@@ -1,0 +1,117 @@
+// ======================================================================== //
+// Copyright 2009-2015 Intel Corporation                                    //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
+#ifndef __RTCORE_RAY_ISPH__
+#define __RTCORE_RAY_ISPH__
+
+/*! \ingroup embree_kernel_api_ispc */
+/*! \{ */
+
+/*! Ray structure for uniform (single) rays. */
+struct RTCRay1 
+{
+  /* ray data */
+  float org[3];      //!< Ray origin
+  float align0;      //!< unused member to force alignment of following members
+  
+  float dir[3];      //!< Ray direction
+  float align1;      //!< unused member to force alignment of following members
+  
+  float tnear;       //!< Start of ray segment
+  float tfar;        //!< End of ray segment (set to hit distance)
+  float time;        //!< Time of this ray for motion blur
+  unsigned   mask;        //!< Used to mask out objects during traversal
+  
+  /* hit data */
+  float Ng[3];       //!< Unnormalized geometry normal
+  float align2;
+  
+  float u;           //!< Barycentric u coordinate of hit
+  float v;           //!< Barycentric v coordinate of hit
+
+  unsigned geomID;        //!< geometry ID
+  unsigned primID;        //!< primitive ID
+  unsigned instID;        //!< instance ID
+  varying unsigned align[0];  //!< aligns ray on stack to at least 16 bytes
+};
+
+/*! Ray structure for packets of 4 rays. */
+struct RTCRay
+{
+  /* ray data */
+  float orgx;  //!< x coordinate of ray origin
+  float orgy;  //!< y coordinate of ray origin
+  float orgz;  //!< z coordinate of ray origin
+  
+  float dirx;  //!< x coordinate of ray direction
+  float diry;  //!< y coordinate of ray direction
+  float dirz;  //!< z coordinate of ray direction
+  
+  float tnear; //!< Start of ray segment 
+  float tfar;  //!< End of ray segment   
+  float time;  //!< Time of this ray for motion blur
+  unsigned mask;  //!< Used to mask out objects during traversal
+  
+  /* hit data */
+  float Ngx;   //!< x coordinate of geometry normal
+  float Ngy;   //!< y coordinate of geometry normal
+  float Ngz;   //!< z coordinate of geometry normal
+  
+  float u;     //!< Barycentric u coordinate of hit
+  float v;     //!< Barycentric v coordinate of hit
+  
+  unsigned geomID;     //!< geometry ID
+  unsigned primID;     //!< primitive ID
+  unsigned instID;     //!< instance ID
+};
+
+
+struct RTCRaySOA
+{
+  /* ray data */
+
+  uniform float* uniform orgx;  //!< x coordinate of ray origin
+  uniform float* uniform orgy;  //!< y coordinate of ray origin
+  uniform float* uniform orgz;  //!< z coordinate of ray origin
+
+  uniform float* uniform dirx;  //!< x coordinate of ray direction
+  uniform float* uniform diry;  //!< y coordinate of ray direction
+  uniform float* uniform dirz;  //!< z coordinate of ray direction
+
+  uniform float* uniform tnear; //!< Start of ray segment (optional)
+  uniform float* uniform tfar;  //!< End of ray segment (set to hit distance)
+ 
+  uniform float* uniform time;  //!< Time of this ray for motion blur (optional)
+  uniform unsigned* uniform mask;  //!< Used to mask out objects during traversal (optional)
+
+  /* hit data */
+
+  uniform float* uniform Ngx;   //!< x coordinate of geometry normal (optional)
+  uniform float* uniform Ngy;   //!< y coordinate of geometry normal (optional)
+  uniform float* uniform Ngz;   //!< z coordinate of geometry normal (optional)
+
+  uniform float* uniform u;     //!< Barycentric u coordinate of hit
+  uniform float* uniform v;     //!< Barycentric v coordinate of hit
+ 
+  uniform unsigned* uniform geomID;  //!< geometry ID
+  uniform unsigned* uniform primID;  //!< primitive ID
+  uniform unsigned* uniform instID;  //!< instance ID (optional)
+};
+
+
+/*! @} */
+
+#endif

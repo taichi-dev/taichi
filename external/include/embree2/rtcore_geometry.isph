@@ -1,0 +1,405 @@
+// ======================================================================== //
+// Copyright 2009-2015 Intel Corporation                                    //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
+#ifndef __RTCORE_GEOMETRY_ISPH__
+#define __RTCORE_GEOMETRY_ISPH__
+
+/*! \ingroup embree_kernel_api_ispc */
+/*! \{ */
+
+/*! invalid geometry ID */
+#define RTC_INVALID_GEOMETRY_ID ((uniform unsigned int)-1)
+
+/*! \brief Specifies the type of buffers when mapping buffers */
+enum RTCBufferType {
+  RTC_INDEX_BUFFER         = 0x01000000,
+
+  RTC_VERTEX_BUFFER        = 0x02000000,
+  RTC_VERTEX_BUFFER0       = 0x02000000,
+  RTC_VERTEX_BUFFER1       = 0x02000001,
+
+  RTC_USER_VERTEX_BUFFER   = 0x02100000,
+  RTC_USER_VERTEX_BUFFER0  = 0x02100000,
+  RTC_USER_VERTEX_BUFFER1  = 0x02100001,
+
+  RTC_FACE_BUFFER          = 0x03000000,
+  RTC_LEVEL_BUFFER         = 0x04000001,
+
+  RTC_EDGE_CREASE_INDEX_BUFFER = 0x05000000,
+  RTC_EDGE_CREASE_WEIGHT_BUFFER = 0x06000000,
+
+  RTC_VERTEX_CREASE_INDEX_BUFFER = 0x07000000,
+  RTC_VERTEX_CREASE_WEIGHT_BUFFER = 0x08000000,
+
+  RTC_HOLE_BUFFER          = 0x09000001,
+};
+
+/*! \brief Supported types of matrix layout for functions involving matrices */
+enum RTCMatrixType {
+  RTC_MATRIX_ROW_MAJOR = 0,
+  RTC_MATRIX_COLUMN_MAJOR = 1,
+  RTC_MATRIX_COLUMN_MAJOR_ALIGNED16 = 2,
+};
+
+/*! \brief Supported geometry flags to specify handling in dynamic scenes. */
+enum RTCGeometryFlags 
+{
+  RTC_GEOMETRY_STATIC     = 0,    //!< specifies static geometry that will change rarely
+  RTC_GEOMETRY_DEFORMABLE = 1,    //!< specifies dynamic geometry with deformable motion (BVH refit possible)
+  RTC_GEOMETRY_DYNAMIC    = 2,    //!< specifies dynamic geometry with arbitrary motion (BVH refit not possible)
+};
+
+/*! \brief Boundary interpolation mode for subdivision surfaces */
+enum RTCBoundaryMode
+{
+  RTC_BOUNDARY_NONE = 0,               //!< ignores border patches
+  RTC_BOUNDARY_EDGE_ONLY = 1,          //!< soft boundary (default)
+  RTC_BOUNDARY_EDGE_AND_CORNER = 2     //!< boundary corner vertices are sharp vertices
+};
+
+/*! Intersection filter function for uniform rays. */
+typedef void (*uniform RTCFilterFuncUniform)(void* uniform ptr,    /*!< pointer to user data */
+                                             uniform RTCRay1& ray  /*!< intersection to filter */);
+
+/*! Intersection filter function for varying rays. */
+typedef void (*uniform RTCFilterFuncVarying)(void* uniform ptr,   /*!< pointer to user data */
+                                             varying RTCRay& ray  /*!< intersection to filter */);
+
+
+/*! \brief Creates a new scene instance. 
+
+  A scene instance contains a reference to a scene to instantiate and
+  the transformation to instantiate the scene with. An implementation
+  will typically transform the ray with the inverse of the provided
+  transformation and continue traversing the ray through the provided
+  scene. If any geometry is hit, the instance ID (instID) member of
+  the ray will get set to the geometry ID of the instance. */
+uniform unsigned int rtcNewInstance (RTCScene target,           //!< the scene the instance belongs to
+                                     RTCScene source            //!< the geometry to instantiate
+  );
+
+/*! \brief Creates a new scene instance. 
+
+  A scene instance contains a reference to a scene to instantiate and
+  the transformation to instantiate the scene with. For motion blurred
+  instances, a number of timesteps can get specified (currently only 1
+  or 2 timesteps are supported). An implementation will typically
+  transform the ray with the inverse of the provided transformation
+  and continue traversing the ray through the provided scene. If any
+  geometry is hit, the instance ID (instID) member of the ray will get
+  set to the geometry ID of the instance. */
+uniform unsigned rtcNewInstance2 (RTCScene target,                  //!< the scene the instance belongs to
+                                  RTCScene source,                  //!< the scene to instantiate
+                                  uniform size_t numTimeSteps = 1); //!< number of timesteps, one matrix per timestep
+
+
+/*! \brief Sets transformation of the instance */
+void rtcSetTransform (RTCScene scene,                                  //!< scene handle
+                      uniform unsigned int geomID,                     //!< ID of geometry
+                      uniform RTCMatrixType layout,                    //!< layout of transformation matrix
+                      const uniform float* uniform xfm                 //!< pointer to transformation matrix
+                      );
+
+/*! \brief Sets transformation of the instance for specified timestep */
+void rtcSetTransform2 (RTCScene scene,                                 //!< scene handle
+                       uniform unsigned int geomID,                    //!< ID of geometry 
+                       uniform RTCMatrixType layout,                   //!< layout of transformation matrix
+                       const uniform float* uniform xfm,               //!< pointer to transformation matrix
+                       uniform size_t timeStep = 0                     //!< timestep to set the matrix for 
+  );
+
+/*! \brief Creates a new triangle mesh. The number of triangles
+  (numTriangles), number of vertices (numVertices), and number of time
+  steps (1 for normal meshes, and 2 for linear motion blur), have to
+  get specified. The triangle indices can be set be mapping and
+  writing to the index buffer (RTC_INDEX_BUFFER) and the triangle
+  vertices can be set by mapping and writing into the vertex buffer
+  (RTC_VERTEX_BUFFER). In case of linear motion blur, two vertex
+  buffers have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1),
+  one for each time step. The index buffer has the default layout of
+  three 32 bit integer indices for each triangle. An index points to
+  the ith vertex. The vertex buffer stores single precision x,y,z
+  floating point coordinates aligned to 16 bytes. The value of the 4th
+  float used for alignment can be arbitrary. */
+uniform unsigned int rtcNewTriangleMesh (RTCScene scene,                  //!< the scene the mesh belongs to
+                                         uniform RTCGeometryFlags flags,  //!< geometry flags
+                                         uniform size_t numTriangles,     //!< number of triangles
+                                         uniform size_t numVertices,      //!< number of vertices
+                                         uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
+  );
+
+/*! \brief Creates a new quad mesh. The number of quads
+  (numQuads), number of vertices (numVertices), and number of time
+  steps (1 for normal meshes, and 2 for linear motion blur), have to
+  get specified. The quad indices can be set be mapping and
+  writing to the index buffer (RTC_INDEX_BUFFER) and the quad
+  vertices can be set by mapping and writing into the vertex buffer
+  (RTC_VERTEX_BUFFER). In case of linear motion blur, two vertex
+  buffers have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1),
+  one for each time step. The index buffer has the default layout of
+  three 32 bit integer indices for each quad. An index points to
+  the ith vertex. The vertex buffer stores single precision x,y,z
+  floating point coordinates aligned to 16 bytes. The value of the 4th
+  float used for alignment can be arbitrary. */
+uniform unsigned int rtcNewQuadMesh (RTCScene scene,                  //!< the scene the mesh belongs to
+                                     uniform RTCGeometryFlags flags,  //!< geometry flags
+                                     uniform size_t numQuads,         //!< number of quads
+                                     uniform size_t numVertices,      //!< number of vertices
+                                     uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
+  );
+
+/*! \brief Creates a new subdivision mesh. The number of faces
+ (numFaces), edges/indices (numEdges), vertices (numVertices), edge
+ creases (numEdgeCreases), vertex creases (numVertexCreases), holes
+ (numHoles), and time steps (numTimeSteps) have to get speficied at
+ construction time.
+
+ The following buffers have to get filled by the application: the face
+ buffer (RTC_FACE_BUFFER) contains the number edges/indices (3 or 4)
+ of each of the numFaces faces, the index buffer (RTC_INDEX_BUFFER)
+ contains multiple (3 or 4) 32bit vertex indices for each face and
+ numEdges indices in total, the vertex buffer (RTC_VERTEX_BUFFER)
+ stores numVertices vertices as single precision x,y,z floating point
+ coordinates aligned to 16 bytes. The value of the 4th float used for
+ alignment can be arbitrary.
+
+ Optionally, the application can fill the hole buffer
+ (RTC_HOLE_BUFFER) with numHoles many 32 bit indices of faces that
+ should be considered non-existing.
+
+ Optionally, the application can fill the level buffer
+ (RTC_LEVEL_BUFFER) with a tessellation level for each of the numEdges
+ edges. The subdivision level is a positive floating point value, that
+ specifies how many quads along the edge should get generated during
+ tessellation. The tessellation level is a lower bound, thus the
+ implementation is free to choose a larger level. If no level buffer
+ is specified a level of 1 is used.
+
+ Optionally, the application can fill the sparse edge crease buffers
+ to make some edges appear sharper. The edge crease index buffer
+ (RTC_EDGE_CREASE_INDEX_BUFFER) contains numEdgeCreases many pairs of
+ 32 bit vertex indices that specify unoriented edges. The edge crease
+ weight buffer (RTC_EDGE_CREASE_WEIGHT_BUFFER) stores for each of
+ theses crease edges a positive floating point weight. The larger this
+ weight, the sharper the edge. Specifying a weight of infinify is
+ supported and marks an edge as infinitely sharp. Storing an edge
+ multiple times with the same crease weight is allowed, but has lower
+ performance. Storing the an edge multiple times with different
+ crease weights results in undefined behaviour. For a stored edge
+ (i,j), the reverse direction edges (j,i) does not have to get stored,
+ as both are considered the same edge.
+
+ Optionally, the application can fill the sparse vertex crease buffers
+ to make some vertices appear sharper. The vertex crease index buffer
+ (RTC_VERTEX_CREASE_INDEX_BUFFER), contains numVertexCreases many 32
+ bit vertex indices to speficy a set of vertices. The vertex crease
+ weight buffer (RTC_VERTEX_CREASE_WEIGHT_BUFFER) specifies for each of
+ these vertices a positive floating point weight. The larger this
+ weight, the sharper the vertex. Specifying a weight of infinity is
+ supported and makes the vertex infinitely sharp. Storing a vertex
+ multiple times with the same crease weight is allowed, but has lower
+ performance. Storing a vertex multiple times with different crease
+ weights results in undefined behaviour.
+
+*/
+
+uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,                //!< the scene the mesh belongs to
+                                            uniform RTCGeometryFlags flags,        //!< geometry flags
+                                            uniform size_t numFaces,               //!< number of faces
+                                            uniform size_t numEdges,               //!< number of edges
+                                            uniform size_t numVertices,            //!< number of vertices
+                                            uniform size_t numEdgeCreases,         //!< number of edge creases
+                                            uniform size_t numVertexCreases,       //!< number of vertex creases
+                                            uniform size_t numHoles,               //!< number of holes
+                                            uniform size_t numTimeSteps = 1        //!< number of motion blur time steps
+  );
+
+/*! \brief Creates a new hair geometry, consisting of multiple hairs
+  represented as cubic bezier curves with varying radii. The number of
+  curves (numCurves), number of vertices (numVertices), and number of
+  time steps (1 for normal curves, and 2 for linear motion blur), have
+  to get specified at construction time. Further, the curve index
+  buffer (RTC_INDEX_BUFFER) and the curve vertex buffer
+  (RTC_VERTEX_BUFFER) have to get set by mapping and writing to the
+  appropiate buffers. In case of linear motion blur, two vertex
+  buffers have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1),
+  one for each time step. The index buffer has the default layout of a
+  single 32 bit integer index for each curve, that references the
+  start vertex of the curve. The vertex buffer stores 4 control points
+  per curve, each such control point consists of a single precision
+  (x,y,z) position and radius, stored in that order in
+  memory. Individual hairs are considered to be subpixel sized which
+  allows the implementation to approximate the intersection
+  calculation. This in particular means that zooming onto one hair
+  might show geometric artefacts. */
+uniform unsigned int rtcNewHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
+                                         uniform RTCGeometryFlags flags,    //!< geometry flags
+                                         uniform size_t numCurves,          //!< number of curves
+                                         uniform size_t numVertices,        //!< number of vertices
+                                         uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
+  );
+
+/*! Sets a uniform tessellation rate for subdiv meshes and hair
+ *  geometry. For subdivision meshes the RTC_LEVEL_BUFFER can also be used
+ *  optionally to set a different tessellation rate per edge.*/
+void rtcSetTessellationRate (RTCScene scene, uniform unsigned geomID, uniform float tessellationRate);
+
+/*! \brief Creates a new line segment geometry, consisting of multiple
+  segments with varying radii. The number of line segments (numSegments),
+  number of vertices (numVertices), and number of time steps (1 for
+  normal line segments, and 2 for linear motion blur), have to get
+  specified at construction time. Further, the segment index buffer
+  (RTC_INDEX_BUFFER) and the segment vertex buffer (RTC_VERTEX_BUFFER)
+  have to get set by mapping and writing to the appropiate buffers. In
+  case of linear motion blur, two vertex buffers have to get filled
+  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1), one for each time step. The
+  index buffer has the default layout of a single 32 bit integer index
+  for each line segment, that references the start vertex of the segment.
+  The vertex buffer stores 2 end points per line segment, each such point
+  consists of a single precision (x,y,z) position and radius, stored in
+  that order in memory. Individual segments are considered to be subpixel
+  sized which allows the implementation to approximate the intersection
+  calculation. This in particular means that zooming onto one line segment
+  might show geometric artefacts. */
+uniform unsigned int rtcNewLineSegments (RTCScene scene,                    //!< the scene the line segments belong to
+                                         uniform RTCGeometryFlags flags,    //!< geometry flags
+                                         uniform size_t numSegments,        //!< number of line segments
+                                         uniform size_t numVertices,        //!< number of vertices
+                                         uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
+  );
+
+/*! \brief Sets 32 bit ray mask. */
+void rtcSetMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
+
+/*! \brief Sets boundary interpolation mode for subdivision surfaces */                                                                        
+void rtcSetBoundaryMode(RTCScene scene, uniform unsigned int geomID, uniform RTCBoundaryMode mode);
+
+/*! \brief Maps specified buffer. This function can be used to set index and
+ *  vertex buffers of geometries. */
+void* uniform rtcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
+
+/*! \brief Unmaps specified buffer. 
+
+  A buffer has to be unmapped before the rtcEnable, rtcDisable,
+  rtcUpdate, or rtcDeleteGeometry calls are executed. */
+void rtcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
+
+/*! \brief Shares a data buffer between the application and
+ *  Embree. The passed buffer is used by Embree to store index and
+ *  vertex data. It has to remain valid as long as the mesh exists,
+ *  and the user is responsible to free the data when the mesh gets
+ *  deleted. One can optionally speficy a byte offset and byte stride
+ *  of the elements stored inside the buffer. The addresses
+ *  ptr+offset+i*stride have to be aligned to 4 bytes on Xeon CPUs and
+ *  16 bytes on Xeon Phi accelerators. For vertex buffers, the 4 bytes
+ *  after the z-coordinate of the last vertex have to be readable memory,
+ *  thus padding is required for some layouts. If this function is not
+ *  called, Embree will allocate and manage buffers of the default
+ *  layout. */
+void rtcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, 
+                  const void* uniform ptr, uniform size_t byteOffset, uniform size_t byteStride);
+
+/*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
+void rtcEnable (RTCScene scene, uniform unsigned int geomID);
+
+/*! \brief Update spefific geometry buffer. 
+
+  Each time geometry buffers got modified, the user has to call some
+  update function to tell the ray tracing engine which buffers got
+  modified. The rtcUpdateBuffer function taggs a specific buffer of
+  some geometry as modified. */
+void rtcUpdate (RTCScene scene, uniform unsigned int geomID);
+
+/*! \brief Update spefific geometry buffer. 
+
+  Each time geometry buffers got modified, the user has to call some
+  update function to tell the ray tracing engine which buffers got
+  modified. The rtcUpdateBuffer function taggs a specific buffer of
+  some geometry as modified. */
+void rtcUpdateBuffer (RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
+
+/*! \brief Disable geometry. 
+
+  Disabled geometry is not hit by any ray. Disabling and enabling
+  geometry gives higher performance than deleting and recreating
+  geometry. */
+void rtcDisable (RTCScene scene, uniform unsigned int geomID);
+
+/*! \brief Sets the intersection filter function for uniform rays. */
+void rtcSetIntersectionFilterFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncUniform func);
+
+/*! \brief Sets the intersection filter function for varying rays. */
+void rtcSetIntersectionFilterFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncVarying func);
+
+/*! \brief Sets the occlusion filter function for uniform rays. */
+void rtcSetOcclusionFilterFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncUniform func);
+
+/*! \brief Sets the occlusion filter function for varying rays. */
+void rtcSetOcclusionFilterFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCFilterFuncVarying func);
+
+/*! Set pointer for user defined data per geometry. Invokations
+ *  of the various user intersect and occluded functions get passed
+ *  this data pointer when called. */
+void rtcSetUserData (RTCScene scene, uniform unsigned int geomID, void* uniform ptr);
+
+/*! Get pointer for user defined data per geometry based on geomID. */
+void* uniform rtcGetUserData (RTCScene scene, uniform unsigned int geomID);
+
+/*! Interpolates user data to some varying u/v location. The data
+ *  buffer specifies per vertex data to interpolate and can be one of
+ *  the RTC_VERTEX_BUFFER0/1 or RTC_USER_VERTEX_BUFFER0/1 and has to contain
+ *  numFloats floating point values to interpolate for each vertex of
+ *  the geometry. The P array will get filled with the interpolated
+ *  data, and the dPdu and dPdv arrays with the u and v derivative of
+ *  the interpolation. If the pointers P is NULL, the value will not
+ *  get calculated. If dPdu and dPdv are NULL the derivatives will not
+ *  get calculated. Both dPdu and dPdv have to be either valid or
+ *  NULL. These destination arrays are filled in structure of array
+ *  (SoA) layout. The buffer has to be padded at the end such
+ *  that the last element can be read safely using SSE
+ *  instructions. */
+void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primIDs, varying float u, varying float v, 
+                    uniform RTCBufferType buffer,
+                    varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv, uniform size_t numFloats);
+
+/*! Interpolates user data to some varying u/v location. The data
+ *  buffer specifies per vertex data to interpolate and can be one of
+ *  the RTC_VERTEX_BUFFER0/1 or RTC_USER_VERTEX_BUFFER0/1 and has to contain
+ *  numFloats floating point values to interpolate for each vertex of
+ *  the geometry. The P array will get filled with the
+ *  interpolated datam the dPdu and dPdv arrays with the u and v
+ *  derivative of the interpolation, and the ddPdudu, ddPdvdv, and
+ *  ddPdudv arrays with the respective second derivatives. One can
+ *  disable 1) the calculation of the interpolated value by setting P
+ *  to NULL, 2) the calculation of the 1st order derivatives by
+ *  setting dPdu and dPdv to NULL, 3) the calculation of the second
+ *  order derivatives by setting ddPdudu, ddPdvdv, and ddPdudv to
+ *  NULL. These destination arrays are filled in structure of array
+ *  (SoA) layout. The buffer has to be padded at the end such that
+ *  the last element can be read safely using SSE
+ *  instructions. */
+void rtcInterpolate2(RTCScene scene, uniform unsigned int geomID, varying unsigned int primIDs, varying float u, varying float v, 
+                    uniform RTCBufferType buffer,
+                    varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv,
+                    varying float* uniform ddPdudu, varying float* uniform ddPdvdv, varying float* uniform ddPdudv,
+                    uniform size_t numFloats);
+
+/*! \brief Deletes the geometry. */
+void rtcDeleteGeometry (RTCScene scene, uniform unsigned int geomID);
+
+/*! @} */
+
+#endif

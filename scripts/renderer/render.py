@@ -39,7 +39,7 @@ class Camera:
         self.c = tc.create_camera(name)
         self.c.initialize(config_from_dict(kwargs))
 
-def create_object(name, x, y=0, z=0, s=1, material='gold'):
+def create_object(name, x, y=0, z=0, s=1, material='wall'):
     mesh = tc.create_mesh()
     mesh.initialize(P(filename='../assets/meshes/%s.obj' % name))
     mesh.set_material(assets.materials.get_material(material))
@@ -66,14 +66,14 @@ def render_frame(i, t):
 
     renderer = Renderer('pt', '../output/frames/%d.png' % i)
     renderer.initialize(width=960, height=540, min_path_length=1, max_path_length=30,
-                        initial_radius=0.05, sampler='sobol')
+                        initial_radius=0.05, sampler='sobol', russian_roulette=True)
     renderer.set_camera(camera.c)
 
     scene = tc.create_scene()
 
     scene.add_mesh(create_object('cylinder', -6))
-    scene.add_mesh(create_object('suzanne', 0, material='gold'))
-    scene.add_mesh(create_object('sphere', -3, material='gold'))
+    scene.add_mesh(create_object('suzanne', 0, material='wall'))
+    scene.add_mesh(create_object('sphere', -3, material='wall'))
     scene.add_mesh(create_object('cone', 3))
     scene.add_mesh(create_object('icosphere', 6))
     scene.add_mesh(create_object('plane', 0, -1, 0, 10))

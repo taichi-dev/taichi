@@ -236,14 +236,6 @@ TC_NAMESPACE_BEGIN
                     break;
                 }
                 f *= c / pdf;
-				if (russian_roulette) {
-					real p = max_component(f);
-					if (p < 1 && rand() < p) {
-						importance *= 1.0f / p;
-					} else {
-						break;
-					}
-				}
                 ray = out_ray;
                 importance *= f;
             } else if (volume.is_event_scattering(rand)) {
@@ -261,20 +253,23 @@ TC_NAMESPACE_BEGIN
                     break;
                 }
                 f *= 1.0 / pdf;
-                real p = max_component(f);
-                if (p <= 1) {
-                    if (rand() < p) {
-                        importance *= 1.0f / p;
-                    } else {
-                        break;
-                    }
-                }
                 ray = out_ray;
                 importance *= f;
             } else {
                 // Volumetric absorption
                 break;
             }
+			if (russian_roulette) {
+				real p = luminance(importance);
+				if (p <= 1) {
+					if (rand() < p) {
+						importance *= 1.0f / p;
+					}
+					else {
+						break;
+					}
+				}
+			}
         }
         return ret;
     }

@@ -137,11 +137,12 @@ TC_NAMESPACE_BEGIN
 			//Russian roulette
 			if (russian_roulette) {
 				real p = max_component(color);
-				if (rand() < p) {
-					flux = (1.0f / p) * flux;
-				} else {
-					break;
-				}
+				if (p < 1)
+					if (rand() < p) {
+						flux = (1.0f / p) * flux;
+					} else {
+						break;
+					}
 			}
             flux *= color;
         }

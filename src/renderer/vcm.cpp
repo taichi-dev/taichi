@@ -49,8 +49,8 @@ TC_NAMESPACE_BEGIN
                     int num_light_vertices = (int) light_path.size();
                     Vertex merging_vertex_eye = eye_path.back();
                     Vertex merging_vertex_light = light_path.back();
-                    if (Material::is_delta(merging_vertex_eye.event) ||
-                        Material::is_delta(merging_vertex_light.event)) {
+                    if (SurfaceMaterial::is_delta(merging_vertex_eye.event) ||
+                        SurfaceMaterial::is_delta(merging_vertex_light.event)) {
                         // Do not connect Delta BSDF
                         continue;
                     }

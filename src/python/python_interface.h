@@ -22,6 +22,7 @@
 #include <vector>
 #include "renderer/camera.h"
 #include "renderer/renderer.h"
+#include "renderer/volume.h"
 #include "renderer/material.h"
 #include "common/utils.h"
 #include "common/config.h"
@@ -49,7 +50,9 @@ namespace boost {
 
     EXPLICIT_GET_POINTER(taichi::Camera);
     
-	EXPLICIT_GET_POINTER(taichi::Material);
+	EXPLICIT_GET_POINTER(taichi::SurfaceMaterial);
+
+	EXPLICIT_GET_POINTER(taichi::VolumeMaterial);
     
 	EXPLICIT_GET_POINTER(taichi::Renderer);
 
@@ -107,7 +110,8 @@ TC_NAMESPACE_BEGIN
         numeric::array::set_module_and_type("numpy", "ndarray");
         def("create_renderer", create_instance<Renderer>);
         def("create_camera", create_instance<Camera>);
-        def("create_material", create_instance<Material>);
+        def("create_surface_material", create_instance<SurfaceMaterial>);
+        def("create_volume_material", create_instance<VolumeMaterial>);
         def("create_mesh", std::make_shared<Mesh>);
         def("create_scene", std::make_shared<Scene>);
         def("config_from_dict", config_from_py_dict);
@@ -267,8 +271,12 @@ TC_NAMESPACE_BEGIN
         EXPORT_SIMULATOR(APICFluid);
         // class_<APICFluid, bases<Simulator>>("APICFluid");
 
-		class_<Material>("Material")
-			.def("initialize", static_cast<void(Material::*)(const Config &)>(&Material::initialize));
+		class_<VolumeMaterial>("VolumeMaterial")
+			.def("initialize", &VolumeMaterial::initialize);
+			;
+
+		class_<SurfaceMaterial>("SurfaceMaterial")
+			.def("initialize", static_cast<void(SurfaceMaterial::*)(const Config &)>(&SurfaceMaterial::initialize));
 			;
 
 		class_<Mesh>("Mesh")
@@ -284,7 +292,9 @@ TC_NAMESPACE_BEGIN
 		class_<Scene>("Scene")
 			//.def("initialize", &Scene::initialize)
 			.def("finalize", &Scene::finalize)
-			.def("add_mesh", &Scene::add_mesh);
+			.def("add_mesh", &Scene::add_mesh)
+			.def("set_atmosphere_material", &Scene::set_atmosphere_material)
+			;
 
         // Renderers
 		class_<Renderer>("Renderer")
@@ -300,7 +310,8 @@ TC_NAMESPACE_BEGIN
                      static_cast<void (Camera::*)(const Config &config)>(&Camera::initialize));
 		register_ptr_to_python<std::shared_ptr<Renderer>>();
         register_ptr_to_python<std::shared_ptr<Camera>>();
-        register_ptr_to_python<std::shared_ptr<Material>>();
+        register_ptr_to_python<std::shared_ptr<SurfaceMaterial>>();
+        register_ptr_to_python<std::shared_ptr<VolumeMaterial>>();
         register_ptr_to_python<std::shared_ptr<Mesh>>();
         register_ptr_to_python<std::shared_ptr<Scene>>();
     }

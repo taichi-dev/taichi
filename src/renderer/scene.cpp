@@ -62,7 +62,7 @@ TC_NAMESPACE_BEGIN
         }
 	}
 
-	void Mesh::set_material(std::shared_ptr<Material> material) {
+	void Mesh::set_material(std::shared_ptr<SurfaceMaterial> material) {
 		this->material = material;
 		if (material->is_emissive()) {
 			this->emission_color = Vector3(1); //TODO
@@ -89,11 +89,11 @@ TC_NAMESPACE_BEGIN
         if (material_type == "light_source") {
             this->emission_color = load_vector3(material_node.get("emission_color", std::string("(0.5, 0.5, 0.5)")));
             this->emission = luminance(this->emission_color);
-            material = create_instance<Material>("emissive");
+            material = create_instance<SurfaceMaterial>("emissive");
             material->initialize(Config().set("color", emission_color));
             material->set_color_sampler(std::make_shared<ConstantTexture>(emission_color));
         } else if (material_type == "pbr") {
-            material = create_instance<Material>("pbr");
+            material = create_instance<SurfaceMaterial>("pbr");
             material->initialize(material_node);
         } else {
             error("No material found.");

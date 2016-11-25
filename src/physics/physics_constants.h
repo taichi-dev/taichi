@@ -15,7 +15,7 @@ inline real luminance(Vector3 v) {
 	for (int i = 0; i < 3; i++) {
 		lum += std_y_weight[i] * v[i];
 	}
-	return 683.0f * lum;
+	return lum; // * 683.0f
 }
 
 TC_NAMESPACE_END

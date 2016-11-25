@@ -5,6 +5,8 @@
 
 TC_NAMESPACE_BEGIN
 
+	// TODO: fix geometry normal?
+
     void SPPMRenderer::initialize(const Config &config) {
         Renderer::initialize(config);
         alpha = config.get("alpha", 0.666666667f);

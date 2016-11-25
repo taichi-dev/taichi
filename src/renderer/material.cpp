@@ -221,7 +221,7 @@ TC_NAMESPACE_BEGIN
             Vector3 diffuse_color = load_vector3(pt.get("diffuse_color", "(0,0,0)"));
             Vector3 specular_color = load_vector3(pt.get("specular_color", "(0,0,0)"));
             real glossiness = pt.get("glossiness", 100.0f);
-            bool transparent = pt.get("transparent", 0);
+            bool transparent = pt.get("transparent", false);
             std::vector<real> luminances;
             std::shared_ptr<Material> diff_mat, glossy_mat;
             if (luminance(diffuse_color) > 0) {

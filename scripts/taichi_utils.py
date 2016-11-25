@@ -124,3 +124,6 @@ def arange(x, y, d):
         yield x
         x += d
 
+def P(**kwargs):
+    return config_from_dict(kwargs)
+

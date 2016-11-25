@@ -8,6 +8,7 @@ TC_NAMESPACE_BEGIN
         this->height = config.get_int("height");
         this->min_path_length = config.get_int("min_path_length");
         this->max_path_length = config.get_int("max_path_length");
+        assert_info(min_path_length <= max_path_length, "min_path_length > max_path_length");
     }
 
     void Renderer::set_scene(std::shared_ptr<Scene> scene) {

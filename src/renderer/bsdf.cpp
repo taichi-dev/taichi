@@ -1,6 +1,6 @@
 #include "bsdf.h"
 #include "scene.h"
-#include "material.h"
+#include "surface_material.h"
 
 TC_NAMESPACE_BEGIN
 

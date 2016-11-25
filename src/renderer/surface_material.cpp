@@ -1,5 +1,5 @@
 #include "physics/physics_constants.h"
-#include "material.h"
+#include "surface_material.h"
 #include "discrete_sampler.h"
 #include "common/config.h"
 #include "io/importer.h"
@@ -374,29 +374,29 @@ TC_NAMESPACE_BEGIN
     class PlainVolumeInterfaceMaterial : public SurfaceMaterial {
 	protected:
 
-		virtual bool get_index_matched() {
+		virtual bool get_index_matched() override {
 			return true;
 		}
 
         virtual void initialize(const Config &config) {}
 
         virtual void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf,
-                            SurfaceScatteringEvent &event, const Vector2 &uv) const {
+                            SurfaceScatteringEvent &event, const Vector2 &uv) const override {
 			out_dir = -in_dir;
 			f = Vector3(1.0f) * abs(1.0f / in_dir.z);
 			pdf = 1.0f;
 			event = SurfaceScatteringEvent::delta;
         }
 
-        virtual real probability_density(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const {
+        virtual real probability_density(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
             return 1.0f;
         };
 
-        virtual Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const {
+        virtual Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
             return Vector3(1.0f) * abs(1.0f / out.z);
         }
 
-        virtual bool is_delta() const {
+        virtual bool is_delta() const override {
             return true;
         }
 

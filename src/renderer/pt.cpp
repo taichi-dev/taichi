@@ -56,7 +56,7 @@ TC_NAMESPACE_BEGIN
             accumulator.accumulate(int(x * width), int(y * height), cont.c * scale);
         }
 
-        bool use_direct_lighting;
+        bool direct_lighting;
         int direct_lighting_bsdf;
         int direct_lighting_light;
         ImageAccumulator<Vector3> accumulator;
@@ -69,7 +69,7 @@ TC_NAMESPACE_BEGIN
     void PathTracingRenderer::initialize(const Config &config) {
         Renderer::initialize(config);
         // NOTE: camera should be specified inside scene
-        this->use_direct_lighting = config.get("use_direct_lighting", true);
+        this->direct_lighting = config.get("direct_lighting", true);
         this->direct_lighting_light = config.get("direct_lighting_light", 1);
         this->direct_lighting_bsdf = config.get("direct_lighting_bsdf", 1);
         this->sampler = create_instance<Sampler>(config.get("sampler", "prand"));
@@ -211,54 +211,52 @@ TC_NAMESPACE_BEGIN
 			const VolumeMaterial &volume = *stack.top();
             IntersectionInfo info = sg->query(ray);
             real safe_distance = volume.sample_free_distance(rand);
+            Vector3 f(1.0f);
+            Ray out_ray;
             if (info.intersected && info.dist < safe_distance) {
                 // Safely travels to the next surface...
                 BSDF bsdf(scene, &info);
                 const Vector3 in_dir = -ray.dir;
                 if (bsdf.is_emissive()) {
-                    bool count = info.front && (depth == 1 || !use_direct_lighting);
-                    if (count && min_path_length <= depth && depth <= max_path_length) {
+                    bool count = info.front && (depth == 1 || !direct_lighting);
+                    if (count && path_length_in_range(depth)) {
                         ret += importance * bsdf.evaluate(info.normal, in_dir);
                     }
                     break;
                 }
-                if (use_direct_lighting && min_path_length <= depth + 1 && depth + 1 <= max_path_length) {
+                if (direct_lighting && !bsdf.is_delta() && path_length_in_range(depth + 1)) {
                     ret += importance * calculate_direct_lighting(in_dir, info, bsdf, rand);
                 }
-                Vector3 f;
                 real pdf;
                 SurfaceScatteringEvent event;
                 Vector3 out_dir;
                 bsdf.sample(in_dir, rand(), rand(), out_dir, f, pdf, event);
-                Ray out_ray(info.pos, out_dir, 1e-5f);
+                out_ray = Ray(info.pos, out_dir, 1e-5f);
                 real c = abs(glm::dot(out_dir, info.normal));
-                if (pdf < 1e-10f) {
+                if (pdf < 1e-20f) {
                     break;
                 }
                 f *= c / pdf;
-                ray = out_ray;
-                importance *= f;
             } else if (volume.sample_event(rand) == VolumeEvent::scattering) {
                 // Volumetric scattering
                 const Vector3 orig = ray.orig + ray.dir * safe_distance;
                 const Vector3 in_dir = -ray.dir;
-                if (use_direct_lighting && min_path_length <= depth + 1 && depth + 1 <= max_path_length) {
+                if (direct_lighting && path_length_in_range(depth + 1)) {
                     ret += importance * calculate_volumetric_direct_lighting(in_dir, orig, rand);
                 }
-                Vector3 f(1.0f);
                 real pdf = 1;
                 Vector3 out_dir = volume.sample_phase(rand);
-                Ray out_ray(orig, out_dir, 1e-5f);
-                if (pdf < 1e-10f) {
+                out_ray = Ray(orig, out_dir, 1e-5f);
+                if (pdf < 1e-20f) {
                     break;
                 }
                 f *= 1.0 / pdf;
-                ray = out_ray;
-                importance *= f;
             } else {
                 // Volumetric absorption
                 break;
             }
+            ray = out_ray;
+            importance *= f;
 			if (russian_roulette) {
 				real p = luminance(importance);
 				if (p <= 1) {

@@ -23,7 +23,7 @@
 #include "renderer/camera.h"
 #include "renderer/renderer.h"
 #include "renderer/volume.h"
-#include "renderer/material.h"
+#include "renderer/surface_material.h"
 #include "common/utils.h"
 #include "common/config.h"
 #include "common/interface.h"

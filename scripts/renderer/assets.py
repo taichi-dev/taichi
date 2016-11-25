@@ -14,6 +14,11 @@ class Materials:
         mat = getattr(self, 'get_material_' + name)()
         return mat
 
+    def get_material_mirror(self):
+        material = tc.create_surface_material('pbr')
+        material.initialize(P(diffuse_color=(0.0, 0.0, 0.0), specular_color=(1.0, 1.0, 1.0), glossiness=-1, transparent=False))
+        return material
+
     def get_material_gold(self):
         material = tc.create_surface_material('pbr')
         material.initialize(P(diffuse_color=(1.0, 1.0, 0.6), specular_color=(0.1, 0.1, 0.1), glossiness=-1, transparent=False))
@@ -21,7 +26,7 @@ class Materials:
 
     def get_material_wall(self):
         material = tc.create_surface_material('pbr')
-        material.initialize(P(diffuse_color=(1.0, 1.0, 0.6), specular_color=(0.0, 0.0, 0.0), glossiness=-1, transparent=False))
+        material.initialize(P(diffuse_color=(1.0, 1.0, 0.0), specular_color=(0.0, 0.0, 0.0), glossiness=-1, transparent=False))
         return material
 
     def get_material_glass(self):

@@ -8,7 +8,7 @@
 #include "physics/physics_constants.h"
 #include "physics/spectrum.h"
 #include "discrete_sampler.h"
-#include "material.h"
+#include "surface_material.h"
 #include "volume.h"
 
 TC_NAMESPACE_BEGIN

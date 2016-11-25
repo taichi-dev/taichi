@@ -5,9 +5,14 @@ class Materials:
         self.materials = {}
 
     def get_material(self, name):
+        '''
         if name not in self.materials:
             self.materials[name] = getattr(self, 'get_material_' + name)()
         return self.materials[name]
+        '''
+        # Let just waste some memory for easier implementation...
+        mat = getattr(self, 'get_material_' + name)()
+        return mat
 
     def get_material_gold(self):
         material = tc.create_surface_material('pbr')
@@ -23,6 +28,11 @@ class Materials:
         material = tc.create_surface_material('pbr')
         material.initialize(P(diffuse_color=(0, 0, 0), specular_color=(1.0, 1.0, 1.0), glossiness=-1,
                               transparent=True, ior=1.0))
+        return material
+
+    def get_material_interface(self):
+        material = tc.create_surface_material('plain_interface')
+        material.initialize(P())
         return material
 
 

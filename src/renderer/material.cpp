@@ -371,4 +371,41 @@ TC_NAMESPACE_BEGIN
 
     TC_IMPLEMENTATION(SurfaceMaterial, EmissiveMaterial, "emissive");
 
+    class PlainVolumeInterfaceMaterial : public SurfaceMaterial {
+	protected:
+
+		virtual bool get_index_matched() {
+			return true;
+		}
+
+        virtual void initialize(const Config &config) {}
+
+        virtual void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf,
+                            SurfaceScatteringEvent &event, const Vector2 &uv) const {
+			out_dir = -in_dir;
+			f = Vector3(1.0f) * abs(1.0f / in_dir.z);
+			pdf = 1.0f;
+			event = SurfaceScatteringEvent::delta;
+        }
+
+        virtual real probability_density(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const {
+            return 1.0f;
+        };
+
+        virtual Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const {
+            return Vector3(1.0f) * abs(1.0f / out.z);
+        }
+
+        virtual bool is_delta() const {
+            return true;
+        }
+
+        virtual std::string get_name() const {
+            assert_info(false, "no impl");
+            return "";
+        };
+    };
+
+	TC_IMPLEMENTATION(SurfaceMaterial, PlainVolumeInterfaceMaterial, "plain_interface");
+
 TC_NAMESPACE_END

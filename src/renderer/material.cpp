@@ -5,12 +5,12 @@
 #include "io/importer.h"
 
 TC_NAMESPACE_BEGIN
-    TC_INTERFACE_DEF(Material, "material");
+    TC_INTERFACE_DEF(SurfaceMaterial, "material");
 
-    class EmissiveMaterial : public Material {
+    class EmissiveMaterial : public SurfaceMaterial {
     public:
         virtual void initialize(const Config &config) override {
-            Material::initialize(config);
+            SurfaceMaterial::initialize(config);
             set_color(config.get_vec3("color"));
         }
 
@@ -39,7 +39,7 @@ TC_NAMESPACE_BEGIN
         };
     };
 
-    class DiffusiveMaterial : public Material {
+    class DiffusiveMaterial : public SurfaceMaterial {
     public:
 		void initialize(const Config &config) override {
 			set_color(config.get_vec3("color"));
@@ -82,7 +82,7 @@ TC_NAMESPACE_BEGIN
         };
     };
 
-    class GlossyMaterial : public Material {
+    class GlossyMaterial : public SurfaceMaterial {
     protected:
         real glossiness = 300.0f;
     public:
@@ -123,7 +123,7 @@ TC_NAMESPACE_BEGIN
         };
     };
 
-    class ReflectiveMaterial : public Material {
+    class ReflectiveMaterial : public SurfaceMaterial {
     public:
         virtual std::string get_name() const override {
             return "reflective";
@@ -147,7 +147,7 @@ TC_NAMESPACE_BEGIN
         }
     };
 
-    class RefractiveMaterial : public Material {
+    class RefractiveMaterial : public SurfaceMaterial {
     protected:
         real inside_ior = 1.5f;
         real outside_ior = 1.0f;
@@ -211,9 +211,9 @@ TC_NAMESPACE_BEGIN
         }
     };
 
-    class PBRMaterial : public Material {
+    class PBRMaterial : public SurfaceMaterial {
     protected:
-        vector<std::shared_ptr<Material> > materials;
+        vector<std::shared_ptr<SurfaceMaterial> > materials;
         DiscreteSampler material_sampler;
         bool flag_is_delta;
     public:
@@ -223,7 +223,7 @@ TC_NAMESPACE_BEGIN
             real glossiness = pt.get("glossiness", 100.0f);
             bool transparent = pt.get("transparent", false);
             std::vector<real> luminances;
-            std::shared_ptr<Material> diff_mat, glossy_mat;
+            std::shared_ptr<SurfaceMaterial> diff_mat, glossy_mat;
             if (luminance(diffuse_color) > 0) {
                 diff_mat = std::make_shared<DiffusiveMaterial>();
                 diff_mat->set_color(diffuse_color);
@@ -277,13 +277,13 @@ TC_NAMESPACE_BEGIN
         }
 
         virtual void initialize(const Config &config) override {
-            Material::initialize(config);
+            SurfaceMaterial::initialize(config);
             Vector3 diffuse_color = config.get_vec3("diffuse_color");
             Vector3 specular_color = config.get_vec3("specular_color");
             real glossiness = config.get_real("glossiness");
             bool transparent = config.get_bool("transparent");
             std::vector<real> luminances;
-            std::shared_ptr<Material> diff_mat, glossy_mat;
+            std::shared_ptr<SurfaceMaterial> diff_mat, glossy_mat;
             if (luminance(diffuse_color) > 0) {
                 diff_mat = std::make_shared<DiffusiveMaterial>();
                 diff_mat->set_color(diffuse_color);
@@ -365,10 +365,10 @@ TC_NAMESPACE_BEGIN
         }
     };
 
-    TC_IMPLEMENTATION(Material, DiffusiveMaterial, "diffusive");
+    TC_IMPLEMENTATION(SurfaceMaterial, DiffusiveMaterial, "diffusive");
 
-    TC_IMPLEMENTATION(Material, PBRMaterial, "pbr");
+    TC_IMPLEMENTATION(SurfaceMaterial, PBRMaterial, "pbr");
 
-    TC_IMPLEMENTATION(Material, EmissiveMaterial, "emissive");
+    TC_IMPLEMENTATION(SurfaceMaterial, EmissiveMaterial, "emissive");
 
 TC_NAMESPACE_END

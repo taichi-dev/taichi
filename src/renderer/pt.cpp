@@ -25,7 +25,7 @@ TC_NAMESPACE_BEGIN
 
     protected:
 
-        Volume volume;
+        VolumeMaterial volume;
 
 		bool russian_roulette;
 
@@ -64,7 +64,6 @@ TC_NAMESPACE_BEGIN
         long long index;
         real luminance_clamping;
         bool full_direct_lighting;
-        bool volumetric;
     };
 
     void PathTracingRenderer::initialize(const Config &config) {
@@ -77,11 +76,7 @@ TC_NAMESPACE_BEGIN
         this->luminance_clamping = config.get("luminance_clamping", 0);
         this->full_direct_lighting = config.get("full_direct_lighting", false);
         this->accumulator = ImageAccumulator<Vector3>(width, height);
-        this->volumetric = config.get("volumetric", false);
 		this->russian_roulette = config.get("russian_roulette", true);
-        if (volumetric) {
-            this->volume.initialize(config);
-        }
         index = 0;
     }
 
@@ -111,7 +106,7 @@ TC_NAMESPACE_BEGIN
                 Vector3 out_dir;
                 Vector3 f;
                 real bsdf_p;
-                MaterialScatteringEvent event;
+                SurfaceScatteringEvent event;
                 if (sample_bsdf) { // Sample BSDF
                     bsdf.sample(in_dir, rand(), rand(), out_dir, f, bsdf_p, event);
                 } else { // Sample light source
@@ -135,7 +130,7 @@ TC_NAMESPACE_BEGIN
                 const Vector3 emission = light_bsdf.evaluate(test.normal, -out_dir);
                 const Vector3 throughput = emission * co * f * volume.get_attenuation(test.dist);
                 if (sample_bsdf) {
-                    if (sample_bsdf && Material::is_delta(event)) {
+                    if (sample_bsdf && SurfaceMaterial::is_delta(event)) {
                         acc += 1 / (direct_lighting_bsdf * bsdf_p) * throughput;
                     } else {
                         acc += 1 / (direct_lighting_bsdf * bsdf_p +
@@ -208,9 +203,14 @@ TC_NAMESPACE_BEGIN
     Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
         Vector3 ret(0);
         Vector3 importance(1);
+		VolumeStack stack;
+		if (scene->get_atmosphere_material()) {
+			stack.push(scene->get_atmosphere_material().get());
+		}
         for (int depth = 1; depth <= max_path_length; depth++) {
+			const VolumeMaterial &volume = *stack.top();
             IntersectionInfo info = sg->query(ray);
-            real safe_distance = volume.sample_volumetric_distance(rand);
+            real safe_distance = volume.sample_free_distance(rand);
             if (info.intersected && info.dist < safe_distance) {
                 // Safely travels to the next surface...
                 BSDF bsdf(scene, &info);
@@ -227,7 +227,7 @@ TC_NAMESPACE_BEGIN
                 }
                 Vector3 f;
                 real pdf;
-                MaterialScatteringEvent event;
+                SurfaceScatteringEvent event;
                 Vector3 out_dir;
                 bsdf.sample(in_dir, rand(), rand(), out_dir, f, pdf, event);
                 Ray out_ray(info.pos, out_dir, 1e-5f);
@@ -238,7 +238,7 @@ TC_NAMESPACE_BEGIN
                 f *= c / pdf;
                 ray = out_ray;
                 importance *= f;
-            } else if (volume.is_event_scattering(rand)) {
+            } else if (volume.sample_event(rand) == VolumeEvent::scattering) {
                 // Volumetric scattering
                 const Vector3 orig = ray.orig + ray.dir * safe_distance;
                 const Vector3 in_dir = -ray.dir;

@@ -4,22 +4,23 @@
 #include <boost/property_tree/ptree_fwd.hpp>
 #include "texture.h"
 #include "common/meta.h"
+#include "volume.h"
 
 TC_NAMESPACE_BEGIN
 
-    enum class MaterialScatteringEvent {
+    enum class SurfaceScatteringEvent {
         delta = 1 << 0,
         non_delta = 1 << 1,
         emit = 1 << 2
     };
 
-    class Material {
+    class SurfaceMaterial {
     protected:
         std::shared_ptr<AbstractTexture> color_sampler;
     public:
-        using ScatteringEvent = MaterialScatteringEvent;
+        using ScatteringEvent = SurfaceScatteringEvent;
 
-        Material() {}
+        SurfaceMaterial() {}
 
         virtual void initialize(const Config &config) {
         }
@@ -80,6 +81,6 @@ TC_NAMESPACE_BEGIN
         }
     };
 
-    TC_INTERFACE(Material);
+    TC_INTERFACE(SurfaceMaterial);
 
 TC_NAMESPACE_END

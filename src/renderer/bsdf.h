@@ -5,15 +5,15 @@
 
 TC_NAMESPACE_BEGIN
 
-    class Material;
-    enum class MaterialScatteringEvent;
+    class SurfaceMaterial;
+    enum class SurfaceScatteringEvent;
     class Scene;
     class IntersectionInfo;
 
     // Generalized BSDF (supposed to include photon and importon source)
     class BSDF {
     protected:
-        Material *material;
+        SurfaceMaterial *material;
         Matrix3 world_to_local; // shaded normal
         Matrix3 local_to_world; // shaded normal
         Vector3 geometry_normal;
@@ -30,7 +30,7 @@ TC_NAMESPACE_BEGIN
         }
         Vector3 sample_direction(const Vector3 &in, real u, real v) const;
         void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir,
-                       Vector3 &f, real &pdf, MaterialScatteringEvent &event) const;
+                       Vector3 &f, real &pdf, SurfaceScatteringEvent &event) const;
         real probability_density(const Vector3 &in, const Vector3 &out) const;
         Vector3 get_geometry_normal() {
             return geometry_normal;

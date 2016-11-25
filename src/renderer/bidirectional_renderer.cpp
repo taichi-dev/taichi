@@ -32,7 +32,7 @@ TC_NAMESPACE_BEGIN
             depth += 1;
             if (bsdf.is_emissive()) {
                 // hit light source...
-                v.event = Material::ScatteringEvent::emit;
+                v.event = SurfaceMaterial::ScatteringEvent::emit;
                 path.push_back(v);
                 break;
             } else {
@@ -90,7 +90,7 @@ TC_NAMESPACE_BEGIN
 
         BSDF bsdf(scene, &info);
         Vertex vertex(info, bsdf);
-        vertex.event = Material::ScatteringEvent::emit;
+        vertex.event = SurfaceMaterial::ScatteringEvent::emit;
         vertex.pdf = glm::dot(info.normal, dir) / pi;
         result.push_back(vertex);
         trace(result, ray, 1, max_light_events, rand);
@@ -102,13 +102,13 @@ TC_NAMESPACE_BEGIN
         const Vector3 dir = normalize(light_end.pos - eye_end.pos);
         if ((num_eye_vertices == 1) && (num_light_vertices >= 1)) {
             // Light tracing
-            if (Material::is_delta(light_end.event) || dot(light_end.normal, dir) > -eps ||
+            if (SurfaceMaterial::is_delta(light_end.event) || dot(light_end.normal, dir) > -eps ||
                 dot(camera->get_dir(), dir) < eps) {
                 return false;
             }
         } else {
 			// Otherwise, vertex connection
-            if (!Material::is_delta(light_end.event) && !Material::is_delta(eye_end.event)) {
+            if (!SurfaceMaterial::is_delta(light_end.event) && !SurfaceMaterial::is_delta(eye_end.event)) {
                 if (light_end.triangle_id == eye_end.triangle_id || // on the same triangle?
                     (dot(dir, light_end.normal) > -eps && num_light_vertices == 1)) {
                     return false;
@@ -179,7 +179,7 @@ TC_NAMESPACE_BEGIN
         if (is_vm) {
             const Vertex &light_end = path[num_eye_vertices];
             const Vertex &eye_end = path[num_eye_vertices - 1];
-            if (Material::is_delta(eye_end.event)) p = 0;
+            if (SurfaceMaterial::is_delta(eye_end.event)) p = 0;
             else {
                 p *= light_end.pdf * direction_to_area(light_end, eye_end) * vm_pdf_constant;
             }
@@ -200,10 +200,10 @@ TC_NAMESPACE_BEGIN
                 if (num_eye_vertices > max_eye_events || num_light_vertices > max_light_events) {
                     continue;
                 }
-                if (num_eye_vertices >= 2 && Material::is_delta(path[num_eye_vertices - 1].event)) {
+                if (num_eye_vertices >= 2 && SurfaceMaterial::is_delta(path[num_eye_vertices - 1].event)) {
                     continue;
                 }
-                if (num_light_vertices >= 2 && Material::is_delta(path[num_eye_vertices].event)) {
+                if (num_light_vertices >= 2 && SurfaceMaterial::is_delta(path[num_eye_vertices].event)) {
                     continue;
                 }
                 vc_pdf += path_pdf(path, num_eye_vertices, num_light_vertices);
@@ -219,7 +219,7 @@ TC_NAMESPACE_BEGIN
                     continue;
                 }
                 // Merging vertex can not be delta
-                if (Material::is_delta(path[num_eye_vertices - 1].event)) {
+                if (SurfaceMaterial::is_delta(path[num_eye_vertices - 1].event)) {
                     continue;
                 }
                 vm_pdf += path_pdf(path, num_eye_vertices, num_light_vertices);

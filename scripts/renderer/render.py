@@ -50,7 +50,7 @@ def create_object(name, x, y=0, z=0, s=1, material='wall'):
 def create_light(t):
     mesh = tc.create_mesh()
     mesh.initialize(P(filename='../assets/meshes/plane.obj'))
-    material = tc.create_material('emissive')
+    material = tc.create_surface_material('emissive')
     material.initialize(P(color=(20, 20, 20)))
     mesh.set_material(material)
     print t
@@ -66,10 +66,14 @@ def render_frame(i, t):
 
     renderer = Renderer('pt', '../output/frames/%d.png' % i)
     renderer.initialize(width=960, height=540, min_path_length=1, max_path_length=30,
-                        initial_radius=0.05, sampler='sobol', russian_roulette=True)
+                        initial_radius=0.05, sampler='sobol', russian_roulette=True, volmetric=True)
     renderer.set_camera(camera.c)
 
+    air = tc.create_volume_material("homogeneous")
+    air.initialize(P(scattering=0.01))
+
     scene = tc.create_scene()
+    scene.set_atmosphere_material(air)
 
     scene.add_mesh(create_object('cylinder', -6))
     scene.add_mesh(create_object('suzanne', 0, material='wall'))

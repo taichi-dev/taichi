@@ -61,8 +61,4 @@ TC_NAMESPACE_BEGIN
         return material->is_emissive();
     }
 
-    std::string BSDF::get_name() const {
-        return material->get_name();
-    }
-
 TC_NAMESPACE_END

@@ -10,8 +10,11 @@
 
 TC_NAMESPACE_BEGIN
 
-template<typename T>
-std::shared_ptr<T> create_instance(const std::string &alias);
+    template<typename T>
+    std::shared_ptr<T> create_instance(const std::string &alias);
+
+    template<typename T>
+    std::shared_ptr<T> create_initialized_instance(const std::string &alias, const Config &config);
 
 #define TC_IMPLEMENTATION_HOLDER_NAME(class_name) ImplementationHolder##class_name
 
@@ -48,6 +51,11 @@ return (factory->second)(); \
     }\
     template<> std::shared_ptr<class_name> create_instance(const std::string &alias) { \
         return TC_IMPLEMENTATION_HOLDER_NAME(class_name)::get_instance()->create(alias); \
+    }\
+    template<> std::shared_ptr<class_name> create_initialized_instance(const std::string &alias, const Config &config) { \
+        auto instance = create_instance<class_name>(alias);\
+        instance->initialize(config);\
+        return instance;\
     }
 
 #define TC_IMPLEMENTATION(base_class_name, class_name, alias) \

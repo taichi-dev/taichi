@@ -1,4 +1,4 @@
-#include "camera.h"
+#include "framebuffer.h"
 
 TC_NAMESPACE_BEGIN
     TC_INTERFACE_DEF(Framebuffer, "framebuffer");

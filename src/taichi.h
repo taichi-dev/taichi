@@ -1,6 +1,0 @@
-#include "renderer/rendering.h"
-#include "heat/heat_transfer.h"
-#include "physics/spectrum_demo.h"
-#include "hdr/hdr_demo.h"
-#include "fluid/fluid_demo.h"
-#include "point_cloud/point_cloud.h"

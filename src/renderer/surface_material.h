@@ -16,7 +16,7 @@ TC_NAMESPACE_BEGIN
 
     class SurfaceMaterial {
     protected:
-        std::shared_ptr<AbstractTexture> color_sampler;
+        std::shared_ptr<Texture> color_sampler;
         std::shared_ptr<VolumeMaterial> internal_material = nullptr;
     public:
         using ScatteringEvent = SurfaceScatteringEvent;
@@ -60,12 +60,12 @@ TC_NAMESPACE_BEGIN
             return Vector3(0.0f);
         }
 
-        virtual void set_color_sampler(const std::shared_ptr<AbstractTexture> color_sampler) {
+        virtual void set_color_sampler(const std::shared_ptr<Texture> color_sampler) {
             this->color_sampler = color_sampler;
         }
 
         virtual void set_color(const Vector3 &color) {
-            this->color_sampler = std::make_shared<ConstantTexture>(color);
+            this->color_sampler = create_initialized_instance<Texture>("const", Config().set("value", color));
         }
 
         virtual real get_intensity(const Vector2 &uv) {
@@ -79,11 +79,6 @@ TC_NAMESPACE_BEGIN
         virtual bool is_emissive() const {
             return false;
         }
-
-        virtual std::string get_name() const {
-            assert_info(false, "no impl");
-            return "";
-        };
 
         static bool is_delta(const ScatteringEvent &event) {
             return ((int) event & (int) ScatteringEvent::delta) != 0;

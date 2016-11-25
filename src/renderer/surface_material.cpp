@@ -14,10 +14,6 @@ TC_NAMESPACE_BEGIN
             set_color(config.get_vec3("color"));
         }
 
-        virtual std::string get_name() const override {
-            return "emissive";
-        }
-
         virtual bool is_emissive() const override {
             return true;
         }
@@ -44,9 +40,6 @@ TC_NAMESPACE_BEGIN
 		void initialize(const Config &config) override {
 			set_color(config.get_vec3("color"));
 		}
-        virtual std::string get_name() const override {
-            return "diffusive";
-        }
 
         virtual Vector3 sample_direction(const Vector3 &in, real u, real v, const Vector2 &uv) const override {
             Vector3 normal(0, 0, sgn(in.z));
@@ -86,9 +79,6 @@ TC_NAMESPACE_BEGIN
     protected:
         real glossiness = 300.0f;
     public:
-        virtual std::string get_name() const override {
-            return "glossy";
-        }
 
         void set_glossiness(real glossiness) {
             this->glossiness = glossiness;
@@ -125,9 +115,6 @@ TC_NAMESPACE_BEGIN
 
     class ReflectiveMaterial : public SurfaceMaterial {
     public:
-        virtual std::string get_name() const override {
-            return "reflective";
-        }
 
         virtual Vector3 sample_direction(const Vector3 &in, real u, real v, const Vector2 &uv) const override {
             return reflect(in);
@@ -152,9 +139,6 @@ TC_NAMESPACE_BEGIN
         real inside_ior = 1.5f;
         real outside_ior = 1.0f;
     public:
-        virtual std::string get_name() const override {
-            return "refractive";
-        }
 
         void set_ior(real ior) {
             this->inside_ior = ior;
@@ -257,7 +241,7 @@ TC_NAMESPACE_BEGIN
                             std::string filepath = v.second.get<std::string>("filepath");
                             real diff = v.second.get("use_map_color_diffuse", 0.0f);
                             real spec = v.second.get("use_map_color_spec", 0.0f);
-                            auto tex = std::make_shared<ImageTexture>(filepath);
+                            auto tex = create_initialized_instance<Texture>("image", Config().set("filepath", filepath));
                             if (diff > 0 && diff_mat) {
                                 diff_mat->set_color_sampler(tex);
                                 P(filepath);
@@ -360,9 +344,6 @@ TC_NAMESPACE_BEGIN
             return flag_is_delta;
         }
 
-        std::string get_name() const override {
-            return "PBR Material";
-        }
     };
 
     TC_IMPLEMENTATION(SurfaceMaterial, DiffusiveMaterial, "diffusive");
@@ -378,7 +359,7 @@ TC_NAMESPACE_BEGIN
 			return true;
 		}
 
-        virtual void initialize(const Config &config) {}
+        virtual void initialize(const Config &config) override {}
 
         virtual void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf,
                             SurfaceScatteringEvent &event, const Vector2 &uv) const override {
@@ -399,11 +380,6 @@ TC_NAMESPACE_BEGIN
         virtual bool is_delta() const override {
             return true;
         }
-
-        virtual std::string get_name() const {
-            assert_info(false, "no impl");
-            return "";
-        };
     };
 
 	TC_IMPLEMENTATION(SurfaceMaterial, PlainVolumeInterfaceMaterial, "plain_interface");

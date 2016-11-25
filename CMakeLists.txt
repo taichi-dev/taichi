@@ -77,14 +77,7 @@ add_subdirectory(src)
 
 message("Taichi Source: ${TAICHI_SOURCE}")
 
-add_executable(run_taichi src/run_taichi.cpp)
-if (NOT WIN32)
-    target_link_libraries(run_taichi dl)
-endif ()
 if (WIN32)
-    set_target_properties(taichi_dll PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
-    set_target_properties(run_taichi PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
-else ()
-    set_target_properties(run_taichi PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/output")
+    set_target_properties(taichi PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
 endif ()
 

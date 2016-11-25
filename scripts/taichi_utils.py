@@ -14,17 +14,17 @@ def get_os_name():
     assert False, "Unknown platform name %s" % name
 
 if get_os_name() == 'osx':
-    if os.path.exists('libtaichi_dll.dylib'):
-        shutil.copy('libtaichi_dll.dylib', 'taichi.so')
+    if os.path.exists('libtaichi.dylib'):
+        shutil.copy('libtaichi.dylib', 'taichi.so')
         sys.path.append(".")
     import taichi as tc
 elif get_os_name() == 'linux':
-    if os.path.exists('libtaichi_dll.so'):
-        shutil.copy('libtaichi_dll.so', 'taichi.so')
+    if os.path.exists('libtaichi.so'):
+        shutil.copy('libtaichi.so', 'taichi.so')
         sys.path.append(".")
     import taichi as tc
 elif get_os_name() == 'win':
-    dll_path = 'Release/taichi_dll.dll'
+    dll_path = 'Release/taichi.dll'
     d = 'tmp' + str(random.randint(0, 100000000)) + '/'
     try:
         os.mkdir(d)

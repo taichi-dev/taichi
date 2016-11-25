@@ -1,35 +1,18 @@
 #pragma once
 
 #include "visualization/image_buffer.h"
+#include "common/config.h"
+#include "common/meta.h"
 
 TC_NAMESPACE_BEGIN
 
-    class AbstractTexture {
+    class Texture {
     public:
-        virtual Vector3 sample(const Vector2 &coord) const = 0;
+        virtual void initialize(const Config &config) {}
+        virtual Vector3 sample(const Vector2 &coord) const {return Vector3(0.0f);};
     };
 
-    class ConstantTexture : public AbstractTexture {
-    private:
-        Vector3 val;
-    public:
-        ConstantTexture(const Vector3 &val) : val(val) {}
-        Vector3 sample(const Vector2 &coord) const override {
-            return val;
-        }
-    };
-
-    class ImageTexture : public AbstractTexture {
-    protected:
-        ImageBuffer<Vector3> image;
-    public:
-        ImageTexture(const string &filename) {
-            image.load(filename);
-        }
-        Vector3 sample(const Vector2 &coord) const override  {
-            return image.sample_relative_coord(coord);
-        }
-    };
+    TC_INTERFACE(Texture);
 
 TC_NAMESPACE_END
 

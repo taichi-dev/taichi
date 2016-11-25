@@ -91,7 +91,8 @@ TC_NAMESPACE_BEGIN
             this->emission = luminance(this->emission_color);
             material = create_instance<SurfaceMaterial>("emissive");
             material->initialize(Config().set("color", emission_color));
-            material->set_color_sampler(std::make_shared<ConstantTexture>(emission_color));
+            auto emission_map = create_initialized_instance<Texture>("constant", Config().set("value", emission_color));
+            material->set_color_sampler(emission_map);
         } else if (material_type == "pbr") {
             material = create_instance<SurfaceMaterial>("pbr");
             material->initialize(material_node);

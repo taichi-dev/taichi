@@ -38,7 +38,7 @@ TC_NAMESPACE_BEGIN
         Vector3 evaluate(const Vector3 &in, const Vector3 &out) const;
         bool is_delta() const;
         bool is_emissive() const;
-        std::string get_name() const;
+        std::string get_name() {return "TBD";};
     };
 
 TC_NAMESPACE_END

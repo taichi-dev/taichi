@@ -207,6 +207,7 @@ TC_NAMESPACE_BEGIN
 		if (scene->get_atmosphere_material()) {
 			stack.push(scene->get_atmosphere_material().get());
 		}
+        bool last_is_delta = false;
         for (int depth = 1; depth <= max_path_length; depth++) {
 			const VolumeMaterial &volume = *stack.top();
             IntersectionInfo info = sg->query(ray);
@@ -218,7 +219,7 @@ TC_NAMESPACE_BEGIN
                 BSDF bsdf(scene, &info);
                 const Vector3 in_dir = -ray.dir;
                 if (bsdf.is_emissive()) {
-                    bool count = info.front && (depth == 1 || !direct_lighting);
+                    bool count = info.front && (last_is_delta || depth == 1 || !direct_lighting);
                     if (count && path_length_in_range(depth)) {
                         ret += importance * bsdf.evaluate(info.normal, in_dir);
                     }
@@ -227,18 +228,22 @@ TC_NAMESPACE_BEGIN
                 if (direct_lighting && !bsdf.is_delta() && path_length_in_range(depth + 1)) {
                     ret += importance * calculate_direct_lighting(in_dir, info, bsdf, rand);
                 }
+                if (bsdf.is_delta()) {
+                    last_is_delta = true;
+                }
                 real pdf;
                 SurfaceScatteringEvent event;
                 Vector3 out_dir;
                 bsdf.sample(in_dir, rand(), rand(), out_dir, f, pdf, event);
                 out_ray = Ray(info.pos, out_dir, 1e-5f);
                 real c = abs(glm::dot(out_dir, info.normal));
-                if (pdf < 1e-20f) {
+                if (pdf < 1e-10f) {
                     break;
                 }
                 f *= c / pdf;
             } else if (volume.sample_event(rand) == VolumeEvent::scattering) {
                 // Volumetric scattering
+                last_is_delta = false;
                 const Vector3 orig = ray.orig + ray.dir * safe_distance;
                 const Vector3 in_dir = -ray.dir;
                 if (direct_lighting && path_length_in_range(depth + 1)) {
@@ -247,7 +252,7 @@ TC_NAMESPACE_BEGIN
                 real pdf = 1;
                 Vector3 out_dir = volume.sample_phase(rand);
                 out_ray = Ray(orig, out_dir, 1e-5f);
-                if (pdf < 1e-20f) {
+                if (pdf < 1e-10f) {
                     break;
                 }
                 f *= 1.0 / pdf;

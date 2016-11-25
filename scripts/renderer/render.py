@@ -66,7 +66,7 @@ def render_frame(i, t):
 
     renderer = Renderer('pt', '../output/frames/%d.png' % i)
     renderer.initialize(width=960, height=540, min_path_length=1, max_path_length=30,
-                        initial_radius=0.05, sampler='sobol', russian_roulette=True, volmetric=True, direct_lighting=False)
+                        initial_radius=0.05, sampler='sobol', russian_roulette=True, volmetric=True, direct_lighting=True)
     renderer.set_camera(camera.c)
 
     air = tc.create_volume_material("vacuum")
@@ -77,7 +77,7 @@ def render_frame(i, t):
 
     #scene.add_mesh(create_object('cylinder', -6, material='mirror'))
     #scene.add_mesh(create_object('suzanne', 0, material='interface'))
-    #scene.add_mesh(create_object('sphere', -3, material='interface'))
+    scene.add_mesh(create_object('sphere', -3, material='interface'))
     #scene.add_mesh(create_object('cone', 3))
     #scene.add_mesh(create_object('icosphere', 6))
     scene.add_mesh(create_object('plane', 0, -1, 0, 10))

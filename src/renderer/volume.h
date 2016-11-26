@@ -3,6 +3,7 @@
 #include "sampler.h"
 #include "math/linalg.h"
 #include "common/meta.h"
+#include "sampler.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -55,7 +56,7 @@ public:
 		return exp(-dist * (volumetric_scattering + volumetric_absorption));
 	}
 
-	virtual real unbiased_sample_attenuation(const Vector3 &start, const Vector3 &end) {
+	virtual real unbiased_sample_attenuation(const Vector3 &start, const Vector3 &end, StateSequence &rand) const {
 		return get_attenuation(glm::length(multiply_matrix4(world2local, end - start, 0)));
 	}
 

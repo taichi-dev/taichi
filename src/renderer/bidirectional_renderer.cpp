@@ -27,7 +27,7 @@ TC_NAMESPACE_BEGIN
             if (!info.intersected) {
                 break;
             }
-            BSDF bsdf(scene, &info);
+            BSDF bsdf(scene, info);
             Vertex v(info, bsdf);
             depth += 1;
             if (bsdf.is_emissive()) {
@@ -88,7 +88,7 @@ TC_NAMESPACE_BEGIN
         info.to_world = Matrix3(u, v, tri.normal);
         info.to_local = glm::transpose(info.to_world);
 
-        BSDF bsdf(scene, &info);
+        BSDF bsdf(scene, info);
         Vertex vertex(info, bsdf);
         vertex.event = SurfaceMaterial::ScatteringEvent::emit;
         vertex.pdf = glm::dot(info.normal, dir) / pi;

@@ -23,7 +23,7 @@ TC_NAMESPACE_BEGIN
         BSDF() {
             material = nullptr;
         }
-        BSDF(std::shared_ptr<Scene> const &scene, const IntersectionInfo *inter);
+        BSDF(std::shared_ptr<Scene> const &scene, const IntersectionInfo &inter);
         BSDF(std::shared_ptr<Scene> const &scene, int triangle_id); // initialize for light triangle
         real cos_theta(const Vector3 &out) {
             return abs((world_to_local * out).z);
@@ -38,6 +38,15 @@ TC_NAMESPACE_BEGIN
         Vector3 evaluate(const Vector3 &in, const Vector3 &out) const;
         bool is_delta() const;
         bool is_emissive() const;
+		bool is_index_matched() const {
+			return material->is_index_matched();
+		}
+		bool is_entering(const Vector3 in_dir) const {
+			return (world_to_local * in_dir).z > 0;
+		}
+		VolumeMaterial const *get_internal_material() const {
+			return material->get_internal_material();
+		}
         std::string get_name() {return "TBD";};
     };
 

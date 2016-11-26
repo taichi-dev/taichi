@@ -4,12 +4,12 @@
 
 TC_NAMESPACE_BEGIN
 
-    BSDF::BSDF(std::shared_ptr<Scene> const &scene, const IntersectionInfo *inter) {
-        world_to_local = Matrix3(inter->to_local);
-        local_to_world = Matrix3(inter->to_world);
-        geometry_normal = inter->geometry_normal;
-        material = scene->get_mesh_from_triangle_id(inter->triangle_id)->material.get();
-        uv = inter->uv;
+    BSDF::BSDF(std::shared_ptr<Scene> const &scene, const IntersectionInfo &inter) {
+        world_to_local = Matrix3(inter.to_local);
+        local_to_world = Matrix3(inter.to_world);
+        geometry_normal = inter.geometry_normal;
+        material = scene->get_mesh_from_triangle_id(inter.triangle_id)->material.get();
+        uv = inter.uv;
     }
 
     BSDF::BSDF(std::shared_ptr<Scene> const &scene, int triangle_id) { // initialize for light triangle

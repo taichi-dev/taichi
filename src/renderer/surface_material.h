@@ -29,11 +29,11 @@ TC_NAMESPACE_BEGIN
 			this->internal_material = vol;
 		}
 
-		virtual std::shared_ptr<VolumeMaterial> get_internal_material() {
-			return internal_material;
+		virtual VolumeMaterial const *get_internal_material() {
+			return internal_material.get();
 		}
 
-		virtual bool get_index_matched() {
+		virtual bool is_index_matched() {
 			return false;
 		}
 

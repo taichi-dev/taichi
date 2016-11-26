@@ -93,7 +93,7 @@ TC_NAMESPACE_BEGIN
                 if (!info.intersected)
                     break;
                 Triangle &tri = scene->triangles[info.triangle_id];
-                BSDF bsdf(scene, &info);
+                BSDF bsdf(scene, info);
                 Vector3 in_dir = -ray.dir;
                 Vector3 out_dir;
                 Vector3 f;

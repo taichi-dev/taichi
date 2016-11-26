@@ -355,7 +355,7 @@ TC_NAMESPACE_BEGIN
     class PlainVolumeInterfaceMaterial : public SurfaceMaterial {
 	protected:
 
-		virtual bool get_index_matched() override {
+		virtual bool is_index_matched() override {
 			return true;
 		}
 
@@ -374,7 +374,7 @@ TC_NAMESPACE_BEGIN
         };
 
         virtual Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
-            return Vector3(1.0f) * abs(1.0f / out.z);
+			return Vector3(1.0f) * abs(1.0f / out.z);
         }
 
         virtual bool is_delta() const override {

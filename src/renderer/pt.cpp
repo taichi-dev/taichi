@@ -56,6 +56,36 @@ TC_NAMESPACE_BEGIN
             accumulator.accumulate(int(x * width), int(y * height), cont.c * scale);
         }
 
+		virtual Vector3 get_attenuation(VolumeStack &stack, Ray ray, int triangle_id, StateSequence &rand) {
+			Vector3 att(1.0f);
+			while (true) {
+				IntersectionInfo info = sg->query(ray);
+				if (triangle_id == info.triangle_id)
+					return att;
+				BSDF bsdf(scene, info);
+				const Vector3 in_dir = -ray.dir;
+				if (bsdf.is_index_matched()) {
+					if (bsdf.is_entering(in_dir)) {
+						stack.push(bsdf.get_internal_material());
+					}
+					else {
+						assert(stack.top() == bsdf.get_internal_material());
+						stack.pop();
+					}
+				}
+				else {
+					// We do not handle non-index matched case here.
+					return Vector3(0.0f);
+				}
+				const VolumeMaterial &vol = *stack.top();
+				att *= bsdf.evaluate(in_dir, -in_dir);
+				Vector3 new_orig = ray.orig + ray.dir * ray.dist;
+				att *= vol.unbiased_sample_attenuation(ray.orig, new_orig, rand);
+				ray = Ray(new_orig + ray.dir * 1e-4f, ray.dir);
+			}
+			return att;
+		}
+
         bool direct_lighting;
         int direct_lighting_bsdf;
         int direct_lighting_light;
@@ -103,6 +133,10 @@ TC_NAMESPACE_BEGIN
             assert_info(samples != 0, "Sum of direct_lighting_bsdf and direct_lighting_light should not be 0.");
             for (int i = 0; i < samples; i++) {
                 bool sample_bsdf = i < direct_lighting_bsdf;
+				if (!sample_bsdf && bsdf.is_delta()) {
+					// Light sampling doesn't work in case of delta BSDF.
+					continue;
+				}
                 Vector3 out_dir;
                 Vector3 f;
                 real bsdf_p;
@@ -126,7 +160,7 @@ TC_NAMESPACE_BEGIN
                 real c = abs(dot(ray.dir, tri.normal));
                 Vector3 dist = test.pos - info.pos;
                 real light_p = dot(dist, dist) / (tri.area * c);
-                BSDF light_bsdf(scene, &test);
+                BSDF light_bsdf(scene, test);
                 const Vector3 emission = light_bsdf.evaluate(test.normal, -out_dir);
                 const Vector3 throughput = emission * co * f * volume.get_attenuation(test.dist);
                 if (sample_bsdf) {
@@ -154,7 +188,7 @@ TC_NAMESPACE_BEGIN
         if (test_info.intersected && test_info.front) {
             Vector3 f(1.0f);
             const Triangle &tri = scene->get_triangle(test_info.triangle_id);
-            const BSDF light_bsdf(scene, &test_info);
+            const BSDF light_bsdf(scene, test_info);
             const Vector3 emission = light_bsdf.evaluate(test_info.normal, -out_dir);
             const Vector3 throughput = emission * f * volume.get_attenuation(test_info.dist);
             lighting += throughput;
@@ -207,7 +241,6 @@ TC_NAMESPACE_BEGIN
 		if (scene->get_atmosphere_material()) {
 			stack.push(scene->get_atmosphere_material().get());
 		}
-        bool last_is_delta = false;
         for (int depth = 1; depth <= max_path_length; depth++) {
 			const VolumeMaterial &volume = *stack.top();
             IntersectionInfo info = sg->query(ray);
@@ -216,20 +249,17 @@ TC_NAMESPACE_BEGIN
             Ray out_ray;
             if (info.intersected && info.dist < safe_distance) {
                 // Safely travels to the next surface...
-                BSDF bsdf(scene, &info);
+                BSDF bsdf(scene, info);
                 const Vector3 in_dir = -ray.dir;
                 if (bsdf.is_emissive()) {
-                    bool count = info.front && (last_is_delta || depth == 1 || !direct_lighting);
+                    bool count = info.front && (depth == 1 || !direct_lighting);
                     if (count && path_length_in_range(depth)) {
                         ret += importance * bsdf.evaluate(info.normal, in_dir);
                     }
                     break;
                 }
-                if (direct_lighting && !bsdf.is_delta() && path_length_in_range(depth + 1)) {
+                if (direct_lighting && path_length_in_range(depth + 1)) {
                     ret += importance * calculate_direct_lighting(in_dir, info, bsdf, rand);
-                }
-                if (bsdf.is_delta()) {
-                    last_is_delta = true;
                 }
                 real pdf;
                 SurfaceScatteringEvent event;
@@ -243,7 +273,6 @@ TC_NAMESPACE_BEGIN
                 f *= c / pdf;
             } else if (volume.sample_event(rand) == VolumeEvent::scattering) {
                 // Volumetric scattering
-                last_is_delta = false;
                 const Vector3 orig = ray.orig + ray.dir * safe_distance;
                 const Vector3 in_dir = -ray.dir;
                 if (direct_lighting && path_length_in_range(depth + 1)) {

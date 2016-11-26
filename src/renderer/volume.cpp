@@ -13,7 +13,7 @@ class VacuumVolumeMaterial : public VolumeMaterial {
 		return 1.0f;
 	}
 
-	virtual real unbiased_sample_attenuation(const Vector3 &start, const Vector3 &end) override {
+	virtual real unbiased_sample_attenuation(const Vector3 &start, const Vector3 &end, StateSequence &rand) const override {
 		return 1.0f;
 	}
 };

@@ -51,7 +51,7 @@ TC_NAMESPACE_BEGIN
                 return;
 
             Triangle &tri = scene->triangles[info.triangle_id];
-            BSDF bsdf(scene, &info);
+            BSDF bsdf(scene, info);
             Vector3 in_dir = -ray.dir;
             if (bsdf.is_emissive()) {
                 if (min_path_length <= depth + 1 && depth + 1 <= max_path_length) {
@@ -99,7 +99,7 @@ TC_NAMESPACE_BEGIN
             if (!info.intersected)
                 break;
             Triangle &tri = scene->triangles[info.triangle_id];
-            BSDF bsdf(scene, &info);
+            BSDF bsdf(scene, info);
             Vector3 in_dir = -ray.dir;
             Vector3 out_dir;
             Vector3 f;

@@ -60,13 +60,14 @@ def create_light(t):
     return mesh
 
 def render_frame(i, t):
-    width, height = 960, 540
+    width, height = 960 / 4, 540 / 4
     camera = Camera('perspective', aspect_ratio=float(width) / height, fov_angle=90,
                     origin=(0, 3, 10), look_at=(0, 0, 0), up=(0, 1, 0))
 
     renderer = Renderer('pt', '../output/frames/%d.png' % i)
-    renderer.initialize(width=960, height=540, min_path_length=1, max_path_length=30,
-                        initial_radius=0.05, sampler='sobol', russian_roulette=True, volmetric=True, direct_lighting=True)
+    renderer.initialize(width=width, height=height, min_path_length=1, max_path_length=30,
+                        initial_radius=0.05, sampler='sobol', russian_roulette=True, volmetric=True, direct_lighting=True,
+                        direct_lighting_light=1, direct_lighting_bsdf=1)
     renderer.set_camera(camera.c)
 
     air = tc.create_volume_material("vacuum")
@@ -86,7 +87,7 @@ def render_frame(i, t):
     scene.finalize()
 
     renderer.set_scene(scene)
-    renderer.render(100)
+    renderer.render(100000)
 
 
 if __name__ == '__main__':

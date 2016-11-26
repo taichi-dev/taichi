@@ -8,7 +8,7 @@ TC_NAMESPACE_BEGIN
     class SurfaceMaterial;
     enum class SurfaceScatteringFlags;
     class Scene;
-    class IntersectionInfo;
+    struct IntersectionInfo;
 
     // Generalized BSDF (supposed to include photon and importon source)
     class BSDF {

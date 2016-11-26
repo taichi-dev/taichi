@@ -16,7 +16,7 @@ TC_NAMESPACE_BEGIN
 
         PSSMLTMarkovChain() : PSSMLTMarkovChain(0, 0) {}
 
-        PSSMLTMarkovChain(int resolution_x, int resolution_y) : resolution_x(resolution_x), resolution_y(resolution_y) {
+        PSSMLTMarkovChain(real resolution_x, real resolution_y) : resolution_x(resolution_x), resolution_y(resolution_y) {
 
         }
 

@@ -12,9 +12,8 @@ def create_light(t):
     mesh = tc.create_mesh()
     mesh.initialize(P(filename='../assets/meshes/plane.obj'))
     material = tc.create_surface_material('emissive')
-    material.initialize(P(color=(20, 20, 20)))
+    material.initialize(P(color=(20, 20, 30)))
     mesh.set_material(material)
-    print t
     mesh.translate(Vector(math.cos(t) * -3, 3, -1))
     mesh.scale_s(1)
     mesh.rotate_euler(Vector(0, 0, 180 + math.cos(t) * 45))

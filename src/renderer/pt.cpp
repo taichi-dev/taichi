@@ -112,7 +112,7 @@ TC_NAMESPACE_BEGIN
         this->direct_lighting_light = config.get("direct_lighting_light", 1);
         this->direct_lighting_bsdf = config.get("direct_lighting_bsdf", 1);
         this->sampler = create_instance<Sampler>(config.get("sampler", "prand"));
-        this->luminance_clamping = config.get("luminance_clamping", 0);
+        this->luminance_clamping = config.get("luminance_clamping", 0.0f);
         this->full_direct_lighting = config.get("full_direct_lighting", false);
         this->accumulator = ImageAccumulator<Vector3>(width, height);
 		this->russian_roulette = config.get("russian_roulette", true);
@@ -161,9 +161,9 @@ TC_NAMESPACE_BEGIN
                     out_dir = normalize(dist);
                 }
                 Ray ray(info.pos + out_dir * 1e-3f, out_dir, 0);
-				IntersectionInfo info;
-				Vector3 att = get_attenuation(stack, ray, rand, info);
-				if (info.triangle_id != tri.id) {
+				IntersectionInfo test_info;
+				Vector3 att = get_attenuation(stack, ray, rand, test_info);
+				if (test_info.triangle_id != tri.id) {
 					continue;
 				}
 				if (max_component(att) == 0.0f) {
@@ -176,10 +176,10 @@ TC_NAMESPACE_BEGIN
                 }
                 real co = abs(dot(ray.dir, info.normal));
                 real c = abs(dot(ray.dir, tri.normal));
-                Vector3 dist = info.pos - info.pos;
+                Vector3 dist = test_info.pos - info.pos;
                 real light_p = dot(dist, dist) / (tri.area * c);
-                BSDF light_bsdf(scene, info);
-                const Vector3 emission = light_bsdf.evaluate(info.normal, -out_dir);
+                BSDF light_bsdf(scene, test_info);
+                const Vector3 emission = light_bsdf.evaluate(test_info.normal, -out_dir);
 				const Vector3 throughput = emission * co * f * att;
                 if (sample_bsdf) {
                     if (sample_bsdf && SurfaceEventClassifier::is_delta(event)) {
@@ -278,10 +278,6 @@ TC_NAMESPACE_BEGIN
                 SurfaceEvent event;
                 Vector3 out_dir;
                 bsdf.sample(in_dir, rand(), rand(), out_dir, f, pdf, event);
-				if (!SurfaceEventClassifier::is_index_matched(event)) {
-					// next time when we arrive at a surface, diret lighting is needed only if 
-					// we have encountered a non-index-matched material
-				}
 				surface_dl_counted = false;
 				if (bsdf.is_entering(in_dir) && !bsdf.is_entering(out_dir)) {
 					if (bsdf.get_internal_material() != nullptr)
@@ -334,7 +330,7 @@ TC_NAMESPACE_BEGIN
 
         PSSMLTMarkovChain() : PSSMLTMarkovChain(0, 0) {}
 
-        PSSMLTMarkovChain(int resolution_x, int resolution_y) : resolution_x(resolution_x), resolution_y(resolution_y) {
+        PSSMLTMarkovChain(real resolution_x, real resolution_y) : resolution_x(resolution_x), resolution_y(resolution_y) {
         }
 
         PSSMLTMarkovChain large_step() const {
@@ -385,7 +381,7 @@ TC_NAMESPACE_BEGIN
             }
         };
 
-        real estimation_rounds;
+        int estimation_rounds;
         MCMCState current_state;
         bool first_stage_done = false;
         real b;
@@ -434,7 +430,7 @@ TC_NAMESPACE_BEGIN
                 }
                 b = total_sc / num_samples;
                 P(b);
-                current_state.chain = PSSMLTMarkovChain(width, height);
+                current_state.chain = PSSMLTMarkovChain((real)width, (real)height);
                 auto rand = MCStateSequence(current_state.chain);
                 current_state.pc = get_path_contribution(rand);
                 current_state.sc = scalar_contribution_function(current_state.pc);
@@ -460,11 +456,11 @@ TC_NAMESPACE_BEGIN
                 // accumulate samples with mean value substitution and MIS
                 if (new_state.sc > 0.0) {
                     write_path_contribution(new_state.pc,
-                                            (a + is_large_step) / (new_state.sc / b + large_step_prob));
+                                            real((a + is_large_step) / (new_state.sc / b + large_step_prob)));
                 }
                 if (current_state.sc > 0.0) {
                     write_path_contribution(current_state.pc,
-                                            (1.0 - a) / (current_state.sc / b + large_step_prob));
+                                            real((1.0 - a) / (current_state.sc / b + large_step_prob)));
                 }
                 // conditionally accept the chain
                 if (rand() <= a) {

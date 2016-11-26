@@ -16,6 +16,11 @@ class VacuumVolumeMaterial : public VolumeMaterial {
 	virtual real unbiased_sample_attenuation(const Vector3 &start, const Vector3 &end, StateSequence &rand) const override {
 		return 1.0f;
 	}
+
+	virtual VolumeEvent sample_event(StateSequence &rand) const override {
+		error("invalid");
+		return VolumeEvent::absorption;
+	}
 };
 
 VolumeStack::VolumeStack() {

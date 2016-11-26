@@ -46,10 +46,7 @@ public:
 	}
 
 	virtual Vector3 sample_phase(StateSequence &rand) const {
-		real x = rand() * 2 - 1;
-		real phi = rand() * 2 * pi;
-		real yz = sqrt(1 - x * x);
-		return Vector3(x, yz * cos(phi), yz * sin(phi));
+		return sample_sphere(rand(), rand());
 	}
 
 	virtual real get_attenuation(real dist) const {

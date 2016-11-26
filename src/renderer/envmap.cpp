@@ -10,6 +10,7 @@ void EnvironmentMap::initialize(const Config & config) {
 	image = std::make_shared<ImageBuffer<Vector3>>(config.get_string("filepath"));
 	width = image->get_width();
 	height = image->get_height();
+	/*
 	for (int j = 0; j < height; j++) {
 		// conversion
 		auto scale = sin(pi * (0.5f + j) / height);
@@ -17,11 +18,13 @@ void EnvironmentMap::initialize(const Config & config) {
 			(*image)[i][j] *= scale;
 		}
 	}
+	*/
 	for (int j = 0; j < height - j - 1; j++) {
 		for (int i = 0; i < width; i++)
 			swap((*image)[i][j], (*image)[i][height - j - 1]);
 	}
 	build_cdfs();
+	/*
 	P("test");
 	P(uv_to_direction(Vector2(0.0f, 0.0f)));
 	P(uv_to_direction(Vector2(0.0f, 0.5f)));
@@ -51,6 +54,7 @@ void EnvironmentMap::initialize(const Config & config) {
 		P(illum);
 		P(luminance(illum) / pdf);
 	}
+	*/
 }
 
 Vector3 EnvironmentMap::sample_direction(StateSequence & rand, real & pdf, Vector3 & illum) const {
@@ -82,7 +86,7 @@ void EnvironmentMap::build_cdfs() {
 			col_pdf.push_back(pdf);
 		}
 		col_samplers.push_back(DiscreteSampler(col_pdf));
-		row_pdf.push_back(total);
+		row_pdf.push_back(total * sin(pi * (0.5f + j) / height));
 	}
 	row_sampler.initialize(row_pdf);
 }

@@ -134,7 +134,9 @@ TC_NAMESPACE_BEGIN
         }
     };
 
-    class RefractiveMaterial : public SurfaceMaterial {
+    class SmallptRefractiveMaterial : public SurfaceMaterial {
+		// from smallpt.cpp
+		// the problem: when inside_ior == outside_ior, reflection still happens
     protected:
         real inside_ior = 1.5f;
         real outside_ior = 1.0f;
@@ -160,6 +162,74 @@ TC_NAMESPACE_BEGIN
             real r0 = a * a / (b * b), c = 1 - (into ? in.z : out_refract.z);
             real reflectance = r0 + (1 - r0) * c * c * c * c * c;
             return 1.0f - reflectance;
+        }
+
+        real get_ior(const Vector3 &in) const {
+            return in.z < 0 ? inside_ior / outside_ior : outside_ior / inside_ior;
+        }
+
+        virtual Vector3 sample_direction(const Vector3 &in, real u, real v, const Vector2 &uv) const override {
+            Vector3 out_reflect, out_refract;
+            real p = get_refraction(in, out_reflect, out_refract);
+            if (u < p) {
+                return out_refract;
+            } else {
+                return out_reflect;
+            }
+        }
+
+        virtual real probability_density(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
+            Vector3 out_reflect, out_refract;
+            real p = get_refraction(in, out_reflect, out_refract);
+            return in.z * out.z < 0 ? p : 1.0f - p;
+        }
+
+        virtual Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
+            Vector3 out_reflect, out_refract;
+            real p = get_refraction(in, out_reflect, out_refract);
+            real factor = in.z * out.z < 0 ? p : 1.0f - p;
+            auto color = color_sampler->sample(uv);
+            return factor * color * (1.0f / max(eps, std::abs(out.z)));
+        }
+
+        virtual bool is_delta() const override {
+            return true;
+        }
+    };
+
+    class RefractiveMaterial : public SurfaceMaterial {
+		// See: https://en.wikipedia.org/wiki/Fresnel_equations
+    protected:
+        real inside_ior = 1.5f;
+        real outside_ior = 1.0f;
+    public:
+
+        void set_ior(real ior) {
+            this->inside_ior = ior;
+        }
+
+        real get_refraction(const Vector3 &in, Vector3 &out_reflect, Vector3 &out_refract) const {
+            // returns refraction probability
+            out_reflect = reflect(in);
+            bool into = in.z > 0;
+            real ior = get_ior(in);
+			real cos_in = abs(in.z);
+            real sin_out = hypot(in.x, in.y) * ior;
+            if (sin_out >= 1) {
+                // total reflection
+                return 0.0f;
+            }
+            real cos_out = sqrt(1 - sin_out * sin_out);
+            out_refract = Vector3(-ior * in.x, -ior * in.y, -cos_out * sgn(in.z));
+
+			real rs, rp;
+			
+			rs = (cos_in - ior * cos_out) / (cos_in + ior * cos_out);
+			rp = (ior * cos_in - cos_out) / (ior * cos_in + cos_out);
+			
+			rs = rs * rs;
+			rp = rp * rp;
+			return 1.0f - 0.5f * (rs + rp);
         }
 
         real get_ior(const Vector3 &in) const {

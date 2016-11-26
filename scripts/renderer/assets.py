@@ -24,6 +24,11 @@ class Materials:
         material.initialize(P(diffuse_color=(1.0, 1.0, 0.6), specular_color=(0.1, 0.1, 0.1), glossiness=-1, transparent=False))
         return material
 
+    def get_material_glossy(self):
+        material = tc.create_surface_material('pbr')
+        material.initialize(P(diffuse_color=(0.4, 0.4, 0.3), specular_color=(1.0, 1.0, 0.5), glossiness=300, transparent=False))
+        return material
+
     def get_material_wall(self):
         material = tc.create_surface_material('pbr')
         material.initialize(P(diffuse_color=(1.0, 1.0, 1.0), specular_color=(0.0, 0.0, 0.0), glossiness=-1, transparent=False))
@@ -31,8 +36,8 @@ class Materials:
 
     def get_material_glass(self):
         material = tc.create_surface_material('pbr')
-        material.initialize(P(diffuse_color=(0, 0, 0), specular_color=(1.0, 1.0, 1.0), glossiness=-1,
-                              transparent=True, ior=1.5))
+        material.initialize(P(diffuse_color=(0, 0, 0), specular_color=(0.0, 0.0, 0.0), glossiness=-1,
+                              transparent=True, ior=1.3))
         return material
 
     def get_material_interface(self):

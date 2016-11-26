@@ -99,6 +99,13 @@ TC_NAMESPACE_BEGIN
         return (w = (w ^ (w >> 19)) ^ (t ^ (t >> 8))) * (1.0f / 4294967296.0f);
     }
 
+	inline vec3 sample_sphere(float u, float v) {
+		float x = u * 2 - 1;
+		float phi = v * 2 * pi;
+		float yz = sqrt(1 - x * x);
+		return vec3(x, yz * cos(phi), yz * sin(phi));
+	}
+
 
     inline float catmull_rom(float f_m_1, float f_0, float f_1, float f_2,
                              float x_r) {

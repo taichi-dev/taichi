@@ -21,12 +21,15 @@ public:
 		return (int)pdf.size();
 	}
 	void initialize(std::vector<real> unnormalized_pdf) {
-		float sum = std::accumulate(unnormalized_pdf.begin(), unnormalized_pdf.end(), 0.0f);
+		//float sum = std::accumulate(unnormalized_pdf.begin(), unnormalized_pdf.end(), 0.0f);
+		float sum = 0.0f;
+		for (int i = 0; i < (int)unnormalized_pdf.size(); i++) {
+			real pdf = unnormalized_pdf[i];
+			assert_info(pdf >= 0, "No negative pdf allowed!");
+			sum += pdf;
+		}
 		assert_info(sum > 0, "Sum of pdf is zero.");
 		float inv_sum = 1.0f / sum;
-		if (sum < eps) {
-			assert(false);
-		}
         this->pdf.resize(unnormalized_pdf.size());
 		this->cdf.resize(unnormalized_pdf.size());
 		for (int i = 0; i < (int)pdf.size(); i++) {

@@ -251,6 +251,9 @@ TC_NAMESPACE_BEGIN
             Vector3 f(1.0f);
             Ray out_ray;
 			if (!info.intersected) {
+				if (scene->envmap) {
+					ret += importance * scene->envmap->sample_illum(ray.dir);
+				}
 				break;
 			}
             if (info.dist < safe_distance) {

@@ -59,6 +59,8 @@ namespace boost {
 	EXPLICIT_GET_POINTER(taichi::Scene);
 
 	EXPLICIT_GET_POINTER(taichi::Mesh);
+
+	EXPLICIT_GET_POINTER(taichi::EnvironmentMap);
 }
 
 TC_NAMESPACE_BEGIN
@@ -112,6 +114,7 @@ TC_NAMESPACE_BEGIN
         def("create_camera", create_instance<Camera>);
         def("create_surface_material", create_instance<SurfaceMaterial>);
         def("create_volume_material", create_instance<VolumeMaterial>);
+        def("create_environment_map", create_instance<EnvironmentMap>);
         def("create_mesh", std::make_shared<Mesh>);
         def("create_scene", std::make_shared<Scene>);
         def("config_from_dict", config_from_py_dict);
@@ -280,6 +283,10 @@ TC_NAMESPACE_BEGIN
 			.def("set_internal_material", &SurfaceMaterial::set_internal_material)
 			;
 
+		class_<EnvironmentMap>("EnvironmentMap")
+			.def("initialize", &EnvironmentMap::initialize)
+			;
+
 		class_<Mesh>("Mesh")
 			.def("initialize", &Mesh::initialize)
 			.def("set_material", &Mesh::set_material)
@@ -295,6 +302,7 @@ TC_NAMESPACE_BEGIN
 			.def("finalize", &Scene::finalize)
 			.def("add_mesh", &Scene::add_mesh)
 			.def("set_atmosphere_material", &Scene::set_atmosphere_material)
+			.def("set_envmap", &Scene::set_envmap)
 			;
 
         // Renderers
@@ -313,6 +321,7 @@ TC_NAMESPACE_BEGIN
         register_ptr_to_python<std::shared_ptr<Camera>>();
         register_ptr_to_python<std::shared_ptr<SurfaceMaterial>>();
         register_ptr_to_python<std::shared_ptr<VolumeMaterial>>();
+        register_ptr_to_python<std::shared_ptr<EnvironmentMap>>();
         register_ptr_to_python<std::shared_ptr<Mesh>>();
         register_ptr_to_python<std::shared_ptr<Scene>>();
     }

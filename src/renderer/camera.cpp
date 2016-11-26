@@ -68,10 +68,8 @@ TC_NAMESPACE_BEGIN
         this->up = up;
         set_dir_and_right();
         tan_half_fov = tan(fov / 2);
-        Matrix4 asp_matrix(1);
-        asp_matrix[0][0] = aspect_ratio;
         this->aspect_ratio = aspect_ratio;
-        this->transform = transform * asp_matrix;
+        this->transform = transform;
     }
 
     real PerspectiveCamera::get_pixel_scaling() {
@@ -81,7 +79,7 @@ TC_NAMESPACE_BEGIN
     Ray PerspectiveCamera::sample(Vector2 offset, Vector2 size, real u, real v) {
         Vector2 rand_offset = random_offset(offset, size, u, v);
         Vector3 local_dir = normalize(
-                dir + rand_offset.x * tan_half_fov * right + rand_offset.y * tan_half_fov * up);
+                dir + rand_offset.x * tan_half_fov * right * aspect_ratio + rand_offset.y * tan_half_fov * up);
         Vector3 world_orig = multiply_matrix4(transform, origin, 1);
         Vector3 world_dir = normalized(multiply_matrix4(transform, local_dir, 0)); //TODO: why normalize here???
         return Ray(world_orig, world_dir, 0);
@@ -90,7 +88,7 @@ TC_NAMESPACE_BEGIN
     void PerspectiveCamera::get_pixel_coordinate(Vector3 ray_dir, real &u, real &v) {
         auto inv_transform = glm::inverse(transform);
         auto local_ray_dir = multiply_matrix4(inv_transform, ray_dir, 0);
-        u = dot(local_ray_dir, right) / dot(local_ray_dir, dir) / tan_half_fov + 0.5f;
+        u = dot(local_ray_dir, right) / dot(local_ray_dir, dir) / tan_half_fov / aspect_ratio + 0.5f;
         v = dot(local_ray_dir, up) / dot(local_ray_dir, dir) / tan_half_fov + 0.5f;
     }
     TC_IMPLEMENTATION(Camera, PerspectiveCamera, "perspective");

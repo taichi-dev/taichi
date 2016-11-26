@@ -9,6 +9,7 @@
 #include "physics/spectrum.h"
 #include "discrete_sampler.h"
 #include "surface_material.h"
+#include "envmap.h"
 #include "volume.h"
 
 TC_NAMESPACE_BEGIN
@@ -145,6 +146,10 @@ public:
 	}
 
 	void load(ptree &pt);
+
+	void set_envmap(std::shared_ptr<EnvironmentMap> envmap) {
+		this->envmap = envmap;
+	}
 
 	void set_atmosphere_material(std::shared_ptr<VolumeMaterial> vol_mat) {
 		this->atmosphere_material = vol_mat;
@@ -285,6 +290,7 @@ public:
 	real total_triangle_area;
 	int resolution_x, resolution_y;
 	std::shared_ptr<VolumeMaterial> atmosphere_material;
+	std::shared_ptr<EnvironmentMap> envmap;
 };
 
 TC_NAMESPACE_END

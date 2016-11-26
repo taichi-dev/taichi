@@ -276,7 +276,8 @@ TC_NAMESPACE_BEGIN
 			;
 
 		class_<SurfaceMaterial>("SurfaceMaterial")
-			.def("initialize", static_cast<void(SurfaceMaterial::*)(const Config &)>(&SurfaceMaterial::initialize));
+			.def("initialize", static_cast<void(SurfaceMaterial::*)(const Config &)>(&SurfaceMaterial::initialize))
+			.def("set_internal_material", &SurfaceMaterial::set_internal_material)
 			;
 
 		class_<Mesh>("Mesh")

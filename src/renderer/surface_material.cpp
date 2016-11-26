@@ -308,7 +308,7 @@ TC_NAMESPACE_BEGIN
         }
 
         void
-        sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf, ScatteringEvent &event,
+        sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf, SurfaceEvent &event,
                const Vector2 &uv) const override {
             real mat_pdf, mat_cdf;
             int mat_id = material_sampler.sample(u, mat_pdf, mat_cdf);
@@ -317,7 +317,9 @@ TC_NAMESPACE_BEGIN
             auto &mat = materials[mat_id];
             out_dir = mat->sample_direction(in_dir, rescaled_u, v, uv);
             f = mat->evaluate_bsdf(in_dir, out_dir, uv);
-            event = mat->is_delta() ? ScatteringEvent::delta : ScatteringEvent::non_delta;
+			event = 0;
+			if(mat->is_delta())
+				event |= (int)SurfaceScatteringFlags::delta;
             pdf = mat_pdf * mat->probability_density(in_dir, out_dir, uv);
         }
 
@@ -362,11 +364,11 @@ TC_NAMESPACE_BEGIN
         virtual void initialize(const Config &config) override {}
 
         virtual void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf,
-                            SurfaceScatteringEvent &event, const Vector2 &uv) const override {
+                            SurfaceEvent &event, const Vector2 &uv) const override {
 			out_dir = -in_dir;
 			f = Vector3(1.0f) * abs(1.0f / in_dir.z);
 			pdf = 1.0f;
-			event = SurfaceScatteringEvent::delta;
+			event = (int)SurfaceScatteringFlags::delta | (int)SurfaceScatteringFlags::index_matched;
         }
 
         virtual real probability_density(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {

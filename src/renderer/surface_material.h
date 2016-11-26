@@ -8,19 +8,41 @@
 
 TC_NAMESPACE_BEGIN
 
-    enum class SurfaceScatteringEvent {
+    enum class SurfaceScatteringFlags {
         delta = 1 << 0,
         non_delta = 1 << 1,
-        emit = 1 << 2
+        emit = 1 << 2,
+        index_matched = 1 << 3,
+        entering = 1 << 4,
+        leaving = 1 << 5,
     };
+
+	typedef int SurfaceEvent;
+
+	class SurfaceEventClassifier {
+	public:
+        static bool is_delta(const SurfaceEvent &event) {
+            return (event & (int) SurfaceScatteringFlags::delta) != 0;
+        }
+        static bool is_entering(const SurfaceEvent &event) {
+            return (event & (int) SurfaceScatteringFlags::entering) != 0;
+        }
+        static bool is_leaving(const SurfaceEvent &event) {
+            return (event & (int) SurfaceScatteringFlags::leaving) != 0;
+        }
+        static bool is_emit(const SurfaceEvent &event) {
+            return (event & (int) SurfaceScatteringFlags::emit) != 0;
+        }
+        static bool is_index_matched(const SurfaceEvent &event) {
+            return (event & (int) SurfaceScatteringFlags::index_matched) != 0;
+        }
+	};
 
     class SurfaceMaterial {
     protected:
         std::shared_ptr<Texture> color_sampler;
         std::shared_ptr<VolumeMaterial> internal_material = nullptr;
     public:
-        using ScatteringEvent = SurfaceScatteringEvent;
-
         SurfaceMaterial() {
 			internal_material = nullptr;
 		}
@@ -48,7 +70,7 @@ TC_NAMESPACE_BEGIN
         }
 
         virtual void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf,
-                            ScatteringEvent &event, const Vector2 &uv) const {
+                            SurfaceEvent &event, const Vector2 &uv) const {
             assert_info(false, "Not implemented");
         }
 
@@ -80,9 +102,6 @@ TC_NAMESPACE_BEGIN
             return false;
         }
 
-        static bool is_delta(const ScatteringEvent &event) {
-            return ((int) event & (int) ScatteringEvent::delta) != 0;
-        }
 
     public:
         static Vector3 reflect(const Vector3 &in) { // Note: in and reflected are both from origin to outside

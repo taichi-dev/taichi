@@ -30,12 +30,12 @@ TC_NAMESPACE_BEGIN
 		bool russian_roulette;
 
         Vector3 calculate_direct_lighting(const Vector3 &in_dir, const IntersectionInfo &info, const BSDF &bsdf,
-                                          StateSequence &rand);
+                                          StateSequence &rand, VolumeStack &stack);
 
         Vector3 calculate_volumetric_direct_lighting(const Vector3 &in_dir, const Vector3 &orig, StateSequence &rand);
 
         Vector3 calculate_direct_lighting(const Vector3 &in_dir, const IntersectionInfo &info, const BSDF &bsdf,
-                                          StateSequence &rand, const Triangle &tri);
+                                          StateSequence &rand, const Triangle &tri, VolumeStack &stack);
 
         PathContribution get_path_contribution(StateSequence &rand) {
             Vector2 offset(rand(), rand());
@@ -56,16 +56,28 @@ TC_NAMESPACE_BEGIN
             accumulator.accumulate(int(x * width), int(y * height), cont.c * scale);
         }
 
-		virtual Vector3 get_attenuation(VolumeStack &stack, Ray ray, int triangle_id, StateSequence &rand) {
+		virtual Vector3 get_attenuation(VolumeStack stack, Ray ray, int triangle_id, StateSequence &rand, IntersectionInfo &last_intersection) {
 			Vector3 att(1.0f);
+
 			while (true) {
 				IntersectionInfo info = sg->query(ray);
-				if (triangle_id == info.triangle_id)
-					return att;
+				if (!info.intersected) {
+					// no intersection (usually bsdf sampling)
+					return Vector3(0.0f);
+				}
+				if (triangle_id == info.triangle_id) {
+					last_intersection = info;
+					break;
+				}
 				BSDF bsdf(scene, info);
+				if (bsdf.is_emissive()) {
+					// another light source...
+					return Vector3(0.0f);
+				}
 				const Vector3 in_dir = -ray.dir;
 				if (bsdf.is_index_matched()) {
 					if (bsdf.is_entering(in_dir)) {
+						assert(bsdf.get_internal_material() != nullptr);
 						stack.push(bsdf.get_internal_material());
 					}
 					else {
@@ -78,10 +90,10 @@ TC_NAMESPACE_BEGIN
 					return Vector3(0.0f);
 				}
 				const VolumeMaterial &vol = *stack.top();
-				att *= bsdf.evaluate(in_dir, -in_dir);
-				Vector3 new_orig = ray.orig + ray.dir * ray.dist;
-				att *= vol.unbiased_sample_attenuation(ray.orig, new_orig, rand);
-				ray = Ray(new_orig + ray.dir * 1e-4f, ray.dir);
+				//P(stack.size());
+				att *= bsdf.evaluate(in_dir, -in_dir) * bsdf.cos_theta(-in_dir);
+				att *= vol.unbiased_sample_attenuation(ray.orig, info.pos, rand);
+				ray = Ray(info.pos + ray.dir * 1e-3f, ray.dir);
 			}
 			return att;
 		}
@@ -125,7 +137,7 @@ TC_NAMESPACE_BEGIN
 
     Vector3 PathTracingRenderer::calculate_direct_lighting(const Vector3 &in_dir, const IntersectionInfo &info,
                                                            const BSDF &bsdf,
-                                                           StateSequence &rand, const Triangle &tri) {
+                                                           StateSequence &rand, const Triangle &tri, VolumeStack &stack) {
         // MIS between bsdf and light sampling.
         Vector3 acc(0);
         {
@@ -140,31 +152,37 @@ TC_NAMESPACE_BEGIN
                 Vector3 out_dir;
                 Vector3 f;
                 real bsdf_p;
-                SurfaceScatteringEvent event;
+                SurfaceEvent event;
                 if (sample_bsdf) { // Sample BSDF
                     bsdf.sample(in_dir, rand(), rand(), out_dir, f, bsdf_p, event);
+					if (SurfaceEventClassifier::is_index_matched(event)) {
+						continue;
+					}
                 } else { // Sample light source
                     Vector3 pos = tri.sample_point(rand(), rand());
                     Vector3 dist = pos - info.pos;
                     out_dir = normalize(dist);
                 }
-                Ray ray(info.pos, out_dir, 0);
-                IntersectionInfo test = sg->query(ray);
-                if (tri.id != test.triangle_id)
-                    continue; // Hits nothing or sth else
+                Ray ray(info.pos + out_dir * 1e-3f, out_dir, 0);
+				IntersectionInfo last_intersection;
+				Vector3 att = get_attenuation(stack, ray, tri.id, rand, last_intersection);
+				if (max_component(att) == 0.0f) {
+					continue;
+				}
+
                 if (!sample_bsdf) { // Sample light source
                     f = bsdf.evaluate(in_dir, out_dir);
                     bsdf_p = bsdf.probability_density(in_dir, out_dir);
                 }
                 real co = abs(dot(ray.dir, info.normal));
                 real c = abs(dot(ray.dir, tri.normal));
-                Vector3 dist = test.pos - info.pos;
+                Vector3 dist = last_intersection.pos - info.pos;
                 real light_p = dot(dist, dist) / (tri.area * c);
-                BSDF light_bsdf(scene, test);
-                const Vector3 emission = light_bsdf.evaluate(test.normal, -out_dir);
-                const Vector3 throughput = emission * co * f * volume.get_attenuation(test.dist);
+                BSDF light_bsdf(scene, last_intersection);
+                const Vector3 emission = light_bsdf.evaluate(last_intersection.normal, -out_dir);
+				const Vector3 throughput = emission * co * f * att;
                 if (sample_bsdf) {
-                    if (sample_bsdf && SurfaceMaterial::is_delta(event)) {
+                    if (sample_bsdf && SurfaceEventClassifier::is_delta(event)) {
                         acc += 1 / (direct_lighting_bsdf * bsdf_p) * throughput;
                     } else {
                         acc += 1 / (direct_lighting_bsdf * bsdf_p +
@@ -197,37 +215,18 @@ TC_NAMESPACE_BEGIN
     }
 
     Vector3 PathTracingRenderer::calculate_direct_lighting(const Vector3 &in_dir, const IntersectionInfo &info,
-                                                           const BSDF &bsdf, StateSequence &rand) {
+                                                           const BSDF &bsdf, StateSequence &rand, VolumeStack &stack) {
         Vector3 acc(0);
         if (!full_direct_lighting) {
             real triangle_pdf;
             Triangle &tri = scene->sample_triangle_light_emission(rand(), triangle_pdf);
             if (tri.get_relative_location_to_plane(info.pos) > 0) {
-                acc += calculate_direct_lighting(in_dir, info, bsdf, rand, tri) / triangle_pdf;
+                acc += calculate_direct_lighting(in_dir, info, bsdf, rand, tri, stack) / triangle_pdf;
             }
         } else {
-            /*
-            static std::vector<real> pdf;
-            pdf.clear();
-            for (int i = 0; i < (int)scene->emissive_triangles.size(); i++) {
-                Triangle &t = scene->emissive_triangles[i];
-                real e = 0;
-                float d = length(info.pos - t.v[0]);
-                if (sgn(d) > 0) {
-                    int _;
-                    d = max(d, t.max_edge_length(_));
-                    e = t.area * scene->get_mesh_from_triangle_id(t.id)->emission / d / d;
-                }
-                pdf.push_back(e);
-            }
-            DiscreteSampler ds(pdf);
-            real triangle_pdf;
-            Triangle &tri = scene->emissive_triangles[ds.sample(sampler->sample(offset, index), triangle_pdf)];
-            acc += calculate_direct_lighting(info, offset, index, tri) / triangle_pdf;
-            */
             for (auto &tri : scene->emissive_triangles) {
                 if (tri.get_relative_location_to_plane(info.pos) > 0) {
-                    acc += calculate_direct_lighting(in_dir, info, bsdf, rand, tri);
+                    acc += calculate_direct_lighting(in_dir, info, bsdf, rand, tri, stack);
                 }
             }
         }
@@ -238,10 +237,15 @@ TC_NAMESPACE_BEGIN
         Vector3 ret(0);
         Vector3 importance(1);
 		VolumeStack stack;
+		bool surface_dl_counted = false;
 		if (scene->get_atmosphere_material()) {
 			stack.push(scene->get_atmosphere_material().get());
 		}
         for (int depth = 1; depth <= max_path_length; depth++) {
+			if (stack.size() == 0) {
+				// What's going on here...
+				break;
+			}
 			const VolumeMaterial &volume = *stack.top();
             IntersectionInfo info = sg->query(ray);
             real safe_distance = volume.sample_free_distance(rand);
@@ -249,30 +253,49 @@ TC_NAMESPACE_BEGIN
             Ray out_ray;
             if (info.intersected && info.dist < safe_distance) {
                 // Safely travels to the next surface...
+
+				// Attenuation
+				Vector3 att(volume.unbiased_sample_attenuation(ray.orig, info.pos, rand));
+				importance *= att;
+
                 BSDF bsdf(scene, info);
                 const Vector3 in_dir = -ray.dir;
                 if (bsdf.is_emissive()) {
-                    bool count = info.front && (depth == 1 || !direct_lighting);
+                    bool count = !surface_dl_counted && info.front && (depth == 1 || !direct_lighting);
                     if (count && path_length_in_range(depth)) {
                         ret += importance * bsdf.evaluate(info.normal, in_dir);
                     }
                     break;
                 }
-                if (direct_lighting && path_length_in_range(depth + 1)) {
-                    ret += importance * calculate_direct_lighting(in_dir, info, bsdf, rand);
+                if (!surface_dl_counted && direct_lighting && path_length_in_range(depth + 1)) {
+                    ret += importance * calculate_direct_lighting(in_dir, info, bsdf, rand, stack);
                 }
+				surface_dl_counted = true;
                 real pdf;
-                SurfaceScatteringEvent event;
+                SurfaceEvent event;
                 Vector3 out_dir;
                 bsdf.sample(in_dir, rand(), rand(), out_dir, f, pdf, event);
+				if (!SurfaceEventClassifier::is_index_matched(event)) {
+					// next time when we arrive at a surface, diret lighting is needed only if 
+					// we have encountered a non-index-matched material
+				}
+				surface_dl_counted = false;
+				if (bsdf.is_entering(in_dir) && !bsdf.is_entering(out_dir)) {
+					if (bsdf.get_internal_material() != nullptr)
+						stack.push(bsdf.get_internal_material());
+				}
+				if (bsdf.is_entering(out_dir) && !bsdf.is_entering(in_dir)) {
+					if (bsdf.get_internal_material() != nullptr)
+						stack.pop();
+				}
                 out_ray = Ray(info.pos, out_dir, 1e-5f);
                 real c = abs(glm::dot(out_dir, info.normal));
                 if (pdf < 1e-10f) {
                     break;
                 }
                 f *= c / pdf;
-            } else if (volume.sample_event(rand) == VolumeEvent::scattering) {
-                // Volumetric scattering
+            } else if (false && volume.sample_event(rand) == VolumeEvent::scattering) {
+                // Note: no Volumetric scattering
                 const Vector3 orig = ray.orig + ray.dir * safe_distance;
                 const Vector3 in_dir = -ray.dir;
                 if (direct_lighting && path_length_in_range(depth + 1)) {

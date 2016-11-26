@@ -30,7 +30,7 @@ TC_NAMESPACE_BEGIN
     }
 
     void BSDF::sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir,
-                      Vector3 &f, real &pdf, SurfaceMaterial::ScatteringEvent &event) const {
+                      Vector3 &f, real &pdf, SurfaceEvent &event) const {
         const Vector3 in_dir_local = world_to_local * in_dir;
         Vector3 out_dir_local;
         material->sample(in_dir_local, u, v, out_dir_local, f, pdf, event, uv);

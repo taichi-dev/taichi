@@ -21,7 +21,7 @@
 #ifndef SOBOL_H
 #define SOBOL_H
 
-#include <cassert>
+#include "common/utils.h"
 
 namespace sobol {
 

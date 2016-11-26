@@ -97,12 +97,12 @@ TC_NAMESPACE_BEGIN
                 Vector3 in_dir = -ray.dir;
                 Vector3 out_dir;
                 Vector3 f;
-                SurfaceMaterial::ScatteringEvent event;
+                SurfaceEvent event;
                 real pdf;
                 if (bsdf.is_emissive()) {
                     break;
                 }
-                if (!SurfaceMaterial::is_delta(event)) {
+                if (!SurfaceEventClassifier::is_delta(event)) {
                     // Connect to camera
                     connect_to_camera(info.pos, info.normal, flux, bsdf, in_dir);
                 }

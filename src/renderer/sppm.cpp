@@ -62,9 +62,9 @@ TC_NAMESPACE_BEGIN
             Vector3 out_dir;
             Vector3 f;
             real pdf;
-            SurfaceMaterial::ScatteringEvent event;
+            SurfaceEvent event;
             bsdf.sample(in_dir, rand(), rand(), out_dir, f, pdf, event);
-            if (SurfaceMaterial::is_delta(event)) { // continue tracing on specular surfaces
+            if (SurfaceEventClassifier::is_delta(event)) { // continue tracing on specular surfaces
                 importance = importance * f * bsdf.cos_theta(out_dir) / pdf;
                 ray = Ray(info.pos, out_dir, 0);
             } else {
@@ -103,14 +103,14 @@ TC_NAMESPACE_BEGIN
             Vector3 in_dir = -ray.dir;
             Vector3 out_dir;
             Vector3 f;
-            SurfaceMaterial::ScatteringEvent event;
+            SurfaceEvent event;
             real pdf;
             if (bsdf.is_emissive()) {
                 break;
             }
             bsdf.sample(in_dir, rand(), rand(), out_dir, f, pdf, event);
             Vector3 color = f * bsdf.cos_theta(out_dir) / pdf;
-            if (SurfaceMaterial::is_delta(event)) {
+            if (SurfaceEventClassifier::is_delta(event)) {
                 // No vertex merging for delta BSDF
             } else {
                 // Vertex merging

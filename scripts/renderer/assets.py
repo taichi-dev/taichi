@@ -38,6 +38,9 @@ class Materials:
     def get_material_interface(self):
         material = tc.create_surface_material('plain_interface')
         material.initialize(P())
+        vol = tc.create_volume_material("homogeneous")
+        vol.initialize(P(absorption=0.5))
+        material.set_internal_material(vol)
         return material
 
 

@@ -6,7 +6,7 @@
 TC_NAMESPACE_BEGIN
 
     class SurfaceMaterial;
-    enum class SurfaceScatteringEvent;
+    enum class SurfaceScatteringFlags;
     class Scene;
     class IntersectionInfo;
 
@@ -30,7 +30,7 @@ TC_NAMESPACE_BEGIN
         }
         Vector3 sample_direction(const Vector3 &in, real u, real v) const;
         void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir,
-                       Vector3 &f, real &pdf, SurfaceScatteringEvent &event) const;
+                       Vector3 &f, real &pdf, SurfaceEvent&event) const;
         real probability_density(const Vector3 &in, const Vector3 &out) const;
         Vector3 get_geometry_normal() {
             return geometry_normal;

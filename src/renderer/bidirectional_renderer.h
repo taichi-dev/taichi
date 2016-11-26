@@ -13,7 +13,7 @@ TC_NAMESPACE_BEGIN
 
 // Reference : http://www.ci.i.u-tokyo.ac.jp/~hachisuka/smallpssmlt.cpp
     class SurfaceMaterial;
-    enum class SurfaceScatteringEvent;
+    enum class SurfaceScatteringFlags;
 
     struct Vertex {
     public:
@@ -25,7 +25,7 @@ TC_NAMESPACE_BEGIN
         }
         Vertex() { }
         Vector3 in_dir, out_dir;
-        SurfaceScatteringEvent event;
+        SurfaceEvent event;
         BSDF bsdf;
         Vector3 f;
         real pdf;

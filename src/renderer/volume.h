@@ -17,7 +17,7 @@ protected:
 	Matrix4 world2local;
 	Matrix4 local2world;
 public:
-	VolumeMaterial() {}
+	VolumeMaterial() { set_transform(Matrix4(1.0f)); }
 	virtual void initialize(const Config &config) {
 		printf("Info: Volumetric rendering is turned ON. Note that PT & MCMCPT are only renderers that support this.\n");
 		printf("      This may lead to different output by different renderers.\n");
@@ -78,6 +78,10 @@ public:
 	}
 	VolumeMaterial const* top() {
 		return stack.back();
+	}
+
+	size_t size() const {
+		return stack.size();
 	}
 };
 

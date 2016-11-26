@@ -32,7 +32,7 @@ TC_NAMESPACE_BEGIN
         Vector3 calculate_direct_lighting(const Vector3 &in_dir, const IntersectionInfo &info, const BSDF &bsdf,
                                           StateSequence &rand, VolumeStack &stack);
 
-        Vector3 calculate_volumetric_direct_lighting(const Vector3 &in_dir, const Vector3 &orig, StateSequence &rand);
+        Vector3 calculate_volumetric_direct_lighting(const Vector3 &in_dir, const Vector3 &orig, StateSequence &rand, VolumeStack &stack);
 
         Vector3 calculate_direct_lighting(const Vector3 &in_dir, const IntersectionInfo &info, const BSDF &bsdf,
                                           StateSequence &rand, const Triangle &tri, VolumeStack &stack);
@@ -56,7 +56,7 @@ TC_NAMESPACE_BEGIN
             accumulator.accumulate(int(x * width), int(y * height), cont.c * scale);
         }
 
-		virtual Vector3 get_attenuation(VolumeStack stack, Ray ray, int triangle_id, StateSequence &rand, IntersectionInfo &last_intersection) {
+		virtual Vector3 get_attenuation(VolumeStack stack, Ray ray, StateSequence &rand, IntersectionInfo &last_intersection) {
 			Vector3 att(1.0f);
 
 			while (true) {
@@ -65,14 +65,11 @@ TC_NAMESPACE_BEGIN
 					// no intersection (usually bsdf sampling)
 					return Vector3(0.0f);
 				}
-				if (triangle_id == info.triangle_id) {
-					last_intersection = info;
-					break;
-				}
 				BSDF bsdf(scene, info);
 				if (bsdf.is_emissive()) {
-					// another light source...
-					return Vector3(0.0f);
+					// light source...
+					last_intersection = info;
+					break;
 				}
 				const Vector3 in_dir = -ray.dir;
 				if (bsdf.is_index_matched()) {
@@ -164,8 +161,11 @@ TC_NAMESPACE_BEGIN
                     out_dir = normalize(dist);
                 }
                 Ray ray(info.pos + out_dir * 1e-3f, out_dir, 0);
-				IntersectionInfo last_intersection;
-				Vector3 att = get_attenuation(stack, ray, tri.id, rand, last_intersection);
+				IntersectionInfo info;
+				Vector3 att = get_attenuation(stack, ray, rand, info);
+				if (info.triangle_id != tri.id) {
+					continue;
+				}
 				if (max_component(att) == 0.0f) {
 					continue;
 				}
@@ -176,10 +176,10 @@ TC_NAMESPACE_BEGIN
                 }
                 real co = abs(dot(ray.dir, info.normal));
                 real c = abs(dot(ray.dir, tri.normal));
-                Vector3 dist = last_intersection.pos - info.pos;
+                Vector3 dist = info.pos - info.pos;
                 real light_p = dot(dist, dist) / (tri.area * c);
-                BSDF light_bsdf(scene, last_intersection);
-                const Vector3 emission = light_bsdf.evaluate(last_intersection.normal, -out_dir);
+                BSDF light_bsdf(scene, info);
+                const Vector3 emission = light_bsdf.evaluate(info.normal, -out_dir);
 				const Vector3 throughput = emission * co * f * att;
                 if (sample_bsdf) {
                     if (sample_bsdf && SurfaceEventClassifier::is_delta(event)) {
@@ -198,17 +198,16 @@ TC_NAMESPACE_BEGIN
     }
 
     Vector3 PathTracingRenderer::calculate_volumetric_direct_lighting(const Vector3 &in_dir, const Vector3 &orig,
-                                                                      StateSequence &rand) {
+                                                                      StateSequence &rand, VolumeStack &stack) {
         Vector3 lighting(0);
         Vector3 out_dir = volume.sample_phase(rand);
         Ray out_ray(orig, out_dir);
-        auto test_info = sg->query(out_ray);
-        if (test_info.intersected && test_info.front) {
-            Vector3 f(1.0f);
-            const Triangle &tri = scene->get_triangle(test_info.triangle_id);
-            const BSDF light_bsdf(scene, test_info);
-            const Vector3 emission = light_bsdf.evaluate(test_info.normal, -out_dir);
-            const Vector3 throughput = emission * f * volume.get_attenuation(test_info.dist);
+		IntersectionInfo info;
+		Vector3 att = get_attenuation(stack, out_ray, rand, info);
+        if (info.intersected && info.front) {
+            const BSDF light_bsdf(scene, info);
+            const Vector3 emission = light_bsdf.evaluate(info.normal, -out_dir);
+			const Vector3 throughput = emission * att;
             lighting += throughput;
         }
         return lighting;
@@ -251,7 +250,10 @@ TC_NAMESPACE_BEGIN
             real safe_distance = volume.sample_free_distance(rand);
             Vector3 f(1.0f);
             Ray out_ray;
-            if (info.intersected && info.dist < safe_distance) {
+			if (!info.intersected) {
+				break;
+			}
+            if (info.dist < safe_distance) {
                 // Safely travels to the next surface...
 
 				// Attenuation
@@ -261,6 +263,7 @@ TC_NAMESPACE_BEGIN
                 BSDF bsdf(scene, info);
                 const Vector3 in_dir = -ray.dir;
                 if (bsdf.is_emissive()) {
+					//assert(stack.size() == 2);
                     bool count = !surface_dl_counted && info.front && (depth == 1 || !direct_lighting);
                     if (count && path_length_in_range(depth)) {
                         ret += importance * bsdf.evaluate(info.normal, in_dir);
@@ -294,20 +297,16 @@ TC_NAMESPACE_BEGIN
                     break;
                 }
                 f *= c / pdf;
-            } else if (false && volume.sample_event(rand) == VolumeEvent::scattering) {
-                // Note: no Volumetric scattering
+            } else if (volume.sample_event(rand) == VolumeEvent::scattering) {
+                // Volumetric scattering
                 const Vector3 orig = ray.orig + ray.dir * safe_distance;
                 const Vector3 in_dir = -ray.dir;
                 if (direct_lighting && path_length_in_range(depth + 1)) {
-                    ret += importance * calculate_volumetric_direct_lighting(in_dir, orig, rand);
+                    ret += importance * calculate_volumetric_direct_lighting(in_dir, orig, rand, stack);
                 }
-                real pdf = 1;
                 Vector3 out_dir = volume.sample_phase(rand);
                 out_ray = Ray(orig, out_dir, 1e-5f);
-                if (pdf < 1e-10f) {
-                    break;
-                }
-                f *= 1.0 / pdf;
+                f = Vector3(1.0f);
             } else {
                 // Volumetric absorption
                 break;

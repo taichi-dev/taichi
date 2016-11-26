@@ -21,8 +21,8 @@ public:
 	virtual void initialize(const Config &config) {
 		printf("Info: Volumetric rendering is turned ON. Note that PT & MCMCPT are only renderers that support this.\n");
 		printf("      This may lead to different output by different renderers.\n");
-		this->volumetric_scattering = config.get("scattering", 0.001f);
-		this->volumetric_absorption = config.get("absorption", 0.001f);
+		this->volumetric_scattering = config.get_real("scattering");
+		this->volumetric_absorption = config.get_real("absorption");
 	}
 
 	void set_transform(const Matrix4 &local2world) {

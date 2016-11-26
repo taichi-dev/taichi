@@ -23,6 +23,7 @@ void EnvironmentMap::initialize(const Config & config) {
 		for (int i = 0; i < width; i++)
 			swap((*image)[i][j], (*image)[i][height - j - 1]);
 	}
+
 	build_cdfs();
 	/*
 	P("test");
@@ -71,7 +72,8 @@ Vector3 EnvironmentMap::sample_direction(StateSequence & rand, real & pdf, Vecto
 	uv.x = u / width;
 	uv.y = v / height;
 	illum = sample_illum(uv);
-	pdf = row_pdf * col_pdf * width * height;
+	pdf = row_pdf * col_pdf * width * height / sin(pi * (0.5f + row) / height);
+	//P(luminance(illum) / pdf);
 	return uv_to_direction(uv);
 }
 

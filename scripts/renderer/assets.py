@@ -21,12 +21,12 @@ class Materials:
 
     def get_material_gold(self):
         material = tc.create_surface_material('pbr')
-        material.initialize(P(diffuse_color=(1.0, 1.0, 0.6), specular_color=(0.1, 0.1, 0.1), glossiness=-1, transparent=False))
+        material.initialize(P(diffuse_color=(0.0, 0.0, 0.0), specular_color=(1.0, 0.9, 0.6), glossiness=-1, transparent=False))
         return material
 
     def get_material_glossy(self):
         material = tc.create_surface_material('pbr')
-        material.initialize(P(diffuse_color=(0.4, 0.4, 0.3), specular_color=(1.0, 1.0, 0.5), glossiness=300, transparent=False))
+        material.initialize(P(diffuse_color=(0.0, 0.0, 0.0), specular_color=(0.5, 0.5, 0.3), glossiness=300, transparent=False))
         return material
 
     def get_material_wall(self):
@@ -38,6 +38,12 @@ class Materials:
         material = tc.create_surface_material('pbr')
         material.initialize(P(diffuse_color=(0, 0, 0), specular_color=(0.0, 0.0, 0.0), glossiness=-1,
                               transparent=True, ior=1.3))
+        return material
+
+    def get_material_dark_grey(self):
+        material = tc.create_surface_material('pbr')
+        material.initialize(P(diffuse_color=(0.3, 0.3, 0.3), specular_color=(0.0, 0.0, 0.0), glossiness=-1,
+                              transparent=False))
         return material
 
     def get_material_interface(self):

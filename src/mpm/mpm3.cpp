@@ -55,6 +55,13 @@ TC_NAMESPACE_BEGIN
             real lambda = lambda_0 * e;
             Matrix r, s;
             polar_decomp(dg_e, r, s);
+			if (!is_normal(r)) {
+				P(dg_e);
+				P(r);
+				P(s);
+			}
+			CV(r);
+			CV(s);
             return 2 * mu * (dg_e - r) +
                    lambda * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
         }
@@ -158,14 +165,18 @@ TC_NAMESPACE_BEGIN
         for (auto p : particles) {
             for (auto &ind : get_bounded_rasterization_region(p->pos)) {
                 Vector3 d_pos = Vector(ind.i, ind.j, ind.k) - p->pos;
-                float weight = w(d_pos);
+                real weight = w(d_pos);
                 grid_mass[ind] += weight * p->mass;
                 grid_velocity[ind] += weight * p->mass * (p->v + (3.0f) * p->apic_b * d_pos);
             }
         }
         for (auto ind: grid_mass.get_region()) {
-            if (grid_mass[ind] > 0)
+			if (grid_mass[ind] > 0) {
+				CV(grid_velocity[ind]);
+				CV(1 / grid_mass[ind]);
                 grid_velocity[ind] = grid_velocity[ind] * (1.0f / grid_mass[ind]);
+				CV(grid_velocity[ind]);
+			}
         }
     }
 
@@ -186,12 +197,16 @@ TC_NAMESPACE_BEGIN
                            aa[0] * bb[2], aa[1] * bb[2], aa[2] * bb[2]);
                 b += weight * out;
                 cdg += glm::outerProduct(grid_velocity[ind], gw);
+				CV(grid_velocity[ind]);
             }
             p->apic_b = b;
             cdg = Matrix(1) + delta_t * cdg;
             p->v = v;
             Matrix dg = cdg * p->dg_e * p->dg_p;
+			P(cdg);
+			P(dg);
             p->dg_e = cdg * p->dg_e;
+			P(p->dg_e);
             p->dg_cache = dg;
         }
     }
@@ -204,13 +219,15 @@ TC_NAMESPACE_BEGIN
         //printf("Accumulating force...\n");
         for (auto &p : particles) {
             for (auto &ind : get_bounded_rasterization_region(p->pos)) {
-                float mass = grid_mass[ind];
+                real mass = grid_mass[ind];
                 if (mass == 0.0f) { // No EPS here
                     continue;
                 }
                 Vector d_pos = p->pos - Vector3(ind.i, ind.j, ind. k);
                 Vector gw = dw(d_pos);
                 Vector force = p->tmp_force * gw;
+				CV(delta_t);
+				CV(force);
                 grid_velocity[ind] += delta_t / mass * force;
             }
         }

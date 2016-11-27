@@ -151,6 +151,24 @@ inline Vector3 random_diffuse(const Vector3 &normal) {
                is_normal(m[1][0]) && is_normal(m[1][1]);
     }
 
+    inline bool is_normal(mat3 m) {
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
+				if (!is_normal(m[i][j])) return false;
+			}
+		}
+		return true;
+    }
+
+    inline bool is_normal(mat4 m) {
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				if (!is_normal(m[i][j])) return false;
+			}
+		}
+		return true;
+    }
+
     inline Vector2 clamp(const Vector2 &v) {
         return Vector2(clamp(v[0]), clamp(v[1]));
     }

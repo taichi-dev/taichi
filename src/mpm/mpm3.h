@@ -21,6 +21,12 @@ TC_NAMESPACE_BEGIN
         svd(A, u, sig, v);
         r = u * glm::transpose(v);
         s = v * sig * glm::transpose(v);
+		if (!is_normal(r)) {
+			P(A);
+			P(u);
+			P(sig);
+			P(v);
+		}
     }
 
     class ParticleShadowMapRenderer;

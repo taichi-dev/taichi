@@ -119,8 +119,15 @@ computed from approx_rsqrt and one newton step
 inline float rsqrt(float a)
 {
 float b = approx_rsqrt(a);
+printf("rsqrt: a %.50f\n", a);
+printf("rsqrt: b %.50f\n", b);
+// a: 0.00000000000000000000000000000000000000000932704258
+// b: inf
+//.................WHAT CAN I SAY........
+
 // Newton step with f(x) = a - 1/x^2
 b = 0.5f * b * (3.0f - a * (b * b));
+printf("newton: b %.50f\n", b);
 return b;
 }
 

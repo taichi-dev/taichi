@@ -203,10 +203,7 @@ TC_NAMESPACE_BEGIN
             cdg = Matrix(1) + delta_t * cdg;
             p->v = v;
             Matrix dg = cdg * p->dg_e * p->dg_p;
-			P(cdg);
-			P(dg);
             p->dg_e = cdg * p->dg_e;
-			P(p->dg_e);
             p->dg_cache = dg;
         }
     }

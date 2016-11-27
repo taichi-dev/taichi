@@ -41,8 +41,8 @@ TC_NAMESPACE_BEGIN
 		bool is_index_matched() const {
 			return material->is_index_matched();
 		}
-		bool is_entering(const Vector3 in_dir) const {
-			return (world_to_local * in_dir).z > 0;
+		bool is_entering(const Vector3 &in_dir) const {
+			return glm::dot(geometry_normal, in_dir) > 0;
 		}
 		VolumeMaterial const *get_internal_material() const {
 			return material->get_internal_material();

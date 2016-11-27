@@ -12,11 +12,11 @@ def create_light(t):
     mesh = tc.create_mesh()
     mesh.initialize(P(filename='../assets/meshes/plane.obj'))
     material = tc.create_surface_material('emissive')
-    e = 0.00001
+    e = 0.1
     material.initialize(P(color=(e, e, e)))
     mesh.set_material(material)
     mesh.translate(Vector(math.cos(t) * -3, 5, -1))
-    mesh.scale_s(0.00001)
+    mesh.scale_s(0.1)
     mesh.rotate_euler(Vector(0, 0, 180 + math.cos(t) * 45))
     return mesh
 
@@ -37,10 +37,10 @@ def render_frame(i, t):
     scene = tc.create_scene()
     scene.set_atmosphere_material(air)
 
-    scene.add_mesh(create_object('suzanne', 2.5, material='gold'))
-    scene.add_mesh(create_object('cube', 0, material='glossy'))
-    scene.add_mesh(create_object('sphere', -2.5, material='glass'))
-    scene.add_mesh(create_object('holder', 0, -1, -4, 2, material='wall'))
+    scene.add_mesh(create_object('suzanne', 2.5, material='snow'))
+    #scene.add_mesh(create_object('cube', 0, material='glossy'))
+    #scene.add_mesh(create_object('sphere', -2.5, material='glass'))
+    #scene.add_mesh(create_object('holder', 0, -1, -4, 2, material='wall'))
     #scene.add_mesh(create_object('plane', 0, -2, 0, 2, material='wall'))
     scene.add_mesh(create_light(0))
 
@@ -48,7 +48,7 @@ def render_frame(i, t):
     envmap.initialize(P(filepath='c:/tmp/20060807_wells6_hd.hdr'))
     #envmap.initialize(P(filepath='c:/tmp/schoenbrunn-front_hd.hdr'))
 
-    scene.set_envmap(envmap)
+    #scene.set_envmap(envmap)
 
     scene.finalize()
 

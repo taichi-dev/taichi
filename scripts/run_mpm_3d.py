@@ -24,13 +24,13 @@ class MPMSimulator3D(Simulator):
         return []
 
 if __name__ == '__main__':
-    resolution = [16, 16, 16]
+    resolution = [64, 64, 64]
     simulator = MPMSimulator3D(simulator='MPM_3D', simulation_width=resolution[0], simulation_height=resolution[1],
                                  simulation_depth=resolution[2], delta_x=1.0 / resolution[0], gravity=(-10, 0, 0),
-                                 advection_order=1, cfl=0.5, simulation_time=40, dt=0.03, substeps=10,
+                                 advection_order=1, cfl=0.5, simulation_time=40, dt=0.01, substeps=30,
                                  shadow_map_resolution=64, shadowing=0.5,
                                  light_direction=(1, 1, 1), viewport_rotation=0.5,
-                                 initial_velocity=(0, 0, 0))
+                                 initial_velocity=(-30, 0, 0))
 
     window = SimulationWindow(400, simulator, color_schemes['smoke'], rescale=True)
 

@@ -47,8 +47,7 @@ TC_NAMESPACE_BEGIN
         }
         virtual Matrix get_energy_gradient() {
             const real hardening = 10.0f;
-            //const real mu_0 = 1e5f, lambda_0 = 1e5f;
-            const real mu_0 = 1e4f, lambda_0 = 1e4f;
+            const real mu_0 = 1e5f, lambda_0 = 1e5f;
             real j_e = det(dg_e);
             real j_p = det(dg_p);
             real e = expf(min(hardening * (1.0f - j_p), 5.0f));
@@ -64,7 +63,6 @@ TC_NAMESPACE_BEGIN
             tmp_force = -vol * get_energy_gradient() * glm::transpose(dg_e);
         };
         virtual void plasticity() {
-			return;
             Matrix svd_u, sig, svd_v;
             svd(dg_e, svd_u, sig, svd_v);
             const float theta_c = 2.5e-2f, theta_s = 7.5e-3f;

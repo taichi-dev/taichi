@@ -46,9 +46,17 @@ class Texture:
     def clamp(self):
         return Texture("linear_op", alpha=1, tex1=self, beta=0, tex2=self, need_clamp=True)
 
+    def flip(self, flip_axis):
+        return Texture("flipped", tex=self, flip_axis=flip_axis)
+
+    def rasterize(self, resolution_x, resolution_y=-1):
+        if resolution_y == -1:
+            resolution_y = resolution_x
+        return Texture("rasterize", tex=self, resolution_x=resolution_x, resolution_y=resolution_y)
+
     @staticmethod
     def create_taichi_wallpaper(n):
         taichi = Texture('taichi', scale=0.96)
         rep = Texture("repeater", repeat_u=n, repeat_v=n, tex=taichi)
         rep = Texture("checkerboard", tex1=rep, tex2=0 * rep, repeat_u=n, repeat_v=n) * 0.8 + 0.1
-        return rep.clamp()
+        return rep.clamp().flip(1).rasterize(2048)

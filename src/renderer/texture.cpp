@@ -97,6 +97,28 @@ TC_NAMESPACE_BEGIN
 			return p;
         }
 	};
+	class RasterizedTexture: public Texture {
+	protected:
+		ImageBuffer<Vector3> cache;
+		int resolution_x;
+		int resolution_y;
+	public:
+        void initialize(const Config &config) override {
+			auto tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
+			resolution_x = config.get_int("resolution_x");
+			resolution_y = config.get_int("resolution_y");
+			cache = ImageBuffer<Vector3>(resolution_x, resolution_y);
+			for (int i = 0; i < resolution_x; i++) {
+				for (int j = 0; j < resolution_y; j++) {
+					cache.set(i, j, tex->sample(
+						Vector2((i + 0.5f) / resolution_x, (j + 0.5f) / resolution_y)));
+				}
+			}
+        }
+        virtual Vector3 sample(const Vector2 &coord) const override  {
+			return cache.sample_relative_coord(coord);
+        }
+	};
 	class MultiplicationTexture: public Texture {
 	protected:
 		std::shared_ptr<Texture> tex1;
@@ -148,12 +170,47 @@ TC_NAMESPACE_BEGIN
 			return tex->sample(Vector2(u * repeat_u, v * repeat_v));
         }
 	};
+	class RotatedTexture: public Texture {
+	protected:
+		std::shared_ptr<Texture> tex;
+		int times;
+	public:
+        void initialize(const Config &config) override {
+			tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
+			times = config.get_int("times");
+        }
+        virtual Vector3 sample(const Vector2 &coord_) const override  {
+			auto coord = coord_;
+			for (int i = 0; i < times; i++) {
+				coord = Vector2(-coord.x, coord.y);
+			}
+			return tex->sample(coord);
+        }
+	};
+	class FlippedTexture: public Texture {
+	protected:
+		std::shared_ptr<Texture> tex;
+		int flip_axis;
+	public:
+        void initialize(const Config &config) override {
+			tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
+			flip_axis = config.get_int("flip_axis");
+        }
+        virtual Vector3 sample(const Vector2 &coord_) const override  {
+			auto coord = coord_;
+			coord[flip_axis] = 1.0f - coord[flip_axis];
+			return tex->sample(coord);
+        }
+	};
     TC_IMPLEMENTATION(Texture, ConstantTexture, "const");
     TC_IMPLEMENTATION(Texture, ImageTexture, "image");
     TC_IMPLEMENTATION(Texture, TaichiTexture, "taichi");
     TC_IMPLEMENTATION(Texture, LinearOpTexture, "linear_op");
+    TC_IMPLEMENTATION(Texture, RasterizedTexture, "rasterize");
     TC_IMPLEMENTATION(Texture, MultiplicationTexture, "mul");
     TC_IMPLEMENTATION(Texture, CheckerboardTexture, "checkerboard");
     TC_IMPLEMENTATION(Texture, RepeaterTexture, "repeater");
+    TC_IMPLEMENTATION(Texture, RotatedTexture, "rotated");
+    TC_IMPLEMENTATION(Texture, FlippedTexture, "flipped");
 TC_NAMESPACE_END
 

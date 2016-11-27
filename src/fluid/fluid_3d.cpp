@@ -59,10 +59,7 @@ TC_NAMESPACE_BEGIN
         tracker_generation = config.get("tracker_generation", 100.0f);
 
         particle_renderer = std::make_shared<ParticleShadowMapRenderer>();
-        particle_renderer->set_shadow_map_resolution(config.get("shadow_map_resolution", 128));
-        particle_renderer->set_light_direction(normalized(config.get("light_direction", Vector3(0, 1, 0))));
-        particle_renderer->set_shadowing(config.get("shadowing", 0.1f));
-        particle_renderer->set_center(Vector3((float)width / height, 1, (float)depth / height));
+		// TODO: refactor here
 
         show_trackers = config.get("show_trackers", true);
         perturbation = config.get("perturbation", 0.0f);
@@ -119,7 +116,6 @@ TC_NAMESPACE_BEGIN
         for (auto tracker: trackers) {
             particles.push_back(Particle(tracker.position * (1.0f / height), tracker.color));
         }
-        particle_renderer->set_rotate_z(viewport_rotation * get_current_time());
         particle_renderer->render(buffer, particles);
     }
 

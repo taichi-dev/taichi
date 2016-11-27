@@ -47,7 +47,8 @@ TC_NAMESPACE_BEGIN
         }
         virtual Matrix get_energy_gradient() {
             const real hardening = 10.0f;
-            const real mu_0 = 1e5f, lambda_0 = 1e5f;
+            //const real mu_0 = 1e5f, lambda_0 = 1e5f;
+            const real mu_0 = 1e4f, lambda_0 = 1e4f;
             real j_e = det(dg_e);
             real j_p = det(dg_p);
             real e = expf(min(hardening * (1.0f - j_p), 5.0f));
@@ -63,6 +64,7 @@ TC_NAMESPACE_BEGIN
             tmp_force = -vol * get_energy_gradient() * glm::transpose(dg_e);
         };
         virtual void plasticity() {
+			return;
             Matrix svd_u, sig, svd_v;
             svd(dg_e, svd_u, sig, svd_v);
             const float theta_c = 2.5e-2f, theta_s = 7.5e-3f;
@@ -109,11 +111,16 @@ TC_NAMESPACE_BEGIN
         grid_mass.initialize(width, height, depth, 0);
 
         particle_renderer = std::make_shared<ParticleShadowMapRenderer>();
-        particle_renderer->set_shadow_map_resolution(config.get("shadow_map_resolution", 128));
-        particle_renderer->set_light_direction(normalized(config.get("light_direction", Vector3(0, 1, 0))));
-        particle_renderer->set_shadowing(config.get("shadowing", 0.1f));
         max_dim = max(max(width, height), depth);
-        particle_renderer->set_center(Vector3((float)width / max_dim, (float)height / max_dim, (float)depth / max_dim) * 0.5f);
+		Config particle_renderer_config;
+		particle_renderer_config.set("shadow_map_resolution", 1)
+			.set("shadowing", 0.0f)
+			.set("light_direction", Vector3(0, 1, 0))
+			.set("shadowing", 0.0f)
+			.set("center", Vector3((float)width / max_dim, (float)height / max_dim, (float)depth / max_dim) * 0.5f)
+			.set("alpha", 1);
+		particle_renderer->initialize(particle_renderer_config);
+
         viewport_rotation = config.get("viewport_rotation", 1.0f);
         // Test SVD...
         /*
@@ -142,7 +149,7 @@ TC_NAMESPACE_BEGIN
         for (auto p: particles) {
             render_particles.push_back(Particle(p->pos * (1.0f / max_dim), Vector3(1, 1, 1)));
         }
-        particle_renderer->set_rotate_z(t * viewport_rotation);
+        //particle_renderer->set_rotate_z(t * viewport_rotation);
         particle_renderer->render(buffer, render_particles);
         return buffer;
     }
@@ -155,7 +162,7 @@ TC_NAMESPACE_BEGIN
                 Vector3 d_pos = Vector(ind.i, ind.j, ind.k) - p->pos;
                 float weight = w(d_pos);
                 grid_mass[ind] += weight * p->mass;
-                grid_velocity[ind] += weight * p->mass * (p->v - (3.0f) * p->apic_b * d_pos);
+                grid_velocity[ind] += weight * p->mass * (p->v + (3.0f) * p->apic_b * d_pos);
             }
         }
         for (auto ind: grid_mass.get_region()) {
@@ -170,13 +177,14 @@ TC_NAMESPACE_BEGIN
             Matrix cdg(0.0f);
             Matrix b(0.0f);
             for (auto &ind : get_bounded_rasterization_region(p->pos)) {
-                Vector d_pos = p->pos - Vector3(ind.i, ind.j, ind. k);
+                Vector d_pos = p->pos - Vector3(ind.i, ind.j, ind.k);
                 float weight = w(d_pos);
                 Vector gw = dw(d_pos);
                 v += weight * grid_velocity[ind];
                 Vector aa = grid_velocity[ind];
                 Vector bb = -d_pos;
-                Matrix out(aa[0] * bb[0], aa[1] * bb[0], aa[2] * bb[0], aa[0] * bb[1], aa[1] * bb[1], aa[2] * bb[1],
+                Matrix out(aa[0] * bb[0], aa[1] * bb[0], aa[2] * bb[0],
+						   aa[0] * bb[1], aa[1] * bb[1], aa[2] * bb[1],
                            aa[0] * bb[2], aa[1] * bb[2], aa[2] * bb[2]);
                 b += weight * out;
                 cdg += glm::outerProduct(grid_velocity[ind], gw);

@@ -56,7 +56,6 @@ TC_NAMESPACE_BEGIN
             Vector2 coord(tracker.x, tracker.y);
             Vector3 bright_color = particles[index].color;
             Vector3 color = lerp(exp(-occlusion[index]), bright_color * 0.5f, bright_color);
-            float alpha = 0.1f;
             int x = (int) round(coord.x * buffer.get_width());
             int y = (int) round(coord.y * buffer.get_height());
             if (buffer.inside(x, y)) {

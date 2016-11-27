@@ -48,7 +48,7 @@ class Texture:
 
     @staticmethod
     def create_taichi_wallpaper(n):
-        taichi = Texture('taichi')
+        taichi = Texture('taichi', scale=0.96)
         rep = Texture("repeater", repeat_u=n, repeat_v=n, tex=taichi)
-        rep = Texture("checkerboard", tex1=rep, tex2=0 * rep + 0.2, repeat_u=n, repeat_v=n)
+        rep = Texture("checkerboard", tex1=rep, tex2=0 * rep, repeat_u=n, repeat_v=n) * 0.8 + 0.1
         return rep.clamp()

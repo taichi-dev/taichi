@@ -28,8 +28,11 @@ TC_NAMESPACE_BEGIN
         }
     };
     class TaichiTexture : public Texture {
+	protected:
+		real scale;
     public:
         void initialize(const Config &config) override {
+			scale = config.get("scale", 1.0f);
         }
 		static bool inside(Vector2 p, Vector2 c, real r) {
 			return (p.x - c.x) * (p.x - c.x) + (p.y - c.y) * (p.y - c.y) <= r * r;
@@ -40,8 +43,7 @@ TC_NAMESPACE_BEGIN
 		static bool inside_right(Vector2 p, Vector2 c, real r) {
 			return inside(p, c, r) && p.x >= c.x;
 		}
-		static bool is_white(Vector2 p) {
-			real scale = 0.98f;
+		bool is_white(Vector2 p) const {
 			if (!inside(p, Vector2(0.50f, 0.50f), 0.5f)) {
 				return true;
 			}

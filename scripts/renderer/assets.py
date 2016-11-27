@@ -33,7 +33,7 @@ class Materials:
 
     def get_material_wall(self):
         material = tc.create_surface_material('diffusive')
-        rep = Texture.create_taichi_wallpaper(8)
+        rep = Texture.create_taichi_wallpaper(20)
         material.initialize(P(diffuse_map=rep.id))
         return material
 

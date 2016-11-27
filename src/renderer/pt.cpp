@@ -281,6 +281,7 @@ Vector3 PathTracingRenderer::calculate_direct_lighting(const Vector3 &in_dir, co
 Vector3 PathTracingRenderer::calculate_volumetric_direct_lighting(const Vector3 &in_dir, const Vector3 &orig,
 	StateSequence &rand, VolumeStack &stack) {
 	Vector3 lighting(0);
+	// Sample phase function
 	Vector3 out_dir = stack.top()->sample_phase(rand);
 	Ray out_ray(orig, out_dir);
 	IntersectionInfo info;
@@ -340,6 +341,9 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
 				ret += importance * scene->envmap->sample_illum(ray.dir);
 			}
 			break;
+		}
+		if (direct_lighting) {
+			// TOOD: add solid angle IS?
 		}
 		if (info.dist < safe_distance) {
 			// Safely travels to the next surface...

@@ -1,5 +1,7 @@
 from taichi_utils import *
 
+from texture import Texture
+
 class Materials:
     def __init__(self):
         self.materials = {}
@@ -30,11 +32,9 @@ class Materials:
         return material
 
     def get_material_wall(self):
-        tex = tc.create_texture("image")
-        tex.initialize(P(filename="C:/tmp/download.jpg"))
-        texture_id = tc.register_texture(tex)
         material = tc.create_surface_material('diffusive')
-        material.initialize(P(diffuse_map=texture_id))
+        rep = Texture.create_taichi_wallpaper(8)
+        material.initialize(P(diffuse_map=rep.id))
         return material
 
     def get_material_glass(self):

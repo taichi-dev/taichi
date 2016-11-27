@@ -43,9 +43,10 @@ def render_frame(i, t):
     #scene.add_mesh(create_object('cone', 3))
     #scene.add_mesh(create_object('sphere', 3, material='wall'))
     #scene.add_mesh(create_object('sphere', 0, material='gold'))
-    scene.add_mesh(create_object('sphere', 0, material='glossy'))
+    #scene.add_mesh(create_object('sphere', 0, material='glossy'))
     #scene.add_mesh(create_object('sphere', -3, y = 1, s = 1.5, material='glass'))
-    scene.add_mesh(create_object('holder', 0, 5.5, -5, 1, material='wall'))
+    #scene.add_mesh(create_object('holder', 0, 5.5, -5, 1, material='wall'))
+    scene.add_mesh(create_object('plane', 0, -2, 0, 2, material='wall'))
     scene.add_mesh(create_light(0))
 
     envmap = tc.create_environment_map('base')

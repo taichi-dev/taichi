@@ -136,20 +136,16 @@ public:
     inline void compute(const T a, const T b)
     {
         using std::sqrt;
+
         T d = a * a + b * b;
-		printf("a b %.50f %.50f\n", a, b);
-		printf("d %.50f\n", d);
         c = 1;
         s = 0;
         if (d != 0) {
             // T t = 1 / sqrt(d);
             T t = JIXIE::MATH_TOOLS::rsqrt(d);
-			printf("rsqrt d %f\n", JIXIE::MATH_TOOLS::rsqrt(d));
-			printf("t %f\n", t);
             c = a * t;
             s = -b * t;
         }
-		printf("c s %f %f\n", c, s);
     }
 
     /**
@@ -281,17 +277,7 @@ inline void zeroChase(Eigen::Matrix<T, 3, 3>& H, Eigen::Matrix<T, 3, 3>& U, Eige
     r1.rowRotation(H);
 
     /* GivensRotation<T> r2(H(0, 1), H(0, 2), 1, 2); */
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 3; j++) {
-			printf("%f\n", H(i, j));
-		}
-	}
     r2.columnRotation(H);
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 3; j++) {
-			printf("%f\n", H(i, j));
-		}
-	}
     r2.columnRotation(V);
 
     /**
@@ -308,7 +294,6 @@ inline void zeroChase(Eigen::Matrix<T, 3, 3>& H, Eigen::Matrix<T, 3, 3>& U, Eige
     // r3.rowRotation(u_transpose);
     r1.columnRotation(U);
     r3.columnRotation(U);
-	exit(-1);
 }
 
 /**
@@ -340,7 +325,6 @@ inline void makeUpperBidiag(Eigen::Matrix<T, 3, 3>& H, Eigen::Matrix<T, 3, 3>& U
     r.columnRotation(U);
     // zeroChase(H, u_transpose, V);
     zeroChase(H, U, V);
-	exit(-1);
 }
 
 /**
@@ -700,7 +684,6 @@ std::enable_if_t<t == 1> sort(Eigen::Matrix<T, 3, 3>& U, Eigen::Matrix<T, 3, 1>&
   \param[out] sigma Diagonal matrix, sorted with decreasing magnitude. The third one can be negative.
   \param[out] V is a rotation matrix.
   */
-
 template <class T>
 inline int singularValueDecomposition(const Eigen::Matrix<T, 3, 3>& A,
     Eigen::Matrix<T, 3, 3>& U,
@@ -729,6 +712,7 @@ inline int singularValueDecomposition(const Eigen::Matrix<T, 3, 3>& A,
     T gamma_1 = alpha_1 * beta_1;
     T gamma_2 = alpha_2 * beta_2;
     tol *= max((T)0.5 * sqrt(alpha_1 * alpha_1 + alpha_2 * alpha_2 + alpha_3 * alpha_3 + beta_1 * beta_1 + beta_2 * beta_2), (T)1);
+
     /**
       Do implicit shift QR until A^T A is block diagonal
       */

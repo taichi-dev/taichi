@@ -38,7 +38,7 @@ TC_NAMESPACE_BEGIN
     class DiffusiveMaterial : public SurfaceMaterial {
     public:
 		void initialize(const Config &config) override {
-			set_color(config.get_vec3("color"));
+			color_sampler = get_color_sampler(config, "diffuse");
 		}
 
         virtual Vector3 sample_direction(const Vector3 &in, real u, real v, const Vector2 &uv) const override {
@@ -73,6 +73,14 @@ TC_NAMESPACE_BEGIN
             auto color = color_sampler->sample(uv);
             return (in.z * out.z > eps ? 1.0f : 0.0f) * color * (1.0f / pi);
         };
+        virtual void
+        sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf,
+			SurfaceEvent &event, const Vector2 &uv) const override {
+            out_dir = sample_direction(in_dir, u, v, uv);
+            f = evaluate_bsdf(in_dir, out_dir, uv);
+			event = (int)SurfaceScatteringFlags::non_delta;
+			pdf = out_dir.z / pi;
+        }
     };
 
     class GlossyMaterial : public SurfaceMaterial {

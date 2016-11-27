@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.h"
+#include "asset_manager.h"
 #include <cstring>
 #include <string>
 #include <map>
@@ -10,11 +11,11 @@
 
 TC_NAMESPACE_BEGIN
 
-    template<typename T>
-    std::shared_ptr<T> create_instance(const std::string &alias);
+template<typename T>
+std::shared_ptr<T> create_instance(const std::string &alias);
 
-    template<typename T>
-    std::shared_ptr<T> create_initialized_instance(const std::string &alias, const Config &config);
+template<typename T>
+std::shared_ptr<T> create_initialized_instance(const std::string &alias, const Config &config);
 
 #define TC_IMPLEMENTATION_HOLDER_NAME(class_name) ImplementationHolder##class_name
 

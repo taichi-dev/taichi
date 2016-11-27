@@ -61,6 +61,8 @@ namespace boost {
 	EXPLICIT_GET_POINTER(taichi::Mesh);
 
 	EXPLICIT_GET_POINTER(taichi::EnvironmentMap);
+
+	EXPLICIT_GET_POINTER(taichi::Texture);
 }
 
 TC_NAMESPACE_BEGIN
@@ -110,6 +112,8 @@ TC_NAMESPACE_BEGIN
         Py_Initialize();
         //import_array();
         numeric::array::set_module_and_type("numpy", "ndarray");
+        def("create_texture", create_instance<Texture>);
+        def("register_texture", &AssetManager::insert_asset<Texture>);
         def("create_renderer", create_instance<Renderer>);
         def("create_camera", create_instance<Camera>);
         def("create_surface_material", create_instance<SurfaceMaterial>);
@@ -274,6 +278,10 @@ TC_NAMESPACE_BEGIN
         EXPORT_SIMULATOR(APICFluid);
         // class_<APICFluid, bases<Simulator>>("APICFluid");
 
+		class_<Texture>("Texture")
+			.def("initialize", &Texture::initialize);
+			;
+
 		class_<VolumeMaterial>("VolumeMaterial")
 			.def("initialize", &VolumeMaterial::initialize);
 			;
@@ -324,6 +332,7 @@ TC_NAMESPACE_BEGIN
         register_ptr_to_python<std::shared_ptr<EnvironmentMap>>();
         register_ptr_to_python<std::shared_ptr<Mesh>>();
         register_ptr_to_python<std::shared_ptr<Scene>>();
+        register_ptr_to_python<std::shared_ptr<Texture>>();
     }
 
 TC_NAMESPACE_END

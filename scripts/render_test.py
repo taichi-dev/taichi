@@ -45,7 +45,7 @@ def render_frame(i, t):
     #scene.add_mesh(create_object('sphere', 0, material='gold'))
     scene.add_mesh(create_object('sphere', 0, material='glossy'))
     #scene.add_mesh(create_object('sphere', -3, y = 1, s = 1.5, material='glass'))
-    scene.add_mesh(create_object('holder', 0, 5.5, -5, 1, material='dark_grey'))
+    scene.add_mesh(create_object('holder', 0, 5.5, -5, 1, material='wall'))
     scene.add_mesh(create_light(0))
 
     envmap = tc.create_environment_map('base')
@@ -57,10 +57,10 @@ def render_frame(i, t):
     scene.finalize()
 
     renderer.set_scene(scene)
-    renderer.render(100)
-
+    renderer.render(10000000)
 
 if __name__ == '__main__':
+
     frames = 20
     for i in [0]:#range(frames):
         render_frame(i, 2 * math.pi * i / frames)

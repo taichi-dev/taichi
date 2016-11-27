@@ -90,6 +90,16 @@ TC_NAMESPACE_BEGIN
             this->color_sampler = create_initialized_instance<Texture>("const", Config().set("value", color));
         }
 
+		static std::shared_ptr<Texture> get_color_sampler(const Config &config, const string &name) {
+			if (config.has_key(name + "_map")) {
+				return AssetManager::get_asset<Texture>(config.get_int(name + "_map"));
+			}
+			else {
+				Vector3 color = config.get_vec3(name);
+				return create_initialized_instance<Texture>("const", Config().set("value", color));
+			}
+		}
+
         virtual real get_intensity(const Vector2 &uv) {
             return luminance(color_sampler->sample(uv));
         }

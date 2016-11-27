@@ -30,8 +30,11 @@ class Materials:
         return material
 
     def get_material_wall(self):
-        material = tc.create_surface_material('pbr')
-        material.initialize(P(diffuse_color=(1.0, 1.0, 1.0), specular_color=(0.0, 0.0, 0.0), glossiness=-1, transparent=False))
+        tex = tc.create_texture("image")
+        tex.initialize(P(filename="C:/tmp/download.jpg"))
+        texture_id = tc.register_texture(tex)
+        material = tc.create_surface_material('diffusive')
+        material.initialize(P(diffuse_map=texture_id))
         return material
 
     def get_material_glass(self):

@@ -10,9 +10,10 @@ TC_NAMESPACE_BEGIN
         geometry_normal = inter.geometry_normal;
         material = scene->get_mesh_from_triangle_id(inter.triangle_id)->material.get();
         uv = inter.uv;
+		front = inter.front;
     }
 
-    BSDF::BSDF(std::shared_ptr<Scene> const &scene, int triangle_id) { // initialize for light triangle
+BSDF::BSDF(std::shared_ptr<Scene> const &scene, int triangle_id) { // initialize for light triangle
         Triangle t = scene->get_triangle(triangle_id);
         Vector3 u = normalized(t.v[1] - t.v[0]);
         float sgn = 1;

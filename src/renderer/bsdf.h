@@ -17,6 +17,7 @@ TC_NAMESPACE_BEGIN
         Matrix3 world_to_local; // shaded normal
         Matrix3 local_to_world; // shaded normal
         Vector3 geometry_normal;
+		bool front;
         Vector2 uv;
 
     public:
@@ -42,7 +43,10 @@ TC_NAMESPACE_BEGIN
 			return material->is_index_matched();
 		}
 		bool is_entering(const Vector3 &in_dir) const {
-			return glm::dot(geometry_normal, in_dir) > 0;
+			return bool((!front) ^ (glm::dot(geometry_normal, in_dir) > 0));
+		}
+		bool is_leaving(const Vector3 &in_dir) const {
+			return !is_entering(in_dir);
 		}
 		VolumeMaterial const *get_internal_material() const {
 			return material->get_internal_material();

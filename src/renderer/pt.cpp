@@ -15,6 +15,8 @@ struct PathContribution {
 		x(x), y(y), c(c) {}
 };
 
+// TODO: we do need a light source class to unify envmap and mesh light...
+
 class PathTracingRenderer : public Renderer {
 public:
 	virtual void initialize(const Config &config) override;
@@ -30,7 +32,27 @@ protected:
 	bool russian_roulette;
 
 	Vector3 calculate_direct_lighting(const Vector3 &in_dir, const IntersectionInfo &info, const BSDF &bsdf,
-		StateSequence &rand, VolumeStack &stack);
+		StateSequence &rand, VolumeStack &stack) {
+		Vector3 acc(0);
+		if (scene->envmap) {
+			acc += calculate_direct_lighting_env(in_dir, info, bsdf, rand, stack);
+		}
+		if (!full_direct_lighting) {
+			real triangle_pdf;
+			Triangle &tri = scene->sample_triangle_light_emission(rand(), triangle_pdf);
+			if (tri.get_relative_location_to_plane(info.pos) > 0) {
+				acc += calculate_direct_lighting(in_dir, info, bsdf, rand, tri, stack) / triangle_pdf;
+			}
+		}
+		else {
+			for (auto &tri : scene->emissive_triangles) {
+				if (tri.get_relative_location_to_plane(info.pos) > 0) {
+					acc += calculate_direct_lighting(in_dir, info, bsdf, rand, tri, stack);
+				}
+			}
+		}
+		return acc;
+	}
 
 	Vector3 calculate_direct_lighting_env(const Vector3 &in_dir, const IntersectionInfo &info, const BSDF &bsdf,
 		StateSequence &rand, VolumeStack &stack) {
@@ -148,7 +170,13 @@ protected:
 				break;
 			}
 			const Vector3 in_dir = -ray.dir;
+			const VolumeMaterial &vol = *stack.top();
 			if (bsdf.is_index_matched()) {
+				att *= bsdf.evaluate(in_dir, -in_dir) * bsdf.cos_theta(-in_dir);
+				att *= vol.unbiased_sample_attenuation(ray.orig, info.pos, rand);
+				//P(vol.unbiased_sample_attenuation(ray.orig, info.pos, rand));
+				//P(att);
+				ray = Ray(info.pos + ray.dir * 1e-3f, ray.dir);
 				if (bsdf.is_entering(in_dir)) {
 					assert(bsdf.get_internal_material() != nullptr);
 					stack.push(bsdf.get_internal_material());
@@ -162,11 +190,7 @@ protected:
 				// We do not handle non-index matched case here.
 				return Vector3(0.0f);
 			}
-			const VolumeMaterial &vol = *stack.top();
 			//P(stack.size());
-			att *= bsdf.evaluate(in_dir, -in_dir) * bsdf.cos_theta(-in_dir);
-			att *= vol.unbiased_sample_attenuation(ray.orig, info.pos, rand);
-			ray = Ray(info.pos + ray.dir * 1e-3f, ray.dir);
 		}
 		return att;
 	}
@@ -281,41 +305,43 @@ Vector3 PathTracingRenderer::calculate_direct_lighting(const Vector3 &in_dir, co
 Vector3 PathTracingRenderer::calculate_volumetric_direct_lighting(const Vector3 &in_dir, const Vector3 &orig,
 	StateSequence &rand, VolumeStack &stack) {
 	Vector3 lighting(0);
-	// Sample phase function
-	Vector3 out_dir = stack.top()->sample_phase(rand);
-	Ray out_ray(orig, out_dir);
-	IntersectionInfo info;
-	Vector3 att = get_attenuation(stack, out_ray, rand, info);
-	if (info.intersected && info.front) {
-		const BSDF light_bsdf(scene, info);
-		const Vector3 emission = light_bsdf.evaluate(info.normal, -out_dir);
-		const Vector3 throughput = emission * att;
-		lighting += throughput;
-	}
-	return lighting;
-}
+	real triangle_pdf;
+	Triangle &tri = scene->sample_triangle_light_emission(rand(), triangle_pdf);
+	// MIS
+	for (int i = 0; i < 2; i++) {
+		bool sample_phase = i == 0;
+		Vector3 out_dir;
+		if (sample_phase) {
+			// Sample phase function
+			out_dir = stack.top()->sample_phase(rand);
+		}
+		else {
+			// Sample light source
+			Vector3 pos = tri.sample_point(rand(), rand());
+			Vector3 dist = pos - orig;
+			out_dir = normalize(dist);
+		}
+		Ray out_ray(orig, out_dir);
 
-Vector3 PathTracingRenderer::calculate_direct_lighting(const Vector3 &in_dir, const IntersectionInfo &info,
-	const BSDF &bsdf, StateSequence &rand, VolumeStack &stack) {
-	Vector3 acc(0);
-	if (scene->envmap) {
-		acc += calculate_direct_lighting_env(in_dir, info, bsdf, rand, stack);
-	}
-	if (!full_direct_lighting) {
-		real triangle_pdf;
-		Triangle &tri = scene->sample_triangle_light_emission(rand(), triangle_pdf);
-		if (tri.get_relative_location_to_plane(info.pos) > 0) {
-			acc += calculate_direct_lighting(in_dir, info, bsdf, rand, tri, stack) / triangle_pdf;
+		real phase_pdf = 1 / (4 * pi);
+	
+		real c = abs(dot(out_ray.dir, tri.normal));
+		IntersectionInfo info;
+		Vector3 att = get_attenuation(stack, out_ray, rand, info);
+		//P(att);
+		Vector3 dist = info.pos - orig;
+		real light_pdf = dot(dist, dist) / (tri.area * c);
+
+		real mis_weight = 1.0f / (phase_pdf + light_pdf);
+		Vector3 f(1.0f / (4.0f * pi));
+		if (info.intersected && info.front && info.triangle_id == tri.id) {
+			const BSDF light_bsdf(scene, info);
+			const Vector3 emission = light_bsdf.evaluate(info.normal, -out_dir);
+			const Vector3 throughput = f * emission * att * mis_weight;
+			lighting += throughput;
 		}
 	}
-	else {
-		for (auto &tri : scene->emissive_triangles) {
-			if (tri.get_relative_location_to_plane(info.pos) > 0) {
-				acc += calculate_direct_lighting(in_dir, info, bsdf, rand, tri, stack);
-			}
-		}
-	}
-	return acc;
+	return lighting / triangle_pdf;
 }
 
 Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
@@ -329,6 +355,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
 	for (int depth = 1; depth <= max_path_length; depth++) {
 		if (stack.size() == 0) {
 			// What's going on here...
+			P(stack.size());
 			break;
 		}
 		const VolumeMaterial &volume = *stack.top();
@@ -376,8 +403,9 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
 					stack.push(bsdf.get_internal_material());
 			}
 			if (bsdf.is_entering(out_dir) && !bsdf.is_entering(in_dir)) {
-				if (bsdf.get_internal_material() != nullptr)
+				if (bsdf.get_internal_material() != nullptr) {
 					stack.pop();
+				}
 			}
 			out_ray = Ray(info.pos, out_dir, 1e-5f);
 			real c = abs(glm::dot(out_dir, info.normal));
@@ -391,6 +419,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
 			const Vector3 orig = ray.orig + ray.dir * safe_distance;
 			const Vector3 in_dir = -ray.dir;
 			if (direct_lighting && path_length_in_range(depth + 1)) {
+				//P(stack.size());
 				ret += importance * calculate_volumetric_direct_lighting(in_dir, orig, rand, stack);
 			}
 			Vector3 out_dir = volume.sample_phase(rand);

@@ -2,6 +2,7 @@ import numpy as np
 from taichi_utils import *
 # TODO: Remove cv2
 import cv2
+import time
 import math
 
 import renderer.assets as assets
@@ -23,7 +24,9 @@ class Renderer(object):
     def render(self, stages):
         for i in range(stages):
             print 'stage', i
+            t = time.time()
             self.render_stage()
+            print 'Time per stage:', time.time() - t
             self.show()
 
     def show(self):

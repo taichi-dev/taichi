@@ -28,7 +28,8 @@ def render_frame(i, t):
     renderer = Renderer('pt', '../output/frames/%d.png' % i)
     renderer.initialize(width=width, height=height, min_path_length=1, max_path_length=10,
                         initial_radius=0.05, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
-                        direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1)
+                        direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1,
+                        num_threads=8)
     renderer.set_camera(camera.c)
 
     air = tc.create_volume_material("vacuum")
@@ -37,11 +38,11 @@ def render_frame(i, t):
     scene = tc.create_scene()
     scene.set_atmosphere_material(air)
 
-    scene.add_mesh(create_object('cube', 1.5, material='snow'))
-    #scene.add_mesh(create_object('suzanne', -1.5, material='snow_nosss'))
+    scene.add_mesh(create_object('suzanne', 1.5, material='snow'))
+    scene.add_mesh(create_object('suzanne', -1.5, material='snow_nosss'))
     #scene.add_mesh(create_object('cube', 0, material='glossy'))
     #scene.add_mesh(create_object('sphere', -2.5, material='glass'))
-    scene.add_mesh(create_object('holder', 0, -1, -4, 2, material='diffuse_white'))
+    scene.add_mesh(create_object('holder', 0, -1, -4, 2, material='wall'))
     #scene.add_mesh(create_object('plane', 0, -2, 0, 2, material='wall'))
     scene.add_mesh(create_light(math.pi * 0.5))
 

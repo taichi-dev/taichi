@@ -3,6 +3,7 @@
 #include <memory>
 #include "math/linalg.h"
 #include "math/array_2d.h"
+#include "system/threading.h"
 #include <stb_image.h>
 #include <stb_image_write.h>
 
@@ -92,11 +93,15 @@ inline void ImageBuffer<T>::write(string filename)
 template<typename T>
 class ImageAccumulator {
 public:
+	std::vector<Spinlock> locks;
 	ImageAccumulator() {}
 
 	ImageAccumulator(int width, int height) : width(width), height(height),
 		buffer(width, height), counter(width, height)
 	{
+		for (int i = 0; i < width * height; i++) {
+			locks.push_back(Spinlock());
+		}
 	}
 
 	ImageBuffer<T> get_averaged(T default_value = T(0)) {
@@ -116,8 +121,11 @@ public:
 	}
 
 	void accumulate(int x, int y, T val) {
+		int lock_id = x * height + y;
+		locks[lock_id].lock();
 		counter[x][y] ++;
 		buffer[x][y] += val;
+		locks[lock_id].unlock();
 	}
 
 	void accumulate(ImageAccumulator<T> &other) {

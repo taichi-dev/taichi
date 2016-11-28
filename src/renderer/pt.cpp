@@ -3,6 +3,7 @@
 #include "bsdf.h"
 #include "markov_chain.h"
 #include "volume.h"
+#include "system/threading.h"
 
 TC_NAMESPACE_BEGIN
 struct PathContribution {
@@ -170,6 +171,10 @@ protected:
 				break;
 			}
 			const Vector3 in_dir = -ray.dir;
+			if (stack.size() == 0) {
+				// TODO: this is a bug...
+				return Vector3(0.0f);
+			}
 			const VolumeMaterial &vol = *stack.top();
 			if (bsdf.is_index_matched()) {
 				att *= bsdf.evaluate(in_dir, -in_dir) * bsdf.cos_theta(-in_dir);
@@ -195,6 +200,7 @@ protected:
 		return att;
 	}
 
+	int num_threads;
 	bool direct_lighting;
 	int direct_lighting_bsdf;
 	int direct_lighting_light;
@@ -208,7 +214,7 @@ protected:
 
 void PathTracingRenderer::initialize(const Config &config) {
 	Renderer::initialize(config);
-	// NOTE: camera should be specified inside scene
+	this->num_threads = config.get("num_threads", 1);
 	this->direct_lighting = config.get("direct_lighting", true);
 	this->direct_lighting_light = config.get("direct_lighting_light", 1);
 	this->direct_lighting_bsdf = config.get("direct_lighting_bsdf", 1);
@@ -222,12 +228,15 @@ void PathTracingRenderer::initialize(const Config &config) {
 }
 
 void PathTracingRenderer::render_stage() {
-	for (int k = 0; k < width * height; k++) {
+	int samples = width * height;
+	auto task = [&](int i) {
+		index = index + i;
 		RandomStateSequence rand(sampler, index);
 		auto cont = get_path_contribution(rand);
 		write_path_contribution(cont);
-		index++;
-	}
+	};
+	ThreadedTaskManager::run(task, 0, samples, num_threads);
+	index += samples;
 }
 
 ImageBuffer<Vector3> PathTracingRenderer::get_output() {

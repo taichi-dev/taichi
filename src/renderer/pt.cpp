@@ -200,7 +200,6 @@ protected:
 		return att;
 	}
 
-	int num_threads;
 	bool direct_lighting;
 	int direct_lighting_bsdf;
 	int direct_lighting_light;
@@ -214,7 +213,6 @@ protected:
 
 void PathTracingRenderer::initialize(const Config &config) {
 	Renderer::initialize(config);
-	this->num_threads = config.get("num_threads", 1);
 	this->direct_lighting = config.get("direct_lighting", true);
 	this->direct_lighting_light = config.get("direct_lighting_light", 1);
 	this->direct_lighting_bsdf = config.get("direct_lighting_bsdf", 1);

@@ -27,6 +27,7 @@ TC_NAMESPACE_BEGIN
         std::shared_ptr<SceneGeometry> sg;
         int width, height;
         int min_path_length, max_path_length;
+		int num_threads;
         bool path_length_in_range(int path_length) {
             return min_path_length <= path_length && path_length <= max_path_length;
         }

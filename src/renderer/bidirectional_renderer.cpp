@@ -444,7 +444,9 @@ TC_NAMESPACE_BEGIN
                     continue;
                 }
                 int ix = (int) floor(cont.x * width), iy = (int) floor(cont.y * height);
+				output_lock.lock();
                 this->buffer[ix][iy] += width * height * total_scaling * cont.c;
+				output_lock.unlock();
             }
         }
     }

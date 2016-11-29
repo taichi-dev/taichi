@@ -23,10 +23,10 @@ class Renderer(object):
 
     def render(self, stages):
         for i in range(stages):
-            print 'stage', i
+            print 'stage', i,
             t = time.time()
             self.render_stage()
-            print 'Time per stage:', time.time() - t
+            print 'time:', time.time() - t
             self.show()
 
     def show(self):

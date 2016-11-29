@@ -8,6 +8,7 @@
 #include "renderer.h"
 #include "sampler.h"
 #include "bsdf.h"
+#include "system/threading.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -85,6 +86,7 @@ TC_NAMESPACE_BEGIN
         long long sample_count = 0;
         std::string print_path_policy;
         real vm_pdf_constant;
+		Spinlock output_lock;
 
     public:
         virtual void initialize(const Config &config) override;

@@ -17,15 +17,16 @@ TC_NAMESPACE_BEGIN
         }
 
         void render_stage() override {
-            for (int k = 0; k < width * height / stage_frequency; k++) {
-                auto state_sequence = RandomStateSequence(sampler, sample_count);
-                Path eye_path = trace_eye_path(state_sequence);
-                Path light_path = trace_light_path(state_sequence);
-                PathContribution pc = connect(eye_path, light_path);
-                write_path_contribution(pc);
-                sample_count += 1;
-                continue;
-            }
+			int num_samples = width * height / stage_frequency;
+			auto func = [&](int i) {
+				auto state_sequence = RandomStateSequence(sampler, sample_count + i);
+				Path eye_path = trace_eye_path(state_sequence);
+				Path light_path = trace_light_path(state_sequence);
+				PathContribution pc = connect(eye_path, light_path);
+				write_path_contribution(pc);
+			};
+			ThreadedTaskManager::run(func, 0, num_samples, num_threads);
+            sample_count += num_samples;
         }
     };
 

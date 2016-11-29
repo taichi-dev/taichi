@@ -30,9 +30,13 @@ TC_NAMESPACE_BEGIN
     class TaichiTexture : public Texture {
 	protected:
 		real scale;
+		real rotation_c, rotation_s;
     public:
         void initialize(const Config &config) override {
 			scale = config.get("scale", 1.0f);
+			real rotation = config.get("rotation", 0.0f);
+			rotation_c = std::cos(rotation);
+			rotation_s = std::sin(rotation);
         }
 		static bool inside(Vector2 p, Vector2 c, real r) {
 			return (p.x - c.x) * (p.x - c.x) + (p.y - c.y) * (p.y - c.y) <= r * r;
@@ -43,7 +47,10 @@ TC_NAMESPACE_BEGIN
 		static bool inside_right(Vector2 p, Vector2 c, real r) {
 			return inside(p, c, r) && p.x >= c.x;
 		}
-		bool is_white(Vector2 p) const {
+		bool is_white(Vector2 p_) const {
+			p_ -= Vector2(0.5f);
+			Vector2 p(p_.x * rotation_c + p_.y * rotation_s, -p_.x * rotation_s + p_.y * rotation_c);
+			p += Vector2(0.5f);
 			if (!inside(p, Vector2(0.50f, 0.50f), 0.5f)) {
 				return true;
 			}

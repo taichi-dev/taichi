@@ -94,9 +94,12 @@ TC_NAMESPACE_BEGIN
 			if (config.has_key(name + "_map")) {
 				return AssetManager::get_asset<Texture>(config.get_int(name + "_map"));
 			}
-			else {
+			else if (config.has_key(name)) {
 				Vector3 color = config.get_vec3(name);
 				return create_initialized_instance<Texture>("const", Config().set("value", color));
+			}
+			else {
+				return nullptr;
 			}
 		}
 
@@ -111,6 +114,10 @@ TC_NAMESPACE_BEGIN
         virtual bool is_emissive() const {
             return false;
         }
+
+		virtual real get_importance(const Vector2 &uv) const {
+			return luminance(color_sampler->sample(uv));
+		}
 
 
     public:

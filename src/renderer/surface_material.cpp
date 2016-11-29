@@ -276,81 +276,19 @@ TC_NAMESPACE_BEGIN
     class PBRMaterial : public SurfaceMaterial {
     protected:
         vector<std::shared_ptr<SurfaceMaterial> > materials;
-        DiscreteSampler material_sampler;
         bool flag_is_delta;
     public:
-        virtual void initialize(ptree &pt) override {
-            Vector3 diffuse_color = load_vector3(pt.get("diffuse_color", "(0,0,0)"));
-            Vector3 specular_color = load_vector3(pt.get("specular_color", "(0,0,0)"));
-            real glossiness = pt.get("glossiness", 100.0f);
-            bool transparent = pt.get("transparent", false);
-            std::vector<real> luminances;
-            std::shared_ptr<SurfaceMaterial> diff_mat, glossy_mat;
-            if (luminance(diffuse_color) > 0) {
-                diff_mat = std::make_shared<DiffusiveMaterial>();
-                diff_mat->set_color(diffuse_color);
-                materials.push_back(diff_mat);
-                luminances.push_back(luminance(diffuse_color));
-            }
-            if (transparent) {
-                // load transparancy...
-                real ior = pt.get("ior", 1.5f);
-                auto mat = std::make_shared<RefractiveMaterial>();
-                mat->set_ior(ior);
-                mat->set_color(Vector3(1, 1, 1));
-                materials.push_back(mat);
-                luminances.push_back(luminance(Vector3(1, 1, 1)));
-            }
-            if (luminance(specular_color) > 0) {
-                if (glossiness > 0) { // glossy
-                    glossy_mat = std::make_shared<GlossyMaterial>();
-                    glossy_mat->set_color(specular_color);
-                    static_cast<GlossyMaterial *>(glossy_mat.get())->set_glossiness(glossiness);
-                    materials.push_back(glossy_mat);
-                    luminances.push_back(luminance(specular_color));
-                } else { // mirror
-                    glossy_mat = std::make_shared<ReflectiveMaterial>();
-                    glossy_mat->set_color(specular_color);
-                    materials.push_back(glossy_mat);
-                    luminances.push_back(luminance(specular_color));
-                }
-            }
-                    foreach(ptree::value_type & v, pt.get_child("textures")) {
-                            std::string filepath = v.second.get<std::string>("filepath");
-                            real diff = v.second.get("use_map_color_diffuse", 0.0f);
-                            real spec = v.second.get("use_map_color_spec", 0.0f);
-                            auto tex = create_initialized_instance<Texture>("image", Config().set("filepath", filepath));
-                            if (diff > 0 && diff_mat) {
-                                diff_mat->set_color_sampler(tex);
-                                P(filepath);
-                            }
-                            if (spec > 0 && glossy_mat) {
-                                glossy_mat->set_color_sampler(tex);
-                            }
-                        }
-            flag_is_delta = false;
-            for (auto &mat : materials) {
-                if (!mat->is_delta()) {
-                    flag_is_delta = false;
-                }
-                assert_info(!mat->is_emissive(), "In PBR material, nothing can be emissive");
-            }
-            material_sampler.initialize(luminances);
-        }
-
         virtual void initialize(const Config &config) override {
             SurfaceMaterial::initialize(config);
-            Vector3 diffuse_color = config.get_vec3("diffuse_color");
-            Vector3 specular_color = config.get_vec3("specular_color");
-            real glossiness = config.get_real("glossiness");
-            bool transparent = config.get_bool("transparent");
+			auto diffuse_color_sampler = get_color_sampler(config, "diffuse");
+			auto specular_color_sampler = get_color_sampler(config, "specular");
+            bool transparent = config.get("transparent", false);
             std::vector<real> luminances;
             std::shared_ptr<SurfaceMaterial> diff_mat, glossy_mat;
-            if (luminance(diffuse_color) > 0) {
-                diff_mat = std::make_shared<DiffusiveMaterial>();
-                diff_mat->set_color(diffuse_color);
-                materials.push_back(diff_mat);
-                luminances.push_back(luminance(diffuse_color));
+            if (diffuse_color_sampler) {
+                auto mat = std::make_shared<DiffusiveMaterial>();
+                mat->set_color_sampler(diffuse_color_sampler);
+                materials.push_back(mat);
             }
             if (transparent) {
                 // load transparancy...
@@ -361,18 +299,17 @@ TC_NAMESPACE_BEGIN
                 materials.push_back(mat);
                 luminances.push_back(luminance(Vector3(1, 1, 1)));
             }
-            if (luminance(specular_color) > 0) {
+            if (specular_color_sampler) {
+				real glossiness = config.get_real("glossiness");
                 if (glossiness > 0) { // glossy
                     glossy_mat = std::make_shared<GlossyMaterial>();
-                    glossy_mat->set_color(specular_color);
+                    glossy_mat->set_color_sampler(specular_color_sampler);
                     static_cast<GlossyMaterial *>(glossy_mat.get())->set_glossiness(glossiness);
                     materials.push_back(glossy_mat);
-                    luminances.push_back(luminance(specular_color));
                 } else { // mirror
                     glossy_mat = std::make_shared<ReflectiveMaterial>();
-                    glossy_mat->set_color(specular_color);
+                    glossy_mat->set_color_sampler(specular_color_sampler);
                     materials.push_back(glossy_mat);
-                    luminances.push_back(luminance(specular_color));
                 }
             }
             flag_is_delta = false;
@@ -382,14 +319,21 @@ TC_NAMESPACE_BEGIN
                 }
                 assert_info(!mat->is_emissive(), "In PBR material, nothing can be emissive");
             }
-            material_sampler.initialize(luminances);
         }
+
+		DiscreteSampler get_material_sampler(const Vector2 uv) const {
+			std::vector<real> luminances;
+			for (auto &mat : materials) {
+				luminances.push_back(mat->get_importance(uv));
+			}
+			return DiscreteSampler(luminances);
+		}
 
         void
         sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf, SurfaceEvent &event,
                const Vector2 &uv) const override {
             real mat_pdf, mat_cdf;
-            int mat_id = material_sampler.sample(u, mat_pdf, mat_cdf);
+            int mat_id = get_material_sampler(uv).sample(u, mat_pdf, mat_cdf);
             real rescaled_u = (u - (mat_cdf - mat_pdf)) / mat_pdf;
             assert(is_normal(rescaled_u));
             auto &mat = materials[mat_id];
@@ -406,7 +350,7 @@ TC_NAMESPACE_BEGIN
             for (int i = 0; i < (int) materials.size(); i++) {
                 if (!materials[i]->is_delta())
                     sum += materials[i]->probability_density(in, out, uv) *
-                           material_sampler.get_pdf(i);
+                           get_material_sampler(uv).get_pdf(i);
             }
             return max(1e-7f, sum);
         }
@@ -423,7 +367,6 @@ TC_NAMESPACE_BEGIN
         bool is_delta() const override {
             return flag_is_delta;
         }
-
     };
 
     TC_IMPLEMENTATION(SurfaceMaterial, DiffusiveMaterial, "diffusive");

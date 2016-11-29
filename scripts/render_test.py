@@ -11,9 +11,11 @@ def create_object(name, x, y=0, z=0, s=1, r=(0, 0, 0), material='wall'):
     return mesh
 
 def create_holder(name, x, y=0, z=0, s=1, r=(0, 0, 0), t=0, taichi_s=0.9):
-    material = tc.create_surface_material('diffusive')
+    material = tc.create_surface_material('pbr')
     rep = Texture.create_taichi_wallpaper(20, rotation=t, scale=taichi_s)
-    material.initialize(P(diffuse_map=rep.id))
+    diff = 0.1 * rep
+    spec = 0.6 * rep
+    material.initialize(P(diffuse_map=diff.id, specular_map=spec.id, glossiness=300))
 
     mesh = tc.create_mesh()
     mesh.initialize(P(filename='../assets/meshes/%s.obj' % name))
@@ -52,7 +54,7 @@ def render_frame(i, t):
     renderer = Renderer('vcm', '../output/frames/%d.png' % i)
     renderer.initialize(width=width, height=height, min_path_length=1, max_path_length=10,
                         initial_radius=0.05, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
-                        direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1,
+                        direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1, stage_frequency=3,
                         num_threads=8)
     renderer.set_camera(camera.c)
 

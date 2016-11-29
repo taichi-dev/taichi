@@ -28,7 +28,7 @@ def create_fractal(scene):
     s = 0.6
     for i in range(n):
         for j in range(n):
-            mesh = create_object('cube', (i - (n - 1) / 2.0) * s, j * s - 0.5, 0, s * 0.3, r=(i * 10, j * 10, 0), material='wall')
+            mesh = create_object('cube', (i - (n - 1) / 2.0) * s, j * s - 0.5, 0, s * 0.3, r=(i * 10, j * 10, 0), material='glass')
             scene.add_mesh(mesh)
 
 
@@ -49,7 +49,7 @@ def render_frame(i, t):
     camera = Camera('perspective', aspect_ratio=float(width) / height, fov_angle=60,
                     origin=(t * 3, 3, 7), look_at=(0, 0.5, 0), up=(0, 1, 0))
 
-    renderer = Renderer('bdpt', '../output/frames/%d.png' % i)
+    renderer = Renderer('vcm', '../output/frames/%d.png' % i)
     renderer.initialize(width=width, height=height, min_path_length=1, max_path_length=10,
                         initial_radius=0.05, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
                         direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1,
@@ -81,7 +81,7 @@ def render_frame(i, t):
     scene.finalize()
 
     renderer.set_scene(scene)
-    renderer.render(300)
+    renderer.render(30000000)
 
 if __name__ == '__main__':
     frames = 120

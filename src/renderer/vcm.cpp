@@ -101,16 +101,20 @@ TC_NAMESPACE_BEGIN
         }
 
         virtual void render_stage() override {
-            radius = initial_radius * pow(num_stages + 1, -(1.0f - alpha) / 2.0f);
+            radius = initial_radius * pow(num_stages + 1.0f, -(1.0f - alpha) / 2.0f);
             vm_pdf_constant = pi * radius * radius;
             hash_grid.initialize(radius, width * height * 10 + 7);
-            light_paths.clear();
-            light_paths_for_connection.clear();
+			light_paths.clear();
+			light_paths_for_connection.resize(n_samples_per_stage);
             // Generate light paths (photons)
-            for (int k = 0; k < n_samples_per_stage; k++) {
+			ThreadedTaskManager::run([&](int k) {
                 auto state_sequence = RandomStateSequence(sampler, sample_count * 2 + k); // TODO: wrong...
                 Path light_path = trace_light_path(state_sequence);
-                light_paths_for_connection.push_back(light_path);
+                light_paths_for_connection[k] = light_path;
+			}, 0, n_samples_per_stage, num_threads);
+
+            for (int k = 0; k < n_samples_per_stage; k++) {
+				Path &light_path = light_paths_for_connection[k];
                 if (use_vm) {
                     for (int num_light_vertices = 2; num_light_vertices <= (int) light_path.size(); num_light_vertices++) {
                         Path partial_light_path(light_path.begin(), light_path.begin() + num_light_vertices);
@@ -119,18 +123,18 @@ TC_NAMESPACE_BEGIN
                     }
                 }
             }
-            hash_grid.build_grid();
+			hash_grid.build_grid();
             // Generate eye paths (importons)
-            for (int k = 0; k < n_samples_per_stage; k++) {
-                auto state_sequence = RandomStateSequence(sampler, sample_count * 2 + n_samples_per_stage + k);
-                Path eye_path = trace_eye_path(state_sequence);
-                if (use_vm) {
-                    write_path_contribution(vertex_merge(eye_path));
-                }
-                if (use_vc) {
-                    write_path_contribution(connect(eye_path, light_paths_for_connection[k], -1, -1, (int)use_vm * n_samples_per_stage));
-                }
-            }
+			ThreadedTaskManager::run([&](int k) {
+				auto state_sequence = RandomStateSequence(sampler, sample_count * 2 + n_samples_per_stage + k);
+				Path eye_path = trace_eye_path(state_sequence);
+				if (use_vm) {
+					write_path_contribution(vertex_merge(eye_path));
+				}
+				if (use_vc) {
+					write_path_contribution(connect(eye_path, light_paths_for_connection[k], -1, -1, (int)use_vm * n_samples_per_stage));
+				}
+			}, 0, n_samples_per_stage, num_threads);
             sample_count += n_samples_per_stage;
         }
     };

@@ -23,7 +23,8 @@ TC_NAMESPACE_BEGIN
         void initialize(const Config &config) override {
             image.load(config.get_string("filename"));
         }
-        virtual Vector3 sample(const Vector2 &coord) const override  {
+        virtual Vector3 sample(const Vector2 &coord_) const override  {
+			Vector2 coord(coord_.x - floor(coord_.x), coord_.y - floor(coord_.y));
             return image.sample_relative_coord(coord);
         }
     };

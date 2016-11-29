@@ -31,8 +31,8 @@ def create_light():
     mesh.rotate_euler(Vector(0, 0, 180))
     return mesh
 
-def load_scene(renderer, scene):
-    ROOT = 'D:/assets/staircase/staircase/'
+def load_scene(root, fov):
+    ROOT = root
     f = json.load(open(ROOT + 'scene.json'))
     bsdfs = f['bsdfs']
     materials = {}
@@ -54,6 +54,8 @@ def load_scene(renderer, scene):
         material.initialize(P(**params))
         materials[name] = material
 
+    meshes = []
+
     for mesh_node in f['primitives']:
         if 'file' in mesh_node:
             # Object
@@ -69,31 +71,33 @@ def load_scene(renderer, scene):
             e = 1
             material.initialize(P(color=(e, e, e)))
             mesh.set_material(material)
-
-            trans = mesh_node['transform']
-            mesh.translate(Vector(*trans['position']))
-            mesh.rotate_euler(Vector(*trans['rotation']))
-        scene.add_mesh(mesh)
+            if 'transform' in mesh_node:
+                trans = mesh_node['transform']
+                if 'position' in trans:
+                    mesh.translate(Vector(*trans['position']))
+                if 'rotation' in trans:
+                    mesh.rotate_euler(Vector(*trans['rotation']))
+        meshes.append(mesh)
 
     camera_node = f['camera']
     width, height = camera_node['resolution']
-    fov = camera_node['fov'] * 3
+    # the FOV value is ?
+    #fov = math.degrees(math.atan(27.2 / camera_node['fov']) * 2)
 
     camera = Camera('perspective', aspect_ratio=float(width) / height, fov_angle=fov,
                     origin=tuple(camera_node['transform']['position']),
                     look_at=tuple(camera_node['transform']['look_at']),
                     up=tuple(camera_node['transform']['up']))
-    renderer.set_camera(camera.c)
 
-    scene.finalize()
+    return (width, height), meshes, camera
 
-    return width, height
-
-def render_frame(i, t):
+def render():
     downsample = 1
-    width, height = 720 / downsample, 1280 / downsample
+    root, fov = 'D:/assets/living-room-3/', 55
+    #root, fov = 'D:/assets/staircase/', 105
+    (width, height), meshes, camera = load_scene(root, fov)
 
-    renderer = Renderer('pt', '../output/frames/%d.png' % i)
+    renderer = Renderer('pt', output_dir='../output/frames/%s' % get_uuid())
     renderer.initialize(width=width, height=height, min_path_length=1, max_path_length=10,
                         initial_radius=0.05, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
                         direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1, stage_frequency=1,
@@ -102,20 +106,18 @@ def render_frame(i, t):
     air = tc.create_volume_material("vacuum")
     air.initialize(P(scattering=0.00))
 
-
     scene = tc.create_scene()
     scene.set_atmosphere_material(air)
 
-    scene.add_mesh(create_light())
+    for mesh in meshes:
+        scene.add_mesh(mesh)
 
-    load_scene(renderer, scene)
+    scene.finalize()
+
+    renderer.set_camera(camera.c)
 
     renderer.set_scene(scene)
-    renderer.render(30000000)
+    renderer.render(30000000, cache_interval=10)
 
 if __name__ == '__main__':
-    frames = 120
-    for i in [30]:
-        render_frame(i, 2 * (-0.5 + 1.0 * i / frames))
-    from tools import video
-    video.make_video('../output/frames/%d.png', 960, 540, '../output/video.mp4')
+    render()

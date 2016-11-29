@@ -28,7 +28,7 @@ class SimulationWindow(pyglet.window.Window):
         super(SimulationWindow, self).__init__(width=width, height=height, fullscreen=False, caption='Taichi',
                                                config=pyglet.gl.Config(sample_buffers=0, samples=0, depth_size=16,
                                                                        double_buffer=True))
-        uuid = datetime.datetime.now().strftime('simulation-%Y-%m-%d-%H-%M-%S-r') + ('%05d' % random.randint(0, 10000))
+        uuid = get_uuid()
         self.video_filename = uuid + ".mp4"
         self.frame_output_path = VIDEO_OUTPUT_ROOT + '/' + uuid + '/'
         print self.frame_output_path

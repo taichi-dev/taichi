@@ -53,7 +53,7 @@ def create_light(t):
     return mesh
 
 def render_frame(i, t):
-    downsample = 1
+    downsample = 2
     width, height = 960 / downsample, 540 / downsample
     camera = Camera('perspective', aspect_ratio=float(width) / height, fov_angle=60,
                     origin=(t * 3, 5, 7), look_at=(0, 0.5, 0), up=(0, 1, 0))

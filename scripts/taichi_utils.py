@@ -1,5 +1,6 @@
 import sys
 import os
+import datetime
 import shutil
 import platform
 import random
@@ -123,6 +124,10 @@ def arange(x, y, d):
     while x < y:
         yield x
         x += d
+
+
+def get_uuid():
+    return datetime.datetime.now().strftime('simulation-%Y-%m-%d-%H-%M-%S-r') + ('%05d' % random.randint(0, 10000))
 
 def P(**kwargs):
     return config_from_dict(kwargs)

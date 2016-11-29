@@ -25,6 +25,7 @@ TC_NAMESPACE_BEGIN
 		for (auto p : tmp) {
 			sum += p;
 		}
+		P(sum);
 		auto scale = luminance(sum) / luminance(Vector3(1.0f)) / tmp.get_width() / tmp.get_height() / 0.18f;
 		P(scale);
 		for (auto ind : tmp.get_region()) {

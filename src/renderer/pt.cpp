@@ -151,6 +151,10 @@ protected:
 	virtual void write_path_contribution(const PathContribution &cont, real scale = 1.0f) {
 		auto x = clamp(cont.x, 0.0f, 1.0f - 1e-7f);
 		auto y = clamp(cont.y, 0.0f, 1.0f - 1e-7f);
+		if (!is_normal(cont.c)) {
+			P(cont.c);
+			return;
+		}
 		accumulator.accumulate(int(x * width), int(y * height), cont.c * scale);
 	}
 
@@ -544,6 +548,10 @@ public:
 	}
 
 	void write_path_contribution(const PathContribution &cont, real scale = 1.0f) override {
+		if (!is_normal(cont.c)) {
+			P(cont.c);
+			return;
+		}
 		if (0 <= cont.x && cont.x <= 1 - eps && 0 <= cont.y && cont.y <= 1 - eps) {
 			int ix = (int)floor(cont.x * width), iy = (int)floor(cont.y * height);
 			this->buffer[ix][iy] += width * height * scale * cont.c;

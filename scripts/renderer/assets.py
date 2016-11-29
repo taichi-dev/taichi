@@ -18,17 +18,17 @@ class Materials:
 
     def get_material_mirror(self):
         material = tc.create_surface_material('pbr')
-        material.initialize(P(diffuse_color=(0.0, 0.0, 0.0), specular_color=(1.0, 1.0, 1.0), glossiness=-1, transparent=False))
+        material.initialize(P(diffuse=(0.0, 0.0, 0.0), specular=(1.0, 1.0, 1.0), glossiness=-1, transparent=False))
         return material
 
     def get_material_gold(self):
         material = tc.create_surface_material('pbr')
-        material.initialize(P(diffuse_color=(0.0, 0.0, 0.0), specular_color=(1.0, 0.9, 0.6), glossiness=-1, transparent=False))
+        material.initialize(P(diffuse=(0.0, 0.0, 0.0), specular=(1.0, 0.9, 0.6), glossiness=-1, transparent=False))
         return material
 
     def get_material_glossy(self):
         material = tc.create_surface_material('pbr')
-        material.initialize(P(diffuse_color=(0.0, 0.0, 0.0), specular_color=(0.5, 0.5, 0.3), glossiness=300, transparent=False))
+        material.initialize(P(diffuse=(0.0, 0.0, 0.0), specular=(0.5, 0.5, 0.3), glossiness=300, transparent=False))
         return material
 
     def get_material_wall(self):
@@ -44,13 +44,13 @@ class Materials:
 
     def get_material_glass(self):
         material = tc.create_surface_material('pbr')
-        material.initialize(P(diffuse_color=(0, 0, 0), specular_color=(0.0, 0.0, 0.0), glossiness=-1,
-                              transparent=True, ior=1.3))
+        material.initialize(P(diffuse=(0, 0, 0), specular=(0.0, 0.0, 0.0), glossiness=-1,
+                              transparent=True, ior=1.5))
         return material
 
     def get_material_dark_grey(self):
         material = tc.create_surface_material('pbr')
-        material.initialize(P(diffuse_color=(0.3, 0.3, 0.3), specular_color=(0.0, 0.0, 0.0), glossiness=-1,
+        material.initialize(P(diffuse=(0.3, 0.3, 0.3), specular=(0.0, 0.0, 0.0), glossiness=-1,
                               transparent=False))
         return material
 

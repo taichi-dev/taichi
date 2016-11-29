@@ -121,7 +121,7 @@ TC_NAMESPACE_BEGIN
                     Vector3 v = (hp.pos - info.pos);
                     int path_length = hp.path_length + depth + 1;
                     real &hp_radius2 = radius2[hp.pixel.x][hp.pixel.y];
-                    if (min_path_length <= path_length && path_length <= max_path_length &&
+                    if (path_length_in_range(path_length) &&
                         dot(hp.normal, info.normal) > eps && dot(v, v) <= hp_radius2) {
                         long long &hp_num_photons = num_photons[hp.pixel.x][hp.pixel.y];
                         real g = (hp_num_photons * alpha + alpha) / (hp_num_photons * alpha + 1.0f);

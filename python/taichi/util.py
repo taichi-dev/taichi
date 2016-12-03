@@ -4,6 +4,7 @@ import datetime
 import shutil
 import platform
 import random
+
 def get_os_name():
     name = platform.platform()
     if name.lower().startswith('darwin'):
@@ -14,46 +15,23 @@ def get_os_name():
         return 'linux'
     assert False, "Unknown platform name %s" % name
 
-if get_os_name() == 'osx':
-    if os.path.exists('libtaichi.dylib'):
-        shutil.copy('libtaichi.dylib', 'taichi.so')
-        sys.path.append(".")
-    import taichi as tc
-elif get_os_name() == 'linux':
-    if os.path.exists('libtaichi.so'):
-        shutil.copy('libtaichi.so', 'taichi.so')
-        sys.path.append(".")
-    import taichi as tc
-elif get_os_name() == 'win':
-    dll_path = 'Release/taichi.dll'
-    d = 'tmp' + str(random.randint(0, 100000000)) + '/'
-    try:
-        os.mkdir(d)
-    except:
-        pass
 
-    if os.path.exists(dll_path):
-        shutil.copy(dll_path, d + 'taichi.pyd')
-        sys.path.append(os.getcwd() + '/' + d)
-        print sys.path
-        import taichi as tc
-    else:
-        assert False, "libtaichi doesn't exists."
-print sys.path
+def get_uuid():
+    return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + ('%05d' % random.randint(0, 10000))
 
-print "*Library Taichi Loaded.*"
 import copy
 import pyglet
 import numpy as np
 import ctypes
 
-TEXTURE_PATH = '../assets/textures/'
+#TEXTURE_PATH = '../assets/textures/'
 
+from taichi.core import tc_core
 def config_from_dict(args):
     d = copy.deepcopy(args)
     for k in d:
         d[k] = str(d[k])
-    return tc.config_from_dict(d)
+    return tc_core.config_from_dict(d)
 
 def make_polygon(points, scale):
     polygon = tc.Vector2List()
@@ -64,17 +42,16 @@ def make_polygon(points, scale):
             polygon.append(scale * p)
     return polygon
 
-
 def Vector(*args):
     if isinstance(args[0], tuple):
         args = tuple(*args)
     if len(args) == 2:
-        v = tc.Vector2()
+        v = tc_core.Vector2()
         v.x = float(args[0])
         v.y = float(args[1])
         return v
     elif len(args) == 3:
-        v = tc.Vector3()
+        v = tc_core.Vector3()
         v.x = float(args[0])
         v.y = float(args[1])
         v.z = float(args[2])
@@ -124,10 +101,6 @@ def arange(x, y, d):
     while x < y:
         yield x
         x += d
-
-
-def get_uuid():
-    return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + ('%05d' % random.randint(0, 10000))
 
 def P(**kwargs):
     return config_from_dict(kwargs)

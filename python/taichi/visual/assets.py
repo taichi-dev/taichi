@@ -1,4 +1,4 @@
-from taichi_utils import *
+import taichi as tc
 
 from texture import Texture
 

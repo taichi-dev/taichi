@@ -73,11 +73,13 @@ find_package(ANN REQUIRED)
 
 include_directories(external/include)
 
+set(CORE_LIBRARY_NAME taichi_core)
+
 add_subdirectory(src)
 
 message("Taichi Source: ${TAICHI_SOURCE}")
 
 if (WIN32)
-    set_target_properties(taichi PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
+    set_target_properties(${CORE_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
 endif ()
 

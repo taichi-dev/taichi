@@ -1,13 +1,14 @@
-from taichi_utils import *
+from taichi.core import tc_core
+from taichi.util import P
 
 class Texture:
     def __init__(self, name, **kwargs):
-        self.c = tc.create_texture(name)
+        self.c = tc_core.create_texture(name)
         for key in kwargs:
             if isinstance(kwargs[key], Texture):
                 kwargs[key] = kwargs[key].id
         self.c.initialize(P(**kwargs))
-        self.id = tc.register_texture(self.c)
+        self.id = tc_core.register_texture(self.c)
 
     @staticmethod
     def wrap_texture(value):

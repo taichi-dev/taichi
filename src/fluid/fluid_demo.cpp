@@ -1,7 +1,6 @@
 #include "fluid_demo.h"
 #include "fluid.h"
 #include "visualization/texture_renderer.h"
-#include "io/movie.h"
 #include <iomanip>
 #include <iomanip>
 #include <ctime>
@@ -16,7 +15,6 @@ private:
 	int simulation_height;
 	int render_width;
 	int render_height;
-	Movie movie;
 	std::shared_ptr<Fluid> fluid;
 	float current_time;
 	float delta_t;

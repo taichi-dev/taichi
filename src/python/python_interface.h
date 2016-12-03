@@ -108,7 +108,7 @@ TC_NAMESPACE_BEGIN
     template<typename T>
     void image_buffer_to_ndarray(T *arr, long long);
 
-    BOOST_PYTHON_MODULE (taichi) {
+    BOOST_PYTHON_MODULE (taichi_core) {
         Py_Initialize();
         //import_array();
         numeric::array::set_module_and_type("numpy", "ndarray");

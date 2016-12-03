@@ -1,5 +1,6 @@
-from renderer.render import *
-from renderer.texture import Texture
+from taichi.visual.renderer import *
+from taichi.visual.texture import Texture
+import math
 
 def map_filename(name):
     if name.rfind('/') == -1:
@@ -9,7 +10,7 @@ def map_filename(name):
     return filename
 
 def create_object(name, x, y=0, z=0, s=1, r=(0, 0, 0), material='wall'):
-    mesh = tc.create_mesh()
+    mesh = tc_core.create_mesh()
     mesh.initialize(P(filename=map_filename(name)))
     mesh.set_material(assets.materials.get_material(material))
     mesh.translate(Vector(x, y, z))
@@ -18,13 +19,13 @@ def create_object(name, x, y=0, z=0, s=1, r=(0, 0, 0), material='wall'):
     return mesh
 
 def create_holder(name, x, y=0, z=0, s=1, r=(0, 0, 0), t=0, taichi_s=0.9):
-    material = tc.create_surface_material('pbr')
+    material = tc_core.create_surface_material('pbr')
     rep = Texture.create_taichi_wallpaper(20, rotation=t, scale=taichi_s)
-    diff = (0.1 * rep).rasterize(4096)
-    spec = (0.6 * rep).rasterize(4096)
+    diff = (0.1 * rep).rasterize(1024)
+    spec = (0.6 * rep).rasterize(1024)
     material.initialize(P(diffuse_map=diff.id, specular_map=spec.id, glossiness=300))
 
-    mesh = tc.create_mesh()
+    mesh = tc_core.create_mesh()
     mesh.initialize(P(filename=map_filename(name)))
     mesh.set_material(material)
     mesh.translate(Vector(x, y, z))
@@ -41,9 +42,9 @@ def create_fractal(scene):
             scene.add_mesh(mesh)
 
 def create_light(t):
-    mesh = tc.create_mesh()
+    mesh = tc_core.create_mesh()
     mesh.initialize(P(filename='../assets/meshes/plane.obj'))
-    material = tc.create_surface_material('emissive')
+    material = tc_core.create_surface_material('emissive')
     e = 1
     material.initialize(P(color=(e, e, e)))
     mesh.set_material(material)
@@ -65,10 +66,10 @@ def render_frame(i, t):
                         num_threads=1)
     renderer.set_camera(camera.c)
 
-    air = tc.create_volume_material("vacuum")
+    air = tc_core.create_volume_material("vacuum")
     air.initialize(P(scattering=0.01))
 
-    scene = tc.create_scene()
+    scene = tc_core.create_scene()
     scene.set_atmosphere_material(air)
 
     #scene.add_mesh(create_object('suzanne', 1.5, material='snow'))
@@ -82,7 +83,7 @@ def render_frame(i, t):
     #create_fractal(scene)
     scene.add_mesh(create_light(math.pi * 0.5))
 
-    envmap = tc.create_environment_map('base')
+    envmap = tc_core.create_environment_map('base')
     #envmap.initialize(P(filepath='c:/tmp/20060807_wells6_hd.hdr'))
 
     #scene.set_envmap(envmap)
@@ -96,5 +97,5 @@ if __name__ == '__main__':
     frames = 120
     for i in [30]:
         render_frame(i, 2 * (-0.5 + 1.0 * i / frames))
-    from tools import video
+    from taichi.tools import video
     video.make_video('../output/frames/%d.png', 960, 540, '../output/video.mp4')

@@ -1,22 +1,15 @@
-import numpy as np
-from taichi_utils import *
+import taichi as tc
+import taichi.util
 # TODO: Remove cv2
 import cv2
 import time
 import os
-import math
-
-import renderer.assets as assets
-
-class ConfigInitializable:
-    def __init__(self, **kwargs):
-        self.c = None
-        self.c.initialize(config_from_dict(kwargs))
-
+from taichi.core import tc_core
+from taichi.util import *
 
 class Renderer(object):
-    def __init__(self, name, output_dir=get_uuid(), overwrite=False):
-        self.c = tc.create_renderer(name)
+    def __init__(self, name, output_dir=taichi.util.get_uuid(), overwrite=False):
+        self.c = tc_core.create_renderer(name)
         self.output_dir = output_dir + '/'
         try:
             os.mkdir(self.output_dir)
@@ -54,6 +47,6 @@ class Renderer(object):
 
 class Camera:
     def __init__(self, name, **kwargs):
-        self.c = tc.create_camera(name)
+        self.c = tc_core.create_camera(name)
         self.c.initialize(config_from_dict(kwargs))
 

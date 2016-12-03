@@ -1,5 +1,5 @@
-from renderer.render import *
-from renderer.texture import Texture
+from visual.renderer import *
+from visual.texture import Texture
 import json
 
 def map_filename(name):

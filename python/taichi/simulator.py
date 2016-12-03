@@ -1,6 +1,6 @@
 import copy
 
-from taichi_utils import *
+from taichi.util import *
 
 
 class Simulator(object):

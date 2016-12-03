@@ -11,7 +11,7 @@ TC_NAMESPACE_BEGIN
         void initialize(const Config &config) override {
             val = config.get_vec3("value");
         }
-        virtual Vector3 sample(const Vector2 &coord) const override {
+        virtual Vector3 sample(const Vector3 &coord) const override {
             return val;
         }
     };
@@ -23,7 +23,7 @@ TC_NAMESPACE_BEGIN
         void initialize(const Config &config) override {
             image.load(config.get_string("filename"));
         }
-        virtual Vector3 sample(const Vector2 &coord_) const override  {
+        virtual Vector3 sample(const Vector3 &coord_) const override  {
 			Vector2 coord(coord_.x - floor(coord_.x), coord_.y - floor(coord_.y));
             return image.sample_relative_coord(coord);
         }
@@ -81,6 +81,9 @@ TC_NAMESPACE_BEGIN
         virtual Vector3 sample(const Vector2 &coord) const override {
 			return Vector3(is_white(coord) ? 1.0f : 0.0f);
         }
+        virtual Vector3 sample(const Vector3 &coord) const override {
+            return sample(Vector2(coord.x, coord.y));
+        }
     };
 	class LinearOpTexture: public Texture {
 	protected:
@@ -95,7 +98,7 @@ TC_NAMESPACE_BEGIN
 			tex1 = AssetManager::get_asset<Texture>(config.get_int("tex1"));
 			tex2 = AssetManager::get_asset<Texture>(config.get_int("tex2"));
         }
-        virtual Vector3 sample(const Vector2 &coord) const override  {
+        virtual Vector3 sample(const Vector3 &coord) const override  {
 			auto p = alpha * tex1->sample(coord) + beta * tex2->sample(coord);
 			if (need_clamp) {
 				for (int i = 0; i < 3; i++) {
@@ -126,6 +129,9 @@ TC_NAMESPACE_BEGIN
         virtual Vector3 sample(const Vector2 &coord) const override  {
 			return cache.sample_relative_coord(coord);
         }
+		virtual Vector3 sample(const Vector3 &coord) const override  {
+			return cache.sample_relative_coord(Vector2(coord.x, coord.y));
+		}
 	};
 	class MultiplicationTexture: public Texture {
 	protected:
@@ -136,14 +142,14 @@ TC_NAMESPACE_BEGIN
 			tex1 = AssetManager::get_asset<Texture>(config.get_int("tex1"));
 			tex2 = AssetManager::get_asset<Texture>(config.get_int("tex2"));
         }
-        virtual Vector3 sample(const Vector2 &coord) const override  {
+        virtual Vector3 sample(const Vector3 &coord) const override  {
 			return tex1->sample(coord) * tex2->sample(coord);
         }
 	};
 	class CheckerboardTexture: public Texture {
 	protected:
-		real repeat_u, repeat_v;
-		real inv_repeat_u, inv_repeat_v;
+		real repeat_u, repeat_v, repeat_p;
+		real inv_repeat_u, inv_repeat_v, inv_repeat_p;
 		std::shared_ptr<Texture> tex1, tex2;
 	public:
         void initialize(const Config &config) override {
@@ -151,31 +157,34 @@ TC_NAMESPACE_BEGIN
 			tex2 = AssetManager::get_asset<Texture>(config.get_int("tex2"));
 			repeat_u = config.get_real("repeat_u");
 			repeat_v = config.get_real("repeat_v");
-			inv_repeat_u = 1.0f / repeat_u;
-			inv_repeat_v = 1.0f / repeat_v;
+			repeat_p = config.get("repeat_p", 1.0f);
         }
-        virtual Vector3 sample(const Vector2 &coord) const override  {
-			int p = (int)floor(coord.x / inv_repeat_u), q = (int)floor(coord.y / inv_repeat_v);
-			return ((p + q) % 2 == 0 ? tex1 : tex2)->sample(coord);
+        virtual Vector3 sample(const Vector3 &coord) const override  {
+			int p = (int)floor(coord.x * repeat_u), q = (int)floor(coord.y * repeat_v),
+					r = (int)floor(coord.z * repeat_p);
+			return ((p + q + r) % 2 == 0 ? tex1 : tex2)->sample(coord);
         }
 	};
 	class RepeaterTexture: public Texture {
 	protected:
-		real repeat_u, repeat_v;
-		real inv_repeat_u, inv_repeat_v;
+		real repeat_u, repeat_v, repeat_p;
+		real inv_repeat_u, inv_repeat_v, inv_repeat_p;
 		std::shared_ptr<Texture> tex;
 	public:
         void initialize(const Config &config) override {
 			repeat_u = config.get_real("repeat_u");
 			repeat_v = config.get_real("repeat_v");
+			repeat_p = config.get("repeat_p", 1.0f);
 			inv_repeat_u = 1.0f / repeat_u;
 			inv_repeat_v = 1.0f / repeat_v;
+			inv_repeat_p = 1.0f / repeat_p;
 			tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
         }
-        virtual Vector3 sample(const Vector2 &coord) const override  {
-			real u = coord.x - floor(coord.x / inv_repeat_u) * inv_repeat_u;
-			real v = coord.y - floor(coord.y / inv_repeat_v) * inv_repeat_v;
-			return tex->sample(Vector2(u * repeat_u, v * repeat_v));
+        virtual Vector3 sample(const Vector3 &coord) const override  {
+			real u = coord.x - floor(coord.x * repeat_u) * inv_repeat_u;
+			real v = coord.y - floor(coord.y * repeat_v) * inv_repeat_v;
+			real p = coord.y - floor(coord.z * repeat_p) * inv_repeat_p;
+			return tex->sample(Vector3(u * repeat_u, v * repeat_v, p * repeat_p));
         }
 	};
 	class RotatedTexture: public Texture {
@@ -187,10 +196,10 @@ TC_NAMESPACE_BEGIN
 			tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
 			times = config.get_int("times");
         }
-        virtual Vector3 sample(const Vector2 &coord_) const override  {
+        virtual Vector3 sample(const Vector3 &coord_) const override  {
 			auto coord = coord_;
 			for (int i = 0; i < times; i++) {
-				coord = Vector2(-coord.x, coord.y);
+				coord = Vector3(-coord.x, coord.y, coord.z);
 			}
 			return tex->sample(coord);
         }
@@ -204,7 +213,7 @@ TC_NAMESPACE_BEGIN
 			tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
 			flip_axis = config.get_int("flip_axis");
         }
-        virtual Vector3 sample(const Vector2 &coord_) const override  {
+        virtual Vector3 sample(const Vector3 &coord_) const override {
 			auto coord = coord_;
 			coord[flip_axis] = 1.0f - coord[flip_axis];
 			return tex->sample(coord);

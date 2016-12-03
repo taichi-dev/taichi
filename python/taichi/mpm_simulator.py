@@ -1,14 +1,15 @@
 from levelset import LevelSet2D
 from simulator import Simulator
 from PIL import Image
-from taichi_utils import *
+from taichi.util import *
+from taichi.core import tc_core
 import random
 
 
 class MPMSimulator(Simulator):
     def __init__(self, **kwargs):
         Simulator.__init__(self, kwargs['simulation_time'], kwargs['dt'])
-        self.simulator = tc.MPMSimulator()
+        self.simulator = tc_core.MPMSimulator()
         self.resolution = (kwargs['simulation_width'], kwargs['simulation_height'])
         self.simulation_width, self.simulation_height = self.resolution[0], self.resolution[1]
         self.simulator.initialize(config_from_dict(kwargs))
@@ -19,14 +20,14 @@ class MPMSimulator(Simulator):
     @staticmethod
     def create_particle(particle_type):
         if particle_type == 'ep':
-            particle = tc.EPParticle()
+            particle = tc_core.EPParticle()
             particle.mu_0 = 1e6
             particle.lambda_0 = 2e5
             particle.theta_c = 0.01
             particle.theta_s = 0.005
             particle.hardening = 5
         elif particle_type == 'dp':
-            particle = tc.DPParticle()
+            particle = tc_core.DPParticle()
             particle.mu_0 = 1e6
             particle.lambda_0 = 2e5
             particle.mu_0 = 10000000
@@ -77,9 +78,9 @@ class MPMSimulator(Simulator):
             particle.h_0 = const_or_evaluate(modifiers['h_0'], u, v)
 
     def add_particles_polygon(self, polygon, particle_type, **kwargs):
-        positions = tc.points_inside_polygon(
-            tc.make_range(.25 * self.delta_x, self.resolution[0] * self.delta_x, self.delta_x / self.sample_rate),
-            tc.make_range(.25 * self.delta_x, self.resolution[1] * self.delta_x, self.delta_x / self.sample_rate),
+        positions = tc_core.points_inside_polygon(
+            tc_core.make_range(.25 * self.delta_x, self.resolution[0] * self.delta_x, self.delta_x / self.sample_rate),
+            tc_core.make_range(.25 * self.delta_x, self.resolution[1] * self.delta_x, self.delta_x / self.sample_rate),
             make_polygon(polygon, 1)
         )
         samples = []
@@ -121,9 +122,9 @@ class MPMSimulator(Simulator):
         self.add_particles(samples)
 
     def add_particles_sphere(self, center, radius, particle_type, **kwargs):
-        positions = tc.points_inside_sphere(
-            tc.make_range(.25 * self.delta_x, self.resolution[0] * self.delta_x, self.delta_x / self.sample_rate),
-            tc.make_range(.25 * self.delta_x, self.resolution[1] * self.delta_x, self.delta_x / self.sample_rate),
+        positions = tc_core.points_inside_sphere(
+            tc_core.make_range(.25 * self.delta_x, self.resolution[0] * self.delta_x, self.delta_x / self.sample_rate),
+            tc_core.make_range(.25 * self.delta_x, self.resolution[1] * self.delta_x, self.delta_x / self.sample_rate),
             center, radius
         )
         samples = []
@@ -138,9 +139,9 @@ class MPMSimulator(Simulator):
 
     def add_particles(self, particles):
         for p in particles:
-            if isinstance(p, tc.EPParticle):
+            if isinstance(p, tc_core.EPParticle):
                 self.add_ep_particle(p)
-            elif isinstance(p, tc.DPParticle):
+            elif isinstance(p, tc_core.DPParticle):
                 self.add_dp_particle(p)
 
     def get_levelset_images(self, width, height, color_scheme):

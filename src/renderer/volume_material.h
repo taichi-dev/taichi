@@ -42,6 +42,10 @@ public:
 		}
 	}
 
+	virtual real unbiased_sample_attenuation(const Vector3 &start, const Vector3 &end, StateSequence &rand) const {
+		return get_attenuation(glm::length(multiply_matrix4(world2local, end - start, 0)));
+	}
+
 	virtual VolumeEvent sample_event(StateSequence &rand) const {
 		return rand() < volumetric_scattering / (volumetric_scattering + volumetric_absorption) ?
 			VolumeEvent::scattering : VolumeEvent::absorption;
@@ -51,12 +55,9 @@ public:
 		return sample_sphere(rand(), rand());
 	}
 
+protected:
 	virtual real get_attenuation(real dist) const {
 		return exp(-dist * (volumetric_scattering + volumetric_absorption));
-	}
-
-	virtual real unbiased_sample_attenuation(const Vector3 &start, const Vector3 &end, StateSequence &rand) const {
-		return get_attenuation(glm::length(multiply_matrix4(world2local, end - start, 0)));
 	}
 
 	real volumetric_scattering;

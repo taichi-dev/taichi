@@ -4,7 +4,7 @@ import os
 import random
 import pyglet
 from pyglet.gl import *
-from taichi_utils import get_os_name
+from taichi.util import get_os_name
 
 if get_os_name() == 'osx':
     VIDEO_OUTPUT_ROOT = '/Users/Iterator/simulation_results'

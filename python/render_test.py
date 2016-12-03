@@ -65,24 +65,18 @@ def render_frame(i, t):
 
     scene = Scene()
     with scene:
-
         scene.set_atmosphere_material(air)
-
         #scene.add_mesh(create_object('suzanne', 1.5, material='snow'))
         #scene.add_mesh(create_object('suzanne', -1.5, material='snow_nosss'))
         #scene.add_mesh(create_object('cube', 0, material='glossy'))
         #scene.add_mesh(create_object('sphere', -2.5, material='glass'))
         #scene.add_mesh(create_object('holder', 0, -1, -4, 2, material='wall'))
         scene.add_mesh(create_holder('holder', 0, -1, -5, 2, taichi_s=0.7 + 0.25 * t, t=-t*math.pi*2))
-
         #scene.add_mesh(create_object('plane', 0, -2, 0, 2, material='wall'))
         #create_fractal(scene)
         scene.add_mesh(create_light(math.pi * 0.5))
-
         #envmap = EnvironmentMap('base', filepath='c:/tmp/20060807_wells6_hd.hdr')
-
         #scene.set_envmap(envmap)
-
     renderer.set_scene(scene)
     renderer.render(30000000)
 

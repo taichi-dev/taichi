@@ -2,7 +2,7 @@
 #include "sampler.h"
 #include "bsdf.h"
 #include "markov_chain.h"
-#include "volume.h"
+#include "volume_material.h"
 #include "system/threading.h"
 
 TC_NAMESPACE_BEGIN

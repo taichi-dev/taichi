@@ -10,7 +10,7 @@
 #include "discrete_sampler.h"
 #include "surface_material.h"
 #include "envmap.h"
-#include "volume.h"
+#include "volume_material.h"
 
 TC_NAMESPACE_BEGIN
 

@@ -24,8 +24,6 @@ import pyglet
 import numpy as np
 import ctypes
 
-#TEXTURE_PATH = '../assets/textures/'
-
 def config_from_dict(args):
     from taichi.core import tc_core
     from taichi.visual import SurfaceMaterial

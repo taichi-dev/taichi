@@ -1,4 +1,4 @@
-#include "volume.h"
+#include "volume_material.h"
 
 TC_NAMESPACE_BEGIN
 

@@ -4,7 +4,7 @@
 #include <boost/property_tree/ptree_fwd.hpp>
 #include "texture.h"
 #include "common/meta.h"
-#include "volume.h"
+#include "volume_material.h"
 
 TC_NAMESPACE_BEGIN
 

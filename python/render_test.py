@@ -1,4 +1,5 @@
-from taichi.visual.renderer import *
+from taichi.visual import *
+from taichi.util import Vector
 from taichi.visual.texture import Texture
 import math
 
@@ -19,15 +20,12 @@ def create_object(name, x, y=0, z=0, s=1, r=(0, 0, 0), material='wall'):
     return mesh
 
 def create_holder(name, x, y=0, z=0, s=1, r=(0, 0, 0), t=0, taichi_s=0.9):
-    material = tc_core.create_surface_material('pbr')
     rep = Texture.create_taichi_wallpaper(20, rotation=t, scale=taichi_s)
     diff = (0.1 * rep).rasterize(1024)
     spec = (0.6 * rep).rasterize(1024)
-    material.initialize(P(diffuse_map=diff.id, specular_map=spec.id, glossiness=300))
+    material = SurfaceMaterial('pbr', diffuse_map=diff.id, specular_map=spec.id, glossiness=300)
 
-    mesh = tc_core.create_mesh()
-    mesh.initialize(P(filename=map_filename(name)))
-    mesh.set_material(material)
+    mesh = Mesh(map_filename(name), material)
     mesh.translate(Vector(x, y, z))
     mesh.scale_s(s)
     mesh.rotate_euler(Vector(*r))
@@ -42,12 +40,9 @@ def create_fractal(scene):
             scene.add_mesh(mesh)
 
 def create_light(t):
-    mesh = tc_core.create_mesh()
-    mesh.initialize(P(filename='../assets/meshes/plane.obj'))
-    material = tc_core.create_surface_material('emissive')
     e = 1
-    material.initialize(P(color=(e, e, e)))
-    mesh.set_material(material)
+    material = SurfaceMaterial('emissive', color=(e, e, e))
+    mesh = Mesh('../assets/meshes/plane.obj', material)
     mesh.translate(Vector(math.cos(t) * -3, 5, -1))
     mesh.scale_s(1)
     mesh.rotate_euler(Vector(0, 0, 180 + math.cos(t) * 45))
@@ -66,29 +61,27 @@ def render_frame(i, t):
                         num_threads=1)
     renderer.set_camera(camera.c)
 
-    air = tc_core.create_volume_material("vacuum")
-    air.initialize(P(scattering=0.01))
+    air = VolumeMaterial('vacuum', scattering=0.01)
 
-    scene = tc_core.create_scene()
-    scene.set_atmosphere_material(air)
+    scene = Scene()
+    with scene:
 
-    #scene.add_mesh(create_object('suzanne', 1.5, material='snow'))
-    #scene.add_mesh(create_object('suzanne', -1.5, material='snow_nosss'))
-    #scene.add_mesh(create_object('cube', 0, material='glossy'))
-    #scene.add_mesh(create_object('sphere', -2.5, material='glass'))
-    #scene.add_mesh(create_object('holder', 0, -1, -4, 2, material='wall'))
-    scene.add_mesh(create_holder('holder', 0, -1, -5, 2, taichi_s=0.7 + 0.25 * t, t=-t*math.pi*2))
+        scene.set_atmosphere_material(air)
 
-    #scene.add_mesh(create_object('plane', 0, -2, 0, 2, material='wall'))
-    #create_fractal(scene)
-    scene.add_mesh(create_light(math.pi * 0.5))
+        #scene.add_mesh(create_object('suzanne', 1.5, material='snow'))
+        #scene.add_mesh(create_object('suzanne', -1.5, material='snow_nosss'))
+        #scene.add_mesh(create_object('cube', 0, material='glossy'))
+        #scene.add_mesh(create_object('sphere', -2.5, material='glass'))
+        #scene.add_mesh(create_object('holder', 0, -1, -4, 2, material='wall'))
+        scene.add_mesh(create_holder('holder', 0, -1, -5, 2, taichi_s=0.7 + 0.25 * t, t=-t*math.pi*2))
 
-    envmap = tc_core.create_environment_map('base')
-    #envmap.initialize(P(filepath='c:/tmp/20060807_wells6_hd.hdr'))
+        #scene.add_mesh(create_object('plane', 0, -2, 0, 2, material='wall'))
+        #create_fractal(scene)
+        scene.add_mesh(create_light(math.pi * 0.5))
 
-    #scene.set_envmap(envmap)
+        #envmap = EnvironmentMap('base', filepath='c:/tmp/20060807_wells6_hd.hdr')
 
-    scene.finalize()
+        #scene.set_envmap(envmap)
 
     renderer.set_scene(scene)
     renderer.render(30000000)

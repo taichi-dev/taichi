@@ -26,10 +26,13 @@ import ctypes
 
 #TEXTURE_PATH = '../assets/textures/'
 
-from taichi.core import tc_core
 def config_from_dict(args):
+    from taichi.core import tc_core
+    from taichi.visual import SurfaceMaterial
     d = copy.deepcopy(args)
     for k in d:
+        if isinstance(d[k], SurfaceMaterial):
+            d[k] = d[k].id
         d[k] = str(d[k])
     return tc_core.config_from_dict(d)
 
@@ -43,6 +46,7 @@ def make_polygon(points, scale):
     return polygon
 
 def Vector(*args):
+    from taichi.core import tc_core
     if isinstance(args[0], tuple):
         args = tuple(*args)
     if len(args) == 2:

@@ -45,8 +45,6 @@ class Renderer(object):
     def __getattr__(self, key):
         return self.c.__getattribute__(key)
 
-class Camera:
-    def __init__(self, name, **kwargs):
-        self.c = tc_core.create_camera(name)
-        self.c.initialize(config_from_dict(kwargs))
+    def set_scene(self, scene):
+        self.c.set_scene(scene.c)
 

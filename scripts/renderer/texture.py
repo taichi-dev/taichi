@@ -49,7 +49,7 @@ class Texture:
     def flip(self, flip_axis):
         return Texture("flipped", tex=self, flip_axis=flip_axis)
 
-    def rasterize(self, resolution_x, resolution_y=-1):
+    def rasterize(self, resolution_x=256, resolution_y=-1):
         if resolution_y == -1:
             resolution_y = resolution_x
         return Texture("rasterize", tex=self, resolution_x=resolution_x, resolution_y=resolution_y)

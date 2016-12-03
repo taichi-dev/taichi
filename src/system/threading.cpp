@@ -2,7 +2,7 @@
 
 TC_NAMESPACE_BEGIN
 
-void ThreadedTaskManager::run(std::function<void(int)> target, int begin, int end, int num_threads) {
+void ThreadedTaskManager::run(const std::function<void(int)> &target, int begin, int end, int num_threads) {
 	std::vector<std::thread *> threads;
 	std::vector<int> end_points;
 	for (int i = 0; i < num_threads; i++) {

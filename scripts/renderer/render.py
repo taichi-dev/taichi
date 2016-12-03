@@ -15,10 +15,15 @@ class ConfigInitializable:
 
 
 class Renderer(object):
-    def __init__(self, name, output_dir):
+    def __init__(self, name, output_dir=get_uuid(), overwrite=False):
         self.c = tc.create_renderer(name)
         self.output_dir = output_dir + '/'
-        os.mkdir(self.output_dir)
+        try:
+            os.mkdir(self.output_dir)
+        except Exception as e:
+            print e
+            if not overwrite:
+                exit(-1)
 
     def initialize(self, **kwargs):
         self.c.initialize(config_from_dict(kwargs))

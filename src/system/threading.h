@@ -33,12 +33,16 @@ public:
 	Spinlock &operator=(const Spinlock &o) {
 		// We just ignore racing condition here...
 		latch.store(o.latch.load());
+		return *this;
 	}
 };
 
 class ThreadedTaskManager {
 public:
-	void static run(std::function<void(int)> target, int begin, int end, int num_threads);
+	void static run(const std::function<void(int)> &target, int begin, int end, int num_threads);
+	void static run(const std::function<void(int)> &target, int end, int num_threads) {
+		return run(target, 0, end, num_threads);
+	}
 };
 
 TC_NAMESPACE_END

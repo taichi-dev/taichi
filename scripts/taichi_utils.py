@@ -127,7 +127,7 @@ def arange(x, y, d):
 
 
 def get_uuid():
-    return datetime.datetime.now().strftime('simulation-%Y-%m-%d-%H-%M-%S-r') + ('%05d' % random.randint(0, 10000))
+    return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + ('%05d' % random.randint(0, 10000))
 
 def P(**kwargs):
     return config_from_dict(kwargs)

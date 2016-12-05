@@ -1,6 +1,7 @@
 import taichi as tc
 
 from texture import Texture
+from surface_material import SurfaceMaterial
 
 class Materials:
     def __init__(self):
@@ -22,25 +23,21 @@ class Materials:
         return material
 
     def get_material_gold(self):
-        material = tc.create_surface_material('pbr')
-        material.initialize(P(diffuse=(0.0, 0.0, 0.0), specular=(1.0, 0.9, 0.6), glossiness=-1, transparent=False))
-        return material
+        return SurfaceMaterial('pbr', diffuse=(0.0, 0.0, 0.0), specular=(1.0, 0.9, 0.6), glossiness=-1,
+                               transparent=False)
 
     def get_material_glossy(self):
-        material = tc.create_surface_material('pbr')
-        material.initialize(P(diffuse=(0.0, 0.0, 0.0), specular=(0.5, 0.5, 0.3), glossiness=300, transparent=False))
-        return material
+        return SurfaceMaterial('pbr', diffuse=(0.0, 0.0, 0.0), specular=(0.5, 0.5, 0.3), glossiness=300,
+                                   transparent=False)
 
     def get_material_wall(self):
-        material = tc.create_surface_material('diffusive')
+        material = tc.create_surface_material('diffuse')
         rep = Texture.create_taichi_wallpaper(20)
         material.initialize(P(diffuse_map=rep.id))
         return material
 
     def get_material_diffuse_white(self):
-        material = tc.create_surface_material('diffusive')
-        material.initialize(P(diffuse=(1, 1, 1)))
-        return material
+        return SurfaceMaterial('diffuse', diffuse=(1, 1, 1))
 
     def get_material_glass(self):
         material = tc.create_surface_material('pbr')
@@ -71,7 +68,7 @@ class Materials:
         return material
 
     def get_material_snow_nosss(self):
-        material = tc.create_surface_material('diffusive')
+        material = tc.create_surface_material('diffuse')
         material.initialize(P(diffuse=(1, 1, 1)))
         return material
 

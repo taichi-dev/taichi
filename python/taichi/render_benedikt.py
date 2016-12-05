@@ -39,7 +39,7 @@ def load_scene(root, fov):
     for bsdf in bsdfs:
         name = bsdf['name']
         print name
-        material = tc.create_surface_material('diffusive')
+        material = tc.create_surface_material('diffuse')
         params = {}
 
         albedo = bsdf['albedo']

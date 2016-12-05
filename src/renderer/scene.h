@@ -139,16 +139,12 @@ struct IntersectionInfo {
 class Scene {
 public:
 	Scene() {
-	}
-	Scene(ptree &pt, real sub_divide_limit) {
-		this->sub_divide_limit = sub_divide_limit;
-		load(pt);
+		this->envmap_sample_prob = 0.0f;
 	}
 
-	void load(ptree &pt);
-
-	void set_envmap(std::shared_ptr<EnvironmentMap> envmap) {
+	void set_environment_map(std::shared_ptr<EnvironmentMap> envmap, real sample_prob) {
 		this->envmap = envmap;
+		this->envmap_sample_prob = sample_prob;
 	}
 
 	void set_atmosphere_material(std::shared_ptr<VolumeMaterial> vol_mat) {
@@ -208,13 +204,35 @@ public:
 
 	IntersectionInfo get_intersection_info(int triangle_id, Ray &ray);
 
-	Triangle &sample_triangle_light_emission(real r, real &pdf) {
+	const Triangle &sample_triangle_light_emission(real r, real &pdf) const {
 		int e_tid = light_emission_sampler.sample(r, pdf);
 		return emissive_triangles[e_tid];
 	}
 
+	// We really need a light source class that unifies triangles and envmap now...
+	void sample_light_source(real r, real &pdf, const Triangle *&triangle,
+		const EnvironmentMap *&envmap) const {
+		if (r < envmap_sample_prob) {
+			triangle = nullptr;
+			envmap = this->envmap.get();
+			pdf = envmap_sample_prob;
+		}
+		else {
+			real scale = 1 - envmap_sample_prob;
+			triangle = &sample_triangle_light_emission(
+				(r - envmap_sample_prob) / scale, pdf);
+			envmap = nullptr;
+			pdf *= scale;
+		}
+	}
+
 	real get_triangle_pdf(int id) const {
-		return triangles[id].area * get_mesh_from_triangle_id(id)->emission / light_total_emission;
+		return (1 - envmap_sample_prob) * triangles[id].area *
+			get_mesh_from_triangle_id(id)->emission / light_total_emission;
+	}
+
+	real get_environment_map_pdf() const {
+		return envmap_sample_prob;
 	}
 
 	void sample_photon(Photon &p, real r, real delta_t, real weight) {
@@ -291,6 +309,7 @@ public:
 	int resolution_x, resolution_y;
 	std::shared_ptr<VolumeMaterial> atmosphere_material;
 	std::shared_ptr<EnvironmentMap> envmap;
+	real envmap_sample_prob;
 };
 
 TC_NAMESPACE_END

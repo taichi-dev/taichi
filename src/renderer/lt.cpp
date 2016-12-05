@@ -78,7 +78,7 @@ TC_NAMESPACE_BEGIN
         bool trace_photon(StateSequence &rand) { // returns visibility
             bool visible = false;
             real pdf;
-            Triangle &tri = scene->sample_triangle_light_emission(rand(), pdf);
+            const Triangle &tri = scene->sample_triangle_light_emission(rand(), pdf);
             auto light_bsdf = BSDF(scene, tri.id);
             Vector3 pos = tri.sample_point(rand(), rand()),
                     dir = light_bsdf.sample_direction(light_bsdf.get_geometry_normal(), rand(), rand());

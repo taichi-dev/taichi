@@ -23,6 +23,7 @@ public:
 };
 
 struct Triangle {
+	Triangle() {};
 	Vector3 v[3];
 	Vector3 v10, v20, normal;
 	Vector3 n0, n1, n2;

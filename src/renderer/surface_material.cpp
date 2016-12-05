@@ -35,7 +35,7 @@ TC_NAMESPACE_BEGIN
         };
     };
 
-    class DiffusiveMaterial : public SurfaceMaterial {
+    class DiffuseMaterial : public SurfaceMaterial {
     public:
 		void initialize(const Config &config) override {
 			color_sampler = get_color_sampler(config, "diffuse");
@@ -286,7 +286,7 @@ TC_NAMESPACE_BEGIN
             std::vector<real> luminances;
             std::shared_ptr<SurfaceMaterial> diff_mat, glossy_mat;
             if (diffuse_color_sampler) {
-                auto mat = std::make_shared<DiffusiveMaterial>();
+                auto mat = std::make_shared<DiffuseMaterial>();
                 mat->set_color_sampler(diffuse_color_sampler);
                 materials.push_back(mat);
             }
@@ -369,7 +369,7 @@ TC_NAMESPACE_BEGIN
         }
     };
 
-    TC_IMPLEMENTATION(SurfaceMaterial, DiffusiveMaterial, "diffusive");
+    TC_IMPLEMENTATION(SurfaceMaterial, DiffuseMaterial, "diffuse");
 
     TC_IMPLEMENTATION(SurfaceMaterial, PBRMaterial, "pbr");
 

@@ -131,48 +131,6 @@ TC_NAMESPACE_BEGIN
         return inter;
     }
 
-    void Scene::load(ptree &pt) {
-        int triangle_count = 0;
-                foreach(ptree::value_type & v, pt.get_child("scene.meshes")) {
-                        v.second.add("sub_divide_limit", this->sub_divide_limit);
-                        meshes.push_back(Mesh(v.second));
-                    }
-        for (auto &mesh : meshes) {
-            triangle_id_start[&mesh] = triangle_count;
-            auto sub = mesh.get_triangles(triangle_count);
-            triangle_count += (int) sub.size();
-            triangles.insert(triangles.end(), sub.begin(), sub.end());
-            if (mesh.emission > 0) {
-                emissive_triangles.insert(emissive_triangles.end(), sub.begin(), sub.end());
-            }
-            for (auto &tri : sub) {
-                triangle_id_to_mesh[tri.id] = &mesh;
-            }
-        }
-        resolution_x = pt.get<int>("scene.render.resolution_x");
-        resolution_y = pt.get<int>("scene.render.resolution_y");
-		/*
-        Config camera_config;
-		Matrix4 t = (load_matrix4(pt.get_child("scene.camera.transform")));
-		P(t);
-		camera_config.set("origin", multiply_matrix4(t, Vector3(0.0f, 0.0f, 1.0f), 1.0f))
-			.set("look_at", multiply_matrix4(t, Vector3(0.0f, 0.0f, 0.0f), 1.0f))
-			.set("up", multiply_matrix4(t, Vector3(0.0f, 0.0f, 1.0f), 0.0f))
-			.set("fov_angle", 60.0f)
-			.set("aspect_ratio", 1);// (real)resolution_x / resolution_y);
-		*/
-        camera = create_instance<Camera>("perspective");
-        camera->initialize(pt.get_child("scene.camera"), (real)resolution_x / resolution_y);
-        num_triangles = triangle_count;
-        printf("Scene loaded. Triangle count: %d\n", triangle_count);
-        total_triangle_area = 0.0f;
-        for (auto tri : triangles) {
-            total_triangle_area += tri.area;
-        }
-        update_emission_cdf();
-        update_light_emission_cdf();
-    }
-
 	void Scene::add_mesh(std::shared_ptr<Mesh> mesh) {
 		meshes.push_back(*mesh);
 	}
@@ -193,8 +151,14 @@ TC_NAMESPACE_BEGIN
         }
         num_triangles = triangle_count;
         printf("Scene loaded. Triangle count: %d\n", triangle_count);
-        update_emission_cdf();
-        update_light_emission_cdf();
+		if (!emissive_triangles.empty()) {
+			update_emission_cdf();
+			update_light_emission_cdf();
+		}
+		else {
+			envmap_sample_prob = 1.0f;
+			assert_info(envmap != nullptr, "There should be light sources.");
+		}
 	}
 
 TC_NAMESPACE_END

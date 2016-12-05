@@ -1,3 +1,4 @@
+/*
 #include "heat_transfer.h"
 #include "renderer/camera.h"
 #include "renderer/renderer.h"
@@ -177,3 +178,4 @@ for (int k = start[i][j]; k < grid_dim; k = next[i][j][k]) if (grid_inside_mesh(
 
 TC_NAMESPACE_END
 
+		*/

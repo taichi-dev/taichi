@@ -30,4 +30,5 @@ runtimes/Taichi.pyd
 runtimes/tmp*
 runtimes/*.exe
 runtimes/Release
+runtimes/RelWithDebInfo
 runtimes/*.png

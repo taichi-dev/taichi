@@ -1,3 +1,4 @@
+/*
 #include "rendering.h"
 #include "renderer.h"
 #include "hdr/tone_mapper.h"
@@ -56,7 +57,6 @@ TC_NAMESPACE_BEGIN
         }
     }
 
-/*
 void rendering_demo(Config config) {
     string input_path = config.get_string("input_file");
     int num_instances = config.get_int("num_instances");
@@ -187,7 +187,7 @@ void rendering_demo(Config config) {
         }
     }
 }
- */
 
 TC_NAMESPACE_END
+ */
 

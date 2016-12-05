@@ -72,7 +72,7 @@ TC_NAMESPACE_BEGIN
             return result;
         }
         real pdf;
-        Triangle &tri = scene->sample_triangle_light_emission(rand(), pdf);
+        const Triangle &tri = scene->sample_triangle_light_emission(rand(), pdf);
         Vector3 pos = tri.sample_point(rand(), rand());
         Vector3 dir = random_diffuse(tri.normal, rand(), rand());
         Ray ray(pos + eps * dir, dir, 0);

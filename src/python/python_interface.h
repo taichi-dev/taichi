@@ -310,7 +310,7 @@ TC_NAMESPACE_BEGIN
 			.def("finalize", &Scene::finalize)
 			.def("add_mesh", &Scene::add_mesh)
 			.def("set_atmosphere_material", &Scene::set_atmosphere_material)
-			.def("set_envmap", &Scene::set_envmap)
+			.def("set_environment_map", &Scene::set_environment_map)
 			;
 
         // Renderers

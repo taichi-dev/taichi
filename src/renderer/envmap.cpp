@@ -58,6 +58,12 @@ void EnvironmentMap::initialize(const Config & config) {
 	*/
 }
 
+real EnvironmentMap::pdf(const Vector3 &dir) const {
+	Vector2 uv = direction_to_uv(dir);
+	return luminance(image->sample(uv.x, uv.y)) 
+		/ avg_illum * (1.0f / 4 / pi);
+}
+
 Vector3 EnvironmentMap::sample_direction(StateSequence & rand, real & pdf, Vector3 & illum) const {
 	Vector2 uv;
 	real row_pdf, row_cdf;
@@ -66,7 +72,6 @@ Vector3 EnvironmentMap::sample_direction(StateSequence & rand, real & pdf, Vecto
 	real col_sample = rand();
 	int row = row_sampler.sample(row_sample, row_pdf, row_cdf);
 	int col = col_samplers[row].sample(col_sample, col_pdf, col_cdf);
-
 	real u = col + 0.5f;// (col_sample - col_cdf) / col_pdf;
 	real v = row + 0.5f;// (row_sample - row_cdf) / row_pdf;
 	uv.x = u / width;
@@ -79,18 +84,24 @@ Vector3 EnvironmentMap::sample_direction(StateSequence & rand, real & pdf, Vecto
 
 void EnvironmentMap::build_cdfs() {
 	std::vector<real> row_pdf;
+	avg_illum = 0;
+	real total_weight = 0.0f;
 	for (int j = 0; j < height; j++) {
 		std::vector<real> col_pdf;
+		real scale = sin(pi * (0.5f + j) / height);
 		real total = 0.0f;
 		for (int i = 0; i < width; i++) {
 			real pdf = luminance(image->sample((i + 0.5f) / width, (j + 0.5f) / height));
+			avg_illum += pdf * scale;
+			total_weight += scale;
 			total += pdf;
 			col_pdf.push_back(pdf);
 		}
-		col_samplers.push_back(DiscreteSampler(col_pdf));
-		row_pdf.push_back(total * sin(pi * (0.5f + j) / height));
+		col_samplers.push_back(DiscreteSampler(col_pdf, true));
+		row_pdf.push_back(total * scale);
 	}
 	row_sampler.initialize(row_pdf);
+	avg_illum /= total_weight;
 }
 
 TC_NAMESPACE_END

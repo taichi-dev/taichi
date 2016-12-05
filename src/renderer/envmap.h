@@ -14,13 +14,15 @@ TC_NAMESPACE_BEGIN
 
 class EnvironmentMap {
 public:
-	virtual void initialize(const Config &config);;
+	virtual void initialize(const Config &config);
 
 	virtual void set_transform(Matrix4 transform) {
 		this->transform = transform;
 	}
 
 	virtual Vector3 sample_direction(StateSequence &rand, real &pdf, Vector3 &illum) const;
+	
+	virtual real pdf(const Vector3 &dir) const;
 
 	Vector3 sample_illum(const Vector3 &direction) const {
 		return sample_illum(direction_to_uv(direction));
@@ -56,6 +58,7 @@ protected:
 		return Vector2(phi / (2 * pi), theta / pi);
 	}
 	Matrix4 transform;
+	real avg_illum;
 };
 
 TC_INTERFACE(EnvironmentMap);

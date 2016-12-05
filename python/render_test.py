@@ -21,9 +21,9 @@ def create_object(name, x, y=0, z=0, s=1, r=(0, 0, 0), material='wall'):
 
 def create_holder(name, x, y=0, z=0, s=1, r=(0, 0, 0), t=0, taichi_s=0.9):
     rep = Texture.create_taichi_wallpaper(20, rotation=t, scale=taichi_s)
-    diff = (0.1 * rep).rasterize(1024)
-    spec = (0.6 * rep).rasterize(1024)
-    material = SurfaceMaterial('pbr', diffuse_map=diff.id, specular_map=spec.id, glossiness=300)
+    diff = (0.6 * rep)#.rasterize(1024)
+    spec = (0.0 * rep)#.rasterize(1024)
+    material = SurfaceMaterial('pbr', diffuse_map=diff.id, specular_map=spec.id, glossiness=-1)
 
     mesh = Mesh(map_filename(name), material)
     mesh.translate(Vector(x, y, z))
@@ -43,14 +43,14 @@ def create_fractal(scene):
 def create_light(t):
     e = 1
     material = SurfaceMaterial('emissive', color=(e, e, e))
-    mesh = Mesh('../assets/meshes/plane.obj', material)
-    mesh.translate(Vector(math.cos(t) * -3, 5, -1))
-    mesh.scale_s(1)
+    mesh = Mesh('../assets/meshes/sphere.obj', material)
+    mesh.translate(Vector(math.cos(t) * -3, -1, -1))
+    mesh.scale_s(0.3)
     mesh.rotate_euler(Vector(0, 0, 180 + math.cos(t) * 45))
     return mesh
 
 def render_frame(i, t):
-    downsample = 2
+    downsample = 1
     width, height = 960 / downsample, 540 / downsample
     camera = Camera('perspective', aspect_ratio=float(width) / height, fov_angle=60,
                     origin=(t * 3, 5, 7), look_at=(0, 0.5, 0), up=(0, 1, 0))
@@ -59,7 +59,7 @@ def render_frame(i, t):
     renderer.initialize(width=width, height=height, min_path_length=1, max_path_length=10,
                         initial_radius=0.05, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
                         direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1, stage_frequency=3,
-                        num_threads=6)
+                        num_threads=8)
     renderer.set_camera(camera.c)
 
     air = VolumeMaterial('vacuum', scattering=0.01)

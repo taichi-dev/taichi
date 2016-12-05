@@ -155,6 +155,7 @@ TC_NAMESPACE_BEGIN
         if (p == 0.0) return p; // Shortcut
         for (int i = -1; i <= num_light_vertices - 2 - is_vm; i++) {
             if (i == -1) {
+				// Light sample PDF
                 int id = path[path_length].triangle_id;
                 p = p * scene->get_triangle_pdf(id) / scene->get_triangle(id).area;
             } else if (i == 0) {

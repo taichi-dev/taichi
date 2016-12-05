@@ -36,20 +36,90 @@ protected:
 		StateSequence &rand, VolumeStack &stack) {
 		Vector3 acc(0);
 		if (scene->envmap) {
-			acc += calculate_direct_lighting_env(in_dir, info, bsdf, rand, stack);
+			// DOTO: env map
+			//acc += calculate_direct_lighting_env(in_dir, info, bsdf, rand, stack);
 		}
-		if (!full_direct_lighting) {
-			real triangle_pdf;
-			Triangle &tri = scene->sample_triangle_light_emission(rand(), triangle_pdf);
-			if (tri.get_relative_location_to_plane(info.pos) > 0) {
-				acc += calculate_direct_lighting(in_dir, info, bsdf, rand, tri, stack) / triangle_pdf;
+		real triangle_pdf;
+		Triangle &tri = scene->sample_triangle_light_emission(rand(), triangle_pdf);
+		// NOTE: / triangle_pdf;
+		// MIS between bsdf and light sampling.
+		int samples = direct_lighting_bsdf + direct_lighting_light;
+		for (int i = 0; i < samples; i++) {
+			// We use solid angle measurement for PDFs here.
+			// When there are two light sources (triangles) sharing an overlapping 
+			// region of solid angle, we simply double count.
+			// Note that invisible parts of light sources are filtered by 
+			// visibility term here, so we can naturally sample them.
+
+			bool sample_bsdf = i < direct_lighting_bsdf;
+			if (!sample_bsdf) {
+				// In case of light sampling
+				if (tri.get_relative_location_to_plane(info.pos) < 0 || bsdf.is_delta())
+					// The former leads to 0 contribution while the latter leads to 0 pdf.
+					continue;
 			}
-		}
-		else {
-			for (auto &tri : scene->emissive_triangles) {
-				if (tri.get_relative_location_to_plane(info.pos) > 0) {
-					acc += calculate_direct_lighting(in_dir, info, bsdf, rand, tri, stack);
+			Vector3 out_dir;
+			Vector3 f;
+			real bsdf_p;
+			SurfaceEvent event;
+			Vector3 dist;
+			if (sample_bsdf) {
+				// Sample BSDF
+				bsdf.sample(in_dir, rand(), rand(), out_dir, f, bsdf_p, event);
+				if (SurfaceEventClassifier::is_index_matched(event)) {
+					// No direct lighting on index-matched surfaces.
+					// It's included in previous vertex.
+					continue;
 				}
+			}
+			else {
+				// Sample light source
+				Vector3 pos = tri.sample_point(rand(), rand());
+				dist = pos - info.pos;
+				out_dir = normalize(dist);
+			}
+			Ray ray(info.pos + out_dir * 1e-3f, out_dir);
+			IntersectionInfo test_info;
+			Vector3 att = get_attenuation(stack, ray, rand, test_info);
+			if (!test_info.intersected || max_component(att) == 0.0f) {
+				// Intersets nothing -> TODO: env map
+				// Or completely blocked.
+				continue;
+			}
+
+			if (!sample_bsdf) {
+				// Sample light source
+				f = bsdf.evaluate(in_dir, out_dir);
+				bsdf_p = bsdf.probability_density(in_dir, out_dir);
+			}
+			else {
+				dist = test_info.pos - info.pos;
+			}
+			real co = abs(dot(ray.dir, info.normal));
+			real c = abs(dot(ray.dir, tri.normal));
+
+			real light_p = dot(dist, dist) / (tri.area * c) * scene->get_triangle_pdf(tri.id);
+			BSDF light_bsdf(scene, test_info);
+			const Vector3 emission = light_bsdf.evaluate(test_info.normal, -out_dir);
+			const Vector3 throughput = emission * co * f * att;
+			if (sample_bsdf) {
+				// BSDF sampling
+				if (sample_bsdf && SurfaceEventClassifier::is_delta(event)) {
+					// Delta BSDF Event, pdf_light (constant) is negligible
+					// compared with pdf_bsdf(inf)
+					acc += 1 / (direct_lighting_bsdf * bsdf_p) * throughput;
+				}
+				else {
+					// Non-delta BSDF event
+					acc += 1 / (direct_lighting_bsdf * bsdf_p +
+						direct_lighting_light * light_p) * throughput;
+				}
+			}
+			else {
+				// Light sampling
+				// The prob. of triggering delta BSDF event is 0, thus we ignore this case
+				acc += 1 / (direct_lighting_bsdf * bsdf_p +
+					direct_lighting_light * light_p) * throughput;
 			}
 		}
 		return acc;
@@ -128,9 +198,6 @@ protected:
 			return acc;
 		}
 	}
-
-	Vector3 calculate_direct_lighting(const Vector3 &in_dir, const IntersectionInfo &info, const BSDF &bsdf,
-		StateSequence &rand, const Triangle &tri, VolumeStack &stack);
 
 	Vector3 calculate_volumetric_direct_lighting(const Vector3 &in_dir, const Vector3 &orig,
 		StateSequence &rand, VolumeStack &stack);
@@ -211,7 +278,6 @@ protected:
 	std::shared_ptr<Sampler> sampler;
 	long long index;
 	real luminance_clamping;
-	bool full_direct_lighting;
 	bool envmap_is;
 };
 
@@ -220,9 +286,10 @@ void PathTracingRenderer::initialize(const Config &config) {
 	this->direct_lighting = config.get("direct_lighting", true);
 	this->direct_lighting_light = config.get("direct_lighting_light", 1);
 	this->direct_lighting_bsdf = config.get("direct_lighting_bsdf", 1);
+	assert_info(this->direct_lighting_bsdf > 0 || this->direct_lighting_light > 0,
+		"Sum of direct_lighting_bsdf and direct_lighting_light should not be 0.");
 	this->sampler = create_instance<Sampler>(config.get("sampler", "prand"));
 	this->luminance_clamping = config.get("luminance_clamping", 0.0f);
-	this->full_direct_lighting = config.get("full_direct_lighting", false);
 	this->accumulator = ImageAccumulator<Vector3>(width, height);
 	this->russian_roulette = config.get("russian_roulette", true);
 	this->envmap_is = config.get("envmap_is", true);
@@ -243,74 +310,6 @@ void PathTracingRenderer::render_stage() {
 
 ImageBuffer<Vector3> PathTracingRenderer::get_output() {
 	return accumulator.get_averaged();
-}
-
-Vector3 PathTracingRenderer::calculate_direct_lighting(const Vector3 &in_dir, const IntersectionInfo &info,
-	const BSDF &bsdf,
-	StateSequence &rand, const Triangle &tri, VolumeStack &stack) {
-	// MIS between bsdf and light sampling.
-	Vector3 acc(0);
-	{
-		int samples = direct_lighting_bsdf + direct_lighting_light;
-		assert_info(samples != 0, "Sum of direct_lighting_bsdf and direct_lighting_light should not be 0.");
-		for (int i = 0; i < samples; i++) {
-			bool sample_bsdf = i < direct_lighting_bsdf;
-			if (!sample_bsdf && bsdf.is_delta()) {
-				// Light sampling doesn't work in case of delta BSDF.
-				continue;
-			}
-			Vector3 out_dir;
-			Vector3 f;
-			real bsdf_p;
-			SurfaceEvent event;
-			if (sample_bsdf) { // Sample BSDF
-				bsdf.sample(in_dir, rand(), rand(), out_dir, f, bsdf_p, event);
-				if (SurfaceEventClassifier::is_index_matched(event)) {
-					continue;
-				}
-			}
-			else { // Sample light source
-				Vector3 pos = tri.sample_point(rand(), rand());
-				Vector3 dist = pos - info.pos;
-				out_dir = normalize(dist);
-			}
-			Ray ray(info.pos + out_dir * 1e-3f, out_dir, 0);
-			IntersectionInfo test_info;
-			Vector3 att = get_attenuation(stack, ray, rand, test_info);
-			if (!test_info.intersected || test_info.triangle_id != tri.id) {
-				continue;
-			}
-			if (max_component(att) == 0.0f) {
-				continue;
-			}
-
-			if (!sample_bsdf) { // Sample light source
-				f = bsdf.evaluate(in_dir, out_dir);
-				bsdf_p = bsdf.probability_density(in_dir, out_dir);
-			}
-			real co = abs(dot(ray.dir, info.normal));
-			real c = abs(dot(ray.dir, tri.normal));
-			Vector3 dist = test_info.pos - info.pos;
-			real light_p = dot(dist, dist) / (tri.area * c);
-			BSDF light_bsdf(scene, test_info);
-			const Vector3 emission = light_bsdf.evaluate(test_info.normal, -out_dir);
-			const Vector3 throughput = emission * co * f * att;
-			if (sample_bsdf) {
-				if (sample_bsdf && SurfaceEventClassifier::is_delta(event)) {
-					acc += 1 / (direct_lighting_bsdf * bsdf_p) * throughput;
-				}
-				else {
-					acc += 1 / (direct_lighting_bsdf * bsdf_p +
-						direct_lighting_light * light_p) * throughput;
-				}
-			}
-			else {
-				acc += 1 / (direct_lighting_bsdf * bsdf_p +
-					direct_lighting_light * light_p) * throughput;
-			}
-		}
-		return acc;
-	}
 }
 
 Vector3 PathTracingRenderer::calculate_volumetric_direct_lighting(const Vector3 &in_dir, const Vector3 &orig,
@@ -335,7 +334,7 @@ Vector3 PathTracingRenderer::calculate_volumetric_direct_lighting(const Vector3 
 		Ray out_ray(orig, out_dir);
 
 		real phase_pdf = 1 / (4 * pi);
-	
+
 		real c = abs(dot(out_ray.dir, tri.normal));
 		IntersectionInfo info;
 		Vector3 att = get_attenuation(stack, out_ray, rand, info);

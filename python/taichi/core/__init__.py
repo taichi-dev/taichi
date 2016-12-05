@@ -27,7 +27,7 @@ elif get_os_name() == 'win':
         shutil.copy(dll_path, d + 'taichi_core.pyd')
         sys.path.append(os.getcwd() + '/' + d)
         print sys.path
-        import taichi_core as tc
+        import taichi_core as tc_core
     else:
         assert False, "Library taichi_core doesn't exists."
 

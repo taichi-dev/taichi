@@ -36,7 +36,8 @@ def create_fractal(scene):
     s = 0.6
     for i in range(n):
         for j in range(n):
-            mesh = create_object('cube', (i - (n - 1) / 2.0) * s, j * s - 0.5, 0, s * 0.3, r=(i * 10, j * 10, 0), material='glass')
+            mesh = create_object('cube', (i - (n - 1) / 2.0) * s, j * s - 0.5, 0, s * 0.3, r=(i * 10, j * 10, 0),
+                                 material='glass')
             scene.add_mesh(mesh)
 
 def create_light(t):
@@ -58,7 +59,7 @@ def render_frame(i, t):
     renderer.initialize(width=width, height=height, min_path_length=1, max_path_length=10,
                         initial_radius=0.05, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
                         direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1, stage_frequency=3,
-                        num_threads=1)
+                        num_threads=6)
     renderer.set_camera(camera.c)
 
     air = VolumeMaterial('vacuum', scattering=0.01)

@@ -49,30 +49,60 @@ def create_light(t):
     mesh.rotate_euler(Vector(0, 0, 180 + math.cos(t) * 45))
     return mesh
 
+def create_mis_scene(eye_position):
+    scene = Scene()
+    num_light_sources = 4
+    num_plates = 5
+    light_position = Vector(-0.5, 0)
+    with scene:
+        #scene.add_mesh(create_object('plane', 0, -0.6, 0, 2, r=(0, 180, 0)))
+        scene.add_mesh(create_holder('holder', 0, -1, -7, 2))
+        for i in range(num_light_sources):
+            radius = 0.002 * 3 ** i
+            e = 0.01 / radius / radius
+            material = SurfaceMaterial('emissive', color=(e, e, e))
+            mesh = Mesh('../assets/meshes/sphere.obj', material)
+            mesh.translate(Vector(0.2 * (i - (num_light_sources - 1) * 0.5), light_position.y, light_position.x))
+            mesh.scale_s(radius)
+            scene.add_mesh(mesh)
+
+        for i in range(num_plates):
+            fraction = -math.pi / 2 - 1.0 * i / num_plates * 0.9
+            z = math.cos(fraction) * 1
+            y = math.sin(fraction) * 1 + 0.5
+            board_position = Vector(z, y)
+            vec1 = eye_position - board_position
+            vec2 = light_position - board_position
+            vec1 *= 1.0 / math.hypot(vec1.x, vec1.y)
+            vec2 *= 1.0 / math.hypot(vec2.x, vec2.y)
+            half_vector = vec1 + vec2
+            angle = math.degrees(math.atan2(half_vector.y, half_vector.x))
+            print angle
+            mesh = Mesh('../assets/meshes/plane.obj', SurfaceMaterial('pbr', specular=(1, 1, 1), glossiness=100 * 3 ** i))
+            #mesh = Mesh('../assets/meshes/plane.obj', SurfaceMaterial('diffuse', diffuse=(1, 1, 1)))
+            mesh.translate(Vector(0, board_position.y, board_position.x))
+            mesh.rotate_euler(Vector(90-angle, 0, 0))
+            mesh.scale(Vector(0.4, 0.7, 0.05))
+            scene.add_mesh(mesh)
+
+        envmap = EnvironmentMap('base', filepath='d:/assets/schoenbrunn-front_hd.hdr')
+        scene.set_environment_map(envmap)
+    return scene
+
 def render_frame(i, t):
-    downsample = 2
+    downsample = 1
     width, height = 960 / downsample, 540 / downsample
+    eye_position = Vector(0.9, -0.3)
     camera = Camera('perspective', aspect_ratio=float(width) / height, fov_angle=60,
-                    origin=(0, 5, 20), look_at=(0, 0.0, 0), up=(0, 1, 0))
+                    origin=(0, eye_position.y, eye_position.x), look_at=(0, -0.3, 0), up=(0, 1, 0))
 
     renderer = Renderer('pt', '../output/frames/frame_%d.png' % i, overwrite=True)
-    renderer.initialize(width=width, height=height, min_path_length=2, max_path_length=4,
-                        initial_radius=0.05, sampler='prand', russian_roulette=False, volmetric=True, direct_lighting=1,
+    renderer.initialize(width=width, height=height, min_path_length=1, max_path_length=2,
+                        initial_radius=0.05, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
                         direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1, stage_frequency=3,
                         num_threads=1)
     renderer.set_camera(camera.c)
-
-    air = VolumeMaterial('vacuum', scattering=0.01)
-
-    scene = Scene()
-    with scene:
-        scene.set_atmosphere_material(air)
-        #scene.add_mesh(create_object('sphere', 0, material='gold'))
-        scene.add_mesh(create_holder('holder', 0, -1, -5, 2, taichi_s=0.7 + 0.25 * t, t=-t*math.pi*2))
-        scene.add_mesh(create_light(math.pi * 0.5))
-        envmap = EnvironmentMap('base', filepath='d:/assets/schoenbrunn-front_hd.hdr')
-        scene.set_environment_map(envmap, 0.5)
-    renderer.set_scene(scene)
+    renderer.set_scene(create_mis_scene(eye_position))
     renderer.render(30000000)
 
 if __name__ == '__main__':

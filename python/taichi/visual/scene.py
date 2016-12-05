@@ -15,7 +15,7 @@ class Scene:
     def set_atmosphere_material(self, mat):
         self.c.set_atmosphere_material(mat.c)
 
-    def set_environment_map(self, map, sample_prob=1.0):
+    def set_environment_map(self, map, sample_prob=0.5):
         self.c.set_environment_map(map.c, sample_prob)
 
     def __enter__(self):

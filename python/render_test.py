@@ -21,9 +21,8 @@ def create_object(name, x, y=0, z=0, s=1, r=(0, 0, 0), material='wall'):
 
 def create_holder(name, x, y=0, z=0, s=1, r=(0, 0, 0), t=0, taichi_s=0.9):
     rep = Texture.create_taichi_wallpaper(20, rotation=t, scale=taichi_s)
-    diff = (0.6 * rep)#.rasterize(1024)
-    spec = (0.0 * rep)#.rasterize(1024)
-    material = SurfaceMaterial('pbr', diffuse_map=diff.id, specular_map=spec.id, glossiness=-1)
+    diff = rep
+    material = SurfaceMaterial('pbr', diffuse_map=diff.id, glossiness=-1)
 
     mesh = Mesh(map_filename(name), material)
     mesh.translate(Vector(x, y, z))
@@ -55,11 +54,18 @@ def create_mis_scene(eye_position):
     num_plates = 5
     light_position = Vector(-0.5, 0)
     with scene:
+        e = 1
+        material = SurfaceMaterial('emissive', color=(e, e, e))
+        mesh = Mesh('../assets/meshes/plane.obj', material)
+        mesh.translate(Vector(2, 1, 0))
+        mesh.scale_s(1)
+        mesh.rotate_euler(Vector(0, 0, 90))
+        scene.add_mesh(mesh)
         #scene.add_mesh(create_object('plane', 0, -0.6, 0, 2, r=(0, 180, 0)))
         scene.add_mesh(create_holder('holder', 0, -1, -7, 2))
         for i in range(num_light_sources):
             radius = 0.002 * 3 ** i
-            e = 0.01 / radius / radius
+            e = 0.01 / radius**2
             material = SurfaceMaterial('emissive', color=(e, e, e))
             mesh = Mesh('../assets/meshes/sphere.obj', material)
             mesh.translate(Vector(0.2 * (i - (num_light_sources - 1) * 0.5), light_position.y, light_position.x))
@@ -78,22 +84,22 @@ def create_mis_scene(eye_position):
             half_vector = vec1 + vec2
             angle = math.degrees(math.atan2(half_vector.y, half_vector.x))
             print angle
-            mesh = Mesh('../assets/meshes/plane.obj', SurfaceMaterial('pbr', specular=(1, 1, 1), glossiness=100 * 3 ** i))
+            mesh = Mesh('../assets/meshes/plane.obj', SurfaceMaterial('pbr', diffuse=(0.1, 0.1, 0.1), specular=(1, 1, 1), glossiness=100 * 3 ** i))
             #mesh = Mesh('../assets/meshes/plane.obj', SurfaceMaterial('diffuse', diffuse=(1, 1, 1)))
             mesh.translate(Vector(0, board_position.y, board_position.x))
             mesh.rotate_euler(Vector(90-angle, 0, 0))
             mesh.scale(Vector(0.4, 0.7, 0.05))
             scene.add_mesh(mesh)
 
-        envmap = EnvironmentMap('base', filepath='d:/assets/schoenbrunn-front_hd.hdr')
-        scene.set_environment_map(envmap)
+        #envmap = EnvironmentMap('base', filepath='d:/assets/schoenbrunn-front_hd.hdr')
+        #scene.set_environment_map(envmap)
     return scene
 
 def render_frame(i, t):
-    downsample = 1
+    downsample = 2
     width, height = 960 / downsample, 540 / downsample
     eye_position = Vector(0.9, -0.3)
-    camera = Camera('perspective', aspect_ratio=float(width) / height, fov_angle=60,
+    camera = Camera('perspective', aspect_ratio=float(width) / height, fov_angle=70,
                     origin=(0, eye_position.y, eye_position.x), look_at=(0, -0.3, 0), up=(0, 1, 0))
 
     renderer = Renderer('pt', '../output/frames/frame_%d.png' % i, overwrite=True)

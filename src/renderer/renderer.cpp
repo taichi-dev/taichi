@@ -4,8 +4,7 @@ TC_NAMESPACE_BEGIN
 
     void Renderer::initialize(const Config &config) {
         this->ray_intersection = create_instance<RayIntersection>(config.get("ray_intersection", "embree"));
-        this->width = config.get_int("width");
-        this->height = config.get_int("height");
+		sg = std::make_shared<SceneGeometry>(scene, ray_intersection);
         this->min_path_length = config.get_int("min_path_length");
         this->max_path_length = config.get_int("max_path_length");
 		this->num_threads = config.get("num_threads", 1);
@@ -14,9 +13,9 @@ TC_NAMESPACE_BEGIN
 
     void Renderer::set_scene(std::shared_ptr<Scene> scene) {
         this->scene = scene;
-        sg = std::make_shared<SceneGeometry>(scene, ray_intersection);
-		if (scene->camera) // TODO: standalone camera specification
-			this->camera = scene->camera;
+		this->camera = scene->camera;
+		this->width = camera->get_width();
+		this->height = camera->get_height();
     }
 	
 	void Renderer::write_output(std::string fn) {

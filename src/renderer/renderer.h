@@ -14,9 +14,6 @@ TC_NAMESPACE_BEGIN
         virtual void initialize(const Config &config);
         virtual void render_stage() {};
         virtual void set_scene(std::shared_ptr<Scene> scene);
-		virtual void set_camera(std::shared_ptr<Camera> camera) { 
-			this->camera = camera;
-		}
         virtual ImageBuffer<Vector3> get_output() {return ImageBuffer<Vector3>(width, height);};
 		virtual void write_output(std::string fn);
 

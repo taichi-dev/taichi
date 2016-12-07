@@ -34,9 +34,7 @@ TC_NAMESPACE_BEGIN
 
         virtual void initialize(const Config &config) override;
 
-        void initialize(ptree &t, real aspect_ratio) override;
-
-        void initialize(Vector3 origin, Vector3 look_at, Vector3 up, real fov_angle,
+        void initialize(Vector3 origin, Vector3 look_at, Vector3 up, int width, int height, real fov_angle, 
                         const Matrix4 &transform, real aspect_ratio);
 
         real get_pixel_scaling() override;
@@ -51,21 +49,21 @@ TC_NAMESPACE_BEGIN
         real aspect_ratio;
     };
     void PerspectiveCamera::initialize(const Config &config) {
+		int width = config.get_int("width");
+		int height = config.get_int("height");
         this->initialize(config.get_vec3("origin"), config.get_vec3("look_at"),
-                   config.get_vec3("up"), config.get_real("fov_angle"), Matrix4(1.0f), config.get_real("aspect_ratio"));
+                   config.get_vec3("up"), width, height, config.get_real("fov_angle"),
+					Matrix4(1.0f), config.get("aspect_ratio", (real)width / height));
     }
 
-    void PerspectiveCamera::initialize(ptree &t, real aspect_ratio) {
-        auto trans = load_matrix4(t.get_child("transform"));
-        initialize(Vector3(0, 0, 0), Vector3(0, 0, -1), Vector3(0, 1, 0), 60.0f, trans, aspect_ratio);
-    }
-
-    void PerspectiveCamera::initialize(Vector3 origin, Vector3 look_at, Vector3 up, real fov_angle,
+    void PerspectiveCamera::initialize(Vector3 origin, Vector3 look_at, Vector3 up, int width, int height, real fov_angle,
                                        const Matrix4 &transform, real aspect_ratio) {
         fov = fov_angle / 180.0f * pi;
         this->origin = origin;
         this->look_at = look_at;
         this->up = up;
+		this->width = width;
+		this->height = height;
         set_dir_and_right();
         tan_half_fov = tan(fov / 2);
         this->aspect_ratio = aspect_ratio;

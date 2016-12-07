@@ -10,7 +10,6 @@ TC_NAMESPACE_BEGIN
     class Camera {
     public:
         virtual void initialize(const Config &config) {};
-		virtual void initialize(ptree &t, real aspect_ratio) {}
 
         virtual Ray sample(Vector2 offset, Vector2 size, real u, real v) {
             assert_info(false, "no impl");
@@ -36,9 +35,18 @@ TC_NAMESPACE_BEGIN
             return 1.0f;
         }
 
+		int get_width() const {
+			return width;
+		}
+
+		int get_height() const {
+			return height;
+		}
+
     protected:
         Vector3 origin, look_at, up, right, dir;
         Matrix4 transform;
+		int width, height;
 
         void set_dir_and_right() {
             this->dir = normalize(look_at - origin);

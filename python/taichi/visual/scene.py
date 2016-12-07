@@ -18,6 +18,9 @@ class Scene:
     def set_environment_map(self, map, sample_prob=0.5):
         self.c.set_environment_map(map.c, sample_prob)
 
+    def set_camera(self, camera):
+        self.c.set_camera(camera.c)
+
     def __enter__(self):
         pass
 

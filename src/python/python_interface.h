@@ -311,12 +311,12 @@ TC_NAMESPACE_BEGIN
 			.def("add_mesh", &Scene::add_mesh)
 			.def("set_atmosphere_material", &Scene::set_atmosphere_material)
 			.def("set_environment_map", &Scene::set_environment_map)
+			.def("set_camera", &Scene::set_camera)
 			;
 
         // Renderers
 		class_<Renderer>("Renderer")
 			.def("initialize", &Renderer::initialize)
-			.def("set_camera", &Renderer::set_camera)
 			.def("set_scene", &Renderer::set_scene)
 			.def("render_stage", &Renderer::render_stage)
 			.def("write_output", &Renderer::write_output)

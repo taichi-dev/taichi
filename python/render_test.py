@@ -53,7 +53,12 @@ def create_mis_scene(eye_position):
     num_light_sources = 4
     num_plates = 5
     light_position = Vector(-0.5, 0)
+    downsample = 1
+    width, height = 960 / downsample, 540 / downsample
+    camera = Camera('perspective', width=width, height=height, fov_angle=70,
+                    origin=(0, eye_position.y, eye_position.x), look_at=(0, -0.3, 0), up=(0, 1, 0))
     with scene:
+        scene.set_camera(camera)
         e = 1
         material = SurfaceMaterial('emissive', color=(e, e, e))
         mesh = Mesh('../assets/meshes/plane.obj', material)
@@ -96,20 +101,17 @@ def create_mis_scene(eye_position):
     return scene
 
 def render_frame(i, t):
-    downsample = 2
-    width, height = 960 / downsample, 540 / downsample
-    eye_position = Vector(0.9, -0.3)
-    camera = Camera('perspective', aspect_ratio=float(width) / height, fov_angle=70,
-                    origin=(0, eye_position.y, eye_position.x), look_at=(0, -0.3, 0), up=(0, 1, 0))
 
     renderer = Renderer('pt', '../output/frames/frame_%d.png' % i, overwrite=True)
-    renderer.initialize(width=width, height=height, min_path_length=1, max_path_length=2,
-                        initial_radius=0.05, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
+
+    eye_position = Vector(0.9, -0.3)
+    scene = create_mis_scene(eye_position)
+    renderer.set_scene(scene)
+    renderer.initialize(min_path_length=1, max_path_length=2,
+                        initial_radius=0.005, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
                         direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1, stage_frequency=3,
-                        num_threads=1)
-    renderer.set_camera(camera.c)
-    renderer.set_scene(create_mis_scene(eye_position))
-    renderer.render(30000000)
+                        num_threads=8)
+    renderer.render(800)
 
 if __name__ == '__main__':
     frames = 120

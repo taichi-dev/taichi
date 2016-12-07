@@ -142,6 +142,10 @@ public:
 		this->envmap_sample_prob = 0.0f;
 	}
 
+	void set_camera(std::shared_ptr<Camera> camera) {
+		this->camera = camera;
+	}
+
 	void set_environment_map(std::shared_ptr<EnvironmentMap> envmap, real sample_prob) {
 		this->envmap = envmap;
 		this->envmap_sample_prob = sample_prob;

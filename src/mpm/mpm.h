@@ -156,7 +156,7 @@ public:
 
 	void initialize(const Config &config_);
 
-	void step(float delta_t=0.0f);
+	void step(float delta_t = 0.0f);
 
 	void show(ImageBuffer<Vector3> &buffer);
 

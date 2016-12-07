@@ -11,7 +11,7 @@ TC_NAMESPACE_BEGIN
 #define CACHE_INDEX ((i - p_i + 1) * 4 + (j - p_j + 1))
 
 struct MPMParticle {
-	Vector3 color=Vector3(-1, 0, 0);
+	Vector3 color = Vector3(-1, 0, 0);
 	Vector2 pos, v;
 	Vector2i mipos;
 	mat2 dg_e, dg_p, tmp_force;

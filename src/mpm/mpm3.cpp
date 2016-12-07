@@ -1,6 +1,7 @@
 #include "mpm3.h"
 #include "fluid/particle_visualization.h"
 #include "math/qr_svd/qr_svd.h"
+#include "system/threading.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -90,6 +91,7 @@ TC_NAMESPACE_BEGIN
         width = config.get_int("simulation_width");
         height = config.get_int("simulation_height");
         depth = config.get_int("simulation_depth");
+        num_threads = config.get_int("num_threads");
         //this->h = config.get_float("delta_x");
         t = 0.0f;
         gravity = config.get_vec3("gravity");
@@ -113,6 +115,7 @@ TC_NAMESPACE_BEGIN
         }
         grid_velocity.initialize(width, height, depth, Vector(0.0f));
         grid_mass.initialize(width, height, depth, 0);
+        grid_locks.initialize(width, height, depth, 0);
 
         particle_renderer = std::make_shared<ParticleShadowMapRenderer>();
         max_dim = max(max(width, height), depth);
@@ -150,8 +153,9 @@ TC_NAMESPACE_BEGIN
         using Particle = ParticleShadowMapRenderer::Particle;
         std::vector<Particle> render_particles;
         render_particles.reserve(particles.size());
-        for (auto p: particles) {
-            render_particles.push_back(Particle(p->pos * (1.0f / max_dim), Vector3(1, 1, 1)));
+        for (auto p_p: particles) {
+			MPM3D::Particle &p = *p_p;
+            render_particles.push_back(Particle(p.pos * (1.0f / max_dim), Vector3(1, 1, 1)));
         }
         //particle_renderer->set_rotate_z(t * viewport_rotation);
         particle_renderer->render(buffer, render_particles);
@@ -161,14 +165,16 @@ TC_NAMESPACE_BEGIN
     void MPM3D::rasterize() {
         grid_velocity.reset(Vector(0.0f));
         grid_mass.reset(0.0f);
-        for (auto p : particles) {
-            for (auto &ind : get_bounded_rasterization_region(p->pos)) {
-                Vector3 d_pos = Vector(ind.i, ind.j, ind.k) - p->pos;
+		parallel_for_each_particle([&](Particle &p) {
+            for (auto &ind : get_bounded_rasterization_region(p.pos)) {
+                Vector3 d_pos = Vector(ind.i, ind.j, ind.k) - p.pos;
                 real weight = w(d_pos);
-                grid_mass[ind] += weight * p->mass;
-                grid_velocity[ind] += weight * p->mass * (p->v + (3.0f) * p->apic_b * d_pos);
+				grid_locks[ind].lock();
+                grid_mass[ind] += weight * p.mass;
+                grid_velocity[ind] += weight * p.mass * (p.v + (3.0f) * p.apic_b * d_pos);
+				grid_locks[ind].unlock();
             }
-        }
+		});
         for (auto ind: grid_mass.get_region()) {
 			if (grid_mass[ind] > 0) {
 				CV(grid_velocity[ind]);
@@ -180,12 +186,12 @@ TC_NAMESPACE_BEGIN
     }
 
     void MPM3D::resample(float delta_t) {
-        for (auto &p : particles) {
+		parallel_for_each_particle([&](Particle &p) {
             Vector v(0.0f);
             Matrix cdg(0.0f);
             Matrix b(0.0f);
-            for (auto &ind : get_bounded_rasterization_region(p->pos)) {
-                Vector d_pos = p->pos - Vector3(ind.i, ind.j, ind.k);
+            for (auto &ind : get_bounded_rasterization_region(p.pos)) {
+                Vector d_pos = p.pos - Vector3(ind.i, ind.j, ind.k);
                 float weight = w(d_pos);
                 Vector gw = dw(d_pos);
                 v += weight * grid_velocity[ind];
@@ -198,35 +204,36 @@ TC_NAMESPACE_BEGIN
                 cdg += glm::outerProduct(grid_velocity[ind], gw);
 				CV(grid_velocity[ind]);
             }
-            p->apic_b = b;
+            p.apic_b = b;
             cdg = Matrix(1) + delta_t * cdg;
-            p->v = v;
-            Matrix dg = cdg * p->dg_e * p->dg_p;
-            p->dg_e = cdg * p->dg_e;
-            p->dg_cache = dg;
-        }
+            p.v = v;
+            Matrix dg = cdg * p.dg_e * p.dg_p;
+            p.dg_e = cdg * p.dg_e;
+            p.dg_cache = dg;
+		});
     }
 
     void MPM3D::apply_deformation_force(float delta_t) {
         //printf("Calculating force...\n");
-        for (auto &p : particles) {
-            p->calculate_force();
-        }
+		parallel_for_each_particle([&](Particle &p) {
+            p.calculate_force();
+		});
         //printf("Accumulating force...\n");
-        for (auto &p : particles) {
-            for (auto &ind : get_bounded_rasterization_region(p->pos)) {
+		parallel_for_each_particle([&](Particle &p) {
+            for (auto &ind : get_bounded_rasterization_region(p.pos)) {
                 real mass = grid_mass[ind];
                 if (mass == 0.0f) { // No EPS here
                     continue;
                 }
-                Vector d_pos = p->pos - Vector3(ind.i, ind.j, ind. k);
+                Vector d_pos = p.pos - Vector3(ind.i, ind.j, ind. k);
                 Vector gw = dw(d_pos);
-                Vector force = p->tmp_force * gw;
-				CV(delta_t);
+                Vector force = p.tmp_force * gw;
 				CV(force);
+				grid_locks[ind].lock();
                 grid_velocity[ind] += delta_t / mass * force;
+				grid_locks[ind].unlock();
             }
-        }
+		});
     }
 
     void MPM3D::apply_boundary_conditions() {
@@ -237,7 +244,7 @@ TC_NAMESPACE_BEGIN
         if (!particles.empty()) {
             /*
             for (auto &p : particles) {
-                p->calculate_kernels();
+                p.calculate_kernels();
             }
             */
             apply_external_impulse(gravity * delta_t);
@@ -245,13 +252,13 @@ TC_NAMESPACE_BEGIN
             apply_deformation_force(delta_t);
             apply_boundary_conditions();
             resample(delta_t);
-            for (auto &p : particles) {
-                p->pos += delta_t * p->v;
-                p->pos.x = clamp(p->pos.x, 0.0f, width - eps);
-                p->pos.y = clamp(p->pos.y, 0.0f, height - eps);
-                p->pos.z = clamp(p->pos.z, 0.0f, depth - eps);
-                p->plasticity();
-            }
+			parallel_for_each_particle([&](Particle &p) {
+                p.pos += delta_t * p.v;
+                p.pos.x = clamp(p.pos.x, 0.0f, width - eps);
+                p.pos.y = clamp(p.pos.y, 0.0f, height - eps);
+                p.pos.z = clamp(p.pos.z, 0.0f, depth - eps);
+                p.plasticity();
+			});
         }
         t += delta_t;
     }

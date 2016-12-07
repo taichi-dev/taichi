@@ -12,8 +12,12 @@ class Spinlock {
 protected:
 	std::atomic<bool> latch;
 public:
-	Spinlock() {
-		latch.store(false);
+	Spinlock() :Spinlock(false) {}
+	Spinlock(bool flag) {
+		latch.store(flag);
+	}
+	Spinlock(int flag) {
+		latch.store((bool)flag);
 	}
 	void lock() {
 		bool unlatched = false;
@@ -41,6 +45,12 @@ class ThreadedTaskManager {
 public:
 	void static run(const std::function<void(int)> &target, int begin, int end, int num_threads);
 	void static run(const std::function<void(int)> &target, int end, int num_threads) {
+		return run(target, 0, end, num_threads);
+	}
+	void static run(int begin, int end, int num_threads, const std::function<void(int)> &target) {
+		return run(target, begin, end, num_threads);
+	}
+	void static run(int end, int num_threads, const std::function<void(int)> &target) {
 		return run(target, 0, end, num_threads);
 	}
 };

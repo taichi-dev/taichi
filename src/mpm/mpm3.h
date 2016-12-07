@@ -4,11 +4,13 @@
 #include <vector>
 #include <memory.h>
 #include <string>
+#include <functional>
 #include "visualization/image_buffer.h"
 #include "common/config.h"
 #include "math/array_3d.h"
 #include "common/interface.h"
 #include "math/qr_svd/qr_svd.h"
+#include "system/threading.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -83,6 +85,7 @@ TC_NAMESPACE_BEGIN
         std::shared_ptr<ParticleShadowMapRenderer> particle_renderer;
         std::vector<Particle *> particles; // for efficiency
         Array3D<Vector> grid_velocity;
+        Array3D<Spinlock> grid_locks;
         Array3D<real> grid_mass;
         int width;
         int height;
@@ -92,6 +95,7 @@ TC_NAMESPACE_BEGIN
         Vector gravity;
         real delta_t;
         real viewport_rotation;
+		int num_threads;
 
         Region get_bounded_rasterization_region(Vector p) {
             assert_info(is_normal(p.x) && is_normal(p.y) && is_normal(p.z), std::string("Abnormal p: ") + std::to_string(p.x)
@@ -133,6 +137,12 @@ TC_NAMESPACE_BEGIN
         }
 
         void substep(float delta_t);
+
+		void parallel_for_each_particle(const std::function<void(Particle &)> &target) {
+			ThreadedTaskManager::run((int)particles.size(), num_threads, [&](int i) {
+				target(*particles[i]);
+			});
+		}
 
     public:
 

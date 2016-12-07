@@ -371,11 +371,14 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
 	Vector3 ret(0);
 	Vector3 importance(1);
 	VolumeStack stack;
-	bool surface_dl_counted = false;
+	int path_length = 1;
 	if (scene->get_atmosphere_material()) {
 		stack.push(scene->get_atmosphere_material().get());
 	}
-	for (int depth = 1; depth <= max_path_length; depth++) {
+	for (int depth = 1; path_length <= max_path_length; depth++) {
+		if (depth > 1000) {
+			error("path too long");
+		}
 		if (stack.size() == 0) {
 			// What's going on here...
 			P(stack.size());
@@ -387,7 +390,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
 		Vector3 f(1.0f);
 		Ray out_ray;
 		if (!info.intersected) {
-			if (scene->envmap && (depth == 1 || !direct_lighting)) {
+			if (scene->envmap && (path_length == 1 || !direct_lighting)) {
 				ret += importance * scene->envmap->sample_illum(ray.dir);
 			}
 			break;
@@ -406,21 +409,23 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
 			const Vector3 in_dir = -ray.dir;
 			if (bsdf.is_emissive()) {
 				//assert(stack.size() == 2);
-				bool count = !surface_dl_counted && info.front && (depth == 1 || !direct_lighting);
-				if (count && path_length_in_range(depth)) {
+				bool count = info.front && (path_length == 1 || !direct_lighting);
+				if (count && path_length_in_range(path_length)) {
 					ret += importance * bsdf.evaluate(info.normal, in_dir);
 				}
 				break;
 			}
-			if (!surface_dl_counted && direct_lighting && path_length_in_range(depth + 1)) {
-				ret += importance * calculate_direct_lighting(in_dir, info, bsdf, rand, stack);
-			}
-			surface_dl_counted = true;
 			real pdf;
 			SurfaceEvent event;
 			Vector3 out_dir;
 			bsdf.sample(in_dir, rand(), rand(), out_dir, f, pdf, event);
-			surface_dl_counted = false;
+			bool index_matched = SurfaceEventClassifier::is_index_matched(event);
+			if (!index_matched) {
+				path_length += 1;
+				if (direct_lighting && path_length_in_range(path_length)) {
+					ret += importance * calculate_direct_lighting(in_dir, info, bsdf, rand, stack);
+				}
+			}
 			if (bsdf.is_entering(in_dir) && !bsdf.is_entering(out_dir)) {
 				if (bsdf.get_internal_material() != nullptr)
 					stack.push(bsdf.get_internal_material());
@@ -439,9 +444,10 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
 		}
 		else if (volume.sample_event(rand, Ray(ray.orig + ray.dir * safe_distance, ray.dir)) == VolumeEvent::scattering) {
 			// Volumetric scattering
+			path_length += 1;
 			const Vector3 orig = ray.orig + ray.dir * safe_distance;
 			const Vector3 in_dir = -ray.dir;
-			if (direct_lighting && path_length_in_range(depth + 1)) {
+			if (direct_lighting && path_length_in_range(path_length + 1)) {
 				//P(stack.size());
 				ret += importance * calculate_volumetric_direct_lighting(in_dir, orig, rand, stack);
 			}

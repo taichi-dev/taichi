@@ -95,7 +95,6 @@ TC_NAMESPACE_BEGIN
         gravity = config.get_vec3("gravity");
         auto initial_velocity = config.get_vec3("initial_velocity");
         delta_t = config.get("delta_t", 0.001f);
-        substeps = config.get("substeps", 10);
         for (int i = int(width * 0.4); i <= int(width * 0.6); i++) {
             for (int j = int(height * 0.2); j <= int(height * 0.6); j++) {
                 for (int k = int(depth * 0.4); k <= int(depth * 0.6); k++) {

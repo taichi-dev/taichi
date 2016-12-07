@@ -91,7 +91,6 @@ TC_NAMESPACE_BEGIN
         float t;
         Vector gravity;
         real delta_t;
-        int substeps = 10;
         real viewport_rotation;
 
         Region get_bounded_rasterization_region(Vector p) {
@@ -141,10 +140,10 @@ TC_NAMESPACE_BEGIN
 
         void initialize(const Config &config);
 
-        void step(real delta_t=0.0f) {
-            real substep_delta_t = delta_t / substeps;
-            for (int i = 0; i < substeps; i++) {
-                substep(substep_delta_t);
+        void step(real dt=0.0f) {
+			int steps = (int)std::ceil(dt / delta_t);
+            for (int i = 0; i < steps; i++) {
+                substep(dt / steps);
             }
         }
 

@@ -109,7 +109,7 @@ def render_frame(i, t):
                         initial_radius=0.005, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
                         direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1, stage_frequency=3,
                         num_threads=8)
-    renderer.set_post_processor(LDRDisplay(bloom_radius=0.08))
+    renderer.set_post_processor(LDRDisplay(exposure=1, bloom_radius=0.00))
     renderer.render(800)
 
 if __name__ == '__main__':

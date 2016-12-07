@@ -28,9 +28,9 @@ class MPM3:
 if __name__ == '__main__':
     resolution = [128] * 3
     mpm = MPM3(simulation_width=resolution[0], simulation_height=resolution[1], simulation_depth=resolution[2],
-               gravity=(0, -10, 0), initial_velocity=(0, -10, 0), delta_t=0.002, shadow_map_resolution=64,
+               gravity=(0, -10, 0), initial_velocity=(0, -30, 0), delta_t=0.002, shadow_map_resolution=64,
                shadowing=0.5, light_direction=(1, 1, 1), num_threads=8)
-    for i in range(100):
+    for i in range(200):
         mpm.step(0.05)
 
     mpm.make_video()

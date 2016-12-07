@@ -45,6 +45,10 @@ def make_polygon(points, scale):
 
 def Vector(*args):
     from taichi.core import tc_core
+    if isinstance(args[0], tc_core.Vector2):
+        return args[0]
+    if isinstance(args[0], tc_core.Vector3):
+        return args[0]
     if isinstance(args[0], tuple):
         args = tuple(*args)
     if len(args) == 2:
@@ -59,7 +63,7 @@ def Vector(*args):
         v.z = float(args[2])
         return v
     else:
-        assert False
+        assert False, type(args[0])
 
 
 def default_const_or_evaluate(f, default, u, v):

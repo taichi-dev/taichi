@@ -1,55 +1,10 @@
 from taichi.visual import *
 from taichi.util import Vector
 from taichi.visual.texture import Texture
-from taichi.visual import assets
 from taichi.visual.post_process import *
 import math
 
-def map_filename(name):
-    if name.rfind('/') == -1:
-        filename = '../assets/meshes/%s.obj' % name
-    else:
-        filename = name
-    return filename
-
-def create_object(name, x, y=0, z=0, s=1, r=(0, 0, 0), material='wall'):
-    mesh = Mesh(map_filename(name), material=assets.materials.get_material(material))
-    mesh.translate(Vector(x, y, z))
-    mesh.scale_s(s)
-    mesh.rotate_euler(Vector(*r))
-    return mesh
-
-def create_holder(name, x, y=0, z=0, s=1, r=(0, 0, 0), t=0, taichi_s=0.9):
-    rep = Texture.create_taichi_wallpaper(20, rotation=t, scale=taichi_s)
-    diff = rep
-    material = SurfaceMaterial('pbr', diffuse_map=diff.id, glossiness=-1)
-
-    mesh = Mesh(map_filename(name), material)
-    mesh.translate(Vector(x, y, z))
-    mesh.scale_s(s)
-    mesh.rotate_euler(Vector(*r))
-    return mesh
-
-def create_fractal(scene):
-    n = 5
-    s = 0.6
-    for i in range(n):
-        for j in range(n):
-            mesh = create_object('cube', (i - (n - 1) / 2.0) * s, j * s - 0.5, 0, s * 0.3, r=(i * 10, j * 10, 0),
-                                 material='glass')
-            scene.add_mesh(mesh)
-
-def create_light(t):
-    e = 100
-    material = SurfaceMaterial('emissive', color=(e, e, e))
-    mesh = Mesh('../assets/meshes/sphere.obj', material)
-    mesh.translate(Vector(math.cos(t) * -3, 4, -1))
-    mesh.scale_s(0.5)
-    mesh.rotate_euler(Vector(0, 0, 180 + math.cos(t) * 45))
-    return mesh
-
 def create_mis_scene(eye_position):
-    scene = Scene()
     num_light_sources = 4
     num_plates = 5
     light_position = Vector(-0.5, 0)
@@ -57,24 +12,20 @@ def create_mis_scene(eye_position):
     width, height = 960 / downsample, 540 / downsample
     camera = Camera('perspective', width=width, height=height, fov_angle=70,
                     origin=(0, eye_position.y, eye_position.x), look_at=(0, -0.3, 0), up=(0, 1, 0))
+
+    scene = Scene()
     with scene:
         scene.set_camera(camera)
-        e = 1
-        material = SurfaceMaterial('emissive', color=(e, e, e))
-        mesh = Mesh('../assets/meshes/plane.obj', material)
-        mesh.translate(Vector(2, 1, 0))
-        mesh.scale_s(1)
-        mesh.rotate_euler(Vector(0, 0, 90))
-        scene.add_mesh(mesh)
-        #scene.add_mesh(create_object('plane', 0, -0.6, 0, 2, r=(0, 180, 0)))
-        scene.add_mesh(create_holder('holder', 0, -1, -7, 2))
+        rep = Texture.create_taichi_wallpaper(20, rotation=0, scale=0.95)
+        material = SurfaceMaterial('pbr', diffuse_map=rep.id)
+        scene.add_mesh(Mesh('holder', material=material, translate=(0, -1, -7), scale=2))
         for i in range(num_light_sources):
             radius = 0.002 * 3 ** i
             e = 0.01 / radius**2
             material = SurfaceMaterial('emissive', color=(e, e, e))
-            mesh = Mesh('../assets/meshes/sphere.obj', material)
-            mesh.translate(Vector(0.2 * (i - (num_light_sources - 1) * 0.5), light_position.y, light_position.x))
-            mesh.scale_s(radius)
+            mesh = Mesh('../assets/meshes/sphere.obj', material,
+                        translate=(0.2 * (i - (num_light_sources - 1) * 0.5), light_position.y, light_position.x),
+                        scale=radius)
             scene.add_mesh(mesh)
 
         for i in range(num_plates):
@@ -88,19 +39,19 @@ def create_mis_scene(eye_position):
             vec2 *= 1.0 / math.hypot(vec2.x, vec2.y)
             half_vector = vec1 + vec2
             angle = math.degrees(math.atan2(half_vector.y, half_vector.x))
-            mesh = Mesh('../assets/meshes/plane.obj', SurfaceMaterial('pbr', diffuse=(0.1, 0.1, 0.1), specular=(1, 1, 1), glossiness=100 * 3 ** i))
-            mesh.translate(Vector(0, board_position.y, board_position.x))
-            mesh.rotate_euler(Vector(90-angle, 0, 0))
-            mesh.scale(Vector(0.4, 0.7, 0.05))
+            mesh = Mesh('../assets/meshes/plane.obj',
+                        SurfaceMaterial('pbr', diffuse=(0.1, 0.1, 0.1), specular=(1, 1, 1), glossiness=100 * 3 ** i),
+                        translate=(0, board_position.y, board_position.x),
+                        rotation=(90-angle, 0, 0),
+                        scale=(0.4, 0.7, 0.05))
             scene.add_mesh(mesh)
 
         #envmap = EnvironmentMap('base', filepath='d:/assets/schoenbrunn-front_hd.hdr')
         #scene.set_environment_map(envmap)
     return scene
 
-def render_frame(i, t):
-
-    renderer = Renderer('pt', '../output/frames/frame_%d.png' % i, overwrite=True)
+if __name__ == '__main__':
+    renderer = Renderer('pt', '../output/frames/mis.png', overwrite=True)
 
     eye_position = Vector(0.9, -0.3)
     scene = create_mis_scene(eye_position)
@@ -109,12 +60,5 @@ def render_frame(i, t):
                         initial_radius=0.005, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
                         direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1, stage_frequency=3,
                         num_threads=8)
-    renderer.set_post_processor(LDRDisplay(exposure=1, bloom_radius=0.00))
+    renderer.set_post_processor(LDRDisplay(exposure=3, bloom_radius=0.00))
     renderer.render(800)
-
-if __name__ == '__main__':
-    frames = 120
-    for i in [30]:
-        render_frame(i, 2 * (-0.5 + 1.0 * i / frames))
-    from taichi.tools import video
-    video.make_video('../output/frames/%d.png', 960, 540, '../output/video.mp4')

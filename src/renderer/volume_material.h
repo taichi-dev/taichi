@@ -4,6 +4,7 @@
 #include "math/linalg.h"
 #include "common/meta.h"
 #include "sampler.h"
+#include "geometry_primitives.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -32,7 +33,7 @@ public:
 		this->world2local = glm::inverse(local2world);
 	}
 
-	virtual real sample_free_distance(StateSequence &rand) const {
+	virtual real sample_free_distance(StateSequence &rand, const Ray &ray) const {
 		real kill = volumetric_scattering + volumetric_absorption;
 		if (kill > 0) {
 			return -log(1 - rand()) / kill;
@@ -46,12 +47,12 @@ public:
 		return get_attenuation(glm::length(multiply_matrix4(world2local, end - start, 0)));
 	}
 
-	virtual VolumeEvent sample_event(StateSequence &rand) const {
+	virtual VolumeEvent sample_event(StateSequence &rand, const Ray &ray) const {
 		return rand() < volumetric_scattering / (volumetric_scattering + volumetric_absorption) ?
 			VolumeEvent::scattering : VolumeEvent::absorption;
 	}
 
-	virtual Vector3 sample_phase(StateSequence &rand) const {
+	virtual Vector3 sample_phase(StateSequence &rand, const Ray &ray) const {
 		return sample_sphere(rand(), rand());
 	}
 

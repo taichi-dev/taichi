@@ -321,7 +321,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
 		}
 		const VolumeMaterial &volume = *stack.top();
 		IntersectionInfo info = sg->query(ray);
-		real safe_distance = volume.sample_free_distance(rand);
+		real safe_distance = volume.sample_free_distance(rand, ray);
 		Vector3 f(1.0f);
 		Ray out_ray;
 		if (!info.intersected) {
@@ -375,7 +375,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
 			}
 			f *= c / pdf;
 		}
-		else if (volume.sample_event(rand) == VolumeEvent::scattering) {
+		else if (volume.sample_event(rand, Ray(ray.orig + ray.dir * safe_distance, ray.dir)) == VolumeEvent::scattering) {
 			// Volumetric scattering
 			const Vector3 orig = ray.orig + ray.dir * safe_distance;
 			const Vector3 in_dir = -ray.dir;
@@ -383,7 +383,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
 				//P(stack.size());
 				ret += importance * calculate_volumetric_direct_lighting(in_dir, orig, rand, stack);
 			}
-			Vector3 out_dir = volume.sample_phase(rand);
+			Vector3 out_dir = volume.sample_phase(rand, Ray(orig, ray.dir));
 			out_ray = Ray(orig, out_dir, 1e-5f);
 			f = Vector3(1.0f);
 		}

@@ -36,14 +36,17 @@ class Renderer(object):
         return self.output_dir + fn
 
     def write(self, fn):
-        self.write_output(self.get_full_fn(fn))
+        cv2.imwrite(self.get_full_fn(fn), self.get_output() * 255)
 
-    def show(self):
+    def get_output(self):
         output = self.c.get_output()
         output = image_buffer_to_ndarray(output)
         if self.post_processor:
             output = self.post_processor.process(output)
-        cv2.imshow('Rendered', output)
+        return output
+
+    def show(self):
+        cv2.imshow('Rendered', self.get_output())
         cv2.waitKey(1)
 
     def __getattr__(self, key):

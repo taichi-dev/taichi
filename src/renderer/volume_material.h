@@ -56,6 +56,18 @@ public:
 		return sample_sphere(rand(), rand());
 	}
 
+	virtual Vector3 phase_evaluate(const Vector3 &pos, const Vector3 &in_dir, const Vector3 &out_dir) {
+		return Vector3(1.0f, 1.0f, 1.0f);
+	}
+
+	virtual real phase_probability_density(const Vector3 &pos, const Vector3 &in_dir, const Vector3 &out_dir) {
+		return 1 / 4 / pi;
+	}
+
+	virtual bool is_vacuum() const {
+		return false;
+	}
+
 protected:
 	virtual real get_attenuation(real dist) const {
 		return exp(-dist * (volumetric_scattering + volumetric_absorption));

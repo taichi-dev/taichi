@@ -111,7 +111,7 @@ protected:
 				}
 				real c = abs(dot(ray.dir, tri.normal));
 				dist = test_info.pos - info.pos;
-				light_p = dot(dist, dist) / std::max(1e-20f, light_tri.area * c) * 
+				light_p = dot(dist, dist) / std::max(1e-20f, light_tri.area * c) *
 					scene->get_triangle_pdf(light_tri.id);
 				const Vector3 emission = light_bsdf.evaluate(test_info.normal, -out_dir);
 				throughput = f * co * emission * att;
@@ -177,10 +177,20 @@ protected:
 		Vector3 att(1.0f);
 
 		while (true) {
+			if (stack.size() == 0) {
+				// TODO: this is a bug...
+				return Vector3(0.0f);
+			}
 			IntersectionInfo info = sg->query(ray);
+			const Vector3 in_dir = -ray.dir;
+			const VolumeMaterial &vol = *stack.top();
+			att *= vol.unbiased_sample_attenuation(ray.orig, info.pos, rand);
 			if (!info.intersected) {
 				// no intersection (usually bsdf sampling) -> envmap
 				last_intersection = info;
+				if (!vol.is_vacuum()) {
+					att = Vector3(0.0f);
+				}
 				break;
 			}
 			BSDF bsdf(scene, info);
@@ -189,17 +199,12 @@ protected:
 				last_intersection = info;
 				break;
 			}
-			const Vector3 in_dir = -ray.dir;
-			if (stack.size() == 0) {
-				// TODO: this is a bug...
-				return Vector3(0.0f);
-			}
-			const VolumeMaterial &vol = *stack.top();
 			if (bsdf.is_index_matched()) {
-				att *= bsdf.evaluate(in_dir, -in_dir) * bsdf.cos_theta(-in_dir);
-				att *= vol.unbiased_sample_attenuation(ray.orig, info.pos, rand);
-				//P(vol.unbiased_sample_attenuation(ray.orig, info.pos, rand));
-				//P(att);
+				SurfaceEvent event;
+				Vector3 f, _;
+				real pdf;
+				bsdf.sample(in_dir, rand(), rand(), _, f, pdf, event);
+				att *= f * bsdf.cos_theta(-in_dir);
 				ray = Ray(info.pos + ray.dir * 1e-3f, ray.dir);
 				if (bsdf.is_entering(in_dir)) {
 					assert(bsdf.get_internal_material() != nullptr);
@@ -214,7 +219,6 @@ protected:
 				// We do not handle non-index matched case here.
 				return Vector3(0.0f);
 			}
-			//P(stack.size());
 		}
 		return att;
 	}
@@ -262,47 +266,105 @@ ImageBuffer<Vector3> PathTracingRenderer::get_output() {
 
 Vector3 PathTracingRenderer::calculate_volumetric_direct_lighting(const Vector3 &in_dir, const Vector3 &orig,
 	StateSequence &rand, VolumeStack &stack) {
-	return Vector3(0.0f);
-	/*
-	Vector3 lighting(0);
-	real triangle_pdf;
-	Triangle &tri = scene->sample_triangle_light_emission(rand(), triangle_pdf);
-	// MIS
-	for (int i = 0; i < 2; i++) {
-		bool sample_phase = i == 0;
+	Vector3 acc(0);
+	real light_source_pdf;
+	bool sample_envmap = false;
+	const Triangle *p_triangle = nullptr;
+	const EnvironmentMap *p_envmap = nullptr;
+	scene->sample_light_source(rand(), light_source_pdf, p_triangle, p_envmap);
+	Triangle tri;
+	if (p_envmap) {
+		sample_envmap = true;
+	}
+	else {
+		tri = *p_triangle;
+	}
+	// MIS between bsdf and light sampling.
+	int samples = direct_lighting_bsdf + direct_lighting_light;
+	for (int i = 0; i < samples; i++) {
+		// We use angular measurement for PDFs here.
+		// When theare two light sources (triangles) sharing an overlapping 
+		// region, we simply double count.
+		// Note that invisible parts of light sources are filtered by 
+		// visibility term here, so we can naturally sample them.
+		bool sample_bsdf = i < direct_lighting_bsdf;
+		if (!sample_bsdf) {
+			// Light sampling
+			if (!sample_envmap && tri.get_relative_location_to_plane(orig) < 0)
+				continue;
+		}
 		Vector3 out_dir;
-		if (sample_phase) {
-			// Sample phase function
-			out_dir = stack.top()->sample_phase(rand);
+		Vector3 f;
+		real bsdf_p;
+		Vector3 dist;
+		auto vol = *stack.top();
+		if (sample_bsdf) {
+			// Sample BSDF
+			out_dir = vol.sample_phase(rand, Ray(orig, in_dir));
+			bsdf_p = vol.phase_probability_density(orig, in_dir, out_dir);
 		}
 		else {
 			// Sample light source
-			Vector3 pos = tri.sample_point(rand(), rand());
-			Vector3 dist = pos - orig;
-			out_dir = normalize(dist);
+			if (sample_envmap) {
+				Vector3 _; // TODO : optimize
+				real pdf;
+				out_dir = p_envmap->sample_direction(rand, pdf, _);
+			}
+			else {
+				Vector3 pos = tri.sample_point(rand(), rand());
+				dist = pos - orig;
+				out_dir = normalize(dist);
+			}
+			f = vol.phase_evaluate(orig, in_dir, out_dir);
+			bsdf_p = vol.phase_probability_density(orig, in_dir, out_dir);
 		}
-		Ray out_ray(orig, out_dir);
+		Ray ray(orig + out_dir * 1e-3f, out_dir);
+		IntersectionInfo test_info;
+		Vector3 att = get_attenuation(stack, ray, rand, test_info);
+		if (max_component(att) == 0.0f) {
+			// Completely blocked.
+			continue;
+		}
 
-		real phase_pdf = 1 / (4 * pi);
+		real co = 1 / 4.0f / pi;
 
-		real c = abs(dot(out_ray.dir, tri.normal));
-		IntersectionInfo info;
-		Vector3 att = get_attenuation(stack, out_ray, rand, info);
-		//P(att);
-		Vector3 dist = info.pos - orig;
-		real light_pdf = dot(dist, dist) / (tri.area * c);
-
-		real mis_weight = 1.0f / (phase_pdf + light_pdf);
-		Vector3 f(1.0f / (4.0f * pi));
-		if (info.intersected && info.front && info.triangle_id == tri.id) {
-			const BSDF light_bsdf(scene, info);
-			const Vector3 emission = light_bsdf.evaluate(info.normal, -out_dir);
-			const Vector3 throughput = f * emission * att * mis_weight;
-			lighting += throughput;
+		real light_p;
+		Vector3 throughput;
+		if (test_info.intersected) {
+			// Mesh light
+			const Triangle &light_tri = scene->get_triangle(test_info.triangle_id);
+			BSDF light_bsdf(scene, test_info);
+			if (!light_bsdf.is_emissive() || !test_info.front) {
+				continue;
+			}
+			real c = abs(dot(ray.dir, tri.normal));
+			dist = test_info.pos - orig;
+			light_p = dot(dist, dist) / std::max(1e-20f, light_tri.area * c) *
+				scene->get_triangle_pdf(light_tri.id);
+			const Vector3 emission = light_bsdf.evaluate(test_info.normal, -out_dir);
+			throughput = f * co * emission * att;
+		}
+		else {
+			// Envmap
+			if (p_envmap == nullptr) {
+				continue;
+			}
+			light_p = scene->get_environment_map_pdf() * p_envmap->pdf(out_dir);
+			throughput = f * co * p_envmap->sample_illum(out_dir) * att;
+		}
+		// Assuming that there is no delta phase function...
+		if (sample_bsdf) {
+			// BSDF sampling
+			acc += 1 / (direct_lighting_bsdf * bsdf_p +
+				direct_lighting_light * light_p) * throughput;
+		}
+		else {
+			// Light sampling
+			acc += 1 / (direct_lighting_bsdf * bsdf_p +
+				direct_lighting_light * light_p) * throughput;
 		}
 	}
-	return lighting / triangle_pdf;
-	*/
+	return acc;
 }
 
 Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {

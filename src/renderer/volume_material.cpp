@@ -22,6 +22,9 @@ class VacuumVolumeMaterial : public VolumeMaterial {
 		error("invalid");
 		return VolumeEvent::absorption;
 	}
+	virtual bool is_vacuum() const override {
+		return true;
+	}
 };
 
 class VoxelVolumeMaterial : public VolumeMaterial {

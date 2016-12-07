@@ -9,7 +9,7 @@ def map_filename(name):
     return filename
 
 class Mesh:
-    def __init__(self, filename, material, translate=Vector(0, 0, 0), rotation=Vector(0, 0, 0), scale=Vector(0, 0, 0)):
+    def __init__(self, filename, material, translate=Vector(0, 0, 0), rotation=Vector(0, 0, 0), scale=Vector(1, 1, 1)):
         filename = map_filename(filename)
         self.c = tc_core.create_mesh()
         self.c.initialize(config_from_dict({'filename': filename}))

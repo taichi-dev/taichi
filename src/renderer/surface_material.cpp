@@ -397,7 +397,8 @@ TC_NAMESPACE_BEGIN
         };
 
         virtual Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
-			return Vector3(1.0f) * abs(1.0f / out.z);
+			//return Vector3(1.0f) * abs(1.0f / out.z);
+			return Vector3(0.0f);
         }
 
         virtual bool is_delta() const override {

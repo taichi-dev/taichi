@@ -320,6 +320,7 @@ TC_NAMESPACE_BEGIN
 			.def("set_scene", &Renderer::set_scene)
 			.def("render_stage", &Renderer::render_stage)
 			.def("write_output", &Renderer::write_output)
+			.def("get_output", &Renderer::get_output)
 			;
 
         class_<Camera>("Camera")

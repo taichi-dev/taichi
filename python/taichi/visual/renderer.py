@@ -11,6 +11,7 @@ class Renderer(object):
     def __init__(self, name, output_dir=taichi.util.get_uuid(), overwrite=False):
         self.c = tc_core.create_renderer(name)
         self.output_dir = output_dir + '/'
+        self.post_processor = None
         try:
             os.mkdir(self.output_dir)
         except Exception as e:
@@ -38,8 +39,11 @@ class Renderer(object):
         self.write_output(self.get_full_fn(fn))
 
     def show(self):
-        self.write('tmp.png')
-        cv2.imshow('Rendered', cv2.imread(self.get_full_fn('tmp.png')))
+        output = self.c.get_output()
+        output = image_buffer_to_ndarray(output)
+        if self.post_processor:
+            output = self.post_processor.process(output)
+        cv2.imshow('Rendered', output)
         cv2.waitKey(1)
 
     def __getattr__(self, key):
@@ -48,3 +52,5 @@ class Renderer(object):
     def set_scene(self, scene):
         self.c.set_scene(scene.c)
 
+    def set_post_processor(self, post_processor):
+        self.post_processor = post_processor

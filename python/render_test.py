@@ -2,8 +2,8 @@ from taichi.visual import *
 from taichi.util import Vector
 from taichi.visual.texture import Texture
 from taichi.visual import assets
+from taichi.visual.post_process import *
 import math
-
 
 def map_filename(name):
     if name.rfind('/') == -1:
@@ -88,9 +88,7 @@ def create_mis_scene(eye_position):
             vec2 *= 1.0 / math.hypot(vec2.x, vec2.y)
             half_vector = vec1 + vec2
             angle = math.degrees(math.atan2(half_vector.y, half_vector.x))
-            print angle
             mesh = Mesh('../assets/meshes/plane.obj', SurfaceMaterial('pbr', diffuse=(0.1, 0.1, 0.1), specular=(1, 1, 1), glossiness=100 * 3 ** i))
-            #mesh = Mesh('../assets/meshes/plane.obj', SurfaceMaterial('diffuse', diffuse=(1, 1, 1)))
             mesh.translate(Vector(0, board_position.y, board_position.x))
             mesh.rotate_euler(Vector(90-angle, 0, 0))
             mesh.scale(Vector(0.4, 0.7, 0.05))
@@ -111,6 +109,7 @@ def render_frame(i, t):
                         initial_radius=0.005, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
                         direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1, stage_frequency=3,
                         num_threads=8)
+    renderer.set_post_processor(LDRDisplay(bloom_radius=0.08))
     renderer.render(800)
 
 if __name__ == '__main__':

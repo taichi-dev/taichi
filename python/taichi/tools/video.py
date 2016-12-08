@@ -3,7 +3,7 @@ import os
 import cv2
 
 class VideoManager:
-    def __init__(self, directory, width, height):
+    def __init__(self, directory, width, height, post_processor=None):
         self.width = width
         self.height = height
         self.directory = '../output/frames/' + directory
@@ -11,10 +11,13 @@ class VideoManager:
             os.mkdir(self.directory)
         except Exception as e:
             print e
+        self.post_processor = post_processor
         self.frame_counter = 0
 
     def write_frame(self, img):
-        img = LDRDisplay().process(img) * 255.0
+        if self.post_processor:
+            img = self.post_processor.process(img)
+        img *= 255.0
         cv2.imwrite(self.directory + '/%05d.png' % self.frame_counter, img)
         self.frame_counter += 1
 

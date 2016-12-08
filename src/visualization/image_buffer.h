@@ -13,6 +13,7 @@ template <typename T>
 class ImageBuffer : public Array2D<T>
 {
 public:
+	ImageBuffer(int width, int height, T t) : Array2D<T>(width, height, t) {}
 	ImageBuffer(int width, int height) : Array2D<T>(width, height) {}
 	ImageBuffer() {}
 	ImageBuffer(std::string filename) {

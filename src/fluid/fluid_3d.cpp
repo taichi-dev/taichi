@@ -110,13 +110,14 @@ TC_NAMESPACE_BEGIN
     }
 
     void Smoke3D::render_trackers(ImageBuffer<Vector3> &buffer) {
-        using Particle = ParticleShadowMapRenderer::Particle;
-        std::vector<Particle> particles;
-        particles.reserve(trackers.size());
-        for (auto tracker: trackers) {
-            particles.push_back(Particle(tracker.position * (1.0f / height), tracker.color));
-        }
-        particle_renderer->render(buffer, particles);
+		// Broken.
+        //using Particle = ParticleShadowMapRenderer::Particle;
+        //std::vector<Particle> particles;
+        //particles.reserve(trackers.size());
+        //for (auto tracker: trackers) {
+        //    particles.push_back(Particle(tracker.position * (1.0f / height), tracker.color));
+        //}
+        //particle_renderer->render(buffer, particles);
     }
 
     void Smoke3D::show(ImageBuffer<Vector3> &buffer) {

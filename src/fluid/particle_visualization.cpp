@@ -2,66 +2,71 @@
 
 TC_NAMESPACE_BEGIN
 
-    void ParticleShadowMapRenderer::render(ImageBuffer<Vector3> &buffer, const std::vector<Particle> particles) {
-        std::vector <std::pair<real, int>> indices(particles.size());
-        for (int i = 0; i < (int) indices.size(); i++) {
-            indices[i] = std::make_pair(-glm::dot(light_direction, particles[i].position), i);
-        }
-        std::vector<float> occlusion(particles.size());
-        Array2D<float> occlusion_buffer(shadow_map_resolution, shadow_map_resolution);
-        std::sort(indices.begin(), indices.end());
-        Vector3 u = abs(light_direction.y) > 0.99f ? Vector3(1, 0, 0) : glm::cross(light_direction, Vector3(0, 1, 0));
-        u = normalized(u);
-        Vector3 v = normalized(glm::cross(u, light_direction));
+void ParticleShadowMapRenderer::initialize(const Config & config) {
+	shadow_map_resolution = config.get_real("shadow_map_resolution");
+	light_direction = config.get_vec3("light_direction");
+	ambient_light = config.get("ambient_light", 0.0f);
+	shadowing = config.get("shadowing", 1.0f);
+	light_direction = normalized(light_direction);
+	Vector3 u = abs(light_direction.y) > 0.99f ? Vector3(1, 0, 0) : glm::cross(light_direction, Vector3(0, 1, 0));
+	u = normalized(u);
+	Vector3 v = normalized(glm::cross(u, light_direction));
+	light_transform = Matrix3(u, v, light_direction);// Transpose?
+}
 
-        for (int i = 0; i < (int) indices.size(); i++) {
-            const int index = indices[i].second;
-            Vector2 coord(glm::dot(particles[index].position - center, u),
-                          glm::dot(particles[index].position - center, v));
-            coord = coord * 0.3f + 0.5f;
-            if (0 <= coord.x && coord.x < 1 && 0 <= coord.y && coord.y < 1) {
-                occlusion[index] = occlusion_buffer.sample_relative_coord(coord);
-                int x = (int) round(coord.x * occlusion_buffer.get_width());
-                int y = (int) round(coord.y * occlusion_buffer.get_height());
-                if (occlusion_buffer.inside(x, y)) {
-                    occlusion_buffer[x][y] += shadowing;
-                }
-            } else {
-                occlusion[index] = 0.0f;
-            }
-        }
+void ParticleShadowMapRenderer::render(ImageBuffer<Vector3> &buffer, const std::vector<Particle> particles) {
+	if (particles.empty()) {
+		return;
+	}
+	Vector2 uv_lowerbound(1e30f);
+	Vector2 uv_upperbound(-1e30f);
 
-        float rotate_cos = cos(rotate_z);
-        float rotate_sin = sin(rotate_z);
-        float front_angle = 0.3f;
-        Matrix3 mat = Matrix3(1.0f, 0.0f, 0.0f,
-                              0.0f, cos(front_angle), sin(front_angle),
-                              0.0f, -sin(front_angle), cos(front_angle)) *
-                      Matrix3(rotate_sin, 0, rotate_cos,
-                              0, 1, 0,
-                              -rotate_cos, 0, rotate_sin);
-        for (int i = 0; i < (int) indices.size(); i++) {
-            indices[i] = std::make_pair((mat * particles[i].position).z, i);
-        }
-        std::sort(indices.begin(), indices.end());
+	std::vector <std::pair<real, int>> indices(particles.size());
+	for (int i = 0; i < (int)indices.size(); i++) {
+		indices[i] = std::make_pair(-glm::dot(light_direction, particles[i].position), i);
+		Vector3 transformed_coord = light_transform * particles[i].position;
+		Vector2 uv(transformed_coord.x, transformed_coord.y);
+		uv_lowerbound.x = std::min(uv_lowerbound.x, uv.x);
+		uv_lowerbound.y = std::min(uv_lowerbound.y, uv.y);
+		uv_upperbound.x = std::max(uv_upperbound.x, uv.x);
+		uv_upperbound.y = std::max(uv_upperbound.y, uv.y);
+	}
+	std::sort(indices.begin(), indices.end());
+	Vector2 res = (uv_upperbound - uv_lowerbound) / shadow_map_resolution;
+	Array2D<real> occlusion_buffer(std::ceil(res.x) + 1, std::ceil(res.y) + 1, 1.0f);
+	real shadow_map_scaling = 1.0f / shadow_map_resolution;
+	std::vector<real> occlusion(particles.size());
 
-        for (int i = 0; i < (int) indices.size(); i++) {
-            const int index = indices[i].second;
-            Vector3 tracker = particles[index].position;
+	for (int i = 0; i < (int)indices.size(); i++) {
+		const int index = indices[i].second;
+		Vector3 transformed_coord = light_transform * particles[index].position;
+		Vector2 uv(transformed_coord.x, transformed_coord.y);
+		uv = shadow_map_scaling * (uv - uv_lowerbound);
+		int int_x = (int)(uv.x);
+		int int_y = (int)(uv.y);
+		occlusion[index] = std::max(ambient_light, occlusion_buffer.sample(uv));
+		occlusion_buffer[int_x][int_y] *= (1.0f - shadowing * particles[index].color.w);
+	}
 
-            tracker = (tracker - center) * 0.7f;
-            tracker = mat * tracker;
-            tracker += center;
-
-            Vector2 coord(tracker.x, tracker.y);
-            Vector3 bright_color = particles[index].color;
-            Vector3 color = lerp(exp(-occlusion[index]), bright_color * 0.5f, bright_color);
-            int x = (int) round(coord.x * buffer.get_width());
-            int y = (int) round(coord.y * buffer.get_height());
-            if (buffer.inside(x, y)) {
-                buffer[x][y] = lerp(alpha, buffer[x][y], color);
-            }
-        }
-    }
+	for (int i = 0; i < (int)indices.size(); i++) {
+		real dist = -glm::dot(camera->get_dir(), particles[i].position - camera->get_origin());
+		indices[i] = std::make_pair(dist, i);
+	}
+	std::sort(indices.begin(), indices.end());
+	for (int i = 0; i < (int)indices.size(); i++) {
+		const int index = indices[i].second;
+		auto &p = particles[index];
+		real dist = -glm::dot(camera->get_dir(), particles[index].position - camera->get_origin());
+		auto direction = normalized(p.position - camera->get_origin());
+		real u, v;
+		camera->get_pixel_coordinate(direction, u, v);
+		int int_u = clamp((int)(u * buffer.get_width()), 0, buffer.get_width() - 1);
+		int int_v = clamp((int)(v * buffer.get_height()), 0, buffer.get_height() - 1);
+		Vector3 color(p.color.x, p.color.y, p.color.z);
+		real alpha = p.color.w;
+		if (buffer.inside(int_u, int_v))
+			buffer[int_u][int_v] = lerp(alpha, buffer[int_u][int_v], color * occlusion[index]);
+	}
+}
 
 TC_NAMESPACE_END

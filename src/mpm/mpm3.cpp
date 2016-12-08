@@ -120,12 +120,18 @@ void MPM3D::initialize(const Config &config) {
 	particle_renderer = std::make_shared<ParticleShadowMapRenderer>();
 	max_dim = max(max(width, height), depth);
 	Config particle_renderer_config;
-	particle_renderer_config.set("shadow_map_resolution", 1)
-		.set("shadowing", 0.0f)
-		.set("light_direction", Vector3(0, 1, 0))
-		.set("shadowing", 0.0f)
-		.set("center", Vector3((float)width / max_dim, (float)height / max_dim, (float)depth / max_dim) * 0.5f)
-		.set("alpha", 1);
+	particle_renderer_config.set("shadow_map_resolution", 0.5f).
+		set("light_direction", Vector3(-1, 1, -2)).
+		set("ambient_light", 0.3f).
+		set("shadowing", 0.1f);
+	Config camera_config;
+	camera_config.set("origin", Vector3(width, height, depth * 2.5)).
+		set("look_at", Vector3(width / 2, height / 2, depth / 2)).
+		set("up", Vector3(0, 1, 0)).
+		set("fov_angle", 60.0f).
+		set("width", 768).
+		set("height", 768);
+	particle_renderer->set_camera(create_initialized_instance<Camera>("perspective", camera_config));
 	particle_renderer->initialize(particle_renderer_config);
 
 	viewport_rotation = config.get("viewport_rotation", 1.0f);
@@ -149,15 +155,14 @@ void MPM3D::initialize(const Config &config) {
 }
 
 ImageBuffer<Vector3> MPM3D::get_visualization(int width, int height) {
-	ImageBuffer<Vector3> buffer(width, height);
+	ImageBuffer<Vector3> buffer(width, height, Vector3(0.1f, 0.1f, 0.2f));
 	using Particle = ParticleShadowMapRenderer::Particle;
 	std::vector<Particle> render_particles;
 	render_particles.reserve(particles.size());
 	for (auto p_p : particles) {
 		MPM3D::Particle &p = *p_p;
-		render_particles.push_back(Particle(p.pos * (1.0f / max_dim), Vector3(1, 1, 1)));
+		render_particles.push_back(Particle(p.pos, Vector4(0.8f, 0.9f, 1.0f, 0.5f)));
 	}
-	//particle_renderer->set_rotate_z(t * viewport_rotation);
 	particle_renderer->render(buffer, render_particles);
 	return buffer;
 }

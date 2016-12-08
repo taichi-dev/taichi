@@ -216,7 +216,7 @@ public:
 	// We really need a light source class that unifies triangles and envmap now...
 	void sample_light_source(real r, real &pdf, const Triangle *&triangle,
 		const EnvironmentMap *&envmap) const {
-		if (r < envmap_sample_prob) {
+		if (r <= envmap_sample_prob) { // TODO: does changing <= to < lead to error?
 			triangle = nullptr;
 			envmap = this->envmap.get();
 			pdf = envmap_sample_prob;

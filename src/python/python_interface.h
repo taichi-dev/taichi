@@ -24,6 +24,7 @@
 #include "renderer/renderer.h"
 #include "renderer/volume_material.h"
 #include "renderer/surface_material.h"
+#include "fluid/particle_visualization.h"
 #include "common/utils.h"
 #include "common/config.h"
 #include "common/interface.h"
@@ -63,6 +64,8 @@ namespace boost {
 	EXPLICIT_GET_POINTER(taichi::EnvironmentMap);
 
 	EXPLICIT_GET_POINTER(taichi::Texture);
+
+	EXPLICIT_GET_POINTER(taichi::ParticleRenderer);
 }
 
 TC_NAMESPACE_BEGIN
@@ -116,6 +119,7 @@ TC_NAMESPACE_BEGIN
         def("register_texture", &AssetManager::insert_asset<Texture>);
         def("create_renderer", create_instance<Renderer>);
         def("create_camera", create_instance<Camera>);
+        def("create_particle_renderer", create_instance<ParticleRenderer>);
         def("create_surface_material", create_instance<SurfaceMaterial>);
         def("create_volume_material", create_instance<VolumeMaterial>);
         def("create_environment_map", create_instance<EnvironmentMap>);
@@ -145,7 +149,7 @@ TC_NAMESPACE_BEGIN
         .def("initialize", &SIM::initialize) \
         .def("step", &SIM::step) \
         .def("get_current_time", &SIM::get_current_time) \
-        .def("get_visualization", &SIM::get_visualization) \
+        .def("get_render_particles", &SIM::get_render_particles) \
         ;
         register_ptr_to_python<std::shared_ptr<Fluid3D>>();
         EXPORT_SIMULATOR_3D(Smoke3D);
@@ -198,7 +202,7 @@ TC_NAMESPACE_BEGIN
                 .def(self - self)
                 .def(self * self)
                 .def(self / self);
-
+		
         class_<Fluid::Particle>("FluidParticle", init<Vector2, Vector2>())
                 .def_readwrite("position", &Fluid::Particle::position)
                 .def_readwrite("velocity", &Fluid::Particle::velocity)
@@ -232,7 +236,7 @@ TC_NAMESPACE_BEGIN
                 .def("to_ndarray", &array2d_to_ndarray<Array2D<float>>)
                 .def("rasterize", &Array2D<float>::rasterize);
 
-        class_<ImageBuffer<Vector3>>("RGBImageFloat")
+        class_<ImageBuffer<Vector3>>("RGBImageFloat", init<int, int, Vector3>())
                 .def("get_width", &ImageBuffer<Vector3>::get_width)
                 .def("get_height", &ImageBuffer<Vector3>::get_height)
                 .def("to_ndarray", &image_buffer_to_ndarray<ImageBuffer<Vector3>>);
@@ -266,6 +270,7 @@ TC_NAMESPACE_BEGIN
     ;
 
         DEFINE_VECTOR_OF(Vector2);
+        DEFINE_VECTOR_OF_NAMED(RenderParticle, "RenderParticles");
         DEFINE_VECTOR_OF_NAMED(std::shared_ptr<MPMParticle>, "MPMParticles");
         DEFINE_VECTOR_OF(float);
 
@@ -326,6 +331,11 @@ TC_NAMESPACE_BEGIN
         class_<Camera>("Camera")
                 .def("initialize",
                      static_cast<void (Camera::*)(const Config &config)>(&Camera::initialize));
+
+		class_<ParticleRenderer>("ParticleRenderer")
+			.def("initialize", &ParticleRenderer::initialize)
+			.def("set_camera", &ParticleRenderer::set_camera)
+			.def("render", &ParticleRenderer::render);
 		register_ptr_to_python<std::shared_ptr<Renderer>>();
         register_ptr_to_python<std::shared_ptr<Camera>>();
         register_ptr_to_python<std::shared_ptr<SurfaceMaterial>>();
@@ -334,6 +344,7 @@ TC_NAMESPACE_BEGIN
         register_ptr_to_python<std::shared_ptr<Mesh>>();
         register_ptr_to_python<std::shared_ptr<Scene>>();
         register_ptr_to_python<std::shared_ptr<Texture>>();
+        register_ptr_to_python<std::shared_ptr<ParticleRenderer>>();
     }
 
 TC_NAMESPACE_END

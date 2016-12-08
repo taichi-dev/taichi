@@ -58,7 +58,6 @@ TC_NAMESPACE_BEGIN
         initial_speed = config.get("initial_speed", Vector3(0, 0, 0));
         tracker_generation = config.get("tracker_generation", 100.0f);
 
-        particle_renderer = std::make_shared<ParticleShadowMapRenderer>();
 		// TODO: refactor here
 
         show_trackers = config.get("show_trackers", true);
@@ -75,17 +74,6 @@ TC_NAMESPACE_BEGIN
         last_pressure = Array(width, height, depth, 0.0f);
         t = Array(width, height, depth, config.get("initial_t", 0.0f));
         current_t = 0.0f;
-    }
-
-    ImageBuffer<Vector3> Smoke3D::get_visualization(int width, int height) {
-        ImageBuffer<Vector3> buffer(width, height);
-        if (show_trackers) {
-            TIME(render_trackers(buffer));
-        } else {
-            TIME(show(buffer));
-        }
-
-        return buffer;
     }
 
     Vector3 hsv2rgb(Vector3 hsv) {
@@ -109,16 +97,16 @@ TC_NAMESPACE_BEGIN
         return Vector3(r, g, b);
     }
 
-    void Smoke3D::render_trackers(ImageBuffer<Vector3> &buffer) {
-		// Broken.
-        //using Particle = ParticleShadowMapRenderer::Particle;
-        //std::vector<Particle> particles;
-        //particles.reserve(trackers.size());
-        //for (auto tracker: trackers) {
-        //    particles.push_back(Particle(tracker.position * (1.0f / height), tracker.color));
-        //}
-        //particle_renderer->render(buffer, particles);
-    }
+	std::vector<RenderParticle> Smoke3D::get_render_particles() const {
+		using Particle = RenderParticle;
+		std::vector<Particle> render_particles;
+		render_particles.reserve(trackers.size());
+		Vector3 center(width / 2.0f, height / 2.0f, depth / 2.0f);
+		for (auto p: trackers) {
+			render_particles.push_back(Particle(p.position - center, Vector4(p.color.x, p.color.y, p.color.z, 1.0f)));
+		}
+		return render_particles;
+	}
 
     void Smoke3D::show(ImageBuffer<Vector3> &buffer) {
         buffer.reset(Vector3(0));

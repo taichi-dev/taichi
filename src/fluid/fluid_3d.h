@@ -7,6 +7,7 @@
 #include "common/interface.h"
 #include "math/array_3d.h"
 #include "pressure_solver.h"
+#include "particle_visualization.h"
 
 TC_NAMESPACE_BEGIN
     class ParticleShadowMapRenderer;
@@ -67,8 +68,6 @@ TC_NAMESPACE_BEGIN
 
         virtual void show(ImageBuffer<Vector3> &buffer);
 
-        virtual void render_trackers(ImageBuffer<Vector3> &buffer);
-
         void advect(Array &attr, float delta_t);
 
         void apply_boundary_condition();
@@ -77,7 +76,7 @@ TC_NAMESPACE_BEGIN
 
         Vector3 sample_velocity(const Vector3 &pos) const;
 
-        ImageBuffer<Vector3> get_visualization(int width, int height);
+		std::vector<RenderParticle> get_render_particles() const;
     };
 
     std::shared_ptr<Fluid3D> create_fluid_3d(std::string name, const Config &config);

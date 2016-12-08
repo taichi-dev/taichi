@@ -4,35 +4,35 @@
 #include "visualization/image_buffer.h"
 #include "common/config.h"
 #include "renderer/camera.h"
+#include "common/meta.h"
 
 TC_NAMESPACE_BEGIN
 
-class ParticleShadowMapRenderer {
-private:
-	Vector3 light_direction;
-	real shadow_map_resolution;
-	Matrix3 light_transform;
-	std::shared_ptr<Camera> camera;
-	real ambient_light;
-	real shadowing;
-public:
-	struct Particle {
-		Vector3 position;
-		Vector4 color;
-		Particle() {}
-		Particle(const Vector3 &position, const Vector4 &color) : position(position), color(color) {}
-	};
+struct RenderParticle {
+	Vector3 position;
+	Vector4 color;
+	RenderParticle() {}
+	RenderParticle(const Vector3 &position, const Vector4 &color) : position(position), color(color) {}
+	bool operator == (const RenderParticle &p) const {
+		// For boost::python vector_indexing_suite
+		return false;
+	}
+};
 
+class ParticleRenderer {
+protected:
+	std::shared_ptr<Camera> camera;
+
+public:
 	void set_camera(std::shared_ptr<Camera> camera) {
 		this->camera = camera;
 	}
-
-	ParticleShadowMapRenderer() {}
-
-	void initialize(const Config &config);
-
-	void render(ImageBuffer<Vector3> &buffer, const std::vector<Particle> particles);
+	virtual void initialize(const Config &config) {};
+	virtual void render(ImageBuffer<Vector3> &buffer, const std::vector<RenderParticle> &particles) const {}
 };
+
+
+TC_INTERFACE(ParticleRenderer)
 
 TC_NAMESPACE_END
 

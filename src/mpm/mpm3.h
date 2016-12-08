@@ -11,6 +11,7 @@
 #include "common/interface.h"
 #include "math/qr_svd/qr_svd.h"
 #include "system/threading.h"
+#include "fluid/particle_visualization.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -30,8 +31,6 @@ inline void polar_decomp(const Matrix3 & A, Matrix3 & r, Matrix3 & s) {
 		P(v);
 	}
 }
-
-class ParticleShadowMapRenderer;
 
 inline real det(const Matrix3 &m) {
 	return glm::determinant(m);
@@ -82,7 +81,6 @@ public:
 		}
 		virtual ~Particle() {}
 	};
-	std::shared_ptr<ParticleShadowMapRenderer> particle_renderer;
 	std::vector<Particle *> particles; // for efficiency
 	Array3D<Vector> grid_velocity;
 	Array3D<Spinlock> grid_locks;
@@ -94,7 +92,6 @@ public:
 	float t;
 	Vector gravity;
 	real delta_t;
-	real viewport_rotation;
 	int num_threads;
 
 	Region get_bounded_rasterization_region(Vector p) {
@@ -157,10 +154,9 @@ public:
 		}
 	}
 
-	ImageBuffer<Vector3> get_visualization(int width, int height);
+	std::vector<RenderParticle> get_render_particles() const;
 
 	void add_particle(const Config &config) {
-
 	}
 
 	float get_current_time() {

@@ -1,5 +1,4 @@
 #include "mpm3.h"
-#include "fluid/particle_visualization.h"
 #include "math/qr_svd/qr_svd.h"
 #include "system/threading.h"
 
@@ -117,25 +116,6 @@ void MPM3D::initialize(const Config &config) {
 	grid_mass.initialize(width, height, depth, 0);
 	grid_locks.initialize(width, height, depth, 0);
 
-	particle_renderer = std::make_shared<ParticleShadowMapRenderer>();
-	max_dim = max(max(width, height), depth);
-	Config particle_renderer_config;
-	particle_renderer_config.set("shadow_map_resolution", 0.5f).
-		set("light_direction", Vector3(-1, 1, -2)).
-		set("ambient_light", 0.3f).
-		set("shadowing", 0.1f);
-	Config camera_config;
-	camera_config.set("origin", Vector3(width, height, depth * 2.5)).
-		set("look_at", Vector3(width / 2, height / 2, depth / 2)).
-		set("up", Vector3(0, 1, 0)).
-		set("fov_angle", 60.0f).
-		set("width", 768).
-		set("height", 768);
-	particle_renderer->set_camera(create_initialized_instance<Camera>("perspective", camera_config));
-	particle_renderer->initialize(particle_renderer_config);
-
-	viewport_rotation = config.get("viewport_rotation", 1.0f);
-	// Test SVD...
 	/*
 	for (int i = 0; i < 100; i++) {
 		Matrix3 m(0.0f), u, s, v, r;
@@ -154,17 +134,16 @@ void MPM3D::initialize(const Config &config) {
 	*/
 }
 
-ImageBuffer<Vector3> MPM3D::get_visualization(int width, int height) {
-	ImageBuffer<Vector3> buffer(width, height, Vector3(0.1f, 0.1f, 0.2f));
-	using Particle = ParticleShadowMapRenderer::Particle;
+std::vector<RenderParticle> MPM3D::get_render_particles() const {
+	using Particle = RenderParticle;
 	std::vector<Particle> render_particles;
 	render_particles.reserve(particles.size());
+	Vector3 center(width / 2.0f, height / 2.0f, depth / 2.0f);
 	for (auto p_p : particles) {
 		MPM3D::Particle &p = *p_p;
-		render_particles.push_back(Particle(p.pos, Vector4(0.8f, 0.9f, 1.0f, 0.5f)));
+		render_particles.push_back(Particle(p.pos - center, Vector4(0.8f, 0.9f, 1.0f, 0.5f)));
 	}
-	particle_renderer->render(buffer, render_particles);
-	return buffer;
+	return render_particles;
 }
 
 void MPM3D::rasterize() {

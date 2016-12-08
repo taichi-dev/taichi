@@ -22,7 +22,7 @@ public:
 		shadowing = config.get("shadowing", 1.0f);
 		alpha = config.get("alpha", 1.0f);
 		light_direction = normalized(light_direction);
-		Vector3 u = abs(light_direction.y) > 0.99f ? Vector3(1, 0, 0) : 
+		Vector3 u = abs(light_direction.y) > 0.99f ? Vector3(1, 0, 0) :
 			normalized(glm::cross(light_direction, Vector3(0, 1, 0)));
 		Vector3 v = normalized(glm::cross(u, light_direction));
 		light_transform = glm::transpose(Matrix3(u, v, light_direction));

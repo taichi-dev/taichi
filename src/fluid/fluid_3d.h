@@ -42,13 +42,11 @@ public:
 	float pressure_tolerance;
 	float density_scaling;
 	Vector3 initial_speed;
-	bool show_trackers;
 	float tracker_generation;
 	float perturbation;
-	float viewport_rotation;
+	int num_threads;
 	std::vector<Tracker3D> trackers;
 	std::shared_ptr<PressureSolver3D> pressure_solver;
-	std::shared_ptr<ParticleShadowMapRenderer> particle_renderer;
 
 	Smoke3D() {}
 

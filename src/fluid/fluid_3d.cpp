@@ -57,14 +57,12 @@ void Smoke3D::initialize(const Config &config) {
 	density_scaling = config.get("density_scaling", 1.0f);
 	initial_speed = config.get("initial_speed", Vector3(0, 0, 0));
 	tracker_generation = config.get("tracker_generation", 100.0f);
+	num_threads = config.get_int("num_threads");
 
-	// TODO: refactor here
-
-	show_trackers = config.get("show_trackers", true);
 	perturbation = config.get("perturbation", 0.0f);
-	viewport_rotation = config.get("viewport_rotation", 0.0f);
 	Config solver_config;
-	solver_config.set("width", width).set("height", height).set("depth", depth);
+	solver_config.set("width", width).set("height", height).set("depth", depth)
+		.set("num_threads", num_threads);
 	pressure_solver = create_pressure_solver_3d(config.get_string("pressure_solver"), solver_config);
 	u = Array(width + 1, height, depth, 0.0f, Vector3(0.0f, 0.5f, 0.5f));
 	v = Array(width, height + 1, depth, 0.0f, Vector3(0.5f, 0.0f, 0.5f));

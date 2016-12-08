@@ -32,6 +32,13 @@ public:
 		this->storage_offset = storage_offset;
 	}
 
+	Index3D(int i, int j, int k) {
+		this->i = i;
+		this->j = j;
+		this->k = k;
+	}
+
+
 	void next() {
 		k++;
 		if (k == z[1]) {

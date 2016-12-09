@@ -71,15 +71,19 @@ public:
 			const int index = indices[i].second;
 			auto &p = particles[index];
 			real dist = -glm::dot(camera->get_dir(), particles[index].position - camera->get_origin());
+			if (dist >= 0) {
+				continue;
+			}
 			auto direction = normalized(p.position - camera->get_origin());
 			real u, v;
 			camera->get_pixel_coordinate(direction, u, v);
-			int int_u = clamp((int)(u * buffer.get_width()), 0, buffer.get_width() - 1);
-			int int_v = clamp((int)(v * buffer.get_height()), 0, buffer.get_height() - 1);
-			Vector3 color(p.color.x, p.color.y, p.color.z);
-			real alpha = p.color.w * this->alpha;
-			if (buffer.inside(int_u, int_v))
+			int int_u = (int)(u * buffer.get_width());
+			int int_v = (int)(v * buffer.get_height());
+			if (buffer.inside(int_u, int_v)) {
+				Vector3 color(p.color.x, p.color.y, p.color.z);
+				real alpha = p.color.w * this->alpha;
 				buffer[int_u][int_v] = lerp(alpha, buffer[int_u][int_v], color * occlusion[index]);
+			}
 		}
 	}
 };

@@ -8,7 +8,7 @@ TC_NAMESPACE_BEGIN
 
 class Simulation3D {
 protected:
-	real current_t;
+	real current_t = 0.0f;
 public:
 	Simulation3D() {}
 	virtual float get_current_time() const {

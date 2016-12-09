@@ -13,7 +13,7 @@ class MPM3:
     def __init__(self, **kwargs):
         self.c = tc_core.create_simulation3d('mpm')
         self.c.initialize(P(**kwargs))
-        self.video_manager = VideoManager(get_uuid(), 480, 270)
+        self.video_manager = VideoManager(get_uuid(), 960, 540)
         self.particle_renderer = ParticleRenderer('shadow_map',
                                                   shadow_map_resolution=0.5, alpha=0.5, shadowing=0.1, ambient_light=0.2,
                                                   light_direction=(-1, 1, -1))
@@ -45,11 +45,9 @@ class MPM3:
         self.video_manager.make_video()
 
 if __name__ == '__main__':
-    resolution = (64, 64, 32)
-    mpm = MPM3(resolution=resolution,
-               gravity=(0, -10, 0), initial_velocity=(0, -30, 0), delta_t=0.002, num_threads=8)
+    resolution = (256, 256, 128)
+    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), initial_velocity=(0, -30, 0), delta_t=0.001, num_threads=8)
     for i in range(500):
         mpm.step(0.05)
-
     mpm.make_video()
 

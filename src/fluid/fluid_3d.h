@@ -23,7 +23,7 @@ class Smoke3D : public Simulation3D {
 	typedef Array3D<float> Array;
 public:
 	Array u, v, w, rho, t, pressure, last_pressure;
-	int width, height, depth;
+	Vector3i res;
 	float smoke_alpha, smoke_beta;
 	float temperature_decay;
 	float pressure_tolerance;

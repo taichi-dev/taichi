@@ -14,23 +14,23 @@ const static Vector3i offsets[]{
 };
 
 void Smoke3D::project() {
-	Array divergence(width, height, depth, 0.0f);
+	Array divergence(res[0], res[1], res[2], 0.0f);
 	for (auto &ind : u.get_region()) {
 		if (0 < ind.i)
 			divergence[ind + Vector3i(-1, 0, 0)] += u[ind];
-		if (ind.i < width)
+		if (ind.i < res[0])
 			divergence[ind] -= u[ind];
 	}
 	for (auto &ind : v.get_region()) {
 		if (0 < ind.j)
 			divergence[ind + Vector3i(0, -1, 0)] += v[ind];
-		if (ind.j < height)
+		if (ind.j < res[1])
 			divergence[ind] -= v[ind];
 	}
 	for (auto &ind : w.get_region()) {
 		if (0 < ind.k)
 			divergence[ind + Vector3i(0, 0, -1)] += w[ind];
-		if (ind.k < depth)
+		if (ind.k < res[2])
 			divergence[ind] -= w[ind];
 	}
 	pressure = 0;
@@ -47,9 +47,7 @@ void Smoke3D::project() {
 }
 
 void Smoke3D::initialize(const Config &config) {
-	width = config.get("simulation_width", 32);
-	height = config.get("simulation_height", 32);
-	depth = config.get("simulation_depth", 32);
+	res = config.get_vec3i("resolution");
 	smoke_alpha = config.get("smoke_alpha", 0.0f);
 	smoke_beta = config.get("smoke_beta", 0.0f);
 	temperature_decay = config.get("temperature_decay", 0.0f);
@@ -61,16 +59,16 @@ void Smoke3D::initialize(const Config &config) {
 
 	perturbation = config.get("perturbation", 0.0f);
 	Config solver_config;
-	solver_config.set("width", width).set("height", height).set("depth", depth)
+	solver_config.set("width", res[0]).set("height", res[1]).set("depth", res[2])
 		.set("num_threads", num_threads);
 	pressure_solver = create_pressure_solver_3d(config.get_string("pressure_solver"), solver_config);
-	u = Array(width + 1, height, depth, 0.0f, Vector3(0.0f, 0.5f, 0.5f));
-	v = Array(width, height + 1, depth, 0.0f, Vector3(0.5f, 0.0f, 0.5f));
-	w = Array(width, height, depth + 1, 0.0f, Vector3(0.5f, 0.5f, 0.0f));
-	rho = Array(width, height, depth, 0.0f);
-	pressure = Array(width, height, depth, 0.0f);
-	last_pressure = Array(width, height, depth, 0.0f);
-	t = Array(width, height, depth, config.get("initial_t", 0.0f));
+	u = Array(res[0] + 1, res[1], res[2], 0.0f, Vector3(0.0f, 0.5f, 0.5f));
+	v = Array(res[0], res[1] + 1, res[2], 0.0f, Vector3(0.5f, 0.0f, 0.5f));
+	w = Array(res[0], res[1], res[2] + 1, 0.0f, Vector3(0.5f, 0.5f, 0.0f));
+	rho = Array(res[0], res[1], res[2], 0.0f);
+	pressure = Array(res[0], res[1], res[2], 0.0f);
+	last_pressure = Array(res[0], res[1], res[2], 0.0f);
+	t = Array(res[0], res[1], res[2], config.get("initial_t", 0.0f));
 	current_t = 0.0f;
 }
 
@@ -99,7 +97,7 @@ std::vector<RenderParticle> Smoke3D::get_render_particles() const {
 	using Particle = RenderParticle;
 	std::vector<Particle> render_particles;
 	render_particles.reserve(trackers.size());
-	Vector3 center(width / 2.0f, height / 2.0f, depth / 2.0f);
+	Vector3 center(res[0] / 2.0f, res[1] / 2.0f, res[2] / 2.0f);
 	for (auto p : trackers) {
 		render_particles.push_back(Particle(p.position - center, Vector4(p.color.x, p.color.y, p.color.z, 1.0f)));
 	}
@@ -113,16 +111,16 @@ void Smoke3D::show(ImageBuffer<Vector3> &buffer) {
 		for (int j = 0; j < buffer.get_height(); j++) {
 			float rho_sum = 0.0f;
 			float t_sum = 0.0f;
-			for (int k = 0; k < depth; k++) {
-				float x = (i + 0.5f) / (float)half_width * width;
-				float y = (j + 0.5f) / (float)buffer.get_height() * height;
+			for (int k = 0; k < res[2]; k++) {
+				float x = (i + 0.5f) / (float)half_width * res[0];
+				float y = (j + 0.5f) / (float)buffer.get_height() * res[1];
 				float z = k + 0.5f;
 				rho_sum += rho.sample(x, y, z);
 				t_sum += t.sample(x, y, z);
 			}
 			rho_sum *= density_scaling;
-			t_sum = std::min(1.0f, t_sum / depth);
-			rho_sum = std::min(1.0f, rho_sum / depth);
+			t_sum = std::min(1.0f, t_sum / res[2]);
+			rho_sum = std::min(1.0f, rho_sum / res[2]);
 			buffer[i][j] = Vector3(t_sum, rho_sum * 0.3f, rho_sum * 0.8f);
 		}
 	}
@@ -130,16 +128,16 @@ void Smoke3D::show(ImageBuffer<Vector3> &buffer) {
 		for (int j = 0; j < half_height; j++) {
 			float rho_sum = 0.0f;
 			float t_sum = 0.0f;
-			for (int k = 0; k < depth; k++) {
-				float x = (i + 0.5f) / (float)half_width * width;
+			for (int k = 0; k < res[2]; k++) {
+				float x = (i + 0.5f) / (float)half_width * res[0];
 				float y = k + 0.5f;
-				float z = (j + 0.5f) / (float)half_height * depth;
+				float z = (j + 0.5f) / (float)half_height * res[2];
 				rho_sum += rho.sample(x, y, z);
 				t_sum += t.sample(x, y, z);
 			}
 			rho_sum *= density_scaling;
-			t_sum = std::min(1.0f, t_sum / depth);
-			rho_sum = std::min(1.0f, rho_sum / depth);
+			t_sum = std::min(1.0f, t_sum / res[2]);
+			rho_sum = std::min(1.0f, rho_sum / res[2]);
 			buffer[half_width + i][j] = Vector3(t_sum, rho_sum * 0.3f, rho_sum * 0.8f);
 		}
 	}
@@ -156,7 +154,7 @@ void Smoke3D::step(float delta_t) {
 	{
 		Time::Timer _("Adding source");
 		for (auto &ind : rho.get_region()) {
-			if (length(ind.get_pos() - Vector3(width / 2.0f, height * 0.1f, depth / 2.0f)) < height * 0.05f) {
+			if (length(ind.get_pos() - Vector3(res[0] / 2.0f, res[1] * 0.1f, res[2] / 2.0f)) < res[1] * 0.05f) {
 				rho[ind] = 1.0f;
 				t[ind] = 1.0f;
 				u[ind] = initial_speed.x;
@@ -174,7 +172,7 @@ void Smoke3D::step(float delta_t) {
 			}
 		}
 		for (auto &ind : v.get_region()) {
-			if (ind.j < height) {
+			if (ind.j < res[1]) {
 				v[ind] += (-smoke_alpha * rho[ind] + smoke_beta * t[ind]) * delta_t;
 			}
 		}
@@ -198,7 +196,7 @@ void Smoke3D::remove_outside_trackers() {
 	trackers.clear();
 	for (auto &tracker : all_trackers) {
 		Vector3 p = tracker.position;
-		if (0 <= p.x && p.x <= width && 0 <= p.y && p.y <= height && 0 <= p.z && p.z <= depth) {
+		if (0 <= p.x && p.x <= res[0] && 0 <= p.y && p.y <= res[1] && 0 <= p.z && p.z <= res[2]) {
 			trackers.push_back(tracker);
 		}
 	}
@@ -223,19 +221,19 @@ void Smoke3D::advect(Array &attr, float delta_t) {
 
 void Smoke3D::apply_boundary_condition() {
 	return;
-	for (int i = 0; i < width; i++) {
-		for (int j = 0; j < height; j++) {
-			w[i][j][0] = w[i][j][depth - 1] = 0;
+	for (int i = 0; i < res[0]; i++) {
+		for (int j = 0; j < res[1]; j++) {
+			w[i][j][0] = w[i][j][res[2] - 1] = 0;
 		}
 	}
-	for (int i = 0; i < width; i++) {
-		for (int k = 0; k < depth; k++) {
-			v[i][0][k] = v[i][height - 1][k] = 0;
+	for (int i = 0; i < res[0]; i++) {
+		for (int k = 0; k < res[2]; k++) {
+			v[i][0][k] = v[i][res[1] - 1][k] = 0;
 		}
 	}
-	for (int j = 0; j < height; j++) {
-		for (int k = 0; k < depth; k++) {
-			u[0][j][k] = u[width - 1][j][k] = 0;
+	for (int j = 0; j < res[1]; j++) {
+		for (int k = 0; k < res[2]; k++) {
+			u[0][j][k] = u[res[0] - 1][j][k] = 0;
 		}
 	}
 }

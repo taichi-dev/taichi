@@ -16,9 +16,7 @@ public:
 	Spinlock(bool flag) {
 		latch.store(flag);
 	}
-	Spinlock(int flag) {
-		latch.store((bool)flag);
-	}
+	Spinlock(int flag) : Spinlock(flag != 0) {}
 	void lock() {
 		bool unlatched = false;
 		while (!latch.compare_exchange_weak(unlatched, true, std::memory_order_acquire)) {

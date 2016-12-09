@@ -68,7 +68,7 @@ TC_NAMESPACE_BEGIN
                 if (test_ray.dist > sqrt(dist2) - 1e-4f) {
                     d0 = normalized(d0);
                     const double c = dot(d0, camera->get_dir());
-                    real scale = fabs(dot(d0, normal) / dist2 / (c * c * c)) / camera->get_pixel_scaling();
+                    real scale = real(abs(dot(d0, normal) / dist2 / (c * c * c)) / camera->get_pixel_scaling());
                     Vector3 co = bsdf.evaluate(in_dir, out_dir);
                     write_path_contribution(PathContribution(px, py, flux * co), scale);
                 }

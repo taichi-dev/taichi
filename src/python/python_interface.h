@@ -30,9 +30,8 @@
 #include "common/interface.h"
 #include "fluid/apic.h"
 #include "fluid/euler_smoke.h"
-#include "fluid/fluid_3d.h"
+#include "fluid/simulation3d.h"
 #include "mpm/mpm.h"
-#include "mpm/mpm3.h"
 #include "levelset/levelset2d.h"
 #include "visualization/rgb.h"
 
@@ -44,10 +43,6 @@ namespace boost {
 	EXPLICIT_GET_POINTER(taichi::EPParticle);
 
 	EXPLICIT_GET_POINTER(taichi::DPParticle);
-
-	EXPLICIT_GET_POINTER(taichi::MPM3D);
-
-	EXPLICIT_GET_POINTER(taichi::Fluid3D);
 
 	EXPLICIT_GET_POINTER(taichi::Camera);
 
@@ -66,6 +61,8 @@ namespace boost {
 	EXPLICIT_GET_POINTER(taichi::Texture);
 
 	EXPLICIT_GET_POINTER(taichi::ParticleRenderer);
+
+	EXPLICIT_GET_POINTER(taichi::Simulation3D);
 }
 
 TC_NAMESPACE_BEGIN
@@ -117,6 +114,7 @@ BOOST_PYTHON_MODULE(taichi_core) {
 	numeric::array::set_module_and_type("numpy", "ndarray");
 	def("create_texture", create_instance<Texture>);
 	def("register_texture", &AssetManager::insert_asset<Texture>);
+	def("create_simulation3d", create_instance<Simulation3D>);
 	def("create_renderer", create_instance<Renderer>);
 	def("create_camera", create_instance<Camera>);
 	def("create_particle_renderer", create_instance<ParticleRenderer>);
@@ -151,10 +149,8 @@ BOOST_PYTHON_MODULE(taichi_core) {
         .def("get_current_time", &SIM::get_current_time) \
         .def("get_render_particles", &SIM::get_render_particles) \
         ;
-	register_ptr_to_python<std::shared_ptr<Fluid3D>>();
-	EXPORT_SIMULATOR_3D(Smoke3D);
-	register_ptr_to_python<std::shared_ptr<MPM3D>>();
-	EXPORT_SIMULATOR_3D(MPM3D);
+	register_ptr_to_python<std::shared_ptr<Simulation3D>>();
+	EXPORT_SIMULATOR_3D(Simulation3D);
 
 #define EXPORT_MPM(SIM) \
     class_<SIM>(#SIM "Simulator") \
@@ -191,10 +187,35 @@ BOOST_PYTHON_MODULE(taichi_core) {
 		.def(self * self)
 		.def(self / self);
 
+	class_<Vector3i>("Vector3i")
+		.def_readwrite("x", &Vector3i::x)
+		.def_readwrite("y", &Vector3i::y)
+		.def_readwrite("z", &Vector3i::z)
+		.def(self * int())
+		.def(int() * self)
+		.def(self / int())
+		.def(self + self)
+		.def(self - self)
+		.def(self * self)
+		.def(self / self);
+
 	class_<Vector3>("Vector3")
 		.def_readwrite("x", &Vector3::x)
 		.def_readwrite("y", &Vector3::y)
 		.def_readwrite("z", &Vector3::z)
+		.def(self * float())
+		.def(float() * self)
+		.def(self / float())
+		.def(self + self)
+		.def(self - self)
+		.def(self * self)
+		.def(self / self);
+
+	class_<Vector4>("Vector4")
+		.def_readwrite("x", &Vector4::x)
+		.def_readwrite("y", &Vector4::y)
+		.def_readwrite("z", &Vector4::z)
+		.def_readwrite("w", &Vector4::w)
 		.def(self * float())
 		.def(float() * self)
 		.def(self / float())
@@ -345,6 +366,7 @@ BOOST_PYTHON_MODULE(taichi_core) {
 	register_ptr_to_python<std::shared_ptr<Scene>>();
 	register_ptr_to_python<std::shared_ptr<Texture>>();
 	register_ptr_to_python<std::shared_ptr<ParticleRenderer>>();
+	register_ptr_to_python<std::shared_ptr<Simulation3D>>();
 }
 
 TC_NAMESPACE_END

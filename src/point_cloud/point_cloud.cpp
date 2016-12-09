@@ -29,7 +29,7 @@ void NearestNeighbour2D::initialize(const std::vector<Vector2>& data_points) {
 
 	this->data_points = data_points;
 
-	ann_kdtree = shared_ptr<ANNkd_tree>(new ANNkd_tree(ann_data_points, (int)data_points.size(), 2));
+	ann_kdtree = std::shared_ptr<ANNkd_tree>(new ANNkd_tree(ann_data_points, (int)data_points.size(), 2));
 }
 
 Vector2 NearestNeighbour2D::query_point(Vector2 p) const {
@@ -57,16 +57,16 @@ void NearestNeighbour2D::query(Vector2 p, int & index, float & dist_out) const
 
 }
 
-void NearestNeighbour2D::query_n(Vector2 p, int n, vector<int>& index, vector<float>& dist) const
+void NearestNeighbour2D::query_n(Vector2 p, int n, std::vector<int>& index, std::vector<float>& dist) const
 {
-	vector<ANNidx> index_in;
-	vector<ANNdist> dist_in;
+	std::vector<ANNidx> index_in;
+	std::vector<ANNdist> dist_in;
 	index_in.resize(n);
 	dist_in.resize(n);
 	ANNcoord point[2];
 	for (unsigned int k = 0; k < 2; k++)
 		point[k] = p[k];
-	int actual_n = min(n, (int)data_points.size());
+	int actual_n = std::min(n, (int)data_points.size());
 	ann_kdtree->annkSearch(point, actual_n, &index_in[0], &dist_in[0], 0.0);
 
 	index.resize(n);
@@ -82,7 +82,7 @@ void NearestNeighbour2D::query_n(Vector2 p, int n, vector<int>& index, vector<fl
 	}
 }
 
-void NearestNeighbour2D::query_n_index(Vector2 p, int n, vector<int>& index) const
+void NearestNeighbour2D::query_n_index(Vector2 p, int n, std::vector<int>& index) const
 {
 	std::vector<float> _;
 	query_n(p, n, index, _);

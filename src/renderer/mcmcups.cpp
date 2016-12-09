@@ -308,7 +308,7 @@ TC_NAMESPACE_BEGIN
                 new_state.pc = pc;
                 new_state.sc = new_state.p_star(u);
 
-                double a = min(1.0, new_state.sc / max(1e-30, previous_state.sc));
+                double a = std::min(1.0, new_state.sc / max(1e-30, previous_state.sc));
                 bool is_accepted = false;
                 if (rand() < a) {
                     if (!is_large_step_done) {
@@ -361,10 +361,10 @@ TC_NAMESPACE_BEGIN
                 }
                 if (chain_exchange) {
                     // Replica Exchange
-                    double r = min(1.0, states[vis].p_star(con) /
+                    double r = std::min(1.0, states[vis].p_star(con) /
                                         max(1e-30, states[con].p_star(con)));
                     if (rand() < r) {
-                        swap(states[con], states[vis]);
+                        std::swap(states[con], states[vis]);
                         for (int i = 0; i < 2; i++) {
                             states[i].sc = states[i].p_star(i);
                         }
@@ -373,7 +373,7 @@ TC_NAMESPACE_BEGIN
                 // Update mutation_strength
                 real ratio_accepted = (real) accepted / (real) mutated;
                 mutation_strength = mutation_strength + (ratio_accepted - target_mutation_acceptance) / mutated;
-                mutation_strength = min(10.0f, max(1e-7f, mutation_strength));
+                mutation_strength = std::min(10.0f, max(1e-7f, mutation_strength));
             }
             real ratio_accepted = (real) accepted / (real) mutated;
             P(ratio_accepted);

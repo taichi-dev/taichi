@@ -12,8 +12,8 @@ TC_NAMESPACE_BEGIN
         this->buffer = ImageBuffer<Vector3>(width, height);
         this->max_eye_events = config.get("max_eye_events", 5);
         this->max_light_events = config.get("max_light_events", 5);
-        this->max_eye_events = min(this->max_eye_events, this->max_path_length + 1);
-        this->max_light_events = min(this->max_light_events, this->max_path_length + 1);
+        this->max_eye_events = std::min(this->max_eye_events, this->max_path_length + 1);
+        this->max_light_events = std::min(this->max_light_events, this->max_path_length + 1);
         this->stage_frequency = config.get("stage_frequency", 1);
         this->print_path_policy = config.get("print_path_policy", "bright");
 		if (luminance_clamping == 0.0f) {
@@ -373,7 +373,7 @@ TC_NAMESPACE_BEGIN
         if ((p_i == 0.0) || (p_all == 0.0)) {
             return 0.0;
         } else {
-            return max(min(p_i / p_all, 1.0), 0.0);
+            return std::max(std::min(p_i / p_all, 1.0), 0.0);
         }
     }
 

@@ -204,7 +204,7 @@ TC_NAMESPACE_BEGIN
         std::vector<MCMCState> current_states;
         bool first_stage_done = false;
         DiscreteSampler path_length_sampler;
-        vector<real> normalizers;
+        std::vector<real> normalizers;
     public:
         virtual void initialize(const Config &config) override {
             PSSMLTRenderer::initialize(config);
@@ -236,7 +236,7 @@ TC_NAMESPACE_BEGIN
             auto state_sequence = MCStateSequence(mc);
             Path eye_path = trace_eye_path(state_sequence);
             Path light_path = trace_light_path(state_sequence);
-            int t = min(path_length, (int) floor(mc.get_technique_state() * (path_length + 1))) + 1, s =
+            int t = std::min(path_length, (int) floor(mc.get_technique_state() * (path_length + 1))) + 1, s =
                     path_length - t + 1;
             assert_info(0 <= t && t <= path_length + 1, "Invalid eye path length: " + std::to_string(t) + " state: " +
                                                         std::to_string(mc.get_technique_state()));

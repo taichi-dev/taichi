@@ -7,22 +7,9 @@
 #include "common/interface.h"
 #include "math/array_3d.h"
 #include "pressure_solver.h"
-#include "particle_visualization.h"
+#include "fluid/simulation3d.h"
 
 TC_NAMESPACE_BEGIN
-class ParticleShadowMapRenderer;
-
-class Fluid3D : public Simulator {
-protected:
-	float current_t;
-public:
-	virtual void show(ImageBuffer<Vector3> &buffer) {};
-	virtual ImageBuffer<Vector3> get_visualization(int width, int height) { return ImageBuffer<Vector3>(1, 1); };
-	float get_current_time() {
-		return current_t;
-	}
-
-};
 
 class Tracker3D {
 public:
@@ -32,7 +19,7 @@ public:
 	Tracker3D(const Vector3 &position, const Vector3 &color) : position(position), color(color) {}
 };
 
-class Smoke3D : public Fluid3D {
+class Smoke3D : public Simulation3D {
 	typedef Array3D<float> Array;
 public:
 	Array u, v, w, rho, t, pressure, last_pressure;
@@ -76,7 +63,5 @@ public:
 
 	std::vector<RenderParticle> get_render_particles() const;
 };
-
-std::shared_ptr<Fluid3D> create_fluid_3d(std::string name, const Config &config);
 
 TC_NAMESPACE_END

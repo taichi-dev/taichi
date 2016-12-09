@@ -139,7 +139,7 @@ public:
 		this->height = height;
 		region = Region2D(0, width, 0, height, storage_offset);
 		size = width * height;
-		data = vector<T>(size, init);
+		data = std::vector<T>(size, init);
 		this->storage_offset = storage_offset;
 	}
 
@@ -408,7 +408,8 @@ public:
 	Region2D get_rasterization_region(Vector2 pos, int half_extent) const {
 		int x = (int)floor(pos.x - storage_offset.x);
 		int y = (int)floor(pos.y - storage_offset.y);
-		return Region2D(max(0, x - half_extent + 1), min(width, x + half_extent + 1), max(0, y - half_extent + 1), min(height, y + half_extent + 1), storage_offset);
+		return Region2D(std::max(0, x - half_extent + 1), std::min(width, x + half_extent + 1), max(0, y - half_extent + 1), 
+			std::min(height, y + half_extent + 1), storage_offset);
 	}
 
 	bool is_normal() const {

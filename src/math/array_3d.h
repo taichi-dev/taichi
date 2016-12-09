@@ -192,7 +192,7 @@ public:
 		region = Region3D(0, width, 0, height, 0, depth, storage_offset);
 		size = width * height * depth;
 		stride = height * depth;
-		data = vector<T>(size, init);
+		data = std::vector<T>(size, init);
 		this->storage_offset = storage_offset;
 	}
 

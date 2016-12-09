@@ -7,11 +7,10 @@
 #include <functional>
 #include "visualization/image_buffer.h"
 #include "common/config.h"
+#include "fluid/simulation3d.h"
 #include "math/array_3d.h"
-#include "common/interface.h"
 #include "math/qr_svd/qr_svd.h"
 #include "system/threading.h"
-#include "fluid/particle_visualization.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -36,7 +35,7 @@ inline real det(const Matrix3 &m) {
 	return glm::determinant(m);
 }
 
-class MPM3D : public Simulator {
+class MPM3D : public Simulation3D {
 protected:
 	typedef Vector3 Vector;
 	typedef Matrix3 Matrix;
@@ -85,9 +84,7 @@ public:
 	Array3D<Vector> grid_velocity;
 	Array3D<Spinlock> grid_locks;
 	Array3D<real> grid_mass;
-	int width;
-	int height;
-	int depth;
+	Vector3i res;
 	int max_dim;
 	float t;
 	Vector gravity;
@@ -102,18 +99,18 @@ public:
 		int z = int(p.z);
 		/*
 		int x_min = max(0, x - 1);
-		int x_max = min(width, x + 3);
+		int x_max = min(res[0], x + 3);
 		int y_min = max(0, y - 1);
-		int y_max = min(height, y + 3);
+		int y_max = min(res[1], y + 3);
 		int z_min = max(0, z - 1);
-		int z_max = min(depth, z + 3);
+		int z_max = min(res[2], z + 3);
 		*/
-		int x_min = max(0, min(width, x - 1));
-		int x_max = max(0, min(width, x + 3));
-		int y_min = max(0, min(height, y - 1));
-		int y_max = max(0, min(height, y + 3));
-		int z_min = max(0, min(depth, z - 1));
-		int z_max = max(0, min(depth, z + 3));
+		int x_min = std::max(0, std::min(res[0], x - 1));
+		int x_max = std::max(0, std::min(res[0], x + 3));
+		int y_min = std::max(0, std::min(res[1], y - 1));
+		int y_max = std::max(0, std::min(res[1], y + 3));
+		int z_min = std::max(0, std::min(res[2], z - 1));
+		int z_max = std::max(0, std::min(res[2], z + 3));
 		return Region(x_min, x_max, y_min, y_max, z_min, z_max);
 	}
 
@@ -145,9 +142,9 @@ public:
 
 	MPM3D() {}
 
-	void initialize(const Config &config);
+	virtual void initialize(const Config &config) override;
 
-	void step(real dt = 0.0f) {
+	virtual void step(real dt) override {
 		int steps = (int)std::ceil(dt / delta_t);
 		for (int i = 0; i < steps; i++) {
 			substep(dt / steps);
@@ -156,20 +153,11 @@ public:
 
 	std::vector<RenderParticle> get_render_particles() const;
 
-	void add_particle(const Config &config) {
-	}
-
-	float get_current_time() {
-		return t;
-	}
-
 	~MPM3D() {
 		for (auto &p : particles) {
 			delete p;
 		}
 	}
-
-	//virtual boost::python::dict get_simulation_data(const Config &config);
 };
 
 std::shared_ptr<MPM3D> get_mpm_3d_simulator(const Config &config);

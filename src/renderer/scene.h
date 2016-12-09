@@ -41,7 +41,6 @@ struct Face {
 
 class Mesh {
 public:
-	Mesh(ptree &pt);
 	Mesh() {}
 
 	void initialize(const Config &config);
@@ -240,7 +239,7 @@ public:
 	}
 
 	void sample_photon(Photon &p, real r, real delta_t, real weight) {
-		int tid = min(int(std::lower_bound(emission_cdf.begin(), emission_cdf.end(), r) - emission_cdf.begin()),
+		int tid = std::min(int(std::lower_bound(emission_cdf.begin(), emission_cdf.end(), r) - emission_cdf.begin()),
 			(int)triangles.size() - 1);
 		Triangle &t = triangles[tid];
 		Mesh *mesh = triangle_id_to_mesh[tid];

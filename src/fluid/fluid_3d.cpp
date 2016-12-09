@@ -121,8 +121,8 @@ void Smoke3D::show(ImageBuffer<Vector3> &buffer) {
 				t_sum += t.sample(x, y, z);
 			}
 			rho_sum *= density_scaling;
-			t_sum = min(1.0f, t_sum / depth);
-			rho_sum = min(1.0f, rho_sum / depth);
+			t_sum = std::min(1.0f, t_sum / depth);
+			rho_sum = std::min(1.0f, rho_sum / depth);
 			buffer[i][j] = Vector3(t_sum, rho_sum * 0.3f, rho_sum * 0.8f);
 		}
 	}
@@ -138,8 +138,8 @@ void Smoke3D::show(ImageBuffer<Vector3> &buffer) {
 				t_sum += t.sample(x, y, z);
 			}
 			rho_sum *= density_scaling;
-			t_sum = min(1.0f, t_sum / depth);
-			rho_sum = min(1.0f, rho_sum / depth);
+			t_sum = std::min(1.0f, t_sum / depth);
+			rho_sum = std::min(1.0f, rho_sum / depth);
 			buffer[half_width + i][j] = Vector3(t_sum, rho_sum * 0.3f, rho_sum * 0.8f);
 		}
 	}
@@ -252,10 +252,6 @@ void Smoke3D::confine_vorticity(float delta_t) {
 
 }
 
-std::shared_ptr<Fluid3D> create_fluid_3d(std::string name, const Config &config) {
-	auto fluid_3d = std::make_shared<Smoke3D>();
-	fluid_3d->initialize(config);
-	return fluid_3d;
-}
+TC_IMPLEMENTATION(Simulation3D, Smoke3D, "smoke");
 
 TC_NAMESPACE_END

@@ -78,13 +78,13 @@ void MPM::step(float delta_t)
 {
 	float simulation_time = 0.0f;
 	while (simulation_time < delta_t - eps) {
-		float purpose_dt = min(max_delta_t, get_dt_with_cfl_1() * cfl);
+		float purpose_dt = std::min(max_delta_t, get_dt_with_cfl_1() * cfl);
 		float thres = min_delta_t;
 		if (purpose_dt < delta_t * thres) {
 			purpose_dt = delta_t * thres;
 			printf("substep dt too small, clamp.\n");
 		}
-		float dt = min(delta_t - simulation_time, purpose_dt);
+		float dt = std::min(delta_t - simulation_time, purpose_dt);
 		substep(dt);
 		simulation_time += dt;
 	}
@@ -97,7 +97,7 @@ void MPM::compute_material_levelset()
 	for (auto &p : particles) {
 		for (auto &ind : material_levelset.get_rasterization_region(p->pos, 3)) {
 			Vector2 delta_pos = ind.get_pos() - p->pos;
-			material_levelset[ind] = min(material_levelset[ind], length(delta_pos) - 0.8f);
+			material_levelset[ind] = std::min(material_levelset[ind], length(delta_pos) - 0.8f);
 		}
 	}
 	for (auto &ind : material_levelset.get_region()) {

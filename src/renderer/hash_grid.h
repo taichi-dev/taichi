@@ -79,7 +79,7 @@ TC_NAMESPACE_BEGIN
                 for (int y = bounds[1][0]; y <= bounds[1][1]; y++)
                     for (int z = bounds[2][0]; z <= bounds[2][1]; z++) {
                         int cell_id = spatial_hash(x, y, z);
-                        cache.push_back(make_pair(cell_id, val));
+                        cache.push_back(std::make_pair(cell_id, val));
                     }
         }
 

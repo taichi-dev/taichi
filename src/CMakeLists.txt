@@ -28,3 +28,7 @@ foreach(source IN LISTS TAICHI_SOURCE)
     string(REPLACE "/" "\\" source_path_msvc "${source_path}")
     source_group("${source_path_msvc}" FILES "${source}")
 endforeach()
+
+if(MSVC)
+    set_property(TARGET ${CORE_LIBRARY_NAME} APPEND PROPERTY LINK_FLAGS /DEBUG)
+endif()

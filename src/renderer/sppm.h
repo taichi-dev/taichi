@@ -41,7 +41,7 @@ TC_NAMESPACE_BEGIN
         real initial_radius;
         int num_photons_per_stage;
         HashGrid hash_grid;
-        vector<HitPoint> hit_points;
+        std::vector<HitPoint> hit_points;
         ImageBuffer<Vector3> image;
         ImageBuffer<Vector3> image_direct_illum;
         int stages;

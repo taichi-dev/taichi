@@ -83,7 +83,7 @@ TC_NAMESPACE_BEGIN
             real r = (real)accepted / (real)mutated;
             last_r = r;
             mutation_strength = mutation_strength + (r - 0.234f) / mutated;
-            mutation_strength = min(0.5f, max(0.0001f, mutation_strength));
+            mutation_strength = std::min(0.5f, std::max(0.0001f, mutation_strength));
         }
         P(mutated);
         P(accepted);

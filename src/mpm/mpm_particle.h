@@ -92,7 +92,7 @@ struct EPParticle : MPMParticle {
 	mat2 get_energy_gradient() {
 		float j_e = det(dg_e);
 		float j_p = det(dg_p);
-		float e = expf(min(hardening * (1.0f - j_p), 5.0f));
+		float e = std::exp(std::min(hardening * (1.0f - j_p), 5.0f));
 		float mu = mu_0 * e;
 		float lambda = lambda_0 * e;
 		mat2 r, s;

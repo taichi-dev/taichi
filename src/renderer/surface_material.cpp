@@ -49,7 +49,7 @@ public:
 		else {
 			// We do the following other than the above to ensure correlation for MCMC...
 			if (u > v) {
-				swap(u, v);
+				std::swap(u, v);
 			}
 			if (v < eps) {
 				v = eps;
@@ -115,7 +115,7 @@ public:
 			return Vector3(0);
 		}
 		const Vector3 r = reflect(in);
-		real t = min(max(dot(r, out), 0.0f), 1.0f);
+		real t = std::min(std::max(dot(r, out), 0.0f), 1.0f);
 		auto color = color_sampler->sample(uv);
 		return color * (glossiness + 2.0f) / (2.0f * pi) * pow(t, glossiness)
 			/ max(max(fabs(in.z), fabs(out.z)), 1e-7f);
@@ -278,7 +278,7 @@ public:
 
 class PBRMaterial : public SurfaceMaterial {
 protected:
-	vector<std::shared_ptr<SurfaceMaterial> > materials;
+	std::vector<std::shared_ptr<SurfaceMaterial> > materials;
 	bool flag_is_delta;
 public:
 	virtual void initialize(const Config &config) override {

@@ -6,28 +6,6 @@
 
 TC_NAMESPACE_BEGIN
 
-using namespace std;
-typedef glm::vec2 Vector2;
-typedef glm::vec3 Vector3;
-typedef glm::vec4 Vector4;
-
-typedef glm::ivec2 Vector2i;
-typedef glm::ivec3 Vector3i;
-typedef glm::ivec4 Vector4i;
-
-typedef glm::vec2 Vector2f;
-typedef glm::vec3 Vector3f;
-typedef glm::vec4 Vector4f;
-
-typedef glm::dvec2 Vector2d;
-typedef glm::dvec3 Vector3d;
-typedef glm::dvec4 Vector4d;
-
-typedef float real;
-typedef glm::mat2 Matrix2;
-typedef glm::mat3 Matrix3;
-typedef glm::mat4 Matrix4;
-
 inline Vector3 cross(const Vector3 &a, const Vector3 &b) {
 	return glm::cross(a, b);
 }
@@ -81,7 +59,7 @@ inline Vector3 random_diffuse(const Vector3 &normal) {
 
 inline Vector3 random_diffuse(const Vector3 &normal, real u, real v) {
 	if (u > v) {
-		swap(u, v);
+		std::swap(u, v);
 	}
 	if (v < eps) {
 		v = eps;
@@ -102,28 +80,28 @@ inline Vector3 random_diffuse(const Vector3 &normal) {
 
 inline Vector4 pow(const Vector4 &v, const float &p) {
 	return Vector4(
-		::pow(v[0], p),
-		::pow(v[1], p),
-		::pow(v[2], p),
-		::pow(v[3], p)
+		std::pow(v[0], p),
+		std::pow(v[1], p),
+		std::pow(v[2], p),
+		std::pow(v[3], p)
 	);
 }
 
 inline Vector3 pow(const Vector3 &v, const float &p) {
 	return Vector3(
-		::pow(v[0], p),
-		::pow(v[1], p),
-		::pow(v[2], p)
+		std::pow(v[0], p),
+		std::pow(v[1], p),
+		std::pow(v[2], p)
 	);
 }
 
 
 inline real max_component(const Vector3 &v) {
-	return max(v.x, max(v.y, v.z));
+	return std::max(v.x, std::max(v.y, v.z));
 }
 
 inline double max_component(const Vector3d &v) {
-	return max(v.x, max(v.y, v.z));
+	return std::max(v.x, std::max(v.y, v.z));
 }
 
 #define CV_ON

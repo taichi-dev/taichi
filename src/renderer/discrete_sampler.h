@@ -48,13 +48,13 @@ public:
 	}
 	int sample(real r, real &pdf_out) const {
 		int index = int(std::lower_bound(cdf.begin(), cdf.end(), r) - cdf.begin());
-		index = min(index, get_num_elements() - 1);
+		index = std::min(index, get_num_elements() - 1);
 		pdf_out = pdf[index];
 		return index;
 	}
 	int sample(real r, real &pdf_out, real &cdf_out) const {
 		int index = int(std::lower_bound(cdf.begin(), cdf.end(), r) - cdf.begin());
-		index = min(index, get_num_elements() - 1);
+		index = std::min(index, get_num_elements() - 1);
 		pdf_out = pdf[index];
 		cdf_out = cdf[index];
 		return index;

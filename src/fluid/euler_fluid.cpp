@@ -258,7 +258,7 @@ void EulerFluid::step(float delta_t)
 			avg /= particles.size() * 2;
 			P(avg);
 		}
-		float dt = min(delta_t - simulation_time, purpose_dt);
+		float dt = std::min(delta_t - simulation_time, purpose_dt);
 		substep(dt);
 		simulation_time += dt;
 	}
@@ -271,7 +271,7 @@ void EulerFluid::compute_liquid_levelset()
 	for (auto &p : particles) {
 		for (auto &ind : liquid_levelset.get_rasterization_region(p.position, 3)) {
 			Vector2 delta_pos = ind.get_pos() - p.position;
-			liquid_levelset[ind] = min(liquid_levelset[ind], length(delta_pos) - p.radius);
+			liquid_levelset[ind] = std::min(liquid_levelset[ind], length(delta_pos) - p.radius);
 		}
 	}
 	for (auto &ind : liquid_levelset.get_region()) {

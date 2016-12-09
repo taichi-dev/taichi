@@ -26,7 +26,28 @@ using glm::mat2;
 using glm::mat3;
 using glm::mat4;
 
-const float pi{ acosf(-1.0f) };
+typedef glm::vec2 Vector2;
+typedef glm::vec3 Vector3;
+typedef glm::vec4 Vector4;
+
+typedef glm::ivec2 Vector2i;
+typedef glm::ivec3 Vector3i;
+typedef glm::ivec4 Vector4i;
+
+typedef glm::vec2 Vector2f;
+typedef glm::vec3 Vector3f;
+typedef glm::vec4 Vector4f;
+
+typedef glm::dvec2 Vector2d;
+typedef glm::dvec3 Vector3d;
+typedef glm::dvec4 Vector4d;
+
+typedef float real;
+typedef glm::mat2 Matrix2;
+typedef glm::mat3 Matrix3;
+typedef glm::mat4 Matrix4;
+
+const real pi{ acosf(-1.0f) };
 
 #define eps (1e-6f)
 
@@ -161,16 +182,40 @@ inline void print(const mat2 &v) {
 	printf("\n%f %f\n%f %f\n", v[0][0], v[1][0], v[0][1], v[1][1]);
 }
 
-inline void print(const vec2 &v) {
+inline void print(const Vector2 &v) {
 	printf("%f %f\n", v[0], v[1]);
 }
 
-inline void print(const vec3 &v) {
+inline void print(const Vector3 &v) {
 	printf("%f %f %f\n", v[0], v[1], v[2]);
 }
 
-inline void print(const vec4 &v) {
+inline void print(const Vector4 &v) {
 	printf("%f %f %f %f\n", v[0], v[1], v[2], v[3]);
+}
+
+inline void print(const Vector2d &v) {
+	printf("%f %f\n", v[0], v[1]);
+}
+
+inline void print(const Vector3d &v) {
+	printf("%f %f %f\n", v[0], v[1], v[2]);
+}
+
+inline void print(const Vector4d &v) {
+	printf("%f %f %f %f\n", v[0], v[1], v[2], v[3]);
+}
+
+inline void print(const Vector2i &v) {
+	printf("%d %d\n", v[0], v[1]);
+}
+
+inline void print(const Vector3i &v) {
+	printf("%d %d %d\n", v[0], v[1], v[2]);
+}
+
+inline void print(const Vector4i &v) {
+	printf("%d %d %d %d\n", v[0], v[1], v[2], v[3]);
 }
 
 inline void print(const mat4 &v) {

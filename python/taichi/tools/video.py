@@ -6,11 +6,7 @@ class VideoManager:
     def __init__(self, directory, width, height, post_processor=None):
         self.width = width
         self.height = height
-        self.directory = '../output/frames/' + directory
-        try:
-            os.mkdir(self.directory)
-        except Exception as e:
-            print e
+        self.directory = directory
         self.post_processor = post_processor
         self.frame_counter = 0
 

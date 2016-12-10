@@ -47,6 +47,7 @@ void Smoke3D::project() {
 }
 
 void Smoke3D::initialize(const Config &config) {
+	Simulation3D::initialize(config);
 	res = config.get_vec3i("resolution");
 	smoke_alpha = config.get("smoke_alpha", 0.0f);
 	smoke_beta = config.get("smoke_beta", 0.0f);

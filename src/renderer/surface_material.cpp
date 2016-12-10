@@ -2,7 +2,6 @@
 #include "surface_material.h"
 #include "discrete_sampler.h"
 #include "common/config.h"
-#include "io/importer.h"
 
 TC_NAMESPACE_BEGIN
 TC_INTERFACE_DEF(SurfaceMaterial, "material");

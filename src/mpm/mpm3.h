@@ -89,7 +89,6 @@ public:
 	float t;
 	Vector gravity;
 	real delta_t;
-	int num_threads;
 
 	Region get_bounded_rasterization_region(Vector p) {
 		assert_info(is_normal(p.x) && is_normal(p.y) && is_normal(p.z), std::string("Abnormal p: ") + std::to_string(p.x)

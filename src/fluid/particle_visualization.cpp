@@ -32,8 +32,8 @@ public:
 		if (particles.empty()) {
 			return;
 		}
-		Vector2 uv_lowerbound(1e30f);
-		Vector2 uv_upperbound(-1e30f);
+		Vector2 uv_lowerbound(2000 * shadow_map_resolution);
+		Vector2 uv_upperbound(-2000 * shadow_map_resolution);
 
 		std::vector <std::pair<real, int>> indices(particles.size());
 		for (int i = 0; i < (int)indices.size(); i++) {
@@ -47,7 +47,7 @@ public:
 		}
 		std::sort(indices.begin(), indices.end());
 		Vector2 res = (uv_upperbound - uv_lowerbound) / shadow_map_resolution;
-		Array2D<real> occlusion_buffer(std::ceil(res.x) + 1, std::ceil(res.y) + 1, 1.0f);
+		Array2D<real> occlusion_buffer((int)std::ceil(res.x) + 1, (int)std::ceil(res.y) + 1, 1.0f);
 		real shadow_map_scaling = 1.0f / shadow_map_resolution;
 		std::vector<real> occlusion(particles.size());
 
@@ -58,8 +58,12 @@ public:
 			uv = shadow_map_scaling * (uv - uv_lowerbound);
 			int int_x = (int)(uv.x);
 			int int_y = (int)(uv.y);
-			occlusion[index] = std::max(ambient_light, occlusion_buffer.sample(uv));
-			occlusion_buffer[int_x][int_y] *= (1.0f - shadowing * particles[index].color.w);
+			real occ = 0.0f;
+			if (occlusion_buffer.inside(uv)) {
+				occlusion_buffer[int_x][int_y] *= (1.0f - shadowing * particles[index].color.w);
+				occ = occlusion_buffer.sample(uv);
+			}
+			occlusion[index] = std::max(ambient_light, occ);
 		}
 
 		for (int i = 0; i < (int)indices.size(); i++) {

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "io/importer.h"
 #include "geometry_primitives.h"
 #include "common/config.h"
 #include "common/meta.h"

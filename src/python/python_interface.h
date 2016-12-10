@@ -34,6 +34,7 @@
 #include "mpm/mpm.h"
 #include "levelset/levelset2d.h"
 #include "visualization/rgb.h"
+#include "io/io.h"
 
 namespace boost {
 #define EXPLICIT_GET_POINTER(T) template <> T const volatile * get_pointer<T const volatile >(T const volatile *c){return c;}
@@ -282,12 +283,16 @@ BOOST_PYTHON_MODULE(taichi_core) {
         .def(vector_indexing_suite<std::vector<x>, true>()) \
         .def("append", static_cast<void (std::vector<x>::*)(const x &)>(&std::vector<x>::push_back)) \
         .def("clear", &std::vector<x>::clear) \
+        .def("write", &write_vector_to_disk<x>) \
+        .def("read", &read_vector_from_disk<x>) \
     ;
 #define DEFINE_VECTOR_OF(x) \
     class_<std::vector<x>>(#x "List", init<>()) \
         .def(vector_indexing_suite<std::vector<x>, true>()) \
         .def("append", static_cast<void (std::vector<x>::*)(const x &)>(&std::vector<x>::push_back)) \
         .def("clear", &std::vector<x>::clear) \
+        .def("write", &write_vector_to_disk<x>) \
+        .def("read", &read_vector_from_disk<x>) \
     ;
 
 	DEFINE_VECTOR_OF(Vector2);

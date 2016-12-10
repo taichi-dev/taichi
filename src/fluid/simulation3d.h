@@ -9,12 +9,15 @@ TC_NAMESPACE_BEGIN
 class Simulation3D {
 protected:
 	real current_t = 0.0f;
+	int num_threads;
 public:
 	Simulation3D() {}
 	virtual float get_current_time() const {
 		return current_t;
 	}
-	virtual void initialize(const Config &config) {}
+	virtual void initialize(const Config &config) {
+		num_threads = config.get_int("num_threads");
+	}
 	virtual void step(real t) {
 		error("no impl");
 	}

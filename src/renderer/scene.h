@@ -1,7 +1,6 @@
 #pragma once
 
 #include "geometry_primitives.h"
-#include "io/importer.h"
 #include "camera.h"
 #include <map>
 #include <deque>

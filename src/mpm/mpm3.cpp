@@ -87,9 +87,9 @@ struct EPParticle3 : public MPM3D::Particle {
 };
 
 void MPM3D::initialize(const Config &config) {
+	Simulation3D::initialize(config);
 	res = config.get_vec3i("resolution");
 	P(res);
-	num_threads = config.get_int("num_threads");
 	gravity = config.get_vec3("gravity");
 	delta_t = config.get_real("delta_t");
 

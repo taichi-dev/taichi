@@ -13,7 +13,7 @@ class MPM3:
     def __init__(self, **kwargs):
         self.c = tc_core.create_simulation3d('mpm')
         self.c.initialize(P(**kwargs))
-        self.video_manager = VideoManager(get_uuid(), 960, 540)
+        self.video_manager = VideoManager('../output/frames/' + get_uuid(), 960, 540)
         self.particle_renderer = ParticleRenderer('shadow_map',
                                                   shadow_map_resolution=0.5, alpha=0.5, shadowing=0.1, ambient_light=0.2,
                                                   light_direction=(-1, 1, -1))

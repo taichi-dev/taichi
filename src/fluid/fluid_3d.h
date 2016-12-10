@@ -31,7 +31,6 @@ public:
 	Vector3 initial_speed;
 	float tracker_generation;
 	float perturbation;
-	int num_threads;
 	std::vector<Tracker3D> trackers;
 	std::shared_ptr<PressureSolver3D> pressure_solver;
 

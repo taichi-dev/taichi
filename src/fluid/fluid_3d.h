@@ -7,79 +7,60 @@
 #include "common/interface.h"
 #include "math/array_3d.h"
 #include "pressure_solver.h"
+#include "fluid/simulation3d.h"
 
 TC_NAMESPACE_BEGIN
-    class ParticleShadowMapRenderer;
 
-    class Fluid3D : public Simulator {
-    protected:
-        float current_t;
-    public:
-		virtual void show(ImageBuffer<Vector3> &buffer) {};
-		virtual ImageBuffer<Vector3> get_visualization(int width, int height) { return ImageBuffer<Vector3>(1, 1); };
-        float get_current_time() {
-            return current_t;
-        }
+class Tracker3D {
+public:
+	Vector3 position;
+	Vector3 color;
+	Tracker3D() {}
+	Tracker3D(const Vector3 &position, const Vector3 &color) : position(position), color(color) {}
+};
 
-    };
+class Smoke3D : public Simulation3D {
+	typedef Array3D<float> Array;
+public:
+	Array u, v, w, rho, t, pressure, last_pressure;
+	Vector3i res;
+	float smoke_alpha, smoke_beta;
+	float temperature_decay;
+	float pressure_tolerance;
+	float density_scaling;
+	Vector3 initial_speed;
+	float tracker_generation;
+	float perturbation;
+	std::vector<Tracker3D> trackers;
+	std::shared_ptr<PressureSolver3D> pressure_solver;
 
-    class Tracker3D {
-    public:
-        Vector3 position;
-        Vector3 color;
-        Tracker3D() {}
-        Tracker3D(const Vector3 &position, const Vector3 &color) : position(position), color(color) {}
-    };
+	Smoke3D() {}
 
-    class Smoke3D : public Fluid3D {
-        typedef Array3D<float> Array;
-    public:
-        Array u, v, w, rho, t, pressure, last_pressure;
-        int width, height, depth;
-        float smoke_alpha, smoke_beta;
-        float temperature_decay;
-        float pressure_tolerance;
-        float density_scaling;
-        Vector3 initial_speed;
-        bool show_trackers;
-        float tracker_generation;
-        float perturbation;
-        float viewport_rotation;
-        std::vector<Tracker3D> trackers;
-        std::shared_ptr<PressureSolver3D> pressure_solver;
-        std::shared_ptr<ParticleShadowMapRenderer> particle_renderer;
+	void remove_outside_trackers();
 
-        Smoke3D() {}
+	void initialize(const Config &config);
 
-        void remove_outside_trackers();
+	void project();
 
-        void initialize(const Config &config);
+	void confine_vorticity(float delta_t);
 
-        void project();
+	void advect(float delta_t);
 
-        void confine_vorticity(float delta_t);
+	void move_trackers(float delta_t);
 
-        void advect(float delta_t);
+	void step(float delta_t);
 
-        void move_trackers(float delta_t);
+	virtual void show(ImageBuffer<Vector3> &buffer);
 
-        void step(float delta_t);
+	void advect(Array &attr, float delta_t);
 
-        virtual void show(ImageBuffer<Vector3> &buffer);
+	void apply_boundary_condition();
 
-        virtual void render_trackers(ImageBuffer<Vector3> &buffer);
+	static Vector3 sample_velocity(const Array &u, const Array &v, const Array &w, const Vector3 &pos);
 
-        void advect(Array &attr, float delta_t);
+	Vector3 sample_velocity(const Vector3 &pos) const;
 
-        void apply_boundary_condition();
-
-        static Vector3 sample_velocity(const Array &u, const Array &v, const Array &w, const Vector3 &pos);
-
-        Vector3 sample_velocity(const Vector3 &pos) const;
-
-        ImageBuffer<Vector3> get_visualization(int width, int height);
-    };
-
-    std::shared_ptr<Fluid3D> create_fluid_3d(std::string name, const Config &config);
+	std::vector<RenderParticle> get_render_particles() const;
+};
 
 TC_NAMESPACE_END

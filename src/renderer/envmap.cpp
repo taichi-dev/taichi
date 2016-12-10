@@ -21,7 +21,7 @@ void EnvironmentMap::initialize(const Config & config) {
 	*/
 	for (int j = 0; j < height - j - 1; j++) {
 		for (int i = 0; i < width; i++)
-			swap((*image)[i][j], (*image)[i][height - j - 1]);
+			std::swap((*image)[i][j], (*image)[i][height - j - 1]);
 	}
 
 	build_cdfs();

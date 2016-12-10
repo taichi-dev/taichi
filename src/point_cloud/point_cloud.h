@@ -23,9 +23,9 @@ public:
 
 	void query(Vector2 p, int &index, float &dist) const;
 
-	void query_n(Vector2 p, int n, vector<int> &index, vector<float> &dist) const;
+	void query_n(Vector2 p, int n, std::vector<int> &index, std::vector<float> &dist) const;
 
-	void query_n_index(Vector2 p, int n, vector<int> &index) const;
+	void query_n_index(Vector2 p, int n, std::vector<int> &index) const;
 
 private:
 	std::vector<Vector2> data_points;

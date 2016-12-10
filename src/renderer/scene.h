@@ -1,7 +1,6 @@
 #pragma once
 
 #include "geometry_primitives.h"
-#include "io/importer.h"
 #include "camera.h"
 #include <map>
 #include <deque>
@@ -41,7 +40,6 @@ struct Face {
 
 class Mesh {
 public:
-	Mesh(ptree &pt);
 	Mesh() {}
 
 	void initialize(const Config &config);
@@ -216,7 +214,7 @@ public:
 	// We really need a light source class that unifies triangles and envmap now...
 	void sample_light_source(real r, real &pdf, const Triangle *&triangle,
 		const EnvironmentMap *&envmap) const {
-		if (r < envmap_sample_prob) {
+		if (r <= envmap_sample_prob) { // TODO: does changing <= to < lead to error?
 			triangle = nullptr;
 			envmap = this->envmap.get();
 			pdf = envmap_sample_prob;
@@ -240,7 +238,7 @@ public:
 	}
 
 	void sample_photon(Photon &p, real r, real delta_t, real weight) {
-		int tid = min(int(std::lower_bound(emission_cdf.begin(), emission_cdf.end(), r) - emission_cdf.begin()),
+		int tid = std::min(int(std::lower_bound(emission_cdf.begin(), emission_cdf.end(), r) - emission_cdf.begin()),
 			(int)triangles.size() - 1);
 		Triangle &t = triangles[tid];
 		Mesh *mesh = triangle_id_to_mesh[tid];

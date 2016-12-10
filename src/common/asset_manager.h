@@ -16,7 +16,7 @@ public:
 	std::shared_ptr<T> get_asset_(int id) {
 		assert_info(id_to_asset.find(id) != id_to_asset.end(), "Asset not found");
 		auto ptr = id_to_asset[id];
-		assert(!ptr.expired());
+		assert_info(!ptr.expired(), "Asset has been expired");
 		return std::static_pointer_cast<T>(ptr.lock());
 	}
 

@@ -111,10 +111,10 @@ protected:
 	Region2D get_bounded_rasterization_region(Vector2 p) {
 		int x = int(p.x);
 		int y = int(p.y);
-		int x_min = max(0, x - 1);
-		int x_max = min(width, x + 3);
-		int y_min = max(0, y - 1);
-		int y_max = min(height, y + 3);
+		int x_min = std::max(0, x - 1);
+		int x_max = std::min(width, x + 3);
+		int y_min = std::max(0, y - 1);
+		int y_max = std::min(height, y + 3);
 		return Region2D(x_min, x_max, y_min, y_max);
 	}
 

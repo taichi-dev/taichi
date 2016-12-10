@@ -8,10 +8,12 @@
 #include <cstdint>
 #include <algorithm>
 
-using std::cout;
-using std::endl;
-
 extern std::string file_search_root;
+
+// Do not disable assert...
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 
 #ifdef _WIN64
 #define __FILENAME__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
@@ -30,7 +32,6 @@ extern std::string file_search_root;
 #define sprintf_s sprintf
 #endif
 
-
 #undef assert
 #define assert(x) {bool ret = static_cast<bool>(x); if (!ret) {printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, #x); getchar(); exit(-1);}}
 #define assert_info(x, info) {bool ret = static_cast<bool>(x); if (!ret) {printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, &((info)[0])); getchar(); exit(-1);}}
@@ -48,3 +49,9 @@ namespace boost
 #define foreach   BOOST_FOREACH
 #define TC_NAMESPACE_BEGIN namespace taichi {
 #define TC_NAMESPACE_END }
+
+#ifdef _WIN64
+typedef __int64 int64;
+#else
+typedef long long int64;
+#endif

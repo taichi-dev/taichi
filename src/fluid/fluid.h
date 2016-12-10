@@ -36,7 +36,7 @@ public:
 		}
 	};
 protected:
-    vector<Particle> particles;
+    std::vector<Particle> particles;
 };
 
 std::shared_ptr<Fluid> create_fluid(std::string name);

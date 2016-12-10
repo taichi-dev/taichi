@@ -74,33 +74,6 @@ TC_NAMESPACE_BEGIN
 		}
 	}
 
-    Mesh::Mesh(ptree &pt) {
-        transform = glm::mat4(1.0f);
-        std::string filepath = pt.get<std::string>("filepath");
-		load_from_file(filepath);
-        initial_temperature = pt.get("temperature", 0.0f);
-        need_voxelization = pt.get("need_voxelization", 0.0f) > 0;
-        const_temp = pt.get("const_temp", 0.0f) > 0;
-        sub_div_limit = pt.get("sub_divide_limit", 0.0f);
-
-        emission = 0.0f;
-        auto material_node = pt.get_child("material");
-        std::string material_type = material_node.get<std::string>("type");
-        if (material_type == "light_source") {
-            this->emission_color = load_vector3(material_node.get("emission_color", std::string("(0.5, 0.5, 0.5)")));
-            this->emission = luminance(this->emission_color);
-            material = create_instance<SurfaceMaterial>("emissive");
-            material->initialize(Config().set("color", emission_color));
-            auto emission_map = create_initialized_instance<Texture>("constant", Config().set("value", emission_color));
-            material->set_color_sampler(emission_map);
-        } else if (material_type == "pbr") {
-            material = create_instance<SurfaceMaterial>("pbr");
-            material->initialize(material_node);
-        } else {
-            error("No material found.");
-        }
-    }
-
     IntersectionInfo Scene::get_intersection_info(int triangle_id, Ray &ray) {
         IntersectionInfo inter;
         if (triangle_id == -1) {

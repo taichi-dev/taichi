@@ -1,5 +1,4 @@
 #include "mpm3.h"
-#include "fluid/particle_visualization.h"
 #include "math/qr_svd/qr_svd.h"
 #include "system/threading.h"
 
@@ -51,7 +50,7 @@ struct EPParticle3 : public MPM3D::Particle {
 		const real mu_0 = 1e5f, lambda_0 = 1e5f;
 		real j_e = det(dg_e);
 		real j_p = det(dg_p);
-		real e = expf(min(hardening * (1.0f - j_p), 5.0f));
+		real e = std::exp(std::min(hardening * (1.0f - j_p), 5.0f));
 		real mu = mu_0 * e;
 		real lambda = lambda_0 * e;
 		Matrix r, s;
@@ -88,19 +87,19 @@ struct EPParticle3 : public MPM3D::Particle {
 };
 
 void MPM3D::initialize(const Config &config) {
-	width = config.get_int("simulation_width");
-	height = config.get_int("simulation_height");
-	depth = config.get_int("simulation_depth");
-	num_threads = config.get_int("num_threads");
-	//this->h = config.get_float("delta_x");
-	t = 0.0f;
+	Simulation3D::initialize(config);
+	res = config.get_vec3i("resolution");
+	P(res);
 	gravity = config.get_vec3("gravity");
+	delta_t = config.get_real("delta_t");
+
+	t = 0.0f;
+
 	auto initial_velocity = config.get_vec3("initial_velocity");
-	delta_t = config.get("delta_t", 0.001f);
-	for (int i = int(width * 0.4); i <= int(width * 0.6); i++) {
-		for (int j = int(height * 0.2); j <= int(height * 0.6); j++) {
-			for (int k = int(depth * 0.4); k <= int(depth * 0.6); k++) {
-				if (j < height / 2 && i < width / 2) {
+	for (int i = int(res[0] * 0.4); i <= int(res[0] * 0.6); i++) {
+		for (int j = int(res[1] * 0.2); j <= int(res[1] * 0.6); j++) {
+			for (int k = int(res[2] * 0.4); k <= int(res[2] * 0.6); k++) {
+				if (j < res[1] / 2 && i < res[0] / 2) {
 					continue;
 				}
 				for (int l = 0; l < 8; l++) {
@@ -113,23 +112,10 @@ void MPM3D::initialize(const Config &config) {
 			}
 		}
 	}
-	grid_velocity.initialize(width, height, depth, Vector(0.0f));
-	grid_mass.initialize(width, height, depth, 0);
-	grid_locks.initialize(width, height, depth, 0);
+	grid_velocity.initialize(res[0], res[1], res[2], Vector(0.0f));
+	grid_mass.initialize(res[0], res[1], res[2], 0);
+	grid_locks.initialize(res[0], res[1], res[2], 0);
 
-	particle_renderer = std::make_shared<ParticleShadowMapRenderer>();
-	max_dim = max(max(width, height), depth);
-	Config particle_renderer_config;
-	particle_renderer_config.set("shadow_map_resolution", 1)
-		.set("shadowing", 0.0f)
-		.set("light_direction", Vector3(0, 1, 0))
-		.set("shadowing", 0.0f)
-		.set("center", Vector3((float)width / max_dim, (float)height / max_dim, (float)depth / max_dim) * 0.5f)
-		.set("alpha", 1);
-	particle_renderer->initialize(particle_renderer_config);
-
-	viewport_rotation = config.get("viewport_rotation", 1.0f);
-	// Test SVD...
 	/*
 	for (int i = 0; i < 100; i++) {
 		Matrix3 m(0.0f), u, s, v, r;
@@ -148,18 +134,16 @@ void MPM3D::initialize(const Config &config) {
 	*/
 }
 
-ImageBuffer<Vector3> MPM3D::get_visualization(int width, int height) {
-	ImageBuffer<Vector3> buffer(width, height);
-	using Particle = ParticleShadowMapRenderer::Particle;
+std::vector<RenderParticle> MPM3D::get_render_particles() const {
+	using Particle = RenderParticle;
 	std::vector<Particle> render_particles;
 	render_particles.reserve(particles.size());
+	Vector3 center(res[0] / 2.0f, res[1] / 2.0f, res[2] / 2.0f);
 	for (auto p_p : particles) {
 		MPM3D::Particle &p = *p_p;
-		render_particles.push_back(Particle(p.pos * (1.0f / max_dim), Vector3(1, 1, 1)));
+		render_particles.push_back(Particle(p.pos - center, Vector4(0.8f, 0.9f, 1.0f, 0.5f)));
 	}
-	//particle_renderer->set_rotate_z(t * viewport_rotation);
-	particle_renderer->render(buffer, render_particles);
-	return buffer;
+	return render_particles;
 }
 
 void MPM3D::rasterize() {
@@ -254,21 +238,15 @@ void MPM3D::substep(float delta_t) {
 		resample(delta_t);
 		parallel_for_each_particle([&](Particle &p) {
 			p.pos += delta_t * p.v;
-			p.pos.x = clamp(p.pos.x, 0.0f, width - eps);
-			p.pos.y = clamp(p.pos.y, 0.0f, height - eps);
-			p.pos.z = clamp(p.pos.z, 0.0f, depth - eps);
+			p.pos.x = clamp(p.pos.x, 0.0f, res[0] - eps);
+			p.pos.y = clamp(p.pos.y, 0.0f, res[1] - eps);
+			p.pos.z = clamp(p.pos.z, 0.0f, res[2] - eps);
 			p.plasticity();
 		});
 	}
-	t += delta_t;
+	current_t += delta_t;
 }
 
-
-std::shared_ptr<MPM3D> get_mpm_3d_simulator(const Config &config) {
-	auto mpm = std::make_shared<MPM3D>();
-	mpm->initialize(config);
-	return mpm;
-}
-
+TC_IMPLEMENTATION(Simulation3D, MPM3D, "mpm");
 
 TC_NAMESPACE_END

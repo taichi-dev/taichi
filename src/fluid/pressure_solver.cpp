@@ -16,11 +16,13 @@ TC_NAMESPACE_BEGIN
         int width, height, depth, max_level;
         std::vector<Array> pressures, residuals, tmp_residuals;
         const int size_threshould = 64;
+		int num_threads;
 
         void initialize(const Config &config) {
             this->width = config.get_int("width");
             this->height = config.get_int("height");
             this->depth = config.get_int("depth");
+            this->num_threads = config.get_int("num_threads");
             this->max_level = 0;
             int width = this->width;
             int height = this->height;
@@ -39,10 +41,30 @@ TC_NAMESPACE_BEGIN
             } while (width * height * depth * 8 >= size_threshould);
         }
 
-        static void gauss_seidel(const Array &residual, Array &pressure, int rounds) {
+		void parallel_for_each_cell(Array &arr, int threshold, const std::function<void(const Index3D &index)> &func) {
+			int max_side = std::max(std::max(arr.get_width(), arr.get_height()), arr.get_depth());
+			int num_threads;
+			if (max_side >= 32) {
+				num_threads = this->num_threads;
+			}
+			else {
+				num_threads = 1;
+			}
+			ThreadedTaskManager::run(arr.get_width(), num_threads, [&](int x) {
+				const int height = arr.get_height();
+				const int depth = arr.get_depth();
+				for (int y = 0; y < height; y++) {
+					for (int z = 0; z < depth; z++) {
+						func(Index3D(x, y, z));
+					}
+				}
+			});
+		}
+
+        void gauss_seidel(const Array &residual, Array &pressure, int rounds) {
             for (int i = 0; i < rounds; i++) {
                 for (int c = 0; c < 2; c++) {
-                    for (auto &ind : pressure.get_region()) {
+					parallel_for_each_cell(pressure, 128, [&](const Index3D &ind) {
                         int sum = ind.i + ind.j + ind.k;
                         if ((sum) % 2 == c) {
                             float res = residual[ind];
@@ -54,7 +76,7 @@ TC_NAMESPACE_BEGIN
                             }
                             pressure[ind] = res / numerator;
                         }
-                    }
+					});
                 }
             }
         }
@@ -75,7 +97,7 @@ TC_NAMESPACE_BEGIN
         }
 
         void compute_residual(const Array &pressure, const Array &div, Array &residual) {
-            for (auto &ind : pressure.get_region()) {
+			parallel_for_each_cell(residual, 128, [&](const Index3D &ind) {
                 float pressure_center = pressure[ind];
                 float res = 0.0f;
                 for (auto &offset : offsets) {
@@ -86,7 +108,7 @@ TC_NAMESPACE_BEGIN
                     res += pressure_center - p;
                 }
                 residual[ind] = div[ind] - res;
-            }
+			});
         }
 
         void downsample(const Array &x, Array &x_downsampled) { // Restriction

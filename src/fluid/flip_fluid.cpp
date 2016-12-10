@@ -59,7 +59,7 @@ void FLIPFluid::advect(float delta_t) {
 			error("advection_order must be in [1, 2, 3].")
 		}
 		p.move(delta_t * p.velocity);
-		max_movement = max(max_movement, length(p.velocity * delta_t));
+		max_movement = std::max(max_movement, length(p.velocity * delta_t));
 		clamp_particle(p);
 	}
 }

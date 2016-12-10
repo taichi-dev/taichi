@@ -13,6 +13,7 @@ template <typename T>
 class ImageBuffer : public Array2D<T>
 {
 public:
+	ImageBuffer(int width, int height, T t) : Array2D<T>(width, height, t) {}
 	ImageBuffer(int width, int height) : Array2D<T>(width, height) {}
 	ImageBuffer() {}
 	ImageBuffer(std::string filename) {
@@ -67,17 +68,17 @@ public:
 	}
 
 
-	void write(string filename);
+	void write(std::string filename);
 
 	void write_text(std::string content, float size, int dx, int dy);
 
 };
 
 template<typename T>
-inline void ImageBuffer<T>::write(string filename)
+inline void ImageBuffer<T>::write(std::string filename)
 {
 	int comp = 3;
-	vector<unsigned char> data(this->width * this->height * comp);
+	std::vector<unsigned char> data(this->width * this->height * comp);
 	for (int i = 0; i < this->width; i++) {
 		for (int j = 0; j < this->height; j++) {
 			for (int k = 0; k < comp; k++) {

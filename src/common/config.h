@@ -69,33 +69,45 @@ public:
 	}
 
 	void print_all() {
-		cout << "Configures: " << endl;
+		return;
+		// We no longer need this??
+		std::cout << "Configures: " << std::endl;
 		for (auto key = data.begin(); key != data.end(); key++) {
-			cout << " * " << key->first << " = " << key->second << endl;
+			std::cout << " * " << key->first << " = " << key->second << std::endl;
 		}
 	}
 
 	float get_float(std::string key) const {
-		return (float)::atof(get_string(key).c_str());
+		return (float)std::atof(get_string(key).c_str());
 	}
 
 	double get_double(std::string key) const {
-		return (double)::atof(get_string(key).c_str());
+		return (double)std::atof(get_string(key).c_str());
 	}
 
 	real get_real(std::string key) const {
-		return (real)::atof(get_string(key).c_str());
+		return (real)std::atof(get_string(key).c_str());
 	}
 
 	int get_int(std::string key) const {
-		return ::atoi(get_string(key).c_str());
+		return std::atoi(get_string(key).c_str());
+	}
+
+	int64 get_int64(std::string key) const {
+		return std::atoll(get_string(key).c_str());
+	}
+
+	unsigned get_unsigned(std::string key) const {
+		return unsigned(std::atoll(get_string(key).c_str()));
 	}
 
 //#define DEFINE_GET(t) template <> t get<t>(std::string key, t default_val) const {if (data.find(key) == data.end()) {return default_val;} else return get_##t(key);}
 #define DEFINE_GET(t) t get(std::string key, t default_val) const {if (data.find(key) == data.end()) {return default_val;} else return get_##t(key);}
 
 	DEFINE_GET(int)
-	DEFINE_GET(real)
+	DEFINE_GET(int64)
+	DEFINE_GET(unsigned)
+	DEFINE_GET(float)
 	DEFINE_GET(double)
 	DEFINE_GET(bool)
 	DEFINE_GET(string)
@@ -140,15 +152,33 @@ public:
 		return ret;
 	}
 
-	vec3 get_vec3(std::string key) const {
-		vec3 ret;
+	Vector2i get_vec2i(std::string key) const {
+		Vector2i ret;
+		sscanf_s(get_string(key).c_str(), "(%d,%d)", &ret.x, &ret.y);
+		return ret;
+	}
+
+	Vector3 get_vec3(std::string key) const {
+		Vector3 ret;
 		sscanf_s(get_string(key).c_str(), "(%f,%f,%f)", &ret.x, &ret.y, &ret.z);
 		return ret;
 	}
 
-	vec4 get_vec4(std::string key) const {
-		vec4 ret;
+	Vector3i get_vec3i(std::string key) const {
+		Vector3i ret;
+		sscanf_s(get_string(key).c_str(), "(%d,%d,%d)", &ret.x, &ret.y, &ret.z);
+		return ret;
+	}
+
+	Vector4 get_vec4(std::string key) const {
+		Vector4 ret;
 		sscanf_s(get_string(key).c_str(), "(%f,%f,%f,%f)", &ret.x, &ret.y, &ret.z, &ret.w);
+		return ret;
+	}
+
+	Vector4i get_vec4i(std::string key) const {
+		Vector4i ret;
+		sscanf_s(get_string(key).c_str(), "(%d,%d,%d,%d)", &ret.x, &ret.y, &ret.z, &ret.w);
 		return ret;
 	}
 
@@ -159,10 +189,45 @@ public:
 		data[name] = ss.str();
 		return *this;
 	}
+	
+	Config &set(std::string name, Vector2 val) {
+		std::stringstream ss;
+		ss << "(" << val.x << "," << val.y << ")";
+		data[name] = ss.str();
+		return *this;
+	}
 
 	Config &set(std::string name, Vector3 val) {
 		std::stringstream ss;
 		ss << "(" << val.x << "," << val.y << "," << val.z << ")";
+		data[name] = ss.str();
+		return *this;
+	}
+
+	Config &set(std::string name, Vector4 val) {
+		std::stringstream ss;
+		ss << "(" << val.x << "," << val.y << "," << val.z << "," << val.w << ")";
+		data[name] = ss.str();
+		return *this;
+	}
+
+	Config &set(std::string name, Vector2i val) {
+		std::stringstream ss;
+		ss << "(" << val.x << "," << val.y << ")";
+		data[name] = ss.str();
+		return *this;
+	}
+
+	Config &set(std::string name, Vector3i val) {
+		std::stringstream ss;
+		ss << "(" << val.x << "," << val.y << "," << val.z << ")";
+		data[name] = ss.str();
+		return *this;
+	}
+
+	Config &set(std::string name, Vector4i val) {
+		std::stringstream ss;
+		ss << "(" << val.x << "," << val.y << "," << val.z << "," << val.w << ")";
 		data[name] = ss.str();
 		return *this;
 	}

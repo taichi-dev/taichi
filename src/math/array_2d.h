@@ -123,8 +123,8 @@ protected:
 	int width, height;
 	Vector2 storage_offset = Vector2(0.5f, 0.5f); // defualt : center storage
 public:
-    template <typename P>
-    friend Array2D<T> operator * (const P &b, const Array2D<T> &a);
+	template <typename P>
+	friend Array2D<T> operator * (const P &b, const Array2D<T> &a);
 
 	int get_size() const {
 		return size;
@@ -139,7 +139,7 @@ public:
 		this->height = height;
 		region = Region2D(0, width, 0, height, storage_offset);
 		size = width * height;
-		data = vector<T>(size, init);
+		data = std::vector<T>(size, init);
 		this->storage_offset = storage_offset;
 	}
 
@@ -168,7 +168,7 @@ public:
 		this->storage_offset = arr.storage_offset;
 	}
 
-    template <typename P>
+	template <typename P>
 	Array2D<T> operator * (const P &b) const {
 		Array2D<T> o(width, height);
 		for (int i = 0; i < size; i++) {
@@ -177,7 +177,7 @@ public:
 		return o;
 	}
 
-    template <typename P>
+	template <typename P>
 	Array2D<T> operator / (const P &b) const {
 		b = T(1) / b;
 		return b * (*this);
@@ -344,7 +344,7 @@ public:
 		return lerp(x_r,
 			lerp(y_r, get(x_i, y_i), get(x_i, y_i + 1)),
 			lerp(y_r, get(x_i + 1, y_i), get(x_i + 1, y_i + 1))
-			);
+		);
 	}
 	T sample(const Vector2 &v) const {
 		return sample(v.x, v.y);
@@ -408,7 +408,8 @@ public:
 	Region2D get_rasterization_region(Vector2 pos, int half_extent) const {
 		int x = (int)floor(pos.x - storage_offset.x);
 		int y = (int)floor(pos.y - storage_offset.y);
-		return Region2D(max(0, x - half_extent + 1), min(width, x + half_extent + 1), max(0, y - half_extent + 1), min(height, y + half_extent + 1), storage_offset);
+		return Region2D(std::max(0, x - half_extent + 1), std::min(width, x + half_extent + 1), max(0, y - half_extent + 1), 
+			std::min(height, y + half_extent + 1), storage_offset);
 	}
 
 	bool is_normal() const {
@@ -442,11 +443,11 @@ public:
 
 template <typename T, typename P>
 Array2D<T> operator * (const P &b, const Array2D<T> &a) {
-    Array2D<T> o(a.width, a.height);
-    for (int i = 0; i < a.size; i++) {
-        o.data[i] = b * a.data[i];
-    }
-    return o;
+	Array2D<T> o(a.width, a.height);
+	for (int i = 0; i < a.size; i++) {
+		o.data[i] = b * a.data[i];
+	}
+	return o;
 }
 
 typedef Array2D<float> Array;

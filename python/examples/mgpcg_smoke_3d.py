@@ -50,7 +50,7 @@ class Smoke3:
         self.video_manager.make_video()
 
 if __name__ == '__main__':
-    resolution = [128] * 3
+    resolution = [64] * 3
     resolution[1] *= 2
     smoke = Smoke3(resolution=tuple(resolution),
                  simulation_depth=resolution[2], delta_x=1.0 / resolution[0], gravity=(0, -10),

@@ -104,32 +104,49 @@ inline double max_component(const Vector3d &v) {
 	return std::max(v.x, std::max(v.y, v.z));
 }
 
-#define CV_ON
 #ifdef CV_ON
-#define CV(v) if (!is_normal(v)) {for (int i = 0; i < 1; i++) printf("Abnormal value %s (Ln %d)\n", #v, __LINE__); taichi::print(v); puts("");}
+#define CV(v) if (abnormal(v)) {for (int i = 0; i < 1; i++) printf("Abnormal value %s (Ln %d)\n", #v, __LINE__); taichi::print(v); puts("");}
 #else
 #define CV(v) 
 #endif
 
-#define abnormal(v) (!is_normal(v))
-
-inline bool is_normal(float m) {
-	return -1e30f < m && m < 1e30f;
+template<typename T>
+inline bool is_normal(T m) {
+	return std::isfinite(m);
 }
 
-inline bool is_normal(vec2 v) {
+template<typename T>
+inline bool abnormal(T m) {
+	return !is_normal(m);
+}
+
+template<>
+inline bool is_normal(Vector2 v) {
 	return is_normal(v[0]) && is_normal(v[1]);
 }
 
+template<>
+inline bool is_normal(Vector2d v) {
+	return is_normal(v[0]) && is_normal(v[1]);
+}
+
+template<>
 inline bool is_normal(Vector3 v) {
 	return is_normal(v[0]) && is_normal(v[1]) && is_normal(v[2]);
 }
 
+template<>
+inline bool is_normal(Vector3d v) {
+	return is_normal(v[0]) && is_normal(v[1]) && is_normal(v[2]);
+}
+
+template<>
 inline bool is_normal(mat2 m) {
 	return is_normal(m[0][0]) && is_normal(m[0][1]) &&
 		is_normal(m[1][0]) && is_normal(m[1][1]);
 }
 
+template<>
 inline bool is_normal(mat3 m) {
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++) {
@@ -139,6 +156,7 @@ inline bool is_normal(mat3 m) {
 	return true;
 }
 
+template<>
 inline bool is_normal(mat4 m) {
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {

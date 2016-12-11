@@ -55,3 +55,6 @@ typedef __int64 int64;
 #else
 typedef long long int64;
 #endif
+
+// Check for inf, nan?
+// #define CV_ON

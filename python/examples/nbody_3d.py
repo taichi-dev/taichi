@@ -14,6 +14,10 @@ class NBody:
         self.c = tc_core.create_simulation3d('nbody')
         self.c.initialize(P(**kwargs))
         self.directory = '../output/frames/' + get_uuid() + '/'
+        try:
+            os.mkdir(self.directory)
+        except Exception as e:
+            print e
         self.video_manager = VideoManager(self.directory, 512, 512)
         self.particle_renderer = ParticleRenderer('shadow_map',
                                                   shadow_map_resolution=0.01, alpha=0.12, shadowing=0.1, ambient_light=0.3,

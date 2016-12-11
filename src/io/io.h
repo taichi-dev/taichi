@@ -20,14 +20,12 @@ void write_vector_to_disk(std::vector<T> *p_vec, std::string fn) {
 template <typename T>
 bool read_vector_from_disk(std::vector<T> *p_vec, std::string fn) {
 	std::vector<T> &vec = *p_vec;
-	P(fn);
 	FILE *f = fopen(fn.c_str(), "rb");
 	if (f == nullptr) {
 		return false;
 	}
 	size_t length;
 	size_t ret = fread(&length, sizeof(length), 1, f);
-	P(length);
 	if (ret != 1) {
 		return false;
 	}

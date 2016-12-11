@@ -13,7 +13,12 @@ class Smoke3:
     def __init__(self, **kwargs):
         self.c = tc_core.create_simulation3d('smoke')
         self.c.initialize(P(**kwargs))
-        self.video_manager = VideoManager('../output/frames/' + get_uuid(), 512, 1024)
+        self.directory = '../output/frames/' + get_uuid() + '/'
+        self.video_manager = VideoManager(self.directory, 512, 1024)
+        try:
+            os.mkdir(self.directory)
+        except Exception as e:
+            print e
         self.particle_renderer = ParticleRenderer('shadow_map',
                                                   shadow_map_resolution=0.5, alpha=0.2, shadowing=0.07, ambient_light=0.3,
                                                   light_direction=(1, 3, 1))

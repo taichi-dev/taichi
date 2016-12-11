@@ -219,6 +219,27 @@ TC_NAMESPACE_BEGIN
 			return tex->sample(coord);
         }
 	};
+	class BoundedTexture: public Texture {
+	protected:
+		std::shared_ptr<Texture> tex;
+		int bound_axis;
+		Vector2 bounds;
+		Vector3 outside_val;
+	public:
+        void initialize(const Config &config) override {
+			tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
+			bound_axis = config.get_int("axis");
+			bounds = config.get_vec2("bounds");
+			outside_val = config.get_vec3("outside_val");
+        }
+        virtual Vector3 sample(const Vector3 &coord_) const override {
+			auto coord = coord_;
+			if (bounds[0] <= coord[bound_axis] && coord[bound_axis] < bounds[1])
+				return tex->sample(coord);
+			else
+				return outside_val;
+        }
+	};
     TC_IMPLEMENTATION(Texture, ConstantTexture, "const");
     TC_IMPLEMENTATION(Texture, ImageTexture, "image");
     TC_IMPLEMENTATION(Texture, TaichiTexture, "taichi");
@@ -229,5 +250,6 @@ TC_NAMESPACE_BEGIN
     TC_IMPLEMENTATION(Texture, RepeaterTexture, "repeater");
     TC_IMPLEMENTATION(Texture, RotatedTexture, "rotated");
     TC_IMPLEMENTATION(Texture, FlippedTexture, "flipped");
+    TC_IMPLEMENTATION(Texture, BoundedTexture, "bounded");
 TC_NAMESPACE_END
 

@@ -86,7 +86,6 @@ public:
 	Array3D<real> grid_mass;
 	Vector3i res;
 	int max_dim;
-	float t;
 	Vector gravity;
 	real delta_t;
 

@@ -117,7 +117,7 @@ public:
 		real t = std::min(std::max(dot(r, out), 0.0f), 1.0f);
 		auto color = color_sampler->sample(uv);
 		return color * (glossiness + 2.0f) / (2.0f * pi) * pow(t, glossiness)
-			/ max(max(fabs(in.z), fabs(out.z)), 1e-7f);
+			/ std::max(std::max(std::abs(in.z), std::abs(out.z)), 1e-7f);
 	};
 };
 

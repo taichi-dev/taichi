@@ -50,7 +50,7 @@ public:
 		}
 	}
 
-	virtual real sample_free_distance(StateSequence &rand, const Ray &ray) const {
+	virtual real sample_free_distance(StateSequence &rand, const Ray &ray) const override {
 		int counter = 0;
 		real kill;
 		real dist = 0.0f;

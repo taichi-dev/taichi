@@ -131,7 +131,7 @@ public:
 	void substep(float delta_t);
 
 	template <typename T>
-	void parallel_for_each_particle(T &target) {
+	void parallel_for_each_particle(const T &target) {
 		ThreadedTaskManager::run((int)particles.size(), num_threads, [&](int i) {
 			target(*particles[i]);
 		});
@@ -150,7 +150,7 @@ public:
 		}
 	}
 
-	std::vector<RenderParticle> get_render_particles() const;
+	std::vector<RenderParticle> get_render_particles() const override;
 
 	~MPM3D() {
 		for (auto &p : particles) {

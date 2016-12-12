@@ -23,16 +23,13 @@ class ParticleViewer:
             print e
         self.step_counter = 0
 
-    def view(self, frame):
+    def view(self, frame, camera):
         particles = tc_core.RenderParticles()
         ret = particles.read(self.input_directory + 'particles%05d.bin' % frame)
         if not ret:
             print 'read file failed'
             return False
         image_buffer = tc_core.RGBImageFloat(self.video_manager.width, self.video_manager.height, Vector(0, 0, 0.0))
-        camera = Camera('perspective', origin=(0, 50, 350),
-                        look_at=(0, 0, 0), up=(0, 1, 0), fov_angle=90,
-                        width=self.video_manager.width, height=self.video_manager.height)
         self.particle_renderer.set_camera(camera)
         self.particle_renderer.render(image_buffer, particles)
         img = image_buffer_to_ndarray(image_buffer)
@@ -45,13 +42,31 @@ class ParticleViewer:
     def make_video(self):
         self.video_manager.make_video()
 
+def get_camera(t):
+    t = 0.5 * (1 - math.cos(math.pi * t))
+    radius = 350
+    origin = (math.sin(t * 2 * math.pi) * radius, 25, math.cos(t * 2 * math.pi) * radius)
+    camera = Camera('perspective', origin=origin,
+                    look_at=(0, 0, 0), up=(0, 1, 0), fov_angle=90,
+                    width=width, height=height)
+    return camera
+
 if __name__ == '__main__':
-    viewer = ParticleViewer('task-2016-12-10-22-34-13-r03331', 960, 540)
-    frame = 0
-    while True:
-        print frame
-        ret = viewer.view(frame)
-        frame += 2
-        if not ret:
-            break
+    width, height = 960, 540
+    viewer = ParticleViewer('snow-taichi-g10', width, height)
+    radius = 350
+    framerate = 3
+    rotate_start = 30
+    rotate_period = 120
+    for frame in range(420):
+        if frame < rotate_start or frame >= rotate_start + rotate_period:
+            dat = frame * framerate
+            if frame >= rotate_start + rotate_period:
+                dat -= rotate_period * framerate
+            camera = get_camera(0)
+        else:
+            # Rotate view
+            camera = get_camera(1.0 * (frame - rotate_start) / rotate_period)
+            dat = rotate_start * framerate
+        ret = viewer.view(dat, camera)
     viewer.make_video()

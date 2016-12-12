@@ -15,8 +15,8 @@ class Renderer(object):
         try:
             os.mkdir(self.output_dir)
         except Exception as e:
-            print e
             if not overwrite:
+                print e
                 exit(-1)
 
     def initialize(self, **kwargs):

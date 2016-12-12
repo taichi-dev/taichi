@@ -245,6 +245,10 @@ public:
 		return in.z < 0 ? inside_ior / outside_ior : outside_ior / inside_ior;
 	}
 
+	bool is_index_matched() const override {
+		return inside_ior == outside_ior;
+	}
+
 	virtual Vector3 sample_direction(const Vector3 &in, real u, real v, const Vector2 &uv) const override {
 		Vector3 out_reflect, out_refract;
 		real p = get_refraction(in, out_reflect, out_refract);
@@ -275,6 +279,8 @@ public:
 	}
 };
 
+
+// TODO: Let's replace this with a true PBR material...
 class PBRMaterial : public SurfaceMaterial {
 protected:
 	std::vector<std::shared_ptr<SurfaceMaterial> > materials;
@@ -293,7 +299,7 @@ public:
 			materials.push_back(mat);
 		}
 		if (transparent) {
-			// load transparancy...
+			//TODO: load transparancy map...
 			real ior = config.get_real("ior");
 			auto mat = std::make_shared<RefractiveMaterial>();
 			mat->set_ior(ior);
@@ -301,7 +307,7 @@ public:
 			materials.push_back(mat);
 			luminances.push_back(luminance(Vector3(1, 1, 1)));
 		}
-		if (specular_color_sampler) {
+		else if (specular_color_sampler) {
 			real glossiness = config.get_real("glossiness");
 			if (glossiness > 0) { // glossy
 				glossy_mat = std::make_shared<GlossyMaterial>();
@@ -381,7 +387,7 @@ TC_IMPLEMENTATION(SurfaceMaterial, EmissiveMaterial, "emissive");
 class PlainVolumeInterfaceMaterial : public SurfaceMaterial {
 protected:
 
-	virtual bool is_index_matched() override {
+	virtual bool is_index_matched() const override {
 		return true;
 	}
 

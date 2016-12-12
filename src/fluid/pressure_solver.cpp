@@ -11,12 +11,78 @@ const static Vector3i offsets[]{
 		Vector3i(0, 0, 1), Vector3i(0, 0, -1)
 };
 
+// Maybe we are going to need Algebraic Multigrid in the future,
+// but let's have a GMG with different boundary conditions support first...
+// TODO: AMG, cache
+
+// TODO: Add one layer of Neumann padding
 class MultigridPressureSolver : public PressureSolver3D {
 public:
 	int width, height, depth, max_level;
 	std::vector<Array> pressures, residuals, tmp_residuals;
+	typedef char CellType;
+	typedef Array3D<CellType> BCArray;
+	std::vector<BCArray> boundaries;
 	const int size_threshould = 64;
 	int num_threads;
+	const char DIRICHLET = 1;
+	const char NEUMANN = 2;
+
+	struct SystemRow {
+		float inv_numerator;
+		int neighbours;
+		SystemRow() : SystemRow(0) {}
+		SystemRow(int i) {
+			inv_numerator = 1.0f;
+			neighbours = 0;
+		}
+		CellType get_neighbour_cell_type(int k) const {
+			return (neighbours >> (k * 2)) & 3;
+		}
+		void set_neighbour_cell_type(int k, CellType c) {
+			neighbours = (neighbours & (~(3 << (2 * k)) | (c << (2 * k))));
+		}
+
+		static void test() {
+
+		}
+	};
+
+	std::vector<Array3D<SystemRow>> systems;
+		
+	void set_boundary_condition(const BCArray &boundary) {
+		int width = this->width;
+		int height = this->height;
+		int depth = this->depth;
+		boundaries.clear();
+		boundaries.push_back(Array3D<char>(width, height, depth));
+		for (int k = 0; k < max_level - 1; k++) {
+			width /= 2;
+			height /= 2;
+			depth /= 2;
+			bool has_dirichlet = false;
+			bool all_neumann = true;
+			boundaries.push_back(Array3D<char>(width, height, depth));
+			for (auto &ind : boundaries.back().get_region()) {
+				for (int i = 0; i < 2; i++) {
+					for (int j = 0; j < 2; j++) {
+						for (int k = 0; k < 2; k++) {
+							char bc = boundaries.back()[ind.i * 2 + i][ind.j * 2 + j][ind.k * 2 + k];
+							if (bc == DIRICHLET) {
+								has_dirichlet = true;
+								break;
+							}
+							if (bc != NEUMANN) {
+								all_neumann = false;
+							}
+						}
+					}
+				}
+				char bc = has_dirichlet ? DIRICHLET : (all_neumann ? NEUMANN : 0);
+				boundaries.back()[ind] = bc;
+			}
+		}
+	}
 
 	void initialize(const Config &config) {
 		this->width = config.get_int("width");

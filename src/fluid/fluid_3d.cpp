@@ -62,7 +62,7 @@ void Smoke3D::initialize(const Config &config) {
 	Config solver_config;
 	solver_config.set("width", res[0]).set("height", res[1]).set("depth", res[2])
 		.set("num_threads", num_threads);
-	pressure_solver = create_pressure_solver_3d(config.get_string("pressure_solver"), solver_config);
+	pressure_solver = create_initialized_instance<PressureSolver3D>(config.get_string("pressure_solver"), solver_config);
 	u = Array(res[0] + 1, res[1], res[2], 0.0f, Vector3(0.0f, 0.5f, 0.5f));
 	v = Array(res[0], res[1] + 1, res[2], 0.0f, Vector3(0.5f, 0.0f, 0.5f));
 	w = Array(res[0], res[1], res[2] + 1, 0.0f, Vector3(0.5f, 0.5f, 0.0f));

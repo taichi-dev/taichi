@@ -109,7 +109,7 @@ TC_NAMESPACE_BEGIN
         }
 
         virtual void render_stage() override {
-            radius = initial_radius * (shrinking_radius ? (real)pow(num_stages + 1, -(1.0f - alpha) / 2.0f) : 1);
+            radius = initial_radius * (shrinking_radius ? (real)pow(num_stages + 1.0f, -(1.0f - alpha) / 2.0f) : 1);
             vm_pdf_constant = pi * radius * radius;
             hash_grid.initialize(radius, width * height * 10 + 7);
             eye_paths.clear();
@@ -216,7 +216,7 @@ TC_NAMESPACE_BEGIN
         }
 
         virtual void render_stage() override {
-            radius = initial_radius * (shrinking_radius ? (real)pow(num_stages + 1, -(1.0f - alpha) / 2.0f) : 1);
+            radius = initial_radius * (shrinking_radius ? (real)pow(num_stages + 1.0f, -(1.0f - alpha) / 2.0f) : 1);
             vm_pdf_constant = pi * radius * radius;
             hash_grid.initialize(radius, width * height * 10 + 7);
             eye_paths.clear();
@@ -320,38 +320,38 @@ TC_NAMESPACE_BEGIN
                 MCMCState &current_state = is_accepted ? new_state : previous_state;
                 if (is_large_step_done) {
                     for (int i = 0; i < 2; i++) {
-                        normalizers[i].insert(new_state.p_star(i), 1);
+                        normalizers[i].insert((real)new_state.p_star(i), 1);
                     }
                 }
-                real current_state_weight = mutation_expectation ? a : real(is_accepted);
+                real current_state_weight = mutation_expectation ? real(a) : real(is_accepted);
                 real last_state_weight = 1.0f - current_state_weight;
                 if (last_state_weight > 0 && previous_state.sc > 0) {
                     all_pcs[u].push_back(previous_state.pc);
                     real p[2] = {0.0f};
                     for (int i = 0; i < 2; i++) {
                         if (markov_chain_mis) {
-                            p[i] = previous_state.p_star(i) / normalizers[i].get_average();
+                            p[i] = (real)previous_state.p_star(i) / normalizers[i].get_average();
                         } else {
                             p[i] = 1.0f;
                         }
                     }
                     auto s = last_state_weight / previous_state.sc * (p[u] / (p[0] + p[1])) * 2;
                     assert_info(is_normal(s), "abnormal scaling");
-                    all_pcs[u].back().set_scaling(s);
+                    all_pcs[u].back().set_scaling(real(s));
                 }
                 if (current_state_weight > 0 && current_state.sc > 0) {
                     all_pcs[u].push_back(current_state.pc);
                     real p[2] = {0.0f};
                     for (int i = 0; i < 2; i++) {
                         if (markov_chain_mis) {
-                            p[i] = current_state.p_star(i) / normalizers[i].get_average();
+							p[i] = real(current_state.p_star(i) / normalizers[i].get_average());
                         } else {
                             p[i] = 1.0f;
                         }
                     }
                     auto s = current_state_weight / current_state.sc * (p[u] / (p[0] + p[1])) * 2;
                     assert_info(is_normal(s), "abnormal scaling " + std::to_string(s));
-                    all_pcs[u].back().set_scaling(s);
+                    all_pcs[u].back().set_scaling(real(s));
                 }
                 if (is_accepted) {
                     states[u] = new_state;

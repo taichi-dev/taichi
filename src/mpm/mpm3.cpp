@@ -1,6 +1,7 @@
 #include "mpm3.h"
 #include "math/qr_svd/qr_svd.h"
 #include "system/threading.h"
+#include "renderer/texture.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -80,7 +81,7 @@ struct EPParticle3 : public MPM3D::Particle {
 		dg_p = glm::inverse(dg_e) * dg_cache;
 		svd(dg_p, svd_u, sig, svd_v);
 		for (int i = 0; i < D; i++) {
-			sig[i][i] = clamp(sig[i][i], 0.01f, 10.0f);
+			sig[i][i] = clamp(sig[i][i], 0.1f, 10.0f);
 		}
 		dg_p = svd_u * sig * glm::transpose(svd_v);
 	};
@@ -89,20 +90,17 @@ struct EPParticle3 : public MPM3D::Particle {
 void MPM3D::initialize(const Config &config) {
 	Simulation3D::initialize(config);
 	res = config.get_vec3i("resolution");
-	P(res);
 	gravity = config.get_vec3("gravity");
 	delta_t = config.get_real("delta_t");
-
-	t = 0.0f;
-
+	std::shared_ptr<Texture> density_texture = AssetManager::get_asset<Texture>(config.get_int("density_tex"));
 	auto initial_velocity = config.get_vec3("initial_velocity");
-	for (int i = int(res[0] * 0.4); i <= int(res[0] * 0.6); i++) {
-		for (int j = int(res[1] * 0.2); j <= int(res[1] * 0.6); j++) {
-			for (int k = int(res[2] * 0.4); k <= int(res[2] * 0.6); k++) {
-				if (j < res[1] / 2 && i < res[0] / 2) {
-					continue;
-				}
-				for (int l = 0; l < 8; l++) {
+	for (int i = 0; i < res[0]; i++) {
+		for (int j = 0; j < res[1]; j++) {
+			for (int k = 0; k < res[2]; k++) {
+				Vector3 coord = Vector3(i + 0.5f, j + 0.5f, k + 0.5f) / Vector3(res);
+				real num = density_texture->sample(coord).x;
+				int t = (int)num + (rand() < num - int(num));
+				for (int l = 0; l < t; l++) {
 					Particle *p = new EPParticle3();
 					p->pos = Vector(i + rand(), j + rand(), k + rand());
 					p->mass = 1.0f;
@@ -112,26 +110,10 @@ void MPM3D::initialize(const Config &config) {
 			}
 		}
 	}
+	P(particles.size());
 	grid_velocity.initialize(res[0], res[1], res[2], Vector(0.0f));
 	grid_mass.initialize(res[0], res[1], res[2], 0);
 	grid_locks.initialize(res[0], res[1], res[2], 0);
-
-	/*
-	for (int i = 0; i < 100; i++) {
-		Matrix3 m(0.0f), u, s, v, r;
-		for (int j = 0; j < 9; j++) {
-			m[j / 3][j % 3] = rand();
-		}
-		svd(m, u, s, v);
-		r = m - u * s * transpose(v);
-		P(m);
-		P(u);
-		P(s);
-		P(v);
-		P(r);
-		P(frobenius_norm(r));
-	}
-	*/
 }
 
 std::vector<RenderParticle> MPM3D::get_render_particles() const {

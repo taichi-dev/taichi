@@ -86,7 +86,6 @@ public:
 	Array3D<real> grid_mass;
 	Vector3i res;
 	int max_dim;
-	float t;
 	Vector gravity;
 	real delta_t;
 
@@ -131,7 +130,8 @@ public:
 
 	void substep(float delta_t);
 
-	void parallel_for_each_particle(const std::function<void(Particle &)> &target) {
+	template <typename T>
+	void parallel_for_each_particle(T &target) {
 		ThreadedTaskManager::run((int)particles.size(), num_threads, [&](int i) {
 			target(*particles[i]);
 		});

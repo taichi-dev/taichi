@@ -1,11 +1,9 @@
 #pragma once
 
-#include "camera.h"
-#include "scene_geometry.h"
-#include "visualization/image_buffer.h"
-#include "system/timer.h"
-#include "common/config.h"
-#include "sampler.h"
+#include <taichi/visual/renderer.h>
+#include <taichi/visual/sampler.h>
+#include <taichi/visual/bsdf.h>
+
 #include "hash_grid.h"
 
 TC_NAMESPACE_BEGIN

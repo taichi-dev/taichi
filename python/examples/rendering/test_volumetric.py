@@ -5,9 +5,9 @@ from taichi.visual.post_process import *
 import math
 
 def create_mis_scene(eye_position):
-    downsample = 1
+    downsample = 2
     width, height = 960 / downsample, 540 / downsample
-    camera = Camera('perspective', width=width, height=height, fov_angle=70,
+    camera = Camera('pinhole', width=width, height=height, fov_angle=70,
                     origin=(0.5, 0.5, 3), look_at=(0.5, 0.5, 0.5), up=(0, 1, 0))
 
     scene = Scene()

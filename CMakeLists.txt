@@ -71,13 +71,51 @@ message("Embree lib ${EMBREE_LIBRARY}")
 
 find_package(ANN REQUIRED)
 
+include_directories(include)
 include_directories(external/include)
 
+file(GLOB TAICHI_SOURCE
+        "src/*/*/*/*.cpp" "src/*/*/*.cpp" "src/*/*.cpp" "src/*.cpp" "src/*/*/*/*.h" "src/*/*/*.h" "src/*/*.h" "src/*.h"
+        "include/taichi/*/*/*/*.cpp" "include/taichi/*/*/*.cpp" "include/taichi/*/*.cpp" "include/taichi/*.cpp"
+        "include/taichi/*/*/*/*.h" "include/taichi/*/*/*.h" "include/taichi/*/*.h" "include/taichi/*.h"
+        )
+
 set(CORE_LIBRARY_NAME taichi_core)
+add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_SOURCE})
 
-add_subdirectory(src)
+target_link_libraries(${CORE_LIBRARY_NAME} ${OPENGL_LIBRARIES})
+if (NOT WIN32)
+    target_link_libraries(${CORE_LIBRARY_NAME} pthread)
+endif()
+target_link_libraries(${CORE_LIBRARY_NAME} ${GLFW3_LIBRARY})
+if (APPLE)
+    target_link_libraries(${CORE_LIBRARY_NAME} glfw3)
+endif()
 
-message("Taichi Source: ${TAICHI_SOURCE}")
+target_link_libraries(${CORE_LIBRARY_NAME} ${GLEW_LIBRARY})
+target_link_libraries(${CORE_LIBRARY_NAME} ${GLEW_LIBRARIES})
+target_link_libraries(${CORE_LIBRARY_NAME} ${EMBREE_LIBRARY})
+target_link_libraries(${CORE_LIBRARY_NAME} ${PYTHON_LIBRARIES})
+target_link_libraries(${CORE_LIBRARY_NAME} ${ANN_LIBRARIES})
+target_link_libraries(${CORE_LIBRARY_NAME} ${ASSIMP_LIBRARY_RELEASE})
+target_link_libraries(${CORE_LIBRARY_NAME} ${assimp_LIBRARIES})
+target_link_libraries(${CORE_LIBRARY_NAME} ${Boost_LIBRARIES})
+
+if (UNIX)
+    target_link_libraries(${CORE_LIBRARY_NAME} boost_system)
+    target_link_libraries(${CORE_LIBRARY_NAME} boost_python)
+endif()
+
+foreach(source IN LISTS TAICHI_SOURCE)
+    get_filename_component(source_path "${source}" PATH)
+    string(REPLACE "/" "\\" source_path_msvc "${source_path}")
+    source_group("${source_path_msvc}" FILES "${source}")
+endforeach()
+
+if(MSVC)
+    set_property(TARGET ${CORE_LIBRARY_NAME} APPEND PROPERTY LINK_FLAGS /DEBUG)
+endif()
+
 
 if (WIN32)
     set_target_properties(${CORE_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")

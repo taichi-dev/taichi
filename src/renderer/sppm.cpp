@@ -1,6 +1,3 @@
-#include "renderer.h"
-#include "sampler.h"
-#include "bsdf.h"
 #include "sppm.h"
 
 TC_NAMESPACE_BEGIN

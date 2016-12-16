@@ -1,9 +1,3 @@
-#include "camera.h"
-#include "scene_geometry.h"
-#include "visualization/image_buffer.h"
-#include "system/timer.h"
-#include "common/config.h"
-#include "sampler.h"
 #include "bidirectional_renderer.h"
 #include "hash_grid.h"
 

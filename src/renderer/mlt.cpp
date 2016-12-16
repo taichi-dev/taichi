@@ -1,12 +1,6 @@
-#include "camera.h"
-#include "scene_geometry.h"
-#include "visualization/image_buffer.h"
-#include "system/timer.h"
-#include "common/config.h"
-#include "sampler.h"
-#include "bsdf.h"
+#include <taichi/math/discrete_sampler.h>
+
 #include "bidirectional_renderer.h"
-#include "discrete_sampler.h"
 #include "markov_chain.h"
 
 TC_NAMESPACE_BEGIN

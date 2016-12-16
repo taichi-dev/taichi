@@ -38,7 +38,7 @@ class MPM3:
         res = map(float, self.resolution)
         radius = res[0] * 2.5
         theta = 0
-        camera = Camera('perspective', origin=(0, res[1], res[2] * 5),
+        camera = Camera('pinhole', origin=(0, res[1], res[2] * 5),
                         look_at=(0, 0, 0), up=(0, 1, 0), fov_angle=70,
                         width=10, height=10)
         self.particle_renderer.set_camera(camera)

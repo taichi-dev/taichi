@@ -6,9 +6,9 @@ import random
 import colorsys
 
 def create_scene():
-    downsample = 1
+    downsample = 2
     width, height = 960 / downsample, 540 / downsample
-    camera = Camera('perspective', width=width, height=height, fov_angle=20,
+    camera = Camera('pinhole', width=width, height=height, fov_angle=20,
                     origin=(0, 0, 30), look_at=(0, 0, 0), up=(0, 1, 0))
 
     scene = Scene()
@@ -18,7 +18,6 @@ def create_scene():
 
         texture = (Texture('perlin') + 1) * 1
         texture = Texture('fract', tex=texture)
-        print 'here'
 
         mesh = Mesh('plane', SurfaceMaterial('diffuse', diffuse_map=texture.id),
                     translate=(0, 0, -0.05), scale=10, rotation=(90, 0, 0))
@@ -49,7 +48,7 @@ if __name__ == '__main__':
     scene = create_scene()
     renderer.set_scene(scene)
     renderer.initialize(min_path_length=1, max_path_length=10,
-                        initial_radius=0.005, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
+                        initial_radius=0.5, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
                         direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1,
                         stage_frequency=3, num_threads=8)
     renderer.set_post_processor(LDRDisplay(exposure=0.6, bloom_radius=0.1))

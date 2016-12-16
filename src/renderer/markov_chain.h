@@ -1,6 +1,8 @@
 #pragma once
-#include "math/linalg.h"
-#include "sampler.h"
+
+#include <taichi/math/linalg.h>
+#include <taichi/visual/sampler.h>
+
 #include <vector>
 #include <memory>
 #include <string>

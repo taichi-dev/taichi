@@ -1,11 +1,3 @@
-#include "camera.h"
-#include "scene_geometry.h"
-#include "visualization/image_buffer.h"
-#include "system/timer.h"
-#include "renderer.h"
-#include "common/config.h"
-#include "sampler.h"
-#include "bsdf.h"
 #include "bidirectional_renderer.h"
 
 TC_NAMESPACE_BEGIN

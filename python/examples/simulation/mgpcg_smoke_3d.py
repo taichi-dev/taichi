@@ -35,7 +35,7 @@ class Smoke3:
         res = map(float, self.resolution)
         radius = res[0] * 4
         theta = t * 0.0 + 1.3
-        camera = Camera('perspective', origin=(radius * math.cos(theta), radius * 0.3, radius * math.sin(theta)),
+        camera = Camera('pinhole', origin=(radius * math.cos(theta), radius * 0.3, radius * math.sin(theta)),
                         look_at=(0, 0, 0), up=(0, 1, 0), fov_angle=70,
                         width=self.video_manager.width, height=self.video_manager.height)
         self.particle_renderer.set_camera(camera)

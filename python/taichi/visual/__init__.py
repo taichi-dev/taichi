@@ -6,5 +6,4 @@ from scene import Scene
 from mesh import Mesh
 from environment_map import EnvironmentMap
 
-print globals()
 __all__ = ['Camera', 'Renderer', 'VolumeMaterial', 'SurfaceMaterial', 'Scene', 'Mesh', 'EnvironmentMap']

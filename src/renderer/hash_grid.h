@@ -1,7 +1,7 @@
 #pragma once
 
 #include <functional>
-#include "math/linalg.h"
+#include <taichi/math/linalg.h>
 
 TC_NAMESPACE_BEGIN
 

@@ -1,9 +1,9 @@
-#include "renderer.h"
-#include "sampler.h"
-#include "bsdf.h"
+#include <taichi/system/threading.h>
+#include <taichi/visual/renderer.h>
+#include <taichi/visual/sampler.h>
+#include <taichi/visual/bsdf.h>
+
 #include "markov_chain.h"
-#include "volume_material.h"
-#include "system/threading.h"
 
 TC_NAMESPACE_BEGIN
 struct PathContribution {

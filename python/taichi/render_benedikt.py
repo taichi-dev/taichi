@@ -84,7 +84,7 @@ def load_scene(root, fov):
     # the FOV value is ?
     #fov = math.degrees(math.atan(27.2 / camera_node['fov']) * 2)
 
-    camera = Camera('perspective', aspect_ratio=float(width) / height, fov_angle=fov,
+    camera = Camera('pinhole', aspect_ratio=float(width) / height, fov_angle=fov,
                     origin=tuple(camera_node['transform']['position']),
                     look_at=tuple(camera_node['transform']['look_at']),
                     up=tuple(camera_node['transform']['up']))

@@ -1,7 +1,6 @@
-#include "renderer.h"
-#include "sampler.h"
-#include "bsdf.h"
-#include "sampler.h"
+#include <taichi/visual/renderer.h>
+#include <taichi/visual/sampler.h>
+#include <taichi/visual/bsdf.h>
 
 TC_NAMESPACE_BEGIN
     struct PathContribution {

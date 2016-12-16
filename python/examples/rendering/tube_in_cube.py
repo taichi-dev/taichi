@@ -6,7 +6,7 @@ from taichi.visual.post_process import *
 def create_scene():
     downsample = 1
     width, height = 960 / downsample, 540 / downsample
-    camera = Camera('perspective', width=width, height=height, fov_angle=50,
+    camera = Camera('pinhole', width=width, height=height, fov_angle=50,
                     origin=(1, 1, 3), look_at=(0, -0.6, 0), up=(0, 1, 0))
 
     scene = Scene()
@@ -36,7 +36,7 @@ def create_scene():
     return scene
 
 if __name__ == '__main__':
-    renderer = Renderer('sppm', '../output/frames/amcmcups.png', overwrite=True)
+    renderer = Renderer('amcmcppm', '../output/frames/amcmcups.png', overwrite=True)
 
     scene = create_scene()
     renderer.set_scene(scene)

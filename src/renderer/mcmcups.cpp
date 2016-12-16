@@ -1,13 +1,8 @@
-#include "camera.h"
-#include "scene_geometry.h"
-#include "visualization/image_buffer.h"
-#include "system/timer.h"
-#include "common/config.h"
-#include "sampler.h"
+#include <taichi/math/averager.h>
+
 #include "bidirectional_renderer.h"
 #include "hash_grid.h"
 #include "markov_chain.h"
-#include "averager.h"
 
 TC_NAMESPACE_BEGIN
     class UPSRenderer : public BidirectionalRenderer {

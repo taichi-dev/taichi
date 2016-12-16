@@ -1,9 +1,9 @@
-#include "renderer.h"
-#include "sampler.h"
-#include "bsdf.h"
+#include <taichi/visual/renderer.h>
+#include <taichi/visual/sampler.h>
+#include <taichi/math/averager.h>
+
 #include "sppm.h"
 #include "markov_chain.h"
-#include "averager.h"
 
 TC_NAMESPACE_BEGIN
     class AMCMCPPMRenderer : public SPPMRenderer {

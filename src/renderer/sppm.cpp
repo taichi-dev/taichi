@@ -131,7 +131,8 @@ TC_NAMESPACE_BEGIN
                             else
                                 g = 1.0f;
                             hp_radius2 *= g;
-                            Vector3 contribution = contribution_scaling * hp.importance * flux * bsdf.evaluate(in_dir, hp.eye_out_dir);
+                            Vector3 contribution = contribution_scaling * hp.importance * flux *
+                                    bsdf.evaluate(in_dir, hp.eye_out_dir);
                             this->flux[hp.pixel.x][hp.pixel.y] = (this->flux[hp.pixel.x][hp.pixel.y] + contribution) * g;
                             hp_num_photons++;
                         }

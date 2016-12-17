@@ -1,12 +1,11 @@
 from taichi.core import tc_core
 from taichi.util import P
+import asset_manager
 
 class Texture:
     def __init__(self, name, **kwargs):
         self.c = tc_core.create_texture(name)
-        for key in kwargs:
-            if isinstance(kwargs[key], Texture):
-                kwargs[key] = kwargs[key].id
+        kwargs = asset_manager.asset_ptr_to_id(kwargs)
         self.c.initialize(P(**kwargs))
         self.id = tc_core.register_texture(self.c)
 
@@ -48,7 +47,7 @@ class Texture:
         return Texture("linear_op", alpha=1, tex1=self, beta=0, tex2=self, need_clamp=True)
 
     def flip(self, flip_axis):
-        return Texture("flipped", tex=self, flip_axis=flip_axis)
+        return Texture("flip", tex=self, flip_axis=flip_axis)
 
     def rasterize(self, resolution_x=256, resolution_y=-1):
         if resolution_y == -1:
@@ -58,6 +57,6 @@ class Texture:
     @staticmethod
     def create_taichi_wallpaper(n, scale=0.96, rotation=0):
         taichi = Texture('taichi', scale=scale, rotation=rotation)
-        rep = Texture("repeater", repeat_u=n, repeat_v=n, tex=taichi)
+        rep = Texture("repeat", repeat_u=n, repeat_v=n, tex=taichi)
         rep = Texture("checkerboard", tex1=rep, tex2=0 * rep, repeat_u=n, repeat_v=n) * 0.8 + 0.1
         return rep.clamp().flip(1)#.rasterize(2048)

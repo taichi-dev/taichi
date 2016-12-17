@@ -1,9 +1,9 @@
+#include <taichi/visual/surface_material.h>
 #include <taichi/physics/physics_constants.h>
-#include "surface_material.h"
 #include <taichi/math/discrete_sampler.h>
-#include <taichi/common/meta.h>
 
 TC_NAMESPACE_BEGIN
+
 TC_INTERFACE_DEF(SurfaceMaterial, "material");
 
 class EmissiveMaterial : public SurfaceMaterial {
@@ -386,7 +386,6 @@ TC_IMPLEMENTATION(SurfaceMaterial, EmissiveMaterial, "emissive");
 
 class PlainVolumeInterfaceMaterial : public SurfaceMaterial {
 protected:
-
 	virtual bool is_index_matched() const override {
 		return true;
 	}

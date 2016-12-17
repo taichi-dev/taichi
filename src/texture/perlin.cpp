@@ -4,7 +4,6 @@ TC_NAMESPACE_BEGIN
 
 // Adapted from the Java reference implementation here http://cs.nyu.edu/~perlin/noise/
 
-
 class PerlinNoiseTexture : public Texture {
 protected:
 public:

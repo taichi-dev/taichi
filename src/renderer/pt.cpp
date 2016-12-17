@@ -199,24 +199,24 @@ protected:
 				last_intersection = info;
 				break;
 			}
-			if (bsdf.is_index_matched()) {
-				SurfaceEvent event;
-				Vector3 f, _;
-				real pdf;
-				bsdf.sample(in_dir, rand(), rand(), _, f, pdf, event);
+            SurfaceEvent event;
+            Vector3 f, _;
+            real pdf;
+            bsdf.sample(in_dir, rand(), rand(), _, f, pdf, event);
+            if (SurfaceEventClassifier::is_index_matched(event)) {
 				att *= f * bsdf.cos_theta(-in_dir);
 				ray = Ray(info.pos + ray.dir * 1e-3f, ray.dir);
-				if (bsdf.is_entering(in_dir)) {
-					assert(bsdf.get_internal_material() != nullptr);
-					stack.push(bsdf.get_internal_material());
+				if (SurfaceEventClassifier::is_entering(event) || SurfaceEventClassifier::is_leaving(event)) {
+					if (bsdf.is_entering(in_dir)) {
+						assert(bsdf.get_internal_material() != nullptr);
+						stack.push(bsdf.get_internal_material());
+					}
+					else {
+						assert(stack.top() == bsdf.get_internal_material());
+						stack.pop();
+					}
 				}
-				else {
-					assert(stack.top() == bsdf.get_internal_material());
-					stack.pop();
-				}
-			}
-			else {
-				// We do not handle non-index matched case here.
+			} else {
 				return Vector3(0.0f);
 			}
 		}
@@ -476,6 +476,8 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
 	return ret;
 }
 
+TC_IMPLEMENTATION(Renderer, PathTracingRenderer, "pt");
+
 class PSSMLTMarkovChain : public MarkovChain {
 public:
 	real resolution_x, resolution_y;
@@ -630,7 +632,6 @@ public:
 	}
 };
 
-TC_IMPLEMENTATION(Renderer, PathTracingRenderer, "pt");
 TC_IMPLEMENTATION(Renderer, MCMCPTRenderer, "mcmcpt");
 
 TC_NAMESPACE_END

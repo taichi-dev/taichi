@@ -2,15 +2,16 @@
 
 TC_NAMESPACE_BEGIN
 
-	// TODO: fix geometry normal?
+    // TODO: fix geometry normal?
 
     void SPPMRenderer::initialize(const Config &config) {
         Renderer::initialize(config);
         alpha = config.get("alpha", 0.666666667f);
-        this->sampler = create_instance<Sampler>(config.get("sampler", "prand"));
-		this->russian_roulette = config.get("russian_roulette", true);
-        initial_radius = config.get_float("initial_radius");
-        stochastic = config.get("stochastic", true);
+        sampler = create_instance<Sampler>(config.get("sampler", "prand"));
+        russian_roulette = config.get("russian_roulette", true);
+        initial_radius = config.get_real("initial_radius");
+        shrinking_radius = config.get_bool("shrinking_radius");
+        stochastic_eye_ray = config.get("stochastic_eye_ray", true); // PPM or SPPM?
         image.initialize(width, height);
         photon_counter = 0;
         stages = 0;
@@ -24,7 +25,7 @@ TC_NAMESPACE_BEGIN
 
     void SPPMRenderer::render_stage() {
         hash_grid.clear_cache();
-        if (stochastic || eye_ray_stages == 0) {
+        if (stochastic_eye_ray || eye_ray_stages == 0) {
             eye_ray_pass();
             eye_ray_stages += 1;
         }
@@ -36,13 +37,14 @@ TC_NAMESPACE_BEGIN
         }
         stages += 1;
         for (auto &ind : image.get_region()) {
-            image[ind] = 1.0f / (pi * radius2[ind]) / photon_counter * flux[ind] + image_direct_illum[ind] * (1.0f / eye_ray_stages);
+            image[ind] = 1.0f / (pi * radius2[ind]) / photon_counter * flux[ind] +
+                         image_direct_illum[ind] * (1.0f / eye_ray_stages);
         }
     }
 
     void SPPMRenderer::trace_eye_path(Ray &ray, const Vector2i &pixel) {
         Vector3 importance = Vector3(1.0f);
-        for (int depth = 0; depth + 1 <= max_path_length; depth ++) {
+        for (int depth = 0; depth + 1 <= max_path_length; depth++) {
             IntersectionInfo info = sg->query(ray);
             if (!info.intersected)
                 return;
@@ -52,7 +54,8 @@ TC_NAMESPACE_BEGIN
             Vector3 in_dir = -ray.dir;
             if (bsdf.is_emissive()) {
                 if (min_path_length <= depth + 1 && depth + 1 <= max_path_length) {
-                    image_direct_illum[pixel.x][pixel.y] += importance * bsdf.evaluate(bsdf.get_geometry_normal(), in_dir);
+                    image_direct_illum[pixel.x][pixel.y] +=
+                            importance * bsdf.evaluate(bsdf.get_geometry_normal(), in_dir);
                 }
                 return;
             }
@@ -74,14 +77,14 @@ TC_NAMESPACE_BEGIN
                 hit_point.id = (int) hit_points.size();
                 hit_point.path_length = depth + 1;
                 hit_points.push_back(hit_point);
-                real radius = sqrt(radius2[pixel.x][pixel.y]);
+                real radius = std::sqrt(radius2[pixel.x][pixel.y]);
                 hash_grid.push_back_to_all_cells_in_range(info.pos, radius, hit_point.id);
                 return;
             }
         }
     }
 
-    bool SPPMRenderer::trace_photon(StateSequence &rand) { // returns visibility
+    bool SPPMRenderer::trace_photon(StateSequence &rand, real contribution_scaling) { // returns visibility
         bool visible = false;
         real pdf;
         const Triangle &tri = scene->sample_triangle_light_emission(rand(), pdf);
@@ -119,29 +122,35 @@ TC_NAMESPACE_BEGIN
                     int path_length = hp.path_length + depth + 1;
                     real &hp_radius2 = radius2[hp.pixel.x][hp.pixel.y];
                     if (path_length_in_range(path_length) &&
-                        dot(hp.normal, info.normal) > eps && dot(v, v) <= hp_radius2) {
-                        long long &hp_num_photons = num_photons[hp.pixel.x][hp.pixel.y];
-                        real g = (hp_num_photons * alpha + alpha) / (hp_num_photons * alpha + 1.0f);
-                        hp_radius2 *= g;
-                        Vector3 contribution = hp.importance * flux * bsdf.evaluate(in_dir, hp.eye_out_dir);
-                        this->flux[hp.pixel.x][hp.pixel.y] = (this->flux[hp.pixel.x][hp.pixel.y] + contribution) * g;
-                        hp_num_photons++;
+                        dot(hp.normal, info.normal) > eps && dot(v, v) < hp_radius2) {
+                        if (contribution_scaling > 0) {
+                            long long &hp_num_photons = num_photons[hp.pixel.x][hp.pixel.y];
+                            real g;
+                            if (shrinking_radius)
+                                g = (hp_num_photons * alpha + alpha) / (hp_num_photons * alpha + 1.0f);
+                            else
+                                g = 1.0f;
+                            hp_radius2 *= g;
+                            Vector3 contribution = contribution_scaling * hp.importance * flux * bsdf.evaluate(in_dir, hp.eye_out_dir);
+                            this->flux[hp.pixel.x][hp.pixel.y] = (this->flux[hp.pixel.x][hp.pixel.y] + contribution) * g;
+                            hp_num_photons++;
+                        }
                         visible = true;
                     }
                 }
             }
             ray = Ray(info.pos, out_dir);
-			//Russian roulette
-			if (russian_roulette) {
-				real p = max_component(color);
-				if (p < 1) {
+            // Russian roulette
+            if (russian_roulette) {
+                real p = max_component(color);
+                if (p < 1) {
                     if (rand() < p) {
                         flux = (1.0f / p) * flux;
                     } else {
                         break;
                     }
                 }
-			}
+            }
             flux *= color;
         }
         return visible;
@@ -152,7 +161,7 @@ TC_NAMESPACE_BEGIN
         hit_points.clear();
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
-                Vector2 offset(float(i) / width, float(j) / height);
+                Vector2 offset(real(i) / (real)width, real(j) / (real)height);
                 Vector2 size(1.0f / width, 1.0f / height);
                 Ray ray = camera->sample(offset, size);
                 trace_eye_path(ray, Vector2i(i, j));
@@ -161,4 +170,5 @@ TC_NAMESPACE_BEGIN
     }
 
     TC_IMPLEMENTATION(Renderer, SPPMRenderer, "sppm");
+
 TC_NAMESPACE_END

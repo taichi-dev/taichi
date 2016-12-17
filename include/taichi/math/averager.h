@@ -6,12 +6,12 @@
 
 TC_NAMESPACE_BEGIN
 
-class RunningAverager {
+class RunningAverage {
 private:
     double total_value, total_weight;
     real safe_value;
 public:
-    RunningAverager() {
+    RunningAverage() {
         safe_value = 0.0f;
         clear();
     }

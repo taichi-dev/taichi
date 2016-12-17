@@ -171,7 +171,7 @@ TC_NAMESPACE_BEGIN
         long long accepted;
         long long mutated;
         real mutation_strength;
-        RunningAverager normalizers[2];
+        RunningAverage normalizers[2];
         std::vector<PathContribution> all_pcs[2];
         bool use_vis_chain;
         bool use_con_chain;
@@ -268,7 +268,7 @@ TC_NAMESPACE_BEGIN
             }
 
             int num_chains = int(use_vis_chain) + int(use_con_chain);
-            RunningAverager photon_visibility;
+            RunningAverage photon_visibility;
             // TODO: deferred writting...
             for (int k = 0; k < n_samples_per_stage; k++) {
                 MarkovChainTag u = (MarkovChainTag) (int(rand() * 2));

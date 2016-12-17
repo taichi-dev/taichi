@@ -24,7 +24,7 @@ class Renderer(object):
 
     def render(self, stages, cache_interval=1000):
         for i in range(stages):
-            print 'stage', i,
+            print 'stage', i
             t = time.time()
             self.render_stage()
             print 'time:', time.time() - t

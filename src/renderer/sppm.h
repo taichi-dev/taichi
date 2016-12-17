@@ -30,7 +30,7 @@ TC_NAMESPACE_BEGIN
 
         virtual void trace_eye_path(Ray &ray, const Vector2i &pixel = Vector2i(-1, -1));
 
-        virtual bool trace_photon(StateSequence &rand); // Returns visibility
+        virtual bool trace_photon(StateSequence &rand, real contribution_scaling=1.0f); // Returns visibility
 
         virtual void eye_ray_pass();
 
@@ -47,10 +47,11 @@ TC_NAMESPACE_BEGIN
         Array2D<real> radius2;
         Array2D<Vector3> flux;
         Array2D<long long> num_photons;
-        long long photon_counter;
-        bool stochastic;
-        int eye_ray_stages;
+        int64 photon_counter;
+        bool stochastic_eye_ray;
 		bool russian_roulette;
+        bool shrinking_radius;
+        int eye_ray_stages;
     };
 TC_NAMESPACE_END
 

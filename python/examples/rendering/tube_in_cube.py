@@ -32,7 +32,6 @@ def create_scene():
                     translate=(0, -0.5, 0), scale=0.25, rotation=(90, 0, 0))
         scene.add_mesh(mesh)
 
-
     return scene
 
 if __name__ == '__main__':
@@ -43,6 +42,6 @@ if __name__ == '__main__':
     renderer.initialize(min_path_length=1, max_path_length=10,
                         initial_radius=0.005, sampler='prand', russian_roulette=False, volmetric=True, direct_lighting=1,
                         direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1, stage_frequency=3,
-                        num_threads=8)
+                        num_threads=8, shrinking_radius=True)
     renderer.set_post_processor(LDRDisplay(exposure=0.3, bloom_radius=0.00))
     renderer.render(10000, 20)

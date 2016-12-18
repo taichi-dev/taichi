@@ -35,35 +35,33 @@
 #include <taichi/visualization/rgb.h>
 #include <taichi/io/io.h>
 
-namespace boost {
-#define EXPLICIT_GET_POINTER(T) template <> T const volatile * get_pointer<T const volatile >(T const volatile *c){return c;}
+#define EXPLICIT_GET_POINTER(T) namespace boost { template <> T const volatile * get_pointer<T const volatile >(T const volatile *c){return c;}}
 
-	EXPLICIT_GET_POINTER(taichi::MPMParticle);
+EXPLICIT_GET_POINTER(taichi::MPMParticle);
 
-	EXPLICIT_GET_POINTER(taichi::EPParticle);
+EXPLICIT_GET_POINTER(taichi::EPParticle);
 
-	EXPLICIT_GET_POINTER(taichi::DPParticle);
+EXPLICIT_GET_POINTER(taichi::DPParticle);
 
-	EXPLICIT_GET_POINTER(taichi::Camera);
+EXPLICIT_GET_POINTER(taichi::Camera);
 
-	EXPLICIT_GET_POINTER(taichi::SurfaceMaterial);
+EXPLICIT_GET_POINTER(taichi::SurfaceMaterial);
 
-	EXPLICIT_GET_POINTER(taichi::VolumeMaterial);
+EXPLICIT_GET_POINTER(taichi::VolumeMaterial);
 
-	EXPLICIT_GET_POINTER(taichi::Renderer);
+EXPLICIT_GET_POINTER(taichi::Renderer);
 
-	EXPLICIT_GET_POINTER(taichi::Scene);
+EXPLICIT_GET_POINTER(taichi::Scene);
 
-	EXPLICIT_GET_POINTER(taichi::Mesh);
+EXPLICIT_GET_POINTER(taichi::Mesh);
 
-	EXPLICIT_GET_POINTER(taichi::EnvironmentMap);
+EXPLICIT_GET_POINTER(taichi::EnvironmentMap);
 
-	EXPLICIT_GET_POINTER(taichi::Texture);
+EXPLICIT_GET_POINTER(taichi::Texture);
 
-	EXPLICIT_GET_POINTER(taichi::ParticleRenderer);
+EXPLICIT_GET_POINTER(taichi::ParticleRenderer);
 
-	EXPLICIT_GET_POINTER(taichi::Simulation3D);
-}
+EXPLICIT_GET_POINTER(taichi::Simulation3D);
 
 TC_NAMESPACE_BEGIN
 
@@ -114,7 +112,7 @@ BOOST_PYTHON_MODULE(taichi_core) {
 	numeric::array::set_module_and_type("numpy", "ndarray");
 	def("create_texture", create_instance<Texture>);
 	def("register_texture", &AssetManager::insert_asset<Texture>);
-    def("register_surface_material", &AssetManager::insert_asset<SurfaceMaterial>);
+	def("register_surface_material", &AssetManager::insert_asset<SurfaceMaterial>);
 	def("create_simulation3d", create_instance<Simulation3D>);
 	def("create_renderer", create_instance<Renderer>);
 	def("create_camera", create_instance<Camera>);
@@ -149,7 +147,6 @@ BOOST_PYTHON_MODULE(taichi_core) {
         .def("get_current_time", &SIM::get_current_time) \
         .def("get_render_particles", &SIM::get_render_particles) \
         ;
-	register_ptr_to_python<std::shared_ptr<Simulation3D>>();
 	EXPORT_SIMULATOR_3D(Simulation3D);
 
 #define EXPORT_MPM(SIM) \
@@ -171,10 +168,6 @@ BOOST_PYTHON_MODULE(taichi_core) {
 	EXPORT_MPM(MPM);
 
 	class_<Config>("Config");
-
-	register_ptr_to_python<std::shared_ptr<MPMParticle>>();
-	register_ptr_to_python<std::shared_ptr<EPParticle>>();
-	register_ptr_to_python<std::shared_ptr<DPParticle>>();
 
 	class_<Vector2>("Vector2")
 		.def_readwrite("x", &Vector2::x)

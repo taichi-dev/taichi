@@ -177,9 +177,10 @@ protected:
 	virtual Vector3 get_attenuation(VolumeStack stack, Ray ray, StateSequence &rand, IntersectionInfo &last_intersection) {
 		Vector3 att(1.0f);
 
-		while (true) {
+		// TODO: 100??
+		for (int i = 0; i < 10; i++) {
 			if (stack.size() == 0) {
-				// TODO: this is a bug...
+				// TODO: this should be bug...
 				return Vector3(0.0f);
 			}
 			IntersectionInfo info = sg->query(ray);
@@ -437,7 +438,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
 					stack.pop();
 				}
 			}
-			out_ray = Ray(info.pos, out_dir, 1e-5f);
+			out_ray = Ray(info.pos + out_dir * 1e-4f, out_dir, 1e-5f);
 			real c = abs(glm::dot(out_dir, info.normal));
 			if (pdf < 1e-10f) {
 				break;

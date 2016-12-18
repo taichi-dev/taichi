@@ -52,6 +52,9 @@ class Texture:
     def zoom(self, zoom=(2, 2, 2), center=(0, 0, 0), repeat=True):
         return Texture("zoom", tex=self, center=center, zoom=zoom, repeat=repeat)
 
+    def repeat(self, repeat_x, repeat_y, repeat_z):
+        return Texture("repeat", tex=self, repeat_u=repeat_x, repeat_v=repeat_y, repeat_w=repeat_z)
+
     def rasterize(self, resolution_x=256, resolution_y=-1):
         if resolution_y == -1:
             resolution_y = resolution_x

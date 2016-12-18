@@ -110,7 +110,7 @@ public:
 		if (!first_stage_done) {
 			b = estimate_b();
 			P(b);
-			current_state.chain = PSSMLTMarkovChain(width, height);
+			current_state.chain = PSSMLTMarkovChain((real)width, (real)height);
 			current_state.pc = get_path_contribution(current_state.chain);
 			current_state.sc = scalar_contribution_function(current_state.pc);
 			first_stage_done = true;
@@ -139,7 +139,7 @@ public:
 			}
 			if (current_state.sc > 0.0) {
 				write_path_contribution(current_state.pc,
-					(1.0 - a) / (current_state.sc / b + large_step_prob));
+					real((1.0 - a) / (current_state.sc / b + large_step_prob)));
 			}
 			// conditionally accept the chain
 			if (rand() <= a) {

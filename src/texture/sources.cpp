@@ -34,6 +34,55 @@ public:
 
 TC_IMPLEMENTATION(Texture, ImageTexture, "image");
 
+class RectTexture : public Texture {
+protected:
+	Vector3 bounds;
+public:
+	void initialize(const Config &config) override {
+		bounds = config.get_vec3("bounds") * 0.5f;
+	}
+
+	bool inside(const Vector3 &coord) const {
+		Vector3 c = coord - Vector3(0.5f);
+		return 
+			std::abs(c.x) < bounds.x &&
+			std::abs(c.y) < bounds.y &&
+			std::abs(c.z) < bounds.z;
+	}
+
+	virtual Vector3 sample(const Vector3 &coord) const override {
+		return Vector3(inside(coord) ? 1.0f : 0.0f);
+	}
+};
+
+TC_IMPLEMENTATION(Texture, RectTexture, "rect");
+
+class RingTexture : public Texture {
+protected:
+	real inner, outer;
+public:
+	void initialize(const Config &config) override {
+		inner = config.get("inner", 0.0f) / 2.0f;
+		outer = config.get("outer", 1.0f) / 2.0f;
+	}
+
+	static bool inside(Vector2 p, Vector2 c, real r) {
+		return (p.x - c.x) * (p.x - c.x) + (p.y - c.y) * (p.y - c.y) <= r * r;
+	}
+
+	virtual Vector3 sample(const Vector2 &coord) const override {
+		return Vector3(
+			inside(coord, Vector2(0.5f, 0.5f), outer) &&
+			!inside(coord, Vector2(0.5f, 0.5f), inner) ? 1.0f : 0.0f);
+	}
+
+	virtual Vector3 sample(const Vector3 &coord) const override {
+		return sample(Vector2(coord.x, coord.y));
+	}
+};
+
+TC_IMPLEMENTATION(Texture, RingTexture, "ring");
+
 class TaichiTexture : public Texture {
 protected:
 	real scale;

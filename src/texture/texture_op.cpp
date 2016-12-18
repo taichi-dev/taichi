@@ -87,25 +87,25 @@ TC_IMPLEMENTATION(Texture, FractTexture, "fract");
 
 class RepeatedTexture : public Texture {
 protected:
-	real repeat_u, repeat_v, repeat_p;
-	real inv_repeat_u, inv_repeat_v, inv_repeat_p;
+	real repeat_u, repeat_v, repeat_w;
+	real inv_repeat_u, inv_repeat_v, inv_repeat_w;
 	std::shared_ptr<Texture> tex;
 public:
 	void initialize(const Config &config) override {
 		repeat_u = config.get_real("repeat_u");
 		repeat_v = config.get_real("repeat_v");
-		repeat_p = config.get("repeat_p", 1.0f);
+		repeat_w = config.get("repeat_w", 1.0f);
 		inv_repeat_u = 1.0f / repeat_u;
 		inv_repeat_v = 1.0f / repeat_v;
-		inv_repeat_p = 1.0f / repeat_p;
+		inv_repeat_w = 1.0f / repeat_w;
 		tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
 	}
 
 	virtual Vector3 sample(const Vector3 &coord) const override {
 		real u = coord.x - floor(coord.x * repeat_u) * inv_repeat_u;
 		real v = coord.y - floor(coord.y * repeat_v) * inv_repeat_v;
-		real p = coord.y - floor(coord.z * repeat_p) * inv_repeat_p;
-		return tex->sample(Vector3(u * repeat_u, v * repeat_v, p * repeat_p));
+		real w = coord.z - floor(coord.z * repeat_w) * inv_repeat_w;
+		return tex->sample(Vector3(u * repeat_u, v * repeat_v, w * repeat_w));
 	}
 };
 

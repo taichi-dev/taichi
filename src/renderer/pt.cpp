@@ -6,6 +6,7 @@
 #include "markov_chain.h"
 
 TC_NAMESPACE_BEGIN
+
 struct PathContribution {
 	float x, y;
 	Vector3 c;
@@ -199,11 +200,11 @@ protected:
 				last_intersection = info;
 				break;
 			}
-            SurfaceEvent event;
-            Vector3 f, _;
-            real pdf;
-            bsdf.sample(in_dir, rand(), rand(), _, f, pdf, event);
-            if (SurfaceEventClassifier::is_index_matched(event)) {
+			SurfaceEvent event;
+			Vector3 f, _;
+			real pdf;
+			bsdf.sample(in_dir, rand(), rand(), _, f, pdf, event);
+			if (SurfaceEventClassifier::is_index_matched(event)) {
 				att *= f * bsdf.cos_theta(-in_dir);
 				ray = Ray(info.pos + ray.dir * 1e-3f, ray.dir);
 				if (SurfaceEventClassifier::is_entering(event) || SurfaceEventClassifier::is_leaving(event)) {
@@ -216,7 +217,8 @@ protected:
 						stack.pop();
 					}
 				}
-			} else {
+			}
+			else {
 				return Vector3(0.0f);
 			}
 		}

@@ -60,7 +60,7 @@ void EnvironmentMap::initialize(const Config & config) {
 
 real EnvironmentMap::pdf(const Vector3 &dir) const {
 	Vector2 uv = direction_to_uv(dir);
-	return luminance(image->sample(uv.x, uv.y)) 
+	return luminance(image->sample(uv.x, uv.y))
 		/ avg_illum * (1.0f / 4 / pi);
 }
 

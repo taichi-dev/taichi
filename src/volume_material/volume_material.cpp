@@ -5,8 +5,10 @@
 TC_NAMESPACE_BEGIN
 
 TC_INTERFACE_DEF(VolumeMaterial, "volume_material")
+TC_IMPLEMENTATION(VolumeMaterial, VolumeMaterial, "homogeneous");
 
 class VacuumVolumeMaterial : public VolumeMaterial {
+public:
 	virtual void initialize(const Config &config) override {
 		this->volumetric_scattering = 0.0f;
 		this->volumetric_absorption = 0.0f;
@@ -27,6 +29,8 @@ class VacuumVolumeMaterial : public VolumeMaterial {
 		return true;
 	}
 };
+
+TC_IMPLEMENTATION(VolumeMaterial, VacuumVolumeMaterial, "vacuum");
 
 class VoxelVolumeMaterial : public VolumeMaterial {
 protected:
@@ -78,8 +82,6 @@ VolumeStack::VolumeStack() {
 	stack.push_back(vacuum.get());
 }
 
-TC_IMPLEMENTATION(VolumeMaterial, VolumeMaterial, "homogeneous");
-TC_IMPLEMENTATION(VolumeMaterial, VacuumVolumeMaterial, "vacuum");
 TC_IMPLEMENTATION(VolumeMaterial, VoxelVolumeMaterial, "voxel");
 
 TC_NAMESPACE_END

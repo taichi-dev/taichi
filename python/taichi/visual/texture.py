@@ -49,6 +49,9 @@ class Texture:
     def flip(self, flip_axis):
         return Texture("flip", tex=self, flip_axis=flip_axis)
 
+    def zoom(self, zoom=(2, 2, 2), center=(0, 0, 0), repeat=True):
+        return Texture("zoom", tex=self, center=center, zoom=zoom, repeat=repeat)
+
     def rasterize(self, resolution_x=256, resolution_y=-1):
         if resolution_y == -1:
             resolution_y = resolution_x

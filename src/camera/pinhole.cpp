@@ -23,6 +23,7 @@ private:
 	real tan_half_fov;
 	real aspect_ratio;
 };
+
 void PinholeCamera::initialize(const Config &config) {
 	int width = config.get_int("width");
 	int height = config.get_int("height");

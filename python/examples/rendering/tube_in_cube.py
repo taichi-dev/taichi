@@ -35,7 +35,7 @@ def create_scene():
     return scene
 
 if __name__ == '__main__':
-    renderer = Renderer('pt', '../output/frames/amcmcups.png', overwrite=True)
+    renderer = Renderer('amcmcppm', '../output/frames/amcmcups.png', overwrite=True)
 
     scene = create_scene()
     renderer.set_scene(scene)

@@ -75,8 +75,6 @@ void AMCMCPPMRenderer::render_stage() {
 	}
 	real last_r = 0.0f;
 	for (int64 i = 0; i < num_photons_per_stage; i++) {
-		// TODO: cache the contribution of trace_photon so that we don't have to do it more than once.
-
 		// ----------------------------------------
 		// We do 3 MCMC steps here:
 		//   1. Mutate the visibility chain
@@ -93,7 +91,13 @@ void AMCMCPPMRenderer::render_stage() {
 		// Mutate the uniform chain, using a completely random new state
 		MCMCState uniform_state = create_new_uniform_state();
 		auto uniform_state_sequence = MCStateSequence(uniform_state.chain);
-		if (trace_photon(uniform_state_sequence, 0.0f)) {
+
+		real weight = normalizer.get_average();
+		// The pdf of sampling this point in the PSS hypercube is 1 while
+		// the normalization factor for the visibility chain is normalizer.get_average().
+		// So we do the corresponding scaling of contribution.
+
+		if (trace_photon(uniform_state_sequence, weight)) {
 			// Uniform state visible
 			normalizer.insert(1, 1);
 			// Step 3:
@@ -110,17 +114,15 @@ void AMCMCPPMRenderer::render_stage() {
 			mutated += 1;
 			candidate_state.chain = current_state.chain.mutate(mutation_strength);
 			auto candidate_state_sequence = MCStateSequence(candidate_state.chain);
-			if (trace_photon(candidate_state_sequence, 0.0f)) {
+			if (trace_photon(candidate_state_sequence, weight)) {
 				current_state = candidate_state;
 				accepted += 1;
 			}
+			else {
+				auto rand = MCStateSequence(current_state.chain);
+				trace_photon(rand, weight);
+			}
 		}
-		// Finally write the contribution here.
-		auto rand = MCStateSequence(current_state.chain);
-		// The pdf of sampling this point in the PSS hypercube is 1 while
-		// the normalization factor for the visibility chain is normalizer.get_average().
-		// So we do the corresponding scaling of contribution.
-		trace_photon(rand, normalizer.get_average());
 		photon_counter += 1;
 
 		// Adaptive MCMC parameter update

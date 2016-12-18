@@ -26,7 +26,7 @@ def create_scene():
             scene.add_mesh(Mesh('plane',
                                 SurfaceMaterial('transparent', mask=menger,
                                                 nested=
-                                                SurfaceMaterial('pbr', diffuse=colorsys.hls_to_rgb(i * 0.1 + 0.3, 0.3, 1.0))),
+                                                SurfaceMaterial('diffuse', diffuse=colorsys.hls_to_rgb(i * 0.1 + 0.3, 0.3, 1.0))),
                                 translate=(i * 7 - 28, 3.5, -5), scale=3, rotation=(90, 0, 0)))
 
 

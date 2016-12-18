@@ -19,6 +19,7 @@
 #pragma warning(disable:4005)
 #include <windows.h>
 #pragma warning(pop)
+#include <intrin.h>
 #else
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #endif
@@ -31,8 +32,13 @@
 #endif
 
 #undef assert
-#define assert(x) {bool ret = static_cast<bool>(x); if (!ret) {printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, #x); getchar(); exit(-1);}}
-#define assert_info(x, info) {bool ret = static_cast<bool>(x); if (!ret) {printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, &((info)[0])); getchar(); exit(-1);}}
+#ifdef _WIN64
+#define DEBUG_TRIGGER __debugbreak()
+#else
+#define DEBUG_TRIGGER getchar()
+#endif
+#define assert(x) {bool ret = static_cast<bool>(x); if (!ret) {printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, #x); DEBUG_TRIGGER; exit(-1);}}
+#define assert_info(x, info) {bool ret = static_cast<bool>(x); if (!ret) {printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, &((info)[0])); DEBUG_TRIGGER; exit(-1);}}
 #define error(info) assert_info(false, info)
 #define NOT_IMPLEMENTED assert_info(false, "Not Implemented!");
 

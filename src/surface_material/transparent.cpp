@@ -54,4 +54,56 @@ public:
 
 TC_IMPLEMENTATION(SurfaceMaterial, TransparentMaterial, "transparent")
 
+class DiffuseTransmissiveMaterial : public SurfaceMaterial {
+public:
+	void initialize(const Config &config) override {
+		color_sampler = get_color_sampler(config, "diffuse");
+	}
+
+	virtual Vector3 sample_direction(const Vector3 &in, real u, real v, const Vector2 &uv) const override {
+		if (abs(in.z) > 1 - eps) {
+			Vector3 normal(0, 0, -sgn(in.z));
+			return random_diffuse(normal, u, v);
+		}
+		else {
+			// We do the following other than the above to ensure correlation for MCMC...
+			if (u > v) {
+				std::swap(u, v);
+			}
+			if (v < eps) {
+				v = eps;
+			}
+			u /= v;
+			real xz = v, y = sqrt(1 - v * v);
+			real phi = u * 2.0f * pi;
+			real r = v / sqrt(in.x * in.x + in.y * in.y), p = in.x * r, q = in.y * r;
+			real c = cos(phi), s = sin(phi);
+			return Vector3(p * c - q * s, q * c + p * s, -y * sgn(in.z));
+		}
+	}
+
+	virtual real probability_density(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
+		if (in.z * out.z > -eps) {
+			return 0;
+		}
+		return abs(out.z) / pi;
+	}
+
+	virtual Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
+		auto color = color_sampler->sample(uv);
+		return (in.z * out.z < -eps ? 1.0f : 0.0f) * color * (1.0f / pi);
+	}
+
+	virtual void
+		sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf,
+			SurfaceEvent &event, const Vector2 &uv) const override {
+		out_dir = sample_direction(in_dir, u, v, uv);
+		f = evaluate_bsdf(in_dir, out_dir, uv);
+		event = (int)SurfaceScatteringFlags::non_delta;
+		pdf = std::abs(out_dir.z) / pi;
+	}
+};
+
+TC_IMPLEMENTATION(SurfaceMaterial, DiffuseTransmissiveMaterial, "difftrans")
+
 TC_NAMESPACE_END

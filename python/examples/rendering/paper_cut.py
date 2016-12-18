@@ -24,6 +24,10 @@ def create_scene():
                     translate=(0, 0, -0.05), scale=10, rotation=(90, 0, 0))
         scene.add_mesh(mesh)
 
+        mesh = Mesh('plane', SurfaceMaterial('difftrans', diffuse=(1, 1, 1)),
+                    translate=(-4, 0, 0), scale=2, rotation=(0, 0, 90))
+        scene.add_mesh(mesh)
+
         mesh = Mesh('plane', SurfaceMaterial('diffuse', diffuse=(0.1, 0.08, 0.08)),
                     translate=(-10, 0, 0), scale=10, rotation=(0, 0, 90))
         scene.add_mesh(mesh)
@@ -48,7 +52,7 @@ if __name__ == '__main__':
 
     scene = create_scene()
     renderer.set_scene(scene)
-    renderer.initialize(min_path_length=1, max_path_length=2,
+    renderer.initialize(min_path_length=1, max_path_length=10,
                         initial_radius=0.5, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
                         direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1,
                         stage_frequency=3, num_threads=8)

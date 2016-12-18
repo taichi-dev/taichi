@@ -113,7 +113,7 @@ public:
 	}
 
 	virtual real get_importance(const Vector2 &uv) const {
-		return luminance(color_sampler->sample(uv));
+		return luminance(color_sampler->sample(uv)) + 1e-7f;
 	}
 
 

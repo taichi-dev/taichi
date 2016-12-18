@@ -135,7 +135,7 @@ public:
 			// accumulate samples with mean value substitution and MIS
 			if (new_state.sc > 0.0) {
 				write_path_contribution(new_state.pc,
-					(a + is_large_step) / (new_state.sc / b + large_step_prob));
+					real((a + is_large_step) / (new_state.sc / b + large_step_prob)));
 			}
 			if (current_state.sc > 0.0) {
 				write_path_contribution(current_state.pc,
@@ -158,12 +158,12 @@ protected:
 	public:
 		MMLTMarkovChain() : MMLTMarkovChain(0, 0) {}
 
-		MMLTMarkovChain(int resolution_x, int resolution_y) : PSSMLTMarkovChain(resolution_x, resolution_y) {
+		MMLTMarkovChain(int resolution_x, int resolution_y) : PSSMLTMarkovChain((real)resolution_x, (real)resolution_y) {
 			technique_state = rand();
 		}
 
 		MMLTMarkovChain large_step() const {
-			return MMLTMarkovChain(resolution_x, resolution_y);
+			return MMLTMarkovChain((int)resolution_x, (int)resolution_y);
 		}
 
 		MMLTMarkovChain mutate() const {
@@ -293,8 +293,8 @@ public:
 			}
 			if (current_state.sc > 0.0) {
 				write_path_contribution(current_state.pc,
-					factor * (1.0 - a) /
-					(current_state.sc / normalizers[path_length] + large_step_prob));
+					factor * real(1.0 - a) /
+					real((current_state.sc / normalizers[path_length] + large_step_prob)));
 			}
 			// conditionally accept the chain
 			if (rand() <= a) {

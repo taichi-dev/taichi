@@ -55,8 +55,8 @@ public:
 				Vector2 size(1.0f / width, 1.0f / height);
 				Vector3 sum(0);
 				for (int k = 0; k < spp; k++) {
-					Ray ray = camera->sample(offset, size);
-					sum += trace(ray);
+					//Ray ray = camera->sample(offset, size);
+					//sum += trace(ray);
 				}
 				buffer[i][j] = 1.0f / spp * sum;
 			}

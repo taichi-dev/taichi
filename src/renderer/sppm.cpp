@@ -42,7 +42,7 @@ void SPPMRenderer::render_stage() {
 	}
 }
 
-void SPPMRenderer::trace_eye_path(Ray &ray, const Vector2i &pixel) {
+void SPPMRenderer::trace_eye_path(StateSequence &rand, Ray &ray, const Vector2i &pixel) {
 	Vector3 importance = Vector3(1.0f);
 	for (int depth = 0; depth + 1 <= max_path_length; depth++) {
 		IntersectionInfo info = sg->query(ray);
@@ -161,14 +161,16 @@ bool SPPMRenderer::trace_photon(StateSequence &rand, real contribution_scaling) 
 }
 
 void SPPMRenderer::eye_ray_pass() {
+	auto sampler = create_instance<Sampler>("prand");
 	hash_grid.initialize(initial_radius, width * height * 10 + 7); // TODO: hash cell size should be shrinking...
 	hit_points.clear();
 	for (int i = 0; i < width; i++) {
 		for (int j = 0; j < height; j++) {
+			auto rand = RandomStateSequence(sampler, i * height + j);
 			Vector2 offset(real(i) / (real)width, real(j) / (real)height);
 			Vector2 size(1.0f / width, 1.0f / height);
-			Ray ray = camera->sample(offset, size);
-			trace_eye_path(ray, Vector2i(i, j));
+			Ray ray = camera->sample(offset, size, rand(), rand());
+			trace_eye_path(rand, ray, Vector2i(i, j));
 		}
 	}
 }

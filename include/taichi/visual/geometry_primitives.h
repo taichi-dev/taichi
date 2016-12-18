@@ -9,7 +9,7 @@ TC_NAMESPACE_BEGIN
 class Ray {
 public:
 	Ray() {};
-	Ray(Vector3 orig, Vector3 dir, real time=0) : orig(orig),
+	Ray(Vector3 orig, Vector3 dir, real time = 0) : orig(orig),
 		dir(dir), dist(DIST_INFINITE), time(time) {
 		triangle_id = -1;
 	}
@@ -28,7 +28,7 @@ struct Triangle {
 	Vector3 v[3];
 	Vector3 v10, v20, normal;
 	Vector3 n0, n1, n2;
-    Vector2 uv0, uv1, uv2;
+	Vector2 uv0, uv1, uv2;
 	Vector3 n10, n20;
 	int id;
 	real area;
@@ -50,8 +50,8 @@ struct Triangle {
 		area = 0.5f * length(cross(v[1] - v[0], v[2] - v[0]));
 	}
 	Triangle(const Vector3 &v0, const Vector3 &v1, const Vector3 &v2,
-			 const Vector3 &n0, const Vector3 &n1, const Vector3 &n2,
-			 const Vector2 &uv0, const Vector2 &uv1, const Vector2 &uv2, int id) {
+		const Vector3 &n0, const Vector3 &n1, const Vector3 &n2,
+		const Vector2 &uv0, const Vector2 &uv1, const Vector2 &uv2, int id) {
 		v[0] = v0;
 		v[1] = v1;
 		v[2] = v2;

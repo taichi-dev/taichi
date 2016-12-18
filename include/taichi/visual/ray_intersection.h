@@ -7,21 +7,21 @@
 
 TC_NAMESPACE_BEGIN
 
-    class RayIntersection {
-    public:
-        virtual void initialize(const Config &config) {}
+class RayIntersection {
+public:
+	virtual void initialize(const Config &config) {}
 
-        virtual void clear() = 0;
+	virtual void clear() = 0;
 
-        virtual void build() = 0;
+	virtual void build() = 0;
 
-        virtual void query(Ray &ray) = 0;
+	virtual void query(Ray &ray) = 0;
 
-        virtual bool occlude(Ray &ray) = 0;
+	virtual bool occlude(Ray &ray) = 0;
 
-        virtual void add_triangle(Triangle &triangle) = 0;
-    };
+	virtual void add_triangle(Triangle &triangle) = 0;
+};
 
-    TC_INTERFACE(RayIntersection);
+TC_INTERFACE(RayIntersection);
 
 TC_NAMESPACE_END

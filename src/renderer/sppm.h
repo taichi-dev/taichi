@@ -26,7 +26,7 @@ public:
 		return image;
 	}
 
-	virtual void trace_eye_path(Ray &ray, const Vector2i &pixel = Vector2i(-1, -1));
+	virtual void trace_eye_path(StateSequence &rand, Ray &ray, const Vector2i &pixel = Vector2i(-1, -1));
 
 	virtual bool trace_photon(StateSequence &rand, real contribution_scaling = 1.0f); // Returns visibility
 

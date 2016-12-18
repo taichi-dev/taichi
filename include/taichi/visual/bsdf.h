@@ -61,7 +61,7 @@ public:
 	bool is_leaving(const Vector3 &in_dir) const {
 		return !is_entering(in_dir);
 	}
-	
+
 	VolumeMaterial const *get_internal_material() const {
 		return material->get_internal_material();
 	}

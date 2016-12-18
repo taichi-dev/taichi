@@ -358,7 +358,7 @@ public:
 				states[u] = new_state;
 			}
 			if (u == vis) {
-				photon_visibility.insert(current_state.sc, 1);
+				photon_visibility.insert((real)current_state.sc, 1);
 			}
 			if (chain_exchange) {
 				// Replica Exchange

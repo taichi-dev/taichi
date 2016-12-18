@@ -57,7 +57,7 @@ Path BidirectionalRenderer::trace_eye_path(StateSequence &rand) {
 	if (max_eye_events == 0) {
 		return result;
 	}
-	Ray r = camera->sample(Vector2(0, 0), Vector2(1.0f, 1.0f), rand(), rand());
+	Ray r = camera->sample(Vector2(0, 0), Vector2(1.0f, 1.0f), rand);
 	IntersectionInfo info;
 	info.pos = r.orig;
 	info.normal = camera->get_dir();

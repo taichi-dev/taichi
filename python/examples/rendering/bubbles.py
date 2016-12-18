@@ -8,7 +8,7 @@ import colorsys
 def create_scene():
     downsample = 1
     width, height = 960 / downsample, 540 / downsample
-    camera = Camera('pinhole', width=width, height=height, fov_angle=20,
+    camera = Camera('pinhole', width=width, height=height, fov=20,
                     origin=(0, 0, 30), look_at=(0, 0, 0), up=(0, 1, 0))
 
     scene = Scene()

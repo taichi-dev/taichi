@@ -154,7 +154,7 @@ protected:
 	PathContribution get_path_contribution(StateSequence &rand) {
 		Vector2 offset(rand(), rand());
 		Vector2 size(1.0f / width, 1.0f / height);
-		Ray ray = camera->sample(offset, size, rand(), rand());
+		Ray ray = camera->sample(offset, size, rand);
 		Vector3 color = trace(ray, rand);
 		if (luminance_clamping > 0 && luminance(color) > luminance_clamping) {
 			color = luminance_clamping / luminance(color) * color;

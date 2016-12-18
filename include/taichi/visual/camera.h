@@ -10,13 +10,9 @@ class Camera {
 public:
 	virtual void initialize(const Config &config) {};
 
-	virtual Ray sample(Vector2 offset, Vector2 size, real u, real v) {
-		assert_info(false, "no impl");
-		return Ray(Vector3(0), Vector3(0));
-	};
-
 	virtual Ray sample(Vector2 offset, Vector2 size, StateSequence &rand) {
-		return sample(offset, size, rand(), rand());
+		error("no impl");
+		return Ray(Vector3(0), Vector3(0));
 	}
 
 	Vector3 get_origin() {
@@ -28,6 +24,7 @@ public:
 	}
 
 	virtual void get_pixel_coordinate(Vector3 dir, real &u, real &v) {
+		error("no impl");
 	}
 
 	virtual real get_pixel_scaling() {

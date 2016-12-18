@@ -169,7 +169,7 @@ void SPPMRenderer::eye_ray_pass() {
 			auto rand = RandomStateSequence(sampler, i * height + j);
 			Vector2 offset(real(i) / (real)width, real(j) / (real)height);
 			Vector2 size(1.0f / width, 1.0f / height);
-			Ray ray = camera->sample(offset, size, rand(), rand());
+			Ray ray = camera->sample(offset, size, rand);
 			trace_eye_path(rand, ray, Vector2i(i, j));
 		}
 	}

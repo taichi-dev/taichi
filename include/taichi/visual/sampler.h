@@ -26,6 +26,18 @@ public:
 		assert_info(this->cursor == cursor, std::string("Cursor position should be " + std::to_string(cursor) +
 			" instead of " + std::to_string(this->cursor)));
 	}
+
+	Vector2 next2() {
+		return Vector2((*this)(), (*this)());
+	}
+
+	Vector3 next3() {
+		return Vector3((*this)(), (*this)(), (*this)());
+	}
+
+	Vector4 next4() {
+		return Vector4((*this)(), (*this)(), (*this)(), (*this)());
+	}
 };
 
 

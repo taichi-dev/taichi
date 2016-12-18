@@ -47,7 +47,7 @@ def get_camera(t):
     radius = 350
     origin = (math.sin(t * 2 * math.pi) * radius, 25, math.cos(t * 2 * math.pi) * radius)
     camera = Camera('pinhole', origin=origin,
-                    look_at=(0, 0, 0), up=(0, 1, 0), fov_angle=90,
+                    look_at=(0, 0, 0), up=(0, 1, 0), fov=90,
                     width=width, height=height)
     return camera
 

@@ -6,8 +6,8 @@ from taichi.visual.post_process import *
 def create_scene():
     downsample = 1
     width, height = 960 / downsample, 540 / downsample
-    camera = Camera('pinhole', width=width, height=height, fov_angle=50,
-                    origin=(1, 1, 3), look_at=(0, -0.6, 0), up=(0, 1, 0))
+    camera = Camera('thinlens', width=width, height=height, fov=50,
+                    origin=(1, 1, 3), look_at=(0, -0.6, 0), up=(0, 1, 0), focus=(0, 0, 0), aperture=0.08)
 
     scene = Scene()
 

@@ -1,4 +1,4 @@
-
+from taichi.dynamics.nbody import NBody
 
 if __name__ == '__main__':
     nbody = NBody(num_particles=200000, gravitation=-0.0001, vel_scale=10, delta_t=0.01, num_threads=8)

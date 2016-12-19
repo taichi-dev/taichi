@@ -34,6 +34,30 @@ public:
 
 TC_IMPLEMENTATION(Texture, ImageTexture, "image");
 
+	class TextTexture : public Texture {
+	protected:
+		ImageBuffer<Vector3> image;
+	public:
+		void initialize(const Config &config) override {
+			int width = config.get_int("width");
+			int height = config.get_int("height");
+			std::string font_file_fn = config.get_string("font_file");
+			std::string content = config.get_string("content");
+			real size = config.get_real("size");
+			int dx = config.get_int("dx");
+			int dy = config.get_int("dy");
+            image.initialize(width, height);
+			image.write_text(font_file_fn, content, size, dx, dy);
+		}
+
+		virtual Vector3 sample(const Vector3 &coord_) const override {
+			Vector2 coord(coord_.x - floor(coord_.x), coord_.y - floor(coord_.y));
+			return image.sample_relative_coord(coord);
+		}
+	};
+
+	TC_IMPLEMENTATION(Texture, TextTexture, "text");
+
 class RectTexture : public Texture {
 protected:
 	Vector3 bounds;

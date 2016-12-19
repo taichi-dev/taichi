@@ -102,6 +102,7 @@ void FLIPFluid::substep(float delta_t) {
 
 
 void FLIPFluid::show(ImageBuffer<Vector3> &buffer) {
+	/*
 	buffer.write_text(title, 20, 0, -1);
 	if (show_grid) {
 		float max_speed = get_max_grid_speed() * 2 + 1e-3f;
@@ -134,6 +135,7 @@ void FLIPFluid::show(ImageBuffer<Vector3> &buffer) {
 		float y = particle.position.y / height;
 		buffer.set_pixel(x, y, Vector3(1));
 	}
+	*/
 }
 
 FLIPFluid::FLIPFluid() : EulerFluid() {

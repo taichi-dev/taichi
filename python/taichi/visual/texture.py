@@ -55,6 +55,9 @@ class Texture:
     def repeat(self, repeat_x, repeat_y, repeat_z):
         return Texture("repeat", tex=self, repeat_u=repeat_x, repeat_v=repeat_y, repeat_w=repeat_z)
 
+    def rotate(self, times):
+        return Texture("rotate", tex=self, times=times)
+
     def rasterize(self, resolution_x=256, resolution_y=-1):
         if resolution_y == -1:
             resolution_y = resolution_x

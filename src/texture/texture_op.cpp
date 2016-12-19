@@ -124,7 +124,7 @@ public:
 	virtual Vector3 sample(const Vector3 &coord_) const override {
 		auto coord = coord_;
 		for (int i = 0; i < times; i++) {
-			coord = Vector3(-coord.x, coord.y, coord.z);
+			coord = Vector3(-coord.y, coord.x, coord.z);
 		}
 		return tex->sample(coord);
 	}

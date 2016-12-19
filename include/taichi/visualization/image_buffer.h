@@ -70,7 +70,7 @@ public:
 
 	void write(std::string filename);
 
-	void write_text(std::string content, float size, int dx, int dy);
+	void write_text(const std::string &font_fn, const std::string &content, real size, int dx, int dy);
 
 };
 

@@ -23,6 +23,16 @@ def create_scene():
                     translate=(0, 0, -0.05), scale=10, rotation=(90.3, 0, 0))
         scene.add_mesh(mesh)
 
+        text = 1 - Texture('text', content='Taichi', width=200, height=200, font_file='../assets/fonts/go/Go-Bold.ttf', size=50,
+                  dx=0, dy=0).rotate(1)
+
+        # Taichi Text
+        mesh = Mesh('plane', SurfaceMaterial('transparent',
+                                             nested=SurfaceMaterial('diffuse', diffuse=(1, 1, 1)),
+                                             mask=text),
+                    translate=(5.0, 2, 0.05), scale=2, rotation=(90, 0, 0))
+        scene.add_mesh(mesh)
+
         mesh = Mesh('plane', SurfaceMaterial('pbr', diffuse=(0.2, 0.5, 0.2)),
                     translate=(0, 0, 0), scale=(8.3, 1, 4.5), rotation=(90, 0, 0))
         scene.add_mesh(mesh)

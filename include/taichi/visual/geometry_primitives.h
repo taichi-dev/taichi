@@ -25,30 +25,16 @@ public:
 
 struct Triangle {
 	Triangle() {};
-	Vector3 v[3];
-	Vector3 v10, v20, normal;
-	Vector3 n0, n1, n2;
-	Vector2 uv0, uv1, uv2;
-	Vector3 n10, n20;
 	int id;
+	Vector3 v[3];
+	Vector3 v10, v20, iv10, iv20; // iv10 = (v1 - v0) / length(v1 - v0)^2
+	Vector3 normal;
+	Vector3 n0;
+	Vector2 uv0, uv10, uv20;
+	Vector3 n10, n20;
 	real area;
 	real temperature;
 	real heat_capacity;
-	real specific_heat;
-	bool reflective;
-	bool refractive;
-	Triangle(const Vector3 &v0, const Vector3 &v1, const Vector3 &v2, int id) {
-		v[0] = v0;
-		v[1] = v1;
-		v[2] = v2;
-		v10 = v1 - v0;
-		v20 = v2 - v0;
-		normal = normalized(cross(v10, v20));
-		n10 = normal;
-		n20 = normal;
-		this->id = id;
-		area = 0.5f * length(cross(v[1] - v[0], v[2] - v[0]));
-	}
 	Triangle(const Vector3 &v0, const Vector3 &v1, const Vector3 &v2,
 		const Vector3 &n0, const Vector3 &n1, const Vector3 &n2,
 		const Vector2 &uv0, const Vector2 &uv1, const Vector2 &uv2, int id) {
@@ -56,13 +42,13 @@ struct Triangle {
 		v[1] = v1;
 		v[2] = v2;
 		this->n0 = n0;
-		this->n1 = n1;
-		this->n2 = n2;
 		this->uv0 = uv0;
-		this->uv1 = uv1;
-		this->uv2 = uv2;
+		this->uv10 = uv1 - uv0;
+		this->uv20 = uv2 - uv0;
 		v10 = v1 - v0;
 		v20 = v2 - v0;
+        iv10 = 1.0f / dot(v10, v10) * v10;
+		iv20 = 1.0f / dot(v20, v20) * v20;
 		n10 = n1 - n0;
 		n20 = n2 - n0;
 		this->id = id;
@@ -103,7 +89,10 @@ struct Triangle {
 		return normalized(n0 + u * n10 + v * n20);
 	}
 	Vector2 get_uv(real u, real v) const {
-		return (1.0f - u - v) * uv0 + u * uv1 + v * uv2;
+		return uv0 + u * uv10 + v * uv20;
+	}
+	Vector2 get_duv(Vector3 dx) const {
+		return uv10 * dot(iv10, dx) + uv20 * dot(iv20, dx);
 	}
 	Vector3 sample_point() const {
 		return sample_point(rand(), rand());

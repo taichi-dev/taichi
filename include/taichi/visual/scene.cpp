@@ -82,6 +82,8 @@ IntersectionInfo Scene::get_intersection_info(int triangle_id, Ray &ray) {
 	inter.intersected = true;
 	Triangle &t = triangles[triangle_id];
 	real coord_u = ray.u, coord_v = ray.v;
+    inter.tri_coord.x = coord_u;
+	inter.tri_coord.y = coord_u;
 	inter.pos = t.v[0] + coord_u * (t.v[1] - t.v[0]) + coord_v * (t.v[2] - t.v[0]);
 	inter.front = dot(ray.orig - t.v[0], t.normal) > 0;
 	// Verify interpolated normals can lead specular rays to go inside the object.
@@ -97,6 +99,8 @@ IntersectionInfo Scene::get_intersection_info(int triangle_id, Ray &ray) {
 	Vector3 u = normalized(t.v[1] - t.v[0]);
 	real sgn = inter.front ? 1.0f : -1.0f;
 	Vector3 v = normalized(cross(sgn * inter.normal, u)); // Due to shading normal, we have to normalize here...
+	inter.dt_du = tri.get_duv(u);
+	inter.dt_dv = tri.get_duv(v);
 	// TODO: ...
 	u = normalized(cross(v, inter.normal));
 	inter.to_world = Matrix3(u, v, inter.normal);

@@ -117,14 +117,16 @@ struct IntersectionInfo {
 
 	bool front;
 	bool intersected;
-	Vector3 pos, normal, geometry_normal;
 	Vector2 uv;
-	Vector3 color;
+	Vector2 dt_du;
+	Vector2 dt_dv;
+    Vector2 tri_coord;
+	Vector3 pos, normal, geometry_normal;
 	SurfaceMaterial *material = nullptr;
-	int triangle_id;
 	Matrix3 to_local;
 	Matrix3 to_world;
-	float dist;
+	real dist;
+	int triangle_id;
 };
 
 class Scene {

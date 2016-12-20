@@ -77,7 +77,7 @@ public:
 		Update();
 	}
 	void Redraw() {
-		graphics.DrawPolygon(curPoints, color, boundaryWidth);
+		//graphics.DrawPolygon(curPoints, color, boundaryWidth);
 	}
 	const Vector2D &GetNormal(int i) const {
 		return curNormals[i];

@@ -46,13 +46,14 @@ bool Game::KeyEvent(int key, int action) {
 }
 
 bool Game::MouseWheelEvent(int delta) {
-	return scoper.MouseWheelEvent(delta);
+	//return scoper.MouseWheelEvent(delta);
+	return false;
 }
 
 
 void Game::Initialize() {
 	srand((unsigned int)time(0));
-	graphics.Initialize();
+	//graphics.Initialize();
 	//glfwSetMousePosCallback(MousePosCallback);
 	//glfwSetMouseButtonCallback(MouseButtonCallback);
 	//glfwSetKeyCallback(KeyEventCallback);
@@ -64,7 +65,7 @@ void Game::Initialize() {
 	settings.Init();
 	designer.SetGame(this);
 	bodyLinker.SetGame(this);
-	scoper.SetGame(this);
+	//scoper.SetGame(this);
 
 }
 
@@ -93,7 +94,7 @@ void Game::Run() {
 		}
 		if (target != NULL) {
 			if (input.mouse.IsPressed(GLFW_MOUSE_BUTTON_2)) {
-				physics.MouseAdjust(target, shapeR, input.mouse.position, &scoper);
+				//physics.MouseAdjust(target, shapeR, input.mouse.position, &scoper);
 				if (input.keyboard.NeedProcess('S')) {
 					target->SetFixed(!target->GetFixed());
 				}
@@ -101,15 +102,16 @@ void Game::Run() {
 		}
 		if (target != NULL) {
 //			if (input.keyboard.NeedProcess('F')) target->SetFixed(!target->GetFixed());
-			if (input.keyboard.NeedProcess(GLFW_KEY_DEL) && target != physics.GetWorldBox()) {
+			//if (input.keyboard.NeedProcess(GLFW_KEY_DEL) && target != physics.GetWorldBox()) {
 				physics.DeleteObject(target);
 				target = NULL;
-			}
+			//}
 		}
 		
 		if (!settings.pause) {
 			physics.Proceed(timeInterval);
 		} else exit(0);//glfwSleep(0.05);
+		/*
 		graphics.BeginRendering();
 			physics.Redraw();
 			if (target != NULL && input.mouse.IsPressed(GLFW_MOUSE_BUTTON_2)) {
@@ -119,6 +121,7 @@ void Game::Run() {
 			designer.Redraw();
 			bodyLinker.Redraw();
 		graphics.EndRendering();
+		*/
 		frameCount++;
 	}
 }

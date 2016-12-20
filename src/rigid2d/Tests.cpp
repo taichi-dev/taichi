@@ -7,7 +7,7 @@ void Game::Test1() {
 	plant->SetPosition(Vector2D(400, 30, 1));
 	plant->SetFixed(true);
 
-	if (input.keyboard.IsPressed(GLFW_KEY_LCTRL)) {
+	if (true) {
 		double width = 20;
 		for (int i = 0; i < 20; i++)
 			for (int j = 0; j < 25; j++) {

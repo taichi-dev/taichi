@@ -1,6 +1,8 @@
-#ifndef COLOR_H
-#define COLOR_H
+#pragma once
+
 #include "Constants.h"
+
+inline float randf();
 
 struct HSB3f {
 	float h, s, b;
@@ -62,5 +64,3 @@ public:
 	}
 
 };
-
-#endif

@@ -6,7 +6,6 @@
 #include "ShapeFactory.h"
 #include "Designer.h"
 #include "BodyLinker.h"
-#include "Scoper.h"
 
 class Game {
 private:
@@ -15,7 +14,6 @@ public:
 	Physics physics;
 	Designer designer;
 	BodyLinker bodyLinker;
-	Scoper scoper;
 	static int frameRate, frameCount;
 	static void FrameRateThreadFun(void *arg);
 	bool MouseButtonEvent(int buttion, int action);

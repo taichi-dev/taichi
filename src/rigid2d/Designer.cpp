@@ -1,12 +1,12 @@
 #include "Designer.h"
 #include "Game.h"
-#include "Scoper.h"
 
 void Designer::SetGame(Game *game) {
 	this->game = game;
 	input = &game->input;
 }
 bool Designer::KeyEvent(int key, int action) {
+	/*
 	if (key == GLFW_KEY_LCTRL) {
 		active = action == GLFW_PRESS;
 		return true;
@@ -22,9 +22,11 @@ bool Designer::KeyEvent(int key, int action) {
 		points.clear();
 		return true;
 	}
+	*/
 	return false;
 }
 bool Designer::MouseButtonEvent(int button, int action) {
+	/*
 	if (showGrid) {
 		double step = 1;
 		while (game->scoper.GetDistanceOnScr(Vector2D(0, 0, 1), Vector2D(0, step * 2, 1)) < 30) step *= 2;
@@ -109,10 +111,12 @@ bool Designer::MouseButtonEvent(int button, int action) {
 
 		}
 	}
+	*/
 	return true;
 }	
 
 void Designer::Redraw() {
+	/*
 	if (!active) return;
 	RGB3f color = Colors::White;
 	if (showGrid) {
@@ -178,4 +182,5 @@ void Designer::Redraw() {
 			}
 			break;
 	}
+	*/
 }

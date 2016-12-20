@@ -1,7 +1,6 @@
 #ifndef SHAPE_H
 #define SHAPE_H
 
-#include "Graphics.h"
 #include "Geometry.h"
 
 class Object;

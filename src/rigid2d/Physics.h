@@ -1,10 +1,8 @@
-#ifndef PHYSICS_H
-#define PHYSICS_H
+#pragma once
 
 #include "Constraints.h"
 #include "QuickIntersectionTest.h"
 #include "ShapeFactory.h"
-#include "Scoper.h"
 #include "Timer.h"
 
 class Physics {
@@ -141,6 +139,7 @@ public:
 			}
 	}
 	void Redraw() {
+		/*
 		for (int i = 0; i < (int)objects.size(); i++)
 			objects[i]->Redraw();
 		for (int i = 0; i < (int)constantConstraints.size(); i++)
@@ -149,20 +148,7 @@ public:
 			forces[i]->Redraw();
 		for (int i = 0; i < (int)contactPoints.size(); i++)
 			graphics.DrawPoint(contactPoints[i].x, contactPoints[i].y, Colors::Black, 3);
-	}
-	void MouseAdjust(Object *a, Vector2D r, Vector2D q, Scoper *scoper) {
-		Vector2D p = a->transformToWorld(r + Vector2D::Origin);
-		Vector2D v = q - p, vN = v.GetDirection();
-		double dist = v.GetLength();
-		if (sgn(dist) == 0) return;
-		if (a == worldBox) {
-			scoper->Move(-v);
-		} else if (!a->fixed) {
-			double v0 = a->GetPointVelocity(p) * vN, v1 = 0.001 * dist * dist / timeInterval + 10;
-			double J = (v1 - v0) / (1.0 / a->mass + sqr(r % a->transformToWorldInverse(vN)) / a->inertia);
-			if (J > 0)
-				a->ApplyImpulse(p, J * vN);
-		}
+		*/
 	}
 	void TestCollision(Polygon *a, Polygon *b);
 	void TestCollision(Circle *a, Circle *b);
@@ -193,4 +179,3 @@ public:
 	*/
 };
 
-#endif

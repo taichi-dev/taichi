@@ -1,5 +1,4 @@
-#ifndef CIRCLE_H
-#define CIRCLE_H
+#pragma once
 
 #include "Shape.h"
 
@@ -7,9 +6,9 @@ class Circle : public Shape {
 	friend class Physics;
 public:
 	static const int ShapeType = 1;
-private :
+private:
 	double radius;
-public :
+public:
 	Circle() : Shape() {
 		radius = 1.;
 		density = 1.;
@@ -27,8 +26,8 @@ public :
 		return ShapeType;
 	}
 	void Redraw() {
-		graphics.DrawCircle(GetTransformToWorld()(centroidPosition), radius, color);
-		graphics.DrawLine(GetTransformToWorld()(centroidPosition), GetTransformToWorld()(centroidPosition + Vector2D(radius, 0, 0)));
+		//graphics.DrawCircle(GetTransformToWorld()(centroidPosition), radius, color);
+		//graphics.DrawLine(GetTransformToWorld()(centroidPosition), GetTransformToWorld()(centroidPosition + Vector2D(radius, 0, 0)));
 	}
 	bool IsPointInside(Vector2D p) const {
 		return sgn((GetTransformToWorldInverse()(p) - centroidPosition).GetLength2() - sqr(radius)) <= 0;
@@ -47,5 +46,3 @@ public :
 		return AABB(worldCentroid.x - radius, worldCentroid.y - radius, worldCentroid.x + radius, worldCentroid.y + radius);
 	}
 };
-
-#endif

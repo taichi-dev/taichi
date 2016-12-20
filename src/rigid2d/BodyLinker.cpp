@@ -1,6 +1,5 @@
 #include "BodyLinker.h"
 #include "Game.h"
-#include "Scoper.h"
 
 void BodyLinker::SetGame(Game *game) {
 	this->game = game;
@@ -13,17 +12,19 @@ bool BodyLinker::KeyEvent(int key, int action) {
 		return true;
 	}
 	if (!active) return false;
+	/*
 	if (key == GLFW_KEY_LSHIFT) {
 		showGrid = action == GLFW_PRESS;
 		return true;
 	}
+	*/
 	return false;
 }
 
 bool BodyLinker::MouseButtonEvent(int button, int action) {
 	if (showGrid) {
 		double step = 1;
-		while (game->scoper.GetDistanceOnScr(Vector2D(0, 0, 1), Vector2D(0, step * 2, 1)) < 30) step *= 2;
+		//while (game->scoper.GetDistanceOnScr(Vector2D(0, 0, 1), Vector2D(0, step * 2, 1)) < 30) step *= 2;
 		Vector2D &p = game->input.mouse.position;
 		p.x = round(p.x / step) * step;
 		p.y = round(p.y / step) * step;
@@ -44,6 +45,7 @@ bool BodyLinker::MouseButtonEvent(int button, int action) {
 }	
 
 void BodyLinker::Redraw() {
+		/*
 	if (!active) return;
 	RGB3f color = Colors::White;
 	if (showGrid) {
@@ -60,11 +62,12 @@ void BodyLinker::Redraw() {
 		Vector2D &p = game->input.mouse.position;
 		p.x = round(p.x / step) * step;
 		p.y = round(p.y / step) * step;
-		graphics.DrawPoint(p, HSB3f(0.0f, 0.7f, 0.8f), 3);
+		//graphics.DrawPoint(p, HSB3f(0.0f, 0.7f, 0.8f), 3);
 	}
 	Vector2D p = input->mouse.position;
 	if (state == 1) {
 		Vector2D p0 = body[0]->GetTransformToWorld(r[0].GetPosition());
-		graphics.DrawLine(p0, p, RGB3f(0.0f, 1.0f, 0.0f), 5);
+		//graphics.DrawLine(p0, p, RGB3f(0.0f, 1.0f, 0.0f), 5);
 	}
+		*/
 }

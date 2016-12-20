@@ -1,5 +1,5 @@
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#pragma once
+
 #include <cmath>
 #include <vector>
 #include <algorithm>
@@ -7,7 +7,20 @@
 #include <climits>
 #include <limits>
 #include <iostream>
-#include <GL/glfw.h>
+#ifdef __linux__
+#include <GL/glew.h>
+#elif defined(__APPLE__)
+#include <GL/glew.h>
+#include <OpenGL/gl3.h>
+#elif defined(_WIN64)
+#include <GL/glew.h>
+#endif
+#include "Color.h"
+
+#pragma warning(push)
+#pragma warning(disable:4005)
+#include <GLFW/glfw3.h>
+#pragma warning(pop)
 #include <cstring>
 #include <cstdio>
 using namespace std;
@@ -63,5 +76,3 @@ inline int loopNext(int i, int n) {
 	if (i == n) return 0;
 	else return i;
 }
-
-#endif

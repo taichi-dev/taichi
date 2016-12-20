@@ -52,9 +52,9 @@ public :
 			points.push_back(p + (q - p) * (i + 0.5)/ n + t);
 		}
 		points.push_back(q);
-		graphics.DrawLines(points, color, width);
-		graphics.DrawPoint(p.x, p.y, color, width * 4);
-		graphics.DrawPoint(q.x, q.y, color, width * 4);
+		//graphics.DrawLines(points, color, width);
+		//graphics.DrawPoint(p.x, p.y, color, width * 4);
+		//graphics.DrawPoint(q.x, q.y, color, width * 4);
 	}
 	bool Linking(Object *object) {
 		return objectA == object || objectB == object;
@@ -210,9 +210,9 @@ public:
 		Vector2D p = objectA->position + objectA->transformToWorld(r0);
 		Vector2D q = objectB->position + objectB->transformToWorld(r1);
 		double width = max(1.0, L / 100.0);
-		graphics.DrawLine(p.x, p.y, q.x, q.y, color, width);
-		graphics.DrawPoint(p.x, p.y, color, width * 4);
-		graphics.DrawPoint(q.x, q.y, color, width * 4);
+		//graphics.DrawLine(p.x, p.y, q.x, q.y, color, width);
+		//graphics.DrawPoint(p.x, p.y, color, width * 4);
+		//graphics.DrawPoint(q.x, q.y, color, width * 4);
 	}
 	bool Linking(Object *object) {
 		if (object == objectA) return true;

@@ -1,4 +1,3 @@
-#include "GL/glfw.h"
 #include <map>
 #include <string>
 #include <cstdio>
@@ -10,20 +9,7 @@ using namespace std;
 #define TIMER_H
 
 inline unsigned long long GetCPUTickCount(){ 
-	unsigned long high32=0, low32=0;
-	#ifdef WIN32 // WIN32
-	_asm
-	{ 
-		RDTSC;
-		mov high32,ebx; 
-		mov low32,eax; 
-	} 
-	#else
-	__asm__ ("RDTSC" : "=a"(low32),"=d"(high32));
-	#endif
-	unsigned long long counter = high32;
-	counter = (counter<<32) + low32;
-	return low32;
+	return 0;
 }
 
 class Timer {

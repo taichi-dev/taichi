@@ -10,6 +10,7 @@ TC_IMPLEMENTATION(VolumeMaterial, VolumeMaterial, "homogeneous");
 class VacuumVolumeMaterial : public VolumeMaterial {
 public:
 	virtual void initialize(const Config &config) override {
+		VolumeMaterial::initialize(config);
 		this->volumetric_scattering = 0.0f;
 		this->volumetric_absorption = 0.0f;
 	}
@@ -41,6 +42,7 @@ protected:
 
 public:
 	virtual void initialize(const Config &config) override {
+		VolumeMaterial::initialize(config);
 		this->volumetric_scattering = config.get_real("scattering");
 		this->volumetric_absorption = config.get_real("absorption");
 		this->resolution = config.get("resolution", 128);
@@ -61,12 +63,19 @@ public:
 		real tot = volumetric_scattering + volumetric_absorption;
 		do {
 			counter += 1;
-			if (counter > 100) {
+			if (counter > 10000) {
+				printf("Warning: path too long\n");
 				break;
 			}
 			dist += -log(1 - rand()) / maximum;
-			const Vector3 pos = ray.orig + ray.dir * dist;
-			kill = voxels.sample_relative_coord(pos.x, pos.y, pos.z) * tot;
+			Vector3 pos = ray.orig + ray.dir * dist;
+			pos = multiply_matrix4(world2local, pos, 1.0f);
+			if (pos.x < 0 || pos.x >= 1 || pos.y < 0 || pos.y >= 1 || pos.z < 0 || pos.z >= 1) {
+				// Outside the texture
+				dist = std::numeric_limits<real>::infinity();
+				break;
+			}
+			kill = voxels.sample_relative_coord(pos) * tot;
 		} while (maximum * rand() > kill && dist < ray.dist);
 		return dist;
 	}

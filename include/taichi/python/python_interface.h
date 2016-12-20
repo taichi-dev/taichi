@@ -100,6 +100,26 @@ std::string rasterize_levelset(const LevelSet2D &levelset, int width, int height
 	return ret;
 }
 
+Matrix4 matrix4_translate(Matrix4 *transform, const Vector3 &offset) {
+	return glm::translate(Matrix4(1.0f), offset) * *transform;
+}
+Matrix4 matrix4_scale(Matrix4 *transform, const Vector3 &scales) {
+	return glm::scale(Matrix4(1.0f), scales) * *transform;
+}
+Matrix4 matrix4_scale_s(Matrix4 *transform, real s) {
+	return matrix4_scale(transform, Vector3(s));
+}
+Matrix4 matrix4_rotate_angle_axis(Matrix4 *transform, real angle, const Vector3 &axis) {
+	return glm::rotate(Matrix4(1.0f), angle * pi / 180.0f, axis) * *transform;
+}
+Matrix4 matrix4_rotate_euler(Matrix4 *transform, const Vector3 &euler_angles) {
+	Matrix4 ret = *transform;
+	ret = matrix4_rotate_angle_axis(&ret, euler_angles.x, Vector3(1.0f, 0.0f, 0.0f));
+	ret = matrix4_rotate_angle_axis(&ret, euler_angles.y, Vector3(0.0f, 1.0f, 0.0f));
+	ret = matrix4_rotate_angle_axis(&ret, euler_angles.z, Vector3(0.0f, 0.0f, 1.0f));
+	return ret;
+}
+
 template<typename T>
 void array2d_to_ndarray(T *arr, long long);
 
@@ -169,6 +189,20 @@ BOOST_PYTHON_MODULE(taichi_core) {
 	EXPORT_MPM(MPM);
 
 	class_<Config>("Config");
+
+	class_<Matrix4>("Matrix4", init<real>())
+		.def(float() * self)
+		.def(self + self)
+		.def(self - self)
+		.def(self * self)
+		.def(self / self)
+		.def("translate", &matrix4_translate)
+		.def("scale", &matrix4_scale)
+		.def("scale_s", &matrix4_scale_s)
+		.def("rotate_euler", &matrix4_rotate_euler)
+		.def("rotate_angle_axis", &matrix4_rotate_angle_axis)
+		.def("get_ptr_string", &Config::get_ptr_string<Matrix4>)
+		;
 
 	class_<Vector2>("Vector2")
 		.def_readwrite("x", &Vector2::x)
@@ -322,6 +356,7 @@ BOOST_PYTHON_MODULE(taichi_core) {
 	class_<Mesh>("Mesh")
 		.def("initialize", &Mesh::initialize)
 		.def("set_material", &Mesh::set_material)
+		.def_readwrite("transform", &Mesh::transform)
 		.def("translate", &Mesh::translate)
 		.def("scale", &Mesh::scale)
 		.def("scale_s", &Mesh::scale_s)

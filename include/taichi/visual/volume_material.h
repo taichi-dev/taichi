@@ -26,6 +26,9 @@ public:
 		printf("      This may lead to different output by different renderers.\n");
 		this->volumetric_scattering = config.get_real("scattering");
 		this->volumetric_absorption = config.get_real("absorption");
+		if (config.has_key("transform_ptr")) {
+			set_transform(*config.get_ptr<Matrix4>("transform_ptr"));
+		}
 	}
 
 	void set_transform(const Matrix4 &local2world) {

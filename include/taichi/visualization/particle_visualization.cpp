@@ -102,16 +102,16 @@ std::shared_ptr<Texture> rasterize_render_particles(const Config &config, const 
 		return std::abs(d.x) * std::abs(d.y) * std::abs(d.z);
 	};
 	for (auto const &p : particles) {
-		for (auto &ind : array.get_rasterization_region(p.position, 1)) {
+		const Vector3 pos = p.position + 0.5f * Vector3(resolution);
+		for (auto &ind : array.get_rasterization_region(pos, 1)) {
 			Vector3 color(p.color.x, p.color.y, p.color.z);
-			array[ind] += color * kernel(p.position - ind.get_pos());
+			array[ind] += color * kernel(pos- ind.get_pos());
 		}
 	}
 	Config cfg;
 	cfg.set("array_ptr", &array);
 	cfg.print_all();
 	auto tex = create_initialized_instance<Texture>("array3d", cfg);
-	P(nullptr != tex.get());
 	return tex;
 }
 

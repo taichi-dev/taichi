@@ -8,13 +8,13 @@ TC_NAMESPACE_BEGIN
 
 Assimp::Importer importer;
 void Mesh::translate(const Vector3 &offset) {
-	transform = glm::translate(transform, offset);
+	transform = glm::translate(Matrix4(1.0f), offset) * transform;
 }
 void Mesh::scale(const Vector3 &scales) {
-	transform = glm::scale(transform, scales);
+	transform = glm::scale(Matrix4(1.0f), scales) * transform;
 }
 void Mesh::scale_s(real scale) {
-	transform = glm::scale(transform, Vector3(scale));
+	transform = glm::scale(Matrix4(1.0f), Vector3(scale)) * transform;
 }
 void Mesh::rotate_euler(const Vector3 &euler_angles) {
 	rotate_angle_axis(euler_angles.x, Vector3(1.0f, 0.0f, 0.0f));
@@ -22,7 +22,7 @@ void Mesh::rotate_euler(const Vector3 &euler_angles) {
 	rotate_angle_axis(euler_angles.z, Vector3(0.0f, 0.0f, 1.0f));
 }
 void Mesh::rotate_angle_axis(real angle, const Vector3 &axis) {
-	transform = glm::rotate(transform, angle * pi / 180.0f, axis);
+	transform = glm::rotate(Matrix4(1.0f), angle * pi / 180.0f, axis) * transform;
 }
 
 void Mesh::initialize(const Config &config) {

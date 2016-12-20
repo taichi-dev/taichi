@@ -71,12 +71,12 @@ def create_scene():
         scene.add_mesh(Mesh('plane', SurfaceMaterial('transparent',
                                                      nested=SurfaceMaterial('diffuse', diffuse=(0, 0.2, 0.5)),
                                                      mask=grid_tex),
-                            translate=(4.3, 0, 0.17), scale=1, rotation=(90, 30, 0)))
+                            translate=(4.3, 0, 0.17), scale=1, rotation=(90, 0, 0)))
 
         scene.add_mesh(Mesh('plane', SurfaceMaterial('transparent',
                                                      nested=SurfaceMaterial('diffuse', diffuse=(1, 1, 0)),
                                                      mask=grid_tex),
-                            translate=(4.3, 0, 0.07), scale=2, rotation=(90, 60, 0)))
+                            translate=(4.3, 0, 0.07), scale=2, rotation=(90, 0, 0)))
 
         scene.add_mesh(Mesh('plane', SurfaceMaterial('transparent',
                                                      nested=SurfaceMaterial('diffuse', diffuse=(0, 1, 1)),

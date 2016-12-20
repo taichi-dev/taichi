@@ -88,10 +88,15 @@ public:
 	}
 
 	template <typename T>
-	Config &set(std::string name, T *ptr) {
+	static std::string get_ptr_string(T *ptr) {
 		std::stringstream ss;
 		ss << typeid(T).name() << "\t" << reinterpret_cast<uint64>(ptr);
-		data[name] = ss.str();
+		return ss.str();
+	}
+
+	template <typename T>
+	Config &set(std::string name, T *ptr) {
+		data[name] = get_ptr_string(ptr);
 		return *this;
 	}
 

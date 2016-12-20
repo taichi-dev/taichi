@@ -67,7 +67,10 @@ public:
 	}
 
 	Index3D &to_end() {
-		i = x[1];
+		if (x[0] >= x[1] || y[0] >= y[1] || z[0] >= z[1])
+			i = x[0];
+		else
+			i = x[1];
 		j = y[0];
 		k = z[0];
 		return *this;
@@ -456,6 +459,13 @@ public:
 		return storage_offset;
 	}
 
+	T sample_relative_coord(const Vector3 &vec) const {
+		float x = vec.x * width;
+		float y = vec.y * height;
+		float z = vec.z * depth;
+		return sample(x, y, z);
+	}
+
 	T sample_relative_coord(float x, float y, float z) const {
 		x = x * width;
 		y = y * height;
@@ -517,9 +527,10 @@ public:
 		int x = (int)floor(pos.x - storage_offset.x);
 		int y = (int)floor(pos.y - storage_offset.y);
 		int z = (int)floor(pos.z - storage_offset.z);
-		return Region3D(max(0, x - half_extent + 1), min(width, x + half_extent + 1),
-			max(0, y - half_extent + 1), min(height, y + half_extent + 1),
-			max(0, z - half_extent + 1), min(depth, z + half_extent + 1),
+		return Region3D(
+			std::max(0, x - half_extent + 1), std::min(width, x + half_extent + 1),
+			std::max(0, y - half_extent + 1), std::min(height, y + half_extent + 1),
+			std::max(0, z - half_extent + 1), std::min(depth, z + half_extent + 1),
 			storage_offset);
 	}
 

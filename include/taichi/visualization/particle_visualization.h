@@ -1,10 +1,9 @@
 #pragma once
 
-#include <taichi/common/util.h>
+#include <taichi/common/meta.h>
 #include <taichi/visualization/image_buffer.h>
-#include <taichi/common/meta.h>
 #include <taichi/visual/camera.h>
-#include <taichi/common/meta.h>
+#include <taichi/visual/texture.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -32,6 +31,7 @@ public:
 	virtual void render(ImageBuffer<Vector3> &buffer, const std::vector<RenderParticle> &particles) const {}
 };
 
+std::shared_ptr<Texture> rasterize_render_particles(const Config &config, const std::vector<RenderParticle> &particles);
 
 TC_INTERFACE(ParticleRenderer)
 

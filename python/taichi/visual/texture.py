@@ -4,9 +4,12 @@ import asset_manager
 
 class Texture:
     def __init__(self, name, **kwargs):
-        self.c = tc_core.create_texture(name)
-        kwargs = asset_manager.asset_ptr_to_id(kwargs)
-        self.c.initialize(P(**kwargs))
+        if isinstance(name, str):
+            self.c = tc_core.create_texture(name)
+            kwargs = asset_manager.asset_ptr_to_id(kwargs)
+            self.c.initialize(P(**kwargs))
+        else:
+            self.c = name
         self.id = tc_core.register_texture(self.c)
 
     @staticmethod
@@ -69,3 +72,7 @@ class Texture:
         rep = Texture("repeat", repeat_u=n, repeat_v=n, tex=taichi)
         rep = Texture("checkerboard", tex1=rep, tex2=0 * rep, repeat_u=n, repeat_v=n) * 0.8 + 0.1
         return rep.clamp().flip(1)#.rasterize(2048)
+
+    @staticmethod
+    def from_render_particles(resolution, particles):
+        return Texture(tc_core.rasterize_render_particles(P(resolution=resolution), particles))

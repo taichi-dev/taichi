@@ -1,5 +1,6 @@
 #include <taichi/visual/texture.h>
 #include <taichi/visualization/image_buffer.h>
+#include <taichi/math/array_3d.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -17,6 +18,21 @@ public:
 };
 
 TC_IMPLEMENTATION(Texture, ConstantTexture, "const");
+
+class Array3DTexture : public Texture {
+protected:
+	Array3D<Vector3> arr;
+public:
+	void initialize(const Config &config) override {
+		arr = *config.get_ptr<Array3D<Vector3>>("array_ptr");
+	}
+
+	virtual Vector3 sample(const Vector3 &coord) const override {
+		return arr.sample_relative_coord(coord);
+	}
+};
+
+TC_IMPLEMENTATION(Texture, Array3DTexture, "array3d");
 
 class ImageTexture : public Texture {
 protected:

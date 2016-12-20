@@ -1,4 +1,5 @@
 #pragma once
+
 #include <map>
 #include <string>
 #include <cstdio>
@@ -6,6 +7,7 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
+#include <typeinfo>
 #include <boost/algorithm/string.hpp>
 
 #include <taichi/common/util.h>
@@ -60,16 +62,16 @@ public:
 #define DEFINE_GET(t) t get(std::string key, t default_val) const {if (data.find(key) == data.end()) {return default_val;} else return get_##t(key);}
 
 	DEFINE_GET(int)
-	DEFINE_GET(int64)
-	DEFINE_GET(unsigned)
-	DEFINE_GET(float)
-	DEFINE_GET(double)
-	DEFINE_GET(bool)
-	std::string get(std::string key, const std::string &default_val) const {if (data.find(key) == data.end()) {return default_val;} else return get_string(key);}
-	std::string get(std::string key, const char *default_val) const {if (data.find(key) == data.end()) {return default_val;} else return get_string(key);}
-	Vector2 get(std::string key, const Vector2 &default_val) const {if (data.find(key) == data.end()) {return default_val;} else return get_vec2(key);}
-	Vector3 get(std::string key, const Vector3 &default_val) const {if (data.find(key) == data.end()) {return default_val;} else return get_vec3(key);}
-	Vector4 get(std::string key, const Vector4 &default_val) const {if (data.find(key) == data.end()) {return default_val;} else return get_vec4(key);}
+		DEFINE_GET(int64)
+		DEFINE_GET(unsigned)
+		DEFINE_GET(float)
+		DEFINE_GET(double)
+		DEFINE_GET(bool)
+		std::string get(std::string key, const std::string &default_val) const { if (data.find(key) == data.end()) { return default_val; } else return get_string(key); }
+	std::string get(std::string key, const char *default_val) const { if (data.find(key) == data.end()) { return default_val; } else return get_string(key); }
+	Vector2 get(std::string key, const Vector2 &default_val) const { if (data.find(key) == data.end()) { return default_val; } else return get_vec2(key); }
+	Vector3 get(std::string key, const Vector3 &default_val) const { if (data.find(key) == data.end()) { return default_val; } else return get_vec3(key); }
+	Vector4 get(std::string key, const Vector4 &default_val) const { if (data.find(key) == data.end()) { return default_val; } else return get_vec4(key); }
 
 	bool has_key(std::string key) const {
 		return data.find(key) != data.end();
@@ -83,6 +85,26 @@ public:
 			boost::algorithm::trim(s);
 		}
 		return strs;
+	}
+
+	template <typename T>
+	Config &set(std::string name, T *ptr) {
+		std::stringstream ss;
+		ss << typeid(T).name() << "\t" << reinterpret_cast<uint64>(ptr);
+		data[name] = ss.str();
+		return *this;
+	}
+
+	template <typename T>
+	T *get_ptr(std::string key) const {
+		std::string val = get_string(key);
+		std::stringstream ss(val);
+		std::string t;
+		int64 ptr_ll;
+		std::getline(ss, t, '\t');
+		ss >> ptr_ll;
+		assert_info(t == typeid(T).name(), "Pointer type mismatch: " + t + " and " + typeid(T).name());
+		return reinterpret_cast<T*>(ptr_ll);
 	}
 
 	bool get_bool(std::string key) const {
@@ -144,7 +166,7 @@ public:
 		data[name] = ss.str();
 		return *this;
 	}
-	
+
 	Config &set(std::string name, Vector2 val) {
 		std::stringstream ss;
 		ss << "(" << val.x << "," << val.y << ")";

@@ -56,8 +56,10 @@ namespace boost
 
 #ifdef _WIN64
 typedef __int64 int64;
+typedef unsigned __int64 uint64;
 #else
 typedef long long int64;
+typedef unsigned long long uint64;
 #endif
 
 // Check for inf, nan?

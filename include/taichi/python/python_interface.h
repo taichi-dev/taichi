@@ -109,7 +109,8 @@ void image_buffer_to_ndarray(T *arr, long long);
 BOOST_PYTHON_MODULE(taichi_core) {
 	Py_Initialize();
 	//import_array();
-	numeric::array::set_module_and_type("numpy", "ndarray");
+	numeric::array::set_module_and_type("numpy", "ndarray"); 
+	def("rasterize_render_particles", rasterize_render_particles);
 	def("create_texture", create_instance<Texture>);
 	def("register_texture", &AssetManager::insert_asset<Texture>);
 	def("register_surface_material", &AssetManager::insert_asset<SurfaceMaterial>);

@@ -24,14 +24,14 @@ class ImplementationHolder##T { \
 public: \
     ImplementationHolder##T(const std::string &name) { \
         this->name = name;\
-        std::cout << "Interface [" << name << "] loaded." << std::endl; \
+        /*std::cout << "Interface [" << name << "] loaded." << std::endl;*/ \
     }\
     typedef std::function<std::shared_ptr<T>()> FactoryMethod; \
     std::string name; \
     std::map<std::string, FactoryMethod> implementation_factories; \
     template<typename G> \
     void register_implementation(const std::string &alias) { \
-        std::cout << "Registering [" << alias << "] => [" << name << "]." << std::endl; \
+        /*std::cout << "Registering [" << alias << "] => [" << name << "]." << std::endl;*/ \
         implementation_factories.insert(std::make_pair(alias, [&]() { \
             return std::make_shared<G>(); \
         })); \
@@ -39,7 +39,7 @@ public: \
     std::shared_ptr<T> create(const std::string &alias) { \
         auto factory = implementation_factories.find(alias); \
         assert_info(factory != implementation_factories.end(), \
-    "Implementation " + alias + " of interface " + name + " not found!"); \
+    "Implementation [" + name + "::" + alias + "] not found!"); \
 return (factory->second)(); \
     } \
     static ImplementationHolder##T* get_instance(); \

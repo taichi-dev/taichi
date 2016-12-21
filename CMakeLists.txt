@@ -32,8 +32,6 @@ message("Module path:" ${CMAKE_MODULE_PATH})
 set(CMAKE_BUILD_TYPE Release)
 
 find_package(OpenGL REQUIRED)
-find_package(assimp REQUIRED)
-include_directories(${ASSIMP_INCLUDE_DIRS})
 
 include_directories("external/include/glm")
 # find_library(OPENCL_LIBRARIES OpenCL)
@@ -97,8 +95,6 @@ target_link_libraries(${CORE_LIBRARY_NAME} ${GLEW_LIBRARIES})
 target_link_libraries(${CORE_LIBRARY_NAME} ${EMBREE_LIBRARY})
 target_link_libraries(${CORE_LIBRARY_NAME} ${PYTHON_LIBRARIES})
 target_link_libraries(${CORE_LIBRARY_NAME} ${ANN_LIBRARIES})
-target_link_libraries(${CORE_LIBRARY_NAME} ${ASSIMP_LIBRARY_RELEASE})
-target_link_libraries(${CORE_LIBRARY_NAME} ${assimp_LIBRARIES})
 target_link_libraries(${CORE_LIBRARY_NAME} ${Boost_LIBRARIES})
 
 if (UNIX)

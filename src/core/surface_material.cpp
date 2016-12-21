@@ -398,6 +398,12 @@ protected:
 		f = Vector3(1.0f) * abs(1.0f / in_dir.z);
 		pdf = 1.0f;
 		event = (int)SurfaceScatteringFlags::delta | (int)SurfaceScatteringFlags::index_matched;
+		if (in_dir.z > 0) {
+			event = event | (int)SurfaceScatteringFlags::entering;
+		}
+		else {
+			event = event | (int)SurfaceScatteringFlags::leaving;
+		}
 	}
 
 	virtual real probability_density(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {

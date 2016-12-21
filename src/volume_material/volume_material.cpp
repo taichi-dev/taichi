@@ -37,7 +37,7 @@ class VoxelVolumeMaterial : public VolumeMaterial {
 protected:
 	Array3D<real> voxels;
 	std::shared_ptr<Texture> tex;
-	int resolution;
+	Vector3i resolution;
 	real maximum;
 
 public:
@@ -45,11 +45,11 @@ public:
 		VolumeMaterial::initialize(config);
 		this->volumetric_scattering = config.get_real("scattering");
 		this->volumetric_absorption = config.get_real("absorption");
-		this->resolution = config.get("resolution", 128);
+		this->resolution = config.get_vec3i("resolution");
 		this->tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
-		voxels.initialize(resolution, resolution, resolution, 1.0f);
+		voxels.initialize(resolution.x, resolution.y, resolution.z, 1.0f);
 		maximum = 0.0f;
-		Vector3 inv(1.0f / resolution);
+		Vector3 inv = Vector3(1.0f) / Vector3(resolution);
 		for (auto &ind : voxels.get_region()) {
 			voxels[ind] = tex->sample(ind.get_pos() * inv).x;
 			maximum = std::max(maximum, voxels[ind]);
@@ -67,7 +67,7 @@ public:
 				printf("Warning: path too long\n");
 				break;
 			}
-			dist += -log(1 - rand()) / maximum;
+			dist += -log(1 - rand()) / (maximum * tot);
 			Vector3 pos = ray.orig + ray.dir * dist;
 			pos = multiply_matrix4(world2local, pos, 1.0f);
 			if (pos.x < 0 || pos.x >= 1 || pos.y < 0 || pos.y >= 1 || pos.z < 0 || pos.z >= 1) {
@@ -75,7 +75,7 @@ public:
 				dist = std::numeric_limits<real>::infinity();
 				break;
 			}
-			kill = voxels.sample_relative_coord(pos) * tot;
+			kill = voxels.sample_relative_coord(pos);
 		} while (maximum * rand() > kill && dist < ray.dist);
 		return dist;
 	}

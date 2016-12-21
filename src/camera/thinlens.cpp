@@ -17,7 +17,10 @@ public:
 		tan_half_fov = tan(fov / 2);
 		this->aspect_ratio = (real)width / height;
 		this->transform = Matrix4(1.0f);
-		this->focus = config.get_vec3("focus");
+		if (config.has_key("focus"))
+			this->focus = config.get_vec3("focus");
+		else
+			this->focus = look_at;
 		this->aperture = config.get_real("aperture");
 	}
 

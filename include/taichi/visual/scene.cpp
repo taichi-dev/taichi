@@ -1,12 +1,10 @@
-#include "scene.h"
-#include "surface_material.h"
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
+#include <taichi/visual/scene.h>
+#include <taichi/visual/surface_material.h>
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
 
 TC_NAMESPACE_BEGIN
 
-Assimp::Importer importer;
 void Mesh::translate(const Vector3 &offset) {
 	transform = glm::translate(Matrix4(1.0f), offset) * transform;
 }
@@ -32,32 +30,49 @@ void Mesh::initialize(const Config &config) {
 }
 
 void Mesh::load_from_file(const std::string &file_path) {
-	auto scene = importer.ReadFile(file_path,
-		aiProcess_Triangulate |
-		aiProcess_JoinIdenticalVertices |
-		aiProcess_SortByPType);
-	assert_info(scene != nullptr, std::string("Mesh file ") + file_path + " load failed");
-	for (int mesh_index = 0; mesh_index < (int)scene->mNumMeshes; mesh_index++) {
-		aiMesh *mesh = scene->mMeshes[mesh_index];
-		for (int face_index = 0; face_index < (int)mesh->mNumFaces; face_index++) {
-			aiFace *face = &mesh->mFaces[face_index];
+	std::string inputfile = file_path;
+	tinyobj::attrib_t attrib;
+	std::vector<tinyobj::shape_t> shapes;
+	std::vector<tinyobj::material_t> materials;
+
+	std::string err;
+	bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, inputfile.c_str());
+
+	if (!err.empty()) { // `err` may contain warning message.
+		std::cerr << err << std::endl;
+	}
+
+	assert_info(ret, "Loading " + file_path + " failed");
+
+	// Loop over shapes
+	for (size_t s = 0; s < shapes.size(); s++) {
+		// Loop over faces(polygon)
+		size_t index_offset = 0;
+		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
+			int fv = shapes[s].mesh.num_face_vertices[f];
+
+			// Loop over vertices in the face.
 			faces.push_back(Face((int)vertices.size(), (int)vertices.size() + 1, (int)vertices.size() + 2));
-			for (int i = 0; i < 3; i++) {
-				auto conv = [](aiVector3D vec) {
-					return Vector3(vec.x, vec.y, vec.z);
-				};
-				auto conv2 = [](aiVector3D vec) {
-					return Vector2(vec.x, vec.y);
-				};
-				Vector3 normal = conv(mesh->mNormals[face->mIndices[i]]);
-				Vector3 vertex = conv(mesh->mVertices[face->mIndices[i]]);
-				Vector2 uv(0.0f);
-				if (mesh->GetNumUVChannels() >= 1)
-					uv = conv2(mesh->mTextureCoords[0][face->mIndices[i]]);
-				normals.push_back(normal);
-				vertices.push_back(vertex);
-				uvs.push_back(uv);
+			assert_info(fv == 3, "Only triangles supported...");
+			for (size_t v = 0; v < fv; v++) {
+				// access to vertex
+				tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
+				float vx = attrib.vertices[3 * idx.vertex_index + 0];
+				float vy = attrib.vertices[3 * idx.vertex_index + 1];
+				float vz = attrib.vertices[3 * idx.vertex_index + 2];
+				float nx = attrib.normals[3 * idx.normal_index + 0];
+				float ny = attrib.normals[3 * idx.normal_index + 1];
+				float nz = attrib.normals[3 * idx.normal_index + 2];
+				float tx = 0.0f, ty = 0.0f;
+				if (idx.texcoord_index != -1) {
+					tx = attrib.texcoords[2 * idx.texcoord_index + 0];
+					ty = attrib.texcoords[2 * idx.texcoord_index + 1];
+				}
+				vertices.push_back(Vector3(vx, vy, vz));
+				normals.push_back(Vector3(nx, ny, nz));
+				uvs.push_back(Vector2(tx, ty));
 			}
+			index_offset += fv;
 		}
 	}
 }
@@ -99,8 +114,8 @@ IntersectionInfo Scene::get_intersection_info(int triangle_id, Ray &ray) {
 	Vector3 u = normalized(t.v[1] - t.v[0]);
 	real sgn = inter.front ? 1.0f : -1.0f;
 	Vector3 v = normalized(cross(sgn * inter.normal, u)); // Due to shading normal, we have to normalize here...
-	inter.dt_du = tri.get_duv(u);
-	inter.dt_dv = tri.get_duv(v);
+	inter.dt_du = t.get_duv(u);
+	inter.dt_dv = t.get_duv(v);
 	// TODO: ...
 	u = normalized(cross(v, inter.normal));
 	inter.to_world = Matrix3(u, v, inter.normal);

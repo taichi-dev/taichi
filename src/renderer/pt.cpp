@@ -177,8 +177,7 @@ protected:
 	virtual Vector3 get_attenuation(VolumeStack stack, Ray ray, StateSequence &rand, IntersectionInfo &last_intersection) {
 		Vector3 att(1.0f);
 
-		// TODO: 100??
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 100; i++) {
 			if (stack.size() == 0) {
 				// TODO: this should be bug...
 				return Vector3(0.0f);
@@ -210,11 +209,20 @@ protected:
 				ray = Ray(info.pos + ray.dir * 1e-3f, ray.dir);
 				if (SurfaceEventClassifier::is_entering(event) || SurfaceEventClassifier::is_leaving(event)) {
 					if (bsdf.is_entering(in_dir)) {
-						assert(bsdf.get_internal_material() != nullptr);
+						if (bsdf.get_internal_material() == nullptr) {
+							// sometimes it happens when the ray enters 
+							// a volume while doesn't exit it.
+							// (When a ray just intersects slightly 
+							// with a cube...)
+							return Vector3(0.0f);
+						}
 						stack.push(bsdf.get_internal_material());
 					}
 					else {
-						assert(stack.top() == bsdf.get_internal_material());
+						if (stack.top() != bsdf.get_internal_material()) {
+							// Same as above...
+							return Vector3(0.0f);
+						}
 						stack.pop();
 					}
 				}

@@ -1,5 +1,7 @@
-#include "opengl.h"
-#include "timer.h"
+#ifdef TC_USE_OPENGL
+
+#include <taichi/system/opengl.h>
+#include <taichi/system/timer.h>
 #include <taichi/common/util.h>
 
 TC_NAMESPACE_BEGIN
@@ -182,3 +184,4 @@ ContextGuard::~ContextGuard() {
 
 TC_NAMESPACE_END
 
+#endif

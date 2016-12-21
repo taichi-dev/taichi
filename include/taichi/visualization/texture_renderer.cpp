@@ -1,6 +1,7 @@
-#include "texture_renderer.h"
 #include <taichi/math/math_util.h>
-#include <taichi/common/util.h>
+#include <taichi/visualization/texture_renderer.h>
+
+#ifdef TC_USE_OPENGL
 
 TC_NAMESPACE_BEGIN
 
@@ -97,3 +98,4 @@ TextureRenderer::~TextureRenderer() {
 
 TC_NAMESPACE_END
 
+#endif

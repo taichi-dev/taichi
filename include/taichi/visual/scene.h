@@ -1,15 +1,16 @@
 #pragma once
 
-#include "geometry_primitives.h"
-#include "camera.h"
-#include "surface_material.h"
-#include "envmap.h"
-#include "volume_material.h"
-#include <map>
-#include <deque>
+#include <taichi/visual/geometry_primitives.h>
+#include <taichi/visual/camera.h>
+#include <taichi/visual/surface_material.h>
+#include <taichi/visual/envmap.h>
+#include <taichi/visual/volume_material.h>
 #include <taichi/physics/physics_constants.h>
 #include <taichi/physics/spectrum.h>
 #include <taichi/math/discrete_sampler.h>
+
+#include <map>
+#include <deque>
 
 TC_NAMESPACE_BEGIN
 

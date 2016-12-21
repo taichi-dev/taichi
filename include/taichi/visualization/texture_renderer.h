@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <taichi/system/opengl.h>
-#include "image_buffer.h"
+#include <taichi/visualization/image_buffer.h>
 
 TC_NAMESPACE_BEGIN
 

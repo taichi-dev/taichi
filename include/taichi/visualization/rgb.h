@@ -10,13 +10,13 @@ TC_NAMESPACE_BEGIN
 
 class RGB {
 public:
-    float r, g, b;
+    real r, g, b;
 
 	RGB() {
 		r = g = b = 0.0;
 	}
 
-    RGB(float r, float g, float b) : r(r), g(g), b(b) { }
+    RGB(real r, real g, real b) : r(r), g(g), b(b) { }
 
     operator glm::vec3() {
         return glm::vec3(r / 255.0f, g / 255.0f, b / 255.0f);

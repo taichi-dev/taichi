@@ -1,4 +1,4 @@
-#include "image_buffer.h"
+#include <taichi/visualization/image_buffer.h>
 
 #include <taichi/math/linalg.h>
 #define STB_IMAGE_IMPLEMENTATION

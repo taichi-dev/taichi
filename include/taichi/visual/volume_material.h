@@ -1,10 +1,9 @@
 #pragma once
 
-#include "sampler.h"
-#include <taichi/math/linalg.h>
 #include <taichi/common/meta.h>
-#include "sampler.h"
-#include "geometry_primitives.h"
+#include <taichi/math/linalg.h>
+#include <taichi/visual/sampler.h>
+#include <taichi/visual/geometry_primitives.h>
 
 TC_NAMESPACE_BEGIN
 

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "camera.h"
-#include "scene.h"
-#include "scene_geometry.h"
+#include <taichi/visual/camera.h>
+#include <taichi/visual/scene.h>
+#include <taichi/visual/scene_geometry.h>
 #include <taichi/visualization/image_buffer.h>
 #include <taichi/system/timer.h>
 #include <taichi/common/meta.h>

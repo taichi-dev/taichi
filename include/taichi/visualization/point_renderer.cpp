@@ -1,5 +1,7 @@
-#include "point_renderer.h"
+#include <taichi/visualization/point_renderer.h>
 #include <taichi/common/util.h>
+
+#if TC_USE_OPENGL
 
 TC_NAMESPACE_BEGIN
 
@@ -50,4 +52,6 @@ void PointRenderer::setViewport(vec2 lower_left, vec2 upper_right)
 }
 
 TC_NAMESPACE_END
+
+#endif
 

@@ -1,4 +1,7 @@
 #pragma once
+
+#if TC_USE_OPENGL
+
 #include <vector>
 #include <taichi/system/opengl.h>
 
@@ -14,7 +17,7 @@ public:
 	void setViewport(vec2 lower_left, vec2 upper_right);
 };
 
-
-
 TC_NAMESPACE_END
+
+#endif
 

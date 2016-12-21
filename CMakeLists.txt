@@ -12,6 +12,14 @@ endif ()
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/output")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED")
+if (USE_OPENGL)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_USE_OPENGL")
+    find_package(OpenGL REQUIRED)
+    find_package(GLFW3 REQUIRED)
+    include_directories(${GLFW_INCLUDE_DIRS})
+    find_package(GLEW REQUIRED)
+    include_directories(${GLEW_INCLUDE_DIRS})
+endif()
 
 if (WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /Z7 /D \"_CRT_SECURE_NO_WARNINGS\"  /arch:AVX")
@@ -31,15 +39,8 @@ message("Module path:" ${CMAKE_MODULE_PATH})
 
 set(CMAKE_BUILD_TYPE Release)
 
-find_package(OpenGL REQUIRED)
-
 include_directories("external/include/glm")
 # find_library(OPENCL_LIBRARIES OpenCL)
-
-find_package(GLFW3 REQUIRED)
-include_directories(${GLFW_INCLUDE_DIRS})
-find_package(GLEW REQUIRED)
-include_directories(${GLEW_INCLUDE_DIRS})
 
 find_package(Boost COMPONENTS
         system
@@ -81,17 +82,19 @@ file(GLOB TAICHI_SOURCE
 set(CORE_LIBRARY_NAME taichi_core)
 add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_SOURCE})
 
-target_link_libraries(${CORE_LIBRARY_NAME} ${OPENGL_LIBRARIES})
 if (NOT WIN32)
     target_link_libraries(${CORE_LIBRARY_NAME} pthread)
 endif()
-target_link_libraries(${CORE_LIBRARY_NAME} ${GLFW3_LIBRARY})
+
+if (USE_OPENGL)
+    target_link_libraries(${CORE_LIBRARY_NAME} ${GLEW_LIBRARY})
+    target_link_libraries(${CORE_LIBRARY_NAME} ${GLEW_LIBRARIES})
+    target_link_libraries(${CORE_LIBRARY_NAME} ${OPENGL_LIBRARIES})
+    target_link_libraries(${CORE_LIBRARY_NAME} ${GLFW3_LIBRARY})
 if (APPLE)
     target_link_libraries(${CORE_LIBRARY_NAME} glfw3)
 endif()
-
-target_link_libraries(${CORE_LIBRARY_NAME} ${GLEW_LIBRARY})
-target_link_libraries(${CORE_LIBRARY_NAME} ${GLEW_LIBRARIES})
+endif()
 target_link_libraries(${CORE_LIBRARY_NAME} ${EMBREE_LIBRARY})
 target_link_libraries(${CORE_LIBRARY_NAME} ${PYTHON_LIBRARIES})
 target_link_libraries(${CORE_LIBRARY_NAME} ${ANN_LIBRARIES})
@@ -112,8 +115,6 @@ if(MSVC)
     set_property(TARGET ${CORE_LIBRARY_NAME} APPEND PROPERTY LINK_FLAGS /DEBUG)
 endif()
 
-
 if (WIN32)
     set_target_properties(${CORE_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
 endif ()
-

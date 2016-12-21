@@ -2,9 +2,9 @@
 
 #include <taichi/math/linalg.h>
 #include <taichi/visual/texture.h>
+#include <taichi/visual/volume_material.h>
 #include <taichi/common/meta.h>
 #include <taichi/physics/physics_constants.h>
-#include "volume_material.h"
 
 TC_NAMESPACE_BEGIN
 

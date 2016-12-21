@@ -42,19 +42,17 @@ def create_mpm_snow_block(fn):
     tex = Texture.from_render_particles((511, 127, 255), particles) * 5
     mesh_transform = tc_core.Matrix4(1.0).scale(Vector(0.5, 0.5, 0.5)).translate(Vector(0.5, 0.5, 0.5))
     transform = tc_core.Matrix4(1.0).scale_s(2).scale(Vector(2.0, 0.5, 1.0)).translate(Vector(-2, -0.99, -1))
-    #vol = VolumeMaterial('sdf_voxel', scattering=5, absorption=0, tex=tex, resolution=(511, 127, 255),
-    # Note: using low res
     vol = VolumeMaterial('sdf_voxel', scattering=5, absorption=0, tex=tex, resolution=(511, 127, 255),
                          transform_ptr=transform.get_ptr_string())
     material = SurfaceMaterial('plain_interface')
     material.set_internal_material(vol)
     return Mesh('cube', material=material, transform=transform * mesh_transform)
 
-def create_snow_scene():
+def create_snow_scene(frame):
     downsample = 1
     width, height = 960 / downsample, 540 / downsample
     camera = Camera('thinlens', width=width, height=height, fov=60,
-                    origin=(0, 1, 4), look_at=(0.0, -0.7, -1.0), up=(0, 1, 0), aperture=0.05)
+                    origin=(0, 1, 4), look_at=(0.0, -0.7, -0.0), up=(0, 1, 0), aperture=0.05)
 
     scene = Scene()
     with scene:
@@ -67,7 +65,7 @@ def create_snow_scene():
                     translate=(1.0, 1.0, -1), scale=(0.1, 0.1, 0.1), rotation=(180, 0, 0))
         scene.add_mesh(mesh)
 
-        fn = '../output/frames/snow-taichi-g10/particles%05d.bin' % 100
+        fn = '../output/frames/snow-taichi-g10/particles%05d.bin' % frame
         mesh = create_mpm_snow_block(fn)
         scene.add_mesh(mesh)
 
@@ -76,14 +74,18 @@ def create_snow_scene():
 
     return scene
 
-if __name__ == '__main__':
-    renderer = Renderer('pt', '../output/frames/volumetric.png', overwrite=True)
-
-    scene = create_snow_scene()
+def render_snow_frame(frame):
+    renderer = Renderer('pt', '../output/frames/volumetric', overwrite=True, frame=frame)
+    scene = create_snow_scene(frame)
     renderer.set_scene(scene)
-    renderer.initialize(min_path_length=1, max_path_length=10,
+    renderer.initialize(min_path_length=1, max_path_length=20,
                         initial_radius=0.005, sampler='prand', russian_roulette=False, volmetric=True, direct_lighting=1,
                         direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1, stage_frequency=3,
                         num_threads=8, luminance_clamping=0)
     renderer.set_post_processor(LDRDisplay(exposure=0.6, bloom_radius=0.0, bloom_threshold=1.0))
-    renderer.render(1000000, 100)
+    renderer.render(20)
+
+if __name__ == '__main__':
+    total_frames = 550
+    for i in range(0, total_frames, 20):
+        render_snow_frame(i)

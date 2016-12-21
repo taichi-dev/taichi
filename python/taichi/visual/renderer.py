@@ -1,4 +1,3 @@
-import taichi as tc
 import taichi.util
 # TODO: Remove cv2
 import cv2
@@ -6,12 +5,14 @@ import time
 import os
 from taichi.core import tc_core
 from taichi.util import *
+from taichi.visual.post_process import LDRDisplay
 
 class Renderer(object):
-    def __init__(self, name, output_dir=taichi.util.get_uuid(), overwrite=False):
+    def __init__(self, name, output_dir=taichi.util.get_uuid(), overwrite=False, frame=0):
         self.c = tc_core.create_renderer(name)
         self.output_dir = output_dir + '/'
-        self.post_processor = None
+        self.post_processor = LDRDisplay()
+        self.frame = frame
         try:
             os.mkdir(self.output_dir)
         except Exception as e:
@@ -22,15 +23,17 @@ class Renderer(object):
     def initialize(self, **kwargs):
         self.c.initialize(config_from_dict(kwargs))
 
-    def render(self, stages, cache_interval=1000):
-        for i in range(stages):
+    def render(self, stages, cache_interval=-1):
+        for i in range(1, stages + 1):
             print 'stage', i
             t = time.time()
             self.render_stage()
             print 'time:', time.time() - t
             self.show()
-            if i % cache_interval == 0:
-                self.write('%07d.png' % i)
+            if cache_interval > 0 and i % cache_interval == 0:
+                self.write('img%04d-%06d.png' % (self.frame, i))
+
+        self.write('img%04d-%06d.png' % (self.frame, stages))
 
     def get_full_fn(self, fn):
         return self.output_dir + fn

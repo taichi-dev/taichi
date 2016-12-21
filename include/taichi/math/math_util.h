@@ -90,8 +90,18 @@ inline V lerp(T a, V x_0, V x_1) {
 	return (T(1) - a) * x_0 + a * x_1;
 }
 
-inline float sqr(float a) {
+inline bool inside_unit_cube(const Vector3 &p) {
+	return 0 <= p.x && p.x < 1 && 0 <= p.y && p.y < 1 && 0 <= p.z && p.z < 1;
+}
+
+template<typename T>
+T sqr(const T &a) {
 	return a * a;
+}
+
+template<typename T>
+T cube(const T &a) {
+	return a * a * a;
 }
 
 inline int sgn(float a) {

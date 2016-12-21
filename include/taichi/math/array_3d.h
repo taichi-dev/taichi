@@ -58,11 +58,15 @@ public:
 		return *this;
 	}
 
-	bool operator==(Index3D &o) const {
+	bool operator==(const Index3D &o) const {
 		return (i == o.i && j == o.j && k == o.k);
 	}
 
-	bool operator!=(Index3D &o) const {
+	bool operator<(const Index3D &o) const {
+		return i < o.i || (i == o.i && (j < o.j)) || (i == o.i && j == o.j && k < o.k);
+	}
+
+	bool operator!=(const Index3D &o) const {
 		return !(i == o.i && j == o.j && k == o.k);
 	}
 

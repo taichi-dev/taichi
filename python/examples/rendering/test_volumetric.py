@@ -42,14 +42,16 @@ def create_mpm_snow_block(fn):
     tex = Texture.from_render_particles((511, 127, 255), particles) * 5
     mesh_transform = tc_core.Matrix4(1.0).scale(Vector(0.5, 0.5, 0.5)).translate(Vector(0.5, 0.5, 0.5))
     transform = tc_core.Matrix4(1.0).scale_s(2).scale(Vector(2.0, 0.5, 1.0)).translate(Vector(-2, -0.99, -1))
-    vol = VolumeMaterial('voxel', scattering=5, absorption=0, tex=tex, resolution=(511, 127, 255),
+    #vol = VolumeMaterial('sdf_voxel', scattering=5, absorption=0, tex=tex, resolution=(511, 127, 255),
+    # Note: using low res
+    vol = VolumeMaterial('sdf_voxel', scattering=5, absorption=0, tex=tex, resolution=(511, 127, 255),
                          transform_ptr=transform.get_ptr_string())
     material = SurfaceMaterial('plain_interface')
     material.set_internal_material(vol)
     return Mesh('cube', material=material, transform=transform * mesh_transform)
 
 def create_snow_scene():
-    downsample = 2
+    downsample = 1
     width, height = 960 / downsample, 540 / downsample
     camera = Camera('thinlens', width=width, height=height, fov=60,
                     origin=(0, 1, 4), look_at=(0.0, -0.7, -1.0), up=(0, 1, 0), aperture=0.05)

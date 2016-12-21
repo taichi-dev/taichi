@@ -46,10 +46,10 @@ public:
 		this->next();
 		return *this;
 	}
-	bool operator==(Index2D &o) const {
+	bool operator==(const Index2D &o) const {
 		return (i == o.i && j == o.j);
 	}
-	bool operator!=(Index2D &o) const {
+	bool operator!=(const Index2D &o) const {
 		return !(i == o.i && j == o.j);
 	}
 	Index2D &to_end() {

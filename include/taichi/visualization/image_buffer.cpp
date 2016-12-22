@@ -1,6 +1,6 @@
 #include <taichi/visualization/image_buffer.h>
-
 #include <taichi/math/linalg.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -10,61 +10,8 @@
 
 TC_NAMESPACE_BEGIN
 
-ImageBuffer<Vector3> calculate_error_image(std::vector<std::shared_ptr<ImageBuffer<Vector3>>> buffers) {
-	int num_instances = (int)buffers.size();
-	assert_info(num_instances >= 2, "Must have more than 2 instances to calculate error");
-	int width = buffers[0]->get_width();
-	int height = buffers[0]->get_height();
-	ImageBuffer<Vector3> error_image(width, height);
-	real total_error = 0;
-	for (int i = 0; i < width; i++) {
-		for (int j = 0; j < height; j++) {
-			Vector3 ave(0);
-			for (int k = 0; k < num_instances; k++) {
-				ave += (*buffers[k])[i][j];
-			}
-			ave /= real(num_instances);
-			for (int k = 0; k < num_instances; k++) {
-				Vector3 diff = (*buffers[k])[i][j] - ave;
-				error_image[i][j] += diff * diff;
-			}
-			error_image[i][j] /= num_instances - 1;
-		}
-	}
-	return error_image;
-}
-
-real estimate_error(const ImageBuffer<Vector3>& error_image) {
-	int width = error_image.get_width();
-	int height = error_image.get_height();
-	real total_error = 0;
-	for (int i = 0; i < width; i++) {
-		for (int j = 0; j < height; j++) {
-			Vector3 err = error_image[i][j];
-			total_error += err.x + err.y + err.z;
-		}
-	}
-	return sqrt(total_error / (width * height));
-}
-
-ImageBuffer<Vector3> combine(std::vector<std::shared_ptr<ImageBuffer<Vector3>>> buffers) {
-	int num_instances = (int)buffers.size();
-	assert_info(num_instances >= 1, "Must have more than 1 instance to connect");
-	int width = buffers[0]->get_width();
-	int height = buffers[0]->get_height();
-	ImageAccumulator<Vector3> total = ImageAccumulator<Vector3>(width, height);
-	for (int i = 0; i < num_instances; i++) {
-		for (int x = 0; x < width; x++) {
-			for (int y = 0; y < height; y++) {
-				total.accumulate(x, y, (*(buffers[i]))[x][y]);
-			}
-		}
-	}
-	return total.get_averaged();
-}
-
-template<>
-void ImageBuffer<Vector3>::write_text(const std::string &font_fn, const std::string &content_, real size,
+template<typename T>
+void ImageBuffer<T>::write_text(const std::string &font_fn, const std::string &content_, real size,
 									  int dx, int dy) {
 	std::vector<unsigned char> buffer(24 << 20, (unsigned char)0);
 	std::vector<unsigned char> screen_buffer((size_t)(this->width * this->height), (unsigned char)0);
@@ -102,15 +49,22 @@ void ImageBuffer<Vector3>::write_text(const std::string &font_fn, const std::str
 		++ch;
 	}
 	if (dy < 0) {
-		dy = this->height + dy - 1 - height;
+		dy = this->height + dy - 1;
 	}
-	for (j = 0; j < height; ++j) {
-		for (i = 0; i < width; ++i) {
+	for (j = 0; j < this->height; ++j) {
+		for (i = 0; i < this->width; ++i) {
 			int x = dx + i, y = dy + j;
-			float alpha = screen_buffer[(height - j - 1) * width + i] / 255.0f;
-			(*this)[x][y] = lerp(alpha, get(x, y), Vector3(1.0f));
+			float alpha = screen_buffer[(this->height - j - 1) * this->width + i] / 255.0f;
+			(*this)[x][y] = lerp(alpha, this->get(x, y), T(1.0f));
 		}
 	}
 }
+
+template
+void ImageBuffer<Vector3>::write_text(const std::string &font_fn, const std::string &content_, real size,
+									  int dx, int dy);
+template
+void ImageBuffer<Vector4>::write_text(const std::string &font_fn, const std::string &content_, real size,
+									  int dx, int dy);
 
 TC_NAMESPACE_END

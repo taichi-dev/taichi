@@ -9,8 +9,8 @@ protected:
 public:
 	void initialize(const Config &config) override {
 	}
-	virtual Vector3 sample(const Vector3 &coord) const override {
-		return Vector3(noise(coord * 256.0f));
+	virtual Vector4 sample(const Vector3 &coord) const override {
+		return Vector4(noise(coord * 256.0f));
 	}
 	real noise(Vector3f coord) const {
 		return real(noise(coord.x, coord.y, coord.z));

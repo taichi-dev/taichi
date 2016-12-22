@@ -15,9 +15,10 @@ class Texture:
     @staticmethod
     def wrap_texture(value):
         if isinstance(value, tuple):
+            value = tuple(list(value) + [0] * (4 - len(value)))
             return Texture('const', value=value)
         elif isinstance(value, float) or isinstance(value, int):
-            return Texture('const', value=(value, value, value))
+            return Texture('const', value=(value, value, value, value))
         else:
             return value
 

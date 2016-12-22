@@ -29,7 +29,7 @@ public:
 	};
 
 	virtual Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
-		auto color = color_sampler->sample(uv);
+		auto color = color_sampler->sample3(uv);
 		return (in.z * out.z > 0 ? 1.0f : 0.0f) * color; // No division by pi here.
 	};
 };
@@ -70,7 +70,7 @@ public:
 	};
 
 	virtual Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
-		auto color = color_sampler->sample(uv);
+		auto color = color_sampler->sample3(uv);
 		return (in.z * out.z > eps ? 1.0f : 0.0f) * color * (1.0f / pi);
 	};
 	virtual void
@@ -115,7 +115,7 @@ public:
 		}
 		const Vector3 r = reflect(in);
 		real t = std::min(std::max(dot(r, out), 0.0f), 1.0f);
-		auto color = color_sampler->sample(uv);
+		auto color = color_sampler->sample3(uv);
 		return color * (glossiness + 2.0f) / (2.0f * pi) * pow(t, glossiness)
 			/ std::max(std::max(std::abs(in.z), std::abs(out.z)), 1e-7f);
 	};
@@ -133,7 +133,7 @@ public:
 	};
 
 	virtual Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
-		auto color = color_sampler->sample(uv);
+		auto color = color_sampler->sample3(uv);
 		return color * (1.0f / out.z);
 	};
 
@@ -197,7 +197,7 @@ public:
 		Vector3 out_reflect, out_refract;
 		real p = get_refraction(in, out_reflect, out_refract);
 		real factor = in.z * out.z < 0 ? p : 1.0f - p;
-		auto color = color_sampler->sample(uv);
+		auto color = color_sampler->sample3(uv);
 		return factor * color * (1.0f / max(eps, std::abs(out.z)));
 	}
 
@@ -270,7 +270,7 @@ public:
 		Vector3 out_reflect, out_refract;
 		real p = get_refraction(in, out_reflect, out_refract);
 		real factor = in.z * out.z < 0 ? p : 1.0f - p;
-		auto color = color_sampler->sample(uv);
+		auto color = color_sampler->sample3(uv);
 		return factor * color * (1.0f / max(eps, std::abs(out.z)));
 	}
 

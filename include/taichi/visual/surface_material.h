@@ -101,7 +101,7 @@ public:
 	}
 
 	virtual real get_intensity(const Vector2 &uv) {
-		return luminance(color_sampler->sample(uv));
+		return luminance(color_sampler->sample3(uv));
 	}
 
 	virtual bool is_delta() const {
@@ -113,7 +113,7 @@ public:
 	}
 
 	virtual real get_importance(const Vector2 &uv) const {
-		return luminance(color_sampler->sample(uv)) + 1e-7f;
+		return luminance(color_sampler->sample3(uv)) + 1e-7f;
 	}
 
 

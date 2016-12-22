@@ -64,3 +64,17 @@ typedef unsigned long long uint64;
 
 // Check for inf, nan?
 // #define CV_ON
+
+#include <type_traits>
+
+template<typename T, typename U>
+struct is_type_same : std::false_type { };
+
+template<typename T>
+struct is_type_same<T, T> : std::true_type { };
+
+template<typename T, typename U>
+constexpr bool same_type() { return is_type_same<T, U>::value; }
+
+template<typename T, typename U>
+constexpr bool same_type(const U &u) { return is_type_same<T, U>::value; }

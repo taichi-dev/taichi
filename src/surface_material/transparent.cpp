@@ -90,7 +90,7 @@ public:
 	}
 
 	virtual Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
-		auto color = color_sampler->sample(uv);
+		auto color = color_sampler->sample3(uv);
 		return (in.z * out.z < -eps ? 1.0f : 0.0f) * color * (1.0f / pi);
 	}
 

@@ -30,8 +30,9 @@ public:
 		for (int i = 0; i < this->width; i++) {
 			for (int j = 0; j < this->height; j++) {
 				float *pixel = data + ((this->height - 1 - j) * this->width + i) * channels;
-				Vector3 color = vec3(pixel[0], pixel[1], pixel[2]);
-				(*this)[i][j] = color;
+				(*this)[i][j].x = pixel[0];
+				(*this)[i][j].y = pixel[1];
+				(*this)[i][j].z = pixel[2];
 			}
 		}
 		stbi_image_free(data);
@@ -152,10 +153,6 @@ private:
 	ImageBuffer<int> counter;
 	int width, height;
 };
-
-real estimate_error(const ImageBuffer<Vector3> &error_image);
-ImageBuffer<Vector3> calculate_error_image(std::vector<std::shared_ptr<ImageBuffer<Vector3>>> buffers);
-ImageBuffer<Vector3> combine(std::vector<std::shared_ptr<ImageBuffer<Vector3>>> buffers);
 
 TC_NAMESPACE_END
 

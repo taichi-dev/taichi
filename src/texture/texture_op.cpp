@@ -16,7 +16,7 @@ public:
 		inv_zoom = Vector3(1.0f) / config.get_vec3("zoom");
 		repeat = config.get_bool("repeat");
 	}
-	virtual Vector3 sample(const Vector3 &coord) const override {
+	virtual Vector4 sample(const Vector3 &coord) const override {
 		Vector3 c = inv_zoom * (coord - center) + center;
 		if (repeat)
 			c = glm::fract(c);
@@ -40,7 +40,7 @@ public:
 		tex2 = AssetManager::get_asset<Texture>(config.get_int("tex2"));
 	}
 
-	virtual Vector3 sample(const Vector3 &coord) const override {
+	virtual Vector4 sample(const Vector3 &coord) const override {
 		auto p = alpha * tex1->sample(coord) + beta * tex2->sample(coord);
 		if (need_clamp) {
 			for (int i = 0; i < 3; i++) {
@@ -63,7 +63,7 @@ public:
 		tex2 = AssetManager::get_asset<Texture>(config.get_int("tex2"));
 	}
 
-	virtual Vector3 sample(const Vector3 &coord) const override {
+	virtual Vector4 sample(const Vector3 &coord) const override {
 		return tex1->sample(coord) * tex2->sample(coord);
 	}
 };
@@ -78,7 +78,7 @@ public:
 		tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
 	}
 
-	virtual Vector3 sample(const Vector3 &coord) const override {
+	virtual Vector4 sample(const Vector3 &coord) const override {
 		return glm::fract(tex->sample(coord));
 	}
 };
@@ -101,7 +101,7 @@ public:
 		tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
 	}
 
-	virtual Vector3 sample(const Vector3 &coord) const override {
+	virtual Vector4 sample(const Vector3 &coord) const override {
 		real u = coord.x - floor(coord.x * repeat_u) * inv_repeat_u;
 		real v = coord.y - floor(coord.y * repeat_v) * inv_repeat_v;
 		real w = coord.z - floor(coord.z * repeat_w) * inv_repeat_w;
@@ -121,7 +121,7 @@ public:
 		times = config.get_int("times");
 	}
 
-	virtual Vector3 sample(const Vector3 &coord_) const override {
+	virtual Vector4 sample(const Vector3 &coord_) const override {
 		auto coord = coord_;
 		for (int i = 0; i < times; i++) {
 			coord = Vector3(-coord.y, coord.x, coord.z);
@@ -142,7 +142,7 @@ public:
 		flip_axis = config.get_int("flip_axis");
 	}
 
-	virtual Vector3 sample(const Vector3 &coord_) const override {
+	virtual Vector4 sample(const Vector3 &coord_) const override {
 		auto coord = coord_;
 		coord[flip_axis] = 1.0f - coord[flip_axis];
 		return tex->sample(coord);
@@ -156,16 +156,16 @@ protected:
 	std::shared_ptr<Texture> tex;
 	int bound_axis;
 	Vector2 bounds;
-	Vector3 outside_val;
+	Vector4 outside_val;
 public:
 	void initialize(const Config &config) override {
 		tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
 		bound_axis = config.get_int("axis");
 		bounds = config.get_vec2("bounds");
-		outside_val = config.get_vec3("outside_val");
+		outside_val = config.get_vec4("outside_val");
 	}
 
-	virtual Vector3 sample(const Vector3 &coord_) const override {
+	virtual Vector4 sample(const Vector3 &coord_) const override {
 		auto coord = coord_;
 		if (bounds[0] <= coord[bound_axis] && coord[bound_axis] < bounds[1])
 			return tex->sample(coord);
@@ -178,7 +178,7 @@ TC_IMPLEMENTATION(Texture, BoundedTexture, "bound");
 
 class RasterizedTexture : public Texture {
 protected:
-	ImageBuffer<Vector3> cache;
+	ImageBuffer<Vector4> cache;
 	int resolution_x;
 	int resolution_y;
 public:
@@ -186,7 +186,7 @@ public:
 		auto tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
 		resolution_x = config.get_int("resolution_x");
 		resolution_y = config.get_int("resolution_y");
-		cache = ImageBuffer<Vector3>(resolution_x, resolution_y);
+		cache = ImageBuffer<Vector4>(resolution_x, resolution_y);
 		for (int i = 0; i < resolution_x; i++) {
 			for (int j = 0; j < resolution_y; j++) {
 				cache.set(i, j, tex->sample(
@@ -195,11 +195,11 @@ public:
 		}
 	}
 
-	virtual Vector3 sample(const Vector2 &coord) const override {
+	virtual Vector4 sample(const Vector2 &coord) const override {
 		return cache.sample_relative_coord(coord);
 	}
 
-	virtual Vector3 sample(const Vector3 &coord) const override {
+	virtual Vector4 sample(const Vector3 &coord) const override {
 		return cache.sample_relative_coord(Vector2(coord.x, coord.y));
 	}
 };

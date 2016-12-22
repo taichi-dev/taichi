@@ -6,13 +6,13 @@ TC_NAMESPACE_BEGIN
 
 class ConstantTexture final : public Texture {
 private:
-	Vector3 val;
+	Vector4 val;
 public:
 	void initialize(const Config &config) override {
-		val = config.get_vec3("value");
+		val = config.get_vec4("value");
 	}
 
-	virtual Vector3 sample(const Vector3 &coord) const override {
+	virtual Vector4 sample(const Vector3 &coord) const override {
 		return val;
 	}
 };
@@ -21,13 +21,13 @@ TC_IMPLEMENTATION(Texture, ConstantTexture, "const");
 
 class Array3DTexture : public Texture {
 protected:
-	Array3D<Vector3> arr;
+	Array3D<Vector4> arr;
 public:
 	void initialize(const Config &config) override {
-		arr = *config.get_ptr<Array3D<Vector3>>("array_ptr");
+		arr = *config.get_ptr<Array3D<Vector4>>("array_ptr");
 	}
 
-	virtual Vector3 sample(const Vector3 &coord) const override {
+	virtual Vector4 sample(const Vector3 &coord) const override {
 		return arr.sample_relative_coord(coord);
 	}
 };
@@ -36,13 +36,13 @@ TC_IMPLEMENTATION(Texture, Array3DTexture, "array3d");
 
 class ImageTexture : public Texture {
 protected:
-	ImageBuffer<Vector3> image;
+	ImageBuffer<Vector4> image;
 public:
 	void initialize(const Config &config) override {
 		image.load(config.get_string("filename"));
 	}
 
-	virtual Vector3 sample(const Vector3 &coord_) const override {
+	virtual Vector4 sample(const Vector3 &coord_) const override {
 		Vector2 coord(coord_.x - floor(coord_.x), coord_.y - floor(coord_.y));
 		return image.sample_relative_coord(coord);
 	}
@@ -52,7 +52,7 @@ TC_IMPLEMENTATION(Texture, ImageTexture, "image");
 
 class TextTexture : public Texture {
 protected:
-	ImageBuffer<Vector3> image;
+	ImageBuffer<Vector4> image;
 public:
 	void initialize(const Config &config) override {
 		int width = config.get_int("width");
@@ -66,7 +66,7 @@ public:
 		image.write_text(font_file_fn, content, size, dx, dy);
 	}
 
-	virtual Vector3 sample(const Vector3 &coord_) const override {
+	virtual Vector4 sample(const Vector3 &coord_) const override {
 		Vector2 coord(coord_.x - floor(coord_.x), coord_.y - floor(coord_.y));
 		return image.sample_relative_coord(coord);
 	}
@@ -90,8 +90,8 @@ public:
 			std::abs(c.z) < bounds.z;
 	}
 
-	virtual Vector3 sample(const Vector3 &coord) const override {
-		return Vector3(inside(coord) ? 1.0f : 0.0f);
+	virtual Vector4 sample(const Vector3 &coord) const override {
+		return Vector4(inside(coord) ? 1.0f : 0.0f);
 	}
 };
 
@@ -110,13 +110,13 @@ public:
 		return (p.x - c.x) * (p.x - c.x) + (p.y - c.y) * (p.y - c.y) <= r * r;
 	}
 
-	virtual Vector3 sample(const Vector2 &coord) const override {
-		return Vector3(
+	virtual Vector4 sample(const Vector2 &coord) const override {
+		return Vector4(
 			inside(coord, Vector2(0.5f, 0.5f), outer) &&
 			!inside(coord, Vector2(0.5f, 0.5f), inner) ? 1.0f : 0.0f);
 	}
 
-	virtual Vector3 sample(const Vector3 &coord) const override {
+	virtual Vector4 sample(const Vector3 &coord) const override {
 		return sample(Vector2(coord.x, coord.y));
 	}
 };
@@ -178,11 +178,11 @@ public:
 		}
 	}
 
-	virtual Vector3 sample(const Vector2 &coord) const override {
-		return Vector3(is_white(coord) ? 1.0f : 0.0f);
+	virtual Vector4 sample(const Vector2 &coord) const override {
+		return Vector4(is_white(coord) ? 1.0f : 0.0f);
 	}
 
-	virtual Vector3 sample(const Vector3 &coord) const override {
+	virtual Vector4 sample(const Vector3 &coord) const override {
 		return sample(Vector2(coord.x, coord.y));
 	}
 };
@@ -202,7 +202,7 @@ public:
 		repeat_w = config.get("repeat_w", 1.0f);
 	}
 
-	virtual Vector3 sample(const Vector3 &coord) const override {
+	virtual Vector4 sample(const Vector3 &coord) const override {
 		int p = (int)floor(coord.x * repeat_u), q = (int)floor(coord.y * repeat_v),
 			r = (int)floor(coord.z * repeat_w);
 		return ((p + q + r) % 2 == 0 ? tex1 : tex2)->sample(coord);

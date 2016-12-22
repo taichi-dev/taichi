@@ -19,13 +19,13 @@ public:
 		return true;
 	}
 
-	virtual Vector3 sample(const Vector3 &coord) const override {
+	virtual Vector4 sample(const Vector3 &coord) const override {
 		Vector3d c = coord;
 		for (int i = 0; i < limit; i++) {
-			if (cut(c)) return Vector3(0.0f);
+			if (cut(c)) return Vector4(0.0f);
 			c = fract(c * 3.0);
 		}
-		return Vector3(1.0f);
+		return Vector4(1.0f);
 	}
 };
 

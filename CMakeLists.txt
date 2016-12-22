@@ -68,7 +68,6 @@ find_package(embree REQUIRED)
 include_directories(${EMBREE_INCLUDE_PATH})
 message("Embree lib ${EMBREE_LIBRARY}")
 
-find_package(ANN REQUIRED)
 
 include_directories(include)
 include_directories(external/include)
@@ -86,18 +85,27 @@ if (NOT WIN32)
     target_link_libraries(${CORE_LIBRARY_NAME} pthread)
 endif()
 
+# Optional dependencies
+
 if (USE_OPENGL)
     target_link_libraries(${CORE_LIBRARY_NAME} ${GLEW_LIBRARY})
     target_link_libraries(${CORE_LIBRARY_NAME} ${GLEW_LIBRARIES})
     target_link_libraries(${CORE_LIBRARY_NAME} ${OPENGL_LIBRARIES})
     target_link_libraries(${CORE_LIBRARY_NAME} ${GLFW3_LIBRARY})
-if (APPLE)
-    target_link_libraries(${CORE_LIBRARY_NAME} glfw3)
+    if (APPLE)
+        target_link_libraries(${CORE_LIBRARY_NAME} glfw3)
+    endif()
 endif()
+if (USE_ANN)
+    target_link_libraries(${CORE_LIBRARY_NAME} ${ANN_LIBRARIES})
+    find_package(ANN REQUIRED)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_USE_ANN")
 endif()
+
+# Required dependencies
+
 target_link_libraries(${CORE_LIBRARY_NAME} ${EMBREE_LIBRARY})
 target_link_libraries(${CORE_LIBRARY_NAME} ${PYTHON_LIBRARIES})
-target_link_libraries(${CORE_LIBRARY_NAME} ${ANN_LIBRARIES})
 target_link_libraries(${CORE_LIBRARY_NAME} ${Boost_LIBRARIES})
 
 if (UNIX)

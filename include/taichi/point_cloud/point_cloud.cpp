@@ -1,11 +1,10 @@
-#include <ANN/ANN.h>
-#include <memory>
-#include <vector>
-
-#include "point_cloud.h"
+#include <taichi/point_cloud/point_cloud.h>
 
 TC_NAMESPACE_BEGIN
 
+#ifdef TC_USE_ANN
+
+#include <ANN/ANN.h>
 NearestNeighbour2D::NearestNeighbour2D() {
 }
 
@@ -87,5 +86,7 @@ void NearestNeighbour2D::query_n_index(Vector2 p, int n, std::vector<int>& index
 	std::vector<float> _;
 	query_n(p, n, index, _);
 }
+
+#endif
 
 TC_NAMESPACE_END

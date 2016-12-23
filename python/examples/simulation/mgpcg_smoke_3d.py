@@ -11,6 +11,5 @@ if __name__ == '__main__':
     for i in range(600):
         smoke.step(0.03)
 
-    smoke.make_video()
 
 

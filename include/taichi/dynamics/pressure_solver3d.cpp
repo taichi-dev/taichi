@@ -33,6 +33,13 @@ public:
         void set_neighbour_cell_type(int k, CellType c) {
             neighbours = ((neighbours & (~(3 << (2 * k)))) | (c << (2 * k)));
         }
+        void print() {
+            printf("%f", inv_numerator);
+            for (int i = 0; i < 6; i++) {
+                printf(" %d", get_neighbour_cell_type(i));
+            }
+            printf("\n");
+        }
 
         static void test() {
             int neighbours[6] = {0};
@@ -68,21 +75,32 @@ public:
         // Iff we pad with Neumann and there's no dirichlet...
         has_null_space = padding == NEUMANN;
 
+        for (auto &ind :boundary.get_region()) {
+            if (boundary[ind] == DIRICHLET)
+                has_null_space = false;
+        }
+
+        if (has_null_space) {
+            // Let's remove the null space in an ad-hoc manner...
+            // TODO: seperated components?
+            // boundaries[0][0][0][0] = DIRICHLET;
+            error("null space detected");
+        }
+
         // Step 1: figure out cell types
         for (int l = 0; l < max_level - 1; l++) {
             res /= 2;
             boundaries.push_back(BCArray(res));
             for (auto &ind : boundaries.back().get_region()) {
+                auto &previous_boundary = boundaries[(int)boundaries.size() - 2];
                 bool has_dirichlet = false;
                 bool all_neumann = true;
                 for (int i = 0; i < 2; i++) {
                     for (int j = 0; j < 2; j++) {
                         for (int k = 0; k < 2; k++) {
-                            char bc = boundaries.back()[ind.i * 2 + i][ind.j * 2 + j][ind.k * 2 + k];
+                            char bc = previous_boundary[ind.i * 2 + i][ind.j * 2 + j][ind.k * 2 + k];
                             if (bc == DIRICHLET) {
                                 has_dirichlet = true;
-                                if (l == 0)
-                                    has_null_space = false;
                                 break;
                             }
                             if (bc != NEUMANN) {
@@ -92,6 +110,8 @@ public:
                     }
                 }
                 CellType bc = has_dirichlet ? DIRICHLET : (all_neumann ? NEUMANN : INTERIOR);
+                //if (bc)
+                //    printf("l %d  %d %d %d -> %d\n", l, ind.i, ind.j, ind.k, (int)bc);
                 boundaries.back()[ind] = bc;
             }
         }
@@ -115,7 +135,10 @@ public:
                         system[ind].inv_numerator += 1.0f;
                     }
                 }
-                system[ind].inv_numerator = 1.0f / system[ind].inv_numerator;
+                if (boundaries[l][ind] != INTERIOR)
+                    system[ind].inv_numerator = 0;
+                else
+                    system[ind].inv_numerator = 1.0f / system[ind].inv_numerator;
             }
             systems.push_back(system);
             res /= 2;
@@ -183,14 +206,18 @@ public:
                 parallel_for_each_cell(pressure, 128, [&](const Index3D &ind) {
                     int sum = ind.i + ind.j + ind.k;
                     if ((sum) % 2 == c) {
-                        real res = residual[ind];
-                        for (int k = 0; k < 6; k++) {
-                            Vector3i offset = neighbour6_3d[k];
-                            if (system[ind].get_neighbour_cell_type(k) == INTERIOR) {
-                                res += pressure[ind + offset];
+                        if (system[ind].inv_numerator > 0) {
+                            real res = residual[ind];
+                            for (int k = 0; k < 6; k++) {
+                                Vector3i offset = neighbour6_3d[k];
+                                if (system[ind].get_neighbour_cell_type(k) == INTERIOR) {
+                                    res += pressure[ind + offset];
+                                }
                             }
+                            pressure[ind] = res * system[ind].inv_numerator;
+                        } else {
+                            pressure[ind] = 0.0f;
                         }
-                        pressure[ind] = res * system[ind].inv_numerator;
                     }
                 });
             }
@@ -199,6 +226,10 @@ public:
 
     void apply_L(const System &system, const Array &pressure, Array &output) {
         for (auto &ind : pressure.get_region()) {
+            if (system[ind].inv_numerator == 0.0f) {
+                output[ind] = 0.0f;
+                continue;
+            }
             real pressure_center = pressure[ind];
             real res = 0.0f;
             for (int k = 0; k < 6; k++) {
@@ -216,6 +247,10 @@ public:
 
     void compute_residual(const System &system, const Array &pressure, const Array &div, Array &residual) {
         parallel_for_each_cell(residual, 128, [&](const Index3D &ind) {
+            if (system[ind].inv_numerator == 0) {
+                residual[ind] = 0.0f;
+                return;
+            }
             real pressure_center = pressure[ind];
             real res = 0.0f;
             for (int k = 0; k < 6; k++) {
@@ -231,30 +266,35 @@ public:
         });
     }
 
-    void downsample(const Array &x, Array &x_downsampled) { // Restriction
+    void downsample(const System &system, const Array &x, Array &x_downsampled) { // Restriction
         for (auto &ind : x_downsampled.get_region()) {
-            x_downsampled[ind] =
-                x[ind.i * 2 + 0][ind.j * 2 + 0][ind.k * 2 + 0] +
-                x[ind.i * 2 + 0][ind.j * 2 + 0][ind.k * 2 + 1] +
-                x[ind.i * 2 + 0][ind.j * 2 + 1][ind.k * 2 + 0] +
-                x[ind.i * 2 + 0][ind.j * 2 + 1][ind.k * 2 + 1] +
-                x[ind.i * 2 + 1][ind.j * 2 + 0][ind.k * 2 + 0] +
-                x[ind.i * 2 + 1][ind.j * 2 + 0][ind.k * 2 + 1] +
-                x[ind.i * 2 + 1][ind.j * 2 + 1][ind.k * 2 + 0] +
-                x[ind.i * 2 + 1][ind.j * 2 + 1][ind.k * 2 + 1];
+            if (system[ind].inv_numerator > 0) {
+                x_downsampled[ind] =
+                    x[ind.i * 2 + 0][ind.j * 2 + 0][ind.k * 2 + 0] +
+                    x[ind.i * 2 + 0][ind.j * 2 + 0][ind.k * 2 + 1] +
+                    x[ind.i * 2 + 0][ind.j * 2 + 1][ind.k * 2 + 0] +
+                    x[ind.i * 2 + 0][ind.j * 2 + 1][ind.k * 2 + 1] +
+                    x[ind.i * 2 + 1][ind.j * 2 + 0][ind.k * 2 + 0] +
+                    x[ind.i * 2 + 1][ind.j * 2 + 0][ind.k * 2 + 1] +
+                    x[ind.i * 2 + 1][ind.j * 2 + 1][ind.k * 2 + 0] +
+                    x[ind.i * 2 + 1][ind.j * 2 + 1][ind.k * 2 + 1];
+            } else {
+                x_downsampled[ind] = 0.0f;
+            }
         }
     }
 
-    void prolongate(Array &x, const Array &x_delta) const {
+    void prolongate(const System &system, Array &x, const Array &x_delta) const {
         for (auto &ind : x.get_region()) {
-            x[ind] += x_delta[ind.i / 2][ind.j / 2][ind.k / 2] * 0.5f;
+            // Do not prolongate to cells without a degree of freedom
+            if (system[ind].inv_numerator > 0) {
+                x[ind] += x_delta[ind.i / 2][ind.j / 2][ind.k / 2] * 0.5f;
+            }
         }
     }
 
     void run(int level) {
-        if (level != 0) {
-            pressures[level].reset(0.0f);
-        }
+        pressures[level].reset(0.0f);
         if (residuals[level].get_size() <= size_threshould) { // 4 * 4 * 4
             gauss_seidel(systems[level], residuals[level], pressures[level], 100);
         }
@@ -262,9 +302,9 @@ public:
             gauss_seidel(systems[level], residuals[level], pressures[level], 4);
             {
                 compute_residual(systems[level], pressures[level], residuals[level], tmp_residuals[level]);
-                downsample(tmp_residuals[level], residuals[level + 1]);
+                downsample(systems[level + 1], tmp_residuals[level], residuals[level + 1]);
                 run(level + 1);
-                prolongate(pressures[level], pressures[level + 1]);
+                prolongate(systems[level], pressures[level], pressures[level + 1]);
             }
             gauss_seidel(systems[level], residuals[level], pressures[level], 4);
         }
@@ -299,7 +339,7 @@ public:
     virtual void run(const Array &residual, Array &pressure, real pressure_tolerance) {
         pressure = 0;
         Array r(width, height, depth), mu(width, height, depth), tmp(width, height, depth);
-        mu = r.get_average();
+        //mu = r.get_average();
         r = residual; //TODO: r = r - Lx
         double nu = (r - mu).abs_max();
         if (nu < pressure_tolerance)
@@ -314,10 +354,7 @@ public:
             double sigma = p.dot_double(z);
             double alpha = rho / max(1e-20, sigma);
             r.add_in_place(-(real)alpha, z);
-            if (has_null_space)
-                mu = r.get_average();
-            else
-                mu = 0;
+            mu = 0;
             nu = (r - mu).abs_max();
             (r - mu).print_abs_max_pos();
             printf(" MGPCG iteration #%02d, nu=%f\n", count, nu);

@@ -20,19 +20,21 @@ public:
 };
 
 class Smoke3D : public Simulation3D {
-	typedef Array3D<float> Array;
+	typedef Array3D<real> Array;
 public:
 	Array u, v, w, rho, t, pressure, last_pressure;
 	Vector3i res;
-	float smoke_alpha, smoke_beta;
-	float temperature_decay;
-	float pressure_tolerance;
-	float density_scaling;
+	real smoke_alpha, smoke_beta;
+	real temperature_decay;
+	real pressure_tolerance;
+	real density_scaling;
 	Vector3 initial_speed;
-	float tracker_generation;
-	float perturbation;
+	real tracker_generation;
+	real perturbation;
+    bool open_boundary;
 	std::vector<Tracker3D> trackers;
 	std::shared_ptr<PressureSolver3D> pressure_solver;
+	PressureSolver3D::BCArray boundary_condition;
 
 	Smoke3D() {}
 
@@ -42,17 +44,17 @@ public:
 
 	void project();
 
-	void confine_vorticity(float delta_t);
+	void confine_vorticity(real delta_t);
 
-	void advect(float delta_t);
+	void advect(real delta_t);
 
-	void move_trackers(float delta_t);
+	void move_trackers(real delta_t);
 
-	void step(float delta_t);
+	void step(real delta_t);
 
 	virtual void show(ImageBuffer<Vector3> &buffer);
 
-	void advect(Array &attr, float delta_t);
+	void advect(Array &attr, real delta_t);
 
 	void apply_boundary_condition();
 

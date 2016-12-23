@@ -34,7 +34,12 @@ void Smoke3D::project() {
 			divergence[ind] -= w[ind];
 	}
 	pressure = 0;
-    pressure_solver->set_boundary_condition(PressureSolver3D::BCArray(res, PressureSolver3D::INTERIOR));
+    pressure_solver->set_boundary_condition(boundary_condition);
+    for (auto &ind : boundary_condition.get_region()) {
+        if (boundary_condition[ind] != PressureSolver3D::INTERIOR) {
+            divergence[ind] = 0.0f;
+        }
+    }
 	pressure_solver->run(divergence, pressure, pressure_tolerance);
 	for (auto &ind : pressure.get_region()) {
 		u[ind] += pressure[ind];
@@ -59,7 +64,8 @@ void Smoke3D::initialize(const Config &config) {
 	tracker_generation = config.get("tracker_generation", 100.0f);
 	num_threads = config.get_int("num_threads");
     std::string padding;
-    if (config.get_bool("open_boundary")) {
+    open_boundary = config.get_bool("open_boundary");
+    if (open_boundary) {
         padding = "dirichlet";
     } else {
         padding = "neumann";
@@ -78,6 +84,14 @@ void Smoke3D::initialize(const Config &config) {
 	last_pressure = Array(res[0], res[1], res[2], 0.0f);
 	t = Array(res[0], res[1], res[2], config.get("initial_t", 0.0f));
 	current_t = 0.0f;
+    boundary_condition = PressureSolver3D::BCArray(res);
+    for (auto &ind : boundary_condition.get_region()) {
+        Vector3 d = ind.get_pos() - Vector3(res) * 0.5f;
+        if (length(d) * 4 < res[0] || ind.i == 0 || ind.i == res[0] - 1 || ind.j == 0
+                || ind.k == 0 || ind.k == res[2] - 1) {
+            boundary_condition[ind] = PressureSolver3D::NEUMANN;
+        }
+    }
 }
 
 Vector3 hsv2rgb(Vector3 hsv) {
@@ -228,22 +242,33 @@ void Smoke3D::advect(Array &attr, float delta_t) {
 }
 
 void Smoke3D::apply_boundary_condition() {
-	return;
-	for (int i = 0; i < res[0]; i++) {
-		for (int j = 0; j < res[1]; j++) {
-			w[i][j][0] = w[i][j][res[2] - 1] = 0;
-		}
-	}
-	for (int i = 0; i < res[0]; i++) {
-		for (int k = 0; k < res[2]; k++) {
-			v[i][0][k] = v[i][res[1] - 1][k] = 0;
-		}
-	}
-	for (int j = 0; j < res[1]; j++) {
-		for (int k = 0; k < res[2]; k++) {
-			u[0][j][k] = u[res[0] - 1][j][k] = 0;
-		}
-	}
+    for (auto &ind : boundary_condition.get_region()) {
+        if (boundary_condition[ind] == PressureSolver3D::NEUMANN) {
+            u[ind] = 0;
+            u[ind + Vector3(1, 0, 0)] = 0;
+            v[ind] = 0;
+            v[ind + Vector3(0, 1, 0)] = 0;
+            w[ind] = 0;
+            w[ind + Vector3(0, 0, 1)] = 0;
+        }
+    }
+    if (!open_boundary) {
+        for (int i = 0; i < res[0]; i++) {
+            for (int j = 0; j < res[1]; j++) {
+                w[i][j][0] = w[i][j][res[2] - 1] = 0;
+            }
+        }
+        for (int i = 0; i < res[0]; i++) {
+            for (int k = 0; k < res[2]; k++) {
+                v[i][0][k] = v[i][res[1] - 1][k] = 0;
+            }
+        }
+        for (int j = 0; j < res[1]; j++) {
+            for (int k = 0; k < res[2]; k++) {
+                u[0][j][k] = u[res[0] - 1][j][k] = 0;
+            }
+        }
+    }
 }
 
 void Smoke3D::advect(float delta_t) {

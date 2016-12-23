@@ -12,7 +12,7 @@ enum class VolumeEvent {
 	absorption
 };
 
-class VolumeMaterial {
+class VolumeMaterial : public Unit {
 protected:
 	Matrix4 world2local;
 	Matrix4 local2world;

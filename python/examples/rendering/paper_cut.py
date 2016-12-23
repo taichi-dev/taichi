@@ -6,6 +6,7 @@ import math
 import random
 import colorsys
 
+
 def create_scene():
     downsample = 1
     width, height = 960 / downsample, 540 / downsample
@@ -23,9 +24,9 @@ def create_scene():
                     translate=(0, 0, -0.05), scale=10, rotation=(90.3, 0, 0))
         scene.add_mesh(mesh)
 
-
         # Taichi Text
-        text = 1 - Texture('text', content='Taichi', width=200, height=200, font_file='../assets/fonts/go/Go-Bold.ttf', size=50,
+        text = 1 - Texture('text', content='Taichi', width=200, height=200, font_file='../assets/fonts/go/Go-Bold.ttf',
+                           size=50,
                            dx=0, dy=0).rotate(1)
         mesh = Mesh('plane', SurfaceMaterial('transparent',
                                              nested=SurfaceMaterial('diffuse', diffuse=(1, 1, 1)),
@@ -64,9 +65,9 @@ def create_scene():
             inv_ring_tex = Texture('ring', inner=0.0, outer=0.5 + i * 0.1)
             color = colorsys.hls_to_rgb(i * 0.1, 0.5, 1.0)
             scene.add_mesh(Mesh('plane', SurfaceMaterial('transparent',
-                                                     nested=SurfaceMaterial('diffuse', diffuse=color),
-                                                     mask=inv_ring_tex),
-                            translate=(-3.7, 0, i * 0.03), scale=4, rotation=(90, 0, 0)))
+                                                         nested=SurfaceMaterial('diffuse', diffuse=color),
+                                                         mask=inv_ring_tex),
+                                translate=(-3.7, 0, i * 0.03), scale=4, rotation=(90, 0, 0)))
 
         scene.add_mesh(Mesh('plane', SurfaceMaterial('transparent',
                                                      nested=SurfaceMaterial('diffuse', diffuse=(0, 0.2, 0.5)),
@@ -99,9 +100,9 @@ if __name__ == '__main__':
 
     scene = create_scene()
     renderer.set_scene(scene)
-    renderer.initialize(min_path_length=1, max_path_length=10,
+    renderer.initialize(min_path_length=1, max_path_length=5,
                         initial_radius=0.5, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
                         direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1,
-                        stage_frequency=3, num_threads=8)
+                        stage_frequency=3, num_threads=8, shrinking_radius=True)
     renderer.set_post_processor(LDRDisplay(exposure=1.5, bloom_radius=0.1))
     renderer.render(10000, 20)

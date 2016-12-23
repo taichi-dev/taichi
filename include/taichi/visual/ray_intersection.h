@@ -7,10 +7,8 @@
 
 TC_NAMESPACE_BEGIN
 
-class RayIntersection {
+class RayIntersection : public Unit {
 public:
-	virtual void initialize(const Config &config) {}
-
 	virtual void clear() = 0;
 
 	virtual void build() = 0;

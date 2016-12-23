@@ -9,7 +9,7 @@ TC_NAMESPACE_BEGIN
 // treat Textued2D as special case of Texture3D.
 // Maybe I'll do it better when I have time.
 
-class Texture {
+class Texture : public Unit {
 public:
     virtual void initialize(const Config &config) {}
     virtual Vector4 sample(const Vector2 &coord) const {return sample(Vector3(coord.x, coord.y, 0.5f));}

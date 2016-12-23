@@ -8,7 +8,7 @@
 #include <taichi/common/meta.h>
 
 TC_NAMESPACE_BEGIN
-class Renderer {
+class Renderer : public Unit {
 public:
 	virtual void initialize(const Config &config);
 	virtual void render_stage() {};

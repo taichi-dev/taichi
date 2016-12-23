@@ -12,7 +12,7 @@
 
 TC_NAMESPACE_BEGIN
 
-class EnvironmentMap {
+class EnvironmentMap : public Unit {
 public:
 	virtual void initialize(const Config &config);
 

@@ -34,6 +34,7 @@ void Smoke3D::project() {
 			divergence[ind] -= w[ind];
 	}
 	pressure = 0;
+    pressure_solver->set_boundary_condition(PressureSolver3D::BCArray(res, PressureSolver3D::INTERIOR));
 	pressure_solver->run(divergence, pressure, pressure_tolerance);
 	for (auto &ind : pressure.get_region()) {
 		u[ind] += pressure[ind];
@@ -57,11 +58,17 @@ void Smoke3D::initialize(const Config &config) {
 	initial_speed = config.get("initial_speed", Vector3(0, 0, 0));
 	tracker_generation = config.get("tracker_generation", 100.0f);
 	num_threads = config.get_int("num_threads");
+    std::string padding;
+    if (config.get_bool("open_boundary")) {
+        padding = "dirichlet";
+    } else {
+        padding = "neumann";
+    };
 
 	perturbation = config.get("perturbation", 0.0f);
 	Config solver_config;
 	solver_config.set("width", res[0]).set("height", res[1]).set("depth", res[2])
-		.set("num_threads", num_threads);
+		.set("num_threads", num_threads).set("padding", padding);
 	pressure_solver = create_initialized_instance<PressureSolver3D>(config.get_string("pressure_solver"), solver_config);
 	u = Array(res[0] + 1, res[1], res[2], 0.0f, Vector3(0.0f, 0.5f, 0.5f));
 	v = Array(res[0], res[1] + 1, res[2], 0.0f, Vector3(0.5f, 0.0f, 0.5f));

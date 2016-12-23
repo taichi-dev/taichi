@@ -41,9 +41,8 @@ public:
 };
 
 
-class Sampler {
+class Sampler : public Unit {
 public:
-	virtual void initialize(const Config &config) {};
 	virtual real sample(int d, long long i) const = 0;
 };
 TC_INTERFACE(Sampler);

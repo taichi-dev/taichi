@@ -6,7 +6,7 @@
 
 TC_NAMESPACE_BEGIN
 
-class Simulation3D {
+class Simulation3D : public Unit {
 protected:
 	real current_t = 0.0f;
 	int num_threads;

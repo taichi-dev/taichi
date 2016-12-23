@@ -38,7 +38,7 @@ public:
 	}
 };
 
-class SurfaceMaterial {
+class SurfaceMaterial : public Unit {
 protected:
 	std::shared_ptr<Texture> color_sampler;
 	std::shared_ptr<VolumeMaterial> internal_material = nullptr;
@@ -58,8 +58,6 @@ public:
 	virtual bool is_index_matched() const {
 		return false;
 	}
-
-	virtual void initialize(const Config &config) {}
 
 	virtual Vector3 sample_direction(const Vector3 &in, real u, real v, const Vector2 &uv) const {
 		assert_info(false, "Not implemented");

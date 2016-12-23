@@ -88,19 +88,6 @@ public:
 	}
 
 	template <typename T>
-	static std::string get_ptr_string(T *ptr) {
-		std::stringstream ss;
-		ss << typeid(T).name() << "\t" << reinterpret_cast<uint64>(ptr);
-		return ss.str();
-	}
-
-	template <typename T>
-	Config &set(std::string name, T *ptr) {
-		data[name] = get_ptr_string(ptr);
-		return *this;
-	}
-
-	template <typename T>
 	T *get_ptr(std::string key) const {
 		std::string val = get_string(key);
 		std::stringstream ss(val);
@@ -172,6 +159,13 @@ public:
 		return *this;
 	}
 
+	Config &set(std::string name, const char *val) {
+		std::stringstream ss;
+		ss << val;
+		data[name] = ss.str();
+		return *this;
+	}
+
 	Config &set(std::string name, Vector2 val) {
 		std::stringstream ss;
 		ss << "(" << val.x << "," << val.y << ")";
@@ -211,6 +205,19 @@ public:
 		std::stringstream ss;
 		ss << "(" << val.x << "," << val.y << "," << val.z << "," << val.w << ")";
 		data[name] = ss.str();
+		return *this;
+	}
+
+	template <typename T>
+	static std::string get_ptr_string(T *ptr) {
+		std::stringstream ss;
+		ss << typeid(T).name() << "\t" << reinterpret_cast<uint64>(ptr);
+		return ss.str();
+	}
+
+	template <typename T>
+	Config &set(std::string name, T *ptr) {
+		data[name] = get_ptr_string(ptr);
 		return *this;
 	}
 

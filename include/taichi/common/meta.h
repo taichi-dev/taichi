@@ -1,7 +1,7 @@
 #pragma once
 
-#include "config.h"
-#include "asset_manager.h"
+#include <taichi/common/config.h>
+#include <taichi/common/asset_manager.h>
 #include <cstring>
 #include <string>
 #include <map>
@@ -16,6 +16,23 @@ std::shared_ptr<T> create_instance(const std::string &alias);
 
 template<typename T>
 std::shared_ptr<T> create_initialized_instance(const std::string &alias, const Config &config);
+
+    class Unit {
+    public:
+        Unit() {}
+
+        virtual void initialize(const Config &config) {
+
+        }
+
+        virtual bool test() const {
+            return true;
+        }
+
+        virtual std::string get_name() {
+            return "unit";
+        }
+    };
 
 #define TC_IMPLEMENTATION_HOLDER_NAME(class_name) ImplementationHolder##class_name
 

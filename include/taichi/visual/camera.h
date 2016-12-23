@@ -6,10 +6,8 @@
 
 TC_NAMESPACE_BEGIN
 
-class Camera {
+class Camera : public Unit{
 public:
-	virtual void initialize(const Config &config) {};
-
 	virtual Ray sample(Vector2 offset, Vector2 size, StateSequence &rand) {
 		error("no impl");
 		return Ray(Vector3(0), Vector3(0));

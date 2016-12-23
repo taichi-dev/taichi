@@ -5,9 +5,8 @@
 
 TC_NAMESPACE_BEGIN
 
-class Framebuffer {
+class Framebuffer : public Unit {
 public:
-	virtual void initialize(const Config &config) {};
 protected:
 };
 

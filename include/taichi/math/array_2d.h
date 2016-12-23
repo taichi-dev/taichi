@@ -134,17 +134,17 @@ public:
 		return region;
 	}
 
-	void initialize(int width, int height, T init, Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
+	void initialize(Vector2i resolution, T init=T(0), Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
+		initialize(resolution.x, resolution.y, init, storage_offset);
+	}
+
+	void initialize(int width, int height, T init=T(0), Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
 		this->width = width;
 		this->height = height;
 		region = Region2D(0, width, 0, height, storage_offset);
 		size = width * height;
 		data = std::vector<T>(size, init);
 		this->storage_offset = storage_offset;
-	}
-
-	virtual void initialize(int width, int height) {
-		initialize(width, height, T(0));
 	}
 
 	Array2D<T> same_shape(T init) const {

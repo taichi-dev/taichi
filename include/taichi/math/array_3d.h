@@ -192,7 +192,11 @@ public:
 		return region;
 	}
 
-	void initialize(int width, int height, int depth, T init, Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
+	void initialize(const Vector3i &resolution, T init=T(0), Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
+		initialize(resolution.x, resolution.y, resolution.z, init, storage_offset);
+	}
+
+	void initialize(int width, int height, int depth, T init=T(0), Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
 		this->width = width;
 		this->height = height;
 		this->depth = depth;
@@ -203,10 +207,6 @@ public:
 		this->storage_offset = storage_offset;
 	}
 
-	virtual void initialize(int width, int height, int depth) {
-		initialize(width, height, depth, T(0));
-	}
-
 	Array3D<T> same_shape(T init) const {
 		return Array3D<T>(width, height, depth, init, storage_offset);
 	}
@@ -215,11 +215,11 @@ public:
 		return Array3D<T>(width, height, depth, T(0), storage_offset);
 	}
 
-	Array3D(int width, int height, int depth) {
-		initialize(width, height, depth);
+	Array3D(const Vector3i &resolution, T init=T(0), Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
+		initialize(resolution, init, storage_offset);
 	}
 
-	Array3D(int width, int height, int depth, T init, Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
+	Array3D(int width, int height, int depth, T init=T(0), Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
 		initialize(width, height, depth, init, storage_offset);
 	}
 

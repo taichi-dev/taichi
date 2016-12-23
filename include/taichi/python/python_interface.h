@@ -120,6 +120,8 @@ Matrix4 matrix4_rotate_euler(Matrix4 *transform, const Vector3 &euler_angles) {
 	return ret;
 }
 
+void test();
+
 template<typename T>
 void array2d_to_ndarray(T *arr, long long);
 
@@ -129,7 +131,8 @@ void image_buffer_to_ndarray(T *arr, long long);
 BOOST_PYTHON_MODULE(taichi_core) {
 	Py_Initialize();
 	//import_array();
-	numeric::array::set_module_and_type("numpy", "ndarray"); 
+	numeric::array::set_module_and_type("numpy", "ndarray");
+    def("test", test);
 	def("rasterize_render_particles", rasterize_render_particles);
 	def("create_texture", create_instance<Texture>);
 	def("register_texture", &AssetManager::insert_asset<Texture>);

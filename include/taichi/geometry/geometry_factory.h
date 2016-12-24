@@ -17,6 +17,5 @@ TC_NAMESPACE_BEGIN
         }
     };
 
-    std::function<Vector3(real, real)> surface_generator_from_py_obj(PyObject *func);
 
 TC_NAMESPACE_END

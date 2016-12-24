@@ -49,7 +49,7 @@ typedef glm::mat4 Matrix4;
 
 const real pi{ acosf(-1.0f) };
 
-#define eps (1e-6f)
+const real eps = 1e-6f;
 
 #undef max
 #undef min

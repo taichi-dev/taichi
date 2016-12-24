@@ -34,6 +34,7 @@
 #include <taichi/levelset/levelset2d.h>
 #include <taichi/visualization/rgb.h>
 #include <taichi/io/io.h>
+#include <taichi/geometry/geometry_factory.h>
 
 #define EXPLICIT_GET_POINTER(T) namespace boost { template <> T const volatile * get_pointer<T const volatile >(T const volatile *c){return c;}}
 
@@ -85,14 +86,14 @@ Config config_from_py_dict(py::dict &c) {
 	return config;
 }
 
-std::vector<float> make_range(float start, float end, float delta) {
-	return std::vector<float> {start, end, delta};
+std::vector<real> make_range(real start, real end, real delta) {
+	return std::vector<real> {start, end, delta};
 }
 
 std::string rasterize_levelset(const LevelSet2D &levelset, int width, int height) {
 	std::string ret;
 	for (auto &ind : Region2D(0, width, 0, height)) {
-		float c = -levelset.sample((ind.i + 0.5f) / width * levelset.get_width(),
+		real c = -levelset.sample((ind.i + 0.5f) / width * levelset.get_width(),
 			(ind.j + 0.5f) / height * levelset.get_height());
 		RGB rgb(c, c, c);
 		rgb.append_to_string(ret);
@@ -120,6 +121,16 @@ Matrix4 matrix4_rotate_euler(Matrix4 *transform, const Vector3 &euler_angles) {
 	return ret;
 }
 
+std::function<Vector3(real, real)> surface_generator_from_py_obj(PyObject *func) {
+    return [func](real u, real v) -> Vector3 {
+        // TODO: GIL here seems inefficient...
+        PyGILState_STATE state = PyGILState_Ensure();
+        Vector3 ret = boost::python::call<Vector3>(func, u, v);
+        PyGILState_Release(state);
+        return ret;
+    };
+}
+
 void test();
 
 template<typename T>
@@ -133,6 +144,8 @@ BOOST_PYTHON_MODULE(taichi_core) {
 	//import_array();
 	numeric::array::set_module_and_type("numpy", "ndarray");
     def("test", test);
+	def("surface_generator_from_py_obj", surface_generator_from_py_obj);
+	def("generate_mesh", Mesh3D::generate);
 	def("rasterize_render_particles", rasterize_render_particles);
 	def("create_texture", create_instance<Texture>);
 	def("register_texture", &AssetManager::insert_asset<Texture>);
@@ -191,10 +204,12 @@ BOOST_PYTHON_MODULE(taichi_core) {
 
 	EXPORT_MPM(MPM);
 
+	class_<Mesh3D::SurfaceGenerator>("surface_generator");
+
 	class_<Config>("Config");
 
 	class_<Matrix4>("Matrix4", init<real>())
-		.def(float() * self)
+		.def(real() * self)
 		.def(self + self)
 		.def(self - self)
 		.def(self * self)
@@ -207,18 +222,29 @@ BOOST_PYTHON_MODULE(taichi_core) {
 		.def("get_ptr_string", &Config::get_ptr_string<Matrix4>)
 		;
 
-	class_<Vector2>("Vector2")
+    class_<Vector2i>("Vector2i", init<int, int>())
+            .def_readwrite("x", &Vector2i::x)
+            .def_readwrite("y", &Vector2i::y)
+            .def(self * int())
+            .def(int() * self)
+            .def(self / int())
+            .def(self + self)
+            .def(self - self)
+            .def(self * self)
+            .def(self / self);
+
+	class_<Vector2>("Vector2", init<real, real>())
 		.def_readwrite("x", &Vector2::x)
 		.def_readwrite("y", &Vector2::y)
-		.def(self * float())
-		.def(float() * self)
-		.def(self / float())
+		.def(self * real())
+		.def(real() * self)
+		.def(self / real())
 		.def(self + self)
 		.def(self - self)
 		.def(self * self)
 		.def(self / self);
 
-	class_<Vector3i>("Vector3i")
+	class_<Vector3i>("Vector3i", init<int, int, int>())
 		.def_readwrite("x", &Vector3i::x)
 		.def_readwrite("y", &Vector3i::y)
 		.def_readwrite("z", &Vector3i::z)
@@ -230,26 +256,26 @@ BOOST_PYTHON_MODULE(taichi_core) {
 		.def(self * self)
 		.def(self / self);
 
-	class_<Vector3>("Vector3")
+	class_<Vector3>("Vector3", init<real, real, real>())
 		.def_readwrite("x", &Vector3::x)
 		.def_readwrite("y", &Vector3::y)
 		.def_readwrite("z", &Vector3::z)
-		.def(self * float())
-		.def(float() * self)
-		.def(self / float())
+		.def(self * real())
+		.def(real() * self)
+		.def(self / real())
 		.def(self + self)
 		.def(self - self)
 		.def(self * self)
 		.def(self / self);
 
-	class_<Vector4>("Vector4")
+	class_<Vector4>("Vector4", init<real, real, real, real>())
 		.def_readwrite("x", &Vector4::x)
 		.def_readwrite("y", &Vector4::y)
 		.def_readwrite("z", &Vector4::z)
 		.def_readwrite("w", &Vector4::w)
-		.def(self * float())
-		.def(float() * self)
-		.def(self / float())
+		.def(self * real())
+		.def(real() * self)
+		.def(self / real())
 		.def(self + self)
 		.def(self - self)
 		.def(self * self)
@@ -285,8 +311,8 @@ BOOST_PYTHON_MODULE(taichi_core) {
 		.def_readwrite("phi_f", &DPParticle::phi_f);
 
 	class_<Array>("Array2DFloat")
-		.def("to_ndarray", &array2d_to_ndarray<Array2D<float>>)
-		.def("rasterize", &Array2D<float>::rasterize);
+		.def("to_ndarray", &array2d_to_ndarray<Array2D<real>>)
+		.def("rasterize", &Array2D<real>::rasterize);
 
 	class_<ImageBuffer<Vector3>>("RGBImageFloat", init<int, int, Vector3>())
 		.def("get_width", &ImageBuffer<Vector3>::get_width)
@@ -295,12 +321,12 @@ BOOST_PYTHON_MODULE(taichi_core) {
 
 	class_<LevelSet2D>("LevelSet2D", init<int, int, Vector2>())
 		.def("get", &LevelSet2D::get_copy)
-		.def("set", static_cast<void (LevelSet2D::*)(int, int, const float &)>(&LevelSet2D::set))
+		.def("set", static_cast<void (LevelSet2D::*)(int, int, const real &)>(&LevelSet2D::set))
 		.def("add_sphere", &LevelSet2D::add_sphere)
 		.def("add_polygon", &LevelSet2D::add_polygon)
 		.def("get_gradient", &LevelSet2D::get_gradient)
 		.def("rasterize", &LevelSet2D::rasterize)
-		.def("sample", static_cast<float (LevelSet2D::*)(float, float) const>(&LevelSet2D::sample))
+		.def("sample", static_cast<real (LevelSet2D::*)(real, real) const>(&LevelSet2D::sample))
 		.def("get_normalized_gradient", &LevelSet2D::get_normalized_gradient)
 		.def("to_ndarray", &array2d_to_ndarray<LevelSet2D>)
 		.def_readwrite("friction", &LevelSet2D::friction);
@@ -328,7 +354,7 @@ BOOST_PYTHON_MODULE(taichi_core) {
 	DEFINE_VECTOR_OF(Vector2);
 	DEFINE_VECTOR_OF_NAMED(RenderParticle, "RenderParticles");
 	DEFINE_VECTOR_OF_NAMED(std::shared_ptr<MPMParticle>, "MPMParticles");
-	DEFINE_VECTOR_OF(float);
+	DEFINE_VECTOR_OF(real);
 
 	//class_<std::vector<Vector2>>("Vector2List", init<>())
 	//	.def(vector_indexing_suite<std::vector<Vector2>>())

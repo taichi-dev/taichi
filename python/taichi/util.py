@@ -43,6 +43,21 @@ def make_polygon(points, scale):
             polygon.append(scale * p)
     return polygon
 
+def Vectori(*args):
+    from taichi.core import tc_core
+    if isinstance(args[0], tc_core.Vector2i):
+        return args[0]
+    if isinstance(args[0], tc_core.Vector3i):
+        return args[0]
+    if isinstance(args[0], tuple):
+        args = tuple(*args)
+    if len(args) == 2:
+        return tc_core.Vector2i(int(args[0]), int(args[1]))
+    elif len(args) == 3:
+        return tc_core.Vector3i(int(args[0]), int(args[1]), int(args[2]))
+    else:
+        assert False, type(args[0])
+
 def Vector(*args):
     from taichi.core import tc_core
     if isinstance(args[0], tc_core.Vector2):
@@ -52,16 +67,9 @@ def Vector(*args):
     if isinstance(args[0], tuple):
         args = tuple(*args)
     if len(args) == 2:
-        v = tc_core.Vector2()
-        v.x = float(args[0])
-        v.y = float(args[1])
-        return v
+        return tc_core.Vector2(float(args[0]), float(args[1]))
     elif len(args) == 3:
-        v = tc_core.Vector3()
-        v.x = float(args[0])
-        v.y = float(args[1])
-        v.z = float(args[2])
-        return v
+        return tc_core.Vector3(float(args[0]), float(args[1]), float(args[2]))
     else:
         assert False, type(args[0])
 

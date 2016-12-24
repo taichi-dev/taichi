@@ -1,5 +1,6 @@
 from taichi.util import *
 from taichi.core import tc_core
+from taichi.scoping.transform_scope import get_current_transform
 
 def map_filename(name):
     if name.rfind('/') == -1:
@@ -20,6 +21,7 @@ class Mesh:
         self.scale(scale)
         self.rotate_euler(rotation)
         self.translate(translate)
+        self.set_transform(get_current_transform() * self.c.transform)
 
     def set_transform(self, transform):
         self.c.transform = transform

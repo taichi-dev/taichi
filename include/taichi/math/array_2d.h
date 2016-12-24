@@ -155,12 +155,12 @@ public:
 		return Array2D<T>(width, height);
 	}
 
-	Array2D(int width, int height) {
-		initialize(width, height);
+	Array2D(int width, int height, T init=T(0), Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
+		initialize(width, height, init, storage_offset);
 	}
 
-	Array2D(int width, int height, T init, Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
-		initialize(width, height, init, storage_offset);
+	Array2D(const Vector2i &res, T init=T(0), Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
+		initialize(res.x, res.y, init, storage_offset);
 	}
 
 	Array2D(const Array2D<T> &arr) : Array2D(arr.width, arr.height) {

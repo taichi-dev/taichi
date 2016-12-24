@@ -3,7 +3,7 @@
 #include <taichi/common/meta.h>
 #include <taichi/math/linalg.h>
 #include <taichi/visual/sampler.h>
-#include <taichi/visual/geometry_primitives.h>
+#include <taichi/geometry/primitives.h>
 
 TC_NAMESPACE_BEGIN
 

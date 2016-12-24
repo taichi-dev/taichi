@@ -1,6 +1,6 @@
 #pragma once
 
-#include "geometry_primitives.h"
+#include "taichi/geometry/primitives.h"
 #include <embree2/rtcore.h>
 #include <embree2/rtcore_ray.h>
 #include <taichi/common/meta.h>

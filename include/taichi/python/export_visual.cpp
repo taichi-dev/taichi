@@ -6,7 +6,7 @@
 #include <taichi/visual/surface_material.h>
 #include <taichi/visualization/particle_visualization.h>
 
-#include <taichi/geometry/geometry_factory.h>
+#include <taichi/geometry/factory.h>
 
 using namespace boost::python;
 
@@ -75,13 +75,9 @@ TC_NAMESPACE_BEGIN
 
         class_<Mesh>("Mesh")
                 .def("initialize", &Mesh::initialize)
+                .def("set_untransformed_triangles", &Mesh::set_untransformed_triangles)
                 .def("set_material", &Mesh::set_material)
-                .def_readwrite("transform", &Mesh::transform)
-                .def("translate", &Mesh::translate)
-                .def("scale", &Mesh::scale)
-                .def("scale_s", &Mesh::scale_s)
-                .def("rotate_angle_axis", &Mesh::rotate_angle_axis)
-                .def("rotate_euler", &Mesh::rotate_euler);
+                .def_readwrite("transform", &Mesh::transform);
 
         class_<Scene>("Scene")
                 //.def("initialize", &Scene::initialize)
@@ -111,6 +107,7 @@ TC_NAMESPACE_BEGIN
         class_<Mesh3D::SurfaceGenerator>("surface_generator");
 
         DEFINE_VECTOR_OF_NAMED(RenderParticle, "RenderParticles");
+        DEFINE_VECTOR_OF_NAMED(Triangle, "Triangles");
 
         register_ptr_to_python<std::shared_ptr<Renderer>>();
         register_ptr_to_python<std::shared_ptr<Camera>>();

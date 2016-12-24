@@ -10,9 +10,11 @@ def map_filename(name):
     return filename
 
 class Mesh:
-    def __init__(self, filename, material, translate=Vector(0, 0, 0), rotation=Vector(0, 0, 0), scale=Vector(1, 1, 1),
-                 transform=None):
-        filename = map_filename(filename)
+    def __init__(self, filename='', material=None, translate=Vector(0, 0, 0), rotation=Vector(0, 0, 0), scale=Vector(1, 1, 1),
+                 transform=None, triangles=None):
+        assert triangles is not None or filename != ''
+        if filename != '':
+            filename = map_filename(filename)
         self.c = tc_core.create_mesh()
         self.c.initialize(config_from_dict({'filename': filename}))
         if transform:
@@ -22,6 +24,8 @@ class Mesh:
         self.rotate_euler(rotation)
         self.translate(translate)
         self.set_transform(get_current_transform() * self.c.transform)
+        if triangles:
+            self.c.set_untransformed_triangles(triangles)
 
     def set_transform(self, transform):
         self.c.transform = transform

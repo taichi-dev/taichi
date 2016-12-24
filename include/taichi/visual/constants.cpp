@@ -1,4 +1,4 @@
-#include "geometry_primitives.h"
+#include "taichi/geometry/primitives.h"
 
 TC_NAMESPACE_BEGIN
 

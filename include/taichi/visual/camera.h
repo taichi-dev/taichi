@@ -1,6 +1,6 @@
 #pragma once
 
-#include <taichi/visual/geometry_primitives.h>
+#include <taichi/geometry/primitives.h>
 #include <taichi/visual/sampler.h>
 #include <taichi/common/meta.h>
 

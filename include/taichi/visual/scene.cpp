@@ -6,28 +6,11 @@
 
 TC_NAMESPACE_BEGIN
 
-void Mesh::translate(const Vector3 &offset) {
-    transform = glm::translate(Matrix4(1.0f), offset) * transform;
-}
-void Mesh::scale(const Vector3 &scales) {
-    transform = glm::scale(Matrix4(1.0f), scales) * transform;
-}
-void Mesh::scale_s(real scale) {
-    transform = glm::scale(Matrix4(1.0f), Vector3(scale)) * transform;
-}
-void Mesh::rotate_euler(const Vector3 &euler_angles) {
-    rotate_angle_axis(euler_angles.x, Vector3(1.0f, 0.0f, 0.0f));
-    rotate_angle_axis(euler_angles.y, Vector3(0.0f, 1.0f, 0.0f));
-    rotate_angle_axis(euler_angles.z, Vector3(0.0f, 0.0f, 1.0f));
-}
-void Mesh::rotate_angle_axis(real angle, const Vector3 &axis) {
-    transform = glm::rotate(Matrix4(1.0f), angle * pi / 180.0f, axis) * transform;
-}
-
 void Mesh::initialize(const Config &config) {
     transform = Matrix4(1.0f);
     std::string filepath = config.get_string("filename");
-    load_from_file(filepath);
+    if (!filepath.empty())
+        load_from_file(filepath);
 }
 
 void Mesh::load_from_file(const std::string &file_path) {
@@ -53,8 +36,8 @@ void Mesh::load_from_file(const std::string &file_path) {
             int fv = shapes[s].mesh.num_face_vertices[f];
 
             // Loop over vertices in the face.
-            faces.push_back(Face((int)vertices.size(), (int)vertices.size() + 1, (int)vertices.size() + 2));
             assert_info(fv == 3, "Only triangles supported...");
+            int i = (int)vertices.size(), j = i + 1, k = i + 2;
             for (size_t v = 0; v < fv; v++) {
                 // access to vertex
                 tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
@@ -73,6 +56,9 @@ void Mesh::load_from_file(const std::string &file_path) {
                 normals.push_back(Vector3(nx, ny, nz));
                 uvs.push_back(Vector2(tx, ty));
             }
+            untransformed_triangles.push_back(Triangle(vertices[i], vertices[j], vertices[k],
+                                                       normals[i], normals[j], normals[k],
+                                                       uvs[i], uvs[j], uvs[k], i / 3));
             index_offset += fv;
         }
     }
@@ -132,7 +118,10 @@ void Scene::finalize() {
     int triangle_count = 0;
     for (auto &mesh : meshes) {
         triangle_id_start[&mesh] = triangle_count;
-        auto sub = mesh.get_triangles(triangle_count);
+        auto sub = mesh.get_triangles();
+        for (int i = 0; i < (int)sub.size(); i++) {
+            sub[i].id += triangle_count;
+        }
         triangle_count += (int)sub.size();
         triangles.insert(triangles.end(), sub.begin(), sub.end());
         if (mesh.emission > 0) {

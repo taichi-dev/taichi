@@ -1,5 +1,5 @@
-from taichi.core import tc_core
+import taichi as tc
 
-tc_core.test()
+tc.core.test()
 
 print 'Testing finished'

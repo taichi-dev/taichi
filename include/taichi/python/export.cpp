@@ -3,7 +3,7 @@
 #include <taichi/common/meta.h>
 #include <taichi/visualization/rgb.h>
 #include <taichi/io/io.h>
-#include <taichi/geometry/geometry_factory.h>
+#include <taichi/geometry/factory.h>
 
 using namespace boost::python;
 namespace py = boost::python;

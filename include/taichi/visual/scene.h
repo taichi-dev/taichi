@@ -1,6 +1,6 @@
 #pragma once
 
-#include <taichi/visual/geometry_primitives.h>
+#include <taichi/geometry/primitives.h>
 #include <taichi/visual/camera.h>
 #include <taichi/visual/surface_material.h>
 #include <taichi/visual/envmap.h>
@@ -19,19 +19,8 @@ struct Photon {
 	real energy;
 };
 
-struct Face {
-	Face() { }
 
-	Face(int v0, int v1, int v2) {
-		vert_ind[0] = v0;
-		vert_ind[1] = v1;
-		vert_ind[2] = v2;
-	}
-
-	int vert_ind[3];
-	int material;
-};
-
+// TODO: Rename Mesh -> Object, and use Mesh for purely geoemtric mesh (without material)
 class Mesh {
 public:
 	Mesh() {}
@@ -39,26 +28,14 @@ public:
 	void initialize(const Config &config);
 	void set_material(std::shared_ptr<SurfaceMaterial> material);
 	void load_from_file(const std::string &file_path);
-	void translate(const Vector3 &offset);
-	void scale(const Vector3 &scales);
-	void scale_s(real scale);
-	void rotate_euler(const Vector3 &euler_angles);
-	void rotate_angle_axis(real angle, const Vector3 &axis);
-	std::vector<Triangle> get_triangles(int triangle_count) {
+	std::vector<Triangle> untransformed_triangles;
+	void set_untransformed_triangles(const std::vector<Triangle> &triangles) {
+		untransformed_triangles = triangles;
+	}
+	std::vector<Triangle> get_triangles() {
 		std::vector<Triangle> triangles;
-		for (auto face : faces) {
-			auto t = Triangle(
-				multiply_matrix4(transform, vertices[face.vert_ind[0]], 1.0f),
-				multiply_matrix4(transform, vertices[face.vert_ind[1]], 1.0f),
-				multiply_matrix4(transform, vertices[face.vert_ind[2]], 1.0f),
-				multiply_matrix4(transform, normals[face.vert_ind[0]], 0.0f),
-				multiply_matrix4(transform, normals[face.vert_ind[1]], 0.0f),
-				multiply_matrix4(transform, normals[face.vert_ind[2]], 0.0f),
-				uvs[face.vert_ind[0]],
-				uvs[face.vert_ind[1]],
-				uvs[face.vert_ind[2]],
-				triangle_count++);
-			triangles.push_back(t);
+        for (auto t : untransformed_triangles) {
+			triangles.push_back(t.get_transformed(transform));
 		}
 		return triangles;
 		/*

@@ -1,8 +1,12 @@
 import taichi as tc
-import math
+from math import *
 import random
 import colorsys
+from taichi.util import *
 
+def create_mesh_from_surface(sur, res):
+    gen = tc.core.surface_generator_from_py_obj(sur)
+    return tc.core.generate_mesh(gen, Vectori(res))
 
 def create_scene():
     downsample = 1
@@ -15,13 +19,18 @@ def create_scene():
     with scene:
         scene.set_camera(camera)
 
-        for i in range(3):
-            with tc.TransformScope(translate=(i, 0, 0)):
-                for j in range(3):
-                    with tc.TransformScope(translate=(0, j, 0)):
-                        mesh = tc.Mesh('plane', tc.SurfaceMaterial('pbr', diffuse=(.1, .1, .1)),
-                                    translate=(0, 0, -0.05), scale=0.4, rotation=(90.3, 0, 0))
-                        scene.add_mesh(mesh)
+        m = create_mesh_from_surface(lambda u, v: Vector(u, 0, v), (10, 10))
+
+        mesh = tc.Mesh(triangles=m, material=tc.SurfaceMaterial('pbr', diffuse=(.1, .1, .1)),
+                       translate=(0, 0, 0), scale=3, rotation=(90, 0, 0))
+        #scene.add_mesh(mesh)
+
+        m = create_mesh_from_surface(lambda u, v: Vector(cos(u * 2 * pi) * sin(-pi * v),
+                                                         cos(-pi * v), sin(u * 2 * pi) * sin(-pi * v)), (100, 100))
+
+        mesh = tc.Mesh(triangles=m, material=tc.SurfaceMaterial('pbr', diffuse=(.1, .1, .1)),
+                       translate=(0, 0, 0), scale=3, rotation=(30, 0, 0))
+        scene.add_mesh(mesh)
 
         mesh = tc.Mesh('plane', tc.SurfaceMaterial('emissive', color=(1, 1, 1)),
                     translate=(-30, 30, 10), scale=2, rotation=(0, 0, -90))
@@ -32,7 +41,7 @@ def create_scene():
 
 
 if __name__ == '__main__':
-    renderer = tc.Renderer('pt', '../output/frames/paper_cut.png', overwrite=True)
+    renderer = tc.Renderer('pt', '../output/frames/geometry.png', overwrite=True)
 
     scene = create_scene()
     renderer.set_scene(scene)

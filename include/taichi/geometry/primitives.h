@@ -20,7 +20,20 @@ public:
 	Vector3 geometry_normal;
 	real u, v;
 
-	const static float DIST_INFINITE;
+	const static real DIST_INFINITE;
+};
+
+struct Face {
+    Face() { }
+
+    Face(int v0, int v1, int v2) {
+        vert_ind[0] = v0;
+        vert_ind[1] = v1;
+        vert_ind[2] = v2;
+    }
+
+    int vert_ind[3];
+    int material;
 };
 
 struct Triangle {
@@ -37,7 +50,7 @@ struct Triangle {
 	real heat_capacity;
 	Triangle(const Vector3 &v0, const Vector3 &v1, const Vector3 &v2,
 		const Vector3 &n0, const Vector3 &n1, const Vector3 &n2,
-		const Vector2 &uv0, const Vector2 &uv1, const Vector2 &uv2, int id) {
+		const Vector2 &uv0, const Vector2 &uv1, const Vector2 &uv2, int id=-1) {
 		v[0] = v0;
 		v[1] = v1;
 		v[2] = v2;
@@ -55,6 +68,22 @@ struct Triangle {
 		normal = normalized(cross(v10, v20));
 		area = 0.5f * length(cross(v[1] - v[0], v[2] - v[0]));
 	}
+
+	Triangle get_transformed(const Matrix4 &transform) const {
+		return Triangle(
+			multiply_matrix4(transform, v[0], 1.0f),
+			multiply_matrix4(transform, v[0] + v10, 1.0f),
+			multiply_matrix4(transform, v[0] + v20, 1.0f),
+			multiply_matrix4(transform, n0, 0.0f),
+			multiply_matrix4(transform, n0 + n10, 0.0f),
+			multiply_matrix4(transform, n0 + n20, 0.0f),
+			uv0,
+			uv0 + uv10,
+			uv0 + uv20,
+			id
+		);
+	}
+
 	void get_coord(const Ray &ray, real dist, real &coord_u, real &coord_v) const {
 		const Vector3 inter_local = ray.orig + ray.dir * dist - v[0];
 		const Vector3 u = v10, v = v20;
@@ -66,9 +95,9 @@ struct Triangle {
 	void intersect(Ray &ray) {
 		const Vector3 &orig = ray.orig;
 		const Vector3 &dir = ray.dir;
-		float dir_n = dot(dir, normal);
-		float dist_n = dot(v[0] - orig, normal);
-		float dist = dist_n / dir_n;
+		real dir_n = dot(dir, normal);
+		real dist_n = dot(v[0] - orig, normal);
+		real dist = dist_n / dir_n;
 		if (dist <= 0.0f) {
 			return;
 		}
@@ -104,22 +133,25 @@ struct Triangle {
 		}
 		return v[0] + v10 * x + v20 * y;
 	}
-	float get_height(Vector3 p) const {
+	real get_height(Vector3 p) const {
 		return dot(normal, p - v[0]);
 	}
 	int get_relative_location_to_plane(Vector3 p) const {
 		return sgn(get_height(p));
 	}
-	float max_edge_length(int &max_id) const {
-		float ret = 0;
+	real max_edge_length(int &max_id) const {
+		real ret = 0;
 		for (int i = 0; i < 3; i++) {
-			float dist = length(v[i] - v[(i + 1) % 3]);
+			real dist = length(v[i] - v[(i + 1) % 3]);
 			if (dist > ret) {
 				max_id = i;
 				ret = dist;
 			}
 		}
 		return ret;
+	}
+    bool operator == (const Triangle &b) const {
+		return false;
 	}
 };
 

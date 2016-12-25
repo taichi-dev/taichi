@@ -4,36 +4,25 @@ import random
 import colorsys
 from taichi.util import *
 
-def create_mesh_from_surface(sur, res):
-    gen = tc.core.surface_generator_from_py_obj(sur)
-    return tc.core.generate_mesh(gen, Vectori(res))
 
 def create_scene():
     downsample = 1
     width, height = 960 / downsample, 540 / downsample
     camera = tc.Camera('pinhole', width=width, height=height, fov=90,
-                    origin=(0, 0, 10), look_at=(0, 0, 0), up=(0, 1, 0))
+                       origin=(0, 0, 10), look_at=(0, 0, 0), up=(0, 1, 0))
 
     scene = tc.Scene()
 
     with scene:
         scene.set_camera(camera)
 
-        m = create_mesh_from_surface(lambda u, v: Vector(u, 0, v), (10, 10))
-
-        mesh = tc.Mesh(triangles=m, material=tc.SurfaceMaterial('pbr', diffuse=(.1, .1, .1)),
+        m = tc.geometry.create_torus((100, 100))
+        mesh = tc.Mesh(m, material=tc.SurfaceMaterial('pbr', diffuse=(.1, .1, .1)),
                        translate=(0, 0, 0), scale=3, rotation=(90, 0, 0))
-        #scene.add_mesh(mesh)
-
-        m = create_mesh_from_surface(lambda u, v: Vector(cos(u * 2 * pi) * sin(-pi * v),
-                                                         cos(-pi * v), sin(u * 2 * pi) * sin(-pi * v)), (100, 100))
-
-        mesh = tc.Mesh(triangles=m, material=tc.SurfaceMaterial('pbr', diffuse=(.1, .1, .1)),
-                       translate=(0, 0, 0), scale=3, rotation=(30, 0, 0))
         scene.add_mesh(mesh)
 
         mesh = tc.Mesh('plane', tc.SurfaceMaterial('emissive', color=(1, 1, 1)),
-                    translate=(-30, 30, 10), scale=2, rotation=(0, 0, -90))
+                       translate=(-30, 30, 10), scale=2, rotation=(0, 0, -90))
 
         scene.add_mesh(mesh)
 

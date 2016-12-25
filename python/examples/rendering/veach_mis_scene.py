@@ -23,7 +23,7 @@ def create_mis_scene(eye_position):
             radius = 0.002 * 3 ** i
             e = 0.01 / radius**2
             material = SurfaceMaterial('emissive', color=(e, e, e))
-            mesh = Mesh('../assets/meshes/sphere.obj', material,
+            mesh = Mesh('sphere', material,
                         translate=(0.2 * (i - (num_light_sources - 1) * 0.5), light_position.y, light_position.x),
                         scale=radius)
             scene.add_mesh(mesh)
@@ -39,7 +39,7 @@ def create_mis_scene(eye_position):
             vec2 *= 1.0 / math.hypot(vec2.x, vec2.y)
             half_vector = vec1 + vec2
             angle = math.degrees(math.atan2(half_vector.y, half_vector.x))
-            mesh = Mesh('../assets/meshes/plane.obj',
+            mesh = Mesh('plane',
                         SurfaceMaterial('pbr', diffuse=(0.1, 0.1, 0.1), specular=(1, 1, 1), glossiness=100 * 3 ** i),
                         translate=(0, board_position.y, board_position.x),
                         rotation=(90-angle, 0, 0),

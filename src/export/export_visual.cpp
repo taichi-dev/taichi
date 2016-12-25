@@ -30,18 +30,29 @@ EXPLICIT_GET_POINTER(taichi::ParticleRenderer);
 
 TC_NAMESPACE_BEGIN
 
-    std::function<Vector3(real, real)> surface_generator_from_py_obj(PyObject *func) {
-        return [func](real u, real v) -> Vector3 {
+    Function23 function23_from_py_obj(PyObject *func) {
+        return [func](Vector2 p) -> Vector3 {
             // TODO: GIL here seems inefficient...
             PyGILState_STATE state = PyGILState_Ensure();
-            Vector3 ret = boost::python::call<Vector3>(func, u, v);
+            Vector3 ret = boost::python::call<Vector3>(func, p);
+            PyGILState_Release(state);
+            return ret;
+        };
+    }
+
+    Function22 function22_from_py_obj(PyObject *func) {
+        return [func](Vector2 p) -> Vector2 {
+            // TODO: GIL here seems inefficient...
+            PyGILState_STATE state = PyGILState_Ensure();
+            Vector2 ret = boost::python::call<Vector2>(func, p);
             PyGILState_Release(state);
             return ret;
         };
     }
 
     void export_visual() {
-        def("surface_generator_from_py_obj", surface_generator_from_py_obj);
+        def("function23_from_py_obj", function23_from_py_obj);
+        def("function22_from_py_obj", function22_from_py_obj);
         def("generate_mesh", Mesh3D::generate);
 
         def("rasterize_render_particles", rasterize_render_particles);
@@ -104,7 +115,8 @@ TC_NAMESPACE_BEGIN
                 .def("set_camera", &ParticleRenderer::set_camera)
                 .def("render", &ParticleRenderer::render);
 
-        class_<Mesh3D::SurfaceGenerator>("surface_generator");
+        class_<Function22>("Function22");
+        class_<Function23>("Function23");
 
         DEFINE_VECTOR_OF_NAMED(RenderParticle, "RenderParticles");
         DEFINE_VECTOR_OF_NAMED(Triangle, "Triangles");

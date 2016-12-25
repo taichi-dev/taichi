@@ -9,11 +9,13 @@
 
 TC_NAMESPACE_BEGIN
 
+    typedef std::function<Vector3(Vector2)> Function23;
+    typedef std::function<Vector2(Vector2)> Function22;
     class Mesh3D {
     public:
-        typedef std::function<Vector3(real, real)> SurfaceGenerator;
-
-        static std::vector<Triangle> generate(const SurfaceGenerator &func, Vector2i res);
+        // norm and uv can be null
+        static std::vector<Triangle> generate(const Vector2i res,
+                                              const Function23 *surf, const Function23 *norm, const Function22 *uv);
     };
 
 

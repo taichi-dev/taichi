@@ -1,6 +1,7 @@
 from taichi.util import *
 from taichi.core import tc_core
 
+
 class ParticleRenderer:
     def __init__(self, name, **kwargs):
         self.c = tc_core.create_particle_renderer(name)

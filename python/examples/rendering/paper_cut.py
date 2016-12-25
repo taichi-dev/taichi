@@ -18,7 +18,7 @@ def create_scene():
     with scene:
         scene.set_camera(camera)
 
-        taichi_tex = Texture('taichi', scale=0.96, rotation=math.pi / 2)
+        taichi_tex = Texture('taichi', scale=0.96)
 
         mesh = Mesh('plane', SurfaceMaterial('pbr', diffuse=(.1, .1, .1)),
                     translate=(0, 0, -0.05), scale=10, rotation=(90.3, 0, 0))
@@ -27,7 +27,7 @@ def create_scene():
         # Taichi Text
         text = 1 - Texture('text', content='Taichi', width=200, height=200, font_file='../assets/fonts/go/Go-Bold.ttf',
                            size=50,
-                           dx=0, dy=0).rotate(1)
+                           dx=0, dy=0)
         mesh = Mesh('plane', SurfaceMaterial('transparent',
                                              nested=SurfaceMaterial('diffuse', diffuse=(1, 1, 1)),
                                              mask=text),
@@ -40,7 +40,7 @@ def create_scene():
 
         text = 1 - Texture('text', content='Physically based Computer Graphics', width=400, height=400,
                            font_file='../assets/fonts/go/Go-Bold.ttf', size=30,
-                           dx=0, dy=0).rotate(1)
+                           dx=0, dy=0)
         mesh = Mesh('plane', SurfaceMaterial('transparent',
                                              nested=SurfaceMaterial('diffuse', diffuse=(1, 0.1, 0.5)),
                                              mask=text),

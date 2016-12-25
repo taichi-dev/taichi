@@ -2,15 +2,27 @@
 
 TC_NAMESPACE_BEGIN
 
-    std::vector<Triangle> Mesh3D::generate(const SurfaceGenerator &func_, Vector2i res) {
-        Vector2 dp = Vector2(1.0) / Vector2(res);
-        auto func = [&](const Vector2 &p) -> Vector3 {
-            return func_(p.x, p.y);
-        };
+    std::vector<Triangle> Mesh3D::generate(const Vector2i res,
+                                           const Function23 *surf, const Function23 *norm, const Function22 *uv) {
+        const Vector2 dp = Vector2(1.0) / Vector2(res);
+
+        assert_info(surf != nullptr, "Surface function can not be null");
+
         auto get_normal_at = [&](const Vector2 &p) -> Vector3 {
-            Vector3 u = normalized(func(p + dp * Vector2(1, 0)) - func(p + dp * Vector2(-1, 0)));
-            Vector3 v = normalized(func(p + dp * Vector2(0, 1)) - func(p + dp * Vector2(0, -1)));
-            return normalized(cross(u, v));
+            if (norm) {
+                return (*norm)(p);
+            } else {
+                Vector3 u = normalized((*surf)(p + dp * Vector2(1, 0)) - (*surf)(p + dp * Vector2(-1, 0)));
+                Vector3 v = normalized((*surf)(p + dp * Vector2(0, 1)) - (*surf)(p + dp * Vector2(0, -1)));
+                return normalized(cross(u, v));
+            }
+        };
+        auto get_uv_at = [&](const Vector2 &p) -> Vector2 {
+            if (uv) {
+                return (*uv)(p);
+            } else {
+                return p;
+            }
         };
         Array2D<Vector3> vertices(res + Vector2i(1));
         Array2D<Vector3> normals(res + Vector2i(1));
@@ -18,9 +30,9 @@ TC_NAMESPACE_BEGIN
         for (int i = 0; i < res[0] + 1; i++) {
             for (int j = 0; j < res[1] + 1; j++) {
                 Vector2 p = Vector2(i, j) / Vector2(res);
-                vertices[i][j] = func(p);
+                vertices[i][j] = (*surf)(p);
                 normals[i][j] = get_normal_at(p);
-                uvs[i][j] = p;
+                uvs[i][j] = get_uv_at(p);
             }
         }
         std::vector<Triangle> triangles;

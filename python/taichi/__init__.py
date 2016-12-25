@@ -5,5 +5,6 @@ from taichi.tools import *
 from taichi.util import Vector, Vectori
 from taichi.core import tc_core as core
 from taichi.geometry import *
+import taichi.settings
 
-__all__ = [s for s in dir() if not s.startswith('_')] + ['geometry']
+__all__ = [s for s in dir() if not s.startswith('_')] + ['settings']

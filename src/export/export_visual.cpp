@@ -50,11 +50,17 @@ TC_NAMESPACE_BEGIN
         };
     }
 
+    std::vector<Triangle> merge_mesh(const std::vector<Triangle> &a, const std::vector<Triangle> &b) {
+        std::vector<Triangle> merged = a;
+        merged.insert(merged.end(), b.begin(), b.end());
+        return merged;
+    }
+
     void export_visual() {
         def("function23_from_py_obj", function23_from_py_obj);
         def("function22_from_py_obj", function22_from_py_obj);
         def("generate_mesh", Mesh3D::generate);
-
+        def("merge_mesh", merge_mesh);
         def("rasterize_render_particles", rasterize_render_particles);
         def("create_texture", create_instance<Texture>);
         def("register_texture", &AssetManager::insert_asset<Texture>);

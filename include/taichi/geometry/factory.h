@@ -15,7 +15,8 @@ TC_NAMESPACE_BEGIN
     public:
         // norm and uv can be null
         static std::vector<Triangle> generate(const Vector2i res,
-                                              const Function23 *surf, const Function23 *norm, const Function22 *uv);
+                                              const Function23 *surf, const Function23 *norm, const Function22 *uv,
+                                              bool smooth_normal);
     };
 
 

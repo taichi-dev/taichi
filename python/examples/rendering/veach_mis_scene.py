@@ -4,6 +4,7 @@ from taichi.visual.texture import Texture
 from taichi.visual.post_process import *
 import math
 
+
 def create_mis_scene(eye_position):
     num_light_sources = 4
     num_plates = 5
@@ -21,7 +22,7 @@ def create_mis_scene(eye_position):
         scene.add_mesh(Mesh('holder', material=material, translate=(0, -1, -7), scale=2))
         for i in range(num_light_sources):
             radius = 0.002 * 3 ** i
-            e = 0.01 / radius**2
+            e = 0.01 / radius ** 2
             material = SurfaceMaterial('emissive', color=(e, e, e))
             mesh = Mesh('sphere', material,
                         translate=(0.2 * (i - (num_light_sources - 1) * 0.5), light_position.y, light_position.x),
@@ -42,13 +43,14 @@ def create_mis_scene(eye_position):
             mesh = Mesh('plane',
                         SurfaceMaterial('pbr', diffuse=(0.1, 0.1, 0.1), specular=(1, 1, 1), glossiness=100 * 3 ** i),
                         translate=(0, board_position.y, board_position.x),
-                        rotation=(90-angle, 0, 0),
+                        rotation=(90 - angle, 0, 0),
                         scale=(0.4, 0.7, 0.05))
             scene.add_mesh(mesh)
 
-        #envmap = EnvironmentMap('base', filepath='d:/assets/schoenbrunn-front_hd.hdr')
-        #scene.set_environment_map(envmap)
+            # envmap = EnvironmentMap('base', filepath='d:/assets/schoenbrunn-front_hd.hdr')
+            # scene.set_environment_map(envmap)
     return scene
+
 
 if __name__ == '__main__':
     renderer = Renderer('pt', '../output/frames/mis.png', overwrite=True)
@@ -57,8 +59,10 @@ if __name__ == '__main__':
     scene = create_mis_scene(eye_position)
     renderer.set_scene(scene)
     renderer.initialize(min_path_length=1, max_path_length=2,
-                        initial_radius=0.005, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
-                        direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1, stage_frequency=3,
+                        initial_radius=0.005, sampler='sobol', russian_roulette=False, volmetric=True,
+                        direct_lighting=1,
+                        direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1,
+                        stage_frequency=3,
                         num_threads=8)
     renderer.set_post_processor(LDRDisplay(exposure=3, bloom_radius=0.00))
     renderer.render(800)

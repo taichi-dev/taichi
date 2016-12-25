@@ -19,7 +19,6 @@ def create_scene():
         scene.set_camera(camera)
 
         taichi_tex = Texture('taichi', scale=0.96)
-
         mesh = Mesh('plane', SurfaceMaterial('pbr', diffuse=(.1, .1, .1)),
                     translate=(0, 0, -0.05), scale=10, rotation=(90.3, 0, 0))
         scene.add_mesh(mesh)

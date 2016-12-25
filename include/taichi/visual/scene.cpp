@@ -120,7 +120,7 @@ void Scene::finalize() {
         triangle_id_start[&mesh] = triangle_count;
         auto sub = mesh.get_triangles();
         for (int i = 0; i < (int)sub.size(); i++) {
-            sub[i].id += triangle_count;
+            sub[i].id = triangle_count + i;
         }
         triangle_count += (int)sub.size();
         triangles.insert(triangles.end(), sub.begin(), sub.end());

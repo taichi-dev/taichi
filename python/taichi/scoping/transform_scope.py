@@ -10,7 +10,7 @@ class TransformScope:
 
     def __enter__(self):
         self.previous_transform = get_current_transform()
-        set_current_tranform(self.transform * self.previous_transform)
+        set_current_tranform(self.previous_transform * self.transform)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_val:
@@ -22,3 +22,5 @@ def get_current_transform():
 
 def set_current_tranform(transform):
     current_transform[0] = transform
+
+transform_scope = TransformScope

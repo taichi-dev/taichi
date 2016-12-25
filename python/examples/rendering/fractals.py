@@ -6,6 +6,7 @@ import math
 import random
 import colorsys
 
+
 def create_scene():
     downsample = 1
     width, height = 960 / downsample, 540 / downsample
@@ -26,17 +27,16 @@ def create_scene():
             scene.add_mesh(Mesh('plane',
                                 SurfaceMaterial('transparent', mask=menger,
                                                 nested=
-                                                SurfaceMaterial('diffuse', diffuse=colorsys.hls_to_rgb(i * 0.1 + 0.3, 0.3, 1.0))),
+                                                SurfaceMaterial('diffuse',
+                                                                diffuse=colorsys.hls_to_rgb(i * 0.1 + 0.3, 0.3, 1.0))),
                                 translate=(i * 7 - 28, 3.5, -5), scale=3, rotation=(90, 0, 0)))
-
 
         # Lights
         scene.add_mesh(Mesh('plane', SurfaceMaterial('emissive', color=(1, 1, 1)),
-                    translate=(0, 100, -200), scale=5, rotation=(180, 0, 0)))
+                            translate=(0, 100, -200), scale=5, rotation=(180, 0, 0)))
 
         scene.add_mesh(Mesh('plane', SurfaceMaterial('emissive', color=(1, 1, 1)),
                             translate=(0, 100, 200), scale=3, rotation=(180, 0, 0)))
-
 
     return scene
 

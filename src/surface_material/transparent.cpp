@@ -23,13 +23,14 @@ public:
 		real alpha = mask->sample(uv).x;
 		if (u < alpha) {
 			out_dir = -in_dir;
-			f = Vector3(1.0f) * abs(1.0f / in_dir.z);
+			f = Vector3(alpha) * abs(1.0f / in_dir.z);
 			pdf = alpha;
 			event = (int)SurfaceScatteringFlags::delta | (int)SurfaceScatteringFlags::index_matched;
 		}
 		else {
 			u = (u - alpha) / (1 - alpha);
 			nested->sample(in_dir, u, v, out_dir, f, pdf, event, uv);
+			f *= 1 - alpha;
 			pdf *= 1 - alpha;
 		}
 	}
@@ -44,7 +45,8 @@ public:
 	};
 
 	virtual Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
-		return nested->evaluate_bsdf(in, out, uv);
+		real alpha = get_alpha(uv);
+		return (1 - alpha) * nested->evaluate_bsdf(in, out, uv);
 	}
 
 	virtual bool is_delta() const override {

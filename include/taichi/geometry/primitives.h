@@ -70,13 +70,14 @@ struct Triangle {
 	}
 
 	Triangle get_transformed(const Matrix4 &transform) const {
+		const Matrix4 normal_transform = glm::transpose(glm::inverse(transform));
 		return Triangle(
 			multiply_matrix4(transform, v[0], 1.0f),
 			multiply_matrix4(transform, v[0] + v10, 1.0f),
 			multiply_matrix4(transform, v[0] + v20, 1.0f),
-			multiply_matrix4(transform, n0, 0.0f),
-			multiply_matrix4(transform, n0 + n10, 0.0f),
-			multiply_matrix4(transform, n0 + n20, 0.0f),
+			multiply_matrix4(normal_transform, n0, 0.0f),
+			multiply_matrix4(normal_transform, n0 + n10, 0.0f),
+			multiply_matrix4(normal_transform, n0 + n20, 0.0f),
 			uv0,
 			uv0 + uv10,
 			uv0 + uv20,

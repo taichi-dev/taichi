@@ -345,25 +345,33 @@ public:
 	DiscreteSampler get_material_sampler(const Vector2 uv) const {
 		std::vector<real> luminances;
 		for (auto &mat : materials) {
-			luminances.push_back(mat->get_importance(uv));
+			real imp = mat->get_importance(uv);
+			luminances.push_back(imp);
 		}
-		return DiscreteSampler(luminances);
+		return DiscreteSampler(luminances, true);
 	}
 
 	void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf, SurfaceEvent &event,
 		const Vector2 &uv) const override {
 		real mat_pdf, mat_cdf;
 		int mat_id = get_material_sampler(uv).sample(u, mat_pdf, mat_cdf);
-		real rescaled_u = (u - (mat_cdf - mat_pdf)) / mat_pdf;
-		assert(is_normal(rescaled_u));
-		auto &mat = materials[mat_id];
-		real submat_pdf;
-		mat->sample(in_dir, rescaled_u, v, out_dir, f, submat_pdf, event, uv);
-		if (SurfaceEventClassifier::is_delta(event)) {
-			pdf = mat_pdf * submat_pdf;
+		if (mat_pdf == 0.0f) {
+			f = Vector3(0.0f);
+			pdf = 1.0f;
+			event = (SurfaceEvent)SurfaceScatteringFlags::non_delta;
 		}
 		else {
-			pdf = probability_density(in_dir, out_dir, uv);
+			real rescaled_u = (u - (mat_cdf - mat_pdf)) / mat_pdf;
+			assert(is_normal(rescaled_u));
+			auto &mat = materials[mat_id];
+			real submat_pdf;
+			mat->sample(in_dir, rescaled_u, v, out_dir, f, submat_pdf, event, uv);
+			if (SurfaceEventClassifier::is_delta(event)) {
+				pdf = mat_pdf * submat_pdf;
+			}
+			else {
+				pdf = probability_density(in_dir, out_dir, uv);
+			}
 		}
 	}
 
@@ -374,7 +382,7 @@ public:
 				sum += materials[i]->probability_density(in, out, uv) *
 				get_material_sampler(uv).get_pdf(i);
 		}
-		return max(1e-7f, sum);
+		return sum;
 	}
 
 	Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {

@@ -211,5 +211,21 @@ public:
 
 TC_IMPLEMENTATION(Texture, CheckerboardTexture, "checkerboard");
 
+class UVTexture : public Texture {
+protected:
+	real coeff_u, coeff_v;
+public:
+	void initialize(const Config &config) override {
+		coeff_u = config.get_real("coeff_u");
+		coeff_v = config.get_real("coeff_v");
+	}
+
+	virtual Vector4 sample(const Vector3 &coord) const override {
+		return Vector4(coeff_u * coord.x + coeff_v * coord.y);
+	}
+};
+
+TC_IMPLEMENTATION(Texture, UVTexture, "uv");
+
 TC_NAMESPACE_END
 

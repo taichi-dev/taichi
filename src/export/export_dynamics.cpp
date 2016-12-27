@@ -17,36 +17,36 @@ EXPLICIT_GET_POINTER(taichi::DPParticle);
 EXPLICIT_GET_POINTER(taichi::Simulation3D);
 
 TC_NAMESPACE_BEGIN
-    void export_dynamics() {
-        def("create_simulation3d", create_instance<Simulation3D>);
-        class_<Fluid::Particle>("FluidParticle", init<Vector2, Vector2>())
-                .def_readwrite("position", &Fluid::Particle::position)
-                .def_readwrite("velocity", &Fluid::Particle::velocity)
-                .def_readwrite("color", &Fluid::Particle::color)
-                .def_readwrite("temperature", &Fluid::Particle::temperature);
-        class_<MPMParticle, std::shared_ptr<MPMParticle>>("MPMParticle")
-                .def_readwrite("position", &MPMParticle::pos)
-                .def_readwrite("velocity", &MPMParticle::v)
-                .def_readwrite("color", &MPMParticle::color);
-        class_<EPParticle, std::shared_ptr<EPParticle>, bases<MPMParticle >>("EPParticle")
-                .def_readwrite("theta_c", &EPParticle::theta_c)
-                .def_readwrite("theta_s", &EPParticle::theta_s)
-                .def_readwrite("mu_0", &EPParticle::mu_0)
-                .def_readwrite("lambda_0", &EPParticle::lambda_0)
-                .def_readwrite("hardening", &EPParticle::hardening)
-                .def_readwrite("mass", &EPParticle::mass)
-                .def("set_compression", &EPParticle::set_compression);
-        class_<DPParticle, std::shared_ptr<DPParticle>, bases<MPMParticle >>("DPParticle")
-                .def_readwrite("h_0", &DPParticle::h_0)
-                .def_readwrite("h_1", &DPParticle::h_1)
-                .def_readwrite("h_2", &DPParticle::h_2)
-                .def_readwrite("h_3", &DPParticle::h_3)
-                .def_readwrite("mu_0", &DPParticle::mu_0)
-                .def_readwrite("lambda_0", &DPParticle::lambda_0)
-                .def_readwrite("alpha", &DPParticle::alpha)
-                .def_readwrite("q", &DPParticle::q)
-                .def_readwrite("mass", &DPParticle::mass)
-                .def_readwrite("phi_f", &DPParticle::phi_f);
+void export_dynamics() {
+	def("create_simulation3d", create_instance<Simulation3D>);
+	class_<Fluid::Particle>("FluidParticle", init<Vector2, Vector2>())
+		.def_readwrite("position", &Fluid::Particle::position)
+		.def_readwrite("velocity", &Fluid::Particle::velocity)
+		.def_readwrite("color", &Fluid::Particle::color)
+		.def_readwrite("temperature", &Fluid::Particle::temperature);
+	class_<MPMParticle, std::shared_ptr<MPMParticle>>("MPMParticle")
+		.def_readwrite("position", &MPMParticle::pos)
+		.def_readwrite("velocity", &MPMParticle::v)
+		.def_readwrite("color", &MPMParticle::color);
+	class_<EPParticle, std::shared_ptr<EPParticle>, bases<MPMParticle >>("EPParticle")
+		.def_readwrite("theta_c", &EPParticle::theta_c)
+		.def_readwrite("theta_s", &EPParticle::theta_s)
+		.def_readwrite("mu_0", &EPParticle::mu_0)
+		.def_readwrite("lambda_0", &EPParticle::lambda_0)
+		.def_readwrite("hardening", &EPParticle::hardening)
+		.def_readwrite("mass", &EPParticle::mass)
+		.def("set_compression", &EPParticle::set_compression);
+	class_<DPParticle, std::shared_ptr<DPParticle>, bases<MPMParticle >>("DPParticle")
+		.def_readwrite("h_0", &DPParticle::h_0)
+		.def_readwrite("h_1", &DPParticle::h_1)
+		.def_readwrite("h_2", &DPParticle::h_2)
+		.def_readwrite("h_3", &DPParticle::h_3)
+		.def_readwrite("mu_0", &DPParticle::mu_0)
+		.def_readwrite("lambda_0", &DPParticle::lambda_0)
+		.def_readwrite("alpha", &DPParticle::alpha)
+		.def_readwrite("q", &DPParticle::q)
+		.def_readwrite("mass", &DPParticle::mass)
+		.def_readwrite("phi_f", &DPParticle::phi_f);
 
 #define EXPORT_SIMULATOR(SIM) \
         class_<SIM>(#SIM) \
@@ -68,7 +68,7 @@ TC_NAMESPACE_BEGIN
         .def("get_current_time", &SIM::get_current_time) \
         .def("get_render_particles", &SIM::get_render_particles) \
         ;
-        EXPORT_SIMULATOR_3D(Simulation3D);
+	EXPORT_SIMULATOR_3D(Simulation3D);
 
 #define EXPORT_MPM(SIM) \
     class_<SIM>(#SIM "Simulator") \
@@ -82,20 +82,20 @@ TC_NAMESPACE_BEGIN
         .def("add_ep_particle", static_cast<void (SIM::*)(EPParticle)>(&SIM::add_particle)) \
         .def("add_dp_particle", static_cast<void (SIM::*)(DPParticle)>(&SIM::add_particle)) \
         ;
-        EXPORT_SIMULATOR(EulerFluid);
-        EXPORT_SIMULATOR(EulerSmoke);
-        EXPORT_SIMULATOR(FLIPFluid);
+	EXPORT_SIMULATOR(EulerFluid);
+	EXPORT_SIMULATOR(EulerSmoke);
+	EXPORT_SIMULATOR(FLIPFluid);
 
-        EXPORT_MPM(MPM);
+	EXPORT_MPM(MPM);
 
-        DEFINE_VECTOR_OF_NAMED(std::shared_ptr<MPMParticle>, "MPMParticles");
+	DEFINE_VECTOR_OF_NAMED(std::shared_ptr<MPMParticle>, "MPMParticles");
 
-        EXPORT_SIMULATOR(APICFluid);
+	EXPORT_SIMULATOR(APICFluid);
 
-        typedef std::vector<Fluid::Particle> FluidParticles;
-        class_<FluidParticles>("FluidParticles")
-                .def(vector_indexing_suite<FluidParticles>());
-        register_ptr_to_python<std::shared_ptr<Simulation3D>>();
-    }
+	typedef std::vector<Fluid::Particle> FluidParticles;
+	class_<FluidParticles>("FluidParticles")
+		.def(vector_indexing_suite<FluidParticles>());
+	register_ptr_to_python<std::shared_ptr<Simulation3D>>();
+}
 
 TC_NAMESPACE_END

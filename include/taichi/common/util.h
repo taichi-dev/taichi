@@ -57,9 +57,11 @@ namespace boost
 #ifdef _WIN64
 typedef __int64 int64;
 typedef unsigned __int64 uint64;
+#define TC_FORCE_INLINE __forceinline
 #else
 typedef long long int64;
 typedef unsigned long long uint64;
+#define TC_FORCE_INLINE __attribute__((always_inline))
 #endif
 
 // Check for inf, nan?

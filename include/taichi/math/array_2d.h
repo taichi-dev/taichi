@@ -134,11 +134,11 @@ public:
 		return region;
 	}
 
-	void initialize(Vector2i resolution, T init=T(0), Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
+	void initialize(Vector2i resolution, T init = T(0), Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
 		initialize(resolution.x, resolution.y, init, storage_offset);
 	}
 
-	void initialize(int width, int height, T init=T(0), Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
+	void initialize(int width, int height, T init = T(0), Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
 		this->width = width;
 		this->height = height;
 		region = Region2D(0, width, 0, height, storage_offset);
@@ -155,11 +155,11 @@ public:
 		return Array2D<T>(width, height);
 	}
 
-	Array2D(int width, int height, T init=T(0), Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
+	Array2D(int width, int height, T init = T(0), Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
 		initialize(width, height, init, storage_offset);
 	}
 
-	Array2D(const Vector2i &res, T init=T(0), Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
+	Array2D(const Vector2i &res, T init = T(0), Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
 		initialize(res.x, res.y, init, storage_offset);
 	}
 
@@ -408,7 +408,7 @@ public:
 	Region2D get_rasterization_region(Vector2 pos, int half_extent) const {
 		int x = (int)floor(pos.x - storage_offset.x);
 		int y = (int)floor(pos.y - storage_offset.y);
-		return Region2D(std::max(0, x - half_extent + 1), std::min(width, x + half_extent + 1), max(0, y - half_extent + 1), 
+		return Region2D(std::max(0, x - half_extent + 1), std::min(width, x + half_extent + 1), max(0, y - half_extent + 1),
 			std::min(height, y + half_extent + 1), storage_offset);
 	}
 

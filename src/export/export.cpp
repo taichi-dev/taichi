@@ -10,14 +10,14 @@ namespace py = boost::python;
 
 TC_NAMESPACE_BEGIN
 
-    BOOST_PYTHON_MODULE (taichi_core) {
-        Py_Initialize();
-        //import_array();
-        export_math();
-        export_dynamics();
-        export_visual();
-        export_misc();
+BOOST_PYTHON_MODULE(taichi_core) {
+	Py_Initialize();
+	//import_array();
+	export_math();
+	export_dynamics();
+	export_visual();
+	export_misc();
 
-    }
+}
 
 TC_NAMESPACE_END

@@ -24,16 +24,16 @@ public:
 };
 
 struct Face {
-    Face() { }
+	Face() { }
 
-    Face(int v0, int v1, int v2) {
-        vert_ind[0] = v0;
-        vert_ind[1] = v1;
-        vert_ind[2] = v2;
-    }
+	Face(int v0, int v1, int v2) {
+		vert_ind[0] = v0;
+		vert_ind[1] = v1;
+		vert_ind[2] = v2;
+	}
 
-    int vert_ind[3];
-    int material;
+	int vert_ind[3];
+	int material;
 };
 
 struct Triangle {
@@ -50,7 +50,7 @@ struct Triangle {
 	real heat_capacity;
 	Triangle(const Vector3 &v0, const Vector3 &v1, const Vector3 &v2,
 		const Vector3 &n0, const Vector3 &n1, const Vector3 &n2,
-		const Vector2 &uv0, const Vector2 &uv1, const Vector2 &uv2, int id=-1) {
+		const Vector2 &uv0, const Vector2 &uv1, const Vector2 &uv2, int id = -1) {
 		v[0] = v0;
 		v[1] = v1;
 		v[2] = v2;
@@ -60,7 +60,7 @@ struct Triangle {
 		this->uv20 = uv2 - uv0;
 		v10 = v1 - v0;
 		v20 = v2 - v0;
-        iv10 = 1.0f / dot(v10, v10) * v10;
+		iv10 = 1.0f / dot(v10, v10) * v10;
 		iv20 = 1.0f / dot(v20, v20) * v20;
 		n10 = n1 - n0;
 		n20 = n2 - n0;
@@ -150,7 +150,7 @@ struct Triangle {
 		}
 		return ret;
 	}
-    bool operator == (const Triangle &b) const {
+	bool operator == (const Triangle &b) const {
 		return false;
 	}
 };

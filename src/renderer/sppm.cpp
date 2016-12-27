@@ -91,9 +91,12 @@ bool SPPMRenderer::trace_photon(StateSequence &rand, real contribution_scaling) 
 	const Triangle &tri = scene->sample_triangle_light_emission(rand(), pdf);
 	auto light_bsdf = BSDF(scene, tri.id);
 	Vector3 pos = tri.sample_point(rand(), rand()),
-		dir = light_bsdf.sample_direction(light_bsdf.get_geometry_normal(), rand(), rand());
-	// should be divided by (1 / (area * pi)), where pi is the total solid angle
-	Vector3 flux = light_bsdf.evaluate(tri.normal, dir) * (1.0f / pdf) * tri.area * pi;
+		dir;
+	real _pdf;
+	SurfaceEvent _event;
+	Vector3 flux;
+	light_bsdf.sample(light_bsdf.get_geometry_normal(), rand(), rand(), dir, flux, _pdf, _event);
+	flux *= (1.0f / pdf) * tri.area;
 	Ray ray(pos + dir * 1e-4f, dir, 0); // TODO: ... 1e-4f
 	for (int depth = 0; depth + 1 <= max_path_length; depth++) {
 		IntersectionInfo info = sg->query(ray);

@@ -17,7 +17,8 @@ public:
 	virtual void initialize(const Config &config);
 
 	virtual void set_transform(Matrix4 transform) {
-		this->transform = transform;
+		this->local2world = transform;
+		this->world2local = glm::inverse(transform);
 	}
 
 	virtual Vector3 sample_direction(StateSequence &rand, real &pdf, Vector3 &illum) const;
@@ -32,6 +33,7 @@ public:
 		return image->sample_relative_coord(uv);
 	}
 
+
 protected:
 	std::shared_ptr<ImageBuffer<Vector3>> image;
 	int width, height;
@@ -39,17 +41,16 @@ protected:
 	std::vector<DiscreteSampler> col_samplers;
 	void build_cdfs();
 
-
 	Vector3 uv_to_direction(const Vector2 &uv) const {
 		real theta = uv.y * pi;
 		real phi = uv.x * 2 * pi;
 		real y = cos(theta);
 		real xz = sqrt(1 - y * y);
-		return Vector3(xz * cos(phi), y, xz * sin(phi));
+		return multiply_matrix4(local2world, Vector3(xz * cos(phi), y, xz * sin(phi)), 0);
 	}
 
 	Vector2 direction_to_uv(const Vector3 &dir_) const {
-		auto dir = normalized(dir_);
+		auto dir = multiply_matrix4(world2local, normalized(dir_), 0);
 		real theta = std::acos(dir.y);
 		real phi = std::atan2(dir.z, dir.x);
 		if (phi < 0) {
@@ -57,8 +58,10 @@ protected:
 		}
 		return Vector2(phi / (2 * pi), theta / pi);
 	}
-	Matrix4 transform;
 	real avg_illum;
+
+	Matrix4 local2world;
+	Matrix4 world2local;
 };
 
 TC_INTERFACE(EnvironmentMap);

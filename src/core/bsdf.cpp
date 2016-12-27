@@ -25,11 +25,6 @@ BSDF::BSDF(std::shared_ptr<Scene> const &scene, int triangle_id) { // initialize
 	uv = Vector2(0.5f);
 }
 
-Vector3 BSDF::sample_direction(const Vector3 &in, real u, real v) const {
-	Vector3 out = local_to_world * material->sample_direction(world_to_local * in, u, v, uv);
-	return out;
-}
-
 void BSDF::sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir,
 	Vector3 &f, real &pdf, SurfaceEvent &event) const {
 	const Vector3 in_dir_local = world_to_local * in_dir;

@@ -55,12 +55,14 @@ public:
 TC_IMPLEMENTATION(SurfaceMaterial, TransparentMaterial, "transparent")
 
 class DiffuseTransmissiveMaterial : public SurfaceMaterial {
+protected:
+	std::shared_ptr<Texture> color_sampler;
 public:
 	void initialize(const Config &config) override {
 		color_sampler = get_color_sampler(config, "diffuse");
 	}
 
-	virtual Vector3 sample_direction(const Vector3 &in, real u, real v, const Vector2 &uv) const override {
+	Vector3 sample_direction(const Vector3 &in, real u, real v, const Vector2 &uv) const {
 		if (abs(in.z) > 1 - eps) {
 			Vector3 normal(0, 0, -sgn(in.z));
 			return random_diffuse(normal, u, v);

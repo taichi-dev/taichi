@@ -62,6 +62,9 @@ class Texture:
     def rotate(self, times):
         return Texture("rotate", tex=self, times=times)
 
+    def fract(self):
+        return Texture("fract", tex=self)
+
     def rasterize(self, resolution_x=256, resolution_y=-1):
         if resolution_y == -1:
             resolution_y = resolution_x

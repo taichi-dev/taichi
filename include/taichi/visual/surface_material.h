@@ -40,7 +40,6 @@ public:
 
 class SurfaceMaterial : public Unit {
 protected:
-	std::shared_ptr<Texture> color_sampler;
 	std::shared_ptr<VolumeMaterial> internal_material = nullptr;
 public:
 	SurfaceMaterial() {
@@ -55,18 +54,15 @@ public:
 		return internal_material.get();
 	}
 
-	virtual bool is_index_matched() const {
-		return false;
-	}
-
-	virtual Vector3 sample_direction(const Vector3 &in, real u, real v, const Vector2 &uv) const {
-		assert_info(false, "Not implemented");
-		return Vector3(0, 0, 0);
-	}
 
 	virtual void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf,
 		SurfaceEvent &event, const Vector2 &uv) const {
 		assert_info(false, "Not implemented");
+	}
+
+	virtual void sample(const Vector3 &in_dir, const Vector2 &r, Vector3 &out_dir, Vector3 &f, real &pdf,
+		SurfaceEvent &event, const Vector2 &uv) const {
+		return sample(in_dir, r.x, r.y, out_dir, f, pdf, event, uv);
 	}
 
 	virtual real probability_density(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const {
@@ -77,29 +73,19 @@ public:
 		return Vector3(0.0f);
 	}
 
-	virtual void set_color_sampler(const std::shared_ptr<Texture> color_sampler) {
-		this->color_sampler = color_sampler;
-	}
-
-	virtual void set_color(const Vector3 &color) {
-		this->color_sampler = create_initialized_instance<Texture>("const", Config().set("value", color));
-	}
-
 	static std::shared_ptr<Texture> get_color_sampler(const Config &config, const std::string &name) {
 		if (config.has_key(name + "_map")) {
 			return AssetManager::get_asset<Texture>(config.get_int(name + "_map"));
 		}
-		else if (config.has_key(name)) {
+        else if (config.has_key(name + "_ptr")) {
+            return *config.get_ptr<std::shared_ptr<Texture>>(name + "_ptr");
+        } else if (config.has_key(name)) {
 			Vector3 color = config.get_vec3(name);
 			return create_initialized_instance<Texture>("const", Config().set("value", color));
 		}
 		else {
 			return nullptr;
 		}
-	}
-
-	virtual real get_intensity(const Vector2 &uv) {
-		return luminance(color_sampler->sample3(uv));
 	}
 
 	virtual bool is_delta() const {
@@ -110,10 +96,14 @@ public:
 		return false;
 	}
 
-	virtual real get_importance(const Vector2 &uv) const {
-		return luminance(color_sampler->sample3(uv)) + 1e-7f;
+	virtual bool is_index_matched() const {
+		return false;
 	}
 
+	virtual real get_importance(const Vector2 &uv) const {
+		error("no impl");
+		return 0;
+	}
 
 public:
 	static Vector3 reflect(const Vector3 &in) { // Note: in and reflected are both from origin to outside

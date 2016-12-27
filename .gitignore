@@ -28,6 +28,7 @@ CMakeCache.txt
 FindNumpyPath.py
 runtimes/Taichi.pyd
 runtimes/tmp*
+runtimes/task*
 runtimes/*.exe
 runtimes/Release
 runtimes/RelWithDebInfo

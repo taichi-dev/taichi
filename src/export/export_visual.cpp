@@ -88,7 +88,8 @@ void export_visual() {
 		.def("set_internal_material", &SurfaceMaterial::set_internal_material);
 
 	class_<EnvironmentMap>("EnvironmentMap")
-		.def("initialize", &EnvironmentMap::initialize);
+		.def("initialize", &EnvironmentMap::initialize)
+		.def("set_transform", &EnvironmentMap::set_transform);
 
 	class_<Mesh>("Mesh")
 		.def("initialize", &Mesh::initialize)

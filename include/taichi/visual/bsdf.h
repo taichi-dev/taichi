@@ -33,10 +33,8 @@ public:
 		return abs((world_to_local * out).z);
 	}
 
-	Vector3 sample_direction(const Vector3 &in, real u, real v) const;
-
 	void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir,
-		Vector3 &f, real &pdf, SurfaceEvent&event) const;
+		Vector3 &f, real &pdf, SurfaceEvent &event) const;
 
 	real probability_density(const Vector3 &in, const Vector3 &out) const;
 

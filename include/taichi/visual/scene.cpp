@@ -67,7 +67,7 @@ void Mesh::load_from_file(const std::string &file_path) {
 void Mesh::set_material(std::shared_ptr<SurfaceMaterial> material) {
 	this->material = material;
 	if (material->is_emissive()) {
-		this->emission_color = Vector3(material->get_intensity(Vector2(0.5f, 0.5f))); //TODO
+		this->emission_color = Vector3(material->get_importance(Vector2(0.5f, 0.5f))); //TODO
 		this->emission = luminance(this->emission_color);
 	}
 	else {

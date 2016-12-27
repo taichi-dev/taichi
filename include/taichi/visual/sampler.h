@@ -57,7 +57,13 @@ public:
 
 	real sample() override {
 		assert_info(sampler != nullptr, "null sampler");
-		return sampler->sample(cursor++, instance);
+		real ret = sampler->sample(cursor++, instance);
+		assert_info(ret >= 0, "sampler output should be non-neg");
+		if (ret >= 1) {
+			printf("Warning: sampler returns value >= 1: [%f]", ret);
+			ret = 0;
+		}
+		return ret;
 	}
 };
 

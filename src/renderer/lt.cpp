@@ -80,9 +80,12 @@ public:
 		real pdf;
 		const Triangle &tri = scene->sample_triangle_light_emission(rand(), pdf);
 		auto light_bsdf = BSDF(scene, tri.id);
-		Vector3 pos = tri.sample_point(rand(), rand()),
-			dir = light_bsdf.sample_direction(light_bsdf.get_geometry_normal(), rand(), rand());
-		Vector3 flux = Vector3(1.0f / pdf) * tri.area;
+		Vector3 pos = tri.sample_point(rand(), rand()), dir, flux;
+        real _pdf;
+        SurfaceEvent _event;
+        light_bsdf.sample(light_bsdf.get_geometry_normal(), rand(), rand(), dir, flux, _pdf, _event);
+        // constant?
+		flux *= Vector3(1.0f / pdf) * tri.area;
 		if (min_path_length <= 1) {
 			connect_to_camera(pos, tri.normal, flux, light_bsdf, tri.normal);
 		}

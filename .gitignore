@@ -33,3 +33,4 @@ runtimes/*.exe
 runtimes/Release
 runtimes/RelWithDebInfo
 runtimes/*.png
+runtimes/taichi_core*

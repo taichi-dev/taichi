@@ -12,7 +12,7 @@ protected:
 public:
 	virtual void initialize(const Config &config) override {
 		SurfaceMaterial::initialize(config);
-
+        color_sampler = get_color_sampler(config, "color");
 	}
 
 	virtual bool is_emissive() const override {
@@ -21,21 +21,27 @@ public:
 
 	Vector3 sample_direction(const Vector3 &in, real u, real v, const Vector2 &uv) const {
 		return random_diffuse(Vector3(0, 0, in.z > 0 ? 1 : -1), u, v);
-	};
+	}
 
 	virtual real probability_density(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
 		if (in.z * out.z < eps) {
 			return 0;
 		}
 		return out.z / pi;
-	};
+	}
 
 	virtual Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
 		auto color = color_sampler->sample3(uv);
 		return (in.z * out.z > 0 ? 1.0f : 0.0f) * color; // No division by pi here.
-	};
+	}
+
+    virtual real get_importance(const Vector2 &uv) const override {
+        return luminance(color_sampler->sample3(uv));
+    }
 
 };
+
+TC_IMPLEMENTATION(SurfaceMaterial, EmissiveMaterial, "emissive");
 
 class DiffuseMaterial : public SurfaceMaterial {
 protected:
@@ -89,7 +95,7 @@ public:
 		pdf = out_dir.z / pi;
 	}
 
-	virtual real get_importance(const Vector2 &uv) const {
+	virtual real get_importance(const Vector2 &uv) const override {
 		return luminance(color_sampler->sample3(uv));
 	}
 };
@@ -148,7 +154,7 @@ public:
 		pdf = probability_density(in_dir, out_dir, uv);
 	}
 
-	virtual real get_importance(const Vector2 &uv) const {
+	virtual real get_importance(const Vector2 &uv) const override {
 		return luminance(color_sampler->sample3(uv));
 	}
 };
@@ -185,7 +191,7 @@ public:
 		pdf = probability_density(in_dir, out_dir, uv);
 	}
 
-	virtual real get_importance(const Vector2 &uv) const {
+	virtual real get_importance(const Vector2 &uv) const override {
 		return luminance(color_sampler->sample3(uv));
 	}
 };
@@ -399,10 +405,7 @@ public:
 	}
 };
 
-
 TC_IMPLEMENTATION(SurfaceMaterial, PBRMaterial, "pbr");
-
-TC_IMPLEMENTATION(SurfaceMaterial, EmissiveMaterial, "emissive");
 
 class PlainVolumeInterfaceMaterial : public SurfaceMaterial {
 protected:

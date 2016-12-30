@@ -1,4 +1,4 @@
-from vfx import *
+from taichi.vfx import *
 
 if __name__ == '__main__':
     scale = 8

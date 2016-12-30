@@ -1,6 +1,7 @@
-import taichi as tc
-from taichi.util import *
 import math
+
+import taichi as tc
+from taichi.mics.util import *
 
 
 def create_mesh_from_functions(res, surface, normal=None, uv=None, smooth=True):

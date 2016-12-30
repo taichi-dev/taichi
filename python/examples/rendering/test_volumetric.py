@@ -1,9 +1,9 @@
-from taichi.visual import *
-from taichi.util import Vector
-from taichi.visual.texture import Texture
-from taichi.visual.post_process import *
 from taichi.core import tc_core
-import math
+from taichi.mics.util import Vector
+from taichi.visual import *
+from taichi.visual.post_process import *
+from taichi.visual.texture import Texture
+
 
 def create_taichi_scene(eye_position):
     downsample = 2

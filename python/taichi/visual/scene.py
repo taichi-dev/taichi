@@ -1,6 +1,7 @@
-from taichi.util import *
-from taichi.core import tc_core
 import traceback
+
+from taichi.core import tc_core
+
 
 class Scene:
     def __init__(self):

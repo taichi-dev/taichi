@@ -1,0 +1,10 @@
+include README
+include MANIFEST.in
+include *.txt
+include *.py
+include *.cfg
+
+
+recursive-include examples *.py
+
+global-exclude *.pyc *.pyo *.pyd *.so *.dll *.lib

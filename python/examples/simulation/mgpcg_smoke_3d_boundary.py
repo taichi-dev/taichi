@@ -1,9 +1,10 @@
-from taichi.util import *
+import cv2
+
 from taichi.core import tc_core
 from taichi.dynamics.smoke3 import Smoke3
-from taichi.visual.particle_renderer import ParticleRenderer
+from taichi.mics.util import *
 from taichi.visual.camera import Camera
-import cv2
+from taichi.visual.particle_renderer import ParticleRenderer
 
 if __name__ == '__main__':
     resolution = [64] * 3

@@ -34,3 +34,6 @@ runtimes/Release
 runtimes/RelWithDebInfo
 runtimes/*.png
 runtimes/taichi_core*
+.pypirc
+python/dist
+python/MANIFEST

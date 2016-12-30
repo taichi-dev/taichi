@@ -1,10 +1,8 @@
-from taichi.visual import *
-from taichi.util import Vector
-from taichi.visual.texture import Texture
-from taichi.visual.post_process import *
-import math
-import random
 import colorsys
+
+from taichi.visual import *
+from taichi.visual.post_process import *
+from taichi.visual.texture import Texture
 
 
 def create_scene():

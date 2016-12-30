@@ -1,7 +1,4 @@
-import numpy as np
-import pyglet
-
-from taichi.util import *
+from taichi.mics.util import *
 
 
 class LevelSet2D:

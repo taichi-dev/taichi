@@ -1,6 +1,7 @@
-from taichi.core import tc_core
-from taichi.util import P
 import asset_manager
+from taichi.core import tc_core
+from taichi.mics.util import P
+
 
 class Texture:
     def __init__(self, name, **kwargs):

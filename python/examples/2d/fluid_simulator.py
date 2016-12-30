@@ -1,6 +1,7 @@
 from levelset import LevelSet2D
 from simulator import Simulator
-from taichi.util import *
+from taichi.mics.util import *
+
 
 class FluidSimulator(Simulator):
     def __init__(self, **kwargs):

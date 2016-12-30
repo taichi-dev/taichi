@@ -1,11 +1,10 @@
-from taichi.util import get_os_name, get_uuid
-from taichi.settings import get_output_directory
-
-import random
-import shutil
-import os
-import sys
 import atexit
+import os
+import shutil
+import sys
+
+import taichi as tc
+from taichi.mics.util import get_os_name, get_uuid
 
 CREATE_SAND_BOX_ON_WINDOWS = True
 
@@ -13,14 +12,13 @@ if get_os_name() == 'osx':
     if os.path.exists('libtaichi_core.dylib'):
         shutil.copy('libtaichi_core.dylib', 'taichi_core.so')
         sys.path.append(".")
-    import taichi_core as tc_core
+        import taichi_core as tc_core
 elif get_os_name() == 'linux':
     if os.path.exists('libtaichi_core.so'):
         shutil.copy('libtaichi_core.so', 'taichi_core.so')
         sys.path.append(".")
-    import taichi_core as tc_core
+        import taichi_core as tc_core
 elif get_os_name() == 'win':
-    import ctypes
 
     bin_dir = os.environ['TAICHI_BIN_DIR'] + '/'
     dll_path = bin_dir + '/Release/taichi_core.dll'
@@ -34,7 +32,7 @@ elif get_os_name() == 'win':
     if os.path.exists(dll_path):
         if CREATE_SAND_BOX_ON_WINDOWS:
             # So let's just create a sandbox for separated core lib development and loading
-            dir = get_output_directory() + '/tmp/' + get_uuid() + '/'
+            dir = tc.settings.get_output_directory() + '/tmp/' + get_uuid() + '/'
             os.mkdir(dir)
             '''
             for fn in os.listdir(bin_dir):
@@ -47,13 +45,12 @@ elif get_os_name() == 'win':
             '''
             shutil.copy(dll_path, dir + 'taichi_core.pyd')
             sys.path.append(dir)
-            import taichi_core as tc_core
         else:
             shutil.copy(dll_path, bin_dir + 'taichi_core.pyd')
             sys.path.append(bin_dir)
-            import taichi_core as tc_core
     else:
         assert False, "Library taichi_core doesn't exists."
+    import taichi_core as tc_core
 
     os.chdir(old_wd)
 

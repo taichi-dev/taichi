@@ -1,7 +1,9 @@
+import json
+
+from taichi.mics.util import *
 from taichi.visual import *
 from taichi.visual.post_process import LDRDisplay
-from taichi.util import *
-import json
+
 
 def load_scene(root, fov):
     scene = Scene()

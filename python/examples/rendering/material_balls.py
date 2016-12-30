@@ -1,8 +1,7 @@
-import taichi as tc
 from math import *
-import random
-import colorsys
-from taichi.util import *
+
+import taichi as tc
+from taichi.mics.util import *
 
 
 def create_scene():

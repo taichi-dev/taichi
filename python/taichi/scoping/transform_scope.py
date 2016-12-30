@@ -1,5 +1,5 @@
 from taichi.core import tc_core
-from taichi.util import *
+from taichi.mics.util import *
 
 current_transform = [tc_core.Matrix4(1.0)]
 

@@ -1,5 +1,6 @@
-from taichi.util import *
 from taichi.core import tc_core
+from taichi.mics.util import *
+
 
 class EnvironmentMap:
     def __init__(self, name, **kwargs):

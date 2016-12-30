@@ -1,6 +1,4 @@
-import copy
-
-from taichi.util import *
+from taichi.mics.util import *
 
 
 class Simulator(object):

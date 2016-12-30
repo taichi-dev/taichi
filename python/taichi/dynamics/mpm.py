@@ -1,13 +1,14 @@
-from taichi.util import *
+import time
+
+import cv2
+
 from taichi.core import tc_core
+from taichi.mics.util import *
 from taichi.tools.video import VideoManager
-from taichi.visual.post_process import LDRDisplay
 from taichi.visual.camera import Camera
 from taichi.visual.particle_renderer import ParticleRenderer
-import math
-import random
-import time
-import cv2
+from taichi.visual.post_process import LDRDisplay
+
 
 class MPM3:
     def __init__(self, **kwargs):

@@ -1,8 +1,8 @@
-from taichi.util import *
-from taichi.core import tc_core
-from taichi.visual.camera import Camera
 import time
-import math
+
+from taichi.core import tc_core
+from taichi.mics.util import *
+
 
 class Smoke3:
     def __init__(self, **kwargs):

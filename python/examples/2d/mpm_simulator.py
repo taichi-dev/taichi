@@ -1,9 +1,9 @@
+from PIL import Image
+
 from levelset import LevelSet2D
 from simulator import Simulator
-from PIL import Image
-from taichi.util import *
 from taichi.core import tc_core
-import random
+from taichi.mics.util import *
 
 
 class MPMSimulator(Simulator):

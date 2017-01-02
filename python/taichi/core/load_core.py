@@ -9,10 +9,16 @@ from taichi.mics.util import get_os_name, get_uuid
 CREATE_SAND_BOX_ON_WINDOWS = True
 
 if get_os_name() == 'osx':
-    if os.path.exists('libtaichi_core.dylib'):
+    bin_dir = os.environ['TAICHI_BIN_DIR'] + '/'
+    if os.path.exists(bin_dir + 'libtaichi_core.dylib'):
+        tmp_cwd = os.getcwd()
+        os.chdir(bin_dir)
         shutil.copy('libtaichi_core.dylib', 'taichi_core.so')
-        sys.path.append(".")
+        sys.path.append(bin_dir)
         import taichi_core as tc_core
+        os.chdir(tmp_cwd)
+    else:
+        assert False, "Library taichi_core doesn't exist."
 elif get_os_name() == 'linux':
     if os.path.exists('libtaichi_core.so'):
         shutil.copy('libtaichi_core.so', 'taichi_core.so')
@@ -49,7 +55,7 @@ elif get_os_name() == 'win':
             shutil.copy(dll_path, bin_dir + 'taichi_core.pyd')
             sys.path.append(bin_dir)
     else:
-        assert False, "Library taichi_core doesn't exists."
+        assert False, "Library taichi_core doesn't exist."
     import taichi_core as tc_core
 
     os.chdir(old_wd)

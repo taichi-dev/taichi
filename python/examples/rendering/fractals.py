@@ -26,7 +26,7 @@ def create_scene():
                                 SurfaceMaterial('transparent', mask=menger,
                                                 nested=
                                                 SurfaceMaterial('diffuse',
-                                                                diffuse=colorsys.hls_to_rgb(i * 0.1 + 0.3, 0.3, 1.0))),
+                                                                color=colorsys.hls_to_rgb(i * 0.1 + 0.3, 0.3, 1.0))),
                                 translate=(i * 7 - 28, 3.5, -5), scale=3, rotation=(90, 0, 0)))
 
         # Lights
@@ -41,12 +41,6 @@ def create_scene():
 
 if __name__ == '__main__':
     renderer = Renderer('pt', '../output/frames/fractals.png', overwrite=True)
-
-    scene = create_scene()
-    renderer.set_scene(scene)
-    renderer.initialize(min_path_length=1, max_path_length=10,
-                        initial_radius=0.5, sampler='sobol', russian_roulette=False, volmetric=True, direct_lighting=1,
-                        direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1,
-                        stage_frequency=3, num_threads=8)
+    renderer.initialize(preset='pt', scene=create_scene())
     renderer.set_post_processor(LDRDisplay(exposure=1.0, bloom_radius=0.1))
     renderer.render(10000, 20)

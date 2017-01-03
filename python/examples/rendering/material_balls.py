@@ -38,26 +38,34 @@ def create_scene():
         # Board
         gradient = tc.Texture('uv', coeff_u=1, coeff_v=0)
 
-        scene.add_mesh(tc.Mesh('plane', tc.SurfaceMaterial('pbr', diffuse_map=gradient, specular_map=1-gradient), scale=(10, 1, 1),
+        scene.add_mesh(tc.Mesh('plane', tc.SurfaceMaterial('pbr', diffuse_map=gradient, specular_map=1 - gradient),
+                               scale=(10, 1, 1),
                                translate=(0, 0.3, 2), rotation=(0, 0, 0)))
 
-        scene.add_mesh(tc.Mesh('plane', tc.SurfaceMaterial('glossy', color=(1, 1, 1), glossiness_map=gradient * 100), scale=(10, 1, 1),
+        scene.add_mesh(tc.Mesh('plane', tc.SurfaceMaterial('glossy', color=(1, 1, 1), glossiness_map=gradient * 100),
+                               scale=(10, 1, 1),
                                translate=(0, 0.3, 4.5), rotation=(0, 0, 0)))
 
-        scene.add_mesh(tc.Mesh('plane', tc.SurfaceMaterial('pbr', diffuse_map=gradient * (1, 0, 0)+(1 - gradient) * (0, 1, 1)), scale=(10, 1, 1),
-                               translate=(0, 0.3, 7), rotation=(0, 0, 0)))
+        scene.add_mesh(
+            tc.Mesh('plane', tc.SurfaceMaterial('pbr', diffuse_map=gradient * (1, 0, 0) + (1 - gradient) * (0, 1, 1)),
+                    scale=(10, 1, 1),
+                    translate=(0, 0.3, 7), rotation=(0, 0, 0)))
 
         scene.add_mesh(tc.Mesh('plane', tc.SurfaceMaterial('transparent', mask=gradient,
-                                                           nested=tc.SurfaceMaterial('diffuse', color=(1, 1, 1))), scale=(10, 1, 1),
+                                                           nested=tc.SurfaceMaterial('diffuse', color=(1, 1, 1))),
+                               scale=(10, 1, 1),
                                translate=(0, 0.3, 9.5), rotation=(0, 0, 0)))
 
         for i in range(10):
             scene.add_mesh(tc.Mesh(tc.geometry.create_mesh_from_functions((50, 50),
                                                                           lambda p: Vector(p.x * 2 - 1,
-                                                                                           sin(p.x * 10 * pi) + cos(p.y * 5 * pi), p.y * 2 - 1)),
-                                   material=tc.SurfaceMaterial('reflective', color=(1, 1, 1)), translate=(0, 1, -6), scale=(8, 0.2, 2)))
+                                                                                           sin(p.x * 10 * pi) + cos(
+                                                                                               p.y * 5 * pi),
+                                                                                           p.y * 2 - 1)),
+                                   material=tc.SurfaceMaterial('reflective', color=(1, 1, 1)), translate=(0, 1, -6),
+                                   scale=(8, 0.2, 2)))
 
-        envmap = tc.EnvironmentMap('base', filepath='../../taichi_assets/envmaps/schoenbrunn-front_hd.hdr')
+        envmap = tc.EnvironmentMap('base', filepath=tc.settings.get_asset_path('/envmaps/schoenbrunn-front_hd.hdr'))
         envmap.set_transform(tc.core.Matrix4(1.0).rotate_euler(Vector(0, 30, 0)))
         scene.set_environment_map(envmap)
 

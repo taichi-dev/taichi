@@ -16,7 +16,7 @@ def create_tree(scene):
             scale=1.0, translate=(0, 1.3, 0)))
         '''
         scene.add_mesh(tc.Mesh(
-            'cube', material=tc.SurfaceMaterial('diffuse', diffuse=(1, 1, 0.4)),
+            'cube', material=tc.SurfaceMaterial('diffuse', color=(1, 1, 0.4)),
             scale=(0.1, 0.5, 0.1), translate=(0, 0.5, 0)))
         scene.add_mesh(tc.Mesh(
             tc.create_cone((4, 2), False),

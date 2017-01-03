@@ -57,13 +57,12 @@ if __name__ == '__main__':
     renderer = Renderer('pt', '../output/frames/mis.png', overwrite=True)
 
     eye_position = Vector(0.9, -0.3)
-    scene = create_mis_scene(eye_position)
-    renderer.set_scene(scene)
     renderer.initialize(min_path_length=1, max_path_length=2,
                         initial_radius=0.005, sampler='sobol', russian_roulette=False, volmetric=True,
                         direct_lighting=1,
                         direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1,
                         stage_frequency=3,
-                        num_threads=8)
+                        num_threads=8,
+                        scene=create_mis_scene(eye_position))
     renderer.set_post_processor(LDRDisplay(exposure=3, bloom_radius=0.00))
     renderer.render(800)

@@ -1,12 +1,12 @@
 from taichi.mics.util import *
-# TODO: Remove cv2
-import cv2
 import time
 import os
 from taichi.core import tc_core
 from taichi.mics.util import get_uuid
 from taichi.visual.post_process import LDRDisplay
 from taichi.mics.settings import get_num_cores
+import cv2
+
 
 class Renderer(object):
     def __init__(self, name=None, output_dir=get_uuid(), overwrite=True, frame=0,

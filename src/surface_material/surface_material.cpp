@@ -78,7 +78,7 @@ public:
 		if (in.z * out.z < eps) {
 			return 0;
 		}
-		return out.z / pi;
+		return std::abs(out.z) / pi;
 	}
 
 	virtual Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {

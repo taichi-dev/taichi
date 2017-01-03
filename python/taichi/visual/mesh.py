@@ -2,8 +2,7 @@ import taichi.geometry as geometry
 from taichi.core import tc_core
 from taichi.mics.util import *
 from taichi.scoping.transform_scope import get_current_transform
-import taichi.settings
-
+import taichi
 
 def map_filename(name):
     if name == 'plane':

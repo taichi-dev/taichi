@@ -18,18 +18,19 @@ def create_scene():
         num_spheres = 6
         for i in range(num_spheres):
             with tc.transform_scope(translate=(0.7 * (i - (num_spheres - 1) / 2.0), 0, 0)):
-                r = 1.0 * i / num_spheres
+                r = 1.0 * i / (num_spheres - 1)
                 r = r * r
-                scene.add_mesh(tc.Mesh('sphere', tc.SurfaceMaterial('microfacet', color=(1, 1, 1),
-                                                                    roughness=(0.01 + r, 0, 0, 0), f0=0.01),
+                scene.add_mesh(tc.Mesh('sphere', tc.SurfaceMaterial('microfacet', color=(1, 1, 0.5),
+                                                                    roughness=(0.01 + r, 0, 0, 0), f0=1),
                                        scale=0.3))
 
-            mesh = tc.Mesh('holder', tc.SurfaceMaterial('pbr', diffuse_map=tc.Texture.create_taichi_wallpaper(20)),
+            mesh = tc.Mesh('holder',
+                           tc.SurfaceMaterial('pbr', diffuse_map=tc.Texture.create_taichi_wallpaper(20)),
                            translate=(0, -1, -3), scale=1, rotation=(0, 0, 0))
             scene.add_mesh(mesh)
 
         envmap = tc.EnvironmentMap('base', filepath=tc.settings.get_asset_path('/envmaps/schoenbrunn-front_hd.hdr'))
-        envmap.set_transform(tc.core.Matrix4(1.0).rotate_euler(tc.Vector(0, 30, 0)))
+        envmap.set_transform(tc.core.Matrix4(1.0).rotate_euler(tc.Vector(0, -30, 0)))
         scene.set_environment_map(envmap)
 
     return scene
@@ -38,6 +39,6 @@ def create_scene():
 if __name__ == '__main__':
     renderer = tc.Renderer('pt', 'microfacet.png', overwrite=True)
 
-    renderer.initialize(preset='pt', scene=create_scene(), num_threads=8, max_path_length=3)
-    renderer.set_post_processor(tc.post_process.LDRDisplay(exposure=1, bloom_radius=0.0))
-    renderer.render(10000, 100)
+    renderer.initialize(preset='pt', scene=create_scene(), num_threads=8)
+    renderer.set_post_processor(tc.post_process.LDRDisplay(exposure=1.0, bloom_radius=0.05))
+    renderer.render(10000, 0)

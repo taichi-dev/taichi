@@ -26,13 +26,7 @@ public:
 	// D can be GGX, Beckmann, Blinn-Phong
 	real evaluateD(real roughness, const Vector3 &h) const {
 		const real cos_t = h.z;
-		return sqr(roughness) / (pi * sqr((sqr(roughness) - 1) * sqr(cos_t) + 1.0f));
-	}
-
-	real pdfD(real roughness, const Vector3 &h) const {
-		const real cos_t = h.z;
-		const real sin_t = std::sqrt(1.0f - cos_t * cos_t);
-		return sqr(roughness) * cos_t * sin_t / (pi * sqr((sqr(roughness) - 1) * sqr(h.z) + 1.0f));
+		return sqr(roughness) / std::max(1e-6f, (pi * sqr((sqr(roughness) - 1) * sqr(cos_t) + 1.0f)));
 	}
 
 	Vector3 sampleD(real roughness, const Vector2 &p) const {
@@ -49,9 +43,11 @@ public:
 
 	// Shadowing term for GGX only
 	real G(real roughness, const Vector3 &in_dir, const Vector3 &out_dir, const Vector3 &h) const {
-		// Note: sqr here?
-		const real a = sqr(0.5f + roughness * 0.5f);
-		return 2.0f / (1 + std::sqrt(1 + a * a * (sqr(1.0f / std::abs(out_dir.z)) - 1.0f)));
+        if (dot(in_dir, h) * in_dir.z < eps) {
+			return 0.0f;
+		}
+		const real a = 0.5f + roughness * 0.5f;
+		return 2.0f / (1 + std::sqrt(1 + a * a * (sqr(1.0f / std::max(1e-6f, std::abs(in_dir.z))) - 1.0f)));
 	}
 
 	static Vector3 reflect(const Vector3 &in, const Vector3 &_h) {
@@ -73,7 +69,7 @@ public:
 			return 0;
 		}
 		const Vector3 h = normalized(in + out);
-		return std::abs(pdfD(get_roughness(uv), h) * h.z / (4.0f * (out.z * dot(out, h))));
+		return std::abs(evaluateD(get_roughness(uv), h) * h.z / std::max(1e-6f, 4.0f * dot(out, h)));
 	}
 
 	Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
@@ -83,9 +79,9 @@ public:
 		}
 		real roughness = get_roughness(uv);
 		const Vector3 h = normalized(in + out);
-		real factor = F(f0, dot(in, h)) * G(roughness, in, out, h) * evaluateD(roughness, h);
-		factor *= 1.0f / (4.0f * in.z * out.z);
-		return color_sampler->sample3(uv) * factor;
+		real factor = F(f0, std::max(0.0f, dot(in, h))) * G(roughness, in, out, h) * evaluateD(roughness, h);
+		factor *= 1.0f / (4.0f * std::max(1e-5f, std::abs(in.z)) * std::abs(out.z));
+		return color * factor;
 	}
 
 	void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir,

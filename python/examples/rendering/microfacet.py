@@ -37,8 +37,8 @@ def create_scene():
 
 
 if __name__ == '__main__':
-    renderer = tc.Renderer('pt', 'microfacet.png', overwrite=True)
+    renderer = tc.Renderer(output_dir='microfacet', overwrite=True)
 
     renderer.initialize(preset='pt', scene=create_scene(), num_threads=8)
     renderer.set_post_processor(tc.post_process.LDRDisplay(exposure=1.0, bloom_radius=0.05))
-    renderer.render(10000, 0)
+    renderer.render(10000, 10)

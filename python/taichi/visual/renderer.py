@@ -1,6 +1,7 @@
 from taichi.mics.util import *
 import time
 import os
+import taichi
 from taichi.core import tc_core
 from taichi.mics.util import get_uuid
 from taichi.visual.post_process import LDRDisplay
@@ -12,7 +13,8 @@ class Renderer(object):
     def __init__(self, name=None, output_dir=get_uuid(), overwrite=True, frame=0,
                  scene=None, preset=None, **kwargs):
         self.renderer_name = name
-        self.output_dir = output_dir + '/'
+        self.output_dir = taichi.settings.get_output_path(output_dir + '/')
+        print self.output_dir
         self.post_processor = LDRDisplay()
         self.frame = frame
         try:

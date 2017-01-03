@@ -4,6 +4,7 @@ import shutil
 import sys
 
 import taichi as tc
+import taichi.settings
 from taichi.mics.util import get_os_name, get_uuid
 
 CREATE_SAND_BOX_ON_WINDOWS = True

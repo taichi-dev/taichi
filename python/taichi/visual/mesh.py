@@ -2,6 +2,7 @@ import taichi.geometry as geometry
 from taichi.core import tc_core
 from taichi.mics.util import *
 from taichi.scoping.transform_scope import get_current_transform
+import taichi.settings
 
 
 def map_filename(name):
@@ -12,9 +13,9 @@ def map_filename(name):
     elif name == 'torus':
         return geometry.create_torus((100, 100), 0.7, 1.0)
     if name.rfind('/') == -1:
-        filename = '../assets/meshes/%s.obj' % name
+        filename = taichi.settings.get_asset_path('meshes/' + name + '.obj')
     else:
-        filename = geometry
+        filename = name
     return filename
 
 

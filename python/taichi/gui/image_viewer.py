@@ -82,7 +82,7 @@ class ImageViewerWidget(GridLayout):
         self.update()
 
     def update(self, dt=0):
-        img = self.raw_img * math.exp((self.controllers.value_exposure - 50) / 10)
+        img = self.raw_img * math.exp((self.controllers.value_exposure - 50) / 20)
         color_cast = np.array(((1,
                                 math.exp(-(self.controllers.value_tint - 50) / 30),
                                 math.exp(-(self.controllers.value_temperature - 50) / 30))))

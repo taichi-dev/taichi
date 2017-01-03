@@ -3,6 +3,7 @@ import json
 from taichi.mics.util import *
 from taichi.visual import *
 from taichi.visual.post_process import LDRDisplay
+import taichi as tc
 
 
 def load_scene(root, fov):
@@ -32,13 +33,13 @@ def load_scene(root, fov):
     for mesh_node in f['primitives']:
         if 'file' in mesh_node:
             # Object
-            fn = ROOT + mesh_node['file'][:-4] + '.obj'
-            mesh = Mesh(filename=fn, material=materials[mesh_node['bsdf']])
+            fn = str(ROOT + mesh_node['file'][:-4] + '.obj')
+            mesh = Mesh(fn, material=materials[mesh_node['bsdf']])
         else:
             # Light source
             e = 1
             material = SurfaceMaterial('emissive', color=(e, e, e))
-            mesh = Mesh(filename='../assets/meshes/plane.obj', material=material)
+            mesh = Mesh('plane', material=material)
             if 'transform' in mesh_node:
                 trans = mesh_node['transform']
                 if 'rotation' in trans:
@@ -50,7 +51,7 @@ def load_scene(root, fov):
     camera_node = f['camera']
     width, height = camera_node['resolution']
     # the FOV value is ?
-    #fov = math.degrees(math.atan(27.2 / camera_node['fov']) * 2)
+    # fov = math.degrees(math.atan(27.2 / camera_node['fov']) * 2)
 
     camera = Camera('pinhole', width=width, height=height, aspect_ratio=float(width) / height, fov=fov,
                     origin=tuple(camera_node['transform']['position']),
@@ -63,20 +64,18 @@ def load_scene(root, fov):
 
     return scene
 
+
 def render():
-    #root, fov = '../../taichi_assets/scenes/living-room/', 55
-    root, fov = '../../taichi_assets/scenes/staircase/', 105
+    # root, fov = '../../taichi_assets/scenes/living-room/', 55
+    root, fov = tc.settings.get_asset_path('scenes/staircase/'), 105
     scene = load_scene(root, fov)
 
     renderer = Renderer('pt', output_dir='../output/frames/reader', overwrite=True)
     renderer.set_post_processor(LDRDisplay(1.0))
 
-    renderer.set_scene(scene)
-    renderer.initialize(min_path_length=1, max_path_length=10,
-                        initial_radius=0.05, sampler='sobol', russian_roulette=True, volmetric=True, direct_lighting=1,
-                        direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1, stage_frequency=1,
-                        num_threads=8)
+    renderer.initialize(preset='pt', scene=scene)
     renderer.render(30000, cache_interval=10)
+
 
 if __name__ == '__main__':
     render()

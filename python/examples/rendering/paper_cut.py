@@ -20,7 +20,7 @@ def create_scene():
 
         # Taichi Text
         text = 1 - tc.Texture('text', content='Taichi', width=200, height=200,
-                              font_file='../assets/fonts/go/Go-Bold.ttf',
+                              font_file=tc.get_asset_path('fonts/go/Go-Bold.ttf'),
                               size=50,
                               dx=0, dy=0)
         mesh = tc.Mesh('plane', tc.SurfaceMaterial('transparent',
@@ -34,7 +34,8 @@ def create_scene():
         scene.add_mesh(mesh)
 
         text = 1 - tc.Texture('text', content='Physically based Computer Graphics', width=400, height=400,
-                              font_file='../assets/fonts/go/Go-Bold.ttf', size=30,
+                              size=30,
+                              font_file=tc.get_asset_path('fonts/go/Go-Bold.ttf'),
                               dx=0, dy=0)
         mesh = tc.Mesh('plane', tc.SurfaceMaterial('transparent',
                                                    nested=tc.SurfaceMaterial('diffuse', color=(1, 0.1, 0.5)),

@@ -9,7 +9,7 @@ if (WIN32)
     link_directories(external/lib)
 endif ()
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/output")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED")
 if (USE_OPENGL)
@@ -44,7 +44,6 @@ include_directories("external/include/glm")
 
 find_package(Boost COMPONENTS
         system
-        thread
         python REQUIRED)
 if (WIN32)
     include_directories(${BOOST_ROOT})

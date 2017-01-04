@@ -37,3 +37,4 @@ runtimes/taichi_core*
 .pypirc
 python/dist
 python/MANIFEST
+build/

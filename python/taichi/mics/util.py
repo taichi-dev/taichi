@@ -19,7 +19,6 @@ def get_uuid():
     return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + ('%05d' % random.randint(0, 10000))
 
 import copy
-import pyglet
 import numpy as np
 import ctypes
 

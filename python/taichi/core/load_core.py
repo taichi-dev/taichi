@@ -20,6 +20,17 @@ if get_os_name() == 'osx':
     else:
         assert False, "Library taichi_core doesn't exist."
 elif get_os_name() == 'linux':
+    bin_dir = os.environ['TAICHI_BIN_DIR'] + '/'
+    os.environ['LD_LIBRARY_PATH'] = '/usr/lib64/'
+    if os.path.exists(bin_dir + 'libtaichi_core.so'):
+        tmp_cwd = os.getcwd()
+        os.chdir(bin_dir)
+        sys.path.append(bin_dir)
+        shutil.copy('libtaichi_core.so', 'taichi_core.so')
+        import taichi_core as tc_core
+        os.chdir(tmp_cwd)
+    else:
+        assert False, "Library taichi_core doesn't exist."
     if os.path.exists('libtaichi_core.so'):
         shutil.copy('libtaichi_core.so', 'taichi_core.so')
         sys.path.append(".")

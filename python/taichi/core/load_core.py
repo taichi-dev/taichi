@@ -3,13 +3,13 @@ import os
 import shutil
 import sys
 
-from taichi.misc.settings import get_output_directory
+from taichi.misc.settings import get_output_directory, get_bin_directory
 from taichi.misc.util import get_os_name, get_uuid
 
 CREATE_SAND_BOX_ON_WINDOWS = True
 
 if get_os_name() == 'osx':
-    bin_dir = os.environ['TAICHI_BIN_DIR'] + '/'
+    bin_dir = get_bin_directory() + '/'
     if os.path.exists(bin_dir + 'libtaichi_core.dylib'):
         tmp_cwd = os.getcwd()
         os.chdir(bin_dir)
@@ -21,7 +21,7 @@ if get_os_name() == 'osx':
     else:
         assert False, "Library taichi_core doesn't exist."
 elif get_os_name() == 'linux':
-    bin_dir = os.environ['TAICHI_BIN_DIR'] + '/'
+    bin_dir = get_bin_directory() + '/'
     os.environ['LD_LIBRARY_PATH'] = '/usr/lib64/'
     if os.path.exists(bin_dir + 'libtaichi_core.so'):
         tmp_cwd = os.getcwd()
@@ -38,7 +38,6 @@ elif get_os_name() == 'linux':
         sys.path.append(".")
         import taichi_core as tc_core
 elif get_os_name() == 'win':
-
     bin_dir = os.environ['TAICHI_BIN_DIR'] + '/'
     dll_path = bin_dir + '/Release/taichi_core.dll'
 

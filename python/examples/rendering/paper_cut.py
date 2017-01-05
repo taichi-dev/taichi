@@ -33,6 +33,7 @@ def create_scene():
                        translate=(0, 0, 0), scale=(8.3, 1, 4.5), rotation=(90, 0, 0))
         scene.add_mesh(mesh)
 
+        '''
         text = 1 - tc.Texture('text', content='Physically based Computer Graphics', width=400, height=400,
                               size=30,
                               font_file=tc.get_asset_path('fonts/go/Go-Bold.ttf'),
@@ -42,6 +43,7 @@ def create_scene():
                                                    mask=text),
                        translate=(3.0, -6, 0.03), scale=(2, 2, 2), rotation=(90, 0, 0))
         scene.add_mesh(mesh)
+        '''
 
         mesh = tc.Mesh('plane', tc.SurfaceMaterial('pbr', diffuse=(0.2, 0.5, 0.2)),
                        translate=(0, 0, 0), scale=(8.3, 1, 4.5), rotation=(90, 0, 0))

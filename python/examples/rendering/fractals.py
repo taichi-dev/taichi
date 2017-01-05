@@ -40,7 +40,7 @@ def create_scene():
 
 
 if __name__ == '__main__':
-    renderer = Renderer('pt', '../output/frames/fractals.png', overwrite=True)
+    renderer = Renderer(output_dir='fractals', overwrite=True)
     renderer.initialize(preset='pt', scene=create_scene())
     renderer.set_post_processor(LDRDisplay(exposure=1.0, bloom_radius=0.1))
     renderer.render(10000, 20)

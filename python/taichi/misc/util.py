@@ -114,7 +114,7 @@ def image_buffer_to_ndarray(arr):
     raw_data = np.empty((arr.get_width() * arr.get_height() * channels,), dtype='float32')
     arr.to_ndarray(raw_data.ctypes.data_as(ctypes.c_void_p).value)
     dat = raw_data.astype('float32')
-    return dat.reshape((arr.get_height(), arr.get_width(), channels))
+    return dat.reshape((arr.get_height(), arr.get_width(), channels))[::-1,:,::-1]
 
 def arange(x, y, d):
     while x < y:

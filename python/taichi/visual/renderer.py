@@ -14,7 +14,6 @@ class Renderer(object):
                  scene=None, preset=None, **kwargs):
         self.renderer_name = name
         self.output_dir = taichi.settings.get_output_path(output_dir + '/')
-        print self.output_dir
         self.post_processor = LDRDisplay()
         self.frame = frame
         try:

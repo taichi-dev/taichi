@@ -52,7 +52,7 @@ elif get_os_name() == 'win':
         if CREATE_SAND_BOX_ON_WINDOWS:
             # So let's just create a sandbox for separated core lib development and loading
             dir = get_output_directory() + '/tmp/' + get_uuid() + '/'
-            os.mkdir(dir)
+            os.makedirs(dir)
             '''
             for fn in os.listdir(bin_dir):
                 if fn.endswith('.dll') and fn != 'taichi_core.dll':

@@ -75,7 +75,7 @@ def create_snow_scene(frame):
     return scene
 
 def render_snow_frame(frame):
-    renderer = Renderer('pt', '../output/frames/volumetric', overwrite=True, frame=frame)
+    renderer = Renderer('pt', 'volumetric', overwrite=True, frame=frame)
     scene = create_snow_scene(frame)
     renderer.set_scene(scene)
     renderer.initialize(min_path_length=1, max_path_length=20,

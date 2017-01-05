@@ -47,7 +47,7 @@ def create_scene():
 
 
 if __name__ == '__main__':
-    renderer = tc.Renderer('../output/frames/geometry.png', overwrite=True)
+    renderer = tc.Renderer(output_dir='geometry', overwrite=True)
     renderer.initialize(preset='pt', scene=create_scene())
     renderer.set_post_processor(tc.post_process.LDRDisplay(exposure=2, bloom_radius=0.0))
     renderer.render(10000, 20)

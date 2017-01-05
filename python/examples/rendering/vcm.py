@@ -59,7 +59,7 @@ if __name__ == '__main__':
             translate=(0, 8, -9), rotation=(0, 0, 180)
         ))
 
-    renderer = tc.Renderer(preset='vcm', scene=scene, max_path_length=10)
+    renderer = tc.Renderer(preset='vcm', output_dir='sds', scene=scene, max_path_length=10)
     renderer.set_post_processor(tc.post_process.LDRDisplay(exposure=1, gamma=2.2))
 
     renderer.render(1000, 20)

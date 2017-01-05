@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 2.8)
-message("Module path:" ${CMAKE_MODULE_PATH})
 project(taichi)
 
 include_directories(src)

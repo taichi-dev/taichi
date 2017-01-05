@@ -1,11 +1,11 @@
-from taichi.mics.util import *
+from taichi.misc.util import *
 import time
 import os
 import taichi
 from taichi.core import tc_core
-from taichi.mics.util import get_uuid
+from taichi.misc.util import get_uuid
 from taichi.visual.post_process import LDRDisplay
-from taichi.mics.settings import get_num_cores
+from taichi.misc.settings import get_num_cores
 import cv2
 
 

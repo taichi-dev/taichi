@@ -17,6 +17,7 @@ EXPLICIT_GET_POINTER(taichi::DPParticle);
 EXPLICIT_GET_POINTER(taichi::Simulation3D);
 
 TC_NAMESPACE_BEGIN
+
 void export_dynamics() {
 	def("create_simulation3d", create_instance<Simulation3D>);
 	class_<Fluid::Particle>("FluidParticle", init<Vector2, Vector2>())

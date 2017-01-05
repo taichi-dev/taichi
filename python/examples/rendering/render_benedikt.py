@@ -1,6 +1,6 @@
 import json
 
-from taichi.mics.util import *
+from taichi.misc.util import *
 from taichi.visual import *
 from taichi.visual.post_process import LDRDisplay
 import taichi as tc

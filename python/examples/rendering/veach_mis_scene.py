@@ -1,6 +1,6 @@
 import math
 
-from taichi.mics.util import Vector
+from taichi.misc.util import Vector
 from taichi.visual import *
 from taichi.visual.post_process import *
 from taichi.visual.texture import Texture

@@ -3,7 +3,7 @@ from PIL import Image
 from levelset import LevelSet2D
 from simulator import Simulator
 from taichi.core import tc_core
-from taichi.mics.util import *
+from taichi.misc.util import *
 
 
 class MPMSimulator(Simulator):

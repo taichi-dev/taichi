@@ -1,7 +1,7 @@
 from math import *
 
 import taichi as tc
-from taichi.mics.util import *
+from taichi.misc.util import *
 
 
 def create_scene():

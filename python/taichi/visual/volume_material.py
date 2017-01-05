@@ -1,5 +1,5 @@
 from taichi.core import tc_core
-from taichi.mics.util import *
+from taichi.misc.util import *
 from taichi.visual.asset_manager import asset_ptr_to_id
 
 

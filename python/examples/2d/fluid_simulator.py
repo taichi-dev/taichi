@@ -1,6 +1,6 @@
 from levelset import LevelSet2D
 from simulator import Simulator
-from taichi.mics.util import *
+from taichi.misc.util import *
 
 
 class FluidSimulator(Simulator):

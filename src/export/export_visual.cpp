@@ -56,15 +56,19 @@ std::vector<Triangle> merge_mesh(const std::vector<Triangle> &a, const std::vect
 	return merged;
 }
 
+template<typename T, int ret>
+int return_constant(T *) { return ret; }
+
 void export_visual() {
 	def("function23_from_py_obj", function23_from_py_obj);
 	def("function22_from_py_obj", function22_from_py_obj);
 	def("generate_mesh", Mesh3D::generate);
 	def("merge_mesh", merge_mesh);
 	def("rasterize_render_particles", rasterize_render_particles);
-	def("create_texture", create_instance<Texture>);
 	def("register_texture", &AssetManager::insert_asset<Texture>);
 	def("register_surface_material", &AssetManager::insert_asset<SurfaceMaterial>);
+	// TODO: these should registered by iterating over existing interfaces.
+	def("create_texture", create_instance<Texture>);
 	def("create_renderer", create_instance<Renderer>);
 	def("create_camera", create_instance<Camera>);
 	def("create_particle_renderer", create_instance<ParticleRenderer>);
@@ -73,10 +77,16 @@ void export_visual() {
 	def("create_environment_map", create_instance<EnvironmentMap>);
 	def("create_mesh", std::make_shared<Mesh>);
 	def("create_scene", std::make_shared<Scene>);
+	class_<ImageBuffer<Vector4 >>("RGBAImageFloat", init<int, int, Vector4>())
+		.def("get_width", &ImageBuffer<Vector4>::get_width)
+		.def("get_height", &ImageBuffer<Vector4>::get_height)
+		.def("get_channels", &return_constant<ImageBuffer<Vector4>, 4>)
+		.def("to_ndarray", &image_buffer_to_ndarray < ImageBuffer<Vector4>, 4>);
 	class_<ImageBuffer<Vector3 >>("RGBImageFloat", init<int, int, Vector3>())
 		.def("get_width", &ImageBuffer<Vector3>::get_width)
 		.def("get_height", &ImageBuffer<Vector3>::get_height)
-		.def("to_ndarray", &image_buffer_to_ndarray < ImageBuffer<Vector3>>);
+		.def("get_channels", &return_constant<ImageBuffer<Vector3>, 3>)
+		.def("to_ndarray", &image_buffer_to_ndarray < ImageBuffer<Vector3>, 3>);
 	class_<Texture>("Texture")
 		.def("initialize", &Texture::initialize);;
 

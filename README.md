@@ -1,4 +1,5 @@
-![image](https://github.com/IteratorAdvance/taichi_assets/raw/master/demos/snow.gif)
+![image](https://github.com/IteratorAdvance/taichi_assets/raw/master/demos/snow.gif) ![image](https://github.com/IteratorAdvance/taichi_assets/raw/master/demos/smoke_cropped.gif)
+
 # [Taichi](http://taichi.graphics)
 
 Taichi is a physically based computer graphics library, with various simulation

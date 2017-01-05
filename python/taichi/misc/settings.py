@@ -1,6 +1,6 @@
 import os
 
-default_num_threads = 8
+default_num_threads = 2
 
 
 def get_num_cores():

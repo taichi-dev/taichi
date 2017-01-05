@@ -1,6 +1,6 @@
 import math
 
-from taichi.mics.util import Vector
+from taichi.misc.util import Vector
 from taichi.visual import *
 from taichi.visual.post_process import *
 from taichi.visual.texture import Texture
@@ -54,15 +54,9 @@ def create_mis_scene(eye_position):
 
 
 if __name__ == '__main__':
-    renderer = Renderer('pt', '../output/frames/mis.png', overwrite=True)
+    renderer = Renderer(output_dir='veach_mis', overwrite=True)
 
     eye_position = Vector(0.9, -0.3)
-    renderer.initialize(min_path_length=1, max_path_length=2,
-                        initial_radius=0.005, sampler='sobol', russian_roulette=False, volmetric=True,
-                        direct_lighting=1,
-                        direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1,
-                        stage_frequency=3,
-                        num_threads=8,
-                        scene=create_mis_scene(eye_position))
-    renderer.set_post_processor(LDRDisplay(exposure=3, bloom_radius=0.00))
+    renderer.initialize(preset='pt', scene=create_mis_scene(eye_position))
+    renderer.set_post_processor(LDRDisplay(exposure=4, bloom_radius=0.00))
     renderer.render(800)

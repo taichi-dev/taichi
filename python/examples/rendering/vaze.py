@@ -1,7 +1,7 @@
 from math import *
 
 import taichi as tc
-from taichi.mics.util import *
+from taichi.misc.util import *
 
 
 def create_scene():
@@ -55,7 +55,7 @@ def create_scene():
 
 
 if __name__ == '__main__':
-    renderer = tc.Renderer('../output/frames/vaze.png', overwrite=True)
+    renderer = tc.Renderer(output_dir='vaze', overwrite=True)
     renderer.initialize(preset='pt', scene=create_scene(), min_path_length=2, max_path_length=3)
     renderer.set_post_processor(tc.post_process.LDRDisplay(adaptive_exposure=False, exposure=1e3, bloom_radius=0.0))
     renderer.render(10000, 20)

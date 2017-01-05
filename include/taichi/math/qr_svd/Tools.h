@@ -118,7 +118,7 @@ computed from approx_rsqrt and one newton step
 */
 inline float rsqrt(float a)
 {
-	return 1.0f / std::sqrtf(a);
+	return 1.0f / std::sqrt(a);
 float b = approx_rsqrt(a);
 // Newton step with f(x) = a - 1/x^2
 b = 0.5f * b * (3.0f - a * (b * b));

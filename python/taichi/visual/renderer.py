@@ -1,11 +1,11 @@
-from taichi.mics.util import *
+from taichi.misc.util import *
 import time
 import os
 import taichi
 from taichi.core import tc_core
-from taichi.mics.util import get_uuid
+from taichi.misc.util import get_uuid
 from taichi.visual.post_process import LDRDisplay
-from taichi.mics.settings import get_num_cores
+from taichi.misc.settings import get_num_cores
 import cv2
 
 
@@ -14,7 +14,6 @@ class Renderer(object):
                  scene=None, preset=None, **kwargs):
         self.renderer_name = name
         self.output_dir = taichi.settings.get_output_path(output_dir + '/')
-        print self.output_dir
         self.post_processor = LDRDisplay()
         self.frame = frame
         try:

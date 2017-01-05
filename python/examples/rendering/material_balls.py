@@ -1,7 +1,7 @@
 from math import *
 
 import taichi as tc
-from taichi.mics.util import *
+from taichi.misc.util import *
 
 
 def create_scene():
@@ -73,7 +73,7 @@ def create_scene():
 
 
 if __name__ == '__main__':
-    renderer = tc.Renderer('../output/frames/geometry.png', overwrite=True)
+    renderer = tc.Renderer(output_dir='materials', overwrite=True)
     renderer.initialize(preset='pt', scene=create_scene(), luminance_clamping=1000)
     renderer.set_post_processor(tc.post_process.LDRDisplay(exposure=1, bloom_radius=0.0))
     renderer.render(10000, 20)

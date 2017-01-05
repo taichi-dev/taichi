@@ -2,7 +2,7 @@ import cv2
 
 from taichi.core import tc_core
 from taichi.dynamics.smoke3 import Smoke3
-from taichi.mics.util import *
+from taichi.misc.util import *
 from taichi.visual.camera import Camera
 from taichi.visual.particle_renderer import ParticleRenderer
 

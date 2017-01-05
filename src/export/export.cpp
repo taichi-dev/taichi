@@ -16,8 +16,8 @@ BOOST_PYTHON_MODULE(taichi_core) {
 	export_math();
 	export_dynamics();
 	export_visual();
+	export_io();
 	export_misc();
-
 }
 
 TC_NAMESPACE_END

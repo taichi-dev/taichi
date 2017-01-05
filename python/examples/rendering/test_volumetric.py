@@ -1,5 +1,5 @@
 from taichi.core import tc_core
-from taichi.mics.util import Vector
+from taichi.misc.util import Vector
 from taichi.visual import *
 from taichi.visual.post_process import *
 from taichi.visual.texture import Texture
@@ -75,7 +75,7 @@ def create_snow_scene(frame):
     return scene
 
 def render_snow_frame(frame):
-    renderer = Renderer('pt', '../output/frames/volumetric', overwrite=True, frame=frame)
+    renderer = Renderer('pt', 'volumetric', overwrite=True, frame=frame)
     scene = create_snow_scene(frame)
     renderer.set_scene(scene)
     renderer.initialize(min_path_length=1, max_path_length=20,

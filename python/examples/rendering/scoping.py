@@ -32,7 +32,7 @@ def create_scene():
 
 
 if __name__ == '__main__':
-    renderer = tc.Renderer('pt', '../output/frames/paper_cut.png', overwrite=True)
+    renderer = tc.Renderer('scoping', overwrite=True)
 
     renderer.initialize(preset='pt', scene=create_scene())
     renderer.set_post_processor(tc.post_process.LDRDisplay(exposure=0.5, bloom_radius=0.0))

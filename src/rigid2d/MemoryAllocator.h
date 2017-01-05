@@ -1,6 +1,8 @@
 #ifndef MEMORY_ALLOCATOR_H
 #define MEMORY_ALLOCATOR_H
 
+#include <cassert>
+
 template 
 <typename T, unsigned int size> class MemoryAllocator {
 private:

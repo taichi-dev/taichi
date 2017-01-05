@@ -1,16 +1,15 @@
-import taichi.geometry as geometry
 from taichi.core import tc_core
-from taichi.mics.util import *
+from taichi.misc.util import *
 from taichi.scoping.transform_scope import get_current_transform
 import taichi
 
 def map_filename(name):
     if name == 'plane':
-        return geometry.create_plane((1, 1))
+        return taichi.geometry.create_plane((1, 1))
     elif name == 'sphere':
-        return geometry.create_sphere((100, 100))
+        return taichi.geometry.create_sphere((100, 100))
     elif name == 'torus':
-        return geometry.create_torus((100, 100), 0.7, 1.0)
+        return taichi.geometry.create_torus((100, 100), 0.7, 1.0)
     if name.rfind('/') == -1:
         filename = taichi.settings.get_asset_path('meshes/' + name + '.obj')
     else:

@@ -15,22 +15,22 @@ void array2d_to_ndarray(T *arr, long long output) // actually as pointer...
 	}
 }
 
-template<typename T>
+template<typename T, int channels>
 void image_buffer_to_ndarray(T *arr, long long output) // actually as pointer...
 {
 	int width = arr->get_width(), height = arr->get_height();
 	for (auto &ind : arr->get_region()) {
-		for (int i = 0; i < 3; i++) {
-			reinterpret_cast<float *>(output)[ind.i * 3 + ind.j * width * 3 + i] = (*arr)[ind][i];
+		for (int i = 0; i < channels; i++) {
+			reinterpret_cast<float *>(output)[ind.i * channels + ind.j * width * channels + i] = (*arr)[ind][i];
 		}
 	}
 }
 
 template void array2d_to_ndarray(LevelSet2D *arr, long long);
-
 template void array2d_to_ndarray(Array2D<float> *arr, long long);
 
-template void image_buffer_to_ndarray(ImageBuffer<Vector3> *arr, long long);
+template void image_buffer_to_ndarray<ImageBuffer<Vector3>, 3>(ImageBuffer<Vector3> *arr, long long);
+template void image_buffer_to_ndarray<ImageBuffer<Vector4>, 4>(ImageBuffer<Vector4> *arr, long long);
 
 TC_NAMESPACE_END
 

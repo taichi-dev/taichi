@@ -32,7 +32,7 @@ def create_scene():
     return scene
 
 if __name__ == '__main__':
-    renderer = tc.Renderer('amcmcppm', '../output/frames/amcmcups.png', overwrite=True)
+    renderer = tc.Renderer('amcmcppm', 'tube_in_cube', overwrite=True)
 
     scene = create_scene()
     renderer.set_scene(scene)

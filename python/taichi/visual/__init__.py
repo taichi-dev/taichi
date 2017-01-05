@@ -7,7 +7,8 @@ from mesh import Mesh
 from environment_map import EnvironmentMap
 from texture import Texture
 from color import color255
+from image_reader import ImageReader
 import post_process
 
 __all__ = ['Camera', 'Renderer', 'VolumeMaterial', 'SurfaceMaterial',
-           'Scene', 'Mesh', 'EnvironmentMap', 'Texture', 'post_process', 'color255']
+           'Scene', 'Mesh', 'EnvironmentMap', 'Texture', 'post_process', 'color255', 'ImageReader']

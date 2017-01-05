@@ -24,19 +24,21 @@
 
 TC_NAMESPACE_BEGIN
 
-    void export_math();
+void export_math();
 
-    void export_dynamics();
+void export_dynamics();
 
-    void export_visual();
+void export_visual();
 
-    void export_misc();
+void export_misc();
 
-    template<typename T>
-    void array2d_to_ndarray(T *arr, long long);
+void export_io();
 
-    template<typename T>
-    void image_buffer_to_ndarray(T *arr, long long);
+template<typename T>
+void array2d_to_ndarray(T *arr, long long);
+
+template<typename T, int channels>
+void image_buffer_to_ndarray(T *arr, long long output);
 
 #define DEFINE_VECTOR_OF_NAMED(x, name) \
     class_<std::vector<x>>(name, init<>()) \

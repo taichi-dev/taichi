@@ -1,4 +1,4 @@
-from taichi.mics.util import *
+from taichi.misc.util import *
 
 
 class LevelSet2D:

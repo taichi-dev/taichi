@@ -23,8 +23,9 @@ $Revision: 1.477 $
 $Date: 2016/05/10 21:30:43 $
 */
 
-#define DCRAW_VERSION "9.27"
 #include "dcraw.h"
+
+#define DCRAW_VERSION "9.27"
 
 #define NODEPS
 
@@ -4418,30 +4419,30 @@ Gradients are numbered clockwise from NW=0 to W=7.
 */
 void CLASS vng_interpolate()
 {
-	static const signed char *cp, terms[] = {
+	static const signed char terms[] = {
 		-2,-2,+0,-1,0,0x01, -2,-2,+0,+0,1,0x01, -2,-1,-1,+0,0,0x01,
 		-2,-1,+0,-1,0,0x02, -2,-1,+0,+0,0,0x03, -2,-1,+0,+1,1,0x01,
 		-2,+0,+0,-1,0,0x06, -2,+0,+0,+0,1,0x02, -2,+0,+0,+1,0,0x03,
 		-2,+1,-1,+0,0,0x04, -2,+1,+0,-1,1,0x04, -2,+1,+0,+0,0,0x06,
 		-2,+1,+0,+1,0,0x02, -2,+2,+0,+0,1,0x04, -2,+2,+0,+1,0,0x04,
-		-1,-2,-1,+0,0,0x80, -1,-2,+0,-1,0,0x01, -1,-2,+1,-1,0,0x01,
-		-1,-2,+1,+0,1,0x01, -1,-1,-1,+1,0,0x88, -1,-1,+1,-2,0,0x40,
+		-1,-2,-1,+0,0,(signed char)0x80, -1,-2,+0,-1,0,0x01, -1,-2,+1,-1,0,0x01,
+		-1,-2,+1,+0,1,0x01, -1,-1,-1,+1,0,(signed char)0x88, -1,-1,+1,-2,0,0x40,
 		-1,-1,+1,-1,0,0x22, -1,-1,+1,+0,0,0x33, -1,-1,+1,+1,1,0x11,
 		-1,+0,-1,+2,0,0x08, -1,+0,+0,-1,0,0x44, -1,+0,+0,+1,0,0x11,
 		-1,+0,+1,-2,1,0x40, -1,+0,+1,-1,0,0x66, -1,+0,+1,+0,1,0x22,
 		-1,+0,+1,+1,0,0x33, -1,+0,+1,+2,1,0x10, -1,+1,+1,-1,1,0x44,
 		-1,+1,+1,+0,0,0x66, -1,+1,+1,+1,0,0x22, -1,+1,+1,+2,0,0x10,
 		-1,+2,+0,+1,0,0x04, -1,+2,+1,+0,1,0x04, -1,+2,+1,+1,0,0x04,
-		+0,-2,+0,+0,1,0x80, +0,-1,+0,+1,1,0x88, +0,-1,+1,-2,0,0x40,
+		+0,-2,+0,+0,1,(signed char)0x80, +0,-1,+0,+1,1,(signed char)0x88, +0,-1,+1,-2,0,0x40,
 		+0,-1,+1,+0,0,0x11, +0,-1,+2,-2,0,0x40, +0,-1,+2,-1,0,0x20,
 		+0,-1,+2,+0,0,0x30, +0,-1,+2,+1,1,0x10, +0,+0,+0,+2,1,0x08,
 		+0,+0,+2,-2,1,0x40, +0,+0,+2,-1,0,0x60, +0,+0,+2,+0,1,0x20,
 		+0,+0,+2,+1,0,0x30, +0,+0,+2,+2,1,0x10, +0,+1,+1,+0,0,0x44,
 		+0,+1,+1,+2,0,0x10, +0,+1,+2,-1,1,0x40, +0,+1,+2,+0,0,0x60,
-		+0,+1,+2,+1,0,0x20, +0,+1,+2,+2,0,0x10, +1,-2,+1,+0,0,0x80,
-		+1,-1,+1,+1,0,0x88, +1,+0,+1,+2,0,0x08, +1,+0,+2,-1,0,0x40,
-		+1,+0,+2,+1,0,0x10
-	}, chood[] = { -1,-1, -1,0, -1,+1, 0,+1, +1,+1, +1,0, +1,-1, 0,-1 };
+		+0,+1,+2,+1,0,0x20, +0,+1,+2,+2,0,0x10, +1,-2,+1,+0,0,(signed char)0x80,
+		+1,-1,+1,+1,0,(signed char)0x88, +1,+0,+1,+2,0,0x08, +1,+0,+2,-1,0,0x40,
+		+1,+0,+2,+1,0,0x10 };
+	static const signed char *cp, chood[] = { -1,-1, -1,0, -1,+1, 0,+1, +1,+1, +1,0, +1,-1, 0,-1 };
 	ushort(*brow[5])[4], *pix;
 	int prow = 8, pcol = 2, *ip, *code[16][16], gval[8], gmin, gmax, sum[4];
 	int row, col, x, y, x1, x2, y1, y2, t, weight, grads, color, diag;
@@ -7938,7 +7939,7 @@ void CLASS adobe_coeff(const char *make, const char *model)
 		{ 8035,435,-962,-6001,13872,2320,-1159,3065,5434 } },
 		{ "Photron BC2-HD", 0, 0,		/* DJC */
 		{ 14603,-4122,-528,-1810,9794,2017,-297,2763,5936 } },
-		{ "Red One", 704, 0xffff,		/* DJC */
+		{ "Red One", 704, (short int)0xffff,		/* DJC */
 		{ 21014,-7891,-2613,-3056,12201,856,-2203,5125,8042 } },
 		{ "Ricoh GR II", 0, 0,
 		{ 4630,-834,-423,-4977,12805,2417,-638,1467,6115 } },
@@ -9943,7 +9944,10 @@ void CLASS jpeg_thumb()
 	free(thumb);
 }
 
-void CLASS write_ppm_tiff()
+
+// We no longer need to write to a tiff file but to a taichi::ImageBuffer<Vector4>
+
+void CLASS write_ppm_tiff(DCRawOutput &output)
 {
 	struct tiff_hdr th;
 	uchar *ppm;
@@ -9952,6 +9956,52 @@ void CLASS write_ppm_tiff()
 	int perc, val, total, white = 0x2000;
 
 	perc = width * height * 0.01;		/* 99th percentile white level */
+	if (fuji_width) perc /= 2;
+	if (!((highlight & ~2) || no_auto_bright))
+		for (white = c = 0; c < colors; c++) {
+			for (val = 0x2000, total = 0; --val > 32; )
+				if ((total += histogram[c][val]) > perc) break;
+			if (white < val) white = val;
+		}
+	gamma_curve(gamm[0], gamm[1], 2, (white << 3) / bright);
+	iheight = height;
+	iwidth = width;
+	if (flip & 4) SWAP(height, width);
+	ppm = (uchar *)calloc(width, colors*output_bps / 8);
+	ppm2 = (ushort *)ppm;
+	if (output_tiff) {
+		tiff_head(&th, 1);
+		fwrite(&th, sizeof th, 1, ofp);
+		if (oprof)
+			fwrite(oprof, ntohl(oprof[0]), 1, ofp);
+	}
+	soff = flip_index(0, 0);
+	cstep = flip_index(0, 1) - soff;
+	rstep = flip_index(1, 0) - flip_index(0, width);
+	output.initialize(width, height, colors);
+	for (row = 0; row < height; row++, soff += rstep) {
+		for (col = 0; col < width; col++, soff += cstep) {
+			FORCC ppm2[col*colors + c] = curve[image[soff][c]];
+			for (int i = 0; i < colors; i++) {
+				output.data[colors * (row * width + col) + i] = ppm2[col * colors + i] * 
+					(1.0f / (1 << 16));
+			}
+		}
+		//fwrite(ppm, colors*output_bps / 8, width, ofp);
+	}
+	free(ppm);
+}
+
+/*
+void CLASS write_ppm_tiff()
+{
+	struct tiff_hdr th;
+	uchar *ppm;
+	ushort *ppm2;
+	int c, row, col, soff, rstep, cstep;
+	int perc, val, total, white = 0x2000;
+
+	perc = width * height * 0.01;		//99th percentile white level
 	if (fuji_width) perc /= 2;
 	if (!((highlight & ~2) || no_auto_bright))
 		for (white = c = 0; c < colors; c++) {
@@ -9993,8 +10043,9 @@ void CLASS write_ppm_tiff()
 	}
 	free(ppm);
 }
+*/
 
-int CLASS dcraw_main(int argc, const char **argv)
+int CLASS dcraw_main(int argc, const char **argv, DCRawOutput &output)
 {
 	int arg, status = 0, quality, i, c;
 	int timestamp_only = 0, thumbnail_only = 0, identify_only = 0;
@@ -10186,7 +10237,7 @@ int CLASS dcraw_main(int argc, const char **argv)
 			}
 			goto next;
 		}
-		write_fun = &CLASS write_ppm_tiff;
+		write_fun = nullptr;
 		if (thumbnail_only) {
 			if ((status = !thumb_offset)) {
 				fprintf(stderr, _("%s has no thumbnail.\n"), ifname);
@@ -10386,7 +10437,7 @@ int CLASS dcraw_main(int argc, const char **argv)
 	thumbnail:
 		if (write_fun == &CLASS jpeg_thumb)
 			write_ext = ".jpg";
-		else if (output_tiff && write_fun == &CLASS write_ppm_tiff)
+		else if (output_tiff && write_fun == nullptr)
 			write_ext = ".tiff";
 		else
 			write_ext = ".pgm\0.ppm\0.ppm\0.pam" + colors * 5 - 5;
@@ -10412,7 +10463,8 @@ int CLASS dcraw_main(int argc, const char **argv)
 		}
 		if (verbose)
 			fprintf(stderr, _("Writing data to %s ...\n"), ofname);
-		(*write_fun)();
+		//(*write_fun)();
+		write_ppm_tiff(output);
 		fclose(ifp);
 		if (ofp != stdout) fclose(ofp);
 	cleanup:
@@ -10428,6 +10480,3 @@ int CLASS dcraw_main(int argc, const char **argv)
 	return status;
 }
 
-void dcraw_read(const char *filepath, void *&buffer) {
-
-}

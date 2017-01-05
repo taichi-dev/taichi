@@ -8,13 +8,13 @@ from taichi.tools.video import VideoManager
 from taichi.visual.camera import Camera
 from taichi.visual.particle_renderer import ParticleRenderer
 from taichi.visual.post_process import LDRDisplay
-
+import taichi as tc
 
 class MPM3:
     def __init__(self, **kwargs):
         self.c = tc_core.create_simulation3d('mpm')
         self.c.initialize(P(**kwargs))
-        self.directory = '../output/frames/' + get_uuid() + '/'
+        self.directory = tc.get_root_directory() + '/' + get_uuid() + '/'
         self.video_manager = VideoManager(self.directory, 960, 540)
         try:
             os.mkdir(self.directory)

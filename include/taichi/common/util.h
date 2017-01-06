@@ -33,12 +33,17 @@
 
 #undef assert
 #ifdef _WIN64
+#ifndef TC_PASS_EXCEPTION_TO_PYTHON
+// For Visual Studio debugging...
 #define DEBUG_TRIGGER __debugbreak()
 #else
-#define DEBUG_TRIGGER getchar()
+#define DEBUG_TRIGGER
 #endif
-#define assert(x) {bool ret = static_cast<bool>(x); if (!ret) {printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, #x); std::cout << std::flush; DEBUG_TRIGGER; exit(-1);}}
-#define assert_info(x, info) {bool ___ret___ = static_cast<bool>(x); if (!___ret___) {printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, &((info)[0])); std::cout << std::flush; DEBUG_TRIGGER; exit(-1);}}
+#else
+#define DEBUG_TRIGGER
+#endif
+#define assert(x) {bool ret = static_cast<bool>(x); if (!ret) {printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, #x); std::cout << std::flush; DEBUG_TRIGGER; taichi_raise_assertion_failure_in_python("Assertion failed.");}}
+#define assert_info(x, info) {bool ___ret___ = static_cast<bool>(x); if (!___ret___) {printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, &((info)[0])); std::cout << std::flush; DEBUG_TRIGGER; taichi_raise_assertion_failure_in_python("Assertion failed.");}}
 #define error(info) assert_info(false, info)
 #define NOT_IMPLEMENTED assert_info(false, "Not Implemented!");
 
@@ -69,6 +74,10 @@ typedef unsigned long long uint64;
 
 #include <type_traits>
 
+void taichi_raise_assertion_failure_in_python(const char *msg);
+
+TC_NAMESPACE_BEGIN
+
 template<typename T, typename U>
 struct is_type_same : std::false_type { };
 
@@ -80,3 +89,5 @@ constexpr bool same_type() { return is_type_same<T, U>::value; }
 
 template<typename T, typename U>
 constexpr bool same_type(const U &u) { return is_type_same<T, U>::value; }
+
+TC_NAMESPACE_END

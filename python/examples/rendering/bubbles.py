@@ -17,8 +17,7 @@ def create_scene():
     with scene:
         scene.set_camera(camera)
 
-        texture = (Texture('perlin') + 1) * 1
-        texture = Texture('fract', tex=texture)
+        texture = (Texture('perlin') + 1).fract()
 
         mesh = Mesh('plane', SurfaceMaterial('diffuse', color_map=texture),
                     translate=(0, 0, -0.05), scale=10, rotation=(90, 0, 0))

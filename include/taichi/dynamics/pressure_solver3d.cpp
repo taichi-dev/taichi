@@ -54,7 +54,7 @@ public:
                     assert_info(neighbours[k] == r.get_neighbour_cell_type(k), "Test failed");
                 }
             }
-            printf("SystemRow tested.");
+            printf("SystemRow tested.\n");
         }
     };
 

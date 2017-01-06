@@ -76,7 +76,7 @@ class Texture:
         taichi = Texture('taichi', scale=scale, rotation=rotation)
         rep = Texture("repeat", repeat_u=n, repeat_v=n, tex=taichi)
         rep = Texture("checkerboard", tex1=rep, tex2=0 * rep, repeat_u=n, repeat_v=n) * 0.8 + 0.1
-        return rep.clamp().flip(1)#.rasterize(2048)
+        return rep.clamp().flip(1)
 
     @staticmethod
     def from_render_particles(resolution, particles):

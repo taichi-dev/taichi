@@ -1,5 +1,3 @@
-#pragma once
-
 #include <taichi/python/export.h>
 #include <taichi/io/image_reader.h>
 

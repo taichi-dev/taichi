@@ -1,4 +1,5 @@
 import os
+from taichi.misc.util import get_os_name
 
 default_num_threads = 2
 
@@ -12,11 +13,16 @@ def get_root_directory():
 
 
 def get_bin_directory():
-    return os.environ.get('TAICHI_BIN_DIR', get_root_directory() + '/taichi/build/')
+    if get_os_name() == 'win':
+        # for the dlls
+        bin_rel_path = '/taichi/runtimes/'
+    else:
+        bin_rel_path = '/taichi/build/'
+    return os.environ.get('TAICHI_BIN_DIR', get_root_directory() + bin_rel_path) + '/'
 
 
 def get_output_directory():
-    return os.environ.get('TAICHI_OUTPUT_DIR', get_root_directory() + '/taichi_outputs/')
+    return os.environ.get('TAICHI_OUTPUT_DIR', get_root_directory() + '/taichi_outputs/') + '/'
 
 
 def get_output_path(path):
@@ -24,7 +30,7 @@ def get_output_path(path):
 
 
 def get_asset_directory():
-    return os.environ.get('TAICHI_ASSET_DIR', get_root_directory() + '/taichi_assets/')
+    return os.environ.get('TAICHI_ASSET_DIR', get_root_directory() + '/taichi_assets/') + '/'
 
 
 def get_asset_path(path):

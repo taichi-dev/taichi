@@ -1,5 +1,6 @@
 import time
 
+import taichi
 from taichi.core import tc_core
 from taichi.misc.util import *
 
@@ -8,7 +9,7 @@ class Smoke3:
     def __init__(self, **kwargs):
         self.c = tc_core.create_simulation3d('smoke')
         self.c.initialize(P(**kwargs))
-        self.directory = '../output/frames/' + get_uuid() + '/'
+        self.directory = taichi.get_output_path(get_unique_task_id())
         try:
             os.mkdir(self.directory)
         except Exception as e:

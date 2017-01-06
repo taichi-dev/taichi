@@ -16,6 +16,10 @@ def get_os_name():
 
 
 def get_uuid():
+    print 'Warning: get_uuid is deprecated. Please use get_unique_task_id instead.'
+    return get_unique_task_id()
+
+def get_unique_task_id():
     return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + ('%05d' % random.randint(0, 10000))
 
 import copy

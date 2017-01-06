@@ -38,7 +38,7 @@ elif get_os_name() == 'linux':
         sys.path.append(".")
         import taichi_core as tc_core
 elif get_os_name() == 'win':
-    bin_dir = os.environ['TAICHI_BIN_DIR'] + '/'
+    bin_dir = get_bin_directory() + '/'
     dll_path = bin_dir + '/Release/taichi_core.dll'
 
     # The problem here is, on windows, when an dll/pyd is loaded, we can not write to it any more...

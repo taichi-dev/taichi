@@ -14,7 +14,7 @@ class MPM3:
     def __init__(self, **kwargs):
         self.c = tc_core.create_simulation3d('mpm')
         self.c.initialize(P(**kwargs))
-        self.directory = tc.get_root_directory() + '/' + get_uuid() + '/'
+        self.directory = tc.get_output_path(get_unique_task_id())
         self.video_manager = VideoManager(self.directory, 960, 540)
         try:
             os.mkdir(self.directory)
@@ -34,7 +34,7 @@ class MPM3:
         print 'Time:', time.time() - T
         image_buffer = tc_core.RGBImageFloat(self.video_manager.width, self.video_manager.height, Vector(0, 0, 0.0))
         particles = self.c.get_render_particles()
-        particles.write(self.directory + 'particles%05d.bin' % self.frame)
+        particles.write(self.directory + '/particles%05d.bin' % self.frame)
         res = map(float, self.resolution)
         radius = res[0] * 2.5
         theta = 0

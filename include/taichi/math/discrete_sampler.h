@@ -36,7 +36,7 @@ public:
 		else {
 			zero_total_pdf = sum < 1e-20f;
 		}
-		float inv_sum = 1.0f / sum;
+		float inv_sum = 1.0f / std::max(sum, 1e-30f);
 		this->pdf.resize(unnormalized_pdf.size());
 		this->cdf.resize(unnormalized_pdf.size());
 		for (int i = 0; i < (int)pdf.size(); i++) {

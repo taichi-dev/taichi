@@ -34,9 +34,9 @@ void BSDF::sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir,
 }
 
 real BSDF::probability_density(const Vector3 &in, const Vector3 &out) const {
-	real output = material->probability_density(world_to_local * in, world_to_local * out, uv);
-	assert_info(output >= 0, "PDF should not be negative: " + std::to_string(output));
-	return output;
+	real pdf = material->probability_density(world_to_local * in, world_to_local * out, uv);
+	assert_info(pdf >= 0, "PDF should be non-negative: " + std::to_string(pdf));
+	return pdf;
 }
 
 Vector3 BSDF::evaluate(const Vector3 &in, const Vector3 &out) const {
@@ -45,7 +45,7 @@ Vector3 BSDF::evaluate(const Vector3 &in, const Vector3 &out) const {
 		return Vector3(0.0f);
 	}
 	Vector3 output = material->evaluate_bsdf(world_to_local * in, world_to_local * out, uv);
-	assert_info(output.r >= 0 && output.g >= 0 && output.b >= 0, "BSDF should not be negative.");
+	assert_info(output.r >= 0 && output.g >= 0 && output.b >= 0, "BSDF should be non-negative.");
 	return output;
 }
 

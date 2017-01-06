@@ -12,7 +12,7 @@ protected:
 public:
 	virtual void initialize(const Config &config) override {
 		SurfaceMaterial::initialize(config);
-        color_sampler = get_color_sampler(config, "color");
+		color_sampler = get_color_sampler(config, "color");
 	}
 
 	virtual bool is_emissive() const override {
@@ -35,9 +35,9 @@ public:
 		return (in.z * out.z > 0 ? 1.0f : 0.0f) * color; // No division by pi here.
 	}
 
-    virtual real get_importance(const Vector2 &uv) const override {
-        return luminance(color_sampler->sample3(uv));
-    }
+	virtual real get_importance(const Vector2 &uv) const override {
+		return luminance(color_sampler->sample3(uv));
+	}
 
 };
 
@@ -383,10 +383,11 @@ public:
 
 	real probability_density(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
 		real sum = 0;
+		auto material_sampler = get_material_sampler(uv);
 		for (int i = 0; i < (int)materials.size(); i++) {
 			if (!materials[i]->is_delta())
 				sum += materials[i]->probability_density(in, out, uv) *
-				get_material_sampler(uv).get_pdf(i);
+				material_sampler.get_pdf(i);
 		}
 		return sum;
 	}

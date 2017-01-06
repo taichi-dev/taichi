@@ -11,7 +11,7 @@ from taichi.visual.particle_renderer import ParticleRenderer
 
 class ParticleViewer:
     def __init__(self, directory, width, height):
-        self.directory = '../output/frames/' + get_uuid() + '/'
+        self.directory = '../output/frames/' + get_unique_task_id() + '/'
         self.input_directory = '../output/frames/' + directory + '/'
         self.video_manager = VideoManager(self.directory, width, height)
         self.particle_renderer = ParticleRenderer('shadow_map',

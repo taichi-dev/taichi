@@ -4,7 +4,7 @@ import shutil
 import sys
 
 from taichi.misc.settings import get_output_directory, get_bin_directory
-from taichi.misc.util import get_os_name, get_uuid
+from taichi.misc.util import get_os_name, get_unique_task_id
 
 CREATE_SAND_BOX_ON_WINDOWS = True
 
@@ -50,7 +50,7 @@ elif get_os_name() == 'win':
     if os.path.exists(dll_path):
         if CREATE_SAND_BOX_ON_WINDOWS:
             # So let's just create a sandbox for separated core lib development and loading
-            dir = get_output_directory() + '/tmp/' + get_uuid() + '/'
+            dir = get_output_directory() + '/tmp/' + get_unique_task_id() + '/'
             os.makedirs(dir)
             '''
             for fn in os.listdir(bin_dir):

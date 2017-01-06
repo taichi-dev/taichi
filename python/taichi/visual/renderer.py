@@ -3,14 +3,14 @@ import time
 import os
 import taichi
 from taichi.core import tc_core
-from taichi.misc.util import get_uuid
+from taichi.misc.util import get_unique_task_id
 from taichi.visual.post_process import LDRDisplay
 from taichi.misc.settings import get_num_cores
 import cv2
 
 
 class Renderer(object):
-    def __init__(self, name=None, output_dir=get_uuid(), overwrite=True, frame=0,
+    def __init__(self, name=None, output_dir=get_unique_task_id(), overwrite=True, frame=0,
                  scene=None, preset=None, **kwargs):
         self.renderer_name = name
         self.output_dir = taichi.settings.get_output_path(output_dir + '/')

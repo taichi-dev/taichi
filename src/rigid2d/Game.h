@@ -10,24 +10,24 @@
 class Game {
 private:
 public:
-	Input input;
-	Physics physics;
-	Designer designer;
-	BodyLinker bodyLinker;
-	static int frameRate, frameCount;
-	static void FrameRateThreadFun(void *arg);
-	bool MouseButtonEvent(int buttion, int action);
-	bool MouseWheelEvent(int delta);
-	bool KeyEvent(int key, int action);
-	void Test1();
-	void Test2();
-	void Test3();
-	void Test4();
-	void Test5();
-	void Test6();
-	void Test7();
-	void Initialize();
-	void Run();
+    Input input;
+    Physics physics;
+    Designer designer;
+    BodyLinker bodyLinker;
+    static int frameRate, frameCount;
+    static void FrameRateThreadFun(void *arg);
+    bool MouseButtonEvent(int buttion, int action);
+    bool MouseWheelEvent(int delta);
+    bool KeyEvent(int key, int action);
+    void Test1();
+    void Test2();
+    void Test3();
+    void Test4();
+    void Test5();
+    void Test6();
+    void Test7();
+    void Initialize();
+    void Run();
 };
 
 void KeyEventCallback(int key, int action);

@@ -9,21 +9,21 @@ using namespace std;
 #define TIMER_H
 
 inline unsigned long long GetCPUTickCount(){ 
-	return 0;
+    return 0;
 }
 
 class Timer {
 private:
-	static map<string, unsigned long long> M;
+    static map<string, unsigned long long> M;
 public:
-	static void BeginTimer(string name) {
-		M[name] = GetCPUTickCount();
-	}
-	static void EndTimer(string name) {
-		assert(M.find(name) != M.end());
-		unsigned long long now = GetCPUTickCount();
-		printf("Time Cost of %s is %I64u ticks\n", name.c_str(), (now - M[name]));
-	}
+    static void BeginTimer(string name) {
+        M[name] = GetCPUTickCount();
+    }
+    static void EndTimer(string name) {
+        assert(M.find(name) != M.end());
+        unsigned long long now = GetCPUTickCount();
+        printf("Time Cost of %s is %I64u ticks\n", name.c_str(), (now - M[name]));
+    }
 };
 
 #endif

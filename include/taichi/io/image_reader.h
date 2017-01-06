@@ -8,10 +8,10 @@ TC_NAMESPACE_BEGIN
 
 class ImageReader : public Unit {
 public:
-	ImageReader() {}
-	virtual ImageBuffer<Vector4> read(const std::string &filepath) {
-		return ImageBuffer<Vector4>(0, 0);
-	}
+    ImageReader() {}
+    virtual ImageBuffer<Vector4> read(const std::string &filepath) {
+        return ImageBuffer<Vector4>(0, 0);
+    }
 };
 
 TC_INTERFACE(ImageReader);

@@ -21,7 +21,7 @@ PointRenderer::PointRenderer(int max_size) : max_size(max_size) {
 
     program = load_program("point", "point");
     CGL;
-	setViewport(vec2(0), vec2(1));
+    setViewport(vec2(0), vec2(1));
 }
 
 void PointRenderer::render(vector<vec2> points, float point_size) {
@@ -30,9 +30,9 @@ void PointRenderer::render(vector<vec2> points, float point_size) {
 
     glBindVertexArray(vao);
     glDisable(GL_DEPTH_TEST);
-	for (auto &p : points) {
-		p = (p - lower_left) / (upper_right - lower_left) * 2.0f - 1.0f;
-	}
+    for (auto &p : points) {
+        p = (p - lower_left) / (upper_right - lower_left) * 2.0f - 1.0f;
+    }
 
     glUseProgram(program);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -47,8 +47,8 @@ void PointRenderer::render(vector<vec2> points, float point_size) {
 
 void PointRenderer::setViewport(vec2 lower_left, vec2 upper_right)
 {
-	this->lower_left = lower_left;
-	this->upper_right = upper_right;
+    this->lower_left = lower_left;
+    this->upper_right = upper_right;
 }
 
 TC_NAMESPACE_END

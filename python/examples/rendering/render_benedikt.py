@@ -70,7 +70,7 @@ def render():
     root, fov = tc.settings.get_asset_path('scenes/staircase/'), 105
     scene = load_scene(root, fov)
 
-    renderer = Renderer('pt', output_dir='benedikt_dataset', overwrite=True)
+    renderer = Renderer(output_dir='benedikt_dataset', overwrite=True)
     renderer.set_post_processor(LDRDisplay(1.0))
 
     renderer.initialize(preset='pt', scene=scene)

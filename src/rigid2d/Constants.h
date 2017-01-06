@@ -33,11 +33,11 @@ const double timeInterval = 0.1;
 #define DBL_INF numeric_limits<double>::infinity()
 
 inline float randf() {
-	return 1.0f * rand() / RAND_MAX;
+    return 1.0f * rand() / RAND_MAX;
 }
 
 inline double sqr(double a) {
-	return a * a;
+    return a * a;
 }
 
 inline double round(double number) {
@@ -47,32 +47,32 @@ inline double round(double number) {
 /*
 inline float invSqrt(float x)
 {
-	float xhalf = 0.5f*x;
-	int i = *(int*)&x; // get bits for floating VALUE 
-	i = 0x5f375a86- (i>>1); // gives initial guess y0
-	x = *(float*)&i; // convert bits BACK to float
-	x = x*(1.5f-xhalf*x*x); // Newton step, repeating increases accuracy
-	x = x*(1.5f-xhalf*x*x); // Newton step, repeating increases accuracy
-	x = x*(1.5f-xhalf*x*x); // Newton step, repeating increases accuracy
-	return x;
+    float xhalf = 0.5f*x;
+    int i = *(int*)&x; // get bits for floating VALUE 
+    i = 0x5f375a86- (i>>1); // gives initial guess y0
+    x = *(float*)&i; // convert bits BACK to float
+    x = x*(1.5f-xhalf*x*x); // Newton step, repeating increases accuracy
+    x = x*(1.5f-xhalf*x*x); // Newton step, repeating increases accuracy
+    x = x*(1.5f-xhalf*x*x); // Newton step, repeating increases accuracy
+    return x;
 }
 */
 
 inline double invSqrt(double y)
 {
-	float x = (float)y;
-	float xhalf = 0.5f*x;
-	int i = *(int*)&x; // get bits for floating VALUE 
-	i = 0x5f375a86- (i>>1); // gives initial guess y0
-	x = *(float*)&i; // convert bits BACK to float
-	x = x*(1.5f-xhalf*x*x); // Newton step, repeating increases accuracy
-	x = x*(1.5f-xhalf*x*x); // Newton step, repeating increases accuracy
-	y = x*(1.5f-xhalf*x*x); // Newton step, repeating increases accuracy
-	return y;
+    float x = (float)y;
+    float xhalf = 0.5f*x;
+    int i = *(int*)&x; // get bits for floating VALUE 
+    i = 0x5f375a86- (i>>1); // gives initial guess y0
+    x = *(float*)&i; // convert bits BACK to float
+    x = x*(1.5f-xhalf*x*x); // Newton step, repeating increases accuracy
+    x = x*(1.5f-xhalf*x*x); // Newton step, repeating increases accuracy
+    y = x*(1.5f-xhalf*x*x); // Newton step, repeating increases accuracy
+    return y;
 }
 
 inline int loopNext(int i, int n) {
-	i++;
-	if (i == n) return 0;
-	else return i;
+    i++;
+    if (i == n) return 0;
+    else return i;
 }

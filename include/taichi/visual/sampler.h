@@ -59,8 +59,10 @@ public:
 		assert_info(sampler != nullptr, "null sampler");
 		real ret = sampler->sample(cursor++, instance);
 		assert_info(ret >= 0, "sampler output should be non-neg");
+		if (ret > 1 + 1e-5f) {
+			printf("Warning: sampler returns value > 1: [%f]", ret);
+		}
 		if (ret >= 1) {
-			printf("Warning: sampler returns value >= 1: [%f]", ret);
 			ret = 0;
 		}
 		return ret;

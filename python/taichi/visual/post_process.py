@@ -12,7 +12,6 @@ class LDRDisplay:
     def process(self, img):
         if self.adaptive_exposure:
             avg = np.mean(img)
-            print avg
             img *= 0.18 / avg * self.exposure
         else:
             img *= self.exposure

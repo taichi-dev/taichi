@@ -65,23 +65,16 @@ def create_snow_scene(frame):
                     translate=(1.0, 1.0, -1), scale=(0.1, 0.1, 0.1), rotation=(180, 0, 0))
         scene.add_mesh(mesh)
 
-        fn = '../output/frames/snow-taichi-g10/particles%05d.bin' % frame
+        # Change this line to your particle output path pls.
+        fn = r'../snow-sim/particles%05d.bin' % frame
         mesh = create_mpm_snow_block(fn)
         scene.add_mesh(mesh)
-
-        #envmap = EnvironmentMap('base', filepath='d:/assets/schoenbrunn-front_hd.hdr')
-        #scene.set_environment_map(envmap)
 
     return scene
 
 def render_snow_frame(frame):
-    renderer = Renderer('pt', 'volumetric', overwrite=True, frame=frame)
-    scene = create_snow_scene(frame)
-    renderer.set_scene(scene)
-    renderer.initialize(min_path_length=1, max_path_length=20,
-                        initial_radius=0.005, sampler='prand', russian_roulette=False, volmetric=True, direct_lighting=1,
-                        direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1, stage_frequency=3,
-                        num_threads=8, luminance_clamping=0)
+    renderer = Renderer(output_dir='volumetric', overwrite=True, frame=frame)
+    renderer.initialize(preset='pt', scene=create_snow_scene(frame), sampler='prand')
     renderer.set_post_processor(LDRDisplay(exposure=0.6, bloom_radius=0.0, bloom_threshold=1.0))
     renderer.render(20)
 

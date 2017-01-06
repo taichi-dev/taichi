@@ -20,7 +20,7 @@ def create_scene():
         texture = (Texture('perlin') + 1) * 1
         texture = Texture('fract', tex=texture)
 
-        mesh = Mesh('plane', SurfaceMaterial('diffuse', color_map=texture.id),
+        mesh = Mesh('plane', SurfaceMaterial('diffuse', color_map=texture),
                     translate=(0, 0, -0.05), scale=10, rotation=(90, 0, 0))
         scene.add_mesh(mesh)
 
@@ -45,7 +45,7 @@ def create_scene():
 
 
 if __name__ == '__main__':
-    renderer = Renderer('bdpt', output_dir='bubbles', overwrite=True)
+    renderer = Renderer(output_dir='bubbles', overwrite=True)
 
     renderer.initialize(preset='pt', scene=create_scene())
     renderer.set_post_processor(LDRDisplay(exposure=0.6, bloom_radius=0.1))

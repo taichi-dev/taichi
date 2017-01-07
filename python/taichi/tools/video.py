@@ -1,6 +1,7 @@
+from taichi import ndarray_to_image_buffer
 from taichi.visual.post_process import LDRDisplay
 import os
-import cv2
+
 
 class VideoManager:
     def __init__(self, directory, width, height, post_processor=None):
@@ -13,8 +14,7 @@ class VideoManager:
     def write_frame(self, img):
         if self.post_processor:
             img = self.post_processor.process(img)
-        img *= 255.0
-        cv2.imwrite(self.directory + '/%05d.png' % self.frame_counter, img)
+        ndarray_to_image_buffer(img).write(self.directory + '/%05d.png' % self.frame_counter)
         self.frame_counter += 1
 
     def make_video(self):

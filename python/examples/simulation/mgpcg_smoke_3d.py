@@ -1,10 +1,9 @@
-import cv2
-
 from taichi.core import tc_core
 from taichi.dynamics.smoke3 import Smoke3
 from taichi.misc.util import *
 from taichi.visual.camera import Camera
 from taichi.visual.particle_renderer import ParticleRenderer
+from taichi.gui.image_viewer import show_image
 
 if __name__ == '__main__':
     resolution = [64] * 3
@@ -33,7 +32,6 @@ if __name__ == '__main__':
         particle_renderer.set_camera(camera)
         particle_renderer.render(image_buffer, particles)
         img = image_buffer_to_ndarray(image_buffer)
-        cv2.imshow('Vis', img)
-        cv2.waitKey(1)
+        show_image('Vis', img)
 
 

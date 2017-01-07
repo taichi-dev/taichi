@@ -1,13 +1,12 @@
 import time
 
-import cv2
-
 from taichi.core import tc_core
 from taichi.misc.util import *
 from taichi.tools.video import VideoManager
 from taichi.visual.camera import Camera
 from taichi.visual.particle_renderer import ParticleRenderer
 from taichi.visual.post_process import LDRDisplay
+from taichi.gui.image_viewer import show_image
 import taichi as tc
 
 class MPM3:
@@ -45,8 +44,7 @@ class MPM3:
         self.particle_renderer.render(image_buffer, particles)
         img = image_buffer_to_ndarray(image_buffer)
         img = LDRDisplay(exposure=0.1).process(img)
-        cv2.imshow('Vis', img)
-        cv2.waitKey(1)
+        show_image('Vis', img)
         self.video_manager.write_frame(img)
         self.frame += 1
 

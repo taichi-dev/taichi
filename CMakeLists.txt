@@ -76,7 +76,7 @@ else ()
     execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import sys; from distutils import sysconfig; sys.stdout.write(sysconfig.get_config_var('LIBDIR'))"
             OUTPUT_VARIABLE PYTHON_LIBRARY_DIR)
 
-    find_library(PYTHON_LIBRARY NAMES python2.7 PATHS ${PYTHON_LIBRARY_DIR} NO_DEFAULT_PATH NO_SYSTEM_ENVIRONMENT_PATH)
+    find_library(PYTHON_LIBRARY NAMES python2.7 PATHS ${PYTHON_LIBRARY_DIR} NO_DEFAULT_PATH NO_SYSTEM_ENVIRONMENT_PATH PATH_SUFFIXES x86_64-linux-gnu)
     message("Python lib ${PYTHON_LIBRARY}")
     set(PYTHON_LIBRARIES ${PYTHON_LIBRARY})
 endif ()

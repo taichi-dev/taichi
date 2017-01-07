@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import os
 import platform
 import sys
@@ -12,7 +10,6 @@ from watchdog.observers import Observer
 
 
 class EventHandler(FileSystemEventHandler):
-
     def __init__(self, filename, label, *args, **kwargs):
         self.filename = filename
         self.label = label
@@ -29,8 +26,7 @@ class EventHandler(FileSystemEventHandler):
         self.label.image = photo
 
 
-class App(object):
-
+class ImageWatchdog(object):
     def __init__(self, filename):
         self.filename = filename
 
@@ -41,7 +37,7 @@ class App(object):
         self.root = tk.Tk()
 
         self.root.configure(background='black')
-        self.root.title('Frame Viewer')
+        self.root.title('Frame Watchdog')
         self.root.protocol('WM_DELETE_WINDOW', self.callback)
 
         photo = ImageTk.PhotoImage(Image.open(self.filename))
@@ -70,6 +66,49 @@ class App(object):
         self.root.mainloop()
 
 
+class ImageViewer(object):
+    def __init__(self, img):
+        self.img = (img * 255).astype('uint8')
+
+    def callback(self):
+        self.root.quit()
+
+    def run(self):
+        self.root = tk.Tk()
+
+        self.root.configure(background='black')
+        self.root.title('Frame Viewer')
+        self.root.protocol('WM_DELETE_WINDOW', self.callback)
+
+        photo = ImageTk.PhotoImage(Image.fromarray(self.img))
+
+        label = tk.Label(self.root, image=photo, background='black')
+        label.image = photo  # keep a reference!
+        label.pack()
+
+        # bring the window to the front when launched
+        # it seems that the following code works well on my Mac,
+        # so maybe we can avoid importing 'Cocoa'
+        # What's your consideration here? @beaugunderson
+
+        if platform.system() != 'Darwin':
+            self.root.lift()
+            self.root.attributes('-topmost', True)
+            self.root.after_idle(self.root.attributes, '-topmost', False)
+        else:
+            self.root.lift()
+            self.root.attributes('-topmost', True)
+            self.root.after_idle(self.root.attributes, '-topmost', False)
+            '''
+            from Cocoa import NSRunningApplication, NSApplicationActivateIgnoringOtherApps
+
+            app = NSRunningApplication.runningApplicationWithProcessIdentifier(os.getpid())
+            app.activateWithOptions(NSApplicationActivateIgnoringOtherApps)
+            '''
+
+        self.root.mainloop()
+
+
 if __name__ == '__main__':
-    app = App(sys.argv[1])
+    app = ImageWatchdog(sys.argv[1])
     app.run()

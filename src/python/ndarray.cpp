@@ -7,7 +7,7 @@
 TC_NAMESPACE_BEGIN
 
 template<typename T>
-void array2d_to_ndarray(T *arr, long long output) // actually as pointer...
+void array2d_to_ndarray(T *arr, long long output) // 'output' is actually a pointer...
 {
     int width = arr->get_width(), height = arr->get_height();
     for (auto &ind : arr->get_region()) {
@@ -16,7 +16,7 @@ void array2d_to_ndarray(T *arr, long long output) // actually as pointer...
 }
 
 template<typename T, int channels>
-void image_buffer_to_ndarray(T *arr, long long output) // actually as pointer...
+void image_buffer_to_ndarray(T *arr, long long output) // 'output' is actually a pointer...
 {
     int width = arr->get_width(), height = arr->get_height();
     for (auto &ind : arr->get_region()) {

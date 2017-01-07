@@ -51,6 +51,10 @@ public:
     size_t get_data_size() const {
         return size * sizeof(T);
     }
+
+    const std::vector<T> &get_data() const {
+        return this->data;
+    }
 };
 
 template <typename T>

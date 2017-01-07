@@ -73,6 +73,11 @@ public:
 
     void write_text(const std::string &font_fn, const std::string &content, real size, int dx, int dy);
 
+    void from_array2d(const Array2D<T> &arr) {
+        this->width = arr.get_width();
+        this->height = arr.get_height();
+        this->data = arr.get_data();
+    }
 };
 
 template<typename T>

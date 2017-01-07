@@ -3,6 +3,7 @@ import os
 import datetime
 import platform
 import random
+import taichi
 
 
 def get_os_name():
@@ -73,12 +74,16 @@ def Vector(*args):
         return args[0]
     if isinstance(args[0], tc_core.Vector3):
         return args[0]
+    if isinstance(args[0], tc_core.Vector4):
+        return args[0]
     if isinstance(args[0], tuple):
         args = tuple(*args)
     if len(args) == 2:
         return tc_core.Vector2(float(args[0]), float(args[1]))
     elif len(args) == 3:
         return tc_core.Vector3(float(args[0]), float(args[1]), float(args[2]))
+    elif len(args) == 4:
+        return tc_core.Vector4(float(args[0]), float(args[1]), float(args[2]), float(args[3]))
     else:
         assert False, type(args[0])
 
@@ -142,3 +147,23 @@ def arange(x, y, d):
 
 def P(**kwargs):
     return config_from_dict(kwargs)
+
+
+def imread(fn, bgr=False):
+    img = taichi.core.RGBImageFloat(0, 0, taichi.Vector(0.0, 0.0, 0.0))
+    img.read(fn)
+    return image_buffer_to_ndarray(img, bgr)[::-1]
+
+
+def ndarray_to_image_buffer(array):
+    flattened = array[::-1].flatten().copy()
+    input_ptr = flattened.ctypes.data_as(ctypes.c_void_p).value
+    if array.shape[2] == 3:
+        img = taichi.core.RGBImageFloat(0, 0, taichi.Vector(0, 0, 0))
+        img.from_ndarray(input_ptr, array.shape[1], array.shape[0])
+    elif array.shape[2] == 4:
+        img = taichi.core.RGBAImageFloat(0, 0, taichi.Vector(0, 0, 0, 0))
+        img.from_ndarray(input_ptr, array.shape[1], array.shape[0])
+    else:
+        assert False, 'array should have 3 or 4 channels'
+    return img

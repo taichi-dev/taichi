@@ -13,8 +13,6 @@ from builtins import (bytes, str, open, super, range,
 
 import taichi as tc
 import numpy as np
-
-import cv2
 import math
 
 
@@ -51,8 +49,8 @@ class ImageViewerWidget(GridLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cols = 2
-        self.raw_img = (1 / 255.0) * (cv2.imread(tc.settings.get_asset_path('textures/vegas.jpg'))).astype(
-            'float32')[::-1, :, ::-1]
+
+        self.raw_img = tc.util.imread(tc.settings.get_asset_path('textures/vegas.jpg'))
 
         self.image = Image()
         controllers_info = [

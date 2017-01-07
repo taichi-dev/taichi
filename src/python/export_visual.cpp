@@ -59,6 +59,18 @@ std::vector<Triangle> merge_mesh(const std::vector<Triangle> &a, const std::vect
 template<typename T, int ret>
 int return_constant(T *) { return ret; }
 
+
+    template<typename T, int channels>
+    void ndarray_to_image_buffer(T *arr, long long input, int width, int height) // 'input' is actually a pointer...
+    {
+        arr->initialize(width, height);
+        for (auto &ind : arr->get_region()) {
+            for (int i = 0; i < channels; i++) {
+                (*arr)[ind][i] = reinterpret_cast<float *>(input)[ind.i * channels + ind.j * width * channels + i];
+            }
+        }
+    }
+
 void export_visual() {
     def("function23_from_py_obj", function23_from_py_obj);
     def("function22_from_py_obj", function22_from_py_obj);
@@ -77,16 +89,23 @@ void export_visual() {
     def("create_environment_map", create_instance<EnvironmentMap>);
     def("create_mesh", std::make_shared<Mesh>);
     def("create_scene", std::make_shared<Scene>);
+    class_<ImageBuffer<Vector3 >>("RGBImageFloat", init<int, int, Vector3>())
+            .def("get_width", &ImageBuffer<Vector3>::get_width)
+            .def("get_height", &ImageBuffer<Vector3>::get_height)
+            .def("get_channels", &return_constant<ImageBuffer<Vector3>, 3>)
+            .def("from_array2d", &ImageBuffer<Vector3>::from_array2d)
+            .def("from_ndarray", &ndarray_to_image_buffer<ImageBuffer<Vector3>, 3>)
+            .def("read", &ImageBuffer<Vector3>::load)
+            .def("write", &ImageBuffer<Vector3>::write)
+            .def("to_ndarray", &image_buffer_to_ndarray<ImageBuffer<Vector3>, 3>);
     class_<ImageBuffer<Vector4 >>("RGBAImageFloat", init<int, int, Vector4>())
         .def("get_width", &ImageBuffer<Vector4>::get_width)
         .def("get_height", &ImageBuffer<Vector4>::get_height)
         .def("get_channels", &return_constant<ImageBuffer<Vector4>, 4>)
-        .def("to_ndarray", &image_buffer_to_ndarray < ImageBuffer<Vector4>, 4>);
-    class_<ImageBuffer<Vector3 >>("RGBImageFloat", init<int, int, Vector3>())
-        .def("get_width", &ImageBuffer<Vector3>::get_width)
-        .def("get_height", &ImageBuffer<Vector3>::get_height)
-        .def("get_channels", &return_constant<ImageBuffer<Vector3>, 3>)
-        .def("to_ndarray", &image_buffer_to_ndarray < ImageBuffer<Vector3>, 3>);
+        .def("write", &ImageBuffer<Vector4>::write)
+        .def("from_array2d", &ImageBuffer<Vector4>::from_array2d)
+        .def("from_ndarray", &ndarray_to_image_buffer<ImageBuffer<Vector4>, 4>)
+        .def("to_ndarray", &image_buffer_to_ndarray<ImageBuffer<Vector4>, 4>);
     class_<Texture>("Texture")
         .def("initialize", &Texture::initialize);;
 

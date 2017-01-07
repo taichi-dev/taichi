@@ -546,6 +546,10 @@ public:
         }
         return true;
     }
+
+    const std::vector<T> &get_data() const {
+        return this->data;
+    }
 };
 
 template<typename T>

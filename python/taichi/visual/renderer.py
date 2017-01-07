@@ -9,8 +9,6 @@ from concurrent.futures import ThreadPoolExecutor
 from subprocess import Popen
 from tempfile import mkstemp
 
-from PIL import Image
-
 import taichi
 
 from taichi.core import tc_core
@@ -66,18 +64,21 @@ class Renderer(object):
         return self.output_dir + fn
 
     def write(self, fn):
-        with open(self.get_full_fn(fn), 'wb') as f:
-            self.get_image_output().save(f)
+        self.get_image_output().write(self.get_full_fn(fn))
 
+    # Returns numpy.ndarray
     def get_output(self):
         output = self.c.get_output()
         output = image_buffer_to_ndarray(output)
+
         if self.post_processor:
             output = self.post_processor.process(output)
+
         return output
 
+    # Returns ImageBuffer<Vector3> a.k.a. RGBImageFloat
     def get_image_output(self):
-        return Image.fromarray((self.get_output() * 255).astype(numpy.uint8), 'RGB')
+        return taichi.util.ndarray_to_image_buffer(self.get_output())
 
     def show(self):
         # allow the user to opt out of the frame viewer by invoking the script
@@ -88,12 +89,8 @@ class Renderer(object):
         frame_path = self.get_full_fn('current-frame.png')
 
         # atomic write so watchers don't get a partial image
-        temp_file, temp_path = mkstemp()
-        temp_file = os.fdopen(temp_file, 'wb')
-        self.get_image_output().save(temp_file, format='png')
-        temp_file.flush()
-        os.fsync(temp_file.fileno())
-        temp_file.close()
+        _, temp_path = mkstemp()
+        self.get_image_output().write(temp_path)
         os.rename(temp_path, frame_path)
 
         if not self.viewer_started:
@@ -109,9 +106,9 @@ class Renderer(object):
         self.viewer_process.terminate()
 
     def start_viewer(self, frame_path):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'viewer.py')
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../gui/tk/viewer.py')
 
-        self.viewer_process = Popen([path, frame_path])
+        self.viewer_process = Popen(['python', path, frame_path])
 
         atexit.register(self.end_viewer_process)
 

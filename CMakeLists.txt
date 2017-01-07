@@ -21,7 +21,7 @@ if (USE_OPENGL)
     include_directories(${GLFW_INCLUDE_DIRS})
     find_package(GLEW REQUIRED)
     include_directories(${GLEW_INCLUDE_DIRS})
-endif()
+endif ()
 
 if (WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /Z7 /D \"_CRT_SECURE_NO_WARNINGS\"  /arch:AVX")
@@ -52,18 +52,46 @@ if (WIN32)
 else ()
     include_directories(${BOOST_INCLUDE_DIRS})
 endif ()
-find_package(PythonLibs REQUIRED)
-if (APPLE)
-    set(PYTHON_INCLUDE_DIRS "/usr/include/python2.7/")
-    set(PYTHON_LIBRARIES "/Users/Iterator/homebrew/Cellar/python/2.7.8_1/Frameworks/Python.framework/Versions/2.7/lib/libpython2.7.dylib")
+
+# Python and numpy
+
+
+message("Make sure the python executable is the same one used in boost::python.")
+
+if (PYTHON_EXECUTABLE)
+    message("Using ${PYTHON_EXECUTABLE} as python executable.")
+else ()
+    message("Using 'python' as python executable.")
+    set(PYTHON_EXECUTABLE python)
 endif ()
-message("Python include ${PYTHON_INCLUDE_DIRS}")
+
+if (WIN32)
+    find_package(PythonLibs 2.7 REQUIRED)
+else ()
+    message("Python version:")
+    execute_process(COMMAND ${PYTHON_EXECUTABLE} --version)
+    message("")
+    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import sys; from distutils import sysconfig; sys.stdout.write(sysconfig.get_config_var('INCLUDEDIR') + '/python2.7/')"
+            OUTPUT_VARIABLE PYTHON_INCLUDE_DIRS)
+    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import sys; from distutils import sysconfig; sys.stdout.write(sysconfig.get_config_var('LIBDIR'))"
+            OUTPUT_VARIABLE PYTHON_LIBRARY_DIR)
+
+    find_library(PYTHON_LIBRARY NAMES python2.7 PATHS ${PYTHON_LIBRARY_DIR} NO_DEFAULT_PATH NO_SYSTEM_ENVIRONMENT_PATH)
+    message("Python lib ${PYTHON_LIBRARY}")
+    set(PYTHON_LIBRARIES ${PYTHON_LIBRARY})
+endif ()
+
 include_directories(${PYTHON_INCLUDE_DIRS})
+message("Python include dir ${PYTHON_INCLUDE_DIRS}")
+message("Python libdir ${PYTHON_LIBRARY_DIR}")
 message("Python lib ${PYTHON_LIBRARIES}")
 
 find_package(NumPy REQUIRED)
+execute_process(COMMAND python -c "import numpy.distutils, sys; sys.stdout.write(':'.join(numpy.distutils.misc_util.get_numpy_include_dirs()))"
+        OUTPUT_VARIABLE PYTHON_NUMPY_INCLUDE_DIR)
+
+message("Numpy include dir: ${PYTHON_NUMPY_INCLUDE_DIR}")
 include_directories(${PYTHON_NUMPY_INCLUDE_DIR})
-message(${PYTHON_NUMPY_INCLUDE_DIR})
 
 find_package(embree REQUIRED)
 include_directories(${EMBREE_INCLUDE_PATH})
@@ -84,7 +112,7 @@ add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_SOURCE})
 
 if (NOT WIN32)
     target_link_libraries(${CORE_LIBRARY_NAME} pthread)
-endif()
+endif ()
 
 # Optional dependencies
 
@@ -95,13 +123,13 @@ if (USE_OPENGL)
     target_link_libraries(${CORE_LIBRARY_NAME} ${GLFW3_LIBRARY})
     if (APPLE)
         target_link_libraries(${CORE_LIBRARY_NAME} glfw3)
-    endif()
-endif()
+    endif ()
+endif ()
 if (USE_ANN)
     target_link_libraries(${CORE_LIBRARY_NAME} ${ANN_LIBRARIES})
     find_package(ANN REQUIRED)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_USE_ANN")
-endif()
+endif ()
 
 # Required dependencies
 
@@ -112,17 +140,17 @@ target_link_libraries(${CORE_LIBRARY_NAME} ${Boost_LIBRARIES})
 if (UNIX)
     target_link_libraries(${CORE_LIBRARY_NAME} boost_system)
     target_link_libraries(${CORE_LIBRARY_NAME} boost_python)
-endif()
+endif ()
 
-foreach(source IN LISTS TAICHI_SOURCE)
+foreach (source IN LISTS TAICHI_SOURCE)
     get_filename_component(source_path "${source}" PATH)
     string(REPLACE "/" "\\" source_path_msvc "${source_path}")
     source_group("${source_path_msvc}" FILES "${source}")
-endforeach()
+endforeach ()
 
-if(MSVC)
+if (MSVC)
     set_property(TARGET ${CORE_LIBRARY_NAME} APPEND PROPERTY LINK_FLAGS /DEBUG)
-endif()
+endif ()
 
 if (WIN32)
     set_target_properties(${CORE_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")

@@ -4,6 +4,7 @@ import datetime
 import platform
 import random
 
+
 def get_os_name():
     name = platform.platform()
     if name.lower().startswith('darwin'):
@@ -19,12 +20,15 @@ def get_uuid():
     print 'Warning: get_uuid is deprecated. Please use get_unique_task_id instead.'
     return get_unique_task_id()
 
+
 def get_unique_task_id():
     return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + ('%05d' % random.randint(0, 10000))
+
 
 import copy
 import numpy as np
 import ctypes
+
 
 def config_from_dict(args):
     from taichi.core import tc_core
@@ -36,6 +40,7 @@ def config_from_dict(args):
         d[k] = str(d[k])
     return tc_core.config_from_dict(d)
 
+
 def make_polygon(points, scale):
     polygon = tc.Vector2List()
     for p in points:
@@ -44,6 +49,7 @@ def make_polygon(points, scale):
         else:
             polygon.append(scale * p)
     return polygon
+
 
 def Vectori(*args):
     from taichi.core import tc_core
@@ -59,6 +65,7 @@ def Vectori(*args):
         return tc_core.Vector3i(int(args[0]), int(args[1]), int(args[2]))
     else:
         assert False, type(args[0])
+
 
 def Vector(*args):
     from taichi.core import tc_core
@@ -83,6 +90,7 @@ def default_const_or_evaluate(f, default, u, v):
         return f
     return f(u, v)
 
+
 def const_or_evaluate(f, u, v):
     if type(f) in [float, int, tuple, tc.Vector2, tc.Vector3]:
         return f
@@ -104,6 +112,7 @@ def array2d_to_image(arr, width, height, color_255, transform='levelset'):
     image_data = pyglet.image.ImageData(width, height, 'RGBA', dat.tostring())
     return image_data
 
+
 def image_buffer_to_image(arr):
     raw_data = np.empty((arr.get_width() * arr.get_height() * 3,), dtype='float32')
     arr.to_ndarray(raw_data.ctypes.data_as(ctypes.c_void_p).value)
@@ -113,18 +122,23 @@ def image_buffer_to_image(arr):
     image_data = pyglet.image.ImageData(arr.get_width(), arr.get_height(), 'RGB', data_string)
     return image_data
 
-def image_buffer_to_ndarray(arr):
+
+def image_buffer_to_ndarray(arr, bgr=False):
     channels = arr.get_channels()
     raw_data = np.empty((arr.get_width() * arr.get_height() * channels,), dtype='float32')
     arr.to_ndarray(raw_data.ctypes.data_as(ctypes.c_void_p).value)
     dat = raw_data.astype('float32')
-    return dat.reshape((arr.get_height(), arr.get_width(), channels))[::-1,:,::-1]
+    ret = dat.reshape((arr.get_height(), arr.get_width(), channels))[::-1, :]
+    if bgr:
+        ret = ret[:, :, ::-1]
+    return ret
+
 
 def arange(x, y, d):
     while x < y:
         yield x
         x += d
 
+
 def P(**kwargs):
     return config_from_dict(kwargs)
-

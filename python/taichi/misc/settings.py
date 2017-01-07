@@ -1,7 +1,9 @@
 import os
+import multiprocessing
+
 from taichi.misc.util import get_os_name
 
-default_num_threads = 2
+default_num_threads = multiprocessing.cpu_count()
 
 
 def get_num_cores():

@@ -1,12 +1,22 @@
 from taichi.misc.util import *
-import time
+
+import atexit
 import os
+import time
+import numpy
+
+from concurrent.futures import ThreadPoolExecutor
+from subprocess import Popen
+from tempfile import mkstemp
+
+from PIL import Image
+
 import taichi
+
 from taichi.core import tc_core
 from taichi.misc.util import get_unique_task_id
 from taichi.visual.post_process import LDRDisplay
 from taichi.misc.settings import get_num_cores
-import cv2
 
 
 class Renderer(object):
@@ -16,6 +26,8 @@ class Renderer(object):
         self.output_dir = taichi.settings.get_output_path(output_dir + '/')
         self.post_processor = LDRDisplay()
         self.frame = frame
+        self.viewer_started = False
+        self.viewer_process = None
         try:
             os.mkdir(self.output_dir)
         except Exception as e:
@@ -54,7 +66,8 @@ class Renderer(object):
         return self.output_dir + fn
 
     def write(self, fn):
-        cv2.imwrite(self.get_full_fn(fn), self.get_output() * 255)
+        with open(self.get_full_fn(fn), 'wb') as f:
+            self.get_image_output().save(f)
 
     def get_output(self):
         output = self.c.get_output()
@@ -63,9 +76,44 @@ class Renderer(object):
             output = self.post_processor.process(output)
         return output
 
+    def get_image_output(self):
+        return Image.fromarray((self.get_output() * 255).astype(numpy.uint8), 'RGB')
+
     def show(self):
-        cv2.imshow('Rendered', self.get_output())
-        cv2.waitKey(1)
+        # allow the user to opt out of the frame viewer by invoking the script
+        # with --no-viewer in the command line
+        if '--no-viewer' in sys.argv:
+            return
+
+        frame_path = self.get_full_fn('current-frame.png')
+
+        # atomic write so watchers don't get a partial image
+        temp_file, temp_path = mkstemp()
+        temp_file = os.fdopen(temp_file, 'wb')
+        self.get_image_output().save(temp_file, format='png')
+        temp_file.flush()
+        os.fsync(temp_file.fileno())
+        temp_file.close()
+        os.rename(temp_path, frame_path)
+
+        if not self.viewer_started:
+            self.viewer_started = True
+
+            pool = ThreadPoolExecutor(max_workers=1)
+            pool.submit(self.start_viewer, frame_path)
+
+    def end_viewer_process(self):
+        if self.viewer_process.returncode is not None:
+            return
+
+        self.viewer_process.terminate()
+
+    def start_viewer(self, frame_path):
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'viewer.py')
+
+        self.viewer_process = Popen([path, frame_path])
+
+        atexit.register(self.end_viewer_process)
 
     def __getattr__(self, key):
         return self.c.__getattribute__(key)

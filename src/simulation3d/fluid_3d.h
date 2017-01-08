@@ -6,7 +6,7 @@
 #include <taichi/common/meta.h>
 #include <taichi/common/interface.h>
 #include <taichi/math/array_3d.h>
-#include <taichi/dynamics/pressure_solver3d.h>
+#include <taichi/dynamics/poisson_solver3d.h>
 #include <taichi/dynamics/simulation3d.h>
 
 TC_NAMESPACE_BEGIN
@@ -33,8 +33,8 @@ public:
     real perturbation;
     bool open_boundary;
     std::vector<Tracker3D> trackers;
-    std::shared_ptr<PressureSolver3D> pressure_solver;
-    PressureSolver3D::BCArray boundary_condition;
+    std::shared_ptr<PoissonSolver3D> pressure_solver;
+    PoissonSolver3D::BCArray boundary_condition;
 
     Smoke3D() {}
 

@@ -1,18 +1,19 @@
 #include <taichi/system/threading.h>
-#include <taichi/dynamics/pressure_solver3d.h>
+#include <taichi/dynamics/poisson_solver3d.h>
 #include <taichi/math/stencils.h>
 
 TC_NAMESPACE_BEGIN
 
-TC_INTERFACE_DEF(PressureSolver3D, "pressure_solver_3d");
+TC_INTERFACE_DEF(PoissonSolver3D, "pressure_solver_3d");
 
 // Maybe we are going to need Algebraic Multigrid in the future,
 // but let's have a GMG with different boundary conditions support first...
 // TODO: AMG, cache
 
-class MultigridPressureSolver : public PressureSolver3D {
+class MultigridPoissonSolver3D : public PoissonSolver3D {
 public:
-    int width, height, depth, max_level;
+    int max_level;
+    Vector3i res;
     std::vector<Array> pressures, residuals, tmp_residuals;
     std::vector<BCArray> boundaries;
     const int size_threshould = 64;
@@ -68,8 +69,7 @@ public:
     std::vector<System> systems;
 
     void set_boundary_condition(const BCArray &boundary) override {
-        Vector3i res;
-        res = Vector3i(width, height, depth);
+        Vector3i res = this->res;
         boundaries.clear();
         boundaries.push_back(BCArray(res));
         // Iff we pad with Neumann and there's no dirichlet...
@@ -117,7 +117,7 @@ public:
         }
 
         systems.clear();
-        res = Vector3i(width, height, depth);
+        res = this->res;
         // Step 2: build the compressed systems
         for (int l = 0; l < max_level; l++) {
             System system(res);
@@ -146,9 +146,7 @@ public:
     }
 
     void initialize(const Config &config) override {
-        this->width = config.get_int("width");
-        this->height = config.get_int("height");
-        this->depth = config.get_int("depth");
+        this->res = config.get_vec3i("res");
         this->num_threads = config.get_int("num_threads");
         auto padding_name = config.get_string("padding");
         assert_info(padding_name == "dirichlet" || padding_name == "neumann",
@@ -159,21 +157,17 @@ public:
             padding = NEUMANN;
         };
         this->max_level = 0;
-        int width = this->width;
-        int height = this->height;
-        int depth = this->depth;
+        auto res = this->res;
         do {
-            pressures.push_back(Array(width, height, depth));
-            residuals.push_back(Array(width, height, depth));
-            tmp_residuals.push_back(Array(width, height, depth));
-            assert_info(width % 2 == 0, "odd width");
-            assert_info(height % 2 == 0, "odd height");
-            assert_info(depth % 2 == 0, "odd depth");
-            width /= 2;
-            height /= 2;
-            depth /= 2;
+            pressures.push_back(Array(res));
+            residuals.push_back(Array(res));
+            tmp_residuals.push_back(Array(res));
+            assert_info(res[0] % 2 == 0, "odd width");
+            assert_info(res[1] % 2 == 0, "odd height");
+            assert_info(res[2] % 2 == 0, "odd depth");
+            res /= 2;
             max_level++;
-        } while (width * height * depth * 8 >= size_threshould);
+        } while (res[0] * res[1] * res[2] * 8 >= size_threshould);
     }
 
     void parallel_for_each_cell(Array &arr, int threshold, const std::function<void(const Index3D &index)> &func) {
@@ -325,20 +319,20 @@ public:
     }
 };
 
-class MultigridPCGPressureSolver : public MultigridPressureSolver {
+class MultigridPCGPoissonSolver3D : public MultigridPoissonSolver3D {
 public:
     void initialize(const Config &config) {
-        MultigridPressureSolver::initialize(config);
+        MultigridPoissonSolver3D::initialize(config);
     }
     Array apply_preconditioner(Array &r) {
         pressures[0] = 0;
         residuals[0] = r;
-        MultigridPressureSolver::run(0);
+        MultigridPoissonSolver3D::run(0);
         return pressures[0];
     }
     virtual void run(const Array &residual, Array &pressure, real pressure_tolerance) {
         pressure = 0;
-        Array r(width, height, depth), mu(width, height, depth), tmp(width, height, depth);
+        Array r(res), mu(res), tmp(res);
         //mu = r.get_average();
         r = residual; //TODO: r = r - Lx
         double nu = (r - mu).abs_max();
@@ -348,7 +342,7 @@ public:
         Array p = apply_preconditioner(r);
         double rho = p.dot_double(r);
         int maximum_iterations = 20;
-        Array z(width, height, depth);
+        Array z(res);
         for (int count = 0; count <= maximum_iterations; count++) {
             apply_L(systems[0], p, z);
             double sigma = p.dot_double(z);
@@ -373,7 +367,7 @@ public:
     }
 };
 
-TC_IMPLEMENTATION(PressureSolver3D, MultigridPressureSolver, "mg");
-TC_IMPLEMENTATION(PressureSolver3D, MultigridPCGPressureSolver, "mgpcg");
+TC_IMPLEMENTATION(PoissonSolver3D, MultigridPoissonSolver3D, "mg");
+TC_IMPLEMENTATION(PoissonSolver3D, MultigridPCGPoissonSolver3D, "mgpcg");
 
 TC_NAMESPACE_END

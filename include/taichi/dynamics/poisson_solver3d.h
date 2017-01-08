@@ -4,7 +4,7 @@
 #include <taichi/math/array_3d.h>
 
 TC_NAMESPACE_BEGIN
-class PressureSolver3D : public Unit {
+class PoissonSolver3D : public Unit {
 protected:
     typedef Array3D<float> Array;
 public:
@@ -18,6 +18,6 @@ public:
     virtual void set_boundary_condition(const BCArray &boundary) {};
 };
 
-TC_INTERFACE(PressureSolver3D);
+TC_INTERFACE(PoissonSolver3D);
 
 TC_NAMESPACE_END

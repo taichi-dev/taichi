@@ -2,7 +2,7 @@
 #include <taichi/common/util.h>
 #include <taichi/math/array_3d.h>
 #include <taichi/math/array_2d.h>
-#include <taichi/dynamics/pressure_solver3d.h>
+#include <taichi/dynamics/poisson_solver3d.h>
 #include <taichi/visualization/particle_visualization.h>
 #include <taichi/system/timer.h>
 
@@ -36,7 +36,7 @@ void Smoke3D::project() {
     pressure = 0;
     pressure_solver->set_boundary_condition(boundary_condition);
     for (auto &ind : boundary_condition.get_region()) {
-        if (boundary_condition[ind] != PressureSolver3D::INTERIOR) {
+        if (boundary_condition[ind] != PoissonSolver3D::INTERIOR) {
             divergence[ind] = 0.0f;
         }
     }
@@ -73,9 +73,8 @@ void Smoke3D::initialize(const Config &config) {
 
     perturbation = config.get("perturbation", 0.0f);
     Config solver_config;
-    solver_config.set("width", res[0]).set("height", res[1]).set("depth", res[2])
-        .set("num_threads", num_threads).set("padding", padding);
-    pressure_solver = create_initialized_instance<PressureSolver3D>(config.get_string("pressure_solver"), solver_config);
+    solver_config.set("res", res).set("num_threads", num_threads).set("padding", padding);
+    pressure_solver = create_initialized_instance<PoissonSolver3D>(config.get_string("pressure_solver"), solver_config);
     u = Array(res[0] + 1, res[1], res[2], 0.0f, Vector3(0.0f, 0.5f, 0.5f));
     v = Array(res[0], res[1] + 1, res[2], 0.0f, Vector3(0.5f, 0.0f, 0.5f));
     w = Array(res[0], res[1], res[2] + 1, 0.0f, Vector3(0.5f, 0.5f, 0.0f));
@@ -84,12 +83,12 @@ void Smoke3D::initialize(const Config &config) {
     last_pressure = Array(res[0], res[1], res[2], 0.0f);
     t = Array(res[0], res[1], res[2], config.get("initial_t", 0.0f));
     current_t = 0.0f;
-    boundary_condition = PressureSolver3D::BCArray(res);
+    boundary_condition = PoissonSolver3D::BCArray(res);
     for (auto &ind : boundary_condition.get_region()) {
         Vector3 d = ind.get_pos() - Vector3(res) * 0.5f;
         if (length(d) * 4 < res[0] || ind.i == 0 || ind.i == res[0] - 1 || ind.j == 0
                 || ind.k == 0 || ind.k == res[2] - 1) {
-            boundary_condition[ind] = PressureSolver3D::NEUMANN;
+            boundary_condition[ind] = PoissonSolver3D::NEUMANN;
         }
     }
 }
@@ -243,7 +242,7 @@ void Smoke3D::advect(Array &attr, float delta_t) {
 
 void Smoke3D::apply_boundary_condition() {
     for (auto &ind : boundary_condition.get_region()) {
-        if (boundary_condition[ind] == PressureSolver3D::NEUMANN) {
+        if (boundary_condition[ind] == PoissonSolver3D::NEUMANN) {
             u[ind] = 0;
             u[ind + Vector3(1, 0, 0)] = 0;
             v[ind] = 0;

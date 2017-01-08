@@ -6,7 +6,7 @@ from taichi.visual.particle_renderer import ParticleRenderer
 from taichi.gui.image_viewer import show_image
 
 if __name__ == '__main__':
-    resolution = [64] * 3
+    resolution = [32] * 3
     resolution[1] *= 2
 
     particle_renderer = ParticleRenderer('shadow_map',
@@ -14,13 +14,13 @@ if __name__ == '__main__':
                                          light_direction=(1, 3, 1))
 
     smoke = Smoke3(resolution=tuple(resolution),
-                 simulation_depth=resolution[2], delta_x=1.0 / resolution[0], gravity=(0, 0, 0),
-                 advection_order=1, cfl=0.5, smoke_alpha=80.0, smoke_beta=800,
-                 temperature_decay=0.05, pressure_tolerance=1e-6, density_scaling=2, initial_speed=(0, 0, 0),
-                 tracker_generation=20, perturbation=0, pressure_solver='mgpcg', num_threads=2, open_boundary=True)
+                   simulation_depth=resolution[2], delta_x=1.0 / resolution[0], gravity=(0, 0, 0),
+                   advection_order=1, cfl=0.5, smoke_alpha=80.0, smoke_beta=800,
+                   temperature_decay=0.05, pressure_tolerance=1e-6, density_scaling=2, initial_speed=(0, 0, 0),
+                   tracker_generation=20, perturbation=0, pressure_solver='mgpcg', num_threads=2, open_boundary=False,
+                   maximum_pressure_iterations=200)
 
-
-    for i in range(600):
+    for i in range(6):
         smoke.step(0.03)
         particles = smoke.c.get_render_particles()
         width, height = 512, 1024
@@ -33,5 +33,3 @@ if __name__ == '__main__':
         particle_renderer.render(image_buffer, particles)
         img = image_buffer_to_ndarray(image_buffer)
         show_image('Vis', img)
-
-

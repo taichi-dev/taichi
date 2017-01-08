@@ -108,8 +108,6 @@ public:
                     }
                 }
                 CellType bc = has_dirichlet ? DIRICHLET : (all_neumann ? NEUMANN : INTERIOR);
-                //if (bc)
-                //    printf("l %d  %d %d %d -> %d\n", l, ind.i, ind.j, ind.k, (int)bc);
                 boundaries.back()[ind] = bc;
             }
         }

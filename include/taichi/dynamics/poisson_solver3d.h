@@ -7,6 +7,7 @@ TC_NAMESPACE_BEGIN
 class PoissonSolver3D : public Unit {
 protected:
     typedef Array3D<float> Array;
+    int maximum_iterations;
 public:
     typedef unsigned char CellType;
     typedef Array3D<CellType> BCArray;
@@ -14,6 +15,7 @@ public:
     static const CellType DIRICHLET = 1;
     static const CellType NEUMANN = 2;
 
+    void initialize(const Config &config);
     virtual void run(const Array &b, Array &x, float tolerance) {};
     virtual void set_boundary_condition(const BCArray &boundary) {};
 };

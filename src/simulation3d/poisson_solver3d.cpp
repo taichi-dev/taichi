@@ -4,6 +4,11 @@
 
 TC_NAMESPACE_BEGIN
 
+
+void PoissonSolver3D::initialize(const Config &config) {
+    maximum_iterations = config.get_int("maximum_iterations");
+}
+
 TC_INTERFACE_DEF(PoissonSolver3D, "pressure_solver_3d");
 
 // Maybe we are going to need Algebraic Multigrid in the future,
@@ -20,6 +25,7 @@ public:
     int num_threads;
     CellType padding;
     bool has_null_space;
+    bool use_as_preconditioner;
 
     struct SystemRow {
         real inv_numerator;
@@ -45,7 +51,7 @@ public:
         static void test() {
             int neighbours[6] = {0};
             SystemRow r;
-            for (int i = 0; i < 1000; i++) {
+            for (int i = 0; i < 100000; i++) {
                 int k = int(rand() * 6);
                 int c = int(rand() * 3);
                 if (rand() < 0.5f) {
@@ -84,7 +90,7 @@ public:
             // Let's remove the null space in an ad-hoc manner...
             // TODO: seperated components?
             // boundaries[0][0][0][0] = DIRICHLET;
-            error("null space detected");
+            // error("null space detected");
         }
 
         // Step 1: figure out cell types
@@ -110,8 +116,6 @@ public:
                     }
                 }
                 CellType bc = has_dirichlet ? DIRICHLET : (all_neumann ? NEUMANN : INTERIOR);
-                //if (bc)
-                //    printf("l %d  %d %d %d -> %d\n", l, ind.i, ind.j, ind.k, (int)bc);
                 boundaries.back()[ind] = bc;
             }
         }
@@ -137,8 +141,9 @@ public:
                 }
                 if (boundaries[l][ind] != INTERIOR)
                     system[ind].inv_numerator = 0;
-                else
+                else {
                     system[ind].inv_numerator = 1.0f / system[ind].inv_numerator;
+                }
             }
             systems.push_back(system);
             res /= 2;
@@ -146,9 +151,11 @@ public:
     }
 
     void initialize(const Config &config) override {
+        PoissonSolver3D::initialize(config);
         this->res = config.get_vec3i("res");
         this->num_threads = config.get_int("num_threads");
         auto padding_name = config.get_string("padding");
+        use_as_preconditioner = false;
         assert_info(padding_name == "dirichlet" || padding_name == "neumann",
                     "'padding' has to be 'dirichlet' or 'neumann' instead of " + std::string(padding_name));
         if (padding_name == "dirichlet") {
@@ -173,7 +180,7 @@ public:
     void parallel_for_each_cell(Array &arr, int threshold, const std::function<void(const Index3D &index)> &func) {
         int max_side = std::max(std::max(arr.get_width(), arr.get_height()), arr.get_depth());
         int num_threads;
-        if (max_side >= 32) {
+        if (max_side >= threshold) {
             num_threads = this->num_threads;
         }
         else {
@@ -209,6 +216,31 @@ public:
                                 }
                             }
                             pressure[ind] = res * system[ind].inv_numerator;
+                        } else {
+                            pressure[ind] = 0.0f;
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    void damped_jacobi(const System &system, const Array &residual, Array &pressure, int rounds) {
+        for (int i = 0; i < rounds; i++) {
+            for (int c = 0; c < 2; c++) {
+                parallel_for_each_cell(pressure, 128, [&](const Index3D &ind) {
+                    int sum = ind.i + ind.j + ind.k;
+                    if ((sum) % 2 == c) {
+                        if (system[ind].inv_numerator > 0) {
+                            real res = residual[ind];
+                            for (int k = 0; k < 6; k++) {
+                                Vector3i offset = neighbour6_3d[k];
+                                if (system[ind].get_neighbour_cell_type(k) == INTERIOR) {
+                                    res += pressure[ind + offset];
+                                }
+                            }
+                            real delta = res * system[ind].inv_numerator - pressure[ind];
+                            pressure[ind] += delta * 0.666666666667f;
                         } else {
                             pressure[ind] = 0.0f;
                         }
@@ -288,7 +320,8 @@ public:
     }
 
     void run(int level) {
-        pressures[level].reset(0.0f);
+        if (use_as_preconditioner)
+            pressures[level].reset(0.0f);
         if (residuals[level].get_size() <= size_threshold) { // 4 * 4 * 4
             gauss_seidel(systems[level], residuals[level], pressures[level], 100);
         }
@@ -319,10 +352,56 @@ public:
     }
 };
 
+class CGPoissonSolver3D : public MultigridPoissonSolver3D {
+public:
+    void initialize(const Config &config) {
+        MultigridPoissonSolver3D::initialize(config);
+    }
+    Array apply_preconditioner(Array &r) {
+        return r;
+    }
+    virtual void run(const Array &residual, Array &pressure, real pressure_tolerance) {
+        pressure = 0;
+        Array r(res), mu(res), tmp(res);
+        mu = has_null_space ? r.get_average() : 0;
+        P(r.get_average());
+        r = residual - mu; //TODO: r = r - Lx
+        double nu = r.abs_max();
+        if (nu < pressure_tolerance)
+            return;
+        Array p = apply_preconditioner(r);
+        double rho = p.dot_double(r);
+        Array z(res);
+        for (int count = 0; count <= maximum_iterations; count++) {
+            apply_L(systems[0], p, z);
+            double sigma = p.dot_double(z);
+            double alpha = rho / max(1e-20, sigma);
+            r.add_in_place(-(real)alpha, z);
+            P(r.get_average());
+            mu = has_null_space ? r.get_average() : 0.0f;
+            r -= mu;
+            nu = r.abs_max();
+            r.print_abs_max_pos();
+            printf(" CG iteration #%02d, nu=%f\n", count, nu);
+            if (nu < pressure_tolerance || count == maximum_iterations) {
+                pressure.add_in_place((real)alpha, p);
+                return;
+            }
+            z = apply_preconditioner(r);
+            double rho_new = z.dot_double(r);
+            double beta = rho_new / rho;
+            rho = rho_new;
+            pressure.add_in_place((real)alpha, p);
+            p = z.add((real)beta, p);
+        }
+    }
+};
+
 class MultigridPCGPoissonSolver3D : public MultigridPoissonSolver3D {
 public:
     void initialize(const Config &config) {
         MultigridPoissonSolver3D::initialize(config);
+        use_as_preconditioner = true;
     }
     Array apply_preconditioner(Array &r) {
         pressures[0] = 0;
@@ -333,30 +412,29 @@ public:
     virtual void run(const Array &residual, Array &pressure, real pressure_tolerance) {
         pressure = 0;
         Array r(res), mu(res), tmp(res);
-        //mu = r.get_average();
-        r = residual; //TODO: r = r - Lx
-        double nu = (r - mu).abs_max();
+        mu = has_null_space ? r.get_average() : 0;
+        P(r.get_average());
+        r = residual - mu; //TODO: r = r - Lx
+        double nu = r.abs_max();
         if (nu < pressure_tolerance)
             return;
-        r -= mu;
         Array p = apply_preconditioner(r);
         double rho = p.dot_double(r);
-        int maximum_iterations = 20;
         Array z(res);
         for (int count = 0; count <= maximum_iterations; count++) {
             apply_L(systems[0], p, z);
             double sigma = p.dot_double(z);
             double alpha = rho / max(1e-20, sigma);
             r.add_in_place(-(real)alpha, z);
-            mu = 0;
-            nu = (r - mu).abs_max();
-            (r - mu).print_abs_max_pos();
+            mu = has_null_space ? r.get_average() : 0.0f;
+            r -= mu;
+            nu = r.abs_max();
+            r.print_abs_max_pos();
             printf(" MGPCG iteration #%02d, nu=%f\n", count, nu);
             if (nu < pressure_tolerance || count == maximum_iterations) {
                 pressure.add_in_place((real)alpha, p);
                 return;
             }
-            r -= mu;
             z = apply_preconditioner(r);
             double rho_new = z.dot_double(r);
             double beta = rho_new / rho;
@@ -368,6 +446,7 @@ public:
 };
 
 TC_IMPLEMENTATION(PoissonSolver3D, MultigridPoissonSolver3D, "mg");
+TC_IMPLEMENTATION(PoissonSolver3D, CGPoissonSolver3D, "cg");
 TC_IMPLEMENTATION(PoissonSolver3D, MultigridPCGPoissonSolver3D, "mgpcg");
 
 TC_NAMESPACE_END

@@ -5,7 +5,7 @@ and rendering algorithms supported ([What's inside?](http://taichi.graphics/#fea
 with Python.
 
 ## Installation
-[Note: It's still a work in progress. Installation guide will be finished within a few days.]
+[Note: It's still a work in progress. Installation guide on OS X, Linux (Ubuntu), Windows will be finished within a few days.]
 
 Please see [Getting Started] (https://github.com/IteratorAdvance/taichi/wiki/Getting-Started).
 
@@ -23,3 +23,6 @@ $ python
 >>> import taichi as tc
 >>> ...
 ```
+
+## Examples
+Please see [examples](https://github.com/IteratorAdvance/taichi/tree/master/python/examples).

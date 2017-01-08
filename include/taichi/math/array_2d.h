@@ -32,6 +32,12 @@ public:
         this->storage_offset = storage_offset;
     }
 
+    Index2D(int i, int j) {
+        this->i = i;
+        this->j = j;
+    }
+
+
     void next() {
         j++;
         //offset++;
@@ -183,6 +189,15 @@ public:
         return b * (*this);
     }
 
+    Array2D<T> operator+(const Array2D<T> &b) const {
+        Array2D<T> o(width, height);
+        assert(same_dim(b));
+        for (int i = 0; i < size; i++) {
+            o.data[i] = data[i] + b.data[i];
+        }
+        return o;
+    }
+
     Array2D<T> operator-(const Array2D<T> &b) const {
         Array2D<T> o(width, height);
         assert(same_dim(b));
@@ -190,6 +205,20 @@ public:
             o.data[i] = data[i] - b.data[i];
         }
         return o;
+    }
+
+    void operator+=(const Array2D<T> &b) {
+        assert(same_dim(b));
+        for (int i = 0; i < size; i++) {
+            data[i] = data[i] + b.data[i];
+        }
+    }
+
+    void operator-=(const Array2D<T> &b) {
+        assert(same_dim(b));
+        for (int i = 0; i < size; i++) {
+            data[i] = data[i] - b.data[i];
+        }
     }
 
     Array2D<T> &operator=(const Array2D<T> &arr) {
@@ -258,6 +287,12 @@ public:
         return o;
     }
 
+    void add_in_place(T alpha, const Array2D<T> &b) {
+        for (int i = 0; i < size; i++) {
+            data[i] += alpha * b.data[i];
+        }
+    }
+
     T *operator[](int i) {
         return &data[0] + i * height;
     }
@@ -301,6 +336,15 @@ public:
             ret = max(ret, abs(data[i]));
         }
         return ret;
+    }
+
+    void print_abs_max_pos() const {
+        T ret = abs_max();
+        for (auto &ind : get_region()) {
+            if (abs(this->operator[](ind)) == ret) {
+                printf("  [%d, %d]\n", ind.i, ind.j);
+            }
+        }
     }
 
     void print(std::string name = "") const {

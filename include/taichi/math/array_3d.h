@@ -228,6 +228,15 @@ public:
         this->storage_offset = arr.storage_offset;
     }
 
+    Array3D<T> operator+(const Array3D<T> &b) const {
+        Array3D<T> o(width, height, depth);
+        assert(same_dim(b));
+        for (int i = 0; i < size; i++) {
+            o.data[i] = data[i] + b.data[i];
+        }
+        return o;
+    }
+
     Array3D<T> operator-(const Array3D<T> &b) const {
         Array3D<T> o(width, height, depth);
         assert(same_dim(b));
@@ -236,17 +245,18 @@ public:
         }
         return o;
     }
-    void operator-=(const Array3D<T> &b) {
-        assert(same_dim(b));
-        for (int i = 0; i < size; i++) {
-            data[i] = data[i] - b.data[i];
-        }
-    }
 
     void operator+=(const Array3D<T> &b) {
         assert(same_dim(b));
         for (int i = 0; i < size; i++) {
             data[i] = data[i] + b.data[i];
+        }
+    }
+
+    void operator-=(const Array3D<T> &b) {
+        assert(same_dim(b));
+        for (int i = 0; i < size; i++) {
+            data[i] = data[i] - b.data[i];
         }
     }
 

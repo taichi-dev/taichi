@@ -1,5 +1,3 @@
-#pragma once
-
 #include <taichi/hdr/tone_mapper.h>
 
 TC_NAMESPACE_BEGIN

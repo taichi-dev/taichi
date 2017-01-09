@@ -527,7 +527,7 @@ public:
             return false;
         }
         size_t ret;
-        ret = fread(&length, sizeof(width), 1, f);
+        ret = fread(&width, sizeof(width), 1, f);
         if (ret != 1) {
             return false;
         }
@@ -552,27 +552,11 @@ public:
         return true;
     }
 
-    Array2D(std::string filename) {
+    Array2D(const std::string &filename) {
         load(filename);
     }
-    void load(std::string filename) {
-        int channels;
-        real *data = stbi_loadf(filename.c_str(), &this->width, &this->height, &channels, 0);
-        if (data == nullptr) {
-            error("Image file not found: " + filename);
-        }
-        assert(channels == 3);
-        this->initialize(this->width, this->height);
-        for (int i = 0; i < this->width; i++) {
-            for (int j = 0; j < this->height; j++) {
-                real *pixel = data + ((this->height - 1 - j) * this->width + i) * channels;
-                (*this)[i][j].x = pixel[0];
-                (*this)[i][j].y = pixel[1];
-                (*this)[i][j].z = pixel[2];
-            }
-        }
-        stbi_image_free(data);
-    }
+
+    void load(const std::string &filename);
 
     void set_pixel(real x, real y, const T &pixel) {
         x *= this->width;
@@ -604,7 +588,7 @@ public:
         return lerp(x - ix, x_0, x_1);
     }
 
-    void write(std::string filename);
+    void write(const std::string &filename);
 
     void write_text(const std::string &font_fn, const std::string &content, real size, int dx, int dy);
 };

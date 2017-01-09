@@ -10,23 +10,6 @@
 TC_NAMESPACE_BEGIN
 
 template<typename T>
-inline void Array2D<T>::write(std::string filename)
-{
-    int comp = 3;
-    std::vector<unsigned char> data(this->width * this->height * comp);
-    for (int i = 0; i < this->width; i++) {
-        for (int j = 0; j < this->height; j++) {
-            for (int k = 0; k < comp; k++) {
-                data[j * this->width * comp + i * comp + k] =
-                    (unsigned char)(255.0f * clamp(this->data[i * this->height + (this->height - j - 1)][k], 0.0f, 1.0f));
-            }
-        }
-    }
-    int write_result = stbi_write_png(filename.c_str(), this->width, this->height, comp, &data[0], comp * this->width);
-    // assert_info((bool)write_result, "Can not write image file");
-}
-
-template<typename T>
 class ImageAccumulator {
 public:
     std::vector<Spinlock> locks;

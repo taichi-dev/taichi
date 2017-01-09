@@ -11,6 +11,43 @@
 TC_NAMESPACE_BEGIN
 
 template<typename T>
+void Array2D<T>::load(const std::string &filename) {
+    int channels;
+    real *data = stbi_loadf(filename.c_str(), &this->width, &this->height, &channels, 0);
+    if (data == nullptr) {
+        error("Image file not found: " + filename);
+    }
+    assert(channels == 3);
+    this->initialize(this->width, this->height);
+    for (int i = 0; i < this->width; i++) {
+        for (int j = 0; j < this->height; j++) {
+            real *pixel = data + ((this->height - 1 - j) * this->width + i) * channels;
+            (*this)[i][j].x = pixel[0];
+            (*this)[i][j].y = pixel[1];
+            (*this)[i][j].z = pixel[2];
+        }
+    }
+    stbi_image_free(data);
+}
+
+template<typename T>
+void Array2D<T>::write(const std::string &filename)
+{
+    int comp = 3;
+    std::vector<unsigned char> data(this->width * this->height * comp);
+    for (int i = 0; i < this->width; i++) {
+        for (int j = 0; j < this->height; j++) {
+            for (int k = 0; k < comp; k++) {
+                data[j * this->width * comp + i * comp + k] =
+                        (unsigned char)(255.0f * clamp(this->data[i * this->height + (this->height - j - 1)][k], 0.0f, 1.0f));
+            }
+        }
+    }
+    int write_result = stbi_write_png(filename.c_str(), this->width, this->height, comp, &data[0], comp * this->width);
+    // assert_info((bool)write_result, "Can not write image file");
+}
+
+template<typename T>
 void Array2D<T>::write_text(const std::string &font_fn, const std::string &content_, real size,
                                       int dx, int dy) {
     std::vector<unsigned char> buffer(24 << 20, (unsigned char)0);
@@ -66,5 +103,10 @@ void Array2D<Vector3>::write_text(const std::string &font_fn, const std::string 
 template
 void Array2D<Vector4>::write_text(const std::string &font_fn, const std::string &content_, real size,
                                       int dx, int dy);
+
+template void Array2D<Vector3>::load(const std::string &filename);
+template void Array2D<Vector4>::load(const std::string &filename);
+template void Array2D<Vector3>::write(const std::string &filename);
+template void Array2D<Vector4>::write(const std::string &filename);
 
 TC_NAMESPACE_END

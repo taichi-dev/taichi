@@ -17,7 +17,7 @@ struct PathContribution {
 class LTRenderer : public Renderer {
 protected:
     std::shared_ptr<Sampler> sampler;
-    ImageBuffer<Vector3> buffer;
+    Array2D<Vector3> buffer;
     long long photon_counter;
     bool volumetric;
 
@@ -39,8 +39,8 @@ public:
         }
     }
 
-    ImageBuffer<Vector3> get_output() {
-        ImageBuffer<Vector3> output(width, height);
+    Array2D<Vector3> get_output() {
+        Array2D<Vector3> output(width, height);
         float r = 1.0f / photon_counter;
         for (auto &ind : output.get_region()) {
             output[ind] = buffer[ind] * r;

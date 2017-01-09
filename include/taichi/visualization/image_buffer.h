@@ -10,7 +10,7 @@
 TC_NAMESPACE_BEGIN
 
 template<typename T>
-inline void ImageBuffer<T>::write(std::string filename)
+inline void Array2D<T>::write(std::string filename)
 {
     int comp = 3;
     std::vector<unsigned char> data(this->width * this->height * comp);
@@ -40,8 +40,8 @@ public:
         }
     }
 
-    ImageBuffer<T> get_averaged(T default_value = T(0)) {
-        ImageBuffer<T> result(width, height);
+    Array2D<T> get_averaged(T default_value = T(0)) {
+        Array2D<T> result(width, height);
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 if (counter[i][j] > 0) {
@@ -83,8 +83,8 @@ public:
     }
 
 private:
-    ImageBuffer<T> buffer;
-    ImageBuffer<int> counter;
+    Array2D<T> buffer;
+    Array2D<int> counter;
     int width, height;
 };
 

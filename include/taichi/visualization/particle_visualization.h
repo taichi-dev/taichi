@@ -28,7 +28,7 @@ public:
         this->camera = camera;
     }
     virtual void initialize(const Config &config) {};
-    virtual void render(ImageBuffer<Vector3> &buffer, const std::vector<RenderParticle> &particles) const {}
+    virtual void render(Array2D<Vector3> &buffer, const std::vector<RenderParticle> &particles) const {}
 };
 
 std::shared_ptr<Texture> rasterize_render_particles(const Config &config, const std::vector<RenderParticle> &particles);

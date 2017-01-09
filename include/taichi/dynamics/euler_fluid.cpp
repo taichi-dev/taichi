@@ -583,7 +583,7 @@ void EulerFluid::apply_boundary_condition() {
     }
 }
 
-void EulerFluid::show(ImageBuffer<Vector3> &buffer) {
+void EulerFluid::show(Array2D<Vector3> &buffer) {
     if (show_grid)
         for (int i = 0; i < width + 1; i++) {
             for (int j = 0; j < height + 1; j++) {

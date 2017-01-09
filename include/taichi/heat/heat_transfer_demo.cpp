@@ -147,7 +147,7 @@ for (int k = start[i][j]; k < grid_dim; k = next[i][j][k]) if (grid_inside_mesh(
         std::shared_ptr<Renderer> renderer = create_instance<Renderer>(config.get("renderer", "pt"));
         auto window = std::make_shared<GLWindow>(Config::load("simulation_view.cfg"));
         auto tr = std::make_shared<TextureRenderer>(window, output_width, output_height);
-        ImageBuffer<Vector3> tex;
+        Array2D<Vector3> tex;
 
         HeatTransferSimulation *simulation = nullptr;
         //new HeatTransferSimulation(&scene, Config::load("heat_transfer_simulation.cfg"));
@@ -162,8 +162,8 @@ for (int k = start[i][j]; k < grid_dim; k = next[i][j][k]) if (grid_inside_mesh(
             simulation->step();
             auto _ = window->create_rendering_guard();
             renderer->render_stage();
-            std::shared_ptr<ImageBuffer<Vector3>> buffer =
-                    std::make_shared<ImageBuffer<Vector3>>(renderer->get_output());
+            std::shared_ptr<Array2D<Vector3>> buffer =
+                    std::make_shared<Array2D<Vector3>>(renderer->get_output());
             //auto tex = (LogLuminance::apply(AverageToOne::apply(PhysicallyBasedHeatToneMapper::apply(*buffer))));
             tex = PBRTToneMapper::apply(PhysicallyBasedHeatToneMapper::apply(*buffer));
             if (frame % output_per_frame == 0) {

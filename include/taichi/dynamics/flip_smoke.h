@@ -167,7 +167,7 @@ protected:
         }
         temperature = new_temperature;
     }
-    virtual void show(ImageBuffer<Vector3> &buffer) {
+    virtual void show(Array2D<Vector3> &buffer) {
         FLIPFluid::show(buffer);
         for (auto ind : temperature.get_region()) {
             buffer[ind.i][ind.j] = Vector3(temperature[ind] / 1000);

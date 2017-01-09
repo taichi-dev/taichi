@@ -11,7 +11,7 @@ void spectrum_demo(Config config) {
     bool tone_mapping = config.get_bool("tone_mapping");
     auto window = std::make_shared<GLWindow>(Config::load("render_view.cfg"));
     auto tr = std::make_shared<TextureRenderer>(window, output_width, output_height);
-    auto buffer = ImageBuffer<Vector3>(output_width, output_height);
+    auto buffer = Array2D<Vector3>(output_width, output_height);
     for (int i = 0; i < output_height; i++) {
         float t = temperature_lower + (temperature_upper - temperature_lower) * (i + 0.5f) / output_width;
         Vector3d color = Spectrum::get_instance().sample(t);

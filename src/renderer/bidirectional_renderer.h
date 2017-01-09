@@ -72,7 +72,7 @@ protected:
     int max_light_events;
     int stage_frequency;
 
-    ImageBuffer<Vector3> buffer;
+    Array2D<Vector3> buffer;
     std::shared_ptr<Sampler> sampler;
     real luminance_clamping;
     long long sample_count = 0;
@@ -112,8 +112,8 @@ public:
 
     void write_path_contribution(const PathContribution &pc, const real scaling = 1.0f);
 
-    ImageBuffer<Vector3> get_output() override {
-        ImageBuffer<Vector3> output(width, height);
+    Array2D<Vector3> get_output() override {
+        Array2D<Vector3> output(width, height);
         float r = 1.0f / sample_count;
         for (auto &ind : output.get_region()) {
             output[ind] = buffer[ind] * r;

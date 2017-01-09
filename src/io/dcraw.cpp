@@ -9945,7 +9945,7 @@ void CLASS jpeg_thumb()
 }
 
 
-// We no longer need to write to a tiff file but to a taichi::ImageBuffer<Vector4>
+// We no longer need to write to a tiff file but to a taichi::Array2D<Vector4>
 
 void CLASS write_ppm_tiff(DCRawOutput &output)
 {

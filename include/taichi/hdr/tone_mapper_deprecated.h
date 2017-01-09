@@ -11,10 +11,10 @@ TC_NAMESPACE_BEGIN
 
 class ToneMapper {
 public:
-    static ImageBuffer<Vector3> apply(const ImageBuffer<Vector3> &input) {
+    static Array2D<Vector3> apply(const Array2D<Vector3> &input) {
         int width = input.get_width();
         int height = input.get_height();
-        ImageBuffer<Vector3> output(width, height);
+        Array2D<Vector3> output(width, height);
         real sum = 0.0f;
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
@@ -38,10 +38,10 @@ public:
 
 class AverageToOne {
 public:
-    static ImageBuffer<Vector3> apply(const ImageBuffer<Vector3> &input) {
+    static Array2D<Vector3> apply(const Array2D<Vector3> &input) {
         int width = input.get_width();
         int height = input.get_height();
-        ImageBuffer<Vector3> output(width, height);
+        Array2D<Vector3> output(width, height);
         real sum_lum = 0.0f;
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
@@ -60,10 +60,10 @@ public:
 
 class GammaCorrection {
 public:
-    static ImageBuffer<Vector3> apply(const ImageBuffer<Vector3> &input) {
+    static Array2D<Vector3> apply(const Array2D<Vector3> &input) {
         int width = input.get_width();
         int height = input.get_height();
-        ImageBuffer<Vector3> output(width, height);
+        Array2D<Vector3> output(width, height);
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 for (int k = 0; k < 3; k++) {
@@ -77,10 +77,10 @@ public:
 
 class ColorPreservingToneMapper {
 public:
-    static ImageBuffer<Vector3> apply(const ImageBuffer<Vector3> &input) {
+    static Array2D<Vector3> apply(const Array2D<Vector3> &input) {
         int width = input.get_width();
         int height = input.get_height();
-        ImageBuffer<Vector3> output(width, height);
+        Array2D<Vector3> output(width, height);
         real sum = 0.0f;
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
@@ -110,10 +110,10 @@ public:
 
 class HeatToneMapper {
 public:
-    static ImageBuffer<Vector3> apply(const ImageBuffer<Vector3> &input) {
+    static Array2D<Vector3> apply(const Array2D<Vector3> &input) {
         int width = input.get_width();
         int height = input.get_height();
-        ImageBuffer<Vector3> output(width, height);
+        Array2D<Vector3> output(width, height);
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 real temp = max(input[i][j][0], eps);
@@ -129,10 +129,10 @@ public:
 
 class PhysicallyBasedHeatToneMapper {
 public:
-    static ImageBuffer<Vector3> apply(const ImageBuffer<Vector3> &input) {
+    static Array2D<Vector3> apply(const Array2D<Vector3> &input) {
         int width = input.get_width();
         int height = input.get_height();
-        ImageBuffer<Vector3> output(width, height);
+        Array2D<Vector3> output(width, height);
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 real temp = max(input[i][j][0], eps);
@@ -145,10 +145,10 @@ public:
 
 class LogLuminance {
 public:
-    static ImageBuffer<Vector3> apply(const ImageBuffer<Vector3> &input) {
+    static Array2D<Vector3> apply(const Array2D<Vector3> &input) {
         int width = input.get_width();
         int height = input.get_height();
-        ImageBuffer<Vector3> output(width, height);
+        Array2D<Vector3> output(width, height);
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 float lum = max(luminance(input[i][j]) * 1e5f, 1.0f);
@@ -162,10 +162,10 @@ public:
 
 class MaxToWhite {
 public:
-    static ImageBuffer<Vector3> apply(const ImageBuffer<Vector3> &input) {
+    static Array2D<Vector3> apply(const Array2D<Vector3> &input) {
         int width = input.get_width();
         int height = input.get_height();
-        ImageBuffer<Vector3> output(width, height);
+        Array2D<Vector3> output(width, height);
         real max_comp = 1e-7f;
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
@@ -183,10 +183,10 @@ public:
 
 class PBRTToneMapper {
 public:
-    static ImageBuffer<Vector3> apply(ImageBuffer<Vector3> input) {
+    static Array2D<Vector3> apply(Array2D<Vector3> input) {
         int width = input.get_width();
         int height = input.get_height();
-        ImageBuffer<Vector3> output(width, height);
+        Array2D<Vector3> output(width, height);
         real max_display_y = 100;
         real max_y = -1e10f;
         Vector3 average = input.get_average();

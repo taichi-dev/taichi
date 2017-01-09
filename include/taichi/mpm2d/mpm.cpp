@@ -127,7 +127,7 @@ void MPM::estimate_volume() {
     }
 }
 
-void MPM::show(ImageBuffer<Vector3>& buffer) {
+void MPM::show(Array2D<Vector3>& buffer) {
 }
 
 void MPM::add_particle(const Config &config)

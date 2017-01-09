@@ -10,8 +10,6 @@
 
 TC_NAMESPACE_BEGIN
 
-#define ImageBuffer Array2D
-
 class Index2D {
 private:
     int x[2], y[2];
@@ -554,7 +552,7 @@ public:
         return true;
     }
 
-    ImageBuffer(std::string filename) {
+    Array2D(std::string filename) {
         load(filename);
     }
     void load(std::string filename) {

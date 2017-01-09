@@ -22,7 +22,7 @@ public:
 
     virtual void render_stage() override;
 
-    virtual ImageBuffer<Vector3> get_output() override {
+    virtual Array2D<Vector3> get_output() override {
         return image;
     }
 
@@ -38,8 +38,8 @@ protected:
     int num_photons_per_stage;
     HashGrid hash_grid;
     std::vector<HitPoint> hit_points;
-    ImageBuffer<Vector3> image;
-    ImageBuffer<Vector3> image_direct_illum;
+    Array2D<Vector3> image;
+    Array2D<Vector3> image_direct_illum;
     int stages;
     std::shared_ptr<Sampler> sampler;
     Array2D<real> radius2;

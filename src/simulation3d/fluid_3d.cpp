@@ -148,7 +148,7 @@ std::vector<RenderParticle> Smoke3D::get_render_particles() const {
     return render_particles;
 }
 
-void Smoke3D::show(ImageBuffer<Vector3> &buffer) {
+void Smoke3D::show(Array2D<Vector3> &buffer) {
     buffer.reset(Vector3(0));
     int half_width = buffer.get_width() / 2, half_height = buffer.get_height() / 2;
     for (int i = 0; i < half_width; i++) {

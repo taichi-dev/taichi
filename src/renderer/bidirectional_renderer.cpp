@@ -10,7 +10,7 @@ void BidirectionalRenderer::initialize(const Config &config) {
     Renderer::initialize(config);
     this->sampler = create_instance<Sampler>(config.get("sampler", "sobol"));
     this->luminance_clamping = config.get("luminance_clamping", 0.0f);
-    this->buffer = ImageBuffer<Vector3>(width, height);
+    this->buffer = Array2D<Vector3>(width, height);
     this->max_eye_events = config.get("max_eye_events", 5);
     this->max_light_events = config.get("max_light_events", 5);
     this->max_eye_events = std::min(this->max_eye_events, this->max_path_length + 1);

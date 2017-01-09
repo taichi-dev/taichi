@@ -7,7 +7,7 @@ TC_NAMESPACE_BEGIN
 
 TC_INTERFACE_DEF(ImageReader, "image_reader");
 
-ImageBuffer<Vector4> dcraw_read(const std::string &filepath) {
+Array2D<Vector4> dcraw_read(const std::string &filepath) {
     // Single threaded...
     static std::mutex lock;
     std::lock_guard<std::mutex> lock_guard(lock);
@@ -21,7 +21,7 @@ ImageBuffer<Vector4> dcraw_read(const std::string &filepath) {
     };
     DCRawOutput output;
     dcraw_main((int)argv.size(), &argv[0], output);
-    auto img = ImageBuffer<Vector4>(output.width, output.height, Vector4(0.0f));
+    auto img = Array2D<Vector4>(output.width, output.height, Vector4(0.0f));
     for (auto &ind : img.get_region()) {
         for (int i = 0; i < output.channels; i++)
             img[ind][i] = output.data[output.channels * (ind.j * output.width + ind.i) + i];
@@ -37,7 +37,7 @@ public:
 
     }
 
-    ImageBuffer<Vector4> read(const std::string &filepath) override {
+    Array2D<Vector4> read(const std::string &filepath) override {
         return dcraw_read(filepath);
     }
 };

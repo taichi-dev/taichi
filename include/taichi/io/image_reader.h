@@ -9,8 +9,8 @@ TC_NAMESPACE_BEGIN
 class ImageReader : public Unit {
 public:
     ImageReader() {}
-    virtual ImageBuffer<Vector4> read(const std::string &filepath) {
-        return ImageBuffer<Vector4>(0, 0);
+    virtual Array2D<Vector4> read(const std::string &filepath) {
+        return Array2D<Vector4>(0, 0);
     }
 };
 

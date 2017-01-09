@@ -25,7 +25,7 @@ public:
 
     void render_stage() override;
 
-    virtual ImageBuffer<Vector3> get_output() override;
+    virtual Array2D<Vector3> get_output() override;
 
 protected:
 
@@ -271,7 +271,7 @@ void PathTracingRenderer::render_stage() {
     index += samples;
 }
 
-ImageBuffer<Vector3> PathTracingRenderer::get_output() {
+Array2D<Vector3> PathTracingRenderer::get_output() {
     return accumulator.get_averaged();
 }
 
@@ -554,10 +554,10 @@ protected:
     real large_step_prob;
     real mutation_strength;
     long long sample_count;
-    ImageBuffer<Vector3> buffer;
+    Array2D<Vector3> buffer;
 public:
-    ImageBuffer<Vector3> get_output() override {
-        ImageBuffer<Vector3> output(width, height);
+    Array2D<Vector3> get_output() override {
+        Array2D<Vector3> output(width, height);
         float r = 1.0f / sample_count;
         for (auto &ind : output.get_region()) {
             output[ind] = buffer[ind] * r;

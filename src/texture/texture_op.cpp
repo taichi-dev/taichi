@@ -178,7 +178,7 @@ TC_IMPLEMENTATION(Texture, BoundedTexture, "bound");
 
 class RasterizedTexture : public Texture {
 protected:
-    ImageBuffer<Vector4> cache;
+    Array2D<Vector4> cache;
     int resolution_x;
     int resolution_y;
 public:
@@ -186,7 +186,7 @@ public:
         auto tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
         resolution_x = config.get_int("resolution_x");
         resolution_y = config.get_int("resolution_y");
-        cache = ImageBuffer<Vector4>(resolution_x, resolution_y);
+        cache = Array2D<Vector4>(resolution_x, resolution_y);
         for (int i = 0; i < resolution_x; i++) {
             for (int j = 0; j < resolution_y; j++) {
                 cache.set(i, j, tex->sample(

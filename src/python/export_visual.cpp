@@ -89,24 +89,24 @@ void export_visual() {
     def("create_mesh", std::make_shared<Mesh>);
     def("create_scene", std::make_shared<Scene>);
     class_<Array2D<Vector3 >>("Array2DVector3", init<int, int, Vector3>())
-        .def("get_width", &ImageBuffer<Vector3>::get_width)
-        .def("get_height", &ImageBuffer<Vector3>::get_height)
-        .def("get_channels", &return_constant<ImageBuffer<Vector3>, 3>)
-        .def("from_ndarray", &ndarray_to_image_buffer<ImageBuffer<Vector3>, 3>)
-        .def("read", &ImageBuffer<Vector3>::load)
-        .def("write", &ImageBuffer<Vector3>::write)
+        .def("get_width", &Array2D<Vector3>::get_width)
+        .def("get_height", &Array2D<Vector3>::get_height)
+        .def("get_channels", &return_constant<Array2D<Vector3>, 3>)
+        .def("from_ndarray", &ndarray_to_image_buffer<Array2D<Vector3>, 3>)
+        .def("read", &Array2D<Vector3>::load)
+        .def("write", &Array2D<Vector3>::write)
         .def("write_to_disk", &Array2D<Vector3>::write_to_disk)
         .def("read_from_disk", &Array2D<Vector3>::read_from_disk)
-        .def("to_ndarray", &image_buffer_to_ndarray<ImageBuffer<Vector3>, 3>);
+        .def("to_ndarray", &image_buffer_to_ndarray<Array2D<Vector3>, 3>);
     class_<Array2D<Vector4 >>("Array2DVector4", init<int, int, Vector4>())
-        .def("get_width", &ImageBuffer<Vector4>::get_width)
-        .def("get_height", &ImageBuffer<Vector4>::get_height)
-        .def("get_channels", &return_constant<ImageBuffer<Vector4>, 4>)
-        .def("write", &ImageBuffer<Vector4>::write)
-        .def("from_ndarray", &ndarray_to_image_buffer<ImageBuffer<Vector4>, 4>)
+        .def("get_width", &Array2D<Vector4>::get_width)
+        .def("get_height", &Array2D<Vector4>::get_height)
+        .def("get_channels", &return_constant<Array2D<Vector4>, 4>)
+        .def("write", &Array2D<Vector4>::write)
+        .def("from_ndarray", &ndarray_to_image_buffer<Array2D<Vector4>, 4>)
         .def("write_to_disk", &Array2D<Vector4>::write_to_disk)
         .def("read_from_disk", &Array2D<Vector4>::read_from_disk)
-        .def("to_ndarray", &image_buffer_to_ndarray<ImageBuffer<Vector4>, 4>);
+        .def("to_ndarray", &image_buffer_to_ndarray<Array2D<Vector4>, 4>);
     class_<Texture>("Texture")
         .def("initialize", &Texture::initialize);;
 

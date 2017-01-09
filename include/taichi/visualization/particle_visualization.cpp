@@ -29,7 +29,7 @@ public:
         light_transform = glm::transpose(Matrix3(u, v, light_direction));
     }
 
-    virtual void render(ImageBuffer<Vector3> &buffer, const std::vector<RenderParticle> &particles) const override {
+    virtual void render(Array2D<Vector3> &buffer, const std::vector<RenderParticle> &particles) const override {
         if (particles.empty()) {
             return;
         }

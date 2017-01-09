@@ -13,7 +13,7 @@ public:
     virtual void initialize(const Config &config);
     virtual void render_stage() {};
     virtual void set_scene(std::shared_ptr<Scene> scene);
-    virtual ImageBuffer<Vector3> get_output() { return ImageBuffer<Vector3>(width, height); };
+    virtual Array2D<Vector3> get_output() { return Array2D<Vector3>(width, height); };
     virtual void write_output(std::string fn);
 
 protected:
@@ -63,12 +63,12 @@ public:
         }
     }
 
-    virtual ImageBuffer<Vector3> get_output() override {
+    virtual Array2D<Vector3> get_output() override {
         return buffer;
     }
 
 private:
-    ImageBuffer<Vector3> buffer;
+    Array2D<Vector3> buffer;
 };
 
 

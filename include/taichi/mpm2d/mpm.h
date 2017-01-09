@@ -159,7 +159,7 @@ public:
 
     void step(float delta_t = 0.0f);
 
-    void show(ImageBuffer<Vector3> &buffer);
+    void show(Array2D<Vector3> &buffer);
 
     void add_particle(const Config &config);
 

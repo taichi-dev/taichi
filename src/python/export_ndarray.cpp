@@ -32,8 +32,8 @@ void image_buffer_to_ndarray(T *arr, uint64 output) // 'output' is actually a po
 template void array2d_to_ndarray(LevelSet2D *arr, uint64);
 template void array2d_to_ndarray(Array2D<real> *arr, uint64);
 
-template void image_buffer_to_ndarray<ImageBuffer<Vector3>, 3>(ImageBuffer<Vector3> *arr, uint64);
-template void image_buffer_to_ndarray<ImageBuffer<Vector4>, 4>(ImageBuffer<Vector4> *arr, uint64);
+template void image_buffer_to_ndarray<Array2D<Vector3>, 3>(Array2D<Vector3> *arr, uint64);
+template void image_buffer_to_ndarray<Array2D<Vector4>, 4>(Array2D<Vector4> *arr, uint64);
 
 void export_ndarray() {
 }

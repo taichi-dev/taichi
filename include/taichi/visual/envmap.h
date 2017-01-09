@@ -35,7 +35,7 @@ public:
 
 
 protected:
-    std::shared_ptr<ImageBuffer<Vector3>> image;
+    std::shared_ptr<Array2D<Vector3>> image;
     int width, height;
     DiscreteSampler row_sampler;
     std::vector<DiscreteSampler> col_samplers;

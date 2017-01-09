@@ -44,7 +44,7 @@ public:
 
     FLIPFluid();
 
-    void show(ImageBuffer<Vector3> &buffer);
+    void show(Array2D<Vector3> &buffer);
 
     virtual void step(float delta_t);
 

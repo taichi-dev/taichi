@@ -101,7 +101,7 @@ void FLIPFluid::substep(float delta_t) {
 }
 
 
-void FLIPFluid::show(ImageBuffer<Vector3> &buffer) {
+void FLIPFluid::show(Array2D<Vector3> &buffer) {
     /*
     buffer.write_text(title, 20, 0, -1);
     if (show_grid) {

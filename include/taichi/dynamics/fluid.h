@@ -7,7 +7,7 @@ TC_NAMESPACE_BEGIN
 
 class Fluid : public Simulator {
 public:
-    virtual void show(ImageBuffer<Vector3> &buffer) = 0;
+    virtual void show(Array2D<Vector3> &buffer) = 0;
     struct Particle {
         Vector3 color=Vector3(-1, 0, 0);
         Vector2 position, velocity;

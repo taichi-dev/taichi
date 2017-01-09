@@ -16,7 +16,7 @@ protected:
     std::vector<Path> eye_paths_for_connection;
     real radius;
     int n_samples_per_stage;
-    ImageBuffer<Vector3> bdpm_image;
+    Array2D<Vector3> bdpm_image;
     real alpha;
     bool use_vc;
     bool use_vm;

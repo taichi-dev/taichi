@@ -36,7 +36,7 @@ TC_IMPLEMENTATION(Texture, Array3DTexture, "array3d");
 
 class ImageTexture : public Texture {
 protected:
-    ImageBuffer<Vector4> image;
+    Array2D<Vector4> image;
 public:
     void initialize(const Config &config) override {
         image.load(config.get_string("filename"));
@@ -52,7 +52,7 @@ TC_IMPLEMENTATION(Texture, ImageTexture, "image");
 
 class TextTexture : public Texture {
 protected:
-    ImageBuffer<Vector4> image;
+    Array2D<Vector4> image;
 public:
     void initialize(const Config &config) override {
         int width = config.get_int("width");

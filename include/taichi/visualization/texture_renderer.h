@@ -27,7 +27,7 @@ public:
     void set_pixel(int x, int y, vec4 color);
 
     template <typename T>
-    void set_texture(ImageBuffer<T> image);
+    void set_texture(Array2D<T> image);
 
     void render();
 
@@ -51,7 +51,7 @@ public:
 };
 
 template<typename T>
-inline void TextureRenderer::set_texture(ImageBuffer<T> image)
+inline void TextureRenderer::set_texture(Array2D<T> image)
 {
     // assert_info(image.get_width() == width && image.get_height() == height, "Texture size mismatch!");
     resize(image.get_width(), image.get_height());

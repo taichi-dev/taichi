@@ -11,7 +11,7 @@
 TC_NAMESPACE_BEGIN
 
 template<typename T>
-void ImageBuffer<T>::write_text(const std::string &font_fn, const std::string &content_, real size,
+void Array2D<T>::write_text(const std::string &font_fn, const std::string &content_, real size,
                                       int dx, int dy) {
     std::vector<unsigned char> buffer(24 << 20, (unsigned char)0);
     std::vector<unsigned char> screen_buffer((size_t)(this->width * this->height), (unsigned char)0);
@@ -61,10 +61,10 @@ void ImageBuffer<T>::write_text(const std::string &font_fn, const std::string &c
 }
 
 template
-void ImageBuffer<Vector3>::write_text(const std::string &font_fn, const std::string &content_, real size,
+void Array2D<Vector3>::write_text(const std::string &font_fn, const std::string &content_, real size,
                                       int dx, int dy);
 template
-void ImageBuffer<Vector4>::write_text(const std::string &font_fn, const std::string &content_, real size,
+void Array2D<Vector4>::write_text(const std::string &font_fn, const std::string &content_, real size,
                                       int dx, int dy);
 
 TC_NAMESPACE_END

@@ -144,7 +144,7 @@ public:
 
     virtual void step(float delta_t);
     
-    virtual void show(ImageBuffer<Vector3> &buffer);
+    virtual void show(Array2D<Vector3> &buffer);
 
     virtual float get_current_time();
 

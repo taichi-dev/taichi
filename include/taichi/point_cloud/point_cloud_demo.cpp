@@ -26,7 +26,7 @@ public:
         this->points = points;
         this->values = values;
     }
-    void rasterize(ImageBuffer<T> &buffer) {
+    void rasterize(Array2D<T> &buffer) {
         int width = buffer.get_width();
         int height = buffer.get_height();
         Array2D<Vector2> voronoi(width, height);
@@ -158,7 +158,7 @@ public:
         glBindVertexArray(0);
     }
 
-    void rasterize(ImageBuffer<T> &buffer) {
+    void rasterize(Array2D<T> &buffer) {
         auto _ = GLWindow::get_gpgpu_window()->create_context_guard();
 
         int width = buffer.get_width();
@@ -214,7 +214,7 @@ public:
         glDrawArrays(GL_POINTS, 0, width * height);
         glBindVertexArray(0);
 
-        ImageBuffer<Vector4> gpu_buffer(width, height);
+        Array2D<Vector4> gpu_buffer(width, height);
         glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
         glReadBuffer(GL_COLOR_ATTACHMENT0);
         glReadPixels(0, 0, width, height, GL_RGBA, GL_FLOAT, &gpu_buffer[0][0]);
@@ -243,7 +243,7 @@ void point_cloud_demo(Config config) {
     LOAD_CONFIG(output_width, 512);
     LOAD_CONFIG(output_height, 512);
 
-    ImageBuffer<Vector3> image;
+    Array2D<Vector3> image;
     LOAD_CONFIG(use_image, false);
     if (use_image) {
         image.load(config.get_string("image_input"));
@@ -280,7 +280,7 @@ void point_cloud_demo(Config config) {
 
     auto window = std::make_shared<GLWindow>(Config().set("width", output_width).set("height", output_height));
     auto tr = std::make_shared<TextureRenderer>(window, output_width, output_height);
-    auto buffer = ImageBuffer<Vector3>(output_width, output_height);
+    auto buffer = Array2D<Vector3>(output_width, output_height);
 
     NearestNeighbour2D nn(points);
     if (config.get("integrate", true)) {
@@ -327,7 +327,7 @@ void point_cloud_demo(Config config) {
         }
     }
 
-    ImageBuffer<Vector3> other_buffer(output_width, output_height);
+    Array2D<Vector3> other_buffer(output_width, output_height);
     if (config.get("disp_diff", false)) {
         if (config.get("interpolator", "cpu") != "cpu") {
             NNI<Vector3> nni(points, colors);

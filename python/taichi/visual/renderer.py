@@ -15,6 +15,7 @@ from taichi.core import tc_core
 from taichi.misc.util import get_unique_task_id
 from taichi.visual.post_process import LDRDisplay
 from taichi.misc.settings import get_num_cores
+from taichi.gui.image_viewer import show_image
 
 
 class Renderer(object):
@@ -86,6 +87,9 @@ class Renderer(object):
         if '--no-viewer' in sys.argv:
             return
 
+        show_image('Taichi Renderer', self.get_output())
+
+        '''
         frame_path = self.get_full_fn('current-frame.png')
 
         # atomic write so watchers don't get a partial image
@@ -98,6 +102,7 @@ class Renderer(object):
 
             pool = ThreadPoolExecutor(max_workers=1)
             pool.submit(self.start_viewer, frame_path)
+        '''
 
     def end_viewer_process(self):
         if self.viewer_process.returncode is not None:

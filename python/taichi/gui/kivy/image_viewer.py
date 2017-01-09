@@ -72,6 +72,12 @@ class ImageViewerWidget(GridLayout):
                 'max': 100,
                 'value': 50,
             },
+            {
+                'name': 'blur',
+                'min': 0,
+                'max': 10,
+                'value': 0,
+            },
         ]
         self.controllers = Controllers(controllers=controllers_info)
         self.controllers.update = lambda: self.update()
@@ -86,11 +92,23 @@ class ImageViewerWidget(GridLayout):
                                 math.exp(-(self.controllers.value_temperature - 50) / 30))))
         color_cast *= math.sqrt(3) / np.linalg.norm(color_cast)
         img *= color_cast
-        tex = Texture.create(size=img.shape[:2][::-1])
-        tex.blit_buffer(img.flatten(), colorfmt='rgb', bufferfmt='float')
+        img = gaussian_blur(img, self.controllers.value_blur)
+        tex = Texture.create(size=img.shape[:2])
+        tex.blit_buffer(img.swapaxes(0, 1)[:,::-1].flatten(), colorfmt='rgb', bufferfmt='float')
 
         self.image.texture = tex
 
+
+def gaussian_blur(img, sigma):
+    img = img.copy()
+    #TODO: This is slow... We should directly blur Array2D<Vector3>
+    for i in range(3):
+        ch = img[:, :, i]
+        ch = tc.util.ndarray_to_array2d(ch)
+        ch = tc.core.gaussian_blur_2d_real(ch, sigma)
+        ch = tc.util.array2d_to_ndarray(ch)
+        img[:, :, i] = ch
+    return img
 
 class ImageViewerApp(App):
     def build(self):

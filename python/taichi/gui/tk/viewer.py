@@ -66,19 +66,9 @@ class ImageWatchdog(object):
         observer.start()
 
         # bring the window to the front when launched
-        if platform.system() != 'Darwin':
-            self.root.lift()
-            self.root.attributes('-topmost', True)
-            self.root.after_idle(self.root.attributes, '-topmost', False)
-        else:
-            self.root.lift()
-            self.root.attributes('-topmost', True)
-            self.root.after_idle(self.root.attributes, '-topmost', False)
-            '''
-            from Cocoa import NSRunningApplication, NSApplicationActivateIgnoringOtherApps
-            app = NSRunningApplication.runningApplicationWithProcessIdentifier(os.getpid())
-            app.activateWithOptions(NSApplicationActivateIgnoringOtherApps)
-            '''
+        self.root.lift()
+        self.root.attributes('-topmost', True)
+        self.root.after_idle(self.root.attributes, '-topmost', False)
 
         self.root.mainloop()
 
@@ -102,26 +92,15 @@ class ImageViewer(object):
         # so maybe we can avoid importing 'Cocoa'
         # What's your consideration here? @beaugunderson
 
-        if platform.system() != 'Darwin':
-            self.root.lift()
-            self.root.attributes('-topmost', True)
-            self.root.after_idle(self.root.attributes, '-topmost', False)
-        else:
-            self.root.lift()
-            self.root.attributes('-topmost', True)
-            self.root.after_idle(self.root.attributes, '-topmost', False)
-            '''
-            from Cocoa import NSRunningApplication, NSApplicationActivateIgnoringOtherApps
-
-            app = NSRunningApplication.runningApplicationWithProcessIdentifier(os.getpid())
-            app.activateWithOptions(NSApplicationActivateIgnoringOtherApps)
-            '''
+        self.root.lift()
+        self.root.attributes('-topmost', True)
+        self.root.after_idle(self.root.attributes, '-topmost', False)
 
         self.update(img)
 
     def update(self, img):
         self.img = (img * 255).astype('uint8')
-        photo = ImageTk.PhotoImage(Image.fromarray(self.img))
+        photo = ImageTk.PhotoImage(Image.fromarray(self.img.swapaxes(0, 1)[::-1,:, :]))
         self.label.configure(image=photo)
         self.label.image = photo
 

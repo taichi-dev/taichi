@@ -560,6 +560,10 @@ public:
     const std::vector<T> &get_data() const {
         return this->data;
     }
+
+    const int get_dim() const {
+        return 2;
+    }
 };
 
 template<typename T>

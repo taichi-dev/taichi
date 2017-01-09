@@ -55,6 +55,10 @@ public:
     const std::vector<T> &get_data() const {
         return this->data;
     }
+
+    const int get_dim() const {
+        return 1;
+    }
 };
 
 template <typename T>

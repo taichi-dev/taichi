@@ -18,6 +18,7 @@ BOOST_PYTHON_MODULE(taichi_core) {
     export_visual();
     export_io();
     export_misc();
+    export_ndarray();
 }
 
 TC_NAMESPACE_END

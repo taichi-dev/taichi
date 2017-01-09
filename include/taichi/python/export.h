@@ -34,11 +34,13 @@ void export_misc();
 
 void export_io();
 
+void export_ndarray();
+
 template<typename T>
-void array2d_to_ndarray(T *arr, long long);
+void array2d_to_ndarray(T *arr, uint64);
 
 template<typename T, int channels>
-void image_buffer_to_ndarray(T *arr, long long output);
+void image_buffer_to_ndarray(T *arr, uint64 output);
 
 #define DEFINE_VECTOR_OF_NAMED(x, name) \
     class_<std::vector<x>>(name, init<>()) \

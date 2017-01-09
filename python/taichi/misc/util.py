@@ -133,7 +133,7 @@ def image_buffer_to_ndarray(arr, bgr=False):
     raw_data = np.empty((arr.get_width() * arr.get_height() * channels,), dtype='float32')
     arr.to_ndarray(raw_data.ctypes.data_as(ctypes.c_void_p).value)
     dat = raw_data.astype('float32')
-    ret = dat.reshape((arr.get_height(), arr.get_width(), channels))[::-1, :]
+    ret = dat.reshape((arr.get_width(), arr.get_height(), channels))
     if bgr:
         ret = ret[:, :, ::-1]
     return ret
@@ -167,3 +167,19 @@ def ndarray_to_image_buffer(array):
     else:
         assert False, 'array should have 3 or 4 channels'
     return img
+
+def ndarray_to_array2d(array):
+    array = array.copy()
+    input_ptr = array.ctypes.data_as(ctypes.c_void_p).value
+    if len(array.shape) == 2 or array.shape[2] == 1:
+        img = taichi.core.Array2DFloat(0, 0)
+        img.from_ndarray(input_ptr, array.shape[0], array.shape[1])
+    else:
+        assert False, 'only 1 channel supported'
+    return img
+
+def array2d_to_ndarray(arr):
+    ndarray = np.empty((arr.get_width(), arr.get_height()), dtype='float32')
+    output_ptr = ndarray.ctypes.data_as(ctypes.c_void_p).value
+    arr.to_ndarray(output_ptr)
+    return ndarray

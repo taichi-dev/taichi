@@ -1,11 +1,12 @@
 #include <taichi/python/export.h>
-
 #include <taichi/common/config.h>
 #include <taichi/levelset/levelset2d.h>
 #include <taichi/visualization/rgb.h>
+#include <taichi/math/array_op.h>
 
 using namespace boost::python;
 namespace py = boost::python;
+
 
 TC_NAMESPACE_BEGIN
 std::vector<real> make_range(real start, real end, real delta) {
@@ -47,14 +48,36 @@ Matrix4 matrix4_rotate_euler(Matrix4 *transform, const Vector3 &euler_angles) {
     return ret;
 }
 
+template<typename T, int channels>
+void ndarray_to_array2d(T *arr, long long input, int width, int height) // 'input' is actually a pointer...
+{
+    arr->initialize(width, height);
+    for (auto &ind : arr->get_region()) {
+        for (int i = 0; i < channels; i++) {
+            (*arr)[ind][i] = reinterpret_cast<float *>(input)[ind.i * height * channels + ind.j * channels + i];
+        }
+    }
+}
+
+void ndarray_to_array2d_real(Array2D<real> *arr, long long input, int width, int height) // 'input' is actually a pointer...
+{
+    arr->initialize(width, height);
+    for (auto &ind : arr->get_region()) {
+        (*arr)[ind] = reinterpret_cast<float *>(input)[ind.i * height + ind.j];
+    }
+}
+
 void export_math() {
     def("rasterize_levelset", rasterize_levelset);
 
     class_<Config>("Config");
     numeric::array::set_module_and_type("numpy", "ndarray");
-    class_<Array>("Array2DFloat")
-        .def("to_ndarray", &array2d_to_ndarray<Array2D<real >>)
-        .def("rasterize", &Array2D<real>::rasterize);
+    class_<Array>("Array2DFloat", init<int, int>())
+        .def("to_ndarray", &array2d_to_ndarray<Array2D<real>>)
+        .def("get_width", &Array2D<real>::get_width)
+        .def("get_height", &Array2D<real>::get_height)
+        .def("rasterize", &Array2D<real>::rasterize)
+        .def("from_ndarray", &ndarray_to_array2d_real);
 
     class_<LevelSet2D>("LevelSet2D", init<int, int, Vector2>())
         .def("get", &LevelSet2D::get_copy)
@@ -82,6 +105,10 @@ void export_math() {
         .def("rotate_euler", &matrix4_rotate_euler)
         .def("rotate_angle_axis", &matrix4_rotate_angle_axis)
         .def("get_ptr_string", &Config::get_ptr_string<Matrix4>);
+
+    def("gaussian_blur_x_2d_real", gaussian_blur_x<real>);
+    def("gaussian_blur_y_2d_real", gaussian_blur_y<real>);
+    def("gaussian_blur_2d_real", gaussian_blur<real>);
 
     class_<Vector2i>("Vector2i", init<int, int>())
         .def_readwrite("x", &Vector2i::x)

@@ -154,7 +154,7 @@ public:
     }
 
     Array2D<T> same_shape(T init) const {
-        return Array2D<T>(width, height, init);
+        return Array2D<T>(width, height, init, storage_offset);
     }
 
     Array2D<T> same_shape() const {
@@ -486,6 +486,10 @@ public:
 
     const std::vector<T> &get_data() const {
         return this->data;
+    }
+
+    const int get_dim() const {
+        return 2;
     }
 };
 

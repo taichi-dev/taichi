@@ -5,7 +5,7 @@ include_directories(src)
 
 if (WIN32)
     set(BOOST_ROOT "C:/boost_1_62_0")
-    link_directories(external/lib)
+    link_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
 endif ()
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")

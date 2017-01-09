@@ -10,6 +10,8 @@
 
 TC_NAMESPACE_BEGIN
 
+#define ImageBuffer Array2D
+
 class Index2D {
 private:
     int x[2], y[2];
@@ -84,7 +86,7 @@ public:
         return neighbour(d);
     }
     Vector2 get_pos() const {
-        return Vector2((float)i + storage_offset.x, (float)j + storage_offset.y);
+        return Vector2((real)i + storage_offset.x, (real)j + storage_offset.y);
     }
 };
 
@@ -378,13 +380,13 @@ public:
         return inside(index.i, index.j);
     }
 
-    T sample(float x, float y) const {
+    T sample(real x, real y) const {
         x = clamp(x - storage_offset.x, 0.f, width - 1.f - eps);
         y = clamp(y - storage_offset.y, 0.f, height - 1.f - eps);
         int x_i = clamp(int(x), 0, width - 2);
         int y_i = clamp(int(y), 0, height - 2);
-        float x_r = x - x_i;
-        float y_r = y - y_i;
+        real x_r = x - x_i;
+        real y_r = y - y_i;
         return lerp(x_r,
             lerp(y_r, get(x_i, y_i), get(x_i, y_i + 1)),
             lerp(y_r, get(x_i + 1, y_i), get(x_i + 1, y_i + 1))
@@ -399,15 +401,15 @@ public:
     Vector2 get_storage_offset() const {
         return storage_offset;
     }
-    T sample_relative_coord(float x, float y) const {
+    T sample_relative_coord(real x, real y) const {
         x = x * width;
         y = y * height;
         return sample(x, y);
     }
 
     T sample_relative_coord(const Vector2 &vec) const {
-        float x = vec.x * width;
-        float y = vec.y * height;
+        real x = vec.x * width;
+        real y = vec.y * height;
         return sample(x, y);
     }
 
@@ -445,7 +447,7 @@ public:
         return 1.0f / width / height * sum;
     }
 
-    bool inside(const Vector2 &pos, float tolerance = 1e-4f) const {
+    bool inside(const Vector2 &pos, real tolerance = 1e-4f) const {
         return (-tolerance <= pos.x && pos.x <= width + tolerance && -tolerance <= pos.y && pos.y < height + tolerance);
     }
 
@@ -491,6 +493,122 @@ public:
     const int get_dim() const {
         return 2;
     }
+
+    void flip(int axis) {
+        if (axis == 0) {
+            for (int i = 0; i < width / 2; i++) {
+                for (int j = 0; j < height; j++) {
+                    std::swap((*this)[i][j], (*this)[width - 1 - i][j]);
+                }
+            }
+        }
+        else {
+            for (int i = 0; i < width; i++) {
+                for (int j = 0; j < height / 2; j++) {
+                    std::swap((*this)[i][j], (*this)[i][height - 1 - j]);
+                }
+            }
+        }
+    }
+
+    // TODO: finally we are going to need a binary serializer
+
+    void write_to_disk(const std::string &fn) {
+        FILE *f = fopen(fn.c_str(), "wb");
+        fwrite(&width, sizeof(width), 1, f);
+        fwrite(&height, sizeof(height), 1, f);
+        fwrite(&storage_offset, sizeof(storage_offset), 1, f);
+        fwrite(&region, sizeof(region), 1, f);
+        fwrite(&data[0], sizeof(data[0]), get_data_size(), f);
+        fclose(f);
+    }
+
+    bool read_from_disk(const std::string &fn) {
+        FILE *f = fopen(fn.c_str(), "rb");
+        if (f == nullptr) {
+            return false;
+        }
+        size_t ret;
+        ret = fread(&length, sizeof(width), 1, f);
+        if (ret != 1) {
+            return false;
+        }
+        ret = fread(&height, sizeof(height), 1, f);
+        if (ret != 1) {
+            return false;
+        }
+        ret = fread(&storage_offset, sizeof(storage_offset), 1, f);
+        if (ret != 1) {
+            return false;
+        }
+        ret = fread(&region, sizeof(region), 1, f);
+        if (ret != 1) {
+            return false;
+        }
+        data.resize(get_data_size());
+        ret = fread(&data[0], sizeof(data[0]), get_data_size(), f);
+        if (ret != get_data_size()) {
+            return false;
+        }
+        fclose(f);
+        return true;
+    }
+
+    ImageBuffer(std::string filename) {
+        load(filename);
+    }
+    void load(std::string filename) {
+        int channels;
+        real *data = stbi_loadf(filename.c_str(), &this->width, &this->height, &channels, 0);
+        if (data == nullptr) {
+            error("Image file not found: " + filename);
+        }
+        assert(channels == 3);
+        this->initialize(this->width, this->height);
+        for (int i = 0; i < this->width; i++) {
+            for (int j = 0; j < this->height; j++) {
+                real *pixel = data + ((this->height - 1 - j) * this->width + i) * channels;
+                (*this)[i][j].x = pixel[0];
+                (*this)[i][j].y = pixel[1];
+                (*this)[i][j].z = pixel[2];
+            }
+        }
+        stbi_image_free(data);
+    }
+
+    void set_pixel(real x, real y, const T &pixel) {
+        x *= this->width;
+        y *= this->height;
+        x -= 0.5f;
+        y -= 0.5f;
+        int int_x = (int)x;
+        int int_y = (int)y;
+        if (int_x < 0 || int_x >= this->width || int_y < 0 || int_y >= this->height)
+            return;
+        this->operator[](int_x)[int_y] = pixel;
+    }
+
+    T sample_as_texture(real x, real y, bool interp = true) {
+        x *= this->width;
+        y *= this->height;
+        x -= 0.5f;
+        y -= 0.5f;
+        x = clamp(x, 0.0f, this->width - 1.0f);
+        y = clamp(y, 0.0f, this->height - 1.0f);
+        int ix = clamp(int(x), 0, this->width - 2);
+        int iy = clamp(int(y), 0, this->height - 2);
+        if (!interp) {
+            x = real(ix);
+            y = real(iy);
+        }
+        T x_0 = lerp(y - iy, (*this)[ix][iy], (*this)[ix][iy + 1]);
+        T x_1 = lerp(y - iy, (*this)[ix + 1][iy], (*this)[ix + 1][iy + 1]);
+        return lerp(x - ix, x_0, x_1);
+    }
+
+    void write(std::string filename);
+
+    void write_text(const std::string &font_fn, const std::string &content, real size, int dx, int dy);
 };
 
 template <typename T, typename P>
@@ -502,7 +620,7 @@ Array2D<T> operator * (const P &b, const Array2D<T> &a) {
     return o;
 }
 
-typedef Array2D<float> Array;
+typedef Array2D<real> Array;
 
 template <typename T>
 void print(const Array2D<T> &arr) {

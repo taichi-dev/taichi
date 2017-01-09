@@ -154,7 +154,7 @@ for (int k = start[i][j]; k < grid_dim; k = next[i][j][k]) if (grid_inside_mesh(
         window->add_mouse_move_callback_float([&](float x, float y) -> void {
             Vector3 c = renderer->get_output().sample(x, y, false);
             P(c.x);
-            P(tex.sample(x, y, false));
+            P(tex.sample_as_tex(x, y, false));
         });
 
 

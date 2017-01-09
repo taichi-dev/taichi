@@ -1,4 +1,4 @@
-from taichi import ndarray_to_image_buffer
+from taichi import ndarray_to_array2d
 from taichi.visual.post_process import LDRDisplay
 import os
 
@@ -14,7 +14,7 @@ class VideoManager:
     def write_frame(self, img):
         if self.post_processor:
             img = self.post_processor.process(img)
-        ndarray_to_image_buffer(img).write(self.directory + '/%05d.png' % self.frame_counter)
+        ndarray_to_array2d(img).write(self.directory + '/%05d.png' % self.frame_counter)
         self.frame_counter += 1
 
     def make_video(self):

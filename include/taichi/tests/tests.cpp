@@ -9,7 +9,7 @@ TC_FORCE_INLINE void benchmark(T &t, int n) {
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             for (int k = 0; k < n; k++) {
-                t[i][j][k] = (i + j + k);
+                t[i][j][k] = real(i + j + k);
             }
         }
     }

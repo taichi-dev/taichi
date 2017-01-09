@@ -34,7 +34,7 @@ class NBody:
         T = time.time()
         self.c.step(step_t)
         print 'Time:', time.time() - T
-        image_buffer = tc_core.RGBImageFloat(self.video_manager.width, self.video_manager.height, Vector(0, 0, 0.0))
+        image_buffer = tc_core.Array2DVector3(self.video_manager.width, self.video_manager.height, Vector(0, 0, 0.0))
         particles = self.c.get_render_particles()
         particles.write(self.get_output_path('particles%05d.bin' % self.step_counter))
         camera = Camera('pinhole', origin=(0, 0, 50),

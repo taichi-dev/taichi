@@ -24,7 +24,7 @@ if __name__ == '__main__':
         smoke.step(0.03)
         particles = smoke.c.get_render_particles()
         width, height = 512, 1024
-        image_buffer = tc_core.RGBImageFloat(width, height, Vector(0, 0, 0.0))
+        image_buffer = tc_core.Array2DVector3(width, height, Vector(0, 0, 0.0))
         radius = resolution[0] * 4
         camera = Camera('pinhole', origin=(0, radius * 0.3, radius),
                         look_at=(0, 0, 0), up=(0, 1, 0), fov=70,

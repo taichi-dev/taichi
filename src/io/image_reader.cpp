@@ -27,6 +27,7 @@ ImageBuffer<Vector4> dcraw_read(const std::string &filepath) {
             img[ind][i] = output.data[output.channels * (ind.j * output.width + ind.i) + i];
     }
     delete[] output.data;
+    img.flip(1);
     return img;
 }
 

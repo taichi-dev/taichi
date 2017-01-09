@@ -28,9 +28,9 @@ public:
 
     bool same_dim(const Array1D<T> &arr);
 
-    float dot(const Array1D<T> &b);
+    real dot(const Array1D<T> &b);
 
-    Array1D<T> add(float alpha, const Array1D<T> &b);
+    Array1D<T> add(real alpha, const Array1D<T> &b);
 
     Array1D<T> operator-(const Array1D<T> &b);
 
@@ -68,8 +68,8 @@ Array1D<T>::Array1D(int size) : size(size) {
 }
 
 template <typename T>
-float Array1D<T>::dot(const Array1D<T> &b) {
-    float sum(0);
+real Array1D<T>::dot(const Array1D<T> &b) {
+    real sum(0);
     assert(same_dim(b));
     for (int i = 0; i < size; i++) {
         sum += glm::dot(this->data[i], b.data[i]);
@@ -78,7 +78,7 @@ float Array1D<T>::dot(const Array1D<T> &b) {
 }
 
 template <typename T>
-Array1D<T> Array1D<T>::add(float alpha, const Array1D<T> &b) {
+Array1D<T> Array1D<T>::add(real alpha, const Array1D<T> &b) {
     Array1D o(size);
     assert(same_dim(b));
     for (int i = 0; i < size; i++) {

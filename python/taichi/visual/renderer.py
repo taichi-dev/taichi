@@ -77,9 +77,9 @@ class Renderer(object):
 
         return output
 
-    # Returns ImageBuffer<Vector3> a.k.a. RGBImageFloat
+    # Returns ImageBuffer<Vector3> a.k.a. Array2DVector3
     def get_image_output(self):
-        return taichi.util.ndarray_to_image_buffer(self.get_output())
+        return taichi.util.ndarray_to_array2d(self.get_output())
 
     def show(self):
         # allow the user to opt out of the frame viewer by invoking the script

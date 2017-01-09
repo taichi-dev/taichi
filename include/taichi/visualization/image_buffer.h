@@ -9,77 +9,6 @@
 
 TC_NAMESPACE_BEGIN
 
-template <typename T>
-class ImageBuffer : public Array2D<T>
-{
-public:
-    ImageBuffer(int width, int height, T t) : Array2D<T>(width, height, t) {}
-    ImageBuffer(int width, int height) : Array2D<T>(width, height) {}
-    ImageBuffer() {}
-    ImageBuffer(std::string filename) {
-        load(filename);
-    }
-    void load(std::string filename) {
-        int channels;
-        float *data = stbi_loadf(filename.c_str(), &this->width, &this->height, &channels, 0);
-        if (data == nullptr) {
-            error("Image file not found: " + filename);
-        }
-        assert(channels == 3);
-        this->initialize(this->width, this->height);
-        for (int i = 0; i < this->width; i++) {
-            for (int j = 0; j < this->height; j++) {
-                float *pixel = data + ((this->height - 1 - j) * this->width + i) * channels;
-                (*this)[i][j].x = pixel[0];
-                (*this)[i][j].y = pixel[1];
-                (*this)[i][j].z = pixel[2];
-            }
-        }
-        stbi_image_free(data);
-    }
-
-    void set_pixel(float x, float y, const T &pixel) {
-        x *= this->width;
-        y *= this->height;
-        x -= 0.5f;
-        y -= 0.5f;
-        int int_x = (int)x;
-        int int_y = (int)y;
-        if (int_x < 0 || int_x >= this->width || int_y < 0 || int_y >= this->height)
-            return;
-        this->operator[](int_x)[int_y] = pixel;
-    }
-
-    T sample(float x, float y, bool interp = true) {
-        x *= this->width;
-        y *= this->height;
-        x -= 0.5f;
-        y -= 0.5f;
-        x = clamp(x, 0.0f, this->width - 1.0f);
-        y = clamp(y, 0.0f, this->height - 1.0f);
-        int ix = clamp(int(x), 0, this->width - 2);
-        int iy = clamp(int(y), 0, this->height - 2);
-        if (!interp) {
-            x = real(ix);
-            y = real(iy);
-        }
-        T x_0 = lerp(y - iy, (*this)[ix][iy], (*this)[ix][iy + 1]);
-        T x_1 = lerp(y - iy, (*this)[ix + 1][iy], (*this)[ix + 1][iy + 1]);
-        return lerp(x - ix, x_0, x_1);
-    }
-
-
-    void write(std::string filename);
-
-    void write_text(const std::string &font_fn, const std::string &content, real size, int dx, int dy);
-
-    void from_array2d(const Array2D<T> &arr) {
-        this->width = arr.get_width();
-        this->height = arr.get_height();
-        this->data = arr.get_data();
-    }
-};
-
 template<typename T>
 inline void ImageBuffer<T>::write(std::string filename)
 {
@@ -89,7 +18,7 @@ inline void ImageBuffer<T>::write(std::string filename)
         for (int j = 0; j < this->height; j++) {
             for (int k = 0; k < comp; k++) {
                 data[j * this->width * comp + i * comp + k] =
-                        (unsigned char)(255.0f * clamp(this->data[i * this->height + (this->height - j - 1)][k], 0.0f, 1.0f));
+                    (unsigned char)(255.0f * clamp(this->data[i * this->height + (this->height - j - 1)][k], 0.0f, 1.0f));
             }
         }
     }

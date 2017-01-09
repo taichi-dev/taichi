@@ -423,7 +423,7 @@ ArrayVec2 MPM::solve_system(ArrayVec2 x_0, Grid & grid) { // returns: total erro
     p = r;
     apply_A(r, Ar);
     Ap = Ar;
-    float rtAr = r.dot(Ar);
+    real rtAr = r.dot(Ar);
     bool early_break = false;
     for (int k = 0; k < config.get_int("maximum_iterations"); k++) {
         float Ap_sqr = Ap.dot(Ap) + 1e-10f;

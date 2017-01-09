@@ -72,7 +72,7 @@ void export_math() {
 
     class_<Config>("Config");
     numeric::array::set_module_and_type("numpy", "ndarray");
-    class_<Array>("Array2DFloat", init<int, int>())
+    class_<Array2D<real>>("Array2DReal", init<int, int>())
         .def("to_ndarray", &array2d_to_ndarray<Array2D<real>>)
         .def("get_width", &Array2D<real>::get_width)
         .def("get_height", &Array2D<real>::get_height)

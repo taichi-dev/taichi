@@ -1,5 +1,6 @@
 #include <taichi/python/export.h>
 #include <taichi/python/exception.h>
+#include <taichi/hdr/tone_mapper.h>
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/exception_translator.hpp>
@@ -35,6 +36,9 @@ void test_raise_error() {
 
 void export_misc() {
     register_exception_translator<ExceptionForPython>(&translate_exception_for_python);
+    class_<ToneMapper>("ToneMapper")
+        .def("initialize", &ToneMapper::initialize)
+        .def("apply", &ToneMapper::apply);
     def("test", test);
     def("test_raise_error", test_raise_error);
     def("config_from_dict", config_from_py_dict);

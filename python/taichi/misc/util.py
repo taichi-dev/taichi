@@ -150,33 +150,22 @@ def P(**kwargs):
 
 
 def imread(fn, bgr=False):
-    img = taichi.core.RGBImageFloat(0, 0, taichi.Vector(0.0, 0.0, 0.0))
+    img = taichi.core.Array2DVector3(0, 0, taichi.Vector(0.0, 0.0, 0.0))
     img.read(fn)
     return image_buffer_to_ndarray(img, bgr)[::-1]
-
-
-def ndarray_to_image_buffer(array):
-    flattened = array[::-1].flatten().copy()
-    input_ptr = flattened.ctypes.data_as(ctypes.c_void_p).value
-    if array.shape[2] == 3:
-        img = taichi.core.RGBImageFloat(0, 0, taichi.Vector(0, 0, 0))
-        img.from_ndarray(input_ptr, array.shape[1], array.shape[0])
-    elif array.shape[2] == 4:
-        img = taichi.core.RGBAImageFloat(0, 0, taichi.Vector(0, 0, 0, 0))
-        img.from_ndarray(input_ptr, array.shape[1], array.shape[0])
-    else:
-        assert False, 'array should have 3 or 4 channels'
-    return img
 
 def ndarray_to_array2d(array):
     array = array.copy()
     input_ptr = array.ctypes.data_as(ctypes.c_void_p).value
     if len(array.shape) == 2 or array.shape[2] == 1:
-        img = taichi.core.Array2DFloat(0, 0)
-        img.from_ndarray(input_ptr, array.shape[0], array.shape[1])
+        arr = taichi.core.Array2DReal(0, 0)
+    elif array.shape[2] == 3:
+        arr = taichi.core.Array2DVector3(0, 0, taichi.Vector(0, 0, 0))
+    elif array.shape[2] == 4:
+        arr = taichi.core.Array2DVector4(0, 0, taichi.Vector(0, 0, 0, 0))
     else:
-        assert False, 'only 1 channel supported'
-    return img
+        assert False, 'ndarray has to be n*m, n*m*3, or n*m*4'
+    return arr.from_ndarray(input_ptr, array.shape[0], array.shape[0])
 
 def array2d_to_ndarray(arr):
     ndarray = np.empty((arr.get_width(), arr.get_height()), dtype='float32')

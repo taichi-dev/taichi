@@ -9,15 +9,20 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 tk_root = None
+import numpy as np
 
 
-def get_tk_root():
+def get_top_level():
     global tk_root
-    tk_root = tk.Tk()
-    return tk_root
+    if tk_root is None:
+        tk_root = tk.Tk()
+        return tk_root
+    else:
+        return tk.Toplevel()
 
 
 def update_tk():
+    assert tk_root is not None
     tk_root.update_idletasks()
     tk_root.update()
 
@@ -77,7 +82,7 @@ class ImageViewer(object):
     def __init__(self, title, img):
         self.title = title
 
-        self.root = get_tk_root()
+        self.root = get_top_level()
 
         self.root.configure(background='black')
         self.root.title(title)
@@ -100,7 +105,9 @@ class ImageViewer(object):
 
     def update(self, img):
         self.img = (img * 255).astype('uint8')
-        photo = ImageTk.PhotoImage(Image.fromarray(self.img.swapaxes(0, 1)[::-1,:, :]))
+        if len(img.shape) == 2:
+            img = img[:, :, None] * np.ones((1, 1, 3), dtype='uint8')
+        photo = ImageTk.PhotoImage(Image.fromarray(self.img.swapaxes(0, 1)[::-1]))
         self.label.configure(image=photo)
         self.label.image = photo
 

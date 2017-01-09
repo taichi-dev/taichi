@@ -109,7 +109,7 @@ public:
     }
 
     Vector3 get_pos() const {
-        return Vector3((float)i + storage_offset.x, (float)j + storage_offset.y, (float)k + storage_offset.z);
+        return Vector3((real)i + storage_offset.x, (real)j + storage_offset.y, (real)k + storage_offset.z);
     }
 };
 
@@ -440,16 +440,16 @@ public:
         return inside(index.i, index.j, index.k);
     }
 
-    T sample(float x, float y, float z) const {
+    T sample(real x, real y, real z) const {
         x = clamp(x - storage_offset.x, 0.f, width - 1.f - eps);
         y = clamp(y - storage_offset.y, 0.f, height - 1.f - eps);
         z = clamp(z - storage_offset.z, 0.f, depth - 1.f - eps);
         int x_i = clamp(int(x), 0, width - 2);
         int y_i = clamp(int(y), 0, height - 2);
         int z_i = clamp(int(z), 0, depth - 2);
-        float x_r = x - x_i;
-        float y_r = y - y_i;
-        float z_r = z - z_i;
+        real x_r = x - x_i;
+        real y_r = y - y_i;
+        real z_r = z - z_i;
         return
             lerp(z_r,
                 lerp(x_r,
@@ -474,13 +474,13 @@ public:
     }
 
     T sample_relative_coord(const Vector3 &vec) const {
-        float x = vec.x * width;
-        float y = vec.y * height;
-        float z = vec.z * depth;
+        real x = vec.x * width;
+        real y = vec.y * height;
+        real z = vec.z * depth;
         return sample(x, y, z);
     }
 
-    T sample_relative_coord(float x, float y, float z) const {
+    T sample_relative_coord(real x, real y, real z) const {
         x = x * width;
         y = y * height;
         z = z * depth;
@@ -531,7 +531,7 @@ public:
         return 1.0f / width / height / depth * sum;
     }
 
-    bool inside(const Vector3 &pos, float tolerance = 1e-4f) const {
+    bool inside(const Vector3 &pos, real tolerance = 1e-4f) const {
         return (-tolerance < pos.x && pos.x < width + tolerance &&
             -tolerance < pos.y && pos.y < height + tolerance &&
             -tolerance < pos.z && pos.z < depth + tolerance);

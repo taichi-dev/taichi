@@ -28,7 +28,7 @@ class ParticleViewer:
         if not ret:
             print 'read file failed'
             return False
-        image_buffer = tc_core.RGBImageFloat(self.video_manager.width, self.video_manager.height, Vector(0, 0, 0.0))
+        image_buffer = tc_core.Array2DVector3(self.video_manager.width, self.video_manager.height, Vector(0, 0, 0.0))
         self.particle_renderer.set_camera(camera)
         self.particle_renderer.render(image_buffer, particles)
         img = image_buffer_to_ndarray(image_buffer)

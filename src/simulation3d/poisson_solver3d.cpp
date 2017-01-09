@@ -408,6 +408,7 @@ public:
         return pressures[0];
     }
     virtual void run(const Array &residual, Array &pressure, real pressure_tolerance) {
+        P(residual.sum());
         pressure = 0;
         Array r(res), mu(res), tmp(res);
         mu = has_null_space ? r.get_average() : 0;

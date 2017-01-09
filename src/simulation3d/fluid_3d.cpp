@@ -41,13 +41,34 @@ void Smoke3D::project() {
         }
     }
     pressure_solver->run(divergence, pressure, pressure_tolerance);
+    auto is_neumann = [&](Index3D const &ind) -> bool {
+        if (boundary_condition.inside(ind)) {
+            return boundary_condition[ind] == PoissonSolver3D::NEUMANN;
+        }
+        else {
+            if (open_boundary) {
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
+    };
     for (auto &ind : pressure.get_region()) {
-        u[ind] += pressure[ind];
-        u[ind + Vector3i(1, 0, 0)] -= pressure[ind];
-        v[ind] += pressure[ind];
-        v[ind + Vector3i(0, 1, 0)] -= pressure[ind];
-        w[ind] += pressure[ind];
-        w[ind + Vector3i(0, 0, 1)] -= pressure[ind];
+        if (!is_neumann(ind.neighbour(Vector3i(-1, 0, 0))))
+            u[ind] += pressure[ind];
+        if (!is_neumann(ind.neighbour(Vector3i(1, 0, 0))))
+            u[ind + Vector3i(1, 0, 0)] -= pressure[ind];
+
+        if (!is_neumann(ind.neighbour(Vector3i(0, -1, 0))))
+            v[ind] += pressure[ind];
+        if (!is_neumann(ind.neighbour(Vector3i(0, 1, 0))))
+            v[ind + Vector3i(0, 1, 0)] -= pressure[ind];
+        
+        if (!is_neumann(ind.neighbour(Vector3i(0, 0, -1))))
+            w[ind] += pressure[ind];
+        if (!is_neumann(ind.neighbour(Vector3i(0, 0, 1))))
+            w[ind + Vector3i(0, 0, 1)] -= pressure[ind];
     }
     last_pressure = pressure;
 }
@@ -67,14 +88,15 @@ void Smoke3D::initialize(const Config &config) {
     open_boundary = config.get_bool("open_boundary");
     if (open_boundary) {
         padding = "dirichlet";
-    } else {
+    }
+    else {
         padding = "neumann";
     }
 
     perturbation = config.get("perturbation", 0.0f);
     Config solver_config;
     solver_config.set("res", res).set("num_threads", num_threads).set("padding", padding).
-            set("maximum_iterations", config.get_int("maximum_pressure_iterations"));
+        set("maximum_iterations", config.get_int("maximum_pressure_iterations"));
     pressure_solver = create_initialized_instance<PoissonSolver3D>(config.get_string("pressure_solver"), solver_config);
     u = Array(res[0] + 1, res[1], res[2], 0.0f, Vector3(0.0f, 0.5f, 0.5f));
     v = Array(res[0], res[1] + 1, res[2], 0.0f, Vector3(0.5f, 0.0f, 0.5f));
@@ -88,7 +110,7 @@ void Smoke3D::initialize(const Config &config) {
     for (auto &ind : boundary_condition.get_region()) {
         Vector3 d = ind.get_pos() - Vector3(res) * 0.5f;
         if (length(d) * 4 < res[0] || ind.i == 0 || ind.i == res[0] - 1 || ind.j == 0
-                || ind.k == 0 || ind.k == res[2] - 1) {
+            || ind.k == 0 || ind.k == res[2] - 1) {
             //boundary_condition[ind] = PoissonSolver3D::NEUMANN;
         }
     }

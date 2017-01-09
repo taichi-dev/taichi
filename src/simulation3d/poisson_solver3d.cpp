@@ -364,7 +364,6 @@ public:
         pressure = 0;
         Array r(res), mu(res), tmp(res);
         mu = has_null_space ? r.get_average() : 0;
-        P(r.get_average());
         r = residual - mu; //TODO: r = r - Lx
         double nu = r.abs_max();
         if (nu < pressure_tolerance)
@@ -377,7 +376,6 @@ public:
             double sigma = p.dot_double(z);
             double alpha = rho / max(1e-20, sigma);
             r.add_in_place(-(real)alpha, z);
-            P(r.get_average());
             mu = has_null_space ? r.get_average() : 0.0f;
             r -= mu;
             nu = r.abs_max();
@@ -413,7 +411,6 @@ public:
         pressure = 0;
         Array r(res), mu(res), tmp(res);
         mu = has_null_space ? r.get_average() : 0;
-        P(r.get_average());
         r = residual - mu; //TODO: r = r - Lx
         double nu = r.abs_max();
         if (nu < pressure_tolerance)

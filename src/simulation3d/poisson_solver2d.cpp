@@ -1,5 +1,5 @@
 #include <taichi/system/threading.h>
-#include <taichi/dynamics/poisson_solver2D.h>
+#include <taichi/dynamics/poisson_solver2d.h>
 #include <taichi/math/stencils.h>
 
 TC_NAMESPACE_BEGIN

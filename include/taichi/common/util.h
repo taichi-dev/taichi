@@ -47,15 +47,6 @@
 #define error(info) assert_info(false, info)
 #define NOT_IMPLEMENTED assert_info(false, "Not Implemented!");
 
-#include <boost/foreach.hpp>
-
-namespace boost
-{
-    // Suggested work-around for https://svn.boost.org/trac/boost/ticket/6131
-    namespace BOOST_FOREACH = foreach;
-}
-
-#define foreach   BOOST_FOREACH
 #define TC_NAMESPACE_BEGIN namespace taichi {
 #define TC_NAMESPACE_END }
 

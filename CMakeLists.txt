@@ -45,10 +45,9 @@ include_directories("external/include/glm")
 find_package(Boost COMPONENTS
         system
         python REQUIRED)
-include_directories(${BOOST_INCLUDE_DIRS})
+include_directories(${Boost_INCLUDE_DIRS})
 
 # Python and numpy
-
 
 message("Make sure the python executable is the same one used in boost::python.")
 

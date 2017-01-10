@@ -1,4 +1,8 @@
 #include "timer.h"
+#ifndef _WIN64
+#include <unistd.h>
+#endif
+
 
 TC_NAMESPACE_BEGIN
 

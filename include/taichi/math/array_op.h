@@ -11,7 +11,7 @@ Array2D<T> gaussian_blur_x(const Array2D<T> &arr, real sigma) {
     if (sigma < 1e-5f) {
         return arr;
     }
-    Array2D<T> ret = arr.same_shape(0.0f);
+    Array2D<T> ret = arr.same_shape(T(0.0f));
     int radius = int(std::ceil(sigma)) * 3;
     std::vector<real> stencil(radius + 1);
 
@@ -41,7 +41,7 @@ Array2D<T> gaussian_blur_y(const Array2D<T> &arr, real sigma) {
     if (sigma < 1e-5f) {
         return arr;
     }
-    Array2D<T> ret = arr.same_shape(0.0f);
+    Array2D<T> ret = arr.same_shape(T(0.0f));
     int radius = int(std::ceil(sigma)) * 3;
     std::vector<real> stencil(radius + 1);
 
@@ -70,5 +70,15 @@ template <typename T>
 Array2D<T> gaussian_blur(const Array2D<T> &arr, real sigma) {
     return gaussian_blur_x(gaussian_blur_y(arr, sigma), sigma);
 }
+
+template<typename T>
+Array2D<T> take_downsampled(const Array2D<T> &arr, int step) {
+    Array2D<T> ret(arr.get_width() / step, arr.get_height() / step);
+    for (auto &ind : ret.get_region()) {
+        ret[ind] = arr[ind.i * step][ind.j * step];
+    }
+    return ret;
+}
+
 TC_NAMESPACE_END
 

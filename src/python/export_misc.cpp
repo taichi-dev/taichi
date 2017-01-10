@@ -8,6 +8,8 @@
 using namespace boost::python;
 namespace py = boost::python;
 
+EXPLICIT_GET_POINTER(taichi::ToneMapper);
+
 TC_NAMESPACE_BEGIN
 
 Config config_from_py_dict(py::dict &c) {
@@ -36,9 +38,13 @@ void test_raise_error() {
 
 void export_misc() {
     register_exception_translator<ExceptionForPython>(&translate_exception_for_python);
+    
+    def("create_tone_mapper", create_instance<ToneMapper>);
     class_<ToneMapper>("ToneMapper")
         .def("initialize", &ToneMapper::initialize)
         .def("apply", &ToneMapper::apply);
+    register_ptr_to_python<std::shared_ptr<ToneMapper>>();
+
     def("test", test);
     def("test_raise_error", test_raise_error);
     def("config_from_dict", config_from_py_dict);

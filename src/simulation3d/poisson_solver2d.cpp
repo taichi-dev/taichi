@@ -83,8 +83,8 @@ public:
         if (has_null_space) {
             // Let's remove the null space in an ad-hoc manner...
             // TODO: seperated components?
-            // boundaries[0][0][0][0] = DIRICHLET;
-            error("null space detected");
+            // Just hack here...
+            //error("null space detected");
         }
 
         // Step 1: figure out cell types
@@ -321,7 +321,7 @@ public:
     virtual void run(const Array &residual, Array &pressure, real pressure_tolerance) {
         pressure = 0;
         Array r(res), mu(res), tmp(res);
-        //mu = r.get_average();
+        mu = has_null_space ? r.get_average() : 0;
         r = residual; //TODO: r = r - Lx
         double nu = (r - mu).abs_max();
         if (nu < pressure_tolerance)
@@ -336,7 +336,7 @@ public:
             double sigma = p.dot_double(z);
             double alpha = rho / max(1e-20, sigma);
             r.add_in_place(-(real)alpha, z);
-            mu = 0;
+            mu = has_null_space ? r.get_average() : 0;
             nu = (r - mu).abs_max();
             (r - mu).print_abs_max_pos();
             printf(" MGPCG iteration #%02d, nu=%f\n", count, nu);

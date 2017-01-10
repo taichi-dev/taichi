@@ -1,4 +1,4 @@
-from taichi import ndarray_to_array2d
+from taichi.misc.util import ndarray_to_array2d
 from taichi.visual.post_process import LDRDisplay
 import os
 

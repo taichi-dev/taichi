@@ -30,7 +30,6 @@ clone_folder: $(TAICHI_ROOT_DIR)
 install:
   - cd %TAICHI_ROOT_DIR%
   - git clone https://github.com/IteratorAdvance/taichi
-  - git clone https://github.com/IteratorAdvance/taichi_assets
   - pip install numpy
 
 #---------------------------------#
@@ -45,8 +44,8 @@ build_script:
   - md build
   - cd build
   - cmake -G "Visual Studio 14 Win64" ..
-  - msbuild /p:Configuration=Release /p:Platform=x64 /m taichi_core.sln
-  - 7z a %TAICHI_ROOT_DIR%\taichi\taichi_bin.zip
+  - msbuild /p:Configuration=Release /p:Platform=x64 /m taichi.sln
+  - 7z a %TAICHI_ROOT_DIR%\taichi\taichi_bin.zip %TAICHI_ROOT_DIR%/taichi/runtimes/*.dll %TAICHI_ROOT_DIR%/taichi/runtimes/Release/taichi_core.dll
 
 #---------------------------------#
 #      artifacts configuration    #

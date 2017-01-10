@@ -24,7 +24,7 @@ void image_buffer_to_ndarray(T *arr, uint64 output) // 'output' is actually a po
     int width = arr->get_width(), height = arr->get_height();
     for (auto &ind : arr->get_region()) {
         for (int i = 0; i < channels; i++) {
-            reinterpret_cast<float *>(output)[ind.i * channels * height + ind.j * channels + i] = (*arr)[ind][i];
+            reinterpret_cast<real *>(output)[ind.i * channels * height + ind.j * channels + i] = (*arr)[ind][i];
         }
     }
 }

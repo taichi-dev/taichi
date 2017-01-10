@@ -165,10 +165,18 @@ def ndarray_to_array2d(array):
         arr = taichi.core.Array2DVector4(0, 0, taichi.Vector(0, 0, 0, 0))
     else:
         assert False, 'ndarray has to be n*m, n*m*3, or n*m*4'
-    return arr.from_ndarray(input_ptr, array.shape[0], array.shape[0])
+    arr.from_ndarray(input_ptr, array.shape[0], array.shape[1])
+    return arr
 
 def array2d_to_ndarray(arr):
-    ndarray = np.empty((arr.get_width(), arr.get_height()), dtype='float32')
+    if isinstance(arr, taichi.core.Array2DVector3):
+        ndarray = np.empty((arr.get_width(), arr.get_height(), 3), dtype='float32')
+    elif isinstance(arr, taichi.core.Array2DVector4):
+        ndarray = np.empty((arr.get_width(), arr.get_height(), 4), dtype='float32')
+    elif isinstance(arr, taichi.core.Array2DReal):
+        ndarray = np.empty((arr.get_width(), arr.get_height()), dtype='float32')
+    else:
+        assert False, 'Array2d must have type real, Vector3, or Vector4'
     output_ptr = ndarray.ctypes.data_as(ctypes.c_void_p).value
     arr.to_ndarray(output_ptr)
     return ndarray

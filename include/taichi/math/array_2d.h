@@ -517,7 +517,7 @@ public:
         fwrite(&height, sizeof(height), 1, f);
         fwrite(&storage_offset, sizeof(storage_offset), 1, f);
         fwrite(&region, sizeof(region), 1, f);
-        fwrite(&data[0], sizeof(data[0]), get_data_size(), f);
+        fwrite(&data[0], sizeof(data[0]), size, f);
         fclose(f);
     }
 
@@ -543,9 +543,9 @@ public:
         if (ret != 1) {
             return false;
         }
-        data.resize(get_data_size());
-        ret = fread(&data[0], sizeof(data[0]), get_data_size(), f);
-        if (ret != get_data_size()) {
+        initialize(Vector2i(width, height), T(0), storage_offset);
+        ret = fread(&data[0], sizeof(data[0]), size, f);
+        if (ret != size) {
             return false;
         }
         fclose(f);

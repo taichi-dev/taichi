@@ -2,6 +2,7 @@ import os
 import platform
 import sys
 import Tkinter as tk
+import taichi as tc
 
 from PIL import Image, ImageTk
 
@@ -104,10 +105,7 @@ class ImageViewer(object):
         self.update(img)
 
     def update(self, img):
-        self.img = (img * 255).astype('uint8')
-        if len(img.shape) == 2:
-            img = img[:, :, None] * np.ones((1, 1, 3), dtype='uint8')
-        photo = ImageTk.PhotoImage(Image.fromarray(self.img.swapaxes(0, 1)[::-1]))
+        photo = ImageTk.PhotoImage(Image.fromarray(img.swapaxes(0, 1)[::-1]))
         self.label.configure(image=photo)
         self.label.image = photo
 

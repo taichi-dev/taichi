@@ -3,7 +3,7 @@ import os
 import shutil
 import sys
 
-from taichi.misc.settings import get_output_directory, get_bin_directory
+from taichi.misc.settings import get_output_directory, get_bin_directory, get_root_directory
 from taichi.misc.util import get_os_name, get_unique_task_id
 
 CREATE_SAND_BOX_ON_WINDOWS = True
@@ -72,6 +72,14 @@ elif get_os_name() == 'win':
 
     os.chdir(old_wd)
 
+def at_startup():
+    assert os.path.exists(get_root_directory()), 'Please make sure $TAICHI_ROOT_DIR [' + get_root_directory() + '] exists.'
+    output_dir = get_output_directory()
+    if not os.path.exists(output_dir):
+        print 'Making output directory'
+        os.mkdir(output_dir)
+
+at_startup()
 
 @atexit.register
 def clean_libs():

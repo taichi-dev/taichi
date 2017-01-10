@@ -31,6 +31,7 @@ install:
   - cd %TAICHI_ROOT_DIR%
   - git clone https://github.com/IteratorAdvance/taichi
   - git clone https://github.com/IteratorAdvance/taichi_assets
+  - pip install numpy
 
 #---------------------------------#
 #       build configuration       #

@@ -45,6 +45,8 @@ build_script:
   - cd build
   - cmake -G "Visual Studio 14 Win64" ..
   - msbuild /p:Configuration=Release /p:Platform=x64 /m taichi.sln
+  - set PYTHONPATH=%TAICHI_ROOT_DIR%/taichi/python/;%PYTHONPATH%
+  - echo %PYTHONPATH%
   - python -c "import taichi as tc"
   - 7z a %TAICHI_ROOT_DIR%\taichi\taichi_bin.zip %TAICHI_ROOT_DIR%/taichi/runtimes/*.dll %TAICHI_ROOT_DIR%/taichi/runtimes/Release/taichi_core.dll
 

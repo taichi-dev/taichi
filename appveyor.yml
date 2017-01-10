@@ -1,0 +1,56 @@
+#---------------------------------#
+#      general configuration      #
+#---------------------------------#
+
+# version format
+version: 0.0.{build}-{branch}
+
+# branches to build
+branches:
+  # whitelist
+  only:
+    - master
+
+#---------------------------------#
+#    environment configuration    #
+#---------------------------------#
+
+# Build worker image (VM template)
+image: Visual Studio 2015
+
+# environment variables
+environment:
+  BOOST_INCLUDEDIR: C:\Libraries\boost_1_60_0
+  BOOST_LIBRARYDIR: C:\Libraries\boost_1_60_0\lib64-msvc-14.0
+  TAICHI_ROOT_DIR: C:\projects\taichi\
+
+# clone directory
+clone_folder: $(TAICHI_ROOT_DIR)
+
+install:
+  - cd %TAICHI_ROOT_DIR%
+  - git clone https://github.com/IteratorAdvance/taichi
+  - git clone https://github.com/IteratorAdvance/taichi_assets
+
+#---------------------------------#
+#       build configuration       #
+#---------------------------------#
+
+platform: x64
+configuration: Release
+
+build_script:
+  - cd %TAICHI_ROOT_DIR%\taichi
+  - md build
+  - cd build
+  - cmake -G "Visual Studio 14 Win64" ..
+  - msbuild /p:Configuration=Release /p:Platform=x64 /m taichi_core.sln
+  - 7z a %TAICHI_ROOT_DIR%\taichi\taichi_bin.zip
+
+#---------------------------------#
+#      artifacts configuration    #
+#---------------------------------#
+
+artifacts:
+  - path: $(TAICHI_ROOT_DIR)\taichi\taichi_bin.zip
+    name: 'taichi-bin-win-x86-64'

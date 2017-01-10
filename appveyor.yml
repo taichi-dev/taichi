@@ -23,6 +23,11 @@ environment:
   BOOST_INCLUDEDIR: C:\Libraries\boost_1_60_0
   BOOST_LIBRARYDIR: C:\Libraries\boost_1_60_0\lib64-msvc-14.0
   TAICHI_ROOT_DIR: C:\projects\taichi\
+  
+  matrix:
+    - PYTHON_ROOT_DIR: "C:\\Python27-x64"
+      PYTHON_VERSION: "2.7.x"
+      PYTHON_ARCH: "64"
 
 # clone directory
 clone_folder: $(TAICHI_ROOT_DIR)
@@ -30,7 +35,6 @@ clone_folder: $(TAICHI_ROOT_DIR)
 install:
   - cd %TAICHI_ROOT_DIR%
   - git clone https://github.com/IteratorAdvance/taichi
-  - pip install numpy
 
 #---------------------------------#
 #       build configuration       #
@@ -40,13 +44,17 @@ platform: x64
 configuration: Release
 
 build_script:
+  - set PATH=%PYTHON_ROOT_DIR%;%PYTHON_ROOT_DIR%\\Scripts;%PATH%
+  - set PYTHONPATH=%TAICHI_ROOT_DIR%/taichi/python/;%PYTHONPATH%
+  - python --version
+  - python -c "import struct; print(struct.calcsize('P') * 8)"
+  - python -m pip install numpy
+  - echo %PYTHONPATH%
   - cd %TAICHI_ROOT_DIR%\taichi
   - md build
   - cd build
   - cmake -G "Visual Studio 14 Win64" ..
   - msbuild /p:Configuration=Release /p:Platform=x64 /m taichi.sln
-  - set PYTHONPATH=%TAICHI_ROOT_DIR%/taichi/python/;%PYTHONPATH%
-  - echo %PYTHONPATH%
   - python -c "import taichi as tc"
   - 7z a %TAICHI_ROOT_DIR%\taichi\taichi_bin.zip %TAICHI_ROOT_DIR%/taichi/runtimes/*.dll %TAICHI_ROOT_DIR%/taichi/runtimes/Release/taichi_core.dll
 
@@ -56,4 +64,4 @@ build_script:
 
 artifacts:
   - path: $(TAICHI_ROOT_DIR)\taichi\taichi_bin.zip
-    name: 'taichi-bin-win-x86-64'
+    name: 'taichi-bin-win-x86_64'

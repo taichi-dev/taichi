@@ -48,7 +48,7 @@ build_script:
   - set PYTHONPATH=%TAICHI_ROOT_DIR%/taichi/python/;%PYTHONPATH%
   - python --version
   - python -c "import struct; print(struct.calcsize('P') * 8)"
-  - python -m pip install numpy future futures watchdog Pillow scipy
+  - python -m pip install numpy future futures watchdog Pillow
   - echo %PYTHONPATH%
   - cd %TAICHI_ROOT_DIR%\taichi
   - md build

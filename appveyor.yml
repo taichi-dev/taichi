@@ -63,5 +63,5 @@ build_script:
 #---------------------------------#
 
 artifacts:
-  - path: $(TAICHI_ROOT_DIR)\taichi\taichi_bin.zip
+  - path: taichi\taichi_bin.zip
     name: 'taichi-bin-win-x86_64'

@@ -70,9 +70,8 @@ public:
                 grad_norm[ind] = std::hypot(grad_x, grad_y) * scale;
             }
             real avg = grad_norm.get_average();
-            P(avg);
             for (auto &ind : phi[k].get_region()) {
-                real norm = grad_norm[ind];
+                real norm = std::max(grad_norm[ind], 1e-5f);
                 phi[k][ind] = std::pow(norm / (alpha * avg), beta - 1);
                 if (k != (int)pyramid.size() - 1) {
                     phi[k][ind] *= phi[k + 1].sample(ind.get_pos() * 2.0f);

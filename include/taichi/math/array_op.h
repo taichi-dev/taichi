@@ -28,8 +28,8 @@ Array2D<T> gaussian_blur_x(const Array2D<T> &arr, real sigma) {
     for (auto &ind : arr.get_region()) {
         T tot = stencil[0] * arr[ind];
         for (int k = 1; k <= radius; k++) {
-            tot += stencil[k] * (arr[std::max(0, ind.i - k)][ind.j]);
-            tot += stencil[k] * (arr[std::min(ind.i + k, arr.get_width() - 1)][ind.j]);
+            tot += stencil[k] * (arr[std::max(0, ind.i - k)][ind.j]
+                + arr[std::min(ind.i + k, arr.get_width() - 1)][ind.j]);
         }
         ret[ind] = tot;
     }
@@ -58,8 +58,8 @@ Array2D<T> gaussian_blur_y(const Array2D<T> &arr, real sigma) {
     for (auto &ind : arr.get_region()) {
         T tot = stencil[0] * arr[ind];
         for (int k = 1; k <= radius; k++) {
-            tot += stencil[k] * (arr[ind.i][std::max(0, ind.j - k)]);
-            tot += stencil[k] * (arr[ind.i][std::min(ind.j + k, arr.get_height() - 1)]);
+            tot += stencil[k] * (arr[ind.i][std::max(0, ind.j - k)] + 
+                arr[ind.i][std::min(ind.j + k, arr.get_height() - 1)]);
         }
         ret[ind] = tot;
     }

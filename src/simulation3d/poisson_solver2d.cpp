@@ -168,7 +168,7 @@ public:
     void parallel_for_each_cell(Array &arr, int threshold, const std::function<void(const Index2D &index)> &func) {
         int max_side = std::max(std::max(arr.get_width(), arr.get_height()), 0);
         int num_threads;
-        if (max_side >= 32) {
+        if (max_side >= threshold) {
             num_threads = this->num_threads;
         }
         else {
@@ -189,7 +189,7 @@ public:
     void gauss_seidel(const System &system, const Array &residual, Array &pressure, int rounds) {
         for (int i = 0; i < rounds; i++) {
             for (int c = 0; c < 2; c++) {
-                parallel_for_each_cell(pressure, 128, [&](const Index2D &ind) {
+                parallel_for_each_cell(pressure, 64, [&](const Index2D &ind) {
                     int sum = ind.i + ind.j;
                     if ((sum) % 2 == c) {
                         if (system[ind].inv_numerator > 0) {

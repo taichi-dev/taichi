@@ -2,6 +2,7 @@
 #include <taichi/math/linalg.h>
 
 #define STB_IMAGE_IMPLEMENTATION
+#define STBI_FAILURE_USERMSG
 #include <stb_image.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
@@ -13,18 +14,21 @@ TC_NAMESPACE_BEGIN
 template<typename T>
 void Array2D<T>::load(const std::string &filename) {
     int channels;
+    FILE *f = fopen(filename.c_str(), "rb");
+    assert_info(f != nullptr, "Image file not found: " + filename);
     real *data = stbi_loadf(filename.c_str(), &this->width, &this->height, &channels, 0);
-    if (data == nullptr) {
-        error("Image file not found: " + filename);
-    }
-    assert(channels == 3);
+    P(stbi_is_hdr(filename.c_str()));
+    assert_info(data != nullptr, "Image file load failed: " + filename + " # Msg: " + std::string(stbi_failure_reason()));
+    assert_info(channels == 3 || channels == 4, "Image must have channel 3 or 4: " + filename);
     this->initialize(this->width, this->height);
     for (int i = 0; i < this->width; i++) {
         for (int j = 0; j < this->height; j++) {
             real *pixel = data + ((this->height - 1 - j) * this->width + i) * channels;
-            (*this)[i][j].x = pixel[0];
-            (*this)[i][j].y = pixel[1];
-            (*this)[i][j].z = pixel[2];
+            (*this)[i][j][0] = pixel[0];
+            (*this)[i][j][1] = pixel[1];
+            (*this)[i][j][2] = pixel[2];
+            if (channels == 4 && same_type<T, Vector4>())
+                (*this)[i][j][3] = pixel[3];
         }
     }
     stbi_image_free(data);

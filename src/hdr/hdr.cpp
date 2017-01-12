@@ -9,25 +9,19 @@ TC_INTERFACE_DEF(ToneMapper, "tone_mapper")
 
 class GradientDomainTMO final : public ToneMapper {
 protected:
-    int to_return;
     real pyramid_sigma;
     real alpha, beta;
-    real scale;
     real s;
-    real minus;
     int num_threads;
     int max_solver_iterations;
 public:
     void initialize(const Config &config) override {
-        to_return = config.get("to_return", -1);
         pyramid_sigma = config.get("pyramid_sigma", 1.0f);
         num_threads = config.get("num_threads", 1);
         max_solver_iterations = config.get("max_solver_iterations", 100);
         alpha = config.get_real("alpha");
         beta = config.get_real("beta");
         s = config.get_real("s");
-        scale = config.get_real("scale");
-        minus = config.get_real("minus");
     }
 
     virtual Array2D<Vector3> apply(const Array2D<Vector3> &inp) override {
@@ -35,14 +29,17 @@ public:
         assert_info(inp.get_width() == inp.get_height(), "only square image supported currently.");
 
         Array2D<real> lum(inp.get_width(), inp.get_height());
-        for (auto &ind : inp.get_region())
+        Array2D<real> log_lum(inp.get_width(), inp.get_height());
+        for (auto &ind : inp.get_region()) {
             lum[ind] = luminance(inp[ind]);
+            log_lum[ind] = std::log(lum[ind] + 1e-4f);
+        }
         std::vector<Array2D<real>> pyramid;
         std::vector<Array2D<real>> phi;
         Array2D<Vector2> G(width, height);
         Array2D<real> div_G(width, height);
 
-        pyramid.push_back(lum);
+        pyramid.push_back(log_lum);
         int size = inp.get_width();
         while (size > 32) {
             size /= 2;
@@ -53,6 +50,7 @@ public:
         for (int k = (int)pyramid.size() - 1; k >= 0; k--) {
             phi[k] = Array2D<real>(pyramid[k].get_width(), pyramid[k].get_height());
             Array2D<real> grad_norm(pyramid[k].get_width(), pyramid[k].get_height());
+            real scale = std::pow(0.5f, k + 1);
             for (auto &ind : grad_norm.get_region()) {
                 real grad_x = 0, grad_y = 0;
                 if (ind.i > 0) {
@@ -69,12 +67,11 @@ public:
                 }
                 grad_x *= 0.5;
                 grad_y *= 0.5;
-                grad_norm[ind] = std::hypot(grad_x, grad_y) * std::pow(0.5f, k + 1);
+                grad_norm[ind] = std::hypot(grad_x, grad_y) * scale;
             }
             real avg = grad_norm.get_average();
-            P(avg);
             for (auto &ind : phi[k].get_region()) {
-                real norm = grad_norm[ind];
+                real norm = std::max(grad_norm[ind], 1e-5f);
                 phi[k][ind] = std::pow(norm / (alpha * avg), beta - 1);
                 if (k != (int)pyramid.size() - 1) {
                     phi[k][ind] *= phi[k + 1].sample(ind.get_pos() * 2.0f);
@@ -85,11 +82,11 @@ public:
         for (auto &ind : G.get_region()) {
             real grad_x, grad_y;
             if (ind.i + 1 < width)
-                grad_x = lum[ind.neighbour(1, 0)] - lum[ind];
+                grad_x = log_lum[ind.neighbour(1, 0)] - log_lum[ind];
             else
                 grad_x = 0;
             if (ind.j + 1 < height)
-                grad_y = lum[ind.neighbour(0, 1)] - lum[ind];
+                grad_y = log_lum[ind.neighbour(0, 1)] - log_lum[ind];
             else
                 grad_y = 0;
             G[ind] = Vector2(grad_x, grad_y) * phi[0][ind];
@@ -118,16 +115,9 @@ public:
 
         Array2D<real> I(width, height);
         poisson_solver->run(div_G, I, 1e-5f);
-        real minimum = 1e30f;
-        for (auto &ind : I.get_region()) {
-            minimum = std::min(minimum, I[ind]);
-        }
-        for (auto &ind : I.get_region()) {
-            I[ind] = std::max(0.0f, I[ind] - minus - minimum) * scale;
-        }
         for (auto &ind : oup.get_region()) {
             for (int i = 0; i < 3; i++) {
-                oup[ind][i] = std::pow(inp[ind][i] / (lum[ind] + 1e-10f), s) * I[ind];
+                oup[ind][i] = std::pow(inp[ind][i] / (lum[ind] + 1e-30f), s) * std::exp(I[ind]);
             }
         }
         return oup;

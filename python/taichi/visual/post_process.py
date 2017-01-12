@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.ndimage.filters import gaussian_filter
 
 class LDRDisplay:
     def __init__(self, exposure=1.0, adaptive_exposure=True, bloom_threshold=2, bloom_radius=0.01, gamma=2.2):
@@ -10,6 +9,7 @@ class LDRDisplay:
         self.gamma = gamma
 
     def process(self, img):
+        from scipy.ndimage.filters import gaussian_filter
         if self.adaptive_exposure:
             avg = np.mean(img)
             img *= 0.18 / avg * self.exposure

@@ -1,3 +1,4 @@
+import taichi as tc
 from taichi.misc.util import *
 
 
@@ -48,7 +49,7 @@ class Simulator(object):
         return images
 
     def maginify(self, val):
-        if type(val) in [int, tc.Vector2, float]:
+        if type(val) in [int, tc.core.Vector2, float]:
             return val / self.delta_x
         elif type(val) == list:
             return list(map(lambda x: x / self.delta_x, val))
@@ -69,7 +70,7 @@ class Simulator(object):
         d = copy.deepcopy(dict)
         for k in d:
             d[k] = str(d[k])
-        return tc.config_from_dict(d)
+        return tc.misc.util.config_from_dict(d)
 
     def get_background_image(self, width, height):
         return None

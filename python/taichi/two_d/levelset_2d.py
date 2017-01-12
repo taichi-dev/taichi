@@ -1,10 +1,11 @@
+import taichi as tc
 from taichi.misc.util import *
 
 
 class LevelSet2D:
     def __init__(self, width, height, delta_x, offset):
         self.delta_x = delta_x
-        self.levelset = tc.LevelSet2D(width, height, offset)
+        self.levelset = tc.core.LevelSet2D(width, height, offset)
         self.width = width
         self.height = height
         self.cache_image = None
@@ -36,4 +37,3 @@ class LevelSet2D:
 
     def set_friction(self, f):
         self.levelset.friction = f
-

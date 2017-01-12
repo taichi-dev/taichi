@@ -43,7 +43,8 @@ def config_from_dict(args):
 
 
 def make_polygon(points, scale):
-    polygon = tc.Vector2List()
+    import taichi as tc
+    polygon = tc.core.Vector2List()
     for p in points:
         if type(p) == list or type(p) == tuple:
             polygon.append(scale * Vector(p[0], p[1]))
@@ -95,17 +96,19 @@ def default_const_or_evaluate(f, default, u, v):
         return f
     return f(u, v)
 
-
 def const_or_evaluate(f, u, v):
-    if type(f) in [float, int, tuple, tc.Vector2, tc.Vector3]:
+    import taichi as tc
+    if type(f) in [float, int, tuple, tc.core.Vector2, tc.core.Vector3]:
         return f
     return f(u, v)
 
 
 def array2d_to_image(arr, width, height, color_255, transform='levelset'):
+    import pyglet
     rasterized = arr.rasterize(width, height)
-    raw_data = np.empty((width * height,), dtype='float32')
+    raw_data = np.empty((width, height), dtype='float32')
     rasterized.to_ndarray(raw_data.ctypes.data_as(ctypes.c_void_p).value)
+    raw_data = raw_data.swapaxes(0, 1).copy().flatten()
     if transform == 'levelset':
         raw_data = (raw_data <= 0)
     else:
@@ -119,6 +122,7 @@ def array2d_to_image(arr, width, height, color_255, transform='levelset'):
 
 
 def image_buffer_to_image(arr):
+    import pyglet
     raw_data = np.empty((arr.get_width() * arr.get_height() * 3,), dtype='float32')
     arr.to_ndarray(raw_data.ctypes.data_as(ctypes.c_void_p).value)
     dat = (raw_data * 255.0).astype('uint8')

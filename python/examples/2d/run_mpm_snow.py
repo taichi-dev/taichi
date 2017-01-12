@@ -1,4 +1,5 @@
-from taichi.vfx import *
+from taichi.misc.util import *
+from taichi.two_d import *
 
 if __name__ == '__main__':
     resolution = tuple([320, 180])

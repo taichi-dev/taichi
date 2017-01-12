@@ -1,4 +1,5 @@
-from taichi.vfx import *
+from taichi.two_d import *
+from taichi.misc.util import *
 
 if __name__ == '__main__':
     scale = 4

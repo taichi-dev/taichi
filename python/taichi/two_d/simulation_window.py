@@ -4,13 +4,10 @@ import os
 import pyglet
 from pyglet.gl import *
 
-from taichi.misc.util import get_os_name
+from taichi.misc.util import get_os_name, get_unique_task_id
+from taichi.misc.settings import get_output_directory
 
-if get_os_name() == 'osx':
-    VIDEO_OUTPUT_ROOT = '/Users/Iterator/simulation_results'
-else:
-    VIDEO_OUTPUT_ROOT = 'C:/tmp/simulation'
-
+VIDEO_OUTPUT_ROOT = get_output_directory()
 
 def normalized_color_255(*args):
     return tuple(map(lambda x: x / 255.0, args))
@@ -28,7 +25,7 @@ class SimulationWindow(pyglet.window.Window):
         super(SimulationWindow, self).__init__(width=width, height=height, fullscreen=False, caption='Taichi',
                                                config=pyglet.gl.Config(sample_buffers=0, samples=0, depth_size=16,
                                                                        double_buffer=True))
-        uuid = get_uuid()
+        uuid = get_unique_task_id()
         self.video_filename = uuid + ".mp4"
         self.frame_output_path = VIDEO_OUTPUT_ROOT + '/' + uuid + '/'
         print self.frame_output_path

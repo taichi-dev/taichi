@@ -1,6 +1,6 @@
 from PIL import Image
 
-from levelset import LevelSet2D
+from levelset_2d import LevelSet2D
 from simulator import Simulator
 from taichi.core import tc_core
 from taichi.misc.util import *

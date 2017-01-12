@@ -1,13 +1,13 @@
-from levelset import LevelSet2D
-from simulator import Simulator
+import taichi as tc
+from taichi.two_d.levelset_2d import LevelSet2D
+from taichi.two_d.simulator import Simulator
 from taichi.misc.util import *
-
 
 class FluidSimulator(Simulator):
     def __init__(self, **kwargs):
         Simulator.__init__(self, kwargs['simulation_time'], kwargs['dt'])
         simulator_name = kwargs['simulator']
-        self.simulator = tc.__dict__[simulator_name]()
+        self.simulator = tc.core.__dict__[simulator_name]()
         self.simulator.initialize(Simulator.config_from_dict(kwargs))
         self.config = kwargs
         self.delta_x = kwargs['delta_x']
@@ -31,15 +31,15 @@ class FluidSimulator(Simulator):
                     vel = vel_eval(x - x_0, y - y_0)
                 else:
                     vel = (0, 0)
-                samples.append(tc.FluidParticle(Vector(x / self.delta_x, y / self.delta_x), Vector(vel[0], vel[1])))
+                samples.append(tc.core.FluidParticle(Vector(x / self.delta_x, y / self.delta_x), Vector(vel[0], vel[1])))
             x += delta_x
         self.add_particles(samples)
 
     def add_particles_sphere(self, center, radius, vel_eval=None):
-        positions = tc.points_inside_sphere(
-            tc.make_range(.25 * self.delta_x, self.resolution[0] * self.delta_x,
+        positions = tc.core.points_inside_sphere(
+            tc.core.make_range(.25 * self.delta_x, self.resolution[0] * self.delta_x,
                              self.delta_x / self.sample_rate),
-            tc.make_range(.25 * self.delta_x, self.resolution[1] * self.delta_x,
+            tc.core.make_range(.25 * self.delta_x, self.resolution[1] * self.delta_x,
                              self.delta_x / self.sample_rate),
             center, radius
         )
@@ -49,7 +49,8 @@ class FluidSimulator(Simulator):
             v = p.y
             vel = default_const_or_evaluate(vel_eval, (0, 0), u, v)
             samples.append(
-                tc.FluidParticle(Vector(p.x / self.delta_x, p.y / self.delta_x), Vector(vel[0], vel[1])))
+                tc.core.FluidParticle(Vector(p.x / self.delta_x, p.y / self.delta_x), Vector(vel[0], vel[1])))
+
         self.add_particles(samples)
 
     def get_levelset_images(self, width, height, color_scheme):

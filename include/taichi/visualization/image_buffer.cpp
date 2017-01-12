@@ -17,7 +17,6 @@ void Array2D<T>::load(const std::string &filename) {
     FILE *f = fopen(filename.c_str(), "rb");
     assert_info(f != nullptr, "Image file not found: " + filename);
     real *data = stbi_loadf(filename.c_str(), &this->width, &this->height, &channels, 0);
-    P(stbi_is_hdr(filename.c_str()));
     assert_info(data != nullptr, "Image file load failed: " + filename + " # Msg: " + std::string(stbi_failure_reason()));
     assert_info(channels == 3 || channels == 4, "Image must have channel 3 or 4: " + filename);
     this->initialize(this->width, this->height);

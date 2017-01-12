@@ -9,12 +9,14 @@ from taichi.misc.settings import get_output_directory
 
 VIDEO_OUTPUT_ROOT = get_output_directory()
 
+
 def normalized_color_255(*args):
     return tuple(map(lambda x: x / 255.0, args))
 
 
 class SimulationWindow(pyglet.window.Window):
-    def __init__(self, max_side, simulator, color_scheme, levelset_supersampling=2, show_grid=False, show_images=True, rescale=True):
+    def __init__(self, max_side, simulator, color_scheme, levelset_supersampling=2, show_grid=False, show_images=True,
+                 rescale=True):
         if rescale:
             scale = min(1.0 * max_side / simulator.simulation_width, 1.0 * max_side / simulator.simulation_height)
             width = int(round(scale * simulator.simulation_width))
@@ -28,7 +30,6 @@ class SimulationWindow(pyglet.window.Window):
         uuid = get_unique_task_id()
         self.video_filename = uuid + ".mp4"
         self.frame_output_path = VIDEO_OUTPUT_ROOT + '/' + uuid + '/'
-        print self.frame_output_path
         os.mkdir(self.frame_output_path[:-1])
         self.simulator = simulator
         self.frame_count = 0
@@ -71,7 +72,7 @@ class SimulationWindow(pyglet.window.Window):
         print command
 
         os.system(command)
-        #self.clear_frames()
+        # self.clear_frames()
 
     def save_frame(self):
         gl.glPixelTransferf(gl.GL_ALPHA_BIAS, 1.0)
@@ -140,7 +141,7 @@ class SimulationWindow(pyglet.window.Window):
         particles = self.simulator.get_particles()
 
         positions = []
-        colors = [] #list(self.color_scheme['particles']) * len(particles)
+        colors = []  # list(self.color_scheme['particles']) * len(particles)
         glPointSize(1.0)
         for p in particles:
             positions.append(p.position.x)

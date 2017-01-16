@@ -18,16 +18,30 @@ void Array2D<T>::load(const std::string &filename) {
     assert_info(f != nullptr, "Image file not found: " + filename);
     real *data = stbi_loadf(filename.c_str(), &this->width, &this->height, &channels, 0);
     assert_info(data != nullptr, "Image file load failed: " + filename + " # Msg: " + std::string(stbi_failure_reason()));
-    assert_info(channels == 3 || channels == 4, "Image must have channel 3 or 4: " + filename);
+    assert_info(channels == 1 || channels == 3 || channels == 4, "Image must have channel 1, 3 or 4: " + filename);
     this->initialize(this->width, this->height);
-    for (int i = 0; i < this->width; i++) {
-        for (int j = 0; j < this->height; j++) {
-            real *pixel = data + ((this->height - 1 - j) * this->width + i) * channels;
-            (*this)[i][j][0] = pixel[0];
-            (*this)[i][j][1] = pixel[1];
-            (*this)[i][j][2] = pixel[2];
-            if (channels == 4 && same_type<T, Vector4>())
-                (*this)[i][j][3] = pixel[3];
+    if (channels == 1) {
+        for (int i = 0; i < this->width; i++) {
+            for (int j = 0; j < this->height; j++) {
+                real *pixel = data + ((this->height - 1 - j) * this->width + i) * channels;
+                (*this)[i][j][0] = pixel[0];
+                (*this)[i][j][1] = pixel[0];
+                (*this)[i][j][2] = pixel[0];
+                if (channels == 4 && same_type<T, Vector4>())
+                    (*this)[i][j][3] = pixel[0];
+            }
+        }
+    }
+    else {
+        for (int i = 0; i < this->width; i++) {
+            for (int j = 0; j < this->height; j++) {
+                real *pixel = data + ((this->height - 1 - j) * this->width + i) * channels;
+                (*this)[i][j][0] = pixel[0];
+                (*this)[i][j][1] = pixel[1];
+                (*this)[i][j][2] = pixel[2];
+                if (channels == 4 && same_type<T, Vector4>())
+                    (*this)[i][j][3] = pixel[3];
+            }
         }
     }
     stbi_image_free(data);
@@ -42,7 +56,7 @@ void Array2D<T>::write(const std::string &filename)
         for (int j = 0; j < this->height; j++) {
             for (int k = 0; k < comp; k++) {
                 data[j * this->width * comp + i * comp + k] =
-                        (unsigned char)(255.0f * clamp(this->data[i * this->height + (this->height - j - 1)][k], 0.0f, 1.0f));
+                    (unsigned char)(255.0f * clamp(this->data[i * this->height + (this->height - j - 1)][k], 0.0f, 1.0f));
             }
         }
     }
@@ -52,7 +66,7 @@ void Array2D<T>::write(const std::string &filename)
 
 template<typename T>
 void Array2D<T>::write_text(const std::string &font_fn, const std::string &content_, real size,
-                                      int dx, int dy) {
+    int dx, int dy) {
     std::vector<unsigned char> buffer(24 << 20, (unsigned char)0);
     std::vector<unsigned char> screen_buffer((size_t)(this->width * this->height), (unsigned char)0);
 
@@ -78,7 +92,7 @@ void Array2D<T>::write_text(const std::string &font_fn, const std::string &conte
         stbtt_GetCodepointHMetrics(&font, content[ch], &advance, &lsb);
         stbtt_GetCodepointBitmapBoxSubpixel(&font, content[ch], scale, scale, x_shift, 0, &x0, &y0, &x1, &y1);
         stbtt_MakeCodepointBitmapSubpixel(&font, &screen_buffer[0] + this->width * (baseline + y0) + (int)xpos + x0,
-                                          x1 - x0, y1 - y0, 200, scale, scale, x_shift, 0, content[ch]);
+            x1 - x0, y1 - y0, 200, scale, scale, x_shift, 0, content[ch]);
         // note that this stomps the old data, so where character boxes overlap (e.g. 'lj') it's wrong
         // because this API is really for baking character bitmaps into textures. if you want to render
         // a sequence of characters, you really need to render each bitmap to a temp buffer, then
@@ -102,10 +116,10 @@ void Array2D<T>::write_text(const std::string &font_fn, const std::string &conte
 
 template
 void Array2D<Vector3>::write_text(const std::string &font_fn, const std::string &content_, real size,
-                                      int dx, int dy);
+    int dx, int dy);
 template
 void Array2D<Vector4>::write_text(const std::string &font_fn, const std::string &content_, real size,
-                                      int dx, int dy);
+    int dx, int dy);
 
 template void Array2D<Vector3>::load(const std::string &filename);
 template void Array2D<Vector4>::load(const std::string &filename);

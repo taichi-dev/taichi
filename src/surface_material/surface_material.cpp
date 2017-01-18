@@ -194,7 +194,11 @@ public:
         Vector3 &f, real &pdf, SurfaceEvent &event, const Vector2 &uv) const override {
         out_dir = reflect(in_dir);
         auto color = color_sampler->sample3(uv);
-        f = color * std::abs(1.0f / std::max(0.0f, out_dir.z));
+        if (std::abs(out_dir.z) < 1e-5f) {
+            f = Vector3(0.0f);
+        } else {
+            f = color * (1.0f / std::abs(out_dir.z));
+        }
         event = (int)SurfaceScatteringFlags::delta;
         pdf = probability_density(in_dir, out_dir, uv);
     }

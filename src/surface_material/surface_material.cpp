@@ -23,6 +23,14 @@ public:
         return random_diffuse(Vector3(0, 0, in.z > 0 ? 1 : -1), u, v);
     }
 
+    virtual void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf,
+                        SurfaceEvent &event, const Vector2 &uv) const override {
+        out_dir = sample_direction(in_dir, u, v, uv);
+        f = evaluate_bsdf(in_dir, out_dir, uv);
+        pdf = probability_density(in_dir, out_dir, uv);
+        event = (int)SurfaceScatteringFlags::emit;
+    }
+
     virtual real probability_density(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
         if (in.z * out.z < eps) {
             return 0;
@@ -320,6 +328,7 @@ public:
             real ior = config.get_real("ior");
             Config cfg;
             cfg.set("ior", ior);
+            cfg.set("color", config.get_string("specular"));
             auto mat = std::make_shared<RefractiveMaterial>();
             mat->initialize(cfg);
             materials.push_back(mat);

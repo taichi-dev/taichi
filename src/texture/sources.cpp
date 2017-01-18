@@ -9,6 +9,7 @@ private:
     Vector4 val;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         val = config.get_vec4("value");
     }
 
@@ -24,6 +25,7 @@ protected:
     Array3D<Vector4> arr;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         arr = *config.get_ptr<Array3D<Vector4>>("array_ptr");
     }
 
@@ -39,6 +41,7 @@ protected:
     Array2D<Vector4> image;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         image.load(config.get_string("filename"));
     }
 
@@ -55,6 +58,7 @@ protected:
     Array2D<Vector4> image;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         int width = config.get_int("width");
         int height = config.get_int("height");
         std::string font_file_fn = config.get_string("font_file");
@@ -79,6 +83,7 @@ protected:
     Vector3 bounds;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         bounds = config.get_vec3("bounds") * 0.5f;
     }
 
@@ -102,6 +107,7 @@ protected:
     real inner, outer;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         inner = config.get("inner", 0.0f) / 2.0f;
         outer = config.get("outer", 1.0f) / 2.0f;
     }
@@ -129,6 +135,7 @@ protected:
     real rotation_c, rotation_s;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         scale = config.get("scale", 1.0f);
         real rotation = config.get("rotation", 0.0f);
         rotation_c = std::cos(rotation);
@@ -195,6 +202,7 @@ protected:
     std::shared_ptr<Texture> tex1, tex2;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         tex1 = AssetManager::get_asset<Texture>(config.get_int("tex1"));
         tex2 = AssetManager::get_asset<Texture>(config.get_int("tex2"));
         repeat_u = config.get_real("repeat_u");
@@ -216,6 +224,7 @@ protected:
     real coeff_u, coeff_v;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         coeff_u = config.get_real("coeff_u");
         coeff_v = config.get_real("coeff_v");
     }

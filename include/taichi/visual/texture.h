@@ -11,7 +11,10 @@ TC_NAMESPACE_BEGIN
 
 class Texture : public Unit {
 public:
-    virtual void initialize(const Config &config) {}
+    virtual void initialize(const Config &config) {
+        printf("DEBUG: Texture %p creating.\n", (void *)this);
+        config.print_all();
+    }
     virtual Vector4 sample(const Vector2 &coord) const {return sample(Vector3(coord.x, coord.y, 0.5f));}
     virtual Vector4 sample(const Vector3 &coord) const {error("no impl"); return Vector4(0.0f);}
     Vector3 sample3(const Vector2 &coord) const {
@@ -21,6 +24,9 @@ public:
     Vector3 sample3(const Vector3 &coord) const {
         Vector4 tmp = sample(coord);
         return Vector3(tmp.x, tmp.y, tmp.z);
+    }
+    ~Texture() {
+        printf("DEBUG: Texture %p disposed.\n", (void *)this);
     }
 };
 

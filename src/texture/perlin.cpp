@@ -8,6 +8,7 @@ class PerlinNoiseTexture : public Texture {
 protected:
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
     }
     virtual Vector4 sample(const Vector3 &coord) const override {
         return Vector4(noise(coord * 256.0f));

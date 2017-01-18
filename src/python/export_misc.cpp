@@ -21,7 +21,6 @@ Config config_from_py_dict(py::dict &c) {
         std::string value = py::extract<std::string>(c[keys[i]]);
         config.set(key, value);
     }
-    config.print_all();
     return config;
 }
 

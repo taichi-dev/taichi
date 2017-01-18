@@ -41,14 +41,14 @@ if __name__ == '__main__':
         # Spheres
         scene.add_mesh(tc.Mesh(
             tc.geometry.create_sphere((30, 30)),
-            material=tc.SurfaceMaterial('pbr', glossiness=-1, transparent=True, ior=1.5, specular=(1, 0, 0)),
+            material=tc.SurfaceMaterial('pbr', glossiness=0, transparent=True, ior=1.5, specular=(1, 0, 0)),
             scale=1,
             translate=(0, 1.5, -1)
         ))
 
         scene.add_mesh(tc.Mesh(
             tc.geometry.create_sphere((30, 30)),
-            material=tc.SurfaceMaterial('pbr', glossiness=-1, specular=(1, 0.1, 0)),
+            material=tc.SurfaceMaterial('pbr', glossiness=0, specular=(1, 0.1, 0)),
             scale=1,
             translate=(2, 1.5, -1)
         ))

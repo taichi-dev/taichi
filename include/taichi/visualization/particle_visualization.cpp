@@ -110,7 +110,6 @@ std::shared_ptr<Texture> rasterize_render_particles(const Config &config, const 
     }
     Config cfg;
     cfg.set("array_ptr", &array);
-    cfg.print_all();
     auto tex = create_initialized_instance<Texture>("array3d", cfg);
     return tex;
 }

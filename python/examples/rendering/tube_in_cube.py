@@ -32,13 +32,13 @@ def create_scene():
     return scene
 
 if __name__ == '__main__':
-    renderer = tc.Renderer('amcmcppm', 'tube_in_cube', overwrite=True)
+    renderer = tc.Renderer('amcmcppm', output_dir='tube_in_cube', overwrite=True)
 
     scene = create_scene()
-    renderer.set_scene(scene)
     renderer.initialize(min_path_length=1, max_path_length=10,
                         initial_radius=0.005, sampler='prand', russian_roulette=False, volmetric=True, direct_lighting=1,
                         direct_lighting_light=1, direct_lighting_bsdf=1, envmap_is=1, mutation_strength=1, stage_frequency=3,
-                        num_threads=8, shrinking_radius=True)
+                        num_threads=8, shrinking_radius=True,
+                        scene=scene)
     renderer.set_post_processor(tc.post_process.LDRDisplay(exposure=0.3, bloom_radius=0.00))
     renderer.render(10000, 20)

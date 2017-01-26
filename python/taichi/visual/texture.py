@@ -5,7 +5,6 @@ from taichi.misc.util import P
 
 class Texture:
     def __init__(self, name, **kwargs):
-        print 'Creating texture:', name
         if isinstance(name, str):
             self.c = tc_core.create_texture(name)
             kwargs = asset_manager.asset_ptr_to_id(kwargs)

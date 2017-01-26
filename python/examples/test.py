@@ -18,5 +18,4 @@ img = tc.util.imread(tc.get_asset_path('textures/vegas.jpg'))
 show_image('img', img)
 time.sleep(1)
 
-
-print 'Testing finished.'
+print 'Testing passed.'

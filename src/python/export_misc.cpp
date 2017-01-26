@@ -1,6 +1,8 @@
 #include <taichi/python/export.h>
 #include <taichi/python/exception.h>
+#include <taichi/visual/texture.h>
 #include <taichi/hdr/tone_mapper.h>
+#include <taichi/common/asset_manager.h>
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/exception_translator.hpp>
@@ -35,6 +37,15 @@ void test_raise_error() {
     raise_assertion_failure_in_python("Just a test.");
 }
 
+void test_get_texture(int id) {
+    auto ptr = AssetManager::get_asset<Texture>(id);
+    P(ptr.use_count());
+}
+
+void print_texture_use_count(const std::shared_ptr<Texture> &tex) {
+    P(tex.use_count());
+}
+
 void export_misc() {
     register_exception_translator<ExceptionForPython>(&translate_exception_for_python);
     
@@ -46,6 +57,8 @@ void export_misc() {
 
     def("test", test);
     def("test_raise_error", test_raise_error);
+    def("test_get_texture", test_get_texture);
+    def("print_texture_use_count", print_texture_use_count);
     def("config_from_dict", config_from_py_dict);
 }
 

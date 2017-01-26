@@ -169,6 +169,10 @@ inline void print(unsigned int v) {
     printf("%u\n", v);
 }
 
+inline void print(long v) {
+    printf("%ld\n", v);
+}
+
 #ifndef WIN32
 inline void print(size_t v) {
     printf("%lld\n", (long long)v);

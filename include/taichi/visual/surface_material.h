@@ -73,20 +73,7 @@ public:
         return Vector3(0.0f);
     }
 
-    static std::shared_ptr<Texture> get_color_sampler(const Config &config, const std::string &name) {
-        if (config.has_key(name + "_map")) {
-            return AssetManager::get_asset<Texture>(config.get_int(name + "_map"));
-        }
-        else if (config.has_key(name + "_ptr")) {
-            return *config.get_ptr<std::shared_ptr<Texture>>(name + "_ptr");
-        } else if (config.has_key(name)) {
-            Vector3 color = config.get_vec3(name);
-            return create_initialized_instance<Texture>("const", Config().set("value", color));
-        }
-        else {
-            return nullptr;
-        }
-    }
+    static std::shared_ptr<Texture> get_color_sampler(const Config &config, const std::string &name);
 
     virtual bool is_delta() const {
         return false;

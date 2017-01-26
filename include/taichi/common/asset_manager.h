@@ -17,16 +17,20 @@ public:
     std::shared_ptr<T> get_asset_(int id) {
         assert_info(id_to_asset.find(id) != id_to_asset.end(), "Asset not found");
         auto ptr = id_to_asset[id];
+        P(ptr.use_count());
         assert_info(!ptr.expired(), "Asset has been expired");
         return std::static_pointer_cast<T>(ptr.lock());
     }
 
     template <typename T>
-    int insert_asset_(const std::shared_ptr<T> &ptr) {
+    int insert_asset_(std::shared_ptr<T> &ptr) {
+        P(ptr.use_count());
         assert_info(asset_to_id.find(ptr.get()) == asset_to_id.end(), "Asset already exists");
         int id = counter++;
         id_to_asset[id] = static_cast<std::weak_ptr<void>>(std::weak_ptr<T>(ptr));
+        P(id_to_asset[id].use_count());
         asset_to_id[ptr.get()] = id;
+        P(id_to_asset[id].use_count());
         return id;
     }
 
@@ -36,8 +40,12 @@ public:
     }
 
     template <typename T>
-    static int insert_asset(const std::shared_ptr<T> &ptr) {
-        return get_instance().insert_asset_<T>(ptr);
+    static int insert_asset(std::shared_ptr<T> &ptr) {
+        //return get_instance().insert_asset_<T>(ptr);
+        int id = get_instance().insert_asset_<T>(ptr);
+        auto p = get_instance().get_asset<T>(id);
+        P(p.use_count());
+        return id;
     }
 
     int counter = 0;

@@ -1,5 +1,6 @@
 #include <taichi/visual/texture.h>
 #include <taichi/visualization/image_buffer.h>
+#include <taichi/common/asset_manager.h>
 
 TC_NAMESPACE_BEGIN
 

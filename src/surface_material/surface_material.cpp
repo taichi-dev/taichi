@@ -1,8 +1,24 @@
 #include <taichi/visual/surface_material.h>
 #include <taichi/physics/physics_constants.h>
 #include <taichi/math/discrete_sampler.h>
+#include <taichi/common/asset_manager.h>
 
 TC_NAMESPACE_BEGIN
+
+std::shared_ptr<Texture> SurfaceMaterial::get_color_sampler(const Config &config, const std::string &name) {
+    if (config.has_key(name + "_map")) {
+        return AssetManager::get_asset<Texture>(config.get_int(name + "_map"));
+    }
+    else if (config.has_key(name + "_ptr")) {
+        return *config.get_ptr<std::shared_ptr<Texture>>(name + "_ptr");
+    } else if (config.has_key(name)) {
+        Vector3 color = config.get_vec3(name);
+        return create_initialized_instance<Texture>("const", Config().set("value", color));
+    }
+    else {
+        return nullptr;
+    }
+}
 
 TC_INTERFACE_DEF(SurfaceMaterial, "material");
 

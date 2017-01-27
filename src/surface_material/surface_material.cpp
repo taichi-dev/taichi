@@ -12,7 +12,13 @@ std::shared_ptr<Texture> SurfaceMaterial::get_color_sampler(const Config &config
     else if (config.has_key(name + "_ptr")) {
         return *config.get_ptr<std::shared_ptr<Texture>>(name + "_ptr");
     } else if (config.has_key(name)) {
-        Vector3 color = config.get_vec3(name);
+        std::string val = config.get_string(name);
+        Vector3 color;
+        if (val[0] == '(') {
+            color = config.get_vec3(name);
+        } else {
+            color = Vector3(config.get_real(name));
+        }
         return create_initialized_instance<Texture>("const", Config().set("value", color));
     }
     else {

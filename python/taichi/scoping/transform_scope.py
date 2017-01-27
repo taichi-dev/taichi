@@ -5,7 +5,11 @@ current_transform = [tc_core.Matrix4(1.0)]
 
 class TransformScope:
     def __init__(self, transform=tc_core.Matrix4(1.0), translate=(0, 0, 0), rotation=(0, 0, 0), scale=(1, 1, 1)):
-        transform = transform.scale(Vector(scale)).rotate_euler(Vector(rotation)).translate(Vector(translate))
+        if isinstance(scale, tuple):
+            transform = transform.scale(Vector(scale))
+        else:
+            transform = transform.scale_s(scale)
+        transform = transform.rotate_euler(Vector(rotation)).translate(Vector(translate))
         self.transform = transform
 
     def __enter__(self):

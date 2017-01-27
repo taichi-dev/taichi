@@ -9,5 +9,6 @@ from taichi.misc import *
 from taichi.misc import settings as settings
 from taichi.misc.settings import *
 import taichi.image as image
+from taichi.tools.video import VideoManager
 
 __all__ = [s for s in dir() if not s.startswith('_')] + ['settings']

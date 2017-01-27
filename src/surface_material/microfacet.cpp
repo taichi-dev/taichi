@@ -61,7 +61,7 @@ public:
     }
 
     real get_roughness(const Vector2 &uv) const {
-        return roughness_sampler->sample(uv).x;
+        return std::max(1e-3f, roughness_sampler->sample(uv).x);
     }
 
     real probability_density(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {

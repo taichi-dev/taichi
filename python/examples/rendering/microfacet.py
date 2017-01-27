@@ -24,10 +24,11 @@ def create_scene():
                                                                     roughness=(0.01 + r, 0, 0, 0), f0=1),
                                        scale=0.3))
 
-            mesh = tc.Mesh('holder',
-                           tc.SurfaceMaterial('pbr', diffuse_map=tc.Texture.create_taichi_wallpaper(20)),
-                           translate=(0, -1, -3), scale=1, rotation=(0, 0, 0))
-            scene.add_mesh(mesh)
+        mesh = tc.Mesh('holder',
+                       tc.SurfaceMaterial('pbr', diffuse_map=tc.Texture.create_taichi_wallpaper(20)),
+                       translate=(0, -1, -3), scale=1, rotation=(0, 0, 0))
+        scene.add_mesh(mesh)
+
 
         envmap = tc.EnvironmentMap('base', filepath=tc.settings.get_asset_path('/envmaps/schoenbrunn-front_hd.hdr'))
         envmap.set_transform(tc.core.Matrix4(1.0).rotate_euler(tc.Vector(0, -30, 0)))

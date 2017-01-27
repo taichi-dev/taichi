@@ -22,7 +22,8 @@ class Renderer(object):
     def __init__(self, name=None, output_dir=get_unique_task_id(), overwrite=True, frame=0,
                  scene=None, preset=None, **kwargs):
         self.renderer_name = name
-        self.output_dir = taichi.settings.get_output_path(output_dir + '/')
+        if output_dir is not None:
+            self.output_dir = taichi.settings.get_output_path(output_dir + '/')
         self.post_processor = LDRDisplay()
         self.frame = frame
         self.viewer_started = False

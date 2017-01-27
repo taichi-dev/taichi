@@ -13,6 +13,7 @@ Please see [Getting Started] (https://github.com/IteratorAdvance/taichi/wiki/Get
 
 ![image](https://github.com/IteratorAdvance/taichi_assets/raw/master/demos/snow.gif)
 ![image](https://github.com/IteratorAdvance/taichi_assets/raw/master/demos/smoke_cropped.gif)
+![image](https://github.com/IteratorAdvance/taichi_assets/raw/master/demos/microfacet.gif)
 ![image](https://github.com/IteratorAdvance/taichi_assets/raw/master/demos/paper-cut.png)
 
 ## Create your world with Taichi

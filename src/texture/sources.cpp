@@ -237,5 +237,23 @@ public:
 
 TC_IMPLEMENTATION(Texture, UVTexture, "uv");
 
+class SphereTexture : public Texture {
+protected:
+    Vector3 center;
+    real radius;
+public:
+    void initialize(const Config &config) override {
+        Texture::initialize(config);
+        center = config.get_vec3("center");
+        radius = config.get_real("radius");
+    }
+
+    virtual Vector4 sample(const Vector3 &coord) const override {
+        return Vector4(int(glm::length(coord - center) < radius));
+    }
+};
+
+TC_IMPLEMENTATION(Texture, SphereTexture, "sphere");
+
 TC_NAMESPACE_END
 

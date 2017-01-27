@@ -76,7 +76,6 @@ if __name__ == '__main__':
     images = []
     for i in range(frames + 1):
         print 'frame', i
-        # images.append(render_frame(0.5 * (1 - math.cos(math.pi * i / frames))))
         images.append(render_frame(12.0 * i / frames))
 
     video_manager.write_frames(images)

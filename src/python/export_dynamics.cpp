@@ -65,6 +65,7 @@ void export_dynamics() {
 #define EXPORT_SIMULATOR_3D(SIM) \
         class_<SIM>(#SIM) \
         .def("initialize", &SIM::initialize) \
+        .def("update", &SIM::update) \
         .def("step", &SIM::step) \
         .def("get_current_time", &SIM::get_current_time) \
         .def("get_render_particles", &SIM::get_render_particles) \

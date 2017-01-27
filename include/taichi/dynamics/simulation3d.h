@@ -12,7 +12,7 @@ protected:
     int num_threads;
 public:
     Simulation3D() {}
-    virtual float get_current_time() const {
+    virtual real get_current_time() const {
         return current_t;
     }
     virtual void initialize(const Config &config) {
@@ -25,6 +25,7 @@ public:
         error("no impl");
         return std::vector<RenderParticle>();
     }
+    virtual void update(const Config &config) {}
 };
 
 TC_INTERFACE(Simulation3D);

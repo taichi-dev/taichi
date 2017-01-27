@@ -153,6 +153,7 @@ void export_math() {
         .def(self / real())
         .def(self + self)
         .def(self - self)
+        .def(- self)
         .def(self * self)
         .def(self / self);
 
@@ -166,6 +167,7 @@ void export_math() {
         .def(self / real())
         .def(self + self)
         .def(self - self)
+        .def(- self)
         .def(self * self)
         .def(self / self);
 

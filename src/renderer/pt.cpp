@@ -262,8 +262,7 @@ void PathTracingRenderer::initialize(const Config &config) {
 void PathTracingRenderer::render_stage() {
     int samples = width * height;
     auto task = [&](int i) {
-        index = index + i;
-        RandomStateSequence rand(sampler, index);
+        RandomStateSequence rand(sampler, index + i);
         auto cont = get_path_contribution(rand);
         write_path_contribution(cont);
     };

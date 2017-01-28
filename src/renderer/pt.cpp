@@ -23,9 +23,20 @@ class PathTracingRenderer : public Renderer {
 public:
     virtual void initialize(const Config &config) override;
 
-    void render_stage() override;
+    void render_stage() override {
+        int samples = width * height;
+        auto task = [&](int i) {
+            RandomStateSequence rand(sampler, index + i);
+            auto cont = get_path_contribution(rand);
+            write_path_contribution(cont);
+        };
+        ThreadedTaskManager::run(task, 0, samples, num_threads);
+        index += samples;
+    }
 
-    virtual Array2D<Vector3> get_output() override;
+    virtual Array2D<Vector3> get_output() override {
+        return accumulator.get_averaged();
+    }
 
 protected:
 
@@ -162,7 +173,7 @@ protected:
         return PathContribution(offset.x, offset.y, color);
     }
 
-    Vector3 trace(Ray ray, StateSequence &rand);
+    virtual Vector3 trace(Ray ray, StateSequence &rand);
 
     virtual void write_path_contribution(const PathContribution &cont, real scale = 1.0f) {
         auto x = clamp(cont.x, 0.0f, 1.0f - 1e-7f);
@@ -257,21 +268,6 @@ void PathTracingRenderer::initialize(const Config &config) {
     this->russian_roulette = config.get("russian_roulette", true);
     this->envmap_is = config.get("envmap_is", true);
     index = 0;
-}
-
-void PathTracingRenderer::render_stage() {
-    int samples = width * height;
-    auto task = [&](int i) {
-        RandomStateSequence rand(sampler, index + i);
-        auto cont = get_path_contribution(rand);
-        write_path_contribution(cont);
-    };
-    ThreadedTaskManager::run(task, 0, samples, num_threads);
-    index += samples;
-}
-
-Array2D<Vector3> PathTracingRenderer::get_output() {
-    return accumulator.get_averaged();
 }
 
 Vector3 PathTracingRenderer::calculate_volumetric_direct_lighting(const Vector3 &in_dir, const Vector3 &orig,
@@ -487,6 +483,168 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
 }
 
 TC_IMPLEMENTATION(Renderer, PathTracingRenderer, "pt");
+
+class PTSDFRenderer final : public PathTracingRenderer {
+public:
+    void initialize(const Config &config) override {
+        PathTracingRenderer::initialize(config);
+        Config cfg;
+        cfg.set("color", Vector3(1, 1, 1));
+        material = create_initialized_instance<SurfaceMaterial>("diffuse", cfg);
+        sdf = [](const Vector3 &p) -> real {
+            return std::min(length(p) - 1.0f, p.y + 1);
+        };
+    }
+
+protected:
+    std::function<real(const Vector3 &)> sdf;
+    std::shared_ptr<SurfaceMaterial> material;
+
+    real ray_march(const Ray &ray, real limit=1e5) {
+        real dist = 0;
+        for (int i = 0; i < 100; i++) {
+            const Vector3 p = ray.orig + dist * ray.dir;
+            real d = sdf(p);
+            if (d < eps) {
+                break;
+            }
+            dist += d;
+            if (dist > limit) {
+                break;
+            }
+        }
+        return dist;
+    }
+
+    Vector3 get_attenuation(VolumeStack stack, Ray ray, StateSequence &rand, IntersectionInfo &last_intersection) override {
+        last_intersection = sg->query(ray);
+        if (!last_intersection.intersected) {
+            return Vector3(0.0f);
+        }
+        real safe_distance = ray_march(ray, last_intersection.dist);
+        return Vector3(int(safe_distance >= last_intersection.dist - eps));
+    }
+
+    Vector3 normal_at(const Vector3 p) {
+        const real d = 1e-3f;
+        real center = sdf(p);
+        Vector3 n = Vector3(
+                sdf(p + Vector3(d, 0, 0)) - center,
+                sdf(p + Vector3(0, d, 0)) - center,
+                sdf(p + Vector3(0, 0, d)) - center
+        );
+        if (dot(n, n) < 1e-20f) {
+            return Vector3(1, 0, 0);
+        }
+        return normalized(n);
+    }
+
+    IntersectionInfo query_geometry(const Ray &ray) {
+        real dist = ray_march(ray);
+        IntersectionInfo inter;
+        if (!(dist < 1e5f)) {
+            return inter;
+        }
+        inter.intersected = true;
+        real coord_u = ray.u, coord_v = ray.v;
+        inter.pos = ray.at(dist);
+        inter.front = true;
+        // Verify interpolated normals can lead specular rays to go inside the object.
+        Vector3 normal = normal_at(inter.pos);
+        inter.uv = Vector2(0, 0);
+        inter.geometry_normal = inter.front ? normal : -normal;
+        inter.normal = inter.front ? normal : -normal;
+        inter.triangle_id = -1;
+        inter.dist = ray.dist;
+        // inter.material = mesh->material.get();
+        Vector3 u_;
+        if (std::abs(inter.normal.z) < 0.9999f) {
+            u_ = Vector3(0, 0, 1);
+        } else {
+            u_ = Vector3(0, 1, 0);
+        }
+        Vector3 u = normalized(cross(inter.normal, u_));
+        real sgn = inter.front ? 1.0f : -1.0f;
+        Vector3 v = normalized(cross(sgn * inter.normal, u)); // Due to shading normal, we have to normalize here...
+
+        u = normalized(cross(v, inter.normal));
+
+        inter.to_world = Matrix3(u, v, inter.normal);
+        inter.to_local = glm::transpose(inter.to_world);
+
+        inter.material = material.get();
+
+        return inter;
+    }
+
+    Vector3 trace(Ray ray, StateSequence &rand) override {
+        Vector3 ret(0);
+        Vector3 importance(1);
+        VolumeStack stack;
+        int path_length = 1;
+        if (scene->get_atmosphere_material()) {
+            stack.push(scene->get_atmosphere_material().get());
+        }
+        for (int depth = 1; path_length <= max_path_length; depth++) {
+            if (depth > 1000) {
+                error("path too long");
+            }
+            const VolumeMaterial &volume = *stack.top();
+            IntersectionInfo info = query_geometry(ray);
+            Vector3 f(1.0f);
+            Ray out_ray;
+            if (!info.intersected) {
+                if (scene->envmap && (path_length == 1 || !direct_lighting)) {
+                    ret += importance * scene->envmap->sample_illum(ray.dir);
+                }
+                break;
+            }
+
+            BSDF bsdf(scene, info);
+            const Vector3 in_dir = -ray.dir;
+            if (bsdf.is_emissive()) {
+                bool count = info.front && (path_length == 1 || !direct_lighting);
+                if (count && path_length_in_range(path_length)) {
+                    ret += importance * bsdf.evaluate(info.normal, in_dir);
+                }
+                break;
+            }
+            real pdf;
+            SurfaceEvent event;
+            Vector3 out_dir;
+            bsdf.sample(in_dir, rand(), rand(), out_dir, f, pdf, event);
+
+            path_length += 1;
+            if (direct_lighting && path_length_in_range(path_length)) {
+                ret += importance * calculate_direct_lighting(in_dir, info, bsdf, rand, stack);
+            }
+
+            out_ray = Ray(info.pos + out_dir * 1e-4f, out_dir, 1e-5f);
+            real c = abs(glm::dot(out_dir, info.normal));
+            if (pdf < 1e-10f) {
+                break;
+            }
+            f *= c / pdf;
+
+            ray = out_ray;
+            importance *= f;
+            if (russian_roulette) {
+                real p = luminance(importance);
+                if (p <= 1) {
+                    if (rand() < p) {
+                        importance *= 1.0f / p;
+                    }
+                    else {
+                        break;
+                    }
+                }
+            }
+        }
+        return ret;
+    }
+};
+
+TC_IMPLEMENTATION(Renderer, PTSDFRenderer, "pt_sdf");
 
 class PSSMLTMarkovChain : public MarkovChain {
 public:

@@ -8,7 +8,10 @@ BSDF::BSDF(std::shared_ptr<Scene> const &scene, const IntersectionInfo &inter) {
     world_to_local = Matrix3(inter.to_local);
     local_to_world = Matrix3(inter.to_world);
     geometry_normal = inter.geometry_normal;
-    material = scene->get_mesh_from_triangle_id(inter.triangle_id)->material.get();
+    if (inter.material == nullptr)
+        material = scene->get_mesh_from_triangle_id(inter.triangle_id)->material.get();
+    else
+        material = inter.material;
     uv = inter.uv;
     front = inter.front;
 }

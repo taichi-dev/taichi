@@ -52,6 +52,20 @@ public: \
             return std::make_shared<G>(); \
         })); \
     } \
+    bool has_implementation(const std::string &alias) { \
+        return implementation_factories.find(alias) == implementation_factories.end(); \
+    } \
+    void remove_implementation(const std::string &alias, const FactoryMethod &f) { \
+        assert_info(has_implementation(alias), std::string("Implemetation ") + alias + "not found!"); \
+        implementation_factories.erase(alias); \
+    } \
+    void update_implementation(const std::string &alias, const FactoryMethod &f) { \
+        if (has_implementation(alias)) { \
+            implementation_factories.insert(std::make_pair(alias, f)); \
+        } else { \
+            implementation_factories[alias] = f; \
+        }\
+    } \
     std::shared_ptr<T> create(const std::string &alias) { \
         auto factory = implementation_factories.find(alias); \
         assert_info(factory != implementation_factories.end(), \

@@ -160,6 +160,19 @@ class Renderer(object):
             'envmap_is': 1,
             'num_threads': get_num_cores()
         },
+        'pt_sdf': {
+            'name': 'pt_sdf',
+            'min_path_length': 1,
+            'max_path_length': 10,
+            'initial_radius': 0.5,
+            'sampler': 'sobol',
+            'russian_roulette': True,
+            'direct_lighting': 1,
+            'direct_lighting_light': 1,
+            'direct_lighting_bsdf': 1,
+            'envmap_is': 1,
+            'num_threads': get_num_cores()
+        },
         'bdpt': {
             'name': 'bdpt',
             'min_path_length': 1,

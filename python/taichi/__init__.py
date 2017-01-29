@@ -13,5 +13,6 @@ from taichi.tools.video import VideoManager
 from taichi.tools.transform import *
 from taichi.visual.particle_renderer import *
 from taichi.dynamics.smoke3 import *
+from taichi.system import *
 
 __all__ = [s for s in dir() if not s.startswith('_')] + ['settings']

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "math_util.h"
+#include <taichi/math/math_util.h>
 #include <taichi/common/util.h>
 
 TC_NAMESPACE_BEGIN

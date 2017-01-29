@@ -2,6 +2,8 @@
 #include <taichi/visual/renderer.h>
 #include <taichi/visual/sampler.h>
 #include <taichi/visual/bsdf.h>
+#include <taichi/levelset/sdf.h>
+#include <taichi/common/asset_manager.h>
 
 #include "markov_chain.h"
 
@@ -491,20 +493,18 @@ public:
         Config cfg;
         cfg.set("color", Vector3(1, 1, 1));
         material = create_initialized_instance<SurfaceMaterial>("diffuse", cfg);
-        sdf = [](const Vector3 &p) -> real {
-            return std::min(length(p) - 1.0f, p.y + 1);
-        };
+        sdf = AssetManager::get_asset<SDF>(config.get_int("sdf"));
     }
 
 protected:
-    std::function<real(const Vector3 &)> sdf;
+    std::shared_ptr<SDF> sdf;
     std::shared_ptr<SurfaceMaterial> material;
 
     real ray_march(const Ray &ray, real limit=1e5) {
         real dist = 0;
         for (int i = 0; i < 100; i++) {
             const Vector3 p = ray.orig + dist * ray.dir;
-            real d = sdf(p);
+            real d = sdf->eval(p);
             if (d < eps) {
                 break;
             }
@@ -527,11 +527,11 @@ protected:
 
     Vector3 normal_at(const Vector3 p) {
         const real d = 1e-3f;
-        real center = sdf(p);
+        real center = sdf->eval(p);
         Vector3 n = Vector3(
-                sdf(p + Vector3(d, 0, 0)) - center,
-                sdf(p + Vector3(0, d, 0)) - center,
-                sdf(p + Vector3(0, 0, d)) - center
+                sdf->eval(p + Vector3(d, 0, 0)) - center,
+                sdf->eval(p + Vector3(0, d, 0)) - center,
+                sdf->eval(p + Vector3(0, 0, d)) - center
         );
         if (dot(n, n) < 1e-20f) {
             return Vector3(1, 0, 0);

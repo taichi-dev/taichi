@@ -40,8 +40,6 @@ message("Module path:" ${CMAKE_MODULE_PATH})
 
 set(CMAKE_BUILD_TYPE Release)
 
-include_directories("external/include/glm")
-
 find_package(Boost COMPONENTS
         system
         python REQUIRED)

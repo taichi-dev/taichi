@@ -4,6 +4,7 @@
 #include <taichi/visual/renderer.h>
 #include <taichi/visual/volume_material.h>
 #include <taichi/visual/surface_material.h>
+#include <taichi/levelset/sdf.h>
 #include <taichi/visualization/particle_visualization.h>
 #include <taichi/common/asset_manager.h>
 
@@ -28,6 +29,8 @@ EXPLICIT_GET_POINTER(taichi::EnvironmentMap);
 EXPLICIT_GET_POINTER(taichi::Texture);
 
 EXPLICIT_GET_POINTER(taichi::ParticleRenderer);
+
+EXPLICIT_GET_POINTER(taichi::SDF);
 
 TC_NAMESPACE_BEGIN
 
@@ -77,6 +80,7 @@ void export_visual() {
     def("generate_mesh", Mesh3D::generate);
     def("merge_mesh", merge_mesh);
     def("rasterize_render_particles", rasterize_render_particles);
+    def("register_sdf", &AssetManager::insert_asset<SDF>);
     def("register_texture", &AssetManager::insert_asset<Texture>);
     def("register_surface_material", &AssetManager::insert_asset<SurfaceMaterial>);
     // TODO: these should registered by iterating over existing interfaces.
@@ -84,6 +88,7 @@ void export_visual() {
     def("create_renderer", create_instance<Renderer>);
     def("create_camera", create_instance<Camera>);
     def("create_particle_renderer", create_instance<ParticleRenderer>);
+    def("create_sdf", create_instance<SDF>);
     def("create_surface_material", create_instance<SurfaceMaterial>);
     def("create_volume_material", create_instance<VolumeMaterial>);
     def("create_environment_map", create_instance<EnvironmentMap>);
@@ -153,6 +158,10 @@ void export_visual() {
         .def("set_camera", &ParticleRenderer::set_camera)
         .def("render", &ParticleRenderer::render);
 
+    class_<SDF>("SDF")
+            .def("initialize", &SDF::initialize)
+            .def("eval", &SDF::eval);
+
     class_<Function22>("Function22");
     class_<Function23>("Function23");
 
@@ -168,6 +177,7 @@ void export_visual() {
     register_ptr_to_python<std::shared_ptr<Scene>>();
     register_ptr_to_python<std::shared_ptr<Texture>>();
     register_ptr_to_python<std::shared_ptr<ParticleRenderer>>();
+    register_ptr_to_python<std::shared_ptr<SDF>>();
 }
 
 TC_NAMESPACE_END

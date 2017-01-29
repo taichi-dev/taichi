@@ -3,7 +3,6 @@ from math import *
 import taichi as tc
 from taichi.misc.util import *
 
-
 def create_scene():
     downsample = 2
     width, height = 800 / downsample, 800 / downsample
@@ -22,7 +21,14 @@ def create_scene():
     return scene
 
 if __name__ == '__main__':
+    dll_path = tc.settings.get_output_path('cpp/build/libunit.dylib')
+
+    unit_dll = tc.core.create_unit_dll()
+    unit_dll.open_dll(dll_path)
+    sdf = tc.core.create_sdf('new_sdf')
+    sdf_id = tc.core.register_sdf(sdf)
+
     renderer = tc.Renderer(output_dir='sdf', overwrite=True)
-    renderer.initialize(preset='pt_sdf', scene=create_scene(), max_path_length=30)
+    renderer.initialize(preset='pt_sdf', scene=create_scene(), max_path_length=30, sdf=sdf_id)
     renderer.set_post_processor(tc.post_process.LDRDisplay(bloom_radius=0.0))
     renderer.render(10000, 20)

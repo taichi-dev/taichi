@@ -4,7 +4,7 @@
 #include <taichi/visual/renderer.h>
 #include <taichi/visual/volume_material.h>
 #include <taichi/visual/surface_material.h>
-#include <taichi/levelset/sdf.h>
+#include <taichi/math/sdf.h>
 #include <taichi/visualization/particle_visualization.h>
 #include <taichi/common/asset_manager.h>
 

@@ -3,11 +3,10 @@
 #include "fluid.h"
 #include <taichi/system/timer.h>
 #include <taichi/math/array_2d.h>
-#include "point_level_set.h"
 #include <memory>
 #include <taichi/visualization/image_buffer.h>
 #include <taichi/math/stencils.h>
-#include <taichi/levelset/levelset2d.h>
+#include <taichi/math/levelset_2d.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -21,10 +20,10 @@ protected:
     Array apply_preconditioner(const Array &x);
     Array get_rhs();
     void apply_boundary_condition();
-    float volume_correction_factor;
+    real volume_correction_factor;
     bool supersampling;
     bool show_grid;
-    float cfl;
+    real cfl;
     std::string title;
     Array u_weight;
     Array v_weight;
@@ -32,15 +31,15 @@ protected:
 
     int width, height;
     Array pressure, q, z;
-    float target_water_cells;
-    float last_water_cells;
-    float integrate_water_cells_difference;
+    real target_water_cells;
+    real last_water_cells;
+    real integrate_water_cells_difference;
     void initialize_volume_controller();
     void update_volume_controller();
-    float get_volume_correction();
-    void advect_level_set(float delta_t);
+    real get_volume_correction();
+    void advect_level_set(real delta_t);
     bool use_bridson_pcg;
-    float tolerance;
+    real tolerance;
     int maximum_iterations;
     LevelSet2D boundary_levelset;
     Array density;
@@ -53,7 +52,7 @@ protected:
 
     Array u, v, p;
     Vector2 gravity;
-    float t;
+    real t;
     enum CellType {
         AIR = 0, WATER = 1
     };
@@ -63,7 +62,7 @@ protected:
 
     virtual Vector2 sample_velocity(Vector2 position);
 
-    std::function<CellType(float, float)> get_initializer(std::string name);
+    std::function<CellType(real, real)> get_initializer(std::string name);
 
     bool check_u_activity(int i, int j);
 
@@ -79,9 +78,9 @@ protected:
 
     virtual Array solve_pressure_naive();
 
-    virtual void project(float delta_t);
+    virtual void project(real delta_t);
 
-    virtual void apply_viscosity(float delta_t);
+    virtual void apply_viscosity(real delta_t);
 
     int count_water_cells();
 
@@ -89,7 +88,7 @@ protected:
 
     virtual void show_surface();
 
-    Vector2 sl_position(Vector2 position, float delta_t);
+    Vector2 sl_position(Vector2 position, real delta_t);
 
     void print_u();
 
@@ -99,13 +98,13 @@ protected:
 
     Vector2 clamp_particle_position(Vector2 pos);
     
-    void advect(float delta_t);
+    void advect(real delta_t);
 
-    virtual void apply_external_forces(float delta_t);
+    virtual void apply_external_forces(real delta_t);
 
     static Vector2 position_noise();
 
-    static float kernel(const Vector2 &c) {
+    static real kernel(const Vector2 &c) {
         return max(0.0f, 1.0f - std::abs(c.x)) * max(0.0f, 1.0f - std::abs(c.y));
     }
 
@@ -122,15 +121,15 @@ protected:
 
     virtual void initialize_particles(const Config &config);
 
-    virtual void substep(float delta_t);
+    virtual void substep(real delta_t);
     
-    virtual float get_dt_with_cfl_1();
+    virtual real get_dt_with_cfl_1();
 
-    virtual float get_max_grid_speed();
+    virtual real get_max_grid_speed();
 
     virtual void compute_liquid_levelset();
 
-    virtual Array advect(const Array &arr, float delta_t);
+    virtual Array advect(const Array &arr, real delta_t);
 
     virtual bool check_diag_domination();
 
@@ -142,11 +141,11 @@ public:
 
     virtual void initialize(const Config &config);
 
-    virtual void step(float delta_t);
+    virtual void step(real delta_t);
     
     virtual void show(Array2D<Vector3> &buffer);
 
-    virtual float get_current_time();
+    virtual real get_current_time();
 
     virtual void add_particle(Particle &particle);
 

@@ -6,7 +6,7 @@
 #include <atomic>
 #include <taichi/math/array_2d.h>
 #include <taichi/math/array_1d.h>
-#include <taichi/levelset/levelset2d.h>
+#include <taichi/math/levelset_2d.h>
 #include "mpm_particle.h"
 
 TC_NAMESPACE_BEGIN

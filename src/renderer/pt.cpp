@@ -2,7 +2,7 @@
 #include <taichi/visual/renderer.h>
 #include <taichi/visual/sampler.h>
 #include <taichi/visual/bsdf.h>
-#include <taichi/levelset/sdf.h>
+#include <taichi/math/sdf.h>
 #include <taichi/common/asset_manager.h>
 
 #include "markov_chain.h"

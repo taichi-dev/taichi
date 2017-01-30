@@ -1,4 +1,4 @@
-#include "apic.h"
+#include "taichi/dynamics/fluid2d/apic.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -44,7 +44,7 @@ Vector2 APICFluid::sample_c(Vector2 & pos, Array & val) {
     return c;
 }
 
-void APICFluid::substep(float delta_t)
+void APICFluid::substep(real delta_t)
 {
     Time::Timer _("substep");
     apply_external_forces(delta_t);

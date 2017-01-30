@@ -4,7 +4,7 @@
 #include <taichi/math/array_2d.h>
 #include "mpm_utils.h"
 #include <taichi/common/util.h>
-#include <taichi/levelset/levelset2d.h>
+#include <taichi/math/levelset_2d.h>
 
 TC_NAMESPACE_BEGIN
 

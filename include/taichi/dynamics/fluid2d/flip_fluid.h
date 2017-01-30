@@ -1,7 +1,6 @@
 #pragma once
 
-#include "euler_fluid.h"
-#include "level_set.h"
+#include "taichi/dynamics/fluid2d/euler_fluid.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -11,34 +10,34 @@ protected:
     Array v_backup;
     Array u_count;
     Array v_count;
-    float FLIP_alpha;
-    float padding;
+    real FLIP_alpha;
+    real padding;
     int advection_order;
-    float correction_strength;
+    real correction_strength;
     int correction_neighbours;
 
     void clamp_particle(Particle &p);
 
     virtual void initialize_solver(const Config &config);
 
-    Vector2 sample_velocity(Vector2 position, Vector2 velocity, float lerp);
+    Vector2 sample_velocity(Vector2 position, Vector2 velocity, real lerp);
 
-    virtual void advect(float delta_t);
+    virtual void advect(real delta_t);
 
-    virtual void apply_external_forces(float delta_t);
+    virtual void apply_external_forces(real delta_t);
 
     virtual void rasterize();
 
-    template <float(*T)(const Particle &, const Vector2 &)>
+    template <real(*T)(const Particle &, const Vector2 &)>
     void rasterize_component(Array &val, Array &count);
 
     virtual void backup_velocity_field();
 
-    virtual void substep(float delta_t);
+    virtual void substep(real delta_t);
 
     void reseed();
 
-    void correct_particle_positions(float delta_t, bool clear_c = false);
+    void correct_particle_positions(real delta_t, bool clear_c = false);
 
 public:
 
@@ -46,7 +45,7 @@ public:
 
     void show(Array2D<Vector3> &buffer);
 
-    virtual void step(float delta_t);
+    virtual void step(real delta_t);
 
 };
 

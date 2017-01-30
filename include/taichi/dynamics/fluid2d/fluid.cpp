@@ -1,11 +1,11 @@
 #include "fluid.h"
 
-#include "euler_fluid.h"
+#include "taichi/dynamics/fluid2d/euler_fluid.h"
 #include "euler_smoke.h"
 #include "flip_fluid.h"
 #include "voronoi_flip_fluid.h"
 #include "flip_smoke.h"
-#include "apic.h"
+#include "taichi/dynamics/fluid2d/apic.h"
 
 TC_NAMESPACE_BEGIN
 

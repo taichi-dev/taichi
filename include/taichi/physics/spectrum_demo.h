@@ -1,7 +1,7 @@
 #pragma once
 
 #include <taichi/visual/renderer.h>
-#include <taichi/hdr/tone_mapper.h>
+#include <taichi/image/tone_mapper.h>
 #include "spectrum.h"
 
 #include <taichi/visualization/texture_renderer.h>

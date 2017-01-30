@@ -1,6 +1,6 @@
 #include <taichi/python/export.h>
 #include <taichi/common/config.h>
-#include <taichi/levelset/levelset2d.h>
+#include <taichi/math/levelset_2d.h>
 #include <taichi/visualization/rgb.h>
 #include <taichi/math/array_op.h>
 

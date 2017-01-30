@@ -1,9 +1,9 @@
 #include <taichi/python/export.h>
 #include <taichi/python/exception.h>
 #include <taichi/visual/texture.h>
-#include <taichi/hdr/tone_mapper.h>
+#include <taichi/image/tone_mapper.h>
 #include <taichi/common/asset_manager.h>
-#include <taichi/levelset/sdf.h>
+#include <taichi/math/sdf.h>
 #include <taichi/system/unit_dll.h>
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>

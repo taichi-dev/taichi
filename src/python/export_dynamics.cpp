@@ -1,10 +1,10 @@
 #include <taichi/python/export.h>
 
-#include <taichi/dynamics/apic.h>
-#include <taichi/dynamics/euler_smoke.h>
+#include <taichi/dynamics/fluid2d/apic.h>
+#include <taichi/dynamics/fluid2d/euler_smoke.h>
+#include <taichi/dynamics/mpm2d/mpm.h>
+#include <taichi/dynamics/mpm2d/mpm_particle.h>
 #include <taichi/dynamics/simulation3d.h>
-#include <taichi/mpm2d/mpm.h>
-#include <taichi/mpm2d/mpm_particle.h>
 
 using namespace boost::python;
 

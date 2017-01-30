@@ -1,6 +1,6 @@
 #pragma once
 
-#include "flip_fluid.h"
+#include "taichi/dynamics/fluid2d/flip_fluid.h"
 
 TC_NAMESPACE_BEGIN
 

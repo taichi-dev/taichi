@@ -11,7 +11,7 @@ class LevelSet2D:
         self.cache_image = None
 
     def add_sphere(self, center, radius, inside_out=False):
-        if type(center) != tc.Vector2:
+        if type(center) != tc.core.Vector2:
             center = Vector(center[0], center[1])
         self.levelset.add_sphere(Vector(center.x / self.delta_x, center.y / self.delta_x), radius / self.delta_x,
                                  inside_out)

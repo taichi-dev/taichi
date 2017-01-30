@@ -19,4 +19,4 @@ if __name__ == '__main__':
     levelset.add_sphere((0.85, 0.8), 0.03)
     simulator.set_levelset(levelset)
     simulator.add_source(center=(0.5, 0.2), radius=0.08, emission=5000, density=1, velocity=(0, 0), temperature=80)
-    window = SimulationWindow(512, 512, simulator, color_schemes['smoke'], levelset_supersampling=2, show_grid=False)
+    window = SimulationWindow(512, simulator, color_schemes['smoke'], levelset_supersampling=2, show_grid=False)

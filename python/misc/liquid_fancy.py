@@ -20,4 +20,4 @@ if __name__ == '__main__':
     levelset = simulator.create_levelset()
     levelset.add_polygon(polygons['T'], True)
     simulator.set_levelset(levelset)
-    window = SimulationWindow(512, 512, simulator, color_schemes['liquid'], levelset_supersampling=2)
+    window = SimulationWindow(512, simulator, color_schemes['liquid'], levelset_supersampling=2)

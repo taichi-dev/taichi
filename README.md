@@ -1,5 +1,7 @@
 # [Taichi](http://taichi.graphics)
 
+[![Join the chat at https://gitter.im/taichi-dev/Lobby](https://badges.gitter.im/taichi-dev/Lobby.svg)](https://gitter.im/taichi-dev/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Taichi is a physically based computer graphics library, with various simulation
 and rendering algorithms supported ([What's inside?](http://taichi.graphics/#features)). It's written in C++11 and wrapped friendly
 with Python.

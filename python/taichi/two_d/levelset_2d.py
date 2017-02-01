@@ -1,9 +1,10 @@
 import taichi as tc
 from taichi.misc.util import *
 
-
 class LevelSet2D:
-    def __init__(self, width, height, delta_x, offset):
+    def __init__(self, width, height, delta_x, offset=None):
+        if offset is None:
+            offset = Vector(0.5, 0.5)
         self.delta_x = delta_x
         self.levelset = tc.core.LevelSet2D(width, height, offset)
         self.width = width

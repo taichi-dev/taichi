@@ -137,27 +137,27 @@ public:
     
     EulerFluid();
 
-    virtual void set_levelset(const LevelSet2D &boundary_levelset);
+    virtual void set_levelset(const LevelSet2D &boundary_levelset) override;
 
-    virtual void initialize(const Config &config);
+    virtual void initialize(const Config &config) override;
 
-    virtual void step(real delta_t);
+    virtual void step(real delta_t) override;
     
-    virtual void show(Array2D<Vector3> &buffer);
+    virtual void show(Array2D<Vector3> &buffer) override;
 
-    virtual real get_current_time();
+    virtual real get_current_time() override;
 
-    virtual void add_particle(Particle &particle);
+    virtual void add_particle(Particle &particle) override;
 
-    virtual std::vector<Fluid::Particle> get_particles();
+    virtual std::vector<Fluid::Particle> get_particles() override;
 
-    virtual LevelSet2D get_liquid_levelset();
+    virtual LevelSet2D get_liquid_levelset() override;
 
-    Array get_density();
+    virtual Array get_density() override;
 
-    virtual void add_source(const Config &config);
+    virtual void add_source(const Config &config) override;
 
-    virtual Array get_pressure();
+    virtual Array get_pressure() override;
 };
 
 

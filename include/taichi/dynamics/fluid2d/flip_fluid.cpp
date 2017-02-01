@@ -1,5 +1,5 @@
 #include "flip_fluid.h"
-#include <taichi/point_cloud/point_cloud.h>
+#include <taichi/nearest_neighbour/point_cloud.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -102,40 +102,6 @@ void FLIPFluid::substep(real delta_t) {
 
 
 void FLIPFluid::show(Array2D<Vector3> &buffer) {
-    /*
-    buffer.write_text(title, 20, 0, -1);
-    if (show_grid) {
-        real max_speed = get_max_grid_speed() * 2 + 1e-3f;
-        auto region = Region2D(0, width + 1, 0, height + 1);
-        for (auto &ind : region) {
-            int i = ind.i, j = ind.j;
-            buffer.set_pixel((real(i) / width), (real(j) / height), Vector3(0, 0, 0.9));
-            if (v.inside(ind)) {
-                buffer.set_pixel((real(i + 0.5f) / width), (real(j) / height), Vector3(0.3, 0, 0));
-                for (real k = 0; k < 1; k += 0.02f) {
-                    buffer.set_pixel((real(i + 0.5f) / width), (real(j + k * v[ind] / max_speed) / height), Vector3(0.5));
-                }
-            }
-            if (u.inside(ind)) {
-                buffer.set_pixel((real(i) / width), (real(j + 0.5f) / height), Vector3(0, 0.3, 0));
-                for (real k = 0; k < 1; k += 0.02f) {
-                    buffer.set_pixel((real(i + k * u[ind] / max_speed) / width), (real(j + 0.5f) / height), Vector3(0.5));
-                }
-
-            }
-            //for (real k = 0; k < 1; k += 0.01f) {
-            //    buffer.set_pixel((real(i + 0.5f) / width) + , (real(j) / height), Vector3(0.3, 0, 0));
-            //}
-        }
-    }
-    for (auto &particle : particles) {
-        if (!particle.show)
-            continue;
-        real x = particle.position.x / width;
-        real y = particle.position.y / height;
-        buffer.set_pixel(x, y, Vector3(1));
-    }
-    */
 }
 
 FLIPFluid::FLIPFluid() : EulerFluid() {
@@ -183,7 +149,6 @@ void FLIPFluid::correct_particle_positions(real delta_t, bool clear_c)
     }
     for (int i = 0; i < (int)particles.size(); i++) {
         particles[i].position += delta_pos[i];
-        // if (delta_pos[i] != Vector2(0)) P(delta_pos[i]);
         clamp_particle(particles[i]);
     }
 }
@@ -215,5 +180,7 @@ template void FLIPFluid::rasterize_component<Fluid::Particle::get_velocity<0>>(A
 template void FLIPFluid::rasterize_component<Fluid::Particle::get_velocity<1>>(Array &val, Array &count);
 template void FLIPFluid::rasterize_component<Fluid::Particle::get_affine_velocity<0>>(Array &val, Array &count);
 template void FLIPFluid::rasterize_component<Fluid::Particle::get_affine_velocity<1>>(Array &val, Array &count);
+
+TC_IMPLEMENTATION(Fluid, FLIPFluid, "flip_liquid");
 
 TC_NAMESPACE_END

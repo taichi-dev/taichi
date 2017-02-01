@@ -2,7 +2,7 @@ from taichi.two_d import *
 
 if __name__ == '__main__':
     resolution = [128] * 2
-    simulator = SmokeSimulator(simulator='EulerSmoke', simulation_width=resolution[0],
+    simulator = SmokeSimulator(simulator='smoke', simulation_width=resolution[0],
                                simulation_height=resolution[1],
                                delta_x=1.0 / resolution[0], gravity=(0, -10),
                                initialize_particles=False, correction_strength=0.5,

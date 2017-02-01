@@ -73,4 +73,6 @@ void EulerSmoke::substep(real delta_t)
     temperature = advect(temperature, delta_t);
 }
 
+TC_IMPLEMENTATION(Fluid, EulerSmoke, "smoke");
+
 TC_NAMESPACE_END

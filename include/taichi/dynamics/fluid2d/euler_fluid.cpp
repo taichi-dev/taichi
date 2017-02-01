@@ -831,5 +831,6 @@ Array EulerFluid::get_pressure()
     return pressure;
 }
 
+TC_IMPLEMENTATION(Fluid, EulerFluid, "liquid");
 
 TC_NAMESPACE_END

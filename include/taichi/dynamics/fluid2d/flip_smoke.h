@@ -1,7 +1,6 @@
 #pragma once
-#include "flip_fluid.h"
-#include "voronoi_flip_fluid.h"
-#include <taichi/point_cloud/point_cloud.h>
+#include <flip_fluid.h>
+#include <taichi/nearest_neighbour/point_cloud.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -17,7 +16,7 @@ protected:
     real source_temperature;
     real temperature_flip_alpha;
     std::string visualization;
-    virtual void initialize(const Config &config) {
+    virtual void initialize(const Config &config) override {
         FLIPFluid::initialize(Config(config).set("initializer", "full"));
 
         temperature = Array(width, height);

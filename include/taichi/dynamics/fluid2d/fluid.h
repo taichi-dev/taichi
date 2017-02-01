@@ -2,12 +2,12 @@
 #include <taichi/visualization/image_buffer.h>
 #include <taichi/common/meta.h>
 #include <taichi/common/interface.h>
+#include <taichi/math/levelset_2d.h>
 
 TC_NAMESPACE_BEGIN
 
 class Fluid : public Simulator {
 public:
-    virtual void show(Array2D<Vector3> &buffer) = 0;
     struct Particle {
         Vector3 color=Vector3(-1, 0, 0);
         Vector2 position, velocity;
@@ -33,11 +33,39 @@ public:
             return o.id == id;
         }
     };
+
+    virtual void initialize(const Config &config) {}
+
+    virtual void set_levelset(const LevelSet2D &boundary_levelset) {}
+
+    virtual void step(real delta_t) {}
+
+    virtual real get_current_time() {return 0.0f;}
+
+    virtual void show(Array2D<Vector3> &buffer) {}
+
+    virtual void add_particle(Particle &particle) {}
+
+    virtual std::vector<Particle> get_particles() {
+        return std::vector<Particle>();
+    }
+
+    virtual LevelSet2D get_liquid_levelset() {
+        return LevelSet2D();
+    }
+
+    virtual Array get_density() {
+        return Array(0, 0);
+    }
+
+    virtual void add_source(const Config &config) {}
+
+    virtual Array get_pressure() {return Array(0, 0);}
 protected:
     std::vector<Particle> particles;
 };
 
-std::shared_ptr<Fluid> create_fluid(std::string name);
+TC_INTERFACE(Fluid);
 
 TC_NAMESPACE_END
 

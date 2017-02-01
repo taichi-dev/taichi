@@ -7,7 +7,7 @@ class FluidSimulator(Simulator):
     def __init__(self, **kwargs):
         Simulator.__init__(self, kwargs['simulation_time'], kwargs['dt'])
         simulator_name = kwargs['simulator']
-        self.simulator = tc.core.__dict__[simulator_name]()
+        self.simulator = tc.core.create_fluid(simulator_name)
         self.simulator.initialize(Simulator.config_from_dict(kwargs))
         self.config = kwargs
         self.delta_x = kwargs['delta_x']

@@ -1,4 +1,4 @@
-#include <taichi/point_cloud/point_cloud.h>
+#include <taichi/nearest_neighbour/point_cloud.h>
 
 TC_NAMESPACE_BEGIN
 

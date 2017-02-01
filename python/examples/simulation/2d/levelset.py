@@ -1,6 +1,7 @@
 import pyglet
 from pyglet.gl import *
 from taichi.two_d.levelset_2d import LevelSet2D
+from taichi import Vector
 
 
 class TaichiWindow(pyglet.window.Window):

@@ -502,7 +502,7 @@ protected:
 
     real ray_march(const Ray &ray, real limit=1e5) {
         real dist = 0;
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1000; i++) {
             const Vector3 p = ray.orig + dist * ray.dir;
             real d = sdf->eval(p);
             if (d < eps) {
@@ -525,13 +525,11 @@ protected:
         return Vector3(int(safe_distance >= last_intersection.dist - eps));
     }
 
-    Vector3 normal_at(const Vector3 p) {
-        const real d = 1e-3f;
-        real center = sdf->eval(p);
+    Vector3 normal_at(const Vector3 p, const real d) {
         Vector3 n = Vector3(
-                sdf->eval(p + Vector3(d, 0, 0)) - center,
-                sdf->eval(p + Vector3(0, d, 0)) - center,
-                sdf->eval(p + Vector3(0, 0, d)) - center
+                sdf->eval(p + Vector3(d, 0, 0)) - sdf->eval(p - Vector3(d, 0, 0)),
+                sdf->eval(p + Vector3(0, d, 0)) - sdf->eval(p - Vector3(0, d, 0)),
+                sdf->eval(p + Vector3(0, 0, d)) - sdf->eval(p - Vector3(0, 0, d))
         );
         if (dot(n, n) < 1e-20f) {
             return Vector3(1, 0, 0);
@@ -547,10 +545,10 @@ protected:
         }
         inter.intersected = true;
         real coord_u = ray.u, coord_v = ray.v;
-        inter.pos = ray.at(dist);
+        inter.pos = ray.at(dist - 1e-3f);
         inter.front = true;
         // Verify interpolated normals can lead specular rays to go inside the object.
-        Vector3 normal = normal_at(inter.pos);
+        Vector3 normal = normal_at(inter.pos, 1e-4f);
         inter.uv = Vector2(0, 0);
         inter.geometry_normal = inter.front ? normal : -normal;
         inter.normal = inter.front ? normal : -normal;

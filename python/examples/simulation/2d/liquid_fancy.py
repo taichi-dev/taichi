@@ -3,10 +3,10 @@ from taichi.misc.util import *
 
 if __name__ == '__main__':
     resolution = [128] * 2
-    simulator = FluidSimulator(simulator='FLIPFluid', simulation_width=resolution[0],
+    simulator = FluidSimulator(simulator='apic_liquid', simulation_width=resolution[0],
                                simulation_height=resolution[1],
                                delta_x=1.0 / resolution[0], gravity=(0, -10),
-                               initialize_particles=False, correction_strength=0.5,
+                               initialize_particles=False, correction_strength=0.0,
                                correction_neighbours=5, advection_order=1,
                                use_bridson_pcg=False, flip_alpha=0.95, padding=0.05, resizable=True, cfl=0.1,
                                simulation_time=50, dt=0.1)

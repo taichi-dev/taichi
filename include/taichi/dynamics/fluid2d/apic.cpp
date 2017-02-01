@@ -60,5 +60,7 @@ void APICFluid::substep(real delta_t)
     t += delta_t;
 }
 
+TC_IMPLEMENTATION(Fluid, APICFluid, "apic_liquid");
+
 TC_NAMESPACE_END
 

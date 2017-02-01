@@ -14,7 +14,6 @@ public:
         Vector2 weight;
         Vector2 c[2] = { Vector2(0), Vector2(0) }; // for APIC
         long long id = instance_counter++;
-        bool show = true;
         real temperature;
         real radius = 0.75f;
         Particle() {};
@@ -41,8 +40,6 @@ public:
     virtual void step(real delta_t) {}
 
     virtual real get_current_time() {return 0.0f;}
-
-    virtual void show(Array2D<Vector3> &buffer) {}
 
     virtual void add_particle(Particle &particle) {}
 

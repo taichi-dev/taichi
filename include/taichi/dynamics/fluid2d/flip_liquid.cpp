@@ -1,10 +1,10 @@
-#include "flip_fluid.h"
+#include "flip_liquid.h"
 #include <taichi/nearest_neighbour/point_cloud.h>
 
 TC_NAMESPACE_BEGIN
 
-void FLIPFluid::clamp_particle(Particle & p) {
-    p.position = EulerFluid::clamp_particle_position(p.position); // Avoid out of bound levelset query
+void FLIPLiquid::clamp_particle(Particle & p) {
+    p.position = EulerLiquid::clamp_particle_position(p.position); // Avoid out of bound levelset query
     Vector2 sample_position = p.position;
     real phi = boundary_levelset.sample(sample_position) - padding;
     if (phi < 0) {
@@ -14,9 +14,9 @@ void FLIPFluid::clamp_particle(Particle & p) {
     }
 }
 
-void FLIPFluid::initialize_solver(const Config &config)
+void FLIPLiquid::initialize_solver(const Config &config)
 {
-    EulerFluid::initialize_solver(config);
+    EulerLiquid::initialize_solver(config);
     FLIP_alpha = config.get("flip_alpha", 0.97f);
     padding = config.get("padding", 0.001f);
     advection_order = config.get("advection_order", 2);
@@ -28,12 +28,12 @@ void FLIPFluid::initialize_solver(const Config &config)
     v_count = Array(width, height + 1, 0.0f);
 }
 
-Vector2 FLIPFluid::sample_velocity(Vector2 position, Vector2 velocity, real lerp) {
-    return EulerFluid::sample_velocity(position, u, v) +
-        lerp * (velocity - EulerFluid::sample_velocity(position, u_backup, v_backup));
+Vector2 FLIPLiquid::sample_velocity(Vector2 position, Vector2 velocity, real lerp) {
+    return EulerLiquid::sample_velocity(position, u, v) +
+        lerp * (velocity - EulerLiquid::sample_velocity(position, u_backup, v_backup));
 }
 
-void FLIPFluid::advect(real delta_t) {
+void FLIPLiquid::advect(real delta_t) {
     real lerp = powf(FLIP_alpha, delta_t / 0.01f);
     real max_movement = 0.0f;
     for (auto &p : particles) {
@@ -64,29 +64,29 @@ void FLIPFluid::advect(real delta_t) {
     }
 }
 
-void FLIPFluid::apply_external_forces(real delta_t) {
+void FLIPLiquid::apply_external_forces(real delta_t) {
     for (auto &p : particles) {
         p.velocity += delta_t * gravity;
     }
 }
 
-void FLIPFluid::rasterize() {
+void FLIPLiquid::rasterize() {
     rasterize_component<Particle::get_velocity<0>>(u, u_count);
     rasterize_component<Particle::get_velocity<1>>(v, v_count);
 }
 
-void FLIPFluid::step(real delta_t)
+void FLIPLiquid::step(real delta_t)
 {
-    EulerFluid::step(delta_t);
+    EulerLiquid::step(delta_t);
     correct_particle_positions(delta_t);
 }
 
-void FLIPFluid::backup_velocity_field() {
+void FLIPLiquid::backup_velocity_field() {
     u_backup = u;
     v_backup = v;
 }
 
-void FLIPFluid::substep(real delta_t) {
+void FLIPLiquid::substep(real delta_t) {
     apply_external_forces(delta_t);
     mark_cells();
     rasterize();
@@ -100,18 +100,10 @@ void FLIPFluid::substep(real delta_t) {
     t += delta_t;
 }
 
-
-void FLIPFluid::show(Array2D<Vector3> &buffer) {
+void FLIPLiquid::reseed() {
 }
 
-FLIPFluid::FLIPFluid() : EulerFluid() {
-
-}
-
-void FLIPFluid::reseed() {
-}
-
-void FLIPFluid::correct_particle_positions(real delta_t, bool clear_c)
+void FLIPLiquid::correct_particle_positions(real delta_t, bool clear_c)
 {
     if (correction_strength == 0.0f && !clear_c) {
         return;
@@ -154,7 +146,7 @@ void FLIPFluid::correct_particle_positions(real delta_t, bool clear_c)
 }
 
 template<real(*T)(const Fluid::Particle &, const Vector2 &)>
-void FLIPFluid::rasterize_component(Array & val, Array & count)
+void FLIPLiquid::rasterize_component(Array & val, Array & count)
 {
     val = 0;
     count = 0;
@@ -176,11 +168,11 @@ void FLIPFluid::rasterize_component(Array & val, Array & count)
 }
 
 
-template void FLIPFluid::rasterize_component<Fluid::Particle::get_velocity<0>>(Array &val, Array &count);
-template void FLIPFluid::rasterize_component<Fluid::Particle::get_velocity<1>>(Array &val, Array &count);
-template void FLIPFluid::rasterize_component<Fluid::Particle::get_affine_velocity<0>>(Array &val, Array &count);
-template void FLIPFluid::rasterize_component<Fluid::Particle::get_affine_velocity<1>>(Array &val, Array &count);
+template void FLIPLiquid::rasterize_component<Fluid::Particle::get_velocity<0>>(Array &val, Array &count);
+template void FLIPLiquid::rasterize_component<Fluid::Particle::get_velocity<1>>(Array &val, Array &count);
+template void FLIPLiquid::rasterize_component<Fluid::Particle::get_affine_velocity<0>>(Array &val, Array &count);
+template void FLIPLiquid::rasterize_component<Fluid::Particle::get_affine_velocity<1>>(Array &val, Array &count);
 
-TC_IMPLEMENTATION(Fluid, FLIPFluid, "flip_liquid");
+TC_IMPLEMENTATION(Fluid, FLIPLiquid, "flip_liquid");
 
 TC_NAMESPACE_END

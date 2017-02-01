@@ -14,7 +14,7 @@ void EulerSmoke::apply_external_forces(real delta_t)
 
 void EulerSmoke::initialize(const Config & config)
 {
-    EulerFluid::initialize(config);
+    EulerLiquid::initialize(config);
     buoyancy_alpha = config.get_real("buoyancy_alpha");
     buoyancy_beta = config.get_real("buoyancy_beta");
     density = Array(width, height, 0);

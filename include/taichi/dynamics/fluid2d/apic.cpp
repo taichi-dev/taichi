@@ -2,13 +2,11 @@
 
 TC_NAMESPACE_BEGIN
 
-APICFluid::APICFluid()
-{
+APICLiquid::APICLiquid() {
 }
 
-void APICFluid::initialize_solver(const Config &config)
-{
-    FLIPFluid::initialize_solver(config);
+void APICLiquid::initialize_solver(const Config &config) {
+    FLIPLiquid::initialize_solver(config);
     FLIP_alpha = 0.0f;
     padding = config.get("padding", 0.501f);
     advection_order = config.get("advection_order", 1);
@@ -19,13 +17,12 @@ void APICFluid::initialize_solver(const Config &config)
     printf("initialized\n");
 }
 
-void APICFluid::rasterize()
-{
+void APICLiquid::rasterize() {
     rasterize_component<Particle::get_affine_velocity<0>>(u, u_count);
     rasterize_component<Particle::get_affine_velocity<1>>(v, v_count);
 }
 
-void APICFluid::sample_c()
+void APICLiquid::sample_c()
 {
     for (auto &p : particles) {
         p.c[0] = apic_blend * sample_c(p.position, u);
@@ -33,7 +30,7 @@ void APICFluid::sample_c()
     }
 }
 
-Vector2 APICFluid::sample_c(Vector2 & pos, Array & val) {
+Vector2 APICLiquid::sample_c(Vector2 & pos, Array & val) {
     const int extent = (1 + 1) / 2;
     Vector2 c(0);
     for (auto &ind : val.get_rasterization_region(pos, extent)) {
@@ -44,8 +41,7 @@ Vector2 APICFluid::sample_c(Vector2 & pos, Array & val) {
     return c;
 }
 
-void APICFluid::substep(real delta_t)
-{
+void APICLiquid::substep(real delta_t) {
     Time::Timer _("substep");
     apply_external_forces(delta_t);
     mark_cells();
@@ -60,7 +56,7 @@ void APICFluid::substep(real delta_t)
     t += delta_t;
 }
 
-TC_IMPLEMENTATION(Fluid, APICFluid, "apic_liquid");
+TC_IMPLEMENTATION(Fluid, APICLiquid, "apic_liquid");
 
 TC_NAMESPACE_END
 

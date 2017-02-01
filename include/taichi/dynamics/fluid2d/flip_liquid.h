@@ -1,10 +1,10 @@
 #pragma once
 
-#include "taichi/dynamics/fluid2d/euler_fluid.h"
+#include "taichi/dynamics/fluid2d/euler_liquid.h"
 
 TC_NAMESPACE_BEGIN
 
-class FLIPFluid : public EulerFluid {
+class FLIPLiquid : public EulerLiquid {
 protected:
     Array u_backup;
     Array v_backup;
@@ -41,9 +41,7 @@ protected:
 
 public:
 
-    FLIPFluid();
-
-    void show(Array2D<Vector3> &buffer);
+    FLIPLiquid() {}
 
     virtual void step(real delta_t);
 

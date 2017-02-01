@@ -1,15 +1,14 @@
 #pragma once
-#include <flip_fluid.h>
+#include <taichi/dynamics/fluid2d/flip_liquid.h>
 #include <taichi/nearest_neighbour/point_cloud.h>
 
 TC_NAMESPACE_BEGIN
 
-class FLIPSmoke : public FLIPFluid {
+class FLIPSmoke : public FLIPLiquid {
 protected:
     real ambient_temp;
     real buoyancy;
     real conduction;
-    bool show_air_particles;
     Array temperature;
     Array temperature_backup;
     Array temperature_count;
@@ -17,7 +16,7 @@ protected:
     real temperature_flip_alpha;
     std::string visualization;
     virtual void initialize(const Config &config) override {
-        FLIPFluid::initialize(Config(config).set("initializer", "full"));
+        FLIPLiquid::initialize(Config(config).set("initializer", "full"));
 
         temperature = Array(width, height);
         temperature_backup = Array(width, height);
@@ -27,19 +26,12 @@ protected:
         conduction = config.get("conduction", 0.0f);
         visualization = config.get("visualization", "");
         source_temperature = config.get("source_temperature", ambient_temp);
-        show_air_particles = config.get("show_air_particles", false);
         temperature_flip_alpha = config.get("temperature_flip_alpha", 0.97f);
         gravity = Vector2(0, 0.5f * height);
         ambient_temp = 200;
 
         for (auto &p : particles) {
             p.temperature = ambient_temp;
-            if (show_air_particles) {
-                p.show = true;
-            }
-            else {
-                p.show = false;
-            }
         }
     }
     virtual void simple_mark_cells() {
@@ -61,7 +53,7 @@ protected:
     }
     virtual void step(real delta_t) {
         seed_particles(delta_t);
-        FLIPFluid::step(delta_t);
+        FLIPLiquid::step(delta_t);
     }
     virtual void substep(real delta_t) {
         apply_external_forces(delta_t);
@@ -166,55 +158,12 @@ protected:
         }
         temperature = new_temperature;
     }
-    virtual void show(Array2D<Vector3> &buffer) {
-        FLIPFluid::show(buffer);
-        for (auto ind : temperature.get_region()) {
-            buffer[ind.i][ind.j] = Vector3(temperature[ind] / 1000);
-        }
-        if (visualization == "temperature_only") {
-            real temp_max = 1000.0f;
-            for (int i = 0; i < buffer.get_width(); i++) {
-                for (int j = 0; j < buffer.get_height(); j++) {
-                    real x = (i + 0.5f) / buffer.get_width();
-                    real y = (j + 0.5f) / buffer.get_height();
-                    buffer[i][j] = Vector3(temperature.sample_relative_coord(x, y) / temp_max);
-                }
-            }
-        }
-        /*
-        for (auto ind : temperature.get_region()) {
-            real m = length(Vector2(u[ind], v[ind]));
-            buffer[200 + ind.i][ind.j] = Vector3(m * 0.01);
-        }
-        for (auto ind : temperature.get_region()) {
-            real m = u[ind] - u[ind.neighbour(Vector2(0, 1))] - v[ind] + v[ind.neighbour(Vector2(1, 0))];
-            buffer[100 + ind.i][ind.j] = (lerp(m * 0.05f + 0.5f, Vector3(1, 0, 0), Vector3(0, 0, 1)));
-        }
-        */
-    }
+
     void resample_temperature(real delta_t) {
         real alpha = powf(temperature_flip_alpha, delta_t / 0.01f);
         for (auto &p : particles) {
             p.temperature = alpha * (-temperature_backup.sample(p.position.x, p.position.y) + p.temperature) + temperature.sample(p.position.x, p.position.y);
         }
-    }
-};
-
-class VoronoiFLIPSmoke : public FLIPSmoke {
-    virtual void substep(real delta_t) {
-        apply_external_forces(delta_t);
-        simple_mark_cells();
-        rasterize();
-        rasterize_temperature();
-        extrapolate();
-        temperature_backup = temperature;
-        backup_velocity_field();
-        apply_boundary_condition();
-        project(delta_t);
-        advect(delta_t);
-        diffuse_temperature(delta_t);
-        resample_temperature(delta_t);
-        t += delta_t;
     }
 };
 

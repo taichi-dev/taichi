@@ -1,18 +1,15 @@
 #pragma once
 
-#include "taichi/dynamics/fluid2d/euler_fluid.h"
+#include "taichi/dynamics/fluid2d/euler_liquid.h"
 
 TC_NAMESPACE_BEGIN
 
-class EulerSmoke : public EulerFluid {
+class EulerSmoke : public EulerLiquid {
 protected:
-    //int advection_order;
 
-
-    //virtual void advect(real delta_t);
     virtual void emit(real delta_t);
 
-    virtual void substep(real delta_t);
+    virtual void substep(real delta_t) override;
 
     Array temperature;
     real buoyancy_alpha;
@@ -21,9 +18,9 @@ protected:
 public:
     EulerSmoke() {}
 
-    virtual void apply_external_forces(real delta_t);
+    virtual void apply_external_forces(real delta_t) override;
 
-    virtual void initialize(const Config &config);
+    virtual void initialize(const Config &config) override;
 
 };
 

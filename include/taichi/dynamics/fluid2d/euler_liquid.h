@@ -10,7 +10,7 @@
 
 TC_NAMESPACE_BEGIN
 
-class EulerFluid : public Fluid {
+class EulerLiquid : public Fluid {
 protected:
     int kernel_size;
     Array Ad, Ax, Ay, E;
@@ -22,7 +22,6 @@ protected:
     void apply_boundary_condition();
     real volume_correction_factor;
     bool supersampling;
-    bool show_grid;
     real cfl;
     std::string title;
     Array u_weight;
@@ -86,8 +85,6 @@ protected:
 
     virtual void mark_cells();
 
-    virtual void show_surface();
-
     Vector2 sl_position(Vector2 position, real delta_t);
 
     void print_u();
@@ -135,7 +132,7 @@ protected:
 
 public:
     
-    EulerFluid();
+    EulerLiquid();
 
     virtual void set_levelset(const LevelSet2D &boundary_levelset) override;
 
@@ -143,8 +140,6 @@ public:
 
     virtual void step(real delta_t) override;
     
-    virtual void show(Array2D<Vector3> &buffer) override;
-
     virtual real get_current_time() override;
 
     virtual void add_particle(Particle &particle) override;

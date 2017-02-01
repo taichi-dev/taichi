@@ -1,10 +1,10 @@
 #pragma once
 
-#include "flip_fluid.h"
+#include "flip_liquid.h"
 
 TC_NAMESPACE_BEGIN
 
-class APICFluid : public FLIPFluid {
+class APICLiquid : public FLIPLiquid {
 protected:
     real apic_blend;
 
@@ -18,7 +18,7 @@ protected:
 
     virtual void substep(real delta_t);
 public:
-    APICFluid();
+    APICLiquid();
 };
 
 

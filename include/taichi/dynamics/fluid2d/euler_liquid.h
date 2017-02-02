@@ -21,9 +21,9 @@ protected:
     Array get_rhs();
     void apply_boundary_condition();
     real volume_correction_factor;
+    real levelset_band;
     bool supersampling;
     real cfl;
-    std::string title;
     Array u_weight;
     Array v_weight;
     LevelSet2D liquid_levelset;
@@ -37,7 +37,6 @@ protected:
     void update_volume_controller();
     real get_volume_correction();
     void advect_level_set(real delta_t);
-    bool use_bridson_pcg;
     real tolerance;
     int maximum_iterations;
     LevelSet2D boundary_levelset;
@@ -105,6 +104,10 @@ protected:
         return max(0.0f, 1.0f - std::abs(c.x)) * max(0.0f, 1.0f - std::abs(c.y));
     }
 
+    virtual void advect_liquid_levelset(real delta_t);
+
+    virtual void rebuild_levelset();
+
     static Vector2 grad_kernel(const Vector2 &c) {
 #define PRECISE_SGN(x) ((-1 < x && x <= 0) ? -1 : ((0 < x && x <= 1) ? 1 : 0))
         return Vector2(
@@ -115,8 +118,6 @@ protected:
     }
 
     virtual void initialize_solver(const Config &config);
-
-    virtual void initialize_particles(const Config &config);
 
     virtual void substep(real delta_t);
     
@@ -132,7 +133,7 @@ protected:
 
 public:
     
-    EulerLiquid();
+    EulerLiquid() {}
 
     virtual void set_levelset(const LevelSet2D &boundary_levelset) override;
 

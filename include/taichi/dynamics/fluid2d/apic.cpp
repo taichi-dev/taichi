@@ -46,7 +46,11 @@ void APICLiquid::substep(real delta_t) {
     apply_external_forces(delta_t);
     mark_cells();
     rasterize();
-    compute_liquid_levelset();
+    if (t == 0.0f)
+        compute_liquid_levelset();
+    else {
+        advect_liquid_levelset(delta_t);
+    }
     simple_extrapolate();
     TIME(project(delta_t));
     simple_extrapolate();

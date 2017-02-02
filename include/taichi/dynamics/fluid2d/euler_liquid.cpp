@@ -6,9 +6,6 @@ TC_NAMESPACE_BEGIN
 real volume_control_i = 0.0f;
 real volume_control_p = 0.0f;
 
-EulerLiquid::EulerLiquid() {
-}
-
 void EulerLiquid::set_levelset(const LevelSet2D & boundary_levelset)
 {
     this->boundary_levelset = boundary_levelset;
@@ -16,20 +13,13 @@ void EulerLiquid::set_levelset(const LevelSet2D & boundary_levelset)
 
 void EulerLiquid::initialize(const Config &config) {
     initialize_solver(config);
-    if (!config.get("initialize_particles", false)) {
-        printf("initialzie_particles=false, No particles initialized.\n");
-    }
-    else {
-        initialize_particles(config);
-    }
+    levelset_band = config.get_real("levelset_band");
 }
 
 void EulerLiquid::initialize_solver(const Config &config)
 {
-    title = config.get("title", "Simulation");
     width = config.get("simulation_width", 64);
     height = config.get("simulation_height", 64);
-    supersampling = config.get("supersampling", true);
     kernel_size = config.get("kernel_size", 1);
     cfl = config.get("cfl", 0.1f);
     u = Array(width + 1, height, 0.0f, Vector2(0.0f, 0.5f));
@@ -38,35 +28,11 @@ void EulerLiquid::initialize_solver(const Config &config)
     v_weight = Array(width, height + 1, 0.0f);
     cell_types = Array2D<CellType>(width, height, CellType::AIR);
     gravity = config.get_vec2("gravity");
-    use_bridson_pcg = config.get("use_bridson_pcg", true);
     maximum_iterations = config.get("maximum_iterations", 300);
     tolerance = config.get("tolerance", 1e-4f);
     initialize_pressure_solver();
     liquid_levelset.initialize(width, height, Vector2(0.5f, 0.5f));
     t = 0;
-}
-
-void EulerLiquid::initialize_particles(const Config &config)
-{
-    real position_noise_amp = config.get("position_noise", 0.0f);
-    auto initializer = get_initializer(config.get("initializer", "collapse"));
-    for (int i = 0; i < width; i++) {
-        for (int j = 0; j < height; j++) {
-            cell_types[i][j] = initializer(real(i + 0.5f) / width,
-                real(j + 0.5f) / height);
-            if (cell_types[i][j] == CellType::WATER) {
-                if (supersampling)
-                    for (int k = 0; k < 4; k++) {
-                        particles.push_back(Particle(Vector2(i, j) + supersample_positions[k]));
-                    }
-                else
-                    particles.push_back(Particle(Vector2(i + 0.5f, j + 0.5f)));
-            }
-        }
-    }
-    for (auto &p : particles) {
-        p.position += position_noise_amp * position_noise();
-    }
 }
 
 Vector2 EulerLiquid::sample_velocity(Vector2 position, const Array &u, const Array &v) {
@@ -264,11 +230,12 @@ void EulerLiquid::step(real delta_t)
         substep(dt);
         simulation_time += dt;
     }
-    compute_liquid_levelset();
+    //compute_liquid_levelset();
 }
 
 void EulerLiquid::compute_liquid_levelset()
 {
+    error("error");
     liquid_levelset.reset(1e7f); // Do not use INF here, otherwise interpolation will get NAN...
     for (auto &p : particles) {
         for (auto &ind : liquid_levelset.get_rasterization_region(p.position, 3)) {
@@ -283,6 +250,55 @@ void EulerLiquid::compute_liquid_levelset()
         }
     }
 }
+
+
+void EulerLiquid::advect_liquid_levelset(real delta_t) {
+    Array old = liquid_levelset;
+    for (auto &ind : liquid_levelset.get_region()) {
+        liquid_levelset[ind] = old.sample(ind.get_pos() - delta_t * sample_velocity(ind.get_pos(), u, v));
+    }
+    rebuild_levelset();
+}
+
+void EulerLiquid::rebuild_levelset() {
+    // Actually, we use a brute-force initialization here
+    Array old = liquid_levelset;
+    real band = levelset_band + 1;
+    liquid_levelset.reset(band);
+    auto update = [&](const Index2D &a, const Index2D &b) {
+        real phi_0 = old[a], phi_1 = old[b];
+        if (phi_0 * phi_1 > 0) {
+            return;
+        }
+        // Free surface detected
+        real p = std::abs(phi_0 / (phi_1 - phi_0));
+        Vector2 pos = lerp(p, a.get_pos(), b.get_pos());
+        for (int i = std::max(0, int(floor(a.i - band)));
+             i <= std::min(liquid_levelset.get_width() - 1, int(b.i + band)); i++) {
+            for (int j = std::max(0, int(floor(a.j - band)));
+                 j <= std::min(liquid_levelset.get_height() - 1, int(b.j + band)); j++) {
+                real l = length(Vector2(i, j) + old.get_storage_offset() - pos);
+                liquid_levelset[i][j] = std::min(liquid_levelset[i][j], l);
+            }
+        }
+    };
+    for (auto &ind : old.get_region()) {
+        if (ind.i > 0) {
+            const Index2D a = ind.neighbour(-1, 0);
+            const Index2D b = ind;
+            update(a, b);
+        }
+        if (ind.j > 0) {
+            const Index2D a = ind.neighbour(0, -1);
+            const Index2D b = ind;
+            update(a, b);
+        }
+    }
+    for (auto &ind : liquid_levelset.get_region()) {
+        liquid_levelset[ind] *= sgn(old[ind]);
+    }
+}
+
 
 Array EulerLiquid::advect(const Array & arr, real delta_t)
 {
@@ -318,6 +334,7 @@ bool EulerLiquid::check_diag_domination()
 
 void EulerLiquid::advect(real delta_t) {
     real total_energy = 0;
+    /*
     for (auto &particle : particles) {
         Vector2 velocity = sample_velocity(particle.position);
         if (true) {
@@ -335,6 +352,7 @@ void EulerLiquid::advect(real delta_t) {
         total_energy += dot(velocity, velocity) * 0.5f;
         //total_energy -= glm::dot(particle.position, gravity);
     }
+    */
     Array new_u = advect(u, delta_t), new_v = advect(v, delta_t);
     u = new_u;
     v = new_v;
@@ -522,13 +540,8 @@ void EulerLiquid::project(real delta_t) {
     update_volume_controller();
 
     apply_boundary_condition();
-    if (use_bridson_pcg) {
-        assert_info(false, "Not implemented");
-    }
-    else {
-        prepare_for_pressure_solve();
-        p = solve_pressure_naive();
-    }
+    prepare_for_pressure_solve();
+    p = solve_pressure_naive();
     apply_boundary_condition();
 
     if (!(p.is_normal())) {
@@ -538,20 +551,29 @@ void EulerLiquid::project(real delta_t) {
 }
 
 void EulerLiquid::mark_cells() {
+    rebuild_levelset();
     cell_types = CellType::AIR;
+    for (auto &ind : cell_types.get_region()) {
+        if (liquid_levelset[ind] < 0) {
+            cell_types[ind] = CellType::WATER;
+        }
+    }
+    /*
     for (auto &particle : particles) {
         int x = (int)particle.position.x, y = (int)particle.position.y;
         cell_types[x][y] = CellType::WATER;
     }
+    */
 }
 
 void EulerLiquid::substep(real delta_t) {
     mark_cells();
     apply_external_forces(delta_t);
-    compute_liquid_levelset();
+    // compute_liquid_levelset();
     project(delta_t);
     simple_extrapolate();
     advect(delta_t);
+    advect_liquid_levelset(delta_t);
     t += delta_t;
 }
 
@@ -586,7 +608,8 @@ real EulerLiquid::get_current_time() {
 }
 
 void EulerLiquid::add_particle(Fluid::Particle & particle) {
-    particles.push_back(particle);
+    liquid_levelset[(int)floor(particle.position.x)][(int)floor(particle.position.y)] = -1;
+    //particles.push_back(particle);
 }
 
 std::vector<Fluid::Particle> EulerLiquid::get_particles() {

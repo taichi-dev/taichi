@@ -8,7 +8,7 @@ if __name__ == '__main__':
                                delta_x=1.0 / resolution[0], gravity=(0, -10),
                                initialize_particles=False, correction_strength=0.0,
                                correction_neighbours=5, advection_order=1,
-                               use_bridson_pcg=False, flip_alpha=0.95, padding=0.05, resizable=True, cfl=0.1,
+                               flip_alpha=0.95, padding=0.05, resizable=True, cfl=0.1,
                                simulation_time=50, dt=0.1)
 
     for i in range(0, 1000):

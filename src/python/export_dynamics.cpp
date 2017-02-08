@@ -1,10 +1,9 @@
 #include <taichi/python/export.h>
 
-#include <taichi/dynamics/apic.h>
-#include <taichi/dynamics/euler_smoke.h>
+#include <taichi/dynamics/fluid2d/fluid.h>
+#include <taichi/dynamics/mpm2d/mpm.h>
+#include <taichi/dynamics/mpm2d/mpm_particle.h>
 #include <taichi/dynamics/simulation3d.h>
-#include <taichi/mpm2d/mpm.h>
-#include <taichi/mpm2d/mpm_particle.h>
 
 using namespace boost::python;
 
@@ -16,9 +15,12 @@ EXPLICIT_GET_POINTER(taichi::DPParticle);
 
 EXPLICIT_GET_POINTER(taichi::Simulation3D);
 
+EXPLICIT_GET_POINTER(taichi::Fluid);
+
 TC_NAMESPACE_BEGIN
 
 void export_dynamics() {
+    def("create_fluid", create_instance<Fluid>);
     def("create_simulation3d", create_instance<Simulation3D>);
     class_<Fluid::Particle>("FluidParticle", init<Vector2, Vector2>())
         .def_readwrite("position", &Fluid::Particle::position)
@@ -49,22 +51,23 @@ void export_dynamics() {
         .def_readwrite("mass", &DPParticle::mass)
         .def_readwrite("phi_f", &DPParticle::phi_f);
 
-#define EXPORT_SIMULATOR(SIM) \
-        class_<SIM>(#SIM) \
-        .def("initialize", &SIM::initialize) \
-        .def("step", &SIM::step) \
-        .def("add_particle", &SIM::add_particle) \
-        .def("get_current_time", &SIM::get_current_time) \
-        .def("get_particles", &SIM::get_particles) \
-        .def("set_levelset", &SIM::set_levelset) \
-        .def("get_liquid_levelset", &SIM::get_liquid_levelset) \
-        .def("get_density", &SIM::get_density) \
-        .def("get_pressure", &SIM::get_pressure) \
-        .def("add_source", &SIM::add_source) \
+    class_<Fluid>("Fluid")
+        .def("initialize", &Fluid::initialize)
+        .def("step", &Fluid::step)
+        .def("add_particle", &Fluid::add_particle)
+        .def("get_current_time", &Fluid::get_current_time)
+        .def("get_particles", &Fluid::get_particles)
+        .def("set_levelset", &Fluid::set_levelset)
+        .def("get_liquid_levelset", &Fluid::get_liquid_levelset)
+        .def("get_density", &Fluid::get_density)
+        .def("get_pressure", &Fluid::get_pressure)
+        .def("add_source", &Fluid::add_source)
         ;
+
 #define EXPORT_SIMULATOR_3D(SIM) \
         class_<SIM>(#SIM) \
         .def("initialize", &SIM::initialize) \
+        .def("update", &SIM::update) \
         .def("step", &SIM::step) \
         .def("get_current_time", &SIM::get_current_time) \
         .def("get_render_particles", &SIM::get_render_particles) \
@@ -83,20 +86,17 @@ void export_dynamics() {
         .def("add_ep_particle", static_cast<void (SIM::*)(EPParticle)>(&SIM::add_particle)) \
         .def("add_dp_particle", static_cast<void (SIM::*)(DPParticle)>(&SIM::add_particle)) \
         ;
-    EXPORT_SIMULATOR(EulerFluid);
-    EXPORT_SIMULATOR(EulerSmoke);
-    EXPORT_SIMULATOR(FLIPFluid);
 
     EXPORT_MPM(MPM);
 
     DEFINE_VECTOR_OF_NAMED(std::shared_ptr<MPMParticle>, "MPMParticles");
 
-    EXPORT_SIMULATOR(APICFluid);
 
     typedef std::vector<Fluid::Particle> FluidParticles;
     class_<FluidParticles>("FluidParticles")
         .def(vector_indexing_suite<FluidParticles>());
     register_ptr_to_python<std::shared_ptr<Simulation3D>>();
+    register_ptr_to_python<std::shared_ptr<Fluid>>();
 }
 
 TC_NAMESPACE_END

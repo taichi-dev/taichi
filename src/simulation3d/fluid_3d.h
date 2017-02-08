@@ -8,6 +8,7 @@
 #include <taichi/math/array_3d.h>
 #include <taichi/dynamics/poisson_solver3d.h>
 #include <taichi/dynamics/simulation3d.h>
+#include <taichi/visual/texture.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -28,9 +29,14 @@ public:
     real temperature_decay;
     real pressure_tolerance;
     real density_scaling;
-    Vector3 initial_speed;
     real tracker_generation;
     real perturbation;
+    real super_sampling;
+    std::shared_ptr<Texture> generation_tex;
+    std::shared_ptr<Texture> initial_velocity_tex;
+    std::shared_ptr<Texture> color_tex;
+    std::shared_ptr<Texture> temperature_tex;
+
     bool open_boundary;
     std::vector<Tracker3D> trackers;
     std::shared_ptr<PoissonSolver3D> pressure_solver;
@@ -40,7 +46,7 @@ public:
 
     void remove_outside_trackers();
 
-    void initialize(const Config &config);
+    void initialize(const Config &config) override;
 
     void project();
 
@@ -50,7 +56,7 @@ public:
 
     void move_trackers(real delta_t);
 
-    void step(real delta_t);
+    void step(real delta_t) override;
 
     virtual void show(Array2D<Vector3> &buffer);
 
@@ -62,7 +68,9 @@ public:
 
     Vector3 sample_velocity(const Vector3 &pos) const;
 
-    std::vector<RenderParticle> get_render_particles() const;
+    std::vector<RenderParticle> get_render_particles() const override;
+
+    void update(const Config &config) override;
 };
 
 TC_NAMESPACE_END

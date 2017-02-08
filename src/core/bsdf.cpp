@@ -8,7 +8,10 @@ BSDF::BSDF(std::shared_ptr<Scene> const &scene, const IntersectionInfo &inter) {
     world_to_local = Matrix3(inter.to_local);
     local_to_world = Matrix3(inter.to_world);
     geometry_normal = inter.geometry_normal;
-    material = scene->get_mesh_from_triangle_id(inter.triangle_id)->material.get();
+    if (inter.material == nullptr)
+        material = scene->get_mesh_from_triangle_id(inter.triangle_id)->material.get();
+    else
+        material = inter.material;
     uv = inter.uv;
     front = inter.front;
 }
@@ -40,7 +43,7 @@ real BSDF::probability_density(const Vector3 &in, const Vector3 &out) const {
 }
 
 Vector3 BSDF::evaluate(const Vector3 &in, const Vector3 &out) const {
-    if (dot(geometry_normal, out) * (world_to_local * out).z < 0.0f) {
+    if (dot(geometry_normal, out) * (world_to_local * out).z <= 0.0f) {
         // for shaded/interpolated normal consistency
         return Vector3(0.0f);
     }

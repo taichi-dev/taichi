@@ -26,9 +26,7 @@ private:
 public:
     Config() {}
 
-    void print_all() {
-        return;
-        // We no longer need this??
+    void print_all() const {
         std::cout << "Configures: " << std::endl;
         for (auto key = data.begin(); key != data.end(); key++) {
             std::cout << " * " << key->first << " = " << key->second << std::endl;

@@ -22,7 +22,8 @@ class Renderer(object):
     def __init__(self, name=None, output_dir=get_unique_task_id(), overwrite=True, frame=0,
                  scene=None, preset=None, **kwargs):
         self.renderer_name = name
-        self.output_dir = taichi.settings.get_output_path(output_dir + '/')
+        if output_dir is not None:
+            self.output_dir = taichi.settings.get_output_path(output_dir + '/')
         self.post_processor = LDRDisplay()
         self.frame = frame
         self.viewer_started = False
@@ -148,6 +149,19 @@ class Renderer(object):
         },
         'pt': {
             'name': 'pt',
+            'min_path_length': 1,
+            'max_path_length': 10,
+            'initial_radius': 0.5,
+            'sampler': 'sobol',
+            'russian_roulette': True,
+            'direct_lighting': 1,
+            'direct_lighting_light': 1,
+            'direct_lighting_bsdf': 1,
+            'envmap_is': 1,
+            'num_threads': get_num_cores()
+        },
+        'pt_sdf': {
+            'name': 'pt_sdf',
             'min_path_length': 1,
             'max_path_length': 10,
             'initial_radius': 0.5,

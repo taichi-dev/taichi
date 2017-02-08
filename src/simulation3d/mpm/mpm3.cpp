@@ -2,6 +2,7 @@
 #include <taichi/math/qr_svd/qr_svd.h>
 #include <taichi/system/threading.h>
 #include <taichi/visual/texture.h>
+#include <taichi/common/asset_manager.h>
 
 TC_NAMESPACE_BEGIN
 

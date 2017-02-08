@@ -1,5 +1,6 @@
 #include <taichi/visual/texture.h>
 #include <taichi/visualization/image_buffer.h>
+#include <taichi/common/asset_manager.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -11,6 +12,7 @@ protected:
     bool repeat;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
         center = config.get("center", Vector3(0.0f));
         inv_zoom = Vector3(1.0f) / config.get_vec3("zoom");
@@ -33,6 +35,7 @@ protected:
     std::shared_ptr<Texture> tex1, tex2;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         alpha = config.get_real("alpha");
         beta = config.get_real("beta");
         need_clamp = config.get("need_clamp", false);
@@ -59,6 +62,7 @@ protected:
     std::shared_ptr<Texture> tex2;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         tex1 = AssetManager::get_asset<Texture>(config.get_int("tex1"));
         tex2 = AssetManager::get_asset<Texture>(config.get_int("tex2"));
     }
@@ -75,6 +79,7 @@ protected:
     std::shared_ptr<Texture> tex;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
     }
 
@@ -92,6 +97,7 @@ protected:
     std::shared_ptr<Texture> tex;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         repeat_u = config.get_real("repeat_u");
         repeat_v = config.get_real("repeat_v");
         repeat_w = config.get("repeat_w", 1.0f);
@@ -117,6 +123,7 @@ protected:
     int times;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
         times = config.get_int("times");
     }
@@ -138,6 +145,7 @@ protected:
     int flip_axis;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
         flip_axis = config.get_int("flip_axis");
     }
@@ -159,6 +167,7 @@ protected:
     Vector4 outside_val;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
         bound_axis = config.get_int("axis");
         bounds = config.get_vec2("bounds");
@@ -183,6 +192,7 @@ protected:
     int resolution_y;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         auto tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
         resolution_x = config.get_int("resolution_x");
         resolution_y = config.get_int("resolution_y");

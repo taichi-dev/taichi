@@ -1,6 +1,7 @@
 #include <taichi/visual/surface_material.h>
 #include <taichi/physics/physics_constants.h>
 #include <taichi/math/discrete_sampler.h>
+#include <taichi/common/asset_manager.h>
 
 TC_NAMESPACE_BEGIN
 

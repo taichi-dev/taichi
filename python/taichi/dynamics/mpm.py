@@ -35,8 +35,6 @@ class MPM3:
         particles = self.c.get_render_particles()
         particles.write(self.directory + '/particles%05d.bin' % self.frame)
         res = map(float, self.resolution)
-        radius = res[0] * 2.5
-        theta = 0
         camera = Camera('pinhole', origin=(0, res[1], res[2] * 5),
                         look_at=(0, 0, 0), up=(0, 1, 0), fov=70,
                         width=10, height=10)

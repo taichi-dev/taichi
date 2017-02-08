@@ -7,6 +7,7 @@ private:
     int limit;
 public:
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         limit = config.get("limit", 10);
     }
 

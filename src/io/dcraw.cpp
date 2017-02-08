@@ -1016,17 +1016,21 @@ void CLASS canon_sraw_load_raw()
     ip = (short(*)[4]) image;
     rp = ip[0];
     for (row = 0; row < height; row++, ip += width) {
-        if (row & (jh.sraw >> 1))
+        if (row & (jh.sraw >> 1)) {
             for (col = 0; col < width; col += 2)
-                for (c = 1; c < 3; c++)
+                for (c = 1; c < 3; c++) {
                     if (row == height - 1)
                         ip[col][c] = ip[col - width][c];
-                    else ip[col][c] = (ip[col - width][c] + ip[col + width][c] + 1) >> 1;
+                    else {
+                        ip[col][c] = (ip[col - width][c] + ip[col + width][c] + 1) >> 1;
+                    }
                     for (col = 1; col < width; col += 2)
                         for (c = 1; c < 3; c++)
                             if (col == width - 1)
                                 ip[col][c] = ip[col - 1][c];
                             else ip[col][c] = (ip[col - 1][c] + ip[col + 1][c] + 1) >> 1;
+                }
+        }
     }
     for (; rp < ip[0]; rp += 4) {
         if (unique_id == 0x80000218 ||
@@ -8462,8 +8466,8 @@ void CLASS identify()
     fread(head, 1, 32, ifp);
     fseek(ifp, 0, SEEK_END);
     flen = fsize = ftell(ifp);
-    if ((cp = (char *)memmem(head, 32, "MMMM", 4)) ||
-        (cp = (char *)memmem(head, 32, "IIII", 4))) {
+    if ((cp = (char *)memmem(head, 32, (char *)"MMMM", 4)) ||
+        (cp = (char *)memmem(head, 32, (char *)"IIII", 4))) {
         parse_phase_one(cp - head);
         if (cp - head && parse_tiff(0)) apply_tiff();
     }
@@ -8514,7 +8518,7 @@ void CLASS identify()
         parse_fuji(get4());
         if (thumb_offset > 120) {
             fseek(ifp, 120, SEEK_SET);
-            is_raw += (i = get4()) && 1;
+            is_raw += (i = get4()) && (bool)1;
             if (is_raw == 2 && shot_select)
                 parse_fuji(i);
         }
@@ -10440,7 +10444,7 @@ int CLASS dcraw_main(int argc, const char **argv, DCRawOutput &output)
         else if (output_tiff && write_fun == nullptr)
             write_ext = ".tiff";
         else
-            write_ext = ".pgm\0.ppm\0.ppm\0.pam" + colors * 5 - 5;
+            write_ext = &(".pgm\0.ppm\0.ppm\0.pam"[colors * 5 - 5]);
         ofname = (char *)malloc(strlen(ifname) + 64);
         merror(ofname, "main()");
         if (write_to_stdout)

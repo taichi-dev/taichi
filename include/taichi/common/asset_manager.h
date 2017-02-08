@@ -36,7 +36,7 @@ public:
     }
 
     template <typename T>
-    static int insert_asset(const std::shared_ptr<T> &ptr) {
+    static int insert_asset(std::shared_ptr<T> &ptr) {
         return get_instance().insert_asset_<T>(ptr);
     }
 

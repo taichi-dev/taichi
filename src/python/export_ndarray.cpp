@@ -1,7 +1,7 @@
 #include <taichi/python/export.h>
 
 #include <taichi/math/array_2d.h>
-#include <taichi/levelset/levelset2d.h>
+#include <taichi/math/levelset_2d.h>
 #include <taichi/visualization/image_buffer.h>
 
 using namespace boost::python;

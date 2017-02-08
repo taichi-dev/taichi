@@ -14,6 +14,10 @@ public:
         triangle_id = -1;
     }
 
+    Vector3 at(real d) const {
+        return orig + d * dir;
+    }
+
     Vector3 orig, dir;
     real time, dist;
     int triangle_id;

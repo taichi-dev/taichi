@@ -1,6 +1,6 @@
 #include <taichi/python/export.h>
 #include <taichi/common/config.h>
-#include <taichi/levelset/levelset2d.h>
+#include <taichi/math/levelset_2d.h>
 #include <taichi/visualization/rgb.h>
 #include <taichi/math/array_op.h>
 
@@ -153,6 +153,7 @@ void export_math() {
         .def(self / real())
         .def(self + self)
         .def(self - self)
+        .def(- self)
         .def(self * self)
         .def(self / self);
 
@@ -166,6 +167,7 @@ void export_math() {
         .def(self / real())
         .def(self + self)
         .def(self - self)
+        .def(- self)
         .def(self * self)
         .def(self / self);
 

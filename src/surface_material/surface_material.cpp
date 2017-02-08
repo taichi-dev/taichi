@@ -1,8 +1,30 @@
 #include <taichi/visual/surface_material.h>
 #include <taichi/physics/physics_constants.h>
 #include <taichi/math/discrete_sampler.h>
+#include <taichi/common/asset_manager.h>
 
 TC_NAMESPACE_BEGIN
+
+std::shared_ptr<Texture> SurfaceMaterial::get_color_sampler(const Config &config, const std::string &name) {
+    if (config.has_key(name + "_map")) {
+        return AssetManager::get_asset<Texture>(config.get_int(name + "_map"));
+    }
+    else if (config.has_key(name + "_ptr")) {
+        return *config.get_ptr<std::shared_ptr<Texture>>(name + "_ptr");
+    } else if (config.has_key(name)) {
+        std::string val = config.get_string(name);
+        Vector3 color;
+        if (val[0] == '(') {
+            color = config.get_vec3(name);
+        } else {
+            color = Vector3(config.get_real(name));
+        }
+        return create_initialized_instance<Texture>("const", Config().set("value", color));
+    }
+    else {
+        return nullptr;
+    }
+}
 
 TC_INTERFACE_DEF(SurfaceMaterial, "material");
 
@@ -21,6 +43,14 @@ public:
 
     Vector3 sample_direction(const Vector3 &in, real u, real v, const Vector2 &uv) const {
         return random_diffuse(Vector3(0, 0, in.z > 0 ? 1 : -1), u, v);
+    }
+
+    virtual void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf,
+                        SurfaceEvent &event, const Vector2 &uv) const override {
+        out_dir = sample_direction(in_dir, u, v, uv);
+        f = evaluate_bsdf(in_dir, out_dir, uv);
+        pdf = probability_density(in_dir, out_dir, uv);
+        event = (int)SurfaceScatteringFlags::emit;
     }
 
     virtual real probability_density(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
@@ -186,7 +216,11 @@ public:
         Vector3 &f, real &pdf, SurfaceEvent &event, const Vector2 &uv) const override {
         out_dir = reflect(in_dir);
         auto color = color_sampler->sample3(uv);
-        f = color * std::abs(1.0f / std::max(0.0f, out_dir.z));
+        if (std::abs(out_dir.z) < 1e-5f) {
+            f = Vector3(0.0f);
+        } else {
+            f = color * (1.0f / std::abs(out_dir.z));
+        }
         event = (int)SurfaceScatteringFlags::delta;
         pdf = probability_density(in_dir, out_dir, uv);
     }
@@ -320,6 +354,7 @@ public:
             real ior = config.get_real("ior");
             Config cfg;
             cfg.set("ior", ior);
+            cfg.set("color", config.get_string("specular"));
             auto mat = std::make_shared<RefractiveMaterial>();
             mat->initialize(cfg);
             materials.push_back(mat);

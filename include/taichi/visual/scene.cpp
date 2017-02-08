@@ -97,7 +97,7 @@ IntersectionInfo Scene::get_intersection_info(int triangle_id, Ray &ray) {
     Mesh *mesh = triangle_id_to_mesh[t.id];
     inter.triangle_id = triangle_id;
     inter.dist = ray.dist;
-    inter.material = mesh->material.get();
+    // inter.material = mesh->material.get();
     Vector3 u = normalized(t.v[1] - t.v[0]);
     real sgn = inter.front ? 1.0f : -1.0f;
     Vector3 v = normalized(cross(sgn * inter.normal, u)); // Due to shading normal, we have to normalize here...

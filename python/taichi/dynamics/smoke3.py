@@ -21,3 +21,12 @@ class Smoke3:
         T = time.time()
         self.c.step(step_t)
         print 'Time:', time.time() - T
+
+    def update(self, generation, initial_velocity, color, temperature):
+        cfg = P(
+            generation_tex=generation.id,
+            initial_velocity_tex=initial_velocity.id,
+            color_tex=color.id,
+            temperature_tex=temperature.id,
+        )
+        self.c.update(cfg)

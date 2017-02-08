@@ -28,5 +28,5 @@ class Scene:
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_val:
             traceback.print_exception(exc_type, exc_val, exc_tb)
-            raise exc_val
+            exit(-1)
         self.finalize()

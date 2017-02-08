@@ -1,4 +1,4 @@
-#include <taichi/hdr/tone_mapper.h>
+#include <taichi/image/tone_mapper.h>
 #include <taichi/math/array_op.h>
 #include <taichi/math/array_3d.h>
 #include <taichi/physics/physics_constants.h>

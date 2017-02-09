@@ -145,6 +145,8 @@ public:
     }
 
     void initialize(int width, int height, T init = T(0), Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
+        //assert_info(width >= 2, "dim must be at least 2");
+        //assert_info(height >= 2, "dim must be at least 2");
         this->width = width;
         this->height = height;
         region = Region2D(0, width, 0, height, storage_offset);
@@ -325,7 +327,7 @@ public:
     T abs_sum() const {
         T ret = 0;
         for (int i = 0; i < size; i++) {
-            ret += abs(data[i]);
+            ret += std::abs(data[i]);
         }
         return ret;
     }
@@ -333,7 +335,23 @@ public:
     T abs_max() const {
         T ret(0);
         for (int i = 0; i < size; i++) {
-            ret = max(ret, abs(data[i]));
+            ret = std::max(ret, abs(data[i]));
+        }
+        return ret;
+    }
+
+    T min() const {
+        T ret = std::numeric_limits<T>::max();
+        for (int i = 0; i < size; i++) {
+            ret = std::min(ret, data[i]);
+        }
+        return ret;
+    }
+
+    T max() const {
+        T ret = std::numeric_limits<T>::min();
+        for (int i = 0; i < size; i++) {
+            ret = std::max(ret, data[i]);
         }
         return ret;
     }
@@ -452,7 +470,7 @@ public:
     Region2D get_rasterization_region(Vector2 pos, int half_extent) const {
         int x = (int)floor(pos.x - storage_offset.x);
         int y = (int)floor(pos.y - storage_offset.y);
-        return Region2D(std::max(0, x - half_extent + 1), std::min(width, x + half_extent + 1), max(0, y - half_extent + 1),
+        return Region2D(std::max(0, x - half_extent + 1), std::min(width, x + half_extent + 1), std::max(0, y - half_extent + 1),
             std::min(height, y + half_extent + 1), storage_offset);
     }
 

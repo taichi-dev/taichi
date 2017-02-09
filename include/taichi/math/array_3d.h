@@ -197,6 +197,9 @@ public:
     }
 
     void initialize(int width, int height, int depth, T init=T(0), Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
+        //assert_info(width >= 2, "dim must be at least 2");
+        //assert_info(height >= 2, "dim must be at least 2");
+        //assert_info(depth >= 2, "dim must be at least 2");
         this->width = width;
         this->height = height;
         this->depth = depth;
@@ -392,7 +395,23 @@ public:
     T abs_max() const {
         T ret(0);
         for (int i = 0; i < size; i++) {
-            ret = max(ret, abs(data[i]));
+            ret = std::max(ret, abs(data[i]));
+        }
+        return ret;
+    }
+
+    T min() const {
+        T ret = std::numeric_limits<T>::max();
+        for (int i = 0; i < size; i++) {
+            ret = std::min(ret, data[i]);
+        }
+        return ret;
+    }
+
+    T max() const {
+        T ret = std::numeric_limits<T>::min();
+        for (int i = 0; i < size; i++) {
+            ret = std::max(ret, data[i]);
         }
         return ret;
     }

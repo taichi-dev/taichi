@@ -32,7 +32,7 @@ void EulerLiquid::initialize_solver(const Config &config)
     maximum_iterations = config.get("maximum_iterations", 300);
     tolerance = config.get("tolerance", 1e-4f);
     initialize_pressure_solver();
-    liquid_levelset.initialize(width + 1, height + 1, Vector2(0.0f, 0.0f));
+    liquid_levelset.initialize(width, height, Vector2(0.0f, 0.0f));
     t = 0;
 }
 
@@ -272,12 +272,12 @@ void EulerLiquid::rebuild_levelset(LevelSet2D &levelset, real band) {
         }
         // Free surface detected
         real p = std::abs(phi_0 / (phi_1 - phi_0));
-        Vector2 pos = lerp(p, a.get_pos(), b.get_pos());
+        Vector2 pos = lerp(p, Vector2(a.i, a.j), Vector2(b.i, b.j));
         for (int i = std::max(0, int(floor(a.i - band)));
              i <= std::min(levelset.get_width() - 1, int(b.i + band)); i++) {
             for (int j = std::max(0, int(floor(a.j - band)));
                  j <= std::min(levelset.get_height() - 1, int(b.j + band)); j++) {
-                real l = length(Vector2(i, j) + old.get_storage_offset() - pos);
+                real l = length(Vector2(i, j) - pos);
                 levelset[i][j] = std::min(levelset[i][j], l);
             }
         }
@@ -382,10 +382,10 @@ bool EulerLiquid::inside(int x, int y) {
 
 void EulerLiquid::prepare_for_pressure_solve() {
     for (auto &ind : u.get_region()) {
-        u_weight[ind] = LevelSet2D::fraction_inside(boundary_levelset[ind], boundary_levelset[ind.neighbour(Vector2i(0, 1))]);
+        u_weight[ind] = LevelSet2D::fraction_outside(boundary_levelset[ind], boundary_levelset[ind.neighbour(Vector2i(0, 1))]);
     }
     for (auto &ind : v.get_region()) {
-        v_weight[ind] = LevelSet2D::fraction_inside(boundary_levelset[ind], boundary_levelset[ind.neighbour(Vector2i(1, 0))]);
+        v_weight[ind] = LevelSet2D::fraction_outside(boundary_levelset[ind], boundary_levelset[ind.neighbour(Vector2i(1, 0))]);
     }
     Ax = 0;
     Ay = 0;
@@ -569,12 +569,12 @@ void EulerLiquid::substep(real delta_t) {
     rebuild_levelset(liquid_levelset, levelset_band);
     apply_external_forces(delta_t);
     mark_cells();
-    //project(delta_t);
+    project(delta_t);
     simple_extrapolate();
     advect(delta_t);
     advect_liquid_levelset(delta_t);
     //for (auto &ind : liquid_levelset.get_region())
-    //    liquid_levelset[ind] = std::max(liquid_levelset[ind], -boundary_levelset[ind]);
+    //    liquid_levelset[ind] = std::max(liquid_levelset[ind], -boundary_levelset.sample(ind.get_pos()));
     t += delta_t;
 }
 

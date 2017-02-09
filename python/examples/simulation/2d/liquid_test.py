@@ -2,7 +2,7 @@ from taichi.two_d import *
 from taichi.misc.util import *
 
 if __name__ == '__main__':
-    resolution = [32, 32]
+    resolution = [128, 128]
     simulator = FluidSimulator(simulator='liquid', simulation_width=resolution[0],
                                simulation_height=resolution[1],
                                delta_x=1.0 / min(resolution), gravity=(0, -10),

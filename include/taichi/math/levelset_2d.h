@@ -14,7 +14,7 @@ public:
         initialize(width, height, offset);
     }
     void initialize(int width, int height, Vector2 offset) {
-        Array2D<float>::initialize(width, height, std::numeric_limits<float>::infinity(), offset);
+        Array2D<float>::initialize(width, height, 1, offset);
     }
     void add_sphere(Vector2 center, float radius, bool inside_out = false);
 

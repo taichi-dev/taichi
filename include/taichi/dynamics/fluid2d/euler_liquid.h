@@ -106,7 +106,7 @@ protected:
 
     virtual void advect_liquid_levelset(real delta_t);
 
-    virtual void rebuild_levelset();
+    virtual void rebuild_levelset(LevelSet2D &levelset, real band);
 
     static Vector2 grad_kernel(const Vector2 &c) {
 #define PRECISE_SGN(x) ((-1 < x && x <= 0) ? -1 : ((0 < x && x <= 1) ? 1 : 0))

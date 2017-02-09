@@ -9,6 +9,7 @@ real volume_control_p = 0.0f;
 void EulerLiquid::set_levelset(const LevelSet2D & boundary_levelset)
 {
     this->boundary_levelset = boundary_levelset;
+    //rebuild_levelset(this->boundary_levelset, levelset_band + 1);
 }
 
 void EulerLiquid::initialize(const Config &config) {
@@ -31,7 +32,7 @@ void EulerLiquid::initialize_solver(const Config &config)
     maximum_iterations = config.get("maximum_iterations", 300);
     tolerance = config.get("tolerance", 1e-4f);
     initialize_pressure_solver();
-    liquid_levelset.initialize(width, height, Vector2(0.5f, 0.5f));
+    liquid_levelset.initialize(width + 1, height + 1, Vector2(0.0f, 0.0f));
     t = 0;
 }
 
@@ -257,14 +258,13 @@ void EulerLiquid::advect_liquid_levelset(real delta_t) {
     for (auto &ind : liquid_levelset.get_region()) {
         liquid_levelset[ind] = old.sample(ind.get_pos() - delta_t * sample_velocity(ind.get_pos(), u, v));
     }
-    rebuild_levelset();
+    rebuild_levelset(liquid_levelset, levelset_band + 1);
 }
 
-void EulerLiquid::rebuild_levelset() {
+void EulerLiquid::rebuild_levelset(LevelSet2D &levelset, real band) {
     // Actually, we use a brute-force initialization here
-    Array old = liquid_levelset;
-    real band = levelset_band + 1;
-    liquid_levelset.reset(band);
+    Array old = levelset;
+    levelset.reset(band);
     auto update = [&](const Index2D &a, const Index2D &b) {
         real phi_0 = old[a], phi_1 = old[b];
         if (phi_0 * phi_1 > 0) {
@@ -274,11 +274,11 @@ void EulerLiquid::rebuild_levelset() {
         real p = std::abs(phi_0 / (phi_1 - phi_0));
         Vector2 pos = lerp(p, a.get_pos(), b.get_pos());
         for (int i = std::max(0, int(floor(a.i - band)));
-             i <= std::min(liquid_levelset.get_width() - 1, int(b.i + band)); i++) {
+             i <= std::min(levelset.get_width() - 1, int(b.i + band)); i++) {
             for (int j = std::max(0, int(floor(a.j - band)));
-                 j <= std::min(liquid_levelset.get_height() - 1, int(b.j + band)); j++) {
+                 j <= std::min(levelset.get_height() - 1, int(b.j + band)); j++) {
                 real l = length(Vector2(i, j) + old.get_storage_offset() - pos);
-                liquid_levelset[i][j] = std::min(liquid_levelset[i][j], l);
+                levelset[i][j] = std::min(levelset[i][j], l);
             }
         }
     };
@@ -294,8 +294,8 @@ void EulerLiquid::rebuild_levelset() {
             update(a, b);
         }
     }
-    for (auto &ind : liquid_levelset.get_region()) {
-        liquid_levelset[ind] *= sgn(old[ind]);
+    for (auto &ind : levelset.get_region()) {
+        levelset[ind] *= sgn(old[ind]);
     }
 }
 
@@ -382,10 +382,10 @@ bool EulerLiquid::inside(int x, int y) {
 
 void EulerLiquid::prepare_for_pressure_solve() {
     for (auto &ind : u.get_region()) {
-        u_weight[ind] = LevelSet2D::fraction_outside(boundary_levelset[ind], boundary_levelset[ind.neighbour(Vector2i(0, 1))]);
+        u_weight[ind] = LevelSet2D::fraction_inside(boundary_levelset[ind], boundary_levelset[ind.neighbour(Vector2i(0, 1))]);
     }
     for (auto &ind : v.get_region()) {
-        v_weight[ind] = LevelSet2D::fraction_outside(boundary_levelset[ind], boundary_levelset[ind.neighbour(Vector2i(1, 0))]);
+        v_weight[ind] = LevelSet2D::fraction_inside(boundary_levelset[ind], boundary_levelset[ind.neighbour(Vector2i(1, 0))]);
     }
     Ax = 0;
     Ay = 0;
@@ -395,7 +395,7 @@ void EulerLiquid::prepare_for_pressure_solve() {
     for (auto &ind : cell_types.get_region()) {
         int i = ind.i, j = ind.j;
 
-        real phi = liquid_levelset.sample(ind);
+        real phi = liquid_levelset.sample(ind.get_pos());
         if (phi >= 0) continue;
         real lhs = 0;
         real neighbour_phi;
@@ -551,10 +551,9 @@ void EulerLiquid::project(real delta_t) {
 }
 
 void EulerLiquid::mark_cells() {
-    rebuild_levelset();
     cell_types = CellType::AIR;
     for (auto &ind : cell_types.get_region()) {
-        if (liquid_levelset[ind] < 0) {
+        if (liquid_levelset.sample(ind.get_pos()) < 0) {
             cell_types[ind] = CellType::WATER;
         }
     }
@@ -567,13 +566,15 @@ void EulerLiquid::mark_cells() {
 }
 
 void EulerLiquid::substep(real delta_t) {
-    mark_cells();
+    rebuild_levelset(liquid_levelset, levelset_band);
     apply_external_forces(delta_t);
-    // compute_liquid_levelset();
-    project(delta_t);
+    mark_cells();
+    //project(delta_t);
     simple_extrapolate();
     advect(delta_t);
     advect_liquid_levelset(delta_t);
+    //for (auto &ind : liquid_levelset.get_region())
+    //    liquid_levelset[ind] = std::max(liquid_levelset[ind], -boundary_levelset[ind]);
     t += delta_t;
 }
 

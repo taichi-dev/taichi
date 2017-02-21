@@ -99,7 +99,7 @@ file(GLOB TAICHI_SOURCE
         )
 
 set(CORE_LIBRARY_NAME taichi_core)
-add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_SOURCE})
+add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_SOURCE} include/taichi/common/string_utils.h)
 
 if (NOT WIN32)
     target_link_libraries(${CORE_LIBRARY_NAME} pthread)

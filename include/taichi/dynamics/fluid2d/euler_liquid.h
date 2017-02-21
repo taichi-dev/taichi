@@ -38,6 +38,7 @@ protected:
     real get_volume_correction();
     void advect_level_set(real delta_t);
     real tolerance;
+    real theta_threshold;
     int maximum_iterations;
     LevelSet2D boundary_levelset;
     Array density;
@@ -59,8 +60,6 @@ protected:
     Vector2 sample_velocity(Vector2 position, const Array &u, const Array &v);
 
     virtual Vector2 sample_velocity(Vector2 position);
-
-    std::function<CellType(real, real)> get_initializer(std::string name);
 
     bool check_u_activity(int i, int j);
 
@@ -130,6 +129,8 @@ protected:
     virtual Array advect(const Array &arr, real delta_t);
 
     virtual bool check_diag_domination();
+
+    virtual void update_velocity_weights();
 
 public:
     

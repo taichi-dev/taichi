@@ -24,15 +24,16 @@ void EulerLiquid::initialize_solver(const Config &config)
     kernel_size = config.get("kernel_size", 1);
     cfl = config.get("cfl", 0.1f);
     u = Array(width + 1, height, 0.0f, Vector2(0.0f, 0.5f));
-    u_weight = Array(width + 1, height, 0.0f);
+    u_weight = Array(width + 1, height, 0.0f, Vector2(0.0f, 0.5f));
     v = Array(width, height + 1, 0.0f, Vector2(0.5f, 0.0f));
-    v_weight = Array(width, height + 1, 0.0f);
-    cell_types = Array2D<CellType>(width, height, CellType::AIR);
+    v_weight = Array(width, height + 1, 0.0f, Vector2(0.5f, 0.0f));
+    cell_types = Array2D<CellType>(width, height, CellType::AIR, Vector2(0.5f, 0.5f));
     gravity = config.get_vec2("gravity");
     maximum_iterations = config.get("maximum_iterations", 300);
     tolerance = config.get("tolerance", 1e-4f);
+    theta_threshold = config.get("theta_threshold", 0.1f);
     initialize_pressure_solver();
-    liquid_levelset.initialize(width, height, Vector2(0.0f, 0.0f));
+    liquid_levelset.initialize(width, height, Vector2(0.5f, 0.5f));
     t = 0;
 }
 
@@ -83,51 +84,6 @@ Vector2 EulerLiquid::sample_velocity(Vector2 position, const Array &u, const Arr
 
 Vector2 EulerLiquid::sample_velocity(Vector2 position) {
     return sample_velocity(position, u, v);
-}
-
-std::function<EulerLiquid::CellType(real, real)> EulerLiquid::get_initializer(std::string name)
-{
-    if (name == "collapse") {
-        return [](real i, real j) -> EulerLiquid::CellType {
-            if (((0.2 < i && i < 0.4 && 0.1 < j && j < 0.5)) || j <= 0.1) {
-                return EulerLiquid::CellType::WATER;
-            }
-            else {
-                return EulerLiquid::CellType::AIR;
-            }
-        };
-    }
-    else if (name == "single") {
-        return [](real i, real j) -> EulerLiquid::CellType {
-            return i == 0.5f && j == 0.5f ? EulerLiquid::CellType::WATER : EulerLiquid::CellType::AIR;
-        };
-    }
-    else if (name == "drop") {
-        return [](real i, real j) -> EulerLiquid::CellType {
-            return (0.4f <= i && i <= 0.6f && 0.4f <= j && j <= 0.6f) ? EulerLiquid::CellType::WATER : EulerLiquid::CellType::AIR;
-        };
-    }
-    else if (name == "still") {
-        return [](real i, real j) -> EulerLiquid::CellType {
-            return j < 0.5f ? EulerLiquid::CellType::WATER : EulerLiquid::CellType::AIR;
-        };
-    }
-    else if (name == "full") {
-        return [](real i, real j) -> EulerLiquid::CellType {
-            return EulerLiquid::CellType::WATER;
-        };
-    }
-    else {
-        error("Unknown Intiializer Name: " + name);
-    }
-    return [](real i, real j) -> EulerLiquid::CellType {
-        if (((0.2 < i && i < 0.4 && 0.1 < j && j < 0.5)) || j <= 0.1) {
-            return EulerLiquid::CellType::WATER;
-        }
-        else {
-            return EulerLiquid::CellType::AIR;
-        }
-    };
 }
 
 bool EulerLiquid::check_u_activity(int i, int j) {
@@ -380,68 +336,93 @@ bool EulerLiquid::inside(int x, int y) {
     return 0 <= x && x < width && 0 <= y && y < height;
 }
 
-void EulerLiquid::prepare_for_pressure_solve() {
+void EulerLiquid::update_velocity_weights() {
     for (auto &ind : u.get_region()) {
         u_weight[ind] = LevelSet2D::fraction_outside(boundary_levelset[ind], boundary_levelset[ind.neighbour(Vector2i(0, 1))]);
     }
     for (auto &ind : v.get_region()) {
         v_weight[ind] = LevelSet2D::fraction_outside(boundary_levelset[ind], boundary_levelset[ind.neighbour(Vector2i(1, 0))]);
     }
+}
+
+void EulerLiquid::prepare_for_pressure_solve() {
     Ax = 0;
     Ay = 0;
     Ad = 0;
     E = 0;
+    particles.clear();
     const real theta_threshold = 0.01f;
+    Array2D<char> boundary_cell(width, height, false);
+    for (int i = 0; i < width; i++) {
+        for (int j = 0; j < height; j++) {
+            int fluid_corner = 0, boundary_corner = 0;
+            fluid_corner += liquid_levelset.sample(Vector2(i + 0, j + 0)) < 0;
+            fluid_corner += liquid_levelset.sample(Vector2(i + 0, j + 1)) < 0;
+            fluid_corner += liquid_levelset.sample(Vector2(i + 1, j + 0)) < 0;
+            fluid_corner += liquid_levelset.sample(Vector2(i + 1, j + 1)) < 0;
+            boundary_corner += boundary_levelset[i + 0][j + 0] < 0;
+            boundary_corner += boundary_levelset[i + 0][j + 1] < 0;
+            boundary_corner += boundary_levelset[i + 1][j + 0] < 0;
+            boundary_corner += boundary_levelset[i + 1][j + 1] < 0;
+            if (fluid_corner > 0 && boundary_corner > 0) {
+                boundary_cell[i][j] = true;
+            }
+        }
+    }
     for (auto &ind : cell_types.get_region()) {
         int i = ind.i, j = ind.j;
-
-        real phi = liquid_levelset.sample(ind.get_pos());
-        if (phi >= 0) continue;
+        real phi = liquid_levelset[ind];
+        if (phi >= 0) {
+            if (!boundary_cell[i][j]) {
+                continue;
+            }
+        } else {
+        }
         real lhs = 0;
         real neighbour_phi;
         real vel_weight;
 
         neighbour_phi = liquid_levelset.sample(ind.get_pos() - Vector2(1, 0));
-        if (neighbour_phi < 0) {
+        if (neighbour_phi < 0 || boundary_cell[i][j] || boundary_cell[i - 1][j]) {
             vel_weight = u_weight[ind];
             lhs += vel_weight;
         }
         else {
             real theta = max(theta_threshold, LevelSet2D::fraction_inside(phi, neighbour_phi));
-            lhs += 1.0f / theta;
+            lhs += vel_weight / theta;
         }
 
         neighbour_phi = liquid_levelset.sample(ind.get_pos() + Vector2(1, 0));
-        if (neighbour_phi < 0) {
+        if (neighbour_phi < 0 || boundary_cell[i][j] || boundary_cell[i + 1][j]) {
             vel_weight = u_weight[ind.neighbour(Vector2i(1, 0))];
             lhs += vel_weight;
             Ax[i][j] -= vel_weight;
         }
         else {
             real theta = max(theta_threshold, LevelSet2D::fraction_inside(phi, neighbour_phi));
-            lhs += 1.0f / theta;
+            lhs += vel_weight / theta;
         }
 
         neighbour_phi = liquid_levelset.sample(ind.get_pos() - Vector2(0, 1));
-        if (neighbour_phi < 0) {
+        if (neighbour_phi < 0 || boundary_cell[i][j] || boundary_cell[i][j - 1]) {
             vel_weight = v_weight[ind];
             lhs += vel_weight;
         }
         else {
             real theta = max(theta_threshold, LevelSet2D::fraction_inside(phi, neighbour_phi));
-            lhs += 1.0f / theta;
+            lhs += vel_weight / theta;
         }
 
 
         neighbour_phi = liquid_levelset.sample(ind.get_pos() + Vector2(0, 1));
-        if (neighbour_phi < 0) {
+        if (neighbour_phi < 0 || boundary_cell[i][j] || boundary_cell[i][j + 1]) {
             vel_weight = v_weight[ind.neighbour(Vector2i(0, 1))];
             lhs += vel_weight;
             Ay[i][j] -= vel_weight;
         }
         else {
             real theta = max(theta_threshold, LevelSet2D::fraction_inside(phi, neighbour_phi));
-            lhs += 1.0f / theta;
+            lhs += vel_weight / theta;
         }
 
         Ad[ind] = lhs;
@@ -538,16 +519,14 @@ Array EulerLiquid::solve_pressure_naive() {
 
 void EulerLiquid::project(real delta_t) {
     update_volume_controller();
-
     apply_boundary_condition();
     prepare_for_pressure_solve();
     p = solve_pressure_naive();
-    apply_boundary_condition();
-
     if (!(p.is_normal())) {
         printf("Abnormal pressure!!!!!\n");
     }
     apply_pressure(p);
+    apply_boundary_condition();
 }
 
 void EulerLiquid::mark_cells() {
@@ -566,39 +545,61 @@ void EulerLiquid::mark_cells() {
 }
 
 void EulerLiquid::substep(real delta_t) {
+    u_weight.print("u_weight");
+    v_weight.print("v_weight");
     rebuild_levelset(liquid_levelset, levelset_band);
+    update_velocity_weights();
     apply_external_forces(delta_t);
     mark_cells();
     project(delta_t);
     simple_extrapolate();
     advect(delta_t);
     advect_liquid_levelset(delta_t);
-    //for (auto &ind : liquid_levelset.get_region())
-    //    liquid_levelset[ind] = std::max(liquid_levelset[ind], -boundary_levelset.sample(ind.get_pos()));
+    for (auto &ind : liquid_levelset.get_region())
+        liquid_levelset[ind] = std::max(liquid_levelset[ind], -boundary_levelset.sample(ind.get_pos()));
     t += delta_t;
 }
 
 void EulerLiquid::apply_pressure(const Array &p) {
     for (int i = 0; i < width - 1; i++) {
         for (int j = 0; j < height; j++) {
-            u[i + 1][j] += p[i][j] - p[i + 1][j];
+            real theta = LevelSet2D::fraction_inside(liquid_levelset[i][j], liquid_levelset[i + 1][j]);
+            if (u_weight[i + 1][j] > 0 && theta > 0)
+                u[i + 1][j] += (p[i][j] - p[i + 1][j]) / std::max(theta_threshold, theta);
         }
     }
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height - 1; j++) {
-            v[i][j + 1] += p[i][j] - p[i][j + 1];
+            real theta = LevelSet2D::fraction_inside(liquid_levelset[i][j], liquid_levelset[i][j + 1]);
+            if (v_weight[i][j + 1] > 0 && theta > 0)
+                v[i][j + 1] += (p[i][j] - p[i][j + 1]) / std::max(theta_threshold, theta);
+        }
+    }
+    for (int i = 0; i < width; i++) {
+        for (int j = 0; j < height; j++) {
+            if (liquid_levelset[i][j] > 0) {
+                continue;
+            }
+            real div = 0;
+            div += u[i][j] * u_weight[i][j];
+            div += v[i][j] * v_weight[i][j];
+            div -= u[i + 1][j] * u_weight[i + 1][j];
+            div -= v[i][j + 1] * v_weight[i][j + 1];
+            if (abs(div) > 1e-3) {
+                printf("%d  %d div %f\n", i, j, div);
+            }
         }
     }
 }
 
 void EulerLiquid::apply_boundary_condition() {
     for (auto &ind : u.get_region()) {
-        if (boundary_levelset.sample(ind.get_pos()) <= 0.0f) {
+        if (u_weight[ind] == 0.0f) {
             u[ind] = 0.0f;
         }
     }
     for (auto &ind : v.get_region()) {
-        if (boundary_levelset.sample(ind.get_pos()) <= 0.0f) {
+        if (v_weight[ind] == 0.0f) {
             v[ind] = 0.0f;
         }
     }

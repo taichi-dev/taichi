@@ -12,12 +12,12 @@ TC_NAMESPACE_BEGIN
 
 struct MPMLinearSystemRow {
     int num_items;
-    mat2 items[49];
+    Matrix2 items[49];
     int indices[49];
     void reset() {
         num_items = 0;
     }
-    void append(int index, const mat2 &item) {
+    void append(int index, const Matrix2 &item) {
         /*
         int i = 0;
         if (num_items > 0)
@@ -39,7 +39,7 @@ class MPMLinearSystem {
 public:
     std::vector<MPMLinearSystemRow> data;
     ArrayVec2 rhs;
-    std::vector<mat2> diag;
+    std::vector<Matrix2> diag;
     int size;
     void reset(int size) {
         this->size = size;
@@ -63,7 +63,7 @@ public:
         }
         return y;
     }
-    void append(int row, int column, const mat2 &item) {
+    void append(int row, int column, const Matrix2 &item) {
         data[row].append(column, item);
         if (row == column) {
             diag[row] = item;
@@ -71,7 +71,7 @@ public:
     }
     void precondition() {
         for (int i = 0; i < size; i++) {
-            mat2 precond = glm::inverse(diag[i]);
+            Matrix2 precond = glm::inverse(diag[i]);
             const int &num_items = data[i].num_items;
             for (int j = 0; j < num_items; j += 1) {
                 data[i].items[j] *= precond;
@@ -85,25 +85,25 @@ public:
 class MPM {
 protected:
     Config config;
-    float theta_c, theta_s;
+    real theta_c, theta_s;
     std::vector<std::shared_ptr<Particle>> particles;
     Grid grid;
     int dim;
     int width;
     int height;
-    float flip_alpha;
-    float flip_alpha_stride;
-    float h;
-    float t;
-    float last_sort;
-    float sorting_period;
+    real flip_alpha;
+    real flip_alpha_stride;
+    real h;
+    real t;
+    real last_sort;
+    real sorting_period;
     vec2 gravity;
-    float implicit_ratio;
+    real implicit_ratio;
     MPMLinearSystem system;
     bool apic;
     bool use_level_set;
-    float max_delta_t;
-    float min_delta_t;
+    real max_delta_t;
+    real min_delta_t;
     LevelSet2D levelset;
     LevelSet2D material_levelset;
 
@@ -125,30 +125,30 @@ protected:
 
     void rasterize();
 
-    void resample(float delta_t);
+    void resample(real delta_t);
 
-    mat4 get_energy_second_derivative_brute_force(Particle &p, float delta = 1e-2f);
+    mat4 get_energy_second_derivative_brute_force(Particle &p, real delta = 1e-2f);
 
     mat4 get_energy_second_derivative(Particle &p);
 
-    void build_system(const float delta_t);
+    void build_system(const real delta_t);
 
     void apply_A(const ArrayVec2 &x, ArrayVec2 &p);
 
     // CR solver
     ArrayVec2 solve_system(ArrayVec2 x_0, Grid &grid);
 
-    void implicit_velocity_update(const float &delta_t);
+    void implicit_velocity_update(const real &delta_t);
 
-    void apply_deformation_force(float delta_t);
+    void apply_deformation_force(real delta_t);
 
-    virtual void substep(float delta_t);
+    virtual void substep(real delta_t);
 
-    float get_dt_with_cfl_1();
+    real get_dt_with_cfl_1();
 
-    float get_max_speed();
+    real get_max_speed();
 
-    float cfl;
+    real cfl;
 
 public:
     MPM() {
@@ -157,7 +157,7 @@ public:
 
     void initialize(const Config &config_);
 
-    void step(float delta_t = 0.0f);
+    void step(real delta_t = 0.0f);
 
     void show(Array2D<Vector3> &buffer);
 
@@ -171,7 +171,7 @@ public:
 
     std::vector<std::shared_ptr<MPMParticle>> get_particles();
 
-    float get_current_time();
+    real get_current_time();
 
     void set_levelset(const LevelSet2D &levelset) {
         this->levelset = levelset;

@@ -160,6 +160,5 @@ public:
     }
 };
 
-std::shared_ptr<MPM3D> get_mpm_3d_simulator(const Config &config);
 TC_NAMESPACE_END
 

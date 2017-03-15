@@ -22,8 +22,8 @@ public:
     Array2D<vec2> velocity;
     Array2D<vec2> velocity_backup;
     Array2D<vec4> boundary_normal;
-    std::vector<mat2> _system;
-    Array2D<float> mass;
+    std::vector<Matrix2> _system;
+    Array2D<real> mass;
     Array2D<int> id;
     std::vector<ivec2> id_to_pos;
     std::vector<ivec2> z_to_xy;
@@ -39,7 +39,7 @@ public:
         id.initialize(width, height);
         this->need_system = need_system;
         if (need_system)
-            _system = std::vector<mat2>((width)* (height)* SYSTEM_STRIDE_PER_GRID);
+            _system = std::vector<Matrix2>((width)* (height)* SYSTEM_STRIDE_PER_GRID);
         id_to_pos = std::vector<ivec2>(width * height);
         z_to_xy = std::vector<ivec2>(width * height);
         initialize_z_order();
@@ -74,15 +74,15 @@ public:
         velocity = Vector2(0);
         mass = 0;
         if (need_system)
-            memset(&_system[0], 0, _system.size() * sizeof(mat2));
+            memset(&_system[0], 0, _system.size() * sizeof(Matrix2));
     }
     int get_system_index(int i, int j, int k, int l) const {
         return (i * height + j) * SYSTEM_STRIDE_PER_GRID + (k - i + 3) * SYSTEM_STRIDE_PER_GRID_AXIS + (l - j + 3);
     }
-    const mat2 system(int i, int j, int k, int l) const {
+    const Matrix2 system(int i, int j, int k, int l) const {
         return _system[get_system_index(i, j, k, l)];
     }
-    mat2 &system(int i, int j, int k, int l) {
+    Matrix2 &system(int i, int j, int k, int l) {
         return _system[get_system_index(i, j, k, l)];
     }
     void normalize_velocity() {
@@ -96,7 +96,7 @@ public:
             CV(velocity[ind]);
         }
     }
-    void apply_external_force(vec2 acc, float delta_t) {
+    void apply_external_force(vec2 acc, real delta_t) {
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 if (mass[i][j] > 0) // Do not use EPS here!!

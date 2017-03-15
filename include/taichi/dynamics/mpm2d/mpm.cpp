@@ -33,23 +33,23 @@ void MPM::initialize(const Config &config_) {
     this->config = config;
     width = config.get_int("simulation_width");
     height = config.get_int("simulation_height");
-    this->implicit_ratio = config.get_float("implicit_ratio");
+    this->implicit_ratio = config.get_real("implicit_ratio");
     this->apic = config.get("apic", true);
     this->use_level_set = config.get("use_level_set", false);
     this->cfl = config.get("cfl", 0.01f);
-    this->h = config.get_float("delta_x");
+    this->h = config.get_real("delta_x");
     grid.initialize(width, height, implicit_ratio != 0);
     t = 0.0f;
     last_sort = 1e20f;
-    flip_alpha = config.get_float("flip_alpha");
-    flip_alpha_stride = config.get_float("flip_alpha_stride");
+    flip_alpha = config.get_real("flip_alpha");
+    flip_alpha_stride = config.get_real("flip_alpha_stride");
     gravity = config.get_vec2("gravity");
     max_delta_t = config.get("max_delta_t", 0.001f);
     min_delta_t = config.get("min_delta_t", 0.00001f);
     material_levelset.initialize(width, height, Vector2(0.5f, 0.5f));
 }
 
-void MPM::substep(float delta_t) {
+void MPM::substep(real delta_t) {
     if (!particles.empty()) {
         for (auto &p : particles) {
             p->calculate_kernels();
@@ -74,17 +74,17 @@ void MPM::substep(float delta_t) {
     t += delta_t;
 }
 
-void MPM::step(float delta_t)
+void MPM::step(real delta_t)
 {
-    float simulation_time = 0.0f;
+    real simulation_time = 0.0f;
     while (simulation_time < delta_t - eps) {
-        float purpose_dt = std::min(max_delta_t, get_dt_with_cfl_1() * cfl);
-        float thres = min_delta_t;
+        real purpose_dt = std::min(max_delta_t, get_dt_with_cfl_1() * cfl);
+        real thres = min_delta_t;
         if (purpose_dt < delta_t * thres) {
             purpose_dt = delta_t * thres;
             printf("substep dt too small, clamp.\n");
         }
-        float dt = std::min(delta_t - simulation_time, purpose_dt);
+        real dt = std::min(delta_t - simulation_time, purpose_dt);
         substep(dt);
         simulation_time += dt;
     }
@@ -93,7 +93,7 @@ void MPM::step(float delta_t)
 
 void MPM::compute_material_levelset()
 {
-    material_levelset.reset(std::numeric_limits<float>::infinity());
+    material_levelset.reset(std::numeric_limits<real>::infinity());
     for (auto &p : particles) {
         for (auto &ind : material_levelset.get_rasterization_region(p->pos, 3)) {
             Vector2 delta_pos = ind.get_pos() - p->pos;
@@ -117,17 +117,14 @@ void MPM::particle_collision_resolution() {
 void MPM::estimate_volume() {
     for (auto &p : particles) {
         if (p->vol == -1.0f) {
-            float rho = 0.0f;
+            real rho = 0.0f;
             for (auto &ind : get_bounded_rasterization_region(p->pos)) {
-                float weight = p->get_cache_w(ind);
+                real weight = p->get_cache_w(ind);
                 rho += grid.mass[ind] / h / h;
             }
             p->vol = p->mass / rho;
         }
     }
-}
-
-void MPM::show(Array2D<Vector3>& buffer) {
 }
 
 void MPM::add_particle(const Config &config)
@@ -158,7 +155,7 @@ std::vector<std::shared_ptr<MPMParticle>> MPM::get_particles()
     return particles;
 }
 
-float MPM::get_current_time() {
+real MPM::get_current_time() {
     return t;
 }
 
@@ -173,12 +170,8 @@ void MPM::rasterize() {
         if (!is_normal(p->pos)) {
             p->print();
         }
-        //if (t > 3.15f)
-        //    P(p->pos);
         for (auto &ind : get_bounded_rasterization_region(p->pos)) {
-            //if (t > 3.15f)
-            //    printf("in %d %d\n", ind.i, ind.j);
-            float weight = p->get_cache_w(ind);
+            real weight = p->get_cache_w(ind);
             grid.mass[ind] += weight * p->mass;
             grid.velocity[ind] += weight * p->mass * (p->v + (3.0f) * p->b * (Vector2(ind.i, ind.j) - p->pos));
         }
@@ -186,8 +179,8 @@ void MPM::rasterize() {
     grid.normalize_velocity();
 }
 
-inline void MPM::resample(float delta_t) {
-    float alpha_delta_t = pow(flip_alpha, delta_t / flip_alpha_stride);
+inline void MPM::resample(real delta_t) {
+    real alpha_delta_t = pow(flip_alpha, delta_t / flip_alpha_stride);
     if (apic)
         alpha_delta_t = 0.0f;
     for (auto &p : particles) {
@@ -199,7 +192,7 @@ inline void MPM::resample(float delta_t) {
         int count = 0;
         for (auto &ind : get_bounded_rasterization_region(p->pos)) {
             count++;
-            float weight = p->get_cache_w(ind);
+            real weight = p->get_cache_w(ind);
             vec2 gw = p->get_cache_gw(ind);
             v += weight * grid.velocity[ind];
             vec2 aa = grid.velocity[ind];
@@ -228,7 +221,7 @@ inline void MPM::resample(float delta_t) {
         //            if (0 <= i && i < dim && 0 <= j && j < dim) {
         //                Pp(i);
         //                Pp(j);
-        //                float weight = p.cache_w[CACHE_INDEX];
+        //                real weight = p.cache_w[CACHE_INDEX];
         //                vec2 gw = p.cache_gw[CACHE_INDEX];
         //                Pp(weight * grid.velocity[i][j]);
         //                Pp(grid.velocity[i][j]);
@@ -247,7 +240,7 @@ inline void MPM::resample(float delta_t) {
     }
 }
 
-mat4 MPM::get_energy_second_derivative_brute_force(Particle & p, float delta) {
+mat4 MPM::get_energy_second_derivative_brute_force(Particle & p, real delta) {
     NOT_IMPLEMENTED;
     return mat4(0.0f);
     //    mat4 ret(0);
@@ -273,11 +266,11 @@ mat4 MPM::get_energy_second_derivative(Particle & p) {
     // This code is optimized and without readibility. Plz refer to ealier version.
     /*
     const mat2 &f = p.dg_e;
-    const float j_e = det(p.dg_e);
-    const float j_p = det(p.dg_p);
-    const float e = expf(hardening * (1.0f - j_p));
-    const float mu = mu_0 * e;
-    const float lambda = lambda_0 * e;
+    const real j_e = det(p.dg_e);
+    const real j_p = det(p.dg_p);
+    const real e = expf(hardening * (1.0f - j_p));
+    const real mu = mu_0 * e;
+    const real lambda = lambda_0 * e;
     mat2 r, s;
     polar_decomp(p.dg_e, r, s);
     mat4 sum(0);
@@ -288,7 +281,7 @@ mat4 MPM::get_energy_second_derivative(Particle & p) {
     sum += m_dR;
     sum += glm::outerProduct(lambda * vec4(f[1][1], -f[0][1], -f[1][0], f[0][0]),
         vec4(f[1][1], -f[0][1], -f[1][0], f[0][0]));
-    float t = lambda * (j_e - 1);
+    real t = lambda * (j_e - 1);
     sum[0][3] += t;
     sum[1][2] -= t;
     sum[2][1] -= t;
@@ -297,7 +290,7 @@ mat4 MPM::get_energy_second_derivative(Particle & p) {
     */
 }
 
-void MPM::build_system(const float delta_t) {
+void MPM::build_system(const real delta_t) {
     NOT_IMPLEMENTED;
     //    system.reset(grid.valid_count);
     //    Time::TickTimer _("build system");
@@ -318,9 +311,9 @@ void MPM::build_system(const float delta_t) {
     //            int id_0 = grid.id[ind];
     //            if (id_0 == -1)
     //                continue;
-    //            const float factor = implicit_ratio * delta_t * delta_t;
+    //            const real factor = implicit_ratio * delta_t * delta_t;
     //            const vec2 Ftdwj = p->get_cache_gw(ind);
-    //            __declspec(align (16)) float accumulator[2][2][2] = { 0 };
+    //            __declspec(align (16)) real accumulator[2][2][2] = { 0 };
     //            /*
     //            for (int tao = 0; tao < 2; tao++) {
     //            for (int sigma = 0; sigma < 2; sigma++) {
@@ -343,10 +336,10 @@ void MPM::build_system(const float delta_t) {
     //            CALC_ACCUMULATOR(1, 1, 0);
     //            CALC_ACCUMULATOR(1, 1, 1);
     //            __m128 g_x, g_y, mat_x, mat_y;
-    //            mat_x = _mm_load_ps((float *)accumulator[0]);
-    //            mat_y = _mm_load_ps((float *)accumulator[1]);
+    //            mat_x = _mm_load_ps((real *)accumulator[0]);
+    //            mat_y = _mm_load_ps((real *)accumulator[1]);
     //            for (int k = p_i - 1; k < p_i + 3; k++) {
-    //                float *target = (float *)&grid.system(i, j, k, p_j - 1);
+    //                real *target = (real *)&grid.system(i, j, k, p_j - 1);
     //                int *p_id = &grid.id[k][p_j - 1];
     //                for (int l = p_j - 1; l < p_j + 3; l++) {
     //                    if (0 <= k && k < dim && 0 <= l && l < dim) {
@@ -374,7 +367,7 @@ void MPM::build_system(const float delta_t) {
     //            if (id_0 == -1) {
     //                continue;
     //            }
-    //            float inv_mass_0 = 1.0f / grid.mass[i][j];
+    //            real inv_mass_0 = 1.0f / grid.mass[i][j];
     //            system.rhs[id_0] = grid.velocity[i][j];
     //            for (int k = i - 3; k <= i + 3; k++) {
     //                for (int l = j - 3; l <= j + 3; l++) {
@@ -382,7 +375,7 @@ void MPM::build_system(const float delta_t) {
     //                        int id_1 = grid.id[k][l];
     //                        if (id_1 == -1 && id_1 < id_0)
     //                            continue;
-    //                        float inv_mass_1 = 1.0f / grid.mass[k][l];
+    //                        real inv_mass_1 = 1.0f / grid.mass[k][l];
     //                        const mat2 &val = grid.system(i, j, k, l);
     //                        if (val != mat2(0)) {
     //                            if (i == k && j == l) {
@@ -412,7 +405,7 @@ ArrayVec2 MPM::solve_system(ArrayVec2 x_0, Grid & grid) { // returns: total erro
     system.precondition();
     int size = grid.valid_count;
     ArrayVec2 x(size), r(size), Ax(size), p(size), Ar(size), Ap(size);
-    std::vector<float> mass(size);
+    std::vector<real> mass(size);
     for (int i = 0; i < size; i++) {
         ivec2 g = grid.id_to_pos[i];
         mass[i] = (grid.mass[g.x][g.y]);
@@ -426,11 +419,11 @@ ArrayVec2 MPM::solve_system(ArrayVec2 x_0, Grid & grid) { // returns: total erro
     real rtAr = r.dot(Ar);
     bool early_break = false;
     for (int k = 0; k < config.get_int("maximum_iterations"); k++) {
-        float Ap_sqr = Ap.dot(Ap) + 1e-10f;
-        float alpha = rtAr / Ap_sqr;
+        real Ap_sqr = Ap.dot(Ap) + 1e-10f;
+        real alpha = rtAr / Ap_sqr;
         x = x.add(alpha, p);
         r = r.add(-alpha, Ap);
-        float error = 0.0f;
+        real error = 0.0f;
         for (int i = 0; i < size; i++) {
             error += mass[i] * glm::length(p[i]);
         }
@@ -453,8 +446,8 @@ ArrayVec2 MPM::solve_system(ArrayVec2 x_0, Grid & grid) { // returns: total erro
         }
 
         apply_A(r, Ar);
-        float new_rtAr = r.dot(Ar);
-        float beta = new_rtAr / rtAr;
+        real new_rtAr = r.dot(Ar);
+        real beta = new_rtAr / rtAr;
         rtAr = new_rtAr;
         p = r.add(beta, p);
         Ap = Ar.add(beta, Ap);
@@ -465,7 +458,7 @@ ArrayVec2 MPM::solve_system(ArrayVec2 x_0, Grid & grid) { // returns: total erro
     return x;
 }
 
-void MPM::implicit_velocity_update(const float & delta_t) {
+void MPM::implicit_velocity_update(const real & delta_t) {
     build_system(delta_t);
     ArrayVec2 initial(grid.valid_count);
     for (int i = 0; i < dim; i++) {
@@ -483,7 +476,7 @@ void MPM::implicit_velocity_update(const float & delta_t) {
     }
 }
 
-void MPM::apply_deformation_force(float delta_t) {
+void MPM::apply_deformation_force(real delta_t) {
 #pragma omp parallel for
     for (auto &p : particles) {
         p->calculate_force();
@@ -492,8 +485,8 @@ void MPM::apply_deformation_force(float delta_t) {
 #pragma omp parallel for
     for (auto &p : particles) {
         for (auto &ind : get_bounded_rasterization_region(p->pos)) {
-            float mass = grid.mass[ind];
-            if (mass == 0.0f) { // No EPS here
+            real mass = grid.mass[ind];
+            if (mass == 0.0f) { // NO NEED for eps here
                 continue;
             }
             vec2 gw = p->get_cache_gw(ind);
@@ -503,14 +496,14 @@ void MPM::apply_deformation_force(float delta_t) {
     }
 }
 
-float MPM::get_dt_with_cfl_1()
+real MPM::get_dt_with_cfl_1()
 {
     return 1 / max(get_max_speed(), 1e-5f);
 }
 
-float MPM::get_max_speed()
+real MPM::get_max_speed()
 {
-    float maximum_speed = 0;
+    real maximum_speed = 0;
     for (auto &p : particles) {
         maximum_speed = max(abs(p->v.x), maximum_speed);
         maximum_speed = max(abs(p->v.y), maximum_speed);

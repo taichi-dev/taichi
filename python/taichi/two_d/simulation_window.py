@@ -141,7 +141,7 @@ class SimulationWindow(pyglet.window.Window):
         particles = self.simulator.get_particles()
 
         positions = []
-        colors = []  # list(self.color_scheme['particles']) * len(particles)
+        colors = []
         glPointSize(1.0)
         for p in particles:
             positions.append(p.position.x)

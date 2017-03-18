@@ -13,7 +13,7 @@ TC_NAMESPACE_BEGIN
 
 typedef MPMParticle Particle;
 
-extern vec2 particle_offsets[4];
+extern Vector2 particle_offsets[4];
 
 #define SYSTEM_STRIDE_PER_GRID_AXIS 8 
 #define SYSTEM_STRIDE_PER_GRID (SYSTEM_STRIDE_PER_GRID_AXIS * SYSTEM_STRIDE_PER_GRID_AXIS)
@@ -91,7 +91,7 @@ public:
                 velocity[ind] /= mass[ind];
             }
             else {
-                velocity[ind] = vec2(0, 0);
+                velocity[ind] = Vector2(0, 0);
             }
             CV(velocity[ind]);
         }

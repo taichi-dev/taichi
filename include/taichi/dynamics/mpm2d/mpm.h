@@ -85,7 +85,6 @@ public:
 class MPM {
 protected:
     Config config;
-    real theta_c, theta_s;
     std::vector<std::shared_ptr<Particle>> particles;
     Grid grid;
     int dim;
@@ -158,8 +157,6 @@ public:
     void initialize(const Config &config_);
 
     void step(real delta_t = 0.0f);
-
-    void show(Array2D<Vector3> &buffer);
 
     void add_particle(const Config &config);
 

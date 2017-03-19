@@ -37,4 +37,30 @@ void testSVD() {
     Pp(v * glm::transpose(v));
 }
 
+template <void(*T)(const mat2 &, mat2 &, mat2&, mat2&)>
+void svd_test() {
+    int test_num = 100000000;
+    int error_count = 0;
+    for (int k = 0; k < test_num; k++) {
+        mat2 m;
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+                m[i][j] = rand() * 2 - 1;
+            }
+        }
+        mat2 u, sig, v;
+        T(m, u, sig, v);
+        if (frobenius_norm(m - u * sig * glm::transpose(v)) > 1e-4f) {
+            if (error_count < 10) {
+                P(m);
+                P(u);
+                P(sig);
+                P(v);
+            }
+            error_count++;
+        }
+    }
+    printf("SVD Test error: %d / %d\n", error_count, test_num);
+}
+
 TC_NAMESPACE_END

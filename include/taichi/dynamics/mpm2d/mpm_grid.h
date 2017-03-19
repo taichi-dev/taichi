@@ -13,38 +13,30 @@ TC_NAMESPACE_BEGIN
 
 typedef MPMParticle Particle;
 
-extern Vector2 particle_offsets[4];
-
-#define SYSTEM_STRIDE_PER_GRID_AXIS 8 
-#define SYSTEM_STRIDE_PER_GRID (SYSTEM_STRIDE_PER_GRID_AXIS * SYSTEM_STRIDE_PER_GRID_AXIS)
 class Grid {
 public:
     Array2D<vec2> velocity;
     Array2D<vec2> velocity_backup;
     Array2D<vec4> boundary_normal;
-    std::vector<Matrix2> _system;
     Array2D<real> mass;
     Array2D<int> id;
     std::vector<ivec2> id_to_pos;
     std::vector<ivec2> z_to_xy;
     int width, height;
     int valid_count;
-    bool need_system;
-    void initialize(int width, int height, bool need_system) {
+    void initialize(int width, int height) {
         this->width = width;
         this->height = height;
         velocity.initialize(width, height);
         boundary_normal.initialize(width, height);
         mass.initialize(width, height);
         id.initialize(width, height);
-        this->need_system = need_system;
-        if (need_system)
-            _system = std::vector<Matrix2>((width)* (height)* SYSTEM_STRIDE_PER_GRID);
         id_to_pos = std::vector<ivec2>(width * height);
         z_to_xy = std::vector<ivec2>(width * height);
         initialize_z_order();
     }
     void initialize_z_order() {
+        // NEVER used!
         //// requires width, height to be POT
         //if (((width & (width - 1)) || (height & (height - 1))) == 0) {
         //    for (auto &ind : mass.get_region()) {
@@ -60,7 +52,6 @@ public:
         //        }
         //        z_to_xy[z] = ivec2(x, y);
         //    }
-
         //}
         for (auto &ind : mass.get_region()) {
             int z = ind.i * height + ind.j;
@@ -73,17 +64,6 @@ public:
     void reset() {
         velocity = Vector2(0);
         mass = 0;
-        if (need_system)
-            memset(&_system[0], 0, _system.size() * sizeof(Matrix2));
-    }
-    int get_system_index(int i, int j, int k, int l) const {
-        return (i * height + j) * SYSTEM_STRIDE_PER_GRID + (k - i + 3) * SYSTEM_STRIDE_PER_GRID_AXIS + (l - j + 3);
-    }
-    const Matrix2 system(int i, int j, int k, int l) const {
-        return _system[get_system_index(i, j, k, l)];
-    }
-    Matrix2 &system(int i, int j, int k, int l) {
-        return _system[get_system_index(i, j, k, l)];
     }
     void normalize_velocity() {
         for (auto &ind : velocity.get_region()) {

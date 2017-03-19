@@ -44,4 +44,5 @@ void svd(const Matrix2 &A, Matrix2 &u, Matrix2 &sig, Matrix2 &v) {
     u = A * v * Matrix2(1.0f / sig[0][0], 0, 0, 1.0f / sig[1][1]);
 }
 
+
 TC_NAMESPACE_END

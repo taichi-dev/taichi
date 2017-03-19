@@ -8,8 +8,6 @@
 
 TC_NAMESPACE_BEGIN
 
-#define CACHE_INDEX ((i - p_i + 1) * 4 + (j - p_j + 1))
-
 struct MPMParticle {
     // Color for visualization: if x=-1, use default color from color scheme.
     Vector3 color = Vector3(-1, 0, 0);
@@ -86,6 +84,8 @@ struct MPMParticle {
     }
 };
 
+
+// Snow particle
 struct EPParticle : MPMParticle {
     real theta_c, theta_s;
     real hardening;
@@ -101,6 +101,7 @@ struct EPParticle : MPMParticle {
         CV(r);
         CV(s);
         if (!is_normal(e) || !is_normal(r) || !is_normal(s)) {
+            // debug code
             P(dg_e);
             P(dg_p);
             P(r);
@@ -136,6 +137,7 @@ struct EPParticle : MPMParticle {
     void calculate_force() {
         tmp_force = -vol * get_energy_gradient() * glm::transpose(dg_e);
         if (!is_normal(tmp_force)) {
+            // debug code
             P(dg_e);
             P(get_energy_gradient());
         }
@@ -145,6 +147,7 @@ struct EPParticle : MPMParticle {
     }
 };
 
+// Sand particle
 struct DPParticle : MPMParticle {
     real h_0, h_1, h_2, h_3;
     real lambda_0, mu_0;
@@ -197,6 +200,7 @@ struct DPParticle : MPMParticle {
         Matrix2 rec = u * sig * glm::transpose(v);
         Matrix2 diff = rec - dg_e;
         if (!(frobenius_norm(diff) < 1e-4f)) {
+            // debug code
             P(dg_e);
             P(rec);
             P(u);

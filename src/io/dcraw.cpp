@@ -150,6 +150,55 @@ void(*write_thumb)(), (*write_fun)();
 void(*load_raw)(), (*thumb_load_raw)();
 jmp_buf failure;
 
+void initialize() {
+#define MM(X) memset(X, 0, sizeof(X));
+#define MMa(X) memset(&X, 0, sizeof(X));
+    ifp = ofp = nullptr;
+    order = 0;
+    ifname = nullptr;
+    meta_data = nullptr;
+    MM(xtrans); MM(xtrans_abs);
+    MM(cdesc); MM(desc); MM(make) MM(model) MM(model2) MM(artist);
+    flash_used = canon_ev = iso_speed = shutter = aperture = focal_len = 0;
+    timestamp = 0;
+    strip_offset = data_offset = 0;
+    thumb_offset = meta_offset = profile_offset = 0;
+    shot_order = kodak_cbpp = exif_cfa = unique_id = 0;
+    thumb_length = meta_length = profile_length = 0;
+    thumb_misc = 0; oprof = nullptr; fuji_layout = shot_select = 0, multi_out = 0;
+    tiff_nifds = tiff_samples = tiff_bps = tiff_compress = 0;
+    black = maximum = mix_green = raw_color = zero_is_bad = 0;
+    zero_after_ff = is_raw = dng_version = is_foveon = data_error = 0;
+    tile_width = tile_length = 0; MM(gpsdata) load_flags = 0;
+    flip = tiff_flip = filters = colors = 0;
+    raw_height = raw_width = height = width = 0; top_margin = left_margin = 0;
+    shrink = iheight = iwidth = fuji_width = thumb_width = thumb_height = 0;
+    raw_image = nullptr;
+    image = nullptr;
+    MM(cblack);
+    MM(white); MM(curve) MM(cr2_slice) MM(sraw_mul);
+    pixel_aspect = 0;
+    for (int i = 0; i < 4; i++) {
+        aber[i] = 1;
+    }
+    MM(gamm);
+    gamm[0] = gamm[1] = 0.45;
+    bright = 1, MM(user_mul) threshold = 0;
+    MM(mask);
+    half_size = 0, four_color_rgb = 0, document_mode = 0, highlight = 0;
+    verbose = 0, use_auto_wb = 0, use_camera_wb = 0, use_camera_matrix = 1;
+    output_color = 1, output_bps = 8, output_tiff = 0, med_passes = 0;
+    no_auto_bright = 0;
+    MM(greybox);
+    greybox[3] = greybox[4] = UINT_MAX;
+    MM(cam_mul) MM(pre_mul) MM(cmatrix) MM(rgb_cam);
+    MM(histogram);
+    write_thumb = write_fun = 0;
+    load_raw = thumb_load_raw = 0;
+    MMa(failure);
+    printf("initialized!\n");
+}
+
 struct decode {
     struct decode *branch[2];
     int leaf;
@@ -2442,7 +2491,7 @@ void CLASS lossy_dng_load_raw()
             pixel = (JSAMPLE(*)[3]) buf[0];
             for (col = 0; col < cinfo.output_width && tcol + col < width; col++) {
                 FORC3 image[row*width + tcol + col][c] = cur[c][pixel[col][c]];
-            }
+}
         }
         jpeg_abort_decompress(&cinfo);
         if ((tcol += tile_width) >= raw_width)
@@ -3065,7 +3114,7 @@ void CLASS redcine_load_raw()
             c = (((pix[0] - 0x800) << 3) +
                 pix[-(width + 2)] + pix[width + 2] + pix[-1] + pix[1]) >> 2;
             pix[0] = LIM(c, 0, 4095);
-        }
+}
     }
     for (row = 0; row < height; row++)
         for (col = 0; col < width; col++)
@@ -6564,7 +6613,7 @@ void CLASS parse_ciff(int offset, int length, int depth)
         if (type == 0x5029) {
             focal_len = len >> 16;
             if ((len & 0xffff) == 2) focal_len /= 32;
-        }
+    }
         if (type == 0x5813) flash_used = int_to_float(len);
         if (type == 0x5814) canon_ev = int_to_float(len);
         if (type == 0x5817) shot_order = len;
@@ -6576,7 +6625,7 @@ void CLASS parse_ciff(int offset, int length, int depth)
             timestamp = mktime(gmtime(&timestamp));
 #endif
         fseek(ifp, save, SEEK_SET);
-    }
+}
 }
 
 void CLASS parse_rollei()
@@ -9987,7 +10036,7 @@ void CLASS write_ppm_tiff(DCRawOutput &output)
         for (col = 0; col < width; col++, soff += cstep) {
             FORCC ppm2[col*colors + c] = curve[image[soff][c]];
             for (int i = 0; i < colors; i++) {
-                output.data[colors * (row * width + col) + i] = ppm2[col * colors + i] * 
+                output.data[colors * (row * width + col) + i] = ppm2[col * colors + i] *
                     (1.0f / (1 << 16));
             }
         }
@@ -10051,6 +10100,7 @@ void CLASS write_ppm_tiff()
 
 int CLASS dcraw_main(int argc, const char **argv, DCRawOutput &output)
 {
+    //initialize();
     int arg, status = 0, quality, i, c;
     int timestamp_only = 0, thumbnail_only = 0, identify_only = 0;
     int user_qual = -1, user_black = -1, user_sat = -1, user_flip = -1;

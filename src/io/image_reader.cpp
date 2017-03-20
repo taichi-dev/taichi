@@ -23,11 +23,17 @@ Array2D<Vector4> dcraw_read(const std::string &filepath) {
     dcraw_main((int)argv.size(), &argv[0], output);
     auto img = Array2D<Vector4>(output.width, output.height, Vector4(0.0f));
     for (auto &ind : img.get_region()) {
-        for (int i = 0; i < output.channels; i++)
+        for (int i = 0; i < output.channels; i++) {
             img[ind][i] = output.data[output.channels * (ind.j * output.width + ind.i) + i];
+        }
     }
     delete[] output.data;
     img.flip(1);
+    P(output.width);
+    P(output.height);
+    P(img.get_width());
+    P(img.get_height());
+    P(img.get_size());
     return img;
 }
 
@@ -38,7 +44,9 @@ public:
     }
 
     Array2D<Vector4> read(const std::string &filepath) override {
-        return dcraw_read(filepath);
+        auto tmp = dcraw_read(filepath);
+        P("read!!");
+        return tmp;
     }
 };
 

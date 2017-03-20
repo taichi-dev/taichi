@@ -7,8 +7,6 @@ and rendering algorithms supported ([What's inside?](http://taichi.graphics/#fea
 with Python.
 
 ## Installation
-[Note: It's still a work in progress. Installation guide on OS X, Linux (Ubuntu), Windows will be finished within a few days.]
-
 Please see [Getting Started](https://github.com/yuanming-hu/taichi/wiki/Getting-Started).
 
 ## Gallery [(More...)](http://taichi.graphics/gallery/)

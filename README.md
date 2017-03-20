@@ -9,9 +9,9 @@ with Python.
 ## Installation
 [Note: It's still a work in progress. Installation guide on OS X, Linux (Ubuntu), Windows will be finished within a few days.]
 
-Please see [Getting Started] (https://github.com/yuanming-hu/taichi/wiki/Getting-Started).
+Please see [Getting Started](https://github.com/yuanming-hu/taichi/wiki/Getting-Started).
 
-## Gallery [(More...)] (http://taichi.graphics/gallery/)
+## Gallery [(More...)](http://taichi.graphics/gallery/)
 
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/snow.gif)
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/smoke_cropped.gif)

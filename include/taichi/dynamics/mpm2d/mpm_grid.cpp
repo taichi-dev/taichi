@@ -8,7 +8,7 @@ long long MPMParticle::instance_count = 0;
 void Grid::apply_boundary_conditions(const LevelSet2D & levelset) {
     if (levelset.get_width() > 0) {
         for (auto &ind : boundary_normal.get_region()) {
-            vec2 v = velocity[ind], n = levelset.get_normalized_gradient(Vector2(ind.i + 0.5f, ind.j + 0.5f));
+            Vector2 v = velocity[ind], n = levelset.get_normalized_gradient(Vector2(ind.i + 0.5f, ind.j + 0.5f));
             real phi = levelset[ind];
             if (phi > 1) continue;
             else if (phi > 0) { // 0~1
@@ -18,7 +18,7 @@ void Grid::apply_boundary_conditions(const LevelSet2D & levelset) {
                     velocity[ind] = Vector2(0.0f);
                 }
                 else {
-                    vec2 t = vec2(-n.y, n.x);
+                    Vector2 t = Vector2(-n.y, n.x);
                     real friction = -clamp(glm::dot(t, v), -mu * pressure, mu * pressure);
                     velocity[ind] = v + n * pressure + t * friction;
                 }

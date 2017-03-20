@@ -11,23 +11,29 @@ TC_NAMESPACE_BEGIN
 class MPM {
 protected:
     Config config;
-    std::vector<std::shared_ptr<Particle>> particles;
     Grid grid;
+
+    std::vector<std::shared_ptr<Particle>> particles;
+
     int width;
     int height;
+
     real flip_alpha;
     real flip_alpha_stride;
+
     real h;
     real t;
-    real last_sort;
-    real sorting_period;
-    vec2 gravity;
+    Vector2 gravity;
     bool apic;
-    bool use_level_set;
     real max_delta_t;
     real min_delta_t;
+
     LevelSet2D levelset;
     LevelSet2D material_levelset;
+
+    real last_sort;
+    real sorting_period;
+    bool use_level_set;
 
     void compute_material_levelset();
 

@@ -38,12 +38,12 @@ inline real dw(real x) {
     return s * val;
 }
 
-inline real w(const vec2 &a) {
+inline real w(const Vector2 &a) {
     return w(a.x) * w(a.y);
 }
 
-inline vec2 dw(const vec2 &a) {
-    return vec2(dw(a.x) * w(a.y), w(a.x) * dw(a.y));
+inline Vector2 dw(const Vector2 &a) {
+    return Vector2(dw(a.x) * w(a.y), w(a.x) * dw(a.y));
 }
 
 inline real det(const Matrix2 &m) {

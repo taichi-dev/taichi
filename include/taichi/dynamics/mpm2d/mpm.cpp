@@ -152,17 +152,17 @@ inline void MPM::resample(real delta_t) {
     for (auto &p : particles) {
         int p_i = int(p->pos.x);
         int p_j = int(p->pos.y);
-        vec2 v = vec2(0, 0), bv = vec2(0, 0);
+        Vector2 v = Vector2(0, 0), bv = Vector2(0, 0);
         mat2 cdg(0.0f);
         mat2 b(0.0f);
         int count = 0;
         for (auto &ind : get_bounded_rasterization_region(p->pos)) {
             count++;
             real weight = p->get_cache_w(ind);
-            vec2 gw = p->get_cache_gw(ind);
+            Vector2 gw = p->get_cache_gw(ind);
             v += weight * grid.velocity[ind];
-            vec2 aa = grid.velocity[ind];
-            vec2 bb = Vector2(ind.i, ind.j) - p->pos;
+            Vector2 aa = grid.velocity[ind];
+            Vector2 bb = Vector2(ind.i, ind.j) - p->pos;
             mat2 out(aa[0] * bb[0], aa[1] * bb[0], aa[0] * bb[1], aa[1] * bb[1]);
             b += weight * out;
             bv += weight * grid.velocity_backup[ind];
@@ -198,8 +198,8 @@ void MPM::apply_deformation_force(real delta_t) {
             if (mass == 0.0f) { // NO NEED for eps here
                 continue;
             }
-            vec2 gw = p->get_cache_gw(ind);
-            vec2 force = p->tmp_force * gw;
+            Vector2 gw = p->get_cache_gw(ind);
+            Vector2 force = p->tmp_force * gw;
             grid.velocity[ind] += delta_t / mass * force;
         }
     }

@@ -9,14 +9,14 @@ with Python.
 ## Installation
 [Note: It's still a work in progress. Installation guide on OS X, Linux (Ubuntu), Windows will be finished within a few days.]
 
-Please see [Getting Started] (https://github.com/IteratorAdvance/taichi/wiki/Getting-Started).
+Please see [Getting Started] (https://github.com/yuanming-hu/taichi/wiki/Getting-Started).
 
 ## Gallery [(More...)] (http://taichi.graphics/gallery/)
 
-![image](https://github.com/IteratorAdvance/taichi_assets/raw/master/demos/snow.gif)
-![image](https://github.com/IteratorAdvance/taichi_assets/raw/master/demos/smoke_cropped.gif)
-![image](https://github.com/IteratorAdvance/taichi_assets/raw/master/demos/microfacet.gif)
-![image](https://github.com/IteratorAdvance/taichi_assets/raw/master/demos/paper-cut.png)
+![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/snow.gif)
+![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/smoke_cropped.gif)
+![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/microfacet.gif)
+![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/paper-cut.png)
 
 ## Create your world with Taichi
 ```shell
@@ -28,4 +28,4 @@ $ python
 ```
 
 ## Examples
-Please see [examples](https://github.com/IteratorAdvance/taichi/tree/master/python/examples).
+Please see [examples](https://github.com/yuanming-hu/taichi/tree/master/python/examples).

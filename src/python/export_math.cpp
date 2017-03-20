@@ -13,9 +13,14 @@
 #include <taichi/visualization/rgb.h>
 #include <taichi/math/array_op.h>
 
-using namespace boost::python;
-namespace py = boost::python;
-
+PYBIND11_MAKE_OPAQUE(std::vector<int>);
+PYBIND11_MAKE_OPAQUE(std::vector<taichi::real>);
+PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector2>);
+PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector3>);
+PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector4>);
+PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector2i>);
+PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector3i>);
+PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector4i>);
 
 TC_NAMESPACE_BEGIN
 std::vector<real> make_range(real start, real end, real delta) {
@@ -76,19 +81,23 @@ void ndarray_to_array2d_real(Array2D<real> *arr, long long input, int width, int
     }
 }
 
-void export_math() {
-    def("rasterize_levelset", rasterize_levelset);
+void export_math(py::module &m) {
+    m.def("rasterize_levelset", rasterize_levelset);
 
-    class_<Config>("Config");
-    numeric::array::set_module_and_type("numpy", "ndarray");
-    class_<Array2D<real>>("Array2DReal", init<int, int>())
+    py::class_<Config>(m, "Config");
+
+    // note??????
+    //numeric::array::set_module_and_type("numpy", "ndarray");
+    py::class_<Array2D<real>>(m, "Array2DReal")
+        .def(py::init<int, int>())
         .def("to_ndarray", &array2d_to_ndarray<Array2D<real>>)
         .def("get_width", &Array2D<real>::get_width)
         .def("get_height", &Array2D<real>::get_height)
         .def("rasterize", &Array2D<real>::rasterize)
         .def("from_ndarray", &ndarray_to_array2d_real);
 
-    class_<LevelSet2D>("LevelSet2D", init<int, int, Vector2>())
+    py::class_<LevelSet2D>(m, "LevelSet2D")
+        .def(py::init<int, int, Vector2>())
         .def("get", &LevelSet2D::get_copy)
         .def("set", static_cast<void (LevelSet2D::*)(int, int, const real &)>(&LevelSet2D::set))
         .def("add_sphere", &LevelSet2D::add_sphere)
@@ -99,15 +108,18 @@ void export_math() {
         .def("get_normalized_gradient", &LevelSet2D::get_normalized_gradient)
         .def("to_ndarray", &array2d_to_ndarray<LevelSet2D>)
         .def_readwrite("friction", &LevelSet2D::friction);
-    def("points_inside_polygon", points_inside_polygon);
-    def("points_inside_sphere", points_inside_sphere);
-    def("make_range", make_range);
-    class_<Matrix4>("Matrix4", init<real>())
-        .def(real() * self)
-        .def(self + self)
-        .def(self - self)
-        .def(self * self)
-        .def(self / self)
+
+    m.def("points_inside_polygon", points_inside_polygon);
+    m.def("points_inside_sphere", points_inside_sphere);
+    m.def("make_range", make_range);
+
+    py::class_<Matrix4>(m, "Matrix4")
+        .def(py::init<real>())
+        .def(real() * py::self)
+        .def(py::self + py::self)
+        .def(py::self - py::self)
+        .def(py::self * py::self)
+        .def(py::self / py::self)
         .def("translate", &matrix4_translate)
         .def("scale", &matrix4_scale)
         .def("scale_s", &matrix4_scale_s)
@@ -115,70 +127,75 @@ void export_math() {
         .def("rotate_angle_axis", &matrix4_rotate_angle_axis)
         .def("get_ptr_string", &Config::get_ptr_string<Matrix4>);
 
-    def("gaussian_blur_x_2d_real", gaussian_blur_x<real>);
-    def("gaussian_blur_y_2d_real", gaussian_blur_y<real>);
-    def("gaussian_blur_2d_real", gaussian_blur<real>);
+    m.def("gaussian_blur_x_2d_real", gaussian_blur_x<real>);
+    m.def("gaussian_blur_y_2d_real", gaussian_blur_y<real>);
+    m.def("gaussian_blur_2d_real", gaussian_blur<real>);
 
-    class_<Vector2i>("Vector2i", init<int, int>())
+    py::class_<Vector2i>(m, "Vector2i")
+        .def(py::init<int, int>())
         .def_readwrite("x", &Vector2i::x)
         .def_readwrite("y", &Vector2i::y)
-        .def(self * int())
-        .def(int() * self)
-        .def(self / int())
-        .def(self + self)
-        .def(self - self)
-        .def(self * self)
-        .def(self / self);
+        .def(py::self * int())
+        .def(int() * py::self)
+        .def(py::self / int())
+        .def(py::self + py::self)
+        .def(py::self - py::self)
+        .def(py::self * py::self)
+        .def(py::self / py::self);
 
-    class_<Vector2>("Vector2", init<real, real>())
+    py::class_<Vector2>(m, "Vector2")
+        .def(py::init<real, real>())
         .def_readwrite("x", &Vector2::x)
         .def_readwrite("y", &Vector2::y)
-        .def(self * real())
-        .def(real() * self)
-        .def(self / real())
-        .def(self + self)
-        .def(self - self)
-        .def(self * self)
-        .def(self / self);
+        .def(py::self * real())
+        .def(real() * py::self)
+        .def(py::self / real())
+        .def(py::self + py::self)
+        .def(py::self - py::self)
+        .def(py::self * py::self)
+        .def(py::self / py::self);
 
-    class_<Vector3i>("Vector3i", init<int, int, int>())
+    py::class_<Vector3i>(m, "Vector3i")
+        .def(py::init<int, int, int>())
         .def_readwrite("x", &Vector3i::x)
         .def_readwrite("y", &Vector3i::y)
         .def_readwrite("z", &Vector3i::z)
-        .def(self * int())
-        .def(int() * self)
-        .def(self / int())
-        .def(self + self)
-        .def(self - self)
-        .def(self * self)
-        .def(self / self);
+        .def(py::self * int())
+        .def(int() * py::self)
+        .def(py::self / int())
+        .def(py::self + py::self)
+        .def(py::self - py::self)
+        .def(py::self * py::self)
+        .def(py::self / py::self);
 
-    class_<Vector3>("Vector3", init<real, real, real>())
+    py::class_<Vector3>(m, "Vector3")
+        .def(py::init<real, real, real>())
         .def_readwrite("x", &Vector3::x)
         .def_readwrite("y", &Vector3::y)
         .def_readwrite("z", &Vector3::z)
-        .def(self * real())
-        .def(real() * self)
-        .def(self / real())
-        .def(self + self)
-        .def(self - self)
-        .def(- self)
-        .def(self * self)
-        .def(self / self);
+        .def(py::self * real())
+        .def(real() * py::self)
+        .def(py::self / real())
+        .def(py::self + py::self)
+        .def(py::self - py::self)
+        .def(- py::self)
+        .def(py::self * py::self)
+        .def(py::self / py::self);
 
-    class_<Vector4>("Vector4", init<real, real, real, real>())
+    py::class_<Vector4>(m, "Vector4")
+        .def(py::init<real, real, real, real>())
         .def_readwrite("x", &Vector4::x)
         .def_readwrite("y", &Vector4::y)
         .def_readwrite("z", &Vector4::z)
         .def_readwrite("w", &Vector4::w)
-        .def(self * real())
-        .def(real() * self)
-        .def(self / real())
-        .def(self + self)
-        .def(self - self)
-        .def(- self)
-        .def(self * self)
-        .def(self / self);
+        .def(py::self * real())
+        .def(real() * py::self)
+        .def(py::self / real())
+        .def(py::self + py::self)
+        .def(py::self - py::self)
+        .def(- py::self)
+        .def(py::self * py::self)
+        .def(py::self / py::self);
 
     DEFINE_VECTOR_OF(real);
     DEFINE_VECTOR_OF(int);

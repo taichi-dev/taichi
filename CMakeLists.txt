@@ -40,14 +40,7 @@ message("Module path:" ${CMAKE_MODULE_PATH})
 
 set(CMAKE_BUILD_TYPE Release)
 
-find_package(Boost COMPONENTS
-        system
-        python REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
-
 # Python and numpy
-
-message("Make sure the python executable is the same one used in boost::python.")
 
 if (PYTHON_EXECUTABLE)
     message("Using ${PYTHON_EXECUTABLE} as python executable.")
@@ -56,12 +49,16 @@ else ()
     set(PYTHON_EXECUTABLE python)
 endif ()
 
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import sys; import pybind11; sys.stdout.write(pybind11.get_include())"
+        OUTPUT_VARIABLE PYBIND11_INCLUDE_DIR)
+include_directories(${PYBIND11_INCLUDE_DIR})
+
 if (WIN32)
     find_package(PythonLibs 2.7 REQUIRED)
 else ()
     message("Python version:")
     execute_process(COMMAND ${PYTHON_EXECUTABLE} --version)
-    message("")
+    message("------------------------------")
     execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import sys; from distutils import sysconfig; sys.stdout.write(sysconfig.get_config_var('INCLUDEDIR') + '/python2.7/')"
             OUTPUT_VARIABLE PYTHON_INCLUDE_DIRS)
     execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import sys; from distutils import sysconfig; sys.stdout.write(sysconfig.get_config_var('LIBDIR'))"
@@ -126,12 +123,6 @@ endif ()
 
 target_link_libraries(${CORE_LIBRARY_NAME} ${EMBREE_LIBRARY})
 target_link_libraries(${CORE_LIBRARY_NAME} ${PYTHON_LIBRARIES})
-target_link_libraries(${CORE_LIBRARY_NAME} ${Boost_LIBRARIES})
-
-if (UNIX)
-    target_link_libraries(${CORE_LIBRARY_NAME} boost_system)
-    target_link_libraries(${CORE_LIBRARY_NAME} boost_python)
-endif ()
 
 foreach (source IN LISTS TAICHI_SOURCE)
     get_filename_component(source_path "${source}" PATH)

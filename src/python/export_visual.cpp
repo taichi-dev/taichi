@@ -19,7 +19,8 @@
 
 #include <taichi/geometry/factory.h>
 
-using namespace boost::python;
+PYBIND11_MAKE_OPAQUE(std::vector<taichi::RenderParticle>);
+PYBIND11_MAKE_OPAQUE(std::vector<taichi::Triangle>);
 
 EXPLICIT_GET_POINTER(taichi::Camera);
 
@@ -43,21 +44,23 @@ EXPLICIT_GET_POINTER(taichi::SDF);
 
 TC_NAMESPACE_BEGIN
 
-Function23 function23_from_py_obj(PyObject *func) {
+Function23 function23_from_py_obj(py::object func) {
     return [func](Vector2 p) -> Vector3 {
         // TODO: GIL here seems inefficient...
         PyGILState_STATE state = PyGILState_Ensure();
-        Vector3 ret = boost::python::call<Vector3>(func, p);
+        py::function f = py::reinterpret_borrow<py::function>(func);
+        Vector3 ret = f(p).cast<Vector3>();
         PyGILState_Release(state);
         return ret;
     };
 }
 
-Function22 function22_from_py_obj(PyObject *func) {
+Function22 function22_from_py_obj(py::object func) {
     return [func](Vector2 p) -> Vector2 {
         // TODO: GIL here seems inefficient...
         PyGILState_STATE state = PyGILState_Ensure();
-        Vector2 ret = boost::python::call<Vector2>(func, p);
+        py::function f = py::reinterpret_borrow<py::function>(func);
+        Vector2 ret = f(p).cast<Vector2>();
         PyGILState_Release(state);
         return ret;
     };
@@ -83,27 +86,32 @@ void ndarray_to_image_buffer(T *arr, uint64 input, int width, int height) // 'in
     }
 }
 
-void export_visual() {
-    def("function23_from_py_obj", function23_from_py_obj);
-    def("function22_from_py_obj", function22_from_py_obj);
-    def("generate_mesh", Mesh3D::generate);
-    def("merge_mesh", merge_mesh);
-    def("rasterize_render_particles", rasterize_render_particles);
-    def("register_sdf", &AssetManager::insert_asset<SDF>);
-    def("register_texture", &AssetManager::insert_asset<Texture>);
-    def("register_surface_material", &AssetManager::insert_asset<SurfaceMaterial>);
+void export_visual(py::module &m) {
+    DEFINE_VECTOR_OF_NAMED(RenderParticle, "RenderParticles");
+    DEFINE_VECTOR_OF_NAMED(Triangle, "Triangles");
+
+    m.def("function23_from_py_obj", function23_from_py_obj);
+    m.def("function22_from_py_obj", function22_from_py_obj);
+    m.def("generate_mesh", Mesh3D::generate);
+    m.def("merge_mesh", merge_mesh);
+    m.def("rasterize_render_particles", rasterize_render_particles);
+    m.def("register_sdf", &AssetManager::insert_asset<SDF>);
+    m.def("register_texture", &AssetManager::insert_asset<Texture>);
+    m.def("register_surface_material", &AssetManager::insert_asset<SurfaceMaterial>);
     // TODO: these should registered by iterating over existing interfaces.
-    def("create_texture", create_instance<Texture>);
-    def("create_renderer", create_instance<Renderer>);
-    def("create_camera", create_instance<Camera>);
-    def("create_particle_renderer", create_instance<ParticleRenderer>);
-    def("create_sdf", create_instance<SDF>);
-    def("create_surface_material", create_instance<SurfaceMaterial>);
-    def("create_volume_material", create_instance<VolumeMaterial>);
-    def("create_environment_map", create_instance<EnvironmentMap>);
-    def("create_mesh", std::make_shared<Mesh>);
-    def("create_scene", std::make_shared<Scene>);
-    class_<Array2D<Vector3 >>("Array2DVector3", init<int, int, Vector3>())
+    m.def("create_texture", create_instance<Texture>);
+    m.def("create_renderer", create_instance<Renderer>);
+    m.def("create_camera", create_instance<Camera>);
+    m.def("create_particle_renderer", create_instance<ParticleRenderer>);
+    m.def("create_sdf", create_instance<SDF>);
+    m.def("create_surface_material", create_instance<SurfaceMaterial>);
+    m.def("create_volume_material", create_instance<VolumeMaterial>);
+    m.def("create_environment_map", create_instance<EnvironmentMap>);
+    m.def("create_mesh", std::make_shared<Mesh>);
+    m.def("create_scene", std::make_shared<Scene>);
+
+    py::class_<Array2D<Vector3>>(m, "Array2DVector3")
+        .def(py::init<int, int, Vector3>())
         .def("get_width", &Array2D<Vector3>::get_width)
         .def("get_height", &Array2D<Vector3>::get_height)
         .def("get_channels", &return_constant<Array2D<Vector3>, 3>)
@@ -113,7 +121,9 @@ void export_visual() {
         .def("write_to_disk", &Array2D<Vector3>::write_to_disk)
         .def("read_from_disk", &Array2D<Vector3>::read_from_disk)
         .def("to_ndarray", &image_buffer_to_ndarray<Array2D<Vector3>, 3>);
-    class_<Array2D<Vector4 >>("Array2DVector4", init<int, int, Vector4>())
+
+    py::class_<Array2D<Vector4>>(m, "Array2DVector4")
+        .def(py::init<int, int, Vector4>())
         .def("get_width", &Array2D<Vector4>::get_width)
         .def("get_height", &Array2D<Vector4>::get_height)
         .def("get_channels", &return_constant<Array2D<Vector4>, 4>)
@@ -122,27 +132,28 @@ void export_visual() {
         .def("write_to_disk", &Array2D<Vector4>::write_to_disk)
         .def("read_from_disk", &Array2D<Vector4>::read_from_disk)
         .def("to_ndarray", &image_buffer_to_ndarray<Array2D<Vector4>, 4>);
-    class_<Texture>("Texture")
+
+    py::class_<Texture, std::shared_ptr<Texture>>(m, "Texture")
         .def("initialize", &Texture::initialize);;
 
-    class_<VolumeMaterial>("VolumeMaterial")
+    py::class_<VolumeMaterial, std::shared_ptr<VolumeMaterial>>(m, "VolumeMaterial")
         .def("initialize", &VolumeMaterial::initialize);;
 
-    class_<SurfaceMaterial>("SurfaceMaterial")
+    py::class_<SurfaceMaterial, std::shared_ptr<SurfaceMaterial>>(m, "SurfaceMaterial")
         .def("initialize", static_cast<void (SurfaceMaterial::*)(const Config &)>(&SurfaceMaterial::initialize))
         .def("set_internal_material", &SurfaceMaterial::set_internal_material);
 
-    class_<EnvironmentMap>("EnvironmentMap")
+    py::class_<EnvironmentMap, std::shared_ptr<EnvironmentMap>>(m, "EnvironmentMap")
         .def("initialize", &EnvironmentMap::initialize)
         .def("set_transform", &EnvironmentMap::set_transform);
 
-    class_<Mesh>("Mesh")
+    py::class_<Mesh, std::shared_ptr<Mesh>>(m, "Mesh")
         .def("initialize", &Mesh::initialize)
         .def("set_untransformed_triangles", &Mesh::set_untransformed_triangles)
         .def("set_material", &Mesh::set_material)
         .def_readwrite("transform", &Mesh::transform);
 
-    class_<Scene>("Scene")
+    py::class_<Scene, std::shared_ptr<Scene>>(m, "Scene")
         //.def("initialize", &Scene::initialize)
         .def("finalize", &Scene::finalize)
         .def("add_mesh", &Scene::add_mesh)
@@ -151,42 +162,29 @@ void export_visual() {
         .def("set_camera", &Scene::set_camera);
 
     // Renderers
-    class_<Renderer>("Renderer")
+    py::class_<Renderer, std::shared_ptr<Renderer>>(m, "Renderer")
         .def("initialize", &Renderer::initialize)
         .def("set_scene", &Renderer::set_scene)
         .def("render_stage", &Renderer::render_stage)
         .def("write_output", &Renderer::write_output)
         .def("get_output", &Renderer::get_output);
 
-    class_<Camera>("Camera")
+    py::class_<Camera, std::shared_ptr<Camera>>(m, "Camera")
         .def("initialize",
             static_cast<void (Camera::*)(const Config &config)>(&Camera::initialize));
 
-    class_<ParticleRenderer>("ParticleRenderer")
+    py::class_<ParticleRenderer, std::shared_ptr<ParticleRenderer>>(m, "ParticleRenderer")
         .def("initialize", &ParticleRenderer::initialize)
         .def("set_camera", &ParticleRenderer::set_camera)
         .def("render", &ParticleRenderer::render);
 
-    class_<SDF>("SDF")
+    py::class_<SDF, std::shared_ptr<SDF>>(m, "SDF")
             .def("initialize", &SDF::initialize)
             .def("eval", &SDF::eval);
 
-    class_<Function22>("Function22");
-    class_<Function23>("Function23");
+    py::class_<Function22>(m, "Function22");
+    py::class_<Function23>(m, "Function23");
 
-    DEFINE_VECTOR_OF_NAMED(RenderParticle, "RenderParticles");
-    DEFINE_VECTOR_OF_NAMED(Triangle, "Triangles");
-
-    register_ptr_to_python<std::shared_ptr<Renderer>>();
-    register_ptr_to_python<std::shared_ptr<Camera>>();
-    register_ptr_to_python<std::shared_ptr<SurfaceMaterial>>();
-    register_ptr_to_python<std::shared_ptr<VolumeMaterial>>();
-    register_ptr_to_python<std::shared_ptr<EnvironmentMap>>();
-    register_ptr_to_python<std::shared_ptr<Mesh>>();
-    register_ptr_to_python<std::shared_ptr<Scene>>();
-    register_ptr_to_python<std::shared_ptr<Texture>>();
-    register_ptr_to_python<std::shared_ptr<ParticleRenderer>>();
-    register_ptr_to_python<std::shared_ptr<SDF>>();
 }
 
 TC_NAMESPACE_END

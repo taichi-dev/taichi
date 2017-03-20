@@ -13,9 +13,6 @@
 #include <taichi/math/levelset_2d.h>
 #include <taichi/visualization/image_buffer.h>
 
-using namespace boost::python;
-namespace py = boost::python;
-
 TC_NAMESPACE_BEGIN
 
 template<typename T>
@@ -44,7 +41,7 @@ template void array2d_to_ndarray(Array2D<real> *arr, uint64);
 template void image_buffer_to_ndarray<Array2D<Vector3>, 3>(Array2D<Vector3> *arr, uint64);
 template void image_buffer_to_ndarray<Array2D<Vector4>, 4>(Array2D<Vector4> *arr, uint64);
 
-void export_ndarray() {
+void export_ndarray(py::module &m) {
 }
 TC_NAMESPACE_END
 

@@ -1,3 +1,12 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #pragma once
 
 #include <memory>
@@ -10,7 +19,7 @@
 #include <taichi/common/meta.h>
 #include <taichi/dynamics/simulation3d.h>
 #include <taichi/math/array_3d.h>
-#include <taichi/math/qr_svd/qr_svd.h>
+#include <taichi/math/qr_svd.h>
 #include <taichi/system/threading.h>
 
 TC_NAMESPACE_BEGIN

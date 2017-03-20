@@ -1,5 +1,14 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #include "mpm3.h"
-#include <taichi/math/qr_svd/qr_svd.h>
+#include <taichi/math/qr_svd.h>
 #include <taichi/system/threading.h>
 #include <taichi/visual/texture.h>
 #include <taichi/common/asset_manager.h>

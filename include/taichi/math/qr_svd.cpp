@@ -1,5 +1,14 @@
-#include "Tools.h"
-#include "ImplicitQRSVD.h"
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
+#include <implicit_qr_svd/Tools.h>
+#include <implicit_qr_svd/ImplicitQRSVD.h>
 #include "qr_svd.h"
 
 TC_NAMESPACE_BEGIN

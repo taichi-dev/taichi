@@ -38,3 +38,4 @@ runtimes/taichi_core*
 python/dist
 python/MANIFEST
 build/
+tmp/

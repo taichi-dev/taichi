@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 2.8)
 project(taichi)
 
-include_directories(src)
-
 if (WIN32)
     link_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
 endif ()
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
+
+message("Using c++ compiler " ${CMAKE_CXX_COMPILER})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED")
 

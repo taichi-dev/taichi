@@ -50,7 +50,14 @@ else ()
 endif ()
 
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import sys; import pybind11; sys.stdout.write(pybind11.get_include())"
-        OUTPUT_VARIABLE PYBIND11_INCLUDE_DIR)
+        OUTPUT_VARIABLE PYBIND11_INCLUDE_DIR
+	RESULT_VARIABLE PYBIND11_IMPORT_RET)
+if (NOT PYBIND11_IMPORT_RET)
+    message("pybind11 include dir: " ${PYBIND11_INCLUDE_DIR})
+else()
+    message(FATAL_ERROR "Can not import pybind11. Please install. ([sudo] pip install pybind11)")
+endif()
+
 include_directories(${PYBIND11_INCLUDE_DIR})
 
 if (WIN32)

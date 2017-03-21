@@ -10,3 +10,4 @@ dpkg -i embree-devel_2.13.0-2_amd64.deb
 dpkg -i embree-examples_2.13.0-2_amd64.deb
 export CXX="g++-6" CC="gcc-6"
 cmake ..
+make -j4

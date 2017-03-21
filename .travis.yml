@@ -35,5 +35,4 @@ before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo sh ../build_scripts/osx.sh ; fi
 
 script:
-  - make -j4
   - python -c 'import taichi as tc'

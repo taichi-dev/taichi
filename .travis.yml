@@ -8,7 +8,7 @@ before_script:
   - export TAICHI_NUM_THREADS=2
   - export PYTHONPATH=$TAICHI_ROOT_DIR/taichi/python/:$PYTHONPATH
   - export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH
-  - sudo apt-get install git cmake build-essential g++ libtbb-dev alien dpkg-dev debhelper libpython2.7-dev  freeglut3-dev python-scipy python-tk python-imaging-tk python-pip
+  - sudo apt-get install git cmake build-essential g++ libtbb-dev alien dpkg-dev debhelper freeglut3-dev python-scipy python-tk python-imaging-tk python-pip
   - sudo pip install numpy future futures watchdog Pillow scipy pybind11
   - mkdir build
   - cd build

@@ -6,12 +6,12 @@ compiler:
 matrix:
   include:
     - os: linux
-      env: COMPILER_NAME=gcc CXX=g++-5 CC=gcc-5
+      env: COMPILER_NAME=gcc CXX=g++-6 CC=gcc-6
       addons:
         apt:
           packages:
-            - gcc-5
-            - g++-5
+            - gcc-6
+            - g++-6
           sources: &sources
             - llvm-toolchain-precise-3.8
             - ubuntu-toolchain-r-test
@@ -35,7 +35,7 @@ before_script:
   - sudo dpkg -i embree-examples_2.13.0-2_amd64.deb
 
 script:
-  - export CXX="g++-5" CC="gcc-5"
+  - export CXX="g++-6" CC="gcc-6"
   - echo $CXX
   - $CXX -v
   - g++ -v

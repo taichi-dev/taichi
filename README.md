@@ -3,7 +3,7 @@
 </div>
 
 **Taichi** is a physically based computer graphics library, with various simulation
-and rendering algorithms supported ([What's inside?](http://taichi.graphics/#features)). It's written in C++11 and wrapped friendly
+and rendering algorithms supported ([What's inside?](http://taichi.graphics/#features)). It's written in C++14 and wrapped friendly
 with Python.
 
 | **`Linux`, `Mac OS`** | **`Windows`** | **Chat** |

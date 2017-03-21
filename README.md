@@ -2,7 +2,11 @@
 
 [![Join the chat at https://gitter.im/taichi-dev/Lobby](https://badges.gitter.im/taichi-dev/Lobby.svg)](https://gitter.im/taichi-dev/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Taichi is a physically based computer graphics library, with various simulation
+| **`Linux`** | **`Mac OS`** | **`Windows`** |
+|-----------------|---------------------|------------------|
+|[![Build Status](https://travis-ci.org/yuanming-hu/taichi.svg?branch=master)](https://travis-ci.org/yuanming-hu/taichi)|  | [![Build Status](https://ci.appveyor.com/api/projects/status/github/yuanming-hu/taichi?branch=master&svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi)|
+
+**Taichi** is a physically based computer graphics library, with various simulation
 and rendering algorithms supported ([What's inside?](http://taichi.graphics/#features)). It's written in C++11 and wrapped friendly
 with Python.
 

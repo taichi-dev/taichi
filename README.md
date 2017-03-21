@@ -1,6 +1,5 @@
 <div align="center">
-  <img src="https://github.com/yuanming-hu/taichi_assets/raw/master/demos/snow.gif" style="max-width:80%;
-   max-height:50%;"><br><br>
+  <img src="https://github.com/yuanming-hu/taichi_assets/raw/master/demos/snow.gif" style="width: 200%; height: 200%"><br><br>
 </div>
 
 | **`Linux`** | **`Mac OS`** | **`Windows`** | **Chat** |

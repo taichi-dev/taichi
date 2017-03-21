@@ -2,13 +2,13 @@
   <img src="https://github.com/yuanming-hu/taichi_assets/raw/master/demos/snow.gif" style="width: 200%; height: 200%"><br><br>
 </div>
 
-| **`Linux`** | **`Mac OS`** | **`Windows`** | **Chat** |
-|-----------------|---------------------|------------------|------------------|
-|[![Build Status](https://travis-ci.org/yuanming-hu/taichi.svg?branch=master)](https://travis-ci.org/yuanming-hu/taichi)| Todo | [![Build Status](https://ci.appveyor.com/api/projects/status/github/yuanming-hu/taichi?branch=master&svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi)|[![Join the chat at https://gitter.im/taichi-dev/Lobby](https://badges.gitter.im/taichi-dev/Lobby.svg)](https://gitter.im/taichi-dev/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)|
-
 **Taichi** is a physically based computer graphics library, with various simulation
 and rendering algorithms supported ([What's inside?](http://taichi.graphics/#features)). It's written in C++11 and wrapped friendly
 with Python.
+
+| **`Linux`** | **`Mac OS`** | **`Windows`** | **Chat** |
+|-----------------|---------------------|------------------|------------------|
+|[![Build Status](https://travis-ci.org/yuanming-hu/taichi.svg?branch=master)](https://travis-ci.org/yuanming-hu/taichi)| Todo | [![Build Status](https://ci.appveyor.com/api/projects/status/github/yuanming-hu/taichi?branch=master&svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi)|[![Join the chat at https://gitter.im/taichi-dev/Lobby](https://badges.gitter.im/taichi-dev/Lobby.svg)](https://gitter.im/taichi-dev/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)|
 
 ## Installation
 Please see [Getting Started](https://github.com/yuanming-hu/taichi/wiki/Getting-Started).

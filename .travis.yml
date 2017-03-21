@@ -5,6 +5,9 @@ compiler:
 
 matrix:
   include:
+    - os: osx
+      env: COMPILER=clang++-3.8 CXX=clang++-3.8
+
     - os: linux
       env: COMPILER_NAME=gcc CXX=g++-6 CC=gcc-6
       addons:
@@ -14,15 +17,6 @@ matrix:
             - g++-6
           sources: &sources
             - ubuntu-toolchain-r-test
-
-    - os: osx
-      env: COMPILER=clang++-3.8 CXX=clang++-3.8
-      addons:
-        apt:
-          packages:
-            - clang-3.8
-          sources: &sources
-            - llvm-toolchain-precise-3.8
 
 before_script:
   - export TAICHI_ROOT_DIR=`pwd`/../

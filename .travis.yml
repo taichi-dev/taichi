@@ -1,14 +1,27 @@
-language: cpp
+language: generic
 
 compiler:
   - g++
+
+matrix:
+  include:
+    - os: linux
+      env: COMPILER_NAME=gcc CXX=g++-5 CC=gcc-5
+      addons:
+        apt:
+          packages:
+            - gcc-5
+            - g++-5
+          sources: &sources
+            - llvm-toolchain-precise-3.8
+            - ubuntu-toolchain-r-test
 
 before_script:
   - export TAICHI_ROOT_DIR=`pwd`/../
   - export TAICHI_NUM_THREADS=2
   - export PYTHONPATH=$TAICHI_ROOT_DIR/taichi/python/:$PYTHONPATH
   - export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH
-  - sudo apt-get install git cmake build-essential g++ libtbb-dev alien dpkg-dev debhelper freeglut3-dev python-scipy python-tk python-imaging-tk python-pip
+  - sudo apt-get install cmake libtbb-dev alien dpkg-dev debhelper freeglut3-dev python-scipy python-tk python-imaging-tk python-pip
   - sudo pip install numpy future futures watchdog Pillow scipy pybind11
   - mkdir build
   - cd build
@@ -20,6 +33,12 @@ before_script:
   - sudo dpkg -i embree-lib_2.13.0-2_amd64.deb
   - sudo dpkg -i embree-devel_2.13.0-2_amd64.deb
   - sudo dpkg -i embree-examples_2.13.0-2_amd64.deb
-  - cmake ..
 
-script: make && python -c 'import taichi as tc'
+script:
+  - export CXX="g++-5" CC="gcc-5"
+  - echo $CXX
+  - $CXX -v
+  - g++ -v
+  - cmake ..
+  - make
+  - python -c 'import taichi as tc'

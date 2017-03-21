@@ -47,7 +47,7 @@ TC_NAMESPACE_BEGIN
         }
 
         Array2D<Vector3> get_reconstruction() {
-
+            return Array2D<Vector3>();
         }
 
         virtual Array2D<Vector3> get_output() override {

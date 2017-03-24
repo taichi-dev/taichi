@@ -31,6 +31,26 @@ void test_raise_error() {
     raise_assertion_failure_in_python("Just a test.");
 }
 
+void print_all_units() {
+    std::vector<std::string> names;
+    auto interfaces = InterfaceHolder::get_instance()->interfaces;
+    for (auto &kv : interfaces) {
+        names.push_back(kv.first);
+    }
+    std::sort(names.begin(), names.end());
+    int all_units = 0;
+    for (auto &interface_name : names) {
+        auto impls = interfaces[interface_name]->get_implementation_names();
+        std::cout << " * " << interface_name << " [" << int(impls.size()) << "]" << std::endl;
+        all_units += int(impls.size());
+        std::sort(impls.begin(), impls.end());
+        for (auto &impl : impls) {
+            std::cout << "   + " << impl << std::endl;
+        }
+    }
+    std::cout << all_units << " units in all." << std::endl;
+}
+
 void export_misc(py::module &m) {
     py::register_exception_translator([](std::exception_ptr p) {
         try {
@@ -49,6 +69,7 @@ void export_misc(py::module &m) {
         .def("close_dll", &UnitDLL::close_dll)
         .def("loaded", &UnitDLL::loaded);
 
+    m.def("print_all_units", print_all_units);
     m.def("test", test);
     m.def("test_raise_error", test_raise_error);
     m.def("config_from_dict", config_from_py_dict);

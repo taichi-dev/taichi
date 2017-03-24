@@ -46,25 +46,29 @@ public:
 #define TC_IMPLEMENTATION_HOLDER_NAME(T) ImplementationHolder_##T
 #define TC_IMPLEMENTATION_HOLDER_PTR(T) instance_ImplementationHolder_##T
 
-class InterfaceHolder {
-public:
-    typedef std::function<void(void *)> RegistrationMethod;
-    std::map<std::string, RegistrationMethod> methods;
-    void register_interface(const std::string &name, const RegistrationMethod &method) {
-        methods[name] = method;
-    }
-    static InterfaceHolder* get_instance() {
-        static InterfaceHolder holder;
-        return &holder;
-    }
-};
-
 class ImplementationHolderBase {
 public:
     std::string name;
     virtual bool has(const std::string &alias) const = 0;
     virtual void remove(const std::string &alias) = 0;
     virtual std::vector<std::string> get_implementation_names() const = 0;
+};
+
+class InterfaceHolder {
+public:
+    typedef std::function<void(void *)> RegistrationMethod;
+    std::map<std::string, RegistrationMethod> methods;
+    std::map<std::string, ImplementationHolderBase *> interfaces;
+    void register_registration_method(const std::string &name, const RegistrationMethod &method) {
+        methods[name] = method;
+    }
+    void register_interface(const std::string &name, ImplementationHolderBase *interface) {
+        interfaces[name] = interface;
+    }
+    static InterfaceHolder* get_instance() {
+        static InterfaceHolder holder;
+        return &holder;
+    }
 };
 
 #define TC_INTERFACE(T) \
@@ -136,25 +140,27 @@ extern TC_IMPLEMENTATION_HOLDER_NAME(T) *TC_IMPLEMENTATION_HOLDER_PTR(T);
     template<> std::vector<std::string> get_implementation_names<class_name>() { \
         return TC_IMPLEMENTATION_HOLDER_NAME(class_name)::get_instance()->get_implementation_names(); \
     } \
-    class InterfaceInjector_##class_name {\
-        public:\
-        InterfaceInjector_##class_name(const std::string &name) {\
-            InterfaceHolder::get_instance()->register_interface(base_alias, [&](void *m) {\
-                ((pybind11::module *)m)->def("create_" base_alias, \
-                    static_cast<std::shared_ptr<class_name>(*)(const std::string &name)>(&create_instance<class_name>)); \
-                ((pybind11::module *)m)->def("create_initialized_" base_alias, \
-                    static_cast<std::shared_ptr<class_name>(*)(const std::string &name, \
-                    const Config &config)>(&create_instance<class_name>)); \
-            });\
-        }\
-    } ImplementationInjector_##base_class_name##class_name##instance(base_alias);\
     TC_IMPLEMENTATION_HOLDER_NAME(class_name) *TC_IMPLEMENTATION_HOLDER_PTR(class_name) = nullptr; \
     void *get_implementation_holder_instance_##class_name() { \
         if (!TC_IMPLEMENTATION_HOLDER_PTR(class_name)) { \
             TC_IMPLEMENTATION_HOLDER_PTR(class_name) = new TC_IMPLEMENTATION_HOLDER_NAME(class_name)(base_alias); \
         } \
         return TC_IMPLEMENTATION_HOLDER_PTR(class_name); \
-    }
+    } \
+    class InterfaceInjector_##class_name {\
+        public:\
+        InterfaceInjector_##class_name(const std::string &name) {\
+            InterfaceHolder::get_instance()->register_registration_method(base_alias, [&](void *m) {\
+                ((pybind11::module *)m)->def("create_" base_alias, \
+                    static_cast<std::shared_ptr<class_name>(*)(const std::string &name)>(&create_instance<class_name>)); \
+                ((pybind11::module *)m)->def("create_initialized_" base_alias, \
+                    static_cast<std::shared_ptr<class_name>(*)(const std::string &name, \
+                    const Config &config)>(&create_instance<class_name>)); \
+            });\
+            InterfaceHolder::get_instance()->register_interface(base_alias, \
+                (ImplementationHolderBase *)get_implementation_holder_instance_##class_name());\
+        }\
+    } ImplementationInjector_##base_class_name##class_name##instance(base_alias);
 
 #define TC_IMPLEMENTATION(base_class_name, class_name, alias) \
     class ImplementationInjector_##base_class_name##class_name {\

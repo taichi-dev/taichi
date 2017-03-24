@@ -13,7 +13,6 @@
 
 TC_NAMESPACE_BEGIN
 
-TC_INTERFACE_DEF(PoissonSolver2D, "pressure_solver_2d");
 
 // Maybe we are going to need Algebraic Multigrid in the future,
 // but let's have a GMG with different boundary conditions support first...

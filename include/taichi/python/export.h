@@ -19,7 +19,6 @@
 #include <vector>
 
 #pragma warning(pop)
-#define EXPLICIT_GET_POINTER(T) // namespace boost {template <> T const volatile * get_pointer<T const volatile >(T const volatile *c){return c;}}
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 #include <numpy/ndarrayobject.h>
@@ -61,9 +60,6 @@ void image_buffer_to_ndarray(T *arr, uint64 output);
         .def("write", &write_vector_to_disk<x>) \
         .def("read", &read_vector_from_disk<x>) \
     ;
-
-// note
-//.def(vector_indexing_suite<std::vector<x>, true>())
 
 #define DEFINE_VECTOR_OF(x) \
     DEFINE_VECTOR_OF_NAMED(x, #x "List");

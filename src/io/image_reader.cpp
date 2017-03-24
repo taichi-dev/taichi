@@ -14,8 +14,6 @@
 
 TC_NAMESPACE_BEGIN
 
-TC_INTERFACE_DEF(ImageReader, "image_reader");
-
 Array2D<Vector4> dcraw_read(const std::string &filepath) {
     // Single threaded...
     static std::mutex lock;

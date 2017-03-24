@@ -13,8 +13,6 @@
 
 TC_NAMESPACE_BEGIN
 
-TC_INTERFACE_DEF(Sampler, "sampler");
-
 class PseudoRandomSampler : public Sampler {
 public:
     void initialize() { }

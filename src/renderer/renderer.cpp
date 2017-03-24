@@ -42,7 +42,6 @@ void Renderer::write_output(std::string fn) {
     tmp.write(fn);
 }
 
-TC_INTERFACE_DEF(Renderer, "renderer");
 
 TC_NAMESPACE_END
 

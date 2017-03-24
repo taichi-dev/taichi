@@ -10,12 +10,11 @@
 #pragma once
 #include <taichi/visualization/image_buffer.h>
 #include <taichi/common/meta.h>
-#include <taichi/common/interface.h>
 #include <taichi/math/levelset_2d.h>
 
 TC_NAMESPACE_BEGIN
 
-class Fluid : public Simulator {
+class Fluid {
 public:
     struct Particle {
         Vector3 color=Vector3(-1, 0, 0);

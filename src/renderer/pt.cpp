@@ -501,7 +501,7 @@ public:
         PathTracingRenderer::initialize(config);
         Config cfg;
         cfg.set("color", Vector3(1, 1, 1));
-        material = create_initialized_instance<SurfaceMaterial>("diffuse", cfg);
+        material = create_instance<SurfaceMaterial>("diffuse", cfg);
         sdf = AssetManager::get_asset<SDF>(config.get_int("sdf"));
     }
 

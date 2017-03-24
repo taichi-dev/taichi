@@ -8,7 +8,6 @@
 *******************************************************************************/
 
 #include <taichi/python/export.h>
-
 #include <taichi/dynamics/fluid2d/fluid.h>
 #include <taichi/dynamics/mpm2d/mpm.h>
 #include <taichi/dynamics/mpm2d/mpm_particle.h>
@@ -16,21 +15,9 @@
 
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::RenderParticle>);
 
-EXPLICIT_GET_POINTER(taichi::MPMParticle);
-
-EXPLICIT_GET_POINTER(taichi::EPParticle);
-
-EXPLICIT_GET_POINTER(taichi::DPParticle);
-
-EXPLICIT_GET_POINTER(taichi::Simulation3D);
-
-EXPLICIT_GET_POINTER(taichi::Fluid);
-
 TC_NAMESPACE_BEGIN
 
 void export_dynamics(py::module &m) {
-    m.def("create_fluid", create_instance<Fluid>);
-    m.def("create_simulation3d", create_instance<Simulation3D>);
     py::class_<Fluid::Particle>(m, "FluidParticle")
         .def(py::init<Vector2, Vector2>())
         .def_readwrite("position", &Fluid::Particle::position)

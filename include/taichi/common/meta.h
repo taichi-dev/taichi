@@ -62,8 +62,8 @@ public:
     void register_registration_method(const std::string &name, const RegistrationMethod &method) {
         methods[name] = method;
     }
-    void register_interface(const std::string &name, ImplementationHolderBase *interface) {
-        interfaces[name] = interface;
+    void register_interface(const std::string &name, ImplementationHolderBase *interface_) {
+        interfaces[name] = interface_;
     }
     static InterfaceHolder* get_instance() {
         static InterfaceHolder holder;

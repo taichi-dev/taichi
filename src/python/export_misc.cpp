@@ -60,19 +60,19 @@ void export_misc(py::module &m) {
             PyErr_SetString(PyExc_RuntimeError, e.what());
         }
     });
-    
+
     py::class_<ToneMapper, std::shared_ptr<ToneMapper>>(m, "ToneMapper")
-        .def("initialize", &ToneMapper::initialize)
-        .def("apply", &ToneMapper::apply);
+            .def("initialize", &ToneMapper::initialize)
+            .def("apply", &ToneMapper::apply);
 
     py::class_<Benchmark, std::shared_ptr<Benchmark>>(m, "Benchmark")
-        .def("run", &Benchmark::run)
-        .def("initialize", &Benchmark::initialize);
+            .def("run", &Benchmark::run)
+            .def("initialize", &Benchmark::initialize);
 
     py::class_<UnitDLL, std::shared_ptr<UnitDLL>>(m, "UnitDLL")
-        .def("open_dll", &UnitDLL::open_dll)
-        .def("close_dll", &UnitDLL::close_dll)
-        .def("loaded", &UnitDLL::loaded);
+            .def("open_dll", &UnitDLL::open_dll)
+            .def("close_dll", &UnitDLL::close_dll)
+            .def("loaded", &UnitDLL::loaded);
 
     m.def("print_all_units", print_all_units);
     m.def("test", test);

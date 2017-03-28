@@ -76,7 +76,7 @@ public:
                     eye_path.back().connected = true;
                     Path full_path;
                     full_path.resize(
-                        num_eye_vertices + num_light_vertices - 1); // note that last light vertex is deleted
+                            num_eye_vertices + num_light_vertices - 1); // note that last light vertex is deleted
                     for (int i = 0; i < num_eye_vertices; i++) full_path[i] = eye_path[i];
                     for (int i = 0; i < num_light_vertices - 1; i++) full_path[path_length - i] = light_path[i];
                     // evaluate the path
@@ -122,7 +122,8 @@ public:
             if (use_vm) {
                 for (int num_light_vertices = 2; num_light_vertices <= (int)light_path.size(); num_light_vertices++) {
                     Path partial_light_path(light_path.begin(), light_path.begin() + num_light_vertices);
-                    hash_grid.push_back_to_all_cells_in_range(partial_light_path.back().pos, radius, (int)light_paths.size());
+                    hash_grid.push_back_to_all_cells_in_range(partial_light_path.back().pos, radius,
+                                                              (int)light_paths.size());
                     light_paths.push_back(partial_light_path);
                 }
             }
@@ -136,7 +137,8 @@ public:
                 write_path_contribution(vertex_merge(eye_path));
             }
             if (use_vc) {
-                write_path_contribution(connect(eye_path, light_paths_for_connection[k], -1, -1, (int)use_vm * n_samples_per_stage));
+                write_path_contribution(
+                        connect(eye_path, light_paths_for_connection[k], -1, -1, (int)use_vm * n_samples_per_stage));
             }
         }, 0, n_samples_per_stage, num_threads);
         sample_count += n_samples_per_stage;

@@ -151,7 +151,7 @@ uint64 Time::get_cycles(){
 uint64 Time::get_cycles() {
     unsigned int lo, hi;
     __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
-    return ((uint64) hi << 32) | lo;
+    return ((uint64)hi << 32) | lo;
 }
 
 #endif

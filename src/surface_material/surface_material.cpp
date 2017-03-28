@@ -17,8 +17,7 @@ TC_NAMESPACE_BEGIN
 std::shared_ptr<Texture> SurfaceMaterial::get_color_sampler(const Config &config, const std::string &name) {
     if (config.has_key(name + "_map")) {
         return AssetManager::get_asset<Texture>(config.get_int(name + "_map"));
-    }
-    else if (config.has_key(name + "_ptr")) {
+    } else if (config.has_key(name + "_ptr")) {
         return *config.get_ptr<std::shared_ptr<Texture>>(name + "_ptr");
     } else if (config.has_key(name)) {
         std::string val = config.get_string(name);
@@ -29,8 +28,7 @@ std::shared_ptr<Texture> SurfaceMaterial::get_color_sampler(const Config &config
             color = Vector3(config.get_real(name));
         }
         return create_instance<Texture>("const", Config().set("value", color));
-    }
-    else {
+    } else {
         return nullptr;
     }
 }
@@ -94,8 +92,7 @@ public:
         Vector3 normal(0, 0, sgn(in.z));
         if (abs(in.z) > 1 - eps) {
             return random_diffuse(normal, u, v);
-        }
-        else {
+        } else {
             // We do the following other than the above to ensure correlation for MCMC...
             if (u > v) {
                 std::swap(u, v);
@@ -125,8 +122,8 @@ public:
     }
 
     virtual void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir,
-        Vector3 &f, real &pdf,
-        SurfaceEvent &event, const Vector2 &uv) const override {
+                        Vector3 &f, real &pdf,
+                        SurfaceEvent &event, const Vector2 &uv) const override {
         out_dir = sample_direction(in_dir, u, v, uv);
         f = evaluate_bsdf(in_dir, out_dir, uv);
         event = (int)SurfaceScatteringFlags::non_delta;
@@ -181,11 +178,11 @@ public:
         real t = std::min(std::max(dot(r, out), 0.0f), 1.0f);
         auto color = color_sampler->sample3(uv);
         return color * (glossiness + 2.0f) / (2.0f * pi) * pow(t, glossiness)
-            / std::max(std::max(std::abs(in.z), std::abs(out.z)), 1e-7f);
+               / std::max(std::max(std::abs(in.z), std::abs(out.z)), 1e-7f);
     }
 
     virtual void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir,
-        Vector3 &f, real &pdf, SurfaceEvent &event, const Vector2 &uv) const override {
+                        Vector3 &f, real &pdf, SurfaceEvent &event, const Vector2 &uv) const override {
         out_dir = sample_direction(in_dir, u, v, uv);
         f = evaluate_bsdf(in_dir, out_dir, uv);
         event = (int)SurfaceScatteringFlags::non_delta;
@@ -221,7 +218,7 @@ public:
     }
 
     virtual void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir,
-        Vector3 &f, real &pdf, SurfaceEvent &event, const Vector2 &uv) const override {
+                        Vector3 &f, real &pdf, SurfaceEvent &event, const Vector2 &uv) const override {
         out_dir = reflect(in_dir);
         auto color = color_sampler->sample3(uv);
         if (std::abs(out_dir.z) < 1e-5f) {
@@ -292,8 +289,7 @@ public:
         real p = get_refraction(in, out_reflect, out_refract);
         if (u < p) {
             return out_refract;
-        }
-        else {
+        } else {
             return out_reflect;
         }
     }
@@ -313,15 +309,14 @@ public:
     }
 
     virtual void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir,
-        Vector3 &f, real &pdf, SurfaceEvent &event, const Vector2 &uv) const override {
+                        Vector3 &f, real &pdf, SurfaceEvent &event, const Vector2 &uv) const override {
         out_dir = sample_direction(in_dir, u, v, uv);
         Vector3 out_reflect, out_refract;
         real p = get_refraction(in_dir, out_reflect, out_refract);
         if (u < p) {
             pdf = p;
             out_dir = out_refract;
-        }
-        else {
+        } else {
             pdf = 1 - p;
             out_dir = out_reflect;
         }
@@ -366,8 +361,7 @@ public:
             auto mat = std::make_shared<RefractiveMaterial>();
             mat->initialize(cfg);
             materials.push_back(mat);
-        }
-        else if (specular_color_sampler) {
+        } else if (specular_color_sampler) {
             Config cfg;
             cfg.set("color_ptr", &specular_color_sampler);
             glossy_mat = std::make_shared<ReflectiveMaterial>();
@@ -401,15 +395,14 @@ public:
     }
 
     void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf, SurfaceEvent &event,
-        const Vector2 &uv) const override {
+                const Vector2 &uv) const override {
         real mat_pdf, mat_cdf;
         int mat_id = get_material_sampler(uv).sample(u, mat_pdf, mat_cdf);
         if (mat_pdf == 0.0f) {
             f = Vector3(0.0f);
             pdf = 1.0f;
             event = (SurfaceEvent)SurfaceScatteringFlags::non_delta;
-        }
-        else {
+        } else {
             real rescaled_u = (u - (mat_cdf - mat_pdf)) / mat_pdf;
             assert(is_normal(rescaled_u));
             auto &mat = materials[mat_id];
@@ -417,8 +410,7 @@ public:
             mat->sample(in_dir, rescaled_u, v, out_dir, f, submat_pdf, event, uv);
             if (SurfaceEventClassifier::is_delta(event)) {
                 pdf = mat_pdf * submat_pdf;
-            }
-            else {
+            } else {
                 pdf = probability_density(in_dir, out_dir, uv);
             }
         }
@@ -430,7 +422,7 @@ public:
         for (int i = 0; i < (int)materials.size(); i++) {
             if (!materials[i]->is_delta())
                 sum += materials[i]->probability_density(in, out, uv) *
-                material_sampler.get_pdf(i);
+                       material_sampler.get_pdf(i);
         }
         return sum;
     }
@@ -460,15 +452,14 @@ protected:
     virtual void initialize(const Config &config) override {}
 
     virtual void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf,
-        SurfaceEvent &event, const Vector2 &uv) const override {
+                        SurfaceEvent &event, const Vector2 &uv) const override {
         out_dir = -in_dir;
         f = Vector3(1.0f) * abs(1.0f / in_dir.z);
         pdf = 1.0f;
         event = (int)SurfaceScatteringFlags::delta | (int)SurfaceScatteringFlags::index_matched;
         if (in_dir.z > 0) {
             event = event | (int)SurfaceScatteringFlags::entering;
-        }
-        else {
+        } else {
             event = event | (int)SurfaceScatteringFlags::leaving;
         }
     }

@@ -83,7 +83,7 @@ public:
                     eye_path.back().connected = true;
                     Path full_path;
                     full_path.resize(
-                        num_eye_vertices + num_light_vertices - 1); // note that last light vertex is deleted
+                            num_eye_vertices + num_light_vertices - 1); // note that last light vertex is deleted
                     for (int i = 0; i < num_eye_vertices; i++) full_path[i] = eye_path[i];
                     for (int i = 0; i < num_light_vertices - 1; i++) full_path[path_length - i] = light_path[i];
 
@@ -99,7 +99,7 @@ public:
                         continue;
                     }
                     double w = mis_weight(full_path, num_eye_vertices, num_light_vertices, use_vc,
-                        n_samples_per_stage);
+                                          n_samples_per_stage);
                     if (w <= 0.0f) {
                         //printf("w\n");
                         continue;
@@ -127,10 +127,10 @@ public:
             if (use_vm) {
                 // TODO: correct??? more efficient???
                 for (int num_eye_vertices = 2;
-                    num_eye_vertices <= (int)eye_path.size(); num_eye_vertices++) {
+                     num_eye_vertices <= (int)eye_path.size(); num_eye_vertices++) {
                     Path partial_eye_path(eye_path.begin(), eye_path.begin() + num_eye_vertices);
                     hash_grid.push_back_to_all_cells_in_range(partial_eye_path.back().pos, radius,
-                        (int)eye_paths.size());
+                                                              (int)eye_paths.size());
                     eye_paths.push_back(partial_eye_path);
                 }
             }
@@ -146,8 +146,8 @@ public:
             }
             if (use_vc) {
                 write_path_contribution(
-                    connect(eye_paths_for_connection[k], light_path, -1, -1,
-                    (int)use_vm * n_samples_per_stage));
+                        connect(eye_paths_for_connection[k], light_path, -1, -1,
+                                (int)use_vm * n_samples_per_stage));
             }
         }
 
@@ -167,8 +167,7 @@ public:
         double p_star(int c) {
             if (c == con) {
                 return pc.get_total_contribution();
-            }
-            else {
+            } else {
                 return pc.get_total_contribution() > 0;
             }
         }
@@ -239,7 +238,7 @@ public:
                     if (num_eye_vertices > 2) continue; // NOTE:debug
                     Path partial_eye_path(eye_path.begin(), eye_path.begin() + num_eye_vertices);
                     hash_grid.push_back_to_all_cells_in_range(partial_eye_path.back().pos, radius,
-                        (int)eye_paths.size());
+                                                              (int)eye_paths.size());
                     eye_paths.push_back(partial_eye_path);
                 }
             }
@@ -285,8 +284,7 @@ public:
             MarkovChainTag u = (MarkovChainTag)(int(rand() * 2));
             if (!use_vis_chain && u == vis) {
                 u = con;
-            }
-            else if (!use_con_chain && u == con) {
+            } else if (!use_con_chain && u == con) {
                 u = vis;
             }
             MCMCState &previous_state = states[u];
@@ -296,8 +294,7 @@ public:
                 // Large step
                 new_state.chain = previous_state.chain.large_step();
                 is_large_step_done = true;
-            }
-            else {
+            } else {
                 // Small step (mutation)
                 mutated += 1;
                 new_state.chain = previous_state.chain.mutate(mutation_strength);
@@ -308,7 +305,7 @@ public:
             auto pc = vertex_merge(light_path);
             if (use_vc) {
                 auto pc_vc = connect(eye_paths_for_connection[k], light_path, -1, -1,
-                    (int)use_vm * n_samples_per_stage);
+                                     (int)use_vm * n_samples_per_stage);
                 for (auto &p : pc_vc.contributions) {
                     pc.push_back(p);
                 }
@@ -335,12 +332,11 @@ public:
             real last_state_weight = 1.0f - current_state_weight;
             if (last_state_weight > 0 && previous_state.sc > 0) {
                 all_pcs[u].push_back(previous_state.pc);
-                real p[2] = { 0.0f };
+                real p[2] = {0.0f};
                 for (int i = 0; i < 2; i++) {
                     if (markov_chain_mis) {
                         p[i] = (real)previous_state.p_star(i) / normalizers[i].get_average();
-                    }
-                    else {
+                    } else {
                         p[i] = 1.0f;
                     }
                 }
@@ -350,12 +346,11 @@ public:
             }
             if (current_state_weight > 0 && current_state.sc > 0) {
                 all_pcs[u].push_back(current_state.pc);
-                real p[2] = { 0.0f };
+                real p[2] = {0.0f};
                 for (int i = 0; i < 2; i++) {
                     if (markov_chain_mis) {
                         p[i] = real(current_state.p_star(i) / normalizers[i].get_average());
-                    }
-                    else {
+                    } else {
                         p[i] = 1.0f;
                     }
                 }
@@ -372,7 +367,7 @@ public:
             if (chain_exchange) {
                 // Replica Exchange
                 double r = std::min(1.0, states[vis].p_star(con) /
-                    max(1e-30, states[con].p_star(con)));
+                                         max(1e-30, states[con].p_star(con)));
                 if (rand() < r) {
                     std::swap(states[con], states[vis]);
                     for (int i = 0; i < 2; i++) {

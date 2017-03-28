@@ -100,9 +100,9 @@ public:
     bool inside(const Vector3 &coord) const {
         Vector3 c = coord - Vector3(0.5f);
         return
-            std::abs(c.x) < bounds.x &&
-            std::abs(c.y) < bounds.y &&
-            std::abs(c.z) < bounds.z;
+                std::abs(c.x) < bounds.x &&
+                std::abs(c.y) < bounds.y &&
+                std::abs(c.z) < bounds.z;
     }
 
     virtual Vector4 sample(const Vector3 &coord) const override {
@@ -128,8 +128,8 @@ public:
 
     virtual Vector4 sample(const Vector2 &coord) const override {
         return Vector4(
-            inside(coord, Vector2(0.5f, 0.5f), outer) &&
-            !inside(coord, Vector2(0.5f, 0.5f), inner) ? 1.0f : 0.0f);
+                inside(coord, Vector2(0.5f, 0.5f), outer) &&
+                !inside(coord, Vector2(0.5f, 0.5f), inner) ? 1.0f : 0.0f);
     }
 
     virtual Vector4 sample(const Vector3 &coord) const override {
@@ -189,8 +189,7 @@ public:
         }
         if (p.x < 0.5f) {
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
@@ -221,8 +220,8 @@ public:
     }
 
     virtual Vector4 sample(const Vector3 &coord) const override {
-        int p = (int)floor(coord.x * repeat_u), q = (int)floor(coord.y * repeat_v),
-            r = (int)floor(coord.z * repeat_w);
+        int p = (int) floor(coord.x * repeat_u), q = (int) floor(coord.y * repeat_v),
+                r = (int) floor(coord.z * repeat_w);
         return ((p + q + r) % 2 == 0 ? tex1 : tex2)->sample(coord);
     }
 };

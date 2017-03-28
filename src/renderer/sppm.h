@@ -8,6 +8,7 @@
 *******************************************************************************/
 
 #pragma once
+
 #include <taichi/visual/renderer.h>
 #include <taichi/visual/sampler.h>
 #include <taichi/visual/bsdf.h>

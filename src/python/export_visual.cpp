@@ -83,72 +83,72 @@ void export_visual(py::module &m) {
     m.def("create_scene", std::make_shared<Scene>);
 
     py::class_<Array2D<Vector3>>(m, "Array2DVector3")
-        .def(py::init<int, int, Vector3>())
-        .def("get_width", &Array2D<Vector3>::get_width)
-        .def("get_height", &Array2D<Vector3>::get_height)
-        .def("get_channels", &return_constant<Array2D<Vector3>, 3>)
-        .def("from_ndarray", &ndarray_to_image_buffer<Array2D<Vector3>, 3>)
-        .def("read", &Array2D<Vector3>::load)
-        .def("write", &Array2D<Vector3>::write)
-        .def("write_to_disk", &Array2D<Vector3>::write_to_disk)
-        .def("read_from_disk", &Array2D<Vector3>::read_from_disk)
-        .def("to_ndarray", &image_buffer_to_ndarray<Array2D<Vector3>, 3>);
+            .def(py::init<int, int, Vector3>())
+            .def("get_width", &Array2D<Vector3>::get_width)
+            .def("get_height", &Array2D<Vector3>::get_height)
+            .def("get_channels", &return_constant<Array2D<Vector3>, 3>)
+            .def("from_ndarray", &ndarray_to_image_buffer<Array2D<Vector3>, 3>)
+            .def("read", &Array2D<Vector3>::load)
+            .def("write", &Array2D<Vector3>::write)
+            .def("write_to_disk", &Array2D<Vector3>::write_to_disk)
+            .def("read_from_disk", &Array2D<Vector3>::read_from_disk)
+            .def("to_ndarray", &image_buffer_to_ndarray<Array2D<Vector3>, 3>);
 
     py::class_<Array2D<Vector4>>(m, "Array2DVector4")
-        .def(py::init<int, int, Vector4>())
-        .def("get_width", &Array2D<Vector4>::get_width)
-        .def("get_height", &Array2D<Vector4>::get_height)
-        .def("get_channels", &return_constant<Array2D<Vector4>, 4>)
-        .def("write", &Array2D<Vector4>::write)
-        .def("from_ndarray", &ndarray_to_image_buffer<Array2D<Vector4>, 4>)
-        .def("write_to_disk", &Array2D<Vector4>::write_to_disk)
-        .def("read_from_disk", &Array2D<Vector4>::read_from_disk)
-        .def("to_ndarray", &image_buffer_to_ndarray<Array2D<Vector4>, 4>);
+            .def(py::init<int, int, Vector4>())
+            .def("get_width", &Array2D<Vector4>::get_width)
+            .def("get_height", &Array2D<Vector4>::get_height)
+            .def("get_channels", &return_constant<Array2D<Vector4>, 4>)
+            .def("write", &Array2D<Vector4>::write)
+            .def("from_ndarray", &ndarray_to_image_buffer<Array2D<Vector4>, 4>)
+            .def("write_to_disk", &Array2D<Vector4>::write_to_disk)
+            .def("read_from_disk", &Array2D<Vector4>::read_from_disk)
+            .def("to_ndarray", &image_buffer_to_ndarray<Array2D<Vector4>, 4>);
 
     py::class_<Texture, std::shared_ptr<Texture>>(m, "Texture")
-        .def("initialize", &Texture::initialize);;
+            .def("initialize", &Texture::initialize);;
 
     py::class_<VolumeMaterial, std::shared_ptr<VolumeMaterial>>(m, "VolumeMaterial")
-        .def("initialize", &VolumeMaterial::initialize);;
+            .def("initialize", &VolumeMaterial::initialize);;
 
     py::class_<SurfaceMaterial, std::shared_ptr<SurfaceMaterial>>(m, "SurfaceMaterial")
-        .def("initialize", static_cast<void (SurfaceMaterial::*)(const Config &)>(&SurfaceMaterial::initialize))
-        .def("set_internal_material", &SurfaceMaterial::set_internal_material);
+            .def("initialize", static_cast<void (SurfaceMaterial::*)(const Config &)>(&SurfaceMaterial::initialize))
+            .def("set_internal_material", &SurfaceMaterial::set_internal_material);
 
     py::class_<EnvironmentMap, std::shared_ptr<EnvironmentMap>>(m, "EnvironmentMap")
-        .def("initialize", &EnvironmentMap::initialize)
-        .def("set_transform", &EnvironmentMap::set_transform);
+            .def("initialize", &EnvironmentMap::initialize)
+            .def("set_transform", &EnvironmentMap::set_transform);
 
     py::class_<Mesh, std::shared_ptr<Mesh>>(m, "Mesh")
-        .def("initialize", &Mesh::initialize)
-        .def("set_untransformed_triangles", &Mesh::set_untransformed_triangles)
-        .def("set_material", &Mesh::set_material)
-        .def_readwrite("transform", &Mesh::transform);
+            .def("initialize", &Mesh::initialize)
+            .def("set_untransformed_triangles", &Mesh::set_untransformed_triangles)
+            .def("set_material", &Mesh::set_material)
+            .def_readwrite("transform", &Mesh::transform);
 
     py::class_<Scene, std::shared_ptr<Scene>>(m, "Scene")
-        //.def("initialize", &Scene::initialize)
-        .def("finalize", &Scene::finalize)
-        .def("add_mesh", &Scene::add_mesh)
-        .def("set_atmosphere_material", &Scene::set_atmosphere_material)
-        .def("set_environment_map", &Scene::set_environment_map)
-        .def("set_camera", &Scene::set_camera);
+            //.def("initialize", &Scene::initialize)
+            .def("finalize", &Scene::finalize)
+            .def("add_mesh", &Scene::add_mesh)
+            .def("set_atmosphere_material", &Scene::set_atmosphere_material)
+            .def("set_environment_map", &Scene::set_environment_map)
+            .def("set_camera", &Scene::set_camera);
 
     // Renderers
     py::class_<Renderer, std::shared_ptr<Renderer>>(m, "Renderer")
-        .def("initialize", &Renderer::initialize)
-        .def("set_scene", &Renderer::set_scene)
-        .def("render_stage", &Renderer::render_stage)
-        .def("write_output", &Renderer::write_output)
-        .def("get_output", &Renderer::get_output);
+            .def("initialize", &Renderer::initialize)
+            .def("set_scene", &Renderer::set_scene)
+            .def("render_stage", &Renderer::render_stage)
+            .def("write_output", &Renderer::write_output)
+            .def("get_output", &Renderer::get_output);
 
     py::class_<Camera, std::shared_ptr<Camera>>(m, "Camera")
-        .def("initialize",
-            static_cast<void (Camera::*)(const Config &config)>(&Camera::initialize));
+            .def("initialize",
+                 static_cast<void (Camera::*)(const Config &config)>(&Camera::initialize));
 
     py::class_<ParticleRenderer, std::shared_ptr<ParticleRenderer>>(m, "ParticleRenderer")
-        .def("initialize", &ParticleRenderer::initialize)
-        .def("set_camera", &ParticleRenderer::set_camera)
-        .def("render", &ParticleRenderer::render);
+            .def("initialize", &ParticleRenderer::initialize)
+            .def("set_camera", &ParticleRenderer::set_camera)
+            .def("render", &ParticleRenderer::render);
 
     py::class_<SDF, std::shared_ptr<SDF>>(m, "SDF")
             .def("initialize", &SDF::initialize)

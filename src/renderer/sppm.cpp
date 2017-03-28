@@ -47,7 +47,7 @@ void SPPMRenderer::render_stage() {
     stages += 1;
     for (auto &ind : image.get_region()) {
         image[ind] = 1.0f / (pi * radius2[ind]) / photon_counter * flux[ind] +
-            image_direct_illum[ind] * (1.0f / eye_ray_stages);
+                     image_direct_illum[ind] * (1.0f / eye_ray_stages);
     }
 }
 
@@ -64,7 +64,7 @@ void SPPMRenderer::trace_eye_path(StateSequence &rand, Ray &ray, const Vector2i 
         if (bsdf.is_emissive()) {
             if (min_path_length <= depth + 1 && depth + 1 <= max_path_length) {
                 image_direct_illum[pixel.x][pixel.y] +=
-                    importance * bsdf.evaluate(bsdf.get_geometry_normal(), in_dir);
+                        importance * bsdf.evaluate(bsdf.get_geometry_normal(), in_dir);
             }
             return;
         }
@@ -76,8 +76,7 @@ void SPPMRenderer::trace_eye_path(StateSequence &rand, Ray &ray, const Vector2i 
         if (SurfaceEventClassifier::is_delta(event)) { // continue tracing on specular surfaces
             importance = importance * f * bsdf.cos_theta(out_dir) / pdf;
             ray = Ray(info.pos, out_dir, 0);
-        }
-        else {
+        } else {
             HitPoint hit_point;
             hit_point.importance = importance;
             hit_point.pos = info.pos;
@@ -100,7 +99,7 @@ bool SPPMRenderer::trace_photon(StateSequence &rand, real contribution_scaling) 
     const Triangle &tri = scene->sample_triangle_light_emission(rand(), pdf);
     auto light_bsdf = BSDF(scene, tri.id);
     Vector3 pos = tri.sample_point(rand(), rand()),
-        dir;
+            dir;
     real _pdf;
     SurfaceEvent _event;
     Vector3 flux;
@@ -125,8 +124,7 @@ bool SPPMRenderer::trace_photon(StateSequence &rand, real contribution_scaling) 
         Vector3 color = f * bsdf.cos_theta(out_dir) / pdf;
         if (SurfaceEventClassifier::is_delta(event)) {
             // No vertex merging for delta BSDF
-        }
-        else {
+        } else {
             // Vertex merging
             int *begin = hash_grid.begin(info.pos);
             int *end = hash_grid.end(info.pos);
@@ -146,7 +144,7 @@ bool SPPMRenderer::trace_photon(StateSequence &rand, real contribution_scaling) 
                             g = 1.0f;
                         hp_radius2 *= g;
                         Vector3 contribution = contribution_scaling * hp.importance * flux *
-                            bsdf.evaluate(in_dir, hp.eye_out_dir);
+                                               bsdf.evaluate(in_dir, hp.eye_out_dir);
                         this->flux[hp.pixel.x][hp.pixel.y] = (this->flux[hp.pixel.x][hp.pixel.y] + contribution) * g;
                         hp_num_photons++;
                     }
@@ -161,8 +159,7 @@ bool SPPMRenderer::trace_photon(StateSequence &rand, real contribution_scaling) 
             if (p < 1) {
                 if (rand() < p) {
                     flux = (1.0f / p) * flux;
-                }
-                else {
+                } else {
                     break;
                 }
             }

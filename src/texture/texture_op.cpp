@@ -27,6 +27,7 @@ public:
         inv_zoom = Vector3(1.0f) / config.get_vec3("zoom");
         repeat = config.get_bool("repeat");
     }
+
     virtual Vector4 sample(const Vector3 &coord) const override {
         Vector3 c = inv_zoom * (coord - center) + center;
         if (repeat)
@@ -209,7 +210,7 @@ public:
         for (int i = 0; i < resolution_x; i++) {
             for (int j = 0; j < resolution_y; j++) {
                 cache.set(i, j, tex->sample(
-                    Vector2((i + 0.5f) / resolution_x, (j + 0.5f) / resolution_y)));
+                        Vector2((i + 0.5f) / resolution_x, (j + 0.5f) / resolution_y)));
             }
         }
     }

@@ -11,7 +11,7 @@
 
 TC_NAMESPACE_BEGIN
 
-class MengerSponge: public Texture {
+class MengerSponge : public Texture {
 private:
     int limit;
 public:

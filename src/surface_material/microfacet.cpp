@@ -94,8 +94,8 @@ public:
     }
 
     void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir,
-        Vector3 &f, real &pdf,
-        SurfaceEvent &event, const Vector2 &uv) const override {
+                Vector3 &f, real &pdf,
+                SurfaceEvent &event, const Vector2 &uv) const override {
         out_dir = sample_direction(in_dir, u, v, uv);
         f = evaluate_bsdf(in_dir, out_dir, uv);
         event = (int)SurfaceScatteringFlags::non_delta;

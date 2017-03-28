@@ -25,7 +25,9 @@ public:
         triangle_id = inter.triangle_id;
         front = inter.front;
     }
-    Vertex() { }
+
+    Vertex() {}
+
     Vector3 in_dir, out_dir;
     SurfaceEvent event;
     BSDF bsdf;
@@ -44,10 +46,10 @@ struct Contribution {
     int path_length;
     Vector3 c;
 
-    Contribution() { };
+    Contribution() {};
 
     Contribution(float x, float y, int path_length, Vector3 c) :
-        x(x), y(y), path_length(path_length), c(c) { }
+            x(x), y(y), path_length(path_length), c(c) {}
 };
 
 struct PathContribution {
@@ -60,15 +62,19 @@ struct PathContribution {
         // We assume that luminance is used for SC...
         total_contribution += luminance(c.c);
     }
+
     bool empty() {
         return contributions.empty();
     }
+
     double get_total_contribution() {
         return total_contribution;
     }
+
     void set_scaling(real scaling) {
         this->scaling = scaling;
     }
+
     real get_scaling() const {
         return scaling;
     }
@@ -103,17 +109,17 @@ public:
     Vector3d path_throughput(const Path &path);
 
     double path_pdf(const Path &path, const int num_eye_vert_spec,
-        const int num_light_vert_spec);
+                    const int num_light_vert_spec);
 
     double path_total_pdf(const Path &path, bool including_connection, int merging_factor);
 
 
     PathContribution connect(const Path &eye_path, const Path &light_path,
-        const int num_eye_vert_spec = -1,
-        const int num_light_vert_spec = -1, const int merging_factor = 0);
+                             const int num_eye_vert_spec = -1,
+                             const int num_light_vert_spec = -1, const int merging_factor = 0);
 
     double mis_weight(const Path &path, const int num_eye_vert_spec, const int num_light_vert_spec,
-        bool including_connection, int merging_factor);
+                      bool including_connection, int merging_factor);
 
     double geometry_term(const Vertex &e0, const Vertex &e1);
 

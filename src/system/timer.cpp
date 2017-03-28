@@ -7,7 +7,7 @@
     the MIT license as written in the LICENSE file.
 *******************************************************************************/
 
-#include "timer.h"
+#include <taichi/system/timer.h>
 
 #ifndef _WIN64
 
@@ -141,17 +141,17 @@ Time::TickTimer::TickTimer(std::string name) {
 #ifdef _WIN32
 
 #include <intrin.h>
-uint64_t Time::get_cycles(){
+uint64 Time::get_cycles(){
     return __rdtsc();
 }
 
 //  Linux/GCC
 #else
 
-uint64_t Time::get_cycles() {
+uint64 Time::get_cycles() {
     unsigned int lo, hi;
     __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
-    return ((uint64_t) hi << 32) | lo;
+    return ((uint64) hi << 32) | lo;
 }
 
 #endif

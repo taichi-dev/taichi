@@ -7,7 +7,7 @@
     the MIT license as written in the LICENSE file.
 *******************************************************************************/
 
-#include "threading.h"
+#include <taichi/system/threading.h>
 
 TC_NAMESPACE_BEGIN
 

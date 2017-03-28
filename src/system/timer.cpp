@@ -59,9 +59,6 @@ double Time::get_time() {
     return (double)t / 10000000.0;
 */
 }
-double Time::get_tick() {
-    return (double)__rdtsc();
-}
 #endif
 
 void Time::usleep(double us) {

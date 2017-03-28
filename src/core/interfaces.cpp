@@ -26,6 +26,7 @@
 #include <taichi/visual/ray_intersection.h>
 #include <taichi/visual/framebuffer.h>
 #include <taichi/visualization/particle_visualization.h>
+#include <taichi/system/benchmark.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -46,5 +47,6 @@ TC_INTERFACE_DEF(Framebuffer, "framebuffer")
 TC_INTERFACE_DEF(Fluid, "fluid")
 TC_INTERFACE_DEF(RayIntersection, "ray_intersection")
 TC_INTERFACE_DEF(ParticleRenderer, "particle_renderer")
+TC_INTERFACE_DEF(Benchmark, "benchmark")
 
 TC_NAMESPACE_END

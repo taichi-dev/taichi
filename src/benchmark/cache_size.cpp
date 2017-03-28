@@ -19,21 +19,33 @@ TC_NAMESPACE_BEGIN
         // Use float here instead of real to make sure it's 4 bytes
         std::vector<float> data;
     public:
-        void initialize(const Config &config) {
+        void initialize(const Config &config) override {
             Benchmark::initialize(config);
             working_set_size = config.get("working_set_size", 1024);
             step = config.get("step", 1);
             assert_info(working_set_size % 4 == 0, "working_set_size should be a multiple of 4");
+            assert_info((working_set_size & (working_set_size - 1)) == 0, "working_set_size should be a multiple of 4");
             n = working_set_size / 4;
             data.resize(n);
         }
     protected:
         void iterate() override {
-            float a = 0;
-            for (unsigned i = 0; i < workload; i++) {
-                a += data[(i * step) % n];
+            float a0 = 0;
+            float a1 = 0;
+            float a2 = 0;
+            float a3 = 0;
+            unsigned int j = 0;
+            for (unsigned i = 0; i < workload / 4; i++) {
+                j = (j + step) & (n - 1);
+                a0 += data[j];
+                j = (j + step) & (n - 1);
+                a1 += data[j];
+                j = (j + step) & (n - 1);
+                a2 += data[j];
+                j = (j + step) & (n - 1);
+                a3 += data[j];
             }
-            dummy = (int)a;
+            dummy = (int)(a0 + a1 + a2 + a3);
         }
     };
     TC_IMPLEMENTATION(Benchmark, CacheReadBenchmark, "cache");

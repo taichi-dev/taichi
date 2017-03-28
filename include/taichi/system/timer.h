@@ -10,13 +10,16 @@
 #pragma once
 
 #ifndef _WIN64
+
 #include <sys/time.h>
+
 #else
 #pragma warning(push)
 #pragma warning(disable:4005)
 #include <windows.h>
 #pragma warning(pop)
 #endif
+
 #include <string>
 #include <cstdio>
 #include <map>
@@ -28,13 +31,16 @@ TC_NAMESPACE_BEGIN
 #define TIME(x) {char timer_name[1000]; \
     sprintf_s(timer_name, "%s[%d]: %s", __FILENAME__, __LINE__, #x); \
     Time::Timer _(timer_name); x;}
-#define CT(name) {Time::TickTimer(#name);
-#define ECT }
+
+#include <stdint.h>
+
 
 class Time {
 public:
     static double get_time();
-    static double get_tick();
+
+    static uint64 get_cycles();
+
     static void usleep(double us);
 
     class Timer {
@@ -42,28 +48,38 @@ public:
     protected:
         std::string name;
         double start_time;
+
         virtual double get_time();
+
         virtual void print_record(const char *left, double elapsed, double average);
+
         void output();
+
         bool have_output;
     public:
         Timer(std::string name);
+
         Timer() {}
 
         virtual ~Timer() {
             output();
         }
     };
+
     class TickTimer : public Timer {
     protected:
         double get_time();
+
         void print_record(const char *left, double elapsed, double average);
+
     public:
         TickTimer(std::string name);
+
         ~TickTimer() {
             output();
         }
     };
+
     class FPSCounter {
     public:
         static void count(std::string name) {
@@ -79,6 +95,7 @@ public:
                 counter[name] = 0;
             }
         }
+
     private:
         static std::map<std::string, double> last_refresh;
         static std::map<std::string, int> counter;

@@ -19,6 +19,7 @@ TC_NAMESPACE_BEGIN
         int dummy;
         int warm_up_iterations;
         int workload;
+        bool returns_time;
         virtual void setup() {};
         virtual void iterate() = 0;
         virtual void finalize() {};
@@ -26,17 +27,27 @@ TC_NAMESPACE_BEGIN
         virtual void initialize(const Config &config) {
             warm_up_iterations = config.get("warm_up_iterations", 16);
             workload = config.get("workload", 1024);
+            returns_time = config.get("returns_time", false);
         }
         virtual real run(int iterations=16) {
             setup();
             for (int i = 0; i < warm_up_iterations; i++) {
                 iterate();
             }
-            double t = Time::get_time();
+            double start_t;
+            if (returns_time)
+                start_t = Time::get_time();
+            else
+                start_t = Time::get_cycles();
             for (int i = 0; i < iterations; i++) {
                 iterate();
             }
-            real elapsed = (real)(Time::get_time() - t);
+            double end_t;
+            if (returns_time)
+                end_t = Time::get_time();
+            else
+                end_t = Time::get_cycles();
+            real elapsed = (real)(end_t - start_t);
             finalize();
             return elapsed / (iterations * workload);
         }

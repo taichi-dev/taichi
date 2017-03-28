@@ -22,26 +22,6 @@
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::RenderParticle>);
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::Triangle>);
 
-EXPLICIT_GET_POINTER(taichi::Camera);
-
-EXPLICIT_GET_POINTER(taichi::SurfaceMaterial);
-
-EXPLICIT_GET_POINTER(taichi::VolumeMaterial);
-
-EXPLICIT_GET_POINTER(taichi::Renderer);
-
-EXPLICIT_GET_POINTER(taichi::Scene);
-
-EXPLICIT_GET_POINTER(taichi::Mesh);
-
-EXPLICIT_GET_POINTER(taichi::EnvironmentMap);
-
-EXPLICIT_GET_POINTER(taichi::Texture);
-
-EXPLICIT_GET_POINTER(taichi::ParticleRenderer);
-
-EXPLICIT_GET_POINTER(taichi::SDF);
-
 TC_NAMESPACE_BEGIN
 
 Function23 function23_from_py_obj(py::object func) {
@@ -99,14 +79,6 @@ void export_visual(py::module &m) {
     m.def("register_texture", &AssetManager::insert_asset<Texture>);
     m.def("register_surface_material", &AssetManager::insert_asset<SurfaceMaterial>);
     // TODO: these should registered by iterating over existing interfaces.
-    m.def("create_texture", create_instance<Texture>);
-    m.def("create_renderer", create_instance<Renderer>);
-    m.def("create_camera", create_instance<Camera>);
-    m.def("create_particle_renderer", create_instance<ParticleRenderer>);
-    m.def("create_sdf", create_instance<SDF>);
-    m.def("create_surface_material", create_instance<SurfaceMaterial>);
-    m.def("create_volume_material", create_instance<VolumeMaterial>);
-    m.def("create_environment_map", create_instance<EnvironmentMap>);
     m.def("create_mesh", std::make_shared<Mesh>);
     m.def("create_scene", std::make_shared<Scene>);
 

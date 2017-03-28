@@ -14,8 +14,6 @@
 
 TC_NAMESPACE_BEGIN
 
-TC_INTERFACE_DEF(ToneMapper, "tone_mapper")
-
 class GradientDomainTMO final : public ToneMapper {
 protected:
     real pyramid_sigma;

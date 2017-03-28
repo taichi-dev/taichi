@@ -5,6 +5,9 @@ compiler:
 
 matrix:
   include:
+    - os: osx
+      env: COMPILER=clang++-3.8 CXX=clang++-3.8
+
     - os: linux
       env: COMPILER_NAME=gcc CXX=g++-6 CC=gcc-6
       addons:
@@ -13,7 +16,6 @@ matrix:
             - gcc-6
             - g++-6
           sources: &sources
-            - llvm-toolchain-precise-3.8
             - ubuntu-toolchain-r-test
 
 before_script:
@@ -21,24 +23,10 @@ before_script:
   - export TAICHI_NUM_THREADS=2
   - export PYTHONPATH=$TAICHI_ROOT_DIR/taichi/python/:$PYTHONPATH
   - export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH
-  - sudo apt-get install cmake libtbb-dev alien dpkg-dev debhelper freeglut3-dev python-scipy python-tk python-imaging-tk python-pip
-  - sudo pip install numpy future futures watchdog Pillow scipy pybind11
   - mkdir build
   - cd build
-  - wget https://github.com/embree/embree/releases/download/v2.13.0/embree-2.13.0.x86_64.rpm.tar.gz
-  - tar xzf embree-2.13.0.x86_64.rpm.tar.gz
-  - sudo alien embree-lib-2.13.0-1.x86_64.rpm
-  - sudo alien embree-devel-2.13.0-1.x86_64.rpm
-  - sudo alien embree-examples-2.13.0-1.x86_64.rpm
-  - sudo dpkg -i embree-lib_2.13.0-2_amd64.deb
-  - sudo dpkg -i embree-devel_2.13.0-2_amd64.deb
-  - sudo dpkg -i embree-examples_2.13.0-2_amd64.deb
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo sh ../build_scripts/linux.sh ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo sh ../build_scripts/osx.sh ; fi
 
 script:
-  - export CXX="g++-6" CC="gcc-6"
-  - echo $CXX
-  - $CXX -v
-  - g++ -v
-  - cmake ..
-  - make
   - python -c 'import taichi as tc'

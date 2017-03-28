@@ -11,7 +11,6 @@
 
 TC_NAMESPACE_BEGIN
 
-TC_INTERFACE_DEF(RayIntersection, "ray_intersection");
 
 class BruteForceRayIntersection : public RayIntersection {
 public:

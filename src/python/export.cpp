@@ -24,6 +24,10 @@ PYBIND11_PLUGIN(taichi_core) {
     .. currentmodule:: taichi_core
     )pbdoc");
 
+    for (auto &kv : InterfaceHolder::get_instance()->methods) {
+        kv.second(&m);
+    }
+
     Py_Initialize();
     export_math(m);
     export_dynamics(m);

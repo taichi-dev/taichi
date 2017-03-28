@@ -39,8 +39,6 @@ FIND_LIBRARY(EMBREE_LIBRARY_MIC NAMES embree_xeonphi PATHS
         /usr/local/lib
         /opt/local/lib)
 
-message("Embree include path: " ${EMBREE_INCLUDE_PATH})
-message("Embree library path: " ${EMBREE_LIBRARY})
 IF (EMBREE_INCLUDE_PATH AND EMBREE_LIBRARY)
     SET(EMBREE_FOUND TRUE)
 ENDIF ()

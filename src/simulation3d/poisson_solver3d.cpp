@@ -13,12 +13,9 @@
 
 TC_NAMESPACE_BEGIN
 
-
 void PoissonSolver3D::initialize(const Config &config) {
     maximum_iterations = config.get_int("maximum_iterations");
 }
-
-TC_INTERFACE_DEF(PoissonSolver3D, "pressure_solver_3d");
 
 // Maybe we are going to need Algebraic Multigrid in the future,
 // but let's have a GMG with different boundary conditions support first...

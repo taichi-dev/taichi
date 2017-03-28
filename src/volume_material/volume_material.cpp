@@ -16,7 +16,6 @@
 
 TC_NAMESPACE_BEGIN
 
-TC_INTERFACE_DEF(VolumeMaterial, "volume_material")
 TC_IMPLEMENTATION(VolumeMaterial, VolumeMaterial, "homogeneous");
 
 class VacuumVolumeMaterial : public VolumeMaterial {

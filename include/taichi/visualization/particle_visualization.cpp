@@ -12,8 +12,6 @@
 
 TC_NAMESPACE_BEGIN
 
-TC_INTERFACE_DEF(ParticleRenderer, "particle_renderer");
-
 class ParticleShadowMapRenderer : public ParticleRenderer {
 private:
     Vector3 light_direction;
@@ -119,7 +117,7 @@ std::shared_ptr<Texture> rasterize_render_particles(const Config &config, const 
     }
     Config cfg;
     cfg.set("array_ptr", &array);
-    auto tex = create_initialized_instance<Texture>("array3d", cfg);
+    auto tex = create_instance<Texture>("array3d", cfg);
     return tex;
 }
 

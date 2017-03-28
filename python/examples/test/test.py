@@ -2,6 +2,7 @@ import time
 import taichi as tc
 from taichi.gui.image_viewer import show_image
 
+tc.core.print_all_units()
 tc.core.test()
 
 tex = tc.Texture('const', value=(0.1, 0.1, 0.1, 0.1))

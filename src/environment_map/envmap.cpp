@@ -10,7 +10,6 @@
 #include <taichi/visual/envmap.h>
 
 TC_NAMESPACE_BEGIN
-TC_INTERFACE_DEF(EnvironmentMap, "envmap");
 
 TC_IMPLEMENTATION(EnvironmentMap, EnvironmentMap, "base");
 

@@ -28,9 +28,7 @@ public:\
 class ImplementationUpdater_##base_class_name##class_name {\
 public:\
     ImplementationUpdater_##base_class_name##class_name() {\
-        P("uodating...\n");\
         TC_IMPLEMENTATION_HOLDER_NAME(base_class_name)::get_instance()->update<class_name>(alias);\
-        P("uodated...\n");\
     }\
 } ImplementationUpdater_##base_class_name##class_name##instance;
 

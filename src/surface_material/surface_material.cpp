@@ -28,14 +28,13 @@ std::shared_ptr<Texture> SurfaceMaterial::get_color_sampler(const Config &config
         } else {
             color = Vector3(config.get_real(name));
         }
-        return create_initialized_instance<Texture>("const", Config().set("value", color));
+        return create_instance<Texture>("const", Config().set("value", color));
     }
     else {
         return nullptr;
     }
 }
 
-TC_INTERFACE_DEF(SurfaceMaterial, "material");
 
 class EmissiveMaterial : public SurfaceMaterial {
 protected:

@@ -1,3 +1,12 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #pragma once
 
 #include <taichi/common/meta.h>
@@ -19,9 +28,7 @@ public:\
 class ImplementationUpdater_##base_class_name##class_name {\
 public:\
     ImplementationUpdater_##base_class_name##class_name() {\
-        P("uodating...\n");\
         TC_IMPLEMENTATION_HOLDER_NAME(base_class_name)::get_instance()->update<class_name>(alias);\
-        P("uodated...\n");\
     }\
 } ImplementationUpdater_##base_class_name##class_name##instance;
 

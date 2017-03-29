@@ -1,3 +1,12 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #include <taichi/math/discrete_sampler.h>
 
 #include "bidirectional_renderer.h"
@@ -40,8 +49,7 @@ protected:
         if (r < 0.5f) {
             r = r * 2.0f;
             result = value + s2 * exp(-log(s2 / s1) * r);
-        }
-        else {
+        } else {
             r = (r - 0.5f) * 2.0f;
             result = value - s2 * exp(-log(s2 / s1) * r);
         }
@@ -56,9 +64,11 @@ private:
         PSSMLTMarkovChain chain;
         PathContribution pc;
         real sc;
+
         MCMCState() {}
+
         MCMCState(const PSSMLTMarkovChain &chain, const PathContribution &pc, real sc) :
-            chain(chain), pc(pc), sc(sc) {
+                chain(chain), pc(pc), sc(sc) {
         }
     };
 
@@ -121,8 +131,7 @@ public:
             if (rand() <= large_step_prob) {
                 new_state.chain = current_state.chain.large_step();
                 is_large_step = 1.0;
-            }
-            else {
+            } else {
                 new_state.chain = current_state.chain.mutate();
                 is_large_step = 0.0;
             }
@@ -135,11 +144,11 @@ public:
             // accumulate samples with mean value substitution and MIS
             if (new_state.sc > 0.0) {
                 write_path_contribution(new_state.pc,
-                    real((a + is_large_step) / (new_state.sc / b + large_step_prob)));
+                                        real((a + is_large_step) / (new_state.sc / b + large_step_prob)));
             }
             if (current_state.sc > 0.0) {
                 write_path_contribution(current_state.pc,
-                    real((1.0 - a) / (current_state.sc / b + large_step_prob)));
+                                        real((1.0 - a) / (current_state.sc / b + large_step_prob)));
             }
             // conditionally accept the chain
             if (rand() <= a) {
@@ -158,7 +167,8 @@ protected:
     public:
         MMLTMarkovChain() : MMLTMarkovChain(0, 0) {}
 
-        MMLTMarkovChain(int resolution_x, int resolution_y) : PSSMLTMarkovChain((real)resolution_x, (real)resolution_y) {
+        MMLTMarkovChain(int resolution_x, int resolution_y) : PSSMLTMarkovChain((real)resolution_x,
+                                                                                (real)resolution_y) {
             technique_state = rand();
         }
 
@@ -193,7 +203,7 @@ protected:
         MCMCState() { weight = 1.0f; }
 
         MCMCState(const MMLTMarkovChain &chain, const PathContribution &pc, real sc) :
-            chain(chain), pc(pc), sc(sc) {
+                chain(chain), pc(pc), sc(sc) {
             weight = 1.0f;
         }
     };
@@ -234,9 +244,9 @@ public:
         Path eye_path = trace_eye_path(state_sequence);
         Path light_path = trace_light_path(state_sequence);
         int t = std::min(path_length, (int)floor(mc.get_technique_state() * (path_length + 1))) + 1, s =
-            path_length - t + 1;
+                path_length - t + 1;
         assert_info(0 <= t && t <= path_length + 1, "Invalid eye path length: " + std::to_string(t) + " state: " +
-            std::to_string(mc.get_technique_state()));
+                                                    std::to_string(mc.get_technique_state()));
         return connect(eye_path, light_path, t, s);
     }
 
@@ -273,8 +283,7 @@ public:
             if (rand() < large_step_prob) {
                 new_state.chain = current_state.chain.large_step();
                 is_large_step = 1.0;
-            }
-            else {
+            } else {
                 new_state.chain = current_state.chain.mutate();
                 is_large_step = 0.0;
             }
@@ -288,13 +297,13 @@ public:
             // accumulate samples with mean value substitution and MIS
             if (new_state.sc > 0.0) {
                 write_path_contribution(new_state.pc,
-                    factor * (a + is_large_step) /
-                    (new_state.sc / normalizers[path_length] + large_step_prob));
+                                        factor * (a + is_large_step) /
+                                        (new_state.sc / normalizers[path_length] + large_step_prob));
             }
             if (current_state.sc > 0.0) {
                 write_path_contribution(current_state.pc,
-                    factor * real(1.0 - a) /
-                    real((current_state.sc / normalizers[path_length] + large_step_prob)));
+                                        factor * real(1.0 - a) /
+                                        real((current_state.sc / normalizers[path_length] + large_step_prob)));
             }
             // conditionally accept the chain
             if (rand() <= a) {
@@ -336,21 +345,19 @@ public:
                 if (rand() < r) {
                     accepted = true;
                 }
-            }
-            else {
+            } else {
                 a = 0;
             }
             if (accepted) {
                 current_state = new_state;
                 current_state.weight = r / a;
-            }
-            else {
+            } else {
                 current_state.weight = current_state.weight / (1 - a);
             }
             real factor = (path_length + 1) / path_length_pdf;
             if (current_state.sc > 0.0) {
                 write_path_contribution(current_state.pc, current_state.weight * factor /
-                    (current_state.sc / normalizers[path_length]));
+                                                          (current_state.sc / normalizers[path_length]));
             }
             sample_count += 1;
         }

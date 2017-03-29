@@ -1,6 +1,18 @@
-#include "timer.h"
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
+#include <taichi/system/timer.h>
+
 #ifndef _WIN64
+
 #include <unistd.h>
+
 #endif
 
 
@@ -14,14 +26,13 @@ std::map<std::string, double> Time::FPSCounter::last_refresh;
 std::map<std::string, int> Time::FPSCounter::counter;
 
 #ifndef _WIN64
+
 double Time::get_time() {
     struct timeval tv;
     gettimeofday(&tv, nullptr);
     return tv.tv_sec + 1e-6 * tv.tv_usec;
 }
-double Time::get_tick() {
-    return 0.0;
-}
+
 #else
 #include <intrin.h>
 #pragma intrinsic(__rdtsc)
@@ -48,37 +59,29 @@ double Time::get_time() {
     return (double)t / 10000000.0;
 */
 }
-double Time::get_tick() {
-    return (double)__rdtsc();
-}
 #endif
 
-void Time::usleep(double us)
-{
+void Time::usleep(double us) {
 #ifdef _WIN64
-            Sleep(DWORD(us * 1e-3));
+    Sleep(DWORD(us * 1e-3));
 #else
-            ::usleep(us);
+    ::usleep(us);
 #endif
 }
 
-double Time::Timer::get_time()
-{
+double Time::Timer::get_time() {
     return Time::get_time();
 }
 
-void Time::Timer::print_record(const char *left, double elapsed, double average)
-{
+void Time::Timer::print_record(const char *left, double elapsed, double average) {
     printf("%s ==> %6.2f ms ~ %6.2f ms\n", left, elapsed * 1e3,
-        average * 1e3);
+           average * 1e3);
 }
 
-void Time::Timer::output()
-{
+void Time::Timer::output() {
     if (have_output) {
         return;
-    }
-    else {
+    } else {
         have_output = true;
     }
     double elapsed = get_time() - this->start_time;
@@ -97,33 +100,28 @@ void Time::Timer::output()
     this->print_record(left.c_str(), elapsed, avg);
 }
 
-double Time::TickTimer::get_time()
-{
-    return Time::get_tick();
+double Time::TickTimer::get_time() {
+    return Time::get_time();
 }
 
-void Time::TickTimer::print_record(const char *left, double elapsed, double average)
-{
+void Time::TickTimer::print_record(const char *left, double elapsed, double average) {
     string unit;
     double measurement;
     if (elapsed < 1e3) {
         measurement = 1.0;
         unit = "cycles";
-    }
-    else if (elapsed < 1e6) {
+    } else if (elapsed < 1e6) {
         measurement = 1e3;
         unit = "K cycles";
-    }
-    else if (elapsed < 1e9) {
+    } else if (elapsed < 1e9) {
         measurement = 1e6;
         unit = "M cycles";
-    }
-    else {
+    } else {
         measurement = 1e9;
         unit = "G cycles";
     }
     printf("%s ==> %4.2f %s ~ %4.2f %s\n", left, elapsed / measurement, unit.c_str(),
-        average / measurement, unit.c_str());
+           average / measurement, unit.c_str());
 }
 
 
@@ -139,6 +137,24 @@ Time::TickTimer::TickTimer(std::string name) {
     this->have_output = false;
 }
 
+//  Windows
+#ifdef _WIN32
+
+#include <intrin.h>
+uint64 Time::get_cycles(){
+    return __rdtsc();
+}
+
+//  Linux/GCC
+#else
+
+uint64 Time::get_cycles() {
+    unsigned int lo, hi;
+    __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+    return ((uint64)hi << 32) | lo;
+}
+
+#endif
 
 TC_NAMESPACE_END
 

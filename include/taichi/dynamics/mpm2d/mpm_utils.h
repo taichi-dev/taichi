@@ -1,3 +1,12 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #pragma once
 
 #include <memory>
@@ -11,7 +20,7 @@ TC_NAMESPACE_BEGIN
 #define abnormal(v) (!is_normal(v))
 
 // Note: assuming abs(x) <= 2!!
-inline float w(float x) {
+inline real w(real x) {
     x = abs(x);
     assert(x <= 2);
     if (x < 1) {
@@ -23,12 +32,12 @@ inline float w(float x) {
 }
 
 // Note: assuming abs(x) <= 2!!
-inline float dw(float x) {
-    float s = x < 0.0f ? -1.0f : 1.0f;
+inline real dw(real x) {
+    real s = x < 0.0f ? -1.0f : 1.0f;
     x *= s;
     assert(x <= 2.0f);
-    float val;
-    float xx = x * x;
+    real val;
+    real xx = x * x;
     if (x < 1.0f) {
         val = 1.5f * xx - 2.0f * x;
     }
@@ -38,21 +47,21 @@ inline float dw(float x) {
     return s * val;
 }
 
-inline float w(const vec2 &a) {
+inline real w(const Vector2 &a) {
     return w(a.x) * w(a.y);
 }
 
-inline vec2 dw(const vec2 &a) {
-    return vec2(dw(a.x) * w(a.y), w(a.x) * dw(a.y));
+inline Vector2 dw(const Vector2 &a) {
+    return Vector2(dw(a.x) * w(a.y), w(a.x) * dw(a.y));
 }
 
-inline float det(const mat2 &m) {
+inline real det(const Matrix2 &m) {
     return m[0][0] * m[1][1] - m[0][1] * m[1][0];
 }
 
-void polar_decomp(const mat2 &A, mat2 &r, mat2 &s);
+void polar_decomp(const Matrix2 &A, Matrix2 &r, Matrix2 &s);
 
-void svd(const mat2 &A, mat2 &u, mat2 &sig, mat2 &v);
+void svd(const Matrix2 &A, Matrix2 &u, Matrix2 &sig, Matrix2 &v);
 
 
 TC_NAMESPACE_END

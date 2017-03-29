@@ -1,3 +1,12 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #include <taichi/visual/surface_material.h>
 #include <taichi/physics/physics_constants.h>
 #include <taichi/math/discrete_sampler.h>
@@ -20,15 +29,14 @@ public:
     }
 
     virtual void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf,
-        SurfaceEvent &event, const Vector2 &uv) const override {
+                        SurfaceEvent &event, const Vector2 &uv) const override {
         real alpha = mask->sample(uv).x;
         if (u < alpha) {
             out_dir = -in_dir;
             f = Vector3(alpha) * abs(1.0f / in_dir.z);
             pdf = alpha;
             event = (int)SurfaceScatteringFlags::delta | (int)SurfaceScatteringFlags::index_matched;
-        }
-        else {
+        } else {
             u = (u - alpha) / (1 - alpha);
             nested->sample(in_dir, u, v, out_dir, f, pdf, event, uv);
             f *= 1 - alpha;
@@ -69,8 +77,7 @@ public:
         if (abs(in.z) > 1 - eps) {
             Vector3 normal(0, 0, -sgn(in.z));
             return random_diffuse(normal, u, v);
-        }
-        else {
+        } else {
             // We do the following other than the above to ensure correlation for MCMC...
             if (u > v) {
                 std::swap(u, v);
@@ -100,8 +107,8 @@ public:
     }
 
     virtual void
-        sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf,
-            SurfaceEvent &event, const Vector2 &uv) const override {
+    sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf,
+           SurfaceEvent &event, const Vector2 &uv) const override {
         out_dir = sample_direction(in_dir, u, v, uv);
         f = evaluate_bsdf(in_dir, out_dir, uv);
         event = (int)SurfaceScatteringFlags::non_delta;

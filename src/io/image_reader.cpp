@@ -1,11 +1,18 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #include "dcraw.h"
 
 #include <mutex>
 #include <taichi/io/image_reader.h>
 
 TC_NAMESPACE_BEGIN
-
-TC_INTERFACE_DEF(ImageReader, "image_reader");
 
 Array2D<Vector4> dcraw_read(const std::string &filepath) {
     // Single threaded...

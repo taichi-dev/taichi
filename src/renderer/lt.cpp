@@ -1,3 +1,12 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #include <taichi/visual/renderer.h>
 #include <taichi/visual/sampler.h>
 #include <taichi/visual/bsdf.h>
@@ -11,7 +20,7 @@ struct PathContribution {
     PathContribution() {};
 
     PathContribution(float x, float y, Vector3 c) :
-        x(x), y(y), c(c) {}
+            x(x), y(y), c(c) {}
 };
 
 class LTRenderer : public Renderer {
@@ -56,7 +65,7 @@ public:
     }
 
     void connect_to_camera(const Vector3 &pos, const Vector3 &normal, const Vector3 &flux,
-        const BSDF &bsdf, const Vector3 in_dir) {
+                           const BSDF &bsdf, const Vector3 in_dir) {
         real px, py;
         camera->get_pixel_coordinate(normalized(pos - camera->get_origin()), px, py);
         if (!(px < 0 || px > 1 || py < 0 || py > 1)) {
@@ -114,8 +123,7 @@ public:
             real p = max_component(color);
             if (p < 1 && rand() < p) {
                 flux = (1.0f / p) * flux;
-            }
-            else {
+            } else {
                 break;
             }
             ray = Ray(info.pos, out_dir);

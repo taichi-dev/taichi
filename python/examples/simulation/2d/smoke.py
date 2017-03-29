@@ -8,7 +8,7 @@ if __name__ == '__main__':
                                delta_x=1.0 / resolution[0], gravity=(0, -10),
                                initialize_particles=False, correction_strength=0.5,
                                correction_neighbours=5, advection_order=1,
-                               use_bridson_pcg=False, flip_alpha=0.95, padding=0.05, resizable=True, cfl=0.5,
+                               flip_alpha=0.95, padding=0.05, resizable=True, cfl=0.5,
                                simulation_time=60, dt=0.1, buoyancy_alpha=0.1, buoyancy_beta=1.5)
 
     levelset = simulator.create_levelset()

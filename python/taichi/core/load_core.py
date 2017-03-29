@@ -33,10 +33,6 @@ elif get_os_name() == 'linux':
         os.chdir(tmp_cwd)
     else:
         assert False, "Library taichi_core doesn't exist."
-    if os.path.exists('libtaichi_core.so'):
-        shutil.copy('libtaichi_core.so', 'taichi_core.so')
-        sys.path.append(".")
-        import taichi_core as tc_core
 elif get_os_name() == 'win':
     bin_dir = get_bin_directory() + '/'
     dll_path = bin_dir + '/Release/taichi_core.dll'

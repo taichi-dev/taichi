@@ -1,3 +1,12 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #include <taichi/visual/volume_material.h>
 #include <taichi/visual/texture.h>
 #include <taichi/math/array_3d.h>
@@ -7,7 +16,6 @@
 
 TC_NAMESPACE_BEGIN
 
-TC_INTERFACE_DEF(VolumeMaterial, "volume_material")
 TC_IMPLEMENTATION(VolumeMaterial, VolumeMaterial, "homogeneous");
 
 class VacuumVolumeMaterial : public VolumeMaterial {
@@ -17,11 +25,13 @@ public:
         this->volumetric_scattering = 0.0f;
         this->volumetric_absorption = 0.0f;
     }
+
     virtual real get_attenuation(real dist) const override {
         return 1.0f;
     }
 
-    virtual real unbiased_sample_attenuation(const Vector3 &start, const Vector3 &end, StateSequence &rand) const override {
+    virtual real
+    unbiased_sample_attenuation(const Vector3 &start, const Vector3 &end, StateSequence &rand) const override {
         return 1.0f;
     }
 
@@ -29,6 +39,7 @@ public:
         error("invalid");
         return VolumeEvent::absorption;
     }
+
     virtual bool is_vacuum() const override {
         return true;
     }
@@ -84,7 +95,8 @@ public:
         return dist;
     }
 
-    virtual real unbiased_sample_attenuation(const Vector3 &start, const Vector3 &end, StateSequence &rand) const override {
+    virtual real
+    unbiased_sample_attenuation(const Vector3 &start, const Vector3 &end, StateSequence &rand) const override {
         auto dir = normalized(end - start);
         return sample_free_distance(rand, Ray(start, dir)) >= glm::length(end - start);
     }
@@ -124,7 +136,7 @@ protected:
                 Index3D nei_ind = ind + st;
                 if (voxels.inside(nei_ind)) {
                     real d = length(multiply_matrix4(local2world,
-                        (nei_ind.get_pos() - target) * inv_res, 0));
+                                                     (nei_ind.get_pos() - target) * inv_res, 0));
                     if (d < sdf[nei_ind]) {
                         // Update
                         nearest[nei_ind] = target;
@@ -135,9 +147,9 @@ protected:
             }
         }
         real shrink = 2 * std::max(std::max(
-            length(multiply_matrix4(local2world, Vector3(1, 0, 0) * inv_res, 0)),
-            length(multiply_matrix4(local2world, Vector3(0, 1, 0) * inv_res, 0))),
-            length(multiply_matrix4(local2world, Vector3(0, 0, 1) * inv_res, 0))
+                length(multiply_matrix4(local2world, Vector3(1, 0, 0) * inv_res, 0)),
+                length(multiply_matrix4(local2world, Vector3(0, 1, 0) * inv_res, 0))),
+                                   length(multiply_matrix4(local2world, Vector3(0, 0, 1) * inv_res, 0))
         );
         for (auto &ind : sdf.get_region()) {
             sdf[ind] -= shrink;

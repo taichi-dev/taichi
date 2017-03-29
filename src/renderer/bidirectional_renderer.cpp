@@ -1,3 +1,12 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #include "bidirectional_renderer.h"
 #include <taichi/visual/surface_material.h>
 
@@ -36,8 +45,7 @@ void BidirectionalRenderer::trace(Path &path, Ray r, int depth, int max_depth, S
             v.event = (int)SurfaceScatteringFlags::emit;
             path.push_back(v);
             break;
-        }
-        else {
+        } else {
             v.in_dir = -r.dir;
             bsdf.sample(v.in_dir, rand(), rand(), v.out_dir, v.f, v.pdf, v.event);
             r = Ray(info.pos + v.out_dir * eps, v.out_dir); // TODO: fix here...
@@ -100,7 +108,7 @@ Path BidirectionalRenderer::trace_light_path(StateSequence &rand) {
 }
 
 bool BidirectionalRenderer::connectable(int num_eye_vertices, int num_light_vertices,
-    const Vertex &eye_end, const Vertex &light_end) {
+                                        const Vertex &eye_end, const Vertex &light_end) {
     const Vector3 dir = normalize(light_end.pos - eye_end.pos);
     if ((num_eye_vertices == 1) && (num_light_vertices >= 1)) {
         // Light tracing
@@ -108,16 +116,14 @@ bool BidirectionalRenderer::connectable(int num_eye_vertices, int num_light_vert
             dot(camera->get_dir(), dir) < eps) {
             return false;
         }
-    }
-    else {
+    } else {
         // Otherwise, vertex connection
         if (!SurfaceEventClassifier::is_delta(light_end.event) && !SurfaceEventClassifier::is_delta(eye_end.event)) {
             if (light_end.triangle_id == eye_end.triangle_id || // on the same triangle?
                 (dot(dir, light_end.normal) > -eps && num_light_vertices == 1)) {
                 return false;
             }
-        }
-        else {
+        } else {
             return false;
         }
     }
@@ -127,7 +133,7 @@ bool BidirectionalRenderer::connectable(int num_eye_vertices, int num_light_vert
 }
 
 double BidirectionalRenderer::path_pdf(const Path &path,
-    const int num_eye_vert_spec, const int num_light_vert_spec) {
+                                       const int num_eye_vert_spec, const int num_light_vert_spec) {
     int path_length = (int)path.size() - 1;
     double p = 1.0;
     const int num_eye_vertices = num_eye_vert_spec;
@@ -136,8 +142,7 @@ double BidirectionalRenderer::path_pdf(const Path &path,
     for (int i = -1; i <= num_eye_vertices - 2; i++) {
         if (i == -1) {
             p = p * camera->get_pixel_scaling();
-        }
-        else if (i == 0) {
+        } else if (i == 0) {
             Vector3 d0 = normalize(path[1].pos - path[0].pos);
             double c = dot(d0, camera->get_dir());
             double distance_to_screen = 1.0f / c;
@@ -146,14 +151,12 @@ double BidirectionalRenderer::path_pdf(const Path &path,
             // NOTE: above....
             p = p * direction_to_area(path[0], path[1]);
             p = p / camera->get_pixel_scaling();
-        }
-        else {
+        } else {
             Vector3 in_dir = normalize(path[i - 1].pos - path[i].pos);
             Vector3 out_dir = normalize(path[i + 1].pos - path[i].pos);
             if (path[i].connected) {
                 p = p * path[i].bsdf.probability_density(in_dir, out_dir);
-            }
-            else {
+            } else {
                 p = p * path[i].pdf;
             }
             p = p * direction_to_area(path[i], path[i + 1]);
@@ -165,22 +168,19 @@ double BidirectionalRenderer::path_pdf(const Path &path,
             // Light sample PDF
             int id = path[path_length].triangle_id;
             p = p * scene->get_triangle_pdf(id) / scene->get_triangle(id).area;
-        }
-        else if (i == 0) {
+        } else if (i == 0) {
             Vector3 in_dir = normalize(
-                path[path_length - 1].pos - path[path_length].pos);
+                    path[path_length - 1].pos - path[path_length].pos);
             p = p * dot(path[path_length].normal, in_dir) / pi;
             p = p * direction_to_area(path[path_length], path[path_length - 1]);
-        }
-        else {
+        } else {
             if (path[path_length - i].connected) {
                 Vector3 in_dir = normalize(
-                    path[path_length - (i - 1)].pos - path[path_length - i].pos);
+                        path[path_length - (i - 1)].pos - path[path_length - i].pos);
                 Vector3 out_dir = normalize(
-                    path[path_length - (i + 1)].pos - path[path_length - i].pos);
+                        path[path_length - (i + 1)].pos - path[path_length - i].pos);
                 p = p * path[path_length - i].bsdf.probability_density(in_dir, out_dir);
-            }
-            else {
+            } else {
                 p = p * path[path_length - i].pdf;
             }
             p = p * direction_to_area(path[path_length - i], path[path_length - (i + 1)]);
@@ -199,7 +199,7 @@ double BidirectionalRenderer::path_pdf(const Path &path,
 }
 
 double BidirectionalRenderer::path_total_pdf(const Path &path,
-    bool including_connection, int merging_factor) {
+                                             bool including_connection, int merging_factor) {
     int path_length = (int)path.size() - 1;
     double vc_pdf(0), vm_pdf(0);
     // We have to calculate all the possibilities...
@@ -240,8 +240,8 @@ double BidirectionalRenderer::path_total_pdf(const Path &path,
 }
 
 PathContribution BidirectionalRenderer::connect(const Path &eye_path, const Path &light_path,
-    const int num_eye_vert_spec,
-    const int num_light_vert_spec, const int merging_factor) {
+                                                const int num_eye_vert_spec,
+                                                const int num_light_vert_spec, const int merging_factor) {
     PathContribution result;
     bool specified = (num_eye_vert_spec != -1) && (num_light_vert_spec != -1);
 
@@ -253,19 +253,17 @@ PathContribution BidirectionalRenderer::connect(const Path &eye_path, const Path
             if (num_eye_vertices > (int)eye_path.size()) continue;
             if (num_light_vertices > (int)light_path.size()) continue;
             if (specified && ((num_eye_vert_spec != num_eye_vertices) ||
-                (num_light_vert_spec != num_light_vertices)))
+                              (num_light_vert_spec != num_light_vertices)))
                 continue;
             if (num_eye_vertices == 0) {
                 continue;
-            }
-            else if (num_light_vertices == 0) {
+            } else if (num_light_vertices == 0) {
                 const Vertex &eye_end = eye_path[num_eye_vertices - 1];
                 bool valid = scene->get_triangle_emission(eye_end.triangle_id) > 0 && eye_end.front;
                 if (!valid) {
                     continue;
                 }
-            }
-            else {
+            } else {
                 const Vertex &eye_end = eye_path[num_eye_vertices - 1];
                 const Vertex &light_end = light_path[num_light_vertices - 1];
                 if (!connectable(num_eye_vertices, num_light_vertices, eye_end, light_end)) {
@@ -306,11 +304,11 @@ PathContribution BidirectionalRenderer::connect(const Path &eye_path, const Path
                 (print_path_policy == "bright" && max_component(c) > luminance_clamping)) {
                 printf("Abnormal Path: #Eye %d, #Light %d", num_eye_vertices, num_light_vertices);
                 printf("  f = %.10f %.10f %.10f, p = %.10f, c = %.10f, %.10f, %.10f\n", f[0], f[1], f[2], p, c[0],
-                    c[1], c[2]);
+                       c[1], c[2]);
                 for (int i = 0; i <= path_length; i++) {
                     auto &v = full_path[i];
                     printf("  pos = %f %f %f, normal = %f %f %f\n", v.pos[0], v.pos[1], v.pos[2], v.normal[0],
-                        v.normal[1], v.normal[2]);
+                           v.normal[1], v.normal[2]);
                     auto &b = full_path[i].bsdf;
                     if (i >= 1 && i < path_length) {
                         Vector3 in = normalized(full_path[i - 1].pos - full_path[i].pos);
@@ -318,17 +316,16 @@ PathContribution BidirectionalRenderer::connect(const Path &eye_path, const Path
                         auto p = b.probability_density(in, out);
                         auto brdf = b.evaluate(in, out);
                         printf("  #brdf = %s, pdf = %f, evaluate_bsdf = %f %f %f\n", b.get_name().c_str(), p,
-                            brdf.x, brdf.y,
-                            brdf.z);
-                    }
-                    else if (i == path_length) {
+                               brdf.x, brdf.y,
+                               brdf.z);
+                    } else if (i == path_length) {
                         Vector3 in = normalized(full_path[i - 1].pos - full_path[i].pos);
                         Vector3 out = normalized(full_path[i].normal);
                         auto p = b.probability_density(in, out);
                         auto brdf = b.evaluate(in, out);
                         printf("  #light brdf = %s, pdf = %f, evaluate_bsdf = %f %f %f\n", b.get_name().c_str(), p,
-                            brdf.x,
-                            brdf.y, brdf.z);
+                               brdf.x,
+                               brdf.y, brdf.z);
                     }
                 }
                 printf("\n");
@@ -336,14 +333,14 @@ PathContribution BidirectionalRenderer::connect(const Path &eye_path, const Path
             if (print_path_policy != "none" && (abnormal(f) || abnormal(p) || abnormal(c))) {
                 printf("%d - %d\n", num_eye_vertices, num_light_vertices);
                 printf("f = %.10f %.10f %.10f, p = %.10f, c = %.10f, %.10f, %.10f\n", f[0], f[1], f[2], p,
-                    c[0], c[1], c[2]);
+                       c[0], c[1], c[2]);
                 printf("Abnormal Path: #Eye %d, #Light %d", num_eye_vertices, num_light_vertices);
                 printf("  f = %.10f %.10f %.10f, p = %.10f, c = %.10f, %.10f, %.10f\n", f[0], f[1], f[2], p, c[0],
-                    c[1], c[2]);
+                       c[1], c[2]);
                 for (int i = 0; i <= path_length; i++) {
                     auto &v = full_path[i];
                     printf("  pos = %f %f %f, normal = %f %f %f\n", v.pos[0], v.pos[1], v.pos[2], v.normal[0],
-                        v.normal[1], v.normal[2]);
+                           v.normal[1], v.normal[2]);
                     auto &b = full_path[i].bsdf;
                     if (i >= 1 && i < path_length) {
                         Vector3 in = normalized(full_path[i - 1].pos - full_path[i].pos);
@@ -351,17 +348,16 @@ PathContribution BidirectionalRenderer::connect(const Path &eye_path, const Path
                         auto p = b.probability_density(in, out);
                         auto brdf = b.evaluate(in, out);
                         printf("  #brdf = %s, pdf = %f, evaluate_bsdf = %f %f %f\n", b.get_name().c_str(), p,
-                            brdf.x, brdf.y,
-                            brdf.z);
-                    }
-                    else if (i == path_length) {
+                               brdf.x, brdf.y,
+                               brdf.z);
+                    } else if (i == path_length) {
                         Vector3 in = normalized(full_path[i - 1].pos - full_path[i].pos);
                         Vector3 out = normalized(full_path[i].normal);
                         auto p = b.probability_density(in, out);
                         auto brdf = b.evaluate(in, out);
                         printf("  #light brdf = %s, pdf = %f, evaluate_bsdf = %f %f %f\n", b.get_name().c_str(), p,
-                            brdf.x,
-                            brdf.y, brdf.z);
+                               brdf.x,
+                               brdf.y, brdf.z);
                     }
                 }
                 printf("\n");
@@ -381,13 +377,12 @@ PathContribution BidirectionalRenderer::connect(const Path &eye_path, const Path
 
 double
 BidirectionalRenderer::mis_weight(const Path &path, const int num_eye_vert_spec, const int num_light_vert_spec,
-    bool including_connection, int merging_factor) {
+                                  bool including_connection, int merging_factor) {
     const double p_i = path_pdf(path, num_eye_vert_spec, num_light_vert_spec); // TODO: not necessary re-evaluation
     const double p_all = path_total_pdf(path, including_connection, merging_factor);
     if ((p_i == 0.0) || (p_all == 0.0)) {
         return 0.0;
-    }
-    else {
+    } else {
         return std::max(std::min(p_i / p_all, 1.0), 0.0);
     }
 }
@@ -403,18 +398,15 @@ Vector3d BidirectionalRenderer::path_throughput(const Path &path) {
             const double c = dot(d0, camera->get_dir());
             const double ds2 = 1.0 / (c * c);
             f = f * double(fabs(dot(d0, path[1].normal) / dist2 / c * ds2));
-        }
-        else if (i == ((int)path.size() - 1)) {
+        } else if (i == ((int)path.size() - 1)) {
             if (path[i].bsdf.is_emissive()) {
                 const Vector3 out_dir = normalize(path[i - 1].pos - path[i].pos);
                 f = f * (Vector3d)path[i].bsdf.evaluate(path[i].normal, out_dir);
-            }
-            else {
+            } else {
                 // Last event must be emission
                 f *= 0;
             }
-        }
-        else {
+        } else {
             // No emissive material in the middle.
             const Vector3 in_dir = !path[i].connected ? path[i].in_dir : normalize(path[i - 1].pos - path[i].pos);
             const Vector3 out_dir = !path[i].connected ? path[i].out_dir : normalize(path[i + 1].pos - path[i].pos);
@@ -428,8 +420,7 @@ Vector3d BidirectionalRenderer::path_throughput(const Path &path) {
             if (path[i].connected) {
                 // For end points of eye/light path, we need to re-evaluate bsdf
                 bsdf = path[i].bsdf.evaluate(in_dir, out_dir);
-            }
-            else {
+            } else {
                 bsdf = path[i].f;
             }
             f *= bsdf * geometry_term(path[i], path[i + 1]);

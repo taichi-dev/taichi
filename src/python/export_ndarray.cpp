@@ -1,11 +1,17 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #include <taichi/python/export.h>
 
 #include <taichi/math/array_2d.h>
 #include <taichi/math/levelset_2d.h>
 #include <taichi/visualization/image_buffer.h>
-
-using namespace boost::python;
-namespace py = boost::python;
 
 TC_NAMESPACE_BEGIN
 
@@ -30,12 +36,14 @@ void image_buffer_to_ndarray(T *arr, uint64 output) // 'output' is actually a po
 }
 
 template void array2d_to_ndarray(LevelSet2D *arr, uint64);
+
 template void array2d_to_ndarray(Array2D<real> *arr, uint64);
 
 template void image_buffer_to_ndarray<Array2D<Vector3>, 3>(Array2D<Vector3> *arr, uint64);
+
 template void image_buffer_to_ndarray<Array2D<Vector4>, 4>(Array2D<Vector4> *arr, uint64);
 
-void export_ndarray() {
+void export_ndarray(py::module &m) {
 }
 TC_NAMESPACE_END
 

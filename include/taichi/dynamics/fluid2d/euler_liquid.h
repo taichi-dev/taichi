@@ -1,3 +1,12 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #pragma once
 
 #include "fluid.h"
@@ -21,9 +30,9 @@ protected:
     Array get_rhs();
     void apply_boundary_condition();
     real volume_correction_factor;
+    real levelset_band;
     bool supersampling;
     real cfl;
-    std::string title;
     Array u_weight;
     Array v_weight;
     LevelSet2D liquid_levelset;
@@ -37,8 +46,8 @@ protected:
     void update_volume_controller();
     real get_volume_correction();
     void advect_level_set(real delta_t);
-    bool use_bridson_pcg;
     real tolerance;
+    real theta_threshold;
     int maximum_iterations;
     LevelSet2D boundary_levelset;
     Array density;
@@ -60,8 +69,6 @@ protected:
     Vector2 sample_velocity(Vector2 position, const Array &u, const Array &v);
 
     virtual Vector2 sample_velocity(Vector2 position);
-
-    std::function<CellType(real, real)> get_initializer(std::string name);
 
     bool check_u_activity(int i, int j);
 
@@ -105,6 +112,10 @@ protected:
         return max(0.0f, 1.0f - std::abs(c.x)) * max(0.0f, 1.0f - std::abs(c.y));
     }
 
+    virtual void advect_liquid_levelset(real delta_t);
+
+    virtual void rebuild_levelset(LevelSet2D &levelset, real band);
+
     static Vector2 grad_kernel(const Vector2 &c) {
 #define PRECISE_SGN(x) ((-1 < x && x <= 0) ? -1 : ((0 < x && x <= 1) ? 1 : 0))
         return Vector2(
@@ -115,8 +126,6 @@ protected:
     }
 
     virtual void initialize_solver(const Config &config);
-
-    virtual void initialize_particles(const Config &config);
 
     virtual void substep(real delta_t);
     
@@ -130,9 +139,11 @@ protected:
 
     virtual bool check_diag_domination();
 
+    virtual void update_velocity_weights();
+
 public:
     
-    EulerLiquid();
+    EulerLiquid() {}
 
     virtual void set_levelset(const LevelSet2D &boundary_levelset) override;
 

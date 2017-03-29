@@ -1,3 +1,12 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #include "taichi/dynamics/fluid2d/apic.h"
 
 TC_NAMESPACE_BEGIN
@@ -46,7 +55,11 @@ void APICLiquid::substep(real delta_t) {
     apply_external_forces(delta_t);
     mark_cells();
     rasterize();
-    compute_liquid_levelset();
+    if (t == 0.0f)
+        compute_liquid_levelset();
+    else {
+        advect_liquid_levelset(delta_t);
+    }
     simple_extrapolate();
     TIME(project(delta_t));
     simple_extrapolate();

@@ -1,10 +1,18 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #pragma once
 
 #include <memory.h>
 #include <string>
 #include <taichi/visualization/image_buffer.h>
 #include <taichi/common/meta.h>
-#include <taichi/common/interface.h>
 #include <taichi/math/array_3d.h>
 #include <taichi/dynamics/poisson_solver3d.h>
 #include <taichi/dynamics/simulation3d.h>

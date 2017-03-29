@@ -1,10 +1,18 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #include <taichi/system/threading.h>
 #include <taichi/dynamics/poisson_solver2d.h>
 #include <taichi/math/stencils.h>
 
 TC_NAMESPACE_BEGIN
 
-TC_INTERFACE_DEF(PoissonSolver2D, "pressure_solver_2d");
 
 // Maybe we are going to need Algebraic Multigrid in the future,
 // but let's have a GMG with different boundary conditions support first...

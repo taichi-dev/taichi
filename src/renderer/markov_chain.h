@@ -1,3 +1,12 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #pragma once
 
 #include <taichi/math/linalg.h>
@@ -19,6 +28,7 @@ public:
         }
         return states[d];
     }
+
     virtual void print_states() {
         printf("chain = ");
         for (int i = 0; i < (int)states.size(); i++) {
@@ -27,18 +37,20 @@ public:
         printf("\n");
     }
 };
+
 class MCStateSequence : public StateSequence {
 private:
     MarkovChain &mc;
 public:
     MCStateSequence(MarkovChain &mc) : mc(mc) {}
+
     real sample() override {
         return mc.get_state(cursor++);
     }
 };
 
 
-template <bool starts_from_screen>
+template<bool starts_from_screen>
 class PSSMarkovChain : public MarkovChain {
 private:
     real resolutions[int(starts_from_screen) * 2];
@@ -46,19 +58,21 @@ public:
     PSSMarkovChain() {
         memset(resolutions, 0, sizeof(resolutions));
     }
+
     PSSMarkovChain(real resolution_x, real resolution_y) {
         static_assert(starts_from_screen, "");
         resolutions[0] = resolution_x;
         resolutions[1] = resolution_y;
     }
+
     PSSMarkovChain<starts_from_screen> large_step() const {
         if (starts_from_screen) {
             return PSSMarkovChain<starts_from_screen>(resolutions[0], resolutions[1]);
-        }
-        else {
+        } else {
             return PSSMarkovChain<starts_from_screen>();
         }
     }
+
     PSSMarkovChain<starts_from_screen> mutate(real strength) const {
         PSSMarkovChain<starts_from_screen> result(*this);
         if (starts_from_screen) {
@@ -77,8 +91,7 @@ protected:
         if (r < 0.5f) {
             r = r * 2.0f;
             result = value + pow(r, 1.0f / strength + 1.0f);
-        }
-        else {
+        } else {
             r = (r - 0.5f) * 2.0f;
             result = value - pow(r, 1.0f / strength + 1.0f);
         }
@@ -92,6 +105,7 @@ public:
     AMCMCPPMMarkovChain large_step() const {
         return AMCMCPPMMarkovChain();
     }
+
     AMCMCPPMMarkovChain mutate(real strength) const {
         AMCMCPPMMarkovChain result(*this);
         for (int i = 0; i < (int)states.size(); i++) {
@@ -108,8 +122,7 @@ protected:
         if (r < 0.5f) {
             r = r * 2.0f;
             result = value + pow(r, 1.0f / strength + 1.0f);
-        }
-        else {
+        } else {
             r = (r - 0.5f) * 2.0f;
             result = value - pow(r, 1.0f / strength + 1.0f);
         }

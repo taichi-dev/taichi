@@ -1,3 +1,12 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #include <taichi/visual/surface_material.h>
 
 TC_NAMESPACE_BEGIN
@@ -85,8 +94,8 @@ public:
     }
 
     void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir,
-        Vector3 &f, real &pdf,
-        SurfaceEvent &event, const Vector2 &uv) const override {
+                Vector3 &f, real &pdf,
+                SurfaceEvent &event, const Vector2 &uv) const override {
         out_dir = sample_direction(in_dir, u, v, uv);
         f = evaluate_bsdf(in_dir, out_dir, uv);
         event = (int)SurfaceScatteringFlags::non_delta;

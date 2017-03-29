@@ -1,3 +1,12 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #include <taichi/system/threading.h>
 #include <taichi/visual/renderer.h>
 #include <taichi/visual/sampler.h>
@@ -16,7 +25,7 @@ struct PathContribution {
     PathContribution() {};
 
     PathContribution(float x, float y, Vector3 c) :
-        x(x), y(y), c(c) {}
+            x(x), y(y), c(c) {}
 };
 
 // TODO: we do need a light source class to unify envmap and mesh light...
@@ -47,7 +56,7 @@ protected:
     bool russian_roulette;
 
     Vector3 calculate_direct_lighting(const Vector3 &in_dir, const IntersectionInfo &info, const BSDF &bsdf,
-        StateSequence &rand, VolumeStack &stack) {
+                                      StateSequence &rand, VolumeStack &stack) {
         Vector3 acc(0);
         real light_source_pdf;
         bool sample_envmap = false;
@@ -57,8 +66,7 @@ protected:
         Triangle tri;
         if (p_envmap) {
             sample_envmap = true;
-        }
-        else {
+        } else {
             tri = *p_triangle;
         }
         // MIS between bsdf and light sampling.
@@ -88,15 +96,13 @@ protected:
                     // It's included in previous vertex.
                     continue;
                 }
-            }
-            else {
+            } else {
                 // Sample light source
                 if (sample_envmap) {
                     Vector3 _; // TODO : optimize
                     real pdf;
                     out_dir = p_envmap->sample_direction(rand, pdf, _);
-                }
-                else {
+                } else {
                     Vector3 pos = tri.sample_point(rand(), rand());
                     dist = pos - info.pos;
                     out_dir = normalize(dist);
@@ -126,11 +132,10 @@ protected:
                 real c = abs(dot(ray.dir, tri.normal));
                 dist = test_info.pos - info.pos;
                 light_p = dot(dist, dist) / std::max(1e-20f, light_tri.area * c) *
-                    scene->get_triangle_pdf(light_tri.id);
+                          scene->get_triangle_pdf(light_tri.id);
                 const Vector3 emission = light_bsdf.evaluate(test_info.normal, -out_dir);
                 throughput = f * co * emission * att;
-            }
-            else {
+            } else {
                 // Envmap
                 if (p_envmap == nullptr) {
                     continue;
@@ -144,25 +149,23 @@ protected:
                     // Delta BSDF Event, pdf_light (constant) is negligible
                     // compared with pdf_bsdf(inf)
                     acc += 1 / (direct_lighting_bsdf * bsdf_p) * throughput;
-                }
-                else {
+                } else {
                     // Non-delta BSDF event
                     acc += 1 / (direct_lighting_bsdf * bsdf_p +
-                        direct_lighting_light * light_p) * throughput;
+                                direct_lighting_light * light_p) * throughput;
                 }
-            }
-            else {
+            } else {
                 // Light sampling
                 // The prob. of triggering delta BSDF event is 0, thus we ignore this case
                 acc += 1 / (direct_lighting_bsdf * bsdf_p +
-                    direct_lighting_light * light_p) * throughput;
+                            direct_lighting_light * light_p) * throughput;
             }
         }
         return acc;
     }
 
     Vector3 calculate_volumetric_direct_lighting(const Vector3 &in_dir, const Vector3 &orig,
-        StateSequence &rand, VolumeStack &stack);
+                                                 StateSequence &rand, VolumeStack &stack);
 
     PathContribution get_path_contribution(StateSequence &rand) {
         Vector2 offset(rand(), rand());
@@ -187,7 +190,8 @@ protected:
         accumulator.accumulate(int(x * width), int(y * height), cont.c * scale);
     }
 
-    virtual Vector3 get_attenuation(VolumeStack stack, Ray ray, StateSequence &rand, IntersectionInfo &last_intersection) {
+    virtual Vector3
+    get_attenuation(VolumeStack stack, Ray ray, StateSequence &rand, IntersectionInfo &last_intersection) {
         Vector3 att(1.0f);
 
         for (int i = 0; i < 100; i++) {
@@ -230,8 +234,7 @@ protected:
                             return Vector3(0.0f);
                         }
                         stack.push(bsdf.get_internal_material());
-                    }
-                    else {
+                    } else {
                         if (stack.top() != bsdf.get_internal_material()) {
                             // Same as above...
                             return Vector3(0.0f);
@@ -239,8 +242,7 @@ protected:
                         stack.pop();
                     }
                 }
-            }
-            else {
+            } else {
                 return Vector3(0.0f);
             }
         }
@@ -263,7 +265,7 @@ void PathTracingRenderer::initialize(const Config &config) {
     this->direct_lighting_light = config.get("direct_lighting_light", 1);
     this->direct_lighting_bsdf = config.get("direct_lighting_bsdf", 1);
     assert_info(this->direct_lighting_bsdf > 0 || this->direct_lighting_light > 0,
-        "Sum of direct_lighting_bsdf and direct_lighting_light should not be 0.");
+                "Sum of direct_lighting_bsdf and direct_lighting_light should not be 0.");
     this->sampler = create_instance<Sampler>(config.get("sampler", "prand"));
     this->luminance_clamping = config.get("luminance_clamping", 0.0f);
     this->accumulator = ImageAccumulator<Vector3>(width, height);
@@ -273,7 +275,7 @@ void PathTracingRenderer::initialize(const Config &config) {
 }
 
 Vector3 PathTracingRenderer::calculate_volumetric_direct_lighting(const Vector3 &in_dir, const Vector3 &orig,
-    StateSequence &rand, VolumeStack &stack) {
+                                                                  StateSequence &rand, VolumeStack &stack) {
     Vector3 acc(0);
     real light_source_pdf;
     bool sample_envmap = false;
@@ -283,8 +285,7 @@ Vector3 PathTracingRenderer::calculate_volumetric_direct_lighting(const Vector3 
     Triangle tri;
     if (p_envmap) {
         sample_envmap = true;
-    }
-    else {
+    } else {
         tri = *p_triangle;
     }
     // MIS between bsdf and light sampling.
@@ -310,15 +311,13 @@ Vector3 PathTracingRenderer::calculate_volumetric_direct_lighting(const Vector3 
             // Sample BSDF
             out_dir = vol.sample_phase(rand, Ray(orig, in_dir));
             bsdf_p = vol.phase_probability_density(orig, in_dir, out_dir);
-        }
-        else {
+        } else {
             // Sample light source
             if (sample_envmap) {
                 Vector3 _; // TODO : optimize
                 real pdf;
                 out_dir = p_envmap->sample_direction(rand, pdf, _);
-            }
-            else {
+            } else {
                 Vector3 pos = tri.sample_point(rand(), rand());
                 dist = pos - orig;
                 out_dir = normalize(dist);
@@ -348,11 +347,10 @@ Vector3 PathTracingRenderer::calculate_volumetric_direct_lighting(const Vector3 
             real c = abs(dot(ray.dir, tri.normal));
             dist = test_info.pos - orig;
             light_p = dot(dist, dist) / std::max(1e-20f, light_tri.area * c) *
-                scene->get_triangle_pdf(light_tri.id);
+                      scene->get_triangle_pdf(light_tri.id);
             const Vector3 emission = light_bsdf.evaluate(test_info.normal, -out_dir);
             throughput = f * co * emission * att;
-        }
-        else {
+        } else {
             // Envmap
             if (p_envmap == nullptr) {
                 continue;
@@ -364,12 +362,11 @@ Vector3 PathTracingRenderer::calculate_volumetric_direct_lighting(const Vector3 
         if (sample_bsdf) {
             // BSDF sampling
             acc += 1 / (direct_lighting_bsdf * bsdf_p +
-                direct_lighting_light * light_p) * throughput;
-        }
-        else {
+                        direct_lighting_light * light_p) * throughput;
+        } else {
             // Light sampling
             acc += 1 / (direct_lighting_bsdf * bsdf_p +
-                direct_lighting_light * light_p) * throughput;
+                        direct_lighting_light * light_p) * throughput;
         }
     }
     return acc;
@@ -449,8 +446,8 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
                 break;
             }
             f *= c / pdf;
-        }
-        else if (volume.sample_event(rand, Ray(ray.orig + ray.dir * safe_distance, ray.dir)) == VolumeEvent::scattering) {
+        } else if (volume.sample_event(rand, Ray(ray.orig + ray.dir * safe_distance, ray.dir)) ==
+                   VolumeEvent::scattering) {
             // Volumetric scattering
             path_length += 1;
             const Vector3 orig = ray.orig + ray.dir * safe_distance;
@@ -462,8 +459,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
             Vector3 out_dir = volume.sample_phase(rand, Ray(orig, ray.dir));
             out_ray = Ray(orig, out_dir, 1e-5f);
             f = Vector3(1.0f);
-        }
-        else {
+        } else {
             // Volumetric absorption
             break;
         }
@@ -474,8 +470,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
             if (p <= 1) {
                 if (rand() < p) {
                     importance *= 1.0f / p;
-                }
-                else {
+                } else {
                     break;
                 }
             }
@@ -492,7 +487,7 @@ public:
         PathTracingRenderer::initialize(config);
         Config cfg;
         cfg.set("color", Vector3(1, 1, 1));
-        material = create_initialized_instance<SurfaceMaterial>("diffuse", cfg);
+        material = create_instance<SurfaceMaterial>("diffuse", cfg);
         sdf = AssetManager::get_asset<SDF>(config.get_int("sdf"));
     }
 
@@ -500,7 +495,7 @@ protected:
     std::shared_ptr<SDF> sdf;
     std::shared_ptr<SurfaceMaterial> material;
 
-    real ray_march(const Ray &ray, real limit=1e5) {
+    real ray_march(const Ray &ray, real limit = 1e5) {
         real dist = 0;
         for (int i = 0; i < 1000; i++) {
             const Vector3 p = ray.orig + dist * ray.dir;
@@ -516,7 +511,8 @@ protected:
         return dist;
     }
 
-    Vector3 get_attenuation(VolumeStack stack, Ray ray, StateSequence &rand, IntersectionInfo &last_intersection) override {
+    Vector3
+    get_attenuation(VolumeStack stack, Ray ray, StateSequence &rand, IntersectionInfo &last_intersection) override {
         last_intersection = sg->query(ray);
         if (!last_intersection.intersected) {
             return Vector3(0.0f);
@@ -631,8 +627,7 @@ protected:
                 if (p <= 1) {
                     if (rand() < p) {
                         importance *= 1.0f / p;
-                    }
-                    else {
+                    } else {
                         break;
                     }
                 }
@@ -677,8 +672,7 @@ protected:
         if (r < 0.5f) {
             r = r * 2.0f;
             result = value + s2 * exp(-log(s2 / s1) * r);
-        }
-        else {
+        } else {
             r = (r - 0.5f) * 2.0f;
             result = value - s2 * exp(-log(s2 / s1) * r);
         }
@@ -698,7 +692,7 @@ protected:
         MCMCState() {}
 
         MCMCState(const PSSMLTMarkovChain &chain, const PathContribution &pc, real sc) :
-            chain(chain), pc(pc), sc(sc) {
+                chain(chain), pc(pc), sc(sc) {
         }
     };
 
@@ -767,8 +761,7 @@ public:
             if (rand() <= large_step_prob) {
                 new_state.chain = current_state.chain.large_step();
                 is_large_step = 1.0;
-            }
-            else {
+            } else {
                 new_state.chain = current_state.chain.mutate(mutation_strength);
                 is_large_step = 0.0;
             }
@@ -782,11 +775,11 @@ public:
             // accumulate samples with mean value substitution and MIS
             if (new_state.sc > 0.0) {
                 write_path_contribution(new_state.pc,
-                    real((a + is_large_step) / (new_state.sc / b + large_step_prob)));
+                                        real((a + is_large_step) / (new_state.sc / b + large_step_prob)));
             }
             if (current_state.sc > 0.0) {
                 write_path_contribution(current_state.pc,
-                    real((1.0 - a) / (current_state.sc / b + large_step_prob)));
+                                        real((1.0 - a) / (current_state.sc / b + large_step_prob)));
             }
             // conditionally accept the chain
             if (rand() <= a) {

@@ -20,8 +20,6 @@ image: Visual Studio 2015
 
 # environment variables
 environment:
-  BOOST_INCLUDEDIR: C:\Libraries\boost_1_62_0
-  BOOST_LIBRARYDIR: C:\Libraries\boost_1_62_0\lib64-msvc-14.0
   TAICHI_ROOT_DIR: C:\projects\taichi\
   
   matrix:
@@ -34,7 +32,7 @@ clone_folder: $(TAICHI_ROOT_DIR)
 
 install:
   - cd %TAICHI_ROOT_DIR%
-  - git clone https://github.com/IteratorAdvance/taichi
+  - git clone https://github.com/yuanming-hu/taichi
 
 #---------------------------------#
 #       build configuration       #
@@ -48,7 +46,7 @@ build_script:
   - set PYTHONPATH=%TAICHI_ROOT_DIR%/taichi/python/;%PYTHONPATH%
   - python --version
   - python -c "import struct; print(struct.calcsize('P') * 8)"
-  - python -m pip install numpy future futures watchdog Pillow
+  - python -m pip install numpy future futures watchdog Pillow pybind11
   - echo %PYTHONPATH%
   - cd %TAICHI_ROOT_DIR%\taichi
   - md build

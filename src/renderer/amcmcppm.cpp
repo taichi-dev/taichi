@@ -1,3 +1,12 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #include <taichi/visual/renderer.h>
 #include <taichi/math/averager.h>
 
@@ -104,8 +113,7 @@ void AMCMCPPMRenderer::render_stage() {
             // Always do replica exchange in this case
             current_state = uniform_state;
             uniform_count += 1;
-        }
-        else {
+        } else {
             // Uniform state invisible
             normalizer.insert(0, 1);
             // Step 1:
@@ -117,8 +125,7 @@ void AMCMCPPMRenderer::render_stage() {
             if (trace_photon(candidate_state_sequence, weight)) {
                 current_state = candidate_state;
                 accepted += 1;
-            }
-            else {
+            } else {
                 auto rand = MCStateSequence(current_state.chain);
                 trace_photon(rand, weight);
             }
@@ -141,7 +148,7 @@ void AMCMCPPMRenderer::render_stage() {
 
     for (auto &ind : image.get_region()) {
         image[ind] = (1.0f / (pi * radius2[ind]) / photon_counter * flux[ind]
-            + image_direct_illum[ind] * (1.0f / stages));
+                      + image_direct_illum[ind] * (1.0f / stages));
     }
 }
 

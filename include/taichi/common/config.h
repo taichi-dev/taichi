@@ -1,3 +1,12 @@
+/*******************************************************************************
+    Taichi - Physically based Computer Graphics Library
+
+    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+
+    All rights reserved. Use of this source code is governed by
+    the MIT license as written in the LICENSE file.
+*******************************************************************************/
+
 #pragma once
 
 #include <map>
@@ -8,8 +17,8 @@
 #include <vector>
 #include <sstream>
 #include <typeinfo>
-#include <boost/algorithm/string.hpp>
 
+#include <taichi/common/string_utils.h>
 #include <taichi/common/util.h>
 #include <taichi/math/math_util.h>
 #include <taichi/math/linalg.h>
@@ -77,10 +86,9 @@ public:
 
     std::vector<std::string> get_string_arr(std::string key) const {
         std::string str = get_string(key);
-        std::vector<std::string> strs;
-        boost::split(strs, str, boost::is_any_of(","));
+        std::vector<std::string> strs = split_string(str, ",");
         for (auto &s : strs) {
-            boost::algorithm::trim(s);
+            s = trim_string(s);
         }
         return strs;
     }

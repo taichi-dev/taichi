@@ -1,0 +1,32 @@
+language: generic
+
+compiler:
+  - g++
+
+matrix:
+  include:
+    - os: osx
+      env: COMPILER=clang++-3.8 CXX=clang++-3.8
+
+    - os: linux
+      env: COMPILER_NAME=gcc CXX=g++-6 CC=gcc-6
+      addons:
+        apt:
+          packages:
+            - gcc-6
+            - g++-6
+          sources: &sources
+            - ubuntu-toolchain-r-test
+
+before_script:
+  - export TAICHI_ROOT_DIR=`pwd`/../
+  - export TAICHI_NUM_THREADS=2
+  - export PYTHONPATH=$TAICHI_ROOT_DIR/taichi/python/:$PYTHONPATH
+  - export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH
+  - mkdir build
+  - cd build
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo sh ../build_scripts/linux.sh ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo sh ../build_scripts/osx.sh ; fi
+
+script:
+  - python -c 'import taichi as tc'

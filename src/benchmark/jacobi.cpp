@@ -84,15 +84,34 @@ template<typename T>
 class JacobiSerial : public Benchmark {
 protected:
     int n;
+
+    void (JacobiSerial<T>::*iteration_method)();
+
     std::vector<T> data[2];
+    Config cfg;
 public:
     void initialize(const Config &config) override {
+        cfg = config;
         Benchmark::initialize(config);
         n = config.get_int("n");
+        std::string method = config.get_string("iteration_method");
         assert_info((n & (n - 1)) == 0, "n should be a power of 2");
         workload = n * n * n;
         data[0].resize(n * n * n);
         data[1].resize(n * n * n);
+        if (method == "naive") {
+            iteration_method = &JacobiSerial<T>::iterate_naive;
+        } else if (method == "relative") {
+            iteration_method = &JacobiSerial<T>::iterate_relative;
+        } else if (method == "relative_noif") {
+            iteration_method = &JacobiSerial<T>::iterate_relative_noif;
+        } else if (method == "relative_noif_inc") {
+            iteration_method = &JacobiSerial<T>::iterate_relative_noif_inc;
+        } else if (method == "relative_noif_inc_unroll") {
+            iteration_method = &JacobiSerial<T>::iterate_relative_noif_inc_unroll;
+        } else {
+            error("Iteration method not found: " + method);
+        }
     }
 
     const T &get_entry(int l, int i, int j, int k) const {
@@ -106,6 +125,7 @@ public:
     bool test() const override {
         Config cfg;
         cfg.set("n", 128);
+        cfg.set("iteration_method", this->cfg.get_string("iteration_method"));
         JacobiBruteForce<T> bf;
         JacobiSerial<T> self;
         bf.initialize(cfg);
@@ -137,6 +157,11 @@ public:
     }
 
     virtual void iterate() override {
+        ((*this).*(this->iteration_method))();
+        data[0].swap(data[1]);
+    }
+
+    void iterate_naive() {
         for (int i = 0; i < n; i++)
             for (int j = 0; j < n; j++)
                 for (int k = 0; k < n; k++) {
@@ -153,9 +178,145 @@ public:
                         t += get_entry(0, i, j + 1, k);
                     if (k + 1 < n)
                         t += get_entry(0, i, j, k + 1);
-                    get_entry(1, i, j, k) = t / T(6.0);
+                    get_entry(1, i, j, k) = t * T(1 / 6.0);
                 }
-        data[0].swap(data[1]);
+    }
+
+    void iterate_relative() {
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                for (int k = 0; k < n; k++) {
+                    int p = i * n * n + j * n + k;
+                    T t(0);
+                    if (i > 0)
+                        t += data[0][p - n * n];
+                    if (j > 0)
+                        t += data[0][p - n];
+                    if (k > 0)
+                        t += data[0][p - 1];
+                    if (i + 1 < n)
+                        t += data[0][p + n * n];
+                    if (j + 1 < n)
+                        t += data[0][p + n];
+                    if (k + 1 < n)
+                        t += data[0][p + 1];
+                    get_entry(1, i, j, k) = t * T(1 / 6.0);
+                }
+    }
+
+    void iterate_boundary(const int boundary) {
+        const int b1 = boundary, b2 = n - boundary;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                for (int k = 0; k < n; k++) {
+                    int p = i * n * n + j * n + k;
+                    T t(0);
+                    if (i > 0)
+                        t += data[0][p - n * n];
+                    if (j > 0)
+                        t += data[0][p - n];
+                    if (k > 0)
+                        t += data[0][p - 1];
+                    if (i + 1 < n)
+                        t += data[0][p + n * n];
+                    if (j + 1 < n)
+                        t += data[0][p + n];
+                    if (k + 1 < n)
+                        t += data[0][p + 1];
+                    data[1][p] = t * T(1 / 6.0);
+                    if (b1 <= std::min(i, j) && std::max(i, j) < b2) {
+                        if (k == b1 - 1) {
+                            k = b2 - 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void iterate_relative_noif() {
+        const int boundary = 4;
+        iterate_boundary(boundary);
+        const int b1 = boundary, b2 = n - boundary;
+        for (int i = b1; i < b2; i++) {
+            for (int j = b1; j < b2; j++) {
+                for (int k = b1; k < b2; k++) {
+                    int p = i * n * n + j * n + k;
+                    T t(0);
+                    t += data[0][p - n * n];
+                    t += data[0][p - n];
+                    t += data[0][p - 1];
+                    t += data[0][p + n * n];
+                    t += data[0][p + n];
+                    t += data[0][p + 1];
+                    data[1][p] = t * T(1 / 6.0);
+                }
+            }
+        }
+    }
+
+    void iterate_relative_noif_inc() {
+        const int boundary = 4;
+        iterate_boundary(boundary);
+        const int b1 = boundary, b2 = n - boundary;
+        for (int i = b1; i < b2; i++) {
+            for (int j = b1; j < b2; j++) {
+                int p = i * n * n + j * n + b1;
+                int p_i_minus = p - n * n;
+                int p_j_minus = p - n;
+                int p_i_plus = p + n * n;
+                int p_j_plus = p + n;
+                for (int k = b1; k < b2; k++) {
+                    T t(0);
+                    t += data[0][p - 1];
+                    t += data[0][p + 1];
+                    t += data[0][p_i_minus];
+                    t += data[0][p_j_minus];
+                    t += data[0][p_i_plus];
+                    t += data[0][p_j_plus];
+                    data[1][p] = t * T(1 / 6.0);
+                    p++;
+                    p_i_minus++;
+                    p_j_minus++;
+                    p_i_plus++;
+                    p_j_plus++;
+                }
+            }
+        }
+    }
+
+    void iterate_relative_noif_inc_unroll() {
+        const int boundary = 4;
+        iterate_boundary(boundary);
+        const int b1 = boundary, b2 = n - boundary;
+        for (int i = b1; i < b2; i++) {
+            for (int j = b1; j < b2; j++) {
+                int p = i * n * n + j * n + b1;
+                T* p_i_minus = &data[0][0] + p - n * n;
+                T* p_i_plus = &data[0][0] + p + n * n;
+                T* p_j_minus = &data[0][0] + p - n;
+                T* p_j_plus = &data[0][0] + p + n;
+                T* p_k_minus = &data[0][0] + p - 1;
+                T* p_k_plus = &data[0][0] + p + 1;
+                for (int k = b1; k < b2; k += 2) {
+                    T a, b, c;
+#define UNROLL \
+                    a = *p_i_minus + *p_i_plus; \
+                    b = *p_j_minus + *p_j_plus; \
+                    c = *p_k_minus + *p_k_plus; \
+                    data[1][p] = ((a + b) + c) * T(1 / 6.0); \
+                    p++; \
+                    p_i_minus++; \
+                    p_j_minus++; \
+                    p_k_minus++; \
+                    p_i_plus++; \
+                    p_j_plus++; \
+                    p_k_plus++;
+                    UNROLL
+                    UNROLL
+                }
+            }
+        }
     }
 };
 

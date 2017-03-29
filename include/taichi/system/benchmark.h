@@ -18,15 +18,15 @@ TC_NAMESPACE_BEGIN
     protected:
         int dummy;
         int warm_up_iterations;
-        int workload;
+        int64 workload;
         bool returns_time;
         virtual void setup() {};
         virtual void iterate() = 0;
         virtual void finalize() {};
     public:
-        virtual void initialize(const Config &config) {
+        virtual void initialize(const Config &config) override {
             warm_up_iterations = config.get("warm_up_iterations", 16);
-            workload = config.get("workload", 1024);
+            workload = config.get("workload", 1024LL);
             returns_time = config.get("returns_time", false);
         }
         virtual real run(int iterations=16) {
@@ -50,6 +50,9 @@ TC_NAMESPACE_BEGIN
             real elapsed = (real)(end_t - start_t);
             finalize();
             return elapsed / (iterations * workload);
+        }
+        virtual bool test() const override {
+            return true;
         }
     };
     TC_INTERFACE(Benchmark)

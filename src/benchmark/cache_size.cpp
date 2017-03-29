@@ -24,7 +24,7 @@ public:
         working_set_size = config.get("working_set_size", 1024);
         step = config.get("step", 1);
         assert_info(working_set_size % 4 == 0, "working_set_size should be a multiple of 4");
-        assert_info((working_set_size & (working_set_size - 1)) == 0, "working_set_size should be a multiple of 4");
+        assert_info((working_set_size & (working_set_size - 1)) == 0, "working_set_size should be a power of 2");
         n = working_set_size / 4;
         data.resize(n);
     }

@@ -38,8 +38,9 @@ def create_taichi_scene(eye_position):
 
 def create_mpm_snow_block(fn):
     particles = tc_core.RenderParticles()
-    particles.read(fn)
-    tex = Texture.from_render_particles((511, 127, 255), particles) * 5
+    assert particles.read(fn)
+    downsample = 2
+    tex = Texture.from_render_particles((511 / downsample, 127 / downsample, 255 / downsample), particles) * 5
     mesh_transform = tc_core.Matrix4(1.0).scale(Vector(0.5, 0.5, 0.5)).translate(Vector(0.5, 0.5, 0.5))
     transform = tc_core.Matrix4(1.0).scale_s(2).scale(Vector(2.0, 0.5, 1.0)).translate(Vector(-2, -0.99, -1))
     vol = VolumeMaterial('sdf_voxel', scattering=5, absorption=0, tex=tex, resolution=(511, 127, 255),
@@ -66,7 +67,8 @@ def create_snow_scene(frame):
         scene.add_mesh(mesh)
 
         # Change this line to your particle output path pls.
-        fn = r'../snow-sim/particles%05d.bin' % frame
+        # fn = r'../snow-sim/particles%05d.bin' % frame
+        fn = r'/Users/squarefk/repos/taichi_outputs/snow-sim/particles%05d.bin' % frame
         mesh = create_mpm_snow_block(fn)
         scene.add_mesh(mesh)
 
@@ -80,5 +82,5 @@ def render_snow_frame(frame):
 
 if __name__ == '__main__':
     total_frames = 550
-    for i in range(0, total_frames, 20):
+    for i in range(0, total_frames, 5):
         render_snow_frame(i)

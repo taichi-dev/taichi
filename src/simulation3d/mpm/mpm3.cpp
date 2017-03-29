@@ -2,6 +2,7 @@
     Taichi - Physically based Computer Graphics Library
 
     Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+                  2017 Yu Fang <squarefk@gmail.com>
 
     All rights reserved. Use of this source code is governed by
     the MIT license as written in the LICENSE file.
@@ -97,6 +98,94 @@ struct EPParticle3 : public MPM3D::Particle {
     };
 };
 
+struct DPParticle3 : public MPM3D::Particle {
+//    particle.mu_0 = 1e6
+//    particle.lambda_0 = 2e5
+//    particle.mu_0 = 10000000
+//    particle.lambda_0 = 10000000
+//    particle.h_0 = 45
+//    particle.h_1 = 9
+//    particle.h_2 = 0.2
+//    particle.h_3 = 10
+//    particle.alpha = 1
+    real h_0 = 35, h_1 = 9, h_2 = 0.2, h_3 = 10;
+    real lambda_0 = 200000, mu_0 = 1000000;
+    real alpha = 1;
+    real q = 0.0f;
+    real phi_f;
+
+    DPParticle3() : MPM3D::Particle() {
+    }
+
+    Matrix3 get_energy_gradient() {
+        return Matrix3(1.f);
+    }
+
+    void project(Matrix3 sigma, real alpha, Matrix3 &sigma_out, real &out) {
+        const real d = 3;
+        Matrix3 epsilon(log(sigma[0][0]), 0.f, 0.f, 0.f, log(sigma[1][1]), 0.f, 0.f, 0.f, log(sigma[2][2]));
+        real tr = epsilon[0][0] + epsilon[1][1] + epsilon[2][2];
+        Matrix3 epsilon_hat = epsilon - (tr) / d * Matrix3(1.0f);
+        real epsilon_for = sqrt(epsilon[0][0] * epsilon[0][0] + epsilon[1][1] * epsilon[1][1] + epsilon[2][2] * epsilon[2][2]);
+        real epsilon_hat_for = sqrt(epsilon_hat[0][0] * epsilon_hat[0][0] + epsilon_hat[1][1] * epsilon_hat[1][1] + epsilon_hat[2][2] * epsilon_hat[2][2]);
+        if (epsilon_hat_for <= 0 || tr > 0.0f) {
+            sigma_out = Matrix3(1.0f);
+            out = epsilon_for;
+        }
+        else {
+            real delta_gamma = epsilon_hat_for + (d * lambda_0 + 2 * mu_0) / (2 * mu_0) * tr * alpha;
+            if (delta_gamma <= 0) {
+                sigma_out = sigma;
+                out = 0;
+            }
+            else {
+                Matrix3 h = epsilon - delta_gamma / epsilon_hat_for * epsilon_hat;
+                sigma_out = Matrix3(exp(h[0][0]), 0.f, 0.f, 0.f, exp(h[1][1]), 0.f, 0.f, 0.f, exp(h[2][2]));
+                out = delta_gamma;
+            }
+        }
+    }
+
+    void calculate_kernels() {
+    }
+
+    void calculate_force() {
+        Matrix3 u, v, sig, dg = dg_e;
+        svd(dg_e, u, sig, v);
+
+        Matrix3 log_sig(log(sig[0][0]), 0.f, 0.f, 0.f, log(sig[1][1]), 0.f, 0.f, 0.f, log(sig[2][2]));
+        Matrix3 inv_sig(1.f / (sig[0][0]), 0.f, 0.f, 0.f, 1.f / (sig[1][1]), 0.f, 0.f, 0.f, 1.f / (sig[2][2]));
+        Matrix3 center = 2 * mu_0 * inv_sig * log_sig + lambda_0 * (log_sig[0][0] + log_sig[1][1] + log_sig[2][2]) * inv_sig;
+
+        tmp_force = -vol * (u * center * glm::transpose(v)) * glm::transpose(dg);
+    }
+
+    void plasticity() {
+        Matrix3 u, v, sig;
+        svd(dg_e, u, sig, v);
+        Matrix3 t = Matrix3(1.0);
+        real delta_q = 0;
+        project(sig, alpha, t, delta_q);
+        Matrix3 rec = u * sig * glm::transpose(v);
+        Matrix3 diff = rec - dg_e;
+        if (!(frobenius_norm(diff) < 1e-4f)) {
+            // debug code
+            P(dg_e);
+            P(rec);
+            P(u);
+            P(sig);
+            P(v);
+            error("SVD error\n");
+        }
+        dg_e = u * t * glm::transpose(v);
+        dg_p = v * glm::inverse(t) * sig * glm::transpose(v) * dg_p;
+        q += delta_q;
+        real phi = h_0 + (h_1 * q - h_3) * expf(-h_2 * q);
+        phi_f = phi;
+        alpha = sqrtf(2.0f / 3.0f) * (2.0f * sin(phi * pi / 180.0f)) / (3.0f - sin(phi * pi / 180.0f));
+    }
+};
+
 void MPM3D::initialize(const Config &config) {
     Simulation3D::initialize(config);
     res = config.get_vec3i("resolution");
@@ -111,7 +200,8 @@ void MPM3D::initialize(const Config &config) {
                 real num = density_texture->sample(coord).x;
                 int t = (int)num + (rand() < num - int(num));
                 for (int l = 0; l < t; l++) {
-                    Particle *p = new EPParticle3();
+//                    Particle *p = new EPParticle3();
+                    Particle *p = new DPParticle3();
                     p->pos = Vector(i + rand(), j + rand(), k + rand());
                     p->mass = 1.0f;
                     p->v = initial_velocity;

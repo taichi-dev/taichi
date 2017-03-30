@@ -5,29 +5,31 @@ from taichi.visual import *
 from taichi.visual.post_process import *
 from taichi.visual.texture import Texture
 
-step_number = 6000
+gi_render = False
+step_number = 200
 # step_number = 1
 # total_frames = 1
-grid_downsample = 1
+grid_downsample = 2
 output_downsample = 1
 render_epoch = 20
 
 
-def create_mpm_snow_block(fn):
+def create_mpm_sand_block(fn):
     particles = tc_core.RenderParticles()
     assert particles.read(fn)
     downsample = grid_downsample
     tex = Texture.from_render_particles((255 / downsample, 255 / downsample, 255 / downsample), particles) * 5
     mesh_transform = tc_core.Matrix4(1.0).scale_s(0.5).translate(Vector(0.5, 0.5, 0.5))
     transform = tc_core.Matrix4(1.0).scale_s(2).scale(Vector(2.0, 0.5, 1.0)).translate(Vector(-2, -0.99, -1))
-    vol = VolumeMaterial('sdf_voxel', scattering=5, absorption=0, tex=tex, resolution=(255, 255, 255),
+    vol = VolumeMaterial('sdf_voxel', scattering=5, absorption=0, tex=tex,
+                         resolution=(255 / downsample, 255 / downsample, 255 / downsample),
                          transform_ptr=transform.get_ptr_string())
     material = SurfaceMaterial('plain_interface')
     material.set_internal_material(vol)
     return Mesh('cube', material=material, transform=transform * mesh_transform)
 
 
-def create_snow_scene(frame, d):
+def create_sand_scene(frame, d):
     downsample = output_downsample
     width, height = 540 / downsample, 540 / downsample
     camera = Camera('thinlens', width=width, height=height, fov=35,
@@ -45,32 +47,34 @@ def create_snow_scene(frame, d):
         scene.add_mesh(mesh)
 
         # Change this line to your particle output path pls.
-        # fn = r'../snow-sim/particles%05d.bin' % frame
+        # fn = r'../sand-sim/particles%05d.bin' % frame
         fn = d + r'/particles%05d.bin' % frame
-        mesh = create_mpm_snow_block(fn)
+        mesh = create_mpm_sand_block(fn)
         scene.add_mesh(mesh)
 
     return scene
 
 
-def render_snow_frame(frame, d):
+def render_sand_frame(frame, d):
     renderer = Renderer(output_dir='volumetric', overwrite=True, frame=frame)
-    renderer.initialize(preset='pt', scene=create_snow_scene(frame, d), sampler='prand')
+    renderer.initialize(preset='pt', scene=create_sand_scene(frame, d), sampler='prand')
     renderer.set_post_processor(LDRDisplay(exposure=0.6, bloom_radius=0.0, bloom_threshold=1.0))
     renderer.render(render_epoch)
 
 
 if __name__ == '__main__':
     downsample = grid_downsample
-    resolution = (255 / downsample, 255 / downsample, 255 / downsample)
-    tex = Texture('ring', outer=0.038) * 8
-    tex = Texture('bound', tex=tex, axis=2, bounds=(0.0, 0.35), outside_val=(0, 0, 0))
+    resolution = (432 / downsample, 144 / downsample, 432 / downsample)
+    tex = Texture('ring', outer=0.15) * 2
+    tex = Texture('bound', tex=tex, axis=2, bounds=(0.0, 0.8), outside_val=(0, 0, 0))
     tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
-    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), initial_velocity=(0, 0, 0), delta_t=0.0005, num_threads=8,
+    mpm = MPM3(resolution=resolution, gravity=(0, -100, 0), initial_velocity=(0, 0, 0), delta_t=0.0005, num_threads=8,
                density_tex=tex.id)
     for i in range(step_number):
         print 'process(%d/%d)' % (i, step_number)
         mpm.step(0.01)
-        d = mpm.get_directory()
-        if i % 20 == 0:
-            render_snow_frame(i, d)
+        if gi_render:
+            d = mpm.get_directory()
+            if i % 20 == 0:
+                render_sand_frame(i, d)
+    mpm.make_video()

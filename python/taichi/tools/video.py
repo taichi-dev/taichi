@@ -23,7 +23,8 @@ class VideoManager:
         if self.width is None:
             self.width = img.shape[0]
             self.height = img.shape[1]
-        ndarray_to_array2d(img).write(self.directory + '/%05d.png' % self.frame_counter)
+        assert os.path.exists(self.directory)
+        ndarray_to_array2d(img).write(os.path.join(self.directory, '%05d.png' % self.frame_counter))
         self.frame_counter += 1
 
     def write_frames(self, images):

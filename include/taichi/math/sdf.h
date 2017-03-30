@@ -29,11 +29,11 @@ namespace sdf {
     }
 
     inline real cmod(real a, real b) {
-        return a - b * (std::floor(a / b + 0.5));
+        return a - b * (std::floor(a / b + 0.5f));
     }
 
     inline real cmod(real a, real b, int l, int r) {
-        return a - b * (clamp((int) std::floor(a / b + 0.5), l, r));
+        return a - b * (clamp((int) std::floor(a / b + 0.5f), l, r));
     }
 
     inline real sphere(const Vector3 &p, real radius) {

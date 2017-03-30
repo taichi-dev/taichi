@@ -38,7 +38,7 @@ TC_NAMESPACE_BEGIN
             if (returns_time)
                 start_t = Time::get_time();
             else
-                start_t = Time::get_cycles();
+                start_t = (double)Time::get_cycles();
             for (int i = 0; i < iterations; i++) {
                 iterate();
             }
@@ -46,7 +46,7 @@ TC_NAMESPACE_BEGIN
             if (returns_time)
                 end_t = Time::get_time();
             else
-                end_t = Time::get_cycles();
+                end_t = (double)Time::get_cycles();
             real elapsed = (real)(end_t - start_t);
             finalize();
             return elapsed / (iterations * workload);

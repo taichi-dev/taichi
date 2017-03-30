@@ -37,7 +37,7 @@ class VideoManager:
         os.system(command)
 
 
-def make_video(input_files, width, height, output_path):
+def make_video(input_files, width=0, height=0, output_path='.'):
     command = "ffmpeg -framerate 24 -i " + input_files + \
               " -s:v " + str(width) + 'x' + str(height) + \
               " -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p " + output_path

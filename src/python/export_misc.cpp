@@ -67,6 +67,7 @@ void export_misc(py::module &m) {
 
     py::class_<Benchmark, std::shared_ptr<Benchmark>>(m, "Benchmark")
             .def("run", &Benchmark::run)
+            .def("test", &Benchmark::test)
             .def("initialize", &Benchmark::initialize);
 
     py::class_<UnitDLL, std::shared_ptr<UnitDLL>>(m, "UnitDLL")

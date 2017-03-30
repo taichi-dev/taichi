@@ -24,8 +24,7 @@ protected:
 
     std::vector<std::shared_ptr<Particle>> particles;
 
-    int width;
-    int height;
+    Vector2i res;
 
     real flip_alpha;
     real flip_alpha_stride;
@@ -50,9 +49,9 @@ protected:
         int x = int(p.x);
         int y = int(p.y);
         int x_min = std::max(0, x - 1);
-        int x_max = std::min(width, x + 3);
+        int x_max = std::min(res[0], x + 3);
         int y_min = std::max(0, y - 1);
-        int y_max = std::min(height, y + 3);
+        int y_max = std::min(res[1], y + 3);
         return Region2D(x_min, x_max, y_min, y_max);
     }
 

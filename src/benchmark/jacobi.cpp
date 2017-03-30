@@ -13,7 +13,7 @@ TC_NAMESPACE_BEGIN
 
 template<typename T>
 T get_initial_entry(int i, int j, int k) {
-    return (unsigned(i * 10000000007 + j * 321343212 + k * 412344739)) * 1e-10;
+    return (unsigned(i * 10000000007 + j * 321343212 + k * 412344739)) * T(1e-10);
 }
 
 template<typename T>

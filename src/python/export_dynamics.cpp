@@ -10,6 +10,7 @@
 #include <taichi/python/export.h>
 #include <taichi/dynamics/fluid2d/fluid.h>
 #include <taichi/dynamics/mpm2d/mpm.h>
+#include <taichi/dynamics/mpm2d/ampm.h>
 #include <taichi/dynamics/mpm2d/mpm_particle.h>
 #include <taichi/dynamics/simulation3d.h>
 
@@ -90,6 +91,7 @@ void export_dynamics(py::module &m) {
         ;
 
     EXPORT_MPM(MPM);
+    EXPORT_MPM(AMPM);
 
     DEFINE_VECTOR_OF_NAMED(std::shared_ptr<MPMParticle>, "MPMParticles");
 

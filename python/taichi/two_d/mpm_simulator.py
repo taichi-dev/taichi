@@ -10,7 +10,7 @@ class MPMSimulator(Simulator):
     def __init__(self, **kwargs):
         Simulator.__init__(self, kwargs['simulation_time'], kwargs['dt'])
         self.simulator = tc_core.MPMSimulator()
-        self.resolution = (kwargs['simulation_width'], kwargs['simulation_height'])
+        self.resolution = kwargs['res']
         self.simulation_width, self.simulation_height = self.resolution[0], self.resolution[1]
         self.simulator.initialize(config_from_dict(kwargs))
         self.config = kwargs
@@ -157,8 +157,7 @@ class MPMSimulator(Simulator):
 
 
 def create_mpm_simulator(resolution, t, dt=0.06, max_delta_t=0.001):
-    return MPMSimulator(simulation_width=resolution[0],
-                        simulation_height=resolution[1],
+    return MPMSimulator(res=resolution,
                         delta_x=1.0 / min(resolution),
                         gravity=(0, -20),
                         position_noise=0.5,

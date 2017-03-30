@@ -14,13 +14,12 @@ TC_NAMESPACE_BEGIN
 void MPM::initialize(const Config &config_) {
     auto config = Config(config_);
     this->config = config;
-    width = config.get_int("simulation_width");
-    height = config.get_int("simulation_height");
+    res = config.get_vec2i("res");
     this->apic = config.get("apic", true);
     this->use_level_set = config.get("use_level_set", false);
     this->cfl = config.get("cfl", 0.01f);
     this->h = config.get_real("delta_x");
-    grid.initialize(width, height);
+    grid.initialize(res);
     t = 0.0f;
     last_sort = 1e20f;
     flip_alpha = config.get_real("flip_alpha");
@@ -28,7 +27,7 @@ void MPM::initialize(const Config &config_) {
     gravity = config.get_vec2("gravity");
     max_delta_t = config.get("max_delta_t", 0.001f);
     min_delta_t = config.get("min_delta_t", 0.00001f);
-    material_levelset.initialize(width, height, Vector2(0.5f, 0.5f));
+    material_levelset.initialize(res[0], res[1], Vector2(0.5f, 0.5f));
 }
 
 void MPM::substep(real delta_t) {
@@ -108,13 +107,13 @@ void MPM::estimate_volume() {
 
 void MPM::add_particle(const Config &config) {
     auto p = create_particle(config);
-    p->mass = 1.0f / width / width;
+    p->mass = 1.0f / res[0] / res[0];
     // p->pos += config.get("position_noise", 0.0f) * Vector2(rand() - 0.5f, rand() - 0.5f);
     particles.push_back(p);
 }
 
 void MPM::add_particle(std::shared_ptr<MPMParticle> p) {
-    p->mass = 1.0f / width / width;
+    p->mass = 1.0f / res[0] / res[0];
     p->pos += config.get("position_noise", 0.0f) * Vector2(rand() - 0.5f, rand() - 0.5f);
     particles.push_back(p);
 }

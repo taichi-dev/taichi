@@ -18,16 +18,29 @@ TC_NAMESPACE_BEGIN
 class LevelSet2D : public Array2D<real> {
 public:
     real friction = 1.0f;
+
     LevelSet2D() : LevelSet2D(0, 0) {}
-    LevelSet2D(int width, int height, Vector2 offset=Vector2(0.5f, 0.5f)) {
+
+    LevelSet2D(int width, int height, Vector2 offset = Vector2(0.5f, 0.5f)) {
         initialize(width, height, offset);
     }
+
     void initialize(int width, int height, Vector2 offset) {
         Array2D<real>::initialize(width, height, std::numeric_limits<real>::infinity(), offset);
     }
+
+    void initialize(const Vector2i &res, Vector2 offset) {
+        Array2D<real>::initialize(res[0], res[1], std::numeric_limits<real>::infinity(), offset);
+    }
+
     void initialize(int width, int height, Vector2 offset, real value) {
         Array2D<real>::initialize(width, height, value, offset);
     }
+
+    void initialize(const Vector2i &res, Vector2 offset, real value) {
+        Array2D<real>::initialize(res[0], res[1], value, offset);
+    }
+
     void add_sphere(Vector2 center, real radius, bool inside_out = false);
 
     void add_polygon(std::vector<Vector2> polygon, bool inside_out = false);
@@ -53,7 +66,6 @@ public:
 
     Array2D<real> rasterize(int width, int height);
 };
-
 
 TC_NAMESPACE_END
 

@@ -8,8 +8,11 @@
 *******************************************************************************/
 
 #include "mpm.h"
+#include <taichi/common/asset_manager.h>
 
 TC_NAMESPACE_BEGIN
+
+long long kernel_calc_counter = 0;
 
 void MPM::initialize(const Config &config_) {
     auto config = Config(config_);
@@ -19,54 +22,56 @@ void MPM::initialize(const Config &config_) {
     this->use_level_set = config.get("use_level_set", false);
     this->cfl = config.get("cfl", 0.01f);
     this->h = config.get_real("delta_x");
+    int dt_multiplier_id = config.get("dt_multiplier_tex_id", -1);
+    if (dt_multiplier_id != -1) {
+        this->dt_multiplier = AssetManager::get_asset<Texture>(dt_multiplier_id);
+    } else {
+        Config cfg;
+        cfg.set("value", Vector4(1.0f));
+        this->dt_multiplier = create_instance<Texture>("const", cfg);
+    }
     grid.initialize(res);
     t = 0.0f;
+    t_int = 0;
+    requested_t = 0.0f;
     last_sort = 1e20f;
     flip_alpha = config.get_real("flip_alpha");
     flip_alpha_stride = config.get_real("flip_alpha_stride");
     gravity = config.get_vec2("gravity");
-    max_delta_t = config.get("max_delta_t", 0.001f);
-    min_delta_t = config.get("min_delta_t", 0.00001f);
-    material_levelset.initialize(res[0], res[1], Vector2(0.5f, 0.5f));
+    base_delta_t = config.get_real("base_delta_t");
+    material_levelset.initialize(res, Vector2(0.5f, 0.5f));
 }
 
-void MPM::substep(real delta_t) {
-    if (!particles.empty()) {
-        for (auto &p : particles) {
-            p->calculate_kernels();
-        }
-        rasterize();
-        grid.reorder_grids();
-        estimate_volume();
-        grid.backup_velocity();
-        grid.apply_external_force(gravity, delta_t);
-        //Deleted: grid.apply_boundary_conditions(levelset);
-        apply_deformation_force(delta_t);
-        grid.apply_boundary_conditions(levelset);
-        resample(delta_t);
-        for (auto &p : particles) {
-            p->pos += delta_t * p->v;
-        }
-        if (config.get("particle_collision", false))
-            particle_collision_resolution();
+void MPM::substep() {
+    t_int += 1;
+    t = base_delta_t * t_int;
+    real delta_t = base_delta_t;
+    if (particles.empty())
+        return;
+    for (auto &p : particles)
+        p->calculate_kernels();
+    rasterize();
+    grid.reorder_grids();
+    estimate_volume();
+    grid.backup_velocity();
+    grid.apply_external_force(gravity, delta_t);
+    //Deleted: grid.apply_boundary_conditions(levelset);
+    apply_deformation_force(delta_t);
+    grid.apply_boundary_conditions(levelset);
+    resample(delta_t);
+    for (auto &p : particles) {
+        p->pos += delta_t * p->v;
     }
-    t += delta_t;
+    if (config.get("particle_collision", false))
+        particle_collision_resolution();
 }
 
 void MPM::step(real delta_t) {
-    real simulation_time = 0.0f;
-    while (simulation_time < delta_t - eps) {
-        real purpose_dt = std::min(max_delta_t, get_dt_with_cfl_1() * cfl);
-        real thres = min_delta_t;
-        if (purpose_dt < delta_t * thres) {
-            purpose_dt = delta_t * thres;
-            printf("substep dt too small, clamp.\n");
-        }
-        real dt = std::min(delta_t - simulation_time, purpose_dt);
-        substep(dt);
-        simulation_time += dt;
-    }
+    requested_t += delta_t;
+    while (t + base_delta_t < requested_t)
+        substep();
     compute_material_levelset();
+    P(kernel_calc_counter);
 }
 
 void MPM::compute_material_levelset()
@@ -106,6 +111,7 @@ void MPM::estimate_volume() {
 }
 
 void MPM::add_particle(const Config &config) {
+    // WTH???
     auto p = create_particle(config);
     p->mass = 1.0f / res[0] / res[0];
     // p->pos += config.get("position_noise", 0.0f) * Vector2(rand() - 0.5f, rand() - 0.5f);
@@ -113,6 +119,7 @@ void MPM::add_particle(const Config &config) {
 }
 
 void MPM::add_particle(std::shared_ptr<MPMParticle> p) {
+    // WTH???
     p->mass = 1.0f / res[0] / res[0];
     p->pos += config.get("position_noise", 0.0f) * Vector2(rand() - 0.5f, rand() - 0.5f);
     particles.push_back(p);

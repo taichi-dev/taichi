@@ -156,7 +156,7 @@ class MPMSimulator(Simulator):
                           self.delta_x, Vector(0.5, 0.5))
 
 
-def create_mpm_simulator(resolution, t, dt=0.06, max_delta_t=0.001):
+def create_mpm_simulator(resolution, t, frame_dt, base_delta_t=0.001):
     return MPMSimulator(res=resolution,
                         delta_x=1.0 / min(resolution),
                         gravity=(0, -20),
@@ -165,16 +165,14 @@ def create_mpm_simulator(resolution, t, dt=0.06, max_delta_t=0.001):
                         particle_collision=True,
                         apic=True,
                         implicit_ratio=0.0,
-                        delta_t=0.06,
+                        base_delta_t=base_delta_t,
                         maximum_iterations=200,
                         threads=1,
                         flip_alpha=0.0,
                         flip_alpha_stride=1.0,
                         cfl=0.5,
-                        max_delta_t=max_delta_t,
-                        min_delta_t=max_delta_t * 0.01,
                         simulation_time=t,
-                        dt=dt,
+                        dt=frame_dt,
                         sample_rate=2
                         )
 

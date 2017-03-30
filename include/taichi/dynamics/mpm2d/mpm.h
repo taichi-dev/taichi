@@ -13,9 +13,12 @@
 #include <vector>
 #include "mpm_grid.h"
 #include <taichi/math/levelset_2d.h>
+#include <taichi/visual/texture.h>
 #include <taichi/visualization/image_buffer.h>
 
 TC_NAMESPACE_BEGIN
+
+extern long long kernel_calc_counter;
 
 class MPM {
 protected:
@@ -31,10 +34,11 @@ protected:
 
     real h;
     real t;
+    real base_delta_t;
+    real requested_t;
+    int t_int;
     Vector2 gravity;
     bool apic;
-    real max_delta_t;
-    real min_delta_t;
 
     LevelSet2D levelset;
     LevelSet2D material_levelset;
@@ -42,6 +46,8 @@ protected:
     real last_sort;
     real sorting_period;
     bool use_level_set;
+    Array2D<real> allowed_dt;
+    std::shared_ptr<Texture> dt_multiplier;
 
     void compute_material_levelset();
 
@@ -65,7 +71,7 @@ protected:
 
     void apply_deformation_force(real delta_t);
 
-    virtual void substep(real delta_t);
+    virtual void substep();
 
     real get_dt_with_cfl_1();
 

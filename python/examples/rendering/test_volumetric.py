@@ -82,5 +82,5 @@ def render_snow_frame(frame):
 
 if __name__ == '__main__':
     total_frames = 550
-    for i in range(0, total_frames, 5):
+    for i in range(0, 1, 5):
         render_snow_frame(i)

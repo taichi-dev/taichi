@@ -46,5 +46,8 @@ class MPM3:
         self.video_manager.write_frame(img)
         self.frame += 1
 
+    def get_directory(self):
+        return self.directory
+
     def make_video(self):
         self.video_manager.make_video()

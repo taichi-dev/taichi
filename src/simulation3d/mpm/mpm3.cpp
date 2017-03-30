@@ -99,17 +99,8 @@ struct EPParticle3 : public MPM3D::Particle {
 };
 
 struct DPParticle3 : public MPM3D::Particle {
-//    particle.mu_0 = 1e6
-//    particle.lambda_0 = 2e5
-//    particle.mu_0 = 10000000
-//    particle.lambda_0 = 10000000
-//    particle.h_0 = 45
-//    particle.h_1 = 9
-//    particle.h_2 = 0.2
-//    particle.h_3 = 10
-//    particle.alpha = 1
     real h_0 = 35, h_1 = 9, h_2 = 0.2, h_3 = 10;
-    real lambda_0 = 200000, mu_0 = 1000000;
+    real lambda_0 = 204057, mu_0 = 136038;
     real alpha = 1;
     real q = 0.0f;
     real phi_f;

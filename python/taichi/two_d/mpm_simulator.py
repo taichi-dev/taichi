@@ -156,7 +156,7 @@ class MPMSimulator(Simulator):
                           self.delta_x, Vector(0.5, 0.5))
 
 
-def create_mpm_simulator(resolution, t, frame_dt, base_delta_t=0.001):
+def create_mpm_simulator(resolution, t, frame_dt, base_delta_t, dt_multiplier=None):
     return MPMSimulator(res=resolution,
                         delta_x=1.0 / min(resolution),
                         gravity=(0, -20),
@@ -173,6 +173,6 @@ def create_mpm_simulator(resolution, t, frame_dt, base_delta_t=0.001):
                         cfl=0.5,
                         simulation_time=t,
                         dt=frame_dt,
-                        sample_rate=2
+                        sample_rate=2,
+                        dt_multiplier_tex_id=dt_multiplier.id if dt_multiplier else -1
                         )
-

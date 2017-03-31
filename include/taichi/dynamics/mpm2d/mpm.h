@@ -67,7 +67,7 @@ protected:
 
     void rasterize();
 
-    void apply_deformation_force(real delta_t);
+    void apply_deformation_force();
 
     void resample();
 

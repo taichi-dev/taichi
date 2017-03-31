@@ -67,7 +67,7 @@ void MPM::substep() {
     grid.backup_velocity();
     grid.apply_external_force(gravity, delta_t);
     //Deleted: grid.apply_boundary_conditions(levelset);
-    apply_deformation_force(delta_t);
+    apply_deformation_force();
     grid.apply_boundary_conditions(levelset);
     resample();
     for (auto &p : particles) {
@@ -182,11 +182,9 @@ void MPM::resample() {
         if (t_int % p->march_interval != 0)
             continue;
         real delta_t = base_delta_t * p->march_interval;
-        int p_i = int(p->pos.x);
-        int p_j = int(p->pos.y);
         Vector2 v = Vector2(0, 0), bv = Vector2(0, 0);
-        mat2 cdg(0.0f);
-        mat2 b(0.0f);
+        Matrix2 cdg(0.0f);
+        Matrix2 b(0.0f);
         int count = 0;
         for (auto &ind : get_bounded_rasterization_region(p->pos)) {
             count++;
@@ -195,32 +193,32 @@ void MPM::resample() {
             v += weight * grid.velocity[ind];
             Vector2 aa = grid.velocity[ind];
             Vector2 bb = Vector2(ind.i, ind.j) - p->pos;
-            mat2 out(aa[0] * bb[0], aa[1] * bb[0], aa[0] * bb[1], aa[1] * bb[1]);
+            Matrix2 out(aa[0] * bb[0], aa[1] * bb[0], aa[0] * bb[1], aa[1] * bb[1]);
             b += weight * out;
             bv += weight * grid.velocity_backup[ind];
             cdg += glm::outerProduct(grid.velocity[ind], gw);
         }
         if (count != 16 || !apic) {
-            b = mat2(0.0f);
+            b = Matrix2(0.0f);
         }
         CV(cdg);
         p->b = b;
-        cdg = mat2(1.0f) + delta_t * cdg;
+        cdg = Matrix2(1.0f) + delta_t * cdg;
 
         p->v = (1 - alpha_delta_t) * v + alpha_delta_t * (v - bv + p->v);
-        mat2 dg = cdg * p->dg_e * p->dg_p;
+        Matrix2 dg = cdg * p->dg_e * p->dg_p;
         p->dg_e = cdg * p->dg_e;
         p->dg_cache = dg;
-    }
-    for (auto &p : particles) {
+
         p->plasticity();
     }
 }
 
-void MPM::apply_deformation_force(real delta_t) {
+void MPM::apply_deformation_force() {
 #pragma omp parallel for
     for (auto &p : particles) {
-        p->calculate_force();
+        if (p->active)
+            p->calculate_force();
     }
     // NOTE: Potential racing condition errors!
 #pragma omp parallel for
@@ -232,7 +230,7 @@ void MPM::apply_deformation_force(real delta_t) {
             }
             Vector2 gw = p->get_cache_gw(ind);
             Vector2 force = p->tmp_force * gw;
-            grid.velocity[ind] += delta_t / mass * force;
+            grid.velocity[ind] += base_delta_t / mass * force;
         }
     }
 }

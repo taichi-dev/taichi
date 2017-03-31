@@ -130,19 +130,33 @@ TC_IMPLEMENTATION(Texture, RepeatedTexture, "repeat");
 class RotatedTexture : public Texture {
 protected:
     std::shared_ptr<Texture> tex;
-    int times;
+    int rotate_times;
+    int rotate_axis;
 public:
     void initialize(const Config &config) override {
         Texture::initialize(config);
         tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
-        times = config.get_int("times");
+        rotate_times = config.get_int("rotate_times");
+        rotate_axis = config.get_int("rotate_axis");
     }
 
     virtual Vector4 sample(const Vector3 &coord_) const override {
         auto coord = coord_;
-        for (int i = 0; i < times; i++) {
-            coord = Vector3(-coord.y, coord.x, coord.z);
+        coord = coord * 2.f - Vector3(1.f, 1.f, 1.f);
+        for (int i = 0; i < rotate_times; i++) {
+            switch (rotate_axis) {
+                case 0:
+                    coord = Vector3(coord.x, -coord.z, coord.y);
+                    break;
+                case 1:
+                    coord = Vector3(coord.z, coord.y, -coord.x);
+                    break;
+                case 2:
+                    coord = Vector3(-coord.y, coord.x, coord.z);
+                    break;
+            }
         }
+        coord = (coord + Vector3(1.f, 1.f, 1.f)) / 2.f;
         return tex->sample(coord);
     }
 };

@@ -17,6 +17,8 @@
 
 TC_NAMESPACE_BEGIN
 
+extern long long kernel_calc_counter;
+
 struct MPMParticle {
     // Color for visualization: if x=-1, use default color from color scheme.
     Vector3 color = Vector3(-1, 0, 0);
@@ -32,6 +34,8 @@ struct MPMParticle {
     Matrix2 dg_cache;
     static long long instance_count;
     long long id = instance_count++;
+    bool active = false;
+    int march_interval;
     MPMParticle() {
         dg_e = Matrix2(1.0f);
         dg_p = Matrix2(1.0f);
@@ -41,6 +45,7 @@ struct MPMParticle {
         dg_p = Matrix2(compression); // 1.0f = no compression
     }
     void calculate_kernels() {
+        kernel_calc_counter++;
         Vector2 fpos = glm::fract(pos);
         real i_w[4], i_dw[4], j_w[4], j_dw[4];
         for (int i = -1; i < 3; i++) {

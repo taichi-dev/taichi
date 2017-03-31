@@ -257,11 +257,32 @@ public:
     }
 
     virtual Vector4 sample(const Vector3 &coord) const override {
-        return Vector4(int(glm::length(coord - center) < radius));
+        return Vector4(real(bool(glm::length(coord - center) < radius)));
     }
 };
 
 TC_IMPLEMENTATION(Texture, SphereTexture, "sphere");
+
+class SlicedTexture : public Texture {
+protected:
+    Vector4 base;
+    Vector4 increment;
+    Vector4 steps;
+public:
+    void initialize(const Config &config) override {
+        Texture::initialize(config);
+        steps = config.get_vec4("steps");
+        base = config.get_vec4("base");
+        increment = config.get_vec4("increment");
+    }
+
+    virtual Vector4 sample(const Vector3 &coord_) const override {
+        Vector4 coord(coord_, 0.0f);
+        return base + floor(coord * steps) * increment;
+    }
+};
+
+TC_IMPLEMENTATION(Texture, SlicedTexture, "sliced");
 
 TC_NAMESPACE_END
 

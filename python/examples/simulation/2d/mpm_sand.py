@@ -1,3 +1,4 @@
+import taichi as tc
 from taichi.two_d import *
 from taichi.misc.util import *
 

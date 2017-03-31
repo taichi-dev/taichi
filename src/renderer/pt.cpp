@@ -518,7 +518,7 @@ protected:
             return Vector3(0.0f);
         }
         real safe_distance = ray_march(ray, last_intersection.dist);
-        return Vector3(int(safe_distance >= last_intersection.dist - eps));
+        return Vector3(real(int(safe_distance >= last_intersection.dist - eps)));
     }
 
     Vector3 normal_at(const Vector3 p, const real d) {

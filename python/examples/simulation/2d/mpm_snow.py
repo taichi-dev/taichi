@@ -3,7 +3,7 @@ from taichi.two_d import *
 
 if __name__ == '__main__':
     resolution = tuple([320, 180])
-    simulator = create_mpm_simulator(resolution, 20, 0.1, max_delta_t=1.1e-3)
+    simulator = create_mpm_simulator(resolution, 20, frame_dt=3e-2, base_delta_t=2e-3)
 
     simulator.add_event(-1, lambda s: s.add_particles_polygon([(0.05, 0.75), (1.2, 0.05), (1.2, 0.08), (0.05, 0.78)],
                                                               'ep', compression=1.1))

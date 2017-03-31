@@ -135,8 +135,8 @@ class SimulationWindow(pyglet.window.Window):
         glMatrixMode(GL_MODELVIEW)
         glPushMatrix()
         glTranslatef(0, 0, 0)
-        glScalef(1.0 * self.width / self.simulator.config['simulation_width'],
-                 1.0 * self.height / self.simulator.config['simulation_height'], 0)
+        glScalef(1.0 * self.width / self.simulator.config['res'][0],
+                 1.0 * self.height / self.simulator.config['res'][1], 0)
 
         particles = self.simulator.get_particles()
 

@@ -477,7 +477,7 @@ singularValueDecomposition(
         sigma(1) = z;
     }
     else {
-        T tau = 0.5 * (x - z);
+        T tau = T(0.5) * (x - z);
         T w = sqrt(tau * tau + y * y);
         // w > y > 0
         T t;

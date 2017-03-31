@@ -39,7 +39,7 @@ public:
     real density_scaling;
     real tracker_generation;
     real perturbation;
-    real super_sampling;
+    int super_sampling;
     std::shared_ptr<Texture> generation_tex;
     std::shared_ptr<Texture> initial_velocity_tex;
     std::shared_ptr<Texture> color_tex;

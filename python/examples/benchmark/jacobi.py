@@ -86,12 +86,12 @@ def analysis_mt():
 
 def keep_running():
     ins = 'jacobi_simd_32'
-    method = 'sse_block'
-    benchmark = tc.system.Benchmark(ins, n=128, warm_up_iterations=0, iteration_method=method)
+    method = 'sse'
+    benchmark = tc.system.Benchmark(ins, n=128, warm_up_iterations=0, iteration_method=method, ignore_boundary=4)
     assert benchmark.test()
-    benchmark = tc.system.Benchmark(ins, n=512, warm_up_iterations=0, iteration_method=method)
+    benchmark = tc.system.Benchmark(ins, n=512, warm_up_iterations=0, iteration_method=method, ignore_boundary=4)
     while True:
-        print benchmark.run(10)
+        print benchmark.run(100)
 
 
 if __name__ == '__main__':

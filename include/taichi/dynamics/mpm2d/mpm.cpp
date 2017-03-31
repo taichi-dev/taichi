@@ -46,10 +46,21 @@ void MPM::substep() {
     t_int += 1;
     t = base_delta_t * t_int;
     real delta_t = base_delta_t;
-    if (particles.empty())
+
+    bool exist_active_particle = false;
+    Vector2 downscale(1.0f / res[0], 1.0f / res[1]);
+    for (auto &p : particles) {
+        Vector3 coord(p->pos.x * downscale.x, p->pos.y * downscale.y, 0.0f);
+        p->march_interval = int(std::round(this->dt_multiplier->sample(coord).x));
+        p->active = t_int % p->march_interval == 0;
+        if (p->active) {
+            p->calculate_kernels();
+            exist_active_particle = true;
+        }
+    }
+    if (!exist_active_particle) {
         return;
-    for (auto &p : particles)
-        p->calculate_kernels();
+    }
     rasterize();
     grid.reorder_grids();
     estimate_volume();
@@ -58,9 +69,11 @@ void MPM::substep() {
     //Deleted: grid.apply_boundary_conditions(levelset);
     apply_deformation_force(delta_t);
     grid.apply_boundary_conditions(levelset);
-    resample(delta_t);
+    resample();
     for (auto &p : particles) {
-        p->pos += delta_t * p->v;
+        if (p->active) {
+            p->pos += p->march_interval * delta_t * p->v;
+        }
     }
     if (config.get("particle_collision", false))
         particle_collision_resolution();
@@ -160,11 +173,15 @@ void MPM::rasterize() {
     grid.normalize_velocity();
 }
 
-inline void MPM::resample(real delta_t) {
-    real alpha_delta_t = pow(flip_alpha, delta_t / flip_alpha_stride);
+void MPM::resample() {
+    // FLIP is disabled here
+    real alpha_delta_t = 1; // pow(flip_alpha, delta_t / flip_alpha_stride);
     if (apic)
         alpha_delta_t = 0.0f;
     for (auto &p : particles) {
+        if (t_int % p->march_interval != 0)
+            continue;
+        real delta_t = base_delta_t * p->march_interval;
         int p_i = int(p->pos.x);
         int p_j = int(p->pos.y);
         Vector2 v = Vector2(0, 0), bv = Vector2(0, 0);

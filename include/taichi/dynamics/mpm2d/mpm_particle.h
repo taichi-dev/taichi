@@ -34,6 +34,8 @@ struct MPMParticle {
     Matrix2 dg_cache;
     static long long instance_count;
     long long id = instance_count++;
+    bool active = false;
+    int march_interval;
     MPMParticle() {
         dg_e = Matrix2(1.0f);
         dg_p = Matrix2(1.0f);

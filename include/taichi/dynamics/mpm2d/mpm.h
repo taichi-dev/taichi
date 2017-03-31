@@ -67,9 +67,9 @@ protected:
 
     void rasterize();
 
-    void resample(real delta_t);
-
     void apply_deformation_force(real delta_t);
+
+    void resample();
 
     virtual void substep();
 

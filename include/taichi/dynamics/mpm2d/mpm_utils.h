@@ -16,6 +16,18 @@
 
 TC_NAMESPACE_BEGIN
 
+const int grid_block_size = 4;
+
+int get_largest_pot(int a) {
+    assert_info(a > 0, "a should be positive");
+    // TODO: optimize
+    int i = 1;
+    while (i * 2 <= a) {
+        i *= 2;
+    }
+    return i;
+}
+
 #define Pp(v) {printf("%s:\n", #v); print(v);}
 #define abnormal(v) (!is_normal(v))
 
@@ -25,8 +37,7 @@ inline real w(real x) {
     assert(x <= 2);
     if (x < 1) {
         return 0.5f * x * x * x - x * x + 2.0f / 3.0f;
-    }
-    else {
+    } else {
         return -1.0f / 6.0f * x * x * x + x * x - 2 * x + 4.0f / 3.0f;
     }
 }
@@ -40,8 +51,7 @@ inline real dw(real x) {
     real xx = x * x;
     if (x < 1.0f) {
         val = 1.5f * xx - 2.0f * x;
-    }
-    else {
+    } else {
         val = -0.5f * xx + 2.0f * x - 2.0f;
     }
     return s * val;

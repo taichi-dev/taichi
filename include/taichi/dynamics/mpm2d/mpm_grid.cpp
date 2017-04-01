@@ -8,7 +8,6 @@
 *******************************************************************************/
 
 #include "mpm_grid.h"
-#include <stb_image.h>
 
 TC_NAMESPACE_BEGIN
 

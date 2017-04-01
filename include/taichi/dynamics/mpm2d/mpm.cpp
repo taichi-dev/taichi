@@ -20,7 +20,6 @@ void MPM::initialize(const Config &config_) {
     res = config.get_vec2i("res");
     this->apic = config.get("apic", true);
     this->use_level_set = config.get("use_level_set", false);
-    this->cfl = config.get("cfl", 0.01f);
     this->h = config.get_real("delta_x");
     int dt_multiplier_id = config.get("dt_multiplier_tex_id", -1);
     if (dt_multiplier_id != -1) {
@@ -47,22 +46,42 @@ void MPM::substep() {
     t = base_delta_t * t_int;
     real delta_t = base_delta_t;
 
-    bool exist_active_particle = false;
+    bool exist_updating_particle = false;
     Vector2 downscale(1.0f / res[0], 1.0f / res[1]);
+    grid.states = 0;
     for (auto &p : particles) {
-        Vector3 coord(p->pos.x * downscale.x, p->pos.y * downscale.y, 0.0f);
-        p->march_interval = int(std::round(this->dt_multiplier->sample(coord).x));
-        p->active = t_int % p->march_interval == 0;
-        if (p->active) {
-            p->calculate_kernels();
-            exist_active_particle = true;
+        int march_interval = get_largest_pot(p->get_allowed_dt() / base_delta_t);
+        p->state = (t_int % march_interval == 0) ? MPMParticle::UPDATING : MPMParticle::INACTIVE;
+        if (p->state == MPMParticle::UPDATING) {
+            exist_updating_particle = true;
         }
+        Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
+        // Rasterize to grid state, expand grid, and resample
+        grid.states[low_res_pos.x][low_res_pos.y] = 1;
     }
-    if (!exist_active_particle) {
+    if (!exist_updating_particle) {
         return;
     }
+
+    grid.expand();
+    for (auto &p : particles) {
+        if (p->state == MPMParticle::UPDATING) {
+            continue;
+        }
+        Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
+        // resample
+        if (grid.states[low_res_pos.x][low_res_pos.y]) {
+            // mark as buffer particle
+            p->state = MPMParticle::BUFFER;
+        }
+    }
+
+    for (auto &p : particles) {
+        if (p->state)
+            p->calculate_kernels();
+    }
+
     rasterize();
-    grid.reorder_grids();
     estimate_volume();
     grid.backup_velocity();
     grid.apply_external_force(gravity);
@@ -72,7 +91,7 @@ void MPM::substep() {
     grid.normalize_acceleration();
     resample();
     for (auto &p : particles) {
-        if (p->active) {
+        if (p->state == MPMParticle::UPDATING) {
             p->pos += p->march_interval * delta_t * p->v;
         }
     }
@@ -88,8 +107,7 @@ void MPM::step(real delta_t) {
     P(kernel_calc_counter);
 }
 
-void MPM::compute_material_levelset()
-{
+void MPM::compute_material_levelset() {
     material_levelset.reset(std::numeric_limits<real>::infinity());
     for (auto &p : particles) {
         for (auto &ind : material_levelset.get_rasterization_region(p->pos, 3)) {
@@ -107,14 +125,14 @@ void MPM::compute_material_levelset()
 
 void MPM::particle_collision_resolution() {
     for (auto &p : particles) {
-        if (p->active)
+        if (p->state == MPMParticle::UPDATING)
             p->resolve_collision(levelset);
     }
 }
 
 void MPM::estimate_volume() {
     for (auto &p : particles) {
-        if (p->active && p->vol == -1.0f) {
+        if (p->state && p->vol == -1.0f) {
             real rho = 0.0f;
             for (auto &ind : get_bounded_rasterization_region(p->pos)) {
                 real weight = p->get_cache_w(ind);
@@ -126,11 +144,7 @@ void MPM::estimate_volume() {
 }
 
 void MPM::add_particle(const Config &config) {
-    // WTH???
-    auto p = create_particle(config);
-    p->mass = 1.0f / res[0] / res[0];
-    // p->pos += config.get("position_noise", 0.0f) * Vector2(rand() - 0.5f, rand() - 0.5f);
-    particles.push_back(p);
+    error("no_impl");
 }
 
 void MPM::add_particle(std::shared_ptr<MPMParticle> p) {
@@ -163,7 +177,7 @@ LevelSet2D MPM::get_material_levelset() {
 void MPM::rasterize() {
     grid.reset();
     for (auto &p : particles) {
-        if (!p->active)
+        if (!p->state)
             continue;
         if (!is_normal(p->pos)) {
             p->print();
@@ -183,7 +197,7 @@ void MPM::resample() {
     if (apic)
         alpha_delta_t = 0.0f;
     for (auto &p : particles) {
-        if (!p->active)
+        if (p->state != MPMParticle::UPDATING)
             continue;
         real delta_t = base_delta_t * p->march_interval;
         Vector2 v = Vector2(0, 0), bv = Vector2(0, 0);
@@ -221,11 +235,11 @@ void MPM::resample() {
 
 void MPM::apply_deformation_force() {
     for (auto &p : particles) {
-        if (p->active)
+        if (p->state)
             p->calculate_force();
     }
     for (auto &p : particles) {
-        if (!p->active) {
+        if (!p->state) {
             continue;
         }
         for (auto &ind : get_bounded_rasterization_region(p->pos)) {

@@ -77,8 +77,6 @@ protected:
 
     real get_max_speed();
 
-    real cfl;
-
 public:
     MPM() {
         sorting_period = 1.0f;

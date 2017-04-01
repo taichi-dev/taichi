@@ -29,11 +29,10 @@ public:
     Array2D<Vector2> velocity_backup;
     Array2D<vec4> boundary_normal;
     Array2D<real> mass;
-    Array2D<int> id;
-    std::vector<Vector2i> id_to_pos;
-    std::vector<Vector2i> z_to_xy;
+    Array2D<int> states;
     Vector2i res;
-    int valid_count;
+
+    Vector2i low_res;
 
     void initialize(const Vector2i &res) {
         this->res = res;
@@ -41,33 +40,37 @@ public:
         force_or_acc.initialize(res);
         boundary_normal.initialize(res);
         mass.initialize(res);
-        id.initialize(res);
-        id_to_pos = std::vector<Vector2i>(res[0] * res[1]);
-        z_to_xy = std::vector<Vector2i>(res[0] * res[1]);
-        initialize_z_order();
+        low_res.x = (res.x + grid_block_size - 1) / grid_block_size;
+        low_res.y = (res.y + grid_block_size - 1) / grid_block_size;
+        states.initialize(low_res);
     }
 
-    void initialize_z_order() {
-        // NEVER used!
-        //// requires res[0], res[1] to be POT
-        //if (((res[0] & (res[0] - 1)) || (res[1] & (res[1] - 1))) == 0) {
-        //    for (auto &ind : mass.get_region()) {
-        //        int z = ind.i * res[1] + ind.j;
-        //        int x = 0, y = 0;
-        //        for (int s = 1, ss = 1; s < dim; s <<= 1, ss <<= 2) {
-        //            if (z & ss) {
-        //                x += s;
-        //            }
-        //            if (z & (ss << 1)) {
-        //                y += s;
-        //            }
-        //        }
-        //        z_to_xy[z] = Vector2i(x, y);
-        //    }
-        //}
-        for (auto &ind : mass.get_region()) {
-            int z = ind.i * res[1] + ind.j;
-            z_to_xy[z] = Vector2i(ind.i, ind.j);
+    void expand() {
+        Array2D<int> new_states;
+        new_states = states;
+        // Expand x
+        for (auto &ind: states.get_region()) {
+            if (states[ind]) {
+                new_states[ind] = 1;
+                if (ind.i > 0) {
+                    new_states[ind.neighbour(-1, 0)] = 1;
+                }
+                if (ind.i < states.get_width() - 1) {
+                    new_states[ind.neighbour(1, 0)] = 1;
+                }
+            }
+        }
+        // Expand y
+        for (auto &ind: states.get_region()) {
+            if (new_states[ind]) {
+                states[ind] = 1;
+                if (ind.j > 0) {
+                    states[ind.neighbour(0, -1)] = 1;
+                }
+                if (ind.j < states.get_height() - 1) {
+                    states[ind.neighbour(0, 1)] = 1;
+                }
+            }
         }
     }
 
@@ -103,7 +106,6 @@ public:
         }
     }
 
-
     void apply_external_force(Vector2 acc) {
         for (auto &ind : mass.get_region()) {
             if (mass[ind] > 0) // Do not use EPS here!!
@@ -112,33 +114,6 @@ public:
     }
 
     void apply_boundary_conditions(const LevelSet2D &levelset);
-
-    void reorder_grids() {
-        valid_count = 0;
-        for (int z = 0; z < res[0] * res[1]; z++) {
-            int i = z_to_xy[z].x, j = z_to_xy[z].y;
-            if (mass[i][j] > 0) {
-                id[i][j] = valid_count;
-                id_to_pos[valid_count] = Vector2i(i, j);
-                valid_count += 1;
-            } else {
-                id[i][j] = -1;
-            }
-        }
-        // printf("Reorder grids is disabled.\n"); // TODO: enable
-        return;
-        //for (int z = 0; z < dim * dim; z++) {
-        //    int i = z_to_xy[z].x, j = z_to_xy[z].y;
-        //    if (mass[i][j] > 0 && scene.image(i, j).r != 0.0f) {
-        //        id[i][j] = valid_count;
-        //        id_to_pos[valid_count] = Vector2i(i, j);
-        //        valid_count += 1;
-        //    }
-        //    else {
-        //        id[i][j] = -1;
-        //    }
-        //}
-    }
 
     void check_velocity() {
         for (int i = 0; i < res[0]; i++) {

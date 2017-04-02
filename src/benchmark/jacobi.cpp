@@ -12,6 +12,8 @@
 #include <taichi/system/benchmark.h>
 #include <taichi/system/threading.h>
 
+// #define TC_USE_AVX
+
 TC_NAMESPACE_BEGIN
 
 template<typename T>
@@ -560,10 +562,10 @@ void JacobiSIMD<float>::iterate_sse_prefetch() {
         for (int j = b1; j < b2; j++) {
             int p_base = i * n * n + j * n;
             for (int k = b1; k < b2; k += 4) {
-                _mm_prefetch((const char *)src + p_base - n * n + n + k, 0);
-                _mm_prefetch((const char *)src + p_base + n * n + n + k, 0);
-                _mm_prefetch((const char *)src + p_base + n * 2 + k, 0);
-                _mm_prefetch((const char *)src + p_base + k, 0);
+                _mm_prefetch((const char *)src + p_base - n * n + n + k, _MM_HINT_T0);
+                _mm_prefetch((const char *)src + p_base + n * n + n + k, _MM_HINT_T0);
+                _mm_prefetch((const char *)src + p_base + n * 2 + k, _MM_HINT_T0);
+                _mm_prefetch((const char *)src + p_base + k, _MM_HINT_T0);
                 int p = p_base + k;
                 FUSION_32_SSE
             }
@@ -640,6 +642,7 @@ void JacobiSIMD<double>::iterate_sse_block() {
 
 template<>
 void JacobiSIMD<float>::iterate_avx() {
+#ifdef TC_USE_AVX
     const int boundary = 8;
     const float one_over_six = float(1) / 6;
     if (boundary > ignore)
@@ -669,6 +672,9 @@ void JacobiSIMD<float>::iterate_avx() {
             }
         }
     }
+#else
+    error("not implemented (needs AVX support)");
+#endif
 }
 
 template<>
@@ -720,6 +726,5 @@ void JacobiSIMD<double>::iterate_avx() {
 REGISTER(JacobiBruteForce, "jacobi_bf")
 REGISTER(JacobiSerial, "jacobi_serial")
 REGISTER(JacobiSIMD, "jacobi_simd")
-
 
 TC_NAMESPACE_END

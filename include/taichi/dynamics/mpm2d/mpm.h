@@ -46,6 +46,7 @@ protected:
     real last_sort;
     real sorting_period;
     bool use_level_set;
+    bool async;
     Array2D<real> allowed_dt;
     std::shared_ptr<Texture> dt_multiplier;
 

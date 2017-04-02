@@ -17,6 +17,7 @@ long long kernel_calc_counter = 0;
 void MPM::initialize(const Config &config_) {
     auto config = Config(config_);
     this->config = config;
+    this->async = config.get("async", false);
     res = config.get_vec2i("res");
     this->apic = config.get("apic", true);
     this->use_level_set = config.get("use_level_set", false);
@@ -42,15 +43,22 @@ void MPM::initialize(const Config &config_) {
 }
 
 void MPM::substep() {
-    t_int += 1;
-    t = base_delta_t * t_int;
     real delta_t = base_delta_t;
 
     // Rasterize to grid state, expand grid, and resample
     bool exist_updating_particle = false;
     grid.states = 0;
+    int maximum_march_interval = 1;
+    int t_int_increment = 1 << 30;
     for (auto &p : particles) {
-        int march_interval = get_largest_pot((int)(p->get_allowed_dt() / base_delta_t));
+        int march_interval;
+        if (!async) {
+            march_interval = 1;
+        } else {
+            march_interval = get_largest_pot((int)(p->get_allowed_dt() / base_delta_t));
+        }
+        maximum_march_interval = std::max(maximum_march_interval, march_interval);
+        t_int_increment = std::min(t_int_increment, march_interval);
         p->march_interval = march_interval;
         p->state = (t_int % march_interval == 0) ? MPMParticle::UPDATING : MPMParticle::INACTIVE;
         if (p->state == MPMParticle::UPDATING) {
@@ -59,6 +67,19 @@ void MPM::substep() {
         Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
         grid.states[low_res_pos.x][low_res_pos.y] = 1;
     }
+    if (async) {
+        t_int_increment = 1;
+        real log_maximum = log((real)maximum_march_interval);
+        real log_minimum = log((real)t_int_increment);
+        if (log_maximum == log_minimum) {
+            log_minimum = log_maximum - 0.00001f;
+        }
+        for (auto &p : particles) {
+            p->color = Vector3((1.0f - (log(real(p->march_interval)) - log_minimum) / (log_maximum - log_minimum)) * 255.0f);
+        }
+    }
+    t_int += t_int_increment;
+    t = base_delta_t * t_int;
     if (!exist_updating_particle) {
         return;
     }
@@ -89,8 +110,8 @@ void MPM::substep() {
     grid.apply_external_force(gravity);
     //Deleted: grid.apply_boundary_conditions(levelset);
     apply_deformation_force();
-    grid.apply_boundary_conditions(levelset);
     grid.normalize_acceleration();
+    grid.apply_boundary_conditions(levelset, t_int_increment * base_delta_t);
     resample();
     for (auto &p : particles) {
         if (p->state == MPMParticle::UPDATING) {

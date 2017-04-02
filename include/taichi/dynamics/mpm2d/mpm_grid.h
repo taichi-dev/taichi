@@ -117,7 +117,7 @@ public:
         }
     }
 
-    void apply_boundary_conditions(const LevelSet2D &levelset);
+    void apply_boundary_conditions(const LevelSet2D &levelset, real delta_t);
 
     void check_velocity() {
         for (int i = 0; i < res[0]; i++) {

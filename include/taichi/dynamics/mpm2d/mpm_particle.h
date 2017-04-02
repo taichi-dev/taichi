@@ -189,7 +189,7 @@ struct EPParticle : MPMParticle {
 
     virtual real get_allowed_dt() const override {
         auto lame = get_lame_parameters();
-        return 1e6f / std::max(std::get<0>(lame), std::get<1>(lame));
+        return 1e4f / std::max(std::get<0>(lame), std::get<1>(lame));
     }
 };
 

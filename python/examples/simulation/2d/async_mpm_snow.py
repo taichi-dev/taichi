@@ -4,9 +4,7 @@ import taichi as tc
 
 if __name__ == '__main__':
     resolution = tuple([160, 90])
-    multiplier = tc.Texture('sliced', base=(1, 0, 0, 0), steps=(4, 1, 1, 1), increment=(1, 0, 0, 0))
-    simulator = create_mpm_simulator(resolution, 1.5, frame_dt=4e-2, base_delta_t=2e-3,
-                                     dt_multiplier=multiplier)
+    simulator = create_mpm_simulator(resolution, 1.5, frame_dt=4e-2, base_delta_t=2e-4)
 
     num_slices = 4
 
@@ -15,7 +13,7 @@ if __name__ == '__main__':
         def event(s):
             print i
             s.add_particles_sphere(Vector(0.3 + 1.2 / (num_slices - 1) * i, 0.20), 0.10, 'ep',
-                                   compression=1.0)
+                                   compression=0.6 + i * 0.1)
 
         return event
 

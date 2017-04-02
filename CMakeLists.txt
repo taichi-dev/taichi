@@ -1,15 +1,16 @@
 cmake_minimum_required(VERSION 2.8)
 project(taichi)
 
-if (WIN32)
-    link_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
-endif ()
-
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
 message("Using c++ compiler: " ${CMAKE_CXX_COMPILER})
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -march=avx -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED")
+if (WIN32)
+    link_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /Z7 /D \"_CRT_SECURE_NO_WARNINGS\"  /arch:AVX -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED")
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -march=native -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED")
+endif ()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_PASS_EXCEPTION_TO_PYTHON")
 
@@ -20,12 +21,6 @@ if (USE_OPENGL)
     include_directories(${GLFW_INCLUDE_DIRS})
     find_package(GLEW REQUIRED)
     include_directories(${GLEW_INCLUDE_DIRS})
-endif ()
-
-if (WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /Z7 /D \"_CRT_SECURE_NO_WARNINGS\"  /arch:AVX")
-else ()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 endif ()
 
 if (WIN32)

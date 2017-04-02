@@ -18,7 +18,7 @@ TC_NAMESPACE_BEGIN
 
 const int grid_block_size = 4;
 
-int get_largest_pot(int a) {
+inline int get_largest_pot(int a) {
     assert_info(a > 0, "a should be positive");
     // TODO: optimize
     int i = 1;

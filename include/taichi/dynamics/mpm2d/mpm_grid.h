@@ -74,6 +74,10 @@ public:
         }
     }
 
+    int get_num_active_grids() {
+        return states.abs_sum();
+    }
+
     void backup_velocity() {
         velocity_backup = velocity;
     }

@@ -123,8 +123,9 @@ void MPM::substep() {
     for (auto &p : particles) {
         if (p->state == MPMParticle::UPDATING) {
             p->pos += (t_int - p->last_update) * delta_t * p->v;
-
             p->last_update = t_int;
+            p->pos.x = clamp(p->pos.x, 1.0f, res[0] - 1.0f);
+            p->pos.y = clamp(p->pos.y, 1.0f, res[1] - 1.0f);
         }
     }
     if (config.get("particle_collision", false))

@@ -263,7 +263,7 @@ void MPM::apply_deformation_force() {
             p->calculate_force();
     }
     for (auto &p : particles) {
-        if (p->state != MPMParticle::INACTIVE) {
+        if (p->state == MPMParticle::INACTIVE) {
             continue;
         }
         for (auto &ind : get_bounded_rasterization_region(p->pos)) {

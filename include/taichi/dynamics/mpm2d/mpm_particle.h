@@ -142,8 +142,8 @@ struct EPParticle : MPMParticle {
         polar_decomp(dg_e, r, s);
         CV(r);
         CV(s);
-        if (!is_normal(r) || !is_normal(s) || !is_normal(std::get<0>(lame_parameters)) || !is_normal(
-                std::get<1>(lame_parameters))) {
+        if (!is_normal(r) || !is_normal(s) || !is_normal(lame_parameters.first) || !is_normal(
+                lame_parameters.second)) {
             // debug code
             P(dg_e);
             P(dg_p);
@@ -152,8 +152,8 @@ struct EPParticle : MPMParticle {
             P(j_e);
             P(j_p);
         }
-        return 2 * std::get<0>(lame_parameters) * (dg_e - r) +
-               std::get<1>(lame_parameters) * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
+        return 2 * lame_parameters.first * (dg_e - r) +
+               lame_parameters.second * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
     }
 
     void plasticity() override {

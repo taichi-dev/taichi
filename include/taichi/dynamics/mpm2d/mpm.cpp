@@ -122,9 +122,9 @@ void MPM::substep() {
     resample();
     for (auto &p : particles) {
         if (p->state == MPMParticle::UPDATING) {
-            p->pos += (p->march_interval - p->last_update) * delta_t * p->v;
+            p->pos += (t_int - p->last_update) * delta_t * p->v;
 
-            //p->last_update = t_int;
+            p->last_update = t_int;
         }
     }
     if (config.get("particle_collision", false))
@@ -232,7 +232,7 @@ void MPM::resample() {
         // Update particles with state UPDATING only
         if (p->state != MPMParticle::UPDATING)
             continue;
-        real delta_t = base_delta_t * (p->march_interval - p->last_update);
+        real delta_t = base_delta_t * (t_int - p->last_update);
         Vector2 v = Vector2(0, 0), bv = Vector2(0, 0);
         Matrix2 cdg(0.0f);
         Matrix2 b(0.0f);

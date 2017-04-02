@@ -39,7 +39,11 @@ void MPM::initialize(const Config &config_) {
     flip_alpha_stride = config.get_real("flip_alpha_stride");
     gravity = config.get_vec2("gravity");
     base_delta_t = config.get_real("base_delta_t");
-    maximum_delta_t = config.get_real("maximum_delta_t");
+    if (async) {
+        maximum_delta_t = config.get_real("maximum_delta_t");
+    } else {
+        maximum_delta_t = base_delta_t;
+    }
     material_levelset.initialize(res, Vector2(0.5f, 0.5f));
 }
 

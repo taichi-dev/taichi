@@ -3,7 +3,7 @@ from taichi.misc.util import *
 
 if __name__ == '__main__':
     resolution = tuple([128, 256])
-    simulator = create_mpm_simulator(resolution, 10, dt=0.06)
+    simulator = create_mpm_simulator(resolution, 10, frame_dt=0.06)
 
     simulator.add_event(-1, lambda s: s.add_particles_sphere(Vector(0.2, 0.55), 0.03, 'ep',
                                                              lambda_0=1e6, mu_0=1e6, theta_c=1, theta_s=1, velocity=Vector(0, 0), color=Vector(255, 255, 255)))

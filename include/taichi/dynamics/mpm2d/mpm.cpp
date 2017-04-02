@@ -39,6 +39,7 @@ void MPM::initialize(const Config &config_) {
     flip_alpha_stride = config.get_real("flip_alpha_stride");
     gravity = config.get_vec2("gravity");
     base_delta_t = config.get_real("base_delta_t");
+    maximum_delta_t = config.get_real("maximum_delta_t");
     material_levelset.initialize(res, Vector2(0.5f, 0.5f));
 }
 
@@ -48,14 +49,20 @@ void MPM::substep() {
     // Rasterize to grid state, expand grid, and resample
     bool exist_updating_particle = false;
     grid.states = 0;
-    int maximum_march_interval = 1;
-    int t_int_increment = 1 << 30;
+    int64 maximum_march_interval = 1;
+    int64 t_int_increment = 1 << 30;
     for (auto &p : particles) {
-        int march_interval;
+        int64 march_interval;
         if (!async) {
             march_interval = 1;
         } else {
-            march_interval = get_largest_pot((int)(p->get_allowed_dt() / base_delta_t));
+            int64 allowed_t_int_inc = (int64)(p->get_allowed_dt() / base_delta_t);
+            allowed_t_int_inc = std::min(allowed_t_int_inc, (int64)(maximum_delta_t / base_delta_t));
+            if (allowed_t_int_inc <= 0) {
+                P(allowed_t_int_inc);
+                // allowed_t_int_inc = 1;
+            }
+            march_interval = get_largest_pot(allowed_t_int_inc);
         }
         maximum_march_interval = std::max(maximum_march_interval, march_interval);
         t_int_increment = std::min(t_int_increment, march_interval);
@@ -68,15 +75,15 @@ void MPM::substep() {
         grid.states[low_res_pos.x][low_res_pos.y] = 1;
     }
     if (async) {
-        t_int_increment = 1;
         real log_maximum = log((real)maximum_march_interval);
         real log_minimum = log((real)t_int_increment);
         if (log_maximum == log_minimum) {
             log_minimum = log_maximum - 0.00001f;
         }
         for (auto &p : particles) {
-            p->color = Vector3((1.0f - (log(real(p->march_interval)) - log_minimum) / (log_maximum - log_minimum)) * 255.0f);
+            p->color.x = (1.0f - (log(real(p->march_interval)) - log_minimum) / (log_maximum - log_minimum)) * 255.0f;
         }
+        P(t_int_increment);
     }
     t_int += t_int_increment;
     t = base_delta_t * t_int;
@@ -115,7 +122,9 @@ void MPM::substep() {
     resample();
     for (auto &p : particles) {
         if (p->state == MPMParticle::UPDATING) {
-            p->pos += p->march_interval * delta_t * p->v;
+            p->pos += (p->march_interval - p->last_update) * delta_t * p->v;
+
+            //p->last_update = t_int;
         }
     }
     if (config.get("particle_collision", false))
@@ -223,7 +232,7 @@ void MPM::resample() {
         // Update particles with state UPDATING only
         if (p->state != MPMParticle::UPDATING)
             continue;
-        real delta_t = base_delta_t * p->march_interval;
+        real delta_t = base_delta_t * (p->march_interval - p->last_update);
         Vector2 v = Vector2(0, 0), bv = Vector2(0, 0);
         Matrix2 cdg(0.0f);
         Matrix2 b(0.0f);

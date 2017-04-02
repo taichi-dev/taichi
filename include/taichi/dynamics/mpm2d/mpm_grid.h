@@ -49,7 +49,7 @@ public:
         Array2D<int> new_states;
         new_states = states;
         // Expand x
-        for (auto &ind: states.get_region()) {
+        for (auto &ind : states.get_region()) {
             if (states[ind]) {
                 new_states[ind] = 1;
                 if (ind.i > 0) {
@@ -61,7 +61,7 @@ public:
             }
         }
         // Expand y
-        for (auto &ind: states.get_region()) {
+        for (auto &ind : states.get_region()) {
             if (new_states[ind]) {
                 states[ind] = 1;
                 if (ind.j > 0) {

@@ -35,8 +35,9 @@ protected:
     real h;
     real t;
     real base_delta_t;
+    real maximum_delta_t;
     real requested_t;
-    int t_int;
+    int64 t_int;
     Vector2 gravity;
     bool apic;
 

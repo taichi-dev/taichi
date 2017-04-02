@@ -4,7 +4,7 @@ import taichi as tc
 
 if __name__ == '__main__':
     resolution = tuple([160, 90])
-    simulator = create_mpm_simulator(resolution, 15, frame_dt=4e-2, base_delta_t=2e-6, async=True)
+    simulator = create_mpm_simulator(resolution, 15, frame_dt=8e-2, base_delta_t=1e-8, async=True)
 
     num_slices = 4
 
@@ -18,7 +18,8 @@ if __name__ == '__main__':
         return event
 
 
-    for i in range(num_slices):
+    # for i in range(num_slices):
+    for i in range(3, 4):
         simulator.add_event(-1, get_event(i))
 
     levelset = simulator.create_levelset()

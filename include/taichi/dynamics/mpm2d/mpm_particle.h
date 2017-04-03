@@ -132,7 +132,7 @@ struct EPParticle : MPMParticle {
         real e = std::max(1e-7f, std::exp(std::min(hardening * (1.0f - j_p), 5.0f)));
         real mu = mu_0 * e;
         real lambda = lambda_0 * e;
-        return{ mu, lambda };
+        return {mu, lambda};
     }
 
     Matrix2 get_energy_gradient() {
@@ -145,7 +145,7 @@ struct EPParticle : MPMParticle {
         CV(r);
         CV(s);
         if (!is_normal(r) || !is_normal(s) || !is_normal(lame_parameters.first) || !is_normal(
-            lame_parameters.second)) {
+                lame_parameters.second)) {
             // debug code
             P(dg_e);
             P(dg_p);
@@ -155,7 +155,7 @@ struct EPParticle : MPMParticle {
             P(j_p);
         }
         return 2 * lame_parameters.first * (dg_e - r) +
-            lame_parameters.second * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
+               lame_parameters.second * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
     }
 
     void plasticity() override {
@@ -191,9 +191,9 @@ struct EPParticle : MPMParticle {
 
     virtual real get_allowed_dt() const override {
         auto lame = get_lame_parameters();
-        real strength = std::max(lame.first, lame.second);
-        real cfl_limit = 1.0f / (std::max(std::abs(v.x), std::abs(v.y)) + 1e-38f);
-        return std::min(1e4f / strength, cfl_limit);
+        real strength_limit = 1e1 / std::sqrt(lame.first + 2 * lame.second);
+        real cfl_limit = 0.5f / (std::max(std::abs(v.x), std::abs(v.y)) + 1e-38f);
+        return std::min(strength_limit, cfl_limit);
     }
 };
 

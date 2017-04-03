@@ -69,9 +69,13 @@ void MPM::substep() {
             march_interval = get_largest_pot(allowed_t_int_inc);
         }
         maximum_march_interval = std::max(maximum_march_interval, march_interval);
-        t_int_increment = std::min(t_int_increment, march_interval);
         p->march_interval = march_interval;
-        p->state = (t_int % march_interval == 0) ? MPMParticle::UPDATING : MPMParticle::INACTIVE;
+        t_int_increment = std::min(t_int_increment, march_interval - t_int % march_interval);
+    }
+    t_int += t_int_increment;
+    t = base_delta_t * t_int;
+    for (auto &p : particles) {
+        p->state = (t_int % p->march_interval == 0) ? MPMParticle::UPDATING : MPMParticle::INACTIVE;
         if (p->state == MPMParticle::UPDATING) {
             exist_updating_particle = true;
         }
@@ -89,8 +93,6 @@ void MPM::substep() {
         }
         P(t_int_increment);
     }
-    t_int += t_int_increment;
-    t = base_delta_t * t_int;
     if (!exist_updating_particle) {
         return;
     }

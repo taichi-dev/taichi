@@ -56,7 +56,7 @@ Vector2 LevelSet2D::get_normalized_gradient(const Vector2 &pos) const
 
 real LevelSet2D::get(const Vector2 &pos) const
 {
-    assert_info(inside(pos), "LevelSet Gradient Query out of Bound! (" + std::to_string(pos.x) + ", " + std::to_string(pos.y) + ")");
+    assert_info(inside(pos), "LevelSet Query out of Bound! (" + std::to_string(pos.x) + ", " + std::to_string(pos.y) + ")");
     real x = pos.x, y = pos.y;
     x = clamp(x - storage_offset.x, 0.f, width - 1.f - eps);
     y = clamp(y - storage_offset.y, 0.f, height - 1.f - eps);

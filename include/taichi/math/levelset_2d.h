@@ -2,6 +2,7 @@
     Taichi - Physically based Computer Graphics Library
 
     Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+                  2017 Yu Fang <squarefk@gmail.com>
 
     All rights reserved. Use of this source code is governed by
     the MIT license as written in the LICENSE file.
@@ -48,6 +49,8 @@ public:
     Vector2 get_gradient(const Vector2 &pos) const; // Note this is not normalized!
 
     Vector2 get_normalized_gradient(const Vector2 &pos) const;
+
+    real get(const Vector2 &pos) const;
 
     static real fraction_outside(real phi_a, real phi_b) {
         return 1.0f - fraction_inside(phi_a, phi_b);

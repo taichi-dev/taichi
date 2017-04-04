@@ -95,6 +95,7 @@ void export_math(py::module &m) {
             .def("get_width", &Array2D<real>::get_width)
             .def("get_height", &Array2D<real>::get_height)
             .def("rasterize", &Array2D<real>::rasterize)
+            .def("rasterize_scale", &Array2D<real>::rasterize_scale)
             .def("from_ndarray", &ndarray_to_array2d_real);
 
     py::class_<LevelSet2D>(m, "LevelSet2D")

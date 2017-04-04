@@ -96,6 +96,7 @@ def default_const_or_evaluate(f, default, u, v):
         return f
     return f(u, v)
 
+
 def const_or_evaluate(f, u, v):
     import taichi as tc
     if type(f) in [float, int, tuple, tc.core.Vector2, tc.core.Vector3]:
@@ -103,9 +104,15 @@ def const_or_evaluate(f, u, v):
     return f(u, v)
 
 
-def array2d_to_image(arr, width, height, color_255, transform='levelset'):
+# color_255: actual color
+# arr: the transparance of the image, if transform is not 'levelset'
+# transform: (x0, x1) as rescaling or simply 'levelset'
+def array2d_to_image(arr, width, height, color_255, transform='levelset', hard_scale=0):
     import pyglet
-    rasterized = arr.rasterize(width, height)
+    if hard_scale:
+        rasterized = arr.rasterize_scale(width, height, hard_scale)
+    else:
+        rasterized = arr.rasterize(width, height)
     raw_data = np.empty((width, height), dtype='float32')
     rasterized.to_ndarray(raw_data.ctypes.data_as(ctypes.c_void_p).value)
     raw_data = raw_data.swapaxes(0, 1).copy().flatten()
@@ -158,6 +165,7 @@ def imread(fn, bgr=False):
     img.read(fn)
     return image_buffer_to_ndarray(img, bgr)[::-1]
 
+
 def ndarray_to_array2d(array):
     array = array.copy()
     input_ptr = array.ctypes.data_as(ctypes.c_void_p).value
@@ -171,6 +179,7 @@ def ndarray_to_array2d(array):
         assert False, 'ndarray has to be n*m, n*m*3, or n*m*4'
     arr.from_ndarray(input_ptr, array.shape[0], array.shape[1])
     return arr
+
 
 def array2d_to_ndarray(arr):
     if isinstance(arr, taichi.core.Array2DVector3):

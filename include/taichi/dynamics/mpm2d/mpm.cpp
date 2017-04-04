@@ -19,6 +19,7 @@ void MPM::initialize(const Config &config_) {
     this->config = config;
     this->async = config.get("async", false);
     res = config.get_vec2i("res");
+    this->cfl = config.get("cfl", 1.0f);
     this->apic = config.get("apic", true);
     this->use_level_set = config.get("use_level_set", false);
     this->h = config.get_real("delta_x");
@@ -52,7 +53,7 @@ void MPM::substep() {
 
     // Rasterize to grid state, expand grid, and resample
     bool exist_updating_particle = false;
-    grid.states = 0;
+    grid.reset();
     int64 maximum_march_interval = 1;
     int64 t_int_increment = 1 << 30;
     for (auto &p : particles) {
@@ -64,7 +65,7 @@ void MPM::substep() {
             allowed_t_int_inc = std::min(allowed_t_int_inc, (int64)(maximum_delta_t / base_delta_t));
             if (allowed_t_int_inc <= 0) {
                 P(allowed_t_int_inc);
-                // allowed_t_int_inc = 1;
+                allowed_t_int_inc = 1;
             }
             march_interval = get_largest_pot(allowed_t_int_inc);
         }
@@ -81,6 +82,11 @@ void MPM::substep() {
         }
         Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
         grid.states[low_res_pos.x][low_res_pos.y] = 1;
+        auto &tmp = grid.min_max_vel[low_res_pos.x][low_res_pos.y];
+        tmp[0] = std::min(tmp[0], p->v.x);
+        tmp[1] = std::min(tmp[1], p->v.y);
+        tmp[2] = std::max(tmp[2], p->v.x);
+        tmp[3] = std::max(tmp[3], p->v.y);
     }
     if (async) {
         real log_maximum = log((real)maximum_march_interval);
@@ -214,7 +220,6 @@ LevelSet2D MPM::get_material_levelset() {
 }
 
 void MPM::rasterize() {
-    grid.reset();
     for (auto &p : particles) {
         if (p->state == MPMParticle::INACTIVE)
             continue;
@@ -292,19 +297,6 @@ void MPM::apply_deformation_force() {
             grid.force_or_acc[ind] += force;
         }
     }
-}
-
-real MPM::get_dt_with_cfl_1() {
-    return 1 / max(get_max_speed(), 1e-5f);
-}
-
-real MPM::get_max_speed() {
-    real maximum_speed = 0;
-    for (auto &p : particles) {
-        maximum_speed = max(abs(p->v.x), maximum_speed);
-        maximum_speed = max(abs(p->v.y), maximum_speed);
-    }
-    return maximum_speed;
 }
 
 TC_NAMESPACE_END

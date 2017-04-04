@@ -27,9 +27,10 @@ public:
     Array2D<Vector2> velocity;
     Array2D<Vector2> force_or_acc;
     Array2D<Vector2> velocity_backup;
-    Array2D<vec4> boundary_normal;
+    Array2D<Vector4> boundary_normal;
     Array2D<real> mass;
     Array2D<int> states;
+    Array2D<Vector4> min_max_vel;
     Vector2i res;
 
     Vector2i low_res;
@@ -43,20 +44,35 @@ public:
         low_res.x = (res.x + grid_block_size - 1) / grid_block_size;
         low_res.y = (res.y + grid_block_size - 1) / grid_block_size;
         states.initialize(low_res);
+        min_max_vel.initialize(low_res);
     }
 
     void expand() {
         Array2D<int> new_states;
+        Array2D<Vector4> new_min_max_vel;
+        new_min_max_vel = min_max_vel;
         new_states = states;
+
+        auto update = [&](const Index2D ind, int dx, int dy,
+                       const Array2D<Vector4> &min_max_vel, Array2D<Vector4> &new_min_max_vel,
+                       Array2D<int> &new_states) -> void {
+            auto &tmp = new_min_max_vel[ind.neighbour(dx, dy)];
+            tmp[0] = std::min(tmp[0], min_max_vel[ind][0]);
+            tmp[1] = std::min(tmp[1], min_max_vel[ind][1]);
+            tmp[2] = std::max(tmp[2], min_max_vel[ind][2]);
+            tmp[3] = std::max(tmp[3], min_max_vel[ind][3]);
+            new_states[ind.neighbour(dx, dy)] = 1;
+        };
+
         // Expand x
         for (auto &ind : states.get_region()) {
             if (states[ind]) {
                 new_states[ind] = 1;
                 if (ind.i > 0) {
-                    new_states[ind.neighbour(-1, 0)] = 1;
+                    update(ind, -1, 0, min_max_vel, new_min_max_vel, new_states);
                 }
                 if (ind.i < states.get_width() - 1) {
-                    new_states[ind.neighbour(1, 0)] = 1;
+                    update(ind, 1, 0, min_max_vel, new_min_max_vel, new_states);
                 }
             }
         }
@@ -65,10 +81,10 @@ public:
             if (new_states[ind]) {
                 states[ind] = 1;
                 if (ind.j > 0) {
-                    states[ind.neighbour(0, -1)] = 1;
+                    update(ind, 0, -1, new_min_max_vel, min_max_vel, states);
                 }
                 if (ind.j < states.get_height() - 1) {
-                    states[ind.neighbour(0, 1)] = 1;
+                    update(ind, 0, 1, new_min_max_vel, min_max_vel, states);
                 }
             }
         }
@@ -83,6 +99,8 @@ public:
     }
 
     void reset() {
+        states = 0;
+        min_max_vel = Vector4(1e30f, 1e30f, -1e30f, -1e30f);
         velocity = Vector2(0.0f);
         force_or_acc = Vector2(0.0f);
         mass = 0.0f;

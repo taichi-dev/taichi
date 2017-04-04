@@ -29,6 +29,7 @@ public:
     Vector2 storage_offset;
 
     Index2D() {}
+
     Index2D(int x0, int x1, int y0, int y1, Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
         x[0] = x0;
         x[1] = x1;
@@ -57,41 +58,53 @@ public:
             }
         }
     }
+
     Index2D operator++() {
         this->next();
         return *this;
     }
+
     bool operator==(const Index2D &o) const {
         return (i == o.i && j == o.j);
     }
+
     bool operator!=(const Index2D &o) const {
         return !(i == o.i && j == o.j);
     }
+
     Index2D &to_end() {
         i = x[1];
         j = y[0];
         //offset = (x[1] - x[0]) * (y[1] - y[0]);
         return *this;
     }
-    const Index2D& operator*() const { return *this; }
-    Index2D& operator*() { return *this; }
-    int operator[] (int c) { return *(&i + c); }
-    const int operator[] (int c) const { return *(&i + c); }
+
+    const Index2D &operator*() const { return *this; }
+
+    Index2D &operator*() { return *this; }
+
+    int operator[](int c) { return *(&i + c); }
+
+    const int operator[](int c) const { return *(&i + c); }
+
     Index2D neighbour(int di, int dj) const {
         Index2D i = *this;
         i.i += di;
         i.j += dj;
         return i;
     }
+
     Index2D neighbour(Vector2i d) const {
         Index2D i = *this;
         i.i += d.x;
         i.j += d.y;
         return i;
     }
-    Index2D operator +(Vector2i d) const {
+
+    Index2D operator+(Vector2i d) const {
         return neighbour(d);
     }
+
     Vector2 get_pos() const {
         return Vector2((real)i + storage_offset.x, (real)j + storage_offset.y);
     }
@@ -105,6 +118,7 @@ private:
     Vector2 storage_offset;
 public:
     Region2D() {}
+
     Region2D(int x0, int x1, int y0, int y1, Vector2 storage_offset = Vector2(0.5f, 0.5f)) {
         x[0] = x0;
         x[1] = x1;
@@ -114,21 +128,25 @@ public:
         index_end = Index2D(x0, x1, y0, y1, storage_offset).to_end();
         this->storage_offset = storage_offset;
     }
+
     const Index2D begin() const {
         return index_begin;
     }
+
     Index2D begin() {
         return index_begin;
     }
+
     const Index2D end() const {
         return index_end;
     }
+
     Index2D end() {
         return index_end;
     }
 };
 
-template <typename T>
+template<typename T>
 struct Array2D {
 protected:
     Region2D region;
@@ -138,8 +156,8 @@ protected:
     int width, height;
     Vector2 storage_offset = Vector2(0.5f, 0.5f); // defualt : center storage
 public:
-    template <typename P>
-    friend Array2D<T> operator * (const P &b, const Array2D<T> &a);
+    template<typename P>
+    friend Array2D<T> operator*(const P &b, const Array2D<T> &a);
 
     int get_size() const {
         return size;
@@ -185,8 +203,8 @@ public:
         this->storage_offset = arr.storage_offset;
     }
 
-    template <typename P>
-    Array2D<T> operator * (const P &b) const {
+    template<typename P>
+    Array2D<T> operator*(const P &b) const {
         Array2D<T> o(width, height);
         for (int i = 0; i < size; i++) {
             o.data[i] = b * data[i];
@@ -194,8 +212,8 @@ public:
         return o;
     }
 
-    template <typename P>
-    Array2D<T> operator / (const P &b) const {
+    template<typename P>
+    Array2D<T> operator/(const P &b) const {
         b = T(1) / b;
         return b * (*this);
     }
@@ -413,19 +431,23 @@ public:
         real x_r = x - x_i;
         real y_r = y - y_i;
         return lerp(x_r,
-            lerp(y_r, get(x_i, y_i), get(x_i, y_i + 1)),
-            lerp(y_r, get(x_i + 1, y_i), get(x_i + 1, y_i + 1))
+                    lerp(y_r, get(x_i, y_i), get(x_i, y_i + 1)),
+                    lerp(y_r, get(x_i + 1, y_i), get(x_i + 1, y_i + 1))
         );
     }
+
     T sample(const Vector2 &v) const {
         return sample(v.x, v.y);
     }
+
     T sample(const Index2D &v) const {
         return sample(v.get_pos());
     }
+
     Vector2 get_storage_offset() const {
         return storage_offset;
     }
+
     T sample_relative_coord(real x, real y) const {
         x = x * width;
         y = y * height;
@@ -441,6 +463,7 @@ public:
     auto begin() const {
         return data.cbegin();
     }
+
     auto end() const {
         return data.cend();
     }
@@ -448,6 +471,7 @@ public:
     T &operator[](const Index2D &index) {
         return (*this)[index.i][index.j];
     }
+
     const T &operator[](const Index2D &index) const {
         return (*this)[index.i][index.j];
     }
@@ -459,9 +483,11 @@ public:
     int get_height() const {
         return height;
     }
+
     bool empty() const {
         return !(width > 0 && height > 0);
     }
+
     T get_average() const {
         T sum(0);
         for (int i = 0; i < width; i++) {
@@ -479,8 +505,9 @@ public:
     Region2D get_rasterization_region(Vector2 pos, int half_extent) const {
         int x = (int)floor(pos.x - storage_offset.x);
         int y = (int)floor(pos.y - storage_offset.y);
-        return Region2D(std::max(0, x - half_extent + 1), std::min(width, x + half_extent + 1), std::max(0, y - half_extent + 1),
-            std::min(height, y + half_extent + 1), storage_offset);
+        return Region2D(std::max(0, x - half_extent + 1), std::min(width, x + half_extent + 1),
+                        std::max(0, y - half_extent + 1),
+                        std::min(height, y + half_extent + 1), storage_offset);
     }
 
     bool is_normal() const {
@@ -497,8 +524,7 @@ public:
         Vector2 actual_size;
         if (storage_offset == Vector2(0.0f, 0.0f)) {
             actual_size = Vector2(this->width - 1, this->height - 1);
-        }
-        else {
+        } else {
             actual_size = Vector2(this->width, this->height);
         }
 
@@ -507,6 +533,14 @@ public:
         for (auto &ind : Region2D(0, width, 0, height, Vector2(0.5f, 0.5f))) {
             Vector2 p = scale_factor * ind.get_pos();
             out[ind] = sample(p);
+        }
+        return out;
+    }
+
+    Array2D<T> rasterize_scale(int width, int height, int scale) {
+        Array2D<T> out(width, height);
+        for (auto &ind : out.get_region()) {
+            out[ind] = (*this)[ind.i / scale][ind.j / scale];
         }
         return out;
     }
@@ -526,8 +560,7 @@ public:
                     std::swap((*this)[i][j], (*this)[width - 1 - i][j]);
                 }
             }
-        }
-        else {
+        } else {
             for (int i = 0; i < width; i++) {
                 for (int j = 0; j < height / 2; j++) {
                     std::swap((*this)[i][j], (*this)[i][height - 1 - j]);
@@ -620,8 +653,8 @@ public:
     void write_text(const std::string &font_fn, const std::string &content, real size, int dx, int dy);
 };
 
-template <typename T, typename P>
-Array2D<T> operator * (const P &b, const Array2D<T> &a) {
+template<typename T, typename P>
+Array2D<T> operator*(const P &b, const Array2D<T> &a) {
     Array2D<T> o(a.width, a.height);
     for (int i = 0; i < a.size; i++) {
         o.data[i] = b * a.data[i];
@@ -631,7 +664,7 @@ Array2D<T> operator * (const P &b, const Array2D<T> &a) {
 
 typedef Array2D<real> Array;
 
-template <typename T>
+template<typename T>
 void print(const Array2D<T> &arr) {
     arr.print("");
 }

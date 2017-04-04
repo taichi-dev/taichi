@@ -38,6 +38,7 @@ protected:
     real maximum_delta_t;
     real requested_t;
     int64 t_int;
+    real cfl;
     Vector2 gravity;
     bool apic;
 
@@ -74,10 +75,6 @@ protected:
     void resample();
 
     virtual void substep();
-
-    real get_dt_with_cfl_1();
-
-    real get_max_speed();
 
 public:
     MPM() {

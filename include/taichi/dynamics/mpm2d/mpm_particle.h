@@ -2,6 +2,7 @@
     Taichi - Physically based Computer Graphics Library
 
     Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+                  2017 Yu Fang <squarefk@gmail.com>
 
     All rights reserved. Use of this source code is governed by
     the MIT license as written in the LICENSE file.
@@ -14,6 +15,7 @@
 #include "mpm_utils.h"
 #include <taichi/common/util.h>
 #include <taichi/math/levelset_2d.h>
+#include <taichi/math/dynamic_levelset_2d.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -104,10 +106,10 @@ struct MPMParticle {
 
     virtual void plasticity() {};
 
-    virtual void resolve_collision(const LevelSet2D &levelset) {
-        real phi = levelset.sample(pos.x, pos.y);
+    virtual void resolve_collision(const DynamicLevelSet2D &levelset, real t) {
+        real phi = levelset.sample(pos, t);
         if (phi < 0) {
-            pos -= levelset.get_normalized_gradient(pos) * phi;
+            pos -= levelset.get_spatial_gradient(pos, t) * phi;
         }
     }
 

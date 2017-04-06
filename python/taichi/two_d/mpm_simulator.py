@@ -146,8 +146,10 @@ class MPMSimulator(Simulator):
 
     def get_levelset_images(self, width, height, color_scheme):
         images = []
-        images.append(self.levelset.get_image(width, height, color_scheme['boundary']))
-        material_levelset = self.get_material_levelset()
+        t = self.simulator.get_current_time()
+        levelset = self.levelset_generator(t)
+        images.append(levelset.get_image(width, height, color_scheme['boundary']))
+        material_levelset = self.simulator.get_material_levelset()
         images.append(array2d_to_image(material_levelset, width, height, color_scheme['material']))
         # if self.buffer_debug:
         #     images.append(array2d_to_image(material_levelset, width, height, color_scheme['material']))

@@ -12,6 +12,7 @@
 #include <taichi/math/levelset_2d.h>
 #include <taichi/visualization/rgb.h>
 #include <taichi/math/array_op.h>
+#include <taichi/math/dynamic_levelset_2d.h>
 
 PYBIND11_MAKE_OPAQUE(std::vector<int>);
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::real>);
@@ -110,6 +111,10 @@ void export_math(py::module &m) {
             .def("get_normalized_gradient", &LevelSet2D::get_normalized_gradient)
             .def("to_ndarray", &array2d_to_ndarray<LevelSet2D>)
             .def_readwrite("friction", &LevelSet2D::friction);
+
+    py::class_<DynamicLevelSet2D>(m, "DynamicLevelSet2D")
+            .def(py::init<>())
+            .def("initialize", &DynamicLevelSet2D::initialize);
 
     m.def("points_inside_polygon", points_inside_polygon);
     m.def("points_inside_sphere", points_inside_sphere);

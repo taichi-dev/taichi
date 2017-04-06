@@ -2,6 +2,7 @@
     Taichi - Physically based Computer Graphics Library
 
     Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+                  2017 Yu Fang <squarefk@gmail.com>
 
     All rights reserved. Use of this source code is governed by
     the MIT license as written in the LICENSE file.
@@ -130,7 +131,7 @@ void MPM::substep() {
     //Deleted: grid.apply_boundary_conditions(levelset);
     apply_deformation_force();
     grid.normalize_acceleration();
-    grid.apply_boundary_conditions(levelset, t_int_increment * base_delta_t);
+    grid.apply_boundary_conditions(levelset, t_int_increment * base_delta_t, t);
     resample();
     for (auto &p : particles) {
         if (p->state == MPMParticle::UPDATING) {
@@ -162,7 +163,7 @@ void MPM::compute_material_levelset() {
     }
     for (auto &ind : material_levelset.get_region()) {
         if (material_levelset[ind] < 0.5f) {
-            if (levelset.sample(ind.get_pos()) < 0)
+            if (levelset.sample(ind.get_pos(), t) < 0)
                 material_levelset[ind] = -0.5f;
         }
     }
@@ -171,7 +172,7 @@ void MPM::compute_material_levelset() {
 void MPM::particle_collision_resolution() {
     for (auto &p : particles) {
         if (p->state == MPMParticle::UPDATING)
-            p->resolve_collision(levelset);
+            p->resolve_collision(levelset, t);
     }
 }
 

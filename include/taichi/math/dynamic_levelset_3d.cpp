@@ -18,19 +18,29 @@ void DynamicLevelSet3D::initialize(real _t0, real _t1, const LevelSet3D &_ls0, c
     levelset1 = std::make_shared<LevelSet3D>(_ls1);
 }
 
-Vector3 DynamicLevelSet3D::get_spatial_gradient(const Vector3 &pos, real t) {
+Vector3 DynamicLevelSet3D::get_spatial_gradient(const Vector3 &pos, real t) const {
     Vector3 gxyz0 = levelset0->get_gradient(pos);
     Vector3 gxyz1 = levelset1->get_gradient(pos);
     real gx = lerp((t - t0) / (t1 - t0), gxyz0.x, gxyz1.x);
     real gy = lerp((t - t0) / (t1 - t0), gxyz0.y, gxyz1.y);
     real gz = lerp((t - t0) / (t1 - t0), gxyz0.z, gxyz1.z);
-    return Vector3(gx, gy, gz);
+    Vector3 gradient = Vector3(gx, gy, gz);
+    if (length(gradient) < 1e-10f)
+        return Vector3(1, 0, 0);
+    else
+        return normalize(gradient);
 }
 
-real DynamicLevelSet3D::get_temporal_gradient(const Vector3 &pos, real t) {
+real DynamicLevelSet3D::get_temporal_derivative(const Vector3 &pos, real t) const {
+    real l0 = levelset0->get(pos);
+    real l1 = levelset1->get(pos);
+    return (l1 - l0) / (t1 - t0);
+}
+
+    real DynamicLevelSet3D::sample(const Vector3 &pos, real t) const {
     real l1 = levelset0->get(pos);
     real l2 = levelset1->get(pos);
-    return (l2 - l1) / (t1 - t0);
+    return lerp((t - t0) / (t1 - t0), l1, l2);
 }
 
 Array3D<real> DynamicLevelSet3D::rasterize(int width, int height, int depth, real t) {

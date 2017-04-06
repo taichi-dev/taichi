@@ -24,12 +24,14 @@ class DynamicLevelSet2D {
 
         void initialize(real _t0, real _t1, const LevelSet2D &_ls0, const LevelSet2D &_ls1);
 
-        Vector2 get_spatial_gradient(const Vector2 &pos, real t);
+        Vector2 get_spatial_gradient(const Vector2 &pos, real t) const;
 
-        real get_temporal_gradient(const Vector2 &pos, real t);
+        real get_temporal_derivative(const Vector2 &pos, real t) const;
+
+        real sample(const Vector2 &pos, real t) const;
 
         Array2D<real> rasterize(int width, int height, real t);
-    };
+};
 
 TC_NAMESPACE_END
 

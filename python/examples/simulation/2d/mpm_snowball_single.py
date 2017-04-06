@@ -4,8 +4,8 @@ from taichi.misc.util import *
 if __name__ == '__main__':
     scale = 4
     resolution = tuple([80 * scale, 45 * scale])
-    # simulator = create_mpm_simulator(resolution, 2, frame_dt=2e-2, base_delta_t=1e-6, async=True, maximum_delta_t=2e-2)
-    simulator = create_mpm_simulator(resolution, 2, frame_dt=2e-2, base_delta_t=1e-3)
+    simulator = create_mpm_simulator(resolution, 2, frame_dt=2e-2, base_delta_t=1e-6, async=True, maximum_delta_t=2e-2)
+    # simulator = create_mpm_simulator(resolution, 2, frame_dt=2e-2, base_delta_t=1e-3)
 
     simulator.add_event(-1, lambda s: s.add_particles_sphere(Vector(0.72, 0.45), 0.10, 'ep', compression=0.8,
                                                              velocity=Vector(1.0, 0.0), theta_s=0.002))

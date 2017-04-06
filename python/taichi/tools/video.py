@@ -38,8 +38,29 @@ class VideoManager:
         os.system(command)
 
 
-def make_video(input_files, width=0, height=0, output_path='.'):
-    command = "ffmpeg -framerate 24 -i " + input_files + \
-              " -s:v " + str(width) + 'x' + str(height) + \
-              " -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p " + output_path
-    os.system(command)
+def make_video(input_files, width=0, height=0, framerate=24, output_path='video.mp4'):
+    if isinstance(input_files, list):
+        from PIL import Image
+        with Image.open(input_files[0]) as img:
+            width, height = img.size
+        import shutil
+        tmp_dir = 'tmp_ffmpeg_dir'
+        os.mkdir(tmp_dir)
+        for i, inp in enumerate(input_files):
+            shutil.copy(inp, os.path.join(tmp_dir, '%06d.png' % i))
+        command = ("ffmpeg -framerate %d -i " % framerate) + tmp_dir + "/%06d.png" + \
+                  " -s:v " + str(width) + 'x' + str(height) + \
+                  " -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p " + output_path
+        os.system(command)
+        for i in range(len(input_files)):
+            os.remove(os.path.join(tmp_dir, '%06d.png' % i))
+        os.rmdir(tmp_dir)
+    elif isinstance(input_files, str):
+        assert width != 0 and height != 0
+        command = ("ffmpeg -framerate %d -i " % framerate) + input_files + \
+                  " -s:v " + str(width) + 'x' + str(height) + \
+                  " -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p " + output_path
+        os.system(command)
+    else:
+        assert 'input_files should be list (of files) or str (of file template, like "%04d.png") instead of ' + \
+               str(type(input_files))

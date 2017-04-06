@@ -2,6 +2,7 @@
     Taichi - Physically based Computer Graphics Library
 
     Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+                  2017 Yu Fang <squarefk@gmail.com>
 
     All rights reserved. Use of this source code is governed by
     the MIT license as written in the LICENSE file.
@@ -16,6 +17,7 @@
 #include <taichi/math/array_2d.h>
 #include <taichi/math/array_1d.h>
 #include <taichi/math/levelset_2d.h>
+#include <taichi/math/dynamic_levelset_2d.h>
 #include "mpm_particle.h"
 
 TC_NAMESPACE_BEGIN
@@ -135,7 +137,7 @@ public:
         }
     }
 
-    void apply_boundary_conditions(const LevelSet2D &levelset, real delta_t);
+    void apply_boundary_conditions(const DynamicLevelSet2D &levelset, real delta_t, real t);
 
     void check_velocity() {
         for (int i = 0; i < res[0]; i++) {

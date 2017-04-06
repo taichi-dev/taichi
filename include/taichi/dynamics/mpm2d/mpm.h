@@ -2,6 +2,7 @@
     Taichi - Physically based Computer Graphics Library
 
     Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+                  2017 Yu Fang <squarefk@gmail.com>
 
     All rights reserved. Use of this source code is governed by
     the MIT license as written in the LICENSE file.
@@ -13,6 +14,7 @@
 #include <vector>
 #include "mpm_grid.h"
 #include <taichi/math/levelset_2d.h>
+#include <taichi/math/dynamic_levelset_2d.h>
 #include <taichi/visual/texture.h>
 #include <taichi/visualization/image_buffer.h>
 
@@ -42,7 +44,7 @@ protected:
     Vector2 gravity;
     bool apic;
 
-    LevelSet2D levelset;
+    DynamicLevelSet2D levelset;
     LevelSet2D material_levelset;
 
     real last_sort;
@@ -97,7 +99,7 @@ public:
 
     real get_current_time();
 
-    void set_levelset(const LevelSet2D &levelset) {
+    void set_levelset(const DynamicLevelSet2D &levelset) {
         this->levelset = levelset;
     }
 

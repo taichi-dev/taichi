@@ -109,7 +109,9 @@ struct MPMParticle {
     virtual void resolve_collision(const DynamicLevelSet2D &levelset, real t) {
         real phi = levelset.sample(pos, t);
         if (phi < 0) {
-            pos -= levelset.get_spatial_gradient(pos, t) * phi;
+            Vector2 gradient = levelset.get_spatial_gradient(pos, t);
+            pos -= gradient * phi;
+            v -= glm::dot(gradient, v) * gradient;
         }
     }
 

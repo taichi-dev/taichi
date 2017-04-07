@@ -18,6 +18,7 @@ void DynamicLevelSet2D::initialize(real _t0, real _t1, const LevelSet2D &_ls0, c
     levelset1 = std::make_shared<LevelSet2D>(_ls1);
 }
 
+// returns gradient (normalized if it is not.)
 Vector2 DynamicLevelSet2D::get_spatial_gradient(const Vector2 &pos, real t) const {
     Vector2 gxy0 = levelset0->get_gradient(pos);
     Vector2 gxy1 = levelset1->get_gradient(pos);

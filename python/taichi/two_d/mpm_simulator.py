@@ -159,8 +159,8 @@ class MPMSimulator(Simulator):
         return images, cover_images
 
     def create_levelset(self):
-        return LevelSet2D(self.simulation_width, self.simulation_height,
-                          self.delta_x, Vector(0.5, 0.5))
+        return LevelSet2D(self.simulation_width + 1, self.simulation_height + 1,
+                          self.delta_x, Vector(0.0, 0.0))
 
 
 def create_mpm_simulator(resolution, t, frame_dt, base_delta_t=1e-3, dt_multiplier=None, **kwargs):

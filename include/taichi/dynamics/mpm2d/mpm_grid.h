@@ -39,14 +39,15 @@ public:
 
     void initialize(const Vector2i &res) {
         this->res = res;
-        velocity.initialize(res);
-        force_or_acc.initialize(res);
-        boundary_normal.initialize(res);
-        mass.initialize(res);
-        low_res.x = (res.x + grid_block_size - 1) / grid_block_size;
-        low_res.y = (res.y + grid_block_size - 1) / grid_block_size;
-        states.initialize(low_res);
-        min_max_vel.initialize(low_res);
+        // Actual resolution is res + Vector2i(1)
+        velocity.initialize(res, Vector2(0), Vector2(0));
+        force_or_acc.initialize(res, Vector2(0), Vector2(0));
+        boundary_normal.initialize(res, Vector4(0), Vector2(0));
+        mass.initialize(res, 0.0f, Vector2(0));
+        low_res.x = (res.x + grid_block_size) / grid_block_size;
+        low_res.y = (res.y + grid_block_size) / grid_block_size;
+        states.initialize(low_res, 0, Vector2(0));
+        min_max_vel.initialize(low_res, Vector4(0), Vector2(0));
     }
 
     void expand() {
@@ -140,8 +141,8 @@ public:
     void apply_boundary_conditions(const DynamicLevelSet2D &levelset, real delta_t, real t);
 
     void check_velocity() {
-        for (int i = 0; i < res[0]; i++) {
-            for (int j = 0; j < res[1]; j++) {
+        for (int i = 0; i <= res[0]; i++) {
+            for (int j = 0; j <= res[1]; j++) {
                 if (!is_normal(velocity[i][j])) {
                     printf("Grid Velocity Check Fail!\n");
                     Pp(i);

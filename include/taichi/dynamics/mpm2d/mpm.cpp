@@ -46,8 +46,8 @@ void MPM::initialize(const Config &config_) {
     } else {
         maximum_delta_t = base_delta_t;
     }
-    material_levelset.initialize(res, Vector2(0.5f, 0.5f));
-    debug_blocks.initialize(grid.min_max_vel.get_width(), grid.min_max_vel.get_height());
+    material_levelset.initialize(res + Vector2i(1), Vector2(0));
+    debug_blocks.initialize(grid.min_max_vel.get_width(), grid.min_max_vel.get_height(), Vector4(0), Vector2(0));
 }
 
 void MPM::substep() {

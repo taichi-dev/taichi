@@ -16,7 +16,7 @@ long long MPMParticle::instance_count = 0;
 void Grid::apply_boundary_conditions(const DynamicLevelSet2D & levelset, real delta_t, real t) {
     if (levelset.levelset0->get_width() > 0) {
         for (auto &ind : boundary_normal.get_region()) {
-            Vector2 pos = Vector2(ind.i + 0.5f, ind.j + 0.5f);
+            Vector2 pos = Vector2(ind.get_pos());
             Vector2 v = velocity[ind] + force_or_acc[ind] * delta_t - levelset.get_temporal_derivative(pos, t) * levelset.get_spatial_gradient(pos, t);
             Vector2 n = levelset.get_spatial_gradient(pos, t);
             real phi = levelset.sample(pos, t);

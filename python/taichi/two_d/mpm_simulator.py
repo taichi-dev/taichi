@@ -151,9 +151,12 @@ class MPMSimulator(Simulator):
         images.append(levelset.get_image(width, height, color_scheme['boundary']))
         material_levelset = self.simulator.get_material_levelset()
         images.append(array2d_to_image(material_levelset, width, height, color_scheme['material']))
-        # if self.buffer_debug:
-        #     images.append(array2d_to_image(material_levelset, width, height, color_scheme['material']))
-        return images
+        # TODO: remove the '4' here
+        cover_images = []
+        debug_blocks = self.simulator.get_debug_blocks().rasterize_scale(self.simulation_width, self.simulation_height, 4)
+        debug_blocks = array2d_to_image(debug_blocks, width, height, transform=[0, 1], alpha_scale=0.4)
+        cover_images.append(debug_blocks)
+        return images, cover_images
 
     def create_levelset(self):
         return LevelSet2D(self.simulation_width, self.simulation_height,

@@ -52,6 +52,7 @@ protected:
     bool use_level_set;
     bool async;
     Array2D<real> allowed_dt;
+    Array2D<Vector4> debug_blocks;
     std::shared_ptr<Texture> dt_multiplier;
 
     void compute_material_levelset();
@@ -104,6 +105,10 @@ public:
     }
 
     LevelSet2D get_material_levelset();
+
+    Array2D<Vector4> get_debug_blocks() {
+        return debug_blocks;
+    }
 };
 
 TC_NAMESPACE_END

@@ -47,6 +47,7 @@ void MPM::initialize(const Config &config_) {
         maximum_delta_t = base_delta_t;
     }
     material_levelset.initialize(res, Vector2(0.5f, 0.5f));
+    debug_blocks.initialize(grid.min_max_vel.get_width(), grid.min_max_vel.get_height());
 }
 
 void MPM::substep() {
@@ -89,6 +90,19 @@ void MPM::substep() {
         tmp[2] = std::max(tmp[2], p->v.x);
         tmp[3] = std::max(tmp[3], p->v.y);
     }
+
+    real max_block_vel = 0;
+    for (auto &ind: grid.min_max_vel.get_region()) {
+        max_block_vel = std::max(std::max(
+                grid.min_max_vel[ind][2] - grid.min_max_vel[ind][0],
+                grid.min_max_vel[ind][3] - grid.min_max_vel[ind][1]
+        ) + 1e-30f, max_block_vel);
+    }
+    for (auto &ind: grid.min_max_vel.get_region()) {
+        debug_blocks[ind] = Vector4((grid.min_max_vel[ind][2] - grid.min_max_vel[ind][0]) / max_block_vel,
+                                    (grid.min_max_vel[ind][3] - grid.min_max_vel[ind][1]) / max_block_vel, 0.0f, 1.0f);
+    }
+
     if (async) {
         real log_maximum = log((real)maximum_march_interval);
         real log_minimum = log((real)t_int_increment);

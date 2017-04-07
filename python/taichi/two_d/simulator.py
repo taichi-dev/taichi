@@ -50,7 +50,7 @@ class Simulator(object):
         if is_dynamic_levelset:
             self.levelset_generator = levelset
         else:
-            def levelset_generator(t):
+            def levelset_generator(_):
                 return levelset
             self.levelset_generator = levelset_generator
 
@@ -59,7 +59,7 @@ class Simulator(object):
         t = self.simulator.get_current_time()
         levelset = self.levelset_generator(t)
         images.append(levelset.get_image(width, height, color_scheme['boundary']))
-        return images
+        return images, []
 
     def maginify(self, val):
         if type(val) in [int, tc.core.Vector2, float]:

@@ -96,13 +96,18 @@ class SimulationWindow(pyglet.window.Window):
                                   anchor_x='left', anchor_y='top')
         ls_width = self.width * self.levelset_supersampling
         ls_height = self.height * self.levelset_supersampling
+        background_images, foreground_images = self.simulator.get_levelset_images(ls_width, ls_height, self.color_scheme)
         if self.show_images:
-            for img in self.simulator.get_levelset_images(ls_width, ls_height, self.color_scheme):
+            for img in background_images:
                 img.blit(0, 0, 0, self.width, self.height)
         if self.show_grid:
             self.render_grid()
 
         self.render_particles()
+
+        if self.show_images:
+            for img in foreground_images:
+                img.blit(0, 0, 0, self.width, self.height)
         label.color = self.color_scheme['label']
         label.draw()
 

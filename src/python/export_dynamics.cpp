@@ -85,6 +85,7 @@ void export_dynamics(py::module &m) {
         .def("get_particles", &SIM::get_particles) \
         .def("set_levelset", &SIM::set_levelset) \
         .def("get_material_levelset", &SIM::get_material_levelset) \
+        .def("get_debug_blocks", &SIM::get_debug_blocks) \
         .def("add_ep_particle", static_cast<void (SIM::*)(EPParticle)>(&SIM::add_particle)) \
         .def("add_dp_particle", static_cast<void (SIM::*)(DPParticle)>(&SIM::add_particle)) \
         ;

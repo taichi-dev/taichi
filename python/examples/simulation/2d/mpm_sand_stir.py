@@ -18,7 +18,6 @@ if __name__ == '__main__':
     def levelset_generator(t):
         levelset = simulator.create_levelset()
         velocity = (0.5 + 0.25 * t) * 3.1415
-        print 0.25 * math.cos(t * velocity), 0.25 * math.sin(t * velocity)
         levelset.add_sphere(Vector(0.5 + 0.25 * math.cos(t * velocity), 0.5 + 0.25 * math.sin(t * velocity)), 0.1, False)
         levelset.add_sphere(Vector(0.5 + 0.25 * math.cos(t * velocity + math.pi), 0.5 + 0.25 * math.sin(t * velocity + math.pi)), 0.1, False)
         levelset.add_sphere(Vector(0.5, 0.5), 0.45, True)

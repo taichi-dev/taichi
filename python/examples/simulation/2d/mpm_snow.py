@@ -10,8 +10,7 @@ if __name__ == '__main__':
     simulator.add_event(-1, lambda s: s.add_particles_sphere(Vector(0.12, 0.85), 0.06, 'ep', compression=0.8,
                                                              velocity=Vector(0.0, -0.1)))
     simulator.add_event(-1, lambda s: s.add_particles_sphere(Vector(1.45, 0.15), 0.10, 'ep', compression=0.8))
-    simulator.add_event(-1, lambda s: s.add_particles_sphere(Vector(1.45, 0.32), 0.07, 'ep', compression=0.8,
-                                                             color=Vector(0, 255, 0)))
+    simulator.add_event(-1, lambda s: s.add_particles_sphere(Vector(1.45, 0.32), 0.07, 'ep', compression=0.8))
     simulator.add_event(-1, lambda s: s.add_particles_sphere(Vector(1.45, 0.43), 0.04, 'ep', compression=0.8))
 
     levelset = simulator.create_levelset()

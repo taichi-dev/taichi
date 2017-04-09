@@ -468,6 +468,14 @@ public:
         return data.cend();
     }
 
+    T &operator[](const Vector2i &pos) {
+        return (*this)[pos.x][pos.y];
+    }
+
+    const T &operator[](const Vector2i &pos) const {
+        return (*this)[pos.x][pos.y];
+    }
+
     T &operator[](const Index2D &index) {
         return (*this)[index.i][index.j];
     }

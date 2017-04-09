@@ -53,85 +53,131 @@ void MPM::initialize(const Config &config_) {
 void MPM::substep() {
     real delta_t = base_delta_t;
 
-    // Rasterize to grid state, expand grid, and resample
     bool exist_updating_particle = false;
+
     grid.reset();
-    int64 maximum_march_interval = 1;
-    int64 t_int_increment = 1 << 30;
+    Array2D<int64> &max_dt_int_strength = grid.max_dt_int_strength;
+    Array2D<int64> &max_dt_int_cfl = grid.max_dt_int_cfl;
+    Array2D<int64> &max_dt_int = grid.max_dt_int;
+
     for (auto &p : particles) {
         int64 march_interval;
         if (!async) {
             march_interval = 1;
         } else {
             int64 allowed_t_int_inc = (int64)(p->get_allowed_dt() / base_delta_t);
-            allowed_t_int_inc = std::min(allowed_t_int_inc, (int64)(maximum_delta_t / base_delta_t));
             if (allowed_t_int_inc <= 0) {
                 P(allowed_t_int_inc);
                 allowed_t_int_inc = 1;
             }
             march_interval = get_largest_pot(allowed_t_int_inc);
         }
-        maximum_march_interval = std::max(maximum_march_interval, march_interval);
         p->march_interval = march_interval;
-        t_int_increment = std::min(t_int_increment, march_interval - t_int % march_interval);
-    }
-    t_int += t_int_increment;
-    t = base_delta_t * t_int;
-    for (auto &p : particles) {
-        p->state = (t_int % p->march_interval == 0) ? MPMParticle::UPDATING : MPMParticle::INACTIVE;
-        if (p->state == MPMParticle::UPDATING) {
-            exist_updating_particle = true;
-        }
         Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
-        grid.states[low_res_pos.x][low_res_pos.y] = 1;
+        // We set the dt, s.t. t + dt achieves a multiple of march_interval
+        max_dt_int_strength[low_res_pos] = std::min(max_dt_int_strength[low_res_pos],
+                                                    march_interval - t_int % march_interval);
         auto &tmp = grid.min_max_vel[low_res_pos.x][low_res_pos.y];
         tmp[0] = std::min(tmp[0], p->v.x);
         tmp[1] = std::min(tmp[1], p->v.y);
         tmp[2] = std::max(tmp[2], p->v.x);
         tmp[3] = std::max(tmp[3], p->v.y);
     }
+    // Expand velocity
+    grid.expand(true, false);
 
-    real max_block_vel = 0;
     for (auto &ind: grid.min_max_vel.get_region()) {
-        max_block_vel = std::max(std::max(
+        real block_vel = std::max(
                 grid.min_max_vel[ind][2] - grid.min_max_vel[ind][0],
                 grid.min_max_vel[ind][3] - grid.min_max_vel[ind][1]
-        ) + 1e-30f, max_block_vel);
-    }
-    for (auto &ind: grid.min_max_vel.get_region()) {
-        debug_blocks[ind] = Vector4((grid.min_max_vel[ind][2] - grid.min_max_vel[ind][0]) / max_block_vel,
-                                    (grid.min_max_vel[ind][3] - grid.min_max_vel[ind][1]) / max_block_vel, 0.0f, 1.0f);
+        ) + 1e-7f;
+        if (block_vel < 0) {
+            // Blocks with no particles
+            continue;
+        }
+        int64 cfl_limit = int64(cfl / block_vel / base_delta_t);
+        if (cfl_limit <= 0) {
+            P(cfl_limit);
+            cfl_limit = 1;
+        }
+        max_dt_int_cfl[ind] = get_largest_pot(cfl_limit);
     }
 
-    if (async) {
-        real log_maximum = log((real)maximum_march_interval);
-        real log_minimum = log((real)t_int_increment);
-        if (log_maximum == log_minimum) {
-            log_minimum = log_maximum - 0.00001f;
-        }
-        for (auto &p : particles) {
-            p->color.x = (1.0f - (log(real(p->march_interval)) - log_minimum) / (log_maximum - log_minimum)) * 255.0f;
-        }
-        P(t_int_increment);
+    int64 minimum = 1LL << 60;
+    int64 t_int_increment = (int64)(maximum_delta_t / base_delta_t);
+
+    for (auto &ind : grid.max_dt_int_strength.get_region()) {
+        max_dt_int[ind] = std::min(max_dt_int_cfl[ind], max_dt_int_strength[ind]);
+        t_int_increment = std::min(t_int_increment, max_dt_int[ind]);
     }
+
+    for (auto &ind : max_dt_int_cfl.get_region()) {
+        minimum = std::min(minimum, max_dt_int[ind]);
+    }
+    minimum = std::max(minimum, 1LL);
+    P(minimum);
+
+    auto visualize = [](const Array2D<int64> step, int grades, int64 minimum) -> Array2D<real> {
+        Array2D<real> output;
+        output.initialize(step.get_width(), step.get_height());
+        for (auto &ind : step.get_region()) {
+            real r;
+            r = 1.0f - std::log2(1.0f * (step[ind] / minimum)) / grades;
+            output[ind] = clamp(r, 0.0f, 1.0f);
+        }
+        return output;
+    };
+
+    auto vis_strength = visualize(max_dt_int_strength, 10, minimum);
+    auto vis_cfl = visualize(max_dt_int_cfl, 10, minimum);
+    for (auto &ind: grid.min_max_vel.get_region()) {
+        debug_blocks[ind] = Vector4(vis_strength[ind], vis_cfl[ind], 0.0f, 1.0f);
+    }
+
+    for (auto &ind : grid.states.get_region()) {
+        if (t_int_increment == max_dt_int[ind]) {
+            grid.states[ind] = 1;
+        }
+    }
+
+    if (!async) {
+        t_int_increment = 1;
+        grid.states = 1;
+    }
+
+    t_int += t_int_increment; // final dt
+    t = base_delta_t * t_int;
+    // TODO...
+    exist_updating_particle = true;
     if (!exist_updating_particle) {
         return;
     }
 
+    Array2D<int> old_grid_states = grid.states;
+    // Expand state
+    grid.expand(false, true);
     // P(grid.get_num_active_grids());
-    grid.expand();
-    // P(grid.get_num_active_grids());
+
+    int active_particle_count = 0;
+    int buffer_particle_count = 0;
+
     for (auto &p : particles) {
-        if (p->state == MPMParticle::UPDATING) {
+        Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
+        if (grid.states[low_res_pos] == 0) {
+            p->state = MPMParticle::INACTIVE;
             continue;
         }
-        Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
-        // resample
-        if (grid.states[low_res_pos.x][low_res_pos.y]) {
-            // mark as buffer particle
+        p->march_interval = max_dt_int[low_res_pos];
+        if (old_grid_states[low_res_pos] == 1) {
+            p->state = MPMParticle::UPDATING;
+            active_particle_count += 1;
+        } else {
             p->state = MPMParticle::BUFFER;
+            buffer_particle_count += 1;
         }
     }
+    P(active_particle_count);
+    P(buffer_particle_count);
 
     for (auto &p : particles) {
         if (p->state != MPMParticle::INACTIVE)

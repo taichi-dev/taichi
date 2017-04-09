@@ -32,39 +32,59 @@ public:
     Array2D<Vector4> boundary_normal;
     Array2D<real> mass;
     Array2D<int> states;
+    Array2D<int64> max_dt_int_strength;
+    Array2D<int64> max_dt_int_cfl;
+    Array2D<int64> max_dt_int;
     Array2D<Vector4> min_max_vel;
     Vector2i res;
 
     Vector2i low_res;
 
-    void initialize(const Vector2i &res) {
-        this->res = res;
-        // Actual resolution is res + Vector2i(1)
+    void initialize(const Vector2i &sim_res) {
+        this->res = sim_res + Vector2i(1);
         velocity.initialize(res, Vector2(0), Vector2(0));
         force_or_acc.initialize(res, Vector2(0), Vector2(0));
         boundary_normal.initialize(res, Vector4(0), Vector2(0));
         mass.initialize(res, 0.0f, Vector2(0));
-        low_res.x = (res.x + grid_block_size) / grid_block_size;
-        low_res.y = (res.y + grid_block_size) / grid_block_size;
+        low_res.x = (res.x + grid_block_size - 1) / grid_block_size;
+        low_res.y = (res.y + grid_block_size - 1) / grid_block_size;
+        max_dt_int_strength.initialize(low_res, 0, Vector2(0));
+        max_dt_int_cfl.initialize(low_res, 0, Vector2(0));
+        max_dt_int.initialize(low_res, 0, Vector2(0));
         states.initialize(low_res, 0, Vector2(0));
         min_max_vel.initialize(low_res, Vector4(0), Vector2(0));
     }
 
-    void expand() {
+    void reset() {
+        states = 0;
+        min_max_vel = Vector4(1e30f, 1e30f, -1e30f, -1e30f);
+        velocity = Vector2(0.0f);
+        force_or_acc = Vector2(0.0f);
+        max_dt_int_strength.reset(1LL << 60);
+        max_dt_int_cfl.reset(1LL << 60);
+        max_dt_int.reset(1LL << 60);
+        mass = 0.0f;
+    }
+
+    void expand(bool expand_vel, bool expand_state) {
         Array2D<int> new_states;
         Array2D<Vector4> new_min_max_vel;
         new_min_max_vel = min_max_vel;
         new_states = states;
 
         auto update = [&](const Index2D ind, int dx, int dy,
-                       const Array2D<Vector4> &min_max_vel, Array2D<Vector4> &new_min_max_vel,
-                       Array2D<int> &new_states) -> void {
-            auto &tmp = new_min_max_vel[ind.neighbour(dx, dy)];
-            tmp[0] = std::min(tmp[0], min_max_vel[ind][0]);
-            tmp[1] = std::min(tmp[1], min_max_vel[ind][1]);
-            tmp[2] = std::max(tmp[2], min_max_vel[ind][2]);
-            tmp[3] = std::max(tmp[3], min_max_vel[ind][3]);
-            new_states[ind.neighbour(dx, dy)] = 1;
+                          const Array2D<Vector4> &min_max_vel, Array2D<Vector4> &new_min_max_vel,
+                          Array2D<int> &new_states) -> void {
+            if (expand_vel) {
+                auto &tmp = new_min_max_vel[ind.neighbour(dx, dy)];
+                tmp[0] = std::min(tmp[0], min_max_vel[ind][0]);
+                tmp[1] = std::min(tmp[1], min_max_vel[ind][1]);
+                tmp[2] = std::max(tmp[2], min_max_vel[ind][2]);
+                tmp[3] = std::max(tmp[3], min_max_vel[ind][3]);
+            }
+            if (expand_state) {
+                new_states[ind.neighbour(dx, dy)] = 1;
+            }
         };
 
         // Expand x
@@ -101,13 +121,6 @@ public:
         velocity_backup = velocity;
     }
 
-    void reset() {
-        states = 0;
-        min_max_vel = Vector4(1e30f, 1e30f, -1e30f, -1e30f);
-        velocity = Vector2(0.0f);
-        force_or_acc = Vector2(0.0f);
-        mass = 0.0f;
-    }
 
     void normalize_velocity() {
         for (auto &ind : velocity.get_region()) {
@@ -141,8 +154,8 @@ public:
     void apply_boundary_conditions(const DynamicLevelSet2D &levelset, real delta_t, real t);
 
     void check_velocity() {
-        for (int i = 0; i <= res[0]; i++) {
-            for (int j = 0; j <= res[1]; j++) {
+        for (int i = 0; i < res[0]; i++) {
+            for (int j = 0; j < res[1]; j++) {
                 if (!is_normal(velocity[i][j])) {
                     printf("Grid Velocity Check Fail!\n");
                     Pp(i);

@@ -287,7 +287,8 @@ TC_IMPLEMENTATION(Texture, SlicedTexture, "sliced");
 
 class MeshTexture : public Texture {
 protected:
-    Array3D<bool> arr;
+    Array3D<char> arr;
+    Vector3i resolution;
     int resolution_x;
     int resolution_y;
     int resolution_z;
@@ -297,41 +298,51 @@ public:
         Mesh mesh;
         mesh.initialize(config);
         Scene scene;
-        scene.add_mesh(std::make_shared(mesh));
-        create_instance<RayIntersection>("embree");
-        std::shared_ptr<SceneGeometry> scene_geometry(new SceneGeometry(std::make_shared(mesh), std::make_shared(scene)));
-        resolution_x = config.get_int("resolution_x");
-        resolution_y = config.get_int("resolution_y");
-        resolution_z = config.get_int("resolution_z");
-        arr = Array3D<bool>(resolution_x, resolution_y, resolution_z);
+        scene.add_mesh(std::make_shared<Mesh>(mesh));
+        scene.finalize_geometry();
+        auto ray_intersection = create_instance<RayIntersection>("embree");
+        std::shared_ptr<SceneGeometry> scene_geometry(new SceneGeometry(std::make_shared<Scene>(scene), ray_intersection));
+        resolution = config.get_vec3i("resolution");
+        arr = Array3D<char>(resolution.x, resolution.y, resolution.z);
         BoundingBox bb = mesh.get_bounding_box();
-        for (int i = 0; i < resolution_x; ++i)
-            for (int j = 0; j < resolution_y; ++j) {
-                real x = lerp((0.5f + i) / resolution_x, bb.lower_boundary.x, bb.upper_boundary.y);
-                real y = lerp((0.5f + j) / resolution_y, bb.lower_boundary.y, bb.upper_boundary.y);
-                real delta_z = (bb.upper_boundary.z - bb.lower_boundary.z) / resolution_z;
+        for (int i = 0; i < resolution.x; ++i)
+            for (int j = 0; j < resolution.y; ++j) {
+                real x = lerp((0.5f + i) / resolution.x, bb.lower_boundary.x, bb.upper_boundary.x);
+                real y = lerp((0.5f + j) / resolution.y, bb.lower_boundary.y, bb.upper_boundary.y);
+                real z = bb.lower_boundary.z - eps;
+                real delta_z = (bb.upper_boundary.z - bb.lower_boundary.z) / resolution.z;
                 int k = 0;
                 bool inside = false;
-                real z = bb.lower_boundary.z - eps;
-                while (k < resolution_z) {
+                while (k < resolution.z) {
                     int kk = k;
                     Ray ray(Vector3(x, y, z), Vector3(0, 0, 1));
                     scene_geometry->query(ray);
-                    if (ray.dist == Ray::DIST_INFINITE) kk = resolution_z;
+                    if (ray.dist == Ray::DIST_INFINITE) kk = resolution.z;
                     else {
                         z += ray.dist + eps;
-                        kk = int((z - bb.lower_boundary.z) / delta_z);
+                        kk = std::min(int((z - bb.lower_boundary.z) / delta_z), resolution.z);
                     }
                     while (k < kk) {
-                        arr.set(i, j, k, inside);
+                        arr.set(i, j, k, char(inside));
                         ++k;
                     }
                     inside = !inside;
                 }
             }
     }
+
+    bool inside(const Vector3 &coord) const {
+        return
+            0 < coord.x && coord.x < 1.f &&
+            0 < coord.y && coord.y < 1.f &&
+            0 < coord.z && coord.z < 1.f;
+    }
+
     virtual Vector4 sample(const Vector3 &coord) const override {
-        return Vector4(arr.sample_relative_coord(coord));
+        if (inside(coord))
+            return Vector4(real(arr.sample_relative_coord(coord)));
+        else
+            return Vector4(0);
     }
 };
 

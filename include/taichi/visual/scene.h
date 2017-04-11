@@ -161,6 +161,10 @@ public:
 
     void add_mesh(std::shared_ptr<Mesh> mesh);
 
+    void finalize_geometry();
+
+    void finalize_lighting();
+
     void finalize();
 
     void update_light_emission_cdf() {

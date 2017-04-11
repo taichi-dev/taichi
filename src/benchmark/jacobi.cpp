@@ -44,8 +44,6 @@ class JacobiSerial;
 template<typename T>
 class JacobiSIMD;
 
-REGISTER(JacobiSIMD, "jacobi_simd")
-
 template<typename T>
 class JacobiBruteForce : public Benchmark {
 private:
@@ -743,7 +741,7 @@ void JacobiSIMD<double>::iterate_avx() {
     }
 }
 
-REGISTER(JacobiSerial, "jacobi_simd")
+REGISTER(JacobiSIMD, "jacobi_simd")
 
 TC_NAMESPACE_END
 

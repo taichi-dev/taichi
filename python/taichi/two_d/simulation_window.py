@@ -39,6 +39,7 @@ class SimulationWindow(pyglet.window.Window):
         self.show_grid = show_grid
         self.quit_pressed = False
         self.timer = 0
+        self.next_video_checkpoint = 4
         pyglet.clock.schedule_interval(self.update, 1 / 120.0)
         pyglet.app.run()
 
@@ -59,8 +60,9 @@ class SimulationWindow(pyglet.window.Window):
     def update(self, _):
         self.timer += 1
         print self.timer
-        if self.timer % 5 == 0:
+        if self.timer % self.next_video_checkpoint == 0:
             self.make_video()
+            self.next_video_checkpoint *= 2
         if not self.quit_pressed and not self.simulator.ended():
             self.simulator.step()
         else:

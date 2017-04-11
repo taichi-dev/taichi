@@ -12,7 +12,24 @@
 #include <taichi/system/benchmark.h>
 #include <taichi/system/threading.h>
 
+
+#ifndef TC_DISABLE_SSE
+#define TC_USE_SSE
+#endif
+
+#ifdef TC_USE_SSE
 // #define TC_USE_AVX
+#define REGISTER_32(B, name) \
+    typedef B<float> B ## 32; \
+    TC_IMPLEMENTATION(Benchmark, B ## 32, (name "_32"));
+
+#define REGISTER_64(B, name) \
+    typedef B<double> B ## 64; \
+    TC_IMPLEMENTATION(Benchmark, B ## 64, (name "_64"));
+
+#define REGISTER(B, name) \
+    REGISTER_32(B, name) \
+    REGISTER_64(B, name)
 
 TC_NAMESPACE_BEGIN
 
@@ -23,8 +40,11 @@ T get_initial_entry(int i, int j, int k) {
 
 template<typename T>
 class JacobiSerial;
+
 template<typename T>
 class JacobiSIMD;
+
+REGISTER(JacobiSIMD, "jacobi_simd")
 
 template<typename T>
 class JacobiBruteForce : public Benchmark {
@@ -88,11 +108,14 @@ protected:
     friend JacobiSIMD<T>;
 };
 
+REGISTER(JacobiBruteForce, "jacobi_bf")
+
 template<typename T>
 class JacobiSerial : public Benchmark {
 protected:
     int n;
     int ignore;
+
     void (JacobiSerial<T>::*iteration_method)();
 
     std::vector<T> data[2];
@@ -307,12 +330,12 @@ public:
         for (int i = b1; i < b2; i++) {
             for (int j = b1; j < b2; j++) {
                 int p = i * n * n + j * n + b1;
-                T* p_i_minus = &data[0][0] + p - n * n;
-                T* p_i_plus = &data[0][0] + p + n * n;
-                T* p_j_minus = &data[0][0] + p - n;
-                T* p_j_plus = &data[0][0] + p + n;
-                T* p_k_minus = &data[0][0] + p - 1;
-                T* p_k_plus = &data[0][0] + p + 1;
+                T *p_i_minus = &data[0][0] + p - n * n;
+                T *p_i_plus = &data[0][0] + p + n * n;
+                T *p_j_minus = &data[0][0] + p - n;
+                T *p_j_plus = &data[0][0] + p + n;
+                T *p_k_minus = &data[0][0] + p - 1;
+                T *p_k_plus = &data[0][0] + p + 1;
                 for (int k = b1; k < b2; k += 2) {
                     T a, b, c;
 #define UNROLL \
@@ -328,7 +351,7 @@ public:
                     p_j_plus++; \
                     p_k_plus++;
                     UNROLL
-                        UNROLL
+                    UNROLL
                 }
             }
         }
@@ -342,12 +365,12 @@ public:
         for (int i = b1; i < b2; i++) {
             for (int j = b1; j < b2; j++) {
                 int p = i * n * n + j * n + b1;
-                T* p_i_minus = &data[0][0] + p - n * n;
-                T* p_i_plus = &data[0][0] + p + n * n;
-                T* p_j_minus = &data[0][0] + p - n;
-                T* p_j_plus = &data[0][0] + p + n;
-                T* p_k_minus = &data[0][0] + p - 1;
-                T* p_k_plus = &data[0][0] + p + 1;
+                T *p_i_minus = &data[0][0] + p - n * n;
+                T *p_i_plus = &data[0][0] + p + n * n;
+                T *p_j_minus = &data[0][0] + p - n;
+                T *p_j_plus = &data[0][0] + p + n;
+                T *p_k_minus = &data[0][0] + p - 1;
+                T *p_k_plus = &data[0][0] + p + 1;
                 for (int k = b1; k < b2; k += 4) {
                     T a, b, c;
 #define UNROLL \
@@ -363,14 +386,16 @@ public:
                     p_j_plus++; \
                     p_k_plus++;
                     UNROLL
-                        UNROLL
-                        UNROLL
-                        UNROLL
+                    UNROLL
+                    UNROLL
+                    UNROLL
                 }
             }
         }
     }
 };
+
+REGISTER(JacobiSerial, "jacobi_serial")
 
 template<typename T>
 class JacobiSIMD : public Benchmark {
@@ -378,7 +403,9 @@ protected:
     int n;
     int ignore;
     int num_threads;
+
     void (JacobiSIMD<T>::*iteration_method)();
+
     std::vector<T> data_[2];
     T *data[2];
     Config cfg;
@@ -499,11 +526,16 @@ public:
     }
 
     void iterate_sse();
+
     void iterate_sse_threaded();
+
     void iterate_sse_prefetch();
+
     void iterate_sse_block();
+
     void iterate_avx();
 };
+
 
 #define FUSION_32_SSE \
     minus_k = _mm_loadu_ps(src + p - 1); \
@@ -527,8 +559,8 @@ void JacobiSIMD<float>::iterate_sse() {
     if (boundary > ignore)
         iterate_boundary(boundary);
     const int b1 = boundary, b2 = n - boundary;
-    float * __restrict src = data[0];
-    float * __restrict dst = data[1];
+    float *__restrict src = data[0];
+    float *__restrict dst = data[1];
     __m128 plus_i, minus_i, plus_j, minus_j, plus_k, minus_k;
     __m128 c = _mm_broadcast_ss(&one_over_six);
     for (int i = b1; i < b2; i++) {
@@ -554,8 +586,8 @@ void JacobiSIMD<float>::iterate_sse_prefetch() {
     if (boundary > ignore)
         iterate_boundary(boundary);
     const int b1 = boundary, b2 = n - boundary;
-    float * __restrict src = data[0];
-    float * __restrict dst = data[1];
+    float *__restrict src = data[0];
+    float *__restrict dst = data[1];
     __m128 plus_i, minus_i, plus_j, minus_j, plus_k, minus_k;
     __m128 c = _mm_broadcast_ss(&one_over_six);
     for (int i = b1; i < b2; i++) {
@@ -585,8 +617,8 @@ void JacobiSIMD<float>::iterate_sse_block() {
         iterate_boundary(boundary);
     const float one_over_six = float(1) / 6;
     const int b1 = boundary, b2 = n - boundary;
-    float * __restrict src = data[0];
-    float * __restrict dst = data[1];
+    float *__restrict src = data[0];
+    float *__restrict dst = data[1];
     __m128 plus_i, minus_i, plus_j, minus_j, plus_k, minus_k;
     __m128 c = _mm_broadcast_ss(&one_over_six);
     const int bi = 16;
@@ -614,8 +646,8 @@ void JacobiSIMD<float>::iterate_sse_threaded() {
     if (boundary > ignore)
         iterate_boundary(boundary);
     const int b1 = boundary, b2 = n - boundary;
-    float * __restrict src = data[0];
-    float * __restrict dst = data[1];
+    float *__restrict src = data[0];
+    float *__restrict dst = data[1];
     ThreadedTaskManager::run(b1, b2, num_threads, [src, dst, b1, b2, this](int i) {
         const float one_over_six = float(1) / 6;
         __m128 plus_i, minus_i, plus_j, minus_j, plus_k, minus_k;
@@ -684,8 +716,8 @@ void JacobiSIMD<double>::iterate_avx() {
     if (boundary > ignore)
         iterate_boundary(boundary);
     const int b1 = boundary, b2 = n - boundary;
-    double * __restrict src = data[0];
-    double * __restrict dst = data[1];
+    double *__restrict src = data[0];
+    double *__restrict dst = data[1];
     __m256d plus_i, minus_i, plus_j, minus_j, plus_k, minus_k;
     __m256d c = _mm256_broadcast_sd(&one_over_six);
     for (int i = b1; i < b2; i++) {
@@ -711,20 +743,8 @@ void JacobiSIMD<double>::iterate_avx() {
     }
 }
 
-#define REGISTER_32(B, name) \
-    typedef B<float> B ## 32; \
-    TC_IMPLEMENTATION(Benchmark, B ## 32, (name "_32"));
+REGISTER(JacobiSerial, "jacobi_simd")
 
-#define REGISTER_64(B, name) \
-    typedef B<double> B ## 64; \
-    TC_IMPLEMENTATION(Benchmark, B ## 64, (name "_64"));
-
-#define REGISTER(B, name) \
-    REGISTER_32(B, name) \
-    REGISTER_64(B, name)
-
-REGISTER(JacobiBruteForce, "jacobi_bf")
-REGISTER(JacobiSerial, "jacobi_serial")
-REGISTER(JacobiSIMD, "jacobi_simd")
+#endif
 
 TC_NAMESPACE_END

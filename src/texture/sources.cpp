@@ -8,6 +8,7 @@
 *******************************************************************************/
 
 #include <taichi/visual/texture.h>
+#include <taichi/visual/scene_geometry.h>
 #include <taichi/visualization/image_buffer.h>
 #include <taichi/math/array_3d.h>
 #include <taichi/common/asset_manager.h>
@@ -283,6 +284,58 @@ public:
 };
 
 TC_IMPLEMENTATION(Texture, SlicedTexture, "sliced");
+
+class MeshTexture : public Texture {
+protected:
+    Array3D<bool> arr;
+    int resolution_x;
+    int resolution_y;
+    int resolution_z;
+public:
+    // parameter name for mesh path is 'filename'
+    void initialize(const Config &config) override {
+        Mesh mesh;
+        mesh.initialize(config);
+        Scene scene;
+        scene.add_mesh(std::make_shared(mesh));
+        create_instance<RayIntersection>("embree");
+        std::shared_ptr<SceneGeometry> scene_geometry(new SceneGeometry(std::make_shared(mesh), std::make_shared(scene)));
+        resolution_x = config.get_int("resolution_x");
+        resolution_y = config.get_int("resolution_y");
+        resolution_z = config.get_int("resolution_z");
+        arr = Array3D<bool>(resolution_x, resolution_y, resolution_z);
+        BoundingBox bb = mesh.get_bounding_box();
+        for (int i = 0; i < resolution_x; ++i)
+            for (int j = 0; j < resolution_y; ++j) {
+                real x = lerp((0.5f + i) / resolution_x, bb.lower_boundary.x, bb.upper_boundary.y);
+                real y = lerp((0.5f + j) / resolution_y, bb.lower_boundary.y, bb.upper_boundary.y);
+                real delta_z = (bb.upper_boundary.z - bb.lower_boundary.z) / resolution_z;
+                int k = 0;
+                bool inside = false;
+                real z = bb.lower_boundary.z - eps;
+                while (k < resolution_z) {
+                    int kk = k;
+                    Ray ray(Vector3(x, y, z), Vector3(0, 0, 1));
+                    scene_geometry->query(ray);
+                    if (ray.dist == Ray::DIST_INFINITE) kk = resolution_z;
+                    else {
+                        z += ray.dist + eps;
+                        kk = int((z - bb.lower_boundary.z) / delta_z);
+                    }
+                    while (k < kk) {
+                        arr.set(i, j, k, inside);
+                        ++k;
+                    }
+                    inside = !inside;
+                }
+            }
+    }
+    virtual Vector4 sample(const Vector3 &coord) const override {
+        return Vector4(arr.sample_relative_coord(coord));
+    }
+};
+
+TC_IMPLEMENTATION(Texture, MeshTexture, "mesh")
 
 TC_NAMESPACE_END
 

@@ -1,6 +1,7 @@
 import time
 
 from taichi.core import tc_core
+from levelset_3d import LevelSet3D
 from taichi.misc.util import *
 from taichi.tools.video import VideoManager
 from taichi.visual.camera import Camera
@@ -27,11 +28,29 @@ class MPM3:
                                                   light_direction=(1, 1, 0))
         self.resolution = kwargs['resolution']
         self.frame = 0
+        self.levelset_generator = None
+
+    def update_levelset(self, t0, t1):
+        levelset = tc.core.DynamicLevelSet3D()
+        levelset.initialize(t0, t1, self.levelset_generator(t0).levelset, self.levelset_generator(t1).levelset)
+        self.c.set_levelset(levelset)
+
+    def set_levelset(self, levelset, is_dynamic_levelset = False):
+        if is_dynamic_levelset:
+            self.levelset_generator = levelset
+        else:
+            def levelset_generator(_):
+                return levelset
+            self.levelset_generator = levelset_generator
+
+    def get_current_time(self):
+        return self.c.get_current_time()
 
     def step(self, step_t):
         t = self.c.get_current_time()
         print 'Simulation time:', t
         T = time.time()
+        self.update_levelset(t, t + step_t)
         self.c.step(step_t)
         print 'Time:', time.time() - T
         image_buffer = tc_core.Array2DVector3(self.video_manager.width, self.video_manager.height, Vector(0, 0, 0.0))
@@ -54,3 +73,6 @@ class MPM3:
 
     def make_video(self):
         self.video_manager.make_video()
+
+    def create_levelset(self):
+        return LevelSet3D(self.resolution, Vector(0.0, 0.0, 0.0))

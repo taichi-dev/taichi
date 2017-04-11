@@ -2,6 +2,7 @@
     Taichi - Physically based Computer Graphics Library
 
     Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+                  2017 Yu Fang <squarefk@gmail.com>
 
     All rights reserved. Use of this source code is governed by
     the MIT license as written in the LICENSE file.
@@ -10,9 +11,11 @@
 #include <taichi/python/export.h>
 #include <taichi/common/config.h>
 #include <taichi/math/levelset_2d.h>
+#include <taichi/math/levelset_3d.h>
 #include <taichi/visualization/rgb.h>
 #include <taichi/math/array_op.h>
 #include <taichi/math/dynamic_levelset_2d.h>
+#include <taichi/math/dynamic_levelset_3d.h>
 
 PYBIND11_MAKE_OPAQUE(std::vector<int>);
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::real>);
@@ -126,6 +129,14 @@ void export_math(py::module &m) {
 
     EXPORT_ARRAY_2D_OF(real, 1);
 
+#define EXPORT_ARRAY_3D_OF(T, C) \
+    py::class_<Array3D<real>>(m, "Array3D" #T)  \
+            .def(py::init<int, int, int>()) \
+            .def("get_width", &Array3D<T>::get_width) \
+            .def("get_height", &Array3D<T>::get_height);
+
+    EXPORT_ARRAY_3D_OF(real, 1);
+
     py::class_<Array2D<Vector3>>(m, "Array2DVector3")
             .def(py::init<int, int, Vector3>())
             .def("get_width", &Array2D<Vector3>::get_width)
@@ -168,6 +179,24 @@ void export_math(py::module &m) {
             .def("to_ndarray", &array2d_to_ndarray<LevelSet2D, 1>)
             .def("get_channels", &return_constant<LevelSet2D, 1>)
             .def_readwrite("friction", &LevelSet2D::friction);
+
+    py::class_<DynamicLevelSet3D>(m, "DynamicLevelSet3D")
+            .def(py::init<>())
+            .def("initialize", &DynamicLevelSet3D::initialize);
+
+    py::class_<LevelSet3D, Array3D<real>>(m, "LevelSet3D")
+            .def(py::init<int, int, int, Vector3>())
+            .def("get_width", &LevelSet3D::get_width)
+            .def("get_height", &LevelSet3D::get_height)
+            .def("get", &LevelSet3D::get_copy)
+            .def("set", static_cast<void (LevelSet3D::*)(int, int, int, const real &)>(&LevelSet3D::set))
+            .def("add_sphere", &LevelSet3D::add_sphere)
+            .def("get_gradient", &LevelSet3D::get_gradient)
+            .def("rasterize", &LevelSet3D::rasterize)
+            .def("sample", static_cast<real(LevelSet3D::*)(real, real, real) const>(&LevelSet3D::sample))
+            .def("get_normalized_gradient", &LevelSet3D::get_normalized_gradient)
+            .def("get_channels", &return_constant<LevelSet3D, 1>)
+            .def_readwrite("friction", &LevelSet3D::friction);
 
     py::class_<DynamicLevelSet2D>(m, "DynamicLevelSet2D")
             .def(py::init<>())

@@ -14,7 +14,7 @@ TC_NAMESPACE_BEGIN
 long long MPMParticle::instance_count = 0;
 
 void Grid::apply_boundary_conditions(const DynamicLevelSet2D & levelset, real delta_t, real t) {
-    if (levelset.levelset0->get_width() > 0) {
+    if (levelset.levelset0) {
         for (auto &ind : boundary_normal.get_region()) {
             Vector2 pos = Vector2(ind.get_pos());
             Vector2 v = velocity[ind] + force_or_acc[ind] * delta_t - levelset.get_temporal_derivative(pos, t) * levelset.get_spatial_gradient(pos, t);
@@ -28,7 +28,10 @@ void Grid::apply_boundary_conditions(const DynamicLevelSet2D & levelset, real de
                     v = Vector2(0.0f);
                 }
                 else {
-                    Vector2 t = Vector2(-n.y, n.x);
+                    Vector2 t = v - n * glm::dot(v, n);
+                    if (length(t) > 1e-6f) {
+                        t = normalize(t);
+                    }
                     real friction = -clamp(glm::dot(t, v), -mu * pressure, mu * pressure);
                     v = v + n * pressure + t * friction;
                 }

@@ -5,7 +5,7 @@ from taichi.misc.util import *
 
 if __name__ == '__main__':
     resolution = tuple([256] * 2)
-    simulator = create_mpm_simulator(resolution, 10, frame_dt=0.01)
+    simulator = create_mpm_simulator(resolution, 1, frame_dt=0.05)
 
     simulator.add_event(-1, lambda s: s.add_particles_polygon([(0.45, 0.15), (0.55, 0.15), (0.55, 0.8), (0.45, 0.8)], 'dp', h_0=20))
 

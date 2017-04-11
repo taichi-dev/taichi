@@ -24,7 +24,9 @@ class Tracker3D {
 public:
     Vector3 position;
     Vector3 color;
+
     Tracker3D() {}
+
     Tracker3D(const Vector3 &position, const Vector3 &color) : position(position), color(color) {}
 };
 

@@ -20,8 +20,7 @@ void LevelSet3D::add_sphere(Vector3 center, real radius, bool inside_out) {
     }
 }
 
-Vector3 LevelSet3D::get_gradient(const Vector3 &pos) const
-{
+Vector3 LevelSet3D::get_gradient(const Vector3 &pos) const {
     assert_info(inside(pos), "LevelSet Gradient Query out of Bound! ("
                              + std::to_string(pos.x) + ", "
                              + std::to_string(pos.y) + ", "
@@ -37,19 +36,24 @@ Vector3 LevelSet3D::get_gradient(const Vector3 &pos) const
     const real y_r = y - y_i;
     const real z_r = z - z_i;
     const real gx = lerp(y_r,
-                         lerp(z_r, Array3D::get(x_i + 1, y_i, z_i) - Array3D::get(x_i, y_i, z_i), Array3D::get(x_i + 1, y_i, z_i + 1) - Array3D::get(x_i, y_i, z_i + 1)),
-                         lerp(z_r, Array3D::get(x_i + 1, y_i + 1, z_i) - Array3D::get(x_i, y_i + 1, z_i), Array3D::get(x_i + 1, y_i + 1, z_i + 1) - Array3D::get(x_i, y_i + 1, z_i + 1)));
+                         lerp(z_r, Array3D::get(x_i + 1, y_i, z_i) - Array3D::get(x_i, y_i, z_i),
+                              Array3D::get(x_i + 1, y_i, z_i + 1) - Array3D::get(x_i, y_i, z_i + 1)),
+                         lerp(z_r, Array3D::get(x_i + 1, y_i + 1, z_i) - Array3D::get(x_i, y_i + 1, z_i),
+                              Array3D::get(x_i + 1, y_i + 1, z_i + 1) - Array3D::get(x_i, y_i + 1, z_i + 1)));
     const real gy = lerp(z_r,
-                         lerp(x_r, Array3D::get(x_i, y_i + 1, z_i) - Array3D::get(x_i, y_i, z_i), Array3D::get(x_i + 1, y_i + 1, z_i) - Array3D::get(x_i + 1, y_i, z_i)),
-                         lerp(x_r, Array3D::get(x_i, y_i + 1, z_i + 1) - Array3D::get(x_i, y_i, z_i + 1), Array3D::get(x_i + 1, y_i + 1, z_i + 1) - Array3D::get(x_i + 1, y_i, z_i + 1)));
+                         lerp(x_r, Array3D::get(x_i, y_i + 1, z_i) - Array3D::get(x_i, y_i, z_i),
+                              Array3D::get(x_i + 1, y_i + 1, z_i) - Array3D::get(x_i + 1, y_i, z_i)),
+                         lerp(x_r, Array3D::get(x_i, y_i + 1, z_i + 1) - Array3D::get(x_i, y_i, z_i + 1),
+                              Array3D::get(x_i + 1, y_i + 1, z_i + 1) - Array3D::get(x_i + 1, y_i, z_i + 1)));
     const real gz = lerp(x_r,
-                         lerp(y_r, Array3D::get(x_i, y_i, z_i + 1) - Array3D::get(x_i, y_i, z_i), Array3D::get(x_i, y_i + 1, z_i + 1) - Array3D::get(x_i, y_i + 1, z_i)),
-                         lerp(y_r, Array3D::get(x_i + 1, y_i, z_i + 1) - Array3D::get(x_i + 1, y_i, z_i), Array3D::get(x_i + 1, y_i + 1, z_i + 1) - Array3D::get(x_i + 1, y_i + 1, z_i)));
+                         lerp(y_r, Array3D::get(x_i, y_i, z_i + 1) - Array3D::get(x_i, y_i, z_i),
+                              Array3D::get(x_i, y_i + 1, z_i + 1) - Array3D::get(x_i, y_i + 1, z_i)),
+                         lerp(y_r, Array3D::get(x_i + 1, y_i, z_i + 1) - Array3D::get(x_i + 1, y_i, z_i),
+                              Array3D::get(x_i + 1, y_i + 1, z_i + 1) - Array3D::get(x_i + 1, y_i + 1, z_i)));
     return Vector3(gx, gy, gz);
 }
 
-Vector3 LevelSet3D::get_normalized_gradient(const Vector3 &pos) const
-{
+Vector3 LevelSet3D::get_normalized_gradient(const Vector3 &pos) const {
     Vector3 gradient = get_gradient(pos);
     if (length(gradient) < 1e-10f)
         return Vector3(1, 0, 0);
@@ -57,8 +61,7 @@ Vector3 LevelSet3D::get_normalized_gradient(const Vector3 &pos) const
         return normalize(gradient);
 }
 
-real LevelSet3D::get(const Vector3 &pos) const
-{
+real LevelSet3D::get(const Vector3 &pos) const {
     assert_info(inside(pos), "LevelSet Query out of Bound! ("
                              + std::to_string(pos.x) + ", "
                              + std::to_string(pos.y) + ", "
@@ -93,8 +96,7 @@ Array3D<real> LevelSet3D::rasterize(int width, int height, int depth) {
     Vector3 actual_size;
     if (storage_offset == Vector3(0.0f, 0.0f, 0.0f)) {
         actual_size = Vector3(this->width - 1, this->height - 1, this->depth - 1);
-    }
-    else {
+    } else {
         actual_size = Vector3(this->width, this->height, this->depth);
     }
 

@@ -32,16 +32,20 @@ public:
     struct SystemRow {
         real inv_numerator;
         int neighbours;
-        SystemRow(int _=0) { // _ is for Array2D initialization... Let's fix it later...
+
+        SystemRow(int _ = 0) { // _ is for Array2D initialization... Let's fix it later...
             inv_numerator = 0.0f;
             neighbours = 0;
         }
+
         CellType get_neighbour_cell_type(int k) const {
             return CellType((neighbours >> (k * 2)) % 4);
         }
+
         void set_neighbour_cell_type(int k, CellType c) {
             neighbours = ((neighbours & (~(3 << (2 * k)))) | (c << (2 * k)));
         }
+
         void print() {
             printf("%f", inv_numerator);
             for (int i = 0; i < 4; i++) {
@@ -178,8 +182,7 @@ public:
         int num_threads;
         if (max_side >= threshold) {
             num_threads = this->num_threads;
-        }
-        else {
+        } else {
             num_threads = 1;
         }
         ThreadedTaskManager::run(arr.get_width(), num_threads, [&](int x) {
@@ -264,10 +267,10 @@ public:
         for (auto &ind : x_downsampled.get_region()) {
             if (system[ind].inv_numerator > 0) {
                 x_downsampled[ind] =
-                    x[ind.i * 2 + 0][ind.j * 2 + 0] +
-                    x[ind.i * 2 + 0][ind.j * 2 + 1] +
-                    x[ind.i * 2 + 1][ind.j * 2 + 0] +
-                    x[ind.i * 2 + 1][ind.j * 2 + 1];
+                        x[ind.i * 2 + 0][ind.j * 2 + 0] +
+                        x[ind.i * 2 + 0][ind.j * 2 + 1] +
+                        x[ind.i * 2 + 1][ind.j * 2 + 0] +
+                        x[ind.i * 2 + 1][ind.j * 2 + 1];
             } else {
                 x_downsampled[ind] = 0.0f;
             }
@@ -287,8 +290,7 @@ public:
         pressures[level].reset(0.0f);
         if (residuals[level].get_size() <= size_threshold) { // 4 * 4 * 4
             gauss_seidel(systems[level], residuals[level], pressures[level], 100);
-        }
-        else {
+        } else {
             gauss_seidel(systems[level], residuals[level], pressures[level], 4);
             {
                 compute_residual(systems[level], pressures[level], residuals[level], tmp_residuals[level]);
@@ -320,12 +322,14 @@ public:
     void initialize(const Config &config) {
         MultigridPoissonSolver2D::initialize(config);
     }
+
     Array apply_preconditioner(Array &r) {
         pressures[0] = 0;
         residuals[0] = r;
         MultigridPoissonSolver2D::run(0);
         return pressures[0];
     }
+
     virtual void run(const Array &residual, Array &pressure, real pressure_tolerance) {
         pressure = 0;
         Array r(res), mu(res), tmp(res);
@@ -364,6 +368,7 @@ public:
 };
 
 TC_IMPLEMENTATION(PoissonSolver2D, MultigridPoissonSolver2D, "mg");
+
 TC_IMPLEMENTATION(PoissonSolver2D, MultigridPCGPoissonSolver2D, "mgpcg");
 
 TC_NAMESPACE_END

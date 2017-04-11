@@ -26,11 +26,11 @@
 
 TC_NAMESPACE_BEGIN
 
-inline void svd(const Matrix3 & A, Matrix3 & u, Matrix3 & sig, Matrix3 & v) {
+inline void svd(const Matrix3 &A, Matrix3 &u, Matrix3 &sig, Matrix3 &v) {
     return imp_svd(transpose(A), u, sig, v);
 }
 
-inline void polar_decomp(const Matrix3 & A, Matrix3 & r, Matrix3 & s) {
+inline void polar_decomp(const Matrix3 &A, Matrix3 &r, Matrix3 &s) {
     Matrix3 u, sig, v;
     svd(A, u, sig, v);
     r = u * glm::transpose(v);
@@ -70,6 +70,7 @@ public:
         Matrix dg_cache;
         static long long instance_count;
         long long id = instance_count++;
+
         Particle() {
             dg_e = Matrix(1.0f);
             dg_p = Matrix(1.0f);
@@ -77,13 +78,19 @@ public:
             v = Vector(0.0f);
             vol = 1.0f;
         }
+
         virtual void set_compression(float compression) {
             dg_p = Matrix(compression); // 1.0f = no compression
         }
+
         virtual Matrix get_energy_gradient() = 0;
+
         virtual void calculate_kernels() {}
+
         virtual void calculate_force() = 0;
+
         virtual void plasticity() {};
+
         virtual void resolve_collision(const DynamicLevelSet3D &levelset, real t) {
             real phi = levelset.sample(pos, t);
             if (phi < 0) {
@@ -92,14 +99,17 @@ public:
                 v -= glm::dot(gradient, v) * gradient;
             }
         }
+
         virtual void print() {
             P(pos);
             P(v);
             P(dg_e);
             P(dg_p);
         }
+
         virtual ~Particle() {}
     };
+
     std::vector<Particle *> particles; // for efficiency
     Array3D<Vector> grid_velocity;
     Array3D<Vector> grid_velocity_backup;
@@ -113,8 +123,9 @@ public:
     bool apic;
 
     Region get_bounded_rasterization_region(Vector p) {
-        assert_info(is_normal(p.x) && is_normal(p.y) && is_normal(p.z), std::string("Abnormal p: ") + std::to_string(p.x)
-            + ", " + std::to_string(p.y) + ", " + std::to_string(p.z));
+        assert_info(is_normal(p.x) && is_normal(p.y) && is_normal(p.z),
+                    std::string("Abnormal p: ") + std::to_string(p.x)
+                    + ", " + std::to_string(p.y) + ", " + std::to_string(p.z));
         int x = int(p.x);
         int y = int(p.y);
         int z = int(p.z);

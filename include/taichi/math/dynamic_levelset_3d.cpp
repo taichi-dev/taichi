@@ -43,9 +43,9 @@ real DynamicLevelSet3D::get_temporal_derivative(const Vector3 &pos, real t) cons
 
 real DynamicLevelSet3D::sample(const Vector3 &pos, real t) const {
     assert_info(levelset0->inside(pos), "Sample("
-                             + std::to_string(pos.x) + ", "
-                             + std::to_string(pos.y) + ", "
-                             + std::to_string(pos.z) + ")");
+                                        + std::to_string(pos.x) + ", "
+                                        + std::to_string(pos.y) + ", "
+                                        + std::to_string(pos.z) + ")");
     real l1 = levelset0->get(pos);
     real l2 = levelset1->get(pos);
     return lerp((t - t0) / (t1 - t0), l1, l2);

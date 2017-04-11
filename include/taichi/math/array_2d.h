@@ -146,7 +146,7 @@ public:
     }
 };
 
-template<typename T>
+template <typename T>
 struct Array2D {
 protected:
     Region2D region;
@@ -156,7 +156,7 @@ protected:
     int width, height;
     Vector2 storage_offset = Vector2(0.5f, 0.5f); // defualt : center storage
 public:
-    template<typename P>
+    template <typename P>
     friend Array2D<T> operator*(const P &b, const Array2D<T> &a);
 
     int get_size() const {
@@ -203,7 +203,7 @@ public:
         this->storage_offset = arr.storage_offset;
     }
 
-    template<typename P>
+    template <typename P>
     Array2D<T> operator*(const P &b) const {
         Array2D<T> o(width, height);
         for (int i = 0; i < size; i++) {
@@ -212,7 +212,7 @@ public:
         return o;
     }
 
-    template<typename P>
+    template <typename P>
     Array2D<T> operator/(const P &b) const {
         b = T(1) / b;
         return b * (*this);
@@ -661,7 +661,7 @@ public:
     void write_text(const std::string &font_fn, const std::string &content, real size, int dx, int dy);
 };
 
-template<typename T, typename P>
+template <typename T, typename P>
 Array2D<T> operator*(const P &b, const Array2D<T> &a) {
     Array2D<T> o(a.width, a.height);
     for (int i = 0; i < a.size; i++) {
@@ -672,7 +672,7 @@ Array2D<T> operator*(const P &b, const Array2D<T> &a) {
 
 typedef Array2D<real> Array;
 
-template<typename T>
+template <typename T>
 void print(const Array2D<T> &arr) {
     arr.print("");
 }

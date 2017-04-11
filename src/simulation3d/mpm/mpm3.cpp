@@ -22,8 +22,7 @@ inline float w(float x) {
     assert(x <= 2);
     if (x < 1) {
         return 0.5f * x * x * x - x * x + 2.0f / 3.0f;
-    }
-    else {
+    } else {
         return -1.0f / 6.0f * x * x * x + x * x - 2 * x + 4.0f / 3.0f;
     }
 }
@@ -37,8 +36,7 @@ inline float dw(float x) {
     float xx = x * x;
     if (x < 1.0f) {
         val = 1.5f * xx - 2.0f * x;
-    }
-    else {
+    } else {
         val = -0.5f * xx + 2.0f * x - 2.0f;
     }
     return s * val;
@@ -57,6 +55,7 @@ long long MPM3D::Particle::instance_count;
 struct EPParticle3 : public MPM3D::Particle {
     EPParticle3() : MPM3D::Particle() {
     }
+
     virtual Matrix get_energy_gradient() {
         const real hardening = 10.0f;
         const real mu_0 = 1e5f, lambda_0 = 1e5f;
@@ -75,12 +74,15 @@ struct EPParticle3 : public MPM3D::Particle {
         CV(r);
         CV(s);
         return 2 * mu * (dg_e - r) +
-            lambda * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
+               lambda * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
     }
+
     virtual void calculate_kernels() {}
+
     virtual void calculate_force() {
         tmp_force = -vol * get_energy_gradient() * glm::transpose(dg_e);
     };
+
     virtual void plasticity() {
         Matrix svd_u, sig, svd_v;
         svd(dg_e, svd_u, sig, svd_v);
@@ -117,19 +119,19 @@ struct DPParticle3 : public MPM3D::Particle {
         Matrix3 epsilon(log(sigma[0][0]), 0.f, 0.f, 0.f, log(sigma[1][1]), 0.f, 0.f, 0.f, log(sigma[2][2]));
         real tr = epsilon[0][0] + epsilon[1][1] + epsilon[2][2];
         Matrix3 epsilon_hat = epsilon - (tr) / d * Matrix3(1.0f);
-        real epsilon_for = sqrt(epsilon[0][0] * epsilon[0][0] + epsilon[1][1] * epsilon[1][1] + epsilon[2][2] * epsilon[2][2]);
-        real epsilon_hat_for = sqrt(epsilon_hat[0][0] * epsilon_hat[0][0] + epsilon_hat[1][1] * epsilon_hat[1][1] + epsilon_hat[2][2] * epsilon_hat[2][2]);
+        real epsilon_for = sqrt(
+                epsilon[0][0] * epsilon[0][0] + epsilon[1][1] * epsilon[1][1] + epsilon[2][2] * epsilon[2][2]);
+        real epsilon_hat_for = sqrt(epsilon_hat[0][0] * epsilon_hat[0][0] + epsilon_hat[1][1] * epsilon_hat[1][1] +
+                                    epsilon_hat[2][2] * epsilon_hat[2][2]);
         if (epsilon_hat_for <= 0 || tr > 0.0f) {
             sigma_out = Matrix3(1.0f);
             out = epsilon_for;
-        }
-        else {
+        } else {
             real delta_gamma = epsilon_hat_for + (d * lambda_0 + 2 * mu_0) / (2 * mu_0) * tr * alpha;
             if (delta_gamma <= 0) {
                 sigma_out = sigma;
                 out = 0;
-            }
-            else {
+            } else {
                 Matrix3 h = epsilon - delta_gamma / epsilon_hat_for * epsilon_hat;
                 sigma_out = Matrix3(exp(h[0][0]), 0.f, 0.f, 0.f, exp(h[1][1]), 0.f, 0.f, 0.f, exp(h[2][2]));
                 out = delta_gamma;
@@ -146,7 +148,8 @@ struct DPParticle3 : public MPM3D::Particle {
 
         Matrix3 log_sig(log(sig[0][0]), 0.f, 0.f, 0.f, log(sig[1][1]), 0.f, 0.f, 0.f, log(sig[2][2]));
         Matrix3 inv_sig(1.f / (sig[0][0]), 0.f, 0.f, 0.f, 1.f / (sig[1][1]), 0.f, 0.f, 0.f, 1.f / (sig[2][2]));
-        Matrix3 center = 2 * mu_0 * inv_sig * log_sig + lambda_0 * (log_sig[0][0] + log_sig[1][1] + log_sig[2][2]) * inv_sig;
+        Matrix3 center =
+                2 * mu_0 * inv_sig * log_sig + lambda_0 * (log_sig[0][0] + log_sig[1][1] + log_sig[2][2]) * inv_sig;
 
         tmp_force = -vol * (u * center * glm::transpose(v)) * glm::transpose(dg);
     }
@@ -265,8 +268,8 @@ void MPM3D::resample(float delta_t) {
             Vector aa = grid_vel;
             Vector bb = -d_pos;
             Matrix out(aa[0] * bb[0], aa[1] * bb[0], aa[2] * bb[0],
-                aa[0] * bb[1], aa[1] * bb[1], aa[2] * bb[1],
-                aa[0] * bb[2], aa[1] * bb[2], aa[2] * bb[2]);
+                       aa[0] * bb[1], aa[1] * bb[1], aa[2] * bb[1],
+                       aa[0] * bb[2], aa[1] * bb[2], aa[2] * bb[2]);
             b += weight * out;
             bv += weight * grid_velocity_backup[ind];
             cdg += glm::outerProduct(grid_velocity[ind], gw);
@@ -312,7 +315,8 @@ void MPM3D::grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, re
     if (levelset.levelset0) {
         for (auto &ind : grid_velocity.get_region()) {
             Vector3 pos = Vector3(ind.get_pos());
-            Vector3 v = grid_velocity[ind] + grid_force_or_acc[ind] * delta_t - levelset.get_temporal_derivative(pos, t) * levelset.get_spatial_gradient(pos, t);
+            Vector3 v = grid_velocity[ind] + grid_force_or_acc[ind] * delta_t -
+                        levelset.get_temporal_derivative(pos, t) * levelset.get_spatial_gradient(pos, t);
             Vector3 n = levelset.get_spatial_gradient(pos, t);
             real phi = levelset.sample(pos, t);
             if (phi > 1) continue;
@@ -321,8 +325,7 @@ void MPM3D::grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, re
                 real mu = levelset.levelset0->friction;
                 if (mu < 0) { // sticky
                     v = Vector3(0.0f);
-                }
-                else {
+                } else {
                     Vector3 t = v - n * glm::dot(v, n);
                     if (length(t) > 1e-6f) {
                         t = normalize(t);
@@ -330,8 +333,7 @@ void MPM3D::grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, re
                     real friction = -clamp(glm::dot(t, v), -mu * pressure, mu * pressure);
                     v = v + n * pressure + t * friction;
                 }
-            }
-            else if (phi <= 0) {
+            } else if (phi <= 0) {
                 v = Vector3(0.0f);
             }
             v += levelset.get_temporal_derivative(pos, t) * levelset.get_spatial_gradient(pos, t);

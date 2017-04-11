@@ -56,7 +56,7 @@ typedef glm::mat2 Matrix2;
 typedef glm::mat3 Matrix3;
 typedef glm::mat4 Matrix4;
 
-const real pi{ acosf(-1.0f) };
+const real pi{acosf(-1.0f)};
 
 const real eps = 1e-6f;
 
@@ -75,26 +75,26 @@ const real eps = 1e-6f;
 
 using glm::max;
 
-template<typename T>
+template <typename T>
 inline T abs(const T &a) {
     return std::abs(a);
 }
 
-template<typename T>
+template <typename T>
 inline T clamp(T a, T min, T max) {
     if (a < min) return min;
     if (a > max) return max;
     return a;
 }
 
-template<typename T>
+template <typename T>
 inline T clamp(T a) {
     if (a < 0) return 0;
     if (a > 1) return 1;
     return a;
 }
 
-template<typename T, typename V>
+template <typename T, typename V>
 inline V lerp(T a, V x_0, V x_1) {
     return (T(1) - a) * x_0 + a * x_1;
 }
@@ -103,12 +103,12 @@ inline bool inside_unit_cube(const Vector3 &p) {
     return 0 <= p.x && p.x < 1 && 0 <= p.y && p.y < 1 && 0 <= p.z && p.z < 1;
 }
 
-template<typename T>
+template <typename T>
 T sqr(const T &a) {
     return a * a;
 }
 
-template<typename T>
+template <typename T>
 T cube(const T &a) {
     return a * a * a;
 }
@@ -132,7 +132,7 @@ inline int sgn(double a) {
 // inline float frand() { return (float)rand() / (RAND_MAX + 1); }
 inline float rand() {
     static unsigned int x = 123456789, y = 362436069, z = 521288629, w = 88675123;
-    unsigned int t = x ^ (x << 11);
+    unsigned int t = x ^(x << 11);
     x = y;
     y = z;
     z = w;
@@ -148,14 +148,14 @@ inline vec3 sample_sphere(float u, float v) {
 
 
 inline float catmull_rom(float f_m_1, float f_0, float f_1, float f_2,
-    float x_r) {
+                         float x_r) {
     float s = (f_1 - f_0);
     float s_0 = (f_1 - f_m_1) / 2.0f;
     float s_1 = (f_2 - f_0) / 2.0f;
     s_0 = s_0 * (s_1 * s > 0);
     s_1 = s_1 * (s_1 * s > 0);
     return f_0 + x_r * s_0 + (-3 * f_0 + 3 * f_1 - 2 * s_0 - s_1) * x_r * x_r +
-        (2 * f_0 - 2 * f_1 + s_0 + s_1) * x_r * x_r * x_r;
+           (2 * f_0 - 2 * f_1 + s_0 + s_1) * x_r * x_r * x_r;
 }
 
 inline float catmull_rom(float *pf_m_1, float x_r) {
@@ -183,9 +183,11 @@ inline void print(long v) {
 }
 
 #ifndef WIN32
+
 inline void print(size_t v) {
     printf("%lld\n", (long long)v);
 }
+
 #endif
 
 inline void print(long long v) {
@@ -269,7 +271,7 @@ inline int is_prime(int a) {
     return true;
 }
 
-template<typename T>
+template <typename T>
 inline T hypot2(const T &x, const T &y) {
     return x * x + y * y;
 }

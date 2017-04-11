@@ -179,6 +179,7 @@ def imread(fn, bgr=False):
 
 
 def ndarray_to_array2d(array):
+    assert array.dtype == np.float32
     array = array.copy()
     input_ptr = array.ctypes.data_as(ctypes.c_void_p).value
     if len(array.shape) == 2 or array.shape[2] == 1:

@@ -6,8 +6,8 @@ from pyglet.gl import *
 
 from taichi.misc.util import get_os_name, get_unique_task_id
 from taichi.misc.settings import get_output_directory
-
-VIDEO_OUTPUT_ROOT = get_output_directory()
+from taichi.tools.video import VideoManager
+import numpy as np
 
 
 def normalized_color_255(*args):
@@ -16,7 +16,7 @@ def normalized_color_255(*args):
 
 class SimulationWindow(pyglet.window.Window):
     def __init__(self, max_side, simulator, color_scheme, levelset_supersampling=2, show_grid=False, show_images=True,
-                 rescale=True):
+                 rescale=True, video_framerate=24):
         if rescale:
             scale = min(1.0 * max_side / simulator.simulation_width, 1.0 * max_side / simulator.simulation_height)
             width = int(round(scale * simulator.simulation_width))
@@ -24,13 +24,14 @@ class SimulationWindow(pyglet.window.Window):
         else:
             width = max_side
             height = max_side
+
         super(SimulationWindow, self).__init__(width=width, height=height, fullscreen=False, caption='Taichi',
                                                config=pyglet.gl.Config(sample_buffers=0, samples=0, depth_size=16,
                                                                        double_buffer=True))
-        uuid = get_unique_task_id()
-        self.video_filename = uuid + ".mp4"
-        self.frame_output_path = VIDEO_OUTPUT_ROOT + '/' + uuid + '/'
-        os.mkdir(self.frame_output_path[:-1])
+        self.width = width
+        self.height = height
+        self.video_framerate = video_framerate
+        self.task_id = get_unique_task_id()
         self.simulator = simulator
         self.frame_count = 0
         self.color_scheme = color_scheme
@@ -38,8 +39,9 @@ class SimulationWindow(pyglet.window.Window):
         self.levelset_supersampling = levelset_supersampling
         self.show_grid = show_grid
         self.quit_pressed = False
-        self.timer = 0
-        self.next_video_checkpoint = 4
+        self.output_directory = os.path.join(get_output_directory(), self.task_id)
+        os.mkdir(self.output_directory)
+        self.video_manager = VideoManager(self.output_directory)
         pyglet.clock.schedule_interval(self.update, 1 / 120.0)
         pyglet.app.run()
 
@@ -49,20 +51,7 @@ class SimulationWindow(pyglet.window.Window):
         if symbol == pyglet.window.key.ESCAPE:
             self.quit_pressed = True
 
-    def clear_frames(self):
-        files = glob.glob(self.frame_output_path + '*.png')
-        for f in files:
-            assert f.endswith('.png')
-            os.remove(f)
-        print '%d png frame files removed' % (len(files))
-        os.rmdir(self.frame_output_path)
-
     def update(self, _):
-        self.timer += 1
-        print self.timer
-        if self.timer % self.next_video_checkpoint == 0:
-            self.make_video()
-            self.next_video_checkpoint *= 2
         if not self.quit_pressed and not self.simulator.ended():
             self.simulator.step()
         else:
@@ -70,20 +59,13 @@ class SimulationWindow(pyglet.window.Window):
         self.redraw()
         self.save_frame()
 
-    def make_video(self):
-        command = "ffmpeg -y -framerate 24 -i " + self.frame_output_path + \
-                  "/frame%d.png -s:v " + str(self.width) + 'x' + str(self.height) + \
-                  " -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p " + VIDEO_OUTPUT_ROOT + \
-                  "/" + self.video_filename
-        print command
-
-        os.system(command)
-        # self.clear_frames()
-
     def save_frame(self):
         gl.glPixelTransferf(gl.GL_ALPHA_BIAS, 1.0)
-        pyglet.image.get_buffer_manager().get_color_buffer().save(
-            self.frame_output_path + '/frame%d.png' % self.frame_count)
+        buffer = pyglet.image.get_buffer_manager().get_color_buffer()
+        data = buffer.get_image_data().data
+        img = (np.fromstring(data, dtype=np.uint8).reshape((self.height, self.width, 4)) / 255.0).astype(
+            np.float32).swapaxes(0, 1)
+        self.video_manager.write_frame(img[:, :, :])
         gl.glPixelTransferf(gl.GL_ALPHA_BIAS, 0.0)
         self.frame_count += 1
 
@@ -102,7 +84,8 @@ class SimulationWindow(pyglet.window.Window):
                                   anchor_x='left', anchor_y='top')
         ls_width = self.width * self.levelset_supersampling
         ls_height = self.height * self.levelset_supersampling
-        background_images, foreground_images = self.simulator.get_levelset_images(ls_width, ls_height, self.color_scheme)
+        background_images, foreground_images = self.simulator.get_levelset_images(ls_width, ls_height,
+                                                                                  self.color_scheme)
         if self.show_images:
             for img in background_images:
                 img.blit(0, 0, 0, self.width, self.height)

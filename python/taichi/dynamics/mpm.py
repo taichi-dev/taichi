@@ -17,11 +17,11 @@ class MPM3:
         self.c.initialize(P(**kwargs))
         self.task_id = get_unique_task_id()
         self.directory = tc.get_output_path(self.task_id)
-        self.video_manager = VideoManager(self.task_id, 540, 540)
         try:
             os.mkdir(self.directory)
         except Exception as e:
             print e
+        self.video_manager = VideoManager(self.directory, 540, 540)
         self.particle_renderer = ParticleRenderer('shadow_map',
                                                   shadow_map_resolution=0.3, alpha=0.7, shadowing=2,
                                                   ambient_light=0.01,
@@ -35,12 +35,13 @@ class MPM3:
         levelset.initialize(t0, t1, self.levelset_generator(t0).levelset, self.levelset_generator(t1).levelset)
         self.c.set_levelset(levelset)
 
-    def set_levelset(self, levelset, is_dynamic_levelset = False):
+    def set_levelset(self, levelset, is_dynamic_levelset=False):
         if is_dynamic_levelset:
             self.levelset_generator = levelset
         else:
             def levelset_generator(_):
                 return levelset
+
             self.levelset_generator = levelset_generator
 
     def get_current_time(self):

@@ -8,7 +8,7 @@ from taichi.visual.post_process import *
 from taichi.visual.texture import Texture
 import taichi as tc
 
-gi_render = True
+gi_render = False
 step_number = 400
 # step_number = 1
 # total_frames = 1

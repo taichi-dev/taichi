@@ -188,7 +188,6 @@ void MPM::substep() {
     estimate_volume();
     grid.backup_velocity();
     grid.apply_external_force(gravity);
-    //Deleted: grid.apply_boundary_conditions(levelset);
     apply_deformation_force();
     grid.normalize_acceleration();
     grid.apply_boundary_conditions(levelset, t_int_increment * base_delta_t, t);
@@ -230,9 +229,11 @@ void MPM::compute_material_levelset() {
 }
 
 void MPM::particle_collision_resolution() {
-    for (auto &p : particles) {
-        if (p->state == MPMParticle::UPDATING)
-            p->resolve_collision(levelset, t);
+    if (levelset.levelset0) {
+        for (auto &p : particles) {
+            if (p->state == MPMParticle::UPDATING)
+                p->resolve_collision(levelset, t);
+        }
     }
 }
 

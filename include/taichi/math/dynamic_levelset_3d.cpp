@@ -32,12 +32,20 @@ Vector3 DynamicLevelSet3D::get_spatial_gradient(const Vector3 &pos, real t) cons
 }
 
 real DynamicLevelSet3D::get_temporal_derivative(const Vector3 &pos, real t) const {
+    assert_info(levelset0->inside(pos), "Temporal("
+                                        + std::to_string(pos.x) + ", "
+                                        + std::to_string(pos.y) + ", "
+                                        + std::to_string(pos.z) + ")");
     real l0 = levelset0->get(pos);
     real l1 = levelset1->get(pos);
     return (l1 - l0) / (t1 - t0);
 }
 
-    real DynamicLevelSet3D::sample(const Vector3 &pos, real t) const {
+real DynamicLevelSet3D::sample(const Vector3 &pos, real t) const {
+    assert_info(levelset0->inside(pos), "Sample("
+                             + std::to_string(pos.x) + ", "
+                             + std::to_string(pos.y) + ", "
+                             + std::to_string(pos.z) + ")");
     real l1 = levelset0->get(pos);
     real l2 = levelset1->get(pos);
     return lerp((t - t0) / (t1 - t0), l1, l2);
@@ -46,7 +54,7 @@ real DynamicLevelSet3D::get_temporal_derivative(const Vector3 &pos, real t) cons
 Array3D<real> DynamicLevelSet3D::rasterize(int width, int height, int depth, real t) {
     Array3D<real> r0 = levelset0->rasterize(width, height, depth);
     Array3D<real> r1 = levelset1->rasterize(width, height, depth);
-    Array3D<real> out(width, height, width);
+    Array3D<real> out(width, height, depth);
     for (auto &ind : Region3D(0, width, 0, height, 0, depth, Vector3(0.5f, 0.5f, 0.5f))) {
         out[ind] = lerp((t - t0) / (t1 - t0), r0[ind], r1[ind]);
         if (std::isnan(out[ind])) {

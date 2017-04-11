@@ -1,10 +1,11 @@
 import taichi as tc
 from taichi.misc.util import *
 
+
 class LevelSet2D:
     def __init__(self, width, height, delta_x, offset=None):
         if offset is None:
-            offset = Vector(0.5, 0.5)
+            offset = Vector(0, 0)
         self.delta_x = delta_x
         self.levelset = tc.core.LevelSet2D(width, height, offset)
         self.width = width
@@ -20,16 +21,16 @@ class LevelSet2D:
     def add_polygon(self, polygon, inside_out):
         self.levelset.add_polygon(make_polygon(polygon, 1.0 / self.delta_x), inside_out)
 
-    def get(self, x, y=None):
-        if y is None:
-            y = x.y
-            x = x.x
-        return self.levelset.sample(x / self.delta_x, y / self.delta_x)
-
-    def get_normalized_gradient(self, p):
-        p.x /= self.delta_x
-        p.y /= self.delta_x
-        return self.levelset.get_normalized_gradient(p)
+    # def get(self, x, y=None):
+    #     if y is None:
+    #         y = x.y
+    #         x = x.x
+    #     return self.levelset.sample(x / self.delta_x, y / self.delta_x)
+    #
+    # def get_normalized_gradient(self, p):
+    #     p.x /= self.delta_x
+    #     p.y /= self.delta_x
+    #     return self.levelset.get_normalized_gradient(p)
 
     def get_image(self, width, height, color_255):
         if self.cache_image is None:

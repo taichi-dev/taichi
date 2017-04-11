@@ -72,6 +72,7 @@ void export_dynamics(py::module &m) {
         .def("step", &SIM::step) \
         .def("get_current_time", &SIM::get_current_time) \
         .def("get_render_particles", &SIM::get_render_particles) \
+        .def("set_levelset", &SIM::set_levelset) \
         ;
     EXPORT_SIMULATOR_3D(Simulation3D);
 

@@ -745,6 +745,6 @@ void JacobiSIMD<double>::iterate_avx() {
 
 REGISTER(JacobiSerial, "jacobi_simd")
 
-#endif
-
 TC_NAMESPACE_END
+
+#endif

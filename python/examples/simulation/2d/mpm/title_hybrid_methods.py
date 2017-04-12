@@ -5,7 +5,7 @@ from taichi import get_asset_path
 if __name__ == '__main__':
     scale = 8
     res = (80 * scale, 40 * scale)
-    simulator = MPMSimulator(res=res, simulation_time=30, frame_dt=0.06, maximum_delta_t=1e-3)
+    simulator = MPMSimulator(res=res, simulation_time=30, frame_dt=6e-2, base_delta_t=1e-3)
 
     simulator.add_event(-1,
                         lambda s: s.add_particles_texture(Vector(1, 0.60), 1.8, get_asset_path('textures/hybrid.png'),

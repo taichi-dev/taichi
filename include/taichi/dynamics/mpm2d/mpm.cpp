@@ -40,7 +40,7 @@ void MPM::initialize(const Config &config_) {
     particle_collision = config.get("particle_collision", true);
     position_noise = config.get("position_noise", 0.5f);
     if (async) {
-        maximum_delta_t = config.get_real("maximum_delta_t");
+        maximum_delta_t = config.get("maximum_delta_t", 1e-1);
     } else {
         maximum_delta_t = base_delta_t;
     }

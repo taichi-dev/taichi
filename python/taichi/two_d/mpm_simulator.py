@@ -137,6 +137,7 @@ class MPMSimulator(Simulator):
         # TODO: remove the '4' here
         cover_images = []
         debug_blocks = self.simulator.get_debug_blocks().rasterize_scale(self.res[0], self.res[1], 4)
+        debug_blocks = array2d_to_image(debug_blocks, width, height, transform=[0, 1], alpha_scale=0.4)
         cover_images.append(debug_blocks)
         return images, cover_images
 

@@ -153,7 +153,8 @@ class MPMSimulator(Simulator):
         images.append(array2d_to_image(material_levelset, width, height, color_scheme['material']))
         # TODO: remove the '4' here
         cover_images = []
-        debug_blocks = self.simulator.get_debug_blocks().rasterize_scale(self.simulation_width, self.simulation_height, 4)
+        debug_blocks = self.simulator.get_debug_blocks().rasterize_scale(self.simulation_width, self.simulation_height,
+                                                                         4)
         debug_blocks = array2d_to_image(debug_blocks, width, height, transform=[0, 1], alpha_scale=0.4)
         cover_images.append(debug_blocks)
         return images, cover_images
@@ -163,10 +164,10 @@ class MPMSimulator(Simulator):
                           self.delta_x, Vector(0.0, 0.0))
 
 
-def create_mpm_simulator(resolution, t, frame_dt, base_delta_t=1e-3, dt_multiplier=None, **kwargs):
+def create_mpm_simulator(resolution, t, frame_dt, base_delta_t=1e-3, dt_multiplier=None, gravity=(0, -20), **kwargs):
     return MPMSimulator(res=resolution,
                         delta_x=1.0 / min(resolution),
-                        gravity=(0, -20),
+                        gravity=gravity,
                         position_noise=0.5,
                         use_level_set=True,
                         particle_collision=True,

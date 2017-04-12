@@ -69,12 +69,12 @@ public:
     void expand(bool expand_vel, bool expand_state) {
         Array2D<int> new_states;
         Array2D<Vector4> new_min_max_vel;
-        new_min_max_vel = min_max_vel;
-        new_states = states;
+        new_min_max_vel.initialize(low_res, Vector4(1e30f, 1e30f, -1e30f, -1e30f));
+        new_states.initialize(low_res, 0);
 
         auto update = [&](const Index2D ind, int dx, int dy,
                           const Array2D<Vector4> &min_max_vel, Array2D<Vector4> &new_min_max_vel,
-                          Array2D<int> &new_states) -> void {
+                          const Array2D<int> &states, Array2D<int> &new_states) -> void {
             if (expand_vel) {
                 auto &tmp = new_min_max_vel[ind.neighbour(dx, dy)];
                 tmp[0] = std::min(tmp[0], min_max_vel[ind][0]);
@@ -83,32 +83,29 @@ public:
                 tmp[3] = std::max(tmp[3], min_max_vel[ind][3]);
             }
             if (expand_state) {
-                new_states[ind.neighbour(dx, dy)] = 1;
+                if (states[ind.neighbour(dx, dy)])
+                    new_states[ind.neighbour(dx, dy)] = 1;
             }
         };
 
         // Expand x
         for (auto &ind : states.get_region()) {
-            if (states[ind]) {
-                new_states[ind] = 1;
-                if (ind.i > 0) {
-                    update(ind, -1, 0, min_max_vel, new_min_max_vel, new_states);
-                }
-                if (ind.i < states.get_width() - 1) {
-                    update(ind, 1, 0, min_max_vel, new_min_max_vel, new_states);
-                }
+            update(ind, 0, 0, min_max_vel, new_min_max_vel, states, new_states);
+            if (ind.i > 0) {
+                update(ind, -1, 0, min_max_vel, new_min_max_vel, states, new_states);
+            }
+            if (ind.i < states.get_width() - 1) {
+                update(ind, 1, 0, min_max_vel, new_min_max_vel, states, new_states);
             }
         }
         // Expand y
         for (auto &ind : states.get_region()) {
-            if (new_states[ind]) {
-                states[ind] = 1;
-                if (ind.j > 0) {
-                    update(ind, 0, -1, new_min_max_vel, min_max_vel, states);
-                }
-                if (ind.j < states.get_height() - 1) {
-                    update(ind, 0, 1, new_min_max_vel, min_max_vel, states);
-                }
+            update(ind, 0, 0, new_min_max_vel, min_max_vel, new_states, states);
+            if (ind.j > 0) {
+                update(ind, 0, -1, new_min_max_vel, min_max_vel, new_states, states);
+            }
+            if (ind.j < states.get_height() - 1) {
+                update(ind, 0, 1, new_min_max_vel, min_max_vel, new_states, states);
             }
         }
     }

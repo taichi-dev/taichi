@@ -35,7 +35,6 @@ class VideoManager:
         if self.width is None:
             self.width = img.shape[0]
             self.height = img.shape[1]
-        print self.directory
         assert os.path.exists(self.directory)
         fn = FRAME_FN_TEMPLATE % self.frame_counter
         self.frame_fns.append(fn)

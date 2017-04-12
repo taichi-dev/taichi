@@ -18,9 +18,9 @@ class SimulationWindow(pyglet.window.Window):
     def __init__(self, max_side, simulator, color_scheme, levelset_supersampling=2, show_grid=False, show_images=True,
                  rescale=True, video_framerate=24):
         if rescale:
-            scale = min(1.0 * max_side / simulator.simulation_width, 1.0 * max_side / simulator.simulation_height)
-            width = int(round(scale * simulator.simulation_width))
-            height = int(round(scale * simulator.simulation_height))
+            scale = min(1.0 * max_side / simulator.res[0], 1.0 * max_side / simulator.res[1])
+            width = int(round(scale * simulator.res[0]))
+            height = int(round(scale * simulator.res[1]))
         else:
             width = max_side
             height = max_side
@@ -104,8 +104,8 @@ class SimulationWindow(pyglet.window.Window):
         glMatrixMode(GL_MODELVIEW)
         glPushMatrix()
         glTranslatef(0, 0, 0)
-        glScalef(1.0 * self.width / self.simulator.config['simulation_width'],
-                 1.0 * self.height / self.simulator.config['simulation_height'], 0)
+        glScalef(1.0 * self.width / self.simulator.config['res'][0],
+                 1.0 * self.height / self.simulator.config['res'][1], 0)
 
         line_num_x = self.simulator.resolution[0]
         line_num_y = self.simulator.resolution[1]

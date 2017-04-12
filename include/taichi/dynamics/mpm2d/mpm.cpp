@@ -17,30 +17,28 @@ long long kernel_calc_counter = 0;
 
 void MPM::initialize(const Config &config_) {
     auto config = Config(config_);
-    this->config = config;
     this->async = config.get("async", false);
     res = config.get_vec2i("res");
     this->cfl = config.get("cfl", 1.0f);
     this->apic = config.get("apic", true);
     this->use_level_set = config.get("use_level_set", false);
     this->h = config.get_real("delta_x");
-    int dt_multiplier_id = config.get("dt_multiplier_tex_id", -1);
-    if (dt_multiplier_id != -1) {
-        this->dt_multiplier = AssetManager::get_asset<Texture>(dt_multiplier_id);
-    } else {
-        Config cfg;
-        cfg.set("value", Vector4(1.0f));
-        this->dt_multiplier = create_instance<Texture>("const", cfg);
-    }
     grid.initialize(res);
     t = 0.0f;
     t_int = 0;
     requested_t = 0.0f;
     last_sort = 1e20f;
-    flip_alpha = config.get_real("flip_alpha");
-    flip_alpha_stride = config.get_real("flip_alpha_stride");
-    gravity = config.get_vec2("gravity");
-    base_delta_t = config.get_real("base_delta_t");
+    if (!apic) {
+        flip_alpha = config.get_real("flip_alpha");
+        flip_alpha_stride = config.get_real("flip_alpha_stride");
+    } else {
+        flip_alpha = 1.0f;
+        flip_alpha_stride = 1.0f;
+    }
+    gravity = config.get("gravity", Vector2(0, -10));
+    base_delta_t = config.get("base_delta_t", 1e-6f);
+    particle_collision = config.get("particle_collision", true);
+    position_noise = config.get("position_noise", 0.5f);
     if (async) {
         maximum_delta_t = config.get_real("maximum_delta_t");
     } else {
@@ -76,7 +74,7 @@ void MPM::substep() {
         Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
         // We set the dt, s.t. t + dt achieves a multiple of march_interval
         max_dt_int_strength[low_res_pos] = std::min(max_dt_int_strength[low_res_pos],
-                                                    march_interval - t_int % march_interval);
+            march_interval - t_int % march_interval);
         auto &tmp = grid.min_max_vel[low_res_pos.x][low_res_pos.y];
         tmp[0] = std::min(tmp[0], p->v.x);
         tmp[1] = std::min(tmp[1], p->v.y);
@@ -86,10 +84,10 @@ void MPM::substep() {
     // Expand velocity
     grid.expand(true, false);
 
-    for (auto &ind: grid.min_max_vel.get_region()) {
+    for (auto &ind : grid.min_max_vel.get_region()) {
         real block_vel = std::max(
-                grid.min_max_vel[ind][2] - grid.min_max_vel[ind][0],
-                grid.min_max_vel[ind][3] - grid.min_max_vel[ind][1]
+            grid.min_max_vel[ind][2] - grid.min_max_vel[ind][0],
+            grid.min_max_vel[ind][3] - grid.min_max_vel[ind][1]
         ) + 1e-7f;
         if (block_vel < 0) {
             // Blocks with no particles
@@ -115,7 +113,6 @@ void MPM::substep() {
         minimum = std::min(minimum, max_dt_int[ind]);
     }
     minimum = std::max(minimum, 1LL);
-    P(minimum);
 
     auto visualize = [](const Array2D<int64> step, int grades, int64 minimum) -> Array2D<real> {
         Array2D<real> output;
@@ -130,7 +127,7 @@ void MPM::substep() {
 
     auto vis_strength = visualize(max_dt_int_strength, 10, minimum);
     auto vis_cfl = visualize(max_dt_int_cfl, 10, minimum);
-    for (auto &ind: grid.min_max_vel.get_region()) {
+    for (auto &ind : grid.min_max_vel.get_region()) {
         debug_blocks[ind] = Vector4(vis_strength[ind], vis_cfl[ind], 0.0f, 1.0f);
     }
 
@@ -176,8 +173,12 @@ void MPM::substep() {
             buffer_particle_count += 1;
         }
     }
-    P(active_particle_count);
-    P(buffer_particle_count);
+
+    if (async) {
+        P(minimum);
+        P(active_particle_count);
+        P(buffer_particle_count);
+    }
 
     for (auto &p : particles) {
         if (p->state != MPMParticle::INACTIVE)
@@ -200,7 +201,7 @@ void MPM::substep() {
             p->pos.y = clamp(p->pos.y, 1.0f, res[1] - 1.0f);
         }
     }
-    if (config.get("particle_collision", false))
+    if (particle_collision)
         particle_collision_resolution();
 }
 
@@ -257,7 +258,7 @@ void MPM::add_particle(const Config &config) {
 void MPM::add_particle(std::shared_ptr<MPMParticle> p) {
     // WTH???
     p->mass = 1.0f / res[0] / res[0];
-    p->pos += config.get("position_noise", 0.0f) * Vector2(rand() - 0.5f, rand() - 0.5f);
+    p->pos += position_noise * Vector2(rand() - 0.5f, rand() - 0.5f);
     particles.push_back(p);
 }
 

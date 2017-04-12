@@ -4,14 +4,15 @@ from levelset_2d import LevelSet2D
 from simulator import Simulator
 from taichi.core import tc_core
 from taichi.misc.util import *
+from taichi.misc.settings import get_asset_path
 
 
 class MPMSimulator(Simulator):
     def __init__(self, **kwargs):
-        Simulator.__init__(self, kwargs['simulation_time'], kwargs['dt'])
+        Simulator.__init__(self, kwargs['simulation_time'], kwargs['frame_dt'])
         self.simulator = tc_core.MPMSimulator()
-        self.resolution = kwargs['res']
-        self.simulation_width, self.simulation_height = self.resolution[0], self.resolution[1]
+        self.res = kwargs['res']
+        kwargs['delta_x'] = 1.0 / min(self.res)
         self.simulator.initialize(config_from_dict(kwargs))
         self.config = kwargs
         self.delta_x = kwargs['delta_x']
@@ -37,29 +38,11 @@ class MPMSimulator(Simulator):
             particle.h_2 = 0.2
             particle.h_3 = 10
             particle.alpha = 1
+        else:
+            assert False, 'Unknown particle type:' + str(particle_type)
         return particle
 
-    def add_particles_rect(self, x, y, delta_x=0, vel_eval=None, comp_eval=None):
-        x_0, x_1 = x[0], x[1]
-        y_0, y_1 = y[0], y[1]
-        if delta_x <= 0.0:
-            delta_x = self.delta_x / 2
-        samples = []
-        x = x_0
-        while x < x_1:
-            y = y_0
-            while y < y_1:
-                y += delta_x
-                u = (x - x_0) / (x_1 - x_0)
-                v = (y - y_0) / (y_1 - y_0)
-                vel = default_const_or_evaluate(vel_eval, (0, 0), u, v)
-                comp = default_const_or_evaluate(comp_eval, 1.0, u, v)
-                samples.append(
-                    MPMParticle(Vector(x / self.delta_x, y / self.delta_x), Vector(vel[0], vel[1]), comp, -1))
-            x += delta_x
-        self.add_particles(samples)
-
-    def modifty_particle(self, particle, modifiers, u, v):
+    def modify_particle(self, particle, modifiers, u, v):
         if 'velocity' in modifiers:
             particle.velocity = const_or_evaluate(modifiers['velocity'], u, v) / Vector(self.delta_x, self.delta_x)
         if 'compression' in modifiers:
@@ -79,8 +62,8 @@ class MPMSimulator(Simulator):
 
     def add_particles_polygon(self, polygon, particle_type, **kwargs):
         positions = tc_core.points_inside_polygon(
-            tc_core.make_range(.25 * self.delta_x, self.resolution[0] * self.delta_x, self.delta_x / self.sample_rate),
-            tc_core.make_range(.25 * self.delta_x, self.resolution[1] * self.delta_x, self.delta_x / self.sample_rate),
+            tc_core.make_range(.25 * self.delta_x, self.res[0] * self.delta_x, self.delta_x / self.sample_rate),
+            tc_core.make_range(.25 * self.delta_x, self.res[1] * self.delta_x, self.delta_x / self.sample_rate),
             make_polygon(polygon, 1)
         )
         samples = []
@@ -88,14 +71,14 @@ class MPMSimulator(Simulator):
             u = p.x
             v = p.y
             particle = self.create_particle(particle_type)
-            self.modifty_particle(particle, kwargs, u, v)
+            self.modify_particle(particle, kwargs, u, v)
             particle.position = Vector(p.x / self.delta_x, p.y / self.delta_x)
             samples.append(particle)
         self.add_particles(samples)
 
     def add_particles_texture(self, center, width, filename, particle_type, **kwargs):
         if filename[0] != '/':
-            filename = TEXTURE_PATH + filename
+            filename = get_asset_path('texture', filename)
         im = Image.open(filename)
         positions = []
         height = width / im.width * im.height
@@ -116,15 +99,15 @@ class MPMSimulator(Simulator):
             u = p.x
             v = p.y
             particle = self.create_particle(particle_type)
-            self.modifty_particle(particle, kwargs, u, v)
+            self.modify_particle(particle, kwargs, u, v)
             particle.position = Vector(p.x / self.delta_x, p.y / self.delta_x)
             samples.append(particle)
         self.add_particles(samples)
 
     def add_particles_sphere(self, center, radius, particle_type, **kwargs):
         positions = tc_core.points_inside_sphere(
-            tc_core.make_range(.25 * self.delta_x, self.resolution[0] * self.delta_x, self.delta_x / self.sample_rate),
-            tc_core.make_range(.25 * self.delta_x, self.resolution[1] * self.delta_x, self.delta_x / self.sample_rate),
+            tc_core.make_range(.25 * self.delta_x, self.res[0] * self.delta_x, self.delta_x / self.sample_rate),
+            tc_core.make_range(.25 * self.delta_x, self.res[1] * self.delta_x, self.delta_x / self.sample_rate),
             center, radius
         )
         samples = []
@@ -132,7 +115,7 @@ class MPMSimulator(Simulator):
             u = p.x
             v = p.y
             particle = self.create_particle(particle_type)
-            self.modifty_particle(particle, kwargs, u, v)
+            self.modify_particle(particle, kwargs, u, v)
             particle.position = Vector(p.x / self.delta_x, p.y / self.delta_x)
             samples.append(particle)
         self.add_particles(samples)
@@ -153,35 +136,9 @@ class MPMSimulator(Simulator):
         images.append(array2d_to_image(material_levelset, width, height, color_scheme['material']))
         # TODO: remove the '4' here
         cover_images = []
-        debug_blocks = self.simulator.get_debug_blocks().rasterize_scale(self.simulation_width, self.simulation_height,
-                                                                         4)
-        debug_blocks = array2d_to_image(debug_blocks, width, height, transform=[0, 1], alpha_scale=0.4)
+        debug_blocks = self.simulator.get_debug_blocks().rasterize_scale(self.res[0], self.res[1], 4)
         cover_images.append(debug_blocks)
         return images, cover_images
 
     def create_levelset(self):
-        return LevelSet2D(self.simulation_width + 1, self.simulation_height + 1,
-                          self.delta_x, Vector(0.0, 0.0))
-
-
-def create_mpm_simulator(resolution, t, frame_dt, base_delta_t=1e-3, dt_multiplier=None, gravity=(0, -20), **kwargs):
-    return MPMSimulator(res=resolution,
-                        delta_x=1.0 / min(resolution),
-                        gravity=gravity,
-                        position_noise=0.5,
-                        use_level_set=True,
-                        particle_collision=True,
-                        apic=True,
-                        implicit_ratio=0.0,
-                        base_delta_t=base_delta_t,
-                        maximum_iterations=200,
-                        threads=1,
-                        flip_alpha=0.0,
-                        flip_alpha_stride=1.0,
-                        cfl=0.5,
-                        simulation_time=t,
-                        dt=frame_dt,
-                        sample_rate=2,
-                        dt_multiplier_tex_id=dt_multiplier.id if dt_multiplier else -1,
-                        **kwargs
-                        )
+        return LevelSet2D(self.res[0] + 1, self.res[1] + 1, self.delta_x, Vector(0.0, 0.0))

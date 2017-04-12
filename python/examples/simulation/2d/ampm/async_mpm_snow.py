@@ -3,8 +3,8 @@ from taichi.two_d import *
 import taichi as tc
 
 if __name__ == '__main__':
-    resolution = tuple([160, 90])
-    simulator = create_mpm_simulator(resolution, 15, frame_dt=8e-2, base_delta_t=1e-6, async=True, maximum_delta_t=1e-2)
+    res = (160, 90)
+    simulator = MPMSimulator(res=res, simulation_time=15, frame_dt=8e-2, base_delta_t=1e-6, async=True, maximum_delta_t=1e-2)
 
     num_slices = 4
 

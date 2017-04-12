@@ -35,6 +35,7 @@ public:
     Array2D<int64> max_dt_int_strength;
     Array2D<int64> max_dt_int_cfl;
     Array2D<int64> max_dt_int;
+    Array2D<int> particle_count;
     Array2D<Vector4> min_max_vel;
     Vector2i res;
 
@@ -46,17 +47,21 @@ public:
         force_or_acc.initialize(res, Vector2(0), Vector2(0));
         boundary_normal.initialize(res, Vector4(0), Vector2(0));
         mass.initialize(res, 0.0f, Vector2(0));
+
         low_res.x = (res.x + grid_block_size - 1) / grid_block_size;
         low_res.y = (res.y + grid_block_size - 1) / grid_block_size;
-        max_dt_int_strength.initialize(low_res, 0, Vector2(0));
-        max_dt_int_cfl.initialize(low_res, 0, Vector2(0));
-        max_dt_int.initialize(low_res, 0, Vector2(0));
-        states.initialize(low_res, 0, Vector2(0));
-        min_max_vel.initialize(low_res, Vector4(0), Vector2(0));
+
+        max_dt_int_strength.initialize(low_res, 0);
+        max_dt_int_cfl.initialize(low_res, 0);
+        max_dt_int.initialize(low_res, 0);
+        particle_count.initialize(low_res, 0);
+        states.initialize(low_res, 0);
+        min_max_vel.initialize(low_res, Vector4(0));
     }
 
     void reset() {
         states = 0;
+        particle_count = 0;
         min_max_vel = Vector4(1e30f, 1e30f, -1e30f, -1e30f);
         velocity = Vector2(0.0f);
         force_or_acc = Vector2(0.0f);

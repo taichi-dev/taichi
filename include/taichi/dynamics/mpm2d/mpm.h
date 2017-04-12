@@ -24,15 +24,12 @@ extern long long kernel_calc_counter;
 
 class MPM {
 protected:
-    Grid grid;
-
-    std::vector<std::shared_ptr<Particle>> particles;
-
     Vector2i res;
+    Grid grid;
+    std::vector<std::shared_ptr<Particle>> particles;
 
     real flip_alpha;
     real flip_alpha_stride;
-
     real h;
     real t;
     real base_delta_t;
@@ -40,21 +37,18 @@ protected:
     real requested_t;
     int64 t_int;
     real cfl;
+
     Vector2 gravity;
-    bool apic;
+    Vector4 debug_input;
 
     DynamicLevelSet2D levelset;
     LevelSet2D material_levelset;
 
-    real last_sort;
-    real sorting_period;
     real position_noise;
     bool particle_collision;
-    bool use_level_set;
     bool async;
-    Array2D<real> allowed_dt;
+    bool apic;
     Array2D<Vector4> debug_blocks;
-    std::shared_ptr<Texture> dt_multiplier;
 
     void compute_material_levelset();
 
@@ -81,9 +75,7 @@ protected:
     virtual void substep();
 
 public:
-    MPM() {
-        sorting_period = 1.0f;
-    }
+    MPM() {}
 
     void initialize(const Config &config_);
 

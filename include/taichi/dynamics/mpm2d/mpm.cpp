@@ -21,13 +21,11 @@ void MPM::initialize(const Config &config_) {
     res = config.get_vec2i("res");
     this->cfl = config.get("cfl", 1.0f);
     this->apic = config.get("apic", true);
-    this->use_level_set = config.get("use_level_set", false);
     this->h = config.get_real("delta_x");
     grid.initialize(res);
     t = 0.0f;
     t_int = 0;
     requested_t = 0.0f;
-    last_sort = 1e20f;
     if (!apic) {
         flip_alpha = config.get_real("flip_alpha");
         flip_alpha_stride = config.get_real("flip_alpha_stride");
@@ -46,6 +44,7 @@ void MPM::initialize(const Config &config_) {
     }
     material_levelset.initialize(res + Vector2i(1), Vector2(0));
     debug_blocks.initialize(grid.min_max_vel.get_width(), grid.min_max_vel.get_height(), Vector4(0), Vector2(0));
+    this->debug_input = config.get("debug_input", Vector4(0, 0, 0, 0));
 }
 
 void MPM::substep() {
@@ -72,9 +71,10 @@ void MPM::substep() {
         }
         p->march_interval = march_interval;
         Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
+        grid.particle_count[low_res_pos] += 1;
         // We set the dt, s.t. t + dt achieves a multiple of march_interval
         max_dt_int_strength[low_res_pos] = std::min(max_dt_int_strength[low_res_pos],
-            march_interval - t_int % march_interval);
+                                                    march_interval - t_int % march_interval);
         auto &tmp = grid.min_max_vel[low_res_pos.x][low_res_pos.y];
         tmp[0] = std::min(tmp[0], p->v.x);
         tmp[1] = std::min(tmp[1], p->v.y);
@@ -86,8 +86,8 @@ void MPM::substep() {
 
     for (auto &ind : grid.min_max_vel.get_region()) {
         real block_vel = std::max(
-            grid.min_max_vel[ind][2] - grid.min_max_vel[ind][0],
-            grid.min_max_vel[ind][3] - grid.min_max_vel[ind][1]
+                grid.min_max_vel[ind][2] - grid.min_max_vel[ind][0],
+                grid.min_max_vel[ind][3] - grid.min_max_vel[ind][1]
         ) + 1e-7f;
         if (block_vel < 0) {
             // Blocks with no particles
@@ -98,10 +98,17 @@ void MPM::substep() {
             P(cfl_limit);
             cfl_limit = 1;
         }
+        real block_absolute_vel = 1e-7f;
+        for (int i = 0; i < 4; i++) {
+            block_absolute_vel = std::max(block_absolute_vel, std::abs(grid.min_max_vel[ind][i]));
+        }
+        real distance2boundary = std::max(levelset.sample(Vector2(ind.get_pos() * real(grid_block_size)), t) - 4, 0.1f);
+        P(distance2boundary);
+        int64 boundary_limit = int64(cfl * distance2boundary / block_absolute_vel / base_delta_t);
+        cfl_limit = std::min(cfl_limit, boundary_limit);
         max_dt_int_cfl[ind] = get_largest_pot(cfl_limit);
     }
 
-    int64 minimum = 1LL << 60;
     int64 t_int_increment = (int64)(maximum_delta_t / base_delta_t);
 
     for (auto &ind : grid.max_dt_int_strength.get_region()) {
@@ -109,10 +116,17 @@ void MPM::substep() {
         t_int_increment = std::min(t_int_increment, max_dt_int[ind]);
     }
 
-    for (auto &ind : max_dt_int_cfl.get_region()) {
-        minimum = std::min(minimum, max_dt_int[ind]);
+    int64 minimum = int64(debug_input[0]);
+    if (minimum == 0) {
+        for (auto &ind : max_dt_int_cfl.get_region()) {
+            minimum = std::min(minimum, max_dt_int[ind]);
+        }
     }
     minimum = std::max(minimum, 1LL);
+    int grades = int(debug_input[1]);
+    if (grades == 0) {
+        grades = 10;
+    }
 
     auto visualize = [](const Array2D<int64> step, int grades, int64 minimum) -> Array2D<real> {
         Array2D<real> output;
@@ -125,23 +139,32 @@ void MPM::substep() {
         return output;
     };
 
-    auto vis_strength = visualize(max_dt_int_strength, 10, minimum);
-    auto vis_cfl = visualize(max_dt_int_cfl, 10, minimum);
+    auto vis_strength = visualize(max_dt_int_strength, grades, minimum);
+    auto vis_cfl = visualize(max_dt_int_cfl, grades, minimum);
     for (auto &ind : grid.min_max_vel.get_region()) {
         debug_blocks[ind] = Vector4(vis_strength[ind], vis_cfl[ind], 0.0f, 1.0f);
     }
 
+    int64 max_dt = 0, min_dt = 1LL << 60;
+
     for (auto &ind : grid.states.get_region()) {
+        if (grid.particle_count[ind] == 0) {
+            continue;
+        }
+        max_dt = std::max(max_dt_int[ind], max_dt);
+        min_dt = std::min(max_dt_int[ind], min_dt);
         if (t_int_increment == max_dt_int[ind]) {
             grid.states[ind] = 1;
         }
     }
+    printf("min_dt %lld max_dt %lld dynamic_range %lld\n", min_dt, max_dt, max_dt / min_dt);
 
     if (!async) {
         t_int_increment = 1;
         grid.states = 1;
     }
 
+    P(t_int_increment);
     t_int += t_int_increment; // final dt
     t = base_delta_t * t_int;
     // TODO...
@@ -175,7 +198,6 @@ void MPM::substep() {
     }
 
     if (async) {
-        P(minimum);
         P(active_particle_count);
         P(buffer_particle_count);
     }

@@ -1,10 +1,9 @@
-import taichi as tc
 from taichi.two_d import *
 from taichi.misc.util import *
 
 if __name__ == '__main__':
-    resolution = tuple([256] * 2)
-    simulator = create_mpm_simulator(resolution, 10, frame_dt=0.01)
+    res = tuple([256] * 2)
+    simulator = MPMSimulator(res=res, simulation_time=10, frame_dt=0.01, base_delta_t=1e-3)
 
     simulator.add_event(-1,
                         lambda s: s.add_particles_polygon([(0.45, 0.15), (0.55, 0.15), (0.55, 0.8), (0.45, 0.8)], 'dp'))

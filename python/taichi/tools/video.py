@@ -1,6 +1,7 @@
 from taichi.misc.util import ndarray_to_array2d
 from taichi.misc.settings import get_output_path
 from taichi.visual.post_process import LDRDisplay
+from taichi.misc.settings import get_os_name
 import os
 
 FRAME_FN_TEMPLATE = '%05d.png'
@@ -35,7 +36,6 @@ class VideoManager:
         if self.width is None:
             self.width = img.shape[0]
             self.height = img.shape[1]
-        print self.directory
         assert os.path.exists(self.directory)
         fn = FRAME_FN_TEMPLATE % self.frame_counter
         self.frame_fns.append(fn)
@@ -65,8 +65,12 @@ class VideoManager:
         if gif:
             # Generate the palette
             palette_name = self.get_output_filename('_palette.png')
-            command = "ffmpeg -i %s -vf 'fps=%d,scale=320:640:flags=lanczos,palettegen' -y %s" % (
-                self.get_output_filename('.mp4'), self.framerate, palette_name)
+            if get_os_name() == 'win':
+                command = "ffmpeg -i %s -vf 'palettegen' -y %s" % (
+                    self.get_output_filename('.mp4'), palette_name)
+            else:
+                command = "ffmpeg -i %s -vf 'fps=%d,scale=320:640:flags=lanczos,palettegen' -y %s" % (
+                    self.get_output_filename('.mp4'), self.framerate, palette_name)
             print command
             os.system(command)
 

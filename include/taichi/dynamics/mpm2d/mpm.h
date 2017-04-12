@@ -24,7 +24,6 @@ extern long long kernel_calc_counter;
 
 class MPM {
 protected:
-    Config config;
     Grid grid;
 
     std::vector<std::shared_ptr<Particle>> particles;
@@ -49,6 +48,8 @@ protected:
 
     real last_sort;
     real sorting_period;
+    real position_noise;
+    bool particle_collision;
     bool use_level_set;
     bool async;
     Array2D<real> allowed_dt;

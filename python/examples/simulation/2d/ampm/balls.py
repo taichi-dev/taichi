@@ -3,9 +3,9 @@ from taichi.two_d import *
 import taichi as tc
 
 if __name__ == '__main__':
-    res = (64, 64)
+    res = (128, 128)
     simulator = MPMSimulator(res=res, simulation_time=15, frame_dt=1e-2, base_delta_t=1e-5, async=True,
-                             maximum_delta_t=1e-1, debug_input=(1, 10, 0, 0), cfl=0.02, gravity=(0, 0))
+                             maximum_delta_t=1e-2, debug_input=(32, 10, 0, 0), cfl=0.5, gravity=(0, 0))
     # simulator = MPMSimulator(res=res, simulation_time=15, frame_dt=1e-2, base_delta_t=1e-3, async=False,
     #                         maximum_delta_t=1e-1, debug_input=(1024, 4, 0, 0))
 
@@ -15,13 +15,12 @@ if __name__ == '__main__':
     def get_event(i):
         def event(s):
             print i
-            s.add_particles_sphere(Vector(0.7 + 1.2 / (num_slices - 1) * i, 0.40), 0.10, 'ep',
-                                   compression=1.5 - i * 0.0, velocity=Vector(0, -1))
+            s.add_particles_sphere(Vector(0.5 + 0.6 / (num_slices - 1) * i, 0.60), 0.08, 'ep',
+                                   compression=1.5 - i * 0.0, velocity=Vector(0, -10))
 
         return event
 
 
-    # for i in range(num_slices):
     for i in range(1):
         simulator.add_event(-1, get_event(i))
 

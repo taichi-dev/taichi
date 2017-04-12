@@ -103,7 +103,6 @@ void MPM::substep() {
             block_absolute_vel = std::max(block_absolute_vel, std::abs(grid.min_max_vel[ind][i]));
         }
         real distance2boundary = std::max(levelset.sample(Vector2(ind.get_pos() * real(grid_block_size)), t) - 4, 0.1f);
-        P(distance2boundary);
         int64 boundary_limit = int64(cfl * distance2boundary / block_absolute_vel / base_delta_t);
         cfl_limit = std::min(cfl_limit, boundary_limit);
         max_dt_int_cfl[ind] = get_largest_pot(cfl_limit);
@@ -113,6 +112,9 @@ void MPM::substep() {
 
     for (auto &ind : grid.max_dt_int_strength.get_region()) {
         max_dt_int[ind] = std::min(max_dt_int_cfl[ind], max_dt_int_strength[ind]);
+        if (grid.particle_count[ind] == 0) {
+            continue;
+        }
         t_int_increment = std::min(t_int_increment, max_dt_int[ind]);
     }
 

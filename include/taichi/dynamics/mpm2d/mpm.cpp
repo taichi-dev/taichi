@@ -164,13 +164,14 @@ void MPM::substep() {
 
         for (auto &ind : scheduler.states.get_region()) {
             if (scheduler.particle_count[ind] == 0) {
-                continue;
+                //continue;
             }
             max_dt = std::max(max_dt_int[ind], max_dt);
             min_dt = std::min(max_dt_int[ind], min_dt);
             if (t_int % max_dt_int[ind] == 0) {
                 scheduler.states[ind] = 1;
             }
+            // printf("t_int %lld max_dt_int %lld mod %lld %d %d\n", t_int, max_dt_int[ind], t_int % max_dt_int[ind], ind.i, ind.j);
         }
         printf("min_dt %lld max_dt %lld dynamic_range %lld\n", min_dt, max_dt, max_dt / min_dt);
 
@@ -180,7 +181,7 @@ void MPM::substep() {
                     printf("      #");
                 } else {
                     printf("%6lld", max_dt_int[j][i]);
-                    if (t_int % max_dt_int[j][i] == 0) {
+                    if (scheduler.states[j][i] == 1) {
                         printf("*");
                     } else {
                         printf(" ");
@@ -230,15 +231,14 @@ void MPM::substep() {
             p->state = MPMParticle::UPDATING;
             p->march_interval = 1;
         }
+        t_int += t_int_increment; // final dt
+        t = base_delta_t * t_int;
     }
 
     for (auto &p : particles) {
         if (p->state != MPMParticle::INACTIVE)
             p->calculate_kernels();
     }
-
-    t_int += t_int_increment; // final dt
-    t = base_delta_t * t_int;
 
     rasterize();
     estimate_volume();

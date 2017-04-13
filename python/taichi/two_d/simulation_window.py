@@ -16,7 +16,7 @@ def normalized_color_255(*args):
 
 class SimulationWindow(pyglet.window.Window):
     def __init__(self, max_side, simulator, color_scheme, levelset_supersampling=2, show_grid=False, show_images=True,
-                 rescale=True, video_framerate=24, video_output=True, substep=False):
+                 rescale=True, video_framerate=24, video_output=True, substep=False, need_press=False):
         if rescale:
             scale = min(1.0 * max_side / simulator.res[0], 1.0 * max_side / simulator.res[1])
             width = int(round(scale * simulator.res[0]))
@@ -44,10 +44,16 @@ class SimulationWindow(pyglet.window.Window):
         self.substep = substep
         self.video_output = video_output
         self.video_manager = VideoManager(self.output_directory, automatic_build=self.video_output)
+        self.need_press = need_press
+        self.pressed = False
         pyglet.clock.schedule_interval(self.update, 1 / 120.0)
         pyglet.app.run()
 
     def on_key_press(self, symbol, modifiers):
+        if symbol == pyglet.window.key.J:
+            self.pressed = True
+        if symbol == pyglet.window.key.K:
+            self.need_press = not self.need_press
         if symbol == pyglet.window.key.Q:
             exit(0)
         if symbol == pyglet.window.key.ESCAPE:
@@ -55,10 +61,12 @@ class SimulationWindow(pyglet.window.Window):
 
     def update(self, _):
         if not self.quit_pressed and not self.simulator.ended():
-            if self.substep:
-                self.simulator.step(True)
-            else:
-                self.simulator.step()
+            if not self.need_press or self.pressed:
+                if self.substep:
+                    self.simulator.step(True)
+                else:
+                    self.simulator.step()
+            self.pressed = False
         else:
             exit(0)
         self.redraw()

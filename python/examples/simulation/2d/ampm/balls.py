@@ -6,13 +6,13 @@ if __name__ == '__main__':
     scale = 32
     res = (scale, scale)
     frame_dt = 1e-2
-    async = False
+    async = True
     gravity = (0, 0)
     if async:
         simulator = MPMSimulator(res=res, simulation_time=15, frame_dt=frame_dt, base_delta_t=1e-5, async=True,
-                                 maximum_delta_t=1e-2, debug_input=(32, 10, 0, 0), cfl=0.5, gravity=gravity)
+                                 maximum_delta_t=1e-2, debug_input=(32, 5, 0, 0), cfl=0.2, gravity=gravity)
     else:
-        simulator = MPMSimulator(res=res, simulation_time=15, frame_dt=frame_dt, base_delta_t=1e-3, async=False,
+        simulator = MPMSimulator(res=res, simulation_time=15, frame_dt=frame_dt, base_delta_t=5e-3, async=False,
                                  maximum_delta_t=1e-1, debug_input=(1024, 4, 0, 0), gravity=gravity)
 
     num_slices = 4
@@ -46,4 +46,4 @@ if __name__ == '__main__':
     levelset.add_polygon([(bd, bd), (1 - bd, bd), (1 - bd, 1 - bd), (bd, 1 - bd)], True)
     simulator.set_levelset(levelset)
     window = SimulationWindow(512, simulator, color_schemes['snow'], levelset_supersampling=2, show_images=True,
-                              substep=False, video_output=False)
+                              substep=async, video_output=False, need_press=async)

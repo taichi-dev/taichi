@@ -96,7 +96,7 @@ file(GLOB TAICHI_SOURCE
         "include/taichi/*/*/*/*.h" "include/taichi/*/*/*.h" "include/taichi/*/*.h" "include/taichi/*.h")
 
 set(CORE_LIBRARY_NAME taichi_core)
-add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_SOURCE})
+add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_SOURCE} include/taichi/dynamics/mpm2d/scheduler.cpp)
 
 if (NOT WIN32)
     target_link_libraries(${CORE_LIBRARY_NAME} pthread)

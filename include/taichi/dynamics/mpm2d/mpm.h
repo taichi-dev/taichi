@@ -13,6 +13,7 @@
 #include <memory>
 #include <vector>
 #include "mpm_grid.h"
+#include "scheduler.h"
 #include <taichi/math/levelset_2d.h>
 #include <taichi/math/dynamic_levelset_2d.h>
 #include <taichi/visual/texture.h>
@@ -40,6 +41,8 @@ protected:
 
     Vector2 gravity;
     Vector4 debug_input;
+
+    MPMScheduler scheduler;
 
     DynamicLevelSet2D levelset;
     LevelSet2D material_levelset;

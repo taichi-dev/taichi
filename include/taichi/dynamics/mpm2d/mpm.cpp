@@ -22,6 +22,7 @@ void MPM::initialize(const Config &config_) {
     this->cfl = config.get("cfl", 1.0f);
     this->apic = config.get("apic", true);
     this->h = config.get_real("delta_x");
+    this->kill_at_boundary = config.get("kill_at_boundary", true);
     grid.initialize(res);
     t = 0.0f;
     t_int = 0;
@@ -114,11 +115,13 @@ void MPM::substep() {
 
         for (auto &ind : scheduler.max_dt_int_strength.get_region()) {
             max_dt_int[ind] = std::min(max_dt_int_cfl[ind], max_dt_int_strength[ind]);
+            // max_dt_int[ind] = std::min(max_dt_int[ind], scheduler.update_propagation[ind]);
             if (scheduler.particle_count[ind] == 0) {
                 continue;
             }
             t_int_increment = std::min(t_int_increment, max_dt_int[ind]);
         }
+        //scheduler.update_propagation.reset(1LL << 60);
 
         int64 minimum = int64(debug_input[0]);
         if (minimum == 0) {
@@ -149,7 +152,6 @@ void MPM::substep() {
             debug_blocks[ind] = Vector4(vis_strength[ind], vis_cfl[ind], 0.0f, 1.0f);
         }
 
-
         P(t_int_increment);
         // t_int_increment is the biggest allowed dt.
         t_int_increment = t_int_increment - t_int % t_int_increment;
@@ -170,6 +172,14 @@ void MPM::substep() {
             min_dt = std::min(max_dt_int[ind], min_dt);
             if (t_int % max_dt_int[ind] == 0) {
                 scheduler.states[ind] = 1;
+                for (int dx = -1; dx < 2; dx++) {
+                    for (int dy = -1; dy < 2; dy++) {
+                        Vector2i pos(ind.i + dx, ind.j + dy);
+                        if (scheduler.update_propagation.inside(pos.x, pos.y))
+                            scheduler.update_propagation[pos] = std::min(scheduler.update_propagation[pos],
+                                                                         max_dt_int[ind] * 2);
+                    }
+                }
             }
             // printf("t_int %lld max_dt_int %lld mod %lld %d %d\n", t_int, max_dt_int[ind], t_int % max_dt_int[ind], ind.i, ind.j);
         }
@@ -248,14 +258,27 @@ void MPM::substep() {
     grid.normalize_acceleration();
     grid.apply_boundary_conditions(levelset, t_int_increment * base_delta_t, t);
     resample();
+    std::vector<std::shared_ptr<Particle>> new_particles;
     for (auto &p : particles) {
+        bool killed = false;
         if (p->state == MPMParticle::UPDATING) {
             p->pos += (t_int - p->last_update) * delta_t * p->v;
             p->last_update = t_int;
-            p->pos.x = clamp(p->pos.x, 1.0f, res[0] - 1.0f);
-            p->pos.y = clamp(p->pos.y, 1.0f, res[1] - 1.0f);
+            for (int i = 0; i < 2; i++) {
+                if (p->pos[i] < 1.0f || p->pos[i] > res[i] - 1.0f) {
+                    if (!kill_at_boundary) {
+                        p->pos[i] = clamp(p->pos.x, 1.0f, res[i] - 1.0f);
+                    } else {
+                        killed = true;
+                    }
+                }
+            }
+        }
+        if (!killed) {
+            new_particles.push_back(p);
         }
     }
+    particles.swap(new_particles);
     if (particle_collision)
         particle_collision_resolution();
 }

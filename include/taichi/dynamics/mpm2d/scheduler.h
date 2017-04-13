@@ -20,6 +20,7 @@ public:
     Array2D <int64> max_dt_int_strength;
     Array2D <int64> max_dt_int_cfl;
     Array2D <int64> max_dt_int;
+    Array2D <int64> update_propagation;
     Array2D<int> particle_count;
     Array2D<int> states;
     Array2D <Vector4> min_max_vel;
@@ -35,6 +36,7 @@ public:
         max_dt_int_strength.initialize(res, 0);
         max_dt_int_cfl.initialize(res, 0);
         max_dt_int.initialize(res, 0);
+        update_propagation.initialize(res, 1LL << 60);
     }
 
     void reset() {

@@ -51,6 +51,7 @@ protected:
     bool particle_collision;
     bool async;
     bool apic;
+    bool kill_at_boundary;
     Array2D<Vector4> debug_blocks;
 
     void compute_material_levelset();

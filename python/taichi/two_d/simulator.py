@@ -21,13 +21,22 @@ class Simulator(object):
         levelset.initialize(t0, t1, self.levelset_generator(t0).levelset, self.levelset_generator(t1).levelset)
         self.simulator.set_levelset(levelset)
 
-    def step(self):
-        t = self.simulator.get_current_time()
-        self.update_levelset(t, t + self.frame_dt)
-        while self.events and t > self.events[0][0]:
-            self.events[0][1](self)
-            self.events = self.events[1:]
-        self.simulator.step(self.frame_dt)
+    def step(self, substep=False):
+        if substep:
+            print 'substep...'
+            t = self.simulator.get_current_time()
+            self.update_levelset(t, t + self.frame_dt)
+            while self.events and t > self.events[0][0]:
+                self.events[0][1](self)
+                self.events = self.events[1:]
+            self.simulator.step(-1)
+        else:
+            t = self.simulator.get_current_time()
+            self.update_levelset(t, t + self.frame_dt)
+            while self.events and t > self.events[0][0]:
+                self.events[0][1](self)
+                self.events = self.events[1:]
+            self.simulator.step(self.frame_dt)
         try:
             self.particles = self.simulator.get_particles()
         except:

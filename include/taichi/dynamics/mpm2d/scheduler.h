@@ -17,12 +17,12 @@ TC_NAMESPACE_BEGIN
 
 class MPMScheduler {
 public:
-    Array2D<int64> max_dt_int_strength;
-    Array2D<int64> max_dt_int_cfl;
-    Array2D<int64> max_dt_int;
+    Array2D <int64> max_dt_int_strength;
+    Array2D <int64> max_dt_int_cfl;
+    Array2D <int64> max_dt_int;
     Array2D<int> particle_count;
     Array2D<int> states;
-    Array2D<Vector4> min_max_vel;
+    Array2D <Vector4> min_max_vel;
     Vector2i res;
 
     void initialize(const Vector2i &sim_res) {
@@ -88,6 +88,10 @@ public:
                 update(ind, 0, 1, new_min_max_vel, min_max_vel, new_states, states);
             }
         }
+    }
+
+    void update() {
+
     }
 
     int get_num_active_grids() {

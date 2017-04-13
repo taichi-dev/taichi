@@ -16,7 +16,7 @@ def normalized_color_255(*args):
 
 class SimulationWindow(pyglet.window.Window):
     def __init__(self, max_side, simulator, color_scheme, levelset_supersampling=2, show_grid=False, show_images=True,
-                 rescale=True, video_framerate=24):
+                 rescale=True, video_framerate=24, video_output=True, substep=False):
         if rescale:
             scale = min(1.0 * max_side / simulator.res[0], 1.0 * max_side / simulator.res[1])
             width = int(round(scale * simulator.res[0]))
@@ -41,7 +41,9 @@ class SimulationWindow(pyglet.window.Window):
         self.quit_pressed = False
         self.output_directory = os.path.join(get_output_directory(), self.task_id)
         os.mkdir(self.output_directory)
-        self.video_manager = VideoManager(self.output_directory)
+        self.substep = substep
+        self.video_output = video_output
+        self.video_manager = VideoManager(self.output_directory, automatic_build=self.video_output)
         pyglet.clock.schedule_interval(self.update, 1 / 120.0)
         pyglet.app.run()
 
@@ -53,7 +55,10 @@ class SimulationWindow(pyglet.window.Window):
 
     def update(self, _):
         if not self.quit_pressed and not self.simulator.ended():
-            self.simulator.step()
+            if self.substep:
+                self.simulator.step(True)
+            else:
+                self.simulator.step()
         else:
             exit(0)
         self.redraw()

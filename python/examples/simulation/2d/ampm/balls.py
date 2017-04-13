@@ -3,7 +3,8 @@ from taichi.two_d import *
 import taichi as tc
 
 if __name__ == '__main__':
-    res = (128, 128)
+    scale = 64
+    res = (scale, scale)
     simulator = MPMSimulator(res=res, simulation_time=15, frame_dt=1e-2, base_delta_t=1e-5, async=True,
                              maximum_delta_t=1e-2, debug_input=(32, 10, 0, 0), cfl=0.5, gravity=(0, 0))
     # simulator = MPMSimulator(res=res, simulation_time=15, frame_dt=1e-2, base_delta_t=1e-3, async=False,
@@ -27,4 +28,5 @@ if __name__ == '__main__':
     levelset = simulator.create_levelset()
     levelset.add_polygon([(0.05, 0.05), (0.95, 0.05), (0.95, 0.95), (0.05, .95)], True)
     simulator.set_levelset(levelset)
-    window = SimulationWindow(512, simulator, color_schemes['snow'], levelset_supersampling=2, show_images=True)
+    window = SimulationWindow(512, simulator, color_schemes['snow'], levelset_supersampling=2, show_images=True,
+                              substep=True, video_output=False)

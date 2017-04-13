@@ -75,9 +75,8 @@ void MPM::substep() {
         p->march_interval = march_interval;
         Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
         scheduler.particle_count[low_res_pos] += 1;
-        // We set the dt, s.t. t + dt achieves a multiple of march_interval
         max_dt_int_strength[low_res_pos] = std::min(max_dt_int_strength[low_res_pos],
-                                                    march_interval - t_int % march_interval);
+                                                    march_interval);
         auto &tmp = scheduler.min_max_vel[low_res_pos.x][low_res_pos.y];
         tmp[0] = std::min(tmp[0], p->v.x);
         tmp[1] = std::min(tmp[1], p->v.y);
@@ -105,13 +104,15 @@ void MPM::substep() {
         for (int i = 0; i < 4; i++) {
             block_absolute_vel = std::max(block_absolute_vel, std::abs(scheduler.min_max_vel[ind][i]));
         }
-        real distance2boundary = std::max(levelset.sample(Vector2(ind.get_pos() * real(grid_block_size)), t) - 4, 0.1f);
+        real distance2boundary = std::max(
+                levelset.sample(Vector2(ind.get_pos() * real(grid_block_size)), t) - real(grid_block_size) * 0.75f,
+                0.5f);
         int64 boundary_limit = int64(cfl * distance2boundary / block_absolute_vel / base_delta_t);
         cfl_limit = std::min(cfl_limit, boundary_limit);
         max_dt_int_cfl[ind] = get_largest_pot(cfl_limit);
     }
 
-    int64 t_int_increment = (int64)(maximum_delta_t / base_delta_t);
+    int64 t_int_increment = get_largest_pot(int64(maximum_delta_t / base_delta_t));
 
     for (auto &ind : scheduler.max_dt_int_strength.get_region()) {
         max_dt_int[ind] = std::min(max_dt_int_cfl[ind], max_dt_int_strength[ind]);
@@ -150,6 +151,22 @@ void MPM::substep() {
         debug_blocks[ind] = Vector4(vis_strength[ind], vis_cfl[ind], 0.0f, 1.0f);
     }
 
+
+    P(t_int_increment);
+    if (!async) {
+        t_int_increment = 1;
+        scheduler.states = 1;
+    } else {
+        // t_int_increment is the biggest allowed dt.
+        t_int_increment = t_int_increment - t_int % t_int_increment;
+    }
+
+    P(t_int_increment);
+    P(t_int);
+
+    t_int += t_int_increment; // final dt
+    t = base_delta_t * t_int;
+
     int64 max_dt = 0, min_dt = 1LL << 60;
 
     for (auto &ind : scheduler.states.get_region()) {
@@ -158,20 +175,29 @@ void MPM::substep() {
         }
         max_dt = std::max(max_dt_int[ind], max_dt);
         min_dt = std::min(max_dt_int[ind], min_dt);
-        if (t_int_increment == max_dt_int[ind]) {
+        if (t_int % max_dt_int[ind] == 0) {
             scheduler.states[ind] = 1;
         }
     }
     printf("min_dt %lld max_dt %lld dynamic_range %lld\n", min_dt, max_dt, max_dt / min_dt);
 
-    if (!async) {
-        t_int_increment = 1;
-        scheduler.states = 1;
+    for (int i = scheduler.max_dt_int.get_height() - 1; i >= 0; i--) {
+        for (int j = 0; j < scheduler.max_dt_int.get_width(); j++) {
+            if (max_dt_int[j][i] >= (1LL << 60)) {
+                printf("      #");
+            } else {
+                printf("%6lld", max_dt_int[j][i]);
+                if (t_int % max_dt_int[j][i] == 0) {
+                    printf("*");
+                } else {
+                    printf(" ");
+                }
+            }
+        }
+        printf("\n");
     }
+    printf("\n");
 
-    P(t_int_increment);
-    t_int += t_int_increment; // final dt
-    t = base_delta_t * t_int;
     // TODO...
     exist_updating_particle = true;
     if (!exist_updating_particle) {
@@ -233,9 +259,14 @@ void MPM::substep() {
 }
 
 void MPM::step(real delta_t) {
-    requested_t += delta_t;
-    while (t + base_delta_t < requested_t)
+    if (delta_t < 0) {
         substep();
+        requested_t = t;
+    } else {
+        requested_t += delta_t;
+        while (t + base_delta_t < requested_t)
+            substep();
+    }
     compute_material_levelset();
     P(kernel_calc_counter);
 }

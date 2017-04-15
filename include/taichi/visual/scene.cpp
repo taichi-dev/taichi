@@ -123,7 +123,7 @@ void Scene::add_mesh(std::shared_ptr<Mesh> mesh) {
     meshes.push_back(*mesh);
 }
 
-void Scene::finalize() {
+void Scene::finalize_geometry() {
     int triangle_count = 0;
     for (auto &mesh : meshes) {
         triangle_id_start[&mesh] = triangle_count;
@@ -142,6 +142,9 @@ void Scene::finalize() {
     }
     num_triangles = triangle_count;
     printf("Scene loaded. Triangle count: %d\n", triangle_count);
+};
+
+void Scene::finalize_lighting() {
     if (!emissive_triangles.empty()) {
         update_emission_cdf();
         update_light_emission_cdf();
@@ -150,6 +153,11 @@ void Scene::finalize() {
         envmap_sample_prob = 1.0f;
         assert_info(envmap != nullptr, "There should be light sources.");
     }
+}
+
+void Scene::finalize() {
+    finalize_geometry();
+    finalize_lighting();
 }
 
 TC_NAMESPACE_END

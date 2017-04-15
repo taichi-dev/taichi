@@ -41,6 +41,26 @@ public:
     void set_untransformed_triangles(const std::vector<Triangle> &triangles) {
         untransformed_triangles = triangles;
     }
+    // bounding box
+    BoundingBox get_bounding_box() {
+        BoundingBox bb;
+        bool is_first_triangle = true;
+        for (auto t : untransformed_triangles) {
+            if (is_first_triangle) {
+                bb.lower_boundary = t.v[0];
+                bb.upper_boundary = t.v[0];
+                is_first_triangle = false;
+            }
+            // loop for xyz
+            for (int i = 0; i < 3; ++i)
+                // loop for each vertex
+                for (int j = 0; j < 3; ++j){
+                    bb.lower_boundary[i] = std::min(bb.lower_boundary[i], t.v[j][i]);
+                    bb.upper_boundary[i] = std::max(bb.upper_boundary[i], t.v[j][i]);
+                }
+        }
+        return bb;
+    }
     std::vector<Triangle> get_triangles() {
         std::vector<Triangle> triangles;
         for (auto t : untransformed_triangles) {
@@ -140,6 +160,10 @@ public:
     }
 
     void add_mesh(std::shared_ptr<Mesh> mesh);
+
+    void finalize_geometry();
+
+    void finalize_lighting();
 
     void finalize();
 

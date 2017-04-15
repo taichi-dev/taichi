@@ -52,14 +52,16 @@ class MPM3:
         print 'Simulation time:', t
         T = time.time()
         self.update_levelset(t, t + step_t)
+        print 'Update Leveset Time:', time.time() - T
+        T = time.time()
         self.c.step(step_t)
-        print 'Time:', time.time() - T
+        print 'Step Time:', time.time() - T
         image_buffer = tc_core.Array2DVector3(self.video_manager.width, self.video_manager.height, Vector(0, 0, 0.0))
         particles = self.c.get_render_particles()
         particles.write(self.directory + '/particles%05d.bin' % self.frame)
         res = map(float, self.resolution)
         camera = Camera('pinhole', origin=(0, res[1] * 0.4, res[2] * 1.4),
-                        look_at=(0, -res[1] * 0.5, 0), up=(0, 1, 0), fov=70,
+                        look_at=(0, -res[1] * 0.5, 0), up=(0, 1, 0), fov=90,
                         width=10, height=10)
         self.particle_renderer.set_camera(camera)
         self.particle_renderer.render(image_buffer, particles)

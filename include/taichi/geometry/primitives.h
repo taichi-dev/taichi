@@ -169,6 +169,12 @@ struct Triangle {
     }
 };
 
+class BoundingBox {
+public:
+    Vector3 lower_boundary;
+    Vector3 upper_boundary;
+};
+
 class Instance {
     Matrix4 transform;
     int id;

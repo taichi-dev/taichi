@@ -8,6 +8,7 @@
 *******************************************************************************/
 
 #include <taichi/visual/texture.h>
+#include <taichi/visual/scene_geometry.h>
 #include <taichi/visualization/image_buffer.h>
 #include <taichi/math/array_3d.h>
 #include <taichi/common/asset_manager.h>
@@ -283,6 +284,78 @@ public:
 };
 
 TC_IMPLEMENTATION(Texture, SlicedTexture, "sliced");
+
+class MeshTexture : public Texture {
+protected:
+    Array3D<char> arr;
+    Vector3i resolution;
+public:
+    // parameter name for mesh path is 'filename'
+    void initialize(const Config &config) override {
+        Texture::initialize(config);
+        Mesh mesh;
+        mesh.initialize(config);
+        Scene scene;
+        scene.add_mesh(std::make_shared<Mesh>(mesh));
+        scene.finalize_geometry();
+        auto ray_intersection = create_instance<RayIntersection>("embree");
+        std::shared_ptr<SceneGeometry> scene_geometry(new SceneGeometry(std::make_shared<Scene>(scene), ray_intersection));
+        BoundingBox bb = mesh.get_bounding_box();
+        // calc offset and delta_x to keep the mesh in the center of texture
+        resolution = config.get_vec3i("resolution");
+        arr = Array3D<char>(resolution.x, resolution.y, resolution.z);
+        real delta_x = 0;
+        Vector3i offset;
+        for (int i = 0; i < 3; ++i)
+            delta_x = std::max(delta_x, (bb.upper_boundary[i] - bb.lower_boundary[i]) / resolution[i]);
+        for (int i = 0; i < 3; ++i)
+            offset[i] = int(resolution[i] - (bb.upper_boundary[i] - bb.lower_boundary[i])/ delta_x) / 2;
+        // cast ray for each i, j
+        for (int i = 0; i < resolution.x; ++i)
+            for (int j = 0; j < resolution.y; ++j) {
+                real x = (i - offset.x) * delta_x + bb.lower_boundary.x;
+                real y = (j - offset.y) * delta_x + bb.lower_boundary.y;
+                real z = (0 - offset.z) * delta_x + bb.lower_boundary.z;
+                real base_z = z - eps;
+                int k = 0;
+                bool inside = false;
+                while (k < resolution.z) {
+                    int next_k;
+                    Ray ray(Vector3(x, y, z), Vector3(0, 0, 1));
+                    scene_geometry->query(ray);
+                    if (ray.dist == Ray::DIST_INFINITE) {
+                        next_k = resolution.z;
+                        inside = false;
+                    }
+                    else {
+                        z += ray.dist;
+                        next_k = std::min(int((z - base_z) / delta_x), resolution.z);
+                    }
+                    while (k < next_k) {
+                        arr.set(i, j, k, char(inside));
+                        ++k;
+                    }
+                    inside = !inside;
+                }
+            }
+    }
+
+    bool inside(const Vector3 &coord) const {
+        return
+            0 < coord.x && coord.x < 1.f &&
+            0 < coord.y && coord.y < 1.f &&
+            0 < coord.z && coord.z < 1.f;
+    }
+
+    virtual Vector4 sample(const Vector3 &coord) const override {
+        if (inside(coord))
+            return Vector4(real(arr.sample_relative_coord(coord)));
+        else
+            return Vector4(0);
+    }
+};
+
+TC_IMPLEMENTATION(Texture, MeshTexture, "mesh")
 
 TC_NAMESPACE_END
 

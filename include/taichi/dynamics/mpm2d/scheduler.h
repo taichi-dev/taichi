@@ -10,6 +10,7 @@
 #pragma once
 
 #include "mpm_utils.h"
+#include "mpm_particle.h"
 #include <taichi/math/array_2d.h>
 #include <taichi/math/dynamic_levelset_2d.h>
 
@@ -17,6 +18,7 @@ TC_NAMESPACE_BEGIN
 
 class MPMScheduler {
 public:
+	typedef MPMParticle Particle;
     Array2D <int64> max_dt_int_strength;
     Array2D <int64> max_dt_int_cfl;
     Array2D <int64> max_dt_int;

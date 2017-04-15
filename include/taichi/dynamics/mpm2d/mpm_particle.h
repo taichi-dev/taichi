@@ -95,7 +95,8 @@ struct MPMParticle {
     }
 
     Vector2 get_cache_gw(const Index2D &ind) const {
-        return cache_gw[get_cache_index(ind)];
+		int d = get_cache_index(ind);
+        return cache_gw[d];
     }
 
     bool operator==(const MPMParticle &o) {

@@ -19,6 +19,7 @@
 #include <taichi/math/levelset_2d.h>
 #include <taichi/math/dynamic_levelset_2d.h>
 #include "mpm_particle.h"
+#include "scheduler.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -32,13 +33,15 @@ public:
     Array2D<Vector4> boundary_normal;
     Array2D<real> mass;
     Vector2i res;
+	MPMScheduler *scheduler;
 
-    void initialize(const Vector2i &sim_res) {
+    void initialize(const Vector2i &sim_res, MPMScheduler *scheduler) {
         this->res = sim_res + Vector2i(1);
         velocity.initialize(res, Vector2(0), Vector2(0));
         force_or_acc.initialize(res, Vector2(0), Vector2(0));
         boundary_normal.initialize(res, Vector4(0), Vector2(0));
         mass.initialize(res, 0.0f, Vector2(0));
+		this->scheduler = scheduler;
     }
 
     void reset() {

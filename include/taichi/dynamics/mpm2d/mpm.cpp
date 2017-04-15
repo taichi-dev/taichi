@@ -23,7 +23,8 @@ void MPM::initialize(const Config &config_) {
     this->apic = config.get("apic", true);
     this->h = config.get_real("delta_x");
     this->kill_at_boundary = config.get("kill_at_boundary", true);
-    grid.initialize(res);
+    scheduler.initialize(res);
+    grid.initialize(res, &scheduler);
     t = 0.0f;
     t_int = 0;
     requested_t = 0.0f;
@@ -45,7 +46,6 @@ void MPM::initialize(const Config &config_) {
     }
     material_levelset.initialize(res + Vector2i(1), Vector2(0));
     this->debug_input = config.get("debug_input", Vector4(0, 0, 0, 0));
-    scheduler.initialize(res);
     debug_blocks.initialize(scheduler.res, Vector4(0), Vector2(0));
 }
 
@@ -254,21 +254,24 @@ void MPM::substep() {
         t = base_delta_t * t_int;
     }
 
-    for (auto &p : particles) {
-        if (p->state != MPMParticle::INACTIVE)
-            p->calculate_kernels();
-    }
 	scheduler.update(particles);
+
+    for (auto &p : scheduler.get_active_particles()) {
+        p->calculate_kernels();
+    }
 
     rasterize();
     estimate_volume();
     grid.backup_velocity();
-    grid.apply_external_force(gravity);
     apply_deformation_force();
+    grid.apply_external_force(gravity);
     grid.normalize_acceleration();
     grid.apply_boundary_conditions(levelset, t_int_increment * base_delta_t, t);
     resample();
     std::vector<Particle *> new_particles;
+    if (particle_collision)
+        particle_collision_resolution();
+	// TODO: accelerate here
     for (auto &p : particles) {
         bool killed = false;
         if (p->state == MPMParticle::UPDATING) {
@@ -286,11 +289,12 @@ void MPM::substep() {
         }
         if (!killed) {
             new_particles.push_back(p);
-        }
+		}
+		else {
+			delete p;
+		}
     }
     particles.swap(new_particles);
-    if (particle_collision)
-        particle_collision_resolution();
 }
 
 void MPM::step(real delta_t) {
@@ -380,9 +384,7 @@ LevelSet2D MPM::get_material_levelset() {
 }
 
 void MPM::rasterize() {
-    for (auto &p : particles) {
-        if (p->state == MPMParticle::INACTIVE)
-            continue;
+    for (auto &p : scheduler.get_active_particles()) {
         if (!is_normal(p->pos)) {
             p->print();
         }
@@ -400,7 +402,7 @@ void MPM::resample() {
     real alpha_delta_t = 1; // pow(flip_alpha, delta_t / flip_alpha_stride);
     if (apic)
         alpha_delta_t = 0.0f;
-    for (auto &p : particles) {
+    for (auto &p : scheduler.get_active_particles()) {
         // Update particles with state UPDATING only
         if (p->state != MPMParticle::UPDATING)
             continue;
@@ -439,14 +441,10 @@ void MPM::resample() {
 }
 
 void MPM::apply_deformation_force() {
-    for (auto &p : particles) {
-        if (p->state != MPMParticle::INACTIVE)
-            p->calculate_force();
+    for (auto &p : scheduler.get_active_particles()) {
+        p->calculate_force();
     }
-    for (auto &p : particles) {
-        if (p->state == MPMParticle::INACTIVE) {
-            continue;
-        }
+    for (auto &p : scheduler.get_active_particles()) {
         for (auto &ind : get_bounded_rasterization_region(p->pos)) {
             real mass = grid.mass[ind];
             if (mass == 0.0f) { // NO NEED for eps here

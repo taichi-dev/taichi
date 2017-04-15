@@ -48,6 +48,9 @@ public:
         states.initialize(res, 0);
         updated.initialize(res, 1);
 		particle_groups.resize(res[0] * res[1]);
+		for (int i = 0; i < res[0] * res[1]; i++) {
+			particle_groups[i] = std::vector<Particle *>();
+		}
         min_max_vel.initialize(res, Vector4(0));
         min_max_vel = Vector4(1e30f, 1e30f, -1e30f, -1e30f);
         min_max_vel_expanded.initialize(res, Vector4(0));
@@ -63,7 +66,11 @@ public:
     }
 
 	bool has_particle(const Index2D &ind) {
-		return particle_groups[ind.i * res[1] + ind.j].size() > 0;
+		return has_particle(Vector2i(ind.i, ind.j));
+	}
+	
+	bool has_particle(const Vector2i &ind) {
+		return particle_groups[ind.x * res[1] + ind.y].size() > 0;
 	}
 
     void expand(bool expand_vel, bool expand_state) {
@@ -101,7 +108,7 @@ public:
         }
         // Expand y
         for (auto &ind : states.get_region()) {
-            update(ind, 0, 0, new_min_max_vel, min_max_vel, new_states, states);
+            update(ind, 0, 0, new_min_max_vel, min_max_vel_expanded, new_states, states);
             if (ind.j > 0) {
                 update(ind, 0, -1, new_min_max_vel, min_max_vel_expanded, new_states, states);
             }
@@ -139,6 +146,7 @@ public:
 				continue;
 			}
 			particle_groups[res[1] * ind.i + ind.j].clear();
+			updated[ind] = 1;
 		}
 		for (auto &p : active_particles) {
 			insert_particle(p);
@@ -164,6 +172,7 @@ public:
 			updated[ind] = 0;
 			max_dt_int_strength[ind] = 1LL << 60;
 			max_dt_int_cfl[ind] = 1LL << 60;
+			min_max_vel[ind] = Vector4(1e30f, 1e30f, -1e30f, -1e30f);
 			for (auto &p : particle_groups[res[1] * ind.i + ind.j]) {
 				int64 march_interval;
 				int64 allowed_t_int_inc = (int64)(p->get_allowed_dt() / base_delta_t);
@@ -173,10 +182,9 @@ public:
 				}
 				march_interval = get_largest_pot(allowed_t_int_inc);
 				p->march_interval = march_interval;
-				Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
-				max_dt_int_strength[low_res_pos] = std::min(max_dt_int_strength[low_res_pos],
+				max_dt_int_strength[ind] = std::min(max_dt_int_strength[ind],
 															march_interval);
-				auto &tmp = min_max_vel[low_res_pos.x][low_res_pos.y];
+				auto &tmp = min_max_vel[ind];
 				tmp[0] = std::min(tmp[0], p->v.x);
 				tmp[1] = std::min(tmp[1], p->v.y);
 				tmp[2] = std::max(tmp[2], p->v.x);

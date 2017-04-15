@@ -123,6 +123,15 @@ void MPM::substep() {
 		/*
 			for (int i = scheduler.max_dt_int.get_height() - 1; i >= 0; i--) {
 				for (int j = 0; j < scheduler.max_dt_int.get_width(); j++) {
+					// std::cout << scheduler.particle_groups[j * scheduler.res[1] + i].size() << " " << (int)scheduler.has_particle(Vector2i(j, i)) << "; ";
+					printf(" %f", scheduler.min_max_vel[j][i][0]);
+				}
+				printf("\n");
+			}
+			printf("\n");
+			P(scheduler.get_active_particles().size());
+			for (int i = scheduler.max_dt_int.get_height() - 1; i >= 0; i--) {
+				for (int j = 0; j < scheduler.max_dt_int.get_width(); j++) {
 					if (max_dt_int[j][i] >= (1LL << 60)) {
 						printf("      #");
 					} else {

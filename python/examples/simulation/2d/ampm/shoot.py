@@ -3,15 +3,15 @@ from taichi.two_d import *
 import taichi as tc
 
 if __name__ == '__main__':
-    scale = 64
+    scale = 256
     res = (scale, scale)
-    frame_dt = 1e-2
+    frame_dt = 1e-3
     async = True
     bullet = True
     gravity = (0, 0)
     if async:
         simulator = MPMSimulator(res=res, simulation_time=0.3, frame_dt=frame_dt, base_delta_t=1e-6, async=True,
-                                 maximum_delta_t=2e-1, debug_input=(128, 7, 0, 0), cfl=0.1, gravity=gravity)
+                                 maximum_delta_t=2e-1, debug_input=(128, 7, 0, 0), cfl=0.5, gravity=gravity)
     else:
         simulator = MPMSimulator(res=res, simulation_time=0.3, frame_dt=frame_dt, base_delta_t=5e-6, async=False,
                                  maximum_delta_t=1e-1, debug_input=(1024, 4, 0, 0), gravity=gravity)
@@ -20,7 +20,7 @@ if __name__ == '__main__':
     def event(s):
         if bullet:
             s.add_particles_sphere(Vector(0.2, 0.5), 0.03, 'ep',
-                                   compression=0.1, velocity=Vector(50, 0), lambda_0=1e10, mu_0=1e10,
+                                   compression=0.1, velocity=Vector(20, 0), lambda_0=1e10, mu_0=1e10,
                                    theta_c=1, theta_s=1)
 
         center_x, center_y = 0.5, 0.5

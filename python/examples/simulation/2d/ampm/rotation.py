@@ -3,7 +3,7 @@ from taichi.two_d import *
 import taichi as tc
 
 if __name__ == '__main__':
-    scale = 32
+    scale = 128
     res = (scale, scale)
     frame_dt = 1e-2
     async = True

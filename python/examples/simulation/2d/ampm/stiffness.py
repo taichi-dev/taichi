@@ -3,7 +3,7 @@ from taichi.two_d import *
 import taichi as tc
 
 if __name__ == '__main__':
-    scale = 128
+    scale = 256
     res = (scale, scale)
     frame_dt = 0.003
     async = True
@@ -15,11 +15,10 @@ if __name__ == '__main__':
         simulator = MPMSimulator(res=res, simulation_time=0.3, frame_dt=frame_dt, base_delta_t=1e-4, async=False,
                                  maximum_delta_t=1e-1, debug_input=(512, 5, 0, 0), gravity=gravity)
 
-
     def event(s):
         s.add_particles_sphere(Vector(0.5, 0.5), 0.37, 'ep',
                                compression=1.0, velocity=Vector(0, 0))
-        s.add_particles_sphere(Vector(0.5, 0.5), 0.03, 'ep',
+        s.add_particles_sphere(Vector(0.5, 0.5), 0.01, 'ep',
                                compression=1.0, velocity=Vector(1, 0), lambda_0=1e10, mu_0=1e10)
 
 

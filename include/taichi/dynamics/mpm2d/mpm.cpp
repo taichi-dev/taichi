@@ -23,8 +23,6 @@ void MPM::initialize(const Config &config_) {
     this->apic = config.get("apic", true);
     this->h = config.get_real("delta_x");
     this->kill_at_boundary = config.get("kill_at_boundary", true);
-    scheduler.initialize(res);
-    grid.initialize(res, &scheduler);
     t = 0.0f;
     t_int = 0;
     requested_t = 0.0f;
@@ -37,6 +35,8 @@ void MPM::initialize(const Config &config_) {
     }
     gravity = config.get("gravity", Vector2(0, -10));
     base_delta_t = config.get("base_delta_t", 1e-6f);
+    scheduler.initialize(res, base_delta_t, cfl, &levelset);
+    grid.initialize(res, &scheduler);
     particle_collision = config.get("particle_collision", true);
     position_noise = config.get("position_noise", 0.5f);
     if (async) {
@@ -57,69 +57,22 @@ void MPM::substep() {
     grid.reset();
     int64 t_int_increment;
 
+	Array2D<int64> &max_dt_int_strength = scheduler.max_dt_int_strength;
+	Array2D<int64> &max_dt_int_cfl = scheduler.max_dt_int_cfl;
+	Array2D<int64> &max_dt_int = scheduler.max_dt_int;
+
     if (async) {
         scheduler.reset();
-        Array2D<int64> &max_dt_int_strength = scheduler.max_dt_int_strength;
-        Array2D<int64> &max_dt_int_cfl = scheduler.max_dt_int_cfl;
-        Array2D<int64> &max_dt_int = scheduler.max_dt_int;
-
-        for (auto &p : particles) {
-            int64 march_interval;
-            int64 allowed_t_int_inc = (int64)(p->get_allowed_dt() / base_delta_t);
-            if (allowed_t_int_inc <= 0) {
-                P(allowed_t_int_inc);
-                allowed_t_int_inc = 1;
-            }
-            march_interval = get_largest_pot(allowed_t_int_inc);
-            p->march_interval = march_interval;
-            Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
-            scheduler.particle_count[low_res_pos] += 1;
-            max_dt_int_strength[low_res_pos] = std::min(max_dt_int_strength[low_res_pos],
-                                                        march_interval);
-            auto &tmp = scheduler.min_max_vel[low_res_pos.x][low_res_pos.y];
-            tmp[0] = std::min(tmp[0], p->v.x);
-            tmp[1] = std::min(tmp[1], p->v.y);
-            tmp[2] = std::max(tmp[2], p->v.x);
-            tmp[3] = std::max(tmp[3], p->v.y);
-        }
-        // Expand velocity
-        scheduler.expand(true, false);
-
-        for (auto &ind : scheduler.min_max_vel.get_region()) {
-            real block_vel = std::max(
-                    scheduler.min_max_vel[ind][2] - scheduler.min_max_vel[ind][0],
-                    scheduler.min_max_vel[ind][3] - scheduler.min_max_vel[ind][1]
-            ) + 1e-7f;
-            if (block_vel < 0) {
-                // Blocks with no particles
-                continue;
-            }
-            int64 cfl_limit = int64(cfl / block_vel / base_delta_t);
-            if (cfl_limit <= 0) {
-                P(cfl_limit);
-                cfl_limit = 1;
-            }
-            real block_absolute_vel = 1e-7f;
-            for (int i = 0; i < 4; i++) {
-                block_absolute_vel = std::max(block_absolute_vel, std::abs(scheduler.min_max_vel[ind][i]));
-            }
-            real distance2boundary = std::max(
-                    levelset.sample(Vector2(ind.get_pos() * real(grid_block_size)), t) - real(grid_block_size) * 0.75f,
-                    0.5f);
-            int64 boundary_limit = int64(cfl * distance2boundary / block_absolute_vel / base_delta_t);
-            cfl_limit = std::min(cfl_limit, boundary_limit);
-            max_dt_int_cfl[ind] = get_largest_pot(cfl_limit);
-        }
+		scheduler.update_dt_limits(t);
 
         t_int_increment = get_largest_pot(int64(maximum_delta_t / base_delta_t));
 
         for (auto &ind : scheduler.max_dt_int_strength.get_region()) {
             max_dt_int[ind] = std::min(max_dt_int_cfl[ind], max_dt_int_strength[ind]);
             // max_dt_int[ind] = std::min(max_dt_int[ind], scheduler.update_propagation[ind]);
-            if (scheduler.particle_count[ind] == 0) {
-                continue;
+            if (scheduler.has_particle(ind)) {
+				t_int_increment = std::min(t_int_increment, max_dt_int[ind]);
             }
-            t_int_increment = std::min(t_int_increment, max_dt_int[ind]);
         }
         //scheduler.update_propagation.reset(1LL << 60);
 
@@ -160,16 +113,53 @@ void MPM::substep() {
 
 		if (debug_input[2] > 0) {
 			P(t_int_increment);
-			P(t_int);
 		}
 
         t_int += t_int_increment; // final dt
+		// P(t_int);
         t = base_delta_t * t_int;
+
+
+		/*
+			for (int i = scheduler.max_dt_int.get_height() - 1; i >= 0; i--) {
+				for (int j = 0; j < scheduler.max_dt_int.get_width(); j++) {
+					if (max_dt_int[j][i] >= (1LL << 60)) {
+						printf("      #");
+					} else {
+						printf("%6lld", max_dt_int_strength[j][i]);
+						if (scheduler.states[j][i] == 1) {
+							printf("*");
+						} else {
+							printf(" ");
+						}
+					}
+				}
+				printf("\n");
+			}
+			printf("\n");
+			printf("cfl\n");
+			for (int i = scheduler.max_dt_int.get_height() - 1; i >= 0; i--) {
+				for (int j = 0; j < scheduler.max_dt_int.get_width(); j++) {
+					if (max_dt_int[j][i] >= (1LL << 60)) {
+						printf("      #");
+					} else {
+						printf("%6lld", max_dt_int_cfl[j][i]);
+						if (scheduler.states[j][i] == 1) {
+							printf("*");
+						} else {
+							printf(" ");
+						}
+					}
+				}
+				printf("\n");
+			}
+			printf("\n");
+		*/
 
         int64 max_dt = 0, min_dt = 1LL << 60;
 
         for (auto &ind : scheduler.states.get_region()) {
-            if (scheduler.particle_count[ind] == 0) {
+            if (!scheduler.has_particle(ind)) {
                 //continue;
             }
             max_dt = std::max(max_dt_int[ind], max_dt);
@@ -220,8 +210,6 @@ void MPM::substep() {
         scheduler.expand(false, true);
         // P(scheduler.get_num_active_grids());
 
-        int active_particle_count = 0;
-        int buffer_particle_count = 0;
 
         for (auto &p : particles) {
             Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
@@ -231,22 +219,13 @@ void MPM::substep() {
             }
             p->march_interval = max_dt_int[low_res_pos];
             if (old_grid_states[low_res_pos] == 1) {
-                p->state = MPMParticle::UPDATING;
-                active_particle_count += 1;
-            } else {
-                p->state = MPMParticle::BUFFER;
-                buffer_particle_count += 1;
+				scheduler.states[low_res_pos] = 2;
             }
         }
-
-		if (debug_input[2] > 0) {
-			P(active_particle_count);
-			P(buffer_particle_count);
-		}
     } else {
         // Sync
         t_int_increment = 1;
-		scheduler.states = 1;
+		scheduler.states = 2;
         for (auto &p : particles) {
             p->state = MPMParticle::UPDATING;
             p->march_interval = 1;
@@ -255,7 +234,27 @@ void MPM::substep() {
         t = base_delta_t * t_int;
     }
 
-	scheduler.update(particles);
+	scheduler.update();
+	// P(scheduler.get_active_particles().size());
+
+    int active_particle_count = 0;
+    int buffer_particle_count = 0;
+	for (auto &p : scheduler.get_active_particles()) {
+		Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
+		p->march_interval = max_dt_int[low_res_pos];
+		if (scheduler.states[low_res_pos] == 2) {
+			p->state = MPMParticle::UPDATING;
+			active_particle_count += 1;
+		} else {
+			p->state = MPMParticle::BUFFER;
+			buffer_particle_count += 1;
+		}
+	}
+
+	if (debug_input[2] > 0) {
+		P(active_particle_count);
+		P(buffer_particle_count);
+	}
 
     for (auto &p : scheduler.get_active_particles()) {
         p->calculate_kernels();
@@ -269,15 +268,23 @@ void MPM::substep() {
     grid.normalize_acceleration();
     grid.apply_boundary_conditions(levelset, t_int_increment * base_delta_t, t);
     resample();
-    std::vector<Particle *> new_particles;
+	for (auto &p : scheduler.get_active_particles()) {
+		if (p->state == MPMParticle::UPDATING) {
+			p->pos += (t_int - p->last_update) * delta_t * p->v;
+			p->last_update = t_int;
+		}
+	}
     if (particle_collision)
         particle_collision_resolution();
+	scheduler.update_particle_groups();
+}
+
+void MPM::kill_outside_particles() {
 	// TODO: accelerate here
+    std::vector<Particle *> new_particles;
     for (auto &p : particles) {
         bool killed = false;
         if (p->state == MPMParticle::UPDATING) {
-            p->pos += (t_int - p->last_update) * delta_t * p->v;
-            p->last_update = t_int;
             for (int i = 0; i < 2; i++) {
                 if (p->pos[i] < 1.0f || p->pos[i] > res[i] - 1.0f) {
                     if (!kill_at_boundary) {
@@ -349,15 +356,13 @@ void MPM::estimate_volume() {
     }
 }
 
-void MPM::add_particle(const Config &config) {
-    error("no_impl");
-}
-
 void MPM::add_particle(std::shared_ptr<MPMParticle> p) {
     // WTH???
     p->mass = 1.0f / res[0] / res[0];
     p->pos += position_noise * Vector2(rand() - 0.5f, rand() - 0.5f);
-    particles.push_back(p->duplicate());
+	Particle *p_direct = p->duplicate();
+    particles.push_back(p_direct);
+	scheduler.insert_particle(p_direct);
 }
 
 void MPM::add_particle(EPParticle p) {

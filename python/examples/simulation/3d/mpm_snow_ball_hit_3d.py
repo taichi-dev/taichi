@@ -78,9 +78,9 @@ if __name__ == '__main__':
     # tex = Texture('ring', outer=0.15) * 4
     # tex = Texture('bound', tex=tex, axis=2, bounds=(0.0, 0.4), outside_val=(0, 0, 0))
     # tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
-    tex = Texture('mesh', resolution=resolution, filename=tc.get_asset_path('/meshes/suzanne.obj')) * 2
+    tex = Texture('mesh', resolution=resolution, filename=tc.get_asset_path('meshes/suzanne.obj')) * 8
     tex = tex.zoom((0.5, 0.5, 0.5), (0.5, 0.5, 0.5), False)
-    # tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
+    # tex = Texture('rotate', tex=tex, rotate_axis=1, rotate_times=1)
     mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), initial_velocity=(0, 0, 0), delta_t=0.0005, num_threads=8,
                density_tex=tex.id)
 

@@ -289,12 +289,10 @@ class MeshTexture : public Texture {
 protected:
     Array3D<char> arr;
     Vector3i resolution;
-    int resolution_x;
-    int resolution_y;
-    int resolution_z;
 public:
     // parameter name for mesh path is 'filename'
     void initialize(const Config &config) override {
+        Texture::initialize(config);
         Mesh mesh;
         mesh.initialize(config);
         Scene scene;
@@ -302,27 +300,38 @@ public:
         scene.finalize_geometry();
         auto ray_intersection = create_instance<RayIntersection>("embree");
         std::shared_ptr<SceneGeometry> scene_geometry(new SceneGeometry(std::make_shared<Scene>(scene), ray_intersection));
+        BoundingBox bb = mesh.get_bounding_box();
+        // calc offset and delta_x to keep the mesh in the center of texture
         resolution = config.get_vec3i("resolution");
         arr = Array3D<char>(resolution.x, resolution.y, resolution.z);
-        BoundingBox bb = mesh.get_bounding_box();
+        real delta_x = 0;
+        Vector3i offset;
+        for (int i = 0; i < 3; ++i)
+            delta_x = std::max(delta_x, (bb.upper_boundary[i] - bb.lower_boundary[i]) / resolution[i]);
+        for (int i = 0; i < 3; ++i)
+            offset[i] = int(resolution[i] - (bb.upper_boundary[i] - bb.lower_boundary[i])/ delta_x) / 2;
+        // cast ray for each i, j
         for (int i = 0; i < resolution.x; ++i)
             for (int j = 0; j < resolution.y; ++j) {
-                real x = lerp((0.5f + i) / resolution.x, bb.lower_boundary.x, bb.upper_boundary.x);
-                real y = lerp((0.5f + j) / resolution.y, bb.lower_boundary.y, bb.upper_boundary.y);
-                real z = bb.lower_boundary.z - eps;
-                real delta_z = (bb.upper_boundary.z - bb.lower_boundary.z) / resolution.z;
+                real x = (i - offset.x) * delta_x + bb.lower_boundary.x;
+                real y = (j - offset.y) * delta_x + bb.lower_boundary.y;
+                real z = (0 - offset.z) * delta_x + bb.lower_boundary.z;
+                real base_z = z - eps;
                 int k = 0;
                 bool inside = false;
                 while (k < resolution.z) {
-                    int kk = k;
+                    int next_k;
                     Ray ray(Vector3(x, y, z), Vector3(0, 0, 1));
                     scene_geometry->query(ray);
-                    if (ray.dist == Ray::DIST_INFINITE) kk = resolution.z;
-                    else {
-                        z += ray.dist + eps;
-                        kk = std::min(int((z - bb.lower_boundary.z) / delta_z), resolution.z);
+                    if (ray.dist == Ray::DIST_INFINITE) {
+                        next_k = resolution.z;
+                        inside = false;
                     }
-                    while (k < kk) {
+                    else {
+                        z += ray.dist;
+                        next_k = std::min(int((z - base_z) / delta_x), resolution.z);
+                    }
+                    while (k < next_k) {
                         arr.set(i, j, k, char(inside));
                         ++k;
                     }

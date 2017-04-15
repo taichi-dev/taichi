@@ -9,8 +9,8 @@ from taichi.misc.util import get_os_name, get_unique_task_id
 CREATE_SAND_BOX_ON_WINDOWS = True
 
 if get_os_name() == 'osx':
-    bin_dir = get_bin_directory() + '/'
-    if os.path.exists(bin_dir + 'libtaichi_core.dylib'):
+    bin_dir = get_bin_directory()
+    if os.path.exists(os.path.join(bin_dir, 'libtaichi_core.dylib')):
         tmp_cwd = os.getcwd()
         os.chdir(bin_dir)
         shutil.copy('libtaichi_core.dylib', 'taichi_core.so')
@@ -21,9 +21,9 @@ if get_os_name() == 'osx':
     else:
         assert False, "Library taichi_core doesn't exist."
 elif get_os_name() == 'linux':
-    bin_dir = get_bin_directory() + '/'
+    bin_dir = get_bin_directory()
     os.environ['LD_LIBRARY_PATH'] = '/usr/lib64/'
-    if os.path.exists(bin_dir + 'libtaichi_core.so'):
+    if os.path.exists(os.path.join(bin_dir, 'libtaichi_core.so')):
         tmp_cwd = os.getcwd()
         os.chdir(bin_dir)
         sys.path.append(bin_dir)
@@ -34,10 +34,11 @@ elif get_os_name() == 'linux':
     else:
         assert False, "Library taichi_core doesn't exist."
 elif get_os_name() == 'win':
-    bin_dir = get_bin_directory() + '/'
-    dll_path = bin_dir + '/Release/taichi_core.dll'
+    bin_dir = get_bin_directory()
+    dll_path = os.path.join(bin_dir, 'Release', 'taichi_core.dll')
     if not os.path.exists(dll_path):
-        dll_path = bin_dir + '/taichi_core.dll'
+        dll_path = os.path.join(bin_dir, 'taichi_core.dll')
+        print dll_path
         if not os.path.exists(dll_path):
             assert False, "Library taichi_core doesn't exist."
 
@@ -49,7 +50,7 @@ elif get_os_name() == 'win':
 
     if CREATE_SAND_BOX_ON_WINDOWS:
         # So let's just create a sandbox for separated core lib development and loading
-        dir = get_output_directory() + '/tmp/' + get_unique_task_id() + '/'
+        dir = os.path.join(get_output_directory(), 'tmp', get_unique_task_id())
         os.makedirs(dir)
         '''
         for fn in os.listdir(bin_dir):
@@ -60,10 +61,10 @@ elif get_os_name() == 'win':
                 #    raise OSError
                 shutil.copy(bin_dir + fn, dir + fn)
         '''
-        shutil.copy(dll_path, dir + 'taichi_core.pyd')
+        shutil.copy(dll_path, os.path.join(dir, 'taichi_core.pyd'))
         sys.path.append(dir)
     else:
-        shutil.copy(dll_path, bin_dir + 'taichi_core.pyd')
+        shutil.copy(dll_path, os.path.join(bin_dir, 'taichi_core.pyd'))
         sys.path.append(bin_dir)
     import taichi_core as tc_core
 

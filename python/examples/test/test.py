@@ -6,8 +6,6 @@ tc.core.print_all_units()
 tc.core.test()
 
 tex = tc.Texture('const', value=(0.1, 0.1, 0.1, 0.1))
-tc.core.print_texture_use_count(tex.c)
-tc.core.test_get_texture(tex.id)
 tex = tex.flip(0)
 
 try:

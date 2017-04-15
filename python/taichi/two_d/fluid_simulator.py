@@ -60,7 +60,7 @@ class FluidSimulator(Simulator):
         images.append(array2d_to_image(liquid_levelset, width, height, color_scheme['liquid']))
         if self.show_pressure:
             images.append(array2d_to_image(self.get_pressure(), width, height, (255, 0, 0, 128), (0, 1)))
-        return images
+        return images, []
 
     def create_levelset(self):
         return LevelSet2D(self.simulation_width + 1, self.simulation_height + 1,

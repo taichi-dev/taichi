@@ -2,6 +2,7 @@
     Taichi - Physically based Computer Graphics Library
 
     Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+                  2017 Yu Fang <squarefk@gmail.com>
 
     All rights reserved. Use of this source code is governed by
     the MIT license as written in the LICENSE file.
@@ -14,8 +15,11 @@
 #include "mpm_utils.h"
 #include <taichi/common/util.h>
 #include <taichi/math/levelset_2d.h>
+#include <taichi/math/dynamic_levelset_2d.h>
 
 TC_NAMESPACE_BEGIN
+
+extern long long kernel_calc_counter;
 
 struct MPMParticle {
     // Color for visualization: if x=-1, use default color from color scheme.
@@ -32,15 +36,31 @@ struct MPMParticle {
     Matrix2 dg_cache;
     static long long instance_count;
     long long id = instance_count++;
+    enum State {
+        INACTIVE = 0,
+        BUFFER = 1,
+        UPDATING = 2,
+    };
+    int state = INACTIVE;
+    int64 march_interval;
+    int64 last_update;
+
     MPMParticle() {
+        last_update = 0;
         dg_e = Matrix2(1.0f);
         dg_p = Matrix2(1.0f);
         b = Matrix2(0);
     }
+
+    // Maximum dt for this particle
+    virtual real get_allowed_dt() const = 0;
+
     void set_compression(real compression) {
         dg_p = Matrix2(compression); // 1.0f = no compression
     }
+
     void calculate_kernels() {
+        kernel_calc_counter++;
         Vector2 fpos = glm::fract(pos);
         real i_w[4], i_dw[4], j_w[4], j_dw[4];
         for (int i = -1; i < 3; i++) {
@@ -65,26 +85,36 @@ struct MPMParticle {
         mipos.x = int(floor(pos.x)) - 1;
         mipos.y = int(floor(pos.y)) - 1;
     }
+
     int get_cache_index(const Index2D &ind) const {
         return (ind.i - mipos.x) * 4 + (ind.j - mipos.y);
     }
+
     real get_cache_w(const Index2D &ind) const {
         return cache_w[get_cache_index(ind)];
     }
+
     Vector2 get_cache_gw(const Index2D &ind) const {
         return cache_gw[get_cache_index(ind)];
     }
+
     bool operator==(const MPMParticle &o) {
         return id == o.id;
     }
+
     virtual void calculate_force() {};
+
     virtual void plasticity() {};
-    virtual void resolve_collision(const LevelSet2D &levelset) {
-        real phi = levelset.sample(pos.x, pos.y);
+
+    virtual void resolve_collision(const DynamicLevelSet2D &levelset, real t) {
+        real phi = levelset.sample(pos, t);
         if (phi < 0) {
-            pos -= levelset.get_normalized_gradient(pos) * phi;
+            Vector2 gradient = levelset.get_spatial_gradient(pos, t);
+            pos -= gradient * phi;
+            v -= glm::dot(gradient, v) * gradient;
         }
     }
+
     virtual void print() {
         P(pos);
         P(v);
@@ -99,30 +129,40 @@ struct EPParticle : MPMParticle {
     real theta_c, theta_s;
     real hardening;
     real mu_0, lambda_0;
+
+    std::pair<real, real> get_lame_parameters() const {
+        real j_e = det(dg_e);
+        real j_p = det(dg_p);
+        real e = std::max(1e-7f, std::exp(std::min(hardening * (1.0f - j_p), 5.0f)));
+        real mu = mu_0 * e;
+        real lambda = lambda_0 * e;
+        return {mu, lambda};
+    }
+
     Matrix2 get_energy_gradient() {
         real j_e = det(dg_e);
         real j_p = det(dg_p);
-        real e = std::exp(std::min(hardening * (1.0f - j_p), 5.0f));
-        real mu = mu_0 * e;
-        real lambda = lambda_0 * e;
+        std::pair<real, real> lame_parameters;
+        lame_parameters = get_lame_parameters();
         Matrix2 r, s;
         polar_decomp(dg_e, r, s);
         CV(r);
         CV(s);
-        if (!is_normal(e) || !is_normal(r) || !is_normal(s)) {
+        if (!is_normal(r) || !is_normal(s) || !is_normal(lame_parameters.first) || !is_normal(
+                lame_parameters.second)) {
             // debug code
             P(dg_e);
             P(dg_p);
             P(r);
             P(s);
-            P(e);
             P(j_e);
             P(j_p);
         }
-        return 2 * mu * (dg_e - r) +
-            lambda * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
+        return 2 * lame_parameters.first * (dg_e - r) +
+               lame_parameters.second * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
     }
-    void plasticity() {
+
+    void plasticity() override {
         Matrix2 svd_u, sig, svd_v;
         svd(dg_e, svd_u, sig, svd_v);
         sig[0][0] = clamp(sig[0][0], 1.0f - theta_c, 1.0f + theta_s);
@@ -143,7 +183,8 @@ struct EPParticle : MPMParticle {
         //    assert_info(is_normal(dg_p), "Abnormal dg_p");
         //}
     }
-    void calculate_force() {
+
+    void calculate_force() override {
         tmp_force = -vol * get_energy_gradient() * glm::transpose(dg_e);
         if (!is_normal(tmp_force)) {
             // debug code
@@ -151,8 +192,12 @@ struct EPParticle : MPMParticle {
             P(get_energy_gradient());
         }
     };
-    static std::shared_ptr<EPParticle> create_instance() {
-        return std::make_shared<EPParticle>();
+
+    virtual real get_allowed_dt() const override {
+        auto lame = get_lame_parameters();
+        real strength_limit = 1e1f / std::sqrt(lame.first + 2 * lame.second);
+        real cfl_limit = 5.0f / (std::max(std::abs(v.x), std::abs(v.y)) + 1e-38f);
+        return std::min(strength_limit, cfl_limit);
     }
 };
 
@@ -174,14 +219,12 @@ struct DPParticle : MPMParticle {
         if (epsilon_hat_for <= 0 || tr > 0.0f) {
             sigma_out = Matrix2(1.0f);
             out = epsilon_for;
-        }
-        else {
+        } else {
             real delta_gamma = epsilon_hat_for + (d * lambda_0 + 2 * mu_0) / (2 * mu_0) * tr * alpha;
             if (delta_gamma <= 0) {
                 sigma_out = sigma;
                 out = 0;
-            }
-            else {
+            } else {
                 Matrix2 h = epsilon - delta_gamma / epsilon_hat_for * epsilon_hat;
                 sigma_out = Matrix2(exp(h[0][0]), 0, 0, exp(h[1][1]));
                 out = delta_gamma;
@@ -189,7 +232,7 @@ struct DPParticle : MPMParticle {
         }
     }
 
-    void calculate_force() {
+    void calculate_force() override {
         Matrix2 u, v, sig, dg = dg_e;
         svd(dg_e, u, sig, v);
 
@@ -200,7 +243,7 @@ struct DPParticle : MPMParticle {
         tmp_force = -vol * (u * center * glm::transpose(v)) * glm::transpose(dg);
     }
 
-    void plasticity() {
+    void plasticity() override {
         Matrix2 u, v, sig;
         svd(dg_e, u, sig, v);
         Matrix2 t = Matrix2(1.0);
@@ -224,14 +267,11 @@ struct DPParticle : MPMParticle {
         phi_f = phi;
         alpha = sqrtf(2.0f / 3.0f) * (2.0f * sin(phi * pi / 180.0f)) / (3.0f - sin(phi * pi / 180.0f));
     }
-    static std::shared_ptr<EPParticle> create_instance() {
-        return std::make_shared<EPParticle>();
+
+    real get_allowed_dt() const override {
+        return 0.0f;
     }
 };
-
-inline std::shared_ptr<MPMParticle> create_particle(const Config &config) {
-    return nullptr;
-}
 
 TC_NAMESPACE_END
 

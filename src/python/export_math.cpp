@@ -2,6 +2,7 @@
     Taichi - Physically based Computer Graphics Library
 
     Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+                  2017 Yu Fang <squarefk@gmail.com>
 
     All rights reserved. Use of this source code is governed by
     the MIT license as written in the LICENSE file.
@@ -10,8 +11,11 @@
 #include <taichi/python/export.h>
 #include <taichi/common/config.h>
 #include <taichi/math/levelset_2d.h>
+#include <taichi/math/levelset_3d.h>
 #include <taichi/visualization/rgb.h>
 #include <taichi/math/array_op.h>
+#include <taichi/math/dynamic_levelset_2d.h>
+#include <taichi/math/dynamic_levelset_3d.h>
 
 PYBIND11_MAKE_OPAQUE(std::vector<int>);
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::real>);
@@ -26,6 +30,21 @@ TC_NAMESPACE_BEGIN
 std::vector<real> make_range(real start, real end, real delta) {
     return std::vector<real> {start, end, delta};
 }
+
+template<typename T, int ret>
+int return_constant(T *) { return ret; }
+
+template<typename T, int channels>
+void ndarray_to_image_buffer(T *arr, uint64 input, int width, int height) // 'input' is actually a pointer...
+{
+    arr->initialize(width, height);
+    for (auto &ind : arr->get_region()) {
+        for (int i = 0; i < channels; i++) {
+            (*arr)[ind][i] = reinterpret_cast<real *>(input)[ind.i * channels * height + ind.j * channels + i];
+        }
+    }
+}
+
 
 std::string rasterize_levelset(const LevelSet2D &levelset, int width, int height) {
     std::string ret;
@@ -82,23 +101,73 @@ ndarray_to_array2d_real(Array2D<real> *arr, long long input, int width, int heig
     }
 }
 
+template<typename T, int channels>
+void array2d_to_ndarray(T *arr, uint64 output) // 'output' is actually a pointer...
+{
+    int width = arr->get_width(), height = arr->get_height();
+    for (auto &ind : arr->get_region()) {
+        for (int k = 0; k < channels; k++)
+            reinterpret_cast<real *>(output)[ind.i * height * channels + ind.j * channels + k] =
+                    *(((float *)(&(*arr)[ind])) + k);
+    }
+}
+
 void export_math(py::module &m) {
     m.def("rasterize_levelset", rasterize_levelset);
 
     py::class_<Config>(m, "Config");
 
-    // note??????
-    //numeric::array::set_module_and_type("numpy", "ndarray");
-    py::class_<Array2D<real>>(m, "Array2DReal")
-            .def(py::init<int, int>())
-            .def("to_ndarray", &array2d_to_ndarray<Array2D<real>>)
-            .def("get_width", &Array2D<real>::get_width)
-            .def("get_height", &Array2D<real>::get_height)
-            .def("rasterize", &Array2D<real>::rasterize)
+#define EXPORT_ARRAY_2D_OF(T, C) \
+    py::class_<Array2D<real>>(m, "Array2D" #T)  \
+            .def(py::init<int, int>()) \
+            .def("to_ndarray", &array2d_to_ndarray<Array2D<T>, C>) \
+            .def("get_width", &Array2D<T>::get_width) \
+            .def("get_height", &Array2D<T>::get_height) \
+            .def("rasterize", &Array2D<T>::rasterize) \
+            .def("rasterize_scale", &Array2D<T>::rasterize_scale) \
             .def("from_ndarray", &ndarray_to_array2d_real);
 
-    py::class_<LevelSet2D>(m, "LevelSet2D")
+    EXPORT_ARRAY_2D_OF(real, 1);
+
+#define EXPORT_ARRAY_3D_OF(T, C) \
+    py::class_<Array3D<real>>(m, "Array3D" #T)  \
+            .def(py::init<int, int, int>()) \
+            .def("get_width", &Array3D<T>::get_width) \
+            .def("get_height", &Array3D<T>::get_height);
+
+    EXPORT_ARRAY_3D_OF(real, 1);
+
+    py::class_<Array2D<Vector3>>(m, "Array2DVector3")
+            .def(py::init<int, int, Vector3>())
+            .def("get_width", &Array2D<Vector3>::get_width)
+            .def("get_height", &Array2D<Vector3>::get_height)
+            .def("get_channels", &return_constant<Array2D<Vector3>, 3>)
+            .def("from_ndarray", &ndarray_to_image_buffer<Array2D<Vector3>, 3>)
+            .def("read", &Array2D<Vector3>::load)
+            .def("write", &Array2D<Vector3>::write)
+            .def("write_to_disk", &Array2D<Vector3>::write_to_disk)
+            .def("read_from_disk", &Array2D<Vector3>::read_from_disk)
+            .def("rasterize", &Array2D<Vector3>::rasterize)
+            .def("rasterize_scale", &Array2D<Vector3>::rasterize_scale)
+            .def("to_ndarray", &array2d_to_ndarray<Array2D<Vector3>, 3>);
+
+    py::class_<Array2D<Vector4>>(m, "Array2DVector4")
+            .def(py::init<int, int, Vector4>())
+            .def("get_width", &Array2D<Vector4>::get_width)
+            .def("get_height", &Array2D<Vector4>::get_height)
+            .def("get_channels", &return_constant<Array2D<Vector4>, 4>)
+            .def("write", &Array2D<Vector4>::write)
+            .def("from_ndarray", &ndarray_to_image_buffer<Array2D<Vector4>, 4>)
+            .def("write_to_disk", &Array2D<Vector4>::write_to_disk)
+            .def("read_from_disk", &Array2D<Vector4>::read_from_disk)
+            .def("rasterize", &Array2D<Vector4>::rasterize)
+            .def("rasterize_scale", &Array2D<Vector4>::rasterize_scale)
+            .def("to_ndarray", &array2d_to_ndarray<Array2D<Vector4>, 4>);
+
+    py::class_<LevelSet2D, Array2D<real>>(m, "LevelSet2D")
             .def(py::init<int, int, Vector2>())
+            .def("get_width", &LevelSet2D::get_width)
+            .def("get_height", &LevelSet2D::get_height)
             .def("get", &LevelSet2D::get_copy)
             .def("set", static_cast<void (LevelSet2D::*)(int, int, const real &)>(&LevelSet2D::set))
             .def("add_sphere", &LevelSet2D::add_sphere)
@@ -107,8 +176,31 @@ void export_math(py::module &m) {
             .def("rasterize", &LevelSet2D::rasterize)
             .def("sample", static_cast<real(LevelSet2D::*)(real, real) const>(&LevelSet2D::sample))
             .def("get_normalized_gradient", &LevelSet2D::get_normalized_gradient)
-            .def("to_ndarray", &array2d_to_ndarray<LevelSet2D>)
+            .def("to_ndarray", &array2d_to_ndarray<LevelSet2D, 1>)
+            .def("get_channels", &return_constant<LevelSet2D, 1>)
             .def_readwrite("friction", &LevelSet2D::friction);
+
+    py::class_<DynamicLevelSet3D>(m, "DynamicLevelSet3D")
+            .def(py::init<>())
+            .def("initialize", &DynamicLevelSet3D::initialize);
+
+    py::class_<LevelSet3D, Array3D<real>>(m, "LevelSet3D")
+            .def(py::init<int, int, int, Vector3>())
+            .def("get_width", &LevelSet3D::get_width)
+            .def("get_height", &LevelSet3D::get_height)
+            .def("get", &LevelSet3D::get_copy)
+            .def("set", static_cast<void (LevelSet3D::*)(int, int, int, const real &)>(&LevelSet3D::set))
+            .def("add_sphere", &LevelSet3D::add_sphere)
+            .def("get_gradient", &LevelSet3D::get_gradient)
+            .def("rasterize", &LevelSet3D::rasterize)
+            .def("sample", static_cast<real(LevelSet3D::*)(real, real, real) const>(&LevelSet3D::sample))
+            .def("get_normalized_gradient", &LevelSet3D::get_normalized_gradient)
+            .def("get_channels", &return_constant<LevelSet3D, 1>)
+            .def_readwrite("friction", &LevelSet3D::friction);
+
+    py::class_<DynamicLevelSet2D>(m, "DynamicLevelSet2D")
+            .def(py::init<>())
+            .def("initialize", &DynamicLevelSet2D::initialize);
 
     m.def("points_inside_polygon", points_inside_polygon);
     m.def("points_inside_sphere", points_inside_sphere);

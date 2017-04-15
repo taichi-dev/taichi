@@ -161,8 +161,7 @@ template <typename T>
 Array1D<T>::Array1D(int size, T init) : Array1D<T>(size) {
     if (init == T(0.0f)) {
         memset(&data[0], 0, get_data_size());
-    }
-    else {
+    } else {
         for (int i = 0; i < size; i++)
             data[i] = init;
     }

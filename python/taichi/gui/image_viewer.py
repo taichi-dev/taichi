@@ -7,7 +7,7 @@ viewers = {}
 
 def show_image(name, img):
     # Ensures img is w*h*3 (RGB)
-    if isinstance(img, tc.core.Array2DReal):
+    if isinstance(img, tc.core.Array2Dreal):
         img = tc.util.array2d_to_ndarray(img)
     if isinstance(img, tc.core.Array2DVector3):
         img = tc.util.array2d_to_ndarray(img)

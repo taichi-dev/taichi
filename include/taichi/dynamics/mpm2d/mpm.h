@@ -2,6 +2,7 @@
     Taichi - Physically based Computer Graphics Library
 
     Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+                  2017 Yu Fang <squarefk@gmail.com>
 
     All rights reserved. Use of this source code is governed by
     the MIT license as written in the LICENSE file.
@@ -12,37 +13,46 @@
 #include <memory>
 #include <vector>
 #include "mpm_grid.h"
+#include "scheduler.h"
 #include <taichi/math/levelset_2d.h>
+#include <taichi/math/dynamic_levelset_2d.h>
+#include <taichi/visual/texture.h>
 #include <taichi/visualization/image_buffer.h>
 
 TC_NAMESPACE_BEGIN
 
+extern long long kernel_calc_counter;
+
 class MPM {
 protected:
-    Config config;
+    Vector2i res;
     Grid grid;
-
     std::vector<std::shared_ptr<Particle>> particles;
-
-    int width;
-    int height;
 
     real flip_alpha;
     real flip_alpha_stride;
-
     real h;
     real t;
-    Vector2 gravity;
-    bool apic;
-    real max_delta_t;
-    real min_delta_t;
+    real base_delta_t;
+    real maximum_delta_t;
+    real requested_t;
+    int64 t_int;
+    real cfl;
 
-    LevelSet2D levelset;
+    Vector2 gravity;
+    Vector4 debug_input;
+
+    MPMScheduler scheduler;
+
+    DynamicLevelSet2D levelset;
     LevelSet2D material_levelset;
 
-    real last_sort;
-    real sorting_period;
-    bool use_level_set;
+    real position_noise;
+    bool particle_collision;
+    bool async;
+    bool apic;
+    bool kill_at_boundary;
+    Array2D<Vector4> debug_blocks;
 
     void compute_material_levelset();
 
@@ -50,9 +60,9 @@ protected:
         int x = int(p.x);
         int y = int(p.y);
         int x_min = std::max(0, x - 1);
-        int x_max = std::min(width, x + 3);
+        int x_max = std::min(res[0], x + 3);
         int y_min = std::max(0, y - 1);
-        int y_max = std::min(height, y + 3);
+        int y_max = std::min(res[1], y + 3);
         return Region2D(x_min, x_max, y_min, y_max);
     }
 
@@ -62,22 +72,14 @@ protected:
 
     void rasterize();
 
-    void resample(real delta_t);
+    void apply_deformation_force();
 
-    void apply_deformation_force(real delta_t);
+    void resample();
 
-    virtual void substep(real delta_t);
-
-    real get_dt_with_cfl_1();
-
-    real get_max_speed();
-
-    real cfl;
+    virtual void substep();
 
 public:
-    MPM() {
-        sorting_period = 1.0f;
-    }
+    MPM() {}
 
     void initialize(const Config &config_);
 
@@ -95,11 +97,15 @@ public:
 
     real get_current_time();
 
-    void set_levelset(const LevelSet2D &levelset) {
+    void set_levelset(const DynamicLevelSet2D &levelset) {
         this->levelset = levelset;
     }
 
     LevelSet2D get_material_levelset();
+
+    Array2D<Vector4> get_debug_blocks() {
+        return debug_blocks;
+    }
 };
 
 TC_NAMESPACE_END

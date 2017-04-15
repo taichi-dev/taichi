@@ -2,6 +2,7 @@
     Taichi - Physically based Computer Graphics Library
 
     Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+                  2017 Yu Fang <squarefk@gmail.com>
 
     All rights reserved. Use of this source code is governed by
     the MIT license as written in the LICENSE file.
@@ -12,6 +13,7 @@
 #include <taichi/common/meta.h>
 #include <taichi/visualization/particle_visualization.h>
 #include <vector>
+#include <taichi/math/dynamic_levelset_3d.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -19,6 +21,7 @@ class Simulation3D : public Unit {
 protected:
     real current_t = 0.0f;
     int num_threads;
+    DynamicLevelSet3D levelset;
 public:
     Simulation3D() {}
     virtual real get_current_time() const {
@@ -34,6 +37,11 @@ public:
         error("no impl");
         return std::vector<RenderParticle>();
     }
+
+    virtual void set_levelset(const DynamicLevelSet3D &levelset) {
+        this->levelset = levelset;
+    }
+
     virtual void update(const Config &config) {}
 };
 

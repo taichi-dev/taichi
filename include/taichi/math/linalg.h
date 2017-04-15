@@ -43,8 +43,7 @@ inline Vector3 set_up(const Vector3 &a, const Vector3 &y) {
     Vector3 x, z;
     if (std::abs(y.y) > 1.0f - eps) {
         x = Vector3(1, 0, 0);
-    }
-    else {
+    } else {
         x = normalize(cross(y, Vector3(0, 1, 0)));
     }
     z = cross(x, y);
@@ -89,18 +88,18 @@ inline Vector3 random_diffuse(const Vector3 &normal) {
 
 inline Vector4 pow(const Vector4 &v, const float &p) {
     return Vector4(
-        std::pow(v[0], p),
-        std::pow(v[1], p),
-        std::pow(v[2], p),
-        std::pow(v[3], p)
+            std::pow(v[0], p),
+            std::pow(v[1], p),
+            std::pow(v[2], p),
+            std::pow(v[3], p)
     );
 }
 
 inline Vector3 pow(const Vector3 &v, const float &p) {
     return Vector3(
-        std::pow(v[0], p),
-        std::pow(v[1], p),
-        std::pow(v[2], p)
+            std::pow(v[0], p),
+            std::pow(v[1], p),
+            std::pow(v[2], p)
     );
 }
 
@@ -116,46 +115,46 @@ inline double max_component(const Vector3d &v) {
 #ifdef CV_ON
 #define CV(v) if (abnormal(v)) {for (int i = 0; i < 1; i++) printf("Abnormal value %s (Ln %d)\n", #v, __LINE__); taichi::print(v); puts("");}
 #else
-#define CV(v) 
+#define CV(v)
 #endif
 
-template<typename T>
+template <typename T>
 inline bool is_normal(T m) {
     return std::isfinite(m);
 }
 
-template<typename T>
+template <typename T>
 inline bool abnormal(T m) {
     return !is_normal(m);
 }
 
-template<>
+template <>
 inline bool is_normal(Vector2 v) {
     return is_normal(v[0]) && is_normal(v[1]);
 }
 
-template<>
+template <>
 inline bool is_normal(Vector2d v) {
     return is_normal(v[0]) && is_normal(v[1]);
 }
 
-template<>
+template <>
 inline bool is_normal(Vector3 v) {
     return is_normal(v[0]) && is_normal(v[1]) && is_normal(v[2]);
 }
 
-template<>
+template <>
 inline bool is_normal(Vector3d v) {
     return is_normal(v[0]) && is_normal(v[1]) && is_normal(v[2]);
 }
 
-template<>
+template <>
 inline bool is_normal(mat2 m) {
     return is_normal(m[0][0]) && is_normal(m[0][1]) &&
-        is_normal(m[1][0]) && is_normal(m[1][1]);
+           is_normal(m[1][0]) && is_normal(m[1][1]);
 }
 
-template<>
+template <>
 inline bool is_normal(mat3 m) {
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
@@ -165,7 +164,7 @@ inline bool is_normal(mat3 m) {
     return true;
 }
 
-template<>
+template <>
 inline bool is_normal(mat4 m) {
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
@@ -215,8 +214,7 @@ inline float frobenius_norm(const Matrix3 &a) {
 inline bool intersect(const Vector2 &a, const Vector2 &b, const Vector2 &c, const Vector2 &d) {
     if (cross(c - a, b - a) * cross(b - a, d - a) > 0 && cross(a - d, c - d) * cross(c - d, b - d) > 0) {
         return true;
-    }
-    else {
+    } else {
         return false;
     }
 }

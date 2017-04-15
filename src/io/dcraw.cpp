@@ -23,6 +23,7 @@ $Revision: 1.477 $
 $Date: 2016/05/10 21:30:43 $
 */
 
+#pragma warning(push, 0)
 #include "dcraw.h"
 
 #define DCRAW_VERSION "9.27"
@@ -10534,3 +10535,4 @@ int CLASS dcraw_main(int argc, const char **argv, DCRawOutput &output)
     return status;
 }
 
+#pragma warning(pop)

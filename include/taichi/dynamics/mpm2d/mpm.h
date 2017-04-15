@@ -27,7 +27,7 @@ class MPM {
 protected:
     Vector2i res;
     Grid grid;
-    std::vector<std::shared_ptr<Particle>> particles;
+    std::vector<Particle *> particles;
 
     real flip_alpha;
     real flip_alpha_stride;
@@ -93,7 +93,7 @@ public:
 
     void add_particle(DPParticle p);
 
-    std::vector<std::shared_ptr<MPMParticle>> get_particles();
+    std::vector<std::shared_ptr<Particle>> get_particles();
 
     real get_current_time();
 
@@ -106,6 +106,10 @@ public:
     Array2D<Vector4> get_debug_blocks() {
         return debug_blocks;
     }
+
+	int get_grid_block_size() {
+		return grid_block_size;
+	}
 };
 
 TC_NAMESPACE_END

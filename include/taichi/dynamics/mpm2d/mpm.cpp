@@ -152,12 +152,16 @@ void MPM::substep() {
             debug_blocks[ind] = Vector4(vis_strength[ind], vis_cfl[ind], 0.0f, 1.0f);
         }
 
-        P(t_int_increment);
+		if (debug_input[2] > 0) {
+			P(t_int_increment);
+		}
         // t_int_increment is the biggest allowed dt.
         t_int_increment = t_int_increment - t_int % t_int_increment;
 
-        P(t_int_increment);
-        P(t_int);
+		if (debug_input[2] > 0) {
+			P(t_int_increment);
+			P(t_int);
+		}
 
         t_int += t_int_increment; // final dt
         t = base_delta_t * t_int;
@@ -183,24 +187,26 @@ void MPM::substep() {
             }
             // printf("t_int %lld max_dt_int %lld mod %lld %d %d\n", t_int, max_dt_int[ind], t_int % max_dt_int[ind], ind.i, ind.j);
         }
-        printf("min_dt %lld max_dt %lld dynamic_range %lld\n", min_dt, max_dt, max_dt / min_dt);
+		if (debug_input[2] > 0) {
+			printf("min_dt %lld max_dt %lld dynamic_range %lld\n", min_dt, max_dt, max_dt / min_dt);
 
-        for (int i = scheduler.max_dt_int.get_height() - 1; i >= 0; i--) {
-            for (int j = 0; j < scheduler.max_dt_int.get_width(); j++) {
-                if (max_dt_int[j][i] >= (1LL << 60)) {
-                    printf("      #");
-                } else {
-                    printf("%6lld", max_dt_int[j][i]);
-                    if (scheduler.states[j][i] == 1) {
-                        printf("*");
-                    } else {
-                        printf(" ");
-                    }
-                }
-            }
-            printf("\n");
-        }
-        printf("\n");
+			for (int i = scheduler.max_dt_int.get_height() - 1; i >= 0; i--) {
+				for (int j = 0; j < scheduler.max_dt_int.get_width(); j++) {
+					if (max_dt_int[j][i] >= (1LL << 60)) {
+						printf("      #");
+					} else {
+						printf("%6lld", max_dt_int[j][i]);
+						if (scheduler.states[j][i] == 1) {
+							printf("*");
+						} else {
+							printf(" ");
+						}
+					}
+				}
+				printf("\n");
+			}
+			printf("\n");
+		}
 
         // TODO...
         exist_updating_particle = true;
@@ -210,8 +216,9 @@ void MPM::substep() {
 
         Array2D<int> old_grid_states = scheduler.states;
         // Expand state
+        // P(scheduler.get_num_active_grids());
         scheduler.expand(false, true);
-        // P(grid.get_num_active_grids());
+        // P(scheduler.get_num_active_grids());
 
         int active_particle_count = 0;
         int buffer_particle_count = 0;
@@ -232,8 +239,10 @@ void MPM::substep() {
             }
         }
 
-        P(active_particle_count);
-        P(buffer_particle_count);
+		if (debug_input[2] > 0) {
+			P(active_particle_count);
+			P(buffer_particle_count);
+		}
     } else {
         // Sync
         t_int_increment = 1;
@@ -249,6 +258,7 @@ void MPM::substep() {
         if (p->state != MPMParticle::INACTIVE)
             p->calculate_kernels();
     }
+	scheduler.update(particles);
 
     rasterize();
     estimate_volume();
@@ -258,7 +268,7 @@ void MPM::substep() {
     grid.normalize_acceleration();
     grid.apply_boundary_conditions(levelset, t_int_increment * base_delta_t, t);
     resample();
-    std::vector<std::shared_ptr<Particle>> new_particles;
+    std::vector<Particle *> new_particles;
     for (auto &p : particles) {
         bool killed = false;
         if (p->state == MPMParticle::UPDATING) {
@@ -342,7 +352,7 @@ void MPM::add_particle(std::shared_ptr<MPMParticle> p) {
     // WTH???
     p->mass = 1.0f / res[0] / res[0];
     p->pos += position_noise * Vector2(rand() - 0.5f, rand() - 0.5f);
-    particles.push_back(p);
+    particles.push_back(p->duplicate());
 }
 
 void MPM::add_particle(EPParticle p) {
@@ -354,6 +364,10 @@ void MPM::add_particle(DPParticle p) {
 }
 
 std::vector<std::shared_ptr<MPMParticle>> MPM::get_particles() {
+	std::vector<std::shared_ptr<MPMParticle>> particles;
+	for (auto &p : this->particles) {
+		particles.push_back(std::shared_ptr<MPMParticle>(p->duplicate()));
+	}
     return particles;
 }
 

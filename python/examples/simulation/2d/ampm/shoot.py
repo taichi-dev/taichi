@@ -5,7 +5,7 @@ import taichi as tc
 if __name__ == '__main__':
     scale = 64
     res = (scale, scale)
-    frame_dt = 1e-3
+    frame_dt = 1e-2
     async = True
     bullet = True
     gravity = (0, 0)

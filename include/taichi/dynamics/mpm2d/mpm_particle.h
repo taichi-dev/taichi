@@ -121,6 +121,7 @@ struct MPMParticle {
         P(dg_e);
         P(dg_p);
     }
+	virtual MPMParticle *duplicate() const = 0;
 };
 
 
@@ -199,6 +200,10 @@ struct EPParticle : MPMParticle {
         real cfl_limit = 5.0f / (std::max(std::abs(v.x), std::abs(v.y)) + 1e-38f);
         return std::min(strength_limit, cfl_limit);
     }
+
+	MPMParticle *duplicate() const override {
+		return new EPParticle(*this);
+	}
 };
 
 // Sand particle
@@ -271,6 +276,9 @@ struct DPParticle : MPMParticle {
     real get_allowed_dt() const override {
         return 0.0f;
     }
+	MPMParticle *duplicate() const override {
+		return new DPParticle(*this);
+	}
 };
 
 TC_NAMESPACE_END

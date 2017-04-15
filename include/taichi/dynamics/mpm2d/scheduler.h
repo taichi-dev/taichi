@@ -25,8 +25,12 @@ public:
     Array2D<int> states;
     Array2D <Vector4> min_max_vel;
     Vector2i res;
+	Vector2i sim_res;
+	std::vector<Particle *> active_particles;
+	std::vector<Vector2i> active_grid_points;
 
     void initialize(const Vector2i &sim_res) {
+		this->sim_res = sim_res;
         res.x = (sim_res.x + grid_block_size - 1) / grid_block_size;
         res.y = (sim_res.y + grid_block_size - 1) / grid_block_size;
 
@@ -65,7 +69,7 @@ public:
                 tmp[3] = std::max(tmp[3], min_max_vel[ind][3]);
             }
             if (expand_state) {
-                if (states[ind.neighbour(dx, dy)])
+                if (states[ind])
                     new_states[ind.neighbour(dx, dy)] = 1;
             }
         };
@@ -92,13 +96,36 @@ public:
         }
     }
 
-    void update() {
-
+    void update(const std::vector<Particle*> &particles) {
+		// Use <= here since grid_res = sim_res + 1
+		active_particles.clear();
+		active_grid_points.clear();
+		for (int i = 0; i <= sim_res[0]; i++) {
+			for (int j = 0; j <= sim_res[1]; j++) {
+				if (states[i / grid_block_size][j / grid_block_size] == 1) {
+					active_grid_points.push_back(Vector2i(i, j));
+				}
+			}
+		}
+		for (auto &p : particles) {
+			Vector2i pos(int(p->pos[0] / grid_block_size), int(p->pos[1] / grid_block_size));
+			if (0 <= pos[0] && pos[0] < res[0] && 0 <= pos[1] && pos[1] < res[1]) {
+				active_particles.push_back(p);
+			}
+		}
     }
 
     int get_num_active_grids() {
         return states.abs_sum();
     }
+
+	const std::vector<Particle *> &get_active_particles() const {
+		return active_particles;
+	}
+
+	const std::vector<Vector2i> &get_active_grid_points() const {
+		return active_grid_points;
+	}
 };
 
 TC_NAMESPACE_END

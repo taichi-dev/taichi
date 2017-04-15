@@ -1,5 +1,6 @@
 import glob
 import os
+import time
 
 import pyglet
 from pyglet.gl import *
@@ -60,6 +61,7 @@ class SimulationWindow(pyglet.window.Window):
             self.quit_pressed = True
 
     def update(self, _):
+        t = time.time()
         if not self.quit_pressed and not self.simulator.ended():
             if not self.need_press or self.pressed:
                 if self.substep:
@@ -69,6 +71,7 @@ class SimulationWindow(pyglet.window.Window):
             self.pressed = False
         else:
             exit(0)
+        print 'Elapsed time:', time.time() - t
         self.redraw()
         self.save_frame()
 

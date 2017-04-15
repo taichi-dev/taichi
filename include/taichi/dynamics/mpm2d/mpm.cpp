@@ -40,7 +40,7 @@ void MPM::initialize(const Config &config_) {
     particle_collision = config.get("particle_collision", true);
     position_noise = config.get("position_noise", 0.5f);
     if (async) {
-        maximum_delta_t = config.get("maximum_delta_t", 1e-1);
+        maximum_delta_t = config.get("maximum_delta_t", 1e-1f);
     } else {
         maximum_delta_t = base_delta_t;
     }
@@ -246,6 +246,7 @@ void MPM::substep() {
     } else {
         // Sync
         t_int_increment = 1;
+		scheduler.states = 1;
         for (auto &p : particles) {
             p->state = MPMParticle::UPDATING;
             p->march_interval = 1;

@@ -112,7 +112,8 @@ public:
 		for (auto &p : particles) {
 			Vector2i pos(int(p->pos[0] / grid_block_size), int(p->pos[1] / grid_block_size));
 			if (0 <= pos[0] && pos[0] < res[0] && 0 <= pos[1] && pos[1] < res[1]) {
-				active_particles.push_back(p);
+				if (states[pos] != 0)
+					active_particles.push_back(p);
 			}
 		}
     }

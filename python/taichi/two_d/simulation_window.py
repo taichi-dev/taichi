@@ -149,6 +149,7 @@ class SimulationWindow(pyglet.window.Window):
                  1.0 * self.height / self.simulator.config['res'][1], 0)
 
         particles = self.simulator.get_particles()
+        print 'num particles:', len(particles)
 
         positions = []
         colors = []

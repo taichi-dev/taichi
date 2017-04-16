@@ -17,6 +17,8 @@ TC_NAMESPACE_BEGIN
 
 class LevelSet3D : public Array3D<real> {
 public:
+    static const real INF;
+
     real friction = 1.0f;
 
     LevelSet3D() : LevelSet3D(0, 0, 0) {}
@@ -26,11 +28,11 @@ public:
     }
 
     void initialize(int width, int height, int depth, Vector3 offset) {
-        Array3D<real>::initialize(width, height, depth, std::numeric_limits<real>::infinity(), offset);
+        Array3D<real>::initialize(width, height, depth, INF, offset);
     }
 
     void initialize(const Vector3i &res, Vector3 offset) {
-        Array3D<real>::initialize(res[0], res[1], res[2], std::numeric_limits<real>::infinity(), offset);
+        Array3D<real>::initialize(res[0], res[1], res[2], INF, offset);
     }
 
     void initialize(int width, int height, int depth, Vector3 offset, real value) {

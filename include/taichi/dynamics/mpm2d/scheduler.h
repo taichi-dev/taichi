@@ -212,11 +212,12 @@ public:
             for (int i = 0; i < 4; i++) {
                 block_absolute_vel = std::max(block_absolute_vel, std::abs(min_max_vel_expanded[ind][i]));
             }
-            real distance2boundary = std::max(
-                    levelset->sample(Vector2(ind.get_pos() * real(grid_block_size)), t) - real(grid_block_size) * 0.75f,
-                    0.5f);
-            int64 boundary_limit = int64(cfl * distance2boundary / block_absolute_vel / base_delta_t);
-            cfl_limit = std::min(cfl_limit, boundary_limit);
+			real last_distance = levelset->sample(Vector2(ind.get_pos() * real(grid_block_size)), t);
+			if (last_distance < LevelSet2D::INF) {
+				real distance2boundary = std::max(last_distance - real(grid_block_size) * 0.75f, 0.5f);
+				int64 boundary_limit = int64(cfl * distance2boundary / block_absolute_vel / base_delta_t);
+				cfl_limit = std::min(cfl_limit, boundary_limit);
+			}
             max_dt_int_cfl[ind] = get_largest_pot(cfl_limit);
         }
 	}

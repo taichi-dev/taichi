@@ -18,6 +18,8 @@ TC_NAMESPACE_BEGIN
 
 class LevelSet2D : public Array2D<real> {
 public:
+    static const real INF;
+
     real friction = 1.0f;
 
     LevelSet2D() : LevelSet2D(0, 0) {}
@@ -27,11 +29,11 @@ public:
     }
 
     void initialize(int width, int height, Vector2 offset) {
-        Array2D<real>::initialize(width, height, std::numeric_limits<real>::infinity(), offset);
+        Array2D<real>::initialize(width, height, INF, offset);
     }
 
     void initialize(const Vector2i &res, Vector2 offset) {
-        Array2D<real>::initialize(res[0], res[1], std::numeric_limits<real>::infinity(), offset);
+        Array2D<real>::initialize(res[0], res[1], INF, offset);
     }
 
     void initialize(int width, int height, Vector2 offset, real value) {

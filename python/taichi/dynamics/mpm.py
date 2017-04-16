@@ -28,7 +28,11 @@ class MPM3:
                                                   light_direction=(1, 1, 0))
         self.resolution = kwargs['resolution']
         self.frame = 0
-        self.levelset_generator = None
+
+        def dummy_levelset_generator(_):
+            return self.create_levelset()
+
+        self.levelset_generator = dummy_levelset_generator
 
     def update_levelset(self, t0, t1):
         levelset = tc.core.DynamicLevelSet3D()

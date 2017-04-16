@@ -312,42 +312,38 @@ void MPM3D::apply_deformation_force(float delta_t) {
 }
 
 void MPM3D::grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, real t) {
-    if (levelset.levelset0) {
-        for (auto &ind : grid_velocity.get_region()) {
-            Vector3 pos = Vector3(ind.get_pos());
-            Vector3 v = grid_velocity[ind] + grid_force_or_acc[ind] * delta_t -
-                        levelset.get_temporal_derivative(pos, t) * levelset.get_spatial_gradient(pos, t);
-            Vector3 n = levelset.get_spatial_gradient(pos, t);
-            real phi = levelset.sample(pos, t);
-            if (phi > 1) continue;
-            else if (phi > 0) { // 0~1
-                real pressure = std::max(-glm::dot(v, n), 0.0f);
-                real mu = levelset.levelset0->friction;
-                if (mu < 0) { // sticky
-                    v = Vector3(0.0f);
-                } else {
-                    Vector3 t = v - n * glm::dot(v, n);
-                    if (length(t) > 1e-6f) {
-                        t = normalize(t);
-                    }
-                    real friction = -clamp(glm::dot(t, v), -mu * pressure, mu * pressure);
-                    v = v + n * pressure + t * friction;
-                }
-            } else if (phi <= 0) {
+    for (auto &ind : grid_velocity.get_region()) {
+        Vector3 pos = Vector3(ind.get_pos());
+        Vector3 v = grid_velocity[ind] + grid_force_or_acc[ind] * delta_t -
+                    levelset.get_temporal_derivative(pos, t) * levelset.get_spatial_gradient(pos, t);
+        Vector3 n = levelset.get_spatial_gradient(pos, t);
+        real phi = levelset.sample(pos, t);
+        if (phi > 1) continue;
+        else if (phi > 0) { // 0~1
+            real pressure = std::max(-glm::dot(v, n), 0.0f);
+            real mu = levelset.levelset0->friction;
+            if (mu < 0) { // sticky
                 v = Vector3(0.0f);
+            } else {
+                Vector3 t = v - n * glm::dot(v, n);
+                if (length(t) > 1e-6f) {
+                    t = normalize(t);
+                }
+                real friction = -clamp(glm::dot(t, v), -mu * pressure, mu * pressure);
+                v = v + n * pressure + t * friction;
             }
-            v += levelset.get_temporal_derivative(pos, t) * levelset.get_spatial_gradient(pos, t);
-            grid_force_or_acc[ind] = (v - grid_velocity[ind]) / delta_t;
+        } else if (phi <= 0) {
+            v = Vector3(0.0f);
         }
+        v += levelset.get_temporal_derivative(pos, t) * levelset.get_spatial_gradient(pos, t);
+        grid_force_or_acc[ind] = (v - grid_velocity[ind]) / delta_t;
     }
 }
 
 void MPM3D::particle_collision_resolution(real t) {
-    if (levelset.levelset0) {
-        parallel_for_each_particle([&](Particle &p) {
-            p.resolve_collision(levelset, t);
-        });
-    }
+    parallel_for_each_particle([&](Particle &p) {
+        p.resolve_collision(levelset, t);
+    });
 }
 
 void MPM3D::substep(float delta_t) {

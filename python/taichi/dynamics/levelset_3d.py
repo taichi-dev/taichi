@@ -5,7 +5,7 @@ from taichi.misc.util import *
 class LevelSet3D:
     def __init__(self, res, offset=None):
         if offset is None:
-            offset = Vector(0, 0, 0)
+            offset = Vector(0.5, 0.5, 0.5)
         self.delta_x = 1.0 / min(res)
         self.res = (res[0] + 1, res[1] + 1, res[2] + 1)
         self.levelset = tc.core.LevelSet3D(int(res[0]), int(res[1]), int(res[2]), offset)

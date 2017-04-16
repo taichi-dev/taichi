@@ -18,6 +18,11 @@ class MPMSimulator(Simulator):
         self.delta_x = kwargs['delta_x']
         self.sample_rate = kwargs.get('sample_rate', 2)
 
+        def dummy_levelset_generator(_):
+            return self.create_levelset()
+
+        self.levelset_generator = dummy_levelset_generator
+
     @staticmethod
     def create_particle(particle_type):
         if particle_type == 'ep':

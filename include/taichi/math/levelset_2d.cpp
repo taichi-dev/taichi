@@ -12,6 +12,7 @@
 
 TC_NAMESPACE_BEGIN
 
+const real LevelSet2D::INF = 1e7;
 
 void LevelSet2D::add_sphere(Vector2 center, real radius, bool inside_out) {
     for (auto &ind : get_region()) {

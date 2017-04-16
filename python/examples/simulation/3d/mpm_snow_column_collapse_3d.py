@@ -8,11 +8,11 @@ from taichi.visual.post_process import *
 from taichi.visual.texture import Texture
 import taichi as tc
 
-gi_render = False
+gi_render = True
 step_number = 400
 # step_number = 1
 # total_frames = 1
-grid_downsample = 8
+grid_downsample = 3
 output_downsample = 1
 render_epoch = 20
 
@@ -53,7 +53,7 @@ def create_sand_scene(frame, d, t):
 
         material = tc.SurfaceMaterial('microfacet', color=(1, 1, 0.5), roughness=(0.1, 0, 0, 0), f0=1)
         sphere = tc.Mesh('sphere', material,
-                         translate=((t+0.05) * 0.5 - 0.35, -0.61, 0), scale=0.1, rotation=(0, 0, 0))
+                         translate=((t+0.05) * 0.5 - 0.35, -0.60, 0), scale=0.1, rotation=(0, 0, 0))
         scene.add_mesh(sphere)
 
         # Change this line to your particle output path pls.
@@ -75,10 +75,10 @@ def render_sand_frame(frame, d, t):
 if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
-    tex = Texture('ring', outer=0.15) * 4
+    tex = Texture('ring', outer=0.15) * 8
     tex = Texture('bound', tex=tex, axis=2, bounds=(0.0, 0.4), outside_val=(0, 0, 0))
     tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
-    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), initial_velocity=(0, 0, 0), delta_t=0.00005, num_threads=8,
+    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), initial_velocity=(0, 0, 0), delta_t=0.001, num_threads=8,
                density_tex=tex.id)
 
 

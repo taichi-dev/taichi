@@ -17,6 +17,7 @@ class MPMSimulator(Simulator):
         self.config = kwargs
         self.delta_x = kwargs['delta_x']
         self.sample_rate = kwargs.get('sample_rate', 2)
+        self.show_limits = kwargs.get('show_limits', True)
 
         def dummy_levelset_generator(_):
             return self.create_levelset()
@@ -140,10 +141,11 @@ class MPMSimulator(Simulator):
         material_levelset = self.simulator.get_material_levelset()
         images.append(array2d_to_image(material_levelset, width, height, color_scheme['material']))
         cover_images = []
-        debug_blocks = self.simulator.get_debug_blocks().rasterize_scale(self.res[0], self.res[1],
-                                                                         self.simulator.get_grid_block_size())
-        debug_blocks = array2d_to_image(debug_blocks, width, height, transform=[0, 1], alpha_scale=0.4)
-        cover_images.append(debug_blocks)
+        if self.show_limits:
+            debug_blocks = self.simulator.get_debug_blocks().rasterize_scale(self.res[0], self.res[1],
+                                                                             self.simulator.get_grid_block_size())
+            debug_blocks = array2d_to_image(debug_blocks, width, height, transform=[0, 1], alpha_scale=0.4)
+            cover_images.append(debug_blocks)
         return images, cover_images
 
     def create_levelset(self):

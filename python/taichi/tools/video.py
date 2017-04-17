@@ -58,7 +58,7 @@ class VideoManager:
     def make_video(self, mp4=True, gif=True):
         command = "ffmpeg -framerate 24 -i " + os.path.join(self.frame_directory, FRAME_FN_TEMPLATE) + \
                   " -s:v " + str(self.width) + 'x' + str(self.height) + \
-                  " -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -y " + self.get_output_filename('.mp4')
+                  " -c:v libx264 -profile:v high -crf 1 -pix_fmt yuv420p -y " + self.get_output_filename('.mp4')
 
         os.system(command)
 

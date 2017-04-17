@@ -419,6 +419,10 @@ public:
         return 0 <= i && i < width && 0 <= j && j < height;
     }
 
+    bool inside(const Vector2i &pos) const {
+		return inside(pos[0], pos[1]);
+    }
+
     bool inside(Index2D index) const {
         return inside(index.i, index.j);
     }

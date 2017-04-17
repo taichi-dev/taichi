@@ -179,7 +179,7 @@ private:
 
     void keyboard_callback(int key, int scancode, int action, int mods);
 
-    vec3 background_color;
+    Vector3 background_color;
     int width, height;
     bool exit_on_esc;
     string title;

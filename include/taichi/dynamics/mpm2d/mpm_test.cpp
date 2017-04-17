@@ -65,6 +65,7 @@ void svd_test() {
                 P(u);
                 P(sig);
                 P(v);
+				P(m - u * sig * glm::transpose(v));
             }
             error_count++;
         }
@@ -73,7 +74,13 @@ void svd_test() {
 }
 
 bool MPM::test() const {
-    Matrix2 m(0.096664, 0.065926, 0.020765, 0.014165), r, s;
+	svd_test<svd>();
+    // Matrix2 m(0.096664, 0.065926, 0.020765, 0.014165), r, s;
+	// Matrix2 m(-0.544766, 1.948113, - 0.211226, 0.754558);
+	Matrix2 m(0.700001, 0.000000,
+		0.000000, 0.699999);
+	Matrix2 r, s;
+
     // Matrix2 m(0.097664, 0.065926, 0.020765, 0.014165), r, s;
     // polar_decomp(m, r, s);
     // P(r);
@@ -83,6 +90,7 @@ bool MPM::test() const {
     P(u);
     P(sig);
     P(v);
+	P(m - u * sig * glm::transpose(v));
     return true;
 }
 

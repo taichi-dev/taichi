@@ -121,8 +121,8 @@ public:
         return dict[s];
     }
 
-    vec2 get_vec2(std::string key) const {
-        vec2 ret;
+    Vector2 get_vec2(std::string key) const {
+        Vector2 ret;
         sscanf_s(get_string(key).c_str(), "(%f,%f)", &ret.x, &ret.y);
         return ret;
     }

@@ -3,20 +3,21 @@ from taichi.two_d import *
 import taichi as tc
 
 if __name__ == '__main__':
-    scale = 64
+    scale = 256
     res = (scale, scale)
     frame_dt = 1e-2
     async = True
     gravity = (0, 0)
     if async:
         simulator = MPMSimulator(res=res, simulation_time=0.22, frame_dt=frame_dt, base_delta_t=1e-6, async=True,
-                                 maximum_delta_t=2e-1, debug_input=(128, 7, 0, 0), cfl=0.5, gravity=gravity)
+                                 maximum_delta_t=2e-1, debug_input=(128, 7, 0, 0), cfl=0.5, gravity=gravity,
+                                 show_limits=False)
     else:
         simulator = MPMSimulator(res=res, simulation_time=0.22, frame_dt=frame_dt, base_delta_t=1e-4, async=False,
                                  maximum_delta_t=1e-1, debug_input=(1024, 4, 0, 0), gravity=gravity)
 
 
-    # simulator.test()
+    simulator.test()
 
     def event(s):
         w, h = 0.10, 0.05
@@ -43,4 +44,4 @@ if __name__ == '__main__':
     levelset.add_polygon([(bd, bd), (1 - bd, bd), (1 - bd, 1 - bd), (bd, 1 - bd)], True)
     simulator.set_levelset(levelset)
     window = SimulationWindow(512, simulator, color_schemes['snow'], levelset_supersampling=2, show_images=True,
-                              substep=True, video_output=True, need_press=False)
+                              substep=False, video_output=False, need_press=False)

@@ -27,14 +27,6 @@
 
 TC_NAMESPACE_BEGIN
 
-using glm::vec2;
-using glm::ivec2;
-using glm::vec3;
-using glm::vec4;
-using glm::mat2;
-using glm::mat3;
-using glm::mat4;
-
 typedef glm::vec2 Vector2;
 typedef glm::vec3 Vector3;
 typedef glm::vec4 Vector4;
@@ -51,10 +43,14 @@ typedef glm::dvec2 Vector2d;
 typedef glm::dvec3 Vector3d;
 typedef glm::dvec4 Vector4d;
 
-typedef float real;
 typedef glm::mat2 Matrix2;
 typedef glm::mat3 Matrix3;
 typedef glm::mat4 Matrix4;
+typedef glm::dmat2 Matrix2d;
+typedef glm::dmat3 Matrix3d;
+typedef glm::dmat4 Matrix4d;
+
+typedef float real;
 
 const real pi{acosf(-1.0f)};
 
@@ -139,11 +135,11 @@ inline float rand() {
     return (w = (w ^ (w >> 19)) ^ (t ^ (t >> 8))) * (1.0f / 4294967296.0f);
 }
 
-inline vec3 sample_sphere(float u, float v) {
+inline Vector3 sample_sphere(float u, float v) {
     float x = u * 2 - 1;
     float phi = v * 2 * pi;
     float yz = sqrt(1 - x * x);
-    return vec3(x, yz * cos(phi), yz * sin(phi));
+    return Vector3(x, yz * cos(phi), yz * sin(phi));
 }
 
 
@@ -203,7 +199,7 @@ inline void print(double v) {
     printf("%f\n", v);
 }
 
-inline void print(const mat2 &v) {
+inline void print(const Matrix2 &v) {
     printf("\n%f %f\n%f %f\n", v[0][0], v[1][0], v[0][1], v[1][1]);
 }
 
@@ -243,7 +239,7 @@ inline void print(const Vector4i &v) {
     printf("%d %d %d %d\n", v[0], v[1], v[2], v[3]);
 }
 
-inline void print(const mat4 &v) {
+inline void print(const Matrix4 &v) {
     printf("\n");
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
@@ -253,7 +249,7 @@ inline void print(const mat4 &v) {
     }
 }
 
-inline void print(const mat3 &v) {
+inline void print(const Matrix3 &v) {
     printf("\n");
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {

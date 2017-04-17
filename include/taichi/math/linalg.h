@@ -149,13 +149,13 @@ inline bool is_normal(Vector3d v) {
 }
 
 template <>
-inline bool is_normal(mat2 m) {
+inline bool is_normal(Matrix2 m) {
     return is_normal(m[0][0]) && is_normal(m[0][1]) &&
            is_normal(m[1][0]) && is_normal(m[1][1]);
 }
 
 template <>
-inline bool is_normal(mat3 m) {
+inline bool is_normal(Matrix3 m) {
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             if (!is_normal(m[i][j])) return false;
@@ -165,7 +165,7 @@ inline bool is_normal(mat3 m) {
 }
 
 template <>
-inline bool is_normal(mat4 m) {
+inline bool is_normal(Matrix4 m) {
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
             if (!is_normal(m[i][j])) return false;
@@ -202,11 +202,23 @@ inline float matrix_norm_squared(const Matrix3 &a) {
     return sum;
 }
 
-inline float frobenius_norm(const Matrix2 &a) {
-    return sqrt(a[0][0] * a[0][0] + a[0][1] * a[0][1] + a[1][0] * a[1][0] + a[1][1] * a[1][1]);
+inline double frobenius_norm2(const Matrix2d &a) {
+    return a[0][0] * a[0][0] + a[0][1] * a[0][1] + a[1][0] * a[1][0] + a[1][1] * a[1][1];
 }
 
-inline float frobenius_norm(const Matrix3 &a) {
+inline double frobenius_norm(const Matrix2d &a) {
+	return sqrt(frobenius_norm2(a));
+}
+
+inline real frobenius_norm2(const Matrix2 &a) {
+    return a[0][0] * a[0][0] + a[0][1] * a[0][1] + a[1][0] * a[1][0] + a[1][1] * a[1][1];
+}
+
+inline real frobenius_norm(const Matrix2 &a) {
+	return sqrt(frobenius_norm2(a));
+}
+
+inline real frobenius_norm(const Matrix3 &a) {
     return sqrt(a[0][0] * a[0][0] + a[0][1] * a[0][1] + a[1][0] * a[1][0] + a[1][1] * a[1][1]);
 }
 

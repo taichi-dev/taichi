@@ -160,7 +160,8 @@ class SimulationWindow(pyglet.window.Window):
             positions.append(p.position.x)
             positions.append(p.position.y)
             if p.color.x != -1:
-                color = (int(p.color.x), int(p.color.y), int(p.color.z), 200)
+                color = p.color * 255
+                color = tuple(map(int, (color.x, color.y, color.z, 200)))
             else:
                 color = self.color_scheme['particles']
             for i in range(4):

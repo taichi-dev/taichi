@@ -57,13 +57,13 @@ void MPM::substep() {
     grid.reset();
     int64 t_int_increment;
 
-	Array2D<int64> &max_dt_int_strength = scheduler.max_dt_int_strength;
-	Array2D<int64> &max_dt_int_cfl = scheduler.max_dt_int_cfl;
-	Array2D<int64> &max_dt_int = scheduler.max_dt_int;
+    Array2D<int64> &max_dt_int_strength = scheduler.max_dt_int_strength;
+    Array2D<int64> &max_dt_int_cfl = scheduler.max_dt_int_cfl;
+    Array2D<int64> &max_dt_int = scheduler.max_dt_int;
 
     if (async) {
         scheduler.reset();
-		scheduler.update_dt_limits(t);
+        scheduler.update_dt_limits(t);
 
         t_int_increment = get_largest_pot(int64(maximum_delta_t / base_delta_t));
 
@@ -71,7 +71,7 @@ void MPM::substep() {
             max_dt_int[ind] = std::min(max_dt_int_cfl[ind], max_dt_int_strength[ind]);
             // max_dt_int[ind] = std::min(max_dt_int[ind], scheduler.update_propagation[ind]);
             if (scheduler.has_particle(ind)) {
-				t_int_increment = std::min(t_int_increment, max_dt_int[ind]);
+                t_int_increment = std::min(t_int_increment, max_dt_int[ind]);
             }
         }
         //scheduler.update_propagation.reset(1LL << 60);
@@ -105,65 +105,65 @@ void MPM::substep() {
             debug_blocks[ind] = Vector4(vis_strength[ind], vis_cfl[ind], 0.0f, 1.0f);
         }
 
-		if (debug_input[2] > 0) {
-			P(t_int_increment);
-		}
+        if (debug_input[2] > 0) {
+            P(t_int_increment);
+        }
         // t_int_increment is the biggest allowed dt.
         t_int_increment = t_int_increment - t_int % t_int_increment;
 
-		if (debug_input[2] > 0) {
-			P(t_int_increment);
-		}
+        if (debug_input[2] > 0) {
+            P(t_int_increment);
+        }
 
         t_int += t_int_increment; // final dt
-		// P(t_int);
+        // P(t_int);
         t = base_delta_t * t_int;
 
 
-		/*
-			for (int i = scheduler.max_dt_int.get_height() - 1; i >= 0; i--) {
-				for (int j = 0; j < scheduler.max_dt_int.get_width(); j++) {
-					// std::cout << scheduler.particle_groups[j * scheduler.res[1] + i].size() << " " << (int)scheduler.has_particle(Vector2i(j, i)) << "; ";
-					printf(" %f", scheduler.min_max_vel[j][i][0]);
-				}
-				printf("\n");
-			}
-			printf("\n");
-			P(scheduler.get_active_particles().size());
-			for (int i = scheduler.max_dt_int.get_height() - 1; i >= 0; i--) {
-				for (int j = 0; j < scheduler.max_dt_int.get_width(); j++) {
-					if (max_dt_int[j][i] >= (1LL << 60)) {
-						printf("      #");
-					} else {
-						printf("%6lld", max_dt_int_strength[j][i]);
-						if (scheduler.states[j][i] == 1) {
-							printf("*");
-						} else {
-							printf(" ");
-						}
-					}
-				}
-				printf("\n");
-			}
-			printf("\n");
-			printf("cfl\n");
-			for (int i = scheduler.max_dt_int.get_height() - 1; i >= 0; i--) {
-				for (int j = 0; j < scheduler.max_dt_int.get_width(); j++) {
-					if (max_dt_int[j][i] >= (1LL << 60)) {
-						printf("      #");
-					} else {
-						printf("%6lld", max_dt_int_cfl[j][i]);
-						if (scheduler.states[j][i] == 1) {
-							printf("*");
-						} else {
-							printf(" ");
-						}
-					}
-				}
-				printf("\n");
-			}
-			printf("\n");
-		*/
+        /*
+            for (int i = scheduler.max_dt_int.get_height() - 1; i >= 0; i--) {
+                for (int j = 0; j < scheduler.max_dt_int.get_width(); j++) {
+                    // std::cout << scheduler.particle_groups[j * scheduler.res[1] + i].size() << " " << (int)scheduler.has_particle(Vector2i(j, i)) << "; ";
+                    printf(" %f", scheduler.min_max_vel[j][i][0]);
+                }
+                printf("\n");
+            }
+            printf("\n");
+            P(scheduler.get_active_particles().size());
+            for (int i = scheduler.max_dt_int.get_height() - 1; i >= 0; i--) {
+                for (int j = 0; j < scheduler.max_dt_int.get_width(); j++) {
+                    if (max_dt_int[j][i] >= (1LL << 60)) {
+                        printf("      #");
+                    } else {
+                        printf("%6lld", max_dt_int_strength[j][i]);
+                        if (scheduler.states[j][i] == 1) {
+                            printf("*");
+                        } else {
+                            printf(" ");
+                        }
+                    }
+                }
+                printf("\n");
+            }
+            printf("\n");
+            printf("cfl\n");
+            for (int i = scheduler.max_dt_int.get_height() - 1; i >= 0; i--) {
+                for (int j = 0; j < scheduler.max_dt_int.get_width(); j++) {
+                    if (max_dt_int[j][i] >= (1LL << 60)) {
+                        printf("      #");
+                    } else {
+                        printf("%6lld", max_dt_int_cfl[j][i]);
+                        if (scheduler.states[j][i] == 1) {
+                            printf("*");
+                        } else {
+                            printf(" ");
+                        }
+                    }
+                }
+                printf("\n");
+            }
+            printf("\n");
+        */
 
         int64 max_dt = 0, min_dt = 1LL << 60;
 
@@ -186,26 +186,26 @@ void MPM::substep() {
             }
             // printf("t_int %lld max_dt_int %lld mod %lld %d %d\n", t_int, max_dt_int[ind], t_int % max_dt_int[ind], ind.i, ind.j);
         }
-		if (debug_input[2] > 0) {
-			printf("min_dt %lld max_dt %lld dynamic_range %lld\n", min_dt, max_dt, max_dt / min_dt);
+        if (debug_input[2] > 0) {
+            printf("min_dt %lld max_dt %lld dynamic_range %lld\n", min_dt, max_dt, max_dt / min_dt);
 
-			for (int i = scheduler.max_dt_int.get_height() - 1; i >= 0; i--) {
-				for (int j = 0; j < scheduler.max_dt_int.get_width(); j++) {
-					if (max_dt_int[j][i] >= (1LL << 60)) {
-						printf("      #");
-					} else {
-						printf("%6lld", max_dt_int[j][i]);
-						if (scheduler.states[j][i] == 1) {
-							printf("*");
-						} else {
-							printf(" ");
-						}
-					}
-				}
-				printf("\n");
-			}
-			printf("\n");
-		}
+            for (int i = scheduler.max_dt_int.get_height() - 1; i >= 0; i--) {
+                for (int j = 0; j < scheduler.max_dt_int.get_width(); j++) {
+                    if (max_dt_int[j][i] >= (1LL << 60)) {
+                        printf("      #");
+                    } else {
+                        printf("%6lld", max_dt_int[j][i]);
+                        if (scheduler.states[j][i] == 1) {
+                            printf("*");
+                        } else {
+                            printf(" ");
+                        }
+                    }
+                }
+                printf("\n");
+            }
+            printf("\n");
+        }
 
         // TODO...
         exist_updating_particle = true;
@@ -228,13 +228,13 @@ void MPM::substep() {
             }
             p->march_interval = max_dt_int[low_res_pos];
             if (old_grid_states[low_res_pos] == 1) {
-				scheduler.states[low_res_pos] = 2;
+                scheduler.states[low_res_pos] = 2;
             }
         }
     } else {
         // Sync
         t_int_increment = 1;
-		scheduler.states = 2;
+        scheduler.states = 2;
         for (auto &p : particles) {
             p->state = MPMParticle::UPDATING;
             p->march_interval = 1;
@@ -243,27 +243,27 @@ void MPM::substep() {
         t = base_delta_t * t_int;
     }
 
-	scheduler.update();
-	// P(scheduler.get_active_particles().size());
+    scheduler.update();
+    // P(scheduler.get_active_particles().size());
 
     int active_particle_count = 0;
     int buffer_particle_count = 0;
-	for (auto &p : scheduler.get_active_particles()) {
-		Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
-		p->march_interval = max_dt_int[low_res_pos];
-		if (scheduler.states[low_res_pos] == 2) {
-			p->state = MPMParticle::UPDATING;
-			active_particle_count += 1;
-		} else {
-			p->state = MPMParticle::BUFFER;
-			buffer_particle_count += 1;
-		}
-	}
+    for (auto &p : scheduler.get_active_particles()) {
+        Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
+        p->march_interval = max_dt_int[low_res_pos];
+        if (scheduler.states[low_res_pos] == 2) {
+            p->state = MPMParticle::UPDATING;
+            active_particle_count += 1;
+        } else {
+            p->state = MPMParticle::BUFFER;
+            buffer_particle_count += 1;
+        }
+    }
 
-	if (debug_input[2] > 0) {
-		P(active_particle_count);
-		P(buffer_particle_count);
-	}
+    if (debug_input[2] > 0) {
+        P(active_particle_count);
+        P(buffer_particle_count);
+    }
 
     for (auto &p : scheduler.get_active_particles()) {
         p->calculate_kernels();
@@ -277,19 +277,19 @@ void MPM::substep() {
     grid.normalize_acceleration();
     grid.apply_boundary_conditions(levelset, t_int_increment * base_delta_t, t);
     resample();
-	for (auto &p : scheduler.get_active_particles()) {
-		if (p->state == MPMParticle::UPDATING) {
-			p->pos += (t_int - p->last_update) * delta_t * p->v;
-			p->last_update = t_int;
-		}
-	}
+    for (auto &p : scheduler.get_active_particles()) {
+        if (p->state == MPMParticle::UPDATING) {
+            p->pos += (t_int - p->last_update) * delta_t * p->v;
+            p->last_update = t_int;
+        }
+    }
     if (particle_collision)
         particle_collision_resolution();
-	scheduler.update_particle_groups();
+    scheduler.update_particle_groups();
 }
 
 void MPM::kill_outside_particles() {
-	// TODO: accelerate here
+    // TODO: accelerate here
     std::vector<Particle *> new_particles;
     for (auto &p : particles) {
         bool killed = false;
@@ -306,10 +306,9 @@ void MPM::kill_outside_particles() {
         }
         if (!killed) {
             new_particles.push_back(p);
-		}
-		else {
-			delete p;
-		}
+        } else {
+            delete p;
+        }
     }
     particles.swap(new_particles);
 }
@@ -369,9 +368,9 @@ void MPM::add_particle(std::shared_ptr<MPMParticle> p) {
     // WTH???
     p->mass = 1.0f / res[0] / res[0];
     p->pos += position_noise * Vector2(rand() - 0.5f, rand() - 0.5f);
-	Particle *p_direct = p->duplicate();
+    Particle *p_direct = p->duplicate();
     particles.push_back(p_direct);
-	scheduler.insert_particle(p_direct);
+    scheduler.insert_particle(p_direct);
 }
 
 void MPM::add_particle(EPParticle p) {
@@ -383,10 +382,10 @@ void MPM::add_particle(DPParticle p) {
 }
 
 std::vector<std::shared_ptr<MPMParticle>> MPM::get_particles() {
-	std::vector<std::shared_ptr<MPMParticle>> particles;
-	for (auto &p : this->particles) {
-		particles.push_back(std::shared_ptr<MPMParticle>(p->duplicate()));
-	}
+    std::vector<std::shared_ptr<MPMParticle>> particles;
+    for (auto &p : this->particles) {
+        particles.push_back(std::shared_ptr<MPMParticle>(p->duplicate()));
+    }
     return particles;
 }
 

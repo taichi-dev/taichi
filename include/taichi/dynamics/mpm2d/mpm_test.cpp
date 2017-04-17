@@ -22,8 +22,8 @@ void testRS() {
     Matrix2 A = Matrix2(0.6, 0.8, -0.8, 0.6) * Matrix2(2, 1, 1, 2), r, s;
     A = Matrix2(32, 31, 25, 64);
     A = Matrix2(
-        0.990792, 0.195787,
-        -0.192265, 0.972972);
+            0.990792, 0.195787,
+            -0.192265, 0.972972);
     polar_decomp(A, r, s);
     puts("r");
     print(r);
@@ -46,7 +46,7 @@ void testSVD() {
     Pp(v * glm::transpose(v));
 }
 
-template <void(*T)(const Matrix2 &, Matrix2 &, Matrix2&, Matrix2&)>
+template <void(*T)(const Matrix2 &, Matrix2 &, Matrix2 &, Matrix2 &)>
 void svd_test() {
     int test_num = 100000000;
     int error_count = 0;
@@ -70,6 +70,20 @@ void svd_test() {
         }
     }
     printf("SVD Test error: %d / %d\n", error_count, test_num);
+}
+
+bool MPM::test() const {
+    Matrix2 m(0.096664, 0.065926, 0.020765, 0.014165), r, s;
+    // Matrix2 m(0.097664, 0.065926, 0.020765, 0.014165), r, s;
+    // polar_decomp(m, r, s);
+    // P(r);
+    // P(s);
+    Matrix2 u, sig, v;
+    svd(m, u, sig, v);
+    P(u);
+    P(sig);
+    P(v);
+    return true;
 }
 
 TC_NAMESPACE_END

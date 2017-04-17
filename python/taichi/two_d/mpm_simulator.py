@@ -148,3 +148,6 @@ class MPMSimulator(Simulator):
 
     def create_levelset(self):
         return LevelSet2D(self.res[0] + 1, self.res[1] + 1, self.delta_x, Vector(0.0, 0.0))
+
+    def test(self):
+        return self.simulator.test()

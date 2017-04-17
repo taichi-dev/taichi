@@ -23,7 +23,7 @@ TC_NAMESPACE_BEGIN
 
 extern long long kernel_calc_counter;
 
-class MPM {
+class MPM : public Unit {
 protected:
     Vector2i res;
     Grid grid;
@@ -81,7 +81,7 @@ protected:
 public:
     MPM() {}
 
-    void initialize(const Config &config_);
+    void initialize(const Config &config) override;
 
     void step(real delta_t = 0.0f);
 
@@ -107,11 +107,13 @@ public:
         return debug_blocks;
     }
 
-	int get_grid_block_size() {
-		return grid_block_size;
-	}
-	
-	void kill_outside_particles();
+    int get_grid_block_size() {
+        return grid_block_size;
+    }
+
+    void kill_outside_particles();
+
+    bool test() const override;
 };
 
 TC_NAMESPACE_END

@@ -18,39 +18,39 @@ TC_NAMESPACE_BEGIN
 
 class MPMScheduler {
 public:
-	typedef MPMParticle Particle;
-    Array2D <int64> max_dt_int_strength;
-    Array2D <int64> max_dt_int_cfl;
-    Array2D <int64> max_dt_int;
-    Array2D <int64> update_propagation;
+    typedef MPMParticle Particle;
+    Array2D<int64> max_dt_int_strength;
+    Array2D<int64> max_dt_int_cfl;
+    Array2D<int64> max_dt_int;
+    Array2D<int64> update_propagation;
     Array2D<int> states;
     Array2D<int> updated;
-    Array2D <Vector4> min_max_vel;
-    Array2D <Vector4> min_max_vel_expanded;
-	std::vector<std::vector<Particle *>> particle_groups;
+    Array2D<Vector4> min_max_vel;
+    Array2D<Vector4> min_max_vel_expanded;
+    std::vector<std::vector<Particle *>> particle_groups;
     Vector2i res;
-	Vector2i sim_res;
-	std::vector<Particle *> active_particles;
-	std::vector<Vector2i> active_grid_points;
-	DynamicLevelSet2D *levelset;
-	real base_delta_t;
-	real cfl;
+    Vector2i sim_res;
+    std::vector<Particle *> active_particles;
+    std::vector<Vector2i> active_grid_points;
+    DynamicLevelSet2D *levelset;
+    real base_delta_t;
+    real cfl;
 
     void initialize(const Vector2i &sim_res, real base_delta_t, real cfl, DynamicLevelSet2D *levelset) {
-		this->sim_res = sim_res;
+        this->sim_res = sim_res;
         res.x = (sim_res.x + grid_block_size - 1) / grid_block_size;
         res.y = (sim_res.y + grid_block_size - 1) / grid_block_size;
 
-		this->base_delta_t = base_delta_t;
-		this->levelset = levelset;
-		this->cfl = cfl;
+        this->base_delta_t = base_delta_t;
+        this->levelset = levelset;
+        this->cfl = cfl;
 
         states.initialize(res, 0);
         updated.initialize(res, 1);
-		particle_groups.resize(res[0] * res[1]);
-		for (int i = 0; i < res[0] * res[1]; i++) {
-			particle_groups[i] = std::vector<Particle *>();
-		}
+        particle_groups.resize(res[0] * res[1]);
+        for (int i = 0; i < res[0] * res[1]; i++) {
+            particle_groups[i] = std::vector<Particle *>();
+        }
         min_max_vel.initialize(res, Vector4(0));
         min_max_vel = Vector4(1e30f, 1e30f, -1e30f, -1e30f);
         min_max_vel_expanded.initialize(res, Vector4(0));
@@ -65,13 +65,13 @@ public:
         max_dt_int.reset(1LL << 60);
     }
 
-	bool has_particle(const Index2D &ind) {
-		return has_particle(Vector2i(ind.i, ind.j));
-	}
-	
-	bool has_particle(const Vector2i &ind) {
-		return particle_groups[ind.x * res[1] + ind.y].size() > 0;
-	}
+    bool has_particle(const Index2D &ind) {
+        return has_particle(Vector2i(ind.i, ind.j));
+    }
+
+    bool has_particle(const Vector2i &ind) {
+        return particle_groups[ind.x * res[1] + ind.y].size() > 0;
+    }
 
     void expand(bool expand_vel, bool expand_state) {
         Array2D<int> new_states;
@@ -119,78 +119,78 @@ public:
     }
 
     void update() {
-		// Use <= here since grid_res = sim_res + 1
-		active_particles.clear();
-		active_grid_points.clear();
-		for (int i = 0; i <= sim_res[0]; i++) {
-			for (int j = 0; j <= sim_res[1]; j++) {
-				if (states[i / grid_block_size][j / grid_block_size] == 1) {
-					active_grid_points.push_back(Vector2i(i, j));
-				}
-			}
+        // Use <= here since grid_res = sim_res + 1
+        active_particles.clear();
+        active_grid_points.clear();
+        for (int i = 0; i <= sim_res[0]; i++) {
+            for (int j = 0; j <= sim_res[1]; j++) {
+                if (states[i / grid_block_size][j / grid_block_size] == 1) {
+                    active_grid_points.push_back(Vector2i(i, j));
+                }
+            }
 
-		}
-		for (auto &ind : states.get_region()) {
-			if (states[ind] != 0) {
-				for (auto &p : particle_groups[res[1] * ind.i + ind.j]) {
-					active_particles.push_back(p);
-				}
-			}
-		}
+        }
+        for (auto &ind : states.get_region()) {
+            if (states[ind] != 0) {
+                for (auto &p : particle_groups[res[1] * ind.i + ind.j]) {
+                    active_particles.push_back(p);
+                }
+            }
+        }
     }
 
-	void update_particle_groups() {
-		// Remove all updating particles, and then re-insert them
-		for (auto &ind : states.get_region()) {
-			if (states[ind] == 0) {
-				continue;
-			}
-			particle_groups[res[1] * ind.i + ind.j].clear();
-			updated[ind] = 1;
-		}
-		for (auto &p : active_particles) {
-			insert_particle(p);
-		}
-	}
+    void update_particle_groups() {
+        // Remove all updating particles, and then re-insert them
+        for (auto &ind : states.get_region()) {
+            if (states[ind] == 0) {
+                continue;
+            }
+            particle_groups[res[1] * ind.i + ind.j].clear();
+            updated[ind] = 1;
+        }
+        for (auto &p : active_particles) {
+            insert_particle(p);
+        }
+    }
 
-	void insert_particle(Particle *p) {
-		int x = int(p->pos.x / grid_block_size);
-		int y = int(p->pos.y / grid_block_size);
-		if (states.inside(x, y)) {
-			int index = res[1] * x + y;
-			particle_groups[index].push_back(p);
-			updated[x][y] = 1;
-		}
-	}
+    void insert_particle(Particle *p) {
+        int x = int(p->pos.x / grid_block_size);
+        int y = int(p->pos.y / grid_block_size);
+        if (states.inside(x, y)) {
+            int index = res[1] * x + y;
+            particle_groups[index].push_back(p);
+            updated[x][y] = 1;
+        }
+    }
 
-	void update_dt_limits(real t) {
-		for (auto &ind : states.get_region()) {
-			// Update those blocks needing an update
-			if (!updated[ind]) {
-				continue;
-			}
-			updated[ind] = 0;
-			max_dt_int_strength[ind] = 1LL << 60;
-			max_dt_int_cfl[ind] = 1LL << 60;
-			min_max_vel[ind] = Vector4(1e30f, 1e30f, -1e30f, -1e30f);
-			for (auto &p : particle_groups[res[1] * ind.i + ind.j]) {
-				int64 march_interval;
-				int64 allowed_t_int_inc = (int64)(p->get_allowed_dt() / base_delta_t);
-				if (allowed_t_int_inc <= 0) {
-					P(allowed_t_int_inc);
-					allowed_t_int_inc = 1;
-				}
-				march_interval = get_largest_pot(allowed_t_int_inc);
-				p->march_interval = march_interval;
-				max_dt_int_strength[ind] = std::min(max_dt_int_strength[ind],
-															march_interval);
-				auto &tmp = min_max_vel[ind];
-				tmp[0] = std::min(tmp[0], p->v.x);
-				tmp[1] = std::min(tmp[1], p->v.y);
-				tmp[2] = std::max(tmp[2], p->v.x);
-				tmp[3] = std::max(tmp[3], p->v.y);
-			}
-		}
+    void update_dt_limits(real t) {
+        for (auto &ind : states.get_region()) {
+            // Update those blocks needing an update
+            if (!updated[ind]) {
+                continue;
+            }
+            updated[ind] = 0;
+            max_dt_int_strength[ind] = 1LL << 60;
+            max_dt_int_cfl[ind] = 1LL << 60;
+            min_max_vel[ind] = Vector4(1e30f, 1e30f, -1e30f, -1e30f);
+            for (auto &p : particle_groups[res[1] * ind.i + ind.j]) {
+                int64 march_interval;
+                int64 allowed_t_int_inc = (int64)(p->get_allowed_dt() / base_delta_t);
+                if (allowed_t_int_inc <= 0) {
+                    P(allowed_t_int_inc);
+                    allowed_t_int_inc = 1;
+                }
+                march_interval = get_largest_pot(allowed_t_int_inc);
+                p->march_interval = march_interval;
+                max_dt_int_strength[ind] = std::min(max_dt_int_strength[ind],
+                                                    march_interval);
+                auto &tmp = min_max_vel[ind];
+                tmp[0] = std::min(tmp[0], p->v.x);
+                tmp[1] = std::min(tmp[1], p->v.y);
+                tmp[2] = std::max(tmp[2], p->v.x);
+                tmp[3] = std::max(tmp[3], p->v.y);
+            }
+        }
         // Expand velocity
         expand(true, false);
 
@@ -212,31 +212,31 @@ public:
             for (int i = 0; i < 4; i++) {
                 block_absolute_vel = std::max(block_absolute_vel, std::abs(min_max_vel_expanded[ind][i]));
             }
-			real last_distance = levelset->sample(Vector2(ind.get_pos() * real(grid_block_size)), t);
-			if (last_distance < LevelSet2D::INF) {
-				real distance2boundary = std::max(last_distance - real(grid_block_size) * 0.75f, 0.5f);
-				int64 boundary_limit = int64(cfl * distance2boundary / block_absolute_vel / base_delta_t);
-				cfl_limit = std::min(cfl_limit, boundary_limit);
-			}
+            real last_distance = levelset->sample(Vector2(ind.get_pos() * real(grid_block_size)), t);
+            if (last_distance < LevelSet2D::INF) {
+                real distance2boundary = std::max(last_distance - real(grid_block_size) * 0.75f, 0.5f);
+                int64 boundary_limit = int64(cfl * distance2boundary / block_absolute_vel / base_delta_t);
+                cfl_limit = std::min(cfl_limit, boundary_limit);
+            }
             max_dt_int_cfl[ind] = get_largest_pot(cfl_limit);
         }
-	}
-
-    int get_num_active_grids() {
-		int count = 0;
-		for (auto &ind : states.get_region()) {
-			count += int(states[ind] != 0);
-		}
-		return count;
     }
 
-	const std::vector<Particle *> &get_active_particles() const {
-		return active_particles;
-	}
+    int get_num_active_grids() {
+        int count = 0;
+        for (auto &ind : states.get_region()) {
+            count += int(states[ind] != 0);
+        }
+        return count;
+    }
 
-	const std::vector<Vector2i> &get_active_grid_points() const {
-		return active_grid_points;
-	}
+    const std::vector<Particle *> &get_active_particles() const {
+        return active_particles;
+    }
+
+    const std::vector<Vector2i> &get_active_grid_points() const {
+        return active_grid_points;
+    }
 };
 
 TC_NAMESPACE_END

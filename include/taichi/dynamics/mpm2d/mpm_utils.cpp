@@ -45,8 +45,7 @@ void svd(const Matrix2 &A, Matrix2 &u, Matrix2 &sig, Matrix2 &v) {
             P(D);
             P(sigma);
         }
-    }
-    else {
+    } else {
         v = Matrix2(1, 0, 0, 1);
     }
     sig = Matrix2(sqrt(sigma[0]), 0, 0, sqrt(sigma[1]));

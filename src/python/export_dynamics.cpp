@@ -81,6 +81,7 @@ void export_dynamics(py::module &m) {
         .def(py::init<>()) \
         .def("initialize", &SIM::initialize) \
         .def("step", &SIM::step) \
+        .def("test", &SIM::test) \
         .def("add_particle", static_cast<void (SIM::*)(std::shared_ptr<MPMParticle>)>(&SIM::add_particle)) \
         .def("get_current_time", &SIM::get_current_time) \
         .def("get_particles", &SIM::get_particles) \

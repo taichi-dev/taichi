@@ -70,6 +70,8 @@ class SimulationWindow(pyglet.window.Window):
                     self.simulator.step()
             self.pressed = False
         else:
+            if self.video_output:
+                self.video_manager.make_video()
             exit(0)
         print 'Elapsed time:', time.time() - t
         self.redraw()
@@ -96,7 +98,7 @@ class SimulationWindow(pyglet.window.Window):
         label = pyglet.text.Label('t = %.5f' % (self.simulator.get_current_time()),
                                   font_name='Rockwell',
                                   font_size=12,
-                                  x=10, y=self.height - 5,
+                                  x=10, y=20,
                                   anchor_x='left', anchor_y='top')
         ls_width = self.width * self.levelset_supersampling
         ls_height = self.height * self.levelset_supersampling

@@ -22,7 +22,6 @@ public:
     Array2D<int64> max_dt_int_strength;
     Array2D<int64> max_dt_int_cfl;
     Array2D<int64> max_dt_int;
-    Array2D<int64> update_propagation;
     Array2D<int> states;
     Array2D<int> updated;
     Array2D<Vector4> min_max_vel;
@@ -57,12 +56,11 @@ public:
         max_dt_int_strength.initialize(res, 0);
         max_dt_int_cfl.initialize(res, 0);
         max_dt_int.initialize(res, 0);
-        update_propagation.initialize(res, 1LL << 60);
     }
 
     void reset() {
         states = 0;
-        max_dt_int.reset(1LL << 60);
+        max_dt_int.initialize(res, 1LL << 60LL);
     }
 
     bool has_particle(const Index2D &ind) {
@@ -73,16 +71,23 @@ public:
         return particle_groups[ind.x * res[1] + ind.y].size() > 0;
     }
 
-    void expand(bool expand_vel, bool expand_state) {
+    void expand(bool expand_vel, bool expand_state, bool expand_propagation) {
         Array2D<int> new_states;
+        Array2D<int> old_states;
+        if (expand_state) {
+            old_states = states;
+        }
         Array2D<Vector4> new_min_max_vel;
         new_min_max_vel.initialize(res, Vector4(1e30f, 1e30f, -1e30f, -1e30f));
         min_max_vel_expanded = Vector4(1e30f, 1e30f, -1e30f, -1e30f);
         new_states.initialize(res, 0);
+        Array2D<int64> new_max_dt_int;
 
         auto update = [&](const Index2D ind, int dx, int dy,
                           const Array2D<Vector4> &min_max_vel, Array2D<Vector4> &new_min_max_vel,
-                          const Array2D<int> &states, Array2D<int> &new_states) -> void {
+                          const Array2D<int> &states, Array2D<int> &new_states,
+                          const Array2D<int64> &max_dt_int,
+                          Array2D<int64> &new_max_dt_int) -> void {
             if (expand_vel) {
                 auto &tmp = new_min_max_vel[ind.neighbour(dx, dy)];
                 tmp[0] = std::min(tmp[0], min_max_vel[ind][0]);
@@ -98,24 +103,23 @@ public:
 
         // Expand x
         for (auto &ind : states.get_region()) {
-            update(ind, 0, 0, min_max_vel, new_min_max_vel, states, new_states);
-            if (ind.i > 0) {
-                update(ind, -1, 0, min_max_vel, new_min_max_vel, states, new_states);
-            }
-            if (ind.i < states.get_width() - 1) {
-                update(ind, 1, 0, min_max_vel, new_min_max_vel, states, new_states);
+            for (int dx = -1; dx <= 1; dx++) {
+                if (0 <= ind.i + dx && ind.i + dx < states.get_width())
+                    update(ind, dx, 0, min_max_vel, new_min_max_vel, states, new_states, max_dt_int,
+                           new_max_dt_int);
             }
         }
         // Expand y
         for (auto &ind : states.get_region()) {
-            update(ind, 0, 0, new_min_max_vel, min_max_vel_expanded, new_states, states);
-            if (ind.j > 0) {
-                update(ind, 0, -1, new_min_max_vel, min_max_vel_expanded, new_states, states);
-            }
-            if (ind.j < states.get_height() - 1) {
-                update(ind, 0, 1, new_min_max_vel, min_max_vel_expanded, new_states, states);
+            for (int dy = -1; dy <= 1; dy++) {
+                if (0 <= ind.j + dy && ind.j + dy < states.get_height())
+                    update(ind, 0, dy, new_min_max_vel, min_max_vel_expanded, new_states, states,
+                           new_max_dt_int, max_dt_int);
             }
         }
+        if (expand_state) {
+            states += old_states;
+        } // 1: buffer, 2: updating
     }
 
     void update() {
@@ -192,7 +196,7 @@ public:
             }
         }
         // Expand velocity
-        expand(true, false);
+        expand(true, false, false);
 
         for (auto &ind : min_max_vel.get_region()) {
             real block_vel = std::max(
@@ -236,6 +240,101 @@ public:
 
     const std::vector<Vector2i> &get_active_grid_points() const {
         return active_grid_points;
+    }
+
+    void visualize(const Vector4 &debug_input, Array2D<Vector4> &debug_blocks) const {
+        int64 minimum = int64(debug_input[0]);
+        if (minimum == 0) {
+            for (auto &ind : max_dt_int_cfl.get_region()) {
+                minimum = std::min(minimum, max_dt_int[ind]);
+            }
+        }
+        minimum = std::max(minimum, 1LL);
+        int grades = int(debug_input[1]);
+        if (grades == 0) {
+            grades = 10;
+        }
+
+        auto visualize = [](const Array2D<int64> step, int grades, int64 minimum) -> Array2D<real> {
+            Array2D<real> output;
+            output.initialize(step.get_width(), step.get_height());
+            for (auto &ind : step.get_region()) {
+                real r;
+                r = 1.0f - std::log2(1.0f * (step[ind] / minimum)) / grades;
+                output[ind] = clamp(r, 0.0f, 1.0f);
+            }
+            return output;
+        };
+
+        auto vis_strength = visualize(max_dt_int_strength, grades, minimum);
+        auto vis_cfl = visualize(max_dt_int_cfl, grades, minimum);
+        for (auto &ind : min_max_vel.get_region()) {
+            debug_blocks[ind] = Vector4(vis_strength[ind], vis_cfl[ind], 0.0f, 1.0f);
+        }
+    }
+
+    void print_limits() {
+        for (int i = max_dt_int.get_height() - 1; i >= 0; i--) {
+            for (int j = 0; j < max_dt_int.get_width(); j++) {
+                // std::cout << scheduler.particle_groups[j * scheduler.res[1] + i].size() << " " << (int)scheduler.has_particle(Vector2i(j, i)) << "; ";
+                printf(" %f", min_max_vel[j][i][0]);
+            }
+            printf("\n");
+        }
+        printf("\n");
+        P(get_active_particles().size());
+        for (int i = max_dt_int.get_height() - 1; i >= 0; i--) {
+            for (int j = 0; j < max_dt_int.get_width(); j++) {
+                if (max_dt_int[j][i] >= (1LL << 60)) {
+                    printf("      #");
+                } else {
+                    printf("%6lld", max_dt_int_strength[j][i]);
+                    if (states[j][i] == 1) {
+                        printf("*");
+                    } else {
+                        printf(" ");
+                    }
+                }
+            }
+            printf("\n");
+        }
+        printf("\n");
+        printf("cfl\n");
+        for (int i = max_dt_int.get_height() - 1; i >= 0; i--) {
+            for (int j = 0; j < max_dt_int.get_width(); j++) {
+                if (max_dt_int[j][i] >= (1LL << 60)) {
+                    printf("      #");
+                } else {
+                    printf("%6lld", max_dt_int_cfl[j][i]);
+                    if (states[j][i] == 1) {
+                        printf("*");
+                    } else {
+                        printf(" ");
+                    }
+                }
+            }
+            printf("\n");
+        }
+        printf("\n");
+    }
+
+    void update_particle_states() {
+        for (auto &p : get_active_particles()) {
+            p->color = Vector3(1.0f);
+            Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
+            p->march_interval = max_dt_int[low_res_pos];
+        }
+    }
+
+    void reset_particle_states() {
+        for (auto &p : get_active_particles()) {
+            Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
+            if (states[low_res_pos] == 0) {
+                p->state = MPMParticle::INACTIVE;
+                p->color = Vector3(0.3f);
+                continue;
+            }
+        }
     }
 };
 

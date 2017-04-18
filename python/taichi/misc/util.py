@@ -179,6 +179,8 @@ def imread(fn, bgr=False):
 
 
 def ndarray_to_array2d(array):
+    if array.dtype == np.uint8:
+        array = (array * (1 / 255.0)).astype(np.float32)
     assert array.dtype == np.float32
     array = array.copy()
     input_ptr = array.ctypes.data_as(ctypes.c_void_p).value
@@ -206,3 +208,7 @@ def array2d_to_ndarray(arr):
     output_ptr = ndarray.ctypes.data_as(ctypes.c_void_p).value
     arr.to_ndarray(output_ptr)
     return ndarray
+
+
+def opencv_img_to_taichi_img(img):
+    return (img.swapaxes(0, 1)[:, ::-1, ::-1] * (1 / 255.0)).astype(np.float32)

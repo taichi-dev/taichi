@@ -11,7 +11,7 @@
 
 TC_NAMESPACE_BEGIN
 
-void MPMScheduler::expand(bool expand_vel, bool expand_state, bool expand_propagation) {
+void MPMScheduler::expand(bool expand_vel, bool expand_state) {
     Array2D<int> new_states;
     Array2D<int> old_states;
     if (expand_state) {
@@ -21,13 +21,10 @@ void MPMScheduler::expand(bool expand_vel, bool expand_state, bool expand_propag
     new_min_max_vel.initialize(res, Vector4(1e30f, 1e30f, -1e30f, -1e30f));
     min_max_vel_expanded = Vector4(1e30f, 1e30f, -1e30f, -1e30f);
     new_states.initialize(res, 0);
-    Array2D<int64> new_max_dt_int;
 
     auto update = [&](const Index2D ind, int dx, int dy,
                       const Array2D<Vector4> &min_max_vel, Array2D<Vector4> &new_min_max_vel,
-                      const Array2D<int> &states, Array2D<int> &new_states,
-                      const Array2D<int64> &max_dt_int,
-                      Array2D<int64> &new_max_dt_int) -> void {
+                      const Array2D<int> &states, Array2D<int> &new_states) -> void {
         if (expand_vel) {
             auto &tmp = new_min_max_vel[ind.neighbour(dx, dy)];
             tmp[0] = std::min(tmp[0], min_max_vel[ind][0]);
@@ -45,16 +42,14 @@ void MPMScheduler::expand(bool expand_vel, bool expand_state, bool expand_propag
     for (auto &ind : states.get_region()) {
         for (int dx = -1; dx <= 1; dx++) {
             if (0 <= ind.i + dx && ind.i + dx < states.get_width())
-                update(ind, dx, 0, min_max_vel, new_min_max_vel, states, new_states, max_dt_int,
-                       new_max_dt_int);
+                update(ind, dx, 0, min_max_vel, new_min_max_vel, states, new_states);
         }
     }
     // Expand y
     for (auto &ind : states.get_region()) {
         for (int dy = -1; dy <= 1; dy++) {
             if (0 <= ind.j + dy && ind.j + dy < states.get_height())
-                update(ind, 0, dy, new_min_max_vel, min_max_vel_expanded, new_states, states,
-                       new_max_dt_int, max_dt_int);
+                update(ind, 0, dy, new_min_max_vel, min_max_vel_expanded, new_states, states);
         }
     }
     if (expand_state) {
@@ -83,11 +78,15 @@ void MPMScheduler::update() {
     update_particle_states();
 }
 
-int64 MPMScheduler::update_max_dt_int() {
+int64 MPMScheduler::update_max_dt_int(int64 t_int) {
     int64 ret = 1LL << 60;
     for (auto &ind : max_dt_int.get_region()) {
         int64 this_step_limit = std::min(max_dt_int_cfl[ind], max_dt_int_strength[ind]);
-        max_dt_int[ind] = std::min(max_dt_int[ind], this_step_limit);
+        int64 allowed_multiplier = 1;
+        if (t_int % max_dt_int[ind] == 0) {
+            allowed_multiplier = 2;
+        }
+        max_dt_int[ind] = std::min(max_dt_int[ind] * allowed_multiplier, this_step_limit);
         if (has_particle(ind)) {
             ret = std::min(ret, max_dt_int[ind]);
         }
@@ -148,7 +147,7 @@ void MPMScheduler::update_dt_limits(real t) {
         }
     }
     // Expand velocity
-    expand(true, false, false);
+    expand(true, false);
 
     for (auto &ind : min_max_vel.get_region()) {
         real block_vel = std::max(
@@ -222,7 +221,7 @@ void MPMScheduler::print_limits() {
     for (int i = max_dt_int.get_height() - 1; i >= 0; i--) {
         for (int j = 0; j < max_dt_int.get_width(); j++) {
             if (max_dt_int[j][i] >= (1LL << 60)) {
-                printf("      #");
+                printf("      .");
             } else {
                 printf("%6lld", max_dt_int_strength[j][i]);
                 if (states[j][i] == 1) {
@@ -257,17 +256,21 @@ void MPMScheduler::print_limits() {
 void MPMScheduler::print_max_dt_int() {
     int64 max_dt = 0, min_dt = 1LL << 60;
     for (auto &ind : states.get_region()) {
-        max_dt = std::max(max_dt_int[ind], max_dt);
-        min_dt = std::min(max_dt_int[ind], min_dt);
+        if (has_particle(ind)) {
+            max_dt = std::max(max_dt_int[ind], max_dt);
+            min_dt = std::min(max_dt_int[ind], min_dt);
+        }
     }
     printf("min_dt %lld max_dt %lld dynamic_range %lld\n", min_dt, max_dt, max_dt / min_dt);
     for (int i = max_dt_int.get_height() - 1; i >= 0; i--) {
         for (int j = 0; j < max_dt_int.get_width(); j++) {
-            if (max_dt_int[j][i] >= (1LL << 60)) {
+            if (!has_particle(Vector2i(j, i))) {
                 printf("      #");
             } else {
                 printf("%6lld", max_dt_int[j][i]);
                 if (states[j][i] == 1) {
+                    printf("+");
+                } else if (states[j][i] == 2) {
                     printf("*");
                 } else {
                     printf(" ");
@@ -299,6 +302,23 @@ void MPMScheduler::reset_particle_states() {
         p->state = MPMParticle::INACTIVE;
         p->color = Vector3(0.3f);
     }
+}
+
+void MPMScheduler::enforce_smoothness(int64 t_int_increment) {
+    Array2D<int64> new_max_dt_int = max_dt_int;
+    for (auto &ind : states.get_region()) {
+        if (states[ind] != 0) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    auto neighbour_ind = ind.neighbour(dx, dy);
+                    if (max_dt_int.inside(neighbour_ind)) {
+                        new_max_dt_int[ind] = std::min(new_max_dt_int[ind], max_dt_int[neighbour_ind] * 2);
+                    }
+                }
+            }
+        }
+    }
+    max_dt_int = new_max_dt_int;
 }
 
 TC_NAMESPACE_END

@@ -16,7 +16,6 @@ if __name__ == '__main__':
         simulator = MPMSimulator(res=res, simulation_time=0.22, frame_dt=frame_dt, base_delta_t=1e-4, async=False,
                                  maximum_delta_t=1e-1, debug_input=(1024, 4, 0, 0), gravity=gravity)
 
-
     # simulator.test()
 
     def event(s):

@@ -3,15 +3,15 @@ from taichi.two_d import *
 import taichi as tc
 
 if __name__ == '__main__':
-    scale = 128
+    scale = 256
     res = (scale, scale)
     frame_dt = 1e-3
-    async = True
+    async = False
     bullet = True
     gravity = (0, 0)
     if async:
         simulator = MPMSimulator(res=res, simulation_time=0.03, frame_dt=frame_dt, base_delta_t=1e-6, async=True,
-                                 maximum_delta_t=2e-1, debug_input=(128, 7, 1, 0), cfl=0.5, gravity=gravity,
+                                 maximum_delta_t=2e-1, debug_input=(128, 7, 0, 0), cfl=0.5, gravity=gravity,
                                  show_limits=False)
     else:
         simulator = MPMSimulator(res=res, simulation_time=0.03, frame_dt=frame_dt, base_delta_t=5e-6, async=False,

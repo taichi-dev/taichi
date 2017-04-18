@@ -56,30 +56,34 @@ void MPM::substep() {
     real delta_t = base_delta_t;
 
     grid.reset();
+    int64 original_t_int_increment;
     int64 t_int_increment;
 
     if (async) {
         scheduler.reset();
         scheduler.update_dt_limits(t);
 
-        t_int_increment = std::min(get_largest_pot(int64(maximum_delta_t / base_delta_t)),
-                                   scheduler.update_max_dt_int());
+        original_t_int_increment = std::min(get_largest_pot(int64(maximum_delta_t / base_delta_t)),
+                                   scheduler.update_max_dt_int(t_int));
 
         // t_int_increment is the biggest allowed dt.
-        t_int_increment = t_int_increment - t_int % t_int_increment;
+        t_int_increment = original_t_int_increment - t_int % original_t_int_increment;
 
+        if (debug_input[2] > 0) {
+            P(t_int);
+            P(t_int_increment);
+        }
         t_int += t_int_increment; // final dt
         t = base_delta_t * t_int;
 
         scheduler.set_time(t_int);
 
+        scheduler.expand(false, true);
         if (debug_input[2] > 0) {
             P(t_int_increment);
             scheduler.visualize(debug_input, debug_blocks);
             scheduler.print_max_dt_int();
         }
-
-        scheduler.expand(false, true, false);
     } else {
         // Sync
         t_int_increment = 1;
@@ -116,6 +120,10 @@ void MPM::substep() {
     }
     if (particle_collision)
         particle_collision_resolution();
+
+    if (async) {
+        scheduler.enforce_smoothness(original_t_int_increment);
+    }
 }
 
 void MPM::kill_outside_particles() {

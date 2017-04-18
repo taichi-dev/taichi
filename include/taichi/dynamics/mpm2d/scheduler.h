@@ -55,12 +55,11 @@ public:
         min_max_vel_expanded.initialize(res, Vector4(0));
         max_dt_int_strength.initialize(res, 0);
         max_dt_int_cfl.initialize(res, 0);
-        max_dt_int.initialize(res, 0);
+        max_dt_int.initialize(res, 1);
     }
 
     void reset() {
         states = 0;
-        max_dt_int.initialize(res, 1LL << 60LL);
     }
 
     bool has_particle(const Index2D &ind) {
@@ -71,11 +70,11 @@ public:
         return particle_groups[ind.x * res[1] + ind.y].size() > 0;
     }
 
-    void expand(bool expand_vel, bool expand_state, bool expand_propagation);
+    void expand(bool expand_vel, bool expand_state);
 
     void update();
 
-    int64 update_max_dt_int();
+    int64 update_max_dt_int(int64 t_int);
 
     void set_time(int64 t_int) {
         for (auto &ind : states.get_region()) {
@@ -116,6 +115,8 @@ public:
     void update_particle_states();
 
     void reset_particle_states();
+
+    void enforce_smoothness(int64 t_int_increment);
 };
 
 TC_NAMESPACE_END

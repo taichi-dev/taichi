@@ -61,19 +61,19 @@ class SimulationWindow(pyglet.window.Window):
             self.quit_pressed = True
 
     def update(self, _):
-        t = time.time()
         if not self.quit_pressed and not self.simulator.ended():
             if not self.need_press or self.pressed:
+                t = time.time()
                 if self.substep:
                     self.simulator.step(True)
                 else:
                     self.simulator.step()
+                print 'Elapsed time:', time.time() - t
             self.pressed = False
         else:
             if self.video_output:
                 self.video_manager.make_video()
             exit(0)
-        print 'Elapsed time:', time.time() - t
         self.redraw()
         self.save_frame()
 
@@ -151,7 +151,6 @@ class SimulationWindow(pyglet.window.Window):
                  1.0 * self.height / self.simulator.config['res'][1], 0)
 
         particles = self.simulator.get_particles()
-        print 'num particles:', len(particles)
 
         positions = []
         colors = []

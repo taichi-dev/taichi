@@ -146,6 +146,10 @@ struct DPParticle3 : public MPM3D::Particle {
         Matrix3 u, v, sig, dg = dg_e;
         svd(dg_e, u, sig, v);
 
+        assert_info(sig[0][0] > 0, "negative singular value");
+        assert_info(sig[1][1] > 0, "negative singular value");
+        assert_info(sig[2][2] > 0, "negative singular value");
+
         Matrix3 log_sig(log(sig[0][0]), 0.f, 0.f, 0.f, log(sig[1][1]), 0.f, 0.f, 0.f, log(sig[2][2]));
         Matrix3 inv_sig(1.f / (sig[0][0]), 0.f, 0.f, 0.f, 1.f / (sig[1][1]), 0.f, 0.f, 0.f, 1.f / (sig[2][2]));
         Matrix3 center =

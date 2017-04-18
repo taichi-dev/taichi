@@ -203,7 +203,9 @@ struct EPParticle : MPMParticle {
     }
 
     void calculate_force() override {
+        P(1);
         tmp_force = -vol * get_energy_gradient() * glm::transpose(dg_e);
+        P(1);
         if (!is_normal(tmp_force)) {
             // debug code
             P(dg_e);

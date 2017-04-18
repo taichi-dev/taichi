@@ -32,11 +32,11 @@ void EulerLiquid::initialize_solver(const Config &config)
     height = config.get("simulation_height", 64);
     kernel_size = config.get("kernel_size", 1);
     cfl = config.get("cfl", 0.1f);
-    u = Array(width + 1, height, 0.0f, Vector2(0.0f, 0.5f));
-    u_weight = Array(width + 1, height, 0.0f, Vector2(0.0f, 0.5f));
-    v = Array(width, height + 1, 0.0f, Vector2(0.5f, 0.0f));
-    v_weight = Array(width, height + 1, 0.0f, Vector2(0.5f, 0.0f));
-    cell_types = Array2D<CellType>(width, height, CellType::AIR, Vector2(0.5f, 0.5f));
+    u = Array<real>(width + 1, height, 0.0f, Vector2(0.0f, 0.5f));
+    u_weight = Array<real>(width + 1, height, 0.0f, Vector2(0.0f, 0.5f));
+    v = Array<real>(width, height + 1, 0.0f, Vector2(0.5f, 0.0f));
+    v_weight = Array<real>(width, height + 1, 0.0f, Vector2(0.5f, 0.0f));
+    cell_types = Array<CellType>(width, height, CellType::AIR, Vector2(0.5f, 0.5f));
     gravity = config.get_vec2("gravity");
     maximum_iterations = config.get("maximum_iterations", 300);
     tolerance = config.get("tolerance", 1e-4f);
@@ -46,7 +46,7 @@ void EulerLiquid::initialize_solver(const Config &config)
     t = 0;
 }
 
-Vector2 EulerLiquid::sample_velocity(Vector2 position, const Array &u, const Array &v) {
+Vector2 EulerLiquid::sample_velocity(Vector2 position, const Array<real> &u, const Array<real> &v) {
     if (kernel_size == 1) {
         return Vector2(u.sample(position), v.sample(position));
     }
@@ -219,7 +219,7 @@ void EulerLiquid::compute_liquid_levelset()
 
 
 void EulerLiquid::advect_liquid_levelset(real delta_t) {
-    Array old = liquid_levelset;
+    Array<real> old = liquid_levelset;
     for (auto &ind : liquid_levelset.get_region()) {
         liquid_levelset[ind] = old.sample(ind.get_pos() - delta_t * sample_velocity(ind.get_pos(), u, v));
     }
@@ -228,7 +228,7 @@ void EulerLiquid::advect_liquid_levelset(real delta_t) {
 
 void EulerLiquid::rebuild_levelset(LevelSet2D &levelset, real band) {
     // Actually, we use a brute-force initialization here
-    Array old = levelset;
+    Array<real> old = levelset;
     levelset.reset(band);
     auto update = [&](const Index2D &a, const Index2D &b) {
         real phi_0 = old[a], phi_1 = old[b];
@@ -265,9 +265,9 @@ void EulerLiquid::rebuild_levelset(LevelSet2D &levelset, real band) {
 }
 
 
-Array EulerLiquid::advect(const Array & arr, real delta_t)
+EulerLiquid::Array<real> EulerLiquid::advect(const Array<real> & arr, real delta_t)
 {
-    Array arr_out(arr.get_width(), arr.get_height(), 0, arr.get_storage_offset());
+    Array<real> arr_out(arr.get_width(), arr.get_height(), 0, arr.get_storage_offset());
     for (auto &ind : arr.get_region()) {
         Vector2 position = ind.get_pos();
         Vector2 velocity = sample_velocity(position);
@@ -318,7 +318,7 @@ void EulerLiquid::advect(real delta_t) {
         //total_energy -= glm::dot(particle.position, gravity);
     }
     */
-    Array new_u = advect(u, delta_t), new_v = advect(v, delta_t);
+    Array<real> new_u = advect(u, delta_t), new_v = advect(v, delta_t);
     u = new_u;
     v = new_v;
 }
@@ -361,7 +361,7 @@ void EulerLiquid::prepare_for_pressure_solve() {
     E = 0;
     particles.clear();
     const real theta_threshold = 0.01f;
-    Array2D<char> boundary_cell(width, height, false);
+    Array<char> boundary_cell(width, height, false);
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height; j++) {
             int fluid_corner = 0, boundary_corner = 0;
@@ -471,8 +471,8 @@ void EulerLiquid::prepare_for_pressure_solve() {
     }
 }
 
-Array EulerLiquid::apply_A(const Array &x) {
-    Array y(width, height);
+EulerLiquid::Array<real> EulerLiquid::apply_A(const Array<real> &x) {
+    Array<real> y(width, height);
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height; j++) {
             if (Ad[i][j] > 0) {
@@ -497,10 +497,10 @@ Array EulerLiquid::apply_A(const Array &x) {
 }
 
 
-Array EulerLiquid::solve_pressure_naive() {
+EulerLiquid::Array<real> EulerLiquid::solve_pressure_naive() {
     static int total_count = 0;
     int count = 0;
-    Array r = get_rhs(), z, s;
+    Array<real> r = get_rhs(), z, s;
     z = apply_preconditioner(r);
     s = z;
 #define CH(v) if (!v.is_normal()) printf("Abnormal value doring CG: %s [Ln %d]\n", #v, __LINE__);
@@ -569,7 +569,7 @@ void EulerLiquid::substep(real delta_t) {
     t += delta_t;
 }
 
-void EulerLiquid::apply_pressure(const Array &p) {
+void EulerLiquid::apply_pressure(const Array<real> &p) {
     for (int i = 0; i < width - 1; i++) {
         for (int j = 0; j < height; j++) {
             real theta = LevelSet2D::fraction_inside(liquid_levelset[i][j], liquid_levelset[i + 1][j]);
@@ -632,7 +632,7 @@ LevelSet2D EulerLiquid::get_liquid_levelset() {
 }
 
 
-Array EulerLiquid::apply_preconditioner(const Array &r) {
+EulerLiquid::Array<real> EulerLiquid::apply_preconditioner(const Array<real> &r) {
     q = 0;
     z = 0;
     assert_info(E.is_normal(), "Abnormal E!\n");
@@ -665,8 +665,8 @@ Array EulerLiquid::apply_preconditioner(const Array &r) {
     return z;
 }
 
-Array EulerLiquid::get_rhs() {
-    Array r(width, height, 0);
+EulerLiquid::Array<real> EulerLiquid::get_rhs() {
+    Array<real> r(width, height, 0);
     real correction = get_volume_correction();
     for (auto &ind : cell_types.get_region()) {
         if (Ad[ind] > 0) {
@@ -790,15 +790,15 @@ void EulerLiquid::print_v() {
 }
 
 void EulerLiquid::initialize_pressure_solver() {
-    pressure = Array(width, height, 0.0);
-    Ad = Array(width, height);
-    Ax = Array(width, height);
-    Ay = Array(width, height);
-    E = Array(width, height);
-    p = Array(width, height, 0.0f);
-    q = Array(width, height);
-    z = Array(width, height);
-    water_cell_index = Array2D<int>(width, height);
+    pressure = Array<real>(width, height, 0.0);
+    Ad = Array<real>(width, height);
+    Ax = Array<real>(width, height);
+    Ay = Array<real>(width, height);
+    E = Array<real>(width, height);
+    p = Array<real>(width, height, 0.0f);
+    q = Array<real>(width, height);
+    z = Array<real>(width, height);
+    water_cell_index = Array<int>(width, height);
 }
 
 Vector2 EulerLiquid::clamp_particle_position(Vector2 pos) {
@@ -825,7 +825,7 @@ real EulerLiquid::get_max_grid_speed()
     return maximum_speed;
 }
 
-Array EulerLiquid::get_density()
+EulerLiquid::Array<real> EulerLiquid::get_density()
 {
     return density;
 }
@@ -835,7 +835,7 @@ void EulerLiquid::add_source(const Config & config)
     sources.push_back(config);
 }
 
-Array EulerLiquid::get_pressure()
+EulerLiquid::Array<real> EulerLiquid::get_pressure()
 {
     return pressure;
 }

@@ -19,13 +19,16 @@ TC_NAMESPACE_BEGIN
 class MPMScheduler {
 public:
     typedef MPMParticle Particle;
-    Array2D<int64> max_dt_int_strength;
-    Array2D<int64> max_dt_int_cfl;
-    Array2D<int64> max_dt_int;
-    Array2D<int> states;
-    Array2D<int> updated;
-    Array2D<Vector4> min_max_vel;
-    Array2D<Vector4> min_max_vel_expanded;
+
+    template <typename T> using Array = Array2D<T>;
+
+    Array<int64> max_dt_int_strength;
+    Array<int64> max_dt_int_cfl;
+    Array<int64> max_dt_int;
+    Array<int> states;
+    Array<int> updated;
+    Array<Vector4> min_max_vel;
+    Array<Vector4> min_max_vel_expanded;
     std::vector<std::vector<Particle *>> particle_groups;
     Vector2i res;
     Vector2i sim_res;
@@ -35,7 +38,8 @@ public:
     real base_delta_t;
     real cfl, strength_dt_mul;
 
-    void initialize(const Vector2i &sim_res, real base_delta_t, real cfl, real strength_dt_mul, DynamicLevelSet2D *levelset) {
+    void initialize(const Vector2i &sim_res, real base_delta_t, real cfl, real strength_dt_mul,
+                    DynamicLevelSet2D *levelset) {
         this->sim_res = sim_res;
         res.x = (sim_res.x + grid_block_size - 1) / grid_block_size;
         res.y = (sim_res.y + grid_block_size - 1) / grid_block_size;
@@ -107,7 +111,7 @@ public:
         return active_grid_points;
     }
 
-    void visualize(const Vector4 &debug_input, Array2D<Vector4> &debug_blocks) const;
+    void visualize(const Vector4 &debug_input, Array<Vector4> &debug_blocks) const;
 
     void print_limits();
 

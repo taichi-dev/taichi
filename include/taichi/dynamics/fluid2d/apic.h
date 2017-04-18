@@ -23,7 +23,7 @@ protected:
 
     virtual void sample_c();
 
-    Vector2 sample_c(Vector2 &pos, Array & val);
+    Vector2 sample_c(Vector2 &pos, Array<real> & val);
 
     virtual void substep(real delta_t);
 public:

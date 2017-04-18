@@ -11,20 +11,22 @@
 
 TC_NAMESPACE_BEGIN
 
+template <typename T> using Array = Array2D<T>;
+
 void MPMScheduler::expand(bool expand_vel, bool expand_state) {
-    Array2D<int> new_states;
-    Array2D<int> old_states;
+    Array<int> new_states;
+    Array<int> old_states;
     if (expand_state) {
         old_states = states;
     }
-    Array2D<Vector4> new_min_max_vel;
+    Array<Vector4> new_min_max_vel;
     new_min_max_vel.initialize(res, Vector4(1e30f, 1e30f, -1e30f, -1e30f));
     min_max_vel_expanded = Vector4(1e30f, 1e30f, -1e30f, -1e30f);
     new_states.initialize(res, 0);
 
     auto update = [&](const Index2D ind, int dx, int dy,
-                      const Array2D<Vector4> &min_max_vel, Array2D<Vector4> &new_min_max_vel,
-                      const Array2D<int> &states, Array2D<int> &new_states) -> void {
+                      const Array<Vector4> &min_max_vel, Array<Vector4> &new_min_max_vel,
+                      const Array<int> &states, Array<int> &new_states) -> void {
         if (expand_vel) {
             auto &tmp = new_min_max_vel[ind.neighbour(dx, dy)];
             tmp[0] = std::min(tmp[0], min_max_vel[ind][0]);
@@ -177,7 +179,7 @@ void MPMScheduler::update_dt_limits(real t) {
     }
 }
 
-void MPMScheduler::visualize(const Vector4 &debug_input, Array2D<Vector4> &debug_blocks) const {
+void MPMScheduler::visualize(const Vector4 &debug_input, Array<Vector4> &debug_blocks) const {
     int64 minimum = int64(debug_input[0]);
     if (minimum == 0) {
         for (auto &ind : max_dt_int_cfl.get_region()) {
@@ -190,8 +192,8 @@ void MPMScheduler::visualize(const Vector4 &debug_input, Array2D<Vector4> &debug
         grades = 10;
     }
 
-    auto visualize = [](const Array2D<int64> step, int grades, int64 minimum) -> Array2D<real> {
-        Array2D<real> output;
+    auto visualize = [](const Array<int64> step, int grades, int64 minimum) -> Array<real> {
+        Array<real> output;
         output.initialize(step.get_width(), step.get_height());
         for (auto &ind : step.get_region()) {
             real r;
@@ -305,7 +307,7 @@ void MPMScheduler::reset_particle_states() {
 }
 
 void MPMScheduler::enforce_smoothness(int64 t_int_increment) {
-    Array2D<int64> new_max_dt_int = max_dt_int;
+    Array<int64> new_max_dt_int = max_dt_int;
     for (auto &ind : states.get_region()) {
         if (states[ind] != 0) {
             for (int dx = -1; dx <= 1; dx++) {

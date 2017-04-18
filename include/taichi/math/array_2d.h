@@ -674,8 +674,6 @@ Array2D<T> operator*(const P &b, const Array2D<T> &a) {
     return o;
 }
 
-typedef Array2D<real> Array;
-
 template <typename T>
 void print(const Array2D<T> &arr) {
     arr.print("");

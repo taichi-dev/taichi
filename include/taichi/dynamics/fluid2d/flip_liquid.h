@@ -15,10 +15,10 @@ TC_NAMESPACE_BEGIN
 
 class FLIPLiquid : public EulerLiquid {
 protected:
-    Array u_backup;
-    Array v_backup;
-    Array u_count;
-    Array v_count;
+    Array<real> u_backup;
+    Array<real> v_backup;
+    Array<real> u_count;
+    Array<real> v_count;
     real FLIP_alpha;
     real padding;
     int advection_order;
@@ -38,7 +38,7 @@ protected:
     virtual void rasterize();
 
     template <real(*T)(const Particle &, const Vector2 &)>
-    void rasterize_component(Array &val, Array &count);
+    void rasterize_component(Array<real> &val, Array<real> &count);
 
     virtual void backup_velocity_field();
 

@@ -22,23 +22,23 @@ TC_NAMESPACE_BEGIN
 class EulerLiquid : public Fluid {
 protected:
     int kernel_size;
-    Array Ad, Ax, Ay, E;
-    Array2D<int> water_cell_index;
-    void apply_pressure(const Array &p);
-    Array apply_A(const Array &x);
-    Array apply_preconditioner(const Array &x);
-    Array get_rhs();
+    Array<real> Ad, Ax, Ay, E;
+    Array<int> water_cell_index;
+    void apply_pressure(const Array<real> &p);
+    Array<real> apply_A(const Array<real> &x);
+    Array<real> apply_preconditioner(const Array<real> &x);
+    Array<real> get_rhs();
     void apply_boundary_condition();
     real volume_correction_factor;
     real levelset_band;
     bool supersampling;
     real cfl;
-    Array u_weight;
-    Array v_weight;
+    Array<real> u_weight;
+    Array<real> v_weight;
     LevelSet2D liquid_levelset;
 
     int width, height;
-    Array pressure, q, z;
+    Array<real> pressure, q, z;
     real target_water_cells;
     real last_water_cells;
     real integrate_water_cells_difference;
@@ -50,7 +50,7 @@ protected:
     real theta_threshold;
     int maximum_iterations;
     LevelSet2D boundary_levelset;
-    Array density;
+    Array<real> density;
     std::vector<Config> sources;
 
     const Vector2 supersample_positions[9]
@@ -58,15 +58,15 @@ protected:
      Vector2(0.75f, 0.75f), Vector2(0.25f, 0.5f), Vector2(0.5f, 0.5f),
      Vector2(0.5f, 0.25f), Vector2(0.5f, 0.75f), Vector2(0.75f, 0.5f) };
 
-    Array u, v, p;
+    Array<real> u, v, p;
     Vector2 gravity;
     real t;
     enum CellType {
         AIR = 0, WATER = 1
     };
-    Array2D<CellType> cell_types;
+    Array<CellType> cell_types;
 
-    Vector2 sample_velocity(Vector2 position, const Array &u, const Array &v);
+    Vector2 sample_velocity(Vector2 position, const Array<real> &u, const Array<real> &v);
 
     virtual Vector2 sample_velocity(Vector2 position);
 
@@ -82,7 +82,7 @@ protected:
 
     virtual void prepare_for_pressure_solve();
 
-    virtual Array solve_pressure_naive();
+    virtual Array<real> solve_pressure_naive();
 
     virtual void project(real delta_t);
 
@@ -135,7 +135,7 @@ protected:
 
     virtual void compute_liquid_levelset();
 
-    virtual Array advect(const Array &arr, real delta_t);
+    virtual Array<real> advect(const Array<real> &arr, real delta_t);
 
     virtual bool check_diag_domination();
 
@@ -159,11 +159,11 @@ public:
 
     virtual LevelSet2D get_liquid_levelset() override;
 
-    virtual Array get_density() override;
+    virtual Array<real> get_density() override;
 
     virtual void add_source(const Config &config) override;
 
-    virtual Array get_pressure() override;
+    virtual Array<real> get_pressure() override;
 };
 
 

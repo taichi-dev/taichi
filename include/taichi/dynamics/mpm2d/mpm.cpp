@@ -65,19 +65,9 @@ void MPM::substep() {
         scheduler.reset();
         scheduler.update_dt_limits(t);
 
-        t_int_increment = get_largest_pot(int64(maximum_delta_t / base_delta_t));
+        t_int_increment = std::min(get_largest_pot(int64(maximum_delta_t / base_delta_t)),
+                                   scheduler.update_max_dt_int());
 
-        for (auto &ind : scheduler.max_dt_int_strength.get_region()) {
-            int64 this_step_limit = std::min(max_dt_int_cfl[ind], max_dt_int_strength[ind]);
-            max_dt_int[ind] = std::min( max_dt_int[ind], this_step_limit);
-            if (scheduler.has_particle(ind)) {
-                t_int_increment = std::min(t_int_increment, max_dt_int[ind]);
-            }
-        }
-
-        if (debug_input[2] > 0) {
-            P(t_int_increment);
-        }
         // t_int_increment is the biggest allowed dt.
         t_int_increment = t_int_increment - t_int % t_int_increment;
 
@@ -88,44 +78,23 @@ void MPM::substep() {
         t_int += t_int_increment; // final dt
         t = base_delta_t * t_int;
 
-        scheduler.visualize(debug_input, debug_blocks);
+        scheduler.set_time(t_int);
 
-        int64 max_dt = 0, min_dt = 1LL << 60;
-
-        for (auto &ind : scheduler.states.get_region()) {
-            if (!scheduler.has_particle(ind)) {
-                //continue;
-            }
-            max_dt = std::max(max_dt_int[ind], max_dt);
-            min_dt = std::min(max_dt_int[ind], min_dt);
-            if (t_int % max_dt_int[ind] == 0) {
-                scheduler.states[ind] = 1;
-            }
-        }
         if (debug_input[2] > 0) {
-            printf("min_dt %lld max_dt %lld dynamic_range %lld\n", min_dt, max_dt, max_dt / min_dt);
-
-            for (int i = scheduler.max_dt_int.get_height() - 1; i >= 0; i--) {
-                for (int j = 0; j < scheduler.max_dt_int.get_width(); j++) {
-                    if (max_dt_int[j][i] >= (1LL << 60)) {
-                        printf("      #");
-                    } else {
-                        printf("%6lld", max_dt_int[j][i]);
-                        if (scheduler.states[j][i] == 1) {
-                            printf("*");
-                        } else {
-                            printf(" ");
-                        }
-                    }
+            scheduler.visualize(debug_input, debug_blocks);
+            int64 max_dt = 0, min_dt = 1LL << 60;
+            for (auto &ind : scheduler.states.get_region()) {
+                max_dt = std::max(max_dt_int[ind], max_dt);
+                min_dt = std::min(max_dt_int[ind], min_dt);
+                if (t_int % max_dt_int[ind] == 0) {
+                    scheduler.states[ind] = 1;
                 }
-                printf("\n");
             }
-            printf("\n");
+            printf("min_dt %lld max_dt %lld dynamic_range %lld\n", min_dt, max_dt, max_dt / min_dt);
+            scheduler.print_max_dt_int();
         }
 
-        // TODO...
         scheduler.expand(false, true, false);
-        scheduler.update_particle_states();
     } else {
         // Sync
         t_int_increment = 1;
@@ -139,28 +108,6 @@ void MPM::substep() {
     }
 
     scheduler.update();
-    // P(scheduler.get_active_particles().size());
-
-    int active_particle_count = 0;
-    int buffer_particle_count = 0;
-    for (auto &p : scheduler.get_active_particles()) {
-        Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
-        p->march_interval = max_dt_int[low_res_pos];
-        if (scheduler.states[low_res_pos] == 2) {
-            p->color = Vector3(1.0f, 1.0f, 1.0f);
-            p->state = MPMParticle::UPDATING;
-            active_particle_count += 1;
-        } else {
-            p->color = Vector3(0.7f);
-            p->state = MPMParticle::BUFFER;
-            buffer_particle_count += 1;
-        }
-    }
-
-    if (debug_input[2] > 0) {
-        P(active_particle_count);
-        P(buffer_particle_count);
-    }
 
     for (auto &p : scheduler.get_active_particles()) {
         p->calculate_kernels();

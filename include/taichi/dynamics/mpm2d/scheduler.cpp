@@ -81,6 +81,19 @@ void MPMScheduler::update() {
             }
         }
     }
+    update_particle_states();
+}
+
+int64 MPMScheduler::update_max_dt_int() {
+    int64 ret = 1LL << 60;
+    for (auto &ind : max_dt_int.get_region()) {
+        int64 this_step_limit = std::min(max_dt_int_cfl[ind], max_dt_int_strength[ind]);
+        max_dt_int[ind] = std::min(max_dt_int[ind], this_step_limit);
+        if (has_particle(ind)) {
+            ret = std::min(ret, max_dt_int[ind]);
+        }
+    }
+    return ret;
 }
 
 void MPMScheduler::update_particle_groups() {
@@ -196,6 +209,7 @@ void MPMScheduler::visualize(const Vector4 &debug_input, Array2D<Vector4> &debug
         debug_blocks[ind] = Vector4(vis_strength[ind], vis_cfl[ind], 0.0f, 1.0f);
     }
 }
+
 void MPMScheduler::print_limits() {
     for (int i = max_dt_int.get_height() - 1; i >= 0; i--) {
         for (int j = 0; j < max_dt_int.get_width(); j++) {
@@ -241,22 +255,44 @@ void MPMScheduler::print_limits() {
     printf("\n");
 }
 
+void MPMScheduler::print_max_dt_int() {
+    for (int i = max_dt_int.get_height() - 1; i >= 0; i--) {
+        for (int j = 0; j < max_dt_int.get_width(); j++) {
+            if (max_dt_int[j][i] >= (1LL << 60)) {
+                printf("      #");
+            } else {
+                printf("%6lld", max_dt_int[j][i]);
+                if (states[j][i] == 1) {
+                    printf("*");
+                } else {
+                    printf(" ");
+                }
+            }
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
 void MPMScheduler::update_particle_states() {
     for (auto &p : get_active_particles()) {
-        p->color = Vector3(1.0f);
         Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
+        p->march_interval = max_dt_int[low_res_pos];
+        if (states[low_res_pos] == 2) {
+            p->color = Vector3(1.0f);
+            p->state = MPMParticle::UPDATING;
+        } else {
+            p->color = Vector3(0.7f);
+            p->state = MPMParticle::BUFFER;
+        }
         p->march_interval = max_dt_int[low_res_pos];
     }
 }
 
 void MPMScheduler::reset_particle_states() {
     for (auto &p : get_active_particles()) {
-        Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
-        if (states[low_res_pos] == 0) {
-            p->state = MPMParticle::INACTIVE;
-            p->color = Vector3(0.3f);
-            continue;
-        }
+        p->state = MPMParticle::INACTIVE;
+        p->color = Vector3(0.3f);
     }
 }
 

@@ -75,6 +75,16 @@ public:
 
     void update();
 
+    int64 update_max_dt_int();
+
+    void set_time(int64 t_int) {
+        for (auto &ind : states.get_region()) {
+            if (t_int % max_dt_int[ind] == 0) {
+                states[ind] = 1;
+            }
+        }
+    }
+
     void update_particle_groups();
 
     void insert_particle(Particle *p);
@@ -100,6 +110,8 @@ public:
     void visualize(const Vector4 &debug_input, Array2D<Vector4> &debug_blocks) const;
 
     void print_limits();
+
+    void print_max_dt_int();
 
     void update_particle_states();
 

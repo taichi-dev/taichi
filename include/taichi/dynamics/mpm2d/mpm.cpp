@@ -50,16 +50,13 @@ void MPM::initialize(const Config &config_) {
 }
 
 void MPM::substep() {
-    real delta_t = base_delta_t;
+    scheduler.update_particle_groups();
+    scheduler.reset_particle_states();
 
-    bool exist_updating_particle = false;
+    real delta_t = base_delta_t;
 
     grid.reset();
     int64 t_int_increment;
-
-    Array2D<int64> &max_dt_int_strength = scheduler.max_dt_int_strength;
-    Array2D<int64> &max_dt_int_cfl = scheduler.max_dt_int_cfl;
-    Array2D<int64> &max_dt_int = scheduler.max_dt_int;
 
     if (async) {
         scheduler.reset();
@@ -71,26 +68,14 @@ void MPM::substep() {
         // t_int_increment is the biggest allowed dt.
         t_int_increment = t_int_increment - t_int % t_int_increment;
 
-        if (debug_input[2] > 0) {
-            P(t_int_increment);
-        }
-
         t_int += t_int_increment; // final dt
         t = base_delta_t * t_int;
 
         scheduler.set_time(t_int);
 
         if (debug_input[2] > 0) {
+            P(t_int_increment);
             scheduler.visualize(debug_input, debug_blocks);
-            int64 max_dt = 0, min_dt = 1LL << 60;
-            for (auto &ind : scheduler.states.get_region()) {
-                max_dt = std::max(max_dt_int[ind], max_dt);
-                min_dt = std::min(max_dt_int[ind], min_dt);
-                if (t_int % max_dt_int[ind] == 0) {
-                    scheduler.states[ind] = 1;
-                }
-            }
-            printf("min_dt %lld max_dt %lld dynamic_range %lld\n", min_dt, max_dt, max_dt / min_dt);
             scheduler.print_max_dt_int();
         }
 
@@ -131,8 +116,6 @@ void MPM::substep() {
     }
     if (particle_collision)
         particle_collision_resolution();
-    scheduler.update_particle_groups();
-    scheduler.reset_particle_states();
 }
 
 void MPM::kill_outside_particles() {

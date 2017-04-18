@@ -72,7 +72,6 @@ void MPMScheduler::update() {
                 active_grid_points.push_back(Vector2i(i, j));
             }
         }
-
     }
     for (auto &ind : states.get_region()) {
         if (states[ind] != 0) {
@@ -256,6 +255,12 @@ void MPMScheduler::print_limits() {
 }
 
 void MPMScheduler::print_max_dt_int() {
+    int64 max_dt = 0, min_dt = 1LL << 60;
+    for (auto &ind : states.get_region()) {
+        max_dt = std::max(max_dt_int[ind], max_dt);
+        min_dt = std::min(max_dt_int[ind], min_dt);
+    }
+    printf("min_dt %lld max_dt %lld dynamic_range %lld\n", min_dt, max_dt, max_dt / min_dt);
     for (int i = max_dt_int.get_height() - 1; i >= 0; i--) {
         for (int j = 0; j < max_dt_int.get_width(); j++) {
             if (max_dt_int[j][i] >= (1LL << 60)) {

@@ -6,7 +6,7 @@ if __name__ == '__main__':
     scale = 256
     res = (scale, scale)
     frame_dt = 1e-2
-    async = True
+    async = False
     gravity = (0, 0)
     if async:
         simulator = MPMSimulator(res=res, simulation_time=0.22, frame_dt=frame_dt, base_delta_t=1e-6, async=True,

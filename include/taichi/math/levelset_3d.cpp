@@ -22,7 +22,7 @@ void LevelSet3D::add_sphere(Vector3 center, real radius, bool inside_out) {
 }
 
 void LevelSet3D::add_plane(real a, real b, real c, real d) {
-    real coeff = 1.0f / (a * a + b * b + c * c);
+    real coeff = 1.0f / sqrt(a * a + b * b + c * c);
     for (auto &ind : get_region()) {
         Vector3 sample = ind.get_pos();
         real dist = (glm::dot(sample, Vector3(a, b, c)) + d) * coeff;

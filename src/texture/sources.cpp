@@ -363,7 +363,6 @@ protected:
     std::shared_ptr<LevelSet3D> levelset;
     Vector2 bounds;
 public:
-    // parameter name for mesh path is 'filename'
     void initialize(const Config &config) override {
         Texture::initialize(config);
         levelset = AssetManager::get_asset<LevelSet3D>(config.get_int("levelset"));

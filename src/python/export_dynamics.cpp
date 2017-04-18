@@ -12,12 +12,15 @@
 #include <taichi/dynamics/mpm2d/mpm.h>
 #include <taichi/dynamics/mpm2d/mpm_particle.h>
 #include <taichi/dynamics/simulation3d.h>
+#include <taichi/common/asset_manager.h>
 
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::RenderParticle>);
 
 TC_NAMESPACE_BEGIN
 
 void export_dynamics(py::module &m) {
+    m.def("register_levelset3d", &AssetManager::insert_asset<LevelSet3D>);
+
     py::class_<Fluid::Particle>(m, "FluidParticle")
             .def(py::init<Vector2, Vector2>())
             .def_readwrite("position", &Fluid::Particle::position)

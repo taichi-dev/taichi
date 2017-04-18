@@ -130,8 +130,8 @@ void export_math(py::module &m) {
     EXPORT_ARRAY_2D_OF(real, 1);
 
 #define EXPORT_ARRAY_3D_OF(T, C) \
-    py::class_<Array3D<real>>(m, "Array3D" #T)  \
-            .def(py::init<int, int, int>()) \
+    py::class_<Array3D<real>> PyArray3D##T(m, "Array3D" #T);  \
+        PyArray3D##T.def(py::init<int, int, int>()) \
             .def("get_width", &Array3D<T>::get_width) \
             .def("get_height", &Array3D<T>::get_height);
 
@@ -184,7 +184,7 @@ void export_math(py::module &m) {
             .def(py::init<>())
             .def("initialize", &DynamicLevelSet3D::initialize);
 
-    py::class_<LevelSet3D, Array3D<real>>(m, "LevelSet3D")
+    py::class_<LevelSet3D, std::shared_ptr<LevelSet3D>>(m, "LevelSet3D", PyArray3Dreal)
             .def(py::init<int, int, int, Vector3>())
             .def("get_width", &LevelSet3D::get_width)
             .def("get_height", &LevelSet3D::get_height)

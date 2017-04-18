@@ -33,9 +33,9 @@ public:
     std::vector<Vector2i> active_grid_points;
     DynamicLevelSet2D *levelset;
     real base_delta_t;
-    real cfl;
+    real cfl, strength_dt_mul;
 
-    void initialize(const Vector2i &sim_res, real base_delta_t, real cfl, DynamicLevelSet2D *levelset) {
+    void initialize(const Vector2i &sim_res, real base_delta_t, real cfl, real strength_dt_mul, DynamicLevelSet2D *levelset) {
         this->sim_res = sim_res;
         res.x = (sim_res.x + grid_block_size - 1) / grid_block_size;
         res.y = (sim_res.y + grid_block_size - 1) / grid_block_size;
@@ -43,6 +43,7 @@ public:
         this->base_delta_t = base_delta_t;
         this->levelset = levelset;
         this->cfl = cfl;
+        this->strength_dt_mul = strength_dt_mul;
 
         states.initialize(res, 0);
         updated.initialize(res, 1);

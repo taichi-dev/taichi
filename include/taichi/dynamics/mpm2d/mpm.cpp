@@ -23,6 +23,7 @@ void MPM::initialize(const Config &config_) {
     this->apic = config.get("apic", true);
     this->h = config.get_real("delta_x");
     this->kill_at_boundary = config.get("kill_at_boundary", true);
+    this->strength_dt_mul = config.get("strength_dt_mul", 1.0f);
     t = 0.0f;
     t_int = 0;
     requested_t = 0.0f;
@@ -35,7 +36,7 @@ void MPM::initialize(const Config &config_) {
     }
     gravity = config.get("gravity", Vector2(0, -10));
     base_delta_t = config.get("base_delta_t", 1e-6f);
-    scheduler.initialize(res, base_delta_t, cfl, &levelset);
+    scheduler.initialize(res, base_delta_t, cfl, strength_dt_mul, &levelset);
     grid.initialize(res, &scheduler);
     particle_collision = config.get("particle_collision", true);
     position_noise = config.get("position_noise", 0.5f);
@@ -53,23 +54,22 @@ void MPM::substep() {
     scheduler.update_particle_groups();
     scheduler.reset_particle_states();
 
-    real delta_t = base_delta_t;
-
     grid.reset();
     int64 original_t_int_increment;
     int64 t_int_increment;
+    int64 old_t_int = t_int;
 
     if (async) {
         scheduler.reset();
         scheduler.update_dt_limits(t);
 
         original_t_int_increment = std::min(get_largest_pot(int64(maximum_delta_t / base_delta_t)),
-                                   scheduler.update_max_dt_int(t_int));
+                                            scheduler.update_max_dt_int(t_int));
 
         // t_int_increment is the biggest allowed dt.
         t_int_increment = original_t_int_increment - t_int % original_t_int_increment;
 
-        if (debug_input[2] > 0) {
+        if (debug_input[2] > 1) {
             P(t_int);
             P(t_int_increment);
         }
@@ -80,8 +80,10 @@ void MPM::substep() {
 
         scheduler.expand(false, true);
         if (debug_input[2] > 0) {
-            P(t_int_increment);
             scheduler.visualize(debug_input, debug_blocks);
+        }
+        if (debug_input[2] > 1) {
+            P(t_int_increment);
             scheduler.print_max_dt_int();
         }
     } else {
@@ -99,6 +101,10 @@ void MPM::substep() {
     scheduler.update();
 
     for (auto &p : scheduler.get_active_particles()) {
+        if (async) {
+            // p->pos += (old_t_int - p->last_update) * base_delta_t * p->v;
+            // p->last_update = old_t_int;
+        }
         p->calculate_kernels();
     }
 
@@ -112,7 +118,7 @@ void MPM::substep() {
     resample();
     for (auto &p : scheduler.get_active_particles()) {
         if (p->state == MPMParticle::UPDATING) {
-            p->pos += (t_int - p->last_update) * delta_t * p->v;
+            p->pos += (t_int - p->last_update) * base_delta_t * p->v;
             p->last_update = t_int;
             p->pos[0] = clamp(p->pos.x, 0.5f, res[0] - 0.5f);
             p->pos[1] = clamp(p->pos.y, 0.5f, res[1] - 0.5f);

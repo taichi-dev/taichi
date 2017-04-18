@@ -63,7 +63,7 @@ void MPMScheduler::update() {
     active_grid_points.clear();
     for (int i = 0; i <= sim_res[0]; i++) {
         for (int j = 0; j <= sim_res[1]; j++) {
-            if (states[i / grid_block_size][j / grid_block_size] == 1) {
+            if (states[i / grid_block_size][j / grid_block_size] != 0) {
                 active_grid_points.push_back(Vector2i(i, j));
             }
         }
@@ -130,7 +130,7 @@ void MPMScheduler::update_dt_limits(real t) {
         min_max_vel[ind] = Vector4(1e30f, 1e30f, -1e30f, -1e30f);
         for (auto &p : particle_groups[res[1] * ind.i + ind.j]) {
             int64 march_interval;
-            int64 allowed_t_int_inc = (int64)(p->get_allowed_dt() / base_delta_t);
+            int64 allowed_t_int_inc = (int64)(strength_dt_mul * p->get_allowed_dt() / base_delta_t);
             if (allowed_t_int_inc <= 0) {
                 P(allowed_t_int_inc);
                 allowed_t_int_inc = 1;

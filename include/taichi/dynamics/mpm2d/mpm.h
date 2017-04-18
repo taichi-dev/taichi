@@ -38,6 +38,7 @@ protected:
     real requested_t;
     int64 t_int;
     real cfl;
+    real strength_dt_mul;
 
     Vector2 gravity;
     Vector4 debug_input;

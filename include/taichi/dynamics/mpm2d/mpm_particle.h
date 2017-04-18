@@ -213,9 +213,8 @@ struct EPParticle : MPMParticle {
 
     virtual real get_allowed_dt() const override {
         auto lame = get_lame_parameters();
-        real strength_limit = 1e1f / std::sqrt(lame.first + 2 * lame.second);
-        real cfl_limit = 5.0f / (std::max(std::abs(v.x), std::abs(v.y)) + 1e-38f);
-        return std::min(strength_limit, cfl_limit);
+        real strength_limit = 0.5f / std::sqrt(lame.first + 2 * lame.second);
+        return strength_limit;
     }
 
     MPMParticle *duplicate() const override {

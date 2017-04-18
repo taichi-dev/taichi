@@ -109,11 +109,17 @@ void svd_old2(const Matrix2 &m, Matrix2 &u, Matrix2 &sig, Matrix2 &v) {
 }
 */
 
-void svd(const Matrix2 &m, Matrix2 &u, Matrix2 &sig, Matrix2 &v) {
-    imp_svd(m, u, sig, v);
+void svd(Matrix2 m, Matrix2 &u, Matrix2 &sig, Matrix2 &v) {
+    // TODO: what's going on ???
+    if (frobenius_norm2(m - Matrix2(m[0][0])) < 1e-7f) {
+        u = m;
+        sig = v = Matrix2(1);
+    } else {
+        imp_svd(m, u, sig, v);
+    }
 }
 
-void svd(const Matrix3 &m, Matrix3 &u, Matrix3 &sig, Matrix3 &v) {
+void svd(Matrix3 m, Matrix3 &u, Matrix3 &sig, Matrix3 &v) {
     imp_svd(m, u, sig, v);
 }
 

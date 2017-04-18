@@ -45,6 +45,10 @@ public:
 
     void add_sphere(Vector3 center, real radius, bool inside_out = false);
 
+    void add_plane(real a, real b, real c, real d);
+
+    void global_increase(real delta);
+
     Vector3 get_gradient(const Vector3 &pos) const; // Note this is not normalized!
 
     Vector3 get_normalized_gradient(const Vector3 &pos) const;

@@ -11,6 +11,7 @@
 #include <taichi/visual/scene_geometry.h>
 #include <taichi/visualization/image_buffer.h>
 #include <taichi/math/array_3d.h>
+#include <taichi/math/levelset_3d.h>
 #include <taichi/common/asset_manager.h>
 
 TC_NAMESPACE_BEGIN
@@ -356,6 +357,25 @@ public:
 };
 
 TC_IMPLEMENTATION(Texture, MeshTexture, "mesh")
+
+class LevelSet3DTexture : public Texture {
+protected:
+    std::shared_ptr<LevelSet3D> levelset;
+    Vector2 bounds;
+public:
+    void initialize(const Config &config) override {
+        Texture::initialize(config);
+        levelset = AssetManager::get_asset<LevelSet3D>(config.get_int("levelset"));
+        bounds = config.get_vec2("bounds");
+    }
+
+    virtual Vector4 sample(const Vector3 &coord) const override {
+        real value = levelset->sample_relative_coord(coord);
+        return (bounds.x < value && value < bounds.y) ? Vector4(1) : Vector4(0);
+    }
+};
+
+TC_IMPLEMENTATION(Texture, LevelSet3DTexture, "levelset3d")
 
 TC_NAMESPACE_END
 

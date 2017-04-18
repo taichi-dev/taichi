@@ -2,21 +2,24 @@ from taichi.misc.util import *
 from taichi.two_d import *
 
 if __name__ == '__main__':
-    scale = 3
+    scale = 4
     res = (80 * scale, 45 * scale)
     sim_t = 20
-    async = True
+    async = False
+    gravity = (0, -20)
 
     if async:
-        simulator = MPMSimulator(res=res, simulation_time=sim_t, frame_dt=0.03, base_delta_t=1e-6, async=async,
-                                 debug_input=(128, 7, 1, 0), strength_dt_mul=3)
+        simulator = MPMSimulator(res=res, simulation_time=sim_t, frame_dt=0.3, base_delta_t=1e-6, async=async,
+                                 gravity=gravity, debug_input=(128, 7, 1, 0), strength_dt_mul=10)
     else:
-        simulator = MPMSimulator(res=res, simulation_time=sim_t, frame_dt=0.3, base_delta_t=2e-3)
+        # dt = 2e-3 is the allowed maximum. DO NOT MODIFY.
+        simulator = MPMSimulator(res=res, simulation_time=sim_t, frame_dt=0.3, base_delta_t=1e-3, gravity=gravity)
 
-    simulator.add_event(-1, lambda s: s.add_particles_polygon([(0.05, 0.75), (1.2, 0.05), (1.2, 0.08), (0.05, 0.78)],
+    simulator.add_event(-1, lambda s: s.add_particles_polygon([(0.05, 0.75), (1.2, 0.05), (1.3, 0.05), (0.05, 0.80)],
                                                               'ep', compression=1.3))
     simulator.add_event(-1, lambda s: s.add_particles_sphere(Vector(0.12, 0.85), 0.05, 'ep', compression=0.8,
-                                                             velocity=Vector(0.0, -0.1)))
+                                                             velocity=Vector(0.1, -0.2)))
+
     # simulator.add_event(-1, lambda s: s.add_particles_sphere(Vector(1.45, 0.15), 0.10, 'ep', compression=0.9))
     # simulator.add_event(-1, lambda s: s.add_particles_sphere(Vector(1.45, 0.32), 0.07, 'ep', compression=0.9))
     # simulator.add_event(-1, lambda s: s.add_particles_sphere(Vector(1.45, 0.43), 0.04, 'ep', compression=0.9))

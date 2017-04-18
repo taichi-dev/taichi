@@ -41,6 +41,7 @@ class SimulationWindow(pyglet.window.Window):
         self.show_grid = show_grid
         self.quit_pressed = False
         self.output_directory = os.path.join(get_output_directory(), self.task_id)
+        self.cpu_time = 0
         os.mkdir(self.output_directory)
         self.substep = substep
         self.video_output = video_output
@@ -68,7 +69,9 @@ class SimulationWindow(pyglet.window.Window):
                     self.simulator.step(True)
                 else:
                     self.simulator.step()
-                print 'Elapsed time:', time.time() - t
+                ela_t = time.time() - t
+                print 'Elapsed time:', ela_t
+                self.cpu_time += ela_t
             self.pressed = False
         else:
             if self.video_output:
@@ -95,11 +98,6 @@ class SimulationWindow(pyglet.window.Window):
         background = self.simulator.get_background_image(self.width, self.height)
         if background:
             background.blit(0, 0, 0, self.width, self.height)
-        label = pyglet.text.Label('t = %.5f' % (self.simulator.get_current_time()),
-                                  font_name='Rockwell',
-                                  font_size=12,
-                                  x=10, y=20,
-                                  anchor_x='left', anchor_y='top')
         ls_width = self.width * self.levelset_supersampling
         ls_height = self.height * self.levelset_supersampling
         background_images, foreground_images = self.simulator.get_levelset_images(ls_width, ls_height,
@@ -115,6 +113,26 @@ class SimulationWindow(pyglet.window.Window):
         if self.show_images:
             for img in foreground_images:
                 img.blit(0, 0, 0, self.width, self.height)
+
+        label = pyglet.text.Label('sim. t = %.5f' % (self.simulator.get_current_time()),
+                                  font_name='Rockwell',
+                                  font_size=12,
+                                  x=10, y=20,
+                                  anchor_x='left', anchor_y='top')
+        label.color = self.color_scheme['label']
+        label.draw()
+        label = pyglet.text.Label('cpu = %.5f' % self.cpu_time,
+                                  font_name='Rockwell',
+                                  font_size=12,
+                                  x=10, y=40,
+                                  anchor_x='left', anchor_y='top')
+        label.color = self.color_scheme['label']
+        label.draw()
+        label = pyglet.text.Label('cpu/frame = %.5f' % (self.cpu_time / (1 + self.frame_count)),
+                                  font_name='Rockwell',
+                                  font_size=12,
+                                  x=10, y=60,
+                                  anchor_x='left', anchor_y='top')
         label.color = self.color_scheme['label']
         label.draw()
 

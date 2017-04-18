@@ -75,7 +75,7 @@ protected:
 
     void apply_deformation_force();
 
-    void resample();
+    void resample(real grid_delta_t);
 
     virtual void substep();
 

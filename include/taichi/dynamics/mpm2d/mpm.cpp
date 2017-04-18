@@ -115,7 +115,7 @@ void MPM::substep() {
     grid.apply_external_force(gravity);
     grid.normalize_acceleration();
     grid.apply_boundary_conditions(levelset, t_int_increment * base_delta_t, t);
-    resample();
+    resample(base_delta_t * t_int_increment);
     for (auto &p : scheduler.get_active_particles()) {
         if (p->state == MPMParticle::UPDATING) {
             p->pos += (t_int - p->last_update) * base_delta_t * p->v;
@@ -255,7 +255,7 @@ void MPM::rasterize() {
     grid.normalize_velocity();
 }
 
-void MPM::resample() {
+void MPM::resample(real grid_delta_t) {
     // FLIP is disabled here
     real alpha_delta_t = 1; // pow(flip_alpha, delta_t / flip_alpha_stride);
     if (apic)
@@ -273,7 +273,7 @@ void MPM::resample() {
             count++;
             real weight = p->get_cache_w(ind);
             Vector2 gw = p->get_cache_gw(ind);
-            Vector2 grid_vel = grid.velocity[ind] + grid.force_or_acc[ind] * delta_t;
+            Vector2 grid_vel = grid.velocity[ind] + grid.force_or_acc[ind] * grid_delta_t;
             v += weight * grid_vel;
             Vector2 aa = grid_vel;
             Vector2 bb = Vector2(ind.i, ind.j) - p->pos;

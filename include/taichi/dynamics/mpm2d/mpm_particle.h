@@ -167,30 +167,31 @@ struct EPParticle : MPMParticle {
 
     void plasticity() override {
         Matrix2 svd_u, sig, svd_v;
-		Matrix2 old_dg_e = dg_e;
+        Matrix2 old_dg_e = dg_e;
         svd(dg_e, svd_u, sig, svd_v);
         sig[0][0] = clamp(sig[0][0], 1.0f - theta_c, 1.0f + theta_s);
         sig[1][1] = clamp(sig[1][1], 1.0f - theta_c, 1.0f + theta_s);
         dg_e = svd_u * sig * glm::transpose(svd_v);
-		if (frobenius_norm(dg_e) > 50 || !is_normal(dg_e) || !is_normal(dg_e) || !is_normal(svd_u) || !is_normal(svd_v) || !is_normal(sig)) {
-			P(old_dg_e);
-			P(dg_e);
-			P(svd_u);
-			P(sig);
-			P(svd_v);
-			assert_info(is_normal(dg_p), "Abnormal dg_p");
-		}
-		Matrix2 old_dg_p1 = dg_p;
+        if (frobenius_norm(dg_e) > 50 || !is_normal(dg_e) || !is_normal(dg_e) || !is_normal(svd_u) ||
+            !is_normal(svd_v) || !is_normal(sig)) {
+            P(old_dg_e);
+            P(dg_e);
+            P(svd_u);
+            P(sig);
+            P(svd_v);
+            assert_info(is_normal(dg_p), "Abnormal dg_p");
+        }
+        Matrix2 old_dg_p1 = dg_p;
         dg_p = glm::inverse(dg_e) * dg_cache;
-		Matrix2 old_dg_p2 = dg_p;
+        Matrix2 old_dg_p2 = dg_p;
         svd(dg_p, svd_u, sig, svd_v);
         sig[0][0] = clamp(sig[0][0], 0.1f, 10.0f);
         sig[1][1] = clamp(sig[1][1], 0.1f, 10.0f);
         dg_p = svd_u * sig * glm::transpose(svd_v);
         if (frobenius_norm(dg_p) > 50 || !is_normal(dg_p) || !is_normal(dg_e)) {
-			P(old_dg_e);
-			P(old_dg_p1);
-			P(old_dg_p2);
+            P(old_dg_e);
+            P(old_dg_p1);
+            P(old_dg_p2);
             P(dg_e);
             P(dg_p);
             P(dg_cache);

@@ -22,9 +22,9 @@ void imp_svd(const Matrix3 &m, Matrix3 &u, Matrix3 &s, Matrix3 &v) {
     */
     JIXIE::singularValueDecomposition(
             *(Eigen::Matrix<float, 3, 3> *)&m,
-            *(Eigen::Matrix<float, 3, 3> *)&v,
+            *(Eigen::Matrix<float, 3, 3> *)&u,
             *(Eigen::Matrix<float, 3, 1> *)&s,
-            *(Eigen::Matrix<float, 3, 3> *)&u
+            *(Eigen::Matrix<float, 3, 3> *)&v
     );
     float s_tmp[2]{s[0][1], s[0][2]};
     memset(&s[0][0] + 1, 0, sizeof(float) * 8);
@@ -47,6 +47,24 @@ void imp_svd(const Matrix3 &m, Matrix3 &u, Matrix3 &s, Matrix3 &v) {
         printf("\n");
     }
      */
+}
+
+void imp_svd(const Matrix2 &m, Matrix2 &u, Matrix2 &s, Matrix2 &v) {
+    /*
+    Eigen::Matrix<T, 3, 3> *M;
+    Eigen::Matrix<T, 3, 1> *S;
+    Eigen::Matrix<T, 3, 3> *U;
+    Eigen::Matrix<T, 3, 3> *V;
+    */
+    JIXIE::singularValueDecomposition(
+            *(Eigen::Matrix<float, 2, 2> *)&m,
+            *(Eigen::Matrix<float, 2, 2> *)&u,
+            *(Eigen::Matrix<float, 2, 1> *)&s,
+            *(Eigen::Matrix<float, 2, 2> *)&v
+    );
+    float s_tmp {s[0][1]};
+    memset(&s[0][0] + 1, 0, sizeof(float) * 3);
+    s[1][1] = s_tmp;
 }
 
 TC_NAMESPACE_END

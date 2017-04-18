@@ -220,18 +220,18 @@ void MPM::substep() {
         // P(scheduler.get_num_active_grids());
 
         for (auto &p : particles) {
-			p->color = Vector3(1.0f);
+            p->color = Vector3(1.0f);
             Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
-			if (!scheduler.states.inside(low_res_pos)) {
-				P(low_res_pos);
-				P(p->pos);
-				P(p->v);
-				P(p->dg_e);
-				P(p->dg_p);
-			}
+            if (!scheduler.states.inside(low_res_pos)) {
+                P(low_res_pos);
+                P(p->pos);
+                P(p->v);
+                P(p->dg_e);
+                P(p->dg_p);
+            }
             if (scheduler.states[low_res_pos] == 0) {
                 p->state = MPMParticle::INACTIVE;
-				p->color = Vector3(0.3f);
+                p->color = Vector3(0.3f);
                 continue;
             }
             p->march_interval = max_dt_int[low_res_pos];
@@ -260,11 +260,11 @@ void MPM::substep() {
         Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
         p->march_interval = max_dt_int[low_res_pos];
         if (scheduler.states[low_res_pos] == 2) {
-			p->color = Vector3(1.0f, 1.0f, 1.0f);
+            p->color = Vector3(1.0f, 1.0f, 1.0f);
             p->state = MPMParticle::UPDATING;
             active_particle_count += 1;
         } else {
-			p->color = Vector3(0.7f);
+            p->color = Vector3(0.7f);
             p->state = MPMParticle::BUFFER;
             buffer_particle_count += 1;
         }
@@ -291,8 +291,8 @@ void MPM::substep() {
         if (p->state == MPMParticle::UPDATING) {
             p->pos += (t_int - p->last_update) * delta_t * p->v;
             p->last_update = t_int;
-			p->pos[0] = clamp(p->pos.x, 0.5f, res[0] - 0.5f);
-			p->pos[1] = clamp(p->pos.y, 0.5f, res[1] - 0.5f);
+            p->pos[0] = clamp(p->pos.x, 0.5f, res[0] - 0.5f);
+            p->pos[1] = clamp(p->pos.y, 0.5f, res[1] - 0.5f);
         }
     }
     if (particle_collision)

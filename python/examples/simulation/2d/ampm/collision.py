@@ -17,7 +17,7 @@ if __name__ == '__main__':
                                  maximum_delta_t=1e-1, debug_input=(1024, 4, 0, 0), gravity=gravity)
 
 
-    simulator.test()
+    # simulator.test()
 
     def event(s):
         w, h = 0.10, 0.05
@@ -44,4 +44,4 @@ if __name__ == '__main__':
     levelset.add_polygon([(bd, bd), (1 - bd, bd), (1 - bd, 1 - bd), (bd, 1 - bd)], True)
     simulator.set_levelset(levelset)
     window = SimulationWindow(512, simulator, color_schemes['snow'], levelset_supersampling=2, show_images=True,
-                              substep=False, video_output=False, need_press=False)
+                              substep=True, video_output=False, need_press=False)

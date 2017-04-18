@@ -21,6 +21,21 @@ void LevelSet3D::add_sphere(Vector3 center, real radius, bool inside_out) {
     }
 }
 
+void LevelSet3D::add_plane(real a, real b, real c, real d) {
+    real coeff = 1.0f / (a * a + b * b + c * c);
+    for (auto &ind : get_region()) {
+        Vector3 sample = ind.get_pos();
+        real dist = (glm::dot(sample, Vector3(a, b, c)) + d) * coeff;
+        set(ind, std::min(Array3D::get(ind), dist));
+    }
+}
+
+void LevelSet3D::global_increase(real delta) {
+    for (auto &ind : get_region()) {
+        set(ind, Array3D::get(ind) + delta);
+    }
+}
+
 Vector3 LevelSet3D::get_gradient(const Vector3 &pos) const {
     assert_info(inside(pos), "LevelSet Gradient Query out of Bound! ("
                              + std::to_string(pos.x) + ", "

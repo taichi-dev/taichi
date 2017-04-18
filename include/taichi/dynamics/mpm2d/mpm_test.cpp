@@ -46,8 +46,8 @@ void testSVD() {
     Pp(v * glm::transpose(v));
 }
 
-template <void(*T)(const Matrix2 &, Matrix2 &, Matrix2 &, Matrix2 &)>
-void svd_test() {
+// template <void(*T)(const Matrix2 &, Matrix2 &, Matrix2 &, Matrix2 &)>
+void svd_test_2d() {
     int test_num = 1000000;
     int error_count = 0;
     for (int k = 0; k < test_num; k++) {
@@ -58,7 +58,7 @@ void svd_test() {
             }
         }
         Matrix2 u, sig, v;
-        T(m, u, sig, v);
+        svd(m, u, sig, v);
         if (frobenius_norm(m - u * sig * glm::transpose(v)) > 1e-4f) {
             if (error_count < 10) {
                 P(m);
@@ -70,11 +70,39 @@ void svd_test() {
             error_count++;
         }
     }
-    printf("SVD Test error: %d / %d\n", error_count, test_num);
+    printf("SVD 2D Test error: %d / %d\n", error_count, test_num);
+}
+
+// template <void(*T)(const Matrix3 &, Matrix3 &, Matrix3 &, Matrix3 &)>
+void svd_test_3d() {
+    int test_num = 1000000;
+    int error_count = 0;
+    for (int k = 0; k < test_num; k++) {
+        Matrix3 m;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                m[i][j] = rand() * 2 - 1;
+            }
+        }
+        Matrix3 u, sig, v;
+        svd(m, u, sig, v);
+        if (frobenius_norm(m - u * sig * glm::transpose(v)) > 1e-4f) {
+            if (error_count < 10) {
+                P(m);
+                P(u);
+                P(sig);
+                P(v);
+                P(m - u * sig * glm::transpose(v));
+            }
+            error_count++;
+        }
+    }
+    printf("SVD 3D Test error: %d / %d\n", error_count, test_num);
 }
 
 bool MPM::test() const {
-    svd_test<svd>();
+    svd_test_2d();
+    svd_test_3d();
     // Matrix2 m(0.096664, 0.065926, 0.020765, 0.014165), r, s;
     // Matrix2 m(-0.544766, 1.948113, - 0.211226, 0.754558);
     Matrix2 m(0.700001, 0.000000,

@@ -113,4 +113,8 @@ void svd(const Matrix2 &m, Matrix2 &u, Matrix2 &sig, Matrix2 &v) {
     imp_svd(m, u, sig, v);
 }
 
+void svd(const Matrix3 &m, Matrix3 &u, Matrix3 &sig, Matrix3 &v) {
+    imp_svd(m, u, sig, v);
+}
+
 TC_NAMESPACE_END

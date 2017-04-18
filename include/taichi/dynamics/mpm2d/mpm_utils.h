@@ -72,6 +72,7 @@ inline real det(const Matrix2 &m) {
 void polar_decomp(const Matrix2 &A, Matrix2 &r, Matrix2 &s);
 
 void svd(const Matrix2 &A, Matrix2 &u, Matrix2 &sig, Matrix2 &v);
+void svd(const Matrix3 &A, Matrix3 &u, Matrix3 &sig, Matrix3 &v);
 
 
 TC_NAMESPACE_END

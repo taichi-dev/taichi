@@ -78,14 +78,14 @@ if __name__ == '__main__':
     tex = Texture('ring', outer=0.15) * 8
     tex = Texture('bound', tex=tex, axis=2, bounds=(0.0, 0.4), outside_val=(0, 0, 0))
     tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
-    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), initial_velocity=(0, 0, 0), delta_t=0.0001, num_threads=8,
+    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), initial_velocity=(0, 0, 0), delta_t=0.001, num_threads=8,
                density_tex=tex.id)
 
 
     # Dynamic Levelset
     def levelset_generator(t):
         levelset = mpm.create_levelset()
-        # levelset.add_sphere(Vector(0.325 + 0.25 * (t+0.05), 0.2, 0.5), 0.1, False)
+        levelset.add_sphere(Vector(0.325 + 0.25 * (t+0.05), 0.2, 0.5), 0.1, False)
         # levelset.add_sphere(Vector(0.5, 0.2, 0.5), t, False)
         return levelset
     mpm.set_levelset(levelset_generator, True)

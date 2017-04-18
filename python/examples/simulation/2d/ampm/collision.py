@@ -17,7 +17,7 @@ if __name__ == '__main__':
                                  maximum_delta_t=1e-1, debug_input=(1024, 4, 0, 0), gravity=gravity)
 
 
-    simulator.test()
+    # simulator.test()
 
     def event(s):
         w, h = 0.10, 0.05

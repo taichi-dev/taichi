@@ -83,3 +83,6 @@ class MPM3:
 
     def create_levelset(self):
         return LevelSet3D(self.resolution, Vector(0.0, 0.0, 0.0))
+
+    def test(self):
+        return self.c.test()

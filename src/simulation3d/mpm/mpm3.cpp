@@ -13,6 +13,7 @@
 #include <taichi/system/threading.h>
 #include <taichi/visual/texture.h>
 #include <taichi/common/asset_manager.h>
+#include <taichi/math/math_util.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -375,6 +376,24 @@ void MPM3D::substep(float delta_t) {
         particle_collision_resolution(current_t);
     }
     current_t += delta_t;
+}
+
+bool MPM3D::test() const {
+    for (int i = 0; i < 100000; i++) {
+        Matrix3 m(1.000000238418579101562500000000, -0.000000000000000000000000000000,
+                  -0.000000000000000000000220735070, 0.000000000000000000000000000000, 1.000000238418579101562500000000,
+                  -0.000000000000000000216840434497, 0.000000000000000000000211758237,
+                  -0.000000000000000001084202172486, 1.000000000000000000000000000000);
+        Matrix3 u, sig, v;
+        svd(m, u, sig, v);
+        if (!is_normal(sig)) {
+            P(m);
+            P(u);
+            P(sig);
+            P(v);
+        }
+    }
+    return false;
 }
 
 TC_IMPLEMENTATION(Simulation3D, MPM3D, "mpm");

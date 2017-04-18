@@ -26,8 +26,13 @@
 
 TC_NAMESPACE_BEGIN
 
-inline void svd(const Matrix3 &A, Matrix3 &u, Matrix3 &sig, Matrix3 &v) {
-    return imp_svd(transpose(A), u, sig, v);
+inline void svd(Matrix3 A, Matrix3 &u, Matrix3 &sig, Matrix3 &v) {
+    if (frobenius_norm2(A - Matrix3(1.0f)) < 1e-5f) {
+        u = A;
+        sig = v = Matrix3(1);
+    } else {
+        imp_svd(A, u, sig, v);
+    }
 }
 
 inline void polar_decomp(const Matrix3 &A, Matrix3 &r, Matrix3 &s) {
@@ -36,10 +41,21 @@ inline void polar_decomp(const Matrix3 &A, Matrix3 &r, Matrix3 &s) {
     r = u * glm::transpose(v);
     s = v * sig * glm::transpose(v);
     if (!is_normal(r)) {
+        Matrix3 m = A;
+        svd(m, u, sig, v);
         P(A);
+        P(m);
         P(u);
         P(sig);
         P(v);
+        P(r);
+        P(s);
+        P(glm::transpose(v));
+        P(u * glm::transpose(v));
+        r = u * glm::transpose(v);
+        P(r);
+        printf("Matrix3 m(%.30f,%.30f,%.30f,%.30f,%.30f,%.30f,%.30f,%.30f,%.30f);\n", m[0][0], m[1][0], m[2][0], m[0][1],
+        m[1][1], m[2][1], m[0][2], m[1][2], m[2][2]);
     }
 }
 
@@ -145,6 +161,8 @@ public:
         int z_max = std::max(0, std::min(res[2], z + 3));
         return Region(x_min, x_max, y_min, y_max, z_min, z_max);
     }
+
+    bool test() const override;
 
     void estimate_volume() {}
 

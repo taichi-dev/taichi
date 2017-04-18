@@ -24,15 +24,19 @@ protected:
     DynamicLevelSet3D levelset;
 public:
     Simulation3D() {}
+
     virtual real get_current_time() const {
         return current_t;
     }
-    virtual void initialize(const Config &config) {
+
+    virtual void initialize(const Config &config) override {
         num_threads = config.get_int("num_threads");
     }
+
     virtual void step(real t) {
         error("no impl");
     }
+
     virtual std::vector<RenderParticle> get_render_particles() const {
         error("no impl");
         return std::vector<RenderParticle>();
@@ -43,6 +47,10 @@ public:
     }
 
     virtual void update(const Config &config) {}
+
+    virtual bool test() const override {
+        return true;
+    };
 };
 
 TC_INTERFACE(Simulation3D);

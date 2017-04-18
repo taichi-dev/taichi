@@ -218,8 +218,12 @@ inline real frobenius_norm(const Matrix2 &a) {
 	return sqrt(frobenius_norm2(a));
 }
 
+inline real frobenius_norm2(const Matrix3 &a) {
+    return a[0][0] * a[0][0] + a[0][1] * a[0][1] + a[1][0] * a[1][0] + a[1][1] * a[1][1];
+}
+
 inline real frobenius_norm(const Matrix3 &a) {
-    return sqrt(a[0][0] * a[0][0] + a[0][1] * a[0][1] + a[1][0] * a[1][0] + a[1][1] * a[1][1]);
+    return sqrt(frobenius_norm2(a));
 }
 
 

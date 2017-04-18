@@ -9,13 +9,34 @@
 
 #pragma once
 
-#include <taichi/common/config.h>
-#include <taichi/math/linalg.h>
-#include <sstream>
-#include <cstdio>
+#include <taichi/common/util.h>
+#include <string>
 #include <vector>
+#include <cstdio>
+#include <cstdlib>
 
 TC_NAMESPACE_BEGIN
+
+template <typename T>
+void write_to_disk(const T &dat, std::string fn) {
+    FILE *f = fopen(fn.c_str(), "wb");
+    fwrite(&dat, sizeof(dat), 1, f);
+    fclose(f);
+}
+
+template <typename T>
+bool read_from_disk(T &dat, std::string fn) {
+    FILE *f = fopen(fn.c_str(), "rb");
+    if (f == nullptr) {
+        return false;
+    }
+    size_t ret = fread(&dat, sizeof(dat), 1, f);
+    if (ret != sizeof(dat)) {
+        return false;
+    }
+    fclose(f);
+    return true;
+}
 
 template <typename T>
 void write_vector_to_disk(std::vector<T> *p_vec, std::string fn) {

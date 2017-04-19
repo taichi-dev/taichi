@@ -96,6 +96,7 @@ def default_const_or_evaluate(f, default, u, v):
         return f
     return f(u, v)
 
+
 def const_or_evaluate(f, u, v):
     import taichi as tc
     if type(f) in [float, int, tuple, tc.core.Vector2, tc.core.Vector3]:
@@ -103,20 +104,38 @@ def const_or_evaluate(f, u, v):
     return f(u, v)
 
 
-def array2d_to_image(arr, width, height, color_255, transform='levelset'):
+# color_255: actual color
+# arr: the transparance of the image, if transform is not 'levelset'
+# transform: (x0, x1) as rescaling or simply 'levelset'
+def array2d_to_image(arr, width, height, color_255=None, transform='levelset', alpha_scale=1.0):
+    from taichi import tc_core
+    if color_255 is None:
+        assert isinstance(arr, tc_core.Array2DVector3) or isinstance(arr, tc_core.Array2DVector4)
     import pyglet
     rasterized = arr.rasterize(width, height)
-    raw_data = np.empty((width, height), dtype='float32')
+    raw_data = np.empty((width, height, arr.get_channels()), dtype=np.float32)
     rasterized.to_ndarray(raw_data.ctypes.data_as(ctypes.c_void_p).value)
-    raw_data = raw_data.swapaxes(0, 1).copy().flatten()
     if transform == 'levelset':
-        raw_data = (raw_data <= 0)
+        raw_data = (raw_data <= 0).astype(np.float32)
     else:
         x0, x1 = transform
         raw_data = (np.clip(raw_data, x0, x1) - x0) / (x1 - x0)
-    dat = np.outer(np.ones_like(raw_data), color_255).astype('uint8')
-    dat.reshape((len(raw_data), 4))
-    dat[:, 3] = (color_255[3] * raw_data).astype('uint8')
+    raw_data = raw_data.swapaxes(0, 1).copy()
+    if isinstance(arr, tc_core.Array2DVector3):
+        dat = np.stack([raw_data, np.ones(shape=(width, height, 1), dtype=np.float32)], axis=2).flatten().reshape(
+            (height * width, 4))
+        dat = dat * 255.0
+    elif isinstance(arr, tc_core.Array2DVector4):
+        dat = raw_data.flatten().reshape((height * width, 4))
+        dat = dat * 255.0
+    else:
+        raw_data = raw_data.flatten()
+        dat = np.outer(np.ones_like(raw_data), color_255)
+        dat[:, 3] = (color_255[3] * raw_data)
+    dat[:, 3] *= alpha_scale
+    dat = np.clip(dat, 0.0, 255.0)
+    dat = dat.astype(np.uint8)
+    assert dat.shape == (height * width, 4)
     image_data = pyglet.image.ImageData(width, height, 'RGBA', dat.tostring())
     return image_data
 
@@ -158,11 +177,15 @@ def imread(fn, bgr=False):
     img.read(fn)
     return image_buffer_to_ndarray(img, bgr)[::-1]
 
+
 def ndarray_to_array2d(array):
+    if array.dtype == np.uint8:
+        array = (array * (1 / 255.0)).astype(np.float32)
+    assert array.dtype == np.float32
     array = array.copy()
     input_ptr = array.ctypes.data_as(ctypes.c_void_p).value
     if len(array.shape) == 2 or array.shape[2] == 1:
-        arr = taichi.core.Array2DReal(0, 0)
+        arr = taichi.core.Array2Dreal(0, 0)
     elif array.shape[2] == 3:
         arr = taichi.core.Array2DVector3(0, 0, taichi.Vector(0, 0, 0))
     elif array.shape[2] == 4:
@@ -172,15 +195,20 @@ def ndarray_to_array2d(array):
     arr.from_ndarray(input_ptr, array.shape[0], array.shape[1])
     return arr
 
+
 def array2d_to_ndarray(arr):
     if isinstance(arr, taichi.core.Array2DVector3):
         ndarray = np.empty((arr.get_width(), arr.get_height(), 3), dtype='float32')
     elif isinstance(arr, taichi.core.Array2DVector4):
         ndarray = np.empty((arr.get_width(), arr.get_height(), 4), dtype='float32')
-    elif isinstance(arr, taichi.core.Array2DReal):
+    elif isinstance(arr, taichi.core.Array2Dreal):
         ndarray = np.empty((arr.get_width(), arr.get_height()), dtype='float32')
     else:
         assert False, 'Array2d must have type real, Vector3, or Vector4'
     output_ptr = ndarray.ctypes.data_as(ctypes.c_void_p).value
     arr.to_ndarray(output_ptr)
     return ndarray
+
+
+def opencv_img_to_taichi_img(img):
+    return (img.swapaxes(0, 1)[:, ::-1, ::-1] * (1 / 255.0)).astype(np.float32)

@@ -54,12 +54,10 @@ void Smoke3D::project() {
     auto is_neumann = [&](Index3D const &ind) -> bool {
         if (boundary_condition.inside(ind)) {
             return boundary_condition[ind] == PoissonSolver3D::NEUMANN;
-        }
-        else {
+        } else {
             if (open_boundary) {
                 return false;
-            }
-            else {
+            } else {
                 return true;
             }
         }
@@ -74,7 +72,7 @@ void Smoke3D::project() {
             v[ind] += pressure[ind];
         if (!is_neumann(ind.neighbour(Vector3i(0, 1, 0))))
             v[ind + Vector3i(0, 1, 0)] -= pressure[ind];
-        
+
         if (!is_neumann(ind.neighbour(Vector3i(0, 0, -1))))
             w[ind] += pressure[ind];
         if (!is_neumann(ind.neighbour(Vector3i(0, 0, 1))))
@@ -98,15 +96,14 @@ void Smoke3D::initialize(const Config &config) {
     open_boundary = config.get_bool("open_boundary");
     if (open_boundary) {
         padding = "dirichlet";
-    }
-    else {
+    } else {
         padding = "neumann";
     }
 
     perturbation = config.get("perturbation", 0.0f);
     Config solver_config;
     solver_config.set("res", res).set("num_threads", num_threads).set("padding", padding).
-        set("maximum_iterations", config.get_int("maximum_pressure_iterations"));
+            set("maximum_iterations", config.get_int("maximum_pressure_iterations"));
     pressure_solver = create_instance<PoissonSolver3D>(config.get_string("pressure_solver"), solver_config);
     u = Array(res[0] + 1, res[1], res[2], 0.0f, Vector3(0.0f, 0.5f, 0.5f));
     v = Array(res[0], res[1] + 1, res[2], 0.0f, Vector3(0.5f, 0.0f, 0.5f));
@@ -137,12 +134,24 @@ Vector3 hsv2rgb(Vector3 hsv) {
     real t = v * (1 - (1 - f) * s);
     real r, g, b;
     switch (j % 6) {
-    case 0: r = v, g = t, b = p; break;
-    case 1: r = q, g = v, b = p; break;
-    case 2: r = p, g = v, b = t; break;
-    case 3: r = p, g = q, b = v; break;
-    case 4: r = t, g = p, b = v; break;
-    case 5: r = v, g = p, b = q; break;
+        case 0:
+            r = v, g = t, b = p;
+            break;
+        case 1:
+            r = q, g = v, b = p;
+            break;
+        case 2:
+            r = p, g = v, b = t;
+            break;
+        case 3:
+            r = p, g = q, b = v;
+            break;
+        case 4:
+            r = t, g = p, b = v;
+            break;
+        case 5:
+            r = v, g = p, b = q;
+            break;
     }
     return Vector3(r, g, b);
 }

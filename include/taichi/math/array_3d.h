@@ -26,7 +26,7 @@ public:
     int i, j, k;
     Vector3 storage_offset;
 
-    Index3D() { }
+    Index3D() {}
 
     Index3D(int x0, int x1, int y0, int y1, int z0, int z1, Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
         x[0] = x0;
@@ -129,7 +129,7 @@ private:
     Index3D index_end;
     Vector3 storage_offset;
 public:
-    Region3D() { }
+    Region3D() {}
 
     Region3D(int x0, int x1, int y0, int y1, int z0, int z1, Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
         x[0] = x0;
@@ -160,7 +160,7 @@ public:
     }
 };
 
-template<typename T>
+template <typename T>
 struct Array3D {
 protected:
     Region3D region;
@@ -174,17 +174,18 @@ protected:
         T *data;
         int offset;
 
-        Accessor2D(T *data, int offset) : data(data), offset(offset) { }
+        Accessor2D(T *data, int offset) : data(data), offset(offset) {}
 
         T *operator[](int i) const {
             return data + offset * i;
         }
     };
+
     struct ConstAccessor2D {
         const T *data;
         int offset;
 
-        ConstAccessor2D(const T *data, int offset) : data(data), offset(offset) { }
+        ConstAccessor2D(const T *data, int offset) : data(data), offset(offset) {}
 
         const T *operator[](int i) const {
             return data + offset * i;
@@ -201,11 +202,12 @@ public:
         return region;
     }
 
-    void initialize(const Vector3i &resolution, T init=T(0), Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
+    void initialize(const Vector3i &resolution, T init = T(0), Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
         initialize(resolution.x, resolution.y, resolution.z, init, storage_offset);
     }
 
-    void initialize(int width, int height, int depth, T init=T(0), Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
+    void
+    initialize(int width, int height, int depth, T init = T(0), Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
         //assert_info(width >= 2, "dim must be at least 2");
         //assert_info(height >= 2, "dim must be at least 2");
         //assert_info(depth >= 2, "dim must be at least 2");
@@ -227,11 +229,11 @@ public:
         return Array3D<T>(width, height, depth, T(0), storage_offset);
     }
 
-    Array3D(const Vector3i &resolution, T init=T(0), Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
+    Array3D(const Vector3i &resolution, T init = T(0), Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
         initialize(resolution, init, storage_offset);
     }
 
-    Array3D(int width, int height, int depth, T init=T(0), Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
+    Array3D(int width, int height, int depth, T init = T(0), Vector3 storage_offset = Vector3(0.5f, 0.5f, 0.5f)) {
         initialize(width, height, depth, init, storage_offset);
     }
 
@@ -479,14 +481,14 @@ public:
         real y_r = y - y_i;
         real z_r = z - z_i;
         return
-            lerp(z_r,
-                lerp(x_r,
-                    lerp(y_r, get(x_i, y_i, z_i), get(x_i, y_i + 1, z_i)),
-                    lerp(y_r, get(x_i + 1, y_i, z_i), get(x_i + 1, y_i + 1, z_i))),
-                lerp(x_r,
-                    lerp(y_r, get(x_i, y_i, z_i + 1), get(x_i, y_i + 1, z_i + 1)),
-                    lerp(y_r, get(x_i + 1, y_i, z_i + 1), get(x_i + 1, y_i + 1, z_i + 1)))
-            );
+                lerp(z_r,
+                     lerp(x_r,
+                          lerp(y_r, get(x_i, y_i, z_i), get(x_i, y_i + 1, z_i)),
+                          lerp(y_r, get(x_i + 1, y_i, z_i), get(x_i + 1, y_i + 1, z_i))),
+                     lerp(x_r,
+                          lerp(y_r, get(x_i, y_i, z_i + 1), get(x_i, y_i + 1, z_i + 1)),
+                          lerp(y_r, get(x_i + 1, y_i, z_i + 1), get(x_i + 1, y_i + 1, z_i + 1)))
+                );
     }
 
     T sample(const Vector3 &v) const {
@@ -561,8 +563,8 @@ public:
 
     bool inside(const Vector3 &pos, real tolerance = 1e-4f) const {
         return (-tolerance < pos.x && pos.x < width + tolerance &&
-            -tolerance < pos.y && pos.y < height + tolerance &&
-            -tolerance < pos.z && pos.z < depth + tolerance);
+                -tolerance < pos.y && pos.y < height + tolerance &&
+                -tolerance < pos.z && pos.z < depth + tolerance);
     }
 
     Region3D get_rasterization_region(Vector3 pos, int half_extent) const {
@@ -570,10 +572,10 @@ public:
         int y = (int)floor(pos.y - storage_offset.y);
         int z = (int)floor(pos.z - storage_offset.z);
         return Region3D(
-            std::max(0, x - half_extent + 1), std::min(width, x + half_extent + 1),
-            std::max(0, y - half_extent + 1), std::min(height, y + half_extent + 1),
-            std::max(0, z - half_extent + 1), std::min(depth, z + half_extent + 1),
-            storage_offset);
+                std::max(0, x - half_extent + 1), std::min(width, x + half_extent + 1),
+                std::max(0, y - half_extent + 1), std::min(height, y + half_extent + 1),
+                std::max(0, z - half_extent + 1), std::min(depth, z + half_extent + 1),
+                storage_offset);
     }
 
     bool is_normal() const {
@@ -594,7 +596,7 @@ public:
     }
 };
 
-template<typename T>
+template <typename T>
 void print(const Array3D<T> &arr) {
     arr.print("");
 }

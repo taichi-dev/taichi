@@ -34,7 +34,6 @@ PYBIND11_PLUGIN(taichi_core) {
     export_visual(m);
     export_io(m);
     export_misc(m);
-    export_ndarray(m);
 
     return m.ptr();
 }

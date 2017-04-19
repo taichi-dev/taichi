@@ -26,8 +26,8 @@ void EulerSmoke::initialize(const Config & config)
     EulerLiquid::initialize(config);
     buoyancy_alpha = config.get_real("buoyancy_alpha");
     buoyancy_beta = config.get_real("buoyancy_beta");
-    density = Array(width, height, 0);
-    temperature = Array(width, height, 0);
+    density = Array<real>(width, height, 0);
+    temperature = Array<real>(width, height, 0);
 }
 
 void EulerSmoke::emit(real delta_t)

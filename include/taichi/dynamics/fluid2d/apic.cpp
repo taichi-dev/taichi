@@ -39,7 +39,7 @@ void APICLiquid::sample_c()
     }
 }
 
-Vector2 APICLiquid::sample_c(Vector2 & pos, Array & val) {
+Vector2 APICLiquid::sample_c(Vector2 & pos, Array<real> & val) {
     const int extent = (1 + 1) / 2;
     Vector2 c(0);
     for (auto &ind : val.get_rasterization_region(pos, extent)) {

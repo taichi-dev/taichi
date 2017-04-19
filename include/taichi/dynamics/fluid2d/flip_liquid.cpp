@@ -31,10 +31,10 @@ void FLIPLiquid::initialize_solver(const Config &config)
     advection_order = config.get("advection_order", 2);
     correction_strength = config.get("correction_strength", 0.1f);
     correction_neighbours = config.get("correction_neighbours", 5);
-    u_backup = Array(width + 1, height, 0.0f, Vector2(0.0f, 0.5f));
-    v_backup = Array(width, height + 1, 0.0f, Vector2(0.5f, 0.0f));
-    u_count = Array(width + 1, height, 0.0f);
-    v_count = Array(width, height + 1, 0.0f);
+    u_backup = Array<real>(width + 1, height, 0.0f, Vector2(0.0f, 0.5f));
+    v_backup = Array<real>(width, height + 1, 0.0f, Vector2(0.5f, 0.0f));
+    u_count = Array<real>(width + 1, height, 0.0f);
+    v_count = Array<real>(width, height + 1, 0.0f);
 }
 
 Vector2 FLIPLiquid::sample_velocity(Vector2 position, Vector2 velocity, real lerp) {
@@ -155,7 +155,7 @@ void FLIPLiquid::correct_particle_positions(real delta_t, bool clear_c)
 }
 
 template<real(*T)(const Fluid::Particle &, const Vector2 &)>
-void FLIPLiquid::rasterize_component(Array & val, Array & count)
+void FLIPLiquid::rasterize_component(Array<real> & val, Array<real> & count)
 {
     val = 0;
     count = 0;
@@ -177,10 +177,10 @@ void FLIPLiquid::rasterize_component(Array & val, Array & count)
 }
 
 
-template void FLIPLiquid::rasterize_component<Fluid::Particle::get_velocity<0>>(Array &val, Array &count);
-template void FLIPLiquid::rasterize_component<Fluid::Particle::get_velocity<1>>(Array &val, Array &count);
-template void FLIPLiquid::rasterize_component<Fluid::Particle::get_affine_velocity<0>>(Array &val, Array &count);
-template void FLIPLiquid::rasterize_component<Fluid::Particle::get_affine_velocity<1>>(Array &val, Array &count);
+template void FLIPLiquid::rasterize_component<Fluid::Particle::get_velocity<0>>(Array<real> &val, Array<real> &count);
+template void FLIPLiquid::rasterize_component<Fluid::Particle::get_velocity<1>>(Array<real> &val, Array<real> &count);
+template void FLIPLiquid::rasterize_component<Fluid::Particle::get_affine_velocity<0>>(Array<real> &val, Array<real> &count);
+template void FLIPLiquid::rasterize_component<Fluid::Particle::get_affine_velocity<1>>(Array<real> &val, Array<real> &count);
 
 TC_IMPLEMENTATION(Fluid, FLIPLiquid, "flip_liquid");
 

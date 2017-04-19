@@ -18,6 +18,7 @@
 #include <taichi/common/asset_manager.h>
 
 #include <taichi/geometry/factory.h>
+#include <taichi/math/levelset_3d.h>
 
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::RenderParticle>);
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::Triangle>);
@@ -52,19 +53,6 @@ std::vector<Triangle> merge_mesh(const std::vector<Triangle> &a, const std::vect
     return merged;
 }
 
-template<typename T, int ret>
-int return_constant(T *) { return ret; }
-
-template<typename T, int channels>
-void ndarray_to_image_buffer(T *arr, uint64 input, int width, int height) // 'input' is actually a pointer...
-{
-    arr->initialize(width, height);
-    for (auto &ind : arr->get_region()) {
-        for (int i = 0; i < channels; i++) {
-            (*arr)[ind][i] = reinterpret_cast<real *>(input)[ind.i * channels * height + ind.j * channels + i];
-        }
-    }
-}
 
 void export_visual(py::module &m) {
     DEFINE_VECTOR_OF_NAMED(RenderParticle, "RenderParticles");
@@ -82,28 +70,6 @@ void export_visual(py::module &m) {
     m.def("create_mesh", std::make_shared<Mesh>);
     m.def("create_scene", std::make_shared<Scene>);
 
-    py::class_<Array2D<Vector3>>(m, "Array2DVector3")
-            .def(py::init<int, int, Vector3>())
-            .def("get_width", &Array2D<Vector3>::get_width)
-            .def("get_height", &Array2D<Vector3>::get_height)
-            .def("get_channels", &return_constant<Array2D<Vector3>, 3>)
-            .def("from_ndarray", &ndarray_to_image_buffer<Array2D<Vector3>, 3>)
-            .def("read", &Array2D<Vector3>::load)
-            .def("write", &Array2D<Vector3>::write)
-            .def("write_to_disk", &Array2D<Vector3>::write_to_disk)
-            .def("read_from_disk", &Array2D<Vector3>::read_from_disk)
-            .def("to_ndarray", &image_buffer_to_ndarray<Array2D<Vector3>, 3>);
-
-    py::class_<Array2D<Vector4>>(m, "Array2DVector4")
-            .def(py::init<int, int, Vector4>())
-            .def("get_width", &Array2D<Vector4>::get_width)
-            .def("get_height", &Array2D<Vector4>::get_height)
-            .def("get_channels", &return_constant<Array2D<Vector4>, 4>)
-            .def("write", &Array2D<Vector4>::write)
-            .def("from_ndarray", &ndarray_to_image_buffer<Array2D<Vector4>, 4>)
-            .def("write_to_disk", &Array2D<Vector4>::write_to_disk)
-            .def("read_from_disk", &Array2D<Vector4>::read_from_disk)
-            .def("to_ndarray", &image_buffer_to_ndarray<Array2D<Vector4>, 4>);
 
     py::class_<Texture, std::shared_ptr<Texture>>(m, "Texture")
             .def("initialize", &Texture::initialize);;

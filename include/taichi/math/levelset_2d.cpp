@@ -2,6 +2,7 @@
     Taichi - Physically based Computer Graphics Library
 
     Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+                  2017 Yu Fang <squarefk@gmail.com>
 
     All rights reserved. Use of this source code is governed by
     the MIT license as written in the LICENSE file.
@@ -11,27 +12,27 @@
 
 TC_NAMESPACE_BEGIN
 
+const real LevelSet2D::INF = 1e7;
 
 void LevelSet2D::add_sphere(Vector2 center, real radius, bool inside_out) {
     for (auto &ind : get_region()) {
         Vector2 sample = ind.get_pos();
         real dist = (inside_out ? -1 : 1) * (length(center - sample) - radius);
-        set(ind, std::min(get(ind), dist));
+        set(ind, std::min(Array2D::get(ind), dist));
     }
 }
 
-void LevelSet2D::add_polygon(std::vector<Vector2> polygon, bool inside_out)
-{
+void LevelSet2D::add_polygon(std::vector<Vector2> polygon, bool inside_out) {
     for (auto &ind : get_region()) {
         Vector2 p = ind.get_pos();
         real dist = ((inside_polygon(p, polygon) ^ inside_out) ? -1 : 1) * (nearest_distance(p, polygon));
-        set(ind, std::min(get(ind), dist));
+        set(ind, std::min(Array2D::get(ind), dist));
     }
 }
 
-Vector2 LevelSet2D::get_gradient(const Vector2 &pos) const
-{
-    assert_info(inside(pos), "LevelSet Gradient Query out of Bound! (" + std::to_string(pos.x) + ", " + std::to_string(pos.y) + ")");
+Vector2 LevelSet2D::get_gradient(const Vector2 &pos) const {
+    assert_info(inside(pos),
+                "LevelSet Gradient Query out of Bound! (" + std::to_string(pos.x) + ", " + std::to_string(pos.y) + ")");
     real x = pos.x, y = pos.y;
     x = clamp(x - storage_offset.x, 0.f, width - 1.f - eps);
     y = clamp(y - storage_offset.y, 0.f, height - 1.f - eps);
@@ -39,19 +40,36 @@ Vector2 LevelSet2D::get_gradient(const Vector2 &pos) const
     const int y_i = clamp(int(y), 0, height - 2);
     const real x_r = x - x_i;
     const real y_r = y - y_i;
-    const real gx = lerp(y_r, get(x_i + 1, y_i) - get(x_i, y_i), get(x_i + 1, y_i + 1) - get(x_i, y_i + 1));
-    const real gy = lerp(x_r, get(x_i, y_i + 1) - get(x_i, y_i), get(x_i + 1, y_i + 1) - get(x_i + 1, y_i));
+    const real gx = lerp(y_r, Array2D::get(x_i + 1, y_i) - Array2D::get(x_i, y_i),
+                         Array2D::get(x_i + 1, y_i + 1) - Array2D::get(x_i, y_i + 1));
+    const real gy = lerp(x_r, Array2D::get(x_i, y_i + 1) - Array2D::get(x_i, y_i),
+                         Array2D::get(x_i + 1, y_i + 1) - Array2D::get(x_i + 1, y_i));
     return Vector2(gx, gy);
 }
 
-Vector2 LevelSet2D::get_normalized_gradient(const Vector2 &pos) const
-{
+Vector2 LevelSet2D::get_normalized_gradient(const Vector2 &pos) const {
     Vector2 gradient = get_gradient(pos);
     if (length(gradient) < 1e-10f)
         return Vector2(1, 0);
     else
         return normalize(gradient);
 }
+
+real LevelSet2D::get(const Vector2 &pos) const {
+    assert_info(inside(pos),
+                "LevelSet Query out of Bound! (" + std::to_string(pos.x) + ", " + std::to_string(pos.y) + ")");
+    real x = pos.x, y = pos.y;
+    x = clamp(x - storage_offset.x, 0.f, width - 1.f - eps);
+    y = clamp(y - storage_offset.y, 0.f, height - 1.f - eps);
+    const int x_i = clamp(int(x), 0, width - 2);
+    const int y_i = clamp(int(y), 0, height - 2);
+    const real x_r = x - x_i;
+    const real y_r = y - y_i;
+    const real ly0 = lerp(x_r, Array2D::get(x_i, y_i), Array2D::get(x_i + 1, y_i));
+    const real ly1 = lerp(x_r, Array2D::get(x_i, y_i + 1), Array2D::get(x_i + 1, y_i + 1));
+    return lerp(y_r, ly0, ly1);
+}
+
 
 Array2D<real> LevelSet2D::rasterize(int width, int height) {
     for (auto &p : (*this)) {
@@ -63,8 +81,7 @@ Array2D<real> LevelSet2D::rasterize(int width, int height) {
     Vector2 actual_size;
     if (storage_offset == Vector2(0.0f, 0.0f)) {
         actual_size = Vector2(this->width - 1, this->height - 1);
-    }
-    else {
+    } else {
         actual_size = Vector2(this->width, this->height);
     }
 

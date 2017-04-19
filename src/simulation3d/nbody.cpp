@@ -18,9 +18,15 @@ public:
     struct Particle {
         Vector3 position;
         real mass;
-        Particle() { mass = 0.0f; position = Vector3(0.0f); }
+
+        Particle() {
+            mass = 0.0f;
+            position = Vector3(0.0f);
+        }
+
         Particle(const Vector3 &position, real mass) : position(position), mass(mass) {}
-        Particle operator + (const Particle &o) const {
+
+        Particle operator+(const Particle &o) const {
             Particle ret;
             ret.mass = mass + o.mass;
             ret.position = (position * mass + o.position * o.mass) / ret.mass;
@@ -29,6 +35,7 @@ public:
             return ret;
         }
     };
+
 protected:
     struct Node {
         Particle p;
@@ -39,6 +46,7 @@ protected:
             memset(children, 0, sizeof(children));
             p = Particle();
         }
+
         bool is_leaf() {
             for (int i = 0; i < 8; i++) {
                 if (children[i] != 0) {
@@ -48,6 +56,7 @@ protected:
             return p.mass > 0;
         }
     };
+
     real resolution, inv_resolution;
     int total_levels;
     int margin;
@@ -173,8 +182,7 @@ public:
                 cp = get_child_index(u, k);
                 if (nodes[t].children[cp] != 0) {
                     t = nodes[t].children[cp];
-                }
-                else {
+                } else {
                     break;
                 }
             }
@@ -195,14 +203,12 @@ public:
                     // We have to merge two particles since they are too close...
                     q = p + q;
                     create_child(t, cp, q);
-                }
-                else {
+                } else {
                     nodes[t].p = Particle();
                     create_child(t, cp, p);
                     create_child(t, cq, q);
                 }
-            }
-            else {
+            } else {
                 // Non-leaf node, simply create a child.
                 create_child(t, cp, p);
             }
@@ -237,7 +243,7 @@ public:
     }
     */
 
-    template<typename T>
+    template <typename T>
     Vector3 summation(int t, const Particle &p, const T &func) {
         const Node &node = nodes[t];
         if (nodes[t].is_leaf()) {
@@ -249,13 +255,12 @@ public:
             if (node.children[c]) {
                 const Node &ch = nodes[node.children[c]];
                 if (
-                    ch.bounds[0][0] <= u[0] && u[0] <= ch.bounds[1][0] &&
-                    ch.bounds[0][1] <= u[1] && u[1] <= ch.bounds[1][1] &&
-                    ch.bounds[0][2] <= u[2] && u[2] <= ch.bounds[1][2]
-                    ) {
+                        ch.bounds[0][0] <= u[0] && u[0] <= ch.bounds[1][0] &&
+                        ch.bounds[0][1] <= u[1] && u[1] <= ch.bounds[1][1] &&
+                        ch.bounds[0][2] <= u[2] && u[2] <= ch.bounds[1][2]
+                        ) {
                     ret += summation(node.children[c], p, func);
-                }
-                else {
+                } else {
                     // Coarse summation 
                     ret += func(p, ch.p);
                 }
@@ -271,8 +276,8 @@ public:
         const Particle &p = nodes[t].p;
         printf("p (%f, %f, %f) m %f ", p.position.x, p.position.y, p.position.z, p.mass);
         printf("(%d, %d, %d) (%d, %d, %d)\n",
-            nodes[t].bounds[0][0], nodes[t].bounds[0][1], nodes[t].bounds[0][2],
-            nodes[t].bounds[1][0], nodes[t].bounds[1][1], nodes[t].bounds[1][2]);
+               nodes[t].bounds[0][0], nodes[t].bounds[0][1], nodes[t].bounds[0][2],
+               nodes[t].bounds[1][0], nodes[t].bounds[1][1], nodes[t].bounds[1][2]);
         for (int c = 0; c < 8; c++) {
             if (nodes[t].children[c] != 0) {
                 print_tree(nodes[t].children[c], level + 1);
@@ -284,10 +289,12 @@ public:
 class NBody : public Simulation3D {
     struct Particle {
         Vector3 position, velocity, color;
+
         Particle(const Vector3 &position, const Vector3 &velocity, const Vector3 &color) :
-            position(position), velocity(velocity), color(color) {
+                position(position), velocity(velocity), color(color) {
         }
     };
+
 protected:
     real gravitation;
     std::shared_ptr<Texture> velocity_field;
@@ -310,6 +317,7 @@ public:
             particles.push_back(Particle(p, v, c));
         }
     }
+
     std::vector<RenderParticle> get_render_particles() const override {
         std::vector<RenderParticle> render_particles;
         render_particles.reserve(particles.size());
@@ -318,6 +326,7 @@ public:
         }
         return render_particles;
     }
+
     void substep(real dt) {
         using BHP = BarnesHutSummation::Particle;
         std::vector<BHP> bhps;
@@ -374,6 +383,7 @@ public:
         }
         current_t += dt;
     }
+
     virtual void step(real dt) override {
         int steps = (int)std::ceil(dt / delta_t);
         for (int i = 0; i < steps; i++) {

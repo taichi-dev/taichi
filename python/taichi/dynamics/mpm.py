@@ -1,6 +1,7 @@
 import time
 
 from taichi.core import tc_core
+from levelset_3d import LevelSet3D
 from taichi.misc.util import *
 from taichi.tools.video import VideoManager
 from taichi.visual.camera import Camera
@@ -16,11 +17,11 @@ class MPM3:
         self.c.initialize(P(**kwargs))
         self.task_id = get_unique_task_id()
         self.directory = tc.get_output_path(self.task_id)
-        self.video_manager = VideoManager(self.task_id, 540, 540)
         try:
             os.mkdir(self.directory)
         except Exception as e:
             print e
+        self.video_manager = VideoManager(self.directory, 540, 540)
         self.particle_renderer = ParticleRenderer('shadow_map',
                                                   shadow_map_resolution=0.3, alpha=0.7, shadowing=2,
                                                   ambient_light=0.01,
@@ -28,18 +29,43 @@ class MPM3:
         self.resolution = kwargs['resolution']
         self.frame = 0
 
+        def dummy_levelset_generator(_):
+            return self.create_levelset()
+
+        self.levelset_generator = dummy_levelset_generator
+
+    def update_levelset(self, t0, t1):
+        levelset = tc.core.DynamicLevelSet3D()
+        levelset.initialize(t0, t1, self.levelset_generator(t0).levelset, self.levelset_generator(t1).levelset)
+        self.c.set_levelset(levelset)
+
+    def set_levelset(self, levelset, is_dynamic_levelset=False):
+        if is_dynamic_levelset:
+            self.levelset_generator = levelset
+        else:
+            def levelset_generator(_):
+                return levelset
+
+            self.levelset_generator = levelset_generator
+
+    def get_current_time(self):
+        return self.c.get_current_time()
+
     def step(self, step_t):
         t = self.c.get_current_time()
         print 'Simulation time:', t
         T = time.time()
+        self.update_levelset(t, t + step_t)
+        print 'Update Leveset Time:', time.time() - T
+        T = time.time()
         self.c.step(step_t)
-        print 'Time:', time.time() - T
+        print 'Step Time:', time.time() - T
         image_buffer = tc_core.Array2DVector3(self.video_manager.width, self.video_manager.height, Vector(0, 0, 0.0))
         particles = self.c.get_render_particles()
         particles.write(self.directory + '/particles%05d.bin' % self.frame)
         res = map(float, self.resolution)
         camera = Camera('pinhole', origin=(0, res[1] * 0.4, res[2] * 1.4),
-                        look_at=(0, -res[1] * 0.5, 0), up=(0, 1, 0), fov=70,
+                        look_at=(0, -res[1] * 0.5, 0), up=(0, 1, 0), fov=90,
                         width=10, height=10)
         self.particle_renderer.set_camera(camera)
         self.particle_renderer.render(image_buffer, particles)
@@ -54,3 +80,13 @@ class MPM3:
 
     def make_video(self):
         self.video_manager.make_video()
+
+    def create_levelset(self):
+        return LevelSet3D(self.resolution, Vector(0.0, 0.0, 0.0))
+
+    @staticmethod
+    def create_levelset(res):
+        return LevelSet3D(res, Vector(0.0, 0.0, 0.0))
+
+    def test(self):
+        return self.c.test()

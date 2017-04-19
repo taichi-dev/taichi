@@ -13,6 +13,7 @@
 #include <taichi/system/threading.h>
 #include <taichi/visual/texture.h>
 #include <taichi/common/asset_manager.h>
+#include <taichi/math/math_util.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -22,8 +23,7 @@ inline float w(float x) {
     assert(x <= 2);
     if (x < 1) {
         return 0.5f * x * x * x - x * x + 2.0f / 3.0f;
-    }
-    else {
+    } else {
         return -1.0f / 6.0f * x * x * x + x * x - 2 * x + 4.0f / 3.0f;
     }
 }
@@ -37,8 +37,7 @@ inline float dw(float x) {
     float xx = x * x;
     if (x < 1.0f) {
         val = 1.5f * xx - 2.0f * x;
-    }
-    else {
+    } else {
         val = -0.5f * xx + 2.0f * x - 2.0f;
     }
     return s * val;
@@ -57,6 +56,7 @@ long long MPM3D::Particle::instance_count;
 struct EPParticle3 : public MPM3D::Particle {
     EPParticle3() : MPM3D::Particle() {
     }
+
     virtual Matrix get_energy_gradient() {
         const real hardening = 10.0f;
         const real mu_0 = 1e5f, lambda_0 = 1e5f;
@@ -75,12 +75,15 @@ struct EPParticle3 : public MPM3D::Particle {
         CV(r);
         CV(s);
         return 2 * mu * (dg_e - r) +
-            lambda * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
+               lambda * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
     }
+
     virtual void calculate_kernels() {}
+
     virtual void calculate_force() {
         tmp_force = -vol * get_energy_gradient() * glm::transpose(dg_e);
     };
+
     virtual void plasticity() {
         Matrix svd_u, sig, svd_v;
         svd(dg_e, svd_u, sig, svd_v);
@@ -99,9 +102,9 @@ struct EPParticle3 : public MPM3D::Particle {
 };
 
 struct DPParticle3 : public MPM3D::Particle {
-    real h_0 = 35, h_1 = 9, h_2 = 0.2, h_3 = 10;
-    real lambda_0 = 204057, mu_0 = 136038;
-    real alpha = 1;
+    real h_0 = 35.0f, h_1 = 9.0f, h_2 = 0.2f, h_3 = 10.0f;
+    real lambda_0 = 204057.0f, mu_0 = 136038.0f;
+    real alpha = 1.0f;
     real q = 0.0f;
     real phi_f;
 
@@ -117,19 +120,19 @@ struct DPParticle3 : public MPM3D::Particle {
         Matrix3 epsilon(log(sigma[0][0]), 0.f, 0.f, 0.f, log(sigma[1][1]), 0.f, 0.f, 0.f, log(sigma[2][2]));
         real tr = epsilon[0][0] + epsilon[1][1] + epsilon[2][2];
         Matrix3 epsilon_hat = epsilon - (tr) / d * Matrix3(1.0f);
-        real epsilon_for = sqrt(epsilon[0][0] * epsilon[0][0] + epsilon[1][1] * epsilon[1][1] + epsilon[2][2] * epsilon[2][2]);
-        real epsilon_hat_for = sqrt(epsilon_hat[0][0] * epsilon_hat[0][0] + epsilon_hat[1][1] * epsilon_hat[1][1] + epsilon_hat[2][2] * epsilon_hat[2][2]);
+        real epsilon_for = sqrt(
+                epsilon[0][0] * epsilon[0][0] + epsilon[1][1] * epsilon[1][1] + epsilon[2][2] * epsilon[2][2]);
+        real epsilon_hat_for = sqrt(epsilon_hat[0][0] * epsilon_hat[0][0] + epsilon_hat[1][1] * epsilon_hat[1][1] +
+                                    epsilon_hat[2][2] * epsilon_hat[2][2]);
         if (epsilon_hat_for <= 0 || tr > 0.0f) {
             sigma_out = Matrix3(1.0f);
             out = epsilon_for;
-        }
-        else {
+        } else {
             real delta_gamma = epsilon_hat_for + (d * lambda_0 + 2 * mu_0) / (2 * mu_0) * tr * alpha;
             if (delta_gamma <= 0) {
                 sigma_out = sigma;
                 out = 0;
-            }
-            else {
+            } else {
                 Matrix3 h = epsilon - delta_gamma / epsilon_hat_for * epsilon_hat;
                 sigma_out = Matrix3(exp(h[0][0]), 0.f, 0.f, 0.f, exp(h[1][1]), 0.f, 0.f, 0.f, exp(h[2][2]));
                 out = delta_gamma;
@@ -144,9 +147,14 @@ struct DPParticle3 : public MPM3D::Particle {
         Matrix3 u, v, sig, dg = dg_e;
         svd(dg_e, u, sig, v);
 
+        assert_info(sig[0][0] > 0, "negative singular value");
+        assert_info(sig[1][1] > 0, "negative singular value");
+        assert_info(sig[2][2] > 0, "negative singular value");
+
         Matrix3 log_sig(log(sig[0][0]), 0.f, 0.f, 0.f, log(sig[1][1]), 0.f, 0.f, 0.f, log(sig[2][2]));
         Matrix3 inv_sig(1.f / (sig[0][0]), 0.f, 0.f, 0.f, 1.f / (sig[1][1]), 0.f, 0.f, 0.f, 1.f / (sig[2][2]));
-        Matrix3 center = 2 * mu_0 * inv_sig * log_sig + lambda_0 * (log_sig[0][0] + log_sig[1][1] + log_sig[2][2]) * inv_sig;
+        Matrix3 center =
+                2 * mu_0 * inv_sig * log_sig + lambda_0 * (log_sig[0][0] + log_sig[1][1] + log_sig[2][2]) * inv_sig;
 
         tmp_force = -vol * (u * center * glm::transpose(v)) * glm::transpose(dg);
     }
@@ -182,6 +190,7 @@ void MPM3D::initialize(const Config &config) {
     res = config.get_vec3i("resolution");
     gravity = config.get_vec3("gravity");
     delta_t = config.get_real("delta_t");
+    apic = config.get("apic", true);
     std::shared_ptr<Texture> density_texture = AssetManager::get_asset<Texture>(config.get_int("density_tex"));
     auto initial_velocity = config.get_vec3("initial_velocity");
     for (int i = 0; i < res[0]; i++) {
@@ -191,8 +200,8 @@ void MPM3D::initialize(const Config &config) {
                 real num = density_texture->sample(coord).x;
                 int t = (int)num + (rand() < num - int(num));
                 for (int l = 0; l < t; l++) {
-//                    Particle *p = new EPParticle3();
-                    Particle *p = new DPParticle3();
+                    Particle *p = new EPParticle3();
+//                    Particle *p = new DPParticle3();
                     p->pos = Vector(i + rand(), j + rand(), k + rand());
                     p->mass = 1.0f;
                     p->v = initial_velocity;
@@ -203,6 +212,7 @@ void MPM3D::initialize(const Config &config) {
     }
     P(particles.size());
     grid_velocity.initialize(res[0], res[1], res[2], Vector(0.0f));
+    grid_force_or_acc.initialize(res[0], res[1], res[2], Vector(0.0f));
     grid_mass.initialize(res[0], res[1], res[2], 0);
     grid_locks.initialize(res[0], res[1], res[2], 0);
 }
@@ -221,6 +231,7 @@ std::vector<RenderParticle> MPM3D::get_render_particles() const {
 
 void MPM3D::rasterize() {
     grid_velocity.reset(Vector(0.0f));
+    grid_force_or_acc.reset(Vector(0.0f));
     grid_mass.reset(0.0f);
     parallel_for_each_particle([&](Particle &p) {
         for (auto &ind : get_bounded_rasterization_region(p.pos)) {
@@ -243,27 +254,38 @@ void MPM3D::rasterize() {
 }
 
 void MPM3D::resample(float delta_t) {
+    real alpha_delta_t = 1;
+    // what is apic in 2D
+    if (apic)
+        alpha_delta_t = 0;
     parallel_for_each_particle([&](Particle &p) {
-        Vector v(0.0f);
+        Vector v(0.0f), bv(0.0f);
         Matrix cdg(0.0f);
         Matrix b(0.0f);
+        int count = 0;
         for (auto &ind : get_bounded_rasterization_region(p.pos)) {
+            count++;
             Vector d_pos = p.pos - Vector3(ind.i, ind.j, ind.k);
             float weight = w(d_pos);
             Vector gw = dw(d_pos);
-            v += weight * grid_velocity[ind];
-            Vector aa = grid_velocity[ind];
+            Vector grid_vel = grid_velocity[ind] + grid_force_or_acc[ind] * delta_t;
+            v += weight * grid_vel;
+            Vector aa = grid_vel;
             Vector bb = -d_pos;
             Matrix out(aa[0] * bb[0], aa[1] * bb[0], aa[2] * bb[0],
-                aa[0] * bb[1], aa[1] * bb[1], aa[2] * bb[1],
-                aa[0] * bb[2], aa[1] * bb[2], aa[2] * bb[2]);
+                       aa[0] * bb[1], aa[1] * bb[1], aa[2] * bb[1],
+                       aa[0] * bb[2], aa[1] * bb[2], aa[2] * bb[2]);
             b += weight * out;
+            bv += weight * grid_velocity_backup[ind];
             cdg += glm::outerProduct(grid_velocity[ind], gw);
             CV(grid_velocity[ind]);
         }
+        if (count != 64 || !apic) {
+            b = Matrix(0);
+        }
         p.apic_b = b;
         cdg = Matrix(1) + delta_t * cdg;
-        p.v = v;
+        p.v = (1 - alpha_delta_t) * v + alpha_delta_t * (v - bv + p.v);
         Matrix dg = cdg * p.dg_e * p.dg_p;
         p.dg_e = cdg * p.dg_e;
         p.dg_cache = dg;
@@ -287,14 +309,46 @@ void MPM3D::apply_deformation_force(float delta_t) {
             Vector force = p.tmp_force * gw;
             CV(force);
             grid_locks[ind].lock();
-            grid_velocity[ind] += delta_t / mass * force;
+//            grid_velocity[ind] += delta_t / mass * force;
+            grid_force_or_acc[ind] += force;
             grid_locks[ind].unlock();
         }
     });
 }
 
-void MPM3D::apply_boundary_conditions() {
+void MPM3D::grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, real t) {
+    for (auto &ind : grid_velocity.get_region()) {
+        Vector3 pos = Vector3(ind.get_pos());
+        Vector3 v = grid_velocity[ind] + grid_force_or_acc[ind] * delta_t -
+                    levelset.get_temporal_derivative(pos, t) * levelset.get_spatial_gradient(pos, t);
+        Vector3 n = levelset.get_spatial_gradient(pos, t);
+        real phi = levelset.sample(pos, t);
+        if (phi > 1) continue;
+        else if (phi > 0) { // 0~1
+            real pressure = std::max(-glm::dot(v, n), 0.0f);
+            real mu = levelset.levelset0->friction;
+            if (mu < 0) { // sticky
+                v = Vector3(0.0f);
+            } else {
+                Vector3 t = v - n * glm::dot(v, n);
+                if (length(t) > 1e-6f) {
+                    t = normalize(t);
+                }
+                real friction = -clamp(glm::dot(t, v), -mu * pressure, mu * pressure);
+                v = v + n * pressure + t * friction;
+            }
+        } else if (phi <= 0) {
+            v = Vector3(0.0f);
+        }
+        v += levelset.get_temporal_derivative(pos, t) * levelset.get_spatial_gradient(pos, t);
+        grid_force_or_acc[ind] = (v - grid_velocity[ind]) / delta_t;
+    }
+}
 
+void MPM3D::particle_collision_resolution(real t) {
+    parallel_for_each_particle([&](Particle &p) {
+        p.resolve_collision(levelset, t);
+    });
 }
 
 void MPM3D::substep(float delta_t) {
@@ -304,10 +358,13 @@ void MPM3D::substep(float delta_t) {
             p.calculate_kernels();
         }
         */
-        apply_external_impulse(gravity * delta_t);
+//        apply_external_impulse(gravity * delta_t);
         rasterize();
+        grid_backup_velocity();
+        grid_apply_external_force(gravity);
         apply_deformation_force(delta_t);
-        apply_boundary_conditions();
+        grid_normalize_acceleration();
+        grid_apply_boundary_conditions(levelset, current_t);
         resample(delta_t);
         parallel_for_each_particle([&](Particle &p) {
             p.pos += delta_t * p.v;
@@ -316,8 +373,27 @@ void MPM3D::substep(float delta_t) {
             p.pos.z = clamp(p.pos.z, 0.0f, res[2] - eps);
             p.plasticity();
         });
+        particle_collision_resolution(current_t);
     }
     current_t += delta_t;
+}
+
+bool MPM3D::test() const {
+    for (int i = 0; i < 100000; i++) {
+        Matrix3 m(1.000000238418579101562500000000, -0.000000000000000000000000000000,
+                  -0.000000000000000000000220735070, 0.000000000000000000000000000000, 1.000000238418579101562500000000,
+                  -0.000000000000000000216840434497, 0.000000000000000000000211758237,
+                  -0.000000000000000001084202172486, 1.000000000000000000000000000000);
+        Matrix3 u, sig, v;
+        svd(m, u, sig, v);
+        if (!is_normal(sig)) {
+            P(m);
+            P(u);
+            P(sig);
+            P(v);
+        }
+    }
+    return false;
 }
 
 TC_IMPLEMENTATION(Simulation3D, MPM3D, "mpm");

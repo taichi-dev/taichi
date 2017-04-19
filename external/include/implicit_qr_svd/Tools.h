@@ -47,9 +47,11 @@ Sample usage:
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 #include <Eigen/Dense>
 #include <Eigen/Core>
 #include <Eigen/SVD>
+
 #pragma GCC diagnostic pop
 
 #include <mmintrin.h>
@@ -71,19 +73,16 @@ public:
     std::mt19937 generator;
 
     RandomNumber(unsigned s = 123)
-        : generator(s)
-    {
+            : generator(s) {
     }
 
-    ~RandomNumber()
-    {
+    ~RandomNumber() {
     }
 
     /**
        Random real number from an interval
     */
-    T randReal(T a, T b)
-    {
+    T randReal(T a, T b) {
         std::uniform_real_distribution<T> distribution(a, b);
         return distribution(generator);
     }
@@ -92,8 +91,7 @@ public:
       Fill with uniform random numbers
     */
     template <class Derived>
-    void fill(Eigen::DenseBase<Derived>& x, T a, T b)
-    {
+    void fill(Eigen::DenseBase<Derived> &x, T a, T b) {
         for (typename Derived::Index i = 0; i < x.size(); i++)
             x(i) = randReal(a, b);
     }
@@ -107,32 +105,31 @@ namespace MATH_TOOLS {
 A fast approximation to the inverse sqrt
 The relative error is less than  1.5*2^-12
 */
-inline float approx_rsqrt(float a)
-{
-return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(a)));
-}
+//inline float approx_rsqrt(float a) {
+//    return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(a)));
+//}
 
 /**
 \brief Inverse square root
 computed from approx_rsqrt and one newton step
 */
-inline float rsqrt(float a)
-{
+inline float rsqrt(float a) {
     return 1.0f / std::sqrt(a);
-float b = approx_rsqrt(a);
-// Newton step with f(x) = a - 1/x^2
-b = 0.5f * b * (3.0f - a * (b * b));
-return b;
+/*
+    float b = approx_rsqrt(a);
+    // Newton step with f(x) = a - 1/x^2
+    b = 0.5f * b * (3.0f - a * (b * b));
+    return b;
+*/
 }
 
 /**
 \brief Inverse square root
 computed from 1/std::sqrt
 */
-inline double rsqrt(double a)
-{
-using std::sqrt;
-return 1 / sqrt(a);
+inline double rsqrt(double a) {
+    using std::sqrt;
+    return 1 / sqrt(a);
 }
 }
 
@@ -148,16 +145,14 @@ public:
     /**
        \brief Start timing
     */
-    void start()
-    {
+    void start() {
         start_time = std::chrono::steady_clock::now();
     }
 
     /**
        \return time elapsed since last click in seconds
 */
-    double click()
-    {
+    double click() {
         to_time = std::chrono::steady_clock::now();
         elapsed_seconds = to_time - start_time;
         start_time = to_time;
@@ -186,8 +181,7 @@ template <class T>
 using ScalarType = typename INTERNAL::ScalarTypeHelper<T>::type;
 
 template <class MatrixType>
-constexpr bool isSize(int m, int n)
-{
+constexpr bool isSize(int m, int n) {
     return MatrixType::RowsAtCompileTime == m && MatrixType::ColsAtCompileTime == n;
 }
 

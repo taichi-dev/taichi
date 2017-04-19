@@ -20,7 +20,7 @@ protected:
 
     virtual void substep(real delta_t) override;
 
-    Array temperature;
+    Array<real> temperature;
     real buoyancy_alpha;
     real buoyancy_beta;
 

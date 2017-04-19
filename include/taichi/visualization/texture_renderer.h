@@ -42,19 +42,19 @@ public:
 
     ~TextureRenderer();
 
-    static vec4 to_vec4(float dat) {
+    static Vector4 to_vec4(real dat) {
         return vec4(dat);
     }
-    static vec4 to_vec4(unsigned char dat) {
+    static Vector4 to_vec4(unsigned char dat) {
         return vec4(dat / 255.0f);
     }
-    static vec4 to_vec4(vec2 dat) {
-        return vec4(dat, 0, 1);
+    static Vector4 to_vec4(Vector2 dat) {
+        return Vector4(dat, 0, 1);
     }
-    static vec4 to_vec4(vec3 dat) {
-        return vec4(dat, 1);
+    static Vector4 to_vec4(Vector3 dat) {
+        return Vector4(dat, 1);
     }   
-    static vec4 to_vec4(vec4 dat) {
+    static Vector4 to_vec4(Vector4 dat) {
         return dat;
     }   
 };

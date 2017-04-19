@@ -19,7 +19,9 @@ private:
     struct Entry {
         int j;
         real val;
+
         Entry() {}
+
         Entry(int j, real val) : j(j), val(val) {}
     };
 

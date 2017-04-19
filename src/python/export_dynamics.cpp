@@ -12,12 +12,15 @@
 #include <taichi/dynamics/mpm2d/mpm.h>
 #include <taichi/dynamics/mpm2d/mpm_particle.h>
 #include <taichi/dynamics/simulation3d.h>
+#include <taichi/common/asset_manager.h>
 
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::RenderParticle>);
 
 TC_NAMESPACE_BEGIN
 
 void export_dynamics(py::module &m) {
+    m.def("register_levelset3d", &AssetManager::insert_asset<LevelSet3D>);
+
     py::class_<Fluid::Particle>(m, "FluidParticle")
             .def(py::init<Vector2, Vector2>())
             .def_readwrite("position", &Fluid::Particle::position)
@@ -72,6 +75,8 @@ void export_dynamics(py::module &m) {
         .def("step", &SIM::step) \
         .def("get_current_time", &SIM::get_current_time) \
         .def("get_render_particles", &SIM::get_render_particles) \
+        .def("set_levelset", &SIM::set_levelset) \
+        .def("test", &SIM::test) \
         ;
     EXPORT_SIMULATOR_3D(Simulation3D);
 
@@ -80,11 +85,14 @@ void export_dynamics(py::module &m) {
         .def(py::init<>()) \
         .def("initialize", &SIM::initialize) \
         .def("step", &SIM::step) \
+        .def("test", &SIM::test) \
         .def("add_particle", static_cast<void (SIM::*)(std::shared_ptr<MPMParticle>)>(&SIM::add_particle)) \
         .def("get_current_time", &SIM::get_current_time) \
         .def("get_particles", &SIM::get_particles) \
         .def("set_levelset", &SIM::set_levelset) \
         .def("get_material_levelset", &SIM::get_material_levelset) \
+        .def("get_debug_blocks", &SIM::get_debug_blocks) \
+        .def("get_grid_block_size", &SIM::get_grid_block_size) \
         .def("add_ep_particle", static_cast<void (SIM::*)(EPParticle)>(&SIM::add_particle)) \
         .def("add_dp_particle", static_cast<void (SIM::*)(DPParticle)>(&SIM::add_particle)) \
         ;

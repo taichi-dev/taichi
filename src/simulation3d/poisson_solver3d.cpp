@@ -108,7 +108,7 @@ public:
             res /= 2;
             boundaries.push_back(BCArray(res));
             for (auto &ind : boundaries.back().get_region()) {
-                auto &previous_boundary = boundaries[(int) boundaries.size() - 2];
+                auto &previous_boundary = boundaries[(int)boundaries.size() - 2];
                 bool has_dirichlet = false;
                 bool all_neumann = true;
                 for (int i = 0; i < 2; i++) {
@@ -385,22 +385,22 @@ public:
             apply_L(systems[0], p, z);
             double sigma = p.dot_double(z);
             double alpha = rho / max(1e-20, sigma);
-            r.add_in_place(-(real) alpha, z);
+            r.add_in_place(-(real)alpha, z);
             mu = has_null_space ? r.get_average() : 0.0f;
             r -= mu;
             nu = r.abs_max();
             r.print_abs_max_pos();
             printf(" CG iteration #%02d, nu=%f\n", count, nu);
             if (nu < pressure_tolerance || count == maximum_iterations) {
-                pressure.add_in_place((real) alpha, p);
+                pressure.add_in_place((real)alpha, p);
                 return;
             }
             z = apply_preconditioner(r);
             double rho_new = z.dot_double(r);
             double beta = rho_new / rho;
             rho = rho_new;
-            pressure.add_in_place((real) alpha, p);
-            p = z.add((real) beta, p);
+            pressure.add_in_place((real)alpha, p);
+            p = z.add((real)beta, p);
         }
     }
 };
@@ -435,22 +435,22 @@ public:
             apply_L(systems[0], p, z);
             double sigma = p.dot_double(z);
             double alpha = rho / max(1e-20, sigma);
-            r.add_in_place(-(real) alpha, z);
+            r.add_in_place(-(real)alpha, z);
             mu = has_null_space ? r.get_average() : 0.0f;
             r -= mu;
             nu = r.abs_max();
             r.print_abs_max_pos();
             printf(" MGPCG iteration #%02d, nu=%f\n", count, nu);
             if (nu < pressure_tolerance || count == maximum_iterations) {
-                pressure.add_in_place((real) alpha, p);
+                pressure.add_in_place((real)alpha, p);
                 return;
             }
             z = apply_preconditioner(r);
             double rho_new = z.dot_double(r);
             double beta = rho_new / rho;
             rho = rho_new;
-            pressure.add_in_place((real) alpha, p);
-            p = z.add((real) beta, p);
+            pressure.add_in_place((real)alpha, p);
+            p = z.add((real)beta, p);
         }
     }
 };

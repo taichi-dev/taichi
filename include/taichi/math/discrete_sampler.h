@@ -23,13 +23,16 @@ private:
     bool zero_total_pdf;
 public:
     DiscreteSampler() {}
+
     DiscreteSampler(std::vector<real> &pdf, bool allow_zero_total_pdf = false) {
         assert_info(pdf.size() > 0, "No choice for sampler.");
         initialize(pdf, allow_zero_total_pdf);
     }
+
     int get_num_elements() const {
         return (int)pdf.size();
     }
+
     void initialize(std::vector<real> unnormalized_pdf, bool allow_zero_total_pdf = true) {
         //float sum = std::accumulate(unnormalized_pdf.begin(), unnormalized_pdf.end(), 0.0f);
         assert(unnormalized_pdf.size() != 0);
@@ -41,8 +44,7 @@ public:
         }
         if (!allow_zero_total_pdf) {
             assert_info(sum > 0, "Sum of pdf is zero.");
-        }
-        else {
+        } else {
             zero_total_pdf = sum < 1e-20f;
         }
         float inv_sum = 1.0f / std::max(sum, 1e-30f);
@@ -56,6 +58,7 @@ public:
             }
         }
     }
+
     int sample(real r, real &pdf_out) const {
         if (zero_total_pdf) {
             pdf_out = 0.0f;
@@ -66,6 +69,7 @@ public:
         pdf_out = pdf[index];
         return index;
     }
+
     int sample(real r, real &pdf_out, real &cdf_out) const {
         if (zero_total_pdf) {
             pdf_out = 0.0f;
@@ -78,13 +82,16 @@ public:
         cdf_out = cdf[index];
         return index;
     }
+
     int sample(real r) const {
         real _;
         return sample(r, _);
     }
+
     real get_pdf(int id) const {
         return pdf[id];
     }
+
     real get_cdf(int id) const {
         return cdf[id];
     }

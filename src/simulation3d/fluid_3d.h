@@ -24,7 +24,9 @@ class Tracker3D {
 public:
     Vector3 position;
     Vector3 color;
+
     Tracker3D() {}
+
     Tracker3D(const Vector3 &position, const Vector3 &color) : position(position), color(color) {}
 };
 
@@ -39,7 +41,7 @@ public:
     real density_scaling;
     real tracker_generation;
     real perturbation;
-    real super_sampling;
+    int super_sampling;
     std::shared_ptr<Texture> generation_tex;
     std::shared_ptr<Texture> initial_velocity_tex;
     std::shared_ptr<Texture> color_tex;

@@ -41,12 +41,6 @@ void export_io(py::module &m);
 
 void export_ndarray(py::module &m);
 
-template<typename T>
-void array2d_to_ndarray(T *arr, uint64);
-
-template<typename T, int channels>
-void image_buffer_to_ndarray(T *arr, uint64 output);
-
 #define DEFINE_VECTOR_OF_NAMED(x, name) \
     py::class_<std::vector<x>>(m, name) \
         .def(py::init<>()) \

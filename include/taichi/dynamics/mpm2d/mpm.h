@@ -12,7 +12,7 @@
 
 #include <memory>
 #include <vector>
-#include "scheduler.h"
+#include "mpm_scheduler.h"
 #include "mpm_grid.h"
 #include <taichi/math/levelset_2d.h>
 #include <taichi/math/dynamic_levelset_2d.h>

@@ -280,6 +280,14 @@ inline double pow(const double &a, const double &b) {
     return ::pow(a, b);
 }
 
+inline real det(const Matrix2 &m) {
+    return glm::determinant(m);
+}
+
+inline real det(const Matrix3 &m) {
+    return glm::determinant(m);
+}
+
 //#define rand frand
 
 

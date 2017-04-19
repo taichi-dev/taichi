@@ -14,12 +14,6 @@
 TC_NAMESPACE_BEGIN
 
 void imp_svd(Matrix3 m, Matrix3 &u, Matrix3 &s, Matrix3 &v) {
-    /*
-    Eigen::Matrix<T, 3, 3> *M;
-    Eigen::Matrix<T, 3, 1> *S;
-    Eigen::Matrix<T, 3, 3> *U;
-    Eigen::Matrix<T, 3, 3> *V;
-    */
     JIXIE::singularValueDecomposition(
             *(Eigen::Matrix<float, 3, 3> *)&m,
             *(Eigen::Matrix<float, 3, 3> *)&u,
@@ -30,40 +24,17 @@ void imp_svd(Matrix3 m, Matrix3 &u, Matrix3 &s, Matrix3 &v) {
     memset(&s[0][0] + 1, 0, sizeof(float) * 8);
     s[1][1] = s_tmp[0];
     s[2][2] = s_tmp[1];
-    /*
-    printf("glm\n");
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            printf(" %.4f", m[j][i]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-    printf("eigen\n");
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            printf(" %.4f", (*((Eigen::Matrix<float, 3, 3> *) &m))(i, j));
-        }
-        printf("\n");
-    }
-     */
 }
 
 // m can not be const here, otherwise JIXIE::singularValueDecomposition will cause a error due to const_cast
 void imp_svd(Matrix2 m, Matrix2 &u, Matrix2 &s, Matrix2 &v) {
-    /*
-    Eigen::Matrix<T, 3, 3> *M;
-    Eigen::Matrix<T, 3, 1> *S;
-    Eigen::Matrix<T, 3, 3> *U;
-    Eigen::Matrix<T, 3, 3> *V;
-    */
     JIXIE::singularValueDecomposition(
             *(Eigen::Matrix<float, 2, 2> *)&m,
             *(Eigen::Matrix<float, 2, 2> *)&u,
             *(Eigen::Matrix<float, 2, 1> *)&s,
             *(Eigen::Matrix<float, 2, 2> *)&v
     );
-    float s_tmp {s[0][1]};
+    float s_tmp{s[0][1]};
     memset(&s[0][0] + 1, 0, sizeof(float) * 3);
     if (s_tmp > 0) {
         s[1][1] = s_tmp;
@@ -71,6 +42,57 @@ void imp_svd(Matrix2 m, Matrix2 &u, Matrix2 &s, Matrix2 &v) {
         s[1][1] = -s_tmp;
         u[1][0] *= -1;
         u[1][1] *= -1;
+    }
+}
+
+void svd(Matrix2 m, Matrix2 &u, Matrix2 &sig, Matrix2 &v) {
+    // TODO: what's going on ???
+    if (frobenius_norm2(m - Matrix2(m[0][0])) < 1e-7f) {
+        u = m;
+        sig = v = Matrix2(1);
+    } else {
+        imp_svd(m, u, sig, v);
+    }
+}
+
+void svd(Matrix3 A, Matrix3 &u, Matrix3 &sig, Matrix3 &v) {
+    if (frobenius_norm2(A - Matrix3(1.0f)) < 1e-5f) {
+        u = A;
+        sig = v = Matrix3(1);
+    } else {
+        imp_svd(A, u, sig, v);
+    }
+}
+
+void polar_decomp(Matrix2 A, Matrix2 &r, Matrix2 &s) {
+    Matrix2 u, sig, v;
+    svd(A, u, sig, v);
+    r = u * glm::transpose(v);
+    s = v * sig * glm::transpose(v);
+}
+
+void polar_decomp(Matrix3 A, Matrix3 &r, Matrix3 &s) {
+    Matrix3 u, sig, v;
+    svd(A, u, sig, v);
+    r = u * glm::transpose(v);
+    s = v * sig * glm::transpose(v);
+    if (!is_normal(r)) {
+        Matrix3 m = A;
+        svd(m, u, sig, v);
+        P(A);
+        P(m);
+        P(u);
+        P(sig);
+        P(v);
+        P(r);
+        P(s);
+        P(glm::transpose(v));
+        P(u * glm::transpose(v));
+        r = u * glm::transpose(v);
+        P(r);
+        printf("Matrix3 m(%.30f,%.30f,%.30f,%.30f,%.30f,%.30f,%.30f,%.30f,%.30f);\n", m[0][0], m[1][0], m[2][0],
+               m[0][1],
+               m[1][1], m[2][1], m[0][2], m[1][2], m[2][2]);
     }
 }
 

@@ -211,10 +211,10 @@ void MPM3D::initialize(const Config &config) {
         }
     }
     P(particles.size());
-    grid_velocity.initialize(res[0], res[1], res[2], Vector(0.0f));
-    grid_force_or_acc.initialize(res[0], res[1], res[2], Vector(0.0f));
-    grid_mass.initialize(res[0], res[1], res[2], 0);
-    grid_locks.initialize(res[0], res[1], res[2], 0);
+    grid_velocity.initialize(res[0], res[1], res[2], Vector(0.0f), Vector3(0.0f));
+    grid_force_or_acc.initialize(res[0], res[1], res[2], Vector(0.0f), Vector3(0.0f));
+    grid_mass.initialize(res[0], res[1], res[2], 0, Vector3(0.0f));
+    grid_locks.initialize(res[0], res[1], res[2], 0, Vector3(0.0f));
 }
 
 std::vector<RenderParticle> MPM3D::get_render_particles() const {

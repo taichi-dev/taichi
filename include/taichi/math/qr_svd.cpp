@@ -56,7 +56,7 @@ void svd(Matrix2 m, Matrix2 &u, Matrix2 &sig, Matrix2 &v) {
 }
 
 void svd(Matrix3 A, Matrix3 &u, Matrix3 &sig, Matrix3 &v) {
-    if (frobenius_norm2(A - Matrix3(1.0f)) < 1e-5f) {
+    if (frobenius_norm2(A - Matrix3(A[0][0])) < 1e-5f) {
         u = A;
         sig = v = Matrix3(1);
     } else {

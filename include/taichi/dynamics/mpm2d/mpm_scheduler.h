@@ -20,7 +20,7 @@ class MPMScheduler {
 public:
     typedef MPMParticle Particle;
 
-    template <typename T> using Array = Array2D<T>;
+    template<typename T> using Array = Array2D<T>;
 
     Array<int64> max_dt_int_strength;
     Array<int64> max_dt_int_cfl;

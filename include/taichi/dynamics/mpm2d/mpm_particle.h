@@ -14,6 +14,7 @@
 #include <taichi/math/array_2d.h>
 #include "mpm_utils.h"
 #include <taichi/common/util.h>
+#include <taichi/math/qr_svd.h>
 #include <taichi/math/levelset_2d.h>
 #include <taichi/math/dynamic_levelset_2d.h>
 

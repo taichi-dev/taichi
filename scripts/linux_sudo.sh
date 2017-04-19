@@ -8,6 +8,6 @@ alien embree-examples-2.13.0-1.x86_64.rpm
 dpkg -i embree-lib_2.13.0-2_amd64.deb
 dpkg -i embree-devel_2.13.0-2_amd64.deb
 dpkg -i embree-examples_2.13.0-2_amd64.deb
-add-apt-repository ppa:ubuntu-toolchain-r/test
-apt-get update
-apt-get install gcc-6 g++-6
+#add-apt-repository ppa:ubuntu-toolchain-r/test
+#apt-get update
+#apt-get install gcc-6 g++-6

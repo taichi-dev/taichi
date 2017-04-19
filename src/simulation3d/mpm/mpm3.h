@@ -58,6 +58,10 @@ public:
             vol = 1.0f;
         }
 
+        virtual void initialize(const Config &config) {
+
+        }
+
         virtual void set_compression(float compression) {
             dg_p = Matrix(compression); // 1.0f = no compression
         }
@@ -181,6 +185,8 @@ public:
     MPM3D() {}
 
     virtual void initialize(const Config &config) override;
+
+    virtual void add_particles(const Config &config) override;
 
     virtual void step(real dt) override {
         int steps = (int)std::ceil(dt / delta_t);

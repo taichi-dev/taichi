@@ -54,12 +54,24 @@ inline Vector3 dw(const Vector3 &a) {
 long long MPM3D::Particle::instance_count;
 
 struct EPParticle3 : public MPM3D::Particle {
+    real hardening = 10.0f;
+    real mu_0 = 1e5f, lambda_0 = 1e5f;
+    real theta_c = 2.5e-2f, theta_s = 7.5e-3f;
+
     EPParticle3() : MPM3D::Particle() {
     }
 
+    void initialize(const Config &config) {
+        hardening = config.get("hardening", hardening);
+        lambda_0 = config.get("lambda_0", lambda_0);
+        mu_0 = config.get("mu_0", mu_0);
+        theta_c = config.get("theta_c", theta_c);
+        theta_s = config.get("theta_s", theta_s);
+        real compression = config.get("compression", 1.0f);
+        dg_p = Matrix(compression);
+    }
+
     virtual Matrix get_energy_gradient() {
-        const real hardening = 10.0f;
-        const real mu_0 = 1e5f, lambda_0 = 1e5f;
         real j_e = det(dg_e);
         real j_p = det(dg_p);
         real e = std::exp(std::min(hardening * (1.0f - j_p), 5.0f));
@@ -87,7 +99,6 @@ struct EPParticle3 : public MPM3D::Particle {
     virtual void plasticity() {
         Matrix svd_u, sig, svd_v;
         svd(dg_e, svd_u, sig, svd_v);
-        const float theta_c = 2.5e-2f, theta_s = 7.5e-3f;
         for (int i = 0; i < D; i++) {
             sig[i][i] = clamp(sig[i][i], 1.0f - theta_c, 1.0f + theta_s);
         }
@@ -106,9 +117,20 @@ struct DPParticle3 : public MPM3D::Particle {
     real lambda_0 = 204057.0f, mu_0 = 136038.0f;
     real alpha = 1.0f;
     real q = 0.0f;
-    real phi_f;
 
     DPParticle3() : MPM3D::Particle() {
+    }
+
+    void initialize(const Config &config) {
+        h_0 = config.get("h_0", h_0);
+        h_1 = config.get("h_1", h_1);
+        h_2 = config.get("h_2", h_2);
+        h_3 = config.get("h_3", h_3);
+        lambda_0 = config.get("lambda_0", lambda_0);
+        mu_0 = config.get("mu_0", mu_0);
+        alpha = config.get("alpha", alpha);
+        real compression = config.get("compression", 1.0f);
+        dg_p = Matrix(compression);
     }
 
     Matrix3 get_energy_gradient() {
@@ -180,7 +202,6 @@ struct DPParticle3 : public MPM3D::Particle {
         dg_p = v * glm::inverse(t) * sig * glm::transpose(v) * dg_p;
         q += delta_q;
         real phi = h_0 + (h_1 * q - h_3) * expf(-h_2 * q);
-        phi_f = phi;
         alpha = sqrtf(2.0f / 3.0f) * (2.0f * sin(phi * pi / 180.0f)) / (3.0f - sin(phi * pi / 180.0f));
     }
 };
@@ -191,8 +212,14 @@ void MPM3D::initialize(const Config &config) {
     gravity = config.get_vec3("gravity");
     delta_t = config.get_real("delta_t");
     apic = config.get("apic", true);
+    grid_velocity.initialize(res[0], res[1], res[2], Vector(0.0f), Vector3(0.0f));
+    grid_force_or_acc.initialize(res[0], res[1], res[2], Vector(0.0f), Vector3(0.0f));
+    grid_mass.initialize(res[0], res[1], res[2], 0, Vector3(0.0f));
+    grid_locks.initialize(res[0], res[1], res[2], 0, Vector3(0.0f));
+}
+
+void MPM3D::add_particles(const Config &config) {
     std::shared_ptr<Texture> density_texture = AssetManager::get_asset<Texture>(config.get_int("density_tex"));
-    auto initial_velocity = config.get_vec3("initial_velocity");
     for (int i = 0; i < res[0]; i++) {
         for (int j = 0; j < res[1]; j++) {
             for (int k = 0; k < res[2]; k++) {
@@ -200,21 +227,23 @@ void MPM3D::initialize(const Config &config) {
                 real num = density_texture->sample(coord).x;
                 int t = (int)num + (rand() < num - int(num));
                 for (int l = 0; l < t; l++) {
-                    Particle *p = new EPParticle3();
-//                    Particle *p = new DPParticle3();
+                    Particle *p = nullptr;
+                    if (config.get("type", std::string("ep")) == std::string("ep")) {
+                        p = new EPParticle3();
+                        p->initialize(config);
+                    } else {
+                        p = new DPParticle3();
+                        p->initialize(config);
+                    }
                     p->pos = Vector(i + rand(), j + rand(), k + rand());
                     p->mass = 1.0f;
-                    p->v = initial_velocity;
+                    p->v = config.get("initial_velocity", p->v);
                     particles.push_back(p);
                 }
             }
         }
     }
     P(particles.size());
-    grid_velocity.initialize(res[0], res[1], res[2], Vector(0.0f), Vector3(0.0f));
-    grid_force_or_acc.initialize(res[0], res[1], res[2], Vector(0.0f), Vector3(0.0f));
-    grid_mass.initialize(res[0], res[1], res[2], 0, Vector3(0.0f));
-    grid_locks.initialize(res[0], res[1], res[2], 0, Vector3(0.0f));
 }
 
 std::vector<RenderParticle> MPM3D::get_render_particles() const {

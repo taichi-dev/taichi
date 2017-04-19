@@ -30,9 +30,12 @@ class MPM3:
         self.frame = 0
 
         def dummy_levelset_generator(_):
-            return self.create_levelset()
+            return LevelSet3D(self.resolution, Vector(0.0, 0.0, 0.0))
 
         self.levelset_generator = dummy_levelset_generator
+
+    def add_particles(self, **kwargs):
+        self.c.add_particles(P(**kwargs))
 
     def update_levelset(self, t0, t1):
         levelset = tc.core.DynamicLevelSet3D()
@@ -83,10 +86,6 @@ class MPM3:
 
     def create_levelset(self):
         return LevelSet3D(self.resolution, Vector(0.0, 0.0, 0.0))
-
-    @staticmethod
-    def create_levelset(res):
-        return LevelSet3D(res, Vector(0.0, 0.0, 0.0))
 
     def test(self):
         return self.c.test()

@@ -33,6 +33,10 @@ public:
         num_threads = config.get_int("num_threads");
     }
 
+    virtual void add_particles(const Config &config) {
+        error("no impl");
+    }
+
     virtual void step(real t) {
         error("no impl");
     }

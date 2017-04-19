@@ -25,8 +25,8 @@ before_script:
   - export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH
   - mkdir build
   - cd build
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo sh ../build_scripts/linux.sh ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo sh ../build_scripts/osx.sh ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo sh ../scripts/linux.sh ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo sh ../scripts/osx.sh ; fi
 
 script:
   - python -c 'import taichi as tc'

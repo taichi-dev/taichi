@@ -71,6 +71,7 @@ void export_dynamics(py::module &m) {
         py::class_<SIM, std::shared_ptr<SIM>>(m, #SIM) \
         .def(py::init<>()) \
         .def("initialize", &SIM::initialize) \
+        .def("add_particles", &SIM::add_particles) \
         .def("update", &SIM::update) \
         .def("step", &SIM::step) \
         .def("get_current_time", &SIM::get_current_time) \

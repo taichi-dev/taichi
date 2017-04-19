@@ -70,18 +70,19 @@ def render_sand_frame(frame, d, t):
 if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
-    levelset = MPM3.create_levelset(resolution)
+
+    mpm = MPM3(resolution=resolution, gravity=(0, -100, 0), delta_t=0.001, num_threads=8)
+
+    levelset = mpm.create_levelset()
     levelset.add_plane(0, 1, 0, -1)
     levelset.add_plane(1, 1, 0, -1.7)
     levelset.global_increase(1)
     tex = Texture('levelset3d', levelset=levelset, bounds=(0, 0.05 / levelset.get_delta_x())) * 8
     tex = Texture('bound', tex=tex, axis=2, bounds=(0.3, 0.7), outside_val=(0, 0, 0))
-
+    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), compression=1.1)
     tex_ball = Texture('sphere', center=(0.1, 0.5, 0.5), radius=0.05) * 8
-    tex += tex_ball
+    mpm.add_particles(density_tex=tex_ball.id, initial_velocity=(0, 0, 0), compression=0.8)
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -100, 0), initial_velocity=(0, 0, 0), delta_t=0.001, num_threads=8,
-               density_tex=tex.id)
     mpm.set_levelset(levelset, False)
 
     t = 0

@@ -11,7 +11,6 @@
 #pragma once
 
 #include "mpm_utils.h"
-#include <stb_image.h>
 #include <algorithm>
 #include <atomic>
 #include <taichi/math/array_2d.h>
@@ -19,7 +18,7 @@
 #include <taichi/math/levelset_2d.h>
 #include <taichi/math/dynamic_levelset_2d.h>
 #include "mpm_particle.h"
-#include "scheduler.h"
+#include "mpm_scheduler.h"
 
 TC_NAMESPACE_BEGIN
 

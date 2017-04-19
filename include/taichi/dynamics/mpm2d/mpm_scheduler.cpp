@@ -7,11 +7,11 @@
     the MIT license as written in the LICENSE file.
 *******************************************************************************/
 
-#include "scheduler.h"
+#include "mpm_scheduler.h"
 
 TC_NAMESPACE_BEGIN
 
-template <typename T> using Array = Array2D<T>;
+template<typename T> using Array = Array2D<T>;
 
 void MPMScheduler::expand(bool expand_vel, bool expand_state) {
     Array<int> new_states;

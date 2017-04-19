@@ -23,8 +23,8 @@ before_script:
   - export TAICHI_NUM_THREADS=2
   - export PYTHONPATH=$TAICHI_ROOT_DIR/taichi/python/:$PYTHONPATH
   - export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo sh scripts/linux.sh ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo sh scripts/osx.sh ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sh scripts/linux.sh ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sh scripts/osx.sh ; fi
 
 script:
   - python -c 'import taichi as tc'

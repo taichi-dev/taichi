@@ -1,5 +1,7 @@
 language: generic
 
+sudo: required
+
 compiler:
   - g++
 

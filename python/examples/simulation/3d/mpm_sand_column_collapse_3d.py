@@ -9,7 +9,7 @@ gi_render = False
 step_number = 200
 # step_number = 1
 # total_frames = 1
-grid_downsample = 2
+grid_downsample = 4
 output_downsample = 1
 render_epoch = 20
 
@@ -68,8 +68,8 @@ if __name__ == '__main__':
     tex = Texture('ring', outer=0.15) * 2
     tex = Texture('bound', tex=tex, axis=2, bounds=(0.0, 0.8), outside_val=(0, 0, 0))
     tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
-    mpm = MPM3(resolution=resolution, gravity=(0, -100, 0), initial_velocity=(0, 0, 0), delta_t=0.0005, num_threads=8,
-               density_tex=tex.id)
+    mpm = MPM3(resolution=resolution, gravity=(0, -100, 0), delta_t=0.001, num_threads=8)
+    mpm.add_particles(type="dp", density_tex=tex.id, initial_velocity=(0, 0, 0))
     for i in range(step_number):
         print 'process(%d/%d)' % (i, step_number)
         mpm.step(0.01)

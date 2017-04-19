@@ -29,9 +29,9 @@ class MPM3:
         self.resolution = kwargs['resolution']
         self.frame = 0
 
+        dummy_levelset = self.create_levelset()
         def dummy_levelset_generator(_):
-            return LevelSet3D(self.resolution, Vector(0.0, 0.0, 0.0))
-
+            return dummy_levelset
         self.levelset_generator = dummy_levelset_generator
 
     def add_particles(self, **kwargs):

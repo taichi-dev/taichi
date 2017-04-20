@@ -287,4 +287,14 @@ points_inside_sphere(std::vector<float> x_range, std::vector<float> y_range, con
     return ret;
 }
 
+inline int64 get_largest_pot(int64 a) {
+    assert_info(a > 0, "a should be positive, instead of " + std::to_string(a));
+    // TODO: optimize
+    int64 i = 1;
+    while (i * 2 <= a) {
+        i *= 2;
+    }
+    return i;
+}
+
 TC_NAMESPACE_END

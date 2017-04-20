@@ -16,17 +16,8 @@
 
 TC_NAMESPACE_BEGIN
 
-const int grid_block_size = 8;
+const int mpm2d_grid_block_size = 8;
 
-inline int64 get_largest_pot(int64 a) {
-    assert_info(a > 0, "a should be positive, instead of " + std::to_string(a));
-    // TODO: optimize
-    int64 i = 1;
-    while (i * 2 <= a) {
-        i *= 2;
-    }
-    return i;
-}
 
 #define Pp(v) {printf("%s:\n", #v); print(v);}
 #define abnormal(v) (!is_normal(v))

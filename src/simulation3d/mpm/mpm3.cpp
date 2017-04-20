@@ -212,9 +212,9 @@ void MPM3D::initialize(const Config &config) {
     gravity = config.get_vec3("gravity");
     delta_t = config.get_real("delta_t");
     apic = config.get("apic", true);
-    grid_velocity.initialize(res[0], res[1], res[2], Vector(0.0f), Vector3(0.0f));
-    grid_mass.initialize(res[0], res[1], res[2], 0, Vector3(0.0f));
-    grid_locks.initialize(res[0], res[1], res[2], 0, Vector3(0.0f));
+    grid_velocity.initialize(res + Vector3i(1), Vector(0.0f), Vector3(0.0f));
+    grid_mass.initialize(res + Vector3i(1), 0, Vector3(0.0f));
+    grid_locks.initialize(res + Vector3i(1), 0, Vector3(0.0f));
 }
 
 void MPM3D::add_particles(const Config &config) {
@@ -346,7 +346,7 @@ void MPM3D::grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, re
     for (auto &ind : grid_velocity.get_region()) {
         Vector3 pos = Vector3(ind.get_pos());
         real phi = levelset.sample(pos, t);
-        if (phi > 1) continue;
+        if (1 < phi || phi < -3) continue;
         Vector3 n = levelset.get_spatial_gradient(pos, t);
         Vector boundary_velocity = levelset.get_temporal_derivative(pos, t) * n;
         Vector3 v = grid_velocity[ind] - boundary_velocity;
@@ -363,8 +363,8 @@ void MPM3D::grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, re
                 real friction = -clamp(glm::dot(t, v), -mu * pressure, mu * pressure);
                 v = v + n * pressure + t * friction;
             }
-        } else if (phi <= 0) {
-            v = Vector3(0.0f);
+        } else if (phi < 0.0f) {
+            v = n * std::max(0.0f, glm::dot(v, n));
         }
         v += boundary_velocity;
         grid_velocity[ind] = v;

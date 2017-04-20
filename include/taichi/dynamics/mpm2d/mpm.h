@@ -109,7 +109,7 @@ public:
     }
 
     int get_grid_block_size() {
-        return grid_block_size;
+        return mpm2d_grid_block_size;
     }
 
     void kill_outside_particles();

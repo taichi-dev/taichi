@@ -8,7 +8,7 @@ class LevelSet3D:
             offset = Vector(0.5, 0.5, 0.5)
         self.delta_x = 1.0 / min(res)
         self.res = (res[0] + 1, res[1] + 1, res[2] + 1)
-        self.levelset = tc.core.LevelSet3D(int(res[0]), int(res[1]), int(res[2]), offset)
+        self.levelset = tc.core.LevelSet3D(int(res[0]) + 1, int(res[1]) + 1, int(res[2]) + 1, offset)
         self.id = tc.core.register_levelset3d(self.levelset)
 
     def add_sphere(self, center, radius, inside_out=False):

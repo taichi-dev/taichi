@@ -77,20 +77,21 @@ if __name__ == '__main__':
     levelset.add_plane(0, 1, 0, -1)
     levelset.add_plane(1, 1, 0, -1.7)
     levelset.global_increase(1)
-    tex = Texture('levelset3d', levelset=levelset, bounds=(0, 0.05 / levelset.get_delta_x())) * 6
+    tex = Texture('levelset3d', levelset=levelset, bounds=(0, 0.04 / levelset.get_delta_x())) * 6
     tex = Texture('bound', tex=tex, axis=2, bounds=(0.45, 0.55), outside_val=(0, 0, 0))
-    tex = Texture('bound', tex=tex, axis=0, bounds=(0.03, 0.3), outside_val=(0, 0, 0))
-    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), compression=1.10)
-    tex_ball = Texture('sphere', center=(0.1, 0.42, 0.5), radius=0.08) * 8
-    mpm.add_particles(density_tex=tex_ball.id, initial_velocity=(0, -10, 0), compression=0.95)
+    tex = Texture('bound', tex=tex, axis=0, bounds=(0.05, 0.3), outside_val=(0, 0, 0))
+    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), compression=1.09)
+    tex_ball = Texture('sphere', center=(0.12, 0.40, 0.5), radius=0.1) * 10
+    mpm.add_particles(density_tex=tex_ball.id, initial_velocity=(0, 0, 0), compression=0.95)
 
+    levelset.set_friction(1)
     mpm.set_levelset(levelset, False)
 
     t = 0
     for i in range(step_number):
         print 'process(%d/%d)' % (i, step_number)
-        mpm.step(0.01)
-        t += 0.01
+        mpm.step(0.03)
+        t += 0.03
         if gi_render:
             d = mpm.get_directory()
             if i % 10 == 0:

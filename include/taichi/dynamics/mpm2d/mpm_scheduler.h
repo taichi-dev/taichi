@@ -41,8 +41,8 @@ public:
     void initialize(const Vector2i &sim_res, real base_delta_t, real cfl, real strength_dt_mul,
                     DynamicLevelSet2D *levelset) {
         this->sim_res = sim_res;
-        res.x = (sim_res.x + grid_block_size - 1) / grid_block_size;
-        res.y = (sim_res.y + grid_block_size - 1) / grid_block_size;
+        res.x = (sim_res.x + mpm2d_grid_block_size - 1) / mpm2d_grid_block_size;
+        res.y = (sim_res.y + mpm2d_grid_block_size - 1) / mpm2d_grid_block_size;
 
         this->base_delta_t = base_delta_t;
         this->levelset = levelset;

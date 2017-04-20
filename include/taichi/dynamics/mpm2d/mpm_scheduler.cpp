@@ -65,7 +65,7 @@ void MPMScheduler::update() {
     active_grid_points.clear();
     for (int i = 0; i <= sim_res[0]; i++) {
         for (int j = 0; j <= sim_res[1]; j++) {
-            if (states[i / grid_block_size][j / grid_block_size] != 0) {
+            if (states[i / mpm2d_grid_block_size][j / mpm2d_grid_block_size] != 0) {
                 active_grid_points.push_back(Vector2i(i, j));
             }
         }
@@ -111,8 +111,8 @@ void MPMScheduler::update_particle_groups() {
 }
 
 void MPMScheduler::insert_particle(Particle *p) {
-    int x = int(p->pos.x / grid_block_size);
-    int y = int(p->pos.y / grid_block_size);
+    int x = int(p->pos.x / mpm2d_grid_block_size);
+    int y = int(p->pos.y / mpm2d_grid_block_size);
     if (states.inside(x, y)) {
         int index = res[1] * x + y;
         particle_groups[index].push_back(p);
@@ -169,9 +169,9 @@ void MPMScheduler::update_dt_limits(real t) {
         for (int i = 0; i < 4; i++) {
             block_absolute_vel = std::max(block_absolute_vel, std::abs(min_max_vel_expanded[ind][i]));
         }
-        real last_distance = levelset->sample(Vector2(ind.get_pos() * real(grid_block_size)), t);
+        real last_distance = levelset->sample(Vector2(ind.get_pos() * real(mpm2d_grid_block_size)), t);
         if (last_distance < LevelSet2D::INF) {
-            real distance2boundary = std::max(last_distance - real(grid_block_size) * 0.75f, 0.5f);
+            real distance2boundary = std::max(last_distance - real(mpm2d_grid_block_size) * 0.75f, 0.5f);
             int64 boundary_limit = int64(cfl * distance2boundary / block_absolute_vel / base_delta_t);
             cfl_limit = std::min(cfl_limit, boundary_limit);
         }
@@ -286,7 +286,7 @@ void MPMScheduler::print_max_dt_int() {
 
 void MPMScheduler::update_particle_states() {
     for (auto &p : get_active_particles()) {
-        Vector2i low_res_pos(int(p->pos.x / grid_block_size), int(p->pos.y / grid_block_size));
+        Vector2i low_res_pos(int(p->pos.x / mpm2d_grid_block_size), int(p->pos.y / mpm2d_grid_block_size));
         p->march_interval = max_dt_int[low_res_pos];
         if (states[low_res_pos] == 2) {
             p->color = Vector3(1.0f);

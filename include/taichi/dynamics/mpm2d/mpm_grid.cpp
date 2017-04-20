@@ -16,12 +16,12 @@ long long MPMParticle::instance_count = 0;
 void Grid::apply_boundary_conditions(const DynamicLevelSet2D &levelset, real delta_t, real t) {
     for (auto &ind : scheduler->get_active_grid_points()) {
         Vector2 pos = Vector2(ind[0] + 0.5f, ind[1] + 0.5f);
-        Vector2 v = velocity[ind] + force_or_acc[ind] * delta_t -
-                    levelset.get_temporal_derivative(pos, t) * levelset.get_spatial_gradient(pos, t);
-        Vector2 n = levelset.get_spatial_gradient(pos, t);
         real phi = levelset.sample(pos, t);
         if (phi > 1) continue;
-        else if (phi > 0) { // 0~1
+        Vector2 n = levelset.get_spatial_gradient(pos, t);
+        Vector2 boundary_velocity = levelset.get_temporal_derivative(pos, t) * n;
+        Vector2 v = velocity[ind] - boundary_velocity;
+        if (phi > 0) { // 0~1
             real pressure = std::max(-glm::dot(v, n), 0.0f);
             real mu = levelset.levelset0->friction;
             if (mu < 0) { // sticky
@@ -37,8 +37,8 @@ void Grid::apply_boundary_conditions(const DynamicLevelSet2D &levelset, real del
         } else if (phi <= 0) {
             v = Vector2(0.0f);
         }
-        v += levelset.get_temporal_derivative(pos, t) * levelset.get_spatial_gradient(pos, t);
-        force_or_acc[ind] = (v - velocity[ind]) / delta_t;
+        v += boundary_velocity;
+        velocity[ind] = v;
     }
 }
 

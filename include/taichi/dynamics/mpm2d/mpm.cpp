@@ -111,9 +111,8 @@ void MPM::substep() {
     rasterize();
     estimate_volume();
     grid.backup_velocity();
-    apply_deformation_force();
-    grid.apply_external_force(gravity);
-    grid.normalize_acceleration();
+    apply_deformation_force(t_int_increment * base_delta_t);
+    grid.apply_external_force(gravity, t_int_increment * base_delta_t);
     grid.apply_boundary_conditions(levelset, t_int_increment * base_delta_t, t);
     resample(base_delta_t * t_int_increment);
     for (auto &p : scheduler.get_active_particles()) {
@@ -273,7 +272,7 @@ void MPM::resample(real grid_delta_t) {
             count++;
             real weight = p->get_cache_w(ind);
             Vector2 gw = p->get_cache_gw(ind);
-            Vector2 grid_vel = grid.velocity[ind] + grid.force_or_acc[ind] * grid_delta_t;
+            Vector2 grid_vel = grid.velocity[ind];
             v += weight * grid_vel;
             Vector2 aa = grid_vel;
             Vector2 bb = Vector2(ind.i, ind.j) - p->pos;
@@ -298,7 +297,7 @@ void MPM::resample(real grid_delta_t) {
     }
 }
 
-void MPM::apply_deformation_force() {
+void MPM::apply_deformation_force(real delta_t) {
     for (auto &p : scheduler.get_active_particles()) {
         p->calculate_force();
     }
@@ -310,7 +309,7 @@ void MPM::apply_deformation_force() {
             }
             Vector2 gw = p->get_cache_gw(ind);
             Vector2 force = p->tmp_force * gw;
-            grid.force_or_acc[ind] += force;
+            grid.velocity[ind] += delta_t / mass * force;
         }
     }
 }

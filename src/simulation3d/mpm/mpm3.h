@@ -96,7 +96,6 @@ public:
     std::vector<Particle *> particles; // for efficiency
     Array3D<Vector> grid_velocity;
     Array3D<Vector> grid_velocity_backup;
-    Array3D<Vector> grid_force_or_acc;
     Array3D<Spinlock> grid_locks;
     Array3D<real> grid_mass;
     Vector3i res;
@@ -145,27 +144,10 @@ public:
 
     void grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, real t);
 
-    void grid_normalize_acceleration() {
-        for (auto &ind : grid_force_or_acc.get_region()) {
-            if (grid_mass[ind] > 0) { // Do not use EPS here!!
-                grid_force_or_acc[ind] /= grid_mass[ind];
-            } else {
-                grid_force_or_acc[ind] = Vector3(0, 0, 0);
-            }
-            CV(force_or_acc[ind]);
-        }
-    }
-
-    void apply_external_impulse(Vector impulse) {
-//        for (auto &p : particles) {
-//            p->v += impulse;
-//        }
-    }
-
-    void grid_apply_external_force(Vector acc) {
+    void grid_apply_external_force(Vector acc, real delta_t) {
         for (auto &ind : grid_mass.get_region()) {
             if (grid_mass[ind] > 0) // Do not use EPS here!!
-                grid_force_or_acc[ind] += acc * grid_mass[ind];
+                grid_velocity[ind] += delta_t * acc;
         }
     }
 

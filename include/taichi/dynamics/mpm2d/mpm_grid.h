@@ -27,7 +27,6 @@ typedef MPMParticle Particle;
 class Grid {
 public:
     Array2D<Vector2> velocity;
-    Array2D<Vector2> force_or_acc;
     Array2D<Vector2> velocity_backup;
     Array2D<Vector4> boundary_normal;
     Array2D<real> mass;
@@ -37,7 +36,6 @@ public:
     void initialize(const Vector2i &sim_res, MPMScheduler *scheduler) {
         this->res = sim_res + Vector2i(1);
         velocity.initialize(res, Vector2(0), Vector2(0));
-        force_or_acc.initialize(res, Vector2(0), Vector2(0));
         boundary_normal.initialize(res, Vector4(0), Vector2(0));
         mass.initialize(res, 0.0f, Vector2(0));
         this->scheduler = scheduler;
@@ -45,7 +43,6 @@ public:
 
     void reset() {
         velocity = Vector2(0.0f);
-        force_or_acc = Vector2(0.0f);
         mass = 0.0f;
     }
 
@@ -64,21 +61,10 @@ public:
         }
     }
 
-    void normalize_acceleration() {
-        for (auto &ind : force_or_acc.get_region()) {
-            if (mass[ind] > 0) { // Do not use EPS here!!
-                force_or_acc[ind] /= mass[ind];
-            } else {
-                force_or_acc[ind] = Vector2(0, 0);
-            }
-            CV(force_or_acc[ind]);
-        }
-    }
-
-    void apply_external_force(Vector2 acc) {
+    void apply_external_force(Vector2 acc, real delta_t) {
         for (auto &ind : mass.get_region()) {
             if (mass[ind] > 0) // Do not use EPS here!!
-                force_or_acc[ind] += acc * mass[ind];
+                velocity[ind] += acc * delta_t;
         }
     }
 

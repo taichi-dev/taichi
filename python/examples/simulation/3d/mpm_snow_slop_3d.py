@@ -12,7 +12,7 @@ gi_render = False
 step_number = 400
 # step_number = 1
 # total_frames = 1
-grid_downsample = 8
+grid_downsample = 2
 output_downsample = 1
 render_epoch = 20
 
@@ -77,11 +77,12 @@ if __name__ == '__main__':
     levelset.add_plane(0, 1, 0, -1)
     levelset.add_plane(1, 1, 0, -1.7)
     levelset.global_increase(1)
-    tex = Texture('levelset3d', levelset=levelset, bounds=(0, 0.05 / levelset.get_delta_x())) * 8
-    tex = Texture('bound', tex=tex, axis=2, bounds=(0.3, 0.7), outside_val=(0, 0, 0))
-    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), compression=1.0)
-    tex_ball = Texture('sphere', center=(0.1, 0.5, 0.5), radius=0.05) * 8
-    mpm.add_particles(density_tex=tex_ball.id, initial_velocity=(0, 0, 0), compression=1.0)
+    tex = Texture('levelset3d', levelset=levelset, bounds=(0, 0.04 / levelset.get_delta_x())) * 6
+    tex = Texture('bound', tex=tex, axis=2, bounds=(0.45, 0.55), outside_val=(0, 0, 0))
+    tex = Texture('bound', tex=tex, axis=0, bounds=(0.0, 0.3), outside_val=(0, 0, 0))
+    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), compression=1.1)
+    tex_ball = Texture('sphere', center=(0.1, 0.38, 0.5), radius=0.07) * 8
+    mpm.add_particles(density_tex=tex_ball.id, initial_velocity=(0, -10, 0), compression=0.95)
 
     mpm.set_levelset(levelset, False)
 

@@ -5,7 +5,7 @@ if __name__ == '__main__':
     scale = 4
     res = (80 * scale, 45 * scale)
     sim_t = 20
-    async = False
+    async = True
     gravity = (0, -20)
 
     if async:

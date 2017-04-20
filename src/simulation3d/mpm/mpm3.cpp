@@ -74,7 +74,7 @@ struct EPParticle3 : public MPM3D::Particle {
     virtual Matrix get_energy_gradient() {
         real j_e = det(dg_e);
         real j_p = det(dg_p);
-        real e = std::exp(std::min(hardening * (1.0f - j_p), 5.0f));
+        real e = std::exp(std::min(hardening * (1.0f - j_p), 10.0f));
         real mu = mu_0 * e;
         real lambda = lambda_0 * e;
         Matrix r, s;
@@ -213,7 +213,6 @@ void MPM3D::initialize(const Config &config) {
     delta_t = config.get_real("delta_t");
     apic = config.get("apic", true);
     grid_velocity.initialize(res[0], res[1], res[2], Vector(0.0f), Vector3(0.0f));
-    grid_force_or_acc.initialize(res[0], res[1], res[2], Vector(0.0f), Vector3(0.0f));
     grid_mass.initialize(res[0], res[1], res[2], 0, Vector3(0.0f));
     grid_locks.initialize(res[0], res[1], res[2], 0, Vector3(0.0f));
 }
@@ -260,7 +259,6 @@ std::vector<RenderParticle> MPM3D::get_render_particles() const {
 
 void MPM3D::rasterize() {
     grid_velocity.reset(Vector(0.0f));
-    grid_force_or_acc.reset(Vector(0.0f));
     grid_mass.reset(0.0f);
     parallel_for_each_particle([&](Particle &p) {
         for (auto &ind : get_bounded_rasterization_region(p.pos)) {
@@ -297,7 +295,7 @@ void MPM3D::resample(float delta_t) {
             Vector d_pos = p.pos - Vector3(ind.i, ind.j, ind.k);
             float weight = w(d_pos);
             Vector gw = dw(d_pos);
-            Vector grid_vel = grid_velocity[ind] + grid_force_or_acc[ind] * delta_t;
+            Vector grid_vel = grid_velocity[ind];
             v += weight * grid_vel;
             Vector aa = grid_vel;
             Vector bb = -d_pos;
@@ -338,8 +336,7 @@ void MPM3D::apply_deformation_force(float delta_t) {
             Vector force = p.tmp_force * gw;
             CV(force);
             grid_locks[ind].lock();
-//            grid_velocity[ind] += delta_t / mass * force;
-            grid_force_or_acc[ind] += force;
+            grid_velocity[ind] += delta_t / mass * force;
             grid_locks[ind].unlock();
         }
     });
@@ -348,12 +345,12 @@ void MPM3D::apply_deformation_force(float delta_t) {
 void MPM3D::grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, real t) {
     for (auto &ind : grid_velocity.get_region()) {
         Vector3 pos = Vector3(ind.get_pos());
-        Vector3 v = grid_velocity[ind] + grid_force_or_acc[ind] * delta_t -
-                    levelset.get_temporal_derivative(pos, t) * levelset.get_spatial_gradient(pos, t);
-        Vector3 n = levelset.get_spatial_gradient(pos, t);
         real phi = levelset.sample(pos, t);
         if (phi > 1) continue;
-        else if (phi > 0) { // 0~1
+        Vector3 n = levelset.get_spatial_gradient(pos, t);
+        Vector boundary_velocity = levelset.get_temporal_derivative(pos, t) * n;
+        Vector3 v = grid_velocity[ind] - boundary_velocity;
+        if (phi > 0) { // 0~1
             real pressure = std::max(-glm::dot(v, n), 0.0f);
             real mu = levelset.levelset0->friction;
             if (mu < 0) { // sticky
@@ -369,8 +366,8 @@ void MPM3D::grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, re
         } else if (phi <= 0) {
             v = Vector3(0.0f);
         }
-        v += levelset.get_temporal_derivative(pos, t) * levelset.get_spatial_gradient(pos, t);
-        grid_force_or_acc[ind] = (v - grid_velocity[ind]) / delta_t;
+        v += boundary_velocity;
+        grid_velocity[ind] = v;
     }
 }
 
@@ -390,9 +387,8 @@ void MPM3D::substep(float delta_t) {
 //        apply_external_impulse(gravity * delta_t);
         rasterize();
         grid_backup_velocity();
-        grid_apply_external_force(gravity);
+        grid_apply_external_force(gravity, delta_t);
         apply_deformation_force(delta_t);
-        grid_normalize_acceleration();
         grid_apply_boundary_conditions(levelset, current_t);
         resample(delta_t);
         parallel_for_each_particle([&](Particle &p) {

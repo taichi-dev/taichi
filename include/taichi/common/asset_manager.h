@@ -32,7 +32,12 @@ public:
 
     template <typename T>
     int insert_asset_(const std::shared_ptr<T> &ptr) {
-        assert_info(asset_to_id.find(ptr.get()) == asset_to_id.end(), "Asset already exists");
+        if (asset_to_id.find(ptr.get()) != asset_to_id.end()) {
+            int existing_id = asset_to_id.find(ptr.get())->second;
+            assert_info(id_to_asset[existing_id].expired(), "Asset already exists");
+            asset_to_id.erase(ptr.get());
+            id_to_asset.erase(existing_id);
+        }
         int id = counter++;
         id_to_asset[id] = static_cast<std::weak_ptr<void>>(std::weak_ptr<T>(ptr));
         asset_to_id[ptr.get()] = id;

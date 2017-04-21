@@ -12,6 +12,7 @@
 #include <vector>
 #include <taichi/math/math_util.h>
 #include <taichi/common/util.h>
+#include <string>
 
 TC_NAMESPACE_BEGIN
 

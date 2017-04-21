@@ -44,10 +44,6 @@ public:
         Array2D<real>::initialize(res[0], res[1], value, offset);
     }
 
-    std::shared_ptr<LevelSet2D> get_shared_ptr() {
-        return std::make_shared<LevelSet2D>(*this);
-    }
-
     void add_sphere(Vector2 center, real radius, bool inside_out = false);
 
     void add_polygon(std::vector<Vector2> polygon, bool inside_out = false);

@@ -166,7 +166,6 @@ void export_math(py::module &m) {
 
     py::class_<LevelSet2D, Array2D<real>>(m, "LevelSet2D")
             .def(py::init<int, int, Vector2>())
-            .def("get_shared_ptr", &LevelSet2D::get_shared_ptr)
             .def("get_width", &LevelSet2D::get_width)
             .def("get_height", &LevelSet2D::get_height)
             .def("get", &LevelSet2D::get_copy)
@@ -187,7 +186,6 @@ void export_math(py::module &m) {
 
     py::class_<LevelSet3D, std::shared_ptr<LevelSet3D>>(m, "LevelSet3D", PyArray3Dreal)
             .def(py::init<int, int, int, Vector3>())
-            .def("get_shared_ptr", &LevelSet3D::get_shared_ptr)
             .def("get_width", &LevelSet3D::get_width)
             .def("get_height", &LevelSet3D::get_height)
             .def("get", &LevelSet3D::get_copy)

@@ -43,10 +43,6 @@ public:
         Array3D<real>::initialize(res[0], res[1], res[2], value, offset);
     }
 
-    std::shared_ptr<LevelSet3D> get_shared_ptr() {
-        return std::make_shared<LevelSet3D>(*this);
-    }
-
     void add_sphere(Vector3 center, real radius, bool inside_out = false);
 
     void add_plane(real a, real b, real c, real d);

@@ -71,7 +71,7 @@ if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -100, 0), delta_t=0.001, num_threads=8)
+    mpm = MPM3(resolution=resolution, gravity=(0, -100, 0), base_delta_t=0.001, num_threads=8)
 
     levelset = mpm.create_levelset()
     levelset.add_plane(0, 1, 0, -1)

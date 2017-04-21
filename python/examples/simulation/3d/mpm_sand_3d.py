@@ -7,7 +7,7 @@ if __name__ == '__main__':
     resolution = (511 / downsample, 127 / downsample, 255 / downsample)
     tex = Texture('image', filename=tc.get_asset_path('textures/taichi_words.png')) * 8
     tex = Texture('bound', tex=tex, axis=2, bounds=(0.475, 0.525), outside_val=(0, 0, 0))
-    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), delta_t=0.001, num_threads=8)
+    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), base_delta_t=0.001, num_threads=8)
     mpm.add_particles(type="dp", density_tex=tex.id, initial_velocity=(0, 0, 0))
     for i in range(1000):
         mpm.step(0.05)

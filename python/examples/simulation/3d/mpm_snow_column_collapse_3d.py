@@ -75,7 +75,7 @@ def render_sand_frame(frame, d, t):
 if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
-    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), delta_t=0.001, num_threads=8)
+    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), base_delta_t=0.001, num_threads=8)
 
     tex = Texture('ring', outer=0.15) * 8
     tex = Texture('bound', tex=tex, axis=2, bounds=(0.0, 0.4), outside_val=(0, 0, 0))

@@ -24,8 +24,10 @@
 #include <taichi/math/dynamic_levelset_3d.h>
 #include <taichi/system/threading.h>
 
-TC_NAMESPACE_BEGIN
+#include "mpm3_scheduler.h"
+#include "mpm3_particle.h"
 
+TC_NAMESPACE_BEGIN
 
 class MPM3D : public Simulation3D {
 protected:
@@ -36,65 +38,7 @@ public:
     static const int D = 3;
 
 public:
-    struct Particle {
-        using Vector = MPM3D::Vector;
-        using Matrix = MPM3D::Matrix;
-        using Region = MPM3D::Region;
-        static const int D = MPM3D::D;
-        Vector3 color = Vector3(1, 0, 0);
-        Vector pos, v;
-        Matrix dg_e, dg_p, tmp_force;
-        real mass;
-        real vol;
-        Matrix apic_b;
-        Matrix dg_cache;
-        static long long instance_count;
-        long long id = instance_count++;
-
-        Particle() {
-            dg_e = Matrix(1.0f);
-            dg_p = Matrix(1.0f);
-            apic_b = Matrix(0);
-            v = Vector(0.0f);
-            vol = 1.0f;
-        }
-
-        virtual void initialize(const Config &config) {
-
-        }
-
-        virtual void set_compression(float compression) {
-            dg_p = Matrix(compression); // 1.0f = no compression
-        }
-
-        virtual Matrix get_energy_gradient() = 0;
-
-        virtual void calculate_kernels() {}
-
-        virtual void calculate_force() = 0;
-
-        virtual void plasticity() {};
-
-        virtual void resolve_collision(const DynamicLevelSet3D &levelset, real t) {
-            real phi = levelset.sample(pos, t);
-            if (phi < 0) {
-                Vector3 gradient = levelset.get_spatial_gradient(pos, t);
-                pos -= gradient * phi;
-                v -= glm::dot(gradient, v) * gradient;
-            }
-        }
-
-        virtual void print() {
-            P(pos);
-            P(v);
-            P(dg_e);
-            P(dg_p);
-        }
-
-        virtual ~Particle() {}
-    };
-
-    std::vector<Particle *> particles; // for efficiency
+    std::vector<MPM3Particle *> particles; // for efficiency
     Array3D<Vector> grid_velocity;
     Array3D<Vector> grid_velocity_backup;
     Array3D<Spinlock> grid_locks;
@@ -102,8 +46,16 @@ public:
     Vector3i res;
     int max_dim;
     Vector gravity;
-    real delta_t;
     bool apic;
+
+    bool async;
+    real base_delta_t;
+    real maximum_delta_t;
+    real cfl;
+    real strength_dt_mul;
+    real request_t = 0.0f;
+    int64 current_t_int = 0;
+    MPM3Scheduler scheduler;
 
     Region get_bounded_rasterization_region(Vector p) {
         assert_info(is_normal(p.x) && is_normal(p.y) && is_normal(p.z),
@@ -135,7 +87,7 @@ public:
 
     void rasterize();
 
-    void resample(float delta_t);
+    void resample();
 
     void grid_backup_velocity() {
         grid_velocity_backup = grid_velocity;
@@ -154,12 +106,19 @@ public:
 
     void particle_collision_resolution(real t);
 
-    void substep(float delta_t);
+    void substep();
 
     template <typename T>
     void parallel_for_each_particle(const T &target) {
         ThreadedTaskManager::run((int)particles.size(), num_threads, [&](int i) {
             target(*particles[i]);
+        });
+    }
+
+    template <typename T>
+    void parallel_for_each_active_particle(const T &target) {
+        ThreadedTaskManager::run((int)scheduler.get_active_particles().size(), num_threads, [&](int i) {
+            target(*scheduler.get_active_particles()[i]);
         });
     }
 
@@ -172,9 +131,14 @@ public:
     virtual void add_particles(const Config &config) override;
 
     virtual void step(real dt) override {
-        int steps = (int)std::ceil(dt / delta_t);
-        for (int i = 0; i < steps; i++) {
-            substep(dt / steps);
+        if (dt < 0) {
+            substep();
+            request_t = current_t;
+        } else {
+            request_t += dt;
+            while (current_t + base_delta_t < request_t) {
+                substep();
+            }
         }
     }
 

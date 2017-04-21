@@ -69,7 +69,7 @@ if __name__ == '__main__':
     tex = Texture('rect', bounds=(1, 1, 1)) * 8
     tex = Texture('bound', tex=tex, axis=2, bounds=(0.0, 0.5), outside_val=(0, 0, 0))
     tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
-    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), delta_t=0.0002, num_threads=8)
+    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), base_delta_t=0.0002, num_threads=8)
     mpm.add_particles(type="dp", density_tex=tex.id, initial_velocity=(0, 0, 0))
     for i in range(step_number):
         print 'process(%d/%d)' % (i, step_number)

@@ -525,6 +525,14 @@ public:
         return data.cend();
     }
 
+    T &operator[](const Vector3i &pos) {
+        return (*this)[pos.x][pos.y][pos.z];
+    }
+
+    const T &operator[](const Vector3i &pos) const {
+        return (*this)[pos.x][pos.y][pos.z];
+    }
+
     T &operator[](const Index3D &index) {
         return (*this)[index.i][index.j][index.k];
     }

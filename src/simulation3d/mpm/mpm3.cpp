@@ -12,8 +12,8 @@
 #include <taichi/math/qr_svd.h>
 #include <taichi/system/threading.h>
 #include <taichi/visual/texture.h>
-#include <taichi/common/asset_manager.h>
 #include <taichi/math/math_util.h>
+#include <taichi/common/asset_manager.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -51,170 +51,25 @@ inline Vector3 dw(const Vector3 &a) {
     return Vector3(dw(a.x) * w(a.y) * w(a.z), w(a.x) * dw(a.y) * w(a.z), w(a.x) * w(a.y) * dw(a.z));
 }
 
-long long MPM3D::Particle::instance_count;
-
-struct EPParticle3 : public MPM3D::Particle {
-    real hardening = 10.0f;
-    real mu_0 = 1e5f, lambda_0 = 1e5f;
-    real theta_c = 2.5e-2f, theta_s = 7.5e-3f;
-
-    EPParticle3() : MPM3D::Particle() {
-    }
-
-    void initialize(const Config &config) {
-        hardening = config.get("hardening", hardening);
-        lambda_0 = config.get("lambda_0", lambda_0);
-        mu_0 = config.get("mu_0", mu_0);
-        theta_c = config.get("theta_c", theta_c);
-        theta_s = config.get("theta_s", theta_s);
-        real compression = config.get("compression", 1.0f);
-        dg_p = Matrix(compression);
-    }
-
-    virtual Matrix get_energy_gradient() {
-        real j_e = det(dg_e);
-        real j_p = det(dg_p);
-        real e = std::exp(std::min(hardening * (1.0f - j_p), 10.0f));
-        real mu = mu_0 * e;
-        real lambda = lambda_0 * e;
-        Matrix r, s;
-        polar_decomp(dg_e, r, s);
-        if (!is_normal(r)) {
-            P(dg_e);
-            P(r);
-            P(s);
-        }
-        CV(r);
-        CV(s);
-        return 2 * mu * (dg_e - r) +
-               lambda * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
-    }
-
-    virtual void calculate_kernels() {}
-
-    virtual void calculate_force() {
-        tmp_force = -vol * get_energy_gradient() * glm::transpose(dg_e);
-    };
-
-    virtual void plasticity() {
-        Matrix svd_u, sig, svd_v;
-        svd(dg_e, svd_u, sig, svd_v);
-        for (int i = 0; i < D; i++) {
-            sig[i][i] = clamp(sig[i][i], 1.0f - theta_c, 1.0f + theta_s);
-        }
-        dg_e = svd_u * sig * glm::transpose(svd_v);
-        dg_p = glm::inverse(dg_e) * dg_cache;
-        svd(dg_p, svd_u, sig, svd_v);
-        for (int i = 0; i < D; i++) {
-            sig[i][i] = clamp(sig[i][i], 0.1f, 10.0f);
-        }
-        dg_p = svd_u * sig * glm::transpose(svd_v);
-    };
-};
-
-struct DPParticle3 : public MPM3D::Particle {
-    real h_0 = 35.0f, h_1 = 9.0f, h_2 = 0.2f, h_3 = 10.0f;
-    real lambda_0 = 204057.0f, mu_0 = 136038.0f;
-    real alpha = 1.0f;
-    real q = 0.0f;
-
-    DPParticle3() : MPM3D::Particle() {
-    }
-
-    void initialize(const Config &config) {
-        h_0 = config.get("h_0", h_0);
-        h_1 = config.get("h_1", h_1);
-        h_2 = config.get("h_2", h_2);
-        h_3 = config.get("h_3", h_3);
-        lambda_0 = config.get("lambda_0", lambda_0);
-        mu_0 = config.get("mu_0", mu_0);
-        alpha = config.get("alpha", alpha);
-        real compression = config.get("compression", 1.0f);
-        dg_p = Matrix(compression);
-    }
-
-    Matrix3 get_energy_gradient() {
-        return Matrix3(1.f);
-    }
-
-    void project(Matrix3 sigma, real alpha, Matrix3 &sigma_out, real &out) {
-        const real d = 3;
-        Matrix3 epsilon(log(sigma[0][0]), 0.f, 0.f, 0.f, log(sigma[1][1]), 0.f, 0.f, 0.f, log(sigma[2][2]));
-        real tr = epsilon[0][0] + epsilon[1][1] + epsilon[2][2];
-        Matrix3 epsilon_hat = epsilon - (tr) / d * Matrix3(1.0f);
-        real epsilon_for = sqrt(
-                epsilon[0][0] * epsilon[0][0] + epsilon[1][1] * epsilon[1][1] + epsilon[2][2] * epsilon[2][2]);
-        real epsilon_hat_for = sqrt(epsilon_hat[0][0] * epsilon_hat[0][0] + epsilon_hat[1][1] * epsilon_hat[1][1] +
-                                    epsilon_hat[2][2] * epsilon_hat[2][2]);
-        if (epsilon_hat_for <= 0 || tr > 0.0f) {
-            sigma_out = Matrix3(1.0f);
-            out = epsilon_for;
-        } else {
-            real delta_gamma = epsilon_hat_for + (d * lambda_0 + 2 * mu_0) / (2 * mu_0) * tr * alpha;
-            if (delta_gamma <= 0) {
-                sigma_out = sigma;
-                out = 0;
-            } else {
-                Matrix3 h = epsilon - delta_gamma / epsilon_hat_for * epsilon_hat;
-                sigma_out = Matrix3(exp(h[0][0]), 0.f, 0.f, 0.f, exp(h[1][1]), 0.f, 0.f, 0.f, exp(h[2][2]));
-                out = delta_gamma;
-            }
-        }
-    }
-
-    void calculate_kernels() {
-    }
-
-    void calculate_force() {
-        Matrix3 u, v, sig, dg = dg_e;
-        svd(dg_e, u, sig, v);
-
-        assert_info(sig[0][0] > 0, "negative singular value");
-        assert_info(sig[1][1] > 0, "negative singular value");
-        assert_info(sig[2][2] > 0, "negative singular value");
-
-        Matrix3 log_sig(log(sig[0][0]), 0.f, 0.f, 0.f, log(sig[1][1]), 0.f, 0.f, 0.f, log(sig[2][2]));
-        Matrix3 inv_sig(1.f / (sig[0][0]), 0.f, 0.f, 0.f, 1.f / (sig[1][1]), 0.f, 0.f, 0.f, 1.f / (sig[2][2]));
-        Matrix3 center =
-                2 * mu_0 * inv_sig * log_sig + lambda_0 * (log_sig[0][0] + log_sig[1][1] + log_sig[2][2]) * inv_sig;
-
-        tmp_force = -vol * (u * center * glm::transpose(v)) * glm::transpose(dg);
-    }
-
-    void plasticity() {
-        Matrix3 u, v, sig;
-        svd(dg_e, u, sig, v);
-        Matrix3 t = Matrix3(1.0);
-        real delta_q = 0;
-        project(sig, alpha, t, delta_q);
-        Matrix3 rec = u * sig * glm::transpose(v);
-        Matrix3 diff = rec - dg_e;
-        if (!(frobenius_norm(diff) < 1e-4f)) {
-            // debug code
-            P(dg_e);
-            P(rec);
-            P(u);
-            P(sig);
-            P(v);
-            error("SVD error\n");
-        }
-        dg_e = u * t * glm::transpose(v);
-        dg_p = v * glm::inverse(t) * sig * glm::transpose(v) * dg_p;
-        q += delta_q;
-        real phi = h_0 + (h_1 * q - h_3) * expf(-h_2 * q);
-        alpha = sqrtf(2.0f / 3.0f) * (2.0f * sin(phi * pi / 180.0f)) / (3.0f - sin(phi * pi / 180.0f));
-    }
-};
-
 void MPM3D::initialize(const Config &config) {
     Simulation3D::initialize(config);
     res = config.get_vec3i("resolution");
     gravity = config.get_vec3("gravity");
-    delta_t = config.get_real("delta_t");
     apic = config.get("apic", true);
+    async = config.get("async", false);
+    base_delta_t = config.get("base_delta_t", 1e-6f);
+    cfl = config.get("cfl", 1.0f);
+    strength_dt_mul = config.get("strength_dt_mul", 1.0f);
+    if (async) {
+        maximum_delta_t = config.get("maximum_delta_t", 1e-1f);
+    } else {
+        maximum_delta_t = base_delta_t;
+    }
+
     grid_velocity.initialize(res + Vector3i(1), Vector(0.0f), Vector3(0.0f));
     grid_mass.initialize(res + Vector3i(1), 0, Vector3(0.0f));
     grid_locks.initialize(res + Vector3i(1), 0, Vector3(0.0f));
+    scheduler.initialize(res, base_delta_t, cfl, strength_dt_mul, &levelset);
 }
 
 void MPM3D::add_particles(const Config &config) {
@@ -226,7 +81,7 @@ void MPM3D::add_particles(const Config &config) {
                 real num = density_texture->sample(coord).x;
                 int t = (int)num + (rand() < num - int(num));
                 for (int l = 0; l < t; l++) {
-                    Particle *p = nullptr;
+                    MPM3Particle *p = nullptr;
                     if (config.get("type", std::string("ep")) == std::string("ep")) {
                         p = new EPParticle3();
                         p->initialize(config);
@@ -238,6 +93,7 @@ void MPM3D::add_particles(const Config &config) {
                     p->mass = 1.0f;
                     p->v = config.get("initial_velocity", p->v);
                     particles.push_back(p);
+                    scheduler.insert_particle(p);
                 }
             }
         }
@@ -251,7 +107,7 @@ std::vector<RenderParticle> MPM3D::get_render_particles() const {
     render_particles.reserve(particles.size());
     Vector3 center(res[0] / 2.0f, res[1] / 2.0f, res[2] / 2.0f);
     for (auto p_p : particles) {
-        MPM3D::Particle &p = *p_p;
+        MPM3Particle &p = *p_p;
         render_particles.push_back(Particle(p.pos - center, Vector4(0.8f, 0.9f, 1.0f, 0.5f)));
     }
     return render_particles;
@@ -260,7 +116,7 @@ std::vector<RenderParticle> MPM3D::get_render_particles() const {
 void MPM3D::rasterize() {
     grid_velocity.reset(Vector(0.0f));
     grid_mass.reset(0.0f);
-    parallel_for_each_particle([&](Particle &p) {
+    parallel_for_each_active_particle([&](MPM3Particle &p) {
         for (auto &ind : get_bounded_rasterization_region(p.pos)) {
             Vector3 d_pos = Vector(ind.i, ind.j, ind.k) - p.pos;
             real weight = w(d_pos);
@@ -280,12 +136,15 @@ void MPM3D::rasterize() {
     }
 }
 
-void MPM3D::resample(float delta_t) {
+void MPM3D::resample() {
     real alpha_delta_t = 1;
     // what is apic in 2D
     if (apic)
         alpha_delta_t = 0;
-    parallel_for_each_particle([&](Particle &p) {
+    parallel_for_each_active_particle([&](MPM3Particle &p) {
+        if (p.state != MPM3Particle::UPDATING)
+            return;
+        real delta_t = base_delta_t * (current_t_int - p.last_update);
         Vector v(0.0f), bv(0.0f);
         Matrix cdg(0.0f);
         Matrix b(0.0f);
@@ -321,11 +180,11 @@ void MPM3D::resample(float delta_t) {
 
 void MPM3D::apply_deformation_force(float delta_t) {
     //printf("Calculating force...\n");
-    parallel_for_each_particle([&](Particle &p) {
+    parallel_for_each_active_particle([&](MPM3Particle &p) {
         p.calculate_force();
     });
     //printf("Accumulating force...\n");
-    parallel_for_each_particle([&](Particle &p) {
+    parallel_for_each_active_particle([&](MPM3Particle &p) {
         for (auto &ind : get_bounded_rasterization_region(p.pos)) {
             real mass = grid_mass[ind];
             if (mass == 0.0f) { // No EPS here
@@ -343,8 +202,8 @@ void MPM3D::apply_deformation_force(float delta_t) {
 }
 
 void MPM3D::grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, real t) {
-    for (auto &ind : grid_velocity.get_region()) {
-        Vector3 pos = Vector3(ind.get_pos());
+    for (auto &ind : scheduler.get_active_grid_points()) {
+        Vector3 pos = Vector3(0.5 + ind[0], 0.5 + ind[1], 0.5 + ind[2]);
         real phi = levelset.sample(pos, t);
         if (1 < phi || phi < -3) continue;
         Vector3 n = levelset.get_spatial_gradient(pos, t);
@@ -372,35 +231,76 @@ void MPM3D::grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, re
 }
 
 void MPM3D::particle_collision_resolution(real t) {
-    parallel_for_each_particle([&](Particle &p) {
-        p.resolve_collision(levelset, t);
+    parallel_for_each_particle([&](MPM3Particle &p) {
+        if (p.state == MPM3Particle::UPDATING) {
+            p.resolve_collision(levelset, t);
+        }
     });
 }
 
-void MPM3D::substep(float delta_t) {
+void MPM3D::substep() {
     if (!particles.empty()) {
         /*
         for (auto &p : particles) {
             p.calculate_kernels();
         }
         */
-//        apply_external_impulse(gravity * delta_t);
+
+        scheduler.update_particle_groups();
+        scheduler.reset_particle_states();
+        int64 original_t_int_increment;
+        int64 t_int_increment;
+        int64 old_t_int = current_t_int;
+        if (async) {
+            scheduler.reset();
+            scheduler.update_dt_limits(current_t);
+
+            original_t_int_increment = std::min(get_largest_pot(int64(maximum_delta_t / base_delta_t)),
+                                                scheduler.update_max_dt_int(current_t_int));
+
+            t_int_increment = original_t_int_increment - current_t_int % original_t_int_increment;
+
+            current_t_int += t_int_increment;
+            current_t = current_t_int * base_delta_t;
+
+            scheduler.set_time(current_t_int);
+
+            scheduler.expand(false, true);
+        } else {
+            // sync
+            t_int_increment = 1;
+            scheduler.states = 2;
+            for (auto &p : particles) {
+                p->state = MPM3Particle::UPDATING;
+            }
+            current_t_int += t_int_increment;
+            current_t = current_t_int * base_delta_t;
+        }
+        scheduler.update();
+//        P(scheduler.active_grid_points.size());
+//        P(scheduler.active_particles.size());
+
         rasterize();
         grid_backup_velocity();
-        grid_apply_external_force(gravity, delta_t);
-        apply_deformation_force(delta_t);
+        grid_apply_external_force(gravity, t_int_increment * base_delta_t);
+        apply_deformation_force(t_int_increment * base_delta_t);
         grid_apply_boundary_conditions(levelset, current_t);
-        resample(delta_t);
-        parallel_for_each_particle([&](Particle &p) {
-            p.pos += delta_t * p.v;
-            p.pos.x = clamp(p.pos.x, 0.0f, res[0] - eps);
-            p.pos.y = clamp(p.pos.y, 0.0f, res[1] - eps);
-            p.pos.z = clamp(p.pos.z, 0.0f, res[2] - eps);
-            p.plasticity();
+        resample();
+        parallel_for_each_particle([&](MPM3Particle &p) {
+            if (p.state == MPM3Particle::UPDATING) {
+                p.pos += (current_t_int - p.last_update) * base_delta_t * p.v;
+                p.last_update = current_t_int;
+                p.pos.x = clamp(p.pos.x, 0.0f, res[0] - eps);
+                p.pos.y = clamp(p.pos.y, 0.0f, res[1] - eps);
+                p.pos.z = clamp(p.pos.z, 0.0f, res[2] - eps);
+                p.plasticity();
+            }
         });
         particle_collision_resolution(current_t);
+        if (async) {
+            scheduler.enforce_smoothness(original_t_int_increment);
+        }
     }
-    current_t += delta_t;
 }
 
 bool MPM3D::test() const {

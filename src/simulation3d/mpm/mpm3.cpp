@@ -231,7 +231,7 @@ void MPM3D::grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, re
 }
 
 void MPM3D::particle_collision_resolution(real t) {
-    parallel_for_each_particle([&](MPM3Particle &p) {
+    parallel_for_each_active_particle([&](MPM3Particle &p) {
         if (p.state == MPM3Particle::UPDATING) {
             p.resolve_collision(levelset, t);
         }

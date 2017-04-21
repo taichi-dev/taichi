@@ -8,11 +8,11 @@ from taichi.visual.post_process import *
 from taichi.visual.texture import Texture
 import taichi as tc
 
-gi_render = True
+gi_render = False
 step_number = 400
 # step_number = 1
 # total_frames = 1
-grid_downsample = 4
+grid_downsample = 2
 output_downsample = 1
 render_epoch = 20
 
@@ -48,13 +48,8 @@ def create_sand_scene(frame, d, t):
         scene.add_mesh(Mesh('holder', material=material, translate=(0, -1, -6), scale=2))
 
         mesh = Mesh('plane', SurfaceMaterial('emissive', color=(1, 1, 1)),
-                    translate=(1.0, 1.0, -1), scale=(0.1, 0.1, 0.1), rotation=(180, 0, 0))
+                    translate=(1.0, 3.0, -1), scale=(0.1, 0.1, 0.1), rotation=(180, 0, 0))
         scene.add_mesh(mesh)
-
-        material = tc.SurfaceMaterial('microfacet', color=(1, 1, 0.5), roughness=(0.1, 0, 0, 0), f0=1)
-        sphere = tc.Mesh('sphere', material,
-                         translate=((t+0.05) * 0.5 - 0.35, -0.61, 0), scale=0.1, rotation=(0, 0, 0))
-        scene.add_mesh(sphere)
 
         # Change this line to your particle output path pls.
         # fn = r'../sand-sim/particles%05d.bin' % frame
@@ -76,29 +71,27 @@ if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), base_delta_t=0.0005, num_threads=8)
+    mpm = MPM3(resolution=resolution, gravity=(0, -100, 0), async=True, num_threads=8)
 
-    # tex = Texture('ring', outer=0.15) * 4
-    # tex = Texture('bound', tex=tex, axis=2, bounds=(0.0, 0.4), outside_val=(0, 0, 0))
-    # tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
-    tex = Texture('mesh', resolution=resolution, filename=tc.get_asset_path('meshes/suzanne.obj')) * 8
-    tex = tex.zoom((0.5, 0.5, 0.5), (0.5, 0.5, 0.5), False)
-    # tex = Texture('rotate', tex=tex, rotate_axis=1, rotate_times=1)
-    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0))
+    levelset = mpm.create_levelset()
+    levelset.add_plane(0, 1, 0, -1)
+    levelset.add_plane(1, 1, 0, -1.7)
+    levelset.global_increase(1)
+    tex = Texture('levelset3d', levelset=levelset, bounds=(0, 0.04 / levelset.get_delta_x())) * 6
+    tex = Texture('bound', tex=tex, axis=2, bounds=(0.45, 0.55), outside_val=(0, 0, 0))
+    tex = Texture('bound', tex=tex, axis=0, bounds=(0.05, 0.3), outside_val=(0, 0, 0))
+    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), compression=1.09)
+    tex_ball = Texture('sphere', center=(0.12, 0.40, 0.5), radius=0.1) * 10
+    mpm.add_particles(density_tex=tex_ball.id, initial_velocity=(0, 0, 0), compression=0.95)
 
-    # Dynamic Levelset
-    def levelset_generator(t):
-        levelset = mpm.create_levelset()
-        levelset.add_sphere(Vector(0.325 + 0.25 * (t+0.05), 0.2, 0.5), 0, False)
-        # levelset.add_sphere(Vector(0.5, 0.2, 0.5), t, False)
-        return levelset
-    mpm.set_levelset(levelset_generator, True)
+    levelset.set_friction(1)
+    mpm.set_levelset(levelset, False)
 
     t = 0
     for i in range(step_number):
         print 'process(%d/%d)' % (i, step_number)
-        mpm.step(0.01)
-        t += 0.01
+        mpm.step(0.03)
+        t += 0.03
         if gi_render:
             d = mpm.get_directory()
             if i % 10 == 0:

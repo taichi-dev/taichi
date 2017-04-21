@@ -187,7 +187,7 @@ void MPM::compute_material_levelset() {
 
 void MPM::particle_collision_resolution() {
     if (levelset.levelset0) {
-        for (auto &p : particles) {
+        for (auto &p : scheduler.get_active_particles()) {
             if (p->state == MPMParticle::UPDATING)
                 p->resolve_collision(levelset, t);
         }

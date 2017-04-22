@@ -42,9 +42,9 @@ private:
     real luminance;
     real turbidity;
     real rayleigh;
-    real mieCoefficient;
-    real mieDirectionalG;
-    Vector3 sunPosition;
+    real mie_coefficient;
+    real mie_directional_g;
+    Vector3 sun_position;
 
     // constants for atmospheric scattering
     static constexpr real e = 2.718281828459f;
@@ -113,11 +113,11 @@ public:
         TC_LOAD_CONFIG(luminance, 1.0f);
         TC_LOAD_CONFIG(turbidity, 10.0f);
         TC_LOAD_CONFIG(rayleigh, 2.0f);
-        TC_LOAD_CONFIG(mieCoefficient, 0.005f);
-        TC_LOAD_CONFIG(mieDirectionalG, 0.8f);
+        TC_LOAD_CONFIG(mie_coefficient, 0.005f);
+        TC_LOAD_CONFIG(mie_directional_g, 0.8f);
         TC_LOAD_CONFIG(cameraPos, Vector3(0.0f));
-        TC_LOAD_CONFIG(sunPosition, Vector3(1.0f));
-        sunPosition = normalized(sunPosition);
+        TC_LOAD_CONFIG(sun_position, Vector3(1.0f));
+        sun_position = normalized(sun_position);
     }
 
     virtual Vector4 sample(const Vector3 &coord) const override {
@@ -134,11 +134,11 @@ public:
 
         real theta_d = coord.x * 2 * pi, phi_d = (coord.y - 0.5) * pi;
         vWorldPosition = Vector3(cos(theta_d) * cos(phi_d), sin(phi_d), sin(theta_d) * cos(phi_d));
-        vSunDirection = normalized(sunPosition);
+        vSunDirection = normalized(sun_position);
 
         vSunE = sunIntensity(dot(vSunDirection, up));
 
-        vSunfade = 1.0f - clamp(1.0f - std::exp((sunPosition.y / 450000.0f)), 0.0f, 1.0f);
+        vSunfade = 1.0f - clamp(1.0f - std::exp((sun_position.y / 450000.0f)), 0.0f, 1.0f);
 
         real rayleighCoefficient = rayleigh - (1.0f * (1.0f - vSunfade));
 
@@ -147,7 +147,7 @@ public:
         vBetaR = totalRayleigh * rayleighCoefficient;
 
         // mie coefficients
-        vBetaM = totalMie(turbidity) * mieCoefficient;
+        vBetaM = totalMie(turbidity) * mie_coefficient;
         real zenithAngle = std::acos(std::max(0.0f, dot(up, normalize(vWorldPosition - cameraPos))));
         real inverse =
                 1.0f / (std::cos(zenithAngle) + 0.15f * std::pow(93.885f - ((zenithAngle * 180.0f) / pi), -1.253f));

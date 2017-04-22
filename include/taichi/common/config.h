@@ -20,12 +20,13 @@
 
 #include <taichi/common/string_utils.h>
 #include <taichi/common/util.h>
+#include <taichi/common/asset_manager.h>
 #include <taichi/math/math_util.h>
 #include <taichi/math/linalg.h>
 
 TC_NAMESPACE_BEGIN
 
-#define LOAD_CONFIG(name, default_val) decltype(default_val) name = config.get(#name, default_val)
+#define TC_LOAD_CONFIG(name, default_val) decltype(default_val) name = config.get(#name, default_val)
 
 class Config {
 private:
@@ -155,6 +156,12 @@ public:
         Vector4i ret;
         sscanf_s(get_string(key).c_str(), "(%d,%d,%d,%d)", &ret.x, &ret.y, &ret.z, &ret.w);
         return ret;
+    }
+
+    template <typename T>
+    std::shared_ptr<T> get_asset(std::string key) const {
+        int id = get_int(key);
+        return AssetManager::get_asset<T>(id);
     }
 
     template <typename T>

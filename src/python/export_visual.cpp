@@ -9,11 +9,13 @@
 
 #include <taichi/python/export.h>
 
+#include <taichi/math/sdf.h>
+
 #include <taichi/visual/camera.h>
 #include <taichi/visual/renderer.h>
 #include <taichi/visual/volume_material.h>
 #include <taichi/visual/surface_material.h>
-#include <taichi/math/sdf.h>
+#include <taichi/visual/envmap.h>
 #include <taichi/visualization/particle_visualization.h>
 #include <taichi/common/asset_manager.h>
 
@@ -60,19 +62,18 @@ void export_visual(py::module &m) {
 
     m.def("function23_from_py_obj", function23_from_py_obj);
     m.def("function22_from_py_obj", function22_from_py_obj);
-    m.def("generate_mesh", Mesh3D::generate);
-    m.def("merge_mesh", merge_mesh);
-    m.def("rasterize_render_particles", rasterize_render_particles);
-    m.def("register_sdf", &AssetManager::insert_asset<SDF>);
-    m.def("register_texture", &AssetManager::insert_asset<Texture>);
-    m.def("register_surface_material", &AssetManager::insert_asset<SurfaceMaterial>);
     // TODO: these should registered by iterating over existing interfaces.
+    m.def("merge_mesh", merge_mesh);
+    m.def("generate_mesh", Mesh3D::generate);
+    m.def("rasterize_render_particles", rasterize_render_particles);
     m.def("create_mesh", std::make_shared<Mesh>);
     m.def("create_scene", std::make_shared<Scene>);
 
 
     py::class_<Texture, std::shared_ptr<Texture>>(m, "Texture")
-            .def("initialize", &Texture::initialize);;
+            .def("initialize", &Texture::initialize)
+            .def("rasterize", static_cast<Array2D<Vector4>(Texture::*)(int, int) const>(&Texture::rasterize))
+            .def("rasterize3", static_cast<Array2D<Vector3>(Texture::*)(int, int) const>(&Texture::rasterize3));
 
     py::class_<VolumeMaterial, std::shared_ptr<VolumeMaterial>>(m, "VolumeMaterial")
             .def("initialize", &VolumeMaterial::initialize);;

@@ -1,6 +1,6 @@
 import asset_manager
 from taichi.core import tc_core
-from taichi.misc.util import P
+from taichi.misc.util import P, array2d_to_ndarray
 
 
 class Texture:
@@ -70,6 +70,14 @@ class Texture:
         if resolution_y == -1:
             resolution_y = resolution_x
         return Texture("rasterize", tex=self, resolution_x=resolution_x, resolution_y=resolution_y)
+
+    def rasterize_to_ndarray(self, res=(512, 512)):
+        array2d = self.c.rasterize(res[0], res[1])
+        return array2d_to_ndarray(array2d)
+
+    def show(self, title='Taichi Texture Renderer', res=(512, 512)):
+        from taichi.gui.image_viewer import show_image
+        show_image(title, self.rasterize_to_ndarray(res))
 
     @staticmethod
     def create_taichi_wallpaper(n=20, scale=0.96, rotation=0):

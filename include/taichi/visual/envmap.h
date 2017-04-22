@@ -45,7 +45,7 @@ public:
 
 protected:
     std::shared_ptr<Array2D<Vector3>> image;
-    int width, height;
+    Vector2i res;
     DiscreteSampler row_sampler;
     std::vector<DiscreteSampler> col_samplers;
     void build_cdfs();

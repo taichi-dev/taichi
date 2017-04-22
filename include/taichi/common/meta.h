@@ -10,6 +10,7 @@
 #pragma once
 
 #include <taichi/common/config.h>
+#include <taichi/common/asset_manager.h>
 #include <cstring>
 #include <string>
 #include <map>
@@ -19,13 +20,13 @@
 
 TC_NAMESPACE_BEGIN
 
-template<typename T>
+template <typename T>
 std::shared_ptr<T> create_instance(const std::string &alias);
 
-template<typename T>
+template <typename T>
 std::shared_ptr<T> create_instance(const std::string &alias, const Config &config);
 
-template<typename T>
+template <typename T>
 std::vector<std::string> get_implementation_names();
 
 class Unit {
@@ -49,8 +50,11 @@ public:
 class ImplementationHolderBase {
 public:
     std::string name;
+
     virtual bool has(const std::string &alias) const = 0;
+
     virtual void remove(const std::string &alias) = 0;
+
     virtual std::vector<std::string> get_implementation_names() const = 0;
 };
 
@@ -59,13 +63,16 @@ public:
     typedef std::function<void(void *)> RegistrationMethod;
     std::map<std::string, RegistrationMethod> methods;
     std::map<std::string, ImplementationHolderBase *> interfaces;
+
     void register_registration_method(const std::string &name, const RegistrationMethod &method) {
         methods[name] = method;
     }
+
     void register_interface(const std::string &name, ImplementationHolderBase *interface_) {
         interfaces[name] = interface_;
     }
-    static InterfaceHolder* get_instance() {
+
+    static InterfaceHolder *get_instance() {
         static InterfaceHolder holder;
         return &holder;
     }
@@ -153,6 +160,7 @@ extern TC_IMPLEMENTATION_HOLDER_NAME(T) *TC_IMPLEMENTATION_HOLDER_PTR(T);
             InterfaceHolder::get_instance()->register_registration_method(base_alias, [&](void *m) {\
                 ((pybind11::module *)m)->def("create_" base_alias, \
                     static_cast<std::shared_ptr<class_name>(*)(const std::string &name)>(&create_instance<class_name>)); \
+                ((pybind11::module *)m)->def("register_" base_alias, &AssetManager::insert_asset<class_name>); \
                 ((pybind11::module *)m)->def("create_initialized_" base_alias, \
                     static_cast<std::shared_ptr<class_name>(*)(const std::string &name, \
                     const Config &config)>(&create_instance<class_name>)); \

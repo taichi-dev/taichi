@@ -8,16 +8,26 @@
 *******************************************************************************/
 
 #include <taichi/visual/envmap.h>
+#include <taichi/visual/texture.h>
+#include <taichi/common/asset_manager.h>
 
 TC_NAMESPACE_BEGIN
 
 TC_IMPLEMENTATION(EnvironmentMap, EnvironmentMap, "base");
 
-void EnvironmentMap::initialize(const Config & config) {
+void EnvironmentMap::initialize(const Config &config) {
     set_transform(Matrix4(1.0f));
-    image = std::make_shared<Array2D<Vector3>>(config.get_string("filepath"));
-    width = image->get_width();
-    height = image->get_height();
+    if (config.has_key("filepath")) {
+        image = std::make_shared<Array2D<Vector3>>(config.get_string("filepath"));
+        res[0] = image->get_width();
+        res[1] = image->get_height();
+    } else {
+        assert_info(config.has_key("texture"), "Either `filenpath` or `texture` should be specified.");
+        res = config.get("res", Vector2i(1024, 512));
+        image = std::make_shared<Array2D<Vector3>>(res);
+        Texture *tex = config.get_asset<Texture>("texture").get();
+        *image = tex->rasterize3(res);
+    }
     /*
     for (int j = 0; j < height; j++) {
         // conversion
@@ -27,9 +37,9 @@ void EnvironmentMap::initialize(const Config & config) {
         }
     }
     */
-    for (int j = 0; j < height - j - 1; j++) {
-        for (int i = 0; i < width; i++)
-            std::swap((*image)[i][j], (*image)[i][height - j - 1]);
+    for (int j = 0; j < res[1] - j - 1; j++) {
+        for (int i = 0; i < res[0]; i++)
+            std::swap((*image)[i][j], (*image)[i][res[1] - j - 1]);
     }
 
     build_cdfs();
@@ -69,10 +79,10 @@ void EnvironmentMap::initialize(const Config & config) {
 real EnvironmentMap::pdf(const Vector3 &dir) const {
     Vector2 uv = direction_to_uv(dir);
     return luminance(image->sample(uv.x, uv.y))
-        / avg_illum * (1.0f / 4 / pi);
+           / avg_illum * (1.0f / 4 / pi);
 }
 
-Vector3 EnvironmentMap::sample_direction(StateSequence & rand, real & pdf, Vector3 & illum) const {
+Vector3 EnvironmentMap::sample_direction(StateSequence &rand, real &pdf, Vector3 &illum) const {
     Vector2 uv;
     real row_pdf, row_cdf;
     real col_pdf, col_cdf;
@@ -82,10 +92,10 @@ Vector3 EnvironmentMap::sample_direction(StateSequence & rand, real & pdf, Vecto
     int col = col_samplers[row].sample(col_sample, col_pdf, col_cdf);
     real u = col + 0.5f;// (col_sample - col_cdf) / col_pdf;
     real v = row + 0.5f;// (row_sample - row_cdf) / row_pdf;
-    uv.x = u / width;
-    uv.y = v / height;
+    uv.x = u / res[0];
+    uv.y = v / res[1];
     illum = sample_illum(uv);
-    pdf = row_pdf * col_pdf * width * height / sin(pi * (0.5f + row) / height);
+    pdf = row_pdf * col_pdf * res[0] * res[1] / sin(pi * (0.5f + row) / res[1]);
     //P(luminance(illum) / pdf);
     return uv_to_direction(uv);
 }
@@ -94,12 +104,12 @@ void EnvironmentMap::build_cdfs() {
     std::vector<real> row_pdf;
     avg_illum = 0;
     real total_weight = 0.0f;
-    for (int j = 0; j < height; j++) {
+    for (int j = 0; j < res[1]; j++) {
         std::vector<real> col_pdf;
-        real scale = sin(pi * (0.5f + j) / height);
+        real scale = sin(pi * (0.5f + j) / res[1]);
         real total = 0.0f;
-        for (int i = 0; i < width; i++) {
-            real pdf = luminance(image->sample((i + 0.5f) / width, (j + 0.5f) / height));
+        for (int i = 0; i < res[0]; i++) {
+            real pdf = luminance(image->sample((i + 0.5f) / res[0], (j + 0.5f) / res[1]));
             avg_illum += pdf * scale;
             total_weight += scale;
             total += pdf;

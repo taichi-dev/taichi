@@ -47,23 +47,41 @@ void Mesh::load_from_file(const std::string &file_path) {
             // Loop over vertices in the face.
             assert_info(fv == 3, "Only triangles supported...");
             int i = (int)vertices.size(), j = i + 1, k = i + 2;
+            bool has_normal = false;
             for (size_t v = 0; v < fv; v++) {
                 // access to vertex
                 tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
                 float vx = attrib.vertices[3 * idx.vertex_index + 0];
                 float vy = attrib.vertices[3 * idx.vertex_index + 1];
                 float vz = attrib.vertices[3 * idx.vertex_index + 2];
-                float nx = attrib.normals[3 * idx.normal_index + 0];
-                float ny = attrib.normals[3 * idx.normal_index + 1];
-                float nz = attrib.normals[3 * idx.normal_index + 2];
+                vertices.push_back(Vector3(vx, vy, vz));
+                if (idx.normal_index != -1) {
+                    float nx = attrib.normals[3 * idx.normal_index + 0];
+                    float ny = attrib.normals[3 * idx.normal_index + 1];
+                    float nz = attrib.normals[3 * idx.normal_index + 2];
+                    has_normal = true;
+                    normals.push_back(Vector3(nx, ny, nz));
+                } else {
+                    // should be consistent
+                    assert(!has_normal);
+                    has_normal = false;
+                }
                 float tx = 0.0f, ty = 0.0f;
                 if (idx.texcoord_index != -1) {
                     tx = attrib.texcoords[2 * idx.texcoord_index + 0];
                     ty = attrib.texcoords[2 * idx.texcoord_index + 1];
                 }
-                vertices.push_back(Vector3(vx, vy, vz));
-                normals.push_back(Vector3(nx, ny, nz));
                 uvs.push_back(Vector2(tx, ty));
+            }
+            if (!has_normal) {
+                Vector3 *a = &vertices[vertices.size()] - 3;
+                Vector3 generated_normal = cross(a[1] - a[0], a[2] - a[0]);
+                if (length(generated_normal) > 1e-6f) {
+                    generated_normal = normalize(generated_normal);
+                }
+                for (size_t v = 0; v < fv; v++) {
+                    normals.push_back(generated_normal);
+                }
             }
             untransformed_triangles.push_back(Triangle(vertices[i], vertices[j], vertices[k],
                 normals[i], normals[j], normals[k],

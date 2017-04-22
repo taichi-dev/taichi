@@ -75,9 +75,12 @@ class Texture:
         array2d = self.c.rasterize(res[0], res[1])
         return array2d_to_ndarray(array2d)
 
-    def show(self, title='Taichi Texture Renderer', res=(512, 512)):
+    def show(self, title='Taichi Texture Renderer', res=(512, 512), post_processor=None):
         from taichi.gui.image_viewer import show_image
-        show_image(title, self.rasterize_to_ndarray(res))
+        img = self.rasterize_to_ndarray(res)
+        if post_processor:
+            img = post_processor.process(img)
+        show_image(title, img)
 
     @staticmethod
     def create_taichi_wallpaper(n=20, scale=0.96, rotation=0):

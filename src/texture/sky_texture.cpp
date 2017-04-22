@@ -27,8 +27,6 @@ TC_NAMESPACE_BEGIN
  * Taichi integration by Yuanming Hu <yuanmhu@gmail.com>
 */
 
-// TODO: no tune mapping needed!
-
 real smoothstep(real edge0, real edge1, real x) {
     real t = clamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
     return t * t * (3.0f - 2.0f * t);
@@ -116,8 +114,9 @@ public:
         TC_LOAD_CONFIG(mie_coefficient, 0.005f);
         TC_LOAD_CONFIG(mie_directional_g, 0.8f);
         TC_LOAD_CONFIG(cameraPos, Vector3(0.0f));
-        TC_LOAD_CONFIG(sun_position, Vector3(1.0f));
-        sun_position = normalized(sun_position);
+        real theta = config.get("direction", 0.0f) * 2 * pi;
+        real phi = (config.get("height", 0.0f) - 0.5) * pi;
+        sun_position = Vector3(cos(theta) * cos(phi), sin(phi), sin(theta) * cos(phi));
     }
 
     virtual Vector4 sample(const Vector3 &coord) const override {
@@ -132,7 +131,7 @@ public:
         real luminance;
         real mieDirectionalG;
 
-        real theta_d = coord.x * 2 * pi, phi_d = (coord.y - 0.5) * pi;
+        real theta_d = coord.x * 2 * pi, phi_d = (coord.y - 0.5f) * pi;
         vWorldPosition = Vector3(cos(theta_d) * cos(phi_d), sin(phi_d), sin(theta_d) * cos(phi_d));
         vSunDirection = normalized(sun_position);
 

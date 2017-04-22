@@ -80,7 +80,7 @@ private:
         return 0.434f * c * MieConst;
     }
 
-    static const Vector3 cameraPos;
+    Vector3 cameraPos;
 
     static constexpr real n = 1.0003; // refractive index of air
     static constexpr real N = 2.545E25; // number of molecules per unit volume for air at
@@ -115,28 +115,26 @@ public:
         TC_LOAD_CONFIG(rayleigh, 2.0f);
         TC_LOAD_CONFIG(mieCoefficient, 0.005f);
         TC_LOAD_CONFIG(mieDirectionalG, 0.8f);
+        TC_LOAD_CONFIG(cameraPos, Vector3(0.0f));
+        TC_LOAD_CONFIG(sunPosition, Vector3(1.0f));
+        sunPosition = normalized(sunPosition);
     }
 
     virtual Vector4 sample(const Vector3 &coord) const override {
         // TODO: what is position?
-        Vector3 position;
-
         Vector3 vWorldPosition;
         Vector3 vSunDirection;
-        float vSunfade;
+        real vSunfade;
         Vector3 vBetaR;
         Vector3 vBetaM;
-        float vSunE;
+        real vSunE;
 
-        float luminance;
-        float mieDirectionalG;
+        real luminance;
+        real mieDirectionalG;
 
-        Vector4 worldPosition = Vector4(position, 1.0f);
-        vWorldPosition = Vector3(worldPosition);
-
-        Vector4 gl_Position = Vector4(position, 1.0f);
-
-        vSunDirection = normalize(sunPosition);
+        real theta_d = coord.x * 2 * pi, phi_d = (coord.y - 0.5) * pi;
+        vWorldPosition = Vector3(cos(theta_d) * cos(phi_d), sin(phi_d), sin(theta_d) * cos(phi_d));
+        vSunDirection = normalized(sunPosition);
 
         vSunE = sunIntensity(dot(vSunDirection, up));
 
@@ -191,9 +189,7 @@ public:
         //Vector3 color = curr * whiteScale;
 
         //Vector3 retColor = pow( color, Vector3( 1.0 / ( 1.2 + ( 1.2 * vSunfade ) ) ) );
-
         return Vector4(texColor, 1.0f);
-
     }
 };
 
@@ -214,8 +210,6 @@ constexpr real v = 4.0;
 const Vector3 SkyTexture::K = Vector3(0.686f, 0.678f, 0.666f);
 // MieConst = pi * pow( ( 2.0 * pi ) / lambda, Vector3( v - 2.0 ) ) * K
 const Vector3 SkyTexture::MieConst = Vector3(1.8399918514433978E14f, 2.7798023919660528E14f, 4.0790479543861094E14f);
-
-const Vector3 SkyTexture::cameraPos = Vector3(0.0, 0.0, 0.0);
 
 TC_IMPLEMENTATION(Texture, SkyTexture, "sky");
 

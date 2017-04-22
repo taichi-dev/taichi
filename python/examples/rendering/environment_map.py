@@ -1,4 +1,5 @@
 import math
+import time
 
 from taichi.misc.util import Vector
 from taichi.visual import *
@@ -17,10 +18,10 @@ def create_scene():
         scene.set_camera(camera)
         rep = Texture.create_taichi_wallpaper(20, rotation=0, scale=0.95)
         material = SurfaceMaterial('pbr', diffuse_map=rep.id)
-        #scene.add_mesh(Mesh('holder', material=material, translate=(0, -1, -7), scale=2))
+        scene.add_mesh(Mesh('holder', material=material, translate=(0, -1, -7), scale=2))
 
-        envmap_texture = Texture.create_taichi_wallpaper(8)
-        envmap_texture.show()
+        envmap_texture = Texture('sky', sunPosition=(0, 0.1, 1))
+        envmap_texture.show(res=(500, 500))
         envmap = EnvironmentMap('base', texture=envmap_texture.id)
         scene.set_environment_map(envmap)
     return scene

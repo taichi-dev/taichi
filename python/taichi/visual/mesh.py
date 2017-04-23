@@ -3,6 +3,7 @@ from taichi.misc.util import *
 from taichi.scoping.transform_scope import get_current_transform
 import taichi
 
+
 def map_filename(name):
     if name == 'plane':
         return taichi.geometry.create_plane((1, 1))
@@ -54,3 +55,20 @@ class Mesh:
 
     def __getattr__(self, key):
         return self.c.__getattribute__(key)
+
+
+# Creates a volumetric block centered (0, 0, 0) with edge length 2
+def create_volumetric_block(texture, res=(64, 64, 64)):
+    import taichi
+    from taichi.visual.volume_material import VolumeMaterial
+    from taichi.visual.surface_material import SurfaceMaterial
+    cur_transform = taichi.get_current_transform()
+    mesh_transform = tc_core.Matrix4(1.0).scale_s(0.495).translate(Vector(0, 0, 0))
+    vol_transform = cur_transform * tc_core.Matrix4(1.0).scale_s(1).translate(Vector(-0.5, -0.5, -0.5))
+    vol = VolumeMaterial('sdf_voxel', scattering=5, absorption=0, tex=texture,
+                         resolution=res,
+                         transform_ptr=vol_transform.get_ptr_string())
+    # material = SurfaceMaterial('diffuse', color=(1, 0, 0))
+    material = SurfaceMaterial('plain_interface')
+    material.set_internal_material(vol)
+    return Mesh('cube', material=material, transform=mesh_transform)

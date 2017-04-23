@@ -22,10 +22,19 @@ void LevelSet3D::add_sphere(Vector3 center, real radius, bool inside_out) {
 }
 
 void LevelSet3D::add_plane(real a, real b, real c, real d) {
+//    auto intersect = [&](real a, real b) {
+//        real r = 2;
+//        Vector2 u(std::max(r + a, 0.f), std::max(r + b, 0.f));
+//        return std::min(-r, std::max(a, b)) + length(u);
+//    };
     real coeff = 1.0f / sqrt(a * a + b * b + c * c);
     for (auto &ind : get_region()) {
         Vector3 sample = ind.get_pos();
         real dist = (glm::dot(sample, Vector3(a, b, c)) + d) * coeff;
+//        if (Array3D::get(ind) == INF)
+//            set(ind, dist);
+//        else
+//          set(ind, intersect(Array3D::get(ind), dist));
         set(ind, std::min(Array3D::get(ind), dist));
     }
 }

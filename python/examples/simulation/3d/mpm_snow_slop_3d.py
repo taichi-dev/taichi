@@ -71,17 +71,17 @@ if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -100, 0), base_delta_t=0.001, num_threads=8)
+    mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), base_delta_t=0.001, num_threads=8)
 
     levelset = mpm.create_levelset()
     levelset.add_plane(0, 1, 0, -1)
     levelset.add_plane(1, 1, 0, -1.7)
     levelset.global_increase(1)
     tex = Texture('levelset3d', levelset=levelset, bounds=(0, 0.04 / levelset.get_delta_x())) * 6
-    tex = Texture('bound', tex=tex, axis=2, bounds=(0.45, 0.55), outside_val=(0, 0, 0))
-    tex = Texture('bound', tex=tex, axis=0, bounds=(0.05, 0.3), outside_val=(0, 0, 0))
+    tex = Texture('bound', tex=tex, axis=2, bounds=(0.33, 0.66), outside_val=(0, 0, 0))
+    tex = Texture('bound', tex=tex, axis=0, bounds=(0.05, 1.0), outside_val=(0, 0, 0))
     mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), compression=1.09)
-    tex_ball = Texture('sphere', center=(0.12, 0.40, 0.5), radius=0.1) * 10
+    tex_ball = Texture('sphere', center=(0.12, 0.40, 0.5), radius=0.06) * 10
     mpm.add_particles(density_tex=tex_ball.id, initial_velocity=(0, 0, 0), compression=0.95)
 
     levelset.set_friction(1)

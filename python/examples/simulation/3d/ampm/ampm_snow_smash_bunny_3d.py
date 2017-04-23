@@ -12,7 +12,7 @@ gi_render = False
 step_number = 400
 # step_number = 1
 # total_frames = 1
-grid_downsample = 2
+grid_downsample = 4
 output_downsample = 1
 render_epoch = 20
 
@@ -73,28 +73,9 @@ if __name__ == '__main__':
 
     mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), async=True, num_threads=8, strength_dt_mul=4)
 
-    levelset = mpm.create_levelset()
-    height_ = 0.0
-    ground_ = 30.0
-    half_ = (180.0 - ground_) / 2
-    norm_ = 90.0 - ground_
-    cross_x = 0.75 + height_ / math.tan(half_ / 180 * math.pi)
-    cross_y = 0 + height_
-    cos_ = math.cos(norm_ / 180 * math.pi)
-    sin_ = math.sin(norm_ / 180 * math.pi)
-    levelset.add_plane(0, 1, 0, -cross_y)
-    levelset.add_plane(cos_, sin_, 0, -cross_x * cos_ - cross_y * sin_)
-    levelset.global_increase(height_)
-
-    tex = Texture('levelset3d', levelset=levelset, bounds=(0, 0.06 / levelset.get_delta_x())) * 2
-    tex = Texture('bound', tex=tex, axis=2, bounds=(0.33, 0.66), outside_val=(0, 0, 0))
-    tex = Texture('bound', tex=tex, axis=0, bounds=(0.05, 1.0), outside_val=(0, 0, 0))
-    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), compression=1.15, lambda_0=1000, mu_0=1000)
-    tex_ball = Texture('sphere', center=(0.11, 0.52, 0.5), radius=0.08) * 6
-    mpm.add_particles(density_tex=tex_ball.id, initial_velocity=(0, 0, 0), compression=0.9)
-
-    levelset.set_friction(1)
-    mpm.set_levelset(levelset, False)
+    tex = Texture('mesh', resolution=resolution, filename=tc.get_asset_path('meshes/bunny.obj')) * 8
+    tex = tex.zoom((0.5, 0.5, 0.5), (0.5, 0.5, 0.5), False)
+    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0))
 
     t = 0
     for i in range(step_number):

@@ -6,14 +6,15 @@ from taichi.misc.util import Vector
 from taichi.visual import *
 from taichi.visual.post_process import *
 from taichi.visual.texture import Texture
+from colorsys import hsv_to_rgb
 import taichi as tc
 
-gi_render = False
+gi_render = True
 step_number = 400
 # step_number = 1
 # total_frames = 1
-grid_downsample = 4
-output_downsample = 1
+grid_downsample = 2
+output_downsample = 2
 render_epoch = 20
 
 
@@ -36,20 +37,34 @@ def create_mpm_sand_block(fn):
 
 def create_sand_scene(frame, d, t):
     downsample = output_downsample
-    width, height = 540 / downsample, 540 / downsample
-    camera = Camera('thinlens', width=width, height=height, fov=75,
-                    origin=(0, 1, 4), look_at=(0.0, -0.9, 0.0), up=(0, 1, 0), aperture=0.01)
+    width, height = 1280 / downsample, 720 / downsample
+    camera = Camera('pinhole', width=width, height=height, fov=30,
+                    origin=(0, 0, 10), look_at=(0, 0, 0), up=(0, 1, 0))
+    # camera = Camera('thinlens', width=width, height=height, fov=75,
+    #                 origin=(0, 1, 4), look_at=(0.0, -0.9, 0.0), up=(0, 1, 0), aperture=0.01)
 
     scene = Scene()
     with scene:
         scene.set_camera(camera)
-        rep = Texture.create_taichi_wallpaper(10, rotation=0, scale=0.95) * Texture('const', value=(0.7, 0.5, 0.5))
-        material = SurfaceMaterial('pbr', diffuse_map=rep)
-        scene.add_mesh(Mesh('holder', material=material, translate=(0, -1, -6), scale=2))
+        tex = Texture.create_taichi_wallpaper(20, rotation=0, scale=0.95) * 0.9
 
-        mesh = Mesh('plane', SurfaceMaterial('emissive', color=(1, 1, 1)),
-                    translate=(1.0, 3.0, -1), scale=(0.1, 0.1, 0.1), rotation=(180, 0, 0))
+        mesh = tc.Mesh('plane', tc.SurfaceMaterial('emissive', color=(10000, 10000, 10000)),
+                       translate=(30, 20, 30), scale=3, rotation=(0, 0, 180))
         scene.add_mesh(mesh)
+
+        with tc.transform_scope(rotation=(0, 0, 0), scale=0.8):
+            material = SurfaceMaterial('diffuse', color=(1, 0.7, 1), roughness_map=tex.id, f0=1)
+            scene.add_mesh(Mesh('cube', material=material, translate=(0, -1, 0), scale=(2, 0.02, 1)))
+            for i in range(7):
+                material = SurfaceMaterial('diffuse', color=hsv_to_rgb(i * 0.2, 0.5, 1.0), roughness_map=tex.id, f0=1)
+                scene.add_mesh(Mesh('cube', material=material, translate=(2, 0.3 * (i - 3), 0.2), scale=(0.01, 0.10, 0.5)))
+            material = SurfaceMaterial('diffuse', color=(1, 1, 1), roughness_map=tex.id, f0=1)
+            scene.add_mesh(Mesh('cube', material=material, translate=(0, 0, -1), scale=(1.9, 0.9, 0.03)))
+
+        envmap_texture = Texture('spherical_gradient', inside_val=(10, 10, 10, 10), outside_val=(1, 1, 1, 0),
+                                 angle=10, sharpness=20)
+        envmap = EnvironmentMap('base', texture=envmap_texture.id, res=(1024, 1024))
+        scene.set_environment_map(envmap)
 
         # Change this line to your particle output path pls.
         # fn = r'../sand-sim/particles%05d.bin' % frame
@@ -74,7 +89,12 @@ if __name__ == '__main__':
     mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), async=True, num_threads=8, strength_dt_mul=4)
 
     tex = Texture('mesh', resolution=resolution, filename=tc.get_asset_path('meshes/bunny.obj')) * 8
-    tex = tex.zoom((0.5, 0.5, 0.5), (0.5, 0.5, 0.5), False)
+
+    #bug1
+    tex = tex.zoom((0.3, 0.3, 0.3), (0.5, 0.6, 0.5), False)
+    #bug2
+    # tex = tex.zoom((0.3, 0.3, 0.3), (0.5, 0.0, 0.5), False)
+
     mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0))
 
     t = 0

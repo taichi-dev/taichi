@@ -39,6 +39,30 @@ void LevelSet3D::add_plane(real a, real b, real c, real d) {
     }
 }
 
+void LevelSet3D::add_cuboid(Vector3 lower_boundry, Vector3 upper_boundry, bool inside_out) {
+    for (auto &ind : get_region()) {
+        Vector3 sample = ind.get_pos();
+        bool in_cuboid = true;
+        for (int i = 0; i < 3; ++i) {
+            if (!(lower_boundry[i] <= sample[i] && sample[i] <= upper_boundry[i]))
+                in_cuboid = false;
+        }
+        real dist = INF;
+        if (in_cuboid) {
+            for (int i = 0; i < 3; ++i) {
+                dist = std::min(dist, std::min(upper_boundry[i] - sample[i], sample[i] - lower_boundry[i]));
+            }
+        } else {
+            Vector3 nearest_p;
+            for (int i = 0; i < 3; ++i) {
+                nearest_p[i] = clamp(sample[i], lower_boundry[i], upper_boundry[i]);
+            }
+            dist = -length(nearest_p - sample);
+        }
+        set(ind, inside_out ? dist : -dist);
+    }
+}
+
 void LevelSet3D::global_increase(real delta) {
     for (auto &ind : get_region()) {
         set(ind, Array3D::get(ind) + delta);

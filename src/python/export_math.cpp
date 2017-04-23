@@ -192,6 +192,7 @@ void export_math(py::module &m) {
             .def("set", static_cast<void (LevelSet3D::*)(int, int, int, const real &)>(&LevelSet3D::set))
             .def("add_sphere", &LevelSet3D::add_sphere)
             .def("add_plane", &LevelSet3D::add_plane)
+            .def("add_cuboid", &LevelSet3D::add_cuboid)
             .def("global_increase", &LevelSet3D::global_increase)
             .def("get_gradient", &LevelSet3D::get_gradient)
             .def("rasterize", &LevelSet3D::rasterize)

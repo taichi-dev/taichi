@@ -47,6 +47,8 @@ public:
 
     void add_plane(real a, real b, real c, real d);
 
+    void add_cuboid(Vector3 lower_boundry, Vector3 upper_boundry, bool inside_out = true);
+
     void global_increase(real delta);
 
     Vector3 get_gradient(const Vector3 &pos) const; // Note this is not normalized!

@@ -20,6 +20,13 @@ class LevelSet3D:
     def add_plane(self, a, b, c, d):
         self.levelset.add_plane(a, b, c, d / self.delta_x)
 
+    def add_cuboid(self, lower_boundry, upper_boundry, inside_out=False):
+        self.levelset.add_cuboid(
+            Vector(lower_boundry[0] / self.delta_x, lower_boundry[1] / self.delta_x, lower_boundry[2] / self.delta_x),
+            Vector(upper_boundry[0] / self.delta_x, upper_boundry[1] / self.delta_x, upper_boundry[2] / self.delta_x),
+            inside_out
+        )
+
     def global_increase(self, delta):
         self.levelset.global_increase(delta / self.delta_x)
 

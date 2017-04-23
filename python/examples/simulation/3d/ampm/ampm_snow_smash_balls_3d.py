@@ -9,13 +9,13 @@ from taichi.visual.texture import Texture
 from colorsys import hsv_to_rgb
 import taichi as tc
 
-gi_render = False
+gi_render = True
 step_number = 400
 # step_number = 1
 # total_frames = 1
-grid_downsample = 4
+grid_downsample = 2
 output_downsample = 2
-render_epoch = 5
+render_epoch = 100
 
 
 def create_mpm_sand_block(fn):
@@ -32,28 +32,28 @@ def create_scene(frame, d, t):
     downsample = output_downsample
     width, height = 1280 / downsample, 720 / downsample
     camera = Camera('pinhole', width=width, height=height, fov=30,
-                    origin=(0, 0, 10), look_at=(0, 0, 0), up=(0, 1, 0))
+                    origin=(2, 4, 4), look_at=(0, 0, 0), up=(0, 1, 0))
 
     scene = Scene()
     with scene:
         scene.set_camera(camera)
 
-        mesh = tc.Mesh('plane', tc.SurfaceMaterial('emissive', color=(10000, 10000, 10000)),
+        mesh = tc.Mesh('plane', tc.SurfaceMaterial('emissive', color=(50000, 50000, 100000)),
                        translate=(30, 20, 30), scale=3, rotation=(0, 0, 180))
         scene.add_mesh(mesh)
 
-        with tc.transform_scope(rotation=(0, 0, 0), scale=1):
-            material = SurfaceMaterial('diffuse', color=(1, 1.0, 1), f0=1)
-            scene.add_mesh(Mesh('cube', material=material, translate=(0, -1, 0), scale=(2, 0.02, 1)))
-            for i in range(7):
-                material = SurfaceMaterial('diffuse', color=hsv_to_rgb(i * 0.2, 0.4, 0.7))
-                scene.add_mesh(
-                    Mesh('cube', material=material, translate=(2, 0.3 * (i - 3), 0.2), scale=(0.01, 0.10, 0.5)))
-
-            tex = (1 - Texture('taichi', scale=0.92, rotation=0).zoom(zoom=(0.1, 0.2, 0.1), center=(0.02, 0.96, 0),
-                                                                      repeat=False)) * (-0.9, -0.5, -0.0) + 1
-            material = SurfaceMaterial('diffuse', color_map=tex.id)
-            scene.add_mesh(Mesh('plane', material=material, translate=(0, 0, -1), scale=(2, 1, 1), rotation=(90, 0, 0)))
+        # with tc.transform_scope(rotation=(0, 0, 0), scale=1):
+        #     material = SurfaceMaterial('diffuse', color=(1, 1.0, 1), f0=1)
+        #     scene.add_mesh(Mesh('cube', material=material, translate=(0, -1, 0), scale=(2, 0.02, 1)))
+        #     for i in range(7):
+        #         material = SurfaceMaterial('diffuse', color=hsv_to_rgb(i * 0.2, 0.4, 0.7))
+        #         scene.add_mesh(
+        #             Mesh('cube', material=material, translate=(2, 0.3 * (i - 3), 0.2), scale=(0.01, 0.10, 0.5)))
+        #
+        #     tex = (1 - Texture('taichi', scale=0.92, rotation=0).zoom(zoom=(0.1, 0.2, 0.1), center=(0.02, 0.96, 0),
+        #                                                               repeat=False)) * (-0.9, -0.5, -0.0) + 1
+        #     material = SurfaceMaterial('diffuse', color_map=tex.id)
+        #     scene.add_mesh(Mesh('plane', material=material, translate=(0, 0, -1), scale=(2, 1, 1), rotation=(90, 0, 0)))
 
         envmap_texture = Texture('spherical_gradient', inside_val=(10, 10, 10, 10), outside_val=(1, 1, 1, 0),
                                  angle=10, sharpness=20)
@@ -78,18 +78,27 @@ if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), async=True, num_threads=8, strength_dt_mul=4)
+    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), async=True, num_threads=8, strength_dt_mul=4)
 
-    tex = Texture('mesh', resolution=resolution, filename=tc.get_asset_path('meshes/bunny.obj')) * 8
-    tex = tex.zoom((0.4, 0.4, 0.4), (0.5, 0.5, 0.5), False)
-    tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
+    # real theta_c = 2.5e-2f, theta_s = 7.5e-3f;
 
-    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 100))
+    tex_ball1 = Texture('sphere', center=(0.1, 0.5, 0.5), radius=0.07) * 1
+    tex_ball1 = tex_ball1 * Texture('perlin') * 10
+    mpm.add_particles(density_tex=tex_ball1.id, initial_velocity=(200, 5, 0), compression=1.0, theta_s=0.015)
+
+    tex_ball2 = Texture('sphere', center=(0.9, 0.56, 0.5), radius=0.07) * 1
+    tex_ball2 = tex_ball2 * Texture('perlin') * 10
+    mpm.add_particles(density_tex=tex_ball2.id, initial_velocity=(-200, 5, 0), compression=1.0, theta_s=0.015)
+
+    # levelset = mpm.create_levelset()
+    # levelset.add_cuboid((0.4, 0.4, 0.4), (0.6, 0.6, 0.6))
+    # tex = Texture('levelset3d', levelset=levelset, bounds=(0, 0.06 / levelset.get_delta_x())) * 2
+    # mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), compression=0.9)
 
     t = 0
     for i in range(step_number):
         print 'process(%d/%d)' % (i, step_number)
-        mpm.step(0.01)
+        mpm.step(0.00)
         t += 0.01
         if gi_render:
             d = mpm.get_directory()

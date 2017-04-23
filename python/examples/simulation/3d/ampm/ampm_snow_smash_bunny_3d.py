@@ -9,13 +9,13 @@ from taichi.visual.texture import Texture
 from colorsys import hsv_to_rgb
 import taichi as tc
 
-gi_render = True
+gi_render = False
 step_number = 400
 # step_number = 1
 # total_frames = 1
-grid_downsample = 2
+grid_downsample = 4
 output_downsample = 2
-render_epoch = 50
+render_epoch = 5
 
 
 def create_mpm_sand_block(fn):
@@ -81,14 +81,16 @@ if __name__ == '__main__':
     mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), async=True, num_threads=8, strength_dt_mul=4)
 
     tex = Texture('mesh', resolution=resolution, filename=tc.get_asset_path('meshes/bunny.obj')) * 8
+    tex = tex.zoom((0.4, 0.4, 0.4), (0.5, 0.5, 0.5), False)
+    tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
 
-    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0))
+    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 100))
 
     t = 0
     for i in range(step_number):
         print 'process(%d/%d)' % (i, step_number)
-        mpm.step(0.00)
-        t += 0.03
+        mpm.step(0.01)
+        t += 0.01
         if gi_render:
             d = mpm.get_directory()
             if i % 10 == 0:

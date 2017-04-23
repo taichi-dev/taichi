@@ -9,12 +9,12 @@ from taichi.visual.texture import Texture
 from colorsys import hsv_to_rgb
 import taichi as tc
 
-gi_render = False
+gi_render = True
 step_number = 400
 # step_number = 1
 # total_frames = 1
 grid_downsample = 4
-output_downsample = 2
+output_downsample = 4
 render_epoch = 5
 
 
@@ -45,6 +45,10 @@ def create_scene(frame, d, t):
         with tc.transform_scope(rotation=(0, 0, 0), scale=1):
             material = SurfaceMaterial('diffuse', color=(1, 1.0, 1), f0=1)
             scene.add_mesh(Mesh('cube', material=material, translate=(0, -1, 0), scale=(2, 0.02, 1)))
+
+            material = SurfaceMaterial('diffuse', color=(1, 1.0, 1), f0=1)
+            scene.add_mesh(Mesh('cube', material=material, translate=(0, t * 2 - 1, 0), scale=(2, 0.02, 1)))
+
             for i in range(7):
                 material = SurfaceMaterial('diffuse', color=hsv_to_rgb(i * 0.2, 0.4, 0.7))
                 scene.add_mesh(
@@ -78,17 +82,20 @@ if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -100, 0), async=True, num_threads=8, strength_dt_mul=4)
+    mpm = MPM3(resolution=resolution, gravity=(0, 0, 0), async=True, num_threads=8, strength_dt_mul=4)
 
-    tex = Texture('mesh', resolution=resolution, filename=tc.get_asset_path('meshes/bunny.obj')) * 8
-    tex = tex.zoom((0.4, 0.4, 0.4), (0.5, 0.5, 0.5), False)
-    tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
+    tex = Texture('mesh', resolution=resolution, filename=tc.get_asset_path('meshes/armadillo.obj')) * 8
+    tex = tex.zoom((0.5, 0.5, 0.5), (0, 0, 0.5), False)
+    tex = Texture('rotate', tex=tex, rotate_axis=1, rotate_times=2)
+    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0))
 
-    levelset = mpm.create_levelset()
-    levelset.add_cuboid((0.1, 0.1, 0.1), (0.9, 0.9, 0.9), True)
-    mpm.set_levelset(levelset)
-
-    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 100))
+    # Dynamic Levelset
+    def levelset_generator(t):
+        levelset = mpm.create_levelset()
+        levelset.add_plane(0, 1, 0, -t)
+        # levelset.add_sphere(Vector(0.5, 0.2, 0.5), t, False)
+        return levelset
+    mpm.set_levelset(levelset_generator, True)
 
     t = 0
     for i in range(step_number):

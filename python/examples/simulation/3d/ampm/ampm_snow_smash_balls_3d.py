@@ -9,7 +9,7 @@ from taichi.visual.texture import Texture
 from colorsys import hsv_to_rgb
 import taichi as tc
 
-gi_render = True
+gi_render = False
 step_number = 400
 # step_number = 1
 # total_frames = 1
@@ -78,7 +78,8 @@ if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), async=True, num_threads=8, strength_dt_mul=4)
+    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), async=True, num_threads=8, strength_dt_mul=4,
+               affine_damping=1000)
 
     # real theta_c = 2.5e-2f, theta_s = 7.5e-3f;
 
@@ -98,7 +99,7 @@ if __name__ == '__main__':
     t = 0
     for i in range(step_number):
         print 'process(%d/%d)' % (i, step_number)
-        mpm.step(0.00)
+        mpm.step(0.01)
         t += 0.01
         if gi_render:
             d = mpm.get_directory()

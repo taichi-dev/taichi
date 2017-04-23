@@ -60,6 +60,7 @@ void MPM3D::initialize(const Config &config) {
     base_delta_t = config.get("base_delta_t", 1e-6f);
     cfl = config.get("cfl", 1.0f);
     strength_dt_mul = config.get("strength_dt_mul", 1.0f);
+    TC_LOAD_CONFIG(affine_damping, 0.0f);
     if (async) {
         maximum_delta_t = config.get("maximum_delta_t", 1e-1f);
     } else {
@@ -146,7 +147,6 @@ void MPM3D::rasterize() {
 
 void MPM3D::resample() {
     real alpha_delta_t = 1;
-    // what is apic in 2D
     if (apic)
         alpha_delta_t = 0;
     parallel_for_each_active_particle([&](MPM3Particle &p) {
@@ -177,7 +177,9 @@ void MPM3D::resample() {
         if (count != 64 || !apic) {
             b = Matrix(0);
         }
-        p.apic_b = b;
+        // We should use an std::exp here, but it is too slow...
+        real damping = std::max(0.0f, 1.0f - delta_t * affine_damping);
+        p.apic_b = b * damping;
         cdg = Matrix(1) + delta_t * cdg;
         p.v = (1 - alpha_delta_t) * v + alpha_delta_t * (v - bv + p.v);
         Matrix dg = cdg * p.dg_e * p.dg_p;

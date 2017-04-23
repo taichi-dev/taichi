@@ -49,6 +49,7 @@ public:
     bool apic;
 
     bool async;
+    real affine_damping;
     real base_delta_t;
     real maximum_delta_t;
     real cfl;

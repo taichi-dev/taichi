@@ -13,7 +13,7 @@ gi_render = True
 step_number = 400
 # step_number = 1
 # total_frames = 1
-grid_downsample = 2
+grid_downsample = 1
 output_downsample = 2
 render_epoch = 50
 
@@ -24,33 +24,36 @@ def create_mpm_sand_block(fn):
     downsample = grid_downsample
     tex = Texture.from_render_particles((255 / downsample, 255 / downsample, 255 / downsample), particles) * 5
     # tex = Texture('sphere', center=(0.5, 0.5, 0.5), radius=0.5)
-    with tc.transform_scope(scale=2):
+    with tc.transform_scope(scale=4):
         return tc.create_volumetric_block(tex, res=(128, 128, 128))
 
 
 def create_scene(frame, d, t):
     downsample = output_downsample
     width, height = 1280 / downsample, 720 / downsample
-    camera = Camera('pinhole', width=width, height=height, fov=35,
-                    origin=(4, 1.5, 5), look_at=(0, -0.5, -1), up=(0, 1, 0))
+    camera = Camera('pinhole', width=width, height=height, fov=30,
+                    origin=(0, 0, 10), look_at=(0, 0, 0), up=(0, 1, 0))
 
     scene = Scene()
     with scene:
         scene.set_camera(camera)
 
-        mesh = tc.Mesh('plane', tc.SurfaceMaterial('emissive', color=(30000, 40000, 60000)),
-                       translate=(-30, 20, 30), scale=3, rotation=(0, 0, 180))
+        mesh = tc.Mesh('plane', tc.SurfaceMaterial('emissive', color=(10000, 10000, 10000)),
+                       translate=(30, 20, 30), scale=3, rotation=(0, 0, 90))
         scene.add_mesh(mesh)
 
         with tc.transform_scope(rotation=(0, 0, 0), scale=1):
-            material = SurfaceMaterial('diffuse', color=(0.24, 0.18, 0.12), f0=1)
-            scene.add_mesh(Mesh('cube', material=material, translate=(0, -1, 0), scale=(4, 0.02, 4)))
+            material = SurfaceMaterial('diffuse', color=(1, 1.0, 1), f0=1)
+            scene.add_mesh(Mesh('cube', material=material, translate=(0, -1, 0), scale=(2, 0.02, 1)))
+            for i in range(7):
+                material = SurfaceMaterial('diffuse', color=hsv_to_rgb(i * 0.2, 0.4, 0.7))
+                scene.add_mesh(
+                    Mesh('cube', material=material, translate=(2, 0.3 * (i - 3), 0.2), scale=(0.01, 0.10, 0.5)))
 
             tex = (1 - Texture('taichi', scale=0.92, rotation=0).zoom(zoom=(0.1, 0.2, 0.1), center=(0.02, 0.96, 0),
                                                                       repeat=False)) * (-0.9, -0.5, -0.0) + 1
-            # material = SurfaceMaterial('diffuse', color_map=tex.id)
-            material = SurfaceMaterial('diffuse', color=(0.24, 0.18, 0.12), f0=1)
-            scene.add_mesh(Mesh('plane', material=material, translate=(0, 0, -1), scale=(4, 1, 4), rotation=(90, 0, 0)))
+            material = SurfaceMaterial('diffuse', color_map=tex.id)
+            scene.add_mesh(Mesh('plane', material=material, translate=(0, 0, -1), scale=(2, 1, 1), rotation=(90, 0, 0)))
 
         envmap_texture = Texture('spherical_gradient', inside_val=(10, 10, 10, 10), outside_val=(1, 1, 1, 0),
                                  angle=10, sharpness=20)
@@ -77,13 +80,13 @@ if __name__ == '__main__':
 
     mpm = MPM3(resolution=resolution, gravity=(0, -100, 0), async=True, num_threads=8, strength_dt_mul=4)
 
-    tex = Texture('mesh', resolution=resolution, filename=tc.get_asset_path('meshes/bunny.obj')) * 8
-    tex = tex.zoom((0.4, 0.4, 0.4), (0.5, 0.5, 0.5), False)
-    tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
-    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, -50))
+    tex = Texture('image', filename=tc.get_asset_path('textures/taichi_words.png')) * 8
+    tex = Texture('bound', tex=tex, axis=2, bounds=(0.475, 0.525), outside_val=(0, 0, 0))
+    tex = tex.zoom((1, 0.25, 0.5), (0.5, 0.5, 0.5), False)
+    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, -100, 0))
 
     levelset = mpm.create_levelset()
-    levelset.add_cuboid((0.01, 0.01, 0.01), (0.99, 0.99, 0.99), True)
+    levelset.add_cuboid((0.1, 0.25, 0.1), (0.9, 0.75, 0.9), True)
     mpm.set_levelset(levelset)
 
     t = 0
@@ -93,7 +96,7 @@ if __name__ == '__main__':
         t += 0.01
         if gi_render:
             d = mpm.get_directory()
-            if i % 10 == 0:
+            if i % 20 == 0:
                 render_frame(i, d, t)
                 pass
     mpm.make_video()

@@ -57,9 +57,19 @@ public:
         image.load(config.get_string("filename"));
     }
 
+    bool inside(const Vector3 &coord) const {
+        return
+            0 <= coord.x && coord.x <= 1.0 &&
+            0 <= coord.y && coord.y <= 1.0 &&
+            0 <= coord.z && coord.z <= 1.0;
+    }
+
     virtual Vector4 sample(const Vector3 &coord_) const override {
         Vector2 coord(coord_.x - floor(coord_.x), coord_.y - floor(coord_.y));
-        return image.sample_relative_coord(coord);
+        if (inside(coord_))
+            return image.sample_relative_coord(coord);
+        else
+            return Vector4(0);
     }
 };
 

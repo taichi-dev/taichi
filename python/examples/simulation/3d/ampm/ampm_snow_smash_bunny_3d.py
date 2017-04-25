@@ -78,7 +78,7 @@ if __name__ == '__main__':
     mpm = MPM3(resolution=resolution, gravity=(0, -50, 0), async=True, num_threads=8, strength_dt_mul=4)
 
     tex = Texture('mesh', resolution=resolution, filename=tc.get_asset_path('meshes/bunny.obj'))
-    tex = tex.zoom((0.4, 0.4, 0.4), (0.5, 0.5, 0.5), False)
+    tex = tex.zoom((0.35, 0.35, 0.35), (0.5, 0.5, 0.5), False)
     tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
     tex = tex * (Texture('perlin').zoom((10, 10, 10)) * 6 + 2)
     mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, -50))

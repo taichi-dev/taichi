@@ -6,26 +6,26 @@ if __name__ == '__main__':
     scale = 256
     res = (scale, scale)
     frame_dt = 1e-3
-    async = False
+    async = True
     bullet = True
     gravity = (0, 0)
     if async:
-        simulator = MPMSimulator(res=res, simulation_time=0.03, frame_dt=frame_dt, base_delta_t=1e-6, async=True,
+        simulator = MPMSimulator(res=res, simulation_time=0.3, frame_dt=frame_dt, base_delta_t=1e-7, async=True,
                                  maximum_delta_t=2e-1, debug_input=(128, 7, 0, 0), cfl=0.5, gravity=gravity,
-                                 show_limits=False)
+                                 show_limits=True, strength_dt_mul=10)
     else:
-        simulator = MPMSimulator(res=res, simulation_time=0.03, frame_dt=frame_dt, base_delta_t=5e-6, async=False,
+        simulator = MPMSimulator(res=res, simulation_time=0.3, frame_dt=frame_dt, base_delta_t=5e-6, async=False,
                                  maximum_delta_t=1e-1, debug_input=(1024, 4, 0, 0), gravity=gravity)
 
 
     def event(s):
         if bullet:
-            s.add_particles_sphere(Vector(0.4, 0.5), 0.03, 'ep',
+            s.add_particles_sphere(Vector(0.2, 0.5), 0.03, 'ep',
                                    compression=0.2, velocity=Vector(20, 0), lambda_0=1e10, mu_0=1e10,
                                    theta_c=1, theta_s=1)
 
-        center_x, center_y = 0.5, 0.5
-        w, h = 0.05, 0.35
+        center_x, center_y = 0.7, 0.5
+        w, h = 0.15, 0.35
         polygon = [
             Vector(center_x - w, center_y - h),
             Vector(center_x + w, center_y - h),

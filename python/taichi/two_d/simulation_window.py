@@ -17,7 +17,7 @@ def normalized_color_255(*args):
 
 class SimulationWindow(pyglet.window.Window):
     def __init__(self, max_side, simulator, color_scheme, levelset_supersampling=2, show_grid=False, show_images=True,
-                 rescale=True, video_framerate=24, video_output=True, substep=False, need_press=False):
+                 rescale=True, video_framerate=24, video_output=True, substep=False, need_press=False, show_stat=True):
         if rescale:
             scale = min(1.0 * max_side / simulator.res[0], 1.0 * max_side / simulator.res[1])
             width = int(round(scale * simulator.res[0]))
@@ -42,6 +42,7 @@ class SimulationWindow(pyglet.window.Window):
         self.quit_pressed = False
         self.output_directory = os.path.join(get_output_directory(), self.task_id)
         self.cpu_time = 0
+        self.show_stat = show_stat
         os.mkdir(self.output_directory)
         self.substep = substep
         self.video_output = video_output
@@ -114,27 +115,28 @@ class SimulationWindow(pyglet.window.Window):
             for img in foreground_images:
                 img.blit(0, 0, 0, self.width, self.height)
 
-        label = pyglet.text.Label('sim. t = %.5f' % (self.simulator.get_current_time()),
-                                  font_name='Rockwell',
-                                  font_size=12,
-                                  x=10, y=20,
-                                  anchor_x='left', anchor_y='top')
-        label.color = self.color_scheme['label']
-        label.draw()
-        label = pyglet.text.Label('cpu = %.5f' % self.cpu_time,
-                                  font_name='Rockwell',
-                                  font_size=12,
-                                  x=10, y=40,
-                                  anchor_x='left', anchor_y='top')
-        label.color = self.color_scheme['label']
-        label.draw()
-        label = pyglet.text.Label('cpu/frame = %.5f' % (self.cpu_time / (1 + self.frame_count)),
-                                  font_name='Rockwell',
-                                  font_size=12,
-                                  x=10, y=60,
-                                  anchor_x='left', anchor_y='top')
-        label.color = self.color_scheme['label']
-        label.draw()
+        if self.show_stat:
+            label = pyglet.text.Label('t = %.5f' % (self.simulator.get_current_time()),
+                                      font_name='Rockwell',
+                                      font_size=12,
+                                      x=10, y=20,
+                                      anchor_x='left', anchor_y='top')
+            label.color = self.color_scheme['label']
+            label.draw()
+            label = pyglet.text.Label('total time = %.2fs' % self.cpu_time,
+                                      font_name='Rockwell',
+                                      font_size=12,
+                                      x=10, y=40,
+                                      anchor_x='left', anchor_y='top')
+            label.color = self.color_scheme['label']
+            label.draw()
+            label = pyglet.text.Label('per frame = %.3fs' % (self.cpu_time / (1 + self.frame_count)),
+                                      font_name='Rockwell',
+                                      font_size=12,
+                                      x=10, y=60,
+                                      anchor_x='left', anchor_y='top')
+            label.color = self.color_scheme['label']
+            label.draw()
 
     def render_grid(self):
         glMatrixMode(GL_MODELVIEW)
@@ -183,5 +185,6 @@ class SimulationWindow(pyglet.window.Window):
                 color = self.color_scheme['particles']
             for i in range(4):
                 colors.append(color[i])
+        print "#part.", len(positions)
         pyglet.graphics.draw(len(particles), gl.GL_POINTS, ('v2f', positions), ('c4B', colors))
         glPopMatrix()

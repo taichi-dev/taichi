@@ -99,7 +99,7 @@ if __name__ == '__main__':
     tex = tex * (Texture('perlin').zoom((10, 10, 10)) * 6 + 2)
     # tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
     # tex = Texture('rotate', tex=tex, rotate_axis=2, rotate_times=1)
-    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0))
+    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), theta_c=1, theta_s=1)
 
     # Dynamic Levelset
     def levelset_generator(t):

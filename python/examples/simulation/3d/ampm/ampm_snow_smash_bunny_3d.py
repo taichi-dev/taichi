@@ -9,8 +9,8 @@ from taichi.visual.texture import Texture
 from colorsys import hsv_to_rgb
 import taichi as tc
 
-gi_render = True
-step_number = 400
+gi_render = False
+step_number = 10000
 # step_number = 1
 # total_frames = 1
 grid_downsample = 2
@@ -75,11 +75,13 @@ if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -100, 0), async=True, num_threads=8, strength_dt_mul=4)
+    mpm = MPM3(resolution=resolution, gravity=(0, -50, 0), async=False,
+               base_delta_t=0.0002, num_threads=8, strength_dt_mul=4)
 
-    tex = Texture('mesh', resolution=resolution, filename=tc.get_asset_path('meshes/bunny.obj')) * 8
+    tex = Texture('mesh', resolution=resolution, filename=tc.get_asset_path('meshes/bunny.obj'))
     tex = tex.zoom((0.4, 0.4, 0.4), (0.5, 0.5, 0.5), False)
     tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
+    tex = tex * (Texture('perlin').zoom((10, 10, 10)) * 6 + 2)
     mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, -50))
 
     levelset = mpm.create_levelset()

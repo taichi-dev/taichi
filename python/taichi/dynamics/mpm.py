@@ -30,8 +30,10 @@ class MPM3:
         self.frame = 0
 
         dummy_levelset = self.create_levelset()
+
         def dummy_levelset_generator(_):
             return dummy_levelset
+
         self.levelset_generator = dummy_levelset_generator
 
     def add_particles(self, **kwargs):
@@ -54,7 +56,7 @@ class MPM3:
     def get_current_time(self):
         return self.c.get_current_time()
 
-    def step(self, step_t):
+    def step(self, step_t, camera=None):
         t = self.c.get_current_time()
         print 'Simulation time:', t
         T = time.time()
@@ -67,9 +69,10 @@ class MPM3:
         particles = self.c.get_render_particles()
         particles.write(self.directory + '/particles%05d.bin' % self.frame)
         res = map(float, self.resolution)
-        camera = Camera('pinhole', origin=(0, res[1] * 0.4, res[2] * 1.4),
-                        look_at=(0, -res[1] * 0.5, 0), up=(0, 1, 0), fov=90,
-                        width=10, height=10)
+        if not camera:
+            camera = Camera('pinhole', origin=(0, res[1] * 0.4, res[2] * 1.4),
+                            look_at=(0, -res[1] * 0.5, 0), up=(0, 1, 0), fov=90,
+                            width=10, height=10)
         self.particle_renderer.set_camera(camera)
         self.particle_renderer.render(image_buffer, particles)
         img = image_buffer_to_ndarray(image_buffer)

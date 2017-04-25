@@ -9,13 +9,13 @@ from taichi.visual.texture import Texture
 from colorsys import hsv_to_rgb
 import taichi as tc
 
-gi_render = False
-step_number = 400
+gi_render = True
+step_number = 10000
 # step_number = 1
 # total_frames = 1
-grid_downsample = 2
+grid_downsample = 4
 output_downsample = 2
-render_epoch = 200
+render_epoch = 60
 
 
 def create_mpm_sand_block(fn):
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), async=True, num_threads=8, strength_dt_mul=4)
+    mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=True, num_threads=8, strength_dt_mul=4)
     # mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), async=False, num_threads=8, strength_dt_mul=4, base_delta_t=0.001)
 
     levelset = mpm.create_levelset()
@@ -96,11 +96,14 @@ if __name__ == '__main__':
     t = 0
     for i in range(step_number):
         print 'process(%d/%d)' % (i, step_number)
-        mpm.step(0.03)
-        t += 0.03
+        camera = Camera('pinhole', origin=(resolution[0] * 1.08, resolution[1] * -0.1, resolution[2] * 1.12),
+                        look_at=(0, -resolution[1] * 0.5, 0), up=(0, 1, 0), fov=90,
+                        width=10, height=10)
+        mpm.step(0.01, camera=camera)
+        t += 0.01
         if gi_render:
             d = mpm.get_directory()
-            if i % 10 == 0:
+            if i % 5 == 0:
                 render_frame(i, d, t)
                 pass
     mpm.make_video()

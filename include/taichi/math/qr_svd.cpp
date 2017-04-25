@@ -13,6 +13,34 @@
 
 TC_NAMESPACE_BEGIN
 
+// m can not be const here, otherwise JIXIE::singularValueDecomposition will cause a error due to const_cast
+void imp_svd(Matrix2 m, Matrix2 &u, Matrix2 &s, Matrix2 &v) {
+    if (frobenius_norm2(m - Matrix2(m[0][0], 0, 0, m[1][1])) < 1e-7f) {
+        s = m;
+        u = v = Matrix2(1);
+    } else {
+        JIXIE::singularValueDecomposition(
+                *(Eigen::Matrix<float, 2, 2> *) &m,
+                *(Eigen::Matrix<float, 2, 2> *) &u,
+                *(Eigen::Matrix<float, 2, 1> *) &s,
+                *(Eigen::Matrix<float, 2, 2> *) &v
+        );
+        float s_tmp[]{s[0][1]};
+        memset(&s[0][0] + 1, 0, sizeof(float) * 3);
+        s[1][1] = s_tmp[0];
+    }
+    if (s[0][0] < 0) {
+        s[0][0] = -s[0][0];
+        u[0][0] *= -1;
+        u[0][1] *= -1;
+    }
+    if (s[1][1] < 0) {
+        s[1][1] = -s[1][1];
+        u[1][0] *= -1;
+        u[1][1] *= -1;
+    }
+}
+
 void imp_svd(Matrix3 m, Matrix3 &u, Matrix3 &s, Matrix3 &v) {
     JIXIE::singularValueDecomposition(
             *(Eigen::Matrix<float, 3, 3> *)&m,
@@ -24,35 +52,29 @@ void imp_svd(Matrix3 m, Matrix3 &u, Matrix3 &s, Matrix3 &v) {
     memset(&s[0][0] + 1, 0, sizeof(float) * 8);
     s[1][1] = s_tmp[0];
     s[2][2] = s_tmp[1];
-}
-
-// m can not be const here, otherwise JIXIE::singularValueDecomposition will cause a error due to const_cast
-void imp_svd(Matrix2 m, Matrix2 &u, Matrix2 &s, Matrix2 &v) {
-    JIXIE::singularValueDecomposition(
-            *(Eigen::Matrix<float, 2, 2> *)&m,
-            *(Eigen::Matrix<float, 2, 2> *)&u,
-            *(Eigen::Matrix<float, 2, 1> *)&s,
-            *(Eigen::Matrix<float, 2, 2> *)&v
-    );
-    float s_tmp{s[0][1]};
-    memset(&s[0][0] + 1, 0, sizeof(float) * 3);
-    if (s_tmp > 0) {
-        s[1][1] = s_tmp;
-    } else {
-        s[1][1] = -s_tmp;
+    if (s[0][0] < 0) {
+        s[0][0] = -s[0][0];
+        u[0][0] *= -1;
+        u[0][1] *= -1;
+        u[0][2] *= -1;
+    }
+    if (s[1][1] < 0) {
+        s[1][1] = -s[1][1];
         u[1][0] *= -1;
         u[1][1] *= -1;
+        u[1][2] *= -1;
+    }
+    if (s[2][2] < 0) {
+        s[2][2] = -s[2][2];
+        u[2][0] *= -1;
+        u[2][1] *= -1;
+        u[2][2] *= -1;
     }
 }
 
 void svd(Matrix2 m, Matrix2 &u, Matrix2 &sig, Matrix2 &v) {
     // TODO: what's going on ???
-    if (frobenius_norm2(m - Matrix2(m[0][0], 0, 0, m[1][1])) < 1e-7f) {
-        sig = m;
-        u = v = Matrix2(1);
-    } else {
-        imp_svd(m, u, sig, v);
-    }
+    imp_svd(m, u, sig, v);
 }
 
 void svd(Matrix3 m, Matrix3 &u, Matrix3 &sig, Matrix3 &v) {

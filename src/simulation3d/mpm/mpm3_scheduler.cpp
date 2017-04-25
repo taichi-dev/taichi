@@ -125,6 +125,7 @@ void MPM3Scheduler::insert_particle(MPM3Particle *p, bool is_new_particle) {
         updated[x][y][z] = 1;
         if (is_new_particle) {
             max_dt_int[x][y][z] = 1;
+            active_particles.push_back(p);
         }
     }
 }

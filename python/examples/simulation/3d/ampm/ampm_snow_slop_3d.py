@@ -13,9 +13,9 @@ gi_render = True
 step_number = 10000
 # step_number = 1
 # total_frames = 1
-grid_downsample = 4
+grid_downsample = 2
 output_downsample = 2
-render_epoch = 60
+render_epoch = 40
 
 
 def create_mpm_sand_block(fn):
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=True, num_threads=8, strength_dt_mul=4)
+    mpm = MPM3(resolution=resolution, gravity=(0, -50, 0), async=True, num_threads=8, strength_dt_mul=4)
     # mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), async=False, num_threads=8, strength_dt_mul=4, base_delta_t=0.001)
 
     levelset = mpm.create_levelset()
@@ -86,9 +86,9 @@ if __name__ == '__main__':
     tex = Texture('levelset3d', levelset=levelset, bounds=(0, 0.04 / levelset.get_delta_x())) * 2
     tex = Texture('bound', tex=tex, axis=2, bounds=(0.22, 0.78), outside_val=(0, 0, 0))
     tex = Texture('bound', tex=tex, axis=0, bounds=(0.05, 1.0), outside_val=(0, 0, 0))
-    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), compression=1.15, lambda_0=1000, mu_0=1000)
+    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), compression=1.15, lambda_0=3000, mu_0=3000)
     tex_ball = Texture('sphere', center=(0.11, 0.52, 0.5), radius=0.08) * 3
-    mpm.add_particles(density_tex=tex_ball.id, initial_velocity=(0, 0, 0), compression=0.9)
+    # mpm.add_particles(density_tex=tex_ball.id, initial_velocity=(0, 0, 0), compression=0.9)
 
     levelset.set_friction(1)
     mpm.set_levelset(levelset, False)
@@ -96,6 +96,8 @@ if __name__ == '__main__':
     t = 0
     for i in range(step_number):
         print 'process(%d/%d)' % (i, step_number)
+        if i==50:
+            mpm.add_particles(density_tex=tex_ball.id, initial_velocity=(0, 0, 0), compression=0.9)
         camera = Camera('pinhole', origin=(resolution[0] * 1.08, resolution[1] * -0.1, resolution[2] * 1.12),
                         look_at=(0, -resolution[1] * 0.5, 0), up=(0, 1, 0), fov=90,
                         width=10, height=10)
@@ -103,7 +105,7 @@ if __name__ == '__main__':
         t += 0.01
         if gi_render:
             d = mpm.get_directory()
-            if i % 5 == 0:
+            if i % 10 == 0:
                 render_frame(i, d, t)
                 pass
     mpm.make_video()

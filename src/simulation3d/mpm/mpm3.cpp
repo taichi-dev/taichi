@@ -109,14 +109,16 @@ std::vector<RenderParticle> MPM3D::get_render_particles() const {
     Vector3 center(res[0] / 2.0f, res[1] / 2.0f, res[2] / 2.0f);
     for (auto p_p : particles) {
         MPM3Particle &p = *p_p;
+        // at least synchronize the position
+        Vector3 pos = p.pos - center + (current_t_int - p.last_update) * base_delta_t * p.v;
         if (p.state == MPM3Particle::UPDATING) {
-            render_particles.push_back(Particle(p.pos - center, Vector4(0.8f, 0.1f, 0.2f, 0.5f)));
+            render_particles.push_back(Particle(pos, Vector4(0.8f, 0.1f, 0.2f, 0.5f)));
         } else
         if (p.state == MPM3Particle::BUFFER) {
-            render_particles.push_back(Particle(p.pos - center, Vector4(0.8f, 0.8f, 0.2f, 0.5f)));
+            render_particles.push_back(Particle(pos, Vector4(0.8f, 0.8f, 0.2f, 0.5f)));
         }
         else {
-            render_particles.push_back(Particle(p.pos - center, Vector4(0.8f, 0.9f, 1.0f, 0.5f)));
+            render_particles.push_back(Particle(pos, Vector4(0.8f, 0.9f, 1.0f, 0.5f)));
         }
     }
     return render_particles;

@@ -9,13 +9,15 @@ from taichi.visual.texture import Texture
 from colorsys import hsv_to_rgb
 import taichi as tc
 
-gi_render = True
+
+gi_render = False
 step_number = 400
 # step_number = 1
 # total_frames = 1
-grid_downsample = 4
+grid_downsample = 1
 output_downsample = 2
 render_epoch = 5
+bullet_speed = 1
 
 
 def create_mpm_sand_block(fn):
@@ -55,9 +57,15 @@ def create_scene(frame, d, t):
 
                 material = tc.SurfaceMaterial('microfacet', color=(1, 1, 0.5), roughness=(0.1, 0, 0, 0), f0=1)
                 # levelset.add_sphere(Vector(0.325 + 0.25 * t, 0.2, 0.5), 0.05, False)
-                sphere = tc.Mesh('sphere', material,
-                                 translate=(t * 0.5 - 1, -0.6, 0), scale=0.05, rotation=(0, 0, 0))
-                scene.add_mesh(sphere)
+                for i in range(0, 24, 3):
+                    px = 0.5 + 0.2 * math.sin(45.0 * i / 180 * math.pi)
+                    py = 0.5 + 0.2 * math.cos(45.0 * i / 180 * math.pi)
+                    vx = - bullet_speed * math.sin(45.0 * i / 180 * math.pi)
+                    vy = - bullet_speed * math.cos(45.0 * i / 180 * math.pi)
+                    sphere = tc.Mesh('sphere', material,
+                                     translate=((px + t * vx) * 2 - 1, 0.08 * (i + 1) - 1, (py + t * vy) * 2 - 1),
+                                     scale=0.04, rotation=(0, 0, 0))
+                    scene.add_mesh(sphere)
 
                 fn = d + r'/particles%05d.bin' % frame
                 mesh = create_mpm_sand_block(fn)
@@ -82,33 +90,41 @@ if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -10, 0), async=True, num_threads=8, strength_dt_mul=4,
+    mpm = MPM3(resolution=resolution, gravity=(0, -50, 0), async=True, num_threads=8, strength_dt_mul=4,
                affine_damping=1000)
 
-    tex = Texture('mesh', resolution=resolution, filename=tc.get_asset_path('meshes/armadillo.obj')) * 8
-    tex = Texture('rotate', tex=tex, rotate_axis=1, rotate_times=3)
-    tex = tex.zoom((0.4, 0.4, 0.4), (0.4, 0, 0.5), False)
+    tex = Texture('mesh', resolution=resolution, filename=tc.get_asset_path('meshes/armadillo.obj'))
+    tex = Texture('rotate', tex=tex, rotate_axis=1, rotate_times=2)
+    tex = tex.zoom((0.4, 0.4, 0.4), (0.5, 0, 0.5), False)
+    tex = tex * (Texture('perlin').zoom((10, 10, 10)) * 6 + 2)
     # tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
     # tex = Texture('rotate', tex=tex, rotate_axis=2, rotate_times=1)
-    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, -50))
+    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0))
 
     # Dynamic Levelset
     def levelset_generator(t):
         levelset = mpm.create_levelset()
         levelset.add_cuboid((0.01, 0.01, 0.01), (0.99, 0.99, 0.99), True)
-        levelset.add_sphere(Vector(0.25 * t, 0.2, 0.5), 0.05, False)
+        for i in range(0, 24, 3):
+            px = 0.5 + 0.2 * math.sin(45.0 * i / 180 * math.pi)
+            py = 0.5 + 0.2 * math.cos(45.0 * i / 180 * math.pi)
+            vx = - bullet_speed * math.sin(45.0 * i / 180 * math.pi)
+            vy = - bullet_speed * math.cos(45.0 * i / 180 * math.pi)
+            levelset.add_sphere(Vector(px + t * vx, 0.04 * (i + 1), py + t * vy), 0.02, False)
         return levelset
     mpm.set_levelset(levelset_generator, True)
 
-
+    print 'Directory : ', mpm.get_directory()
     t = 0
     for i in range(step_number):
         print 'process(%d/%d)' % (i, step_number)
-        mpm.step(0.01)
+        if not gi_render:
+            mpm.step(0.01)
         t += 0.01
         if gi_render:
-            d = mpm.get_directory()
-            if i % 10 == 0:
+            # d = mpm.get_directory()
+            d = '/Users/squarefk/repos/taichi_outputs/task-2017-04-25-17-28-19-r02321'
+            if i % 3 == 0:
                 render_frame(i, d, t)
                 pass
     mpm.make_video()

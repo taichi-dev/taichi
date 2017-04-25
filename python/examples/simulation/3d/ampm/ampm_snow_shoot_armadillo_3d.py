@@ -57,7 +57,7 @@ def create_scene(frame, d, t):
 
                 material = tc.SurfaceMaterial('microfacet', color=(1, 1, 0.5), roughness=(0.1, 0, 0, 0), f0=1)
                 # levelset.add_sphere(Vector(0.325 + 0.25 * t, 0.2, 0.5), 0.05, False)
-                for i in range(0, 24, 3):
+                for i in range(0, 27, 3):
                     px = 0.5 + 0.2 * math.sin(45.0 * i / 180 * math.pi)
                     py = 0.5 + 0.2 * math.cos(45.0 * i / 180 * math.pi)
                     vx = - bullet_speed * math.sin(45.0 * i / 180 * math.pi)
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     def levelset_generator(t):
         levelset = mpm.create_levelset()
         levelset.add_cuboid((0.01, 0.01, 0.01), (0.99, 0.99, 0.99), True)
-        for i in range(0, 24, 3):
+        for i in range(0, 27, 3):
             px = 0.5 + 0.2 * math.sin(45.0 * i / 180 * math.pi)
             py = 0.5 + 0.2 * math.cos(45.0 * i / 180 * math.pi)
             vx = - bullet_speed * math.sin(45.0 * i / 180 * math.pi)

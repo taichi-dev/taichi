@@ -115,7 +115,7 @@ void MPM3Scheduler::update_particle_groups() {
     }
 }
 
-void MPM3Scheduler::insert_particle(MPM3Particle *p) {
+void MPM3Scheduler::insert_particle(MPM3Particle *p, bool is_new_particle) {
     int x = int(p->pos.x / mpm3d_grid_block_size);
     int y = int(p->pos.y / mpm3d_grid_block_size);
     int z = int(p->pos.z / mpm3d_grid_block_size);
@@ -123,7 +123,9 @@ void MPM3Scheduler::insert_particle(MPM3Particle *p) {
         int index = res[2] * res[1] * x + res[2] * y + z;
         particle_groups[index].push_back(p);
         updated[x][y][z] = 1;
-        max_dt_int[x][y][z] = 1;
+        if (is_new_particle) {
+            max_dt_int[x][y][z] = 1;
+        }
     }
 }
 

@@ -102,7 +102,7 @@ public:
 
     void update_particle_groups();
 
-    void insert_particle(MPM3Particle *p);
+    void insert_particle(MPM3Particle *p, bool is_new_particle = false);
 
     void update_dt_limits(real t);
 

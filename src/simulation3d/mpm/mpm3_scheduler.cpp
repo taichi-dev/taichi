@@ -123,6 +123,7 @@ void MPM3Scheduler::insert_particle(MPM3Particle *p) {
         int index = res[2] * res[1] * x + res[2] * y + z;
         particle_groups[index].push_back(p);
         updated[x][y][z] = 1;
+        max_dt_int[x][y][z] = 1;
     }
 }
 

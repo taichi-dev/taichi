@@ -47,20 +47,20 @@ void imp_svd(Matrix2 m, Matrix2 &u, Matrix2 &s, Matrix2 &v) {
 
 void svd(Matrix2 m, Matrix2 &u, Matrix2 &sig, Matrix2 &v) {
     // TODO: what's going on ???
-    if (frobenius_norm2(m - Matrix2(m[0][0])) < 1e-7f) {
-        u = m;
-        sig = v = Matrix2(1);
+    if (frobenius_norm2(m - Matrix2(m[0][0], 0, 0, m[1][1])) < 1e-7f) {
+        sig = m;
+        u = v = Matrix2(1);
     } else {
         imp_svd(m, u, sig, v);
     }
 }
 
-void svd(Matrix3 A, Matrix3 &u, Matrix3 &sig, Matrix3 &v) {
-    if (frobenius_norm2(A - Matrix3(A[0][0])) < 1e-5f) {
-        u = A;
-        sig = v = Matrix3(1);
+void svd(Matrix3 m, Matrix3 &u, Matrix3 &sig, Matrix3 &v) {
+    if (frobenius_norm2(m - Matrix3(m[0][0], 0, 0, 0, m[1][1], 0, 0, 0, m[2][2])) < 1e-7f) {
+        sig = m;
+        u = v = Matrix3(1);
     } else {
-        imp_svd(A, u, sig, v);
+        imp_svd(m, u, sig, v);
     }
 }
 

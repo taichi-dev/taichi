@@ -9,7 +9,7 @@ from taichi.visual.texture import Texture
 from colorsys import hsv_to_rgb
 import taichi as tc
 
-gi_render = True
+gi_render = False
 step_number = 10000
 # step_number = 1
 # total_frames = 1
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -50, 0), async=True, num_threads=8, strength_dt_mul=4)
+    mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=True, num_threads=4, strength_dt_mul=4)
     # mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), async=False, num_threads=8, strength_dt_mul=4, base_delta_t=0.001)
 
     levelset = mpm.create_levelset()
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     tex = Texture('levelset3d', levelset=levelset, bounds=(0, 0.04 / levelset.get_delta_x())) * 2
     tex = Texture('bound', tex=tex, axis=2, bounds=(0.22, 0.78), outside_val=(0, 0, 0))
     tex = Texture('bound', tex=tex, axis=0, bounds=(0.05, 1.0), outside_val=(0, 0, 0))
-    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), compression=1.15, lambda_0=3000, mu_0=3000)
+    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), compression=1.15, lambda_0=1000, mu_0=1000)
     tex_ball = Texture('sphere', center=(0.11, 0.52, 0.5), radius=0.08) * 3
     # mpm.add_particles(density_tex=tex_ball.id, initial_velocity=(0, 0, 0), compression=0.9)
 
@@ -105,7 +105,7 @@ if __name__ == '__main__':
         t += 0.01
         if gi_render:
             d = mpm.get_directory()
-            if i % 10 == 0:
+            if i % 8 == 0:
                 render_frame(i, d, t)
                 pass
     mpm.make_video()

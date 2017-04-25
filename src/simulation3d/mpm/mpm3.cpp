@@ -93,6 +93,7 @@ void MPM3D::add_particles(const Config &config) {
                     p->pos = Vector(i + rand(), j + rand(), k + rand());
                     p->mass = 1.0f;
                     p->v = config.get("initial_velocity", p->v);
+                    p->last_update = current_t_int;
                     particles.push_back(p);
                     scheduler.insert_particle(p);
                 }

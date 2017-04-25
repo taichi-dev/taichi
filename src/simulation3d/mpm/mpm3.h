@@ -56,6 +56,9 @@ public:
     real strength_dt_mul;
     real request_t = 0.0f;
     int64 current_t_int = 0;
+    int64 original_t_int_increment;
+    int64 t_int_increment;
+    int64 old_t_int;
     MPM3Scheduler scheduler;
 
     Region get_bounded_rasterization_region(Vector p) {
@@ -140,6 +143,7 @@ public:
             while (current_t + base_delta_t < request_t) {
                 substep();
             }
+            P(t_int_increment * base_delta_t);
         }
     }
 

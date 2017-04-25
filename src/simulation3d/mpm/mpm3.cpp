@@ -258,9 +258,9 @@ void MPM3D::substep() {
 
         scheduler.update_particle_groups();
         scheduler.reset_particle_states();
-        int64 original_t_int_increment;
-        int64 t_int_increment;
-        int64 old_t_int = current_t_int;
+//        int64 original_t_int_increment;
+//        int64 t_int_increment;
+        old_t_int = current_t_int;
         if (async) {
             scheduler.reset();
             scheduler.update_dt_limits(current_t);

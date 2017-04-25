@@ -9,11 +9,11 @@ from taichi.visual.texture import Texture
 from colorsys import hsv_to_rgb
 import taichi as tc
 
-gi_render = True
+gi_render = False
 step_number = 400
 # step_number = 1
 # total_frames = 1
-grid_downsample = 1
+grid_downsample = 2
 output_downsample = 2
 render_epoch = 200
 
@@ -68,6 +68,7 @@ if __name__ == '__main__':
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
 
     mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), async=True, num_threads=8, strength_dt_mul=4)
+    # mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), async=False, num_threads=8, strength_dt_mul=4, base_delta_t=0.001)
 
     levelset = mpm.create_levelset()
     height_ = 0.0
@@ -82,7 +83,7 @@ if __name__ == '__main__':
     levelset.add_plane(cos_, sin_, 0, -cross_x * cos_ - cross_y * sin_)
     levelset.global_increase(height_)
 
-    tex = Texture('levelset3d', levelset=levelset, bounds=(0, 0.03 / levelset.get_delta_x()))
+    tex = Texture('levelset3d', levelset=levelset, bounds=(0, 0.04 / levelset.get_delta_x())) * 2
     tex = Texture('bound', tex=tex, axis=2, bounds=(0.22, 0.78), outside_val=(0, 0, 0))
     tex = Texture('bound', tex=tex, axis=0, bounds=(0.05, 1.0), outside_val=(0, 0, 0))
     mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), compression=1.15, lambda_0=1000, mu_0=1000)

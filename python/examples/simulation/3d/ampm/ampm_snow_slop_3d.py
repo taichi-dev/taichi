@@ -13,7 +13,7 @@ gi_render = False
 step_number = 10000
 # step_number = 1
 # total_frames = 1
-grid_downsample = 4
+grid_downsample = 2
 output_downsample = 2
 render_epoch = 40
 
@@ -67,8 +67,10 @@ if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
 
+    from taichi.two_d import MPMSimulator
+
     mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=True, num_threads=4, strength_dt_mul=4)
-    # mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), async=False, num_threads=8, strength_dt_mul=4, base_delta_t=0.001)
+    # mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=False, num_threads=4, base_delta_t=5e-4)
 
     levelset = mpm.create_levelset()
     height_ = 0.0

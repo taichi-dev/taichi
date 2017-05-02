@@ -28,6 +28,8 @@ Config config_from_py_dict(py::dict &c) {
 
 void test();
 
+void test_volumetric_io();
+
 void test_raise_error() {
     raise_assertion_failure_in_python("Just a test.");
 }
@@ -78,6 +80,7 @@ void export_misc(py::module &m) {
     m.def("print_all_units", print_all_units);
     m.def("test", test);
     m.def("test_raise_error", test_raise_error);
+    m.def("test_volumetric_io", test_volumetric_io);
     m.def("config_from_dict", config_from_py_dict);
 }
 

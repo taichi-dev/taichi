@@ -5,7 +5,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
 message("Using c++ compiler: " ${CMAKE_CXX_COMPILER})
 
-if (CMAKE_COMPILER_IS_GNUCXX)
+if (MINGW)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_hypot=hypot")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMS_WIN64")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static")
@@ -112,7 +112,7 @@ endif ()
 
 # Optional dependencies
 
-if (CMAKE_COMPILER_IS_GNUCXX)
+if (MINGW)
     target_link_libraries(${CORE_LIBRARY_NAME} ws2_32)
 endif()
 

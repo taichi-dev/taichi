@@ -24,6 +24,10 @@ public:
 
     void initialize(real _t0, real _t1, const LevelSet3D &_ls0, const LevelSet3D &_ls1);
 
+    bool inside(const Vector3i pos) const {
+        return levelset0->inside(pos);
+    }
+
     Vector3 get_spatial_gradient(const Vector3 &pos, real t) const;
 
     real get_temporal_derivative(const Vector3 &pos, real t) const;

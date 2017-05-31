@@ -5,7 +5,15 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
 message("Using c++ compiler: " ${CMAKE_CXX_COMPILER})
 
-if (WIN32)
+if (MINGW)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_hypot=hypot")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMS_WIN64")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libgcc")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
+endif()
+
+if (MSVC)
     link_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /Z7 /D \"_CRT_SECURE_NO_WARNINGS\"  /arch:AVX -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED")
 else()
@@ -103,6 +111,10 @@ if (NOT WIN32)
 endif ()
 
 # Optional dependencies
+
+if (MINGW)
+    target_link_libraries(${CORE_LIBRARY_NAME} ws2_32)
+endif()
 
 if (USE_OPENGL)
     target_link_libraries(${CORE_LIBRARY_NAME} ${GLEW_LIBRARY})

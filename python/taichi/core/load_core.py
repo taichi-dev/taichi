@@ -40,7 +40,9 @@ elif get_os_name() == 'win':
         dll_path = os.path.join(bin_dir, 'taichi_core.dll')
         print dll_path
         if not os.path.exists(dll_path):
-            assert False, "Library taichi_core doesn't exist."
+            dll_path = os.path.join(bin_dir, 'libtaichi_core.dll')
+            if not os.path.exists(dll_path):
+                assert False, "Library taichi_core doesn't exist."
 
     # The problem here is, on windows, when an dll/pyd is loaded, we can not write to it any more...
 

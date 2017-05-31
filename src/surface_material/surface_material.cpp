@@ -74,10 +74,52 @@ public:
     virtual real get_importance(const Vector2 &uv) const override {
         return luminance(color_sampler->sample3(uv));
     }
-
 };
 
 TC_IMPLEMENTATION(SurfaceMaterial, EmissiveMaterial, "emissive");
+
+// TODO: This is a quick hack...
+class SpotLightEmissiveMaterial : public SurfaceMaterial {
+protected:
+    std::shared_ptr<Texture> color_sampler;
+    real exponential;
+public:
+    virtual void initialize(const Config &config) override {
+        SurfaceMaterial::initialize(config);
+        color_sampler = get_color_sampler(config, "color");
+        exponential = config.get_real("exponential");
+    }
+
+    virtual bool is_emissive() const override {
+        return true;
+    }
+
+    Vector3 sample_direction(const Vector3 &in, real u, real v, const Vector2 &uv) const {
+        error("no_impl");
+        return Vector3(0.0f);
+    }
+
+    virtual void sample(const Vector3 &in_dir, real u, real v, Vector3 &out_dir, Vector3 &f, real &pdf,
+                        SurfaceEvent &event, const Vector2 &uv) const override {
+        error("no_impl");
+    }
+
+    virtual real probability_density(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
+        error("no_impl");
+        return 0.0f;
+    }
+
+    virtual Vector3 evaluate_bsdf(const Vector3 &in, const Vector3 &out, const Vector2 &uv) const override {
+        auto color = color_sampler->sample3(uv);
+        return (in.z * out.z > 0 ? std::pow(std::min(in.z * out.z, 1.0f), exponential) * (exponential + 1): 0.0f) * color; 
+    }
+
+    virtual real get_importance(const Vector2 &uv) const override {
+        return luminance(color_sampler->sample3(uv));
+    }
+};
+
+TC_IMPLEMENTATION(SurfaceMaterial, SpotLightEmissiveMaterial, "emissive_spot");
 
 class DiffuseMaterial : public SurfaceMaterial {
 protected:

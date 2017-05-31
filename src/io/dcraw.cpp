@@ -57,7 +57,14 @@ $Date: 2016/05/10 21:30:43 $
 #include <io.h>
 #endif
 
-#ifdef MSVC
+#ifdef __MINGW32__
+#include <sys/utime.h>
+#include <windows.h>
+#include <winsock2.h>
+#define INT64 long long
+#define UINT64 unsigned long long
+
+#elif defined WIN32
 #include <sys/utime.h>
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
@@ -70,13 +77,6 @@ typedef unsigned __int64 UINT64;
 #define fseeko _fseeki64
 #define ftello _ftelli64
 #define getc_unlocked _fgetc_nolock
-
-#elif defined __MINGW32__
-#include <sys/utime.h>
-#include <windows.h>
-#include <winsock2.h>
-#define INT64 long long
-#define UINT64 unsigned long long
 
 #else
 #include <unistd.h>

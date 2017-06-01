@@ -9,9 +9,59 @@
 
 #include <implicit_qr_svd/Tools.h>
 #include <implicit_qr_svd/ImplicitQRSVD.h>
+#include <Eigen/Dense>
 #include "qr_svd.h"
 
 TC_NAMESPACE_BEGIN
+
+void eigen_svd(Matrix2 m, Matrix2 &u, Matrix2 &s, Matrix2 &v) {
+    Eigen::MatrixXf e_m = Eigen::MatrixXf::Random(2, 2);
+    for (int i = 0; i < 2; ++i)
+        for (int j = 0; j < 2; ++j)
+            e_m(j, i) = m[i][j];
+    Eigen::JacobiSVD<Eigen::MatrixXf> e_svd(e_m, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    for (int i = 0; i < 2; ++i)
+        s[i][i] = e_svd.singularValues()(i);
+    for (int i = 0; i < 2; ++i)
+        for (int j = 0; j < 2; ++j)
+            u[j][i] = e_svd.matrixU()(i, j);
+    for (int i = 0; i < 2; ++i)
+        for (int j = 0; j < 2; ++j)
+            v[j][i] = e_svd.matrixV()(i, j);
+    for (int i = 0; i < 2; ++i)
+        if (s[i][i] < 0) {
+            s[i][i] = -s[i][i];
+            for (int j = 0; j < 2; ++j)
+                u[j][i] = -u[j][i];
+        }
+}
+
+void eigen_svd(Matrix3 m, Matrix3 &u, Matrix3 &s, Matrix3 &v) {
+    Eigen::MatrixXf e_m = Eigen::MatrixXf::Random(3, 3);
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+            e_m(j, i) = m[i][j];
+    Eigen::JacobiSVD<Eigen::MatrixXf> e_svd(e_m, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    for (int i = 0; i < 3; ++i)
+        s[i][i] = e_svd.singularValues()(i);
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+            u[j][i] = e_svd.matrixU()(i, j);
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+            v[j][i] = e_svd.matrixV()(i, j);
+//    check if Matrix s is diagonal
+//    for (int i = 0; i < 3; ++i)
+//        for (int j = 0; j < 3; ++j)
+//            if (i!=j) assert(s[i][j] == 0);
+    for (int i = 0; i < 3; ++i)
+        if (s[i][i] < 0) {
+            s[i][i] = -s[i][i];
+            for (int j = 0; j < 3; ++j)
+                u[j][i] = -u[j][i];
+        }
+}
+
 
 // m can not be const here, otherwise JIXIE::singularValueDecomposition will cause a error due to const_cast
 void imp_svd(Matrix2 m, Matrix2 &u, Matrix2 &s, Matrix2 &v) {
@@ -74,7 +124,8 @@ void imp_svd(Matrix3 m, Matrix3 &u, Matrix3 &s, Matrix3 &v) {
 
 void svd(Matrix2 m, Matrix2 &u, Matrix2 &sig, Matrix2 &v) {
     // TODO: what's going on ???
-    imp_svd(m, u, sig, v);
+    eigen_svd(m, u, sig, v);
+//    imp_svd(m, u, sig, v);
 }
 
 void svd(Matrix3 m, Matrix3 &u, Matrix3 &sig, Matrix3 &v) {
@@ -82,7 +133,8 @@ void svd(Matrix3 m, Matrix3 &u, Matrix3 &sig, Matrix3 &v) {
         sig = m;
         u = v = Matrix3(1);
     } else {
-        imp_svd(m, u, sig, v);
+        eigen_svd(m, u, sig, v);
+//        imp_svd(m, u, sig, v);
     }
 }
 

@@ -14,6 +14,9 @@
 
 TC_NAMESPACE_BEGIN
 
+void eigen_svd(Matrix2 m, Matrix2 &u, Matrix2 &s, Matrix2 &v);
+
+void eigen_svd(Matrix3 m, Matrix3 &u, Matrix3 &s, Matrix3 &v);
 
 void imp_svd(Matrix2 m, Matrix2 &u, Matrix2 &s, Matrix2 &v);
 

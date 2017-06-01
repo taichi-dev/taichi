@@ -18,9 +18,11 @@
 #include <vector>
 #include <algorithm>
 #include <memory>
+#include <mutex>
 
 TC_NAMESPACE_BEGIN
 
+static std::mutex traceback_printer_mutex;
 
 void print_traceback() {
 #ifdef __APPLE__
@@ -52,7 +54,7 @@ void print_traceback() {
 
         char stack_frame[4096] = {};
         bool is_valid_cpp_name = (valid_cpp_name == 0);
-        sprintf(stack_frame, "* %20s | %7d | %s", module_name, offset, function_name);
+        sprintf(stack_frame, "* %28s | %7d | %s", module_name, offset, function_name);
         if (function_name != nullptr)
             free(function_name);
 
@@ -65,13 +67,14 @@ void print_traceback() {
     // Exclude this function itself
     stack_frames.erase(stack_frames.begin());
     std::reverse(stack_frames.begin(), stack_frames.end());
+    std::lock_guard<std::mutex> guard(traceback_printer_mutex);
     printf("\n");
     printf("                            * Taichi Core - Stack Traceback *                             \n");
     printf("==========================================================================================\n");
-    printf("|               Module |  Offset | Function                                              |\n");
+    printf("|                       Module |  Offset | Function                                      |\n");
     printf("|----------------------------------------------------------------------------------------|\n");
     for (auto trace: stack_frames) {
-        const int function_start = 31;
+        const int function_start = 39;
         const int line_width = 86;
         const int function_width = line_width - function_start - 2;
         int i;

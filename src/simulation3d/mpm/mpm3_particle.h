@@ -106,7 +106,8 @@ struct EPParticle3 : public MPM3Particle {
     virtual Matrix get_energy_gradient() override {
         real j_e = det(dg_e);
         real j_p = det(dg_p);
-        real e = std::exp(std::min(hardening * (1.0f - j_p), 1000.0f));
+        //real e = std::exp(std::min(hardening * (1.0f - j_p), 1000.0f));
+        real e = std::exp(hardening * (1.0f - j_p));
         real mu = mu_0 * e;
         real lambda = lambda_0 * e;
         Matrix r, s;
@@ -137,9 +138,9 @@ struct EPParticle3 : public MPM3Particle {
         dg_e = svd_u * sig * glm::transpose(svd_v);
         dg_p = glm::inverse(dg_e) * dg_cache;
         svd(dg_p, svd_u, sig, svd_v);
-        for (int i = 0; i < D; i++) {
-            sig[i][i] = clamp(sig[i][i], 0.1f, 10.0f);
-        }
+        // for (int i = 0; i < D; i++) {
+        //    sig[i][i] = clamp(sig[i][i], 0.1f, 10.0f);
+        //}
         dg_p = svd_u * sig * glm::transpose(svd_v);
     };
 

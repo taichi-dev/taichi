@@ -13,8 +13,8 @@ gi_render = False
 step_number = 10000
 # step_number = 1
 # total_frames = 1
-grid_downsample = 5
-output_downsample = 5
+grid_downsample = 3
+output_downsample = 3
 render_epoch = 30
 
 
@@ -67,8 +67,9 @@ if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
     print resolution
+    frame_dt = 0.1
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=True, num_threads=4, strength_dt_mul=4)
+    mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=True, num_threads=4, strength_dt_mul=2, base_delta_t=1e-7)
     #mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=False, num_threads=2, base_delta_t=0.001)
 
     levelset = mpm.create_levelset()
@@ -100,7 +101,7 @@ if __name__ == '__main__':
         camera = Camera('pinhole', origin=(resolution[0] * 1.08, resolution[1] * -0.1, resolution[2] * 1.12),
                         look_at=(0, -resolution[1] * 0.5, 0), up=(0, 1, 0), fov=90,
                         width=10, height=10)
-        mpm.step(0.01, camera=camera)
+        mpm.step(frame_dt, camera=camera)
         t += 0.01
         if gi_render:
             d = mpm.get_directory()

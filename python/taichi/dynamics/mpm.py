@@ -59,15 +59,15 @@ class MPM3:
 
     def step(self, step_t, camera=None):
         t = self.c.get_current_time()
-        print 'Simulation time:', t
-        T = time.time()
+        print '* Current t: %.3f' % t
+        # T = time.time()
         self.update_levelset(t, t + step_t)
-        print 'Update Leveset Time:', time.time() - T
+        # print 'Update Leveset Time:', time.time() - T
         T = time.time()
         if not self.start_simulation_time:
             self.start_simulation_time = T
         self.c.step(step_t)
-        print 'Step Time:', time.time() - T, ' (', time.time() - self.start_simulation_time, ')'
+        print '* Step Time: %.2f [tot: %.2f]' % (time.time() - T, time.time() - self.start_simulation_time)
         image_buffer = tc_core.Array2DVector3(self.video_manager.width, self.video_manager.height, Vector(0, 0, 0.0))
         particles = self.c.get_render_particles()
         particles.write(self.directory + '/particles%05d.bin' % self.frame)

@@ -13,7 +13,7 @@ gi_render = False
 step_number = 10000
 # step_number = 1
 # total_frames = 1
-grid_downsample = 8
+grid_downsample = 5
 output_downsample = 5
 render_epoch = 30
 

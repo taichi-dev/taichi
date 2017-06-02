@@ -113,26 +113,39 @@ struct EPParticle3 : public MPM3Particle {
     virtual Matrix get_energy_gradient() override {
         real j_e = det(dg_e);
         real j_p = det(dg_p);
-        //real e = std::exp(std::min(hardening * (1.0f - j_p), 1000.0f));
-        real e = std::exp(hardening * (1.0f - j_p));
-        real mu = mu_0 * e;
-        real lambda = lambda_0 * e;
+        auto lame = get_lame_parameters();
+        real mu = lame.first, lambda = lame.second;
         Matrix r, s;
         polar_decomp(dg_e, r, s);
-        if (!is_normal(r)) {
+        Matrix3 grad = 2 * mu * (dg_e - r) +
+               lambda * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
+        if (abnormal(r) || abnormal(dg_e) || abnormal(s) || abnormal(glm::inverse(dg_e)) || abnormal(grad)) {
             P(dg_e);
+            P(dg_p);
+            P(glm::inverse(dg_e));
+            P(glm::inverse(glm::transpose(dg_e)));
             P(r);
             P(s);
+            P(grad);
+            P(mu);
+            P(j_e);
+            P(j_p);
+            P(lambda);
+            error("");
         }
-        CV(r);
-        CV(s);
-        return 2 * mu * (dg_e - r) +
-               lambda * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
+        return grad;
     }
 
     virtual void calculate_kernels() override {}
 
     virtual void calculate_force() override {
+        if (abnormal(vol)) {
+            P(vol);
+            error("Abnormal volume");
+        }
+        if (abnormal(dg_e)) {
+            P(dg_e);
+        }
         tmp_force = -vol * get_energy_gradient() * glm::transpose(dg_e);
     };
 
@@ -156,6 +169,7 @@ struct EPParticle3 : public MPM3Particle {
         if (abnormal(dg_p) || abnormal(dg_e)) {
             P(dg_e);
             P(dg_p);
+            P(dg_cache);
             P(sig);
             P(svd_u);
             P(svd_v);

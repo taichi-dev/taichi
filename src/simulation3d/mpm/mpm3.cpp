@@ -153,8 +153,10 @@ void MPM3D::resample() {
     if (apic)
         alpha_delta_t = 0;
     parallel_for_each_active_particle([&](MPM3Particle &p) {
-        if (p.state != MPM3Particle::UPDATING)
+        if (p.state != MPM3Particle::UPDATING) {
+            error("Sync...");
             return;
+        }
         real delta_t = base_delta_t * (current_t_int - p.last_update);
         Vector v(0.0f), bv(0.0f);
         Matrix cdg(0.0f);
@@ -163,7 +165,7 @@ void MPM3D::resample() {
         for (auto &ind : get_bounded_rasterization_region(p.pos)) {
             count++;
             Vector d_pos = p.pos - Vector3(ind.i, ind.j, ind.k);
-            float weight = w(d_pos);
+            real weight = w(d_pos);
             Vector gw = dw(d_pos);
             Vector grid_vel = grid_velocity[ind];
             v += weight * grid_vel;
@@ -186,21 +188,31 @@ void MPM3D::resample() {
         cdg = Matrix(1) + delta_t * cdg;
         p.v = (1 - alpha_delta_t) * v + alpha_delta_t * (v - bv + p.v);
         Matrix dg = cdg * p.dg_e * p.dg_p;
-        CV(dg);
-        CV(cdg);
-        CV(p.dg_e);
+        if (abnormal(dg) || abnormal(cdg) || abnormal(p.dg_e) || abnormal(p.dg_cache)) {
+            P(dg);
+            P(cdg);
+            P(p.dg_e);
+            P(p.dg_p);
+            P(p.dg_cache);
+            error("");
+        }
         p.dg_e = cdg * p.dg_e;
-        CV(p.dg_e);
         p.dg_cache = dg;
+        if (abnormal(dg) || abnormal(cdg) || abnormal(p.dg_e) || abnormal(p.dg_cache)) {
+            P(dg);
+            P(cdg);
+            P(p.dg_e);
+            P(p.dg_p);
+            P(p.dg_cache);
+            error("");
+        }
     });
 }
 
 void MPM3D::apply_deformation_force(float delta_t) {
-    //printf("Calculating force...\n");
     parallel_for_each_active_particle([&](MPM3Particle &p) {
         p.calculate_force();
     });
-    //printf("Accumulating force...\n");
     parallel_for_each_active_particle([&](MPM3Particle &p) {
         for (auto &ind : get_bounded_rasterization_region(p.pos)) {
             real mass = grid_mass[ind];
@@ -211,6 +223,8 @@ void MPM3D::apply_deformation_force(float delta_t) {
             Vector gw = dw(d_pos);
             Vector force = p.tmp_force * gw;
             CV(force);
+            CV(p.tmp_force);
+            CV(gw);
             grid_locks[ind].lock();
             grid_velocity[ind] += delta_t / mass * force;
             grid_locks[ind].unlock();
@@ -302,7 +316,31 @@ void MPM3D::substep() {
         grid_apply_external_force(gravity, t_int_increment * base_delta_t);
         apply_deformation_force(t_int_increment * base_delta_t);
         grid_apply_boundary_conditions(levelset, current_t);
+
+        for (auto &p: particles) {
+            if (abnormal(p->dg_e)) {
+                P(p->dg_e);
+                error("abnormal DG_e (before resampling)");
+            }
+        }
         resample();
+        if (!async) {
+            for (auto &p: particles) {
+                assert_info(p->state == MPM3Particle::UPDATING, "should be updating");
+            }
+            for (auto &p: particles) {
+                if (abnormal(p->dg_e)) {
+                    P(p->dg_e);
+                    error("abnormal DG_e");
+                }
+            }
+            for (auto &p: this->scheduler.active_particles) {
+                if (abnormal(p->dg_e)) {
+                    P(p->dg_e);
+                    error("abnormal DG_e in active_particles");
+                }
+            }
+        }
         parallel_for_each_particle([&](MPM3Particle &p) {
             if (p.state == MPM3Particle::UPDATING) {
                 p.pos += (current_t_int - p.last_update) * base_delta_t * p.v;

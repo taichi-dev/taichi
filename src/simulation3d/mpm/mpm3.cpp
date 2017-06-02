@@ -186,7 +186,11 @@ void MPM3D::resample() {
         cdg = Matrix(1) + delta_t * cdg;
         p.v = (1 - alpha_delta_t) * v + alpha_delta_t * (v - bv + p.v);
         Matrix dg = cdg * p.dg_e * p.dg_p;
+        CV(dg);
+        CV(cdg);
+        CV(p.dg_e);
         p.dg_e = cdg * p.dg_e;
+        CV(p.dg_e);
         p.dg_cache = dg;
     });
 }

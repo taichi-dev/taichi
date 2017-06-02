@@ -17,9 +17,11 @@
 
 TC_NAMESPACE_BEGIN
 
-void check_singular_value_non_negative(Matrix3 &sig) {
-    for (int i = 0; i < 3; i++)
-        assert_info(sig[i][i] > -eps, "sigular values should not be negative, instead of " + std::to_string(sig[i][i]));
+inline void check_singular_value_non_negative(Matrix3 &sig) {
+    for (int i = 0; i < 3; i++) {
+        assert_info(sig[i][i] > -eps, "sigular values should not be negative, instead of " +
+                                      std::to_string(sig[i][i]));
+    }
 }
 
 struct MPM3Particle {
@@ -137,12 +139,28 @@ struct EPParticle3 : public MPM3Particle {
     virtual void plasticity() override {
         Matrix svd_u, sig, svd_v;
         svd(dg_e, svd_u, sig, svd_v);
+        if (abnormal(sig) || abnormal(svd_u) || abnormal(svd_v)) {
+            P(dg_e);
+            P(sig);
+            P(svd_u);
+            P(svd_v);
+            error("abnormal SVD");
+        }
         for (int i = 0; i < D; i++) {
-            assert_info(sig[i][i] > -eps, "sigular values should not be negative, instead of " + std::to_string(sig[i][i]));
+            assert_info(sig[i][i] > -eps,
+                        "sigular values should be non-negative, instead of " + std::to_string(sig[i][i]));
             sig[i][i] = clamp(sig[i][i], 1.0f - theta_c, 1.0f + theta_s);
         }
         dg_e = svd_u * sig * glm::transpose(svd_v);
         dg_p = glm::inverse(dg_e) * dg_cache;
+        if (abnormal(dg_p) || abnormal(dg_e)) {
+            P(dg_e);
+            P(dg_p);
+            P(sig);
+            P(svd_u);
+            P(svd_v);
+            error("abnormal singular value");
+        }
         //svd(dg_p, svd_u, sig, svd_v);
         // for (int i = 0; i < D; i++) {
         //    sig[i][i] = clamp(sig[i][i], 0.1f, 10.0f);

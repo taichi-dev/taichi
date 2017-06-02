@@ -13,7 +13,7 @@ gi_render = False
 step_number = 10000
 # step_number = 1
 # total_frames = 1
-grid_downsample = 5
+grid_downsample = 8
 output_downsample = 5
 render_epoch = 30
 
@@ -69,8 +69,8 @@ if __name__ == '__main__':
     print resolution
     frame_dt = 0.1
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=True, num_threads=4, strength_dt_mul=2, base_delta_t=1e-7)
-    # mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=False, num_threads=2, base_delta_t=0.0001)
+    # mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=True, num_threads=4, strength_dt_mul=2, base_delta_t=1e-7)
+    mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=False, num_threads=4, base_delta_t=0.0004)
 
     levelset = mpm.create_levelset()
     height_ = 0.0

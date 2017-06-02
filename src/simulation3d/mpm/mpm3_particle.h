@@ -17,6 +17,11 @@
 
 TC_NAMESPACE_BEGIN
 
+void check_singular_value_non_negative(Matrix3 &sig) {
+    for (int i = 0; i < 3; i++)
+        assert_info(sig[i][i] > -eps, "sigular values should not be negative, instead of " + std::to_string(sig[i][i]));
+}
+
 struct MPM3Particle {
     using Vector = Vector3;
     using Matrix = Matrix3;
@@ -133,21 +138,24 @@ struct EPParticle3 : public MPM3Particle {
         Matrix svd_u, sig, svd_v;
         svd(dg_e, svd_u, sig, svd_v);
         for (int i = 0; i < D; i++) {
+            assert_info(sig[i][i] > -eps, "sigular values should not be negative, instead of " + std::to_string(sig[i][i]));
             sig[i][i] = clamp(sig[i][i], 1.0f - theta_c, 1.0f + theta_s);
         }
         dg_e = svd_u * sig * glm::transpose(svd_v);
         dg_p = glm::inverse(dg_e) * dg_cache;
-        svd(dg_p, svd_u, sig, svd_v);
+        //svd(dg_p, svd_u, sig, svd_v);
         // for (int i = 0; i < D; i++) {
         //    sig[i][i] = clamp(sig[i][i], 0.1f, 10.0f);
         //}
-        dg_p = svd_u * sig * glm::transpose(svd_v);
+        //dg_p = svd_u * sig * glm::transpose(svd_v);
     };
 
     std::pair<real, real> get_lame_parameters() const {
         real j_e = det(dg_e);
         real j_p = det(dg_p);
-        real e = std::max(1e-7f, std::exp(std::min(hardening * (1.0f - j_p), 5.0f)));
+        // real e = std::max(1e-7f, std::exp(std::min(hardening * (1.0f - j_p), 5.0f)));
+        // no clamping
+        real e = std::exp(hardening * (1.0f - j_p));
         real mu = mu_0 * e;
         real lambda = lambda_0 * e;
         return {mu, lambda};
@@ -155,7 +163,7 @@ struct EPParticle3 : public MPM3Particle {
 
     virtual real get_allowed_dt() const override {
         auto lame = get_lame_parameters();
-        real strength_limit = 0.5f / std::sqrt(lame.first + 2 * lame.second);
+        real strength_limit = 0.5f / std::sqrt(lame.first + 2 * lame.second + 1e-7f);
         return strength_limit;
     }
 };

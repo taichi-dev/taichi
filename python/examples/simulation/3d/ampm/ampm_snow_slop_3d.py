@@ -70,7 +70,7 @@ if __name__ == '__main__':
     frame_dt = 0.1
 
     # mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=True, num_threads=4, strength_dt_mul=2, base_delta_t=1e-7)
-    mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=False, num_threads=4, base_delta_t=0.0004)
+    mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=False, num_threads=4, base_delta_t=0.0001)
 
     levelset = mpm.create_levelset()
     height_ = 0.0

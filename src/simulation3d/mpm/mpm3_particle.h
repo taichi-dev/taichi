@@ -175,11 +175,12 @@ struct EPParticle3 : public MPM3Particle {
             P(svd_v);
             error("abnormal singular value");
         }
-        //svd(dg_p, svd_u, sig, svd_v);
-        // for (int i = 0; i < D; i++) {
-        //    sig[i][i] = clamp(sig[i][i], 0.1f, 10.0f);
-        //}
-        //dg_p = svd_u * sig * glm::transpose(svd_v);
+        // clamp dg_p to ensure that it does not explode
+        svd(dg_p, svd_u, sig, svd_v);
+         for (int i = 0; i < D; i++) {
+            sig[i][i] = clamp(sig[i][i], 0.1f, 10.0f);
+        }
+        dg_p = svd_u * sig * glm::transpose(svd_v);
     };
 
     std::pair<real, real> get_lame_parameters() const {

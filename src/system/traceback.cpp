@@ -12,7 +12,9 @@
 #include <vector>
 #include <iostream>
 #include <cxxabi.h>
+#ifdef __APPLE__
 #include <execinfo.h>
+#endif
 #include <string>
 #include <cstdio>
 #include <vector>

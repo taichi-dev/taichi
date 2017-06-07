@@ -94,7 +94,7 @@ struct MPM3Particle {
 
 struct EPParticle3 : public MPM3Particle {
     real hardening = 10.0f;
-    real mu_0 = 1e5f, lambda_0 = 1e5f;
+    real mu_0 = 58333.3, lambda_0 = 38888.9;
     real theta_c = 2.5e-2f, theta_s = 7.5e-3f;
 
     EPParticle3() : MPM3Particle() {

@@ -9,13 +9,13 @@ from taichi.visual.texture import Texture
 from colorsys import hsv_to_rgb
 import taichi as tc
 
-gi_render = True
+gi_render = False
 step_number = 100000
 # step_number = 1
 # total_frames = 1
-grid_downsample = 4
-output_downsample = 4
-render_epoch = 10
+grid_downsample = 2
+output_downsample = 1
+render_epoch = 33
 
 
 def create_mpm_snow_block(fn):
@@ -41,7 +41,7 @@ def create_scene(frame, d, t):
     with scene:
         scene.set_camera(camera)
 
-        with tc.transform_scope(rotation=(20, 0, 0), translate=(0, 0.5, 0), scale=1):
+        with tc.transform_scope(rotation=(20, 0, 0), translate=(0, 0.75, 0), scale=1):
             mesh = tc.Mesh('plane', tc.SurfaceMaterial('emissive', color=(30000, 40000, 60000)),
                            translate=(-20, 30, 0), scale=3, rotation=(0, 0, 180))
             scene.add_mesh(mesh)
@@ -77,9 +77,9 @@ if __name__ == '__main__':
 
     mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), async=True, num_threads=8, strength_dt_mul=4)
 
-    tex = Texture('image', filename=tc.get_asset_path('textures/taichi_words.png'))
+    tex = Texture('image', filename=tc.get_asset_path('textures/taichi_words.png')) * 8
     tex = Texture('bound', tex=tex, axis=2, bounds=(0.475, 0.525), outside_val=(0, 0, 0))
-    tex = tex * (Texture('perlin').zoom((16, 16, 16), (0.1, 0.2, 0.3)) * 5 + 3)
+    # tex = tex * (Texture('perlin').zoom((16, 16, 16), (0.1, 0.2, 0.3)) * 5 + 3)
     mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0))
 
     # levelset = mpm.create_levelset()
@@ -89,7 +89,10 @@ if __name__ == '__main__':
     t = 0
     for i in range(step_number):
         print 'process(%d/%d)' % (i, step_number)
-        mpm.step(0.01)
+        camera = Camera('pinhole', origin=(0, resolution[1] * 0.4, resolution[2] * 2.4),
+                        look_at=(0, -resolution[1] * 0.5, 0), up=(0, 1, 0), fov=90,
+                        width=10, height=10)
+        mpm.step(0.01, camera=camera)
         t += 0.01
         if gi_render:
             d = mpm.get_directory()

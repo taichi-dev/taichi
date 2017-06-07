@@ -153,10 +153,10 @@ void MPM3D::resample() {
     if (apic)
         alpha_delta_t = 0;
     parallel_for_each_active_particle([&](MPM3Particle &p) {
-        if (p.state != MPM3Particle::UPDATING) {
-            error("Sync...");
-            return;
-        }
+//        if (p.state != MPM3Particle::UPDATING) {
+//            error("Sync...");
+//            return;
+//        }
         real delta_t = base_delta_t * (current_t_int - p.last_update);
         Vector v(0.0f), bv(0.0f);
         Matrix cdg(0.0f);

@@ -11,13 +11,13 @@
 
 TC_NAMESPACE_BEGIN
 
-class CacheReadBenchmark : public Benchmark {
+class CacheStridedReadBenchmark : public Benchmark {
 private:
     int working_set_size;
     int n;
     int step;
     // Use float here instead of real to make sure it's 4 bytes
-    std::vector<float> data;
+    std::vector<int> data;
 public:
     void initialize(const Config &config) override {
         Benchmark::initialize(config);
@@ -27,14 +27,17 @@ public:
         assert_info((working_set_size & (working_set_size - 1)) == 0, "working_set_size should be a power of 2");
         n = working_set_size / 4;
         data.resize(n);
+        for (auto &d : data) {
+            d = 1;
+        }
     }
 
 protected:
     void iterate() override {
-        float a0 = 0;
-        float a1 = 0;
-        float a2 = 0;
-        float a3 = 0;
+        int a0 = 0;
+        int a1 = 0;
+        int a2 = 0;
+        int a3 = 0;
         unsigned int j = 0;
         for (unsigned i = 0; i < workload / 4; i++) {
             j = (j + step) & (n - 1);
@@ -50,8 +53,7 @@ protected:
     }
 };
 
-TC_IMPLEMENTATION(Benchmark, CacheReadBenchmark, "cache");
-
+TC_IMPLEMENTATION(Benchmark, CacheStridedReadBenchmark, "cache_strided_read");
 
 TC_NAMESPACE_END
 

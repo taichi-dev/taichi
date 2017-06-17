@@ -70,7 +70,7 @@ typedef unsigned long long uint64;
 #endif
 
 // Check for inf, nan?
-#define CV_ON
+// #define CV_ON
 
 #include <type_traits>
 

@@ -14,13 +14,16 @@
 #include <taichi/visual/texture.h>
 #include <taichi/math/math_util.h>
 #include <taichi/common/asset_manager.h>
+#include <taichi/system/profiler.h>
 
 TC_NAMESPACE_BEGIN
 
 // Note: assuming abs(x) <= 2!!
-inline float w(float x) {
+inline real w(real x) {
     x = abs(x);
+#ifdef CV_ON
     assert(x <= 2);
+#endif
     if (x < 1) {
         return 0.5f * x * x * x - x * x + 2.0f / 3.0f;
     } else {
@@ -29,12 +32,14 @@ inline float w(float x) {
 }
 
 // Note: assuming abs(x) <= 2!!
-inline float dw(float x) {
-    float s = x < 0.0f ? -1.0f : 1.0f;
+inline real dw(real x) {
+    real s = x < 0.0f ? -1.0f : 1.0f;
     x *= s;
+#ifdef CV_ON
     assert(x <= 2.0f);
-    float val;
-    float xx = x * x;
+#endif
+    real val;
+    real xx = x * x;
     if (x < 1.0f) {
         val = 1.5f * xx - 2.0f * x;
     } else {
@@ -43,7 +48,7 @@ inline float dw(float x) {
     return s * val;
 }
 
-inline float w(const Vector3 &a) {
+inline real w(const Vector3 &a) {
     return w(a.x) * w(a.y) * w(a.z);
 }
 
@@ -114,11 +119,9 @@ std::vector<RenderParticle> MPM3D::get_render_particles() const {
         Vector3 pos = p.pos - center + (current_t_int - p.last_update) * base_delta_t * p.v;
         if (p.state == MPM3Particle::UPDATING) {
             render_particles.push_back(Particle(pos, Vector4(0.8f, 0.1f, 0.2f, 0.5f)));
-        } else
-        if (p.state == MPM3Particle::BUFFER) {
+        } else if (p.state == MPM3Particle::BUFFER) {
             render_particles.push_back(Particle(pos, Vector4(0.8f, 0.8f, 0.2f, 0.5f)));
-        }
-        else {
+        } else {
             render_particles.push_back(Particle(pos, Vector4(0.8f, 0.9f, 1.0f, 0.5f)));
         }
     }
@@ -153,10 +156,6 @@ void MPM3D::resample() {
     if (apic)
         alpha_delta_t = 0;
     parallel_for_each_active_particle([&](MPM3Particle &p) {
-//        if (p.state != MPM3Particle::UPDATING) {
-//            error("Sync...");
-//            return;
-//        }
         real delta_t = base_delta_t * (current_t_int - p.last_update);
         Vector v(0.0f), bv(0.0f);
         Matrix cdg(0.0f);
@@ -175,19 +174,27 @@ void MPM3D::resample() {
                        aa[0] * bb[1], aa[1] * bb[1], aa[2] * bb[1],
                        aa[0] * bb[2], aa[1] * bb[2], aa[2] * bb[2]);
             b += weight * out;
+#ifdef TC_MPM_WITH_FLIP
             bv += weight * grid_velocity_backup[ind];
+#endif
             cdg += glm::outerProduct(grid_velocity[ind], gw);
             CV(grid_velocity[ind]);
         }
         if (count != 64 || !apic) {
             b = Matrix(0);
         }
-        // We should use an std::exp here, but it is too slow...
+        // We should use an std::exp here, but that is too slow...
         real damping = std::max(0.0f, 1.0f - delta_t * affine_damping);
         p.apic_b = b * damping;
         cdg = Matrix(1) + delta_t * cdg;
+#ifdef TC_MPM_WITH_FLIP
+        // APIC part + FLIP part
         p.v = (1 - alpha_delta_t) * v + alpha_delta_t * (v - bv + p.v);
+#else
+        p.v = v;
+#endif
         Matrix dg = cdg * p.dg_e * p.dg_p;
+#ifdef CV_ON
         if (abnormal(dg) || abnormal(cdg) || abnormal(p.dg_e) || abnormal(p.dg_cache)) {
             P(dg);
             P(cdg);
@@ -196,8 +203,10 @@ void MPM3D::resample() {
             P(p.dg_cache);
             error("");
         }
+#endif
         p.dg_e = cdg * p.dg_e;
         p.dg_cache = dg;
+#ifdef CV_ON
         if (abnormal(dg) || abnormal(cdg) || abnormal(p.dg_e) || abnormal(p.dg_cache)) {
             P(dg);
             P(cdg);
@@ -206,10 +215,11 @@ void MPM3D::resample() {
             P(p.dg_cache);
             error("");
         }
+#endif
     });
 }
 
-void MPM3D::apply_deformation_force(float delta_t) {
+void MPM3D::apply_deformation_force(real delta_t) {
     parallel_for_each_active_particle([&](MPM3Particle &p) {
         p.calculate_force();
     });
@@ -270,17 +280,10 @@ void MPM3D::particle_collision_resolution(real t) {
 }
 
 void MPM3D::substep() {
+    Profiler _p("mpm_substep");
     if (!particles.empty()) {
-        /*
-        for (auto &p : particles) {
-            p.calculate_kernels();
-        }
-        */
-
         scheduler.update_particle_groups();
         scheduler.reset_particle_states();
-//        int64 original_t_int_increment;
-//        int64 t_int_increment;
         old_t_int = current_t_int;
         if (async) {
             scheduler.reset();
@@ -307,27 +310,28 @@ void MPM3D::substep() {
             current_t_int += t_int_increment;
             current_t = current_t_int * base_delta_t;
         }
-        scheduler.update();
-//        P(scheduler.active_grid_points.size());
-//        P(scheduler.active_particles.size());
-
-        rasterize();
+        TC_PROFILE("update", scheduler.update());
+        TC_PROFILE("rasterize", rasterize());
+#ifdef TC_MPM_WITH_FLIP
         grid_backup_velocity();
-        grid_apply_external_force(gravity, t_int_increment * base_delta_t);
-        apply_deformation_force(t_int_increment * base_delta_t);
-        grid_apply_boundary_conditions(levelset, current_t);
-
+#endif
+        TC_PROFILE("external_force", grid_apply_external_force(gravity, t_int_increment * base_delta_t));
+        TC_PROFILE("deformation_force", apply_deformation_force(t_int_increment * base_delta_t));
+        TC_PROFILE("boundary_condition", grid_apply_boundary_conditions(levelset, current_t));
+#ifdef CV_ON
         for (auto &p: particles) {
             if (abnormal(p->dg_e)) {
                 P(p->dg_e);
                 error("abnormal DG_e (before resampling)");
             }
         }
-        resample();
+#endif
+        TC_PROFILE("resample", resample());
         if (!async) {
             for (auto &p: particles) {
                 assert_info(p->state == MPM3Particle::UPDATING, "should be updating");
             }
+#ifdef CV_ON
             for (auto &p: particles) {
                 if (abnormal(p->dg_e)) {
                     P(p->dg_e);
@@ -340,18 +344,23 @@ void MPM3D::substep() {
                     error("abnormal DG_e in active_particles");
                 }
             }
+#endif
         }
-        parallel_for_each_particle([&](MPM3Particle &p) {
-            if (p.state == MPM3Particle::UPDATING) {
-                p.pos += (current_t_int - p.last_update) * base_delta_t * p.v;
-                p.last_update = current_t_int;
-                p.pos.x = clamp(p.pos.x, 0.0f, res[0] - eps);
-                p.pos.y = clamp(p.pos.y, 0.0f, res[1] - eps);
-                p.pos.z = clamp(p.pos.z, 0.0f, res[2] - eps);
-                p.plasticity();
-            }
-        });
-        particle_collision_resolution(current_t);
+        {
+            Profiler _("plasticity");
+            // TODO: should this be active particle?
+            parallel_for_each_particle([&](MPM3Particle &p) {
+                if (p.state == MPM3Particle::UPDATING) {
+                    p.pos += (current_t_int - p.last_update) * base_delta_t * p.v;
+                    p.last_update = current_t_int;
+                    p.pos.x = clamp(p.pos.x, 0.0f, res[0] - eps);
+                    p.pos.y = clamp(p.pos.y, 0.0f, res[1] - eps);
+                    p.pos.z = clamp(p.pos.z, 0.0f, res[2] - eps);
+                    p.plasticity();
+                }
+            });
+        }
+        TC_PROFILE("particle_collision", particle_collision_resolution(current_t));
         if (async) {
             scheduler.enforce_smoothness(original_t_int_increment);
         }

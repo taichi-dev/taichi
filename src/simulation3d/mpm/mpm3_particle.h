@@ -67,8 +67,6 @@ struct MPM3Particle {
 
     virtual Matrix get_energy_gradient() = 0;
 
-    virtual void calculate_kernels() {}
-
     virtual void calculate_force() = 0;
 
     virtual void plasticity() {};
@@ -118,7 +116,8 @@ struct EPParticle3 : public MPM3Particle {
         Matrix r, s;
         polar_decomp(dg_e, r, s);
         Matrix3 grad = 2 * mu * (dg_e - r) +
-               lambda * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
+                       lambda * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
+#ifdef CV_ON
         if (abnormal(r) || abnormal(dg_e) || abnormal(s) || abnormal(glm::inverse(dg_e)) || abnormal(grad)) {
             P(dg_e);
             P(dg_p);
@@ -133,12 +132,12 @@ struct EPParticle3 : public MPM3Particle {
             P(lambda);
             error("");
         }
+#endif
         return grad;
     }
 
-    virtual void calculate_kernels() override {}
-
     virtual void calculate_force() override {
+#ifdef CV_ON
         if (abnormal(vol)) {
             P(vol);
             error("Abnormal volume");
@@ -146,12 +145,14 @@ struct EPParticle3 : public MPM3Particle {
         if (abnormal(dg_e)) {
             P(dg_e);
         }
+#endif
         tmp_force = -vol * get_energy_gradient() * glm::transpose(dg_e);
     };
 
     virtual void plasticity() override {
         Matrix svd_u, sig, svd_v;
         svd(dg_e, svd_u, sig, svd_v);
+#ifdef CV_ON
         if (abnormal(sig) || abnormal(svd_u) || abnormal(svd_v)) {
             P(dg_e);
             P(sig);
@@ -159,13 +160,17 @@ struct EPParticle3 : public MPM3Particle {
             P(svd_v);
             error("abnormal SVD");
         }
+#endif
         for (int i = 0; i < D; i++) {
+#ifdef CV_ON
             assert_info(sig[i][i] > -eps,
                         "sigular values should be non-negative, instead of " + std::to_string(sig[i][i]));
+#endif
             sig[i][i] = clamp(sig[i][i], 1.0f - theta_c, 1.0f + theta_s);
         }
         dg_e = svd_u * sig * glm::transpose(svd_v);
         dg_p = glm::inverse(dg_e) * dg_cache;
+#ifdef CV_ON
         if (abnormal(dg_p) || abnormal(dg_e)) {
             P(dg_e);
             P(dg_p);
@@ -175,9 +180,10 @@ struct EPParticle3 : public MPM3Particle {
             P(svd_v);
             error("abnormal singular value");
         }
+#endif
         // clamp dg_p to ensure that it does not explode
         svd(dg_p, svd_u, sig, svd_v);
-         for (int i = 0; i < D; i++) {
+        for (int i = 0; i < D; i++) {
             sig[i][i] = clamp(sig[i][i], 0.1f, 10.0f);
         }
         dg_p = svd_u * sig * glm::transpose(svd_v);
@@ -231,10 +237,10 @@ struct DPParticle3 : public MPM3Particle {
         Matrix3 epsilon(log(sigma[0][0]), 0.f, 0.f, 0.f, log(sigma[1][1]), 0.f, 0.f, 0.f, log(sigma[2][2]));
         real tr = epsilon[0][0] + epsilon[1][1] + epsilon[2][2];
         Matrix3 epsilon_hat = epsilon - (tr) / d * Matrix3(1.0f);
-        real epsilon_for = sqrt(
+        real epsilon_for = std::sqrt(
                 epsilon[0][0] * epsilon[0][0] + epsilon[1][1] * epsilon[1][1] + epsilon[2][2] * epsilon[2][2]);
-        real epsilon_hat_for = sqrt(epsilon_hat[0][0] * epsilon_hat[0][0] + epsilon_hat[1][1] * epsilon_hat[1][1] +
-                                    epsilon_hat[2][2] * epsilon_hat[2][2]);
+        real epsilon_hat_for = std::sqrt(epsilon_hat[0][0] * epsilon_hat[0][0] + epsilon_hat[1][1] * epsilon_hat[1][1] +
+                                         epsilon_hat[2][2] * epsilon_hat[2][2]);
         if (epsilon_hat_for <= 0 || tr > 0.0f) {
             sigma_out = Matrix3(1.0f);
             out = epsilon_for;
@@ -251,21 +257,20 @@ struct DPParticle3 : public MPM3Particle {
         }
     }
 
-    void calculate_kernels() override {
-    }
-
     void calculate_force() override {
         Matrix3 u, v, sig, dg = dg_e;
         svd(dg_e, u, sig, v);
 
+#ifdef CV_ON
         assert_info(sig[0][0] > 0, "negative singular value");
         assert_info(sig[1][1] > 0, "negative singular value");
         assert_info(sig[2][2] > 0, "negative singular value");
+#endif
 
         Matrix3 log_sig(log(sig[0][0]), 0.f, 0.f, 0.f, log(sig[1][1]), 0.f, 0.f, 0.f, log(sig[2][2]));
         Matrix3 inv_sig(1.f / (sig[0][0]), 0.f, 0.f, 0.f, 1.f / (sig[1][1]), 0.f, 0.f, 0.f, 1.f / (sig[2][2]));
         Matrix3 center =
-                2 * mu_0 * inv_sig * log_sig + lambda_0 * (log_sig[0][0] + log_sig[1][1] + log_sig[2][2]) * inv_sig;
+                2.0f * mu_0 * inv_sig * log_sig + lambda_0 * (log_sig[0][0] + log_sig[1][1] + log_sig[2][2]) * inv_sig;
 
         tmp_force = -vol * (u * center * glm::transpose(v)) * glm::transpose(dg);
     }
@@ -278,6 +283,7 @@ struct DPParticle3 : public MPM3Particle {
         project(sig, alpha, t, delta_q);
         Matrix3 rec = u * sig * glm::transpose(v);
         Matrix3 diff = rec - dg_e;
+#ifdef CV_ON
         if (!(frobenius_norm(diff) < 1e-4f)) {
             // debug code
             P(dg_e);
@@ -287,11 +293,12 @@ struct DPParticle3 : public MPM3Particle {
             P(v);
             error("SVD error\n");
         }
+#endif
         dg_e = u * t * glm::transpose(v);
         dg_p = v * glm::inverse(t) * sig * glm::transpose(v) * dg_p;
         q += delta_q;
         real phi = h_0 + (h_1 * q - h_3) * expf(-h_2 * q);
-        alpha = sqrtf(2.0f / 3.0f) * (2.0f * sin(phi * pi / 180.0f)) / (3.0f - sin(phi * pi / 180.0f));
+        alpha = std::sqrt(2.0f / 3.0f) * (2.0f * std::sin(phi * pi / 180.0f)) / (3.0f - std::sin(phi * pi / 180.0f));
     }
 
     real get_allowed_dt() const override {

@@ -235,6 +235,13 @@ void MPM3D::apply_deformation_force(real delta_t) {
     {
         Profiler _("rasterize_force");
         parallel_for_each_active_particle([&](MPM3Particle &p) {
+            real w_cache[3][4];
+            Vector p_frac(fract(p.pos));
+            for (int k = 0; k < 3; k++) {
+                for (int i = 0; i < 4; i++) {
+                    w_cache[k][i] = w(p.pos[k]);
+                }
+            }
             for (auto &ind : get_bounded_rasterization_region(p.pos)) {
                 real mass = grid_mass[ind];
                 if (mass == 0.0f) { // No EPS here

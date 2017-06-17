@@ -12,7 +12,7 @@
 #include <Eigen/Dense>
 #include "qr_svd.h"
 
-#define TC_USE_EIGEN_SVD
+// #define TC_USE_EIGEN_SVD
 
 TC_NAMESPACE_BEGIN
 

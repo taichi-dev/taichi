@@ -18,6 +18,14 @@
 
 TC_NAMESPACE_BEGIN
 
+#ifdef TC_MPM_USE_LOCKS
+#define LOCK_GRID grid_locks[ind].lock();
+#define UNLOCK_GRID grid_locks[ind].unlock();
+#els
+#define LOCK_GRID
+#define UNLOCK_GRID
+#endif
+
 // Note: assuming abs(x) <= 2!!
 inline real w(real x) {
     x = abs(x);
@@ -55,6 +63,31 @@ inline real w(const Vector3 &a) {
 inline Vector3 dw(const Vector3 &a) {
     return Vector3(dw(a.x) * w(a.y) * w(a.z), w(a.x) * dw(a.y) * w(a.z), w(a.x) * w(a.y) * dw(a.z));
 }
+
+#define PREPROCESS_KERNELS \
+    real w_cache[3][4]; \
+    real dw_cache[3][4]; \
+    Vector p_fract = fract(p.pos); \
+    for (int k = 0; k < 3; k++) { \
+        for (int i = 0; i < 4; i++) { \
+            w_cache[k][i] = w(p_fract[k] - i + 1); \
+            dw_cache[k][i] = dw(p_fract[k] - i + 1); \
+        } \
+    } \
+    const int base_i = int(floor(p.pos[0])) - 1; \
+    const int base_j = int(floor(p.pos[1])) - 1; \
+    const int base_k = int(floor(p.pos[2])) - 1;
+
+#define CALCULATE_WEIGHT \
+    real weight = w_cache[0][ind.i - base_i] * w_cache[1][ind.j - base_j] * w_cache[2][ind.k - base_k]
+
+#define CALCULATE_GRADIENT \
+    Vector dw = Vector3( \
+            dw_cache[0][ind.i - base_i] * w_cache[1][ind.j - base_j] * w_cache[2][ind.k - base_k], \
+            w_cache[0][ind.i - base_i] * dw_cache[1][ind.j - base_j] * w_cache[2][ind.k - base_k], \
+            w_cache[0][ind.i - base_i] * w_cache[1][ind.j - base_j] * dw_cache[2][ind.k - base_k] \
+    );
+
 
 void MPM3D::initialize(const Config &config) {
     Simulation3D::initialize(config);
@@ -128,19 +161,21 @@ std::vector<RenderParticle> MPM3D::get_render_particles() const {
     return render_particles;
 }
 
+
 void MPM3D::rasterize() {
     TC_PROFILE("reset_velocity", grid_velocity.reset(Vector(0.0f)));
     TC_PROFILE("reset mass", grid_mass.reset(0.0f));
     {
         Profiler _("deposit");
         parallel_for_each_active_particle([&](MPM3Particle &p) {
+            PREPROCESS_KERNELS;
             for (auto &ind : get_bounded_rasterization_region(p.pos)) {
                 Vector3 d_pos = Vector(ind.i, ind.j, ind.k) - p.pos;
-                real weight = w(d_pos);
-                grid_locks[ind].lock();
+                CALCULATE_WEIGHT;
+                LOCK_GRID
                 grid_mass[ind] += weight * p.mass;
                 grid_velocity[ind] += weight * p.mass * (p.v + (3.0f) * p.apic_b * d_pos);
-                grid_locks[ind].unlock();
+                UNLOCK_GRID
             }
         });
     }
@@ -167,15 +202,15 @@ void MPM3D::resample() {
         Matrix cdg(0.0f);
         Matrix b(0.0f);
         int count = 0;
+        PREPROCESS_KERNELS;
         for (auto &ind : get_bounded_rasterization_region(p.pos)) {
             count++;
-            Vector d_pos = p.pos - Vector3(ind.i, ind.j, ind.k);
-            real weight = w(d_pos);
-            Vector gw = dw(d_pos);
+            CALCULATE_WEIGHT;
+            CALCULATE_GRADIENT;
             Vector grid_vel = grid_velocity[ind];
             v += weight * grid_vel;
             Vector aa = grid_vel;
-            Vector bb = -d_pos;
+            Vector bb = Vector3(ind.i, ind.j, ind.k) - p.pos;
             Matrix out(aa[0] * bb[0], aa[1] * bb[0], aa[2] * bb[0],
                        aa[0] * bb[1], aa[1] * bb[1], aa[2] * bb[1],
                        aa[0] * bb[2], aa[1] * bb[2], aa[2] * bb[2]);
@@ -183,7 +218,7 @@ void MPM3D::resample() {
 #ifdef TC_MPM_WITH_FLIP
             bv += weight * grid_velocity_backup[ind];
 #endif
-            cdg += glm::outerProduct(grid_velocity[ind], gw);
+            cdg += glm::outerProduct(grid_velocity[ind], dw);
             CV(grid_velocity[ind]);
         }
         if (count != 64 || !apic) {
@@ -235,38 +270,20 @@ void MPM3D::apply_deformation_force(real delta_t) {
     {
         Profiler _("rasterize_force");
         parallel_for_each_active_particle([&](MPM3Particle &p) {
-            real w_cache[3][4];
-            real dw_cache[3][4];
-            Vector p_fract = fract(p.pos);
-            for (int k = 0; k < 3; k++) {
-                for (int i = 0; i < 4; i++) {
-                    w_cache[k][i] = w(p_fract[k] - i + 1);
-                    dw_cache[k][i] = dw(p_fract[k] - i + 1);
-                }
-            }
-            const int base_i = int(floor(p.pos[0])) - 1;
-            const int base_j = int(floor(p.pos[1])) - 1;
-            const int base_k = int(floor(p.pos[2])) - 1;
+            PREPROCESS_KERNELS;
             for (auto &ind : get_bounded_rasterization_region(p.pos)) {
                 real mass = grid_mass[ind];
                 if (mass == 0.0f) { // No EPS here
                     continue;
                 }
-                Vector d_pos = p.pos - Vector3(ind.i, ind.j, ind.k);
-                //Vector gw = dw(d_pos);
-                Vector gw_ = Vector3(
-                        dw_cache[0][ind.i - base_i] * w_cache[1][ind.j - base_j] * w_cache[2][ind.k - base_k],
-                        w_cache[0][ind.i - base_i] * dw_cache[1][ind.j - base_j] * w_cache[2][ind.k - base_k],
-                        w_cache[0][ind.i - base_i] * w_cache[1][ind.j - base_j] * dw_cache[2][ind.k - base_k]
-                );
-                //assert_info(glm::length(gw - gw_) < 1e-6f, "error");
-                Vector force = p.tmp_force * gw_;
+                CALCULATE_GRADIENT;
+                Vector force = p.tmp_force * dw;
                 CV(force);
                 CV(p.tmp_force);
                 CV(gw);
-                // grid_locks[ind].lock();
+                LOCK_GRID
                 grid_velocity[ind] += delta_t / mass * force;
-                // grid_locks[ind].unlock();
+                UNLOCK_GRID
             }
         });
     }

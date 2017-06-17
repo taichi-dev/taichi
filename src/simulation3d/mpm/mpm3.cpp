@@ -236,20 +236,31 @@ void MPM3D::apply_deformation_force(real delta_t) {
         Profiler _("rasterize_force");
         parallel_for_each_active_particle([&](MPM3Particle &p) {
             real w_cache[3][4];
-            Vector p_frac(fract(p.pos));
+            real dw_cache[3][4];
+            Vector p_fract = fract(p.pos);
             for (int k = 0; k < 3; k++) {
                 for (int i = 0; i < 4; i++) {
-                    w_cache[k][i] = w(p.pos[k]);
+                    w_cache[k][i] = w(p_fract[k] - i + 1);
+                    dw_cache[k][i] = dw(p_fract[k] - i + 1);
                 }
             }
+            const int base_i = int(floor(p.pos[0])) - 1;
+            const int base_j = int(floor(p.pos[1])) - 1;
+            const int base_k = int(floor(p.pos[2])) - 1;
             for (auto &ind : get_bounded_rasterization_region(p.pos)) {
                 real mass = grid_mass[ind];
                 if (mass == 0.0f) { // No EPS here
                     continue;
                 }
                 Vector d_pos = p.pos - Vector3(ind.i, ind.j, ind.k);
-                Vector gw = dw(d_pos);
-                Vector force = p.tmp_force * gw;
+                //Vector gw = dw(d_pos);
+                Vector gw_ = Vector3(
+                        dw_cache[0][ind.i - base_i] * w_cache[1][ind.j - base_j] * w_cache[2][ind.k - base_k],
+                        w_cache[0][ind.i - base_i] * dw_cache[1][ind.j - base_j] * w_cache[2][ind.k - base_k],
+                        w_cache[0][ind.i - base_i] * w_cache[1][ind.j - base_j] * dw_cache[2][ind.k - base_k]
+                );
+                //assert_info(glm::length(gw - gw_) < 1e-6f, "error");
+                Vector force = p.tmp_force * gw_;
                 CV(force);
                 CV(p.tmp_force);
                 CV(gw);

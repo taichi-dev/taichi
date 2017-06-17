@@ -264,9 +264,9 @@ void MPM3D::apply_deformation_force(real delta_t) {
                 CV(force);
                 CV(p.tmp_force);
                 CV(gw);
-                grid_locks[ind].lock();
+                // grid_locks[ind].lock();
                 grid_velocity[ind] += delta_t / mass * force;
-                grid_locks[ind].unlock();
+                // grid_locks[ind].unlock();
             }
         });
     }

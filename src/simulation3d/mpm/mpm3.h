@@ -44,6 +44,7 @@ public:
     std::vector<MPM3Particle *> particles; // for efficiency
     Array3D<Vector> grid_velocity;
     Array3D<real> grid_mass;
+    Array3D<Vector4> grid_velocity_and_mass;
 #ifdef TC_MPM_WITH_FLIP
     Array3D<Vector> grid_velocity_backup;
 #endif

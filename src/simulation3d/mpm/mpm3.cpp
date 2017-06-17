@@ -21,7 +21,7 @@ TC_NAMESPACE_BEGIN
 #ifdef TC_MPM_USE_LOCKS
 #define LOCK_GRID grid_locks[ind].lock();
 #define UNLOCK_GRID grid_locks[ind].unlock();
-#els
+#else
 #define LOCK_GRID
 #define UNLOCK_GRID
 #endif
@@ -107,6 +107,7 @@ void MPM3D::initialize(const Config &config) {
 
     grid_velocity.initialize(res + Vector3i(1), Vector(0.0f), Vector3(0.0f));
     grid_mass.initialize(res + Vector3i(1), 0, Vector3(0.0f));
+    grid_velocity_and_mass.initialize(res + Vector3i(1), Vector4(0.0f), Vector3(0.0f));
     grid_locks.initialize(res + Vector3i(1), 0, Vector3(0.0f));
     scheduler.initialize(res, base_delta_t, cfl, strength_dt_mul, &levelset);
 }
@@ -163,6 +164,7 @@ std::vector<RenderParticle> MPM3D::get_render_particles() const {
 
 
 void MPM3D::rasterize() {
+    grid_velocity_and_mass.reset(Vector4(0.0f));
     TC_PROFILE("reset_velocity", grid_velocity.reset(Vector(0.0f)));
     TC_PROFILE("reset mass", grid_mass.reset(0.0f));
     {
@@ -173,8 +175,11 @@ void MPM3D::rasterize() {
                 Vector3 d_pos = Vector(ind.i, ind.j, ind.k) - p.pos;
                 CALCULATE_WEIGHT;
                 LOCK_GRID
-                grid_mass[ind] += weight * p.mass;
-                grid_velocity[ind] += weight * p.mass * (p.v + (3.0f) * p.apic_b * d_pos);
+                Vector4 delta_velocity_and_mass;
+                *reinterpret_cast<Vector3 *>(&delta_velocity_and_mass) =
+                        p.v + (3.0f * (p.apic_b * d_pos));
+                delta_velocity_and_mass[3] = 1.0f;
+                grid_velocity_and_mass[ind] += (weight * p.mass) * delta_velocity_and_mass;
                 UNLOCK_GRID
             }
         });
@@ -182,10 +187,13 @@ void MPM3D::rasterize() {
     {
         Profiler _("normalize");
         for (auto ind : grid_mass.get_region()) {
-            if (grid_mass[ind] > 0) {
+            auto &velocity_and_mass = grid_velocity_and_mass[ind];
+            const real mass = velocity_and_mass[3];
+            if (mass > 0) {
+                grid_mass[ind] = mass;
                 CV(grid_velocity[ind]);
                 CV(1 / grid_mass[ind]);
-                grid_velocity[ind] = grid_velocity[ind] * (1.0f / grid_mass[ind]);
+                grid_velocity[ind] = (1.0f / mass) * (*reinterpret_cast<Vector3 *>(&velocity_and_mass));
                 CV(grid_velocity[ind]);
             }
         }

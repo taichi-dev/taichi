@@ -129,24 +129,30 @@ std::vector<RenderParticle> MPM3D::get_render_particles() const {
 }
 
 void MPM3D::rasterize() {
-    grid_velocity.reset(Vector(0.0f));
-    grid_mass.reset(0.0f);
-    parallel_for_each_active_particle([&](MPM3Particle &p) {
-        for (auto &ind : get_bounded_rasterization_region(p.pos)) {
-            Vector3 d_pos = Vector(ind.i, ind.j, ind.k) - p.pos;
-            real weight = w(d_pos);
-            grid_locks[ind].lock();
-            grid_mass[ind] += weight * p.mass;
-            grid_velocity[ind] += weight * p.mass * (p.v + (3.0f) * p.apic_b * d_pos);
-            grid_locks[ind].unlock();
-        }
-    });
-    for (auto ind : grid_mass.get_region()) {
-        if (grid_mass[ind] > 0) {
-            CV(grid_velocity[ind]);
-            CV(1 / grid_mass[ind]);
-            grid_velocity[ind] = grid_velocity[ind] * (1.0f / grid_mass[ind]);
-            CV(grid_velocity[ind]);
+    TC_PROFILE("reset_velocity", grid_velocity.reset(Vector(0.0f)));
+    TC_PROFILE("reset mass", grid_mass.reset(0.0f));
+    {
+        Profiler _("deposit");
+        parallel_for_each_active_particle([&](MPM3Particle &p) {
+            for (auto &ind : get_bounded_rasterization_region(p.pos)) {
+                Vector3 d_pos = Vector(ind.i, ind.j, ind.k) - p.pos;
+                real weight = w(d_pos);
+                grid_locks[ind].lock();
+                grid_mass[ind] += weight * p.mass;
+                grid_velocity[ind] += weight * p.mass * (p.v + (3.0f) * p.apic_b * d_pos);
+                grid_locks[ind].unlock();
+            }
+        });
+    }
+    {
+        Profiler _("normalize");
+        for (auto ind : grid_mass.get_region()) {
+            if (grid_mass[ind] > 0) {
+                CV(grid_velocity[ind]);
+                CV(1 / grid_mass[ind]);
+                grid_velocity[ind] = grid_velocity[ind] * (1.0f / grid_mass[ind]);
+                CV(grid_velocity[ind]);
+            }
         }
     }
 }
@@ -220,26 +226,32 @@ void MPM3D::resample() {
 }
 
 void MPM3D::apply_deformation_force(real delta_t) {
-    parallel_for_each_active_particle([&](MPM3Particle &p) {
-        p.calculate_force();
-    });
-    parallel_for_each_active_particle([&](MPM3Particle &p) {
-        for (auto &ind : get_bounded_rasterization_region(p.pos)) {
-            real mass = grid_mass[ind];
-            if (mass == 0.0f) { // No EPS here
-                continue;
+    {
+        Profiler _("calculate_force");
+        parallel_for_each_active_particle([&](MPM3Particle &p) {
+            p.calculate_force();
+        });
+    }
+    {
+        Profiler _("rasterize_force");
+        parallel_for_each_active_particle([&](MPM3Particle &p) {
+            for (auto &ind : get_bounded_rasterization_region(p.pos)) {
+                real mass = grid_mass[ind];
+                if (mass == 0.0f) { // No EPS here
+                    continue;
+                }
+                Vector d_pos = p.pos - Vector3(ind.i, ind.j, ind.k);
+                Vector gw = dw(d_pos);
+                Vector force = p.tmp_force * gw;
+                CV(force);
+                CV(p.tmp_force);
+                CV(gw);
+                grid_locks[ind].lock();
+                grid_velocity[ind] += delta_t / mass * force;
+                grid_locks[ind].unlock();
             }
-            Vector d_pos = p.pos - Vector3(ind.i, ind.j, ind.k);
-            Vector gw = dw(d_pos);
-            Vector force = p.tmp_force * gw;
-            CV(force);
-            CV(p.tmp_force);
-            CV(gw);
-            grid_locks[ind].lock();
-            grid_velocity[ind] += delta_t / mass * force;
-            grid_locks[ind].unlock();
-        }
-    });
+        });
+    }
 }
 
 void MPM3D::grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, real t) {
@@ -316,7 +328,7 @@ void MPM3D::substep() {
         grid_backup_velocity();
 #endif
         TC_PROFILE("external_force", grid_apply_external_force(gravity, t_int_increment * base_delta_t));
-        TC_PROFILE("deformation_force", apply_deformation_force(t_int_increment * base_delta_t));
+        TC_PROFILE("apply_deformation_force", apply_deformation_force(t_int_increment * base_delta_t));
         TC_PROFILE("boundary_condition", grid_apply_boundary_conditions(levelset, current_t));
 #ifdef CV_ON
         for (auto &p: particles) {

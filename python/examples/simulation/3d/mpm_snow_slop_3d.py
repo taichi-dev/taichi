@@ -9,7 +9,7 @@ from taichi.visual.texture import Texture
 import taichi as tc
 
 gi_render = False
-step_number = 1
+step_number = 10
 # step_number = 1
 # total_frames = 1
 grid_downsample = 2

@@ -20,7 +20,7 @@ TC_NAMESPACE_BEGIN
 class ProfilerRecords {
 public:
     struct Node {
-        std::map<std::string, std::unique_ptr<Node>> childs;
+        std::vector<std::unique_ptr<Node>> childs;
         Node *parent;
         std::string name;
         double total_time;
@@ -43,10 +43,13 @@ public:
         }
 
         Node *get_child(const std::string &name) {
-            if (childs.find(name) == childs.end()) {
-                childs[name] = std::make_unique<Node>(name, this);
+            for (auto &ch: childs) {
+                if (ch->name == name) {
+                    return ch.get();
+                }
             }
-            return childs[name].get();
+            childs.push_back(std::make_unique<Node>(name, this));
+            return childs.back().get();
         }
     };
 
@@ -58,7 +61,7 @@ public:
         current_node = root.get();
     }
 
-    void print(std::unique_ptr<Node> &node, int depth) {
+    void print(Node *node, int depth) {
         auto make_indent = [depth](int additional) {
             for (int i = 0; i < depth + additional; i++) {
                 printf("  ");
@@ -71,22 +74,22 @@ public:
             printf("%s\n", node->name.c_str());
         }
         if (total_time < eps) {
-            for (auto &it: node->childs) {
+            for (auto &ch: node->childs) {
                 make_indent(1);
-                auto child_time = it.second->get_averaged();
-                printf("%6.2f %s\n", child_time, it.second->name.c_str());
-                print(it.second, depth + 1);
+                auto child_time = ch->get_averaged();
+                printf("%6.2f %s\n", child_time, ch->name.c_str());
+                print(ch.get(), depth + 1);
             }
         } else {
             double unaccounted = total_time;
-            for (auto &it: node->childs) {
+            for (auto &ch: node->childs) {
                 make_indent(1);
-                auto child_time = it.second->get_averaged();
-                printf("%6.2f %4.1f%%  %s\n", child_time, child_time * 100.0 / total_time, it.second->name.c_str());
-                print(it.second, depth + 1);
+                auto child_time = ch->get_averaged();
+                printf("%6.2f %4.1f%%  %s\n", child_time, child_time * 100.0 / total_time, ch->name.c_str());
+                print(ch.get(), depth + 1);
                 unaccounted -= child_time;
             }
-            if (!node->childs.empty()) {
+            if (!node->childs.empty() && (unaccounted > total_time * 0.05)) {
                 make_indent(1);
                 printf("%6.2f %4.1f%%  %s\n", unaccounted, unaccounted * 100.0 / total_time, "[unaccounted]");
             }
@@ -94,7 +97,7 @@ public:
     }
 
     void print() {
-        print(root, 0);
+        print(root.get(), 0);
     }
 
     void insert_sample(double time) {

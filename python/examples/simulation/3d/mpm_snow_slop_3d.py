@@ -90,7 +90,7 @@ if __name__ == '__main__':
     t = 0
     for i in range(step_number):
         print 'process(%d/%d)' % (i, step_number)
-        mpm.step(0.003)
+        mpm.step(0.03)
         tc.core.print_profile_info()
         t += 0.003
         if gi_render:

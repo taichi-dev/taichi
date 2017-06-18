@@ -12,7 +12,7 @@
 
 TC_NAMESPACE_BEGIN
 
-template<typename T> using Array = Array3D<T>;
+template <typename T> using Array = Array3D<T>;
 
 void MPM3Scheduler::expand(bool expand_vel, bool expand_state) {
     Array<int> new_states;
@@ -51,7 +51,8 @@ void MPM3Scheduler::expand(bool expand_vel, bool expand_state) {
             for (int dy = -1; dy <= 1; dy++) {
                 for (int dz = -1; dz <= 1; dz++) {
                     if (states.inside(ind.neighbour(dx, dy, dz)))
-                        update(ind, dx, dy, dz, min_vel, max_vel, min_vel_expanded, max_vel_expanded, states, new_states);
+                        update(ind, dx, dy, dz, min_vel, max_vel, min_vel_expanded, max_vel_expanded, states,
+                               new_states);
                 }
             }
         }
@@ -83,6 +84,18 @@ void MPM3Scheduler::update() {
         }
     }
     update_particle_states();
+    // TODO: testing memory locality...
+    // std::random_shuffle(active_particles.begin(), active_particles.end());
+    /*
+    std::sort(active_particles.begin(), active_particles.end(),
+              [](MPM3Particle *a, MPM3Particle *b) {
+                  return a->key() < b->key();
+              });
+    for (auto &p :active_particles) {
+        p->pos = Vector3(10.0f);
+        p->v = Vector3(0.0f);
+    }
+    */
 }
 
 int64 MPM3Scheduler::update_max_dt_int(int64 t_int) {
@@ -166,10 +179,10 @@ void MPM3Scheduler::update_dt_limits(real t) {
 
     for (auto &ind : min_vel.get_region()) {
         real block_vel = std::max(
-            std::max(
-                max_vel_expanded[ind][0] - min_vel_expanded[ind][0],
-                max_vel_expanded[ind][1] - min_vel_expanded[ind][1]),
-            max_vel_expanded[ind][2] - min_vel_expanded[ind][2]
+                std::max(
+                        max_vel_expanded[ind][0] - min_vel_expanded[ind][0],
+                        max_vel_expanded[ind][1] - min_vel_expanded[ind][1]),
+                max_vel_expanded[ind][2] - min_vel_expanded[ind][2]
         ) + 1e-7f;
         if (block_vel < 0) {
             // Blocks with no particles
@@ -205,9 +218,9 @@ void MPM3Scheduler::update_dt_limits(real t) {
 void MPM3Scheduler::update_particle_states() {
     for (auto &p : get_active_particles()) {
         Vector3i low_res_pos(
-            int(p->pos.x / mpm3d_grid_block_size),
-            int(p->pos.y / mpm3d_grid_block_size),
-            int(p->pos.z / mpm3d_grid_block_size)
+                int(p->pos.x / mpm3d_grid_block_size),
+                int(p->pos.y / mpm3d_grid_block_size),
+                int(p->pos.z / mpm3d_grid_block_size)
         );
         if (states[low_res_pos] == 2) {
             p->color = Vector3(1.0f);

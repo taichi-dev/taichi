@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <immintrin.h>
 #include <taichi/math/qr_svd.h>
 #include <taichi/common/meta.h>
 #include <taichi/math/array_3d.h>
@@ -88,6 +89,13 @@ struct MPM3Particle {
     }
 
     virtual ~MPM3Particle() {}
+
+    uint64 key() const {
+        // 3D Morton Coding
+        const uint64 mask_x = 0x9249249249249249ULL;
+        return _pdep_u64(uint64(pos.x), mask_x) | _pdep_u64(uint64(pos.y), mask_x << 1) |
+               _pdep_u64(uint64(pos.z), mask_x << 2);
+    }
 };
 
 struct EPParticle3 : public MPM3Particle {
@@ -304,6 +312,7 @@ struct DPParticle3 : public MPM3Particle {
     real get_allowed_dt() const override {
         return 0.0f;
     }
+
 };
 
 TC_NAMESPACE_END

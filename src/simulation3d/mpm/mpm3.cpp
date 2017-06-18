@@ -171,15 +171,20 @@ void MPM3D::rasterize() {
         Profiler _("deposit");
         parallel_for_each_active_particle([&](MPM3Particle &p) {
             PREPROCESS_KERNELS;
-            for (auto &ind : get_bounded_rasterization_region(p.pos)) {
-                Vector3 d_pos = Vector(ind.i, ind.j, ind.k) - p.pos;
+            const Vector pos = p.pos, v = p.v;
+            const Matrix apic_b_3 = p.apic_b * 3.0f;
+            const real mass = p.mass;
+            Vector4 delta_velocity_and_mass;
+            delta_velocity_and_mass[3] = 1;
+            for (auto &ind : get_bounded_rasterization_region(pos)) {
+                Vector3 d_pos = Vector(ind.i, ind.j, ind.k) - pos;
                 CALCULATE_WEIGHT;
                 LOCK_GRID
-                Vector4 delta_velocity_and_mass;
+                // Originally
+                // v + 3 * apic_b * d_pos;
                 *reinterpret_cast<Vector3 *>(&delta_velocity_and_mass) =
-                        p.v + (3.0f * (p.apic_b * d_pos));
-                delta_velocity_and_mass[3] = 1.0f;
-                grid_velocity_and_mass[ind] += (weight * p.mass) * delta_velocity_and_mass;
+                        v + (apic_b_3 * d_pos);
+                grid_velocity_and_mass[ind] += (weight * mass) * delta_velocity_and_mass;
                 UNLOCK_GRID
             }
         });

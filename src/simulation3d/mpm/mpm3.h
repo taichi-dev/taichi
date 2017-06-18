@@ -86,8 +86,6 @@ public:
 
     void estimate_volume() {}
 
-    void rasterize();
-
     void resample();
 
     void grid_backup_velocity() {
@@ -96,7 +94,7 @@ public:
 #endif
     }
 
-    void apply_deformation_force(float delta_t);
+    void calculate_force_and_rasterize(float delta_t);
 
     void grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, real t);
 

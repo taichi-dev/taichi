@@ -79,10 +79,10 @@ inline Vector3 dw(const Vector3 &a) {
     const int base_k = int(floor(p.pos[2])) - 1;
 
 #define CALCULATE_WEIGHT \
-    real weight = w_cache[0][ind.i - base_i] * w_cache[1][ind.j - base_j] * w_cache[2][ind.k - base_k]
+    const real weight = w_cache[0][ind.i - base_i] * w_cache[1][ind.j - base_j] * w_cache[2][ind.k - base_k];
 
 #define CALCULATE_GRADIENT \
-    Vector dw = Vector3( \
+    const Vector dw( \
             dw_cache[0][ind.i - base_i] * w_cache[1][ind.j - base_j] * w_cache[2][ind.k - base_k], \
             w_cache[0][ind.i - base_i] * dw_cache[1][ind.j - base_j] * w_cache[2][ind.k - base_k], \
             w_cache[0][ind.i - base_i] * w_cache[1][ind.j - base_j] * dw_cache[2][ind.k - base_k] \
@@ -162,49 +162,6 @@ std::vector<RenderParticle> MPM3D::get_render_particles() const {
     return render_particles;
 }
 
-
-void MPM3D::rasterize() {
-    grid_velocity_and_mass.reset(Vector4(0.0f));
-    TC_PROFILE("reset_velocity", grid_velocity.reset(Vector(0.0f)));
-    TC_PROFILE("reset mass", grid_mass.reset(0.0f));
-    {
-        Profiler _("deposit");
-        parallel_for_each_active_particle([&](MPM3Particle &p) {
-            PREPROCESS_KERNELS;
-            const Vector pos = p.pos, v = p.v;
-            const Matrix apic_b_3 = p.apic_b * 3.0f;
-            const real mass = p.mass;
-            Vector4 delta_velocity_and_mass;
-            delta_velocity_and_mass[3] = 1;
-            for (auto &ind : get_bounded_rasterization_region(pos)) {
-                Vector3 d_pos = Vector(ind.i, ind.j, ind.k) - pos;
-                CALCULATE_WEIGHT;
-                LOCK_GRID
-                // Originally
-                // v + 3 * apic_b * d_pos;
-                *reinterpret_cast<Vector3 *>(&delta_velocity_and_mass) =
-                        v + (apic_b_3 * d_pos);
-                grid_velocity_and_mass[ind] += (weight * mass) * delta_velocity_and_mass;
-                UNLOCK_GRID
-            }
-        });
-    }
-    {
-        Profiler _("normalize");
-        for (auto ind : grid_mass.get_region()) {
-            auto &velocity_and_mass = grid_velocity_and_mass[ind];
-            const real mass = velocity_and_mass[3];
-            if (mass > 0) {
-                grid_mass[ind] = mass;
-                CV(grid_velocity[ind]);
-                CV(1 / grid_mass[ind]);
-                grid_velocity[ind] = (1.0f / mass) * (*reinterpret_cast<Vector3 *>(&velocity_and_mass));
-                CV(grid_velocity[ind]);
-            }
-        }
-    }
-}
-
 void MPM3D::resample() {
     real alpha_delta_t = 1;
     if (apic)
@@ -220,19 +177,20 @@ void MPM3D::resample() {
             count++;
             CALCULATE_WEIGHT;
             CALCULATE_GRADIENT;
-            Vector grid_vel = grid_velocity[ind];
-            v += weight * grid_vel;
-            Vector aa = grid_vel;
-            Vector bb = Vector3(ind.i, ind.j, ind.k) - p.pos;
+            const Vector grid_vel = grid_velocity[ind];
+            const Vector weight_grid_vel = weight * grid_vel;
+            v += weight_grid_vel;
+            const Vector aa = weight_grid_vel;
+            const Vector bb = Vector3(ind.i, ind.j, ind.k) - p.pos;
             Matrix out(aa[0] * bb[0], aa[1] * bb[0], aa[2] * bb[0],
                        aa[0] * bb[1], aa[1] * bb[1], aa[2] * bb[1],
                        aa[0] * bb[2], aa[1] * bb[2], aa[2] * bb[2]);
-            b += weight * out;
+            b += out;
 #ifdef TC_MPM_WITH_FLIP
             bv += weight * grid_velocity_backup[ind];
 #endif
-            cdg += glm::outerProduct(grid_velocity[ind], dw);
-            CV(grid_velocity[ind]);
+            cdg += glm::outerProduct(grid_vel, dw);
+            CV(grid_vel);
         }
         if (count != 64 || !apic) {
             b = Matrix(0);
@@ -273,33 +231,64 @@ void MPM3D::resample() {
     });
 }
 
-void MPM3D::apply_deformation_force(real delta_t) {
+void MPM3D::calculate_force_and_rasterize(real delta_t) {
     {
-        Profiler _("calculate_force");
+        Profiler _("calculate force");
         parallel_for_each_active_particle([&](MPM3Particle &p) {
             p.calculate_force();
         });
     }
+    TC_PROFILE("reset velocity_and_mass", grid_velocity_and_mass.reset(Vector4(0.0f)));
+    TC_PROFILE("reset velocity", grid_velocity.reset(Vector(0.0f)));
+    TC_PROFILE("reset mass", grid_mass.reset(0.0f));
     {
-        Profiler _("rasterize_force");
+        Profiler _("rasterize velocity, mass, and force");
         parallel_for_each_active_particle([&](MPM3Particle &p) {
-            PREPROCESS_KERNELS;
-            for (auto &ind : get_bounded_rasterization_region(p.pos)) {
-                real mass = grid_mass[ind];
-                if (mass == 0.0f) { // No EPS here
-                    continue;
-                }
-                CALCULATE_GRADIENT;
-                Vector force = p.tmp_force * dw;
-                CV(force);
-                CV(p.tmp_force);
-                CV(gw);
+            PREPROCESS_KERNELS
+            const Vector pos = p.pos, v = p.v;
+            const Matrix apic_b_3 = p.apic_b * 3.0f;
+            const real mass = p.mass;
+            Vector4 delta_velocity_and_mass;
+            delta_velocity_and_mass[3] = 1;
+            for (auto &ind : get_bounded_rasterization_region(pos)) {
+                Vector3 d_pos = Vector(ind.i, ind.j, ind.k) - pos;
+                CALCULATE_WEIGHT
+                CALCULATE_GRADIENT
                 LOCK_GRID
-                grid_velocity[ind] += delta_t / mass * force;
+                {
+                    // Originally
+                    // v + 3 * apic_b * d_pos;
+                    *reinterpret_cast<Vector *>(&delta_velocity_and_mass) =
+                            v + (apic_b_3 * d_pos);
+                    const Vector force = p.tmp_force * dw;
+                    const Vector4 delta_from_force = Vector4(force.x, force.y, force.z, 0.0f);
+                    CV(force);
+                    CV(p.tmp_force);
+                    CV(gw);
+                    grid_velocity_and_mass[ind] += (weight * mass) * delta_velocity_and_mass + delta_t * delta_from_force;
+                };
                 UNLOCK_GRID
             }
         });
     }
+    {
+        Profiler _("normalize");
+        for (auto ind : grid_mass.get_region()) {
+            auto &velocity_and_mass = grid_velocity_and_mass[ind];
+            const real mass = velocity_and_mass[3];
+            if (mass > 0) {
+                grid_mass[ind] = mass;
+                CV(grid_velocity[ind]);
+                CV(1 / grid_mass[ind]);
+                grid_velocity[ind] = (1.0f / mass) * (*reinterpret_cast<Vector3 *>(&velocity_and_mass));
+                CV(grid_velocity[ind]);
+            }
+        }
+    }
+#ifdef TC_MPM_WITH_FLIP
+    error("grid_back_velocity is not in the correct position");
+    grid_backup_velocity();
+#endif
 }
 
 void MPM3D::grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, real t) {
@@ -371,12 +360,8 @@ void MPM3D::substep() {
             current_t = current_t_int * base_delta_t;
         }
         TC_PROFILE("update", scheduler.update());
-        TC_PROFILE("rasterize", rasterize());
-#ifdef TC_MPM_WITH_FLIP
-        grid_backup_velocity();
-#endif
+        TC_PROFILE("calculate_force_and_rasterize", calculate_force_and_rasterize(t_int_increment * base_delta_t));
         TC_PROFILE("external_force", grid_apply_external_force(gravity, t_int_increment * base_delta_t));
-        TC_PROFILE("apply_deformation_force", apply_deformation_force(t_int_increment * base_delta_t));
         TC_PROFILE("boundary_condition", grid_apply_boundary_conditions(levelset, current_t));
 #ifdef CV_ON
         for (auto &p: particles) {

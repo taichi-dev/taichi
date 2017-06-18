@@ -9,10 +9,10 @@ from taichi.visual.texture import Texture
 import taichi as tc
 
 gi_render = False
-step_number = 1000
+step_number = 10
 # step_number = 1
 # total_frames = 1
-grid_downsample = 4
+grid_downsample = 2
 output_downsample = 1
 render_epoch = 20
 
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     t = 0
     for i in range(step_number):
         print 'process(%d/%d)' % (i, step_number)
-        mpm.step(0.03)
+        mpm.step(0.003)
         tc.core.print_profile_info()
         t += 0.003
         if gi_render:

@@ -171,17 +171,18 @@ void MPM3D::resample() {
         Vector v(0.0f), bv(0.0f);
         Matrix cdg(0.0f);
         Matrix b(0.0f);
+        Vector3 pos = p.pos;
         int count = 0;
-        PREPROCESS_KERNELS;
-        for (auto &ind : get_bounded_rasterization_region(p.pos)) {
+        PREPROCESS_KERNELS
+        for (auto &ind : get_bounded_rasterization_region(pos)) {
             count++;
-            CALCULATE_WEIGHT;
-            CALCULATE_GRADIENT;
+            CALCULATE_WEIGHT
+            CALCULATE_GRADIENT
             const Vector grid_vel = grid_velocity[ind];
             const Vector weight_grid_vel = weight * grid_vel;
             v += weight_grid_vel;
             const Vector aa = weight_grid_vel;
-            const Vector bb = Vector3(ind.i, ind.j, ind.k) - p.pos;
+            const Vector bb = Vector3(ind.i, ind.j, ind.k) - pos;
             Matrix out(aa[0] * bb[0], aa[1] * bb[0], aa[2] * bb[0],
                        aa[0] * bb[1], aa[1] * bb[1], aa[2] * bb[1],
                        aa[0] * bb[2], aa[1] * bb[2], aa[2] * bb[2]);
@@ -265,7 +266,8 @@ void MPM3D::calculate_force_and_rasterize(real delta_t) {
                     CV(force);
                     CV(p.tmp_force);
                     CV(gw);
-                    grid_velocity_and_mass[ind] += (weight * mass) * delta_velocity_and_mass + delta_t * delta_from_force;
+                    grid_velocity_and_mass[ind] +=
+                            (weight * mass) * delta_velocity_and_mass + delta_t * delta_from_force;
                 };
                 UNLOCK_GRID
             }

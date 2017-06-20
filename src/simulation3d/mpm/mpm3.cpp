@@ -18,6 +18,7 @@
 
 TC_NAMESPACE_BEGIN
 
+#define TC_MPM_USE_LOCKS
 #ifdef TC_MPM_USE_LOCKS
 #define LOCK_GRID grid_locks[ind].lock();
 #define UNLOCK_GRID grid_locks[ind].unlock();
@@ -247,28 +248,30 @@ void MPM3D::calculate_force_and_rasterize(real delta_t) {
         parallel_for_each_active_particle([&](MPM3Particle &p) {
             PREPROCESS_KERNELS
             const Vector pos = p.pos, v = p.v;
-            const Matrix apic_b_3 = p.apic_b * 3.0f;
             const real mass = p.mass;
+            const Matrix apic_b_3_mass = p.apic_b * (3.0f * mass);
+            const Vector3 mass_v = mass * v;
+            const Matrix delta_t_tmp_force = delta_t * p.tmp_force;
             Vector4 delta_velocity_and_mass;
-            delta_velocity_and_mass[3] = 1;
+            delta_velocity_and_mass[3] = mass;
             for (auto &ind : get_bounded_rasterization_region(pos)) {
                 Vector3 d_pos = Vector(ind.i, ind.j, ind.k) - pos;
                 CALCULATE_WEIGHT
                 CALCULATE_GRADIENT
+                // Originally
+                // v + 3 * apic_b * d_pos;
+                Vector3 rast_v = mass_v + (apic_b_3_mass * d_pos);
+                delta_velocity_and_mass[0] = rast_v[0];
+                delta_velocity_and_mass[1] = rast_v[1];
+                delta_velocity_and_mass[2] = rast_v[2];
+
+                const Vector force = delta_t_tmp_force * dw;
+                const Vector4 delta_from_force = Vector4(force.x, force.y, force.z, 0.0f);
+                CV(force);
+                CV(p.tmp_force);
+                CV(gw);
                 LOCK_GRID
-                {
-                    // Originally
-                    // v + 3 * apic_b * d_pos;
-                    *reinterpret_cast<Vector *>(&delta_velocity_and_mass) =
-                            v + (apic_b_3 * d_pos);
-                    const Vector force = p.tmp_force * dw;
-                    const Vector4 delta_from_force = Vector4(force.x, force.y, force.z, 0.0f);
-                    CV(force);
-                    CV(p.tmp_force);
-                    CV(gw);
-                    grid_velocity_and_mass[ind] +=
-                            (weight * mass) * delta_velocity_and_mass + delta_t * delta_from_force;
-                };
+                grid_velocity_and_mass[ind] += weight * delta_velocity_and_mass + delta_from_force;
                 UNLOCK_GRID
             }
         });

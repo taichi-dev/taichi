@@ -17,7 +17,7 @@ if (MSVC)
     link_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /Z7 /D \"_CRT_SECURE_NO_WARNINGS\"  /arch:AVX -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED")
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -march=native -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp=libiomp5 -std=c++14 -march=native -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED")
 endif ()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_PASS_EXCEPTION_TO_PYTHON")
@@ -82,6 +82,7 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import sys; import pybind11; sy
         OUTPUT_VARIABLE PYBIND11_INCLUDE_DIR
         RESULT_VARIABLE PYBIND11_IMPORT_RET)
 if (NOT PYBIND11_IMPORT_RET)
+    # returns zero if success
     message("    pybind11 include: " ${PYBIND11_INCLUDE_DIR})
 else()
     message(FATAL_ERROR "Can not import pybind11. Please install. ([sudo] pip install pybind11)")
@@ -107,7 +108,7 @@ set(CORE_LIBRARY_NAME taichi_core)
 add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_SOURCE})
 
 if (NOT WIN32)
-    target_link_libraries(${CORE_LIBRARY_NAME} pthread)
+    target_link_libraries(${CORE_LIBRARY_NAME} pthread stdc++)
 endif ()
 
 # Optional dependencies

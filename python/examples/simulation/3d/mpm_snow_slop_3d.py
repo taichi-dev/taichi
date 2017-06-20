@@ -9,7 +9,7 @@ from taichi.visual.texture import Texture
 import taichi as tc
 
 gi_render = False
-step_number = 10
+step_number = 1000
 # step_number = 1
 # total_frames = 1
 grid_downsample = 2
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), base_delta_t=0.001, num_threads=1)
+    mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), base_delta_t=0.001, num_threads=2)
 
     levelset = mpm.create_levelset()
     levelset.add_plane(0, 1, 0, -1)

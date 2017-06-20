@@ -72,7 +72,7 @@ class MPM3:
         self.c.step(step_t)
         self.simulation_total_time += time.time() - T
         print '* Step Time: %.2f [tot: %.2f per frame %.2f]' % (
-        time.time() - T, time.time() - self.start_simulation_time, self.simulation_total_time / (self.frame + 1))
+            time.time() - T, time.time() - self.start_simulation_time, self.simulation_total_time / (self.frame + 1))
         image_buffer = tc_core.Array2DVector3(self.video_manager.width, self.video_manager.height, Vector(0, 0, 0.0))
         particles = self.c.get_render_particles()
         particles.write(self.directory + '/particles%05d.bin' % self.frame)
@@ -100,3 +100,6 @@ class MPM3:
 
     def test(self):
         return self.c.test()
+
+    def get_mpi_world_rank(self):
+        return self.c.get_mpi_world_rank()

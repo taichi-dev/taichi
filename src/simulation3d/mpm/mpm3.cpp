@@ -9,6 +9,7 @@
 *******************************************************************************/
 
 #include "mpm3.h"
+#include <mpi.h>
 #include <taichi/math/qr_svd.h>
 #include <taichi/system/threading.h>
 #include <taichi/visual/texture.h>
@@ -94,8 +95,19 @@ void MPM3D::initialize(const Config &config) {
     Simulation3D::initialize(config);
     res = config.get_vec3i("resolution");
     gravity = config.get_vec3("gravity");
+    use_mpi = config.get("use_mpi", false);
     apic = config.get("apic", true);
     async = config.get("async", false);
+    if (use_mpi) {
+        assert_info(!async, "AsyncMPM support is not finished.");
+        MPI_Init(nullptr, nullptr);
+        MPI_Comm_rank(MPI_COMM_WORLD, &mpi_world_rank);
+        MPI_Comm_size(MPI_COMM_WORLD, &mpi_world_size);
+        printf("%d / %d\n", mpi_world_rank, mpi_world_size);
+    } else {
+        mpi_world_size = 1;
+        mpi_world_rank = 0;
+    }
     base_delta_t = config.get("base_delta_t", 1e-6f);
     cfl = config.get("cfl", 1.0f);
     strength_dt_mul = config.get("strength_dt_mul", 1.0f);
@@ -110,7 +122,7 @@ void MPM3D::initialize(const Config &config) {
     grid_mass.initialize(res + Vector3i(1), 0, Vector3(0.0f));
     grid_velocity_and_mass.initialize(res + Vector3i(1), Vector4(0.0f), Vector3(0.0f));
     grid_locks.initialize(res + Vector3i(1), 0, Vector3(0.0f));
-    scheduler.initialize(res, base_delta_t, cfl, strength_dt_mul, &levelset);
+    scheduler.initialize(res, base_delta_t, cfl, strength_dt_mul, &levelset, mpi_world_rank);
 }
 
 void MPM3D::add_particles(const Config &config) {
@@ -335,6 +347,7 @@ void MPM3D::particle_collision_resolution(real t) {
 
 void MPM3D::substep() {
     Profiler _p("mpm_substep");
+    synchronize_particles();
     if (!particles.empty()) {
         scheduler.update_particle_groups();
         scheduler.reset_particle_states();
@@ -364,7 +377,9 @@ void MPM3D::substep() {
             current_t_int += t_int_increment;
             current_t = current_t_int * base_delta_t;
         }
-        TC_PROFILE("update", scheduler.update());
+        if (!use_mpi) {
+            TC_PROFILE("update", scheduler.update());
+        }
         TC_PROFILE("calculate_force_and_rasterize", calculate_force_and_rasterize(t_int_increment * base_delta_t));
         TC_PROFILE("external_force", grid_apply_external_force(gravity, t_int_increment * base_delta_t));
         TC_PROFILE("boundary_condition", grid_apply_boundary_conditions(levelset, current_t));
@@ -417,6 +432,154 @@ void MPM3D::substep() {
     }
 }
 
+#define TC_MPM_TAG_BELONGING 1
+#define TC_MPM_TAG_PARTICLE_COUNT 2
+#define TC_MPM_TAG_PARTICLES 3
+
+void MPM3D::synchronize_particles() {
+    if (!use_mpi) {
+        // No need for this
+        return;
+    }
+    // Count number of particles with in each block
+    Array3D<int> self_particle_count(scheduler.res, 0);
+    P(scheduler.get_active_particles().size());
+    for (auto p: scheduler.get_active_particles()) {
+        self_particle_count[scheduler.get_rough_pos(p)] += 1;
+    }
+    auto old_belonging = scheduler.belonging;
+    if (mpi_world_rank == 0) { // Master
+        // Receive particle counts
+        Array3D<int> particle_count_all(scheduler.res, 0);
+        Array3D<int> particle_count(scheduler.res, 0);
+        for (int i = 0; i < mpi_world_size; i++) {
+            if (i != 0) {
+                // Fetch from slaves
+                MPI_Recv(static_cast<void *>(&particle_count.get_data()[0]), particle_count.get_size(), MPI_INT, i,
+                         TC_MPM_TAG_PARTICLE_COUNT, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                int sum = 0;
+                for (auto &ind: particle_count.get_region()) {
+                    sum += particle_count[ind];
+                }
+                P(sum);
+            } else {
+                particle_count = self_particle_count;
+            }
+            for (auto &ind: particle_count.get_region()) {
+                if (scheduler.belongs_to(ind) == i) {
+                    particle_count_all[ind] = particle_count[ind];
+                }
+            }
+        }
+        // Re-decomposition according to x-axis slices
+        std::vector<int> total_num_particles_x((size_t)scheduler.res[0], 0);
+        std::vector<int> belonging_x((size_t)scheduler.res[0], 0);
+        Array3D<int> belonging(scheduler.res);
+        int total_num_particles = 0;
+        for (auto &ind: particle_count_all.get_region()) {
+            total_num_particles_x[ind.i] += particle_count_all[ind];
+            total_num_particles += particle_count_all[ind];
+        }
+        // Determine slices
+        int accumulated_num_particles = 0;
+        int head = 0;
+        int threshold = total_num_particles / mpi_world_size + 1;
+        P(total_num_particles);
+        P(threshold);
+        for (int i = 0; i < scheduler.res[0]; i++) {
+            accumulated_num_particles += total_num_particles_x[i];
+            while (accumulated_num_particles >= threshold) {
+                accumulated_num_particles -= threshold;
+                head += 1;
+            }
+            belonging_x[i] = head;
+            P(head);
+        }
+        // Broadcast into y and z
+        for (auto &ind: belonging.get_region()) {
+            belonging[ind] = belonging_x[ind.i];
+        }
+        scheduler.belonging = belonging;
+        for (int i = 1; i < mpi_world_size; i++) {
+            // Send partition information to other nodes
+            MPI_Send((void *)&scheduler.belonging.get_data()[0], scheduler.belonging.get_size(), MPI_INT, i,
+                     TC_MPM_TAG_BELONGING, MPI_COMM_WORLD);
+        }
+    } else {
+        // Slaves
+        // Send particle count to master
+        MPI_Send(&self_particle_count.get_data()[0], self_particle_count.get_size(), MPI_INT, 0,
+                 TC_MPM_TAG_PARTICLE_COUNT,
+                 MPI_COMM_WORLD);
+        // Receive new domain decomposition information
+        MPI_Recv((void *)&scheduler.belonging.get_data()[0], scheduler.belonging.get_size(), MPI_INT, 0,
+                 TC_MPM_TAG_BELONGING,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        int block_count = 0;
+        for (auto ind: scheduler.belonging.get_region()) {
+            block_count += scheduler.belonging[ind] == mpi_world_rank;
+        }
+        P(block_count);
+    }
+    std::vector<std::vector<DPParticle3>> particles_to_send;
+    particles_to_send.resize(mpi_world_size);
+    // Exchange (a small amount of) particles to other nodes
+    for (auto &p: scheduler.get_active_particles()) {
+        if (scheduler.belongs_to(p) != mpi_world_rank) {
+            particles_to_send[scheduler.belongs_to(p)].push_back(*(DPParticle3 *)p);
+        }
+    }
+    for (int i = 0; i < mpi_world_size; i++) {
+        if (i < mpi_world_rank) {
+            // Send, and then receive
+            int to_send = particles_to_send[i].size();
+            MPI_Send(&to_send, 1, MPI_INT, i, TC_MPM_TAG_PARTICLES, MPI_COMM_WORLD);
+            MPI_Send(&particles_to_send[i][0], particles_to_send[i].size() * sizeof(DPParticle3), MPI_CHAR, i,
+                     TC_MPM_TAG_PARTICLES,
+                     MPI_COMM_WORLD);
+            int num_particles;
+            MPI_Recv(&num_particles, 1, MPI_INT, 0, TC_MPM_TAG_PARTICLES, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            std::vector<DPParticle3> to_receive(num_particles);
+            MPI_Recv(&to_receive[0], num_particles * sizeof(DPParticle3), MPI_CHAR, i, TC_MPM_TAG_PARTICLES,
+                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        } else if (i > mpi_world_rank){
+            // Receive, and then send
+            int num_particles;
+            MPI_Recv(&num_particles, 1, MPI_INT, 0, TC_MPM_TAG_PARTICLES, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            std::vector<DPParticle3> to_receive(num_particles);
+            MPI_Recv(&to_receive[0], num_particles * sizeof(DPParticle3), MPI_CHAR, i, TC_MPM_TAG_PARTICLES,
+                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            int to_send = particles_to_send[i].size();
+            MPI_Send(&to_send, 1, MPI_INT, i, TC_MPM_TAG_PARTICLES, MPI_COMM_WORLD);
+            MPI_Send(&particles_to_send[i][0], particles_to_send[i].size() * sizeof(DPParticle3), MPI_CHAR, i,
+                     TC_MPM_TAG_PARTICLES,
+                     MPI_COMM_WORLD);
+        }
+    }
+    // Delete particles outside
+    clear_particles_outside();
+    P(scheduler.get_active_particles().size());
+    for (auto &p: scheduler.get_active_particles()) {
+        p->state = MPM3Particle::UPDATING;
+    }
+}
+
+void MPM3D::clear_particles_outside() {
+    std::vector<MPM3Particle *> new_active_particles;
+    for (auto p: scheduler.get_active_particles()) {
+        if (scheduler.belongs_to(p) == mpi_world_rank) {
+            new_active_particles.push_back(p);
+        } else {
+            // delete p;
+        }
+    }
+    scheduler.get_active_particles() = new_active_particles;
+}
+
+void MPM3D::finalize() {
+    MPI_Finalize();
+}
+
 bool MPM3D::test() const {
     for (int i = 0; i < 100000; i++) {
         Matrix3 m(1.000000238418579101562500000000, -0.000000000000000000000000000000,
@@ -433,6 +596,12 @@ bool MPM3D::test() const {
         }
     }
     return false;
+}
+
+MPM3D::~MPM3D() {
+    for (auto &p : particles) {
+        delete p;
+    }
 }
 
 TC_IMPLEMENTATION(Simulation3D, MPM3D, "mpm");

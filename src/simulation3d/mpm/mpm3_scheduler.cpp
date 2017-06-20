@@ -258,5 +258,4 @@ void MPM3Scheduler::enforce_smoothness(int64 t_int_increment) {
     max_dt_int = new_max_dt_int;
 }
 
-
 TC_NAMESPACE_END

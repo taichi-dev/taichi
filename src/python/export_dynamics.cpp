@@ -67,38 +67,32 @@ void export_dynamics(py::module &m) {
             .def("get_pressure", &Fluid::get_pressure)
             .def("add_source", &Fluid::add_source);
 
-#define EXPORT_SIMULATOR_3D(SIM) \
-        py::class_<SIM, std::shared_ptr<SIM>>(m, #SIM) \
-        .def(py::init<>()) \
-        .def("initialize", &SIM::initialize) \
-        .def("add_particles", &SIM::add_particles) \
-        .def("update", &SIM::update) \
-        .def("step", &SIM::step) \
-        .def("get_current_time", &SIM::get_current_time) \
-        .def("get_render_particles", &SIM::get_render_particles) \
-        .def("set_levelset", &SIM::set_levelset) \
-        .def("test", &SIM::test) \
-        ;
-    EXPORT_SIMULATOR_3D(Simulation3D);
+    py::class_<Simulation3D, std::shared_ptr<Simulation3D>>(m, "Simulation3D")
+            .def(py::init<>())
+            .def("initialize", &Simulation3D::initialize)
+            .def("add_particles", &Simulation3D::add_particles)
+            .def("update", &Simulation3D::update)
+            .def("step", &Simulation3D::step)
+            .def("get_current_time", &Simulation3D::get_current_time)
+            .def("get_render_particles", &Simulation3D::get_render_particles)
+            .def("set_levelset", &Simulation3D::set_levelset)
+            .def("get_mpi_world_rank", &Simulation3D::get_mpi_world_rank)
+            .def("test", &Simulation3D::test);
 
-#define EXPORT_MPM(SIM) \
-    py::class_<SIM>(m, #SIM "Simulator") \
-        .def(py::init<>()) \
-        .def("initialize", &SIM::initialize) \
-        .def("step", &SIM::step) \
-        .def("test", &SIM::test) \
-        .def("add_particle", static_cast<void (SIM::*)(std::shared_ptr<MPMParticle>)>(&SIM::add_particle)) \
-        .def("get_current_time", &SIM::get_current_time) \
-        .def("get_particles", &SIM::get_particles) \
-        .def("set_levelset", &SIM::set_levelset) \
-        .def("get_material_levelset", &SIM::get_material_levelset) \
-        .def("get_debug_blocks", &SIM::get_debug_blocks) \
-        .def("get_grid_block_size", &SIM::get_grid_block_size) \
-        .def("add_ep_particle", static_cast<void (SIM::*)(EPParticle)>(&SIM::add_particle)) \
-        .def("add_dp_particle", static_cast<void (SIM::*)(DPParticle)>(&SIM::add_particle)) \
-        ;
-
-    EXPORT_MPM(MPM);
+    py::class_<MPM>(m, "MPMSimulator")
+            .def(py::init<>())
+            .def("initialize", &MPM::initialize)
+            .def("step", &MPM::step)
+            .def("test", &MPM::test)
+            .def("add_particle", static_cast<void (MPM::*)(std::shared_ptr<MPMParticle>)>(&MPM::add_particle))
+            .def("get_current_time", &MPM::get_current_time)
+            .def("get_particles", &MPM::get_particles)
+            .def("set_levelset", &MPM::set_levelset)
+            .def("get_material_levelset", &MPM::get_material_levelset)
+            .def("get_debug_blocks", &MPM::get_debug_blocks)
+            .def("get_grid_block_size", &MPM::get_grid_block_size)
+            .def("add_ep_particle", static_cast<void (MPM::*)(EPParticle)>(&MPM::add_particle))
+            .def("add_dp_particle", static_cast<void (MPM::*)(DPParticle)>(&MPM::add_particle));
 
     DEFINE_VECTOR_OF_NAMED(std::shared_ptr<MPMParticle>, "MPMParticles");
 

@@ -60,6 +60,9 @@ public:
     real cfl;
     real strength_dt_mul;
     real request_t = 0.0f;
+    bool use_mpi;
+    int mpi_world_size;
+    int mpi_world_rank;
     int64 current_t_int = 0;
     int64 original_t_int_increment;
     int64 t_int_increment;
@@ -144,13 +147,19 @@ public:
         }
     }
 
+    void synchronize_particles();
+
+    void finalize();
+
+    void clear_particles_outside();
+
     std::vector<RenderParticle> get_render_particles() const override;
 
-    ~MPM3D() {
-        for (auto &p : particles) {
-            delete p;
-        }
+    int get_mpi_world_rank() const override {
+        return mpi_world_rank;
     }
+
+    ~MPM3D();
 };
 
 TC_NAMESPACE_END

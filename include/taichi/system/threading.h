@@ -67,7 +67,7 @@ public:
     void static run(const T &target, int begin, int end, int num_threads) {
 #ifdef TC_MT_OPENMP
         omp_set_num_threads(num_threads);
-#pragma omp parallel for schedule (dynamic)
+#pragma omp parallel for schedule (static)
         for (int i = begin; i < end; i++) {
             target(i);
         }

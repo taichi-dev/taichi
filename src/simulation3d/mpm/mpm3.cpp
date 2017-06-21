@@ -98,12 +98,12 @@ void MPM3D::initialize(const Config &config) {
     use_mpi = config.get("use_mpi", false);
     apic = config.get("apic", true);
     async = config.get("async", false);
+    mpi_initialized = false;
     if (use_mpi) {
         assert_info(!async, "AsyncMPM support is not finished.");
         MPI_Init(nullptr, nullptr);
         MPI_Comm_rank(MPI_COMM_WORLD, &mpi_world_rank);
         MPI_Comm_size(MPI_COMM_WORLD, &mpi_world_size);
-        printf("%d / %d\n", mpi_world_rank, mpi_world_size);
     } else {
         mpi_world_size = 1;
         mpi_world_rank = 0;
@@ -348,6 +348,7 @@ void MPM3D::particle_collision_resolution(real t) {
 void MPM3D::substep() {
     Profiler _p("mpm_substep");
     synchronize_particles();
+    P("synchronized");
     if (!particles.empty()) {
         scheduler.update_particle_groups();
         scheduler.reset_particle_states();
@@ -381,8 +382,11 @@ void MPM3D::substep() {
             TC_PROFILE("update", scheduler.update());
         }
         TC_PROFILE("calculate_force_and_rasterize", calculate_force_and_rasterize(t_int_increment * base_delta_t));
+        P("force");
         TC_PROFILE("external_force", grid_apply_external_force(gravity, t_int_increment * base_delta_t));
+        P("external");
         TC_PROFILE("boundary_condition", grid_apply_boundary_conditions(levelset, current_t));
+        P("BC");
 #ifdef CV_ON
         for (auto &p: particles) {
             if (abnormal(p->dg_e)) {
@@ -392,6 +396,7 @@ void MPM3D::substep() {
         }
 #endif
         TC_PROFILE("resample", resample());
+        P("resampled");
         if (!async) {
             for (auto &p: particles) {
                 assert_info(p->state == MPM3Particle::UPDATING, "should be updating");
@@ -460,13 +465,16 @@ void MPM3D::synchronize_particles() {
                 int sum = 0;
                 for (auto &ind: particle_count.get_region()) {
                     sum += particle_count[ind];
+                    if (particle_count[ind] > 0) {
+                        //P(scheduler.belonging[ind]);
+                    }
                 }
-                P(sum);
+                //P(sum);
             } else {
                 particle_count = self_particle_count;
             }
             for (auto &ind: particle_count.get_region()) {
-                if (scheduler.belongs_to(ind) == i) {
+                if (scheduler.belonging[ind] == i) {
                     particle_count_all[ind] = particle_count[ind];
                 }
             }
@@ -493,7 +501,7 @@ void MPM3D::synchronize_particles() {
                 head += 1;
             }
             belonging_x[i] = head;
-            P(head);
+            // P(head);
         }
         // Broadcast into y and z
         for (auto &ind: belonging.get_region()) {
@@ -521,47 +529,85 @@ void MPM3D::synchronize_particles() {
         }
         P(block_count);
     }
-    std::vector<std::vector<DPParticle3>> particles_to_send;
+    if (!mpi_initialized) {
+        // Delete particles outside
+        // During first iteration, clear particles outside before synchronization
+        clear_particles_outside();
+    }
+    std::vector<std::vector<EPParticle3>> particles_to_send;
     particles_to_send.resize(mpi_world_size);
     // Exchange (a small amount of) particles to other nodes
     for (auto &p: scheduler.get_active_particles()) {
-        if (scheduler.belongs_to(p) != mpi_world_rank) {
-            particles_to_send[scheduler.belongs_to(p)].push_back(*(DPParticle3 *)p);
+        int belongs_to = scheduler.belongs_to(p);
+        if (belongs_to != mpi_world_rank) {
+            particles_to_send[belongs_to].push_back(*(EPParticle3 *)p);
         }
     }
+    P(scheduler.get_active_particles().size());
+    std::vector<EPParticle3> to_receive(0);
     for (int i = 0; i < mpi_world_size; i++) {
+        if (i == mpi_world_rank) continue;
         if (i < mpi_world_rank) {
             // Send, and then receive
             int to_send = particles_to_send[i].size();
+            P(to_send);
             MPI_Send(&to_send, 1, MPI_INT, i, TC_MPM_TAG_PARTICLES, MPI_COMM_WORLD);
-            MPI_Send(&particles_to_send[i][0], particles_to_send[i].size() * sizeof(DPParticle3), MPI_CHAR, i,
-                     TC_MPM_TAG_PARTICLES,
-                     MPI_COMM_WORLD);
-            int num_particles;
-            MPI_Recv(&num_particles, 1, MPI_INT, 0, TC_MPM_TAG_PARTICLES, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            std::vector<DPParticle3> to_receive(num_particles);
-            MPI_Recv(&to_receive[0], num_particles * sizeof(DPParticle3), MPI_CHAR, i, TC_MPM_TAG_PARTICLES,
-                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+//            if (to_send)
+//                MPI_Send(&particles_to_send[i][0], to_send * sizeof(EPParticle3), MPI_CHAR, i,
+//                         TC_MPM_TAG_PARTICLES,
+//                         MPI_COMM_WORLD);
+            int to_recv;
+            MPI_Recv(&to_recv, 1, MPI_INT, i, TC_MPM_TAG_PARTICLES, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            to_receive.resize(to_recv);
+            P(to_recv);
+            if (to_recv) {
+                printf("trying...\n");
+                MPI_Recv(&to_receive[0], to_recv * sizeof(EPParticle3), MPI_CHAR, i, TC_MPM_TAG_PARTICLES,
+                         MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                printf("done...\n");
+            }
         } else if (i > mpi_world_rank){
             // Receive, and then send
-            int num_particles;
-            MPI_Recv(&num_particles, 1, MPI_INT, 0, TC_MPM_TAG_PARTICLES, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            std::vector<DPParticle3> to_receive(num_particles);
-            MPI_Recv(&to_receive[0], num_particles * sizeof(DPParticle3), MPI_CHAR, i, TC_MPM_TAG_PARTICLES,
-                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            int to_recv;
+            MPI_Recv(&to_recv, 1, MPI_INT, i, TC_MPM_TAG_PARTICLES, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            to_receive.resize(to_recv);
+            P(to_recv);
+//            if (to_recv)
+//                MPI_Recv(&to_receive[0], to_recv * sizeof(EPParticle3), MPI_CHAR, i, TC_MPM_TAG_PARTICLES,
+//                         MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             int to_send = particles_to_send[i].size();
+            P(to_send);
             MPI_Send(&to_send, 1, MPI_INT, i, TC_MPM_TAG_PARTICLES, MPI_COMM_WORLD);
-            MPI_Send(&particles_to_send[i][0], particles_to_send[i].size() * sizeof(DPParticle3), MPI_CHAR, i,
-                     TC_MPM_TAG_PARTICLES,
-                     MPI_COMM_WORLD);
+            if (to_send) {
+                printf("sending...\n");
+                MPI_Send(&particles_to_send[i][0], particles_to_send[i].size() * sizeof(EPParticle3), MPI_CHAR, i,
+                         TC_MPM_TAG_PARTICLES,
+                         MPI_COMM_WORLD);
+                printf("sent...\n");
+            }
+        }
+        for (auto &p: to_receive) {
+//            auto ptr = new EPParticle3(p);
+//            scheduler.get_active_particles().push_back(ptr);
+//            ptr->plasticity();
+//            P(ptr->get_allowed_dt());
         }
     }
-    // Delete particles outside
-    clear_particles_outside();
-    P(scheduler.get_active_particles().size());
+    //TODO: test if vtable is not copied
+    P("here");
     for (auto &p: scheduler.get_active_particles()) {
         p->state = MPM3Particle::UPDATING;
+        int b = scheduler.belongs_to(p);
+        p->color = Vector3(b % 2, b / 2 % 2, b / 4 % 2);
     }
+    P("here2");
+    if (mpi_initialized) {
+        // Delete particles outside
+        // clear_particles_outside();
+    }
+    particles = scheduler.active_particles;
+    mpi_initialized = true;
+    P("finished");
 }
 
 void MPM3D::clear_particles_outside() {

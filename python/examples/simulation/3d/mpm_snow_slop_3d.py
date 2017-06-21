@@ -10,7 +10,7 @@ import taichi as tc
 
 gi_render = False
 use_mpi = True
-step_number = 1000
+step_number = 100
 # step_number = 1
 # total_frames = 1
 grid_downsample = 8

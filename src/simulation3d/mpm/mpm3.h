@@ -41,7 +41,7 @@ public:
     static const int D = 3;
 
 public:
-    std::vector<MPM3Particle *> particles; // for efficiency
+    std::vector<MPM3Particle *> particles; // for (copy) efficiency, we do not use smart pointers here
     Array3D<Vector> grid_velocity;
     Array3D<real> grid_mass;
     Array3D<Vector4> grid_velocity_and_mass;
@@ -68,6 +68,7 @@ public:
     int64 t_int_increment;
     int64 old_t_int;
     MPM3Scheduler scheduler;
+    bool mpi_initialized;
 
     Region get_bounded_rasterization_region(Vector p) {
         assert_info(is_normal(p.x) && is_normal(p.y) && is_normal(p.z),

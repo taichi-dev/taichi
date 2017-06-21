@@ -9,7 +9,13 @@
 *******************************************************************************/
 
 #include "mpm3.h"
+
+#ifdef TC_USE_MPI
+
 #include <mpi.h>
+
+#endif
+
 #include <taichi/math/qr_svd.h>
 #include <taichi/system/threading.h>
 #include <taichi/visual/texture.h>
@@ -102,10 +108,14 @@ void MPM3D::initialize(const Config &config) {
     async = config.get("async", false);
     mpi_initialized = false;
     if (use_mpi) {
+#ifndef TC_USE_MPI
+        error("Not compiled with MPI. Please recompile with cmake -DTC_USE_MPI=True")
+#else
         assert_info(!async, "AsyncMPM support is not finished.");
         MPI_Init(nullptr, nullptr);
         MPI_Comm_rank(MPI_COMM_WORLD, &mpi_world_rank);
         MPI_Comm_size(MPI_COMM_WORLD, &mpi_world_size);
+#endif
     } else {
         mpi_world_size = 1;
         mpi_world_rank = 0;
@@ -443,6 +453,7 @@ void MPM3D::synchronize_particles() {
         // No need for this
         return;
     }
+#ifdef TC_USE_MPI
     // Count number of particles with in each block
     Array3D<int> self_particle_count(scheduler.res, 0);
     P(scheduler.get_active_particles().size());
@@ -594,6 +605,7 @@ void MPM3D::synchronize_particles() {
     }
     particles = scheduler.active_particles;
     mpi_initialized = true;
+#endif
 }
 
 void MPM3D::clear_particles_outside() {
@@ -609,7 +621,9 @@ void MPM3D::clear_particles_outside() {
 }
 
 void MPM3D::finalize() {
+#ifdef TC_USE_MPI
     MPI_Finalize();
+#endif
 }
 
 bool MPM3D::test() const {

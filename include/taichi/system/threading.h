@@ -16,12 +16,12 @@
 #include <thread>
 #include <vector>
 
-//#define TC_MT_OPENMP
 
-#ifdef TC_MT_OPENMP
+#ifdef TC_USE_OPENMP
 
 #include <omp.h>
 
+#define TC_MT_OPENMP
 #endif
 
 TC_NAMESPACE_BEGIN

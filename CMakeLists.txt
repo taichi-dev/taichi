@@ -24,6 +24,17 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_PASS_EXCEPTION_TO_PYTHON")
 
 if (TC_DISABLE_SSE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_DISABLE_SSE")
+    message("SSE Disabled")
+endif()
+
+if (TC_USE_MPI)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_USE_MPI")
+    message("Using MPI")
+endif()
+
+if (TC_USE_OPENMP)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_USE_OPENMP")
+    message("Using OpenMP")
 endif()
 
 if (USE_OPENGL)

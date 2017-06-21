@@ -58,6 +58,7 @@ inline real dw(real x) {
     return s * val;
 }
 
+/*
 inline real w(const Vector3 &a) {
     return w(a.x) * w(a.y) * w(a.z);
 }
@@ -65,6 +66,7 @@ inline real w(const Vector3 &a) {
 inline Vector3 dw(const Vector3 &a) {
     return Vector3(dw(a.x) * w(a.y) * w(a.z), w(a.x) * dw(a.y) * w(a.z), w(a.x) * w(a.y) * dw(a.z));
 }
+*/
 
 #define PREPROCESS_KERNELS \
     real w_cache[3][4]; \
@@ -348,7 +350,6 @@ void MPM3D::particle_collision_resolution(real t) {
 void MPM3D::substep() {
     Profiler _p("mpm_substep");
     synchronize_particles();
-    P("synchronized");
     if (!particles.empty()) {
         scheduler.update_particle_groups();
         scheduler.reset_particle_states();
@@ -382,11 +383,8 @@ void MPM3D::substep() {
             TC_PROFILE("update", scheduler.update());
         }
         TC_PROFILE("calculate_force_and_rasterize", calculate_force_and_rasterize(t_int_increment * base_delta_t));
-        P("force");
         TC_PROFILE("external_force", grid_apply_external_force(gravity, t_int_increment * base_delta_t));
-        P("external");
         TC_PROFILE("boundary_condition", grid_apply_boundary_conditions(levelset, current_t));
-        P("BC");
 #ifdef CV_ON
         for (auto &p: particles) {
             if (abnormal(p->dg_e)) {
@@ -396,7 +394,6 @@ void MPM3D::substep() {
         }
 #endif
         TC_PROFILE("resample", resample());
-        P("resampled");
         if (!async) {
             for (auto &p: particles) {
                 assert_info(p->state == MPM3Particle::UPDATING, "should be updating");
@@ -565,7 +562,7 @@ void MPM3D::synchronize_particles() {
                 MPI_Recv(&to_receive[0], to_recv * sizeof(EPParticle3), MPI_CHAR, i, TC_MPM_TAG_PARTICLES,
                          MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             }
-        } else if (i > mpi_world_rank){
+        } else if (i > mpi_world_rank) {
             // Receive, and then send
             int to_recv;
             MPI_Recv(&to_recv, 1, MPI_INT, i, TC_MPM_TAG_PARTICLES, MPI_COMM_WORLD, MPI_STATUS_IGNORE);

@@ -69,8 +69,8 @@ if __name__ == '__main__':
     print resolution
     frame_dt = 0.01
 
-    # mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=True, num_threads=4, strength_dt_mul=2, base_delta_t=1e-7)
-    mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=False, num_threads=4, base_delta_t=0.00010237)
+    mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=True, num_threads=2, strength_dt_mul=2, base_delta_t=1e-7)
+    # mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=False, num_threads=2, base_delta_t=0.00010237)
 
     levelset = mpm.create_levelset()
     height_ = 0.0
@@ -108,4 +108,6 @@ if __name__ == '__main__':
             if i % 8 == 0:
                 render_frame(i, d, t)
                 pass
+        tc.core.print_profile_info()
+
     mpm.make_video()

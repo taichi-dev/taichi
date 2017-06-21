@@ -9,11 +9,11 @@ from taichi.visual.texture import Texture
 import taichi as tc
 
 gi_render = False
-use_mpi = True
-step_number = 100
+use_mpi = False
+step_number = 1000
 # step_number = 1
 # total_frames = 1
-grid_downsample = 8
+grid_downsample = 2
 output_downsample = 1
 render_epoch = 20
 
@@ -92,10 +92,10 @@ if __name__ == '__main__':
     for i in range(step_number):
         if mpm.get_mpi_world_rank() == 0:
             print 'process(%d/%d)' % (i, step_number)
-        mpm.step(0.003)
+        mpm.step(0.03)
         if mpm.get_mpi_world_rank() == 0:
             tc.core.print_profile_info()
-            t += 0.003
+            t += 0.03
             if gi_render:
                 d = mpm.get_directory()
                 if i % 10 == 0:

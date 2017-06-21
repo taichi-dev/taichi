@@ -106,6 +106,26 @@ struct EPParticle3 : public MPM3Particle {
     EPParticle3() : MPM3Particle() {
     }
 
+    EPParticle3(const EPParticle3 &other) {
+        this->hardening = other.hardening;
+        this->mu_0 = other.mu_0;
+        this->lambda_0 = other.lambda_0;
+        this->theta_c = other.theta_c;
+        this->theta_s = other.theta_s;
+        this->color = other.color;
+        this->pos = other.pos;
+        this->v = other.v;
+        this->dg_e = other.dg_e;
+        this->dg_p = other.dg_p;
+        this->tmp_force = other.tmp_force;
+        this->mass = other.mass;
+        this->vol = other.vol;
+        this->apic_b = other.apic_b;
+        this->dg_cache = other.dg_cache;
+        this->state = other.state;
+        this->last_update = other.last_update;
+    }
+
     void initialize(const Config &config) override {
         hardening = config.get("hardening", hardening);
         lambda_0 = config.get("lambda_0", lambda_0);

@@ -14,8 +14,15 @@ TC_NAMESPACE_BEGIN
 
 // SIMD Vector4
 class Vector4s {
+    union {
+        struct {
+            real x, y, z, w;
+        };
 
+    };
 };
+
+
 
 // Note: assuming abs(x) <= 2!!
 inline real w(real x) {

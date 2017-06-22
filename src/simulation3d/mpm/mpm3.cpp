@@ -20,6 +20,7 @@
 #include <taichi/system/threading.h>
 #include <taichi/visual/texture.h>
 #include <taichi/math/math_util.h>
+#include <taichi/math/math_simd.h>
 #include <taichi/common/asset_manager.h>
 #include <taichi/system/profiler.h>
 
@@ -74,15 +75,21 @@ inline Vector3 dw(const Vector3 &a) {
 }
 */
 
-#define PREPROCESS_KERNELS \
-    real w_cache[3][4]; \
-    real dw_cache[3][4]; \
+#define PREPROCESS_KERNELS\
+    Vector4s w_cache[3]; \
+    Vector4s dw_cache[3];\
     Vector p_fract = fract(p.pos); \
     for (int k = 0; k < 3; k++) { \
-        for (int i = 0; i < 4; i++) { \
-            w_cache[k][i] = w(p_fract[k] - i + 1); \
-            dw_cache[k][i] = dw(p_fract[k] - i + 1); \
-        } \
+        const Vector4s t = Vector4s(p_fract[k]) - Vector4s(-1, 0, 1, 2); \
+        auto tt = t * t; \
+        auto ttt = tt * t; \
+        w_cache[k] = Vector4s(-1 / 6.0f, 0.5f, -0.5f, 1 / 6.0f) * ttt + \
+        Vector4s(1, -1, -1, 1) * tt + \
+        Vector4s(-2, 0, 0, 2) * t + \
+        Vector4s(4 / 3.0f, 2 / 3.0f, 2 / 3.0f, 4 / 3.0f); \
+        dw_cache[k] = Vector4s(-0.5f, 1.5f, -1.5f, 0.5f) * tt + \
+        Vector4s(2, -2, -2, 2) * t + \
+        Vector4s(-2, 0, 0, 2); \
     } \
     const int base_i = int(floor(p.pos[0])) - 1; \
     const int base_j = int(floor(p.pos[1])) - 1; \
@@ -264,7 +271,7 @@ void MPM3D::calculate_force_and_rasterize(real delta_t) {
             p.calculate_force();
         });
     }
-    TC_PROFILE("reset velocity_and_mass", grid_velocity_and_mass.reset(Vector4(0.0f)));
+    TC_PROFILE("reset velocity_and_mass", grid_velocity_and_mass.reset(Vector4s(0.0f)));
     TC_PROFILE("reset velocity", grid_velocity.reset(Vector(0.0f)));
     TC_PROFILE("reset mass", grid_mass.reset(0.0f));
     {
@@ -276,7 +283,7 @@ void MPM3D::calculate_force_and_rasterize(real delta_t) {
             const Matrix apic_b_3_mass = p.apic_b * (3.0f * mass);
             const Vector3 mass_v = mass * v;
             const Matrix delta_t_tmp_force = delta_t * p.tmp_force;
-            Vector4 delta_velocity_and_mass;
+            Vector4s delta_velocity_and_mass;
             delta_velocity_and_mass[3] = mass;
             for (auto &ind : get_bounded_rasterization_region(pos)) {
                 Vector3 d_pos = Vector(ind.i, ind.j, ind.k) - pos;

@@ -15,6 +15,7 @@
 #include <taichi/common/meta.h>
 #include <taichi/math/array_3d.h>
 #include <taichi/math/dynamic_levelset_3d.h>
+#include <taichi/math/math_simd.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -31,10 +32,16 @@ struct MPM3Particle {
     using Region = Region3D;
     static const int D = 3;
     Vector3 color = Vector3(1, 0, 0);
-    Vector pos, v;
-    Matrix dg_e, dg_p, tmp_force;
-    real mass;
     real vol;
+    union {
+        Vector4s velocity_and_mass;
+        struct {
+            Vector3 v;
+            real mass;
+        };
+    };
+    Vector pos;
+    Matrix dg_e, dg_p, tmp_force;
     Matrix apic_b;
     Matrix dg_cache;
     static long long instance_count;

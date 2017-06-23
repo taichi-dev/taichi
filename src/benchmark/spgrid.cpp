@@ -33,7 +33,7 @@
 
 // Minimalist SPGrid
 
-#if !defined(__WIN64) && !defined(TC_DISABLE_SSE)
+#if !defined(_WIN64) && !defined(TC_DISABLE_SSE)
 // let's support Unix-like (Linux and OS X) first.
 
 #include <taichi/system/benchmark.h>

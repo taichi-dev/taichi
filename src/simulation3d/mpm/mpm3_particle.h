@@ -33,13 +33,8 @@ struct MPM3Particle {
     static const int D = 3;
     Vector3 color = Vector3(1, 0, 0);
     real vol;
-    union {
-        Vector4s velocity_and_mass;
-        struct {
-            Vector3 v;
-            real mass;
-        };
-    };
+    Vector3 v;
+    real mass;
     Vector pos;
     Matrix dg_e, dg_p, tmp_force;
     Matrix apic_b;

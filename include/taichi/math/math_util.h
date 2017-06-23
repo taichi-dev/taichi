@@ -125,6 +125,22 @@ inline int sgn(double a) {
     return 0;
 }
 
+inline float fract(float x) {
+    return x - std::floor(x);
+}
+
+inline Vector2 fract(const Vector2 &v) {
+    return Vector2(fract(v.x), fract(v.y));
+}
+
+inline Vector3 fract(const Vector3 &v) {
+    return Vector3(fract(v.x), fract(v.y), fract(v.z));
+}
+
+inline Vector4 fract(const Vector4 &v) {
+    return Vector4(fract(v.x), fract(v.y), fract(v.z), fract(v.w));
+}
+
 // inline float frand() { return (float)rand() / (RAND_MAX + 1); }
 inline float rand() {
     static unsigned int x = 123456789, y = 362436069, z = 521288629, w = 88675123;

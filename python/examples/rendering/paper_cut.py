@@ -65,7 +65,7 @@ def create_scene():
             scene.add_mesh(tc.Mesh('plane', tc.SurfaceMaterial('transparent',
                                                                nested=tc.SurfaceMaterial('diffuse', color=color),
                                                                mask=inv_ring_tex),
-                                   translate=(-3.7, 0, i * 0.03), scale=4, rotation=(90, 0, 0)))
+                                   translate=(-3.7, 1, i * 0.03), scale=4, rotation=(90, 0, 0)))
 
         scene.add_mesh(tc.Mesh('plane', tc.SurfaceMaterial('transparent',
                                                            nested=tc.SurfaceMaterial('diffuse', color=(0, 0.2, 0.5)),

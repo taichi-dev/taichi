@@ -12,7 +12,7 @@
 
 TC_NAMESPACE_BEGIN
 
-template<typename T> using Array = Array3D<T>;
+template <typename T> using Array = Array3D<T>;
 
 void MPM3Scheduler::expand(bool expand_vel, bool expand_state) {
     Array<int> new_states;
@@ -51,7 +51,8 @@ void MPM3Scheduler::expand(bool expand_vel, bool expand_state) {
             for (int dy = -1; dy <= 1; dy++) {
                 for (int dz = -1; dz <= 1; dz++) {
                     if (states.inside(ind.neighbour(dx, dy, dz)))
-                        update(ind, dx, dy, dz, min_vel, max_vel, min_vel_expanded, max_vel_expanded, states, new_states);
+                        update(ind, dx, dy, dz, min_vel, max_vel, min_vel_expanded, max_vel_expanded, states,
+                               new_states);
                 }
             }
         }
@@ -83,6 +84,18 @@ void MPM3Scheduler::update() {
         }
     }
     update_particle_states();
+    // TODO: testing memory locality...
+    // std::random_shuffle(active_particles.begin(), active_particles.end());
+    /*
+    std::sort(active_particles.begin(), active_particles.end(),
+              [](MPM3Particle *a, MPM3Particle *b) {
+                  return a->key() < b->key();
+              });
+    for (auto &p :active_particles) {
+        p->pos = Vector3(10.0f);
+        p->v = Vector3(0.0f);
+    }
+    */
 }
 
 int64 MPM3Scheduler::update_max_dt_int(int64 t_int) {
@@ -166,10 +179,10 @@ void MPM3Scheduler::update_dt_limits(real t) {
 
     for (auto &ind : min_vel.get_region()) {
         real block_vel = std::max(
-            std::max(
-                max_vel_expanded[ind][0] - min_vel_expanded[ind][0],
-                max_vel_expanded[ind][1] - min_vel_expanded[ind][1]),
-            max_vel_expanded[ind][2] - min_vel_expanded[ind][2]
+                std::max(
+                        max_vel_expanded[ind][0] - min_vel_expanded[ind][0],
+                        max_vel_expanded[ind][1] - min_vel_expanded[ind][1]),
+                max_vel_expanded[ind][2] - min_vel_expanded[ind][2]
         ) + 1e-7f;
         if (block_vel < 0) {
             // Blocks with no particles
@@ -185,7 +198,14 @@ void MPM3Scheduler::update_dt_limits(real t) {
             block_absolute_vel = std::max(block_absolute_vel, std::abs(min_vel_expanded[ind][i]));
             block_absolute_vel = std::max(block_absolute_vel, std::abs(max_vel_expanded[ind][i]));
         }
-        real last_distance = levelset->sample(Vector3(ind.get_pos() * real(mpm3d_grid_block_size)), t);
+        Vector3 levelset_query_position = Vector3(ind.get_pos() * real(mpm3d_grid_block_size));
+
+        real last_distance;
+        if (levelset->inside(levelset_query_position)) {
+            last_distance = levelset->sample(levelset_query_position, t);
+        } else {
+            last_distance = 0.0f;
+        }
         if (last_distance < LevelSet3D::INF) {
             real distance2boundary = std::max(last_distance - real(mpm3d_grid_block_size) * 0.75f, 0.5f);
             int64 boundary_limit = int64(cfl * distance2boundary / block_absolute_vel / base_delta_t);
@@ -195,119 +215,12 @@ void MPM3Scheduler::update_dt_limits(real t) {
     }
 }
 
-/*
-void MPMScheduler::visualize(const Vector4 &debug_input, Array<Vector4> &debug_blocks) const {
-    int64 minimum = int64(debug_input[0]);
-    if (minimum == 0) {
-        for (auto &ind : max_dt_int_cfl.get_region()) {
-            minimum = std::min(minimum, max_dt_int[ind]);
-        }
-    }
-    minimum = std::max(minimum, 1LL);
-    int grades = int(debug_input[1]);
-    if (grades == 0) {
-        grades = 10;
-    }
-
-    auto visualize = [](const Array<int64> step, int grades, int64 minimum) -> Array<real> {
-        Array<real> output;
-        output.initialize(step.get_width(), step.get_height());
-        for (auto &ind : step.get_region()) {
-            real r;
-            r = 1.0f - std::log2(1.0f * (step[ind] / minimum)) / grades;
-            output[ind] = clamp(r, 0.0f, 1.0f);
-        }
-        return output;
-    };
-
-    auto vis_strength = visualize(max_dt_int_strength, grades, minimum);
-    auto vis_cfl = visualize(max_dt_int_cfl, grades, minimum);
-    for (auto &ind : min_max_vel.get_region()) {
-        debug_blocks[ind] = Vector4(vis_strength[ind], vis_cfl[ind], 0.0f, 1.0f);
-    }
-}
-
-void MPMScheduler::print_limits() {
-    for (int i = max_dt_int.get_height() - 1; i >= 0; i--) {
-        for (int j = 0; j < max_dt_int.get_width(); j++) {
-            // std::cout << scheduler.particle_groups[j * scheduler.res[1] + i].size() << " " << (int)scheduler.has_particle(Vector2i(j, i)) << "; ";
-            printf(" %f", min_max_vel[j][i][0]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-    P(get_active_particles().size());
-    for (int i = max_dt_int.get_height() - 1; i >= 0; i--) {
-        for (int j = 0; j < max_dt_int.get_width(); j++) {
-            if (max_dt_int[j][i] >= (1LL << 60)) {
-                printf("      .");
-            } else {
-                printf("%6lld", max_dt_int_strength[j][i]);
-                if (states[j][i] == 1) {
-                    printf("*");
-                } else {
-                    printf(" ");
-                }
-            }
-        }
-        printf("\n");
-    }
-    printf("\n");
-    printf("cfl\n");
-    for (int i = max_dt_int.get_height() - 1; i >= 0; i--) {
-        for (int j = 0; j < max_dt_int.get_width(); j++) {
-            if (max_dt_int[j][i] >= (1LL << 60)) {
-                printf("      #");
-            } else {
-                printf("%6lld", max_dt_int_cfl[j][i]);
-                if (states[j][i] == 1) {
-                    printf("*");
-                } else {
-                    printf(" ");
-                }
-            }
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
-
-void MPMScheduler::print_max_dt_int() {
-    int64 max_dt = 0, min_dt = 1LL << 60;
-    for (auto &ind : states.get_region()) {
-        if (has_particle(ind)) {
-            max_dt = std::max(max_dt_int[ind], max_dt);
-            min_dt = std::min(max_dt_int[ind], min_dt);
-        }
-    }
-    printf("min_dt %lld max_dt %lld dynamic_range %lld\n", min_dt, max_dt, max_dt / min_dt);
-    for (int i = max_dt_int.get_height() - 1; i >= 0; i--) {
-        for (int j = 0; j < max_dt_int.get_width(); j++) {
-            if (!has_particle(Vector2i(j, i))) {
-                printf("      #");
-            } else {
-                printf("%6lld", max_dt_int[j][i]);
-                if (states[j][i] == 1) {
-                    printf("+");
-                } else if (states[j][i] == 2) {
-                    printf("*");
-                } else {
-                    printf(" ");
-                }
-            }
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
-*/
-
 void MPM3Scheduler::update_particle_states() {
     for (auto &p : get_active_particles()) {
         Vector3i low_res_pos(
-            int(p->pos.x / mpm3d_grid_block_size),
-            int(p->pos.y / mpm3d_grid_block_size),
-            int(p->pos.z / mpm3d_grid_block_size)
+                int(p->pos.x / mpm3d_grid_block_size),
+                int(p->pos.y / mpm3d_grid_block_size),
+                int(p->pos.z / mpm3d_grid_block_size)
         );
         if (states[low_res_pos] == 2) {
             p->color = Vector3(1.0f);
@@ -344,6 +257,5 @@ void MPM3Scheduler::enforce_smoothness(int64 t_int_increment) {
     }
     max_dt_int = new_max_dt_int;
 }
-
 
 TC_NAMESPACE_END

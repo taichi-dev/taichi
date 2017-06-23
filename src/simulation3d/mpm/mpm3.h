@@ -29,6 +29,9 @@
 
 TC_NAMESPACE_BEGIN
 
+// Supports FLIP?
+// #define TC_MPM_WITH_FLIP
+
 class MPM3D : public Simulation3D {
 protected:
     typedef Vector3 Vector;
@@ -38,13 +41,15 @@ public:
     static const int D = 3;
 
 public:
-    std::vector<MPM3Particle *> particles; // for efficiency
+    std::vector<MPM3Particle *> particles; // for (copy) efficiency, we do not use smart pointers here
     Array3D<Vector> grid_velocity;
-    Array3D<Vector> grid_velocity_backup;
-    Array3D<Spinlock> grid_locks;
     Array3D<real> grid_mass;
+    Array3D<Vector4s> grid_velocity_and_mass;
+#ifdef TC_MPM_WITH_FLIP
+    Array3D<Vector> grid_velocity_backup;
+#endif
+    Array3D<Spinlock> grid_locks;
     Vector3i res;
-    int max_dim;
     Vector gravity;
     bool apic;
 
@@ -55,11 +60,15 @@ public:
     real cfl;
     real strength_dt_mul;
     real request_t = 0.0f;
+    bool use_mpi;
+    int mpi_world_size;
+    int mpi_world_rank;
     int64 current_t_int = 0;
     int64 original_t_int_increment;
     int64 t_int_increment;
     int64 old_t_int;
     MPM3Scheduler scheduler;
+    bool mpi_initialized;
 
     Region get_bounded_rasterization_region(Vector p) {
         assert_info(is_normal(p.x) && is_normal(p.y) && is_normal(p.z),
@@ -68,14 +77,6 @@ public:
         int x = int(p.x);
         int y = int(p.y);
         int z = int(p.z);
-        /*
-        int x_min = max(0, x - 1);
-        int x_max = min(res[0], x + 3);
-        int y_min = max(0, y - 1);
-        int y_max = min(res[1], y + 3);
-        int z_min = max(0, z - 1);
-        int z_max = min(res[2], z + 3);
-        */
         int x_min = std::max(0, std::min(res[0], x - 1));
         int x_max = std::max(0, std::min(res[0], x + 3));
         int y_min = std::max(0, std::min(res[1], y - 1));
@@ -89,15 +90,15 @@ public:
 
     void estimate_volume() {}
 
-    void rasterize();
-
     void resample();
 
     void grid_backup_velocity() {
+#ifdef TC_MPM_WITH_FLIP
         grid_velocity_backup = grid_velocity;
+#endif
     }
 
-    void apply_deformation_force(float delta_t);
+    void calculate_force_and_rasterize(float delta_t);
 
     void grid_apply_boundary_conditions(const DynamicLevelSet3D &levelset, real t);
 
@@ -147,13 +148,19 @@ public:
         }
     }
 
+    void synchronize_particles();
+
+    void finalize();
+
+    void clear_particles_outside();
+
     std::vector<RenderParticle> get_render_particles() const override;
 
-    ~MPM3D() {
-        for (auto &p : particles) {
-            delete p;
-        }
+    int get_mpi_world_rank() const override {
+        return mpi_world_rank;
     }
+
+    ~MPM3D();
 };
 
 TC_NAMESPACE_END

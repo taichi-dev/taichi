@@ -13,9 +13,9 @@ gi_render = False
 step_number = 10000
 # step_number = 1
 # total_frames = 1
-grid_downsample = 2
-output_downsample = 2
-render_epoch = 40
+grid_downsample = 1
+output_downsample = 5
+render_epoch = 30
 
 
 def create_mpm_sand_block(fn):
@@ -66,11 +66,11 @@ def render_frame(frame, d, t):
 if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
+    print resolution
+    frame_dt = 0.01
 
-    from taichi.two_d import MPMSimulator
-
-    mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=True, num_threads=4, strength_dt_mul=4)
-    # mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=False, num_threads=4, base_delta_t=5e-4)
+    mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=True, num_threads=2, strength_dt_mul=2, base_delta_t=1e-7)
+    # mpm = MPM3(resolution=resolution, gravity=(0, -40, 0), async=False, num_threads=2, base_delta_t=0.00010237)
 
     levelset = mpm.create_levelset()
     height_ = 0.0
@@ -85,12 +85,12 @@ if __name__ == '__main__':
     levelset.add_plane(cos_, sin_, 0, -cross_x * cos_ - cross_y * sin_)
     levelset.global_increase(height_)
 
-    tex = Texture('levelset3d', levelset=levelset, bounds=(0, 0.02 / levelset.get_delta_x())) * 4
+    tex = Texture('levelset3d', levelset=levelset, bounds=(0, 0.02 / levelset.get_delta_x())) * 2
     tex = Texture('bound', tex=tex, axis=2, bounds=(0.22, 0.78), outside_val=(0, 0, 0))
     tex = Texture('bound', tex=tex, axis=0, bounds=(0.05, 1.0), outside_val=(0, 0, 0))
-    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), compression=1.15, lambda_0=1000, mu_0=1000)
-    tex_ball = Texture('sphere', center=(0.11, 0.52, 0.5), radius=0.08) * 3
-    mpm.add_particles(density_tex=tex_ball.id, initial_velocity=(0, 0, 0), compression=0.9)
+    mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, 0), compression=1.15, lambda_0=3000, mu_0=3000)
+    tex_ball = Texture('sphere', center=(0.11, 0.51, 0.5), radius=0.08) * 3
+    mpm.add_particles(density_tex=tex_ball.id, initial_velocity=(0, 0, 0), compression=0.95)
 
     levelset.set_friction(1)
     mpm.set_levelset(levelset, False)
@@ -98,16 +98,16 @@ if __name__ == '__main__':
     t = 0
     for i in range(step_number):
         print 'process(%d/%d)' % (i, step_number)
-        # if i==50:
-        #     mpm.add_particles(density_tex=tex_ball.id, initial_velocity=(0, 0, 0), compression=0.9)
         camera = Camera('pinhole', origin=(resolution[0] * 1.08, resolution[1] * -0.1, resolution[2] * 1.12),
                         look_at=(0, -resolution[1] * 0.5, 0), up=(0, 1, 0), fov=90,
                         width=10, height=10)
-        mpm.step(0.01, camera=camera)
+        mpm.step(frame_dt, camera=camera)
         t += 0.01
         if gi_render:
             d = mpm.get_directory()
             if i % 8 == 0:
                 render_frame(i, d, t)
                 pass
+        tc.core.print_profile_info()
+
     mpm.make_video()

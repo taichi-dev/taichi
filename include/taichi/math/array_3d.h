@@ -599,8 +599,12 @@ public:
         return this->data;
     }
 
+    std::vector<T> &get_data() {
+        return this->data;
+    }
+
     const int get_dim() const {
-        return 2;
+        return 3;
     }
 };
 

@@ -15,6 +15,7 @@
 #include <taichi/math/sdf.h>
 #include <taichi/system/unit_dll.h>
 #include <taichi/system/benchmark.h>
+#include <taichi/system/profiler.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -82,6 +83,7 @@ void export_misc(py::module &m) {
     m.def("test_raise_error", test_raise_error);
     m.def("test_volumetric_io", test_volumetric_io);
     m.def("config_from_dict", config_from_py_dict);
+    m.def("print_profile_info", [&]() { ProfilerRecords::get_instance().print(); });
 }
 
 TC_NAMESPACE_END

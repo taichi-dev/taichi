@@ -42,6 +42,7 @@ inline float sample(
     const unsigned dimension,
     const unsigned scramble = 0U)
 {
+    using namespace taichi;
     assert(dimension < Matrices::num_dimensions);
 
     unsigned result = scramble;

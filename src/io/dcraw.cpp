@@ -56,7 +56,15 @@ $Date: 2016/05/10 21:30:43 $
 #ifdef __CYGWIN__
 #include <io.h>
 #endif
-#ifdef WIN32
+
+#ifdef __MINGW32__
+#include <sys/utime.h>
+#include <windows.h>
+#include <winsock2.h>
+#define INT64 long long
+#define UINT64 unsigned long long
+
+#elif defined WIN32
 #include <sys/utime.h>
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")

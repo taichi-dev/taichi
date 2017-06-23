@@ -56,7 +56,7 @@ class VideoManager:
                 os.remove(fn)
 
     def make_video(self, mp4=True, gif=True):
-        command = "ffmpeg -framerate 24 -i " + os.path.join(self.frame_directory, FRAME_FN_TEMPLATE) + \
+        command = "ffmpeg -loglevel panic -framerate 24 -i " + os.path.join(self.frame_directory, FRAME_FN_TEMPLATE) + \
                   " -s:v " + str(self.width) + 'x' + str(self.height) + \
                   " -c:v libx264 -profile:v high -crf 1 -pix_fmt yuv420p -y " + self.get_output_filename('.mp4')
 
@@ -66,19 +66,19 @@ class VideoManager:
             # Generate the palette
             palette_name = self.get_output_filename('_palette.png')
             if get_os_name() == 'win':
-                command = "ffmpeg -i %s -vf 'palettegen' -y %s" % (
+                command = "ffmpeg -loglevel panic -i %s -vf 'palettegen' -y %s" % (
                     self.get_output_filename('.mp4'), palette_name)
             else:
-                command = "ffmpeg -i %s -vf 'fps=%d,scale=320:640:flags=lanczos,palettegen' -y %s" % (
+                command = "ffmpeg -loglevel panic -i %s -vf 'fps=%d,scale=320:640:flags=lanczos,palettegen' -y %s" % (
                     self.get_output_filename('.mp4'), self.framerate, palette_name)
-            print command
+            # print command
             os.system(command)
 
             # Generate the GIF
-            command = "ffmpeg -i %s -i %s -lavfi paletteuse -y %s" % (
+            command = "ffmpeg -loglevel panic -i %s -i %s -lavfi paletteuse -y %s" % (
                 self.get_output_filename('.mp4'), palette_name,
                 self.get_output_filename('.gif'))
-            print command
+            # print command
             os.system(command)
             os.remove(palette_name)
 
@@ -96,7 +96,7 @@ def make_video(input_files, width=0, height=0, framerate=24, output_path='video.
         os.mkdir(tmp_dir)
         for i, inp in enumerate(input_files):
             shutil.copy(inp, os.path.join(tmp_dir, '%06d.png' % i))
-        command = ("ffmpeg -framerate %d -i " % framerate) + tmp_dir + "/%06d.png" + \
+        command = ("ffmpeg -loglevel panic -framerate %d -i " % framerate) + tmp_dir + "/%06d.png" + \
                   " -s:v " + str(width) + 'x' + str(height) + \
                   " -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p " + output_path
         os.system(command)
@@ -105,7 +105,7 @@ def make_video(input_files, width=0, height=0, framerate=24, output_path='video.
         os.rmdir(tmp_dir)
     elif isinstance(input_files, str):
         assert width != 0 and height != 0
-        command = ("ffmpeg -framerate %d -i " % framerate) + input_files + \
+        command = ("ffmpeg -loglevel panic -framerate %d -i " % framerate) + input_files + \
                   " -s:v " + str(width) + 'x' + str(height) + \
                   " -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p " + output_path
         os.system(command)

@@ -25,11 +25,11 @@ const int mpm3d_grid_block_size = 8;
 
 class MPM3Scheduler {
 public:
-    template<typename T> using Array = Array3D<T>;
-
+    template <typename T> using Array = Array3D<T>;
     Array<int64> max_dt_int_strength;
     Array<int64> max_dt_int_cfl;
     Array<int64> max_dt_int;
+    Array<int> belonging;
     Array<int> states;
     Array<int> updated;
     Array<Vector3> max_vel, min_vel;
@@ -42,9 +42,10 @@ public:
     DynamicLevelSet3D *levelset;
     real base_delta_t;
     real cfl, strength_dt_mul;
+    int node_id;
 
     void initialize(const Vector3i &sim_res, real base_delta_t, real cfl, real strength_dt_mul,
-                    DynamicLevelSet3D *levelset) {
+                    DynamicLevelSet3D *levelset, int node_id) {
         this->sim_res = sim_res;
         res.x = (sim_res.x + mpm3d_grid_block_size - 1) / mpm3d_grid_block_size;
         res.y = (sim_res.y + mpm3d_grid_block_size - 1) / mpm3d_grid_block_size;
@@ -54,6 +55,7 @@ public:
         this->levelset = levelset;
         this->cfl = cfl;
         this->strength_dt_mul = strength_dt_mul;
+        this->node_id = node_id;
 
         states.initialize(res, 0);
         updated.initialize(res, 1);
@@ -72,6 +74,7 @@ public:
         max_dt_int_strength.initialize(res, 0);
         max_dt_int_cfl.initialize(res, 0);
         max_dt_int.initialize(res, 1);
+        belonging.initialize(res, 0);
     }
 
     void reset() {
@@ -118,21 +121,42 @@ public:
         return active_particles;
     }
 
+    std::vector<MPM3Particle *> &get_active_particles() {
+        return active_particles;
+    }
+
     const std::vector<Vector3i> &get_active_grid_points() const {
         return active_grid_points;
     }
-
-//    void visualize(const Vector4 &debug_input, Array<Vector4> &debug_blocks) const;
-
-//    void print_limits();
-
-//    void print_max_dt_int();
 
     void update_particle_states();
 
     void reset_particle_states();
 
     void enforce_smoothness(int64 t_int_increment);
+
+    Vector3i get_rough_pos(const MPM3Particle *p) const {
+        int x = int(p->pos.x / mpm3d_grid_block_size);
+        int y = int(p->pos.y / mpm3d_grid_block_size);
+        int z = int(p->pos.z / mpm3d_grid_block_size);
+        return Vector3i(x, y, z);
+    }
+
+    Vector3i get_rough_pos(const Index3D &pos) const {
+        int x = pos.i / mpm3d_grid_block_size;
+        int y = pos.j / mpm3d_grid_block_size;
+        int z = pos.k / mpm3d_grid_block_size;
+        return Vector3i(x, y, z);
+    }
+
+    int belongs_to(const Index3D &pos) const {
+        return belonging[get_rough_pos(pos)];
+    }
+
+    int belongs_to(const MPM3Particle *p) const {
+        return belonging[get_rough_pos(p)];
+    }
+
 };
 
 

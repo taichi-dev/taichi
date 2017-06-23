@@ -5,7 +5,15 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
 message("Using c++ compiler: " ${CMAKE_CXX_COMPILER})
 
-if (WIN32)
+if (MINGW)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_hypot=hypot")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMS_WIN64")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libgcc")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
+endif()
+
+if (MSVC)
     link_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /Z7 /D \"_CRT_SECURE_NO_WARNINGS\"  /arch:AVX -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED")
 else()
@@ -16,6 +24,24 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_PASS_EXCEPTION_TO_PYTHON")
 
 if (TC_DISABLE_SSE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_DISABLE_SSE")
+    message("SSE Disabled")
+endif()
+
+if (TC_USE_MPI)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_USE_MPI")
+    message("Using MPI")
+endif()
+
+if (TC_USE_OPENMP)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_USE_OPENMP")
+    message("Using OpenMP")
+    if (APPLE)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp=libiomp5")
+    elseif(MSVC)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp")
+    else()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+    endif()
 endif()
 
 if (USE_OPENGL)
@@ -74,6 +100,7 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import sys; import pybind11; sy
         OUTPUT_VARIABLE PYBIND11_INCLUDE_DIR
         RESULT_VARIABLE PYBIND11_IMPORT_RET)
 if (NOT PYBIND11_IMPORT_RET)
+    # returns zero if success
     message("    pybind11 include: " ${PYBIND11_INCLUDE_DIR})
 else()
     message(FATAL_ERROR "Can not import pybind11. Please install. ([sudo] pip install pybind11)")
@@ -99,10 +126,14 @@ set(CORE_LIBRARY_NAME taichi_core)
 add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_SOURCE})
 
 if (NOT WIN32)
-    target_link_libraries(${CORE_LIBRARY_NAME} pthread)
+    target_link_libraries(${CORE_LIBRARY_NAME} pthread stdc++)
 endif ()
 
 # Optional dependencies
+
+if (MINGW)
+    target_link_libraries(${CORE_LIBRARY_NAME} ws2_32)
+endif()
 
 if (USE_OPENGL)
     target_link_libraries(${CORE_LIBRARY_NAME} ${GLEW_LIBRARY})

@@ -55,6 +55,10 @@ public:
     virtual bool test() const override {
         return true;
     };
+
+    virtual int get_mpi_world_rank() const  {
+        return 0;
+    }
 };
 
 TC_INTERFACE(Simulation3D);

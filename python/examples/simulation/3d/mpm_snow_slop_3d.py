@@ -9,7 +9,8 @@ from taichi.visual.texture import Texture
 import taichi as tc
 
 gi_render = False
-step_number = 400
+use_mpi = False
+step_number = 1000
 # step_number = 1
 # total_frames = 1
 grid_downsample = 2
@@ -17,7 +18,7 @@ output_downsample = 1
 render_epoch = 20
 
 
-def create_mpm_sand_block(fn):
+def create_snow_block(fn):
     particles = tc_core.RenderParticles()
     assert particles.read(fn)
     downsample = grid_downsample
@@ -71,7 +72,7 @@ if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), base_delta_t=0.001, num_threads=8)
+    mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), base_delta_t=0.001, num_threads=1, use_mpi=use_mpi)
 
     levelset = mpm.create_levelset()
     levelset.add_plane(0, 1, 0, -1)
@@ -89,12 +90,15 @@ if __name__ == '__main__':
 
     t = 0
     for i in range(step_number):
-        print 'process(%d/%d)' % (i, step_number)
+        if mpm.get_mpi_world_rank() == 0:
+            print 'process(%d/%d)' % (i, step_number)
         mpm.step(0.03)
-        t += 0.03
-        if gi_render:
-            d = mpm.get_directory()
-            if i % 10 == 0:
-                render_sand_frame(i, d, t)
-                pass
-    mpm.make_video()
+        if mpm.get_mpi_world_rank() == 0:
+            tc.core.print_profile_info()
+            t += 0.03
+            if gi_render:
+                d = mpm.get_directory()
+                if i % 10 == 0:
+                    render_sand_frame(i, d, t)
+                    pass
+                    # mpm.make_video()

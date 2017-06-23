@@ -10,12 +10,21 @@
 
 #pragma once
 
+#include <immintrin.h>
 #include <taichi/math/qr_svd.h>
 #include <taichi/common/meta.h>
 #include <taichi/math/array_3d.h>
 #include <taichi/math/dynamic_levelset_3d.h>
+#include <taichi/math/math_simd.h>
 
 TC_NAMESPACE_BEGIN
+
+inline void check_singular_value_non_negative(Matrix3 &sig) {
+    for (int i = 0; i < 3; i++) {
+        assert_info(sig[i][i] > -eps, "sigular values should not be negative, instead of " +
+                                      std::to_string(sig[i][i]));
+    }
+}
 
 struct MPM3Particle {
     using Vector = Vector3;
@@ -23,10 +32,16 @@ struct MPM3Particle {
     using Region = Region3D;
     static const int D = 3;
     Vector3 color = Vector3(1, 0, 0);
-    Vector pos, v;
-    Matrix dg_e, dg_p, tmp_force;
-    real mass;
     real vol;
+    union {
+        Vector4s velocity_and_mass;
+        struct {
+            Vector3 v;
+            real mass;
+        };
+    };
+    Vector pos;
+    Matrix dg_e, dg_p, tmp_force;
     Matrix apic_b;
     Matrix dg_cache;
     static long long instance_count;
@@ -60,8 +75,6 @@ struct MPM3Particle {
 
     virtual Matrix get_energy_gradient() = 0;
 
-    virtual void calculate_kernels() {}
-
     virtual void calculate_force() = 0;
 
     virtual void plasticity() {};
@@ -83,14 +96,41 @@ struct MPM3Particle {
     }
 
     virtual ~MPM3Particle() {}
+
+    uint64 key() const {
+        // 3D Morton Coding
+        const uint64 mask_x = 0x9249249249249249ULL;
+        return _pdep_u64(uint64(pos.x), mask_x) | _pdep_u64(uint64(pos.y), mask_x << 1) |
+               _pdep_u64(uint64(pos.z), mask_x << 2);
+    }
 };
 
 struct EPParticle3 : public MPM3Particle {
     real hardening = 10.0f;
-    real mu_0 = 1e5f, lambda_0 = 1e5f;
+    real mu_0 = 58333.3, lambda_0 = 38888.9;
     real theta_c = 2.5e-2f, theta_s = 7.5e-3f;
 
     EPParticle3() : MPM3Particle() {
+    }
+
+    EPParticle3(const EPParticle3 &other) {
+        this->hardening = other.hardening;
+        this->mu_0 = other.mu_0;
+        this->lambda_0 = other.lambda_0;
+        this->theta_c = other.theta_c;
+        this->theta_s = other.theta_s;
+        this->color = other.color;
+        this->pos = other.pos;
+        this->v = other.v;
+        this->dg_e = other.dg_e;
+        this->dg_p = other.dg_p;
+        this->tmp_force = other.tmp_force;
+        this->mass = other.mass;
+        this->vol = other.vol;
+        this->apic_b = other.apic_b;
+        this->dg_cache = other.dg_cache;
+        this->state = other.state;
+        this->last_update = other.last_update;
     }
 
     void initialize(const Config &config) override {
@@ -106,36 +146,77 @@ struct EPParticle3 : public MPM3Particle {
     virtual Matrix get_energy_gradient() override {
         real j_e = det(dg_e);
         real j_p = det(dg_p);
-        real e = std::exp(std::min(hardening * (1.0f - j_p), 1000.0f));
-        real mu = mu_0 * e;
-        real lambda = lambda_0 * e;
+        auto lame = get_lame_parameters();
+        real mu = lame.first, lambda = lame.second;
         Matrix r, s;
         polar_decomp(dg_e, r, s);
-        if (!is_normal(r)) {
+        Matrix3 grad = 2 * mu * (dg_e - r) +
+                       lambda * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
+#ifdef CV_ON
+        if (abnormal(r) || abnormal(dg_e) || abnormal(s) || abnormal(glm::inverse(dg_e)) || abnormal(grad)) {
             P(dg_e);
+            P(dg_p);
+            P(glm::inverse(dg_e));
+            P(glm::inverse(glm::transpose(dg_e)));
             P(r);
             P(s);
+            P(grad);
+            P(mu);
+            P(j_e);
+            P(j_p);
+            P(lambda);
+            error("");
         }
-        CV(r);
-        CV(s);
-        return 2 * mu * (dg_e - r) +
-               lambda * (j_e - 1) * j_e * glm::inverse(glm::transpose(dg_e));
+#endif
+        return grad;
     }
 
-    virtual void calculate_kernels() override {}
-
     virtual void calculate_force() override {
+#ifdef CV_ON
+        if (abnormal(vol)) {
+            P(vol);
+            error("Abnormal volume");
+        }
+        if (abnormal(dg_e)) {
+            P(dg_e);
+        }
+#endif
         tmp_force = -vol * get_energy_gradient() * glm::transpose(dg_e);
     };
 
     virtual void plasticity() override {
         Matrix svd_u, sig, svd_v;
         svd(dg_e, svd_u, sig, svd_v);
+#ifdef CV_ON
+        if (abnormal(sig) || abnormal(svd_u) || abnormal(svd_v)) {
+            P(dg_e);
+            P(sig);
+            P(svd_u);
+            P(svd_v);
+            error("abnormal SVD");
+        }
+#endif
         for (int i = 0; i < D; i++) {
+#ifdef CV_ON
+            assert_info(sig[i][i] > -eps,
+                        "sigular values should be non-negative, instead of " + std::to_string(sig[i][i]));
+#endif
             sig[i][i] = clamp(sig[i][i], 1.0f - theta_c, 1.0f + theta_s);
         }
         dg_e = svd_u * sig * glm::transpose(svd_v);
         dg_p = glm::inverse(dg_e) * dg_cache;
+#ifdef CV_ON
+        if (abnormal(dg_p) || abnormal(dg_e)) {
+            P(dg_e);
+            P(dg_p);
+            P(dg_cache);
+            P(sig);
+            P(svd_u);
+            P(svd_v);
+            error("abnormal singular value");
+        }
+#endif
+        // clamp dg_p to ensure that it does not explode
         svd(dg_p, svd_u, sig, svd_v);
         for (int i = 0; i < D; i++) {
             sig[i][i] = clamp(sig[i][i], 0.1f, 10.0f);
@@ -146,7 +227,9 @@ struct EPParticle3 : public MPM3Particle {
     std::pair<real, real> get_lame_parameters() const {
         real j_e = det(dg_e);
         real j_p = det(dg_p);
-        real e = std::max(1e-7f, std::exp(std::min(hardening * (1.0f - j_p), 5.0f)));
+        // real e = std::max(1e-7f, std::exp(std::min(hardening * (1.0f - j_p), 5.0f)));
+        // no clamping
+        real e = std::exp(hardening * (1.0f - j_p));
         real mu = mu_0 * e;
         real lambda = lambda_0 * e;
         return {mu, lambda};
@@ -154,7 +237,7 @@ struct EPParticle3 : public MPM3Particle {
 
     virtual real get_allowed_dt() const override {
         auto lame = get_lame_parameters();
-        real strength_limit = 0.5f / std::sqrt(lame.first + 2 * lame.second);
+        real strength_limit = 0.5f / std::sqrt(lame.first + 2 * lame.second + 1e-7f);
         return strength_limit;
     }
 };
@@ -189,10 +272,10 @@ struct DPParticle3 : public MPM3Particle {
         Matrix3 epsilon(log(sigma[0][0]), 0.f, 0.f, 0.f, log(sigma[1][1]), 0.f, 0.f, 0.f, log(sigma[2][2]));
         real tr = epsilon[0][0] + epsilon[1][1] + epsilon[2][2];
         Matrix3 epsilon_hat = epsilon - (tr) / d * Matrix3(1.0f);
-        real epsilon_for = sqrt(
+        real epsilon_for = std::sqrt(
                 epsilon[0][0] * epsilon[0][0] + epsilon[1][1] * epsilon[1][1] + epsilon[2][2] * epsilon[2][2]);
-        real epsilon_hat_for = sqrt(epsilon_hat[0][0] * epsilon_hat[0][0] + epsilon_hat[1][1] * epsilon_hat[1][1] +
-                                    epsilon_hat[2][2] * epsilon_hat[2][2]);
+        real epsilon_hat_for = std::sqrt(epsilon_hat[0][0] * epsilon_hat[0][0] + epsilon_hat[1][1] * epsilon_hat[1][1] +
+                                         epsilon_hat[2][2] * epsilon_hat[2][2]);
         if (epsilon_hat_for <= 0 || tr > 0.0f) {
             sigma_out = Matrix3(1.0f);
             out = epsilon_for;
@@ -209,21 +292,20 @@ struct DPParticle3 : public MPM3Particle {
         }
     }
 
-    void calculate_kernels() override {
-    }
-
     void calculate_force() override {
         Matrix3 u, v, sig, dg = dg_e;
         svd(dg_e, u, sig, v);
 
+#ifdef CV_ON
         assert_info(sig[0][0] > 0, "negative singular value");
         assert_info(sig[1][1] > 0, "negative singular value");
         assert_info(sig[2][2] > 0, "negative singular value");
+#endif
 
         Matrix3 log_sig(log(sig[0][0]), 0.f, 0.f, 0.f, log(sig[1][1]), 0.f, 0.f, 0.f, log(sig[2][2]));
         Matrix3 inv_sig(1.f / (sig[0][0]), 0.f, 0.f, 0.f, 1.f / (sig[1][1]), 0.f, 0.f, 0.f, 1.f / (sig[2][2]));
         Matrix3 center =
-                2 * mu_0 * inv_sig * log_sig + lambda_0 * (log_sig[0][0] + log_sig[1][1] + log_sig[2][2]) * inv_sig;
+                2.0f * mu_0 * inv_sig * log_sig + lambda_0 * (log_sig[0][0] + log_sig[1][1] + log_sig[2][2]) * inv_sig;
 
         tmp_force = -vol * (u * center * glm::transpose(v)) * glm::transpose(dg);
     }
@@ -236,6 +318,7 @@ struct DPParticle3 : public MPM3Particle {
         project(sig, alpha, t, delta_q);
         Matrix3 rec = u * sig * glm::transpose(v);
         Matrix3 diff = rec - dg_e;
+#ifdef CV_ON
         if (!(frobenius_norm(diff) < 1e-4f)) {
             // debug code
             P(dg_e);
@@ -245,16 +328,18 @@ struct DPParticle3 : public MPM3Particle {
             P(v);
             error("SVD error\n");
         }
+#endif
         dg_e = u * t * glm::transpose(v);
         dg_p = v * glm::inverse(t) * sig * glm::transpose(v) * dg_p;
         q += delta_q;
         real phi = h_0 + (h_1 * q - h_3) * expf(-h_2 * q);
-        alpha = sqrtf(2.0f / 3.0f) * (2.0f * sin(phi * pi / 180.0f)) / (3.0f - sin(phi * pi / 180.0f));
+        alpha = std::sqrt(2.0f / 3.0f) * (2.0f * std::sin(phi * pi / 180.0f)) / (3.0f - std::sin(phi * pi / 180.0f));
     }
 
     real get_allowed_dt() const override {
         return 0.0f;
     }
+
 };
 
 TC_NAMESPACE_END

@@ -9,13 +9,13 @@ from taichi.visual.texture import Texture
 from colorsys import hsv_to_rgb
 import taichi as tc
 
-gi_render = False
+gi_render = True
 step_number = 10000
 # step_number = 1
 # total_frames = 1
-grid_downsample = 2
-output_downsample = 2
-render_epoch = 50
+grid_downsample = 1
+output_downsample = 1
+render_epoch = 33
 
 
 def create_mpm_sand_block(fn):
@@ -75,13 +75,13 @@ if __name__ == '__main__':
     downsample = grid_downsample
     resolution = (255 / downsample, 255 / downsample, 255 / downsample)
 
-    mpm = MPM3(resolution=resolution, gravity=(0, -50, 0), async=False,
-               base_delta_t=0.0002, num_threads=8, strength_dt_mul=4)
+    mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), async=True, num_threads=2, strength_dt_mul=2)
+    # mpm = MPM3(resolution=resolution, gravity=(0, -20, 0), async=False, base_delta_t=0.0002, num_threads=2, strength_dt_mul=2)
 
-    tex = Texture('mesh', resolution=resolution, filename=tc.get_asset_path('meshes/bunny.obj'))
+    tex = Texture('mesh', resolution=(200, 200, 200), filename=tc.get_asset_path('meshes/bunny.obj'))
     tex = tex.zoom((0.4, 0.4, 0.4), (0.5, 0.5, 0.5), False)
     tex = Texture('rotate', tex=tex, rotate_axis=0, rotate_times=1)
-    tex = tex * (Texture('perlin').zoom((10, 10, 10)) * 6 + 2)
+    tex = tex * (Texture('perlin').zoom((10, 10, 10)) * 5 + 3)
     mpm.add_particles(density_tex=tex.id, initial_velocity=(0, 0, -50))
 
     levelset = mpm.create_levelset()
@@ -95,7 +95,7 @@ if __name__ == '__main__':
         t += 0.01
         if gi_render:
             d = mpm.get_directory()
-            if i % 10 == 0:
+            if i % 4 == 0:
                 render_frame(i, d, t)
                 pass
     mpm.make_video()

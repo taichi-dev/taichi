@@ -71,8 +71,8 @@ class SimulationWindow(pyglet.window.Window):
                 else:
                     self.simulator.step()
                 ela_t = time.time() - t
-                print 'Elapsed time:', ela_t
                 self.cpu_time += ela_t
+                print 'CPU Time: %.3f [%.3f per frame]' % (ela_t, self.get_time_per_frame())
             self.pressed = False
         else:
             if self.video_output:
@@ -130,13 +130,16 @@ class SimulationWindow(pyglet.window.Window):
                                       anchor_x='left', anchor_y='top')
             label.color = self.color_scheme['label']
             label.draw()
-            label = pyglet.text.Label('per frame = %.3fs' % (self.cpu_time / (1 + self.frame_count)),
+            label = pyglet.text.Label('per frame = %.3fs' % self.get_time_per_frame(),
                                       font_name='Rockwell',
                                       font_size=12,
                                       x=10, y=60,
                                       anchor_x='left', anchor_y='top')
             label.color = self.color_scheme['label']
             label.draw()
+
+    def get_time_per_frame(self):
+        return self.cpu_time / (1 + self.frame_count)
 
     def render_grid(self):
         glMatrixMode(GL_MODELVIEW)

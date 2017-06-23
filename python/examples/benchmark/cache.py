@@ -7,14 +7,32 @@ def analysis_working_set_size():
     x, y = [], []
     for i in range(tot):
         size = 2 ** i * 32
-        benchmark = tc.system.Benchmark('cache', working_set_size=size, workload=1000000, step=10000000007)
-        t = benchmark.run(10)
+        benchmark = tc.system.Benchmark('cache_strided_read', working_set_size=size, workload=10000000, step=10000000007,
+                                        returns_time=True)
+        t = benchmark.run(20)
+        x.append(size)
+        t = 64 / t * 1e-9
+        y.append(t)
+        print size, t, 'GB/s'
+
+    plt.semilogx(x, y, basex=2)
+    # plt.ylim(0, 100)
+    plt.show()
+
+def analysis_working_set_size_cycle():
+    tot = 25
+    x, y = [], []
+    for i in range(tot):
+        size = 2 ** i * 32
+        benchmark = tc.system.Benchmark('cache_strided_read', working_set_size=size, workload=10000000, step=10000000007,
+                                        returns_time=False)
+        t = benchmark.run(20)
         x.append(size)
         y.append(t)
         print size, t, 'cyc'
 
     plt.semilogx(x, y, basex=2)
-    plt.ylim(0, 100)
+    # plt.ylim(0, 100)
     plt.show()
 
 
@@ -23,11 +41,11 @@ def analysis_stride():
     x, y = [], []
     for i in range(tot):
         step = i
-        benchmark = tc.system.Benchmark('cache', working_set_size=2 ** 20, workload=1000000, step=step)
+        benchmark = tc.system.Benchmark('cache_strided_read', working_set_size=2 ** 20, workload=1000000, step=step)
         t = benchmark.run(100)
         x.append(step)
         y.append(t)
-        print step, t, 'cyc'
+        print '%d, %.2f cyc' % (step, t)
 
     plt.plot(x, y, 'x-')
     plt.ylim(0, 7)
@@ -35,4 +53,5 @@ def analysis_stride():
 
 
 if __name__ == '__main__':
-    analysis_stride()
+    # analysis_stride()
+    analysis_working_set_size_cycle()

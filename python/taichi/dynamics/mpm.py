@@ -36,6 +36,7 @@ class MPM3:
 
         self.levelset_generator = dummy_levelset_generator
         self.start_simulation_time = None
+        self.simulation_total_time = None
 
     def add_particles(self, **kwargs):
         self.c.add_particles(P(**kwargs))
@@ -59,15 +60,19 @@ class MPM3:
 
     def step(self, step_t, camera=None):
         t = self.c.get_current_time()
-        print 'Simulation time:', t
-        T = time.time()
+        print '* Current t: %.3f' % t
+        # T = time.time()
         self.update_levelset(t, t + step_t)
-        print 'Update Leveset Time:', time.time() - T
+        # print 'Update Leveset Time:', time.time() - T
         T = time.time()
         if not self.start_simulation_time:
             self.start_simulation_time = T
+        if not self.simulation_total_time:
+            self.simulation_total_time = 0
         self.c.step(step_t)
-        print 'Step Time:', time.time() - T, ' (', time.time() - self.start_simulation_time, ')'
+        self.simulation_total_time += time.time() - T
+        print '* Step Time: %.2f [tot: %.2f per frame %.2f]' % (
+            time.time() - T, time.time() - self.start_simulation_time, self.simulation_total_time / (self.frame + 1))
         image_buffer = tc_core.Array2DVector3(self.video_manager.width, self.video_manager.height, Vector(0, 0, 0.0))
         particles = self.c.get_render_particles()
         particles.write(self.directory + '/particles%05d.bin' % self.frame)
@@ -95,3 +100,6 @@ class MPM3:
 
     def test(self):
         return self.c.test()
+
+    def get_mpi_world_rank(self):
+        return self.c.get_mpi_world_rank()

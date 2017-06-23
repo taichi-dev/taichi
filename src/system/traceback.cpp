@@ -8,12 +8,11 @@
 *******************************************************************************/
 
 #include <taichi/common/util.h>
-#include <cxxabi.h>
 #include <vector>
 #include <iostream>
-#include <cxxabi.h>
 #ifdef __APPLE__
 #include <execinfo.h>
+#include <cxxabi.h>
 #endif
 #include <string>
 #include <cstdio>

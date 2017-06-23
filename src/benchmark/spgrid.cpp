@@ -57,7 +57,7 @@ template <uint v>
 struct Log2;
 
 template <>
-struct Log2<0> {
+struct Log2<1> {
     enum {
         value = 0
     };
@@ -80,17 +80,13 @@ unsigned long Bit_Spread(const unsigned int data, const unsigned long mask) {
 }
 
 unsigned long Bit_Spread(const int data, const unsigned long mask) {
-    union {
-        signed long sldata;
-        unsigned long uldata;
-    };
-    sldata = data;
-    return _pdep_u64(uldata, mask);
+    signed long sldata = data;
+    return _pdep_u64(static_cast<unsigned long>(sldata), mask);
 }
 
 #endif
 
-int Bit_Pack(const unsigned long data, const unsigned long mask) {
+inline int Bit_Pack(const unsigned long data, const unsigned long mask) {
     union {
         signed long slresult;
         unsigned long ulresult;
@@ -111,10 +107,16 @@ int Bit_Pack(const unsigned long data, const unsigned long mask) {
 template <typename T>
 class SPGrid {
 private:
-    uint64 masks[3];
     T *data;
+    size_t size_bytes;
 
 public:
+
+    enum {
+        res_x = 1024,
+        res_y = 1024,
+        res_z = 1024
+    };
 
     enum {
         data_bits = Log2<sizeof(T)>::value,            // Bits needed for indexing individual bytes within type T
@@ -124,7 +126,10 @@ public:
         block_ybits =
         block_bits / 3 + (block_bits % 3 > 1), // Bits needed for the y-coordinate of a data elements within a block
         block_xbits =
-        block_bits / 3                   // Bits needed for the x-coordinate of a data elements within a block
+        block_bits / 3,                   // Bits needed for the x-coordinate of a data elements within a block
+        block_xsize = 1 << block_xbits,
+        block_ysize = 1 << block_ybits,
+        block_zsize = 1 << block_zbits,
     };
 
     enum {
@@ -132,7 +137,8 @@ public:
     };
 
     enum {
-        log2_field = 4
+        // TODO: what is the difference?
+                log2_field = data_bits
     };
 
     enum { // Bit masks for the lower 12 bits of memory addresses (element indices within a page)
@@ -153,13 +159,20 @@ public:
         xmask = page_xmask | (unsigned long)element_xmask
     };
 
-    void initialize() {
+    SPGrid() {
+        Check_Compliance();
+        size_bytes = res_x * res_y * res_z * sizeof(T);
+        data = (T *)allocate(size_bytes);
+    }
+
+    uint64 map_coord(const Vector3i &coord) const {
+        return map_coord(coord.x, coord.y, coord.z);
     }
 
     uint64 map_coord(int i, int j, int k) const {
-        return Bit_Spread(i, masks[0]) |
-               Bit_Spread(j, masks[1]) |
-               Bit_Spread(k, masks[2]);
+        return Bit_Spread(i, xmask) |
+               Bit_Spread(j, ymask) |
+               Bit_Spread(k, zmask);
     }
 
     T &operator()(int i, int j, int k) {
@@ -170,7 +183,6 @@ public:
         return data[map_coord(i, j, k)];
     }
 
-
     static void *allocate(size_t size) {
         void *ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
         if (ptr == MAP_FAILED) error("Failed to allocate " + std::to_string(size) + " bytes.");
@@ -178,7 +190,6 @@ public:
                 "Allocated pointer value " + std::to_string((size_t)ptr) + " is not page-aligned.");
         return ptr;
     }
-
 
     static void deallocate(void *data, const size_t size) {
         if (munmap(data, size) != 0) error("Failed to deallocate " + std::to_string(size) + " bytes");
@@ -218,6 +229,26 @@ public:
         } Long_Enum;
         if (sizeof(Long_Enum) != 8) error("Missing support for 64-bit enums");
     }
+
+    ~SPGrid() {
+        deallocate(data, size_bytes);
+    }
+
+    bool coord_in_memory(const Vector3i &coord) const {
+        return Check_Address_Resident(data + map_coord(coord));
+    }
+
+    size_t count_active_pages() {
+        size_t pages = 0;
+        for (int i = 0; i < res_x; i += block_xsize) {
+            for (int j = 0; j < res_y; j += block_ysize) {
+                for (int k = 0; k < res_z; k += block_zsize) {
+                    pages += (int)coord_in_memory(Vector3i(i, j, k));
+                }
+            }
+        }
+        return pages;
+    }
 };
 
 class SPGridBenchmark : public Benchmark {
@@ -236,41 +267,60 @@ public:
     }
 
 protected:
+
+    static const int test_n = 256;
+
     real sum_spgrid(Vector3 p) const {
+        return 0.0f;
     }
 
     real sum_dense(Vector3 p) const {
+        return 0.0f;
     }
 
     void iterate() override {
-//        real ret = 0.0f;
-//        if (brute_force) {
-//            for (int i = 0; i < workload; i++) {
-//                ret += sum_brute_force(input[i]);
-//            }
-//        } else {
-//            for (int i = 0; i < workload; i++) {
-//                ret += sum_simd(input[i]);
-//            }
-//        }
-//        dummy = (int)(ret);
     }
+
 
 public:
     bool test() const override {
-        for (int i = 0; i < workload; i++) {
-//            real bf_result = sum_brute_force(input[i]);
-//            real simd_result = sum_simd(input[i]);
-//            if (abs(bf_result - simd_result) > 1e-6) {
-//                printf("%f %f\n", bf_result, simd_result);
-//                error("value mismatch");
-//            }
+        SPGrid<Vector4s> grid;
+        for (int i = 0; i < 100; i++) {
+            //P(grid.map_coord(i, i, i));
+            grid(i, i, i) = Vector4s(i);
+        }
+        for (int i = 0; i < 100; i += 10) {
+            P(grid(i, i, i));
+        }
+        P(grid.count_active_pages());
+        P(grid.block_xsize);
+        P(grid.block_ysize);
+        P(grid.block_zsize);
+        P(grid.data_bits);
+        SPGrid<float> float_grid;
+        auto n = test_n;
+        std::vector<float> dense_array(n * n * n);
+        for (int i = 0; i < test_n; i++) {
+            for (int j = 0; j < test_n; j++) {
+                for (int k = 0; k < test_n; k++) {
+                    auto val = rand();
+                    dense_array[i * n * n + j * n + k] = val;
+                    float_grid(i, j, k) = val;
+                }
+            }
+        }
+        for (int i = 0; i < test_n; i++) {
+            for (int j = 0; j < test_n; j++) {
+                for (int k = 0; k < test_n; k++) {
+                    assert_info(dense_array[i * n * n + j * n + k] == float_grid(i, j, k), "value mismatch");
+                }
+            }
         }
         return true;
     }
 };
 
-//TC_IMPLEMENTATION(Benchmark, KernelCalculationBenchmark, "mpm_kernel");
+TC_IMPLEMENTATION(Benchmark, SPGridBenchmark, "spgrid");
 
 TC_NAMESPACE_END
 #endif

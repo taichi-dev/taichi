@@ -1,3 +1,4 @@
+#if defined(TC_ENABLE_SPGRID)
 /*******************************************************************************
     Taichi - Physically based Computer Graphics Library
 
@@ -323,4 +324,5 @@ public:
 TC_IMPLEMENTATION(Benchmark, SPGridBenchmark, "spgrid");
 
 TC_NAMESPACE_END
+#endif
 #endif

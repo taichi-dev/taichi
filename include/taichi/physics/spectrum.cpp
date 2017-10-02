@@ -156,7 +156,7 @@ Vector3d rgb_from_temperature(float temp) {
   Vector3d radiance(0);
   Vector3d c;
   for (int i = 0; i < 256; i++) {
-    double lambda = 360.0f + (750.0f - 360.0f) * (i + 0.5f) / 256.0f;
+    double lambda = 360.0_f + (750.0_f - 360.0_f) * (i + 0.5f) / 256.0f;
     Vector3d color(spectrum_to_rgb[i * 4], spectrum_to_rgb[i * 4 + 1],
                    spectrum_to_rgb[i * 4 + 2]);
     double intensity =

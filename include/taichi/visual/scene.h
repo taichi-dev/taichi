@@ -139,7 +139,7 @@ struct IntersectionInfo {
 
 class Scene {
  public:
-  Scene() { this->envmap_sample_prob = 0.0f; }
+  Scene() { this->envmap_sample_prob = 0.0_f; }
 
   void set_camera(std::shared_ptr<Camera> camera) { this->camera = camera; }
 
@@ -250,7 +250,7 @@ class Scene {
     p.energy = weight * total_emission * delta_t * stefan_boltzmann_constant;
     if (!mesh->const_temp) {
       t.temperature -= p.energy / t.heat_capacity;
-      t.temperature = std::max(t.temperature, 0.0f);
+      t.temperature = std::max(t.temperature, 0.0_f);
     }
   }
 
@@ -264,7 +264,7 @@ class Scene {
 
   real get_temperature(int triangle_id, real u, real v) {
     error("not implemented");
-    return 0.0f;
+    return 0.0_f;
     /*
     real cooef[3]{ 1 - u - v, u, v };
     Mesh *mesh = triangle_id_to_mesh[triangle_id];

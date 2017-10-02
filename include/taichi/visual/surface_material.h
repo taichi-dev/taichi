@@ -87,13 +87,13 @@ class SurfaceMaterial : public Unit {
   virtual real probability_density(const Vector3 &in,
                                    const Vector3 &out,
                                    const Vector2 &uv) const {
-    return 0.0f;
+    return 0.0_f;
   };
 
   virtual Vector3 evaluate_bsdf(const Vector3 &in,
                                 const Vector3 &out,
                                 const Vector2 &uv) const {
-    return Vector3(0.0f);
+    return Vector3(0.0_f);
   }
 
   static std::shared_ptr<Texture> get_color_sampler(const Config &config,

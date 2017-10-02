@@ -27,7 +27,7 @@ class ParticleShadowMapRenderer : public ParticleRenderer {
   virtual void initialize(const Config &config) override {
     shadow_map_resolution = config.get_real("shadow_map_resolution");
     light_direction = config.get_vec3("light_direction");
-    ambient_light = config.get("ambient_light", 0.0f);
+    ambient_light = config.get("ambient_light", 0.0_f);
     shadowing = config.get("shadowing", 1.0_f);
     alpha = config.get("alpha", 1.0_f);
     light_direction = normalized(light_direction);
@@ -73,7 +73,7 @@ class ParticleShadowMapRenderer : public ParticleRenderer {
       uv = shadow_map_scaling * (uv - uv_lowerbound);
       int int_x = (int)(uv.x);
       int int_y = (int)(uv.y);
-      real occ = 0.0f;
+      real occ = 0.0_f;
       if (occlusion_buffer.inside(uv)) {
         occlusion_buffer[int_x][int_y] *=
             (1.0_f - shadowing * particles[index].color.w);

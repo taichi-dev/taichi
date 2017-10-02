@@ -23,7 +23,7 @@ void eigen_svd(Matrix2 m, Matrix2 &u, Matrix2 &s, Matrix2 &v) {
       e_m(j, i) = m[i][j];
   Eigen::JacobiSVD<Eigen::MatrixXf> e_svd(
       e_m, Eigen::ComputeThinU | Eigen::ComputeThinV);
-  s = Matrix2(0.0f);
+  s = Matrix2(0.0_f);
   for (int i = 0; i < 2; ++i)
     s[i][i] = e_svd.singularValues()(i);
   for (int i = 0; i < 2; ++i)
@@ -41,7 +41,7 @@ void eigen_svd(Matrix3 m, Matrix3 &u, Matrix3 &s, Matrix3 &v) {
       e_m(j, i) = m[i][j];
   Eigen::JacobiSVD<Eigen::MatrixXf> e_svd(
       e_m, Eigen::ComputeThinU | Eigen::ComputeThinV);
-  s = Matrix3(0.0f);
+  s = Matrix3(0.0_f);
   for (int i = 0; i < 3; ++i)
     s[i][i] = e_svd.singularValues()(i);
   for (int i = 0; i < 3; ++i)
@@ -105,7 +105,7 @@ void imp_svd(Matrix3 m, Matrix3 &u, Matrix3 &s, Matrix3 &v) {
   }
 
   JIXIE::singularValueDecomposition(M, U, S, V);
-  s = u = v = Matrix3(0.0f);
+  s = u = v = Matrix3(0.0_f);
   for (int i = 0; i < 3; i++) {
     s[i][i] = S(i, 0);
   }

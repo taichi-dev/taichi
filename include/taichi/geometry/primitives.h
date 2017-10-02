@@ -92,9 +92,9 @@ struct Triangle {
     return Triangle(multiply_matrix4(transform, v[0], 1.0_f),
                     multiply_matrix4(transform, v[0] + v10, 1.0_f),
                     multiply_matrix4(transform, v[0] + v20, 1.0_f),
-                    multiply_matrix4(normal_transform, n0, 0.0f),
-                    multiply_matrix4(normal_transform, n0 + n10, 0.0f),
-                    multiply_matrix4(normal_transform, n0 + n20, 0.0f), uv0,
+                    multiply_matrix4(normal_transform, n0, 0.0_f),
+                    multiply_matrix4(normal_transform, n0 + n10, 0.0_f),
+                    multiply_matrix4(normal_transform, n0 + n20, 0.0_f), uv0,
                     uv0 + uv10, uv0 + uv20, id);
   }
 
@@ -116,7 +116,7 @@ struct Triangle {
     real dir_n = dot(dir, normal);
     real dist_n = dot(v[0] - orig, normal);
     real dist = dist_n / dir_n;
-    if (dist <= 0.0f) {
+    if (dist <= 0.0_f) {
       return;
     } else {
       if (dist > 0 && dist < ray.dist) {

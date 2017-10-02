@@ -32,7 +32,7 @@ class FLIPSmoke : public FLIPLiquid {
     temperature_count = Array(width, height);
 
     buoyancy = config.get("bouyancy", 0.1f);
-    conduction = config.get("conduction", 0.0f);
+    conduction = config.get("conduction", 0.0_f);
     visualization = config.get("visualization", "");
     source_temperature = config.get("source_temperature", ambient_temp);
     temperature_flip_alpha = config.get("temperature_flip_alpha", 0.97f);
@@ -48,7 +48,7 @@ class FLIPSmoke : public FLIPLiquid {
     for (int i = 0; i < 100; i++) {
       Vector2 pos((0.4f + 0.2f * rand()) * width,
                   (0.1f + 0.1f * rand()) * height);
-      Vector2 vel(0.0f, 0.0f);
+      Vector2 vel(0.0_f, 0.0_f);
       Particle p(pos, vel);
       p.temperature = source_temperature;
       particles.push_back(p);

@@ -22,7 +22,7 @@ class RunningAverage {
 
  public:
   RunningAverage() {
-    safe_value = 0.0f;
+    safe_value = 0.0_f;
     clear();
   }
 

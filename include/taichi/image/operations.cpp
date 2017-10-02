@@ -27,7 +27,7 @@ Array2D<Vector3> blur_with_depth(const Array2D<Vector3> &image,
   auto ret = image.same_shape();
   constexpr int max_radius = 50;
 
-  std::vector<real> kernel(max_radius, 0.0f);
+  std::vector<real> kernel(max_radius, 0.0_f);
 
   for (auto &ind : image.get_region()) {
     int radius;
@@ -71,7 +71,7 @@ Array2D<Vector3> seam_carving(const Array2D<Vector3> &image) {
   int minimum_energy_column = -1;
 
   for (int i = 1; i < image.get_width() - 1; i++) {
-    real total_energy = 0.0f;
+    real total_energy = 0.0_f;
     for (int j = 1; j < image.get_height() - 1; j++) {
       for (int k = 0; k < 3; k++) {
         real grad_x = image[i + 1][j + 1][k] + image[i + 1][j][k] * 2 +

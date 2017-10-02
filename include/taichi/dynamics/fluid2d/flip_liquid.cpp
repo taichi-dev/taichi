@@ -31,10 +31,10 @@ void FLIPLiquid::initialize_solver(const Config &config) {
   advection_order = config.get("advection_order", 2);
   correction_strength = config.get("correction_strength", 0.1f);
   correction_neighbours = config.get("correction_neighbours", 5);
-  u_backup = Array<real>(u.get_res(), 0.0f, Vector2(0.0f, 0.5f));
-  v_backup = Array<real>(v.get_res(), 0.0f, Vector2(0.5f, 0.0f));
-  u_count = Array<real>(u.get_res(), 0.0f);
-  v_count = Array<real>(v.get_res(), 0.0f);
+  u_backup = Array<real>(u.get_res(), 0.0_f, Vector2(0.0_f, 0.5f));
+  v_backup = Array<real>(v.get_res(), 0.0_f, Vector2(0.5f, 0.0_f));
+  u_count = Array<real>(u.get_res(), 0.0_f);
+  v_count = Array<real>(v.get_res(), 0.0_f);
 }
 
 Vector2 FLIPLiquid::sample_velocity(Vector2 position,
@@ -47,7 +47,7 @@ Vector2 FLIPLiquid::sample_velocity(Vector2 position,
 
 void FLIPLiquid::advect(real delta_t) {
   real lerp = powf(FLIP_alpha, delta_t / 0.01f);
-  real max_movement = 0.0f;
+  real max_movement = 0.0_f;
   for (auto &p : particles) {
     if (advection_order == 3) {
       Vector2 velocity_1 = sample_velocity(p.position, p.velocity, lerp);
@@ -111,7 +111,7 @@ void FLIPLiquid::substep(real delta_t) {
 void FLIPLiquid::reseed() {}
 
 void FLIPLiquid::correct_particle_positions(real delta_t, bool clear_c) {
-  if (correction_strength == 0.0f && !clear_c) {
+  if (correction_strength == 0.0_f && !clear_c) {
     return;
   }
   NearestNeighbour2D nn;
@@ -143,7 +143,7 @@ void FLIPLiquid::correct_particle_positions(real delta_t, bool clear_c) {
       }
     }
     if (clear_c && (neighbour_index.size() <= 1 || neighbour_dist[1] > 1.5f)) {
-      p.c[0] = p.c[1] = Vector2(0.0f);
+      p.c[0] = p.c[1] = Vector2(0.0_f);
     }
   }
   for (int i = 0; i < (int)particles.size(); i++) {

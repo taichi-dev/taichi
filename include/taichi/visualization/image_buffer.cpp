@@ -77,7 +77,7 @@ void Array2D<T>::write(const std::string &filename) {
                             clamp(VectorND<3, real>(
                                       this->data[i * this->res[1] +
                                                  (this->res[1] - j - 1)])[k],
-                                  0.0f, 1.0_f));
+                                  0.0_f, 1.0_f));
       }
     }
   }

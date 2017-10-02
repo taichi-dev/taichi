@@ -161,7 +161,7 @@ void EmbreeRayIntersection::query(Ray &ray) {
   *(Vector3 *)rtc_ray.dir = ray.dir;
   rtc_ray.tnear = eps * 10;
   rtc_ray.tfar = Ray::DIST_INFINITE;
-  rtc_ray.time = 0.0f;
+  rtc_ray.time = 0.0_f;
   rtc_ray.mask = -1;
   rtc_ray.geomID = RTC_INVALID_GEOMETRY_ID;
   rtc_ray.primID = RTC_INVALID_GEOMETRY_ID;
@@ -189,7 +189,7 @@ bool EmbreeRayIntersection::occlude(Ray &ray) {
   *(Vector3 *)rtc_ray.dir = ray.dir;
   rtc_ray.tnear = eps * 10;
   rtc_ray.tfar = ray.dist;
-  rtc_ray.time = 0.0f;
+  rtc_ray.time = 0.0_f;
   rtc_ray.mask = -1;
   rtc_ray.geomID = RTC_INVALID_GEOMETRY_ID;
   rtc_ray.primID = RTC_INVALID_GEOMETRY_ID;

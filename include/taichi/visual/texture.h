@@ -25,7 +25,7 @@ class Texture : public Unit {
 
   virtual Vector4 sample(const Vector3 &coord) const {
     error("no impl");
-    return Vector4(0.0f);
+    return Vector4(0.0_f);
   }
 
   Vector3 sample3(const Vector2 &coord) const {

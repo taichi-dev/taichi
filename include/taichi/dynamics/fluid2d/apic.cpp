@@ -15,7 +15,7 @@ APICLiquid::APICLiquid() {}
 
 void APICLiquid::initialize_solver(const Config &config) {
   FLIPLiquid::initialize_solver(config);
-  FLIP_alpha = 0.0f;
+  FLIP_alpha = 0.0_f;
   padding = config.get("padding", 0.501f);
   advection_order = config.get("advection_order", 1);
   if (advection_order == 2) {
@@ -54,7 +54,7 @@ void APICLiquid::substep(real delta_t) {
   apply_external_forces(delta_t);
   mark_cells();
   rasterize();
-  if (t == 0.0f)
+  if (t == 0.0_f)
     compute_liquid_levelset();
   else {
     advect_liquid_levelset(delta_t);

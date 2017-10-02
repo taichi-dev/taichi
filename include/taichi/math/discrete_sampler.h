@@ -35,9 +35,9 @@ class DiscreteSampler {
   void initialize(std::vector<real> unnormalized_pdf,
                   bool allow_zero_total_pdf = true) {
     // float sum = std::accumulate(unnormalized_pdf.begin(),
-    // unnormalized_pdf.end(), 0.0f);
+    // unnormalized_pdf.end(), 0.0_f);
     assert(unnormalized_pdf.size() != 0);
-    float sum = 0.0f;
+    float sum = 0.0_f;
     for (int i = 0; i < (int)unnormalized_pdf.size(); i++) {
       real pdf = unnormalized_pdf[i];
       assert_info(pdf >= 0, "No negative pdf allowed!");
@@ -62,7 +62,7 @@ class DiscreteSampler {
 
   int sample(real r, real &pdf_out) const {
     if (zero_total_pdf) {
-      pdf_out = 0.0f;
+      pdf_out = 0.0_f;
       return 0;
     }
     int index = int(std::lower_bound(cdf.begin(), cdf.end(), r) - cdf.begin());
@@ -73,8 +73,8 @@ class DiscreteSampler {
 
   int sample(real r, real &pdf_out, real &cdf_out) const {
     if (zero_total_pdf) {
-      pdf_out = 0.0f;
-      cdf_out = 0.0f;
+      pdf_out = 0.0_f;
+      cdf_out = 0.0_f;
       return 0;
     }
     int index = int(std::lower_bound(cdf.begin(), cdf.end(), r) - cdf.begin());

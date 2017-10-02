@@ -109,7 +109,7 @@ class EulerLiquid : public Fluid {
   static Vector2 position_noise();
 
   static real kernel(const Vector2 &c) {
-    return max(0.0f, 1.0_f - std::abs(c.x)) * max(0.0f, 1.0_f - std::abs(c.y));
+    return max(0.0_f, 1.0_f - std::abs(c.x)) * max(0.0_f, 1.0_f - std::abs(c.y));
   }
 
   virtual void advect_liquid_levelset(real delta_t);
@@ -118,8 +118,8 @@ class EulerLiquid : public Fluid {
 
   static Vector2 grad_kernel(const Vector2 &c) {
 #define PRECISE_SGN(x) ((-1 < x && x <= 0) ? -1 : ((0 < x && x <= 1) ? 1 : 0))
-    return Vector2(PRECISE_SGN(c.x) * max(0.0f, 1.0_f - abs(c.y)),
-                   PRECISE_SGN(c.y) * max(0.0f, 1.0_f - abs(c.x)));
+    return Vector2(PRECISE_SGN(c.x) * max(0.0_f, 1.0_f - abs(c.y)),
+                   PRECISE_SGN(c.y) * max(0.0_f, 1.0_f - abs(c.x)));
 #undef PRECISE_SGN
   }
 

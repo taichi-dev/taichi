@@ -24,7 +24,7 @@ public:
         int width = input.get_width();
         int height = input.get_height();
         Array2D<Vector3> output(width, height);
-        real sum = 0.0f;
+        real sum = 0.0_f;
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 for (int k = 0; k < 3; k++) {
@@ -51,7 +51,7 @@ public:
         int width = input.get_width();
         int height = input.get_height();
         Array2D<Vector3> output(width, height);
-        real sum_lum = 0.0f;
+        real sum_lum = 0.0_f;
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 sum_lum += luminance(input[i][j]);
@@ -90,7 +90,7 @@ public:
         int width = input.get_width();
         int height = input.get_height();
         Array2D<Vector3> output(width, height);
-        real sum = 0.0f;
+        real sum = 0.0_f;
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 for (int k = 0; k < 3; k++) {
@@ -207,8 +207,8 @@ public:
             }
         }
         float inv_y2;
-        if (max_y <= 0.0f) {
-            float ywa = 0.0f;
+        if (max_y <= 0.0_f) {
+            float ywa = 0.0_f;
             for (int i = 0; i < width; i++) {
                 for (int j = 0; j < height; j++) {
                     real y = luminance(input[i][j]);
@@ -219,7 +219,7 @@ public:
             }
             ywa = expf(ywa / (width * height));
             ywa /= 683;
-            inv_y2 = 1.f / (ywa * ywa);
+            inv_y2 = 1.0_f / (ywa * ywa);
         }
         else {
             inv_y2 = 1.0_f / (max_y * max_y);

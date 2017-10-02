@@ -64,7 +64,7 @@ class Fluid {
 
   virtual void step(real delta_t) {}
 
-  virtual real get_current_time() { return 0.0f; }
+  virtual real get_current_time() { return 0.0_f; }
 
   virtual void add_particle(Particle &particle) {}
 

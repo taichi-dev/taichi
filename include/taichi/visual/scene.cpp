@@ -67,7 +67,7 @@ void Mesh::load_from_file(const std::string &file_path) {
           assert(!has_normal);
           has_normal = false;
         }
-        float tx = 0.0f, ty = 0.0f;
+        float tx = 0.0_f, ty = 0.0_f;
         if (idx.texcoord_index != -1) {
           tx = attrib.texcoords[2 * idx.texcoord_index + 0];
           ty = attrib.texcoords[2 * idx.texcoord_index + 1];
@@ -99,7 +99,7 @@ void Mesh::set_material(std::shared_ptr<SurfaceMaterial> material) {
         Vector3(material->get_importance(Vector2(0.5f, 0.5f)));  // TODO
     this->emission = luminance(this->emission_color);
   } else {
-    this->emission = 0.0f;
+    this->emission = 0.0_f;
     this->emission_color = Vector3(0);
   }
 }

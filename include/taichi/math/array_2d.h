@@ -466,8 +466,8 @@ class ArrayND<2, T> {
   bool inside(const Index2D &index) const { return inside(index.i, index.j); }
 
   T sample(real x, real y) const {
-    x = clamp(x - storage_offset.x, 0.f, res[0] - 1.f - eps);
-    y = clamp(y - storage_offset.y, 0.f, res[1] - 1.f - eps);
+    x = clamp(x - storage_offset.x, 0.0_f, res[0] - 1.0_f - eps);
+    y = clamp(y - storage_offset.y, 0.0_f, res[1] - 1.0_f - eps);
     int x_i = clamp(int(x), 0, res[0] - 2);
     int y_i = clamp(int(y), 0, res[1] - 2);
     real x_r = x - x_i;
@@ -554,7 +554,7 @@ class ArrayND<2, T> {
   Array2D<T> rasterize(int width, int height) {
     Array2D<T> out(Vector2i(width, height));
     Vector2 actual_size;
-    if (storage_offset == Vector2(0.0f, 0.0f)) {
+    if (storage_offset == Vector2(0.0_f, 0.0_f)) {
       actual_size = Vector2(this->res[0] - 1, this->res[1] - 1);
     } else {
       actual_size = Vector2(this->res[0], this->res[1]);
@@ -662,8 +662,8 @@ class ArrayND<2, T> {
     y *= this->res[1];
     x -= 0.5f;
     y -= 0.5f;
-    x = clamp(x, 0.0f, this->res[0] - 1.0_f);
-    y = clamp(y, 0.0f, this->res[1] - 1.0_f);
+    x = clamp(x, 0.0_f, this->res[0] - 1.0_f);
+    y = clamp(y, 0.0_f, this->res[1] - 1.0_f);
     int ix = clamp(int(x), 0, this->res[0] - 2);
     int iy = clamp(int(y), 0, this->res[1] - 2);
     if (!interp) {

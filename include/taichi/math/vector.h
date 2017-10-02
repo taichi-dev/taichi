@@ -106,7 +106,7 @@ struct TC_ALIGNED(16)
     float32 d[4];
   };
 
-  VectorNDBase(float32 x = 0.0f) : v(_mm_set_ps1(x)) {}
+  VectorNDBase(float32 x = 0.0_f) : v(_mm_set_ps1(x)) {}
 
   explicit VectorNDBase(__m128 v) : v(v) {}
 };
@@ -139,7 +139,7 @@ struct TC_ALIGNED(16)
     float32 d[4];
   };
 
-  VectorNDBase(float32 x = 0.0f) : v(_mm_set_ps1(x)) {}
+  VectorNDBase(float32 x = 0.0_f) : v(_mm_set_ps1(x)) {}
 
   explicit VectorNDBase(__m128 v) : v(v) {}
 };
@@ -197,7 +197,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<SIMD_4_32F<DIM_, T_, ISE_> && DIM_ == 3,
                                       int> = 0>
-  VectorND(real x, real y, real z, real w = 0.0f)
+  VectorND(real x, real y, real z, real w = 0.0_f)
       : VectorBase(_mm_set_ps(w, z, y, x)) {}
 
   // Vector4f
@@ -549,7 +549,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             typename std::enable_if_t<SIMD_4_32F<DIM_, T_, ISE_>, int> = 0>
 
   VectorND operator-() const {
-    return VectorND(_mm_sub_ps(VectorND(0.0f), this->v));
+    return VectorND(_mm_sub_ps(VectorND(0.0_f), this->v));
   }
 
   template <int a,

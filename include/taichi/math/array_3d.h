@@ -481,9 +481,9 @@ class ArrayND<3, T> {
   }
 
   T sample(real x, real y, real z) const {
-    x = clamp(x - storage_offset.x, 0.f, res[0] - 1.f - eps);
-    y = clamp(y - storage_offset.y, 0.f, res[1] - 1.f - eps);
-    z = clamp(z - storage_offset.z, 0.f, res[2] - 1.f - eps);
+    x = clamp(x - storage_offset.x, 0.0_f, res[0] - 1.0_f - eps);
+    y = clamp(y - storage_offset.y, 0.0_f, res[1] - 1.0_f - eps);
+    z = clamp(z - storage_offset.z, 0.0_f, res[2] - 1.0_f - eps);
     int x_i = clamp(int(x), 0, res[0] - 2);
     int y_i = clamp(int(y), 0, res[1] - 2);
     int z_i = clamp(int(z), 0, res[2] - 2);

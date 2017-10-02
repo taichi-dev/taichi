@@ -20,7 +20,7 @@ ArrayND<N, T> symmetric_convolution(const ArrayND<N, T> &arr,
                                     std::vector<real> kernel,
                                     int axis,
                                     bool normalize = true) {
-  ArrayND<N, T> ret = arr.same_shape(T(0.0f));
+  ArrayND<N, T> ret = arr.same_shape(T(0.0_f));
   const int radius = kernel.size() - 1;
   if (normalize) {
     real tot(0.0);

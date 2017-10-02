@@ -88,7 +88,7 @@ class KDTree2D {
 
     real dist(real x0, real y0, real x1, real y1) {
         real dist = hypot(x0 - x1, y0 - y1);
-        if (dist == 0.0f) {
+        if (dist == 0.0_f) {
             return std::numeric_limits<real>::infinity();
         } else {
             return dist;

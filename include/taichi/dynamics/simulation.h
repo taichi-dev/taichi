@@ -20,7 +20,7 @@ TC_NAMESPACE_BEGIN
 template <int DIM>
 class Simulation : public Unit {
  protected:
-  real current_t = 0.0f;
+  real current_t = 0.0_f;
   int num_threads;
   DynamicLevelSet<DIM> levelset;
 

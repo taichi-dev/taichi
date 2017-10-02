@@ -39,8 +39,8 @@ Vector2 LevelSet<2>::get_gradient(const Vector2 &pos) const {
               "LevelSet Gradient Query out of Bound! (" +
                   std::to_string(pos.x) + ", " + std::to_string(pos.y) + ")");
   real x = pos.x, y = pos.y;
-  x = clamp(x - storage_offset.x, 0.f, this->res[0] - 1.f - eps);
-  y = clamp(y - storage_offset.y, 0.f, this->res[1] - 1.f - eps);
+  x = clamp(x - storage_offset.x, 0.0_f, this->res[0] - 1.0_f - eps);
+  y = clamp(y - storage_offset.y, 0.0_f, this->res[1] - 1.0_f - eps);
   const int x_i = clamp(int(x), 0, this->res[0] - 2);
   const int y_i = clamp(int(y), 0, this->res[1] - 2);
   const real x_r = x - x_i;
@@ -67,8 +67,8 @@ real LevelSet<2>::get(const Vector2 &pos) const {
               "LevelSet Query out of Bound! (" + std::to_string(pos.x) + ", " +
                   std::to_string(pos.y) + ")");
   real x = pos.x, y = pos.y;
-  x = clamp(x - this->storage_offset.x, 0.f, this->res[0] - 1.f - eps);
-  y = clamp(y - this->storage_offset.y, 0.f, this->res[1] - 1.f - eps);
+  x = clamp(x - this->storage_offset.x, 0.0_f, this->res[0] - 1.0_f - eps);
+  y = clamp(y - this->storage_offset.y, 0.0_f, this->res[1] - 1.0_f - eps);
   const int x_i = clamp(int(x), 0, this->res[0] - 2);
   const int y_i = clamp(int(y), 0, this->res[1] - 2);
   const real x_r = x - x_i;
@@ -85,9 +85,9 @@ real LevelSet<3>::get(const Vector3 &pos) const {
               "LevelSet Query out of Bound! (" + std::to_string(pos.x) + ", " +
                   std::to_string(pos.y) + ", " + std::to_string(pos.z) + ")");
   real x = pos.x, y = pos.y, z = pos.z;
-  x = clamp(x - storage_offset.x, 0.f, this->res[0] - 1.f - eps);
-  y = clamp(y - storage_offset.y, 0.f, this->res[1] - 1.f - eps);
-  z = clamp(z - storage_offset.z, 0.f, this->res[2] - 1.f - eps);
+  x = clamp(x - storage_offset.x, 0.0_f, this->res[0] - 1.0_f - eps);
+  y = clamp(y - storage_offset.y, 0.0_f, this->res[1] - 1.0_f - eps);
+  z = clamp(z - storage_offset.z, 0.0_f, this->res[2] - 1.0_f - eps);
   const int x_i = clamp(int(x), 0, this->res[0] - 2);
   const int y_i = clamp(int(y), 0, this->res[1] - 2);
   const int z_i = clamp(int(z), 0, this->res[2] - 2);
@@ -114,7 +114,7 @@ typename LevelSet<2>::Array LevelSet<2>::rasterize(
   }
   Array2D<real> out(output_res);
   Vector2 actual_size;
-  if (this->storage_offset == Vector2(0.0f, 0.0f)) {
+  if (this->storage_offset == Vector2(0.0_f, 0.0_f)) {
     actual_size = Vector2(this->res[0] - 1, this->res[1] - 1);
   } else {
     actual_size = Vector2(this->res[0], this->res[1]);
@@ -142,7 +142,7 @@ Array3D<real> LevelSet<3>::rasterize(Vector3i output_res) {
   }
   Array3D<real> out(output_res);
   Vector3 actual_size;
-  if (storage_offset == Vector3(0.0f, 0.0f, 0.0f)) {
+  if (storage_offset == Vector3(0.0_f, 0.0_f, 0.0_f)) {
     actual_size = Vector3(this->res[0] - 1, this->res[1] - 1, this->res[2] - 1);
   } else {
     actual_size = Vector3(this->res[0], this->res[1], this->res[2]);
@@ -214,9 +214,9 @@ Vector3 LevelSet<3>::get_gradient(const Vector3 &pos) const {
                   std::to_string(pos.x) + ", " + std::to_string(pos.y) + ", " +
                   std::to_string(pos.z) + ")");
   real x = pos.x, y = pos.y, z = pos.z;
-  x = clamp(x - storage_offset.x, 0.f, res[0] - 1.f - eps);
-  y = clamp(y - storage_offset.y, 0.f, res[1] - 1.f - eps);
-  z = clamp(z - storage_offset.z, 0.f, res[2] - 1.f - eps);
+  x = clamp(x - storage_offset.x, 0.0_f, res[0] - 1.0_f - eps);
+  y = clamp(y - storage_offset.y, 0.0_f, res[1] - 1.0_f - eps);
+  z = clamp(z - storage_offset.z, 0.0_f, res[2] - 1.0_f - eps);
   const int x_i = clamp(int(x), 0, res[0] - 2);
   const int y_i = clamp(int(y), 0, res[1] - 2);
   const int z_i = clamp(int(z), 0, res[2] - 2);

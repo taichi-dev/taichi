@@ -41,8 +41,8 @@ inline real sphere(const Vector3 &p, real radius) {
 inline real box(Vector3 p, const Vector3 &e) {
   p = Vector3(abs(p.x), abs(p.y), abs(p.z));
   p -= e;
-  return length(Vector3(max(p.x, 0.0f), max(p.y, 0.0f), max(p.z, 0.0f))) +
-         std::min(0.0f, p.max());
+  return length(Vector3(max(p.x, 0.0_f), max(p.y, 0.0_f), max(p.z, 0.0_f))) +
+         std::min(0.0_f, p.max());
 }
 
 inline real cylinder(Vector3 p, real r, real h) {

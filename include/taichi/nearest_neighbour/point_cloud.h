@@ -59,7 +59,7 @@ class NearestNeighbour2D {
 
   void initialize(const std::vector<Vector2> &data_points) {}
 
-  Vector2 query_point(Vector2 p) const { return Vector2(0.0f); }
+  Vector2 query_point(Vector2 p) const { return Vector2(0.0_f); }
 
   int query_index(Vector2 p) const { return -1; }
 

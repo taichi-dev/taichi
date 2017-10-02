@@ -12,8 +12,8 @@
 
 TC_NAMESPACE_BEGIN
 
-real volume_control_i = 0.0f;
-real volume_control_p = 0.0f;
+real volume_control_i = 0.0_f;
+real volume_control_p = 0.0_f;
 
 void EulerLiquid::set_levelset(const LevelSet2D &boundary_levelset) {
   this->boundary_levelset = boundary_levelset;
@@ -30,12 +30,12 @@ void EulerLiquid::initialize_solver(const Config &config) {
   height = config.get("simulation_height", 64);
   kernel_size = config.get("kernel_size", 1);
   cfl = config.get("cfl", 0.1f);
-  u = Array<real>(Vector2i(width + 1, height), 0.0f, Vector2(0.0f, 0.5f));
+  u = Array<real>(Vector2i(width + 1, height), 0.0_f, Vector2(0.0_f, 0.5f));
   u_weight =
-      Array<real>(Vector2i(width + 1, height), 0.0f, Vector2(0.0f, 0.5f));
-  v = Array<real>(Vector2i(width, height + 1), 0.0f, Vector2(0.5f, 0.0f));
+      Array<real>(Vector2i(width + 1, height), 0.0_f, Vector2(0.0_f, 0.5f));
+  v = Array<real>(Vector2i(width, height + 1), 0.0_f, Vector2(0.5f, 0.0_f));
   v_weight =
-      Array<real>(Vector2i(width, height + 1), 0.0f, Vector2(0.5f, 0.0f));
+      Array<real>(Vector2i(width, height + 1), 0.0_f, Vector2(0.5f, 0.0_f));
   cell_types = Array<CellType>(Vector2i(width, height), CellType::AIR,
                                Vector2(0.5f, 0.5f));
   gravity = config.get_vec2("gravity");
@@ -60,8 +60,8 @@ Vector2 EulerLiquid::sample_velocity(Vector2 position,
 
     x = (int)floor(position.x);
     y = (int)floor(position.y - 0.5);
-    tot_weight = 0.0f;
-    tot = 0.0f;
+    tot_weight = 0.0_f;
+    tot = 0.0_f;
     for (int dx = -extent + 1; dx <= extent; dx++) {
       for (int dy = -extent + 1; dy <= extent; dy++) {
         int nx = x + dx, ny = y + dy;
@@ -77,8 +77,8 @@ Vector2 EulerLiquid::sample_velocity(Vector2 position,
 
     x = (int)floor(position.x - 0.5);
     y = (int)floor(position.y);
-    tot_weight = 0.0f;
-    tot = 0.0f;
+    tot_weight = 0.0_f;
+    tot = 0.0_f;
     for (int dx = -extent + 1; dx <= extent; dx++) {
       for (int dy = -extent + 1; dy <= extent; dy++) {
         int nx = x + dx, ny = y + dy;
@@ -143,7 +143,7 @@ void EulerLiquid::simple_extrapolate() {
     for (int j = 0; j < height; j++) {
       if (check_u_activity(i, j))
         continue;
-      real sum = 0.0f, num = 0.0f;
+      real sum = 0.0_f, num = 0.0_f;
       for (int k = 0; k < 4; k++) {
         int nx = i + dx[k], ny = j + dy[k];
         if (check_u_activity(nx, ny)) {
@@ -151,8 +151,8 @@ void EulerLiquid::simple_extrapolate() {
           sum += u[nx][ny];
         }
       }
-      if (num == 0.0f)
-        u[i][j] = 0.0f;
+      if (num == 0.0_f)
+        u[i][j] = 0.0_f;
       else
         u[i][j] = sum / num;
     }
@@ -161,7 +161,7 @@ void EulerLiquid::simple_extrapolate() {
     for (int j = 1; j < height; j++) {
       if (check_v_activity(i, j))
         continue;
-      real sum = 0.0f, num = 0.0f;
+      real sum = 0.0_f, num = 0.0_f;
       for (int k = 0; k < 4; k++) {
         int nx = i + dx[k], ny = j + dy[k];
         if (check_v_activity(nx, ny)) {
@@ -169,8 +169,8 @@ void EulerLiquid::simple_extrapolate() {
           sum += v[nx][ny];
         }
       }
-      if (num == 0.0f)
-        v[i][j] = 0.0f;
+      if (num == 0.0_f)
+        v[i][j] = 0.0_f;
       else {
         v[i][j] = sum / num;
       }
@@ -179,7 +179,7 @@ void EulerLiquid::simple_extrapolate() {
 }
 
 void EulerLiquid::step(real delta_t) {
-  real simulation_time = 0.0f;
+  real simulation_time = 0.0_f;
   while (simulation_time < delta_t - eps) {
     real purpose_dt = get_dt_with_cfl_1() * cfl;
     real thres = 0.001f;
@@ -454,7 +454,7 @@ void EulerLiquid::prepare_for_pressure_solve() {
   for (auto &ind : cell_types.get_region()) {
     if (Ad[ind] > 0) {
       real e = Ad[ind];
-      real e_tao = 0.0f;
+      real e_tao = 0.0_f;
       Index2D nei;
       nei = ind.neighbour(Vector2i(-1, 0));
       if (cell_types.inside(nei) && Ad[nei] > 0) {
@@ -618,13 +618,13 @@ void EulerLiquid::apply_pressure(const Array<real> &p) {
 
 void EulerLiquid::apply_boundary_condition() {
   for (auto &ind : u.get_region()) {
-    if (u_weight[ind] == 0.0f) {
-      u[ind] = 0.0f;
+    if (u_weight[ind] == 0.0_f) {
+      u[ind] = 0.0_f;
     }
   }
   for (auto &ind : v.get_region()) {
-    if (v_weight[ind] == 0.0f) {
-      v[ind] = 0.0f;
+    if (v_weight[ind] == 0.0_f) {
+      v[ind] = 0.0_f;
     }
   }
 }
@@ -740,7 +740,7 @@ int EulerLiquid::count_water_cells() {
 }
 
 void EulerLiquid::initialize_volume_controller() {
-  integrate_water_cells_difference = 0.0f;
+  integrate_water_cells_difference = 0.0_f;
   target_water_cells = (real)count_water_cells();
   last_water_cells = (real)count_water_cells();
 }
@@ -760,7 +760,7 @@ real EulerLiquid::get_volume_correction() {
   if (false)
     return volume_correction_factor;
   else
-    return 0.0f;
+    return 0.0_f;
 }
 
 void EulerLiquid::advect_level_set(real delta_t) {
@@ -809,15 +809,15 @@ void EulerLiquid::initialize_pressure_solver() {
   Ax = Array<real>(width, height);
   Ay = Array<real>(width, height);
   E = Array<real>(width, height);
-  p = Array<real>(width, height, 0.0f);
+  p = Array<real>(width, height, 0.0_f);
   q = Array<real>(width, height);
   z = Array<real>(width, height);
   water_cell_index = Array<int>(width, height);
 }
 
 Vector2 EulerLiquid::clamp_particle_position(Vector2 pos) {
-  pos = Vector2(clamp(pos.x, 0.0f, (real)width),
-                clamp(pos.y, 0.0f, (real)height));
+  pos = Vector2(clamp(pos.x, 0.0_f, (real)width),
+                clamp(pos.y, 0.0_f, (real)height));
   real phi = boundary_levelset.sample(pos);
   if (phi < 0) {
     pos -= boundary_levelset.get_normalized_gradient(pos) * phi;

@@ -80,10 +80,10 @@ void TextureRenderer::reset() {
 
 void TextureRenderer::set_pixel(int x, int y, vec4 color) {
   unsigned char *p = &image[0] + 4 * (y * width + x);
-  p[0] = (unsigned char)(clamp(color.r, 0.0f, 1.0_f) * 255.0);
-  p[1] = (unsigned char)(clamp(color.g, 0.0f, 1.0_f) * 255.0);
-  p[2] = (unsigned char)(clamp(color.b, 0.0f, 1.0_f) * 255.0);
-  p[3] = (unsigned char)(clamp(color.a, 0.0f, 1.0_f) * 255.0);
+  p[0] = (unsigned char)(clamp(color.r, 0.0_f, 1.0_f) * 255.0);
+  p[1] = (unsigned char)(clamp(color.g, 0.0_f, 1.0_f) * 255.0);
+  p[2] = (unsigned char)(clamp(color.b, 0.0_f, 1.0_f) * 255.0);
+  p[3] = (unsigned char)(clamp(color.a, 0.0_f, 1.0_f) * 255.0);
 }
 
 void TextureRenderer::render() {

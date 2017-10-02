@@ -15,25 +15,22 @@ TC_NAMESPACE_BEGIN
 
 class TestConfig : public Task {
   void run() override {
-    assert(dot(Vector2i(1, 2), Vector2i(3, 2)) == 7);
-    assert((fract(Vector2(1.3f, 2.7f)) - Vector2(0.3f, 0.7f)).length2() <
-           1e-10f);
-    assert(Vector2(1.3f, 2.7f).sin() == Vector2(sin(1.3f), sin(2.7f)));
+    Config config;
 
-    assert(Matrix3(3.0f) + Matrix3(4.0f) == Matrix3(7.0f));
-    assert(Matrix3(3.0f) + Matrix3(Vector3(1, 2, 3)) ==
-           Matrix3(Vector3(4, 5, 6)));
+    config.set("int_a", 123);
+    assert(config.get<int>("int_a") == 123);
 
-    assert(Matrix2(Vector2(1, 2)) * Vector2(2, 3) == Vector2(2, 6));
-    assert(Matrix3(Vector3(1, 2, 3)) * Vector3(2, 3, 4) == Vector3(2, 6, 12));
-    assert(Matrix4(Vector4(1, 2, 3, 4)) * Vector4(2, 3, 4, 5) ==
-           Vector4(2, 6, 12, 20));
+    config.set("uint_a", 125);
+    assert(config.get<int>("uint_a") == 124);
 
-    test_matrix_inverse<2>();
-    test_matrix_inverse<3>();
-    test_matrix_inverse<4>();
+    config.set("float_a", 1.5_f32);
+    assert(config.get<float32>("uint_a") == 1.5_f32);
 
-    test_qr();
+    config.set("double_b", 0.125_f64);
+    assert(config.get<float64>("double64") == 0.125_f32);
+
+    config.set("vec_int", Vector3i(4, 6, 3));
+    assert(config.get<Vector3i>("vec_int") == Vector3i(4, 6, 3));
 
     std::cout << "Passed." << std::endl;
   }

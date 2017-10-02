@@ -87,10 +87,10 @@ void Smoke3D::initialize(const Config &config) {
   pressure_tolerance = config.get("pressure_tolerance", 0.0_f);
   density_scaling = config.get("density_scaling", 1.0_f);
   tracker_generation = config.get("tracker_generation", 100.0_f);
-  num_threads = config.get_int("num_threads");
-  super_sampling = config.get_int("super_sampling");
+  num_threads = config.get<int>("num_threads");
+  super_sampling = config.get<int>("super_sampling");
   std::string padding;
-  open_boundary = config.get_bool("open_boundary");
+  open_boundary = config.get<bool>("open_boundary");
   if (open_boundary) {
     padding = "dirichlet";
   } else {
@@ -102,9 +102,9 @@ void Smoke3D::initialize(const Config &config) {
   solver_config.set("res", res)
       .set("num_threads", num_threads)
       .set("padding", padding)
-      .set("maximum_iterations", config.get_int("maximum_pressure_iterations"));
+      .set("maximum_iterations", config.get<int>("maximum_pressure_iterations"));
   pressure_solver = create_instance<PoissonSolver3D>(
-      config.get_string("pressure_solver"), solver_config);
+      config.get<std::string>("pressure_solver"), solver_config);
   u = Array(res + Vector3i(1, 0, 0), 0.0_f, Vector3(0.0_f, 0.5f, 0.5f));
   v = Array(res + Vector3i(0, 1, 0), 0.0_f, Vector3(0.5f, 0.0_f, 0.5f));
   w = Array(res + Vector3i(0, 0, 1), 0.0_f, Vector3(0.5f, 0.5f, 0.0_f));
@@ -343,12 +343,12 @@ void Smoke3D::confine_vorticity(real delta_t) {}
 
 void Smoke3D::update(const Config &config) {
   generation_tex =
-      AssetManager::get_asset<Texture>(config.get_int("generation_tex"));
+      AssetManager::get_asset<Texture>(config.get<int>("generation_tex"));
   initial_velocity_tex =
-      AssetManager::get_asset<Texture>(config.get_int("initial_velocity_tex"));
-  color_tex = AssetManager::get_asset<Texture>(config.get_int("color_tex"));
+      AssetManager::get_asset<Texture>(config.get<int>("initial_velocity_tex"));
+  color_tex = AssetManager::get_asset<Texture>(config.get<int>("color_tex"));
   temperature_tex =
-      AssetManager::get_asset<Texture>(config.get_int("temperature_tex"));
+      AssetManager::get_asset<Texture>(config.get<int>("temperature_tex"));
 }
 
 TC_IMPLEMENTATION(Simulation3D, Smoke3D, "smoke");

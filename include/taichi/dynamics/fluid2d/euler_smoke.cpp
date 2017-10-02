@@ -23,8 +23,8 @@ void EulerSmoke::apply_external_forces(real delta_t) {
 
 void EulerSmoke::initialize(const Config &config) {
   EulerLiquid::initialize(config);
-  buoyancy_alpha = config.get_real("buoyancy_alpha");
-  buoyancy_beta = config.get_real("buoyancy_beta");
+  buoyancy_alpha = config.get<real>("buoyancy_alpha");
+  buoyancy_beta = config.get<real>("buoyancy_beta");
   density = Array<real>(width, height, 0);
   temperature = Array<real>(width, height, 0);
 }
@@ -32,12 +32,12 @@ void EulerSmoke::initialize(const Config &config) {
 void EulerSmoke::emit(real delta_t) {
   for (auto &emit : sources) {
     auto c = emit.get<Vector2>("center");
-    auto r = emit.get_real("radius");
-    auto init_temperature = emit.get_real("temperature");
-    auto init_density = emit.get_real("density");
+    auto r = emit.get<real>("radius");
+    auto init_temperature = emit.get<real>("temperature");
+    auto init_density = emit.get<real>("density");
     auto init_v = emit.get<Vector2>("velocity");
     auto failure_limit = emit.get("failure_limit", 100);
-    auto emission = emit.get_real("emission") * delta_t;
+    auto emission = emit.get<real>("emission") * delta_t;
     int num_particles = int(emission) + (rand() < (delta_t - floor(delta_t)));
     for (int i = 0; i < num_particles; i++) {
       int failures = 0;

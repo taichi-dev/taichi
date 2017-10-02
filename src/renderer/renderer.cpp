@@ -15,8 +15,8 @@ void Renderer::initialize(const Config &config) {
   this->ray_intersection = create_instance<RayIntersection>(
       config.get("ray_intersection", "embree"));
   sg = std::make_shared<SceneGeometry>(scene, ray_intersection);
-  this->min_path_length = config.get_int("min_path_length");
-  this->max_path_length = config.get_int("max_path_length");
+  this->min_path_length = config.get<int>("min_path_length");
+  this->max_path_length = config.get<int>("max_path_length");
   this->num_threads = config.get("num_threads", 1);
   assert_info(min_path_length <= max_path_length,
               "min_path_length > max_path_length");

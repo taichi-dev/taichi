@@ -158,8 +158,8 @@ class MultigridPoissonSolver2D : public PoissonSolver2D {
 
   void initialize(const Config &config) override {
     this->res = config.get<Vector2i>("res");
-    this->num_threads = config.get_int("num_threads");
-    auto padding_name = config.get_string("padding");
+    this->num_threads = config.get<int>("num_threads");
+    auto padding_name = config.get<std::string>("padding");
     assert_info(padding_name == "dirichlet" || padding_name == "neumann",
                 "'padding' has to be 'dirichlet' or 'neumann' instead of " +
                     std::string(padding_name));

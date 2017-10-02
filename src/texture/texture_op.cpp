@@ -22,10 +22,10 @@ class ZoomingTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
+    tex = AssetManager::get_asset<Texture>(config.get<int>("tex"));
     center = config.get("center", Vector3(0.0_f));
     inv_zoom = Vector3(1.0_f) / config.get<Vector3>("zoom");
-    repeat = config.get_bool("repeat");
+    repeat = config.get<bool>("repeat");
   }
 
   virtual Vector4 sample(const Vector3 &coord) const override {
@@ -47,11 +47,11 @@ class LinearOpTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    alpha = config.get_real("alpha");
-    beta = config.get_real("beta");
+    alpha = config.get<real>("alpha");
+    beta = config.get<real>("beta");
     need_clamp = config.get("need_clamp", false);
-    tex1 = AssetManager::get_asset<Texture>(config.get_int("tex1"));
-    tex2 = AssetManager::get_asset<Texture>(config.get_int("tex2"));
+    tex1 = AssetManager::get_asset<Texture>(config.get<int>("tex1"));
+    tex2 = AssetManager::get_asset<Texture>(config.get<int>("tex2"));
   }
 
   virtual Vector4 sample(const Vector3 &coord) const override {
@@ -75,8 +75,8 @@ class MultiplicationTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    tex1 = AssetManager::get_asset<Texture>(config.get_int("tex1"));
-    tex2 = AssetManager::get_asset<Texture>(config.get_int("tex2"));
+    tex1 = AssetManager::get_asset<Texture>(config.get<int>("tex1"));
+    tex2 = AssetManager::get_asset<Texture>(config.get<int>("tex2"));
   }
 
   virtual Vector4 sample(const Vector3 &coord) const override {
@@ -93,7 +93,7 @@ class FractTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
+    tex = AssetManager::get_asset<Texture>(config.get<int>("tex"));
   }
 
   virtual Vector4 sample(const Vector3 &coord) const override {
@@ -112,13 +112,13 @@ class RepeatedTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    repeat_u = config.get_real("repeat_u");
-    repeat_v = config.get_real("repeat_v");
+    repeat_u = config.get<real>("repeat_u");
+    repeat_v = config.get<real>("repeat_v");
     repeat_w = config.get("repeat_w", 1.0_f);
     inv_repeat_u = 1.0_f / repeat_u;
     inv_repeat_v = 1.0_f / repeat_v;
     inv_repeat_w = 1.0_f / repeat_w;
-    tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
+    tex = AssetManager::get_asset<Texture>(config.get<int>("tex"));
   }
 
   virtual Vector4 sample(const Vector3 &coord) const override {
@@ -140,9 +140,9 @@ class RotatedTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
-    rotate_times = config.get_int("rotate_times");
-    rotate_axis = config.get_int("rotate_axis");
+    tex = AssetManager::get_asset<Texture>(config.get<int>("tex"));
+    rotate_times = config.get<int>("rotate_times");
+    rotate_axis = config.get<int>("rotate_axis");
   }
 
   virtual Vector4 sample(const Vector3 &coord_) const override {
@@ -176,8 +176,8 @@ class FlippedTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
-    flip_axis = config.get_int("flip_axis");
+    tex = AssetManager::get_asset<Texture>(config.get<int>("tex"));
+    flip_axis = config.get<int>("flip_axis");
   }
 
   virtual Vector4 sample(const Vector3 &coord_) const override {
@@ -199,8 +199,8 @@ class BoundedTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
-    bound_axis = config.get_int("axis");
+    tex = AssetManager::get_asset<Texture>(config.get<int>("tex"));
+    bound_axis = config.get<int>("axis");
     bounds = config.get<Vector2>("bounds");
     outside_val = config.get<Vector4>("outside_val");
   }
@@ -225,9 +225,9 @@ class RasterizedTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    auto tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
-    resolution_x = config.get_int("resolution_x");
-    resolution_y = config.get_int("resolution_y");
+    auto tex = AssetManager::get_asset<Texture>(config.get<int>("tex"));
+    resolution_x = config.get<int>("resolution_x");
+    resolution_y = config.get<int>("resolution_y");
     cache = Array2D<Vector4>(resolution_x, resolution_y);
     for (int i = 0; i < resolution_x; i++) {
       for (int j = 0; j < resolution_y; j++) {
@@ -257,7 +257,7 @@ class TranslatedTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
+    tex = AssetManager::get_asset<Texture>(config.get<int>("tex"));
     translation = config.get<Vector3>("translation");
   }
 

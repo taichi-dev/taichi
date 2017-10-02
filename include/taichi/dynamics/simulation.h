@@ -32,7 +32,7 @@ class Simulation : public Unit {
   virtual real get_current_time() const { return current_t; }
 
   virtual void initialize(const Config &config) override {
-    num_threads = config.get_int("num_threads");
+    num_threads = config.get<int32>("num_threads");
   }
 
   virtual void add_particles(const Config &config) { error("no impl"); }

@@ -55,10 +55,10 @@ class VoxelVolumeMaterial : public VolumeMaterial {
  public:
   virtual void initialize(const Config &config) override {
     VolumeMaterial::initialize(config);
-    this->volumetric_scattering = config.get_real("scattering");
-    this->volumetric_absorption = config.get_real("absorption");
+    this->volumetric_scattering = config.get<real>("scattering");
+    this->volumetric_absorption = config.get<real>("absorption");
     this->resolution = config.get<Vector3i>("resolution");
-    this->tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
+    this->tex = AssetManager::get_asset<Texture>(config.get<int>("tex"));
     voxels.initialize(resolution, 1.0_f);
     maximum = 0.0_f;
     Vector3 inv = Vector3(1.0_f) / resolution.cast<real>();

@@ -23,7 +23,7 @@ class Matrix4sBenchmark : public Benchmark {
  public:
   void initialize(const Config &config) override {
     Benchmark::initialize(config);
-    brute_force = config.get_bool("brute_force");
+    brute_force = config.get<bool>("brute_force");
     input.resize(workload);
     input_s.resize(workload);
     for (int i = 0; i < workload; i++) {

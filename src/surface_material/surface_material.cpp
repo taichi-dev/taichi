@@ -18,16 +18,16 @@ std::shared_ptr<Texture> SurfaceMaterial::get_color_sampler(
     const Config &config,
     const std::string &name) {
   if (config.has_key(name + "_map")) {
-    return AssetManager::get_asset<Texture>(config.get_int(name + "_map"));
+    return AssetManager::get_asset<Texture>(config.get<int>(name + "_map"));
   } else if (config.has_key(name + "_ptr")) {
     return *config.get_ptr<std::shared_ptr<Texture>>(name + "_ptr");
   } else if (config.has_key(name)) {
-    std::string val = config.get_string(name);
+    std::string val = config.get<std::string>(name);
     Vector3 color;
     if (val[0] == '(') {
       color = config.get<Vector3>(name);
     } else {
-      color = Vector3(config.get_real(name));
+      color = Vector3(config.get<real>(name));
     }
     return create_instance<Texture>("const", Config().set("value", color));
   } else {
@@ -101,7 +101,7 @@ class SpotLightEmissiveMaterial : public SurfaceMaterial {
   virtual void initialize(const Config &config) override {
     SurfaceMaterial::initialize(config);
     color_sampler = get_color_sampler(config, "color");
-    exponential = config.get_real("exponential");
+    exponential = config.get<real>("exponential");
   }
 
   virtual bool is_emissive() const override { return true; }
@@ -356,7 +356,7 @@ class RefractiveMaterial : public SurfaceMaterial {
 
  public:
   void initialize(const Config &config) override {
-    inside_ior = config.get_real("ior");
+    inside_ior = config.get<real>("ior");
     color_sampler = get_color_sampler(config, "color");
     assert(color_sampler != nullptr);
   }
@@ -475,10 +475,10 @@ class PBRMaterial : public SurfaceMaterial {
     }
     if (transparent) {
       // TODO: load transparancy map...
-      real ior = config.get_real("ior");
+      real ior = config.get<real>("ior");
       Config cfg;
       cfg.set("ior", ior);
-      cfg.set("color", config.get_string("specular"));
+      cfg.set("color", config.get<std::string>("specular"));
       auto mat = std::make_shared<RefractiveMaterial>();
       mat->initialize(cfg);
       materials.push_back(mat);
@@ -490,7 +490,7 @@ class PBRMaterial : public SurfaceMaterial {
       materials.push_back(glossy_mat);
     }
     if (glossy_color_sampler) {
-      real glossiness = config.get_real("glossiness");
+      real glossiness = config.get<real>("glossiness");
       Config cfg;
       cfg.set("color_ptr", &specular_color_sampler);
       cfg.set("glossiness", glossiness);

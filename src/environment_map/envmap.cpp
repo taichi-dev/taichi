@@ -18,7 +18,7 @@ TC_IMPLEMENTATION(EnvironmentMap, EnvironmentMap, "base");
 void EnvironmentMap::initialize(const Config &config) {
   set_transform(Matrix4(1.0_f));
   if (config.has_key("filepath")) {
-    image = std::make_shared<Array2D<Vector3>>(config.get_string("filepath"));
+    image = std::make_shared<Array2D<Vector3>>(config.get<std::string>("filepath"));
     res[0] = image->get_width();
     res[1] = image->get_height();
   } else {

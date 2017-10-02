@@ -310,11 +310,11 @@ class NBody : public Simulation3D {
  public:
   virtual void initialize(const Config &config) override {
     Simulation3D::initialize(config);
-    int num_particles = config.get_int("num_particles");
+    int num_particles = config.get<int>("num_particles");
     particles.reserve(num_particles);
-    gravitation = config.get_real("gravitation");
-    delta_t = config.get_real("delta_t");
-    real vel_scale = config.get_real("vel_scale");
+    gravitation = config.get<real>("gravitation");
+    delta_t = config.get<real>("delta_t");
+    real vel_scale = config.get<real>("vel_scale");
     for (int i = 0; i < num_particles; i++) {
       Vector3 p(rand(), rand(), rand());
       Vector3 v = Vector3(p.y, p.z, p.x) - Vector3(0.5f);

@@ -30,7 +30,7 @@ class MicrofacetMaterial final : public SurfaceMaterial {
     roughness_sampler = get_color_sampler(config, "roughness");
     // m = sqrt(2/(a + 2)) for Phong
     assert(roughness_sampler != nullptr);
-    f0 = config.get_real("f0");
+    f0 = config.get<real>("f0");
   }
 
   // D can be GGX, Beckmann, Blinn-Phong

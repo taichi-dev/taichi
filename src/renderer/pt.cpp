@@ -509,7 +509,7 @@ class PTSDFRenderer final : public PathTracingRenderer {
     Config cfg;
     cfg.set("color", Vector3(1, 1, 1));
     material = create_instance<SurfaceMaterial>("diffuse", cfg);
-    sdf = AssetManager::get_asset<SDF>(config.get_int("sdf"));
+    sdf = AssetManager::get_asset<SDF>(config.get<int>("sdf"));
   }
 
  protected:
@@ -748,7 +748,7 @@ class MCMCPTRenderer : public PathTracingRenderer {
     PathTracingRenderer::initialize(config);
     large_step_prob = config.get("large_step_prob", 0.3f);
     estimation_rounds = config.get("estimation_rounds", 1);
-    mutation_strength = config.get_real("mutation_strength");
+    mutation_strength = config.get<real>("mutation_strength");
     buffer.initialize(Vector2i(width, height), Vector3(0.0_f));
     sample_count = 0;
   }

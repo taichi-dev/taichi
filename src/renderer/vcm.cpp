@@ -30,7 +30,7 @@ class VCMRenderer : public BidirectionalRenderer {
   virtual void initialize(const Config &config) override {
     BidirectionalRenderer::initialize(config);
     num_stages = 0;
-    initial_radius = config.get_float("initial_radius");
+    initial_radius = config.get<real>("initial_radius");
     use_vc = config.get("use_vc", true);
     use_vm = config.get("use_vm", true);
     alpha = config.get("alpha", 0.66667f);

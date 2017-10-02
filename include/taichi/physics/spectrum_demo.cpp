@@ -13,10 +13,10 @@
 TC_NAMESPACE_BEGIN
 
 void spectrum_demo(Config config) {
-    int output_width = config.get_int("output_width");
-    int output_height = config.get_int("output_height");
-    float temperature_lower = config.get_float("temperature_lower");
-    float temperature_upper = config.get_float("temperature_upper");
+    int output_width = config.get<int32>("output_width");
+    int output_height = config.get<int32>("output_height");
+    float temperature_lower = config.get<real>("temperature_lower");
+    float temperature_upper = config.get<real>("temperature_upper");
     bool tone_mapping = config.get_bool("tone_mapping");
     auto window = std::make_shared<GLWindow>(Config::load("render_view.cfg"));
     auto tr = std::make_shared<TextureRenderer>(window, output_width,

@@ -52,7 +52,7 @@ class JacobiBruteForce : public Benchmark {
  public:
   void initialize(const Config &config) override {
     Benchmark::initialize(config);
-    n = config.get_int("n");
+    n = config.get<int>("n");
     assert_info((n & (n - 1)) == 0, "n should be a power of 2");
     workload = n * n * n;
     for (int l = 0; l < 2; l++) {
@@ -122,10 +122,10 @@ class JacobiSerial : public Benchmark {
   void initialize(const Config &config) override {
     cfg = config;
     Benchmark::initialize(config);
-    n = config.get_int("n");
+    n = config.get<int>("n");
     assert_info((n & (n - 1)) == 0, "n should be a power of 2");
-    std::string method = config.get_string("iteration_method");
-    ignore = config.get_int("ignore_boundary");
+    std::string method = config.get<std::string>("iteration_method");
+    ignore = config.get<int>("ignore_boundary");
     workload = (n - ignore * 2) * (n - ignore * 2) * (n - ignore * 2);
     data[0].resize(n * n * n);
     data[1].resize(n * n * n);
@@ -414,9 +414,9 @@ class JacobiSIMD : public Benchmark {
   void initialize(const Config &config) override {
     cfg = config;
     Benchmark::initialize(config);
-    n = config.get_int("n");
-    ignore = config.get_int("ignore_boundary");
-    std::string method = config.get_string("iteration_method");
+    n = config.get<int>("n");
+    ignore = config.get<int>("ignore_boundary");
+    std::string method = config.get<std::string>("iteration_method");
     num_threads = config.get("num_threads", 1);
     assert_info((n & (n - 1)) == 0, "n should be a power of 2");
     workload = (n - ignore * 2) * (n - ignore * 2) * (n - ignore * 2);

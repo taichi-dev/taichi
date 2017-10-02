@@ -20,7 +20,7 @@ class HETMO final : public ToneMapper {
 
  public:
   void initialize(const Config &config) override {
-    num_bins = config.get_int("num_bins");
+    num_bins = config.get<int>("num_bins");
   }
 
   virtual Array2D<Vector3> apply(const Array2D<Vector3> &inp) override {
@@ -60,8 +60,8 @@ class CLAHETMO final : public ToneMapper {
 
  public:
   void initialize(const Config &config) override {
-    num_bins = config.get_int("num_bins");
-    num_slices = config.get_int("num_slices");
+    num_bins = config.get<int>("num_bins");
+    num_slices = config.get<int>("num_slices");
     contrast_limit = config.get("contrast_limit", 0.0_f);
   }
 

@@ -14,7 +14,7 @@
 TC_NAMESPACE_BEGIN
 
 void PoissonSolver3D::initialize(const Config &config) {
-  maximum_iterations = config.get_int("maximum_iterations");
+  maximum_iterations = config.get<int>("maximum_iterations");
 }
 
 // Maybe we are going to need Algebraic Multigrid in the future,
@@ -168,8 +168,8 @@ class MultigridPoissonSolver3D : public PoissonSolver3D {
   void initialize(const Config &config) override {
     PoissonSolver3D::initialize(config);
     this->res = config.get<Vector3i>("res");
-    this->num_threads = config.get_int("num_threads");
-    auto padding_name = config.get_string("padding");
+    this->num_threads = config.get<int>("num_threads");
+    auto padding_name = config.get<std::string>("padding");
     use_as_preconditioner = false;
     assert_info(padding_name == "dirichlet" || padding_name == "neumann",
                 "'padding' has to be 'dirichlet' or 'neumann' instead of " +

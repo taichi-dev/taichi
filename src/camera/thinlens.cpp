@@ -17,7 +17,7 @@ class ThinLensCamera : public Camera {
 
   virtual void initialize(const Config &config) override {
     Camera::initialize(config);
-    fov = config.get_real("fov") / 180.0_f * pi;
+    fov = config.get<real>("fov") / 180.0_f * pi;
     this->origin = config.get<Vector3>("origin");
     this->look_at = config.get<Vector3>("look_at");
     this->up = config.get<Vector3>("up");
@@ -28,7 +28,7 @@ class ThinLensCamera : public Camera {
       this->focus = config.get<Vector3>("focus");
     else
       this->focus = look_at;
-    this->aperture = config.get_real("aperture");
+    this->aperture = config.get<real>("aperture");
   }
 
   real get_pixel_scaling() override { return sqr(tan_half_fov) * aspect_ratio; }

@@ -54,7 +54,7 @@ class KernelCalculationBenchmark : public Benchmark {
  public:
   void initialize(const Config &config) override {
     Benchmark::initialize(config);
-    brute_force = config.get_bool("brute_force");
+    brute_force = config.get<bool>("brute_force");
     input.resize(workload);
     for (int i = 0; i < workload; i++) {
       input[i] = Vector3(rand(), rand(), rand()) + Vector3(1.0_f);

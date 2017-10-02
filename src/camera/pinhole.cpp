@@ -17,7 +17,7 @@ class PinholeCamera : public Camera {
 
   virtual void initialize(const Config &config) override {
     Camera::initialize(config);
-    fov = config.get_real("fov") / 180.0_f * pi;
+    fov = config.get<real>("fov") / 180.0_f * pi;
     this->origin = config.get<Vector3>("origin");
     this->look_at = config.get<Vector3>("look_at");
     this->up = config.get<Vector3>("up");

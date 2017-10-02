@@ -22,7 +22,7 @@ void EulerLiquid::set_levelset(const LevelSet2D &boundary_levelset) {
 
 void EulerLiquid::initialize(const Config &config) {
   initialize_solver(config);
-  levelset_band = config.get_real("levelset_band");
+  levelset_band = config.get<real>("levelset_band");
 }
 
 void EulerLiquid::initialize_solver(const Config &config) {

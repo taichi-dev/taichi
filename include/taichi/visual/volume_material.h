@@ -30,8 +30,8 @@ class VolumeMaterial : public Unit {
         "Info: Volumetric rendering is turned ON. Note that PT & MCMCPT are "
         "only renderers that support this.\n");
     printf("      This may lead to different output by different renderers.\n");
-    this->volumetric_scattering = config.get_real("scattering");
-    this->volumetric_absorption = config.get_real("absorption");
+    this->volumetric_scattering = config.get<real>("scattering");
+    this->volumetric_absorption = config.get<real>("absorption");
     if (config.has_key("transform_ptr")) {
       set_transform(*config.get_ptr<Matrix4>("transform_ptr"));
     }

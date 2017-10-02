@@ -18,8 +18,8 @@ void SPPMRenderer::initialize(const Config &config) {
   alpha = config.get("alpha", 0.666666667f);
   sampler = create_instance<Sampler>(config.get("sampler", "prand"));
   russian_roulette = config.get("russian_roulette", true);
-  initial_radius = config.get_real("initial_radius");
-  shrinking_radius = config.get_bool("shrinking_radius");
+  initial_radius = config.get<real>("initial_radius");
+  shrinking_radius = config.get<bool>("shrinking_radius");
   stochastic_eye_ray = config.get("stochastic_eye_ray", true);  // PPM or SPPM?
   Vector2i res(width, height);
   image.initialize(res);

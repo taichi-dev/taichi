@@ -56,7 +56,7 @@ class ImageTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    image.load(config.get_string("filename"));
+    image.load(config.get<std::string>("filename"));
   }
 
   bool inside(const Vector3 &coord) const {
@@ -82,13 +82,13 @@ class TextTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    int width = config.get_int("width");
-    int height = config.get_int("height");
-    std::string font_file_fn = config.get_string("font_file");
-    std::string content = config.get_string("content");
-    real size = config.get_real("size");
-    int dx = config.get_int("dx");
-    int dy = config.get_int("dy");
+    int width = config.get<int>("width");
+    int height = config.get<int>("height");
+    std::string font_file_fn = config.get<std::string>("font_file");
+    std::string content = config.get<std::string>("content");
+    real size = config.get<real>("size");
+    int dx = config.get<int>("dx");
+    int dy = config.get<int>("dy");
     image.initialize(Vector2i(width, height));
     image.write_text(font_file_fn, content, size, dx, dy);
   }
@@ -229,10 +229,10 @@ class CheckerboardTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    tex1 = AssetManager::get_asset<Texture>(config.get_int("tex1"));
-    tex2 = AssetManager::get_asset<Texture>(config.get_int("tex2"));
-    repeat_u = config.get_real("repeat_u");
-    repeat_v = config.get_real("repeat_v");
+    tex1 = AssetManager::get_asset<Texture>(config.get<int>("tex1"));
+    tex2 = AssetManager::get_asset<Texture>(config.get<int>("tex2"));
+    repeat_u = config.get<real>("repeat_u");
+    repeat_v = config.get<real>("repeat_v");
     repeat_w = config.get("repeat_w", 1.0_f);
   }
 
@@ -252,8 +252,8 @@ class UVTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    coeff_u = config.get_real("coeff_u");
-    coeff_v = config.get_real("coeff_v");
+    coeff_u = config.get<real>("coeff_u");
+    coeff_v = config.get<real>("coeff_v");
   }
 
   virtual Vector4 sample(const Vector3 &coord) const override {
@@ -272,7 +272,7 @@ class SphereTexture : public Texture {
   void initialize(const Config &config) override {
     Texture::initialize(config);
     center = config.get<Vector3>("center");
-    radius = config.get_real("radius");
+    radius = config.get<real>("radius");
   }
 
   virtual Vector4 sample(const Vector3 &coord) const override {
@@ -387,7 +387,7 @@ class LevelSet3DTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    levelset = AssetManager::get_asset<LevelSet3D>(config.get_int("levelset"));
+    levelset = AssetManager::get_asset<LevelSet3D>(config.get<int>("levelset"));
     bounds = config.get<Vector2>("bounds");
   }
 

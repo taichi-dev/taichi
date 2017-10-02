@@ -52,29 +52,6 @@ class Config {
     }
   }
 
-  float get_float(std::string key) const {
-    return (float)std::atof(get_string(key).c_str());
-  }
-
-  double get_double(std::string key) const {
-    return (double)std::atof(get_string(key).c_str());
-  }
-
-  real get_real(std::string key) const {
-    return (real)std::atof(get_string(key).c_str());
-  }
-
-  int get_int(std::string key) const {
-    return std::atoi(get_string(key).c_str());
-  }
-
-  int64 get_int64(std::string key) const {
-    return std::atoll(get_string(key).c_str());
-  }
-
-  unsigned get_unsigned(std::string key) const {
-    return unsigned(std::atoll(get_string(key).c_str()));
-  }
 
   template <typename V>
   typename std::enable_if_t<(!is_VectorND<V>()), V> get(std::string key) const;
@@ -161,19 +138,9 @@ class Config {
     return reinterpret_cast<T *>(ptr_ll);
   }
 
-  bool get_bool(std::string key) const {
-    std::string s = get_string(key);
-    static std::map<std::string, bool> dict{
-        {"true", true},   {"True", true},   {"t", true},  {"1", true},
-        {"false", false}, {"False", false}, {"f", false}, {"0", false},
-    };
-    assert_info(dict.find(s) != dict.end(), "Unkown identifer for bool: " + s);
-    return dict[s];
-  }
-
   template <typename T>
   std::shared_ptr<T> get_asset(std::string key) const {
-    int id = get_int(key);
+    int id = get<int>(key);
     return AssetManager::get_asset<T>(id);
   }
 
@@ -282,6 +249,42 @@ inline std::string Config::get(std::string key, const char *default_val) const {
     return default_val;
   } else
     return get<std::string>(key);
+}
+
+template <>
+inline float32 Config::get<float32>(std::string key) const {
+  return (float32)std::atof(get_string(key).c_str());
+}
+
+template <>
+inline float64 Config::get<float64>(std::string key) const {
+  return (float64)std::atof(get_string(key).c_str());
+}
+
+template <>
+inline int Config::get<int>(std::string key) const {
+  return std::atoi(get_string(key).c_str());
+}
+
+template <>
+inline int64 Config::get<int64>(std::string key) const {
+  return std::atoll(get_string(key).c_str());
+}
+
+template <>
+inline uint32 Config::get<uint32>(std::string key) const {
+  return uint64(std::atoll(get_string(key).c_str()));
+}
+
+template <>
+inline bool Config::get<bool>(std::string key) const {
+  std::string s = get_string(key);
+  static std::map<std::string, bool> dict{
+      {"true", true},   {"True", true},   {"t", true},  {"1", true},
+      {"false", false}, {"False", false}, {"f", false}, {"0", false},
+  };
+  assert_info(dict.find(s) != dict.end(), "Unkown identifer for bool: " + s);
+  return dict[s];
 }
 
 TC_NAMESPACE_END

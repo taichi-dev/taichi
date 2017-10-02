@@ -86,17 +86,17 @@ void imp_svd(Matrix2 m, Matrix2 &u, Matrix2 &s, Matrix2 &v) {
     u = v = Matrix2(1);
   } else {
     JIXIE::singularValueDecomposition(
-        *(Eigen::Matrix<float, 2, 2> *)&m, *(Eigen::Matrix<float, 2, 2> *)&u,
-        *(Eigen::Matrix<float, 2, 1> *)&s, *(Eigen::Matrix<float, 2, 2> *)&v);
-    float s_tmp[]{s[0][1]};
-    memset(&s[0][0] + 1, 0, sizeof(float) * 3);
+        *(Eigen::Matrix<real, 2, 2> *)&m, *(Eigen::Matrix<real, 2, 2> *)&u,
+        *(Eigen::Matrix<real, 2, 1> *)&s, *(Eigen::Matrix<real, 2, 2> *)&v);
+    real s_tmp[]{s[0][1]};
+    memset(&s[0][0] + 1, 0, sizeof(real) * 3);
     s[1][1] = s_tmp[0];
   }
 }
 
 void imp_svd(Matrix3 m, Matrix3 &u, Matrix3 &s, Matrix3 &v) {
-  Eigen::Matrix<float32, 3, 3> M, U, V;
-  Eigen::Matrix<float32, 3, 1> S;
+  Eigen::Matrix<real, 3, 3> M, U, V;
+  Eigen::Matrix<real, 3, 1> S;
 
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {

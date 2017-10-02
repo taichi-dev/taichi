@@ -456,9 +456,9 @@ void export_math(py::module &m) {
   m.def("seam_carving", seam_carving);
 
   // VectorRegistration<Vector1>::run(m);
-  VectorRegistration<Vector2>::run(m);
-  VectorRegistration<Vector3>::run(m);
-  VectorRegistration<Vector4>::run(m);
+  VectorRegistration<Vector2f>::run(m);
+  VectorRegistration<Vector3f>::run(m);
+  VectorRegistration<Vector4f>::run(m);
 
   // VectorRegistration<Vector1d>::run(m);
   VectorRegistration<Vector2d>::run(m);

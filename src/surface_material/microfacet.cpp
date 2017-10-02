@@ -63,7 +63,7 @@ class MicrofacetMaterial final : public SurfaceMaterial {
       return 0.0_f;
     }
     const real a = 0.5f + roughness * 0.5f;
-    return 2.0f /
+    return 2.0_f /
            (1 +
             std::sqrt(1 +
                       a * a * (sqr(1.0_f / std::max(1e-6_f, std::abs(in_dir.z))) -
@@ -72,7 +72,7 @@ class MicrofacetMaterial final : public SurfaceMaterial {
 
   static Vector3 reflect(const Vector3 &in, const Vector3 &_h) {
     auto h = normalized(_h);
-    return in - 2.0f * (in - dot(in, h) * h);
+    return in - 2.0_f * (in - dot(in, h) * h);
   }
 
   Vector3 sample_direction(const Vector3 &in,

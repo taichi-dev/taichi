@@ -122,7 +122,7 @@ class SkyTexture final : public Texture {
 
   static real hgPhase(real cosTheta, real g) {
     real g2 = std::pow(g, 2.0f);
-    real inverse = 1.0_f / pow(1.0_f - 2.0f * g * cosTheta + g2, 1.5f);
+    real inverse = 1.0_f / pow(1.0_f - 2.0f * g * cosTheta + g2, 1.5_f);
     return ONE_OVER_FOURPI * ((1.0_f - g2) * inverse);
   }
 
@@ -198,8 +198,8 @@ class SkyTexture final : public Texture {
     Lin *=
         lerp(Vector3(1.0_f),
              pow(vSunE * ((betaRTheta + betaMTheta) / (vBetaR + vBetaM)) * Fex,
-                 Vector3(1.0_f / 2.0f)),
-             clamp(pow(1.0_f - dot(up, vSunDirection), 5.0f), 0.0_f, 1.0_f));
+                 Vector3(1.0_f / 2.0_f)),
+             clamp(pow(1.0_f - dot(up, vSunDirection), 5.0_f), 0.0_f, 1.0_f));
 
     // nightsky
     Vector3 direction = normalize(vWorldPosition - cameraPos);

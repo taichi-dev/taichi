@@ -140,8 +140,8 @@ using real = float32;
 
 // Float literal for both float32/64
 // (Learned from https://github.com/hi2p-perim/lightmetrica-v2)
-real operator"" _f(long double v) { return real(v); }
-real operator"" _f(unsigned long long v) { return real(v); }
+real constexpr operator"" _f(long double v) { return real(v); }
+real constexpr operator"" _f(unsigned long long v) { return real(v); }
 
 
 TC_EXPORT void print_traceback();

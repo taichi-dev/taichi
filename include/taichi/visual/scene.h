@@ -186,7 +186,7 @@ class Scene {
     emission_cdf.clear();
     total_emission = 0;
     for (auto tri : triangles) {
-      real e = tri.area * pow(tri.temperature, 4.0f);
+      real e = tri.area * pow(tri.temperature, 4.0_f);
       emission_cdf.push_back(e);
       total_emission += e;
     }

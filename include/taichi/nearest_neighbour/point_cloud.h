@@ -68,7 +68,7 @@ class NearestNeighbour2D {
   void query_n(Vector2 p,
                int n,
                std::vector<int> &index,
-               std::vector<float> &dist) const {}
+               std::vector<real> &dist) const {}
 
   void query_n_index(Vector2 p, int n, std::vector<int> &index) const {}
 };

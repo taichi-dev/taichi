@@ -19,12 +19,12 @@
 TC_NAMESPACE_BEGIN
 
 struct PathContribution {
-  float x, y;
+  real x, y;
   Vector3 c;
 
   PathContribution(){};
 
-  PathContribution(float x, float y, Vector3 c) : x(x), y(y), c(c) {}
+  PathContribution(real x, real y, Vector3 c) : x(x), y(y), c(c) {}
 };
 
 // TODO: we do need a light source class to unify envmap and mesh light...
@@ -133,7 +133,7 @@ class PathTracingRenderer : public Renderer {
         }
         real c = abs(dot(ray.dir, tri.normal));
         dist = test_info.pos - info.pos;
-        light_p = dot(dist, dist) / std::max(1e-20f, light_tri.area * c) *
+        light_p = dot(dist, dist) / std::max(1e-20_f, light_tri.area * c) *
                   scene->get_triangle_pdf(light_tri.id);
         const Vector3 emission =
             light_bsdf.evaluate(test_info.normal, -out_dir);
@@ -349,7 +349,7 @@ Vector3 PathTracingRenderer::calculate_volumetric_direct_lighting(
       continue;
     }
 
-    real co = 1 / 4.0f / pi;
+    real co = 1 / 4.0_f / pi;
 
     real light_p;
     Vector3 throughput;
@@ -362,7 +362,7 @@ Vector3 PathTracingRenderer::calculate_volumetric_direct_lighting(
       }
       real c = abs(dot(ray.dir, tri.normal));
       dist = test_info.pos - orig;
-      light_p = dot(dist, dist) / std::max(1e-20f, light_tri.area * c) *
+      light_p = dot(dist, dist) / std::max(1e-20_f, light_tri.area * c) *
                 scene->get_triangle_pdf(light_tri.id);
       const Vector3 emission = light_bsdf.evaluate(test_info.normal, -out_dir);
       throughput = f * co * emission * att;

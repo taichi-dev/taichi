@@ -826,7 +826,7 @@ Vector2 EulerLiquid::clamp_particle_position(Vector2 pos) {
 }
 
 real EulerLiquid::get_dt_with_cfl_1() {
-  return 1 / max(get_max_grid_speed(), 1e-5f);
+  return 1 / max(get_max_grid_speed(), 1e-5_f);
 }
 
 real EulerLiquid::get_max_grid_speed() {

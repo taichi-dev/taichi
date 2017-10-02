@@ -30,7 +30,7 @@ BSDF::BSDF(std::shared_ptr<Scene> const &scene,
            int triangle_id) {  // initialize for light triangle
   Triangle t = scene->get_triangle(triangle_id);
   Vector3 u = normalized(t.v[1] - t.v[0]);
-  float sgn = 1;
+  real sgn = 1;
   Vector3 v = cross(sgn * t.normal, u);
   local_to_world = Matrix3(u, v, t.normal);
   world_to_local = transposed(local_to_world);

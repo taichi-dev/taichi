@@ -138,7 +138,7 @@ void AMCMCPPMRenderer::render_stage() {
     real r = (real)accepted / (real)mutated;
     last_r = r;
     mutation_strength = mutation_strength + (r - 0.234_f) / mutated;
-    mutation_strength = std::min(0.5f, std::max(0.0001_f, mutation_strength));
+    mutation_strength = std::min(0.5_f, std::max(0.0001_f, mutation_strength));
   }
 
   P(mutated);

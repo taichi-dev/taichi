@@ -52,16 +52,16 @@ void FLIPLiquid::advect(real delta_t) {
     if (advection_order == 3) {
       Vector2 velocity_1 = sample_velocity(p.position, p.velocity, lerp);
       Vector2 velocity_2 = sample_velocity(
-          (p.position + delta_t * 0.5f * velocity_1), p.velocity, lerp);
+          (p.position + delta_t * 0.5_f * velocity_1), p.velocity, lerp);
       Vector2 velocity_3 = sample_velocity(
-          (p.position + delta_t * 0.75f * velocity_2), p.velocity, lerp);
-      p.velocity = (2.0f / 9.0f) * velocity_1 + (3.0f / 9.0f) * velocity_2 +
-                   (4.0f / 9.0f) * velocity_3;
+          (p.position + delta_t * 0.75_f * velocity_2), p.velocity, lerp);
+      p.velocity = (2.0_f / 9.0_f) * velocity_1 + (3.0_f / 9.0_f) * velocity_2 +
+                   (4.0_f / 9.0_f) * velocity_3;
     } else if (advection_order == 2) {
       Vector2 velocity_1 = sample_velocity(p.position, p.velocity, lerp);
       Vector2 velocity_2 =
           sample_velocity(p.position - delta_t * velocity_1, p.velocity, lerp);
-      p.velocity = 0.5f * (velocity_1 + velocity_2);
+      p.velocity = 0.5_f * (velocity_1 + velocity_2);
     } else if (advection_order == 1) {
       p.velocity = sample_velocity(p.position, p.velocity, lerp);
     } else {

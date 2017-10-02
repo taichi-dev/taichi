@@ -24,24 +24,4 @@
 
 TC_NAMESPACE_BEGIN
 
-template <>
-real Config::get<real>(std::string key) const {
-  return this->get_real(key);
-}
-
-template <>
-int Config::get<int>(std::string key) const {
-  return this->get_int(key);
-}
-
-template <>
-bool Config::get<bool>(std::string key) const {
-  return this->get_bool(key);
-}
-
-template <>
-std::string Config::get<std::string>(std::string key) const {
-  return this->get_string(key);
-}
-
 TC_NAMESPACE_END

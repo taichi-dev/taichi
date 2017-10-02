@@ -116,13 +116,13 @@ TC_IMPLEMENTATION(ParticleRenderer, ParticleShadowMapRenderer, "shadow_map");
 std::shared_ptr<Texture> rasterize_render_particles(
     const Config &config,
     const std::vector<RenderParticle> &particles) {
-  Vector3i resolution = config.get_vec3i("resolution");
+  Vector3i resolution = config.get<Vector3i>("resolution");
   Array3D<Vector4> array(resolution, Vector4(0));
   auto kernel = [](const Vector3 &d) {
     return std::abs(d.x) * std::abs(d.y) * std::abs(d.z);
   };
   for (auto const &p : particles) {
-    const Vector3 pos = p.position + 0.5f * resolution.cast<real>();
+    const Vector3 pos = p.position + 0.5_f * resolution.cast<real>();
     for (auto &ind : array.get_rasterization_region(pos, 1)) {
       Vector4 color(p.color.x, p.color.y, p.color.z, 1.0_f);
       array[ind] += color * kernel(pos - ind.get_pos());

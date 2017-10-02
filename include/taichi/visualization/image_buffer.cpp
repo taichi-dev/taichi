@@ -32,7 +32,7 @@ void Array2D<T>::load(const std::string &filename, bool linearize) {
   FILE *f = fopen(filename.c_str(), "rb");
   assert_info(f != nullptr, "Image file not found: " + filename);
   stbi_ldr_to_hdr_gamma(1.0_f);
-  real *data =
+  float32 *data =
       stbi_loadf(filename.c_str(), &this->res[0], &this->res[1], &channels, 0);
   assert_info(data != nullptr,
               "Image file load failed: " + filename +
@@ -43,7 +43,7 @@ void Array2D<T>::load(const std::string &filename, bool linearize) {
 
   for (int i = 0; i < this->res[0]; i++) {
     for (int j = 0; j < this->res[1]; j++) {
-      real *pixel_ =
+      float32 *pixel_ =
           data + ((this->res[1] - 1 - j) * this->res[0] + i) * channels;
       Vector4 pixel;
       if (channels == 1) {
@@ -143,7 +143,7 @@ void Array2D<T>::write_text(const std::string &font_fn,
   for (j = 0; j < this->res[1]; ++j) {
     for (i = 0; i < this->res[0]; ++i) {
       int x = dx + i, y = dy + j;
-      float alpha =
+      real alpha =
           screen_buffer[(this->res[1] - j - 1) * this->res[0] + i] / 255.0f;
       (*this)[x][y] = lerp(alpha, this->get(x, y), T(1.0_f));
     }

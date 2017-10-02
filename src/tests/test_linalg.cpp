@@ -57,13 +57,17 @@ class TestLinAlg : public Task {
     a = Vector3({7.0f, 8.0f, 9.0f});
     assert(a == Vector3(7, 8, 9));
 
+#ifndef TC_USE_DOUBLE
     auto t = __m128(a);
+#endif
 
     Vector2 c(1, 2), d(2, 5);
     assert(c + d == Vector2(3, 7));
 
     assert(Vector4(1, 2, 3, 1).length2() == 15.0f);
+#ifndef TC_USE_DOUBLE
     assert(Vector3(1, 2, 3, 1).length2() == 14.0f);
+#endif
     assert(dot(Vector2(1, 2), Vector2(3, 2)) == 7.0f);
     assert(dot(Vector2i(1, 2), Vector2i(3, 2)) == 7);
     assert((fract(Vector2(1.3f, 2.7f)) - Vector2(0.3f, 0.7f)).length2() <

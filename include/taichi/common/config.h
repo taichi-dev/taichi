@@ -29,8 +29,8 @@ TC_NAMESPACE_BEGIN
 //#define TC_PULL_CONFIG(name, default_val) \
   //decltype(default_val) name = config.get(#name, default_val)
 // Load to `this`
-//#define TC_LOAD_CONFIG(name, default_val) \
-//  this->name = config.get(#name, default_val)
+#define TC_LOAD_CONFIG(name, default_val) \
+  this->name = config.get(#name, default_val)
 
 class Config {
  private:
@@ -125,6 +125,13 @@ class Config {
       sscanf(str.c_str(), temp.c_str(), &ret[0], &ret[1], &ret[2], &ret[3]);
     }
     return ret;
+  }
+
+  std::string get(std::string key, const char *default_val) const {
+    if (data.find(key) == data.end()) {
+      return default_val;
+    } else
+      return get<std::string>(key);
   }
 
   template  <typename T>

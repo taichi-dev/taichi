@@ -403,7 +403,7 @@ PathContribution BidirectionalRenderer::connect(const Path &eye_path,
       if (c.max() <= 0.0)
         continue;
       // printf("%d - %d\n", num_eye_vertices, num_light_vertices);
-      result.push_back(Contribution(px, py, path_length, c.cast<float32>()));
+      result.push_back(Contribution(px, py, path_length, c.cast<real>()));
 
       if (specified && (num_eye_vert_spec == num_eye_vertices) &&
           (num_light_vert_spec == num_light_vertices))

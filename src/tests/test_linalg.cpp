@@ -17,7 +17,7 @@ class TestLinAlg : public Task {
   template <int DIM>
   void test_matrix_inverse() {
     using Matrix = MatrixND<DIM, real>;
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 100; i++) {
       Matrix M = Matrix::rand();
       P(M);
       P(M * inverse(M));

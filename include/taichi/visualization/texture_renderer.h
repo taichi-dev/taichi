@@ -15,61 +15,51 @@
 
 TC_NAMESPACE_BEGIN
 
-using glm::vec4;
-
 class TextureRenderer {
-private:
-    static GLuint program, vbo;
-    static bool shared_resources_initialized;
-    GLuint vao;
-    GLuint texture;
-    int width, height;
-    vector<unsigned char> image;
-    std::shared_ptr<GLWindow> context;
-public:
-    TextureRenderer(std::shared_ptr<GLWindow> window, int height, int width);
+ private:
+  static GLuint program, vbo;
+  static bool shared_resources_initialized;
+  GLuint vao;
+  GLuint texture;
+  int width, height;
+  vector<unsigned char> image;
+  std::shared_ptr<GLWindow> context;
 
-    void resize(int height, int width);
+ public:
+  TextureRenderer(std::shared_ptr<GLWindow> window, int height, int width);
 
-    void reset();
+  void resize(int height, int width);
 
-    void set_pixel(int x, int y, vec4 color);
+  void reset();
 
-    template <typename T>
-    void set_texture(Array2D<T> image);
+  void set_pixel(int x, int y, Vector4 color);
 
-    void render();
+  template <typename T>
+  void set_texture(Array2D<T> image);
 
-    ~TextureRenderer();
+  void render();
 
-    static Vector4 to_vec4(real dat) {
-        return vec4(dat);
-    }
-    static Vector4 to_vec4(unsigned char dat) {
-        return vec4(dat / 255.0f);
-    }
-    static Vector4 to_vec4(Vector2 dat) {
-        return Vector4(dat, 0, 1);
-    }
-    static Vector4 to_vec4(Vector3 dat) {
-        return Vector4(dat, 1);
-    }   
-    static Vector4 to_vec4(Vector4 dat) {
-        return dat;
-    }   
+  ~TextureRenderer();
+
+  static Vector4 to_vec4(real dat) { return dat; }
+  static Vector4 to_vec4(unsigned char dat) { return dat / 255.0f; }
+  static Vector4 to_vec4(Vector2 dat) { return Vector4(dat.x, dat.y, 0, 1); }
+  static Vector4 to_vec4(Vector3 dat) {
+    return Vector4(dat.x, dat.y, dat.z, 1);
+  }
+  static Vector4 to_vec4(Vector4 dat) { return dat; }
 };
 
-template<typename T>
-inline void TextureRenderer::set_texture(Array2D<T> image)
-{
-    // assert_info(image.get_width() == width && image.get_height() == height, "Texture size mismatch!");
-    resize(image.get_width(), image.get_height());
-    for (int i = 0; i < width; i++) {
-        for (int j = 0; j < height; j++) {
-            set_pixel(i, j, to_vec4(image[i][j]));
-        }
+template <typename T>
+inline void TextureRenderer::set_texture(Array2D<T> image) {
+  // assert_info(image.get_width() == width && image.get_height() == height,
+  // "Texture size mismatch!");
+  resize(image.get_width(), image.get_height());
+  for (int i = 0; i < width; i++) {
+    for (int j = 0; j < height; j++) {
+      set_pixel(i, j, to_vec4(image[i][j]));
     }
+  }
 }
 
 TC_NAMESPACE_END
-

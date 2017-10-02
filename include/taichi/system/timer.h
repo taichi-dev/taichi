@@ -15,7 +15,7 @@
 
 #else
 #pragma warning(push)
-#pragma warning(disable:4005)
+#pragma warning(disable : 4005)
 #include <windows.h>
 #pragma warning(pop)
 #endif
@@ -28,80 +28,79 @@
 TC_NAMESPACE_BEGIN
 
 // #define TIME(x) {Time::Timer _(#x "@" __FILENAME__ "[" __LINE__"]"); x;}
-#define TIME(x) {char timer_name[1000]; \
+#define TIME(x)                                                      \
+  {                                                                  \
+    char timer_name[1000];                                           \
     sprintf_s(timer_name, "%s[%d]: %s", __FILENAME__, __LINE__, #x); \
-    Time::Timer _(timer_name); x;}
+    Time::Timer _(timer_name);                                       \
+    x;                                                               \
+  }
 
 #include <stdint.h>
 
-
 class Time {
-public:
-    static double get_time();
+ public:
+  static double get_time();
 
-    static uint64 get_cycles();
+  static uint64 get_cycles();
 
-    static void usleep(double us);
+  static void usleep(double us);
 
-    class Timer {
-        static std::map<std::string, std::pair<double, int>> memo;
-    protected:
-        std::string name;
-        double start_time;
+  class Timer {
+    static std::map<std::string, std::pair<double, int>> memo;
 
-        virtual double get_time();
+   protected:
+    std::string name;
+    double start_time;
 
-        virtual void print_record(const char *left, double elapsed, double average);
+    virtual double get_time();
 
-        void output();
+    virtual void print_record(const char *left, double elapsed, double average);
 
-        bool have_output;
-    public:
-        Timer(std::string name);
+    void output();
 
-        Timer() {}
+    bool have_output;
 
-        virtual ~Timer() {
-            output();
-        }
-    };
+   public:
+    Timer(std::string name);
 
-    class TickTimer : public Timer {
-    protected:
-        double get_time();
+    Timer() {}
 
-        void print_record(const char *left, double elapsed, double average);
+    virtual ~Timer() { output(); }
+  };
 
-    public:
-        TickTimer(std::string name);
+  class TickTimer : public Timer {
+   protected:
+    double get_time();
 
-        ~TickTimer() {
-            output();
-        }
-    };
+    void print_record(const char *left, double elapsed, double average);
 
-    class FPSCounter {
-    public:
-        static void count(std::string name) {
-            if (last_refresh.find(name) == last_refresh.end()) {
-                last_refresh[name] = get_time();
-                counter[name] = 0;
-            }
-            counter[name]++;
-            double current_time = get_time();
-            if (current_time > 1 + last_refresh[name]) {
-                last_refresh[name] = last_refresh[name] + 1;
-                printf("FPS [%s]: %d\n", name.c_str(), counter[name]);
-                counter[name] = 0;
-            }
-        }
+   public:
+    TickTimer(std::string name);
 
-    private:
-        static std::map<std::string, double> last_refresh;
-        static std::map<std::string, int> counter;
-    };
+    ~TickTimer() { output(); }
+  };
+
+  class FPSCounter {
+   public:
+    static void count(std::string name) {
+      if (last_refresh.find(name) == last_refresh.end()) {
+        last_refresh[name] = get_time();
+        counter[name] = 0;
+      }
+      counter[name]++;
+      double current_time = get_time();
+      if (current_time > 1 + last_refresh[name]) {
+        last_refresh[name] = last_refresh[name] + 1;
+        printf("FPS [%s]: %d\n", name.c_str(), counter[name]);
+        counter[name] = 0;
+      }
+    }
+
+   private:
+    static std::map<std::string, double> last_refresh;
+    static std::map<std::string, int> counter;
+  };
 };
 
-
 TC_NAMESPACE_END
-

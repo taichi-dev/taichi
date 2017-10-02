@@ -15,33 +15,30 @@
 TC_NAMESPACE_BEGIN
 
 class BinaryFileStreamInput final {
-private:
-    FILE *f;
-public:
-    BinaryFileStreamInput(const std::string &fn) {
-        f = std::fopen(fn.c_str(), "rb");
-    }
+ private:
+  FILE *f;
 
-    template<typename T>
-    BinaryFileStreamInput operator >> (const T &t) {
-    }
+ public:
+  BinaryFileStreamInput(const std::string &fn) {
+    f = std::fopen(fn.c_str(), "rb");
+  }
 
-    BinaryFileStreamInput() {
-        std::fclose(f);
-    }
+  template <typename T>
+  BinaryFileStreamInput operator>>(const T &t) {}
+
+  BinaryFileStreamInput() { std::fclose(f); }
 };
 
 class BinaryFileStreamOutput final {
-private:
-    FILE *f;
-public:
-    BinaryFileStreamOutput(const std::string &fn) {
-        f = std::fopen(fn.c_str(), "wb");
-    }
+ private:
+  FILE *f;
 
-    BinaryFileStreamOutput() {
-        std::fclose(f);
-    }
+ public:
+  BinaryFileStreamOutput(const std::string &fn) {
+    f = std::fopen(fn.c_str(), "wb");
+  }
+
+  BinaryFileStreamOutput() { std::fclose(f); }
 };
 
 TC_NAMESPACE_END

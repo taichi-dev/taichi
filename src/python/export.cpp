@@ -13,29 +13,27 @@
 #include <taichi/io/io.h>
 #include <taichi/geometry/factory.h>
 
-
 TC_NAMESPACE_BEGIN
 
 PYBIND11_PLUGIN(taichi_core) {
-
-    py::module m("taichi_core", R"pbdoc(
+  py::module m("taichi_core", R"pbdoc(
     Taichi Core Library
     -----------------------
     .. currentmodule:: taichi_core
     )pbdoc");
 
-    for (auto &kv : InterfaceHolder::get_instance()->methods) {
-        kv.second(&m);
-    }
+  for (auto &kv : InterfaceHolder::get_instance()->methods) {
+    kv.second(&m);
+  }
 
-    Py_Initialize();
-    export_math(m);
-    export_dynamics(m);
-    export_visual(m);
-    export_io(m);
-    export_misc(m);
+  Py_Initialize();
+  export_math(m);
+  export_dynamics(m);
+  export_visual(m);
+  export_io(m);
+  export_misc(m);
 
-    return m.ptr();
+  return m.ptr();
 }
 
 TC_NAMESPACE_END

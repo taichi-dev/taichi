@@ -19,10 +19,12 @@ void spectrum_demo(Config config) {
     float temperature_upper = config.get_float("temperature_upper");
     bool tone_mapping = config.get_bool("tone_mapping");
     auto window = std::make_shared<GLWindow>(Config::load("render_view.cfg"));
-    auto tr = std::make_shared<TextureRenderer>(window, output_width, output_height);
+    auto tr = std::make_shared<TextureRenderer>(window, output_width,
+output_height);
     auto buffer = Array2D<Vector3>(output_width, output_height);
     for (int i = 0; i < output_height; i++) {
-        float t = temperature_lower + (temperature_upper - temperature_lower) * (i + 0.5f) / output_width;
+        float t = temperature_lower + (temperature_upper - temperature_lower) *
+(i + 0.5f) / output_width;
         Vector3d color = Spectrum::get_instance().sample(t);
         if (!tone_mapping)
             color = color / max_component(color);

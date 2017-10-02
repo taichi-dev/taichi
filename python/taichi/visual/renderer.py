@@ -19,166 +19,159 @@ from taichi.gui.image_viewer import show_image
 
 
 class Renderer(object):
-    def __init__(self, name=None, output_dir=get_unique_task_id(), overwrite=True, frame=0,
-                 scene=None, preset=None, **kwargs):
-        self.renderer_name = name
-        if output_dir is not None:
-            self.output_dir = taichi.settings.get_output_path(output_dir + '/')
-        self.post_processor = LDRDisplay()
-        self.frame = frame
-        self.viewer_started = False
-        self.viewer_process = None
-        try:
-            os.mkdir(self.output_dir)
-        except Exception as e:
-            if not overwrite:
-                print e
-                exit(-1)
-        if scene:
-            self.initialize(preset, scene=scene, **kwargs)
 
-    def initialize(self, preset=None, scene=None, **kwargs):
-        if preset is not None:
-            args = Renderer.presets[preset]
-            for key, value in kwargs.items():
-                args[key] = value
-            self.renderer_name = args['name']
-        else:
-            args = kwargs
-        self.c = tc_core.create_renderer(self.renderer_name)
-        if scene is not None:
-            self.set_scene(scene)
-        self.c.initialize(config_from_dict(args))
+  def __init__(self,
+               name=None,
+               output_dir=get_unique_task_id(),
+               overwrite=True,
+               frame=0,
+               scene=None,
+               preset=None,
+               visualize=True,
+               **kwargs):
+    self.renderer_name = name
+    if output_dir is not None:
+      self.output_dir = taichi.settings.get_output_path(output_dir + '/')
+    self.post_processor = LDRDisplay()
+    self.frame = frame
+    self.viewer_started = False
+    self.viewer_process = None
+    try:
+      os.mkdir(self.output_dir)
+    except Exception as e:
+      if not overwrite:
+        print e
+        exit(-1)
+    if scene:
+      self.initialize(preset, scene=scene, **kwargs)
+    self.visualize = visualize
 
-    def render(self, stages, cache_interval=-1):
-        for i in range(1, stages + 1):
-            print 'stage', i
-            t = time.time()
-            self.render_stage()
-            print 'time:', time.time() - t
-            self.show()
-            if cache_interval > 0 and i % cache_interval == 0:
-                self.write('img%04d-%06d.png' % (self.frame, i))
+  def initialize(self, preset=None, scene=None, **kwargs):
+    if preset is not None:
+      args = Renderer.presets[preset]
+      for key, value in kwargs.items():
+        args[key] = value
+      self.renderer_name = args['name']
+    else:
+      args = kwargs
+    self.c = tc_core.create_renderer(self.renderer_name)
+    if scene is not None:
+      self.set_scene(scene)
+    self.c.initialize(config_from_dict(args))
 
-        self.write('img%04d-%06d.png' % (self.frame, stages))
+  def render(self, stages, cache_interval=-1):
+    for i in range(1, stages + 1):
+      print 'stage', i
+      t = time.time()
+      self.render_stage()
+      print 'time:', time.time() - t
+      self.show()
+      if cache_interval > 0 and i % cache_interval == 0:
+        self.write('img%04d-%06d.png' % (self.frame, i))
 
-    def get_full_fn(self, fn):
-        return self.output_dir + fn
+    self.write('img%04d-%06d.png' % (self.frame, stages))
 
-    def write(self, fn):
-        self.get_image_output().write(self.get_full_fn(fn))
+  def get_full_fn(self, fn):
+    return self.output_dir + fn
 
-    # Returns numpy.ndarray
-    def get_output(self):
-        output = self.c.get_output()
-        output = image_buffer_to_ndarray(output)
+  def write(self, fn):
+    self.get_image_output().write(self.get_full_fn(fn))
 
-        if self.post_processor:
-            output = self.post_processor.process(output)
+  # Returns numpy.ndarray
+  def get_output(self):
+    output = self.c.get_output()
+    output = image_buffer_to_ndarray(output)
 
-        return output
+    if self.post_processor:
+      output = self.post_processor.process(output)
 
-    # Returns ImageBuffer<Vector3> a.k.a. Array2DVector3
-    def get_image_output(self):
-        return taichi.util.ndarray_to_array2d(self.get_output())
+    return output
 
-    def show(self):
-        # allow the user to opt out of the frame viewer by invoking the script
-        # with --no-viewer in the command line
-        if '--no-viewer' in sys.argv:
-            return
+  # Returns ImageBuffer<Vector3> a.k.a. Array2DVector3
+  def get_image_output(self):
+    return taichi.util.ndarray_to_array2d(self.get_output())
 
-        show_image('Taichi Renderer', self.get_output())
+  def show(self):
+    if not self.visualize:
+      return
 
-        '''
-        frame_path = self.get_full_fn('current-frame.png')
+    show_image('Taichi Renderer', self.get_output())
 
-        # atomic write so watchers don't get a partial image
-        _, temp_path = mkstemp()
-        self.get_image_output().write(temp_path)
-        os.rename(temp_path, frame_path)
+  def end_viewer_process(self):
+    if self.viewer_process.returncode is not None:
+      return
 
-        if not self.viewer_started:
-            self.viewer_started = True
+    self.viewer_process.terminate()
 
-            pool = ThreadPoolExecutor(max_workers=1)
-            pool.submit(self.start_viewer, frame_path)
-        '''
+  def start_viewer(self, frame_path):
+    path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../gui/tk/viewer.py')
 
-    def end_viewer_process(self):
-        if self.viewer_process.returncode is not None:
-            return
+    self.viewer_process = Popen(['python', path, frame_path])
 
-        self.viewer_process.terminate()
+    atexit.register(self.end_viewer_process)
 
-    def start_viewer(self, frame_path):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../gui/tk/viewer.py')
+  def __getattr__(self, key):
+    return self.c.__getattribute__(key)
 
-        self.viewer_process = Popen(['python', path, frame_path])
+  def set_scene(self, scene):
+    self.c.set_scene(scene.c)
 
-        atexit.register(self.end_viewer_process)
+  def set_post_processor(self, post_processor):
+    self.post_processor = post_processor
 
-    def __getattr__(self, key):
-        return self.c.__getattribute__(key)
-
-    def set_scene(self, scene):
-        self.c.set_scene(scene.c)
-
-    def set_post_processor(self, post_processor):
-        self.post_processor = post_processor
-
-    presets = {
-        'sppm': {
-            'name': 'sppm',
-            'min_path_length': 1,
-            'max_path_length': 10,
-            'initial_radius': 0.5,
-            'sampler': 'sobol',
-            'shrinking_radius': True,
-            'num_threads': get_num_cores()
-        },
-        'vcm': {
-            'name': 'vcm',
-            'min_path_length': 1,
-            'max_path_length': 10,
-            'initial_radius': 0.5,
-            'sampler': 'prand',
-            'stage_frequency': 10,
-            'shrinking_radius': True,
-            'num_threads': get_num_cores()
-        },
-        'pt': {
-            'name': 'pt',
-            'min_path_length': 1,
-            'max_path_length': 10,
-            'initial_radius': 0.5,
-            'sampler': 'sobol',
-            'russian_roulette': True,
-            'direct_lighting': 1,
-            'direct_lighting_light': 1,
-            'direct_lighting_bsdf': 1,
-            'envmap_is': 1,
-            'num_threads': get_num_cores()
-        },
-        'pt_sdf': {
-            'name': 'pt_sdf',
-            'min_path_length': 1,
-            'max_path_length': 10,
-            'initial_radius': 0.5,
-            'sampler': 'sobol',
-            'russian_roulette': True,
-            'direct_lighting': 1,
-            'direct_lighting_light': 1,
-            'direct_lighting_bsdf': 1,
-            'envmap_is': 1,
-            'num_threads': get_num_cores()
-        },
-        'bdpt': {
-            'name': 'bdpt',
-            'min_path_length': 1,
-            'max_path_length': 10,
-            'stage_frequence': 3,
-            'sampler': 'sobol',
-            'num_threads': get_num_cores()
-        }
-    }
+  presets = {
+      'sppm': {
+          'name': 'sppm',
+          'min_path_length': 1,
+          'max_path_length': 10,
+          'initial_radius': 0.5,
+          'sampler': 'sobol',
+          'shrinking_radius': True,
+          'num_threads': get_num_cores()
+      },
+      'vcm': {
+          'name': 'vcm',
+          'min_path_length': 1,
+          'max_path_length': 10,
+          'initial_radius': 0.5,
+          'sampler': 'prand',
+          'stage_frequency': 10,
+          'shrinking_radius': True,
+          'num_threads': get_num_cores()
+      },
+      'pt': {
+          'name': 'pt',
+          'min_path_length': 1,
+          'max_path_length': 10,
+          'initial_radius': 0.5,
+          'sampler': 'sobol',
+          'russian_roulette': True,
+          'direct_lighting': 1,
+          'direct_lighting_light': 1,
+          'direct_lighting_bsdf': 1,
+          'envmap_is': 1,
+          'num_threads': get_num_cores()
+      },
+      'pt_sdf': {
+          'name': 'pt_sdf',
+          'min_path_length': 1,
+          'max_path_length': 10,
+          'initial_radius': 0.5,
+          'sampler': 'sobol',
+          'russian_roulette': True,
+          'direct_lighting': 1,
+          'direct_lighting_light': 1,
+          'direct_lighting_bsdf': 1,
+          'envmap_is': 1,
+          'num_threads': get_num_cores()
+      },
+      'bdpt': {
+          'name': 'bdpt',
+          'min_path_length': 1,
+          'max_path_length': 10,
+          'stage_frequence': 3,
+          'sampler': 'sobol',
+          'num_threads': get_num_cores()
+      }
+  }

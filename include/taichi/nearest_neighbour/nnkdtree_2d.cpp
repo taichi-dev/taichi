@@ -7,9 +7,10 @@
     the MIT license as written in the LICENSE file.
 *******************************************************************************/
 
-// My old, Olympiad for Informatics version of Kd-tree ... just for a replacement of ANN
+// My old, Olympiad for Informatics version of Kd-tree ... just for a
+// replacement of ANN
 
-#include <taichi/math/linalg.h>
+#include <taichi/math/math.h>
 
 /*
 using namespace std;
@@ -108,8 +109,10 @@ class KDTree2D {
         int c = 0;
         if (depth & 1) c = t->x < p.x;
         else c = t->y < p.y;
-        if (t->ch[c] && MinDist(t->ch[c], p) < opt) Query(t->ch[c], p, opt, depth + 1);
-        if (t->ch[!c] && MinDist(t->ch[!c], p) < opt) Query(t->ch[!c], p, opt, depth + 1);
+        if (t->ch[c] && MinDist(t->ch[c], p) < opt) Query(t->ch[c], p, opt,
+depth + 1);
+        if (t->ch[!c] && MinDist(t->ch[!c], p) < opt) Query(t->ch[!c], p, opt,
+depth + 1);
     }
 
     real Query(point p) {
@@ -129,7 +132,8 @@ class KDTree2D {
             return;
         }
         int mid = (bgn + end) / 2;
-        nth_element(points + bgn, points + mid, points + end, (depth & 1) ? cmpX : cmpY);
+        nth_element(points + bgn, points + mid, points + end, (depth & 1) ? cmpX
+: cmpY);
         t = new KDNode(points[mid]);
         Build(t->ch[0], bgn, mid, depth + 1);
         Build(t->ch[1], mid + 1, end, depth + 1);

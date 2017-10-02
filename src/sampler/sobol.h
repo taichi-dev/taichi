@@ -2,9 +2,11 @@
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights to
+// in the Software without restriction, including without limitation the rights
+// to
 // use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-// of the Software, and to permit persons to whom the Software is furnished to do
+// of the Software, and to permit persons to whom the Software is furnished to
+// do
 // so, subject to the following conditions:
 //
 // The above copyright notice and this permission notice shall be included in
@@ -25,11 +27,10 @@
 
 namespace sobol {
 
-struct Matrices
-{
-    static const unsigned num_dimensions = 1024;
-    static const unsigned size = 52;
-    static const unsigned matrices[];
+struct Matrices {
+  static const unsigned num_dimensions = 1024;
+  static const unsigned size = 52;
+  static const unsigned matrices[];
 };
 
 // Compute one component of the Sobol'-sequence, where the component
@@ -37,25 +38,21 @@ struct Matrices
 // the point inside the sequence. The scramble parameter can be used
 // to permute elementary intervals, and might be chosen randomly to
 // generate a randomized QMC sequence.
-inline float sample(
-    unsigned long long index,
-    const unsigned dimension,
-    const unsigned scramble = 0U)
-{
-    using namespace taichi;
-    assert(dimension < Matrices::num_dimensions);
+inline float sample(unsigned long long index,
+                    const unsigned dimension,
+                    const unsigned scramble = 0U) {
+  using namespace taichi;
+  assert(dimension < Matrices::num_dimensions);
 
-    unsigned result = scramble;
-    for (unsigned i = dimension * Matrices::size; index; index >>= 1, ++i)
-    {
-        if (index & 1)
-            result ^= Matrices::matrices[i];
-    }
+  unsigned result = scramble;
+  for (unsigned i = dimension * Matrices::size; index; index >>= 1, ++i) {
+    if (index & 1)
+      result ^= Matrices::matrices[i];
+  }
 
-    return result * (1.f / (1ULL << 32));
+  return result * (1.f / (1ULL << 32));
 }
 
-} // namespace sobol
+}  // namespace sobol
 
 #endif
-

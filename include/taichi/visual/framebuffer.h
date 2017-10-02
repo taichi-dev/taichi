@@ -15,11 +15,10 @@
 TC_NAMESPACE_BEGIN
 
 class Framebuffer : public Unit {
-public:
-protected:
+ public:
+ protected:
 };
 
 TC_INTERFACE(Framebuffer);
 
 TC_NAMESPACE_END
-

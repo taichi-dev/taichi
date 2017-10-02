@@ -13,9 +13,9 @@
 TC_NAMESPACE_BEGIN
 
 void export_io(py::module &m) {
-    py::class_<ImageReader, std::shared_ptr<ImageReader>>(m, "ImageReader")
-            .def("initialize", &ImageReader::initialize)
-            .def("read", &ImageReader::read);
+  py::class_<ImageReader, std::shared_ptr<ImageReader>>(m, "ImageReader")
+      .def("initialize", &ImageReader::initialize)
+      .def("read", &ImageReader::read);
 }
 
 TC_NAMESPACE_END

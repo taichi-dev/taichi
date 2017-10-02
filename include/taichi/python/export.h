@@ -10,8 +10,8 @@
 #pragma once
 
 #pragma warning(push)
-#pragma warning(disable:4244)
-#pragma warning(disable:4267)
+#pragma warning(disable : 4244)
+#pragma warning(disable : 4267)
 
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
@@ -41,21 +41,22 @@ void export_io(py::module &m);
 
 void export_ndarray(py::module &m);
 
-#define DEFINE_VECTOR_OF_NAMED(x, name) \
-    py::class_<std::vector<x>>(m, name) \
-        .def(py::init<>()) \
-        .def("clear", &std::vector<x>::clear) \
-        .def("append", [](std::vector<x> &vec, const x &val) {vec.push_back(val);}) \
-        .def("pop_back", &std::vector<x>::pop_back) \
-        .def("__len__", [](const std::vector<x> &v) { return v.size(); }) \
-        .def("__iter__", [](std::vector<x> &v) { \
-            return py::make_iterator(v.begin(), v.end()); \
-        }, py::keep_alive<0, 1>()) \
-        .def("write", &write_vector_to_disk<x>) \
-        .def("read", &read_vector_from_disk<x>) \
-    ;
+#define DEFINE_VECTOR_OF_NAMED(x, name)                                   \
+  py::class_<std::vector<x>>(m, name)                                     \
+      .def(py::init<>())                                                  \
+      .def("clear", &std::vector<x>::clear)                               \
+      .def("append",                                                      \
+           [](std::vector<x> &vec, const x &val) { vec.push_back(val); }) \
+      .def("pop_back", &std::vector<x>::pop_back)                         \
+      .def("__len__", [](const std::vector<x> &v) { return v.size(); })   \
+      .def("__iter__",                                                    \
+           [](std::vector<x> &v) {                                        \
+             return py::make_iterator(v.begin(), v.end());                \
+           },                                                             \
+           py::keep_alive<0, 1>())                                        \
+      .def("write", &write_vector_to_disk<x>)                             \
+      .def("read", &read_vector_from_disk<x>);
 
-#define DEFINE_VECTOR_OF(x) \
-    DEFINE_VECTOR_OF_NAMED(x, #x "List");
+#define DEFINE_VECTOR_OF(x) DEFINE_VECTOR_OF_NAMED(x, #x "List");
 
 TC_NAMESPACE_END

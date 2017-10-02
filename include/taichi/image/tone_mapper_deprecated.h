@@ -12,7 +12,7 @@
 /*
 
 #include <taichi/visualization/image_buffer.h>
-#include <taichi/math/linalg.h>
+#include <taichi/math/math.h>
 #include <taichi/physics/spectrum.h>
 #include <taichi/physics/physics_constants.h>
 
@@ -227,7 +227,8 @@ public:
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 float ys = luminance(input[i][j]) / 683;
-                float s = max_display_y / 683.0f * (1 + ys * inv_y2) / (1.0f + ys);
+                float s = max_display_y / 683.0f * (1 + ys * inv_y2) / (1.0f +
+ys);
                 // float s = (log(ys) + 5) / (log(max_y) + 5) / ys;
                 // if (!(s >= 0)) s = 0;
                 Vector3 c = input[i][j] * s * 683.0f / max_display_y;

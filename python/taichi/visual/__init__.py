@@ -10,6 +10,8 @@ from color import color255
 from image_reader import ImageReader
 import post_process
 
-__all__ = ['Camera', 'Renderer', 'VolumeMaterial', 'SurfaceMaterial',
-           'Scene', 'Mesh', 'EnvironmentMap', 'Texture', 'post_process', 'color255', 'ImageReader',
-           'create_volumetric_block']
+__all__ = [
+    'Camera', 'Renderer', 'VolumeMaterial', 'SurfaceMaterial', 'Scene', 'Mesh',
+    'EnvironmentMap', 'Texture', 'post_process', 'color255', 'ImageReader',
+    'create_volumetric_block'
+]

@@ -15,54 +15,49 @@
 
 TC_NAMESPACE_BEGIN
 
-class Camera : public Unit{
-public:
-    virtual Ray sample(Vector2 offset, Vector2 size, StateSequence &rand) {
-        error("no impl");
-        return Ray(Vector3(0), Vector3(0));
-    }
+class Camera : public Unit {
+ public:
+  virtual void initialize(const Config &config) {
+    this->res = config.get_vec2i("res");
+    this->aspect_ratio = (real)res[0] / res[1];
+  }
 
-    Vector3 get_origin() {
-        return multiply_matrix4(transform, origin, 1);
-    }
+  virtual Ray sample(Vector2 offset, Vector2 size, StateSequence &rand) {
+    error("no impl");
+    return Ray(Vector3(0), Vector3(0));
+  }
 
-    Vector3 get_dir() {
-        return multiply_matrix4(transform, dir, 0);
-    }
+  Vector3 get_origin() { return multiply_matrix4(transform, origin, 1); }
 
-    virtual void get_pixel_coordinate(Vector3 dir, real &u, real &v) {
-        error("no impl");
-    }
+  Vector3 get_dir() { return multiply_matrix4(transform, dir, 0); }
 
-    virtual real get_pixel_scaling() {
-        return 1.0f;
-    }
+  virtual void get_pixel_coordinate(Vector3 dir, real &u, real &v) {
+    error("no impl");
+  }
 
-    int get_width() const {
-        return width;
-    }
+  virtual real get_pixel_scaling() { return 1.0f; }
 
-    int get_height() const {
-        return height;
-    }
+  int get_width() const { return res[0]; }
 
-protected:
-    Vector3 origin, look_at, up, right, dir;
-    Matrix4 transform;
-    int width, height;
+  int get_height() const { return res[1]; }
 
-    void set_dir_and_right() {
-        this->dir = normalize(look_at - origin);
-        this->up = normalize(up - dir * dot(dir, up));
-        this->right = cross(dir, up);
-    }
+ protected:
+  Vector3 origin, look_at, up, right, dir;
+  Matrix4 transform;
+  Vector2i res;
+  real aspect_ratio;
 
-    Vector2 random_offset(Vector2 offset, Vector2 size, real u, real v) {
-        return Vector2(offset.x + u * size.x - 0.5f, offset.y + v * size.y - 0.5f);
-    }
+  void set_dir_and_right() {
+    this->dir = normalize(look_at - origin);
+    this->up = normalize(up - dir * dot(dir, up));
+    this->right = cross(dir, up);
+  }
+
+  Vector2 random_offset(Vector2 offset, Vector2 size, real u, real v) {
+    return Vector2(offset.x + u * size.x - 0.5f, offset.y + v * size.y - 0.5f);
+  }
 };
 
 TC_INTERFACE(Camera);
 
 TC_NAMESPACE_END
-

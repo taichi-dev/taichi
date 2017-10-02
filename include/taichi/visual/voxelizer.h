@@ -11,13 +11,13 @@
 
 #include <functional>
 #include <taichi/common/meta.h>
-#include <taichi/math/linalg.h>
+#include <taichi/math/math.h>
 
 TC_NAMESPACE_BEGIN
 
-    class Voxelizer {
-    protected:
-    public:
-    };
+class Voxelizer {
+ protected:
+ public:
+};
 
 TC_NAMESPACE_END

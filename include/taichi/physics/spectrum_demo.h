@@ -14,7 +14,7 @@
 #include "spectrum.h"
 
 #include <taichi/visualization/texture_renderer.h>
-#include <taichi/math/linalg.h>
+#include <taichi/math/math.h>
 
 TC_NAMESPACE_BEGIN
 

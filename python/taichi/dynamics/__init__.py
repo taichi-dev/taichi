@@ -1,1 +1,3 @@
-__all__ = []
+from mpm import MPM
+
+__all__ = ['MPM']

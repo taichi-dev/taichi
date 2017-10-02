@@ -9,8 +9,8 @@
 
 #pragma once
 
-#include <taichi/math/math_util.h>
-#include <taichi/math/linalg.h>
+#include <taichi/math/math.h>
+#include <taichi/math/math.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -29,5 +29,9 @@ void svd(Matrix3 m, Matrix3 &u, Matrix3 &sig, Matrix3 &v);
 void polar_decomp(Matrix2 A, Matrix2 &r, Matrix2 &s);
 
 void polar_decomp(Matrix3 A, Matrix3 &r, Matrix3 &s);
+
+void qr_decomp(Matrix2 A, Matrix2 &q, Matrix2 &r);
+
+void qr_decomp(Matrix3 A, Matrix3 &q, Matrix3 &r);
 
 TC_NAMESPACE_END

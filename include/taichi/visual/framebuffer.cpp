@@ -11,12 +11,8 @@
 
 TC_NAMESPACE_BEGIN
 
-
-class NaiveFramebuffer : public Framebuffer {
-
-};
+class NaiveFramebuffer : public Framebuffer {};
 
 TC_IMPLEMENTATION(Framebuffer, NaiveFramebuffer, "naive");
 
 TC_NAMESPACE_END
-

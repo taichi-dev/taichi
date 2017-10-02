@@ -10,8 +10,7 @@ setup(
     url='https://github.com/IteratorAdvance/taichi',
     keywords=['graphics', 'simulation', 'animation', 'renderer'],
     license='MIT',
-    classifiers=[],
-)
+    classifiers=[],)
 
 classifiers = [
     'Development Status :: 1 - Planning',

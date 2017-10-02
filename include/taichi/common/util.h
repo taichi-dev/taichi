@@ -15,6 +15,8 @@
 #include <cstdio>
 #include <cstddef>
 #include <cstdint>
+#include <utility>
+#include <type_traits>
 #include <algorithm>
 
 // Do not disable assert...
@@ -23,16 +25,24 @@
 #endif
 
 #ifdef _WIN64
-#define __FILENAME__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
+#define __FILENAME__ \
+  (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
 #pragma warning(push)
-#pragma warning(disable:4005)
+#pragma warning(disable : 4005)
 #include <windows.h>
 #pragma warning(pop)
 #include <intrin.h>
+#define TC_EXPORT __declspec(dllexport)
 #else
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#define __FILENAME__ \
+  (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#define TC_EXPORT
 #endif
-#define PRINT(x) {printf("%s[%d]: %s = ", __FILENAME__, __LINE__, #x); taichi::print(x);};
+#define PRINT(x)                                         \
+  {                                                      \
+    printf("%s[%d]: %s = ", __FILENAME__, __LINE__, #x); \
+    taichi::print(x);                                    \
+  };
 #define P(x) PRINT(x)
 
 #ifndef _WIN64
@@ -51,45 +61,141 @@
 #else
 #define DEBUG_TRIGGER
 #endif
-#define assert(x) {bool ret = static_cast<bool>(x); if (!ret) {printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, #x); std::cout << std::flush; print_traceback(); DEBUG_TRIGGER; taichi_raise_assertion_failure_in_python("Assertion failed.");}}
-#define assert_info(x, info) {bool ___ret___ = static_cast<bool>(x); if (!___ret___) {printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, &((info)[0])); std::cout << std::flush; print_traceback(); DEBUG_TRIGGER; taichi_raise_assertion_failure_in_python("Assertion failed.");}}
+#define assert(x)                                                            \
+  {                                                                          \
+    bool ret = static_cast<bool>(x);                                         \
+    if (!ret) {                                                              \
+      printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, \
+             #x);                                                            \
+      std::cout << std::flush;                                               \
+      print_traceback();                                                     \
+      DEBUG_TRIGGER;                                                         \
+      taichi_raise_assertion_failure_in_python("Assertion failed.");         \
+    }                                                                        \
+  }
+#define assert_info(x, info)                                                 \
+  {                                                                          \
+    bool ___ret___ = static_cast<bool>(x);                                   \
+    if (!___ret___) {                                                        \
+      printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, \
+             &((info)[0]));                                                  \
+      std::cout << std::flush;                                               \
+      print_traceback();                                                     \
+      DEBUG_TRIGGER;                                                         \
+      taichi_raise_assertion_failure_in_python("Assertion failed.");         \
+    }                                                                        \
+  }
 #define error(info) assert_info(false, info)
 #define NOT_IMPLEMENTED assert_info(false, "Not Implemented!");
 
 #define TC_NAMESPACE_BEGIN namespace taichi {
 #define TC_NAMESPACE_END }
 
-#ifdef _WIN64
-typedef __int64 int64;
-typedef unsigned __int64 uint64;
-#define TC_FORCE_INLINE __forceinline
-#else
-typedef long long int64;
-typedef unsigned long long uint64;
-#define TC_FORCE_INLINE __attribute__((always_inline))
-#endif
-
 // Check for inf, nan?
 // #define CV_ON
 
-#include <type_traits>
+#ifdef CV_ON
+#define CV(v)                                              \
+  if (abnormal(v)) {                                       \
+    for (int i = 0; i < 1; i++)                            \
+      printf("Abnormal value %s (Ln %d)\n", #v, __LINE__); \
+    taichi::print(v);                                      \
+    puts("");                                              \
+  }
+#else
+#define CV(v)
+#endif
 
-void taichi_raise_assertion_failure_in_python(const char *msg);
+TC_EXPORT void taichi_raise_assertion_failure_in_python(const char *msg);
 
 TC_NAMESPACE_BEGIN
 
-void print_traceback();
+using int8 = signed char;
+using uint8 = unsigned char;
 
-template<typename T, typename U>
-struct is_type_same : std::false_type { };
+using int16 = short;
+using uint16 = unsigned short;
 
-template<typename T>
-struct is_type_same<T, T> : std::true_type { };
+using int32 = int;
+using uint32 = unsigned int;
 
-template<typename T, typename U>
-constexpr bool same_type() { return is_type_same<T, U>::value; }
+#ifdef _WIN64
+using int64 = __int64;
+using uint64 = unsigned __int64;
+#define TC_FORCE_INLINE __forceinline
+#else
+using int64 = long long;
+using uint64 = unsigned long long;
+#define TC_FORCE_INLINE __attribute__((always_inline))
+#endif
+using float32 = float;
+using float64 = double;
+using real = float;
 
-template<typename T, typename U>
-constexpr bool same_type(const U &u) { return is_type_same<T, U>::value; }
+TC_EXPORT void print_traceback();
+
+template <typename T>
+inline void print(T t) {
+  std::cout << t << std::endl;
+}
+
+namespace STATIC_IF {
+// reference: https://github.com/wichtounet/cpp_utils
+
+struct identity {
+  template <typename T>
+  T operator()(T &&x) const {
+    return std::forward<T>(x);
+  }
+};
+
+template <bool Cond>
+struct statement {
+  template <typename F>
+  void then(const F &f) {
+    f(identity());
+  }
+
+  template <typename F>
+  void else_(const F &) {}
+};
+
+template <>
+struct statement<false> {
+  template <typename F>
+  void then(const F &) {}
+
+  template <typename F>
+  void else_(const F &f) {
+    f(identity());
+  }
+};
+
+template <bool Cond, typename F>
+inline statement<Cond> static_if(F const &f) {
+  statement<Cond> if_;
+  if_.then(f);
+  return if_;
+}
+}
+
+using STATIC_IF::static_if;
+
+#define TC_STATIC_IF(x) static_if<(x)>([&](const auto& _____) {
+#define TC_STATIC_ELSE \
+  }).else_([&](const auto &_____) {
+#define TC_STATIC_END_IF \
+  });
+
+// After we switch to C++17, we should use
+// (Note the the behaviour of 'return' is still different.)
+
+/*
+#define TC_STATIC_IF(x) if constexpr(x) {
+#define TC_STATIC_ELSE \
+    } else {
+#define TC_STATIC_END_IF \
+    }
+*/
 
 TC_NAMESPACE_END

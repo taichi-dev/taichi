@@ -128,6 +128,7 @@ using int64 = long long;
 using uint64 = unsigned long long;
 #define TC_FORCE_INLINE __attribute__((always_inline))
 #endif
+
 using float32 = float;
 using float64 = double;
 
@@ -136,6 +137,12 @@ using real = float64;
 #else
 using real = float32;
 #endif
+
+// Float literal for both float32/64
+// (Learned from https://github.com/hi2p-perim/lightmetrica-v2)
+real operator"" _f(long double v) { return real(v); }
+real operator"" _f(unsigned long long v) { return real(v); }
+
 
 TC_EXPORT void print_traceback();
 

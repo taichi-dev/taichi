@@ -565,10 +565,21 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
   }
 
   template <int a,
+      int b,
+      int c,
+      int d,
+      int DIM_ = DIM,
+      typename T_ = T,
+      InstSetExt ISE_ = ISE,
+      typename std::enable_if_t<!SIMD_4_32F<DIM_, T_, ISE_>, int> = 0>
+  VectorND permute() const {
+    return VectorND(this->d[a], this->d[b], this->d[c], this->d[d]);
+  }
+
+  template <int a,
             int DIM_ = DIM,
             typename T_ = T,
-            InstSetExt ISE_ = ISE,
-            typename std::enable_if_t<SIMD_4_32F<DIM_, T_, ISE_>, int> = 0>
+            InstSetExt ISE_ = ISE>
   VectorND broadcast() const {
     return permute<a, a, a, a>();
   }
@@ -679,10 +690,15 @@ VectorND<DIM, T, ISE> operator*(const VectorND<DIM, T, ISE> &v, T a) {
   return a * v;
 }
 
-using Vector1 = VectorND<1, float32, default_instruction_set>;
-using Vector2 = VectorND<2, float32, default_instruction_set>;
-using Vector3 = VectorND<3, float32, default_instruction_set>;
-using Vector4 = VectorND<4, float32, default_instruction_set>;
+using Vector1 = VectorND<1, real, default_instruction_set>;
+using Vector2 = VectorND<2, real, default_instruction_set>;
+using Vector3 = VectorND<3, real, default_instruction_set>;
+using Vector4 = VectorND<4, real, default_instruction_set>;
+
+using Vector1f = VectorND<1, float32, default_instruction_set>;
+using Vector2f = VectorND<2, float32, default_instruction_set>;
+using Vector3f = VectorND<3, float32, default_instruction_set>;
+using Vector4f = VectorND<4, float32, default_instruction_set>;
 
 using Vector1d = VectorND<1, float64, default_instruction_set>;
 using Vector2d = VectorND<2, float64, default_instruction_set>;
@@ -1039,9 +1055,13 @@ inline MatrixND<DIM, T, ISE> transposed(const MatrixND<DIM, T, ISE> &mat) {
   return transpose(mat);
 }
 
-using Matrix2 = MatrixND<2, float32, default_instruction_set>;
-using Matrix3 = MatrixND<3, float32, default_instruction_set>;
-using Matrix4 = MatrixND<4, float32, default_instruction_set>;
+using Matrix2 = MatrixND<2, real, default_instruction_set>;
+using Matrix3 = MatrixND<3, real, default_instruction_set>;
+using Matrix4 = MatrixND<4, real, default_instruction_set>;
+
+using Matrix2f = MatrixND<2, float32, default_instruction_set>;
+using Matrix3f = MatrixND<3, float32, default_instruction_set>;
+using Matrix4f = MatrixND<4, float32, default_instruction_set>;
 
 using Matrix2d = MatrixND<2, float64, default_instruction_set>;
 using Matrix3d = MatrixND<3, float64, default_instruction_set>;

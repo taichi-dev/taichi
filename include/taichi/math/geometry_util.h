@@ -33,7 +33,7 @@ inline real nearest_distance(const Vector2 &p,
                              const Vector2 &b) {
   real ab = length(a - b);
   Vector2 dir = (b - a) / ab;
-  real pos = clamp(dot(p - a, dir), 0.0f, ab);
+  real pos = clamp(dot(p - a, dir), 0.0_f, ab);
   return length(a + pos * dir - p);
 }
 

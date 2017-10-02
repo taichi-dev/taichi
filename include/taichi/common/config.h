@@ -45,9 +45,6 @@ class Config {
     file_names.clear();
   }
 
-  template <typename T>
-  T get(std::string key) const;
-
   void print_all() const {
     std::cout << "Configures: " << std::endl;
     for (auto key = data.begin(); key != data.end(); key++) {
@@ -79,68 +76,63 @@ class Config {
     return unsigned(std::atoll(get_string(key).c_str()));
   }
 
-  template <typename V, int N = V::D, typename T=typename V::ScalarType, int ISE=V::ise>
-  VectorND<N, T, ISE> get(std::string key) const {
-    std::string str = this->get_string(key);
-    std::string temp = "(";
-    for (int i = 0; i < N; i++) {
-      std::string placeholder;
-      if (std::is_same<T, float32>()) {
-        placeholder = "%f";
-      } else if (std::is_same<T, float64>()) {
-        placeholder = "%lf";
-      } else if (std::is_same<T, int32>()) {
-        placeholder = "%d";
-      } else if (std::is_same<T, uint32>()) {
-        placeholder = "%u";
-      } else if (std::is_same<T, int64>()) {
-#ifdef WIN32
-        placeholder = "%I64d";
-#else
-        placeholder = "%lld";
-#endif
-      } else if (std::is_same<T, uint64>()) {
-#ifdef WIN32
-        placeholder = "%I64u";
-#else
-        placeholder = "%llu";
-#endif
-      } else {
-        assert(false);
+  template <typename T>
+  T get(std::string key) const {NOT_IMPLEMENTED}
+  /*
+    template <typename V, int N = V::D, typename T=typename V::ScalarType, int
+  ISE=V::ise>
+    VectorND<N, T, ISE> get(std::string key) const {
+      std::string str = this->get_string(key);
+      std::string temp = "(";
+      for (int i = 0; i < N; i++) {
+        std::string placeholder;
+        if (std::is_same<T, float32>()) {
+          placeholder = "%f";
+        } else if (std::is_same<T, float64>()) {
+          placeholder = "%lf";
+        } else if (std::is_same<T, int32>()) {
+          placeholder = "%d";
+        } else if (std::is_same<T, uint32>()) {
+          placeholder = "%u";
+        } else if (std::is_same<T, int64>()) {
+  #ifdef WIN32
+          placeholder = "%I64d";
+  #else
+          placeholder = "%lld";
+  #endif
+        } else if (std::is_same<T, uint64>()) {
+  #ifdef WIN32
+          placeholder = "%I64u";
+  #else
+          placeholder = "%llu";
+  #endif
+        } else {
+          assert(false);
+        }
+        temp += placeholder;
+        if (i != N - 1) {
+          temp += ",";
+        }
       }
-      temp += placeholder;
-      if (i != N - 1) {
-        temp += ",";
+      temp += ")";
+      VectorND<N, T> ret;
+      if (N == 1) {
+        sscanf(str.c_str(), temp.c_str(), &ret[0]);
+      } else if (N == 2) {
+        sscanf(str.c_str(), temp.c_str(), &ret[0], &ret[1]);
+      }else if (N == 3) {
+        sscanf(str.c_str(), temp.c_str(), &ret[0], &ret[1], &ret[2]);
+      }else if (N == 4) {
+        sscanf(str.c_str(), temp.c_str(), &ret[0], &ret[1], &ret[2], &ret[3]);
       }
+      return ret;
     }
-    temp += ")";
-    VectorND<N, T> ret;
-    if (N == 1) {
-      sscanf(str.c_str(), temp.c_str(), &ret[0]);
-    } else if (N == 2) {
-      sscanf(str.c_str(), temp.c_str(), &ret[0], &ret[1]);
-    }else if (N == 3) {
-      sscanf(str.c_str(), temp.c_str(), &ret[0], &ret[1], &ret[2]);
-    }else if (N == 4) {
-      sscanf(str.c_str(), temp.c_str(), &ret[0], &ret[1], &ret[2], &ret[3]);
-    }
-    return ret;
-  }
+    */
 
-  std::string get(std::string key, const char *default_val) const {
-    if (data.find(key) == data.end()) {
-      return default_val;
-    } else
-      return get<std::string>(key);
-  }
+  std::string get(std::string key, const char *default_val) const;
 
-  template  <typename T>
-  T get(std::string key, const T &default_val) const {
-    if (data.find(key) == data.end()) {
-      return default_val;
-    } else
-      return get<T>(key);
-  }
+  template <typename T>
+  T get(std::string key, const T &default_val) const;
 
   bool has_key(std::string key) const { return data.find(key) != data.end(); }
 
@@ -268,5 +260,25 @@ class Config {
     return data.find(key)->second;
   }
 };
+
+template <>
+inline std::string Config::get<std::string>(std::string key) const {
+  return get_string(key);
+}
+
+template <typename T>
+inline T Config::get(std::string key, const T &default_val) const {
+  if (data.find(key) == data.end()) {
+    return default_val;
+  } else
+    return get<T>(key);
+}
+
+inline std::string Config::get(std::string key, const char *default_val) const {
+  if (data.find(key) == data.end()) {
+    return default_val;
+  } else
+    return get<std::string>(key);
+}
 
 TC_NAMESPACE_END

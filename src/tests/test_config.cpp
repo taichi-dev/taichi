@@ -32,6 +32,10 @@ class TestConfig : public Task {
     config.set("vec_int", Vector3i(4, 6, 3));
     assert(config.get<Vector3i>("vec_int") == Vector3i(4, 6, 3));
 
+
+    config.set("str", "Hello");
+    assert(config.get<std::string>("str") == "Hello");
+
     std::cout << "Passed." << std::endl;
   }
 };

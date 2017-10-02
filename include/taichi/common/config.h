@@ -76,16 +76,16 @@ class Config {
     return unsigned(std::atoll(get_string(key).c_str()));
   }
 
-  template <typename T>
-  T get(std::string key) const {
-    NOT_IMPLEMENTED
-  }
+  template <typename V>
+  typename std::enable_if_t<(!is_VectorND<V>()), V> get(std::string key) const;
 
   template <typename V,
-            int N = V::D,
-            typename T = typename V::ScalarType,
-            int ISE = V::ise>
-  VectorND<N, T, ISE> get(std::string key) const {
+            typename std::enable_if<(is_VectorND<V>()), V>::type * = nullptr>
+  V get(std::string key) const {
+    constexpr int N = V::D;
+    using T = typename V::ScalarType;
+    InstSetExt ISE = V::ise;
+
     std::string str = this->get_string(key);
     std::string temp = "(";
     for (int i = 0; i < N; i++) {

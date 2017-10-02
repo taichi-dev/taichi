@@ -1,3 +1,4 @@
+from __future__ import print_function
 import atexit
 import os
 import shutil
@@ -29,7 +30,14 @@ elif get_os_name() == 'linux':
     os.chdir(bin_dir)
     sys.path.append(bin_dir)
     shutil.copy('libtaichi_core.so', 'taichi_core.so')
-    import taichi_core as tc_core
+    try:
+        import taichi_core as tc_core
+    except Exception as e:
+      print()
+      print("\033[91m*Please make sure you are using python3 "
+            "instead of python2.\033[0m")
+      print()
+      print(e)
 
     os.chdir(tmp_cwd)
   else:

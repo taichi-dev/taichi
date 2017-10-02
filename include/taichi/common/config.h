@@ -79,8 +79,8 @@ class Config {
     return unsigned(std::atoll(get_string(key).c_str()));
   }
 
-  template <typename V, int N = V::N, typename T=typename V::ScalarType>
-  VectorND<N, T> get(std::string key) const {
+  template <typename V, int N = V::D, typename T=typename V::ScalarType, int ISE=V::ise>
+  VectorND<N, T, ISE> get(std::string key) const {
     std::string str = this->get_string(key);
     std::string temp = "(";
     for (int i = 0; i < N; i++) {

@@ -464,7 +464,7 @@ class ArrayND<3, T> {
 
   void set_pattern(int s) {
     for (int i = 0; i < size; i++) {
-      data[i] = sinf(s * i + 231.0f);
+      data[i] = sinf(s * i + 231.0_f);
     }
   }
 
@@ -575,7 +575,7 @@ class ArrayND<3, T> {
         }
       }
     }
-    return 1.0f / size * sum;
+    return 1.0_f / size * sum;
   }
 
   bool inside(const Vector3 &pos, real tolerance = 1e-4f) const {

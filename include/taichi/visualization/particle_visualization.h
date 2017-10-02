@@ -23,7 +23,7 @@ struct RenderParticle {
   RenderParticle(const Vector3 &position, const Vector4 &color)
       : position(position), color(color) {}
   RenderParticle(const Vector3 &position, const Vector3 &color)
-      : position(position), color(color, 1.0f) {}
+      : position(position), color(color, 1.0_f) {}
   bool operator==(const RenderParticle &p) const {
     // For boost::python vector_indexing_suite
     return false;

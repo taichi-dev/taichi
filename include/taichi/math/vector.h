@@ -1008,7 +1008,7 @@ struct MatrixND {
     return ret;
   }
 
-  static MatrixND identidy() { return MatrixND(1.0f); }
+  static MatrixND identidy() { return MatrixND(1.0_f); }
 };
 
 template <int DIM, typename T, InstSetExt ISE>
@@ -1113,7 +1113,7 @@ template <InstSetExt ISE>
 inline MatrixND<2, float32, ISE> inversed(
     const MatrixND<2, float32, ISE> &mat) {
   real det = determinant(mat);
-  return 1.0f / det * MatrixND<2, float32, ISE>(
+  return 1.0_f / det * MatrixND<2, float32, ISE>(
                           VectorND<2, float32, ISE>(mat[1][1], -mat[0][1]),
                           VectorND<2, float32, ISE>(-mat[1][0], mat[0][0]));
 }
@@ -1122,7 +1122,7 @@ template <InstSetExt ISE>
 inline MatrixND<3, float32, ISE> inversed(
     const MatrixND<3, float32, ISE> &mat) {
   real det = determinant(mat);
-  return 1.0f / det * MatrixND<3, float32, ISE>(
+  return 1.0_f / det * MatrixND<3, float32, ISE>(
                           VectorND<3, float32, ISE>(
                               mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2],
                               mat[2][1] * mat[0][2] - mat[0][1] * mat[2][2],

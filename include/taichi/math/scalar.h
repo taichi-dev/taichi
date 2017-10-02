@@ -28,7 +28,7 @@ using std::tan;
 using std::atan;
 using std::floor;
 
-const real pi{acosf(-1.0f)};
+const real pi{acosf(-1.0_f)};
 const real eps = 1e-6f;
 
 template <int I, typename T>
@@ -103,7 +103,7 @@ inline uint32 rand_int() {
 
 // inline float frand() { return (float)rand() / (RAND_MAX + 1); }
 inline float rand() {
-  return rand_int() * (1.0f / 4294967296.0f);
+  return rand_int() * (1.0_f / 4294967296.0f);
 }
 
 inline int is_prime(int a) {

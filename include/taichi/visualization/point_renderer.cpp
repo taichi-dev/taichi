@@ -40,7 +40,7 @@ void PointRenderer::render(vector<vec2> points, float point_size) {
   glBindVertexArray(vao);
   glDisable(GL_DEPTH_TEST);
   for (auto &p : points) {
-    p = (p - lower_left) / (upper_right - lower_left) * 2.0f - 1.0f;
+    p = (p - lower_left) / (upper_right - lower_left) * 2.0f - 1.0_f;
   }
 
   glUseProgram(program);

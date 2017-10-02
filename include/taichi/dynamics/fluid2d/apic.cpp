@@ -21,7 +21,7 @@ void APICLiquid::initialize_solver(const Config &config) {
   if (advection_order == 2) {
     printf("Warning: using second order advection can be unstable for APIC!\n");
   }
-  apic_blend = config.get("apic_blend", 1.0f);
+  apic_blend = config.get("apic_blend", 1.0_f);
   printf("initialized\n");
 }
 

@@ -45,7 +45,7 @@ ArrayND<N, T> symmetric_convolution(const ArrayND<N, T> &arr,
 
 template <typename T>
 Array2D<T> box_blur(const Array2D<T> &arr, real radius, int axis = -1) {
-  auto kernel = std::vector<real>(radius, 1.0f);
+  auto kernel = std::vector<real>(radius, 1.0_f);
   if (axis == -1) {
     return box_blur(box_blur(arr, radius, 0), radius, 1);
   } else {

@@ -24,7 +24,7 @@ class VolumeMaterial : public Unit {
   Matrix4 local2world;
 
  public:
-  VolumeMaterial() { set_transform(Matrix4(1.0f)); }
+  VolumeMaterial() { set_transform(Matrix4(1.0_f)); }
   virtual void initialize(const Config &config) {
     printf(
         "Info: Volumetric rendering is turned ON. Note that PT & MCMCPT are "
@@ -72,7 +72,7 @@ class VolumeMaterial : public Unit {
   virtual Vector3 phase_evaluate(const Vector3 &pos,
                                  const Vector3 &in_dir,
                                  const Vector3 &out_dir) {
-    return Vector3(1.0f, 1.0f, 1.0f);
+    return Vector3(1.0_f, 1.0_f, 1.0_f);
   }
 
   virtual real phase_probability_density(const Vector3 &pos,

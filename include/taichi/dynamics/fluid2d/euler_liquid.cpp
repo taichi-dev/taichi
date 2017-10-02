@@ -53,7 +53,7 @@ Vector2 EulerLiquid::sample_velocity(Vector2 position,
   if (kernel_size == 1) {
     return Vector2(u.sample(position), v.sample(position));
   } else {
-    real inv_kernel_size = 1.0f / kernel_size;
+    real inv_kernel_size = 1.0_f / kernel_size;
     int extent = (kernel_size + 1) / 2;
     int x, y;
     real tot_weight, tot;
@@ -147,7 +147,7 @@ void EulerLiquid::simple_extrapolate() {
       for (int k = 0; k < 4; k++) {
         int nx = i + dx[k], ny = j + dy[k];
         if (check_u_activity(nx, ny)) {
-          num += 1.0f;
+          num += 1.0_f;
           sum += u[nx][ny];
         }
       }
@@ -165,7 +165,7 @@ void EulerLiquid::simple_extrapolate() {
       for (int k = 0; k < 4; k++) {
         int nx = i + dx[k], ny = j + dy[k];
         if (check_v_activity(nx, ny)) {
-          num += 1.0f;
+          num += 1.0_f;
           sum += v[nx][ny];
         }
       }
@@ -470,7 +470,7 @@ void EulerLiquid::prepare_for_pressure_solve() {
       if (e < sigma * Ad[ind])
         e = Ad[ind];
       assert_info(e >= 0, "Negative e!");
-      E[ind] = 1.0f / sqrtf(e);
+      E[ind] = 1.0_f / sqrtf(e);
       if (!is_normal(E[ind])) {
         P(E[ind]);
         P(e);
@@ -749,7 +749,7 @@ void EulerLiquid::update_volume_controller() {
   int current_water_cells = count_water_cells();
   integrate_water_cells_difference += current_water_cells - target_water_cells;
   last_water_cells = (real)current_water_cells;
-  real factor = 1.0f / width / height;
+  real factor = 1.0_f / width / height;
   volume_correction_factor =
       -factor * (integrate_water_cells_difference * volume_control_i +
                  (current_water_cells - target_water_cells) * volume_control_p);

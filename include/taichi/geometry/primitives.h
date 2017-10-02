@@ -78,8 +78,8 @@ struct Triangle {
     this->uv20 = uv2 - uv0;
     v10 = v1 - v0;
     v20 = v2 - v0;
-    iv10 = 1.0f / dot(v10, v10) * v10;
-    iv20 = 1.0f / dot(v20, v20) * v20;
+    iv10 = 1.0_f / dot(v10, v10) * v10;
+    iv20 = 1.0_f / dot(v20, v20) * v20;
     n10 = n1 - n0;
     n20 = n2 - n0;
     this->id = id;
@@ -89,9 +89,9 @@ struct Triangle {
 
   Triangle get_transformed(const Matrix4 &transform) const {
     const Matrix4 normal_transform = transposed(inversed(transform));
-    return Triangle(multiply_matrix4(transform, v[0], 1.0f),
-                    multiply_matrix4(transform, v[0] + v10, 1.0f),
-                    multiply_matrix4(transform, v[0] + v20, 1.0f),
+    return Triangle(multiply_matrix4(transform, v[0], 1.0_f),
+                    multiply_matrix4(transform, v[0] + v10, 1.0_f),
+                    multiply_matrix4(transform, v[0] + v20, 1.0_f),
                     multiply_matrix4(normal_transform, n0, 0.0f),
                     multiply_matrix4(normal_transform, n0 + n10, 0.0f),
                     multiply_matrix4(normal_transform, n0 + n20, 0.0f), uv0,

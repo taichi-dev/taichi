@@ -453,7 +453,7 @@ class ArrayND<2, T> {
 
   void set_pattern(int s) {
     for (int i = 0; i < size; i++) {
-      data[i] = sinf(s * i + 231.0f);
+      data[i] = sinf(s * i + 231.0_f);
     }
   }
 
@@ -525,7 +525,7 @@ class ArrayND<2, T> {
         sum += get(i, j);
       }
     }
-    return 1.0f / size * sum;
+    return 1.0_f / size * sum;
   }
 
   bool inside(const Vector2 &pos, real tolerance = 1e-4f) const {
@@ -662,8 +662,8 @@ class ArrayND<2, T> {
     y *= this->res[1];
     x -= 0.5f;
     y -= 0.5f;
-    x = clamp(x, 0.0f, this->res[0] - 1.0f);
-    y = clamp(y, 0.0f, this->res[1] - 1.0f);
+    x = clamp(x, 0.0f, this->res[0] - 1.0_f);
+    y = clamp(y, 0.0f, this->res[1] - 1.0_f);
     int ix = clamp(int(x), 0, this->res[0] - 2);
     int iy = clamp(int(y), 0, this->res[1] - 2);
     if (!interp) {

@@ -25,7 +25,7 @@ class LevelSet : public ArrayND<DIM, real> {
   using Array = ArrayND<DIM, real>;
   static constexpr real INF = 1e7f;
 
-  real friction = 1.0f;
+  real friction = 1.0_f;
 
   LevelSet() { initialize(VectorI(0)); }
 
@@ -75,7 +75,7 @@ class LevelSet : public ArrayND<DIM, real> {
   }
 
   static real fraction_outside(real phi_a, real phi_b) {
-    return 1.0f - fraction_inside(phi_a, phi_b);
+    return 1.0_f - fraction_inside(phi_a, phi_b);
   }
 };
 

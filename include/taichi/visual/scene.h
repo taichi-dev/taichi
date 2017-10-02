@@ -190,7 +190,7 @@ class Scene {
       emission_cdf.push_back(e);
       total_emission += e;
     }
-    real inv_tot = 1.0f / total_emission;
+    real inv_tot = 1.0_f / total_emission;
     for (int i = 0; i < (int)emission_cdf.size() - 1; i++) {
       emission_cdf[i + 1] += emission_cdf[i];
     }

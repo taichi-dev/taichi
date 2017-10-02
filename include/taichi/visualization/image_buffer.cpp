@@ -31,7 +31,7 @@ void Array2D<T>::load(const std::string &filename, bool linearize) {
   int channels;
   FILE *f = fopen(filename.c_str(), "rb");
   assert_info(f != nullptr, "Image file not found: " + filename);
-  stbi_ldr_to_hdr_gamma(1.0f);
+  stbi_ldr_to_hdr_gamma(1.0_f);
   real *data =
       stbi_loadf(filename.c_str(), &this->res[0], &this->res[1], &channels, 0);
   assert_info(data != nullptr,
@@ -77,7 +77,7 @@ void Array2D<T>::write(const std::string &filename) {
                             clamp(VectorND<3, real>(
                                       this->data[i * this->res[1] +
                                                  (this->res[1] - j - 1)])[k],
-                                  0.0f, 1.0f));
+                                  0.0f, 1.0_f));
       }
     }
   }
@@ -145,7 +145,7 @@ void Array2D<T>::write_text(const std::string &font_fn,
       int x = dx + i, y = dy + j;
       float alpha =
           screen_buffer[(this->res[1] - j - 1) * this->res[0] + i] / 255.0f;
-      (*this)[x][y] = lerp(alpha, this->get(x, y), T(1.0f));
+      (*this)[x][y] = lerp(alpha, this->get(x, y), T(1.0_f));
     }
   }
 }

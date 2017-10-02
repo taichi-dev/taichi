@@ -57,7 +57,7 @@ typename LevelSet<DIM>::Vector LevelSet<DIM>::get_normalized_gradient(
     const LevelSet<DIM>::Vector &pos) const {
   Vector gradient = get_gradient(pos);
   if (length(gradient) < 1e-10f)
-    gradient[0] = 1.0f;
+    gradient[0] = 1.0_f;
   return normalize(gradient);
 }
 
@@ -164,7 +164,7 @@ Array3D<real> LevelSet<3>::rasterize(Vector3i output_res) {
 template <int DIM>
 void LevelSet<DIM>::add_plane(const LevelSet<DIM>::Vector &normal_, real d) {
   Vector normal = normalized(normal_);
-  real coeff = 1.0f / length(normal);
+  real coeff = 1.0_f / length(normal);
   for (auto &ind : this->get_region()) {
     Vector sample = ind.get_pos();
     real dist = (dot(sample, normal) + d) * coeff;

@@ -143,7 +143,7 @@ void svd(Matrix3 m, Matrix3 &u, Matrix3 &sig, Matrix3 &v) {
 }
 
 void qr_decomp(Matrix2 A, Matrix2 &q, Matrix2 &r) {
-  real a = A[0][0], b = A[0][1], inv_r = 1.0f / hypot(a, b);
+  real a = A[0][0], b = A[0][1], inv_r = 1.0_f / hypot(a, b);
   a *= inv_r;
   b *= inv_r;
   Matrix2 Q(Vector2(a, -b), Vector2(b, a));

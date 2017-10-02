@@ -16,7 +16,7 @@
 TC_NAMESPACE_BEGIN
 
 void Mesh::initialize(const Config &config) {
-  transform = Matrix4(1.0f);
+  transform = Matrix4(1.0_f);
   std::string filepath = config.get_string("filename");
   if (!filepath.empty())
     load_from_file(filepath);
@@ -128,7 +128,7 @@ IntersectionInfo Scene::get_intersection_info(int triangle_id, Ray &ray) {
   inter.dist = ray.dist;
   // inter.material = mesh->material.get();
   Vector3 u = normalized(t.v[1] - t.v[0]);
-  real sgn = inter.front ? 1.0f : -1.0f;
+  real sgn = inter.front ? 1.0_f : -1.0_f;
   Vector3 v = normalized(
       cross(sgn * inter.normal,
             u));  // Due to shading normal, we have to normalize here...
@@ -172,7 +172,7 @@ void Scene::finalize_lighting() {
     update_emission_cdf();
     update_light_emission_cdf();
   } else {
-    envmap_sample_prob = 1.0f;
+    envmap_sample_prob = 1.0_f;
     assert_info(envmap != nullptr, "There should be light sources.");
   }
 }

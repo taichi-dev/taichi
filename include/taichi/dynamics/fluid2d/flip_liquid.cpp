@@ -156,7 +156,7 @@ template <real (*T)(const Fluid::Particle &, const Vector2 &)>
 void FLIPLiquid::rasterize_component(Array<real> &val, Array<real> &count) {
   val = 0;
   count = 0;
-  real inv_kernel_size = 1.0f / kernel_size;
+  real inv_kernel_size = 1.0_f / kernel_size;
   int extent = (kernel_size + 1) / 2;
   for (auto &p : particles) {
     for (auto &ind : val.get_rasterization_region(p.position, extent)) {

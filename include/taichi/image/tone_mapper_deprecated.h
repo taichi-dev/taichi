@@ -160,7 +160,7 @@ public:
         Array2D<Vector3> output(width, height);
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
-                float lum = max(luminance(input[i][j]) * 1e5f, 1.0f);
+                float lum = max(luminance(input[i][j]) * 1e5f, 1.0_f);
                 float scale = log(lum) / lum;
                 output[i][j] = input[i][j] * scale;
             }
@@ -222,17 +222,17 @@ public:
             inv_y2 = 1.f / (ywa * ywa);
         }
         else {
-            inv_y2 = 1.0f / (max_y * max_y);
+            inv_y2 = 1.0_f / (max_y * max_y);
         }
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 float ys = luminance(input[i][j]) / 683;
-                float s = max_display_y / 683.0f * (1 + ys * inv_y2) / (1.0f +
+                float s = max_display_y / 683.0f * (1 + ys * inv_y2) / (1.0_f +
 ys);
                 // float s = (log(ys) + 5) / (log(max_y) + 5) / ys;
                 // if (!(s >= 0)) s = 0;
                 Vector3 c = input[i][j] * s * 683.0f / max_display_y;
-                if (max_component(c) > 1.0f) {
+                if (max_component(c) > 1.0_f) {
                     c /= max_component(c);
                 }
                 output[i][j] = pow(c, 1 / 2.2f);

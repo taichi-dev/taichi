@@ -25,20 +25,20 @@ class Pakua : Unit {
   }
 
   // Add a particle to buffer
-  virtual void add_point(Vector pos, Vector color, real size = 1.0f) = 0;
+  virtual void add_point(Vector pos, Vector color, real size = 1.0_f) = 0;
 
-  virtual void add_point(Vector2 pos, Vector color, real size = 1.0f) {
+  virtual void add_point(Vector2 pos, Vector color, real size = 1.0_f) {
     this->add_point(Vector3(pos, 0.5f), color, size);
   }
 
   // Add a line to buffer
   virtual void add_line(const std::vector<Vector3> &pos,
                         const std::vector<Vector3> &color,
-                        real width = 1.0f) = 0;
+                        real width = 1.0_f) = 0;
 
   virtual void add_line(const std::vector<Vector2> &pos_,
                         const std::vector<Vector3> &color,
-                        real width = 1.0f) {
+                        real width = 1.0_f) {
     std::vector<Vector3> pos;
     for (auto &p : pos_) {
       pos.push_back(Vector3(p, 0.5f));

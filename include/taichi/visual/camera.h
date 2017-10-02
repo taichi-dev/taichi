@@ -35,7 +35,7 @@ class Camera : public Unit {
     error("no impl");
   }
 
-  virtual real get_pixel_scaling() { return 1.0f; }
+  virtual real get_pixel_scaling() { return 1.0_f; }
 
   int get_width() const { return res[0]; }
 

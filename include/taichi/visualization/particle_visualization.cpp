@@ -28,8 +28,8 @@ class ParticleShadowMapRenderer : public ParticleRenderer {
     shadow_map_resolution = config.get_real("shadow_map_resolution");
     light_direction = config.get_vec3("light_direction");
     ambient_light = config.get("ambient_light", 0.0f);
-    shadowing = config.get("shadowing", 1.0f);
-    alpha = config.get("alpha", 1.0f);
+    shadowing = config.get("shadowing", 1.0_f);
+    alpha = config.get("alpha", 1.0_f);
     light_direction = normalized(light_direction);
     Vector3 u = abs(light_direction.y) > 0.999f
                     ? Vector3(1, 0, 0)
@@ -62,8 +62,8 @@ class ParticleShadowMapRenderer : public ParticleRenderer {
     std::sort(indices.begin(), indices.end());
     Vector2 res = (uv_upperbound - uv_lowerbound) / shadow_map_resolution;
     Array2D<real> occlusion_buffer(
-        Vector2i((int)std::ceil(res.x) + 1, (int)std::ceil(res.y) + 1), 1.0f);
-    real shadow_map_scaling = 1.0f / shadow_map_resolution;
+        Vector2i((int)std::ceil(res.x) + 1, (int)std::ceil(res.y) + 1), 1.0_f);
+    real shadow_map_scaling = 1.0_f / shadow_map_resolution;
     std::vector<real> occlusion(particles.size());
 
     for (int i = 0; i < (int)indices.size(); i++) {
@@ -76,7 +76,7 @@ class ParticleShadowMapRenderer : public ParticleRenderer {
       real occ = 0.0f;
       if (occlusion_buffer.inside(uv)) {
         occlusion_buffer[int_x][int_y] *=
-            (1.0f - shadowing * particles[index].color.w);
+            (1.0_f - shadowing * particles[index].color.w);
         occ = occlusion_buffer.sample(uv);
       }
       occlusion[index] = std::max(ambient_light, occ);
@@ -124,7 +124,7 @@ std::shared_ptr<Texture> rasterize_render_particles(
   for (auto const &p : particles) {
     const Vector3 pos = p.position + 0.5f * resolution.cast<real>();
     for (auto &ind : array.get_rasterization_region(pos, 1)) {
-      Vector4 color(p.color.x, p.color.y, p.color.z, 1.0f);
+      Vector4 color(p.color.x, p.color.y, p.color.z, 1.0_f);
       array[ind] += color * kernel(pos - ind.get_pos());
     }
   }

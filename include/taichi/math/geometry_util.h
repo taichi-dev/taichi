@@ -91,7 +91,7 @@ inline std::vector<Vector2> points_inside_sphere(std::vector<float> x_range,
 
 inline Vector3 set_up(const Vector3 &a, const Vector3 &y) {
   Vector3 x, z;
-  if (std::abs(y.y) > 1.0f - eps) {
+  if (std::abs(y.y) > 1.0_f - eps) {
     x = Vector3(1, 0, 0);
   } else {
     x = normalize(cross(y, Vector3(0, 1, 0)));

@@ -23,7 +23,7 @@ class PointRenderer {
 
  public:
   PointRenderer(int max_size = 1048576);
-  void render(std::vector<vec2> points, float point_size = 1.0f);
+  void render(std::vector<vec2> points, float point_size = 1.0_f);
   void setViewport(vec2 lower_left, vec2 upper_right);
 };
 

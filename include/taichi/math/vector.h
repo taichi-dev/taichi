@@ -1012,8 +1012,7 @@ struct MatrixND {
 };
 
 template <int DIM, typename T, InstSetExt ISE>
-MatrixND<DIM, T, ISE> operator*(const T a,
-                                const MatrixND<DIM, T, ISE> &M) {
+MatrixND<DIM, T, ISE> operator*(const T a, const MatrixND<DIM, T, ISE> &M) {
   MatrixND<DIM, T, ISE> ret;
   for (int i = 0; i < DIM; i++) {
     ret[i] = a * M[i];
@@ -1022,8 +1021,7 @@ MatrixND<DIM, T, ISE> operator*(const T a,
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-MatrixND<DIM, T, ISE> operator*(const MatrixND<DIM, T, ISE> &M,
-                                const T a) {
+MatrixND<DIM, T, ISE> operator*(const MatrixND<DIM, T, ISE> &M, const T a) {
   return a * M;
 }
 
@@ -1110,31 +1108,28 @@ inline VectorND<DIM, T, ISE> fract(const VectorND<DIM, T, ISE> &a) {
 }
 
 template <InstSetExt ISE, typename T>
-inline MatrixND<2, T, ISE> inversed(
-    const MatrixND<2, T, ISE> &mat) {
+inline MatrixND<2, T, ISE> inversed(const MatrixND<2, T, ISE> &mat) {
   real det = determinant(mat);
-  return 1.0_f / det * MatrixND<2, T, ISE>(
-                          VectorND<2, T, ISE>(mat[1][1], -mat[0][1]),
-                          VectorND<2, T, ISE>(-mat[1][0], mat[0][0]));
+  return 1.0_f / det *
+         MatrixND<2, T, ISE>(VectorND<2, T, ISE>(mat[1][1], -mat[0][1]),
+                             VectorND<2, T, ISE>(-mat[1][0], mat[0][0]));
 }
 
 template <InstSetExt ISE, typename T>
-inline MatrixND<3, T, ISE> inversed(
-    const MatrixND<3, T, ISE> &mat) {
+inline MatrixND<3, T, ISE> inversed(const MatrixND<3, T, ISE> &mat) {
   real det = determinant(mat);
-  return 1.0_f / det * MatrixND<3, T, ISE>(
-                          VectorND<3, T, ISE>(
-                              mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2],
-                              mat[2][1] * mat[0][2] - mat[0][1] * mat[2][2],
-                              mat[0][1] * mat[1][2] - mat[1][1] * mat[0][2]),
-                          VectorND<3, T, ISE>(
-                              mat[2][0] * mat[1][2] - mat[1][0] * mat[2][2],
-                              mat[0][0] * mat[2][2] - mat[2][0] * mat[0][2],
-                              mat[1][0] * mat[0][2] - mat[0][0] * mat[1][2]),
-                          VectorND<3, T, ISE>(
-                              mat[1][0] * mat[2][1] - mat[2][0] * mat[1][1],
-                              mat[2][0] * mat[0][1] - mat[0][0] * mat[2][1],
-                              mat[0][0] * mat[1][1] - mat[1][0] * mat[0][1]));
+  return 1.0_f / det *
+         MatrixND<3, T, ISE>(
+             VectorND<3, T, ISE>(mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2],
+                                 mat[2][1] * mat[0][2] - mat[0][1] * mat[2][2],
+                                 mat[0][1] * mat[1][2] - mat[1][1] * mat[0][2]),
+             VectorND<3, T, ISE>(mat[2][0] * mat[1][2] - mat[1][0] * mat[2][2],
+                                 mat[0][0] * mat[2][2] - mat[2][0] * mat[0][2],
+                                 mat[1][0] * mat[0][2] - mat[0][0] * mat[1][2]),
+             VectorND<3, T, ISE>(
+                 mat[1][0] * mat[2][1] - mat[2][0] * mat[1][1],
+                 mat[2][0] * mat[0][1] - mat[0][0] * mat[2][1],
+                 mat[0][0] * mat[1][1] - mat[1][0] * mat[0][1]));
 }
 
 template <typename T, InstSetExt ISE>
@@ -1303,5 +1298,11 @@ VectorND<DIM, T> max(const VectorND<DIM, T> &a, const VectorND<DIM, T> &b) {
   }
   return ret;
 }
+
+template <typename>
+struct is_VectorND : public std::false_type {};
+
+template <int N, typename T, InstSetExt ISE>
+struct is_VectorND<VectorND<N, T, ISE>> : public std::true_type {};
 
 TC_NAMESPACE_END

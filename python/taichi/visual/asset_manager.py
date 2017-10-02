@@ -1,6 +1,6 @@
-import surface_material
-import volume_material
-import texture
+from . import surface_material
+from . import volume_material
+from . import texture
 from taichi.dynamics import levelset
 
 

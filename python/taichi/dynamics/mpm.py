@@ -1,7 +1,7 @@
 import time
 
 from taichi.core import tc_core
-from levelset import LevelSet
+from .levelset import LevelSet
 from taichi.misc.util import *
 from taichi.tools.video import VideoManager
 from taichi.visual.camera import Camera
@@ -34,7 +34,7 @@ class MPM:
     try:
       os.mkdir(self.directory)
     except Exception as e:
-      print e
+      print(e)
     vis_res = self.c.get_vis_resolution()
     self.video_manager.width = vis_res.x
     self.video_manager.height = vis_res.y
@@ -87,7 +87,7 @@ class MPM:
 
   def step(self, step_t, camera=None):
     t = self.c.get_current_time()
-    print '* Current t: %.3f' % t
+    print('* Current t: %.3f' % t)
     self.update_levelset(t, t + step_t)
     T = time.time()
     if not self.start_simulation_time:
@@ -96,9 +96,9 @@ class MPM:
       self.simulation_total_time = 0
     self.c.step(step_t)
     self.simulation_total_time += time.time() - T
-    print '* Step Time: %.2f [tot: %.2f per frame %.2f]' % (
+    print('* Step Time: %.2f [tot: %.2f per frame %.2f]' % (
         time.time() - T, time.time() - self.start_simulation_time,
-        self.simulation_total_time / (self.frame + 1))
+        self.simulation_total_time / (self.frame + 1)))
     image_buffer = tc_core.Array2DVector3(
         Vectori(self.video_manager.width, self.video_manager.height),
         Vector(0, 0, 0.0))
@@ -108,7 +108,7 @@ class MPM:
     except:
       pass
     particles.write(self.directory + '/particles/%05d.bin' % self.frame)
-    res = map(float, self.res)
+    res = list(map(float, self.res))
     r = res[0]
     if not camera:
       camera = Camera(

@@ -15,7 +15,7 @@ class LevelSet:
     if offset is None:
       offset = self.Vector(0.5)
     self.delta_x = 1.0 / res.min()
-    print self.delta_x
+    print(self.delta_x)
     self.res = res + self.Vectori(1)
     if len(res) == 2:
       self.levelset = tc.core.LevelSet2D(self.res, offset)

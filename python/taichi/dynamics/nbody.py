@@ -18,7 +18,7 @@ class NBody:
     try:
       os.mkdir(self.directory)
     except Exception as e:
-      print e
+      print(e)
     self.video_manager = VideoManager(self.directory, 512, 512)
     self.particle_renderer = ParticleRenderer(
         'shadow_map',
@@ -34,10 +34,10 @@ class NBody:
 
   def step(self, step_t):
     t = self.c.get_current_time()
-    print 'Simulation time:', t
+    print('Simulation time:', t)
     T = time.time()
     self.c.step(step_t)
-    print 'Time:', time.time() - T
+    print('Time:', time.time() - T)
     image_buffer = tc_core.Array2DVector3(self.video_manager.width,
                                           self.video_manager.height,
                                           Vector(0, 0, 0.0))

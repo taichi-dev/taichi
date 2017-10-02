@@ -43,10 +43,10 @@ class VideoManager:
     if isinstance(img, core.Array2DVector3):
       img = array2d_to_ndarray(img)
     if img.shape[0] % 2 != 0:
-      print 'Warning: height is not divisible by 2! Dropping last row'
+      print('Warning: height is not divisible by 2! Dropping last row')
       img = img[:-1]
     if img.shape[1] % 2 != 0:
-      print 'Warning: width is not divisible by 2! Dropping last column'
+      print('Warning: width is not divisible by 2! Dropping last column')
       img = img[:, :-1]
     if self.post_processor:
       img = self.post_processor.process(img)

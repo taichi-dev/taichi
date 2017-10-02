@@ -1,7 +1,7 @@
 import taichi as tc
 
-from texture import Texture
-from surface_material import SurfaceMaterial
+from .texture import Texture
+from .surface_material import SurfaceMaterial
 
 
 class Materials:

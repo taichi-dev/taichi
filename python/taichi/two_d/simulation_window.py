@@ -12,7 +12,7 @@ import numpy as np
 
 
 def normalized_color_255(*args):
-  return tuple(map(lambda x: x / 255.0, args))
+  return tuple([x / 255.0 for x in args])
 
 
 class SimulationWindow(pyglet.window.Window):
@@ -90,8 +90,8 @@ class SimulationWindow(pyglet.window.Window):
           self.simulator.step()
         ela_t = time.time() - t
         self.cpu_time += ela_t
-        print 'CPU Time: %.3f [%.3f per frame]' % (ela_t,
-                                                   self.get_time_per_frame())
+        print('CPU Time: %.3f [%.3f per frame]' % (ela_t,
+                                                   self.get_time_per_frame()))
       self.pressed = False
     else:
       if self.video_output:
@@ -218,7 +218,7 @@ class SimulationWindow(pyglet.window.Window):
         color = self.color_scheme['particles']
       for i in range(4):
         colors.append(color[i])
-    print "#part.", len(positions)
+    print("#part.", len(positions))
     pyglet.graphics.draw(
         len(particles), gl.GL_POINTS, ('v2f', positions), ('c4B', colors))
     glPopMatrix()

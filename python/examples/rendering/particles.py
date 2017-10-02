@@ -90,7 +90,7 @@ if __name__ == '__main__':
   video_manager = tc.VideoManager(output_dir='particles')
   images = []
   for i in range(frames + 1):
-    print 'frame', i
+    print('frame', i)
     images.append(render_frame(12.0 * i / frames))
 
   video_manager.write_frames(images)

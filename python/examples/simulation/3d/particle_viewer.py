@@ -24,14 +24,14 @@ class ParticleViewer:
     try:
       os.mkdir(self.directory)
     except Exception as e:
-      print e
+      print(e)
     self.step_counter = 0
 
   def view(self, frame, camera):
     particles = tc_core.RenderParticles()
     ret = particles.read(self.input_directory + 'particles%05d.bin' % frame)
     if not ret:
-      print 'read file failed'
+      print('read file failed')
       return False
     image_buffer = tc_core.Array2DVector3(
         Vectori(self.video_manager.width, self.video_manager.height),

@@ -1,4 +1,4 @@
-from tk.viewer import ImageViewer, update_tk
+from .tk.viewer import ImageViewer, update_tk
 import taichi as tc
 import numpy as np
 

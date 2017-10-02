@@ -35,7 +35,7 @@ if __name__ == '__main__':
   def get_event(i):
 
     def event(s):
-      print i
+      print(i)
       # s.add_particles_sphere(Vector(0.5, 0.5), 0.3, 'ep',
       #                       compression=1, velocity=lambda x, y: Vector(-(y - 0.5), x - 0.5),
       #                       theta_c=1, theta_s=1)

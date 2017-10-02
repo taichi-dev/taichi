@@ -141,11 +141,14 @@ void array2d_to_ndarray(T *arr,
                         uint64 output)  // 'output' is actually a pointer...
 {
   int width = arr->get_width(), height = arr->get_height();
+  assert_info(width > 0, "");
+  assert_info(height > 0, "");
   for (auto &ind : arr->get_region()) {
-    for (int k = 0; k < channels; k++)
+    for (int k = 0; k < channels; k++) {
       reinterpret_cast<real *>(
           output)[ind.i * height * channels + ind.j * channels + k] =
           *(((float *)(&(*arr)[ind])) + k);
+    }
   }
 }
 
@@ -155,6 +158,8 @@ void array2d_to_ndarray(Array2D<Vector3> *arr,
                         uint64 output)  // 'output' is actually a pointer...
 {
   int width = arr->get_width(), height = arr->get_height();
+  assert_info(width > 0, "");
+  assert_info(height > 0, "");
   for (auto &ind : arr->get_region()) {
     for (int k = 0; k < channels; k++) {
       const Vector3 entry = (*arr)[ind];

@@ -18,12 +18,12 @@ def analysis_bf():
       32,
   ]
   maximum = 0
-  for cls, methods in cls_methods.items():
+  for cls, methods in list(cls_methods.items()):
     for method in methods:
       for b in bits:
         ins = 'jacobi_%s_%d' % (cls, b)
         x, y = [], []
-        print 'Running', ins, '(%s)' % method
+        print('Running', ins, '(%s)' % method)
         benchmark = tc.system.Benchmark(
             ins,
             n=128,
@@ -33,7 +33,7 @@ def analysis_bf():
         assert benchmark.test()
         for i in range(tot):
           n = 2**i * 64
-          print '%5d' % n
+          print('%5d' % n)
           benchmark = tc.system.Benchmark(
               ins,
               n=n,
@@ -45,7 +45,7 @@ def analysis_bf():
           maximum = max(maximum, t)
           x.append(n)
           y.append(t)
-          print '%.3f' % (t), 'CPE'
+          print('%.3f' % (t), 'CPE')
         plt.semilogx(
             x, y, basex=2, label=ins + ('_' + method if method else ''))
         plt.xlabel('N')
@@ -64,12 +64,12 @@ def analysis_mt():
       32,
   ]
   maximum = 0
-  for cls, methods in cls_methods.items():
+  for cls, methods in list(cls_methods.items()):
     for method in methods:
       for b in bits:
         ins = 'jacobi_%s_%d' % (cls, b)
         x, y = [], []
-        print 'Running', ins, '(%s)' % method
+        print('Running', ins, '(%s)' % method)
         benchmark = tc.system.Benchmark(
             ins,
             n=128,
@@ -78,7 +78,7 @@ def analysis_mt():
             ignore_boundary=4)
         assert benchmark.test()
         n = 512
-        print '%5d' % n
+        print('%5d' % n)
         for i in range(4):
           num_threads = 2**i
           benchmark = tc.system.Benchmark(
@@ -92,7 +92,7 @@ def analysis_mt():
           maximum = max(maximum, t)
           x.append(num_threads)
           y.append(t)
-          print '%.3f' % (t), 'CPE'
+          print('%.3f' % (t), 'CPE')
 
         plt.semilogx(
             x, y, basex=2, label=ins + ('_' + method if method else ''))
@@ -121,7 +121,7 @@ def keep_running():
       iteration_method=method,
       ignore_boundary=4)
   while True:
-    print benchmark.run(100)
+    print(benchmark.run(100))
 
 
 if __name__ == '__main__':

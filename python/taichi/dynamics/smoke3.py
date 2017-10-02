@@ -14,14 +14,14 @@ class Smoke3:
     try:
       os.mkdir(self.directory)
     except Exception as e:
-      print e
+      print(e)
 
   def step(self, step_t):
     t = self.c.get_current_time()
-    print 'Simulation time:', t
+    print('Simulation time:', t)
     T = time.time()
     self.c.step(step_t)
-    print 'Time:', time.time() - T
+    print('Time:', time.time() - T)
 
   def update(self, generation, initial_velocity, color, temperature):
     cfg = P(

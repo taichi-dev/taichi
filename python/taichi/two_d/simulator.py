@@ -26,7 +26,7 @@ class Simulator(object):
 
   def step(self, substep=False):
     if substep:
-      print 'substep...'
+      print('substep...')
       t = self.simulator.get_current_time()
       self.update_levelset(t, t + self.frame_dt)
       while self.events and t > self.events[0][0]:
@@ -80,9 +80,9 @@ class Simulator(object):
     if type(val) in [int, tc.core.Vector2, float]:
       return val / self.delta_x
     elif type(val) == list:
-      return list(map(lambda x: x / self.delta_x, val))
+      return list([x / self.delta_x for x in val])
     elif type(val) == tuple:
-      return tuple(map(lambda x: x / self.delta_x, val))
+      return tuple([x / self.delta_x for x in val])
     else:
       assert False
 

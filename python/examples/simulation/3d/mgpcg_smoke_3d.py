@@ -39,7 +39,7 @@ if __name__ == '__main__':
   video_manager = tc.VideoManager(output_dir='new_year')
   images = []
   for i in range(600):
-    print 'frame', i
+    print('frame', i)
     generation = tc.Texture('sphere', radius=0.08, center=(0.25, 0.1, 0.25)) + \
         tc.Texture('sphere', radius=0.08, center=(0.25, 0.1, 0.75)) + \
         tc.Texture('sphere', radius=0.08, center=(0.75, 0.1, 0.25)) + \

@@ -11,8 +11,8 @@ if __name__ == '__main__':
       'matrix4s', workload=workload, brute_force=True)
   benchmark.test()
   t = benchmark.run(100)
-  print 'Brute Force', t
+  print('Brute Force', t)
   benchmark = tc.system.Benchmark(
       'matrix4s', workload=workload, brute_force=False)
   t = benchmark.run(100)
-  print 'SIMD', t
+  print('SIMD', t)

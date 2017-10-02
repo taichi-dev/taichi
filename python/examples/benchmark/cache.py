@@ -17,7 +17,7 @@ def analysis_working_set_size():
     x.append(size)
     t = 64 / t * 1e-9
     y.append(t)
-    print size, t, 'GB/s'
+    print(size, t, 'GB/s')
 
   plt.semilogx(x, y, basex=2)
   # plt.ylim(0, 100)
@@ -38,7 +38,7 @@ def analysis_working_set_size_cycle():
     t = benchmark.run(20)
     x.append(size)
     y.append(t)
-    print size, t, 'cyc'
+    print(size, t, 'cyc')
 
   plt.semilogx(x, y, basex=2)
   # plt.ylim(0, 100)
@@ -58,7 +58,7 @@ def analysis_stride():
     t = benchmark.run(100)
     x.append(step)
     y.append(t)
-    print '%d, %.2f cyc' % (step, t)
+    print('%d, %.2f cyc' % (step, t))
 
   plt.plot(x, y, 'x-')
   plt.ylim(0, 7)

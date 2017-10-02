@@ -89,7 +89,7 @@ def dump_particles():
 def create_volumetric_block():
   fn = 'particles.bin'  # or your file name...
   import os
-  print os.getcwd()
+  print(os.getcwd())
   particles = tc.core.RenderParticles()
   assert particles.read(fn)
   # pls. use the same resolution as in the .bin file...

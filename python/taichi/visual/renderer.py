@@ -40,7 +40,7 @@ class Renderer(object):
       os.mkdir(self.output_dir)
     except Exception as e:
       if not overwrite:
-        print e
+        print(e)
         exit(-1)
     if scene:
       self.initialize(preset, scene=scene, **kwargs)
@@ -49,7 +49,7 @@ class Renderer(object):
   def initialize(self, preset=None, scene=None, **kwargs):
     if preset is not None:
       args = Renderer.presets[preset]
-      for key, value in kwargs.items():
+      for key, value in list(kwargs.items()):
         args[key] = value
       self.renderer_name = args['name']
     else:
@@ -61,10 +61,10 @@ class Renderer(object):
 
   def render(self, stages, cache_interval=-1):
     for i in range(1, stages + 1):
-      print 'stage', i
+      print('stage', i)
       t = time.time()
       self.render_stage()
-      print 'time:', time.time() - t
+      print('time:', time.time() - t)
       self.show()
       if cache_interval > 0 and i % cache_interval == 0:
         self.write('img%04d-%06d.png' % (self.frame, i))

@@ -19,7 +19,7 @@ def get_os_name():
 
 
 def get_uuid():
-  print 'Warning: get_uuid is deprecated. Please use get_unique_task_id instead.'
+  print('Warning: get_uuid is deprecated. Please use get_unique_task_id instead.')
   return get_unique_task_id()
 
 

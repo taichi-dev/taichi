@@ -1,4 +1,4 @@
-import asset_manager
+from . import asset_manager
 from taichi.core import tc_core
 from taichi.misc.util import *
 

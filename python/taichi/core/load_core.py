@@ -39,7 +39,7 @@ elif get_os_name() == 'win':
   dll_path = os.path.join(bin_dir, 'Release', 'taichi_core.dll')
   if not os.path.exists(dll_path):
     dll_path = os.path.join(bin_dir, 'taichi_core.dll')
-    print dll_path
+    print(dll_path)
     if not os.path.exists(dll_path):
       dll_path = os.path.join(bin_dir, 'libtaichi_core.dll')
       if not os.path.exists(dll_path):
@@ -86,14 +86,14 @@ def at_startup():
   )), 'Please make sure $TAICHI_ROOT_DIR [' + get_root_directory() + '] exists.'
   output_dir = get_output_directory()
   if not os.path.exists(output_dir):
-    print 'Making output directory'
+    print('Making output directory')
     os.mkdir(output_dir)
 
   # Load modules
   f = open(os.path.join(get_root_directory(), 'taichi', 'modules.txt'), 'r')
   modules = f.readline().split()
   for module in modules:
-    print 'Loading module', module
+    print('Loading module', module)
     ctypes.PyDLL(
         os.path.join(get_root_directory(), 'taichi', 'build',
                      get_dll_name(module)))

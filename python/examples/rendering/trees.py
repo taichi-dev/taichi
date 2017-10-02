@@ -32,8 +32,8 @@ def create_tree(scene):
 
 if __name__ == '__main__':
   downsample = 1
-  width = 540 / downsample
-  height = 960 / downsample
+  width = 540 // downsample
+  height = 960 // downsample
 
   scene = tc.Scene()
   with scene:

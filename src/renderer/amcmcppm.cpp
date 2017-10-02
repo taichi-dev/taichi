@@ -69,7 +69,7 @@ void AMCMCPPMRenderer::render_stage() {
       }
       current_state = create_new_uniform_state();
       auto uniform_state_sequence = MCStateSequence(current_state.chain);
-      bool visible = trace_photon(uniform_state_sequence, 0.0f);
+      bool visible = trace_photon(uniform_state_sequence, 0.0_f);
       normalizer.insert((real)visible, 1);
       if (visible) {
         accepted = 1;
@@ -79,7 +79,7 @@ void AMCMCPPMRenderer::render_stage() {
       }
     }
   }
-  real last_r = 0.0f;
+  real last_r = 0.0_f;
   for (int64 i = 0; i < num_photons_per_stage; i++) {
     // ----------------------------------------
     // We do 3 MCMC steps here:
@@ -137,8 +137,8 @@ void AMCMCPPMRenderer::render_stage() {
     // Adaptive MCMC parameter update
     real r = (real)accepted / (real)mutated;
     last_r = r;
-    mutation_strength = mutation_strength + (r - 0.234f) / mutated;
-    mutation_strength = std::min(0.5f, std::max(0.0001f, mutation_strength));
+    mutation_strength = mutation_strength + (r - 0.234_f) / mutated;
+    mutation_strength = std::min(0.5f, std::max(0.0001_f, mutation_strength));
   }
 
   P(mutated);
@@ -149,8 +149,8 @@ void AMCMCPPMRenderer::render_stage() {
   stages += 1;
 
   for (auto &ind : image.get_region()) {
-    image[ind] = (1.0f / (pi * radius2[ind]) / photon_counter * flux[ind] +
-                  image_direct_illum[ind] * (1.0f / stages));
+    image[ind] = (1.0_f / (pi * radius2[ind]) / photon_counter * flux[ind] +
+                  image_direct_illum[ind] * (1.0_f / stages));
   }
 }
 

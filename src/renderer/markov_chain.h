@@ -87,10 +87,10 @@ class PSSMarkovChain : public MarkovChain {
     real r = rand();
     if (r < 0.5f) {
       r = r * 2.0f;
-      result = value + pow(r, 1.0f / strength + 1.0f);
+      result = value + pow(r, 1.0_f / strength + 1.0_f);
     } else {
       r = (r - 0.5f) * 2.0f;
-      result = value - pow(r, 1.0f / strength + 1.0f);
+      result = value - pow(r, 1.0_f / strength + 1.0_f);
     }
     result -= floor(result);
     return result;
@@ -116,10 +116,10 @@ class AMCMCPPMMarkovChain : public MarkovChain {
     real r = rand();
     if (r < 0.5f) {
       r = r * 2.0f;
-      result = value + pow(r, 1.0f / strength + 1.0f);
+      result = value + pow(r, 1.0_f / strength + 1.0_f);
     } else {
       r = (r - 0.5f) * 2.0f;
-      result = value - pow(r, 1.0f / strength + 1.0f);
+      result = value - pow(r, 1.0_f / strength + 1.0_f);
     }
     result -= floor(result);
     return result;

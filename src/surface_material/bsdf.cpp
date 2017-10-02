@@ -60,9 +60,9 @@ real BSDF::probability_density(const Vector3 &in, const Vector3 &out) const {
 }
 
 Vector3 BSDF::evaluate(const Vector3 &in, const Vector3 &out) const {
-  if (dot(geometry_normal, out) * (world_to_local * out).z <= 0.0f) {
+  if (dot(geometry_normal, out) * (world_to_local * out).z <= 0.0_f) {
     // for shaded/interpolated normal consistency
-    return Vector3(0.0f);
+    return Vector3(0.0_f);
   }
   Vector3 output =
       material->evaluate_bsdf(world_to_local * in, world_to_local * out, uv);

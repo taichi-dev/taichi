@@ -54,7 +54,7 @@ struct Contribution {
 
 struct PathContribution {
   std::vector<Contribution> contributions;
-  real scaling = 1.0f;
+  real scaling = 1.0_f;
   double total_contribution = 0.0;
 
   void push_back(const Contribution &c) {
@@ -127,11 +127,11 @@ class BidirectionalRenderer : public Renderer {
   double direction_to_area(const Vertex &current, const Vertex &next);
 
   void write_path_contribution(const PathContribution &pc,
-                               const real scaling = 1.0f);
+                               const real scaling = 1.0_f);
 
   Array2D<Vector3> get_output() override {
     Array2D<Vector3> output(width, height);
-    float r = 1.0f / sample_count;
+    float r = 1.0_f / sample_count;
     for (auto &ind : output.get_region()) {
       output[ind] = buffer[ind] * r;
     }

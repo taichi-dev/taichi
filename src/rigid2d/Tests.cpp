@@ -36,7 +36,7 @@ void Game::Test2() {
   for (int i = 0; i < n; i++) {
     double x = 100 + 36 * (i + 1);
     Circle *cir = Circle::GenerateCircle(18);
-    cir->color = HSB3f(360.0f / n * i, 0.8f, 0.8f);
+    cir->color = HSB3f(360.0_f / n * i, 0.8f, 0.8f);
     cir->restitution = 1.0;
     cir->centroidPosition = Vector2D(x, 200, 1);
     Object *obj = new Object(cir);
@@ -55,7 +55,7 @@ void Game::Test2() {
   n = 32;
   for (int i = 0; i < n; i++) {
     box = ShapeFactory::GenerateBoxObject(7, 50);
-    box->GetShape(0)->color = HSB3f(360.0f / n * i, 0.8f, 1.0f);
+    box->GetShape(0)->color = HSB3f(360.0_f / n * i, 0.8f, 1.0_f);
     box->GetShape(0)->friction = 0.4;
     box->SetPosition(Vector2D(100 + i * 20, 100, 1));
     physics.AddObject(box);
@@ -73,7 +73,7 @@ void Game::Test3() {
     boxes[i]->GetShape(0)->density = 0.1;
     boxes[i]->Update();
     boxes[i]->GetShape(0)->SetBoundaryWidth(0.0);
-    boxes[i]->SetColor(HSB3f(180.0f / n * i, 0.7f, 0.8f));
+    boxes[i]->SetColor(HSB3f(180.0_f / n * i, 0.7f, 0.8f));
     physics.AddObject(boxes[i]);
   }
   for (int i = 0; i < n - 1; i++) {
@@ -81,7 +81,7 @@ void Game::Test3() {
                                  Vector2D(-23, 0, 1), 8000, 5);
     Spring *spring1 = new Spring(boxes[i], Vector2D(23, 0, 1), boxes[i + 1],
                                  Vector2D(23, 0, 1), 8000, 5);
-    spring0->color = spring1->color = HSB3f(180.0f / n * i, 0.7f, 0.8f);
+    spring0->color = spring1->color = HSB3f(180.0_f / n * i, 0.7f, 0.8f);
     physics.AddForce(spring0);
     physics.AddForce(spring1);
   }
@@ -188,7 +188,7 @@ void Game::Test5() {
   for (int i = 0; i < n; i++) {
     double x = 100 + 36 * (i + 1);
     Circle *cir = Circle::GenerateCircle(18);
-    cir->color = HSB3f(360.0f / n * i, 0.8f, 0.8f);
+    cir->color = HSB3f(360.0_f / n * i, 0.8f, 0.8f);
     cir->restitution = 1.0;
     cir->centroidPosition = Vector2D(x, 200, 1);
     Object *obj = new Object(cir);
@@ -207,7 +207,7 @@ void Game::Test5() {
   n = 32;
   for (int i = 0; i < n; i++) {
     box = ShapeFactory::GenerateBoxObject(7, 50);
-    box->GetShape(0)->color = HSB3f(360.0f / n * i, 0.8f, 1.0f);
+    box->GetShape(0)->color = HSB3f(360.0_f / n * i, 0.8f, 1.0_f);
     box->GetShape(0)->friction = 0.4;
     box->SetPosition(Vector2D(100 + i * 20, 100, 1));
     physics.AddObject(box);

@@ -21,7 +21,7 @@ class TestLinAlg : public Task {
       Matrix M = Matrix::rand();
       P(M);
       P(M * inverse(M));
-      assert((M * inverse(M) - Matrix(1.0f)).frobenius_norm2() < 1e-3_f);
+      assert((M * inverse(M) - Matrix(1.0_f)).frobenius_norm2() < 1e-3_f);
     }
   }
 
@@ -31,7 +31,7 @@ class TestLinAlg : public Task {
       Matrix m = Matrix::rand(), q, r;
       qr_decomp(m, q, r);
       assert((m - q * r).frobenius_norm() < 1e-5_f);
-      assert((q * q.transposed() - Matrix(1.0f)).frobenius_norm() < 1e-6_f);
+      assert((q * q.transposed() - Matrix(1.0_f)).frobenius_norm() < 1e-6_f);
       assert(abs(r[0][1]) < 1e-6_f);
       assert(r[0][0] > -1e-6_f);
       assert(r[1][1] > -1e-6_f);

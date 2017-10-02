@@ -23,8 +23,8 @@ class ZoomingTexture : public Texture {
   void initialize(const Config &config) override {
     Texture::initialize(config);
     tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
-    center = config.get("center", Vector3(0.0f));
-    inv_zoom = Vector3(1.0f) / config.get<Vector3>("zoom");
+    center = config.get("center", Vector3(0.0_f));
+    inv_zoom = Vector3(1.0_f) / config.get<Vector3>("zoom");
     repeat = config.get_bool("repeat");
   }
 
@@ -58,7 +58,7 @@ class LinearOpTexture : public Texture {
     auto p = alpha * tex1->sample(coord) + beta * tex2->sample(coord);
     if (need_clamp) {
       for (int i = 0; i < 3; i++) {
-        p[i] = clamp(p[i], 0.0f, 1.0f);
+        p[i] = clamp(p[i], 0.0_f, 1.0_f);
       }
     }
     return p;
@@ -114,10 +114,10 @@ class RepeatedTexture : public Texture {
     Texture::initialize(config);
     repeat_u = config.get_real("repeat_u");
     repeat_v = config.get_real("repeat_v");
-    repeat_w = config.get("repeat_w", 1.0f);
-    inv_repeat_u = 1.0f / repeat_u;
-    inv_repeat_v = 1.0f / repeat_v;
-    inv_repeat_w = 1.0f / repeat_w;
+    repeat_w = config.get("repeat_w", 1.0_f);
+    inv_repeat_u = 1.0_f / repeat_u;
+    inv_repeat_v = 1.0_f / repeat_v;
+    inv_repeat_w = 1.0_f / repeat_w;
     tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
   }
 
@@ -182,7 +182,7 @@ class FlippedTexture : public Texture {
 
   virtual Vector4 sample(const Vector3 &coord_) const override {
     auto coord = coord_;
-    coord[flip_axis] = 1.0f - coord[flip_axis];
+    coord[flip_axis] = 1.0_f - coord[flip_axis];
     return tex->sample(coord);
   }
 };

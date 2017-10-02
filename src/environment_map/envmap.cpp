@@ -16,7 +16,7 @@ TC_NAMESPACE_BEGIN
 TC_IMPLEMENTATION(EnvironmentMap, EnvironmentMap, "base");
 
 void EnvironmentMap::initialize(const Config &config) {
-  set_transform(Matrix4(1.0f));
+  set_transform(Matrix4(1.0_f));
   if (config.has_key("filepath")) {
     image = std::make_shared<Array2D<Vector3>>(config.get_string("filepath"));
     res[0] = image->get_width();
@@ -46,15 +46,15 @@ void EnvironmentMap::initialize(const Config &config) {
   build_cdfs();
   /*
   P("test");
-  P(uv_to_direction(Vector2(0.0f, 0.0f)));
-  P(uv_to_direction(Vector2(0.0f, 0.5f)));
-  P(uv_to_direction(Vector2(0.0f, 1.0f)));
+  P(uv_to_direction(Vector2(0.0_f, 0.0_f)));
+  P(uv_to_direction(Vector2(0.0_f, 0.5f)));
+  P(uv_to_direction(Vector2(0.0_f, 1.0_f)));
   P(uv_to_direction(Vector2(0.5f, 0.25f)));
   P(uv_to_direction(Vector2(0.5f, 0.5f)));
   P(uv_to_direction(Vector2(0.5f, 0.75f)));
-  P(uv_to_direction(Vector2(1.0f, 0.0f)));
-  P(uv_to_direction(Vector2(1.0f, 0.5f)));
-  P(uv_to_direction(Vector2(1.0f, 1.0f)));
+  P(uv_to_direction(Vector2(1.0_f, 0.0_f)));
+  P(uv_to_direction(Vector2(1.0_f, 0.5f)));
+  P(uv_to_direction(Vector2(1.0_f, 1.0_f)));
 
   for (int i = 0; i < 10; i++) {
       real x = rand(), y = rand();
@@ -79,7 +79,7 @@ void EnvironmentMap::initialize(const Config &config) {
 
 real EnvironmentMap::pdf(const Vector3 &dir) const {
   Vector2 uv = direction_to_uv(dir);
-  return luminance(image->sample(uv.x, uv.y)) / avg_illum * (1.0f / 4 / pi);
+  return luminance(image->sample(uv.x, uv.y)) / avg_illum * (1.0_f / 4 / pi);
 }
 
 Vector3 EnvironmentMap::sample_direction(StateSequence &rand,
@@ -105,11 +105,11 @@ Vector3 EnvironmentMap::sample_direction(StateSequence &rand,
 void EnvironmentMap::build_cdfs() {
   std::vector<real> row_pdf;
   avg_illum = 0;
-  real total_weight = 0.0f;
+  real total_weight = 0.0_f;
   for (int j = 0; j < res[1]; j++) {
     std::vector<real> col_pdf;
     real scale = sin(pi * (0.5f + j) / res[1]);
-    real total = 0.0f;
+    real total = 0.0_f;
     for (int i = 0; i < res[0]; i++) {
       real pdf =
           luminance(image->sample((i + 0.5f) / res[0], (j + 0.5f) / res[1]));

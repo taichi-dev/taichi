@@ -42,7 +42,7 @@ const double timeInterval = 0.1;
 #define DBL_INF numeric_limits<double>::infinity()
 
 inline float randf() {
-  return 1.0f * rand() / RAND_MAX;
+  return 1.0_f * rand() / RAND_MAX;
 }
 
 inline double sqr(double a) {
@@ -60,9 +60,9 @@ inline float invSqrt(float x)
     int i = *(int*)&x; // get bits for floating VALUE
     i = 0x5f375a86- (i>>1); // gives initial guess y0
     x = *(float*)&i; // convert bits BACK to float
-    x = x*(1.5f-xhalf*x*x); // Newton step, repeating increases accuracy
-    x = x*(1.5f-xhalf*x*x); // Newton step, repeating increases accuracy
-    x = x*(1.5f-xhalf*x*x); // Newton step, repeating increases accuracy
+    x = x*(1.5_f-xhalf*x*x); // Newton step, repeating increases accuracy
+    x = x*(1.5_f-xhalf*x*x); // Newton step, repeating increases accuracy
+    x = x*(1.5_f-xhalf*x*x); // Newton step, repeating increases accuracy
     return x;
 }
 */
@@ -73,9 +73,9 @@ inline double invSqrt(double y) {
   int i = *(int *)&x;              // get bits for floating VALUE
   i = 0x5f375a86 - (i >> 1);       // gives initial guess y0
   x = *(float *)&i;                // convert bits BACK to float
-  x = x * (1.5f - xhalf * x * x);  // Newton step, repeating increases accuracy
-  x = x * (1.5f - xhalf * x * x);  // Newton step, repeating increases accuracy
-  y = x * (1.5f - xhalf * x * x);  // Newton step, repeating increases accuracy
+  x = x * (1.5_f - xhalf * x * x);  // Newton step, repeating increases accuracy
+  x = x * (1.5_f - xhalf * x * x);  // Newton step, repeating increases accuracy
+  y = x * (1.5_f - xhalf * x * x);  // Newton step, repeating increases accuracy
   return y;
 }
 

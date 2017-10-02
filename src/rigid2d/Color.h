@@ -20,11 +20,11 @@ struct HSB3f {
 
 struct RGB3f {
   float r, g, b;
-  RGB3f() { r = g = b = 1.0f; }
+  RGB3f() { r = g = b = 1.0_f; }
   RGB3f(float r, float g, float b) : r(r), g(g), b(b) {}
   RGB3f(HSB3f hsb) {
-    float H = hsb.h / 60.0f, S = hsb.s, B = hsb.b;
-    if (S == 0.0f) {
+    float H = hsb.h / 60.0_f, S = hsb.s, B = hsb.b;
+    if (S == 0.0_f) {
       *this = RGB3f(B, B, B);
       return;
     }
@@ -57,7 +57,7 @@ struct RGB3f {
     }
   }
   static RGB3f RandomBrightColor() {
-    return HSB3f(randf() * 360.0f, 0.8f, 0.8f);
+    return HSB3f(randf() * 360.0_f, 0.8f, 0.8f);
   }
   operator float *() { return (float *)this; }
 };
@@ -67,6 +67,6 @@ class Colors {
   static RGB3f White;
   static RGB3f Black;
   static RGB3f RandomBrightColor() {
-    return HSB3f(randf() * 360.0f, 0.8f, 0.8f);
+    return HSB3f(randf() * 360.0_f, 0.8f, 0.8f);
   }
 };

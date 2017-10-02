@@ -39,7 +39,7 @@ class HETMO final : public ToneMapper {
     }
     auto oup = inp;
     for (auto &ind : oup.get_region()) {
-      real new_lum = 1.0f *
+      real new_lum = 1.0_f *
                      cdf[std::min(num_bins - 1, (int)(scale * lum[ind]))] /
                      (width * height);
       for (int i = 0; i < 3; i++) {
@@ -62,15 +62,15 @@ class CLAHETMO final : public ToneMapper {
   void initialize(const Config &config) override {
     num_bins = config.get_int("num_bins");
     num_slices = config.get_int("num_slices");
-    contrast_limit = config.get("contrast_limit", 0.0f);
+    contrast_limit = config.get("contrast_limit", 0.0_f);
   }
 
   virtual Array2D<Vector3> apply(const Array2D<Vector3> &inp) override {
     int width = inp.get_width(), height = inp.get_height();
     int x_slices = num_slices;
     int y_slices = num_slices;
-    int x_slice_size = (int)std::ceil(1.0f * width / num_slices);
-    int y_slice_size = (int)std::ceil(1.0f * height / num_slices);
+    int x_slice_size = (int)std::ceil(1.0_f * width / num_slices);
+    int y_slice_size = (int)std::ceil(1.0_f * height / num_slices);
     Array2D<real> lum(inp.get_res());
     for (auto &ind : inp.get_region()) {
       lum[ind] = luminance(inp[ind]);
@@ -91,9 +91,9 @@ class CLAHETMO final : public ToneMapper {
           }
         }
         int num_pixels = (x_end - x_start) * (y_end - y_start);
-        int threshold = int(1.0f * num_pixels / num_bins * contrast_limit);
+        int threshold = int(1.0_f * num_pixels / num_bins * contrast_limit);
         int clipped = 0;
-        if (contrast_limit != 0.0f) {
+        if (contrast_limit != 0.0_f) {
           for (int k = 0; k < num_bins; k++) {
             if (cdf[k] > threshold) {
               clipped += cdf[k] - threshold;
@@ -108,7 +108,7 @@ class CLAHETMO final : public ToneMapper {
         for (int k = 0; k < num_bins - 1; k++) {
           cdf[k + 1] += cdf[k];
         }
-        real inv_scale = 1.0f / num_pixels;
+        real inv_scale = 1.0_f / num_pixels;
         for (int k = num_bins - 2; k >= 0; k--) {
           cdf[k + 1] = cdf[k];
         }
@@ -122,7 +122,7 @@ class CLAHETMO final : public ToneMapper {
     auto oup = inp;
     for (auto &ind : oup.get_region()) {
       real new_lum = histograms.sample_relative_coord(
-          1.0f * ind.i / width, 1.0f * ind.j / height, lum[ind] / max_lum);
+          1.0_f * ind.i / width, 1.0_f * ind.j / height, lum[ind] / max_lum);
       for (int i = 0; i < 3; i++) {
         oup[ind][i] = inp[ind][i] / (lum[ind] + 1e-30f) * new_lum;
       }

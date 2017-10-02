@@ -38,7 +38,7 @@ class MicrofacetMaterial final : public SurfaceMaterial {
     const real cos_t = h.z;
     return sqr(roughness) /
            std::max(1e-6_f,
-                    (pi * sqr((sqr(roughness) - 1) * sqr(cos_t) + 1.0f)));
+                    (pi * sqr((sqr(roughness) - 1) * sqr(cos_t) + 1.0_f)));
   }
 
   Vector3 sampleD(real roughness, const Vector2 &p) const {
@@ -60,14 +60,14 @@ class MicrofacetMaterial final : public SurfaceMaterial {
          const Vector3 &out_dir,
          const Vector3 &h) const {
     if (dot(in_dir, h) * in_dir.z < eps) {
-      return 0.0f;
+      return 0.0_f;
     }
     const real a = 0.5f + roughness * 0.5f;
     return 2.0f /
            (1 +
             std::sqrt(1 +
-                      a * a * (sqr(1.0f / std::max(1e-6_f, std::abs(in_dir.z))) -
-                               1.0f)));
+                      a * a * (sqr(1.0_f / std::max(1e-6_f, std::abs(in_dir.z))) -
+                               1.0_f)));
   }
 
   static Vector3 reflect(const Vector3 &in, const Vector3 &_h) {
@@ -103,13 +103,13 @@ class MicrofacetMaterial final : public SurfaceMaterial {
                         const Vector2 &uv) const override {
     auto color = color_sampler->sample3(uv);
     if (in.z * out.z < eps) {
-      return Vector3(0.0f);
+      return Vector3(0.0_f);
     }
     real roughness = get_roughness(uv);
     const Vector3 h = normalized(in + out);
-    real factor = F(f0, std::max(0.0f, dot(in, h))) * G(roughness, in, out, h) *
+    real factor = F(f0, std::max(0.0_f, dot(in, h))) * G(roughness, in, out, h) *
                   evaluateD(roughness, h);
-    factor *= 1.0f / (4.0f * std::max(1e-5_f, std::abs(in.z)) * std::abs(out.z));
+    factor *= 1.0_f / (4.0f * std::max(1e-5_f, std::abs(in.z)) * std::abs(out.z));
     return color * factor;
   }
 

@@ -81,7 +81,7 @@ class EmissiveMaterial : public SurfaceMaterial {
                                 const Vector3 &out,
                                 const Vector2 &uv) const override {
     auto color = color_sampler->sample3(uv);
-    return (in.z * out.z > 0 ? 1.0f : 0.0f) * color;  // No division by pi here.
+    return (in.z * out.z > 0 ? 1.0_f : 0.0_f) * color;  // No division by pi here.
   }
 
   virtual real get_importance(const Vector2 &uv) const override {
@@ -111,7 +111,7 @@ class SpotLightEmissiveMaterial : public SurfaceMaterial {
                            real v,
                            const Vector2 &uv) const {
     error("no_impl");
-    return Vector3(0.0f);
+    return Vector3(0.0_f);
   }
 
   virtual void sample(const Vector3 &in_dir,
@@ -129,7 +129,7 @@ class SpotLightEmissiveMaterial : public SurfaceMaterial {
                                    const Vector3 &out,
                                    const Vector2 &uv) const override {
     error("no_impl");
-    return 0.0f;
+    return 0.0_f;
   }
 
   virtual Vector3 evaluate_bsdf(const Vector3 &in,
@@ -137,9 +137,9 @@ class SpotLightEmissiveMaterial : public SurfaceMaterial {
                                 const Vector2 &uv) const override {
     auto color = color_sampler->sample3(uv);
     return (in.z * out.z > 0
-                ? std::pow(std::min(in.z * out.z, 1.0f), exponential) *
+                ? std::pow(std::min(in.z * out.z, 1.0_f), exponential) *
                       (exponential + 1)
-                : 0.0f) *
+                : 0.0_f) *
            color;
   }
 
@@ -198,7 +198,7 @@ class DiffuseMaterial : public SurfaceMaterial {
                                 const Vector3 &out,
                                 const Vector2 &uv) const override {
     auto color = color_sampler->sample3(uv);
-    return (in.z * out.z > eps ? 1.0f : 0.0f) * color * (1.0f / pi);
+    return (in.z * out.z > eps ? 1.0_f : 0.0_f) * color * (1.0_f / pi);
   }
 
   virtual void sample(const Vector3 &in_dir,
@@ -244,8 +244,8 @@ class GlossyMaterial : public SurfaceMaterial {
     const Vector3 p = r.z > 1 - 1e-5_f ? Vector3(0, 1, 0)
                                       : normalized(cross(Vector3(0, 0, 1), r));
     const Vector3 q = normalized(cross(r, p));
-    const real phi = 2.0f * pi * u, d = pow(v, 1.0f / (glossiness + 1.0f));
-    const real s = sin(phi), c = cos(phi), t = sqrt(1.0f - d * d);
+    const real phi = 2.0f * pi * u, d = pow(v, 1.0_f / (glossiness + 1.0_f));
+    const real s = sin(phi), c = cos(phi), t = sqrt(1.0_f - d * d);
     return (s * p + c * q) * t + d * r;
   }
 
@@ -257,8 +257,8 @@ class GlossyMaterial : public SurfaceMaterial {
       return 0;
     }
     const Vector3 r = reflect(in);
-    return (glossiness + 1.0f) / (2.0f * pi) *
-           pow(max(dot(r, out), 0.0f), glossiness);
+    return (glossiness + 1.0_f) / (2.0f * pi) *
+           pow(max(dot(r, out), 0.0_f), glossiness);
   }
 
   virtual Vector3 evaluate_bsdf(const Vector3 &in,
@@ -269,7 +269,7 @@ class GlossyMaterial : public SurfaceMaterial {
       return Vector3(0);
     }
     const Vector3 r = reflect(in);
-    real t = std::min(std::max(dot(r, out), 0.0f), 1.0f);
+    real t = std::min(std::max(dot(r, out), 0.0_f), 1.0_f);
     auto color = color_sampler->sample3(uv);
     return color * (glossiness + 2.0f) / (2.0f * pi) * pow(t, glossiness) /
            std::max(std::max(std::abs(in.z), std::abs(out.z)), 1e-7_f);
@@ -315,7 +315,7 @@ class ReflectiveMaterial : public SurfaceMaterial {
   virtual Vector3 evaluate_bsdf(const Vector3 &in,
                                 const Vector3 &out,
                                 const Vector2 &uv) const override {
-    return Vector3(0.0f);
+    return Vector3(0.0_f);
   };
 
   virtual bool is_delta() const override { return true; }
@@ -331,9 +331,9 @@ class ReflectiveMaterial : public SurfaceMaterial {
     out_dir = reflect(in_dir);
     auto color = color_sampler->sample3(uv);
     if (std::abs(out_dir.z) < 1e-5_f) {
-      f = Vector3(0.0f);
+      f = Vector3(0.0_f);
     } else {
-      f = color * (1.0f / std::abs(out_dir.z));
+      f = color * (1.0_f / std::abs(out_dir.z));
     }
     event = (int)SurfaceScatteringFlags::delta;
     pdf = probability_density(in_dir, out_dir, uv);
@@ -351,7 +351,7 @@ class RefractiveMaterial : public SurfaceMaterial {
 
  protected:
   real inside_ior = 1.5f;
-  real outside_ior = 1.0f;
+  real outside_ior = 1.0_f;
   std::shared_ptr<Texture> color_sampler;
 
  public:
@@ -372,7 +372,7 @@ class RefractiveMaterial : public SurfaceMaterial {
     real sin_out = std::hypot(in.x, in.y) * ior;
     if (sin_out >= 1) {
       // total reflection
-      return 0.0f;
+      return 0.0_f;
     }
     real cos_out = std::sqrt(1 - sin_out * sin_out);
     out_refract = Vector3(-ior * in.x, -ior * in.y, -cos_out * sgn(in.z));
@@ -384,7 +384,7 @@ class RefractiveMaterial : public SurfaceMaterial {
 
     rs = rs * rs;
     rp = rp * rp;
-    return 1.0f - 0.5f * (rs + rp);
+    return 1.0_f - 0.5f * (rs + rp);
   }
 
   real get_ior(const Vector3 &in) const {
@@ -411,13 +411,13 @@ class RefractiveMaterial : public SurfaceMaterial {
                                    const Vector2 &uv) const override {
     Vector3 out_reflect, out_refract;
     real p = get_refraction(in, out_reflect, out_refract);
-    return in.z * out.z < 0 ? p : 1.0f - p;
+    return in.z * out.z < 0 ? p : 1.0_f - p;
   }
 
   virtual Vector3 evaluate_bsdf(const Vector3 &in,
                                 const Vector3 &out,
                                 const Vector2 &uv) const override {
-    return Vector3(0.0f);
+    return Vector3(0.0_f);
   }
 
   virtual bool is_delta() const override { return true; }
@@ -441,7 +441,7 @@ class RefractiveMaterial : public SurfaceMaterial {
       out_dir = out_reflect;
     }
     auto color = color_sampler->sample3(uv);
-    f = pdf * color * (1.0f / max(0.0f, std::abs(out_dir.z)));
+    f = pdf * color * (1.0_f / max(0.0_f, std::abs(out_dir.z)));
     event = (int)SurfaceScatteringFlags::delta;
   }
 
@@ -525,9 +525,9 @@ class PBRMaterial : public SurfaceMaterial {
               const Vector2 &uv) const override {
     real mat_pdf, mat_cdf;
     int mat_id = get_material_sampler(uv).sample(u, mat_pdf, mat_cdf);
-    if (mat_pdf == 0.0f) {
-      f = Vector3(0.0f);
-      pdf = 1.0f;
+    if (mat_pdf == 0.0_f) {
+      f = Vector3(0.0_f);
+      pdf = 1.0_f;
       event = (SurfaceEvent)SurfaceScatteringFlags::non_delta;
     } else {
       real rescaled_u = (u - (mat_cdf - mat_pdf)) / mat_pdf;
@@ -587,8 +587,8 @@ class PlainVolumeInterfaceMaterial : public SurfaceMaterial {
                       SurfaceEvent &event,
                       const Vector2 &uv) const override {
     out_dir = -in_dir;
-    f = Vector3(1.0f) * abs(1.0f / in_dir.z);
-    pdf = 1.0f;
+    f = Vector3(1.0_f) * abs(1.0_f / in_dir.z);
+    pdf = 1.0_f;
     event = (int)SurfaceScatteringFlags::delta |
             (int)SurfaceScatteringFlags::index_matched;
     if (in_dir.z > 0) {
@@ -601,14 +601,14 @@ class PlainVolumeInterfaceMaterial : public SurfaceMaterial {
   virtual real probability_density(const Vector3 &in,
                                    const Vector3 &out,
                                    const Vector2 &uv) const override {
-    return 1.0f;
+    return 1.0_f;
   };
 
   virtual Vector3 evaluate_bsdf(const Vector3 &in,
                                 const Vector3 &out,
                                 const Vector2 &uv) const override {
-    // return Vector3(1.0f) * abs(1.0f / out.z);
-    return Vector3(0.0f);
+    // return Vector3(1.0_f) * abs(1.0_f / out.z);
+    return Vector3(0.0_f);
   }
 
   virtual bool is_delta() const override { return true; }

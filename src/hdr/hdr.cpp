@@ -24,7 +24,7 @@ class GradientDomainTMO final : public ToneMapper {
 
  public:
   void initialize(const Config &config) override {
-    pyramid_sigma = config.get("pyramid_sigma", 1.0f);
+    pyramid_sigma = config.get("pyramid_sigma", 1.0_f);
     num_threads = config.get("num_threads", 1);
     max_solver_iterations = config.get("max_solver_iterations", 100);
     alpha = config.get_real("alpha");

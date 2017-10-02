@@ -34,7 +34,7 @@ class VCMRenderer : public BidirectionalRenderer {
     use_vc = config.get("use_vc", true);
     use_vm = config.get("use_vm", true);
     alpha = config.get("alpha", 0.66667f);
-    bdpm_image.initialize(Vector2i(width, height), Vector3(0.0f, 0.0f, 0.0f));
+    bdpm_image.initialize(Vector2i(width, height), Vector3(0.0_f, 0.0_f, 0.0_f));
     radius = initial_radius;
     n_samples_per_stage = width * height / stage_frequency;
   }
@@ -79,8 +79,8 @@ class VCMRenderer : public BidirectionalRenderer {
             // TODO: is this caused by non-zero radius?
             continue;
           }
-          screen_u = clamp(screen_u, 0.0f, 1.0f);
-          screen_v = clamp(screen_v, 0.0f, 1.0f);
+          screen_u = clamp(screen_u, 0.0_f, 1.0_f);
+          screen_v = clamp(screen_v, 0.0_f, 1.0_f);
           eye_path.back().connected = true;
           Path full_path;
           full_path.resize(num_eye_vertices + num_light_vertices -
@@ -91,18 +91,18 @@ class VCMRenderer : public BidirectionalRenderer {
             full_path[path_length - i] = light_path[i];
           // evaluate the path
           Vector3 f = path_throughput(full_path).cast<real>();
-          if (f.max() <= 0.0f) {
+          if (f.max() <= 0.0_f) {
             // printf("f\n");
             continue;
           }
           double p = path_pdf(full_path, num_eye_vertices, num_light_vertices);
-          if (p <= 0.0f) {
+          if (p <= 0.0_f) {
             // printf("p\n");
             continue;
           }
           double w = mis_weight(full_path, num_eye_vertices, num_light_vertices,
                                 use_vc, n_samples_per_stage);
-          if (w <= 0.0f) {
+          if (w <= 0.0_f) {
             // printf("w\n");
             continue;
           }
@@ -117,7 +117,7 @@ class VCMRenderer : public BidirectionalRenderer {
   }
 
   virtual void render_stage() override {
-    radius = initial_radius * pow(num_stages + 1.0f, -(1.0f - alpha) / 2.0f);
+    radius = initial_radius * pow(num_stages + 1.0_f, -(1.0_f - alpha) / 2.0f);
     vm_pdf_constant = pi * radius * radius;
     hash_grid.initialize(radius, width * height * 10 + 7);
     light_paths.clear();

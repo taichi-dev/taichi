@@ -54,7 +54,7 @@ class HaltonSampler : public Sampler {
 
   real hal(const int d, long long j) const {
     const int p = prime_list.get_prime(d);
-    real h = 0.0, f = 1.0f / p, fct = f;
+    real h = 0.0, f = 1.0_f / p, fct = f;
     while (j > 0) {
       h += rev(j % p, p) * fct;
       j /= p;

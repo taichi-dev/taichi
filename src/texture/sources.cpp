@@ -118,7 +118,7 @@ class RectTexture : public Texture {
   }
 
   virtual Vector4 sample(const Vector3 &coord) const override {
-    return Vector4(inside(coord) ? 1.0f : 0.0f);
+    return Vector4(inside(coord) ? 1.0_f : 0.0_f);
   }
 };
 
@@ -131,8 +131,8 @@ class RingTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    inner = config.get("inner", 0.0f) / 2.0f;
-    outer = config.get("outer", 1.0f) / 2.0f;
+    inner = config.get("inner", 0.0_f) / 2.0f;
+    outer = config.get("outer", 1.0_f) / 2.0f;
   }
 
   static bool inside(Vector2 p, Vector2 c, real r) {
@@ -142,8 +142,8 @@ class RingTexture : public Texture {
   virtual Vector4 sample(const Vector2 &coord) const override {
     return Vector4(inside(coord, Vector2(0.5f, 0.5f), outer) &&
                            !inside(coord, Vector2(0.5f, 0.5f), inner)
-                       ? 1.0f
-                       : 0.0f);
+                       ? 1.0_f
+                       : 0.0_f);
   }
 
   virtual Vector4 sample(const Vector3 &coord) const override {
@@ -161,8 +161,8 @@ class TaichiTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    scale = config.get("scale", 1.0f);
-    real rotation = config.get("rotation", 0.0f);
+    scale = config.get("scale", 1.0_f);
+    real rotation = config.get("rotation", 0.0_f);
     rotation_c = std::cos(rotation);
     rotation_s = std::sin(rotation);
   }
@@ -190,7 +190,7 @@ class TaichiTexture : public Texture {
     if (!inside(p, Vector2(0.50f, 0.50f), 0.5f * scale)) {
       return false;
     }
-    p = Vector2(0.5f) + (p - Vector2(0.5f)) * (1.0f / scale);
+    p = Vector2(0.5f) + (p - Vector2(0.5f)) * (1.0_f / scale);
     if (inside(p, Vector2(0.50f, 0.25f), 0.08f)) {
       return true;
     }
@@ -211,7 +211,7 @@ class TaichiTexture : public Texture {
   }
 
   virtual Vector4 sample(const Vector2 &coord) const override {
-    return Vector4(is_white(coord) ? 1.0f : 0.0f);
+    return Vector4(is_white(coord) ? 1.0_f : 0.0_f);
   }
 
   virtual Vector4 sample(const Vector3 &coord) const override {
@@ -233,7 +233,7 @@ class CheckerboardTexture : public Texture {
     tex2 = AssetManager::get_asset<Texture>(config.get_int("tex2"));
     repeat_u = config.get_real("repeat_u");
     repeat_v = config.get_real("repeat_v");
-    repeat_w = config.get("repeat_w", 1.0f);
+    repeat_w = config.get("repeat_w", 1.0_f);
   }
 
   virtual Vector4 sample(const Vector3 &coord) const override {
@@ -297,7 +297,7 @@ class SlicedTexture : public Texture {
   }
 
   virtual Vector4 sample(const Vector3 &coord_) const override {
-    Vector4 coord(coord_, 0.0f);
+    Vector4 coord(coord_, 0.0_f);
     return base + (coord * steps).floor() * increment;
   }
 };

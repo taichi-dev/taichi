@@ -115,7 +115,7 @@ class PathTracingRenderer : public Renderer {
       Ray ray(info.pos + out_dir * 1e-3_f, out_dir);
       IntersectionInfo test_info;
       Vector3 att = get_attenuation(stack, ray, rand, test_info);
-      if (att.max() == 0.0f) {
+      if (att.max() == 0.0_f) {
         // Completely blocked.
         continue;
       }
@@ -177,7 +177,7 @@ class PathTracingRenderer : public Renderer {
 
   PathContribution get_path_contribution(StateSequence &rand) {
     Vector2 offset(rand(), rand());
-    Vector2 size(1.0f / width, 1.0f / height);
+    Vector2 size(1.0_f / width, 1.0_f / height);
     Ray ray = camera->sample(offset, size, rand);
     Vector3 color = trace(ray, rand);
     if (luminance_clamping > 0 && luminance(color) > luminance_clamping) {
@@ -189,9 +189,9 @@ class PathTracingRenderer : public Renderer {
   virtual Vector3 trace(Ray ray, StateSequence &rand);
 
   virtual void write_path_contribution(const PathContribution &cont,
-                                       real scale = 1.0f) {
-    auto x = clamp(cont.x, 0.0f, 1.0f - 1e-7_f);
-    auto y = clamp(cont.y, 0.0f, 1.0f - 1e-7_f);
+                                       real scale = 1.0_f) {
+    auto x = clamp(cont.x, 0.0_f, 1.0_f - 1e-7_f);
+    auto y = clamp(cont.y, 0.0_f, 1.0_f - 1e-7_f);
     if (cont.c.abnormal()) {
       P(cont.c);
       return;
@@ -203,12 +203,12 @@ class PathTracingRenderer : public Renderer {
                                   Ray ray,
                                   StateSequence &rand,
                                   IntersectionInfo &last_intersection) {
-    Vector3 att(1.0f);
+    Vector3 att(1.0_f);
 
     for (int i = 0; i < 100; i++) {
       if (stack.size() == 0) {
         // TODO: this should be bug...
-        return Vector3(0.0f);
+        return Vector3(0.0_f);
       }
       IntersectionInfo info = sg->query(ray);
       const Vector3 in_dir = -ray.dir;
@@ -218,7 +218,7 @@ class PathTracingRenderer : public Renderer {
         // no intersection (usually bsdf sampling) -> envmap
         last_intersection = info;
         if (!vol.is_vacuum()) {
-          att = Vector3(0.0f);
+          att = Vector3(0.0_f);
         }
         break;
       }
@@ -243,19 +243,19 @@ class PathTracingRenderer : public Renderer {
               // a volume while doesn't exit it.
               // (When a ray just intersects slightly
               // with a cube...)
-              return Vector3(0.0f);
+              return Vector3(0.0_f);
             }
             stack.push(bsdf.get_internal_material());
           } else {
             if (stack.top() != bsdf.get_internal_material()) {
               // Same as above...
-              return Vector3(0.0f);
+              return Vector3(0.0_f);
             }
             stack.pop();
           }
         }
       } else {
-        return Vector3(0.0f);
+        return Vector3(0.0_f);
       }
     }
     return att;
@@ -280,7 +280,7 @@ void PathTracingRenderer::initialize(const Config &config) {
       this->direct_lighting_bsdf > 0 || this->direct_lighting_light > 0,
       "Sum of direct_lighting_bsdf and direct_lighting_light should not be 0.");
   this->sampler = create_instance<Sampler>(config.get("sampler", "prand"));
-  this->luminance_clamping = config.get("luminance_clamping", 0.0f);
+  this->luminance_clamping = config.get("luminance_clamping", 0.0_f);
   this->accumulator = ImageAccumulator<Vector3>(Vector2i(width, height));
   this->russian_roulette = config.get("russian_roulette", true);
   this->envmap_is = config.get("envmap_is", true);
@@ -344,7 +344,7 @@ Vector3 PathTracingRenderer::calculate_volumetric_direct_lighting(
     Ray ray(orig + out_dir * 1e-3_f, out_dir);
     IntersectionInfo test_info;
     Vector3 att = get_attenuation(stack, ray, rand, test_info);
-    if (att.max() == 0.0f) {
+    if (att.max() == 0.0_f) {
       // Completely blocked.
       continue;
     }
@@ -410,7 +410,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
     const VolumeMaterial &volume = *stack.top();
     IntersectionInfo info = sg->query(ray);
     real safe_distance = volume.sample_free_distance(rand, ray);
-    Vector3 f(1.0f);
+    Vector3 f(1.0_f);
     Ray out_ray;
     if (!info.intersected) {
       if (scene->envmap && (path_length == 1 || !direct_lighting)) {
@@ -479,7 +479,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
       }
       Vector3 out_dir = volume.sample_phase(rand, Ray(orig, ray.dir));
       out_ray = Ray(orig, out_dir, 1e-5_f);
-      f = Vector3(1.0f);
+      f = Vector3(1.0_f);
     } else {
       // Volumetric absorption
       break;
@@ -490,7 +490,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
       real p = luminance(importance);
       if (p <= 1) {
         if (rand() < p) {
-          importance *= 1.0f / p;
+          importance *= 1.0_f / p;
         } else {
           break;
         }
@@ -538,7 +538,7 @@ class PTSDFRenderer final : public PathTracingRenderer {
                           IntersectionInfo &last_intersection) override {
     last_intersection = sg->query(ray);
     if (!last_intersection.intersected) {
-      return Vector3(0.0f);
+      return Vector3(0.0_f);
     }
     real safe_distance = ray_march(ray, last_intersection.dist);
     return Vector3(real(int(safe_distance >= last_intersection.dist - eps)));
@@ -581,7 +581,7 @@ class PTSDFRenderer final : public PathTracingRenderer {
       u_ = Vector3(0, 1, 0);
     }
     Vector3 u = normalized(cross(inter.normal, u_));
-    real sgn = inter.front ? 1.0f : -1.0f;
+    real sgn = inter.front ? 1.0_f : -1.0_f;
     Vector3 v = normalized(
         cross(sgn * inter.normal,
               u));  // Due to shading normal, we have to normalize here...
@@ -610,7 +610,7 @@ class PTSDFRenderer final : public PathTracingRenderer {
       }
       const VolumeMaterial &volume = *stack.top();
       IntersectionInfo info = query_geometry(ray);
-      Vector3 f(1.0f);
+      Vector3 f(1.0_f);
       Ray out_ray;
       if (!info.intersected) {
         if (scene->envmap && (path_length == 1 || !direct_lighting)) {
@@ -652,7 +652,7 @@ class PTSDFRenderer final : public PathTracingRenderer {
         real p = luminance(importance);
         if (p <= 1) {
           if (rand() < p) {
-            importance *= 1.0f / p;
+            importance *= 1.0_f / p;
           } else {
             break;
           }
@@ -678,7 +678,7 @@ class PSSMLTMarkovChain : public MarkovChain {
     return PSSMLTMarkovChain(resolution_x, resolution_y);
   }
 
-  PSSMLTMarkovChain mutate(real strength = 1.0f) const {
+  PSSMLTMarkovChain mutate(real strength = 1.0_f) const {
     PSSMLTMarkovChain result(*this);
     // Pixel location
     real delta_pixel = 2.0f / (resolution_x + resolution_y);
@@ -689,8 +689,8 @@ class PSSMLTMarkovChain : public MarkovChain {
         perturb(result.states[1], delta_pixel * strength, 0.1f * strength);
     // Events
     for (int i = 2; i < (int)result.states.size(); i++)
-      result.states[i] = perturb(result.states[i], 1.0f / 1024.0f * strength,
-                                 1.0f / 64.0f * strength);
+      result.states[i] = perturb(result.states[i], 1.0_f / 1024.0f * strength,
+                                 1.0_f / 64.0f * strength);
     return result;
   }
 
@@ -737,7 +737,7 @@ class MCMCPTRenderer : public PathTracingRenderer {
  public:
   Array2D<Vector3> get_output() override {
     Array2D<Vector3> output(Vector2i(width, height));
-    float r = 1.0f / sample_count;
+    float r = 1.0_f / sample_count;
     for (auto &ind : output.get_region()) {
       output[ind] = buffer[ind] * r;
     };
@@ -749,7 +749,7 @@ class MCMCPTRenderer : public PathTracingRenderer {
     large_step_prob = config.get("large_step_prob", 0.3f);
     estimation_rounds = config.get("estimation_rounds", 1);
     mutation_strength = config.get_real("mutation_strength");
-    buffer.initialize(Vector2i(width, height), Vector3(0.0f));
+    buffer.initialize(Vector2i(width, height), Vector3(0.0_f));
     sample_count = 0;
   }
 
@@ -758,7 +758,7 @@ class MCMCPTRenderer : public PathTracingRenderer {
   }
 
   void write_path_contribution(const PathContribution &cont,
-                               real scale = 1.0f) override {
+                               real scale = 1.0_f) override {
     if (cont.c.abnormal()) {
       P(cont.c);
       return;
@@ -771,7 +771,7 @@ class MCMCPTRenderer : public PathTracingRenderer {
 
   virtual void render_stage() override {
     if (!first_stage_done) {
-      real total_sc = 0.0f;
+      real total_sc = 0.0_f;
       int num_samples = width * height * estimation_rounds;
       auto sampler = create_instance<Sampler>("prand");
       for (int i = 0; i < num_samples; i++) {
@@ -801,7 +801,7 @@ class MCMCPTRenderer : public PathTracingRenderer {
       new_state.sc = scalar_contribution_function(new_state.pc);
       double a = 1.0;
       if (current_state.sc > 0.0) {
-        a = clamp(new_state.sc / current_state.sc, 0.0f, 1.0f);
+        a = clamp(new_state.sc / current_state.sc, 0.0_f, 1.0_f);
       }
       // accumulate samples with mean value substitution and MIS
       if (new_state.sc > 0.0) {

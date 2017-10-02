@@ -307,16 +307,16 @@ class SPGridBenchmark : public Benchmark {
     brute_force = config.get_bool("brute_force");
     input.resize(workload);
     for (int i = 0; i < workload; i++) {
-      input[i] = Vector3(rand(), rand(), rand()) + Vector3(1.0f);
+      input[i] = Vector3(rand(), rand(), rand()) + Vector3(1.0_f);
     }
   }
 
  protected:
   static const int test_n = 256;
 
-  real sum_spgrid(Vector3 p) const { return 0.0f; }
+  real sum_spgrid(Vector3 p) const { return 0.0_f; }
 
-  real sum_dense(Vector3 p) const { return 0.0f; }
+  real sum_dense(Vector3 p) const { return 0.0_f; }
 
   void iterate() override {}
 

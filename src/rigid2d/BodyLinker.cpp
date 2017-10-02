@@ -72,16 +72,16 @@ if (showGrid) {
   y1 = (int)(game->scoper.GetTop() / step) + 5;
   for (int i = x0; i < x1; i++)
       for (int j = y0; j < y1; j++)
-          graphics.DrawPoint(i * step, j * step, HSB3f(130.0f, 0.8f, 0.8f));
+          graphics.DrawPoint(i * step, j * step, HSB3f(130.0_f, 0.8f, 0.8f));
   Vector2D &p = game->input.mouse.position;
   p.x = round(p.x / step) * step;
   p.y = round(p.y / step) * step;
-  //graphics.DrawPoint(p, HSB3f(0.0f, 0.7f, 0.8f), 3);
+  //graphics.DrawPoint(p, HSB3f(0.0_f, 0.7f, 0.8f), 3);
 }
 Vector2D p = input->mouse.position;
 if (state == 1) {
   Vector2D p0 = body[0]->GetTransformToWorld(r[0].GetPosition());
-  //graphics.DrawLine(p0, p, RGB3f(0.0f, 1.0f, 0.0f), 5);
+  //graphics.DrawLine(p0, p, RGB3f(0.0_f, 1.0_f, 0.0_f), 5);
 }
   */
 }

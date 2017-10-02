@@ -40,7 +40,7 @@ class TransparentMaterial : public SurfaceMaterial {
     real alpha = mask->sample(uv).x;
     if (u < alpha) {
       out_dir = -in_dir;
-      f = Vector3(alpha) * abs(1.0f / in_dir.z);
+      f = Vector3(alpha) * abs(1.0_f / in_dir.z);
       pdf = alpha;
       event = (int)SurfaceScatteringFlags::delta |
               (int)SurfaceScatteringFlags::index_matched;
@@ -120,7 +120,7 @@ class DiffuseTransmissiveMaterial : public SurfaceMaterial {
                                 const Vector3 &out,
                                 const Vector2 &uv) const override {
     auto color = color_sampler->sample3(uv);
-    return (in.z * out.z < -eps ? 1.0f : 0.0f) * color * (1.0f / pi);
+    return (in.z * out.z < -eps ? 1.0_f : 0.0_f) * color * (1.0_f / pi);
   }
 
   virtual void sample(const Vector3 &in_dir,

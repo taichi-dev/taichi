@@ -40,7 +40,7 @@ class UPSRenderer : public BidirectionalRenderer {
     use_vm = config.get("use_vm", true);
     alpha = config.get("alpha", 0.66667f);
     shrinking_radius = config.get("shrinking_radius", true);
-    bdpm_image.initialize(Vector2i(width, height), Vector3(0.0f));
+    bdpm_image.initialize(Vector2i(width, height), Vector3(0.0_f));
     radius = initial_radius;
     n_samples_per_stage = width * height / stage_frequency;
   }
@@ -85,8 +85,8 @@ class UPSRenderer : public BidirectionalRenderer {
                 screen_v < 1)) {
             continue;
           }
-          screen_u = clamp(screen_u, 0.0f, 1.0f);
-          screen_v = clamp(screen_v, 0.0f, 1.0f);
+          screen_u = clamp(screen_u, 0.0_f, 1.0_f);
+          screen_v = clamp(screen_v, 0.0_f, 1.0_f);
           eye_path.back().connected = true;
           Path full_path;
           full_path.resize(num_eye_vertices + num_light_vertices -
@@ -98,18 +98,18 @@ class UPSRenderer : public BidirectionalRenderer {
 
           // Evaluateh
           Vector3 f = path_throughput(full_path).cast<real>();
-          if (f.max() <= 0.0f) {
+          if (f.max() <= 0.0_f) {
             // printf("f\n");
             continue;
           }
           double p = path_pdf(full_path, num_eye_vertices, num_light_vertices);
-          if (p <= 0.0f) {
+          if (p <= 0.0_f) {
             // printf("p\n");
             continue;
           }
           double w = mis_weight(full_path, num_eye_vertices, num_light_vertices,
                                 use_vc, n_samples_per_stage);
-          if (w <= 0.0f) {
+          if (w <= 0.0_f) {
             // printf("w\n");
             continue;
           }
@@ -126,7 +126,7 @@ class UPSRenderer : public BidirectionalRenderer {
   virtual void render_stage() override {
     radius =
         initial_radius *
-        (shrinking_radius ? (real)pow(num_stages + 1.0f, -(1.0f - alpha) / 2.0f)
+        (shrinking_radius ? (real)pow(num_stages + 1.0_f, -(1.0_f - alpha) / 2.0f)
                           : 1);
     vm_pdf_constant = pi * radius * radius;
     hash_grid.initialize(radius, width * height * 10 + 7);
@@ -237,7 +237,7 @@ class MCMCUPSRenderer : public UPSRenderer {
   virtual void render_stage() override {
     radius =
         initial_radius *
-        (shrinking_radius ? (real)pow(num_stages + 1.0f, -(1.0f - alpha) / 2.0f)
+        (shrinking_radius ? (real)pow(num_stages + 1.0_f, -(1.0_f - alpha) / 2.0f)
                           : 1);
     vm_pdf_constant = pi * radius * radius;
     hash_grid.initialize(radius, width * height * 10 + 7);
@@ -350,16 +350,16 @@ class MCMCUPSRenderer : public UPSRenderer {
       }
       real current_state_weight =
           mutation_expectation ? real(a) : real(is_accepted);
-      real last_state_weight = 1.0f - current_state_weight;
+      real last_state_weight = 1.0_f - current_state_weight;
       if (last_state_weight > 0 && previous_state.sc > 0) {
         all_pcs[u].push_back(previous_state.pc);
-        real p[2] = {0.0f};
+        real p[2] = {0.0_f};
         for (int i = 0; i < 2; i++) {
           if (markov_chain_mis) {
             p[i] =
                 (real)previous_state.p_star(i) / normalizers[i].get_average();
           } else {
-            p[i] = 1.0f;
+            p[i] = 1.0_f;
           }
         }
         auto s =
@@ -369,12 +369,12 @@ class MCMCUPSRenderer : public UPSRenderer {
       }
       if (current_state_weight > 0 && current_state.sc > 0) {
         all_pcs[u].push_back(current_state.pc);
-        real p[2] = {0.0f};
+        real p[2] = {0.0_f};
         for (int i = 0; i < 2; i++) {
           if (markov_chain_mis) {
             p[i] = real(current_state.p_star(i) / normalizers[i].get_average());
           } else {
-            p[i] = 1.0f;
+            p[i] = 1.0_f;
           }
         }
         auto s = current_state_weight / current_state.sc *
@@ -404,7 +404,7 @@ class MCMCUPSRenderer : public UPSRenderer {
       mutation_strength =
           mutation_strength +
           (ratio_accepted - target_mutation_acceptance) / mutated;
-      mutation_strength = std::min(10.0f, max(1e-7_f, mutation_strength));
+      mutation_strength = std::min(10.0_f, max(1e-7_f, mutation_strength));
     }
     real ratio_accepted = (real)accepted / (real)mutated;
     P(ratio_accepted);

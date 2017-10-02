@@ -22,16 +22,16 @@ class VacuumVolumeMaterial : public VolumeMaterial {
  public:
   virtual void initialize(const Config &config) override {
     VolumeMaterial::initialize(config);
-    this->volumetric_scattering = 0.0f;
-    this->volumetric_absorption = 0.0f;
+    this->volumetric_scattering = 0.0_f;
+    this->volumetric_absorption = 0.0_f;
   }
 
-  virtual real get_attenuation(real dist) const override { return 1.0f; }
+  virtual real get_attenuation(real dist) const override { return 1.0_f; }
 
   virtual real unbiased_sample_attenuation(const Vector3 &start,
                                            const Vector3 &end,
                                            StateSequence &rand) const override {
-    return 1.0f;
+    return 1.0_f;
   }
 
   virtual VolumeEvent sample_event(StateSequence &rand,
@@ -59,12 +59,12 @@ class VoxelVolumeMaterial : public VolumeMaterial {
     this->volumetric_absorption = config.get_real("absorption");
     this->resolution = config.get<Vector3i>("resolution");
     this->tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
-    voxels.initialize(resolution, 1.0f);
-    maximum = 0.0f;
-    Vector3 inv = Vector3(1.0f) / resolution.cast<real>();
+    voxels.initialize(resolution, 1.0_f);
+    maximum = 0.0_f;
+    Vector3 inv = Vector3(1.0_f) / resolution.cast<real>();
     for (auto &ind : voxels.get_region()) {
       voxels[ind] = tex->sample(ind.get_pos() * inv).x;
-      assert_info(voxels[ind] >= 0.0f, "Density can not be negative.");
+      assert_info(voxels[ind] >= 0.0_f, "Density can not be negative.");
       maximum = std::max(maximum, voxels[ind]);
     }
   }
@@ -73,7 +73,7 @@ class VoxelVolumeMaterial : public VolumeMaterial {
                                     const Ray &ray) const override {
     int counter = 0;
     real kill;
-    real dist = 0.0f;
+    real dist = 0.0_f;
     real tot = volumetric_scattering + volumetric_absorption;
     do {
       counter += 1;
@@ -83,7 +83,7 @@ class VoxelVolumeMaterial : public VolumeMaterial {
       }
       dist += -log(1 - rand()) / (maximum * tot);
       Vector3 pos = ray.orig + ray.dir * dist;
-      pos = multiply_matrix4(world2local, pos, 1.0f);
+      pos = multiply_matrix4(world2local, pos, 1.0_f);
       if (pos.x < 0 || pos.x >= 1 || pos.y < 0 || pos.y >= 1 || pos.z < 0 ||
           pos.z >= 1) {
         // Outside the texture
@@ -116,12 +116,12 @@ class SDFVoxelVolumeMaterial : public VoxelVolumeMaterial {
     std::priority_queue<std::pair<real, Index3D>> pq;
     for (auto &ind : voxels.get_region()) {
       if (voxels[ind] > 0) {
-        sdf[ind] = 0.0f;
+        sdf[ind] = 0.0_f;
         nearest[ind] = ind.get_pos();
         pq.push(std::make_pair(-sdf[ind], ind));
       }
     }
-    Vector3 inv_res = Vector3(1.0f) / Vector3(resolution.cast<real>());
+    Vector3 inv_res = Vector3(1.0_f) / Vector3(resolution.cast<real>());
     // Dijkstra
     while (!pq.empty()) {
       auto t = pq.top();
@@ -170,7 +170,7 @@ class SDFVoxelVolumeMaterial : public VoxelVolumeMaterial {
                                     const Ray &ray) const override {
     int counter = 0;
     real kill;
-    real dist = 0.0f;
+    real dist = 0.0_f;
     real tot = volumetric_scattering + volumetric_absorption;
     do {
       counter += 1;
@@ -181,7 +181,7 @@ class SDFVoxelVolumeMaterial : public VoxelVolumeMaterial {
 
       Vector3 pos;
       for (int i = 0; i < 100; i++) {
-        pos = multiply_matrix4(world2local, ray.orig + ray.dir * dist, 1.0f);
+        pos = multiply_matrix4(world2local, ray.orig + ray.dir * dist, 1.0_f);
         if (inside_unit_cube(pos)) {
           real d = sdf.sample_relative_coord(pos);
           if (d > 1e-4_f) {
@@ -193,7 +193,7 @@ class SDFVoxelVolumeMaterial : public VoxelVolumeMaterial {
       }
       dist += -log(1 - rand()) / (maximum * tot);
       pos = ray.orig + ray.dir * dist;
-      pos = multiply_matrix4(world2local, pos, 1.0f);
+      pos = multiply_matrix4(world2local, pos, 1.0_f);
       if (!inside_unit_cube(pos)) {
         // Outside the texture
         dist = std::numeric_limits<real>::infinity();

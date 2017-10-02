@@ -1012,7 +1012,7 @@ struct MatrixND {
 };
 
 template <int DIM, typename T, InstSetExt ISE>
-MatrixND<DIM, T, ISE> operator*(const float32 a,
+MatrixND<DIM, T, ISE> operator*(const T a,
                                 const MatrixND<DIM, T, ISE> &M) {
   MatrixND<DIM, T, ISE> ret;
   for (int i = 0; i < DIM; i++) {
@@ -1023,7 +1023,7 @@ MatrixND<DIM, T, ISE> operator*(const float32 a,
 
 template <int DIM, typename T, InstSetExt ISE>
 MatrixND<DIM, T, ISE> operator*(const MatrixND<DIM, T, ISE> &M,
-                                const float32 a) {
+                                const T a) {
   return a * M;
 }
 

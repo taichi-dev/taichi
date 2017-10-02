@@ -16,22 +16,22 @@ TC_NAMESPACE_BEGIN
 inline real w(real x) {
   x = abs(x);
   if (x < 1) {
-    return 0.5f * x * x * x - x * x + 2.0f / 3.0f;
+    return 0.5_f * x * x * x - x * x + 2.0_f / 3.0_f;
   } else {
-    return -1.0f / 6.0f * x * x * x + x * x - 2 * x + 4.0f / 3.0f;
+    return -1.0_f / 6.0_f * x * x * x + x * x - 2 * x + 4.0_f / 3.0_f;
   }
 }
 
 // Note: assuming abs(x) <= 2!!
 inline real dw(real x) {
-  real s = x < 0.0f ? -1.0f : 1.0f;
+  real s = x < 0.0_f ? -1.0_f : 1.0_f;
   x *= s;
   real val;
   real xx = x * x;
-  if (x < 1.0f) {
-    val = 1.5f * xx - 2.0f * x;
+  if (x < 1.0_f) {
+    val = 1.5_f * xx - 2.0_f * x;
   } else {
-    val = -0.5f * xx + 2.0f * x - 2.0f;
+    val = -0.5f * xx + 2.0_f * x - 2.0_f;
   }
   return s * val;
 }
@@ -57,7 +57,7 @@ class KernelCalculationBenchmark : public Benchmark {
     brute_force = config.get_bool("brute_force");
     input.resize(workload);
     for (int i = 0; i < workload; i++) {
-      input[i] = Vector3(rand(), rand(), rand()) + Vector3(1.0f);
+      input[i] = Vector3(rand(), rand(), rand()) + Vector3(1.0_f);
     }
   }
 
@@ -76,7 +76,7 @@ class KernelCalculationBenchmark : public Benchmark {
       w_cache[k] = Vector4(-1 / 6.0f, 0.5f, -0.5f, 1 / 6.0f) * ttt +
                    Vector4(1, -1, -1, 1) * tt + Vector4(-2, 0, 0, 2) * t +
                    Vector4(4 / 3.0f, 2 / 3.0f, 2 / 3.0f, 4 / 3.0f);
-      dw_cache[k] = Vector4(-0.5f, 1.5f, -1.5f, 0.5f) * tt +
+      dw_cache[k] = Vector4(-0.5f, 1.5_f, -1.5_f, 0.5f) * tt +
                     Vector4(2, -2, -2, 2) * t + Vector4(-2, 0, 0, 2);
       /*
       for (int i = 0; i < 4; i++) {
@@ -92,7 +92,7 @@ class KernelCalculationBenchmark : public Benchmark {
       w = fused_mul_add(Vector4(1, -1, -1, 1), tt, w);
       w = fused_mul_add(Vector4(1 / 6.0f, -0.5f, 0.5f, -1 / 6.0f), ttt, w);
       dw = fused_mul_add(Vector4(2, -2, -2, 2), t, dw);
-      dw = fused_mul_add(Vector4(0.5f, -1.5f, 1.5f, -0.5f), tt, dw);
+      dw = fused_mul_add(Vector4(0.5f, -1.5_f, 1.5_f, -0.5f), tt, dw);
       w_cache[k] = w;
       dw_cache[k] = dw;
        */
@@ -122,7 +122,7 @@ class KernelCalculationBenchmark : public Benchmark {
   }
 
   real sum_brute_force(Vector3 p) const {
-    Vector4 ret(0.0f);
+    Vector4 ret(0.0_f);
     for (int i = 0; i < 4; i++) {
       for (int j = 0; j < 4; j++) {
         for (int k = 0; k < 4; k++) {
@@ -137,7 +137,7 @@ class KernelCalculationBenchmark : public Benchmark {
   }
 
   void iterate() override {
-    real ret = 0.0f;
+    real ret = 0.0_f;
     if (brute_force) {
       for (int i = 0; i < workload; i++) {
         ret += sum_brute_force(input[i]);

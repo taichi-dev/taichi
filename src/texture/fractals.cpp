@@ -34,10 +34,10 @@ class MengerSponge : public Texture {
     Vector3d c = coord.cast<float64>();
     for (int i = 0; i < limit; i++) {
       if (cut(c))
-        return Vector4(0.0f);
+        return Vector4(0.0_f);
       c = fract(c * 3.0);
     }
-    return Vector4(1.0f);
+    return Vector4(1.0_f);
   }
 };
 

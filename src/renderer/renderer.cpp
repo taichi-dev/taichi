@@ -31,15 +31,15 @@ void Renderer::set_scene(std::shared_ptr<Scene> scene) {
 
 void Renderer::write_output(std::string fn) {
   auto tmp = get_output();
-  Vector3 sum(0.0f);
+  Vector3 sum(0.0_f);
   for (auto p : tmp) {
     sum += p;
   }
-  auto scale = luminance(sum) / luminance(Vector3(1.0f)) / tmp.get_width() /
+  auto scale = luminance(sum) / luminance(Vector3(1.0_f)) / tmp.get_width() /
                tmp.get_height() / 0.18f;
   for (auto ind : tmp.get_region()) {
     for (int i = 0; i < 3; i++) {
-      tmp[ind][i] = std::pow(clamp(tmp[ind][i] / scale, 0.0f, 1.0f), 1 / 2.2f);
+      tmp[ind][i] = std::pow(clamp(tmp[ind][i] / scale, 0.0_f, 1.0_f), 1 / 2.2f);
     }
   }
   tmp.write(fn);

@@ -146,24 +146,24 @@ void Designer::Redraw() {
       y1 = (int)(game->scoper.GetTop() / step) + 5;
       for (int i = x0; i < x1; i++)
           for (int j = y0; j < y1; j++)
-              graphics.DrawPoint(i * step, j * step, HSB3f(130.0f, 0.8f, 0.8f));
+              graphics.DrawPoint(i * step, j * step, HSB3f(130.0_f, 0.8f, 0.8f));
       Vector2D &p = game->input.mouse.position;
       p.x = round(p.x / step) * step;
       p.y = round(p.y / step) * step;
-      graphics.DrawPoint(p, HSB3f(0.0f, 0.7f, 0.8f), 3);
+      graphics.DrawPoint(p, HSB3f(0.0_f, 0.7f, 0.8f), 3);
   }
   Vector2D p = input->mouse.position;
   switch (type) {
       case 0:
           if (input->mouse.IsPressed(GLFW_MOUSE_BUTTON_1)) {
               graphics.DrawCircle(center.x, center.y, (p - center).GetLength(),
-  RGB3f(1.0f, 1.0f, 1.0f), false);
+  RGB3f(1.0_f, 1.0_f, 1.0_f), false);
           }
           break;
       case 1:
           if ((int)points.size()) {
               if (game->scoper.GetDistanceOnScr(p, points[0]) <= 8)
-                  color = RGB3f(0.0f, 0.8f, 0.0f);
+                  color = RGB3f(0.0_f, 0.8f, 0.0_f);
               graphics.DrawLine(points.back().x, points.back().y, p.x, p.y,
   color, 2.0);
           }

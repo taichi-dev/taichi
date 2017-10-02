@@ -19,7 +19,7 @@ TC_NAMESPACE_BEGIN
 void BidirectionalRenderer::initialize(const Config &config) {
   Renderer::initialize(config);
   this->sampler = create_instance<Sampler>(config.get("sampler", "sobol"));
-  this->luminance_clamping = config.get("luminance_clamping", 0.0f);
+  this->luminance_clamping = config.get("luminance_clamping", 0.0_f);
   this->buffer = Array2D<Vector3>(width, height);
   this->max_eye_events = config.get("max_eye_events", 5);
   this->max_light_events = config.get("max_light_events", 5);
@@ -29,7 +29,7 @@ void BidirectionalRenderer::initialize(const Config &config) {
       std::min(this->max_light_events, this->max_path_length + 1);
   this->stage_frequency = config.get("stage_frequency", 1);
   this->print_path_policy = config.get("print_path_policy", "bright");
-  if (luminance_clamping == 0.0f) {
+  if (luminance_clamping == 0.0_f) {
     this->print_path_policy = "none";
   }
 }
@@ -72,7 +72,7 @@ Path BidirectionalRenderer::trace_eye_path(StateSequence &rand) {
   if (max_eye_events == 0) {
     return result;
   }
-  Ray r = camera->sample(Vector2(0, 0), Vector2(1.0f, 1.0f), rand);
+  Ray r = camera->sample(Vector2(0, 0), Vector2(1.0_f, 1.0_f), rand);
   IntersectionInfo info;
   info.pos = r.orig;
   info.normal = camera->get_dir();
@@ -159,7 +159,7 @@ double BidirectionalRenderer::path_pdf(const Path &path,
     } else if (i == 0) {
       Vector3 d0 = normalize(path[1].pos - path[0].pos);
       double c = dot(d0, camera->get_dir());
-      double distance_to_screen = 1.0f / c;
+      double distance_to_screen = 1.0_f / c;
       distance_to_screen = distance_to_screen * distance_to_screen;
       p = p / (c / distance_to_screen);
       // NOTE: above....
@@ -321,18 +321,18 @@ PathContribution BidirectionalRenderer::connect(const Path &eye_path,
         full_path[num_eye_vertices].connected = true;
       }
       Vector3d f = path_throughput(full_path);
-      if (f.max() <= 0.0f) {
+      if (f.max() <= 0.0_f) {
         // printf("f\n");
         continue;
       }
       double p = path_pdf(full_path, num_eye_vertices, num_light_vertices);
-      if (p <= 0.0f) {
+      if (p <= 0.0_f) {
         // printf("p\n");
         continue;
       }
       double w = mis_weight(full_path, num_eye_vertices, num_light_vertices,
                             true, merging_factor);
-      if (w <= 0.0f) {
+      if (w <= 0.0_f) {
         // printf("w\n");
         continue;
       }
@@ -431,13 +431,13 @@ double BidirectionalRenderer::mis_weight(const Path &path,
 }
 
 Vector3d BidirectionalRenderer::path_throughput(const Path &path) {
-  Vector3d f(1.0f);
+  Vector3d f(1.0_f);
   for (int i = 0; i < path.size(); i++) {
     if (i == 0) {
       // Tricky camera throughput...
       Vector3 d0 = path[1].pos - path[0].pos;
       const real dist2 = dot(d0, d0);
-      d0 = d0 * (1.0f / sqrt(dist2));
+      d0 = d0 * (1.0_f / sqrt(dist2));
       const real c = dot(d0, camera->get_dir());
       const real ds2 = 1.0 / (c * c);
       f = f * double(fabs(dot(d0, path[1].normal) / dist2 / c * ds2));
@@ -460,7 +460,7 @@ Vector3d BidirectionalRenderer::path_throughput(const Path &path) {
       if (path[i].bsdf.is_emissive() ||
           abs(dot(in_dir, path[i].normal)) < eps ||
           abs(dot(out_dir, path[i].normal)) < eps) {
-        f *= 0.0f;
+        f *= 0.0_f;
         return f;
       }
       Vector3d bsdf;
@@ -472,7 +472,7 @@ Vector3d BidirectionalRenderer::path_throughput(const Path &path) {
       }
       f *= bsdf * geometry_term(path[i], path[i + 1]);
     }
-    if (f.max() == 0.0f)
+    if (f.max() == 0.0_f)
       return f;
   }
   return f;

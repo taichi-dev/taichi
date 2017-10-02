@@ -26,7 +26,7 @@ void SPPMRenderer::initialize(const Config &config) {
   photon_counter = 0;
   stages = 0;
   radius2.initialize(res, initial_radius * initial_radius);
-  flux.initialize(res, Vector3(0.0f));
+  flux.initialize(res, Vector3(0.0_f));
   num_photons.initialize(res, 0LL);
   image_direct_illum.initialize(res);
   num_photons_per_stage = config.get("num_photons_per_stage", width * height);
@@ -47,15 +47,15 @@ void SPPMRenderer::render_stage() {
   }
   stages += 1;
   for (auto &ind : image.get_region()) {
-    image[ind] = 1.0f / (pi * radius2[ind]) / photon_counter * flux[ind] +
-                 image_direct_illum[ind] * (1.0f / eye_ray_stages);
+    image[ind] = 1.0_f / (pi * radius2[ind]) / photon_counter * flux[ind] +
+                 image_direct_illum[ind] * (1.0_f / eye_ray_stages);
   }
 }
 
 void SPPMRenderer::trace_eye_path(StateSequence &rand,
                                   Ray &ray,
                                   const Vector2i &pixel) {
-  Vector3 importance = Vector3(1.0f);
+  Vector3 importance = Vector3(1.0_f);
   for (int depth = 0; depth + 1 <= max_path_length; depth++) {
     IntersectionInfo info = sg->query(ray);
     if (!info.intersected)
@@ -110,7 +110,7 @@ bool SPPMRenderer::trace_photon(
   Vector3 flux;
   light_bsdf.sample(light_bsdf.get_geometry_normal(), rand(), rand(), dir, flux,
                     _pdf, _event);
-  flux *= (1.0f / pdf) * tri.area;
+  flux *= (1.0_f / pdf) * tri.area;
   Ray ray(pos + dir * 1e-4_f, dir, 0);  // TODO: ... 1e-4_f
   for (int depth = 0; depth + 1 <= max_path_length; depth++) {
     IntersectionInfo info = sg->query(ray);
@@ -146,9 +146,9 @@ bool SPPMRenderer::trace_photon(
             real g;
             if (shrinking_radius)
               g = (hp_num_photons * alpha + alpha) /
-                  (hp_num_photons * alpha + 1.0f);
+                  (hp_num_photons * alpha + 1.0_f);
             else
-              g = 1.0f;
+              g = 1.0_f;
             hp_radius2 *= g;
             Vector3 contribution = contribution_scaling * hp.importance * flux *
                                    bsdf.evaluate(in_dir, hp.eye_out_dir);
@@ -166,7 +166,7 @@ bool SPPMRenderer::trace_photon(
       real p = color.max();
       if (p < 1) {
         if (rand() < p) {
-          flux = (1.0f / p) * flux;
+          flux = (1.0_f / p) * flux;
         } else {
           break;
         }
@@ -187,7 +187,7 @@ void SPPMRenderer::eye_ray_pass() {
     for (int j = 0; j < height; j++) {
       auto rand = RandomStateSequence(sampler, i * height + j);
       Vector2 offset(real(i) / (real)width, real(j) / (real)height);
-      Vector2 size(1.0f / width, 1.0f / height);
+      Vector2 size(1.0_f / width, 1.0_f / height);
       Ray ray = camera->sample(offset, size, rand);
       trace_eye_path(rand, ray, Vector2i(i, j));
     }

@@ -24,7 +24,7 @@ Array2D<Vector4> dcraw_read(const std::string &filepath) {
   DCRawOutput output;
   dcraw_main((int)argv.size(), &argv[0], output);
   auto img =
-      Array2D<Vector4>(Vector2i(output.width, output.height), Vector4(0.0f));
+      Array2D<Vector4>(Vector2i(output.width, output.height), Vector4(0.0_f));
   for (auto &ind : img.get_region()) {
     for (int i = 0; i < output.channels; i++) {
       img[ind][i] =

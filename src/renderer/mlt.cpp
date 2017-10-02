@@ -38,7 +38,7 @@ class PSSMLTMarkovChain : public MarkovChain {
     // Events
     for (int i = 2; i < (int)result.states.size(); i++)
       result.states[i] =
-          perturb(result.states[i], 1.0f / 1024.0f, 1.0f / 64.0f);
+          perturb(result.states[i], 1.0_f / 1024.0f, 1.0_f / 64.0f);
     return result;
   }
 
@@ -101,7 +101,7 @@ class PSSMLTRenderer : public BidirectionalRenderer {
   }
 
   real scalar_contribution_function(const PathContribution &pc) {
-    real ret = 0.0f;
+    real ret = 0.0_f;
     for (auto &contribution : pc.contributions) {
       ret = max(ret, scalar_contribution_function(contribution));
     }
@@ -142,7 +142,7 @@ class PSSMLTRenderer : public BidirectionalRenderer {
       new_state.sc = scalar_contribution_function(new_state.pc);
       double a = 1.0;
       if (current_state.sc > 0.0) {
-        a = clamp(new_state.sc / current_state.sc, 0.0f, 1.0f);
+        a = clamp(new_state.sc / current_state.sc, 0.0_f, 1.0_f);
       }
       // accumulate samples with mean value substitution and MIS
       if (new_state.sc > 0.0) {
@@ -194,7 +194,7 @@ class MMLTRenderer : public PSSMLTRenderer {
       // Events
       for (int i = 2; i < (int)result.states.size(); i++)
         result.states[i] =
-            perturb(result.states[i], 1.0f / 1024.0f, 1.0f / 64.0f);
+            perturb(result.states[i], 1.0_f / 1024.0f, 1.0_f / 64.0f);
       return result;
     }
 
@@ -206,11 +206,11 @@ class MMLTRenderer : public PSSMLTRenderer {
     PathContribution pc;
     real sc, weight;
 
-    MCMCState() { weight = 1.0f; }
+    MCMCState() { weight = 1.0_f; }
 
     MCMCState(const MMLTMarkovChain &chain, const PathContribution &pc, real sc)
         : chain(chain), pc(pc), sc(sc) {
-      weight = 1.0f;
+      weight = 1.0_f;
     }
   };
 
@@ -229,7 +229,7 @@ class MMLTRenderer : public PSSMLTRenderer {
   void estimate_normalizers() {
     real sum = 0;
     int n_samples = width * height;
-    std::vector<real> intensities(max_path_length + 1, 0.0f);
+    std::vector<real> intensities(max_path_length + 1, 0.0_f);
     std::vector<long long> samples(max_path_length + 1, 0LL);
     for (int k = 0; k < n_samples; k++) {
       auto state_sequence = RandomStateSequence(sampler, k);
@@ -264,7 +264,7 @@ class MMLTRenderer : public PSSMLTRenderer {
   void initialize_path_length_sampler() {
     estimate_normalizers();
     for (int i = min_path_length; i <= max_path_length; i++) {
-      if (normalizers[i] == 0.0f) {
+      if (normalizers[i] == 0.0_f) {
         // No path of such length
         continue;
       }
@@ -304,7 +304,7 @@ class MMLTRenderer : public PSSMLTRenderer {
       new_state.sc = scalar_contribution_function(new_state.pc);
       real a = 1.0;
       if (current_state.sc > 0.0) {
-        a = clamp(new_state.sc / current_state.sc, 0.0f, 1.0f);
+        a = clamp(new_state.sc / current_state.sc, 0.0_f, 1.0_f);
       }
       real factor = (path_length + 1) / path_length_pdf;
       // accumulate samples with mean value substitution and MIS
@@ -336,7 +336,7 @@ class DWMMLTRenderer : public MMLTRenderer {
  public:
   void initialize(Config &config) {
     MMLTRenderer::initialize(config);
-    large_step_prob = 0.0f;
+    large_step_prob = 0.0_f;
   }
 
   virtual void render_stage() override {

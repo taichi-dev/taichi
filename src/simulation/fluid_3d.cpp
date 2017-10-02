@@ -21,7 +21,7 @@ const static Vector3i offsets[]{Vector3i(1, 0, 0), Vector3i(-1, 0, 0),
                                 Vector3i(0, 0, 1), Vector3i(0, 0, -1)};
 
 void Smoke3D::project() {
-  Array divergence(res, 0.0f);
+  Array divergence(res, 0.0_f);
   for (auto &ind : u.get_region()) {
     if (0 < ind.i)
       divergence[ind + Vector3i(-1, 0, 0)] += u[ind];
@@ -44,7 +44,7 @@ void Smoke3D::project() {
   pressure_solver->set_boundary_condition(boundary_condition);
   for (auto &ind : boundary_condition.get_region()) {
     if (boundary_condition[ind] != PoissonSolver3D::INTERIOR) {
-      divergence[ind] = 0.0f;
+      divergence[ind] = 0.0_f;
     }
   }
   pressure_solver->run(divergence, pressure, pressure_tolerance);
@@ -81,12 +81,12 @@ void Smoke3D::project() {
 void Smoke3D::initialize(const Config &config) {
   Simulation3D::initialize(config);
   res = config.get<Vector3i>("resolution");
-  smoke_alpha = config.get("smoke_alpha", 0.0f);
-  smoke_beta = config.get("smoke_beta", 0.0f);
-  temperature_decay = config.get("temperature_decay", 0.0f);
-  pressure_tolerance = config.get("pressure_tolerance", 0.0f);
-  density_scaling = config.get("density_scaling", 1.0f);
-  tracker_generation = config.get("tracker_generation", 100.0f);
+  smoke_alpha = config.get("smoke_alpha", 0.0_f);
+  smoke_beta = config.get("smoke_beta", 0.0_f);
+  temperature_decay = config.get("temperature_decay", 0.0_f);
+  pressure_tolerance = config.get("pressure_tolerance", 0.0_f);
+  density_scaling = config.get("density_scaling", 1.0_f);
+  tracker_generation = config.get("tracker_generation", 100.0_f);
   num_threads = config.get_int("num_threads");
   super_sampling = config.get_int("super_sampling");
   std::string padding;
@@ -97,7 +97,7 @@ void Smoke3D::initialize(const Config &config) {
     padding = "neumann";
   }
 
-  perturbation = config.get("perturbation", 0.0f);
+  perturbation = config.get("perturbation", 0.0_f);
   Config solver_config;
   solver_config.set("res", res)
       .set("num_threads", num_threads)
@@ -105,14 +105,14 @@ void Smoke3D::initialize(const Config &config) {
       .set("maximum_iterations", config.get_int("maximum_pressure_iterations"));
   pressure_solver = create_instance<PoissonSolver3D>(
       config.get_string("pressure_solver"), solver_config);
-  u = Array(res + Vector3i(1, 0, 0), 0.0f, Vector3(0.0f, 0.5f, 0.5f));
-  v = Array(res + Vector3i(0, 1, 0), 0.0f, Vector3(0.5f, 0.0f, 0.5f));
-  w = Array(res + Vector3i(0, 0, 1), 0.0f, Vector3(0.5f, 0.5f, 0.0f));
-  rho = Array(res, 0.0f);
-  pressure = Array(res, 0.0f);
-  last_pressure = Array(res, 0.0f);
-  t = Array(res, config.get("initial_t", 0.0f));
-  current_t = 0.0f;
+  u = Array(res + Vector3i(1, 0, 0), 0.0_f, Vector3(0.0_f, 0.5f, 0.5f));
+  v = Array(res + Vector3i(0, 1, 0), 0.0_f, Vector3(0.5f, 0.0_f, 0.5f));
+  w = Array(res + Vector3i(0, 0, 1), 0.0_f, Vector3(0.5f, 0.5f, 0.0_f));
+  rho = Array(res, 0.0_f);
+  pressure = Array(res, 0.0_f);
+  last_pressure = Array(res, 0.0_f);
+  t = Array(res, config.get("initial_t", 0.0_f));
+  current_t = 0.0_f;
   boundary_condition = PoissonSolver3D::BCArray(res);
   for (auto &ind : boundary_condition.get_region()) {
     Vector3 d = ind.get_pos() - res.cast<real>() * 0.5f;
@@ -163,7 +163,7 @@ std::vector<RenderParticle> Smoke3D::get_render_particles() const {
   Vector3 center(res[0] / 2.0f, res[1] / 2.0f, res[2] / 2.0f);
   for (auto p : trackers) {
     render_particles.push_back(Particle(
-        p.position - center, Vector4(p.color.x, p.color.y, p.color.z, 1.0f)));
+        p.position - center, Vector4(p.color.x, p.color.y, p.color.z, 1.0_f)));
   }
   return render_particles;
 }
@@ -174,8 +174,8 @@ void Smoke3D::show(Array2D<Vector3> &buffer) {
       half_height = buffer.get_height() / 2;
   for (int i = 0; i < half_width; i++) {
     for (int j = 0; j < buffer.get_height(); j++) {
-      real rho_sum = 0.0f;
-      real t_sum = 0.0f;
+      real rho_sum = 0.0_f;
+      real t_sum = 0.0_f;
       for (int k = 0; k < res[2]; k++) {
         real x = (i + 0.5f) / (real)half_width * res[0];
         real y = (j + 0.5f) / (real)buffer.get_height() * res[1];
@@ -184,15 +184,15 @@ void Smoke3D::show(Array2D<Vector3> &buffer) {
         t_sum += t.sample(x, y, z);
       }
       rho_sum *= density_scaling;
-      t_sum = std::min(1.0f, t_sum / res[2]);
-      rho_sum = std::min(1.0f, rho_sum / res[2]);
+      t_sum = std::min(1.0_f, t_sum / res[2]);
+      rho_sum = std::min(1.0_f, rho_sum / res[2]);
       buffer[i][j] = Vector3(t_sum, rho_sum * 0.3f, rho_sum * 0.8f);
     }
   }
   for (int i = 0; i < half_width; i++) {
     for (int j = 0; j < half_height; j++) {
-      real rho_sum = 0.0f;
-      real t_sum = 0.0f;
+      real rho_sum = 0.0_f;
+      real t_sum = 0.0_f;
       for (int k = 0; k < res[2]; k++) {
         real x = (i + 0.5f) / (real)half_width * res[0];
         real y = k + 0.5f;
@@ -201,8 +201,8 @@ void Smoke3D::show(Array2D<Vector3> &buffer) {
         t_sum += t.sample(x, y, z);
       }
       rho_sum *= density_scaling;
-      t_sum = std::min(1.0f, t_sum / res[2]);
-      rho_sum = std::min(1.0f, rho_sum / res[2]);
+      t_sum = std::min(1.0_f, t_sum / res[2]);
+      rho_sum = std::min(1.0_f, rho_sum / res[2]);
       buffer[half_width + i][j] =
           Vector3(t_sum, rho_sum * 0.3f, rho_sum * 0.8f);
     }

@@ -40,7 +40,7 @@ class SPPMRenderer : public Renderer {
 
   virtual bool trace_photon(
       StateSequence &rand,
-      real contribution_scaling = 1.0f);  // Returns visibility
+      real contribution_scaling = 1.0_f);  // Returns visibility
 
   virtual void eye_ray_pass();
 

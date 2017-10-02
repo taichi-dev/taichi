@@ -20,8 +20,8 @@ class BarnesHutSummation {
     real mass;
 
     Particle() {
-      mass = 0.0f;
-      position = Vector3(0.0f);
+      mass = 0.0_f;
+      position = Vector3(0.0_f);
     }
 
     Particle(const Vector3 &position, real mass)
@@ -92,8 +92,8 @@ class BarnesHutSummation {
       node.bounds[1] = u + Vector3i(margin);
       return;
     }
-    real mass = 0.0f;
-    Vector3 total_position(0.0f);
+    real mass = 0.0_f;
+    Vector3 total_position(0.0_f);
     node.bounds[0] = Vector3i(std::numeric_limits<int>::max());
     node.bounds[1] = Vector3i(std::numeric_limits<int>::min());
     for (int c = 0; c < 8; c++) {
@@ -108,7 +108,7 @@ class BarnesHutSummation {
         }
       }
     }
-    total_position *= 1.0f / mass;
+    total_position *= 1.0_f / mass;
     if (total_position.abnormal()) {
       P(mass);
       for (int i = 0; i < 8; i++) {
@@ -123,7 +123,7 @@ class BarnesHutSummation {
   }
 
   int create_child(int t, int child_index) {
-    return create_child(t, child_index, Particle(Vector3(0.0f), 0.0f));
+    return create_child(t, child_index, Particle(Vector3(0.0_f), 0.0_f));
   }
 
   int create_child(int t, int child_index, const Particle &p) {
@@ -145,7 +145,7 @@ class BarnesHutSummation {
                   real margin_real,
                   const std::vector<Particle> &particles) {
     this->resolution = resolution;
-    this->inv_resolution = 1.0f / resolution;
+    this->inv_resolution = 1.0_f / resolution;
     this->margin = (int)std::ceil(margin_real * inv_resolution);
     assert(particles.size() != 0);
     Vector3 lower(1e30f);
@@ -228,7 +228,7 @@ class BarnesHutSummation {
       // TODO: fine level
       // TODO: only one particle?
       int t = 1;
-      Vector3 ret(0.0f);
+      Vector3 ret(0.0_f);
       Vector3 u = get_coord(p.position);
       for (int k = 0; k < total_levels; k++) {
           int cp = get_child_index(u, k);
@@ -254,7 +254,7 @@ class BarnesHutSummation {
     if (nodes[t].is_leaf()) {
       return func(p, node.p);
     }
-    Vector3 ret(0.0f);
+    Vector3 ret(0.0_f);
     Vector3i u = get_coord(p.position);
     for (int c = 0; c < 8; c++) {
       if (node.children[c]) {
@@ -339,7 +339,7 @@ class NBody : public Simulation3D {
     std::vector<BHP> bhps;
     bhps.reserve(particles.size());
     for (auto &p : particles) {
-      bhps.push_back(BHP(p.position, 1.0f));
+      bhps.push_back(BHP(p.position, 1.0_f));
     }
 
     bhs.initialize(1e-4_f, 1e-3_f, bhps);
@@ -364,10 +364,10 @@ class NBody : public Simulation3D {
       ThreadedTaskManager::run((int)particles.size(), num_threads, [&](int i) {
         auto &p = particles[i];
         /*
-        Vector3 total_f(0.0f);
+        Vector3 total_f(0.0_f);
         for (int j = 0; j < (int)particles.size(); j++) {
             auto &q = particles[j];
-            total_f += f(BHP(p.position, 1.0f), BHP(q.position, 1.0f));
+            total_f += f(BHP(p.position, 1.0_f), BHP(q.position, 1.0_f));
         }
 
         auto err = length(total_f_bhs - total_f) / length(total_f);
@@ -377,7 +377,7 @@ class NBody : public Simulation3D {
         P(total_f_bhs);
         P(err);
         */
-        Vector3 total_f_bhs = bhs.summation(1, BHP(p.position, 1.0f), f);
+        Vector3 total_f_bhs = bhs.summation(1, BHP(p.position, 1.0_f), f);
         CV(total_f_bhs);
         particles[i].velocity += total_f_bhs * gravitation * dt;
         CV(particles[i].velocity);

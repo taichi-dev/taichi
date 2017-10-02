@@ -145,7 +145,7 @@ void Game::Run() {
             Vector2D p = target->GetTransformToWorld()(shapeR +
     Vector2D::Origin);
             graphics.DrawLine(p.x, p.y, input.mouse.position.x,
-    input.mouse.position.y, HSB3f(0.0f, 0.8f, 0.8f), 5.0);
+    input.mouse.position.y, HSB3f(0.0_f, 0.8f, 0.8f), 5.0);
         }
         designer.Redraw();
         bodyLinker.Redraw();

@@ -40,14 +40,14 @@ class Matrix4sBenchmark : public Benchmark {
  protected:
   void iterate() override {
     if (brute_force) {
-      Vector4 ret(0.0f);
+      Vector4 ret(0.0_f);
       Matrix4 Ms(M);
       for (int i = 0; i < workload; i++) {
         ret += Ms * input_s[i];
       }
       dummy = (int)(ret.length());
     } else {
-      Vector4 ret(0.0f);
+      Vector4 ret(0.0_f);
       for (int i = 0; i < workload; i++) {
         ret += M * input[i];
       }

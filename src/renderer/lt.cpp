@@ -34,7 +34,7 @@ class LTRenderer : public Renderer {
     Renderer::initialize(config);
     this->sampler = create_instance<Sampler>(config.get("sampler", "prand"));
     this->volumetric = config.get("volumetric", true);
-    this->buffer.initialize(Vector2i(width, height), Vector3(0.0f));
+    this->buffer.initialize(Vector2i(width, height), Vector3(0.0_f));
     this->photon_counter = 0;
   }
 
@@ -49,7 +49,7 @@ class LTRenderer : public Renderer {
 
   Array2D<Vector3> get_output() {
     Array2D<Vector3> output(width, height);
-    float r = 1.0f / photon_counter;
+    float r = 1.0_f / photon_counter;
     for (auto &ind : output.get_region()) {
       output[ind] = buffer[ind] * r;
     }
@@ -57,7 +57,7 @@ class LTRenderer : public Renderer {
   }
 
   virtual void write_path_contribution(const PathContribution &cont,
-                                       real scale = 1.0f) {
+                                       real scale = 1.0_f) {
     if (0 <= cont.x && cont.x <= 1 - eps && 0 <= cont.y && cont.y <= 1 - eps) {
       int ix = (int)floor(cont.x * width), iy = (int)floor(cont.y * height);
       this->buffer[ix][iy] += width * height * scale * cont.c;
@@ -100,7 +100,7 @@ class LTRenderer : public Renderer {
     light_bsdf.sample(light_bsdf.get_geometry_normal(), rand(), rand(), dir,
                       flux, _pdf, _event);
     // constant?
-    flux *= Vector3(1.0f / pdf) * tri.area;
+    flux *= Vector3(1.0_f / pdf) * tri.area;
     if (min_path_length <= 1) {
       connect_to_camera(pos, tri.normal, flux, light_bsdf, tri.normal);
     }
@@ -128,7 +128,7 @@ class LTRenderer : public Renderer {
       Vector3 color = f * bsdf.cos_theta(out_dir) / pdf;
       real p = color.max();
       if (p < 1 && rand() < p) {
-        flux = (1.0f / p) * flux;
+        flux = (1.0_f / p) * flux;
       } else {
         break;
       }

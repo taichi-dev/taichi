@@ -40,7 +40,7 @@ class MultigridPoissonSolver3D : public PoissonSolver3D {
     SystemRow(
         int _ =
             0) {  // _ is for Array3D initialization... Let's fix it later...
-      inv_numerator = 0.0f;
+      inv_numerator = 0.0_f;
       neighbours = 0;
     }
 
@@ -151,13 +151,13 @@ class MultigridPoissonSolver3D : public PoissonSolver3D {
           }
           system[ind].set_neighbour_cell_type(i, cell);
           if (cell == DIRICHLET || cell == INTERIOR) {
-            system[ind].inv_numerator += 1.0f;
+            system[ind].inv_numerator += 1.0_f;
           }
         }
         if (boundaries[l][ind] != INTERIOR)
           system[ind].inv_numerator = 0;
         else {
-          system[ind].inv_numerator = 1.0f / system[ind].inv_numerator;
+          system[ind].inv_numerator = 1.0_f / system[ind].inv_numerator;
         }
       }
       systems.push_back(system);
@@ -237,7 +237,7 @@ class MultigridPoissonSolver3D : public PoissonSolver3D {
               }
               pressure[ind] = res * system[ind].inv_numerator;
             } else {
-              pressure[ind] = 0.0f;
+              pressure[ind] = 0.0_f;
             }
           }
         });
@@ -265,7 +265,7 @@ class MultigridPoissonSolver3D : public PoissonSolver3D {
               real delta = res * system[ind].inv_numerator - pressure[ind];
               pressure[ind] += delta * 0.666666666667f;
             } else {
-              pressure[ind] = 0.0f;
+              pressure[ind] = 0.0_f;
             }
           }
         });
@@ -275,12 +275,12 @@ class MultigridPoissonSolver3D : public PoissonSolver3D {
 
   void apply_L(const System &system, const Array &pressure, Array &output) {
     for (auto &ind : pressure.get_region()) {
-      if (system[ind].inv_numerator == 0.0f) {
-        output[ind] = 0.0f;
+      if (system[ind].inv_numerator == 0.0_f) {
+        output[ind] = 0.0_f;
         continue;
       }
       real pressure_center = pressure[ind];
-      real res = 0.0f;
+      real res = 0.0_f;
       for (int k = 0; k < 6; k++) {
         Vector3i offset = neighbour6_3d[k];
         CellType type = system[ind].get_neighbour_cell_type(k);
@@ -300,11 +300,11 @@ class MultigridPoissonSolver3D : public PoissonSolver3D {
                         Array &residual) {
     parallel_for_each_cell(residual, 128, [&](const Index3D &ind) {
       if (system[ind].inv_numerator == 0) {
-        residual[ind] = 0.0f;
+        residual[ind] = 0.0_f;
         return;
       }
       real pressure_center = pressure[ind];
-      real res = 0.0f;
+      real res = 0.0_f;
       for (int k = 0; k < 6; k++) {
         Vector3i offset = neighbour6_3d[k];
         CellType type = system[ind].get_neighbour_cell_type(k);
@@ -332,7 +332,7 @@ class MultigridPoissonSolver3D : public PoissonSolver3D {
                              x[ind.i * 2 + 1][ind.j * 2 + 1][ind.k * 2 + 0] +
                              x[ind.i * 2 + 1][ind.j * 2 + 1][ind.k * 2 + 1];
       } else {
-        x_downsampled[ind] = 0.0f;
+        x_downsampled[ind] = 0.0_f;
       }
     }
   }
@@ -348,7 +348,7 @@ class MultigridPoissonSolver3D : public PoissonSolver3D {
 
   void run(int level) {
     if (use_as_preconditioner)
-      pressures[level].reset(0.0f);
+      pressures[level].reset(0.0_f);
     if (residuals[level].get_size() <= size_threshold) {  // 4 * 4 * 4
       gauss_seidel(systems[level], residuals[level], pressures[level], 100);
     } else {
@@ -409,7 +409,7 @@ class CGPoissonSolver3D : public MultigridPoissonSolver3D {
       double sigma = p.dot_double(z);
       double alpha = rho / max(1e-20, sigma);
       r.add_in_place(-(real)alpha, z);
-      mu = has_null_space ? r.get_average() : 0.0f;
+      mu = has_null_space ? r.get_average() : 0.0_f;
       r -= mu;
       nu = r.abs_max();
       r.print_abs_max_pos();
@@ -461,7 +461,7 @@ class MultigridPCGPoissonSolver3D : public MultigridPoissonSolver3D {
       double sigma = p.dot_double(z);
       double alpha = rho / max(1e-20, sigma);
       r.add_in_place(-(real)alpha, z);
-      mu = has_null_space ? r.get_average() : 0.0f;
+      mu = has_null_space ? r.get_average() : 0.0_f;
       r -= mu;
       nu = r.abs_max();
       r.print_abs_max_pos();

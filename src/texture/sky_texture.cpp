@@ -42,7 +42,7 @@ Vector3 lerp(Vector3 a, Vector3 b, Vector3 x) {
 */
 
 real smoothstep(real edge0, real edge1, real x) {
-  real t = clamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
+  real t = clamp((x - edge0) / (edge1 - edge0), 0.0_f, 1.0_f);
   return t * t * (3.0f - 2.0f * t);
 }
 
@@ -81,14 +81,14 @@ class SkyTexture final : public Texture {
   // cutoffAngle = pi / 1.95;
   static constexpr real cutoffAngle = 1.6110731556870734f;
   static constexpr real steepness = 1.5f;
-  static constexpr real EE = 1000.0f;
+  static constexpr real EE = 1000.0_f;
 
   static real sunIntensity(real zenithAngleCos) {
-    zenithAngleCos = clamp(zenithAngleCos, -1.0f, 1.0f);
+    zenithAngleCos = clamp(zenithAngleCos, -1.0_f, 1.0_f);
     return EE *
            std::max(
-               0.0f,
-               1.0f - std::pow(e,
+               0.0_f,
+               1.0_f - std::pow(e,
                                -((cutoffAngle - std::acos(zenithAngleCos)) /
                                  steepness)));
   }
@@ -117,26 +117,26 @@ class SkyTexture final : public Texture {
   static constexpr real ONE_OVER_FOURPI = 0.07957747f;
 
   static real rayleighPhase(real cosTheta) {
-    return THREE_OVER_SIXTEENPI * (1.0f + std::pow(cosTheta, 2.0f));
+    return THREE_OVER_SIXTEENPI * (1.0_f + std::pow(cosTheta, 2.0f));
   }
 
   static real hgPhase(real cosTheta, real g) {
     real g2 = std::pow(g, 2.0f);
-    real inverse = 1.0f / pow(1.0f - 2.0f * g * cosTheta + g2, 1.5f);
-    return ONE_OVER_FOURPI * ((1.0f - g2) * inverse);
+    real inverse = 1.0_f / pow(1.0_f - 2.0f * g * cosTheta + g2, 1.5f);
+    return ONE_OVER_FOURPI * ((1.0_f - g2) * inverse);
   }
 
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    TC_LOAD_CONFIG(luminance, 1.0f);
-    TC_LOAD_CONFIG(turbidity, 10.0f);
+    TC_LOAD_CONFIG(luminance, 1.0_f);
+    TC_LOAD_CONFIG(turbidity, 10.0_f);
     TC_LOAD_CONFIG(rayleigh, 2.0f);
     TC_LOAD_CONFIG(mie_coefficient, 0.005f);
     TC_LOAD_CONFIG(mie_directional_g, 0.8f);
-    TC_LOAD_CONFIG(cameraPos, Vector3(0.0f));
-    real theta = config.get("direction", 0.0f) * 2 * pi;
-    real phi = (config.get("height", 0.0f) - 0.5) * pi;
+    TC_LOAD_CONFIG(cameraPos, Vector3(0.0_f));
+    real theta = config.get("direction", 0.0_f) * 2 * pi;
+    real phi = (config.get("height", 0.0_f) - 0.5) * pi;
     sun_position =
         Vector3(cos(theta) * cos(phi), sin(phi), sin(theta) * cos(phi));
   }
@@ -161,9 +161,9 @@ class SkyTexture final : public Texture {
     vSunE = sunIntensity(dot(vSunDirection, up));
 
     vSunfade =
-        1.0f - clamp(1.0f - std::exp((sun_position.y / 450000.0f)), 0.0f, 1.0f);
+        1.0_f - clamp(1.0_f - std::exp((sun_position.y / 450000.0_f)), 0.0_f, 1.0_f);
 
-    real rayleighCoefficient = rayleigh - (1.0f * (1.0f - vSunfade));
+    real rayleighCoefficient = rayleigh - (1.0_f * (1.0_f - vSunfade));
 
     // extinction (absorbtion + out scattering)
     // rayleigh coefficients
@@ -172,11 +172,11 @@ class SkyTexture final : public Texture {
     // mie coefficients
     vBetaM = totalMie(turbidity) * mie_coefficient;
     real zenithAngle = std::acos(
-        std::max(0.0f, dot(up, normalize(vWorldPosition - cameraPos))));
+        std::max(0.0_f, dot(up, normalize(vWorldPosition - cameraPos))));
     real inverse =
-        1.0f /
+        1.0_f /
         (std::cos(zenithAngle) +
-         0.15f * std::pow(93.885f - ((zenithAngle * 180.0f) / pi), -1.253f));
+         0.15f * std::pow(93.885f - ((zenithAngle * 180.0_f) / pi), -1.253f));
     real sR = rayleighZenithLength * inverse;
     real sM = mieZenithLength * inverse;
 
@@ -193,13 +193,13 @@ class SkyTexture final : public Texture {
     Vector3 betaMTheta = vBetaM * mPhase;
 
     Vector3 Lin = pow(vSunE * ((betaRTheta + betaMTheta) / (vBetaR + vBetaM)) *
-                          (Vector3(1.0f) - Fex),
+                          (Vector3(1.0_f) - Fex),
                       Vector3(1.5f));
     Lin *=
-        lerp(Vector3(1.0f),
+        lerp(Vector3(1.0_f),
              pow(vSunE * ((betaRTheta + betaMTheta) / (vBetaR + vBetaM)) * Fex,
-                 Vector3(1.0f / 2.0f)),
-             clamp(pow(1.0f - dot(up, vSunDirection), 5.0f), 0.0f, 1.0f));
+                 Vector3(1.0_f / 2.0f)),
+             clamp(pow(1.0_f - dot(up, vSunDirection), 5.0f), 0.0_f, 1.0_f));
 
     // nightsky
     Vector3 direction = normalize(vWorldPosition - cameraPos);
@@ -208,15 +208,15 @@ class SkyTexture final : public Texture {
     real phi = std::atan2(direction.z,
                           direction.x);  // azimuth --> x-axis [-pi/2, pi/2]
     Vector2 uv =
-        Vector2(phi, theta) / Vector2(2.0f * pi, pi) + Vector2(0.5f, 0.0f);
+        Vector2(phi, theta) / Vector2(2.0f * pi, pi) + Vector2(0.5f, 0.0_f);
     Vector3 L0 = Vector3(0.1f) * Fex;
 
     // composition + solar disc
     real sundisk = smoothstep(sunAngularDiameterCos,
                               sunAngularDiameterCos + 0.00002f, cosTheta);
-    L0 += (vSunE * 19000.0f * Fex) * sundisk;
+    L0 += (vSunE * 19000.0_f * Fex) * sundisk;
 
-    Vector3 texColor = (Lin + L0) * 0.04f + Vector3(0.0f, 0.0003f, 0.00075f);
+    Vector3 texColor = (Lin + L0) * 0.04f + Vector3(0.0_f, 0.0003f, 0.00075f);
 
     // Vector3 curr = Uncharted2Tonemap( ( log2( 2.0 / pow( luminance, 4.0 ) ) )
     // * texColor );
@@ -224,11 +224,11 @@ class SkyTexture final : public Texture {
 
     // Vector3 retColor = pow( color, Vector3( 1.0 / ( 1.2 + ( 1.2 * vSunfade )
     // ) ) );
-    return Vector4(texColor, 1.0f);
+    return Vector4(texColor, 1.0_f);
   }
 };
 
-const Vector3 SkyTexture::up(0.0f, 1.0f, 0.0f);
+const Vector3 SkyTexture::up(0.0_f, 1.0_f, 0.0_f);
 // wavelength of used primaries, according to preetham
 const Vector3 SkyTexture::lambda(680E-9f, 550E-9f, 450E-9f);
 

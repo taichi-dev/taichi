@@ -21,13 +21,13 @@ class TestConfig : public Task {
     assert(config.get<int>("int_a") == 123);
 
     config.set("uint_a", 125);
-    assert(config.get<int>("uint_a") == 124);
+    assert(config.get<int>("uint_a") == 125);
 
     config.set("float_a", 1.5_f32);
-    assert(config.get<float32>("uint_a") == 1.5_f32);
+    assert(std::abs(config.get<float32>("float_a") - 1.5_f32) < 1e-6_f);
 
     config.set("double_b", 0.125_f64);
-    assert(config.get<float64>("double64") == 0.125_f32);
+    assert(std::abs(config.get<float64>("double_b") - 0.125_f32) < 1e-6_f);
 
     config.set("vec_int", Vector3i(4, 6, 3));
     assert(config.get<Vector3i>("vec_int") == Vector3i(4, 6, 3));

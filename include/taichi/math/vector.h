@@ -565,21 +565,18 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
   }
 
   template <int a,
-      int b,
-      int c,
-      int d,
-      int DIM_ = DIM,
-      typename T_ = T,
-      InstSetExt ISE_ = ISE,
-      typename std::enable_if_t<!SIMD_4_32F<DIM_, T_, ISE_>, int> = 0>
+            int b,
+            int c,
+            int d,
+            int DIM_ = DIM,
+            typename T_ = T,
+            InstSetExt ISE_ = ISE,
+            typename std::enable_if_t<!SIMD_4_32F<DIM_, T_, ISE_>, int> = 0>
   VectorND permute() const {
     return VectorND(this->d[a], this->d[b], this->d[c], this->d[d]);
   }
 
-  template <int a,
-            int DIM_ = DIM,
-            typename T_ = T,
-            InstSetExt ISE_ = ISE>
+  template <int a, int DIM_ = DIM, typename T_ = T, InstSetExt ISE_ = ISE>
   VectorND broadcast() const {
     return permute<a, a, a, a>();
   }
@@ -732,9 +729,9 @@ inline typename std::
 template <int DIM, typename T, InstSetExt ISE = default_instruction_set>
 struct MatrixND {
   template <int DIM_, typename T_, InstSetExt ISE_>
-  static constexpr bool SIMD_4_32F = (DIM_ == 3 || DIM_ == 4) &&
-                                     std::is_same<T_, float32>::value &&ISE_
-                                         >= InstSetExt::SSE;
+  static constexpr bool SIMD_4_32F =
+      (DIM_ == 3 || DIM_ == 4) && std::is_same<T_, float32>::value &&
+      (ISE_ >= InstSetExt::SSE);
 
   template <int DIM_, typename T_, InstSetExt ISE_>
   static constexpr bool SIMD_NONE = !SIMD_4_32F<DIM_, T_, ISE_>;
@@ -930,37 +927,33 @@ struct MatrixND {
 
   auto frobenius_norm() const { return std::sqrt(frobenius_norm2()); }
 
-  template <int DIM_ = DIM,
-            typename T_ = T,
-            InstSetExt ISE_ = ISE,
-            typename std::enable_if_t<SIMD_NONE<DIM_, T_, ISE_> || DIM_ != 4,
-                                      int> = 0>
+  // Matrix4
   MatrixND transposed() const {
     MatrixND ret;
+    // TC_STATIC_IF((SIMD_4_32F<DIM, T, ISE> && DIM == 4)) {
+    // TC_STATIC_IF((std::is_same<T, float32>::value && DIM == 4)) {
+    /*
+    TC_STATIC_IF((true)) {
+      static_assert(std::is_same<T, float32>(), "123");
+      static_assert(std::is_same<T, float64>(), "456");
+      Vector4 t0(_mm_unpacklo_ps(this->d[0], this->d[1]));
+      Vector4 t2(_mm_unpacklo_ps(this->d[2], this->d[3]));
+      Vector4 t1(_mm_unpackhi_ps(this->d[0], this->d[1]));
+      Vector4 t3(_mm_unpackhi_ps(this->d[2], this->d[3]));
+      ret[0] = Vector4(_mm_movelh_ps(t0, t2));
+      ret[1] = Vector4(_mm_movehl_ps(t2, t0));
+      ret[2] = Vector4(_mm_movelh_ps(t1, t3));
+      ret[3] = Vector4(_mm_movehl_ps(t3, t1));
+    }
+    TC_STATIC_ELSE {
+       */
     for (int i = 0; i < DIM; i++) {
       for (int j = 0; j < DIM; j++) {
         ret[i][j] = d[j][i];
       }
     }
-    return ret;
-  }
-
-  // Matrix4
-  template <int DIM_ = DIM,
-            typename T_ = T,
-            InstSetExt ISE_ = ISE,
-            typename std::enable_if_t<SIMD_4_32F<DIM_, T_, ISE_> && DIM_ == 4,
-                                      int> = 0>
-  MatrixND transposed() const {
-    MatrixND ret;
-    Vector4 t0(_mm_unpacklo_ps(this->d[0], this->d[1]));
-    Vector4 t2(_mm_unpacklo_ps(this->d[2], this->d[3]));
-    Vector4 t1(_mm_unpackhi_ps(this->d[0], this->d[1]));
-    Vector4 t3(_mm_unpackhi_ps(this->d[2], this->d[3]));
-    ret[0] = Vector4(_mm_movelh_ps(t0, t2));
-    ret[1] = Vector4(_mm_movehl_ps(t2, t0));
-    ret[2] = Vector4(_mm_movelh_ps(t1, t3));
-    ret[3] = Vector4(_mm_movehl_ps(t3, t1));
+    //}
+    // TC_STATIC_END_IF
     return ret;
   }
 

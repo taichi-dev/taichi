@@ -130,7 +130,12 @@ using uint64 = unsigned long long;
 #endif
 using float32 = float;
 using float64 = double;
-using real = float;
+
+#ifdef TC_USE_DOUBLE
+using real = float64;
+#else
+using real = float32;
+#endif
 
 TC_EXPORT void print_traceback();
 

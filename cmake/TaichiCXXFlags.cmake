@@ -48,6 +48,13 @@ else ()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_DISABLE_SSE")
 endif ()
 
+if (TC_USE_DOUBLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_USE_DOUBLE")
+    message("Using float64 precision")
+else ()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_DISABLE_SSE")
+endif ()
+
 if (TC_USE_MPI)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_USE_MPI")
     message("Using MPI")

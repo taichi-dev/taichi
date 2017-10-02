@@ -52,7 +52,6 @@ class Config {
     }
   }
 
-
   template <typename V>
   typename std::enable_if_t<(!is_VectorND<V>()), V> get(std::string key) const;
 

@@ -21,7 +21,7 @@ def update_tk():
   assert tk_root is not None
   tk_root.update_idletasks()
   tk_root.update()
-  
+
 
 class ImageViewer(object):
 
@@ -50,4 +50,3 @@ class ImageViewer(object):
 
   def callback(self):
     self.root.quit()
-

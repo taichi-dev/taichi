@@ -89,8 +89,8 @@ class SkyTexture final : public Texture {
            std::max(
                0.0_f,
                1.0_f - std::pow(e,
-                               -((cutoffAngle - std::acos(zenithAngleCos)) /
-                                 steepness)));
+                                -((cutoffAngle - std::acos(zenithAngleCos)) /
+                                  steepness)));
   }
 
   static Vector3 totalMie(real T) {
@@ -160,8 +160,8 @@ class SkyTexture final : public Texture {
 
     vSunE = sunIntensity(dot(vSunDirection, up));
 
-    vSunfade =
-        1.0_f - clamp(1.0_f - std::exp((sun_position.y / 450000.0_f)), 0.0_f, 1.0_f);
+    vSunfade = 1.0_f - clamp(1.0_f - std::exp((sun_position.y / 450000.0_f)),
+                             0.0_f, 1.0_f);
 
     real rayleighCoefficient = rayleigh - (1.0_f * (1.0_f - vSunfade));
 

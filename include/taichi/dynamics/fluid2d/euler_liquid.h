@@ -109,7 +109,8 @@ class EulerLiquid : public Fluid {
   static Vector2 position_noise();
 
   static real kernel(const Vector2 &c) {
-    return max(0.0_f, 1.0_f - std::abs(c.x)) * max(0.0_f, 1.0_f - std::abs(c.y));
+    return max(0.0_f, 1.0_f - std::abs(c.x)) *
+           max(0.0_f, 1.0_f - std::abs(c.y));
   }
 
   virtual void advect_liquid_levelset(real delta_t);

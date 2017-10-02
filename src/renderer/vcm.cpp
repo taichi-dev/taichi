@@ -34,7 +34,8 @@ class VCMRenderer : public BidirectionalRenderer {
     use_vc = config.get("use_vc", true);
     use_vm = config.get("use_vm", true);
     alpha = config.get("alpha", 0.66667f);
-    bdpm_image.initialize(Vector2i(width, height), Vector3(0.0_f, 0.0_f, 0.0_f));
+    bdpm_image.initialize(Vector2i(width, height),
+                          Vector3(0.0_f, 0.0_f, 0.0_f));
     radius = initial_radius;
     n_samples_per_stage = width * height / stage_frequency;
   }

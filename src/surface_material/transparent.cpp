@@ -22,7 +22,8 @@ class TransparentMaterial : public SurfaceMaterial {
  public:
   void initialize(const Config &config) override {
     mask = AssetManager::get_asset<Texture>(config.get<int>("mask"));
-    nested = AssetManager::get_asset<SurfaceMaterial>(config.get<int>("nested"));
+    nested =
+        AssetManager::get_asset<SurfaceMaterial>(config.get<int>("nested"));
   }
 
   virtual bool is_index_matched() const override {

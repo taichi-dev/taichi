@@ -96,9 +96,9 @@ class MPM:
       self.simulation_total_time = 0
     self.c.step(step_t)
     self.simulation_total_time += time.time() - T
-    print('* Step Time: %.2f [tot: %.2f per frame %.2f]' % (
-        time.time() - T, time.time() - self.start_simulation_time,
-        self.simulation_total_time / (self.frame + 1)))
+    print('* Step Time: %.2f [tot: %.2f per frame %.2f]' %
+          (time.time() - T, time.time() - self.start_simulation_time,
+           self.simulation_total_time / (self.frame + 1)))
     image_buffer = tc_core.Array2DVector3(
         Vectori(self.video_manager.width, self.video_manager.height),
         Vector(0, 0, 0.0))

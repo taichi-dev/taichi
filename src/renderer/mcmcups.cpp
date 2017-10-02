@@ -124,10 +124,10 @@ class UPSRenderer : public BidirectionalRenderer {
   }
 
   virtual void render_stage() override {
-    radius =
-        initial_radius *
-        (shrinking_radius ? (real)pow(num_stages + 1.0_f, -(1.0_f - alpha) / 2.0f)
-                          : 1);
+    radius = initial_radius *
+             (shrinking_radius
+                  ? (real)pow(num_stages + 1.0_f, -(1.0_f - alpha) / 2.0f)
+                  : 1);
     vm_pdf_constant = pi * radius * radius;
     hash_grid.initialize(radius, width * height * 10 + 7);
     eye_paths.clear();
@@ -235,10 +235,10 @@ class MCMCUPSRenderer : public UPSRenderer {
   }
 
   virtual void render_stage() override {
-    radius =
-        initial_radius *
-        (shrinking_radius ? (real)pow(num_stages + 1.0_f, -(1.0_f - alpha) / 2.0f)
-                          : 1);
+    radius = initial_radius *
+             (shrinking_radius
+                  ? (real)pow(num_stages + 1.0_f, -(1.0_f - alpha) / 2.0f)
+                  : 1);
     vm_pdf_constant = pi * radius * radius;
     hash_grid.initialize(radius, width * height * 10 + 7);
     eye_paths.clear();

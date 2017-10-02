@@ -102,7 +102,8 @@ void Smoke3D::initialize(const Config &config) {
   solver_config.set("res", res)
       .set("num_threads", num_threads)
       .set("padding", padding)
-      .set("maximum_iterations", config.get<int>("maximum_pressure_iterations"));
+      .set("maximum_iterations",
+           config.get<int>("maximum_pressure_iterations"));
   pressure_solver = create_instance<PoissonSolver3D>(
       config.get<std::string>("pressure_solver"), solver_config);
   u = Array(res + Vector3i(1, 0, 0), 0.0_f, Vector3(0.0_f, 0.5f, 0.5f));

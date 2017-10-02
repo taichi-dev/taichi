@@ -81,7 +81,8 @@ class EmissiveMaterial : public SurfaceMaterial {
                                 const Vector3 &out,
                                 const Vector2 &uv) const override {
     auto color = color_sampler->sample3(uv);
-    return (in.z * out.z > 0 ? 1.0_f : 0.0_f) * color;  // No division by pi here.
+    return (in.z * out.z > 0 ? 1.0_f : 0.0_f) *
+           color;  // No division by pi here.
   }
 
   virtual real get_importance(const Vector2 &uv) const override {
@@ -242,7 +243,7 @@ class GlossyMaterial : public SurfaceMaterial {
     real glossiness = glossiness_sampler->sample(uv).x;
     const Vector3 r = reflect(in);
     const Vector3 p = r.z > 1 - 1e-5_f ? Vector3(0, 1, 0)
-                                      : normalized(cross(Vector3(0, 0, 1), r));
+                                       : normalized(cross(Vector3(0, 0, 1), r));
     const Vector3 q = normalized(cross(r, p));
     const real phi = 2.0f * pi * u, d = pow(v, 1.0_f / (glossiness + 1.0_f));
     const real s = sin(phi), c = cos(phi), t = sqrt(1.0_f - d * d);

@@ -39,7 +39,8 @@ void Renderer::write_output(std::string fn) {
                tmp.get_height() / 0.18f;
   for (auto ind : tmp.get_region()) {
     for (int i = 0; i < 3; i++) {
-      tmp[ind][i] = std::pow(clamp(tmp[ind][i] / scale, 0.0_f, 1.0_f), 1 / 2.2f);
+      tmp[ind][i] =
+          std::pow(clamp(tmp[ind][i] / scale, 0.0_f, 1.0_f), 1 / 2.2f);
     }
   }
   tmp.write(fn);

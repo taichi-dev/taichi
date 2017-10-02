@@ -26,7 +26,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
 include(cmake/TaichiCXXFlags.cmake)
 include(cmake/TaichiCore.cmake)
-include(cmake/TaichiPakua.cmake)
 include(cmake/TaichiMain.cmake)
 
 set(TAICHI_PROJECT_LIBRARIES "")

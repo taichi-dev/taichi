@@ -111,7 +111,7 @@ bool SPPMRenderer::trace_photon(
   light_bsdf.sample(light_bsdf.get_geometry_normal(), rand(), rand(), dir, flux,
                     _pdf, _event);
   flux *= (1.0f / pdf) * tri.area;
-  Ray ray(pos + dir * 1e-4f, dir, 0);  // TODO: ... 1e-4f
+  Ray ray(pos + dir * 1e-4_f, dir, 0);  // TODO: ... 1e-4_f
   for (int depth = 0; depth + 1 <= max_path_length; depth++) {
     IntersectionInfo info = sg->query(ray);
     if (!info.intersected)

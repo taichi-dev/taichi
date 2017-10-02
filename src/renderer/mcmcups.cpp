@@ -270,7 +270,7 @@ class MCMCUPSRenderer : public UPSRenderer {
       normalizers[i].clear();
       all_pcs[i].clear();
     }
-    normalizers[vis].insert(1e-6f, 1e-5f);
+    normalizers[vis].insert(1e-6_f, 1e-5_f);
 
     // 2. Generate light paths (photons)
 
@@ -404,7 +404,7 @@ class MCMCUPSRenderer : public UPSRenderer {
       mutation_strength =
           mutation_strength +
           (ratio_accepted - target_mutation_acceptance) / mutated;
-      mutation_strength = std::min(10.0f, max(1e-7f, mutation_strength));
+      mutation_strength = std::min(10.0f, max(1e-7_f, mutation_strength));
     }
     real ratio_accepted = (real)accepted / (real)mutated;
     P(ratio_accepted);

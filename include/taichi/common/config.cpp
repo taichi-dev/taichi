@@ -44,34 +44,4 @@ std::string Config::get<std::string>(std::string key) const {
   return this->get_string(key);
 }
 
-template <>
-VectorND<2, real> Config::get<VectorND<2, real>>(std::string key) const {
-  return this->get_vec2(key);
-}
-
-template <>
-VectorND<3, real> Config::get<VectorND<3, real>>(std::string key) const {
-  return this->get_vec3(key);
-}
-
-template <>
-VectorND<4, real> Config::get<VectorND<4, real>>(std::string key) const {
-  return this->get_vec4(key);
-}
-
-template <>
-VectorND<2, int> Config::get<VectorND<2, int>>(std::string key) const {
-  return this->get_vec2i(key);
-}
-
-template <>
-VectorND<3, int> Config::get<VectorND<3, int>>(std::string key) const {
-  return this->get_vec3i(key);
-}
-
-template <>
-VectorND<4, int> Config::get<VectorND<4, int>>(std::string key) const {
-  return this->get_vec4i(key);
-}
-
 TC_NAMESPACE_END

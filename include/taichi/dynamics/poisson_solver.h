@@ -15,7 +15,7 @@
 TC_NAMESPACE_BEGIN
 class PoissonSolver2D : public Unit {
  protected:
-  typedef Array2D<float> Array;
+  typedef Array2D<real> Array;
 
  public:
   typedef unsigned char CellType;
@@ -24,7 +24,7 @@ class PoissonSolver2D : public Unit {
   static const CellType DIRICHLET = 1;
   static const CellType NEUMANN = 2;
 
-  virtual void run(const Array &b, Array &x, float tolerance){};
+  virtual void run(const Array &b, Array &x, real tolerance){};
 
   virtual void set_boundary_condition(const BCArray &boundary){};
 };
@@ -33,7 +33,7 @@ TC_INTERFACE(PoissonSolver2D);
 
 class PoissonSolver3D : public Unit {
  protected:
-  typedef Array3D<float> Array;
+  typedef Array3D<real> Array;
   int maximum_iterations;
 
  public:
@@ -45,7 +45,7 @@ class PoissonSolver3D : public Unit {
 
   void initialize(const Config &config);
 
-  virtual void run(const Array &b, Array &x, float tolerance){};
+  virtual void run(const Array &b, Array &x, real tolerance){};
 
   virtual void set_boundary_condition(const BCArray &boundary){};
 };

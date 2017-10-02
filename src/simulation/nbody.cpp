@@ -342,7 +342,7 @@ class NBody : public Simulation3D {
       bhps.push_back(BHP(p.position, 1.0f));
     }
 
-    bhs.initialize(1e-4f, 1e-3f, bhps);
+    bhs.initialize(1e-4_f, 1e-3_f, bhps);
     // bhs.print_tree(1, 0);
 
     auto f = [](const BHP &p, const BHP &q) {
@@ -350,7 +350,7 @@ class NBody : public Simulation3D {
       CV(q.position);
       Vector3 d = p.position - q.position;
       real dist2 = dot(d, d);
-      dist2 += 1e-4f;
+      dist2 += 1e-4_f;
       CV(d);
       d *= p.mass * q.mass / (dist2 * sqrt(dist2));
       CV(p.mass);

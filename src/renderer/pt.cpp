@@ -112,7 +112,7 @@ class PathTracingRenderer : public Renderer {
         f = bsdf.evaluate(in_dir, out_dir);
         bsdf_p = bsdf.probability_density(in_dir, out_dir);
       }
-      Ray ray(info.pos + out_dir * 1e-3f, out_dir);
+      Ray ray(info.pos + out_dir * 1e-3_f, out_dir);
       IntersectionInfo test_info;
       Vector3 att = get_attenuation(stack, ray, rand, test_info);
       if (att.max() == 0.0f) {
@@ -190,8 +190,8 @@ class PathTracingRenderer : public Renderer {
 
   virtual void write_path_contribution(const PathContribution &cont,
                                        real scale = 1.0f) {
-    auto x = clamp(cont.x, 0.0f, 1.0f - 1e-7f);
-    auto y = clamp(cont.y, 0.0f, 1.0f - 1e-7f);
+    auto x = clamp(cont.x, 0.0f, 1.0f - 1e-7_f);
+    auto y = clamp(cont.y, 0.0f, 1.0f - 1e-7_f);
     if (cont.c.abnormal()) {
       P(cont.c);
       return;
@@ -234,7 +234,7 @@ class PathTracingRenderer : public Renderer {
       bsdf.sample(in_dir, rand(), rand(), _, f, pdf, event);
       if (SurfaceEventClassifier::is_index_matched(event)) {
         att *= f * bsdf.cos_theta(-in_dir);
-        ray = Ray(info.pos + ray.dir * 1e-3f, ray.dir);
+        ray = Ray(info.pos + ray.dir * 1e-3_f, ray.dir);
         if (SurfaceEventClassifier::is_entering(event) ||
             SurfaceEventClassifier::is_leaving(event)) {
           if (bsdf.is_entering(in_dir)) {
@@ -341,7 +341,7 @@ Vector3 PathTracingRenderer::calculate_volumetric_direct_lighting(
       f = vol.phase_evaluate(orig, in_dir, out_dir);
       bsdf_p = vol.phase_probability_density(orig, in_dir, out_dir);
     }
-    Ray ray(orig + out_dir * 1e-3f, out_dir);
+    Ray ray(orig + out_dir * 1e-3_f, out_dir);
     IntersectionInfo test_info;
     Vector3 att = get_attenuation(stack, ray, rand, test_info);
     if (att.max() == 0.0f) {
@@ -459,7 +459,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
           stack.pop();
         }
       }
-      out_ray = Ray(info.pos + out_dir * 1e-4f, out_dir, 1e-5f);
+      out_ray = Ray(info.pos + out_dir * 1e-4_f, out_dir, 1e-5_f);
       real c = abs(dot(out_dir, info.normal));
       if (pdf < 1e-10f) {
         break;
@@ -478,7 +478,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
                calculate_volumetric_direct_lighting(in_dir, orig, rand, stack);
       }
       Vector3 out_dir = volume.sample_phase(rand, Ray(orig, ray.dir));
-      out_ray = Ray(orig, out_dir, 1e-5f);
+      out_ray = Ray(orig, out_dir, 1e-5_f);
       f = Vector3(1.0f);
     } else {
       // Volumetric absorption
@@ -563,11 +563,11 @@ class PTSDFRenderer final : public PathTracingRenderer {
     }
     inter.intersected = true;
     real coord_u = ray.u, coord_v = ray.v;
-    inter.pos = ray.at(dist - 1e-3f);
+    inter.pos = ray.at(dist - 1e-3_f);
     inter.front = true;
     // Verify interpolated normals can lead specular rays to go inside the
     // object.
-    Vector3 normal = normal_at(inter.pos, 1e-4f);
+    Vector3 normal = normal_at(inter.pos, 1e-4_f);
     inter.uv = Vector2(0, 0);
     inter.geometry_normal = inter.front ? normal : -normal;
     inter.normal = inter.front ? normal : -normal;
@@ -639,7 +639,7 @@ class PTSDFRenderer final : public PathTracingRenderer {
                calculate_direct_lighting(in_dir, info, bsdf, rand, stack);
       }
 
-      out_ray = Ray(info.pos + out_dir * 1e-4f, out_dir, 1e-5f);
+      out_ray = Ray(info.pos + out_dir * 1e-4_f, out_dir, 1e-5_f);
       real c = abs(dot(out_dir, info.normal));
       if (pdf < 1e-10f) {
         break;

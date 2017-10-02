@@ -18,7 +18,7 @@ TC_NAMESPACE_BEGIN
 class Camera : public Unit {
  public:
   virtual void initialize(const Config &config) {
-    this->res = config.get_vec2i("res");
+    this->res = config.get<Vector2i>("res");
     this->aspect_ratio = (real)res[0] / res[1];
   }
 

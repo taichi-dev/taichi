@@ -24,7 +24,7 @@ class ConstantTexture final : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    val = config.get_vec4("value");
+    val = config.get<Vector4>("value");
   }
 
   virtual Vector4 sample(const Vector3 &coord) const override { return val; }
@@ -108,7 +108,7 @@ class RectTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    bounds = config.get_vec3("bounds") * 0.5f;
+    bounds = config.get<Vector3>("bounds") * 0.5f;
   }
 
   bool inside(const Vector3 &coord) const {
@@ -271,7 +271,7 @@ class SphereTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    center = config.get_vec3("center");
+    center = config.get<Vector3>("center");
     radius = config.get_real("radius");
   }
 
@@ -291,9 +291,9 @@ class SlicedTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    steps = config.get_vec4("steps");
-    base = config.get_vec4("base");
-    increment = config.get_vec4("increment");
+    steps = config.get<Vector4>("steps");
+    base = config.get<Vector4>("base");
+    increment = config.get<Vector4>("increment");
   }
 
   virtual Vector4 sample(const Vector3 &coord_) const override {
@@ -323,7 +323,7 @@ class MeshTexture : public Texture {
         new SceneGeometry(std::make_shared<Scene>(scene), ray_intersection));
     BoundingBox bb = mesh.get_bounding_box();
     // calc offset and delta_x to keep the mesh in the center of texture
-    resolution = config.get_vec3i("resolution");
+    resolution = config.get<Vector3i>("resolution");
     arr = Array3D<char>(resolution.x, resolution.y, resolution.z);
     real delta_x = 0;
     Vector3i offset;
@@ -388,7 +388,7 @@ class LevelSet3DTexture : public Texture {
   void initialize(const Config &config) override {
     Texture::initialize(config);
     levelset = AssetManager::get_asset<LevelSet3D>(config.get_int("levelset"));
-    bounds = config.get_vec2("bounds");
+    bounds = config.get<Vector2>("bounds");
   }
 
   virtual Vector4 sample(const Vector3 &coord) const override {

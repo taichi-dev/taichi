@@ -78,7 +78,7 @@ class LTRenderer : public Renderer {
       sg->query(test_ray);
       Vector3 d0 = pos - camera->get_origin();
       const real dist2 = dot(d0, d0);
-      if (test_ray.dist > sqrt(dist2) - 1e-4f) {
+      if (test_ray.dist > sqrt(dist2) - 1e-4_f) {
         d0 = normalized(d0);
         const real c = dot(d0, camera->get_dir());
         real scale = real(abs(dot(d0, normal) / dist2 / (c * c * c)) /
@@ -105,7 +105,7 @@ class LTRenderer : public Renderer {
       connect_to_camera(pos, tri.normal, flux, light_bsdf, tri.normal);
     }
     flux = flux * light_bsdf.evaluate(tri.normal, dir) * pi;
-    Ray ray(pos + dir * 1e-4f, dir, 0);  // TODO: ... 1e-4f
+    Ray ray(pos + dir * 1e-4_f, dir, 0);  // TODO: ... 1e-4_f
     for (int depth = 1; depth + 1 <= max_path_length; depth++) {
       IntersectionInfo info = sg->query(ray);
       if (!info.intersected)

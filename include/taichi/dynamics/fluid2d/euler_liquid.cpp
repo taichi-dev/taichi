@@ -38,7 +38,7 @@ void EulerLiquid::initialize_solver(const Config &config) {
       Array<real>(Vector2i(width, height + 1), 0.0_f, Vector2(0.5f, 0.0_f));
   cell_types = Array<CellType>(Vector2i(width, height), CellType::AIR,
                                Vector2(0.5f, 0.5f));
-  gravity = config.get_vec2("gravity");
+  gravity = config.get<Vector2>("gravity");
   maximum_iterations = config.get("maximum_iterations", 300);
   tolerance = config.get("tolerance", 1e-4f);
   theta_threshold = config.get("theta_threshold", 0.1f);

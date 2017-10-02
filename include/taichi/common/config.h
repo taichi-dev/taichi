@@ -26,11 +26,11 @@
 TC_NAMESPACE_BEGIN
 
 // Declare and then load
-#define TC_PULL_CONFIG(name, default_val) \
-  decltype(default_val) name = config.get(#name, default_val)
+//#define TC_PULL_CONFIG(name, default_val) \
+  //decltype(default_val) name = config.get(#name, default_val)
 // Load to `this`
-#define TC_LOAD_CONFIG(name, default_val) \
-  this->name = config.get(#name, default_val)
+//#define TC_LOAD_CONFIG(name, default_val) \
+//  this->name = config.get(#name, default_val)
 
 class Config {
  private:
@@ -79,67 +79,60 @@ class Config {
     return unsigned(std::atoll(get_string(key).c_str()));
   }
 
-#define DEFINE_GET(t)                           \
-  t get(std::string key, t default_val) const { \
-    if (data.find(key) == data.end()) {         \
-      return default_val;                       \
-    } else                                      \
-      return get_##t(key);                      \
+  template <typename V, int N = V::N, typename T=typename V::ScalarType>
+  VectorND<N, T> get(std::string key) const {
+    std::string str = this->get_string(key);
+    std::string temp = "(";
+    for (int i = 0; i < N; i++) {
+      std::string placeholder;
+      if (std::is_same<T, float32>()) {
+        placeholder = "%f";
+      } else if (std::is_same<T, float64>()) {
+        placeholder = "%lf";
+      } else if (std::is_same<T, int32>()) {
+        placeholder = "%d";
+      } else if (std::is_same<T, uint32>()) {
+        placeholder = "%u";
+      } else if (std::is_same<T, int64>()) {
+#ifdef WIN32
+        placeholder = "%I64d";
+#else
+        placeholder = "%lld";
+#endif
+      } else if (std::is_same<T, uint64>()) {
+#ifdef WIN32
+        placeholder = "%I64u";
+#else
+        placeholder = "%llu";
+#endif
+      } else {
+        assert(false);
+      }
+      temp += placeholder;
+      if (i != N - 1) {
+        temp += ",";
+      }
+    }
+    temp += ")";
+    VectorND<N, T> ret;
+    if (N == 1) {
+      sscanf(str.c_str(), temp.c_str(), &ret[0]);
+    } else if (N == 2) {
+      sscanf(str.c_str(), temp.c_str(), &ret[0], &ret[1]);
+    }else if (N == 3) {
+      sscanf(str.c_str(), temp.c_str(), &ret[0], &ret[1], &ret[2]);
+    }else if (N == 4) {
+      sscanf(str.c_str(), temp.c_str(), &ret[0], &ret[1], &ret[2], &ret[3]);
+    }
+    return ret;
   }
 
-  DEFINE_GET(int)
-  DEFINE_GET(int64)
-  DEFINE_GET(unsigned)
-  DEFINE_GET(float)
-  DEFINE_GET(double)
-  DEFINE_GET(bool)
-  std::string get(std::string key, const std::string &default_val) const {
+  template  <typename T>
+  T get(std::string key, const T &default_val) const {
     if (data.find(key) == data.end()) {
       return default_val;
     } else
-      return get_string(key);
-  }
-  std::string get(std::string key, const char *default_val) const {
-    if (data.find(key) == data.end()) {
-      return default_val;
-    } else
-      return get_string(key);
-  }
-  Vector2 get(std::string key, const Vector2 &default_val) const {
-    if (data.find(key) == data.end()) {
-      return default_val;
-    } else
-      return get_vec2(key);
-  }
-  Vector3 get(std::string key, const Vector3 &default_val) const {
-    if (data.find(key) == data.end()) {
-      return default_val;
-    } else
-      return get_vec3(key);
-  }
-  Vector4 get(std::string key, const Vector4 &default_val) const {
-    if (data.find(key) == data.end()) {
-      return default_val;
-    } else
-      return get_vec4(key);
-  }
-  Vector2i get(std::string key, const Vector2i &default_val) const {
-    if (data.find(key) == data.end()) {
-      return default_val;
-    } else
-      return get_vec2i(key);
-  }
-  Vector3i get(std::string key, const Vector3i &default_val) const {
-    if (data.find(key) == data.end()) {
-      return default_val;
-    } else
-      return get_vec3i(key);
-  }
-  Vector4i get(std::string key, const Vector4i &default_val) const {
-    if (data.find(key) == data.end()) {
-      return default_val;
-    } else
-      return get_vec4i(key);
+      return get<T>(key);
   }
 
   bool has_key(std::string key) const { return data.find(key) != data.end(); }
@@ -174,44 +167,6 @@ class Config {
     };
     assert_info(dict.find(s) != dict.end(), "Unkown identifer for bool: " + s);
     return dict[s];
-  }
-
-  Vector2 get_vec2(std::string key) const {
-    Vector2 ret;
-    sscanf_s(get_string(key).c_str(), "(%f,%f)", &ret.x, &ret.y);
-    return ret;
-  }
-
-  Vector2i get_vec2i(std::string key) const {
-    Vector2i ret;
-    sscanf_s(get_string(key).c_str(), "(%d,%d)", &ret.x, &ret.y);
-    return ret;
-  }
-
-  Vector3 get_vec3(std::string key) const {
-    Vector3 ret;
-    sscanf_s(get_string(key).c_str(), "(%f,%f,%f)", &ret.x, &ret.y, &ret.z);
-    return ret;
-  }
-
-  Vector3i get_vec3i(std::string key) const {
-    Vector3i ret;
-    sscanf_s(get_string(key).c_str(), "(%d,%d,%d)", &ret.x, &ret.y, &ret.z);
-    return ret;
-  }
-
-  Vector4 get_vec4(std::string key) const {
-    Vector4 ret;
-    sscanf_s(get_string(key).c_str(), "(%f,%f,%f,%f)", &ret.x, &ret.y, &ret.z,
-             &ret.w);
-    return ret;
-  }
-
-  Vector4i get_vec4i(std::string key) const {
-    Vector4i ret;
-    sscanf_s(get_string(key).c_str(), "(%d,%d,%d,%d)", &ret.x, &ret.y, &ret.z,
-             &ret.w);
-    return ret;
   }
 
   template <typename T>

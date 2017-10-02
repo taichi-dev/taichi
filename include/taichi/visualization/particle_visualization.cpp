@@ -26,7 +26,7 @@ class ParticleShadowMapRenderer : public ParticleRenderer {
 
   virtual void initialize(const Config &config) override {
     shadow_map_resolution = config.get_real("shadow_map_resolution");
-    light_direction = config.get_vec3("light_direction");
+    light_direction = config.get<Vector3>("light_direction");
     ambient_light = config.get("ambient_light", 0.0_f);
     shadowing = config.get("shadowing", 1.0_f);
     alpha = config.get("alpha", 1.0_f);

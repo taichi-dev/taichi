@@ -57,7 +57,7 @@ class VoxelVolumeMaterial : public VolumeMaterial {
     VolumeMaterial::initialize(config);
     this->volumetric_scattering = config.get_real("scattering");
     this->volumetric_absorption = config.get_real("absorption");
-    this->resolution = config.get_vec3i("resolution");
+    this->resolution = config.get<Vector3i>("resolution");
     this->tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
     voxels.initialize(resolution, 1.0f);
     maximum = 0.0f;
@@ -184,7 +184,7 @@ class SDFVoxelVolumeMaterial : public VoxelVolumeMaterial {
         pos = multiply_matrix4(world2local, ray.orig + ray.dir * dist, 1.0f);
         if (inside_unit_cube(pos)) {
           real d = sdf.sample_relative_coord(pos);
-          if (d > 1e-4f) {
+          if (d > 1e-4_f) {
             dist += d;
             continue;
           }

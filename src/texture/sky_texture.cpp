@@ -235,9 +235,9 @@ const Vector3 SkyTexture::lambda(680E-9f, 550E-9f, 450E-9f);
 // this pre-calcuation replaces older TotalRayleigh(Vector3 lambda) function:
 // (8.0 * pow(pi, 3.0) * pow(pow(n, 2.0) - 1.0, 2.0) * (6.0 + 3.0 * pn)) / (3.0
 // * N * pow(lambda, Vector3(4.0)) * (6.0 - 7.0 * pn))
-const Vector3 SkyTexture::totalRayleigh = Vector3(5.804542996261093E-6f,
-                                                  1.3562911419845635E-5f,
-                                                  3.0265902468824876E-5f);
+const Vector3 SkyTexture::totalRayleigh = Vector3(5.804542996261093E-6_f,
+                                                  1.3562911419845635E-5_f,
+                                                  3.0265902468824876E-5_f);
 
 // mie stuff
 // K coefficient for the primaries

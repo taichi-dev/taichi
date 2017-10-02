@@ -37,7 +37,7 @@ class MicrofacetMaterial final : public SurfaceMaterial {
   real evaluateD(real roughness, const Vector3 &h) const {
     const real cos_t = h.z;
     return sqr(roughness) /
-           std::max(1e-6f,
+           std::max(1e-6_f,
                     (pi * sqr((sqr(roughness) - 1) * sqr(cos_t) + 1.0f)));
   }
 
@@ -66,7 +66,7 @@ class MicrofacetMaterial final : public SurfaceMaterial {
     return 2.0f /
            (1 +
             std::sqrt(1 +
-                      a * a * (sqr(1.0f / std::max(1e-6f, std::abs(in_dir.z))) -
+                      a * a * (sqr(1.0f / std::max(1e-6_f, std::abs(in_dir.z))) -
                                1.0f)));
   }
 
@@ -84,7 +84,7 @@ class MicrofacetMaterial final : public SurfaceMaterial {
   }
 
   real get_roughness(const Vector2 &uv) const {
-    return std::max(1e-3f, roughness_sampler->sample(uv).x);
+    return std::max(1e-3_f, roughness_sampler->sample(uv).x);
   }
 
   real probability_density(const Vector3 &in,
@@ -95,7 +95,7 @@ class MicrofacetMaterial final : public SurfaceMaterial {
     }
     const Vector3 h = normalized(in + out);
     return std::abs(evaluateD(get_roughness(uv), h) * h.z /
-                    std::max(1e-6f, 4.0f * dot(out, h)));
+                    std::max(1e-6_f, 4.0f * dot(out, h)));
   }
 
   Vector3 evaluate_bsdf(const Vector3 &in,
@@ -109,7 +109,7 @@ class MicrofacetMaterial final : public SurfaceMaterial {
     const Vector3 h = normalized(in + out);
     real factor = F(f0, std::max(0.0f, dot(in, h))) * G(roughness, in, out, h) *
                   evaluateD(roughness, h);
-    factor *= 1.0f / (4.0f * std::max(1e-5f, std::abs(in.z)) * std::abs(out.z));
+    factor *= 1.0f / (4.0f * std::max(1e-5_f, std::abs(in.z)) * std::abs(out.z));
     return color * factor;
   }
 

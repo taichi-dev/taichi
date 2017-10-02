@@ -41,7 +41,7 @@ class GradientDomainTMO final : public ToneMapper {
     Array2D<real> log_lum(inp.get_res());
     for (auto &ind : inp.get_region()) {
       lum[ind] = luminance(inp[ind]);
-      log_lum[ind] = std::log(lum[ind] + 1e-4f);
+      log_lum[ind] = std::log(lum[ind] + 1e-4_f);
     }
     std::vector<Array2D<real>> pyramid;
     std::vector<Array2D<real>> phi;
@@ -80,10 +80,10 @@ class GradientDomainTMO final : public ToneMapper {
       }
       real avg = grad_norm.get_average();
       for (auto &ind : phi[k].get_region()) {
-        real norm = std::max(grad_norm[ind], 1e-5f);
+        real norm = std::max(grad_norm[ind], 1e-5_f);
         phi[k][ind] = std::pow(norm / (alpha * avg), beta - 1);
         if (k != (int)pyramid.size() - 1) {
-          phi[k][ind] *= phi[k + 1].sample(ind.get_pos() * 2.0f);
+          phi[k][ind] *= phi[k + 1].sample(ind.get_pos() * 2.0_f);
         }
       }
     }
@@ -126,7 +126,7 @@ class GradientDomainTMO final : public ToneMapper {
     }
 
     Array2D<real> I(Vector2i(width, height));
-    poisson_solver->run(div_G, I, 1e-5f);
+    poisson_solver->run(div_G, I, 1e-5_f);
     for (auto &ind : oup.get_region()) {
       for (int i = 0; i < 3; i++) {
         oup[ind][i] =

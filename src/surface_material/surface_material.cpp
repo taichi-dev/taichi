@@ -25,7 +25,7 @@ std::shared_ptr<Texture> SurfaceMaterial::get_color_sampler(
     std::string val = config.get_string(name);
     Vector3 color;
     if (val[0] == '(') {
-      color = config.get_vec3(name);
+      color = config.get<Vector3>(name);
     } else {
       color = Vector3(config.get_real(name));
     }
@@ -241,7 +241,7 @@ class GlossyMaterial : public SurfaceMaterial {
                            const Vector2 &uv) const {
     real glossiness = glossiness_sampler->sample(uv).x;
     const Vector3 r = reflect(in);
-    const Vector3 p = r.z > 1 - 1e-5f ? Vector3(0, 1, 0)
+    const Vector3 p = r.z > 1 - 1e-5_f ? Vector3(0, 1, 0)
                                       : normalized(cross(Vector3(0, 0, 1), r));
     const Vector3 q = normalized(cross(r, p));
     const real phi = 2.0f * pi * u, d = pow(v, 1.0f / (glossiness + 1.0f));
@@ -272,7 +272,7 @@ class GlossyMaterial : public SurfaceMaterial {
     real t = std::min(std::max(dot(r, out), 0.0f), 1.0f);
     auto color = color_sampler->sample3(uv);
     return color * (glossiness + 2.0f) / (2.0f * pi) * pow(t, glossiness) /
-           std::max(std::max(std::abs(in.z), std::abs(out.z)), 1e-7f);
+           std::max(std::max(std::abs(in.z), std::abs(out.z)), 1e-7_f);
   }
 
   virtual void sample(const Vector3 &in_dir,
@@ -330,7 +330,7 @@ class ReflectiveMaterial : public SurfaceMaterial {
                       const Vector2 &uv) const override {
     out_dir = reflect(in_dir);
     auto color = color_sampler->sample3(uv);
-    if (std::abs(out_dir.z) < 1e-5f) {
+    if (std::abs(out_dir.z) < 1e-5_f) {
       f = Vector3(0.0f);
     } else {
       f = color * (1.0f / std::abs(out_dir.z));

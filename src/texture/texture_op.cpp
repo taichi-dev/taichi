@@ -24,7 +24,7 @@ class ZoomingTexture : public Texture {
     Texture::initialize(config);
     tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
     center = config.get("center", Vector3(0.0f));
-    inv_zoom = Vector3(1.0f) / config.get_vec3("zoom");
+    inv_zoom = Vector3(1.0f) / config.get<Vector3>("zoom");
     repeat = config.get_bool("repeat");
   }
 
@@ -201,8 +201,8 @@ class BoundedTexture : public Texture {
     Texture::initialize(config);
     tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
     bound_axis = config.get_int("axis");
-    bounds = config.get_vec2("bounds");
-    outside_val = config.get_vec4("outside_val");
+    bounds = config.get<Vector2>("bounds");
+    outside_val = config.get<Vector4>("outside_val");
   }
 
   virtual Vector4 sample(const Vector3 &coord_) const override {
@@ -258,7 +258,7 @@ class TranslatedTexture : public Texture {
   void initialize(const Config &config) override {
     Texture::initialize(config);
     tex = AssetManager::get_asset<Texture>(config.get_int("tex"));
-    translation = config.get_vec3("translation");
+    translation = config.get<Vector3>("translation");
   }
 
   virtual Vector4 sample(const Vector3 &coord_) const override {

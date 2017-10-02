@@ -167,7 +167,7 @@ class MultigridPoissonSolver3D : public PoissonSolver3D {
 
   void initialize(const Config &config) override {
     PoissonSolver3D::initialize(config);
-    this->res = config.get_vec3i("res");
+    this->res = config.get<Vector3i>("res");
     this->num_threads = config.get_int("num_threads");
     auto padding_name = config.get_string("padding");
     use_as_preconditioner = false;

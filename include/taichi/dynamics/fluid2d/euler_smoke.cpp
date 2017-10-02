@@ -31,11 +31,11 @@ void EulerSmoke::initialize(const Config &config) {
 
 void EulerSmoke::emit(real delta_t) {
   for (auto &emit : sources) {
-    auto c = emit.get_vec2("center");
+    auto c = emit.get<Vector2>("center");
     auto r = emit.get_real("radius");
     auto init_temperature = emit.get_real("temperature");
     auto init_density = emit.get_real("density");
-    auto init_v = emit.get_vec2("velocity");
+    auto init_v = emit.get<Vector2>("velocity");
     auto failure_limit = emit.get("failure_limit", 100);
     auto emission = emit.get_real("emission") * delta_t;
     int num_particles = int(emission) + (rand() < (delta_t - floor(delta_t)));

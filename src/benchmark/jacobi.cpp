@@ -174,7 +174,7 @@ class JacobiSerial : public Benchmark {
           T a = self.get_entry(0, i, j, k), b = bf.data[0][i][j][k];
           if (std::abs(a - b) /
                   std::max((T)1e-3, std::max(std::abs(a), std::abs(b))) >
-              1e-3f) {
+              1e-3_f) {
             same = false;
           }
         }
@@ -477,7 +477,7 @@ class JacobiSIMD : public Benchmark {
           T a = self.get_entry(0, i, j, k), b = bf.data[0][i][j][k];
           if (std::abs(a - b) /
                   std::max((T)1e-3, std::max(std::abs(a), std::abs(b))) >
-              1e-3f) {
+              1e-3_f) {
             same = false;
           }
         }

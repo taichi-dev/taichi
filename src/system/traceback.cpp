@@ -14,6 +14,12 @@
 #include <execinfo.h>
 #include <cxxabi.h>
 #endif
+#ifdef __linux__
+#include <execinfo.h>
+#include <signal.h>
+#include <ucontext.h>
+#include <unistd.h>
+#endif
 #include <string>
 #include <cstdio>
 #include <vector>
@@ -112,6 +118,31 @@ TC_EXPORT void print_traceback() {
       "========================================================================"
       "==================\n");
   printf("\n");
+#elif defined(__WIN32__)
+// Windows
+#else
+  // Based on http://man7.org/linux/man-pages/man3/backtrace.3.html
+  constexpr int BT_BUF_SIZE = 1024;
+  int nptrs;
+  void *buffer[BT_BUF_SIZE];
+  char **strings;
+
+  nptrs = backtrace(buffer, BT_BUF_SIZE);
+  printf("backtrace() returned %d addresses\n", nptrs);
+
+  /* The call backtrace_symbols_fd(buffer, nptrs, STDOUT_FILENO)
+     would produce similar output to the following: */
+
+  strings = backtrace_symbols(buffer, nptrs);
+  if (strings == NULL) {
+    perror("backtrace_symbols");
+    exit(EXIT_FAILURE);
+  }
+
+  for (int j = 0; j < nptrs; j++)
+    printf("%s\n", strings[j]);
+
+  free(strings);
 #endif
 }
 

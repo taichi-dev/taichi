@@ -14,5 +14,6 @@ from taichi.tools.transform import *
 from taichi.visual.particle_renderer import *
 from taichi.dynamics.smoke3 import *
 from taichi.system import *
+from taichi.pakua import get_pakua_server
 
 __all__ = [s for s in dir() if not s.startswith('_')] + ['settings']

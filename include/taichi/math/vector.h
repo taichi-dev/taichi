@@ -169,7 +169,8 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
   }
 
   template <int DIM_, typename T_, InstSetExt ISE_>
-  TC_FORCE_INLINE explicit VectorND(const VectorND<DIM_, T_, ISE_> &o) : VectorND() {
+  TC_FORCE_INLINE explicit VectorND(const VectorND<DIM_, T_, ISE_> &o)
+      : VectorND() {
     for (int i = 0; i < std::min(DIM_, DIM); i++) {
       d[i] = o[i];
     }
@@ -278,7 +279,8 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
 
   // Vector extension
   template <int DIM_ = DIM, std::enable_if_t<(DIM_ > 1), int> = 0>
-  TC_FORCE_INLINE explicit VectorND(const VectorND<DIM - 1, T, ISE> &o, T extra) {
+  TC_FORCE_INLINE explicit VectorND(const VectorND<DIM - 1, T, ISE> &o,
+                                    T extra) {
     for (int i = 0; i < DIM_ - 1; i++) {
       this->d[i] = o[i];
     }
@@ -316,7 +318,8 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
     return *this;
   }
 
-  TC_FORCE_INLINE auto map(T(f)(T)) const -> VectorND<DIM, decltype(f(T(0))), ISE> {
+  TC_FORCE_INLINE auto map(T(f)(T)) const
+      -> VectorND<DIM, decltype(f(T(0))), ISE> {
     VectorND<DIM, decltype(f(T(0))), ISE> ret;
     for (int i = 0; i < DIM; i++)
       ret[i] = f(this->d[i]);
@@ -742,14 +745,15 @@ struct MatrixND {
   static constexpr InstSetExt ise = ISE;
   using type = T;
 
-  MatrixND() {
+  TC_FORCE_INLINE MatrixND() {
     for (int i = 0; i < DIM; i++) {
       d[i] = VectorND<DIM, T, ISE>();
     }
   }
 
   template <int DIM_, typename T_, InstSetExt ISE_>
-  explicit MatrixND(const MatrixND<DIM_, T_, ISE_> &o) : MatrixND() {
+  TC_FORCE_INLINE explicit MatrixND(const MatrixND<DIM_, T_, ISE_> &o)
+      : MatrixND() {
     for (int i = 0; i < std::min(DIM_, DIM); i++) {
       for (int j = 0; j < std::min(DIM_, DIM); j++) {
         d[i][j] = o[i][j];
@@ -757,34 +761,37 @@ struct MatrixND {
     }
   }
 
-  MatrixND(T v) : MatrixND() {
+  TC_FORCE_INLINE MatrixND(T v) : MatrixND() {
     for (int i = 0; i < DIM; i++) {
       d[i][i] = v;
     }
   }
 
-  MatrixND(const MatrixND &o) { *this = o; }
+  TC_FORCE_INLINE MatrixND(const MatrixND &o) { *this = o; }
 
   // Diag
-  explicit MatrixND(Vector v) : MatrixND() {
+  TC_FORCE_INLINE explicit MatrixND(Vector v) : MatrixND() {
     for (int i = 0; i < DIM; i++)
       this->d[i][i] = v[i];
   }
 
-  explicit MatrixND(Vector v0, Vector v1) {
+  TC_FORCE_INLINE explicit MatrixND(Vector v0, Vector v1) {
     static_assert(DIM == 2, "Matrix dim must be 2");
     this->d[0] = v0;
     this->d[1] = v1;
   }
 
-  explicit MatrixND(Vector v0, Vector v1, Vector v2) {
+  TC_FORCE_INLINE explicit MatrixND(Vector v0, Vector v1, Vector v2) {
     static_assert(DIM == 3, "Matrix dim must be 3");
     this->d[0] = v0;
     this->d[1] = v1;
     this->d[2] = v2;
   }
 
-  explicit MatrixND(Vector v0, Vector v1, Vector v2, Vector v3) {
+  TC_FORCE_INLINE explicit MatrixND(Vector v0,
+                                    Vector v1,
+                                    Vector v2,
+                                    Vector v3) {
     static_assert(DIM == 4, "Matrix dim must be 4");
     this->d[0] = v0;
     this->d[1] = v1;
@@ -797,7 +804,7 @@ struct MatrixND {
             std::enable_if_t<
                 std::is_convertible<F, std::function<Vector(int)>>::value,
                 int> = 0>
-  MatrixND(const F &f) {
+  TC_FORCE_INLINE MatrixND(const F &f) {
     for (int i = 0; i < DIM; i++)
       this->d[i] = f(i);
   }
@@ -806,28 +813,31 @@ struct MatrixND {
             std::enable_if_t<
                 std::is_convertible<F, std::function<Vector(int)>>::value,
                 int> = 0>
-  MatrixND &set(const F &f) {
+  TC_FORCE_INLINE MatrixND &set(const F &f) {
     for (int i = 0; i < DIM; i++)
       this->d[i] = f(i);
     return *this;
   }
 
-  MatrixND &operator=(const MatrixND &o) {
+  TC_FORCE_INLINE MatrixND &operator=(const MatrixND &o) {
     for (int i = 0; i < DIM; i++) {
       this->d[i] = o[i];
     }
     return *this;
   }
 
-  VectorND<DIM, T, ISE> &operator[](int i) { return d[i]; }
+  TC_FORCE_INLINE VectorND<DIM, T, ISE> &operator[](int i) { return d[i]; }
 
-  const VectorND<DIM, T, ISE> &operator[](int i) const { return d[i]; }
+  TC_FORCE_INLINE const VectorND<DIM, T, ISE> &operator[](int i) const {
+    return d[i];
+  }
 
   template <int DIM_ = DIM,
             typename T_ = T,
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<!SIMD_4_32F<DIM_, T_, ISE_>, int> = 0>
-  VectorND<DIM, T, ISE> operator*(const VectorND<DIM, T, ISE> &o) const {
+  TC_FORCE_INLINE VectorND<DIM, T, ISE> operator*(
+      const VectorND<DIM, T, ISE> &o) const {
     VectorND<DIM, T, ISE> ret = d[0] * o[0];
     for (int i = 1; i < DIM; i++)
       ret += d[i] * o[i];
@@ -840,7 +850,8 @@ struct MatrixND {
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<SIMD_4_32F<DIM_, T_, ISE_> && DIM_ == 3,
                                       int> = 0>
-  VectorND<DIM, T, ISE> operator*(const VectorND<DIM, T, ISE> &o) const {
+  TC_FORCE_INLINE VectorND<DIM, T, ISE> operator*(
+      const VectorND<DIM, T, ISE> &o) const {
     VectorND<DIM, T, ISE> ret = o.template broadcast<2>() * d[2];
     ret = fused_mul_add(d[1], o.template broadcast<1>(), ret);
     ret = fused_mul_add(d[0], o.template broadcast<0>(), ret);
@@ -853,7 +864,7 @@ struct MatrixND {
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<SIMD_4_32F<DIM_, T_, ISE_> && DIM_ == 4,
                                       int> = 0>
-  Vector operator*(const Vector &o) const {
+  TC_FORCE_INLINE Vector operator*(const Vector &o) const {
     Vector ret = o.template broadcast<3>() * d[3];
     ret = fused_mul_add(d[2], o.template broadcast<2>(), ret);
     ret = fused_mul_add(d[1], o.template broadcast<1>(), ret);
@@ -866,42 +877,42 @@ struct MatrixND {
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<SIMD_4_32F<DIM_, T_, ISE_> && DIM_ == 4,
                                       int> = 0>
-  Vector4 multiply_vec3(const Vector4 &o) const {
+  TC_FORCE_INLINE Vector4 multiply_vec3(const Vector4 &o) const {
     Vector4 ret = o.broadcast<2>() * d[2];
     ret = fused_mul_add(d[1], o.template broadcast<1>(), ret);
     ret = fused_mul_add(d[0], o.template broadcast<0>(), ret);
     return ret;
   }
 
-  MatrixND operator*(const MatrixND &o) const {
+  TC_FORCE_INLINE MatrixND operator*(const MatrixND &o) const {
     return MatrixND([&](int i) { return (*this) * o[i]; });
   }
 
-  static MatrixND outer_product(Vector column, Vector row) {
+  TC_FORCE_INLINE static MatrixND outer_product(Vector column, Vector row) {
     return MatrixND([&](int i) { return column * row[i]; });
   }
 
-  MatrixND operator+(const MatrixND &o) const {
+  TC_FORCE_INLINE MatrixND operator+(const MatrixND &o) const {
     return MatrixND([=](int i) { return this->d[i] + o[i]; });
   }
 
-  MatrixND operator-(const MatrixND &o) const {
+  TC_FORCE_INLINE MatrixND operator-(const MatrixND &o) const {
     return MatrixND([=](int i) { return this->d[i] - o[i]; });
   }
 
-  MatrixND &operator+=(const MatrixND &o) {
+  TC_FORCE_INLINE MatrixND &operator+=(const MatrixND &o) {
     return this->set([&](int i) { return this->d[i] + o[i]; });
   }
 
-  MatrixND &operator-=(const MatrixND &o) {
+  TC_FORCE_INLINE MatrixND &operator-=(const MatrixND &o) {
     return this->set([&](int i) { return this->d[i] - o[i]; });
   }
 
-  MatrixND operator-() const {
+  TC_FORCE_INLINE MatrixND operator-() const {
     return MatrixND([=](int i) { return -this->d[i]; });
   }
 
-  bool operator==(const MatrixND &o) const {
+  TC_FORCE_INLINE bool operator==(const MatrixND &o) const {
     for (int i = 0; i < DIM; i++)
       for (int j = 0; j < DIM; j++)
         if (d[i][j] != o[i][j])
@@ -909,7 +920,7 @@ struct MatrixND {
     return true;
   }
 
-  bool operator!=(const MatrixND &o) const {
+  TC_FORCE_INLINE bool operator!=(const MatrixND &o) const {
     for (int i = 0; i < DIM; i++)
       for (int j = 0; j < DIM; j++)
         if (d[i][j] != o[i][j])
@@ -917,7 +928,7 @@ struct MatrixND {
     return false;
   }
 
-  T frobenius_norm2() const {
+  TC_FORCE_INLINE T frobenius_norm2() const {
     T sum = d[0].length2();
     for (int i = 1; i < DIM; i++) {
       sum += d[i].length2();
@@ -925,10 +936,12 @@ struct MatrixND {
     return sum;
   }
 
-  auto frobenius_norm() const { return std::sqrt(frobenius_norm2()); }
+  TC_FORCE_INLINE auto frobenius_norm() const {
+    return std::sqrt(frobenius_norm2());
+  }
 
   // Matrix4
-  MatrixND transposed() const {
+  TC_FORCE_INLINE MatrixND transposed() const {
     MatrixND ret;
     // TC_STATIC_IF((SIMD_4_32F<DIM, T, ISE> && DIM == 4)) {
     // TC_STATIC_IF((std::is_same<T, float32>::value && DIM == 4)) {
@@ -958,7 +971,7 @@ struct MatrixND {
   }
 
   template <typename G>
-  MatrixND<DIM, G, ISE> cast() const {
+  TC_FORCE_INLINE MatrixND<DIM, G, ISE> cast() const {
     return MatrixND([=](int i) { return d[i].template cast<G>(); });
   }
 
@@ -980,7 +993,7 @@ struct MatrixND {
     return ret;
   }
 
-  Vector diag() const {
+  TC_FORCE_INLINE Vector diag() const {
     Vector ret;
     for (int i = 0; i < DIM; i++) {
       ret[i] = this->d[i][i];
@@ -988,7 +1001,7 @@ struct MatrixND {
     return ret;
   }
 
-  T sum() const {
+  TC_FORCE_INLINE T sum() const {
     T ret(0);
     for (int i = 0; i < DIM; i++) {
       ret += this->d[i].sum();
@@ -996,11 +1009,12 @@ struct MatrixND {
     return ret;
   }
 
-  T trace() const { return this->diag().sum(); }
+  TC_FORCE_INLINE T trace() const { return this->diag().sum(); }
 
-  T tr() const { return this->trace(); }
+  TC_FORCE_INLINE T tr() const { return this->trace(); }
 
-  MatrixND elementwise_product(const MatrixND<DIM, T> &o) const {
+  TC_FORCE_INLINE MatrixND
+  elementwise_product(const MatrixND<DIM, T> &o) const {
     MatrixND ret;
     for (int i = 0; i < DIM; i++) {
       ret[i] = this->d[i] * o[i];
@@ -1008,11 +1022,12 @@ struct MatrixND {
     return ret;
   }
 
-  static MatrixND identidy() { return MatrixND(1.0_f); }
+  TC_FORCE_INLINE static MatrixND identidy() { return MatrixND(1.0_f); }
 };
 
 template <int DIM, typename T, InstSetExt ISE>
-MatrixND<DIM, T, ISE> operator*(const T a, const MatrixND<DIM, T, ISE> &M) {
+TC_FORCE_INLINE MatrixND<DIM, T, ISE> operator
+    *(const T a, const MatrixND<DIM, T, ISE> &M) {
   MatrixND<DIM, T, ISE> ret;
   for (int i = 0; i < DIM; i++) {
     ret[i] = a * M[i];
@@ -1021,7 +1036,7 @@ MatrixND<DIM, T, ISE> operator*(const T a, const MatrixND<DIM, T, ISE> &M) {
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-MatrixND<DIM, T, ISE> operator*(const MatrixND<DIM, T, ISE> &M, const T a) {
+ TC_FORCE_INLINE MatrixND<DIM, T, ISE> operator*(const MatrixND<DIM, T, ISE> &M, const T a) {
   return a * M;
 }
 
@@ -1037,12 +1052,12 @@ inline void print(const MatrixND<DIM, T, ISE> &v) {
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-inline MatrixND<DIM, T, ISE> transpose(const MatrixND<DIM, T, ISE> &mat) {
+TC_FORCE_INLINE MatrixND<DIM, T, ISE> transpose(const MatrixND<DIM, T, ISE> &mat) {
   return mat.transposed();
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-inline MatrixND<DIM, T, ISE> transposed(const MatrixND<DIM, T, ISE> &mat) {
+TC_FORCE_INLINE MatrixND<DIM, T, ISE> transposed(const MatrixND<DIM, T, ISE> &mat) {
   return transpose(mat);
 }
 
@@ -1059,56 +1074,56 @@ using Matrix3d = MatrixND<3, float64, default_instruction_set>;
 using Matrix4d = MatrixND<4, float64, default_instruction_set>;
 
 template <typename T, InstSetExt ISE>
-inline float32 determinant(const MatrixND<2, T, ISE> &mat) {
+TC_FORCE_INLINE real determinant(const MatrixND<2, T, ISE> &mat) {
   return mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
 }
 
 template <typename T, InstSetExt ISE>
-inline float32 determinant(const MatrixND<3, T, ISE> &mat) {
+TC_FORCE_INLINE real determinant(const MatrixND<3, T, ISE> &mat) {
   return mat[0][0] * (mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2]) -
          mat[1][0] * (mat[0][1] * mat[2][2] - mat[2][1] * mat[0][2]) +
          mat[2][0] * (mat[0][1] * mat[1][2] - mat[1][1] * mat[0][2]);
 }
 
 template <typename T, InstSetExt ISE>
-inline T cross(const VectorND<2, T, ISE> &a, const VectorND<2, T, ISE> &b) {
+TC_FORCE_INLINE T cross(const VectorND<2, T, ISE> &a, const VectorND<2, T, ISE> &b) {
   return a.x * b.y - a.y * b.x;
 }
 
 template <typename T, InstSetExt ISE>
-inline VectorND<3, T, ISE> cross(const VectorND<3, T, ISE> &a,
+TC_FORCE_INLINE VectorND<3, T, ISE> cross(const VectorND<3, T, ISE> &a,
                                  const VectorND<3, T, ISE> &b) {
   return VectorND<3, T, ISE>(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z,
                              a.x * b.y - a.y * b.x);
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-inline T dot(const VectorND<DIM, T, ISE> &a, const VectorND<DIM, T, ISE> &b) {
+TC_FORCE_INLINE T dot(const VectorND<DIM, T, ISE> &a, const VectorND<DIM, T, ISE> &b) {
   return a.dot(b);
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-inline VectorND<DIM, T, ISE> normalize(const VectorND<DIM, T, ISE> &a) {
+TC_FORCE_INLINE VectorND<DIM, T, ISE> normalize(const VectorND<DIM, T, ISE> &a) {
   return (T(1) / a.length()) * a;
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-inline VectorND<DIM, T, ISE> normalized(const VectorND<DIM, T, ISE> &a) {
+TC_FORCE_INLINE VectorND<DIM, T, ISE> normalized(const VectorND<DIM, T, ISE> &a) {
   return normalize(a);
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-inline T length(const VectorND<DIM, T, ISE> &a) {
+TC_FORCE_INLINE T length(const VectorND<DIM, T, ISE> &a) {
   return a.length();
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-inline VectorND<DIM, T, ISE> fract(const VectorND<DIM, T, ISE> &a) {
+TC_FORCE_INLINE VectorND<DIM, T, ISE> fract(const VectorND<DIM, T, ISE> &a) {
   return a.fract();
 }
 
 template <InstSetExt ISE, typename T>
-inline MatrixND<2, T, ISE> inversed(const MatrixND<2, T, ISE> &mat) {
+TC_FORCE_INLINE MatrixND<2, T, ISE> inversed(const MatrixND<2, T, ISE> &mat) {
   real det = determinant(mat);
   return 1.0_f / det *
          MatrixND<2, T, ISE>(VectorND<2, T, ISE>(mat[1][1], -mat[0][1]),
@@ -1116,7 +1131,7 @@ inline MatrixND<2, T, ISE> inversed(const MatrixND<2, T, ISE> &mat) {
 }
 
 template <InstSetExt ISE, typename T>
-inline MatrixND<3, T, ISE> inversed(const MatrixND<3, T, ISE> &mat) {
+MatrixND<3, T, ISE> inversed(const MatrixND<3, T, ISE> &mat) {
   real det = determinant(mat);
   return 1.0_f / det *
          MatrixND<3, T, ISE>(
@@ -1133,7 +1148,7 @@ inline MatrixND<3, T, ISE> inversed(const MatrixND<3, T, ISE> &mat) {
 }
 
 template <typename T, InstSetExt ISE>
-inline MatrixND<4, T, ISE> inversed(const MatrixND<4, T, ISE> &m) {
+MatrixND<4, T, ISE> inversed(const MatrixND<4, T, ISE> &m) {
   // This function is copied from GLM
   /*
   ================================================================================
@@ -1251,11 +1266,11 @@ inline MatrixND<4, T, ISE> inversed(const MatrixND<4, T, ISE> &m) {
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-inline MatrixND<DIM, T, ISE> inverse(const MatrixND<DIM, T, ISE> &m) {
+TC_FORCE_INLINE MatrixND<DIM, T, ISE> inverse(const MatrixND<DIM, T, ISE> &m) {
   return inversed(m);
 }
 
-inline Vector3 multiply_matrix4(const Matrix4 &m, const Vector3 &v, real w) {
+TC_FORCE_INLINE Vector3 multiply_matrix4(const Matrix4 &m, const Vector3 &v, real w) {
   return Vector3(m * Vector4(v, w));
 }
 
@@ -1282,7 +1297,7 @@ struct is_matrix<MatrixND<DIM, T, ISE>> {
 };
 
 template <int DIM, typename T>
-VectorND<DIM, T> min(const VectorND<DIM, T> &a, const VectorND<DIM, T> &b) {
+TC_FORCE_INLINE VectorND<DIM, T> min(const VectorND<DIM, T> &a, const VectorND<DIM, T> &b) {
   VectorND<DIM, T> ret;
   for (int i = 0; i < DIM; i++) {
     ret[i] = std::min(a[i], b[i]);
@@ -1291,7 +1306,7 @@ VectorND<DIM, T> min(const VectorND<DIM, T> &a, const VectorND<DIM, T> &b) {
 }
 
 template <int DIM, typename T>
-VectorND<DIM, T> max(const VectorND<DIM, T> &a, const VectorND<DIM, T> &b) {
+TC_FORCE_INLINE VectorND<DIM, T> max(const VectorND<DIM, T> &a, const VectorND<DIM, T> &b) {
   VectorND<DIM, T> ret;
   for (int i = 0; i < DIM; i++) {
     ret[i] = std::max(a[i], b[i]);

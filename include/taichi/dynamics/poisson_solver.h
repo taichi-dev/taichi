@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <taichi/common/meta.h>
+#include <taichi/common/interface.h>
 #include <taichi/math/array.h>
 
 TC_NAMESPACE_BEGIN

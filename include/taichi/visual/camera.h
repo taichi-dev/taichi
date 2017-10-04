@@ -11,7 +11,7 @@
 
 #include <taichi/geometry/primitives.h>
 #include <taichi/visual/sampler.h>
-#include <taichi/common/meta.h>
+#include <taichi/common/interface.h>
 
 TC_NAMESPACE_BEGIN
 

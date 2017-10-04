@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <taichi/common/meta.h>
+#include <taichi/common/interface.h>
 #include <vector>
 #include <string>
 

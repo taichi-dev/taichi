@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <taichi/common/meta.h>
+#include <taichi/common/interface.h>
 #include <taichi/visualization/image_buffer.h>
 #include <taichi/visual/camera.h>
 #include <taichi/visual/texture.h>

@@ -9,8 +9,8 @@
 
 #pragma once
 
-#include <taichi/common/meta.h>
-#include <taichi/common/meta.h>
+#include <taichi/common/interface.h>
+#include <taichi/common/interface.h>
 
 TC_NAMESPACE_BEGIN
 

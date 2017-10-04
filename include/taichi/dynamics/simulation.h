@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <taichi/common/meta.h>
+#include <taichi/common/interface.h>
 #include <taichi/visualization/particle_visualization.h>
 #include <vector>
 #include <taichi/math/levelset.h>

@@ -12,7 +12,7 @@
 #include "taichi/geometry/primitives.h"
 #include <embree2/rtcore.h>
 #include <embree2/rtcore_ray.h>
-#include <taichi/common/meta.h>
+#include <taichi/common/interface.h>
 
 TC_NAMESPACE_BEGIN
 

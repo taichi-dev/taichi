@@ -12,7 +12,7 @@
 #include <taichi/math/math.h>
 #include <taichi/visual/texture.h>
 #include <taichi/visual/volume_material.h>
-#include <taichi/common/meta.h>
+#include <taichi/common/interface.h>
 #include <taichi/physics/physics_constants.h>
 
 TC_NAMESPACE_BEGIN

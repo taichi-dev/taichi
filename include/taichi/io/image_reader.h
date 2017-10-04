@@ -11,7 +11,7 @@
 
 #include <taichi/math/math.h>
 #include <taichi/image/image_buffer.h>
-#include <taichi/common/meta.h>
+#include <taichi/common/interface.h>
 
 TC_NAMESPACE_BEGIN
 

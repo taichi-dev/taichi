@@ -10,7 +10,7 @@
 #pragma once
 
 #include <taichi/math/math.h>
-#include <taichi/common/meta.h>
+#include <taichi/common/interface.h>
 #include <taichi/math/array_2d.h>
 
 TC_NAMESPACE_BEGIN

@@ -13,7 +13,7 @@
 #include <dlfcn.h>
 #endif
 
-#include <taichi/common/meta.h>
+#include <taichi/common/interface.h>
 
 TC_NAMESPACE_BEGIN
 

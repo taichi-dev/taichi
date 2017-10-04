@@ -20,7 +20,7 @@
 
 
 #include <taichi/common/util.h>
-#include <taichi/common/meta.h>
+#include <taichi/common/interface.h>
 #include <taichi/common/task.h>
 #include <iostream>
 

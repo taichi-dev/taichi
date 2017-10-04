@@ -8,7 +8,7 @@
 *******************************************************************************/
 
 #include <taichi/python/export.h>
-#include <taichi/common/meta.h>
+#include <taichi/common/interface.h>
 #include <taichi/visualization/rgb.h>
 #include <taichi/io/io.h>
 #include <taichi/geometry/factory.h>

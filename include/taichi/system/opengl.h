@@ -44,7 +44,7 @@
 #include <GLFW/glfw3.h>
 #pragma warning(pop)
 
-#include <taichi/common/meta.h>
+#include <taichi/common/interface.h>
 #include "timer.h"
 
 #ifndef DEBUG

@@ -99,7 +99,7 @@ def at_startup():
 
   # Load modules
   f = open(os.path.join(get_root_directory(), 'taichi', 'modules.txt'), 'r')
-  modules = f.readline().split()
+  modules = f.readline().split(';')
   for module in modules:
     print('Loading module', module)
     ctypes.PyDLL(

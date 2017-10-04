@@ -29,7 +29,7 @@ using std::atan;
 using std::floor;
 
 const real pi{acosf(-1.0_f)};
-const real eps = 1e-6f;
+const real eps = 1e-6_f;
 
 template <int I, typename T>
 constexpr inline T pow(T a) {

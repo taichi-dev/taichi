@@ -40,6 +40,14 @@ class Config {
  public:
   Config() {}
 
+  std::vector<std::string> get_keys() const {
+    std::vector<std::string> keys;
+    for (auto it = data.begin(); it != data.end(); ++it) {
+      keys.push_back(it->first);
+    }
+    return keys;
+  }
+
   void clear() {
     data.clear();
     file_names.clear();
@@ -285,5 +293,7 @@ inline bool Config::get<bool>(std::string key) const {
   assert_info(dict.find(s) != dict.end(), "Unkown identifer for bool: " + s);
   return dict[s];
 }
+
+using Dict = Config;
 
 TC_NAMESPACE_END

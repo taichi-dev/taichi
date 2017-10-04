@@ -36,6 +36,7 @@ void register_simulation(py::module &m) {
       .def("get_mpi_world_rank", &Sim::get_mpi_world_rank)
       .def("get_vis_resolution", &Sim::get_vis_resolution)
       .def("get_debug_information", &Sim::get_debug_information)
+      .def("general_action", &Sim::general_action)
       .def("test", &Sim::test);
 }
 

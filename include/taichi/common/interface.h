@@ -46,6 +46,8 @@ class Unit {
   virtual bool test() const { return true; }
 
   virtual std::string get_name() const { return "unit"; }
+
+  virtual std::string general_action(const Config &config) {NOT_IMPLEMENTED;}
 };
 
 #define TC_IMPLEMENTATION_HOLDER_NAME(T) ImplementationHolder_##T

@@ -20,6 +20,16 @@
 
 TC_NAMESPACE_BEGIN
 
+/*
+py::dict py_dict_from_py_config(const Config &config) {
+  py::dict d;
+  for (auto key : config.get_keys()) {
+    d[key] = config.get<std::string>(key);
+  }
+  return d;
+}
+*/
+
 Config config_from_py_dict(py::dict &c) {
   Config config;
   for (auto item : c) {
@@ -87,6 +97,7 @@ void export_misc(py::module &m) {
   m.def("test_raise_error", test_raise_error);
   m.def("test_volumetric_io", test_volumetric_io);
   m.def("config_from_dict", config_from_py_dict);
+  //m.def("dict_from_config", py_dict_from_py_config);
   m.def("print_profile_info",
         [&]() { ProfilerRecords::get_instance().print(); });
 }

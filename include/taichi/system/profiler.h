@@ -81,18 +81,25 @@ class ProfilerRecords {
         print(ch.get(), depth + 1);
       }
     } else {
+      std::string unit = "s";
+      real scale = 1;
+      if (total_time < 0.1) {
+        // Use ms
+        unit = "ms";
+        scale = 1000;
+      }
       double unaccounted = total_time;
       for (auto &ch : node->childs) {
         make_indent(1);
         auto child_time = ch->get_averaged();
-        printf("%6.2f %4.1f%%  %s\n", child_time,
+        printf("%6.2f%s %4.1f%%  %s\n", child_time * scale, unit.c_str(),
                child_time * 100.0 / total_time, ch->name.c_str());
         print(ch.get(), depth + 1);
         unaccounted -= child_time;
       }
       if (!node->childs.empty() && (unaccounted > total_time * 0.05)) {
         make_indent(1);
-        printf("%6.2f %4.1f%%  %s\n", unaccounted,
+        printf("%6.2f%s %4.1f%%  %s\n", unaccounted * scale, unit.c_str(),
                unaccounted * 100.0 / total_time, "[unaccounted]");
       }
     }

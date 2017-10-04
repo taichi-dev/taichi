@@ -106,7 +106,7 @@ struct TC_ALIGNED(16)
     float32 d[4];
   };
 
-  VectorNDBase(float32 x = 0.0_f) : v(_mm_set_ps1(x)) {}
+  TC_FORCE_INLINE VectorNDBase(float32 x = 0.0_f) : v(_mm_set_ps1(x)) {}
 
   explicit VectorNDBase(__m128 v) : v(v) {}
 };
@@ -139,9 +139,9 @@ struct TC_ALIGNED(16)
     float32 d[4];
   };
 
-  VectorNDBase(float32 x = 0.0_f) : v(_mm_set_ps1(x)) {}
+  TC_FORCE_INLINE VectorNDBase(float32 x = 0.0_f) : v(_mm_set_ps1(x)) {}
 
-  explicit VectorNDBase(__m128 v) : v(v) {}
+  TC_FORCE_INLINE explicit VectorNDBase(__m128 v) : v(v) {}
 };
 
 template <int DIM, typename T, InstSetExt ISE = default_instruction_set>
@@ -681,12 +681,14 @@ inline void print(const VectorND<DIM, T, ISE> &v) {
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-VectorND<DIM, T, ISE> operator*(T a, const VectorND<DIM, T, ISE> &v) {
+TC_FORCE_INLINE VectorND<DIM, T, ISE> operator
+    *(T a, const VectorND<DIM, T, ISE> &v) {
   return VectorND<DIM, T, ISE>(a) * v;
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-VectorND<DIM, T, ISE> operator*(const VectorND<DIM, T, ISE> &v, T a) {
+TC_FORCE_INLINE VectorND<DIM, T, ISE> operator*(const VectorND<DIM, T, ISE> &v,
+                                                T a) {
   return a * v;
 }
 
@@ -712,14 +714,14 @@ using Vector4i = VectorND<4, int, default_instruction_set>;
 
 // FMA: a * b + c
 template <typename T>
-inline typename std::
+TC_FORCE_INLINE typename std::
     enable_if<T::simd && (default_instruction_set >= InstSetExt::AVX), T>::type
     fused_mul_add(const T &a, const T &b, const T &c) {
   return T(_mm_fmadd_ps(a, b, c));
 }
 
 template <typename T>
-inline typename std::
+TC_FORCE_INLINE typename std::
     enable_if<!T::simd || (default_instruction_set < InstSetExt::AVX), T>::type
     fused_mul_add(const T &a, const T &b, const T &c) {
   return a * b + c;

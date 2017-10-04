@@ -241,7 +241,8 @@ using STATIC_IF::static_if;
     }
 */
 
-template <typename T> std::string format_string(std::string templ, T t) {
+template <typename T>
+std::string format_string(std::string templ, T t) {
   constexpr int buf_length = 128;
   char buf[buf_length];
   snprintf(buf, buf_length, templ.c_str(), t);

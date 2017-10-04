@@ -347,7 +347,7 @@ void export_math(py::module &m) {
 
 #define EXPORT_ARRAY_3D_OF(T, C)                           \
   py::class_<Array3D<real>> PyArray3D##T(m, "Array3D" #T); \
-  PyArray3D##T.def(py::init<int, int, int>())              \
+  PyArray3D##T.def(py::init<Vector3i>())                   \
       .def("get_width", &Array3D<T>::get_width)            \
       .def("get_height", &Array3D<T>::get_height);
 

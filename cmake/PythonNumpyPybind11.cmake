@@ -11,12 +11,17 @@ endif ()
 if (WIN32)
     find_package(PythonLibs 3.5 REQUIRED)
 else ()
+    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+            "import sys;\
+            from distutils import sysconfig;\
+            sys.stdout.write(sysconfig.get_python_version())"
+            OUTPUT_VARIABLE PYTHON_VERSION)
     execute_process(COMMAND ${PYTHON_EXECUTABLE} --version)
     execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
             "import sys;\
             from distutils import sysconfig;\
             sys.stdout.write(\
-            (sysconfig.get_config_var('INCLUDEDIR') + '/python3.5/'\
+            (sysconfig.get_config_var('INCLUDEPY')\
             if sysconfig.get_config_var('INCLUDEDIR') is not None else None)\
             or sysconfig.get_python_inc())"
             OUTPUT_VARIABLE PYTHON_INCLUDE_DIRS)
@@ -26,12 +31,13 @@ else ()
             sys.stdout.write(sysconfig.get_config_var('LIBDIR') or sysconfig.get_python_lib())"
             OUTPUT_VARIABLE PYTHON_LIBRARY_DIR)
 
-    find_library(PYTHON_LIBRARY NAMES python3.5 python3.5m PATHS ${PYTHON_LIBRARY_DIR}
+    find_library(PYTHON_LIBRARY NAMES python${PYTHON_VERSION} python${PYTHON_VERSION}m PATHS ${PYTHON_LIBRARY_DIR}
             NO_DEFAULT_PATH NO_SYSTEM_ENVIRONMENT_PATH PATH_SUFFIXES x86_64-linux-gnu)
     set(PYTHON_LIBRARIES ${PYTHON_LIBRARY})
 endif ()
 
 include_directories(${PYTHON_INCLUDE_DIRS})
+message("    version: ${PYTHON_VERSION}")
 message("    include: ${PYTHON_INCLUDE_DIRS}")
 message("    library: ${PYTHON_LIBRARIES}")
 

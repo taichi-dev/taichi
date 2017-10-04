@@ -23,23 +23,23 @@ class ProfilerRecords {
     std::vector<std::unique_ptr<Node>> childs;
     Node *parent;
     std::string name;
-    double total_time;
+    float64 total_time;
     int64 num_samples;
 
     Node(const std::string &name, Node *parent) {
       this->name = name;
       this->parent = parent;
-      this->total_time = 0.0;
+      this->total_time = 0.0_f64;
       this->num_samples = 1LL;
     }
 
-    void insert_sample(double sample) {
+    void insert_sample(float64 sample) {
       num_samples += 1;
       total_time += sample;
     }
 
-    double get_averaged() const {
-      return total_time / (double)std::max(num_samples, 1LL);
+    float64 get_averaged() const {
+      return total_time / (float64)std::max(num_samples, 1LL);
     }
 
     Node *get_child(const std::string &name) {
@@ -55,10 +55,12 @@ class ProfilerRecords {
 
   std::unique_ptr<Node> root;
   Node *current_node;
+  int current_depth;
 
   ProfilerRecords() {
-    root = std::make_unique<Node>("taichi", nullptr);
+    root = std::make_unique<Node>("[Taichi Profiler]", nullptr);
     current_node = root.get();
+    current_depth = 0;  // depth(root) = 0
   }
 
   void print(Node *node, int depth) {
@@ -67,7 +69,7 @@ class ProfilerRecords {
         printf("  ");
       }
     };
-    double total_time = node->get_averaged();
+    float64 total_time = node->get_averaged();
     if (depth == 0) {
       // Root node only
       make_indent(0);
@@ -88,7 +90,7 @@ class ProfilerRecords {
         unit = "ms";
         scale = 1000;
       }
-      double unaccounted = total_time;
+      float64 unaccounted = total_time;
       for (auto &ch : node->childs) {
         make_indent(1);
         auto child_time = ch->get_averaged();
@@ -107,13 +109,17 @@ class ProfilerRecords {
 
   void print() { print(root.get(), 0); }
 
-  void insert_sample(double time) { current_node->insert_sample(time); }
+  void insert_sample(float64 time) { current_node->insert_sample(time); }
 
   void push(const std::string name) {
     current_node = current_node->get_child(name);
+    current_depth += 1;
   }
 
-  void pop() { current_node = current_node->parent; }
+  void pop() {
+    current_node = current_node->parent;
+    current_depth -= 1;
+  }
 
   static ProfilerRecords &get_instance() {
     static ProfilerRecords profiler_records;
@@ -123,19 +129,28 @@ class ProfilerRecords {
 
 class Profiler {
  public:
-  double start_time;
+  float64 start_time;
   std::string name;
+  bool stopped;
 
   Profiler(std::string name) {
     start_time = Time::get_time();
     this->name = name;
+    stopped = false;
     ProfilerRecords::get_instance().push(name);
   }
 
-  ~Profiler() {
-    double elapsed = Time::get_time() - start_time;
+  void stop() {
+    assert_info(!stopped, "Profiler already stopped.");
+    float64 elapsed = Time::get_time() - start_time;
     ProfilerRecords::get_instance().insert_sample(elapsed);
     ProfilerRecords::get_instance().pop();
+  }
+
+  ~Profiler() {
+    if (!stopped) {
+      stop();
+    }
   }
 };
 

@@ -241,4 +241,37 @@ using STATIC_IF::static_if;
     }
 */
 
+template <typename T> std::string format_string(std::string templ, T t) {
+  constexpr int buf_length = 128;
+  char buf[buf_length];
+  snprintf(buf, buf_length, templ.c_str(), t);
+  return buf;
+}
+
+template <typename T, typename... Args>
+std::string format_string(std::string templ, T t, Args... rest) {
+  std::cout << templ << std::endl;
+  int first_formatter_pos = -1;
+  int counter = 0;
+  for (int i = 0; i < templ.size() - 1; i++) {
+    if (templ[i] == '%') {
+      if (templ[i + 1] == '%') {
+        i++;
+      } else {
+        first_formatter_pos = i;
+        counter++;
+        if (counter == 2) {
+          break;
+        }
+      }
+    }
+  }
+  assert_info(first_formatter_pos != -1,
+              "Insufficient placeholders in format string.");
+  std::string rest_templ =
+      templ.substr(first_formatter_pos, templ.size() - first_formatter_pos);
+  std::string first_templ = templ.substr(0, first_formatter_pos);
+  return format_string(first_templ, t) + format_string(rest_templ, rest...);
+}
+
 TC_NAMESPACE_END

@@ -15,6 +15,12 @@
 #include <functional>
 #include <thread>
 #include <vector>
+#ifdef __WIN32__
+
+#else
+// Mac and Linux
+#include <unistd.h>
+#endif
 
 #ifdef TC_USE_OPENMP
 
@@ -113,6 +119,12 @@ class ThreadedTaskManager {
   void static run(int end, int num_threads, const T &target) {
     return run(target, 0, end, num_threads);
   }
+};
+
+class PID {
+public:
+  static int get_pid() { return (int)getpid(); }
+  static int get_parent_pid() { return (int)getppid(); }
 };
 
 TC_NAMESPACE_END

@@ -216,7 +216,6 @@ template <typename T>
 class ArrayND<3, T> {
  protected:
   Region3D region;
-  std::vector<T> data;
   typedef typename std::vector<T>::iterator iterator;
   int size;
   Vector3i res;
@@ -242,6 +241,7 @@ class ArrayND<3, T> {
   };
 
  public:
+  std::vector<T> data;
   template <typename S>
   using Array3D = ArrayND<3, S>;
 

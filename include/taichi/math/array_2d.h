@@ -183,12 +183,12 @@ template <typename T>
 class ArrayND<2, T> {
  protected:
   Region2D region;
-  std::vector<T> data;
   typedef typename std::vector<T>::iterator iterator;
   int size;
   Vector2i res;
   Vector2 storage_offset = Vector2(0.5f, 0.5f);  // defualt : center storage
  public:
+  std::vector<T> data;
   template <typename S>
   using Array2D = ArrayND<2, S>;
 

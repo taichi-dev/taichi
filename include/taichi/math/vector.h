@@ -377,7 +377,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             typename T_ = T,
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<SIMD_NONE<DIM_, T_, ISE_>, int> = 0>
-  TC_FORCE_INLINE VectorND operator+(const VectorND o) const {
+  TC_FORCE_INLINE VectorND operator+(const VectorND &o) const {
     return VectorND([=](int i) { return this->d[i] + o[i]; });
   }
 
@@ -385,7 +385,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             typename T_ = T,
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<SIMD_NONE<DIM_, T_, ISE_>, int> = 0>
-  TC_FORCE_INLINE VectorND operator-(const VectorND o) const {
+  TC_FORCE_INLINE VectorND operator-(const VectorND &o) const {
     return VectorND([=](int i) { return this->d[i] - o[i]; });
   }
 
@@ -393,7 +393,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             typename T_ = T,
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<SIMD_NONE<DIM_, T_, ISE_>, int> = 0>
-  TC_FORCE_INLINE VectorND operator*(const VectorND o) const {
+  TC_FORCE_INLINE VectorND operator*(const VectorND &o) const {
     return VectorND([=](int i) { return this->d[i] * o[i]; });
   }
 
@@ -401,27 +401,27 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             typename T_ = T,
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<SIMD_NONE<DIM_, T_, ISE_>, int> = 0>
-  TC_FORCE_INLINE VectorND operator/(const VectorND o) const {
+  TC_FORCE_INLINE VectorND operator/(const VectorND &o) const {
     return VectorND([=](int i) { return this->d[i] / o[i]; });
   }
 
   // Inplace operations
-  TC_FORCE_INLINE VectorND &operator+=(const VectorND o) {
+  TC_FORCE_INLINE VectorND &operator+=(const VectorND &o) {
     (*this) = (*this) + o;
     return *this;
   }
 
-  TC_FORCE_INLINE VectorND &operator-=(const VectorND o) {
+  TC_FORCE_INLINE VectorND &operator-=(const VectorND &o) {
     (*this) = (*this) - o;
     return *this;
   }
 
-  TC_FORCE_INLINE VectorND &operator*=(const VectorND o) {
+  TC_FORCE_INLINE VectorND &operator*=(const VectorND &o) {
     (*this) = (*this) * o;
     return *this;
   }
 
-  TC_FORCE_INLINE VectorND &operator/=(const VectorND o) {
+  TC_FORCE_INLINE VectorND &operator/=(const VectorND &o) {
     (*this) = (*this) / o;
     return *this;
   }
@@ -1036,7 +1036,8 @@ TC_FORCE_INLINE MatrixND<DIM, T, ISE> operator
 }
 
 template <int DIM, typename T, InstSetExt ISE>
- TC_FORCE_INLINE MatrixND<DIM, T, ISE> operator*(const MatrixND<DIM, T, ISE> &M, const T a) {
+TC_FORCE_INLINE MatrixND<DIM, T, ISE> operator*(const MatrixND<DIM, T, ISE> &M,
+                                                const T a) {
   return a * M;
 }
 
@@ -1052,12 +1053,14 @@ inline void print(const MatrixND<DIM, T, ISE> &v) {
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-TC_FORCE_INLINE MatrixND<DIM, T, ISE> transpose(const MatrixND<DIM, T, ISE> &mat) {
+TC_FORCE_INLINE MatrixND<DIM, T, ISE> transpose(
+    const MatrixND<DIM, T, ISE> &mat) {
   return mat.transposed();
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-TC_FORCE_INLINE MatrixND<DIM, T, ISE> transposed(const MatrixND<DIM, T, ISE> &mat) {
+TC_FORCE_INLINE MatrixND<DIM, T, ISE> transposed(
+    const MatrixND<DIM, T, ISE> &mat) {
   return transpose(mat);
 }
 
@@ -1086,29 +1089,33 @@ TC_FORCE_INLINE real determinant(const MatrixND<3, T, ISE> &mat) {
 }
 
 template <typename T, InstSetExt ISE>
-TC_FORCE_INLINE T cross(const VectorND<2, T, ISE> &a, const VectorND<2, T, ISE> &b) {
+TC_FORCE_INLINE T cross(const VectorND<2, T, ISE> &a,
+                        const VectorND<2, T, ISE> &b) {
   return a.x * b.y - a.y * b.x;
 }
 
 template <typename T, InstSetExt ISE>
 TC_FORCE_INLINE VectorND<3, T, ISE> cross(const VectorND<3, T, ISE> &a,
-                                 const VectorND<3, T, ISE> &b) {
+                                          const VectorND<3, T, ISE> &b) {
   return VectorND<3, T, ISE>(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z,
                              a.x * b.y - a.y * b.x);
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-TC_FORCE_INLINE T dot(const VectorND<DIM, T, ISE> &a, const VectorND<DIM, T, ISE> &b) {
+TC_FORCE_INLINE T dot(const VectorND<DIM, T, ISE> &a,
+                      const VectorND<DIM, T, ISE> &b) {
   return a.dot(b);
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-TC_FORCE_INLINE VectorND<DIM, T, ISE> normalize(const VectorND<DIM, T, ISE> &a) {
+TC_FORCE_INLINE VectorND<DIM, T, ISE> normalize(
+    const VectorND<DIM, T, ISE> &a) {
   return (T(1) / a.length()) * a;
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-TC_FORCE_INLINE VectorND<DIM, T, ISE> normalized(const VectorND<DIM, T, ISE> &a) {
+TC_FORCE_INLINE VectorND<DIM, T, ISE> normalized(
+    const VectorND<DIM, T, ISE> &a) {
   return normalize(a);
 }
 
@@ -1270,7 +1277,9 @@ TC_FORCE_INLINE MatrixND<DIM, T, ISE> inverse(const MatrixND<DIM, T, ISE> &m) {
   return inversed(m);
 }
 
-TC_FORCE_INLINE Vector3 multiply_matrix4(const Matrix4 &m, const Vector3 &v, real w) {
+TC_FORCE_INLINE Vector3 multiply_matrix4(const Matrix4 &m,
+                                         const Vector3 &v,
+                                         real w) {
   return Vector3(m * Vector4(v, w));
 }
 
@@ -1297,7 +1306,8 @@ struct is_matrix<MatrixND<DIM, T, ISE>> {
 };
 
 template <int DIM, typename T>
-TC_FORCE_INLINE VectorND<DIM, T> min(const VectorND<DIM, T> &a, const VectorND<DIM, T> &b) {
+TC_FORCE_INLINE VectorND<DIM, T> min(const VectorND<DIM, T> &a,
+                                     const VectorND<DIM, T> &b) {
   VectorND<DIM, T> ret;
   for (int i = 0; i < DIM; i++) {
     ret[i] = std::min(a[i], b[i]);
@@ -1306,7 +1316,8 @@ TC_FORCE_INLINE VectorND<DIM, T> min(const VectorND<DIM, T> &a, const VectorND<D
 }
 
 template <int DIM, typename T>
-TC_FORCE_INLINE VectorND<DIM, T> max(const VectorND<DIM, T> &a, const VectorND<DIM, T> &b) {
+TC_FORCE_INLINE VectorND<DIM, T> max(const VectorND<DIM, T> &a,
+                                     const VectorND<DIM, T> &b) {
   VectorND<DIM, T> ret;
   for (int i = 0; i < DIM; i++) {
     ret[i] = std::max(a[i], b[i]);

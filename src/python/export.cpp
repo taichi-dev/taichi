@@ -15,12 +15,12 @@
 
 TC_NAMESPACE_BEGIN
 
-PYBIND11_PLUGIN(taichi_core) {
-  py::module m("taichi_core", R"pbdoc(
+PYBIND11_MODULE(taichi_core, m) {
+  m.doc() = "taichi_core", R"pbdoc(
     Taichi Core Library
     -----------------------
     .. currentmodule:: taichi_core
-    )pbdoc");
+    )pbdoc";
 
   for (auto &kv : InterfaceHolder::get_instance()->methods) {
     kv.second(&m);
@@ -32,8 +32,6 @@ PYBIND11_PLUGIN(taichi_core) {
   export_visual(m);
   export_io(m);
   export_misc(m);
-
-  return m.ptr();
 }
 
 TC_NAMESPACE_END

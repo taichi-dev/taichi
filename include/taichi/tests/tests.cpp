@@ -14,7 +14,7 @@
 TC_NAMESPACE_BEGIN
 
 template <typename T>
-TC_FORCE_INLINE void benchmark(T &t, int n) {
+void benchmark(T &t, int n) {
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       for (int k = 0; k < n; k++) {

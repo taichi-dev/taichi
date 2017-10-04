@@ -72,3 +72,4 @@ if (TC_USE_OPENMP)
     endif ()
 endif ()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")

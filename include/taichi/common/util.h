@@ -126,7 +126,7 @@ using uint64 = unsigned __int64;
 #else
 using int64 = long long;
 using uint64 = unsigned long long;
-#define TC_FORCE_INLINE __attribute__((always_inline))
+#define TC_FORCE_INLINE inline __attribute__((always_inline))
 #endif
 
 using float32 = float;

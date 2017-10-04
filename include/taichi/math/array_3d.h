@@ -124,9 +124,9 @@ class IndexND<3> {
 
   Index3D &operator*() { return *this; }
 
-  int operator[](int c) { return *(&i + c); }
+  TC_FORCE_INLINE int operator[](int c) { return *(&i + c); }
 
-  const int operator[](int c) const { return *(&i + c); }
+  TC_FORCE_INLINE const int operator[](int c) const { return *(&i + c); }
 
   Index3D neighbour(int di, int dj, int dk) const {
     Index3D i = *this;
@@ -227,29 +227,29 @@ class ArrayND<3, T> {
     T *data;
     int offset;
 
-    Accessor2D(T *data, int offset) : data(data), offset(offset) {}
+    TC_FORCE_INLINE Accessor2D(T *data, int offset) : data(data), offset(offset) {}
 
-    T *operator[](int i) const { return data + offset * i; }
+    TC_FORCE_INLINE T *operator[](int i) const { return data + offset * i; }
   };
 
   struct ConstAccessor2D {
     const T *data;
     int offset;
 
-    ConstAccessor2D(const T *data, int offset) : data(data), offset(offset) {}
+    TC_FORCE_INLINE ConstAccessor2D(const T *data, int offset) : data(data), offset(offset) {}
 
-    const T *operator[](int i) const { return data + offset * i; }
+    TC_FORCE_INLINE const T *operator[](int i) const { return data + offset * i; }
   };
 
  public:
   template <typename S>
   using Array3D = ArrayND<3, S>;
 
-  int get_size() const { return size; }
+  TC_FORCE_INLINE int get_size() const { return size; }
 
-  const Region3D &get_region() const { return region; }
+  TC_FORCE_INLINE const Region3D &get_region() const { return region; }
 
-  ArrayND(const Vector3i &resolution,
+  TC_FORCE_INLINE ArrayND(const Vector3i &resolution,
           T init = T(0),
           Vector3 storage_offset = Vector3(0.5f)) {
     initialize(resolution, init, storage_offset);
@@ -374,11 +374,11 @@ class ArrayND<3, T> {
     }
   }
 
-  const Accessor2D operator[](int i) {
+  TC_FORCE_INLINE const Accessor2D operator[](int i) {
     return Accessor2D(&data[0] + i * stride, res[2]);
   }
 
-  const ConstAccessor2D operator[](int i) const {
+  TC_FORCE_INLINE const ConstAccessor2D operator[](int i) const {
     return ConstAccessor2D(&data[0] + i * stride, res[2]);
   }
 
@@ -542,17 +542,17 @@ class ArrayND<3, T> {
 
   auto end() const { return data.cend(); }
 
-  T &operator[](const Vector3i &pos) { return (*this)[pos.x][pos.y][pos.z]; }
+  TC_FORCE_INLINE T &operator[](const Vector3i &pos) { return (*this)[pos.x][pos.y][pos.z]; }
 
-  const T &operator[](const Vector3i &pos) const {
+  TC_FORCE_INLINE const T &operator[](const Vector3i &pos) const {
     return (*this)[pos.x][pos.y][pos.z];
   }
 
-  T &operator[](const Index3D &index) {
+  TC_FORCE_INLINE T &operator[](const Index3D &index) {
     return (*this)[index.i][index.j][index.k];
   }
 
-  const T &operator[](const Index3D &index) const {
+  TC_FORCE_INLINE const T &operator[](const Index3D &index) const {
     return (*this)[index.i][index.j][index.k];
   }
 

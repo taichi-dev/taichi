@@ -501,6 +501,14 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
     return ret;
   }
 
+  TC_FORCE_INLINE T abs_max() const {
+    T ret = std::abs(this->d[0]);
+    for (int i = 1; i < DIM; i++) {
+      ret = std::max(ret, std::abs(this->d[i]));
+    }
+    return ret;
+  }
+
   template <typename G>
   TC_FORCE_INLINE VectorND<DIM, G, ISE> cast() const {
     return VectorND<DIM, G, ISE>(

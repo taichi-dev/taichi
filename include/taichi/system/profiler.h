@@ -56,11 +56,13 @@ class ProfilerRecords {
   std::unique_ptr<Node> root;
   Node *current_node;
   int current_depth;
+  bool enabled;
 
   ProfilerRecords() {
     root = std::make_unique<Node>("[Taichi Profiler]", nullptr);
     current_node = root.get();
     current_depth = 0;  // depth(root) = 0
+    enabled = true;
   }
 
   void print(Node *node, int depth) {
@@ -109,14 +111,22 @@ class ProfilerRecords {
 
   void print() { print(root.get(), 0); }
 
-  void insert_sample(float64 time) { current_node->insert_sample(time); }
+  void insert_sample(float64 time) {
+    if (!enabled)
+      return;
+    current_node->insert_sample(time);
+  }
 
   void push(const std::string name) {
+    if (!enabled)
+      return;
     current_node = current_node->get_child(name);
     current_depth += 1;
   }
 
   void pop() {
+    if (!enabled)
+      return;
     current_node = current_node->parent;
     current_depth -= 1;
   }
@@ -152,6 +162,10 @@ class Profiler {
       stop();
     }
   }
+
+  static void disable() { ProfilerRecords::get_instance().enabled = false; }
+
+  static void enable() { ProfilerRecords::get_instance().enabled = true; }
 };
 
 #define TC_PROFILE(name, statements) \

@@ -131,7 +131,7 @@ void svd(Matrix3 m, Matrix3 &u, Matrix3 &sig, Matrix3 &v) {
   eigen_svd(m, u, sig, v);
 #else
   if ((m - Matrix3(Vector3(m[0][0], m[1][1], m[2][2]))).frobenius_norm2() <
-      1e-7f) {
+      1e-7_f) {
     // QR_SVD crashes in this case...
     sig = m;
     u = v = Matrix3(1);
@@ -143,7 +143,7 @@ void svd(Matrix3 m, Matrix3 &u, Matrix3 &sig, Matrix3 &v) {
 }
 
 void qr_decomp(Matrix2 A, Matrix2 &q, Matrix2 &r) {
-  real a = A[0][0], b = A[0][1], inv_r = 1.0_f / hypot(a, b);
+  real a = A[0][0], b = A[0][1], inv_r = 1.0_f / std::hypot(a, b);
   a *= inv_r;
   b *= inv_r;
   Matrix2 Q(Vector2(a, -b), Vector2(b, a));

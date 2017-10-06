@@ -31,7 +31,7 @@ elif get_os_name() == 'linux':
     sys.path.append(bin_dir)
     shutil.copy('libtaichi_core.so', 'taichi_core.so')
     try:
-        import taichi_core as tc_core
+      import taichi_core as tc_core
     except Exception as e:
       print()
       print("\033[91m*Please make sure you are using python3 "

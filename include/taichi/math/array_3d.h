@@ -226,7 +226,8 @@ class ArrayND<3, T> {
     T *data;
     int offset;
 
-    TC_FORCE_INLINE Accessor2D(T *data, int offset) : data(data), offset(offset) {}
+    TC_FORCE_INLINE Accessor2D(T *data, int offset)
+        : data(data), offset(offset) {}
 
     TC_FORCE_INLINE T *operator[](int i) const { return data + offset * i; }
   };
@@ -235,9 +236,12 @@ class ArrayND<3, T> {
     const T *data;
     int offset;
 
-    TC_FORCE_INLINE ConstAccessor2D(const T *data, int offset) : data(data), offset(offset) {}
+    TC_FORCE_INLINE ConstAccessor2D(const T *data, int offset)
+        : data(data), offset(offset) {}
 
-    TC_FORCE_INLINE const T *operator[](int i) const { return data + offset * i; }
+    TC_FORCE_INLINE const T *operator[](int i) const {
+      return data + offset * i;
+    }
   };
 
  public:
@@ -250,8 +254,8 @@ class ArrayND<3, T> {
   TC_FORCE_INLINE const Region3D &get_region() const { return region; }
 
   TC_FORCE_INLINE ArrayND(const Vector3i &resolution,
-          T init = T(0),
-          Vector3 storage_offset = Vector3(0.5f)) {
+                          T init = T(0),
+                          Vector3 storage_offset = Vector3(0.5f)) {
     initialize(resolution, init, storage_offset);
   }
 
@@ -542,7 +546,9 @@ class ArrayND<3, T> {
 
   auto end() const { return data.cend(); }
 
-  TC_FORCE_INLINE T &operator[](const Vector3i &pos) { return (*this)[pos.x][pos.y][pos.z]; }
+  TC_FORCE_INLINE T &operator[](const Vector3i &pos) {
+    return (*this)[pos.x][pos.y][pos.z];
+  }
 
   TC_FORCE_INLINE const T &operator[](const Vector3i &pos) const {
     return (*this)[pos.x][pos.y][pos.z];

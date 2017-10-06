@@ -122,7 +122,7 @@ class ThreadedTaskManager {
 };
 
 class PID {
-public:
+ public:
   static int get_pid() { return (int)getpid(); }
   static int get_parent_pid() { return (int)getppid(); }
 };

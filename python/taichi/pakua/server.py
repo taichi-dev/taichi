@@ -4,6 +4,7 @@ import os
 
 app = Flask(__name__)
 
+
 @app.route('/')
 def browse_outputs():
   output_dir = get_output_directory()
@@ -12,8 +13,8 @@ def browse_outputs():
   entries = []
   for d in dirs:
     entries.append({
-      'title': d,
-      'text': '',
+        'title': d,
+        'text': '',
     })
   return render_template('browser.html', entries=entries)
 
@@ -22,6 +23,7 @@ def browse_outputs():
 def view(folder):
   output_dir = get_output_directory()
   return render_template('view.html', folder=folder)
+
 
 def get_pakua_server():
   return app

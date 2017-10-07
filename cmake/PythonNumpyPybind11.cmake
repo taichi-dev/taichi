@@ -41,6 +41,7 @@ else ()
     file(MAKE_DIRECTORY bin)
     file(WRITE bin/ti "#!${PYTHON_EXECUTABLE_PATH}\nimport taichi\ntaichi.main()")
     execute_process(COMMAND chmod +x ../bin/ti)
+    execute_process(COMMAND cp ../bin/ti ../bin/taichi)
 endif ()
 
 include_directories(${PYTHON_INCLUDE_DIRS})

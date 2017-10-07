@@ -1,15 +1,19 @@
 import taichi
+from taichi import core
+from taichi.core.unit import unit
+from taichi.misc.util import config_from_dict
 import sys
 
 
+@unit('task')
 class Task:
-
+  def __init__(self, name, **kwargs):
+    self.c = core.create_task(name)
+    self.c.initialize(config_from_dict(kwargs))
+    print("initializing task", name)
+  
   def run(self, *args):
-    pass
-
-
-def create_task():
-  return Task()
+    self.c.run(*args)
 
 
 def main():
@@ -29,9 +33,9 @@ def main():
     if argc <= 2:
       print("Please specify [task name], e.g. test_math")
       exit(-1)
-    task_name = sys.argv[2]
-    task = create_task(task_name)
-    task.run(sys.argv[2:])
+    name = sys.argv[2]
+    task = Task(name)
+    task.run(sys.argv[3:])
   elif mode == "test":
     print("not implemented")
     exit(-1)

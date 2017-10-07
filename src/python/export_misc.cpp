@@ -17,6 +17,7 @@
 #include <taichi/system/unit_dll.h>
 #include <taichi/system/benchmark.h>
 #include <taichi/system/profiler.h>
+#include <taichi/common/task.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -77,6 +78,11 @@ void export_misc(py::module &m) {
       PyErr_SetString(PyExc_RuntimeError, e.what());
     }
   });
+
+  py::class_<Task, std::shared_ptr<Task>>(m, "Task")
+      .def("initialize", &Task::initialize)
+      .def("run", static_cast<void (Task::*)(const std::vector<std::string> &)>(
+                      &Task::run));
 
   py::class_<ToneMapper, std::shared_ptr<ToneMapper>>(m, "ToneMapper")
       .def("initialize", &ToneMapper::initialize)

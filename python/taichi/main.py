@@ -17,16 +17,17 @@ class Task:
 
 
 def main():
-  print("                          \u262f \u262f \u262f \u262f\n"
-        " ********************************************************* \n"
-        " ** Taichi - Physically based Computer Graphics Library ** \n"
-        " ********************************************************* \n"
-        "                          *******                          \n")
+  print("                  \u262f \u262f \u262f \u262f\n"
+        " ******************************************\n"
+        " ** Taichi - A Computer Graphics Library **\n"
+        " ******************************************\n"
+        "              \u2630 \u2631 \u2632 \u2633 "
+        "\u2634 \u2635 \u2636 \u2637\n")
 
   argc = len(sys.argv)
   if argc == 1:
-    print("    usage: taichi run [task name] \n"
-          "           taichi test [module name]")
+    print("    Usage: ti run  [task name] \n"
+          "           ti test [module name]")
     exit(-1)
   mode = sys.argv[1]
   if mode == "run":

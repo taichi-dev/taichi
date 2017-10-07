@@ -10,7 +10,6 @@ class Task:
   def __init__(self, name, **kwargs):
     self.c = core.create_task(name)
     self.c.initialize(config_from_dict(kwargs))
-    print("initializing task", name)
   
   def run(self, *args):
     self.c.run(*args)

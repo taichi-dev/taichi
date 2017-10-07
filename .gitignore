@@ -39,6 +39,7 @@ runtimes/libtaichi_core*
 python/dist
 python/MANIFEST
 build/
+bin/
 tmp/
 cmake-build-debug
 cmake-build-release

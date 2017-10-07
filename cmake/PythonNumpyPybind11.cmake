@@ -11,6 +11,8 @@ endif ()
 if (WIN32)
     find_package(PythonLibs 3.5 REQUIRED)
 else ()
+    execute_process(COMMAND which ${PYTHON_EXECUTABLE}
+            OUTPUT_VARIABLE PYTHON_EXECUTABLE_PATH)
     execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
             "import sys;\
             from distutils import sysconfig;\
@@ -34,6 +36,11 @@ else ()
     find_library(PYTHON_LIBRARY NAMES python${PYTHON_VERSION} python${PYTHON_VERSION}m PATHS ${PYTHON_LIBRARY_DIR}
             NO_DEFAULT_PATH NO_SYSTEM_ENVIRONMENT_PATH PATH_SUFFIXES x86_64-linux-gnu)
     set(PYTHON_LIBRARIES ${PYTHON_LIBRARY})
+
+    # Creating python enters
+    file(MAKE_DIRECTORY bin)
+    file(WRITE bin/ti "#!${PYTHON_EXECUTABLE_PATH}\nimport taichi\ntaichi.main()")
+    execute_process(COMMAND chmod +x ../bin/ti)
 endif ()
 
 include_directories(${PYTHON_INCLUDE_DIRS})
@@ -61,3 +68,5 @@ else ()
 endif ()
 
 include_directories(${PYBIND11_INCLUDE_DIR})
+
+

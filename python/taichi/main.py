@@ -17,7 +17,7 @@ class Task:
 
 
 def main():
-  print("                          *******                          \n"
+  print("                          \u262f \u262f \u262f \u262f\n"
         " ********************************************************* \n"
         " ** Taichi - Physically based Computer Graphics Library ** \n"
         " ********************************************************* \n"

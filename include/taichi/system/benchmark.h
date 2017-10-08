@@ -34,6 +34,7 @@ class Benchmark : public Unit {
     returns_time = config.get("returns_time", false);
   }
 
+  // returns cycles per element (default) / time per element
   virtual real run(int iterations = 16) {
     setup();
     for (int i = 0; i < warm_up_iterations; i++) {

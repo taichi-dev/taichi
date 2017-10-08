@@ -1,18 +1,5 @@
-import taichi
-from taichi import core
-from taichi.core.unit import unit
-from taichi.misc.util import config_from_dict
+from taichi import Task
 import sys
-
-
-@unit('task')
-class Task:
-  def __init__(self, name, **kwargs):
-    self.c = core.create_task(name)
-    self.c.initialize(config_from_dict(kwargs))
-  
-  def run(self, *args):
-    self.c.run(*args)
 
 
 def main():

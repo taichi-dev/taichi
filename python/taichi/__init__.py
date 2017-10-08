@@ -6,6 +6,7 @@ from taichi.scoping import *
 from taichi.tools import *
 from taichi.visual import *
 from taichi.misc import *
+from taichi.misc.task import Task
 from taichi.misc import settings as settings
 from taichi.misc.settings import *
 import taichi.image as image

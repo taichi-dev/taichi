@@ -27,7 +27,7 @@
 			void main() {
 				vColor = customColor;
 				vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-				gl_PointSize = size * ( 300.0 / -mvPosition.z );
+				gl_PointSize = max(5.0, size * ( 300.0 / -mvPosition.z ));
 				gl_Position = projectionMatrix * mvPosition;
 			}
 </script>
@@ -89,9 +89,9 @@ function init() {
     }
 
     var particles, uniforms;
-    var PARTICLE_SIZE = 20;
+    var PARTICLE_SIZE = 0.1;
 
-    var geometry1 = new THREE.BoxGeometry( 200, 200, 200, 16, 16, 16 );
+    var geometry1 = new THREE.BoxGeometry( 2, 2, 2, 16, 16, 16 );
     var vertices = geometry1.vertices;
     var positions = new Float32Array( vertices.length * 3 );
     var colors = new Float32Array( vertices.length * 3 );

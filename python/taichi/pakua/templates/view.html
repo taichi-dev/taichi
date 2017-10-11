@@ -1,4 +1,165 @@
 {% extends "layout.html" %}
 {% block body %}
+<script src="../viewer/three.min.js"></script>
+<script src="../viewer/TrackballControls.js"></script>
+<script src="../viewer/stats.min.js"></script>
+<script type="x-shader/x-vertex" id="vertexshader">
+			attribute float size;
+			attribute vec3 customColor;
+			varying vec3 vColor;
+			void main() {
+				vColor = customColor;
+				vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+				//gl_PointSize = max(5.0, size * ( 300.0 / -mvPosition.z ));
+			    gl_PointSize = 1.0;
+				gl_Position = projectionMatrix * mvPosition;
+			}
+</script>
+<script type="x-shader/x-fragment" id="fragmentshader">
+			uniform vec3 color;
+			uniform sampler2D texture;
+			varying vec3 vColor;
+			void main() {
+				gl_FragColor = vec4( color * vColor, 1.0 );
+				//gl_FragColor = gl_FragColor;// * texture2D( texture, gl_PointCoord );
+				if ( gl_FragColor.a < ALPHATEST ) discard;
+			}
+</script>
 <h2>{{folder}}</h2>
+<script type="text/javascript">
+    var container, stats;
+    var camera, controls, scene, renderer;
+    var objects = [];
+    init();
+    animate();
+    function init() {
+        container = document.createElement( 'div' );
+        document.body.appendChild( container );
+        camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+        camera.position.z = 10;
+        controls = new THREE.TrackballControls( camera );
+        controls.rotateSpeed = 1.0;
+        controls.zoomSpeed = 1.2;
+        controls.panSpeed = 0.8;
+        controls.noZoom = false;
+        controls.noPan = false;
+        controls.staticMoving = true;
+        controls.dynamicDampingFactor = 0.3;
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color( 0xf0f0f0 );
+        scene.add( new THREE.AmbientLight( 0x505050 ) );
+        var light = new THREE.SpotLight( 0xffffff, 1.5 );
+        light.position.set( 0, 500, 2000 );
+        light.castShadow = true; light.shadow = new THREE.LightShadow( new THREE.PerspectiveCamera( 50, 1, 200, 10000 ) ); light.shadow.bias = - 0.00022;
+        light.shadow.mapSize.width = 2048;
+        light.shadow.mapSize.height = 2048;
+        scene.add( light );
+        var geometry = new THREE.BoxGeometry( 0.4, 0.4, 0.4);
+        for ( var i = 0; i < 0; i ++ ) {
+            var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
+            object.position.x = Math.random() * 10 - 5;
+            object.position.y = Math.random() * 6 - 3;
+            object.position.z = Math.random() * 8 - 4;
+            object.rotation.x = Math.random() * 2 * Math.PI;
+            object.rotation.y = Math.random() * 2 * Math.PI;
+            object.rotation.z = Math.random() * 2 * Math.PI;
+            object.scale.x = Math.random() * 2 + 1;
+            object.scale.y = Math.random() * 2 + 1;
+            object.scale.z = Math.random() * 2 + 1;
+            object.castShadow = true;
+            object.receiveShadow = true;
+            scene.add( object );
+            objects.push( object );
+        }
+
+        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFShadowMap;
+        container.appendChild( renderer.domElement );
+        var info = document.createElement( 'div' );
+        info.style.position = 'absolute';
+        info.style.top = '10px';
+        info.style.width = '100%';
+        info.style.textAlign = 'center';
+        container.appendChild( info );
+        stats = new Stats();
+        container.appendChild( stats.dom );
+        window.addEventListener( 'resize', onWindowResize, false );
+
+        loadJSON('../data/{{folder}}/frames/0000.json',
+            function(data) { reload(data); },
+            function(xhr) { console.error(xhr); }
+        );
+    }
+
+    // https://stackoverflow.com/questions/9838812/how-can-i-open-a-json-file-in-javascript-without-jquery
+    function loadJSON(path, success, error)
+    {
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function()
+        {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    if (success)
+                        success(JSON.parse(xhr.responseText));
+                } else {
+                    if (error)
+                        error(xhr);
+                }
+            }
+        };
+        xhr.open("GET", path, true);
+        xhr.send();
+    }
+    function reload(data) {
+        var positions = new Float32Array(data.points.position);
+        var colors = new Float32Array(data.points.color);
+        var sizes = new Float32Array(data.points.sizes);
+
+        // Points
+        var geometry = new THREE.BufferGeometry();
+        geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+        geometry.addAttribute( 'customColor', new THREE.BufferAttribute( colors, 3 ) );
+        geometry.addAttribute( 'size', new THREE.BufferAttribute( sizes, 1 ) );
+
+        var material = new THREE.ShaderMaterial( {
+            uniforms: {
+                color:   { value: new THREE.Color( 0xffffff ) },
+                texture: { value: new THREE.TextureLoader().load( "disc.png" ) }
+            },
+            vertexShader: document.getElementById( 'vertexshader' ).textContent,
+            fragmentShader: document.getElementById( 'fragmentshader' ).textContent,
+            alphaTest: 0.9
+        } );
+
+        var particles = new THREE.Points( geometry, material );
+        if (window.particles) {
+            scene.remove(window.particles);
+        }
+        scene.add(particles);
+
+        window.particles = particles;
+        window.geometry = geometry;
+        window.geometry.attributes.position.needsUpdate = true;
+        window.geometry.attributes.customColor.needsUpdate = true;
+        window.geometry.attributes.size.needsUpdate = true;
+    }
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+    }
+    function animate() {
+        requestAnimationFrame( animate );
+        render();
+        stats.update();
+    }
+    function render() {
+        controls.update();
+        renderer.render( scene, camera );
+    }
+</script>
+
 {% endblock %}

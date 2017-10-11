@@ -1,8 +1,16 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
 from taichi.misc.settings import get_output_directory
 import os
+from flask_cors import CORS
 
 app = Flask(__name__)
+#CORS(app)
+
+
+@app.route('/test/<path:path>')
+def send_file(path):
+  print(path)
+  return send_from_directory('test', path)
 
 
 @app.route('/')

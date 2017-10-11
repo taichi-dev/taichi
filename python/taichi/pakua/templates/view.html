@@ -113,21 +113,27 @@
     }
 
     function refreshFrame() {
-        loadJSON('../data/{{folder}}/frames/' + pad_with_zero(window.frameId, 4) + '.json',
+        var json = {
+            path: '{{folder}}/frames/',
+            frame_id:window.frameId
+        };
+        loadJSON(json,
             function(data) { reload(data); },
             function(xhr) { console.error(xhr); }
         );
     }
 
+    // Based on
     // https://stackoverflow.com/questions/9838812/how-can-i-open-a-json-file-in-javascript-without-jquery
-    https://stackoverflow.com/questions/4116992/how-to-include-json-data-in-javascript-synchronously-without-parsing
-    function loadJSON(path, success, error)
+    // https://stackoverflow.com/questions/4116992/how-to-include-json-data-in-javascript-synchronously-without-parsing
+    function loadJSON(json, success, error)
     {
         var sync=true;
         if (sync) {
             var xmlhttp=new XMLHttpRequest();
-            xmlhttp.open("GET",path,false);
-            xmlhttp.send();
+            xmlhttp.open("POST",'../data',false);
+            xmlhttp.setRequestHeader("Content-Type", "application/json");
+            xmlhttp.send(JSON.stringify(json));
             if (xmlhttp.status==200)
             {
                 success(JSON.parse(xmlhttp.responseText));
@@ -150,7 +156,7 @@
                     }
                 }
             };
-            xhr.open("GET", path, true);
+            xhr.open("POST", path, true);
             xhr.send();
         }
     }

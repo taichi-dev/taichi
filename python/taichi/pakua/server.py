@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_from_directory, send_file
+from flask import Flask, render_template, send_from_directory, send_file, request
 from taichi.misc.settings import get_output_directory
 import os
 from taichi import get_output_directory
@@ -12,10 +12,11 @@ app = Flask(__name__)
 def send_front_end_file(path):
   return send_from_directory('viewer', path)
 
-@app.route('/data/<path:path>')
-def send_data_file(path):
-  path = os.path.join(get_output_directory(), path)
-  print(path)
+@app.route('/data', methods=['POST'])
+def next_frame():
+  content = request.get_json(silent=True)
+  print(content)
+  path = os.path.join(get_output_directory(), content['path'], '%04d.json' % content['frame_id'])
   return send_file(path)
 
 

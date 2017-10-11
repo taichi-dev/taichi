@@ -121,10 +121,8 @@
             frame_id:window.frameId,
             inc: inc
         };
-        console.log(json);
         loadJSON(json,
             function(data) {
-                console.log(data);
                 reload(data.data);
                 window.frameId = data.next_frame;
             },

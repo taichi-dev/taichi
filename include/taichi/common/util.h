@@ -274,13 +274,7 @@ std::string format_string(std::string templ, T t, Args... rest) {
   return format_string(first_templ, t) + format_string(rest_templ, rest...);
 }
 
-enum LogLevel {
-  VERBOSE=0,
-  INFO=1,
-  WARNING=2,
-  ERROR=3,
-  FATAL=4
-};
+enum LogLevel { VERBOSE = 0, INFO = 1, WARNING = 2, ERROR = 3, FATAL = 4 };
 
 extern LogLevel log_level;
 

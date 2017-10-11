@@ -21,9 +21,7 @@ class Task : public Unit {
     assert_info(parameters.size() == 0, "No parameters supported.");
     this->run();
   }
-  virtual void run() {
-    this->run(std::vector<std::string>());
-  }
+  virtual void run() { this->run(std::vector<std::string>()); }
 };
 
 TC_INTERFACE(Task)

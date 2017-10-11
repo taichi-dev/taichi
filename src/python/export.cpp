@@ -26,7 +26,6 @@ PYBIND11_MODULE(taichi_core, m) {
     kv.second(&m);
   }
 
-  Py_Initialize();
   export_math(m);
   export_dynamics(m);
   export_visual(m);

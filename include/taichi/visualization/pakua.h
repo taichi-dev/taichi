@@ -21,7 +21,7 @@ class Pakua : Unit {
   using Vector = VectorND<3, real>;
 
   virtual void initialize(const Config &config) override {
-    int port = config.get<int32>("port");
+    //int port = config.get<int32>("port");
   }
 
   // Add a particle to buffer
@@ -65,7 +65,7 @@ class Pakua : Unit {
   // Finish and send canvas (buffer) to frontend
   virtual void finish() = 0;
 
-  virtual void set_resolution(Vector2i res) = 0;
+  virtual void set_resolution(Vector2i res) {NOT_IMPLEMENTED};
 };
 
 TC_INTERFACE(Pakua)

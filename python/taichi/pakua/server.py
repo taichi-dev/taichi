@@ -25,12 +25,13 @@ def next_frame():
   next_frame = int(next_frame)
   
   json_path = os.path.join(directory, frame_fn)
-  with open(json_path) as f:
-    response = {
-      'data': json.loads(f.read()),
-      'next_frame': next_frame
-    }
-    return json.dumps(response)
+  response = {
+    'next_frame': next_frame
+  }
+  if content['need_geometry']:
+    with open(json_path) as f:
+      response['data'] = json.loads(f.read())
+  return json.dumps(response)
 
 
 @app.route('/')

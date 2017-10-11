@@ -251,7 +251,6 @@ std::string format_string(std::string templ, T t) {
 
 template <typename T, typename... Args>
 std::string format_string(std::string templ, T t, Args... rest) {
-  std::cout << templ << std::endl;
   int first_formatter_pos = -1;
   int counter = 0;
   for (int i = 0; i < templ.size() - 1; i++) {
@@ -274,5 +273,15 @@ std::string format_string(std::string templ, T t, Args... rest) {
   std::string first_templ = templ.substr(0, first_formatter_pos);
   return format_string(first_templ, t) + format_string(rest_templ, rest...);
 }
+
+enum LogLevel {
+  VERBOSE=0,
+  INFO=1,
+  WARNING=2,
+  ERROR=3,
+  FATAL=4
+};
+
+extern LogLevel log_level;
 
 TC_NAMESPACE_END

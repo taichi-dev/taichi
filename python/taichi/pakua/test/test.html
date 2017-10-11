@@ -9,7 +9,7 @@
     <style>
 			body {
 				font-family: Monospace;
-				background-color: #f0f0f0;
+				background-color: #d0d0d0;
 				margin: 0px;
 				overflow: hidden;
 			}
@@ -88,43 +88,6 @@ function init() {
         objects.push( object );
     }
 
-    var particles, uniforms;
-    var PARTICLE_SIZE = 0.1;
-
-    var n = 16;
-    var positions = new Float32Array( n * 3 );
-    var colors = new Float32Array( n * 3 );
-    var sizes = new Float32Array( n);
-    var color = new THREE.Color();
-    for ( var i = 0, l = n; i < l; i ++ ) {
-        var vertex = new THREE.Vector3(i, i % 2, i);
-        vertex.toArray( positions, i * 3 );
-        color.setHSL( 0.01 + 0.1 * ( i / l ), 1.0, 0.5 );
-        color.toArray( colors, i * 3 );
-        sizes[ i ] = PARTICLE_SIZE * 0.5;
-    }
-
-    // Points
-    var geometry = new THREE.BufferGeometry();
-    window.geometry = geometry;
-    geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
-    geometry.addAttribute( 'customColor', new THREE.BufferAttribute( colors, 3 ) );
-    geometry.addAttribute( 'size', new THREE.BufferAttribute( sizes, 1 ) );
-    //
-    var material = new THREE.ShaderMaterial( {
-        uniforms: {
-            color:   { value: new THREE.Color( 0xffffff ) },
-            texture: { value: new THREE.TextureLoader().load( "disc.png" ) }
-        },
-        vertexShader: document.getElementById( 'vertexshader' ).textContent,
-        fragmentShader: document.getElementById( 'fragmentshader' ).textContent,
-        alphaTest: 0.9
-    } );
-    //
-    particles = new THREE.Points( geometry, material );
-    scene.add( particles );
-
-
     renderer = new THREE.WebGLRenderer( { antialias: true } );
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( window.innerWidth, window.innerHeight );
@@ -140,11 +103,61 @@ function init() {
     stats = new Stats();
     container.appendChild( stats.dom );
     window.addEventListener( 'resize', onWindowResize, false );
+
+    loadJSON('example.json',
+        function(data) { reload(data); },
+        function(xhr) { console.error(xhr); }
+    );
 }
-function reload() {
-    for ( var i = 0; i < 10; i ++ ) {
-        window.geometry.attributes.position.array[i] = Math.random();
+
+// https://stackoverflow.com/questions/9838812/how-can-i-open-a-json-file-in-javascript-without-jquery
+function loadJSON(path, success, error)
+{
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function()
+    {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                if (success)
+                    success(JSON.parse(xhr.responseText));
+            } else {
+                if (error)
+                    error(xhr);
+            }
+        }
+    };
+    xhr.open("GET", path, true);
+    xhr.send();
+}
+function reload(data) {
+    var positions = new Float32Array(data.position);
+    var colors = new Float32Array(data.color);
+    var sizes = new Float32Array(data.sizes);
+
+    // Points
+    var geometry = new THREE.BufferGeometry();
+    geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+    geometry.addAttribute( 'customColor', new THREE.BufferAttribute( colors, 3 ) );
+    geometry.addAttribute( 'size', new THREE.BufferAttribute( sizes, 1 ) );
+
+    var material = new THREE.ShaderMaterial( {
+        uniforms: {
+            color:   { value: new THREE.Color( 0xffffff ) },
+            texture: { value: new THREE.TextureLoader().load( "disc.png" ) }
+        },
+        vertexShader: document.getElementById( 'vertexshader' ).textContent,
+        fragmentShader: document.getElementById( 'fragmentshader' ).textContent,
+        alphaTest: 0.9
+    } );
+
+    var particles = new THREE.Points( geometry, material );
+    if (window.particles) {
+        scene.remove(window.particles);
     }
+    scene.add(particles);
+
+    window.particles = particles;
+    window.geometry = geometry;
     window.geometry.attributes.position.needsUpdate = true;
     window.geometry.attributes.customColor.needsUpdate = true;
     window.geometry.attributes.size.needsUpdate = true;
@@ -157,7 +170,6 @@ function onWindowResize() {
 function animate() {
     requestAnimationFrame( animate );
     render();
-    reload();
     stats.update();
 }
 function render() {

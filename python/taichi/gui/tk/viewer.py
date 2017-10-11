@@ -1,8 +1,11 @@
 import sys
 import tkinter as tk
 
-from PIL import Image
-from PIL.ImageTk import PhotoImage
+try:
+  from PIL import Image
+  from PIL.ImageTk import PhotoImage
+except Exception as e:
+  print(e)
 
 tk_root = None
 import numpy as np

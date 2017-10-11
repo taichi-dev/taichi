@@ -94,17 +94,20 @@
         window.addEventListener( 'resize', onWindowResize, false );
 
         window.frameId = 0;
+        window.playing = false;
+        // http://keycode.info/
         document.addEventListener('keydown', function(event) {
             if(event.keyCode == 39) {
-                window.frameId += 1;
-                refreshFrame();
+                refreshFrame(+1);
             }
             else if(event.keyCode == 37) {
                 window.frameId -= 1;
-                refreshFrame();
+                refreshFrame(-1);
+            } else if(event.keyCode == 80) { // 'p'
+                window.playing = !window.playing;
             }
         });
-        refreshFrame();
+        refreshFrame(0);
     }
 
     function pad_with_zero(num, size) {
@@ -112,13 +115,19 @@
         return s.substr(s.length-size);
     }
 
-    function refreshFrame() {
+    function refreshFrame(inc) {
         var json = {
             path: '{{folder}}/frames/',
-            frame_id:window.frameId
+            frame_id:window.frameId,
+            inc: inc
         };
+        console.log(json);
         loadJSON(json,
-            function(data) { reload(data); },
+            function(data) {
+                console.log(data);
+                reload(data.data);
+                window.frameId = data.next_frame;
+            },
             function(xhr) { console.error(xhr); }
         );
     }
@@ -202,6 +211,9 @@
         requestAnimationFrame( animate );
         render();
         stats.update();
+        if (window.playing) {
+            refreshFrame(1);
+        }
     }
     function render() {
         controls.update();

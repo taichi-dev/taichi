@@ -3,6 +3,7 @@ from taichi.misc.settings import get_output_directory
 import os
 from taichi import get_output_directory
 from flask_cors import CORS
+import json
 
 app = Flask(__name__)
 #CORS(app)
@@ -16,8 +17,20 @@ def send_front_end_file(path):
 def next_frame():
   content = request.get_json(silent=True)
   print(content)
-  path = os.path.join(get_output_directory(), content['path'], '%04d.json' % content['frame_id'])
-  return send_file(path)
+  directory = os.path.join(get_output_directory(), content['path'])
+  files = sorted(os.listdir(directory))
+  files = list(filter(lambda x: x.endswith('.json'), files))
+  frame_fn = '%04d.json' % content['frame_id']
+  next_frame = files[(files.index(frame_fn) + content['inc']) % len(files)].split('.')[0]
+  next_frame = int(next_frame)
+  
+  json_path = os.path.join(directory, frame_fn)
+  with open(json_path) as f:
+    response = {
+      'data': json.loads(f.read()),
+      'next_frame': next_frame
+    }
+    return json.dumps(response)
 
 
 @app.route('/')

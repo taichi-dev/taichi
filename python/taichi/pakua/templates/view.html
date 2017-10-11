@@ -36,10 +36,15 @@
         container = document.createElement( 'div' );
         document.body.appendChild( container );
         camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
-        camera.position.z = 10;
-        controls = new THREE.TrackballControls( camera );
-        controls.rotateSpeed = 1.0;
-        controls.zoomSpeed = 1.2;
+        camera.position.x = 0.5;
+        camera.position.y = 0.5;
+        camera.position.z = 2;
+        camera.up = new THREE.Vector3(0,1,0);
+        camera.lookAt(new THREE.Vector3(0.5, 0.5, 0));
+        camera.updateProjectionMatrix();
+        controls = new THREE.TrackballControls(camera);
+        controls.rotateSpeed = 2.0;
+        controls.zoomSpeed = 2.2;
         controls.panSpeed = 0.8;
         controls.noZoom = false;
         controls.noPan = false;
@@ -88,7 +93,27 @@
         container.appendChild( stats.dom );
         window.addEventListener( 'resize', onWindowResize, false );
 
-        loadJSON('../data/{{folder}}/frames/0000.json',
+        window.frameId = 0;
+        document.addEventListener('keydown', function(event) {
+            if(event.keyCode == 39) {
+                window.frameId += 1;
+                refreshFrame();
+            }
+            else if(event.keyCode == 37) {
+                window.frameId -= 1;
+                refreshFrame();
+            }
+        });
+        refreshFrame();
+    }
+
+    function pad_with_zero(num, size) {
+        var s = "000000000000000" + num;
+        return s.substr(s.length-size);
+    }
+
+    function refreshFrame() {
+        loadJSON('../data/{{folder}}/frames/' + pad_with_zero(window.frameId, 4) + '.json',
             function(data) { reload(data); },
             function(xhr) { console.error(xhr); }
         );

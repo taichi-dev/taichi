@@ -7,10 +7,9 @@ app = Flask(__name__)
 #CORS(app)
 
 
-@app.route('/test/<path:path>')
+@app.route('/viewer/<path:path>')
 def send_file(path):
-  print(path)
-  return send_from_directory('test', path)
+  return send_from_directory('viewer', path)
 
 
 @app.route('/')

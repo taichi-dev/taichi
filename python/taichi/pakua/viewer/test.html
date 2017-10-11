@@ -27,7 +27,8 @@
 			void main() {
 				vColor = customColor;
 				vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-				gl_PointSize = max(5.0, size * ( 300.0 / -mvPosition.z ));
+				//gl_PointSize = max(5.0, size * ( 300.0 / -mvPosition.z ));
+			    gl_PointSize = 1.0;
 				gl_Position = projectionMatrix * mvPosition;
 			}
 </script>
@@ -37,7 +38,7 @@
 			varying vec3 vColor;
 			void main() {
 				gl_FragColor = vec4( color * vColor, 1.0 );
-				gl_FragColor = gl_FragColor * texture2D( texture, gl_PointCoord );
+				//gl_FragColor = gl_FragColor;// * texture2D( texture, gl_PointCoord );
 				if ( gl_FragColor.a < ALPHATEST ) discard;
 			}
 </script>
@@ -71,7 +72,7 @@ function init() {
     light.shadow.mapSize.height = 2048;
     scene.add( light );
     var geometry = new THREE.BoxGeometry( 0.4, 0.4, 0.4);
-    for ( var i = 0; i < 2; i ++ ) {
+    for ( var i = 0; i < 0; i ++ ) {
         var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
         object.position.x = Math.random() * 10 - 5;
         object.position.y = Math.random() * 6 - 3;
@@ -130,9 +131,9 @@ function loadJSON(path, success, error)
     xhr.send();
 }
 function reload(data) {
-    var positions = new Float32Array(data.position);
-    var colors = new Float32Array(data.color);
-    var sizes = new Float32Array(data.sizes);
+    var positions = new Float32Array(data.points.position);
+    var colors = new Float32Array(data.points.color);
+    var sizes = new Float32Array(data.points.sizes);
 
     // Points
     var geometry = new THREE.BufferGeometry();

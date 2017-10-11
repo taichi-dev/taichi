@@ -57,7 +57,7 @@ class MPM:
     self.start_simulation_time = None
     self.simulation_total_time = None
     self.visualize_count = 0
-    self.visualize_count_limit = 4.0
+    self.visualize_count_limit = 400000.0
 
   def add_particles(self, **kwargs):
     self.c.add_particles(P(**kwargs))

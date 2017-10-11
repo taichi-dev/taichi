@@ -25,7 +25,7 @@
 				if ( gl_FragColor.a < ALPHATEST ) discard;
 			}
 </script>
-<h2>{{folder}}</h2>
+<h2 id="stat"></h2>
 <script type="text/javascript">
     var container, stats;
     var camera, controls, scene, renderer;
@@ -38,9 +38,9 @@
         camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.001, 100);
         camera.position.x = 0.5;
         camera.position.y = 0.5;
-        camera.position.z = 2;
+        camera.position.z = 3;
         camera.up = new THREE.Vector3(0,1,0);
-        camera.lookAt(new THREE.Vector3(0.5, 0.5, 0));
+        camera.lookAt(new THREE.Vector3(0.5, 0.5, 0.5));
         camera.updateProjectionMatrix();
         controls = new THREE.TrackballControls(camera);
         controls.rotateSpeed = 2.0;
@@ -199,6 +199,8 @@
         window.geometry.attributes.position.needsUpdate = true;
         window.geometry.attributes.customColor.needsUpdate = true;
         window.geometry.attributes.size.needsUpdate = true;
+
+        document.getElementById("stat").innerHTML = "Frame: " + window.frameId + "  # Particles: " + (data.points.position.length / 3)
     }
     function onWindowResize() {
         camera.aspect = window.innerWidth / window.innerHeight;

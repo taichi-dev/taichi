@@ -224,9 +224,9 @@ inline statement<Cond> static_if(F const &f) {
 
 using STATIC_IF::static_if;
 
-#define TC_STATIC_IF(x) static_if<(x)>([&](const auto& _____) {
+#define TC_STATIC_IF(x) static_if<(x)>([&](const auto& _____) -> void {
 #define TC_STATIC_ELSE \
-  }).else_([&](const auto &_____) {
+  }).else_([&](const auto &_____) -> void {
 #define TC_STATIC_END_IF \
   });
 

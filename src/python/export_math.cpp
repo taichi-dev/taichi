@@ -17,6 +17,7 @@
 
 PYBIND11_MAKE_OPAQUE(std::vector<int>);
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::float32>);
+PYBIND11_MAKE_OPAQUE(std::vector<taichi::float64>);
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector2>);
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector3>);
 PYBIND11_MAKE_OPAQUE(std::vector<taichi::Vector4>);

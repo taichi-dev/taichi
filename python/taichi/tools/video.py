@@ -110,7 +110,7 @@ class VideoManager:
 def make_video(input_files,
                width=0,
                height=0,
-               framerate=24,
+               frame_rate=24,
                output_path='video.mp4'):
   if isinstance(input_files, list):
     from PIL import Image
@@ -121,7 +121,7 @@ def make_video(input_files,
     os.mkdir(tmp_dir)
     for i, inp in enumerate(input_files):
       shutil.copy(inp, os.path.join(tmp_dir, '%06d.png' % i))
-    command = ("ffmpeg -loglevel panic -framerate %d -i " % framerate) + tmp_dir + "/%06d.png" + \
+    command = ("ffmpeg -loglevel panic -framerate %d -i " % frame_rate) + tmp_dir + "/%06d.png" + \
               " -s:v " + str(width) + 'x' + str(height) + \
               " -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p " + output_path
     os.system(command)
@@ -130,7 +130,7 @@ def make_video(input_files,
     os.rmdir(tmp_dir)
   elif isinstance(input_files, str):
     assert width != 0 and height != 0
-    command = ("ffmpeg -loglevel panic -framerate %d -i " % framerate) + input_files + \
+    command = ("ffmpeg -loglevel panic -framerate %d -i " % frame_rate) + input_files + \
               " -s:v " + str(width) + 'x' + str(height) + \
               " -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p " + output_path
     os.system(command)

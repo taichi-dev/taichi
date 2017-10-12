@@ -144,9 +144,6 @@ class MPM:
     return self.c.get_mpi_world_rank()
 
   def visualize(self):
-    while self.last_visualization + 0.8 > time.time():
-      time.sleep(0.01)
-    self.last_visualization = time.time()
     self.c.visualize()
     self.visualize_count += 1
     if self.visualize_count == int(self.visualize_count_limit):

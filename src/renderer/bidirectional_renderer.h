@@ -26,7 +26,8 @@ struct Vertex {
     front = inter.front;
   }
 
-  Vertex() {}
+  Vertex() {
+  }
 
   Vector3 in_dir, out_dir;
   SurfaceEvent event;
@@ -49,7 +50,8 @@ struct Contribution {
   Contribution(){};
 
   Contribution(float x, float y, int path_length, Vector3 c)
-      : x(x), y(y), path_length(path_length), c(c) {}
+      : x(x), y(y), path_length(path_length), c(c) {
+  }
 };
 
 struct PathContribution {
@@ -63,13 +65,21 @@ struct PathContribution {
     total_contribution += luminance(c.c);
   }
 
-  bool empty() { return contributions.empty(); }
+  bool empty() {
+    return contributions.empty();
+  }
 
-  double get_total_contribution() { return total_contribution; }
+  double get_total_contribution() {
+    return total_contribution;
+  }
 
-  void set_scaling(real scaling) { this->scaling = scaling; }
+  void set_scaling(real scaling) {
+    this->scaling = scaling;
+  }
 
-  real get_scaling() const { return scaling; }
+  real get_scaling() const {
+    return scaling;
+  }
 };
 
 class BidirectionalRenderer : public Renderer {

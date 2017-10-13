@@ -19,11 +19,16 @@ class RGB {
  public:
   real r, g, b;
 
-  RGB() { r = g = b = 0.0; }
+  RGB() {
+    r = g = b = 0.0;
+  }
 
-  RGB(real r, real g, real b) : r(r), g(g), b(b) {}
+  RGB(real r, real g, real b) : r(r), g(g), b(b) {
+  }
 
-  operator Vector3() { return Vector3(r / 255.0f, g / 255.0f, b / 255.0f); }
+  operator Vector3() {
+    return Vector3(r / 255.0f, g / 255.0f, b / 255.0f);
+  }
 
   void append_to_string(std::string &str) {
     str.push_back((char)int(clamp(r, 0.0_f, 1.0_f) * 255.0));

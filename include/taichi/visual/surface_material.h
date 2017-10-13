@@ -52,7 +52,9 @@ class SurfaceMaterial : public Unit {
   std::shared_ptr<VolumeMaterial> internal_material = nullptr;
 
  public:
-  SurfaceMaterial() { internal_material = nullptr; }
+  SurfaceMaterial() {
+    internal_material = nullptr;
+  }
 
   virtual void set_internal_material(
       const std::shared_ptr<VolumeMaterial> &vol) {
@@ -99,11 +101,17 @@ class SurfaceMaterial : public Unit {
   static std::shared_ptr<Texture> get_color_sampler(const Config &config,
                                                     const std::string &name);
 
-  virtual bool is_delta() const { return false; }
+  virtual bool is_delta() const {
+    return false;
+  }
 
-  virtual bool is_emissive() const { return false; }
+  virtual bool is_emissive() const {
+    return false;
+  }
 
-  virtual bool is_index_matched() const { return false; }
+  virtual bool is_index_matched() const {
+    return false;
+  }
 
   virtual real get_importance(const Vector2 &uv) const {
     error("no impl");

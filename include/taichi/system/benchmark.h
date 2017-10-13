@@ -58,7 +58,9 @@ class Benchmark : public Unit {
     return elapsed / (iterations * workload);
   }
 
-  virtual bool test() const override { return true; }
+  virtual bool test() const override {
+    return true;
+  }
 };
 
 TC_INTERFACE(Benchmark)

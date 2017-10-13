@@ -109,7 +109,9 @@ class ProfilerRecords {
     }
   }
 
-  void print() { print(root.get(), 0); }
+  void print() {
+    print(root.get(), 0);
+  }
 
   void insert_sample(float64 time) {
     if (!enabled)
@@ -163,9 +165,13 @@ class Profiler {
     }
   }
 
-  static void disable() { ProfilerRecords::get_instance().enabled = false; }
+  static void disable() {
+    ProfilerRecords::get_instance().enabled = false;
+  }
 
-  static void enable() { ProfilerRecords::get_instance().enabled = true; }
+  static void enable() {
+    ProfilerRecords::get_instance().enabled = true;
+  }
 };
 
 #define TC_PROFILE(name, statements) \

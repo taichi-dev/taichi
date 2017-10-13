@@ -23,7 +23,8 @@ class ImageAccumulator {
  public:
   std::vector<Spinlock> locks;
 
-  ImageAccumulator() {}
+  ImageAccumulator() {
+  }
 
   ImageAccumulator(Vector2i res) : buffer(res), counter(res), res(res) {
     for (int i = 0; i < res[0] * res[1]; i++) {
@@ -63,9 +64,13 @@ class ImageAccumulator {
     }
   }
 
-  int get_width() const { return res[0]; }
+  int get_width() const {
+    return res[0];
+  }
 
-  int get_height() const { return res[1]; }
+  int get_height() const {
+    return res[1];
+  }
 
  private:
   Array2D<T> buffer;

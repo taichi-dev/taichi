@@ -141,7 +141,8 @@ class EulerLiquid : public Fluid {
   virtual void update_velocity_weights();
 
  public:
-  EulerLiquid() {}
+  EulerLiquid() {
+  }
 
   virtual void set_levelset(const LevelSet2D &boundary_levelset) override;
 

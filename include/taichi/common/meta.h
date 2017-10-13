@@ -32,7 +32,9 @@ struct RepeatFunctionHelper {
 
 template <template <int> typename F, int bgn, typename... Args>
 struct RepeatFunctionHelper<F, bgn, bgn, Args...> {
-  TC_FORCE_INLINE static void run(Args &&... args) { return; }
+  TC_FORCE_INLINE static void run(Args &&... args) {
+    return;
+  }
 };
 
 template <template <int> typename F, int bgn, int end, typename... Args>

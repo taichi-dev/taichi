@@ -49,7 +49,8 @@ class FLIPLiquid : public EulerLiquid {
   void correct_particle_positions(real delta_t, bool clear_c = false);
 
  public:
-  FLIPLiquid() {}
+  FLIPLiquid() {
+  }
 
   virtual void step(real delta_t);
 };

@@ -19,11 +19,14 @@ TC_NAMESPACE_BEGIN
 struct RenderParticle {
   Vector3 position;
   Vector4 color;
-  RenderParticle() {}
+  RenderParticle() {
+  }
   RenderParticle(const Vector3 &position, const Vector4 &color)
-      : position(position), color(color) {}
+      : position(position), color(color) {
+  }
   RenderParticle(const Vector3 &position, const Vector3 &color)
-      : position(position), color(color, 1.0_f) {}
+      : position(position), color(color, 1.0_f) {
+  }
   bool operator==(const RenderParticle &p) const {
     // For boost::python vector_indexing_suite
     return false;
@@ -35,10 +38,13 @@ class ParticleRenderer {
   std::shared_ptr<Camera> camera;
 
  public:
-  void set_camera(std::shared_ptr<Camera> camera) { this->camera = camera; }
+  void set_camera(std::shared_ptr<Camera> camera) {
+    this->camera = camera;
+  }
   virtual void initialize(const Config &config){};
   virtual void render(Array2D<Vector3> &buffer,
-                      const std::vector<RenderParticle> &particles) const {}
+                      const std::vector<RenderParticle> &particles) const {
+  }
 };
 
 std::shared_ptr<Texture> rasterize_render_particles(

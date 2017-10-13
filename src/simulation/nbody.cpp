@@ -25,7 +25,8 @@ class BarnesHutSummation {
     }
 
     Particle(const Vector3 &position, real mass)
-        : position(position), mass(mass) {}
+        : position(position), mass(mass) {
+    }
 
     Particle operator+(const Particle &o) const {
       Particle ret;
@@ -297,7 +298,8 @@ class NBody : public Simulation3D {
     Particle(const Vector3 &position,
              const Vector3 &velocity,
              const Vector3 &color)
-        : position(position), velocity(velocity), color(color) {}
+        : position(position), velocity(velocity), color(color) {
+    }
   };
 
  protected:

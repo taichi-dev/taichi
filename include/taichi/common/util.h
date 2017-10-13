@@ -200,13 +200,15 @@ struct statement {
   }
 
   template <typename F>
-  void else_(const F &) {}
+  void else_(const F &) {
+  }
 };
 
 template <>
 struct statement<false> {
   template <typename F>
-  void then(const F &) {}
+  void then(const F &) {
+  }
 
   template <typename F>
   void else_(const F &f) {
@@ -296,10 +298,10 @@ extern LogLevel log_level;
 
 #define TC_ERROR(format, ...)                                                \
   if (log_level <= LogLevel::ERROR)                                          \
-    printf("%s",                                                            \
-           format_string(                                                   \
+    printf("%s",                                                             \
+           format_string(                                                    \
                ("[ERROR]%s:[Ln %d]: " + std::string(format) + "\n").c_str(), \
-               __FILENAME__, __LINE__, __VA_ARGS__)                         \
+               __FILENAME__, __LINE__, __VA_ARGS__)                          \
                .c_str());
 
 TC_NAMESPACE_END

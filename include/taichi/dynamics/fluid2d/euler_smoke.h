@@ -24,7 +24,8 @@ class EulerSmoke : public EulerLiquid {
   real buoyancy_beta;
 
  public:
-  EulerSmoke() {}
+  EulerSmoke() {
+  }
 
   virtual void apply_external_forces(real delta_t) override;
 

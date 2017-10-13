@@ -15,9 +15,12 @@ TC_NAMESPACE_BEGIN
 
 class PseudoRandomSampler : public Sampler {
  public:
-  void initialize() {}
+  void initialize() {
+  }
 
-  real sample(int d, long long i) const { return rand(); }
+  real sample(int d, long long i) const {
+    return rand();
+  }
 };
 
 TC_IMPLEMENTATION(Sampler, PseudoRandomSampler, "prand")
@@ -33,9 +36,13 @@ class PrimeList {
     assert(primes.size() == 1229);
   }
 
-  int get_prime(int i) { return primes[i]; }
+  int get_prime(int i) {
+    return primes[i];
+  }
 
-  int get_num_primes() { return (int)primes.size(); }
+  int get_num_primes() {
+    return (int)primes.size();
+  }
 
  private:
   std::vector<int> primes;
@@ -50,7 +57,9 @@ class HaltonSampler : public Sampler {
   }
 
  private:
-  inline int rev(const int i, const int p) const { return i == 0 ? i : p - i; }
+  inline int rev(const int i, const int p) const {
+    return i == 0 ? i : p - i;
+  }
 
   real hal(const int d, long long j) const {
     const int p = prime_list.get_prime(d);
@@ -70,7 +79,9 @@ TC_IMPLEMENTATION(Sampler, HaltonSampler, "halton")
 
 class SobolSampler : public Sampler {
  public:
-  real sample(int d, long long i) const { return sobol::sample(i, d); }
+  real sample(int d, long long i) const {
+    return sobol::sample(i, d);
+  }
 };
 
 TC_IMPLEMENTATION(Sampler, SobolSampler, "sobol")

@@ -340,7 +340,8 @@ void Smoke3D::advect(real delta_t) {
   advect(w, delta_t);
 }
 
-void Smoke3D::confine_vorticity(real delta_t) {}
+void Smoke3D::confine_vorticity(real delta_t) {
+}
 
 void Smoke3D::update(const Config &config) {
   generation_tex =

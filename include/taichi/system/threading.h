@@ -36,11 +36,15 @@ class Spinlock {
   std::atomic<bool> latch;
 
  public:
-  Spinlock() : Spinlock(false) {}
+  Spinlock() : Spinlock(false) {
+  }
 
-  Spinlock(bool flag) { latch.store(flag); }
+  Spinlock(bool flag) {
+    latch.store(flag);
+  }
 
-  Spinlock(int flag) : Spinlock(flag != 0) {}
+  Spinlock(int flag) : Spinlock(flag != 0) {
+  }
 
   void lock() {
     bool unlatched = false;
@@ -50,7 +54,9 @@ class Spinlock {
     }
   }
 
-  void unlock() { latch.store(false, std::memory_order_release); }
+  void unlock() {
+    latch.store(false, std::memory_order_release);
+  }
 
   Spinlock(const Spinlock &o) {
     // We just ignore racing condition here...
@@ -123,8 +129,12 @@ class ThreadedTaskManager {
 
 class PID {
  public:
-  static int get_pid() { return (int)getpid(); }
-  static int get_parent_pid() { return (int)getppid(); }
+  static int get_pid() {
+    return (int)getpid();
+  }
+  static int get_parent_pid() {
+    return (int)getppid();
+  }
 };
 
 TC_NAMESPACE_END

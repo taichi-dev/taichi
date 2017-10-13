@@ -65,7 +65,8 @@ class Pakua : Unit {
   // Finish and send canvas (buffer) to frontend
   virtual void finish() = 0;
 
-  virtual void set_resolution(Vector2i res) {}
+  virtual void set_resolution(Vector2i res) {
+  }
 };
 
 TC_INTERFACE(Pakua)

@@ -63,7 +63,6 @@ std::string rasterize_levelset(const LevelSet2D &levelset,
   return ret;
 }
 
-
 template <typename T, int channels>
 void ndarray_to_array2d(T *arr,
                         long long input,
@@ -164,22 +163,30 @@ struct VectorInitializer {};
 
 template <typename T>
 struct VectorInitializer<1, T> {
-  static auto get() { return py::init<T>(); }
+  static auto get() {
+    return py::init<T>();
+  }
 };
 
 template <typename T>
 struct VectorInitializer<2, T> {
-  static auto get() { return py::init<T, T>(); }
+  static auto get() {
+    return py::init<T, T>();
+  }
 };
 
 template <typename T>
 struct VectorInitializer<3, T> {
-  static auto get() { return py::init<T, T, T>(); }
+  static auto get() {
+    return py::init<T, T, T>();
+  }
 };
 
 template <typename T>
 struct VectorInitializer<4, T> {
-  static auto get() { return py::init<T, T, T, T>(); }
+  static auto get() {
+    return py::init<T, T, T, T>();
+  }
 };
 
 template <int i, typename VEC>
@@ -187,29 +194,38 @@ struct get_vec_field {};
 
 template <typename VEC>
 struct get_vec_field<0, VEC> {
-  static auto get() { return &VEC::x; }
+  static auto get() {
+    return &VEC::x;
+  }
 };
 
 template <typename VEC>
 struct get_vec_field<1, VEC> {
-  static auto get() { return &VEC::y; }
+  static auto get() {
+    return &VEC::y;
+  }
 };
 
 template <typename VEC>
 struct get_vec_field<2, VEC> {
-  static auto get() { return &VEC::z; }
+  static auto get() {
+    return &VEC::z;
+  }
 };
 
 template <typename VEC>
 struct get_vec_field<3, VEC> {
-  static auto get() { return &VEC::w; }
+  static auto get() {
+    return &VEC::w;
+  }
 };
 
 template <int i,
           typename VEC,
           typename Class,
           std::enable_if_t<get_dim<VEC>::value<i + 1, int> = 0> void
-              register_vec_field(Class &cls) {}
+              register_vec_field(Class &cls) {
+}
 
 template <int i,
           typename VEC,

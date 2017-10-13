@@ -106,9 +106,11 @@ struct TC_ALIGNED(16)
     float32 d[4];
   };
 
-  TC_FORCE_INLINE VectorNDBase(float32 x = 0.0_f) : v(_mm_set_ps1(x)) {}
+  TC_FORCE_INLINE VectorNDBase(float32 x = 0.0_f) : v(_mm_set_ps1(x)) {
+  }
 
-  explicit VectorNDBase(__m128 v) : v(v) {}
+  explicit VectorNDBase(__m128 v) : v(v) {
+  }
 };
 
 template <typename T, InstSetExt ISE>
@@ -139,9 +141,11 @@ struct TC_ALIGNED(16)
     float32 d[4];
   };
 
-  TC_FORCE_INLINE VectorNDBase(float32 x = 0.0_f) : v(_mm_set_ps1(x)) {}
+  TC_FORCE_INLINE VectorNDBase(float32 x = 0.0_f) : v(_mm_set_ps1(x)) {
+  }
 
-  TC_FORCE_INLINE explicit VectorNDBase(__m128 v) : v(v) {}
+  TC_FORCE_INLINE explicit VectorNDBase(__m128 v) : v(v) {
+  }
 };
 
 template <int DIM, typename T, InstSetExt ISE = default_instruction_set>
@@ -182,7 +186,8 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<SIMD_4_32F<DIM_, T_, ISE_> && DIM_ == 3,
                                       int> = 0>
-  TC_FORCE_INLINE VectorND(float32 x) : VectorNDBase<DIM, T, ISE>(x) {}
+  TC_FORCE_INLINE VectorND(float32 x) : VectorNDBase<DIM, T, ISE>(x) {
+  }
 
   // Vector4f
   template <int DIM_ = DIM,
@@ -190,7 +195,8 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<SIMD_4_32F<DIM_, T_, ISE_> && DIM_ == 4,
                                       int> = 0>
-  TC_FORCE_INLINE VectorND(float32 x) : VectorNDBase<DIM, T, ISE>(x) {}
+  TC_FORCE_INLINE VectorND(float32 x) : VectorNDBase<DIM, T, ISE>(x) {
+  }
 
   // Vector3f
   template <int DIM_ = DIM,
@@ -199,7 +205,8 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             typename std::enable_if_t<SIMD_4_32F<DIM_, T_, ISE_> && DIM_ == 3,
                                       int> = 0>
   TC_FORCE_INLINE VectorND(real x, real y, real z, real w = 0.0_f)
-      : VectorBase(_mm_set_ps(w, z, y, x)) {}
+      : VectorBase(_mm_set_ps(w, z, y, x)) {
+  }
 
   // Vector4f
   template <int DIM_ = DIM,
@@ -208,7 +215,8 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             typename std::enable_if_t<SIMD_4_32F<DIM_, T_, ISE_> && DIM_ == 4,
                                       int> = 0>
   TC_FORCE_INLINE VectorND(real x, real y, real z, real w)
-      : VectorBase(_mm_set_ps(w, z, y, x)) {}
+      : VectorBase(_mm_set_ps(w, z, y, x)) {
+  }
 
   // Vector initialization
   template <typename F,
@@ -297,9 +305,13 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
       this->d[i] = T(o[i]);
   }
 
-  TC_FORCE_INLINE T &operator[](int i) { return this->d[i]; }
+  TC_FORCE_INLINE T &operator[](int i) {
+    return this->d[i];
+  }
 
-  TC_FORCE_INLINE const T &operator[](int i) const { return this->d[i]; }
+  TC_FORCE_INLINE const T &operator[](int i) const {
+    return this->d[i];
+  }
 
   TC_FORCE_INLINE T dot(VectorND<DIM, T, ISE> o) const {
     T ret = T(0);
@@ -626,7 +638,9 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
     return ret;
   }
 
-  TC_FORCE_INLINE auto length() const { return std::sqrt(length2()); }
+  TC_FORCE_INLINE auto length() const {
+    return std::sqrt(length2());
+  }
 
   bool is_normal() const {
     for (int i = 0; i < DIM; i++) {
@@ -636,7 +650,9 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
     return true;
   }
 
-  bool abnormal() const { return !this->is_normal(); }
+  bool abnormal() const {
+    return !this->is_normal();
+  }
 
   static VectorND rand() {
     VectorND ret;
@@ -654,7 +670,9 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
     return ret;
   }
 
-  TC_FORCE_INLINE T average() const { return (T(1.0) / DIM) * sum(); }
+  TC_FORCE_INLINE T average() const {
+    return (T(1.0) / DIM) * sum();
+  }
 
   TC_FORCE_INLINE T prod() const {
     T ret = this->d[0];
@@ -777,7 +795,9 @@ struct MatrixND {
     }
   }
 
-  TC_FORCE_INLINE MatrixND(const MatrixND &o) { *this = o; }
+  TC_FORCE_INLINE MatrixND(const MatrixND &o) {
+    *this = o;
+  }
 
   // Diag
   TC_FORCE_INLINE explicit MatrixND(Vector v) : MatrixND() {
@@ -836,7 +856,9 @@ struct MatrixND {
     return *this;
   }
 
-  TC_FORCE_INLINE VectorND<DIM, T, ISE> &operator[](int i) { return d[i]; }
+  TC_FORCE_INLINE VectorND<DIM, T, ISE> &operator[](int i) {
+    return d[i];
+  }
 
   TC_FORCE_INLINE const VectorND<DIM, T, ISE> &operator[](int i) const {
     return d[i];
@@ -993,7 +1015,9 @@ struct MatrixND {
     return true;
   }
 
-  bool abnormal() const { return !this->is_normal(); }
+  bool abnormal() const {
+    return !this->is_normal();
+  }
 
   static MatrixND rand() {
     MatrixND ret;
@@ -1019,9 +1043,13 @@ struct MatrixND {
     return ret;
   }
 
-  TC_FORCE_INLINE T trace() const { return this->diag().sum(); }
+  TC_FORCE_INLINE T trace() const {
+    return this->diag().sum();
+  }
 
-  TC_FORCE_INLINE T tr() const { return this->trace(); }
+  TC_FORCE_INLINE T tr() const {
+    return this->trace();
+  }
 
   TC_FORCE_INLINE MatrixND
   elementwise_product(const MatrixND<DIM, T> &o) const {
@@ -1032,7 +1060,9 @@ struct MatrixND {
     return ret;
   }
 
-  TC_FORCE_INLINE static MatrixND identidy() { return MatrixND(1.0_f); }
+  TC_FORCE_INLINE static MatrixND identidy() {
+    return MatrixND(1.0_f);
+  }
 };
 
 template <int DIM, typename T, InstSetExt ISE>
@@ -1341,22 +1371,22 @@ struct is_VectorND : public std::false_type {};
 template <int N, typename T, InstSetExt ISE>
 struct is_VectorND<VectorND<N, T, ISE>> : public std::true_type {};
 
-Matrix4 matrix4_translate(Matrix4 *transform, const Vector3 &offset) {
+inline Matrix4 matrix4_translate(Matrix4 *transform, const Vector3 &offset) {
   return Matrix4(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0),
                  Vector4(offset, 1.0_f)) *
          *transform;
 }
 
-Matrix4 matrix4_scale(Matrix4 *transform, const Vector3 &scales) {
+inline Matrix4 matrix4_scale(Matrix4 *transform, const Vector3 &scales) {
   return Matrix4(Vector4(scales, 1.0_f)) * *transform;
 }
 
-Matrix4 matrix4_scale_s(Matrix4 *transform, real s) {
+inline Matrix4 matrix4_scale_s(Matrix4 *transform, real s) {
   return matrix4_scale(transform, Vector3(s));
 }
 
 // Reference: https://en.wikipedia.org/wiki/Rotation_matrix
-Matrix4 get_rotation_matrix(Vector3 u, real angle) {
+inline Matrix4 get_rotation_matrix(Vector3 u, real angle) {
   u = normalized(u);
   real c = cos(angle), s = sin(angle);
   real d = 1 - c;
@@ -1372,13 +1402,14 @@ Matrix4 get_rotation_matrix(Vector3 u, real angle) {
   return Matrix4(col0, col1, col2, col3).transposed();
 }
 
-Matrix4 matrix4_rotate_angle_axis(Matrix4 *transform,
-                                  real angle,
-                                  const Vector3 &axis) {
+inline Matrix4 matrix4_rotate_angle_axis(Matrix4 *transform,
+                                         real angle,
+                                         const Vector3 &axis) {
   return get_rotation_matrix(axis, angle * (pi / 180.0_f)) * *transform;
 }
 
-Matrix4 matrix4_rotate_euler(Matrix4 *transform, const Vector3 &euler_angles) {
+inline Matrix4 matrix4_rotate_euler(Matrix4 *transform,
+                                    const Vector3 &euler_angles) {
   Matrix4 ret = *transform;
   ret = matrix4_rotate_angle_axis(&ret, euler_angles.x,
                                   Vector3(1.0_f, 0.0_f, 0.0_f));

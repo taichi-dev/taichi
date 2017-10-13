@@ -27,7 +27,9 @@ class LevelSet : public ArrayND<DIM, real> {
 
   real friction = 1.0_f;
 
-  LevelSet() { initialize(VectorI(0)); }
+  LevelSet() {
+    initialize(VectorI(0));
+  }
 
   LevelSet(const VectorI &res, Vector offset = Vector(0.5f), real value = INF) {
     Array::initialize(res, value, offset);
@@ -95,7 +97,9 @@ class DynamicLevelSet {
     return levelset0->inside(pos.template cast<real>());
   }
 
-  bool inside(const Vector pos) const { return levelset0->inside(pos); }
+  bool inside(const Vector pos) const {
+    return levelset0->inside(pos);
+  }
 
   void initialize(real _t0,
                   real _t1,

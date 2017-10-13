@@ -32,7 +32,8 @@ struct Photon {
 // material)
 class Mesh {
  public:
-  Mesh() {}
+  Mesh() {
+  }
 
   void initialize(const Config &config);
   void set_material(std::shared_ptr<SurfaceMaterial> material);
@@ -139,9 +140,13 @@ struct IntersectionInfo {
 
 class Scene {
  public:
-  Scene() { this->envmap_sample_prob = 0.0_f; }
+  Scene() {
+    this->envmap_sample_prob = 0.0_f;
+  }
 
-  void set_camera(std::shared_ptr<Camera> camera) { this->camera = camera; }
+  void set_camera(std::shared_ptr<Camera> camera) {
+    this->camera = camera;
+  }
 
   void set_environment_map(std::shared_ptr<EnvironmentMap> envmap,
                            real sample_prob) {
@@ -200,9 +205,13 @@ class Scene {
     }
   }
 
-  std::vector<Triangle> &get_triangles() { return triangles; }
+  std::vector<Triangle> &get_triangles() {
+    return triangles;
+  }
 
-  Triangle get_triangle(int id) const { return triangles[id]; }
+  Triangle get_triangle(int id) const {
+    return triangles[id];
+  }
 
   IntersectionInfo get_intersection_info(int triangle_id, Ray &ray);
 
@@ -235,7 +244,9 @@ class Scene {
            get_mesh_from_triangle_id(id)->emission / light_total_emission;
   }
 
-  real get_environment_map_pdf() const { return envmap_sample_prob; }
+  real get_environment_map_pdf() const {
+    return envmap_sample_prob;
+  }
 
   void sample_photon(Photon &p, real r, real delta_t, real weight) {
     int tid = std::min(

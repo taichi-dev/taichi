@@ -27,19 +27,29 @@ class Camera : public Unit {
     return Ray(Vector3(0), Vector3(0));
   }
 
-  Vector3 get_origin() { return multiply_matrix4(transform, origin, 1); }
+  Vector3 get_origin() {
+    return multiply_matrix4(transform, origin, 1);
+  }
 
-  Vector3 get_dir() { return multiply_matrix4(transform, dir, 0); }
+  Vector3 get_dir() {
+    return multiply_matrix4(transform, dir, 0);
+  }
 
   virtual void get_pixel_coordinate(Vector3 dir, real &u, real &v) {
     error("no impl");
   }
 
-  virtual real get_pixel_scaling() { return 1.0_f; }
+  virtual real get_pixel_scaling() {
+    return 1.0_f;
+  }
 
-  int get_width() const { return res[0]; }
+  int get_width() const {
+    return res[0];
+  }
 
-  int get_height() const { return res[1]; }
+  int get_height() const {
+    return res[1];
+  }
 
  protected:
   Vector3 origin, look_at, up, right, dir;

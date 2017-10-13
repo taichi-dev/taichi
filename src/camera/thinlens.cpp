@@ -13,7 +13,8 @@ TC_NAMESPACE_BEGIN
 
 class ThinLensCamera : public Camera {
  public:
-  ThinLensCamera() {}
+  ThinLensCamera() {
+  }
 
   virtual void initialize(const Config &config) override {
     Camera::initialize(config);
@@ -31,7 +32,9 @@ class ThinLensCamera : public Camera {
     this->aperture = config.get<real>("aperture");
   }
 
-  real get_pixel_scaling() override { return sqr(tan_half_fov) * aspect_ratio; }
+  real get_pixel_scaling() override {
+    return sqr(tan_half_fov) * aspect_ratio;
+  }
 
   Vector2 sample_lens(const Vector2 &uv) {
     real r = std::sqrt(uv[0]);

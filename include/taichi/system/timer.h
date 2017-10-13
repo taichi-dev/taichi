@@ -64,9 +64,12 @@ class Time {
    public:
     Timer(std::string name);
 
-    Timer() {}
+    Timer() {
+    }
 
-    virtual ~Timer() { output(); }
+    virtual ~Timer() {
+      output();
+    }
   };
 
   class TickTimer : public Timer {
@@ -78,7 +81,9 @@ class Time {
    public:
     TickTimer(std::string name);
 
-    ~TickTimer() { output(); }
+    ~TickTimer() {
+      output();
+    }
   };
 
   class FPSCounter {

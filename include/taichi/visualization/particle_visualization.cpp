@@ -22,7 +22,8 @@ class ParticleShadowMapRenderer : public ParticleRenderer {
   real alpha;
 
  public:
-  ParticleShadowMapRenderer() {}
+  ParticleShadowMapRenderer() {
+  }
 
   virtual void initialize(const Config &config) override {
     shadow_map_resolution = config.get<real>("shadow_map_resolution");

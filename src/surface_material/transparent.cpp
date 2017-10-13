@@ -53,7 +53,9 @@ class TransparentMaterial : public SurfaceMaterial {
     }
   }
 
-  real get_alpha(const Vector2 &uv) const { return mask->sample(uv).x; }
+  real get_alpha(const Vector2 &uv) const {
+    return mask->sample(uv).x;
+  }
 
   virtual real probability_density(const Vector3 &in,
                                    const Vector3 &out,
@@ -69,7 +71,9 @@ class TransparentMaterial : public SurfaceMaterial {
     return (1 - alpha) * nested->evaluate_bsdf(in, out, uv);
   }
 
-  virtual bool is_delta() const override { return nested->is_delta(); }
+  virtual bool is_delta() const override {
+    return nested->is_delta();
+  }
 };
 
 TC_IMPLEMENTATION(SurfaceMaterial, TransparentMaterial, "transparent")

@@ -30,7 +30,8 @@ class IndexND<3> {
 
   using Index3D = IndexND<3>;
 
-  IndexND() {}
+  IndexND() {
+  }
 
   IndexND(int x0,
           int x1,
@@ -120,13 +121,21 @@ class IndexND<3> {
     return *this;
   }
 
-  const Index3D &operator*() const { return *this; }
+  const Index3D &operator*() const {
+    return *this;
+  }
 
-  Index3D &operator*() { return *this; }
+  Index3D &operator*() {
+    return *this;
+  }
 
-  TC_FORCE_INLINE int operator[](int c) { return *(&i + c); }
+  TC_FORCE_INLINE int operator[](int c) {
+    return *(&i + c);
+  }
 
-  TC_FORCE_INLINE const int operator[](int c) const { return *(&i + c); }
+  TC_FORCE_INLINE const int operator[](int c) const {
+    return *(&i + c);
+  }
 
   Index3D neighbour(int di, int dj, int dk) const {
     Index3D i = *this;
@@ -144,14 +153,18 @@ class IndexND<3> {
     return i;
   }
 
-  Index3D operator+(Vector3i d) const { return neighbour(d); }
+  Index3D operator+(Vector3i d) const {
+    return neighbour(d);
+  }
 
   Vector3 get_pos() const {
     return Vector3((real)i + storage_offset.x, (real)j + storage_offset.y,
                    (real)k + storage_offset.z);
   }
 
-  Vector3i get_ipos() const { return Vector3i(i, j, k); }
+  Vector3i get_ipos() const {
+    return Vector3i(i, j, k);
+  }
 };
 
 using Index3D = IndexND<3>;
@@ -167,7 +180,8 @@ class RegionND<3> {
  public:
   using Region3D = RegionND<3>;
 
-  RegionND() {}
+  RegionND() {
+  }
 
   RegionND(int x0,
            int x1,
@@ -201,13 +215,21 @@ class RegionND<3> {
     this->storage_offset = storage_offset;
   }
 
-  const Index3D begin() const { return index_begin; }
+  const Index3D begin() const {
+    return index_begin;
+  }
 
-  Index3D begin() { return index_begin; }
+  Index3D begin() {
+    return index_begin;
+  }
 
-  const Index3D end() const { return index_end; }
+  const Index3D end() const {
+    return index_end;
+  }
 
-  Index3D end() { return index_end; }
+  Index3D end() {
+    return index_end;
+  }
 };
 
 using Region3D = RegionND<3>;
@@ -227,9 +249,12 @@ class ArrayND<3, T> {
     int offset;
 
     TC_FORCE_INLINE Accessor2D(T *data, int offset)
-        : data(data), offset(offset) {}
+        : data(data), offset(offset) {
+    }
 
-    TC_FORCE_INLINE T *operator[](int i) const { return data + offset * i; }
+    TC_FORCE_INLINE T *operator[](int i) const {
+      return data + offset * i;
+    }
   };
 
   struct ConstAccessor2D {
@@ -237,7 +262,8 @@ class ArrayND<3, T> {
     int offset;
 
     TC_FORCE_INLINE ConstAccessor2D(const T *data, int offset)
-        : data(data), offset(offset) {}
+        : data(data), offset(offset) {
+    }
 
     TC_FORCE_INLINE const T *operator[](int i) const {
       return data + offset * i;
@@ -249,9 +275,13 @@ class ArrayND<3, T> {
   template <typename S>
   using Array3D = ArrayND<3, S>;
 
-  TC_FORCE_INLINE int get_size() const { return size; }
+  TC_FORCE_INLINE int get_size() const {
+    return size;
+  }
 
-  TC_FORCE_INLINE const Region3D &get_region() const { return region; }
+  TC_FORCE_INLINE const Region3D &get_region() const {
+    return region;
+  }
 
   TC_FORCE_INLINE ArrayND(const Vector3i &resolution,
                           T init = T(0),
@@ -335,7 +365,8 @@ class ArrayND<3, T> {
     data.resize(0);
   }
 
-  ~ArrayND() {}
+  ~ArrayND() {
+  }
 
   void reset(T a) {
     for (int i = 0; i < size; i++) {
@@ -343,7 +374,9 @@ class ArrayND<3, T> {
     }
   }
 
-  bool same_dim(const Array3D<T> &arr) const { return res == arr.res; }
+  bool same_dim(const Array3D<T> &arr) const {
+    return res == arr.res;
+  }
 
   T dot(const Array3D<T> &b) const {
     T sum = 0;
@@ -386,9 +419,13 @@ class ArrayND<3, T> {
     return ConstAccessor2D(&data[0] + i * stride, res[2]);
   }
 
-  const T &get(int i, int j, int k) const { return (*this)[i][j][k]; }
+  const T &get(int i, int j, int k) const {
+    return (*this)[i][j][k];
+  }
 
-  const T &get(const Index3D &ind) const { return get(ind.i, ind.j, ind.k); }
+  const T &get(const Index3D &ind) const {
+    return get(ind.i, ind.j, ind.k);
+  }
 
   T &set_if_inside(const Index3D &ind, const T &val) {
     if (inside(ind))
@@ -400,11 +437,17 @@ class ArrayND<3, T> {
       (*this)[ind] += val;
   }
 
-  T get_copy(int i, int j, int k) const { return (*this)[i][j][k]; }
+  T get_copy(int i, int j, int k) const {
+    return (*this)[i][j][k];
+  }
 
-  void set(int i, int j, int k, const T &t) { (*this)[i][j][k] = t; }
+  void set(int i, int j, int k, const T &t) {
+    (*this)[i][j][k] = t;
+  }
 
-  void set(const Index3D &ind, const T &t) { (*this)[ind] = t; }
+  void set(const Index3D &ind, const T &t) {
+    (*this)[ind] = t;
+  }
 
   T abs_sum() const {
     T ret = 0;
@@ -464,7 +507,9 @@ class ArrayND<3, T> {
     printf("\n");
   }
 
-  size_t get_data_size() const { return size * sizeof(T); }
+  size_t get_data_size() const {
+    return size * sizeof(T);
+  }
 
   void set_pattern(int s) {
     for (int i = 0; i < size; i++) {
@@ -503,11 +548,17 @@ class ArrayND<3, T> {
                   get(x_i + 1, y_i + 1, z_i + 1))));
   }
 
-  T sample(const Vector3 &v) const { return sample(v.x, v.y, v.z); }
+  T sample(const Vector3 &v) const {
+    return sample(v.x, v.y, v.z);
+  }
 
-  T sample(const Index3D &v) const { return sample(v.get_pos()); }
+  T sample(const Index3D &v) const {
+    return sample(v.get_pos());
+  }
 
-  Vector3 get_storage_offset() const { return storage_offset; }
+  Vector3 get_storage_offset() const {
+    return storage_offset;
+  }
 
   T sample_relative_coord(const Vector3 &vec) const {
     real x = vec.x * res[0];
@@ -542,9 +593,13 @@ class ArrayND<3, T> {
     return ret;
   }
 
-  auto begin() const { return data.cbegin(); }
+  auto begin() const {
+    return data.cbegin();
+  }
 
-  auto end() const { return data.cend(); }
+  auto end() const {
+    return data.cend();
+  }
 
   TC_FORCE_INLINE T &operator[](const Vector3i &pos) {
     return (*this)[pos.x][pos.y][pos.z];
@@ -562,15 +617,25 @@ class ArrayND<3, T> {
     return (*this)[index.i][index.j][index.k];
   }
 
-  Vector3i get_res() const { return res; }
+  Vector3i get_res() const {
+    return res;
+  }
 
-  int get_width() const { return res[0]; }
+  int get_width() const {
+    return res[0];
+  }
 
-  int get_height() const { return res[1]; }
+  int get_height() const {
+    return res[1];
+  }
 
-  int get_depth() const { return res[2]; }
+  int get_depth() const {
+    return res[2];
+  }
 
-  bool empty() const { return size == 0; }
+  bool empty() const {
+    return size == 0;
+  }
 
   T get_average() const {
     T sum(0);
@@ -610,11 +675,17 @@ class ArrayND<3, T> {
     return true;
   }
 
-  const std::vector<T> &get_data() const { return this->data; }
+  const std::vector<T> &get_data() const {
+    return this->data;
+  }
 
-  std::vector<T> &get_data() { return this->data; }
+  std::vector<T> &get_data() {
+    return this->data;
+  }
 
-  const int get_dim() const { return 3; }
+  const int get_dim() const {
+    return 3;
+  }
 };
 
 template <typename T>

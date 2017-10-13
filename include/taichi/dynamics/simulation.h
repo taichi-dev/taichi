@@ -27,17 +27,24 @@ class Simulation : public Unit {
  public:
   static constexpr int D = DIM;
 
-  Simulation() {}
+  Simulation() {
+  }
 
-  virtual real get_current_time() const { return current_t; }
+  virtual real get_current_time() const {
+    return current_t;
+  }
 
   virtual void initialize(const Config &config) override {
     num_threads = config.get<int32>("num_threads");
   }
 
-  virtual void add_particles(const Config &config) { error("no impl"); }
+  virtual void add_particles(const Config &config) {
+    error("no impl");
+  }
 
-  virtual void step(real t) { error("no impl"); }
+  virtual void step(real t) {
+    error("no impl");
+  }
 
   virtual std::vector<RenderParticle> get_render_particles() const {
     error("no impl");
@@ -48,15 +55,23 @@ class Simulation : public Unit {
     this->levelset = levelset;
   }
 
-  virtual void update(const Config &config) {}
+  virtual void update(const Config &config) {
+  }
 
-  virtual bool test() const override { return true; };
+  virtual bool test() const override {
+    return true;
+  };
 
-  virtual void visualize() const {}
+  virtual void visualize() const {
+  }
 
-  virtual int get_mpi_world_rank() const { return 0; }
+  virtual int get_mpi_world_rank() const {
+    return 0;
+  }
 
-  virtual Vector2i get_vis_resolution() const { return Vector2i(512, 512); }
+  virtual Vector2i get_vis_resolution() const {
+    return Vector2i(512, 512);
+  }
 
   virtual std::string get_debug_information() {
     NOT_IMPLEMENTED;

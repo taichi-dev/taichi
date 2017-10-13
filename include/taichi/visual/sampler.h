@@ -24,9 +24,13 @@ class StateSequence {
  public:
   virtual real sample() = 0;
 
-  virtual real operator()() { return sample(); }
+  virtual real operator()() {
+    return sample();
+  }
 
-  int get_cursor() const { return cursor; }
+  int get_cursor() const {
+    return cursor;
+  }
 
   void assert_cursor_pos(int cursor) const {
     assert_info(
@@ -35,9 +39,13 @@ class StateSequence {
                     " instead of " + std::to_string(this->cursor)));
   }
 
-  Vector2 next2() { return Vector2((*this)(), (*this)()); }
+  Vector2 next2() {
+    return Vector2((*this)(), (*this)());
+  }
 
-  Vector3 next3() { return Vector3((*this)(), (*this)(), (*this)()); }
+  Vector3 next3() {
+    return Vector3((*this)(), (*this)(), (*this)());
+  }
 
   Vector4 next4() {
     return Vector4((*this)(), (*this)(), (*this)(), (*this)());
@@ -57,7 +65,8 @@ class RandomStateSequence : public StateSequence {
 
  public:
   RandomStateSequence(std::shared_ptr<Sampler> sampler, long long instance)
-      : sampler(sampler), instance(instance) {}
+      : sampler(sampler), instance(instance) {
+  }
 
   real sample() override {
     assert_info(sampler != nullptr, "null sampler");

@@ -24,7 +24,8 @@ struct PathContribution {
 
   PathContribution(){};
 
-  PathContribution(real x, real y, Vector3 c) : x(x), y(y), c(c) {}
+  PathContribution(real x, real y, Vector3 c) : x(x), y(y), c(c) {
+  }
 };
 
 // TODO: we do need a light source class to unify envmap and mesh light...
@@ -669,10 +670,12 @@ class PSSMLTMarkovChain : public MarkovChain {
  public:
   real resolution_x, resolution_y;
 
-  PSSMLTMarkovChain() : PSSMLTMarkovChain(0, 0) {}
+  PSSMLTMarkovChain() : PSSMLTMarkovChain(0, 0) {
+  }
 
   PSSMLTMarkovChain(real resolution_x, real resolution_y)
-      : resolution_x(resolution_x), resolution_y(resolution_y) {}
+      : resolution_x(resolution_x), resolution_y(resolution_y) {
+  }
 
   PSSMLTMarkovChain large_step() const {
     return PSSMLTMarkovChain(resolution_x, resolution_y);
@@ -717,12 +720,14 @@ class MCMCPTRenderer : public PathTracingRenderer {
     PathContribution pc;
     real sc;
 
-    MCMCState() {}
+    MCMCState() {
+    }
 
     MCMCState(const PSSMLTMarkovChain &chain,
               const PathContribution &pc,
               real sc)
-        : chain(chain), pc(pc), sc(sc) {}
+        : chain(chain), pc(pc), sc(sc) {
+    }
   };
 
   int estimation_rounds;

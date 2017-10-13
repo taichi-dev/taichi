@@ -41,13 +41,21 @@ class TextureRenderer {
 
   ~TextureRenderer();
 
-  static Vector4 to_vec4(real dat) { return dat; }
-  static Vector4 to_vec4(unsigned char dat) { return dat / 255.0f; }
-  static Vector4 to_vec4(Vector2 dat) { return Vector4(dat.x, dat.y, 0, 1); }
+  static Vector4 to_vec4(real dat) {
+    return dat;
+  }
+  static Vector4 to_vec4(unsigned char dat) {
+    return dat / 255.0f;
+  }
+  static Vector4 to_vec4(Vector2 dat) {
+    return Vector4(dat.x, dat.y, 0, 1);
+  }
   static Vector4 to_vec4(Vector3 dat) {
     return Vector4(dat.x, dat.y, dat.z, 1);
   }
-  static Vector4 to_vec4(Vector4 dat) { return dat; }
+  static Vector4 to_vec4(Vector4 dat) {
+    return dat;
+  }
 };
 
 template <typename T>

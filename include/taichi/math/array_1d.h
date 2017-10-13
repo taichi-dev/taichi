@@ -43,9 +43,13 @@ class Array1D {
 
   Array1D<T> operator-(const Array1D<T> &b);
 
-  T &operator[](int i) { return data[i]; }
+  T &operator[](int i) {
+    return data[i];
+  }
 
-  const T &operator[](int i) const { return data[i]; }
+  const T &operator[](int i) const {
+    return data[i];
+  }
 
   T abs_sum();
 
@@ -53,11 +57,17 @@ class Array1D {
 
   void print(std::string name = "");
 
-  size_t get_data_size() const { return size * sizeof(T); }
+  size_t get_data_size() const {
+    return size * sizeof(T);
+  }
 
-  const std::vector<T> &get_data() const { return this->data; }
+  const std::vector<T> &get_data() const {
+    return this->data;
+  }
 
-  const int get_dim() const { return 1; }
+  const int get_dim() const {
+    return 1;
+  }
 };
 
 template <typename T>
@@ -134,7 +144,8 @@ void Array1D<T>::reset(T a) {
 }
 
 template <typename T>
-Array1D<T>::~Array1D() {}
+Array1D<T>::~Array1D() {
+}
 
 template <typename T>
 Array1D<T>::Array1D(const Array1D<T> &arr) : Array1D(arr.size) {

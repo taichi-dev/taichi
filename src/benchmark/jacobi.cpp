@@ -446,7 +446,8 @@ class JacobiSIMD : public Benchmark {
     }
   }
 
-  ~JacobiSIMD() {}
+  ~JacobiSIMD() {
+  }
 
   const T &get_entry(int l, int i, int j, int k) const {
     return data[l][i * n * n + j * n + k];

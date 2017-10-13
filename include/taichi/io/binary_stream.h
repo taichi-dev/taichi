@@ -24,9 +24,12 @@ class BinaryFileStreamInput final {
   }
 
   template <typename T>
-  BinaryFileStreamInput operator>>(const T &t) {}
+  BinaryFileStreamInput operator>>(const T &t) {
+  }
 
-  BinaryFileStreamInput() { std::fclose(f); }
+  BinaryFileStreamInput() {
+    std::fclose(f);
+  }
 };
 
 class BinaryFileStreamOutput final {
@@ -38,7 +41,9 @@ class BinaryFileStreamOutput final {
     f = std::fopen(fn.c_str(), "wb");
   }
 
-  BinaryFileStreamOutput() { std::fclose(f); }
+  BinaryFileStreamOutput() {
+    std::fclose(f);
+  }
 };
 
 TC_NAMESPACE_END

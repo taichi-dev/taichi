@@ -39,7 +39,9 @@ class HashGrid {
     clear_cache();
   }
 
-  void clear_cache() { cache.clear(); }
+  void clear_cache() {
+    cache.clear();
+  }
 
   void build_grid() {
     memset(&cell_count[0], 0, sizeof(cell_count[0]) * cell_count.size());
@@ -71,9 +73,13 @@ class HashGrid {
     return end(spatial_hash((int)ip.x, (int)ip.y, (int)ip.z));
   }
 
-  int *begin(int cell) const { return heads[cell]; }
+  int *begin(int cell) const {
+    return heads[cell];
+  }
 
-  int *end(int cell) const { return heads[cell + 1]; }
+  int *end(int cell) const {
+    return heads[cell + 1];
+  }
 
   void push_back_to_all_cells_in_range(const Vector3 &pos,
                                        real range,

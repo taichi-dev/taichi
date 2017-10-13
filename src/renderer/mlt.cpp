@@ -18,10 +18,12 @@ class PSSMLTMarkovChain : public MarkovChain {
  public:
   real resolution_x, resolution_y;
 
-  PSSMLTMarkovChain() : PSSMLTMarkovChain(0, 0) {}
+  PSSMLTMarkovChain() : PSSMLTMarkovChain(0, 0) {
+  }
 
   PSSMLTMarkovChain(real resolution_x, real resolution_y)
-      : resolution_x(resolution_x), resolution_y(resolution_y) {}
+      : resolution_x(resolution_x), resolution_y(resolution_y) {
+  }
 
   PSSMLTMarkovChain large_step() const {
     PSSMLTMarkovChain result(resolution_x, resolution_y);
@@ -65,12 +67,14 @@ class PSSMLTRenderer : public BidirectionalRenderer {
     PathContribution pc;
     real sc;
 
-    MCMCState() {}
+    MCMCState() {
+    }
 
     MCMCState(const PSSMLTMarkovChain &chain,
               const PathContribution &pc,
               real sc)
-        : chain(chain), pc(pc), sc(sc) {}
+        : chain(chain), pc(pc), sc(sc) {
+    }
   };
 
   MCMCState current_state;
@@ -171,7 +175,8 @@ class MMLTRenderer : public PSSMLTRenderer {
     real technique_state;
 
    public:
-    MMLTMarkovChain() : MMLTMarkovChain(0, 0) {}
+    MMLTMarkovChain() : MMLTMarkovChain(0, 0) {
+    }
 
     MMLTMarkovChain(int resolution_x, int resolution_y)
         : PSSMLTMarkovChain((real)resolution_x, (real)resolution_y) {
@@ -198,7 +203,9 @@ class MMLTRenderer : public PSSMLTRenderer {
       return result;
     }
 
-    real get_technique_state() { return technique_state; }
+    real get_technique_state() {
+      return technique_state;
+    }
   };
 
   struct MCMCState {
@@ -206,7 +213,9 @@ class MMLTRenderer : public PSSMLTRenderer {
     PathContribution pc;
     real sc, weight;
 
-    MCMCState() { weight = 1.0_f; }
+    MCMCState() {
+      weight = 1.0_f;
+    }
 
     MCMCState(const MMLTMarkovChain &chain, const PathContribution &pc, real sc)
         : chain(chain), pc(pc), sc(sc) {

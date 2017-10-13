@@ -19,7 +19,8 @@ struct PathContribution {
 
   PathContribution(){};
 
-  PathContribution(float x, float y, Vector3 c) : x(x), y(y), c(c) {}
+  PathContribution(float x, float y, Vector3 c) : x(x), y(y), c(c) {
+  }
 };
 
 class LTRenderer : public Renderer {

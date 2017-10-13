@@ -108,7 +108,8 @@ void FLIPLiquid::substep(real delta_t) {
   t += delta_t;
 }
 
-void FLIPLiquid::reseed() {}
+void FLIPLiquid::reseed() {
+}
 
 void FLIPLiquid::correct_particle_positions(real delta_t, bool clear_c) {
   if (correction_strength == 0.0_f && !clear_c) {

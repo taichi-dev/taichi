@@ -27,7 +27,9 @@ class SceneGeometry {
     rebuild();
   }
 
-  void rebuild() { ray_intersection->build(); }
+  void rebuild() {
+    ray_intersection->build();
+  }
 
   int query_hit_triangle_id(Ray &ray) {
     ray_intersection->query(ray);

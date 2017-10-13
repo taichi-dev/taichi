@@ -45,7 +45,9 @@ class EmissiveMaterial : public SurfaceMaterial {
     color_sampler = get_color_sampler(config, "color");
   }
 
-  virtual bool is_emissive() const override { return true; }
+  virtual bool is_emissive() const override {
+    return true;
+  }
 
   Vector3 sample_direction(const Vector3 &in,
                            real u,
@@ -105,7 +107,9 @@ class SpotLightEmissiveMaterial : public SurfaceMaterial {
     exponential = config.get<real>("exponential");
   }
 
-  virtual bool is_emissive() const override { return true; }
+  virtual bool is_emissive() const override {
+    return true;
+  }
 
   Vector3 sample_direction(const Vector3 &in,
                            real u,
@@ -319,7 +323,9 @@ class ReflectiveMaterial : public SurfaceMaterial {
     return Vector3(0.0_f);
   };
 
-  virtual bool is_delta() const override { return true; }
+  virtual bool is_delta() const override {
+    return true;
+  }
 
   virtual void sample(const Vector3 &in_dir,
                       real u,
@@ -392,7 +398,9 @@ class RefractiveMaterial : public SurfaceMaterial {
     return in.z < 0 ? inside_ior / outside_ior : outside_ior / inside_ior;
   }
 
-  bool is_index_matched() const override { return inside_ior == outside_ior; }
+  bool is_index_matched() const override {
+    return inside_ior == outside_ior;
+  }
 
   Vector3 sample_direction(const Vector3 &in,
                            real u,
@@ -421,7 +429,9 @@ class RefractiveMaterial : public SurfaceMaterial {
     return Vector3(0.0_f);
   }
 
-  virtual bool is_delta() const override { return true; }
+  virtual bool is_delta() const override {
+    return true;
+  }
 
   virtual void sample(const Vector3 &in_dir,
                       real u,
@@ -568,16 +578,21 @@ class PBRMaterial : public SurfaceMaterial {
     return sum;
   }
 
-  bool is_delta() const override { return flag_is_delta; }
+  bool is_delta() const override {
+    return flag_is_delta;
+  }
 };
 
 TC_IMPLEMENTATION(SurfaceMaterial, PBRMaterial, "pbr");
 
 class PlainVolumeInterfaceMaterial : public SurfaceMaterial {
  protected:
-  virtual bool is_index_matched() const override { return true; }
+  virtual bool is_index_matched() const override {
+    return true;
+  }
 
-  virtual void initialize(const Config &config) override {}
+  virtual void initialize(const Config &config) override {
+  }
 
   virtual void sample(const Vector3 &in_dir,
                       real u,
@@ -612,7 +627,9 @@ class PlainVolumeInterfaceMaterial : public SurfaceMaterial {
     return Vector3(0.0_f);
   }
 
-  virtual bool is_delta() const override { return true; }
+  virtual bool is_delta() const override {
+    return true;
+  }
 };
 
 TC_IMPLEMENTATION(SurfaceMaterial,

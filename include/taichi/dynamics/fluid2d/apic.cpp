@@ -11,7 +11,8 @@
 
 TC_NAMESPACE_BEGIN
 
-APICLiquid::APICLiquid() {}
+APICLiquid::APICLiquid() {
+}
 
 void APICLiquid::initialize_solver(const Config &config) {
   FLIPLiquid::initialize_solver(config);

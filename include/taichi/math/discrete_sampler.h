@@ -23,14 +23,17 @@ class DiscreteSampler {
   bool zero_total_pdf;
 
  public:
-  DiscreteSampler() {}
+  DiscreteSampler() {
+  }
 
   DiscreteSampler(std::vector<real> &pdf, bool allow_zero_total_pdf = false) {
     assert_info(pdf.size() > 0, "No choice for sampler.");
     initialize(pdf, allow_zero_total_pdf);
   }
 
-  int get_num_elements() const { return (int)pdf.size(); }
+  int get_num_elements() const {
+    return (int)pdf.size();
+  }
 
   void initialize(std::vector<real> unnormalized_pdf,
                   bool allow_zero_total_pdf = true) {
@@ -89,9 +92,13 @@ class DiscreteSampler {
     return sample(r, _);
   }
 
-  real get_pdf(int id) const { return pdf[id]; }
+  real get_pdf(int id) const {
+    return pdf[id];
+  }
 
-  real get_cdf(int id) const { return cdf[id]; }
+  real get_cdf(int id) const {
+    return cdf[id];
+  }
 };
 
 inline void test_discrete_sampler() {

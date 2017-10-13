@@ -26,7 +26,9 @@ class VacuumVolumeMaterial : public VolumeMaterial {
     this->volumetric_absorption = 0.0_f;
   }
 
-  virtual real get_attenuation(real dist) const override { return 1.0_f; }
+  virtual real get_attenuation(real dist) const override {
+    return 1.0_f;
+  }
 
   virtual real unbiased_sample_attenuation(const Vector3 &start,
                                            const Vector3 &end,
@@ -40,7 +42,9 @@ class VacuumVolumeMaterial : public VolumeMaterial {
     return VolumeEvent::absorption;
   }
 
-  virtual bool is_vacuum() const override { return true; }
+  virtual bool is_vacuum() const override {
+    return true;
+  }
 };
 
 TC_IMPLEMENTATION(VolumeMaterial, VacuumVolumeMaterial, "vacuum");

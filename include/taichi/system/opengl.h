@@ -107,15 +107,21 @@ class GLWindow {
 
   ~GLWindow();
 
-  RenderingGuard create_rendering_guard() { return RenderingGuard(this); }
+  RenderingGuard create_rendering_guard() {
+    return RenderingGuard(this);
+  }
 
-  ContextGuard create_context_guard() { return ContextGuard(this); }
+  ContextGuard create_context_guard() {
+    return ContextGuard(this);
+  }
 
   void print_actual_version();
 
   void begin_rendering();
 
-  void end_rendering() { glfwSwapBuffers(window); }
+  void end_rendering() {
+    glfwSwapBuffers(window);
+  }
 
   void add_keyboard_callback(KeyboardCallback callback) {
     keyboard_callbacks.push_back(callback);
@@ -158,11 +164,17 @@ class GLWindow {
     window_to_instance[window]->keyboard_callback(key, scancode, action, mods);
   }
 
-  int get_width() const { return width; }
+  int get_width() const {
+    return width;
+  }
 
-  int get_height() const { return height; }
+  int get_height() const {
+    return height;
+  }
 
-  void make_current() { glfwMakeContextCurrent(window); }
+  void make_current() {
+    glfwMakeContextCurrent(window);
+  }
 
   static GLWindow *get_gpgpu_window() {
     static GLWindow window(Config().set("hide", true));

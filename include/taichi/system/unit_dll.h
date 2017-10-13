@@ -53,9 +53,12 @@ class UnitDLL {
     return func;
   }
 
-  UnitDLL() {}
+  UnitDLL() {
+  }
 
-  UnitDLL(const std::string &dll_path) { open_dll(dll_path); }
+  UnitDLL(const std::string &dll_path) {
+    open_dll(dll_path);
+  }
 
   void open_dll(const std::string &dll_path) {
     assert(dll == nullptr);
@@ -78,7 +81,9 @@ class UnitDLL {
     dll = nullptr;
   }
 
-  bool loaded() const { return dll != nullptr; }
+  bool loaded() const {
+    return dll != nullptr;
+  }
 
   ~UnitDLL() {
     if (loaded())

@@ -16,9 +16,12 @@ TC_NAMESPACE_BEGIN
 
 class SDF : public Unit {
  public:
-  virtual void initialize(const Config &config) {}
+  virtual void initialize(const Config &config) {
+  }
 
-  virtual real eval(const Vector3 &p) const { return 1; }
+  virtual real eval(const Vector3 &p) const {
+    return 1;
+  }
 };
 
 namespace sdf {

@@ -27,7 +27,9 @@ class ConstantTexture final : public Texture {
     val = config.get<Vector4>("value");
   }
 
-  virtual Vector4 sample(const Vector3 &coord) const override { return val; }
+  virtual Vector4 sample(const Vector3 &coord) const override {
+    return val;
+  }
 };
 
 TC_IMPLEMENTATION(Texture, ConstantTexture, "const");

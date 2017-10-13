@@ -21,9 +21,11 @@ struct Node {
 
 class KDTree {
  public:
-  KDTree() {}
+  KDTree() {
+  }
 
-  void insert_new_sample() {}
+  void insert_new_sample() {
+  }
 };
 
 class MDAS : public Renderer {
@@ -35,9 +37,12 @@ class MDAS : public Renderer {
     samples_per_stage = config.get("samples_per_stages", 128);
   }
 
-  void render_stage() override {}
+  void render_stage() override {
+  }
 
-  Array2D<Vector3> get_reconstruction() { return Array2D<Vector3>(); }
+  Array2D<Vector3> get_reconstruction() {
+    return Array2D<Vector3>();
+  }
 
   virtual Array2D<Vector3> get_output() override {
     return get_reconstruction();

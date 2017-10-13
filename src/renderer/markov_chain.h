@@ -44,9 +44,12 @@ class MCStateSequence : public StateSequence {
   MarkovChain &mc;
 
  public:
-  MCStateSequence(MarkovChain &mc) : mc(mc) {}
+  MCStateSequence(MarkovChain &mc) : mc(mc) {
+  }
 
-  real sample() override { return mc.get_state(cursor++); }
+  real sample() override {
+    return mc.get_state(cursor++);
+  }
 };
 
 template <bool starts_from_screen>
@@ -55,7 +58,9 @@ class PSSMarkovChain : public MarkovChain {
   real resolutions[int(starts_from_screen) * 2];
 
  public:
-  PSSMarkovChain() { memset(resolutions, 0, sizeof(resolutions)); }
+  PSSMarkovChain() {
+    memset(resolutions, 0, sizeof(resolutions));
+  }
 
   PSSMarkovChain(real resolution_x, real resolution_y) {
     static_assert(starts_from_screen, "");
@@ -99,7 +104,9 @@ class PSSMarkovChain : public MarkovChain {
 
 class AMCMCPPMMarkovChain : public MarkovChain {
  public:
-  AMCMCPPMMarkovChain large_step() const { return AMCMCPPMMarkovChain(); }
+  AMCMCPPMMarkovChain large_step() const {
+    return AMCMCPPMMarkovChain();
+  }
 
   AMCMCPPMMarkovChain mutate(real strength) const {
     AMCMCPPMMarkovChain result(*this);

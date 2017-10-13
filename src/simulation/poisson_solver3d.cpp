@@ -216,7 +216,9 @@ class MultigridPoissonSolver3D : public PoissonSolver3D {
     });
   }
 
-  bool get_has_null_space() { return has_null_space; }
+  bool get_has_null_space() {
+    return has_null_space;
+  }
 
   void gauss_seidel(const System &system,
                     const Array &residual,
@@ -389,7 +391,9 @@ class CGPoissonSolver3D : public MultigridPoissonSolver3D {
     MultigridPoissonSolver3D::initialize(config);
   }
 
-  Array apply_preconditioner(Array &r) { return r; }
+  Array apply_preconditioner(Array &r) {
+    return r;
+  }
 
   virtual void run(const Array &residual,
                    Array &pressure,

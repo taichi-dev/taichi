@@ -38,7 +38,8 @@ class Config {
   std::vector<std::string> file_names;
 
  public:
-  Config() {}
+  Config() {
+  }
 
   std::vector<std::string> get_keys() const {
     std::vector<std::string> keys;
@@ -121,7 +122,9 @@ class Config {
   template <typename T>
   T get(std::string key, const T &default_val) const;
 
-  bool has_key(std::string key) const { return data.find(key) != data.end(); }
+  bool has_key(std::string key) const {
+    return data.find(key) != data.end();
+  }
 
   std::vector<std::string> get_string_arr(std::string key) const {
     std::string str = get_string(key);

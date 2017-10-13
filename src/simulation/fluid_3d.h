@@ -25,10 +25,12 @@ class Tracker3D {
   Vector3 position;
   Vector3 color;
 
-  Tracker3D() {}
+  Tracker3D() {
+  }
 
   Tracker3D(const Vector3 &position, const Vector3 &color)
-      : position(position), color(color) {}
+      : position(position), color(color) {
+  }
 };
 
 class Smoke3D : public Simulation3D {
@@ -54,7 +56,8 @@ class Smoke3D : public Simulation3D {
   std::shared_ptr<PoissonSolver3D> pressure_solver;
   PoissonSolver3D::BCArray boundary_condition;
 
-  Smoke3D() {}
+  Smoke3D() {
+  }
 
   void remove_outside_trackers();
 

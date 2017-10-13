@@ -38,7 +38,9 @@ class AMCMCPPMRenderer : public SPPMRenderer {
   // Current state on the *visibility* chain.
   MCMCState current_state;
 
-  MCMCState create_new_uniform_state() { return MCMCState(); }
+  MCMCState create_new_uniform_state() {
+    return MCMCState();
+  }
 
   // The ratio of visible part of the PSS hypercube
   // Also the normalizer for the visibility chain

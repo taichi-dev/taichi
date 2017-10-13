@@ -33,9 +33,12 @@ class Fluid {
     Particle(){};
 
     Particle(Vector2 position, Vector2 velocity = Vector2(0))
-        : position(position), velocity(velocity) {}
+        : position(position), velocity(velocity) {
+    }
 
-    void move(Vector2 delta_x) { this->position += delta_x; }
+    void move(Vector2 delta_x) {
+      this->position += delta_x;
+    }
 
     template <int k>
     static real get_velocity(const Particle &p, const Vector2 &delta_pos) {
@@ -55,30 +58,45 @@ class Fluid {
 
     static long long instance_counter;
 
-    bool operator==(const Particle &o) { return o.id == id; }
+    bool operator==(const Particle &o) {
+      return o.id == id;
+    }
   };
 
-  virtual void initialize(const Config &config) {}
+  virtual void initialize(const Config &config) {
+  }
 
-  virtual void set_levelset(const LevelSet2D &boundary_levelset) {}
+  virtual void set_levelset(const LevelSet2D &boundary_levelset) {
+  }
 
-  virtual void step(real delta_t) {}
+  virtual void step(real delta_t) {
+  }
 
-  virtual real get_current_time() { return 0.0_f; }
+  virtual real get_current_time() {
+    return 0.0_f;
+  }
 
-  virtual void add_particle(Particle &particle) {}
+  virtual void add_particle(Particle &particle) {
+  }
 
   virtual std::vector<Particle> get_particles() {
     return std::vector<Particle>();
   }
 
-  virtual LevelSet2D get_liquid_levelset() { return LevelSet2D(); }
+  virtual LevelSet2D get_liquid_levelset() {
+    return LevelSet2D();
+  }
 
-  virtual Array<real> get_density() { return Array<real>(Vector2i(0)); }
+  virtual Array<real> get_density() {
+    return Array<real>(Vector2i(0));
+  }
 
-  virtual void add_source(const Config &config) {}
+  virtual void add_source(const Config &config) {
+  }
 
-  virtual Array<real> get_pressure() { return Array<real>(Vector2i(0, 0)); }
+  virtual Array<real> get_pressure() {
+    return Array<real>(Vector2i(0, 0));
+  }
 
  protected:
   std::vector<Particle> particles;

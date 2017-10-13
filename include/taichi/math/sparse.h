@@ -20,9 +20,11 @@ class SparseMatrix {
     int j;
     real val;
 
-    Entry() {}
+    Entry() {
+    }
 
-    Entry(int j, real val) : j(j), val(val) {}
+    Entry(int j, real val) : j(j), val(val) {
+    }
   };
 
   // TODO: This is slow... make some low-level optimizations here...
@@ -31,9 +33,12 @@ class SparseMatrix {
   int n;
 
  public:
-  SparseMatrix(int n) : n(n) { entries.resize(n); }
+  SparseMatrix(int n) : n(n) {
+    entries.resize(n);
+  }
 
-  SparseMatrix() {}
+  SparseMatrix() {
+  }
 
   void insert(int i, int j, real value) {
     for (int k = 0; k < (int)entries[i].size(); k++) {

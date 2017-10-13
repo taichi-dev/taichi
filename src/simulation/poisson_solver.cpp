@@ -200,7 +200,9 @@ class MultigridPoissonSolver2D : public PoissonSolver2D {
     });
   }
 
-  bool get_has_null_space() { return has_null_space; }
+  bool get_has_null_space() {
+    return has_null_space;
+  }
 
   void gauss_seidel(const System &system,
                     const Array &residual,

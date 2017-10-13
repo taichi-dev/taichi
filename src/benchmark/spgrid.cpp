@@ -193,7 +193,9 @@ class SPGrid {
     return Bit_Spread(i, xmask) | Bit_Spread(j, ymask) | Bit_Spread(k, zmask);
   }
 
-  T &operator()(int i, int j, int k) { return data[map_coord(i, j, k)]; }
+  T &operator()(int i, int j, int k) {
+    return data[map_coord(i, j, k)];
+  }
 
   const T &operator()(int i, int j, int k) const {
     return data[map_coord(i, j, k)];
@@ -262,7 +264,9 @@ class SPGrid {
       error("Missing support for 64-bit enums");
   }
 
-  ~SPGrid() { deallocate(data, size_bytes); }
+  ~SPGrid() {
+    deallocate(data, size_bytes);
+  }
 
   bool coord_in_memory(const Vector3i &coord) const {
     return Check_Address_Resident(data + map_coord(coord));
@@ -314,11 +318,16 @@ class SPGridBenchmark : public Benchmark {
  protected:
   static const int test_n = 256;
 
-  real sum_spgrid(Vector3 p) const { return 0.0_f; }
+  real sum_spgrid(Vector3 p) const {
+    return 0.0_f;
+  }
 
-  real sum_dense(Vector3 p) const { return 0.0_f; }
+  real sum_dense(Vector3 p) const {
+    return 0.0_f;
+  }
 
-  void iterate() override {}
+  void iterate() override {
+  }
 
  public:
   bool test() const override {

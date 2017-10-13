@@ -23,7 +23,9 @@ class Ray {
     triangle_id = -1;
   }
 
-  Vector3 at(real d) const { return orig + d * dir; }
+  Vector3 at(real d) const {
+    return orig + d * dir;
+  }
 
   Vector3 orig, dir;
   real time, dist;
@@ -35,7 +37,8 @@ class Ray {
 };
 
 struct Face {
-  Face() {}
+  Face() {
+  }
 
   Face(int v0, int v1, int v2) {
     vert_ind[0] = v0;
@@ -134,11 +137,15 @@ struct Triangle {
   Vector3 get_normal(real u, real v) const {
     return normalized(n0 + u * n10 + v * n20);
   }
-  Vector2 get_uv(real u, real v) const { return uv0 + u * uv10 + v * uv20; }
+  Vector2 get_uv(real u, real v) const {
+    return uv0 + u * uv10 + v * uv20;
+  }
   Vector2 get_duv(Vector3 dx) const {
     return uv10 * dot(iv10, dx) + uv20 * dot(iv20, dx);
   }
-  Vector3 sample_point() const { return sample_point(rand(), rand()); }
+  Vector3 sample_point() const {
+    return sample_point(rand(), rand());
+  }
   Vector3 sample_point(real x, real y) const {
     if (x + y > 1) {
       x = 1 - x;
@@ -146,7 +153,9 @@ struct Triangle {
     }
     return v[0] + v10 * x + v20 * y;
   }
-  real get_height(Vector3 p) const { return dot(normal, p - v[0]); }
+  real get_height(Vector3 p) const {
+    return dot(normal, p - v[0]);
+  }
   int get_relative_location_to_plane(Vector3 p) const {
     return sgn(get_height(p));
   }
@@ -161,7 +170,9 @@ struct Triangle {
     }
     return ret;
   }
-  bool operator==(const Triangle &b) const { return false; }
+  bool operator==(const Triangle &b) const {
+    return false;
+  }
 
   Vector3 get_center() const {
     return (v[0] + v[1] + v[2]) * (1.0_f / 3);

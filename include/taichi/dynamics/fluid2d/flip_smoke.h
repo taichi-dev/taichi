@@ -43,7 +43,9 @@ class FLIPSmoke : public FLIPLiquid {
       p.temperature = ambient_temp;
     }
   }
-  virtual void simple_mark_cells() { cell_types = CellType::WATER; }
+  virtual void simple_mark_cells() {
+    cell_types = CellType::WATER;
+  }
   void seed_particles(real delta_t) {
     for (int i = 0; i < 100; i++) {
       Vector2 pos((0.4f + 0.2f * rand()) * width,

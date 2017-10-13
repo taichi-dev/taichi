@@ -17,7 +17,8 @@ TC_NAMESPACE_BEGIN
 
 class Texture : public Unit {
  public:
-  virtual void initialize(const Config &config) {}
+  virtual void initialize(const Config &config) {
+  }
 
   virtual Vector4 sample(const Vector2 &coord) const {
     return sample(Vector3(coord.x, coord.y, 0.5f));

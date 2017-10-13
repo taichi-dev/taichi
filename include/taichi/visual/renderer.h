@@ -74,7 +74,9 @@ class TemperatureRenderer : public Renderer {
     }
   }
 
-  virtual Array2D<Vector3> get_output() override { return buffer; }
+  virtual Array2D<Vector3> get_output() override {
+    return buffer;
+  }
 
  private:
   Array2D<Vector3> buffer;

@@ -43,7 +43,8 @@ Array2D<Vector4> dcraw_read(const std::string &filepath) {
 
 class RawImageReader final : public ImageReader {
  public:
-  void initialize(const Config &config) override {}
+  void initialize(const Config &config) override {
+  }
 
   Array2D<Vector4> read(const std::string &filepath) override {
     auto tmp = dcraw_read(filepath);

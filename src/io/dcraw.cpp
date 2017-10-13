@@ -2515,8 +2515,10 @@ void CLASS kodak_radc_load_raw() {
 #undef PREDICTOR
 
 #ifdef NO_JPEG
-void CLASS kodak_jpeg_load_raw() {}
-void CLASS lossy_dng_load_raw() {}
+void CLASS kodak_jpeg_load_raw() {
+}
+void CLASS lossy_dng_load_raw() {
+}
 #else
 
 METHODDEF(boolean)

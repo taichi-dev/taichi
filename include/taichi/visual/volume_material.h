@@ -24,7 +24,9 @@ class VolumeMaterial : public Unit {
   Matrix4 local2world;
 
  public:
-  VolumeMaterial() { set_transform(Matrix4(1.0_f)); }
+  VolumeMaterial() {
+    set_transform(Matrix4(1.0_f));
+  }
   virtual void initialize(const Config &config) {
     printf(
         "Info: Volumetric rendering is turned ON. Note that PT & MCMCPT are "
@@ -81,7 +83,9 @@ class VolumeMaterial : public Unit {
     return 1 / 4 / pi;
   }
 
-  virtual bool is_vacuum() const { return false; }
+  virtual bool is_vacuum() const {
+    return false;
+  }
 
  protected:
   virtual real get_attenuation(real dist) const {
@@ -99,11 +103,19 @@ class VolumeStack {
 
  public:
   VolumeStack();
-  void push(VolumeMaterial const *vol) { stack.push_back(vol); }
-  void pop() { stack.pop_back(); }
-  VolumeMaterial const *top() { return stack.back(); }
+  void push(VolumeMaterial const *vol) {
+    stack.push_back(vol);
+  }
+  void pop() {
+    stack.pop_back();
+  }
+  VolumeMaterial const *top() {
+    return stack.back();
+  }
 
-  size_t size() const { return stack.size(); }
+  size_t size() const {
+    return stack.size();
+  }
 };
 
 class VolumeStackPushGuard {
@@ -115,6 +127,8 @@ class VolumeStackPushGuard {
       : stack(stack) {
     stack.push(&volume);
   }
-  ~VolumeStackPushGuard() { stack.pop(); }
+  ~VolumeStackPushGuard() {
+    stack.pop();
+  }
 };
 TC_NAMESPACE_END

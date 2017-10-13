@@ -108,7 +108,8 @@ void TextureRenderer::render() {
   CGL;
 }
 
-TextureRenderer::~TextureRenderer() {}
+TextureRenderer::~TextureRenderer() {
+}
 
 TC_NAMESPACE_END
 

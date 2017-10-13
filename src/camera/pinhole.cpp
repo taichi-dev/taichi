@@ -13,7 +13,8 @@ TC_NAMESPACE_BEGIN
 
 class PinholeCamera : public Camera {
  public:
-  PinholeCamera() {}
+  PinholeCamera() {
+  }
 
   virtual void initialize(const Config &config) override {
     Camera::initialize(config);
@@ -26,7 +27,9 @@ class PinholeCamera : public Camera {
     this->transform = Matrix4(1.0_f);
   }
 
-  real get_pixel_scaling() override { return sqr(tan_half_fov) * aspect_ratio; }
+  real get_pixel_scaling() override {
+    return sqr(tan_half_fov) * aspect_ratio;
+  }
 
   virtual Ray sample(Vector2 offset,
                      Vector2 size,

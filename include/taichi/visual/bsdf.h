@@ -30,14 +30,18 @@ class BSDF {
   Vector2 uv;
 
  public:
-  BSDF() { material = nullptr; }
+  BSDF() {
+    material = nullptr;
+  }
 
   BSDF(std::shared_ptr<Scene> const &scene, const IntersectionInfo &inter);
 
   BSDF(std::shared_ptr<Scene> const &scene,
        int triangle_id);  // initialize for light triangle
 
-  real cos_theta(const Vector3 &out) { return abs((world_to_local * out).z); }
+  real cos_theta(const Vector3 &out) {
+    return abs((world_to_local * out).z);
+  }
 
   void sample(const Vector3 &in_dir,
               real u,
@@ -49,7 +53,9 @@ class BSDF {
 
   real probability_density(const Vector3 &in, const Vector3 &out) const;
 
-  Vector3 get_geometry_normal() { return geometry_normal; }
+  Vector3 get_geometry_normal() {
+    return geometry_normal;
+  }
 
   Vector3 evaluate(const Vector3 &in, const Vector3 &out) const;
 
@@ -57,19 +63,25 @@ class BSDF {
 
   bool is_emissive() const;
 
-  bool is_index_matched() const { return material->is_index_matched(); }
+  bool is_index_matched() const {
+    return material->is_index_matched();
+  }
 
   bool is_entering(const Vector3 &in_dir) const {
     return bool((!front) ^ (dot(geometry_normal, in_dir) > 0));
   }
 
-  bool is_leaving(const Vector3 &in_dir) const { return !is_entering(in_dir); }
+  bool is_leaving(const Vector3 &in_dir) const {
+    return !is_entering(in_dir);
+  }
 
   VolumeMaterial const *get_internal_material() const {
     return material->get_internal_material();
   }
 
-  std::string get_name() { return "TBD"; };
+  std::string get_name() {
+    return "TBD";
+  };
 };
 
 TC_NAMESPACE_END

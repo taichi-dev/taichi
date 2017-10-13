@@ -32,7 +32,9 @@ class SPPMRenderer : public Renderer {
 
   virtual void render_stage() override;
 
-  virtual Array2D<Vector3> get_output() override { return image; }
+  virtual Array2D<Vector3> get_output() override {
+    return image;
+  }
 
   virtual void trace_eye_path(StateSequence &rand,
                               Ray &ray,

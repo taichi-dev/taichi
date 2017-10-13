@@ -16,7 +16,8 @@ TC_NAMESPACE_BEGIN
 
 class ToneMapper : Unit {
  public:
-  void initialize(const Config &config) override {}
+  void initialize(const Config &config) override {
+  }
 
   virtual Array2D<Vector3> apply(const Array2D<Vector3> &inp) {
     return Array2D<Vector3>(Vector2i(0, 0));

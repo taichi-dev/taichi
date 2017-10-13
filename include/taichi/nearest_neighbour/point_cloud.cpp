@@ -14,7 +14,8 @@ TC_NAMESPACE_BEGIN
 #ifdef TC_USE_ANN
 
 #include <ANN/ANN.h>
-NearestNeighbour2D::NearestNeighbour2D() {}
+NearestNeighbour2D::NearestNeighbour2D() {
+}
 
 NearestNeighbour2D::NearestNeighbour2D(
     const std::vector<Vector2> &data_points) {

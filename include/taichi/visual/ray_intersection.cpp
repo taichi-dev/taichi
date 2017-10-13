@@ -51,7 +51,8 @@ void BruteForceRayIntersection::clear() {
   triangles.clear();
 }
 
-void BruteForceRayIntersection::build() {}
+void BruteForceRayIntersection::build() {
+}
 
 void BruteForceRayIntersection::query(Ray &ray) {
   for (auto &triangle : triangles) {

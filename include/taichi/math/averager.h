@@ -43,7 +43,9 @@ class RunningAverage {
     total_weight = 0.0;
   }
 
-  void set_safe_value(real safe_value) { this->safe_value = safe_value; }
+  void set_safe_value(real safe_value) {
+    this->safe_value = safe_value;
+  }
 };
 
 TC_NAMESPACE_END

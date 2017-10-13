@@ -30,7 +30,8 @@ elif get_os_name() == 'linux':
     os.chdir(bin_dir)
     sys.path.append(bin_dir)
     # https://stackoverflow.com/questions/3855004/overwriting-library-file-causes-segmentation-fault
-    os.unlink('taichi_core.so')
+    if os.path.exists('taichi_core.so'):
+      os.unlink('taichi_core.so')
     shutil.copy('libtaichi_core.so', 'taichi_core.so')
     try:
       import taichi_core as tc_core

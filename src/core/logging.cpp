@@ -11,6 +11,6 @@
 
 TC_NAMESPACE_BEGIN
 
-LogLevel log_level = LogLevel::WARNING;
+LogLevel log_level = LogLevel::INFO;
 
 TC_NAMESPACE_END

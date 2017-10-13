@@ -1341,4 +1341,52 @@ struct is_VectorND : public std::false_type {};
 template <int N, typename T, InstSetExt ISE>
 struct is_VectorND<VectorND<N, T, ISE>> : public std::true_type {};
 
+Matrix4 matrix4_translate(Matrix4 *transform, const Vector3 &offset) {
+  return Matrix4(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0),
+                 Vector4(offset, 1.0_f)) *
+         *transform;
+}
+
+Matrix4 matrix4_scale(Matrix4 *transform, const Vector3 &scales) {
+  return Matrix4(Vector4(scales, 1.0_f)) * *transform;
+}
+
+Matrix4 matrix4_scale_s(Matrix4 *transform, real s) {
+  return matrix4_scale(transform, Vector3(s));
+}
+
+// Reference: https://en.wikipedia.org/wiki/Rotation_matrix
+Matrix4 get_rotation_matrix(Vector3 u, real angle) {
+  u = normalized(u);
+  real c = cos(angle), s = sin(angle);
+  real d = 1 - c;
+
+  auto col0 = Vector4(c + u.x * u.x * d, u.x * u.y * d - u.z * s,
+                      u.x * u.z * d + u.y * s, 0.0_f);
+  auto col1 = Vector4(u.x * u.y * d + u.z * s, c + u.y * u.y * d,
+                      u.y * u.z * d - u.x * s, 0.0_f);
+  auto col2 = Vector4(u.x * u.z * d - u.y * s, u.y * u.z * d + u.x * s,
+                      c + u.z * u.z * d, 0.0_f);
+  auto col3 = Vector4(0.0_f, 0.0_f, 0.0_f, 1.0_f);
+
+  return Matrix4(col0, col1, col2, col3).transposed();
+}
+
+Matrix4 matrix4_rotate_angle_axis(Matrix4 *transform,
+                                  real angle,
+                                  const Vector3 &axis) {
+  return get_rotation_matrix(axis, angle * (pi / 180.0_f)) * *transform;
+}
+
+Matrix4 matrix4_rotate_euler(Matrix4 *transform, const Vector3 &euler_angles) {
+  Matrix4 ret = *transform;
+  ret = matrix4_rotate_angle_axis(&ret, euler_angles.x,
+                                  Vector3(1.0_f, 0.0_f, 0.0_f));
+  ret = matrix4_rotate_angle_axis(&ret, euler_angles.y,
+                                  Vector3(0.0_f, 1.0_f, 0.0_f));
+  ret = matrix4_rotate_angle_axis(&ret, euler_angles.z,
+                                  Vector3(0.0_f, 0.0_f, 1.0_f));
+  return ret;
+}
+
 TC_NAMESPACE_END

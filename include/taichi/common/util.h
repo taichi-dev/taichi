@@ -278,4 +278,28 @@ enum LogLevel { VERBOSE = 0, INFO = 1, WARNING = 2, ERROR = 3, FATAL = 4 };
 
 extern LogLevel log_level;
 
+#define TC_INFO(format, ...)                                                \
+  if (log_level <= LogLevel::INFO)                                          \
+    printf("%s",                                                            \
+           format_string(                                                   \
+               ("[INFO]%s:[Ln %d]: " + std::string(format) + "\n").c_str(), \
+               __FILENAME__, __LINE__, __VA_ARGS__)                         \
+               .c_str());
+
+#define TC_WARN(format, ...)                                                \
+  if (log_level <= LogLevel::WARN)                                          \
+    printf("%s",                                                            \
+           format_string(                                                   \
+               ("[WARN]%s:[Ln %d]: " + std::string(format) + "\n").c_str(), \
+               __FILENAME__, __LINE__, __VA_ARGS__)                         \
+               .c_str());
+
+#define TC_ERROR(format, ...)                                                \
+  if (log_level <= LogLevel::ERROR)                                          \
+    printf("%s",                                                            \
+           format_string(                                                   \
+               ("[ERROR]%s:[Ln %d]: " + std::string(format) + "\n").c_str(), \
+               __FILENAME__, __LINE__, __VA_ARGS__)                         \
+               .c_str());
+
 TC_NAMESPACE_END

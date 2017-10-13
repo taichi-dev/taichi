@@ -162,6 +162,10 @@ struct Triangle {
     return ret;
   }
   bool operator==(const Triangle &b) const { return false; }
+
+  Vector3 get_center() const {
+    return (v[0] + v[1] + v[2]) * (1.0_f / 3);
+  }
 };
 
 class BoundingBox {

@@ -1165,8 +1165,29 @@ TC_FORCE_INLINE T length(const VectorND<DIM, T, ISE> &a) {
 }
 
 template <int DIM, typename T, InstSetExt ISE>
+TC_FORCE_INLINE T length2(const VectorND<DIM, T, ISE> &a) {
+  return dot(a, a);
+}
+
+TC_FORCE_INLINE float32 length2(const float32 &a) {
+  return a * a;
+}
+
+TC_FORCE_INLINE float64 length2(const float64 &a) {
+  return a * a;
+}
+
+template <int DIM, typename T, InstSetExt ISE>
 TC_FORCE_INLINE VectorND<DIM, T, ISE> fract(const VectorND<DIM, T, ISE> &a) {
   return a.fract();
+}
+
+TC_FORCE_INLINE float32 inversed(const float32 &a) {
+  return 1.0_f32 / a;
+}
+
+TC_FORCE_INLINE float64 inversed(const float64 &a) {
+  return 1.0_f64 / a;
 }
 
 template <InstSetExt ISE, typename T>
@@ -1377,7 +1398,24 @@ inline Matrix4 matrix4_translate(Matrix4 *transform, const Vector3 &offset) {
          *transform;
 }
 
+inline Matrix4 matrix_translate(Matrix4 *transform, const Vector3 &offset) {
+  return matrix4_translate(transform, offset);
+}
+
+inline Matrix3 matrix_translate(Matrix3 *transform, const Vector2 &offset) {
+  return Matrix3(Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(offset, 1.0_f)) *
+         *transform;
+}
+
+inline Matrix3 matrix_scale(Matrix3 *transform, const Vector2 &scales) {
+  return Matrix3(Vector3(scales, 1.0_f)) * *transform;
+}
+
 inline Matrix4 matrix4_scale(Matrix4 *transform, const Vector3 &scales) {
+  return Matrix4(Vector4(scales, 1.0_f)) * *transform;
+}
+
+inline Matrix4 matrix_scale(Matrix4 *transform, const Vector3 &scales) {
   return Matrix4(Vector4(scales, 1.0_f)) * *transform;
 }
 
@@ -1419,5 +1457,12 @@ inline Matrix4 matrix4_rotate_euler(Matrix4 *transform,
                                   Vector3(0.0_f, 0.0_f, 1.0_f));
   return ret;
 }
+
+template <typename T>
+inline MatrixND<3, T> cross_product_matrix(const VectorND<3, T> &a) {
+  return MatrixND<3, T>(VectorND<3, T>(0, a[2], -a[1]),
+                        VectorND<3, T>(-a[2], 0, a[0]),
+                        VectorND<3, T>(a[1], -a[0], 0));
+};
 
 TC_NAMESPACE_END

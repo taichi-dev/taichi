@@ -106,9 +106,13 @@ def at_startup():
   for module in modules:
     if module != '':
         print('Loading module', module)
-        ctypes.PyDLL(
-            os.path.join(get_root_directory(), 'taichi', 'build',
-                         get_dll_name(module)))
+        try:
+          ctypes.PyDLL(
+              os.path.join(get_root_directory(), 'taichi', 'build',
+                           get_dll_name(module)))
+        except Exception as e:
+          print(e)
+          print("Warning: module", module, "loading failed!")
 
   f.close()
 

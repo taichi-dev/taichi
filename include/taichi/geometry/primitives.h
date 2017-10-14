@@ -113,6 +113,15 @@ struct Triangle {
     coord_u = (uv * wv - vv * wu) / dom;
     coord_v = (uv * wu - uu * wv) / dom;
   }
+  void get_coord(const Vector3 &inter, real &coord_u, real &coord_v) const {
+    const Vector3 inter_local = inter - v[0];
+    const Vector3 u = v10, v = v20;
+    real uv = dot(u, v), vv = dot(v, v), wu = dot(inter_local, u),
+         uu = dot(u, u), wv = dot(inter_local, v);
+    real dom = uv * uv - uu * vv;
+    coord_u = (uv * wv - vv * wu) / dom;
+    coord_v = (uv * wu - uu * wv) / dom;
+  }
   void intersect(Ray &ray) {
     const Vector3 &orig = ray.orig;
     const Vector3 &dir = ray.dir;
@@ -153,10 +162,10 @@ struct Triangle {
     }
     return v[0] + v10 * x + v20 * y;
   }
-  real get_height(Vector3 p) const {
+  real get_height(const Vector3 &p) const {
     return dot(normal, p - v[0]);
   }
-  int get_relative_location_to_plane(Vector3 p) const {
+  int get_relative_location_to_plane(const Vector3 &p) const {
     return sgn(get_height(p));
   }
   real max_edge_length(int &max_id) const {

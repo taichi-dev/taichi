@@ -33,6 +33,9 @@
     init();
     animate();
     function init() {
+
+        window.frame_rate = 24;
+
         container = document.createElement( 'div' );
         document.body.appendChild( container );
         camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.001, 100);
@@ -233,6 +236,76 @@
                 var particles = new THREE.Points( geometry, material );
                 group.add(particles);
             }
+            {
+                // Triangles
+                var positions = new Float32Array(data.triangles.position);
+                var colors = new Float32Array(data.triangles.color);
+                var triangles = positions.length / 9;
+                var geometry = new THREE.BufferGeometry();
+                var normals = new Float32Array( triangles * 3 * 3 );
+
+                var color = new THREE.Color();
+                var pA = new THREE.Vector3();
+                var pB = new THREE.Vector3();
+                var pC = new THREE.Vector3();
+                var cb = new THREE.Vector3();
+                var ab = new THREE.Vector3();
+                for ( var i = 0; i < positions.length; i += 9 ) {
+                    // positions
+                    var ax = positions[ i ];
+                    var ay = positions[ i + 1 ];
+                    var az = positions[ i + 2 ];
+                    var bx = positions[ i + 3 ];
+                    var by = positions[ i + 4 ];
+                    var bz = positions[ i + 5 ];
+                    var cx = positions[ i + 6 ];
+                    var cy = positions[ i + 7 ];
+                    var cz = positions[ i + 8 ];
+                    // flat face normals
+                    pA.set( ax, ay, az );
+                    pB.set( bx, by, bz );
+                    pC.set( cx, cy, cz );
+                    cb.subVectors( pC, pB );
+                    ab.subVectors( pA, pB );
+                    cb.cross( ab );
+                    cb.normalize();
+                    var nx = cb.x;
+                    var ny = cb.y;
+                    var nz = cb.z;
+                    normals[ i ]     = nx;
+                    normals[ i + 1 ] = ny;
+                    normals[ i + 2 ] = nz;
+                    normals[ i + 3 ] = nx;
+                    normals[ i + 4 ] = ny;
+                    normals[ i + 5 ] = nz;
+                    normals[ i + 6 ] = nx;
+                    normals[ i + 7 ] = ny;
+                    normals[ i + 8 ] = nz;
+                }
+                function disposeArray() { this.array = null; }
+                geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ).onUpload( disposeArray ) );
+                geometry.addAttribute( 'normal', new THREE.BufferAttribute( normals, 3 ).onUpload( disposeArray ) );
+                geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ).onUpload( disposeArray ) );
+                geometry.computeBoundingSphere();
+
+                var material = new THREE.MeshPhongMaterial( {
+                    color: 0xaaaaaa, specular: 0xffffff, shininess: 250,
+                    side: THREE.DoubleSide, vertexColors: THREE.VertexColors,
+                    polygonOffset: true,
+                    polygonOffsetFactor: 1,
+                    polygonOffsetUnit: 1
+                } );
+
+
+                var mesh = new THREE.Mesh( geometry, material );
+
+                group.add(mesh);
+
+                var geo = new THREE.WireframeGeometry( mesh.geometry );
+                var mat = new THREE.LineBasicMaterial( { color: 0x777777, linewidth: 1});
+                var wireframe = new THREE.LineSegments( geo, mat );
+                group.add( wireframe );
+            }
             window.geometries[frame_id] = group;
         }
         return window.geometries[frame_id]
@@ -255,7 +328,9 @@
         renderer.setSize( window.innerWidth, window.innerHeight );
     }
     function animate() {
-        requestAnimationFrame( animate );
+        setTimeout( function() {
+            requestAnimationFrame( animate );
+        }, 1000 / window.frame_rate);
         render();
         stats.update();
         if (window.playing) {

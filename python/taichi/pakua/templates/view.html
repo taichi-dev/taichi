@@ -206,28 +206,34 @@
                 },
                 function(xhr) { console.error(xhr); }
             );
-            var positions = new Float32Array(data.points.position);
-            var colors = new Float32Array(data.points.color);
-            var sizes = new Float32Array(data.points.sizes);
 
-            // Points
-            var geometry = new THREE.BufferGeometry();
-            geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
-            geometry.addAttribute( 'customColor', new THREE.BufferAttribute( colors, 3 ) );
-            geometry.addAttribute( 'size', new THREE.BufferAttribute( sizes, 1 ) );
+            var group = new THREE.Group();
+            {
+                // Points
+                var positions = new Float32Array(data.points.position);
+                var colors = new Float32Array(data.points.color);
+                var sizes = new Float32Array(data.points.sizes);
 
-            var material = new THREE.ShaderMaterial( {
-                uniforms: {
-                    color:   { value: new THREE.Color( 0xffffff ) },
-                    texture: { value: new THREE.TextureLoader().load( "disc.png" ) }
-                },
-                vertexShader: document.getElementById( 'vertexshader' ).textContent,
-                fragmentShader: document.getElementById( 'fragmentshader' ).textContent,
-                alphaTest: 0.9
-            } );
+                window.num_particles = positions.length / 3;
 
-            var particles = new THREE.Points( geometry, material );
-            window.geometries[frame_id] = particles;
+                var geometry = new THREE.BufferGeometry();
+                geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+                geometry.addAttribute( 'customColor', new THREE.BufferAttribute( colors, 3 ) );
+                geometry.addAttribute( 'size', new THREE.BufferAttribute( sizes, 1 ) );
+
+                var material = new THREE.ShaderMaterial( {
+                    uniforms: {
+                        color:   { value: new THREE.Color( 0xffffff ) },
+                        texture: { value: new THREE.TextureLoader().load( "disc.png" ) }
+                    },
+                    vertexShader: document.getElementById( 'vertexshader' ).textContent,
+                    fragmentShader: document.getElementById( 'fragmentshader' ).textContent,
+                    alphaTest: 0.9
+                } );
+                var particles = new THREE.Points( geometry, material );
+                group.add(particles);
+            }
+            window.geometries[frame_id] = group;
         }
         return window.geometries[frame_id]
     }
@@ -240,11 +246,8 @@
         scene.add(particles);
 
         window.particles = particles;
-        particles.geometry.attributes.position.needsUpdate = true;
-        particles.geometry.attributes.customColor.needsUpdate = true;
-        particles.geometry.attributes.size.needsUpdate = true;
 
-        document.getElementById("stat").innerHTML = "Frame: " + window.frameId + "  # Particles: " + (particles.geometry.attributes.position.array.length / 3)
+        document.getElementById("stat").innerHTML = "Frame: " + window.frameId + "  # Particles: " + (window.num_particles)
     }
     function onWindowResize() {
         camera.aspect = window.innerWidth / window.innerHeight;

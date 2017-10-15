@@ -247,7 +247,13 @@ template <typename T>
 std::string format_string(std::string templ, T t) {
   constexpr int buf_length = 128;
   char buf[buf_length];
-  snprintf(buf, buf_length, templ.c_str(), t);
+  TC_STATIC_IF((std::is_same<T, std::string>::value)) {
+    snprintf(buf, buf_length, templ.c_str(), t.c_str());
+  }
+  TC_STATIC_ELSE {
+    snprintf(buf, buf_length, templ.c_str(), t);
+  }
+  TC_STATIC_END_IF
   return buf;
 }
 
@@ -289,7 +295,7 @@ extern LogLevel log_level;
                .c_str());
 
 #define TC_WARN(format, ...)                                                \
-  if (log_level <= LogLevel::WARN)                                          \
+  if (log_level <= LogLevel::WARNING)                                       \
     printf("%s",                                                            \
            format_string(                                                   \
                ("[WARN]%s:[Ln %d]: " + std::string(format) + "\n").c_str(), \

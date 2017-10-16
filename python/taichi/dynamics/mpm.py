@@ -134,7 +134,7 @@ class MPM:
     self.video_manager.make_video()
 
   def create_levelset(self):
-    ls = LevelSet(Vectori(self.res), self.Vector(0.0))
+    ls = LevelSet(Vectori(self.res) + Vectori(1, 1), self.Vector(0.0))
     return ls
 
   def test(self):

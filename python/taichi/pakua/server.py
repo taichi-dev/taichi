@@ -6,6 +6,7 @@ from flask_cors import CORS
 import json
 
 app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 #CORS(app)
 
 

@@ -38,7 +38,7 @@ class VacuumVolumeMaterial : public VolumeMaterial {
 
   virtual VolumeEvent sample_event(StateSequence &rand,
                                    const Ray &ray) const override {
-    error("invalid");
+    TC_ERROR("invalid");
     return VolumeEvent::absorption;
   }
 

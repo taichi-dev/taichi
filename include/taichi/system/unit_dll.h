@@ -35,7 +35,7 @@ class UnitDLL {
     dll = dlopen(dll_path.c_str(), RTLD_LAZY);
 #endif
     if (!dll) {
-      error(std::string("Cannot load library: " + dll_path));
+      TC_ERROR(std::string("Cannot load library: " + dll_path));
     }
   }
 
@@ -46,7 +46,7 @@ class UnitDLL {
     auto func = (Func)dlsym(dll, func_name.c_str());
     const char *dlsym_error = dlerror();
     if (dlsym_error) {
-      error(std::string("Cannot load function: ") + dlsym_error);
+      TC_ERROR(std::string("Cannot load function: ") + dlsym_error);
     }
 #endif
     assert_info(func != nullptr, "Function " + func_name + " not found");

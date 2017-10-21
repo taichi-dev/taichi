@@ -115,7 +115,7 @@ class SpotLightEmissiveMaterial : public SurfaceMaterial {
                            real u,
                            real v,
                            const Vector2 &uv) const {
-    error("no_impl");
+    TC_ERROR("no_impl");
     return Vector3(0.0_f);
   }
 
@@ -127,13 +127,13 @@ class SpotLightEmissiveMaterial : public SurfaceMaterial {
                       real &pdf,
                       SurfaceEvent &event,
                       const Vector2 &uv) const override {
-    error("no_impl");
+    TC_ERROR("no_impl");
   }
 
   virtual real probability_density(const Vector3 &in,
                                    const Vector3 &out,
                                    const Vector2 &uv) const override {
-    error("no_impl");
+    TC_ERROR("no_impl");
     return 0.0_f;
   }
 

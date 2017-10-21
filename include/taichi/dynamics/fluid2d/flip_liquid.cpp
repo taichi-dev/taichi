@@ -65,7 +65,7 @@ void FLIPLiquid::advect(real delta_t) {
     } else if (advection_order == 1) {
       p.velocity = sample_velocity(p.position, p.velocity, lerp);
     } else {
-      error("advection_order must be in [1, 2, 3].")
+      TC_ERROR("advection_order must be in [1, 2, 3].")
     }
     p.move(delta_t * p.velocity);
     max_movement = std::max(max_movement, length(p.velocity * delta_t));

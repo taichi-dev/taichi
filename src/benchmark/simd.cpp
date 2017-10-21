@@ -69,7 +69,7 @@ class Matrix4sBenchmark : public Benchmark {
         TC_P(i);
         TC_P(bf_result);
         TC_P(simd_result);
-        error("value mismatch");
+        TC_ERROR("value mismatch");
       }
     }
     return true;

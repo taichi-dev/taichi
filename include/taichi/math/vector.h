@@ -298,7 +298,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
   template <typename T_>
   TC_FORCE_INLINE VectorND(const std::vector<T_> &o) {
     if (o.size() != DIM) {
-      error("Dimension mismatch: " + std::to_string(DIM) + " v.s. " +
+      TC_ERROR("Dimension mismatch: " + std::to_string(DIM) + " v.s. " +
             std::to_string((int)o.size()));
     }
     for (int i = 0; i < DIM; i++)

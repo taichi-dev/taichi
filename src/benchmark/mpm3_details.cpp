@@ -157,7 +157,7 @@ class KernelCalculationBenchmark : public Benchmark {
       real simd_result = sum_simd(input[i]);
       if (abs(bf_result - simd_result) > 1e-6) {
         printf("%f %f\n", bf_result, simd_result);
-        error("value mismatch");
+        TC_ERROR("value mismatch");
       }
     }
     return true;

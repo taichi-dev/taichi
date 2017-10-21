@@ -114,7 +114,7 @@ class SurfaceMaterial : public Unit {
   }
 
   virtual real get_importance(const Vector2 &uv) const {
-    error("no impl");
+    TC_ERROR("no impl");
     return 0;
   }
 

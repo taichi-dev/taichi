@@ -25,7 +25,7 @@ class Texture : public Unit {
   }
 
   virtual Vector4 sample(const Vector3 &coord) const {
-    error("no impl");
+    TC_ERROR("no impl");
     return Vector4(0.0_f);
   }
 

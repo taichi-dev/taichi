@@ -159,7 +159,7 @@ void qr_decomp(Matrix2 A, Matrix2 &q, Matrix2 &r) {
 }
 
 void qr_decomp(Matrix3 A, Matrix3 &q, Matrix3 &r) {
-  NOT_IMPLEMENTED
+  TC_NOT_IMPLEMENTED
 }
 
 void polar_decomp(Matrix2 A, Matrix2 &r, Matrix2 &s) {

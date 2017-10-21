@@ -401,7 +401,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
   }
   for (int depth = 1; path_length <= max_path_length; depth++) {
     if (depth > 1000) {
-      error("path too long");
+      TC_ERROR("path too long");
     }
     if (stack.size() == 0) {
       // What's going on here...
@@ -607,7 +607,7 @@ class PTSDFRenderer final : public PathTracingRenderer {
     }
     for (int depth = 1; path_length <= max_path_length; depth++) {
       if (depth > 1000) {
-        error("path too long");
+        TC_ERROR("path too long");
       }
       const VolumeMaterial &volume = *stack.top();
       IntersectionInfo info = query_geometry(ray);

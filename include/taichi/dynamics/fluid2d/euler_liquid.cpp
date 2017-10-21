@@ -208,7 +208,7 @@ void EulerLiquid::step(real delta_t) {
 }
 
 void EulerLiquid::compute_liquid_levelset() {
-  error("error");
+  TC_ERROR("error");
   liquid_levelset.reset(
       1e7f);  // Do not use INF here, otherwise interpolation will get NAN...
   for (auto &p : particles) {

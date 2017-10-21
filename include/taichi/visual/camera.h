@@ -23,7 +23,7 @@ class Camera : public Unit {
   }
 
   virtual Ray sample(Vector2 offset, Vector2 size, StateSequence &rand) {
-    error("no impl");
+    TC_ERROR("no impl");
     return Ray(Vector3(0), Vector3(0));
   }
 
@@ -36,7 +36,7 @@ class Camera : public Unit {
   }
 
   virtual void get_pixel_coordinate(Vector3 dir, real &u, real &v) {
-    error("no impl");
+    TC_ERROR("no impl");
   }
 
   virtual real get_pixel_scaling() {

@@ -38,12 +38,12 @@
   (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #define TC_EXPORT
 #endif
-#define PRINT(x)                                         \
+#define TC_PRINT(x)                                         \
   {                                                      \
     printf("%s[%d]: %s = ", __FILENAME__, __LINE__, #x); \
     taichi::print(x);                                    \
   };
-#define TC_P(x) PRINT(x)
+#define TC_P(x) TC_PRINT(x)
 
 #ifndef _WIN64
 #define sscanf_s sscanf
@@ -85,8 +85,8 @@
       taichi_raise_assertion_failure_in_python("Assertion failed.");         \
     }                                                                        \
   }
-#define error(info) assert_info(false, info)
-#define NOT_IMPLEMENTED assert_info(false, "Not Implemented!");
+#define TC_ERROR(info) assert_info(false, info)
+#define TC_NOT_IMPLEMENTED assert_info(false, "Not Implemented!");
 
 #define TC_NAMESPACE_BEGIN namespace taichi {
 #define TC_NAMESPACE_END }
@@ -301,7 +301,7 @@ extern LogLevel log_level;
                ("[WARN]%s:[Ln %d]: " + std::string(format) + "\n").c_str(), \
                __FILENAME__, __LINE__, __VA_ARGS__)                         \
                .c_str());
-
+/*
 #define TC_ERROR(format, ...)                                                \
   if (log_level <= LogLevel::ERROR)                                          \
     printf("%s",                                                             \
@@ -309,5 +309,6 @@ extern LogLevel log_level;
                ("[ERROR]%s:[Ln %d]: " + std::string(format) + "\n").c_str(), \
                __FILENAME__, __LINE__, __VA_ARGS__)                          \
                .c_str());
+*/
 
 TC_NAMESPACE_END

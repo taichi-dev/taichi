@@ -50,11 +50,11 @@ class NearestNeighbour2D {
 class NearestNeighbour2D {
  public:
   NearestNeighbour2D() {
-    error("no impl");
+    TC_ERROR("no impl");
   }
 
   NearestNeighbour2D(const std::vector<Vector2> &data_points) {
-    error("no impl");
+    TC_ERROR("no impl");
   }
 
   void clear() {

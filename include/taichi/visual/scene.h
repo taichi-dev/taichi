@@ -274,7 +274,7 @@ class Scene {
   }
 
   real get_temperature(int triangle_id, real u, real v) {
-    error("not implemented");
+    TC_ERROR("not implemented");
     return 0.0_f;
     /*
     real cooef[3]{ 1 - u - v, u, v };

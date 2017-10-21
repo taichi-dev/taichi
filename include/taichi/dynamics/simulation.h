@@ -39,15 +39,15 @@ class Simulation : public Unit {
   }
 
   virtual void add_particles(const Config &config) {
-    error("no impl");
+    TC_ERROR("no impl");
   }
 
   virtual void step(real t) {
-    error("no impl");
+    TC_ERROR("no impl");
   }
 
   virtual std::vector<RenderParticle> get_render_particles() const {
-    error("no impl");
+    TC_ERROR("no impl");
     return std::vector<RenderParticle>();
   }
 
@@ -74,7 +74,7 @@ class Simulation : public Unit {
   }
 
   virtual std::string get_debug_information() {
-    NOT_IMPLEMENTED;
+    TC_NOT_IMPLEMENTED;
     return "";
   }
 };

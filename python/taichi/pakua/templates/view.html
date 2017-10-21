@@ -11,7 +11,7 @@
 				vColor = customColor;
 				vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
 				//gl_PointSize = max(5.0, size * ( 300.0 / -mvPosition.z ));
-			    gl_PointSize = 1.0;
+			    gl_PointSize = 3.0;
 				gl_Position = projectionMatrix * mvPosition;
 			}
 </script>
@@ -55,7 +55,7 @@
         controls.staticMoving = true;
         controls.dynamicDampingFactor = 0.3;
         scene = new THREE.Scene();
-        scene.background = new THREE.Color( 0xf0f0f0 );
+        scene.background = new THREE.Color( 0xa0b0c0 );
         scene.add( new THREE.AmbientLight( 0x505050 ) );
 
         var light = new THREE.DirectionalLight( 0xffffff, 1 );

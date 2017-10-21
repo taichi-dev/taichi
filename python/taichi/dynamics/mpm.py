@@ -26,7 +26,10 @@ class MPM:
       self.Vector = tc_core.Vector3f
       self.Vectori = tc_core.Vector3i
 
-    self.task_id = get_unique_task_id()
+    if 'task_id' in kwargs:
+      self.task_id = kwargs['task_id']
+    else:
+      self.task_id = get_unique_task_id()
     self.directory = tc.get_output_path(self.task_id)
     self.video_manager = VideoManager(self.directory)
     kwargs['frame_directory'] = self.video_manager.get_frame_directory()

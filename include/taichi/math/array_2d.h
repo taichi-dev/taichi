@@ -771,7 +771,7 @@ template <typename T>
 using Array2D = ArrayND<2, T>;
 
 template <typename T, typename P>
-Array2D<T> operator*(const P &b, const Array2D<T> &a) {
+inline Array2D<T> operator*(const P &b, const Array2D<T> &a) {
   Array2D<T> o(a.res);
   for (int i = 0; i < a.size; i++) {
     o.data[i] = b * a.data[i];
@@ -780,7 +780,7 @@ Array2D<T> operator*(const P &b, const Array2D<T> &a) {
 }
 
 template <typename T>
-void print(const Array2D<T> &arr) {
+inline void print(const Array2D<T> &arr) {
   arr.print("");
 }
 

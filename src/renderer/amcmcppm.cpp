@@ -143,11 +143,11 @@ void AMCMCPPMRenderer::render_stage() {
     mutation_strength = std::min(0.5_f, std::max(0.0001_f, mutation_strength));
   }
 
-  P(mutated);
-  P(accepted);
-  P(last_r);
-  P(mutation_strength);
-  P(normalizer.get_average());
+  TC_P(mutated);
+  TC_P(accepted);
+  TC_P(last_r);
+  TC_P(mutation_strength);
+  TC_P(normalizer.get_average());
   stages += 1;
 
   for (auto &ind : image.get_region()) {

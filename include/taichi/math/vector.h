@@ -1216,6 +1216,122 @@ MatrixND<3, T, ISE> inversed(const MatrixND<3, T, ISE> &mat) {
 }
 
 template <typename T, InstSetExt ISE>
+T determinant(const MatrixND<4, T, ISE> &m) {
+  // This function is adopted from GLM
+  /*
+  ================================================================================
+  OpenGL Mathematics (GLM)
+  --------------------------------------------------------------------------------
+  GLM is licensed under The Happy Bunny License and MIT License
+
+  ================================================================================
+  The Happy Bunny License (Modified MIT License)
+  --------------------------------------------------------------------------------
+  Copyright (c) 2005 - 2014 G-Truc Creation
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  Restrictions:
+   By making use of the Software for military purposes, you choose to make a
+   Bunny unhappy.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
+
+  ================================================================================
+  The MIT License
+  --------------------------------------------------------------------------------
+  Copyright (c) 2005 - 2014 G-Truc Creation
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
+   */
+
+  T Coef00 = m[2][2] * m[3][3] - m[3][2] * m[2][3];
+  T Coef02 = m[1][2] * m[3][3] - m[3][2] * m[1][3];
+  T Coef03 = m[1][2] * m[2][3] - m[2][2] * m[1][3];
+
+  T Coef04 = m[2][1] * m[3][3] - m[3][1] * m[2][3];
+  T Coef06 = m[1][1] * m[3][3] - m[3][1] * m[1][3];
+  T Coef07 = m[1][1] * m[2][3] - m[2][1] * m[1][3];
+
+  T Coef08 = m[2][1] * m[3][2] - m[3][1] * m[2][2];
+  T Coef10 = m[1][1] * m[3][2] - m[3][1] * m[1][2];
+  T Coef11 = m[1][1] * m[2][2] - m[2][1] * m[1][2];
+
+  T Coef12 = m[2][0] * m[3][3] - m[3][0] * m[2][3];
+  T Coef14 = m[1][0] * m[3][3] - m[3][0] * m[1][3];
+  T Coef15 = m[1][0] * m[2][3] - m[2][0] * m[1][3];
+
+  T Coef16 = m[2][0] * m[3][2] - m[3][0] * m[2][2];
+  T Coef18 = m[1][0] * m[3][2] - m[3][0] * m[1][2];
+  T Coef19 = m[1][0] * m[2][2] - m[2][0] * m[1][2];
+
+  T Coef20 = m[2][0] * m[3][1] - m[3][0] * m[2][1];
+  T Coef22 = m[1][0] * m[3][1] - m[3][0] * m[1][1];
+  T Coef23 = m[1][0] * m[2][1] - m[2][0] * m[1][1];
+
+  using Vector = VectorND<4, T, ISE>;
+
+  Vector Fac0(Coef00, Coef00, Coef02, Coef03);
+  Vector Fac1(Coef04, Coef04, Coef06, Coef07);
+  Vector Fac2(Coef08, Coef08, Coef10, Coef11);
+  Vector Fac3(Coef12, Coef12, Coef14, Coef15);
+  Vector Fac4(Coef16, Coef16, Coef18, Coef19);
+  Vector Fac5(Coef20, Coef20, Coef22, Coef23);
+
+  Vector Vec0(m[1][0], m[0][0], m[0][0], m[0][0]);
+  Vector Vec1(m[1][1], m[0][1], m[0][1], m[0][1]);
+  Vector Vec2(m[1][2], m[0][2], m[0][2], m[0][2]);
+  Vector Vec3(m[1][3], m[0][3], m[0][3], m[0][3]);
+
+  Vector Inv0(Vec1 * Fac0 - Vec2 * Fac1 + Vec3 * Fac2);
+  Vector Inv1(Vec0 * Fac0 - Vec2 * Fac3 + Vec3 * Fac4);
+  Vector Inv2(Vec0 * Fac1 - Vec1 * Fac3 + Vec3 * Fac5);
+  Vector Inv3(Vec0 * Fac2 - Vec1 * Fac4 + Vec2 * Fac5);
+
+  Vector SignA(+1, -1, +1, -1);
+  Vector SignB(-1, +1, -1, +1);
+  MatrixND<4, T, ISE> Inverse(Inv0 * SignA, Inv1 * SignB, Inv2 * SignA,
+                              Inv3 * SignB);
+
+  Vector Row0(Inverse[0][0], Inverse[1][0], Inverse[2][0], Inverse[3][0]);
+
+  Vector Dot0(m[0] * Row0);
+  T Dot1 = (Dot0.x + Dot0.y) + (Dot0.z + Dot0.w);
+
+  return Dot1;
+}
+
+template <typename T, InstSetExt ISE>
 MatrixND<4, T, ISE> inversed(const MatrixND<4, T, ISE> &m) {
   // This function is copied from GLM
   /*

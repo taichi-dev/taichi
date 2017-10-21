@@ -195,10 +195,10 @@ void EulerLiquid::step(real delta_t) {
         avg += abs(p.velocity.x) + abs(p.velocity.y);
       }
       printf("Fastest particle:\n");
-      P(fastest.position);
-      P(fastest.velocity);
+      TC_P(fastest.position);
+      TC_P(fastest.velocity);
       avg /= particles.size() * 2;
-      P(avg);
+      TC_P(avg);
     }
     real dt = std::min(delta_t - simulation_time, purpose_dt);
     substep(dt);
@@ -472,8 +472,8 @@ void EulerLiquid::prepare_for_pressure_solve() {
       assert_info(e >= 0, "Negative e!");
       E[ind] = 1.0_f / sqrtf(e);
       if (!is_normal(E[ind])) {
-        P(E[ind]);
-        P(e);
+        TC_P(E[ind]);
+        TC_P(e);
         printf("Bad E.\n");
       }
     }

@@ -211,8 +211,8 @@ class MCMCUPSRenderer : public UPSRenderer {
     use_vis_chain = config.get("use_vis_chain", true);
     use_con_chain = config.get("use_con_chain", true);
     large_step_probabilities[con] = use_vis_chain ? 0 : large_step_prob;
-    P(large_step_probabilities[con]);
-    P(large_step_probabilities[vis]);
+    TC_P(large_step_probabilities[con]);
+    TC_P(large_step_probabilities[vis]);
     assert_info(use_vis_chain || use_con_chain,
                 "Must use at least one Markov chain...");
     chain_exchange = config.get("chain_exchange", true);
@@ -228,7 +228,7 @@ class MCMCUPSRenderer : public UPSRenderer {
     mutation_expectation = config.get("mutation_expectation", true);
     target_mutation_acceptance =
         config.get("target_mutation_acceptance", 0.234f);
-    P(target_mutation_acceptance);
+    TC_P(target_mutation_acceptance);
     mutation_strength = 0.001f;
     accepted = 1;
     mutated = 1;
@@ -407,14 +407,14 @@ class MCMCUPSRenderer : public UPSRenderer {
       mutation_strength = std::min(10.0_f, max(1e-7_f, mutation_strength));
     }
     real ratio_accepted = (real)accepted / (real)mutated;
-    P(ratio_accepted);
-    P(mutated);
-    P(accepted);
-    P(mutation_strength);
-    P(photon_visibility.get_average());
+    TC_P(ratio_accepted);
+    TC_P(mutated);
+    TC_P(accepted);
+    TC_P(mutation_strength);
+    TC_P(photon_visibility.get_average());
     for (int u = 0; u < 2; u++) {
       real b = normalizers[u].get_average();
-      P(b);
+      TC_P(b);
       for (auto &pc : all_pcs[u]) {
         write_path_contribution(pc, b);
       }

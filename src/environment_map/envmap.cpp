@@ -46,22 +46,22 @@ void EnvironmentMap::initialize(const Config &config) {
 
   build_cdfs();
   /*
-  P("test");
-  P(uv_to_direction(Vector2(0.0_f, 0.0_f)));
-  P(uv_to_direction(Vector2(0.0_f, 0.5f)));
-  P(uv_to_direction(Vector2(0.0_f, 1.0_f)));
-  P(uv_to_direction(Vector2(0.5f, 0.25f)));
-  P(uv_to_direction(Vector2(0.5f, 0.5f)));
-  P(uv_to_direction(Vector2(0.5f, 0.75f)));
-  P(uv_to_direction(Vector2(1.0_f, 0.0_f)));
-  P(uv_to_direction(Vector2(1.0_f, 0.5f)));
-  P(uv_to_direction(Vector2(1.0_f, 1.0_f)));
+  TC_P("test");
+  TC_P(uv_to_direction(Vector2(0.0_f, 0.0_f)));
+  TC_P(uv_to_direction(Vector2(0.0_f, 0.5f)));
+  TC_P(uv_to_direction(Vector2(0.0_f, 1.0_f)));
+  TC_P(uv_to_direction(Vector2(0.5f, 0.25f)));
+  TC_P(uv_to_direction(Vector2(0.5f, 0.5f)));
+  TC_P(uv_to_direction(Vector2(0.5f, 0.75f)));
+  TC_P(uv_to_direction(Vector2(1.0_f, 0.0_f)));
+  TC_P(uv_to_direction(Vector2(1.0_f, 0.5f)));
+  TC_P(uv_to_direction(Vector2(1.0_f, 1.0_f)));
 
   for (int i = 0; i < 10; i++) {
       real x = rand(), y = rand();
       auto uv = Vector2(x, y);
-      P(uv);
-      P(direction_to_uv(uv_to_direction(uv)));
+      TC_P(uv);
+      TC_P(direction_to_uv(uv_to_direction(uv)));
   }
 
   for (int i = 0; i < 100; i++) {
@@ -70,10 +70,10 @@ void EnvironmentMap::initialize(const Config &config) {
       Vector3 illum;
       Vector3 dir;
       dir = sample_direction(rand, pdf, illum);
-      P(dir);
-      P(pdf);
-      P(illum);
-      P(luminance(illum) / pdf);
+      TC_P(dir);
+      TC_P(pdf);
+      TC_P(illum);
+      TC_P(luminance(illum) / pdf);
   }
   */
 }
@@ -99,7 +99,7 @@ Vector3 EnvironmentMap::sample_direction(StateSequence &rand,
   uv.y = v / res[1];
   illum = sample_illum(uv);
   pdf = row_pdf * col_pdf * res[0] * res[1] / sin(pi * (0.5f + row) / res[1]);
-  // P(luminance(illum) / pdf);
+  // TC_P(luminance(illum) / pdf);
   return uv_to_direction(uv);
 }
 

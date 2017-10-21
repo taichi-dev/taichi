@@ -498,11 +498,11 @@ void BidirectionalRenderer::write_path_contribution(const PathContribution &pc,
   for (auto &cont : pc.contributions) {
     if (0 <= cont.x && cont.x <= 1 - eps && 0 <= cont.y && cont.y <= 1 - eps) {
       if (cont.c.abnormal()) {
-        P(cont.c);
+        TC_P(cont.c);
         continue;
       }
       if (luminance_clamping > 0 && cont.c.max() > luminance_clamping) {
-        P(cont.c);
+        TC_P(cont.c);
         continue;
       }
       int ix = (int)floor(cont.x * width), iy = (int)floor(cont.y * height);

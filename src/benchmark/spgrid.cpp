@@ -333,17 +333,17 @@ class SPGridBenchmark : public Benchmark {
   bool test() const override {
     SPGrid<Vector4> grid;
     for (int i = 0; i < 100; i++) {
-      // P(grid.map_coord(i, i, i));
+      // TC_P(grid.map_coord(i, i, i));
       grid(i, i, i) = Vector4(i);
     }
     for (int i = 0; i < 100; i += 10) {
-      P(grid(i, i, i));
+      TC_P(grid(i, i, i));
     }
-    P(grid.count_active_pages());
-    P(grid.block_xsize);
-    P(grid.block_ysize);
-    P(grid.block_zsize);
-    P(grid.data_bits);
+    TC_P(grid.count_active_pages());
+    TC_P(grid.block_xsize);
+    TC_P(grid.block_ysize);
+    TC_P(grid.block_zsize);
+    TC_P(grid.data_bits);
     SPGrid<float> float_grid;
     auto n = test_n;
     std::vector<float> dense_array(n * n * n);

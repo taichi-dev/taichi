@@ -18,8 +18,8 @@ class TestArray : public Task {
     using Array = Array2D<real>;
     Array A(Vector2i(5, 6));
     Array B(A);
-    P(A.get_res());
-    P(B.get_res());
+    TC_P(A.get_res());
+    TC_P(B.get_res());
   }
 };
 

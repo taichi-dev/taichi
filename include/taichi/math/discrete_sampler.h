@@ -113,8 +113,8 @@ inline void test_discrete_sampler() {
     count[ds.sample(rand())]++;
   }
   for (int i = 0; i < n; i++) {
-    P(i);
-    P(count[i]);
+    TC_P(i);
+    TC_P(count[i]);
   }
 }
 

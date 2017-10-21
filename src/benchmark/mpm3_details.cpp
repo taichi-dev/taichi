@@ -80,8 +80,8 @@ class KernelCalculationBenchmark : public Benchmark {
                     Vector4(2, -2, -2, 2) * t + Vector4(-2, 0, 0, 2);
       /*
       for (int i = 0; i < 4; i++) {
-          P(dw_cache[k][i]);
-          P(dw(p[k] - i));
+          TC_P(dw_cache[k][i]);
+          TC_P(dw(p[k] - i));
       }
       */
       /* FMA - doesn't help...

@@ -126,7 +126,7 @@ class PSSMLTRenderer : public BidirectionalRenderer {
   virtual void render_stage() override {
     if (!first_stage_done) {
       b = estimate_b();
-      P(b);
+      TC_P(b);
       current_state.chain = PSSMLTMarkovChain((real)width, (real)height);
       current_state.pc = get_path_contribution(current_state.chain);
       current_state.sc = scalar_contribution_function(current_state.pc);
@@ -358,7 +358,7 @@ class DWMMLTRenderer : public MMLTRenderer {
       real path_length_pdf;
       int path_length = path_length_sampler.sample(rand(), path_length_pdf);
       MCMCState &current_state = current_states[path_length];
-      // P(current_state.weight);
+      // TC_P(current_state.weight);
       new_state.chain = current_state.chain.mutate();
       new_state.pc = get_path_contribution(new_state.chain, path_length);
       new_state.sc = scalar_contribution_function(new_state.pc);

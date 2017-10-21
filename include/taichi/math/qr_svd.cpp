@@ -177,17 +177,17 @@ void polar_decomp(Matrix3 A, Matrix3 &r, Matrix3 &s) {
   if (r.abnormal()) {
     Matrix3 m = A;
     svd(m, u, sig, v);
-    P(A);
-    P(m);
-    P(u);
-    P(sig);
-    P(v);
-    P(r);
-    P(s);
-    P(transposed(v));
-    P(u * transposed(v));
+    TC_P(A);
+    TC_P(m);
+    TC_P(u);
+    TC_P(sig);
+    TC_P(v);
+    TC_P(r);
+    TC_P(s);
+    TC_P(transposed(v));
+    TC_P(u * transposed(v));
     r = u * transposed(v);
-    P(r);
+    TC_P(r);
     printf(
         "Matrix3 m(%.30f,%.30f,%.30f,%.30f,%.30f,%.30f,%.30f,%.30f,%.30f);\n",
         m[0][0], m[1][0], m[2][0], m[0][1], m[1][1], m[2][1], m[0][2], m[1][2],

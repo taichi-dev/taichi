@@ -74,7 +74,7 @@ class UnitDLL {
     assert_info(loaded(), "Dll not opened.");
     on_unload();
 #ifdef WIN32
-    P("Not implemented");
+    TC_P("Not implemented");
 #else
     dlclose(dll);
 #endif

@@ -43,7 +43,7 @@
     printf("%s[%d]: %s = ", __FILENAME__, __LINE__, #x); \
     taichi::print(x);                                    \
   };
-#define P(x) PRINT(x)
+#define TC_P(x) PRINT(x)
 
 #ifndef _WIN64
 #define sscanf_s sscanf

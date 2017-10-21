@@ -330,8 +330,8 @@ class MultigridPoissonSolver2D : public PoissonSolver2D {
       run(0);
       compute_residual(systems[0], pressures[0], residuals[0],
                        tmp_residuals[0]);
-      P(iterations);
-      P(tmp_residuals[0].abs_max());
+      TC_P(iterations);
+      TC_P(tmp_residuals[0].abs_max());
     } while (tmp_residuals[0].abs_max() > pressure_tolerance);
     pressure = pressures[0];
   }

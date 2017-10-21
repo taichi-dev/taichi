@@ -33,11 +33,11 @@ Array2D<Vector4> dcraw_read(const std::string &filepath) {
   }
   delete[] output.data;
   img.flip(1);
-  P(output.width);
-  P(output.height);
-  P(img.get_width());
-  P(img.get_height());
-  P(img.get_size());
+  TC_P(output.width);
+  TC_P(output.height);
+  TC_P(img.get_width());
+  TC_P(img.get_height());
+  TC_P(img.get_size());
   return img;
 }
 
@@ -48,7 +48,7 @@ class RawImageReader final : public ImageReader {
 
   Array2D<Vector4> read(const std::string &filepath) override {
     auto tmp = dcraw_read(filepath);
-    P("read!!");
+    TC_P("read!!");
     return tmp;
   }
 };

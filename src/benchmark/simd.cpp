@@ -62,13 +62,13 @@ class Matrix4sBenchmark : public Benchmark {
       Vector4 bf_result = M * input[i];
       Vector4 simd_result = Ms * input_s[i];
       if ((bf_result - simd_result).length() > 1e-6) {
-        P(M);
-        P(Ms);
-        P(input[i]);
-        P(input_s[i]);
-        P(i);
-        P(bf_result);
-        P(simd_result);
+        TC_P(M);
+        TC_P(Ms);
+        TC_P(input[i]);
+        TC_P(input_s[i]);
+        TC_P(i);
+        TC_P(bf_result);
+        TC_P(simd_result);
         error("value mismatch");
       }
     }

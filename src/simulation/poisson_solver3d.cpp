@@ -378,8 +378,8 @@ class MultigridPoissonSolver3D : public PoissonSolver3D {
       run(0);
       compute_residual(systems[0], pressures[0], residuals[0],
                        tmp_residuals[0]);
-      P(iterations);
-      P(tmp_residuals[0].abs_max());
+      TC_P(iterations);
+      TC_P(tmp_residuals[0].abs_max());
     } while (tmp_residuals[0].abs_max() > pressure_tolerance);
     pressure = pressures[0];
   }
@@ -449,7 +449,7 @@ class MultigridPCGPoissonSolver3D : public MultigridPoissonSolver3D {
   virtual void run(const Array &residual,
                    Array &pressure,
                    real pressure_tolerance) {
-    P(residual.sum());
+    TC_P(residual.sum());
     pressure = 0;
     Array r(res), mu(res), tmp(res);
     mu = has_null_space ? r.get_average() : 0;

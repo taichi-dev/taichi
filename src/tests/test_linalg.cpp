@@ -19,8 +19,8 @@ class TestLinAlg : public Task {
     using Matrix = MatrixND<DIM, real>;
     for (int i = 0; i < 100; i++) {
       Matrix M = Matrix::rand();
-      P(M);
-      P(M * inverse(M));
+      TC_P(M);
+      TC_P(M * inverse(M));
       assert((M * inverse(M) - Matrix(1.0_f)).frobenius_norm2() < 1e-3_f);
     }
   }
@@ -35,8 +35,8 @@ class TestLinAlg : public Task {
       assert(abs(r[0][1]) < 1e-6_f);
       assert(r[0][0] > -1e-6_f);
       assert(r[1][1] > -1e-6_f);
-      P(q);
-      P(r);
+      TC_P(q);
+      TC_P(r);
     }
   }
 

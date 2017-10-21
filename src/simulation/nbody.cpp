@@ -111,12 +111,12 @@ class BarnesHutSummation {
     }
     total_position *= 1.0_f / mass;
     if (total_position.abnormal()) {
-      P(mass);
+      TC_P(mass);
       for (int i = 0; i < 8; i++) {
-        P(i);
-        P(node.children[i]);
-        P(nodes[node.children[i]].p.position);
-        P(nodes[node.children[i]].p.mass);
+        TC_P(i);
+        TC_P(node.children[i]);
+        TC_P(nodes[node.children[i]].p.position);
+        TC_P(nodes[node.children[i]].p.mass);
       }
     }
     CV(total_position);
@@ -156,7 +156,7 @@ class BarnesHutSummation {
         lower[k] = std::min(lower[k], p.position[k]);
         upper[k] = std::max(upper[k], p.position[k]);
       }
-      // P(p.position);
+      // TC_P(p.position);
     }
     lower_corner = lower;
     int intervals = (int)std::ceil((upper - lower).max() / resolution);
@@ -219,7 +219,7 @@ class BarnesHutSummation {
         create_child(t, cp, p);
       }
     }
-    P(node_end);
+    TC_P(node_end);
     summarize(root);
   }
 
@@ -375,9 +375,9 @@ class NBody : public Simulation3D {
         auto err = length(total_f_bhs - total_f) / length(total_f);
         max_err = std::max(err, max_err);
 
-        P(total_f);
-        P(total_f_bhs);
-        P(err);
+        TC_P(total_f);
+        TC_P(total_f_bhs);
+        TC_P(err);
         */
         Vector3 total_f_bhs = bhs.summation(1, BHP(p.position, 1.0_f), f);
         CV(total_f_bhs);
@@ -385,7 +385,7 @@ class NBody : public Simulation3D {
         CV(particles[i].velocity);
         CV(total_f_bhs);
       });
-      // P(max_err);
+      // TC_P(max_err);
     }
     for (auto &p : particles) {
       p.position += dt * p.velocity;

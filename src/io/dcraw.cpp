@@ -1535,7 +1535,7 @@ void CLASS layer_thumb() {
   thumb_length = thumb_width * thumb_height;
   thumb = (char *)calloc(colors, thumb_length);
   merror(thumb, "layer_thumb()");
-  fprintf(ofp, "P%d\n%d %d\n255\n", 5 + (colors >> 1), thumb_width,
+  fprintf(ofp, "TC_P%d\n%d %d\n255\n", 5 + (colors >> 1), thumb_width,
           thumb_height);
   fread(thumb, thumb_length, colors, ifp);
   for (i = 0; i < thumb_length; i++)
@@ -6422,7 +6422,7 @@ int CLASS parse_tiff_ifd(int base) {
           FORC(36)((char *)xtrans)[c] = fgetc(ifp) & 3;
           break;
         }
-      case 64777: /* Kodak P-series */
+      case 64777: /* Kodak TC_P-series */
         if ((plen = len) > 16)
           plen = 16;
         fread(cfa_pat, 1, plen, ifp);
@@ -6688,7 +6688,7 @@ int CLASS parse_tiff_ifd(int base) {
       case 51009: /* OpcodeList2 */
         meta_offset = ftell(ifp);
         break;
-      case 64772: /* Kodak P-series */
+      case 64772: /* Kodak TC_P-series */
         if (len < 13)
           break;
         fseek(ifp, 16, SEEK_CUR);
@@ -9469,15 +9469,15 @@ void CLASS adobe_coeff(const char *make, const char *model) {
        0,
        0,
        {2905, 732, -237, -8134, 16626, 1476, -3038, 4253, 7517}},
-      {"Phase One P 2",
+      {"Phase One TC_P 2",
        0,
        0,
        {2905, 732, -237, -8134, 16626, 1476, -3038, 4253, 7517}},
-      {"Phase One P 30",
+      {"Phase One TC_P 30",
        0,
        0,
        {4516, -245, -37, -7020, 14976, 2173, -3206, 4671, 7087}},
-      {"Phase One P 45",
+      {"Phase One TC_P 45",
        0,
        0,
        {5053, -24, -117, -5684, 14076, 1702, -2619, 4492, 5849}},
@@ -10612,7 +10612,7 @@ void CLASS identify() {
       width -= 8;
   } else if (!strncmp(model, "D300", 4)) {
     width -= 32;
-  } else if (!strncmp(model, "COOLPIX P", 9) && raw_width != 4032) {
+  } else if (!strncmp(model, "COOLPIX TC_P", 9) && raw_width != 4032) {
     load_flags = 24;
     filters = 0x94949494;
     if (model[9] == '7' && iso_speed >= 400)
@@ -11716,7 +11716,7 @@ void CLASS write_ppm_tiff()
 %s\nENDHDR\n",
             width, height, colors, (1 << output_bps) - 1, cdesc);
     else
-        fprintf(ofp, "P%d\n%d %d\n%d\n",
+        fprintf(ofp, "TC_P%d\n%d %d\n%d\n",
             colors / 2 + 5, width, height, (1 << output_bps) - 1);
     soff = flip_index(0, 0);
     cstep = flip_index(0, 1) - soff;
@@ -11773,7 +11773,7 @@ int CLASS dcraw_main(int argc, const char **argv, DCRawOutput &output) {
     puts(_("-r <r g b g> Set custom white balance"));
     puts(_("+M/-M     Use/don't use an embedded color matrix"));
     puts(_("-C <r b>  Correct chromatic aberration"));
-    puts(_("-P <file> Fix the dead pixels listed in this file"));
+    puts(_("-TC_P <file> Fix the dead pixels listed in this file"));
     puts(_("-K <file> Subtract dark frame (16-bit raw PGM)"));
     puts(_("-k <num>  Set the darkness level"));
     puts(_("-S <num>  Set the saturation level"));

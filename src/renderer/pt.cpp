@@ -194,7 +194,7 @@ class PathTracingRenderer : public Renderer {
     auto x = clamp(cont.x, 0.0_f, 1.0_f - 1e-7_f);
     auto y = clamp(cont.y, 0.0_f, 1.0_f - 1e-7_f);
     if (cont.c.abnormal()) {
-      P(cont.c);
+      TC_P(cont.c);
       return;
     }
     accumulator.accumulate(int(x * width), int(y * height), cont.c *scale);
@@ -405,7 +405,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
     }
     if (stack.size() == 0) {
       // What's going on here...
-      P(stack.size());
+      TC_P(stack.size());
       break;
     }
     const VolumeMaterial &volume = *stack.top();
@@ -474,7 +474,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
       const Vector3 orig = ray.orig + ray.dir * safe_distance;
       const Vector3 in_dir = -ray.dir;
       if (direct_lighting && path_length_in_range(path_length + 1)) {
-        // P(stack.size());
+        // TC_P(stack.size());
         ret += importance *
                calculate_volumetric_direct_lighting(in_dir, orig, rand, stack);
       }
@@ -765,7 +765,7 @@ class MCMCPTRenderer : public PathTracingRenderer {
   void write_path_contribution(const PathContribution &cont,
                                real scale = 1.0_f) override {
     if (cont.c.abnormal()) {
-      P(cont.c);
+      TC_P(cont.c);
       return;
     }
     if (0 <= cont.x && cont.x <= 1 - eps && 0 <= cont.y && cont.y <= 1 - eps) {
@@ -784,7 +784,7 @@ class MCMCPTRenderer : public PathTracingRenderer {
         total_sc += scalar_contribution_function(get_path_contribution(rand));
       }
       b = total_sc / num_samples;
-      P(b);
+      TC_P(b);
       current_state.chain = PSSMLTMarkovChain((real)width, (real)height);
       auto rand = MCStateSequence(current_state.chain);
       current_state.pc = get_path_contribution(rand);

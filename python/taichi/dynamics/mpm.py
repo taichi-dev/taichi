@@ -156,10 +156,6 @@ class MPM:
   def get_debug_information(self):
     return self.c.get_debug_information()
 
-
   def clear_output_directory(self):
     frames_dir = os.path.join(self.directory, 'frames')
-    files = os.listdir(frames_dir)
-    for f in files:
-      assert f.endswith(".json")
-      os.remove(os.path.join(frames_dir, f))
+    taichi.clear_directory_with_suffix(frames_dir, 'json')

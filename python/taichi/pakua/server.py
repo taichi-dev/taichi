@@ -55,6 +55,21 @@ def view(folder):
   output_dir = get_output_directory()
   return render_template('view.html', folder=folder)
 
+frame_buffer = os.path.join(get_output_directory(), 'frame_buffer')
+
+@app.route('/clear_frame_buffer', methods=['POST'])
+def clear_frame_buffer():
+  try:
+    os.mkdir(frame_buffer):
+  except Exception as e:
+    print(e)
+  os.li
+  return ''
+
+@app.route('/make_video', methods=['POST'])
+def make_video():
+  return ''
+
 @app.route('/upload_frame', methods=['POST'])
 def upload_frame():
   img = str(request.data).split(',')[1]

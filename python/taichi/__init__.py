@@ -12,6 +12,7 @@ from taichi.misc.settings import *
 import taichi.image as image
 from taichi.tools.video import VideoManager
 from taichi.tools.transform import *
+from taichi.tools.file import *
 from taichi.visual.particle_renderer import *
 from taichi.dynamics.smoke3 import *
 from taichi.system import *

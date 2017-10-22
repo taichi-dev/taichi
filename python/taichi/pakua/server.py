@@ -56,6 +56,7 @@ def view(folder):
   return render_template('view.html', folder=folder)
 
 frame_buffer = os.path.join(get_output_directory(), 'frame_buffer')
+video_buffer = os.path.join(get_output_directory(), 'videos')
 
 @app.route('/clear_frame_buffer', methods=['POST'])
 def clear_frame_buffer():
@@ -68,8 +69,14 @@ def clear_frame_buffer():
 
 @app.route('/make_video/<task_id>', methods=['POST'])
 def make_video(task_id):
-  files = sorted(os.listdir(frame_buffer))
-  taichi.tools.video.make_video(files, output_path=task_id)
+  try:
+    os.mkdir(video_buffer)
+  except Exception as e:
+    print(e)
+  raw_files = sorted(os.listdir(frame_buffer))
+  files = map(lambda f: os.path.join(frame_buffer, f), raw_files)
+  taichi.tools.video.make_video(list(files), output_path=os.path.join(video_buffer, task_id + '.mp4'))
+  return ''
 
 @app.route('/upload_frame/<frame_id>', methods=['POST'])
 def upload_frame(frame_id):

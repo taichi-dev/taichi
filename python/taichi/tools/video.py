@@ -121,7 +121,7 @@ def make_video(input_files,
     os.mkdir(tmp_dir)
     for i, inp in enumerate(input_files):
       shutil.copy(inp, os.path.join(tmp_dir, '%06d.png' % i))
-    command = ("ffmpeg -loglevel panic -framerate %d -i " % frame_rate) + tmp_dir + "/%06d.png" + \
+    command = ("ffmpeg -y -loglevel panic -framerate %d -i " % frame_rate) + tmp_dir + "/%06d.png" + \
               " -s:v " + str(width) + 'x' + str(height) + \
               " -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p " + output_path
     os.system(command)

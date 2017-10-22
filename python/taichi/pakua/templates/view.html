@@ -188,12 +188,23 @@
         }
     }
 
-    function postFrame(data)
+    function postFrame(data, frameId)
     {
         var xmlhttp=new XMLHttpRequest();
-        xmlhttp.open("POST",'../upload_frame',false);
-        //xmlhttp.setRequestHeader("Content-Type", "application/json");
+        xmlhttp.open("POST",'../upload_frame/' + frameId, false);
         xmlhttp.send(data);
+    }
+
+    function clear_frame_buffer() {
+        var xmlhttp=new XMLHttpRequest();
+        xmlhttp.open("POST",'../clear_frame_buffer/', false);
+        xmlhttp.send();
+    }
+
+    function make_video() {
+        var xmlhttp=new XMLHttpRequest();
+        xmlhttp.open("POST",'../make_video/' + {{folder}}, false);
+        xmlhttp.send();
     }
 
     function get_geometry(frame_id) {
@@ -332,7 +343,7 @@
     }
     function animate() {
         requestAnimationFrame( animate );
-        postFrame(renderer.domElement.toDataURL());
+        postFrame(renderer.domElement.toDataURL(), window.frameId);
         if (get_frame_rate() == 60) {
             if (window.playing) {
                 refreshFrame(1);

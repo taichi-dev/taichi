@@ -60,7 +60,7 @@ frame_buffer = os.path.join(get_output_directory(), 'frame_buffer')
 @app.route('/clear_frame_buffer', methods=['POST'])
 def clear_frame_buffer():
   try:
-    os.mkdir(frame_buffer):
+    os.mkdir(frame_buffer)
   except Exception as e:
     print(e)
   clear_directory_with_suffix(frame_buffer, 'png')
@@ -75,7 +75,7 @@ def make_video(task_id):
 def upload_frame(frame_id):
   img = str(request.data).split(',')[1]
   img = base64.decodebytes(img.encode())
-  with open('%06d.png' % frame_id, 'wb') as f:
+  with open(os.path.join(frame_buffer, '%06d.png' % int(frame_id)), 'wb') as f:
     f.write(img)
   return ''
     

@@ -39,7 +39,7 @@
 
         container = document.createElement( 'div' );
         document.body.appendChild( container );
-        camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.001, 100);
+        camera = new THREE.PerspectiveCamera( 70, 1, 0.001, 100);
         camera.position.x = 0.5;
         camera.position.y = 0.5;
         camera.position.z = 3;
@@ -55,7 +55,7 @@
         controls.staticMoving = true;
         controls.dynamicDampingFactor = 0.3;
         scene = new THREE.Scene();
-        scene.background = new THREE.Color( 0xa0b0c0 );
+        scene.background = new THREE.Color( 0xf0f0f0 );
         scene.add( new THREE.AmbientLight( 0x505050 ) );
 
         var light = new THREE.DirectionalLight( 0xffffff, 1 );
@@ -85,14 +85,16 @@
         light.shadow.mapSize.height = 2048;
         scene.add( light );
 
-        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            preserveDrawingBuffer: true
+        });
         renderer.setPixelRatio( window.devicePixelRatio );
-        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.setSize( 1024, 1024);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFShadowMap;
         container.appendChild( renderer.domElement );
         var info = document.createElement( 'div' );
-        info.style.position = 'absolute';
         info.style.top = '10px';
         info.style.width = '100%';
         info.style.textAlign = 'center';
@@ -184,6 +186,14 @@
             xhr.open("POST", path, true);
             xhr.send();
         }
+    }
+
+    function postFrame(data)
+    {
+        var xmlhttp=new XMLHttpRequest();
+        xmlhttp.open("POST",'../upload_frame',false);
+        //xmlhttp.setRequestHeader("Content-Type", "application/json");
+        xmlhttp.send(data);
     }
 
     function get_geometry(frame_id) {
@@ -322,6 +332,7 @@
     }
     function animate() {
         requestAnimationFrame( animate );
+        postFrame(renderer.domElement.toDataURL());
         if (get_frame_rate() == 60) {
             if (window.playing) {
                 refreshFrame(1);

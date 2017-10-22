@@ -4,6 +4,7 @@ import os
 from taichi import get_output_directory
 from flask_cors import CORS
 import json
+import base64
 
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
@@ -54,6 +55,13 @@ def view(folder):
   output_dir = get_output_directory()
   return render_template('view.html', folder=folder)
 
-
+@app.route('/upload_frame', methods=['POST'])
+def upload_frame():
+  img = str(request.data).split(',')[1]
+  img = base64.decodebytes(img.encode())
+  #with open('a.png', 'wb') as f:
+  #  f.write(img)
+  return ''
+    
 def get_pakua_server():
   return app

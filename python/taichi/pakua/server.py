@@ -1,8 +1,10 @@
 from flask import Flask, render_template, send_from_directory, send_file, request
 from taichi.misc.settings import get_output_directory
 import os
-from taichi import get_output_directory
+from taichi import get_output_directory, clear_directory_with_suffix
+import taichi.tools.video
 from flask_cors import CORS
+import taichi as tc
 import json
 import base64
 
@@ -49,10 +51,8 @@ def browse_outputs():
     })
   return render_template('browser.html', entries=entries)
 
-
 @app.route('/view/<folder>')
 def view(folder):
-  output_dir = get_output_directory()
   return render_template('view.html', folder=folder)
 
 frame_buffer = os.path.join(get_output_directory(), 'frame_buffer')
@@ -63,19 +63,20 @@ def clear_frame_buffer():
     os.mkdir(frame_buffer):
   except Exception as e:
     print(e)
-  os.li
+  clear_directory_with_suffix(frame_buffer, 'png')
   return ''
 
-@app.route('/make_video', methods=['POST'])
-def make_video():
-  return ''
+@app.route('/make_video/<task_id>', methods=['POST'])
+def make_video(task_id):
+  files = sorted(os.listdir(frame_buffer))
+  taichi.tools.video.make_video(files, output_path=task_id)
 
-@app.route('/upload_frame', methods=['POST'])
-def upload_frame():
+@app.route('/upload_frame/<frame_id>', methods=['POST'])
+def upload_frame(frame_id):
   img = str(request.data).split(',')[1]
   img = base64.decodebytes(img.encode())
-  #with open('a.png', 'wb') as f:
-  #  f.write(img)
+  with open('%06d.png' % frame_id, 'wb') as f:
+    f.write(img)
   return ''
     
 def get_pakua_server():

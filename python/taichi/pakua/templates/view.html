@@ -221,7 +221,6 @@
 
         // Restore
         window.recording = false;
-        requestAnimationFrame( animate );
     }
 
     function get_geometry(frame_id) {
@@ -361,9 +360,6 @@
     }
 
     function animate() {
-        if (window.recording) {
-            return;
-        }
         requestAnimationFrame( animate );
         if (get_frame_rate() == 60) {
             if (window.playing) {

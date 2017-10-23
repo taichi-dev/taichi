@@ -13,9 +13,15 @@ def main():
   argc = len(sys.argv)
   if argc == 1:
     print("    Usage: ti run  [task name] \n"
-          "           ti test [module name]")
+          "           ti test [module name]\n"
+          "           ti *.py [arguments]\n")
     exit(-1)
   mode = sys.argv[1]
+
+  if mode.endswith('.py'):
+    with open(mode) as script:
+      exec(script.read())
+
   if mode == "run":
     if argc <= 2:
       print("Please specify [task name], e.g. test_math")

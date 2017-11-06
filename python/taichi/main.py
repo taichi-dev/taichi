@@ -21,6 +21,7 @@ def main():
   if mode.endswith('.py'):
     with open(mode) as script:
       exec(script.read())
+    exit()
 
   if mode == "run":
     if argc <= 2:
@@ -33,5 +34,5 @@ def main():
     print("not implemented")
     exit(-1)
   else:
-    print("Mode should be 'run' or 'test' instead of " + mode)
+    print("Mode should be 'run' or 'test' instead of '%s'" % mode)
     exit(-1)

@@ -33,5 +33,6 @@ if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/projects")
     add_subdirectory(projects)
 endif()
 
+message("C++ Flags: ${CMAKE_CXX_FLAGS}")
 message("Project libraries: ${TAICHI_PROJECT_LIBRARIES}")
 file(WRITE modules.txt "${TAICHI_PROJECT_LIBRARIES}")

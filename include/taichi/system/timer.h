@@ -32,9 +32,10 @@ TC_NAMESPACE_BEGIN
   {                                                                  \
     char timer_name[1000];                                           \
     sprintf_s(timer_name, "%s[%d]: %s", __FILENAME__, __LINE__, #x); \
-    Time::Timer _(timer_name);                                       \
+    taichi::Time::Timer _(timer_name);                               \
     x;                                                               \
   }
+#define TC_TIME(x) TIME(x)
 
 #include <stdint.h>
 

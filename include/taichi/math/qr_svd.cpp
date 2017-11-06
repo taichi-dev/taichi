@@ -195,4 +195,25 @@ void polar_decomp(Matrix3 A, Matrix3 &r, Matrix3 &s) {
   }
 }
 
+void svd_eigen3(void const *A_, void *u_, void *sig_, void *v_) {
+  Eigen::Matrix3d A = *reinterpret_cast<Eigen::Matrix3d const *>(A_);
+  Eigen::Matrix3d u;
+  Eigen::Matrix<double, 3, 1> sig;
+  Eigen::Matrix3d v;
+
+  Eigen::Vector3d diagonal = A.diagonal();
+  Eigen::Matrix3d Adiag = diagonal.asDiagonal();
+  if ((A - Adiag).norm() < 1e-7_f) {
+    // QR_SVD crashes in this case...
+    sig = diagonal;
+    u = v = Eigen::Matrix3d::Identity();
+  } else {
+    JIXIE::singularValueDecomposition(A, u, sig, v);
+  }
+
+  *reinterpret_cast<Eigen::Matrix3d *>(u_) = u;
+  *reinterpret_cast<Eigen::Matrix<double, 3, 1> *>(sig_) = sig;
+  *reinterpret_cast<Eigen::Matrix3d *>(v_) = v;
+}
+
 TC_NAMESPACE_END

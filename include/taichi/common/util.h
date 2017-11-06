@@ -38,7 +38,7 @@
   (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #define TC_EXPORT
 #endif
-#define TC_PRINT(x)                                         \
+#define TC_PRINT(x)                                      \
   {                                                      \
     printf("%s[%d]: %s = ", __FILENAME__, __LINE__, #x); \
     taichi::print(x);                                    \
@@ -68,7 +68,7 @@
       printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, \
              #x);                                                            \
       std::cout << std::flush;                                               \
-      print_traceback();                                                     \
+      taichi::print_traceback();                                             \
       DEBUG_TRIGGER;                                                         \
       taichi_raise_assertion_failure_in_python("Assertion failed.");         \
     }                                                                        \
@@ -80,7 +80,7 @@
       printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, \
              &((info)[0]));                                                  \
       std::cout << std::flush;                                               \
-      print_traceback();                                                     \
+      taichi::print_traceback();                                             \
       DEBUG_TRIGGER;                                                         \
       taichi_raise_assertion_failure_in_python("Assertion failed.");         \
     }                                                                        \
@@ -286,21 +286,32 @@ enum LogLevel { VERBOSE = 0, INFO = 1, WARNING = 2, ERROR = 3, FATAL = 4 };
 
 extern LogLevel log_level;
 
-#define TC_INFO(format, ...)                                                \
-  if (log_level <= LogLevel::INFO)                                          \
-    printf("%s",                                                            \
-           format_string(                                                   \
-               ("[INFO]%s:[Ln %d]: " + std::string(format) + "\n").c_str(), \
-               __FILENAME__, __LINE__, __VA_ARGS__)                         \
-               .c_str());
+#define TC_VERB(format, ...)                                             \
+  if (taichi::log_level <= taichi::LogLevel::VERBOSE)                       \
+    std::printf(                                                         \
+        "%s",                                                            \
+        taichi::format_string(                                           \
+            ("[VERB]%s:[Ln %d]: " + std::string(format) + "\n").c_str(), \
+            __FILENAME__, __LINE__, __VA_ARGS__)                         \
+            .c_str());
 
-#define TC_WARN(format, ...)                                                \
-  if (log_level <= LogLevel::WARNING)                                       \
-    printf("%s",                                                            \
-           format_string(                                                   \
-               ("[WARN]%s:[Ln %d]: " + std::string(format) + "\n").c_str(), \
-               __FILENAME__, __LINE__, __VA_ARGS__)                         \
-               .c_str());
+#define TC_INFO(format, ...)                                             \
+  if (taichi::log_level <= taichi::LogLevel::INFO)                       \
+    std::printf(                                                         \
+        "%s",                                                            \
+        taichi::format_string(                                           \
+            ("[INFO]%s:[Ln %d]: " + std::string(format) + "\n").c_str(), \
+            __FILENAME__, __LINE__, __VA_ARGS__)                         \
+            .c_str());
+
+#define TC_WARN(format, ...)                                             \
+  if (taichi::log_level <= taichi::LogLevel::WARNING)                    \
+    std::printf(                                                         \
+        "%s",                                                            \
+        taichi::format_string(                                           \
+            ("[WARN]%s:[Ln %d]: " + std::string(format) + "\n").c_str(), \
+            __FILENAME__, __LINE__, __VA_ARGS__)                         \
+            .c_str());
 /*
 #define TC_ERROR(format, ...)                                                \
   if (log_level <= LogLevel::ERROR)                                          \

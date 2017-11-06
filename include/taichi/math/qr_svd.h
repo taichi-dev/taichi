@@ -33,4 +33,6 @@ void qr_decomp(Matrix2 A, Matrix2 &q, Matrix2 &r);
 
 void qr_decomp(Matrix3 A, Matrix3 &q, Matrix3 &r);
 
+void svd_eigen3(void const *A_, void *u_, void *sig_, void *v_);
+
 TC_NAMESPACE_END

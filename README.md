@@ -26,3 +26,20 @@ $ python
 >>> import taichi as tc
 >>> ...
 ```
+
+## Acknowledgement
+
+`Taichi`, like many other open-source projects, is based on other open-source projects:
+ - stb_image
+ - stb_image_write
+ - stb_truetype
+ - tinyobjloader
+ - fmtlib
+ - spdlog
+ - catch2
+ - JIXIE::ImplicitQRSVD
+ - dcraw
+ - Intel Embree
+ - Intel TBB
+ 
+Note that all of them (except Intel Embree and TBB) are head-only and bundled in `Taichi``, and the users do not have to install them.

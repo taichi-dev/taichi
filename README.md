@@ -16,6 +16,17 @@ with Python.
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/paper-cut.png)
 
 ## Getting Started
+# Ubuntu 16.04
+Install `python3`.
+```
+sudo python3 -m pip install numpy Pillow scipy pybind11 flask flask_cors
+```
+Install `embree` and `tbb`:
+```
+cd build
+sudo sh ../install_embree.sh
+```
+
 Please see [Installation](https://github.com/yuanming-hu/taichi/wiki/Installation) and [examples](https://github.com/yuanming-hu/taichi/tree/master/python/examples).
 
 ### Create your world with Taichi
@@ -40,4 +51,4 @@ $ python
  - Intel Embree
  - Intel TBB
  
-Note that all of them (except Intel Embree and TBB) are head-only and bundled in `Taichi``, and the users do not have to install them.
+Note that all of them (except Intel Embree and TBB) are head-only and bundled in `Taichi`, and the users do not have to install them.

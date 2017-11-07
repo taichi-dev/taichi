@@ -29,11 +29,11 @@ sudo sh ../install_embree.sh
 
 Research Projects should be put into folder `projects`.
 
-### View results:
+### View results
 ```
 python3 python/examples/server/main.py 
 ```
-and then open your browser `localhost:1111`.
+and then open your browser `localhost:1111`. Choose a simulation output, press `P` to play, `R` to change frame rate (faster/slower).
 
 Please see [Installation](https://github.com/yuanming-hu/taichi/wiki/Installation) and [examples](https://github.com/yuanming-hu/taichi/tree/master/python/examples).
 

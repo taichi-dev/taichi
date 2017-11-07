@@ -11,8 +11,6 @@
 #include <taichi/math/math.h>
 #include <taichi/math/vector.h>
 
-#if __GNUC__ == 5
-#else
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_FAILURE_USERMSG
 
@@ -25,18 +23,11 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 
 #include <stb_truetype.h>
-#endif
 
 TC_NAMESPACE_BEGIN
 
-#define TC_GCC_5_ERROR \
-  TC_ERROR("stb_image will trigger a bug of gcc-5; Recompile with gcc-6");
-
 template <typename T>
 void Array2D<T>::load(const std::string &filename, bool linearize) {
-#if __GNUC__ == 5
-  TC_GCC_5_ERROR
-#else
   int channels;
   FILE *f = fopen(filename.c_str(), "rb");
   assert_info(f != nullptr, "Image file not found: " + filename);
@@ -72,14 +63,10 @@ void Array2D<T>::load(const std::string &filename, bool linearize) {
   }
 
   stbi_image_free(data);
-#endif
 }
 
 template <typename T>
 void Array2D<T>::write(const std::string &filename) {
-#if __GNUC__ == 5
-  TC_GCC_5_ERROR
-#else
   int comp = 3;
   std::vector<unsigned char> data(this->res[0] * this->res[1] * comp);
   for (int i = 0; i < this->res[0]; i++) {
@@ -98,7 +85,6 @@ void Array2D<T>::write(const std::string &filename) {
       stbi_write_png(filename.c_str(), this->res[0], this->res[1], comp,
                      &data[0], comp * this->res[0]);
   // assert_info((bool)write_result, "Can not write image file");
-#endif
 }
 
 template <typename T>
@@ -107,9 +93,6 @@ void Array2D<T>::write_text(const std::string &font_fn,
                             real size,
                             int dx,
                             int dy) {
-#if __GNUC__ == 5
-  TC_GCC_5_ERROR
-#else
   std::vector<unsigned char> buffer(24 << 20, (unsigned char)0);
   std::vector<unsigned char> screen_buffer(
       (size_t)(this->res[0] * this->res[1]), (unsigned char)0);
@@ -165,7 +148,6 @@ void Array2D<T>::write_text(const std::string &font_fn,
       (*this)[x][y] = lerp(alpha, this->get(x, y), T(1.0_f));
     }
   }
-#endif
 }
 
 template void Array2D<Vector3>::write_text(const std::string &font_fn,

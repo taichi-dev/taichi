@@ -17,6 +17,9 @@ with Python.
 
 ## Getting Started
 ### Ubuntu 16.04
+Packages:
+https://github.com/yuanming-hu/config/wiki
+
 Install `python3`.
 ```
 sudo python3 -m pip install numpy Pillow scipy pybind11 flask flask_cors

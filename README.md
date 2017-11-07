@@ -30,9 +30,7 @@ $ python
 ## Acknowledgement
 
 `Taichi`, like many other open-source projects, is based on other open-source projects:
- - stb_image
- - stb_image_write
- - stb_truetype
+ - stb_image, stb_image_write, stb_truetype
  - tinyobjloader
  - fmtlib
  - spdlog

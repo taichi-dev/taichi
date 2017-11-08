@@ -38,10 +38,10 @@
   (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #define TC_EXPORT
 #endif
-#define TC_PRINT(x)                                      \
-  {                                                      \
-    printf("%s[%d]: %s = ", __FILENAME__, __LINE__, #x); \
-    taichi::print(x);                                    \
+#define TC_PRINT(x)                                           \
+  {                                                           \
+    std::printf("%s[%d]: %s = ", __FILENAME__, __LINE__, #x); \
+    taichi::print(x);                                         \
   };
 #define TC_P(x) TC_PRINT(x)
 
@@ -61,29 +61,29 @@
 #else
 #define DEBUG_TRIGGER
 #endif
-#define assert(x)                                                            \
-  {                                                                          \
-    bool ret = static_cast<bool>(x);                                         \
-    if (!ret) {                                                              \
-      printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, \
-             #x);                                                            \
-      std::cout << std::flush;                                               \
-      taichi::print_traceback();                                             \
-      DEBUG_TRIGGER;                                                         \
-      taichi_raise_assertion_failure_in_python("Assertion failed.");         \
-    }                                                                        \
+#define assert(x)                                                       \
+  {                                                                     \
+    bool ret = static_cast<bool>(x);                                    \
+    if (!ret) {                                                         \
+      std::printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, \
+                  __LINE__, #x);                                        \
+      std::cout << std::flush;                                          \
+      taichi::print_traceback();                                        \
+      DEBUG_TRIGGER;                                                    \
+      taichi_raise_assertion_failure_in_python("Assertion failed.");    \
+    }                                                                   \
   }
-#define assert_info(x, info)                                                 \
-  {                                                                          \
-    bool ___ret___ = static_cast<bool>(x);                                   \
-    if (!___ret___) {                                                        \
-      printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, __LINE__, \
-             &((info)[0]));                                                  \
-      std::cout << std::flush;                                               \
-      taichi::print_traceback();                                             \
-      DEBUG_TRIGGER;                                                         \
-      taichi_raise_assertion_failure_in_python("Assertion failed.");         \
-    }                                                                        \
+#define assert_info(x, info)                                            \
+  {                                                                     \
+    bool ___ret___ = static_cast<bool>(x);                              \
+    if (!___ret___) {                                                   \
+      std::printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, \
+                  __LINE__, &((info)[0]));                              \
+      std::cout << std::flush;                                          \
+      taichi::print_traceback();                                        \
+      DEBUG_TRIGGER;                                                    \
+      taichi_raise_assertion_failure_in_python("Assertion failed.");    \
+    }                                                                   \
   }
 #define TC_ASSERT assert
 #define TC_ASSERT_INFO assert_info
@@ -228,7 +228,7 @@ inline statement<Cond> static_if(F const &f) {
 
 using STATIC_IF::static_if;
 
-#define TC_STATIC_IF(x) static_if<(x)>([&](const auto& _____) -> void {
+#define TC_STATIC_IF(x) taichi::static_if<(x)>([&](const auto& _____) -> void {
 #define TC_STATIC_ELSE \
   }).else_([&](const auto &_____) -> void {
 #define TC_STATIC_END_IF \
@@ -276,8 +276,8 @@ std::string format_string(std::string templ, T t, Args... rest) {
       }
     }
   }
-  assert_info(first_formatter_pos != -1,
-              "Insufficient placeholders in format string.");
+  TC_ASSERT_INFO(first_formatter_pos != -1,
+                 "Insufficient placeholders in format string.");
   std::string rest_templ =
       templ.substr(first_formatter_pos, templ.size() - first_formatter_pos);
   std::string first_templ = templ.substr(0, first_formatter_pos);

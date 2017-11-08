@@ -284,44 +284,4 @@ std::string format_string(std::string templ, T t, Args... rest) {
   return format_string(first_templ, t) + format_string(rest_templ, rest...);
 }
 
-enum LogLevel { VERBOSE = 0, INFO = 1, WARNING = 2, ERROR = 3, FATAL = 4 };
-
-extern LogLevel log_level;
-
-#define TC_VERB(format, ...)                                             \
-  if (taichi::log_level <= taichi::LogLevel::VERBOSE)                       \
-    std::printf(                                                         \
-        "%s",                                                            \
-        taichi::format_string(                                           \
-            ("[VERB]%s:[Ln %d]: " + std::string(format) + "\n").c_str(), \
-            __FILENAME__, __LINE__, __VA_ARGS__)                         \
-            .c_str());
-
-#define TC_INFO(format, ...)                                             \
-  if (taichi::log_level <= taichi::LogLevel::INFO)                       \
-    std::printf(                                                         \
-        "%s",                                                            \
-        taichi::format_string(                                           \
-            ("[INFO]%s:[Ln %d]: " + std::string(format) + "\n").c_str(), \
-            __FILENAME__, __LINE__, __VA_ARGS__)                         \
-            .c_str());
-
-#define TC_WARN(format, ...)                                             \
-  if (taichi::log_level <= taichi::LogLevel::WARNING)                    \
-    std::printf(                                                         \
-        "%s",                                                            \
-        taichi::format_string(                                           \
-            ("[WARN]%s:[Ln %d]: " + std::string(format) + "\n").c_str(), \
-            __FILENAME__, __LINE__, __VA_ARGS__)                         \
-            .c_str());
-/*
-#define TC_ERROR(format, ...)                                                \
-  if (log_level <= LogLevel::ERROR)                                          \
-    printf("%s",                                                             \
-           format_string(                                                    \
-               ("[ERROR]%s:[Ln %d]: " + std::string(format) + "\n").c_str(), \
-               __FILENAME__, __LINE__, __VA_ARGS__)                          \
-               .c_str());
-*/
-
 TC_NAMESPACE_END

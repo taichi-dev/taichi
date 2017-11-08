@@ -7,10 +7,10 @@
     the MIT license as written in the LICENSE file.
 *******************************************************************************/
 
-#include <taichi/common/util.h>
+#include <taichi/common/logging.h>
 
 TC_NAMESPACE_BEGIN
 
-LogLevel log_level = LogLevel::INFO;
+std::shared_ptr<spdlog::logger> console = spdlog::stdout_color_mt("console");
 
 TC_NAMESPACE_END

@@ -65,7 +65,7 @@ class Array1D {
     return this->data;
   }
 
-  const int get_dim() const {
+  int get_dim() const {
     return 1;
   }
 };

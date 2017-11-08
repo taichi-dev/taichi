@@ -133,7 +133,7 @@ class IndexND<3> {
     return *(&i + c);
   }
 
-  TC_FORCE_INLINE const int operator[](int c) const {
+  TC_FORCE_INLINE int operator[](int c) const {
     return *(&i + c);
   }
 
@@ -683,7 +683,7 @@ class ArrayND<3, T> {
     return this->data;
   }
 
-  const int get_dim() const {
+  static constexpr int get_dim() {
     return 3;
   }
 };

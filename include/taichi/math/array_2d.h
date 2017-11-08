@@ -113,7 +113,7 @@ class IndexND<2> {
     return *(&i + c);
   }
 
-  const int operator[](int c) const {
+  int operator[](int c) const {
     return *(&i + c);
   }
 
@@ -658,7 +658,7 @@ class ArrayND<2, T> {
     return this->data;
   }
 
-  const int get_dim() const {
+  static constexpr int get_dim() {
     return 2;
   }
 

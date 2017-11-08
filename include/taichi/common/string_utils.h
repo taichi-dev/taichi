@@ -24,7 +24,7 @@ inline std::vector<std::string> split_string(const std::string &s,
   }
   int begin = 0;
   for (int i = 0; i <= (int)s.size(); i++) {
-    if (is_seperator[s[i]] || i == (int)s.size()) {
+    if (is_seperator[(uint8)s[i]] || i == (int)s.size()) {
       ret.push_back(std::string(s.begin() + begin, s.begin() + i));
       begin = i + 1;
     }

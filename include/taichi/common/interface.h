@@ -55,6 +55,7 @@ class Unit {
 
   virtual std::string general_action(const Config &config) {
     TC_NOT_IMPLEMENTED;
+    return "";
   }
 };
 

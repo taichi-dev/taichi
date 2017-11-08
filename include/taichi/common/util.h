@@ -263,7 +263,7 @@ template <typename T, typename... Args>
 std::string format_string(std::string templ, T t, Args... rest) {
   int first_formatter_pos = -1;
   int counter = 0;
-  for (int i = 0; i < templ.size() - 1; i++) {
+  for (int i = 0; i < (int)templ.size() - 1; i++) {
     if (templ[i] == '%') {
       if (templ[i + 1] == '%') {
         i++;

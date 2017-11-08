@@ -19,8 +19,6 @@
 #include <type_traits>
 #include <algorithm>
 
-#include <spdlog/fmt/fmt.h>
-
 // Do not disable assert...
 #ifdef NDEBUG
 #undef NDEBUG
@@ -87,6 +85,8 @@
       taichi_raise_assertion_failure_in_python("Assertion failed.");         \
     }                                                                        \
   }
+#define TC_ASSERT assert
+#define TC_ASSERT_INFO assert_info
 #define TC_ERROR(info) assert_info(false, info)
 #define TC_NOT_IMPLEMENTED assert_info(false, "Not Implemented!");
 

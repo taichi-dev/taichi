@@ -11,6 +11,7 @@
 #include <implicit_qr_svd/ImplicitQRSVD.h>
 #include <Eigen/Dense>
 #include "qr_svd.h"
+#include <taichi/common/logging.h>
 
 //#define TC_USE_EIGEN_SVD
 
@@ -214,6 +215,27 @@ void svd_eigen3(void const *A_, void *u_, void *sig_, void *v_) {
   *reinterpret_cast<Eigen::Matrix3d *>(u_) = u;
   *reinterpret_cast<Eigen::Matrix<double, 3, 1> *>(sig_) = sig;
   *reinterpret_cast<Eigen::Matrix3d *>(v_) = v;
+}
+
+void svd_eigen2(void const *A_, void *u_, void *sig_, void *v_) {
+  Eigen::Matrix2d A = *reinterpret_cast<Eigen::Matrix2d const *>(A_);
+  Eigen::Matrix2d u;
+  Eigen::Matrix<double, 2, 1> sig;
+  Eigen::Matrix2d v;
+
+  Eigen::Vector2d diagonal = A.diagonal();
+  Eigen::Matrix2d Adiag = diagonal.asDiagonal();
+  if ((A - Adiag).norm() < 1e-7_f) {
+    // QR_SVD crashes in this case...
+    sig = diagonal;
+    u = v = Eigen::Matrix2d::Identity();
+  } else {
+    JIXIE::singularValueDecomposition(A, u, sig, v);
+  }
+
+  *reinterpret_cast<Eigen::Matrix2d *>(u_) = u;
+  *reinterpret_cast<Eigen::Matrix<double, 2, 1> *>(sig_) = sig;
+  *reinterpret_cast<Eigen::Matrix2d *>(v_) = v;
 }
 
 TC_NAMESPACE_END

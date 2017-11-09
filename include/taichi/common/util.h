@@ -87,6 +87,7 @@
   }
 #define TC_ASSERT assert
 #define TC_ASSERT_INFO assert_info
+// TODO: this should be part of logging
 #define TC_ERROR(info) assert_info(false, info)
 #define TC_NOT_IMPLEMENTED assert_info(false, "Not Implemented!");
 

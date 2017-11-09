@@ -23,6 +23,7 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 
 #include <stb_truetype.h>
+#include <taichi/common/logging.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -81,10 +82,25 @@ void Array2D<T>::write(const std::string &filename) {
       }
     }
   }
-  int write_result =
-      stbi_write_png(filename.c_str(), this->res[0], this->res[1], comp,
-                     &data[0], comp * this->res[0]);
-  // assert_info((bool)write_result, "Can not write image file");
+  TC_ASSERT(filename.size() >= 5);
+  int write_result = 0;
+  std::string suffix = filename.substr(filename.size() - 4);
+  if (suffix == ".png") {
+    write_result = stbi_write_png(filename.c_str(), this->res[0], this->res[1],
+                                  comp, &data[0], comp * this->res[0]);
+  } else if (suffix == ".bmp") {
+    // TODO: test
+    write_result = stbi_write_bmp(filename.c_str(), this->res[0], this->res[1],
+                                  comp, &data[0]);
+  } else if (suffix == ".jpg") {
+    // TODO: test
+    write_result = stbi_write_jpg(filename.c_str(), this->res[0], this->res[1],
+                                  comp, &data[0], 95);
+  } else {
+    TC_ERR("Unknown suffix {}", suffix);
+  }
+
+  TC_ASSERT_INFO((bool)write_result, "Can not write image file");
 }
 
 template <typename T>

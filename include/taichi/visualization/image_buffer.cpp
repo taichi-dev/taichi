@@ -67,7 +67,7 @@ void Array2D<T>::load(const std::string &filename, bool linearize) {
 }
 
 template <typename T>
-void Array2D<T>::write(const std::string &filename) {
+void Array2D<T>::write_as_image(const std::string &filename) {
   int comp = 3;
   std::vector<unsigned char> data(this->res[0] * this->res[1] * comp);
   for (int i = 0; i < this->res[0]; i++) {
@@ -182,10 +182,10 @@ template void Array2D<Vector3>::load(const std::string &filename, bool);
 
 template void Array2D<Vector4>::load(const std::string &filename, bool);
 
-template void Array2D<real>::write(const std::string &filename);
+template void Array2D<real>::write_as_image(const std::string &filename);
 
-template void Array2D<Vector3>::write(const std::string &filename);
+template void Array2D<Vector3>::write_as_image(const std::string &filename);
 
-template void Array2D<Vector4>::write(const std::string &filename);
+template void Array2D<Vector4>::write_as_image(const std::string &filename);
 
 TC_NAMESPACE_END

@@ -43,7 +43,7 @@ void Renderer::write_output(std::string fn) {
           std::pow(clamp(tmp[ind][i] / scale, 0.0_f, 1.0_f), 1 / 2.2f);
     }
   }
-  tmp.write(fn);
+  tmp.write_as_image(fn);
 }
 
 TC_NAMESPACE_END

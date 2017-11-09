@@ -758,7 +758,7 @@ class ArrayND<2, T> {
     return lerp(x - ix, x_0, x_1);
   }
 
-  void write(const std::string &filename);
+  void write_as_image(const std::string &filename);
 
   void write_text(const std::string &font_fn,
                   const std::string &content,

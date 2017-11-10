@@ -329,7 +329,7 @@ void export_math(py::module &m) {
       .def("get_height", &Array2D<Vector3>::get_height)
       .def("get_channels", &return_constant<Array2D<Vector3>, 3>)
       .def("from_ndarray", &ndarray_to_image_buffer<Array2D<Vector3>, 3>)
-      .def("read", &Array2D<Vector3>::load)
+      .def("read", &Array2D<Vector3>::load_image)
       .def("write", &Array2D<Vector3>::write_as_image)
       .def("write_to_disk", &Array2D<Vector3>::write_to_disk)
       .def("read_from_disk", &Array2D<Vector3>::read_from_disk)

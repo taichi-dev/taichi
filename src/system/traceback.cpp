@@ -19,6 +19,7 @@
 #include <signal.h>
 #include <ucontext.h>
 #include <unistd.h>
+#include <cxxabi.h>
 #endif
 #include <string>
 #include <cstdio>
@@ -26,6 +27,7 @@
 #include <algorithm>
 #include <memory>
 #include <mutex>
+#include <taichi/logging.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -128,7 +130,8 @@ TC_EXPORT void print_traceback() {
   char **strings;
 
   nptrs = backtrace(buffer, BT_BUF_SIZE);
-  printf("backtrace() returned %d addresses\n", nptrs);
+
+  // std::printf("backtrace() returned %d addresses\n", nptrs);
 
   /* The call backtrace_symbols_fd(buffer, nptrs, STDOUT_FILENO)
      would produce similar output to the following: */
@@ -139,10 +142,37 @@ TC_EXPORT void print_traceback() {
     exit(EXIT_FAILURE);
   }
 
-  for (int j = 0; j < nptrs; j++)
-    printf("%s\n", strings[j]);
+  // j = 0: taichi::print_traceback
+  for (int j = 1; j < nptrs; j++) {
+    std::string s(strings[j]);
+    int start = s.find("(");
+    int end = s.rfind("+");
 
-  free(strings);
+    std::string line;
+
+    if (start < end) {
+      std::string name = s.substr(start + 1, end - start - 1);
+
+      char *demangled_name_;
+
+      int status = -1;
+
+      demangled_name_ = abi::__cxa_demangle(name.c_str(), NULL, NULL, &status);
+
+      if (demangled_name_) {
+        name = std::string(demangled_name_);
+      }
+
+      std::string prefix = s.substr(0, start);
+
+      line = fmt::format("{}: {}", prefix, name);
+      free(demangled_name_);
+    } else {
+      line = s;
+    }
+    std::cout << line << std::endl;
+  }
+  std::free(strings);
 #endif
 }
 

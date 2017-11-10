@@ -722,10 +722,10 @@ class ArrayND<2, T> {
   }
 
   ArrayND(const std::string &filename) {
-    load(filename);
+    load_image(filename);
   }
 
-  void load(const std::string &filename, bool linearize = true);
+  void load_image(const std::string &filename, bool linearize = true);
 
   void set_pixel(real x, real y, const T &pixel) {
     x *= this->res[0];

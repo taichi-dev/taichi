@@ -28,7 +28,7 @@
 TC_NAMESPACE_BEGIN
 
 template <typename T>
-void Array2D<T>::load(const std::string &filename, bool linearize) {
+void Array2D<T>::load_image(const std::string &filename, bool linearize) {
   int channels;
   FILE *f = fopen(filename.c_str(), "rb");
   assert_info(f != nullptr, "Image file not found: " + filename);
@@ -178,9 +178,9 @@ template void Array2D<Vector4>::write_text(const std::string &font_fn,
                                            int dx,
                                            int dy);
 
-template void Array2D<Vector3>::load(const std::string &filename, bool);
+template void Array2D<Vector3>::load_image(const std::string &filename, bool);
 
-template void Array2D<Vector4>::load(const std::string &filename, bool);
+template void Array2D<Vector4>::load_image(const std::string &filename, bool);
 
 template void Array2D<real>::write_as_image(const std::string &filename);
 

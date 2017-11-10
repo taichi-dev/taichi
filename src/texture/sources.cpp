@@ -58,7 +58,7 @@ class ImageTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    image.load(config.get<std::string>("filename"));
+    image.load_image(config.get<std::string>("filename"));
   }
 
   bool inside(const Vector3 &coord) const {

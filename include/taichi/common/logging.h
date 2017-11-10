@@ -16,10 +16,10 @@ TC_NAMESPACE_BEGIN
 
 extern std::shared_ptr<spdlog::logger> console;
 
-#define SPD_AUGMENTED_LOG(X, ...)                                       \
-  taichi::console->X(fmt::format("[{}:{}@{}] ", __FILENAME__, \
-                                 __FUNCTION__, __LINE__) +              \
-                     fmt::format(__VA_ARGS__))
+#define SPD_AUGMENTED_LOG(X, ...)                                        \
+  taichi::console->X(                                                    \
+      fmt::format("[{}:{}@{}] ", __FILENAME__, __FUNCTION__, __LINE__) + \
+      fmt::format(__VA_ARGS__))
 
 #define TC_TRACE(...) SPD_AUGMENTED_LOG(trace, __VA_ARGS__)
 #define TC_DEBUG(...) SPD_AUGMENTED_LOG(debug, __VA_ARGS__)
@@ -29,5 +29,7 @@ extern std::shared_ptr<spdlog::logger> console;
 #define TC_CRITICAL(...) SPD_AUGMENTED_LOG(critical, __VA_ARGS__)
 
 #define TC_LOG_SET_PATTERN(x) spdlog::set_pattern(x);
+
+#define TC_FLUSH_LOGGER {taichi::console->flush();};
 
 TC_NAMESPACE_END

@@ -145,8 +145,8 @@ TC_EXPORT void print_traceback() {
   // j = 0: taichi::print_traceback
   for (int j = 1; j < nptrs; j++) {
     std::string s(strings[j]);
-    int start = s.find("(");
-    int end = s.rfind("+");
+    std::size_t start = s.find("(");
+    std::size_t end = s.rfind("+");
 
     std::string line;
 
@@ -170,7 +170,7 @@ TC_EXPORT void print_traceback() {
     } else {
       line = s;
     }
-    std::cout << line << std::endl;
+    fmt::print_colored(fmt::MAGENTA, "{}\n", line);
   }
   std::free(strings);
 #endif

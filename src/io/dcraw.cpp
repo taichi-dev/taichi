@@ -23,7 +23,17 @@ $Revision: 1.477 $
 $Date: 2016/05/10 21:30:43 $
 */
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#pragma GCC diagnostic ignored "-Wunused-result"
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#if defined(_MSC_VAR)
 #pragma warning(push, 0)
+#endif
 #include "dcraw.h"
 
 #define DCRAW_VERSION "9.27"
@@ -12263,4 +12273,7 @@ int CLASS dcraw_main(int argc, const char **argv, DCRawOutput &output) {
   return status;
 }
 
-#pragma warning(pop)
+#if defined(_MSC_VER)
+  #pragma warning(pop)
+#endif
+#pragma GCC diagnostic pop

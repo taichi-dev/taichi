@@ -41,7 +41,7 @@ if (MSVC)
 else ()
     set(CMAKE_CXX_FLAGS
             "${CMAKE_CXX_FLAGS} -std=c++14 -march=native\
-            -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED")
+            -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED -Wall")
 endif ()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_PASS_EXCEPTION_TO_PYTHON")

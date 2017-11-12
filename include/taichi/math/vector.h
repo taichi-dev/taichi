@@ -340,6 +340,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
 
   TC_FORCE_INLINE VectorND &operator=(const VectorND &o) {
     memcpy(this, &o, sizeof(*this));
+    return *this;
   }
 
   template <int DIM_ = DIM,

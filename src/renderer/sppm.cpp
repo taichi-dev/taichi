@@ -61,7 +61,8 @@ void SPPMRenderer::trace_eye_path(StateSequence &rand,
     if (!info.intersected)
       return;
 
-    Triangle &tri = scene->triangles[info.triangle_id];
+    // TODO: why unused?
+    // Triangle &tri = scene->triangles[info.triangle_id];
     BSDF bsdf(scene, info);
     Vector3 in_dir = -ray.dir;
     if (bsdf.is_emissive()) {
@@ -116,7 +117,8 @@ bool SPPMRenderer::trace_photon(
     IntersectionInfo info = sg->query(ray);
     if (!info.intersected)
       break;
-    Triangle &tri = scene->triangles[info.triangle_id];
+    // TODO: why unused
+    // Triangle &tri = scene->triangles[info.triangle_id];
     BSDF bsdf(scene, info);
     Vector3 in_dir = -ray.dir;
     Vector3 out_dir;

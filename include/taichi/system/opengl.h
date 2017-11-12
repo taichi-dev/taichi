@@ -39,10 +39,14 @@
 #include <GL/glew.h>
 #endif
 
+#if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable : 4005)
+#endif
 #include <GLFW/glfw3.h>
+#if defined(_MSC_VER)
 #pragma warning(pop)
+#endif
 
 #include <taichi/common/interface.h>
 #include "timer.h"

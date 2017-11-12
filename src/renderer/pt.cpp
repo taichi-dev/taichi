@@ -563,7 +563,7 @@ class PTSDFRenderer final : public PathTracingRenderer {
       return inter;
     }
     inter.intersected = true;
-    real coord_u = ray.u, coord_v = ray.v;
+    // real coord_u = ray.u, coord_v = ray.v;
     inter.pos = ray.at(dist - 1e-3_f);
     inter.front = true;
     // Verify interpolated normals can lead specular rays to go inside the
@@ -609,7 +609,8 @@ class PTSDFRenderer final : public PathTracingRenderer {
       if (depth > 1000) {
         TC_ERROR("path too long");
       }
-      const VolumeMaterial &volume = *stack.top();
+      // TODO: why unused?
+      // const VolumeMaterial &volume = *stack.top();
       IntersectionInfo info = query_geometry(ray);
       Vector3 f(1.0_f);
       Ray out_ray;

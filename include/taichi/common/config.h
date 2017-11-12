@@ -26,8 +26,6 @@
 TC_NAMESPACE_BEGIN
 
 // Declare and then load
-//#define TC_PULL_CONFIG(name, default_val) \
-  //decltype(default_val) name = config.get(#name, default_val)
 // Load to `this`
 #define TC_LOAD_CONFIG(name, default_val) \
   this->name = config.get(#name, default_val)
@@ -69,7 +67,6 @@ class Config {
   V get(std::string key) const {
     constexpr int N = V::D;
     using T = typename V::ScalarType;
-    InstSetExt ISE = V::ise;
 
     std::string str = this->get_string(key);
     std::string temp = "(";

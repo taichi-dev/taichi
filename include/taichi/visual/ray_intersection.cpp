@@ -158,8 +158,8 @@ void EmbreeRayIntersection::build() {
 
 void EmbreeRayIntersection::query(Ray &ray) {
   RTCRay rtc_ray;
-  *(Vector3 *)rtc_ray.org = ray.orig;
-  *(Vector3 *)rtc_ray.dir = ray.dir;
+  *reinterpret_cast<Vector3 *>(rtc_ray.org) = ray.orig;
+  *reinterpret_cast<Vector3 *>(rtc_ray.dir) = ray.dir;
   rtc_ray.tnear = eps * 10;
   rtc_ray.tfar = Ray::DIST_INFINITE;
   rtc_ray.time = 0.0_f;

@@ -432,7 +432,7 @@ double BidirectionalRenderer::mis_weight(const Path &path,
 
 Vector3d BidirectionalRenderer::path_throughput(const Path &path) {
   Vector3d f(1.0_f);
-  for (int i = 0; i < path.size(); i++) {
+  for (int i = 0; i < (int)path.size(); i++) {
     if (i == 0) {
       // Tricky camera throughput...
       Vector3 d0 = path[1].pos - path[0].pos;

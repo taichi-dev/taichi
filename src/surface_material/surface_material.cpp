@@ -182,7 +182,7 @@ class DiffuseMaterial : public SurfaceMaterial {
         v = eps;
       }
       u /= v;
-      real xz = v, y = sqrt(1 - v * v);
+      real y = sqrt(1 - v * v);
       real phi = u * 2.0f * pi;
       real r = v / sqrt(in.x * in.x + in.y * in.y), p = in.x * r, q = in.y * r;
       real c = cos(phi), s = sin(phi);
@@ -373,7 +373,6 @@ class RefractiveMaterial : public SurfaceMaterial {
                       Vector3 &out_refract) const {
     // returns refraction probability
     out_reflect = reflect(in);
-    bool into = in.z > 0;
     real ior = get_ior(in);
     real cos_in = abs(in.z);
     real sin_out = std::hypot(in.x, in.y) * ior;

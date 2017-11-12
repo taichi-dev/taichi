@@ -296,7 +296,8 @@ class MCMCUPSRenderer : public UPSRenderer {
       }
     }
 
-    int num_chains = int(use_vis_chain) + int(use_con_chain);
+    // TODO: why unused?
+    // int num_chains = int(use_vis_chain) + int(use_con_chain);
     RunningAverage photon_visibility;
     // TODO: deferred writting...
     for (int k = 0; k < n_samples_per_stage; k++) {

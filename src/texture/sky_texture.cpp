@@ -122,7 +122,7 @@ class SkyTexture final : public Texture {
 
   static real hgPhase(real cosTheta, real g) {
     real g2 = std::pow(g, 2.0f);
-    real inverse = 1.0_f / pow(1.0_f - 2.0f * g * cosTheta + g2, 1.5_f);
+    real inverse = 1.0_f / pow(1.0_f - 2.0_f * g * cosTheta + g2, 1.5_f);
     return ONE_OVER_FOURPI * ((1.0_f - g2) * inverse);
   }
 
@@ -150,8 +150,9 @@ class SkyTexture final : public Texture {
     Vector3 vBetaM;
     real vSunE;
 
-    real luminance;
-    real mieDirectionalG;
+    // TODO: why unused x2
+    // real luminance;
+    real mieDirectionalG {0.0_f};
 
     real theta_d = coord.x * 2 * pi, phi_d = (coord.y - 0.5f) * pi;
     vWorldPosition = Vector3(cos(theta_d) * cos(phi_d), sin(phi_d),
@@ -202,13 +203,14 @@ class SkyTexture final : public Texture {
              clamp(pow(1.0_f - dot(up, vSunDirection), 5.0_f), 0.0_f, 1.0_f));
 
     // nightsky
-    Vector3 direction = normalize(vWorldPosition - cameraPos);
-    real theta = std::acos(direction.y);  // elevation --> y-axis, [-pi/2, pi/2]
+    // TODO: why unused?
+    // Vector3 direction = normalize(vWorldPosition - cameraPos);
+    // TODO: why unused?
+    // real theta = std::acos(direction.y);  // elevation --> y-axis, [-pi/2, pi/2]
     // NOTE: changed atan to atan2
-    real phi = std::atan2(direction.z,
-                          direction.x);  // azimuth --> x-axis [-pi/2, pi/2]
-    Vector2 uv =
-        Vector2(phi, theta) / Vector2(2.0f * pi, pi) + Vector2(0.5f, 0.0_f);
+    // TODO: why phi unused?
+    // real phi = std::atan2(direction.z,
+    //                       direction.x);  // azimuth --> x-axis [-pi/2, pi/2]
     Vector3 L0 = Vector3(0.1f) * Fex;
 
     // composition + solar disc

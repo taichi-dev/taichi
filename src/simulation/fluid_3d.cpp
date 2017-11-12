@@ -16,9 +16,9 @@
 #include <taichi/system/timer.h>
 
 TC_NAMESPACE_BEGIN
-const static Vector3i offsets[]{Vector3i(1, 0, 0), Vector3i(-1, 0, 0),
-                                Vector3i(0, 1, 0), Vector3i(0, -1, 0),
-                                Vector3i(0, 0, 1), Vector3i(0, 0, -1)};
+//const static Vector3i offsets[]{Vector3i(1, 0, 0), Vector3i(-1, 0, 0),
+//                                Vector3i(0, 1, 0), Vector3i(0, -1, 0),
+//                                Vector3i(0, 0, 1), Vector3i(0, 0, -1)};
 
 void Smoke3D::project() {
   Array divergence(res, 0.0_f);
@@ -150,7 +150,7 @@ Vector3 hsv2rgb(Vector3 hsv) {
     case 4:
       r = t, g = p, b = v;
       break;
-    case 5:
+    default: // 5, actually
       r = v, g = p, b = q;
       break;
   }

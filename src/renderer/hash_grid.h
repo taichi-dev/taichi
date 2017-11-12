@@ -49,7 +49,7 @@ class HashGrid {
     for (auto p : cache) {
       cell_count[p.first]++;
     }
-    for (int i = 0; i + 2 < cell_count.size(); i++) {
+    for (int i = 0; i + 2 < (int)cell_count.size(); i++) {
       cell_count[i + 1] += cell_count[i];
     }
     heads[0] = &built_data[0];

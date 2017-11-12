@@ -183,7 +183,8 @@ class BarnesHutSummation {
       }
       // Traverse down until there's no way...
       int k = 0;
-      int cp;
+      TC_ERROR("cp maybe originally used without initialization");
+      int cp = -1;
       for (; k < total_levels; k++) {
         cp = get_child_index(u, k);
         if (nodes[t].children[cp] != 0) {
@@ -362,7 +363,7 @@ class NBody : public Simulation3D {
       return d;
     };
     if (gravitation != 0) {
-      real max_err = -1;
+      // real max_err = -1;
       ThreadedTaskManager::run((int)particles.size(), num_threads, [&](int i) {
         auto &p = particles[i];
         /*

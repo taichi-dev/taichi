@@ -304,8 +304,8 @@ bool EulerLiquid::check_diag_domination() {
 }
 
 void EulerLiquid::advect(real delta_t) {
-  real total_energy = 0;
   /*
+  real total_energy = 0;
   for (auto &particle : particles) {
       Vector2 velocity = sample_velocity(particle.position);
       if (true) {
@@ -398,7 +398,8 @@ void EulerLiquid::prepare_for_pressure_solve() {
     }
     real lhs = 0;
     real neighbour_phi;
-    real vel_weight;
+    TC_ERROR("vel_weight may be used uninitialized");
+    real vel_weight = 0;
 
     neighbour_phi = liquid_levelset.sample(ind.get_pos() - Vector2(1, 0));
     if (neighbour_phi < 0 || boundary_cell[i][j] || boundary_cell[i - 1][j]) {

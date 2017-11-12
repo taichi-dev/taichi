@@ -111,7 +111,6 @@ class LTRenderer : public Renderer {
       IntersectionInfo info = sg->query(ray);
       if (!info.intersected)
         break;
-      Triangle &tri = scene->triangles[info.triangle_id];
       BSDF bsdf(scene, info);
       Vector3 in_dir = -ray.dir;
       Vector3 out_dir;

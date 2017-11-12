@@ -49,7 +49,7 @@ void Mesh::load_from_file(const std::string &file_path) {
       assert_info(fv == 3, "Only triangles supported...");
       int i = (int)vertices.size(), j = i + 1, k = i + 2;
       bool has_normal = false;
-      for (size_t v = 0; v < fv; v++) {
+      for (int v = 0; v < fv; v++) {
         // access to vertex
         tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
         float vx = attrib.vertices[3 * idx.vertex_index + 0];
@@ -80,7 +80,7 @@ void Mesh::load_from_file(const std::string &file_path) {
         if (length(generated_normal) > 1e-6f) {
           generated_normal = normalize(generated_normal);
         }
-        for (size_t v = 0; v < fv; v++) {
+        for (int v = 0; v < fv; v++) {
           normals.push_back(generated_normal);
         }
       }
@@ -123,7 +123,8 @@ IntersectionInfo Scene::get_intersection_info(int triangle_id, Ray &ray) {
   inter.uv = uv;
   inter.geometry_normal = inter.front ? t.normal : -t.normal;
   inter.normal = inter.front ? normal : -normal;
-  Mesh *mesh = triangle_id_to_mesh[t.id];
+  // TODO: why unused?
+  // Mesh *mesh = triangle_id_to_mesh[t.id];
   inter.triangle_id = triangle_id;
   inter.dist = ray.dist;
   // inter.material = mesh->material.get();

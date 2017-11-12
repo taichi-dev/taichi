@@ -713,8 +713,8 @@ class ArrayND<2, T> {
       return false;
     }
     initialize(res, T(0), storage_offset);
-    ret = fread(&data[0], sizeof(data[0]), size, f);
-    if (ret != size) {
+    ret = (int)std::fread(&data[0], sizeof(data[0]), size, f);
+    if (ret != (std::size_t)size) {
       return false;
     }
     fclose(f);

@@ -9,16 +9,20 @@
 
 #pragma once
 
+#if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable : 4244)
 #pragma warning(disable : 4267)
+#endif
 
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 #include <pybind11/stl.h>
 #include <vector>
 
+#if defined(_MSC_VER)
 #pragma warning(pop)
+#endif
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 #include <numpy/ndarrayobject.h>

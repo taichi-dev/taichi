@@ -236,7 +236,6 @@ class MMLTRenderer : public PSSMLTRenderer {
   }
 
   void estimate_normalizers() {
-    real sum = 0;
     int n_samples = width * height;
     std::vector<real> intensities(max_path_length + 1, 0.0_f);
     std::vector<long long> samples(max_path_length + 1, 0LL);

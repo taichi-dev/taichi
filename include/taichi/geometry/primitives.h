@@ -19,7 +19,7 @@ class Ray {
  public:
   Ray(){};
   Ray(Vector3 orig, Vector3 dir, real time = 0)
-      : orig(orig), dir(dir), dist(DIST_INFINITE), time(time) {
+      : orig(orig), dir(dir), time(time), dist(DIST_INFINITE) {
     triangle_id = -1;
   }
 

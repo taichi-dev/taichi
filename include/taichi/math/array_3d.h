@@ -602,7 +602,7 @@ class ArrayND<3, T> {
   }
 
   TC_FORCE_INLINE T &operator[](const Vector3i &pos) {
-    return (*this)[pos.x][pos.y][pos.z];
+    return data[(pos.x * res[1] + pos.y) * res[2] + pos.z];
   }
 
   TC_FORCE_INLINE const T &operator[](const Vector3i &pos) const {

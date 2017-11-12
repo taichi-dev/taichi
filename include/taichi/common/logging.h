@@ -30,6 +30,7 @@ extern std::shared_ptr<spdlog::logger> console;
 
 #define TC_LOG_SET_PATTERN(x) spdlog::set_pattern(x);
 
-#define TC_FLUSH_LOGGER {taichi::console->flush();};
+#define TC_FLUSH_LOGGER \
+  { taichi::console->flush(); };
 
 TC_NAMESPACE_END

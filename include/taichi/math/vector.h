@@ -299,7 +299,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
   TC_FORCE_INLINE VectorND(const std::vector<T_> &o) {
     if (o.size() != DIM) {
       TC_ERROR("Dimension mismatch: " + std::to_string(DIM) + " v.s. " +
-            std::to_string((int)o.size()));
+               std::to_string((int)o.size()));
     }
     for (int i = 0; i < DIM; i++)
       this->d[i] = T(o[i]);

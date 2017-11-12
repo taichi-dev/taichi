@@ -104,7 +104,7 @@ class DiffuseTransmissiveMaterial : public SurfaceMaterial {
         v = eps;
       }
       u /= v;
-      real xz = v, y = sqrt(1 - v * v);
+      real y = sqrt(1 - v * v);
       real phi = u * 2.0f * pi;
       real r = v / sqrt(in.x * in.x + in.y * in.y), p = in.x * r, q = in.y * r;
       real c = cos(phi), s = sin(phi);

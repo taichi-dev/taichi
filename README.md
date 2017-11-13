@@ -16,7 +16,10 @@ with Python.
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/paper-cut.png)
 
 ## Getting Started
-### Ubuntu 16.04
+
+### Installation
+
+#### Ubuntu 16.04
 Packages:
 https://github.com/yuanming-hu/config/wiki
 
@@ -32,13 +35,19 @@ sudo sh ../install_embree.sh
 
 Research Projects should be put into folder `projects`.
 
+#### Arch Linux
+```
+sudo pacman -S python3 python-pip make cmake htop tmux tree meld intel-tbb embree openssh gcc ffmpeg trash-cli mlocate tk
+```
+
 ### View results
 ```
 python3 python/examples/server/main.py 
 ```
 and then open your browser `localhost:1111`. Choose a simulation output, press `P` to play, `R` to change frame rate (faster/slower).
 
-Please see [Installation](https://github.com/yuanming-hu/taichi/wiki/Installation) and [examples](https://github.com/yuanming-hu/taichi/tree/master/python/examples).
+## Examples
+Please see [examples](https://github.com/yuanming-hu/taichi/tree/master/python/examples).
 
 ### Create your world with Taichi
 ```shell

@@ -39,7 +39,7 @@ class ProfilerRecords {
     }
 
     float64 get_averaged() const {
-      return total_time / (float64)std::max(num_samples, 1LL);
+      return total_time / (float64)std::max(num_samples, int64(1));
     }
 
     Node *get_child(const std::string &name) {

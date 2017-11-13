@@ -45,12 +45,8 @@ class logger;
   (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #define TC_EXPORT
 #endif
-#define TC_PRINT(x)                                           \
-  {                                                           \
-    std::printf("%s[%d]: %s = ", __FILENAME__, __LINE__, #x); \
-    taichi::print(x);                                         \
-  };
-#define TC_P(x) TC_PRINT(x)
+#define TC_P(x) \
+  { TC_DEBUG("{}", taichi::TextSerializer::serialize(#x, x)); }
 
 #ifndef _WIN64
 #define sscanf_s sscanf

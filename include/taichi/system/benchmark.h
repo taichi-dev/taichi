@@ -30,7 +30,7 @@ class Benchmark : public Unit {
  public:
   virtual void initialize(const Config &config) override {
     warm_up_iterations = config.get("warm_up_iterations", 16);
-    workload = config.get("workload", 1024LL);
+    workload = config.get("workload", int64(1024));
     returns_time = config.get("returns_time", false);
   }
 

@@ -21,7 +21,7 @@ TC_NAMESPACE_BEGIN
 
 #define TC_IO_DECL      \
   template <typename S> \
-  void io(S &serializer)
+  void io(S &serializer) const
 
 #define TC_IO_DEF(...)     \
   template <typename S>    \
@@ -29,8 +29,17 @@ TC_NAMESPACE_BEGIN
     TC_IO(__VA_ARGS__)     \
   }
 
+/*
 #define TC_IO(...) \
   { serializer(#__VA_ARGS__, __VA_ARGS__); }
+*/
+
+#define TC_IO(x)                                                            \
+  {                                                                         \
+    serializer(                                                             \
+        #x,                                                                 \
+        const_cast<typename std::decay<decltype(*this)>::type *>(this)->x); \
+  }
 
 #define TC_SERIALIZER_IS(T)                                                 \
   (std::is_same<typename std::remove_reference<decltype(serializer)>::type, \
@@ -60,7 +69,7 @@ template <typename... Args>
 using type_switch_t = typename type_switch<Args...>::type;
 
 class Serializer {
-public:
+ public:
   template <typename T, std::size_t n>
   using Array = T[n];
 
@@ -68,36 +77,36 @@ public:
   struct has_io {
     template <typename T_>
     static constexpr auto helper(T_ *)
-    -> std::is_same<decltype((std::declval<T_>().template io(
-        std::declval<Serializer &>()))),
-        void>;
+        -> std::is_same<decltype((std::declval<T_>().template io(
+                            std::declval<Serializer &>()))),
+                        void>;
 
     template <typename>
     static constexpr auto helper(...) -> std::false_type;
 
-  public:
-    using T__ = typename std::remove_reference<T>::type;
+   public:
+    using T__ = typename std::decay<T>::type;
     using type = decltype(helper<T__>(nullptr));
     static constexpr bool value = type::value;
   };
 
-public:
+ public:
   template <typename T>
   struct Item {
     using is_array =
-    typename std::is_array<typename std::remove_cv<T>::type>::type;
+        typename std::is_array<typename std::remove_cv<T>::type>::type;
     using is_lref = typename std::is_lvalue_reference<T>::type;
 
     static_assert(!std::is_pointer<T>(), "");
 
     using ValueType = type_switch_t<
         std::pair<is_lref, T>,  // Keep l-value references
-    std::pair<is_array,
-        typename std::remove_cv<T>::type>,  // Do nothing for arrays
-    std::pair<std::true_type, typename std::decay<T>::type>
-    // copy r-value references?
-    // is there a better way?
-    >;
+        std::pair<is_array,
+                  typename std::remove_cv<T>::type>,  // Do nothing for arrays
+        std::pair<std::true_type, typename std::decay<T>::type>
+        // copy r-value references?
+        // is there a better way?
+        >;
 
     Item(const std::string &key, ValueType &&value)
         : key(key), value(std::forward<ValueType>(value)) {
@@ -138,7 +147,7 @@ static_assert(
 
 template <bool writing>
 class BinarySerializer : public Serializer {
-public:
+ public:
   std::vector<uint8_t> data;
   uint8_t *c_data;
 
@@ -177,7 +186,6 @@ public:
       }
     }
     fclose(f);
-    TC_P(length);
     data.resize(length);
     c_data = reinterpret_cast<uint8_t *>(&data[0]);
     head = sizeof(std::size_t);
@@ -190,7 +198,7 @@ public:
     std::size_t n = 0;
     head = 0;
     if (preserved_ != 0) {
-      TC_P(preserved_);
+      TC_TRACE("perserved = {}", preserved_);
       // Preserved mode
       this->preserved = preserved_;
       assert(c_data != nullptr);
@@ -347,7 +355,7 @@ using BinaryOutputSerializer = BinarySerializer<true>;
 using BinaryInputSerializer = BinarySerializer<false>;
 
 class TextSerializer : public Serializer {
-public:
+ public:
   std::string data;
   void print() const {
     std::cout << data << std::endl;
@@ -359,7 +367,7 @@ public:
     fs.close();
   }
 
-private:
+ private:
   int indent;
   static constexpr int indent_width = 2;
   void add_line(const std::string &str) {
@@ -371,37 +379,56 @@ private:
     add_line(key + ": " + value);
   }
 
-public:
+ public:
   TextSerializer() {
     indent = 0;
   }
+
+  template <typename T>
+  static std::string serialize(const char *key, T &&t) {
+    TextSerializer ser;
+    ser(key, std::forward<T>(t));
+    return ser.data;
+  }
+
   void operator()(const char *key, std::string &val) {
     add_line(std::string(key) + ": " + val);
   }
 
+  template <typename T, std::size_t n>
+  using is_compact =
+      typename std::integral_constant<bool,
+                                      std::is_arithmetic<T>::value && (n < 7)>;
+
   // C-array
   template <typename T, std::size_t n>
-  void operator()(const char *key, Array<T, n> &val) {
-    if (std::is_arithmetic<T>::value && n < 7) {
-      std::stringstream ss;
-      ss << "[";
-      for (std::size_t i = 0; i < n; i++) {
-        ss << val[i];
-        if (i != n - 1) {
-          ss << ", ";
-        }
+  typename std::enable_if<is_compact<T, n>::value, void>::type operator()(
+      const char *key,
+      Array<T, n> &val) {
+    std::stringstream ss;
+    ss << "[";
+    for (std::size_t i = 0; i < n; i++) {
+      ss << val[i];
+      if (i != n - 1) {
+        ss << ", ";
       }
-      ss << "]";
-      add_line(key, ss.str());
-    } else {
-      add_line(key, "[");
-      indent++;
-      for (std::size_t i = 0; i < n; i++) {
-        this->operator()(("[" + std::to_string(i) + "]").c_str(), val[i]);
-      }
-      indent--;
-      add_line("]");
     }
+    ss << "]";
+    add_line(key, ss.str());
+  }
+
+  // C-array
+  template <typename T, std::size_t n>
+  typename std::enable_if<!is_compact<T, n>::value, void>::type operator()(
+      const char *key,
+      Array<T, n> &val) {
+    add_line(key, "[");
+    indent++;
+    for (std::size_t i = 0; i < n; i++) {
+      this->operator()(("[" + std::to_string(i) + "]").c_str(), val[i]);
+    }
+    indent--;
+    add_line("]");
   }
 
   // Elementary data types
@@ -409,6 +436,7 @@ public:
   typename std::enable_if<!has_io<T>::value, void>::type operator()(
       const char *key,
       T &&val) {
+    static_assert(!has_io<T>::value, "");
     std::stringstream ss;
     ss << std::boolalpha << val;
     add_line(key, ss.str());

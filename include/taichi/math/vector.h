@@ -696,6 +696,10 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
     ret[i] = 1;
     return ret;
   }
+
+  TC_IO_DECL {
+    TC_IO(d);
+  }
 };
 
 template <int DIM, typename T, InstSetExt ISE>
@@ -1063,6 +1067,10 @@ struct MatrixND {
 
   TC_FORCE_INLINE static MatrixND identidy() {
     return MatrixND(1.0_f);
+  }
+
+  TC_IO_DECL {
+    TC_IO(d);
   }
 };
 
@@ -1581,5 +1589,15 @@ inline MatrixND<3, T> cross_product_matrix(const VectorND<3, T> &a) {
                         VectorND<3, T>(-a[2], 0, a[0]),
                         VectorND<3, T>(a[1], -a[0], 0));
 };
+
+static_assert(Serializer::has_io<Matrix4>::value, "");
+static_assert(Serializer::has_io<const Matrix4>::value, "");
+static_assert(Serializer::has_io<const Matrix4 &>::value, "");
+static_assert(Serializer::has_io<Matrix4 &>::value, "");
+static_assert(
+    TextSerializer::has_io<
+        const taichi::MatrixND<4, double, (taichi::InstSetExt)3>>::value,
+    "");
+
 
 TC_NAMESPACE_END

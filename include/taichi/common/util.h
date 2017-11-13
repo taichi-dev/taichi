@@ -19,6 +19,11 @@
 #include <type_traits>
 #include <algorithm>
 #include <spdlog/fmt/fmt.h>
+#include <memory>
+
+namespace spdlog {
+class logger;
+}
 
 // Do not disable assert...
 #ifdef NDEBUG
@@ -285,5 +290,40 @@ std::string format_string(std::string templ, T t, Args... rest) {
   std::string first_templ = templ.substr(0, first_formatter_pos);
   return format_string(first_templ, t) + format_string(rest_templ, rest...);
 }
+
+// Logging
+
+#define SPD_AUGMENTED_LOG(X, ...)                                        \
+  taichi::logger.X(                                                      \
+      fmt::format("[{}:{}@{}] ", __FILENAME__, __FUNCTION__, __LINE__) + \
+      fmt::format(__VA_ARGS__))
+
+#define TC_TRACE(...) SPD_AUGMENTED_LOG(trace, __VA_ARGS__)
+#define TC_DEBUG(...) SPD_AUGMENTED_LOG(debug, __VA_ARGS__)
+#define TC_INFO(...) SPD_AUGMENTED_LOG(info, __VA_ARGS__)
+#define TC_WARN(...) SPD_AUGMENTED_LOG(warn, __VA_ARGS__)
+#define TC_ERR(...) SPD_AUGMENTED_LOG(error, __VA_ARGS__)
+#define TC_CRITICAL(...) SPD_AUGMENTED_LOG(critical, __VA_ARGS__)
+
+#define TC_LOG_SET_PATTERN(x) spdlog::set_pattern(x);
+
+#define TC_FLUSH_LOGGER \
+  { taichi::logger.flush(); };
+
+class Logger {
+  std::shared_ptr<spdlog::logger> console;
+
+public:
+  Logger();
+  void trace(const std::string &s);
+  void debug(const std::string &s);
+  void info(const std::string &s);
+  void warn(const std::string &s);
+  void error(const std::string &s);
+  void critical(const std::string &s);
+  void flush();
+};
+
+extern Logger logger;
 
 TC_NAMESPACE_END

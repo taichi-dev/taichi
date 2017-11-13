@@ -25,6 +25,7 @@ https://github.com/yuanming-hu/config/wiki
 
 Install `python3`.
 ```
+sudo apt-get install git build-essential g++ libtbb-dev alien dpkg-dev debhelper libpython2.7-dev  freeglut3-dev ffmpeg python3-tk python3-pip
 sudo python3 -m pip install numpy Pillow scipy pybind11 flask flask_cors
 ```
 Install `embree` and `tbb`:
@@ -33,11 +34,16 @@ cd build
 sudo sh ../install_embree.sh
 ```
 
-Research Projects should be put into folder `projects`.
-
 #### Arch Linux
 ```
-sudo pacman -S python3 python-pip make cmake htop tmux tree meld intel-tbb embree openssh gcc ffmpeg trash-cli mlocate tk
+sudo pacman -S python3 python-pip make cmake intel-tbb embree ffmpeg tk
+```
+
+####
+Append to your `~/.bashrc`:
+```
+export TAICHI_ROOT_DIR=/home/yuanming/repos/                  
+export PYTHONPATH=$PYTHONPATH:$TAICHI_ROOT_DIR/taichi/python
 ```
 
 ### View results
@@ -46,8 +52,10 @@ python3 python/examples/server/main.py
 ```
 and then open your browser `localhost:1111`. Choose a simulation output, press `P` to play, `R` to change frame rate (faster/slower).
 
+(Research Projects should be put into the folder `projects`, and will be automatically detected if the folder contains a `CMakeLists.txt`.)
+
 ## Examples
-Please see [examples](https://github.com/yuanming-hu/taichi/tree/master/python/examples).
+Please see [examples](https://github.com/yuanming-hu/taichi/tree/dev/python/examples).
 
 ### Create your world with Taichi
 ```shell
@@ -58,17 +66,17 @@ $ python
 >>> ...
 ```
 
-## Acknowledgement
+## Acknowledgements
 
 `Taichi`, like many other open-source projects, is based on other open-source projects:
- - stb_image, stb_image_write, stb_truetype
- - tinyobjloader
- - fmtlib
- - spdlog
- - catch2
- - JIXIE::ImplicitQRSVD
- - dcraw
- - Intel Embree
- - Intel TBB
+ - [stb_image, stb_image_write, stb_truetype](https://github.com/nothings/stb)
+ - [tinyobjloader](https://github.com/syoyo/tinyobjloader)
+ - [fmt](https://github.com/fmtlib/fmt)
+ - [spdlog](https://github.com/gabime/spdlog)
+ - [Catch2](https://github.com/catchorg/Catch2)
+ - [JIXIE::ImplicitQRSVD](http://www.math.ucla.edu/~fuchuyuan/svd/paper.pdf)
+ - [dcraw](https://www.cybercom.net/~dcoffin/dcraw/)
+ - [Intel Embree](https://embree.github.io/)
+ - [Intel TBB](https://www.threadingbuildingblocks.org/)
  
-Note that all of them (except Intel Embree and TBB) are head-only and bundled in `Taichi`, and the users do not have to install them.
+Note that all of them (except `Intel Embree` and `TBB`) are head-only and bundled in `Taichi`, and users do not have to install them.

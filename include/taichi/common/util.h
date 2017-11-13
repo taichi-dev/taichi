@@ -67,34 +67,24 @@ class logger;
 #else
 #define DEBUG_TRIGGER
 #endif
-#define assert(x)                                                       \
-  {                                                                     \
-    bool ret = static_cast<bool>(x);                                    \
-    if (!ret) {                                                         \
-      std::printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, \
-                  __LINE__, #x);                                        \
-      std::cout << std::flush;                                          \
-      taichi::print_traceback();                                        \
-      DEBUG_TRIGGER;                                                    \
-      taichi_raise_assertion_failure_in_python("Assertion failed.");    \
-    }                                                                   \
+
+#define assert(x) \
+  { assert_info(x, ""); }
+
+#define assert_info(x, info)                                         \
+  {                                                                  \
+    bool ___ret___ = static_cast<bool>(x);                           \
+    if (!___ret___) {                                                \
+      TC_ERROR(info);                                                \
+      taichi::print_traceback();                                     \
+      DEBUG_TRIGGER;                                                 \
+      taichi_raise_assertion_failure_in_python("Assertion failed."); \
+    }                                                                \
   }
-#define assert_info(x, info)                                            \
-  {                                                                     \
-    bool ___ret___ = static_cast<bool>(x);                              \
-    if (!___ret___) {                                                   \
-      std::printf("%s@(Ln %d): Assertion Failed. [%s]\n", __FILENAME__, \
-                  __LINE__, &((info)[0]));                              \
-      std::cout << std::flush;                                          \
-      taichi::print_traceback();                                        \
-      DEBUG_TRIGGER;                                                    \
-      taichi_raise_assertion_failure_in_python("Assertion failed.");    \
-    }                                                                   \
-  }
+
 #define TC_ASSERT assert
 #define TC_ASSERT_INFO assert_info
 // TODO: this should be part of logging
-#define TC_ERROR(info) assert_info(false, info)
 #define TC_NOT_IMPLEMENTED assert_info(false, "Not Implemented!");
 
 #define TC_NAMESPACE_BEGIN namespace taichi {
@@ -118,6 +108,10 @@ class logger;
 TC_EXPORT void taichi_raise_assertion_failure_in_python(const char *msg);
 
 TC_NAMESPACE_BEGIN
+
+//******************************************************************************
+//                                 Types
+//******************************************************************************
 
 using int8 = signed char;
 using uint8 = unsigned char;
@@ -191,6 +185,10 @@ inline void print(T t) {
   std::cout << t << std::endl;
 }
 
+//******************************************************************************
+//                                 Static If
+//******************************************************************************
+
 namespace STATIC_IF {
 // reference: https://github.com/wichtounet/cpp_utils
 
@@ -252,46 +250,9 @@ using STATIC_IF::static_if;
     }
 */
 
-template <typename T>
-std::string format_string(std::string templ, T t) {
-  constexpr int buf_length = 128;
-  char buf[buf_length];
-  TC_STATIC_IF((std::is_same<T, std::string>::value)) {
-    snprintf(buf, buf_length, templ.c_str(), t.c_str());
-  }
-  TC_STATIC_ELSE {
-    snprintf(buf, buf_length, templ.c_str(), t);
-  }
-  TC_STATIC_END_IF
-  return buf;
-}
-
-template <typename T, typename... Args>
-std::string format_string(std::string templ, T t, Args... rest) {
-  int first_formatter_pos = -1;
-  int counter = 0;
-  for (int i = 0; i < (int)templ.size() - 1; i++) {
-    if (templ[i] == '%') {
-      if (templ[i + 1] == '%') {
-        i++;
-      } else {
-        first_formatter_pos = i;
-        counter++;
-        if (counter == 2) {
-          break;
-        }
-      }
-    }
-  }
-  TC_ASSERT_INFO(first_formatter_pos != -1,
-                 "Insufficient placeholders in format string.");
-  std::string rest_templ =
-      templ.substr(first_formatter_pos, templ.size() - first_formatter_pos);
-  std::string first_templ = templ.substr(0, first_formatter_pos);
-  return format_string(first_templ, t) + format_string(rest_templ, rest...);
-}
-
-// Logging
+//******************************************************************************
+//                               Logging
+//******************************************************************************
 
 #define SPD_AUGMENTED_LOG(X, ...)                                        \
   taichi::logger.X(                                                      \
@@ -302,7 +263,7 @@ std::string format_string(std::string templ, T t, Args... rest) {
 #define TC_DEBUG(...) SPD_AUGMENTED_LOG(debug, __VA_ARGS__)
 #define TC_INFO(...) SPD_AUGMENTED_LOG(info, __VA_ARGS__)
 #define TC_WARN(...) SPD_AUGMENTED_LOG(warn, __VA_ARGS__)
-#define TC_ERR(...) SPD_AUGMENTED_LOG(error, __VA_ARGS__)
+#define TC_ERROR(...) SPD_AUGMENTED_LOG(error, __VA_ARGS__)
 #define TC_CRITICAL(...) SPD_AUGMENTED_LOG(critical, __VA_ARGS__)
 
 #define TC_LOG_SET_PATTERN(x) spdlog::set_pattern(x);
@@ -313,7 +274,7 @@ std::string format_string(std::string templ, T t, Args... rest) {
 class Logger {
   std::shared_ptr<spdlog::logger> console;
 
-public:
+ public:
   Logger();
   void trace(const std::string &s);
   void debug(const std::string &s);

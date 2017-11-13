@@ -15,7 +15,7 @@
 TC_NAMESPACE_BEGIN
 
 void signal_handler(int signo) {
-  TC_ERR("Received signal {} ({})", signo, strsignal(signo));
+  TC_ERROR("Received signal {} ({})", signo, strsignal(signo));
   TC_FLUSH_LOGGER;
   taichi::print_traceback();
   std::exit(-1);

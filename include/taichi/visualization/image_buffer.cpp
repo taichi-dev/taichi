@@ -97,7 +97,7 @@ void Array2D<T>::write_as_image(const std::string &filename) {
     write_result = stbi_write_jpg(filename.c_str(), this->res[0], this->res[1],
                                   comp, &data[0], 95);
   } else {
-    TC_ERR("Unknown suffix {}", suffix);
+    TC_ERROR("Unknown suffix {}", suffix);
   }
 
   TC_ASSERT_INFO((bool)write_result, "Can not write image file");

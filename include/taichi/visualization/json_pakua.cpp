@@ -86,8 +86,7 @@ class JsonPakua : public Pakua {
   }
 
   void finish() override {
-    std::ofstream f(
-        format_string("%s/%04d.json", frame_directory.c_str(), frame_count));
+    std::ofstream f(fmt::format("{}/{:04}.json", frame_directory, frame_count));
     f << geometry;
     frame_count += 1;
   }

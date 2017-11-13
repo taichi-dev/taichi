@@ -13,9 +13,12 @@
 
 TC_NAMESPACE_BEGIN
 
+static const Vector2i neighbour4_2d[]{
+    Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
+};
+
 // Maybe we are going to need Algebraic Multigrid in the future,
 // but let's have a GMG with different boundary conditions support first...
-// TODO: AMG, cache
 
 class MultigridPoissonSolver2D : public PoissonSolver2D {
  public:

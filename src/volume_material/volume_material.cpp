@@ -16,6 +16,10 @@
 
 TC_NAMESPACE_BEGIN
 
+static const Vector3i neighbour6_3d[]{Vector3i(0, 0, 1), Vector3i(0, 0, -1),
+                                      Vector3i(0, 1, 0), Vector3i(0, -1, 0),
+                                      Vector3i(1, 0, 0), Vector3i(-1, 0, 0)};
+
 TC_IMPLEMENTATION(VolumeMaterial, VolumeMaterial, "homogeneous");
 
 class VacuumVolumeMaterial : public VolumeMaterial {

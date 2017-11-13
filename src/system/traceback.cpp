@@ -27,7 +27,6 @@
 #include <algorithm>
 #include <memory>
 #include <mutex>
-#include <taichi/logging.h>
 
 TC_NAMESPACE_BEGIN
 

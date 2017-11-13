@@ -86,7 +86,7 @@ class logger;
 #define TC_ASSERT assert
 #define TC_ASSERT_INFO assert_info
 // TODO: this should be part of logging
-#define TC_NOT_IMPLEMENTED assert_info(false, "Not Implemented!");
+#define TC_NOT_IMPLEMENTED TC_ERROR("Not Implemented.");
 
 #define TC_NAMESPACE_BEGIN namespace taichi {
 #define TC_NAMESPACE_END }
@@ -288,3 +288,9 @@ class Logger {
 extern Logger logger;
 
 TC_NAMESPACE_END
+
+//******************************************************************************
+//                               Serialization
+//******************************************************************************
+
+#include "serialization.h"

@@ -23,7 +23,6 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 
 #include <stb_truetype.h>
-#include <taichi/common/logging.h>
 
 TC_NAMESPACE_BEGIN
 

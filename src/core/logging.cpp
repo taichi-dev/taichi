@@ -7,7 +7,7 @@
     the MIT license as written in the LICENSE file.
 *******************************************************************************/
 
-#include <taichi/common/logging.h>
+#include <taichi/util.h>
 #include <taichi/system/threading.h>
 #include <signal.h>
 #include <spdlog/spdlog.h>

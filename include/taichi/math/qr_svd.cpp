@@ -11,7 +11,6 @@
 #include <implicit_qr_svd/ImplicitQRSVD.h>
 #include <Eigen/Dense>
 #include "qr_svd.h"
-#include <taichi/common/logging.h>
 
 //#define TC_USE_EIGEN_SVD
 

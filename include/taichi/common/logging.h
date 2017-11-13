@@ -10,14 +10,16 @@
 #pragma once
 
 #include "util.h"
-#include <spdlog/spdlog.h>
+#include <memory>
+
+namespace spdlog {
+class logger;
+}
 
 TC_NAMESPACE_BEGIN
 
-extern std::shared_ptr<spdlog::logger> console;
-
 #define SPD_AUGMENTED_LOG(X, ...)                                        \
-  taichi::console->X(                                                    \
+  taichi::logger.X(                                                      \
       fmt::format("[{}:{}@{}] ", __FILENAME__, __FUNCTION__, __LINE__) + \
       fmt::format(__VA_ARGS__))
 
@@ -31,6 +33,22 @@ extern std::shared_ptr<spdlog::logger> console;
 #define TC_LOG_SET_PATTERN(x) spdlog::set_pattern(x);
 
 #define TC_FLUSH_LOGGER \
-  { taichi::console->flush(); };
+  { taichi::logger.flush(); };
+
+class Logger {
+  std::shared_ptr<spdlog::logger> console;
+
+ public:
+  Logger();
+  void trace(const std::string &s);
+  void debug(const std::string &s);
+  void info(const std::string &s);
+  void warn(const std::string &s);
+  void error(const std::string &s);
+  void critical(const std::string &s);
+  void flush();
+};
+
+extern Logger logger;
 
 TC_NAMESPACE_END

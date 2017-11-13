@@ -18,6 +18,7 @@
 #include <utility>
 #include <type_traits>
 #include <algorithm>
+#include <spdlog/fmt/fmt.h>
 
 // Do not disable assert...
 #ifdef NDEBUG

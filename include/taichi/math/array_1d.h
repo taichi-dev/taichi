@@ -128,12 +128,7 @@ T Array1D<T>::abs_max() {
 
 template <typename T>
 void Array1D<T>::print(std::string name) {
-  if (name.size())
-    printf("%s[%d]=\n", name.c_str(), size);
-  for (int i = 0; i < size; i++) {
-    taichi::print(this->operator[](i));
-  }
-  printf("\n");
+  TC_NOT_IMPLEMENTED
 }
 
 template <typename T>

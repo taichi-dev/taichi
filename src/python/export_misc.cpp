@@ -99,6 +99,7 @@ void export_misc(py::module &m) {
       .def("loaded", &UnitDLL::loaded);
 
   m.def("print_all_units", print_all_units);
+  m.def("set_core_state_python_imported", CoreState::set_python_imported);
   m.def("test", test);
   m.def("test_raise_error", test_raise_error);
   m.def("test_volumetric_io", test_volumetric_io);

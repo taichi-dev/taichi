@@ -68,15 +68,17 @@ class logger;
 #define assert(x) \
   { assert_info(x, ""); }
 
-#define assert_info(x, info)                                         \
-  {                                                                  \
-    bool ___ret___ = static_cast<bool>(x);                           \
-    if (!___ret___) {                                                \
-      TC_ERROR(info);                                                \
-      taichi::print_traceback();                                     \
-      DEBUG_TRIGGER;                                                 \
-      taichi_raise_assertion_failure_in_python("Assertion failed."); \
-    }                                                                \
+#define assert_info(x, info)                                           \
+  {                                                                    \
+    bool ___ret___ = static_cast<bool>(x);                             \
+    if (!___ret___) {                                                  \
+      TC_ERROR(info);                                                  \
+      taichi::print_traceback();                                       \
+      DEBUG_TRIGGER;                                                   \
+      if (taichi::CoreState::get_instance().python_imported) {         \
+        taichi_raise_assertion_failure_in_python("Assertion failed."); \
+      }                                                                \
+    }                                                                  \
   }
 
 #define TC_ASSERT assert
@@ -105,6 +107,23 @@ class logger;
 TC_EXPORT void taichi_raise_assertion_failure_in_python(const char *msg);
 
 TC_NAMESPACE_BEGIN
+
+//******************************************************************************
+//                                 System State
+//******************************************************************************
+
+
+class CoreState {
+public:
+  bool python_imported = false;
+
+  static CoreState &get_instance();
+
+  static void set_python_imported(bool val) {
+    get_instance().python_imported = val;
+  }
+};
+
 
 //******************************************************************************
 //                                 Types
@@ -175,11 +194,6 @@ float64 constexpr operator"" _fd(unsigned long long v) {
 }
 
 TC_EXPORT void print_traceback();
-
-template <typename T>
-inline void print(T t) {
-  std::cout << t << std::endl;
-}
 
 //******************************************************************************
 //                                 Static If
@@ -290,3 +304,4 @@ TC_NAMESPACE_END
 //******************************************************************************
 
 #include "serialization.h"
+

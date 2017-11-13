@@ -703,15 +703,6 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
 };
 
 template <int DIM, typename T, InstSetExt ISE>
-inline void print(const VectorND<DIM, T, ISE> &v) {
-  std::cout << std::endl;
-  for (int i = 0; i < DIM; i++) {
-    std::cout << v[i] << " ";
-  }
-  std::cout << std::endl;
-}
-
-template <int DIM, typename T, InstSetExt ISE>
 TC_FORCE_INLINE VectorND<DIM, T, ISE> operator
     *(T a, const VectorND<DIM, T, ISE> &v) {
   return VectorND<DIM, T, ISE>(a) * v;
@@ -1088,17 +1079,6 @@ template <int DIM, typename T, InstSetExt ISE>
 TC_FORCE_INLINE MatrixND<DIM, T, ISE> operator*(const MatrixND<DIM, T, ISE> &M,
                                                 const T a) {
   return a * M;
-}
-
-template <int DIM, typename T, InstSetExt ISE>
-inline void print(const MatrixND<DIM, T, ISE> &v) {
-  std::cout << std::endl;
-  for (int i = 0; i < DIM; i++) {
-    for (int j = 0; j < DIM; j++) {
-      std::cout << v[j][i] << " ";
-    }
-    std::cout << std::endl;
-  }
 }
 
 template <int DIM, typename T, InstSetExt ISE>

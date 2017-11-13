@@ -114,6 +114,7 @@ def at_startup():
           print(e)
           print("Warning: module", module, "loading failed!")
 
+  tc_core.set_core_state_python_imported(True)
   f.close()
 
 

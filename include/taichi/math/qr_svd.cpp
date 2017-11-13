@@ -7,9 +7,12 @@
     the MIT license as written in the LICENSE file.
 *******************************************************************************/
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmisleading-indentation"
 #include <implicit_qr_svd/Tools.h>
 #include <implicit_qr_svd/ImplicitQRSVD.h>
 #include <Eigen/Dense>
+#pragma GCC diagnostic pop
 #include "qr_svd.h"
 
 //#define TC_USE_EIGEN_SVD
@@ -78,6 +81,9 @@ void ensure_non_negative_singular_values(Matrix3 &u, Matrix3 &s) {
   }
 }
 
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
 // m can not be const here, otherwise JIXIE::singularValueDecomposition will
 // cause a error due to const_cast
 void imp_svd(Matrix2 m, Matrix2 &u, Matrix2 &s, Matrix2 &v) {
@@ -93,6 +99,7 @@ void imp_svd(Matrix2 m, Matrix2 &u, Matrix2 &s, Matrix2 &v) {
     s[1][1] = s_tmp[0];
   }
 }
+#pragma GCC diagnostic pop
 
 void imp_svd(Matrix3 m, Matrix3 &u, Matrix3 &s, Matrix3 &v) {
   Eigen::Matrix<real, 3, 3> M, U, V;

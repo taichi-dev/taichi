@@ -58,7 +58,7 @@ message("    numpy include: ${PYTHON_NUMPY_INCLUDE_DIR}")
 include_directories(${PYTHON_NUMPY_INCLUDE_DIR})
 
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
-        "import sys; import pybind11; sys.stdout.write(pybind11.get_include())"
+        "import sys; import pybind11; sys.stdout.write(pybind11.get_include(True))"
         OUTPUT_VARIABLE PYBIND11_INCLUDE_DIR
         RESULT_VARIABLE PYBIND11_IMPORT_RET)
 if (NOT PYBIND11_IMPORT_RET)

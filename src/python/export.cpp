@@ -16,11 +16,7 @@
 TC_NAMESPACE_BEGIN
 
 PYBIND11_MODULE(taichi_core, m) {
-  m.doc() = "taichi_core", R"pbdoc(
-    Taichi Core Library
-    -----------------------
-    .. currentmodule:: taichi_core
-    )pbdoc";
+  m.doc() = "taichi_core";
 
   for (auto &kv : InterfaceHolder::get_instance()->methods) {
     kv.second(&m);

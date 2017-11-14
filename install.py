@@ -45,6 +45,8 @@ if __name__ == '__main__':
   os.environ['TAICHI_ROOT_DIR'] = taichi_root_dir
   os.environ['PYTHONPATH'] = '{}/taichi/python/;'.format(taichi_root_dir) + os.environ['PYTHONPATH']
   
+  print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
+  
   sys.path.append(os.path.join(taichi_root_dir, 'bin'))
   sys.path.append(os.path.join(taichi_root_dir, 'python'))
   execute_command('python3 -c "import taichi as tc" && echo "Successfully Installed Taichi at ~/repos."')

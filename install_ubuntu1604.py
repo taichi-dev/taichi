@@ -7,7 +7,7 @@ def execute_command(line):
   
 if __name__ == '__main__':
   usename = pwd.getpwuid(os.getuid())[0]
-  execute_command('sudo apt-get install sudo apt-get install git python3 git build-essential cmake make g++ libtbb-dev alien dpkg-dev debhelper ffmpeg python3-tk python3-pip')
+  execute_command('sudo apt-get install python3 git build-essential cmake make g++ libtbb-dev alien dpkg-dev debhelper ffmpeg python3-tk python3-pip')
   execute_command('cd ~')
   execute_command('mkdir -p repos')
   if os.path.exists('taichi'):

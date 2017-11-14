@@ -1,50 +1,100 @@
-from __future__ import print_function
 import atexit
 import os
 import shutil
 import sys
 import ctypes
+import subprocess
+
+try:
+  import pip
+except Exception as e:
+  print(e)
+  print('  Please install pip3.')
+  print('    [Ubuntu] sudo apt-get install python-pip3')
+  print('    [Arch Linux] sudo pacman -S python-pip')
+  exit(-1)
+
+required_packages = ['numpy', ('Pillow', 'PIL'), 'scipy', 'pybind11', 'flask', 'flask_cors']
+
+def install_package(pkg):
+  pip.main(['install', '--user', pkg])
+
+def check_for_packages():
+  for pkg in required_packages:
+    if isinstance(pkg, tuple):
+      import_name = pkg[1]
+      pkg = pkg[0]
+    else:
+      import_name = pkg
+      
+    try:
+      exec('import {}'.format(import_name))
+    except ImportError as e:
+      print("Installing package: ", pkg)
+      install_package(pkg)
+    
+check_for_packages()
 
 from taichi.misc.settings import get_output_directory, get_bin_directory, get_root_directory
 from taichi.misc.util import get_os_name, get_unique_task_id
 
 CREATE_SAND_BOX_ON_WINDOWS = True
 
+def build_from_source():
+  tmp_cwd = os.getcwd()
+  bin_dir = get_bin_directory()
+  
+  try:
+    os.mkdir(bin_dir)
+  except:
+    pass
+  os.chdir(bin_dir)
+  
+  cmake_ret = os.system('cmake ..')
+  if cmake_ret != 0:
+    print('  Error: cmake failed.')
+    exit(-1)
+    
+  make_ret = os.system('make -j8')
+  if make_ret != 0:
+    print('  Error: make failed.')
+    exit(-1)
+  
+  os.chdir(tmp_cwd)
+  
+
 if get_os_name() == 'osx':
   bin_dir = get_bin_directory()
-  if os.path.exists(os.path.join(bin_dir, 'libtaichi_core.dylib')):
-    tmp_cwd = os.getcwd()
-    os.chdir(bin_dir)
-    shutil.copy('libtaichi_core.dylib', 'taichi_core.so')
-    sys.path.append(bin_dir)
-    import taichi_core as tc_core
-
-    os.chdir(tmp_cwd)
-  else:
-    assert False, "Library taichi_core doesn't exist."
+  if not os.path.exists(os.path.join(bin_dir, 'libtaichi_core.dylib')):
+    build_from_source()
+  tmp_cwd = os.getcwd()
+  os.chdir(bin_dir)
+  shutil.copy('libtaichi_core.dylib', 'taichi_core.so')
+  sys.path.append(bin_dir)
+  import taichi_core as tc_core
+  os.chdir(tmp_cwd)
 elif get_os_name() == 'linux':
   bin_dir = get_bin_directory()
   os.environ['LD_LIBRARY_PATH'] = '/usr/lib64/'
-  if os.path.exists(os.path.join(bin_dir, 'libtaichi_core.so')):
-    tmp_cwd = os.getcwd()
-    os.chdir(bin_dir)
-    sys.path.append(bin_dir)
-    # https://stackoverflow.com/questions/3855004/overwriting-library-file-causes-segmentation-fault
-    if os.path.exists('taichi_core.so'):
-      os.unlink('taichi_core.so')
-    shutil.copy('libtaichi_core.so', 'taichi_core.so')
-    try:
-      import taichi_core as tc_core
-    except Exception as e:
-      print()
-      print("\033[91m*Please make sure you are using python3 "
-            "instead of python2.\033[0m")
-      print()
-      print(e)
+  if not os.path.exists(os.path.join(bin_dir, 'libtaichi_core.so')):
+    build_from_source()
+  tmp_cwd = os.getcwd()
+  os.chdir(bin_dir)
+  sys.path.append(bin_dir)
+  # https://stackoverflow.com/questions/3855004/overwriting-library-file-causes-segmentation-fault
+  if os.path.exists('taichi_core.so'):
+    os.unlink('taichi_core.so')
+  shutil.copy('libtaichi_core.so', 'taichi_core.so')
+  try:
+    import taichi_core as tc_core
+  except Exception as e:
+    print()
+    print("\033[91m*Please make sure you are using python3 "
+          "instead of python2.\033[0m")
+    print()
+    print(e)
 
-    os.chdir(tmp_cwd)
-  else:
-    assert False, "Library taichi_core doesn't exist."
+  os.chdir(tmp_cwd)
 elif get_os_name() == 'win':
   bin_dir = get_bin_directory()
   dll_path = os.path.join(bin_dir, 'Release', 'taichi_core.dll')

@@ -44,10 +44,10 @@ if __name__ == '__main__':
   os.environ['TAICHI_NUM_THREADS'] = '8'
   os.environ['TAICHI_ROOT_DIR'] = taichi_root_dir
   os.environ['PYTHONPATH'] = '{}/taichi/python/:'.format(taichi_root_dir) + os.environ.get('PYTHONPATH', '')
+  os.environ['PATH'] = os.path.join(taichi_root_dir, 'taichi/bin') + ':' + os.environ.get('PATH', '')
   
   print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
   
-  sys.path.append(os.path.join(taichi_root_dir, 'taichi/bin'))
   if execute_command('echo $PYTHONPATH; python3 -c "import taichi as tc" && echo "Successfully Installed Taichi at ~/repos."') == 0:
     execute_command('ti')
     print('  Installation finished. Please execute')

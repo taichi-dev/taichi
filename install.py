@@ -21,6 +21,7 @@ if __name__ == '__main__':
     execute_command('wget https://bootstrap.pypa.io/get-pip.py')
     execute_command('python3 get-pip.py --user')
     execute_command('rm get-pip.py')
+  execute_command('sudo apt-get update')
   execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ python3-tk')
   execute_command('cd /home/{}/'.format(usename))
   execute_command('mkdir -p repos')
@@ -42,6 +43,7 @@ if __name__ == '__main__':
 
   os.environ['TAICHI_NUM_THREADS'] = '8'
   os.environ['TAICHI_ROOT_DIR'] = taichi_root_dir
+  os.environ['PYTHONPATH'] = '{}/taichi/python/;'.format(taichi_root_dir) + os.environ['PYTHONPATH']
   
   sys.path.append(os.path.join(taichi_root_dir, 'bin'))
   sys.path.append(os.path.join(taichi_root_dir, 'python'))

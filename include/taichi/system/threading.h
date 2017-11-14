@@ -20,13 +20,7 @@
 #else
 // Mac and Linux
 #include <unistd.h>
-#endif
-
-#ifdef TC_USE_OPENMP
-
-#include <omp.h>
-
-#define TC_MT_OPENMP
+#include <tbb/tbb.h>
 #endif
 
 TC_NAMESPACE_BEGIN
@@ -74,41 +68,8 @@ class ThreadedTaskManager {
  public:
   template <typename T>
   void static run(const T &target, int begin, int end, int num_threads) {
-#ifdef TC_MT_OPENMP
-    omp_set_num_threads(num_threads);
-#pragma omp parallel for schedule(static)
-    for (int i = begin; i < end; i++) {
-      target(i);
-    }
-#else
-    if (num_threads == 1) {
-      // Single-threading
-      for (int i = begin; i < end; i++) {
-        target(i);
-      }
-    } else {
-      // Multi-threading
-      std::vector<std::thread *> threads;
-      std::vector<int> end_points;
-      for (int i = 0; i < num_threads; i++) {
-        end_points.push_back(i * (end - begin) / num_threads + begin);
-      }
-      end_points.push_back(end);
-      for (int i = 0; i < num_threads; i++) {
-        auto func = [&target, i, &end_points]() {
-          int begin = end_points[i], end = end_points[i + 1];
-          for (int k = begin; k < end; k++) {
-            target(k);
-          }
-        };
-        threads.push_back(new std::thread(func));
-      }
-      for (int i = 0; i < num_threads; i++) {
-        threads[i]->join();
-        delete threads[i];
-      }
-    }
-#endif
+    tbb::task_arena limited_arena(num_threads);
+    limited_arena.execute([&]() { tbb::parallel_for(begin, end, target); });
   }
 
   template <typename T>

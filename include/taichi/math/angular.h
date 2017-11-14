@@ -12,7 +12,11 @@
 #include <taichi/util.h>
 #include <taichi/math/math.h>
 #include <taichi/math/vector.h>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#pragma GCC diagnostic ignored "-Wmisleading-indentation"
 #include <Eigen/Geometry>
+#pragma GCC diagnostic pop
 #include <type_traits>
 
 TC_NAMESPACE_BEGIN

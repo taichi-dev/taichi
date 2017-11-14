@@ -374,6 +374,10 @@ class ArrayND<3, T> {
     }
   }
 
+  void reset_zero() {
+    memset(&data[0], 0, sizeof(T) * data.size());
+  }
+
   bool same_dim(const Array3D<T> &arr) const {
     return res == arr.res;
   }

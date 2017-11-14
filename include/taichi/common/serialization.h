@@ -71,7 +71,7 @@ using type_switch_t = typename type_switch<Args...>::type;
 class Serializer {
  public:
   template <typename T, std::size_t n>
-  using Array = T[n];
+  using TArray = T[n];
 
   template <typename T>
   struct has_io {
@@ -252,14 +252,14 @@ class BinarySerializer : public Serializer {
 
   // C-array
   template <typename T, std::size_t n>
-  void operator()(const char *, Array<T, n> &val) {
+  void operator()(const char *, TArray<T, n> &val) {
     if (writing) {
       for (std::size_t i = 0; i < n; i++) {
         this->operator()("", val[i]);
       }
     } else {
       // TODO: why do I have to let it write to tmp, otherwise I get Sig Fault?
-      Array<T, n> tmp;
+      TArray<T, n> tmp;
       for (std::size_t i = 0; i < n; i++) {
         this->operator()("", tmp[i]);
       }
@@ -370,8 +370,14 @@ class TextSerializer : public Serializer {
  private:
   int indent;
   static constexpr int indent_width = 2;
+  bool first_line;
+
   void add_line(const std::string &str) {
-    data += "\n";
+    if (first_line) {
+      first_line = false;
+    } else {
+      data += "\n";
+    }
     data += std::string(indent_width * indent, ' ') + str;
   }
 
@@ -382,6 +388,7 @@ class TextSerializer : public Serializer {
  public:
   TextSerializer() {
     indent = 0;
+    first_line = false;
   }
 
   template <typename T>
@@ -404,7 +411,7 @@ class TextSerializer : public Serializer {
   template <typename T, std::size_t n>
   typename std::enable_if<is_compact<T, n>::value, void>::type operator()(
       const char *key,
-      Array<T, n> &val) {
+      TArray<T, n> &val) {
     std::stringstream ss;
     ss << "[";
     for (std::size_t i = 0; i < n; i++) {
@@ -421,7 +428,7 @@ class TextSerializer : public Serializer {
   template <typename T, std::size_t n>
   typename std::enable_if<!is_compact<T, n>::value, void>::type operator()(
       const char *key,
-      Array<T, n> &val) {
+      TArray<T, n> &val) {
     add_line(key, "[");
     indent++;
     for (std::size_t i = 0; i < n; i++) {

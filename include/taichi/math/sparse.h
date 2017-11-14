@@ -61,6 +61,11 @@ class SparseMatrix {
 
     return y;
   }
+
+  TC_IO_DECL {
+    TC_IO(n);
+    TC_IO(entries);
+  }
 };
 
 TC_NAMESPACE_END

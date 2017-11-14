@@ -58,16 +58,14 @@ message("    numpy include: ${PYTHON_NUMPY_INCLUDE_DIR}")
 include_directories(${PYTHON_NUMPY_INCLUDE_DIR})
 
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
-        "import sys; import pybind11; sys.stdout.write(pybind11.get_include(True))"
+        "import sys; import pybind11; sys.stdout.write(pybind11.get_include() + ';' + pybind11.get_include(True))"
         OUTPUT_VARIABLE PYBIND11_INCLUDE_DIR
         RESULT_VARIABLE PYBIND11_IMPORT_RET)
 if (NOT PYBIND11_IMPORT_RET)
     # returns zero if success
-    message("    pybind11 include: " ${PYBIND11_INCLUDE_DIR})
+    message("    pybind11 include: ${PYBIND11_INCLUDE_DIR}")
 else ()
     message(FATAL_ERROR "Can not import pybind11. Please install. ([sudo] pip install pybind11)")
 endif ()
 
 include_directories(${PYBIND11_INCLUDE_DIR})
-
-

@@ -68,6 +68,11 @@ class Array1D {
   int get_dim() const {
     return 1;
   }
+
+  TC_IO_DECL {
+    TC_IO(size);
+    TC_IO(data);
+  }
 };
 
 template <typename T>

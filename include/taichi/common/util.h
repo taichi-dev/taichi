@@ -112,9 +112,8 @@ TC_NAMESPACE_BEGIN
 //                                 System State
 //******************************************************************************
 
-
 class CoreState {
-public:
+ public:
   bool python_imported = false;
 
   static CoreState &get_instance();
@@ -123,7 +122,6 @@ public:
     get_instance().python_imported = val;
   }
 };
-
 
 //******************************************************************************
 //                                 Types
@@ -264,9 +262,9 @@ using STATIC_IF::static_if;
 //                               Logging
 //******************************************************************************
 
-#define SPD_AUGMENTED_LOG(X, ...)                                        \
-  taichi::logger.X(                                                      \
-      fmt::format("[{}:{}@{}] ", __FILENAME__, __FUNCTION__, __LINE__) + \
+#define SPD_AUGMENTED_LOG(X, ...)                                             \
+  taichi::logger.X(                                                           \
+      fmt::format("[{}:{}@{}]", __FILENAME__, __FUNCTION__, __LINE__) + \
       fmt::format(__VA_ARGS__))
 
 #define TC_TRACE(...) SPD_AUGMENTED_LOG(trace, __VA_ARGS__)
@@ -304,4 +302,3 @@ TC_NAMESPACE_END
 //******************************************************************************
 
 #include "serialization.h"
-

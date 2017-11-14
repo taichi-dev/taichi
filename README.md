@@ -23,9 +23,8 @@ with Python.
 Packages:
 https://github.com/yuanming-hu/config/wiki
 
-Install `python3`.
 ```
-sudo apt-get install git build-essential g++ libtbb-dev alien dpkg-dev debhelper libpython2.7-dev  freeglut3-dev ffmpeg python3-tk python3-pip
+sudo apt-get install python3 git build-essential g++ libtbb-dev alien dpkg-dev debhelper ffmpeg python3-tk python3-pip
 sudo python3 -m pip install numpy Pillow scipy pybind11 flask flask_cors
 ```
 Install `embree` and `tbb`:

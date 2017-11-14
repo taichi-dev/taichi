@@ -25,13 +25,15 @@ FIND_LIBRARY(EMBREE_LIBRARY NAMES embree PATHS
         /usr/lib64
         /usr/local/lib
         /opt/local/lib
-        external/lib)
+        external/lib
+        )
 
 FIND_LIBRARY(EMBREE_LIBRARY NAMES embree.2 PATHS
         /usr/lib
         /usr/lib64
         /usr/local/lib
-        /opt/local/lib)
+        /opt/local/lib
+        external/lib)
 
 FIND_LIBRARY(EMBREE_LIBRARY_MIC NAMES embree_xeonphi PATHS
         /usr/lib

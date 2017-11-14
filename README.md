@@ -15,17 +15,12 @@ with Python.
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/microfacet.gif)
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/paper-cut.png)
 
-## Getting Started
-
-### Installation
-
-#### Ubuntu 16.04
-Packages:
-https://github.com/yuanming-hu/config/wiki
+# Installation
+## Step 1: Install Prerequists
+### On Ubuntu 16.04
 
 ```
-sudo apt-get install python3 git build-essential g++ libtbb-dev alien dpkg-dev debhelper ffmpeg python3-tk python3-pip
-sudo python3 -m pip install numpy Pillow scipy pybind11 flask flask_cors
+sudo apt-get install python3 git build-essential cmake make g++ libtbb-dev alien dpkg-dev debhelper ffmpeg python3-tk python3-pip
 ```
 Install `embree` and `tbb`:
 ```
@@ -33,37 +28,38 @@ cd build
 sudo sh ../install_embree.sh
 ```
 
-#### Arch Linux
+### On Arch Linux
 ```
 sudo pacman -S python3 python-pip make cmake intel-tbb embree ffmpeg tk
 ```
 
-####
+## Step 2:
 Append to your `~/.bashrc`:
 ```
 export TAICHI_ROOT_DIR=/home/yuanming/repos/                  
 export PYTHONPATH=$PYTHONPATH:$TAICHI_ROOT_DIR/taichi/python
 ```
 
-### View results
-```
-python3 python/examples/server/main.py 
-```
-and then open your browser `localhost:1111`. Choose a simulation output, press `P` to play, `R` to change frame rate (faster/slower).
-
-(Research Projects should be put into the folder `projects`, and will be automatically detected if the folder contains a `CMakeLists.txt`.)
-
-## Examples
-Please see [examples](https://github.com/yuanming-hu/taichi/tree/dev/python/examples).
-
-### Create your world with Taichi
+## Step 3:
+Start `taichi`: (this will automatically install required python packages and build `taichi`.)
 ```shell
-$ python
+$ python3
 ```
-```python
+```python3
 >>> import taichi as tc
 >>> ...
 ```
+
+(Research Projects should be put into the folder `projects`, and will be automatically detected if the folder contains a `CMakeLists.txt`.)
+
+# View results
+```
+python3 python/examples/server/main.py 
+```
+Then open page http://localhost:1111. Choose a simulation output, press `P` to play, `R` to change frame rate (faster/slower).
+
+# Examples
+Please see [examples](https://github.com/yuanming-hu/taichi/tree/dev/python/examples).
 
 ## Acknowledgements
 
@@ -78,4 +74,4 @@ $ python
  - [Intel Embree](https://embree.github.io/)
  - [Intel TBB](https://www.threadingbuildingblocks.org/)
  
-Note that all of them (except `Intel Embree` and `TBB`) are head-only and bundled in `Taichi`, and users do not have to install them.
+Note that all of them are bundled in `taichi` (in source (header)/binary forms), and users do not have to manually install them.

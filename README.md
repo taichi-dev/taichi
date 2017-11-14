@@ -16,7 +16,7 @@ with Python.
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/paper-cut.png)
 
 # Installation
-## Step 1: Install Prerequists
+## Step 1: Install Prerequisites
 ### On Ubuntu 16.04
 
 ```

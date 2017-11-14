@@ -8,6 +8,12 @@ def execute_command(line):
   
 if __name__ == '__main__':
   usename = pwd.getpwuid(os.getuid())[0]
+  
+  if len(sys.argv) > 1:
+    build_type = sys.argv[1]
+    print('Build type: ', build_type)
+    assert build_type in ['default', 'ci']
+    
   try:
     import pip
   except Exception as e:

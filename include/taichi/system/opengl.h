@@ -9,6 +9,8 @@
 
 #pragma once
 
+static_assert(false, "OpenGL headers are deprecated. We do not rely on OpenGL");
+
 #include <cmath>
 #include <iostream>
 #include <cstdio>

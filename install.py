@@ -15,7 +15,7 @@ if __name__ == '__main__':
     execute_command('wget https://bootstrap.pypa.io/get-pip.py')
     execute_command('python3 get-pip.py --user')
     execute_command('rm get-pip.py')
-  execute_command('sudo apt-get install -y python3 git build-essential cmake make g++ python3-tk')
+  execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ python3-tk')
   execute_command('cd /home/{}/'.format(usename))
   execute_command('mkdir -p repos')
   os.chdir('repos')

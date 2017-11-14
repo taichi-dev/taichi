@@ -25,7 +25,7 @@ FIND_LIBRARY(EMBREE_LIBRARY NAMES embree PATHS
         /usr/lib64
         /usr/local/lib
         /opt/local/lib
-        external/lib
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/lib
         )
 
 FIND_LIBRARY(EMBREE_LIBRARY NAMES embree.2 PATHS
@@ -33,7 +33,7 @@ FIND_LIBRARY(EMBREE_LIBRARY NAMES embree.2 PATHS
         /usr/lib64
         /usr/local/lib
         /opt/local/lib
-        external/lib)
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
 
 FIND_LIBRARY(EMBREE_LIBRARY_MIC NAMES embree_xeonphi PATHS
         /usr/lib

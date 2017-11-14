@@ -16,45 +16,21 @@ with Python.
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/paper-cut.png)
 
 # Installation
-## Step 1: Install Prerequisites
-### On Ubuntu 16.04
+(Research/private projects should be put into the folder `projects`, and will be automatically detected if the folder contains a `CMakeLists.txt`.)
 
+## On Ubuntu 16.04
 ```
-sudo apt-get install python3 git build-essential cmake make g++ libtbb-dev alien dpkg-dev debhelper ffmpeg python3-tk python3-pip
-```
-Install `embree` and `tbb`:
-```
-cd build
-sudo sh ../install_embree.sh
+wget https://raw.githubusercontent.com/yuanming-hu/taichi/dev/install.py && python3 install.py
 ```
 
-### On Arch Linux
+## On Arch Linux
 ```
 sudo pacman -S python3 python-pip make cmake intel-tbb embree ffmpeg tk
 ```
 
-## Step 2:
-Append to your `~/.bashrc`:
-```
-export TAICHI_ROOT_DIR=/home/yuanming/repos/                  
-export PYTHONPATH=$PYTHONPATH:$TAICHI_ROOT_DIR/taichi/python
-```
-
-## Step 3:
-Start `taichi`: (this will automatically install required python packages and build `taichi`.)
-```shell
-$ python3
-```
-```python3
->>> import taichi as tc
->>> ...
-```
-
-(Research Projects should be put into the folder `projects`, and will be automatically detected if the folder contains a `CMakeLists.txt`.)
-
 # View results
 ```
-python3 python/examples/server/main.py 
+python3 $TAICHI_ROOT_DIR/taichi/python/examples/server/main.py 
 ```
 Then open page http://localhost:1111. Choose a simulation output, press `P` to play, `R` to change frame rate (faster/slower).
 

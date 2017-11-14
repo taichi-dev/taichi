@@ -35,6 +35,8 @@ FIND_LIBRARY(EMBREE_LIBRARY NAMES embree.2 PATHS
         /opt/local/lib
         ${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
 
+message("CMake lib dir: ${CMAKE_CURRENT_SOURCE_DIR}/external/lib")
+
 FIND_LIBRARY(EMBREE_LIBRARY_MIC NAMES embree_xeonphi PATHS
         /usr/lib
         /usr/lib64

@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
   os.environ['TAICHI_NUM_THREADS'] = '8'
   os.environ['TAICHI_ROOT_DIR'] = taichi_root_dir
-  os.environ['PYTHONPATH'] = '{}/taichi/python/:'.format(taichi_root_dir) + os.environ['PYTHONPATH']
+  os.environ['PYTHONPATH'] = '{}/taichi/python/:'.format(taichi_root_dir) + os.environ.get('PYTHONPATH', '')
   
   print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
   

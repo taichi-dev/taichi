@@ -46,3 +46,4 @@ cmake-build-release
 research
 projects
 modules.txt
+/external/lib

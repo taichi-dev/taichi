@@ -29,7 +29,7 @@ if __name__ == '__main__':
   
   # Make sure there is no existing Taichi ENV
   taichi_root_dir = "/home/{}/repos/".format(usename)
-  execute_command('echo "export TAICHI_NUM_THREADS=4" >> ~/.bashrc')
+  execute_command('echo "export TAICHI_NUM_THREADS=8" >> ~/.bashrc')
   execute_command('echo "export TAICHI_ROOT_DIR={}" >> ~/.bashrc'.format(taichi_root_dir))
   execute_command('echo "export PYTHONPATH=\$TAICHI_ROOT_DIR/taichi/python/:\$PYTHONPATH" >> ~/.bashrc')
   execute_command('echo "export PATH=\$TAICHI_ROOT_DIR/taichi/bin/:\$PATH" >> ~/.bashrc')

@@ -1,20 +1,11 @@
 sudo: required
+
 language: generic
+services:
+  - docker
 
-compiler:
-  - g++
-
-matrix:
-  include:
-    - os: linux
-      env: COMPILER_NAME=gcc CXX=g++-6 CC=gcc-6 TC_CI=1
-      addons:
-        apt:
-          packages:
-            - gcc-6
-            - g++-6
-          sources: &sources
-            - ubuntu-toolchain-r-test
+before_install:
+  - docker pull ubuntu:16.04
 
 script:
-  - python3 install.py
+  - docker build .

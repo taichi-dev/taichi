@@ -11,10 +11,13 @@ if __name__ == '__main__':
   if len(sys.argv) > 1:
     build_type = sys.argv[1]
     print('Build type: ', build_type)
-    assert build_type in ['default', 'ci']
+  else:
+    build_type = 'default'
 
   if os.environ.get('TC_CI', '') == '1':
     build_type = 'ci'
+
+  assert build_type in ['default', 'ci']
 
   if build_type == 'ci':
     username = pwd.getpwuid(os.getuid())[0]

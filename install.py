@@ -14,12 +14,10 @@ if __name__ == '__main__':
   else:
     build_type = 'default'
 
-  if os.environ.get('TC_CI', '') == '1':
-    build_type = 'ci'
-
   assert build_type in ['default', 'ci']
 
   if build_type == 'ci':
+    os.environ['TC_CI'] = '1'
     username = pwd.getpwuid(os.getuid())[0]
   else:
     username = 'travis'

@@ -51,6 +51,7 @@ def build_from_source():
   os.chdir(bin_dir)
 
   if os.environ.get('TC_CI', '') == '1':
+    print('  Note: building for CI. SIMD disabled.')
     cmake_ret = os.system('cmake .. -DTC_DISABLE_SIMD:BOOL=1')
   else:
     cmake_ret = os.system('cmake ..')

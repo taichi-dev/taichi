@@ -7,8 +7,7 @@ def execute_command(line):
   return os.system(line)
   
 if __name__ == '__main__':
-  usename = pwd.getpwuid(os.getuid())[0]
-  
+
   if len(sys.argv) > 1:
     build_type = sys.argv[1]
     print('Build type: ', build_type)
@@ -16,6 +15,11 @@ if __name__ == '__main__':
 
   if os.environ.get('TC_CI', '') == '1':
     build_type = 'ci'
+
+  if build_type == 'ci':
+    username = pwd.getpwuid(os.getuid())[0]
+  else:
+    username = 'travis'
 
   try:
     import pip
@@ -25,8 +29,8 @@ if __name__ == '__main__':
     execute_command('python3 get-pip.py --user')
     execute_command('rm get-pip.py')
   execute_command('sudo apt-get update')
-  execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ python3-tk')
-  os.chdir('/home/{}/'.format(usename))
+  execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ python3-tk ffmpeg')
+  os.chdir('/home/{}/'.format(username))
   execute_command('mkdir -p repos')
   os.chdir('repos')
   if os.path.exists('taichi'):
@@ -38,7 +42,7 @@ if __name__ == '__main__':
   execute_command('git clone https://github.com/yuanming-hu/taichi_runtime external/lib')
   
   # Make sure there is no existing Taichi ENV
-  taichi_root_dir = "/home/{}/repos/".format(usename)
+  taichi_root_dir = "/home/{}/repos/".format(username)
   execute_command('echo "export TAICHI_NUM_THREADS=8" >> ~/.bashrc')
   execute_command('echo "export TAICHI_ROOT_DIR={}" >> ~/.bashrc'.format(taichi_root_dir))
   execute_command('echo "export PYTHONPATH=\$TAICHI_ROOT_DIR/taichi/python/:\$PYTHONPATH" >> ~/.bashrc')

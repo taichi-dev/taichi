@@ -1,5 +1,6 @@
 FROM ubuntu:16.04
 
-RUN add-apt-repository -y ppa:ubuntu-toolchain-r/test
+RUN mkdir -p /home/travis/
 RUN apt-get update
+RUN apt-get install -y python3
 RUN python3 install.py

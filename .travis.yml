@@ -5,9 +5,6 @@ compiler:
 
 matrix:
   include:
-    - os: osx
-      env: COMPILER=clang++-3.8 CXX=clang++-3.8
-
     - os: linux
       env: COMPILER_NAME=gcc CXX=g++-6 CC=gcc-6
       addons:
@@ -17,10 +14,6 @@ matrix:
             - g++-6
           sources: &sources
             - ubuntu-toolchain-r-test
-
-before_script:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sh ../ci_scripts/linux_normal.sh ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sh ../ci_scripts/osx_normal.sh ; fi
 
 script:
   - python3 install.py

@@ -13,7 +13,10 @@ if __name__ == '__main__':
     build_type = sys.argv[1]
     print('Build type: ', build_type)
     assert build_type in ['default', 'ci']
-    
+
+  if os.environ.get('TC_CI', '') == '1':
+    build_type = 'ci'
+
   try:
     import pip
   except Exception as e:
@@ -45,7 +48,7 @@ if __name__ == '__main__':
   os.environ['TAICHI_ROOT_DIR'] = taichi_root_dir
   os.environ['PYTHONPATH'] = '{}/taichi/python/:'.format(taichi_root_dir) + os.environ.get('PYTHONPATH', '')
   os.environ['PATH'] = os.path.join(taichi_root_dir, 'taichi/bin') + ':' + os.environ.get('PATH', '')
-  
+
   print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
   
   if execute_command('echo $PYTHONPATH; PYTHONPATH={} python3 -c "import taichi as tc"'.format(os.environ['PYTHONPATH'])) == 0:

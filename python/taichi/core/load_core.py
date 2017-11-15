@@ -49,8 +49,11 @@ def build_from_source():
   except:
     pass
   os.chdir(bin_dir)
-  
-  cmake_ret = os.system('cmake ..')
+
+  if os.environ.get('TC_CI', '') == '1':
+    cmake_ret = os.system('cmake .. -DTC_DISABLE_SIMD:BOOL=1')
+  else:
+    cmake_ret = os.system('cmake ..')
   if cmake_ret != 0:
     print('  Error: cmake failed.')
     exit(-1)

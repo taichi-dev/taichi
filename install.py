@@ -44,7 +44,7 @@ if __name__ == '__main__':
   execute_command('git checkout dev')
   execute_command('git clone https://github.com/yuanming-hu/taichi_runtime external/lib')
   
-  # Make sure there is no existing Taichi ENV
+  #TODO: Make sure there is no existing Taichi ENV
   taichi_root_dir = "/home/{}/repos/".format(username)
   execute_command('echo "export TAICHI_NUM_THREADS=8" >> ~/.bashrc')
   execute_command('echo "export TAICHI_ROOT_DIR={}" >> ~/.bashrc'.format(taichi_root_dir))
@@ -55,11 +55,15 @@ if __name__ == '__main__':
   os.environ['TAICHI_ROOT_DIR'] = taichi_root_dir
   os.environ['PYTHONPATH'] = '{}/taichi/python/:'.format(taichi_root_dir) + os.environ.get('PYTHONPATH', '')
   os.environ['PATH'] = os.path.join(taichi_root_dir, 'taichi/bin') + ':' + os.environ.get('PATH', '')
+  os.environ['PYTHONIOENCODING'] = 'utf-8'
 
   print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
   
   if execute_command('echo $PYTHONPATH; python3 -c "import taichi as tc"') == 0:
-    execute_command('ti')
+    if execute_command('ti') != 0:
+      print('  Warning: shortcut "ti" does not work.')
+    if execute_command('taichi') != 0:
+      print('  Warning: shortcut "taichi" does not work.')
     print('  Successfully Installed Taichi at ~/repos/taichi.')
     print('  Please execute')
     print('    source ~/.bashrc')

@@ -193,75 +193,17 @@ float64 constexpr operator"" _fd(unsigned long long v) {
 
 TC_EXPORT void print_traceback();
 
+TC_NAMESPACE_END
 //******************************************************************************
-//                                 Static If
+//                           Meta-programming
 //******************************************************************************
 
-namespace STATIC_IF {
-// reference: https://github.com/wichtounet/cpp_utils
-
-struct identity {
-  template <typename T>
-  T operator()(T &&x) const {
-    return std::forward<T>(x);
-  }
-};
-
-template <bool Cond>
-struct statement {
-  template <typename F>
-  void then(const F &f) {
-    f(identity());
-  }
-
-  template <typename F>
-  void else_(const F &) {
-  }
-};
-
-template <>
-struct statement<false> {
-  template <typename F>
-  void then(const F &) {
-  }
-
-  template <typename F>
-  void else_(const F &f) {
-    f(identity());
-  }
-};
-
-template <bool Cond, typename F>
-inline statement<Cond> static_if(F const &f) {
-  statement<Cond> if_;
-  if_.then(f);
-  return if_;
-}
-}
-
-using STATIC_IF::static_if;
-
-#define TC_STATIC_IF(x) taichi::static_if<(x)>([&](const auto& _____) -> void {
-#define TC_STATIC_ELSE \
-  }).else_([&](const auto &_____) -> void {
-#define TC_STATIC_END_IF \
-  });
-
-// After we switch to C++17, we should use
-// (Note the the behaviour of 'return' is still different.)
-
-/*
-#define TC_STATIC_IF(x) if constexpr(x) {
-#define TC_STATIC_ELSE \
-    } else {
-#define TC_STATIC_END_IF \
-    }
-*/
+#include "meta.h"
 
 //******************************************************************************
 //                               Logging
 //******************************************************************************
-
+TC_NAMESPACE_BEGIN
 #define SPD_AUGMENTED_LOG(X, ...)                                             \
   taichi::logger.X(                                                           \
       fmt::format("[{}:{}@{}]", __FILENAME__, __FUNCTION__, __LINE__) + \

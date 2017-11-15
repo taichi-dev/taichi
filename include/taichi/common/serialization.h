@@ -29,6 +29,7 @@ TC_NAMESPACE_BEGIN
     TC_IO(__VA_ARGS__)     \
   }
 
+// TODO: restore this
 /*
 #define TC_IO(...) \
   { serializer(#__VA_ARGS__, __VA_ARGS__); }
@@ -49,22 +50,6 @@ static_assert(
     sizeof(std::size_t) == sizeof(uint64_t),
     "sizeof(std::size_t) should be 8. Try compiling with 64bit mode.");
 
-template <typename option, typename... Args>
-struct type_switch {
-  using type = typename std::conditional<
-      std::is_same<typename option::first_type, std::true_type>::value,
-      typename option::second_type,
-      typename type_switch<Args...>::type>::type;
-};
-
-template <typename option>
-struct type_switch<option> {
-  static_assert(
-      std::is_same<typename option::first_type, std::true_type>::value,
-      "None of the options in type_switch works.");
-  using type = typename option::second_type;
-};
-
 template <typename... Args>
 using type_switch_t = typename type_switch<Args...>::type;
 
@@ -72,6 +57,8 @@ class Serializer {
  public:
   template <typename T, std::size_t n>
   using TArray = T[n];
+  template <typename T, std::size_t n>
+  using StdTArray = std::array<T, n>;
 
   template <typename T>
   struct has_io {
@@ -429,6 +416,37 @@ class TextSerializer : public Serializer {
   typename std::enable_if<!is_compact<T, n>::value, void>::type operator()(
       const char *key,
       TArray<T, n> &val) {
+    add_line(key, "[");
+    indent++;
+    for (std::size_t i = 0; i < n; i++) {
+      this->operator()(("[" + std::to_string(i) + "]").c_str(), val[i]);
+    }
+    indent--;
+    add_line("]");
+  }
+
+  // std::array
+  template <typename T, std::size_t n>
+  typename std::enable_if<is_compact<T, n>::value, void>::type operator()(
+      const char *key,
+      StdTArray<T, n> &val) {
+    std::stringstream ss;
+    ss << "[";
+    for (std::size_t i = 0; i < n; i++) {
+      ss << val[i];
+      if (i != n - 1) {
+        ss << ", ";
+      }
+    }
+    ss << "]";
+    add_line(key, ss.str());
+  }
+
+  // std::array
+  template <typename T, std::size_t n>
+  typename std::enable_if<!is_compact<T, n>::value, void>::type operator()(
+      const char *key,
+      StdTArray<T, n> &val) {
     add_line(key, "[");
     indent++;
     for (std::size_t i = 0; i < n; i++) {

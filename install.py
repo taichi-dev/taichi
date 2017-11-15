@@ -7,12 +7,13 @@ def execute_command(line):
   return os.system(line)
   
 if __name__ == '__main__':
-
   if len(sys.argv) > 1:
     build_type = sys.argv[1]
     print('Build type: ', build_type)
   else:
     build_type = 'default'
+    
+  print('Build type = {}'.format(build_type))
 
   assert build_type in ['default', 'ci']
 

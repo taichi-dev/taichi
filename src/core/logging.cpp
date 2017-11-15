@@ -29,6 +29,7 @@ void signal_handler(int signo) {
 
 Logger::Logger() {
   console = spdlog::stdout_color_mt("console");
+  TC_LOG_SET_PATTERN("[%L %D %X.%e] %v")
 
   TC_REGISTER_SIGNAL_HANDLER(SIGSEGV, signal_handler);
   TC_REGISTER_SIGNAL_HANDLER(SIGABRT, signal_handler);

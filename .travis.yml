@@ -19,14 +19,8 @@ matrix:
             - ubuntu-toolchain-r-test
 
 before_script:
-  - export TAICHI_ROOT_DIR=`pwd`/../
-  - export TAICHI_NUM_THREADS=2
-  - export PYTHONPATH=$TAICHI_ROOT_DIR/taichi/python/:$PYTHONPATH
-  - export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo sh ../ci_scripts/linux_sudo.sh ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo sh ../ci_scripts/osx_sudo.sh ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sh ../ci_scripts/linux_normal.sh ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sh ../ci_scripts/osx_normal.sh ; fi
 
 script:
-  - python -c 'import taichi as tc'
+  - python3 install.py

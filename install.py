@@ -26,7 +26,7 @@ if __name__ == '__main__':
     execute_command('rm get-pip.py')
   execute_command('sudo apt-get update')
   execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ python3-tk')
-  execute_command('cd /home/{}/'.format(usename))
+  os.chdir('/home/{}/'.format(usename))
   execute_command('mkdir -p repos')
   os.chdir('repos')
   if os.path.exists('taichi'):
@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
   print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
   
-  if execute_command('echo $PYTHONPATH; python3 -c "import sys;sys.path.append(\'{}\');import taichi as tc"'.format(taichi_root_dir + '/taichi/python')) == 0:
+  if execute_command('echo $PYTHONPATH; python3 -c "import taichi as tc"') == 0:
     execute_command('ti')
     print('  Successfully Installed Taichi at ~/repos/taichi.')
     print('  Please execute')

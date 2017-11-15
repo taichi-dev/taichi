@@ -19,9 +19,9 @@ if __name__ == '__main__':
 
   if build_type == 'ci':
     os.environ['TC_CI'] = '1'
-    username = pwd.getpwuid(os.getuid())[0]
-  else:
     username = 'travis'
+  else:
+    username = pwd.getpwuid(os.getuid())[0]
 
   try:
     import pip

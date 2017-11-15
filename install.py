@@ -48,7 +48,7 @@ if __name__ == '__main__':
   
   print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
   
-  if execute_command('echo $PYTHONPATH; python3 -c "import taichi as tc"') == 0:
+  if execute_command('echo $PYTHONPATH; PYTHONPATH={} python3 -c "import taichi as tc"'.format(os.environ['PYTHONPATH'])) == 0:
     execute_command('ti')
     print('  Successfully Installed Taichi at ~/repos/taichi.')
     print('  Please execute')
@@ -56,4 +56,5 @@ if __name__ == '__main__':
     print('  or restart your terminal.')
   else:
     print('  Error: installation failed.')
+    exit(-1)
 

@@ -9,7 +9,7 @@
 
 #include <taichi/util.h>
 #include <taichi/system/threading.h>
-#include <signal.h>
+#include <csignal>
 #include <spdlog/spdlog.h>
 
 TC_NAMESPACE_BEGIN
@@ -23,7 +23,7 @@ void signal_handler(int signo) {
 
 #define TC_REGISTER_SIGNAL_HANDLER(name, handler)                    \
   {                                                                  \
-    if (signal(name, handler) == SIG_ERR)                            \
+    if (std::signal(name, handler) == SIG_ERR)                            \
       std::printf("Can not register signal handler for" #name "\n"); \
   }
 
@@ -56,9 +56,11 @@ void Logger::warn(const std::string &s) {
 }
 void Logger::error(const std::string &s) {
   console->error(s);
+  std::raise(SIGABRT);
 }
 void Logger::critical(const std::string &s) {
   console->critical(s);
+  std::raise(SIGABRT);
 }
 void Logger::flush() {
   console->flush();

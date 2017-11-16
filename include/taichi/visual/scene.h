@@ -37,7 +37,8 @@ class Mesh {
 
   void initialize(const Config &config);
   void set_material(std::shared_ptr<SurfaceMaterial> material);
-  void load_from_file(const std::string &file_path);
+  void load_from_file(const std::string &file_path,
+                      bool reverse_vertices = false);
   std::vector<Triangle> untransformed_triangles;
   void set_untransformed_triangles(const std::vector<Triangle> &triangles) {
     untransformed_triangles = triangles;

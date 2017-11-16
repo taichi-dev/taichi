@@ -19,10 +19,14 @@ void Mesh::initialize(const Config &config) {
   transform = Matrix4(1.0_f);
   std::string filepath = config.get_string("filename");
   if (!filepath.empty())
-    load_from_file(filepath);
+    load_from_file(filepath, config.get("reverse_vertices", false));
+  else {
+    TC_ERROR("File name can not be empty");
+  }
 }
 
-void Mesh::load_from_file(const std::string &file_path) {
+void Mesh::load_from_file(const std::string &file_path,
+                          bool reverse_vertices) {
   std::string inputfile = file_path;
   tinyobj::attrib_t attrib;
   std::vector<tinyobj::shape_t> shapes;
@@ -36,7 +40,7 @@ void Mesh::load_from_file(const std::string &file_path) {
     std::cerr << err << std::endl;
   }
 
-  assert_info(ret, "Loading " + file_path + " failed");
+  TC_ASSERT_INFO(ret, "Loading " + file_path + " failed");
 
   // Loop over shapes
   for (size_t s = 0; s < shapes.size(); s++) {
@@ -46,8 +50,11 @@ void Mesh::load_from_file(const std::string &file_path) {
       int fv = shapes[s].mesh.num_face_vertices[f];
 
       // Loop over vertices in the face.
-      assert_info(fv == 3, "Only triangles supported...");
+      TC_ASSERT_INFO(fv == 3, "Only triangles supported...");
       int i = (int)vertices.size(), j = i + 1, k = i + 2;
+      if (reverse_vertices) {
+        std::swap(j, k);
+      }
       bool has_normal = false;
       for (int v = 0; v < fv; v++) {
         // access to vertex

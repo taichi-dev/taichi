@@ -58,6 +58,8 @@ class AngularVelocity {
     TC_STATIC_END_IF;
     return ret;
   }
+
+  TC_IO_DEF(value);
 };
 
 template <int dim>
@@ -127,11 +129,16 @@ class Rotation {
       value += dt * vel.value;
     }
     TC_STATIC_ELSE {
-      real ot = length(vel.value) * dt;
+      Vector3 axis(vel.value[0], vel.value[1], vel.value[2]);
+      real angle = length(axis);
+      if (angle < 1e-10_f) {
+        return;
+      }
+      axis = normalized(axis);
+      real ot = angle * dt;
       real s = std::sin(ot / 2);
       real c = std::cos(ot / 2);
-      Eigen::Quaternion<real> omega_t(c, s * vel.value[0], s * vel.value[1],
-                                      s * vel.value[2]);
+      Eigen::Quaternion<real> omega_t(c, s * axis[0], s * axis[1], s * axis[2]);
       value = omega_t * value;
     }
     TC_STATIC_END_IF

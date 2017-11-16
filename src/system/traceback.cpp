@@ -141,9 +141,9 @@ TC_EXPORT void print_traceback() {
     exit(EXIT_FAILURE);
   }
 
-  fmt::print_colored(fmt::MAGENTA, "***************\n");
-  fmt::print_colored(fmt::MAGENTA, "* Stack Trace *\n");
-  fmt::print_colored(fmt::MAGENTA, "***************\n");
+  fmt::print_colored(fmt::MAGENTA, "***************************\n");
+  fmt::print_colored(fmt::MAGENTA, "* Taichi Core Stack Trace *\n");
+  fmt::print_colored(fmt::MAGENTA, "***************************\n");
 
   // j = 0: taichi::print_traceback
   for (int j = 1; j < nptrs; j++) {

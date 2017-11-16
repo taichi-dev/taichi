@@ -10,6 +10,7 @@ from taichi.visual.post_process import LDRDisplay
 from taichi.gui.image_viewer import show_image
 import taichi as tc
 import math
+import sys
 
 
 class MPM:
@@ -29,7 +30,8 @@ class MPM:
     if 'task_id' in kwargs:
       self.task_id = kwargs['task_id']
     else:
-      self.task_id = get_unique_task_id()
+      self.task_id = sys.argv[0].split('.')[0]
+    print(self.task_id)
     self.directory = tc.get_output_path(self.task_id)
     self.video_manager = VideoManager(self.directory)
     kwargs['frame_directory'] = self.video_manager.get_frame_directory()

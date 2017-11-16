@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <spdlog/fmt/fmt.h>
 #include <memory>
+#include <csignal>
 
 namespace spdlog {
 class logger;
@@ -77,6 +78,8 @@ class logger;
       DEBUG_TRIGGER;                                                   \
       if (taichi::CoreState::get_instance().python_imported) {         \
         taichi_raise_assertion_failure_in_python("Assertion failed."); \
+      } else {                                                         \
+        std::raise(SIGABRT);                                           \
       }                                                                \
     }                                                                  \
   }
@@ -204,9 +207,10 @@ TC_NAMESPACE_END
 //                               Logging
 //******************************************************************************
 TC_NAMESPACE_BEGIN
-#define SPD_AUGMENTED_LOG(X, ...)                                             \
-  taichi::logger.X(                                                           \
-      fmt::format("[{}:{}@{}]", __FILENAME__, __FUNCTION__, __LINE__) + \
+
+#define SPD_AUGMENTED_LOG(X, ...)                                        \
+  taichi::logger.X(                                                      \
+      fmt::format("[{}:{}@{}] ", __FILENAME__, __FUNCTION__, __LINE__) + \
       fmt::format(__VA_ARGS__))
 
 #define TC_TRACE(...) SPD_AUGMENTED_LOG(trace, __VA_ARGS__)

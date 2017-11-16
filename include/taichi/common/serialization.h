@@ -53,6 +53,11 @@ static_assert(
 template <typename... Args>
 using type_switch_t = typename type_switch<Args...>::type;
 
+template <typename T, typename S>
+struct IO {
+  using implemented = std::false_type;
+};
+
 class Serializer {
  public:
   template <typename T, std::size_t n>
@@ -67,6 +72,21 @@ class Serializer {
         -> std::is_same<decltype((std::declval<T_>().template io(
                             std::declval<Serializer &>()))),
                         void>;
+
+    template <typename>
+    static constexpr auto helper(...) -> std::false_type;
+
+   public:
+    using T__ = typename std::decay<T>::type;
+    using type = decltype(helper<T__>(nullptr));
+    static constexpr bool value = type::value;
+  };
+
+  template <typename T>
+  struct has_free_io {
+    template <typename T_>
+    static constexpr auto helper(T_ *) ->
+        typename taichi::IO<T_, Serializer>::implemented;
 
     template <typename>
     static constexpr auto helper(...) -> std::false_type;
@@ -458,9 +478,9 @@ class TextSerializer : public Serializer {
 
   // Elementary data types
   template <typename T>
-  typename std::enable_if<!has_io<T>::value, void>::type operator()(
-      const char *key,
-      T &&val) {
+  typename std::enable_if<!has_io<T>::value && !has_free_io<T>::value,
+                          void>::type
+  operator()(const char *key, T &&val) {
     static_assert(!has_io<T>::value, "");
     std::stringstream ss;
     ss << std::boolalpha << val;
@@ -474,6 +494,17 @@ class TextSerializer : public Serializer {
     add_line(key, "{");
     indent++;
     val.io(*this);
+    indent--;
+    add_line("}");
+  }
+
+  template <typename T>
+  typename std::enable_if<has_free_io<T>::value, void>::type operator()(
+      const char *key,
+      T &&val) {
+    add_line(key, "{");
+    indent++;
+    IO<typename std::decay<T>::type, decltype(*this)>()(*this, val);
     indent--;
     add_line("}");
   }

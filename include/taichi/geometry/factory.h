@@ -18,6 +18,7 @@
 
 TC_NAMESPACE_BEGIN
 
+// TODO: change to 'using'
 typedef std::function<Vector3(Vector2)> Function23;
 typedef std::function<Vector2(Vector2)> Function22;
 typedef std::function<Vector2(real)> Function12;

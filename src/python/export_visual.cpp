@@ -27,6 +27,14 @@ PYBIND11_MAKE_OPAQUE(std::vector<taichi::Triangle>);
 
 TC_NAMESPACE_BEGIN
 
+uint64 get_function12_address(Function12 &func) {
+  return (uint64)(&func);
+}
+
+uint64 get_function13_address(Function13 &func) {
+  return (uint64)(&func);
+}
+
 Function12 function12_from_py_obj(py::object func) {
   return [func](real p) -> Vector2 {
     // TODO: GIL here seems inefficient...
@@ -39,6 +47,7 @@ Function12 function12_from_py_obj(py::object func) {
 }
 
 Function13 function13_from_py_obj(py::object func) {
+  TC_P((uint64)(&func));
   return [func](real p) -> Vector3 {
     // TODO: GIL here seems inefficient...
     PyGILState_STATE state = PyGILState_Ensure();
@@ -82,10 +91,15 @@ void export_visual(py::module &m) {
   DEFINE_VECTOR_OF_NAMED(RenderParticle, "RenderParticles");
   DEFINE_VECTOR_OF_NAMED(Triangle, "Triangles");
 
-  m.def("function22_from_py_obj", function12_from_py_obj);
+  m.def("get_function12_address", get_function12_address);
+  m.def("get_function13_address", get_function13_address);
+
+  m.def("function12_from_py_obj", function12_from_py_obj);
   m.def("function13_from_py_obj", function13_from_py_obj);
+
   m.def("function22_from_py_obj", function22_from_py_obj);
   m.def("function23_from_py_obj", function23_from_py_obj);
+
   // TODO: these should registered by iterating over existing interfaces.
   m.def("merge_mesh", merge_mesh);
   m.def("generate_mesh", Mesh3D::generate);
@@ -153,6 +167,8 @@ void export_visual(py::module &m) {
       .def("initialize", &SDF::initialize)
       .def("eval", &SDF::eval);
 
+  py::class_<Function12>(m, "Function12");
+  py::class_<Function13>(m, "Function13");
   py::class_<Function22>(m, "Function22");
   py::class_<Function23>(m, "Function23");
 }

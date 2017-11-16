@@ -150,4 +150,16 @@ class Rotation {
   }
 };
 
+template <typename S>
+struct IO<Eigen::Quaternion<real>, S> {
+  using implemented = std::true_type;
+
+  void operator() (S &serializer, Eigen::Quaternion<real> &t) {
+      serializer("x", t.x());
+      serializer("y", t.y());
+      serializer("z", t.z());
+      serializer("w", t.w());
+  }
+};
+
 TC_NAMESPACE_END

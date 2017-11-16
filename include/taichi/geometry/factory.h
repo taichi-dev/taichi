@@ -20,6 +20,9 @@ TC_NAMESPACE_BEGIN
 
 typedef std::function<Vector3(Vector2)> Function23;
 typedef std::function<Vector2(Vector2)> Function22;
+typedef std::function<Vector2(real)> Function12;
+typedef std::function<Vector3(real)> Function13;
+
 class Mesh3D {
  public:
   // norm and uv can be null

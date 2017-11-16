@@ -20,9 +20,6 @@ void Mesh::initialize(const Config &config) {
   std::string filepath = config.get_string("filename");
   if (!filepath.empty())
     load_from_file(filepath, config.get("reverse_vertices", false));
-  else {
-    TC_ERROR("File name can not be empty");
-  }
 }
 
 void Mesh::load_from_file(const std::string &file_path,

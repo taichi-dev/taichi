@@ -124,7 +124,7 @@ class Rotation {
     return ret;
   }
 
-  void apply_angular_velocity(AngVel &vel, real dt) {
+  void apply_angular_velocity(const AngVel &vel, real dt) {
     TC_STATIC_IF(dim == 2) {
       value += dt * vel.value;
     }

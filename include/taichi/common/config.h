@@ -269,8 +269,13 @@ inline float64 Config::get<float64>(std::string key) const {
 }
 
 template <>
-inline int Config::get<int>(std::string key) const {
+inline int32 Config::get<int32>(std::string key) const {
   return std::atoi(get_string(key).c_str());
+}
+
+template <>
+inline uint32 Config::get<uint32>(std::string key) const {
+  return uint32(std::atoll(get_string(key).c_str()));
 }
 
 template <>
@@ -279,8 +284,8 @@ inline int64 Config::get<int64>(std::string key) const {
 }
 
 template <>
-inline uint32 Config::get<uint32>(std::string key) const {
-  return uint64(std::atoll(get_string(key).c_str()));
+inline uint64 Config::get<uint64>(std::string key) const {
+  return std::stoull(get_string(key));
 }
 
 template <>

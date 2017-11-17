@@ -47,7 +47,6 @@ Function12 function12_from_py_obj(py::object func) {
 }
 
 Function13 function13_from_py_obj(py::object func) {
-  TC_P((uint64)(&func));
   return [func](real p) -> Vector3 {
     // TODO: GIL here seems inefficient...
     PyGILState_STATE state = PyGILState_Ensure();

@@ -308,7 +308,7 @@ TC_IMPLEMENTATION(Texture, SlicedTexture, "sliced");
 
 class MeshTexture : public Texture {
  protected:
-  Array3D<char> arr;
+  Array3D<real> arr;
   Vector3i resolution;
 
  public:
@@ -318,7 +318,15 @@ class MeshTexture : public Texture {
     Mesh mesh;
     mesh.initialize(config);
     Scene scene;
-    scene.add_mesh(std::make_shared<Mesh>(mesh));
+    Vector3 scale = config.get("scale", Vector3(1));
+    Vector3 translate = config.get("translate", Vector3(0));
+    bool adaptive = config.get("adaptive", true);
+    auto mesh_p = std::make_shared<Mesh>(mesh);
+    Matrix4 trans(1);
+    trans = matrix4_scale(&trans, scale);
+    trans = matrix4_translate(&trans, translate);
+    mesh_p->transform = trans;
+    scene.add_mesh(mesh_p);
     scene.finalize_geometry();
     auto ray_intersection = create_instance<RayIntersection>("embree");
     std::shared_ptr<SceneGeometry> scene_geometry(
@@ -326,7 +334,7 @@ class MeshTexture : public Texture {
     BoundingBox bb = mesh.get_bounding_box();
     // calc offset and delta_x to keep the mesh in the center of texture
     resolution = config.get<Vector3i>("resolution");
-    arr = Array3D<char>(resolution.x, resolution.y, resolution.z);
+    arr = Array3D<real>(resolution);
     real delta_x = 0;
     Vector3i offset;
     for (int i = 0; i < 3; ++i)
@@ -337,8 +345,13 @@ class MeshTexture : public Texture {
       offset[i] = int(resolution[i] -
                       (bb.upper_boundary[i] - bb.lower_boundary[i]) / delta_x) /
                   2;
+    if (!adaptive) {
+      offset = Vector3i(0);
+      delta_x = 1.0_f / resolution[0];
+      bb.lower_boundary = Vector3(0);
+    }
     // cast ray for each i, j
-    for (int i = 0; i < resolution.x; ++i)
+    for (int i = 0; i < resolution.x; ++i) {
       for (int j = 0; j < resolution.y; ++j) {
         real x = (i - offset.x) * delta_x + bb.lower_boundary.x;
         real y = (j - offset.y) * delta_x + bb.lower_boundary.y;
@@ -358,12 +371,13 @@ class MeshTexture : public Texture {
             next_k = std::min(int((z - base_z) / delta_x), resolution.z);
           }
           while (k < next_k) {
-            arr.set(i, j, k, char(inside));
+            arr.set(i, j, k, inside ? 1 : 0);
             ++k;
           }
           inside = !inside;
         }
       }
+    }
   }
 
   bool inside(const Vector3 &coord) const {
@@ -372,9 +386,9 @@ class MeshTexture : public Texture {
   }
 
   virtual Vector4 sample(const Vector3 &coord) const override {
-    if (inside(coord))
+    if (inside(coord)) {
       return Vector4(real(arr.sample_relative_coord(coord)));
-    else
+    } else
       return Vector4(0);
   }
 };

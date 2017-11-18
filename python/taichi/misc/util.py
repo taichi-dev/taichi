@@ -185,7 +185,6 @@ def arange(x, y, d):
     yield x
     x += d
 
-
 # TODO: remove this...
 def P(**kwargs):
   return config_from_dict(kwargs)
@@ -256,3 +255,15 @@ def sleep(seconds=-1):
       time.sleep(1)  # Wait for Ctrl-C
   else:
     time.sleep(seconds)
+
+def function13(f):
+  func = taichi.core.function13_from_py_obj(f)
+  function13.keeper.append(f)
+  function13.keeper.append(func)
+  func_address = taichi.core.get_function13_address(func)
+  return func_address
+
+function13.keeper = []
+
+def constant_function13(v):
+  return function13(lambda t: v)

@@ -1,7 +1,7 @@
 /*******************************************************************************
     Taichi - Physically based Computer Graphics Library
 
-    Copyright (c) 2016 Yuanming Hu <yuanmhu@gmail.com>
+    Copyright (c) 2017 Yuanming Hu <yuanmhu@gmail.com>
 
     All rights reserved. Use of this source code is governed by
     the MIT license as written in the LICENSE file.
@@ -19,10 +19,23 @@
 TC_NAMESPACE_BEGIN
 
 // TODO: change to 'using'
-typedef std::function<Vector3(Vector2)> Function23;
-typedef std::function<Vector2(Vector2)> Function22;
-typedef std::function<Vector2(real)> Function12;
-typedef std::function<Vector3(real)> Function13;
+template<int n, typename T>
+using VectorLengthed = std::conditional_t<n != 1, VectorND<n, T>, T>;
+
+template <int n, int m, typename T>
+using VectorFunction = std::function<VectorLengthed<m, T>(VectorLengthed<n, T>)>;
+
+using Function11 = VectorFunction<1, 1, real>;
+using Function12 = VectorFunction<1, 2, real>;
+using Function13 = VectorFunction<1, 3, real>;
+
+using Function21 = VectorFunction<2, 1, real>;
+using Function22 = VectorFunction<2, 2, real>;
+using Function23 = VectorFunction<2, 3, real>;
+
+using Function31 = VectorFunction<3, 1, real>;
+using Function32 = VectorFunction<3, 2, real>;
+using Function33 = VectorFunction<3, 3, real>;
 
 class Mesh3D {
  public:

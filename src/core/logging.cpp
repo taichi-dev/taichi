@@ -18,12 +18,15 @@ void signal_handler(int signo) {
   TC_ERROR("Received signal {} ({})", signo, strsignal(signo));
   TC_FLUSH_LOGGER;
   taichi::print_traceback();
+  if (taichi::CoreState::get_instance().python_imported) {
+    taichi_raise_assertion_failure_in_python("Taichi Core Exception");
+  }
   std::exit(-1);
 }
 
 #define TC_REGISTER_SIGNAL_HANDLER(name, handler)                    \
   {                                                                  \
-    if (std::signal(name, handler) == SIG_ERR)                            \
+    if (std::signal(name, handler) == SIG_ERR)                       \
       std::printf("Can not register signal handler for" #name "\n"); \
   }
 

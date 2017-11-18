@@ -74,13 +74,6 @@ class logger;
     bool ___ret___ = static_cast<bool>(x);                             \
     if (!___ret___) {                                                  \
       TC_ERROR(info);                                                  \
-      taichi::print_traceback();                                       \
-      DEBUG_TRIGGER;                                                   \
-      if (taichi::CoreState::get_instance().python_imported) {         \
-        taichi_raise_assertion_failure_in_python("Assertion failed."); \
-      } else {                                                         \
-        std::raise(SIGABRT);                                           \
-      }                                                                \
     }                                                                  \
   }
 

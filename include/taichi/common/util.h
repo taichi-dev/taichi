@@ -219,6 +219,7 @@ TC_NAMESPACE_BEGIN
 #define TC_WARN(...) SPD_AUGMENTED_LOG(warn, __VA_ARGS__)
 #define TC_ERROR(...) SPD_AUGMENTED_LOG(error, __VA_ARGS__)
 #define TC_CRITICAL(...) SPD_AUGMENTED_LOG(critical, __VA_ARGS__)
+#define TC_STOP TC_ERROR("Stopping here")
 
 #define TC_LOG_SET_PATTERN(x) spdlog::set_pattern(x);
 

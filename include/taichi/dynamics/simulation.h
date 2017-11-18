@@ -35,7 +35,7 @@ class Simulation : public Unit {
   }
 
   virtual void initialize(const Config &config) override {
-    num_threads = config.get<int32>("num_threads");
+    num_threads = config.get("num_threads", 8);
   }
 
   virtual void add_particles(const Config &config) {

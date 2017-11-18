@@ -18,6 +18,8 @@ class MPM:
   def __init__(self, **kwargs):
     res = kwargs['res']
     self.last_visualization = -1e5
+    self.frame_dt = kwargs.get('frame_dt', 0.01)
+    self.num_frames = kwargs.get('num_frames', 1000)
     if len(res) == 2:
       self.c = tc_core.create_simulation2('mpm')
       self.Vector = tc_core.Vector2f
@@ -31,7 +33,14 @@ class MPM:
       self.task_id = kwargs['task_id']
     else:
       self.task_id = sys.argv[0].split('.')[0]
-    print(self.task_id)
+    if 'delta_x' not in kwargs:
+      kwargs['delta_x'] = 1.0 / res[0]
+    else:
+      self.task_id = sys.argv[0].split('.')[0]
+      
+    print('delta_x = {}', kwargs['delta_x'])
+    print('task_id = {}', self.task_id)
+    
     self.directory = tc.get_output_path(self.task_id)
     self.video_manager = VideoManager(self.directory)
     kwargs['frame_directory'] = self.video_manager.get_frame_directory()
@@ -161,3 +170,16 @@ class MPM:
   def clear_output_directory(self):
     frames_dir = os.path.join(self.directory, 'frames')
     taichi.clear_directory_with_suffix(frames_dir, 'json')
+    
+  def simulate(self, clear_output_directory=False, print_profile_info=False, frame_update=None):
+    if clear_output_directory:
+      self.clear_output_directory()
+    for i in range(self.num_frames):
+      if frame_update:
+        frame_update(self.get_current_time(), self.frame_dt)
+      print('Simulating frame {}'.format(i))
+      self.step(self.frame_dt)
+      self.visualize()
+      if print_profile_info:
+        tc.core.print_profile_info()
+

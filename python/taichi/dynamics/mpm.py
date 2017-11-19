@@ -38,8 +38,8 @@ class MPM:
     else:
       self.task_id = sys.argv[0].split('.')[0]
       
-    print('delta_x = {}', kwargs['delta_x'])
-    print('task_id = {}', self.task_id)
+    print('delta_x = {}'.format(kwargs['delta_x']))
+    print('task_id = {}'.format(self.task_id))
     
     self.directory = tc.get_output_path(self.task_id)
     self.video_manager = VideoManager(self.directory)

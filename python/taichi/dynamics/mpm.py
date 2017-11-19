@@ -1,5 +1,3 @@
-import time
-
 from taichi.core import tc_core
 from .levelset import LevelSet
 from taichi.misc.util import *
@@ -10,14 +8,12 @@ from taichi.visual.post_process import LDRDisplay
 from taichi.gui.image_viewer import show_image
 import taichi as tc
 import math
+import errno
 import sys
 
-
 class MPM:
-
   def __init__(self, **kwargs):
     res = kwargs['res']
-    self.last_visualization = -1e5
     self.frame_dt = kwargs.get('frame_dt', 0.01)
     self.num_frames = kwargs.get('num_frames', 1000)
     if len(res) == 2:
@@ -47,8 +43,9 @@ class MPM:
     self.c.initialize(P(**kwargs))
     try:
       os.mkdir(self.directory)
-    except Exception as e:
-      print(e)
+    except OSError as exc:
+      if exc.errno != errno.EEXIST:
+        raise
     vis_res = self.c.get_vis_resolution()
     self.video_manager.width = vis_res.x
     self.video_manager.height = vis_res.y

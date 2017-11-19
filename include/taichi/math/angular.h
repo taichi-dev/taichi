@@ -150,6 +150,14 @@ class Rotation {
   }
 };
 
+inline VectorND<3, real> rotate(VectorND<3, real> v, const Rotation<3> &rot) {
+  return rot.rotate(v);
+}
+
+inline VectorND<2, real> rotate(VectorND<2, real> v, real angle) {
+  return Rotation<2>(angle).rotate(v);
+}
+
 template <typename S>
 struct IO<Eigen::Quaternion<real>, S> {
   using implemented = std::true_type;

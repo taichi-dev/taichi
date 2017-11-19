@@ -1579,5 +1579,4 @@ static_assert(
         const taichi::MatrixND<4, double, (taichi::InstSetExt)3>>::value,
     "");
 
-
 TC_NAMESPACE_END

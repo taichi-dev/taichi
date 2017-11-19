@@ -81,7 +81,6 @@ void ensure_non_negative_singular_values(Matrix3 &u, Matrix3 &s) {
   }
 }
 
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 // m can not be const here, otherwise JIXIE::singularValueDecomposition will

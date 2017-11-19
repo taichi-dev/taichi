@@ -152,7 +152,7 @@ class SkyTexture final : public Texture {
 
     // TODO: why unused x2
     // real luminance;
-    real mieDirectionalG {0.0_f};
+    real mieDirectionalG{0.0_f};
 
     real theta_d = coord.x * 2 * pi, phi_d = (coord.y - 0.5f) * pi;
     vWorldPosition = Vector3(cos(theta_d) * cos(phi_d), sin(phi_d),
@@ -206,7 +206,8 @@ class SkyTexture final : public Texture {
     // TODO: why unused?
     // Vector3 direction = normalize(vWorldPosition - cameraPos);
     // TODO: why unused?
-    // real theta = std::acos(direction.y);  // elevation --> y-axis, [-pi/2, pi/2]
+    // real theta = std::acos(direction.y);  // elevation --> y-axis, [-pi/2,
+    // pi/2]
     // NOTE: changed atan to atan2
     // TODO: why phi unused?
     // real phi = std::atan2(direction.z,

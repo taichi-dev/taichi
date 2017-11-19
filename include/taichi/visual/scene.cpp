@@ -22,8 +22,7 @@ void Mesh::initialize(const Config &config) {
     load_from_file(filepath, config.get("reverse_vertices", false));
 }
 
-void Mesh::load_from_file(const std::string &file_path,
-                          bool reverse_vertices) {
+void Mesh::load_from_file(const std::string &file_path, bool reverse_vertices) {
   std::string inputfile = file_path;
   tinyobj::attrib_t attrib;
   std::vector<tinyobj::shape_t> shapes;

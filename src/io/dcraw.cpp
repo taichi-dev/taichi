@@ -12274,6 +12274,6 @@ int CLASS dcraw_main(int argc, const char **argv, DCRawOutput &output) {
 }
 
 #if defined(_MSC_VER)
-  #pragma warning(pop)
+#pragma warning(pop)
 #endif
 #pragma GCC diagnostic pop

@@ -19,11 +19,12 @@
 TC_NAMESPACE_BEGIN
 
 // TODO: change to 'using'
-template<int n, typename T>
+template <int n, typename T>
 using VectorLengthed = std::conditional_t<n != 1, VectorND<n, T>, T>;
 
 template <int n, int m, typename T>
-using VectorFunction = std::function<VectorLengthed<m, T>(VectorLengthed<n, T>)>;
+using VectorFunction =
+    std::function<VectorLengthed<m, T>(VectorLengthed<n, T>)>;
 
 using Function11 = VectorFunction<1, 1, real>;
 using Function12 = VectorFunction<1, 2, real>;

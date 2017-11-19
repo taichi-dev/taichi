@@ -19,7 +19,7 @@
 namespace taichi {
 
 namespace meta {
-template<template<int> typename F, int bgn, int end, typename... Args>
+template <template <int> typename F, int bgn, int end, typename... Args>
 struct RepeatFunctionHelper {
   TC_FORCE_INLINE static void run(Args &&... args) {
     F<bgn>::run(args...);
@@ -28,14 +28,14 @@ struct RepeatFunctionHelper {
   }
 };
 
-template<template<int> typename F, int bgn, typename... Args>
+template <template <int> typename F, int bgn, typename... Args>
 struct RepeatFunctionHelper<F, bgn, bgn, Args...> {
   TC_FORCE_INLINE static void run(Args &&... args) {
     return;
   }
 };
 
-template<template<int> typename F, int bgn, int end, typename... Args>
+template <template <int> typename F, int bgn, int end, typename... Args>
 TC_FORCE_INLINE void repeat_function(Args &&... args) {
   RepeatFunctionHelper<F, bgn, end, Args...>::run(std::forward<Args>(args)...);
 }
@@ -43,7 +43,7 @@ TC_FORCE_INLINE void repeat_function(Args &&... args) {
 
 using meta::repeat_function;
 
-template<typename option, typename... Args>
+template <typename option, typename... Args>
 struct type_switch {
   using type = typename std::conditional<
       std::is_same<typename option::first_type, std::true_type>::value,
@@ -51,7 +51,7 @@ struct type_switch {
       typename type_switch<Args...>::type>::type;
 };
 
-template<typename option>
+template <typename option>
 struct type_switch<option> {
   static_assert(
       std::is_same<typename option::first_type, std::true_type>::value,
@@ -59,42 +59,41 @@ struct type_switch<option> {
   using type = typename option::second_type;
 };
 
-
 namespace STATIC_IF {
 // reference: https://github.com/wichtounet/cpp_utils
 
 struct identity {
-  template<typename T>
+  template <typename T>
   T operator()(T &&x) const {
     return std::forward<T>(x);
   }
 };
 
-template<bool Cond>
+template <bool Cond>
 struct statement {
-  template<typename F>
+  template <typename F>
   void then(const F &f) {
     f(identity());
   }
 
-  template<typename F>
+  template <typename F>
   void else_(const F &) {
   }
 };
 
-template<>
+template <>
 struct statement<false> {
-  template<typename F>
+  template <typename F>
   void then(const F &) {
   }
 
-  template<typename F>
+  template <typename F>
   void else_(const F &f) {
     f(identity());
   }
 };
 
-template<bool Cond, typename F>
+template <bool Cond, typename F>
 inline statement<Cond> static_if(F const &f) {
   statement<Cond> if_;
   if_.then(f);
@@ -121,4 +120,3 @@ using STATIC_IF::static_if;
     }
 */
 }
-

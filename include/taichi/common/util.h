@@ -69,12 +69,12 @@ class logger;
 #define assert(x) \
   { assert_info(x, ""); }
 
-#define assert_info(x, info)                                           \
-  {                                                                    \
-    bool ___ret___ = static_cast<bool>(x);                             \
-    if (!___ret___) {                                                  \
-      TC_ERROR(info);                                                  \
-    }                                                                  \
+#define assert_info(x, info)               \
+  {                                        \
+    bool ___ret___ = static_cast<bool>(x); \
+    if (!___ret___) {                      \
+      TC_ERROR(info);                      \
+    }                                      \
   }
 
 #define TC_ASSERT assert

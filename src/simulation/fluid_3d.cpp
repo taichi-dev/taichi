@@ -16,7 +16,7 @@
 #include <taichi/system/timer.h>
 
 TC_NAMESPACE_BEGIN
-//const static Vector3i offsets[]{Vector3i(1, 0, 0), Vector3i(-1, 0, 0),
+// const static Vector3i offsets[]{Vector3i(1, 0, 0), Vector3i(-1, 0, 0),
 //                                Vector3i(0, 1, 0), Vector3i(0, -1, 0),
 //                                Vector3i(0, 0, 1), Vector3i(0, 0, -1)};
 
@@ -150,7 +150,7 @@ Vector3 hsv2rgb(Vector3 hsv) {
     case 4:
       r = t, g = p, b = v;
       break;
-    default: // 5, actually
+    default:  // 5, actually
       r = v, g = p, b = q;
       break;
   }

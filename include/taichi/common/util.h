@@ -228,8 +228,8 @@ class Logger {
   void debug(const std::string &s);
   void info(const std::string &s);
   void warn(const std::string &s);
-  void error(const std::string &s);
-  void critical(const std::string &s);
+  void error(const std::string &s, bool raise_signal=true);
+  void critical(const std::string &s, bool raise_signal=true);
   void flush();
 };
 

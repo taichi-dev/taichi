@@ -14,7 +14,7 @@
 
 TC_NAMESPACE_BEGIN
 
-class ExceptionForPython : std::exception {
+class ExceptionForPython : public std::exception {
  private:
   std::string msg;
 

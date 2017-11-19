@@ -14,15 +14,7 @@
 
 TC_NAMESPACE_BEGIN
 
-void signal_handler(int signo) {
-  TC_ERROR("Received signal {} ({})", signo, strsignal(signo));
-  TC_FLUSH_LOGGER;
-  taichi::print_traceback();
-  if (taichi::CoreState::get_instance().python_imported) {
-    taichi_raise_assertion_failure_in_python("Taichi Core Exception");
-  }
-  std::exit(-1);
-}
+void signal_handler(int signo);
 
 #define TC_REGISTER_SIGNAL_HANDLER(name, handler)                    \
   {                                                                  \
@@ -57,18 +49,35 @@ void Logger::info(const std::string &s) {
 void Logger::warn(const std::string &s) {
   console->warn(s);
 }
-void Logger::error(const std::string &s) {
+void Logger::error(const std::string &s, bool raise_signal) {
   console->error(s);
-  std::raise(SIGABRT);
+  if (raise_signal) {
+    //std::raise(SIGABRT);
+  }
 }
-void Logger::critical(const std::string &s) {
+void Logger::critical(const std::string &s, bool raise_signal) {
   console->critical(s);
-  std::raise(SIGABRT);
+  if (raise_signal) {
+    std::raise(SIGABRT);
+  }
 }
 void Logger::flush() {
   console->flush();
 }
 
 Logger logger;
+
+void signal_handler(int signo) {
+  logger.error(fmt::format("Received signal {} ({})", signo, strsignal(signo)),
+               false);
+  TC_FLUSH_LOGGER;
+  taichi::print_traceback();
+  if (taichi::CoreState::get_instance().python_imported) {
+    std::string msg =
+        fmt::format("Taichi Core Exception: {} ({})", signo, strsignal(signo));
+    taichi_raise_assertion_failure_in_python(msg.c_str());
+  }
+  //std::exit(-1);
+}
 
 TC_NAMESPACE_END

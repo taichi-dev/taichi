@@ -52,7 +52,7 @@ void Logger::warn(const std::string &s) {
 void Logger::error(const std::string &s, bool raise_signal) {
   console->error(s);
   if (raise_signal) {
-    //std::raise(SIGABRT);
+    std::raise(SIGABRT);
   }
 }
 void Logger::critical(const std::string &s, bool raise_signal) {
@@ -77,7 +77,7 @@ void signal_handler(int signo) {
         fmt::format("Taichi Core Exception: {} ({})", signo, strsignal(signo));
     taichi_raise_assertion_failure_in_python(msg.c_str());
   }
-  //std::exit(-1);
+  std::exit(-1);
 }
 
 TC_NAMESPACE_END

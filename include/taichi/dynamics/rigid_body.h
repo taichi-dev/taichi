@@ -64,7 +64,7 @@ struct RigidBody {
     position = Vector(0.0f);
     velocity = Vector(0.0f);
     rotation = 0.0f;
-    angular_velocity = AngularVelocity<dim>(0.0_f);
+    angular_velocity = AngularVelocity<dim>();
     friction = 0;
     restitution = 0;
     color = Vector3(0.5_f);
@@ -190,7 +190,8 @@ struct RigidBody {
   }
 
   void reset_tmp_velocity() {
-    tmp_angular_velocity = AngularVelocity<dim>(0.0f);
+    tmp_angular_velocity =
+        AngularVelocity<dim>((typename AngularVelocity<dim>::ValueType)(0.0f));
     tmp_velocity = Vector(0.0f);
   }
 

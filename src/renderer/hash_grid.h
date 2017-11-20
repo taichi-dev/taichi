@@ -64,12 +64,12 @@ class HashGrid {
   }
 
   int *begin(Vector3 p) const {
-    Vector3 ip = p / hash_cell_size;
+    Vector3 ip = p / Vector3(hash_cell_size);
     return begin(spatial_hash((int)ip.x, (int)ip.y, (int)ip.z));
   }
 
   int *end(Vector3 p) const {
-    Vector3 ip = p / hash_cell_size;
+    Vector3 ip = p / Vector3(hash_cell_size);
     return end(spatial_hash((int)ip.x, (int)ip.y, (int)ip.z));
   }
 

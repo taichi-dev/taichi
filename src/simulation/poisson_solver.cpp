@@ -106,7 +106,7 @@ class MultigridPoissonSolver2D : public PoissonSolver2D {
 
     // Step 1: figure out cell types
     for (int l = 0; l < max_level - 1; l++) {
-      res /= 2;
+      res /= Vector2i(2);
       boundaries.push_back(BCArray(res));
       for (auto &ind : boundaries.back().get_region()) {
         auto &previous_boundary = boundaries[(int)boundaries.size() - 2];
@@ -155,7 +155,7 @@ class MultigridPoissonSolver2D : public PoissonSolver2D {
           system[ind].inv_numerator = 1.0_f / system[ind].inv_numerator;
       }
       systems.push_back(system);
-      res /= 2;
+      res /= Vector2i(2);
     }
   }
 
@@ -179,7 +179,7 @@ class MultigridPoissonSolver2D : public PoissonSolver2D {
       tmp_residuals.push_back(Array(res));
       assert_info(res[0] % 2 == 0, "odd width");
       assert_info(res[1] % 2 == 0, "odd height");
-      res /= 2;
+      res /= Vector2i(2);
       max_level++;
     } while (res[0] * res[1] * 8 >= size_threshold);
   }

@@ -112,7 +112,7 @@ class MultigridPoissonSolver3D : public PoissonSolver3D {
 
     // Step 1: figure out cell types
     for (int l = 0; l < max_level - 1; l++) {
-      res /= 2;
+      res /= Vector3i(2);
       boundaries.push_back(BCArray(res));
       for (auto &ind : boundaries.back().get_region()) {
         auto &previous_boundary = boundaries[(int)boundaries.size() - 2];
@@ -165,7 +165,7 @@ class MultigridPoissonSolver3D : public PoissonSolver3D {
         }
       }
       systems.push_back(system);
-      res /= 2;
+      res /= Vector3i(2);
     }
   }
 
@@ -192,7 +192,7 @@ class MultigridPoissonSolver3D : public PoissonSolver3D {
       assert_info(res[0] % 2 == 0, "odd width");
       assert_info(res[1] % 2 == 0, "odd height");
       assert_info(res[2] % 2 == 0, "odd depth");
-      res /= 2;
+      res /= Vector3i(2);
       max_level++;
     } while (res[0] * res[1] * res[2] * 8 >= size_threshold);
   }

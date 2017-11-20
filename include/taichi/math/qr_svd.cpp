@@ -58,7 +58,7 @@ void eigen_svd(Matrix3 m, Matrix3 &u, Matrix3 &s, Matrix3 &v) {
 void ensure_non_negative_singular_values(Matrix2 &u, Matrix2 &s) {
   if (s[0][0] < 0) {
     s[0][0] = -s[0][0];
-    u[0] *= -1;
+    u[0] *= -1.0_f;
   }
   if (s[1][1] < 0) {
     s[1][1] = -s[1][1];

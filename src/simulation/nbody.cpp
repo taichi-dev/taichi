@@ -31,7 +31,8 @@ class BarnesHutSummation {
     Particle operator+(const Particle &o) const {
       Particle ret;
       ret.mass = mass + o.mass;
-      ret.position = (position * mass + o.position * o.mass) / ret.mass;
+      ret.position =
+          (position * mass + o.position * o.mass) * (1.0_f / ret.mass);
       CV(ret.position);
       CV(ret.mass);
       return ret;
@@ -109,7 +110,7 @@ class BarnesHutSummation {
         }
       }
     }
-    total_position *= 1.0_f / mass;
+    total_position *= Vector3(1.0_f / mass);
     if (total_position.abnormal()) {
       TC_P(mass);
       for (int i = 0; i < 8; i++) {
@@ -321,7 +322,7 @@ class NBody : public Simulation3D {
     for (int i = 0; i < num_particles; i++) {
       Vector3 p(rand(), rand(), rand());
       Vector3 v = Vector3(p.y, p.z, p.x) - Vector3(0.5f);
-      v *= vel_scale;
+      v *= Vector3(vel_scale);
       Vector3 c(0.5, 0.7, 0.4);
       particles.push_back(Particle(p, v, c));
     }
@@ -355,7 +356,7 @@ class NBody : public Simulation3D {
       real dist2 = dot(d, d);
       dist2 += 1e-4_f;
       CV(d);
-      d *= p.mass * q.mass / (dist2 * sqrt(dist2));
+      d *= Vector3(p.mass * q.mass / (dist2 * std::sqrt(dist2)));
       CV(p.mass);
       CV(q.mass);
       CV(dist2);

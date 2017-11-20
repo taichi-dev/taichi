@@ -651,7 +651,7 @@ class ArrayND<2, T> {
   }
 
   Array2D<T> rasterize_scale(int width, int height, int scale) {
-    Array2D<T> out(width, height);
+    Array2D<T> out(Vector2i(width, height));
     for (auto &ind : out.get_region()) {
       out[ind] = (*this)[ind.i / scale][ind.j / scale];
     }

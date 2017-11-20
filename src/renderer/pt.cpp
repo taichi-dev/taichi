@@ -214,7 +214,7 @@ class PathTracingRenderer : public Renderer {
       IntersectionInfo info = sg->query(ray);
       const Vector3 in_dir = -ray.dir;
       const VolumeMaterial &vol = *stack.top();
-      att *= vol.unbiased_sample_attenuation(ray.orig, info.pos, rand);
+      att *= Vector3(vol.unbiased_sample_attenuation(ray.orig, info.pos, rand));
       if (!info.intersected) {
         // no intersection (usually bsdf sampling) -> envmap
         last_intersection = info;
@@ -465,7 +465,7 @@ Vector3 PathTracingRenderer::trace(Ray ray, StateSequence &rand) {
       if (pdf < 1e-10f) {
         break;
       }
-      f *= c / pdf;
+      f *= Vector3(c / pdf);
     } else if (volume.sample_event(
                    rand, Ray(ray.orig + ray.dir * safe_distance, ray.dir)) ==
                VolumeEvent::scattering) {

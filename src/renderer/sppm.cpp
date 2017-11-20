@@ -79,7 +79,7 @@ void SPPMRenderer::trace_eye_path(StateSequence &rand,
     bsdf.sample(in_dir, rand(), rand(), out_dir, f, pdf, event);
     if (SurfaceEventClassifier::is_delta(
             event)) {  // continue tracing on specular surfaces
-      importance = importance * f * bsdf.cos_theta(out_dir) / pdf;
+      importance = importance * f * bsdf.cos_theta(out_dir) * (1.0_f / pdf);
       ray = Ray(info.pos, out_dir, 0);
     } else {
       HitPoint hit_point;
@@ -111,7 +111,7 @@ bool SPPMRenderer::trace_photon(
   Vector3 flux;
   light_bsdf.sample(light_bsdf.get_geometry_normal(), rand(), rand(), dir, flux,
                     _pdf, _event);
-  flux *= (1.0_f / pdf) * tri.area;
+  flux *= Vector3((1.0_f / pdf) * tri.area);
   Ray ray(pos + dir * 1e-4_f, dir, 0);  // TODO: ... 1e-4_f
   for (int depth = 0; depth + 1 <= max_path_length; depth++) {
     IntersectionInfo info = sg->query(ray);

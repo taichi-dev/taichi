@@ -136,7 +136,7 @@ void FLIPLiquid::correct_particle_positions(real delta_t, bool clear_c) {
       }
       auto &nei = particles[nei_index];
       real dist = length(p.position - nei.position);
-      Vector2 dir = (p.position - nei.position) / dist;
+      Vector2 dir = (p.position - nei.position) / Vector2(dist);
       if (dist > 1e-4f && dist < range) {
         real a = correction_strength * delta_t * pow(1 - dist / range, 2);
         delta_pos[i] += a * dir;

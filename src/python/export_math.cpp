@@ -256,7 +256,6 @@ struct VectorRegistration<VectorND<DIM, T, ISE>> {
     auto cls = py::class_<Vector, VectorBase>(m, vector_name.c_str());
     cls.def(VectorInitializer<DIM, T>::get())
         .def(py::init<T>())
-        .def(py::self * real())
         .def(T() * py::self)
         .def(py::self * T())
         .def(py::self + py::self)

@@ -51,7 +51,7 @@ Array2D<Vector3> blur_with_depth(const Array2D<Vector3> &image,
     for (int i = 0; i <= radius; i++) {
       kernel[i] /= kernel_tot;
     }
-    Vector3 tot = 0;
+    Vector3 tot(0.0_f);
     for (int i = -radius; i <= radius; i++) {
       for (int j = -radius; j <= radius; j++) {
         Vector2i coord(clamp(ind.i + i, 0, image.get_width() - 1),

@@ -28,7 +28,7 @@ void benchmark(T &t, int n) {
 
 const int n = 512;
 real t[n][n][n];
-Array3D<real> p(n, n, n);
+Array3D<real> p(Vector3i(n, n, n));
 
 void benchmark_array_3d() {
   benchmark(t, n);

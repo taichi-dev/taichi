@@ -276,8 +276,9 @@ class GlossyMaterial : public SurfaceMaterial {
     const Vector3 r = reflect(in);
     real t = std::min(std::max(dot(r, out), 0.0_f), 1.0_f);
     auto color = color_sampler->sample3(uv);
-    return color * (glossiness + 2.0f) / (2.0f * pi) * pow(t, glossiness) /
-           std::max(std::max(std::abs(in.z), std::abs(out.z)), 1e-7_f);
+    return color * (glossiness + 2.0f) * (1.0_f / (2.0_f * pi)) * pow(t, glossiness) *
+           (1.0_f /
+            std::max(std::max(std::abs(in.z), std::abs(out.z)), 1e-7_f));
   }
 
   virtual void sample(const Vector3 &in_dir,

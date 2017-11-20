@@ -49,7 +49,7 @@ class LTRenderer : public Renderer {
   }
 
   Array2D<Vector3> get_output() {
-    Array2D<Vector3> output(width, height);
+    Array2D<Vector3> output(Vector2i(width, height));
     float r = 1.0_f / photon_counter;
     for (auto &ind : output.get_region()) {
       output[ind] = buffer[ind] * r;

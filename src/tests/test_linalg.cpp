@@ -54,7 +54,7 @@ class TestLinAlg : public Task {
     assert(a == Vector3(4, 4, 15));
     a /= b;
     assert(a == Vector3(1, 2, 3));
-    a = Vector3({7.0f, 8.0f, 9.0f});
+    a = Vector3(7.0f, 8.0f, 9.0f);
     assert(a == Vector3(7, 8, 9));
 
     Vector2 c(1, 2), d(2, 5);

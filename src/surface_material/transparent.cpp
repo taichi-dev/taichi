@@ -48,7 +48,7 @@ class TransparentMaterial : public SurfaceMaterial {
     } else {
       u = (u - alpha) / (1 - alpha);
       nested->sample(in_dir, u, v, out_dir, f, pdf, event, uv);
-      f *= 1 - alpha;
+      f *= Vector3(1 - alpha);
       pdf *= 1 - alpha;
     }
   }

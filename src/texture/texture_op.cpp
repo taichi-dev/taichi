@@ -161,7 +161,7 @@ class RotatedTexture : public Texture {
           break;
       }
     }
-    coord = (coord + Vector3(1.f, 1.f, 1.f)) / 2.f;
+    coord = (coord + Vector3(1.f, 1.f, 1.f)) * 0.5_f;
     return tex->sample(coord);
   }
 };
@@ -228,7 +228,7 @@ class RasterizedTexture : public Texture {
     auto tex = AssetManager::get_asset<Texture>(config.get<int>("tex"));
     resolution_x = config.get<int>("resolution_x");
     resolution_y = config.get<int>("resolution_y");
-    cache = Array2D<Vector4>(resolution_x, resolution_y);
+    cache = Array2D<Vector4>(Vector2i(resolution_x, resolution_y));
     for (int i = 0; i < resolution_x; i++) {
       for (int j = 0; j < resolution_y; j++) {
         cache.set(i, j,

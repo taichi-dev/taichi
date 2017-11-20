@@ -173,7 +173,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
   }
 
   template <int DIM_, typename T_, InstSetExt ISE_>
-  TC_FORCE_INLINE explicit VectorND(const VectorND<DIM_, T_, ISE_> &o)
+  explicit TC_FORCE_INLINE VectorND(const VectorND<DIM_, T_, ISE_> &o)
       : VectorND() {
     for (int i = 0; i < std::min(DIM_, DIM); i++) {
       d[i] = o[i];
@@ -186,7 +186,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<SIMD_4_32F<DIM_, T_, ISE_> && DIM_ == 3,
                                       int> = 0>
-  TC_FORCE_INLINE VectorND(float32 x) : VectorNDBase<DIM, T, ISE>(x) {
+  explicit TC_FORCE_INLINE VectorND(float32 x) : VectorNDBase<DIM, T, ISE>(x) {
   }
 
   // Vector4f
@@ -195,7 +195,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<SIMD_4_32F<DIM_, T_, ISE_> && DIM_ == 4,
                                       int> = 0>
-  TC_FORCE_INLINE VectorND(float32 x) : VectorNDBase<DIM, T, ISE>(x) {
+  explicit TC_FORCE_INLINE VectorND(float32 x) : VectorNDBase<DIM, T, ISE>(x) {
   }
 
   // Vector3f
@@ -204,7 +204,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<SIMD_4_32F<DIM_, T_, ISE_> && DIM_ == 3,
                                       int> = 0>
-  TC_FORCE_INLINE VectorND(real x, real y, real z, real w = 0.0_f)
+  explicit TC_FORCE_INLINE VectorND(real x, real y, real z, real w = 0.0_f)
       : VectorBase(_mm_set_ps(w, z, y, x)) {
   }
 
@@ -214,21 +214,21 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<SIMD_4_32F<DIM_, T_, ISE_> && DIM_ == 4,
                                       int> = 0>
-  TC_FORCE_INLINE VectorND(real x, real y, real z, real w)
+  explicit TC_FORCE_INLINE VectorND(real x, real y, real z, real w)
       : VectorBase(_mm_set_ps(w, z, y, x)) {
   }
 
   // Vector initialization
   template <typename F,
             std::enable_if_t<std::is_same<F, VectorND>::value, int> = 0>
-  TC_FORCE_INLINE VectorND(const F &f) {
+  explicit TC_FORCE_INLINE VectorND(const F &f) {
     for (int i = 0; i < DIM; i++)
       this->d[i] = f[i];
   }
 
   // Scalar initialization
   template <typename F, std::enable_if_t<std::is_same<F, T>::value, int> = 0>
-  TC_FORCE_INLINE VectorND(const F &f) {
+  explicit TC_FORCE_INLINE VectorND(const F &f) {
     for (int i = 0; i < DIM; i++)
       this->d[i] = f;
   }
@@ -238,7 +238,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
       typename F,
       std::enable_if_t<std::is_convertible<F, std::function<T(int)>>::value,
                        int> = 0>
-  TC_FORCE_INLINE VectorND(const F &f) {
+  explicit TC_FORCE_INLINE VectorND(const F &f) {
     for (int i = 0; i < DIM; i++)
       this->d[i] = f(i);
   }
@@ -247,13 +247,13 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             typename T_ = T,
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<SIMD_NONE<DIM_, T_, ISE_>, int> = 0>
-  TC_FORCE_INLINE VectorND(T v) {
+  explicit TC_FORCE_INLINE VectorND(T v) {
     for (int i = 0; i < DIM; i++) {
       this->d[i] = v;
     }
   }
 
-  TC_FORCE_INLINE VectorND(T v0, T v1) {
+  explicit TC_FORCE_INLINE VectorND(T v0, T v1) {
     static_assert(DIM == 2, "Vector dim must be 2");
     this->d[0] = v0;
     this->d[1] = v1;
@@ -265,7 +265,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<!SIMD_4_32F<DIM_, T_, ISE_> || DIM != 3,
                                       int> = 0>
-  TC_FORCE_INLINE VectorND(T v0, T v1, T v2) {
+  explicit TC_FORCE_INLINE VectorND(T v0, T v1, T v2) {
     static_assert(DIM == 3, "Vector dim must be 3");
     this->d[0] = v0;
     this->d[1] = v1;
@@ -277,7 +277,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
             typename T_ = T,
             InstSetExt ISE_ = ISE,
             typename std::enable_if_t<SIMD_NONE<DIM_, T_, ISE_>, int> = 0>
-  TC_FORCE_INLINE VectorND(T v0, T v1, T v2, T v3) {
+  explicit TC_FORCE_INLINE VectorND(T v0, T v1, T v2, T v3) {
     static_assert(DIM == 4, "Vector dim must be 4");
     this->d[0] = v0;
     this->d[1] = v1;
@@ -287,7 +287,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
 
   // Vector extension
   template <int DIM_ = DIM, std::enable_if_t<(DIM_ > 1), int> = 0>
-  TC_FORCE_INLINE explicit VectorND(const VectorND<DIM - 1, T, ISE> &o,
+  explicit TC_FORCE_INLINE VectorND(const VectorND<DIM - 1, T, ISE> &o,
                                     T extra) {
     for (int i = 0; i < DIM_ - 1; i++) {
       this->d[i] = o[i];
@@ -296,7 +296,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
   }
 
   template <typename T_>
-  TC_FORCE_INLINE VectorND(const std::vector<T_> &o) {
+  explicit TC_FORCE_INLINE VectorND(const std::vector<T_> &o) {
     if (o.size() != DIM) {
       TC_ERROR("Dimension mismatch: " + std::to_string(DIM) + " v.s. " +
                std::to_string((int)o.size()));
@@ -434,7 +434,17 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
     return *this;
   }
 
+  TC_FORCE_INLINE VectorND &operator*=(const T &o) {
+    (*this) = (*this) * o;
+    return *this;
+  }
+
   TC_FORCE_INLINE VectorND &operator/=(const VectorND &o) {
+    (*this) = (*this) / o;
+    return *this;
+  }
+
+  TC_FORCE_INLINE VectorND &operator/=(const T &o) {
     (*this) = (*this) / o;
     return *this;
   }
@@ -712,6 +722,18 @@ template <int DIM, typename T, InstSetExt ISE>
 TC_FORCE_INLINE VectorND<DIM, T, ISE> operator*(const VectorND<DIM, T, ISE> &v,
                                                 T a) {
   return a * v;
+}
+
+template <int DIM, typename T, InstSetExt ISE>
+TC_FORCE_INLINE VectorND<DIM, T, ISE> operator
+/(T a, const VectorND<DIM, T, ISE> &v) {
+  return VectorND<DIM, T, ISE>(a) / v;
+}
+
+template <int DIM, typename T, InstSetExt ISE>
+TC_FORCE_INLINE VectorND<DIM, T, ISE> operator/(const VectorND<DIM, T, ISE> &v,
+                                                T a) {
+  return v / VectorND<DIM, T, ISE>(a);
 }
 
 using Vector1 = VectorND<1, real, default_instruction_set>;

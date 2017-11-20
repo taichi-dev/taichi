@@ -20,7 +20,7 @@ void BidirectionalRenderer::initialize(const Config &config) {
   Renderer::initialize(config);
   this->sampler = create_instance<Sampler>(config.get("sampler", "sobol"));
   this->luminance_clamping = config.get("luminance_clamping", 0.0_f);
-  this->buffer = Array2D<Vector3>(width, height);
+  this->buffer = Array2D<Vector3>(Vector2i(width, height));
   this->max_eye_events = config.get("max_eye_events", 5);
   this->max_light_events = config.get("max_light_events", 5);
   this->max_eye_events =
@@ -437,7 +437,7 @@ Vector3d BidirectionalRenderer::path_throughput(const Path &path) {
       // Tricky camera throughput...
       Vector3 d0 = path[1].pos - path[0].pos;
       const real dist2 = dot(d0, d0);
-      d0 = d0 * (1.0_f / sqrt(dist2));
+      d0 = d0 * (1.0_f / std::sqrt(dist2));
       const real c = dot(d0, camera->get_dir());
       const real ds2 = 1.0 / (c * c);
       f = f * double(fabs(dot(d0, path[1].normal) / dist2 / c * ds2));
@@ -447,7 +447,7 @@ Vector3d BidirectionalRenderer::path_throughput(const Path &path) {
         f = f * path[i].bsdf.evaluate(path[i].normal, out_dir).cast<float64>();
       } else {
         // Last event must be emission
-        f *= 0;
+        f *= Vector3d(0.0_f);
       }
     } else {
       // No emissive material in the middle.
@@ -460,7 +460,7 @@ Vector3d BidirectionalRenderer::path_throughput(const Path &path) {
       if (path[i].bsdf.is_emissive() ||
           abs(dot(in_dir, path[i].normal)) < eps ||
           abs(dot(out_dir, path[i].normal)) < eps) {
-        f *= 0.0_f;
+        f *= 0.0_f64;
         return f;
       }
       Vector3d bsdf;

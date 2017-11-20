@@ -370,7 +370,7 @@ void EulerLiquid::prepare_for_pressure_solve() {
   E = 0;
   particles.clear();
   const real theta_threshold = 0.01f;
-  Array<char> boundary_cell(width, height, false);
+  Array<char> boundary_cell(Vector2i(width, height), false);
   for (int i = 0; i < width; i++) {
     for (int j = 0; j < height; j++) {
       int fluid_corner = 0, boundary_corner = 0;
@@ -482,7 +482,7 @@ void EulerLiquid::prepare_for_pressure_solve() {
 }
 
 EulerLiquid::Array<real> EulerLiquid::apply_A(const Array<real> &x) {
-  Array<real> y(width, height);
+  Array<real> y(Vector2i(width, height));
   for (int i = 0; i < width; i++) {
     for (int j = 0; j < height; j++) {
       if (Ad[i][j] > 0) {
@@ -683,7 +683,7 @@ EulerLiquid::Array<real> EulerLiquid::apply_preconditioner(
 }
 
 EulerLiquid::Array<real> EulerLiquid::get_rhs() {
-  Array<real> r(width, height, 0);
+  Array<real> r(Vector2i(width, height), 0);
   real correction = get_volume_correction();
   for (auto &ind : cell_types.get_region()) {
     if (Ad[ind] > 0) {
@@ -805,15 +805,15 @@ void EulerLiquid::print_v() {
 }
 
 void EulerLiquid::initialize_pressure_solver() {
-  pressure = Array<real>(width, height, 0.0);
-  Ad = Array<real>(width, height);
-  Ax = Array<real>(width, height);
-  Ay = Array<real>(width, height);
-  E = Array<real>(width, height);
-  p = Array<real>(width, height, 0.0_f);
-  q = Array<real>(width, height);
-  z = Array<real>(width, height);
-  water_cell_index = Array<int>(width, height);
+  pressure = Array<real>(Vector2i(width, height), 0.0);
+  Ad = Array<real>(Vector2i(width, height));
+  Ax = Array<real>(Vector2i(width, height));
+  Ay = Array<real>(Vector2i(width, height));
+  E = Array<real>(Vector2i(width, height));
+  p = Array<real>(Vector2i(width, height), 0.0_f);
+  q = Array<real>(Vector2i(width, height));
+  z = Array<real>(Vector2i(width, height));
+  water_cell_index = Array<int>(Vector2i(width, height));
 }
 
 Vector2 EulerLiquid::clamp_particle_position(Vector2 pos) {

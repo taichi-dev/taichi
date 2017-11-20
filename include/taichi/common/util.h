@@ -252,7 +252,7 @@ TC_NAMESPACE_BEGIN
 extern int __trash__;
 template <typename T>
 void trash(T &&t) {
-  static_assert(!std::is_same<T, void>::value);
+  static_assert(!std::is_same<T, void>::value, "");
   __trash__ = *reinterpret_cast<uint8*>(&t);
 }
 

@@ -31,9 +31,11 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
         // Triangle with vertices a, b, c
         int slices = 10;  // inaccurate and hacky inertia computation
         for (int k = 0; k < slices; k++) {
-          inertia += length(a - b) *
-                     length2((a + (a - b) / (slices * 1.0_f) * (0.5_f + i)) * 0.5_f - c) /
-                     slices;
+          inertia +=
+              length(a - b) *
+              length2((a + (a - b) / (slices * 1.0_f) * (0.5_f + i)) * 0.5_f -
+                      c) /
+              slices;
         }
       }
       inertia *= density;

@@ -64,6 +64,11 @@ struct Element {
     TC_STATIC_END_IF
     return ret;
   }
+
+  TC_IO_DECL {
+    TC_IO(v);
+    TC_IO(open_end);
+  }
 };
 
 template <int dim>

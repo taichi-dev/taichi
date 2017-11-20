@@ -157,7 +157,20 @@ struct RigidBody {
         }
       }
       TC_STATIC_ELSE {
-        TC_NOT_IMPLEMENTED;
+        auto rot_quat = [&](real t) { return radians(this->rot_func(t)); };
+        rotation.value = rot_quat(t);
+        real d = 1e-3_f;
+        real rot = 0.5_f * (rot_quat(t + d) - rot_quat(t - d)) / d;
+        real len_rot = abs(rot);
+        if (len_rot > 100.0_f) {
+          TC_WARN(
+              "Rotation not differentiable at time {}. (Magnitude {} at d = "
+              "{})",
+              t, len_rot, d);
+          angular_velocity.value = 0;
+        } else {
+          angular_velocity.value = rot;
+        }
       }
       TC_STATIC_END_IF
     } else {

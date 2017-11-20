@@ -1581,10 +1581,19 @@ static_assert(
     "");
 
 namespace type {
+template <typename T, typename = void>
+struct element_;
+
 template <typename T>
-struct element_ {
-  using type = std::
-      conditional_t<std::is_arithmetic<T>::value, T, typename T::ScalarType>;
+struct element_<T,
+                typename std::enable_if_t<std::is_arithmetic<T>::value>> {
+  using type = T;
+};
+
+template <typename T>
+struct element_<T,
+                typename std::enable_if_t<!std::is_arithmetic<T>::value>> {
+  using type = typename T::ScalarType;
 };
 
 template <typename T>

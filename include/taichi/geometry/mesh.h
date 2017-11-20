@@ -32,6 +32,15 @@ struct Element {
       open_end[i] = false;
     }
   }
+
+  Element get_transformed(const MatrixP &m) const {
+    Element ret;
+    for (int i = 0; i < dim; i++) {
+      ret.v[i] = transform(m, v[i], 1);
+      ret.open_end[i] = open_end[i];
+    }
+    return ret;
+  }
 };
 
 template <int dim>
@@ -42,7 +51,6 @@ struct ElementMesh {
   MatrixP transform;
 
   void initialize(const Config &config) {
-
   }
 };
 

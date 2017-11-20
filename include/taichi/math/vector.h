@@ -1449,6 +1449,13 @@ TC_FORCE_INLINE Vector3 multiply_matrix4(const Matrix4 &m,
   return Vector3(m * Vector4(v, w));
 }
 
+template <int dim>
+TC_FORCE_INLINE VectorND<dim, real> transform(const MatrixND<dim + 1, real> &m,
+                                              const VectorND<dim, real> &v,
+                                              real w = 1.0_f) {
+  return VectorND<dim, real>(m * VectorND<dim + 1, real>(v, w));
+}
+
 // Type traits
 
 template <typename T>

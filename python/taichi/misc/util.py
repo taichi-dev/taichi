@@ -274,8 +274,15 @@ def function13(f):
 
 function13.keeper = []
 
-def constant_function12(v):
-  return function12(lambda t: v)
+def constant_function(v):
+  if isinstance(v, tuple):
+    v = taichi.Vector(*v)
+  if isinstance(v, taichi.core.Vector2f):
+    return function12(lambda t: v)
+  elif isinstance(v, taichi.core.Vector3f):
+    return function13(lambda t: v)
+  else:
+    assert False
 
 def constant_function13(v):
   return function13(lambda t: v)

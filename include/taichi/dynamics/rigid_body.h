@@ -33,8 +33,7 @@ struct RigidBody {
   // Segment mesh for 2D and thin shell for 3D
   bool codimensional;
   real friction, restitution;
-  Matrix4 mesh_to_local;
-  Matrix4 local_to_sdf;
+  MatrixP mesh_to_local;
 
   AngularVelocity<dim> angular_velocity, tmp_angular_velocity;
   Rotation<dim> rotation;
@@ -206,8 +205,7 @@ struct RigidBody {
     return matrix_translate(&trans, position);
   }
 
-  template <int dim_ = dim>
-  typename std::enable_if_t<dim_ == 3, Matrix4> get_mesh_transform() const {
+  MatrixP get_mesh_to_world() const {
     return get_local_to_world() * mesh_to_local;
   };
 

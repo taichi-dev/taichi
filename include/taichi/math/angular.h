@@ -150,12 +150,18 @@ class Rotation {
   }
 };
 
-inline VectorND<3, real> rotate(VectorND<3, real> v, const Rotation<3> &rot) {
+inline VectorND<2, real> rotate(const VectorND<2, real> &v, real angle) {
+  return Rotation<2>(angle).rotate(v);
+}
+
+inline VectorND<2, real> rotate(const VectorND<2, real> &v,
+                                const Rotation<2> &rot) {
   return rot.rotate(v);
 }
 
-inline VectorND<2, real> rotate(VectorND<2, real> v, real angle) {
-  return Rotation<2>(angle).rotate(v);
+inline VectorND<3, real> rotate(const VectorND<3, real> &v,
+                                const Rotation<3> &rot) {
+  return rot.rotate(v);
 }
 
 template <typename S>

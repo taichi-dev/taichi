@@ -255,6 +255,15 @@ def sleep(seconds=-1):
       time.sleep(1)  # Wait for Ctrl-C
   else:
     time.sleep(seconds)
+    
+def function12(f):
+  func = taichi.core.function12_from_py_obj(f)
+  function12.keeper.append(f)
+  function12.keeper.append(func)
+  func_address = taichi.core.get_function12_address(func)
+  return func_address
+
+function12.keeper = []
 
 def function13(f):
   func = taichi.core.function13_from_py_obj(f)
@@ -265,5 +274,9 @@ def function13(f):
 
 function13.keeper = []
 
+def constant_function12(v):
+  return function12(lambda t: v)
+
 def constant_function13(v):
   return function13(lambda t: v)
+

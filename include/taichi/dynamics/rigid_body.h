@@ -51,6 +51,8 @@ struct RigidBody {
 
   Vector rotation_axis;
 
+  using ElementType =
+      std::conditional_t<dim == 2, typename ElementMesh<dim>::Elem, Triangle>;
   using MeshType = std::conditional_t<dim == 2, ElementMesh<dim>, Mesh>;
 
   std::shared_ptr<MeshType> mesh;

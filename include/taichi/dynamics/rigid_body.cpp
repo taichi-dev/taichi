@@ -15,26 +15,50 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
   TC_STATIC_IF(dim == 2) {
     std::vector<Element<2>> &elements = this->mesh->elements;
     int n = (int)elements.size();
-    for (int i = 0; i < n; i++) {
-      Vector a = elements[i].v[0], b = elements[i].v[1];
-      // Triangle with vertices (0, 0), a, b
-      real triangle_area = 0.5f * (a.x * b.y - a.y * b.x);
-      volume += triangle_area;
-      center_of_mass += triangle_area * (a + b) * (1.0f / 3.0f);
+    if (this->codimensional) {
+      // This shell
+      for (int i = 0; i < n; i++) {
+        Vector a = elements[i].v[0], b = elements[i].v[1];
+        // Triangle with vertices (0, 0), a, b
+        real triangle_area = length(a - b);
+        volume += triangle_area;
+        center_of_mass += triangle_area * (a + b) * (1.0f / 2.0f);
+      }
+      center_of_mass /= volume;
+      for (int i = 0; i < n; i++) {
+        Vector a = elements[i].v[0], b = elements[i].v[1];
+        Vector c = center_of_mass;
+        // Triangle with vertices a, b, c
+        int slices = 10;  // inaccurate and hacky inertia computation
+        for (int k = 0; k < slices; k++) {
+          inertia += length(a - b) *
+                     length2((a + (a - b) / slices * (0.5_f + i)) * 0.5_f - c) /
+                     slices;
+        }
+      }
+      inertia *= density;
+    } else {
+      for (int i = 0; i < n; i++) {
+        Vector a = elements[i].v[0], b = elements[i].v[1];
+        // Triangle with vertices (0, 0), a, b
+        real triangle_area = 0.5f * (a.x * b.y - a.y * b.x);
+        volume += triangle_area;
+        center_of_mass += triangle_area * (a + b) * (1.0f / 3.0f);
+      }
+      center_of_mass /= volume;
+      for (int i = 0; i < n; i++) {
+        Vector a = elements[i].v[0], b = elements[i].v[1];
+        Vector c = center_of_mass;
+        const Vector ac = a - c;
+        const Vector ba = b - a;
+        // Triangle with vertices a, b, c
+        inertia += (ac[0] * ba[1] - ba[0] * ac[1]) *
+                   (3 * sqr(ac[0]) + 3 * sqr(ac[1]) + sqr(ba[0]) + sqr(ba[1]) +
+                    3 * ac[0] * ba[0] + 3 * ac[1] * ba[1]);
+      }
+      inertia *= 1.0_f / 12 * density;
     }
-    center_of_mass /= volume;
-    for (int i = 0; i < n; i++) {
-      Vector a = elements[i].v[0], b = elements[i].v[1];
-      Vector c = center_of_mass;
-      const Vector ac = a - c;
-      const Vector ba = b - a;
-      // Triangle with vertices a, b, c
-      inertia += (ac[0] * ba[1] - ba[0] * ac[1]) *
-                 (3 * sqr(ac[0]) + 3 * sqr(ac[1]) + sqr(ba[0]) + sqr(ba[1]) +
-                  3 * ac[0] * ba[0] + 3 * ac[1] * ba[1]);
-    }
-    inertia *= 1.0_f / 12 * density;
-    assert_info(inertia > 0,
+    assert_info(inertia >= 0,
                 "Rigid body inertia cannot be negative. (Make sure vertices "
                 "are counter-clockwise)");
   }
@@ -46,7 +70,6 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
       TC_TRACE("Adding a codimensional (thin shell) rigid body");
       // Thin shell case
       // Volume is actually ``area'' in this case
-      TC_P(n);
       for (int i = 0; i < n; ++i) {
         Vector local_center_of_mass(0.0_f);
         for (int d = 0; d < dim; ++d) {
@@ -106,8 +129,8 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
         for (int d = 0; d < dim; ++d) {
           verts[d] = triangles[i].v[d] - center_of_mass;
         }
-        inertia += -tetrahedron_inertia_tensor(Vector(0.0_f), verts[0], verts[1],
-                                              verts[2]);
+        inertia += -tetrahedron_inertia_tensor(Vector(0.0_f), verts[0],
+                                               verts[1], verts[2]);
       }
     }
   };
@@ -117,9 +140,9 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
   this->mass = volume * density;
   TC_P(mass);
   TC_P(inertia);
-  assert_info(this->mass > 0,
-              "Rigid body mass cannot be negative. (Make sure vertices "
-              "are counter-clockwise)");
+  TC_ASSERT_INFO(this->mass > 0,
+                 "Rigid body mass cannot be negative. (Make sure vertices "
+                 "are counter-clockwise)");
   return center_of_mass;
 }
 

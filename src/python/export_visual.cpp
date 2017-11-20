@@ -27,53 +27,18 @@ PYBIND11_MAKE_OPAQUE(std::vector<taichi::Triangle>);
 
 TC_NAMESPACE_BEGIN
 
-uint64 get_function12_address(Function12 &func) {
-  return (uint64)(&func);
-}
+template <typename T, typename V>
+V address_as(T &obj) {
+  return (V)(&obj);
+};
 
-uint64 get_function13_address(Function13 &func) {
-  return (uint64)(&func);
-}
-
-Function12 function12_from_py_obj(py::object func) {
-  return [func](real p) -> Vector2 {
+template <int N, int M, typename T>
+VectorFunction<N, M, T> function_from_py_obj(py::object func) {
+  return [func](const VectorLengthed<N, T> &p) -> VectorLengthed<M, T> {
     // TODO: GIL here seems inefficient...
     PyGILState_STATE state = PyGILState_Ensure();
     py::function f = py::reinterpret_borrow<py::function>(func);
-    Vector2 ret = f(p).cast<Vector2>();
-    PyGILState_Release(state);
-    return ret;
-  };
-}
-
-Function13 function13_from_py_obj(py::object func) {
-  return [func](real p) -> Vector3 {
-    // TODO: GIL here seems inefficient...
-    PyGILState_STATE state = PyGILState_Ensure();
-    py::function f = py::reinterpret_borrow<py::function>(func);
-    Vector3 ret = f(p).cast<Vector3>();
-    PyGILState_Release(state);
-    return ret;
-  };
-}
-
-Function23 function23_from_py_obj(py::object func) {
-  return [func](Vector2 p) -> Vector3 {
-    // TODO: GIL here seems inefficient...
-    PyGILState_STATE state = PyGILState_Ensure();
-    py::function f = py::reinterpret_borrow<py::function>(func);
-    Vector3 ret = f(p).cast<Vector3>();
-    PyGILState_Release(state);
-    return ret;
-  };
-}
-
-Function22 function22_from_py_obj(py::object func) {
-  return [func](Vector2 p) -> Vector2 {
-    // TODO: GIL here seems inefficient...
-    PyGILState_STATE state = PyGILState_Ensure();
-    py::function f = py::reinterpret_borrow<py::function>(func);
-    Vector2 ret = f(p).cast<Vector2>();
+    VectorLengthed<M, T> ret = f(p).template cast<VectorLengthed<M, T>>();
     PyGILState_Release(state);
     return ret;
   };
@@ -90,14 +55,21 @@ void export_visual(py::module &m) {
   DEFINE_VECTOR_OF_NAMED(RenderParticle, "RenderParticles");
   DEFINE_VECTOR_OF_NAMED(Triangle, "Triangles");
 
-  m.def("get_function12_address", get_function12_address);
-  m.def("get_function13_address", get_function13_address);
+  m.def("get_function11_address", address_as<Function12, uint64>);
+  m.def("get_function12_address", address_as<Function12, uint64>);
+  m.def("get_function13_address", address_as<Function13, uint64>);
 
-  m.def("function12_from_py_obj", function12_from_py_obj);
-  m.def("function13_from_py_obj", function13_from_py_obj);
+  m.def("function11_from_py_obj", function_from_py_obj<1, 1, real>);
+  m.def("function12_from_py_obj", function_from_py_obj<1, 2, real>);
+  m.def("function13_from_py_obj", function_from_py_obj<1, 3, real>);
 
-  m.def("function22_from_py_obj", function22_from_py_obj);
-  m.def("function23_from_py_obj", function23_from_py_obj);
+  m.def("function21_from_py_obj", function_from_py_obj<2, 1, real>);
+  m.def("function22_from_py_obj", function_from_py_obj<2, 2, real>);
+  m.def("function23_from_py_obj", function_from_py_obj<2, 3, real>);
+
+  m.def("function31_from_py_obj", function_from_py_obj<3, 1, real>);
+  m.def("function32_from_py_obj", function_from_py_obj<3, 2, real>);
+  m.def("function33_from_py_obj", function_from_py_obj<3, 3, real>);
 
   // TODO: these should registered by iterating over existing interfaces.
   m.def("merge_mesh", merge_mesh);

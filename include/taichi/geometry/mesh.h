@@ -11,6 +11,7 @@
 
 #include <memory>
 #include <vector>
+#include <taichi/common/config.h>
 #include <taichi/math.h>
 
 TC_NAMESPACE_BEGIN
@@ -37,6 +38,12 @@ template <int dim>
 struct ElementMesh {
   using Elem = Element<dim>;
   std::vector<Elem> elements;
+  using MatrixP = MatrixND<dim + 1, real>;
+  MatrixP transform;
+
+  void initialize(const Config &config) {
+
+  }
 };
 
 TC_NAMESPACE_END

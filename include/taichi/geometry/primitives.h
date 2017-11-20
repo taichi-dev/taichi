@@ -113,6 +113,7 @@ struct Triangle {
     coord_u = (uv * wv - vv * wu) / dom;
     coord_v = (uv * wu - uu * wv) / dom;
   }
+
   void get_coord(const Vector3 &inter, real &coord_u, real &coord_v) const {
     const Vector3 inter_local = inter - v[0];
     const Vector3 u = v10, v = v20;
@@ -122,6 +123,7 @@ struct Triangle {
     coord_u = (uv * wv - vv * wu) / dom;
     coord_v = (uv * wu - uu * wv) / dom;
   }
+
   void intersect(Ray &ray) {
     const Vector3 &orig = ray.orig;
     const Vector3 &dir = ray.dir;

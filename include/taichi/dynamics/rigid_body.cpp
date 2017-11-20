@@ -13,7 +13,7 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
   real volume = 0.0f;
   InertiaType inertia(0);
   TC_STATIC_IF(dim == 2) {
-    std::vector<Element<2>> &elements = this->mesh->elements;
+    const std::vector<Element<2>> &elements = this->mesh->elements;
     int n = (int)elements.size();
     if (this->codimensional) {
       // This shell
@@ -64,7 +64,7 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
   }
   TC_STATIC_ELSE {
     // 3D
-    std::vector<Triangle> triangles = mesh->get_triangles();
+    std::vector<Element<3>> triangles = mesh->elements;
     int n = triangles.size();
     if (codimensional) {
       TC_TRACE("Adding a codimensional (thin shell) rigid body");

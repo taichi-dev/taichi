@@ -9,7 +9,6 @@
 #include <mutex>
 #include <taichi/math/angular.h>
 #include <taichi/geometry/mesh.h>
-#include <taichi/visual/scene.h>
 #include <taichi/math.h>
 
 TC_NAMESPACE_BEGIN
@@ -33,7 +32,7 @@ struct RigidBody {
   // Segment mesh for 2D and thin shell for 3D
   bool codimensional;
   real friction, restitution;
-  MatrixP mesh_to_local;
+  MatrixP mesh_to_centroid;
 
   AngularVelocity<dim> angular_velocity, tmp_angular_velocity;
   Rotation<dim> rotation;
@@ -50,9 +49,8 @@ struct RigidBody {
 
   Vector rotation_axis;
 
-  using ElementType =
-      std::conditional_t<dim == 2, typename ElementMesh<dim>::Elem, Triangle>;
-  using MeshType = std::conditional_t<dim == 2, ElementMesh<dim>, Mesh>;
+  using ElementType = typename ElementMesh<dim>::Elem;
+  using MeshType = ElementMesh<dim>;
 
   std::shared_ptr<MeshType> mesh;
   std::mutex mut;
@@ -70,6 +68,7 @@ struct RigidBody {
     friction = 0;
     restitution = 0;
     color = Vector3(0.5_f);
+    mesh_to_centroid = MatrixP::identidy();
     coin = 1;
   }
 
@@ -208,18 +207,14 @@ struct RigidBody {
   // Returns center of mass
   Vector initialize_mass_and_inertia(real density);
 
-  MatrixP get_world_to_local() const {
-    return inversed(get_local_to_world());
-  }
-
-  MatrixP get_local_to_world() const {
+  MatrixP get_centroid_to_world() const {
     MatrixP trans(rotation.get_rotation_matrix());
     trans[dim][dim] = 1;
     return matrix_translate(&trans, position);
   }
 
   MatrixP get_mesh_to_world() const {
-    return get_local_to_world() * mesh_to_local;
+    return get_centroid_to_world() * mesh_to_centroid;
   };
 
   void enforce_velocity_parallel_to(Vector direction) {

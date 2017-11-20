@@ -256,6 +256,15 @@ def sleep(seconds=-1):
   else:
     time.sleep(seconds)
     
+def function11(f):
+  func = taichi.core.function11_from_py_obj(f)
+  function11.keeper.append(f)
+  function11.keeper.append(func)
+  func_address = taichi.core.get_function11_address(func)
+  return func_address
+
+function11.keeper = []
+
 def function12(f):
   func = taichi.core.function12_from_py_obj(f)
   function12.keeper.append(f)

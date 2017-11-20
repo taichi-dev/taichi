@@ -242,3 +242,18 @@ TC_NAMESPACE_END
 //******************************************************************************
 
 #include "serialization.h"
+
+//******************************************************************************
+//                                   Misc.
+//******************************************************************************
+
+TC_NAMESPACE_BEGIN
+
+extern int __trash__;
+template <typename T>
+void trash(T &&t) {
+  static_assert(!std::is_same<T, void>());
+  __trash__ = *reinterpret_cast<uint8*>(&t);
+}
+
+TC_NAMESPACE_END

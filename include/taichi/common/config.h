@@ -60,10 +60,12 @@ class Config {
   }
 
   template <typename V>
-  typename std::enable_if_t<(!is_VectorND<V>()), V> get(std::string key) const;
+  typename std::enable_if_t<(!type::is_VectorND<V>()), V> get(
+      std::string key) const;
 
-  template <typename V,
-            typename std::enable_if<(is_VectorND<V>()), V>::type * = nullptr>
+  template <
+      typename V,
+      typename std::enable_if<(type::is_VectorND<V>()), V>::type * = nullptr>
   V get(std::string key) const {
     constexpr int N = V::D;
     using T = typename V::ScalarType;

@@ -120,7 +120,7 @@ void Array2D<T>::write_text(const std::string &font_fn,
   FILE *font_file = fopen(font_fn.c_str(), "rb");
   assert_info(font_file != nullptr,
               "Font file not found: " + std::string(font_fn));
-  fread(&buffer[0], 1, 24 << 20, font_file);
+  trash(fread(&buffer[0], 1, 24 << 20, font_file));
   stbtt_InitFont(&font, &buffer[0], 0);
 
   scale = stbtt_ScaleForPixelHeight(&font, size);

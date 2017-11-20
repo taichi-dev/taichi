@@ -127,7 +127,7 @@ struct RigidBody {
     if (rot_func) {
       TC_STATIC_IF(dim == 3) {
         auto rot_quat = [&](real t) {
-          Vector r = this->rot_func(t) * (pi / 180);
+          Vector r = radians(this->rot_func(t));
           Eigen::AngleAxis<real> angleAxisX(r[0],
                                             Eigen::Matrix<real, 3, 1>::UnitX());
           Eigen::AngleAxis<real> angleAxisY(r[1],

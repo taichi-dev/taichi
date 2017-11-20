@@ -16,4 +16,6 @@ CoreState &CoreState::get_instance() {
   return state;
 }
 
+int __trash__;
+
 TC_NAMESPACE_END

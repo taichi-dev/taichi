@@ -1498,12 +1498,6 @@ TC_FORCE_INLINE VectorND<DIM, T> max(const VectorND<DIM, T> &a,
   return ret;
 }
 
-template <typename>
-struct is_VectorND : public std::false_type {};
-
-template <int N, typename T, InstSetExt ISE>
-struct is_VectorND<VectorND<N, T, ISE>> : public std::true_type {};
-
 inline Matrix4 matrix4_translate(Matrix4 *transform, const Vector3 &offset) {
   return Matrix4(Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0),
                  Vector4(offset, 1.0_f)) *
@@ -1585,5 +1579,22 @@ static_assert(
     TextSerializer::has_io<
         const taichi::MatrixND<4, double, (taichi::InstSetExt)3>>::value,
     "");
+
+namespace type {
+template <typename T>
+struct element_ {
+  using type = std::
+      conditional_t<std::is_arithmetic<T>::value, T, typename T::ScalarType>;
+};
+
+template <typename T>
+using element = typename element_<T>::type;
+
+template <typename>
+struct is_VectorND : public std::false_type {};
+
+template <int N, typename T, InstSetExt ISE>
+struct is_VectorND<VectorND<N, T, ISE>> : public std::true_type {};
+}
 
 TC_NAMESPACE_END

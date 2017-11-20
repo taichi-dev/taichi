@@ -55,7 +55,7 @@ void export_visual(py::module &m) {
   DEFINE_VECTOR_OF_NAMED(RenderParticle, "RenderParticles");
   DEFINE_VECTOR_OF_NAMED(Triangle, "Triangles");
 
-  m.def("get_function11_address", address_as<Function12, uint64>);
+  m.def("get_function11_address", address_as<Function11, uint64>);
   m.def("get_function12_address", address_as<Function12, uint64>);
   m.def("get_function13_address", address_as<Function13, uint64>);
 
@@ -138,10 +138,15 @@ void export_visual(py::module &m) {
       .def("initialize", &SDF::initialize)
       .def("eval", &SDF::eval);
 
+  py::class_<Function11>(m, "Function11");
   py::class_<Function12>(m, "Function12");
   py::class_<Function13>(m, "Function13");
+  py::class_<Function21>(m, "Function21");
   py::class_<Function22>(m, "Function22");
   py::class_<Function23>(m, "Function23");
+  py::class_<Function31>(m, "Function31");
+  py::class_<Function32>(m, "Function32");
+  py::class_<Function33>(m, "Function33");
 }
 
 TC_NAMESPACE_END

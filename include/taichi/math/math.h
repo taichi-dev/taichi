@@ -16,4 +16,14 @@
 
 TC_NAMESPACE_BEGIN
 
+template <typename T>
+inline T degrees(T rad) {
+  return rad * (type::element<T>(180) / pi);
+}
+
+template <typename T>
+inline T radians(T deg) {
+  return deg * (pi / type::element<T>(180));
+}
+
 TC_NAMESPACE_END

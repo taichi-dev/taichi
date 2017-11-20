@@ -85,9 +85,10 @@ class TestLinAlg : public Task {
 
     test_qr();
 
-    static_assert(is_VectorND<VectorND<3, float>>(),
+    static_assert(type::is_VectorND<VectorND<3, float>>(),
                   "VectorND should be VectorND");
-    static_assert(!is_VectorND<std::string>(), "std::string is not VectorND.");
+    static_assert(!type::is_VectorND<std::string>(),
+                  "std::string is not VectorND.");
 
     std::cout << "Passed." << std::endl;
   }

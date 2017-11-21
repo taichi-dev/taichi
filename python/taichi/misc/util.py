@@ -284,6 +284,8 @@ def function13(f):
 function13.keeper = []
 
 def constant_function(v):
+  if isinstance(v, int) or isinstance(v, float):
+    return function11(lambda t: v)
   if isinstance(v, tuple):
     v = taichi.Vector(*v)
   if isinstance(v, taichi.core.Vector2f):

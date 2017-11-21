@@ -81,19 +81,16 @@ struct ElementMesh {
 
   void initialize(const Config &config) {
     TC_STATIC_IF(dim == 2) {
-      std::vector<Vector> vertices;
-      for (int i = 0; i < 1000; i++) {
-        std::string key_name = fmt::format("p{:03}", i);
-        if (!config.has_key(key_name)) {
-          break;
-        }
-        auto v = config.get<Vector>(key_name);
-        vertices.push_back(v);
-      }
-      for (int i = 0; i < (int)vertices.size() - 1; i++) {
+      std::string s = config.get<std::string>("segment_mesh");
+      std::stringstream ss(s);
+      int n;
+      ss >> n;
+      for (int i = 0; i < n; i++) {
         Elem elem;
-        elem.v[0] = vertices[i];
-        elem.v[1] = vertices[i + 1];
+        ss >> elem.v[0][0];
+        ss >> elem.v[0][1];
+        ss >> elem.v[1][0];
+        ss >> elem.v[1][1];
         elements.push_back(elem);
       }
     }

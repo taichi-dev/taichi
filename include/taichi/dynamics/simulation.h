@@ -38,8 +38,9 @@ class Simulation : public Unit {
     num_threads = config.get("num_threads", 8);
   }
 
-  virtual void add_particles(const Config &config) {
+  virtual std::string add_particles(const Config &config) {
     TC_ERROR("no impl");
+    return "";
   }
 
   virtual void step(real t) {

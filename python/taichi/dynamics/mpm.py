@@ -71,7 +71,7 @@ class MPM:
     self.visualize_count_limit = 400000.0
 
   def add_particles(self, **kwargs):
-    self.c.add_particles(P(**kwargs))
+    return self.c.add_particles(P(**kwargs))
 
   def update_levelset(self, t0, t1):
     if len(self.res) == 2:

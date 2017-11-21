@@ -179,4 +179,8 @@ class MPM:
       self.visualize()
       if print_profile_info:
         tc.core.print_profile_info()
+  
+  def add_articulation(self, **kwargs):
+    kwargs['action'] = 'add_articulation'
+    self.c.general_action(P(**kwargs))
 

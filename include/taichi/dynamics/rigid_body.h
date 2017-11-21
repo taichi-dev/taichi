@@ -78,6 +78,20 @@ struct RigidBody {
     angular_velocity += get_inversed_inertia() * torque;
   }
 
+  InertiaType get_inertia() const {
+    InertiaType ret;
+    TC_STATIC_IF(dim == 2) {
+      ret = inertia;
+    }
+    TC_STATIC_ELSE {
+      // "Rotate" the inertia_tensor
+      Matrix rotation_matrix = rotation.get_rotation_matrix();
+      ret = rotation_matrix * inertia * transposed(rotation_matrix);
+    };
+    TC_STATIC_END_IF
+    return ret;
+  }
+
   InertiaType get_inversed_inertia() const {
     InertiaType ret;
     TC_STATIC_IF(dim == 2) {
@@ -200,8 +214,8 @@ struct RigidBody {
   }
 
   // Self-centered angular_momemtum
-  real get_angular_momemtum() const {
-    return inertia * angular_velocity;
+  typename AngularVelocity<dim>::ValueType get_angular_momemtum() const {
+    return inertia * angular_velocity.value;
   }
 
   // Returns center of mass
@@ -234,10 +248,6 @@ struct RigidBody {
           dot(angular_velocity.value, direction) * direction;
     }
     TC_STATIC_END_IF
-  }
-
-  InertiaType get_inv_inertia() const {
-    return inversed(inertia);
   }
 
   // Inputs: impulse point minus position, and normal

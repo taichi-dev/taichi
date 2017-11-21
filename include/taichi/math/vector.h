@@ -725,8 +725,9 @@ TC_FORCE_INLINE VectorND<DIM, T, ISE> operator*(const VectorND<DIM, T, ISE> &v,
 }
 
 template <int DIM, typename T, InstSetExt ISE>
-TC_FORCE_INLINE VectorND<DIM, T, ISE> operator
-/(T a, const VectorND<DIM, T, ISE> &v) {
+TC_FORCE_INLINE VectorND<DIM, T, ISE> operator/(
+    T a,
+    const VectorND<DIM, T, ISE> &v) {
   return VectorND<DIM, T, ISE>(a) / v;
 }
 
@@ -1211,8 +1212,8 @@ TC_FORCE_INLINE MatrixND<2, T, ISE> inversed(const MatrixND<2, T, ISE> &mat) {
 
 template <InstSetExt ISE, typename T>
 MatrixND<3, T, ISE> inversed(const MatrixND<3, T, ISE> &mat) {
-  real det = determinant(mat);
-  return 1.0_f / det *
+  T det = determinant(mat);
+  return T(1.0) / det *
          MatrixND<3, T, ISE>(
              VectorND<3, T, ISE>(mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2],
                                  mat[2][1] * mat[0][2] - mat[0][1] * mat[2][2],
@@ -1607,14 +1608,12 @@ template <typename T, typename = void>
 struct element_;
 
 template <typename T>
-struct element_<T,
-                typename std::enable_if_t<std::is_arithmetic<T>::value>> {
+struct element_<T, typename std::enable_if_t<std::is_arithmetic<T>::value>> {
   using type = T;
 };
 
 template <typename T>
-struct element_<T,
-                typename std::enable_if_t<!std::is_arithmetic<T>::value>> {
+struct element_<T, typename std::enable_if_t<!std::is_arithmetic<T>::value>> {
   using type = typename T::ScalarType;
 };
 

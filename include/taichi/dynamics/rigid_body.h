@@ -190,8 +190,7 @@ struct RigidBody {
   }
 
   void reset_tmp_velocity() {
-    tmp_angular_velocity =
-        AngularVelocity<dim>((typename AngularVelocity<dim>::ValueType)(0.0f));
+    tmp_angular_velocity = AngularVelocity<dim>();
     tmp_velocity = Vector(0.0f);
   }
 

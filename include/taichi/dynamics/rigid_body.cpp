@@ -19,7 +19,6 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
       // This shell
       for (int i = 0; i < n; i++) {
         Vector a = elements[i].v[0], b = elements[i].v[1];
-        // Triangle with vertices (0, 0), a, b
         real triangle_area = length(a - b);
         volume += triangle_area;
         center_of_mass += triangle_area * (a + b) * (1.0f / 2.0f);
@@ -29,16 +28,12 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
         Vector a = elements[i].v[0], b = elements[i].v[1];
         Vector c = center_of_mass;
         // Triangle with vertices a, b, c
-        int slices = 10;  // inaccurate and hacky inertia computation
+        int slices = 10000;  // inaccurate and hacky inertia computation
         for (int k = 0; k < slices; k++) {
-          inertia +=
-              length(a - b) *
-              length2((a + (a - b) / (slices * 1.0_f) * (0.5_f + i)) * 0.5_f -
-                      c) /
-              slices;
+          inertia += length(a - b) / slices *
+                     length2(lerp((0.5_f + k) / slices, a, b) - c);
         }
       }
-      inertia *= density;
     } else {
       for (int i = 0; i < n; i++) {
         Vector a = elements[i].v[0], b = elements[i].v[1];
@@ -58,7 +53,7 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
                    (3 * sqr(ac[0]) + 3 * sqr(ac[1]) + sqr(ba[0]) + sqr(ba[1]) +
                     3 * ac[0] * ba[0] + 3 * ac[1] * ba[1]);
       }
-      inertia *= 1.0_f / 12 * density;
+      inertia *= 1.0_f / 12;
     }
     assert_info(inertia >= 0,
                 "Rigid body inertia cannot be negative. (Make sure vertices "
@@ -137,14 +132,16 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
     }
   };
   TC_STATIC_END_IF
-  inertia = density * inertia;
-  this->inertia = inertia;
+  this->inertia = inertia * density;
   this->mass = volume * density;
-  TC_P(mass);
-  TC_P(inertia);
-  TC_ASSERT_INFO(this->mass > 0,
-                 "Rigid body mass cannot be negative. (Make sure vertices "
-                 "are counter-clockwise)");
+  TC_P(this->mass);
+  TC_P(this->inertia);
+  TC_ASSERT_INFO(
+      this->mass > 0,
+      fmt::format(
+          "Rigid body mass ({}) cannot be negative. (Make sure vertices "
+          "are counter-clockwise)",
+          this->mass));
   return center_of_mass;
 }
 

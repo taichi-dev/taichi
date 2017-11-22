@@ -15,17 +15,12 @@ with Python.
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/microfacet.gif)
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/paper-cut.png)
 
-# Installation
+# Installation on Ubuntu 16.04
 (Research/private projects should be put into the folder `projects`, and will be automatically detected if the folder contains a `CMakeLists.txt`.)
 
-## On Ubuntu 16.04
+## 
 ```
 wget https://raw.githubusercontent.com/yuanming-hu/taichi/dev/install.py && python3 install.py
-```
-
-## On Arch Linux
-```
-sudo pacman -S python3 python-pip make cmake intel-tbb embree ffmpeg tk
 ```
 
 # View results

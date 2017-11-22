@@ -1,6 +1,6 @@
 ---
 Language:        Cpp
-# BasedOnStyle:  Chromium
+#BasedOnStyle:  Chromium
 AccessModifierOffset: -1
 AlignAfterOpenBracket: Align
 AlignConsecutiveAssignments: false

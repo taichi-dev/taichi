@@ -18,7 +18,6 @@ with Python.
 # Installation on Ubuntu 16.04
 (Research/private projects should be put into the folder `projects`, and will be automatically detected if the folder contains a `CMakeLists.txt`.)
 
-## 
 ```
 wget https://raw.githubusercontent.com/yuanming-hu/taichi/dev/install.py && python3 install.py
 ```

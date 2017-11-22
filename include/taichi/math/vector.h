@@ -708,7 +708,17 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
   }
 
   TC_IO_DECL {
-    TC_IO(d);
+    if (TC_SERIALIZER_IS(TextSerializer)) {
+      std::string ret = "(";
+      for (int i = 0; i < DIM - 1; i++) {
+        ret += fmt::format("{}, ", d[i]);
+      }
+      ret += fmt::format("{}", d[DIM - 1]);
+      ret += ")";
+      serializer("vec", ret);
+    } else {
+      TC_IO(d);
+    }
   }
 };
 
@@ -1084,7 +1094,20 @@ struct MatrixND {
   }
 
   TC_IO_DECL {
-    TC_IO(d);
+    TC_STATIC_IF(TC_SERIALIZER_IS(TextSerializer)) {
+      for (int i = 0; i < DIM; i++) {
+        std::string line = "[";
+        for (int j = 0; j < DIM; j++) {
+          line += fmt::format("{}   ", d[j][i]);
+        }
+        line += "]";
+        serializer.add_line(line);
+      }
+    }
+    TC_STATIC_ELSE {
+      TC_IO(d);
+    }
+    TC_STATIC_END_IF
   }
 };
 

@@ -379,6 +379,12 @@ class TextSerializer : public Serializer {
   static constexpr int indent_width = 2;
   bool first_line;
 
+ public:
+  TextSerializer() {
+    indent = 0;
+    first_line = false;
+  }
+
   void add_line(const std::string &str) {
     if (first_line) {
       first_line = false;
@@ -390,12 +396,6 @@ class TextSerializer : public Serializer {
 
   void add_line(const std::string &key, const std::string &value) {
     add_line(key + ": " + value);
-  }
-
- public:
-  TextSerializer() {
-    indent = 0;
-    first_line = false;
   }
 
   template <typename T>

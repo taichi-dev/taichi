@@ -110,3 +110,21 @@ def create_cylinder(res, smooth=True):
       lambda uv: Vector(0, 1, 0))
   cap = create_merged(cap1, cap2)
   return create_merged(cap, body)
+
+class SegmentMesh:
+  def __init__(self):
+    self.segments = []
+  
+  def add_segment(self, segment):
+    assert(len(segment) == 2)
+    assert(isinstance(segment[0], tuple))
+    assert(isinstance(segment[1], tuple))
+    self.segments.append(segment)
+  
+  def __str__(self):
+    ret = ''
+    ret += '{} '.format(2 * len(self.segments))
+    for seg in self.segments:
+      ret += '{} {} {} {} '.format(seg[0][0], seg[0][1], seg[1][0], seg[1][1])
+    return ret
+

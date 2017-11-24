@@ -167,6 +167,8 @@ class MPM:
   def clear_output_directory(self):
     frames_dir = os.path.join(self.directory, 'frames')
     taichi.clear_directory_with_suffix(frames_dir, 'json')
+    taichi.clear_directory_with_suffix(frames_dir, 'bgeo')
+    taichi.clear_directory_with_suffix(frames_dir, 'obj')
     
   def simulate(self, clear_output_directory=False, print_profile_info=False, frame_update=None):
     if clear_output_directory:
@@ -182,5 +184,8 @@ class MPM:
   
   def add_articulation(self, **kwargs):
     kwargs['action'] = 'add_articulation'
+    self.c.general_action(P(**kwargs))
+    
+  def action(self, **kwargs):
     self.c.general_action(P(**kwargs))
 

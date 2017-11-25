@@ -44,7 +44,6 @@ struct RigidBody {
   PositionFunctionType pos_func;
   RotationFunctionType rot_func;
 
-  int coin;
   int id;
 
   Vector rotation_axis;
@@ -69,7 +68,6 @@ struct RigidBody {
     restitution = 0;
     color = Vector3(0.5_f);
     mesh_to_centroid = MatrixP::identidy();
-    coin = 1;
   }
 
   void apply_impulse(Vector impulse, Vector orig) {
@@ -229,7 +227,7 @@ struct RigidBody {
 
   MatrixP get_mesh_to_world() const {
     return get_centroid_to_world() * mesh_to_centroid;
-  };
+  }
 
   void enforce_velocity_parallel_to(Vector direction) {
     direction = normalized(direction);

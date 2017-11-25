@@ -123,7 +123,7 @@ class SegmentMesh:
   
   def __str__(self):
     ret = ''
-    ret += '{} '.format(2 * len(self.segments))
+    ret += '{} '.format(len(self.segments))
     for seg in self.segments:
       ret += '{} {} {} {} '.format(seg[0][0], seg[0][1], seg[1][0], seg[1][1])
     return ret

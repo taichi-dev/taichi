@@ -27,6 +27,8 @@ struct RigidBody {
   InertiaType inertia;
   Vector position, velocity, tmp_velocity;
 
+  real linear_damping, angular_damping;
+
   Vector3 color;
 
   // Segment mesh for 2D and thin shell for 3D
@@ -66,6 +68,8 @@ struct RigidBody {
     angular_velocity = AngularVelocity<dim>();
     friction = 0;
     restitution = 0;
+    linear_damping = 0;
+    angular_damping = 0;
     color = Vector3(0.5_f);
     mesh_to_centroid = MatrixP::identidy();
   }
@@ -134,6 +138,7 @@ struct RigidBody {
       }
     } else {
       position += velocity * dt;
+      velocity *= std::exp(-linear_damping * dt);
     }
     if (rot_func) {
       TC_STATIC_IF(dim == 3) {
@@ -186,6 +191,7 @@ struct RigidBody {
       TC_STATIC_END_IF
     } else {
       rotation.apply_angular_velocity(angular_velocity, dt);
+      angular_velocity.value *= std::exp(-angular_damping * dt);
     }
   }
 

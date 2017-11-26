@@ -137,8 +137,8 @@ struct RigidBody {
         velocity = Vector(0);
       }
     } else {
-      position += velocity * dt;
       velocity *= std::exp(-linear_damping * dt);
+      position += velocity * dt;
     }
     if (rot_func) {
       TC_STATIC_IF(dim == 3) {
@@ -190,8 +190,8 @@ struct RigidBody {
       }
       TC_STATIC_END_IF
     } else {
-      rotation.apply_angular_velocity(angular_velocity, dt);
       angular_velocity.value *= std::exp(-angular_damping * dt);
+      rotation.apply_angular_velocity(angular_velocity, dt);
     }
   }
 

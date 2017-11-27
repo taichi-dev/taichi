@@ -56,8 +56,8 @@ class SparseMatrix {
     }
   }
 
-  Array1D multiply(const Array1D &x) {
-    Array1D y(x.get_dim());
+  Array1D<real> multiply(const Array1D<real> &x) {
+    Array1D<real> y(x.get_dim());
 
     return y;
   }

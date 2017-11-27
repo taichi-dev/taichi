@@ -200,7 +200,8 @@ class SkyTexture final : public Texture {
         lerp(Vector3(1.0_f),
              pow(vSunE * ((betaRTheta + betaMTheta) / (vBetaR + vBetaM)) * Fex,
                  Vector3(1.0_f / 2.0_f)),
-             Vector3(clamp(pow(1.0_f - dot(up, vSunDirection), 5.0_f), 0.0_f, 1.0_f)));
+             Vector3(clamp(pow(1.0_f - dot(up, vSunDirection), 5.0_f), 0.0_f,
+                           1.0_f)));
 
     // nightsky
     // TODO: why unused?

@@ -228,8 +228,8 @@ class Logger {
   void debug(const std::string &s);
   void info(const std::string &s);
   void warn(const std::string &s);
-  void error(const std::string &s, bool raise_signal=true);
-  void critical(const std::string &s, bool raise_signal=true);
+  void error(const std::string &s, bool raise_signal = true);
+  void critical(const std::string &s, bool raise_signal = true);
   void flush();
 };
 
@@ -253,7 +253,7 @@ extern int __trash__;
 template <typename T>
 void trash(T &&t) {
   static_assert(!std::is_same<T, void>::value, "");
-  __trash__ = *reinterpret_cast<uint8*>(&t);
+  __trash__ = *reinterpret_cast<uint8 *>(&t);
 }
 
 TC_NAMESPACE_END

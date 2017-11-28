@@ -180,6 +180,12 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
     }
   }
 
+  explicit TC_FORCE_INLINE VectorND(const std::array<T, DIM> &o) {
+    for (int i = 0; i < DIM; i++) {
+      d[i] = o[i];
+    }
+  }
+
   // Vector3f
   template <int DIM_ = DIM,
             typename T_ = T,

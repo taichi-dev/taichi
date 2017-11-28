@@ -170,14 +170,15 @@ class MPM:
     taichi.clear_directory_with_suffix(frames_dir, 'bgeo')
     taichi.clear_directory_with_suffix(frames_dir, 'obj')
     
-  def simulate(self, clear_output_directory=False, print_profile_info=False, frame_update=None):
+  def simulate(self, clear_output_directory=False, print_profile_info=False, frame_update=None, update_frequency=1):
     if clear_output_directory:
       self.clear_output_directory()
     for i in range(self.num_frames):
-      if frame_update:
-        frame_update(self.get_current_time(), self.frame_dt)
       print('Simulating frame {}'.format(i))
-      self.step(self.frame_dt)
+      for k in range(update_frequency):
+        if frame_update:
+          frame_update(self.get_current_time(), self.frame_dt / update_frequency)
+        self.step(self.frame_dt / update_frequency)
       self.visualize()
       if print_profile_info:
         tc.core.print_profile_info()

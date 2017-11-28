@@ -306,7 +306,7 @@ class SlicedTexture : public Texture {
 
 TC_IMPLEMENTATION(Texture, SlicedTexture, "sliced");
 
-class MeshTexture : public Texture {
+class FastMeshTexture : public Texture {
  protected:
   Array3D<real> arr;
   Vector3i resolution;
@@ -391,6 +391,58 @@ class MeshTexture : public Texture {
     } else
       return Vector4(0);
   }
+};
+
+TC_IMPLEMENTATION(Texture, FastMeshTexture, "fast_mesh")
+
+class MeshTexture : public Texture {
+protected:
+    std::shared_ptr<SceneGeometry> scene_geometry;
+    Vector3 offset;
+
+public:
+    // parameter name for mesh path is 'filename'
+    void initialize(const Config &config) override {
+        Texture::initialize(config);
+        Mesh mesh;
+        mesh.initialize(config);
+        Scene scene;
+        Vector3 scale = config.get("scale", Vector3(1));
+        Vector3 translate = config.get("translate", Vector3(0));
+        auto mesh_p = std::make_shared<Mesh>(mesh);
+        Matrix4 trans(1);
+        trans = matrix4_scale(&trans, scale);
+        trans = matrix4_translate(&trans, translate);
+        mesh_p->transform = trans;
+        scene.add_mesh(mesh_p);
+        scene.finalize_geometry();
+        auto ray_intersection = create_instance<RayIntersection>("embree");
+        scene_geometry = std::make_shared<SceneGeometry>(std::make_shared<Scene>(scene), ray_intersection);
+        if (config.get("adaptive", true)) {
+            BoundingBox bb = mesh.get_bounding_box();
+            offset = (bb.lower_boundary + bb.upper_boundary) / 2.0_f - Vector3(0.5_f);
+        } else {
+            offset = Vector3(0.0_f);
+        }
+    }
+
+    virtual Vector4 sample(const Vector3 &coord) const override {
+        real x = coord.x + offset.x;
+        real y = coord.y + offset.y;
+        real z = coord.z + offset.z;
+        bool inside = false;
+        while (true) {
+            Ray ray(Vector3(x, y, z), Vector3(0, 0, 1));
+            scene_geometry->query(ray);
+            if (ray.dist == Ray::DIST_INFINITE) {
+                break;
+            } else {
+                z += ray.dist;
+                inside = !inside;
+            }
+        }
+        return Vector4(inside ? 1.0_f : 0.0_f);
+    }
 };
 
 TC_IMPLEMENTATION(Texture, MeshTexture, "mesh")

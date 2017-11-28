@@ -412,18 +412,16 @@ public:
         auto mesh_p = std::make_shared<Mesh>(mesh);
         Matrix4 trans(1);
         trans = matrix4_scale(&trans, scale);
+        if (config.get("adaptive", true)) {
+            BoundingBox bb = mesh.get_bounding_box();
+            translate -= (bb.lower_boundary + bb.upper_boundary) / 2.0_f * scale;
+        }
         trans = matrix4_translate(&trans, translate);
         mesh_p->transform = trans;
         scene.add_mesh(mesh_p);
         scene.finalize_geometry();
         auto ray_intersection = create_instance<RayIntersection>("embree");
         scene_geometry = std::make_shared<SceneGeometry>(std::make_shared<Scene>(scene), ray_intersection);
-        if (config.get("adaptive", true)) {
-            BoundingBox bb = mesh.get_bounding_box();
-            offset = (bb.lower_boundary + bb.upper_boundary) / 2.0_f - Vector3(0.5_f);
-        } else {
-            offset = Vector3(0.0_f);
-        }
     }
 
     virtual Vector4 sample(const Vector3 &coord) const override {

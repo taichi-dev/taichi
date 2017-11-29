@@ -31,7 +31,7 @@ Logger::Logger() {
   TC_REGISTER_SIGNAL_HANDLER(SIGBUS, signal_handler);
   TC_REGISTER_SIGNAL_HANDLER(SIGFPE, signal_handler);
   spdlog::set_level(spdlog::level::trace);
-  TC_TRACE("Taichi core started. Thread ID={}", PID::get_pid());
+  TC_TRACE("Taichi core started. Thread ID = {}", PID::get_pid());
 }
 
 void Logger::trace(const std::string &s) {

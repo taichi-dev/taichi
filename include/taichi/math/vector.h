@@ -13,6 +13,7 @@
 #include <type_traits>
 #include <functional>
 #include <vector>
+#include <array>
 #include <taichi/common/util.h>
 #include <taichi/math/scalar.h>
 
@@ -726,6 +727,14 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
       TC_IO(d);
     }
   }
+
+  TC_FORCE_INLINE operator std::array<T, DIM> () const {
+    std::array<T, DIM> arr;
+    for (int i = 0; i < DIM; i++) {
+      arr[i] = d[i];
+    }
+    return arr;
+  };
 };
 
 template <int DIM, typename T, InstSetExt ISE>

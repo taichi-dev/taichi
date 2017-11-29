@@ -28,6 +28,7 @@ class Simulation : public Unit {
   static constexpr int D = DIM;
 
   Simulation() {
+    num_threads = -1;
   }
 
   virtual real get_current_time() const {
@@ -35,7 +36,8 @@ class Simulation : public Unit {
   }
 
   virtual void initialize(const Config &config) override {
-    num_threads = config.get("num_threads", 8);
+    // Use all threads by default
+    num_threads = config.get("num_threads", -1);
   }
 
   virtual std::string add_particles(const Config &config) {

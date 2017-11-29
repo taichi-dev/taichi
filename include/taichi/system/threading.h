@@ -68,8 +68,17 @@ class ThreadedTaskManager {
  public:
   template <typename T>
   void static run(const T &target, int begin, int end, int num_threads) {
-    tbb::task_arena limited_arena(num_threads);
-    limited_arena.execute([&]() { tbb::parallel_for(begin, end, target); });
+    if (num_threads > 0) {
+      tbb::task_arena limited_arena(num_threads);
+      limited_arena.execute([&]() { tbb::parallel_for(begin, end, target); });
+    } else {
+      TC_ASSERT_INFO(
+          num_threads == -1,
+          fmt::format(
+              "num_threads must be a positive number or -1, instead of [{}]",
+              num_threads));
+      tbb::parallel_for(begin, end, target);
+    }
   }
 
   template <typename T>

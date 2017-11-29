@@ -35,6 +35,14 @@ TC_EXPORT T *create_instance_raw(const std::string &alias,
                                  const Config &config);
 
 template <typename T>
+TC_EXPORT T *create_instance_placement(const std::string &alias, void *place);
+
+template <typename T>
+TC_EXPORT T *create_instance_placement(const std::string &alias,
+                                       void *place,
+                                       const Config &config);
+
+template <typename T>
 TC_EXPORT std::vector<std::string> get_implementation_names();
 
 class Unit {
@@ -102,10 +110,13 @@ class InterfaceHolder {
     TC_IMPLEMENTATION_HOLDER_NAME(T)(const std::string &name) {               \
       this->name = name;                                                      \
     }                                                                         \
-    typedef std::function<std::shared_ptr<T>()> FactoryMethod;                \
-    typedef std::function<T *()> FactoryRawMethod;                            \
+    using FactoryMethod = std::function<std::shared_ptr<T>()>;                \
+    using FactoryRawMethod = std::function<T *()>;                            \
+    using FactoryPlacementMethod = std::function<T *(void *)>;                \
     std::map<std::string, FactoryMethod> implementation_factories;            \
     std::map<std::string, FactoryRawMethod> implementation_raw_factories;     \
+    std::map<std::string, FactoryPlacementMethod>                             \
+        implementation_placement_factories;                                   \
     std::vector<std::string> get_implementation_names() const override {      \
       std::vector<std::string> names;                                         \
       for (auto &kv : implementation_factories) {                             \
@@ -119,6 +130,8 @@ class InterfaceHolder {
           std::make_pair(alias, [&]() { return std::make_shared<G>(); }));    \
       implementation_raw_factories.insert(                                    \
           std::make_pair(alias, [&]() { return new G(); }));                  \
+      implementation_placement_factories.insert(std::make_pair(               \
+          alias, [&](void *place) { return new (place) G(); }));              \
     }                                                                         \
     void insert(const std::string &alias, const FactoryMethod &f) {           \
       implementation_factories.insert(std::make_pair(alias, f));              \
@@ -157,6 +170,12 @@ class InterfaceHolder {
                   "Implementation [" + name + "::" + alias + "] not found!"); \
       return (factory->second)();                                             \
     }                                                                         \
+    T *create_placement(const std::string &alias, void *place) {              \
+      auto factory = implementation_placement_factories.find(alias);          \
+      assert_info(factory != implementation_placement_factories.end(),        \
+                  "Implementation [" + name + "::" + alias + "] not found!"); \
+      return (factory->second)(place);                                        \
+    }                                                                         \
     static TC_IMPLEMENTATION_HOLDER_NAME(T) * get_instance() {                \
       return static_cast<TC_IMPLEMENTATION_HOLDER_NAME(T) *>(                 \
           get_implementation_holder_instance_##T());                          \
@@ -179,13 +198,26 @@ class InterfaceHolder {
     return instance;                                                          \
   }                                                                           \
   template <>                                                                 \
-  class_name *create_instance_raw(const std::string &alias) {                 \
+  TC_EXPORT class_name *create_instance_raw(const std::string &alias) {       \
     return TC_IMPLEMENTATION_HOLDER_NAME(class_name)::get_instance()          \
         ->create_raw(alias);                                                  \
   }                                                                           \
   template <>                                                                 \
-  class_name *create_instance_raw(const std::string &alias,                   \
-                                  const Config &config) {                     \
+  TC_EXPORT class_name *create_instance_placement(const std::string &alias,   \
+                                                  void *place) {              \
+    return TC_IMPLEMENTATION_HOLDER_NAME(class_name)::get_instance()          \
+        ->create_placement(alias, place);                                     \
+  }                                                                           \
+  template <>                                                                 \
+  TC_EXPORT class_name *create_instance_placement(                            \
+      const std::string &alias, void *place, const Config &config) {          \
+    auto instance = create_instance_placement<class_name>(alias, place);      \
+    instance->initialize(config);                                             \
+    return instance;                                                          \
+  }                                                                           \
+  template <>                                                                 \
+  TC_EXPORT class_name *create_instance_raw(const std::string &alias,         \
+                                            const Config &config) {           \
     auto instance = create_instance_raw<class_name>(alias);                   \
     instance->initialize(config);                                             \
     return instance;                                                          \

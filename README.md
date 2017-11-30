@@ -17,7 +17,7 @@ with Python.
 
 # Installation on Ubuntu 16.04
 ```
-wget https://raw.githubusercontent.com/yuanming-hu/taichi/dev/install.py && python3 install.py
+wget https://raw.githubusercontent.com/yuanming-hu/taichi/master/install.py && python3 install.py
 ```
 
 # View results

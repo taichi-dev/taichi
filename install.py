@@ -40,7 +40,6 @@ if __name__ == '__main__':
     exit(-1)
   execute_command('git clone https://github.com/yuanming-hu/taichi.git')
   os.chdir('taichi')
-  execute_command('git checkout dev')
   execute_command('git clone https://github.com/yuanming-hu/taichi_runtime external/lib')
   
   #TODO: Make sure there is no existing Taichi ENV

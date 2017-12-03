@@ -15,6 +15,8 @@ class MPM:
   def __init__(self, **kwargs):
     res = kwargs['res']
     self.frame_dt = kwargs.get('frame_dt', 0.01)
+    if 'frame_dt' not in kwargs:
+      kwargs['frame_dt'] = self.frame_dt
     self.num_frames = kwargs.get('num_frames', 1000)
     if len(res) == 2:
       self.c = tc_core.create_simulation2('mpm')

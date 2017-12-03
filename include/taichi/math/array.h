@@ -14,6 +14,7 @@
 #include <taichi/math/array_3d.h>
 #include <taichi/math/array_op.h>
 
+TC_NAMESPACE_BEGIN
 template <int DIM>
 class IndexND;
 
@@ -22,3 +23,5 @@ class RegionND;
 
 template <int DIM, typename T>
 class ArrayND;
+
+TC_NAMESPACE_END

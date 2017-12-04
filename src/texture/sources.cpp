@@ -396,62 +396,64 @@ class FastMeshTexture : public Texture {
 TC_IMPLEMENTATION(Texture, FastMeshTexture, "fast_mesh")
 
 class MeshTexture : public Texture {
-protected:
-    std::shared_ptr<SceneGeometry> scene_geometry;
-    int mesh_accuracy = 3;
+ protected:
+  std::shared_ptr<SceneGeometry> scene_geometry;
+  int mesh_accuracy = 3;
 
-public:
-    // parameter name for mesh path is 'filename'
-    void initialize(const Config &config) override {
-        Texture::initialize(config);
-        mesh_accuracy = config.get("mesh_accuracy", mesh_accuracy);
-        Mesh mesh;
-        mesh.initialize(config);
-        Scene scene;
-        Vector3 scale = config.get("scale", Vector3(1));
-        Vector3 translate = config.get("translate", Vector3(0));
-        auto mesh_p = std::make_shared<Mesh>(mesh);
-        Matrix4 trans(1);
-        trans = matrix4_scale(&trans, scale);
-        if (config.get("adaptive", true)) {
-            BoundingBox bb = mesh.get_bounding_box();
-            translate -= (bb.lower_boundary + bb.upper_boundary) / 2.0_f * scale;
-        }
-        trans = matrix4_translate(&trans, translate);
-        mesh_p->transform = trans;
-        scene.add_mesh(mesh_p);
-        scene.finalize_geometry();
-        auto ray_intersection = create_instance<RayIntersection>("embree");
-        scene_geometry = std::make_shared<SceneGeometry>(std::make_shared<Scene>(scene), ray_intersection);
+ public:
+  // parameter name for mesh path is 'filename'
+  void initialize(const Config &config) override {
+    Texture::initialize(config);
+    mesh_accuracy = config.get("mesh_accuracy", mesh_accuracy);
+    Mesh mesh;
+    mesh.initialize(config);
+    Scene scene;
+    Vector3 scale = config.get("scale", Vector3(1));
+    Vector3 translate = config.get("translate", Vector3(0));
+    auto mesh_p = std::make_shared<Mesh>(mesh);
+    Matrix4 trans(1);
+    trans = matrix4_scale(&trans, scale);
+    if (config.get("adaptive", true)) {
+      BoundingBox bb = mesh.get_bounding_box();
+      translate -= (bb.lower_boundary + bb.upper_boundary) / 2.0_f * scale;
     }
+    trans = matrix4_translate(&trans, translate);
+    mesh_p->transform = trans;
+    scene.add_mesh(mesh_p);
+    scene.finalize_geometry();
+    auto ray_intersection = create_instance<RayIntersection>("embree");
+    scene_geometry = std::make_shared<SceneGeometry>(
+        std::make_shared<Scene>(scene), ray_intersection);
+  }
 
-    virtual Vector4 sample(const Vector3 &coord) const override {
-        auto emitting_ray_test = [&]() {
-            int inside = 0;
-            real alpha = rand() * 2.0_f * M_PI;
-            real beta = rand() * 2.0_f * M_PI;
-            Vector3 direction(Vector3(cos(alpha) * cos(beta), cos(alpha) * sin(beta), sin(alpha)));
-            Vector3 position = coord;
-            while (true) {
-                Ray ray(position, direction);
-                scene_geometry->query(ray);
-                if (ray.dist == Ray::DIST_INFINITE) {
-                    break;
-                } else {
-                    position += ray.dist * direction;
-                    inside = 1 - inside;
-                }
-            }
-            return inside;
-        };
-        int test_count[2];
-        test_count[0] = test_count[1] = 0;
-        for (int i= 0; i < mesh_accuracy; ++i) {
-            int test_result = emitting_ray_test();
-            test_count[test_result]++;
+  virtual Vector4 sample(const Vector3 &coord) const override {
+    auto emitting_ray_test = [&]() {
+      int inside = 0;
+      real alpha = rand() * 2.0_f * M_PI;
+      real beta = rand() * 2.0_f * M_PI;
+      Vector3 direction(
+          Vector3(cos(alpha) * cos(beta), cos(alpha) * sin(beta), sin(alpha)));
+      Vector3 position = coord;
+      while (true) {
+        Ray ray(position, direction);
+        scene_geometry->query(ray);
+        if (ray.dist == Ray::DIST_INFINITE) {
+          break;
+        } else {
+          position += ray.dist * direction;
+          inside = 1 - inside;
         }
-        return Vector4(test_count[1] > test_count[0] ? 1.0_f : 0.0_f);
+      }
+      return inside;
+    };
+    int test_count[2];
+    test_count[0] = test_count[1] = 0;
+    for (int i = 0; i < mesh_accuracy; ++i) {
+      int test_result = emitting_ray_test();
+      test_count[test_result]++;
     }
+    return Vector4(test_count[1] > test_count[0] ? 1.0_f : 0.0_f);
+  }
 };
 
 TC_IMPLEMENTATION(Texture, MeshTexture, "mesh")

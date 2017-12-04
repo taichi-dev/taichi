@@ -130,7 +130,7 @@ TC_FORCE_INLINE real distance_to_segment(const Vector2 &pos,
 }
 
 TC_FORCE_INLINE real distance_to_triangle(const Vector3 &pos,
-                                     const Element<3> &tri) {
+                                          const Element<3> &tri) {
   Vector3 normal = tri.get_normal();
   real height = dot(normal, (pos - tri.v[0]));
 

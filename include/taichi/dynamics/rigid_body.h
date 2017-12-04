@@ -23,8 +23,10 @@ struct RigidBody {
 
   using InertiaType = std::conditional_t<dim == 2, real, Matrix>;
 
-  real mass;
-  InertiaType inertia;
+ public:
+  real mass, inv_mass;
+  InertiaType inertia, inv_inertia;
+
   Vector position, velocity, tmp_velocity;
 
   real linear_damping, angular_damping;
@@ -77,10 +79,10 @@ struct RigidBody {
   void apply_impulse(Vector impulse, Vector orig) {
     velocity += impulse / mass;
     auto torque = cross(orig - position, impulse);
-    angular_velocity += get_inversed_inertia() * torque;
+    angular_velocity += get_transformed_inversed_inertia() * torque;
   }
 
-  InertiaType get_inertia() const {
+  InertiaType get_transformed_inertia() const {
     InertiaType ret;
     TC_STATIC_IF(dim == 2) {
       ret = inertia;
@@ -94,7 +96,7 @@ struct RigidBody {
     return ret;
   }
 
-  InertiaType get_inversed_inertia() const {
+  InertiaType get_transformed_inversed_inertia() const {
     InertiaType ret;
     TC_STATIC_IF(dim == 2) {
       ret = 1.0_f / inertia;
@@ -113,7 +115,7 @@ struct RigidBody {
 
     tmp_velocity += impulse / mass;
     auto torque = cross(orig - position, impulse);
-    tmp_angular_velocity += get_inversed_inertia() * torque;
+    tmp_angular_velocity += get_transformed_inversed_inertia() * torque;
 
     mut.unlock();
   }
@@ -121,7 +123,8 @@ struct RigidBody {
   void apply_position_impulse(Vector impulse, Vector orig) {
     position += impulse / mass;
     auto torque = cross(orig - position, impulse);
-    rotation.apply_angular_velocity(get_inversed_inertia() * torque, 1);
+    rotation.apply_angular_velocity(get_transformed_inversed_inertia() * torque,
+                                    1);
   }
 
   void advance(real t, real dt) {
@@ -262,13 +265,51 @@ struct RigidBody {
     }
     TC_STATIC_ELSE {
       ret = 1.0_f / mass;
-      InertiaType inversed_inertia = this->get_inversed_inertia();
+      InertiaType inversed_inertia = this->get_transformed_inversed_inertia();
       auto rn = cross_product_matrix(r);
       inversed_inertia = transposed(rn) * inversed_inertia * rn;
       ret += dot(n, inversed_inertia * n);
     }
     TC_STATIC_END_IF
     return ret;
+  }
+
+  real get_mass() const {
+    return mass;
+  }
+
+  real get_inv_mass() const {
+    return inv_mass;
+  }
+
+  InertiaType get_inertia() const {
+    return inertia;
+  }
+
+  InertiaType get_inv_inertia() const {
+    return inv_inertia;
+  }
+
+  void set_mass(real mass) {
+    TC_ASSERT(std::isnormal(mass));
+    this->mass = mass;
+    this->inv_mass = 1.0_f / mass;
+  }
+
+  void set_infinity_mass() {
+    this->mass = std::numeric_limits<real>::infinity();
+    this->inv_mass = 0.0_f;
+  }
+
+  void set_inertia(const InertiaType &inertia) {
+    this->inertia = inertia;
+    this->inv_inertia =
+        inversed(inertia.template cast<float64>()).template cast<real>();
+  }
+
+  void set_infinity_inertia() {
+    this->inertia = InertiaType(std::numeric_limits<real>::infinity());
+    this->inv_inertia = InertiaType(0.0_f);
   }
 };
 

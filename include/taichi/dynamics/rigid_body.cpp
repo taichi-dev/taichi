@@ -132,10 +132,14 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
     }
   };
   TC_STATIC_END_IF
-  this->inertia = inertia * density;
-  this->mass = volume * density;
+
+  set_inertia(inertia * density);
+  set_mass(volume * density);
+
   TC_P(this->mass);
   TC_P(this->inertia);
+  TC_P(this->inv_mass);
+  TC_P(this->inv_inertia);
   TC_ASSERT_INFO(
       this->mass > 0,
       fmt::format(

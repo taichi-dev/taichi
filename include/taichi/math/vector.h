@@ -728,7 +728,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
     }
   }
 
-  TC_FORCE_INLINE operator std::array<T, DIM> () const {
+  TC_FORCE_INLINE operator std::array<T, DIM>() const {
     std::array<T, DIM> arr;
     for (int i = 0; i < DIM; i++) {
       arr[i] = d[i];
@@ -1048,7 +1048,8 @@ struct MatrixND {
 
   template <typename G>
   TC_FORCE_INLINE MatrixND<DIM, G, ISE> cast() const {
-    return MatrixND([=](int i) { return d[i].template cast<G>(); });
+    return MatrixND<DIM, G, ISE>(
+        [=](int i) { return d[i].template cast<G>(); });
   }
 
   bool is_normal() const {

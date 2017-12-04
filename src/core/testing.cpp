@@ -7,17 +7,20 @@
     the MIT license as written in the LICENSE file.
 *******************************************************************************/
 
-#pragma once
-
-#include "util.h"
-#define BENCHMARK CATCH_BENCHMARK
-#include <catch.hpp>
-#undef BENCHMARK
+#define CATCH_CONFIG_RUNNER
+#include <taichi/common/testing.h>
 
 TC_NAMESPACE_BEGIN
 
-#define TC_TEST(x) TEST_CASE(x, ("[" x "]"))
-
-int run_tests();
+int run_tests() {
+  char arg[] = "test";
+  char *argv_[1];
+  argv_[0] = arg;
+  Catch::Session session;
+  int returnCode = session.applyCommandLine(1, argv_);
+  if (returnCode != 0)
+    return returnCode;
+  return session.run();
+}
 
 TC_NAMESPACE_END

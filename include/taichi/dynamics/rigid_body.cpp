@@ -21,7 +21,7 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
         Vector a = elements[i].v[0], b = elements[i].v[1];
         real triangle_area = length(a - b);
         volume += triangle_area;
-        center_of_mass += triangle_area * (a + b) * (1.0f / 2.0f);
+        center_of_mass += triangle_area * (a + b) * (1.0_f / 2.0_f);
       }
       center_of_mass /= volume;
       for (int i = 0; i < n; i++) {
@@ -40,7 +40,7 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
         // Triangle with vertices (0, 0), a, b
         real triangle_area = 0.5f * (a.x * b.y - a.y * b.x);
         volume += triangle_area;
-        center_of_mass += triangle_area * (a + b) * (1.0f / 3.0f);
+        center_of_mass += triangle_area * (a + b) * (1.0_f / 3.0_f);
       }
       center_of_mass /= volume;
       for (int i = 0; i < n; i++) {

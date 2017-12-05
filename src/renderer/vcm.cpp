@@ -107,7 +107,7 @@ class VCMRenderer : public BidirectionalRenderer {
             // printf("w\n");
             continue;
           }
-          Vector3 c = f * float(w / p);
+          Vector3 c = f * real(w / p);
           if (c.max() <= 0.0)
             continue;
           pc.push_back(Contribution(screen_u, screen_v, path_length, c));

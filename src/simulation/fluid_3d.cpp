@@ -116,7 +116,7 @@ void Smoke3D::initialize(const Config &config) {
   current_t = 0.0_f;
   boundary_condition = PoissonSolver3D::BCArray(res);
   for (auto &ind : boundary_condition.get_region()) {
-    Vector3 d = ind.get_pos() - res.cast<real>() * 0.5f;
+    Vector3 d = ind.get_pos() - res.cast<real>() * 0.5_f;
     if (length(d) * 4 < res[0] || ind.i == 0 || ind.i == res[0] - 1 ||
         ind.j == 0 || ind.k == 0 || ind.k == res[2] - 1) {
       // boundary_condition[ind] = PoissonSolver3D::NEUMANN;

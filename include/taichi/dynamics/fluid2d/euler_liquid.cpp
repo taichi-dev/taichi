@@ -778,7 +778,7 @@ void EulerLiquid::advect_level_set(real delta_t) {
 
 Vector2 EulerLiquid::sl_position(Vector2 position, real delta_t) {
   Vector2 velocity = sample_velocity(position, u, v);
-  Vector2 mid = (position - velocity * 0.5f * delta_t).clamp();
+  Vector2 mid = (position - velocity * 0.5_f * delta_t).clamp();
   velocity = sample_velocity(mid, u, v);
   position = (position - velocity * delta_t).clamp();
   return position;

@@ -220,7 +220,7 @@ class SkyTexture final : public Texture {
                               sunAngularDiameterCos + 0.00002f, cosTheta);
     L0 += (vSunE * 19000.0_f * Fex) * sundisk;
 
-    Vector3 texColor = (Lin + L0) * 0.04f + Vector3(0.0_f, 0.0003f, 0.00075f);
+    Vector3 texColor = (Lin + L0) * 0.04_f + Vector3(0.0_f, 0.0003f, 0.00075f);
 
     // Vector3 curr = Uncharted2Tonemap( ( log2( 2.0 / pow( luminance, 4.0 ) ) )
     // * texColor );

@@ -21,7 +21,7 @@ class PerlinNoiseTexture : public Texture {
     Texture::initialize(config);
   }
   virtual Vector4 sample(const Vector3 &coord) const override {
-    return Vector4(noise(coord * 256.0f));
+    return Vector4(noise(coord * 256.0_f));
   }
   real noise(Vector3 coord) const {
     return real(noise(coord.x, coord.y, coord.z));

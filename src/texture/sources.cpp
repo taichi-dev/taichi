@@ -110,7 +110,7 @@ class RectTexture : public Texture {
  public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
-    bounds = config.get<Vector3>("bounds") * 0.5f;
+    bounds = config.get<Vector3>("bounds") * 0.5_f;
   }
 
   bool inside(const Vector3 &coord) const {

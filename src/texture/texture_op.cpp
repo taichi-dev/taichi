@@ -147,7 +147,7 @@ class RotatedTexture : public Texture {
 
   virtual Vector4 sample(const Vector3 &coord_) const override {
     auto coord = coord_;
-    coord = coord * 2.f - Vector3(1.f, 1.f, 1.f);
+    coord = coord * 2._f - Vector3(1.f, 1.f, 1.f);
     for (int i = 0; i < rotate_times; i++) {
       switch (rotate_axis) {
         case 0:

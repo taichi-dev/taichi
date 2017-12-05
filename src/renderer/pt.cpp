@@ -743,7 +743,7 @@ class MCMCPTRenderer : public PathTracingRenderer {
  public:
   Array2D<Vector3> get_output() override {
     Array2D<Vector3> output(Vector2i(width, height));
-    float r = 1.0_f / sample_count;
+    real r = 1.0_f / sample_count;
     for (auto &ind : output.get_region()) {
       output[ind] = buffer[ind] * r;
     };

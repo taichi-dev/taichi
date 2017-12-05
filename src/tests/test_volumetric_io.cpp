@@ -15,7 +15,7 @@ TC_NAMESPACE_BEGIN
 void test_volumetric_io() {
   const int nx = 128, ny = 128, nz = 64, step = 16;
   std::vector<RenderParticle> particles;
-  Vector3 center = Vector3(nx, ny, nz) * 0.5f;
+  Vector3 center = Vector3(nx, ny, nz) * 0.5_f;
   for (int i = 0; i < nx; i++) {
     for (int j = 0; j < ny; j++) {
       for (int k = 0; k < nz; k++) {

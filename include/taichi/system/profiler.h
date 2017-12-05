@@ -24,13 +24,18 @@ class ProfilerRecords {
     Node *parent;
     std::string name;
     float64 total_time;
+    // Time per element
+    bool account_tpe;
+    uint64 total_elements;
     int64 num_samples;
 
     Node(const std::string &name, Node *parent) {
       this->name = name;
       this->parent = parent;
       this->total_time = 0.0_f64;
-      this->num_samples = 1LL;
+      this->num_samples = 1ll;
+      this->total_elements = 0ll;
+      this->account_tpe = false;
     }
 
     void insert_sample(float64 sample) {
@@ -38,8 +43,20 @@ class ProfilerRecords {
       total_time += sample;
     }
 
+    void insert_sample(float64 sample, uint64 elements) {
+      account_tpe = true;
+      num_samples += 1;
+      total_time += sample;
+      total_elements += elements;
+    }
+
     float64 get_averaged() const {
       return total_time / (float64)std::max(num_samples, int64(1));
+    }
+
+    float64 get_averaged_tpe() const {
+      TC_ASSERT(account_tpe);
+      return total_time / (float64)total_elements;
     }
 
     Node *get_child(const std::string &name) {
@@ -68,43 +85,67 @@ class ProfilerRecords {
   void print(Node *node, int depth) {
     auto make_indent = [depth](int additional) {
       for (int i = 0; i < depth + additional; i++) {
-        printf("  ");
+        fmt::print("  ");
       }
     };
+    using TimeScale = std::pair<real, std::string>;
+
+    auto get_time_scale = [&](real t) -> TimeScale {
+      if (t < 1e-6) {
+        return std::make_pair(1e9_f, "ns");
+      } else if (t < 1e-3) {
+        return std::make_pair(1e6_f, "us");
+      } else if (t < 1) {
+        return std::make_pair(1e3_f, "ms");
+      } else {
+        return std::make_pair(1_f, " s");
+      }
+    };
+
+    auto get_readable_time_with_scale = [&](real t, TimeScale scale) {
+      return fmt::format("{:7.3f} {}", t * scale.first, scale.second);
+    };
+
+    auto get_readable_time = [&](real t) {
+      auto scale = get_time_scale(t);
+      return get_readable_time_with_scale(t, scale);
+    };
+
     float64 total_time = node->get_averaged();
     if (depth == 0) {
       // Root node only
       make_indent(0);
-      printf("%s\n", node->name.c_str());
+      fmt::print("{}\n", node->name.c_str());
     }
     if (total_time < 1e-6f) {
       for (auto &ch : node->childs) {
         make_indent(1);
         auto child_time = ch->get_averaged();
-        printf("%7.3f %s\n", child_time, ch->name.c_str());
+        fmt::print("{} {}\n", get_readable_time(child_time), ch->name);
         print(ch.get(), depth + 1);
       }
     } else {
-      std::string unit = "s";
-      real scale = 1;
-      if (total_time < 0.1) {
-        // Use ms
-        unit = "ms";
-        scale = 1000;
-      }
+      TimeScale scale = get_time_scale(total_time);
       float64 unaccounted = total_time;
       for (auto &ch : node->childs) {
         make_indent(1);
         auto child_time = ch->get_averaged();
-        printf("%7.3f%s %5.2f%%  %s\n", child_time * scale, unit.c_str(),
-               child_time * 100.0 / total_time, ch->name.c_str());
+        fmt::print("{} {:5.2f}%  {}\n",
+                   get_readable_time_with_scale(child_time, scale),
+                   child_time * 100.0 / total_time, ch->name);
+        if (ch->account_tpe) {
+          make_indent(1);
+          fmt::print("                     [TPE] {}\n",
+                     get_readable_time(ch->get_averaged_tpe()));
+        }
         print(ch.get(), depth + 1);
         unaccounted -= child_time;
       }
       if (!node->childs.empty() && (unaccounted > total_time * 0.05)) {
         make_indent(1);
-        printf("%7.3f%s %5.2f%%  %s\n", unaccounted * scale, unit.c_str(),
-               unaccounted * 100.0 / total_time, "[unaccounted]");
+        fmt::print("{} {:5.2f}%  {}\n",
+                   get_readable_time_with_scale(unaccounted, scale),
+                   unaccounted * 100.0 / total_time, "[unaccounted]");
       }
     }
   }
@@ -117,6 +158,12 @@ class ProfilerRecords {
     if (!enabled)
       return;
     current_node->insert_sample(time);
+  }
+
+  void insert_sample(float64 time, uint64 tpe) {
+    if (!enabled)
+      return;
+    current_node->insert_sample(time, tpe);
   }
 
   void push(const std::string name) {
@@ -144,10 +191,12 @@ class Profiler {
   float64 start_time;
   std::string name;
   bool stopped;
+  uint64 elements;
 
-  Profiler(std::string name) {
+  Profiler(std::string name, uint64 elements = -1) {
     start_time = Time::get_time();
     this->name = name;
+    this->elements = elements;
     stopped = false;
     ProfilerRecords::get_instance().push(name);
   }
@@ -155,7 +204,11 @@ class Profiler {
   void stop() {
     assert_info(!stopped, "Profiler already stopped.");
     float64 elapsed = Time::get_time() - start_time;
-    ProfilerRecords::get_instance().insert_sample(elapsed);
+    if (elements != -1) {
+      ProfilerRecords::get_instance().insert_sample(elapsed, elements);
+    } else {
+      ProfilerRecords::get_instance().insert_sample(elapsed);
+    }
     ProfilerRecords::get_instance().pop();
   }
 
@@ -178,6 +231,12 @@ class Profiler {
   {                                  \
     Profiler _(name);                \
     statements;                      \
+  }
+
+#define TC_PROFILE_TPE(name, statements, elements) \
+  {                                                \
+    Profiler _(name, elements);                    \
+    statements;                                    \
   }
 
 TC_NAMESPACE_END

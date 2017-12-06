@@ -14,7 +14,7 @@ except Exception as e:
   print('    [Arch Linux] sudo pacman -S python-pip')
   exit(-1)
 
-required_packages = ['numpy', ('Pillow', 'PIL'), 'scipy', 'pybind11', 'flask', 'flask_cors']
+required_packages = ['numpy', ('Pillow', 'PIL'), 'scipy', 'pybind11', 'flask', 'flask_cors', 'GitPython']
 
 def install_package(pkg):
   pip.main(['install', '--user', pkg])

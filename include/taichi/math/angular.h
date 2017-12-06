@@ -53,7 +53,7 @@ class AngularVelocity {
       ret = Vector(-input.y, input.x) * value;
     }
     TC_STATIC_ELSE {
-      ret = cross(value, input);
+      ret = taichi::cross(value, input);
     }
     TC_STATIC_END_IF;
     return ret;

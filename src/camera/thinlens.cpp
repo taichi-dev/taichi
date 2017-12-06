@@ -51,9 +51,9 @@ class ThinLensCamera : public Camera {
                   rand_offset.y * tan_half_fov * up);
     Vector3 world_dir = normalized(multiply_matrix4(
         transform, local_dir, 0));  // TODO: why normalize here???
-    Vector3 focus_point = get_origin() +
-                          world_dir * (dot(focus - get_origin(), get_dir()) /
-                                       dot(get_dir(), world_dir));
+    Vector3 focus_point =
+        get_origin() + world_dir * (dot(focus - get_origin(), get_dir()) /
+                                    dot(get_dir(), world_dir));
     Vector2 uv = sample_lens(rand.next2());
     Vector3 orig = get_origin() + aperture * (uv[0] * right + uv[1] * up);
     return Ray(orig, normalized(focus_point - orig));

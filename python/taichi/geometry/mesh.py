@@ -120,7 +120,11 @@ class SegmentMesh:
     assert(isinstance(segment[0], tuple))
     assert(isinstance(segment[1], tuple))
     self.segments.append(segment)
-  
+
+  def add_closed_segments(self, segments):
+    for i in range(len(segments)):
+      self.segments.append((segments[i], segments[(i + 1) % len(segments)]))
+
   def __str__(self):
     ret = ''
     ret += '{} '.format(len(self.segments))

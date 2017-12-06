@@ -13,6 +13,8 @@ def get_num_cores():
 def get_root_directory():
   return os.environ['TAICHI_ROOT_DIR']
 
+def get_repo_directory():
+  return os.path.join(get_root_directory(), 'taichi')
 
 def get_bin_directory():
   if get_os_name() == 'win':

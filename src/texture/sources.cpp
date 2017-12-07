@@ -424,6 +424,44 @@ class MeshTexture : public Texture {
     auto ray_intersection = create_instance<RayIntersection>("embree");
     scene_geometry = std::make_shared<SceneGeometry>(
         std::make_shared<Scene>(scene), ray_intersection);
+
+    if (config.get("generate_peeling", false)) {
+      real peeling_cycle = config.get("peeling_cycle", 1.0_f);
+      real peeling_velocity = config.get("peeling_velocity", 1.0_f);
+      std::ofstream os;
+      std::string fn = std::getenv("TAICHI_ROOT_DIR") + std::string("/taichi/projects/mpm/data/apple_peeler.pos");
+      os.open(fn, std::ios::app);
+      Vector3 pos;
+      real t_start = -1.0_f;
+      bool last_intersection = false;
+      for (real t = 0; ; t += 0.01_f) {
+        pos.x = t * peeling_velocity;
+        real angle;
+        if (t_start < 0.0_f) {
+          angle = 0.0_f;
+        } else {
+          angle = 2.0_f * M_PI / peeling_cycle * (t - t_start);
+        }
+        pos.y = 0.5_f + -sin(angle);
+        pos.z = 0.5_f + cos(angle);
+        Vector3 dir = normalize(Vector3(pos.x, 0.5_f, 0.5_f)-pos);
+        Ray ray(pos, dir);
+        scene_geometry->query(ray);
+        if (ray.dist == Ray::DIST_INFINITE || ray.dist > 1.0_f) {
+          if (last_intersection)
+            break;
+          last_intersection = false;
+        } else {;
+          if (!last_intersection)
+            t_start = t;
+          pos += ray.dist * dir;
+          os << t - t_start << " " << pos.x << " " << pos.y << " " << pos.z << std::endl;
+          last_intersection = true;
+        }
+      }
+      os.close();
+      TC_STOP;
+    }
   }
 
   virtual Vector4 sample(const Vector3 &coord) const override {

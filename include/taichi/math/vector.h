@@ -320,6 +320,14 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
     return this->d[i];
   }
 
+  TC_FORCE_INLINE T &operator()(int i) {
+    return d[i];
+  }
+
+  TC_FORCE_INLINE const T &operator()(int i) const {
+    return d[i];
+  }
+
   TC_FORCE_INLINE T dot(VectorND<DIM, T, ISE> o) const {
     T ret = T(0);
     for (int i = 0; i < DIM; i++)
@@ -808,6 +816,8 @@ struct MatrixND {
       (DIM_ == 3 || DIM_ == 4) && std::is_same<T_, float32>::value &&
       (ISE_ >= InstSetExt::SSE);
 
+  using ScalarType = T;
+
   template <int DIM_, typename T_, InstSetExt ISE_>
   static constexpr bool SIMD_NONE = !SIMD_4_32F<DIM_, T_, ISE_>;
   using Vector = VectorND<DIM, T, ISE>;
@@ -902,6 +912,14 @@ struct MatrixND {
 
   TC_FORCE_INLINE VectorND<DIM, T, ISE> &operator[](int i) {
     return d[i];
+  }
+
+  TC_FORCE_INLINE T &operator()(int i, int j) {
+    return d[j][i];
+  }
+
+  TC_FORCE_INLINE const T &operator()(int i, int j) const {
+    return d[j][i];
   }
 
   TC_FORCE_INLINE const VectorND<DIM, T, ISE> &operator[](int i) const {
@@ -1244,7 +1262,7 @@ TC_FORCE_INLINE float64 inversed(const float64 &a) {
 template <InstSetExt ISE, typename T>
 TC_FORCE_INLINE MatrixND<2, T, ISE> inversed(const MatrixND<2, T, ISE> &mat) {
   real det = determinant(mat);
-  return 1.0_f / det *
+  return static_cast<T>(1) / det *
          MatrixND<2, T, ISE>(VectorND<2, T, ISE>(mat[1][1], -mat[0][1]),
                              VectorND<2, T, ISE>(-mat[1][0], mat[0][0]));
 }

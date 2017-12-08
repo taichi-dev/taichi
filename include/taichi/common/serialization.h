@@ -561,4 +561,11 @@ class TextSerializer : public Serializer {
   }
 };
 
+template <typename T>
+std::enable_if_t<Serializer::has_io<T>::value, std::ostream&> operator<<(
+    std::ostream &os, const T &t) {
+  os << TextSerializer::serialize("value", t);
+  return os;
+}
+
 TC_NAMESPACE_END

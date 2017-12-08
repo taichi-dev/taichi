@@ -17,13 +17,51 @@
 TC_NAMESPACE_BEGIN
 
 template <typename T>
-inline T degrees(T rad) {
+TC_FORCE_INLINE T degrees(T rad) {
   return rad * (type::element<T>(180) / pi);
 }
 
 template <typename T>
-inline T radians(T deg) {
+TC_FORCE_INLINE T radians(T deg) {
   return deg * (pi / type::element<T>(180));
+}
+
+template <typename T>
+T abs(const T &t) {
+  return std::abs(t);
+}
+
+template <int dim, typename T>
+inline bool equal(const MatrixND<dim, T> &A,
+                  const MatrixND<dim, T> &B,
+                  T tolerance) {
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      if (abs(A(i, j) - B(i, j)) > tolerance) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+template <int dim, typename T>
+inline bool equal(const VectorND<dim, T> &A,
+                  const VectorND<dim, T> &B,
+                  T tolerance) {
+  for (int i = 0; i < dim; i++) {
+    if (abs(A(i) - B(i)) > tolerance) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <int dim, typename T>
+inline bool equal(const T &A, const T &B, T tolerance) {
+  if (abs(A - B) > tolerance)
+    return false;
+  return true;
 }
 
 TC_NAMESPACE_END

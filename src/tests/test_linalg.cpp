@@ -8,8 +8,9 @@
 *******************************************************************************/
 
 #include <taichi/util.h>
-#include <taichi/math.h>
-#include <taichi/math/qr_svd.h>
+#include <taichi/testing.h>
+#include <taichi/math/svd.h>
+#include <taichi/math/eigen.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -93,6 +94,58 @@ class TestLinAlg : public Task {
     std::cout << "Passed." << std::endl;
   }
 };
+
+template <typename T, int dim>
+void test_conversion() {
+  using Vector = VectorND<dim, T>;
+  using Matrix = MatrixND<dim, T>;
+  Vector vec = Vector::rand();
+  Matrix mat = Matrix::rand();
+  CHECK(from_eigen(to_eigen(vec)) == vec);
+  CHECK(from_eigen(to_eigen(mat)) == mat);
+}
+
+TC_TEST("eigen_conversion") {
+  for (int T = 0; T < 1000; T++) {
+    test_conversion<float32, 2>();
+    test_conversion<float32, 3>();
+    test_conversion<float32, 4>();
+    test_conversion<float64, 2>();
+    test_conversion<float64, 3>();
+    test_conversion<float64, 4>();
+    test_conversion<int, 2>();
+    test_conversion<int, 3>();
+    test_conversion<int, 4>();
+  }
+}
+
+template <int dim, typename T>
+inline void test_decompositions() {
+  using Matrix = MatrixND<dim, T>;
+  T tolerance = std::is_same<T, float32>() ? 1e-4f : 1e-4;
+  for (int i = 0; i < 100; i++) {
+    Matrix m = Matrix::rand();
+    Matrix U, sig, V, Q, R, S;
+
+    svd(m, U, sig, V);
+    CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
+
+    if (dim == 2) {
+      qr_decomp(m, Q, R);
+      CHECK_EQUAL(m, Q * R, tolerance);
+    }
+
+    polar_decomp(m, R, S);
+    CHECK_EQUAL(m, R * S, tolerance);
+  }
+};
+
+TC_TEST("decompositions") {
+  test_decompositions<2, float32>();
+  test_decompositions<3, float32>();
+  test_decompositions<2, float64>();
+  test_decompositions<3, float64>();
+}
 
 TC_IMPLEMENTATION(Task, TestLinAlg, "test_linalg")
 

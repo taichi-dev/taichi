@@ -16,6 +16,14 @@
 
 TC_NAMESPACE_BEGIN
 
+#define CHECK_EQUAL(A, B, tolerance)                 \
+  {                                                  \
+    if (!equal(A, B, tolerance)) {                   \
+      std::cout << A << std::endl << B << std::endl; \
+    }                                                \
+    CHECK(equal(A, B, tolerance));                   \
+  }
+
 #define TC_TEST(x) TEST_CASE(x, ("[" x "]"))
 
 int run_tests();

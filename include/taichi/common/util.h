@@ -111,11 +111,16 @@ TC_NAMESPACE_BEGIN
 class CoreState {
  public:
   bool python_imported = false;
+  bool trigger_gdb_when_crash = false;
 
   static CoreState &get_instance();
 
   static void set_python_imported(bool val) {
     get_instance().python_imported = val;
+  }
+
+  static void set_trigger_gdb_when_crash(bool val) {
+    get_instance().trigger_gdb_when_crash = val;
   }
 };
 

@@ -72,10 +72,9 @@ void signal_handler(int signo) {
                false);
   TC_FLUSH_LOGGER;
   taichi::print_traceback();
-#ifdef __linux__
-  if (false)
+  if (taichi::CoreState::get_instance().trigger_gdb_when_crash) {
     system(fmt::format("sudo gdb -p {}", PID::get_pid()).c_str());
-#endif
+  }
   if (taichi::CoreState::get_instance().python_imported) {
     std::string msg =
         fmt::format("Taichi Core Exception: {} ({})", signo, strsignal(signo));

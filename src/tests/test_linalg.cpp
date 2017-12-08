@@ -122,7 +122,7 @@ TC_TEST("eigen_conversion") {
 template <int dim, typename T>
 inline void test_decompositions() {
   using Matrix = MatrixND<dim, T>;
-  T tolerance = std::is_same<T, float32>() ? 1e-4f : 1e-4;
+  T tolerance = std::is_same<T, float32>() ? 1e-6f : 1e-8;
   for (int i = 0; i < 100; i++) {
     Matrix m = Matrix::rand();
     Matrix U, sig, V, Q, R, S;

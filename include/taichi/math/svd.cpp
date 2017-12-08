@@ -20,41 +20,20 @@
 
 TC_NAMESPACE_BEGIN
 
-template <>
-void eigen_svd(const Matrix2 &m, Matrix2 &u, Matrix2 &s, Matrix2 &v) {
-  Eigen::MatrixXf e_m(2, 2);
-  for (int i = 0; i < 2; ++i)
-    for (int j = 0; j < 2; ++j)
-      e_m(j, i) = m[i][j];
-  Eigen::JacobiSVD<Eigen::MatrixXf> e_svd(
+template <int dim, typename T>
+void eigen_svd(const MatrixND<dim, T> &m,
+               MatrixND<dim, T> &u,
+               MatrixND<dim, T> &s,
+               MatrixND<dim, T> &v) {
+  Eigen::Matrix<T, dim, dim> e_m(dim, dim);
+  e_m = to_eigen(m);
+  Eigen::JacobiSVD<Eigen::Matrix<T, dim, dim>> e_svd(
       e_m, Eigen::ComputeThinU | Eigen::ComputeThinV);
-  s = Matrix2(0.0_f);
-  for (int i = 0; i < 2; ++i)
+  s = MatrixND<dim, T>(0.0_f);
+  for (int i = 0; i < dim; ++i)
     s[i][i] = e_svd.singularValues()(i);
-  for (int i = 0; i < 2; ++i)
-    for (int j = 0; j < 2; ++j)
-      u[j][i] = e_svd.matrixU()(i, j);
-  for (int i = 0; i < 2; ++i)
-    for (int j = 0; j < 2; ++j)
-      v[j][i] = e_svd.matrixV()(i, j);
-}
-
-void eigen_svd(Matrix3 m, Matrix3 &u, Matrix3 &s, Matrix3 &v) {
-  Eigen::MatrixXf e_m(3, 3);
-  for (int i = 0; i < 3; ++i)
-    for (int j = 0; j < 3; ++j)
-      e_m(j, i) = m[i][j];
-  Eigen::JacobiSVD<Eigen::MatrixXf> e_svd(
-      e_m, Eigen::ComputeThinU | Eigen::ComputeThinV);
-  s = Matrix3(0.0_f);
-  for (int i = 0; i < 3; ++i)
-    s[i][i] = e_svd.singularValues()(i);
-  for (int i = 0; i < 3; ++i)
-    for (int j = 0; j < 3; ++j)
-      u[j][i] = e_svd.matrixU()(i, j);
-  for (int i = 0; i < 3; ++i)
-    for (int j = 0; j < 3; ++j)
-      v[j][i] = e_svd.matrixV()(i, j);
+  u = from_eigen(e_svd.matrixU());
+  v = from_eigen(e_svd.matrixV());
 }
 
 template <int dim, typename T>
@@ -212,6 +191,9 @@ void svd_eigen2(void const *A_, void *u_, void *sig_, void *v_) {
 }
 
 #define SPECIALIZE(T, dim)                                                    \
+  template void eigen_svd<dim, T>(const MatrixND<dim, T> &,                   \
+                                  MatrixND<dim, T> &, MatrixND<dim, T> &,     \
+                                  MatrixND<dim, T> &);                        \
   template void imp_svd<dim, T>(const MatrixND<dim, T> &, MatrixND<dim, T> &, \
                                 MatrixND<dim, T> &, MatrixND<dim, T> &);      \
   template void svd<dim, T>(const MatrixND<dim, T> &, MatrixND<dim, T> &,     \

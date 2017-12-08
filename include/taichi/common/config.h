@@ -67,7 +67,7 @@ class Config {
       typename V,
       typename std::enable_if<(type::is_VectorND<V>()), V>::type * = nullptr>
   V get(std::string key) const {
-    constexpr int N = V::D;
+    constexpr int N = V::dim;
     using T = typename V::ScalarType;
 
     std::string str = this->get_string(key);

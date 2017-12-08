@@ -31,6 +31,31 @@ T abs(const T &t) {
   return std::abs(t);
 }
 
+template <typename F, typename T>
+T map(const T &t, const F &f) {
+  T ret;
+  TC_STATIC_IF(type::is_VectorND<T>()) {
+    for (int i = 0; i < T::dim; i++) {
+      ret[i] = f(t[i]);
+    }
+  }
+  TC_STATIC_ELSE {
+    TC_STATIC_IF(type::is_MatrixND<T>()){
+      for (int i = 0; i < T::dim; i++) {
+        for (int j = 0; j < T::dim; j++) {
+          ret[i][j] = f(t(i, j));
+        }
+      }
+    }
+    TC_STATIC_ELSE {
+      ret = f(t);
+    }
+    TC_STATIC_END_IF
+  }
+  TC_STATIC_END_IF
+  return ret;
+}
+
 template <int dim, typename T>
 inline bool equal(const MatrixND<dim, T> &A,
                   const MatrixND<dim, T> &B,

@@ -274,8 +274,8 @@ struct VectorRegistration<VectorND<DIM, T, ISE>> {
         .def("cast_float32", &Vector::template cast<float32>)
         .def("cast_float64", &Vector::template cast<float64>)
         .def("cast_int", &Vector::template cast<int>)
-        .def("D", [](Vector *) { return Vector::D; })
-        .def("__len__", [](Vector *) { return Vector::D; })
+        .def("D", [](Vector *) { return Vector::dim; })
+        .def("__len__", [](Vector *) { return Vector::dim; })
         //.def("__getitem__", static_cast<T
         //(Vector::*)(int)>(&Vector::operator[]))
         .def("__getitem__", [](Vector *vec, int i) { return (*vec)[i]; })

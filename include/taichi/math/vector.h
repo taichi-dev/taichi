@@ -153,14 +153,14 @@ template <int DIM, typename T, InstSetExt ISE = default_instruction_set>
 struct VectorND : public VectorNDBase<DIM, T, ISE> {
   using ScalarType = T;
   template <int DIM_, typename T_, InstSetExt ISE_>
-  static constexpr bool SIMD_4_32F = (DIM_ == 3 || DIM_ == 4) &&
-                                     std::is_same<T_, float32>::value &&ISE_
-                                         >= InstSetExt::SSE;
+  static constexpr bool SIMD_4_32F =
+      (DIM_ == 3 || DIM_ == 4) && std::is_same<T_, float32>::value &&ISE_
+                                      >= InstSetExt::SSE;
 
   template <int DIM_, typename T_, InstSetExt ISE_>
   static constexpr bool SIMD_NONE = !SIMD_4_32F<DIM_, T_, ISE_>;
 
-  static constexpr int D = DIM;
+  static constexpr int dim = DIM;
   static constexpr InstSetExt ise = ISE;
   using type = T;
 
@@ -817,13 +817,13 @@ struct MatrixND {
       (ISE_ >= InstSetExt::SSE);
 
   using ScalarType = T;
+  static constexpr int dim = DIM;
 
   template <int DIM_, typename T_, InstSetExt ISE_>
   static constexpr bool SIMD_NONE = !SIMD_4_32F<DIM_, T_, ISE_>;
   using Vector = VectorND<DIM, T, ISE>;
   Vector d[DIM];
 
-  static constexpr int D = DIM;
   static constexpr InstSetExt ise = ISE;
   using type = T;
 
@@ -1682,6 +1682,11 @@ struct is_VectorND : public std::false_type {};
 
 template <int N, typename T, InstSetExt ISE>
 struct is_VectorND<VectorND<N, T, ISE>> : public std::true_type {};
-}
+template <typename>
+struct is_MatrixND : public std::false_type {};
+
+template <int N, typename T, InstSetExt ISE>
+struct is_MatrixND<MatrixND<N, T, ISE>> : public std::true_type {};
+}  // namespace type
 
 TC_NAMESPACE_END

@@ -16,6 +16,7 @@
 
 TC_NAMESPACE_BEGIN
 
+namespace math {
 template <typename T>
 TC_FORCE_INLINE T degrees(T rad) {
   return rad * (type::element<T>(180) / pi);
@@ -26,11 +27,6 @@ TC_FORCE_INLINE T radians(T deg) {
   return deg * (pi / type::element<T>(180));
 }
 
-template <typename T>
-T abs(const T &t) {
-  return std::abs(t);
-}
-
 template <typename F, typename T>
 T map(const T &t, const F &f) {
   T ret;
@@ -39,22 +35,30 @@ T map(const T &t, const F &f) {
       ret[i] = f(t[i]);
     }
   }
-  TC_STATIC_ELSE {
-    TC_STATIC_IF(type::is_MatrixND<T>()){
-      for (int i = 0; i < T::dim; i++) {
-        for (int j = 0; j < T::dim; j++) {
-          ret[i][j] = f(t(i, j));
-        }
-      }
-    }
-    TC_STATIC_ELSE {
-      ret = f(t);
-    }
-    TC_STATIC_END_IF
-  }
-  TC_STATIC_END_IF
-  return ret;
+  TC_STATIC_ELSE{
+      TC_STATIC_IF(type::is_MatrixND<T>()){for (int i = 0; i < T::dim; i++){
+          for (int j = 0; j < T::dim; j++){ret[i][j] = f(t(i, j));
 }
+}  // namespace math
+}
+TC_STATIC_ELSE {
+  ret = f(t);
+}
+TC_STATIC_END_IF
+}
+TC_STATIC_END_IF
+return ret;
+}
+
+#define TC_MAKE_VECTORIZED_FROM_STD(op)                  \
+  auto op = [](const auto &t) {                          \
+    using Elem = typename type::element<decltype(t)>;    \
+    return map(t, static_cast<Elem (*)(Elem)>(std::op)); \
+  };
+
+TC_MAKE_VECTORIZED_FROM_STD(abs);
+TC_MAKE_VECTORIZED_FROM_STD(log);
+TC_MAKE_VECTORIZED_FROM_STD(exp);
 
 template <int dim, typename T>
 inline bool equal(const MatrixND<dim, T> &A,
@@ -87,6 +91,7 @@ inline bool equal(const T &A, const T &B, T tolerance) {
   if (abs(A - B) > tolerance)
     return false;
   return true;
+}
 }
 
 TC_NAMESPACE_END

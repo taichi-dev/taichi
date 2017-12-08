@@ -1675,7 +1675,7 @@ struct element_<T, typename std::enable_if_t<!std::is_arithmetic<T>::value>> {
 };
 
 template <typename T>
-using element = typename element_<T>::type;
+using element = typename element_<std::decay_t<T>>::type;
 
 template <typename>
 struct is_VectorND : public std::false_type {};

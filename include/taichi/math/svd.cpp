@@ -66,7 +66,7 @@ void imp_svd(const MatrixND<dim, T> &m,
       JIXIE::singularValueDecomposition(
           *(Eigen::Matrix<T, dim, dim> *)&m, *(Eigen::Matrix<T, dim, dim> *)&u,
           *(Eigen::Matrix<T, dim, 1> *)&s, *(Eigen::Matrix<T, dim, dim> *)&v);
-      real s_tmp[]{s[0][1]};
+      T s_tmp[]{s[0][1]};
       memset(&s[0][0] + 1, 0, sizeof(T) * 3);
       s[1][1] = s_tmp[0];
     }
@@ -120,7 +120,7 @@ void qr_decomp(const MatrixND<dim, T> &A,
                MatrixND<dim, T> &q,
                MatrixND<dim, T> &r) {
   TC_STATIC_IF(dim == 2) {
-    real a = A[0][0], b = A[0][1], inv_r = 1.0_f / std::hypot(a, b);
+    T a = A[0][0], b = A[0][1], inv_r = 1.0 / std::hypot(a, b);
     a *= inv_r;
     b *= inv_r;
     MatrixND<dim, T> Q(VectorND<dim, T>(a, -b), VectorND<dim, T>(b, a));

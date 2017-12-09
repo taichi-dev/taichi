@@ -65,8 +65,8 @@ type::element<T> maximum(const T &t) {
     }
   }
   TC_STATIC_ELSE {
-    ret = t(0, 0);
     TC_STATIC_IF(type::is_MatrixND<T>()) {
+      ret = t(0, 0);
       for (int i = 0; i < T::dim; i++){
         for (int j = 0; j < T::dim; j++){
           ret = std::max(ret, t(i, j));
@@ -94,8 +94,8 @@ type::element<T> minimum(const T &t) {
     }
   }
   TC_STATIC_ELSE {
-    ret = t(0, 0);
     TC_STATIC_IF(type::is_MatrixND<T>()) {
+      ret = t(0, 0);
       for (int i = 0; i < T::dim; i++){
         for (int j = 0; j < T::dim; j++){
           ret = std::min(ret, t(i, j));
@@ -115,15 +115,13 @@ type::element<T> minimum(const T &t) {
 // clang-format off
 template <typename T>
 type::element<T> sum(const T &t) {
-  typename type::element<T> ret;
+  typename type::element<T> ret = 0;
   TC_STATIC_IF(type::is_VectorND<T>()) {
-    ret = 0;
     for (int i = 0; i < T::dim; i++) {
       ret += t(i);
     }
   }
   TC_STATIC_ELSE {
-    ret = 0;
     TC_STATIC_IF(type::is_MatrixND<T>()) {
       for (int i = 0; i < T::dim; i++){
         for (int j = 0; j < T::dim; j++){
@@ -143,15 +141,13 @@ type::element<T> sum(const T &t) {
 
 template <typename T>
 type::element<T> prod(const T &t) {
-  typename type::element<T> ret;
+  typename type::element<T> ret = 1;
   TC_STATIC_IF(type::is_VectorND<T>()) {
-    ret = 1;
     for (int i = 0; i < T::dim; i++) {
       ret *= t(i);
     }
   }
   TC_STATIC_ELSE {
-    ret = 1;
     TC_STATIC_IF(type::is_MatrixND<T>()) {
       for (int i = 0; i < T::dim; i++){
         for (int j = 0; j < T::dim; j++){

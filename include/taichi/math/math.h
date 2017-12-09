@@ -83,6 +83,92 @@ type::element<T> maximum(const T &t) {
 }
 // clang-format on
 
+// clang-format off
+template <typename T>
+type::element<T> minimum(const T &t) {
+  typename type::element<T> ret;
+  TC_STATIC_IF(type::is_VectorND<T>()) {
+    ret = t(0);
+    for (int i = 1; i < T::dim; i++) {
+      ret = std::min(ret, t(i));
+    }
+  }
+  TC_STATIC_ELSE {
+    ret = t(0, 0);
+    TC_STATIC_IF(type::is_MatrixND<T>()) {
+      for (int i = 0; i < T::dim; i++){
+        for (int j = 0; j < T::dim; j++){
+          ret = std::min(ret, t(i, j));
+        }
+      }
+    }
+    TC_STATIC_ELSE {
+      ret = t;
+    }
+    TC_STATIC_END_IF
+  }
+  TC_STATIC_END_IF
+  return ret;
+}
+// clang-format on
+
+// clang-format off
+template <typename T>
+type::element<T> sum(const T &t) {
+  typename type::element<T> ret;
+  TC_STATIC_IF(type::is_VectorND<T>()) {
+    ret = 0;
+    for (int i = 0; i < T::dim; i++) {
+      ret += t(i);
+    }
+  }
+  TC_STATIC_ELSE {
+    ret = 0;
+    TC_STATIC_IF(type::is_MatrixND<T>()) {
+      for (int i = 0; i < T::dim; i++){
+        for (int j = 0; j < T::dim; j++){
+          ret += t(i, j);
+        }
+      }
+    }
+    TC_STATIC_ELSE {
+      ret = t;
+    }
+    TC_STATIC_END_IF
+  }
+  TC_STATIC_END_IF
+  return ret;
+}
+// clang-format on
+
+template <typename T>
+type::element<T> prod(const T &t) {
+  typename type::element<T> ret;
+  TC_STATIC_IF(type::is_VectorND<T>()) {
+    ret = 1;
+    for (int i = 0; i < T::dim; i++) {
+      ret *= t(i);
+    }
+  }
+  TC_STATIC_ELSE {
+    ret = 1;
+    TC_STATIC_IF(type::is_MatrixND<T>()) {
+      for (int i = 0; i < T::dim; i++){
+        for (int j = 0; j < T::dim; j++){
+          ret *= t(i, j);
+        }
+      }
+    }
+    TC_STATIC_ELSE {
+      ret = t;
+    }
+    TC_STATIC_END_IF
+  }
+  TC_STATIC_END_IF
+  return ret;
+}
+// clang-format on
+
 #define TC_MAKE_VECTORIZED_FROM_STD(op)                  \
   auto op = [](const auto &t) {                          \
     using Elem = typename type::element<decltype(t)>;    \

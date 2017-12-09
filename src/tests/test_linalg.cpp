@@ -86,6 +86,12 @@ TC_TEST("vector arith") {
   test_matrix<3, float64>();
   test_matrix<4, float64>();
 
+  CHECK(math::sum(Vector4(1, 2, 3, 4)) == 10);
+  CHECK(math::prod(Vector4(1, 2, 3, 4)) == 24);
+  CHECK(math::sum(Vector4(1, 2, 3, 2.5)) == 8.5);
+  CHECK(math::prod(Vector4(1, 2, 3, 2.5)) == 15);
+  CHECK(math::sum(42) == 42);
+
   CHECK(math::exp(Vector4(1, 2, 3, 4)) ==
         Vector4(math::exp(1.0_f), math::exp(2.0_f), math::exp(3.0_f),
                 math::exp(4.0_f)));

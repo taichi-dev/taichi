@@ -17,10 +17,15 @@ TC_NAMESPACE_BEGIN
 template <int dim, typename T>
 void test_matrix() {
   using Matrix = MatrixND<dim, T>;
-  T tolerance = std::is_same<T, float32>() ? 1e-6f : 1e-14;
+  T tolerance = std::is_same<T, float32>() ? 1e-5f : 1e-7;
   for (int i = 0; i < 1000; i++) {
     Matrix m = Matrix::rand();
-    if (determinant(m) > tolerance) {
+    if (determinant(m) > tolerance * 1e3) {
+      if (!math::equal(m * inversed(m), Matrix(1), tolerance)) {
+        TC_P(m * inversed(m) - Matrix(1));
+        TC_P(math::abs(m * inversed(m) - Matrix(1)));
+        TC_P(math::maximum(math::abs(m * inversed(m) - Matrix(1))));
+      }
       CHECK_EQUAL(m * inversed(m), Matrix(1), tolerance);
     }
   }

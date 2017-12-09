@@ -27,6 +27,7 @@ TC_FORCE_INLINE T radians(T deg) {
   return deg * (pi / type::element<T>(180));
 }
 
+// clang-format off
 template <typename F, typename T>
 T map(const T &t, const F &f) {
   T ret;
@@ -36,19 +37,51 @@ T map(const T &t, const F &f) {
     }
   }
   TC_STATIC_ELSE{
-      TC_STATIC_IF(type::is_MatrixND<T>()){for (int i = 0; i < T::dim; i++){
-          for (int j = 0; j < T::dim; j++){ret[i][j] = f(t(i, j));
+    TC_STATIC_IF(type::is_MatrixND<T>()){
+      for (int i = 0; i < T::dim; i++){
+        for (int j = 0; j < T::dim; j++){
+          ret[i][j] = f(t(i, j));
+        }
+      }
+    }
+    TC_STATIC_ELSE {
+      ret = f(t);
+    }
+    TC_STATIC_END_IF
+  }
+  TC_STATIC_END_IF
+  return ret;
 }
-}  // namespace math
+// clang-format on
+
+// clang-format off
+template <typename T>
+type::element<T> maximum(const T &t) {
+  typename type::element<T> ret;
+  TC_STATIC_IF(type::is_VectorND<T>()) {
+    ret = t(0);
+    for (int i = 1; i < T::dim; i++) {
+      ret = std::max(ret, t(i));
+    }
+  }
+  TC_STATIC_ELSE {
+    ret = t(0, 0);
+    TC_STATIC_IF(type::is_MatrixND<T>()) {
+      for (int i = 0; i < T::dim; i++){
+        for (int j = 0; j < T::dim; j++){
+          ret = std::max(ret, t(i, j));
+        }
+      }
+    }
+    TC_STATIC_ELSE {
+      ret = t;
+    }
+    TC_STATIC_END_IF
+  }
+  TC_STATIC_END_IF
+  return ret;
 }
-TC_STATIC_ELSE {
-  ret = f(t);
-}
-TC_STATIC_END_IF
-}
-TC_STATIC_END_IF
-return ret;
-}
+// clang-format on
 
 #define TC_MAKE_VECTORIZED_FROM_STD(op)                  \
   auto op = [](const auto &t) {                          \
@@ -70,38 +103,13 @@ TC_MAKE_VECTORIZED_FROM_STD(ceil);
 TC_MAKE_VECTORIZED_FROM_STD(floor);
 TC_MAKE_VECTORIZED_FROM_STD(sqrt);
 
-template <int dim, typename T>
-inline bool equal(const MatrixND<dim, T> &A,
-                  const MatrixND<dim, T> &B,
-                  T tolerance) {
-  for (int i = 0; i < dim; i++) {
-    for (int j = 0; j < dim; j++) {
-      if (abs(A(i, j) - B(i, j)) > tolerance) {
-        return false;
-      }
-    }
-  }
-  return true;
+template <typename T>
+inline bool equal(const T &A,
+                  const T &B,
+                  float64 tolerance) {
+  return maximum(abs(A - B)) < tolerance;
 }
 
-template <int dim, typename T>
-inline bool equal(const VectorND<dim, T> &A,
-                  const VectorND<dim, T> &B,
-                  T tolerance) {
-  for (int i = 0; i < dim; i++) {
-    if (abs(A(i) - B(i)) > tolerance) {
-      return false;
-    }
-  }
-  return true;
-}
-
-template <int dim, typename T>
-inline bool equal(const T &A, const T &B, T tolerance) {
-  if (abs(A - B) > tolerance)
-    return false;
-  return true;
-}
-}
+} // namespace math
 
 TC_NAMESPACE_END

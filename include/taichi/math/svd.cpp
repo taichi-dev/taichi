@@ -52,12 +52,13 @@ TC_FORCE_INLINE void ensure_non_negative_singular_values(MatrixND<dim, T> &u,
 // m can not be const here, otherwise JIXIE::singularValueDecomposition will
 // cause a error due to const_cast
 template <int dim, typename T>
-void imp_svd(const MatrixND<dim, T> &m,
+void imp_svd(const MatrixND<dim, T> &m_,
              MatrixND<dim, T> &u,
              MatrixND<dim, T> &s,
              MatrixND<dim, T> &v) {
   using Matrix = MatrixND<dim, T>;
   using Vector = VectorND<dim, T>;
+  Matrix m = m_;
   TC_STATIC_IF(dim == 2) {
     if ((m - Matrix(Vector(m[0][0], m[1][1]))).frobenius_norm2() < 1e-7f) {
       s = m;

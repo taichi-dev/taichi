@@ -132,10 +132,10 @@ struct RigidBody {
   void advance(real t, real dt) {
     if (pos_func) {
       position = pos_func(t);
-      real d = 1e-3_f;
+      real d = 1e-4_f;
       velocity = (pos_func(t + d) - pos_func(t - d)) / (2.0_f * d);
       real vel_mag = length(velocity);
-      if (velocity.abs_max() > 100.0_f) {
+      if (velocity.abs_max() > 50.0_f) {
         TC_WARN(
             "Position not differentiable at time {}. (Magnitude {} at d = {})",
             t, vel_mag, d);

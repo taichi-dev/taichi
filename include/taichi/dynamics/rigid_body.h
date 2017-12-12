@@ -180,10 +180,10 @@ struct RigidBody {
       TC_STATIC_ELSE {
         auto rot_quat = [&](real t) { return radians(this->rot_func(t)); };
         rotation.value = rot_quat(t);
-        real d = 1e-3_f;
+        real d = 1e-4_f;
         real rot = 0.5_f * (rot_quat(t + d) - rot_quat(t - d)) / d;
         real len_rot = abs(rot);
-        if (len_rot > 100.0_f) {
+        if (len_rot > 1000.0_f) {
           TC_WARN(
               "Rotation not differentiable at time {}. (Magnitude {} at d = "
               "{})",

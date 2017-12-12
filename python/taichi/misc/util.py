@@ -33,14 +33,17 @@ import copy
 import numpy as np
 import ctypes
 
-
 def config_from_dict(args):
   from taichi.core import tc_core
   from taichi.visual import SurfaceMaterial
-  d = copy.deepcopy(args)
+  d = copy.copy(args)
   for k in d:
     if isinstance(d[k], SurfaceMaterial):
       d[k] = d[k].id
+    if isinstance(d[k], tc_core.Vector2f):
+      d[k] = '({}, {})'.format(d[k].x, d[k].y)
+    if isinstance(d[k], tc_core.Vector3f):
+      d[k] = '({}, {}, {})'.format(d[k].x, d[k].y, d[k].z)
     d[k] = str(d[k])
   return tc_core.config_from_dict(d)
 

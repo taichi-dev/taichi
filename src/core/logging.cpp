@@ -73,7 +73,7 @@ void signal_handler(int signo) {
   TC_FLUSH_LOGGER;
   taichi::print_traceback();
   if (taichi::CoreState::get_instance().trigger_gdb_when_crash) {
-    system(fmt::format("sudo gdb -p {}", PID::get_pid()).c_str());
+    trash(system(fmt::format("sudo gdb -p {}", PID::get_pid()).c_str()));
   }
   if (taichi::CoreState::get_instance().python_imported) {
     std::string msg =

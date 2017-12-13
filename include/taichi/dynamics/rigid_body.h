@@ -23,11 +23,10 @@ struct RigidBody {
 
   using InertiaType = std::conditional_t<dim == 2, real, Matrix>;
 
- private:
+public:
   real mass, inv_mass;
   InertiaType inertia, inv_inertia;
 
- public:
   Vector position, velocity, tmp_velocity;
 
   real linear_damping, angular_damping;

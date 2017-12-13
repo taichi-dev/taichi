@@ -1,3 +1,5 @@
+#pragma once
+
 #include <taichi/util.h>
 #include <taichi/math/vector.h>
 #include <Eigen/Dense>

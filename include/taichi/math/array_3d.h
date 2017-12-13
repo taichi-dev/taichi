@@ -165,6 +165,16 @@ class IndexND<3> {
   Vector3i get_ipos() const {
     return Vector3i(i, j, k);
   }
+
+  TC_IO_DECL {
+    TC_IO(x);
+    TC_IO(y);
+    TC_IO(z);
+    TC_IO(i);
+    TC_IO(j);
+    TC_IO(k);
+    TC_IO(storage_offset);
+  }
 };
 
 using Index3D = IndexND<3>;
@@ -229,6 +239,15 @@ class RegionND<3> {
 
   Index3D end() {
     return index_end;
+  }
+
+  TC_IO_DECL {
+    TC_IO(x);
+    TC_IO(y);
+    TC_IO(z);
+    TC_IO(index_begin);
+    TC_IO(index_end);
+    TC_IO(storage_offset);
   }
 };
 

@@ -238,6 +238,11 @@ class Config {
     }
     return data.find(key)->second;
   }
+
+  TC_IO_DECL {
+    TC_IO(data);
+    TC_IO(file_names);
+  }
 };
 
 template <>

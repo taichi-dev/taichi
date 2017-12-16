@@ -1,6 +1,7 @@
 #pragma once
 
 #include <taichi/geometry/factory.h>
+#include <taichi/visual/scene_geometry.h>
 #include <memory>
 #include <vector>
 #include <memory.h>
@@ -55,6 +56,7 @@ public:
   using ElementType = typename ElementMesh<dim>::Elem;
   using MeshType = ElementMesh<dim>;
 
+  std::shared_ptr<SceneGeometry> scene_geometry;
   std::shared_ptr<MeshType> mesh;
   std::mutex mut;
 

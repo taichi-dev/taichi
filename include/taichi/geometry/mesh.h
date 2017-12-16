@@ -75,6 +75,7 @@ template <int dim>
 struct ElementMesh {
   using Elem = Element<dim>;
   std::vector<Elem> elements;
+  std::shared_ptr<Mesh> mesh = nullptr;
   using Vector = VectorND<dim, real>;
   using Vectori = VectorND<dim, int>;
   using MatrixP = MatrixND<dim + 1, real>;
@@ -99,7 +100,7 @@ struct ElementMesh {
       std::string mesh_fn = config.get<std::string>("mesh_fn");
       std::string full_fn = std::getenv("TAICHI_ROOT_DIR") +
                             std::string("/taichi/projects/mpm/data/") + mesh_fn;
-      std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>();
+      mesh = std::make_shared<Mesh>();
       Config mesh_config;
       mesh_config.set("filename", full_fn);
       mesh_config.set("reverse_vertices",

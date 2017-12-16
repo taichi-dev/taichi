@@ -17,12 +17,11 @@ class TestPLY : public Task {
 
     using Vert = PLYWriter::Vertex;
 
-    for (int i = 0; i< 10; i++) {
+    for (int i = 0; i < 10; i++) {
       ply.add_face({Vert(Vector3f(1 + i, 0, 0), Vector3f(1, 0, 0)),
                     Vert(Vector3f(0, 1 + i, 0), Vector3f(0, 1, 0)),
                     Vert(Vector3f(0, 0, 1 + i), Vector3f(0, 0, i % 5 * 0.2f))});
     }
-
   }
 };
 

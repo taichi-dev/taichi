@@ -24,7 +24,7 @@ struct RigidBody {
 
   using InertiaType = std::conditional_t<dim == 2, real, Matrix>;
 
-public:
+ public:
   real mass, inv_mass;
   InertiaType inertia, inv_inertia;
 

@@ -15,31 +15,31 @@ TC_NAMESPACE_BEGIN
 
 template <int dim, typename T>
 extern void eigen_svd(const MatrixND<dim, T> &m,
-               MatrixND<dim, T> &u,
-               MatrixND<dim, T> &sig,
-               MatrixND<dim, T> &v);
+                      MatrixND<dim, T> &u,
+                      MatrixND<dim, T> &sig,
+                      MatrixND<dim, T> &v);
 
 template <int dim, typename T>
 extern void imp_svd(const MatrixND<dim, T> &m,
-             MatrixND<dim, T> &u,
-             MatrixND<dim, T> &sig,
-             MatrixND<dim, T> &v);
+                    MatrixND<dim, T> &u,
+                    MatrixND<dim, T> &sig,
+                    MatrixND<dim, T> &v);
 
 template <int dim, typename T>
 extern void svd(const MatrixND<dim, T> &m,
-         MatrixND<dim, T> &u,
-         MatrixND<dim, T> &sig,
-         MatrixND<dim, T> &v);
+                MatrixND<dim, T> &u,
+                MatrixND<dim, T> &sig,
+                MatrixND<dim, T> &v);
 
 template <int dim, typename T>
 extern void polar_decomp(const MatrixND<dim, T> &A,
-                  MatrixND<dim, T> &r,
-                  MatrixND<dim, T> &s);
+                         MatrixND<dim, T> &r,
+                         MatrixND<dim, T> &s);
 
 template <int dim, typename T>
 extern void qr_decomp(const MatrixND<dim, T> &A,
-               MatrixND<dim, T> &q,
-               MatrixND<dim, T> &r);
+                      MatrixND<dim, T> &q,
+                      MatrixND<dim, T> &r);
 
 void svd_eigen2(void const *A_, void *u_, void *sig_, void *v_);
 

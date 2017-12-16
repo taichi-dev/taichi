@@ -7,7 +7,8 @@
 TC_NAMESPACE_BEGIN
 
 template <int n, typename T>
-TC_FORCE_INLINE VectorND<n, T> from_eigen(const Eigen::Matrix<T, n, 1> &eigen_vec) {
+TC_FORCE_INLINE VectorND<n, T> from_eigen(
+    const Eigen::Matrix<T, n, 1> &eigen_vec) {
   VectorND<n, T> ret;
   for (int i = 0; i < n; i++) {
     ret[i] = eigen_vec(i);
@@ -16,7 +17,8 @@ TC_FORCE_INLINE VectorND<n, T> from_eigen(const Eigen::Matrix<T, n, 1> &eigen_ve
 }
 
 template <int n, typename T>
-TC_FORCE_INLINE Eigen::Matrix<T, n, 1> to_eigen(const VectorND<n, T> &taichi_vec) {
+TC_FORCE_INLINE Eigen::Matrix<T, n, 1> to_eigen(
+    const VectorND<n, T> &taichi_vec) {
   Eigen::Matrix<T, n, 1> ret;
   for (int i = 0; i < n; i++) {
     ret(i) = taichi_vec[i];
@@ -25,7 +27,8 @@ TC_FORCE_INLINE Eigen::Matrix<T, n, 1> to_eigen(const VectorND<n, T> &taichi_vec
 }
 
 template <int n, typename T>
-TC_FORCE_INLINE MatrixND<n, T> from_eigen(const Eigen::Matrix<T, n, n> &eigen_vec) {
+TC_FORCE_INLINE MatrixND<n, T> from_eigen(
+    const Eigen::Matrix<T, n, n> &eigen_vec) {
   MatrixND<n, T> ret;
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
@@ -36,7 +39,8 @@ TC_FORCE_INLINE MatrixND<n, T> from_eigen(const Eigen::Matrix<T, n, n> &eigen_ve
 }
 
 template <int n, typename T>
-TC_FORCE_INLINE Eigen::Matrix<T, n, n> to_eigen(const MatrixND<n, T> &taichi_vec) {
+TC_FORCE_INLINE Eigen::Matrix<T, n, n> to_eigen(
+    const MatrixND<n, T> &taichi_vec) {
   Eigen::Matrix<T, n, n> ret;
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {

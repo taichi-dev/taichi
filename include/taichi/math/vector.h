@@ -153,9 +153,9 @@ template <int DIM, typename T, InstSetExt ISE = default_instruction_set>
 struct VectorND : public VectorNDBase<DIM, T, ISE> {
   using ScalarType = T;
   template <int DIM_, typename T_, InstSetExt ISE_>
-  static constexpr bool SIMD_4_32F =
-      (DIM_ == 3 || DIM_ == 4) && std::is_same<T_, float32>::value &&ISE_
-                                      >= InstSetExt::SSE;
+  static constexpr bool SIMD_4_32F = (DIM_ == 3 || DIM_ == 4) &&
+                                     std::is_same<T_, float32>::value &&ISE_
+                                         >= InstSetExt::SSE;
 
   template <int DIM_, typename T_, InstSetExt ISE_>
   static constexpr bool SIMD_NONE = !SIMD_4_32F<DIM_, T_, ISE_>;

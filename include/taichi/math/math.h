@@ -147,21 +147,19 @@ type::element<T> prod(const T &t) {
       ret *= t(i);
     }
   }
-  TC_STATIC_ELSE {
-    TC_STATIC_IF(type::is_MatrixND<T>()) {
-      for (int i = 0; i < T::dim; i++){
-        for (int j = 0; j < T::dim; j++){
-          ret *= t(i, j);
-        }
-      }
-    }
-    TC_STATIC_ELSE {
-      ret = t;
-    }
-    TC_STATIC_END_IF
-  }
-  TC_STATIC_END_IF
-  return ret;
+  TC_STATIC_ELSE{
+      TC_STATIC_IF(type::is_MatrixND<T>()){for (int i = 0; i < T::dim; i++){
+          for (int j = 0; j < T::dim; j++){ret *= t(i, j);
+}
+}
+}
+TC_STATIC_ELSE {
+  ret = t;
+}
+TC_STATIC_END_IF
+}
+TC_STATIC_END_IF
+return ret;
 }
 // clang-format on
 
@@ -186,12 +184,10 @@ TC_MAKE_VECTORIZED_FROM_STD(floor);
 TC_MAKE_VECTORIZED_FROM_STD(sqrt);
 
 template <typename T>
-inline bool equal(const T &A,
-                  const T &B,
-                  float64 tolerance) {
+inline bool equal(const T &A, const T &B, float64 tolerance) {
   return maximum(abs(A - B)) < tolerance;
 }
 
-} // namespace math
+}  // namespace math
 
 TC_NAMESPACE_END

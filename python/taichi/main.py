@@ -10,19 +10,20 @@ def main():
   lines.append(u' ** Taichi - A Computer Graphics Library **')
   lines.append(u' ******************************************')
   lines.append(u'{:^43}'.format(u"\u2630 \u2631 \u2632 \u2633 "
-                    "\u2634 \u2635 \u2636 \u2637"))
+                                "\u2634 \u2635 \u2636 \u2637"))
   print(u'\n'.join(lines))
   print()
 
   argc = len(sys.argv)
   if argc == 1 or sys.argv[1] == 'help':
-    print("    Usage: ti run [task name]        |-> Run a specific task\n"
-          "           ti test                   |-> Run tests\n"
-          "           ti build                  |-> Build C++ files\n"
-          "           ti update                 |-> Update taichi and projects\n"
-          "           ti format                 |-> Format taichi and projects\n"
-          "                                         (C++ source and python scripts)\n"
-          "           ti *.py [arguments]       |-> Run scripts\n")
+    print(
+        "    Usage: ti run [task name]        |-> Run a specific task\n"
+        "           ti test                   |-> Run tests\n"
+        "           ti build                  |-> Build C++ files\n"
+        "           ti update                 |-> Update taichi and projects\n"
+        "           ti format                 |-> Format taichi and projects\n"
+        "                                         (C++ source and python scripts)\n"
+        "           ti *.py [arguments]       |-> Run scripts\n")
     exit(-1)
   mode = sys.argv[1]
 
@@ -45,9 +46,12 @@ def main():
     tc.core.build()
   elif mode == "format":
     tc.core.format()
+  elif mode == "update":
+    tc.core.update()
   else:
     print("Unknown command '{}'".format(mode))
     exit(-1)
+
 
 if __name__ == '__main__':
   main()

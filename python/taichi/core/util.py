@@ -20,14 +20,26 @@ required_packages = [
 ]
 
 
+def get_repo():
+  from git import Repo
+  import taichi as tc
+  repo = Repo(tc.get_repo_directory())
+  return repo
+
+
+def update():
+  import git
+  import taichi as tc
+  g = git.cmd.Git(tc.get_repo_directory())
+  g.pull('--rebase')
+
+
 def format():
   import os
   import sys
   import taichi as tc
-  from git import Repo
   from yapf.yapflib.yapf_api import FormatFile
-
-  repo = Repo(tc.get_repo_directory())
+  repo = get_repo()
 
   print('* Formatting code', end='')
   for item in repo.index.diff('HEAD'):
@@ -40,6 +52,7 @@ def format():
           style_config=os.path.join(tc.get_repo_directory(), '.style.yapf'))
     if fn.endswith('.cpp'):
       os.system('clang-format -i -style=file {}'.format(fn))
+    repo.git.add(item.a_path)
 
   print('* Done!')
 

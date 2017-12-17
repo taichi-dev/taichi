@@ -569,4 +569,20 @@ std::enable_if_t<Serializer::has_io<T>::value, std::ostream &> operator<<(
   return os;
 }
 
+template <typename T>
+void read_from_binary_file(T &t, std::string file_name) {
+  BinaryInputSerializer reader;
+  reader.initialize(file_name);
+  reader(t);
+}
+
+template <typename T>
+void write_to_binary_file(T &t, std::string file_name) {
+  BinaryOutputSerializer writer;
+  writer.initialize();
+  writer("", &writer);
+  writer.finalize();
+  writer.write_to_file(file_name);
+}
+
 TC_NAMESPACE_END

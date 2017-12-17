@@ -84,7 +84,7 @@ class Rotation {
     return;
   }
 
-  Rotation(real value) {  // initialize
+  explicit Rotation(real value) {
     // according to dim
     TC_STATIC_IF(dim == 2) {
       this->value = value;

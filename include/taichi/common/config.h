@@ -148,6 +148,15 @@ class Config {
   }
 
   template <typename T>
+  T *get_ptr(std::string key, T *default_value) const {
+    if (has_key(key)) {
+      return get_ptr<T>(key);
+    } else {
+      return default_value;
+    }
+  }
+
+  template <typename T>
   std::shared_ptr<T> get_asset(std::string key) const {
     int id = get<int>(key);
     return AssetManager::get_asset<T>(id);

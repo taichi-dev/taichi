@@ -68,7 +68,7 @@ struct RigidBody {
     inertia = 0.0f;
     position = Vector(0.0f);
     velocity = Vector(0.0f);
-    rotation = 0.0f;
+    rotation = Rotation<dim>();
     angular_velocity = AngularVelocity<dim>();
     friction = 0;
     restitution = 0;
@@ -78,9 +78,25 @@ struct RigidBody {
     mesh_to_centroid = MatrixP::identidy();
   }
 
+  void set_as_background() {
+    set_infinity_inertia();
+    set_infinity_mass();
+    pos_func = [](real t) { return Vector(0); };
+    TC_STATIC_IF(dim == 2) {
+      rot_func = [](real t) { return 0.0_f; };
+    }
+    TC_STATIC_ELSE {
+      rot_func = [](real t) { return Vector(0.0_f); };
+    }
+    TC_STATIC_END_IF
+  }
+
   void apply_impulse(Vector impulse, Vector orig) {
     velocity += impulse * get_inv_mass();
-    auto torque = cross(orig - position, impulse);
+    apply_torque(cross(orig - position, impulse));
+  }
+
+  void apply_torque(const typename AngularVelocity<dim>::ValueType &torque) {
     angular_velocity += get_transformed_inversed_inertia() * torque;
   }
 

@@ -14,10 +14,39 @@ except Exception as e:
   print('    [Arch Linux] sudo pacman -S python-pip')
   exit(-1)
 
-required_packages = ['numpy', ('Pillow', 'PIL'), 'scipy', 'pybind11', 'flask', 'flask_cors', ('GitPython', 'git'), 'yapf']
+required_packages = [
+    'numpy', ('Pillow', 'PIL'), 'scipy', 'pybind11', 'flask', 'flask_cors',
+    ('GitPython', 'git'), 'yapf'
+]
+
+
+def format():
+  import os
+  import sys
+  import taichi as tc
+  from git import Repo
+  from yapf.yapflib.yapf_api import FormatFile
+
+  repo = Repo(tc.get_repo_directory())
+
+  print('* Formatting code', end='')
+  for item in repo.index.diff('HEAD'):
+    fn = os.path.join(tc.get_repo_directory(), item.a_path)
+    print(end='.')
+    if fn.endswith('.py'):
+      FormatFile(
+          fn,
+          in_place=True,
+          style_config=os.path.join(tc.get_repo_directory(), '.style.yapf'))
+    if fn.endswith('.cpp'):
+      os.system('clang-format -i -style=file {}'.format(fn))
+
+  print('* Done!')
+
 
 def install_package(pkg):
   pip.main(['install', '--user', pkg])
+
 
 def check_for_packages():
   for pkg in required_packages:
@@ -26,13 +55,14 @@ def check_for_packages():
       pkg = pkg[0]
     else:
       import_name = pkg
-      
+
     try:
       exec('import {}'.format(import_name))
     except ImportError as e:
       print("Installing package: ", pkg)
       install_package(pkg)
-    
+
+
 check_for_packages()
 
 from taichi.misc.settings import get_output_directory, get_bin_directory, get_root_directory
@@ -40,10 +70,11 @@ from taichi.misc.util import get_os_name, get_unique_task_id
 
 CREATE_SAND_BOX_ON_WINDOWS = True
 
+
 def build():
   tmp_cwd = os.getcwd()
   bin_dir = get_bin_directory()
-  
+
   try:
     os.mkdir(bin_dir)
   except:
@@ -58,14 +89,14 @@ def build():
   if cmake_ret != 0:
     print('  Error: CMake failed.')
     exit(-1)
-    
+
   make_ret = os.system('make -j8')
   if make_ret != 0:
     print('  Error: Build failed.')
     exit(-1)
-  
+
   os.chdir(tmp_cwd)
-  
+
 
 if get_os_name() == 'osx':
   bin_dir = get_bin_directory()
@@ -159,20 +190,21 @@ def at_startup():
   modules = f.readline().strip().split(';')
   for module in modules:
     if module != '':
-        print('Loading module', module)
-        try:
-          ctypes.PyDLL(
-              os.path.join(get_root_directory(), 'taichi', 'build',
-                           get_dll_name(module)))
-        except Exception as e:
-          print(e)
-          print("Warning: module", module, "loading failed!")
+      print('Loading module', module)
+      try:
+        ctypes.PyDLL(
+            os.path.join(get_root_directory(), 'taichi', 'build',
+                         get_dll_name(module)))
+      except Exception as e:
+        print(e)
+        print("Warning: module", module, "loading failed!")
 
   tc_core.set_core_state_python_imported(True)
   f.close()
 
 
 at_startup()
+
 
 @atexit.register
 def clean_libs():

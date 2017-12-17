@@ -43,6 +43,8 @@ def main():
     task.run(sys.argv[2:])
   elif mode == "build":
     tc.core.build()
+  elif mode == "format":
+    tc.core.format()
   else:
     print("Unknown command '{}'".format(mode))
     exit(-1)

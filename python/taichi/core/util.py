@@ -1,3 +1,4 @@
+from __future__ import print_function
 import atexit
 import os
 import shutil
@@ -16,7 +17,7 @@ except Exception as e:
 
 required_packages = [
     'numpy', ('Pillow', 'PIL'), 'scipy', 'pybind11', 'flask', 'flask_cors',
-    ('GitPython', 'git'), 'yapf'
+    ('GitPython', 'git'), 'yapf', 'colorama'
 ]
 
 
@@ -136,11 +137,13 @@ elif get_os_name() == 'linux':
   try:
     import taichi_core as tc_core
   except Exception as e:
-    print()
-    print("\033[91m*Please make sure you are using python3 "
-          "instead of python2.\033[0m")
-    print()
+    from colorama import Fore, Back, Style
     print(e)
+    print()
+    print(Fore.RED + "Please make sure you are using python3 "
+          "instead of python2." + Style.RESET_ALL)
+    print()
+    exit(-1)
 
   os.chdir(tmp_cwd)
 elif get_os_name() == 'win':
@@ -209,8 +212,9 @@ def at_startup():
             os.path.join(get_root_directory(), 'taichi', 'build',
                          get_dll_name(module)))
       except Exception as e:
-        print(e)
-        print("Warning: module", module, "loading failed!")
+        from colorama import Fore, Back, Style
+        print(Fore.YELLOW + "Warning: module [{}] loading failed: {}".format(
+            module, e) + Style.RESET_ALL)
 
   tc_core.set_core_state_python_imported(True)
   f.close()

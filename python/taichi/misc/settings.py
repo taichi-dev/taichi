@@ -16,6 +16,12 @@ def get_root_directory():
 def get_repo_directory():
   return os.path.join(get_root_directory(), 'taichi')
 
+def get_project_directory(project=None):
+  if project:
+    return os.path.join(get_project_directory(), project)
+  else:
+    return os.path.join(get_root_directory(), 'taichi', 'projects')
+
 def get_bin_directory():
   if get_os_name() == 'win':
     # for the dlls

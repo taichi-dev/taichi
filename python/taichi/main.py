@@ -47,7 +47,7 @@ def main():
   elif mode == "format":
     tc.core.format()
   elif mode == "update":
-    tc.core.update()
+    tc.core.update(True)
   else:
     print("Unknown command '{}'".format(mode))
     exit(-1)

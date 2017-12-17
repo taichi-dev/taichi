@@ -20,6 +20,25 @@ required_packages = [
     ('GitPython', 'git'), 'yapf', 'colorama'
 ]
 
+def install_package(pkg):
+  pip.main(['install', '--user', pkg])
+
+def check_for_packages():
+  for pkg in required_packages:
+    if isinstance(pkg, tuple):
+      import_name = pkg[1]
+      pkg = pkg[0]
+    else:
+      import_name = pkg
+    
+    try:
+      exec('import {}'.format(import_name))
+    except ImportError as e:
+      print("Installing package: ", pkg)
+      install_package(pkg)
+
+check_for_packages()
+from colorama import Fore, Back, Style
 
 def get_repo():
   from git import Repo
@@ -28,11 +47,23 @@ def get_repo():
   return repo
 
 
-def update():
+def update(include_projects=False):
   import git
   import taichi as tc
+  
   g = git.cmd.Git(tc.get_repo_directory())
+  print(Fore.GREEN + "Updating [taichi]..." + Style.RESET_ALL)
   g.pull('--rebase')
+  print(Fore.GREEN + "   ...Done" + Style.RESET_ALL)
+  
+  for proj in os.listdir(tc.get_project_directory()):
+    if proj in ['examples'] or proj.startswith('_') or not os.path.isdir(tc.get_project_directory(proj)):
+      continue
+    print(Fore.GREEN + "Updating project [{}]...".format(proj) + Style.RESET_ALL)
+    g = git.cmd.Git(os.path.join(tc.get_project_directory(proj)))
+    g.pull('--rebase')
+    print(Fore.GREEN + "   ...Done" + Style.RESET_ALL)
+    
 
 
 def format():
@@ -58,26 +89,6 @@ def format():
   print('* Done!')
 
 
-def install_package(pkg):
-  pip.main(['install', '--user', pkg])
-
-
-def check_for_packages():
-  for pkg in required_packages:
-    if isinstance(pkg, tuple):
-      import_name = pkg[1]
-      pkg = pkg[0]
-    else:
-      import_name = pkg
-
-    try:
-      exec('import {}'.format(import_name))
-    except ImportError as e:
-      print("Installing package: ", pkg)
-      install_package(pkg)
-
-
-check_for_packages()
 
 from taichi.misc.settings import get_output_directory, get_bin_directory, get_root_directory
 from taichi.misc.util import get_os_name, get_unique_task_id
@@ -212,7 +223,6 @@ def at_startup():
             os.path.join(get_root_directory(), 'taichi', 'build',
                          get_dll_name(module)))
       except Exception as e:
-        from colorama import Fore, Back, Style
         print(Fore.YELLOW + "Warning: module [{}] loading failed: {}".format(
             module, e) + Style.RESET_ALL)
 

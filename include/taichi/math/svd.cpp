@@ -117,6 +117,29 @@ void svd(const MatrixND<dim, T> &m,
 }
 
 template <int dim, typename T>
+void svd_rot(const MatrixND<dim, T> &m,
+             MatrixND<dim, T> &u,
+             MatrixND<dim, T> &sig,
+             MatrixND<dim, T> &v) {
+  using Matrix = MatrixND<dim, T>;
+  using Vector = VectorND<dim, T>;
+  TC_STATIC_IF(dim == 3) {
+    if ((m - Matrix(Vector(m[0][0], m[1][1], m[2][2]))).frobenius_norm2() <
+        static_cast<T>(1e-7)) {
+      // QR_SVD crashes in this case...
+      sig = m;
+      u = v = Matrix(1);
+    } else {
+      imp_svd(m, u, sig, v);
+    }
+  }
+  TC_STATIC_ELSE {
+    imp_svd(m, u, sig, v);
+  }
+  TC_STATIC_END_IF
+}
+
+template <int dim, typename T>
 void qr_decomp(const MatrixND<dim, T> &A,
                MatrixND<dim, T> &q,
                MatrixND<dim, T> &r) {
@@ -199,6 +222,8 @@ void svd_eigen2(void const *A_, void *u_, void *sig_, void *v_) {
                                 MatrixND<dim, T> &, MatrixND<dim, T> &);      \
   template void svd<dim, T>(const MatrixND<dim, T> &, MatrixND<dim, T> &,     \
                             MatrixND<dim, T> &, MatrixND<dim, T> &);          \
+  template void svd_rot<dim, T>(const MatrixND<dim, T> &, MatrixND<dim, T> &, \
+                                MatrixND<dim, T> &, MatrixND<dim, T> &);      \
   template void qr_decomp<dim, T>(const MatrixND<dim, T> &,                   \
                                   MatrixND<dim, T> &, MatrixND<dim, T> &T);   \
   template void polar_decomp<dim, T>(const MatrixND<dim, T> &,                \

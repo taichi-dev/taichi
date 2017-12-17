@@ -16,11 +16,13 @@ def main():
 
   argc = len(sys.argv)
   if argc == 1 or sys.argv[1] == 'help':
-    print("    Usage: ti run [task name]        * Run a specific task\n"
-          "           ti test                   * Run tests\n"
-          "           ti build                  * Build C++ files\n"
-          "           ti update                 * Update taichi and projects\n"
-          "           ti *.py [arguments]       * Run scripts\n")
+    print("    Usage: ti run [task name]        |-> Run a specific task\n"
+          "           ti test                   |-> Run tests\n"
+          "           ti build                  |-> Build C++ files\n"
+          "           ti update                 |-> Update taichi and projects\n"
+          "           ti format                 |-> Format taichi and projects\n"
+          "                                         (C++ source and python scripts)\n"
+          "           ti *.py [arguments]       |-> Run scripts\n")
     exit(-1)
   mode = sys.argv[1]
 

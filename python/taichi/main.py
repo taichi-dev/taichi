@@ -16,8 +16,10 @@ def main():
 
   argc = len(sys.argv)
   if argc == 1:
-    print("    Usage: ti run  [task name] \n"
-          "           ti test [module name]\n"
+    print("    Usage: ti run [task name] \n"
+          "           ti test\n"
+          "           ti build\n"
+          "           ti update\n"
           "           ti *.py [arguments]\n")
     exit(-1)
   mode = sys.argv[1]
@@ -35,10 +37,11 @@ def main():
     task = Task(name)
     task.run(sys.argv[3:])
   elif mode == "test":
-    print("not implemented")
+    task = Task('test')
+    task.run(sys.argv[2:])
     exit(-1)
   else:
-    print("Mode should be 'run' or 'test' instead of '%s'" % mode)
+    print("Unknown command '{}'".format(mode))
     exit(-1)
 
 if __name__ == '__main__':

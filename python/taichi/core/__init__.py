@@ -1,6 +1,6 @@
-from .load_core import tc_core
+from .load_core import tc_core, build
 from .unit import unit
 
-# TODO: 'tc_core' should be changed to 'core'...
+tc_core.build = build
 
 __all__ = ['tc_core', 'core', 'unit']

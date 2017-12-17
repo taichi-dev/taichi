@@ -40,7 +40,7 @@ from taichi.misc.util import get_os_name, get_unique_task_id
 
 CREATE_SAND_BOX_ON_WINDOWS = True
 
-def build_from_source():
+def build():
   tmp_cwd = os.getcwd()
   bin_dir = get_bin_directory()
   
@@ -56,12 +56,12 @@ def build_from_source():
   else:
     cmake_ret = os.system('cmake ..')
   if cmake_ret != 0:
-    print('  Error: cmake failed.')
+    print('  Error: CMake failed.')
     exit(-1)
     
   make_ret = os.system('make -j8')
   if make_ret != 0:
-    print('  Error: make failed.')
+    print('  Error: Build failed.')
     exit(-1)
   
   os.chdir(tmp_cwd)
@@ -70,7 +70,7 @@ def build_from_source():
 if get_os_name() == 'osx':
   bin_dir = get_bin_directory()
   if not os.path.exists(os.path.join(bin_dir, 'libtaichi_core.dylib')):
-    build_from_source()
+    build()
   tmp_cwd = os.getcwd()
   os.chdir(bin_dir)
   shutil.copy('libtaichi_core.dylib', 'taichi_core.so')
@@ -81,7 +81,7 @@ elif get_os_name() == 'linux':
   bin_dir = get_bin_directory()
   os.environ['LD_LIBRARY_PATH'] = '/usr/lib64/'
   if not os.path.exists(os.path.join(bin_dir, 'libtaichi_core.so')):
-    build_from_source()
+    build()
   tmp_cwd = os.getcwd()
   os.chdir(bin_dir)
   sys.path.append(bin_dir)
@@ -173,7 +173,6 @@ def at_startup():
 
 
 at_startup()
-
 
 @atexit.register
 def clean_libs():

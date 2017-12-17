@@ -1,4 +1,4 @@
-from taichi import Task
+import taichi as tc
 import sys
 
 
@@ -34,12 +34,13 @@ def main():
       print("Please specify [task name], e.g. test_math")
       exit(-1)
     name = sys.argv[2]
-    task = Task(name)
+    task = tc.Task(name)
     task.run(sys.argv[3:])
   elif mode == "test":
-    task = Task('test')
+    task = tc.Task('test')
     task.run(sys.argv[2:])
-    exit(-1)
+  elif mode == "build":
+    tc.core.build()
   else:
     print("Unknown command '{}'".format(mode))
     exit(-1)

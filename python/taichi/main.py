@@ -15,7 +15,7 @@ def main():
   print()
 
   argc = len(sys.argv)
-  if argc == 1:
+  if argc == 1 or sys.argv[1] == 'help':
     print("    Usage: ti run [task name]        * Run a specific task\n"
           "           ti test                   * Run tests\n"
           "           ti build                  * Build C++ files\n"

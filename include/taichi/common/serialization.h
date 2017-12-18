@@ -23,24 +23,14 @@ TC_NAMESPACE_BEGIN
   template <typename S> \
   void io(S &serializer) const
 
-#define TC_IO_DEF(...)     \
-  template <typename S>    \
-  void io(S &serializer) { \
-    TC_IO(__VA_ARGS__)     \
+#define TC_IO_DEF(...)           \
+  template <typename S>          \
+  void io(S &serializer) const { \
+    TC_IO(__VA_ARGS__)           \
   }
 
-// TODO: restore this
-/*
 #define TC_IO(...) \
   { serializer(#__VA_ARGS__, __VA_ARGS__); }
-*/
-
-#define TC_IO(x)                                                            \
-  {                                                                         \
-    serializer(                                                             \
-        #x,                                                                 \
-        const_cast<typename std::decay<decltype(*this)>::type *>(this)->x); \
-  }
 
 #define TC_SERIALIZER_IS(T)                                                 \
   (std::is_same<typename std::remove_reference<decltype(serializer)>::type, \
@@ -64,6 +54,11 @@ class Serializer {
   using TArray = T[n];
   template <typename T, std::size_t n>
   using StdTArray = std::array<T, n>;
+
+  template <typename T, typename T_ = typename std::decay<T>::type>
+  T_ &get_writable(T &&t) {
+    return *const_cast<T_ *>(&t);
+  }
 
   template <typename T>
   struct has_io {
@@ -266,11 +261,12 @@ class BinarySerializer : public Serializer {
       }
     } else {
       // TODO: why do I have to let it write to tmp, otherwise I get Sig Fault?
-      TArray<T, n> tmp;
+      TArray<typename std::decay<T>::type, n> tmp;
       for (std::size_t i = 0; i < n; i++) {
         this->operator()("", tmp[i]);
       }
-      std::memcpy(val, tmp, sizeof(tmp));
+      std::memcpy(const_cast<typename std::decay<T>::type *>(val), tmp,
+                  sizeof(tmp));
     }
   }
 
@@ -285,16 +281,15 @@ class BinarySerializer : public Serializer {
         if (new_size > preserved) {
           TC_CRITICAL("Preserved Buffer (size {}) Overflow.", preserved);
         }
-        *reinterpret_cast<typename std::remove_reference<T>::type *>(
-            &c_data[head]) = val;
+        *reinterpret_cast<typename std::decay<T>::type *>(&c_data[head]) = val;
       } else {
         data.resize(new_size);
-        *reinterpret_cast<typename std::remove_reference<T>::type *>(
-            &data[head]) = val;
+        *reinterpret_cast<typename std::decay<T>::type *>(&data[head]) = val;
       }
     } else {
-      val = *reinterpret_cast<typename std::remove_reference<T>::type *>(
-          &c_data[head]);
+      get_writable(val) =
+          *reinterpret_cast<typename std::remove_reference<T>::type *>(
+              &c_data[head]);
     }
     head += sizeof(T);
   }
@@ -348,13 +343,13 @@ class BinarySerializer : public Serializer {
 
   template <typename T, typename... Args>
   void operator()(const char *, T &&t, Args &&... rest) {
-    this->operator()(nullptr, std::forward<T>(t));
+    this->operator()(nullptr, get_writable(t));
     this->operator()(nullptr, std::forward<Args>(rest)...);
   }
 
   template <typename T>
   void operator()(T &&val) {
-    this->operator()(nullptr, std::forward<T>(val));
+    this->operator()(nullptr, get_writable(val));
   }
 };
 
@@ -510,7 +505,8 @@ class TextSerializer : public Serializer {
   }
 
   template <typename T>
-  void operator()(const char *key, std::vector<T> &val) {
+  void operator()(const char *key, const std::vector<T> &val_) {
+    auto &val = get_writable(val_);
     add_line(key, "[");
     indent++;
     for (std::size_t i = 0; i < val.size(); i++) {
@@ -522,7 +518,8 @@ class TextSerializer : public Serializer {
   }
 
   template <typename T, typename G>
-  void operator()(const char *key, std::pair<T, G> &val) {
+  void operator()(const char *key, const std::pair<T, G> &val_) {
+    auto &val = get_writable(val_);
     add_line(key, "(");
     indent++;
     this->operator()("[0]", val.first);
@@ -532,7 +529,8 @@ class TextSerializer : public Serializer {
   }
 
   template <typename T, typename G>
-  void operator()(const char *key, std::map<T, G> &val) {
+  void operator()(const char *key, const std::map<T, G> &val_) {
+    auto &val = get_writable(val_);
     add_line(key, "{");
     indent++;
     for (auto iter : val) {
@@ -551,13 +549,13 @@ class TextSerializer : public Serializer {
     std::string first_name = key.substr(0, pos);
     std::string rest_names =
         key.substr(pos + 2, int(key.size()) - (int)pos - 2);
-    this->operator()(first_name.c_str(), std::forward<T>(t));
+    this->operator()(first_name.c_str(), get_writable(t));
     this->operator()(rest_names.c_str(), std::forward<Args>(rest)...);
   }
 
   template <typename T>
   void operator()(Item<T> &item) {
-    this->operator()(item.key.c_str(), item.value);
+    this->operator()(item.key.c_str(), get_writable(item.value));
   }
 };
 
@@ -574,13 +572,14 @@ void read_from_binary_file(T &t, std::string file_name) {
   BinaryInputSerializer reader;
   reader.initialize(file_name);
   reader(t);
+  reader.finalize();
 }
 
 template <typename T>
 void write_to_binary_file(T &t, std::string file_name) {
   BinaryOutputSerializer writer;
   writer.initialize();
-  writer("", &writer);
+  writer(t);
   writer.finalize();
   writer.write_to_file(file_name);
 }

@@ -24,6 +24,11 @@ class Simulation : public Unit {
   int num_threads;
   DynamicLevelSet<DIM> levelset;
 
+  TC_IO_DECL {
+    TC_IO(current_t);
+    TC_IO(num_threads);
+  };
+
  public:
   static constexpr int D = DIM;
 

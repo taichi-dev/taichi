@@ -204,7 +204,7 @@ class Profiler {
   void stop() {
     assert_info(!stopped, "Profiler already stopped.");
     float64 elapsed = Time::get_time() - start_time;
-    if (elements != -1) {
+    if ((int64)elements != -1) {
       ProfilerRecords::get_instance().insert_sample(elapsed, elements);
     } else {
       ProfilerRecords::get_instance().insert_sample(elapsed);

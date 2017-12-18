@@ -56,9 +56,10 @@ struct RigidBody {
   using ElementType = typename ElementMesh<dim>::Elem;
   using MeshType = ElementMesh<dim>;
 
-  std::shared_ptr<SceneGeometry> scene_geometry;
-  std::shared_ptr<MeshType> mesh;
-  std::mutex mut;
+  std::unique_ptr<MeshType> mesh;
+
+  // Forgive me... I have to make it trivially movable
+  std::unique_ptr<std::mutex> mut;
 
   RigidBody() {
     static int counter = 0;
@@ -130,13 +131,13 @@ struct RigidBody {
   }
 
   void apply_tmp_impulse(Vector impulse, Vector orig) {
-    mut.lock();
+    mut->lock();
 
     tmp_velocity += impulse * get_inv_mass();
     auto torque = cross(orig - position, impulse);
     tmp_angular_velocity += get_transformed_inversed_inertia() * torque;
 
-    mut.unlock();
+    mut->unlock();
   }
 
   void apply_position_impulse(Vector impulse, Vector orig) {

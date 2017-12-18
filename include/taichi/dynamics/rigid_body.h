@@ -16,6 +16,7 @@ TC_NAMESPACE_BEGIN
 
 template <int dim>
 struct RigidBody {
+ public:
   using Vector = VectorND<dim, real>;
   using Vectori = VectorND<dim, int>;
 
@@ -23,43 +24,50 @@ struct RigidBody {
   using MatrixP = MatrixND<dim + 1, real>;
 
   using InertiaType = std::conditional_t<dim == 2, real, Matrix>;
+  using PositionFunctionType =
+      std::conditional_t<dim == 2, Function12, Function13>;
+  using RotationFunctionType =
+      std::conditional_t<dim == 2, Function11, Function13>;
 
- public:
-  real mass, inv_mass;
-  InertiaType inertia, inv_inertia;
-
-  Vector position, velocity, tmp_velocity;
-
-  real linear_damping, angular_damping;
-
-  Vector3 color;
+  using ElementType = typename ElementMesh<dim>::Elem;
+  using MeshType = ElementMesh<dim>;
 
   // Segment mesh for 2D and thin shell for 3D
   bool codimensional;
   real friction, restitution;
   MatrixP mesh_to_centroid;
-
+  real mass, inv_mass;
+  InertiaType inertia, inv_inertia;
+  Vector position, velocity, tmp_velocity;
+  real linear_damping, angular_damping;
+  Vector3 color;
   AngularVelocity<dim> angular_velocity, tmp_angular_velocity;
   Rotation<dim> rotation;
 
-  using PositionFunctionType =
-      std::conditional_t<dim == 2, Function12, Function13>;
-  using RotationFunctionType =
-      std::conditional_t<dim == 2, Function11, Function13>;
-  PositionFunctionType pos_func;
-  RotationFunctionType rot_func;
-
   int id;
-
   Vector rotation_axis;
-
-  using ElementType = typename ElementMesh<dim>::Elem;
-  using MeshType = ElementMesh<dim>;
 
   std::unique_ptr<MeshType> mesh;
 
-  // Forgive me... I have to make it trivially movable
+  // Will not be serialized:
   std::unique_ptr<std::mutex> mut;
+  PositionFunctionType pos_func;
+  RotationFunctionType rot_func;
+
+  TC_IO_DECL {
+    TC_IO(codimensional, friction, restitution, mesh_to_centroid, mass,
+          inv_mass);
+    TC_IO(inertia, inv_inertia);
+    TC_IO(position, velocity, tmp_velocity);
+    TC_IO(linear_damping, angular_damping);
+    TC_IO(color);
+    TC_IO(angular_velocity, tmp_angular_velocity);
+    TC_IO(rotation);
+    TC_IO(id, rotation_axis);
+    TC_IO(mesh);
+    TC_ASSERT(!pos_func);
+    TC_ASSERT(!rot_func);
+  }
 
   RigidBody() {
     static int counter = 0;

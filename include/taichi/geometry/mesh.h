@@ -27,6 +27,8 @@ struct Element {
   Vector v[dim];
   bool open_end[dim];
 
+  TC_IO_DEF(v, open_end);
+
   Element() {
     for (int i = 0; i < dim; i++) {
       v[i] = Vector(0.0_f);
@@ -64,21 +66,18 @@ struct Element {
     TC_STATIC_END_IF
     return ret;
   }
-
-  TC_IO_DECL {
-    TC_IO(v);
-    TC_IO(open_end);
-  }
 };
 
 template <int dim>
 struct ElementMesh {
   using Elem = Element<dim>;
-  std::vector<Elem> elements;
-  std::shared_ptr<Mesh> mesh = nullptr;
   using Vector = VectorND<dim, real>;
   using Vectori = VectorND<dim, int>;
   using MatrixP = MatrixND<dim + 1, real>;
+
+  std::vector<Elem> elements;
+
+  TC_IO_DEF(elements);
 
   void initialize(const Config &config) {
     TC_STATIC_IF(dim == 2) {
@@ -100,7 +99,7 @@ struct ElementMesh {
       std::string mesh_fn = config.get<std::string>("mesh_fn");
       std::string full_fn = std::getenv("TAICHI_ROOT_DIR") +
                             std::string("/taichi/projects/mpm/data/") + mesh_fn;
-      mesh = std::make_shared<Mesh>();
+      auto mesh = std::make_shared<Mesh>();
       Config mesh_config;
       mesh_config.set("filename", full_fn);
       mesh_config.set("reverse_vertices",

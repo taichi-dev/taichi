@@ -29,6 +29,8 @@ class AngularVelocity {
 
   ValueType value;
 
+  TC_IO_DEF(value);
+
   AngularVelocity() {
     value = ValueType(0.0_f);
   }
@@ -58,8 +60,6 @@ class AngularVelocity {
     TC_STATIC_END_IF;
     return ret;
   }
-
-  TC_IO_DEF(value);
 };
 
 template <int dim>
@@ -72,6 +72,8 @@ class Rotation {
       typename std::conditional_t<dim == 2, real, Eigen::Quaternion<real>>;
 
   ValueType value;
+
+  TC_IO_DEF(value);
 
   Rotation() {
     TC_STATIC_IF(dim == 2) {

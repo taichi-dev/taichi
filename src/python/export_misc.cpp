@@ -100,6 +100,8 @@ void export_misc(py::module &m) {
 
   m.def("print_all_units", print_all_units);
   m.def("set_core_state_python_imported", CoreState::set_python_imported);
+  m.def("set_core_trigger_gdb_when_crash",
+        CoreState::set_trigger_gdb_when_crash);
   m.def("test", test);
   m.def("test_raise_error", test_raise_error);
   m.def("test_volumetric_io", test_volumetric_io);

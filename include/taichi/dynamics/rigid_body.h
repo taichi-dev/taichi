@@ -77,6 +77,7 @@ struct RigidBody {
     angular_damping = 0;
     color = Vector3(0.5_f);
     mesh_to_centroid = MatrixP::identidy();
+    mut = std::make_unique<std::mutex>();
   }
 
   void set_as_background() {

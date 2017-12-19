@@ -12,6 +12,7 @@
 #include <map>
 #include <fstream>
 #include <sstream>
+#include <unordered_map>
 
 TC_NAMESPACE_BEGIN
 
@@ -22,12 +23,20 @@ TC_NAMESPACE_BEGIN
 
 namespace type {
 
+class Unit;
+
 template <typename T>
 using remove_cvref =
     typename std::remove_cv<typename std::remove_reference<T>::type>;
 
 template <typename T>
 using remove_cvref_t = typename remove_cvref<T>::type;
+
+template <typename T>
+using is_unit = typename std::is_base_of<Unit, T>;
+
+template <typename T>
+using is_unit_t = typename is_unit<T>::type;
 }
 
 #define TC_IO_DECL      \
@@ -65,6 +74,8 @@ class Serializer {
   using TArray = T[n];
   template <typename T, std::size_t n>
   using StdTArray = std::array<T, n>;
+
+  std::unordered_map<std::size_t, void *> assets;
 
   template <typename T, typename T_ = typename type::remove_cvref_t<T>>
   static T_ &get_writable(T &&t) {
@@ -169,6 +180,7 @@ class BinarySerializer : public Serializer {
 
   using Base = Serializer;
   using Base::Item;
+  using Base::assets;
 
   void write_to_file(const std::string &file_name) {
     FILE *f = fopen(file_name.c_str(), "wb");
@@ -252,7 +264,9 @@ class BinarySerializer : public Serializer {
     }
   }
 
-  void operator()(const char *, std::string &val) {
+  // std::string
+  void operator()(const char *, const std::string &val_) {
+    auto &val = get_writable(val_);
     if (writing) {
       std::vector<char> val_vector(val.begin(), val.end());
       this->operator()(nullptr, val_vector);
@@ -313,8 +327,11 @@ class BinarySerializer : public Serializer {
     val.io(*this);
   }
 
+  // Unique Pointers to non-taichi-unit Types
   template <typename T>
-  void operator()(const char *, const std::unique_ptr<T> &val_) {
+  typename std::enable_if<!type::is_unit<T>::value, void>::type operator()(
+      const char *,
+      const std::unique_ptr<T> &val_) {
     auto &val = get_writable(val_);
     if (writing) {
       this->operator()("", *val);
@@ -324,6 +341,21 @@ class BinarySerializer : public Serializer {
     }
   }
 
+  // Unique Pointers to taichi-unit Types
+  template <typename T>
+  typename std::enable_if<type::is_unit<T>::value, void>::type operator()(
+      const char *,
+      const std::unique_ptr<T> &val_) {
+    auto &val = get_writable(val_);
+    if (writing) {
+      this->operator()("", *val);
+    } else {
+      val = std::make_unique<T>();
+      this->operator()("", *val);
+    }
+  }
+
+  // std::vector
   template <typename T>
   void operator()(const char *, const std::vector<T> &val_) {
     auto &val = get_writable(val_);
@@ -339,12 +371,14 @@ class BinarySerializer : public Serializer {
     }
   }
 
+  // std::pair
   template <typename T, typename G>
   void operator()(const char *, std::pair<T, G> &val) {
     this->operator()(nullptr, val.first);
     this->operator()(nullptr, val.second);
   }
 
+  // std::map
   template <typename T, typename G>
   void operator()(const char *, std::map<T, G> &val) {
     if (writing) {

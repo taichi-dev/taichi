@@ -52,6 +52,13 @@ using is_unit_t = typename is_unit<T>::type;
     TC_IO(__VA_ARGS__)           \
   }
 
+#define TC_IO_DEF_WITH_BASE(...) \
+  template <typename S>          \
+  void io(S &serializer) const { \
+    Base::io(serializer);        \
+    TC_IO(__VA_ARGS__)           \
+  }
+
 #define TC_IO(...) \
   { serializer(#__VA_ARGS__, __VA_ARGS__); }
 

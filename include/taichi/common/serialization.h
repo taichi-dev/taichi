@@ -282,7 +282,7 @@ class BinarySerializer : public Serializer {
 
   // C-array
   template <typename T, std::size_t n>
-  void operator()(const char *, TArray<T, n> &val) {
+  void operator()(const char *, const TArray<T, n> &val) {
     if (writing) {
       for (std::size_t i = 0; i < n; i++) {
         this->operator()("", val[i]);
@@ -300,9 +300,13 @@ class BinarySerializer : public Serializer {
 
   // Elementary data types
   template <typename T>
-  typename std::enable_if<!has_io<T>::value, void>::type operator()(
-      const char *,
-      T &&val) {
+  typename std::enable_if<!has_io<T>::value && !std::is_pointer<T>::value,
+                          void>::type
+  operator()(const char *, const T &val) {
+    static_assert(!std::is_reference<T>::value, "T cannot be reference");
+    static_assert(!std::is_const<T>::value, "T cannot be const");
+    static_assert(!std::is_volatile<T>::value, "T cannot be volatile");
+    static_assert(!std::is_pointer<T>::value, "T cannot be pointer");
     if (writing) {
       std::size_t new_size = head + sizeof(T);
       if (c_data) {
@@ -325,8 +329,9 @@ class BinarySerializer : public Serializer {
   }
 
   template <typename T>
-  typename std::enable_if<has_io<T>::value, void>::type operator()(const char *,
-                                                                   T &&val) {
+  typename std::enable_if<has_io<T>::value, void>::type operator()(
+      const char *,
+      const T &val) {
     val.io(*this);
   }
 
@@ -357,7 +362,7 @@ class BinarySerializer : public Serializer {
     auto &val = get_writable(val_);
     if (writing) {
       this->operator()(val->get_name());
-      this->operator()(val.get());
+      this->operator()(ptr_to_int(val.get()));
       if (val.get() != nullptr) {
         this->operator()("", *val);
         // Just for checking future raw pointers
@@ -378,19 +383,25 @@ class BinarySerializer : public Serializer {
 
   // Raw pointers (no ownership)
   template <typename T>
-  void operator()(const char *, T *const val_) {
+  typename std::enable_if<std::is_pointer<T>::value, void>::type operator()(
+      const char *,
+      const T &val_) {
     auto &val = get_writable(val_);
     if (writing) {
-      this->operator()("", *val);
+      this->operator()("", ptr_to_int(val));
       if (val != nullptr) {
-        TC_ASSERT(assets.find(ptr_to_int(val)) != assets.end());
+        TC_ASSERT_INFO(assets.find(ptr_to_int(val)) != assets.end(),
+                       "Cannot find the address with a smart pointer pointing "
+                       "to. Make sure the smart pointer is serialized before "
+                       "the raw pointer.");
       }
     } else {
       std::size_t val_ptr;
       this->operator()("", val_ptr);
       if (val_ptr != 0) {
-        TC_ASSERT(assets.find(ptr_to_int(val)) != assets.end());
-        val = reinterpret_cast<T *>(assets[val_ptr]);
+        TC_ASSERT(assets.find(val_ptr) != assets.end());
+        val = reinterpret_cast<typename std::remove_pointer<T>::type *>(
+            assets[val_ptr]);
       }
     }
   }
@@ -441,14 +452,14 @@ class BinarySerializer : public Serializer {
   }
 
   template <typename T, typename... Args>
-  void operator()(const char *, T &&t, Args &&... rest) {
-    this->operator()(nullptr, std::forward<T>(t));
+  void operator()(const char *, const T &t, Args &&... rest) {
+    this->operator()(nullptr, t);
     this->operator()(nullptr, std::forward<Args>(rest)...);
   }
 
   template <typename T>
-  void operator()(T &&val) {
-    this->operator()(nullptr, std::forward<T>(val));
+  void operator()(const T &val) {
+    this->operator()(nullptr, val);
   }
 };
 

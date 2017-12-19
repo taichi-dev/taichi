@@ -16,14 +16,17 @@
 
 TC_NAMESPACE_BEGIN
 
+template <typename T>
+TC_EXPORT std::unique_ptr<T> create_instance_unique(const std::string &alias);
+
 ////////////////////////////////////////////////////////////////////////////////
 //                   A Minimalist Serializer for Taichi                       //
 //                           (C++11 Compatible)                               //
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace type {
-
 class Unit;
+
+namespace type {
 
 template <typename T>
 using remove_cvref =
@@ -33,7 +36,7 @@ template <typename T>
 using remove_cvref_t = typename remove_cvref<T>::type;
 
 template <typename T>
-using is_unit = typename std::is_base_of<Unit, T>;
+using is_unit = typename std::is_base_of<Unit, remove_cvref_t<T>>;
 
 template <typename T>
 using is_unit_t = typename is_unit<T>::type;
@@ -341,6 +344,11 @@ class BinarySerializer : public Serializer {
     }
   }
 
+  template <typename T>
+  std::size_t ptr_to_int(T *t) {
+    return reinterpret_cast<std::size_t>(t);
+  }
+
   // Unique Pointers to taichi-unit Types
   template <typename T>
   typename std::enable_if<type::is_unit<T>::value, void>::type operator()(
@@ -348,10 +356,42 @@ class BinarySerializer : public Serializer {
       const std::unique_ptr<T> &val_) {
     auto &val = get_writable(val_);
     if (writing) {
-      this->operator()("", *val);
+      this->operator()(val->get_name());
+      this->operator()(val.get());
+      if (val.get() != nullptr) {
+        this->operator()("", *val);
+        // Just for checking future raw pointers
+        assets.insert(std::make_pair(ptr_to_int(val.get()), val.get()));
+      }
     } else {
-      val = std::make_unique<T>();
+      std::string name;
+      std::size_t original_addr;
+      this->operator()("", name);
+      this->operator()("", original_addr);
+      if (original_addr != 0) {
+        val = create_instance_unique<T>(name);
+        assets.insert(std::make_pair(original_addr, val.get()));
+        this->operator()("", *val);
+      }
+    }
+  }
+
+  // Raw pointers (no ownership)
+  template <typename T>
+  void operator()(const char *, T *const val_) {
+    auto &val = get_writable(val_);
+    if (writing) {
       this->operator()("", *val);
+      if (val != nullptr) {
+        TC_ASSERT(assets.find(ptr_to_int(val)) != assets.end());
+      }
+    } else {
+      std::size_t val_ptr;
+      this->operator()("", val_ptr);
+      if (val_ptr != 0) {
+        TC_ASSERT(assets.find(ptr_to_int(val)) != assets.end());
+        val = reinterpret_cast<T *>(assets[val_ptr]);
+      }
     }
   }
 
@@ -402,13 +442,13 @@ class BinarySerializer : public Serializer {
 
   template <typename T, typename... Args>
   void operator()(const char *, T &&t, Args &&... rest) {
-    this->operator()(nullptr, get_writable(t));
+    this->operator()(nullptr, std::forward<T>(t));
     this->operator()(nullptr, std::forward<Args>(rest)...);
   }
 
   template <typename T>
   void operator()(T &&val) {
-    this->operator()(nullptr, get_writable(val));
+    this->operator()(nullptr, std::forward<T>(val));
   }
 };
 

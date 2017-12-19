@@ -17,7 +17,18 @@ TC_NAMESPACE_BEGIN
 
 ////////////////////////////////////////////////////////////////////////////////
 //                   A Minimalist Serializer for Taichi                       //
+//                           (C++11 Compatible)                               //
 ////////////////////////////////////////////////////////////////////////////////
+
+namespace type {
+
+template <typename T>
+using remove_cvref =
+    typename std::remove_cv<typename std::remove_reference<T>::type>;
+
+template <typename T>
+using remove_cvref_t = typename remove_cvref<T>::type;
+}
 
 #define TC_IO_DECL      \
   template <typename S> \
@@ -55,8 +66,8 @@ class Serializer {
   template <typename T, std::size_t n>
   using StdTArray = std::array<T, n>;
 
-  template <typename T, typename T_ = typename std::decay<T>::type>
-  T_ &get_writable(T &&t) {
+  template <typename T, typename T_ = typename type::remove_cvref_t<T>>
+  static T_ &get_writable(T &&t) {
     return *const_cast<T_ *>(&t);
   }
 
@@ -72,7 +83,7 @@ class Serializer {
     static constexpr auto helper(...) -> std::false_type;
 
    public:
-    using T__ = typename std::decay<T>::type;
+    using T__ = typename type::remove_cvref_t<T>;
     using type = decltype(helper<T__>(nullptr));
     static constexpr bool value = type::value;
   };
@@ -87,7 +98,7 @@ class Serializer {
     static constexpr auto helper(...) -> std::false_type;
 
    public:
-    using T__ = typename std::decay<T>::type;
+    using T__ = typename type::remove_cvref_t<T>;
     using type = decltype(helper<T__>(nullptr));
     static constexpr bool value = type::value;
   };
@@ -105,7 +116,7 @@ class Serializer {
         std::pair<is_lref, T>,  // Keep l-value references
         std::pair<is_array,
                   typename std::remove_cv<T>::type>,  // Do nothing for arrays
-        std::pair<std::true_type, typename std::decay<T>::type>
+        std::pair<std::true_type, typename type::remove_cvref_t<T>>
         // copy r-value references?
         // is there a better way?
         >;
@@ -261,11 +272,11 @@ class BinarySerializer : public Serializer {
       }
     } else {
       // TODO: why do I have to let it write to tmp, otherwise I get Sig Fault?
-      TArray<typename std::decay<T>::type, n> tmp;
+      TArray<typename type::remove_cvref_t<T>, n> tmp;
       for (std::size_t i = 0; i < n; i++) {
         this->operator()("", tmp[i]);
       }
-      std::memcpy(const_cast<typename std::decay<T>::type *>(val), tmp,
+      std::memcpy(const_cast<typename std::remove_cv<T>::type *>(val), tmp,
                   sizeof(tmp));
     }
   }
@@ -281,10 +292,12 @@ class BinarySerializer : public Serializer {
         if (new_size > preserved) {
           TC_CRITICAL("Preserved Buffer (size {}) Overflow.", preserved);
         }
-        *reinterpret_cast<typename std::decay<T>::type *>(&c_data[head]) = val;
+        *reinterpret_cast<typename type::remove_cvref_t<T> *>(&c_data[head]) =
+            val;
       } else {
         data.resize(new_size);
-        *reinterpret_cast<typename std::decay<T>::type *>(&data[head]) = val;
+        *reinterpret_cast<typename type::remove_cvref_t<T> *>(&data[head]) =
+            val;
       }
     } else {
       get_writable(val) =
@@ -301,7 +314,19 @@ class BinarySerializer : public Serializer {
   }
 
   template <typename T>
-  void operator()(const char *, std::vector<T> &val) {
+  void operator()(const char *, const std::unique_ptr<T> &val_) {
+    auto &val = get_writable(val_);
+    if (writing) {
+      this->operator()("", *val);
+    } else {
+      val = std::make_unique<T>();
+      this->operator()("", *val);
+    }
+  }
+
+  template <typename T>
+  void operator()(const char *, const std::vector<T> &val_) {
+    auto &val = get_writable(val_);
     if (writing) {
       this->operator()("", val.size());
     } else {
@@ -310,7 +335,7 @@ class BinarySerializer : public Serializer {
       val.resize(n);
     }
     for (std::size_t i = 0; i < val.size(); i++) {
-      this->operator()("", std::forward<T>(val[i]));
+      this->operator()("", val[i]);
     }
   }
 
@@ -499,7 +524,7 @@ class TextSerializer : public Serializer {
       T &&val) {
     add_line(key, "{");
     indent++;
-    IO<typename std::decay<T>::type, decltype(*this)>()(*this, val);
+    IO<typename type::remove_cvref_t<T>, decltype(*this)>()(*this, val);
     indent--;
     add_line("}");
   }
@@ -583,5 +608,18 @@ void write_to_binary_file(T &t, std::string file_name) {
   writer.finalize();
   writer.write_to_file(file_name);
 }
+
+// Compile-Time Tests
+static_assert(std::is_same<decltype(Serializer::get_writable(
+                               std::declval<const std::vector<int> &>())),
+                           std::vector<int> &>(),
+              "");
+
+static_assert(
+    std::is_same<
+        decltype(Serializer::get_writable(
+            std::declval<const std::vector<std::unique_ptr<int>> &>())),
+        std::vector<std::unique_ptr<int>> &>(),
+    "");
 
 TC_NAMESPACE_END

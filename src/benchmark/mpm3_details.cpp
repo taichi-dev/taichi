@@ -47,7 +47,6 @@ inline Vector3 dw(const Vector3 &a) {
 
 class KernelCalculationBenchmark : public Benchmark {
  private:
-  int n;
   bool brute_force;
   std::vector<Vector3> input;
 

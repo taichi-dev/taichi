@@ -342,7 +342,7 @@ TC_IMPLEMENTATION(Renderer, PSSMLTRenderer, "pssmlt");
 
 class DWMMLTRenderer : public MMLTRenderer {
  public:
-  void initialize(Config &config) {
+  void initialize(const Config &config) override {
     MMLTRenderer::initialize(config);
     large_step_prob = 0.0_f;
   }

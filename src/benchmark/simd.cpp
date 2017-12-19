@@ -14,7 +14,6 @@ TC_NAMESPACE_BEGIN
 
 class Matrix4sBenchmark : public Benchmark {
  private:
-  int n;
   bool brute_force;
   std::vector<Vector4> input;
   std::vector<Vector4> input_s;

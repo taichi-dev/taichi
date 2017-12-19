@@ -198,7 +198,6 @@ class BoundingBox {
 
 class Instance {
   Matrix4 transform;
-  int id;
 };
 
 TC_NAMESPACE_END

@@ -2,6 +2,7 @@ from . import asset_manager
 from taichi.core import tc_core
 from taichi.misc.util import P, array2d_to_ndarray
 
+import random
 
 class Texture:
 
@@ -58,6 +59,10 @@ class Texture:
 
   def zoom(self, zoom=(2, 2, 2), center=(0, 0, 0), repeat=True):
     return Texture("zoom", tex=self, center=center, zoom=zoom, repeat=repeat)
+
+  def perlin_noise(self, bounds=(0, 1), scale=(10, 10, 10)):
+    rnd_offset = (random.random(), random.random(), random.random())
+    return self * ((Texture('perlin').zoom(scale, rnd_offset) + 1) * 0.5 * (bounds[1] - bounds[0]) + bounds[0])
 
   def repeat(self, repeat_x, repeat_y, repeat_z):
     return Texture(

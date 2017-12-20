@@ -40,6 +40,7 @@ def main():
     task = tc.Task(name)
     task.run(sys.argv[3:])
   elif mode == "test":
+    # tc.core.set_core_trigger_gdb_when_crash(True)
     task = tc.Task('test')
     task.run(sys.argv[2:])
   elif mode == "build":

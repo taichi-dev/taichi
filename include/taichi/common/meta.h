@@ -59,6 +59,9 @@ struct type_switch<option> {
   using type = typename option::second_type;
 };
 
+template <typename... Args>
+using type_switch_t = typename type_switch<Args...>::type;
+
 namespace STATIC_IF {
 // reference: https://github.com/wichtounet/cpp_utils
 

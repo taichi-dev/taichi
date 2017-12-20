@@ -13,8 +13,22 @@
 #include <fstream>
 #include <sstream>
 #include <unordered_map>
+#include <vector>
+#include <memory>
+#include <cstring>
+#include <cassert>
+#include <iostream>
 
+#ifdef TC_INCLUDED
 TC_NAMESPACE_BEGIN
+#else
+#define TC_NAMESPACE_BEGIN
+#define TC_NAMESPACE_END
+#define TC_EXPORT
+#define TC_TRACE
+#define TC_CRITICAL
+#define TC_ASSERT assert
+#endif
 
 template <typename T>
 TC_EXPORT std::unique_ptr<T> create_instance_unique(const std::string &alias);
@@ -109,9 +123,6 @@ static_assert(
     sizeof(std::size_t) == sizeof(uint64_t),
     "sizeof(std::size_t) should be 8. Try compiling with 64bit mode.");
 
-template <typename... Args>
-using type_switch_t = typename type_switch<Args...>::type;
-
 template <typename T, typename S>
 struct IO {
   using implemented = std::false_type;
@@ -152,7 +163,7 @@ class Serializer {
   struct has_free_io {
     template <typename T_>
     static constexpr auto helper(T_ *) ->
-        typename taichi::IO<T_, Serializer>::implemented;
+        typename IO<T_, Serializer>::implemented;
 
     template <typename>
     static constexpr auto helper(...) -> std::false_type;
@@ -162,6 +173,8 @@ class Serializer {
     using type = decltype(helper<T__>(nullptr));
     static constexpr bool value = type::value;
   };
+
+  /*
 
  public:
   template <typename T>
@@ -198,8 +211,6 @@ class Serializer {
   auto make_item(T &&t) -> Item<T> {
     return Item<T>("", std::forward<T>(t));
   }
-};
-
 static_assert(
     std::is_same<typename Serializer::Item<int &>::is_array, std::false_type>(),
     "");
@@ -207,7 +218,6 @@ static_assert(
 static_assert(
     std::is_same<typename Serializer::Item<int &>::ValueType, int &>(),
     "");
-
 static_assert(std::is_same<typename Serializer::Item<int &&>::ValueType, int>(),
               "");
 
@@ -217,6 +227,8 @@ static_assert(std::is_same<typename Serializer::Item<int &&>::ValueType, int>(),
 static_assert(
     std::is_same<typename Serializer::Item<int[32]>::ValueType, int[32]>(),
     "");
+   */
+};
 
 template <bool writing>
 class BinarySerializer : public Serializer {
@@ -228,7 +240,7 @@ class BinarySerializer : public Serializer {
   std::size_t preserved;
 
   using Base = Serializer;
-  using Base::Item;
+  // using Base::Item;
   using Base::assets;
 
   void write_to_file(const std::string &file_name) {
@@ -463,6 +475,13 @@ class BinarySerializer : public Serializer {
       this->operator()("", n);
       val.resize(n);
     }
+    /*
+    for (std::size_t i = 0; i < val.size(); i++) {
+      printf("i %d\n", i);
+      printf("val %d\n", val[i]);
+    }
+
+     */
     for (std::size_t i = 0; i < val.size(); i++) {
       this->operator()("", val[i]);
     }
@@ -709,10 +728,12 @@ class TextSerializer : public Serializer {
     this->operator()(rest_names.c_str(), std::forward<Args>(rest)...);
   }
 
+  /*
   template <typename T>
   void operator()(Item<T> &item) {
     this->operator()(item.key.c_str(), get_writable(item.value));
   }
+  */
 };
 
 template <typename T>
@@ -724,7 +745,7 @@ std::enable_if_t<Serializer::has_io<T>::value, std::ostream &> operator<<(
 }
 
 template <typename T>
-void read_from_binary_file(T &t, std::string file_name) {
+void read_from_binary_file(T &t, const std::string &file_name) {
   BinaryInputSerializer reader;
   reader.initialize(file_name);
   reader(t);
@@ -732,7 +753,7 @@ void read_from_binary_file(T &t, std::string file_name) {
 }
 
 template <typename T>
-void write_to_binary_file(T &t, std::string file_name) {
+void write_to_binary_file(T &t, const std::string &file_name) {
   BinaryOutputSerializer writer;
   writer.initialize();
   writer(t);

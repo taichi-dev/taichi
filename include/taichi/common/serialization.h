@@ -403,10 +403,20 @@ class BinarySerializer : public Serializer {
       const std::unique_ptr<T> &val_) {
     auto &val = get_writable(val_);
     if (writing) {
-      this->operator()("", *val);
+      this->operator()(ptr_to_int(val.get()));
+      if (val.get() != nullptr) {
+        this->operator()("", *val);
+        // Just for checking future raw pointers
+        assets.insert(std::make_pair(ptr_to_int(val.get()), val.get()));
+      }
     } else {
-      val = std::make_unique<T>();
-      this->operator()("", *val);
+      std::size_t original_addr;
+      this->operator()("", original_addr);
+      if (original_addr != 0) {
+        val = std::make_unique<T>();
+        assets.insert(std::make_pair(original_addr, val.get()));
+        this->operator()("", *val);
+      }
     }
   }
 

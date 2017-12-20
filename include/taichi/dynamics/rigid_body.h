@@ -65,8 +65,8 @@ struct RigidBody {
     TC_IO(rotation);
     TC_IO(id, rotation_axis);
     TC_IO(mesh);
-    //TC_ASSERT(!pos_func);
-    //TC_ASSERT(!rot_func);
+    TC_ASSERT(!pos_func);
+    TC_ASSERT(!rot_func);
   }
 
   RigidBody() {

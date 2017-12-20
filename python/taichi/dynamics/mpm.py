@@ -191,4 +191,10 @@ class MPM:
     
   def action(self, **kwargs):
     self.c.general_action(P(**kwargs))
+    
+  def save(self, fn):
+    self.action(action="save", file_name=fn)
+    
+  def load(self, fn):
+    self.action(action="load", file_name=fn)
 

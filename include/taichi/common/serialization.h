@@ -42,17 +42,56 @@ template <typename T>
 using is_unit_t = typename is_unit<T>::type;
 }
 
+#define TC_IO_DECL_INST                               \
+  void binary_io(BinaryOutputSerializer &ser) const { \
+    ser(*this);                                       \
+  }                                                   \
+  void binary_io(BinaryInputSerializer &ser) const {  \
+    ser(*this);                                       \
+  }
+
+#define TC_IO_DECL_INST_VIRT                                  \
+  virtual void binary_io(BinaryOutputSerializer &ser) const { \
+    ser(*this);                                               \
+  }                                                           \
+  virtual void binary_io(BinaryInputSerializer &ser) const {  \
+    ser(*this);                                               \
+  }
+
+#define TC_IO_DECL_INST_VIRT_OVERRIDE                                  \
+  virtual void binary_io(BinaryOutputSerializer &ser) const override { \
+    ser(*this);                                                        \
+  }                                                                    \
+  virtual void binary_io(BinaryInputSerializer &ser) const override {  \
+    ser(*this);                                                        \
+  }
+
 #define TC_IO_DECL      \
+  TC_IO_DECL_INST       \
+  template <typename S> \
+  void io(S &serializer) const
+
+#define TC_IO_DECL_VIRT \
+  TC_IO_DECL_INST_VIRT  \
   template <typename S> \
   void io(S &serializer) const
 
 #define TC_IO_DEF(...)           \
+  TC_IO_DECL_INST                \
+  template <typename S>          \
+  void io(S &serializer) const { \
+    TC_IO(__VA_ARGS__)           \
+  }
+
+#define TC_IO_DEF_VIRT(...)      \
+  TC_IO_DECL_INST_VIRT           \
   template <typename S>          \
   void io(S &serializer) const { \
     TC_IO(__VA_ARGS__)           \
   }
 
 #define TC_IO_DEF_WITH_BASE(...) \
+  TC_IO_DECL_INST_VIRT_OVERRIDE  \
   template <typename S>          \
   void io(S &serializer) const { \
     Base::io(serializer);        \
@@ -371,7 +410,7 @@ class BinarySerializer : public Serializer {
       this->operator()(val->get_name());
       this->operator()(ptr_to_int(val.get()));
       if (val.get() != nullptr) {
-        this->operator()("", *val);
+        val->binary_io(*this);
         // Just for checking future raw pointers
         assets.insert(std::make_pair(ptr_to_int(val.get()), val.get()));
       }
@@ -383,7 +422,7 @@ class BinarySerializer : public Serializer {
       if (original_addr != 0) {
         val = create_instance_unique<T>(name);
         assets.insert(std::make_pair(original_addr, val.get()));
-        this->operator()("", *val);
+        val->binary_io(*this);
       }
     }
   }

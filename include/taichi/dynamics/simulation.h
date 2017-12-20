@@ -21,7 +21,6 @@ template <int DIM>
 class Simulation : public Unit {
  protected:
   real current_t = 0.0_f;
-  int frame = 0;
   int num_threads;
   DynamicLevelSet<DIM> levelset;
 
@@ -32,6 +31,7 @@ class Simulation : public Unit {
 
  public:
   static constexpr int D = DIM;
+  int frame = 0;
 
   Simulation() {
     num_threads = -1;

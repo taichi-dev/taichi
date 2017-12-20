@@ -18,6 +18,7 @@
 #include <cstring>
 #include <cassert>
 #include <iostream>
+#include <type_traits>
 
 #ifdef TC_INCLUDED
 TC_NAMESPACE_BEGIN
@@ -751,9 +752,8 @@ class TextSerializer : public Serializer {
 };
 
 template <typename T>
-std::enable_if_t<Serializer::has_io<T>::value, std::ostream &> operator<<(
-    std::ostream &os,
-    const T &t) {
+typename std::enable_if<Serializer::has_io<T>::value, std::ostream &>::type
+operator<<(std::ostream &os, const T &t) {
   os << TextSerializer::serialize("value", t);
   return os;
 }

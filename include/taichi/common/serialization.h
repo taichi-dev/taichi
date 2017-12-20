@@ -371,17 +371,20 @@ class BinarySerializer : public Serializer {
         if (new_size > preserved) {
           TC_CRITICAL("Preserved Buffer (size {}) Overflow.", preserved);
         }
-        *reinterpret_cast<typename type::remove_cvref_t<T> *>(&c_data[head]) =
-            val;
+        //*reinterpret_cast<typename type::remove_cvref_t<T> *>(&c_data[head]) =
+        //    val;
+        std::memcpy(&c_data[head], &val, sizeof(T));
       } else {
         data.resize(new_size);
-        *reinterpret_cast<typename type::remove_cvref_t<T> *>(&data[head]) =
-            val;
+        //*reinterpret_cast<typename type::remove_cvref_t<T> *>(&data[head]) =
+        //    val;
+        std::memcpy(&data[head], &val, sizeof(T));
       }
     } else {
-      get_writable(val) =
-          *reinterpret_cast<typename std::remove_reference<T>::type *>(
-              &c_data[head]);
+      // get_writable(val) =
+      //    *reinterpret_cast<typename std::remove_reference<T>::type *>(
+      //        &c_data[head]);
+      std::memcpy(&get_writable(val), &c_data[head], sizeof(T));
     }
     head += sizeof(T);
   }
@@ -489,14 +492,15 @@ class BinarySerializer : public Serializer {
 
   // std::pair
   template <typename T, typename G>
-  void operator()(const char *, std::pair<T, G> &val) {
+  void operator()(const char *, const std::pair<T, G> &val) {
     this->operator()(nullptr, val.first);
     this->operator()(nullptr, val.second);
   }
 
   // std::map
   template <typename T, typename G>
-  void operator()(const char *, std::map<T, G> &val) {
+  void operator()(const char *, const std::map<T, G> &val_) {
+    auto &val = get_writable(val_);
     if (writing) {
       this->operator()(nullptr, val.size());
       for (auto iter : val) {

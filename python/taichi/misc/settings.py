@@ -37,8 +37,12 @@ def get_output_directory():
                         os.path.join(get_root_directory(), 'taichi_outputs'))
 
 
-def get_output_path(path):
-  return os.path.join(get_output_directory(), path)
+def get_output_path(path, create=False):
+  path = os.path.join(get_output_directory(), path)
+  if create:
+    os.makedirs(path, exist_ok=True)
+  return path
+  
 
 
 def get_asset_directory():

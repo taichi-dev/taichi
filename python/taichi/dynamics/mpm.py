@@ -12,7 +12,7 @@ import errno
 import sys
 
 class MPM:
-  def __init__(self, **kwargs):
+  def __init__(self, snapshot_interval=20, **kwargs):
     res = kwargs['res']
     self.frame_dt = kwargs.get('frame_dt', 0.01)
     if 'frame_dt' not in kwargs:
@@ -26,6 +26,8 @@ class MPM:
       self.c = tc.core.create_simulation3('mpm')
       self.Vector = tc_core.Vector3f
       self.Vectori = tc_core.Vector3i
+    
+    self.snaoshot_interval = snapshot_interval
 
     if 'task_id' in kwargs:
       self.task_id = kwargs['task_id']
@@ -39,7 +41,8 @@ class MPM:
     print('delta_x = {}'.format(kwargs['delta_x']))
     print('task_id = {}'.format(self.task_id))
     
-    self.directory = tc.get_output_path(self.task_id)
+    self.directory = tc.get_output_path('mpm/' + self.task_id, True)
+    self.snapshot_directory = os.path.join(self.directory, 'snapshots')
     self.video_manager = VideoManager(self.directory)
     kwargs['frame_directory'] = self.video_manager.get_frame_directory()
     self.c.initialize(P(**kwargs))
@@ -115,12 +118,14 @@ class MPM:
     image_buffer = tc_core.Array2DVector3(
         Vectori(self.video_manager.width, self.video_manager.height),
         Vector(0, 0, 0.0))
+    '''
     particles = self.c.get_render_particles()
     try:
       os.mkdir(self.directory + '/particles')
     except:
       pass
     particles.write(self.directory + '/particles/%05d.bin' % self.frame)
+    '''
     res = list(map(float, self.res))
     r = res[0]
     if not camera:
@@ -197,4 +202,7 @@ class MPM:
     
   def load(self, fn):
     self.action(action="load", file_name=fn)
-
+    
+  def get_snapshot_file_name(self, iteration):
+    return os.path.join(self.snapshot_directory, '{:04d}.tcb'.format(iteration))
+    

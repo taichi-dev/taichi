@@ -246,7 +246,10 @@ class BinarySerializer : public Serializer {
 
   void write_to_file(const std::string &file_name) {
     FILE *f = fopen(file_name.c_str(), "wb");
-    assert(f != nullptr);
+    if(f == nullptr) {
+      TC_ERROR("Can not open file [{}] for writing. (Does the directory exist?)", file_name);
+      assert(f != nullptr);
+    }
     void *ptr = c_data;
     if (!ptr) {
       assert(!data.empty());

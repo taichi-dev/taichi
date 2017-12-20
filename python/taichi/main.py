@@ -49,6 +49,7 @@ def main():
     tc.core.format()
   elif mode == "update":
     tc.core.update(True)
+    tc.core.build()
   else:
     print("Unknown command '{}'".format(mode))
     exit(-1)

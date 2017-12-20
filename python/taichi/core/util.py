@@ -115,7 +115,9 @@ def build():
     print('  Error: CMake failed.')
     exit(-1)
 
-  make_ret = os.system('make -j8')
+  import multiprocessing
+  num_make_threads = min(20, multiprocessing.cpu_count())
+  make_ret = os.system('make -j {}'.format(num_make_threads))
   if make_ret != 0:
     print('  Error: Build failed.')
     exit(-1)

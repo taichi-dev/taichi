@@ -62,7 +62,7 @@ class MPM:
         ambient_light=0.01,
         light_direction=(1, 1, 0))
     self.res = kwargs['res']
-    self.frame = 0
+    self.c.frame = 0
 
     dummy_levelset = self.create_levelset()
 
@@ -114,7 +114,7 @@ class MPM:
     self.simulation_total_time += time.time() - T
     print('* Step Time: %.2f [tot: %.2f per frame %.2f]' %
           (time.time() - T, time.time() - self.start_simulation_time,
-           self.simulation_total_time / (self.frame + 1)))
+           self.simulation_total_time / (self.c.frame + 1)))
     image_buffer = tc_core.Array2DVector3(
         Vectori(self.video_manager.width, self.video_manager.height),
         Vector(0, 0, 0.0))
@@ -143,7 +143,7 @@ class MPM:
       img = LDRDisplay(exposure=2.0, adaptive_exposure=False).process(img)
       show_image('Vis', img)
       self.video_manager.write_frame(img)
-    self.frame += 1
+    self.c.frame += 1
 
   def get_directory(self):
     return self.directory

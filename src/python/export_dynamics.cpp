@@ -24,6 +24,7 @@ void register_simulation(py::module &m) {
       (std::string("Simulation") + std::to_string(DIM) + std::string("D"))
           .c_str())
       .def(py::init<>())
+      .def_read_write("frame", &Sim::frame)
       .def("initialize", &Sim::initialize)
       .def("D", [](Sim *) { return Sim::D; })
       .def("add_particles", &Sim::add_particles)

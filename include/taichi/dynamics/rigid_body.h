@@ -65,8 +65,9 @@ struct RigidBody {
     TC_IO(rotation);
     TC_IO(id, rotation_axis);
     TC_IO(mesh);
-    TC_ASSERT(!pos_func);
-    TC_ASSERT(!rot_func);
+    if (pos_func || rot_func) {
+      TC_WARN("Serializing scripted rigid bodies is not yet supported.");
+    }
   }
 
   RigidBody() {

@@ -73,16 +73,6 @@ class MPM:
     self.visualize_count = 0
     self.visualize_count_limit = 400000.0
 
-    if '--continue' in sys.argv:
-      path = self.snapshot_directory
-      files = [f for f in os.listdir(path) if f.endswith('.tcb')]
-      if len(files) == 0:
-        return
-      files.sort()
-      f = files[-1]
-      self.c.frame = int(f[:-4])
-      self.load(os.path.join(path, f))
-
   def check_directory(self, directory):
     try:
       os.mkdir(directory)
@@ -193,6 +183,15 @@ class MPM:
     taichi.clear_directory_with_suffix(self.snapshot_directory, 'tcb')
 
   def simulate(self, clear_output_directory=False, print_profile_info=False, frame_update=None, update_frequency=1):
+    if '--continue' in sys.argv:
+      path = self.snapshot_directory
+      files = [f for f in os.listdir(path) if f.endswith('.tcb')]
+      if len(files) == 0:
+        return
+      files.sort()
+      f = files[-1]
+      self.c.frame = int(f[:-4])
+      self.load(os.path.join(path, f))
     if clear_output_directory:
       if self.c.frame > 0:
         print('clear_output_directory doesn\'t work with --continue.')

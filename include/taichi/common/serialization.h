@@ -767,7 +767,7 @@ void read_from_binary_file(T &t, const std::string &file_name) {
 }
 
 template <typename T>
-void write_to_binary_file(T &t, const std::string &file_name) {
+void write_to_binary_file(const T &t, const std::string &file_name) {
   BinaryOutputSerializer writer;
   writer.initialize();
   writer(t);

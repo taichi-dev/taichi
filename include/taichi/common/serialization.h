@@ -55,7 +55,7 @@ using is_unit = typename std::is_base_of<Unit, remove_cvref_t<T>>;
 
 template <typename T>
 using is_unit_t = typename is_unit<T>::type;
-}
+}  // namespace type
 
 #define TC_IO_DECL_INST                               \
   void binary_io(BinaryOutputSerializer &ser) const { \
@@ -246,8 +246,10 @@ class BinarySerializer : public Serializer {
 
   void write_to_file(const std::string &file_name) {
     FILE *f = fopen(file_name.c_str(), "wb");
-    if(f == nullptr) {
-      TC_ERROR("Can not open file [{}] for writing. (Does the directory exist?)", file_name);
+    if (f == nullptr) {
+      TC_ERROR(
+          "Can not open file [{}] for writing. (Does the directory exist?)",
+          file_name);
       assert(f != nullptr);
     }
     void *ptr = c_data;
@@ -587,13 +589,13 @@ class TextSerializer : public Serializer {
   }
 
   template <typename T>
-  static std::string serialize(const char *key, T &&t) {
+  static std::string serialize(const char *key, const T &t) {
     TextSerializer ser;
-    ser(key, std::forward<T>(t));
+    ser(key, t);
     return ser.data;
   }
 
-  void operator()(const char *key, std::string &val) {
+  void operator()(const char *key, const std::string &val) {
     add_line(std::string(key) + ": " + val);
   }
 
@@ -606,7 +608,7 @@ class TextSerializer : public Serializer {
   template <typename T, std::size_t n>
   typename std::enable_if<is_compact<T, n>::value, void>::type operator()(
       const char *key,
-      TArray<T, n> &val) {
+      const TArray<T, n> &val) {
     std::stringstream ss;
     ss << "[";
     for (std::size_t i = 0; i < n; i++) {
@@ -623,7 +625,7 @@ class TextSerializer : public Serializer {
   template <typename T, std::size_t n>
   typename std::enable_if<!is_compact<T, n>::value, void>::type operator()(
       const char *key,
-      TArray<T, n> &val) {
+      const TArray<T, n> &val) {
     add_line(key, "[");
     indent++;
     for (std::size_t i = 0; i < n; i++) {
@@ -637,7 +639,7 @@ class TextSerializer : public Serializer {
   template <typename T, std::size_t n>
   typename std::enable_if<is_compact<T, n>::value, void>::type operator()(
       const char *key,
-      StdTArray<T, n> &val) {
+      const StdTArray<T, n> &val) {
     std::stringstream ss;
     ss << "[";
     for (std::size_t i = 0; i < n; i++) {
@@ -654,7 +656,7 @@ class TextSerializer : public Serializer {
   template <typename T, std::size_t n>
   typename std::enable_if<!is_compact<T, n>::value, void>::type operator()(
       const char *key,
-      StdTArray<T, n> &val) {
+      const StdTArray<T, n> &val) {
     add_line(key, "[");
     indent++;
     for (std::size_t i = 0; i < n; i++) {
@@ -668,7 +670,7 @@ class TextSerializer : public Serializer {
   template <typename T>
   typename std::enable_if<!has_io<T>::value && !has_free_io<T>::value,
                           void>::type
-  operator()(const char *key, T &&val) {
+  operator()(const char *key, const T &val) {
     static_assert(!has_io<T>::value, "");
     std::stringstream ss;
     ss << std::boolalpha << val;
@@ -678,7 +680,7 @@ class TextSerializer : public Serializer {
   template <typename T>
   typename std::enable_if<has_io<T>::value, void>::type operator()(
       const char *key,
-      T &&val) {
+      const T &val) {
     add_line(key, "{");
     indent++;
     val.io(*this);
@@ -689,7 +691,7 @@ class TextSerializer : public Serializer {
   template <typename T>
   typename std::enable_if<has_free_io<T>::value, void>::type operator()(
       const char *key,
-      T &&val) {
+      const T &val) {
     add_line(key, "{");
     indent++;
     IO<typename type::remove_cvref_t<T>, decltype(*this)>()(*this, val);
@@ -698,21 +700,18 @@ class TextSerializer : public Serializer {
   }
 
   template <typename T>
-  void operator()(const char *key, const std::vector<T> &val_) {
-    auto &val = get_writable(val_);
+  void operator()(const char *key, const std::vector<T> &val) {
     add_line(key, "[");
     indent++;
     for (std::size_t i = 0; i < val.size(); i++) {
-      this->operator()(("[" + std::to_string(i) + "]").c_str(),
-                       std::forward<T>(val[i]));
+      this->operator()(("[" + std::to_string(i) + "]").c_str(), val[i]);
     }
     indent--;
     add_line("]");
   }
 
   template <typename T, typename G>
-  void operator()(const char *key, const std::pair<T, G> &val_) {
-    auto &val = get_writable(val_);
+  void operator()(const char *key, const std::pair<T, G> &val) {
     add_line(key, "(");
     indent++;
     this->operator()("[0]", val.first);
@@ -722,8 +721,7 @@ class TextSerializer : public Serializer {
   }
 
   template <typename T, typename G>
-  void operator()(const char *key, const std::map<T, G> &val_) {
-    auto &val = get_writable(val_);
+  void operator()(const char *key, const std::map<T, G> &val) {
     add_line(key, "{");
     indent++;
     for (auto iter : val) {
@@ -736,13 +734,13 @@ class TextSerializer : public Serializer {
   }
 
   template <typename T, typename... Args>
-  void operator()(const char *key_, T &&t, Args &&... rest) {
+  void operator()(const char *key_, const T &t, Args &&... rest) {
     std::string key(key_);
     size_t pos = key.find(",");
     std::string first_name = key.substr(0, pos);
     std::string rest_names =
         key.substr(pos + 2, int(key.size()) - (int)pos - 2);
-    this->operator()(first_name.c_str(), get_writable(t));
+    this->operator()(first_name.c_str(), t);
     this->operator()(rest_names.c_str(), std::forward<Args>(rest)...);
   }
 

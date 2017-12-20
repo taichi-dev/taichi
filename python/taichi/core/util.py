@@ -20,8 +20,10 @@ required_packages = [
     ('GitPython', 'git'), 'yapf', 'colorama'
 ]
 
+
 def install_package(pkg):
   pip.main(['install', '--user', pkg])
+
 
 def check_for_packages():
   for pkg in required_packages:
@@ -30,15 +32,17 @@ def check_for_packages():
       pkg = pkg[0]
     else:
       import_name = pkg
-    
+
     try:
       exec('import {}'.format(import_name))
     except ImportError as e:
       print("Installing package: ", pkg)
       install_package(pkg)
 
+
 check_for_packages()
 from colorama import Fore, Back, Style
+
 
 def get_repo():
   from git import Repo
@@ -50,20 +54,21 @@ def get_repo():
 def update(include_projects=False):
   import git
   import taichi as tc
-  
+
   g = git.cmd.Git(tc.get_repo_directory())
   print(Fore.GREEN + "Updating [taichi]..." + Style.RESET_ALL)
   g.pull('--rebase')
   print(Fore.GREEN + "   ...Done" + Style.RESET_ALL)
-  
+
   for proj in os.listdir(tc.get_project_directory()):
-    if proj in ['examples'] or proj.startswith('_') or not os.path.isdir(tc.get_project_directory(proj)):
+    if proj in ['examples'] or proj.startswith('_') or not os.path.isdir(
+        tc.get_project_directory(proj)):
       continue
-    print(Fore.GREEN + "Updating project [{}]...".format(proj) + Style.RESET_ALL)
+    print(
+        Fore.GREEN + "Updating project [{}]...".format(proj) + Style.RESET_ALL)
     g = git.cmd.Git(os.path.join(tc.get_project_directory(proj)))
     g.pull('--rebase')
     print(Fore.GREEN + "   ...Done" + Style.RESET_ALL)
-    
 
 
 def format():
@@ -87,7 +92,6 @@ def format():
     repo.git.add(item.a_path)
 
   print('* Done!')
-
 
 
 from taichi.misc.settings import get_output_directory, get_bin_directory, get_root_directory

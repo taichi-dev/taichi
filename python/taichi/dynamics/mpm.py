@@ -184,19 +184,17 @@ class MPM:
 
   def simulate(self, clear_output_directory=False, print_profile_info=False, frame_update=None, update_frequency=1):
     if '--continue' in sys.argv:
+      print('clear_output_directory is disabled with --continue.')
       path = self.snapshot_directory
       files = [f for f in os.listdir(path) if f.endswith('.tcb')]
-      if len(files) == 0:
-        return
-      files.sort()
-      f = files[-1]
-      self.c.frame = int(f[:-4])
-      self.load(os.path.join(path, f))
-    if clear_output_directory:
-      if self.c.frame > 0:
-        print('clear_output_directory doesn\'t work with --continue.')
-        sys.exit()
-      self.clear_output_directory()
+      if len(files) > 0:
+        files.sort()
+        f = files[-1]
+        self.c.frame = int(f[:-4])
+        self.load(os.path.join(path, f))
+    else:
+      if clear_output_directory:
+        self.clear_output_directory()
     while self.c.frame < self.num_frames:
       print('Simulating frame {}'.format(self.c.frame + 1))
       for k in range(update_frequency):

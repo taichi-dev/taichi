@@ -194,6 +194,9 @@ class MPM:
 
   def simulate(self, clear_output_directory=False, print_profile_info=False, frame_update=None, update_frequency=1):
     if clear_output_directory:
+      if self.c.frame > 0:
+        print('clear_output_directory doesn\'t work with --continue.')
+        sys.exit()
       self.clear_output_directory()
     while self.c.frame < self.num_frames:
       print('Simulating frame {}'.format(self.c.frame + 1))

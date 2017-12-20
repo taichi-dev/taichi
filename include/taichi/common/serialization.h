@@ -250,7 +250,7 @@ class BinarySerializer : public Serializer {
     assert(f != nullptr);
     std::size_t length = 0;
     while (true) {
-      int limit = 1 << 8;
+      size_t limit = 1 << 8;
       data.resize(data.size() + limit);
       void *ptr = reinterpret_cast<void *>(&data[length]);
       size_t length_tmp = fread(ptr, sizeof(uint8_t), limit, f);

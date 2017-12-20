@@ -10,6 +10,7 @@ import taichi as tc
 import math
 import errno
 import sys
+import os
 
 class MPM:
   def __init__(self, snapshot_interval=20, **kwargs):
@@ -46,11 +47,8 @@ class MPM:
     self.video_manager = VideoManager(self.directory)
     kwargs['frame_directory'] = self.video_manager.get_frame_directory()
     self.c.initialize(P(**kwargs))
-    try:
-      os.mkdir(self.directory)
-    except OSError as exc:
-      if exc.errno != errno.EEXIST:
-        raise
+    self.check_directory(self.directory)
+    self.check_directory(self.snapshot_directory)
     vis_res = self.c.get_vis_resolution()
     self.video_manager.width = vis_res.x
     self.video_manager.height = vis_res.y
@@ -74,6 +72,23 @@ class MPM:
     self.simulation_total_time = None
     self.visualize_count = 0
     self.visualize_count_limit = 400000.0
+
+    if '--continue' in sys.argv:
+      path = self.snapshot_directory
+      files = [f for f in os.listdir(path) if f.endswith('.tcb')]
+      if len(files) == 0:
+        return
+      files.sort()
+      f = files[-1]
+      self.c.frame = int(f[:-4])
+      self.load(os.path.join(path, f))
+
+  def check_directory(self, directory):
+    try:
+      os.mkdir(directory)
+    except OSError as exc:
+      if exc.errno != errno.EEXIST:
+        raise
 
   def add_particles(self, **kwargs):
     return self.c.add_particles(P(**kwargs))
@@ -143,7 +158,6 @@ class MPM:
       img = LDRDisplay(exposure=2.0, adaptive_exposure=False).process(img)
       show_image('Vis', img)
       self.video_manager.write_frame(img)
-    self.c.frame += 1
 
   def get_directory(self):
     return self.directory
@@ -176,12 +190,13 @@ class MPM:
     taichi.clear_directory_with_suffix(frames_dir, 'json')
     taichi.clear_directory_with_suffix(frames_dir, 'bgeo')
     taichi.clear_directory_with_suffix(frames_dir, 'obj')
-    
+    taichi.clear_directory_with_suffix(self.snapshot_directory, 'tcb')
+
   def simulate(self, clear_output_directory=False, print_profile_info=False, frame_update=None, update_frequency=1):
     if clear_output_directory:
       self.clear_output_directory()
-    for i in range(self.num_frames):
-      print('Simulating frame {}'.format(i))
+    while self.c.frame < self.num_frames:
+      print('Simulating frame {}'.format(self.c.frame + 1))
       for k in range(update_frequency):
         if frame_update:
           frame_update(self.get_current_time(), self.frame_dt / update_frequency)
@@ -189,6 +204,9 @@ class MPM:
       self.visualize()
       if print_profile_info:
         tc.core.print_profile_info()
+      self.c.frame += 1
+      if self.c.frame % self.snaoshot_interval == 0:
+        self.save(self.get_snapshot_file_name(self.c.frame))
   
   def add_articulation(self, **kwargs):
     kwargs['action'] = 'add_articulation'

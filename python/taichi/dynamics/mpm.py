@@ -124,7 +124,7 @@ class MPM:
       os.mkdir(self.directory + '/particles')
     except:
       pass
-    particles.write(self.directory + '/particles/%05d.bin' % self.frame)
+    particles.write(self.directory + '/particles/%05d.bin' % self.c.frame)
     '''
     res = list(map(float, self.res))
     r = res[0]

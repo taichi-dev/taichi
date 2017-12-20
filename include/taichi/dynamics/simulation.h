@@ -23,11 +23,9 @@ class Simulation : public Unit {
   real current_t = 0.0_f;
   int num_threads;
   DynamicLevelSet<DIM> levelset;
+  std::string working_directory;
 
-  TC_IO_DECL {
-    TC_IO(current_t);
-    TC_IO(num_threads);
-  };
+  TC_IO_DEF(current_t, num_threads, working_directory);
 
  public:
   static constexpr int D = DIM;
@@ -44,6 +42,7 @@ class Simulation : public Unit {
   virtual void initialize(const Config &config) override {
     // Use all threads by default
     num_threads = config.get("num_threads", -1);
+    working_directory = config.get("working_directory", "/tmp/");
   }
 
   virtual std::string add_particles(const Config &config) {

@@ -28,6 +28,7 @@ class IndexND<3> {
   int i, j, k;
   Vector3 storage_offset;
 
+  TC_IO_DEF(i, j, k, x, y, z, storage_offset);
   using Index3D = IndexND<3>;
 
   IndexND() {
@@ -164,16 +165,6 @@ class IndexND<3> {
 
   Vector3i get_ipos() const {
     return Vector3i(i, j, k);
-  }
-
-  TC_IO_DECL {
-    TC_IO(x);
-    TC_IO(y);
-    TC_IO(z);
-    TC_IO(i);
-    TC_IO(j);
-    TC_IO(k);
-    TC_IO(storage_offset);
   }
 };
 

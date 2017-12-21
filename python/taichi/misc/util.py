@@ -33,6 +33,7 @@ import copy
 import numpy as np
 import ctypes
 
+
 def config_from_dict(args):
   from taichi.core import tc_core
   from taichi.visual import SurfaceMaterial
@@ -166,8 +167,8 @@ def image_buffer_to_image(arr):
   dat = (raw_data * 255.0).astype('uint8')
   dat.reshape((len(raw_data) / 3, 3))
   data_string = dat.tostring()
-  image_data = pyglet.image.ImageData(arr.get_width(),
-                                      arr.get_height(), 'RGB', data_string)
+  image_data = pyglet.image.ImageData(arr.get_width(), arr.get_height(), 'RGB',
+                                      data_string)
   return image_data
 
 
@@ -187,6 +188,7 @@ def arange(x, y, d):
   while x < y:
     yield x
     x += d
+
 
 # TODO: remove this...
 def P(**kwargs):
@@ -258,7 +260,8 @@ def sleep(seconds=-1):
       time.sleep(1)  # Wait for Ctrl-C
   else:
     time.sleep(seconds)
-    
+
+
 def function11(f):
   func = taichi.core.function11_from_py_obj(f)
   function11.keeper.append(f)
@@ -266,7 +269,9 @@ def function11(f):
   func_address = taichi.core.get_function11_address(func)
   return func_address
 
+
 function11.keeper = []
+
 
 def function12(f):
   func = taichi.core.function12_from_py_obj(f)
@@ -275,7 +280,9 @@ def function12(f):
   func_address = taichi.core.get_function12_address(func)
   return func_address
 
+
 function12.keeper = []
+
 
 def function13(f):
   func = taichi.core.function13_from_py_obj(f)
@@ -284,7 +291,9 @@ def function13(f):
   func_address = taichi.core.get_function13_address(func)
   return func_address
 
+
 function13.keeper = []
+
 
 def constant_function(v):
   if isinstance(v, int) or isinstance(v, float):
@@ -298,10 +307,13 @@ def constant_function(v):
   else:
     assert False
 
+
 def constant_function13(v):
   return function13(lambda t: v)
 
+
 class Tee():
+
   def __init__(self, name):
     self.file = open(name, 'w')
     self.stdout = sys.stdout

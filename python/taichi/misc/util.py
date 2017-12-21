@@ -301,3 +301,22 @@ def constant_function(v):
 def constant_function13(v):
   return function13(lambda t: v)
 
+class Tee():
+  def __init__(self, name):
+    self.file = open(name, 'w')
+    self.stdout = sys.stdout
+    self.stderr = sys.stderr
+    sys.stdout = self
+    sys.stderr = self
+
+  def __del__(self):
+    self.file.close()
+
+  def write(self, data):
+    self.file.write(data)
+    self.stdout.write(data)
+    self.file.flush()
+    self.stdout.flush()
+
+  def write_to_file(self, data):
+    self.file.write(data)

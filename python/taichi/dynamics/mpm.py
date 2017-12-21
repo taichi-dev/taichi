@@ -11,6 +11,7 @@ import math
 import errno
 import sys
 import os
+import getopt
 
 class MPM:
   def __init__(self, snapshot_interval=20, **kwargs):
@@ -46,6 +47,23 @@ class MPM:
     self.snapshot_directory = os.path.join(self.directory, 'snapshots')
     self.video_manager = VideoManager(self.directory)
     kwargs['frame_directory'] = self.video_manager.get_frame_directory()
+
+    try:
+      opts, args = getopt.getopt(sys.argv[1:], 'c:d:', ['continue=', 'dt-multiplier='])
+    except getopt.GetoptError as err:
+      print(err)
+      # TODO: output usage here
+      sys.exit()
+    self.continue_opt = False
+    self.continue_frame = ''
+    for o, a in opts:
+      if o in ('--continue', '-c'):
+        print('clear_output_directory is disabled with --continue.')
+        self.continue_opt = True
+        self.continue_frame = int(a)
+      elif o in ('--dt-multiplier', '-d'):
+        kwargs['dt-multiplier'] = float(a)
+
     self.c.initialize(P(**kwargs))
     self.check_directory(self.directory)
     self.check_directory(self.snapshot_directory)
@@ -183,18 +201,20 @@ class MPM:
     taichi.clear_directory_with_suffix(self.snapshot_directory, 'tcb')
 
   def simulate(self, clear_output_directory=False, print_profile_info=False, frame_update=None, update_frequency=1):
-    if '--continue' in sys.argv:
-      print('clear_output_directory is disabled with --continue.')
+    # do restart
+    if self.continue_opt:
       path = self.snapshot_directory
       files = [f for f in os.listdir(path) if f.endswith('.tcb')]
-      if len(files) > 0:
-        files.sort()
-        f = files[-1]
-        self.c.frame = int(f[:-4])
-        self.load(os.path.join(path, f))
-    else:
-      if clear_output_directory:
-        self.clear_output_directory()
+      files.sort()
+      if not '{:04d}.tcb'.format(self.continue_frame) in files:
+        print('Snapshot is not found.')
+        print('The lastest one is ', files[-1], '.')
+        sys.exit()
+      f = self.get_snapshot_file_name(self.continue_frame)
+      self.load(os.path.join(path, f))
+    elif clear_output_directory:
+      self.clear_output_directory()
+    # do main cycle
     while self.c.frame < self.num_frames:
       print('Simulating frame {}'.format(self.c.frame + 1))
       for k in range(update_frequency):

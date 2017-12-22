@@ -209,6 +209,19 @@ def get_dll_name(name):
   else:
     assert False
 
+def load_module(name, verbose=True):
+  if verbose:
+    print('Loading module', name)
+  try:
+    if '.so' in name:
+      ctypes.PyDLL(name)
+    else:
+      ctypes.PyDLL(
+        os.path.join(get_root_directory(), 'taichi', 'build',
+                     get_dll_name(name)))
+  except Exception as e:
+    print(Fore.YELLOW + "Warning: module [{}] loading failed: {}".format(
+      name, e) + Style.RESET_ALL)
 
 def at_startup():
   assert os.path.exists(get_root_directory(
@@ -223,14 +236,7 @@ def at_startup():
   modules = f.readline().strip().split(';')
   for module in modules:
     if module != '':
-      print('Loading module', module)
-      try:
-        ctypes.PyDLL(
-            os.path.join(get_root_directory(), 'taichi', 'build',
-                         get_dll_name(module)))
-      except Exception as e:
-        print(Fore.YELLOW + "Warning: module [{}] loading failed: {}".format(
-            module, e) + Style.RESET_ALL)
+      load_module(module)
 
   tc_core.set_core_state_python_imported(True)
   f.close()

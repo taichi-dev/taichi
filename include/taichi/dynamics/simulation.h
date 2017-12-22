@@ -87,8 +87,8 @@ class Simulation : public Unit {
   }
 };
 
-typedef Simulation<2> Simulation2D;
-typedef Simulation<3> Simulation3D;
+using Simulation2D = Simulation<2>;
+using Simulation3D = Simulation<3>;
 
 TC_INTERFACE(Simulation2D);
 TC_INTERFACE(Simulation3D);

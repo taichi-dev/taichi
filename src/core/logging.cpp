@@ -22,6 +22,38 @@ void signal_handler(int signo);
       std::printf("Can not register signal handler for" #name "\n"); \
   }
 
+void Logger::set_level(const std::string &level) {
+  /*
+  trace = 0,
+  debug = 1,
+  info = 2,
+  warn = 3,
+  err = 4,
+  critical = 5,
+  off = 6
+  */
+  if (level == "trace") {
+    spdlog::set_level(spdlog::level::trace);
+  } else if (level == "debug") {
+    spdlog::set_level(spdlog::level::debug);
+  } else if (level == "info") {
+    spdlog::set_level(spdlog::level::info);
+  } else if (level == "warn") {
+    spdlog::set_level(spdlog::level::warn);
+  } else if (level == "error") {
+    spdlog::set_level(spdlog::level::err);
+  } else if (level == "critical") {
+    spdlog::set_level(spdlog::level::critical);
+  } else if (level == "off") {
+    spdlog::set_level(spdlog::level::off);
+  } else {
+    TC_ERROR(
+        "Unknown logging level [{}]. Levels = trace, debug, info, warn, error, "
+        "critical, off",
+        level);
+  }
+}
+
 Logger::Logger() {
   console = spdlog::stdout_color_mt("console");
   TC_LOG_SET_PATTERN("[%L %D %X.%e] %v")

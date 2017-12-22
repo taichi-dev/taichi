@@ -236,6 +236,7 @@ class Logger {
   void error(const std::string &s, bool raise_signal = true);
   void critical(const std::string &s, bool raise_signal = true);
   void flush();
+  void set_level(const std::string &level);
 };
 
 extern Logger logger;

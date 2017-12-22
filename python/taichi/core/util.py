@@ -61,7 +61,7 @@ def update(include_projects=False):
   print(Fore.GREEN + "   ...Done" + Style.RESET_ALL)
 
   for proj in os.listdir(tc.get_project_directory()):
-    if proj in ['examples'] or proj.startswith('_') or not os.path.isdir(
+    if proj in ['examples', 'toys'] or proj.startswith('_') or not os.path.isdir(
         tc.get_project_directory(proj)):
       continue
     print(

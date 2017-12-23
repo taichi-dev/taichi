@@ -262,14 +262,16 @@ def sleep(seconds=-1):
     time.sleep(seconds)
 
 functions = []
+function_addresses = []
 
 def get_function_XY(x, y):
   def functionXY(f):
     func = getattr(taichi.core, 'function{}{}_from_py_obj'.format(x, y))(f)
     functions.append(f)
     functions.append(func)
-    func_address = getattr(taichi.core, 'get_function{}{}_address'.format(x, y))(func)
-    return func_address
+    function_address = getattr(taichi.core, 'get_function{}{}_address'.format(x, y))(func)
+    function_addresses.append(function_address)
+    return function_address
   return functionXY
 
 function11 = get_function_XY(1, 1)

@@ -25,11 +25,12 @@ class Simulation : public Unit {
   DynamicLevelSet<DIM> levelset;
   std::string working_directory;
 
-  TC_IO_DEF(current_t, num_threads, working_directory);
 
  public:
   static constexpr int D = DIM;
   int frame = 0;
+
+  TC_IO_DEF(current_t, num_threads, working_directory, frame);
 
   Simulation() {
     num_threads = -1;

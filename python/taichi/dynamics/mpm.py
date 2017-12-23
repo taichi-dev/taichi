@@ -99,6 +99,10 @@ class MPM:
         raise
 
   def add_particles(self, **kwargs):
+    if 'scripted_rotation' in kwargs:
+      kwargs['scripted_rotation_id'] = function_addresses.index(kwargs['scripted_rotation'])
+    if 'scripted_position' in kwargs:
+      kwargs['scripted_position_id'] = function_addresses.index(kwargs['scripted_position'])
     return self.c.add_particles(P(**kwargs))
 
   def update_levelset(self, t0, t1):
@@ -239,7 +243,11 @@ class MPM:
     self.action(action="save", file_name=fn)
     
   def load(self, fn):
-    self.action(action="load", file_name=fn)
+    script_dict = {}
+    for i, func in enumerate(function_addresses):
+      script_dict['script{:05d}'.format(i)] = func
+    print(script_dict)
+    self.action(action="load", file_name=fn, **script_dict)
     
   def get_snapshot_file_name(self, iteration):
     return os.path.join(self.snapshot_directory, '{:04d}.tcb'.format(iteration))

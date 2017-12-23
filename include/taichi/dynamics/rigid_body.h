@@ -51,6 +51,7 @@ struct RigidBody {
 
   // Will not be serialized:
   std::unique_ptr<std::mutex> mut;
+  int pos_func_id = -1, rot_func_id = -1;
   PositionFunctionType pos_func;
   RotationFunctionType rot_func;
 
@@ -65,9 +66,7 @@ struct RigidBody {
     TC_IO(rotation);
     TC_IO(id, rotation_axis);
     TC_IO(mesh);
-    if (pos_func || rot_func) {
-      TC_WARN("Serializing scripted rigid bodies is not yet supported.");
-    }
+    TC_IO(pos_func_id, rot_func_id);
   }
 
   RigidBody() {

@@ -261,39 +261,20 @@ def sleep(seconds=-1):
   else:
     time.sleep(seconds)
 
+functions = []
 
-def function11(f):
-  func = taichi.core.function11_from_py_obj(f)
-  function11.keeper.append(f)
-  function11.keeper.append(func)
-  func_address = taichi.core.get_function11_address(func)
-  return func_address
+def get_function_XY(x, y):
+  def functionXY(f):
+    func = getattr(taichi.core, 'function{}{}_from_py_obj'.format(x, y))(f)
+    functions.append(f)
+    functions.append(func)
+    func_address = getattr(taichi.core, 'get_function{}{}_address'.format(x, y))(func)
+    return func_address
+  return functionXY
 
-
-function11.keeper = []
-
-
-def function12(f):
-  func = taichi.core.function12_from_py_obj(f)
-  function12.keeper.append(f)
-  function12.keeper.append(func)
-  func_address = taichi.core.get_function12_address(func)
-  return func_address
-
-
-function12.keeper = []
-
-
-def function13(f):
-  func = taichi.core.function13_from_py_obj(f)
-  function13.keeper.append(f)
-  function13.keeper.append(func)
-  func_address = taichi.core.get_function13_address(func)
-  return func_address
-
-
-function13.keeper = []
-
+function11 = get_function_XY(1, 1)
+function12 = get_function_XY(1, 2)
+function13 = get_function_XY(1, 3)
 
 def constant_function(v):
   if isinstance(v, int) or isinstance(v, float):

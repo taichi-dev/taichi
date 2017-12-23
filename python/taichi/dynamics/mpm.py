@@ -29,7 +29,7 @@ class MPM:
       self.Vector = tc_core.Vector3f
       self.Vectori = tc_core.Vector3i
     
-    self.snaoshot_interval = snapshot_interval
+    self.snapshot_interval = snapshot_interval
 
     if 'task_id' in kwargs:
       self.task_id = kwargs['task_id']
@@ -199,10 +199,9 @@ class MPM:
 
   def clear_output_directory(self):
     frames_dir = os.path.join(self.directory, 'frames')
-    taichi.clear_directory_with_suffix(frames_dir, 'json')
     taichi.clear_directory_with_suffix(frames_dir, 'bgeo')
     taichi.clear_directory_with_suffix(frames_dir, 'obj')
-    taichi.clear_directory_with_suffix(self.snapshot_directory, 'tcb')
+    # taichi.clear_directory_with_suffix(self.snapshot_directory, 'tcb')
 
   def simulate(self, clear_output_directory=False, print_profile_info=False, frame_update=None, update_frequency=1):
     # do restart
@@ -229,7 +228,7 @@ class MPM:
       if print_profile_info:
         tc.core.print_profile_info()
       self.c.frame += 1
-      if self.c.frame % self.snaoshot_interval == 0:
+      if self.c.frame % self.snapshot_interval == 0:
         self.save(self.get_snapshot_file_name(self.c.frame))
   
   def add_articulation(self, **kwargs):

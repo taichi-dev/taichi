@@ -60,9 +60,16 @@ void imp_svd(const MatrixND<dim, T> &m_,
   using Vector = VectorND<dim, T>;
   Matrix m = m_;
   TC_STATIC_IF(dim == 2) {
-    if ((m - Matrix(Vector(m[0][0], m[1][1]))).frobenius_norm2() < 1e-7f) {
+    if ((m - Matrix(m.diag())).frobenius_norm2() < 1e-7f) {
       s = m;
       u = v = Matrix(1);
+      if (abs(s[0][0]) < abs(s[1][1])) {
+        std::swap(s[0][0], s[1][1]);
+      }
+      if (s[0][0] < 0) {
+        s = -s;
+        u = -u;
+      }
     } else {
       JIXIE::singularValueDecomposition(
           *(Eigen::Matrix<T, dim, dim> *)&m, *(Eigen::Matrix<T, dim, dim> *)&u,
@@ -124,14 +131,15 @@ void svd_rot(const MatrixND<dim, T> &m,
   using Matrix = MatrixND<dim, T>;
   using Vector = VectorND<dim, T>;
   TC_STATIC_IF(dim == 3) {
-    if ((m - Matrix(Vector(m[0][0], m[1][1], m[2][2]))).frobenius_norm2() <
-        static_cast<T>(1e-7)) {
+    /*
+    if ((m - Matrix(m.diag())).frobenius_norm2() < static_cast<T>(1e-7)) {
       // QR_SVD crashes in this case...
       sig = m;
       u = v = Matrix(1);
     } else {
-      imp_svd(m, u, sig, v);
-    }
+     */
+    imp_svd(m, u, sig, v);
+    //}
   }
   TC_STATIC_ELSE {
     imp_svd(m, u, sig, v);

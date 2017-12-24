@@ -17,18 +17,24 @@
 
 TC_NAMESPACE_BEGIN
 
-template <int DIM>
+template <int dim_>
 class Simulation : public Unit {
  protected:
   real current_t = 0.0_f;
   int num_threads;
-  DynamicLevelSet<DIM> levelset;
   std::string working_directory;
 
 
  public:
-  static constexpr int D = DIM;
+  static constexpr int dim = dim_;
+  DynamicLevelSet<dim> levelset;
   int frame = 0;
+  using Vector = VectorND<dim, real>;
+  using VectorP = VectorND<dim + 1, real>;
+  using VectorI = VectorND<dim, int>;
+  using Vectori = VectorND<dim, int>;
+  using Matrix = MatrixND<dim, real>;
+  using MatrixP = MatrixND<dim + 1, real>;
 
   TC_IO_DEF(current_t, num_threads, working_directory, frame);
 
@@ -60,7 +66,7 @@ class Simulation : public Unit {
     return std::vector<RenderParticle>();
   }
 
-  virtual void set_levelset(const DynamicLevelSet<DIM> &levelset) {
+  virtual void set_levelset(const DynamicLevelSet<dim> &levelset) {
     this->levelset = levelset;
   }
 

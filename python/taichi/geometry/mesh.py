@@ -124,6 +124,13 @@ class SegmentMesh:
   def add_closed_segments(self, segments):
     for i in range(len(segments)):
       self.segments.append((segments[i], segments[(i + 1) % len(segments)]))
+          
+  def add_circle(self, center, radius, num_segments=30):
+    segments = []
+    for i in range(num_segments):
+      angle = 2 * math.pi / num_segments * i
+      segments.append((center[0] + math.cos(angle) * radius, center[1] + math.sin(angle) * radius))
+    self.add_closed_segments(segments)
 
   def __str__(self):
     ret = ''

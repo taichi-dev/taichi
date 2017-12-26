@@ -103,6 +103,10 @@ void export_misc(py::module &m) {
       taichi::logger.X(msg); \
   });
 
+  m.def("flush_log", []() {
+      taichi::logger.flush();
+  });
+
   TC_EXPORT_LOGGING(trace);
   TC_EXPORT_LOGGING(debug);
   TC_EXPORT_LOGGING(info);

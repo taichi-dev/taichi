@@ -345,3 +345,11 @@ warning = get_logging('warning')
 error = get_logging('error')
 critical = get_logging('critical')
 
+def redirect_print_to_log():
+  class Logger:
+    def write(self, msg):
+      taichi.core.info('[{}:{}@{}] {}'.format(get_file_name(1), get_function_name(1), get_line_number(1), msg))
+
+    def flush(self):
+      taichi.core.flush_log()
+  sys.stdout = Logger()

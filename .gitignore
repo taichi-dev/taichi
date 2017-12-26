@@ -41,9 +41,8 @@ python/MANIFEST
 build/
 bin/
 tmp/
-cmake-build-debug
-cmake-build-release
-research
-projects
+cmake-build-*
+/projects/*
+!/projects/examples
 modules.txt
 /external/lib

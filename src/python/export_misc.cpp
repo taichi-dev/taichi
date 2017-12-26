@@ -98,6 +98,18 @@ void export_misc(py::module &m) {
       .def("close_dll", &UnitDLL::close_dll)
       .def("loaded", &UnitDLL::loaded);
 
+#define TC_EXPORT_LOGGING(X) \
+  m.def(#X, [](const std::string &msg) { \
+      taichi::logger.X(msg); \
+  });
+
+  TC_EXPORT_LOGGING(trace);
+  TC_EXPORT_LOGGING(debug);
+  TC_EXPORT_LOGGING(info);
+  TC_EXPORT_LOGGING(warn);
+  TC_EXPORT_LOGGING(error);
+  TC_EXPORT_LOGGING(critical);
+
   m.def("print_all_units", print_all_units);
   m.def("set_core_state_python_imported", CoreState::set_python_imported);
   m.def("set_logging_level", [](const std::string &level){

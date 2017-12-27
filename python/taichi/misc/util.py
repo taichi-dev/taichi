@@ -51,7 +51,7 @@ def config_from_dict(args):
 
 def make_polygon(points, scale):
   import taichi as tc
-  polygon = tc.core.Vector2List()
+  polygon = tc.core.Vector2fList()
   for p in points:
     if type(p) == list or type(p) == tuple:
       polygon.append(scale * Vector(p[0], p[1]))

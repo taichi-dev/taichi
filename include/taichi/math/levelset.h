@@ -17,6 +17,7 @@
 
 TC_NAMESPACE_BEGIN
 
+// Rasterized level set
 template <int DIM>
 class LevelSet : public ArrayND<DIM, real> {
  public:

@@ -31,6 +31,9 @@ class LevelSet:
         Vector(center) * (1.0 / self.delta_x), radius / self.delta_x,
         inside_out)
 
+  def add_polygon(self, vertices, inside_out=False):
+    self.levelset.add_polygon(make_polygon(vertices, 1 / self.delta_x), inside_out)
+
   def add_plane(self, normal, d):
     self.levelset.add_plane(normal, d / self.delta_x)
 

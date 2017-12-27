@@ -14,6 +14,7 @@
 #include <taichi/math/levelset.h>
 #include <taichi/math/math.h>
 #include <taichi/common/asset_manager.h>
+#include <taichi/geometry/mesh.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -454,7 +455,6 @@ class MeshTexture : public Texture {
             break;
           last_intersection = false;
         } else {
-          ;
           if (!last_intersection)
             t_start = t;
           pos += ray.dist * dir;
@@ -519,5 +519,32 @@ class LevelSet3DTexture : public Texture {
 };
 
 TC_IMPLEMENTATION(Texture, LevelSet3DTexture, "levelset3d")
+
+class PolygonTexture : public Texture {
+  // TODO: test it
+protected:
+  ElementMesh<2> poly;
+
+public:
+  void initialize(const Config &config) override {
+    Texture::initialize(config);
+    poly.initialize(config);
+  }
+
+  virtual Vector4 sample(const Vector3 &pos_) const override {
+    Vector2 pos(pos_);
+    real min_distance = 1e30_f;
+    for (auto &elem : poly.elements) {
+      // clamp to ends, signed
+      real dist = distance_to_segment(pos, elem.v[0], elem.v[1], true, true);
+      if (abs(dist) < abs(min_distance)) {
+        min_distance = dist;
+      }
+    }
+    return Vector4(min_distance);
+  }
+};
+
+TC_IMPLEMENTATION(Texture, PolygonTexture, "polygon")
 
 TC_NAMESPACE_END

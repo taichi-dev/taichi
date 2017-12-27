@@ -235,9 +235,13 @@ class MPM:
     kwargs['action'] = 'add_articulation'
     self.c.general_action(P(**kwargs))
     
+  def delete_particles_inside_level_set(self):
+    self.update_levelset(self.c.get_current_time(), self.c.get_current_time() + 1)
+    self.c.general_action(P(action='delete_particles_inside_level_set'))
+
   def action(self, **kwargs):
     self.c.general_action(P(**kwargs))
-    
+
   def save(self, fn):
     self.action(action="save", file_name=fn)
     

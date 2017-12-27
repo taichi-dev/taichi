@@ -1,5 +1,8 @@
 import taichi as tc
 import sys
+import os
+import shutil
+import random
 
 
 def main():
@@ -50,6 +53,15 @@ def main():
   elif mode == "update":
     tc.core.update(True)
     tc.core.build()
+  elif mode == "convert":
+    # http://www.commandlinefu.com/commands/view/3584/remove-color-codes-special-characters-with-sed
+    # TODO: Windows support
+    for fn in sys.argv[2:]:
+      print("Converting logging file: {}".format(fn))
+      tmp_fn = '/tmp/{}.{:05d}.backup'.format(fn, random.randint(0, 10000))
+      shutil.move(fn, tmp_fn)
+      command = r'sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g"'
+      os.system('{} {} > {}'.format(command, tmp_fn, fn))
   else:
     print("Unknown command '{}'".format(mode))
     exit(-1)

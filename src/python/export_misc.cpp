@@ -7,17 +7,17 @@
     the MIT license as written in the LICENSE file.
 *******************************************************************************/
 
-#include <taichi/python/export.h>
-#include <taichi/python/exception.h>
-#include <taichi/visual/texture.h>
-#include <taichi/image/tone_mapper.h>
 #include <taichi/common/asset_manager.h>
-#include <taichi/math/sdf.h>
+#include <taichi/common/task.h>
+#include <taichi/image/tone_mapper.h>
 #include <taichi/math/math.h>
-#include <taichi/system/unit_dll.h>
+#include <taichi/math/sdf.h>
+#include <taichi/python/exception.h>
+#include <taichi/python/export.h>
 #include <taichi/system/benchmark.h>
 #include <taichi/system/profiler.h>
-#include <taichi/common/task.h>
+#include <taichi/system/unit_dll.h>
+#include <taichi/visual/texture.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -44,9 +44,7 @@ void test();
 
 void test_volumetric_io();
 
-void test_raise_error() {
-  raise_assertion_failure_in_python("Just a test.");
-}
+void test_raise_error() { raise_assertion_failure_in_python("Just a test."); }
 
 void print_all_units() {
   std::vector<std::string> names;
@@ -67,6 +65,21 @@ void print_all_units() {
     }
   }
   std::cout << all_units << " units in all." << std::endl;
+}
+
+static int stdout_fd = -1;
+
+void duplicate_stdout_to_file(const std::string &fn) {
+  stdout_fd = dup(STDOUT_FILENO);
+  trash(freopen(fn.c_str(), "w", stdout));
+}
+
+void stop_duplicating_stdout_to_file(const std::string &fn) {
+  TC_ASSERT(stdout_fd != -1);
+  fclose(stdout);
+  dup2(stdout_fd, STDOUT_FILENO);
+  stdout = fdopen(STDOUT_FILENO, "w");
+  close(stdout_fd);
 }
 
 void export_misc(py::module &m) {
@@ -98,14 +111,10 @@ void export_misc(py::module &m) {
       .def("close_dll", &UnitDLL::close_dll)
       .def("loaded", &UnitDLL::loaded);
 
-#define TC_EXPORT_LOGGING(X) \
-  m.def(#X, [](const std::string &msg) { \
-      taichi::logger.X(msg); \
-  });
+#define TC_EXPORT_LOGGING(X)                                                   \
+  m.def(#X, [](const std::string &msg) { taichi::logger.X(msg); });
 
-  m.def("flush_log", []() {
-      taichi::logger.flush();
-  });
+  m.def("flush_log", []() { taichi::logger.flush(); });
 
   TC_EXPORT_LOGGING(trace);
   TC_EXPORT_LOGGING(debug);
@@ -114,11 +123,12 @@ void export_misc(py::module &m) {
   TC_EXPORT_LOGGING(error);
   TC_EXPORT_LOGGING(critical);
 
+  m.def("duplicate_stdout_to_file", duplicate_stdout_to_file);
+
   m.def("print_all_units", print_all_units);
   m.def("set_core_state_python_imported", CoreState::set_python_imported);
-  m.def("set_logging_level", [](const std::string &level){
-    logger.set_level(level);
-  });
+  m.def("set_logging_level",
+        [](const std::string &level) { logger.set_level(level); });
   m.def("set_core_trigger_gdb_when_crash",
         CoreState::set_trigger_gdb_when_crash);
   m.def("test", test);

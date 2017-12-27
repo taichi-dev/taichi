@@ -261,22 +261,30 @@ def sleep(seconds=-1):
   else:
     time.sleep(seconds)
 
+
 functions = []
 function_addresses = []
 
+
 def get_function_XY(x, y):
+
   def functionXY(f):
     func = getattr(taichi.core, 'function{}{}_from_py_obj'.format(x, y))(f)
     functions.append(f)
     functions.append(func)
-    function_address = getattr(taichi.core, 'get_function{}{}_address'.format(x, y))(func)
+    function_address = getattr(taichi.core, 'get_function{}{}_address'.format(
+        x, y))(
+            func)
     function_addresses.append(function_address)
     return function_address
+
   return functionXY
+
 
 function11 = get_function_XY(1, 1)
 function12 = get_function_XY(1, 2)
 function13 = get_function_XY(1, 3)
+
 
 def constant_function(v):
   if isinstance(v, int) or isinstance(v, float):
@@ -316,27 +324,37 @@ class Tee():
   def write_to_file(self, data):
     self.file.write(data)
 
+
 import inspect
+
 
 def get_file_name(asc=0):
   return inspect.stack()[1 + asc][1]
 
+
 def get_function_name(asc=0):
   return inspect.stack()[1 + asc][3]
+
 
 def get_line_number(asc=0):
   return inspect.stack()[1 + asc][2]
 
+
 def log_info(fmt, *args, **kwargs):
   tc.core.log_info(fmt.format(*args, **kwargs))
 
+
 def get_logging(name):
+
   def logger(msg, *args, **kwargs):
     msg_formatted = msg.format(*args, **kwargs)
     func = getattr(taichi.core, name)
-    func('[{}:{}@{}] {}'.format(get_file_name(1), get_function_name(1), get_line_number(1), msg_formatted))
+    func('[{}:{}@{}] {}'.format(
+        get_file_name(1), get_function_name(1), get_line_number(1),
+        msg_formatted))
 
   return logger
+
 
 debug = get_logging('debug')
 info = get_logging('info')
@@ -345,11 +363,20 @@ warning = get_logging('warning')
 error = get_logging('error')
 critical = get_logging('critical')
 
+
 def redirect_print_to_log():
+
   class Logger:
+
     def write(self, msg):
-      taichi.core.info('[{}:{}@{}] {}'.format(get_file_name(1), get_function_name(1), get_line_number(1), msg))
+      taichi.core.info('[{}:{}@{}] {}'.format(
+          get_file_name(1), get_function_name(1), get_line_number(1), msg))
 
     def flush(self):
       taichi.core.flush_log()
+
   sys.stdout = Logger()
+
+
+def duplicate_stdout_to_file(fn):
+  taichi.core.duplicate_stdout_to_file(fn)

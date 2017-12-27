@@ -263,3 +263,5 @@ void trash(T &&t) {
 }
 
 TC_NAMESPACE_END
+
+#include "asset_manager.h"

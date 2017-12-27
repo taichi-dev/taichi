@@ -7,7 +7,6 @@
     the MIT license as written in the LICENSE file.
 *******************************************************************************/
 
-#include <taichi/common/asset_manager.h>
 #include <taichi/common/task.h>
 #include <taichi/image/tone_mapper.h>
 #include <taichi/math/math.h>

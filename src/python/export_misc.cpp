@@ -69,11 +69,18 @@ void print_all_units() {
 static int stdout_fd = -1;
 
 void duplicate_stdout_to_file(const std::string &fn) {
-  stdout_fd = dup(STDOUT_FILENO);
-  trash(freopen(fn.c_str(), "w", stdout));
+    /*
+  int fd[2];
+  pipe(fd);
+  stdout = fdopen(fd[1], "w");
+  auto file_fd = fdopen(fd[0], "w");
+  FILE *file = freopen(fn.c_str(), "w", file_fd);
+  */
+    dup2(fileno(popen(fmt::format("tee {}", fn).c_str(), "w")), STDOUT_FILENO);
 }
 
 void stop_duplicating_stdout_to_file(const std::string &fn) {
+  TC_NOT_IMPLEMENTED;
   TC_ASSERT(stdout_fd != -1);
   fclose(stdout);
   dup2(stdout_fd, STDOUT_FILENO);

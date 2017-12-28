@@ -313,6 +313,9 @@ struct RigidBody {
     return inv_mass;
   }
 
+private:
+  // These are in local space. Only transformed versions are public.
+
   InertiaType get_inertia() const {
     return inertia;
   }
@@ -320,6 +323,7 @@ struct RigidBody {
   InertiaType get_inv_inertia() const {
     return inv_inertia;
   }
+public:
 
   void set_mass(real mass) {
     TC_ASSERT(std::isnormal(mass));

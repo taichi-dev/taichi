@@ -34,7 +34,7 @@ struct RigidBody {
 
   // Segment mesh for 2D and thin shell for 3D
   bool codimensional;
-  real friction, restitution;
+  real frictions[2], restitution;
   MatrixP mesh_to_centroid;
   real mass, inv_mass;
   InertiaType inertia, inv_inertia;
@@ -56,7 +56,7 @@ struct RigidBody {
   RotationFunctionType rot_func;
 
   TC_IO_DECL {
-    TC_IO(codimensional, friction, restitution, mesh_to_centroid, mass,
+    TC_IO(codimensional, frictions, restitution, mesh_to_centroid, mass,
           inv_mass);
     TC_IO(inertia, inv_inertia);
     TC_IO(position, velocity, tmp_velocity);
@@ -79,7 +79,8 @@ struct RigidBody {
     velocity = Vector(0.0f);
     rotation = Rotation<dim>();
     angular_velocity = AngularVelocity<dim>();
-    friction = 0;
+    frictions[0] = 0;
+    frictions[1] = 0;
     restitution = 0;
     linear_damping = 0;
     angular_damping = 0;

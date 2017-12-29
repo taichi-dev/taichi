@@ -3,6 +3,7 @@ import sys
 import os
 import shutil
 import random
+from taichi.tools.video import make_video
 
 
 def main():
@@ -24,6 +25,7 @@ def main():
         "           ti test                   |-> Run tests\n"
         "           ti build                  |-> Build C++ files\n"
         "           ti update                 |-> Update taichi and projects\n"
+        "           ti video                  |-> Make a video using *.png files in the current folder\n"
         "           ti format                 |-> Format taichi and projects\n"
         "                                         (C++ source and python scripts)\n"
         "           ti *.py [arguments]       |-> Run scripts\n")
@@ -53,6 +55,13 @@ def main():
   elif mode == "update":
     tc.core.update(True)
     tc.core.build()
+  elif mode == "video":
+    files = sorted(os.listdir('.'))
+    files = list(filter(lambda x: x.endswith('.png'), files))
+    tc.info('Making video using {} png files...', len(files))
+    output_fn = 'video.mp4'
+    make_video(files, output_path=output_fn)
+    tc.info('Done! Output video file = {}', output_fn)
   elif mode == "convert":
     # http://www.commandlinefu.com/commands/view/3584/remove-color-codes-special-characters-with-sed
     # TODO: Windows support

@@ -265,6 +265,10 @@ class BinarySerializer : public Serializer {
   typename std::enable_if<!writing_, void>::type initialize(
       const std::string &file_name) {
     FILE *f = fopen(file_name.c_str(), "rb");
+    if (f == nullptr) {
+      TC_ERROR("Cannot open file: {}", file_name);
+      return;
+    }
     assert(f != nullptr);
     std::size_t length = 0;
     while (true) {

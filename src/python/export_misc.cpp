@@ -43,7 +43,9 @@ void test();
 
 void test_volumetric_io();
 
-void test_raise_error() { raise_assertion_failure_in_python("Just a test."); }
+void test_raise_error() {
+  raise_assertion_failure_in_python("Just a test.");
+}
 
 void print_all_units() {
   std::vector<std::string> names;
@@ -69,14 +71,15 @@ void print_all_units() {
 static int stdout_fd = -1;
 
 void duplicate_stdout_to_file(const std::string &fn) {
-    /*
-  int fd[2];
-  pipe(fd);
-  stdout = fdopen(fd[1], "w");
-  auto file_fd = fdopen(fd[0], "w");
-  FILE *file = freopen(fn.c_str(), "w", file_fd);
-  */
-    dup2(fileno(popen(fmt::format("tee {}", fn).c_str(), "w")), STDOUT_FILENO);
+  /*
+int fd[2];
+pipe(fd);
+stdout = fdopen(fd[1], "w");
+auto file_fd = fdopen(fd[0], "w");
+FILE *file = freopen(fn.c_str(), "w", file_fd);
+*/
+  std::cerr.rdbuf(std::cout.rdbuf());
+  dup2(fileno(popen(fmt::format("tee {}", fn).c_str(), "w")), STDOUT_FILENO);
 }
 
 void stop_duplicating_stdout_to_file(const std::string &fn) {
@@ -117,7 +120,7 @@ void export_misc(py::module &m) {
       .def("close_dll", &UnitDLL::close_dll)
       .def("loaded", &UnitDLL::loaded);
 
-#define TC_EXPORT_LOGGING(X)                                                   \
+#define TC_EXPORT_LOGGING(X) \
   m.def(#X, [](const std::string &msg) { taichi::logger.X(msg); });
 
   m.def("flush_log", []() { taichi::logger.flush(); });

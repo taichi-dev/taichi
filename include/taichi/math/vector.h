@@ -483,6 +483,34 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
     return true;
   }
 
+  TC_FORCE_INLINE bool operator<(const VectorND &o) const {
+    for (int i = 0; i < DIM; i++)
+      if (this->d[i] >= o[i])
+        return false;
+    return true;
+  }
+
+  TC_FORCE_INLINE bool operator<=(const VectorND &o) const {
+    for (int i = 0; i < DIM; i++)
+      if (this->d[i] > o[i])
+        return false;
+    return true;
+  }
+
+  TC_FORCE_INLINE bool operator>(const VectorND &o) const {
+    for (int i = 0; i < DIM; i++)
+      if (this->d[i] <= o[i])
+        return false;
+    return true;
+  }
+
+  TC_FORCE_INLINE bool operator>=(const VectorND &o) const {
+    for (int i = 0; i < DIM; i++)
+      if (this->d[i] < o[i])
+        return false;
+    return true;
+  }
+
   TC_FORCE_INLINE bool operator==(const std::vector<T> &o) const {
     if (o.size() != DIM)
       return false;
@@ -750,7 +778,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
       arr[i] = d[i];
     }
     return arr;
-  };
+  }
 };
 
 template <int DIM, typename T, InstSetExt ISE>

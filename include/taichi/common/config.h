@@ -33,11 +33,11 @@ TC_NAMESPACE_BEGIN
 class Config {
  private:
   std::map<std::string, std::string> data;
-  std::vector<std::string> file_names;
 
  public:
-  Config() {
-  }
+  TC_IO_DEF(data);
+
+  Config() = default;
 
   std::vector<std::string> get_keys() const {
     std::vector<std::string> keys;
@@ -49,14 +49,6 @@ class Config {
 
   void clear() {
     data.clear();
-    file_names.clear();
-  }
-
-  void print_all() const {
-    std::cout << "Configures: " << std::endl;
-    for (auto key = data.begin(); key != data.end(); key++) {
-      std::cout << " * " << key->first << " = " << key->second << std::endl;
-    }
   }
 
   template <typename V>
@@ -232,25 +224,11 @@ class Config {
     return *this;
   }
 
-  std::string get_all_file_names() const {
-    std::string ret = "";
-    for (auto f : file_names)
-      ret += f + " ";
-    return ret;
-  }
-
   std::string get_string(std::string key) const {
     if (data.find(key) == data.end()) {
-      assert_info(false,
-                  "No key named '" + key +
-                      "' found! [Config files: " + get_all_file_names() + "]");
+      TC_ERROR("No key named '{}' found.", key);
     }
     return data.find(key)->second;
-  }
-
-  TC_IO_DECL {
-    TC_IO(data);
-    TC_IO(file_names);
   }
 };
 

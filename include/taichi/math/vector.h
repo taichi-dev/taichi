@@ -173,6 +173,14 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
     }
   }
 
+  static TC_FORCE_INLINE VectorND from_array(const T new_val[dim]) {
+    VectorND ret;
+    for (int i = 0; i < DIM; i++) {
+      ret.d[i] = new_val[i];
+    }
+    return ret;
+  }
+
   template <int DIM_, typename T_, InstSetExt ISE_>
   explicit TC_FORCE_INLINE VectorND(const VectorND<DIM_, T_, ISE_> &o)
       : VectorND() {

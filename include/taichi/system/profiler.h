@@ -76,7 +76,7 @@ class ProfilerRecords {
   bool enabled;
 
   ProfilerRecords() {
-    root = std::make_unique<Node>("[Taichi Profiler]", nullptr);
+    root = std::make_unique<Node>("[Profiler]", nullptr);
     current_node = root.get();
     current_depth = 0;  // depth(root) = 0
     enabled = true;

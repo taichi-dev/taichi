@@ -730,8 +730,8 @@ class TextSerializer : public Serializer {
     indent++;
     for (auto iter : val) {
       T first = iter.first;
-      this->operator()(nullptr, first);
-      this->operator()(nullptr, iter.second);
+      this->operator()("key", first);
+      this->operator()("value", iter.second);
     }
     indent--;
     add_line("}");

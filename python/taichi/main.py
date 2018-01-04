@@ -26,6 +26,7 @@ def main():
         "           ti build                  |-> Build C++ files\n"
         "           ti update                 |-> Update taichi and projects\n"
         "           ti video                  |-> Make a video using *.png files in the current folder\n"
+        "           ti convert                |-> Delete color controllers in a log file\n"
         "           ti format                 |-> Format taichi and projects\n"
         "                                         (C++ source and python scripts)\n"
         "           ti *.py [arguments]       |-> Run scripts\n")

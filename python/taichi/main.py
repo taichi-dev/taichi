@@ -27,6 +27,7 @@ def main():
         "           ti update                 |-> Update taichi and projects\n"
         "           ti video                  |-> Make a video using *.png files in the current folder\n"
         "           ti convert                |-> Delete color controllers in a log file\n"
+        "           ti exec                   |-> Invoke a executable in the 'build' folder\n"
         "           ti format                 |-> Format taichi and projects\n"
         "                                         (C++ source and python scripts)\n"
         "           ti *.py [arguments]       |-> Run scripts\n")
@@ -56,6 +57,12 @@ def main():
   elif mode == "update":
     tc.core.update(True)
     tc.core.build()
+  elif mode == "exec":
+    import subprocess
+    exec_name = sys.argv[2]
+    folder = tc.get_bin_directory()
+    assert exec_name in os.listdir(folder)
+    subprocess.call([os.path.join(folder, exec_name)] + sys.argv[3:])
   elif mode == "video":
     files = sorted(os.listdir('.'))
     files = list(filter(lambda x: x.endswith('.png'), files))

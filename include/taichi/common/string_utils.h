@@ -43,4 +43,11 @@ inline std::string trim_string(const std::string &s) {
   return std::string(s.begin() + begin, s.begin() + end);
 }
 
+inline bool ends_with(std::string const &str, std::string const &ending) {
+  if (ending.size() > str.size())
+    return false;
+  else
+    return std::equal(ending.begin(), ending.end(), str.end() - ending.size());
+}
+
 TC_NAMESPACE_END

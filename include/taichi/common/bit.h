@@ -24,19 +24,20 @@ struct Bits {
   Bits(void *) {
   }
 
-  template <int start, int len = 1>
+  template <int start, int bits = 1>
   static constexpr T mask() {
-    return (((T)1 << len) - 1) << start;
+    return (((T)1 << bits) - 1) << start;
   }
 
-  template <int start, int len = 1>
+  template <int start, int bits = 1>
   TC_FORCE_INLINE T get() const {
-    return (data >> start) & (((T)1 << len) - 1);
+    return (data >> start) & (((T)1 << bits) - 1);
   }
 
-  template <int start, int len = 1>
+  template <int start, int bits = 1>
   TC_FORCE_INLINE void set(T val) {
-    data = (data & ~mask<start, len>()) | ((val << start) & mask<start, len>());
+    data =
+        (data & ~mask<start, bits>()) | ((val << start) & mask<start, bits>());
   }
 
   TC_FORCE_INLINE T operator()(T) const {
@@ -52,12 +53,17 @@ struct Bits {
   }
 };
 
-#define TC_BIT_FIELD(T, name, start)         \
-  T get_##name() const {                     \
-    return (T)Base::get<start, sizeof(T)>(); \
-  }                                          \
-  void set_##name(const T &val) {            \
-    Base::set<start, sizeof(T)>(val);        \
+template <typename T>
+constexpr int bit_length() {
+  return std::is_same<T, bool>() ? 1 : sizeof(T) * 8;
+}
+
+#define TC_BIT_FIELD(T, name, start)                    \
+  T get_##name() const {                                \
+    return (T)Base::get<start, bit::bit_length<T>()>(); \
+  }                                                     \
+  void set_##name(const T &val) {                       \
+    Base::set<start, bit::bit_length<T>()>(val);        \
   }
 
 }  // namespace bit

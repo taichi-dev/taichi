@@ -429,7 +429,6 @@ class MeshTexture : public Texture {
     if (config.get("generate_peeling", false)) {
       real peeling_cycle = config.get("peeling_cycle", 1.0_f);
       real peeling_velocity = config.get("peeling_velocity", 1.0_f);
-      real peeling_offset = config.get("peeling_offset", 1.0_f);
       std::ofstream os;
       std::string fn =
           std::getenv("TAICHI_ROOT_DIR") +
@@ -459,7 +458,7 @@ class MeshTexture : public Texture {
           if (!last_intersection)
             t_start = t;
           pos += ray.dist * dir;
-          os << t - t_start - peeling_offset << " " << pos.x << " " << pos.y << " " << pos.z
+          os << t - t_start << " " << pos.x << " " << pos.y << " " << pos.z
              << std::endl;
           last_intersection = true;
         }

@@ -437,7 +437,7 @@ class MeshTexture : public Texture {
       Vector3 pos;
       real t_start = -1.0_f;
       bool last_intersection = false;
-      for (real t = 0;; t += 0.01_f) {
+      for (real t = 0;; t += 0.0001_f) {
         pos.x = t * peeling_velocity;
         real angle;
         if (t_start < 0.0_f) {
@@ -460,6 +460,8 @@ class MeshTexture : public Texture {
           pos += ray.dist * dir;
           os << t - t_start << " " << pos.x << " " << pos.y << " " << pos.z
              << std::endl;
+          if (t - t_start > 10.0_f)
+            break;
           last_intersection = true;
         }
       }

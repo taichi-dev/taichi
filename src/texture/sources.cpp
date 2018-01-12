@@ -437,17 +437,17 @@ class MeshTexture : public Texture {
       Vector3 pos;
       real t_start = -1.0_f;
       bool last_intersection = false;
-      for (real t = 0;; t += 0.0001_f) {
-        pos.x = t * peeling_velocity;
+      for (real t = 0;; t += 0.001_f) {
+        pos.y = t * peeling_velocity;
         real angle;
         if (t_start < 0.0_f) {
           angle = 0.0_f;
         } else {
           angle = 2.0_f * M_PI / peeling_cycle * (t - t_start);
         }
-        pos.y = 0.5_f + -sin(angle);
+        pos.x = 0.5_f + sin(angle);
         pos.z = 0.5_f + cos(angle);
-        Vector3 dir = normalize(Vector3(pos.x, 0.5_f, 0.5_f) - pos);
+        Vector3 dir = normalize(Vector3(0.5_f, pos.y, 0.5_f) - pos);
         Ray ray(pos, dir);
         scene_geometry->query(ray);
         if (ray.dist == Ray::DIST_INFINITE || ray.dist > 1.0_f) {

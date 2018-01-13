@@ -220,7 +220,58 @@ TC_NAMESPACE_BEGIN
 #define TC_WARN(...) SPD_AUGMENTED_LOG(warn, __VA_ARGS__)
 #define TC_ERROR(...) SPD_AUGMENTED_LOG(error, __VA_ARGS__)
 #define TC_CRITICAL(...) SPD_AUGMENTED_LOG(critical, __VA_ARGS__)
+
+#define TC_TRACE_IF(condition, ...) \
+  if (condition) {                  \
+    TC_TRACE(__VA_ARGS__);          \
+  }
+#define TC_TRACE_UNLESS(condition, ...) \
+  if (!(condition)) {                   \
+    TC_TRACE(__VA_ARGS__);              \
+  }
+#define TC_DEBUG_IF(condition, ...) \
+  if (condition) {                  \
+    TC_DEBUG(__VA_ARGS__);          \
+  }
+#define TC_DEBUG_UNLESS(condition, ...) \
+  if (!(condition)) {                   \
+    TC_DEBUG(__VA_ARGS__);              \
+  }
+#define TC_INFO_IF(condition, ...) \
+  if (condition) {                 \
+    TC_INFO(__VA_ARGS__);          \
+  }
+#define TC_INFO_UNLESS(condition, ...) \
+  if (!(condition)) {                  \
+    TC_INFO(__VA_ARGS__);              \
+  }
+#define TC_WARN_IF(condition, ...) \
+  if (condition) {                 \
+    TC_WARN(__VA_ARGS__);          \
+  }
+#define TC_WARN_UNLESS(condition, ...) \
+  if (!(condition)) {                  \
+    TC_WARN(__VA_ARGS__);              \
+  }
+#define TC_ERROR_IF(condition, ...) \
+  if (condition) {                  \
+    TC_ERROR(__VA_ARGS__);          \
+  }
+#define TC_ERROR_UNLESS(condition, ...) \
+  if (!(condition)) {                   \
+    TC_ERROR(__VA_ARGS__);              \
+  }
+#define TC_CRITICAL_IF(condition, ...) \
+  if (condition) {                     \
+    TC_CRITICAL(__VA_ARGS__);          \
+  }
+#define TC_CRITICAL_UNLESS(condition, ...) \
+  if (!(condition)) {                      \
+    TC_CRITICAL(__VA_ARGS__);              \
+  }
+
 #define TC_STOP TC_ERROR("Stopping here")
+#define TC_TAG TC_TRACE("Tagging here")
 
 #define TC_LOG_SET_PATTERN(x) spdlog::set_pattern(x);
 

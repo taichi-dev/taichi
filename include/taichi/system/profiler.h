@@ -33,7 +33,7 @@ class ProfilerRecords {
       this->name = name;
       this->parent = parent;
       this->total_time = 0.0_f64;
-      this->num_samples = 1ll;
+      this->num_samples = 0ll;
       this->total_elements = 0ll;
       this->account_tpe = false;
     }

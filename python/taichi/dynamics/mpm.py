@@ -37,8 +37,6 @@ class MPM:
       self.task_id = sys.argv[0].split('.')[0]
     if 'delta_x' not in kwargs:
       kwargs['delta_x'] = 1.0 / res[0]
-    else:
-      self.task_id = sys.argv[0].split('.')[0]
       
     print('delta_x = {}'.format(kwargs['delta_x']))
     print('task_id = {}'.format(self.task_id))
@@ -230,7 +228,30 @@ class MPM:
       self.c.frame += 1
       if self.c.frame % self.snapshot_interval == 0:
         self.save(self.get_snapshot_file_name(self.c.frame))
-  
+        
+  def simulate_with_energy(self, clear_output_directory=False, print_profile_info=False, frame_update=None, update_frequency=1):
+    # do restart
+    if clear_output_directory:
+      self.clear_output_directory()
+    # do main cycle
+    energy = []
+    while self.c.frame < self.num_frames:
+      print('Simulating frame {}'.format(self.c.frame + 1))
+      for k in range(update_frequency):
+        if frame_update:
+          frame_update(self.get_current_time(), self.frame_dt / update_frequency)
+        self.step(self.frame_dt / update_frequency)
+      self.visualize()
+      if print_profile_info:
+        tc.core.print_profile_info()
+      self.c.frame += 1
+      energy.append(float(self.general_action(action="calculate_energy")))
+    return energy
+
+
+  def general_action(self, **kwargs):
+    return self.c.general_action(P(**kwargs))
+
   def add_articulation(self, **kwargs):
     kwargs['action'] = 'add_articulation'
     self.c.general_action(P(**kwargs))

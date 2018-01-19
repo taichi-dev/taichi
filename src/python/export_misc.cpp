@@ -17,8 +17,11 @@
 #include <taichi/system/profiler.h>
 #include <taichi/system/unit_dll.h>
 #include <taichi/visual/texture.h>
+#include <taichi/geometry/factory.h>
 
 TC_NAMESPACE_BEGIN
+
+extern Function11 python_at_exit;
 
 /*
 py::dict py_dict_from_py_config(const Config &config) {
@@ -144,6 +147,13 @@ void export_misc(py::module &m) {
   m.def("test_raise_error", test_raise_error);
   m.def("test_volumetric_io", test_volumetric_io);
   m.def("config_from_dict", config_from_py_dict);
+  m.def("register_at_exit",
+        [&](uint64 ptr) { python_at_exit = *(Function11 *)(ptr); });
+  m.def("trigger_sig_fpe", []() {
+    int a = 2;
+    a -= 2;
+    return 1 / a;
+  });
   // m.def("dict_from_config", py_dict_from_py_config);
   m.def("print_profile_info",
         [&]() { ProfilerRecords::get_instance().print(); });

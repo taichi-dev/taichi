@@ -18,7 +18,6 @@
 
 TC_NAMESPACE_BEGIN
 
-// TODO: change to 'using'
 template <int n, typename T>
 using VectorLengthed = std::conditional_t<n != 1, VectorND<n, T>, T>;
 

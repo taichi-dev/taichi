@@ -11,8 +11,11 @@
 #include <taichi/system/threading.h>
 #include <csignal>
 #include <spdlog/spdlog.h>
+#include <taichi/geometry/factory.h>
 
 TC_NAMESPACE_BEGIN
+
+Function11 python_at_exit;
 
 void signal_handler(int signo);
 
@@ -106,6 +109,11 @@ void signal_handler(int signo) {
   taichi::print_traceback();
   if (taichi::CoreState::get_instance().trigger_gdb_when_crash) {
     trash(system(fmt::format("sudo gdb -p {}", PID::get_pid()).c_str()));
+  }
+  if (python_at_exit) {
+    TC_INFO("Invoking registered Python at_exit...");
+    python_at_exit(0);
+    TC_INFO("Python-side at_exit returned.");
   }
   if (taichi::CoreState::get_instance().python_imported) {
     std::string msg =

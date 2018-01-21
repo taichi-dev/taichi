@@ -1,3 +1,6 @@
+/*******************************************************************************
+*******************************************************************************/
+
 // Copyright (c) 2012 Leonhard Gruenschloss (leonhard@gruenschloss.org)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy

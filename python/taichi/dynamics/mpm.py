@@ -201,7 +201,7 @@ class MPM:
     taichi.clear_directory_with_suffix(frames_dir, 'obj')
     # taichi.clear_directory_with_suffix(self.snapshot_directory, 'tcb')
 
-  def simulate(self, clear_output_directory=False, print_profile_info=False, frame_update=None, update_frequency=1):
+  def simulate(self, clear_output_directory=False, print_profile_info=True, frame_update=None, update_frequency=1):
     # do restart
     if self.continue_opt:
       path = self.snapshot_directory

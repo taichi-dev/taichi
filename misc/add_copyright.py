@@ -23,8 +23,13 @@ for fn in files:
   start_lines = start_lines[0]
   end_lines = end_lines[0]
   assert(start_lines == 0)
-  assert(end_lines < 9)
   
+  if end_lines == 1:
+    continue
   
+  assert(7 <= end_lines < 9)
+  
+  with open(fn, 'w') as f:
+    f.writelines(lines)
   
   

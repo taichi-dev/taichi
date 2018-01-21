@@ -4,6 +4,11 @@ import os
 line_start = '/*******************************************************************************'
 line_end = '*******************************************************************************/'
 
+copyright_content = '''
+    Copyright (c) The Taichi Authors (2016- ). All rights reserved.
+    The use of this software is governed by the LICENSE file.
+'''
+
 files = list(glob.iglob('src/**/*', recursive=True)) + list(glob.iglob('include/**/*', recursive=True))
 
 for fn in files:
@@ -28,6 +33,8 @@ for fn in files:
     continue
   
   assert(7 <= end_lines < 9)
+  
+  lines = lines[end_lines+1:]
   
   with open(fn, 'w') as f:
     f.writelines(lines)

@@ -1,8 +1,5 @@
 #*********************************************************************
-# Taichi - Physically based Computer Graphics Library
-#
-# All rights reserved. Use of this source code is governed by
-# the MIT license as written in the LICENSE file.
+# Taichi - A Computer Graphics Library
 #*********************************************************************
 
 cmake_minimum_required(VERSION 2.8)

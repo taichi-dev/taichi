@@ -345,11 +345,11 @@ public:
   void set_inertia(const InertiaType &inertia) {
     this->inertia = inertia;
     TC_STATIC_IF(dim == 2) {
-      this->inv_inertia = inversed(inertia);
+      this->inv_inertia = inversed(id(inertia));
     }
     TC_STATIC_ELSE {
       this->inv_inertia =
-          inversed(inertia.template cast<float64>()).template cast<real>();
+          inversed(id(inertia).template cast<float64>()).template cast<real>();
     }
     TC_STATIC_END_IF
   }

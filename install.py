@@ -1,12 +1,28 @@
 import os
 import pwd
 import sys
+import platform
 
 def execute_command(line):
   print(line)
   return os.system(line)
-  
+
+def check_command_existence(cmd):
+  return os.system('type {}'.format(cmd)) == 0
+
+def get_os_name():
+  name = platform.platform()
+  if name.lower().startswith('darwin'):
+    return 'osx'
+  elif name.lower().startswith('windows'):
+    return 'win'
+  elif name.lower().startswith('linux'):
+    return 'linux'
+  assert False, "Unknown platform name %s" % name
+
 if __name__ == '__main__':
+  assert get_os_name() in ['linux', 'darwin'],\
+    'Platform {} is not currently supported by this script. Please install manually.'.format(get_os_name())
   if len(sys.argv) > 1:
     build_type = sys.argv[1]
     print('Build type: ', build_type)

@@ -490,7 +490,7 @@ class BinarySerializer : public Serializer {
     if (writing) {
       this->operator()("", val.size());
     } else {
-      std::size_t n;
+      std::size_t n = 0;
       this->operator()("", n);
       val.resize(n);
     }
@@ -526,7 +526,7 @@ class BinarySerializer : public Serializer {
       }
     } else {
       val.clear();
-      std::size_t n;
+      std::size_t n = 0;
       this->operator()(nullptr, n);
       for (std::size_t i = 0; i < n; i++) {
         std::pair<T, G> record;

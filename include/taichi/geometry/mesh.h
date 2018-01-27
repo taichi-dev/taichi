@@ -104,7 +104,7 @@ struct ElementMesh {
       for (auto tri : mesh->get_triangles()) {
         Elem elem;
         for (int i = 0; i < 3; i++) {
-          elem.v[i] = tri.v[i];
+          elem.v[i] = id(tri.v)[i];
         }
         elements.push_back(elem);
       }

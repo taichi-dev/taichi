@@ -1260,6 +1260,14 @@ TC_FORCE_INLINE VectorND<DIM, T, ISE> normalized(
   return normalize(a);
 }
 
+TC_FORCE_INLINE float32 length(const float32 &a) {
+ return a;
+}
+
+TC_FORCE_INLINE float64 length(const float64 &a) {
+  return a;
+}
+
 template <int DIM, typename T, InstSetExt ISE>
 TC_FORCE_INLINE T length(const VectorND<DIM, T, ISE> &a) {
   return a.length();
@@ -1714,6 +1722,7 @@ struct is_VectorND : public std::false_type {};
 
 template <int N, typename T, InstSetExt ISE>
 struct is_VectorND<VectorND<N, T, ISE>> : public std::true_type {};
+
 template <typename>
 struct is_MatrixND : public std::false_type {};
 

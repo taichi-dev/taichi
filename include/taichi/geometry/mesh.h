@@ -115,7 +115,9 @@ struct ElementMesh {
 
 TC_FORCE_INLINE real distance_to_segment(const Vector2 &pos,
                                          const Vector2 &a,
-                                         const Vector2 &b, bool clamp_to_ends=false, bool signed_result=false) {
+                                         const Vector2 &b,
+                                         bool clamp_to_ends = false,
+                                         bool signed_result = false) {
   real t = dot(pos - a, b - a) / length2(b - a);
   if (clamp_to_ends) {
     t = clamp(t, 0.0_f, 1.0_f);

@@ -106,28 +106,23 @@ std::string signal_name(int sig) {
 #else
   if (sig == SIGABRT) {
     return "SIGABRT";
-  }
-  else if (sig == SIGFPE) {
+  } else if (sig == SIGFPE) {
     return "SIGFPE";
-  }
-  else if (sig == SIGILL) {
+  } else if (sig == SIGILL) {
     return "SIGFPE";
-  }
-  else if (sig == SIGSEGV) {
+  } else if (sig == SIGSEGV) {
     return "SIGSEGV";
-  }
-  else if (sig == SIGTERM) {
+  } else if (sig == SIGTERM) {
     return "SIGTERM";
-  }
-  else {
+  } else {
     return "SIGNAL-Unknown";
   }
 #endif
 }
 
 void signal_handler(int signo) {
-  logger.error(fmt::format("Received signal {} ({})", signo, signal_name(signo)),
-    false);
+  logger.error(
+      fmt::format("Received signal {} ({})", signo, signal_name(signo)), false);
   TC_FLUSH_LOGGER;
   taichi::print_traceback();
   if (taichi::CoreState::get_instance().trigger_gdb_when_crash) {
@@ -139,8 +134,8 @@ void signal_handler(int signo) {
     TC_INFO("Python-side at_exit returned.");
   }
   if (taichi::CoreState::get_instance().python_imported) {
-    std::string msg =
-        fmt::format("Taichi Core Exception: {} ({})", signo, signal_name(signo));
+    std::string msg = fmt::format("Taichi Core Exception: {} ({})", signo,
+                                  signal_name(signo));
     taichi_raise_assertion_failure_in_python(msg.c_str());
   }
   std::exit(-1);

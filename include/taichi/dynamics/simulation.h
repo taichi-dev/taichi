@@ -19,7 +19,6 @@ class Simulation : public Unit {
   int num_threads;
   std::string working_directory;
 
-
  public:
   static constexpr int dim = dim_;
   DynamicLevelSet<dim> levelset;

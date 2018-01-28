@@ -97,16 +97,16 @@ class PID {
  public:
   static int get_pid() {
 #ifdef _MSVC_LANG
-	return (int)GetCurrentProcessId();
+    return (int)GetCurrentProcessId();
 #else
-	return (int)getpid();
+    return (int)getpid();
 #endif
   }
   static int get_parent_pid() {
 #ifdef _MSVC_LANG
-	  TC_NOT_IMPLEMENTED
+    TC_NOT_IMPLEMENTED
 #else
-	  return (int)getppid();
+    return (int)getppid();
 #endif
   }
 };

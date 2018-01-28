@@ -29,9 +29,9 @@ extern void svd(const MatrixND<dim, T> &m,
 
 template <int dim, typename T>
 extern void svd_rot(const MatrixND<dim, T> &m,
-                MatrixND<dim, T> &u,
-                MatrixND<dim, T> &sig,
-                MatrixND<dim, T> &v);
+                    MatrixND<dim, T> &u,
+                    MatrixND<dim, T> &sig,
+                    MatrixND<dim, T> &v);
 
 template <int dim, typename T>
 extern void polar_decomp(const MatrixND<dim, T> &A,

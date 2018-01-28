@@ -59,8 +59,8 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
       inertia = inertia * (1.0_f / 12);
     }
     TC_ASSERT_INFO(id(inertia) >= 0,
-                "Rigid body inertia cannot be negative. (Make sure vertices "
-                "are counter-clockwise)");
+                   "Rigid body inertia cannot be negative. (Make sure vertices "
+                   "are counter-clockwise)");
   }
   TC_STATIC_ELSE {
     // 3D
@@ -130,7 +130,7 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
           verts[d] = triangles[i].v[d] - center_of_mass;
         }
         inertia += -id(tetrahedron_inertia_tensor(id(Vector(0.0_f)), verts[0],
-                                               verts[1], verts[2]));
+                                                  verts[1], verts[2]));
       }
     }
   }

@@ -70,7 +70,7 @@ void print_all_units() {
 static int stdout_fd = -1;
 
 void duplicate_stdout_to_file(const std::string &fn) {
-  /*
+/*
 int fd[2];
 pipe(fd);
 stdout = fdopen(fd[1], "w");

@@ -520,10 +520,10 @@ TC_IMPLEMENTATION(Texture, LevelSet3DTexture, "levelset3d")
 
 class PolygonTexture : public Texture {
   // TODO: test it
-protected:
+ protected:
   ElementMesh<2> poly;
 
-public:
+ public:
   void initialize(const Config &config) override {
     Texture::initialize(config);
     poly.initialize(config);

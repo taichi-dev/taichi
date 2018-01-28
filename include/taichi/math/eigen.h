@@ -11,8 +11,7 @@
 TC_NAMESPACE_BEGIN
 
 template <int n, typename T>
-TC_FORCE_INLINE VectorND<n, T> from_eigen(
-    Eigen::Matrix<T, n, 1> eigen_vec) {
+TC_FORCE_INLINE VectorND<n, T> from_eigen(Eigen::Matrix<T, n, 1> eigen_vec) {
   VectorND<n, T> ret;
   for (int i = 0; i < n; i++) {
     ret[i] = eigen_vec(i);

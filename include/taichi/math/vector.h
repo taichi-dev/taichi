@@ -1261,7 +1261,7 @@ TC_FORCE_INLINE VectorND<DIM, T, ISE> normalized(
 }
 
 TC_FORCE_INLINE float32 length(const float32 &a) {
- return a;
+  return a;
 }
 
 TC_FORCE_INLINE float64 length(const float64 &a) {

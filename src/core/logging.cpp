@@ -102,7 +102,7 @@ Logger logger;
 
 std::string signal_name(int sig) {
 #if !defined(_WIN64)
-  return strsignal(signo);
+  return strsignal(sig);
 #else
   if (sig == SIGABRT) {
     return "SIGABRT";

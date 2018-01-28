@@ -25,12 +25,12 @@ inline Matrix3 tetrahedron_inertia_tensor(const Vector3& p1, const Vector3& p2, 
 
   T det = x3*y2*z1 - x4*y2*z1 - x2*y3*z1 + x4*y3*z1 + x2*y4*z1 - x3*y4*z1 - x3*y1*z2 + x4*y1*z2 + x1*y3*z2 - x4*y3*z2 - x1*y4*z2 + x3*y4*z2 + x2*y1*z3 - x4*y1*z3 - x1*y2*z3 + x4*y2*z3 + x1*y4*z3 - x2*y4*z3 - x2*y1*z4 + x3*y1*z4 + x1*y2*z4 - x3*y2*z4 - x1*y3*z4 + x2*y3*z4;
 
-  T a = (y1*y1 + y2*y2 + y3*y3 + y3*y4 + y4*y4 + y2*(y3 + y4) + y1*(y2 + y3 + y4) + z1*z1 + z2*z2 + z2*z3 + z3*z3 + (z2 + z3)*z4 + z4*z4 + z1*(z2 + z3 + z4)) / 60.0;
-  T b = (x1*x1 + x2*x2 + x3*x3 + x3*x4 + x4*x4 + x2*(x3 + x4) + x1*(x2 + x3 + x4) + z1*z1 + z2*z2 + z2*z3 + z3*z3 + (z2 + z3)*z4 + z4*z4 + z1*(z2 + z3 + z4)) / 60.0;
-  T c = (x1*x1 + x2*x2 + x3*x3 + x3*x4 + x4*x4 + x2*(x3 + x4) + x1*(x2 + x3 + x4) + y1*y1 + y2*y2 + y2*y3 + y3*y3 + (y2 + y3)*y4 + y4*y4 + y1*(y2 + y3 + y4)) / 60.0;
-  T apr = (y3*z1 + y4*z1 + y3*z2 + y4*z2 + 2*y3*z3 + y4*z3 + y3*z4 + 2*y4*z4 + y1*(2*z1 + z2 + z3 + z4) + y2*(z1 + 2*z2 + z3 + z4)) / 120.0;
-  T bpr = (x3*z1 + x4*z1 + x3*z2 + x4*z2 + 2*x3*z3 + x4*z3 + x3*z4 + 2*x4*z4 + x1*(2*z1 + z2 + z3 + z4) + x2*(z1 + 2*z2 + z3 + z4)) / 120.0;
-  T cpr = (x3*y1 + x4*y1 + x3*y2 + x4*y2 + 2*x3*y3 + x4*y3 + x3*y4 + 2*x4*y4 + x1*(2*y1 + y2 + y3 + y4) + x2*(y1 + 2*y2 + y3 + y4)) / 120.0;
+  T a = (y1*y1 + y2*y2 + y3*y3 + y3*y4 + y4*y4 + y2*(y3 + y4) + y1*(y2 + y3 + y4) + z1*z1 + z2*z2 + z2*z3 + z3*z3 + (z2 + z3)*z4 + z4*z4 + z1*(z2 + z3 + z4)) / 60.0_f;
+  T b = (x1*x1 + x2*x2 + x3*x3 + x3*x4 + x4*x4 + x2*(x3 + x4) + x1*(x2 + x3 + x4) + z1*z1 + z2*z2 + z2*z3 + z3*z3 + (z2 + z3)*z4 + z4*z4 + z1*(z2 + z3 + z4)) / 60.0_f;
+  T c = (x1*x1 + x2*x2 + x3*x3 + x3*x4 + x4*x4 + x2*(x3 + x4) + x1*(x2 + x3 + x4) + y1*y1 + y2*y2 + y2*y3 + y3*y3 + (y2 + y3)*y4 + y4*y4 + y1*(y2 + y3 + y4)) / 60.0_f;
+  T apr = (y3*z1 + y4*z1 + y3*z2 + y4*z2 + 2*y3*z3 + y4*z3 + y3*z4 + 2*y4*z4 + y1*(2*z1 + z2 + z3 + z4) + y2*(z1 + 2*z2 + z3 + z4)) / 120.0_f;
+  T bpr = (x3*z1 + x4*z1 + x3*z2 + x4*z2 + 2*x3*z3 + x4*z3 + x3*z4 + 2*x4*z4 + x1*(2*z1 + z2 + z3 + z4) + x2*(z1 + 2*z2 + z3 + z4)) / 120.0_f;
+  T cpr = (x3*y1 + x4*y1 + x3*y2 + x4*y2 + 2*x3*y3 + x4*y3 + x3*y4 + 2*x4*y4 + x1*(2*y1 + y2 + y3 + y4) + x2*(y1 + 2*y2 + y3 + y4)) / 120.0_f;
 
   ret[0][0] = det * a;
   ret[1][1] = det * b;

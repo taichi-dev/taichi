@@ -3,7 +3,6 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 #include <taichi/geometry/mesh.h>
-#include <taichi/visualization/pakua.h>
 #include "rigid_body.h"
 #include "inertia.h"
 
@@ -59,7 +58,7 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
       }
       inertia = inertia * (1.0_f / 12);
     }
-    assert_info(id(inertia) >= 0,
+    TC_ASSERT_INFO(id(inertia) >= 0,
                 "Rigid body inertia cannot be negative. (Make sure vertices "
                 "are counter-clockwise)");
   }
@@ -134,7 +133,7 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
                                                verts[1], verts[2]));
       }
     }
-  };
+  }
   TC_STATIC_END_IF
 
   set_inertia(inertia * density);

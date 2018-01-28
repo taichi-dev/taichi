@@ -5,14 +5,13 @@
 
 #pragma once
 
-#include <taichi/geometry/factory.h>
-#include <taichi/visual/scene_geometry.h>
 #include <memory>
 #include <vector>
-#include <memory.h>
 #include <string>
 #include <functional>
 #include <mutex>
+#include <taichi/geometry/factory.h>
+#include <taichi/visual/scene_geometry.h>
 #include <taichi/math/angular.h>
 #include <taichi/geometry/mesh.h>
 #include <taichi/math.h>
@@ -348,8 +347,7 @@ public:
       this->inv_inertia = inversed(id(inertia));
     }
     TC_STATIC_ELSE {
-      this->inv_inertia =
-          inversed(id(inertia).template cast<float64>()).template cast<real>();
+      this->inv_inertia = inversed(id(inertia).cast<float64>()).cast<real>();
     }
     TC_STATIC_END_IF
   }

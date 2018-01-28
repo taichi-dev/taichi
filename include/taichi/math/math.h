@@ -25,7 +25,7 @@ TC_FORCE_INLINE T radians(T deg) {
 
 // clang-format off
 template <typename F, typename T>
-T map(const T &t, const F &f) {
+inline T map(const T &t, const F &f) {
   T ret;
   TC_STATIC_IF(type::is_VectorND<T>()) {
     for (int i = 0; i < std::decay_t<decltype(id(t))>::dim; i++) {
@@ -52,7 +52,7 @@ T map(const T &t, const F &f) {
 
 // clang-format off
 template <typename T>
-type::element<T> maximum(const T &t) {
+inline type::element<T> maximum(const T &t) {
   typename type::element<T> ret;
   TC_STATIC_IF(type::is_VectorND<T>()) {
     ret = id(t)(0);
@@ -81,7 +81,7 @@ type::element<T> maximum(const T &t) {
 
 // clang-format off
 template <typename T>
-type::element<T> minimum(const T &t) {
+inline type::element<T> minimum(const T &t) {
   typename type::element<T> ret;
   TC_STATIC_IF(type::is_VectorND<T>()) {
     ret = t(0);
@@ -110,7 +110,7 @@ type::element<T> minimum(const T &t) {
 
 // clang-format off
 template <typename T>
-type::element<T> sum(const T &t) {
+inline type::element<T> sum(const T &t) {
   typename type::element<T> ret = 0;
   TC_STATIC_IF(type::is_VectorND<T>()) {
     for (int i = 0; i < std::decay_t<decltype(id(t))>::dim; i++) {
@@ -135,7 +135,7 @@ type::element<T> sum(const T &t) {
 }
 
 template <typename T>
-type::element<T> prod(const T &t) {
+inline type::element<T> prod(const T &t) {
   typename type::element<T> ret = 1;
   TC_STATIC_IF(type::is_VectorND<T>()) {
     for (int i = 0; i < T::dim; i++) {
@@ -157,10 +157,11 @@ type::element<T> prod(const T &t) {
 // clang-format on
 
 #define TC_MAKE_VECTORIZED_FROM_STD(op)                  \
-  auto op = [](const auto &t) {                          \
+  template <typename T>                                  \
+  inline T op(const T &t) {                              \
     using Elem = typename type::element<decltype(t)>;    \
     return map(t, static_cast<Elem (*)(Elem)>(std::op)); \
-  };
+  }
 
 TC_MAKE_VECTORIZED_FROM_STD(abs);
 TC_MAKE_VECTORIZED_FROM_STD(log);

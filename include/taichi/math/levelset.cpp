@@ -8,7 +8,7 @@
 TC_NAMESPACE_BEGIN
 
 template <int DIM>
-void LevelSet<DIM>::add_sphere(LevelSet<DIM>::Vector center,
+void LevelSet<DIM>::add_sphere(typename LevelSet<DIM>::Vector center,
                                real radius,
                                bool inside_out) {
   for (auto &ind : this->get_region()) {
@@ -49,7 +49,7 @@ Vector2 LevelSet<2>::get_gradient(const Vector2 &pos) const {
 
 template <int DIM>
 typename LevelSet<DIM>::Vector LevelSet<DIM>::get_normalized_gradient(
-    const LevelSet<DIM>::Vector &pos) const {
+    const typename LevelSet<DIM>::Vector &pos) const {
   Vector gradient = get_gradient(pos);
   if (length(gradient) < 1e-10f)
     gradient[0] = 1.0_f;
@@ -157,12 +157,12 @@ Array3D<real> LevelSet<3>::rasterize(Vector3i output_res) {
 }
 
 template <int DIM>
-void LevelSet<DIM>::add_plane(const LevelSet<DIM>::Vector &normal_, real d) {
+void LevelSet<DIM>::add_plane(const typename LevelSet<DIM>::Vector &normal_, real d) {
   Vector normal = normalized(normal_);
   real coeff = 1.0_f / length(normal);
   for (auto &ind : this->get_region()) {
     Vector sample = ind.get_pos();
-    real dist = (dot(sample, normal) + d) * coeff;
+    real dist = (taichi::dot(sample, normal) + d) * coeff;
     this->set(ind, std::min(Array::get(ind), dist));
   }
 }

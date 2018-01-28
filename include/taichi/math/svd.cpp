@@ -28,8 +28,8 @@ void eigen_svd(const MatrixND<dim, T> &m,
   s = MatrixND<dim, T>(0.0_f);
   for (int i = 0; i < dim; ++i)
     s[i][i] = e_svd.singularValues()(i);
-  u = from_eigen(e_svd.matrixU());
-  v = from_eigen(e_svd.matrixV());
+  u = from_eigen<dim, T>(e_svd.matrixU());
+  v = from_eigen<dim, T>(e_svd.matrixV());
 }
 
 template <int dim, typename T>
@@ -84,8 +84,8 @@ void imp_svd(const MatrixND<dim, T> &m_,
     for (int i = 0; i < dim; i++) {
       s[i][i] = S(i, 0);
     }
-    u = from_eigen(U);
-    v = from_eigen(V);
+    u = from_eigen<dim, T>(U);
+    v = from_eigen<dim, T>(V);
   }
   TC_STATIC_END_IF
 }

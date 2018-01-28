@@ -59,7 +59,9 @@ Logger::Logger() {
 
   TC_REGISTER_SIGNAL_HANDLER(SIGSEGV, signal_handler);
   TC_REGISTER_SIGNAL_HANDLER(SIGABRT, signal_handler);
+#if !defined(_WIN64)
   TC_REGISTER_SIGNAL_HANDLER(SIGBUS, signal_handler);
+#endif
   TC_REGISTER_SIGNAL_HANDLER(SIGFPE, signal_handler);
   spdlog::set_level(spdlog::level::trace);
   TC_TRACE("Taichi core started. Thread ID = {}", PID::get_pid());
@@ -98,9 +100,34 @@ void Logger::flush() {
 
 Logger logger;
 
+std::string signal_name(int sig) {
+#if !defined(_WIN64)
+  return strsignal(signo);
+#else
+  if (sig == SIGABRT) {
+    return "SIGABRT";
+  }
+  else if (sig == SIGFPE) {
+    return "SIGFPE";
+  }
+  else if (sig == SIGILL) {
+    return "SIGFPE";
+  }
+  else if (sig == SIGSEGV) {
+    return "SIGSEGV";
+  }
+  else if (sig == SIGTERM) {
+    return "SIGTERM";
+  }
+  else {
+    return "SIGNAL-Unknown";
+  }
+#endif
+}
+
 void signal_handler(int signo) {
-  logger.error(fmt::format("Received signal {} ({})", signo, strsignal(signo)),
-               false);
+  logger.error(fmt::format("Received signal {} ({})", signo, signal_name(signo)),
+    false);
   TC_FLUSH_LOGGER;
   taichi::print_traceback();
   if (taichi::CoreState::get_instance().trigger_gdb_when_crash) {
@@ -113,7 +140,7 @@ void signal_handler(int signo) {
   }
   if (taichi::CoreState::get_instance().python_imported) {
     std::string msg =
-        fmt::format("Taichi Core Exception: {} ({})", signo, strsignal(signo));
+        fmt::format("Taichi Core Exception: {} ({})", signo, signal_name(signo));
     taichi_raise_assertion_failure_in_python(msg.c_str());
   }
   std::exit(-1);

@@ -5,7 +5,9 @@
 
 #include <taichi/common/util.h>
 #include <taichi/common/task.h>
+#if !defined(_WIN64)
 #include <cxxabi.h>
+#endif
 
 TC_NAMESPACE_BEGIN
 
@@ -19,10 +21,14 @@ class Demangling : public Task {
     for (auto p : parameters) {
       char *demangled_name;
       int status = -1;
+#if !defined(_WIN64)
       demangled_name =
           abi::__cxa_demangle(parameters[0].c_str(), NULL, NULL, &status);
       printf("Demangled C++ Identifier: %s\n", demangled_name);
       free(demangled_name);
+#else
+      TC_NOT_IMPLEMENTED
+#endif
     }
   }
 };

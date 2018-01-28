@@ -5,7 +5,6 @@
 
 #include <taichi/common/util.h>
 #include <taichi/common/task.h>
-#include <cxxabi.h>
 #include <taichi/testing.h>
 
 TC_NAMESPACE_BEGIN

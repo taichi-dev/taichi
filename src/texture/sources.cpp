@@ -439,7 +439,7 @@ class MeshTexture : public Texture {
         if (t_start < 0.0_f) {
           angle = 0.0_f;
         } else {
-          angle = 2.0_f * M_PI / peeling_cycle * (t - t_start);
+          angle = 2.0_f * pi / peeling_cycle * (t - t_start);
         }
         pos.x = 0.5_f + sin(angle);
         pos.z = 0.5_f + cos(angle);
@@ -469,8 +469,8 @@ class MeshTexture : public Texture {
   virtual Vector4 sample(const Vector3 &coord) const override {
     auto emitting_ray_test = [&]() {
       int inside = 0;
-      real alpha = rand() * 2.0_f * M_PI;
-      real beta = rand() * 2.0_f * M_PI;
+      real alpha = rand() * 2.0_f * pi;
+      real beta = rand() * 2.0_f * pi;
       Vector3 direction(
           Vector3(cos(alpha) * cos(beta), cos(alpha) * sin(beta), sin(alpha)));
       Vector3 position = coord;

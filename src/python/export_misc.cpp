@@ -77,17 +77,14 @@ stdout = fdopen(fd[1], "w");
 auto file_fd = fdopen(fd[0], "w");
 FILE *file = freopen(fn.c_str(), "w", file_fd);
 */
+#if !defined(_WIN64)
   std::cerr.rdbuf(std::cout.rdbuf());
   dup2(fileno(popen(fmt::format("tee {}", fn).c_str(), "w")), STDOUT_FILENO);
+#endif
 }
 
 void stop_duplicating_stdout_to_file(const std::string &fn) {
   TC_NOT_IMPLEMENTED;
-  TC_ASSERT(stdout_fd != -1);
-  fclose(stdout);
-  dup2(stdout_fd, STDOUT_FILENO);
-  stdout = fdopen(STDOUT_FILENO, "w");
-  close(stdout_fd);
 }
 
 void export_misc(py::module &m) {

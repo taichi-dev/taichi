@@ -33,8 +33,8 @@ void test_conversion() {
   using Matrix = MatrixND<dim, T>;
   Vector vec = Vector::rand();
   Matrix mat = Matrix::rand();
-  CHECK(from_eigen(to_eigen(vec)) == vec);
-  CHECK(from_eigen(to_eigen(mat)) == mat);
+  CHECK(from_eigen<dim, T>(to_eigen(vec)) == vec);
+  CHECK(from_eigen<dim, T>(to_eigen(mat)) == mat);
 }
 
 TC_TEST("vector arith") {

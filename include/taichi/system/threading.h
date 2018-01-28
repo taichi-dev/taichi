@@ -11,13 +11,13 @@
 #include <functional>
 #include <thread>
 #include <vector>
-#ifdef __WIN32__
-
+#ifdef _WIN64
+#include <windows.h>
 #else
 // Mac and Linux
 #include <unistd.h>
-#include <tbb/tbb.h>
 #endif
+#include <tbb/tbb.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -96,10 +96,18 @@ class ThreadedTaskManager {
 class PID {
  public:
   static int get_pid() {
-    return (int)getpid();
+#ifdef _MSVC_LANG
+	return (int)GetCurrentProcessId();
+#else
+	return (int)getpid();
+#endif
   }
   static int get_parent_pid() {
-    return (int)getppid();
+#ifdef _MSVC_LANG
+	  TC_NOT_IMPLEMENTED
+#else
+	  return (int)getppid();
+#endif
   }
 };
 

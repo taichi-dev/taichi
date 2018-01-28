@@ -115,7 +115,7 @@ TC_EXPORT void print_traceback() {
       "========================================================================"
       "==================\n");
   printf("\n");
-#elif defined(__WIN32__)
+#elif defined(_WIN64)
 // Windows
 #else
   // Based on http://man7.org/linux/man-pages/man3/backtrace.3.html

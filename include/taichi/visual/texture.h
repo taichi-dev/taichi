@@ -37,7 +37,7 @@ class Texture : public Unit {
 
   Array2D<Vector4> rasterize(Vector2i res) const {
     Array2D<Vector4> image(res);
-    Vector2 inv_res(1.0 / res[0], 1.0 / res[1]);
+    Vector2 inv_res(1.0_f / res[0], 1.0_f / res[1]);
     for (auto &ind : image.get_region()) {
       image[ind] = sample(ind.get_pos() * inv_res);
     }
@@ -50,7 +50,7 @@ class Texture : public Unit {
 
   Array2D<Vector3> rasterize3(Vector2i res) const {
     Array2D<Vector3> image(res);
-    Vector2 inv_res(1.0 / res[0], 1.0 / res[1]);
+    Vector2 inv_res(1.0_f / res[0], 1.0_f / res[1]);
     for (auto &ind : image.get_region()) {
       Vector4 color = sample(ind.get_pos() * inv_res);
       image[ind] = Vector3(color.x, color.y, color.z);

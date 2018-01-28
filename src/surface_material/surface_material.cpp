@@ -49,7 +49,7 @@ class EmissiveMaterial : public SurfaceMaterial {
                            real u,
                            real v,
                            const Vector2 &uv) const {
-    return random_diffuse(Vector3(0, 0, in.z > 0 ? 1 : -1), u, v);
+    return random_diffuse(Vector3(0.0_f, 0.0_f, in.z > 0 ? 1.0_f : -1.0_f), u, v);
   }
 
   virtual void sample(const Vector3 &in_dir,

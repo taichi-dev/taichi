@@ -16,7 +16,7 @@ void test_matrix() {
   T tolerance = std::is_same<T, float32>() ? 1e-5f : 1e-7;
   for (int i = 0; i < 1000; i++) {
     Matrix m = Matrix::rand();
-    if (determinant(m) > tolerance * 1e3) {
+    if (determinant(m) > tolerance * 1e3_f) {
       if (!math::equal(m * inversed(m), Matrix(1), tolerance)) {
         TC_P(m * inversed(m) - Matrix(1));
         TC_P(math::abs(m * inversed(m) - Matrix(1)));
@@ -115,7 +115,7 @@ TC_TEST("eigen_conversion") {
 template <int dim, typename T>
 inline void test_decompositions() {
   using Matrix = MatrixND<dim, T>;
-  T tolerance = std::is_same<T, float32>() ? 3e-5f : 1e-12;
+  T tolerance = std::is_same<T, float32>() ? 3e-5_f32 : 1e-12_f64;
   for (int i = 0; i < 100; i++) {
     Matrix m = Matrix::rand();
     Matrix U, sig, V, Q, R, S;

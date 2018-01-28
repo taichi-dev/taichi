@@ -88,7 +88,7 @@ class DiffuseTransmissiveMaterial : public SurfaceMaterial {
                            real v,
                            const Vector2 &uv) const {
     if (abs(in.z) > 1 - eps) {
-      Vector3 normal(0, 0, -sgn(in.z));
+      Vector3 normal(0.0_f, 0.0_f, -sgn(in.z) * 1_f);
       return random_diffuse(normal, u, v);
     } else {
       // We do the following other than the above to ensure correlation for

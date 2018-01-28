@@ -222,7 +222,7 @@ void Smoke3D::step(real delta_t) {
         Vector3 pos = ind.get_pos() + Vector3(rand(), rand(), rand()) -
                       ind.storage_offset;
         Vector3 relative_pos =
-            pos / Vector3(rho.get_width(), rho.get_height(), rho.get_depth());
+            pos / Vector3i(rho.get_width(), rho.get_height(), rho.get_depth()).template cast<real>();
         real seed = generation_tex->sample(relative_pos).x / super_sampling;
         if (seed == 0) {
           continue;

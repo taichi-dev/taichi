@@ -65,7 +65,7 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
   TC_STATIC_ELSE {
     // 3D
     std::vector<Element<dim>> triangles = mesh->elements;
-    int n = triangles.size();
+    int n = (int)triangles.size();
     if (codimensional) {
       TC_TRACE("Adding a codimensional (thin shell) rigid body");
       // Thin shell case
@@ -81,7 +81,7 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
                          triangles[i].v[2] - triangles[i].v[0])) *
             0.5_f;
         volume += local_volume;
-        local_center_of_mass *= (1.0 / 3);
+        local_center_of_mass *= (1.0_f / 3.0_f);
         center_of_mass += local_center_of_mass * local_volume;
       }
       center_of_mass /= volume;

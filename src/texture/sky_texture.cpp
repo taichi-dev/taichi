@@ -96,24 +96,24 @@ class SkyTexture final : public Texture {
 
   Vector3 cameraPos;
 
-  static constexpr real n = 1.0003;  // refractive index of air
+  static constexpr real n = 1.0003_f;  // refractive index of air
   static constexpr real N =
-      2.545E25;  // number of molecules per unit volume for air at
+      2.545E25_f;  // number of molecules per unit volume for air at
   // 288.15K and 1013mb (sea level -45 celsius)
 
   // optical length at zenith for molecules
-  static constexpr real rayleighZenithLength = 8.4E3;
-  static constexpr real mieZenithLength = 1.25E3;
+  static constexpr real rayleighZenithLength = 8.4E3_f;
+  static constexpr real mieZenithLength = 1.25E3_f;
   // 66 arc seconds -> degrees, and the cosine of that
-  static constexpr real sunAngularDiameterCos = 0.9999566769f;
+  static constexpr real sunAngularDiameterCos = 0.9999566769_f;
 
   // 3.0 / ( 16.0 * pi )
   static constexpr real THREE_OVER_SIXTEENPI = 0.05968310f;
   // 1.0 / ( 4.0 * pi )
-  static constexpr real ONE_OVER_FOURPI = 0.07957747f;
+  static constexpr real ONE_OVER_FOURPI = 0.07957747_f;
 
   static real rayleighPhase(real cosTheta) {
-    return THREE_OVER_SIXTEENPI * (1.0_f + std::pow(cosTheta, 2.0f));
+    return THREE_OVER_SIXTEENPI * (1.0_f + std::pow(cosTheta, 2.0_f));
   }
 
   static real hgPhase(real cosTheta, real g) {
@@ -132,7 +132,7 @@ class SkyTexture final : public Texture {
     TC_LOAD_CONFIG(mie_directional_g, 0.8f);
     TC_LOAD_CONFIG(cameraPos, Vector3(0.0_f));
     real theta = config.get("direction", 0.0_f) * 2 * pi;
-    real phi = (config.get("height", 0.0_f) - 0.5) * pi;
+    real phi = (config.get("height", 0.0_f) - 0.5_f) * pi;
     sun_position =
         Vector3(cos(theta) * cos(phi), sin(phi), sin(theta) * cos(phi));
   }

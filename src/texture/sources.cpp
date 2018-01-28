@@ -368,7 +368,7 @@ class FastMeshTexture : public Texture {
             next_k = std::min(int((z - base_z) / delta_x), resolution.z);
           }
           while (k < next_k) {
-            arr.set(i, j, k, inside ? 1 : 0);
+            arr.set(i, j, k, inside ? 1.0_f : 0.0_f);
             ++k;
           }
           inside = !inside;

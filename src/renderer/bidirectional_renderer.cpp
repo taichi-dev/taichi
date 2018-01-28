@@ -435,7 +435,7 @@ Vector3d BidirectionalRenderer::path_throughput(const Path &path) {
       const real dist2 = dot(d0, d0);
       d0 = d0 * (1.0_f / std::sqrt(dist2));
       const real c = dot(d0, camera->get_dir());
-      const real ds2 = 1.0 / (c * c);
+      const real ds2 = 1.0_f / (c * c);
       f = f * double(fabs(dot(d0, path[1].normal) / dist2 / c * ds2));
     } else if (i == ((int)path.size() - 1)) {
       if (path[i].bsdf.is_emissive()) {

@@ -19,9 +19,9 @@ class Demangling : public Task {
       printf("There should be at least one parameter for demangling.\n");
     }
     for (auto p : parameters) {
+#if !defined(_WIN64)
       char *demangled_name;
       int status = -1;
-#if !defined(_WIN64)
       demangled_name =
           abi::__cxa_demangle(parameters[0].c_str(), NULL, NULL, &status);
       printf("Demangled C++ Identifier: %s\n", demangled_name);

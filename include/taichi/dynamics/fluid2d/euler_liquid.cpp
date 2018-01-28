@@ -64,7 +64,7 @@ Vector2 EulerLiquid::sample_velocity(Vector2 position,
         if (!u.inside(nx, ny))
           continue;
         real weight =
-            kernel(inv_kernel_size * (position - Vector2(nx, ny + 0.5f)));
+            kernel(inv_kernel_size * (position - Vector2(nx, ny + 0.5_f)));
         tot += u[nx][ny] * weight;
         tot_weight += weight;
       }
@@ -82,7 +82,7 @@ Vector2 EulerLiquid::sample_velocity(Vector2 position,
           continue;
         }
         real weight =
-            kernel(inv_kernel_size * (position - Vector2(nx + 0.5f, ny)));
+            kernel(inv_kernel_size * (position - Vector2(nx + 0.5_f, ny)));
         tot += v[nx][ny] * weight;
         tot_weight += weight;
       }

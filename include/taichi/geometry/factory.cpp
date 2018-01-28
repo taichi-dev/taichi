@@ -42,7 +42,7 @@ std::vector<Triangle> Mesh3D::generate(const Vector2i res,
   Array2D<Vector2> uvs(res + Vector2i(1));
   for (int i = 0; i < res[0] + 1; i++) {
     for (int j = 0; j < res[1] + 1; j++) {
-      Vector2 p = Vector2(i, j) / res.cast<real>();
+      Vector2 p = Vector2(real(i), real(j)) / res.cast<real>();
       vertices[i][j] = (*surf)(p);
       normals[i][j] = get_normal_at(p);
       uvs[i][j] = get_uv_at(p);

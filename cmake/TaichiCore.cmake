@@ -6,7 +6,7 @@ file(GLOB TAICHI_CORE_SOURCE
         "src/*/*/*/*.cpp" "src/*/*/*.cpp" "src/*/*.cpp" "src/*.cpp"
         "src/*/*/*/*.h" "src/*/*/*.h" "src/*/*.h" "src/*.h"
         "include/taichi/*/*/*/*.cpp" "include/taichi/*/*/*.cpp" "include/taichi/*/*.cpp"
-        "include/taichi/*/*/*/*.h" "include/taichi/*/*/*.h" "include/taichi/*/*.h" "pakua/*.cpp")
+        "include/taichi/*/*/*/*.h" "include/taichi/*/*/*.h" "include/taichi/*/*.h")
 
 file(GLOB TAICHI_PROJECT_SOURCE
         "projects/*/*/*/*.cpp"
@@ -57,9 +57,7 @@ if (NOT WIN32)
         target_link_libraries(${CORE_LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/libtbbmalloc.so.2)
     endif()
 endif ()
-if (MINGW)
-    target_link_libraries(${CORE_LIBRARY_NAME} ws2_32)
-endif ()
+message("PYTHON_LIBRARIES" ${PYTHON_LIBRARIES})
 target_link_libraries(${CORE_LIBRARY_NAME} ${PYTHON_LIBRARIES})
 
 foreach (source IN LISTS TAICHI_CORE_SOURCE)
@@ -76,7 +74,11 @@ endif ()
 if (WIN32)
     set_target_properties(${CORE_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
             "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
-    target_link_libraries(${CORE_LIBRARY_NAME} ws2_32 wsock32)
+    target_link_libraries(${CORE_LIBRARY_NAME}
+      ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/embree.lib
+      ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/tbb.lib
+      ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/tbbmalloc.lib
+    )
 endif ()
 
 include_directories(include)

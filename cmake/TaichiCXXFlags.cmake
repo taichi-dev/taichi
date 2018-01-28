@@ -40,7 +40,7 @@ endif ()
 if (MSVC)
     link_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
     set(CMAKE_CXX_FLAGS
-            "${CMAKE_CXX_FLAGS} /MP /Z7 /D \"_CRT_SECURE_NO_WARNINGS\" /arch:AVX -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED")
+            "${CMAKE_CXX_FLAGS} /MP /Z7 /D \"_CRT_SECURE_NO_WARNINGS\" /arch:AVX2 -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED /std:c++14")
 else ()
     set(CMAKE_CXX_FLAGS
             "${CMAKE_CXX_FLAGS} -std=c++14 -march=native\
@@ -61,4 +61,6 @@ if (TC_USE_MPI)
     message("Using MPI")
 endif ()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+if (NOT WIN32)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+endif()

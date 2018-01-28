@@ -3,46 +3,52 @@
 if (PYTHON_EXECUTABLE)
     message("Using ${PYTHON_EXECUTABLE} as python executable.")
 else ()
-    message("Using 'python3' as python interpreter.")
-    set(PYTHON_EXECUTABLE python3)
+    if (WIN32)
+        message("Using 'python' as python interpreter.")
+        set(PYTHON_EXECUTABLE python)
+    else ()
+        message("Using 'python3' as python interpreter.")
+        set(PYTHON_EXECUTABLE python3)
+    endif()
 endif ()
 
-
 if (WIN32)
-    find_package(PythonLibs 3.5 REQUIRED)
+    execute_process(COMMAND where ${PYTHON_EXECUTABLE}
+        OUTPUT_VARIABLE PYTHON_EXECUTABLE_PATH)
 else ()
     execute_process(COMMAND which ${PYTHON_EXECUTABLE}
             OUTPUT_VARIABLE PYTHON_EXECUTABLE_PATH)
-    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
-            "import sys;\
-            from distutils import sysconfig;\
-            sys.stdout.write(sysconfig.get_python_version())"
-            OUTPUT_VARIABLE PYTHON_VERSION)
-    execute_process(COMMAND ${PYTHON_EXECUTABLE} --version)
-    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
-            "import sys;\
-            from distutils import sysconfig;\
-            sys.stdout.write(\
-            (sysconfig.get_config_var('INCLUDEPY')\
-            if sysconfig.get_config_var('INCLUDEDIR') is not None else None)\
-            or sysconfig.get_python_inc())"
-            OUTPUT_VARIABLE PYTHON_INCLUDE_DIRS)
-    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
-            "import sys;\
-            from distutils import sysconfig;\
-            sys.stdout.write(sysconfig.get_config_var('LIBDIR') or sysconfig.get_python_lib())"
-            OUTPUT_VARIABLE PYTHON_LIBRARY_DIR)
+endif()
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+        "import sys;\
+        from distutils import sysconfig;\
+        sys.stdout.write(sysconfig.get_python_version())"
+        OUTPUT_VARIABLE PYTHON_VERSION)
+execute_process(COMMAND ${PYTHON_EXECUTABLE} --version)
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+        "import sys;\
+        from distutils import sysconfig;\
+        sys.stdout.write(\
+        (sysconfig.get_config_var('INCLUDEPY')\
+        if sysconfig.get_config_var('INCLUDEDIR') is not None else None)\
+        or sysconfig.get_python_inc())"
+        OUTPUT_VARIABLE PYTHON_INCLUDE_DIRS)
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+        "import sys;\
+        from distutils import sysconfig;\
+        sys.stdout.write(sysconfig.get_config_var('LIBDIR') or sysconfig.get_python_lib())"
+        OUTPUT_VARIABLE PYTHON_LIBRARY_DIR)
 
     find_library(PYTHON_LIBRARY NAMES python${PYTHON_VERSION} python${PYTHON_VERSION}m PATHS ${PYTHON_LIBRARY_DIR}
             NO_DEFAULT_PATH NO_SYSTEM_ENVIRONMENT_PATH PATH_SUFFIXES x86_64-linux-gnu)
     set(PYTHON_LIBRARIES ${PYTHON_LIBRARY})
 
-    # Creating python enters
-    file(MAKE_DIRECTORY bin)
-    file(WRITE bin/ti "#!${PYTHON_EXECUTABLE_PATH}\nimport taichi\ntaichi.main()")
-    execute_process(COMMAND chmod +x ../bin/ti)
-    execute_process(COMMAND cp ../bin/ti ../bin/taichi)
-endif ()
+# Creating python enters
+file(MAKE_DIRECTORY bin)
+file(WRITE bin/ti "#!${PYTHON_EXECUTABLE_PATH}\nimport taichi\ntaichi.main()")
+execute_process(COMMAND chmod +x ../bin/ti)
+execute_process(COMMAND cp ../bin/ti ../bin/taichi)
+
 
 include_directories(${PYTHON_INCLUDE_DIRS})
 message("    version: ${PYTHON_VERSION}")

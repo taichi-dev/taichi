@@ -28,7 +28,7 @@ if __name__ == '__main__':
     print('Build type: ', build_type)
   else:
     build_type = 'default'
-    
+
   print('Build type = {}'.format(build_type))
 
   assert build_type in ['default', 'ci']
@@ -57,7 +57,7 @@ if __name__ == '__main__':
   execute_command('git clone https://github.com/yuanming-hu/taichi.git')
   os.chdir('taichi')
   execute_command('git clone https://github.com/yuanming-hu/taichi_runtime external/lib')
-  
+
   #TODO: Make sure there is no existing Taichi ENV
   taichi_root_dir = "/home/{}/repos/".format(username)
   execute_command('echo "export TAICHI_NUM_THREADS=8" >> ~/.bashrc')
@@ -72,7 +72,7 @@ if __name__ == '__main__':
   os.environ['PYTHONIOENCODING'] = 'utf-8'
 
   print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
-  
+
   if execute_command('echo $PYTHONPATH; python3 -c "import taichi as tc"') == 0:
     if execute_command('ti') != 0:
       print('  Warning: shortcut "ti" does not work.')
@@ -85,4 +85,3 @@ if __name__ == '__main__':
   else:
     print('  Error: installation failed.')
     exit(-1)
-

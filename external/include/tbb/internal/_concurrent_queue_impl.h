@@ -1,21 +1,21 @@
 /*
-    Copyright 2005-2015 Intel Corporation.  All Rights Reserved.
+    Copyright (c) 2005-2017 Intel Corporation
 
-    This file is part of Threading Building Blocks. Threading Building Blocks is free software;
-    you can redistribute it and/or modify it under the terms of the GNU General Public License
-    version 2  as  published  by  the  Free Software Foundation.  Threading Building Blocks is
-    distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See  the GNU General Public License for more details.   You should have received a copy of
-    the  GNU General Public License along with Threading Building Blocks; if not, write to the
-    Free Software Foundation, Inc.,  51 Franklin St,  Fifth Floor,  Boston,  MA 02110-1301 USA
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    As a special exception,  you may use this file  as part of a free software library without
-    restriction.  Specifically,  if other files instantiate templates  or use macros or inline
-    functions from this file, or you compile this file and link it with other files to produce
-    an executable,  this file does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however invalidate any other
-    reasons why the executable file might be covered by the GNU General Public License.
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+
+
+
 */
 
 #ifndef __TBB__concurrent_queue_impl_H
@@ -33,19 +33,8 @@
 #include "../tbb_exception.h"
 #include "../tbb_profiling.h"
 #include <new>
-#include <utility>
-
-#if !TBB_USE_EXCEPTIONS && _MSC_VER
-    // Suppress "C++ exception handler used, but unwind semantics are not enabled" warning in STL headers
-    #pragma warning (push)
-    #pragma warning (disable: 4530)
-#endif
-
+#include __TBB_STD_SWAP_HEADER
 #include <iterator>
-
-#if !TBB_USE_EXCEPTIONS && _MSC_VER
-    #pragma warning (pop)
-#endif
 
 namespace tbb {
 
@@ -281,15 +270,15 @@ bool micro_queue<T>::pop( void* dst, ticket k, concurrent_queue_base_v3<T>& base
     call_itt_notify(acquired, &head_counter);
     if( tail_counter==k ) spin_wait_while_eq( tail_counter, k );
     call_itt_notify(acquired, &tail_counter);
-    page& p = *head_page;
-    __TBB_ASSERT( &p, NULL );
+    page *p = head_page;
+    __TBB_ASSERT( p, NULL );
     size_t index = modulo_power_of_two( k/concurrent_queue_rep_base::n_queue, base.my_rep->items_per_page );
     bool success = false;
     {
-        micro_queue_pop_finalizer<T> finalizer( *this, base, k+concurrent_queue_rep_base::n_queue, index==base.my_rep->items_per_page-1 ? &p : NULL );
-        if( p.mask & uintptr_t(1)<<index ) {
+        micro_queue_pop_finalizer<T> finalizer( *this, base, k+concurrent_queue_rep_base::n_queue, index==base.my_rep->items_per_page-1 ? p : NULL );
+        if( p->mask & uintptr_t(1)<<index ) {
             success = true;
-            assign_and_destroy_item( dst, p, index );
+            assign_and_destroy_item( dst, *p, index );
         } else {
             --base.my_rep->n_invalid_entries;
         }
@@ -450,13 +439,13 @@ private:
     typedef typename micro_queue<T>::padded_page padded_page;
     typedef typename micro_queue<T>::item_constructor_t item_constructor_t;
 
-    /* override */ virtual page *allocate_page() {
+    virtual page *allocate_page() __TBB_override {
         concurrent_queue_rep<T>& r = *my_rep;
         size_t n = sizeof(padded_page) + (r.items_per_page-1)*sizeof(T);
         return reinterpret_cast<page*>(allocate_block ( n ));
     }
 
-    /* override */ virtual void deallocate_page( concurrent_queue_rep_base::page *p ) {
+    virtual void deallocate_page( concurrent_queue_rep_base::page *p ) __TBB_override {
         concurrent_queue_rep<T>& r = *my_rep;
         size_t n = sizeof(padded_page) + (r.items_per_page-1)*sizeof(T);
         deallocate_block( reinterpret_cast<void*>(p), n );
@@ -471,7 +460,7 @@ private:
 protected:
     concurrent_queue_base_v3();
 
-    /* override */ virtual ~concurrent_queue_base_v3() {
+    virtual ~concurrent_queue_base_v3() {
 #if TBB_USE_ASSERT
         size_t nq = my_rep->n_queue;
         for( size_t i=0; i<nq; i++ )
@@ -764,7 +753,7 @@ class concurrent_queue_iterator: public concurrent_queue_iterator_base_v3<typena
 public:
 #endif
     //! Construct iterator pointing to head of queue.
-    concurrent_queue_iterator( const concurrent_queue_base_v3<Value>& queue ) :
+    explicit concurrent_queue_iterator( const concurrent_queue_base_v3<typename tbb_remove_cv<Value>::type>& queue ) :
         concurrent_queue_iterator_base_v3<typename tbb_remove_cv<Value>::type>(queue)
     {
     }
@@ -772,6 +761,8 @@ public:
 public:
     concurrent_queue_iterator() {}
 
+    /** If Value==Container::value_type, then this routine is the copy constructor.
+        If Value==const Container::value_type, then this routine is a conversion constructor. */
     concurrent_queue_iterator( const concurrent_queue_iterator<Container,typename Container::value_type>& other ) :
         concurrent_queue_iterator_base_v3<typename tbb_remove_cv<Value>::type>(other)
     {}
@@ -1023,7 +1014,7 @@ public:
 #endif
 
     //! Construct iterator pointing to head of queue.
-    concurrent_queue_iterator( const concurrent_queue_base_v3& queue ) :
+    explicit concurrent_queue_iterator( const concurrent_queue_base_v3& queue ) :
         concurrent_queue_iterator_base_v3(queue,__TBB_offsetof(concurrent_queue_base_v3::padded_page<Value>,last))
     {
     }

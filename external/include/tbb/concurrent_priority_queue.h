@@ -1,21 +1,21 @@
 /*
-    Copyright 2005-2015 Intel Corporation.  All Rights Reserved.
+    Copyright (c) 2005-2017 Intel Corporation
 
-    This file is part of Threading Building Blocks. Threading Building Blocks is free software;
-    you can redistribute it and/or modify it under the terms of the GNU General Public License
-    version 2  as  published  by  the  Free Software Foundation.  Threading Building Blocks is
-    distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See  the GNU General Public License for more details.   You should have received a copy of
-    the  GNU General Public License along with Threading Building Blocks; if not, write to the
-    Free Software Foundation, Inc.,  51 Franklin St,  Fifth Floor,  Boston,  MA 02110-1301 USA
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    As a special exception,  you may use this file  as part of a free software library without
-    restriction.  Specifically,  if other files instantiate templates  or use macros or inline
-    functions from this file, or you compile this file and link it with other files to produce
-    an executable,  this file does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however invalidate any other
-    reasons why the executable file might be covered by the GNU General Public License.
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+
+
+
 */
 
 #ifndef __TBB_concurrent_priority_queue_H
@@ -30,6 +30,7 @@
 #include <vector>
 #include <iterator>
 #include <functional>
+#include __TBB_STD_SWAP_HEADER
 
 #if __TBB_INITIALIZER_LISTS_PRESENT
     #include <initializer_list>
@@ -373,7 +374,7 @@ class concurrent_priority_queue {
                     compare(data[0], data[data.size()-1])) {
                     // there are newly pushed elems and the last one
                     // is higher than top
-                    *(tmp->elem) = move(data[data.size()-1]);
+                    *(tmp->elem) = tbb::internal::move(data[data.size()-1]);
                     __TBB_store_with_release(my_size, my_size-1);
                     itt_store_word_with_release(tmp->status, uintptr_t(SUCCEEDED));
                     data.pop_back();
@@ -389,7 +390,7 @@ class concurrent_priority_queue {
                     if (tmp->type == PUSH_OP) {
                         push_back_helper(*(tmp->elem), typename internal::use_element_copy_constructor<value_type>::type());
                     } else {
-                        data.push_back(move(*(tmp->elem)));
+                        data.push_back(tbb::internal::move(*(tmp->elem)));
                     }
                     __TBB_store_with_release(my_size, my_size + 1);
                     itt_store_word_with_release(tmp->status, uintptr_t(SUCCEEDED));
@@ -413,13 +414,13 @@ class concurrent_priority_queue {
                     compare(data[0], data[data.size()-1])) {
                     // there are newly pushed elems and the last one is
                     // higher than top
-                    *(tmp->elem) = move(data[data.size()-1]);
+                    *(tmp->elem) = tbb::internal::move(data[data.size()-1]);
                     __TBB_store_with_release(my_size, my_size-1);
                     itt_store_word_with_release(tmp->status, uintptr_t(SUCCEEDED));
                     data.pop_back();
                 }
                 else { // extract top and push last element down heap
-                    *(tmp->elem) = move(data[0]);
+                    *(tmp->elem) = tbb::internal::move(data[0]);
                     __TBB_store_with_release(my_size, my_size-1);
                     itt_store_word_with_release(tmp->status, uintptr_t(SUCCEEDED));
                     reheap();
@@ -439,14 +440,14 @@ class concurrent_priority_queue {
         for (; mark<data.size(); ++mark) {
             // for each unheapified element under size
             size_type cur_pos = mark;
-            value_type to_place = move(data[mark]);
+            value_type to_place = tbb::internal::move(data[mark]);
             do { // push to_place up the heap
                 size_type parent = (cur_pos-1)>>1;
                 if (!compare(data[parent], to_place)) break;
-                data[cur_pos] = move(data[parent]);
+                data[cur_pos] = tbb::internal::move(data[parent]);
                 cur_pos = parent;
             } while( cur_pos );
-            data[cur_pos] = move(to_place);
+            data[cur_pos] = tbb::internal::move(to_place);
         }
     }
 
@@ -461,12 +462,12 @@ class concurrent_priority_queue {
                 ++target;
             // target now has the higher priority child
             if (compare(data[target], data[data.size()-1])) break;
-            data[cur_pos] = move(data[target]);
+            data[cur_pos] = tbb::internal::move(data[target]);
             cur_pos = target;
             child = (cur_pos<<1)+1;
         }
         if (cur_pos != data.size()-1)
-            data[cur_pos] = move(data[data.size()-1]);
+            data[cur_pos] = tbb::internal::move(data[data.size()-1]);
         data.pop_back();
         if (mark > data.size()) mark = data.size();
     }

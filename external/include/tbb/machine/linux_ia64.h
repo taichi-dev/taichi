@@ -1,21 +1,21 @@
 /*
-    Copyright 2005-2015 Intel Corporation.  All Rights Reserved.
+    Copyright (c) 2005-2017 Intel Corporation
 
-    This file is part of Threading Building Blocks. Threading Building Blocks is free software;
-    you can redistribute it and/or modify it under the terms of the GNU General Public License
-    version 2  as  published  by  the  Free Software Foundation.  Threading Building Blocks is
-    distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See  the GNU General Public License for more details.   You should have received a copy of
-    the  GNU General Public License along with Threading Building Blocks; if not, write to the
-    Free Software Foundation, Inc.,  51 Franklin St,  Fifth Floor,  Boston,  MA 02110-1301 USA
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    As a special exception,  you may use this file  as part of a free software library without
-    restriction.  Specifically,  if other files instantiate templates  or use macros or inline
-    functions from this file, or you compile this file and link it with other files to produce
-    an executable,  this file does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however invalidate any other
-    reasons why the executable file might be covered by the GNU General Public License.
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+
+
+
 */
 
 #if !defined(__TBB_machine_H) || defined(__TBB_machine_linux_ia64_H)
@@ -39,7 +39,7 @@
 #else
     #define __TBB_compiler_fence() __asm__ __volatile__("": : :"memory")
     #define __TBB_control_consistency_helper() __TBB_compiler_fence()
-    // Even though GCC imbues volatile loads with acquire semantics, it sometimes moves 
+    // Even though GCC imbues volatile loads with acquire semantics, it sometimes moves
     // loads over the acquire fence. The following helpers stop such incorrect code motion.
     #define __TBB_acquire_consistency_helper() __TBB_compiler_fence()
     #define __TBB_release_consistency_helper() __TBB_compiler_fence()
@@ -82,21 +82,21 @@ extern "C" {
     int64_t __TBB_machine_fetchstore8acquire(volatile void *ptr, int64_t value);
     int64_t __TBB_machine_fetchstore8release(volatile void *ptr, int64_t value);
 
-    int8_t __TBB_machine_cmpswp1__TBB_full_fence (volatile void *ptr, int8_t value, int8_t comparand); 
-    int8_t __TBB_machine_cmpswp1acquire(volatile void *ptr, int8_t value, int8_t comparand); 
-    int8_t __TBB_machine_cmpswp1release(volatile void *ptr, int8_t value, int8_t comparand); 
+    int8_t __TBB_machine_cmpswp1__TBB_full_fence (volatile void *ptr, int8_t value, int8_t comparand);
+    int8_t __TBB_machine_cmpswp1acquire(volatile void *ptr, int8_t value, int8_t comparand);
+    int8_t __TBB_machine_cmpswp1release(volatile void *ptr, int8_t value, int8_t comparand);
 
     int16_t __TBB_machine_cmpswp2__TBB_full_fence (volatile void *ptr, int16_t value, int16_t comparand);
-    int16_t __TBB_machine_cmpswp2acquire(volatile void *ptr, int16_t value, int16_t comparand); 
-    int16_t __TBB_machine_cmpswp2release(volatile void *ptr, int16_t value, int16_t comparand); 
+    int16_t __TBB_machine_cmpswp2acquire(volatile void *ptr, int16_t value, int16_t comparand);
+    int16_t __TBB_machine_cmpswp2release(volatile void *ptr, int16_t value, int16_t comparand);
 
     int32_t __TBB_machine_cmpswp4__TBB_full_fence (volatile void *ptr, int32_t value, int32_t comparand);
-    int32_t __TBB_machine_cmpswp4acquire(volatile void *ptr, int32_t value, int32_t comparand); 
-    int32_t __TBB_machine_cmpswp4release(volatile void *ptr, int32_t value, int32_t comparand); 
+    int32_t __TBB_machine_cmpswp4acquire(volatile void *ptr, int32_t value, int32_t comparand);
+    int32_t __TBB_machine_cmpswp4release(volatile void *ptr, int32_t value, int32_t comparand);
 
     int64_t __TBB_machine_cmpswp8__TBB_full_fence (volatile void *ptr, int64_t value, int64_t comparand);
-    int64_t __TBB_machine_cmpswp8acquire(volatile void *ptr, int64_t value, int64_t comparand); 
-    int64_t __TBB_machine_cmpswp8release(volatile void *ptr, int64_t value, int64_t comparand); 
+    int64_t __TBB_machine_cmpswp8acquire(volatile void *ptr, int64_t value, int64_t comparand);
+    int64_t __TBB_machine_cmpswp8release(volatile void *ptr, int64_t value, int64_t comparand);
 
     int64_t __TBB_machine_lg(uint64_t value);
     void __TBB_machine_pause(int32_t delay);
@@ -127,7 +127,7 @@ extern "C" {
 #define __TBB_machine_fetchstore4full_fence __TBB_machine_fetchstore4__TBB_full_fence
 #define __TBB_machine_fetchstore8full_fence __TBB_machine_fetchstore8__TBB_full_fence
 #define __TBB_machine_cmpswp1full_fence     __TBB_machine_cmpswp1__TBB_full_fence
-#define __TBB_machine_cmpswp2full_fence     __TBB_machine_cmpswp2__TBB_full_fence 
+#define __TBB_machine_cmpswp2full_fence     __TBB_machine_cmpswp2__TBB_full_fence
 #define __TBB_machine_cmpswp4full_fence     __TBB_machine_cmpswp4__TBB_full_fence
 #define __TBB_machine_cmpswp8full_fence     __TBB_machine_cmpswp8__TBB_full_fence
 
@@ -143,7 +143,7 @@ extern "C" {
 #define __TBB_machine_fetchstore4relaxed    __TBB_machine_fetchstore4acquire
 #define __TBB_machine_fetchstore8relaxed    __TBB_machine_fetchstore8acquire
 #define __TBB_machine_cmpswp1relaxed        __TBB_machine_cmpswp1acquire
-#define __TBB_machine_cmpswp2relaxed        __TBB_machine_cmpswp2acquire 
+#define __TBB_machine_cmpswp2relaxed        __TBB_machine_cmpswp2acquire
 #define __TBB_machine_cmpswp4relaxed        __TBB_machine_cmpswp4acquire
 #define __TBB_machine_cmpswp8relaxed        __TBB_machine_cmpswp8acquire
 

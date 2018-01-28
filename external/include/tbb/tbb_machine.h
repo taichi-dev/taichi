@@ -1,21 +1,21 @@
 /*
-    Copyright 2005-2015 Intel Corporation.  All Rights Reserved.
+    Copyright (c) 2005-2017 Intel Corporation
 
-    This file is part of Threading Building Blocks. Threading Building Blocks is free software;
-    you can redistribute it and/or modify it under the terms of the GNU General Public License
-    version 2  as  published  by  the  Free Software Foundation.  Threading Building Blocks is
-    distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See  the GNU General Public License for more details.   You should have received a copy of
-    the  GNU General Public License along with Threading Building Blocks; if not, write to the
-    Free Software Foundation, Inc.,  51 Franklin St,  Fifth Floor,  Boston,  MA 02110-1301 USA
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    As a special exception,  you may use this file  as part of a free software library without
-    restriction.  Specifically,  if other files instantiate templates  or use macros or inline
-    functions from this file, or you compile this file and link it with other files to produce
-    an executable,  this file does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however invalidate any other
-    reasons why the executable file might be covered by the GNU General Public License.
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+
+
+
 */
 
 #ifndef __TBB_machine_H
@@ -38,7 +38,7 @@
     __TBB_USE_GENERIC_RELAXED_LOAD_STORE
     __TBB_USE_FETCHSTORE_AS_FULL_FENCED_STORE
 
-    In this case tbb_machine.h will add missing functionality based on a minimal set 
+    In this case tbb_machine.h will add missing functionality based on a minimal set
     of APIs that are required to be implemented by all plug-n headers as described
     further.
     Note that these generic implementations may be sub-optimal for a particular
@@ -102,7 +102,7 @@
         data-dependent, and will then make subsequent code behave as if the
         original data dependency were acquired.
         It needs only a compiler fence where implied by the architecture
-        either specifically (like IA-64 architecture) or because generally stronger 
+        either specifically (like IA-64 architecture) or because generally stronger
         "acquire" semantics are enforced (like x86).
         It is always valid, though potentially suboptimal, to replace
         control with acquire on the load and then remove the helper.
@@ -208,10 +208,8 @@ template<> struct atomic_selector<8> {
         #include "machine/icc_generic.h"
     #elif defined(_M_IX86) && !defined(__TBB_WIN32_USE_CL_BUILTINS)
         #include "machine/windows_ia32.h"
-    #elif defined(_M_X64) 
+    #elif defined(_M_X64)
         #include "machine/windows_intel64.h"
-    #elif defined(_XBOX)
-        #include "machine/xbox360_ppc.h"
     #elif defined(_M_ARM) || defined(__TBB_WIN32_USE_CL_BUILTINS)
         #include "machine/msvc_armv7.h"
     #endif
@@ -231,9 +229,6 @@ template<> struct atomic_selector<8> {
 
 #elif __linux__ || __FreeBSD__ || __NetBSD__
 
-    #ifndef TBB_USE_GCC_BUILTINS
-        #define TBB_USE_GCC_BUILTINS 1
-    #endif
     #if (TBB_USE_GCC_BUILTINS && __TBB_GCC_BUILTIN_ATOMICS_PRESENT)
         #include "machine/gcc_generic.h"
     #elif (TBB_USE_ICC_BUILTINS && __TBB_ICC_BUILTIN_ATOMICS_PRESENT)
@@ -246,7 +241,7 @@ template<> struct atomic_selector<8> {
         #include "machine/linux_ia64.h"
     #elif __powerpc__
         #include "machine/mac_ppc.h"
-    #elif __arm__
+    #elif __ARM_ARCH_7A__
         #include "machine/gcc_armv7.h"
     #elif __TBB_GCC_BUILTIN_ATOMICS_PRESENT
         #include "machine/gcc_generic.h"
@@ -257,9 +252,9 @@ template<> struct atomic_selector<8> {
     //TODO:  TBB_USE_GCC_BUILTINS is not used for Mac, Sun, Aix
     #if (TBB_USE_ICC_BUILTINS && __TBB_ICC_BUILTIN_ATOMICS_PRESENT)
         #include "machine/icc_generic.h"
-    #elif __i386__
+    #elif __TBB_x86_32
         #include "machine/linux_ia32.h"
-    #elif __x86_64__
+    #elif __TBB_x86_64
         #include "machine/linux_intel64.h"
     #elif __POWERPC__
         #include "machine/mac_ppc.h"
@@ -668,7 +663,15 @@ struct machine_load_store_seq_cst<T,8> {
         return __TBB_machine_cmpswp8( (volatile void*)const_cast<volatile T*>(&location), anyvalue, anyvalue );
     }
     static void store ( volatile T &location, T value ) {
+#if __TBB_GCC_VERSION >= 40702
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+        // An atomic initialization leads to reading of uninitialized memory
         int64_t result = (volatile int64_t&)location;
+#if __TBB_GCC_VERSION >= 40702
+#pragma GCC diagnostic pop
+#endif
         while ( __TBB_machine_cmpswp8((volatile void*)&location, (int64_t)value, result) != result )
             result = (volatile int64_t&)location;
     }
@@ -754,7 +757,16 @@ inline void __TBB_store_relaxed ( volatile size_t& location, size_t value ) {
 // strictest alignment is 64.
 #ifndef __TBB_TypeWithAlignmentAtLeastAsStrict
 
-#if __TBB_ATTRIBUTE_ALIGNED_PRESENT
+#if __TBB_ALIGNAS_PRESENT
+
+// Use C++11 keywords alignas and alignof
+#define __TBB_DefineTypeWithAlignment(PowerOf2)       \
+struct alignas(PowerOf2) __TBB_machine_type_with_alignment_##PowerOf2 { \
+    uint32_t member[PowerOf2/sizeof(uint32_t)];       \
+};
+#define __TBB_alignof(T) alignof(T)
+
+#elif __TBB_ATTRIBUTE_ALIGNED_PRESENT
 
 #define __TBB_DefineTypeWithAlignment(PowerOf2)       \
 struct __TBB_machine_type_with_alignment_##PowerOf2 { \
@@ -853,9 +865,9 @@ inline intptr_t __TBB_Log2( uintptr_t x ) {
     if( x==0 ) return -1;
     intptr_t result = 0;
 
-#if !defined(_M_ARM) 
-    uintptr_t tmp;
-    if( sizeof(x)>4 && (tmp = ((uint64_t)x)>>32) ) { x=tmp; result += 32; }
+#if !defined(_M_ARM)
+    uintptr_t tmp_;
+    if( sizeof(x)>4 && (tmp_ = ((uint64_t)x)>>32) ) { x=tmp_; result += 32; }
 #endif
     if( uintptr_t tmp = x>>16 ) { x=tmp; result += 16; }
     if( uintptr_t tmp = x>>8 )  { x=tmp; result += 8; }
@@ -919,7 +931,7 @@ inline __TBB_Flag __TBB_LockByte( __TBB_atomic_flag& flag ) {
 #define __TBB_UnlockByte(addr) __TBB_store_with_release((addr),0)
 #endif
 
-// lock primitives with TSX
+// lock primitives with Intel(R) Transactional Synchronization Extensions (Intel(R) TSX)
 #if ( __TBB_x86_32 || __TBB_x86_64 )  /* only on ia32/intel64 */
 inline void __TBB_TryLockByteElidedCancel() { __TBB_machine_try_lock_elided_cancel(); }
 

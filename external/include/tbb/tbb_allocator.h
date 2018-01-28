@@ -1,21 +1,21 @@
 /*
-    Copyright 2005-2015 Intel Corporation.  All Rights Reserved.
+    Copyright (c) 2005-2017 Intel Corporation
 
-    This file is part of Threading Building Blocks. Threading Building Blocks is free software;
-    you can redistribute it and/or modify it under the terms of the GNU General Public License
-    version 2  as  published  by  the  Free Software Foundation.  Threading Building Blocks is
-    distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See  the GNU General Public License for more details.   You should have received a copy of
-    the  GNU General Public License along with Threading Building Blocks; if not, write to the
-    Free Software Foundation, Inc.,  51 Franklin St,  Fifth Floor,  Boston,  MA 02110-1301 USA
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    As a special exception,  you may use this file  as part of a free software library without
-    restriction.  Specifically,  if other files instantiate templates  or use macros or inline
-    functions from this file, or you compile this file and link it with other files to produce
-    an executable,  this file does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however invalidate any other
-    reasons why the executable file might be covered by the GNU General Public License.
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+
+
+
 */
 
 #ifndef __TBB_tbb_allocator_H
@@ -26,18 +26,7 @@
 #if __TBB_ALLOCATOR_CONSTRUCT_VARIADIC
  #include <utility> // std::forward
 #endif
-
-#if !TBB_USE_EXCEPTIONS && _MSC_VER
-    // Suppress "C++ exception handler used, but unwind semantics are not enabled" warning in STL headers
-    #pragma warning (push)
-    #pragma warning (disable: 4530)
-#endif
-
 #include <cstring>
-
-#if !TBB_USE_EXCEPTIONS && _MSC_VER
-    #pragma warning (pop)
-#endif
 
 namespace tbb {
 
@@ -64,7 +53,7 @@ namespace internal {
 #endif
 
 //! Meets "allocator" requirements of ISO C++ Standard, Section 20.1.5
-/** The class selects the best memory allocation mechanism available 
+/** The class selects the best memory allocation mechanism available
     from scalable_malloc and standard malloc.
     The members are ordered the same way they are in section 20.4.1
     of the ISO C++ standard.
@@ -85,7 +74,7 @@ public:
 
     //! Specifies current allocator
     enum malloc_type {
-        scalable, 
+        scalable,
         standard
     };
 
@@ -95,7 +84,7 @@ public:
 
     pointer address(reference x) const {return &x;}
     const_pointer address(const_reference x) const {return &x;}
-    
+
     //! Allocate space for n objects.
     pointer allocate( size_type n, const void* /*hint*/ = 0) {
         return pointer(internal::allocate_via_handler_v3( n * sizeof(value_type) ));
@@ -103,7 +92,7 @@ public:
 
     //! Free previously allocated block of memory.
     void deallocate( pointer p, size_type ) {
-        internal::deallocate_via_handler_v3(p);        
+        internal::deallocate_via_handler_v3(p);
     }
 
     //! Largest value for which method allocate might succeed.
@@ -111,7 +100,7 @@ public:
         size_type max = static_cast<size_type>(-1) / sizeof (value_type);
         return (max > 0 ? max : 1);
     }
-    
+
     //! Copy-construct value at location pointed to by p.
 #if __TBB_ALLOCATOR_CONSTRUCT_VARIADIC
     template<typename U, typename... Args>
@@ -139,7 +128,7 @@ public:
 
 //! Analogous to std::allocator<void>, as defined in ISO C++ Standard, Section 20.4.1
 /** @ingroup memory_allocation */
-template<> 
+template<>
 class tbb_allocator<void> {
 public:
     typedef void* pointer;
@@ -192,7 +181,7 @@ public:
 
 //! Analogous to std::allocator<void>, as defined in ISO C++ Standard, Section 20.4.1
 /** @ingroup memory_allocation */
-template<template<typename T> class Allocator> 
+template<template<typename T> class Allocator>
 class zero_allocator<void, Allocator> : public Allocator<void> {
 public:
     typedef Allocator<void> base_allocator_type;
@@ -213,6 +202,6 @@ inline bool operator!=( const zero_allocator<T1,B1> &a, const zero_allocator<T2,
     return static_cast< B1<T1> >(a) != static_cast< B2<T2> >(b);
 }
 
-} // namespace tbb 
+} // namespace tbb
 
 #endif /* __TBB_tbb_allocator_H */

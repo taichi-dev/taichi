@@ -1,21 +1,21 @@
 /*
-    Copyright 2005-2015 Intel Corporation.  All Rights Reserved.
+    Copyright (c) 2005-2017 Intel Corporation
 
-    This file is part of Threading Building Blocks. Threading Building Blocks is free software;
-    you can redistribute it and/or modify it under the terms of the GNU General Public License
-    version 2  as  published  by  the  Free Software Foundation.  Threading Building Blocks is
-    distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See  the GNU General Public License for more details.   You should have received a copy of
-    the  GNU General Public License along with Threading Building Blocks; if not, write to the
-    Free Software Foundation, Inc.,  51 Franklin St,  Fifth Floor,  Boston,  MA 02110-1301 USA
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    As a special exception,  you may use this file  as part of a free software library without
-    restriction.  Specifically,  if other files instantiate templates  or use macros or inline
-    functions from this file, or you compile this file and link it with other files to produce
-    an executable,  this file does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however invalidate any other
-    reasons why the executable file might be covered by the GNU General Public License.
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+
+
+
 */
 
 #ifndef __TBB_enumerable_thread_specific_H
@@ -73,7 +73,7 @@ namespace interface6 {
                 slot& at( size_t k ) {
                     return ((slot*)(void*)(this+1))[k];
                 }
-                size_t size() const {return (size_t)1<<lg_size;}
+                size_t size() const {return size_t(1)<<lg_size;}
                 size_t mask() const {return size()-1;}
                 size_t start( size_t h ) const {
                     return h>>(8*sizeof(size_t)-lg_size);
@@ -102,14 +102,14 @@ namespace interface6 {
             virtual void* create_array(size_t _size) = 0;  // _size in bytes
             virtual void free_array(void* ptr, size_t _size) = 0; // _size in bytes
             array* allocate( size_t lg_size ) {
-                size_t n = 1<<lg_size;
+                size_t n = size_t(1)<<lg_size;
                 array* a = static_cast<array*>(create_array( sizeof(array)+n*sizeof(slot) ));
                 a->lg_size = lg_size;
                 std::memset( a+1, 0, n*sizeof(slot) );
                 return a;
             }
             void free(array* a) {
-                size_t n = 1<<(a->lg_size);
+                size_t n = size_t(1)<<(a->lg_size);
                 free_array( (void *)a, size_t(sizeof(array)+n*sizeof(slot)) );
             }
 
@@ -266,9 +266,9 @@ namespace interface6 {
             void* get_tls() const { return pthread_getspecific(my_key); }
 #endif
             tls_key_t my_key;
-            virtual void* create_local() = 0;
-            virtual void* create_array(size_t _size) = 0;  // _size in bytes
-            virtual void free_array(void* ptr, size_t _size) = 0; // size in bytes
+            virtual void* create_local() __TBB_override = 0;
+            virtual void* create_array(size_t _size) __TBB_override = 0;  // _size in bytes
+            virtual void free_array(void* ptr, size_t _size) __TBB_override = 0; // size in bytes
         protected:
             ets_base() {create_key();}
             ~ets_base() {destroy_key();}
@@ -636,7 +636,7 @@ namespace interface6 {
             }
             construct_by_args( P&& ... args ) : pack(std::forward<P>(args)...) {}
         };
-#endif 
+#endif
 
         // storage for initialization function pointer
         // TODO: consider removing the template parameter T here and in callback_leaf
@@ -663,16 +663,16 @@ namespace interface6 {
             // TODO: make the construction/destruction consistent (use allocator.construct/destroy)
             typedef typename tbb::tbb_allocator<callback_leaf> my_allocator_type;
 
-            /*override*/ callback_base<T>* clone() const {
+            callback_base<T>* clone() const __TBB_override {
                 return make(*this);
             }
 
-            /*override*/ void destroy() {
+            void destroy() __TBB_override {
                 my_allocator_type().destroy(this);
                 my_allocator_type().deallocate(this,1);
             }
 
-            /*override*/ void construct(void* where) {
+            void construct(void* where) __TBB_override {
                 Constructor::construct(where);
             }
         public:
@@ -700,7 +700,6 @@ namespace interface6 {
             successfully-constructed, set the flag to true or call value_committed().
             If the constructor throws, the flag will be false.
         */
-        // TODO: make a constructor for ets_element that takes a callback_base.  make is_built private
         template<typename U>
         struct ets_element {
             tbb::aligned_space<U> my_space;
@@ -708,7 +707,7 @@ namespace interface6 {
             ets_element() { is_built = false; }  // not currently-built
             U* value() { return my_space.begin(); }
             U* value_committed() { is_built = true; return my_space.begin(); }
-            ~ets_element() { 
+            ~ets_element() {
                 if(is_built) {
                     my_space.begin()->~U();
                     is_built = false;
@@ -794,7 +793,7 @@ namespace interface6 {
 
         // TODO: consider unifying the callback mechanism for all create_local* methods below
         //   (likely non-compatible and requires interface version increase)
-        /*override*/ void* create_local() {
+        void* create_local() __TBB_override {
             padded_element& lref = *my_locals.grow_by(1);
             my_construct_callback->construct(lref.value());
             return lref.value_committed();
@@ -819,12 +818,12 @@ namespace interface6 {
         typedef typename Allocator::template rebind< uintptr_t >::other array_allocator_type;
 
         // _size is in bytes
-        /*override*/ void* create_array(size_t _size) {
+        void* create_array(size_t _size) __TBB_override {
             size_t nelements = (_size + sizeof(uintptr_t) -1) / sizeof(uintptr_t);
             return array_allocator_type().allocate(nelements);
         }
 
-        /*override*/ void free_array( void* _ptr, size_t _size) {
+        void free_array( void* _ptr, size_t _size) __TBB_override {
             size_t nelements = (_size + sizeof(uintptr_t) -1) / sizeof(uintptr_t);
             array_allocator_type().deallocate( reinterpret_cast<uintptr_t *>(_ptr),nelements);
         }
@@ -860,17 +859,17 @@ namespace interface6 {
                   , typename = typename internal::enable_if<internal::is_callable_no_args<typename internal::strip<Finit>::type>::value>::type
 #endif
         >
-        enumerable_thread_specific( Finit finit ) : my_construct_callback(
+        explicit enumerable_thread_specific( Finit finit ) : my_construct_callback(
             internal::callback_leaf<T,internal::construct_by_finit<T,Finit> >::make( tbb::internal::move(finit) )
         ){}
 
         //! Constructor with exemplar. Each local instance of T is copy-constructed from the exemplar.
-        enumerable_thread_specific( const T& exemplar ) : my_construct_callback(
+        explicit enumerable_thread_specific( const T& exemplar ) : my_construct_callback(
             internal::callback_leaf<T,internal::construct_by_exemplar<T> >::make( exemplar )
         ){}
 
 #if __TBB_ETS_USE_CPP11
-        enumerable_thread_specific( T&& exemplar ) : my_construct_callback(
+        explicit enumerable_thread_specific( T&& exemplar ) : my_construct_callback(
             internal::callback_leaf<T,internal::construct_by_exemplar<T> >::make( std::move(exemplar) )
         ){}
 
@@ -1089,7 +1088,7 @@ namespace interface6 {
         flattened2d( const Container &c, typename Container::const_iterator b, typename Container::const_iterator e ) :
             my_container(const_cast<Container*>(&c)), my_begin(b), my_end(e) { }
 
-        flattened2d( const Container &c ) :
+        explicit flattened2d( const Container &c ) :
             my_container(const_cast<Container*>(&c)), my_begin(c.begin()), my_end(c.end()) { }
 
         iterator begin() { return iterator(*my_container) = my_begin; }

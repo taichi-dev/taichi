@@ -1,21 +1,21 @@
 /*
-    Copyright 2005-2015 Intel Corporation.  All Rights Reserved.
+    Copyright (c) 2005-2017 Intel Corporation
 
-    This file is part of Threading Building Blocks. Threading Building Blocks is free software;
-    you can redistribute it and/or modify it under the terms of the GNU General Public License
-    version 2  as  published  by  the  Free Software Foundation.  Threading Building Blocks is
-    distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See  the GNU General Public License for more details.   You should have received a copy of
-    the  GNU General Public License along with Threading Building Blocks; if not, write to the
-    Free Software Foundation, Inc.,  51 Franklin St,  Fifth Floor,  Boston,  MA 02110-1301 USA
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    As a special exception,  you may use this file  as part of a free software library without
-    restriction.  Specifically,  if other files instantiate templates  or use macros or inline
-    functions from this file, or you compile this file and link it with other files to produce
-    an executable,  this file does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however invalidate any other
-    reasons why the executable file might be covered by the GNU General Public License.
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+
+
+
 */
 
 #ifndef __TBB_scalable_allocator_H
@@ -193,7 +193,8 @@ void *pool_aligned_realloc(MemoryPool* mPool, void *ptr, size_t size, size_t ali
 bool  pool_reset(MemoryPool* memPool);
 bool  pool_free(MemoryPool *memPool, void *object);
 MemoryPool *pool_identify(void *object);
-}
+
+} // namespace rml
 
 #include <new>      /* To use new with the placement argument */
 
@@ -282,18 +283,18 @@ public:
     template<typename U, typename... Args>
     void construct(U *p, Args&&... args)
         { ::new((void *)p) U(std::forward<Args>(args)...); }
-#else // __TBB_ALLOCATOR_CONSTRUCT_VARIADIC
+#else /* __TBB_ALLOCATOR_CONSTRUCT_VARIADIC */
 #if __TBB_CPP11_RVALUE_REF_PRESENT
     void construct( pointer p, value_type&& value ) { ::new((void*)(p)) value_type( std::move( value ) ); }
 #endif
     void construct( pointer p, const value_type& value ) {::new((void*)(p)) value_type(value);}
-#endif // __TBB_ALLOCATOR_CONSTRUCT_VARIADIC
+#endif /* __TBB_ALLOCATOR_CONSTRUCT_VARIADIC */
     void destroy( pointer p ) {p->~value_type();}
 };
 
 #if _MSC_VER && !defined(__INTEL_COMPILER)
     #pragma warning (pop)
-#endif // warning 4100 is back
+#endif /* warning 4100 is back */
 
 //! Analogous to std::allocator<void>, as defined in ISO C++ Standard, Section 20.4.1
 /** @ingroup memory_allocation */
@@ -336,6 +337,6 @@ inline bool operator!=( const scalable_allocator<T>&, const scalable_allocator<U
 
 #if !defined(__cplusplus) && __ICC==1100
     #pragma warning (pop)
-#endif // ICC 11.0 warning 991 is back
+#endif /* ICC 11.0 warning 991 is back */
 
 #endif /* __TBB_scalable_allocator_H */

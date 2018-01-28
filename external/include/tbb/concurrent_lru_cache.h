@@ -1,21 +1,21 @@
 /*
-    Copyright 2005-2015 Intel Corporation.  All Rights Reserved.
+    Copyright (c) 2005-2017 Intel Corporation
 
-    This file is part of Threading Building Blocks. Threading Building Blocks is free software;
-    you can redistribute it and/or modify it under the terms of the GNU General Public License
-    version 2  as  published  by  the  Free Software Foundation.  Threading Building Blocks is
-    distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See  the GNU General Public License for more details.   You should have received a copy of
-    the  GNU General Public License along with Threading Building Blocks; if not, write to the
-    Free Software Foundation, Inc.,  51 Franklin St,  Fifth Floor,  Boston,  MA 02110-1301 USA
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    As a special exception,  you may use this file  as part of a free software library without
-    restriction.  Specifically,  if other files instantiate templates  or use macros or inline
-    functions from this file, or you compile this file and link it with other files to produce
-    an executable,  this file does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however invalidate any other
-    reasons why the executable file might be covered by the GNU General Public License.
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+
+
+
 */
 
 #ifndef __TBB_concurrent_lru_cache_H
@@ -25,10 +25,15 @@
     #error Set TBB_PREVIEW_CONCURRENT_LRU_CACHE to include concurrent_lru_cache.h
 #endif
 
+#include "tbb_stddef.h"
+
 #include <map>
 #include <list>
+#include <algorithm> // std::find
+#if __TBB_CPP11_RVALUE_REF_PRESENT
+#include <utility> // std::move
+#endif
 
-#include "tbb_stddef.h"
 #include "atomic.h"
 #include "internal/_aggregator_impl.h"
 
@@ -99,37 +104,84 @@ private:
     }
 
 private:
+#if !__TBB_CPP11_RVALUE_REF_PRESENT
     struct handle_move_t:no_assign{
         concurrent_lru_cache & my_cache_ref;
         typename map_storage_type::reference my_map_record_ref;
         handle_move_t(concurrent_lru_cache & cache_ref, typename map_storage_type::reference value_ref):my_cache_ref(cache_ref),my_map_record_ref(value_ref) {};
     };
+#endif
     class handle_object {
         concurrent_lru_cache * my_cache_pointer;
-        typename map_storage_type::reference my_map_record_ref;
+        typename map_storage_type::pointer my_map_record_ptr;
     public:
-        handle_object(concurrent_lru_cache & cache_ref, typename map_storage_type::reference value_ref):my_cache_pointer(&cache_ref), my_map_record_ref(value_ref) {}
-        handle_object(handle_move_t m):my_cache_pointer(&m.my_cache_ref), my_map_record_ref(m.my_map_record_ref){}
-        operator handle_move_t(){ return move(*this);}
+        handle_object() : my_cache_pointer(), my_map_record_ptr() {}
+        handle_object(concurrent_lru_cache& cache_ref, typename map_storage_type::reference value_ref) : my_cache_pointer(&cache_ref), my_map_record_ptr(&value_ref) {}
+        operator bool() const {
+            return (my_cache_pointer && my_map_record_ptr);
+        }
+#if __TBB_CPP11_RVALUE_REF_PRESENT
+        // TODO: add check for double moved objects by special dedicated field
+        handle_object(handle_object&& src) : my_cache_pointer(src.my_cache_pointer), my_map_record_ptr(src.my_map_record_ptr) {
+            __TBB_ASSERT((src.my_cache_pointer && src.my_map_record_ptr) || (!src.my_cache_pointer && !src.my_map_record_ptr), "invalid state of moving object?");
+            src.my_cache_pointer = NULL;
+            src.my_map_record_ptr = NULL;
+        }
+        handle_object& operator=(handle_object&& src) {
+            __TBB_ASSERT((src.my_cache_pointer && src.my_map_record_ptr) || (!src.my_cache_pointer && !src.my_map_record_ptr), "invalid state of moving object?");
+            if (my_cache_pointer) {
+                my_cache_pointer->signal_end_of_usage(*my_map_record_ptr);
+            }
+            my_cache_pointer = src.my_cache_pointer;
+            my_map_record_ptr = src.my_map_record_ptr;
+            src.my_cache_pointer = NULL;
+            src.my_map_record_ptr = NULL;
+            return *this;
+        }
+#else
+        handle_object(handle_move_t m) : my_cache_pointer(&m.my_cache_ref), my_map_record_ptr(&m.my_map_record_ref) {}
+        handle_object& operator=(handle_move_t m) {
+            if (my_cache_pointer) {
+                my_cache_pointer->signal_end_of_usage(*my_map_record_ptr);
+            }
+            my_cache_pointer = &m.my_cache_ref;
+            my_map_record_ptr = &m.my_map_record_ref;
+            return *this;
+        }
+        operator handle_move_t(){
+            return move(*this);
+        }
+#endif // __TBB_CPP11_RVALUE_REF_PRESENT
         value_type& value(){
-            __TBB_ASSERT(my_cache_pointer,"get value from moved from object?");
-            return my_map_record_ref.second.my_value;
+            __TBB_ASSERT(my_cache_pointer,"get value from already moved object?");
+            __TBB_ASSERT(my_map_record_ptr,"get value from an invalid or already moved object?");
+            return my_map_record_ptr->second.my_value;
         }
         ~handle_object(){
             if (my_cache_pointer){
-                my_cache_pointer->signal_end_of_usage(my_map_record_ref);
+                my_cache_pointer->signal_end_of_usage(*my_map_record_ptr);
             }
         }
     private:
+#if __TBB_CPP11_RVALUE_REF_PRESENT
+        // For source compatibility with C++03
+        friend handle_object&& move(handle_object& h){
+            return std::move(h);
+        }
+#else
         friend handle_move_t move(handle_object& h){
             return handle_object::move(h);
         }
+        // TODO: add check for double moved objects by special dedicated field
         static handle_move_t move(handle_object& h){
-            __TBB_ASSERT(h.my_cache_pointer,"move from the same object twice ?");
-            concurrent_lru_cache * cache_pointer = NULL;
-            std::swap(cache_pointer,h.my_cache_pointer);
-            return handle_move_t(*cache_pointer,h.my_map_record_ref);
+            __TBB_ASSERT((h.my_cache_pointer && h.my_map_record_ptr) || (!h.my_cache_pointer && !h.my_map_record_ptr), "invalid state of moving object?");
+            concurrent_lru_cache * cache_pointer = h.my_cache_pointer;
+            typename map_storage_type::pointer map_record_ptr = h.my_map_record_ptr;
+            h.my_cache_pointer = NULL;
+            h.my_map_record_ptr = NULL;
+            return handle_move_t(*cache_pointer, *map_record_ptr);
         }
+#endif // __TBB_CPP11_RVALUE_REF_PRESENT
     private:
         void operator=(handle_object&);
 #if __SUNPRO_CC

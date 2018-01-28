@@ -1,21 +1,21 @@
 /*
-    Copyright 2005-2015 Intel Corporation.  All Rights Reserved.
+    Copyright (c) 2005-2017 Intel Corporation
 
-    This file is part of Threading Building Blocks. Threading Building Blocks is free software;
-    you can redistribute it and/or modify it under the terms of the GNU General Public License
-    version 2  as  published  by  the  Free Software Foundation.  Threading Building Blocks is
-    distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See  the GNU General Public License for more details.   You should have received a copy of
-    the  GNU General Public License along with Threading Building Blocks; if not, write to the
-    Free Software Foundation, Inc.,  51 Franklin St,  Fifth Floor,  Boston,  MA 02110-1301 USA
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    As a special exception,  you may use this file  as part of a free software library without
-    restriction.  Specifically,  if other files instantiate templates  or use macros or inline
-    functions from this file, or you compile this file and link it with other files to produce
-    an executable,  this file does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however invalidate any other
-    reasons why the executable file might be covered by the GNU General Public License.
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+
+
+
 */
 
 #ifndef __TBB__aggregator_impl_H
@@ -36,7 +36,9 @@ using namespace tbb::internal;
 template <typename Derived>
 class aggregated_operation {
  public:
+    //! Zero value means "wait" status, all other values are "user" specified values and are defined into the scope of a class which uses "status".
     uintptr_t status;
+
     Derived *next;
     aggregated_operation() : status(0), next(NULL) {}
 };
@@ -52,19 +54,21 @@ class aggregator_generic {
 public:
     aggregator_generic() : handler_busy(false) { pending_operations = NULL; }
 
-    //! Place operation in list
-    /** Place operation in list and either handle list or wait for operation to
-        complete.
-        long_life_time specifies life time of an operation inserting in an aggregator.
-        "Long" (long_life_time == true) life time operation can be accessed
-        even after executing it.
-        "Short" (long_life_time == false) life time operations can be destroyed
-        during executing so any access to it after executing is invalid.*/
+    //! Execute an operation
+    /** Places an operation into the waitlist (pending_operations), and either handles the list,
+        or waits for the operation to complete, or returns.
+        The long_life_time parameter specifies the life time of the given operation object.
+        Operations with long_life_time == true may be accessed after execution.
+        A "short" life time operation (long_life_time == false) can be destroyed
+        during execution, and so any access to it after it was put into the waitlist,
+        including status check, is invalid. As a consequence, waiting for completion
+        of such operation causes undefined behavior.
+    */
     template < typename handler_type >
     void execute(operation_type *op, handler_type &handle_operations, bool long_life_time = true) {
         operation_type *res;
-        // op->status should be read before inserting the operation in the
-        // aggregator queue since it can become invalid after executing a
+        // op->status should be read before inserting the operation into the
+        // aggregator waitlist since it can become invalid after executing a
         // handler (if the operation has 'short' life time.)
         const uintptr_t status = op->status;
 
@@ -76,7 +80,7 @@ public:
         call_itt_notify(releasing, &(op->status));
         // insert the operation in the queue.
         do {
-            // ITT may flag the following line as a race; it is a false positive:
+            // Tools may flag the following line as a race; it is a false positive:
             // This is an atomic read; we don't provide itt_hide_load_word for atomics
             op->next = res = pending_operations; // NOT A RACE
         } while (pending_operations.compare_and_swap(op, res) != res);
@@ -92,7 +96,7 @@ public:
         }
         // not first; wait for op to be ready.
         else if (!status) { // operation is blocking here.
-            __TBB_ASSERT(long_life_time, "The blocking operation cannot have 'short' life time. Since it can already be destroyed.");
+            __TBB_ASSERT(long_life_time, "Waiting for an operation object that might be destroyed during processing.");
             call_itt_notify(prepare, &(op->status));
             spin_wait_while_eq(op->status, uintptr_t(0));
             itt_load_word_with_acquire(op->status);

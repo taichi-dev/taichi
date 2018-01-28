@@ -1,21 +1,21 @@
 /*
-    Copyright 2005-2015 Intel Corporation.  All Rights Reserved.
+    Copyright (c) 2005-2017 Intel Corporation
 
-    This file is part of Threading Building Blocks. Threading Building Blocks is free software;
-    you can redistribute it and/or modify it under the terms of the GNU General Public License
-    version 2  as  published  by  the  Free Software Foundation.  Threading Building Blocks is
-    distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See  the GNU General Public License for more details.   You should have received a copy of
-    the  GNU General Public License along with Threading Building Blocks; if not, write to the
-    Free Software Foundation, Inc.,  51 Franklin St,  Fifth Floor,  Boston,  MA 02110-1301 USA
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    As a special exception,  you may use this file  as part of a free software library without
-    restriction.  Specifically,  if other files instantiate templates  or use macros or inline
-    functions from this file, or you compile this file and link it with other files to produce
-    an executable,  this file does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however invalidate any other
-    reasons why the executable file might be covered by the GNU General Public License.
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+
+
+
 */
 
 #ifndef __TBB_blocked_range3d_H
@@ -49,8 +49,7 @@ public:
         my_pages(page_begin,page_end),
         my_rows(row_begin,row_end),
         my_cols(col_begin,col_end)
-    {
-    }
+    {}
 
     blocked_range3d( PageValue page_begin, PageValue page_end, typename page_range_type::size_type page_grainsize,
                      RowValue  row_begin,  RowValue row_end,   typename row_range_type::size_type row_grainsize,
@@ -58,12 +57,11 @@ public:
         my_pages(page_begin,page_end,page_grainsize),
         my_rows(row_begin,row_end,row_grainsize),
         my_cols(col_begin,col_end,col_grainsize)
-    {
-    }
+    {}
 
     //! True if range is empty
     bool empty() const {
-        // Yes, it is a logical OR here, not AND.
+        // Range is empty if at least one dimension is empty.
         return my_pages.empty() || my_rows.empty() || my_cols.empty();
     }
 
@@ -94,24 +92,6 @@ public:
     }
 #endif /* __TBB_USE_PROPORTIONAL_SPLIT_IN_BLOCKED_RANGES */
 
-    template <typename Split>
-    void do_split( blocked_range3d& r, Split& split_obj)
-    {
-        if ( my_pages.size()*double(my_rows.grainsize()) < my_rows.size()*double(my_pages.grainsize()) ) {
-            if ( my_rows.size()*double(my_cols.grainsize()) < my_cols.size()*double(my_rows.grainsize()) ) {
-                my_cols.my_begin = col_range_type::do_split(r.my_cols, split_obj);
-            } else {
-                my_rows.my_begin = row_range_type::do_split(r.my_rows, split_obj);
-            }
-	} else {
-            if ( my_pages.size()*double(my_cols.grainsize()) < my_cols.size()*double(my_pages.grainsize()) ) {
-                my_cols.my_begin = col_range_type::do_split(r.my_cols, split_obj);
-            } else {
-                my_pages.my_begin = page_range_type::do_split(r.my_pages, split_obj);
-            }
-        }
-    }
-
     //! The pages of the iteration space
     const page_range_type& pages() const {return my_pages;}
 
@@ -121,6 +101,25 @@ public:
     //! The columns of the iteration space
     const col_range_type& cols() const {return my_cols;}
 
+private:
+
+    template <typename Split>
+    void do_split( blocked_range3d& r, Split& split_obj)
+    {
+        if ( my_pages.size()*double(my_rows.grainsize()) < my_rows.size()*double(my_pages.grainsize()) ) {
+            if ( my_rows.size()*double(my_cols.grainsize()) < my_cols.size()*double(my_rows.grainsize()) ) {
+                my_cols.my_begin = col_range_type::do_split(r.my_cols, split_obj);
+            } else {
+                my_rows.my_begin = row_range_type::do_split(r.my_rows, split_obj);
+            }
+        } else {
+            if ( my_pages.size()*double(my_cols.grainsize()) < my_cols.size()*double(my_pages.grainsize()) ) {
+                my_cols.my_begin = col_range_type::do_split(r.my_cols, split_obj);
+            } else {
+                my_pages.my_begin = page_range_type::do_split(r.my_pages, split_obj);
+            }
+        }
+    }
 };
 
 } // namespace tbb

@@ -1,32 +1,32 @@
 /*
-    Copyright 2005-2015 Intel Corporation.  All Rights Reserved.
+    Copyright (c) 2005-2017 Intel Corporation
 
-    This file is part of Threading Building Blocks. Threading Building Blocks is free software;
-    you can redistribute it and/or modify it under the terms of the GNU General Public License
-    version 2  as  published  by  the  Free Software Foundation.  Threading Building Blocks is
-    distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See  the GNU General Public License for more details.   You should have received a copy of
-    the  GNU General Public License along with Threading Building Blocks; if not, write to the
-    Free Software Foundation, Inc.,  51 Franklin St,  Fifth Floor,  Boston,  MA 02110-1301 USA
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    As a special exception,  you may use this file  as part of a free software library without
-    restriction.  Specifically,  if other files instantiate templates  or use macros or inline
-    functions from this file, or you compile this file and link it with other files to produce
-    an executable,  this file does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however invalidate any other
-    reasons why the executable file might be covered by the GNU General Public License.
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+
+
+
 */
 
 #ifndef __TBB_tbb_stddef_H
 #define __TBB_tbb_stddef_H
 
 // Marketing-driven product version
-#define TBB_VERSION_MAJOR 4
-#define TBB_VERSION_MINOR 4
+#define TBB_VERSION_MAJOR 2018
+#define TBB_VERSION_MINOR 0
 
 // Engineering-focused interface version
-#define TBB_INTERFACE_VERSION 9002
+#define TBB_INTERFACE_VERSION 10002
 #define TBB_INTERFACE_VERSION_MAJOR TBB_INTERFACE_VERSION/1000
 
 // The oldest major interface version still supported
@@ -155,8 +155,8 @@ namespace tbb {
 
 #if TBB_USE_ASSERT
 
-    //! Assert that x is true.
-    /** If x is false, print assertion failure message.
+    //! Assert that predicate is true.
+    /** If predicate is false, print assertion failure message.
         If the comment argument is not NULL, it is printed as part of the failure message.
         The comment argument has no other effect. */
     #define __TBB_ASSERT(predicate,message) __TBB_ASSERT_RELEASE(predicate,message)
@@ -240,6 +240,12 @@ const size_t NFS_MaxLineSize = 128;
     TODO: apply wherever relevant **/
 #define __TBB_atomic // intentionally empty, see above
 
+#if __TBB_OVERRIDE_PRESENT
+#define __TBB_override override
+#else
+#define __TBB_override // formal comment only
+#endif
+
 template<class T, size_t S, size_t R>
 struct padded_base : T {
     char pad[S - R];
@@ -272,7 +278,7 @@ void __TBB_EXPORTED_FUNC handle_perror( int error_code, const char* aux_info );
     inline bool __TBB_false() { return false; }
     #define __TBB_TRY
     #define __TBB_CATCH(e) if ( tbb::internal::__TBB_false() )
-    #define __TBB_THROW(e) ((void)0)
+    #define __TBB_THROW(e) tbb::internal::suppress_unused_warning(e)
     #define __TBB_RETHROW() ((void)0)
 #endif /* !TBB_USE_EXCEPTIONS */
 
@@ -417,16 +423,23 @@ private:
 // Following is a set of classes and functions typically used in compile-time "metaprogramming".
 // TODO: move all that to a separate header
 
-#if __TBB_ALLOCATOR_TRAITS_PRESENT
-#include <memory> //for allocator_traits
+#if __TBB_ALLOCATOR_TRAITS_PRESENT || __TBB_CPP11_SMART_POINTERS_PRESENT
+#include <memory> // for allocator_traits, unique_ptr
 #endif
 
-#if __TBB_CPP11_RVALUE_REF_PRESENT || _LIBCPP_VERSION
-#include <utility> // for std::move
+#if __TBB_CPP11_RVALUE_REF_PRESENT || __TBB_CPP11_DECLTYPE_PRESENT || _LIBCPP_VERSION
+#include <utility> // for std::move, std::forward, std::declval
 #endif
 
 namespace tbb {
 namespace internal {
+
+#if __TBB_CPP11_SMART_POINTERS_PRESENT && __TBB_CPP11_RVALUE_REF_PRESENT && __TBB_CPP11_VARIADIC_TEMPLATES_PRESENT
+    template<typename T, typename... Args>
+    std::unique_ptr<T> make_unique(Args&&... args) {
+        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+    }
+#endif
 
 //! Class for determining type of std::allocator<T>::value_type.
 template<typename T>
@@ -495,7 +508,7 @@ T& forward( T& x ) { return x; }
 #define __TBB_PARAMETER_PACK ...
 #define __TBB_PACK_EXPANSION(A) A...
 #else
-#define __TBB_PARAMETER_PACK 
+#define __TBB_PARAMETER_PACK
 #define __TBB_PACK_EXPANSION(A) A
 #endif /* __TBB_CPP11_VARIADIC_TEMPLATES_PRESENT */
 
@@ -528,7 +541,7 @@ struct STATIC_ASSERTION_FAILED<true>; //intentionally left undefined to cause co
     enum {static_assert_on_line_##line = tbb::internal::STATIC_ASSERTION_FAILED<!(condition)>::value}
 
 #define __TBB_STATIC_ASSERT_IMPL(condition,msg,line) __TBB_STATIC_ASSERT_IMPL1(condition,msg,line)
-//! Verify at compile time that passed in condition is hold
+//! Verify condition, at compile time
 #define __TBB_STATIC_ASSERT(condition,msg) __TBB_STATIC_ASSERT_IMPL(condition,msg,__LINE__)
 #endif
 

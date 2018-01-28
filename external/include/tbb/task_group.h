@@ -1,21 +1,21 @@
 /*
-    Copyright 2005-2015 Intel Corporation.  All Rights Reserved.
+    Copyright (c) 2005-2017 Intel Corporation
 
-    This file is part of Threading Building Blocks. Threading Building Blocks is free software;
-    you can redistribute it and/or modify it under the terms of the GNU General Public License
-    version 2  as  published  by  the  Free Software Foundation.  Threading Building Blocks is
-    distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See  the GNU General Public License for more details.   You should have received a copy of
-    the  GNU General Public License along with Threading Building Blocks; if not, write to the
-    Free Software Foundation, Inc.,  51 Franklin St,  Fifth Floor,  Boston,  MA 02110-1301 USA
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    As a special exception,  you may use this file  as part of a free software library without
-    restriction.  Specifically,  if other files instantiate templates  or use macros or inline
-    functions from this file, or you compile this file and link it with other files to produce
-    an executable,  this file does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however invalidate any other
-    reasons why the executable file might be covered by the GNU General Public License.
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+
+
+
 */
 
 #ifndef __TBB_task_group_H
@@ -23,6 +23,7 @@
 
 #include "task.h"
 #include "tbb_exception.h"
+#include "internal/_template_helpers.h"
 
 #if __TBB_TASK_GROUP_CONTEXT
 
@@ -54,6 +55,9 @@ class task_handle : internal::no_assign {
     }
 public:
     task_handle( const F& f ) : my_func(f), my_state(0) {}
+#if __TBB_CPP11_RVALUE_REF_PRESENT
+    task_handle( F&& f ) : my_func( std::move(f)), my_state(0) {}
+#endif
 
     void operator() () const { my_func(); }
 };
@@ -69,7 +73,7 @@ namespace internal {
 template<typename F>
 class task_handle_task : public task {
     task_handle<F>& my_handle;
-    /*override*/ task* execute() {
+    task* execute() __TBB_override {
         my_handle();
         return NULL;
     }
@@ -95,9 +99,9 @@ protected:
         return wait();
     }
 
-    template<typename F, typename Task>
-    void internal_run( F& f ) {
-        owner().spawn( *new( owner().allocate_additional_child_of(*my_root) ) Task(f) );
+    template<typename Task, typename F>
+    void internal_run( __TBB_FORWARDING_REF(F) f ) {
+        owner().spawn( *new( owner().allocate_additional_child_of(*my_root) ) Task( internal::forward<F>(f) ));
     }
 
 public:
@@ -111,7 +115,7 @@ public:
     ~task_group_base() __TBB_NOEXCEPT(false) {
         if( my_root->ref_count() > 1 ) {
             bool stack_unwinding_in_progress = std::uncaught_exception();
-            // Always attempt to do proper cleanup to avoid inevitable memory corruption 
+            // Always attempt to do proper cleanup to avoid inevitable memory corruption
             // in case of missing wait (for the sake of better testability & debuggability)
             if ( !is_canceling() )
                 cancel();
@@ -132,7 +136,7 @@ public:
 
     template<typename F>
     void run( task_handle<F>& h ) {
-        internal_run< task_handle<F>, internal::task_handle_task<F> >( h );
+        internal_run< internal::task_handle_task<F> >( h );
     }
 
     task_group_status wait() {
@@ -168,22 +172,30 @@ public:
 #if __SUNPRO_CC
     template<typename F>
     void run( task_handle<F>& h ) {
-        internal_run< task_handle<F>, internal::task_handle_task<F> >( h );
+        internal_run< internal::task_handle_task<F> >( h );
     }
 #else
     using task_group_base::run;
 #endif
 
+#if __TBB_CPP11_RVALUE_REF_PRESENT
     template<typename F>
-    void run( const F& f ) {
-        internal_run< const F, internal::function_task<F> >( f );
+    void run( F&& f ) {
+        internal_run< internal::function_task< typename internal::strip<F>::type > >( std::forward< F >(f) );
     }
+#else
+    template<typename F>
+    void run(const F& f) {
+        internal_run<internal::function_task<F> >(f);
+    }
+#endif
 
     template<typename F>
     task_group_status run_and_wait( const F& f ) {
         return internal_run_and_wait<const F>( f );
     }
 
+    // TODO: add task_handle rvalues support
     template<typename F>
     task_group_status run_and_wait( task_handle<F>& h ) {
       h.mark_scheduled();
@@ -193,6 +205,7 @@ public:
 
 class structured_task_group : public internal::task_group_base {
 public:
+    // TODO: add task_handle rvalues support
     template<typename F>
     task_group_status run_and_wait ( task_handle<F>& h ) {
         h.mark_scheduled();
@@ -206,15 +219,22 @@ public:
     }
 }; // class structured_task_group
 
-inline 
+inline
 bool is_current_task_group_canceling() {
     return task::self().is_cancelled();
 }
 
+#if __TBB_CPP11_RVALUE_REF_PRESENT
+template<class F>
+task_handle< typename internal::strip<F>::type > make_task( F&& f ) {
+    return task_handle< typename internal::strip<F>::type >( std::forward<F>(f) );
+}
+#else
 template<class F>
 task_handle<F> make_task( const F& f ) {
     return task_handle<F>( f );
 }
+#endif /* __TBB_CPP11_RVALUE_REF_PRESENT */
 
 } // namespace tbb
 

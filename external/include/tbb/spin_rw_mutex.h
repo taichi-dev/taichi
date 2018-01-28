@@ -1,21 +1,21 @@
 /*
-    Copyright 2005-2015 Intel Corporation.  All Rights Reserved.
+    Copyright (c) 2005-2017 Intel Corporation
 
-    This file is part of Threading Building Blocks. Threading Building Blocks is free software;
-    you can redistribute it and/or modify it under the terms of the GNU General Public License
-    version 2  as  published  by  the  Free Software Foundation.  Threading Building Blocks is
-    distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See  the GNU General Public License for more details.   You should have received a copy of
-    the  GNU General Public License along with Threading Building Blocks; if not, write to the
-    Free Software Foundation, Inc.,  51 Franklin St,  Fifth Floor,  Boston,  MA 02110-1301 USA
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    As a special exception,  you may use this file  as part of a free software library without
-    restriction.  Specifically,  if other files instantiate templates  or use macros or inline
-    functions from this file, or you compile this file and link it with other files to produce
-    an executable,  this file does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however invalidate any other
-    reasons why the executable file might be covered by the GNU General Public License.
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+
+
+
 */
 
 #ifndef __TBB_spin_rw_mutex_H
@@ -130,13 +130,13 @@ public:
         //! Release lock.
         void release() {
             __TBB_ASSERT( mutex, "lock is not acquired" );
-            spin_rw_mutex *m = mutex; 
+            spin_rw_mutex *m = mutex;
             mutex = NULL;
 #if TBB_USE_THREADING_TOOLS||TBB_USE_ASSERT
             if( is_writer ) m->internal_release_writer();
             else            m->internal_release_reader();
 #else
-            if( is_writer ) __TBB_AtomicAND( &m->state, READERS ); 
+            if( is_writer ) __TBB_AtomicAND( &m->state, READERS );
             else            __TBB_FetchAndAddWrelease( &m->state, -(intptr_t)ONE_READER);
 #endif /* TBB_USE_THREADING_TOOLS||TBB_USE_ASSERT */
         }
@@ -158,10 +158,10 @@ public:
         bool try_acquire( spin_rw_mutex& m, bool write = true ) {
             __TBB_ASSERT( !mutex, "holding mutex already" );
             bool result;
-            is_writer = write; 
+            is_writer = write;
             result = write? m.internal_try_acquire_writer()
                           : m.internal_try_acquire_reader();
-            if( result ) 
+            if( result )
                 mutex = &m;
             return result;
         }
@@ -196,7 +196,7 @@ public:
         if( state&WRITER ) internal_release_writer();
         else               internal_release_reader();
 #else
-        if( state&WRITER ) __TBB_AtomicAND( &state, READERS ); 
+        if( state&WRITER ) __TBB_AtomicAND( &state, READERS );
         else               __TBB_FetchAndAddWrelease( &state, -(intptr_t)ONE_READER);
 #endif /* TBB_USE_THREADING_TOOLS||TBB_USE_ASSERT */
     }
@@ -243,7 +243,7 @@ namespace interface8 {
     ensure atomicity of the critical sections. In particular, it uses
     Intel(R) Transactional Synchronization Extensions (Intel(R) TSX).
     Without such HW support, it behaves like a spin_rw_mutex.
-    It should be used for locking short critical sections where the lock is 
+    It should be used for locking short critical sections where the lock is
     contended but the data it protects are not.
     @ingroup synchronization */
 #if __TBB_TSX_AVAILABLE

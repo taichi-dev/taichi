@@ -41,5 +41,6 @@ Please see [examples](https://github.com/yuanming-hu/taichi/tree/master/projects
  - [dcraw](https://www.cybercom.net/~dcoffin/dcraw/)
  - [Intel Embree](https://embree.github.io/)
  - [Intel TBB](https://www.threadingbuildingblocks.org/)
+ - [ffmpeg](https://www.ffmpeg.org/)
  
 Note that all of them are bundled in `taichi` (in source (header)/binary forms), and users do not have to manually install them.

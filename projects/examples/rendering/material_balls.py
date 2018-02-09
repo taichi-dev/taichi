@@ -6,7 +6,7 @@ from taichi.misc.util import *
 
 def create_scene():
   downsample = 1
-  width, height = 960 / downsample, 540 / downsample
+  width, height = 960 // downsample, 540 // downsample
   camera = tc.Camera(
       'thinlens',
       width=width,

@@ -4,8 +4,8 @@ import colorsys
 
 if __name__ == '__main__':
   downsample = 2
-  width = 960 / downsample
-  height = 540 / downsample
+  width = 960 // downsample
+  height = 540 // downsample
 
   scene = tc.Scene()
   with scene:

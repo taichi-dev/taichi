@@ -5,7 +5,7 @@ import taichi as tc
 
 def create_scene():
   downsample = 2
-  width, height = 800 / downsample, 800 / downsample
+  width, height = 800 // downsample, 800 // downsample
   camera = tc.Camera(
       'pinhole',
       res=(width, height),

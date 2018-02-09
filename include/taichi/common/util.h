@@ -62,9 +62,6 @@ class logger;
 #define DEBUG_TRIGGER
 #endif
 
-#define assert(x) \
-  { assert_info(x, ""); }
-
 #define assert_info(x, info)               \
   {                                        \
     bool ___ret___ = static_cast<bool>(x); \
@@ -73,7 +70,7 @@ class logger;
     }                                      \
   }
 
-#define TC_ASSERT assert
+#define TC_ASSERT(x) TC_ASSERT_INFO(x, #x)
 #define TC_ASSERT_INFO assert_info
 // TODO: this should be part of logging
 #define TC_NOT_IMPLEMENTED TC_ERROR("Not Implemented.");

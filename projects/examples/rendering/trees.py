@@ -4,16 +4,9 @@ import colorsys
 
 
 def create_tree(scene):
-  s = random.random() * 0.7 + 0.7
   translate = (random.random() * 0.4, 0, random.random() * 0.4)
   with tc.transform_scope(scale=(0.7, 0.7, 0.7), translate=translate):
     body_material = tc.SurfaceMaterial('pbr', diffuse=(1, 1, 1))
-    '''
-        scene.add_mesh(tc.Mesh(
-            tc.create_sphere((40, 40), True),
-            material=body_material,
-            scale=1.0, translate=(0, 1.3, 0)))
-        '''
     scene.add_mesh(
         tc.Mesh(
             'cube',
@@ -27,8 +20,6 @@ def create_tree(scene):
             scale=(0.6, 1.0, 0.6),
             translate=(0, 1.3, 0)))
 
-    #color = (0.46, 0.55, 0.63)
-
 
 if __name__ == '__main__':
   downsample = 1
@@ -39,8 +30,7 @@ if __name__ == '__main__':
   with scene:
     camera = tc.Camera(
         'pinhole',
-        width=width,
-        height=height,
+        res=(width, height),
         fov=4,
         origin=(200, 500, 700),
         look_at=(0, 0, 0),

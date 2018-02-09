@@ -44,7 +44,7 @@ class Particle:
 
 
 def create_scene(t):
-  width, height = 960 / downsample, 540 / downsample
+  width, height = 960 // downsample, 540 // downsample
   camera = tc.Camera(
       'thinlens',
       width=width,

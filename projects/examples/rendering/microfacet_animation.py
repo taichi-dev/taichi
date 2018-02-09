@@ -6,7 +6,7 @@ import colorsys
 
 def create_scene(t):
   downsample = 1
-  width, height = 960 / downsample, 540 / downsample
+  width, height = 960 // downsample, 540 // downsample
   camera = tc.Camera(
       'pinhole',
       width=width,

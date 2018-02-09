@@ -7,7 +7,7 @@ from taichi.visual.texture import Texture
 
 def create_taichi_scene(eye_position):
   downsample = 2
-  width, height = 960 / downsample, 540 / downsample
+  width, height = 960 // downsample, 540 // downsample
   camera = Camera(
       'pinhole',
       width=width,
@@ -59,8 +59,8 @@ def create_mpm_snow_block(fn):
   particles = tc_core.RenderParticles()
   assert particles.read(fn)
   downsample = 2
-  tex = Texture.from_render_particles((511 / downsample, 127 / downsample,
-                                       255 / downsample), particles) * 5
+  tex = Texture.from_render_particles((511 // downsample, 127 // downsample,
+                                       255 // downsample), particles) * 5
   mesh_transform = tc_core.Matrix4(1.0).scale(Vector(0.5, 0.5, 0.5)).translate(
       Vector(0.5, 0.5, 0.5))
   transform = tc_core.Matrix4(1.0).scale_s(2).scale(
@@ -79,7 +79,7 @@ def create_mpm_snow_block(fn):
 
 def create_snow_scene(frame):
   downsample = 1
-  width, height = 960 / downsample, 540 / downsample
+  width, height = 960 // downsample, 540 // downsample
   camera = Camera(
       'thinlens',
       width=width,

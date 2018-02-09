@@ -27,7 +27,7 @@ python3 $TAICHI_ROOT_DIR/taichi/python/examples/server/main.py
 Then open page http://localhost:1111. Choose a simulation output, press `P` to play, `R` to change frame rate (faster/slower).
 
 # Examples
-Please see [examples](https://github.com/yuanming-hu/taichi/tree/dev/python/examples).
+Please see [examples](https://github.com/yuanming-hu/taichi/tree/master/projects/examples).
 
 ## Acknowledgements
 

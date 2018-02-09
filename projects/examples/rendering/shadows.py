@@ -26,11 +26,9 @@ def create_taichi_text():
 
 def create_scene():
   downsample = 2
-  width, height = 1500 // downsample, 600 // downsample
   camera = tc.Camera(
       'pinhole',
-      width=width,
-      height=height,
+      res=(1500 // downsample, 600 // downsample),
       fov=30,
       origin=(0, 1, 20),
       look_at=(0, 2, 0),

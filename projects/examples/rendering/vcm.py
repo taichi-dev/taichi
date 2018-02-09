@@ -4,15 +4,13 @@ import colorsys
 
 if __name__ == '__main__':
   downsample = 2
-  width = 960 // downsample
-  height = 540 // downsample
+  res = 960 // downsample, 540 // downsample
 
   scene = tc.Scene()
   with scene:
     camera = tc.Camera(
         'pinhole',
-        width=width,
-        height=height,
+        res=res,
         fov=90,
         origin=(-5, 2, 0),
         look_at=(0, 1, 2),

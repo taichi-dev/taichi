@@ -7,11 +7,10 @@ import taichi as tc
 
 def create_scene():
   downsample = 1
-  width, height = 1280 // downsample, 720 // downsample
+  res = 1280 // downsample, 720 // downsample
   camera = Camera(
       'pinhole',
-      width=width,
-      height=height,
+      res=res,
       fov=30,
       origin=(4, 0, 15),
       look_at=(0, 0, 0),

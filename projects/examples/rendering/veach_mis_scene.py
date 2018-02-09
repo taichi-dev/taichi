@@ -11,11 +11,10 @@ def create_mis_scene(eye_position):
   num_plates = 5
   light_position = Vector(-0.5, 0)
   downsample = 1
-  width, height = 960 // downsample, 540 // downsample
+  res = 960 // downsample, 540 // downsample
   camera = Camera(
       'pinhole',
-      width=width,
-      height=height,
+      res=res,
       fov=70,
       origin=(0, eye_position.y, eye_position.x),
       look_at=(0, -0.3, 0),

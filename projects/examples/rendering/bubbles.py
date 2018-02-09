@@ -8,11 +8,10 @@ from taichi.visual.texture import Texture
 
 def create_scene():
   downsample = 1
-  width, height = 960 // downsample, 540 // downsample
+  res = 960 // downsample, 540 // downsample
   camera = Camera(
       'pinhole',
-      width=width,
-      height=height,
+      res=res,
       fov=20,
       origin=(0, 0, 30),
       look_at=(0, 0, 0),

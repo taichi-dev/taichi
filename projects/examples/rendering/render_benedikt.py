@@ -55,8 +55,7 @@ def load_scene(root, fov):
 
   camera = Camera(
       'pinhole',
-      width=width,
-      height=height,
+      res=(width, height),
       aspect_ratio=float(width) / height,
       fov=fov,
       origin=tuple(camera_node['transform']['position']),

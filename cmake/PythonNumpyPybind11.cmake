@@ -36,7 +36,7 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
         "import sys;\
         from distutils import sysconfig;\
-        sys.stdout.write(sysconfig.get_config_var('LIBDIR') or sysconfig.get_python_lib())"
+        sys.stdout.write((sysconfig.get_config_var('LIBDIR') or sysconfig.get_python_lib()).replace('\\\\','/'))"
         OUTPUT_VARIABLE PYTHON_LIBRARY_DIR)
 
 find_library(PYTHON_LIBRARY NAMES python${PYTHON_VERSION} python${PYTHON_VERSION}m PATHS ${PYTHON_LIBRARY_DIR}

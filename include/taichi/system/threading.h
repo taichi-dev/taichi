@@ -106,7 +106,8 @@ class PID {
 #ifdef _MSVC_LANG
     TC_NOT_IMPLEMENTED
 #else
-    return (int)getppid();
+    TC_NOT_IMPLEMENTED
+//    return (int)getppid();
 #endif
   }
 };

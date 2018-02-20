@@ -348,8 +348,13 @@ struct RigidBody {
     }
     TC_STATIC_ELSE {
 #ifdef _WIN64
+#ifdef _MSVC_LANG
       this->inv_inertia =
           inversed(id(inertia).cast<float64>()).cast<real>();
+#else
+      this->inv_inertia =
+          inversed(id(inertia).template cast<float64>()).template cast<real>();
+#endif
 #else
       this->inv_inertia =
           inversed(id(inertia).template cast<float64>()).template cast<real>();

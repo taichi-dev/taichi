@@ -12,15 +12,18 @@ matrix:
           - ubuntu-toolchain-r-test
         packages:
           - g++-6
-    env: CC=gcc-6 CXX=g++-6
+    env:
+      - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.5"
 
-#  - os: osx
-#    osx_image: xcode9
-#    env: PYTHON=3.6 CPP=14 CLANG
+  - os: osx
+    osx_image: xcode9
+    env:
+      - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.5"
 
-#services:
-#  - docker
-#before_install:
-#  - docker pull ubuntu:16.04
+before_install:
+  - eval "${MATRIX_EVAL}"
+  - echo $CXX
+  - echo $PYTHON
+
 script:
-  - python3 install.py
+  - $PYTHON install.py

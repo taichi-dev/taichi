@@ -1,6 +1,6 @@
 sudo: required
 
-language: generic
+language: cpp
 matrix:
   - os: linux
     env: PYTHON=3.5 CPP=11 GCC=6
@@ -10,7 +10,7 @@ matrix:
 
   - os: osx
     osx_image: xcode9
-    env: PYTHON=3.6 CPP=14 CLANG- os: linux
+    env: PYTHON=3.6 CPP=14 CLANG
 
 #services:
 #  - docker

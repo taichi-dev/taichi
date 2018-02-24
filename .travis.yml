@@ -6,7 +6,6 @@ language: cpp
 matrix:
   include:
   - os: linux
-    env: PYTHON=3.5 CPP=14 GCC=6
     addons:
       apt:
         sources:
@@ -14,11 +13,11 @@ matrix:
         packages:
           - g++-6
     env:
-      - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+      - CC=gcc-6 CXX=g++-6
 
-  - os: osx
-    osx_image: xcode9
-    env: PYTHON=3.6 CPP=14 CLANG
+#  - os: osx
+#    osx_image: xcode9
+#    env: PYTHON=3.6 CPP=14 CLANG
 
 #services:
 #  - docker

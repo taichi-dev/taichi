@@ -125,7 +125,7 @@ class Installer:
       execute_command('{} get-pip.py --user'.format(get_python_executable()))
       execute_command('rm get-pip.py')
 
-    execute_command('{} -m pip install colorama'.format(get_python_executable()))
+    execute_command('{} -m pip install colorama numpy'.format(get_python_executable()))
 
     execute_command('cmake --version')
     if get_os_name() == 'osx':

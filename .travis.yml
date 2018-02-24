@@ -21,15 +21,15 @@ matrix:
   - os: osx
     osx_image: xcode9
     env:
-      - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.5"
+      - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3"
 
 before_install:
   - eval "${MATRIX_EVAL}"
   - echo $CXX
   - echo $PYTHON
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install $PYTHON; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install $PYTHON; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository ppa:deadsnakes/ppa; sudo apt-get update; sudo apt-get install $PYTHON; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install $PYTHON; fi
 
 script:
   - $PYTHON install.py
-  
+

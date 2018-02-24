@@ -3,9 +3,21 @@ import pwd
 import sys
 import platform
 import argparse
-
+from os import environ
 
 # Utils
+
+def get_shell_name():
+  return environ['SHELL'].split('/')[-1]
+
+def get_shell_rc_name():
+  shell = get_shell_name()
+  if shell == 'bash':
+    return '~/.bashrc'
+  elif shell == 'zsh':
+    return '~/.zshrc'
+  else:
+    assert False, 'No shell rc file specified for shell "{}"'.format(shell)
 
 def get_username():
   if build_type == 'ci':
@@ -110,11 +122,13 @@ class Installer:
     self.detect_or_setup_repo()
 
 
+    def append_to_shell_rc(line):
+      execute_command('echo "{}" >> {}'.format(line, get_shell_rc_name()))
     #TODO: Make sure there is no existing Taichi ENV
-    execute_command('echo "export TAICHI_NUM_THREADS=8" >> ~/.bashrc')
-    execute_command('echo "export TAICHI_ROOT_DIR={}" >> ~/.bashrc'.format(self.root_dir))
-    execute_command('echo "export PYTHONPATH=\$TAICHI_ROOT_DIR/taichi/python/:\$PYTHONPATH" >> ~/.bashrc')
-    execute_command('echo "export PATH=\$TAICHI_ROOT_DIR/taichi/bin/:\$PATH" >> ~/.bashrc')
+    append_to_shell_rc("export TAICHI_NUM_THREADS=8")
+    append_to_shell_rc("export TAICHI_ROOT_DIR={}".format(self.root_dir))
+    append_to_shell_rc("export PYTHONPATH=\$TAICHI_ROOT_DIR/taichi/python/:\$PYTHONPATH")
+    append_to_shell_rc("export PATH=\$TAICHI_ROOT_DIR/taichi/bin/:\$PATH")
 
     os.environ['TAICHI_NUM_THREADS'] = '8'
     os.environ['TAICHI_ROOT_DIR'] = self.root_dir

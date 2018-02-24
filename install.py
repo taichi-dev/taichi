@@ -102,7 +102,7 @@ class Installer:
       self.root_dir = os.curdir()
       execute_command('git clone https://github.com/yuanming-hu/taichi.git')
       os.chdir('taichi')
-      execute_command('git clone https://github.com/yuanming-hu/taichi_runtime external/lib')
+      execute_command('git clone https://github.com/yuanming-hu/taichi_runtime external/lib -b {} -depth 1'.format(get_os_name()))
 
   def run(self):
     assert get_os_name() in ['linux', 'osx', 'win'], \

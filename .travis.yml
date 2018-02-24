@@ -27,7 +27,7 @@ before_install:
   - eval "${MATRIX_EVAL}"
   - echo $CXX
   - echo $PYTHON
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository ppa:deadsnakes/ppa; sudo apt-get update; sudo apt-get install $PYTHON; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:deadsnakes/ppa; sudo apt-get update; sudo apt-get install $PYTHON; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install $PYTHON; fi
 
 script:

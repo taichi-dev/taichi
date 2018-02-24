@@ -19,6 +19,59 @@
 #include <memory>
 #include <csignal>
 
+
+//******************************************************************************
+//                                 System State
+//******************************************************************************
+
+
+// Reference:
+// https://blog.kowalczyk.info/article/j/guide-to-predefined-macros-in-c-compilers-gcc-clang-msvc-etc..html
+
+// Platforms
+
+// Windows
+#if defined(_WIN64)
+#define TC_PLATFORM_WINDOWS
+#endif
+
+#if defined(_WIN32) && !defined(_WIN64)
+static_assert(false, "32-bit Windows systems are not supported")
+#endif
+
+// Linux
+#if defined(__linux__)
+#define TC_PLATFORM_LINUX
+#endif
+
+// OSX
+#if defined(__APPLE__)
+#define TC_PLATFORM_OSX
+#endif
+
+// Compilers
+
+// MSVC
+#if defined(_MSC_VER)
+#define TC_COMPILER_MSVC
+#endif
+
+// MINGW
+#if defined(__MINGW64__)
+#define TC_COMPILER_MINGW
+#endif
+
+// gcc
+#if defined(__GNUC__)
+#define TC_COMPILER__GCC
+#endif
+
+// clang
+#if defined(__clang__)
+#define TC_COMPILER_CLANG
+#endif
+
+
 namespace spdlog {
 class logger;
 }

@@ -103,11 +103,11 @@ class PID {
 #endif
   }
   static int get_parent_pid() {
-#ifdef _MSVC_LANG
+#if defined(TC_PLATFORM_WINDOWS)
     TC_NOT_IMPLEMENTED
+    return -1;
 #else
-    TC_NOT_IMPLEMENTED
-//    return (int)getppid();
+    return (int)getppid();
 #endif
   }
 };

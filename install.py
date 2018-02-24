@@ -1,3 +1,5 @@
+print("Taichi Installer v0.1")
+
 import os
 import pwd
 import sys

@@ -8,6 +8,7 @@ import subprocess
 
 if sys.version_info[0] < 3 or sys.version_info[1] < 5:
   print("\nPlease restart with python3. \n(Taichi supports Python 3.5+)\n")
+  print("Current version:", sys.version_info)
   exit(-1)
 
 try:

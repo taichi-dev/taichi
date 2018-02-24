@@ -2,6 +2,7 @@ sudo: required
 
 language: cpp
 matrix:
+  include:
   - os: linux
     env: PYTHON=3.5 CPP=11 GCC=6
 

@@ -114,8 +114,10 @@ class Installer:
     check_command_existence('wget')
     try:
       import pip
+      print('pip3 installation detected')
     except Exception as e:
       print(e)
+      print('Installing pip3')
       execute_command('wget https://bootstrap.pypa.io/get-pip.py')
       execute_command('python3 get-pip.py --user')
       execute_command('rm get-pip.py')

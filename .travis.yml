@@ -18,4 +18,4 @@ matrix:
 #before_install:
 #  - docker pull ubuntu:16.04
 script:
-  - python3 install.py
+  - python3 install.py 2>&1

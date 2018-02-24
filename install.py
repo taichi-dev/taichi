@@ -10,7 +10,7 @@ from os import environ
 # Utils
 
 def get_python_executable():
-  return sys.executable()
+  return sys.executable
 
 def get_shell_name():
   return environ['SHELL'].split('/')[-1]

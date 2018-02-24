@@ -17,7 +17,7 @@ except Exception as e:
 
 required_packages = [
     'numpy', ('Pillow', 'PIL'), 'scipy', 'pybind11', 'flask', 'flask_cors',
-    ('GitPython', 'git'), 'yapf', 'colorama'
+    ('GitPython', 'git'), 'yapf', 'colorama', 'pyglet'
 ]
 
 

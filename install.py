@@ -3,6 +3,8 @@ import pwd
 import sys
 import platform
 
+build_type = None
+
 def execute_command(line):
   print(line)
   return os.system(line)
@@ -20,9 +22,41 @@ def get_os_name():
     return 'linux'
   assert False, "Unknown platform name %s" % name
 
-if __name__ == '__main__':
-  assert get_os_name() in ['linux', 'darwin'],\
+def get_default_directory_name():
+  os = get_os_name()
+  if os == 'linux':
+    return '/home/{}/'.format(username)
+  elif os == 'osx':
+    return '/Users/{}/'.format(username)
+  else:
+    assert 'Unsupported OS: {}'.format(os)
+
+
+
+def setup_repo():
+  root_directory = os.path.abspath(os.path.dirname(sys.argv[0]))
+  print("Root directory:", root_directory)
+
+  if os.path.exists(os.path.join(root_directory, 'include', 'taichi')):
+    print("Taichi source detected.")
+  else:
+    print("Cloning taichi from github...")
+    os.chdir('/home/{}/'.format(username))
+    execute_command('mkdir -p repos')
+    os.chdir('repos')
+    if os.path.exists('taichi'):
+      print('Please remove original taichi installation in ~/repos/')
+      exit(-1)
+    execute_command('git clone https://github.com/yuanming-hu/taichi.git')
+    os.chdir('taichi')
+    execute_command('git clone https://github.com/yuanming-hu/taichi_runtime external/lib')
+
+  return root_directory
+
+def install_taichi():
+  assert get_os_name() in ['linux', 'osx'], \
     'Platform {} is not currently supported by this script. Please install manually.'.format(get_os_name())
+  global build_type
   if len(sys.argv) > 1:
     build_type = sys.argv[1]
     print('Build type: ', build_type)
@@ -39,6 +73,7 @@ if __name__ == '__main__':
   else:
     username = pwd.getpwuid(os.getuid())[0]
 
+  check_command_existence('wget')
   try:
     import pip
   except Exception as e:
@@ -46,17 +81,20 @@ if __name__ == '__main__':
     execute_command('wget https://bootstrap.pypa.io/get-pip.py')
     execute_command('python3 get-pip.py --user')
     execute_command('rm get-pip.py')
-  execute_command('sudo apt-get update')
-  execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ python3-tk ffmpeg')
-  os.chdir('/home/{}/'.format(username))
-  execute_command('mkdir -p repos')
-  os.chdir('repos')
-  if os.path.exists('taichi'):
-    print('Please remove original taichi installation in ~/repos/')
-    exit(-1)
-  execute_command('git clone https://github.com/yuanming-hu/taichi.git')
-  os.chdir('taichi')
-  execute_command('git clone https://github.com/yuanming-hu/taichi_runtime external/lib')
+
+  if get_os_name() == 'osx':
+    # Check command existence
+    check_command_existence('git')
+    check_command_existence('cmake')
+    check_command_existence('python3')
+    # TODO: ship ffmpeg
+    #check_command_existence('ffmpeg')
+  else:
+    execute_command('sudo apt-get update')
+    execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ python3-tk ffmpeg')
+
+  root_directory = setup_repo()
+
 
   #TODO: Make sure there is no existing Taichi ENV
   taichi_root_dir = "/home/{}/repos/".format(username)
@@ -85,3 +123,6 @@ if __name__ == '__main__':
   else:
     print('  Error: installation failed.')
     exit(-1)
+
+if __name__ == '__main__':
+  install_taichi()

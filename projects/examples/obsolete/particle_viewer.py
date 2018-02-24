@@ -7,6 +7,7 @@ from taichi.visual.camera import Camera
 from taichi.visual.particle_renderer import ParticleRenderer
 from taichi.gui.image_viewer import show_image
 
+width, height = 960, 540
 
 class ParticleViewer:
 
@@ -59,13 +60,11 @@ def get_camera(t):
       look_at=(0, 0, 0),
       up=(0, 1, 0),
       fov=90,
-      width=width,
-      height=height)
+      res=(width, height))
   return camera
 
 
 if __name__ == '__main__':
-  width, height = 960, 540
   viewer = ParticleViewer('snow-taichi-g10', width, height)
   radius = 350
   framerate = 3

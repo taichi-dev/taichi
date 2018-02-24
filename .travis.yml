@@ -4,10 +4,10 @@ language: cpp
 matrix:
   include:
   - os: linux
-    env: PYTHON=3.5 CPP=11 GCC=6
+    env: PYTHON=3.5 CPP=14 GCC=6
 
   - os: linux
-    env: PYTHON=3.5 CPP=11 GCC=7
+    env: PYTHON=3.5 CPP=14 GCC=7
 
   - os: osx
     osx_image: xcode9

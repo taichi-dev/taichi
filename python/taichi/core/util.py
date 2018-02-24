@@ -115,11 +115,12 @@ def build():
     pass
   os.chdir(bin_dir)
 
+  flags = ' -DPYTHON_EXECUTABLE:FILEPATH={}'.format(sys.executable)
+
   if os.environ.get('TC_CI', '') == '1':
     print('  Note: building for CI. SIMD disabled.')
-    cmake_ret = os.system('cmake .. -DTC_DISABLE_SIMD:BOOL=1')
-  else:
-    cmake_ret = os.system('cmake ..')
+    flags += ' -DTC_DISABLE_SIMD:BOOL=1'
+  cmake_ret = os.system('cmake .. ' + flags)
   if cmake_ret != 0:
     print('  Error: CMake failed.')
     exit(-1)

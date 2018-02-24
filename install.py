@@ -54,6 +54,17 @@ def get_default_directory_name():
   else:
     assert False, 'Unsupported OS: {}'.format(os)
 
+def append_to_shell_rc(line):
+  execute_command('echo "{}" >> {}'.format(line, get_shell_rc_name()))
+
+def set_env(key, val, val_now=None):
+  if val_now is None:
+    val_now = val
+  val = str(val)
+  val_now = str(val_now)
+  append_to_shell_rc("export {}={}".format(key, val))
+  os.environ[key] = val_now
+
 
 # (Stateful) Installer class
 
@@ -122,23 +133,19 @@ class Installer:
     self.detect_or_setup_repo()
 
 
-    def append_to_shell_rc(line):
-      execute_command('echo "{}" >> {}'.format(line, get_shell_rc_name()))
     #TODO: Make sure there is no existing Taichi ENV
-    append_to_shell_rc("export TAICHI_NUM_THREADS=8")
-    append_to_shell_rc("export TAICHI_ROOT_DIR={}".format(self.root_dir))
-    append_to_shell_rc("export PYTHONPATH=\$TAICHI_ROOT_DIR/taichi/python/:\$PYTHONPATH")
-    append_to_shell_rc("export PATH=\$TAICHI_ROOT_DIR/taichi/bin/:\$PATH")
+    set_env('TAICHI_NUM_THREADS', 8)
+    set_env('TAICHI_ROOT_DIR', self.root_dir)
 
-    os.environ['TAICHI_NUM_THREADS'] = '8'
-    os.environ['TAICHI_ROOT_DIR'] = self.root_dir
-    os.environ['PYTHONPATH'] = '{}/taichi/python/:'.format(self.root_dir) + os.environ.get('PYTHONPATH', '')
-    os.environ['PATH'] = os.path.join(self.root_dir, 'taichi/bin') + ':' + os.environ.get('PATH', '')
+    set_env('PYTHONPATH', '$TAICHI_ROOT_DIR/taichi/python/:$PYTHONPATH',
+            '{}/taichi/python/:'.format(self.root_dir) + os.environ.get('PYTHONPATH', ''))
+    set_env('PATH', '$TAICHI_ROOT_DIR/taichi/bin/:$PATH', os.path.join(self.root_dir, 'taichi/bin') + ':' + os.environ.get('PATH', ''))
+
     os.environ['PYTHONIOENCODING'] = 'utf-8'
-
     print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
 
-    if execute_command('echo $PYTHONPATH; python3 -c "import taichi as tc"') == 0:
+    execute_command('echo $PYTHONPATH')
+    if execute_command('python3 -c "import taichi as tc"') == 0:
       if execute_command('ti') != 0:
         print('  Warning: shortcut "ti" does not work.')
       if execute_command('taichi') != 0:

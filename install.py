@@ -134,7 +134,10 @@ class Installer:
     else:
       check_command_existence('sudo')
       execute_command('sudo apt-get update')
-      execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ python3-tk')
+      if build_type == 'ci':
+        execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ python3-tk')
+      else:
+        execute_command('sudo apt-get install -y python3-dev python3-tk')
 
     self.detect_or_setup_repo()
 

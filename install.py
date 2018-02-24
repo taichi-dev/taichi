@@ -4,6 +4,7 @@ import os
 import sys
 import platform
 import argparse
+import subprocess
 from os import environ
 
 # Utils
@@ -165,7 +166,10 @@ class Installer:
 
     execute_command('echo $PYTHONPATH')
 
-    if execute_command('"{}" -c "import taichi as tc"'.format(get_python_executable())) == 0:
+    def test_taichi():
+      return subprocess.run([get_python_executable(), "-c", "import taichi as tc"]).returncode
+
+    if test_taichi() == 0:
       if execute_command('ti') != 0:
         print('  Warning: shortcut "ti" does not work.')
       if execute_command('taichi') != 0:

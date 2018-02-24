@@ -6,7 +6,7 @@ import platform
 build_type = None
 
 def execute_command(line):
-  print(line)
+  print('Executing command:', line)
   return os.system(line)
 
 def check_command_existence(cmd):
@@ -24,14 +24,13 @@ def get_os_name():
 
 def get_default_directory_name():
   os = get_os_name()
+  username = get_username()
   if os == 'linux':
     return '/home/{}/'.format(username)
   elif os == 'osx':
     return '/Users/{}/'.format(username)
   else:
-    assert 'Unsupported OS: {}'.format(os)
-
-
+    assert False, 'Unsupported OS: {}'.format(os)
 
 def setup_repo():
   root_directory = os.path.abspath(os.path.dirname(sys.argv[0]))
@@ -41,7 +40,7 @@ def setup_repo():
     print("Taichi source detected.")
   else:
     print("Cloning taichi from github...")
-    os.chdir('/home/{}/'.format(username))
+    os.chdir(get_default_directory_name())
     execute_command('mkdir -p repos')
     os.chdir('repos')
     if os.path.exists('taichi'):
@@ -52,6 +51,14 @@ def setup_repo():
     execute_command('git clone https://github.com/yuanming-hu/taichi_runtime external/lib')
 
   return root_directory
+
+def get_username():
+  if build_type == 'ci':
+    os.environ['TC_CI'] = '1'
+    username = 'travis'
+  else:
+    username = pwd.getpwuid(os.getuid())[0]
+  return username
 
 def install_taichi():
   assert get_os_name() in ['linux', 'osx'], \
@@ -67,11 +74,7 @@ def install_taichi():
 
   assert build_type in ['default', 'ci']
 
-  if build_type == 'ci':
-    os.environ['TC_CI'] = '1'
-    username = 'travis'
-  else:
-    username = pwd.getpwuid(os.getuid())[0]
+  username = get_username()
 
   check_command_existence('wget')
   try:
@@ -90,6 +93,7 @@ def install_taichi():
     # TODO: ship ffmpeg
     #check_command_existence('ffmpeg')
   else:
+    check_command_existence('sudo')
     execute_command('sudo apt-get update')
     execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ python3-tk ffmpeg')
 

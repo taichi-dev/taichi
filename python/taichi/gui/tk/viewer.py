@@ -1,5 +1,8 @@
 import sys
-import tkinter as tk
+try:
+  import tkinter as tk
+except Exception as e:
+  print(e)
 
 try:
   from PIL import Image

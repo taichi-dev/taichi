@@ -82,7 +82,7 @@ class Installer:
 
     if os.path.exists(os.path.join(cwd, 'include', 'taichi')):
       print("Taichi source detected.")
-      self.root_dir = cwd
+      self.root_dir = os.path.abspath(os.path.join(cwd, '..'))
     else:
       print("Cloning taichi from github...")
       os.chdir(get_default_directory_name())

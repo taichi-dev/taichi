@@ -9,6 +9,9 @@ from os import environ
 
 # Utils
 
+def get_python_executable():
+  return sys.executable()
+
 def get_shell_name():
   return environ['SHELL'].split('/')[-1]
 
@@ -119,7 +122,7 @@ class Installer:
       print(e)
       print('Installing pip3')
       execute_command('wget https://bootstrap.pypa.io/get-pip.py')
-      execute_command('python3 get-pip.py --user')
+      execute_command('{} get-pip.py --user'.format(get_python_executable()))
       execute_command('rm get-pip.py')
 
 
@@ -128,7 +131,6 @@ class Installer:
       # Check command existence
       check_command_existence('git')
       check_command_existence('cmake')
-      check_command_existence('python3')
       # TODO: ship ffmpeg
       #check_command_existence('ffmpeg')
     else:
@@ -154,7 +156,7 @@ class Installer:
     print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
 
     execute_command('echo $PYTHONPATH')
-    if execute_command('python3 -c "import taichi as tc"') == 0:
+    if execute_command('{} -c "import taichi as tc"'.format(get_python_executable())) == 0:
       if execute_command('ti') != 0:
         print('  Warning: shortcut "ti" does not work.')
       if execute_command('taichi') != 0:

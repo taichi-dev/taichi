@@ -1,11 +1,20 @@
 sudo: required
 
 language: generic
-services:
-  - docker
+matrix:
+  - os: linux
+    env: PYTHON=3.5 CPP=11 GCC=6
 
-before_install:
-  - docker pull ubuntu:16.04
+  - os: linux
+    env: PYTHON=3.5 CPP=11 GCC=7
 
+  - os: osx
+    osx_image: xcode9
+    env: PYTHON=3.6 CPP=14 CLANG- os: linux
+
+#services:
+#  - docker
+#before_install:
+#  - docker pull ubuntu:16.04
 script:
-  - docker build . 
+  - python3 install.py

@@ -2,6 +2,9 @@ sudo: required
 
 # TODO: gcc 5, 7
 
+git:
+  depth: 1
+
 language: cpp
 matrix:
   include:
@@ -24,6 +27,9 @@ before_install:
   - eval "${MATRIX_EVAL}"
   - echo $CXX
   - echo $PYTHON
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install $PYTHON; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install $PYTHON; fi
 
 script:
   - $PYTHON install.py
+  

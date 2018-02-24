@@ -1,7 +1,6 @@
 print("Taichi Installer v0.1")
 
 import os
-import pwd
 import sys
 import platform
 import argparse
@@ -10,7 +9,7 @@ from os import environ
 # Utils
 
 def get_python_executable():
-  return sys.executable
+  return sys.executable.replace('\\','/')
 
 def get_shell_name():
   return environ['SHELL'].split('/')[-1]
@@ -29,6 +28,8 @@ def get_username():
     os.environ['TC_CI'] = '1'
     username = 'travis'
   else:
+    assert get_os_name() != 'win'
+    import pwd
     username = pwd.getpwuid(os.getuid())[0]
   return username
 
@@ -60,7 +61,10 @@ def get_default_directory_name():
     assert False, 'Unsupported OS: {}'.format(os)
 
 def append_to_shell_rc(line):
-  execute_command('echo "{}" >> {}'.format(line, get_shell_rc_name()))
+  if get_os_name() != 'win':
+    execute_command('echo "{}" >> {}'.format(line, get_shell_rc_name()))
+  else:
+    print("Warning: Windows environment variable persistent edits are not supported")
 
 def set_env(key, val, val_now=None):
   if val_now is None:
@@ -101,7 +105,7 @@ class Installer:
       execute_command('git clone https://github.com/yuanming-hu/taichi_runtime external/lib')
 
   def run(self):
-    assert get_os_name() in ['linux', 'osx'], \
+    assert get_os_name() in ['linux', 'osx', 'win'], \
       'Platform {} is not currently supported by this script. Please install manually.'.format(get_os_name())
     global build_type
     if len(sys.argv) > 1:
@@ -157,7 +161,8 @@ class Installer:
     print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
 
     execute_command('echo $PYTHONPATH')
-    if execute_command('{} -c "import taichi as tc"'.format(get_python_executable())) == 0:
+
+    if execute_command('"{}" -c "import taichi as tc"'.format(get_python_executable())) == 0:
       if execute_command('ti') != 0:
         print('  Warning: shortcut "ti" does not work.')
       if execute_command('taichi') != 0:

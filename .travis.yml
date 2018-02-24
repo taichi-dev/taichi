@@ -1,13 +1,20 @@
 sudo: required
 
+# TODO: gcc 5, 7
+
 language: cpp
 matrix:
   include:
   - os: linux
     env: PYTHON=3.5 CPP=14 GCC=6
-
-  - os: linux
-    env: PYTHON=3.5 CPP=14 GCC=7
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - g++-6
+    env:
+      - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
 
   - os: osx
     osx_image: xcode9

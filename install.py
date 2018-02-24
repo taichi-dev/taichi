@@ -122,6 +122,8 @@ class Installer:
       execute_command('python3 get-pip.py --user')
       execute_command('rm get-pip.py')
 
+
+    execute_command('cmake --version')
     if get_os_name() == 'osx':
       # Check command existence
       check_command_existence('git')

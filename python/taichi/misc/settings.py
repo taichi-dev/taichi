@@ -40,7 +40,7 @@ def get_bin_directory():
 
 def get_output_directory():
   return os.environ.get('TAICHI_OUTPUT_DIR',
-                        os.path.join(get_root_directory(), 'taichi_outputs'))
+                        os.path.join(get_root_directory(), 'taichi/taichi_outputs'))
 
 
 def get_output_path(path, create=False):

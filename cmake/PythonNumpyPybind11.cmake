@@ -44,6 +44,7 @@ find_library(PYTHON_LIBRARY NAMES python${PYTHON_VERSION} python${PYTHON_VERSION
 set(PYTHON_LIBRARIES ${PYTHON_LIBRARY})
 
 if (WIN32)
+  link_directories(${PYTHON_LIBRARY_DIR}/../../libs)
   set(PYTHON_LIBRARIES ${PYTHON_LIBRARY_DIR}/../../libs/python3.lib)
 else()
   find_library(PYTHON_LIBRARY NAMES python${PYTHON_VERSION} python${PYTHON_VERSION}m PATHS ${PYTHON_LIBRARY_DIR}

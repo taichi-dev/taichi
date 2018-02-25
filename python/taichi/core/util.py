@@ -190,16 +190,9 @@ elif get_os_name() == 'win':
   if CREATE_SAND_BOX_ON_WINDOWS:
     # Create a sandbox for separated core lib development and loading
     dir = os.path.join(get_output_directory(), 'tmp', get_unique_task_id())
+
+    os.environ['PATH'] += ';' + (os.path.join(get_root_directory(), 'taichi', 'external', 'lib'))
     os.makedirs(dir)
-    '''
-        for fn in os.listdir(bin_dir):
-            if fn.endswith('.dll') and fn != 'taichi_core.dll':
-                print dir + fn, bin_dir + fn
-                # Why can we create symbolic links....
-                # if not ctypes.windll.kernel32.CreateSymbolicLinkW(bin_dir + fn, dir + fn, 0):
-                #    raise OSError
-                shutil.copy(bin_dir + fn, dir + fn)
-        '''
     shutil.copy(dll_path, os.path.join(dir, 'taichi_core.pyd'))
     sys.path.append(dir)
   else:

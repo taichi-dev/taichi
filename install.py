@@ -119,7 +119,12 @@ class Installer:
       print('Existing taichi runtimes detected.')
     else:
       print('Fetching taichi runtimes...')
-      execute_command('git clone https://github.com/yuanming-hu/taichi_runtime taichi/external/lib -b {} --depth 1'.format(get_os_name()))
+      if get_os_name() == 'win':
+        # On Windows, both MSVC and MinGW are supported. Assuming MSVC here
+        # TODO: MinGW
+        execute_command('git clone https://github.com/yuanming-hu/taichi_runtime external/lib -b msvc --depth 1'.format(get_os_name()))
+      else:
+        execute_command('git clone https://github.com/yuanming-hu/taichi_runtime external/lib -b {} --depth 1'.format(get_os_name()))
 
   def run(self):
     assert get_os_name() in ['linux', 'osx', 'win'], \

@@ -16,14 +16,14 @@ with Python.
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/paper-cut.png)
 
 # Installation
+python 3.5+ is required.
 ```
 wget https://raw.githubusercontent.com/yuanming-hu/taichi/master/install.py && python3 install.py
 ```
-
 Suppoprted Platforms (open an issue if you find the script fails):
- - Linux with gcc 5+ and python 3.5+
- - Mac OS X (gcc, clang)
- - Windows (MSVS 2015+ and MINGW 64)
+ - Ubuntu (gcc 5+)
+ - Mac OS X (gcc 5+, clang 4.0+)
+ - Windows (Microsoft Visual Studio 2017)
 
 # View results
 ```

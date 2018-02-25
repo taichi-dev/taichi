@@ -63,11 +63,11 @@ def get_os_name():
   assert False, "Unknown platform name %s" % name
 
 def get_default_directory_name():
-  os = get_os_name()
-  if os == 'linux':
+  osname = get_os_name()
+  if osname == 'linux':
     username = get_username()
     return '/home/{}/'.format(username)
-  elif os == 'osx':
+  elif osname == 'osx':
     username = get_username()
     return '/Users/{}/'.format(username)
   else:

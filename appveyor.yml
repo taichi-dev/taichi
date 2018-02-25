@@ -18,7 +18,7 @@ version: 0.0.{build}-{branch}
 image: Visual Studio 2015
 
 # environment variables
-environment:
+# environment:
 
 # clone directory
 clone_folder: C:\repos\taichi

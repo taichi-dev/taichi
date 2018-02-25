@@ -22,7 +22,7 @@ environment:
   
   
   matrix:
-    - PYTHON_ROOT_DIR: "C:\\Python3.5-x64"
+    - PYTHON_ROOT_DIR: "C:\\Python35-x64"
       PYTHON_VERSION: "3.5.x"
       PYTHON_ARCH: "64"
 

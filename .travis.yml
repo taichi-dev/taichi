@@ -1,7 +1,7 @@
 sudo: required
 
 git:
-  depth: 1
+  depth: 50
 
 language: cpp
 matrix:

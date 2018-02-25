@@ -26,8 +26,14 @@ required_packages = [
 ]
 
 
+def is_ci():
+  return os.environ.get('TC_CI', '') == '1'
+
 def install_package(pkg):
-  pip.main(['install', '--user', pkg])
+  if is_ci():
+    pip.main(['install', pkg])
+  else:
+    pip.main(['install', '--user', pkg])
 
 
 def check_for_packages():
@@ -120,7 +126,7 @@ def build():
   flags = ' -DPYTHON_EXECUTABLE:FILEPATH="{}"'.format(sys.executable)
 
   print('Running cmake...')
-  if os.environ.get('TC_CI', '') == '1':
+  if is_ci():
     print('  Note: building for CI. SIMD disabled.')
     flags += ' -DTC_DISABLE_SIMD:BOOL=1'
   if get_os_name() == 'win':

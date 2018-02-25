@@ -3,7 +3,7 @@ print("* Taichi Installer")
 import os
 import sys
 import platform
-import argparse
+#import argparse
 import subprocess
 from os import environ
 import platform
@@ -105,8 +105,8 @@ def test_installation():
 
 class Installer:
   def __init__(self):
-    parser = argparse.ArgumentParser()
-    parser.parse_args()
+    #parser = argparse.ArgumentParser()
+    #parser.parse_args()
     self.build_type = None
 
   def detect_or_setup_repo(self):

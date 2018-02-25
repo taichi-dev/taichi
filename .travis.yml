@@ -16,7 +16,6 @@ matrix:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3"
 
   - os: linux
-    compiler: gcc
     dist: trusty
     addons:
       apt:
@@ -26,7 +25,6 @@ matrix:
       - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5 && PYTHON=python3.5"
 
   - os: linux
-    compiler: gcc
     dist: trusty
     addons: &gcc6
       apt:

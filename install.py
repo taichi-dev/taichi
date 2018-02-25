@@ -63,6 +63,7 @@ def get_os_name():
   assert False, "Unknown platform name %s" % name
 
 def get_default_directory_name():
+  '''
   osname = get_os_name()
   if osname == 'linux':
     username = get_username()
@@ -73,6 +74,8 @@ def get_default_directory_name():
   else:
     #Windows
     return os.getcwd()
+  '''
+  return os.getcwd()
 
 def append_to_shell_rc(line):
   if get_os_name() != 'win':
@@ -161,7 +164,9 @@ class Installer:
       subprocess.run([get_python_executable(), "get-pip.py", "--user"])
       execute_command('rm get-pip.py')
 
-    subprocess.run([get_python_executable(), "-m", "pip", "install", "colorama", "numpy", "Pillow", "flask", "scipy", "pybind11", "flask_cors", "GitPython", "yapf", "pyglet", "PyQt5"])
+    subprocess.run([get_python_executable(), "-m", "pip", "install", "--user",
+                    "colorama", "numpy", "Pillow", "flask", "scipy", "pybind11",
+                    "flask_cors", "GitPython", "yapf", "pyglet", "PyQt5"])
     print("importing numpy test:")
     ret = subprocess.run([get_python_executable(), "-c", "import numpy as np"])
     print("ret:", ret)

@@ -30,11 +30,7 @@ def is_ci():
   return os.environ.get('TC_CI', '') == '1'
 
 def install_package(pkg):
-  if is_ci():
-    #pip.main(['install', pkg])
-    pip.main(['install', '--user', pkg])
-  else:
-    pip.main(['install', '--user', pkg])
+  pip.main(['install', '--user', pkg])
 
 
 def check_for_packages():
@@ -108,7 +104,7 @@ def format():
   print('* Done!')
 
 
-from taichi.misc.settings import get_output_directory, get_build_directory, get_bin_directory, get_root_directory
+from taichi.misc.settings import get_output_directory, get_build_directory, get_bin_directory, get_root_directory, get_runtime_directory
 from taichi.misc.util import get_os_name, get_unique_task_id
 
 CREATE_SAND_BOX_ON_WINDOWS = True
@@ -153,6 +149,7 @@ def build():
 
 if get_os_name() == 'osx':
   bin_dir = get_bin_directory()
+  os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = get_runtime_directory()
   if not os.path.exists(os.path.join(bin_dir, 'libtaichi_core.dylib')):
     build()
   tmp_cwd = os.getcwd()

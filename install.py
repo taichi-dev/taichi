@@ -94,6 +94,10 @@ def get_path_separator():
   else:
     return ':'
 
+def test_installation():
+  return subprocess.run([get_python_executable(), "-c", "import taichi as tc"]).returncode == 0
+
+
 # (Stateful) Installer class
 
 class Installer:
@@ -116,7 +120,7 @@ class Installer:
       execute_command('mkdir {}'.format(self.root_dir))
       if os.path.exists('taichi'):
         print('Existing taichi installation detected.')
-        print('Please remove original taichi installation in {}'.format(self.root_dir))
+        print('Please remove existing taichi installation in {}'.format(self.root_dir))
         exit(-1)
       self.root_dir = os.getcwd()
       execute_command('git clone https://github.com/yuanming-hu/taichi.git')
@@ -194,18 +198,16 @@ class Installer:
 
     execute_command('echo $PYTHONPATH')
 
-    def test_taichi():
-      return subprocess.run([get_python_executable(), "-c", "import taichi as tc"]).returncode
-
-    if test_taichi() == 0:
-      if execute_command('ti') != 0:
-        print('  Warning: shortcut "ti" does not work.')
-      if execute_command('taichi') != 0:
-        print('  Warning: shortcut "taichi" does not work.')
-      print('  Successfully Installed Taichi at ~/repos/taichi.')
-      print('  Please execute')
-      print('    source ~/.bashrc')
-      print('  or restart your terminal.')
+    if test_installation():
+      print('  Successfully Installed Taichi at {}.'.format(self.root_dir))
+      if get_os_name() != 'win':
+        if execute_command('ti') != 0:
+          print('  Warning: shortcut "ti" does not work.')
+        if execute_command('taichi') != 0:
+          print('  Warning: shortcut "taichi" does not work.')
+        print('  Please execute')
+        print('    source ~/.bashrc')
+        print('  or restart your terminal.')
     else:
       print('  Error: installation failed.')
       exit(-1)

@@ -88,6 +88,11 @@ def set_env(key, val, val_now=None):
   append_to_shell_rc("export {}={}".format(key, val))
   os.environ[key] = val_now
 
+def get_path_separator():
+  if get_os_name() == 'win':
+    return ';'
+  else:
+    return ':'
 
 # (Stateful) Installer class
 
@@ -176,9 +181,9 @@ class Installer:
     set_env('TAICHI_NUM_THREADS', 8)
     set_env('TAICHI_ROOT_DIR', self.root_dir)
 
-    set_env('PYTHONPATH', '$TAICHI_ROOT_DIR/taichi/python/;$PYTHONPATH',
-            '{}/taichi/python/;'.format(self.root_dir) + os.environ.get('PYTHONPATH', ''))
-    set_env('PATH', '$TAICHI_ROOT_DIR/taichi/bin/;$PATH', os.path.join(self.root_dir, 'taichi/bin') + ';' + os.environ.get('PATH', ''))
+    set_env('PYTHONPATH', '$TAICHI_ROOT_DIR/taichi/python/' + get_path_separator() + '$PYTHONPATH',
+            '{}/taichi/python/'.format(self.root_dir) + get_path_separator() + os.environ.get('PYTHONPATH', ''))
+    set_env('PATH', '$TAICHI_ROOT_DIR/taichi/bin/' + get_path_separator() + '$PATH', os.path.join(self.root_dir, 'taichi/bin') + get_path_separator() + os.environ.get('PATH', ''))
 
     os.environ['PYTHONIOENCODING'] = 'utf-8'
     print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))

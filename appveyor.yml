@@ -6,10 +6,9 @@
 version: 0.0.{build}-{branch}
 
 # branches to build
-branches:
-  # whitelist
-  only:
-    - master
+# branches:
+#   only:
+#     - master
 
 #---------------------------------#
 #    environment configuration    #

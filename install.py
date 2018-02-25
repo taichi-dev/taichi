@@ -156,7 +156,7 @@ class Installer:
       execute_command('{} get-pip.py --user'.format(get_python_executable()))
       execute_command('rm get-pip.py')
 
-    subprocess.run([get_python_executable(), "-m", "pip", "install", "colorama", "numpy", "Pillow", "flask"])
+    subprocess.run([get_python_executable(), "-m", "pip", "install", "colorama", "numpy", "Pillow", "flask", "scipy", "pybind11", "flask_cros", "GitPython", "yapf", "pyglet", "PyQt5"])
 
     execute_command('cmake --version')
     if get_os_name() == 'osx':

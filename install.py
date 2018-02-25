@@ -6,11 +6,14 @@ import platform
 import argparse
 import subprocess
 from os import environ
+import platform
+
+print(platform.architecture())
 
 # Utils
 
 import struct
-assert struct.calcsize('P') * 8 == 64, "Only 64-bit platforms are supported"
+assert struct.calcsize('P') * 8 == 64, "Only 64-bit platforms are supported. Current platform: {}".format(struct.calcsize('P') * 8)
 
 if sys.version_info[0] < 3 or sys.version_info[1] < 5:
   print("\nPlease restart with python3. \n(Taichi supports Python 3.5+)\n")

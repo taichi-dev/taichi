@@ -15,24 +15,7 @@ with Python.
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/microfacet.gif)
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/paper-cut.png)
 
-# Installation
-python 3.5+ is required.
-```
-wget https://raw.githubusercontent.com/yuanming-hu/taichi/master/install.py && python3 install.py
-```
-Suppoprted Platforms (open an issue if you find the script fails):
- - Ubuntu (gcc 5+)
- - Mac OS X (gcc 5+, clang 4.0+)
- - Windows (Microsoft Visual Studio 2017)
-
-# View results
-```
-python3 $TAICHI_ROOT_DIR/taichi/python/examples/server/main.py 
-```
-Then open page http://localhost:1111. Choose a simulation output, press `P` to play, `R` to change frame rate (faster/slower).
-
-# Examples
-Please see [examples](https://github.com/yuanming-hu/taichi/tree/master/projects/examples).
+# [Quick Start](https://github.com/yuanming-hu/taichi/wiki/Quick-Start)
 
 ## Acknowledgements
 

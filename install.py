@@ -118,7 +118,7 @@ class Installer:
         print('Existing taichi installation detected.')
         print('Please remove original taichi installation in ~/repos/')
         exit(-1)
-      self.root_dir = os.curdir()
+      self.root_dir = os.getcwd()
       execute_command('git clone https://github.com/yuanming-hu/taichi.git')
     if os.path.exists('external/lib'):
       print('Existing taichi runtimes detected.')

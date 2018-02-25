@@ -9,6 +9,7 @@ from os import environ
 import platform
 
 print(platform.architecture())
+build_type = 'default'
 
 # Utils
 
@@ -143,16 +144,17 @@ class Installer:
   def run(self):
     assert get_os_name() in ['linux', 'osx', 'win'], \
       'Platform {} is not currently supported by this script. Please install manually.'.format(get_os_name())
-    global build_type
     if len(sys.argv) > 1:
       self.build_type = sys.argv[1]
-      print('Build type: ', build_type)
+      print('Build type: ', self.build_type)
     else:
-      build_type = 'default'
+      self.build_type = 'default'
+    global build_type
+    build_type = self.build_type
 
-    print('Build type = {}'.format(build_type))
+    print('Build type = {}'.format(self.build_type))
 
-    assert build_type in ['default', 'ci']
+    assert self.build_type in ['default', 'ci']
 
     check_command_existence('wget')
     try:
@@ -183,7 +185,7 @@ class Installer:
       check_command_existence('sudo')
       execute_command('sudo apt-get update')
       # TODO: this works for Ubuntu only
-      if build_type == 'ci':
+      if self.build_type == 'ci':
         execute_command('sudo apt-get install -y python3-dev python3-tk')
       else:
         execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ python3-tk')

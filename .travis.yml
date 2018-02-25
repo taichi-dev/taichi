@@ -75,7 +75,9 @@ before_install:
     if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
         CMAKE_URL="http://www.cmake.org/files/v3.6/cmake-3.6.3-Linux-x86_64.tar.gz"
         mkdir cmake3 && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake3
-        export PATH=${DEPS_DIR}/cmake3/bin:${PATH}
+        export PATH=$PWD/cmake3/bin:${PATH}
+        echo "Installed CMake in $PWD/cmake3/bin:${PATH}"
+  - |
     fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:deadsnakes/ppa; sudo apt-get update; sudo apt-get install $PYTHON-dev; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install $PYTHON; fi

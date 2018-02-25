@@ -66,10 +66,10 @@ def get_default_directory_name():
   osname = get_os_name()
   if osname == 'linux':
     username = get_username()
-    return '/home/{}/'.format(username)
+    return '/home/{}/repos'.format(username)
   elif osname == 'osx':
     username = get_username()
-    return '/Users/{}/'.format(username)
+    return '/Users/{}/repos'.format(username)
   else:
     #Windows
     return os.getcwd()
@@ -103,7 +103,7 @@ class Installer:
     self.build_type = None
 
   def detect_or_setup_repo(self):
-    cwd = os.path.abspath(os.path.dirname(sys.argv[0]))
+    cwd = os.getcwd()
     print("Current directory:", cwd)
 
     if os.path.exists(os.path.join(cwd, 'include', 'taichi')):
@@ -111,15 +111,16 @@ class Installer:
       self.root_dir = os.path.abspath(os.path.join(cwd, '..'))
     else:
       print("Cloning taichi from github...")
-      os.chdir(get_default_directory_name())
-      execute_command('mkdir -p repos')
-      os.chdir('repos')
+      self.root_dir = get_default_directory_name()
+      os.chdir(self.root_dir)
+      execute_command('mkdir {}'.format(self.root_dir))
       if os.path.exists('taichi'):
         print('Existing taichi installation detected.')
-        print('Please remove original taichi installation in ~/repos/')
+        print('Please remove original taichi installation in {}'.format(self.root_dir))
         exit(-1)
       self.root_dir = os.getcwd()
       execute_command('git clone https://github.com/yuanming-hu/taichi.git')
+      os.chdir('taichi')
     if os.path.exists('external/lib'):
       print('Existing taichi runtimes detected.')
     else:

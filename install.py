@@ -1,4 +1,4 @@
-print("Taichi Installer v0.1")
+print(u"\u262f Taichi Installer")
 
 import os
 import sys
@@ -141,7 +141,7 @@ class Installer:
       execute_command('{} get-pip.py --user'.format(get_python_executable()))
       execute_command('rm get-pip.py')
 
-    execute_command('{} -m pip install colorama numpy'.format(get_python_executable()))
+    subprocess.run([get_python_executable(), "-m", "pip", "install", "colorama", "numpy"])
 
     execute_command('cmake --version')
     if get_os_name() == 'osx':

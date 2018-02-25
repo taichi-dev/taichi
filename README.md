@@ -51,6 +51,6 @@ Like many other open-source projects, `taichi` is based on other open-source pro
  - ...
 
 Current developers include:
- - [Yuanming Hu](http://taichi.graphics/me)(Project creator & main developer. MIT CSAIL, Ph.D. student (1st year). )
- - [Yu Fang](http://squarefk.com/)(Developer. Tsinghua University, senior undergraduate student. Next: Ph.D. student at University of Pennsylvania with [Prof. Chenfanfu Jiang](http://www.seas.upenn.edu/~cffjiang/))
+ - [Yuanming Hu](http://taichi.graphics/me) (Project creator & main developer. MIT CSAIL, Ph.D. student (1st year). )
+ - [Yu Fang](http://squarefk.com/) (Developer. Tsinghua University, senior undergraduate student. Next: Ph.D. student at University of Pennsylvania with [Prof. Chenfanfu Jiang](http://www.seas.upenn.edu/~cffjiang/))
  - ...

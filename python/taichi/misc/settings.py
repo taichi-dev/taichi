@@ -22,6 +22,12 @@ def get_project_directory(project=None):
   else:
     return os.path.join(get_root_directory(), 'taichi', 'projects')
 
+def get_build_directory():
+  bin_rel_path = ['taichi', 'build']
+  return os.environ.get('TAICHI_BIN_DIR',
+    os.path.join(get_root_directory(), *bin_rel_path))
+
+
 def get_bin_directory():
   if get_os_name() == 'win':
     # for the dlls

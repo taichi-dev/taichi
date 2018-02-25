@@ -99,7 +99,7 @@ def format():
   print('* Done!')
 
 
-from taichi.misc.settings import get_output_directory, get_bin_directory, get_root_directory
+from taichi.misc.settings import get_output_directory, get_build_directory, get_bin_directory, get_root_directory
 from taichi.misc.util import get_os_name, get_unique_task_id
 
 CREATE_SAND_BOX_ON_WINDOWS = True
@@ -107,7 +107,7 @@ CREATE_SAND_BOX_ON_WINDOWS = True
 
 def build():
   tmp_cwd = os.getcwd()
-  bin_dir = get_bin_directory()
+  bin_dir = get_build_directory()
 
   try:
     os.mkdir(bin_dir)
@@ -115,19 +115,26 @@ def build():
     pass
   os.chdir(bin_dir)
 
-  flags = ' -DPYTHON_EXECUTABLE:FILEPATH={}'.format(sys.executable)
+  flags = ' -DPYTHON_EXECUTABLE:FILEPATH="{}"'.format(sys.executable)
 
+  print('Running cmake...')
   if os.environ.get('TC_CI', '') == '1':
     print('  Note: building for CI. SIMD disabled.')
     flags += ' -DTC_DISABLE_SIMD:BOOL=1'
+  if get_os_name() == 'win':
+    flags += ' -G "Visual Studio 15 Win64"'
   cmake_ret = os.system('cmake .. ' + flags)
   if cmake_ret != 0:
     print('  Error: CMake failed.')
     exit(-1)
 
   import multiprocessing
+  print('Building taichi...')
   num_make_threads = min(20, multiprocessing.cpu_count())
-  make_ret = os.system('make -j {}'.format(num_make_threads))
+  if get_os_name() == 'win':
+    make_ret = os.system("msbuild /p:Configuration=Release /p:Platform=x64 /m taichi.sln")
+  else:
+    make_ret = os.system('make -j {}'.format(num_make_threads))
   if make_ret != 0:
     print('  Error: Build failed.')
     exit(-1)
@@ -173,12 +180,7 @@ elif get_os_name() == 'win':
   bin_dir = get_bin_directory()
   dll_path = os.path.join(bin_dir, 'Release', 'taichi_core.dll')
   if not os.path.exists(dll_path):
-    dll_path = os.path.join(bin_dir, 'taichi_core.dll')
-    print(dll_path)
-    if not os.path.exists(dll_path):
-      dll_path = os.path.join(bin_dir, 'libtaichi_core.dll')
-      if not os.path.exists(dll_path):
-        assert False, "Library taichi_core doesn't exist."
+    build()
 
   # The problem here is, on windows, when an dll/pyd is loaded, we can not write to it any more
 

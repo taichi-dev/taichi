@@ -3,6 +3,9 @@ sudo: required
 git:
   depth: 50
 
+common_sources: &all_sources
+  - ubuntu-toolchain-r-test
+
 language: cpp
 matrix:
   include:

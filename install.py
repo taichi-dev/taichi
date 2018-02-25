@@ -1,4 +1,4 @@
-print(u"\u262f Taichi Installer")
+print("* Taichi Installer")
 
 import os
 import sys

@@ -27,7 +27,7 @@ environment:
       PYTHON_ARCH: "64"
 
 # clone directory
-clone_folder: C:\projects\
+clone_folder: C:\repos\taichi
 
 #---------------------------------#
 #       build configuration       #
@@ -38,7 +38,7 @@ configuration: Release
 
 build_script:
   # - set PYTHONPATH=%TAICHI_ROOT_DIR%/taichi/python/;%PYTHONPATH%
-  - cd C:\projects\taichi
+  - cd C:\repos\taichi
   - python install.py
 
 #  - 7z a %TAICHI_ROOT_DIR%\taichi\taichi_bin.zip %TAICHI_ROOT_DIR%/taichi/runtimes/*.dll %TAICHI_ROOT_DIR%/taichi/runtimes/Release/taichi_core.dll

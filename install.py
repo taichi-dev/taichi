@@ -105,7 +105,7 @@ class Installer:
       print('Existing taichi runtimes detected.')
     else:
       print('Fetching taichi runtimes...')
-      execute_command('git clone https://github.com/yuanming-hu/taichi_runtime taichi/external/lib -b {} -depth 1'.format(get_os_name()))
+      execute_command('git clone https://github.com/yuanming-hu/taichi_runtime taichi/external/lib -b {} --depth 1'.format(get_os_name()))
 
   def run(self):
     assert get_os_name() in ['linux', 'osx', 'win'], \

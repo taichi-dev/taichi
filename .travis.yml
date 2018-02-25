@@ -1,4 +1,3 @@
-dist: trusty
 sudo: required
 
 git:
@@ -9,6 +8,7 @@ matrix:
   include:
 
   - os: linux
+    dist: trusty
     addons:
       apt:
         sources:
@@ -19,6 +19,7 @@ matrix:
       - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5 && PYTHON=python3.5"
 
   - os: linux
+    dist: trusty
     addons:
       apt:
         sources:
@@ -29,6 +30,7 @@ matrix:
       - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.5"
 
   - os: linux
+    dist: trusty
     addons:
       apt:
         sources:
@@ -39,6 +41,7 @@ matrix:
       - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.6"
 
   - os: linux
+    dist: trusty
     addons:
       apt:
         sources:
@@ -49,6 +52,7 @@ matrix:
       - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.5"
 
   - os: linux
+    dist: trusty
     addons:
       apt:
         sources:

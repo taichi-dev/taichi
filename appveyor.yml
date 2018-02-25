@@ -19,7 +19,7 @@ image: Visual Studio 2015
 
 # environment variables
 environment:
-  TAICHI_ROOT_DIR: C:\projects\
+  #TAICHI_ROOT_DIR: C:\projects\
   
   matrix:
     - PYTHON_ROOT_DIR: "C:\\Python3.5-x64"
@@ -28,10 +28,6 @@ environment:
 
 # clone directory
 clone_folder: $(TAICHI_ROOT_DIR)
-
-install:
-  - cd %TAICHI_ROOT_DIR%
-  - git clone https://github.com/yuanming-hu/taichi
 
 #---------------------------------#
 #       build configuration       #
@@ -42,8 +38,7 @@ configuration: Release
 
 build_script:
   # - set PYTHONPATH=%TAICHI_ROOT_DIR%/taichi/python/;%PYTHONPATH%
-  - echo %PYTHONPATH%
-  - cd %TAICHI_ROOT_DIR%\taichi
+  - cd "C:/projects/taichi/"
   - python install.py
 
 #  - 7z a %TAICHI_ROOT_DIR%\taichi\taichi_bin.zip %TAICHI_ROOT_DIR%/taichi/runtimes/*.dll %TAICHI_ROOT_DIR%/taichi/runtimes/Release/taichi_core.dll

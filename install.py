@@ -61,13 +61,15 @@ def get_os_name():
 
 def get_default_directory_name():
   os = get_os_name()
-  username = get_username()
   if os == 'linux':
+    username = get_username()
     return '/home/{}/'.format(username)
   elif os == 'osx':
+    username = get_username()
     return '/Users/{}/'.format(username)
   else:
-    assert False, 'Unsupported OS: {}'.format(os)
+    #Windows
+    return os.getcwd()
 
 def append_to_shell_rc(line):
   if get_os_name() != 'win':

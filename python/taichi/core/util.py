@@ -41,8 +41,10 @@ def check_for_packages():
     try:
       exec('import {}'.format(import_name))
     except ImportError as e:
-      print("Installing package: ", pkg)
+      print("Installing package:", pkg)
       install_package(pkg)
+      print('Checking installation of "{}"'.format(import_name))
+      exec('import {}'.format(import_name))
 
 
 check_for_packages()

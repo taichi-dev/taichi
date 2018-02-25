@@ -36,7 +36,7 @@ Please see [examples](https://github.com/yuanming-hu/taichi/tree/master/projects
 
 ## Acknowledgements
 
-`Taichi`, like many other open-source projects, is based on other open-source projects:
+Like many other open-source projects, `taichi` is based on other open-source projects, which are shipped with taichi and users do not have to install manually:
  - [Intel Embree](https://embree.github.io/)
  - [Intel TBB](https://www.threadingbuildingblocks.org/)
  - [fmt](https://github.com/fmtlib/fmt)
@@ -47,5 +47,10 @@ Please see [examples](https://github.com/yuanming-hu/taichi/tree/master/projects
  - [JIXIE::ImplicitQRSVD](http://www.math.ucla.edu/~fuchuyuan/svd/paper.pdf)
  - [dcraw](https://www.cybercom.net/~dcoffin/dcraw/)
  - [ffmpeg](https://www.ffmpeg.org/)
- 
-Note that all of them are bundled in `taichi` (in source (header)/binary forms), and users do not have to manually install them.
+ - [pybind11](https://github.com/pybind/pybind11)
+ - ...
+
+Current developers include:
+ - [Yuanming Hu](http://taichi.graphics/me)(Project creator & main developer. MIT CSAIL, Ph.D. student (1st year). )
+ - [Yu Fang](http://squarefk.com/)(Developer. Tsinghua University, senior undergraduate student. Next: Ph.D. student at University of Pennsylvania with [Prof. Chenfanfu Jiang](http://www.seas.upenn.edu/~cffjiang/))
+ - ...

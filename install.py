@@ -9,6 +9,14 @@ from os import environ
 
 # Utils
 
+import struct
+assert struct.calcsize('P') * 8 == 64, "Only 64-bit platforms are supported"
+
+if sys.version_info[0] < 3 or sys.version_info[1] < 5:
+  print("\nPlease restart with python3. \n(Taichi supports Python 3.5+)\n")
+  print("Current version:", sys.version_info)
+  exit(-1)
+
 def get_python_executable():
   return sys.executable.replace('\\','/')
 
@@ -142,13 +150,14 @@ class Installer:
       check_command_existence('cmake')
       # TODO: ship ffmpeg
       #check_command_existence('ffmpeg')
-    else:
+    elif get_os_name() == 'linux':
       check_command_existence('sudo')
       execute_command('sudo apt-get update')
+      # TODO: this works for Ubuntu only
       if build_type == 'ci':
-        execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ python3-tk')
+        execute_command('sudo apt-get install -y dev python3-tk')
       else:
-        execute_command('sudo apt-get install -y python3-dev python3-tk')
+        execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ python3-tk')
 
     self.detect_or_setup_repo()
 

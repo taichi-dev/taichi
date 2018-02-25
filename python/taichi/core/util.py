@@ -180,14 +180,13 @@ elif get_os_name() == 'win':
       if not os.path.exists(dll_path):
         assert False, "Library taichi_core doesn't exist."
 
-  # The problem here is, on windows, when an dll/pyd is loaded, we can not write to it any more...
+  # The problem here is, on windows, when an dll/pyd is loaded, we can not write to it any more
 
-  # Ridiculous...
   old_wd = os.getcwd()
   os.chdir(bin_dir)
 
   if CREATE_SAND_BOX_ON_WINDOWS:
-    # So let's just create a sandbox for separated core lib development and loading
+    # Create a sandbox for separated core lib development and loading
     dir = os.path.join(get_output_directory(), 'tmp', get_unique_task_id())
     os.makedirs(dir)
     '''

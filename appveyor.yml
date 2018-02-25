@@ -5,22 +5,11 @@
 # version format
 version: 0.0.{build}-{branch}
 
-# branches to build
-# branches:
-#   only:
-#     - master
-
 #---------------------------------#
 #    environment configuration    #
 #---------------------------------#
 
-# Build worker image (VM template)
 image: Visual Studio 2017
-
-# environment variables
-# environment:
-
-# clone directory
 clone_folder: C:\repos\taichi
 
 #---------------------------------#
@@ -31,16 +20,13 @@ platform: x64
 configuration: Release
 
 build_script:
-  # - set PYTHONPATH=%TAICHI_ROOT_DIR%/taichi/python/;%PYTHONPATH%
   - cd C:\repos\taichi
   - C:\Python36-x64\python.exe install.py
-
-#  - 7z a %TAICHI_ROOT_DIR%\taichi\taichi_bin.zip %TAICHI_ROOT_DIR%/taichi/runtimes/*.dll %TAICHI_ROOT_DIR%/taichi/runtimes/Release/taichi_core.dll
+#- 7z a C:\repos\taichi\taichi_bin.zip %TAICHI_ROOT_DIR%/taichi/runtimes/*.dll %TAICHI_ROOT_DIR%/taichi/runtimes/Release/taichi_core.dll
 
 #---------------------------------#
 #      artifacts configuration    #
 #---------------------------------#
-
 artifacts:
   - path: taichi\taichi_bin.zip
     name: 'taichi-win-x86_64'

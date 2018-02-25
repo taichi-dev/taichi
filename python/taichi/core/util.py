@@ -31,7 +31,8 @@ def is_ci():
 
 def install_package(pkg):
   if is_ci():
-    pip.main(['install', pkg])
+    #pip.main(['install', pkg])
+    pip.main(['install', '--user', pkg])
   else:
     pip.main(['install', '--user', pkg])
 

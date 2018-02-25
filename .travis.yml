@@ -82,5 +82,5 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo rm /opt/local/lib/libembree.2.dylib; brew update; brew install $PYTHON; fi
 
 script:
-  - $PYTHON install.py
+  - $PYTHON install.py ci
 

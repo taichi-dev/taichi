@@ -184,7 +184,7 @@ class Installer:
       execute_command('sudo apt-get update')
       # TODO: this works for Ubuntu only
       if build_type == 'ci':
-        execute_command('sudo apt-get install -y dev python3-tk')
+        execute_command('sudo apt-get install -y python3-dev python3-tk')
       else:
         execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ python3-tk')
 

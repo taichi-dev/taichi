@@ -157,9 +157,9 @@ class Installer:
     set_env('TAICHI_NUM_THREADS', 8)
     set_env('TAICHI_ROOT_DIR', self.root_dir)
 
-    set_env('PYTHONPATH', '$TAICHI_ROOT_DIR/taichi/python/:$PYTHONPATH',
-            '{}/taichi/python/:'.format(self.root_dir) + os.environ.get('PYTHONPATH', ''))
-    set_env('PATH', '$TAICHI_ROOT_DIR/taichi/bin/:$PATH', os.path.join(self.root_dir, 'taichi/bin') + ':' + os.environ.get('PATH', ''))
+    set_env('PYTHONPATH', '$TAICHI_ROOT_DIR/taichi/python/;$PYTHONPATH',
+            '{}/taichi/python/;'.format(self.root_dir) + os.environ.get('PYTHONPATH', ''))
+    set_env('PATH', '$TAICHI_ROOT_DIR/taichi/bin/;$PATH', os.path.join(self.root_dir, 'taichi/bin') + ';' + os.environ.get('PATH', ''))
 
     os.environ['PYTHONIOENCODING'] = 'utf-8'
     print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))

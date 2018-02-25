@@ -10,6 +10,11 @@ language: cpp
 matrix:
   include:
 
+  - os: osx
+    osx_image: xcode9
+    env:
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3"
+
   - os: linux
     compiler: gcc
     dist: trusty
@@ -21,53 +26,41 @@ matrix:
       - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5 && PYTHON=python3.5"
 
   - os: linux
+    compiler: gcc
     dist: trusty
-    addons:
+    addons: &gcc6
       apt:
-        sources:
-          - ubuntu-toolchain-r-test
-        packages:
-          - g++-6
+        sources: *all_sources
+        packages: ['g++-6']
     env:
       - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.5"
 
   - os: linux
     dist: trusty
-    addons:
+    addons: &gcc6
       apt:
-        sources:
-          - ubuntu-toolchain-r-test
-        packages:
-          - g++-6
+        sources: *all_sources
+        packages: ['g++-6']
     env:
       - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.6"
 
   - os: linux
     dist: trusty
-    addons:
+    addons: &gcc7
       apt:
-        sources:
-          - ubuntu-toolchain-r-test
-        packages:
-          - g++-7
+        sources: *all_sources
+        packages: ['g++-7']
     env:
       - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.5"
 
   - os: linux
     dist: trusty
-    addons:
+    addons: &gcc7
       apt:
-        sources:
-          - ubuntu-toolchain-r-test
-        packages:
-          - g++-7
+        sources: *all_sources
+        packages: ['g++-7']
     env:
       - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.6"
-
-  - os: osx
-    osx_image: xcode9
-    env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3"
 
 before_install:
   - eval "${MATRIX_EVAL}"

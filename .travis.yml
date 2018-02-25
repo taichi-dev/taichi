@@ -79,7 +79,7 @@ before_install:
         echo "Installed CMake in $PWD/cmake3/bin:${PATH}"
     fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:deadsnakes/ppa; sudo apt-get update; sudo apt-get install $PYTHON-dev; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install $PYTHON; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo rm /opt/local/lib/libembree.2.dylib; brew update; brew install $PYTHON; fi
 
 script:
   - $PYTHON install.py

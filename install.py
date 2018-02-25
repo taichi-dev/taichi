@@ -138,6 +138,7 @@ class Installer:
         execute_command('git clone https://github.com/yuanming-hu/taichi_runtime external/lib -b msvc --depth 1'.format(get_os_name()))
       else:
         execute_command('git clone https://github.com/yuanming-hu/taichi_runtime external/lib -b {} --depth 1'.format(get_os_name()))
+    execute_command("git submodule update --init --recursive")
 
   def run(self):
     assert get_os_name() in ['linux', 'osx', 'win'], \

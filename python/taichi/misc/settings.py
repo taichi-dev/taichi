@@ -20,7 +20,7 @@ def get_project_directory(project=None):
   if project:
     return os.path.join(get_project_directory(), project)
   else:
-    return os.path.join(get_root_directory(), 'taichi', 'projects')
+    return os.path.join(get_repo_directory(), 'projects')
   
 def get_runtime_directory():
   bin_rel_path = ['taichi', 'extneral', 'lib']
@@ -45,7 +45,7 @@ def get_bin_directory():
 
 def get_output_directory():
   return os.environ.get('TAICHI_OUTPUT_DIR',
-                        os.path.join(get_root_directory(), 'taichi/taichi_outputs'))
+                        os.path.join(get_repo_directory(), 'outputs'))
 
 
 def get_output_path(path, create=False):

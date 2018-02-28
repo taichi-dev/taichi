@@ -47,3 +47,4 @@ cmake-build-*
 !/projects/examples
 modules.txt
 /external/lib
+__pycache__

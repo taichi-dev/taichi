@@ -48,3 +48,4 @@ cmake-build-*
 modules.txt
 /external/lib
 __pycache__
+/outputs

@@ -169,7 +169,7 @@ class Installer:
 
     subprocess.run([get_python_executable(), "-m", "pip", "install", "--user",
                     "colorama", "numpy", "Pillow", "flask", "scipy", "pybind11",
-                    "flask_cors", "GitPython", "yapf", "pyglet", "PyQt5"])
+                    "flask_cors", "GitPython", "yapf", "pyglet", "PyQt5", "distro"])
     print("importing numpy test:")
     ret = subprocess.run([get_python_executable(), "-c", "import numpy as np"])
     print("ret:", ret)
@@ -185,10 +185,18 @@ class Installer:
       check_command_existence('sudo')
       execute_command('sudo apt-get update')
       # TODO: this works for Ubuntu only
-      if self.build_type == 'ci':
-        execute_command('sudo apt-get install -y python3-dev python3-tk')
+      import distro
+      dist = distro.id()
+      print("Linux distribution '{}' detected", dist)
+      if dist == 'ubuntu':
+          if self.build_type == 'ci':
+            execute_command('sudo apt-get install -y python3-dev python3-tk')
+          else:
+            execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ python3-tk')
+      elif dist == 'arch':
+        execute_command('sudo pacman --needed -S git cmake make gcc')
       else:
-        execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ python3-tk')
+        print("Unsupported Linux distribution.")
 
     self.detect_or_setup_repo()
 

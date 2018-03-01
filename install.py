@@ -185,8 +185,11 @@ class Installer:
       check_command_existence('sudo')
       execute_command('sudo apt-get update')
       # TODO: this works for Ubuntu only
-      import distro
-      dist = distro.id()
+      if self.build_type != 'ci':
+        import distro
+        dist = distro.id()
+      else:
+        dist = 'ubuntu'
       print("Linux distribution '{}' detected", dist)
       if dist == 'ubuntu':
           if self.build_type == 'ci':

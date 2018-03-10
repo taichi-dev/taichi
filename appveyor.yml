@@ -22,7 +22,8 @@ configuration: Release
 build_script:
   - cd C:\repos\taichi
   - C:\Python36-x64\python.exe install.py ci
-#- 7z a C:\repos\taichi\taichi_bin.zip %TAICHI_ROOT_DIR%/taichi/runtimes/*.dll %TAICHI_ROOT_DIR%/taichi/runtimes/Release/taichi_core.dll
+#- 7z a C:\repos\taichi\taichi_bin.zip %TAICHI_REPO_DIR%/runtimes/*.dll %TAICHI_ROOT_DIR%/taichi/runtimes/Release/taichi_core.dll
+
 
 #---------------------------------#
 #      artifacts configuration    #

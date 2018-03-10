@@ -427,8 +427,8 @@ class MeshTexture : public Texture {
       real peeling_velocity = config.get("peeling_velocity", 1.0_f);
       std::ofstream os;
       std::string fn =
-          std::getenv("TAICHI_ROOT_DIR") +
-          std::string("/taichi/projects/mpm/data/apple_peeler.pos");
+          std::getenv("TAICHI_REPO_DIR") +
+          std::string("/projects/mpm/data/apple_peeler.pos");
       os.open(fn, std::ios::app);
       Vector3 pos;
       real t_start = -1.0_f;

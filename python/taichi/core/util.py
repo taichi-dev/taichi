@@ -104,7 +104,7 @@ def format():
   print('* Done!')
 
 
-from taichi.misc.settings import get_output_directory, get_build_directory, get_bin_directory, get_root_directory, get_runtime_directory
+from taichi.misc.settings import get_output_directory, get_build_directory, get_bin_directory, get_repo_directory, get_runtime_directory
 from taichi.misc.util import get_os_name, get_unique_task_id
 
 CREATE_SAND_BOX_ON_WINDOWS = True
@@ -197,7 +197,7 @@ elif get_os_name() == 'win':
     # Create a sandbox for separated core lib development and loading
     dir = os.path.join(get_output_directory(), 'tmp', get_unique_task_id())
 
-    os.environ['PATH'] += ';' + (os.path.join(get_root_directory(), 'taichi', 'external', 'lib'))
+    os.environ['PATH'] += ';' + (os.path.join(get_repo_directory(), 'external', 'lib'))
     os.makedirs(dir)
     shutil.copy(dll_path, os.path.join(dir, 'taichi_core.pyd'))
     sys.path.append(dir)
@@ -223,22 +223,22 @@ def load_module(name, verbose=True):
       ctypes.PyDLL(name)
     else:
       ctypes.PyDLL(
-        os.path.join(get_root_directory(), 'taichi', 'build',
+        os.path.join(get_repo_directory(), 'build',
                      get_dll_name(name)))
   except Exception as e:
     print(Fore.YELLOW + "Warning: module [{}] loading failed: {}".format(
       name, e) + Style.RESET_ALL)
 
 def at_startup():
-  assert os.path.exists(get_root_directory(
-  )), 'Please make sure $TAICHI_ROOT_DIR [' + get_root_directory() + '] exists.'
+  assert os.path.exists(get_repo_directory(
+  )), 'Please make sure $TAICHI_REPO_DIR [' + get_repo_directory() + '] exists.'
   output_dir = get_output_directory()
   if not os.path.exists(output_dir):
     print('Making output directory')
     os.mkdir(output_dir)
 
   # Load modules
-  f = open(os.path.join(get_root_directory(), 'taichi', 'modules.txt'), 'r')
+  f = open(os.path.join(get_repo_directory(), 'modules.txt'), 'r')
   modules = f.readline().strip().split(';')
   for module in modules:
     if module != '':

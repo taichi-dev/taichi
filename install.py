@@ -116,17 +116,15 @@ class Installer:
 
     if os.path.exists(os.path.join(cwd, 'include', 'taichi')):
       print("Taichi source detected.")
-      self.root_dir = os.path.abspath(os.path.join(cwd, '..'))
+      self.repo_dir = cwd
     else:
       print("Cloning taichi from github...")
-      self.root_dir = get_default_directory_name()
-      os.chdir(self.root_dir)
-      execute_command('mkdir {}'.format(self.root_dir))
+      self.repo_dir = os.path.join(get_default_directory_name(), 'taichi')
+      os.chdir(os.path.join(self.repo_dir, '..'))
       if os.path.exists('taichi'):
         print('Existing taichi installation detected.')
-        print('Please remove existing taichi installation in {}'.format(self.root_dir))
+        print('Please remove existing taichi installation in {}'.format(self.repo_dir))
         exit(-1)
-      self.root_dir = os.getcwd()
       execute_command('git clone https://github.com/yuanming-hu/taichi.git')
       os.chdir('taichi')
     if os.path.exists('external/lib'):
@@ -206,11 +204,11 @@ class Installer:
 
     #TODO: Make sure there is no existing Taichi ENV
     set_env('TAICHI_NUM_THREADS', 8)
-    set_env('TAICHI_ROOT_DIR', self.root_dir)
+    set_env('TAICHI_REPO_DIR', self.repo_dir)
 
-    set_env('PYTHONPATH', '$TAICHI_ROOT_DIR/taichi/python/' + get_path_separator() + '$PYTHONPATH',
-            '{}/taichi/python/'.format(self.root_dir) + get_path_separator() + os.environ.get('PYTHONPATH', ''))
-    set_env('PATH', '$TAICHI_ROOT_DIR/taichi/bin/' + get_path_separator() + '$PATH', os.path.join(self.root_dir, 'taichi/bin') + get_path_separator() + os.environ.get('PATH', ''))
+    set_env('PYTHONPATH', '$TAICHI_REPO_DIR/python/' + get_path_separator() + '$PYTHONPATH',
+            '{}/python/'.format(self.repo_dir) + get_path_separator() + os.environ.get('PYTHONPATH', ''))
+    set_env('PATH', '$TAICHI_REPO_DIR/bin/' + get_path_separator() + '$PATH', os.path.join(self.repo_dir, 'bin') + get_path_separator() + os.environ.get('PATH', ''))
 
     os.environ['PYTHONIOENCODING'] = 'utf-8'
     print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
@@ -218,7 +216,7 @@ class Installer:
     execute_command('echo $PYTHONPATH')
 
     if test_installation():
-      print('  Successfully Installed Taichi at {}.'.format(self.root_dir))
+      print('  Successfully Installed Taichi at {}.'.format(self.repo_dir))
       if get_os_name() != 'win':
         if execute_command('ti') != 0:
           print('  Warning: shortcut "ti" does not work.')

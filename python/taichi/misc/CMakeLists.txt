@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(taichi_unit)
 
 if (WIN32)
-    link_directories($ENV{TAICHI_ROOT_DIR}/taichi/external/lib)
+    link_directories($ENV{TAICHI_REPO_DIR}/external/lib)
 endif ()
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
@@ -19,15 +19,15 @@ endif ()
 
 set(CMAKE_BUILD_TYPE Release)
 
-include_directories("$ENV{TAICHI_ROOT_DIR}/taichi/include")
-include_directories("$ENV{TAICHI_ROOT_DIR}/taichi/external/include")
+include_directories("$ENV{TAICHI_REPO_DIR}/include")
+include_directories("$ENV{TAICHI_REPO_DIR}/external/include")
 
 set(UNIT_SOURCE "unit.cpp")
 
 set(CORE_LIBRARY_NAME unit)
 
 add_library(${CORE_LIBRARY_NAME} SHARED ${UNIT_SOURCE})
-target_link_libraries(${CORE_LIBRARY_NAME} $ENV{TAICHI_ROOT_DIR}/taichi/build/libtaichi_core.dylib)
+target_link_libraries(${CORE_LIBRARY_NAME} $ENV{TAICHI_REPO_DIR}/build/libtaichi_core.dylib)
 
 if (MSVC)
     set_property(TARGET ${CORE_LIBRARY_NAME} APPEND PROPERTY LINK_FLAGS /DEBUG)

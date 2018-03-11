@@ -1,12 +1,7 @@
 import taichi as tc
-import math
-import random
-import colorsys
-
 
 def create_scene():
-  downsample = 1
-  res = 960 // downsample, 540 // downsample
+  res = 960, 540
   camera = tc.Camera(
       'pinhole',
       res=res,
@@ -45,9 +40,5 @@ def create_scene():
 
 
 if __name__ == '__main__':
-  renderer = tc.Renderer('scoping', overwrite=True)
-
-  renderer.initialize(preset='pt', scene=create_scene())
-  renderer.set_post_processor(
-      tc.post_process.LDRDisplay(exposure=0.5, bloom_radius=0.0))
-  renderer.render(10000, 20)
+  renderer = tc.Renderer(scene=create_scene())
+  renderer.render()

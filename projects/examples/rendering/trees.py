@@ -1,6 +1,5 @@
 import taichi as tc
 import random
-import colorsys
 
 
 def create_tree(scene):
@@ -76,7 +75,5 @@ if __name__ == '__main__':
             translate=(-50, 100, -50),
             rotation=(180, 0, 0)))
 
-  renderer = tc.Renderer(preset='pt', output_dir='trees', scene=scene)
-  renderer.set_post_processor(tc.post_process.LDRDisplay(exposure=4, gamma=1))
-
-  renderer.render(1000, 20)
+  renderer = tc.Renderer(scene=scene)
+  renderer.render()

@@ -1,7 +1,5 @@
-from math import *
-
 import taichi as tc
-
+from math import *
 
 def create_scene():
   res = 600, 800

@@ -1,5 +1,5 @@
 from taichi.core import tc_core
-from taichi.misc.settings import get_output_path, get_root_directory
+from taichi.misc.settings import get_output_path, get_repo_directory
 from taichi.misc.util import get_unique_task_id
 import os
 import shutil
@@ -17,7 +17,7 @@ class UnitWatcher:
     self.src_path = os.path.join(self.dir, 'unit.cpp')
     self.dll_path = os.path.join(self.dir, 'build', 'libunit.dylib')
     self.cmakelists_path = os.path.join(self.dir, 'CMakeLists.txt')
-    cmakelists_src = os.path.join(get_root_directory(), 'taichi', 'python',
+    cmakelists_src = os.path.join(get_repo_directory(), 'python',
                                   'taichi', 'misc', 'CMakeLists.txt')
     shutil.copy(cmakelists_src, self.cmakelists_path)
 

@@ -1,48 +1,44 @@
 import colorsys
 import random
 
-from taichi.visual import *
-from taichi.visual.post_process import *
-from taichi.visual.texture import Texture
+import taichi as tc
 
 
 def create_scene():
-  downsample = 1
-  res = 960 // downsample, 540 // downsample
-  camera = Camera(
+  camera = tc.Camera(
       'pinhole',
-      res=res,
+      res=(960, 540),
       fov=20,
       origin=(0, 0, 30),
       look_at=(0, 0, 0),
       up=(0, 1, 0))
 
-  scene = Scene()
+  scene = tc.Scene()
 
   with scene:
     scene.set_camera(camera)
 
-    texture = (Texture('perlin') + 1).fract()
+    texture = (tc.Texture('perlin') + 1).fract()
 
-    mesh = Mesh(
+    mesh = tc.Mesh(
         'plane',
-        SurfaceMaterial('diffuse', color_map=texture),
+        tc.SurfaceMaterial('diffuse', color_map=texture),
         translate=(0, 0, -0.05),
         scale=10,
         rotation=(90, 0, 0))
     scene.add_mesh(mesh)
 
-    mesh = Mesh(
+    mesh = tc.Mesh(
         'plane',
-        SurfaceMaterial('diffuse', color=(0.1, 0.08, 0.08)),
+        tc.SurfaceMaterial('diffuse', color=(0.1, 0.08, 0.08)),
         translate=(-10, 0, 0),
         scale=10,
         rotation=(0, 0, 90))
     scene.add_mesh(mesh)
 
-    mesh = Mesh(
+    mesh = tc.Mesh(
         'plane',
-        SurfaceMaterial('emissive', color=(1, 1, 1)),
+        tc.SurfaceMaterial('emissive', color=(1, 1, 1)),
         translate=(10, 0, 1),
         scale=0.3,
         rotation=(0, 0, 90))
@@ -53,9 +49,9 @@ def create_scene():
       scale = random.random() * 0.03 + 0.1
       rgb = colorsys.hls_to_rgb(random.random(), 0.6, 0.8)
       x, y = random.random() - 0.5, random.random() - 0.5
-      mesh = Mesh(
+      mesh = tc.Mesh(
           'sphere',
-          SurfaceMaterial('pbr', diffuse=rgb, specular=rgb, glossiness=4),
+          tc.SurfaceMaterial('pbr', diffuse=rgb, specular=rgb, glossiness=4),
           translate=(x * s, y * s, 0),
           scale=scale)
       scene.add_mesh(mesh)
@@ -64,8 +60,7 @@ def create_scene():
 
 
 if __name__ == '__main__':
-  renderer = Renderer(output_dir='bubbles', overwrite=True)
-
+  renderer = tc.Renderer(output_dir='bubbles', overwrite=True)
   renderer.initialize(preset='pt', scene=create_scene())
-  renderer.set_post_processor(LDRDisplay(exposure=0.6, bloom_radius=0.1))
+  renderer.set_post_processor(tc.post_process.LDRDisplay(exposure=0.6, bloom_radius=0.1))
   renderer.render(10000, 20)

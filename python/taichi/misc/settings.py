@@ -11,6 +11,8 @@ def get_num_cores():
 
 
 def get_repo_directory():
+  if 'TAICHI_REPO_DIR' not in os.environ:
+    raise Exception('Please make sure environment variable TAICHI_REPO_DIR is properly set.')
   return os.environ.get('TAICHI_REPO_DIR')
 
 def get_project_directory(project=None):

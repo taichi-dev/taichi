@@ -25,9 +25,6 @@ def create_scene():
         rotation=(0, 0, 0))
     scene.add_mesh(mesh)
 
-    #scene.add_mesh(tc.Mesh('plane', tc.SurfaceMaterial('pbr', diffuse=(1, 1, 1)), scale=20,
-    #                       translate=(0, 0, 0), rotation=(90, 0, 0)))
-
   return scene
 
 

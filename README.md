@@ -1,3 +1,5 @@
+## Note: Taichi is currently under active development for multiple research projects, and we apologize for its poor usability and stability at this stage. We aim for releasing a stable version, for everyone to use, in August 2018.
+
 <div align="center">
   <img src="https://github.com/yuanming-hu/taichi_assets/raw/master/demos/snow.gif" style="width: 200%; height: 200%"><br><br>
 </div>

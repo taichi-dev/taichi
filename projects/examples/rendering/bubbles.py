@@ -1,8 +1,6 @@
+import taichi as tc
 import colorsys
 import random
-
-import taichi as tc
-
 
 def create_scene():
   camera = tc.Camera(
@@ -60,7 +58,6 @@ def create_scene():
 
 
 if __name__ == '__main__':
-  renderer = tc.Renderer(output_dir='bubbles', overwrite=True)
-  renderer.initialize(preset='pt', scene=create_scene())
-  renderer.set_post_processor(tc.post_process.LDRDisplay(exposure=0.6, bloom_radius=0.1))
-  renderer.render(10000, 20)
+  renderer = tc.Renderer(scene=create_scene())
+  renderer.render()
+  

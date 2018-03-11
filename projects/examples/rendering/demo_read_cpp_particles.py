@@ -92,6 +92,5 @@ def create_volumetric_block():
 
 if __name__ == '__main__':
   dump_particles()
-  renderer = tc.Renderer(overwrite=True)
-  renderer.initialize(preset='pt', scene=create_scene())
+  renderer = tc.Renderer(overwrite=True, scene=create_scene())
   renderer.render()

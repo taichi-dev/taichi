@@ -60,6 +60,5 @@ def create_scene():
 
 
 if __name__ == '__main__':
-  renderer = tc.Renderer(output_dir='geometry', overwrite=True)
-  renderer.initialize(preset='pt', scene=create_scene())
+  renderer = tc.Renderer(scene=create_scene())
   renderer.render()

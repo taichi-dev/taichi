@@ -94,5 +94,4 @@ if __name__ == '__main__':
   dump_particles()
   renderer = tc.Renderer(overwrite=True)
   renderer.initialize(preset='pt', scene=create_scene())
-  renderer.set_post_processor(tc.post_process.LDRDisplay(exposure=2.4, bloom_radius=0.01))
-  renderer.render(800)
+  renderer.render()

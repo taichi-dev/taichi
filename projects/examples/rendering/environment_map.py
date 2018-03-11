@@ -36,4 +36,4 @@ if __name__ == '__main__':
   renderer.initialize(preset='pt', scene=create_scene())
   renderer.set_post_processor(
       tc.post_process.FilmicToneMapping(exposure=15, bloom_radius=0.01, gamma=1))
-  renderer.render(800)
+  renderer.render()

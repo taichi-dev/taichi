@@ -59,7 +59,7 @@ class Renderer(object):
       self.set_scene(scene)
     self.c.initialize(config_from_dict(args))
 
-  def render(self, stages, cache_interval=-1):
+  def render(self, stages=1000, cache_interval=-1):
     for i in range(1, stages + 1):
       print('stage', i)
       t = time.time()

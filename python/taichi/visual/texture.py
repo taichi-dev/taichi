@@ -1,6 +1,7 @@
 from . import asset_manager
 from taichi.core import tc_core
 from taichi.misc.util import P, array2d_to_ndarray
+from taichi.visual.post_process import LDRDisplay
 
 import random
 
@@ -100,6 +101,8 @@ class Texture:
            post_processor=None):
     from taichi.gui.image_viewer import show_image
     img = self.rasterize_to_ndarray(res)
+    if post_processor is None:
+      post_processor = LDRDisplay()
     if post_processor:
       img = post_processor.process(img)
     show_image(title, img)

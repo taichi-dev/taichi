@@ -1,12 +1,10 @@
 from math import *
 
 import taichi as tc
-from taichi.misc.util import *
 
 
 def create_scene():
-  downsample = 2
-  res = 600 // downsample, 800 // downsample
+  res = 600, 800
   camera = tc.Camera(
       'pinhole',
       res=res,
@@ -18,7 +16,7 @@ def create_scene():
   scene = tc.Scene()
 
   radius = lambda x: exp(sin(x * 2 * pi + 0.1) + x + sin(150 * x) * 0.02) / 3
-  surf = lambda p: tc.geometry.rotate_y(Vector(radius(p.x), p.x * 4, 0), p.y * 2 * pi)
+  surf = lambda p: tc.geometry.rotate_y(tc.Vector(radius(p.x), p.x * 4, 0), p.y * 2 * pi)
 
   tex = ((tc.Texture('perlin') + 1) * 5).zoom(zoom=(10, 10,
                                                     2)).fract() * (1.0, 0.4,
@@ -75,7 +73,7 @@ def create_scene():
       mesh = tc.Mesh('plane',
                      tc.SurfaceMaterial('emissive', color=(100, 100, 10)))
       scene.add_mesh(mesh)
-      surf = lambda p: tc.geometry.rotate_y(Vector(p.x * 3, p.x * p.x * 4 - 2, 0), p.y * 2 * pi)
+      surf = lambda p: tc.geometry.rotate_y(tc.Vector(p.x * 3, p.x * p.x * 4 - 2, 0), p.y * 2 * pi)
       bowl = tc.geometry.create_mesh_from_functions((50, 50), surf)
       mesh = tc.Mesh(bowl, tc.SurfaceMaterial('diffuse', color=(0, 0, 0)))
       scene.add_mesh(mesh)
@@ -84,10 +82,9 @@ def create_scene():
 
 
 if __name__ == '__main__':
-  renderer = tc.Renderer(output_dir='vaze', overwrite=True)
-  renderer.initialize(
-      preset='pt', scene=create_scene(), min_path_length=2, max_path_length=3)
+  renderer = tc.Renderer()
+  renderer.initialize(scene=create_scene(), min_path_length=2, max_path_length=3)
   renderer.set_post_processor(
       tc.post_process.LDRDisplay(
           adaptive_exposure=False, exposure=1e3, bloom_radius=0.0))
-  renderer.render(10000, 20)
+  renderer.render()

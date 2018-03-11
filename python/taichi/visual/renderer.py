@@ -46,7 +46,7 @@ class Renderer(object):
       self.initialize(preset, scene=scene, **kwargs)
     self.visualize = visualize
 
-  def initialize(self, preset=None, scene=None, **kwargs):
+  def initialize(self, preset='pt', scene=None, **kwargs):
     if preset is not None:
       args = Renderer.presets[preset]
       for key, value in list(kwargs.items()):

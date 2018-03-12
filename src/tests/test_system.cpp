@@ -28,12 +28,14 @@ public:
 #if defined(TC_PLATFORM_UNIX)
     ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE,
                MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+    TC_ERROR_IF(ptr == MAP_FAILED, "Virtual memory allocation ({} B) failed.",
+                size);
 #else
     ptr = VirtualAlloc(nullptr, size, MEM_RESERVE | MEM_COMMIT,
                        PAGE_READWRITE);
-#endif
-    TC_ERROR_IF(ptr == MAP_FAILED, "Virtual memory allocation ({} B) failed.",
+    TC_ERROR_IF(ptr == nullptr, "Virtual memory allocation ({} B) failed.",
                 size);
+#endif
     TC_ERROR_IF(((uint64_t)ptr) % page_size != 0,
                 "Allocated address ({:}) is not aligned by page size {}", ptr,
                 page_size);
@@ -61,8 +63,7 @@ TC_TEST("Virtual Memory") {
     VirtualMemoryAllocator vm(size);
     // Touch 512 MB (1 << 29 B)
     for (int j = 0; j < (1 << 29) / page_size; j++) {
-      void *target = vm.ptr + rand_int64() % size;
-      uint8 val = *(uint8 *)target;
+      uint8 val = *((uint8 *)vm.ptr + rand_int64() % size);
       CHECK(val == 0);
     }
   }

@@ -29,7 +29,7 @@ public:
     ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE,
                MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
 #else
-    ptr = VirtualAlloc(nullptr, size, MEM_NORESERVE | MEM_COMMIT,
+    ptr = VirtualAlloc(nullptr, size, MEM_RESERVE | MEM_COMMIT,
                        PAGE_READWRITE);
 #endif
     TC_ERROR_IF(ptr == MAP_FAILED, "Virtual memory allocation ({} B) failed.",

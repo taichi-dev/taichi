@@ -42,6 +42,7 @@ class Time {
   static uint64 get_cycles();
 
   static void usleep(double us);
+  static void sleep(double s);
 
   class Timer {
     static std::map<std::string, std::pair<double, int>> memo;

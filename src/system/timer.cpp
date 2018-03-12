@@ -65,6 +65,10 @@ void Time::usleep(double us) {
 #endif
 }
 
+void Time::sleep(double s) {
+  Time::usleep(s * 1e6_f64);
+}
+
 double Time::Timer::get_time() {
   return Time::get_time();
 }

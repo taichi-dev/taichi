@@ -9,6 +9,8 @@ default_num_threads = multiprocessing.cpu_count()
 def get_num_cores():
   return os.environ.get('TAICHI_NUM_THREADS', default_num_threads)
 
+def get_directory(dir):
+  return os.path.join(get_repo_directory(), *dir.split('/'))
 
 def get_repo_directory():
   if 'TAICHI_REPO_DIR' not in os.environ:

@@ -177,8 +177,6 @@ class Installer:
       # Check command existence
       check_command_existence('git')
       check_command_existence('cmake')
-      # TODO: ship ffmpeg
-      #check_command_existence('ffmpeg')
     elif get_os_name() == 'linux':
       check_command_existence('sudo')
       execute_command('sudo apt-get update')

@@ -49,7 +49,7 @@ static_assert(false, "32-bit Windows systems are not supported")
 #define TC_PLATFORM_OSX
 #endif
 
-#if defined(TC_PLATFORM_LINUX) or defined(TC_PLATFORM_UNIX)
+#if defined(TC_PLATFORM_LINUX) or defined(TC_PLATFORM_OSX)
 #define TC_PLATFORM_UNIX
 #endif
 

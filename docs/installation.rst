@@ -10,7 +10,7 @@ Make sure you have `python 3.5+`.
 
 
 Ubuntu, Arch Linux, and Mac OS X
--------------------------------
+---------------------------------------
 
 .. code-block:: bash
 

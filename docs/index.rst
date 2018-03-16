@@ -6,4 +6,5 @@ Taichi --- Open-Source Computer Graphics Library
    :caption: Contents:
 
    installation
+   misc
 

@@ -355,12 +355,19 @@ def get_logging(name):
   return logger
 
 
-debug = get_logging('debug')
-info = get_logging('info')
-trace = get_logging('trace')
-warning = get_logging('warning')
-error = get_logging('error')
-critical = get_logging('critical')
+DEBUG = 'debug'
+TRACE = 'trace'
+INFO = 'info'
+WARNING = 'warning'
+ERROR = 'error'
+CRITICAL = 'critical'
+
+debug = get_logging(DEBUG)
+trace = get_logging(TRACE)
+info = get_logging(INFO)
+warning = get_logging(WARNING)
+error = get_logging(ERROR)
+critical = get_logging(CRITICAL)
 
 
 def redirect_print_to_log():
@@ -379,3 +386,9 @@ def redirect_print_to_log():
 
 def duplicate_stdout_to_file(fn):
   taichi.core.duplicate_stdout_to_file(fn)
+  
+def set_logging_level(level):
+  taichi.core.set_logging_level(level)
+  
+def set_gdb_trigger(on=True):
+  taichi.core.set_core_trigger_gdb_when_crash(on)

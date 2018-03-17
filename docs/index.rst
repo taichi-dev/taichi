@@ -7,4 +7,5 @@ Taichi --- Open-Source Computer Graphics Library
 
    installation
    misc
+   serialization
 

@@ -35,6 +35,11 @@ class Dict {
 
   Dict() = default;
 
+  template <typename T>
+  Dict(const std::string &key, const T &value) {
+    this->set(key, value);
+  }
+
   std::vector<std::string> get_keys() const {
     std::vector<std::string> keys;
     for (auto it = data.begin(); it != data.end(); ++it) {
@@ -48,8 +53,11 @@ class Dict {
   }
 
   template <typename V>
-  typename std::enable_if_t<(!type::is_VectorND<V>()), V> get(
-      std::string key) const;
+  typename std::enable_if_t<(!type::is_VectorND<V>() &&
+                             !std::is_reference<V>::value &&
+                             !std::is_pointer<V>::value),
+                            V>
+  get(std::string key) const;
 
   static bool is_string_integral(const std::string &str) {
     // TODO: make it correct
@@ -67,7 +75,10 @@ class Dict {
 
   void check_string_integral(const std::string &str) const {
     if (!is_string_integral(str)) {
-      TC_ERROR("Getting integral value out of non-integral string '{}' is not allowed.", str);
+      TC_ERROR(
+          "Getting integral value out of non-integral string '{}' is not "
+          "allowed.",
+          str);
     }
   }
 
@@ -164,6 +175,18 @@ class Dict {
   }
 
   template <typename T>
+  std::enable_if_t<std::is_pointer<T>::value, std::remove_pointer_t<T>> get(
+      std::string key) const {
+    return get_ptr<std::remove_pointer_t<T>>(key);
+  }
+
+  template <typename T>
+  std::enable_if_t<std::is_reference<T>::value, std::remove_reference_t<T>>
+      &get(std::string key) const {
+    return *get_ptr<std::remove_reference_t<T>>(key);
+  }
+
+  template <typename T>
   T *get_ptr(std::string key, T *default_value) const {
     if (has_key(key)) {
       return get_ptr<T>(key);
@@ -253,6 +276,12 @@ class Dict {
       TC_ERROR("No key named '{}' found.", key);
     }
     return data.find(key)->second;
+  }
+
+  template <typename T>
+  Dict &operator()(const std::string &key, const T &value) {
+    this->set(key, value);
+    return *this;
   }
 };
 

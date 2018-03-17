@@ -225,13 +225,13 @@ class Profiler {
 
 #define TC_PROFILE(name, statements) \
   {                                  \
-    Profiler _(name);                \
+    taichi::Profiler _(name);        \
     statements;                      \
   }
 
 #define TC_PROFILE_TPE(name, statements, elements) \
   {                                                \
-    Profiler _(name, elements);                    \
+    taichi::Profiler _(name, elements);            \
     statements;                                    \
   }
 

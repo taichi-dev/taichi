@@ -61,14 +61,24 @@ def get_repo():
   return repo
 
 
+def print_red_bold(*args, **kwargs):
+  print(Fore.RED + Style.BRIGHT, end='')
+  print(*args, **kwargs)
+  print(Style.RESET_ALL, end='')
+
 def update(include_projects=False):
   import git
   import taichi as tc
 
   g = git.cmd.Git(tc.get_repo_directory())
   print(Fore.GREEN + "Updating [taichi]..." + Style.RESET_ALL)
-  g.pull('--rebase')
-  print(Fore.GREEN + "   ...Done" + Style.RESET_ALL)
+  try:
+    g.pull('--rebase')
+    print(Fore.GREEN + "   ...Done" + Style.RESET_ALL)
+  except git.exc.GitCommandError as e:
+    if 'You have unstaged changes' in e.stderr:
+      print_red_bold("   You have unstaged changes in the Taichi main repo. Please commit your changes first.")
+      exit(-1)
 
   for proj in os.listdir(tc.get_project_directory()):
     if proj in ['examples', 'toys'] or proj.startswith('_') or not os.path.isdir(
@@ -77,8 +87,13 @@ def update(include_projects=False):
     print(
         Fore.GREEN + "Updating project [{}]...".format(proj) + Style.RESET_ALL)
     g = git.cmd.Git(os.path.join(tc.get_project_directory(proj)))
-    g.pull('--rebase')
-    print(Fore.GREEN + "   ...Done" + Style.RESET_ALL)
+    try:
+      g.pull('--rebase')
+      print(Fore.GREEN + "   ...Done" + Style.RESET_ALL)
+    except git.exc.GitCommandError as e:
+      if 'You have unstaged changes' in e.stderr:
+        print_red_bold("   You have unstaged changes in the project[{}]. Please commit your changes first.".format(proj))
+        exit(-1)
 
 
 def format():

@@ -13,12 +13,14 @@ class Simulation:
       self.c = tc.core.create_simulation3(name)
       self.Vector = tc_core.Vector3f
       self.Vectori = tc_core.Vector3i
+    self.c.initialize(config_from_dict(kwargs))
 
 
   def __getattr__(self, item):
     if item not in self.__dict__:
       # Goes to general action
       def action(**kwargs):
-        print("general action generating")
-        return self.c.general_action(name=item, **kwargs)
+        assert 'action' not in kwargs
+        kwargs['action'] = item
+        return self.c.general_action(config_from_dict(kwargs))
       return action

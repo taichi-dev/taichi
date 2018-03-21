@@ -95,7 +95,12 @@ class Dict {
     using T = typename V::ScalarType;
 
     std::string str = this->get_string(key);
-    std::string temp = "(";
+    std::string temp;
+    if (str[0] == '(') {
+      temp = "(";
+    } else if (str[0] == '[') {
+      temp = "[";
+    }
     if (std::is_integral<T>()) {
       check_string_integral(str);
     }
@@ -129,7 +134,11 @@ class Dict {
         temp += ",";
       }
     }
-    temp += ")";
+    if (str[0] == '(') {
+      temp += ")";
+    } else if (str[0] == '[') {
+      temp += "]";
+    }
     VectorND<N, T> ret;
     if (N == 1) {
       sscanf(str.c_str(), temp.c_str(), &ret[0]);

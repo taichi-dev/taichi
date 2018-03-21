@@ -358,7 +358,7 @@ def get_logging(name):
 DEBUG = 'debug'
 TRACE = 'trace'
 INFO = 'info'
-WARNING = 'warning'
+WARNING = 'warn'
 ERROR = 'error'
 CRITICAL = 'critical'
 

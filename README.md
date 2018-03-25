@@ -4,7 +4,7 @@
   <img src="https://github.com/yuanming-hu/taichi_assets/raw/master/demos/snow.gif" style="width: 200%; height: 200%"><br><br>
 </div>
 
-**Taichi** is a open-source computer graphics library, with various simulation
+**Taichi** is an open-source computer graphics library, with various simulation
 and rendering algorithms supported ([What's inside?](http://taichi.graphics/#features)). It's written in C++14 and wrapped friendly
 with Python.
 

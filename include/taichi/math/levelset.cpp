@@ -168,31 +168,68 @@ void LevelSet<DIM>::add_plane(const typename LevelSet<DIM>::Vector &normal_,
   }
 }
 
+//Box - signed - exact
+//
+//float sdBox( vec3 p, vec3 b )
+//{
+//  vec3 d = abs(p) - b;
+//  return min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0));
+//}
 template <>
 void LevelSet<3>::add_cuboid(Vector3 lower_boundry,
                              Vector3 upper_boundry,
                              bool inside_out) {
   for (auto &ind : this->get_region()) {
     Vector3 sample = ind.get_pos();
-    bool in_cuboid = true;
-    for (int i = 0; i < 3; ++i) {
-      if (!(lower_boundry[i] <= sample[i] && sample[i] <= upper_boundry[i]))
-        in_cuboid = false;
-    }
-    real dist = INF;
-    if (in_cuboid) {
-      for (int i = 0; i < 3; ++i) {
-        dist = std::min(dist, std::min(upper_boundry[i] - sample[i],
-                                       sample[i] - lower_boundry[i]));
-      }
+    Vector3 b = (upper_boundry - lower_boundry) * 0.5_f;
+    Vector3 center = (upper_boundry + lower_boundry) * 0.5_f;
+    Vector3 p = sample - center;
+    Vector3 d = p.abs() - b;
+    Vector3 clamped_d = d;
+    for (int i = 0; i < 3; ++i)
+      clamped_d[i] = std::max(clamped_d[i], 0.0_f);
+    real dist = std::min(std::max(d[0], std::max(d[1], d[2])), 0.0_f) + clamped_d.length();
+    set(ind, inside_out ? -dist : dist);
+  }
+}
+
+template <int DIM>
+void LevelSet<DIM>::add_slope(const Vector &center, real radius, real angle) {
+  TC_ASSERT_INFO(0 <= radius, "Radius should be non-negative");
+  TC_ASSERT_INFO(0 <= angle && angle <= M_PI, "Angle should be in [0, PI]");
+  for (auto &ind : this->get_region()) {
+    Vector sample = ind.get_pos();
+    real dist;
+    if (abs(sample[0]-center[0] <= 1e-6) && abs(sample[1]-center[1])<1e-6) {
+      dist = radius;
     } else {
-      Vector3 nearest_p;
-      for (int i = 0; i < 3; ++i) {
-        nearest_p[i] = clamp(sample[i], lower_boundry[i], upper_boundry[i]);
+      real ao = std::atan2(sample[0] - center[0], sample[1] - center[1]);
+      if (ao < 0) ao += M_PI * 2;
+      if (angle / 2 <= ao && ao <= M_PI) {
+        dist = sample[1] - (center[1] - radius);
+      } else if (M_PI <= ao && ao <= M_PI + angle) {
+        dist = radius - sqrt(sqr(center[0]-sample[0]) + sqr(center[1]-sample[1]));
+      } else {
+        real a = sin(angle);
+        real b = cos(angle);
+        real x = center[0] - radius * a;
+        real y = center[1] - radius * b;
+        real c = -(a * x + b * y);
+        dist = (a * sample[0] + b * sample[1] + c) / sqrt(a * a + b * b);
       }
-      dist = -length(nearest_p - sample);
     }
-    set(ind, inside_out ? dist : -dist);
+    this->set(ind, std::min(Array::get(ind), dist));
+  }
+}
+
+template <>
+void LevelSet<3>::add_cylinder(const Vector &center, real radius, bool inside_out) {
+  for (auto &ind : this->get_region()) {
+    Vector sample = ind.get_pos();
+    real dist;
+    dist = length(Vector(sample[0], 0, sample[2]) - Vector(center[0], 0, center[2])) - radius;
+    dist = inside_out ? -dist : dist;
+    this->set(ind, std::min(Array::get(ind), dist));
   }
 }
 

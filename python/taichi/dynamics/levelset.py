@@ -44,6 +44,12 @@ class LevelSet:
         Vector(upper_boundry[0] / self.delta_x, upper_boundry[1] / self.delta_x,
                upper_boundry[2] / self.delta_x), inside_out)
 
+  def add_slope(self, center, radius, angle):
+    self.levelset.add_slope(Vector(center) * (1.0 / self.delta_x), radius / self.delta_x, angle)
+
+  def add_cylinder(self, center, radius, inside_out):
+    self.levelset.add_cylinder(Vector(center) * (1.0 / self.delta_x), radius / self.delta_x, inside_out)
+
   def global_increase(self, delta):
     self.levelset.global_increase(delta / self.delta_x)
 

@@ -355,6 +355,7 @@ void export_math(py::module &m) {
       .def("add_sphere", &LevelSet2D::add_sphere)
       .def("add_polygon", &LevelSet2D::add_polygon)
       .def("add_plane", &LevelSet2D::add_plane)
+      .def("add_slope", &LevelSet2D::add_slope)
       .def("get_gradient", &LevelSet2D::get_gradient)
       .def("rasterize", &LevelSet2D::rasterize)
       .def("sample", static_cast<real (LevelSet2D::*)(real, real) const>(
@@ -380,6 +381,8 @@ void export_math(py::module &m) {
       .def("add_sphere", &LevelSet3D::add_sphere)
       .def("add_plane", &LevelSet3D::add_plane)
       .def("add_cuboid", &LevelSet3D::add_cuboid)
+      .def("add_slope", &LevelSet3D::add_slope)
+      .def("add_cylinder", &LevelSet3D::add_cylinder)
       .def("global_increase", &LevelSet3D::global_increase)
       .def("get_gradient", &LevelSet3D::get_gradient)
       .def("rasterize", &LevelSet3D::rasterize)

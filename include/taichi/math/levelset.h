@@ -55,6 +55,10 @@ class LevelSet : public ArrayND<DIM, real> {
                   Vector3 upper_boundry,
                   bool inside_out = true);
 
+  void add_slope(const Vector &center, real radius, real angle);
+
+  void add_cylinder(const Vector &center, real radius, bool inside_out = true);
+
   void global_increase(real delta);
 
   Vector get_gradient(const Vector &pos) const;  // Note this is not normalized!

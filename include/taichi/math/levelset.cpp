@@ -196,7 +196,7 @@ void LevelSet<3>::add_cuboid(Vector3 lower_boundry,
 template <int DIM>
 void LevelSet<DIM>::add_slope(const Vector &center, real radius, real angle) {
   TC_ASSERT_INFO(0 <= radius, "Radius should be non-negative");
-  TC_ASSERT_INFO(0 <= angle && angle <= M_PI, "Angle should be in [0, PI]");
+  TC_ASSERT_INFO(0 <= angle && angle <= pi, "Angle should be in [0, PI]");
   for (auto &ind : this->get_region()) {
     Vector sample = ind.get_pos();
     real dist;
@@ -204,10 +204,10 @@ void LevelSet<DIM>::add_slope(const Vector &center, real radius, real angle) {
       dist = radius;
     } else {
       real ao = std::atan2(sample[0] - center[0], sample[1] - center[1]);
-      if (ao < 0) ao += M_PI * 2;
-      if (angle / 2 <= ao && ao <= M_PI) {
+      if (ao < 0) ao += pi * 2;
+      if (angle / 2 <= ao && ao <= pi) {
         dist = sample[1] - (center[1] - radius);
-      } else if (M_PI <= ao && ao <= M_PI + angle) {
+      } else if (pi <= ao && ao <= pi + angle) {
         dist = radius - sqrt(sqr(center[0]-sample[0]) + sqr(center[1]-sample[1]));
       } else {
         real a = sin(angle);

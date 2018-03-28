@@ -777,6 +777,9 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
   }
 };
 
+template <typename T, int dim, InstSetExt ISE = default_instruction_set>
+using TVector = VectorND<dim, T, ISE>;
+
 template <int DIM, typename T, InstSetExt ISE>
 TC_FORCE_INLINE VectorND<DIM, T, ISE> operator
     *(T a, const VectorND<DIM, T, ISE> &v) {
@@ -1204,6 +1207,9 @@ TC_FORCE_INLINE MatrixND<DIM, T, ISE> transposed(
     const MatrixND<DIM, T, ISE> &mat) {
   return transpose(mat);
 }
+
+template <typename T, int dim, InstSetExt ISE = default_instruction_set>
+using TMatrix = MatrixND<dim, T, ISE>;
 
 using Matrix2 = MatrixND<2, real, default_instruction_set>;
 using Matrix3 = MatrixND<3, real, default_instruction_set>;

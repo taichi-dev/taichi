@@ -97,6 +97,10 @@ inline uint32 rand_int() {
   return (w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)));
 }
 
+inline uint64 rand_int64() {
+  return ((uint64)rand_int() << 32) + rand_int();
+}
+
 // inline float frand() { return (float)rand() / (RAND_MAX + 1); }
 inline float rand() {
   return rand_int() * (1.0_f / 4294967296.0f);

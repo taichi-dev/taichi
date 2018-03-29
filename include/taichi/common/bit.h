@@ -8,7 +8,19 @@ TC_NAMESPACE_BEGIN
 
 namespace bit {
 
-TC_FORCE_INLINE constexpr bool is_power_of_two(int x) {
+TC_FORCE_INLINE constexpr bool is_power_of_two(int32 x) {
+  return x != 0 && (x & (x - 1)) == 0;
+}
+
+TC_FORCE_INLINE constexpr bool is_power_of_two(uint32 x) {
+  return x != 0 && (x & (x - 1)) == 0;
+}
+
+TC_FORCE_INLINE constexpr bool is_power_of_two(int64 x) {
+  return x != 0 && (x & (x - 1)) == 0;
+}
+
+TC_FORCE_INLINE constexpr bool is_power_of_two(uint64 x) {
   return x != 0 && (x & (x - 1)) == 0;
 }
 

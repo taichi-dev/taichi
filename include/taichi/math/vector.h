@@ -805,6 +805,26 @@ TC_FORCE_INLINE VectorND<DIM, T, ISE> operator/(const VectorND<DIM, T, ISE> &v,
   return v / VectorND<DIM, T, ISE>(a);
 }
 
+template <typename T>
+TC_FORCE_INLINE std::array<T, 1> to_std_array(const TVector<T, 1> &v) {
+  return std::array<T, 1>{v[0]};
+}
+
+template <typename T>
+TC_FORCE_INLINE std::array<T, 2> to_std_array(const TVector<T, 2> &v) {
+  return std::array<T, 2>{v[0], v[1]};
+}
+
+template <typename T>
+TC_FORCE_INLINE std::array<T, 3> to_std_array(const TVector<T, 3> &v) {
+  return std::array<T, 3>{v[0], v[1], v[2]};
+}
+
+template <typename T>
+TC_FORCE_INLINE std::array<T, 4> to_std_array(const TVector<T, 4> &v) {
+  return std::array<T, 4>{v[0], v[1], v[2], v[3]};
+}
+
 using Vector1 = VectorND<1, real, default_instruction_set>;
 using Vector2 = VectorND<2, real, default_instruction_set>;
 using Vector3 = VectorND<3, real, default_instruction_set>;

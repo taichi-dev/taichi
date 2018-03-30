@@ -137,7 +137,7 @@ class ProfilerRecords {
         print(ch.get(), depth + 1);
         unaccounted -= child_time;
       }
-      if (!node->childs.empty() && (unaccounted > total_time * 0.05)) {
+      if (!node->childs.empty() && (unaccounted > total_time * 0.005)) {
         make_indent(1);
         fmt::print("{} {:5.2f}%  {}\n",
                    get_readable_time_with_scale(unaccounted, scale),

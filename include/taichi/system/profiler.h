@@ -229,6 +229,8 @@ class Profiler {
     statements;                      \
   }
 
+#define TC_PROFILER(name) taichi::Profiler _profiler_ ## __LINE__(name);
+
 #define TC_PROFILE_TPE(name, statements, elements) \
   {                                                \
     taichi::Profiler _(name, elements);            \

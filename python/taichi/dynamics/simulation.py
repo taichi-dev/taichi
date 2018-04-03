@@ -26,7 +26,5 @@ class Simulation:
     if item not in self.__dict__:
       # Goes to general action
       def action(**kwargs):
-        assert 'action' not in kwargs
-        kwargs['action'] = item
-        return self.c.general_action(config_from_dict(kwargs))
+        return self.general_action(item, **kwargs)
       return action

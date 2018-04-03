@@ -36,7 +36,7 @@ if __name__ == '__main__':
       maximum_pressure_iterations=200,
       super_sampling=20)
 
-  video_manager = tc.VideoManager(output_dir='new_year')
+  video_manager = tc.VideoManager(output_dir='smoke_3d')
   images = []
   for i in range(600):
     print('frame', i)

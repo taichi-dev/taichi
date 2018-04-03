@@ -235,4 +235,8 @@ class Profiler {
     statements;                                    \
   }
 
+inline void print_profile_info() {
+  ProfilerRecords::get_instance().print();
+}
+
 TC_NAMESPACE_END

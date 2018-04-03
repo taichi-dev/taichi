@@ -149,7 +149,7 @@ void export_misc(py::module &m) {
   });
   // m.def("dict_from_config", py_dict_from_py_config);
   m.def("print_profile_info",
-        [&]() { ProfilerRecords::get_instance().print(); });
+        [&]() { print_profile_info(); });
 }
 
 TC_NAMESPACE_END

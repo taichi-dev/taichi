@@ -92,7 +92,7 @@ def update(include_projects=False):
       print(Fore.GREEN + "   ...Done" + Style.RESET_ALL)
     except git.exc.GitCommandError as e:
       if 'You have unstaged changes' in e.stderr:
-        print_red_bold("   You have unstaged changes in the project[{}]. Please commit your changes first.".format(proj))
+        print_red_bold("   You have committed changes in project [{}]. Please commit your changes first.".format(proj))
         exit(-1)
 
 

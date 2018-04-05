@@ -120,7 +120,7 @@ class Installer:
     else:
       print("Cloning taichi from github...")
       self.repo_dir = os.path.join(get_default_directory_name(), 'taichi')
-      os.chdir(os.path.join(self.repo_dir, '..'))
+      os.chdir(get_default_directory_name())
       if os.path.exists('taichi'):
         print('Existing taichi installation detected.')
         print('Please remove existing taichi installation in {}'.format(self.repo_dir))

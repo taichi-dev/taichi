@@ -3,15 +3,33 @@ Misc Functions
 
 Logging
 -------------------------------
-tc.set_logging_level(level)
 
-    trace = 0, (tc.TRACE)
-    debug = 1,
-    info = 2,
-    warn = 3,
-    err = 4,
-    critical = 5,
-    off = 6 (not used)
+.. code-block:: python
+
+    '''
+    level can be {}
+        tc.TRACE
+        tc.DEBUG
+        tc.INFO
+        tc.WARN
+        tc.ERR
+        tc.CRITICAL
+    '''
+    tc.set_logging_level(level)
 
 
-set_gdb_trigger(on=True)
+
+Trigger GDB when the program crashes:
+
+Python:
+
+.. code-block:: python
+
+    set_gdb_trigger(on=True)
+
+
+C++:
+
+.. code-block:: C++
+
+    CoreState::set_trigger_gdb_when_crash(true);

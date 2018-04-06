@@ -76,6 +76,9 @@ class Texture:
   def rotate(self, times):
     return Texture("rotate", tex=self, times=times)
 
+  def rotate_angle(self, angle):
+    return Texture("rotate_angle", tex=self, angle=angle)
+
   def translate(self, translation):
     return Texture("trans", tex=self, translation=translation)
 

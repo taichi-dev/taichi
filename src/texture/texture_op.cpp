@@ -164,6 +164,32 @@ class RotatedTexture : public Texture {
 
 TC_IMPLEMENTATION(Texture, RotatedTexture, "rotate");
 
+class RotatedAngleTexture : public Texture {
+protected:
+  std::shared_ptr<Texture> tex;
+  real angle;
+
+public:
+  void initialize(const Config &config) override {
+    Texture::initialize(config);
+    tex = AssetManager::get_asset<Texture>(config.get<int>("tex"));
+    angle = config.get<real>("angle");
+  }
+
+  virtual Vector4 sample(const Vector3 &coord_) const override {
+    auto coord = coord_;
+    coord = coord * 2._f - Vector3(1.f, 1.f, 1.f);
+    coord = Vector3(
+        cos(angle)*coord.x-sin(angle)*coord.y,
+        sin(angle)*coord.x+cos(angle)*coord.y,
+        coord.z);
+    coord = (coord + Vector3(1.f, 1.f, 1.f)) * 0.5_f;
+    return tex->sample(coord);
+  }
+};
+
+TC_IMPLEMENTATION(Texture, RotatedAngleTexture, "rotate_angle");
+
 class FlippedTexture : public Texture {
  protected:
   std::shared_ptr<Texture> tex;

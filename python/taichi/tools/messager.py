@@ -8,27 +8,32 @@ gmail_sender = 'taichi.messager@gmail.com'
 gmail_passwd = '6:L+XbNOp^'
 
 def send_crash_report(message,
-                      receiver=os.environ['TC_MONITOR_EMAIL']):
-    tc.warning('Emailing {}'.format(receiver))
-    TO = receiver
-    SUBJECT = 'Report'
-    TEXT = message
+                      receiver=None):
+  if receiver is None:
+    receiver = os.environ.get('TC_MONITOR_EMAIL', None)
+  if receiver is None:
+    tc.warning('No receiver in $TC_MONITOR_EMAIL')
+    return
+  tc.warning('Emailing {}'.format(receiver))
+  TO = receiver
+  SUBJECT = 'Report'
+  TEXT = message
 
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.ehlo()
-    server.starttls()
-    server.login(gmail_sender, gmail_passwd)
+  server = smtplib.SMTP('smtp.gmail.com', 587)
+  server.ehlo()
+  server.starttls()
+  server.login(gmail_sender, gmail_passwd)
 
-    BODY = '\r\n'.join(['To: %s' % TO,
-                        'From: %s' % gmail_sender,
-                        'Subject: %s' % SUBJECT,
-                        '', TEXT])
+  BODY = '\r\n'.join(['To: %s' % TO,
+                      'From: %s' % gmail_sender,
+                      'Subject: %s' % SUBJECT,
+                      '', TEXT])
 
-    try:
-        server.sendmail(gmail_sender, [TO], BODY)
-    except:
-        print('Error sending mail')
-    server.quit()
+  try:
+      server.sendmail(gmail_sender, [TO], BODY)
+  except:
+      print('Error sending mail')
+  server.quit()
     
     
 def enable(task_name):

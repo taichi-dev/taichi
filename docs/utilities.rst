@@ -73,3 +73,17 @@ You can use TC_IO macros to explicit define fields necessary in Taichi.
     }
 
     // TC_IO_DEF_VIRT();
+
+
+Progress Notification
+----------------------------------
+
+The taichi messager can send an email to $TC_MONITOR_EMAIL when the task finished or crashed.
+To enable:
+
+.. code-block:: python
+
+    from taichi.tools import messager
+    messager.enable(task_id='test')
+
+

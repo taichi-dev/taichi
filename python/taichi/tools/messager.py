@@ -7,8 +7,14 @@ import atexit
 gmail_sender = 'taichi.messager@gmail.com'
 gmail_passwd = '6:L+XbNOp^'
 
+emailed = False
+
 def send_crash_report(message,
                       receiver=None):
+  global emailed
+  if emailed:
+    return
+  emailed = True
   if receiver is None:
     receiver = os.environ.get('TC_MONITOR_EMAIL', None)
   if receiver is None:
@@ -34,7 +40,8 @@ def send_crash_report(message,
   except:
       print('Error sending mail')
   server.quit()
-    
+  print('Press enter or Ctrl + \ to exit.')
+  
     
 def enable(task_name):
   register_call_back(task_name)

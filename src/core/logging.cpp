@@ -120,6 +120,8 @@ std::string signal_name(int sig) {
 #endif
 }
 
+bool python_at_exit_called = false;
+
 void signal_handler(int signo) {
   logger.error(
       fmt::format("Received signal {} ({})", signo, signal_name(signo)), false);
@@ -128,7 +130,8 @@ void signal_handler(int signo) {
   if (taichi::CoreState::get_instance().trigger_gdb_when_crash) {
     trash(system(fmt::format("sudo gdb -p {}", PID::get_pid()).c_str()));
   }
-  if (python_at_exit) {
+  if (python_at_exit && !python_at_exit_called) {
+    python_at_exit_called = true;
     TC_INFO("Invoking registered Python at_exit...");
     python_at_exit(0);
     TC_INFO("Python-side at_exit returned.");

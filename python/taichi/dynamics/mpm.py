@@ -12,6 +12,8 @@ import errno
 import sys
 import os
 import getopt
+from taichi.tools import messager
+
 
 class MPM:
   def __init__(self, snapshot_interval=20, **kwargs):
@@ -88,6 +90,8 @@ class MPM:
     self.simulation_total_time = None
     self.visualize_count = 0
     self.visualize_count_limit = 400000.0
+    
+    messager.enable(self.task_id)
 
   def check_directory(self, directory):
     try:

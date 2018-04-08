@@ -89,7 +89,7 @@ using is_unit_t = typename is_unit<T>::type;
 
 #define TC_IO_DECL_VIRT_OVERRIDE \
   TC_IO_DECL_INST_VIRT_OVERRIDE  \
-  template <typename S> \
+  template <typename S>          \
   void io(S &serializer) const
 
 #define TC_IO_DEF(...)           \
@@ -357,12 +357,16 @@ class BinarySerializer : public Serializer {
       }
     } else {
       // TODO: why do I have to let it write to tmp, otherwise I get Sig Fault?
-      TArray<typename type::remove_cvref_t<T>, n> tmp;
+      // Take care of std::vector<bool> ...
+      using Traw = typename type::remove_cvref_t<T>;
+      std::vector<
+          std::conditional_t<std::is_same<Traw, bool>::value, uint8, Traw>>
+          tmp(n);
       for (std::size_t i = 0; i < n; i++) {
         this->operator()("", tmp[i]);
       }
-      std::memcpy(const_cast<typename std::remove_cv<T>::type *>(val), tmp,
-                  sizeof(tmp));
+      std::memcpy(const_cast<typename std::remove_cv<T>::type *>(val), &tmp[0],
+                  sizeof(tmp[0]) * tmp.size());
     }
   }
 

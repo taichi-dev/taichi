@@ -82,6 +82,49 @@ constexpr int bit_length() {
     Base::set<start, bit::bit_length<T>()>(val);        \
   }
 
+template <typename T, int N>
+TC_FORCE_INLINE constexpr T product(const std::array<T, N> arr) {
+  T ret(1);
+  for (int i = 0; i < N; i++) {
+    ret *= arr[i];
+  }
+  return ret;
+}
+
+constexpr std::size_t least_pot_bound(std::size_t v) {
+  std::size_t ret = 1;
+  while (ret < v) {
+    ret *= 2;
+  }
+  return ret;
+}
+
+TC_FORCE_INLINE uint32 pdep(uint32 value, uint32 mask) {
+  return _pdep_u32(value, mask);
+}
+
+TC_FORCE_INLINE uint32 pdep(int32 value, int32 mask) {
+  return pdep((uint32)value, (uint32)mask);
+}
+
+TC_FORCE_INLINE uint64 pdep(uint64 value, uint64 mask) {
+  return _pdep_u64(value, mask);
+}
+
+TC_FORCE_INLINE constexpr uint32 pot_mask(int x) {
+  return (1u << x) - 1;
+}
+
+TC_FORCE_INLINE constexpr uint32 log2int(uint64 value) {
+  int ret = 0;
+  value >>= 1;
+  while (value) {
+    value >>= 1;
+    ret += 1;
+  }
+  return ret;
+}
+
 }  // namespace bit
 
 TC_NAMESPACE_END

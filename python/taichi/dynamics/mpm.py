@@ -47,6 +47,11 @@ class MPM:
     self.snapshot_directory = os.path.join(self.directory, 'snapshots')
     self.video_manager = VideoManager(self.directory)
     kwargs['frame_directory'] = self.video_manager.get_frame_directory()
+    
+    self.log_fn = os.path.join(self.directory, 'log.txt')
+    tc.duplicate_stdout_to_file(self.log_fn)
+    tc.redirect_print_to_log()
+    tc.trace("log_fn = {}", self.log_fn)
 
     try:
       opts, args = getopt.getopt(sys.argv[1:], 'c:d:', ['continue=', 'dt-multiplier='])

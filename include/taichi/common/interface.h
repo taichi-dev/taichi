@@ -334,13 +334,22 @@ class InterfaceHolder {
     }                                                                \
   } ImplementationInjector_##base_class_name##class_name##instance;
 
-#define TC_IMPLEMENTATION_NEW(base_class_name, class_name, alias)    \
+#define TC_IMPLEMENTATION_NEW(base_class_name, class_name)           \
   class ImplementationInjector_##base_class_name##class_name {       \
    public:                                                           \
     ImplementationInjector_##base_class_name##class_name() {         \
       TC_IMPLEMENTATION_HOLDER_NAME(base_class_name)::get_instance() \
-          ->insert_new<class_name>(alias);                           \
+          ->insert_new<class_name>(class_name::get_name_static());   \
+      TC_P(class_name::get_name_static());                           \
     }                                                                \
   } ImplementationInjector_##base_class_name##class_name##instance;
+
+#define TC_NAME(alias)                            \
+  virtual std::string get_name() const override { \
+    return get_name_static();                     \
+  }                                               \
+  static std::string get_name_static() {          \
+    return #alias;                                \
+  }
 
 TC_NAMESPACE_END

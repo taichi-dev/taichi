@@ -87,6 +87,11 @@ using is_unit_t = typename is_unit<T>::type;
   template <typename S> \
   void io(S &serializer) const
 
+#define TC_IO_DECL_VIRT_OVERRIDE \
+  TC_IO_DECL_INST_VIRT_OVERRIDE  \
+  template <typename S> \
+  void io(S &serializer) const
+
 #define TC_IO_DEF(...)           \
   TC_IO_DECL_INST                \
   template <typename S>          \

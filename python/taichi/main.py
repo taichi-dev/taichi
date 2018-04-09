@@ -36,7 +36,8 @@ def main():
 
   if mode.endswith('.py'):
     with open(mode) as script:
-      exec(script.read())
+      script = script.read()
+    exec(script, {'__name__': '__main__'})
     exit()
 
   if mode == "run":

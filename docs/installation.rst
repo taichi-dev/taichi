@@ -30,3 +30,12 @@ Examples
 ------------------------------
 Please see `examples <https://github.com/yuanming-hu/taichi/tree/master/projects/examples>`_.
 
+Run examples using `python3 [X.py]`. For example,
+
+.. code-block:: bash
+
+    python3 projects/examples/simulation/3d/mgpcg_smoke_3d.py
+    python3 projects/examples/rendering/paper_cut.py
+
+Please learn the python interface by examples for now.
+Detailed documentation coming soon.

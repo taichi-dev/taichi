@@ -30,7 +30,8 @@ def main():
         "           ti exec                   |-> Invoke a executable in the 'build' folder\n"
         "           ti format                 |-> Format taichi and projects\n"
         "                                         (C++ source and python scripts)\n"
-        "           ti *.py [arguments]       |-> Run scripts\n")
+        "           ti [script.py]            |-> Run script\n"
+        "           ti debug [script.py]      |-> Debug script\n")
     exit(-1)
   mode = sys.argv[1]
 
@@ -47,8 +48,17 @@ def main():
     name = sys.argv[2]
     task = tc.Task(name)
     task.run(sys.argv[3:])
+  elif mode == "debug":
+    tc.core.set_core_trigger_gdb_when_crash(True)
+    if argc <= 2:
+      print("Please specify [file name], e.g. render.py")
+      exit(-1)
+    name = sys.argv[2]
+    with open(name) as script:
+      script = script.read()
+    exec(script, {'__name__': '__main__'})
+    exit()
   elif mode == "test":
-    # tc.core.set_core_trigger_gdb_when_crash(True)
     task = tc.Task('test')
     task.run(sys.argv[2:])
   elif mode == "build":

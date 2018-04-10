@@ -349,7 +349,7 @@ class InterfaceHolder {
     return get_name_static();                     \
   }                                               \
   static std::string get_name_static() {          \
-    return #alias;                                \
+    return alias;                                 \
   }
 
 TC_NAMESPACE_END

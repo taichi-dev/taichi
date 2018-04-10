@@ -34,6 +34,12 @@ C++:
 
     CoreState::set_trigger_gdb_when_crash(true);
 
+Interface System
+---------------------------------
+Print all interfaces and units
+
+.. code-block:: python
+    tc.core.print_all_units()
 
 Serialization
 ----------------------------------

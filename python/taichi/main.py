@@ -30,6 +30,7 @@ def main():
         "           ti exec                   |-> Invoke a executable in the 'build' folder\n"
         "           ti format                 |-> Format taichi and projects\n"
         "                                         (C++ source and python scripts)\n"
+        "           ti statement [statement]  |-> Execute a single statement (with taichi imported as tc\n"
         "           ti [script.py]            |-> Run script\n"
         "           ti debug [script.py]      |-> Debug script\n")
     exit(-1)
@@ -65,6 +66,8 @@ def main():
     tc.core.build()
   elif mode == "format":
     tc.core.format()
+  elif mode == "statement":
+    exec(sys.argv[2])
   elif mode == "update":
     tc.core.update(True)
     tc.core.build()

@@ -340,7 +340,6 @@ class InterfaceHolder {
     ImplementationInjector_##base_class_name##class_name() {         \
       TC_IMPLEMENTATION_HOLDER_NAME(base_class_name)::get_instance() \
           ->insert_new<class_name>(class_name::get_name_static());   \
-      TC_P(class_name::get_name_static());                           \
     }                                                                \
   } ImplementationInjector_##base_class_name##class_name##instance;
 

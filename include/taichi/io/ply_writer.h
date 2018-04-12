@@ -30,6 +30,15 @@ class PLYWriter {
     face_vertices_count.push_back(vert.size());
   }
 
+  void add_face(const std::vector<Vector3f> &vert_) {
+    std::vector<Vertex> vert;
+    for (auto v : vert_) {
+      vert.push_back(Vertex(v, Vector3f(0, 1, 0)));
+    }
+    vertices.insert(vertices.end(), vert.begin(), vert.end());
+    face_vertices_count.push_back(vert.size());
+  }
+
   ~PLYWriter() {
     std::string header =
         "ply\n"

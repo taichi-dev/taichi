@@ -11,7 +11,7 @@
 #include <functional>
 #include <thread>
 #include <vector>
-#ifdef _WIN64
+#ifdef _MSVC_LANG
 #include <windows.h>
 #else
 // Mac and Linux

@@ -1,3 +1,4 @@
+from taichi.main import main
 from taichi.core import tc_core as core
 from taichi.dynamics import *
 from taichi.geometry import *
@@ -17,7 +18,6 @@ from taichi.visual.particle_renderer import *
 from taichi.dynamics.smoke3 import *
 from taichi.system import *
 from taichi.pakua import get_pakua_server
-from taichi.main import main
 
 def test():
   task = taichi.Task('test')

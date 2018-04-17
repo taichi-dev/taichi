@@ -3,7 +3,23 @@ import os
 import shutil
 import random
 from taichi.tools.video import make_video
+from taichi.core.util import get_projects
+import colorama
 
+def print_all_projects():
+  from colorama import Fore, Back, Style
+  print(Fore.GREEN, end='')
+  print("Active projects:")
+  projs = get_projects(active=True)
+  for p in projs:
+    print('    {}'.format(p))
+
+  print(Fore.BLUE, end='')
+  projs = get_projects(active=False)
+  print("Inactive projects:")
+  for p in projs:
+    print('    {}'.format(p))
+  print(Fore.RESET, end='')
 
 def main():
   lines = []
@@ -11,7 +27,7 @@ def main():
   lines.append(u'{:^43}'.format(u' '.join([u'\u262f'] * 8)))
   lines.append(u' *******************************************')
   lines.append(u' **                Taichi                 **')
-  lines.append(u' **                                       **')
+  lines.append(u' **                ~~~~~~                 **')
   lines.append(u' ** Open Source Computer Graphics Library **')
   lines.append(u' *******************************************')
   lines.append(u'{:^43}'.format(u"\u2630 \u2631 \u2632 \u2633 "
@@ -25,6 +41,9 @@ def main():
     print(
         "    Usage: ti run [task name]        |-> Run a specific task\n"
         "           ti test                   |-> Run tests\n"
+        "           ti proj                   |-> List all projects\n"
+        "           ti proj activate [name]   |-> Activate project\n"
+        "           ti proj deactivate [name] |-> Deactivate project\n"
         "           ti build                  |-> Build C++ files\n"
         "           ti update                 |-> Update taichi and projects\n"
         "           ti video                  |-> Make a video using *.png files in the current folder\n"
@@ -61,6 +80,21 @@ def main():
       script = script.read()
     exec(script, {'__name__': '__main__'})
     exit()
+  elif mode == "proj":
+    if len(sys.argv) == 2:
+      print_all_projects()
+    elif sys.argv[2] == 'activate':
+      proj = sys.argv[3]
+      assert not os.path.exists(tc.get_project_directory(proj))
+      assert os.path.exists(tc.get_project_directory('_' + proj))
+      os.rename(tc.get_project_directory('_' + proj), tc.get_project_directory(proj))
+    elif sys.argv[2] == 'deactivate':
+      proj = sys.argv[3]
+      assert not os.path.exists(tc.get_project_directory('_' + proj))
+      assert os.path.exists(tc.get_project_directory(proj))
+      os.rename(tc.get_project_directory(proj), tc.get_project_directory('_' + proj))
+    else:
+      assert False
   elif mode == "test":
     task = tc.Task('test')
     task.run(sys.argv[2:])

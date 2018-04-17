@@ -66,6 +66,18 @@ def print_red_bold(*args, **kwargs):
   print(*args, **kwargs)
   print(Style.RESET_ALL, end='')
 
+def get_projects(active=True):
+  import taichi as tc
+  ret = []
+  for proj in os.listdir(tc.get_project_directory()):
+    if proj not in ['examples', 'toys'] and os.path.isdir(tc.get_project_directory(proj)):
+      activation = not proj.startswith('_')
+      if not activation:
+        proj = proj[1:]
+      if activation == active:
+        ret.append(proj)
+  return ret
+
 def update(include_projects=False):
   import git
   import taichi as tc

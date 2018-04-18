@@ -701,6 +701,9 @@ class ArrayND<3, T> {
 template <typename T>
 using Array3D = ArrayND<3, T>;
 
+template <int dim, typename T>
+using TArray = ArrayND<dim, T>;
+
 template <typename T>
 void print(const Array3D<T> &arr) {
   arr.print("");

@@ -50,3 +50,5 @@ modules.txt
 __pycache__
 /outputs
 *.ppm
+*.png
+*.jpg

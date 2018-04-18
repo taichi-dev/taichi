@@ -563,6 +563,14 @@ class ArrayND<2, T> {
     return data.cend();
   }
 
+  auto begin() {
+    return data.begin();
+  }
+
+  auto end() {
+    return data.end();
+  }
+
   T &operator[](const Vector2i &pos) {
     return (*this)[pos.x][pos.y];
   }

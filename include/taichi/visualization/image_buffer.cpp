@@ -173,15 +173,25 @@ template void Array2D<Vector4>::write_text(const std::string &font_fn,
                                            int dx,
                                            int dy);
 
-template void Array2D<Vector3>::load_image(const std::string &filename, bool);
+template void Array2D<Vector3f>::load_image(const std::string &filename, bool);
 
-template void Array2D<Vector4>::load_image(const std::string &filename, bool);
+template void Array2D<Vector4f>::load_image(const std::string &filename, bool);
 
-template void Array2D<real>::write_as_image(const std::string &filename);
+template void Array2D<Vector3d>::load_image(const std::string &filename, bool);
 
-template void Array2D<Vector3>::write_as_image(const std::string &filename);
+template void Array2D<Vector4d>::load_image(const std::string &filename, bool);
 
-template void Array2D<Vector4>::write_as_image(const std::string &filename);
+template void Array2D<float32>::write_as_image(const std::string &filename);
+
+template void Array2D<float64>::write_as_image(const std::string &filename);
+
+template void Array2D<Vector3f>::write_as_image(const std::string &filename);
+
+template void Array2D<Vector4f>::write_as_image(const std::string &filename);
+
+template void Array2D<Vector3d>::write_as_image(const std::string &filename);
+
+template void Array2D<Vector4d>::write_as_image(const std::string &filename);
 
 void write_pgm(Array2D<real> img, const std::string &fn) {
   std::ofstream fs(fn, std::ios_base::binary);

@@ -740,7 +740,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
     return ret;
   }
 
-  TC_FORCE_INLINE VectorND pow(real index) const {
+  TC_FORCE_INLINE VectorND pow(T index) const {
     VectorND ret;
     for (int i = 0; i < DIM; i++) {
       ret[i] = std::pow(this->d[i], index);

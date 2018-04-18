@@ -13,22 +13,22 @@ TC_NAMESPACE_BEGIN
 #undef max
 #undef min
 
-using std::min;
-using std::max;
 using std::abs;
-using std::sin;
-using std::asin;
-using std::cos;
 using std::acos;
-using std::tan;
+using std::asin;
 using std::atan;
+using std::cos;
 using std::floor;
+using std::max;
+using std::min;
+using std::sin;
+using std::tan;
 
 const real pi{acosf(-1.0_f)};
 const real eps = 1e-6_f;
 
 template <int I, typename T>
-constexpr inline T pow(T a) {
+constexpr TC_FORCE_INLINE T pow(T a) {
   T ret(1);
   for (int i = 0; i < I; i++) {
     ret *= a;
@@ -36,16 +36,16 @@ constexpr inline T pow(T a) {
   return ret;
 };
 
-inline float32 fract(float32 a) {
+TC_FORCE_INLINE float32 fract(float32 a) {
   return a - (int)floor(a);
 }
 
-inline float64 fract(float64 a) {
+TC_FORCE_INLINE float64 fract(float64 a) {
   return a - (int)floor(a);
 }
 
 template <typename T>
-inline T clamp(const T &a, const T &min, const T &max) {
+TC_FORCE_INLINE T clamp(const T &a, const T &min, const T &max) {
   if (a < min)
     return min;
   if (a > max)
@@ -54,7 +54,7 @@ inline T clamp(const T &a, const T &min, const T &max) {
 }
 
 template <typename T>
-inline T clamp(const T &a) {
+TC_FORCE_INLINE T clamp(const T &a) {
   if (a < T(0))
     return T(0);
   if (a > T(1))
@@ -63,16 +63,16 @@ inline T clamp(const T &a) {
 }
 
 template <typename T, typename V>
-inline V lerp(T a, V x_0, V x_1) {
+TC_FORCE_INLINE V lerp(T a, V x_0, V x_1) {
   return (T(1) - a) * x_0 + a * x_1;
 }
 
 template <typename T>
-T sqr(const T &a) {
+TC_FORCE_INLINE T sqr(const T &a) {
   return pow<2>(a);
 }
 
-inline int sgn(float a) {
+TC_FORCE_INLINE int sgn(float a) {
   if (a < -eps)
     return -1;
   else if (a > eps)
@@ -80,7 +80,7 @@ inline int sgn(float a) {
   return 0;
 }
 
-inline int sgn(double a) {
+TC_FORCE_INLINE int sgn(double a) {
   if (a < -eps)
     return -1;
   else if (a > eps)
@@ -88,7 +88,7 @@ inline int sgn(double a) {
   return 0;
 }
 
-inline uint32 rand_int() {
+TC_FORCE_INLINE uint32 rand_int() {
   static unsigned int x = 123456789, y = 362436069, z = 521288629, w = 88675123;
   unsigned int t = x ^ (x << 11);
   x = y;
@@ -97,13 +97,31 @@ inline uint32 rand_int() {
   return (w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)));
 }
 
-inline uint64 rand_int64() {
+TC_FORCE_INLINE uint64 rand_int64() {
   return ((uint64)rand_int() << 32) + rand_int();
 }
 
 // inline float frand() { return (float)rand() / (RAND_MAX + 1); }
-inline float rand() {
+TC_FORCE_INLINE float rand() {
   return rand_int() * (1.0_f / 4294967296.0f);
+}
+
+template <typename T>
+TC_FORCE_INLINE T rand();
+
+template <>
+TC_FORCE_INLINE float rand<float>() {
+  return rand_int() * (1.0_f / 4294967296.0f);
+}
+
+template <>
+TC_FORCE_INLINE double rand<double>() {
+  return rand_int() * (1.0 / 4294967296.0);
+}
+
+template <>
+TC_FORCE_INLINE int rand<int>() {
+  return rand_int();
 }
 
 inline int is_prime(int a) {
@@ -116,25 +134,25 @@ inline int is_prime(int a) {
 }
 
 template <typename T>
-inline T hypot2(const T &x, const T &y) {
+TC_FORCE_INLINE T hypot2(const T &x, const T &y) {
   return x * x + y * y;
 }
 
-inline float32 pow(const float32 &a, const float32 &b) {
+TC_FORCE_INLINE float32 pow(const float32 &a, const float32 &b) {
   return ::pow(a, b);
 }
 
-inline float64 pow(const float64 &a, const float64 &b) {
+TC_FORCE_INLINE float64 pow(const float64 &a, const float64 &b) {
   return ::pow(a, b);
 }
 
 template <typename T>
-inline bool is_normal(T m) {
+TC_FORCE_INLINE bool is_normal(T m) {
   return std::isfinite(m);
 }
 
 template <typename T>
-inline bool abnormal(T m) {
+TC_FORCE_INLINE bool abnormal(T m) {
   return !is_normal(m);
 }
 

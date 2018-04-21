@@ -1756,4 +1756,14 @@ template <int N, typename T, InstSetExt ISE>
 struct is_MatrixND<MatrixND<N, T, ISE>> : public std::true_type {};
 }  // namespace type
 
+// Intrinsics
+TC_FORCE_INLINE float32 extract_float32(const __m128 &s, int i) {
+  int ret = _mm_extract_ps(s, i);
+  return reinterpret_cast<float32 *>(&ret)[0];
+}
+
+TC_FORCE_INLINE __m128 broadcast(const __m128 &s, int i) {
+  return _mm_shuffle_ps(s, s, 0x55 * i);
+}
+
 TC_NAMESPACE_END

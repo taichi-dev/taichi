@@ -123,6 +123,31 @@ class RectTexture : public Texture {
 
 TC_IMPLEMENTATION(Texture, RectTexture, "rect");
 
+class RectBoundTexture : public Texture {
+ protected:
+  Vector3 lower_bounds;
+  Vector3 upper_bounds;
+
+ public:
+  void initialize(const Config &config) override {
+    Texture::initialize(config);
+    lower_bounds = config.get<Vector3>("lower_bounds");
+    upper_bounds = config.get<Vector3>("upper_bounds");
+  }
+
+  bool inside(const Vector3 &coord) const {
+    return lower_bounds.x < coord.x && coord.x < upper_bounds.x &&
+           lower_bounds.y < coord.y && coord.y < upper_bounds.y &&
+           lower_bounds.z < coord.z && coord.z < upper_bounds.z;
+  }
+
+  virtual Vector4 sample(const Vector3 &coord) const override {
+    return Vector4(inside(coord) ? 1.0_f : 0.0_f);
+  }
+};
+
+TC_IMPLEMENTATION(Texture, RectBoundTexture, "rect_bound");
+
 class RingTexture : public Texture {
  protected:
   real inner, outer;

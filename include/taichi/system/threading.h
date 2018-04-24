@@ -11,7 +11,7 @@
 #include <functional>
 #include <thread>
 #include <vector>
-#ifdef _MSVC_LANG
+#if defined(TC_PLATFORM_WINDOWS)
 #include <windows.h>
 #else
 // Mac and Linux

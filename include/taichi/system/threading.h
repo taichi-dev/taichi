@@ -96,7 +96,7 @@ class ThreadedTaskManager {
 class PID {
  public:
   static int get_pid() {
-#ifdef _MSVC_LANG
+#if defined(TC_PLATFORM_WINDOWS)
     return (int)GetCurrentProcessId();
 #else
     return (int)getpid();

@@ -45,6 +45,7 @@ def main():
         "           ti proj activate [name]   |-> Activate project\n"
         "           ti proj deactivate [name] |-> Deactivate project\n"
         "           ti build                  |-> Build C++ files\n"
+        "           ti clean asm [*.s]        |-> Clean up gcc ASM\n"
         "           ti update                 |-> Update taichi and projects\n"
         "           ti video                  |-> Make a video using *.png files in the current folder\n"
         "           ti convert                |-> Delete color controllers in a log file\n"
@@ -107,6 +108,9 @@ def main():
   elif mode == "update":
     tc.core.update(True)
     tc.core.build()
+  elif mode == "asm":
+    fn = sys.argv[2]
+    os.system(r"sed '/^\s*\.\(L[A-Z]\|[a-z]\)/ d' {0} > clean_{0}".format(fn))
   elif mode == "exec":
     import subprocess
     exec_name = sys.argv[2]

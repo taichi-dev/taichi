@@ -11,7 +11,7 @@
 #include <functional>
 #include <thread>
 #include <vector>
-#ifdef _WIN64
+#if defined(TC_PLATFORM_WINDOWS)
 #include <windows.h>
 #else
 // Mac and Linux
@@ -96,7 +96,7 @@ class ThreadedTaskManager {
 class PID {
  public:
   static int get_pid() {
-#ifdef _MSVC_LANG
+#if defined(TC_PLATFORM_WINDOWS)
     return (int)GetCurrentProcessId();
 #else
     return (int)getpid();

@@ -26,6 +26,13 @@ Additional environment variables: (assuming taichi is installed in ``DIR/taichi`
 
 Add ``DIR/taichi/python`` to ``PYTHONPATH`` and ``DIR/taichi/bin`` to ``PATH``
 
+Build with Double Precision (64 bit) Float Point
+------------------------------
+.. code-block:: bash
+
+   export TC_USE_DOUBLE=1
+   ti build
+
 Examples
 ------------------------------
 Please see `examples <https://github.com/yuanming-hu/taichi/tree/master/projects/examples>`_.

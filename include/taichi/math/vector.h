@@ -1327,7 +1327,7 @@ TC_FORCE_INLINE float64 inversed(const float64 &a) {
 
 template <InstSetExt ISE, typename T>
 TC_FORCE_INLINE MatrixND<2, T, ISE> inversed(const MatrixND<2, T, ISE> &mat) {
-  real det = determinant(mat);
+  T det = determinant(mat);
   return static_cast<T>(1) / det *
          MatrixND<2, T, ISE>(VectorND<2, T, ISE>(mat[1][1], -mat[0][1]),
                              VectorND<2, T, ISE>(-mat[1][0], mat[0][0]));

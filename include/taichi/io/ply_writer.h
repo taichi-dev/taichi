@@ -11,9 +11,9 @@ class PLYWriter {
   FILE *file;
 
   struct Vertex {
-    Vector3f position;
-    Vector3f color;
-    Vertex(Vector3f position, Vector3f color)
+    Vector3 position;
+    Vector3 color;
+    Vertex(Vector3 position, Vector3 color)
         : position(position), color(color) {
     }
   };
@@ -30,10 +30,10 @@ class PLYWriter {
     face_vertices_count.push_back(vert.size());
   }
 
-  void add_face(const std::vector<Vector3f> &vert_) {
+  void add_face(const std::vector<Vector3> &vert_) {
     std::vector<Vertex> vert;
     for (auto v : vert_) {
-      vert.push_back(Vertex(v, Vector3f(0, 1, 0)));
+      vert.push_back(Vertex(v, Vector3(0, 1, 0)));
     }
     vertices.insert(vertices.end(), vert.begin(), vert.end());
     face_vertices_count.push_back(vert.size());
@@ -57,7 +57,7 @@ class PLYWriter {
     fmt::print(file, header, vertices.size(), face_vertices_count.size());
 
     for (auto v : vertices) {
-      Vector3i color = (v.color * 255.0f).template cast<int>();
+      Vector3i color = (v.color * 255.0_f).template cast<int>();
       fmt::print(file, "{} {} {} {} {} {}\n", v.position.x, v.position.y,
                  v.position.z, color.x, color.y, color.z);
     }

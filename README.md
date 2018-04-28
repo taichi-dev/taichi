@@ -19,9 +19,9 @@ with Python.
 
 # [Quick Start](https://github.com/yuanming-hu/taichi/wiki/Quick-Start)
 
-## Acknowledgements
+## Acknowledgments
 
-Like many other open-source projects, `taichi` is based on other open-source projects, which are shipped with taichi and users do not have to install manually:
+`Taichi` is based on many other open-source projects, which are shipped with taichi and users do not have to install manually:
  - [Intel Embree](https://embree.github.io/)
  - [Intel TBB](https://www.threadingbuildingblocks.org/)
  - [fmt](https://github.com/fmtlib/fmt)

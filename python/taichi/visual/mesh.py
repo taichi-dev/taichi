@@ -23,10 +23,16 @@ class Mesh:
   def __init__(self,
                filename_or_triangles,
                material=None,
-               translate=Vector(0, 0, 0),
-               rotation=Vector(0, 0, 0),
-               scale=Vector(1, 1, 1),
+               translate=None,
+               rotation=None,
+               scale=None,
                transform=None):
+    if translate is None:
+      translate = Vector(0, 0, 0)
+    if rotation is None:
+      rotation = Vector(0, 0, 0)
+    if scale is None:
+      scale = Vector(1, 1, 1)
     if isinstance(filename_or_triangles, str):
       filename_or_triangles = map_filename(filename_or_triangles)
     self.c = tc_core.create_mesh()

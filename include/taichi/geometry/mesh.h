@@ -93,11 +93,9 @@ struct ElementMesh {
     TC_STATIC_ELSE {
       TC_INFO("Adding mesh, fn={}", config.get<std::string>("mesh_fn"));
       std::string mesh_fn = config.get<std::string>("mesh_fn");
-      std::string full_fn = std::getenv("TAICHI_REPO_DIR") +
-                            std::string("/projects/mpm/data/") + mesh_fn;
       auto mesh = std::make_shared<Mesh>();
       Config mesh_config;
-      mesh_config.set("filename", full_fn);
+      mesh_config.set("filename", mesh_fn);
       mesh_config.set("reverse_vertices",
                       config.get<bool>("reverse_vertices", false));
       mesh->initialize(mesh_config);

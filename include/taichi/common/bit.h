@@ -134,7 +134,7 @@ struct Reinterpretor {
 
   Reinterpretor(T t) : t(t) {
   }
-  static_assert(sizeof(T) == sizeof(G));
+  static_assert(sizeof(T) == sizeof(G), "");
 };
 
 template <typename G, typename T>

@@ -140,6 +140,7 @@ void export_misc(py::module &m) {
   m.def("test_raise_error", test_raise_error);
   m.def("test_volumetric_io", test_volumetric_io);
   m.def("config_from_dict", config_from_py_dict);
+  m.def("get_default_float_size", []() { return sizeof(real); });
   m.def("register_at_exit",
         [&](uint64 ptr) { python_at_exit = *(Function11 *)(ptr); });
   m.def("trigger_sig_fpe", []() {
@@ -148,8 +149,7 @@ void export_misc(py::module &m) {
     return 1 / a;
   });
   // m.def("dict_from_config", py_dict_from_py_config);
-  m.def("print_profile_info",
-        [&]() { print_profile_info(); });
+  m.def("print_profile_info", [&]() { print_profile_info(); });
 }
 
 TC_NAMESPACE_END

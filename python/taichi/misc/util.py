@@ -88,15 +88,26 @@ def Vector(*args):
     return args[0]
   if isinstance(args[0], tuple):
     args = tuple(*args)
-  if len(args) == 2:
-    return tc_core.Vector2f(float(args[0]), float(args[1]))
-  elif len(args) == 3:
-    return tc_core.Vector3f(float(args[0]), float(args[1]), float(args[2]))
-  elif len(args) == 4:
-    return tc_core.Vector4f(
-        float(args[0]), float(args[1]), float(args[2]), float(args[3]))
+  if tc_core.get_default_float_size() == 4:
+    if len(args) == 2:
+      return tc_core.Vector2f(float(args[0]), float(args[1]))
+    elif len(args) == 3:
+      return tc_core.Vector3f(float(args[0]), float(args[1]), float(args[2]))
+    elif len(args) == 4:
+      return tc_core.Vector4f(
+          float(args[0]), float(args[1]), float(args[2]), float(args[3]))
+    else:
+      assert False, type(args[0])
   else:
-    assert False, type(args[0])
+    if len(args) == 2:
+      return tc_core.Vector2d(float(args[0]), float(args[1]))
+    elif len(args) == 3:
+      return tc_core.Vector3d(float(args[0]), float(args[1]), float(args[2]))
+    elif len(args) == 4:
+      return tc_core.Vector4d(
+        float(args[0]), float(args[1]), float(args[2]), float(args[3]))
+    else:
+      assert False, type(args[0])
 
 
 def default_const_or_evaluate(f, default, u, v):

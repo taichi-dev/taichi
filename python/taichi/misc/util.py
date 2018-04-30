@@ -86,6 +86,12 @@ def Vector(*args):
     return args[0]
   if isinstance(args[0], tc_core.Vector4f):
     return args[0]
+  if isinstance(args[0], tc_core.Vector2d):
+    return args[0]
+  if isinstance(args[0], tc_core.Vector3d):
+    return args[0]
+  if isinstance(args[0], tc_core.Vector4d):
+    return args[0]
   if isinstance(args[0], tuple):
     args = tuple(*args)
   if tc_core.get_default_float_size() == 4:

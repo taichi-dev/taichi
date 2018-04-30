@@ -124,17 +124,17 @@ void EmbreeRayIntersection::build() {
       rtcNewTriangleMesh(rtc_scene, geom_flags, num_triangles, num_vertices, 1);
 
   struct RTCVertex {
-    float x, y, z, a;
+    float32 x, y, z, a;
   };
   struct RTCTriangle {
-    int v[3];
+    int32 v[3];
   };
 
   RTCVertex *vertices =
       (RTCVertex *)rtcMapBuffer(rtc_scene, geom_id, RTC_VERTEX_BUFFER);
   for (int i = 0; i < num_triangles; i++) {
     for (int k = 0; k < 3; k++) {
-      *(Vector4 *)(&vertices[i * 3 + k]) = Vector4(triangles[i].v[k], 0);
+      *(Vector4f *)(&vertices[i * 3 + k]) = Vector4(triangles[i].v[k], 0).cast<float32>();
     }
   }
   rtcUnmapBuffer(rtc_scene, geom_id, RTC_VERTEX_BUFFER);
@@ -154,8 +154,8 @@ void EmbreeRayIntersection::build() {
 
 void EmbreeRayIntersection::query(Ray &ray) {
   RTCRay rtc_ray;
-  *reinterpret_cast<Vector3 *>(rtc_ray.org) = ray.orig;
-  *reinterpret_cast<Vector3 *>(rtc_ray.dir) = ray.dir;
+  *reinterpret_cast<Vector3f *>(rtc_ray.org) = ray.orig.cast<float32>();
+  *reinterpret_cast<Vector3f *>(rtc_ray.dir) = ray.dir.cast<float32>();
   rtc_ray.tnear = eps * 10;
   rtc_ray.tfar = Ray::DIST_INFINITE;
   rtc_ray.time = 0.0_f;
@@ -182,8 +182,8 @@ void EmbreeRayIntersection::add_triangle(Triangle &triangle) {
 bool EmbreeRayIntersection::occlude(Ray &ray) {
   assert(false);  // TODO
   RTCRay rtc_ray;
-  *(Vector3 *)rtc_ray.org = ray.orig;
-  *(Vector3 *)rtc_ray.dir = ray.dir;
+  *(Vector3f *)rtc_ray.org = ray.orig.cast<float32>();
+  *(Vector3f *)rtc_ray.dir = ray.dir.cast<float32>();
   rtc_ray.tnear = eps * 10;
   rtc_ray.tfar = ray.dist;
   rtc_ray.time = 0.0_f;

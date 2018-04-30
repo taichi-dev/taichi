@@ -125,6 +125,35 @@ TC_FORCE_INLINE constexpr uint32 log2int(uint64 value) {
   return ret;
 }
 
+template <typename G, typename T>
+struct Reinterpretor {
+  union {
+    G g;
+    T t;
+  };
+
+  Reinterpretor(T t) : t(t) {
+  }
+  static_assert(sizeof(T) == sizeof(G));
+};
+
+template <typename G, typename T>
+TC_FORCE_INLINE constexpr G reinterpret_bits(T t) {
+  return Reinterpretor<G, T>(t).g;
+};
+
+TC_FORCE_INLINE constexpr float64 compress(float32 h, float32 l) {
+  uint64 data =
+      ((uint64)reinterpret_bits<uint32>(h) << 32) + reinterpret_bits<uint32>(l);
+  return reinterpret_bits<float64>(data);
+}
+
+TC_FORCE_INLINE constexpr std::tuple<float32, float32> extract(float64 x) {
+  auto data = reinterpret_bits<uint64>(x);
+  return std::make_tuple(reinterpret_bits<float32>((uint32)(data >> 32)),
+                         reinterpret_bits<float32>((uint32)(data & (-1))));
+}
+
 }  // namespace bit
 
 TC_NAMESPACE_END

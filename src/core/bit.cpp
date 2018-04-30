@@ -47,5 +47,9 @@ TC_TEST("bit") {
   CHECK(f.get_cherry() == 63);
   f.set_banana(false);
   CHECK(f.get_cherry() == 63);
+
+  float64 t = 123.456789;
+  auto e = extract(t);
+  CHECK(t == compress(std::get<0>(e), std::get<1>(e)));
 }
 TC_NAMESPACE_END

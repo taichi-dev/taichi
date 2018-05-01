@@ -282,7 +282,7 @@ def start_memory_monitoring(output_fn, pid=-1, interval=1):
   import os, psutil, time
   if pid == -1:
     pid = os.getpid()
-  import threading
+  import multiprocessing
   def task():
     with open(output_fn, 'w') as f:
       process = psutil.Process(pid)
@@ -294,8 +294,8 @@ def start_memory_monitoring(output_fn, pid=-1, interval=1):
         time.sleep(interval)
         print(time.time(), mem, file=f)
         f.flush()
-  th = threading.Thread(target=task)
-  th.start()
+  proc = multiprocessing.Process(target=task)
+  proc.start()
 
 
 @atexit.register

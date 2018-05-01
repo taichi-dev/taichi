@@ -21,6 +21,28 @@ def print_all_projects():
     print('    {}'.format(p))
   print(Fore.RESET, end='')
 
+def plot(fn):
+  import matplotlib.pyplot as plt
+  with open(fn) as f:
+    lines = f.readlines()
+    T = []
+    M = []
+    for l in lines:
+      t, m = map(float, l.split(' '))
+      T.append(t)
+      M.append(m / 2 ** 30)
+
+  base_t = T[0]
+  for i in range(len(T)):
+    T[i] -= base_t
+
+  plt.clf()
+  plt.plot(T, M)
+  plt.xlabel('Time (seconds)')
+  plt.ylabel('Memory Consumption (G Bytes)')
+  plt.ylim(0, max(M) * 1.2)
+  plt.show()
+
 def main():
   lines = []
   print()
@@ -46,6 +68,7 @@ def main():
         "           ti proj deactivate [name] |-> Deactivate project\n"
         "           ti build                  |-> Build C++ files\n"
         "           ti clean asm [*.s]        |-> Clean up gcc ASM\n"
+        "           ti plot [*.txt]           |-> Plot a memory usage curve\n"
         "           ti update                 |-> Update taichi and projects\n"
         "           ti video                  |-> Make a video using *.png files in the current folder\n"
         "           ti convert                |-> Delete color controllers in a log file\n"
@@ -105,6 +128,8 @@ def main():
     tc.core.format()
   elif mode == "statement":
     exec(sys.argv[2])
+  elif mode == "plot":
+    plot(sys.argv[2])
   elif mode == "update":
     tc.core.update(True)
     tc.core.build()

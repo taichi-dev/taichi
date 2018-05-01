@@ -8,6 +8,8 @@
 
 TC_NAMESPACE_BEGIN
 
+constexpr size_t VirtualMemoryAllocator::page_size;
+
 float64 get_memory_usage_gb(int pid) {
   return get_memory_usage(pid) * pow<3>(1.0_f64 / 1024.0_f64);
 }

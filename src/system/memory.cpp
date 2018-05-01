@@ -1,4 +1,5 @@
 #include <taichi/system/memory.h>
+#include <taichi/system/timer.h>
 #include <taichi/math.h>
 #include <taichi/util.h>
 #include <taichi/system/threading.h>
@@ -8,18 +9,23 @@
 
 TC_NAMESPACE_BEGIN
 
+namespace py = pybind11;
+using namespace py::literals;
+
 constexpr size_t VirtualMemoryAllocator::page_size;
 
+float64 bytes_to_GB(float64 bytes) {
+  return float64(bytes) * pow<3>(1.0_f64 / 1024.0_f64);
+}
+
 float64 get_memory_usage_gb(int pid) {
-  return get_memory_usage(pid) * pow<3>(1.0_f64 / 1024.0_f64);
+  return bytes_to_GB(get_memory_usage(pid));
 }
 
 uint64 get_memory_usage(int pid) {
   if (pid == -1) {
     pid = PID::get_pid();
   }
-  namespace py = pybind11;
-  using namespace py::literals;
 
   auto locals = py::dict("pid"_a = pid);
   py::exec(R"(
@@ -29,6 +35,56 @@ uint64 get_memory_usage(int pid) {
            py::globals(), locals);
 
   return locals["mem"].cast<int64>();
+}
+
+MemoryMonitor::MemoryMonitor(int pid, std::string output_fn) {
+  locals = new py::dict;
+  log.open(output_fn, std::ios_base::out);
+  (*reinterpret_cast<py::dict *>(locals))["pid"] = pid;
+  py::exec(R"(
+        import os, psutil
+        process = psutil.Process(pid))",
+           py::globals(), *reinterpret_cast<py::dict *>(locals));
+}
+
+MemoryMonitor::~MemoryMonitor() {
+  delete reinterpret_cast<py::dict *>(locals);
+}
+
+uint64 MemoryMonitor::get_usage() const {
+  py::exec(R"(
+        try:
+          mem = process.memory_info().rss
+        except:
+          mem = -1)",
+           py::globals(), *reinterpret_cast<py::dict *>(locals));
+  return (*reinterpret_cast<py::dict *>(locals))["mem"].cast<uint64>();
+}
+
+void MemoryMonitor::append_sample() {
+  auto t = std::chrono::system_clock::now();
+  log << fmt::format(
+      "{:.5f} {}\n",
+      (t.time_since_epoch() / std::chrono::nanoseconds(1)) / 1e9_f64,
+      get_usage());
+  log.flush();
+}
+
+void start_memory_monitoring(int pid,
+                             std::string output_fn,
+                             real interval) {
+  if (pid == -1) {
+    pid = PID::get_pid();
+  }
+  TC_P(pid);
+  std::thread th([&]() {
+    MemoryMonitor monitor(pid, output_fn);
+    while (true) {
+      monitor.append_sample();
+      Time::sleep(interval);
+    }
+  });
+  th.detach();
 }
 
 class MemoryTest : public Task {
@@ -42,6 +98,20 @@ class MemoryTest : public Task {
   }
 };
 
+class MemoryTest2 : public Task {
+ public:
+  void run(const std::vector<std::string> &parameters) override {
+    start_memory_monitoring(-1, "test.txt");
+    std::vector<uint8> a;
+    for (int i = 0; i < 10; i++) {
+      a.resize(1024ul * 1024 * 1024 * i / 2);
+      std::fill(std::begin(a), std::end(a), 3);
+      Time::sleep(0.5);
+    }
+  }
+};
+
 TC_IMPLEMENTATION(Task, MemoryTest, "mem_test");
+TC_IMPLEMENTATION(Task, MemoryTest2, "mem_test2");
 
 TC_NAMESPACE_END

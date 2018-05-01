@@ -42,7 +42,7 @@ TC_TEST("vector arith") {
   CHECK(a + b == Vector3(5, 4, 8));
   CHECK(b - a == Vector3(3, 0, 2));
   CHECK(b * a == Vector3(4, 4, 15));
-  CHECK(b / a == Vector3(4, 1, 5.0f / 3.0f));
+  CHECK(b / a == Vector3(4, 1, 5.0_f / 3.0_f));
   a += b;
   CHECK(a == Vector3(5, 4, 8));
   a -= b;
@@ -51,23 +51,23 @@ TC_TEST("vector arith") {
   CHECK(a == Vector3(4, 4, 15));
   a /= b;
   CHECK(a == Vector3(1, 2, 3));
-  a = Vector3(7.0f, 8.0f, 9.0f);
+  a = Vector3(7.0_f, 8.0_f, 9.0_f);
   CHECK(a == Vector3(7, 8, 9));
 
   Vector2 c(1, 2), d(2, 5);
   CHECK(c + d == Vector2(3, 7));
 
-  CHECK(Vector4(1, 2, 3, 1).length2() == 15.0f);
+  CHECK(Vector4(1, 2, 3, 1).length2() == 15.0_f);
 #if !defined(TC_USE_DOUBLE) && !defined(TC_ISE_NONE)
-  CHECK(Vector3(1, 2, 3, 1).length2() == 14.0f);
+  CHECK(Vector3(1, 2, 3, 1).length2() == 14.0_f);
 #endif
-  CHECK(dot(Vector2(1, 2), Vector2(3, 2)) == 7.0f);
+  CHECK(dot(Vector2(1, 2), Vector2(3, 2)) == 7.0_f);
   CHECK(dot(Vector2i(1, 2), Vector2i(3, 2)) == 7);
-  CHECK((fract(Vector2(1.3f, 2.7f)) - Vector2(0.3f, 0.7f)).length2() < 1e-10f);
-  CHECK(Vector2(1.3f, 2.7f).sin() == Vector2(sin(1.3f), sin(2.7f)));
+  CHECK((fract(Vector2(1.3_f, 2.7_f)) - Vector2(0.3_f, 0.7_f)).length2() < 1e-10_f);
+  CHECK(Vector2(1.3_f, 2.7_f).sin() == Vector2(sin(1.3_f), sin(2.7_f)));
 
-  CHECK(Matrix3(3.0f) + Matrix3(4.0f) == Matrix3(7.0f));
-  CHECK(Matrix3(3.0f) + Matrix3(Vector3(1, 2, 3)) == Matrix3(Vector3(4, 5, 6)));
+  CHECK(Matrix3(3.0_f) + Matrix3(4.0_f) == Matrix3(7.0_f));
+  CHECK(Matrix3(3.0_f) + Matrix3(Vector3(1, 2, 3)) == Matrix3(Vector3(4, 5, 6)));
 
   CHECK(Matrix2(Vector2(1, 2)) * Vector2(2, 3) == Vector2(2, 6));
   CHECK(Matrix3(Vector3(1, 2, 3)) * Vector3(2, 3, 4) == Vector3(2, 6, 12));
@@ -84,7 +84,7 @@ TC_TEST("vector arith") {
 
   CHECK(math::sum(Vector4(1, 2, 3, 4)) == 10);
   CHECK(math::prod(Vector4(1, 2, 3, 4)) == 24);
-  CHECK(math::sum(Vector4(1, 2, 3, 2.5)) == 8.5);
+  CHECK(math::sum(Vector4(1, 2, 3, 2.5)) == 8.5_f);
   CHECK(math::prod(Vector4(1, 2, 3, 2.5)) == 15);
   CHECK(math::sum(42) == 42);
 

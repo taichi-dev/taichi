@@ -10,11 +10,10 @@
 
 TC_NAMESPACE_BEGIN
 
-constexpr size_t page_size = (1 << 12);  // 4 KB page size by default
-
 // Cross-platform virtual memory allocator
 class VirtualMemoryAllocator {
-public:
+ public:
+  static constexpr size_t page_size = (1 << 12);  // 4 KB page size by default
   void *ptr;
   size_t size;
   explicit VirtualMemoryAllocator(size_t size) : size(size) {
@@ -25,8 +24,7 @@ public:
     TC_ERROR_IF(ptr == MAP_FAILED, "Virtual memory allocation ({} B) failed.",
                 size);
 #else
-    ptr = VirtualAlloc(nullptr, size, MEM_RESERVE | MEM_COMMIT,
-                       PAGE_READWRITE);
+    ptr = VirtualAlloc(nullptr, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
     TC_ERROR_IF(ptr == nullptr, "Virtual memory allocation ({} B) failed.",
                 size);
 #endif
@@ -39,11 +37,16 @@ public:
 #if defined(TC_PLATFORM_UNIX)
     if (munmap(ptr, size) != 0)
 #else
-      if (!VirtualFree(ptr, size, MEM_RELEASE))
+    if (!VirtualFree(ptr, size, MEM_RELEASE))
 #endif
       TC_ERROR("Failed to free virtual memory ({} B)", size);
-
   }
 };
+
+float64 get_memory_usage_gb(int pid = -1);
+uint64 get_memory_usage(int pid = -1);
+
+#define TC_MEMORY_USAGE(name) \
+  TC_WARN("Memory Usage [{}] = {:.2f} GB", name, get_memory_usage_gb());
 
 TC_NAMESPACE_END

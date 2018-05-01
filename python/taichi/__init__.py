@@ -1,5 +1,6 @@
 from taichi.main import main
 from taichi.core import tc_core as core
+from taichi.core import start_memory_monitoring
 from taichi.dynamics import *
 from taichi.geometry import *
 from taichi.misc.util import Vector, Vectori

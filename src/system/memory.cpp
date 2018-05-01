@@ -38,8 +38,8 @@ uint64 get_memory_usage(int pid) {
 }
 
 MemoryMonitor::MemoryMonitor(int pid, std::string output_fn) {
-  locals = new py::dict;
   log.open(output_fn, std::ios_base::out);
+  locals = new py::dict;
   (*reinterpret_cast<py::dict *>(locals))["pid"] = pid;
   py::exec(R"(
         import os, psutil
@@ -52,6 +52,7 @@ MemoryMonitor::~MemoryMonitor() {
 }
 
 uint64 MemoryMonitor::get_usage() const {
+  py::gil_scoped_acquire acquire;
   py::exec(R"(
         try:
           mem = process.memory_info().rss
@@ -70,14 +71,12 @@ void MemoryMonitor::append_sample() {
   log.flush();
 }
 
-void start_memory_monitoring(int pid,
-                             std::string output_fn,
-                             real interval) {
+void start_memory_monitoring(std::string output_fn, int pid, real interval) {
   if (pid == -1) {
     pid = PID::get_pid();
   }
   TC_P(pid);
-  std::thread th([&]() {
+  std::thread th([=]() {
     MemoryMonitor monitor(pid, output_fn);
     while (true) {
       monitor.append_sample();
@@ -101,7 +100,7 @@ class MemoryTest : public Task {
 class MemoryTest2 : public Task {
  public:
   void run(const std::vector<std::string> &parameters) override {
-    start_memory_monitoring(-1, "test.txt");
+    start_memory_monitoring("test.txt");
     std::vector<uint8> a;
     for (int i = 0; i < 10; i++) {
       a.resize(1024ul * 1024 * 1024 * i / 2);

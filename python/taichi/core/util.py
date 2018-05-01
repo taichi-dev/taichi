@@ -278,6 +278,26 @@ def at_startup():
 at_startup()
 
 
+def start_memory_monitoring(output_fn, pid=-1, interval=1):
+  import os, psutil, time
+  if pid == -1:
+    pid = os.getpid()
+  import threading
+  def task():
+    with open(output_fn, 'w') as f:
+      process = psutil.Process(pid)
+      while True:
+        try:
+          mem = process.memory_info().rss
+        except:
+          mem = -1
+        time.sleep(interval)
+        print(time.time(), mem, file=f)
+        f.flush()
+  th = threading.Thread(target=task)
+  th.start()
+
+
 @atexit.register
 def clean_libs():
   pass

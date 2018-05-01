@@ -11,6 +11,7 @@
 #include <taichi/python/export.h>
 #include <taichi/system/benchmark.h>
 #include <taichi/system/profiler.h>
+#include <taichi/system/memory.h>
 #include <taichi/system/unit_dll.h>
 #include <taichi/visual/texture.h>
 #include <taichi/geometry/factory.h>
@@ -67,10 +68,10 @@ void print_all_units() {
   std::cout << all_units << " units in all." << std::endl;
 }
 
-static int stdout_fd = -1;
 
 void duplicate_stdout_to_file(const std::string &fn) {
 /*
+static int stdout_fd = -1;
 int fd[2];
 pipe(fd);
 stdout = fdopen(fd[1], "w");
@@ -150,6 +151,7 @@ void export_misc(py::module &m) {
   });
   // m.def("dict_from_config", py_dict_from_py_config);
   m.def("print_profile_info", [&]() { print_profile_info(); });
+  m.def("start_memory_monitoring", start_memory_monitoring);
 }
 
 TC_NAMESPACE_END

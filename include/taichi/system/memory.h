@@ -15,6 +15,8 @@ class MemoryMonitor {
   void append_sample();
 };
 
-void start_memory_monitoring(int pid, std::string output_fn, real interval = 1);
+void start_memory_monitoring(std::string output_fn,
+                             int pid = -1,
+                             real interval = 1);
 
 TC_NAMESPACE_END

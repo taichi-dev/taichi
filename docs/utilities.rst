@@ -93,3 +93,15 @@ To enable:
     messager.enable(task_id='test')
 
 
+Memory Usage Monitoring
+----------------------------------
+
+.. code-block:: python
+
+    tc.start_memory_monitoring(output_fn='memory_usage_curve.txt', interval=1, pid=-1) # -1 means "this thread"
+
+.. code-block:: bash
+    ti plot memory_usage_curve.txt
+
+Shows the result.
+

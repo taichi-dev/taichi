@@ -32,14 +32,18 @@ def plot(fn):
       T.append(t)
       M.append(m / 2 ** 30)
 
+  base_m = min(M)
   base_t = T[0]
   for i in range(len(T)):
     T[i] -= base_t
+    M[i] -= base_m
 
   plt.clf()
   plt.plot(T, M)
   plt.xlabel('Time (seconds)')
   plt.ylabel('Memory Consumption (G Bytes)')
+  title = "Max={:3f} GB (taichi runtime={:3f} GB)".format(max(M), base_m)
+  plt.title(title)
   plt.ylim(0, max(M) * 1.2)
   plt.show()
 

@@ -16,11 +16,22 @@ TC_NAMESPACE_BEGIN
 
 namespace zip {
 
+inline std::string get_file_name_from_whole_path(const std::string &fn) {
+  std::size_t start_index = 0;
+  if (fn.rfind("/") != std::string::npos) {
+    start_index = fn.rfind("/") + 1;
+  }
+  return std::string(fn.begin() + start_index, fn.end());
+}
+
 void write(std::string fn, const uint8 *data, std::size_t len) {
   mz_bool status;
   TC_ERROR_UNLESS(taichi::ends_with(fn, ".tcb.zip"),
                   "Filename must end with .tcb.zip");
-  std::string fn_uncompressed(fn.begin(), fn.end() - 4);  // remove .zip
+
+  std::string fn_uncompressed = get_file_name_from_whole_path(fn);
+  fn_uncompressed = std::string(fn_uncompressed.begin(),
+                                fn_uncompressed.end() - 4);  // remove .zip
   std::remove(fn.c_str());
 
   auto s_pComment = "Taichi Binary File";
@@ -35,8 +46,7 @@ void write(std::string fn, const uint8 *data, std::size_t len) {
 }
 
 void write(const std::string &fn, const std::string &data) {
-  write(fn, reinterpret_cast<const uint8 *>(data.c_str()),
-                   data.size() + 1);
+  write(fn, reinterpret_cast<const uint8 *>(data.c_str()), data.size() + 1);
 }
 
 std::vector<uint8> read(const std::string fn, bool verbose) {
@@ -76,7 +86,10 @@ std::vector<uint8> read(const std::string fn, bool verbose) {
     TC_ERROR("mz_zip_reader_init_file() failed!\n");
   }
 
-  auto archive_filename = std::string(fn.begin(), fn.end() - 4);  // remove .zip
+  std::string fn_uncompressed = get_file_name_from_whole_path(fn);
+  fn_uncompressed = std::string(fn_uncompressed.begin(),
+                                fn_uncompressed.end() - 4);  // remove .zip
+  auto archive_filename = fn_uncompressed;
   auto p = reinterpret_cast<const uint8 *>(mz_zip_reader_extract_file_to_heap(
       &zip_archive, archive_filename.c_str(), &uncomp_size, 0));
 
@@ -96,6 +109,6 @@ std::vector<uint8> read(const std::string fn, bool verbose) {
   return ret;
 }
 
-} // namespace zip
+}  // namespace zip
 
 TC_NAMESPACE_END

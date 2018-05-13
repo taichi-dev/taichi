@@ -178,7 +178,7 @@ class Serializer {
 
 inline std::vector<uint8> read_data_from_file(const std::string &fn) {
   std::vector<uint8_t> data;
-  FILE *f = fopen(fn.c_str(), "rb");
+  std::FILE *f = fopen(fn.c_str(), "rb");
   if (f == nullptr) {
     TC_ERROR("Cannot open file: {}", fn);
     return std::vector<uint8_t>();
@@ -201,9 +201,28 @@ inline std::vector<uint8> read_data_from_file(const std::string &fn) {
         break;
       }
     }
-    fclose(f);
+    std::fclose(f);
     data.resize(length);
     return data;
+  }
+}
+
+inline void write_data_to_file(const std::string &fn, uint8_t *data, std::size_t size) {
+  std::FILE *f = fopen(fn.c_str(), "wb");
+  if (f == nullptr) {
+    TC_ERROR(
+        "Can not open file [{}] for writing. (Does the directory exist?)",
+        fn);
+    assert(f != nullptr);
+  }
+  if (ends_with(fn, ".tcb.zip")) {
+    std::fclose(f);
+    zip::write(fn, data, size);
+  } else if (ends_with(fn, ".tcb")) {
+    fwrite(data, sizeof(uint8_t), size, f);
+    std::fclose(f);
+  } else {
+    TC_ERROR("File must end with .tcb or .tcb.zip. [Filename = {}]", fn);
   }
 }
 
@@ -227,21 +246,13 @@ class BinarySerializer : public Serializer {
     head = sizeof(std::size_t);
   }
 
-  void write_to_file(const std::string &file_name) {
-    FILE *f = fopen(file_name.c_str(), "wb");
-    if (f == nullptr) {
-      TC_ERROR(
-          "Can not open file [{}] for writing. (Does the directory exist?)",
-          file_name);
-      assert(f != nullptr);
-    }
+  void write_to_file(const std::string &fn) {
     void *ptr = c_data;
     if (!ptr) {
       assert(!data.empty());
       ptr = &data[0];
     }
-    fwrite(ptr, sizeof(uint8_t), head, f);
-    fclose(f);
+    write_data_to_file(fn, reinterpret_cast<uint8_t *>(ptr), head);
   }
 
   template <bool writing_ = writing>

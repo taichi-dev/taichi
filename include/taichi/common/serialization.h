@@ -174,62 +174,38 @@ class Serializer {
     using type = decltype(helper<T__>(nullptr));
     static constexpr bool value = type::value;
   };
-
-  /*
-
- public:
-  template <typename T>
-  struct Item {
-    using is_array =
-        typename std::is_array<typename std::remove_cv<T>::type>::type;
-    using is_lref = typename std::is_lvalue_reference<T>::type;
-
-    static_assert(!std::is_pointer<T>(), "");
-
-    using ValueType = type_switch_t<
-        std::pair<is_lref, T>,  // Keep l-value references
-        std::pair<is_array,
-                  typename std::remove_cv<T>::type>,  // Do nothing for arrays
-        std::pair<std::true_type, typename type::remove_cvref_t<T>>
-        // copy r-value references?
-        // is there a better way?
-        >;
-
-    Item(const std::string &key, ValueType &&value)
-        : key(key), value(std::forward<ValueType>(value)) {
-    }
-
-    ValueType value;
-    const std::string &key;
-  };
-
-  template <typename T>
-  auto make_item(const std::string &name, T &&t) -> Item<T> {
-    return Item<T>(name, std::forward<T>(t));
-  }
-
-  template <typename T>
-  auto make_item(T &&t) -> Item<T> {
-    return Item<T>("", std::forward<T>(t));
-  }
-static_assert(
-    std::is_same<typename Serializer::Item<int &>::is_array, std::false_type>(),
-    "");
-
-static_assert(
-    std::is_same<typename Serializer::Item<int &>::ValueType, int &>(),
-    "");
-static_assert(std::is_same<typename Serializer::Item<int &&>::ValueType, int>(),
-              "");
-
-static_assert(std::is_same<typename Serializer::Item<int &&>::ValueType, int>(),
-              "");
-
-static_assert(
-    std::is_same<typename Serializer::Item<int[32]>::ValueType, int[32]>(),
-    "");
-   */
 };
+
+inline std::vector<uint8> read_data_from_file(const std::string &fn) {
+  std::vector<uint8_t> data;
+  FILE *f = fopen(fn.c_str(), "rb");
+  if (f == nullptr) {
+    TC_ERROR("Cannot open file: {}", fn);
+    return std::vector<uint8_t>();
+  }
+  if (ends_with(fn, ".zip")) {
+    std::fclose(f);
+    // Read zip file, e.g. particles.tcb.zip
+    return zip::read(fn);
+  } else {
+    // Read uncompressed file, e.g. particles.tcb
+    assert(f != nullptr);
+    std::size_t length = 0;
+    while (true) {
+      size_t limit = 1 << 8;
+      data.resize(data.size() + limit);
+      void *ptr = reinterpret_cast<void *>(&data[length]);
+      size_t length_tmp = fread(ptr, sizeof(uint8_t), limit, f);
+      length += length_tmp;
+      if (length_tmp < limit) {
+        break;
+      }
+    }
+    fclose(f);
+    data.resize(length);
+    return data;
+  }
+}
 
 template <bool writing>
 class BinarySerializer : public Serializer {
@@ -241,8 +217,15 @@ class BinarySerializer : public Serializer {
   std::size_t preserved;
 
   using Base = Serializer;
-  // using Base::Item;
   using Base::assets;
+
+  template <bool writing_ = writing>
+  typename std::enable_if<!writing_, void>::type initialize(
+      const std::string &fn) {
+    data = read_data_from_file(fn);
+    c_data = reinterpret_cast<uint8_t *>(&data[0]);
+    head = sizeof(std::size_t);
+  }
 
   void write_to_file(const std::string &file_name) {
     FILE *f = fopen(file_name.c_str(), "wb");
@@ -259,32 +242,6 @@ class BinarySerializer : public Serializer {
     }
     fwrite(ptr, sizeof(uint8_t), head, f);
     fclose(f);
-  }
-
-  template <bool writing_ = writing>
-  typename std::enable_if<!writing_, void>::type initialize(
-      const std::string &file_name) {
-    FILE *f = fopen(file_name.c_str(), "rb");
-    if (f == nullptr) {
-      TC_ERROR("Cannot open file: {}", file_name);
-      return;
-    }
-    assert(f != nullptr);
-    std::size_t length = 0;
-    while (true) {
-      size_t limit = 1 << 8;
-      data.resize(data.size() + limit);
-      void *ptr = reinterpret_cast<void *>(&data[length]);
-      size_t length_tmp = fread(ptr, sizeof(uint8_t), limit, f);
-      length += length_tmp;
-      if (length_tmp < limit) {
-        break;
-      }
-    }
-    fclose(f);
-    data.resize(length);
-    c_data = reinterpret_cast<uint8_t *>(&data[0]);
-    head = sizeof(std::size_t);
   }
 
   template <bool writing_ = writing>
@@ -751,13 +708,6 @@ class TextSerializer : public Serializer {
     this->operator()(first_name.c_str(), t);
     this->operator()(rest_names.c_str(), std::forward<Args>(rest)...);
   }
-
-  /*
-  template <typename T>
-  void operator()(Item<T> &item) {
-    this->operator()(item.key.c_str(), get_writable(item.value));
-  }
-  */
 };
 
 template <typename T>

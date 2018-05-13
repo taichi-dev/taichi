@@ -9,4 +9,3 @@
 #include <taichi/common/interface.h>
 #include <taichi/common/loader.h>
 #include <taichi/common/asset_manager.h>
-#include <taichi/common/string_utils.h>

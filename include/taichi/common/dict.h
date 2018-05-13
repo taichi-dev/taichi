@@ -14,7 +14,6 @@
 #include <sstream>
 #include <typeinfo>
 
-#include <taichi/common/string_utils.h>
 #include <taichi/common/util.h>
 #include <taichi/common/asset_manager.h>
 #include <taichi/math/math.h>

@@ -22,6 +22,7 @@ with Python.
 ## Acknowledgments
 
 `Taichi` is based on many other open-source projects, which are shipped with taichi and users do not have to install manually:
+ - [pybind11](https://github.com/pybind/pybind11)
  - [Intel Embree](https://embree.github.io/)
  - [Intel TBB](https://www.threadingbuildingblocks.org/)
  - [fmt](https://github.com/fmtlib/fmt)
@@ -32,7 +33,7 @@ with Python.
  - [JIXIE::ImplicitQRSVD](http://www.math.ucla.edu/~fuchuyuan/svd/paper.pdf)
  - [dcraw](https://www.cybercom.net/~dcoffin/dcraw/)
  - [ffmpeg](https://www.ffmpeg.org/)
- - [pybind11](https://github.com/pybind/pybind11)
+ - [miniz](https://github.com/richgel999/miniz)
  - ...
 
 Current developers include:

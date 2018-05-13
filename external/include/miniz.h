@@ -4297,7 +4297,7 @@ static FILE *mz_freopen(const char *pPath, const char *pMode, FILE *pStream)
 #define MZ_FFLUSH fflush
 #define MZ_FREOPEN(f, m, s) freopen(f, m, s)
 #define MZ_DELETE_FILE remove
-#elif defined(__GNUC__) && _LARGEFILE64_SOURCE
+#elif defined(__GNUC__) && _LARGEFILE64_SOURCE && !defined(TC_PLATFORM_OSX)
 #ifndef MINIZ_NO_TIME
 #include <utime.h>
 #endif

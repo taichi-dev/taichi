@@ -4,6 +4,7 @@
 *******************************************************************************/
 
 #include "common/util.h"
+#include "common/zip.h"
 #include "math/vector.h"
 #include "math/scalar.h"
 #include "math/array.h"

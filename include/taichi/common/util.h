@@ -1,6 +1,6 @@
 /*******************************************************************************
-    Copyright (c) The Taichi Authors (2016- ). All Rights Reserved.
-    The use of this software is governed by the LICENSE file.
+    copyright (c) the taichi authors (2016- ). all rights reserved.
+    the use of this software is governed by the license file.
 *******************************************************************************/
 
 #pragma once

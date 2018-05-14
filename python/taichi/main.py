@@ -2,9 +2,8 @@ import sys
 import os
 import shutil
 import random
-from taichi.tools.video import make_video
+from taichi.tools.video import make_video, interpolate_frames
 from taichi.core.util import get_projects
-import colorama
 
 def print_all_projects():
   from colorama import Fore, Back, Style
@@ -146,6 +145,8 @@ def main():
     folder = tc.get_bin_directory()
     assert exec_name in os.listdir(folder)
     subprocess.call([os.path.join(folder, exec_name)] + sys.argv[3:])
+  elif mode == "interpolate":
+    interpolate_frames('.')
   elif mode == "video":
     files = sorted(os.listdir('.'))
     files = list(filter(lambda x: x.endswith('.png'), files))

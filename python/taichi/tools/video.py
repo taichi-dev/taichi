@@ -106,6 +106,28 @@ class VideoManager:
     if not mp4:
       os.remove(self.get_output_filename('mp4'))
 
+def interpolate_frames(frame_dir, mul=4):
+  # TODO: remove dependency on cv2 here
+  import cv2
+  files = os.listdir(frame_dir)
+  images = []
+  images_interpolated = []
+  for f in sorted(files):
+    if f.endswith('png'):
+      images.append(cv2.imread(f) / 255.0)
+
+  for i in range(len(images) - 1):
+    images_interpolated.append(images[i])
+    for j in range(mul - 1):
+      alpha = 1 - j / mul
+      images_interpolated.append(images[i] * alpha + images[i + 1] * (1 - alpha))
+
+  images_interpolated.append(images[-1])
+
+  os.makedirs('interpolated', exist_ok=True)
+  for i, img in enumerate(images_interpolated):
+    cv2.imwrite('interpolated/{:05d}.png'.format(i), img * 255.0)
+
 
 def make_video(input_files,
                width=0,

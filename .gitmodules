@@ -1,3 +1,6 @@
 [submodule "assets"]
 	path = assets
 	url = https://github.com/yuanming-hu/taichi_assets
+[submodule "external/glfw"]
+	path = external/glfw
+	url = https://github.com/glfw/glfw

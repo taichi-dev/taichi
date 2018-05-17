@@ -47,6 +47,6 @@ float64 get_memory_usage_gb(int pid = -1);
 uint64 get_memory_usage(int pid = -1);
 
 #define TC_MEMORY_USAGE(name) \
-  TC_WARN("Memory Usage [{}] = {:.2f} GB", name, get_memory_usage_gb());
+  TC_DEBUG("Memory Usage [{}] = {:.2f} GB", name, get_memory_usage_gb());
 
 TC_NAMESPACE_END

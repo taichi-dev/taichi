@@ -413,6 +413,20 @@ void trash(T &&t) {
   __trash__ = *reinterpret_cast<uint8 *>(&t);
 }
 
+class DeferedExecution {
+  std::function<void(void)> statement;
+
+public:
+  DeferedExecution(const std::function<void(void)> &statement)
+      : statement(statement) {
+  }
+
+  ~DeferedExecution() {
+    statement();
+  }
+};
+
+
 TC_NAMESPACE_END
 
 #include "asset_manager.h"

@@ -1,5 +1,5 @@
 #*********************************************************************
-# Taichi - A Computer Graphics Library
+# Taichi - Open-Source Computer Graphics Library
 #*********************************************************************
 
 cmake_minimum_required(VERSION 3.0)

@@ -84,6 +84,9 @@ endif ()
 include_directories(include)
 include_directories(external/include)
 include_directories(pakua/external/asio/include)
+add_subdirectory(external/glfw)
+include_directories(external/glfw/include)
+target_link_libraries(${CORE_LIBRARY_NAME} glfw)
 
 add_custom_target(
         clangformat

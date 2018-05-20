@@ -24,6 +24,9 @@ add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE})
 # Optional dependencies
 
 if (USE_OPENGL)
+    #add_subdirectory(external/glfw)
+    #include_directories(external/glfw/include)
+    #target_link_libraries(${CORE_LIBRARY_NAME} glfw)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_USE_OPENGL")
     find_package(OpenGL REQUIRED)
     find_package(GLFW3 REQUIRED)
@@ -83,10 +86,6 @@ endif ()
 
 include_directories(include)
 include_directories(external/include)
-include_directories(pakua/external/asio/include)
-add_subdirectory(external/glfw)
-include_directories(external/glfw/include)
-target_link_libraries(${CORE_LIBRARY_NAME} glfw)
 
 add_custom_target(
         clangformat

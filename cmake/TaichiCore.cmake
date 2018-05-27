@@ -77,11 +77,18 @@ endif ()
 if (WIN32)
     set_target_properties(${CORE_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
             "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
-    target_link_libraries(${CORE_LIBRARY_NAME}
-      ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/embree.lib
-      ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/tbb.lib
-      ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/tbbmalloc.lib
-    )
+    if (MSVC)
+        target_link_libraries(${CORE_LIBRARY_NAME}
+          ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/embree.lib
+          ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/tbb.lib
+          ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/tbbmalloc.lib
+        )
+    else ()
+        target_link_libraries(${CORE_LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/embree.lib)
+        target_link_libraries(${CORE_LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/tbb.dll)
+        target_link_libraries(${CORE_LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/external/lib/tbbmalloc.dll)
+        target_link_libraries(${CORE_LIBRARY_NAME} ws2_32)
+    endif()
 endif ()
 
 include_directories(include)

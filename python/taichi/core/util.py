@@ -294,7 +294,7 @@ def start_memory_monitoring(output_fn, pid=-1, interval=1):
         time.sleep(interval)
         print(time.time(), mem, file=f)
         f.flush()
-  proc = multiprocessing.Process(target=task)
+  proc = multiprocessing.Process(target=task, daemon=True)
   proc.start()
 
 

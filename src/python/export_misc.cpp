@@ -78,9 +78,11 @@ stdout = fdopen(fd[1], "w");
 auto file_fd = fdopen(fd[0], "w");
 FILE *file = freopen(fn.c_str(), "w", file_fd);
 */
-#if !defined(_WIN64)
+#if defined(TC_PLATFORM_UNIX)
   std::cerr.rdbuf(std::cout.rdbuf());
   dup2(fileno(popen(fmt::format("tee {}", fn).c_str(), "w")), STDOUT_FILENO);
+#else
+  TC_NOT_IMPLEMENTED;
 #endif
 }
 

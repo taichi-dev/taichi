@@ -42,6 +42,8 @@ if (USE_OPENGL)
     endif ()
 endif ()
 
+target_link_libraries(${CORE_LIBRARY_NAME} stdc++fs)
+
 if (NOT WIN32)
     target_link_libraries(${CORE_LIBRARY_NAME} pthread stdc++)
     if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/lib)

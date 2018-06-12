@@ -5,10 +5,13 @@
 
 #pragma once
 
-#ifndef _WIN64
 
+#include <string>
+#include <cstdio>
+#include <map>
+#include <taichi/common/util.h>
+#if defined(TC_PLATFORM_UNIX)
 #include <sys/time.h>
-
 #else
 #pragma warning(push)
 #pragma warning(disable : 4005)
@@ -16,14 +19,8 @@
 #pragma warning(pop)
 #endif
 
-#include <string>
-#include <cstdio>
-#include <map>
-#include <taichi/common/util.h>
-
 TC_NAMESPACE_BEGIN
 
-// #define TIME(x) {Time::Timer _(#x "@" __FILENAME__ "[" __LINE__"]"); x;}
 #define TIME(x)                                                      \
   {                                                                  \
     char timer_name[1000];                                           \

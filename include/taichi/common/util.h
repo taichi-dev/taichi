@@ -426,6 +426,8 @@ public:
   }
 };
 
+#define TC_DEFER(x) taichi::DeferedExecution _defered([&]() {x;});
+
 
 TC_NAMESPACE_END
 

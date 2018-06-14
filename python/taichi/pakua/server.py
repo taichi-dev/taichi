@@ -1,17 +1,18 @@
 from flask import Flask, render_template, send_from_directory, send_file, request
-from taichi.misc.settings import get_output_directory
 import os
 from taichi import get_output_directory, clear_directory_with_suffix
 import taichi.tools.video
 from flask_cors import CORS
-import taichi as tc
+import requests
 import json
 import base64
 
+import socket
+
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
-#CORS(app)
 
+port = 9563
 
 @app.route('/viewer/<path:path>')
 def send_front_end_file(path):
@@ -38,53 +39,45 @@ def next_frame():
   return json.dumps(response)
 
 
-@app.route('/')
-def browse_outputs():
-  output_dir = get_output_directory()
-  dirs = os.listdir(output_dir)
-  dirs = sorted(dirs)
-  entries = []
-  for d in dirs:
-    entries.append({
-        'title': d,
-        'text': '',
-    })
-  return render_template('browser.html', entries=entries)
 
-@app.route('/view/<folder>')
-def view(folder):
-  return render_template('view.html', folder=folder)
+class Server:
+  # When ip_address = None, create the local server instance
+  def __init__(self, content=None):
+    # self.name = requests.get('http://{}:{}/get_host_name'.format(ip_address, port))
+    self.version = 'XXXXXX'
+    self.ip = socket.gethostname()
 
-frame_buffer = os.path.join(get_output_directory(), 'frame_buffer')
-video_buffer = os.path.join(get_output_directory(), 'videos')
+  def get_heart_beat(self):
+    content = {
+      'ip': self.ip
+    }
+    return content
 
-@app.route('/clear_frame_buffer', methods=['POST'])
-def clear_frame_buffer():
-  try:
-    os.mkdir(frame_buffer)
-  except Exception as e:
-    print(e)
-  clear_directory_with_suffix(frame_buffer, 'png')
+class ServerList:
+  def __init__(self):
+    self.servers = {}
+
+  def update_srever(self, content):
+    ip = content['ip']
+    self.servers[ip] = Server(content=content)
+
+
+server = Server()
+servers = ServerList()
+
+@app.route('/heart_beat', methods=['POST'])
+def heart_beat():
+  content = request.get_json(silent=True)
+  servers.update_srever(content)
   return ''
 
-@app.route('/make_video/<task_id>', methods=['POST'])
-def make_video(task_id):
-  try:
-    os.mkdir(video_buffer)
-  except Exception as e:
-    print(e)
-  raw_files = sorted(os.listdir(frame_buffer))
-  files = map(lambda f: os.path.join(frame_buffer, f), raw_files)
-  taichi.tools.video.make_video(list(files), output_path=os.path.join(video_buffer, task_id + '.mp4'))
-  return ''
+@app.route('/get_host_name', methods=['GET'])
+def get_hostname():
+  return socket.gethostname()
 
-@app.route('/upload_frame/<frame_id>', methods=['POST'])
-def upload_frame(frame_id):
-  img = str(request.data).split(',')[1]
-  img = base64.decodebytes(img.encode())
-  with open(os.path.join(frame_buffer, '%06d.png' % int(frame_id)), 'wb') as f:
-    f.write(img)
-  return ''
-    
-def get_pakua_server():
-  return app
+@app.route('/register/<frame_id>', methods=['GET'])
+def get_identical(frame_id):
+  return str(frame_id)
+
+app.run(port=9563, host='0.0.0.0')
+

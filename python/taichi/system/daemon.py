@@ -1,11 +1,5 @@
-
-
-
-
-
-
-
 from flask import Flask, render_template, send_from_directory, send_file, request
+import time
 import os
 from taichi import get_output_directory, clear_directory_with_suffix
 import taichi.tools.video
@@ -13,13 +7,24 @@ from flask_cors import CORS
 import requests
 import json
 import base64
+import threading
 
 import socket
 
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
+master = False
 port = 9563
+heart_beat_interval = 1.0
+
+def post(action, data=None):
+  return requests.post(url='http://{}:{}/{}'.format(get_master_address(), port, action), json=data)
+
+def get_master_address():
+  key = 'TC_MASTER'
+  assert key in os.environ, 'master server not found. Please specify master in environment variable {}'.format(key)
+  return os.environ[key]
 
 @app.route('/viewer/<path:path>')
 def send_front_end_file(path):
@@ -45,16 +50,13 @@ def next_frame():
       response['data'] = json.loads(f.read())
   return json.dumps(response)
 
-
 class Server:
   # When ip_address = None, create the local server instance
   def __init__(self, content=None):
-    # self.name = requests.get('http://{}:{}/get_host_name'.format(ip_address, port))
-
     if content is None:
       from taichi.core.util import get_projects
       self.name = socket.gethostname()
-      self.ip = socket.gethostbyname(self.name)
+      self.ip = post('get_ip').content.decode("utf-8")
       # TODO: get module versions via git
       self.packages = get_projects()
     else:
@@ -66,7 +68,9 @@ class Server:
 
   def get_heart_beat(self):
     content = {
-      'ip': self.ip
+      'name': self.name,
+      'ip': self.ip,
+      'packages': self.packages
     }
     return content
 
@@ -78,16 +82,6 @@ class ServerList:
     ip = content['ip']
     self.servers[ip] = Server(content=content)
 
-
-server = Server()
-servers = ServerList()
-
-@app.route('/heart_beat', methods=['POST'])
-def heart_beat():
-  content = request.get_json(silent=True)
-  servers.update_srever(content)
-  return ''
-
 @app.route('/get_host_name', methods=['GET'])
 def get_hostname():
   return socket.gethostname()
@@ -96,7 +90,43 @@ def get_hostname():
 def get_identical(frame_id):
   return str(frame_id)
 
+@app.route('/get_ip', methods=['POST'])
+def get_ip():
+  return request.remote_addr
+
+class SlaveDaemon:
+  def __init__(self):
+    server = Server()
+    while True:
+      hb = server.get_heart_beat()
+      print('sending hear beat', hb)
+      post(action='heart_beat', data=hb)
+      time.sleep(heart_beat_interval)
+
+   #self.th = threading.Thread(target=self.dae)
+
+class MasterDaemon:
+  def __init__(self):
+    servers = ServerList()
+    @app.route('/heart_beat', methods=['POST'])
+    def heart_beat():
+      content = request.get_json(silent=True)
+      servers.update_srever(content)
+      return ''
+    while True:
+      print(servers.servers)
+      time.sleep(heart_beat_interval)
+
+
+def start(master=False):
+  if master:
+    th = threading.Thread(target=lambda: app.run(port=port, host='0.0.0.0'))
+    th.start()
+    daemon = MasterDaemon()
+  else:
+    server = Server()
+    daemon = SlaveDaemon()
 
 if __name__ == '__main__':
-  app.run(port=9563, host='0.0.0.0')
+  start(master=True)
 

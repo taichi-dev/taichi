@@ -30,7 +30,6 @@ def get_master_address():
   return os.environ[key]
 
 class Server:
-  # When ip_address = None, create the local server instance
   def __init__(self, content=None):
     if content is None:
       from taichi.core.util import get_projects
@@ -51,6 +50,13 @@ class Server:
     }
     return content
 
+  def post(self, action, data=None):
+    return requests.post(url='http://{}:{}/{}'.format(self.ip, master_port, action), json=data)
+
+  def call(self, name, data):
+    return self.post(action='run_{}'.format(name), data=data)
+
+
 class ServerList:
   def __init__(self):
     self.servers = {}
@@ -58,6 +64,11 @@ class ServerList:
   def update_srever(self, content):
     ip = content['ip']
     self.servers[ip] = Server(content=content)
+
+class Job:
+  def __init__(self, name, func):
+    self.name = name
+    self.func = func
 
 class SlaveDaemon:
   def __init__(self):
@@ -71,23 +82,32 @@ class SlaveDaemon:
       post_to_master(action='heart_beat', data=hb)
       time.sleep(heart_beat_interval)
 
-
 class MasterDaemon:
   def __init__(self):
     servers = ServerList()
     @app.route('/heart_beat', methods=['POST'])
+
     def heart_beat():
       content = request.get_json(silent=True)
       servers.update_srever(content)
-      return ''
+      return 'success'
+
     @app.route('/get_ip', methods=['POST'])
     def get_ip():
       return request.remote_addr
 
-    while True:
-      print(servers.servers)
-      time.sleep(heart_beat_interval)
+    self.register_job(Job('add', lambda x: {'c': x['a'] + x['b']}))
 
+    while True:
+      print('servers', servers.servers)
+      time.sleep(heart_beat_interval)
+      for name, s in servers.servers.items():
+        print(name, s.call('add', {'a':1, 'b':2}).json())
+
+  def register_job(self, job):
+    @app.route('/run_{}'.format(job.name), methods=['POST'])
+    def run_job():
+      return json.dumps(job.func(request.get_json(silent=True)))
 
 def start(master=False):
   if master:

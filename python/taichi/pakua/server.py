@@ -39,13 +39,23 @@ def next_frame():
   return json.dumps(response)
 
 
-
 class Server:
   # When ip_address = None, create the local server instance
   def __init__(self, content=None):
     # self.name = requests.get('http://{}:{}/get_host_name'.format(ip_address, port))
-    self.version = 'XXXXXX'
-    self.ip = socket.gethostname()
+
+    if content is None:
+      from taichi.core.util import get_projects
+      self.name = socket.gethostname()
+      self.ip = socket.gethostname(self.name)
+      # TODO: get module versions via git
+      self.packages = get_projects()
+    else:
+      self.ip = content['ip']
+      self.name = content['name']
+      self.packages = content['packages']
+      # load from content
+
 
   def get_heart_beat(self):
     content = {
@@ -78,6 +88,7 @@ def get_hostname():
 @app.route('/register/<frame_id>', methods=['GET'])
 def get_identical(frame_id):
   return str(frame_id)
+
 
 app.run(port=9563, host='0.0.0.0')
 

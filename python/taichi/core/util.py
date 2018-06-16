@@ -211,12 +211,12 @@ elif get_os_name() == 'linux':
   os.chdir(tmp_cwd)
 elif get_os_name() == 'win':
   bin_dir = get_bin_directory()
-  dll_path = os.path.join(bin_dir, 'Release', 'taichi_core.dll')
-  if not os.path.exists(dll_path):
+  dll_path1 = os.path.join(bin_dir, 'Release', 'taichi_core.dll')
+  dll_path2 = os.path.join(bin_dir, 'libtaichi_core.dll')
+  if not os.path.exists(dll_path1) and not os.path.exists(dll_path2):
     build()
 
-  # The problem here is, on windows, when an dll/pyd is loaded, we can not write to it any more
-
+  # On windows when an dll/pyd is loaded, we can not write to it any more
   old_wd = os.getcwd()
   os.chdir(bin_dir)
 
@@ -224,9 +224,15 @@ elif get_os_name() == 'win':
     # Create a sandbox for separated core lib development and loading
     dir = os.path.join(get_output_directory(), 'tmp', get_unique_task_id())
 
-    os.environ['PATH'] += ';' + (os.path.join(get_repo_directory(), 'external', 'lib'))
+    lib_dir = os.path.join(get_repo_directory(), 'external', 'lib')
+    os.environ['PATH'] += ';' + lib_dir
+
     os.makedirs(dir)
-    shutil.copy(dll_path, os.path.join(dir, 'taichi_core.pyd'))
+    if os.path.exists(dll_path1):
+      shutil.copy(dll_path1, os.path.join(dir, 'taichi_core.pyd'))
+    else:
+      shutil.copy(dll_path2, os.path.join(dir, 'taichi_core.pyd'))
+    os.environ['PATH'] += ';' + dir
     sys.path.append(dir)
   else:
     shutil.copy(dll_path, os.path.join(bin_dir, 'taichi_core.pyd'))

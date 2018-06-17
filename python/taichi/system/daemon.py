@@ -13,6 +13,7 @@ import socket
 
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
+CORS(app)
 
 master = False
 
@@ -84,13 +85,20 @@ class SlaveDaemon:
 
 class MasterDaemon:
   def __init__(self):
-    servers = ServerList()
+    self.servers = ServerList()
     @app.route('/heart_beat', methods=['POST'])
 
     def heart_beat():
       content = request.get_json(silent=True)
-      servers.update_srever(content)
+      self.servers.update_srever(content)
       return 'success'
+    
+    @app.route('/get_servers', methods=['POST'])
+    def get_servers():
+      reply = []
+      for s in self.servers.servers.values():
+        reply.append(s.get_heart_beat())
+      return json.dumps(reply)
 
     @app.route('/get_ip', methods=['POST'])
     def get_ip():
@@ -99,9 +107,9 @@ class MasterDaemon:
     self.register_job(Job('add', lambda x: {'c': x['a'] + x['b']}))
 
     while True:
-      print('servers', servers.servers)
+      print('servers', self.servers.servers)
       time.sleep(heart_beat_interval)
-      for name, s in servers.servers.items():
+      for name, s in self.servers.servers.items():
         print(name, s.call('add', {'a':1, 'b':2}).json())
 
   def register_job(self, job):

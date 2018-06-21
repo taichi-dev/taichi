@@ -22,7 +22,7 @@ void test_matrix() {
         TC_P(math::abs(m * inversed(m) - Matrix(1)));
         TC_P(math::maximum(math::abs(m * inversed(m) - Matrix(1))));
       }
-      CHECK_EQUAL(m * inversed(m), Matrix(1), tolerance);
+      TC_CHECK_EQUAL(m * inversed(m), Matrix(1), tolerance);
     }
   }
 }
@@ -121,19 +121,19 @@ inline void test_decompositions() {
     Matrix U, sig, V, Q, R, S;
 
     svd(m, U, sig, V);
-    CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
+    TC_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
 
     if (dim == 2) {
       qr_decomp(m, Q, R);
-      CHECK_EQUAL(m, Q * R, tolerance);
-      CHECK_EQUAL(Q * transposed(Q), Matrix(1), tolerance);
+      TC_CHECK_EQUAL(m, Q * R, tolerance);
+      TC_CHECK_EQUAL(Q * transposed(Q), Matrix(1), tolerance);
       CHECK(abs(R[0][1]) < 1e-6_f);
       CHECK(R[0][0] > -1e-6_f);
       CHECK(R[1][1] > -1e-6_f);
     }
 
     polar_decomp(m, R, S);
-    CHECK_EQUAL(m, R * S, tolerance);
+    TC_CHECK_EQUAL(m, R * S, tolerance);
   }
 };
 

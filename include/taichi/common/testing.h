@@ -12,7 +12,7 @@
 
 TC_NAMESPACE_BEGIN
 
-#define CHECK_EQUAL(A, B, tolerance)                 \
+#define TC_CHECK_EQUAL(A, B, tolerance)              \
   {                                                  \
     if (!taichi::math::equal(A, B, tolerance)) {     \
       std::cout << A << std::endl << B << std::endl; \

@@ -237,7 +237,14 @@ elif get_os_name() == 'win':
   else:
     shutil.copy(dll_path, os.path.join(bin_dir, 'taichi_core.pyd'))
     sys.path.append(bin_dir)
-  import taichi_core as tc_core
+  try:
+    import taichi_core as tc_core
+  except Exception as e:
+    print(e)
+    print()
+    print('Is taichi\external\lib correctly set to branch msvc or mingw?')
+    print()
+    raise e
 
   os.chdir(old_wd)
 

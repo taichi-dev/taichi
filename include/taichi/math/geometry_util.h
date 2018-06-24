@@ -8,7 +8,7 @@
 #include <vector>
 
 #include <taichi/common/util.h>
-#include <taichi/math/vector.h>
+#include "vector.h"
 
 TC_NAMESPACE_BEGIN
 

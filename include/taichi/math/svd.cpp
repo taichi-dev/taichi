@@ -7,9 +7,9 @@
 #pragma GCC diagnostic ignored "-Wmisleading-indentation"
 #include <implicit_qr_svd/Tools.h>
 #include <implicit_qr_svd/ImplicitQRSVD.h>
-#include <taichi/math/eigen.h>
-#include <taichi/testing.h>
+#include "eigen.h"
 #pragma GCC diagnostic pop
+#include <taichi/testing.h>
 #include "svd.h"
 
 //#define TC_USE_EIGEN_SVD
@@ -53,7 +53,6 @@ void imp_svd(const MatrixND<dim, T> &m_,
              MatrixND<dim, T> &s,
              MatrixND<dim, T> &v) {
   using Matrix = MatrixND<dim, T>;
-  using Vector = VectorND<dim, T>;
   Matrix m = m_;
   TC_STATIC_IF(dim == 2) {
     if ((m - Matrix(m.diag())).frobenius_norm2() < 1e-7f) {
@@ -124,8 +123,6 @@ void svd_rot(const MatrixND<dim, T> &m,
              MatrixND<dim, T> &u,
              MatrixND<dim, T> &sig,
              MatrixND<dim, T> &v) {
-  using Matrix = MatrixND<dim, T>;
-  using Vector = VectorND<dim, T>;
   TC_STATIC_IF(dim == 3) {
     /*
     if ((m - Matrix(m.diag())).frobenius_norm2() < static_cast<T>(1e-7)) {

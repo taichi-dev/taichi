@@ -4,7 +4,7 @@
 *******************************************************************************/
 
 #include <taichi/python/export.h>
-#include <taichi/common/config.h>
+#include <taichi/common/dict.h>
 #include <taichi/math/levelset.h>
 #include <taichi/visualization/rgb.h>
 #include <taichi/math/levelset.h>

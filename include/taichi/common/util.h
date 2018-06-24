@@ -75,6 +75,11 @@ static_assert(false, "32-bit Windows systems are not supported")
 #define TC_COMPILER_CLANG
 #endif
 
+#if defined(TC_COMPILER_MSVC)
+#define TC_ALIGNED(x) __declspec(align(x))
+#else
+#define TC_ALIGNED(x) __attribute__((aligned(x)))
+#endif
 
 namespace spdlog {
 class logger;

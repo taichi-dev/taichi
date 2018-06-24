@@ -6,9 +6,9 @@
 #pragma once
 
 #include <taichi/common/util.h>
-#include <taichi/math/geometry_util.h>
-#include <taichi/math/array.h>
-#include <taichi/math/vector.h>
+#include "geometry_util.h"
+#include "array.h"
+#include "vector.h"
 
 TC_NAMESPACE_BEGIN
 

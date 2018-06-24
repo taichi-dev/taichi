@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <taichi/common/config.h>
+#include <taichi/common/dict.h>
 #include <taichi/common/asset_manager.h>
 #include <cstring>
 #include <string>

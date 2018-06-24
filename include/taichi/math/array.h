@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include <taichi/math/array_1d.h>
-#include <taichi/math/array_2d.h>
-#include <taichi/math/array_3d.h>
-#include <taichi/math/array_op.h>
+#include "array_1d.h"
+#include "array_2d.h"
+#include "array_3d.h"
+#include "array_op.h"
 
 TC_NAMESPACE_BEGIN
 template <int DIM>

@@ -5,12 +5,11 @@
 
 #pragma once
 
+#include <memory>
 #include "fluid.h"
 #include <taichi/system/timer.h>
 #include <taichi/math/array_2d.h>
-#include <memory>
 #include <taichi/visualization/image_buffer.h>
-#include <taichi/math/stencils.h>
 #include <taichi/math/levelset.h>
 
 TC_NAMESPACE_BEGIN

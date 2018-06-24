@@ -5,13 +5,14 @@
 
 #pragma once
 
-#include <taichi/math/array_fwd.h>
-#include "vector.h"
 #include <cstring>
 #include <cstdio>
 #include <string>
 #include <vector>
 #include <iterator>
+
+#include "array_fwd.h"
+#include "vector.h"
 
 TC_NAMESPACE_BEGIN
 

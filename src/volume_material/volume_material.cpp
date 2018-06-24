@@ -3,12 +3,11 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
+#include <queue>
 #include <taichi/visual/volume_material.h>
 #include <taichi/visual/texture.h>
 #include <taichi/math/array_3d.h>
-#include <taichi/math/stencils.h>
 #include <taichi/common/asset_manager.h>
-#include <queue>
 
 TC_NAMESPACE_BEGIN
 

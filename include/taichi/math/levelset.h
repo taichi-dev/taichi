@@ -7,8 +7,8 @@
 
 #include <memory>
 #include <taichi/common/util.h>
-#include <taichi/math/array.h>
-#include <taichi/math/math.h>
+#include "array.h"
+#include "math.h"
 
 TC_NAMESPACE_BEGIN
 

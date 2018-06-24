@@ -7,7 +7,7 @@
 
 #include <memory>
 #include <vector>
-#include <taichi/common/config.h>
+#include <taichi/common/dict.h>
 #include <taichi/math.h>
 #include <taichi/visual/scene.h>
 

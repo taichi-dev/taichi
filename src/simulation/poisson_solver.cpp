@@ -5,7 +5,6 @@
 
 #include <taichi/system/threading.h>
 #include <taichi/dynamics/poisson_solver.h>
-#include <taichi/math/stencils.h>
 
 TC_NAMESPACE_BEGIN
 

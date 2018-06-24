@@ -10,18 +10,11 @@
 #include <functional>
 #include <vector>
 #include <array>
-#include <taichi/common/util.h>
-#include <taichi/math/scalar.h>
-
 #include <immintrin.h>
+#include <taichi/common/util.h>
+#include "scalar.h"
 
 TC_NAMESPACE_BEGIN
-
-#ifdef _WIN64
-#define TC_ALIGNED(x) __declspec(align(x))
-#else
-#define TC_ALIGNED(x) __attribute__((aligned(x)))
-#endif
 
 // Instruction Set Extension
 

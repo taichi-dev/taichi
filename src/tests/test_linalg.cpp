@@ -122,6 +122,9 @@ inline void test_decompositions() {
 
     svd(m, U, sig, V);
     TC_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
+    TC_CHECK_EQUAL(Matrix(1), U * transposed(U), tolerance);
+    TC_CHECK_EQUAL(Matrix(1), V * transposed(V), tolerance);
+    TC_CHECK_EQUAL(sig, Matrix(sig.diag()), tolerance);
 
     if (dim == 2) {
       qr_decomp(m, Q, R);
@@ -134,6 +137,8 @@ inline void test_decompositions() {
 
     polar_decomp(m, R, S);
     TC_CHECK_EQUAL(m, R * S, tolerance);
+    TC_CHECK_EQUAL(Matrix(1), R * transposed(R), tolerance);
+    TC_CHECK_EQUAL(S, transposed(S), tolerance);
   }
 };
 

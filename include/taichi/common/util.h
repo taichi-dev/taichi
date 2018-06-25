@@ -15,9 +15,9 @@
 #include <type_traits>
 #include <cstdint>
 #include <algorithm>
-#include <spdlog/fmt/fmt.h>
 #include <memory>
 #include <csignal>
+#include <vector>
 
 
 //******************************************************************************
@@ -80,10 +80,6 @@ static_assert(false, "32-bit Windows systems are not supported")
 #else
 #define TC_ALIGNED(x) __attribute__((aligned(x)))
 #endif
-
-namespace spdlog {
-class logger;
-}
 
 // Do not disable assert...
 #ifdef NDEBUG
@@ -156,6 +152,7 @@ class logger;
 #endif
 
 TC_EXPORT void taichi_raise_assertion_failure_in_python(const char *msg);
+
 
 TC_NAMESPACE_BEGIN
 
@@ -262,6 +259,11 @@ TC_NAMESPACE_END
 //******************************************************************************
 //                               Logging
 //******************************************************************************
+#include "spdlog/fmt/fmt.h"
+namespace spdlog {
+class logger;
+}
+
 TC_NAMESPACE_BEGIN
 
 #define SPD_AUGMENTED_LOG(X, ...)                                        \

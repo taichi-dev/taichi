@@ -20,7 +20,6 @@ TC_NAMESPACE_BEGIN
 
 enum class InstSetExt { None, SSE, AVX, AVX2 };
 
-
 #ifdef TC_ISE_NONE
 constexpr InstSetExt default_instruction_set = InstSetExt::None;
 #elif TC_ISE_SSE
@@ -1765,5 +1764,87 @@ template <int i1>
 TC_FORCE_INLINE __m128 broadcast(const __m128 &s) {
   return _mm_shuffle_ps(s, s, 0x55 * i1);
 }
+
+#if defined(TC_AMALGAMATED)
+TC_FORCE_INLINE void polar_decomp(Matrix2 m, Matrix2 &R, Matrix2 &S) {
+  auto x = m(0, 0) + m(1, 1);
+  auto y = m(1, 0) - m(0, 1);
+  auto scale = 1.0_f / std::sqrt(x * x + y * y);
+  auto c = x * scale, s = y * scale;
+  R(0, 0) = c;
+  R(0, 1) = -s;
+  R(1, 0) = s;
+  R(1, 1) = c;
+  S = transposed(R) * m;
+}
+
+// Based on http://www.seas.upenn.edu/~cffjiang/research/svd/svd.pdf
+// Algorithm 4
+inline void svd(Matrix2 m, Matrix2 &U, Matrix2 &sig, Matrix2 &V) {
+  Matrix2 S;
+  polar_decomp(m, U, S);
+  real c, s;
+  if (std::abs(S(0, 1)) < 1e-6_f) {
+    sig = S;
+    c = 1;
+    s = 0;
+  } else {
+    auto tao = 0.5_f * (S(0, 0) - S(1, 1));
+    auto w = std::sqrt(tao * tao + S(0, 1) * S(0, 1));
+    auto t = tao > 0 ? S(0, 1) / (tao + w) : S(0, 1) / (tao - w);
+    c = 1.0_f / std::sqrt(t * t + 1);
+    s = -t * c;
+    sig(0, 0) = pow<2>(c) * S(0, 0) - 2 * c * s * S(0, 1) + pow<2>(s) * S(1, 1);
+    sig(1, 1) = pow<2>(s) * S(0, 0) + 2 * c * s * S(0, 1) + pow<2>(c) * S(1, 1);
+  }
+  if (sig(0, 0) < sig(1, 1)) {
+    std::swap(sig(0, 0), sig(1, 1));
+    V(0, 0) = -s;
+    V(0, 1) = -c;
+    V(1, 0) = c;
+    V(1, 1) = -s;
+  } else {
+    V(0, 0) = c;
+    V(0, 1) = -s;
+    V(1, 0) = s;
+    V(1, 1) = c;
+  }
+  V = transposed(V);
+  U = U * V;
+}
+
+template <int dim, typename T>
+inline void test_simple_decompositions() {
+  using Matrix = MatrixND<dim, T>;
+  T tolerance = std::is_same<T, float32>() ? 3e-5_f32 : 1e-12_f32;
+  for (int i = 0; i < 10000; i++) {
+    Matrix m = Matrix::rand();
+    Matrix U, sig, V, Q, R, S;
+
+    polar_decomp(m, R, S);
+    TC_CHECK_EQUAL(m, R * S, tolerance);
+    TC_CHECK_EQUAL(Matrix(1), R * transposed(R), tolerance);
+    TC_CHECK_EQUAL(1.0_f, determinant(R), tolerance);
+    TC_CHECK_EQUAL(S, transposed(S), tolerance);
+
+    svd(m, U, sig, V);
+    if (dim == 2) {
+      CHECK(tolerance + sig(0, 0) > std::abs(sig(1, 1)));
+    }
+    TC_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
+    TC_CHECK_EQUAL(Matrix(1), U * transposed(U), tolerance);
+    TC_CHECK_EQUAL(Matrix(1), V * transposed(V), tolerance);
+    TC_CHECK_EQUAL(1.0_f, determinant(U), tolerance);
+    TC_CHECK_EQUAL(1.0_f, determinant(V), tolerance);
+    TC_CHECK_EQUAL(sig, Matrix(sig.diag()), tolerance);
+  }
+};
+
+/*
+TC_TEST("SVD") {
+  test_simple_decompositions<2, float32>();
+}
+*/
+#endif
 
 TC_NAMESPACE_END

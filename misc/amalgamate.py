@@ -10,6 +10,7 @@ files_to_include = [
   'src/core/core.cpp',
   'src/core/logging.cpp',
   'src/system/traceback.cpp',
+  'include/taichi/visual/gui.h',
 ]
 
 output_fn = 'build/taichi.h'

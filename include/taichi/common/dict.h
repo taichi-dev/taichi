@@ -14,9 +14,9 @@
 #include <sstream>
 #include <typeinfo>
 
+#include <taichi/math/math.h>
 #include "util.h"
 #include "asset_manager.h"
-#include "../math/math.h"
 
 TC_NAMESPACE_BEGIN
 

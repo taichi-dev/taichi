@@ -1,6 +1,7 @@
 # This file generates a taichi header (analgamation)
 
 import os
+import sys
 import re
 
 files_to_include = [
@@ -19,7 +20,8 @@ def expand_files(files):
       new_files.append(f)
   return new_files
   
-include_template = r'#include.*([<"](.*)[>"])'
+include_template = r'#include.*([<"])(.*)[>"]'
+search_directories = ['include/', 'external/include/']
 
 class Amalgamator:
   def __init__(self):
@@ -42,18 +44,27 @@ class Amalgamator:
         match = re.search(include_template, l)
         need_expand = False
         if match:
+          assert match.group(1) in ['\"', '<']
           local = (match.group(1) == '\"')
           includee = match.group(2)
           if local:
             need_expand = True
             includee = fn[:fn.rfind('/')] + includee
           else:
-            # taichi headers or not?
-            if includee.startswith('taichi'):
-              need_expand = True
-              includee = 'include/' + includee
-            else:
-              pass # Should be system header
+            # Search for file
+            found = False
+            for d in search_directories:
+              suspect_includee = os.path.join(d, includee)
+              if os.path.exists(suspect_includee):
+                found = True
+                need_expand = True
+                includee = suspect_includee
+              else:
+                pass # Should be system header
+            if not found:
+              print("Classified as stdc++ header: {}".format(includee))
+              print("  ({})".format(l))
+              need_expand = False
         if need_expand:
           self.include(includee)
         else:

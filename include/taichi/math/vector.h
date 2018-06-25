@@ -20,6 +20,7 @@ TC_NAMESPACE_BEGIN
 
 enum class InstSetExt { None, SSE, AVX, AVX2 };
 
+
 #ifdef TC_ISE_NONE
 constexpr InstSetExt default_instruction_set = InstSetExt::None;
 #elif TC_ISE_SSE
@@ -29,8 +30,12 @@ constexpr InstSetExt default_instruction_set = InstSetExt::AVX;
 #elif TC_ISE_AVX2
 constexpr InstSetExt default_instruction_set = InstSetExt::AVX2;
 #else
-#error \
-    "No Instruction Set Extension specified. Define TC_ISE_{NONE|SSE|AVX|AVX2}."
+#if !defined(TC_AMALGAMATED)
+#warning \
+    "No Instruction Set Extension specified. Please define TC_ISE_{NONE|SSE|AVX|AVX2}. Assuming TC_ISE_NONE"
+#endif
+#define TC_ISE_ISE_NONE
+constexpr InstSetExt default_instruction_set = InstSetExt::None;
 #endif
 
 /////////////////////////////////////////////////////////////////
@@ -1750,15 +1755,15 @@ struct is_MatrixND<MatrixND<N, T, ISE>> : public std::true_type {};
 }  // namespace type
 
 // Intrinsics
-template <int i>
+template <int i1>
 TC_FORCE_INLINE float32 extract_float32(const __m128 &s) {
-  int ret = _mm_extract_ps(s, i);
+  int ret = _mm_extract_ps(s, i1);
   return reinterpret_cast<float32 *>(&ret)[0];
 }
 
-template <int i>
+template <int i1>
 TC_FORCE_INLINE __m128 broadcast(const __m128 &s) {
-  return _mm_shuffle_ps(s, s, 0x55 * i);
+  return _mm_shuffle_ps(s, s, 0x55 * i1);
 }
 
 TC_NAMESPACE_END

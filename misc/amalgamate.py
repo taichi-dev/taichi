@@ -20,14 +20,16 @@ def expand_files(files):
       new_files.append(f)
   return new_files
   
-include_template = r'#include.*([<"])(.*)[>"]'
-search_directories = ['include/', 'external/include/']
+include_template = r'#\s?include.*([<"])(.*)[>"]'
+search_directories = ['include', 'external/include']
 
 class Amalgamator:
   def __init__(self):
     self.files = expand_files(files_to_include)
     self.included = set()
     self.output_f = open('build/taichi.h', 'w')
+    print("#define TC_INCLUDED", file=self.output_f)
+    print("#define TC_AMALGAMATED", file=self.output_f)
     
   def include(self, fn):
     if fn in self.included:
@@ -38,7 +40,7 @@ class Amalgamator:
     with open(fn, 'r') as f:
       lines = f.readlines()
       for l in lines:
-        l = l.strip()
+        l = l.rstrip()
         if l == '#pragma once':
           continue
         match = re.search(include_template, l)
@@ -47,24 +49,25 @@ class Amalgamator:
           assert match.group(1) in ['\"', '<']
           local = (match.group(1) == '\"')
           includee = match.group(2)
+          
+          local_dir = fn[:fn.rfind('/')]
+          local_search_directories = search_directories
           if local:
-            need_expand = True
-            includee = fn[:fn.rfind('/')] + includee
-          else:
-            # Search for file
-            found = False
-            for d in search_directories:
-              suspect_includee = os.path.join(d, includee)
-              if os.path.exists(suspect_includee):
-                found = True
-                need_expand = True
-                includee = suspect_includee
-              else:
-                pass # Should be system header
-            if not found:
-              print("Classified as stdc++ header: {}".format(includee))
-              print("  ({})".format(l))
-              need_expand = False
+            local_search_directories = [local_dir] + local_search_directories
+          # Search for file
+          found = False
+          for d in local_search_directories:
+            suspect_includee = os.path.join(d, includee)
+            if os.path.exists(suspect_includee):
+              found = True
+              need_expand = True
+              includee = suspect_includee
+            else:
+              pass # Should be system header
+          if not found:
+            print("  X - Classified as stdc++ header: {}".format(includee))
+            #print("  ({})".format(l))
+            need_expand = False
         if need_expand:
           self.include(includee)
         else:

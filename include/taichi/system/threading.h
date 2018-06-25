@@ -17,7 +17,9 @@
 // Mac and Linux
 #include <unistd.h>
 #endif
+#if !defined(TC_AMALGAMATED)
 #include <tbb/tbb.h>
+#endif
 
 TC_NAMESPACE_BEGIN
 
@@ -64,6 +66,7 @@ class ThreadedTaskManager {
  public:
   template <typename T>
   void static run(const T &target, int begin, int end, int num_threads) {
+#if !defined(TC_AMALGAMATED)
     if (num_threads > 0) {
       tbb::task_arena limited_arena(num_threads);
       limited_arena.execute([&]() { tbb::parallel_for(begin, end, target); });
@@ -75,6 +78,9 @@ class ThreadedTaskManager {
               num_threads));
       tbb::parallel_for(begin, end, target);
     }
+#else
+    TC_NOT_IMPLEMENTED
+#endif
   }
 
   template <typename T>

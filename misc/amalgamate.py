@@ -15,16 +15,23 @@ def expand_files(files):
       for header in os.listdir(f[:-1]):
         new_files.append(f[:-1] + header)
     else:
-      assert f.endswith('.h') or f.endswith('.cpp')
+      assert f.endswith('.h') or f.endswith('.cpp') or f.endswith('.cc') or f.endswith('.c')
       new_files.append(f)
   return new_files
-
-def main():
-  files = expand_files(files_to_include)
-  include_template = r'#include.*([<"](.*)[>"])'
-  included = set()
   
-  def include(fn, output_f):
+include_template = r'#include.*([<"](.*)[>"])'
+
+class Amalgamator:
+  def __init__(self):
+    self.files = expand_files(files_to_include)
+    self.included = set()
+    self.output_f = open('build/taichi.h', 'w')
+    
+  def include(self, fn):
+    if fn in self.included:
+      print('Skipping {}'.format(fn))
+      return
+    self.included.add(fn)
     print('Including {}'.format(fn))
     with open(fn, 'r') as f:
       lines = f.readlines()
@@ -48,13 +55,17 @@ def main():
             else:
               pass # Should be system header
         if need_expand:
-          include(includee, output_f)
+          self.include(includee)
         else:
-          print(l, file=output_f)
+          print(l, file=self.output_f)
   
-  with open('build/taichi.h', 'w') as output_f:
-    for f in files:
-      include(f, output_f)
+  def run(self):
+    for f in self.files:
+      self.include(f)
+
+def main():
+  ama = Amalgamator()
+  ama.run()
 
 if __name__ == '__main__':
   main()

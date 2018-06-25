@@ -108,14 +108,14 @@ if __name__ == '__main__':
     f.write('''\
 #include "taichi.h"
 using namespace taichi;
+
 int main() {
   Vector4 v(21);
   auto x = v + v;
   fmt::print("{}\\n", x.x);
   TC_P(x);
 }
-    ''')
-  #os.system('g++ build/taichi.h -o build/taichi -std=c++14')
+''')
   os.system('g++ build/test_amal.cpp -o build/test_amal -std=c++14 -g -lpthread && ./build/test_amal')
   
   stat = os.stat('build/taichi.h')

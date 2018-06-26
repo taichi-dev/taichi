@@ -110,7 +110,6 @@ def update(include_projects=False):
 
 def format():
   import os
-  import sys
   import taichi as tc
   from yapf.yapflib.yapf_api import FormatFile
   repo = get_repo()

@@ -20,6 +20,14 @@ TC_NAMESPACE_BEGIN
     CHECK(taichi::math::equal(A, B, tolerance));     \
   }
 
+#define TC_ASSERT_EQUAL(A, B, tolerance)             \
+  {                                                  \
+    if (!taichi::math::equal(A, B, tolerance)) {     \
+      std::cout << A << std::endl << B << std::endl; \
+      TC_ERROR(#A " != " #B);                        \
+    }                                                \
+  }
+
 #define TC_TEST(x) TEST_CASE(x, ("[" x "]"))
 
 int run_tests();

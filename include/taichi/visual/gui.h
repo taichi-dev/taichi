@@ -36,7 +36,7 @@ class GUI {
     }
 
     ~CXImage() {
-      XDestroyImage(image);
+      delete image; // image->data is automatically released in image_data
     }
   };
 

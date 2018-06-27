@@ -149,9 +149,6 @@ void Array2D<T>::write_text(const std::string &font_fn,
                                                     content[ch + 1]);
     ++ch;
   }
-  if (dy < 0) {
-    dy = this->res[1] + dy - 1;
-  }
   for (j = 0; j < this->res[1]; ++j) {
     for (i = 0; i < this->res[0]; ++i) {
       int x = dx + i, y = dy + j;

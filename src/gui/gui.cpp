@@ -84,6 +84,12 @@ GUI::GUI(const std::string &window_name, int width, int height)
   last_frame_time = taichi::Time::get_time();
 }
 
+void GUI::draw_log() {
+  for (int i = 0; i < (int)log_entries.size(); i++) {
+    canvas->text(log_entries[i], Vector2(0.0, -0.02 * i), 15, Vector4(0));
+  }
+}
+
 void GUI::update() {
   img->set_data(buffer);
   frame_id++;
@@ -99,7 +105,7 @@ void GUI::update() {
                   (std::accumulate(last_frame_interval.begin(),
                                    last_frame_interval.end(), 0.0_f));
   XStoreName((Display *)display, window,
-             fmt::format("{} ({:.04f} FPS)", window_name, real_fps).c_str());
+             fmt::format("{} ({:.02f} FPS)", window_name, real_fps).c_str());
   if (last_frame_time != 0) {
     last_frame_interval.push_back(taichi::Time::get_time() - last_frame_time);
   }

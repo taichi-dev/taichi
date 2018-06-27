@@ -62,11 +62,15 @@ class Canvas {
     }
   }
 
-  void text(const std::string &str, real size, Vector4 color) {
+  void text(const std::string &str,
+            Vector2 position,
+            real size,
+            Vector4 color) {
+    position = transform(position);
     char *root_dir = std::getenv("TAICHI_REPO_DIR");
     TC_ASSERT(root_dir != nullptr);
-    img.write_text(root_dir + std::string("/assets/fonts/go/Go-Bold.ttf"),
-                   str, size, 0, 0, color);
+    img.write_text(root_dir + std::string("/assets/fonts/go/Go-Bold.ttf"), str,
+                   size, position.x, position.y, color);
   }
 
   void clear(Vector4 color) {
@@ -92,6 +96,7 @@ class GUI {
   std::unique_ptr<Canvas> canvas;
   float64 last_frame_time;
   bool key_pressed;
+  std::vector<std::string> log_entries;
 
   void process_event();
 
@@ -104,6 +109,15 @@ class GUI {
   void update();
 
   void wait_key();
+
+  void draw_log();
+
+  void log(std::string entry) {
+    log_entries.push_back(entry);
+    if (log_entries.size() > 15) {
+      log_entries.erase(log_entries.begin());
+    }
+  }
 
   ~GUI();
 };

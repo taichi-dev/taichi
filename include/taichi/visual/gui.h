@@ -65,8 +65,8 @@ class Canvas {
   void text(const std::string &str, real size, Vector4 color) {
     char *root_dir = std::getenv("TAICHI_REPO_DIR");
     TC_ASSERT(root_dir != nullptr);
-    img.write_text(root_dir + std::string("/assets/fonts/go/Go-Regular.ttf"),
-                   str, size, 100, 100, color);
+    img.write_text(root_dir + std::string("/assets/fonts/go/Go-Bold.ttf"),
+                   str, size, 0, 0, color);
   }
 
   void clear(Vector4 color) {

@@ -103,7 +103,8 @@ void Array2D<T>::write_text(const std::string &font_fn,
                             const std::string &content_,
                             real size,
                             int dx,
-                            int dy) {
+                            int dy,
+                            T color) {
   std::vector<unsigned char> buffer(24 << 20, (unsigned char)0);
   std::vector<unsigned char> screen_buffer(
       (size_t)(this->res[0] * this->res[1]), (unsigned char)0);
@@ -117,6 +118,7 @@ void Array2D<T>::write_text(const std::string &font_fn,
   assert_info(font_file != nullptr,
               "Font file not found: " + std::string(font_fn));
   trash(fread(&buffer[0], 1, 24 << 20, font_file));
+  fclose(font_file);
   stbtt_InitFont(&font, &buffer[0], 0);
 
   scale = stbtt_ScaleForPixelHeight(&font, size);
@@ -127,7 +129,7 @@ void Array2D<T>::write_text(const std::string &font_fn,
   const char *content = c_content.c_str();
   while (content[ch]) {
     int advance, lsb, x0, y0, x1, y1;
-    float x_shift = xpos - (float)floor(xpos);
+    float x_shift = xpos - (float32)floor(xpos);
     stbtt_GetCodepointHMetrics(&font, content[ch], &advance, &lsb);
     stbtt_GetCodepointBitmapBoxSubpixel(&font, content[ch], scale, scale,
                                         x_shift, 0, &x0, &y0, &x1, &y1);
@@ -156,7 +158,15 @@ void Array2D<T>::write_text(const std::string &font_fn,
       int x = dx + i, y = dy + j;
       real alpha =
           screen_buffer[(this->res[1] - j - 1) * this->res[0] + i] / 255.0f;
-      (*this)[x][y] = lerp(alpha, this->get(x, y), T(1.0_f));
+      if (inside(x, y) && alpha != 0) {
+        /*
+        TC_P(this->get(x, y));
+        TC_P(lerp(alpha, this->get(x, y), color));
+        TC_P(color);
+        TC_P(alpha);
+        */
+        (*this)[x][y] = lerp(alpha, this->get(x, y), color);
+      }
     }
   }
 }
@@ -165,13 +175,15 @@ template void Array2D<Vector3>::write_text(const std::string &font_fn,
                                            const std::string &content_,
                                            real size,
                                            int dx,
-                                           int dy);
+                                           int dy,
+                                           Vector3);
 
 template void Array2D<Vector4>::write_text(const std::string &font_fn,
                                            const std::string &content_,
                                            real size,
                                            int dx,
-                                           int dy);
+                                           int dy,
+                                           Vector4);
 
 template void Array2D<Vector3f>::load_image(const std::string &filename, bool);
 

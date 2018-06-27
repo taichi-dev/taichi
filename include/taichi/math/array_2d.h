@@ -773,7 +773,8 @@ class ArrayND<2, T> {
                   const std::string &content,
                   real size,
                   int dx,
-                  int dy);
+                  int dy,
+                  T color = T(1.0_f));
 };
 
 template <typename T>

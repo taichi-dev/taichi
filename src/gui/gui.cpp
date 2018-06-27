@@ -54,21 +54,27 @@ void GUI::process_event() {
       case Expose:
         break;
       case ButtonPress:
-        // exit(0);
+        break;
+      case KeyPress:
+        key_pressed = true;
         break;
     }
   }
 }
 
 GUI::GUI(const std::string &window_name, int width, int height)
-    : window_name(window_name), width(width), height(height) {
+    : window_name(window_name),
+      width(width),
+      height(height),
+      key_pressed(false) {
   display = XOpenDisplay(NULL);
   visual = DefaultVisual(display, 0);
   window =
       XCreateSimpleWindow((Display *)display, RootWindow((Display *)display, 0),
                           0, 0, width, height, 1, 0, 0);
   XStoreName((Display *)display, window, window_name.c_str());
-  XSelectInput((Display *)display, window, ButtonPressMask | ExposureMask);
+  XSelectInput((Display *)display, window,
+               ButtonPressMask | ExposureMask | KeyPressMask | KeyReleaseMask);
   XMapWindow((Display *)display, window);
   img = std::make_unique<CXImage>((Display *)display, (Visual *)visual, width,
                                   height);
@@ -98,6 +104,16 @@ void GUI::update() {
     last_frame_interval.push_back(taichi::Time::get_time() - last_frame_time);
   }
   last_frame_time = taichi::Time::get_time();
+}
+
+void GUI::wait_key() {
+  while (true) {
+    key_pressed = false;
+    update();
+    if (key_pressed) {
+      break;
+    }
+  }
 }
 
 GUI::~GUI() {

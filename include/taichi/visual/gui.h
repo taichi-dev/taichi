@@ -1,4 +1,5 @@
 #pragma once
+
 #include <taichi/taichi>
 #include <numeric>
 
@@ -61,6 +62,13 @@ class Canvas {
     }
   }
 
+  void text(const std::string &str, real size, Vector4 color) {
+    char *root_dir = std::getenv("TAICHI_REPO_DIR");
+    TC_ASSERT(root_dir != nullptr);
+    img.write_text(root_dir + std::string("/assets/fonts/go/Go-Regular.ttf"),
+                   str, size, 100, 100, color);
+  }
+
   void clear(Vector4 color) {
     img.reset(color);
   }
@@ -83,6 +91,7 @@ class GUI {
   std::vector<real> last_frame_interval;
   std::unique_ptr<Canvas> canvas;
   float64 last_frame_time;
+  bool key_pressed;
 
   void process_event();
 
@@ -93,6 +102,8 @@ class GUI {
   }
 
   void update();
+
+  void wait_key();
 
   ~GUI();
 };

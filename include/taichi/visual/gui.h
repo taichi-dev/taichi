@@ -97,5 +97,6 @@ class GUI {
   ~GUI();
 };
 
-TC_NAMESPACE_END
 #endif
+
+TC_NAMESPACE_END

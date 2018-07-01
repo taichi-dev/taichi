@@ -434,6 +434,14 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
     return VectorND([=](int i) { return this->d[i] / o[i]; });
   }
 
+  template <int DIM_ = DIM,
+            typename T_ = T,
+            InstSetExt ISE_ = ISE,
+            typename std::enable_if_t<std::is_integral<T_>::value, int> = 0>
+  TC_FORCE_INLINE VectorND operator%(const VectorND &o) const {
+    return VectorND([=](int i) { return this->d[i] % o[i]; });
+  }
+
   // Inplace operations
   TC_FORCE_INLINE VectorND &operator+=(const VectorND &o) {
     (*this) = (*this) + o;

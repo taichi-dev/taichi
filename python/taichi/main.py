@@ -97,7 +97,7 @@ def main():
       exit(-1)
     name = sys.argv[2]
     task = tc.Task(name)
-    task.run(sys.argv[3:])
+    task.run(*sys.argv[3:])
   elif mode == "debug":
     tc.core.set_core_trigger_gdb_when_crash(True)
     if argc <= 2:

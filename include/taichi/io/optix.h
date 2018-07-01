@@ -42,4 +42,15 @@ struct OptiXMesh {
   }
 };
 
+struct OptiXParticle {
+  Vector4 position_and_radius;
+  TC_IO_DEF(position_and_radius);
+};
+
+struct OptiXScene {
+  std::vector<OptiXMesh> meshes;
+  std::vector<OptiXParticle> particles;
+  TC_IO_DEF(meshes, particles);
+};
+
 TC_NAMESPACE_END

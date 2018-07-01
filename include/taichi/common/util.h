@@ -128,6 +128,7 @@ static_assert(false, "32-bit Windows systems are not supported")
     }                                      \
   }
 
+#define TC_STATIC_ASSERT(x) static_assert(x, #x);
 #define TC_ASSERT(x) TC_ASSERT_INFO(x, #x)
 #define TC_ASSERT_INFO assert_info
 // TODO: this should be part of logging

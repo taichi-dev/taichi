@@ -19,6 +19,8 @@
 #endif
 #if !defined(TC_AMALGAMATED)
 #include <tbb/tbb.h>
+#define TBB_PREVIEW_GLOBAL_CONTROL 1
+#include <tbb/global_control.h>
 #endif
 
 TC_NAMESPACE_BEGIN
@@ -64,6 +66,16 @@ class Spinlock {
 
 class ThreadedTaskManager {
  public:
+#if !defined(TC_AMALGAMATED)
+  class TbbParallelismControl {
+    std::unique_ptr<tbb::global_control> c;
+   public:
+    TbbParallelismControl(int threads) {
+      c = std::make_unique<tbb::global_control>(
+          tbb::global_control::max_allowed_parallelism, threads);
+    }
+  };
+#endif
   template <typename T>
   void static run(const T &target, int begin, int end, int num_threads) {
 #if !defined(TC_AMALGAMATED)

@@ -133,7 +133,7 @@ def main():
       assert False
   elif mode == "test":
     task = tc.Task('test')
-    task.run(sys.argv[2:])
+    task.run(*sys.argv[2:])
   elif mode == "build":
     tc.core.build()
   elif mode == "format":

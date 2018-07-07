@@ -71,7 +71,7 @@ before_install:
         export PATH=$PWD/cmake3/bin:${PATH}
         echo "Installed CMake in $PWD/cmake3/bin:${PATH}"
     fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:deadsnakes/ppa; sudo apt-get update; sudo apt-get install $PYTHON-dev --allow-unauthenticated -yes; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:deadsnakes/ppa; sudo apt-get update; sudo apt-get install $PYTHON-dev --allow-unauthenticated -y; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo rm /opt/local/lib/libembree.2.dylib; brew update; brew install $PYTHON || brew upgrade python; fi
 
 script:

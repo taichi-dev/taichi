@@ -137,7 +137,8 @@ struct TBlock {
   // Particle data
   std::size_t particle_count;
 
-  TBlock() {}
+  TBlock() {
+  }
 
   TBlock(VectorI base_coord) {
     initialize(base_coord);
@@ -702,6 +703,7 @@ class TaichiGrid {
         continue;
       // Send request to peer for the block
       blocks_to_recv[p] = requested_blocks[p].size();
+      // For Isend, make sure the content does not change
       MPI_Isend(&blocks_to_recv[p], 1, MPI_INT32_T, p, TAG_REQUEST_BLOCKS_NUM,
                 MPI_COMM_WORLD, &reqs[p]);
       MPI_Isend(requested_blocks[p].data(),
@@ -717,11 +719,11 @@ class TaichiGrid {
         continue;
 
       int count;
-      MPI_Recv(&count, 1, MPI_INT, p, TAG_REQUEST_BLOCKS, MPI_COMM_WORLD,
-               &stats[p]);
+      MPI_Recv(&count, 1, MPI_INT32_T, p, TAG_REQUEST_BLOCKS_NUM,
+               MPI_COMM_WORLD, &stats[p]);
 
       std::vector<VectorI> coords(count);
-      MPI_Recv(coords.data(), count * VectorI::storage_elements, MPI_INT, p,
+      MPI_Recv(coords.data(), count * VectorI::storage_elements, MPI_INT32_T, p,
                TAG_REQUEST_BLOCKS, MPI_COMM_WORLD, &stats[p]);
 
       // Prepare requested blocks
@@ -734,16 +736,17 @@ class TaichiGrid {
         std::memcpy(&block_buffer[i], b, sizeof(Block));
         i++;
       }
-      MPI_Isend(&i, 1, MPI_INT32_T, p, TAG_REPLY_BLOCKS_NUM, MPI_COMM_WORLD,
-                &reqs[p]);
+      // Stage 2: send out blocks
+      // Note: some blocks may be empty, so possibly blocks to send != requested_blocks
+      blocks_to_send[p] = i;
+      MPI_Isend(&blocks_to_send[p], 1, MPI_INT32_T, p, TAG_REPLY_BLOCKS_NUM,
+                MPI_COMM_WORLD, &reqs[p]);
       MPI_Isend(block_buffer.data(), block_buffer.size() * sizeof(Block),
                 MPI_CHAR, p, TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &reqs[p]);
       // TODO: serialize to save communication. For now, we just take the whole
       // block
     }
 
-    // Stage 2: send out blocks
-    // Note: some blocks may be empty
     for (int p = 0; p < world_size; p++) {
       if (p == world_rank)
         continue;

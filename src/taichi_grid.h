@@ -137,6 +137,8 @@ struct TBlock {
   // Particle data
   std::size_t particle_count;
 
+  TBlock() {}
+
   TBlock(VectorI base_coord) {
     initialize(base_coord);
   }
@@ -430,12 +432,14 @@ class TaichiGrid {
   static constexpr const std::array<int, dim> &block_size = Block::size;
   static constexpr int TC_GRID_CURRENT = 0;
   static constexpr int TC_GRID_PREVIOUS = 1;
-  using VectorI = VectorND<dim, int>;
+  using VectorI = TVector<int, dim>;
   // static constexpr const std::array<int, dim> bucket_size = {128, 128, 128};
   using Node = typename Block::Node;
   using Particle = typename Block::Particle;
   using Ancestors = TAncestors<Block>;
   using GridScratchPad = TGridScratchPad<Block>;
+  using PartitionFunction = std::function<int(VectorI)>;
+  PartitionFunction part_func;
 
   void gc() {
     TC_NOT_IMPLEMENTED
@@ -486,14 +490,21 @@ class TaichiGrid {
       MPI_Comm_size(MPI_COMM_WORLD, &world_size);
       MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
       TC_P(world_rank);
+      TC_ASSERT(world_size == 4);
+      part_func = [](const VectorI coord) -> int {
+        return 2 * int(coord.x >= 0) + int(coord.z >= 0);
+      };
     } else {
+      part_func = [](const VectorI coord) -> int { return 0; };
       world_size = 1;
       world_rank = 0;
     }
   }
 
   ~TaichiGrid() {
-    MPI_Finalize();
+    if (with_mpi()) {
+      MPI_Finalize();
+    }
   }
 
   TC_FORCE_INLINE RootDomain *get_root_domain_if_exist(
@@ -644,9 +655,116 @@ class TaichiGrid {
     }
   }
 
+  enum {
+    TAG_REQUEST_BLOCKS,
+    TAG_REQUEST_BLOCKS_NUM,
+    TAG_REPLY_BLOCKS,
+    TAG_REPLY_BLOCKS_NUM,
+  };
+
+  void fetch_neighbours() {
+    TC_ASSERT(with_mpi());
+    update_block_list();
+    std::vector<std::vector<VectorI>> requested_blocks;
+    requested_blocks.resize(world_size);
+
+    for (auto *b : blocks) {
+      RegionND<dim> region(VectorI(-1), VectorI(2));
+      for (auto &b : blocks) {
+        auto base_coord = b->base_coord;
+        for (auto &offset : region) {
+          auto nb_coord = base_coord + VectorI(Block::size) * offset.get_ipos();
+          auto nb_rank = part_func(nb_coord);
+          if (nb_rank == world_rank) {
+            continue;
+          }
+          auto nb = get_block_if_exist(nb_coord);
+          if (!nb) {
+            requested_blocks[nb_rank].push_back(nb_coord);
+          }
+        }
+      }
+    }
+
+    MPI_Request reqs[world_size];
+    MPI_Status stats[world_size];
+    std::size_t blocks_to_send[world_size];
+    std::size_t blocks_to_recv[world_size];
+
+    const auto coord_buffer_size = 1000000;
+
+    std::vector<VectorI> recv_buffer;
+    recv_buffer.resize(coord_buffer_size);
+
+    // Stage 1: send out requests
+    for (int p = 0; p < world_size; p++) {
+      if (p == world_rank)
+        continue;
+      // Send request to peer for the block
+      blocks_to_recv[p] = requested_blocks[p].size();
+      MPI_Isend(&blocks_to_recv[p], 1, MPI_INT32_T, p, TAG_REQUEST_BLOCKS_NUM,
+                MPI_COMM_WORLD, &reqs[p]);
+      MPI_Isend(requested_blocks[p].data(),
+                requested_blocks[p].size() * VectorI::storage_elements,
+                MPI_INT32_T, p, TAG_REQUEST_BLOCKS, MPI_COMM_WORLD, &reqs[p]);
+      TC_ASSERT(requested_blocks[p].size() < coord_buffer_size);
+    }
+
+    std::vector<std::vector<Block>> block_buffers;
+    block_buffers.resize(world_size);
+    for (int p = 0; p < world_size; p++) {
+      if (p == world_rank)
+        continue;
+
+      int count;
+      MPI_Recv(&count, 1, MPI_INT, p, TAG_REQUEST_BLOCKS, MPI_COMM_WORLD,
+               &stats[p]);
+
+      std::vector<VectorI> coords(count);
+      MPI_Recv(coords.data(), count * VectorI::storage_elements, MPI_INT, p,
+               TAG_REQUEST_BLOCKS, MPI_COMM_WORLD, &stats[p]);
+
+      // Prepare requested blocks
+      auto &block_buffer = block_buffers[p];
+      block_buffer.resize(count);
+      int i = 0;
+      for (auto &coord : coords) {
+        TC_ASSERT(part_func(coord) == world_rank);
+        auto b = get_block_if_exist(coord);
+        std::memcpy(&block_buffer[i], b, sizeof(Block));
+        i++;
+      }
+      MPI_Isend(&i, 1, MPI_INT32_T, p, TAG_REPLY_BLOCKS_NUM, MPI_COMM_WORLD,
+                &reqs[p]);
+      MPI_Isend(block_buffer.data(), block_buffer.size() * sizeof(Block),
+                MPI_CHAR, p, TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &reqs[p]);
+      // TODO: serialize to save communication. For now, we just take the whole
+      // block
+    }
+
+    // Stage 2: send out blocks
+    // Note: some blocks may be empty
+    for (int p = 0; p < world_size; p++) {
+      if (p == world_rank)
+        continue;
+      MPI_Wait(&reqs[p], &stats[p]);
+      // stats[p].
+
+      int num_blocks;
+      MPI_Recv(&num_blocks, 1, MPI_INT32_T, p, TAG_REPLY_BLOCKS_NUM,
+               MPI_COMM_WORLD, &stats[p]);
+      std::vector<Block> blocks(num_blocks);
+      MPI_Recv(blocks.data(), num_blocks, MPI_CHAR, p, TAG_REPLY_BLOCKS,
+               MPI_COMM_WORLD, &stats[p]);
+    }
+  }
+
   // Advance
   template <typename T>
   void advance(const T &t, bool needs_expand = true) {
+    if (world_size != 1) {
+      fetch_neighbours();
+    }
     // T takes (base_coord, Ancestor) and returns bool (true to keep, false to
     // discard)
     // TODO: an optimization can be, when T returns false, do not even

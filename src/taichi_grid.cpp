@@ -1,5 +1,4 @@
 #include "taichi_grid.h"
-#include <mpi.h>
 #include <taichi/system/threading.h>
 
 TC_NAMESPACE_BEGIN
@@ -204,7 +203,6 @@ TC_TEST("Propagate") {
   TestGrid grid;
   grid.touch(Vector3i(0));
   grid.node(Vector3i(0)).x = 100;
-  TC_P(grid.num_active_blocks());
   for (int i = 0; i < 10; i++) {
     if (i == 0)
       CHECK(grid.num_active_blocks() == 1);

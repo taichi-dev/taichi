@@ -1,4 +1,4 @@
-set(TAICHI_PROJECT_NAME "toys")
+set(TAICHI_PROJECT_NAME "pangu")
 
 file(GLOB_RECURSE PROJECT_SOURCES "src/*.cpp" "src/*.h")
 

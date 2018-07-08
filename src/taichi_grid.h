@@ -775,7 +775,11 @@ class TaichiGrid {
 
         // Prepare requested blocks
         auto &block_buffer = block_buffers[p];
-        TC_PROFILE("resize coord buffer 1", block_buffer.resize(count));
+        {
+          TC_PROFILER("resize coord buffer");
+          if (count > block_buffer.size())
+            block_buffer.resize(count);
+        }
         num_sent_blocks[p] = 0;
         {
           TC_PROFILER("prepare blocks to reply");
@@ -792,8 +796,7 @@ class TaichiGrid {
         // Stage 2: send out blocks
         // Note: some blocks may be empty, so possibly blocks to send !=
         // requested_blocks
-        TC_PROFILE("resize block buffer 2",
-                   block_buffer.resize(num_sent_blocks[p]));
+        // Note: do not use block_buffer.size() here. That's just a upper bound!
         TC_PROFILE("Isend count",
                    MPI_Isend(&num_sent_blocks[p], 1, MPI_INT32_T, p,
                              TAG_REPLY_BLOCK_NUM, MPI_COMM_WORLD, &reqs[p]));

@@ -925,7 +925,7 @@ class TaichiGrid {
     {
       TC_PROFILER("computation");
       tbb::parallel_for_each(blocks.begin(), blocks.end(), [&](Block *block) {
-        if (!block->computed)
+        if (!block->computed && !block->killed)
           compute_block(block);
       });
     }

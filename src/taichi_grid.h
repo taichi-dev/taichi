@@ -448,6 +448,7 @@ class TaichiGrid {
 
   int world_size;  // aka num. machines (processes)
   int world_rank;
+  static constexpr int master_rank = 0;
 
   bool blocks_dirty;
   std::vector<Block *> blocks;
@@ -665,14 +666,16 @@ class TaichiGrid {
   }
 
   enum {
+    TAG_REQUEST_BLOCK_NUM,
     TAG_REQUEST_BLOCKS,
-    TAG_REQUEST_BLOCKS_NUM,
+    TAG_REPLY_BLOCK_NUM,
     TAG_REPLY_BLOCKS,
-    TAG_REPLY_BLOCKS_NUM,
+    TAG_REPLY_PARTICLE_NUM,
+    TAG_REPLY_PARTICLES
   };
 
   void fetch_neighbours() {
-    bool debug = true;
+    constexpr bool debug = false;
     TC_ASSERT(with_mpi());
     update_block_list();
     std::vector<std::vector<VectorI>> requested_blocks;
@@ -736,7 +739,7 @@ class TaichiGrid {
       num_requested_blocks[p] = requested_blocks[p].size();
       // For Isend, make sure the content does not change
       MPI_Isend(&num_requested_blocks[p], 1, MPI_INT32_T, p,
-                TAG_REQUEST_BLOCKS_NUM, MPI_COMM_WORLD, &reqs[p]);
+                TAG_REQUEST_BLOCK_NUM, MPI_COMM_WORLD, &reqs[p]);
       MPI_Isend(requested_blocks[p].data(),
                 num_requested_blocks[p] * VectorI::storage_elements,
                 MPI_INT32_T, p, TAG_REQUEST_BLOCKS, MPI_COMM_WORLD, &reqs[p]);
@@ -750,8 +753,8 @@ class TaichiGrid {
         continue;
 
       int count;
-      MPI_Recv(&count, 1, MPI_INT32_T, p, TAG_REQUEST_BLOCKS_NUM,
-               MPI_COMM_WORLD, &stats[p]);
+      MPI_Recv(&count, 1, MPI_INT32_T, p, TAG_REQUEST_BLOCK_NUM, MPI_COMM_WORLD,
+               &stats[p]);
 
       if (debug)
         TC_INFO("Rank {} received request from rank {}, {} blocks", world_rank,
@@ -777,7 +780,7 @@ class TaichiGrid {
       // Note: some blocks may be empty, so possibly blocks to send !=
       // requested_blocks
       block_buffer.resize(num_sent_blocks[p]);
-      MPI_Isend(&num_sent_blocks[p], 1, MPI_INT32_T, p, TAG_REPLY_BLOCKS_NUM,
+      MPI_Isend(&num_sent_blocks[p], 1, MPI_INT32_T, p, TAG_REPLY_BLOCK_NUM,
                 MPI_COMM_WORLD, &reqs[p]);
       MPI_Isend(block_buffer.data(), num_sent_blocks[p] * sizeof(Block),
                 MPI_CHAR, p, TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &reqs[p]);
@@ -794,7 +797,7 @@ class TaichiGrid {
         continue;
 
       int num_blocks;
-      MPI_Recv(&num_blocks, 1, MPI_INT32_T, p, TAG_REPLY_BLOCKS_NUM,
+      MPI_Recv(&num_blocks, 1, MPI_INT32_T, p, TAG_REPLY_BLOCK_NUM,
                MPI_COMM_WORLD, &stats[p]);
       if (debug) {
         TC_WARN("rank {} Receiving {} blocks", world_rank, num_blocks);
@@ -886,23 +889,43 @@ class TaichiGrid {
 
   std::vector<Particle> gather_particles() {
     // TODO: fix alignment issues here
-    std::vector<Particle> p;
+    std::vector<Particle> particles;
     update_block_list();
+    // TC_INFO("Gathering particles");
     for (auto b : blocks) {
-      /*
-      TC_P(sizeof(Particle));
-      TC_P(b->particle_count);
-      TC_P(&b->particles[0]);
-      TC_P(b->particles + b->particle_count)
-      TC_P(p.size());
-      for (int i = 0; i < b->particle_count; i++) {
-        p.push_back(b->particles[i]);
-      }
-      */
-      p.insert(p.end(), b->particles, b->particles + b->particle_count);
-      // TC_P(p.size());
+      particles.insert(particles.end(), b->particles,
+                       b->particles + b->particle_count);
     }
-    return p;
+    if (with_mpi()) {
+      MPI_Request req;
+      MPI_Status stats;
+      if (is_master()) {
+        for (int p = 0; p < world_size; p++) {
+          if (p == world_rank) {
+            continue;
+          }
+          int count;
+          // TC_INFO("waiting for count");
+          MPI_Recv(&count, 1, MPI_INT32_T, p, TAG_REPLY_PARTICLE_NUM,
+                   MPI_COMM_WORLD, &stats);
+          // TC_INFO("receiving {} particles", count);
+          std::vector<Particle> remote_particles(count);
+          MPI_Recv(remote_particles.data(), count * sizeof(Particle), MPI_CHAR,
+                   p, TAG_REPLY_PARTICLES, MPI_COMM_WORLD, &stats);
+          particles.insert(particles.end(), remote_particles.begin(),
+                           remote_particles.end());
+        }
+      } else {
+        int count = particles.size();
+        // TC_INFO("sending {} particles", count);
+        MPI_Isend(&count, 1, MPI_INT32_T, master_rank, TAG_REPLY_PARTICLE_NUM,
+                  MPI_COMM_WORLD, &req);
+        MPI_Isend(particles.data(), count * sizeof(Particle), MPI_CHAR,
+                  master_rank, TAG_REPLY_PARTICLES, MPI_COMM_WORLD, &req);
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
+    return particles;
   }
 
   TC_FORCE_INLINE bool inside(VectorI coord) {
@@ -911,7 +934,7 @@ class TaichiGrid {
   }
 
   TC_FORCE_INLINE bool is_master() {
-    return world_rank == 0;
+    return world_rank == master_rank;
   }
 };
 

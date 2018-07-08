@@ -234,11 +234,11 @@ class MPMTest {
   MPMTest() {
     gravity = Vector3(0, -100, 0);
     current_frame = 0;
-    auto res = 30;
+    auto res = 20;
     dx = 1.0_f / res;
     dt = 5e-5_f;
     frame_dt = 1e-2f;
-    //frame_dt = 5e-5_f;
+    // frame_dt = 5e-5_f;
     inv_dx = 1.0_f / dx;
     total_frames = 128;
     grid_pos = [&](Particle &p) -> VectorI {
@@ -391,14 +391,15 @@ class MPMTest {
   }
 
   virtual void output(std::string fn) {
-    if (!grid.is_master()) {
-      return;
+    auto particles = grid.gather_particles();
+    if (grid.is_master()) {
+      OptiXScene scene;
+      for (auto &p : particles) {
+        scene.particles.push_back(
+            OptiXParticle{Vector4(p.pos * 3.0_f, 0.01_f)});
+      }
+      write_to_binary_file(scene, fn);
     }
-    OptiXScene scene;
-    grid.serial_for_each_particle([&](Particle &p) {
-      scene.particles.push_back(OptiXParticle{Vector4(p.pos * 3.0_f, 0.01_f)});
-    });
-    write_to_binary_file(scene, fn);
   }
 };
 

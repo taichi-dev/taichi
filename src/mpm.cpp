@@ -237,7 +237,8 @@ class MPMTest {
     auto res = 10;
     dx = 1.0_f / res;
     dt = 5e-5_f;
-    frame_dt = 1e-4f;
+    //frame_dt = 1e-2f;
+    frame_dt = 5e-5_f;
     inv_dx = 1.0_f / dx;
     total_frames = 128;
     grid_pos = [&](Particle &p) -> VectorI {

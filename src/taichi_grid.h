@@ -607,6 +607,12 @@ class TaichiGrid {
                            [&](Block *block) { block->for_each_node(t); });
   }
 
+  void touch_if_inside(VectorI coord) {
+    if (part_func(coord) == world_rank) {
+      touch(coord);
+    }
+  }
+
   // Activate a root domain/block
   void touch(VectorI coord) {
     blocks_dirty = true;

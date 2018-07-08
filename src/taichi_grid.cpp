@@ -261,10 +261,13 @@ TC_TEST("Propagate") {
   CHECK(grid.root.size() == 8);
 }
 
-TC_TEST("basic distributed") {
+TC_TEST("basic distributed 2") {
   if (!with_mpi())
     return;
   TestGrid grid;
+  if (grid.world_size != 2) {
+    return;
+  }
   if (grid.world_rank == 0) {
     grid.touch(Vector3i(-8, 0, 0));
   } else {
@@ -274,6 +277,23 @@ TC_TEST("basic distributed") {
   CHECK(grid.num_active_blocks() == 1);
   grid.fetch_neighbours();
   CHECK(grid.num_active_blocks() == 2);
+}
+
+TC_TEST("basic distributed 4") {
+  if (!with_mpi())
+    return;
+  TestGrid grid;
+  if (grid.world_size != 4) {
+    return;
+  }
+  grid.touch(Vector3i(-8, 0, 0));
+  grid.touch(Vector3i(0, -8, 0));
+  grid.touch(Vector3i(-8, -8, 0));
+  grid.touch(Vector3i(0, 0, 0));
+  // Distributed case
+  CHECK(grid.num_active_blocks() == 1);
+  grid.fetch_neighbours();
+  CHECK(grid.num_active_blocks() == 4);
 }
 
 auto test_mpi = [](const std::vector<std::string> &param) {

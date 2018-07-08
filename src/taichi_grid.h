@@ -674,11 +674,12 @@ class TaichiGrid {
     TAG_REPLY_PARTICLES
   };
 
+  std::vector<std::vector<VectorI>> requested_blocks;
+  std::vector<std::vector<Block>> block_buffers;
   void fetch_neighbours() {
     constexpr bool debug = false;
     TC_ASSERT(with_mpi());
     update_block_list();
-    std::vector<std::vector<VectorI>> requested_blocks;
     requested_blocks.resize(world_size);
 
     {
@@ -709,9 +710,6 @@ class TaichiGrid {
     std::size_t num_requested_blocks[world_size];
 
     const auto coord_buffer_size = 1000000;
-
-    std::vector<VectorI> recv_buffer;
-    recv_buffer.resize(coord_buffer_size);
 
     {
       // Stage 1:
@@ -753,7 +751,6 @@ class TaichiGrid {
     }
     // TC_TRACE("Stage 1 messages sent");
 
-    std::vector<std::vector<Block>> block_buffers;
     block_buffers.resize(world_size);
     {
       TC_PROFILER("reply blocks")

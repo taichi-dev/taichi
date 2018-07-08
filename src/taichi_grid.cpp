@@ -262,6 +262,8 @@ TC_TEST("Propagate") {
 }
 
 TC_TEST("basic distributed") {
+  if (!with_mpi())
+    return;
   TestGrid grid;
   if (grid.world_rank == 0) {
     grid.touch(Vector3i(-8, 0, 0));

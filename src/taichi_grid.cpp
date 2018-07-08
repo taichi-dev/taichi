@@ -116,7 +116,7 @@ TC_TEST("grid") {
       }
     }
   }
-  CHECK(grid.root.size() == pow<3>((n - 1) / 128 + 1));
+  CHECK(grid.root_current.size() == pow<3>((n - 1) / 128 + 1));
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       for (int k = 0; k < n; k++) {
@@ -257,7 +257,7 @@ TC_TEST("Propagate") {
   CHECK(int(grid.node(Vector3i(0, 5, 5)).x) == 100);
   CHECK(int(grid.node(Vector3i(0, 6, 5)).x) == 0);
 
-  CHECK(grid.root.size() == 8);
+  CHECK(grid.root_current.size() == 8);
 }
 
 TC_TEST("basic distributed 2") {

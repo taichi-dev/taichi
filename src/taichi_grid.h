@@ -672,7 +672,7 @@ class TaichiGrid {
   };
 
   void fetch_neighbours() {
-    bool debug = false;
+    bool debug = true;
     TC_ASSERT(with_mpi());
     update_block_list();
     std::vector<std::vector<VectorI>> requested_blocks;
@@ -698,8 +698,8 @@ class TaichiGrid {
 
     MPI_Request reqs[world_size];
     MPI_Status stats[world_size];
-    std::size_t blocks_to_send[world_size];
-    std::size_t blocks_to_recv[world_size];
+    std::size_t num_sent_blocks[world_size];
+    std::size_t num_requested_blocks[world_size];
 
     const auto coord_buffer_size = 1000000;
 
@@ -733,12 +733,12 @@ class TaichiGrid {
       if (debug)
         TC_INFO("rank {} asking for {} blocks from rank {}", world_rank,
                 requested_blocks[p].size(), p);
-      blocks_to_recv[p] = requested_blocks[p].size();
+      num_requested_blocks[p] = requested_blocks[p].size();
       // For Isend, make sure the content does not change
-      MPI_Isend(&blocks_to_recv[p], 1, MPI_INT32_T, p, TAG_REQUEST_BLOCKS_NUM,
-                MPI_COMM_WORLD, &reqs[p]);
+      MPI_Isend(&num_requested_blocks[p], 1, MPI_INT32_T, p,
+                TAG_REQUEST_BLOCKS_NUM, MPI_COMM_WORLD, &reqs[p]);
       MPI_Isend(requested_blocks[p].data(),
-                requested_blocks[p].size() * VectorI::storage_elements,
+                num_requested_blocks[p] * VectorI::storage_elements,
                 MPI_INT32_T, p, TAG_REQUEST_BLOCKS, MPI_COMM_WORLD, &reqs[p]);
     }
     // TC_TRACE("Stage 1 messages sent");
@@ -764,24 +764,22 @@ class TaichiGrid {
       // Prepare requested blocks
       auto &block_buffer = block_buffers[p];
       block_buffer.resize(count);
-      int i = 0;
+      num_sent_blocks[p] = 0;
       for (auto &coord : coords) {
         TC_ASSERT(part_func(coord) == world_rank);
         auto b = get_block_if_exist(coord);
         if (b != nullptr) {
           // TC_P(coord);
-          std::memcpy(&block_buffer[i], b, sizeof(Block));
-          i++;
+          std::memcpy(&block_buffer[num_sent_blocks[p]++], b, sizeof(Block));
         }
       }
       // Stage 2: send out blocks
       // Note: some blocks may be empty, so possibly blocks to send !=
       // requested_blocks
-      blocks_to_send[p] = i;
-      block_buffer.resize(i);
-      MPI_Isend(&blocks_to_send[p], 1, MPI_INT32_T, p, TAG_REPLY_BLOCKS_NUM,
+      block_buffer.resize(num_sent_blocks[p]);
+      MPI_Isend(&num_sent_blocks[p], 1, MPI_INT32_T, p, TAG_REPLY_BLOCKS_NUM,
                 MPI_COMM_WORLD, &reqs[p]);
-      MPI_Isend(block_buffer.data(), block_buffer.size() * sizeof(Block),
+      MPI_Isend(block_buffer.data(), num_sent_blocks[p] * sizeof(Block),
                 MPI_CHAR, p, TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &reqs[p]);
       if (debug)
         TC_INFO("Rank {} sent {} blocks to rank {}", world_rank, i, p);

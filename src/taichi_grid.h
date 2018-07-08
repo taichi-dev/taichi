@@ -708,6 +708,7 @@ class TaichiGrid {
     MPI_Status stats[world_size];
     std::size_t num_sent_blocks[world_size];
     std::size_t num_requested_blocks[world_size];
+    std::vector<Block> recv_blocks;
 
     const auto coord_buffer_size = 1000000;
 
@@ -820,23 +821,38 @@ class TaichiGrid {
           continue;
 
         int num_blocks;
-        MPI_Recv(&num_blocks, 1, MPI_INT32_T, p, TAG_REPLY_BLOCK_NUM,
-                 MPI_COMM_WORLD, &stats[p]);
+        TC_PROFILE("Recv block count",
+                   MPI_Recv(&num_blocks, 1, MPI_INT32_T, p, TAG_REPLY_BLOCK_NUM,
+                            MPI_COMM_WORLD, &stats[p]));
         if (debug) {
           TC_WARN("rank {} Receiving {} blocks", world_rank, num_blocks);
           TC_P(sizeof(Block));
         }
+        {
+          TC_PROFILER("Resize buffer")
+          if (num_blocks > recv_blocks.size()) {
+            recv_blocks.resize(num_blocks);
+          }
+        }
 
-        std::vector<Block> blocks(num_blocks);
-        MPI_Recv(&blocks[0], num_blocks * sizeof(Block), MPI_CHAR, p,
-                 TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &stats[p]);
+        // Note: do not use recv_blocks.size() for the # of blocks received.
+        // That's just an upper bound.
+
+        {
+          TC_PROFILER("Recv blocks");
+          MPI_Recv(&recv_blocks[0], num_blocks * sizeof(Block), MPI_CHAR, p,
+                   TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &stats[p]);
+        }
         if (debug)
           TC_WARN("rank {} Received {} blocks", world_rank, num_blocks);
-        for (int i = 0; i < num_blocks; i++) {
-          touch(blocks[i].base_coord);
-          auto local_b = get_block_if_exist(blocks[i].base_coord);
-          TC_ASSERT(local_b);
-          std::memcpy(local_b, &blocks[i], sizeof(Block));
+        {
+          TC_PROFILER("save blocks");
+          for (int i = 0; i < num_blocks; i++) {
+            touch(recv_blocks[i].base_coord);
+            auto local_b = get_block_if_exist(recv_blocks[i].base_coord);
+            TC_ASSERT(local_b);
+            std::memcpy(local_b, &recv_blocks[i], sizeof(Block));
+          }
         }
       }
     }

@@ -184,7 +184,6 @@ class SPHTestPangu : public SPHTestBase {
           for (std::size_t i = 0; i < b.particle_count; i++) {
             auto &p = b.particles[i];
           }
-          return true;
         },
         false);
     output(get_filename(current_frame));

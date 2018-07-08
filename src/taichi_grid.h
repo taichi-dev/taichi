@@ -137,6 +137,11 @@ struct TBlock {
   // Particle data
   std::size_t particle_count;
 
+  TC_FORCE_INLINE void kill() {
+    TC_ASSERT(!killed);
+    killed = true;
+  }
+
   TBlock() {
   }
 
@@ -862,6 +867,8 @@ class TaichiGrid {
   // Advance
   template <typename T>
   void advance(const T &t, bool needs_expand = true) {
+    using result_type = std::result_of_t<T(Block &, Ancestors &)>;
+    TC_STATIC_ASSERT((std::is_same<result_type, void>::value));
     if (world_size != 1) {
       TC_PROFILE("fetch_neighbours", fetch_neighbours());
     }
@@ -891,7 +898,7 @@ class TaichiGrid {
       TC_PROFILER("computation");
       tbb::parallel_for_each(blocks.begin(), blocks.end(), [&](Block *block) {
         if (!inside(block->base_coord)) {
-          block->killed = true;
+          block->kill();
           return;
         }
         Ancestors ancestors;
@@ -904,10 +911,7 @@ class TaichiGrid {
             ancestors[offset.get_ipos()] = b;
           }
         }
-        bool ret = t(*block, ancestors);
-        if (!ret) {
-          block->killed = true;
-        }
+        t(*block, ancestors);
       });
     }
     TC_PROFILE("clear_killed_blocks", clear_killed_blocks());

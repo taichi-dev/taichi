@@ -181,7 +181,6 @@ class AdvectionTestPangu : public AdvectionTestBase {
             auto sampled = sample_velocity(b, p.position, scratch);
             p.position += dt * sampled;
           }
-          return true;
         },
         false);
   }

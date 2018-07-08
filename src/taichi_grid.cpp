@@ -51,10 +51,8 @@ TC_TEST("dilated block") {
   }
 
   // Do grid exchange here
-  grid.advance([](Block &b, TAncestors<Block> &an) {
-    accumulate_dilated_grids(b, an);
-    return true;
-  });
+  grid.advance(
+      [](Block &b, TAncestors<Block> &an) { accumulate_dilated_grids(b, an); });
 
   for (auto b_ind : block_region) {
     auto base_coord = b_ind.get_ipos() * block_size;
@@ -179,7 +177,6 @@ TC_TEST("grid") {
         }
       }
     }
-    return true;
   });
 }
 
@@ -239,12 +236,12 @@ TC_TEST("Propagate") {
             update(0, 0, -1);
             if (maximum != 0) {
               b.node_local(Vector3i(i, j, k)).x = maximum;
-              has_non_zero = true;
+            } else {
+              b.kill();
             }
           }
         }
       }
-      return has_non_zero;
     });
     // TC_P(grid.num_active_blocks());
   }

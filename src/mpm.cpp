@@ -234,7 +234,7 @@ class MPMTest {
   MPMTest() {
     gravity = Vector3(0, -100, 0);
     current_frame = 0;
-    auto res = 20;
+    auto res = 40;
     dx = 1.0_f / res;
     dt = 5e-5_f;
     frame_dt = 1e-2f;
@@ -277,6 +277,10 @@ class MPMTest {
       grid.advance(
           [&](Grid::Block &b, Grid::Ancestors &an) {
             gather_particles(b, an, grid_pos);
+            if (b.particle_count == 0) {
+              b.kill();
+              return;
+            }
 
             // Rasterize
             for (std::size_t i = 0; i < b.particle_count; i++) {
@@ -306,7 +310,6 @@ class MPMTest {
                 b.node_global(i) += delta;
               }
             }
-            return b.particle_count != 0;
           },
           true);
     }
@@ -365,7 +368,6 @@ class MPMTest {
               // Advection
               p.pos += delta_t * v;
             }
-            return true;
           },
           false);
     }

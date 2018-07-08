@@ -681,19 +681,23 @@ class TaichiGrid {
     std::vector<std::vector<VectorI>> requested_blocks;
     requested_blocks.resize(world_size);
 
-    for (auto *b : blocks) {
-      RegionND<dim> region(VectorI(-1), VectorI(2));
-      for (auto &b : blocks) {
-        auto base_coord = b->base_coord;
-        for (auto &offset : region) {
-          auto nb_coord = base_coord + VectorI(Block::size) * offset.get_ipos();
-          auto nb_rank = part_func(nb_coord);
-          if (nb_rank == world_rank) {
-            continue;
-          }
-          auto nb = get_block_if_exist(nb_coord);
-          if (!nb) {
-            requested_blocks[nb_rank].push_back(nb_coord);
+    {
+      TC_PROFILER("calc blocks to fetch");
+      for (auto *b : blocks) {
+        RegionND<dim> region(VectorI(-1), VectorI(2));
+        for (auto &b : blocks) {
+          auto base_coord = b->base_coord;
+          for (auto &offset : region) {
+            auto nb_coord =
+                base_coord + VectorI(Block::size) * offset.get_ipos();
+            auto nb_rank = part_func(nb_coord);
+            if (nb_rank == world_rank) {
+              continue;
+            }
+            auto nb = get_block_if_exist(nb_coord);
+            if (!nb) {
+              requested_blocks[nb_rank].push_back(nb_coord);
+            }
           }
         }
       }
@@ -709,111 +713,131 @@ class TaichiGrid {
     std::vector<VectorI> recv_buffer;
     recv_buffer.resize(coord_buffer_size);
 
-    // Stage 1: send out requests
-    for (int p = 0; p < world_size; p++) {
-      if (p == world_rank)
-        continue;
-      // Send request to peer for the block
+    {
+      // Stage 1:
+      TC_PROFILER("send out requests");
+      for (int p = 0; p < world_size; p++) {
+        if (p == world_rank)
+          continue;
+        // Send request to peer for the block
 
-      // Remove repeated ones
-      std::sort(requested_blocks[p].begin(), requested_blocks[p].end(),
-                [](VectorI a, VectorI b) {
-                  if (a.x == b.x) {
-                    if (a.y == b.y) {
-                      return a.z < b.z;
+        // Remove repeated ones
+        std::sort(requested_blocks[p].begin(), requested_blocks[p].end(),
+                  [](VectorI a, VectorI b) {
+                    if (a.x == b.x) {
+                      if (a.y == b.y) {
+                        return a.z < b.z;
+                      } else {
+                        return a.y < b.y;
+                      }
                     } else {
-                      return a.y < b.y;
+                      return a.x < b.x;
                     }
-                  } else {
-                    return a.x < b.x;
-                  }
-                });
+                  });
 
-      requested_blocks[p].resize(
-          std::unique(requested_blocks[p].begin(), requested_blocks[p].end()) -
-          requested_blocks[p].begin());
-      TC_ASSERT(requested_blocks[p].size() < coord_buffer_size);
-      if (debug)
-        TC_INFO("rank {} asking for {} blocks from rank {}", world_rank,
-                requested_blocks[p].size(), p);
-      num_requested_blocks[p] = requested_blocks[p].size();
-      // For Isend, make sure the content does not change
-      MPI_Isend(&num_requested_blocks[p], 1, MPI_INT32_T, p,
-                TAG_REQUEST_BLOCK_NUM, MPI_COMM_WORLD, &reqs[p]);
-      MPI_Isend(requested_blocks[p].data(),
-                num_requested_blocks[p] * VectorI::storage_elements,
-                MPI_INT32_T, p, TAG_REQUEST_BLOCKS, MPI_COMM_WORLD, &reqs[p]);
+        requested_blocks[p].resize(std::unique(requested_blocks[p].begin(),
+                                               requested_blocks[p].end()) -
+                                   requested_blocks[p].begin());
+        TC_ASSERT(requested_blocks[p].size() < coord_buffer_size);
+        if (debug)
+          TC_INFO("rank {} asking for {} blocks from rank {}", world_rank,
+                  requested_blocks[p].size(), p);
+        num_requested_blocks[p] = requested_blocks[p].size();
+        // For Isend, make sure the content does not change
+        MPI_Isend(&num_requested_blocks[p], 1, MPI_INT32_T, p,
+                  TAG_REQUEST_BLOCK_NUM, MPI_COMM_WORLD, &reqs[p]);
+        MPI_Isend(requested_blocks[p].data(),
+                  num_requested_blocks[p] * VectorI::storage_elements,
+                  MPI_INT32_T, p, TAG_REQUEST_BLOCKS, MPI_COMM_WORLD, &reqs[p]);
+      }
     }
     // TC_TRACE("Stage 1 messages sent");
 
     std::vector<std::vector<Block>> block_buffers;
     block_buffers.resize(world_size);
-    for (int p = 0; p < world_size; p++) {
-      if (p == world_rank)
-        continue;
+    {
+      TC_PROFILER("reply blocks")
+      for (int p = 0; p < world_size; p++) {
+        if (p == world_rank)
+          continue;
 
-      int count;
-      MPI_Recv(&count, 1, MPI_INT32_T, p, TAG_REQUEST_BLOCK_NUM, MPI_COMM_WORLD,
-               &stats[p]);
+        int count;
+        TC_PROFILE("Recv count",
+                   MPI_Recv(&count, 1, MPI_INT32_T, p, TAG_REQUEST_BLOCK_NUM,
+                            MPI_COMM_WORLD, &stats[p]));
 
-      if (debug)
-        TC_INFO("Rank {} received request from rank {}, {} blocks", world_rank,
-                p, count);
+        if (debug)
+          TC_INFO("Rank {} received request from rank {}, {} blocks",
+                  world_rank, p, count);
 
-      std::vector<VectorI> coords(count);
-      MPI_Recv(coords.data(), count * VectorI::storage_elements, MPI_INT32_T, p,
-               TAG_REQUEST_BLOCKS, MPI_COMM_WORLD, &stats[p]);
+        std::vector<VectorI> coords(count);
+        TC_PROFILE("Recv blocks",
+                   MPI_Recv(coords.data(), count * VectorI::storage_elements,
+                            MPI_INT32_T, p, TAG_REQUEST_BLOCKS, MPI_COMM_WORLD,
+                            &stats[p]));
 
-      // Prepare requested blocks
-      auto &block_buffer = block_buffers[p];
-      block_buffer.resize(count);
-      num_sent_blocks[p] = 0;
-      for (auto &coord : coords) {
-        TC_ASSERT(part_func(coord) == world_rank);
-        auto b = get_block_if_exist(coord);
-        if (b != nullptr) {
-          // TC_P(coord);
-          std::memcpy(&block_buffer[num_sent_blocks[p]++], b, sizeof(Block));
+        // Prepare requested blocks
+        auto &block_buffer = block_buffers[p];
+        TC_PROFILE("resize coord buffer 1", block_buffer.resize(count));
+        num_sent_blocks[p] = 0;
+        {
+          TC_PROFILER("prepare blocks to reply");
+          for (auto &coord : coords) {
+            TC_ASSERT(part_func(coord) == world_rank);
+            auto b = get_block_if_exist(coord);
+            if (b != nullptr) {
+              // TC_P(coord);
+              std::memcpy(&block_buffer[num_sent_blocks[p]++], b,
+                          sizeof(Block));
+            }
+          }
         }
+        // Stage 2: send out blocks
+        // Note: some blocks may be empty, so possibly blocks to send !=
+        // requested_blocks
+        TC_PROFILE("resize block buffer 2",
+                   block_buffer.resize(num_sent_blocks[p]));
+        TC_PROFILE("Isend count",
+                   MPI_Isend(&num_sent_blocks[p], 1, MPI_INT32_T, p,
+                             TAG_REPLY_BLOCK_NUM, MPI_COMM_WORLD, &reqs[p]));
+        TC_PROFILE(
+            "Isend blocks",
+            MPI_Isend(block_buffer.data(), num_sent_blocks[p] * sizeof(Block),
+                      MPI_CHAR, p, TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &reqs[p]));
+        if (debug)
+          TC_INFO("Rank {} sent {} blocks to rank {}", world_rank,
+                  num_sent_blocks[p], p);
+        // TODO: serialize to save communication. For now, we just take the
+        // whole block
       }
-      // Stage 2: send out blocks
-      // Note: some blocks may be empty, so possibly blocks to send !=
-      // requested_blocks
-      block_buffer.resize(num_sent_blocks[p]);
-      MPI_Isend(&num_sent_blocks[p], 1, MPI_INT32_T, p, TAG_REPLY_BLOCK_NUM,
-                MPI_COMM_WORLD, &reqs[p]);
-      MPI_Isend(block_buffer.data(), num_sent_blocks[p] * sizeof(Block),
-                MPI_CHAR, p, TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &reqs[p]);
-      if (debug)
-        TC_INFO("Rank {} sent {} blocks to rank {}", world_rank,
-                num_sent_blocks[p], p);
-      // TODO: serialize to save communication. For now, we just take the whole
-      // block
+      // TC_P(sizeof(Block));
     }
-    // TC_P(sizeof(Block));
 
-    for (int p = 0; p < world_size; p++) {
-      if (p == world_rank)
-        continue;
+    {
+      TC_PROFILER("receive and save blocks");
+      for (int p = 0; p < world_size; p++) {
+        if (p == world_rank)
+          continue;
 
-      int num_blocks;
-      MPI_Recv(&num_blocks, 1, MPI_INT32_T, p, TAG_REPLY_BLOCK_NUM,
-               MPI_COMM_WORLD, &stats[p]);
-      if (debug) {
-        TC_WARN("rank {} Receiving {} blocks", world_rank, num_blocks);
-        TC_P(sizeof(Block));
-      }
+        int num_blocks;
+        MPI_Recv(&num_blocks, 1, MPI_INT32_T, p, TAG_REPLY_BLOCK_NUM,
+                 MPI_COMM_WORLD, &stats[p]);
+        if (debug) {
+          TC_WARN("rank {} Receiving {} blocks", world_rank, num_blocks);
+          TC_P(sizeof(Block));
+        }
 
-      std::vector<Block> blocks(num_blocks);
-      MPI_Recv(&blocks[0], num_blocks * sizeof(Block), MPI_CHAR, p,
-               TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &stats[p]);
-      if (debug)
-        TC_WARN("rank {} Received {} blocks", world_rank, num_blocks);
-      for (int i = 0; i < num_blocks; i++) {
-        touch(blocks[i].base_coord);
-        auto local_b = get_block_if_exist(blocks[i].base_coord);
-        TC_ASSERT(local_b);
-        std::memcpy(local_b, &blocks[i], sizeof(Block));
+        std::vector<Block> blocks(num_blocks);
+        MPI_Recv(&blocks[0], num_blocks * sizeof(Block), MPI_CHAR, p,
+                 TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &stats[p]);
+        if (debug)
+          TC_WARN("rank {} Received {} blocks", world_rank, num_blocks);
+        for (int i = 0; i < num_blocks; i++) {
+          touch(blocks[i].base_coord);
+          auto local_b = get_block_if_exist(blocks[i].base_coord);
+          TC_ASSERT(local_b);
+          std::memcpy(local_b, &blocks[i], sizeof(Block));
+        }
       }
     }
     MPI_Barrier(MPI_COMM_WORLD);

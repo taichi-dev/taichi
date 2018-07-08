@@ -377,6 +377,9 @@ class MPMTest {
       // TC_PROFILER("simulation");
       for (int i = 0; i < int(std::round(frame_dt / dt)); i++) {
         TC_PROFILE("substep", substep());
+        if (grid.is_master()) {
+          taichi::print_profile_info();
+        }
       }
     }
     current_frame += 1;
@@ -409,7 +412,6 @@ auto mpm = [](const std::vector<std::string> &params) {
   mpm = std::make_unique<MPMTest>();
   for (int t = 0; t < mpm->total_frames; t++) {
     TC_PROFILE("advance", mpm->advance());
-    taichi::print_profile_info();
   }
 };
 

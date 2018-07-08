@@ -5,6 +5,8 @@ TC_NAMESPACE_BEGIN
 
 using Block = TestGrid::Block;
 
+MPIEnvironment mpi_env;
+
 TC_TEST("dilated block") {
   if (with_mpi())
     return;

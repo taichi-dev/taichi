@@ -487,7 +487,6 @@ class TaichiGrid {
   TaichiGrid() {
     blocks_dirty = false;
     if (with_mpi()) {
-      MPI_Init(nullptr, nullptr);
       MPI_Comm_size(MPI_COMM_WORLD, &world_size);
       MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
       TC_P(world_rank);
@@ -509,9 +508,6 @@ class TaichiGrid {
   }
 
   ~TaichiGrid() {
-    if (with_mpi()) {
-      MPI_Finalize();
-    }
   }
 
   TC_FORCE_INLINE RootDomain *get_root_domain_if_exist(
@@ -931,5 +927,17 @@ void gather_particles(Block &b,
     }
   }
 }
+
+class MPIEnvironment {
+ public:
+  MPIEnvironment() {
+    if (with_mpi())
+      MPI_Init(nullptr, nullptr);
+  }
+  ~MPIEnvironment() {
+    if (with_mpi())
+      MPI_Finalize();
+  }
+};
 
 TC_NAMESPACE_END

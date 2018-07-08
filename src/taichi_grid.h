@@ -842,6 +842,7 @@ class TaichiGrid {
       TC_PROFILER("computation");
       tbb::parallel_for_each(blocks.begin(), blocks.end(), [&](Block *block) {
         if (!inside(block->base_coord)) {
+          block->killed = true;
           return;
         }
         Ancestors ancestors;

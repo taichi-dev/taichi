@@ -782,7 +782,8 @@ class TaichiGrid {
       MPI_Isend(block_buffer.data(), num_sent_blocks[p] * sizeof(Block),
                 MPI_CHAR, p, TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &reqs[p]);
       if (debug)
-        TC_INFO("Rank {} sent {} blocks to rank {}", world_rank, i, p);
+        TC_INFO("Rank {} sent {} blocks to rank {}", world_rank,
+                num_sent_blocks[p], p);
       // TODO: serialize to save communication. For now, we just take the whole
       // block
     }
@@ -795,17 +796,24 @@ class TaichiGrid {
       int num_blocks;
       MPI_Recv(&num_blocks, 1, MPI_INT32_T, p, TAG_REPLY_BLOCKS_NUM,
                MPI_COMM_WORLD, &stats[p]);
+      if (debug) {
+        TC_WARN("rank {} Receiving {} blocks", world_rank, num_blocks);
+        TC_P(sizeof(Block));
+      }
+
       std::vector<Block> blocks(num_blocks);
-      if (debug)
-        TC_WARN("Receiving {} blocks", num_blocks);
-      // Block blocks[num_blocks];
       MPI_Recv(&blocks[0], num_blocks * sizeof(Block), MPI_CHAR, p,
                TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &stats[p]);
-      for (auto &b : blocks) {
-        touch(b.base_coord);
-        memcpy(get_block_if_exist(b.base_coord), &b, sizeof(b));
+      if (debug)
+        TC_WARN("rank {} Received {} blocks", world_rank, num_blocks);
+      for (int i = 0; i < num_blocks; i++) {
+        touch(blocks[i].base_coord);
+        auto local_b = get_block_if_exist(blocks[i].base_coord);
+        TC_ASSERT(local_b);
+        std::memcpy(local_b, &blocks[i], sizeof(Block));
       }
     }
+    MPI_Barrier(MPI_COMM_WORLD);
   }
 
   // Advance

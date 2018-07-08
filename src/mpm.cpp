@@ -211,7 +211,7 @@ struct MPMKernel<dim, 2> : public MPMKernelBase<dim, 2> {
   }
 };
 
-class MPMTestBase {
+class MPMTest {
  public:
   static constexpr auto dim = Block::dim;
   using Vector = TVector<real, dim>;
@@ -231,28 +231,31 @@ class MPMTestBase {
   using Kernel = MPMKernel<3, 2>;
   Block::particle_to_grid_func grid_pos;
 
-  MPMTestBase() {
+  MPMTest() {
     gravity = Vector3(0, -100, 0);
     current_frame = 0;
-    auto res = 100;
+    auto res = 10;
     dx = 1.0_f / res;
     dt = 5e-5_f;
-    frame_dt = 1e-2f;
+    frame_dt = 1e-4f;
     inv_dx = 1.0_f / dx;
     total_frames = 128;
     grid_pos = [&](Particle &p) -> VectorI {
       return (p.pos * inv_dx + Vector(0.5_f)).floor().template cast<int>();
     };
-    Region3D reg(VectorI(res / 2), VectorI(res));
+    Region3D reg(VectorI(-res / 2, res, -res / 2),
+                 VectorI(res / 2, res + res / 2, res / 2));
     for (auto &ind : reg) {
       for (int i = 0; i < 8; i++) {
         auto pos = (ind.get_pos() + Vector3::rand()) * dx;
         pos.y += pos.x;
         Particle p(pos, Vector(0, -10, 0));
         auto node = grid_pos(p);
-        grid.touch(node);
-        auto b = grid.get_block_if_exist(node);
-        b->add_particle(p);
+        if (grid.inside(node)) {
+          grid.touch(node);
+          auto b = grid.get_block_if_exist(node);
+          b->add_particle(p);
+        }
       }
     }
     output(get_filename(current_frame));
@@ -387,6 +390,9 @@ class MPMTestBase {
   }
 
   virtual void output(std::string fn) {
+    if (!grid.is_master()) {
+      return;
+    }
     OptiXScene scene;
     grid.serial_for_each_particle([&](Particle &p) {
       scene.particles.push_back(OptiXParticle{Vector4(p.pos * 3.0_f, 0.01_f)});
@@ -397,8 +403,8 @@ class MPMTestBase {
 
 auto mpm = [](const std::vector<std::string> &params) {
   // ThreadedTaskManager::TbbParallelismControl _(1);
-  std::unique_ptr<MPMTestBase> mpm;
-  mpm = std::make_unique<MPMTestBase>();
+  std::unique_ptr<MPMTest> mpm;
+  mpm = std::make_unique<MPMTest>();
   for (int t = 0; t < mpm->total_frames; t++) {
     TC_PROFILE("advance", mpm->advance());
     taichi::print_profile_info();

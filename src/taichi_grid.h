@@ -672,6 +672,7 @@ class TaichiGrid {
   };
 
   void fetch_neighbours() {
+    bool debug = false;
     TC_ASSERT(with_mpi());
     update_block_list();
     std::vector<std::vector<VectorI>> requested_blocks;
@@ -710,13 +711,8 @@ class TaichiGrid {
       if (p == world_rank)
         continue;
       // Send request to peer for the block
-      blocks_to_recv[p] = requested_blocks[p].size();
-      // For Isend, make sure the content does not change
-      MPI_Isend(&blocks_to_recv[p], 1, MPI_INT32_T, p, TAG_REQUEST_BLOCKS_NUM,
-                MPI_COMM_WORLD, &reqs[p]);
-      MPI_Isend(requested_blocks[p].data(),
-                requested_blocks[p].size() * VectorI::storage_elements,
-                MPI_INT32_T, p, TAG_REQUEST_BLOCKS, MPI_COMM_WORLD, &reqs[p]);
+
+      // Remove repeated ones
       std::sort(requested_blocks[p].begin(), requested_blocks[p].end(),
                 [](VectorI a, VectorI b) {
                   if (a.x == b.x) {
@@ -734,8 +730,16 @@ class TaichiGrid {
           std::unique(requested_blocks[p].begin(), requested_blocks[p].end()) -
           requested_blocks[p].begin());
       TC_ASSERT(requested_blocks[p].size() < coord_buffer_size);
-      // TC_INFO("rank {} asking for {} blocks from rank {}", world_rank,
-      // requested_blocks[p].size(), p);
+      if (debug)
+        TC_INFO("rank {} asking for {} blocks from rank {}", world_rank,
+                requested_blocks[p].size(), p);
+      blocks_to_recv[p] = requested_blocks[p].size();
+      // For Isend, make sure the content does not change
+      MPI_Isend(&blocks_to_recv[p], 1, MPI_INT32_T, p, TAG_REQUEST_BLOCKS_NUM,
+                MPI_COMM_WORLD, &reqs[p]);
+      MPI_Isend(requested_blocks[p].data(),
+                requested_blocks[p].size() * VectorI::storage_elements,
+                MPI_INT32_T, p, TAG_REQUEST_BLOCKS, MPI_COMM_WORLD, &reqs[p]);
     }
     // TC_TRACE("Stage 1 messages sent");
 
@@ -749,8 +753,9 @@ class TaichiGrid {
       MPI_Recv(&count, 1, MPI_INT32_T, p, TAG_REQUEST_BLOCKS_NUM,
                MPI_COMM_WORLD, &stats[p]);
 
-      // TC_INFO("Rank {} received request from rank {}, {} blocks", world_rank,
-      // p, count);
+      if (debug)
+        TC_INFO("Rank {} received request from rank {}, {} blocks", world_rank,
+                p, count);
 
       std::vector<VectorI> coords(count);
       MPI_Recv(coords.data(), count * VectorI::storage_elements, MPI_INT32_T, p,
@@ -764,6 +769,7 @@ class TaichiGrid {
         TC_ASSERT(part_func(coord) == world_rank);
         auto b = get_block_if_exist(coord);
         if (b != nullptr) {
+          // TC_P(coord);
           std::memcpy(&block_buffer[i], b, sizeof(Block));
           i++;
         }
@@ -777,7 +783,8 @@ class TaichiGrid {
                 MPI_COMM_WORLD, &reqs[p]);
       MPI_Isend(block_buffer.data(), block_buffer.size() * sizeof(Block),
                 MPI_CHAR, p, TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &reqs[p]);
-      // TC_INFO("Rank {} sent {} blocks to rank {}", world_rank, i, p);
+      if (debug)
+        TC_INFO("Rank {} sent {} blocks to rank {}", world_rank, i, p);
       // TODO: serialize to save communication. For now, we just take the whole
       // block
     }
@@ -786,14 +793,13 @@ class TaichiGrid {
     for (int p = 0; p < world_size; p++) {
       if (p == world_rank)
         continue;
-      // MPI_Wait(&reqs[p], &stats[p]);
-      // stats[p].
 
       int num_blocks;
       MPI_Recv(&num_blocks, 1, MPI_INT32_T, p, TAG_REPLY_BLOCKS_NUM,
                MPI_COMM_WORLD, &stats[p]);
       std::vector<Block> blocks(num_blocks);
-      // TC_WARN("Receiving {} blocks", num_blocks);
+      if (debug)
+        TC_WARN("Receiving {} blocks", num_blocks);
       // Block blocks[num_blocks];
       MPI_Recv(&blocks[0], num_blocks * sizeof(Block), MPI_CHAR, p,
                TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &stats[p]);
@@ -808,7 +814,7 @@ class TaichiGrid {
   template <typename T>
   void advance(const T &t, bool needs_expand = true) {
     if (world_size != 1) {
-      fetch_neighbours();
+      TC_PROFILE("fetch_neighbours", fetch_neighbours());
     }
     // T takes (base_coord, Ancestor) and returns bool (true to keep, false to
     // discard)
@@ -835,6 +841,9 @@ class TaichiGrid {
     {
       TC_PROFILER("computation");
       tbb::parallel_for_each(blocks.begin(), blocks.end(), [&](Block *block) {
+        if (!inside(block->base_coord)) {
+          return;
+        }
         Ancestors ancestors;
         RegionND<dim> region(VectorI(-1), VectorI(2));
         auto base_coord = block->base_coord;
@@ -887,6 +896,15 @@ class TaichiGrid {
       // TC_P(p.size());
     }
     return p;
+  }
+
+  TC_FORCE_INLINE bool inside(VectorI coord) {
+    return part_func(div_floor(coord, VectorI(block_size)) *
+                     VectorI(block_size)) == world_rank;
+  }
+
+  TC_FORCE_INLINE bool is_master() {
+    return world_rank == 0;
   }
 };
 

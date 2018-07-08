@@ -491,10 +491,16 @@ class TaichiGrid {
       MPI_Comm_size(MPI_COMM_WORLD, &world_size);
       MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
       TC_P(world_rank);
-      TC_ASSERT(world_size == 4);
-      part_func = [](const VectorI coord) -> int {
-        return 2 * int(coord.x >= 0) + int(coord.z >= 0);
-      };
+      TC_ASSERT(world_size == 2 || world_size == 4);
+      if (world_size == 2) {
+        part_func = [](const VectorI coord) -> int {
+          return int(coord.x >= 0);
+        };
+      } else {
+        part_func = [](const VectorI coord) -> int {
+          return 2 * int(coord.x >= 0) + int(coord.z >= 0);
+        };
+      }
     } else {
       part_func = [](const VectorI coord) -> int { return 0; };
       world_size = 1;
@@ -709,6 +715,22 @@ class TaichiGrid {
       MPI_Isend(requested_blocks[p].data(),
                 requested_blocks[p].size() * VectorI::storage_elements,
                 MPI_INT32_T, p, TAG_REQUEST_BLOCKS, MPI_COMM_WORLD, &reqs[p]);
+      std::sort(requested_blocks[p].begin(), requested_blocks[p].end(),
+                [](VectorI a, VectorI b) {
+                  if (a.x == b.x) {
+                    if (a.y == b.y) {
+                      return a.z < b.z;
+                    } else {
+                      return a.y < b.y;
+                    }
+                  } else {
+                    return a.x < b.x;
+                  }
+                });
+
+      requested_blocks[p].resize(
+          std::unique(requested_blocks[p].begin(), requested_blocks[p].end()) -
+          requested_blocks[p].begin());
       TC_ASSERT(requested_blocks[p].size() < coord_buffer_size);
     }
 
@@ -737,7 +759,8 @@ class TaichiGrid {
         i++;
       }
       // Stage 2: send out blocks
-      // Note: some blocks may be empty, so possibly blocks to send != requested_blocks
+      // Note: some blocks may be empty, so possibly blocks to send !=
+      // requested_blocks
       blocks_to_send[p] = i;
       MPI_Isend(&blocks_to_send[p], 1, MPI_INT32_T, p, TAG_REPLY_BLOCKS_NUM,
                 MPI_COMM_WORLD, &reqs[p]);

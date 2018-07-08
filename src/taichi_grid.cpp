@@ -6,6 +6,8 @@ TC_NAMESPACE_BEGIN
 using Block = TestGrid::Block;
 
 TC_TEST("dilated block") {
+  if (with_mpi())
+    return;
   using Block = TBlock<int, char, TSize3D<8>, 1>;
   Block block(Vector3i(8));
 
@@ -61,6 +63,10 @@ TC_TEST("dilated block") {
   }
 }
 
+TC_TEST("basic distributed") {
+  TestGrid grid;
+}
+
 TC_TEST("grid_basics") {
   CHECK(product<int, 3>(std::array<int, 3>({2, 3, 4})) == 24);
   CHECK(product<int, 1>(std::array<int, 1>({7})) == 7);
@@ -94,6 +100,8 @@ TC_TEST("grid_basics") {
 }
 
 TC_TEST("grid") {
+  if (with_mpi())
+    return;
   TestGrid grid;
 
   constexpr int n = 136;
@@ -200,6 +208,9 @@ TC_TEST("block base") {
 }
 
 TC_TEST("Propagate") {
+  if (with_mpi()) {
+    return;
+  }
   TestGrid grid;
   grid.touch(Vector3i(0));
   grid.node(Vector3i(0)).x = 100;

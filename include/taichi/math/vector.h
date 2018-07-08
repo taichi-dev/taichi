@@ -44,12 +44,14 @@ constexpr InstSetExt default_instruction_set = InstSetExt::None;
 template <int DIM, typename T, InstSetExt ISE, class Enable = void>
 struct VectorNDBase {
   static constexpr bool simd = false;
+  static constexpr int storage_elements = DIM;
   T d[DIM];
 };
 
 template <typename T, InstSetExt ISE>
 struct VectorNDBase<1, T, ISE, void> {
   static constexpr bool simd = false;
+  static constexpr int storage_elements = 1;
   union {
     T d[1];
     struct {
@@ -61,6 +63,7 @@ struct VectorNDBase<1, T, ISE, void> {
 template <typename T, InstSetExt ISE>
 struct VectorNDBase<2, T, ISE, void> {
   static constexpr bool simd = false;
+  static constexpr int storage_elements = 2;
   union {
     T d[2];
     struct {
@@ -77,6 +80,7 @@ struct VectorNDBase<
     typename std::enable_if_t<(!std::is_same<T, float32>::value ||
                                ISE < InstSetExt::SSE)>> {
   static constexpr bool simd = false;
+  static constexpr int storage_elements = 3;
   union {
     T d[3];
     struct {
@@ -92,6 +96,7 @@ struct TC_ALIGNED(16)
                  ISE,
                  typename std::enable_if_t<ISE >= InstSetExt::SSE>> {
   static constexpr bool simd = true;
+  static constexpr int storage_elements = 4;
   union {
     __m128 v;
     struct {
@@ -114,6 +119,7 @@ struct VectorNDBase<
     ISE,
     typename std::enable_if_t<(!std::is_same<T, float32>::value ||
                                ISE < InstSetExt::SSE)>> {
+  static constexpr int storage_elements = 4;
   static constexpr bool simd = false;
   union {
     T d[4];
@@ -127,6 +133,7 @@ template <InstSetExt ISE>
 struct TC_ALIGNED(16)
     VectorNDBase<4, float32, ISE, std::enable_if_t<(ISE >= InstSetExt::SSE)>> {
   static constexpr bool simd = true;
+  static constexpr int storage_elements = 4;
   union {
     __m128 v;
     struct {
@@ -159,6 +166,7 @@ struct VectorND : public VectorNDBase<DIM, T, ISE> {
 
   using VectorBase = VectorNDBase<DIM, T, ISE>;
   using VectorBase::d;
+  static constexpr int storage_elements = VectorBase::storage_elements;
 
   TC_FORCE_INLINE VectorND() {
     for (int i = 0; i < DIM; i++) {

@@ -128,6 +128,7 @@ struct TBlock {
   // Meta data
   VectorI base_coord;  // smallest coordinate
   bool killed;
+  bool computed;
 
   // Grid data
   Node nodes[num_nodes];
@@ -153,6 +154,7 @@ struct TBlock {
   void initialize(VectorI base_coord) {
     this->base_coord = base_coord;
     this->killed = false;
+    this->computed = false;
     this->particle_count = 0;
     std::memset(nodes, 0, sizeof(nodes));
   }
@@ -691,19 +693,16 @@ class TaichiGrid {
       TC_PROFILER("calc blocks to fetch");
       for (auto *b : blocks) {
         RegionND<dim> region(VectorI(-1), VectorI(2));
-        for (auto &b : blocks) {
-          auto base_coord = b->base_coord;
-          for (auto &offset : region) {
-            auto nb_coord =
-                base_coord + VectorI(Block::size) * offset.get_ipos();
-            auto nb_rank = part_func(nb_coord);
-            if (nb_rank == world_rank) {
-              continue;
-            }
-            auto nb = get_block_if_exist(nb_coord);
-            if (!nb) {
-              requested_blocks[nb_rank].push_back(nb_coord);
-            }
+        auto base_coord = b->base_coord;
+        for (auto &offset : region) {
+          auto nb_coord = base_coord + VectorI(Block::size) * offset.get_ipos();
+          auto nb_rank = part_func(nb_coord);
+          if (nb_rank == world_rank) {
+            continue;
+          }
+          auto nb = get_block_if_exist(nb_coord);
+          if (!nb) {
+            requested_blocks[nb_rank].push_back(nb_coord);
           }
         }
       }
@@ -893,25 +892,29 @@ class TaichiGrid {
     if (needs_expand) {
       TC_PROFILE("expand", expand());
     }
+    auto compute_block = [&](Block *block) {
+      if (!inside(block->base_coord)) {
+        block->kill();
+        return;
+      }
+      Ancestors ancestors;
+      RegionND<dim> region(VectorI(-1), VectorI(2));
+      auto base_coord = block->base_coord;
+      for (auto &offset : region) {
+        auto an_coord = base_coord + VectorI(Block::size) * offset.get_ipos();
+        auto b = get_block_if_exist(an_coord, TC_GRID_PREVIOUS);
+        if (b) {
+          ancestors[offset.get_ipos()] = b;
+        }
+      }
+      t(*block, ancestors);
+    };
     TC_PROFILE("update_block_list2", update_block_list());
     {
       TC_PROFILER("computation");
       tbb::parallel_for_each(blocks.begin(), blocks.end(), [&](Block *block) {
-        if (!inside(block->base_coord)) {
-          block->kill();
-          return;
-        }
-        Ancestors ancestors;
-        RegionND<dim> region(VectorI(-1), VectorI(2));
-        auto base_coord = block->base_coord;
-        for (auto &offset : region) {
-          auto an_coord = base_coord + VectorI(Block::size) * offset.get_ipos();
-          auto b = get_block_if_exist(an_coord, TC_GRID_PREVIOUS);
-          if (b) {
-            ancestors[offset.get_ipos()] = b;
-          }
-        }
-        t(*block, ancestors);
+        if (!block->computed)
+          compute_block(block);
       });
     }
     TC_PROFILE("clear_killed_blocks", clear_killed_blocks());

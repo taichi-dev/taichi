@@ -279,7 +279,7 @@ TC_TEST("basic distributed 2") {
   }
   // Distributed case
   CHECK(grid.num_active_blocks() == 1);
-  grid.fetch_neighbours();
+  grid.fetch_neighbours(grid.current_timestamp);
   CHECK(grid.num_active_blocks() == 2);
 }
 
@@ -296,8 +296,8 @@ TC_TEST("basic distributed 4") {
   grid.touch_if_inside(Vector3i(0, 0, -8));
   // Distributed case
   CHECK(grid.num_active_blocks() == 1);
-  // grid.fetch_neighbours();
-  // CHECK(grid.num_active_blocks() == 4);
+  grid.fetch_neighbours(grid.current_timestamp);
+  CHECK(grid.num_active_blocks() == 4);
 }
 
 auto test_mpi = [](const std::vector<std::string> &param) {

@@ -248,6 +248,7 @@ struct TRootDomain {
   Block *data;
   std::vector<uint64> bitmap;
   VectorI base_coord;
+  std::mutex lock;
   int timestamp;
 
   static constexpr int num_blocks = pow<3>(128 / 8);
@@ -298,6 +299,7 @@ struct TRootDomain {
   }
 
   void touch(VectorI global_coord) {
+    std::lock_guard<std::mutex> _(lock);
     auto local_coord = global_coord - base_coord;
     auto bid = local_coord_to_block_id(local_coord);
     if (get_block_activity(bid)) {
@@ -332,6 +334,7 @@ struct TRootDomain {
   }
 
   void clear_killed_blocks() {
+    std::lock_guard<std::mutex> _(lock);
     for (int i = 0; i < num_blocks; i++) {
       if (get_block_activity(i))
         if (data[i].killed)
@@ -340,6 +343,7 @@ struct TRootDomain {
   }
 
   void collect_blocks(std::vector<Block *> &blocks) {
+    std::lock_guard<std::mutex> _(lock);
     for (int i = 0; i < num_blocks; i++) {
       if (get_block_activity(i)) {
         if (data[i].killed) {
@@ -352,11 +356,13 @@ struct TRootDomain {
   }
 
   void reset() {
+    std::lock_guard<std::mutex> _(lock);
     std::fill(bitmap.begin(), bitmap.end(), 0);
     // blocks will be re-initialized when used for the next time
   }
 
-  std::size_t num_active_blocks() const {
+  std::size_t num_active_blocks() {
+    std::lock_guard<std::mutex> _(lock);
     std::size_t ret = 0;
     for (int i = 0; i < num_blocks; i++) {
       if (get_block_activity(i)) {
@@ -461,7 +467,8 @@ class TaichiGrid {
 
   // TODO: remove
   bool blocks_dirty;
-  // std::vector<Block *> blocks;
+
+  std::mutex root_lock;
 
   using RootDomain = TRootDomain<Block, bucket_size>;
   // A mapping to root domains
@@ -529,6 +536,8 @@ class TaichiGrid {
   TC_FORCE_INLINE RootDomain *get_root_domain_if_exist(const VectorI &coord,
                                                        int timestamp) {
     auto h = domain_hash(coord, timestamp);
+    // critical region
+    std::lock_guard<std::mutex> _(root_lock);
     auto p = root.find(h);
     if (p == root.end()) {
       return nullptr;
@@ -633,16 +642,21 @@ class TaichiGrid {
       timestamp = current_timestamp;
     }
     auto h = domain_hash(coord, timestamp);
-    if (root.find(h) == root.end()) {
-      // TODO: support staggered blocks here
-      // create_domain
-      // TC_TRACE("creating domain");
-      auto base_coord =
-          div_floor(coord, bucket_size::VectorI()) * bucket_size::VectorI();
-      root[h] = std::make_unique<RootDomain>(base_coord, timestamp);
+    {
+      // Serial region
+      std::lock_guard<std::mutex> _(root_lock);
+
+      if (root.find(h) == root.end()) {
+        // TODO: support staggered blocks here
+        // create_domain
+        // TC_TRACE("creating domain");
+        auto base_coord =
+            div_floor(coord, bucket_size::VectorI()) * bucket_size::VectorI();
+        root[h] = std::make_unique<RootDomain>(base_coord, timestamp);
+      }
+      auto &domain = get_root_domain(coord, timestamp);
+      domain.touch(coord);
     }
-    auto &domain = get_root_domain(coord, timestamp);
-    domain.touch(coord);
   }
 
   void expand() {
@@ -691,7 +705,8 @@ class TaichiGrid {
 
   std::vector<std::vector<VectorI>> requested_blocks;
   std::vector<std::vector<Block>> block_buffers;
-  void fetch_neighbours() {
+
+  void fetch_neighbours(int timestamp) {
     constexpr bool debug = false;
     TC_ASSERT(with_mpi());
     requested_blocks.resize(world_size);
@@ -707,7 +722,7 @@ class TaichiGrid {
           if (nb_rank == world_rank) {
             continue;
           }
-          auto nb = get_block_if_exist(nb_coord);
+          auto nb = get_block_if_exist(nb_coord, timestamp);
           if (!nb) {
             requested_blocks[nb_rank].push_back(nb_coord);
           }
@@ -797,7 +812,7 @@ class TaichiGrid {
           TC_PROFILER("prepare blocks to reply");
           for (auto &coord : coords) {
             TC_ASSERT(part_func(coord) == world_rank);
-            auto b = get_block_if_exist(coord);
+            auto b = get_block_if_exist(coord, timestamp);
             if (b != nullptr) {
               // TC_P(coord);
               std::memcpy(&block_buffer[num_sent_blocks[p]++], b,
@@ -859,8 +874,9 @@ class TaichiGrid {
         {
           TC_PROFILER("save blocks");
           for (int i = 0; i < num_blocks; i++) {
-            touch(recv_blocks[i].base_coord);
-            auto local_b = get_block_if_exist(recv_blocks[i].base_coord);
+            touch(recv_blocks[i].base_coord, timestamp);
+            auto local_b =
+                get_block_if_exist(recv_blocks[i].base_coord, timestamp);
             TC_ASSERT(local_b);
             std::memcpy(local_b, &recv_blocks[i], sizeof(Block));
           }
@@ -873,30 +889,24 @@ class TaichiGrid {
   // Advance
   template <typename T>
   void advance(const T &t, bool needs_expand = true) {
+    // T takes (base_coord, Ancestor) and should return void
     using result_type = std::result_of_t<T(Block &, Ancestors &)>;
     TC_STATIC_ASSERT((std::is_same<result_type, void>::value));
-    if (world_size != 1) {
-      TC_PROFILE("fetch_neighbours", fetch_neighbours());
-    }
-    // T takes (base_coord, Ancestor) and returns bool (true to keep, false to
-    // discard)
-    // TODO: an optimization can be, when T returns false, do not even
-    //   initialize the block
 
-    // Populate blocks at the next time step, if NOT killed
-    // Swap two grids
+    const int old_timestamp = current_timestamp;
+    const int new_timestamp = current_timestamp + 1;
+
     current_timestamp += 1;
+    // Populate blocks at the next time step, if NOT killed
     {
       TC_PROFILER("populate new grid1");
-      for (auto b : update_block_list(current_timestamp - 1)) {
+      for (auto b : update_block_list(old_timestamp)) {
         if (!b->killed) {
-          touch(b->base_coord, current_timestamp);
+          touch(b->base_coord, new_timestamp);
         }
       }
     }
-    if (needs_expand) {
-      TC_PROFILE("expand", expand());
-    }
+
     auto compute_block = [&](Block *block) {
       if (!inside(block->base_coord)) {
         block->kill();
@@ -907,15 +917,30 @@ class TaichiGrid {
       auto base_coord = block->base_coord;
       for (auto &offset : region) {
         auto an_coord = base_coord + VectorI(Block::size) * offset.get_ipos();
-        auto b = get_block_if_exist(an_coord, current_timestamp - 1);
+        auto b = get_block_if_exist(an_coord, old_timestamp);
         if (b) {
           ancestors[offset.get_ipos()] = b;
         }
       }
       t(*block, ancestors);
     };
+    if (world_size != 1) {
+      tbb::task_group g;
+      auto old_blocks = update_block_list(old_timestamp);
+      g.run([&] {
+        TC_PROFILE("fetch_neighbours", fetch_neighbours(old_timestamp));
+      });
+
+      // Do some computation to overlap with communication
+
+      g.wait();
+    }
+
+    if (needs_expand) {
+      TC_PROFILE("expand", expand());
+    }
     {
-      auto new_blocks = update_block_list();
+      auto new_blocks = update_block_list(new_timestamp);
       TC_PROFILER("computation");
       tbb::parallel_for_each(new_blocks.begin(), new_blocks.end(),
                              [&](Block *block) {

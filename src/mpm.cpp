@@ -234,7 +234,7 @@ class MPMTest {
   MPMTest() {
     gravity = Vector3(0, -100, 0);
     current_frame = 0;
-    auto res = 20;
+    auto res = 30;
     dx = 1.0_f / res;
     dt = 5e-5_f;
     frame_dt = 1e-2f;

@@ -930,9 +930,9 @@ class TaichiGrid {
     };
     if (world_size != 1) {
       tbb::task_group g;
-      auto old_blocks = update_block_list(old_timestamp);
+      auto existing_new_blocks = update_block_list(new_timestamp);
       g.run([&] {
-        TC_PROFILER("fetch_neighbours")
+        // TC_PROFILER("fetch_neighbours")
         auto fetched_blocks = fetch_neighbours(old_timestamp);
         // NOTE: newly fetched blocks should propagate to the next timestamp for
         // expansion
@@ -943,24 +943,27 @@ class TaichiGrid {
         }
       });
 
-      // Do some computation to overlap with communication
-      tbb::parallel_for_each(
-          old_blocks.begin(), old_blocks.end(), [&](Block *block) {
-            // Make sure all neighbours are inside domain
-            auto base_coord = block->base_coord;
-            RegionND<dim> region(VectorI(-1), VectorI(2));
-            bool ancesters_inside = true;
-            for (auto &offset : region) {
-              auto an_coord =
-                  base_coord + VectorI(Block::size) * offset.get_ipos();
-              if (!inside(an_coord)) {
-                ancesters_inside = false;
+      g.run([&] {
+        // Do some computation to overlap with communication
+        tbb::parallel_for_each(
+            existing_new_blocks.begin(), existing_new_blocks.end(),
+            [&](Block *block) {
+              // Make sure all neighbours are inside domain
+              auto base_coord = block->base_coord;
+              RegionND<dim> region(VectorI(-1), VectorI(2));
+              bool ancesters_inside = true;
+              for (auto &offset : region) {
+                auto an_coord =
+                    base_coord + VectorI(Block::size) * offset.get_ipos();
+                if (!inside(an_coord)) {
+                  ancesters_inside = false;
+                }
               }
-            }
-            if (ancesters_inside && !block->computed && !block->killed)
-              compute_block(block);
-          });
-      g.wait();
+              if (ancesters_inside && !block->computed && !block->killed)
+                compute_block(block);
+            });
+      });
+      TC_PROFILE("computation & communication part 1", g.wait());
     }
 
     if (needs_expand) {

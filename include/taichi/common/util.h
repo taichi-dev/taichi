@@ -101,7 +101,7 @@ static_assert(false, "32-bit Windows systems are not supported")
 #define TC_EXPORT
 #endif
 #define TC_P(x) \
-  { TC_DEBUG("{}", taichi::TextSerializer::serialize(#x, x)); }
+  { TC_DEBUG("{}", taichi::TextSerializer::serialize(#x, (x))); }
 
 #ifndef _WIN64
 #define sscanf_s sscanf
@@ -128,29 +128,14 @@ static_assert(false, "32-bit Windows systems are not supported")
     }                                      \
   }
 
-#define TC_STATIC_ASSERT(x) static_assert(x, #x);
-#define TC_ASSERT(x) TC_ASSERT_INFO(x, #x)
+#define TC_STATIC_ASSERT(x) static_assert((x), #x);
+#define TC_ASSERT(x) TC_ASSERT_INFO((x), #x)
 #define TC_ASSERT_INFO assert_info
 // TODO: this should be part of logging
 #define TC_NOT_IMPLEMENTED TC_ERROR("Not Implemented.");
 
 #define TC_NAMESPACE_BEGIN namespace taichi {
 #define TC_NAMESPACE_END }
-
-// Check for inf, nan?
-// #define CV_ON
-
-#ifdef CV_ON
-#define CV(v)                                              \
-  if (abnormal(v)) {                                       \
-    for (int i = 0; i < 1; i++)                            \
-      printf("Abnormal value %s (Ln %d)\n", #v, __LINE__); \
-    taichi::print(v);                                      \
-    puts("");                                              \
-  }
-#else
-#define CV(v)
-#endif
 
 TC_EXPORT void taichi_raise_assertion_failure_in_python(const char *msg);
 

@@ -9,6 +9,8 @@
 
 TC_NAMESPACE_BEGIN
 
+#define CV(x)
+
 class BarnesHutSummation {
  public:
   struct Particle {
@@ -29,8 +31,6 @@ class BarnesHutSummation {
       ret.mass = mass + o.mass;
       ret.position =
           (position * mass + o.position * o.mass) * (1.0_f / ret.mass);
-      CV(ret.position);
-      CV(ret.mass);
       return ret;
     }
   };

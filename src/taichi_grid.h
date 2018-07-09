@@ -659,12 +659,12 @@ class TaichiGrid {
     }
   }
 
-  void expand() {
+  void expand(int timestamp) {
     RegionND<dim> region(VectorI(-1), VectorI(2));
-    for (auto &b : update_block_list()) {
+    for (auto &b : update_block_list(timestamp)) {
       auto base_coord = b->base_coord;
       for (auto &offset : region) {
-        touch(base_coord + VectorI(Block::size) * offset.get_ipos());
+        touch(base_coord + VectorI(Block::size) * offset.get_ipos(), timestamp);
       }
     }
   }
@@ -706,7 +706,7 @@ class TaichiGrid {
   std::vector<std::vector<VectorI>> requested_blocks;
   std::vector<std::vector<Block>> block_buffers;
 
-  void fetch_neighbours(int timestamp) {
+  std::vector<Block *> fetch_neighbours(int timestamp) {
     constexpr bool debug = false;
     TC_ASSERT(with_mpi());
     requested_blocks.resize(world_size);
@@ -778,6 +778,7 @@ class TaichiGrid {
     }
     // TC_TRACE("Stage 1 messages sent");
 
+    std::vector<Block *> new_blocks;
     block_buffers.resize(world_size);
     {
       TC_PROFILER("reply blocks")
@@ -878,12 +879,14 @@ class TaichiGrid {
             auto local_b =
                 get_block_if_exist(recv_blocks[i].base_coord, timestamp);
             TC_ASSERT(local_b);
+            new_blocks.push_back(local_b);
             std::memcpy(local_b, &recv_blocks[i], sizeof(Block));
           }
         }
       }
     }
     MPI_Barrier(MPI_COMM_WORLD);
+    return new_blocks;
   }
 
   // Advance
@@ -923,21 +926,45 @@ class TaichiGrid {
         }
       }
       t(*block, ancestors);
+      block->computed = true;
     };
     if (world_size != 1) {
       tbb::task_group g;
       auto old_blocks = update_block_list(old_timestamp);
       g.run([&] {
-        TC_PROFILE("fetch_neighbours", fetch_neighbours(old_timestamp));
+        TC_PROFILER("fetch_neighbours")
+        auto fetched_blocks = fetch_neighbours(old_timestamp);
+        // NOTE: newly fetched blocks should propagate to the next timestamp for
+        // expansion
+        for (auto &b : fetched_blocks) {
+          if (!b->killed) {
+            touch(b->base_coord, new_timestamp);
+          }
+        }
       });
 
       // Do some computation to overlap with communication
-
+      tbb::parallel_for_each(
+          old_blocks.begin(), old_blocks.end(), [&](Block *block) {
+            // Make sure all neighbours are inside domain
+            auto base_coord = block->base_coord;
+            RegionND<dim> region(VectorI(-1), VectorI(2));
+            bool ancesters_inside = true;
+            for (auto &offset : region) {
+              auto an_coord =
+                  base_coord + VectorI(Block::size) * offset.get_ipos();
+              if (!inside(an_coord)) {
+                ancesters_inside = false;
+              }
+            }
+            if (ancesters_inside && !block->computed && !block->killed)
+              compute_block(block);
+          });
       g.wait();
     }
 
     if (needs_expand) {
-      TC_PROFILE("expand", expand());
+      TC_PROFILE("expand", expand(new_timestamp));
     }
     {
       auto new_blocks = update_block_list(new_timestamp);

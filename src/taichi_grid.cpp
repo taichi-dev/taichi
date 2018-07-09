@@ -236,11 +236,13 @@ TC_TEST("Propagate") {
             update(0, 0, -1);
             if (maximum != 0) {
               b.node_local(Vector3i(i, j, k)).x = maximum;
-            } else {
-              b.kill();
+              has_non_zero = true;
             }
           }
         }
+      }
+      if (!has_non_zero) {
+        b.kill();
       }
     });
     // TC_P(grid.num_active_blocks());

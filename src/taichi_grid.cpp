@@ -304,14 +304,36 @@ auto test_mpi = [](const std::vector<std::string> &param) {
   if (!with_mpi()) {
     TC_ERROR("Pls execute this task with mpirun");
   }
-  MPI_Init(nullptr, nullptr);
   int world_size = 4, world_rank;
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
   TC_P(world_rank);
-  MPI_Finalize();
 };
 
 TC_REGISTER_TASK(test_mpi);
+
+extern "C" char **environ;
+
+void print_all_env() {
+  auto s = environ;
+  for (int i = 0; s[i]; i++) {
+    TC_INFO("{}", std::string(s[i]));
+  }
+}
+
+auto test_mpi_tbb = [](const std::vector<std::string> &param) {
+  // ThreadedTaskManager::TbbParallelismControl _(8);
+  TC_P(tbb::task_scheduler_init::default_num_threads());
+  if (!with_mpi()) {
+    TC_WARN("Pls execute this task with mpirun");
+  }
+  print_all_env();
+  tbb::parallel_for(0, 1000, [](int i) {
+    while (1)
+      ;
+  });
+};
+
+TC_REGISTER_TASK(test_mpi_tbb);
 
 TC_NAMESPACE_END

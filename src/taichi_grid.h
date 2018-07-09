@@ -127,6 +127,7 @@ struct TBlock {
 
   // Meta data
   VectorI base_coord;  // smallest coordinate
+  int timestamp;
   bool killed;
   bool computed;
 
@@ -146,16 +147,17 @@ struct TBlock {
   TBlock() {
   }
 
-  TBlock(VectorI base_coord) {
-    initialize(base_coord);
+  TBlock(VectorI base_coord, int timestamp) {
+    initialize(base_coord, timestamp);
   }
 
   // This is cheaper because particles/nodes will not be initialized
-  void initialize(VectorI base_coord) {
+  void initialize(VectorI base_coord, int timestamp) {
     this->base_coord = base_coord;
     this->killed = false;
     this->computed = false;
     this->particle_count = 0;
+    this->timestamp = timestamp;
     std::memset(nodes, 0, sizeof(nodes));
   }
 
@@ -246,10 +248,12 @@ struct TRootDomain {
   Block *data;
   std::vector<uint64> bitmap;
   VectorI base_coord;
+  int timestamp;
 
   static constexpr int num_blocks = pow<3>(128 / 8);
 
-  TRootDomain(VectorI base_coord) : base_coord(base_coord) {
+  TRootDomain(VectorI base_coord, int timestamp)
+      : base_coord(base_coord), timestamp(timestamp) {
     TC_ASSERT(num_blocks ==
               (bucket_size::x() / block_size[0]) *
                   (bucket_size::y() / block_size[1]) *
@@ -301,7 +305,7 @@ struct TRootDomain {
     } else {
       auto block_base_coord = to_global(
           div_floor(local_coord, VectorI(block_size)) * VectorI(block_size));
-      data[bid].initialize(block_base_coord);
+      data[bid].initialize(block_base_coord, timestamp);
       set_block_activity(bid, true);
     }
   }
@@ -438,8 +442,6 @@ class TaichiGrid {
   using Block = Block_;
   static constexpr int dim = Block::dim;
   static constexpr const std::array<int, dim> &block_size = Block::size;
-  static constexpr int TC_GRID_CURRENT = 0;
-  static constexpr int TC_GRID_PREVIOUS = 1;
   using VectorI = TVector<int, dim>;
   // static constexpr const std::array<int, dim> bucket_size = {128, 128, 128};
   using Node = typename Block::Node;
@@ -457,53 +459,19 @@ class TaichiGrid {
   int world_rank;
   static constexpr int master_rank = 0;
 
+  // TODO: remove
   bool blocks_dirty;
-  std::vector<Block *> blocks;
+  // std::vector<Block *> blocks;
 
   using RootDomain = TRootDomain<Block, bucket_size>;
   // A mapping to root domains
   // TODO: this is slow
   using RootDomains = std::unordered_map<uint64, std::unique_ptr<RootDomain>>;
-  RootDomains root_current, root_previous;
-
-  TC_FORCE_INLINE uint64 domain_hash(VectorI coord) {
-    VectorI bucket_coord = div_floor(coord, bucket_size::VectorI());
-    constexpr int coord_width = 20;
-    uint64 rep = 0;
-    for (int i = 0; i < dim; i++) {
-      if (grid_debug) {
-        bool ok = -(1 << (coord_width - 1)) <= bucket_coord[i] &&
-                  bucket_coord[i] < (1 << (coord_width - 1));
-        if (!ok) {
-          // TC_P(coord);
-          // TC_P(bucket_coord);
-        }
-        TC_ASSERT(-(1 << (coord_width - 1)) <= bucket_coord[i] &&
-                  bucket_coord[i] < (1 << (coord_width - 1)));
-      }
-      rep = (rep << coord_width) + bucket_coord[i];
-    }
-    return rep;
-  }
-
-  RootDomains &get_root_domains(int which) {
-    if (which == TC_GRID_PREVIOUS) {
-      return root_previous;
-    } else if (which == TC_GRID_CURRENT) {
-      return root_current;
-    } else {
-      TC_ERROR("");
-      std::exit(-1);
-    }
-  }
-
-  RootDomain &get_root_domain(VectorI coord, int which = TC_GRID_CURRENT) {
-    // Let's use a hash table first
-    auto h = domain_hash(coord);
-    return *(get_root_domains(which)[h]);
-  }
+  RootDomains root;
+  int current_timestamp;
 
   TaichiGrid() {
+    current_timestamp = 0;
     blocks_dirty = false;
     if (with_mpi()) {
       MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -529,30 +497,52 @@ class TaichiGrid {
   ~TaichiGrid() {
   }
 
-  TC_FORCE_INLINE RootDomain *get_root_domain_if_exist(
-      const VectorI &coord,
-      int which = TC_GRID_CURRENT) {
-    auto h = domain_hash(coord);
-    if (which == TC_GRID_CURRENT) {
-      auto p = root_current.find(h);
-      if (p == root_current.end()) {
-        return nullptr;
-      } else {
-        return p->second.get();
+  // NOTE: current timestamp will be mod by 2
+  TC_FORCE_INLINE uint64 domain_hash(VectorI coord, int timestamp) {
+    TC_ASSERT(((current_timestamp - 2 < timestamp) &&
+               (timestamp <= current_timestamp)));
+    VectorI bucket_coord = div_floor(coord, bucket_size::VectorI());
+    constexpr int coord_width = 20;
+    uint64 rep = uint(timestamp % 2);
+    for (int i = 0; i < dim; i++) {
+      if (grid_debug) {
+        bool ok = -(1 << (coord_width - 1)) <= bucket_coord[i] &&
+                  bucket_coord[i] < (1 << (coord_width - 1));
+        if (!ok) {
+          // TC_P(coord);
+          // TC_P(bucket_coord);
+        }
+        TC_ASSERT(-(1 << (coord_width - 1)) <= bucket_coord[i] &&
+                  bucket_coord[i] < (1 << (coord_width - 1)));
       }
+      rep = (rep << coord_width) + bucket_coord[i];
+    }
+    return rep;
+  }
+
+  RootDomain &get_root_domain(VectorI coord, int timestamp) {
+    // Let's use a hash table first
+    auto h = domain_hash(coord, timestamp);
+    return *root[h];
+  }
+
+  TC_FORCE_INLINE RootDomain *get_root_domain_if_exist(const VectorI &coord,
+                                                       int timestamp) {
+    auto h = domain_hash(coord, timestamp);
+    auto p = root.find(h);
+    if (p == root.end()) {
+      return nullptr;
     } else {
-      auto p = root_previous.find(h);
-      if (p == root_previous.end()) {
-        return nullptr;
-      } else {
-        return p->second.get();
-      }
+      return p->second.get();
     }
   }
 
   TC_FORCE_INLINE Block *get_block_if_exist(const VectorI &coord,
-                                            int which = TC_GRID_CURRENT) {
-    auto domain = get_root_domain_if_exist(coord, which);
+                                            int timestamp = -1) {
+    if (timestamp == -1) {
+      timestamp = current_timestamp;
+    }
+    auto domain = get_root_domain_if_exist(coord, timestamp);
     if (domain) {
       auto bid = domain->global_coord_to_block_id(coord);
       // TC_P(bid);
@@ -563,29 +553,34 @@ class TaichiGrid {
     return nullptr;
   }
 
-  TC_FORCE_INLINE Node &node(const VectorI &coord) {
+  TC_FORCE_INLINE Node &node(const VectorI &coord, int timestamp = -1) {
+    if (timestamp == -1) {
+      timestamp = current_timestamp;
+    }
     // Step I find root domain
-    auto &d = get_root_domain(coord);
+    auto &d = get_root_domain(coord, timestamp);
     // Step II find block
     auto &b = d.get_block_from_global_coord(coord);
     return b.node_global(coord);
   }
 
-  void update_block_list(bool force = false, int which = TC_GRID_CURRENT) {
-    if (!force && !blocks_dirty)
-      return;
-    blocks.clear();
-    for (auto &kv : get_root_domains(which)) {
-      auto &domain = *kv.second;
-      // domain->bitmap
-      domain.collect_blocks(blocks);
+  std::vector<Block *> update_block_list(int timestamp = -1) {
+    if (timestamp == -1) {
+      timestamp = current_timestamp;
     }
-    blocks_dirty = false;
+    std::vector<Block *> blocks;
+    for (auto &kv : root) {
+      auto &domain = *kv.second;
+      if (domain.timestamp == timestamp) {
+        domain.collect_blocks(blocks);
+      }
+    }
+    return blocks;
   }
 
   template <typename T>
   void for_each_block(const T &t) {
-    update_block_list();
+    auto blocks = update_block_list();
     tbb::parallel_for_each(blocks.begin(), blocks.end(),
                            [&](Block *block) { t(*block); });
   }
@@ -595,7 +590,7 @@ class TaichiGrid {
                                       const R &r,
                                       std::result_of_t<T(Block &)> v) {
     using V = std::result_of_t<T(Block &)>;
-    update_block_list();
+    auto blocks = update_block_list();
     return tbb::parallel_reduce(
         tbb::blocked_range<std::size_t>(std::size_t(0), blocks.size()), v,
         [&](tbb::blocked_range<std::size_t> &range, V v) {
@@ -621,7 +616,7 @@ class TaichiGrid {
 
   template <typename T>
   void for_each_node(const T &t) {
-    update_block_list();
+    auto blocks = update_block_list();
     tbb::parallel_for_each(blocks.begin(), blocks.end(),
                            [&](Block *block) { block->for_each_node(t); });
   }
@@ -633,26 +628,26 @@ class TaichiGrid {
   }
 
   // Activate a root domain/block
-  void touch(VectorI coord, int which = TC_GRID_CURRENT) {
-    blocks_dirty = true;
-    auto h = domain_hash(coord);
-    auto &root = get_root_domains(which);
+  void touch(VectorI coord, int timestamp = -1) {
+    if (timestamp == -1) {
+      timestamp = current_timestamp;
+    }
+    auto h = domain_hash(coord, timestamp);
     if (root.find(h) == root.end()) {
       // TODO: support staggered blocks here
       // create_domain
       // TC_TRACE("creating domain");
       auto base_coord =
           div_floor(coord, bucket_size::VectorI()) * bucket_size::VectorI();
-      root[h] = std::make_unique<RootDomain>(base_coord);
+      root[h] = std::make_unique<RootDomain>(base_coord, timestamp);
     }
-    auto &domain = get_root_domain(coord);
+    auto &domain = get_root_domain(coord, timestamp);
     domain.touch(coord);
   }
 
   void expand() {
-    update_block_list();
     RegionND<dim> region(VectorI(-1), VectorI(2));
-    for (auto &b : blocks) {
+    for (auto &b : update_block_list()) {
       auto base_coord = b->base_coord;
       for (auto &offset : region) {
         touch(base_coord + VectorI(Block::size) * offset.get_ipos());
@@ -661,7 +656,8 @@ class TaichiGrid {
   }
 
   void reset() {
-    for (auto &kv : root_current) {
+    TC_NOT_IMPLEMENTED;
+    for (auto &kv : root) {
       auto &domain = *kv.second;
       domain.reset();
     }
@@ -669,7 +665,7 @@ class TaichiGrid {
 
   std::size_t num_active_blocks() const {
     int sum = 0;
-    for (auto &kv : root_current) {
+    for (auto &kv : root) {
       auto &domain = *kv.second;
       sum += domain.num_active_blocks();
     }
@@ -678,7 +674,7 @@ class TaichiGrid {
 
   void clear_killed_blocks() {
     blocks_dirty = true;
-    for (auto &kv : root_current) {
+    for (auto &kv : root) {
       auto &domain = *kv.second;
       domain.clear_killed_blocks();
     }
@@ -698,12 +694,11 @@ class TaichiGrid {
   void fetch_neighbours() {
     constexpr bool debug = false;
     TC_ASSERT(with_mpi());
-    update_block_list();
     requested_blocks.resize(world_size);
 
     {
       TC_PROFILER("calc blocks to fetch");
-      for (auto *b : blocks) {
+      for (auto b : update_block_list()) {
         RegionND<dim> region(VectorI(-1), VectorI(2));
         auto base_coord = b->base_coord;
         for (auto &offset : region) {
@@ -889,16 +884,14 @@ class TaichiGrid {
     //   initialize the block
 
     // Populate blocks at the next time step, if NOT killed
-    TC_PROFILE("update_block_list1", update_block_list());
-    auto old_blocks = blocks;
     // Swap two grids
-    TC_PROFILE("swap grids", std::swap(root_current, root_previous));
-    TC_PROFILE("reset", reset());
+    current_timestamp += 1;
     {
       TC_PROFILER("populate new grid1");
-      for (auto b : old_blocks) {
-        if (!b->killed)
-          touch(b->base_coord);
+      for (auto b : update_block_list(current_timestamp - 1)) {
+        if (!b->killed) {
+          touch(b->base_coord, current_timestamp);
+        }
       }
     }
     if (needs_expand) {
@@ -914,22 +907,32 @@ class TaichiGrid {
       auto base_coord = block->base_coord;
       for (auto &offset : region) {
         auto an_coord = base_coord + VectorI(Block::size) * offset.get_ipos();
-        auto b = get_block_if_exist(an_coord, TC_GRID_PREVIOUS);
+        auto b = get_block_if_exist(an_coord, current_timestamp - 1);
         if (b) {
           ancestors[offset.get_ipos()] = b;
         }
       }
       t(*block, ancestors);
     };
-    TC_PROFILE("update_block_list2", update_block_list());
     {
+      auto new_blocks = update_block_list();
       TC_PROFILER("computation");
-      tbb::parallel_for_each(blocks.begin(), blocks.end(), [&](Block *block) {
-        if (!block->computed && !block->killed)
-          compute_block(block);
-      });
+      tbb::parallel_for_each(new_blocks.begin(), new_blocks.end(),
+                             [&](Block *block) {
+                               if (!block->computed && !block->killed)
+                                 compute_block(block);
+                             });
     }
     TC_PROFILE("clear_killed_blocks", clear_killed_blocks());
+    RootDomains new_root;
+    for (auto &kv : root) {
+      auto &b = *kv.second;
+      // Note: this works only for synchronous...
+      if (b.timestamp == current_timestamp) {
+        new_root.insert(std::move(kv));
+      }
+    }
+    root = std::move(new_root);
   }
 
   std::size_t num_particles() {
@@ -938,8 +941,7 @@ class TaichiGrid {
 
   template <typename T>
   void serial_for_each_particle(const T &t) {
-    update_block_list();
-    for (auto b : blocks) {
+    for (auto b : update_block_list()) {
       for (std::size_t i = 0; i < b->particle_count; i++) {
         t(b->particles[i]);
       }
@@ -949,9 +951,7 @@ class TaichiGrid {
   std::vector<Particle> gather_particles() {
     // TODO: fix alignment issues here
     std::vector<Particle> particles;
-    update_block_list();
-    // TC_INFO("Gathering particles");
-    for (auto b : blocks) {
+    for (auto b : update_block_list()) {
       particles.insert(particles.end(), b->particles,
                        b->particles + b->particle_count);
     }

@@ -11,7 +11,7 @@ TC_TEST("dilated block") {
   if (with_mpi())
     return;
   using Block = TBlock<int, char, TSize3D<8>, 1>;
-  Block block(Vector3i(8));
+  Block block(Vector3i(8), 0);
 
   TC_STATIC_ASSERT(Block::num_nodes == pow<3>(10));
   CHECK(block.linearize_global(Vector3i(7)) == 0);
@@ -51,12 +51,15 @@ TC_TEST("dilated block") {
   }
 
   // Do grid exchange here
+  CHECK(grid.root.size() == 1);
   grid.advance(
       [](Block &b, TAncestors<Block> &an) { accumulate_dilated_grids(b, an); });
+  CHECK(grid.root.size() == 1);
 
   for (auto b_ind : block_region) {
     auto base_coord = b_ind.get_ipos() * block_size;
     auto b = grid.get_block_if_exist(base_coord);
+    TC_ASSERT(b);
     for (auto i : local_grid_region) {
       CHECK(gt[base_coord + i.get_ipos()] == b->node_local(i.get_ipos()));
     }
@@ -116,7 +119,7 @@ TC_TEST("grid") {
       }
     }
   }
-  CHECK(grid.root_current.size() == pow<3>((n - 1) / 128 + 1));
+  CHECK(grid.root.size() == pow<3>((n - 1) / 128 + 1));
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       for (int k = 0; k < n; k++) {
@@ -183,7 +186,7 @@ TC_TEST("grid") {
 TC_TEST("block base") {
   {
     // Test at coord 0
-    Block base(Vector3i(0));
+    Block base(Vector3i(0), 0);
     int n = 8;
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
@@ -259,7 +262,7 @@ TC_TEST("Propagate") {
   CHECK(int(grid.node(Vector3i(0, 5, 5)).x) == 100);
   CHECK(int(grid.node(Vector3i(0, 6, 5)).x) == 0);
 
-  CHECK(grid.root_current.size() == 8);
+  CHECK(grid.root.size() == 8);
 }
 
 TC_TEST("basic distributed 2") {

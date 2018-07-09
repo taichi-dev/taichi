@@ -484,8 +484,10 @@ class TaichiGrid {
       MPI_Comm_size(MPI_COMM_WORLD, &world_size);
       MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
       TC_P(world_rank);
-      TC_ASSERT(world_size == 2 || world_size == 4);
-      if (world_size == 2) {
+      TC_ASSERT(world_size == 1 || world_size == 2 || world_size == 4);
+      if (world_size == 1) {
+        part_func = [](const VectorI coord) -> int { return 0; };
+      } else if (world_size == 2) {
         part_func = [](const VectorI coord) -> int {
           return int(coord.x >= 0);
         };

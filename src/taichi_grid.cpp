@@ -324,7 +324,7 @@ void print_all_env() {
 auto test_mpi_tbb = [](const std::vector<std::string> &param) {
   if (!with_mpi()) {
     TC_WARN("Pls execute this task with mpirun");
-  run }
+  }
   //ThreadedTaskManager::TbbParallelismControl _(8);
   tbb::task_scheduler_init init(8);
   // print_all_env();

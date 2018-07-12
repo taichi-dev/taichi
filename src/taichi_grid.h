@@ -133,6 +133,7 @@ struct TBlock {
 
   // Grid data
   Node nodes[num_nodes];
+  using VolumeNodeType = Node[grid_size[0]][grid_size[1]][grid_size[2]];
 
   static constexpr int max_num_particles = 12 * num_nodes;
   Particle particles[max_num_particles];
@@ -149,6 +150,12 @@ struct TBlock {
 
   TBlock(VectorI base_coord, int timestamp) {
     initialize(base_coord, timestamp);
+  }
+
+  TC_FORCE_INLINE VolumeNodeType &get_node_volume() {
+    return *reinterpret_cast<VolumeNodeType *>(
+        &nodes[grid_size[1] * grid_size[2] * dilation +
+               grid_size[2] * dilation + dilation]);
   }
 
   // This is cheaper because particles/nodes will not be initialized
@@ -436,6 +443,8 @@ struct TGridScratchPad {
       auto local_coord = (ind.get_ipos() + bs) % bs;
       if (an_b) {
         linearized_data[p] = an_b->node_local(local_coord);
+      } else {
+        std::memset(&linearized_data[p], 0, sizeof(linearized_data[p]));
       }
       p++;
     }
@@ -594,6 +603,11 @@ class TaichiGrid {
     auto blocks = update_block_list();
     tbb::parallel_for_each(blocks.begin(), blocks.end(),
                            [&](Block *block) { t(*block); });
+  }
+
+  template <typename T>
+  void map(const T &t) {
+    return for_each_block(t);
   }
 
   template <typename T, typename R>

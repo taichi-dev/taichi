@@ -46,7 +46,7 @@ Serialization
 
 The serialization module of taichi allows you to serialize/deserialize objects into/from binary strings.
 
-You can use TC_IO macros to explicit define fields necessary in Taichi.
+You can use ``TC_IO`` macros to explicit define fields necessary in Taichi.
 
 .. code-block:: cpp
 

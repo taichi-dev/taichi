@@ -23,29 +23,35 @@ class MGPCGTest {
   using Matrix = TMatrix<real, dim>;
   using Grid = TaichiGrid<Block>;
 
-  Grid grid;
+  std::vector<std::unique_ptr<Grid>> grids;
+  int mg_lv = 4;
 
   using VectorI = Vector3i;
   using Vectori = VectorI;
   using GridScratchPad = TGridScratchPad<Block>;
 
-  enum { CHANNEL_R, CHANNEL_Z, CHANNEL_X, CHANNEL_B, CHANNEL_TMP, CHANNEL_P };
+  enum { CH_R, CH_Z, CH_X, CH_B, CH_TMP, CH_P };
 
   MGPCGTest() {
     // Span a region in
+    grids.resize(mg_lv);
+    for (int i = 0; i < mg_lv; i++) {
+      grids[i] = std::make_unique<Grid>();
+    }
+    TC_ASSERT(mg_lv >= 1);
     constexpr int n = 32;
     Region3D active_region(VectorI(-n, -n, -n * 2), VectorI(n, n, n * 2));
     for (auto &ind : active_region) {
-      grid.touch(ind.get_ipos());
+      grids[0]->touch(ind.get_ipos());
       if (ind.get_ipos() == VectorI(0)) {
         TC_TAG;
-        grid.node(ind.get_ipos())[CHANNEL_B] = 1;
+        grids[0]->node(ind.get_ipos())[CH_B] = 1;
       }
     }
   }
 
   void multiply(int channel_out, int channel_in) {
-    grid.advance(
+    grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
           GridScratchPad scratch(an);
           std::memcpy(&b.nodes[0], &an[VectorI(0)]->nodes[0], sizeof(b.nodes));
@@ -83,7 +89,7 @@ class MGPCGTest {
   // out += a + scale * b
   void saxpy(int channel_out, int channel_a, int channel_b, real scale) {
     TC_ASSERT(!with_mpi());
-    grid.map([&](Block &b) {
+    grids[0]->map([&](Block &b) {
       for (auto &n : b.nodes) {
         n[channel_out] = n[channel_a] + scale * n[channel_b];
       }
@@ -92,7 +98,7 @@ class MGPCGTest {
 
   // out += a + scale * b
   void copy(int channel_out, int channel_a) {
-    grid.map([&](Block &b) {
+    grids[0]->map([&](Block &b) {
       for (auto &n : b.nodes) {
         n[channel_out] = n[channel_a];
       }
@@ -100,7 +106,7 @@ class MGPCGTest {
   }
 
   float64 dot_product(int channel_a, int channel_b) {
-    return grid.reduce([&](Block &b) -> float64 {
+    return grids[0]->reduce([&](Block &b) -> float64 {
       float64 sum = 0;
       for (auto &n : b.nodes) {
         sum += n[channel_a] * n[channel_b];
@@ -110,7 +116,7 @@ class MGPCGTest {
   }
 
   void smoothing() {
-    grid.advance(
+    grids[0]->advance(
         [&](Grid::Block &b, Grid::Ancestors &an) {
 
         },
@@ -123,37 +129,36 @@ class MGPCGTest {
 
   // https://en.wikipedia.org/wiki/Conjugate_gradient_method
   void run() {
-    TC_P(norm(CHANNEL_B));
+    TC_P(norm(CH_B));
     // r = b - Ax
-    multiply(CHANNEL_TMP, CHANNEL_X);
-    TC_P(norm(CHANNEL_TMP));
-    saxpy(CHANNEL_R, CHANNEL_B, CHANNEL_TMP, -1);
+    multiply(CH_TMP, CH_X);
+    TC_P(norm(CH_TMP));
+    saxpy(CH_R, CH_B, CH_TMP, -1);
     // z = M^-1 r
-    saxpy(CHANNEL_Z, CHANNEL_R, CHANNEL_R, 0);
+    saxpy(CH_Z, CH_R, CH_R, 0);
     // p = z
-    copy(CHANNEL_P, CHANNEL_Z);
+    copy(CH_P, CH_Z);
     while (1) {
-      multiply(CHANNEL_TMP, CHANNEL_P);
-      real alpha = dot_product(CHANNEL_R, CHANNEL_Z) /
-                   dot_product(CHANNEL_P, CHANNEL_TMP);
+      multiply(CH_TMP, CH_P);
+      real alpha = dot_product(CH_R, CH_Z) / dot_product(CH_P, CH_TMP);
 
-      auto old_zr = dot_product(CHANNEL_Z, CHANNEL_R);
+      auto old_zr = dot_product(CH_Z, CH_R);
 
-      saxpy(CHANNEL_X, CHANNEL_X, CHANNEL_P, alpha);
+      saxpy(CH_X, CH_X, CH_P, alpha);
 
-      saxpy(CHANNEL_R, CHANNEL_R, CHANNEL_TMP, -alpha);
+      saxpy(CH_R, CH_R, CH_TMP, -alpha);
 
-      auto l2 = norm(CHANNEL_R);
+      auto l2 = norm(CH_R);
       TC_P(l2);
       if (l2 < 1e-7) {
         break;
       }
 
-      copy(CHANNEL_Z, CHANNEL_R);
+      copy(CH_Z, CH_R);
 
-      auto beta = dot_product(CHANNEL_Z, CHANNEL_R) / old_zr;
+      auto beta = dot_product(CH_Z, CH_R) / old_zr;
 
-      saxpy(CHANNEL_P, CHANNEL_Z, CHANNEL_P, beta);
+      saxpy(CH_P, CH_Z, CH_P, beta);
     }
   }
 };

@@ -66,6 +66,40 @@ TC_TEST("dilated block") {
   }
 }
 
+TC_TEST("grid_coarsen") {
+  if (with_mpi())
+    return;
+  // ThreadedTaskManager::TbbParallelismControl _(1);
+  using Block = TBlock<Vector3, char, TSize3D<8>>;
+  using Grid = TaichiGrid<Block>;
+  std::vector<std::unique_ptr<Grid>> grids;
+  int mg_lv = 3;
+  grids.resize(mg_lv);
+  const int n = 32;
+
+  for (int i = 0; i < mg_lv; i++) {
+    grids[i] = std::make_unique<Grid>();
+  }
+
+  for (auto ind : Region3D(Vector3i(-n), Vector3i(n))) {
+    grids[0]->touch(ind.get_ipos());
+    grids[0]->node(ind.get_ipos()) = ind.get_pos();
+  }
+
+  for (int i = 0; i < mg_lv - 1; i++) {
+    grids[i]->coarsen(*grids[i + 1], [&](Block &b, Grid::PyramidAncestors &an) {
+      for (auto a : an.data) {
+        if (!a)
+          continue;
+        for (auto ind : a->get_global_region()) {
+          b.node_global(div_floor(ind.get_ipos(), Vector3i(2))) +=
+              a->node_global(ind.get_ipos()) * (1.0_f / 8);
+        }
+      }
+    });
+  }
+}
+
 TC_TEST("grid_basics") {
   CHECK(product<int, 3>(std::array<int, 3>({2, 3, 4})) == 24);
   CHECK(product<int, 1>(std::array<int, 1>({7})) == 7);
@@ -325,7 +359,7 @@ auto test_mpi_tbb = [](const std::vector<std::string> &param) {
   if (!with_mpi()) {
     TC_WARN("Pls execute this task with mpirun");
   }
-  //ThreadedTaskManager::TbbParallelismControl _(8);
+  // ThreadedTaskManager::TbbParallelismControl _(8);
   tbb::task_scheduler_init init(8);
   // print_all_env();
   tbb::parallel_for(0, 1000, [](int i) {

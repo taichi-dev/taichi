@@ -16,7 +16,7 @@
 
 TC_NAMESPACE_BEGIN
 
-constexpr bool grid_debug = false;
+constexpr bool grid_debug = true;
 
 template <typename T, int N>
 TC_FORCE_INLINE constexpr T product(const std::array<T, N> arr) {
@@ -238,6 +238,13 @@ struct TBlock {
 
   TC_FORCE_INLINE bool inside_undilated_global(const VectorI global_coord) {
     return inside_undilated_local(to_local(global_coord));
+  }
+
+  Region3D get_global_region() const {
+    return Region3D(base_coord, base_coord + block_size::VectorI());
+  }
+  Region3D get_local_region() const {
+    return Region3D(VectorI(0), block_size::VectorI());
   }
 };
 
@@ -467,7 +474,8 @@ class TaichiGrid {
   // static constexpr const std::array<int, dim> bucket_size = {128, 128, 128};
   using Node = typename Block::Node;
   using Particle = typename Block::Particle;
-  using Ancestors = TAncestors<Block>;
+  using Ancestors = TAncestors<Block, 3>;
+  using PyramidAncestors = TAncestors<Block, 2>;
   using GridScratchPad = TGridScratchPad<Block>;
   using PartitionFunction = std::function<int(VectorI)>;
   PartitionFunction part_func;
@@ -1073,12 +1081,19 @@ class TaichiGrid {
     return world_rank == master_rank;
   }
 
-  void coarsen(TaichiGrid &coarse) {
+  template <typename T>
+  void coarsen(TaichiGrid &coarse, const T &t) {
     // TODO: parallelize
     for (auto b : get_block_list()) {
-      coarse.touch(div_floor(b.base_coord, VectorI(2)), current_timestamp);
+      coarse.touch(div_floor(b->base_coord, VectorI(2)), current_timestamp);
     }
     for (auto b : coarse.get_block_list(current_timestamp)) {
+      PyramidAncestors an;
+      for (auto ind : Region3D(VectorI(0), VectorI(2))) {
+        an[ind.get_ipos()] = get_block_if_exist(
+            b->base_coord * VectorI(2) + ind.get_ipos() * VectorI(block_size));
+      }
+      t(*b, an);
     }
   }
 };

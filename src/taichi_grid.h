@@ -380,11 +380,16 @@ struct TRootDomain {
   }
 };
 
-template <typename Block>
+template <typename Block, int _width = 3>
 struct TAncestors {
   static constexpr int dim = Block::dim;
   // TODO: staggered
-  static constexpr int width = 3;
+  static constexpr int width = _width;
+  TC_STATIC_ASSERT(width == 2 || width == 3);
+
+  // If width == 2, each coord of offset can be 0 ~ +1
+  // If width == 3, each coord of offset can be -1 ~ +1
+  static constexpr int coord_offset = width == 3 ? 1 : 0;
   static constexpr int size = pow<dim>(width);
   using VectorI = TVector<int, dim>;
 
@@ -393,22 +398,23 @@ struct TAncestors {
   TAncestors() {
     std::memset(data, 0, sizeof(data));
   }
+
   Block *&operator[](int i) {
     return data[i];
   }
-  // Each coord of offset can be -1 ~ +1
+
   template <int dim_ = dim>
   std::enable_if_t<dim_ == 2, Block *&> operator[](VectorI offset) {
-    return data[offset.x * width + offset.y + width + 1];
+    return data[offset.x * width + offset.y + (width + 1) * coord_offset];
   }
 
   template <int dim_ = dim>
   std::enable_if_t<dim_ == 3, Block *&> operator[](VectorI offset) {
     if (grid_debug) {
-      TC_ASSERT(VectorI(-1) <= offset && offset < VectorI(width));
+      TC_ASSERT(VectorI(-coord_offset) <= offset && offset < VectorI(width));
     }
     return data[offset.x * (width * width) + offset.y * width + offset.z +
-                width * width + width + 1];
+                (width * width + width + 1) * coord_offset];
   }
 };
 
@@ -584,7 +590,7 @@ class TaichiGrid {
     return b.node_global(coord);
   }
 
-  std::vector<Block *> update_block_list(int timestamp = -1) {
+  std::vector<Block *> get_block_list(int timestamp = -1) {
     if (timestamp == -1) {
       timestamp = current_timestamp;
     }
@@ -600,7 +606,7 @@ class TaichiGrid {
 
   template <typename T>
   void for_each_block(const T &t) {
-    auto blocks = update_block_list();
+    auto blocks = get_block_list();
     tbb::parallel_for_each(blocks.begin(), blocks.end(),
                            [&](Block *block) { t(*block); });
   }
@@ -615,7 +621,7 @@ class TaichiGrid {
                                       const R &r,
                                       std::result_of_t<T(Block &)> v) {
     using V = std::result_of_t<T(Block &)>;
-    auto blocks = update_block_list();
+    auto blocks = get_block_list();
     return tbb::parallel_reduce(
         tbb::blocked_range<std::size_t>(std::size_t(0), blocks.size()), v,
         [&](tbb::blocked_range<std::size_t> &range, V v) {
@@ -641,7 +647,7 @@ class TaichiGrid {
 
   template <typename T>
   void for_each_node(const T &t) {
-    auto blocks = update_block_list();
+    auto blocks = get_block_list();
     tbb::parallel_for_each(blocks.begin(), blocks.end(),
                            [&](Block *block) { block->for_each_node(t); });
   }
@@ -677,7 +683,7 @@ class TaichiGrid {
 
   void expand(int timestamp) {
     RegionND<dim> region(VectorI(-1), VectorI(2));
-    for (auto &b : update_block_list(timestamp)) {
+    for (auto &b : get_block_list(timestamp)) {
       auto base_coord = b->base_coord;
       for (auto &offset : region) {
         touch(base_coord + VectorI(Block::size) * offset.get_ipos(), timestamp);
@@ -729,7 +735,7 @@ class TaichiGrid {
 
     {
       TC_PROFILER("calc blocks to fetch");
-      for (auto b : update_block_list()) {
+      for (auto b : get_block_list()) {
         RegionND<dim> region(VectorI(-1), VectorI(2));
         auto base_coord = b->base_coord;
         for (auto &offset : region) {
@@ -919,7 +925,7 @@ class TaichiGrid {
     // Populate blocks at the next time step, if NOT killed
     {
       TC_PROFILER("populate new grid1");
-      for (auto b : update_block_list(old_timestamp)) {
+      for (auto b : get_block_list(old_timestamp)) {
         if (!b->killed) {
           touch(b->base_coord, new_timestamp);
         }
@@ -946,7 +952,7 @@ class TaichiGrid {
     };
     if (world_size != 1) {
       tbb::task_group g;
-      auto existing_new_blocks = update_block_list(new_timestamp);
+      auto existing_new_blocks = get_block_list(new_timestamp);
       g.run([&] {
         // TC_PROFILER("fetch_neighbours")
         auto fetched_blocks = fetch_neighbours(old_timestamp);
@@ -986,7 +992,7 @@ class TaichiGrid {
       TC_PROFILE("expand", expand(new_timestamp));
     }
     {
-      auto new_blocks = update_block_list(new_timestamp);
+      auto new_blocks = get_block_list(new_timestamp);
       TC_PROFILER("computation");
       tbb::parallel_for_each(new_blocks.begin(), new_blocks.end(),
                              [&](Block *block) {
@@ -1012,7 +1018,7 @@ class TaichiGrid {
 
   template <typename T>
   void serial_for_each_particle(const T &t) {
-    for (auto b : update_block_list()) {
+    for (auto b : get_block_list()) {
       for (std::size_t i = 0; i < b->particle_count; i++) {
         t(b->particles[i]);
       }
@@ -1022,7 +1028,7 @@ class TaichiGrid {
   std::vector<Particle> gather_particles() {
     // TODO: fix alignment issues here
     std::vector<Particle> particles;
-    for (auto b : update_block_list()) {
+    for (auto b : get_block_list()) {
       particles.insert(particles.end(), b->particles,
                        b->particles + b->particle_count);
     }
@@ -1065,6 +1071,15 @@ class TaichiGrid {
 
   TC_FORCE_INLINE bool is_master() {
     return world_rank == master_rank;
+  }
+
+  void coarsen(TaichiGrid &coarse) {
+    // TODO: parallelize
+    for (auto b : get_block_list()) {
+      coarse.touch(div_floor(b.base_coord, VectorI(2)), current_timestamp);
+    }
+    for (auto b : coarse.get_block_list(current_timestamp)) {
+    }
   }
 };
 

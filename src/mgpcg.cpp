@@ -41,7 +41,7 @@ class MGPCGTest {
   using Vectori = VectorI;
   using GridScratchPad = TGridScratchPad<Block>;
 
-  enum { CH_R, CH_Z, CH_X, CH_B, CH_TMP, CH_P };
+  enum { CH_R, CH_Z, CH_X, CH_B, CH_TMP, CH_P, CH_MG_U, CH_MG_B, CH_MG_R };
 
   MGPCGTest() {
     // Span a region in
@@ -75,6 +75,39 @@ class MGPCGTest {
       total_blocks /= 8;
       TC_ASSERT(grids[i + 1]->num_active_blocks() == total_blocks);
     }
+  }
+
+  void residual(int level, int U, int B, int R) {
+    grids[level]->advance(
+        [&](Block &b, Grid::Ancestors &an) {
+          GridScratchPad scratch(an);
+          std::memcpy(&b.nodes[0], &an[VectorI(0)]->nodes[0], sizeof(b.nodes));
+          // 6 neighbours
+          for (int i = 0; i < Block::size[0]; i++) {
+            for (int j = 0; j < Block::size[1]; j++) {
+              for (int k = 0; k < Block::size[2]; k++) {
+                auto rhs = b.get_node_volume()[i][j][k][B];
+                auto c = b.get_node_volume()[i][j][k][U];
+                auto &o = b.get_node_volume()[i][j][k][R];
+                auto fetch = [&](int ii, int jj, int kk) {
+                  if (scratch.data[i + ii][j + jj][k + kk]
+                          .flags()
+                          .get_effective()) {
+                    rhs -= (scratch.data[i + ii][j + jj][k + kk][U] - c);
+                  }
+                };
+                fetch(0, 0, 1);
+                fetch(0, 0, -1);
+                fetch(0, 1, 0);
+                fetch(0, -1, 0);
+                fetch(1, 0, 0);
+                fetch(-1, 0, 0);
+                b.get_node_volume()[i][j][k][R] = rhs;
+              }
+            }
+          }
+        },
+        false);
   }
 
   void multiply(int channel_out, int channel_in) {
@@ -142,7 +175,7 @@ class MGPCGTest {
     });
   }
 
-  void smooth(int level, int channel_in) {
+  void smooth(int level, int U, int B) {
     grids[level]->advance(
         [&](Grid::Block &b, Grid::Ancestors &an) {
           GridScratchPad scratch(an);
@@ -155,13 +188,13 @@ class MGPCGTest {
                   continue;
                 }
                 int count = 0;
-                real tmp = 0;
+                real tmp = scratch.data[i][j][k][B];
                 auto fetch = [&](int ii, int jj, int kk) {
                   if (scratch.data[i + ii][j + jj][k + kk]
                           .flags()
                           .get_effective()) {
                     count += 1;
-                    tmp += scratch.data[i + ii][j + jj][k + kk][channel_in];
+                    tmp += scratch.data[i + ii][j + jj][k + kk][U];
                   }
                 };
                 fetch(0, 0, 1);
@@ -170,17 +203,21 @@ class MGPCGTest {
                 fetch(0, -1, 0);
                 fetch(1, 0, 0);
                 fetch(-1, 0, 0);
-
-                auto &o = b.get_node_volume()[i][j][k][channel_in];
+                auto &o = b.get_node_volume()[i][j][k][U];
                 o = tmp / count;
               }
             }
           }
         },
-        true);
+        false);
   }
 
-  void restrict(int level, int channel) {
+  void clear(int level, int channel) {
+    grids[level]->for_each_node([&](Block::Node &n) { n[channel] = 0; });
+  }
+
+  // B[level + 1] = coarsened(R[level])
+  void restrict(int level, int R_in, int B_out) {
     // average residual
     grids[level]->coarsen(
         *grids[level + 1], [&](Block &block, Grid::PyramidAncestors &an) {
@@ -193,22 +230,22 @@ class MGPCGTest {
               auto coarse_coord = div_floor(
                   ind.get_ipos() * Vector3i(Block::size) + j.get_ipos(),
                   Vector3i(2));
-              block.node_local(coarse_coord).channels[channel] +=
-                  ab.node_local(j.get_ipos())[channel];
+              block.node_local(coarse_coord).channels[B_out] +=
+                  ab.node_local(j.get_ipos())[R_in];
             }
           }
         });
   }
 
-  void prolongate(int level, int channel) {
+  // U[level] += refined(U]level + 1]);
+  void prolongate(int level, int U) {
     real scale = 0.5_f;
     // upsample and apply correction
     grids[level - 1]->refine(*grids[level], [&](Block &block, Block &ancestor) {
       for (auto ind : block.get_global_region()) {
-        block.node_global(ind.get_ipos())[channel] +=
+        block.node_global(ind.get_ipos())[U] +=
             scale *
-            ancestor.node_global(
-                div_floor(ind.get_ipos(), Vector3i(2)))[channel];
+            ancestor.node_global(div_floor(ind.get_ipos(), Vector3i(2)))[U];
       }
     });
   }
@@ -217,31 +254,48 @@ class MGPCGTest {
     return (real)std::sqrt(dot_product(channel, channel));
   }
 
-  void V_cycle(int channel) {
-    constexpr int smoothing_iters = 3;
+  void V_cycle(int channel_in, int channel_out, bool use_as_preconditioner=true) {
+    copy(CH_MG_B, channel_in);
+    constexpr int U = CH_MG_U, B = CH_MG_B, R = CH_MG_R;
+    constexpr int smoothing_iters = 1, bottom_smoothing_iter = 10;
     for (int i = 0; i < mg_lv - 1; i++) {
+      if (use_as_preconditioner || i != 0) {
+        clear(i, U);
+      }
       // pre-smoothing
       for (int j = 0; j < smoothing_iters; j++) {
-        smooth(i, channel);
+        smooth(i, U, B);
       }
-      restrict(i, CH_R);
+      residual(i, U, B, R);
+      restrict(i, R, B);
     }
 
     // Bottom solve
-    for (int j = 0; j < 200; j++) {
-      smooth(mg_lv - 1, channel);
+    for (int j = 0; j < bottom_smoothing_iter; j++) {
+      smooth(mg_lv - 1, U, B);
     }
 
     for (int i = mg_lv - 1; i > 0; i--) {
+      prolongate(i, U);
+      // post-smoothing
       for (int j = 0; j < smoothing_iters; j++) {
-        smooth(i, channel);
+        smooth(i, U, B);
       }
-      prolongate(i, channel);
+    }
+    copy(channel_out, CH_MG_U);
+  }
+
+  void run() {
+    while (1) {
+      V_cycle(CH_B, CH_X, false);
+      multiply(CH_TMP, CH_X);
+      saxpy(CH_R, CH_B, CH_TMP, -1);
+      TC_P(norm(CH_TMP));
     }
   }
 
   // https://en.wikipedia.org/wiki/Conjugate_gradient_method
-  void run() {
+  void run_pcg() {
     TC_P(norm(CH_B));
     // r = b - Ax
     multiply(CH_TMP, CH_X);

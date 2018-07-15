@@ -6,10 +6,21 @@
 
 TC_NAMESPACE_BEGIN
 
+struct NodeFlags : public bit::Bits<32> {
+  using Base = bit::Bits<32>;
+  TC_BIT_FIELD(uint8, num_effective_neighbours, 0);
+  TC_BIT_FIELD(bool, effective, 8);
+};
+
 struct Node {
   real channels[16];
+
   real &operator[](int i) {
     return channels[i];
+  }
+
+  NodeFlags &flags() {
+    return bit::reinterpret_bits<NodeFlags>(channels[15]);
   }
 };
 
@@ -43,8 +54,8 @@ class MGPCGTest {
     Region3D active_region(VectorI(-n, -n, -n * 2), VectorI(n, n, n * 2));
     for (auto &ind : active_region) {
       grids[0]->touch(ind.get_ipos());
+      grids[0]->node(ind.get_ipos()).flags().set_effective(true);
       if (ind.get_ipos() == VectorI(0)) {
-        TC_TAG;
         grids[0]->node(ind.get_ipos())[CH_B] = 1;
       }
     }
@@ -115,16 +126,79 @@ class MGPCGTest {
     });
   }
 
-  void smoothing() {
-    grids[0]->advance(
+  void smooth(int level, int channel_in) {
+    grids[level]->advance(
         [&](Grid::Block &b, Grid::Ancestors &an) {
+          GridScratchPad scratch(an);
+          std::memcpy(&b.nodes[0], &an[VectorI(0)]->nodes[0], sizeof(b.nodes));
+          // 6 neighbours
+          for (int i = 0; i < Block::size[0]; i++) {
+            for (int j = 0; j < Block::size[1]; j++) {
+              for (int k = 0; k < Block::size[2]; k++) {
+                if (!scratch.data[i][j][k].flags().get_effective()) {
+                  continue;
+                }
+                int count = 0;
+                real tmp = 0;
+                auto fetch = [&](int ii, int jj, int kk) {
+                  if (scratch.data[i + ii][j + jj][k + kk]
+                          .flags()
+                          .get_effective()) {
+                    count += 1;
+                    tmp += scratch.data[i + ii][j + jj][k + kk][channel_in];
+                  }
+                };
+                fetch(0, 0, 1);
+                fetch(0, 0, -1);
+                fetch(0, 1, 0);
+                fetch(0, -1, 0);
+                fetch(1, 0, 0);
+                fetch(-1, 0, 0);
 
+                auto &o = b.get_node_volume()[i][j][k][channel_in];
+                o = tmp / count;
+              }
+            }
+          }
         },
         true);
   }
 
+  void restrict(int level, int channel) {
+    // average residual
+    grids[level]->coarsen(
+        *grids[level + 1], [&](Block &block, Grid::PyramidAncestors &an) {
+          for (auto ind : Region3D(Vector3i(0), Vector3i(2))) {
+            if (!an[ind.get_ipos()]) {
+              continue;
+            }
+            Block &ab = *an[ind.get_ipos()];
+            for (auto j : ab.get_local_region()) {
+              auto coarse_coord = div_floor(
+                  ind.get_ipos() * Vector3i(Block::size) + j.get_ipos(),
+                  Vector3i(2));
+              block.node_local(coarse_coord).channels[channel] +=
+                  ab.node_local(j.get_ipos())[channel];
+            }
+          }
+        });
+  }
+
+  void prolongate(int level, int channel) {
+    real scale = 0.5_f;
+    // upsample and apply correction
+    grids[level - 1]->refine(*grids[level], [&](Block &block, Block &ancestor) {
+      for (auto ind : block.get_global_region()) {
+        block.node_global(ind.get_ipos())[channel] +=
+            scale *
+            ancestor.node_global(
+                div_floor(ind.get_ipos(), Vector3i(2)))[channel];
+      }
+    });
+  }
+
   real norm(int channel) {
-    return std::sqrt(dot_product(channel, channel));
+    return (real)std::sqrt(dot_product(channel, channel));
   }
 
   // https://en.wikipedia.org/wiki/Conjugate_gradient_method

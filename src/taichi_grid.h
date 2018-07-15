@@ -1096,6 +1096,20 @@ class TaichiGrid {
       t(*b, an);
     }
   }
+
+  template <typename T>
+  void refine(TaichiGrid &coarse, const T &t) {
+    // TODO: parallelize
+    for (auto b : coarse.get_block_list(current_timestamp)) {
+      auto ancestor_coord = div_floor(b->base_coord, VectorI(block_size) * 2) *
+                            VectorI(block_size);
+      auto ancestor = coarse.get_block_if_exist(ancestor_coord);
+      if (grid_debug) {
+        TC_ASSERT(ancestor);
+      }
+      t(*b, *ancestor);
+    }
+  }
 };
 
 struct TestParticle {

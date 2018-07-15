@@ -35,7 +35,7 @@ class MGPCGTest {
   using Grid = TaichiGrid<Block>;
 
   std::vector<std::unique_ptr<Grid>> grids;
-  int mg_lv = 4;
+  int mg_lv = 2;
 
   using VectorI = Vector3i;
   using Vectori = VectorI;
@@ -51,6 +51,7 @@ class MGPCGTest {
     }
     TC_ASSERT(mg_lv >= 1);
     constexpr int n = 32;
+    TC_ASSERT_INFO(bit::is_power_of_two(n), "Only POT grid sizes supported");
     Region3D active_region(VectorI(-n, -n, -n * 2), VectorI(n, n, n * 2));
     for (auto &ind : active_region) {
       grids[0]->touch(ind.get_ipos());
@@ -58,6 +59,21 @@ class MGPCGTest {
       if (ind.get_ipos() == VectorI(0)) {
         grids[0]->node(ind.get_ipos())[CH_B] = 1;
       }
+    }
+    set_up_hierechy();
+  }
+
+  void set_up_hierechy() {
+    int total_blocks = grids[0]->num_active_blocks();
+    for (int i = 0; i < mg_lv - 1; i++) {
+      grids[i]->coarsen(
+          *grids[i + 1], [&](Block &b, Grid::PyramidAncestors &an) {
+            for (auto ind : b.get_local_region()) {
+              b.node_local(ind.get_ipos()).flags().set_effective(true);
+            }
+          });
+      total_blocks /= 8;
+      TC_ASSERT(grids[i + 1]->num_active_blocks() == total_blocks);
     }
   }
 
@@ -199,6 +215,29 @@ class MGPCGTest {
 
   real norm(int channel) {
     return (real)std::sqrt(dot_product(channel, channel));
+  }
+
+  void V_cycle(int channel) {
+    constexpr int smoothing_iters = 3;
+    for (int i = 0; i < mg_lv - 1; i++) {
+      // pre-smoothing
+      for (int j = 0; j < smoothing_iters; j++) {
+        smooth(i, channel);
+      }
+      restrict(i, CH_R);
+    }
+
+    // Bottom solve
+    for (int j = 0; j < 200; j++) {
+      smooth(mg_lv - 1, channel);
+    }
+
+    for (int i = mg_lv - 1; i > 0; i--) {
+      for (int j = 0; j < smoothing_iters; j++) {
+        smooth(i, channel);
+      }
+      prolongate(i, channel);
+    }
   }
 
   // https://en.wikipedia.org/wiki/Conjugate_gradient_method

@@ -48,8 +48,25 @@ TC_TEST("bit") {
   f.set_banana(false);
   CHECK(f.get_cherry() == 63);
 
+  struct Decomp {
+    uint8 a, b, c, d;
+  };
+
+  uint32 v = 0xabcd1234;
+  auto &dec = reinterpret_bits<Decomp>(v);
+  CHECK(dec.a == 0x34);
+  CHECK(dec.b == 0x12);
+  CHECK(dec.c == 0xcd);
+  CHECK(dec.d == 0xab);
+  dec.d = 0xef;
+  CHECK(v == 0xefcd1234);
+
+  CHECK(reinterpret_bits<real>(reinterpret_bits<uint32>(1.32_f32)) == 1.32_f32);
+
   float64 t = 123.456789;
   auto e = extract(t);
-  CHECK(t == compress(std::get<0>(e), std::get<1>(e)));
+  //TC_P(std::get<0>(e));
+  //TC_P(std::get<1>(e));
+  //CHECK(t == compress(std::get<0>(e), std::get<1>(e)));
 }
 TC_NAMESPACE_END

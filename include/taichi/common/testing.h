@@ -29,6 +29,7 @@ TC_NAMESPACE_BEGIN
   }
 
 #define TC_TEST(x) TEST_CASE(x, ("[" x "]"))
+#define TC_CHECK(x) CHECK(x)
 
 int run_tests();
 

@@ -118,4 +118,44 @@ using STATIC_IF::static_if;
 #define TC_STATIC_END_IF \
     }
 */
+
+template <typename T, typename G>
+struct copy_refcv {
+  TC_STATIC_ASSERT(
+      (std::is_same<G, std::remove_cv_t<std::remove_reference_t<G>>>::value));
+  static constexpr bool has_lvalue_ref = std::is_lvalue_reference<T>::value;
+  static constexpr bool has_rvalue_ref = std::is_rvalue_reference<T>::value;
+  static constexpr bool has_const =
+      std::is_const<std::remove_reference_t<T>>::value;
+  static constexpr bool has_volatile =
+      std::is_volatile<std::remove_reference_t<T>>::value;
+  using G1 = std::conditional_t<has_const, const G, G>;
+  using G2 = std::conditional_t<has_volatile, volatile G1, G1>;
+  using G3 = std::conditional_t<has_lvalue_ref, G2 &, G2>;
+  using type = std::conditional_t<has_rvalue_ref, G3 &&, G3>;
+};
+
+template <typename T, typename G>
+using copy_refcv_t = typename copy_refcv<T, G>::type;
+
+TC_STATIC_ASSERT((std::is_same<const volatile int, volatile const int>::value));
+TC_STATIC_ASSERT(
+    (std::is_same<int,
+        std::remove_volatile_t<
+            std::remove_const_t<const volatile int>>>::value));
+TC_STATIC_ASSERT(
+    (std::is_same<int,
+        std::remove_const_t<
+            std::remove_volatile_t<const volatile int>>>::value));
+TC_STATIC_ASSERT((std::is_same<int &, std::add_const_t<int &>>::value));
+TC_STATIC_ASSERT((std::is_same<copy_refcv_t<int, real>, real>::value));
+TC_STATIC_ASSERT((std::is_same<copy_refcv_t<int &, real>, real &>::value));
+TC_STATIC_ASSERT((copy_refcv<const int &, real>::has_lvalue_ref));
+TC_STATIC_ASSERT(
+    (std::is_same<copy_refcv<const int &, real>::G2, const real>::value));
+TC_STATIC_ASSERT(
+    (std::is_same<copy_refcv_t<const int &, real>, const real &>::value));
+TC_STATIC_ASSERT((std::is_same<copy_refcv_t<const volatile int &, real>,
+    const volatile real &>::value));
+
 }

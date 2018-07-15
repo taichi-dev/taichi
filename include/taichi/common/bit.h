@@ -70,6 +70,9 @@ struct Bits {
   }
 };
 
+template <int length>
+using BitFlags = Bits<length>;
+
 template <typename T>
 constexpr int bit_length() {
   return std::is_same<T, bool>() ? 1 : sizeof(T) * 8;
@@ -127,20 +130,9 @@ TC_FORCE_INLINE constexpr uint32 log2int(uint64 value) {
 }
 
 template <typename G, typename T>
-struct Reinterpretor {
-  union {
-    G g;
-    T t;
-  };
-
-  Reinterpretor(T t) : t(t) {
-  }
-  static_assert(sizeof(T) == sizeof(G), "");
-};
-
-template <typename G, typename T>
-TC_FORCE_INLINE constexpr G reinterpret_bits(T t) {
-  return Reinterpretor<G, T>(t).g;
+    constexpr TC_FORCE_INLINE copy_refcv_t<T, G> &&reinterpret_bits(T &&t) {
+  TC_STATIC_ASSERT(sizeof(G) == sizeof(T));
+  return std::forward<copy_refcv_t<T, G>>(*reinterpret_cast<G *>(&t));
 };
 
 TC_FORCE_INLINE constexpr float64 compress(float32 h, float32 l) {

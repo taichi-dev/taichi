@@ -35,7 +35,7 @@ class MGPCGTest {
   using Grid = TaichiGrid<Block>;
 
   std::vector<std::unique_ptr<Grid>> grids;
-  int mg_lv = 1;
+  static constexpr int mg_lv = 3;
 
   using VectorI = Vector3i;
   using Vectori = VectorI;
@@ -224,7 +224,8 @@ class MGPCGTest {
   // B[level + 1] = coarsened(R[level])
   void restrict(int level, int R_in, int B_out) {
     // NOTE: supports POT grids only
-    // average residual
+    // sum residual
+    clear(level + 1, B_out);
     grids[level]->coarsen_to(
         *grids[level + 1], [&](Block &block, Grid::PyramidAncestors &an) {
           for (auto ind : Region3D(Vector3i(0), Vector3i(2))) {
@@ -246,7 +247,7 @@ class MGPCGTest {
 
   // U[level] += refined(U]level + 1]);
   void prolongate(int level, int U) {
-    real scale = 0.5_f;
+    real scale = 0.25_f;
     // upsample and apply correction
     grids[level]->refine_from(
         *grids[level + 1], [&](Block &block, Block &ancestor) {
@@ -254,11 +255,6 @@ class MGPCGTest {
             auto correction =
                 scale *
                 ancestor.node_global(div_floor(ind.get_ipos(), Vector3i(2)))[U];
-            /*
-            if (correction != 0) {
-              TC_P(correction);
-            }
-            */
             block.node_global(ind.get_ipos())[U] += correction;
           }
         });
@@ -273,7 +269,7 @@ class MGPCGTest {
                bool use_as_preconditioner = true) {
     copy(CH_MG_B, channel_in);
     constexpr int U = CH_MG_U, B = CH_MG_B, R = CH_MG_R;
-    constexpr int smoothing_iters = 1, bottom_smoothing_iter = 10;
+    constexpr int smoothing_iters = 1, bottom_smoothing_iter = 20;
     if (use_as_preconditioner) {
       clear(0, U);
     }
@@ -303,7 +299,7 @@ class MGPCGTest {
   }
 
   void run() {
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 1000000; i++) {
       V_cycle(CH_B, CH_X, false);
       residual(0, CH_X, CH_B, CH_R);
       /*
@@ -314,7 +310,11 @@ class MGPCGTest {
         }
       });
       */
-      TC_P(norm(CH_R));
+      auto residual_l2 = norm(CH_R);
+      TC_TRACE("iter {}, residual {}", i, residual_l2);
+      if (residual_l2 < 1e-7) {
+        break;
+      }
     }
   }
 
@@ -344,9 +344,9 @@ class MGPCGTest {
 
       saxpy(CH_R, CH_R, CH_TMP, -alpha);
 
-      auto l2 = norm(CH_R);
-      TC_TRACE("iter {}, residual {}", i, l2);
-      if (l2 < 1e-7) {
+      auto residual_l2 = norm(CH_R);
+      TC_TRACE("iter {}, residual {}", i, residual_l2);
+      if (residual_l2 < 1e-7) {
         break;
       }
 

@@ -35,7 +35,7 @@ class MGPCGTest {
   using Grid = TaichiGrid<Block>;
 
   std::vector<std::unique_ptr<Grid>> grids;
-  int mg_lv = 2;
+  int mg_lv = 1;
 
   using VectorI = Vector3i;
   using Vectori = VectorI;
@@ -111,6 +111,7 @@ class MGPCGTest {
   }
 
   void multiply(int channel_out, int channel_in) {
+    // TODO: this supports zero-Dirichlet BC only!
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
           GridScratchPad scratch(an);
@@ -119,26 +120,29 @@ class MGPCGTest {
           for (int i = 0; i < Block::size[0]; i++) {
             for (int j = 0; j < Block::size[1]; j++) {
               for (int k = 0; k < Block::size[2]; k++) {
-#define V(ii, jj, kk) scratch.data[i + (ii)][j + (jj)][k + (kk)][channel_in]
+                int count = 0;
+                real tmp = 0;
                 auto &o = b.get_node_volume()[i][j][k][channel_out];
-                o = 6 * V(0, 0, 0) - V(0, 0, 1) - V(0, 0, -1) - V(0, 1, 0) -
-                    V(0, -1, 0) - V(1, 0, 0) - V(-1, 0, 0);
+                auto fetch = [&](int ii, int jj, int kk) {
+                  auto &n = scratch.data[i + (ii)][j + (jj)][k + (kk)];
+                  count++;
+                  tmp += n[channel_in];
+                };
+                fetch(0, 0, 1);
+                fetch(0, 0, -1);
+                fetch(0, 1, 0);
+                fetch(0, -1, 0);
+                fetch(1, 0, 0);
+                fetch(-1, 0, 0);
+                o = count * scratch.data[i][j][k][channel_in] - tmp;
                 if (o != o) {
                   TC_P(b.base_coord);
-                  TC_P(V(0, 0, 0));
-                  TC_P(V(0, 0, 1));
-                  TC_P(V(0, 1, 0));
-                  TC_P(V(1, 0, 0));
-                  TC_P(V(0, 0, -1));
-                  TC_P(V(0, -1, 0));
-                  TC_P(V(-1, 0, 0));
                   TC_P(o);
                   TC_P(i);
                   TC_P(j);
                   TC_P(k);
                   Time::sleep(0.01);
                 }
-#undef V
               }
             }
           }
@@ -176,6 +180,7 @@ class MGPCGTest {
   }
 
   void smooth(int level, int U, int B) {
+    // TODO: this supports zero-Dirichlet BC only!
     grids[level]->advance(
         [&](Grid::Block &b, Grid::Ancestors &an) {
           GridScratchPad scratch(an);
@@ -184,18 +189,13 @@ class MGPCGTest {
           for (int i = 0; i < Block::size[0]; i++) {
             for (int j = 0; j < Block::size[1]; j++) {
               for (int k = 0; k < Block::size[2]; k++) {
-                if (!scratch.data[i][j][k].flags().get_effective()) {
-                  continue;
-                }
+                TC_ASSERT(scratch.data[i][j][k].flags().get_effective());
                 int count = 0;
+                // (B - Lu) / Diag
                 real tmp = scratch.data[i][j][k][B];
                 auto fetch = [&](int ii, int jj, int kk) {
-                  if (scratch.data[i + ii][j + jj][k + kk]
-                          .flags()
-                          .get_effective()) {
-                    count += 1;
-                    tmp += scratch.data[i + ii][j + jj][k + kk][U];
-                  }
+                  count += 1;
+                  tmp += scratch.data[i + ii][j + jj][k + kk][U];
                 };
                 fetch(0, 0, 1);
                 fetch(0, 0, -1);
@@ -203,8 +203,18 @@ class MGPCGTest {
                 fetch(0, -1, 0);
                 fetch(1, 0, 0);
                 fetch(-1, 0, 0);
+                auto original = scratch.data[i][j][k][U];
+                TC_ASSERT(count != 0);
                 auto &o = b.get_node_volume()[i][j][k][U];
-                o = tmp / count;
+                o = original + (tmp / count - original) * 1;  // 0.666667_f;
+                /*
+                if (tmp != 0) {
+                  TC_P(b.base_coord + Vector3i(i, j, k));
+                  TC_P(o);
+                  TC_P(tmp);
+                  TC_P(count);
+                }
+                */
               }
             }
           }
@@ -254,10 +264,12 @@ class MGPCGTest {
     return (real)std::sqrt(dot_product(channel, channel));
   }
 
-  void V_cycle(int channel_in, int channel_out, bool use_as_preconditioner=true) {
+  void V_cycle(int channel_in,
+               int channel_out,
+               bool use_as_preconditioner = true) {
     copy(CH_MG_B, channel_in);
     constexpr int U = CH_MG_U, B = CH_MG_B, R = CH_MG_R;
-    constexpr int smoothing_iters = 1, bottom_smoothing_iter = 10;
+    constexpr int smoothing_iters = 1, bottom_smoothing_iter = 1;
     for (int i = 0; i < mg_lv - 1; i++) {
       if (use_as_preconditioner || i != 0) {
         clear(i, U);
@@ -286,11 +298,19 @@ class MGPCGTest {
   }
 
   void run() {
-    while (1) {
+    for (int i = 0; i < 10; i++) {
       V_cycle(CH_B, CH_X, false);
       multiply(CH_TMP, CH_X);
+      /*
+      grids[0]->for_each_block([&](Block &b) {
+        for (auto ind : b.get_global_region())  {
+          auto val = b.node_global(ind.get_ipos())[CH_B];
+          if ()
+        }
+      });
+      */
       saxpy(CH_R, CH_B, CH_TMP, -1);
-      TC_P(norm(CH_TMP));
+      TC_P(norm(CH_R));
     }
   }
 
@@ -331,7 +351,7 @@ class MGPCGTest {
 };
 
 auto mgpcg = [](const std::vector<std::string> &params) {
-  // ThreadedTaskManager::TbbParallelismControl _(1);
+  ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGTest> mgpcg;
   mgpcg = std::make_unique<MGPCGTest>();
   mgpcg->run();

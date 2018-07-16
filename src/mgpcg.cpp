@@ -201,8 +201,8 @@ class MGPCGTest {
                 auto original = scratch.data[i][j][k][U];
                 TC_ASSERT(count != 0);
                 auto &o = b.get_node_volume()[i][j][k][U];
-                //o = original + (tmp / count - original) * 1;  // 0.666667_f;
-                o = original + (tmp / count - original) * 0.666667_f;
+                // Damping is important. It brings down #iterations to 1e-7 from 91 to 10...
+                o = original + (tmp / count - original) * (2.0_f / 3_f);
                 /*
                 if (tmp != 0) {
                   TC_P(b.base_coord + Vector3i(i, j, k));

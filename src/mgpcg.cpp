@@ -247,7 +247,7 @@ class MGPCGTest {
 
   // U[level] += refined(U]level + 1]);
   void prolongate(int level, int U) {
-    real scale = 0.25_f;
+    real scale = 0.5_f;
     // upsample and apply correction
     grids[level]->refine_from(
         *grids[level + 1], [&](Block &block, Block &ancestor) {
@@ -269,7 +269,7 @@ class MGPCGTest {
                bool use_as_preconditioner = true) {
     copy(CH_MG_B, channel_in);
     constexpr int U = CH_MG_U, B = CH_MG_B, R = CH_MG_R;
-    constexpr int smoothing_iters = 1, bottom_smoothing_iter = 20;
+    constexpr int smoothing_iters = 4, bottom_smoothing_iter = 100;
     if (use_as_preconditioner) {
       clear(0, U);
     }
@@ -323,9 +323,7 @@ class MGPCGTest {
     bool use_preconditioner = true;
     TC_P(norm(CH_B));
     // r = b - Ax
-    multiply(CH_TMP, CH_X);
-    TC_P(norm(CH_TMP));
-    saxpy(CH_R, CH_B, CH_TMP, -1);
+    residual(0, CH_X, CH_B, CH_R);
     // z = M^-1 r
     if (use_preconditioner) {
       V_cycle(CH_R, CH_Z);
@@ -334,15 +332,13 @@ class MGPCGTest {
     }
     // p = z
     copy(CH_P, CH_Z);
+    auto old_zr = dot_product(CH_Z, CH_R);
     for (int i = 0; i < 100000; i++) {
-      multiply(CH_TMP, CH_P);
-      real alpha = dot_product(CH_R, CH_Z) / dot_product(CH_P, CH_TMP);
-
-      auto old_zr = dot_product(CH_Z, CH_R);
+      multiply(CH_Z, CH_P);
+      real alpha = old_zr / dot_product(CH_P, CH_Z);
 
       saxpy(CH_X, CH_X, CH_P, alpha);
-
-      saxpy(CH_R, CH_R, CH_TMP, -alpha);
+      saxpy(CH_R, CH_R, CH_Z, -alpha);
 
       auto residual_l2 = norm(CH_R);
       TC_TRACE("iter {}, residual {}", i, residual_l2);
@@ -355,8 +351,10 @@ class MGPCGTest {
       } else {
         copy(CH_Z, CH_R);
       }
-      auto beta = dot_product(CH_Z, CH_R) / old_zr;
 
+      auto new_zr = dot_product(CH_Z, CH_R);
+      auto beta = new_zr / old_zr;
+      old_zr = new_zr;
       saxpy(CH_P, CH_Z, CH_P, beta);
     }
   }

@@ -203,14 +203,6 @@ class MGPCGTest {
                 auto &o = b.get_node_volume()[i][j][k][U];
                 // Damping is important. It brings down #iterations to 1e-7 from 91 to 10...
                 o = original + (tmp / count - original) * (2.0_f / 3_f);
-                /*
-                if (tmp != 0) {
-                  TC_P(b.base_coord + Vector3i(i, j, k));
-                  TC_P(o);
-                  TC_P(tmp);
-                  TC_P(count);
-                }
-                */
               }
             }
           }
@@ -303,14 +295,6 @@ class MGPCGTest {
     for (int i = 0; i < 1000000; i++) {
       V_cycle(CH_B, CH_X, false);
       residual(0, CH_X, CH_B, CH_R);
-      /*
-      grids[0]->for_each_block([&](Block &b) {
-        for (auto ind : b.get_global_region())  {
-          auto val = b.node_global(ind.get_ipos())[CH_B];
-          if ()
-        }
-      });
-      */
       auto residual_l2 = norm(CH_R);
       TC_TRACE("iter {}, residual {}", i, residual_l2);
       if (residual_l2 < 1e-7) {

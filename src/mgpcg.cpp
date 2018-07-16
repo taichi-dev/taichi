@@ -26,7 +26,7 @@ struct Node {
 
 using Block = TBlock<Node, char, TSize3D<8>, 0>;
 
-class MGPCGTest {
+class MGPCGSmoke {
  public:
   static constexpr auto dim = Block::dim;
   using Vector = TVector<real, dim>;
@@ -41,16 +41,33 @@ class MGPCGTest {
   using Vectori = VectorI;
   using GridScratchPad = TGridScratchPad<Block>;
 
-  enum { CH_R, CH_Z, CH_X, CH_B, CH_P, CH_MG_U, CH_MG_B, CH_MG_R };
+  const int n = 32;
+  real current_t;
+  real dt = 1e-2_f, dx = 1.0_f / n;
 
-  MGPCGTest() {
+  enum {
+    CH_R,
+    CH_Z,
+    CH_X,
+    CH_B,
+    CH_P,
+    CH_MG_U,
+    CH_MG_B,
+    CH_MG_R,
+    CH_VX,
+    CH_VY,
+    CH_VZ,
+    CH_DENSITY
+  };
+
+  MGPCGSmoke() {
+    current_t = 0;
     // Span a region in
     grids.resize(mg_lv);
     for (int i = 0; i < mg_lv; i++) {
       grids[i] = std::make_unique<Grid>();
     }
     TC_ASSERT(mg_lv >= 1);
-    constexpr int n = 32;
     TC_ASSERT_INFO(bit::is_power_of_two(n), "Only POT grid sizes supported");
     Region3D active_region(VectorI(-n, -n, -n * 2), VectorI(n, n, n * 2));
     for (auto &ind : active_region) {
@@ -201,7 +218,8 @@ class MGPCGTest {
                 auto original = scratch.data[i][j][k][U];
                 TC_ASSERT(count != 0);
                 auto &o = b.get_node_volume()[i][j][k][U];
-                // Damping is important. It brings down #iterations to 1e-7 from 91 to 10...
+                // Damping is important. It brings down #iterations to 1e-7 from
+                // 91 to 10...
                 o = original + (tmp / count - original) * (2.0_f / 3_f);
               }
             }
@@ -262,7 +280,7 @@ class MGPCGTest {
                bool use_as_preconditioner = true) {
     copy(CH_MG_B, channel_in);
     constexpr int U = CH_MG_U, B = CH_MG_B, R = CH_MG_R;
-    constexpr int smoothing_iters = 3, bottom_smoothing_iter = 100;
+    constexpr int smoothing_iters = 3, bottom_smoothing_iter = 50;
     if (use_as_preconditioner) {
       clear(0, U);
     }
@@ -343,12 +361,103 @@ class MGPCGTest {
       saxpy(CH_P, CH_Z, CH_P, beta);
     }
   }
+
+  template <typename T>
+  static TC_FORCE_INLINE T trilinear_interpolate(Vector3 frac,
+                                                 const T &v000,
+                                                 const T &v001,
+                                                 const T &v010,
+                                                 const T &v011,
+                                                 const T &v100,
+                                                 const T &v101,
+                                                 const T &v110,
+                                                 const T &v111) {
+    const auto &rx = frac.x;
+    const auto &ry = frac.y;
+    const auto &rz = frac.z;
+// TODO: replace with lerp
+#define V(i, j, k) v##i##j##k
+    T vx0 = (1 - ry) * ((1 - rz) * V(0, 0, 0) + rz * V(0, 0, 1)) +
+            ry * ((1 - rz) * V(0, 1, 0) + rz * V(0, 1, 1));
+    T vx1 = (1 - ry) * ((1 - rz) * V(1, 0, 0) + rz * V(1, 0, 1)) +
+            ry * ((1 - rz) * V(1, 1, 0) + rz * V(1, 1, 1));
+#undef V
+    return (1 - rx) * vx0 + rx * vx1;
+  }
+
+  TC_FORCE_INLINE Vector3 storage_offset(int axis) {
+    return axis < 3 ? Vector3::axis(axis) * 0.5_f : Vector3(0.5_f);
+  }
+
+  void advect() {
+    // Unfortunately, ux, uy, uz and density are not collocated...
+    grids[0]->advance(
+        [&](Block &b, Grid::Ancestors &an) {
+          TC_STATIC_ASSERT(Block::size[0] == 8);
+          Node nodes[24][24][24];
+#define V(axis, i, j, k) \
+  nodes[ipos[0] + i][ipos[1] + j][ipos[2] + k][CH_VX + axis]
+          auto sample_quantity = [&](Vector3 sample_pos, int axis_) -> real {
+            auto pos = sample_pos + storage_offset(axis_);
+            Vector3i ipos = pos.floor().template cast<int>();
+            Vector3 frac = pos - ipos.template cast<real>();
+            return trilinear_interpolate(
+                frac, V(axis_, 0, 0, 0), V(axis_, 0, 0, 1), V(axis_, 0, 1, 0),
+                V(axis_, 0, 1, 1), V(axis_, 1, 0, 0), V(axis_, 1, 0, 1),
+                V(axis_, 1, 1, 0), V(axis_, 1, 1, 1));
+          };
+          auto sample_velocity = [&](Vector3 sample_pos) {
+            // Sample x, y, z
+            Vector3 v;
+#define SAMPLE(axis_)                                                  \
+  {                                                                    \
+    auto pos = sample_pos + Vector3::axis(axis_) * 0.5_f;              \
+    Vector3i ipos = pos.floor().template cast<int>();                  \
+    Vector3 frac = pos - ipos.template cast<real>();                   \
+    v[axis_] = trilinear_interpolate(                                  \
+        frac, V(axis_, 0, 0, 0), V(axis_, 0, 0, 1), V(axis_, 0, 1, 0), \
+        V(axis_, 0, 1, 1), V(axis_, 1, 0, 0), V(axis_, 1, 0, 1),       \
+        V(axis_, 1, 1, 0), V(axis_, 1, 1, 1));                         \
+  }
+            SAMPLE(0);
+            SAMPLE(1);
+            SAMPLE(2);
+#undef SAMPLE
+#undef V
+            return v;
+          };
+          auto backtrace = [&](Vector3 pos) {
+            // RK2
+            return pos -
+                   dt * sample_velocity(pos -
+                                        (dt * 0.5_f) * sample_velocity(pos));
+          };
+          for (auto ind : b.get_local_region()) {
+            for (int q = 0; q < 4; q++) {
+              auto end =
+                  ind.get_ipos().template cast<real>() + storage_offset(q);
+              b.node_local(ind.get_ipos())[CH_VX + q] =
+                  sample_quantity(backtrace(end), q);
+            }
+          }
+        },
+        false);
+  }
+
+  void project() {
+  }
+
+  void step() {
+    advect();
+    project();
+    current_t += dt;
+  }
 };
 
 auto mgpcg = [](const std::vector<std::string> &params) {
   // ThreadedTaskManager::TbbParallelismControl _(1);
-  std::unique_ptr<MGPCGTest> mgpcg;
-  mgpcg = std::make_unique<MGPCGTest>();
+  std::unique_ptr<MGPCGSmoke> mgpcg;
+  mgpcg = std::make_unique<MGPCGSmoke>();
   TC_TIME(mgpcg->run_pcg());
 };
 

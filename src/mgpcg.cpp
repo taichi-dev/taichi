@@ -89,7 +89,7 @@ class MGPCGTest {
                 auto rhs = b.get_node_volume()[i][j][k][B];
                 auto c = b.get_node_volume()[i][j][k][U];
                 auto fetch = [&](int ii, int jj, int kk) {
-                  rhs -= (scratch.data[i + ii][j + jj][k + kk][U] - c);
+                  rhs += (scratch.data[i + ii][j + jj][k + kk][U] - c);
                 };
                 fetch(0, 0, 1);
                 fetch(0, 0, -1);
@@ -248,18 +248,20 @@ class MGPCGTest {
   void prolongate(int level, int U) {
     real scale = 0.5_f;
     // upsample and apply correction
-    grids[level - 1]->refine_from(*grids[level], [&](Block &block, Block &ancestor) {
-      for (auto ind : block.get_global_region()) {
-        auto correction = scale *
-            ancestor.node_global(div_floor(ind.get_ipos(), Vector3i(2)))[U];
-        /*
-        if (correction != 0) {
-          TC_P(correction);
-        }
-        */
-        block.node_global(ind.get_ipos())[U] += correction;
-      }
-    });
+    grids[level]->refine_from(
+        *grids[level + 1], [&](Block &block, Block &ancestor) {
+          for (auto ind : block.get_global_region()) {
+            auto correction =
+                scale *
+                ancestor.node_global(div_floor(ind.get_ipos(), Vector3i(2)))[U];
+            /*
+            if (correction != 0) {
+              TC_P(correction);
+            }
+            */
+            block.node_global(ind.get_ipos())[U] += correction;
+          }
+        });
   }
 
   real norm(int channel) {
@@ -271,7 +273,7 @@ class MGPCGTest {
                bool use_as_preconditioner = true) {
     copy(CH_MG_B, channel_in);
     constexpr int U = CH_MG_U, B = CH_MG_B, R = CH_MG_R;
-    constexpr int smoothing_iters = 1, bottom_smoothing_iter = 1;
+    constexpr int smoothing_iters = 1, bottom_smoothing_iter = 10;
     if (use_as_preconditioner) {
       clear(0, U);
     }
@@ -290,7 +292,7 @@ class MGPCGTest {
       smooth(mg_lv - 1, U, B);
     }
 
-    for (int i = mg_lv - 1; i > 0; i--) {
+    for (int i = mg_lv - 2; i >= 0; i--) {
       prolongate(i, U);
       // post-smoothing
       for (int j = 0; j < smoothing_iters; j++) {
@@ -301,9 +303,9 @@ class MGPCGTest {
   }
 
   void run() {
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 100; i++) {
       V_cycle(CH_B, CH_X, false);
-      multiply(CH_TMP, CH_X);
+      residual(0, CH_X, CH_B, CH_R);
       /*
       grids[0]->for_each_block([&](Block &b) {
         for (auto ind : b.get_global_region())  {
@@ -312,7 +314,6 @@ class MGPCGTest {
         }
       });
       */
-      saxpy(CH_R, CH_B, CH_TMP, -1);
       TC_P(norm(CH_R));
     }
   }

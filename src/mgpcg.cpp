@@ -35,7 +35,7 @@ class MGPCGTest {
   using Grid = TaichiGrid<Block>;
 
   std::vector<std::unique_ptr<Grid>> grids;
-  int mg_lv = 2;
+  int mg_lv = 1;
 
   using VectorI = Vector3i;
   using Vectori = VectorI;
@@ -320,16 +320,21 @@ class MGPCGTest {
 
   // https://en.wikipedia.org/wiki/Conjugate_gradient_method
   void run_pcg() {
+    bool use_preconditioner = true;
     TC_P(norm(CH_B));
     // r = b - Ax
     multiply(CH_TMP, CH_X);
     TC_P(norm(CH_TMP));
     saxpy(CH_R, CH_B, CH_TMP, -1);
     // z = M^-1 r
-    saxpy(CH_Z, CH_R, CH_R, 0);
+    if (use_preconditioner) {
+      V_cycle(CH_R, CH_Z);
+    } else {
+      copy(CH_Z, CH_R);
+    }
     // p = z
     copy(CH_P, CH_Z);
-    while (1) {
+    for (int i = 0; i < 100000; i++) {
       multiply(CH_TMP, CH_P);
       real alpha = dot_product(CH_R, CH_Z) / dot_product(CH_P, CH_TMP);
 
@@ -340,13 +345,16 @@ class MGPCGTest {
       saxpy(CH_R, CH_R, CH_TMP, -alpha);
 
       auto l2 = norm(CH_R);
-      TC_P(l2);
+      TC_TRACE("iter {}, residual {}", i, l2);
       if (l2 < 1e-7) {
         break;
       }
 
-      copy(CH_Z, CH_R);
-
+      if (use_preconditioner) {
+        V_cycle(CH_R, CH_Z);
+      } else {
+        copy(CH_Z, CH_R);
+      }
       auto beta = dot_product(CH_Z, CH_R) / old_zr;
 
       saxpy(CH_P, CH_Z, CH_P, beta);
@@ -355,10 +363,10 @@ class MGPCGTest {
 };
 
 auto mgpcg = [](const std::vector<std::string> &params) {
-  ThreadedTaskManager::TbbParallelismControl _(1);
+  //ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGTest> mgpcg;
   mgpcg = std::make_unique<MGPCGTest>();
-  mgpcg->run();
+  TC_TIME(mgpcg->run_pcg());
 };
 
 TC_REGISTER_TASK(mgpcg);

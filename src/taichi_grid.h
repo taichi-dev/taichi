@@ -1087,28 +1087,27 @@ class TaichiGrid {
     for (auto b : get_block_list()) {
       coarse.touch(div_floor(b->base_coord, VectorI(2)));
     }
-    for (auto b : coarse.get_block_list()) {
+    coarse.for_each_block([&](Block &b) {
       PyramidAncestors an;
       for (auto ind : Region3D(VectorI(0), VectorI(2))) {
         an[ind.get_ipos()] = get_block_if_exist(
-            b->base_coord * VectorI(2) + ind.get_ipos() * VectorI(block_size));
+            b.base_coord * VectorI(2) + ind.get_ipos() * VectorI(block_size));
       }
-      t(*b, an);
-    }
+      t(b, an);
+    });
   }
 
   template <typename T>
   void refine_from(TaichiGrid &coarse, const T &t) {
-    // TODO: parallelize
-    for (auto b : get_block_list()) {
-      auto ancestor_coord = div_floor(b->base_coord, VectorI(block_size) * 2) *
+    for_each_block([&](Block &b) {
+      auto ancestor_coord = div_floor(b.base_coord, VectorI(block_size) * 2) *
                             VectorI(block_size);
       auto ancestor = coarse.get_block_if_exist(ancestor_coord);
       if (grid_debug) {
         TC_ASSERT(ancestor);
       }
-      t(*b, *ancestor);
-    }
+      t(b, *ancestor);
+    });
   }
 };
 

@@ -1082,7 +1082,7 @@ class TaichiGrid {
   }
 
   template <typename T>
-  void coarsen(TaichiGrid &coarse, const T &t) {
+  void coarsen_to(TaichiGrid &coarse, const T &t) {
     // TODO: parallelize
     for (auto b : get_block_list()) {
       coarse.touch(div_floor(b->base_coord, VectorI(2)));
@@ -1098,9 +1098,9 @@ class TaichiGrid {
   }
 
   template <typename T>
-  void refine(TaichiGrid &coarse, const T &t) {
+  void refine_from(TaichiGrid &coarse, const T &t) {
     // TODO: parallelize
-    for (auto b : coarse.get_block_list()) {
+    for (auto b : get_block_list()) {
       auto ancestor_coord = div_floor(b->base_coord, VectorI(block_size) * 2) *
                             VectorI(block_size);
       auto ancestor = coarse.get_block_if_exist(ancestor_coord);

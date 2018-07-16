@@ -35,7 +35,7 @@ class MGPCGTest {
   using Grid = TaichiGrid<Block>;
 
   std::vector<std::unique_ptr<Grid>> grids;
-  int mg_lv = 1;
+  int mg_lv = 2;
 
   using VectorI = Vector3i;
   using Vectori = VectorI;
@@ -66,7 +66,7 @@ class MGPCGTest {
   void set_up_hierechy() {
     int total_blocks = grids[0]->num_active_blocks();
     for (int i = 0; i < mg_lv - 1; i++) {
-      grids[i]->coarsen(
+      grids[i]->coarsen_to(
           *grids[i + 1], [&](Block &b, Grid::PyramidAncestors &an) {
             for (auto ind : b.get_local_region()) {
               b.node_local(ind.get_ipos()).flags().set_effective(true);
@@ -88,13 +88,8 @@ class MGPCGTest {
               for (int k = 0; k < Block::size[2]; k++) {
                 auto rhs = b.get_node_volume()[i][j][k][B];
                 auto c = b.get_node_volume()[i][j][k][U];
-                auto &o = b.get_node_volume()[i][j][k][R];
                 auto fetch = [&](int ii, int jj, int kk) {
-                  if (scratch.data[i + ii][j + jj][k + kk]
-                          .flags()
-                          .get_effective()) {
-                    rhs -= (scratch.data[i + ii][j + jj][k + kk][U] - c);
-                  }
+                  rhs -= (scratch.data[i + ii][j + jj][k + kk][U] - c);
                 };
                 fetch(0, 0, 1);
                 fetch(0, 0, -1);
@@ -228,11 +223,13 @@ class MGPCGTest {
 
   // B[level + 1] = coarsened(R[level])
   void restrict(int level, int R_in, int B_out) {
+    // NOTE: supports POT grids only
     // average residual
-    grids[level]->coarsen(
+    grids[level]->coarsen_to(
         *grids[level + 1], [&](Block &block, Grid::PyramidAncestors &an) {
           for (auto ind : Region3D(Vector3i(0), Vector3i(2))) {
             if (!an[ind.get_ipos()]) {
+              TC_NOT_IMPLEMENTED
               continue;
             }
             Block &ab = *an[ind.get_ipos()];
@@ -251,11 +248,16 @@ class MGPCGTest {
   void prolongate(int level, int U) {
     real scale = 0.5_f;
     // upsample and apply correction
-    grids[level - 1]->refine(*grids[level], [&](Block &block, Block &ancestor) {
+    grids[level - 1]->refine_from(*grids[level], [&](Block &block, Block &ancestor) {
       for (auto ind : block.get_global_region()) {
-        block.node_global(ind.get_ipos())[U] +=
-            scale *
+        auto correction = scale *
             ancestor.node_global(div_floor(ind.get_ipos(), Vector3i(2)))[U];
+        /*
+        if (correction != 0) {
+          TC_P(correction);
+        }
+        */
+        block.node_global(ind.get_ipos())[U] += correction;
       }
     });
   }
@@ -270,16 +272,17 @@ class MGPCGTest {
     copy(CH_MG_B, channel_in);
     constexpr int U = CH_MG_U, B = CH_MG_B, R = CH_MG_R;
     constexpr int smoothing_iters = 1, bottom_smoothing_iter = 1;
+    if (use_as_preconditioner) {
+      clear(0, U);
+    }
     for (int i = 0; i < mg_lv - 1; i++) {
-      if (use_as_preconditioner || i != 0) {
-        clear(i, U);
-      }
       // pre-smoothing
       for (int j = 0; j < smoothing_iters; j++) {
         smooth(i, U, B);
       }
       residual(i, U, B, R);
       restrict(i, R, B);
+      clear(i + 1, U);
     }
 
     // Bottom solve

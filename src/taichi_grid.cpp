@@ -87,7 +87,7 @@ TC_TEST("grid_coarsen") {
   }
 
   for (int i = 0; i < mg_lv - 1; i++) {
-    grids[i]->coarsen(*grids[i + 1], [&](Block &b, Grid::PyramidAncestors &an) {
+    grids[i]->coarsen_to(*grids[i + 1], [&](Block &b, Grid::PyramidAncestors &an) {
       for (auto a : an.data) {
         if (!a)
           continue;

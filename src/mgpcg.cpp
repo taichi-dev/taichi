@@ -41,7 +41,7 @@ class MGPCGTest {
   using Vectori = VectorI;
   using GridScratchPad = TGridScratchPad<Block>;
 
-  enum { CH_R, CH_Z, CH_X, CH_B, CH_TMP, CH_P, CH_MG_U, CH_MG_B, CH_MG_R };
+  enum { CH_R, CH_Z, CH_X, CH_B, CH_P, CH_MG_U, CH_MG_B, CH_MG_R };
 
   MGPCGTest() {
     // Span a region in
@@ -201,7 +201,8 @@ class MGPCGTest {
                 auto original = scratch.data[i][j][k][U];
                 TC_ASSERT(count != 0);
                 auto &o = b.get_node_volume()[i][j][k][U];
-                o = original + (tmp / count - original) * 1;  // 0.666667_f;
+                //o = original + (tmp / count - original) * 1;  // 0.666667_f;
+                o = original + (tmp / count - original) * 0.666667_f;
                 /*
                 if (tmp != 0) {
                   TC_P(b.base_coord + Vector3i(i, j, k));
@@ -269,7 +270,7 @@ class MGPCGTest {
                bool use_as_preconditioner = true) {
     copy(CH_MG_B, channel_in);
     constexpr int U = CH_MG_U, B = CH_MG_B, R = CH_MG_R;
-    constexpr int smoothing_iters = 4, bottom_smoothing_iter = 100;
+    constexpr int smoothing_iters = 3, bottom_smoothing_iter = 100;
     if (use_as_preconditioner) {
       clear(0, U);
     }
@@ -361,7 +362,7 @@ class MGPCGTest {
 };
 
 auto mgpcg = [](const std::vector<std::string> &params) {
-  //ThreadedTaskManager::TbbParallelismControl _(1);
+  // ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGTest> mgpcg;
   mgpcg = std::make_unique<MGPCGTest>();
   TC_TIME(mgpcg->run_pcg());

@@ -1,6 +1,7 @@
 #include "taichi_grid.h"
 #include <taichi/visual/texture.h>
 #include <taichi/system/threading.h>
+#include <taichi/visual/gui.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -198,6 +199,103 @@ class SPHTestPangu : public SPHTestBase {
     write_to_binary_file(scene, fn);
   }
 };
+
+auto sph2d = [](const std::vector<std::string> &params) {
+  using Vector = Vector2;
+  struct Particle {
+    Vector position, velocity;
+    real pressure, inv_density;
+  };
+  real dt = 0.001;
+  real dx = 0.01;
+  const auto h = dx;
+
+  std::vector<Particle> particles;
+
+  for (int i = 0; i < 40; i++) {
+    for (int j = 0; j < 40; j++) {
+      particles.push_back({Vector(i, j) * dx + Vector(0.1), Vector(0), 0, 0});
+    }
+  }
+
+  GUI gui("SPH 2D", 800, 800);
+  auto gravity = Vector(0, -10);
+
+  while (1) {
+    for (int i = 0; i < (int)particles.size(); i++) {
+      particles[i].pressure = 0;
+    }
+
+    gui.get_canvas().clear(Vector4(0.5));
+
+    //const real c = 315.0_f / (64.0_f * pi * pow<9>(h));
+    for (int K = 0; K < 10; K++) {
+      const real rho0 = 1;//c;
+      const real k = 1e-7;
+      for (auto &p : particles) {
+        // Compute pressure
+        real rho = 0;
+        for (auto &q : particles) {
+          auto dpos = q.position - p.position;
+          auto dpos2 = length2(dpos);
+          if (dpos2 < h * h) {
+            rho += std::max(0.0_f, pow<3>(h * h - dpos2));
+          }
+        }
+        rho /= rho0;
+        TC_P(rho);
+        p.inv_density = 1.0_f / rho;
+        p.pressure = k * (pow<7>(rho) - 1);
+      }
+
+      for (auto &p : particles) {
+        auto inv_rho = p.inv_density;
+        Vector pressure;
+        for (auto &q : particles) {
+          auto dpos = q.position - p.position;
+          auto dpos2 = length2(dpos);
+          if (dpos2 < h * h) {
+            auto inv_rho1 = q.inv_density;
+            auto grad = -6 * (h * h - dpos2) * dpos;
+            pressure += (p.pressure * inv_rho * inv_rho +
+                         q.pressure * inv_rho1 * inv_rho1) *
+                        grad;
+          }
+        }
+
+        Vector force = (k * pressure + gravity) * dt;
+
+        p.velocity += force * dt;
+        p.position += p.velocity * dt;
+
+        if (p.position.x < 0) {
+          p.position.x = 0;
+          p.velocity.x = std::max(p.velocity.x, 0.0_f);
+        }
+        if (p.position.y < 0.1) {
+          p.position.y = 0.1;
+          p.velocity.y = std::max(p.velocity.y, 0.0_f);
+        }
+        if (p.position.x > 1 - dx) {
+          p.position.x = 1 - dx;
+          p.velocity.x = std::min(p.velocity.x, 0.0_f);
+        }
+        if (p.position.y > 1 - dx) {
+          p.position.y = 1 - dx;
+          p.velocity.y = std::min(p.velocity.y, 0.0_f);
+        }
+      }
+    }
+
+    for (auto &p : particles) {
+      auto coord = (p.position / dx * 8.0_f).template cast<int>();
+      gui.canvas->img[coord] = Vector4((1.0 / p.inv_density) * 0.5_f);
+    }
+    gui.update();
+  }
+
+};
+TC_REGISTER_TASK(sph2d);
 
 auto sph = [](const std::vector<std::string> &params) {
   // auto _ = ThreadedTaskManager::TbbParallelismControl(1);

@@ -86,7 +86,7 @@ class SPHTestBruteForce : public SPHTestBase {
       rho *= c;
       // TC_P(rho);
       p.position[3] = 1.0_f / rho;
-      p.velocity[3] = k * (pow<7>(rho / rho0) - 1);
+      p.velocity[3] = k * std::max(0.0_f, (pow<7>(rho / rho0) - 1.0_f));
     }
 
     for (auto &p : particles) {
@@ -207,39 +207,53 @@ auto sph2d = [](const std::vector<std::string> &params) {
     real pressure, inv_density;
     bool movable;
   };
-  real dt = 0.000333;
+  real dt = 0.00001;
   real dx = 0.02;
   const auto h = dx;
 
   std::vector<Particle> particles;
 
-  int N = 30;
+  int N = 24;
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < N; j++) {
       bool movable = true;
       if (i < 2 || j < 2 || i >= N - 2 || j >= N - 2) {
         movable = false;
+      } else {
+        // if (i != N / 2 || j != N / 2) {
+        if ((j < 5 || j > 15) || (i < 5 || i > 11)) {
+          continue;
+        }
       }
       particles.push_back(
-          {Vector(i, j) * dx * 0.5_f + Vector(0.2), Vector(0),
-           0, 0, movable});
+          {Vector(i, j) * dx * 0.8_f + Vector(0.2), Vector(0), 0, 0, movable});
     }
   }
 
   GUI gui("SPH 2D", 800, 800);
-  auto gravity = Vector(0, -10);
+  auto gravity = Vector(0, -100);
+
+  real rho0 = 0;
+  for (auto &p : particles) {
+    // Compute pressure
+    real rho = 0;
+    for (auto &q : particles) {
+      auto dpos = q.position - p.position;
+      auto dpos2 = length2(dpos);
+      if (dpos2 < h * h) {
+        rho += pow<3>(h * h - dpos2);
+      }
+    }
+    rho0 = std::max(rho0, rho);
+  }
+  rho0 *= 1.0_f;
+  TC_P(rho0);
 
   while (1) {
-    for (int i = 0; i < (int)particles.size(); i++) {
-      particles[i].pressure = 0;
-    }
-
-    gui.get_canvas().clear(Vector4(0.5));
-
-    const real rho0 = pow<6>(h);  // c;
-    const real k = 3e2_f;
+    // const real k = 1e6_f;
+    const real k = 1e11;
     // const real c = 315.0_f / (64.0_f * pi * pow<9>(h));
-    for (int K = 0; K < 30; K++) {
+    for (int K = 0; K < 100; K++) {
       for (auto &p : particles) {
         // Compute pressure
         real rho = 0;
@@ -247,7 +261,7 @@ auto sph2d = [](const std::vector<std::string> &params) {
           auto dpos = q.position - p.position;
           auto dpos2 = length2(dpos);
           if (dpos2 < h * h) {
-            rho += std::max(0.0_f, pow<3>(h * h - dpos2));
+            rho += pow<3>(h * h - dpos2);
           }
         }
         rho /= rho0;
@@ -256,6 +270,9 @@ auto sph2d = [](const std::vector<std::string> &params) {
       }
 
       for (auto &p : particles) {
+        if (!p.movable) {
+          continue;
+        }
         auto inv_rho = p.inv_density;
         Vector pressure;
         for (auto &q : particles) {
@@ -263,21 +280,22 @@ auto sph2d = [](const std::vector<std::string> &params) {
           auto dpos2 = length2(dpos);
           if (dpos2 < h * h) {
             auto inv_rho1 = q.inv_density;
-            auto grad = -6 * (h * h - dpos2) * dpos;
+            auto grad = -6 * pow<2>(h * h - dpos2) * dpos;
             pressure += (p.pressure * inv_rho * inv_rho +
                          q.pressure * inv_rho1 * inv_rho1) *
                         grad;
+            /*
+            pressure += (p.pressure + q.pressure) * grad;
+            */
           }
         }
 
-        Vector force = (k * pressure + gravity) * dt;
+        p.velocity += (pressure + gravity) * dt;
+        p.velocity *= (1 - dt * 10);
+      }
 
-        if (p.movable) {
-          p.velocity += force * dt;
-          p.position += p.velocity * dt;
-        } else {
-        }
-
+      for (auto &p : particles) {
+        p.position += p.velocity * dt;
         if (p.position.x < 0.1) {
           p.position.x = 0.1;
           p.velocity.x = std::max(p.velocity.x, 0.0_f);
@@ -297,16 +315,19 @@ auto sph2d = [](const std::vector<std::string> &params) {
       }
     }
 
+    gui.get_canvas().clear(Vector4(0.5));
     for (auto &p : particles) {
       auto coord = (p.position / dx * 24.0_f).template cast<int>();
+      Vector4 color;
+      if (p.movable) {
+        color = Vector4((1.0 / p.inv_density) * 0.3_f);
+      } else {
+        color = Vector4(1, 0, 0, 0);
+      }
       for (auto ind : Region2D(Vector2i(-2), Vector2i(3))) {
-        Vector4 color;
-        if (p.movable) {
-          color = Vector4((1.0 / p.inv_density) * 0.2_f);
-        } else {
-          color = Vector4(1, 0, 0, 0);
+        if (gui.canvas->img.inside(coord + ind.get_ipos())) {
+          gui.canvas->img[coord + ind.get_ipos()] = color;
         }
-        gui.canvas->img[coord + ind.get_ipos()] = color;
       }
     }
     gui.update();

@@ -78,6 +78,28 @@ def get_projects(active=True):
         ret.append(proj)
   return ret
 
+def get_packages():
+  import taichi as tc
+  ret = []
+  for proj in os.listdir(tc.get_project_directory()):
+    proj_path = tc.get_project_directory(proj)
+    if proj not in ['examples', 'toys'] and os.path.isdir(proj_path):
+      activation = not proj.startswith('_')
+      import git
+      repo = git.Repo(proj_path)
+      commit = repo.head.commit
+      print(commit.hexsha)
+      print(commit.message)
+      if not activation:
+        proj = proj[1:]
+      ret.append({
+        'name': proj,
+        'active': activation,
+        'version': commit.hexsha[:8] + ': ' + commit.message,
+        'time': commit.committed_datetime.strftime('%b %d %Y, %H:%M:%S')
+      })
+  return ret
+
 def update(include_projects=False):
   import git
   import taichi as tc

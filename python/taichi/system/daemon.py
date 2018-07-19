@@ -33,11 +33,11 @@ def get_master_address():
 class Server:
   def __init__(self, content=None):
     if content is None:
-      from taichi.core.util import get_projects
+      from taichi.core.util import get_packages
       self.name = socket.gethostname()
       self.ip = post_to_master('get_ip').content.decode("utf-8")
       # TODO: get module versions via git
-      self.packages = get_projects()
+      self.packages = get_packages()
     else:
       self.ip = content['ip']
       self.name = content['name']
@@ -77,6 +77,10 @@ class SlaveDaemon:
     @app.route('/get_host_name', methods=['GET'])
     def get_hostname():
       return socket.gethostname()
+
+    @app.route('/get_packages', methods=['GET'])
+    def get_packages():
+      return json.dumps(server.packages)
     while True:
       hb = server.get_heart_beat()
       print('sending hear beat', hb)

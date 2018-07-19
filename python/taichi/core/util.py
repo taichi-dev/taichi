@@ -88,8 +88,6 @@ def get_packages():
       import git
       repo = git.Repo(proj_path)
       commit = repo.head.commit
-      print(commit.hexsha)
-      print(commit.message)
       if not activation:
         proj = proj[1:]
       ret.append({
@@ -99,6 +97,18 @@ def get_packages():
         'time': commit.committed_datetime.strftime('%b %d %Y, %H:%M:%S')
       })
   return ret
+
+def activate_package(proj):
+  import taichi as tc
+  assert not os.path.exists(tc.get_project_directory(proj))
+  assert os.path.exists(tc.get_project_directory('_' + proj))
+  os.rename(tc.get_project_directory('_' + proj), tc.get_project_directory(proj))
+
+def deactivate_package(proj):
+  import taichi as tc
+  assert not os.path.exists(tc.get_project_directory('_' + proj))
+  assert os.path.exists(tc.get_project_directory(proj))
+  os.rename(tc.get_project_directory(proj), tc.get_project_directory('_' + proj))
 
 def update(include_projects=False):
   import git

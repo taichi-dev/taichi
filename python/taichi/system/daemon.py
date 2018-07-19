@@ -81,6 +81,19 @@ class SlaveDaemon:
     @app.route('/get_packages', methods=['GET'])
     def get_packages():
       return json.dumps(server.packages)
+
+    @app.route('/toggle_package', methods=['POST'])
+    def toggle_package():
+      name = request.get_json()['package_name']
+      from taichi.core.util import activate_package, deactivate_package
+      for p in server.packages:
+        if p['name'] == name:
+          if p['active']:
+            deactivate_package(name)
+          else:
+            activate_package(name)
+
+      return json.dumps(server.packages)
     while True:
       hb = server.get_heart_beat()
       print('sending hear beat', hb)

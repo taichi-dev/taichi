@@ -3,7 +3,7 @@ import os
 import shutil
 import random
 from taichi.tools.video import make_video, interpolate_frames
-from taichi.core.util import get_projects
+from taichi.core.util import get_projects, activate_package, deactivate_package
 
 def print_all_projects():
   from colorama import Fore, Back, Style
@@ -121,14 +121,10 @@ def main():
       print_all_projects()
     elif sys.argv[2] == 'activate':
       proj = sys.argv[3]
-      assert not os.path.exists(tc.get_project_directory(proj))
-      assert os.path.exists(tc.get_project_directory('_' + proj))
-      os.rename(tc.get_project_directory('_' + proj), tc.get_project_directory(proj))
+      activate_package(proj)
     elif sys.argv[2] == 'deactivate':
       proj = sys.argv[3]
-      assert not os.path.exists(tc.get_project_directory('_' + proj))
-      assert os.path.exists(tc.get_project_directory(proj))
-      os.rename(tc.get_project_directory(proj), tc.get_project_directory('_' + proj))
+      deactivate_package(proj)
     else:
       assert False
   elif mode == "test":

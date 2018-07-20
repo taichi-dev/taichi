@@ -167,7 +167,7 @@ class Installer:
 
     subprocess.run([get_python_executable(), "-m", "pip", "install", "--user",
                     "colorama", "numpy", "Pillow", "flask", "scipy", "pybind11",
-                    "flask_cors", "GitPython", "yapf", "distro", "requests"])
+                    "flask_cors", "GitPython", "yapf", "distro", "requests", "PyQt5"])
     print("importing numpy test:")
     ret = subprocess.run([get_python_executable(), "-c", "import numpy as np"])
     print("ret:", ret)

@@ -3,7 +3,7 @@ import numpy as np
 try:
   from .qt_viewer import create_window
 except:
-  tc.warning('Qt initialization failed.')
+  print('Warning: Qt initialization failed.')
   pass
 
 viewers = {}

@@ -1,6 +1,10 @@
 import taichi as tc
 import numpy as np
-from .qt_viewer import create_window
+try:
+  from .qt_viewer import create_window
+except:
+  tc.warning('Qt initialization failed.')
+  pass
 
 viewers = {}
 

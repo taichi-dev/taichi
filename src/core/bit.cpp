@@ -61,12 +61,13 @@ TC_TEST("bit") {
   dec.d = 0xef;
   CHECK(v == 0xefcd1234);
 
-  CHECK(reinterpret_bits<real>(reinterpret_bits<uint32>(1.32_f32)) == 1.32_f32);
+  CHECK(reinterpret_bits<float32>(reinterpret_bits<uint32>(1.32_f32)) ==
+        1.32_f32);
 
-  float64 t = 123.456789;
-  auto e = extract(t);
-  //TC_P(std::get<0>(e));
-  //TC_P(std::get<1>(e));
-  //CHECK(t == compress(std::get<0>(e), std::get<1>(e)));
+  // float64 t = 123.456789;
+  // auto e = extract(t);
+  // TC_P(std::get<0>(e));
+  // TC_P(std::get<1>(e));
+  // CHECK(t == compress(std::get<0>(e), std::get<1>(e)));
 }
 TC_NAMESPACE_END

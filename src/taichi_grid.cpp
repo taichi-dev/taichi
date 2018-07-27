@@ -38,7 +38,7 @@ TC_TEST("dilated block") {
   Region3D block_region(Vector3i(7), Vector3i(10));
   Region3D local_grid_region(Vector3i(-1), Vector3i(1) + block_size);
 
-  TArray<3, int> gt(Vector3i(100));
+  TArray<int, 3> gt(Vector3i(100));
   for (auto b_ind : block_region) {
     auto base_coord = b_ind.get_ipos() * block_size;
     grid.touch(base_coord);

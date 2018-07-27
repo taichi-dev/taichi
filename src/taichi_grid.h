@@ -1167,4 +1167,60 @@ class MPIEnvironment {
   }
 };
 
+template <typename T, typename block_size_>
+struct LerpField {
+  using block_size = block_size_;
+  using Vector = TVector<real, 3>;
+  using VectorI = TVector<int, 3>;
+  using Region = TRegion<3>;
+  T data[block_size::x()][block_size::y()][block_size::z()];
+  Vector scale;
+  Vector translate;
+
+  LerpField(Vector scale, Vector translate)
+      : scale(scale), translate(translate) {
+  }
+
+  TC_FORCE_INLINE T *linear_data() {
+    return &data[0][0][0];
+  }
+
+  TC_FORCE_INLINE int linearize(const VectorI &ivec) {
+    return ivec[0] * (block_size::y() * block_size::z()) +
+           ivec[1] * block_size::z() + ivec[2];
+  }
+
+  TC_FORCE_INLINE T sample(Vector vec) {
+    // World frame to local frame
+    vec = vec * scale - translate;
+    auto ivec = vec.floor().template cast<int>();
+    auto fract = vec - ivec.template cast<real>();
+    auto ind = linearize(ivec);
+    const auto &rx = fract.x;
+    const auto &ry = fract.y;
+    const auto &rz = fract.z;
+#define V(i, j, k)                                               \
+  (linear_data()[ind + i * (block_size::y() * block_size::z()) + \
+                 j * block_size::z() + k])
+    T vx0 = (1 - ry) * ((1 - rz) * V(0, 0, 0) + rz * V(0, 0, 1)) +
+            ry * ((1 - rz) * V(0, 1, 0) + rz * V(0, 1, 1));
+    T vx1 = (1 - ry) * ((1 - rz) * V(1, 0, 0) + rz * V(1, 0, 1)) +
+            ry * ((1 - rz) * V(1, 1, 0) + rz * V(1, 1, 1));
+#undef V
+    return (1 - rx) * vx0 + rx * vx1;
+  }
+
+  Region local_region() {
+    return Region(VectorI(0), block_size::VectorI(), translate);
+  }
+
+  TC_FORCE_INLINE Vector node_pos(VectorI ind) {
+    return (ind.template cast<real>() + translate) / scale;
+  }
+
+  TC_FORCE_INLINE T &node(VectorI ind) {
+    return data[ind.x][ind.y][ind.z];
+  }
+};
+
 TC_NAMESPACE_END

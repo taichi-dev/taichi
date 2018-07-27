@@ -43,7 +43,7 @@ class MGPCGSmoke {
 
   const int n = 32;
   real current_t;
-  real dt = 1e-2_f, dx = 1.0_f / n;
+  real dt = 1e-2_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
 
   enum {
     CH_R,
@@ -81,7 +81,7 @@ class MGPCGSmoke {
   }
 
   void set_up_hierechy() {
-    int total_blocks = grids[0]->num_active_blocks();
+    std::size_t total_blocks = grids[0]->num_active_blocks();
     for (int i = 0; i < mg_lv - 1; i++) {
       grids[i]->coarsen_to(
           *grids[i + 1], [&](Block &b, Grid::PyramidAncestors &an) {
@@ -361,69 +361,31 @@ class MGPCGSmoke {
     }
   }
 
-  template <typename T>
-  static TC_FORCE_INLINE T trilinear_interpolate(Vector3 frac,
-                                                 const T &v000,
-                                                 const T &v001,
-                                                 const T &v010,
-                                                 const T &v011,
-                                                 const T &v100,
-                                                 const T &v101,
-                                                 const T &v110,
-                                                 const T &v111) {
-    const auto &rx = frac.x;
-    const auto &ry = frac.y;
-    const auto &rz = frac.z;
-// TODO: replace with lerp
-#define V(i, j, k) v##i##j##k
-    T vx0 = (1 - ry) * ((1 - rz) * V(0, 0, 0) + rz * V(0, 0, 1)) +
-            ry * ((1 - rz) * V(0, 1, 0) + rz * V(0, 1, 1));
-    T vx1 = (1 - ry) * ((1 - rz) * V(1, 0, 0) + rz * V(1, 0, 1)) +
-            ry * ((1 - rz) * V(1, 1, 0) + rz * V(1, 1, 1));
-#undef V
-    return (1 - rx) * vx0 + rx * vx1;
-  }
-
   TC_FORCE_INLINE Vector3 storage_offset(int axis) {
     return axis < 3 ? Vector3::axis(axis) * 0.5_f : Vector3(0.5_f);
   }
 
   void advect() {
-    // Unfortunately, ux, uy, uz and density are not collocated...
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
           TC_STATIC_ASSERT(Block::size[0] == 8);
-          Node nodes[24][24][24];
-#define V(axis, i, j, k) \
-  nodes[ipos[0] + i][ipos[1] + j][ipos[2] + k][CH_VX + axis]
-          auto sample_quantity = [&](Vector3 sample_pos, int axis_) -> real {
-            auto pos = sample_pos + storage_offset(axis_);
-            Vector3i ipos = pos.floor().template cast<int>();
-            Vector3 frac = pos - ipos.template cast<real>();
-            return trilinear_interpolate(
-                frac, V(axis_, 0, 0, 0), V(axis_, 0, 0, 1), V(axis_, 0, 1, 0),
-                V(axis_, 0, 1, 1), V(axis_, 1, 0, 0), V(axis_, 1, 0, 1),
-                V(axis_, 1, 1, 0), V(axis_, 1, 1, 1));
-          };
-          auto sample_velocity = [&](Vector3 sample_pos) {
-            // Sample x, y, z
-            Vector3 v;
-#define SAMPLE(axis_)                                                  \
-  {                                                                    \
-    auto pos = sample_pos + Vector3::axis(axis_) * 0.5_f;              \
-    Vector3i ipos = pos.floor().template cast<int>();                  \
-    Vector3 frac = pos - ipos.template cast<real>();                   \
-    v[axis_] = trilinear_interpolate(                                  \
-        frac, V(axis_, 0, 0, 0), V(axis_, 0, 0, 1), V(axis_, 0, 1, 0), \
-        V(axis_, 0, 1, 1), V(axis_, 1, 0, 0), V(axis_, 1, 0, 1),       \
-        V(axis_, 1, 1, 0), V(axis_, 1, 1, 1));                         \
-  }
-            SAMPLE(0);
-            SAMPLE(1);
-            SAMPLE(2);
-#undef SAMPLE
-#undef V
-            return v;
+          auto scale = Vector(inv_dx);
+          auto corner = b.base_coord.template cast<real>() -
+                        VectorI(Block::size).template cast<real>();
+          // Unfortunately, ux, uy, uz and density are not collocated...
+          LerpField<real, TSize3D<24>> u(scale,
+                                         corner + Vector(0.5_f, 0.0_f, 0.0_f));
+          LerpField<real, TSize3D<24>> v(scale,
+                                         corner + Vector(0.0_f, 0.5_f, 0.0_f));
+          LerpField<real, TSize3D<24>> w(scale,
+                                         corner + Vector(0.0_f, 0.0_f, 0.5_f));
+          LerpField<real, TSize3D<24>> rho(
+              scale, corner + Vector(0.5_f, 0.5_f, 0.5_f));
+
+          // TODO: gather lerp fields
+
+          auto sample_velocity = [&](Vector3 pos) {
+            return Vector3(u.sample(pos), v.sample(pos), w.sample(pos));
           };
           auto backtrace = [&](Vector3 pos) {
             // RK2
@@ -431,12 +393,15 @@ class MGPCGSmoke {
                                                         sample_velocity(pos));
           };
           for (auto ind : b.get_local_region()) {
-            for (int q = 0; q < 4; q++) {
-              auto end =
-                  ind.get_ipos().template cast<real>() + storage_offset(q);
-              b.node_local(ind.get_ipos())[CH_VX + q] =
-                  sample_quantity(backtrace(end), q);
-            }
+            auto node_pos = ind.get_ipos().template cast<real>();
+            b.node_local(ind.get_ipos())[CH_VX + 0] =
+                u.sample(backtrace(node_pos + storage_offset(0)));
+            b.node_local(ind.get_ipos())[CH_VX + 1] =
+                v.sample(backtrace(node_pos + storage_offset(1)));
+            b.node_local(ind.get_ipos())[CH_VX + 2] =
+                w.sample(backtrace(node_pos + storage_offset(2)));
+            b.node_local(ind.get_ipos())[CH_VX + 3] =
+                rho.sample(backtrace(node_pos + storage_offset(3)));
           }
         },
         false);
@@ -451,78 +416,6 @@ class MGPCGSmoke {
     current_t += dt;
   }
 };
-
-template <typename T, typename block_size_>
-struct LerpField {
-  using block_size = block_size_;
-  using Vector = TVector<real, 3>;
-  using VectorI = TVector<int, 3>;
-  using Region = TRegion<3>;
-  T data[block_size::x()][block_size::y()][block_size::z()];
-  Vector scale;
-  Vector translate;
-
-  LerpField(Vector scale, Vector translate)
-      : scale(scale), translate(translate) {
-  }
-
-  TC_FORCE_INLINE T *linear_data() {
-    return &data[0][0][0];
-  }
-
-  TC_FORCE_INLINE int linearize(const VectorI &ivec) {
-    return ivec[0] * (block_size::y() * block_size::z()) +
-           ivec[1] * block_size::z() + ivec[2];
-  }
-
-  TC_FORCE_INLINE T sample(Vector vec) {
-    // World frame to local frame
-    vec = vec * scale - translate;
-    auto ivec = vec.floor().template cast<int>();
-    auto fract = vec - ivec.template cast<real>();
-    auto ind = linearize(ivec);
-    const auto &rx = fract.x;
-    const auto &ry = fract.y;
-    const auto &rz = fract.z;
-#define V(i, j, k)                                               \
-  (linear_data()[ind + i * (block_size::y() * block_size::z()) + \
-                 j * block_size::z() + k])
-    T vx0 = (1 - ry) * ((1 - rz) * V(0, 0, 0) + rz * V(0, 0, 1)) +
-            ry * ((1 - rz) * V(0, 1, 0) + rz * V(0, 1, 1));
-    T vx1 = (1 - ry) * ((1 - rz) * V(1, 0, 0) + rz * V(1, 0, 1)) +
-            ry * ((1 - rz) * V(1, 1, 0) + rz * V(1, 1, 1));
-#undef V
-    return (1 - rx) * vx0 + rx * vx1;
-  }
-
-  Region local_region() {
-    return Region(VectorI(0), block_size::VectorI(), translate);
-  }
-
-  TC_FORCE_INLINE Vector node_pos(VectorI ind) {
-    return (ind.template cast<real>() + translate) / scale;
-  }
-
-  TC_FORCE_INLINE T &node(VectorI ind) {
-    return data[ind.x][ind.y][ind.z];
-  }
-};
-
-TC_TEST("Interpolation ") {
-  auto func = [](Vector3 vec) { return dot(vec, Vector3(2, 45, 67)) + 10; };
-  auto scale = Vector3(10);
-  auto translate = Vector3(0.5_f);
-  LerpField<real, TSize3D<8>> field(scale, translate);
-  for (auto ind : field.local_region()) {
-    field.node(ind) = func(field.node_pos(ind));
-  }
-
-  for (int i = 0; i < 100000; i++) {
-    auto coord = (Vector3::rand() * Vector3(7) + translate) / scale;
-    auto gt = func(coord);
-    TC_CHECK_EQUAL(field.sample(coord), gt, 1e-4_f);
-  }
-}
 
 auto mgpcg = [](const std::vector<std::string> &params) {
   // ThreadedTaskManager::TbbParallelismControl _(1);

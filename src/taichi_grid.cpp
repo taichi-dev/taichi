@@ -377,4 +377,21 @@ auto test_mpi_tbb = [](const std::vector<std::string> &param) {
 
 TC_REGISTER_TASK(test_mpi_tbb);
 
+TC_TEST("Interpolation") {
+  auto func = [](Vector3 vec) { return dot(vec, Vector3(2, 45, 67)) + 10; };
+  auto scale = Vector3(10);
+  auto translate = Vector3(10.32_f);
+  LerpField<real, TSize3D<8>> field(scale, translate);
+  for (auto ind : field.local_region()) {
+    field.node(ind) = func(field.node_pos(ind));
+  }
+
+  for (int i = 0; i < 100000; i++) {
+    auto coord = (Vector3::rand() * Vector3(7) + translate) / scale;
+    auto gt = func(coord);
+    TC_CHECK_EQUAL(field.sample(coord), gt, 1e-4_f);
+  }
+}
+
+
 TC_NAMESPACE_END

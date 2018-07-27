@@ -33,9 +33,9 @@ class CXImage {
     for (int j = 0; j < height; j++) {
       for (int i = 0; i < width; i++) {
         auto c = color[i][height - j - 1];
-        *p++ = uint8(clamp(int(c[0] * 255.0_f), 0, 255));
-        *p++ = uint8(clamp(int(c[1] * 255.0_f), 0, 255));
         *p++ = uint8(clamp(int(c[2] * 255.0_f), 0, 255));
+        *p++ = uint8(clamp(int(c[1] * 255.0_f), 0, 255));
+        *p++ = uint8(clamp(int(c[0] * 255.0_f), 0, 255));
         *p++ = uint8(clamp(int(c[3] * 255.0_f), 0, 255));
       }
     }

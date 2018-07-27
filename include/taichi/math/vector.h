@@ -186,7 +186,7 @@ struct VectorND : public VectorNDBase<dim__, T, ISE> {
   template <int dim_, typename T_, InstSetExt ISE_>
   explicit TC_FORCE_INLINE VectorND(const VectorND<dim_, T_, ISE_> &o)
       : VectorND() {
-    for (int i = 0; i < std::min(dim_, dim); i++) {
+    for (int i = 0; i < std::min(dim_, dim__); i++) {
       d[i] = o[i];
     }
   }
@@ -906,8 +906,8 @@ struct MatrixND {
   template <int dim_, typename T_, InstSetExt ISE_>
   TC_FORCE_INLINE explicit MatrixND(const MatrixND<dim_, T_, ISE_> &o)
       : MatrixND() {
-    for (int i = 0; i < std::min(dim_, dim); i++) {
-      for (int j = 0; j < std::min(dim_, dim); j++) {
+    for (int i = 0; i < std::min(dim_, dim__); i++) {
+      for (int j = 0; j < std::min(dim_, dim__); j++) {
         d[i][j] = o[i][j];
       }
     }

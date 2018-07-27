@@ -13,6 +13,7 @@
 #include <immintrin.h>
 #include <taichi/common/util.h>
 #include "scalar.h"
+#include "array_fwd.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -153,11 +154,11 @@ template <int dim__, typename T, InstSetExt ISE = default_instruction_set>
 struct VectorND : public VectorNDBase<dim__, T, ISE> {
   static constexpr int dim = dim__;
   using ScalarType = T;
-  
+
   template <int dim_, typename T_, InstSetExt ISE_>
-  static constexpr bool SIMD_4_32F = (dim_ == 3 || dim_ == 4) &&
-                                     std::is_same<T_, float32>::value &&ISE_
-                                         >= InstSetExt::SSE;
+  static constexpr bool SIMD_4_32F =
+      (dim_ == 3 || dim_ == 4) && std::is_same<T_, float32>::value &&ISE_
+                                      >= InstSetExt::SSE;
 
   template <int dim_, typename T_, InstSetExt ISE_>
   static constexpr bool SIMD_NONE = !SIMD_4_32F<dim_, T_, ISE_>;
@@ -196,6 +197,10 @@ struct VectorND : public VectorNDBase<dim__, T, ISE> {
       d[i] = o[i];
     }
   }
+
+  template <typename T_ = T,
+            typename std::enable_if_t<std::is_same<T_, int>::value, int> = 0>
+  VectorND(const TIndex<dim> &ind);
 
   // Vector3f
   template <int dim_ = dim,
@@ -881,7 +886,7 @@ TC_FORCE_INLINE typename std::
 template <int dim__, typename T, InstSetExt ISE = default_instruction_set>
 struct MatrixND {
   static constexpr int dim = dim__;
-  
+
   template <int dim_, typename T_, InstSetExt ISE_>
   static constexpr bool SIMD_4_32F =
       (dim_ == 3 || dim_ == 4) && std::is_same<T_, float32>::value &&

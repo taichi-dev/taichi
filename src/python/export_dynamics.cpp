@@ -12,12 +12,12 @@ PYBIND11_MAKE_OPAQUE(std::vector<taichi::RenderParticle>);
 
 TC_NAMESPACE_BEGIN
 
-template <int DIM>
+template <int dim>
 void register_simulation(py::module &m) {
-  using Sim = Simulation<DIM>;
+  using Sim = Simulation<dim>;
   py::class_<Sim, std::shared_ptr<Sim>>(
       m,
-      (std::string("Simulation") + std::to_string(DIM) + std::string("D"))
+      (std::string("Simulation") + std::to_string(dim) + std::string("D"))
           .c_str())
       .def(py::init<>())
       .def_readwrite("frame", &Sim::frame)

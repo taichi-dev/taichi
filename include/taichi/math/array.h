@@ -11,13 +11,13 @@
 #include "array_op.h"
 
 TC_NAMESPACE_BEGIN
-template <int DIM>
+template <int dim>
 class IndexND;
 
-template <int DIM>
+template <int dim>
 class RegionND;
 
-template <int DIM, typename T>
+template <int dim, typename T>
 class ArrayND;
 
 TC_NAMESPACE_END

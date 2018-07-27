@@ -148,12 +148,12 @@ std::string get_type_short_name<uint64>() {
 template <typename T>
 struct get_dim {};
 
-template <int DIM, typename T, InstSetExt ISE>
-struct get_dim<VectorND<DIM, T, ISE>> {
-  constexpr static int value = DIM;
+template <int dim, typename T, InstSetExt ISE>
+struct get_dim<VectorND<dim, T, ISE>> {
+  constexpr static int value = dim;
 };
 
-template <int DIM, typename T>
+template <int dim, typename T>
 struct VectorInitializer {};
 
 template <typename T>
@@ -234,22 +234,22 @@ void register_vec_field(Class &cls) {
 template <typename T>
 struct VectorRegistration {};
 
-template <int DIM, typename T, InstSetExt ISE>
-struct VectorRegistration<VectorND<DIM, T, ISE>> {
+template <int dim, typename T, InstSetExt ISE>
+struct VectorRegistration<VectorND<dim, T, ISE>> {
   static void run(py::module &m) {
-    using VectorBase = VectorNDBase<DIM, T, ISE>;
-    using Vector = VectorND<DIM, T, ISE>;
+    using VectorBase = VectorNDBase<dim, T, ISE>;
+    using Vector = VectorND<dim, T, ISE>;
 
     // e.g. Vector4f
     std::string vector_name =
-        std::string("Vector") + std::to_string(DIM) + get_type_short_name<T>();
+        std::string("Vector") + std::to_string(dim) + get_type_short_name<T>();
     // e.g. Vector4fBase
     std::string base_name = vector_name + "Base";
 
     py::class_<VectorBase>(m, base_name.c_str());
 
     auto cls = py::class_<Vector, VectorBase>(m, vector_name.c_str());
-    cls.def(VectorInitializer<DIM, T>::get())
+    cls.def(VectorInitializer<dim, T>::get())
         .def(py::init<T>())
         .def(T() * py::self)
         .def(py::self * T())

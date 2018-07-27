@@ -263,9 +263,8 @@ class MGPCGSmoke {
     grids[level]->refine_from(
         *grids[level + 1], [&](Block &block, Block &ancestor) {
           for (auto ind : block.get_global_region()) {
-            auto correction =
-                scale *
-                ancestor.node_global(div_floor(ind.get_ipos(), Vector3i(2)))[U];
+            auto correction = scale * ancestor.node_global(div_floor(
+                                          ind.get_ipos(), Vector3i(2)))[U];
             block.node_global(ind.get_ipos())[U] += correction;
           }
         });
@@ -428,9 +427,8 @@ class MGPCGSmoke {
           };
           auto backtrace = [&](Vector3 pos) {
             // RK2
-            return pos -
-                   dt * sample_velocity(pos -
-                                        (dt * 0.5_f) * sample_velocity(pos));
+            return pos - dt * sample_velocity(pos - (dt * 0.5_f) *
+                                                        sample_velocity(pos));
           };
           for (auto ind : b.get_local_region()) {
             for (int q = 0; q < 4; q++) {
@@ -453,6 +451,78 @@ class MGPCGSmoke {
     current_t += dt;
   }
 };
+
+template <typename T, typename block_size_>
+struct LerpField {
+  using block_size = block_size_;
+  using Vector = TVector<real, 3>;
+  using VectorI = TVector<int, 3>;
+  using Region = TRegion<3>;
+  T data[block_size::x()][block_size::y()][block_size::z()];
+  Vector scale;
+  Vector translate;
+
+  LerpField(Vector scale, Vector translate)
+      : scale(scale), translate(translate) {
+  }
+
+  TC_FORCE_INLINE T *linear_data() {
+    return &data[0][0][0];
+  }
+
+  TC_FORCE_INLINE int linearize(const VectorI &ivec) {
+    return ivec[0] * (block_size::y() * block_size::z()) +
+           ivec[1] * block_size::z() + ivec[2];
+  }
+
+  TC_FORCE_INLINE T sample(Vector vec) {
+    // World frame to local frame
+    vec = vec * scale - translate;
+    auto ivec = vec.floor().template cast<int>();
+    auto fract = vec - ivec.template cast<real>();
+    auto ind = linearize(ivec);
+    const auto &rx = fract.x;
+    const auto &ry = fract.y;
+    const auto &rz = fract.z;
+#define V(i, j, k)                                               \
+  (linear_data()[ind + i * (block_size::y() * block_size::z()) + \
+                 j * block_size::z() + k])
+    T vx0 = (1 - ry) * ((1 - rz) * V(0, 0, 0) + rz * V(0, 0, 1)) +
+            ry * ((1 - rz) * V(0, 1, 0) + rz * V(0, 1, 1));
+    T vx1 = (1 - ry) * ((1 - rz) * V(1, 0, 0) + rz * V(1, 0, 1)) +
+            ry * ((1 - rz) * V(1, 1, 0) + rz * V(1, 1, 1));
+#undef V
+    return (1 - rx) * vx0 + rx * vx1;
+  }
+
+  Region local_region() {
+    return Region(VectorI(0), block_size::VectorI(), translate);
+  }
+
+  TC_FORCE_INLINE Vector node_pos(VectorI ind) {
+    return (ind.template cast<real>() + translate) / scale;
+  }
+
+  TC_FORCE_INLINE T &node(VectorI ind) {
+    return data[ind.x][ind.y][ind.z];
+  }
+};
+
+TC_TEST("Interpolation ") {
+  auto func = [](Vector3 vec) { return dot(vec, Vector3(2, 45, 67)) + 10; };
+  auto scale = Vector3(10);
+  auto translate = Vector3(0.5_f);
+  LerpField<real, TSize3D<8>> field(scale, translate);
+  for (auto ind : field.local_region()) {
+    field.node(ind) = func(field.node_pos(ind));
+  }
+
+  for (int i = 0; i < 100000; i++) {
+    auto coord = (Vector3::rand() * Vector3(7) + translate) / scale;
+    auto gt = func(coord);
+    TC_CHECK_EQUAL(field.sample(coord), gt, 1e-4_f);
+  }
+}
 
 auto mgpcg = [](const std::vector<std::string> &params) {
   // ThreadedTaskManager::TbbParallelismControl _(1);

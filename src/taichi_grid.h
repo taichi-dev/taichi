@@ -1,7 +1,7 @@
 #include <atomic>
 #include <mutex>
 #include <functional>
-#include <hash_map>
+#include <unordered_map>
 #include <experimental/filesystem>
 #include <tbb/tbb.h>
 #include <taichi/util.h>
@@ -427,7 +427,7 @@ struct TAncestors {
 
 template <typename Block>
 struct TGridScratchPad {
-  static constexpr int dim = 3;
+  static constexpr int dim = Block::dim;
   TC_STATIC_ASSERT(dim == 3);
   using VectorI = typename Block::VectorI;
   using Node = typename Block::Node;

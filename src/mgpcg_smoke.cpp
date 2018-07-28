@@ -100,11 +100,18 @@ class MGPCGSmoke {
     for (auto &ind : active_region) {
       grids[0]->touch(ind.get_ipos());
       grids[0]->node(ind.get_ipos()).flags().set_effective(true);
+    }
+    set_up_hierechy();
+  }
+
+  void test_pcg() {
+    Region3D active_region(VectorI(-n, -n, -n * 2), VectorI(n, n, n * 2));
+    for (auto &ind : active_region) {
       if (ind.get_ipos() == VectorI(0)) {
         grids[0]->node(ind.get_ipos())[CH_B] = 1;
       }
     }
-    set_up_hierechy();
+    run_pcg();
   }
 
   void set_up_hierechy() {
@@ -519,30 +526,59 @@ class MGPCGSmoke {
     TC_P(after_projection);
   }
 
-  void render_particles() {
-    auto particles = grids[0]->gather_particles();
+  void enforce_boundary_condition() {
+    grids[0]->map([&](Block &b) {
+      for (auto &ind : b.get_local_region()) {
+        b.node_local(ind)[CH_VX] = 0;
+        b.node_local(ind)[CH_VY] = 1;
+        b.node_local(ind)[CH_VZ] = 0;
+        if (current_t == 0 && b.base_coord == VectorI(0)) {
+          // Sample some particles
+          Vector pos =
+              (b.base_coord.template cast<real>() +
+               Vector::rand() * VectorI(Block::size).template cast<real>()) *
+              dx;
+          b.add_particle(Particle{pos});
+        }
+      }
+    });
+  }
+
+  void render(Canvas &canvas) {
+    auto res = canvas.img.get_res();
+    Array2D<Vector3> image(Vector2i(res), Vector3(0.7));
+    std::vector<RenderParticle> particles;
+    for (auto &p : grids[0]->gather_particles()) {
+      particles.push_back(RenderParticle(p.pos * Vector(0.1_f),
+                                         Vector4(1.0_f, 1.0_f, 0.0_f, 0.5_f)));
+    }
+    renderer->render(image, particles);
+    for (auto &ind : image.get_region()) {
+      canvas.img[ind] = Vector4(image[ind]);
+    }
   }
 
   void step() {
+    enforce_boundary_condition();
     advect();
-    project();
+    // project();
     current_t += dt;
   }
 
   void test_renderer() {
     int res = 800;
     GUI gui("Rendering Test", res, res);
-    Array2D<Vector3> image1(Vector2i(res), Vector3(0));
+    Array2D<Vector3> image(Vector2i(res), Vector3(0.7));
     std::vector<RenderParticle> particles;
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 1000000; i++) {
       Vector3 pos = Vector::rand() - Vector3(0.5_f);
       particles.push_back(RenderParticle(pos * Vector(0.1_f),
-                                         Vector4(1.0_f, 1.0_f, 0.0_f, 1.0_f)));
+                                         Vector4(1.0_f, 1.0_f, 0.0_f, 0.5_f)));
     }
-    renderer->render(image1, particles);
+    renderer->render(image, particles);
     auto &canvas = gui.get_canvas().img;
-    for (auto &ind : image1.get_region()) {
-      canvas[ind] = Vector4(image1[ind]);
+    for (auto &ind : image.get_region()) {
+      canvas[ind] = Vector4(image[ind]);
     }
     while (1) {
       gui.update();
@@ -554,10 +590,24 @@ auto mgpcg = [](const std::vector<std::string> &params) {
   // ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGSmoke> mgpcg;
   mgpcg = std::make_unique<MGPCGSmoke>();
-  TC_TIME(mgpcg->run_pcg());
+  TC_TIME(mgpcg->test_pcg());
 };
 
 TC_REGISTER_TASK(mgpcg);
+
+auto smoke = [](const std::vector<std::string> &params) {
+  ThreadedTaskManager::TbbParallelismControl _(1);
+  std::unique_ptr<MGPCGSmoke> smoke;
+  smoke = std::make_unique<MGPCGSmoke>();
+  GUI gui("MGPCG Smoke", 800, 800);
+  while (1) {
+    TC_TIME(smoke->step());
+    smoke->render(gui.get_canvas());
+    gui.update();
+  }
+};
+
+TC_REGISTER_TASK(smoke);
 
 auto test_volume_rendering = [](const std::vector<std::string> &params) {
   std::unique_ptr<MGPCGSmoke> smoke;

@@ -419,13 +419,22 @@ class MGPCGSmoke {
               scale, corner + Vector(0.5_f, 0.5_f, 0.5_f));
 
           for (auto ind : Region3D(VectorI(0), VectorI(24))) {
-            auto node = an[VectorI(ind) / VectorI(Block::size) - VectorI(1)]
-                            ->node_local(VectorI(ind) % VectorI(Block::size));
-            u.node(ind) = node[CH_VX];
-            v.node(ind) = node[CH_VY];
-            w.node(ind) = node[CH_VZ];
-            rho.node(ind) = node[CH_DENSITY];
+            auto ab = an[VectorI(ind) / VectorI(Block::size) - VectorI(1)];
+            if (!ab) {
+              u.node(ind) = 0;
+              v.node(ind) = 0;
+              w.node(ind) = 0;
+              rho.node(ind) = 0;
+            } else {
+              auto node = ab->node_local(VectorI(ind) % VectorI(Block::size));
+              u.node(ind) = node[CH_VX];
+              v.node(ind) = node[CH_VY];
+              w.node(ind) = node[CH_VZ];
+              rho.node(ind) = node[CH_DENSITY];
+            }
           }
+
+          // TODO: fix local/global
 
           auto sample_velocity = [&](Vector3 pos) -> Vector3 {
             return Vector3(u.sample(pos), v.sample(pos), w.sample(pos));
@@ -439,11 +448,10 @@ class MGPCGSmoke {
           for (auto ind : b.get_local_region()) {
             auto node_pos = ind.get_ipos().template cast<real>();
             auto node = b.node_local(ind.get_ipos());
-            node[CH_VX + 0] = u.sample(backtrace(node_pos + storage_offset(0)));
-            node[CH_VX + 1] = v.sample(backtrace(node_pos + storage_offset(1)));
-            node[CH_VX + 2] = w.sample(backtrace(node_pos + storage_offset(2)));
-            node[CH_VX + 3] =
-                rho.sample(backtrace(node_pos + storage_offset(3)));
+            node[CH_VX + 0] = u.sample(backtrace(u.node_pos(ind)));
+            node[CH_VX + 1] = v.sample(backtrace(v.node_pos(ind)));
+            node[CH_VX + 2] = w.sample(backtrace(w.node_pos(ind)));
+            node[CH_VX + 3] = rho.sample_global(backtrace(rho.node_pos(ind)));
           }
 
           Vector particle_range[] = {

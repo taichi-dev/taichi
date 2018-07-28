@@ -1215,9 +1215,16 @@ struct LerpField {
            ivec[1] * block_size::z() + ivec[2];
   }
 
-  TC_FORCE_INLINE T sample(Vector vec) {
+  TC_FORCE_INLINE T sample_global(Vector vec) {
     // World frame to local frame
-    vec = vec * scale - translate;
+    return sample_local(vec * scale - translate);
+  }
+
+  TC_FORCE_INLINE T sample(Vector vec) {
+    return sample_global(vec);
+  }
+
+  TC_FORCE_INLINE T sample_local(Vector vec) {
     auto ivec = vec.floor().template cast<int>();
     auto fract = vec - ivec.template cast<real>();
     auto ind = linearize(ivec);

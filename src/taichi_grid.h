@@ -655,6 +655,7 @@ class TaichiGrid {
   std::result_of_t<T(Block &)> reduce_max(const T &t) {
     using V = std::result_of_t<T(Block &)>;
     auto max = [](const V &a, const V &b) -> V {
+      TC_ASSERT(!std::isnan(a) && !std::isnan(b));
       if (a > b) {
         return a;
       } else {

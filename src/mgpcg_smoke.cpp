@@ -8,6 +8,8 @@
 
 TC_NAMESPACE_BEGIN
 
+// TODO: u, v, w has different sizes
+
 struct NodeFlags : public bit::Bits<32> {
   using Base = bit::Bits<32>;
   TC_BIT_FIELD(uint8, num_effective_neighbours, 0);
@@ -181,6 +183,7 @@ class MGPCGSmoke {
                 o = count * scratch.data[i][j][k][channel_in] - tmp;
                 if (o != o) {
                   TC_P(b.base_coord);
+                  TC_P(scratch.data[i][j][k][channel_in]);
                   TC_P(o);
                   TC_P(i);
                   TC_P(j);
@@ -356,6 +359,7 @@ class MGPCGSmoke {
   void poisson_solve() {
     bool use_preconditioner = true;
     TC_P(norm(CH_B));
+    clear(0, CH_X);
     // r = b - Ax
     residual(0, CH_X, CH_B, CH_R);
     // z = M^-1 r
@@ -470,16 +474,6 @@ class MGPCGSmoke {
         false);
   }
 
-  real b_norm() {
-    return grids[0]->reduce_max([&](Block &b) {
-      real ret = 0;
-      for (auto &ind : b.get_local_region()) {
-        ret = std::max(ret, std::abs(b.node_local(ind)[CH_B]));
-      }
-      return ret;
-    });
-  }
-
   void compute_b() {
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
@@ -492,9 +486,6 @@ class MGPCGSmoke {
                      scratch.node(center + VectorI::axis(i))[CH_VX + i];
             }
             b.node_local(ind)[CH_B] = div;
-            if (div != 0) {
-              TC_P(div);
-            }
           }
         },
         false, true);
@@ -503,12 +494,10 @@ class MGPCGSmoke {
   void project() {
     // Compute divergence
     compute_b();
-    real before_projection = b_norm();
+    real before_projection = norm(CH_B);
     TC_P(before_projection);
     // Solve Poisson
-    TC_ERROR("");
     poisson_solve();
-    TC_INFO("solved");
     // Apply pressure
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
@@ -524,7 +513,7 @@ class MGPCGSmoke {
 
         },
         false, true);
-    real after_projection = b_norm();
+    real after_projection = norm(CH_B);
     TC_P(after_projection);
   }
 
@@ -565,7 +554,6 @@ class MGPCGSmoke {
   }
 
   void step() {
-    project();
     enforce_boundary_condition();
     advect();
     project();

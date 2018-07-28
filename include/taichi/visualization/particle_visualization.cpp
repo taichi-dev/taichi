@@ -42,6 +42,7 @@ class ParticleShadowMapRenderer : public ParticleRenderer {
     if (particles.empty()) {
       return;
     }
+    TC_ASSERT(camera);
     Vector2 uv_lowerbound(2000 * shadow_map_resolution);
     Vector2 uv_upperbound(-2000 * shadow_map_resolution);
 

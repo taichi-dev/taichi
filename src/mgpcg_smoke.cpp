@@ -357,8 +357,10 @@ class MGPCGSmoke {
 
   // https://en.wikipedia.org/wiki/Conjugate_gradient_method
   void poisson_solve() {
+    constexpr real tolerance = 1e-4_f;
     bool use_preconditioner = true;
-    TC_P(norm(CH_B));
+    real initial_residual_norm = norm(CH_B);
+    TC_P(initial_residual_norm);
     clear(0, CH_X);
     // r = b - Ax
     residual(0, CH_X, CH_B, CH_R);
@@ -380,7 +382,7 @@ class MGPCGSmoke {
 
       auto residual_l2 = norm(CH_R);
       TC_TRACE("iter {}, residual {}", i, residual_l2);
-      if (residual_l2 < 1e-7) {
+      if (residual_l2 < tolerance * initial_residual_norm) {
         break;
       }
 
@@ -505,7 +507,7 @@ class MGPCGSmoke {
           for (auto &ind : b.get_local_region()) {
             auto center = VectorI(ind);
             for (int k = 0; k < dim; k++) {
-              b.node_local(ind)[CH_VX + k] +=
+              b.node_local(ind)[CH_VX + k] -=
                   scratch.node(center)[CH_X] -
                   scratch.node(center - VectorI::axis(k))[CH_X];
             }
@@ -513,8 +515,9 @@ class MGPCGSmoke {
 
         },
         false, true);
+    compute_b();
     real after_projection = norm(CH_B);
-    TC_P(after_projection);
+    TC_WARN("After projection: {}", after_projection);
   }
 
   void enforce_boundary_condition() {
@@ -591,7 +594,7 @@ auto mgpcg = [](const std::vector<std::string> &params) {
 TC_REGISTER_TASK(mgpcg);
 
 auto smoke = [](const std::vector<std::string> &params) {
-  ThreadedTaskManager::TbbParallelismControl _(1);
+  // ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGSmoke> smoke;
   smoke = std::make_unique<MGPCGSmoke>();
   GUI gui("MGPCG Smoke", 800, 800);
@@ -599,6 +602,7 @@ auto smoke = [](const std::vector<std::string> &params) {
     TC_TIME(smoke->step());
     smoke->render(gui.get_canvas());
     gui.update();
+    return;
   }
 };
 

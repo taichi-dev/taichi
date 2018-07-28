@@ -98,7 +98,7 @@ class MGPCGSmoke {
     }
     TC_ASSERT(mg_lv >= 1);
     TC_ASSERT_INFO(bit::is_power_of_two(n), "Only POT grid sizes supported");
-    Region3D active_region(VectorI(-n, -n, -n * 2), VectorI(n, n, n * 2));
+    Region3D active_region(VectorI(-n, -n * 2, -n), VectorI(n, n * 2, n));
     for (auto ind : active_region) {
       grids[0]->touch(ind);
       grids[0]->node(ind).flags().set_effective(true);
@@ -107,7 +107,7 @@ class MGPCGSmoke {
   }
 
   void test_pcg() {
-    Region3D active_region(VectorI(-n, -n, -n * 2), VectorI(n, n, n * 2));
+    Region3D active_region(VectorI(-n, -n * 2, -n), VectorI(n, n * 2, n));
     for (auto &ind : active_region) {
       if (ind.get_ipos() == VectorI(0)) {
         grids[0]->node(ind.get_ipos())[CH_B] = 1;
@@ -440,8 +440,6 @@ class MGPCGSmoke {
             }
           }
 
-          // TODO: fix local/global
-
           auto sample_velocity = [&](Vector3 pos) -> Vector3 {
             return Vector3(u.sample(pos), v.sample(pos), w.sample(pos));
           };
@@ -452,7 +450,7 @@ class MGPCGSmoke {
                                         (dt * 0.5_f) * sample_velocity(pos));
           };
           for (auto ind : b.get_local_region()) {
-            auto node = b.node_local(ind.get_ipos());
+            auto node = b.node_local(ind);
             node[CH_VX + 0] = u.sample(backtrace(u.node_pos(ind)));
             node[CH_VX + 1] = v.sample(backtrace(v.node_pos(ind)));
             node[CH_VX + 2] = w.sample(backtrace(w.node_pos(ind)));
@@ -530,7 +528,7 @@ class MGPCGSmoke {
       if (current_t == 0) {
         for (auto &ind : b.get_local_region()) {
           b.node_local(ind)[CH_VX] = 0;
-          b.node_local(ind)[CH_VY] = 1;
+          b.node_local(ind)[CH_VY] = 0;
           b.node_local(ind)[CH_VZ] = 0;
         }
       }
@@ -542,6 +540,11 @@ class MGPCGSmoke {
                Vector::rand() * VectorI(Block::size).template cast<real>()) *
               dx;
           b.add_particle(Particle{pos});
+        }
+        for (auto &ind : b.get_local_region()) {
+          b.node_local(ind)[CH_VX] = 0;
+          b.node_local(ind)[CH_VY] = 2;
+          b.node_local(ind)[CH_VZ] = 0;
         }
       }
     });
@@ -587,6 +590,25 @@ class MGPCGSmoke {
       gui.update();
     }
   }
+
+  Array2D<Vector3> render_velocity_field() {
+    Array2D<Vector3> img;
+    img.initialize(Vector2i(n * 2, n * 4));
+    grids[0]->for_each_block([&](Block &b) {
+      if (b.base_coord.z != 0) {
+        return;
+      }
+      for (int i = 0; i < b.size[0]; i++) {
+        for (int j = 0; j < b.size[1]; j++) {
+          auto node = b.node_local(Vector3i(i, j, 0));
+          auto vel = Vector3(node[CH_VX], node[CH_VY], node[CH_VZ]);
+          img[Vector2i(b.base_coord.x, b.base_coord.y) + Vector2i(n + i, n * 2 + j)] =
+              vel * Vector3(15) + Vector3(0.5_f);
+        }
+      }
+    });
+    return img;
+  }
 };
 
 auto mgpcg = [](const std::vector<std::string> &params) {
@@ -603,10 +625,16 @@ auto smoke = [](const std::vector<std::string> &params) {
   std::unique_ptr<MGPCGSmoke> smoke;
   smoke = std::make_unique<MGPCGSmoke>();
   GUI gui("MGPCG Smoke", 800, 800);
+  GUI gui2("MGPCG Smoke", 256, 512);
   while (1) {
     TC_TIME(smoke->step());
     smoke->render(gui.get_canvas());
     gui.update();
+    auto img = smoke->render_velocity_field();
+    for (auto ind: gui2.get_canvas().img.get_region()) {
+      gui2.get_canvas().img[ind] = Vector3(img[Vector2i(ind) / Vector2i(4)]);
+    }
+    gui2.update();
   }
 };
 

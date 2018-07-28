@@ -24,7 +24,11 @@ struct Node {
   }
 };
 
-using Block = TBlock<Node, char, TSize3D<8>, 0>;
+struct Particle {
+  Vector3 pos;
+};
+
+using Block = TBlock<Node, Particle, TSize3D<8>, 0>;
 
 class MGPCGSmoke {
  public:
@@ -119,7 +123,7 @@ class MGPCGSmoke {
             }
           }
         },
-        false);
+        false, true);
   }
 
   void multiply(int channel_out, int channel_in) {
@@ -159,7 +163,7 @@ class MGPCGSmoke {
             }
           }
         },
-        false);
+        false, true);
   }
 
   // out += a + scale * b
@@ -225,7 +229,7 @@ class MGPCGSmoke {
             }
           }
         },
-        false);
+        false, true);
   }
 
   void clear(int level, int channel) {
@@ -263,8 +267,9 @@ class MGPCGSmoke {
     grids[level]->refine_from(
         *grids[level + 1], [&](Block &block, Block &ancestor) {
           for (auto ind : block.get_global_region()) {
-            auto correction = scale * ancestor.node_global(div_floor(
-                                          ind.get_ipos(), Vector3i(2)))[U];
+            auto correction =
+                scale *
+                ancestor.node_global(div_floor(ind.get_ipos(), Vector3i(2)))[U];
             block.node_global(ind.get_ipos())[U] += correction;
           }
         });
@@ -372,6 +377,7 @@ class MGPCGSmoke {
           auto scale = Vector(inv_dx);
           auto corner = b.base_coord.template cast<real>() -
                         VectorI(Block::size).template cast<real>();
+
           // Unfortunately, ux, uy, uz and density are not collocated...
           LerpField<real, TSize3D<24>> u(scale,
                                          corner + Vector(0.5_f, 0.0_f, 0.0_f));
@@ -382,32 +388,112 @@ class MGPCGSmoke {
           LerpField<real, TSize3D<24>> rho(
               scale, corner + Vector(0.5_f, 0.5_f, 0.5_f));
 
-          // TODO: gather lerp fields
+          for (auto ind : Region3D(VectorI(0), VectorI(24))) {
+            auto node = an[VectorI(ind) / VectorI(Block::size) - VectorI(1)]
+                            ->node_local(VectorI(ind) % VectorI(Block::size));
+            u.node(ind) = node[CH_VX];
+            v.node(ind) = node[CH_VY];
+            w.node(ind) = node[CH_VZ];
+            rho.node(ind) = node[CH_DENSITY];
+          }
 
-          auto sample_velocity = [&](Vector3 pos) {
+          auto sample_velocity = [&](Vector3 pos) -> Vector3 {
             return Vector3(u.sample(pos), v.sample(pos), w.sample(pos));
           };
           auto backtrace = [&](Vector3 pos) {
             // RK2
-            return pos - dt * sample_velocity(pos - (dt * 0.5_f) *
-                                                        sample_velocity(pos));
+            return pos -
+                   dt * sample_velocity(pos -
+                                        (dt * 0.5_f) * sample_velocity(pos));
           };
           for (auto ind : b.get_local_region()) {
             auto node_pos = ind.get_ipos().template cast<real>();
-            b.node_local(ind.get_ipos())[CH_VX + 0] =
-                u.sample(backtrace(node_pos + storage_offset(0)));
-            b.node_local(ind.get_ipos())[CH_VX + 1] =
-                v.sample(backtrace(node_pos + storage_offset(1)));
-            b.node_local(ind.get_ipos())[CH_VX + 2] =
-                w.sample(backtrace(node_pos + storage_offset(2)));
-            b.node_local(ind.get_ipos())[CH_VX + 3] =
+            auto node = b.node_local(ind.get_ipos());
+            node[CH_VX + 0] = u.sample(backtrace(node_pos + storage_offset(0)));
+            node[CH_VX + 1] = v.sample(backtrace(node_pos + storage_offset(1)));
+            node[CH_VX + 2] = w.sample(backtrace(node_pos + storage_offset(2)));
+            node[CH_VX + 3] =
                 rho.sample(backtrace(node_pos + storage_offset(3)));
+          }
+
+          Vector particle_range[] = {
+              b.base_coord.template cast<real>() * dx,
+              (b.base_coord + VectorI(Block::size)).template cast<real>() * dx};
+          // Gather and move particles
+          for (auto ab : an.data) {
+            if (ab) {
+              for (std::size_t i = 0; i < ab->particle_count; i++) {
+                // Copy
+                auto p = ab->particles[i];
+                if (particle_range[0] < p.pos && p.pos < particle_range[1]) {
+                  p.pos += sample_velocity(p.pos) * dt;
+                  b.add_particle(p);
+                }
+              }
+            }
           }
         },
         false);
   }
 
+  real max_divergency() {
+    return 0;
+    /*
+    grids[0]->reduce_max([&](Block &b) {
+      real ret = 0;
+      for (auto &ind : b.get_local_region()) {
+        auto center = VectorI(ind);
+        auto div = scratch.node(center)[CH_VX] -
+                   scratch.node(center + VectorI(1, 0, 0))[CH_VX] +
+                   scratch.node(center)[CH_VY] -
+                   scratch.node(center + VectorI(0, 1, 0))[CH_VY] +
+                   scratch.node(center)[CH_VZ] -
+                   scratch.node(center + VectorI(0, 0, 1))[CH_VZ];
+        ret = std::max(ret, std::abs(div));
+      }
+      return ret;
+    });
+    */
+  }
+
   void project() {
+    // Compute divergence
+    real before_projection = max_divergency();
+    TC_P(before_projection);
+    grids[0]->advance(
+        [&](Block &b, Grid::Ancestors &an) {
+          Grid::GridScratchPad scratch(an);
+          for (auto &ind : b.get_local_region()) {
+            auto center = VectorI(ind);
+            b.node_local(ind)[CH_B] =
+                scratch.node(center)[CH_VX] -
+                scratch.node(center + VectorI(1, 0, 0))[CH_VX] +
+                scratch.node(center)[CH_VY] -
+                scratch.node(center + VectorI(0, 1, 0))[CH_VY] +
+                scratch.node(center)[CH_VZ] -
+                scratch.node(center + VectorI(0, 0, 1))[CH_VZ];
+          }
+        },
+        false, true);
+    // Solve Poisson
+    run_pcg();
+    // Apply pressure
+    grids[0]->advance(
+        [&](Block &b, Grid::Ancestors &an) {
+          Grid::GridScratchPad scratch(an);
+          for (auto &ind : b.get_local_region()) {
+            auto center = VectorI(ind);
+            for (int k = 0; k < dim; k++) {
+              b.node_local(ind)[CH_VX + k] +=
+                  scratch.node(center)[CH_X] -
+                  scratch.node(center - VectorI::axis(k))[CH_X];
+            }
+          }
+
+        },
+        false, true);
+    real after_projection = max_divergency();
+    TC_P(after_projection);
   }
 
   void step() {

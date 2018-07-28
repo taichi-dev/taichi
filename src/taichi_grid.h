@@ -462,6 +462,10 @@ struct TGridScratchPad {
       p++;
     }
   }
+
+  Node &node(VectorI ind) {
+    return data[ind.x][ind.y][ind.z];
+  }
 };
 
 template <typename Block_, typename bucket_size = TSize3D<128>>
@@ -645,6 +649,19 @@ class TaichiGrid {
   std::result_of_t<T(Block &)> reduce(const T &t, const R &r) {
     using V = std::result_of_t<T(Block &)>;
     return reduce(t, r, V(0));
+  }
+
+  template <typename T, typename R>
+  std::result_of_t<T(Block &)> reduce_max(const T &t) {
+    using V = std::result_of_t<T(Block &)>;
+    auto max = [](const V &a, const V &b) -> V {
+      if (a > b) {
+        return a;
+      } else {
+        return b;
+      }
+    };
+    return reduce(t, max, V(-std::numeric_limits<V>::infinity()));
   }
 
   template <typename T>
@@ -921,7 +938,9 @@ class TaichiGrid {
 
   // Advance
   template <typename T>
-  void advance(const T &t, bool needs_expand = true) {
+  void advance(const T &t,
+               bool needs_expand = true,
+               bool carry_particles = false) {
     // T takes (base_coord, Ancestor) and should return void
     using result_type = std::result_of_t<T(Block &, Ancestors &)>;
     TC_STATIC_ASSERT((std::is_same<result_type, void>::value));
@@ -946,6 +965,12 @@ class TaichiGrid {
         return;
       }
       Ancestors ancestors;
+      auto direct_ancestor = ancestors[VectorI(0)];
+      if (carry_particles && direct_ancestor) {
+        std::memcpy(block->particles, direct_ancestor->particles,
+                    direct_ancestor->particle_count * sizeof(Particle));
+        block->particle_count = direct_ancestor->particle_count;
+      }
       RegionND<dim> region(VectorI(-1), VectorI(2));
       auto base_coord = block->base_coord;
       for (auto &offset : region) {

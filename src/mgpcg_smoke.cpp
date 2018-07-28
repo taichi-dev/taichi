@@ -4,6 +4,7 @@
 #include <taichi/util.h>
 #include <taichi/math/svd.h>
 #include <taichi/visualization/particle_visualization.h>
+#include <taichi/visual/gui.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -47,6 +48,8 @@ class MGPCGSmoke {
   using GridScratchPad = TGridScratchPad<Block>;
 
   const int n = 32;
+
+  std::shared_ptr<Camera> cam;
   real current_t;
   real dt = 1e-2_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
 
@@ -69,6 +72,14 @@ class MGPCGSmoke {
 
   MGPCGSmoke() {
     renderer = create_instance_unique<ParticleRenderer>("shadow_map");
+    auto radius = 1.0_f;
+    Dict cam_dict;
+    cam_dict.set("origin", Vector(0, radius * 0.3, radius))
+        .set("look_at", Vector(0, 0, 0))
+        .set("up", Vector(0, 1, 0))
+        .set("fov", 70)
+        .set("res", Vector2i(800));
+    cam = create_instance<Camera>("pinhole", cam_dict);
     Dict dict;
     dict.set("shadow_map_resolution", 0.5_f)
         .set("alpha", 0.6_f)
@@ -76,6 +87,7 @@ class MGPCGSmoke {
         .set("ambient_light", 0.3_f)
         .set("light_direction", Vector(1, 3, 1));
     renderer->initialize(dict);
+    renderer->set_camera(cam);
     current_t = 0;
     // Span a region in
     grids.resize(mg_lv);
@@ -516,6 +528,26 @@ class MGPCGSmoke {
     project();
     current_t += dt;
   }
+
+  void test_renderer() {
+    int res = 800;
+    GUI gui("Rendering Test", res, res);
+    Array2D<Vector3> image1(Vector2i(res), Vector3(0));
+    std::vector<RenderParticle> particles;
+    for (int i = 0; i < 10000; i++) {
+      Vector3 pos = Vector::rand() - Vector3(0.5_f);
+      particles.push_back(RenderParticle(pos * Vector(0.1_f),
+                                         Vector4(1.0_f, 1.0_f, 0.0_f, 1.0_f)));
+    }
+    renderer->render(image1, particles);
+    auto &canvas = gui.get_canvas().img;
+    for (auto &ind : image1.get_region()) {
+      canvas[ind] = Vector4(image1[ind]);
+    }
+    while (1) {
+      gui.update();
+    }
+  }
 };
 
 auto mgpcg = [](const std::vector<std::string> &params) {
@@ -526,5 +558,13 @@ auto mgpcg = [](const std::vector<std::string> &params) {
 };
 
 TC_REGISTER_TASK(mgpcg);
+
+auto test_volume_rendering = [](const std::vector<std::string> &params) {
+  std::unique_ptr<MGPCGSmoke> smoke;
+  smoke = std::make_unique<MGPCGSmoke>();
+  smoke->test_renderer();
+};
+
+TC_REGISTER_TASK(test_volume_rendering);
 
 TC_NAMESPACE_END

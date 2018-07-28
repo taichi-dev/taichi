@@ -97,9 +97,9 @@ class MGPCGSmoke {
     TC_ASSERT(mg_lv >= 1);
     TC_ASSERT_INFO(bit::is_power_of_two(n), "Only POT grid sizes supported");
     Region3D active_region(VectorI(-n, -n, -n * 2), VectorI(n, n, n * 2));
-    for (auto &ind : active_region) {
-      grids[0]->touch(ind.get_ipos());
-      grids[0]->node(ind.get_ipos()).flags().set_effective(true);
+    for (auto ind : active_region) {
+      grids[0]->touch(ind);
+      grids[0]->node(ind).flags().set_effective(true);
     }
     set_up_hierechy();
   }
@@ -111,7 +111,7 @@ class MGPCGSmoke {
         grids[0]->node(ind.get_ipos())[CH_B] = 1;
       }
     }
-    run_pcg();
+    poisson_solve();
   }
 
   void set_up_hierechy() {
@@ -132,7 +132,6 @@ class MGPCGSmoke {
     grids[level]->advance(
         [&](Block &b, Grid::Ancestors &an) {
           GridScratchPad scratch(an);
-          std::memcpy(&b.nodes[0], &an[VectorI(0)]->nodes[0], sizeof(b.nodes));
           // 6 neighbours
           for (int i = 0; i < Block::size[0]; i++) {
             for (int j = 0; j < Block::size[1]; j++) {
@@ -161,7 +160,6 @@ class MGPCGSmoke {
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
           GridScratchPad scratch(an);
-          std::memcpy(&b.nodes[0], &an[VectorI(0)]->nodes[0], sizeof(b.nodes));
           // 6 neighbours
           for (int i = 0; i < Block::size[0]; i++) {
             for (int j = 0; j < Block::size[1]; j++) {
@@ -230,7 +228,6 @@ class MGPCGSmoke {
     grids[level]->advance(
         [&](Grid::Block &b, Grid::Ancestors &an) {
           GridScratchPad scratch(an);
-          std::memcpy(&b.nodes[0], &an[VectorI(0)]->nodes[0], sizeof(b.nodes));
           // 6 neighbours
           for (int i = 0; i < Block::size[0]; i++) {
             for (int j = 0; j < Block::size[1]; j++) {
@@ -356,7 +353,7 @@ class MGPCGSmoke {
   }
 
   // https://en.wikipedia.org/wiki/Conjugate_gradient_method
-  void run_pcg() {
+  void poisson_solve() {
     bool use_preconditioner = true;
     TC_P(norm(CH_B));
     // r = b - Ax
@@ -446,7 +443,6 @@ class MGPCGSmoke {
                                         (dt * 0.5_f) * sample_velocity(pos));
           };
           for (auto ind : b.get_local_region()) {
-            auto node_pos = ind.get_ipos().template cast<real>();
             auto node = b.node_local(ind.get_ipos());
             node[CH_VX + 0] = u.sample(backtrace(u.node_pos(ind)));
             node[CH_VX + 1] = v.sample(backtrace(v.node_pos(ind)));
@@ -474,47 +470,45 @@ class MGPCGSmoke {
         false);
   }
 
-  real max_divergency() {
-    return 0;
-    /*
-    grids[0]->reduce_max([&](Block &b) {
+  real b_norm() {
+    return grids[0]->reduce_max([&](Block &b) {
       real ret = 0;
       for (auto &ind : b.get_local_region()) {
-        auto center = VectorI(ind);
-        auto div = scratch.node(center)[CH_VX] -
-                   scratch.node(center + VectorI(1, 0, 0))[CH_VX] +
-                   scratch.node(center)[CH_VY] -
-                   scratch.node(center + VectorI(0, 1, 0))[CH_VY] +
-                   scratch.node(center)[CH_VZ] -
-                   scratch.node(center + VectorI(0, 0, 1))[CH_VZ];
-        ret = std::max(ret, std::abs(div));
+        ret = std::max(ret, std::abs(b.node_local(ind)[CH_B]));
       }
       return ret;
     });
-    */
   }
 
-  void project() {
-    // Compute divergence
-    real before_projection = max_divergency();
-    TC_P(before_projection);
+  void compute_b() {
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
           Grid::GridScratchPad scratch(an);
           for (auto &ind : b.get_local_region()) {
             auto center = VectorI(ind);
-            b.node_local(ind)[CH_B] =
-                scratch.node(center)[CH_VX] -
-                scratch.node(center + VectorI(1, 0, 0))[CH_VX] +
-                scratch.node(center)[CH_VY] -
-                scratch.node(center + VectorI(0, 1, 0))[CH_VY] +
-                scratch.node(center)[CH_VZ] -
-                scratch.node(center + VectorI(0, 0, 1))[CH_VZ];
+            auto div = 0;
+            for (int i = 0; i < 3; i++) {
+              div += scratch.node(center)[CH_VX + i] -
+                     scratch.node(center + VectorI::axis(i))[CH_VX + i];
+            }
+            b.node_local(ind)[CH_B] = div;
+            if (div != 0) {
+              TC_P(div);
+            }
           }
         },
         false, true);
+  }
+
+  void project() {
+    // Compute divergence
+    compute_b();
+    real before_projection = b_norm();
+    TC_P(before_projection);
     // Solve Poisson
-    run_pcg();
+    TC_ERROR("");
+    poisson_solve();
+    TC_INFO("solved");
     // Apply pressure
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
@@ -530,18 +524,22 @@ class MGPCGSmoke {
 
         },
         false, true);
-    real after_projection = max_divergency();
+    real after_projection = b_norm();
     TC_P(after_projection);
   }
 
   void enforce_boundary_condition() {
     grids[0]->map([&](Block &b) {
-      for (auto &ind : b.get_local_region()) {
-        b.node_local(ind)[CH_VX] = 0;
-        b.node_local(ind)[CH_VY] = 1;
-        b.node_local(ind)[CH_VZ] = 0;
-        if (current_t == 0 && b.base_coord == VectorI(0)) {
-          // Sample some particles
+      if (current_t == 0) {
+        for (auto &ind : b.get_local_region()) {
+          b.node_local(ind)[CH_VX] = 0;
+          b.node_local(ind)[CH_VY] = 1;
+          b.node_local(ind)[CH_VZ] = 0;
+        }
+      }
+      if (b.base_coord == VectorI(0)) {
+        // Sample some particles
+        for (int i = 0; i < 100; i++) {
           Vector pos =
               (b.base_coord.template cast<real>() +
                Vector::rand() * VectorI(Block::size).template cast<real>()) *
@@ -567,9 +565,10 @@ class MGPCGSmoke {
   }
 
   void step() {
+    project();
     enforce_boundary_condition();
     advect();
-    // project();
+    project();
     current_t += dt;
   }
 

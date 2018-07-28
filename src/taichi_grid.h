@@ -651,7 +651,7 @@ class TaichiGrid {
     return reduce(t, r, V(0));
   }
 
-  template <typename T, typename R>
+  template <typename T>
   std::result_of_t<T(Block &)> reduce_max(const T &t) {
     using V = std::result_of_t<T(Block &)>;
     auto max = [](const V &a, const V &b) -> V {
@@ -940,7 +940,8 @@ class TaichiGrid {
   template <typename T>
   void advance(const T &t,
                bool needs_expand = true,
-               bool carry_particles = false) {
+               bool carry_particles = false,
+               bool carry_nodes = true) {
     // T takes (base_coord, Ancestor) and should return void
     using result_type = std::result_of_t<T(Block &, Ancestors &)>;
     TC_STATIC_ASSERT((std::is_same<result_type, void>::value));
@@ -965,12 +966,6 @@ class TaichiGrid {
         return;
       }
       Ancestors ancestors;
-      auto direct_ancestor = ancestors[VectorI(0)];
-      if (carry_particles && direct_ancestor) {
-        std::memcpy(block->particles, direct_ancestor->particles,
-                    direct_ancestor->particle_count * sizeof(Particle));
-        block->particle_count = direct_ancestor->particle_count;
-      }
       RegionND<dim> region(VectorI(-1), VectorI(2));
       auto base_coord = block->base_coord;
       for (auto &offset : region) {
@@ -979,6 +974,15 @@ class TaichiGrid {
         if (b) {
           ancestors[offset.get_ipos()] = b;
         }
+      }
+      auto direct_ancestor = ancestors[VectorI(0)];
+      if (carry_particles && direct_ancestor) {
+        std::memcpy(block->particles, direct_ancestor->particles,
+                    direct_ancestor->particle_count * sizeof(Particle));
+        block->particle_count = direct_ancestor->particle_count;
+      }
+      if (carry_nodes && direct_ancestor) {
+        std::memcpy(block->nodes, direct_ancestor->nodes, sizeof(Block::nodes));
       }
       t(*block, ancestors);
       block->computed = true;

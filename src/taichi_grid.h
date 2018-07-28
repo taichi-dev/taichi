@@ -1148,7 +1148,7 @@ using TestGrid =
     TaichiGrid<TBlock<Vector3f, TestParticle>, TSize3D<128, 128, 128>>;
 
 template <typename Block>
-void accumulate_dilated_grids(Block &b, TAncestors<Block> &an) {
+void stitch_dilated_grids(Block &b, TAncestors<Block> &an) {
   auto base_coord = b.base_coord;
   Region3D local_grid_region(Vector3i(-Block::dilation),
                              Vector3i(Block::dilation) + Vector3i(Block::size));
@@ -1156,7 +1156,7 @@ void accumulate_dilated_grids(Block &b, TAncestors<Block> &an) {
     auto local_i = ind.get_ipos();
     auto global_i = base_coord + local_i;
     for (auto ab : an.data) {
-      if (ab == nullptr)
+      if (ab == nullptr || ab->base_coord == b.base_coord)
         continue;
       if (ab->inside_dilated_global(global_i)) {
         b.node_local(local_i) += ab->node_global(global_i);

@@ -53,7 +53,7 @@ TC_TEST("dilated block") {
   // Do grid exchange here
   CHECK(grid.root.size() == 1);
   grid.advance(
-      [](Block &b, TAncestors<Block> &an) { accumulate_dilated_grids(b, an); });
+      [](Block &b, TAncestors<Block> &an) { stitch_dilated_grids(b, an); });
   CHECK(grid.root.size() == 1);
 
   for (auto b_ind : block_region) {
@@ -87,20 +87,21 @@ TC_TEST("grid_coarsen") {
   }
 
   for (int i = 0; i < mg_lv - 1; i++) {
-    grids[i]->coarsen_to(*grids[i + 1], [&](Block &b, Grid::PyramidAncestors &an) {
-      for (auto a : an.data) {
-        if (!a)
-          continue;
-        for (auto ind : a->get_global_region()) {
-          b.node_global(div_floor(ind.get_ipos(), Vector3i(2))) +=
-              a->node_global(ind.get_ipos()) * (1.0_f / 8 / 2);
-        }
-      }
-    });
+    grids[i]->coarsen_to(
+        *grids[i + 1], [&](Block &b, Grid::PyramidAncestors &an) {
+          for (auto a : an.data) {
+            if (!a)
+              continue;
+            for (auto ind : a->get_global_region()) {
+              b.node_global(div_floor(ind.get_ipos(), Vector3i(2))) +=
+                  a->node_global(ind.get_ipos()) * (1.0_f / 8 / 2);
+            }
+          }
+        });
   }
   for (int i = 0; i < mg_lv; i++) {
     grids[i]->for_each_block([](Block &b) {
-      for (auto ind: b.get_global_region()) {
+      for (auto ind : b.get_global_region()) {
         TC_ASSERT_EQUAL(b.node_global(ind.get_ipos()), ind.get_pos(), 1e-5_f);
       }
     });
@@ -392,6 +393,5 @@ TC_TEST("Interpolation") {
     TC_CHECK_EQUAL(field.sample(coord), gt, 1e-4_f);
   }
 }
-
 
 TC_NAMESPACE_END

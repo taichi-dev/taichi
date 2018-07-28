@@ -318,7 +318,7 @@ class MPMTest {
       grid.advance(
           [&](Grid::Block &b, Grid::Ancestors &an) {
             gather_particles(b, an, grid_pos);
-            accumulate_dilated_grids(b, an);
+            stitch_dilated_grids(b, an);
             // normalize grid
             if (b.base_coord.y <= 0) {
               for (auto &g : b.nodes) {

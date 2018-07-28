@@ -3,6 +3,7 @@
 #include <taichi/system/threading.h>
 #include <taichi/util.h>
 #include <taichi/math/svd.h>
+#include <taichi/visualization/particle_visualization.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -49,6 +50,8 @@ class MGPCGSmoke {
   real current_t;
   real dt = 1e-2_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
 
+  std::unique_ptr<ParticleRenderer> renderer;
+
   enum {
     CH_R,
     CH_Z,
@@ -65,6 +68,14 @@ class MGPCGSmoke {
   };
 
   MGPCGSmoke() {
+    renderer = create_instance_unique<ParticleRenderer>("shadow_map");
+    Dict dict;
+    dict.set("shadow_map_resolution", 0.5_f)
+        .set("alpha", 0.6_f)
+        .set("shadowing", 0.07_f)
+        .set("ambient_light", 0.3_f)
+        .set("light_direction", Vector(1, 3, 1));
+    renderer->initialize(dict);
     current_t = 0;
     // Span a region in
     grids.resize(mg_lv);
@@ -494,6 +505,10 @@ class MGPCGSmoke {
         false, true);
     real after_projection = max_divergency();
     TC_P(after_projection);
+  }
+
+  void render_particles() {
+    auto particles = grids[0]->gather_particles();
   }
 
   void step() {

@@ -361,6 +361,9 @@ class MGPCGSmoke {
     bool use_preconditioner = true;
     real initial_residual_norm = norm(CH_B);
     TC_P(initial_residual_norm);
+    if (initial_residual_norm < 1e-20_f) {
+      return;
+    }
     clear(0, CH_X);
     // r = b - Ax
     residual(0, CH_X, CH_B, CH_R);
@@ -517,7 +520,9 @@ class MGPCGSmoke {
         false, true);
     compute_b();
     real after_projection = norm(CH_B);
-    TC_WARN("After projection: {}", after_projection);
+    if (after_projection > 1e-4_f) {
+      TC_WARN("After projection: {}", after_projection);
+    }
   }
 
   void enforce_boundary_condition() {
@@ -602,7 +607,6 @@ auto smoke = [](const std::vector<std::string> &params) {
     TC_TIME(smoke->step());
     smoke->render(gui.get_canvas());
     gui.update();
-    return;
   }
 };
 

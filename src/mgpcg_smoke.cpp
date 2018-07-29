@@ -91,7 +91,7 @@ class MGPCGSmoke {
   using Vectori = VectorI;
   using GridScratchPad = TGridScratchPad<Block>;
 
-  const int n = 64;
+  const int n = 32;
 
   std::shared_ptr<Camera> cam;
   real current_t;

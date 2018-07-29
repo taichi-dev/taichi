@@ -8,9 +8,9 @@
 
 TC_NAMESPACE_BEGIN
 
-real gravity = 600;
+real gravity = 100;
 real buoyancy = 700;
-real temperature_decay = 3;
+real temperature_decay = 1;
 // TODO: u, v, w have different sizes
 
 struct NodeFlags : public bit::Bits<32> {
@@ -89,7 +89,7 @@ class MGPCGSmoke {
 
   std::shared_ptr<Camera> cam;
   real current_t;
-  real dt = 1e-2_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+  real dt = 3e-3_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
 
   std::unique_ptr<ParticleRenderer> renderer;
 
@@ -496,7 +496,7 @@ class MGPCGSmoke {
             node[CH_VY] = v.sample(backtrace(v.node_pos(ind + offset)));
             node[CH_VZ] = w.sample(backtrace(w.node_pos(ind + offset)));
             node[CH_RHO] = rho.sample(backtrace(rho.node_pos(ind + offset)));
-            node[CH_T] = rho.sample(backtrace(T.node_pos(ind + offset)));
+            node[CH_T] = T.sample(backtrace(T.node_pos(ind + offset)));
           }
 
           Vector particle_range[] = {
@@ -584,21 +584,24 @@ class MGPCGSmoke {
       }
       if (b.base_coord == VectorI(0, -n * 2 + 8, 0)) {
         // Sample some particles
-        for (int i = 0; i < 2000; i++) {
-          Vector pos =
-              (b.base_coord.template cast<real>() +
-               Vector::rand() * VectorI(Block::size).template cast<real>()) *
-              dx;
+        for (int i = 0; i < 3e5 * dt; i++) {
+          auto r = Vector::rand();
+          if (length(r - Vector(0.5_f)) > 0.5) {
+            continue;
+          }
+          Vector pos = (b.base_coord.template cast<real>() +
+                        r * VectorI(Block::size).template cast<real>()) *
+                       dx;
           pos[3] = current_t;
           b.add_particle(Particle{pos});
         }
         // if (current_t == 0) {
         for (auto ind : b.local_region()) {
-          b.node_local(ind)[CH_VX] = 0;
+          b.node_local(ind)[CH_VX] = std::cos(current_t * 50);
           b.node_local(ind)[CH_VY] = 0;
           b.node_local(ind)[CH_VZ] = 0;
           b.node_local(ind)[CH_RHO] = 1;
-          b.node_local(ind)[CH_T] = 1;
+          b.node_local(ind)[CH_T] = (std::sin(current_t * 30)) * 0.2_f + 1_f;
         }
       }
       real scale = std::exp(-temperature_decay * dt);
@@ -606,7 +609,7 @@ class MGPCGSmoke {
         b.node_local(ind)[CH_VY] += (b.node_local(ind)[CH_T] * buoyancy -
                                      b.node_local(ind)[CH_RHO] * gravity) *
                                     dt;
-        b.node_local(ind)[CH_RHO] *= scale;
+        b.node_local(ind)[CH_T] *= scale;
       }
     });
   }
@@ -665,7 +668,7 @@ class MGPCGSmoke {
       for (int i = 0; i < b.size[0]; i++) {
         for (int j = 0; j < b.size[1]; j++) {
           auto node = b.node_local(Vector3i(i, j, 0));
-          auto vel = Vector3(node[CH_T]);
+          auto vel = Vector3(node[CH_RHO]);
           img[Vector2i(b.base_coord.x, b.base_coord.y) +
               Vector2i(n + i, n * 2 + j)] = vel * Vector3(1);
         }

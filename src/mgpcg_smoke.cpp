@@ -163,10 +163,13 @@ class MGPCGSmoke {
   }
 
   void test_pcg() {
-    Region3D active_region(VectorI(-n, -n * 2, -n), VectorI(n, n * 2, n));
-    for (auto &ind : active_region) {
-      if (ind.get_ipos() == VectorI(0)) {
-        grids[0]->node(ind.get_ipos())[CH_B] = 1;
+    {
+      TC_PROFILER("Initialize")
+      Region3D active_region(VectorI(-n, -n * 2, -n), VectorI(n, n * 2, n));
+      for (auto &ind : active_region) {
+        if (ind.get_ipos() == VectorI(0)) {
+          grids[0]->node(ind.get_ipos())[CH_B] = 1;
+        }
       }
     }
     poisson_solve();
@@ -428,6 +431,7 @@ class MGPCGSmoke {
 
   // https://en.wikipedia.org/wiki/Conjugate_gradient_method
   void poisson_solve() {
+    TC_PROFILER("Poisson Solve");
     constexpr real tolerance = 1e-4_f;
     bool use_preconditioner = true;
     real initial_residual_norm = norm(CH_B);
@@ -448,7 +452,7 @@ class MGPCGSmoke {
     copy(CH_P, CH_Z);
     auto old_zr = dot_product(CH_Z, CH_R);
     for (int i = 0; i < 100000; i++) {
-      multiply(CH_Z, CH_P);
+      TC_PROFILE("Multiply", multiply(CH_Z, CH_P));
       real alpha = old_zr / dot_product(CH_P, CH_Z);
 
       saxpy(CH_X, CH_X, CH_P, alpha);
@@ -461,7 +465,7 @@ class MGPCGSmoke {
       }
 
       if (use_preconditioner) {
-        V_cycle(CH_R, CH_Z);
+        TC_PROFILE("V_cycle", V_cycle(CH_R, CH_Z));
       } else {
         copy(CH_Z, CH_R);
       }
@@ -754,7 +758,10 @@ auto mgpcg = [](const std::vector<std::string> &params) {
   // ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGSmoke> mgpcg;
   mgpcg = std::make_unique<MGPCGSmoke>();
-  TC_TIME(mgpcg->test_pcg());
+  while (true) {
+    TC_TIME(mgpcg->test_pcg());
+    print_profile_info();
+  }
   GUI gui2("Pressure", 256, 512);
   auto img = mgpcg->render_pressure_field();
   for (auto ind : gui2.get_canvas().img.get_region()) {

@@ -121,7 +121,7 @@ class MGPCGSmoke {
     for (int i = 0; i < mg_lv - 1; i++) {
       grids[i]->coarsen_to(
           *grids[i + 1], [&](Block &b, Grid::PyramidAncestors &an) {
-            for (auto ind : b.get_local_region()) {
+            for (auto ind : b.local_region()) {
               b.node_local(ind.get_ipos()).flags().set_effective(true);
             }
           });
@@ -279,7 +279,7 @@ class MGPCGSmoke {
               continue;
             }
             Block &ab = *an[ind.get_ipos()];
-            for (auto j : ab.get_local_region()) {
+            for (auto j : ab.local_region()) {
               auto coarse_coord = div_floor(
                   ind.get_ipos() * Vector3i(Block::size) + j.get_ipos(),
                   Vector3i(2));
@@ -296,7 +296,7 @@ class MGPCGSmoke {
     // upsample and apply correction
     grids[level]->refine_from(
         *grids[level + 1], [&](Block &block, Block &ancestor) {
-          for (auto ind : block.get_global_region()) {
+          for (auto ind : block.global_region()) {
             auto correction =
                 scale *
                 ancestor.node_global(div_floor(ind.get_ipos(), Vector3i(2)))[U];
@@ -449,7 +449,7 @@ class MGPCGSmoke {
                    dt * sample_velocity(pos -
                                         (dt * 0.5_f) * sample_velocity(pos));
           };
-          for (auto ind : b.get_local_region()) {
+          for (auto ind : b.local_region()) {
             auto node = b.node_local(ind);
             node[CH_VX + 0] = u.sample(backtrace(u.node_pos(ind)));
             node[CH_VX + 1] = v.sample(backtrace(v.node_pos(ind)));
@@ -481,7 +481,7 @@ class MGPCGSmoke {
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
           Grid::GridScratchPad scratch(an);
-          for (auto &ind : b.get_local_region()) {
+          for (auto &ind : b.local_region()) {
             auto center = VectorI(ind);
             auto div = 0;
             for (int i = 0; i < dim; i++) {
@@ -509,7 +509,7 @@ class MGPCGSmoke {
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
           Grid::GridScratchPad scratch(an);
-          for (auto &ind : b.get_local_region()) {
+          for (auto &ind : b.local_region()) {
             auto center = VectorI(ind);
             for (int k = 0; k < dim; k++) {
               b.node_local(ind)[CH_VX + k] -=
@@ -530,13 +530,13 @@ class MGPCGSmoke {
   void enforce_boundary_condition() {
     grids[0]->map([&](Block &b) {
       if (current_t == 0) {
-        for (auto &ind : b.get_local_region()) {
+        for (auto &ind : b.local_region()) {
           b.node_local(ind)[CH_VX] = 0;
           b.node_local(ind)[CH_VY] = 0;
           b.node_local(ind)[CH_VZ] = 0;
         }
       }
-      if (b.base_coord == VectorI(0)) {
+      if (b.base_coord == VectorI(0, 8, 0)) {
         // Sample some particles
         for (int i = 0; i < 100; i++) {
           Vector pos =
@@ -545,10 +545,12 @@ class MGPCGSmoke {
               dx;
           b.add_particle(Particle{pos});
         }
-        for (auto &ind : b.get_local_region()) {
-          b.node_local(ind)[CH_VX] = 0;
-          b.node_local(ind)[CH_VY] = 2;
-          b.node_local(ind)[CH_VZ] = 0;
+        if (current_t == 0) {
+          for (auto ind : b.local_region()) {
+            b.node_local(ind)[CH_VX] = 0;
+            b.node_local(ind)[CH_VY] = 2;
+            b.node_local(ind)[CH_VZ] = 0;
+          }
         }
       }
     });
@@ -625,7 +627,7 @@ class MGPCGSmoke {
           auto node = b.node_local(Vector3i(i, j, 0));
           auto vel = Vector3(node[CH_X]);
           img[Vector2i(b.base_coord.x, b.base_coord.y) +
-              Vector2i(n + i, n * 2 + j)] = vel * Vector3(10) + Vector3(0.5_f);
+              Vector2i(n + i, n * 2 + j)] = vel * Vector3(1) + Vector3(0.5_f);
         }
       }
     });
@@ -659,7 +661,8 @@ auto smoke = [](const std::vector<std::string> &params) {
     TC_TIME(smoke->step());
     smoke->render(gui.get_canvas());
     gui.update();
-    auto img = smoke->render_velocity_field();
+    //auto img = smoke->render_velocity_field();
+    auto img = smoke->render_pressure_field();
     for (auto ind : gui2.get_canvas().img.get_region()) {
       gui2.get_canvas().img[ind] = Vector3(img[Vector2i(ind) / Vector2i(4)]);
     }

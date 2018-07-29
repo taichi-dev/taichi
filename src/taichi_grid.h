@@ -240,10 +240,10 @@ struct TBlock {
     return inside_undilated_local(to_local(global_coord));
   }
 
-  Region3D get_global_region() const {
+  Region3D global_region() const {
     return Region3D(base_coord, base_coord + block_size::VectorI());
   }
-  Region3D get_local_region() const {
+  Region3D local_region() const {
     return Region3D(VectorI(0), block_size::VectorI());
   }
 };

@@ -92,7 +92,7 @@ TC_TEST("grid_coarsen") {
           for (auto a : an.data) {
             if (!a)
               continue;
-            for (auto ind : a->get_global_region()) {
+            for (auto ind : a->global_region()) {
               b.node_global(div_floor(ind.get_ipos(), Vector3i(2))) +=
                   a->node_global(ind.get_ipos()) * (1.0_f / 8 / 2);
             }
@@ -101,7 +101,7 @@ TC_TEST("grid_coarsen") {
   }
   for (int i = 0; i < mg_lv; i++) {
     grids[i]->for_each_block([](Block &b) {
-      for (auto ind : b.get_global_region()) {
+      for (auto ind : b.global_region()) {
         TC_ASSERT_EQUAL(b.node_global(ind.get_ipos()), ind.get_pos(), 1e-5_f);
       }
     });

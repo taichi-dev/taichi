@@ -94,7 +94,7 @@ class MGPCGSmoke {
   using Vectori = VectorI;
   using GridScratchPad = TGridScratchPad<Block>;
 
-  const int n = 32;
+  const int n = 64;
 
   std::shared_ptr<Camera> cam;
   real current_t;
@@ -755,7 +755,7 @@ class MGPCGSmoke {
 };
 
 auto mgpcg = [](const std::vector<std::string> &params) {
-  ThreadedTaskManager::TbbParallelismControl _(1);
+  ThreadedTaskManager::TbbParallelismControl _(4);
   std::unique_ptr<MGPCGSmoke> mgpcg;
   mgpcg = std::make_unique<MGPCGSmoke>();
   while (true) {

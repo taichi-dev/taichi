@@ -170,7 +170,7 @@ struct TBlock {
     this->computed = false;
     this->particle_count = 0;
     this->timestamp = timestamp;
-    //std::memset(nodes, 0, sizeof(nodes));
+    // std::memset(nodes, 0, sizeof(nodes));
   }
 
   void add_particle(const Particle &p) {
@@ -506,6 +506,7 @@ class TaichiGrid {
   // A mapping to root domains
   // TODO: this is slow
   using RootDomains = std::unordered_map<uint64, std::unique_ptr<RootDomain>>;
+  //using RootDomains = std::map<uint64, std::unique_ptr<RootDomain>>;
   RootDomains root;
   int current_timestamp;
 
@@ -961,11 +962,20 @@ class TaichiGrid {
     // Populate blocks at the next time step, if NOT killed
     {
       TC_PROFILER("populate new grid1");
-      for (auto b : get_block_list(old_timestamp)) {
+      auto list = get_block_list(old_timestamp);
+      for (auto b: list) {
         if (!b->killed) {
           touch(b->base_coord, new_timestamp);
         }
       }
+      /*
+      tbb::parallel_for(0, (int)list.size(), [&](int i) {
+        auto &b = list[i];
+        if (!b->killed) {
+          touch(b->base_coord, new_timestamp);
+        }
+      });
+      */
     }
 
     auto compute_block = [&](Block *block) {
@@ -1000,6 +1010,7 @@ class TaichiGrid {
       block->computed = true;
     };
     if (world_size != 1) {
+      TC_PROFILER("Communicate");
       tbb::task_group g;
       auto existing_new_blocks = get_block_list(new_timestamp);
       g.run([&] {
@@ -1041,8 +1052,8 @@ class TaichiGrid {
       TC_PROFILE("expand", expand(new_timestamp));
     }
     {
-      auto new_blocks = get_block_list(new_timestamp);
       TC_PROFILER("computation");
+      auto new_blocks = get_block_list(new_timestamp);
       tbb::parallel_for_each(new_blocks.begin(), new_blocks.end(),
                              [&](Block *block) {
                                if (!block->computed && !block->killed)
@@ -1050,15 +1061,19 @@ class TaichiGrid {
                              });
     }
     TC_PROFILE("clear_killed_blocks", clear_killed_blocks());
-    RootDomains new_root;
-    for (auto &kv : root) {
-      auto &b = *kv.second;
-      // Note: this works only for synchronous...
-      if (b.timestamp == current_timestamp) {
-        new_root.insert(std::move(kv));
+    {
+      TC_PROFILER("make new root");
+      // This may be slow due to destructor invocations (RootDomain, Block)
+      RootDomains new_root;
+      for (auto &kv : root) {
+        auto &b = *kv.second;
+        // Note: this works only for synchronous...
+        if (b.timestamp == current_timestamp) {
+          new_root.insert(std::move(kv));
+        }
       }
+      root = std::move(new_root);
     }
-    root = std::move(new_root);
   }
 
   std::size_t num_particles() {

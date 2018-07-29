@@ -170,7 +170,7 @@ struct TBlock {
     this->computed = false;
     this->particle_count = 0;
     this->timestamp = timestamp;
-    std::memset(nodes, 0, sizeof(nodes));
+    //std::memset(nodes, 0, sizeof(nodes));
   }
 
   void add_particle(const Particle &p) {

@@ -329,7 +329,7 @@ class MGPCGSmoke {
             }
           }
         },
-        false, true);
+        false, true); // carry nodes only if on finest level
   }
 
   void clear(int level, int channel) {
@@ -755,7 +755,7 @@ class MGPCGSmoke {
 };
 
 auto mgpcg = [](const std::vector<std::string> &params) {
-  // ThreadedTaskManager::TbbParallelismControl _(1);
+  ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGSmoke> mgpcg;
   mgpcg = std::make_unique<MGPCGSmoke>();
   while (true) {

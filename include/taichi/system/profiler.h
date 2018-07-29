@@ -93,8 +93,12 @@ class ProfilerRecords {
         return std::make_pair(1e6_f, "us");
       } else if (t < 1) {
         return std::make_pair(1e3_f, "ms");
-      } else {
+      } else if (t < 60) {
         return std::make_pair(1_f, " s");
+      } else if (t < 3600) {
+        return std::make_pair(60_f, " m");
+      } else {
+        return std::make_pair(3600_f, "h");
       }
     };
 
@@ -107,17 +111,18 @@ class ProfilerRecords {
       return get_readable_time_with_scale(t, scale);
     };
 
-    float64 total_time = node->get_averaged();
+    float64 total_time = node->total_time;
     if (depth == 0) {
       // Root node only
       make_indent(0);
-      fmt::print("{}\n", node->name.c_str());
+      fmt::print_colored(fmt::GREEN, "{}\n", node->name.c_str());
     }
     if (total_time < 1e-6f) {
       for (auto &ch : node->childs) {
         make_indent(1);
-        auto child_time = ch->get_averaged();
-        fmt::print("{} {}\n", get_readable_time(child_time), ch->name);
+        auto child_time = ch->total_time;
+        fmt::print_colored(fmt::CYAN, "{} {}\n", get_readable_time(child_time),
+                           ch->name);
         print(ch.get(), depth + 1);
       }
     } else {
@@ -125,29 +130,36 @@ class ProfilerRecords {
       float64 unaccounted = total_time;
       for (auto &ch : node->childs) {
         make_indent(1);
-        auto child_time = ch->get_averaged();
-        fmt::print("{} {:5.2f}%  {}\n",
-                   get_readable_time_with_scale(child_time, scale),
-                   child_time * 100.0 / total_time, ch->name);
+        auto child_time = ch->total_time;
+        std::string bulk_statistics = fmt::format(
+            "{} {:5.2f}%  {}", get_readable_time_with_scale(child_time, scale),
+            child_time * 100.0 / total_time, ch->name);
+        fmt::print_colored(fmt::CYAN, "{:40}", bulk_statistics);
+        fmt::print_colored(
+            fmt::BLUE, "         [{} x {}]\n", ch->num_samples,
+            get_readable_time_with_scale(ch->get_averaged(),
+                                         get_time_scale(ch->get_averaged())));
         if (ch->account_tpe) {
           make_indent(1);
           fmt::print("                     [TPE] {}\n",
-                     get_readable_time(ch->get_averaged_tpe()));
+                     get_readable_time(ch->total_time));
         }
         print(ch.get(), depth + 1);
         unaccounted -= child_time;
       }
       if (!node->childs.empty() && (unaccounted > total_time * 0.005)) {
         make_indent(1);
-        fmt::print("{} {:5.2f}%  {}\n",
-                   get_readable_time_with_scale(unaccounted, scale),
-                   unaccounted * 100.0 / total_time, "[unaccounted]");
+        fmt::print_colored(fmt::YELLOW, "{} {:5.2f}%  {}\n",
+                           get_readable_time_with_scale(unaccounted, scale),
+                           unaccounted * 100.0 / total_time, "[unaccounted]");
       }
     }
   }
 
   void print() {
+    fmt::print_colored(fmt::CYAN, std::string(80, '>') + "\n");
     print(root.get(), 0);
+    fmt::print_colored(fmt::CYAN, std::string(80, '>') + "\n");
   }
 
   void insert_sample(float64 time) {
@@ -229,7 +241,7 @@ class Profiler {
     statements;                      \
   }
 
-#define TC_PROFILER(name) taichi::Profiler _profiler_ ## __LINE__(name);
+#define TC_PROFILER(name) taichi::Profiler _profiler_##__LINE__(name);
 
 #define TC_PROFILE_TPE(name, statements, elements) \
   {                                                \

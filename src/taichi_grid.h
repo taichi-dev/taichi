@@ -274,14 +274,18 @@ struct TRootDomain {
 
   TRootDomain(VectorI base_coord, int timestamp)
       : base_coord(base_coord), timestamp(timestamp) {
+    TC_PROFILER("RootDomain Ctor");
     TC_ASSERT(num_blocks ==
               (bucket_size::x() / block_size[0]) *
                   (bucket_size::y() / block_size[1]) *
                   (bucket_size::z() / block_size[2]));
     // TC_P(num_blocks);
     bitmap.resize((num_blocks + 63) / 64);
-    allocator =
-        std::make_unique<VirtualMemoryAllocator>(num_blocks * sizeof(Block));
+    {
+      TC_PROFILER("memory allocation");
+      allocator =
+          std::make_unique<VirtualMemoryAllocator>(num_blocks * sizeof(Block));
+    }
     data = (Block *)allocator->ptr;
     reset();
   }
@@ -318,6 +322,7 @@ struct TRootDomain {
   }
 
   void touch(VectorI global_coord) {
+    TC_PROFILER("touch block");
     std::lock_guard<std::mutex> _(lock);
     auto local_coord = global_coord - base_coord;
     auto bid = local_coord_to_block_id(local_coord);
@@ -326,7 +331,8 @@ struct TRootDomain {
     } else {
       auto block_base_coord = to_global(
           div_floor(local_coord, VectorI(block_size)) * VectorI(block_size));
-      data[bid].initialize(block_base_coord, timestamp);
+      TC_PROFILE("Initialize block",
+                  data[bid].initialize(block_base_coord, timestamp));
       set_block_activity(bid, true);
     }
   }
@@ -506,7 +512,7 @@ class TaichiGrid {
   // A mapping to root domains
   // TODO: this is slow
   using RootDomains = std::unordered_map<uint64, std::unique_ptr<RootDomain>>;
-  //using RootDomains = std::map<uint64, std::unique_ptr<RootDomain>>;
+  // using RootDomains = std::map<uint64, std::unique_ptr<RootDomain>>;
   RootDomains root;
   int current_timestamp;
 
@@ -963,19 +969,22 @@ class TaichiGrid {
     {
       TC_PROFILER("populate new grid1");
       auto list = get_block_list(old_timestamp);
-      for (auto b: list) {
-        if (!b->killed) {
-          touch(b->base_coord, new_timestamp);
+      {
+        TC_PROFILER("touch");
+        for (auto b : list) {
+          if (!b->killed) {
+            touch(b->base_coord, new_timestamp);
+          }
         }
+        /*
+        tbb::parallel_for(0, (int)list.size(), [&](int i) {
+          auto &b = list[i];
+          if (!b->killed) {
+            touch(b->base_coord, new_timestamp);
+          }
+        });
+        */
       }
-      /*
-      tbb::parallel_for(0, (int)list.size(), [&](int i) {
-        auto &b = list[i];
-        if (!b->killed) {
-          touch(b->base_coord, new_timestamp);
-        }
-      });
-      */
     }
 
     auto compute_block = [&](Block *block) {

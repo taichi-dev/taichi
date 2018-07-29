@@ -95,7 +95,7 @@ class MGPCGSmoke {
 
   std::shared_ptr<Camera> cam;
   real current_t;
-  real dt = 3e-3_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+  real dt = 1e-2_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
 
   std::unique_ptr<ParticleRenderer> renderer;
 
@@ -148,8 +148,15 @@ class MGPCGSmoke {
     for (auto ind : active_region) {
       grids[0]->touch(ind);
       grids[0]->node(ind).flags().set_effective(true);
+      grids[0]->get_block_if_exist(ind)->meta.set_has_effective_cell(true);
     }
     set_up_hierechy();
+    Region3D buffer_region(VectorI(-n, -n * 2, -n),
+                           VectorI(n, n * 2, n) + VectorI(1));
+    // Touch extra faces for u, v, w
+    for (auto ind : buffer_region) {
+      grids[0]->touch(ind);
+    }
   }
 
   void test_pcg() {
@@ -170,6 +177,7 @@ class MGPCGSmoke {
             for (auto ind : b.local_region()) {
               b.node_local(ind.get_ipos()).flags().set_effective(true);
             }
+            b.meta.set_has_effective_cell(true);
           });
       total_blocks /= 8;
       TC_ASSERT(grids[i + 1]->num_active_blocks() == total_blocks);
@@ -179,6 +187,8 @@ class MGPCGSmoke {
   void residual(int level, int U, int B, int R) {
     grids[level]->advance(
         [&](Block &b, Grid::Ancestors &an) {
+          if (!b.meta.get_has_effective_cell())
+            return;
           GridScratchPad scratch(an);
           // 6 neighbours
           for (int i = 0; i < Block::size[0]; i++) {
@@ -207,6 +217,8 @@ class MGPCGSmoke {
     // TODO: this supports zero-Dirichlet BC only!
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
+          if (!b.meta.get_has_effective_cell())
+            return;
           GridScratchPad scratch(an);
           // 6 neighbours
           for (int i = 0; i < Block::size[0]; i++) {
@@ -276,6 +288,8 @@ class MGPCGSmoke {
     // TODO: this supports zero-Dirichlet BC only!
     grids[level]->advance(
         [&](Grid::Block &b, Grid::Ancestors &an) {
+          if (!b.meta.get_has_effective_cell())
+            return;
           GridScratchPad scratch(an);
           // 6 neighbours
           for (int i = 0; i < Block::size[0]; i++) {
@@ -319,6 +333,8 @@ class MGPCGSmoke {
     clear(level + 1, B_out);
     grids[level]->coarsen_to(
         *grids[level + 1], [&](Block &block, Grid::PyramidAncestors &an) {
+          if (!block.meta.get_has_effective_cell())
+            return;
           for (auto ind : Region3D(Vector3i(0), Vector3i(2))) {
             if (!an[ind.get_ipos()]) {
               TC_NOT_IMPLEMENTED
@@ -342,6 +358,8 @@ class MGPCGSmoke {
     // upsample and apply correction
     grids[level]->refine_from(
         *grids[level + 1], [&](Block &block, Block &ancestor) {
+          if (!block.meta.get_has_effective_cell())
+            return;
           for (auto ind : block.global_region()) {
             auto correction =
                 scale *
@@ -668,7 +686,7 @@ class MGPCGSmoke {
     Array2D<Vector3> img;
     img.initialize(Vector2i(n * 2, n * 4));
     grids[0]->for_each_block([&](Block &b) {
-      if (b.base_coord.z != 0) {
+      if (b.base_coord.z != 0 || !b.meta.get_has_effective_cell()) {
         return;
       }
       for (int i = 0; i < b.size[0]; i++) {
@@ -687,7 +705,7 @@ class MGPCGSmoke {
     Array2D<Vector3> img;
     img.initialize(Vector2i(n * 2, n * 4));
     grids[0]->for_each_block([&](Block &b) {
-      if (b.base_coord.z != 0) {
+      if (b.base_coord.z != 0 || !b.meta.get_has_effective_cell()) {
         return;
       }
       for (int i = 0; i < b.size[0]; i++) {
@@ -706,7 +724,7 @@ class MGPCGSmoke {
     Array2D<Vector3> img;
     img.initialize(Vector2i(n * 2, n * 4));
     grids[0]->for_each_block([&](Block &b) {
-      if (b.base_coord.z != 0) {
+      if (b.base_coord.z != 0 || !b.meta.get_has_effective_cell()) {
         return;
       }
       for (int i = 0; i < b.size[0]; i++) {

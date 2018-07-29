@@ -483,13 +483,13 @@ class MGPCGSmoke {
           Grid::GridScratchPad scratch(an);
           for (auto &ind : b.local_region()) {
             auto center = VectorI(ind);
-            auto div = 0;
+            auto div = 0.0_f;
             for (int i = 0; i < dim; i++) {
               div += scratch.node(center)[CH_VX + i] -
                      scratch.node(center + VectorI::axis(i))[CH_VX + i];
             }
             b.node_local(ind)[CH_B] = div;
-            if (debug && std::abs(div) > 1e-4_f) {
+            if (debug && std::abs(div) > 1e-3_f) {
               TC_P(b.base_coord + ind);
               TC_P(div);
             }
@@ -536,7 +536,7 @@ class MGPCGSmoke {
           b.node_local(ind)[CH_VZ] = 0;
         }
       }
-      if (b.base_coord == VectorI(0, 8, 0)) {
+      if (b.base_coord == VectorI(0)) {
         // Sample some particles
         for (int i = 0; i < 100; i++) {
           Vector pos =
@@ -548,7 +548,7 @@ class MGPCGSmoke {
         if (current_t == 0) {
           for (auto ind : b.local_region()) {
             b.node_local(ind)[CH_VX] = 0;
-            b.node_local(ind)[CH_VY] = 2;
+            b.node_local(ind)[CH_VY] = 1;
             b.node_local(ind)[CH_VZ] = 0;
           }
         }
@@ -661,7 +661,7 @@ auto smoke = [](const std::vector<std::string> &params) {
     TC_TIME(smoke->step());
     smoke->render(gui.get_canvas());
     gui.update();
-    //auto img = smoke->render_velocity_field();
+    // auto img = smoke->render_velocity_field();
     auto img = smoke->render_pressure_field();
     for (auto ind : gui2.get_canvas().img.get_region()) {
       gui2.get_canvas().img[ind] = Vector3(img[Vector2i(ind) / Vector2i(4)]);

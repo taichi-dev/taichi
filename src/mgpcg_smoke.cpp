@@ -11,6 +11,9 @@ TC_NAMESPACE_BEGIN
 real gravity = 100;
 real buoyancy = 700;
 real temperature_decay = 1;
+
+static constexpr bool debug = false;
+
 // TODO: u, v, w have different sizes
 
 struct BlockFlags : public bit::Bits<32> {
@@ -226,7 +229,6 @@ class MGPCGSmoke {
               for (int k = 0; k < Block::size[2]; k++) {
                 int count = 0;
                 real tmp = 0;
-                auto &o = b.get_node_volume()[i][j][k][channel_out];
                 auto fetch = [&](int ii, int jj, int kk) {
                   auto &n = scratch.data[i + (ii)][j + (jj)][k + (kk)];
                   count++;
@@ -238,15 +240,18 @@ class MGPCGSmoke {
                 fetch(0, -1, 0);
                 fetch(1, 0, 0);
                 fetch(-1, 0, 0);
+                auto &o = b.get_node_volume()[i][j][k][channel_out];
                 o = count * scratch.data[i][j][k][channel_in] - tmp;
-                if (o != o) {
-                  TC_P(b.base_coord);
-                  TC_P(scratch.data[i][j][k][channel_in]);
-                  TC_P(o);
-                  TC_P(i);
-                  TC_P(j);
-                  TC_P(k);
-                  Time::sleep(0.01);
+                if (debug) {
+                  if (o != o) {
+                    TC_P(b.base_coord);
+                    TC_P(scratch.data[i][j][k][channel_in]);
+                    TC_P(o);
+                    TC_P(i);
+                    TC_P(j);
+                    TC_P(k);
+                    Time::sleep(0.01);
+                  }
                 }
               }
             }
@@ -295,7 +300,7 @@ class MGPCGSmoke {
           for (int i = 0; i < Block::size[0]; i++) {
             for (int j = 0; j < Block::size[1]; j++) {
               for (int k = 0; k < Block::size[2]; k++) {
-                TC_ASSERT(scratch.data[i][j][k].flags().get_effective());
+                if (debug)TC_ASSERT(scratch.data[i][j][k].flags().get_effective());
                 int count = 0;
                 // (B - Lu) / Diag
                 real tmp = scratch.data[i][j][k][B];
@@ -310,7 +315,9 @@ class MGPCGSmoke {
                 fetch(1, 0, 0);
                 fetch(-1, 0, 0);
                 auto original = scratch.data[i][j][k][U];
-                TC_ASSERT(count != 0);
+                if (debug) {
+                  TC_ASSERT(count != 0);
+                }
                 auto &o = b.get_node_volume()[i][j][k][U];
                 // Damping is important. It brings down #iterations to 1e-7 from
                 // 91 to 10...

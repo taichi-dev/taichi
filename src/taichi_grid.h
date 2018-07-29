@@ -99,7 +99,8 @@ struct TSize3D {
 template <typename Node_,
           typename Particle_,
           typename block_size_ = TSize3D<8>,
-          int dilation_ = 0>
+          int dilation_ = 0,
+          int max_particles_per_node_ = 12>
 struct TBlock {
   static constexpr int dim = 3;
   static constexpr int dilation = dilation_;
@@ -109,11 +110,12 @@ struct TBlock {
   using Node = Node_;
   using Particle = Particle_;
   using block_size = block_size_;
-
   using particle_to_grid_func = std::function<TVector<int, dim>(Particle &)>;
 
   static constexpr const std::array<int, dim> size = {
       block_size_::x(), block_size_::y(), block_size_::z()};
+
+  static constexpr int max_particles_per_node = max_particles_per_node_;
 
   static constexpr const std::array<int, dim> grid_size = {
       block_size_::x() + 2 * dilation, block_size_::y() + 2 * dilation,
@@ -135,7 +137,7 @@ struct TBlock {
   Node nodes[num_nodes];
   using VolumeNodeType = Node[grid_size[0]][grid_size[1]][grid_size[2]];
 
-  static constexpr int max_num_particles = 12 * num_nodes;
+  static constexpr int max_num_particles = max_particles_per_node * num_nodes;
   Particle particles[max_num_particles];
   // Particle data
   std::size_t particle_count;
@@ -1204,11 +1206,11 @@ struct LerpField {
   using VectorI = TVector<int, 3>;
   using Region = TRegion<3>;
   T data[block_size::x()][block_size::y()][block_size::z()];
-  Vector scale;
+  Vector scale, inv_scale;
   Vector translate;
 
   LerpField(Vector scale, Vector translate)
-      : scale(scale), translate(translate) {
+      : scale(scale), inv_scale(Vector(1.0_f) / scale), translate(translate) {
   }
 
   TC_FORCE_INLINE T *linear_data() {
@@ -1252,7 +1254,7 @@ struct LerpField {
   }
 
   TC_FORCE_INLINE Vector node_pos(VectorI ind) {
-    return (ind.template cast<real>() + translate) / scale;
+    return (ind.template cast<real>() + translate) * inv_scale;
   }
 
   TC_FORCE_INLINE T &node(VectorI ind) {

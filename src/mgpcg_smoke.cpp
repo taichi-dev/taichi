@@ -8,7 +8,8 @@
 
 TC_NAMESPACE_BEGIN
 
-// TODO: u, v, w has different sizes
+real gravity = 3;
+// TODO: u, v, w have different sizes
 
 struct NodeFlags : public bit::Bits<32> {
   using Base = bit::Bits<32>;
@@ -32,7 +33,40 @@ struct Particle {
   Vector3 pos;
 };
 
-using Block = TBlock<Node, Particle, TSize3D<8>, 0>;
+Vector3 hsv2rgb(Vector3 hsv) {
+  real h = hsv.x;
+  real s = hsv.y;
+  real v = hsv.z;
+  int j = (int)floor(h * 6);
+  real f = h * 6 - j;
+  real p = v * (1 - s);
+  real q = v * (1 - f * s);
+  real t = v * (1 - (1 - f) * s);
+  real r, g, b;
+  switch (j % 6) {
+    case 0:
+      r = v, g = t, b = p;
+      break;
+    case 1:
+      r = q, g = v, b = p;
+      break;
+    case 2:
+      r = p, g = v, b = t;
+      break;
+    case 3:
+      r = p, g = q, b = v;
+      break;
+    case 4:
+      r = t, g = p, b = v;
+      break;
+    default:  // 5, actually
+      r = v, g = p, b = q;
+      break;
+  }
+  return Vector3(r, g, b);
+}
+
+using Block = TBlock<Node, Particle, TSize3D<8>, 0, 64>;
 
 class MGPCGSmoke {
  public:
@@ -75,6 +109,7 @@ class MGPCGSmoke {
   MGPCGSmoke() {
     renderer = create_instance_unique<ParticleRenderer>("shadow_map");
     auto radius = 1.0_f;
+
     Dict cam_dict;
     cam_dict.set("origin", Vector(0, radius * 0.3, radius))
         .set("look_at", Vector(0, 0, 0))
@@ -82,12 +117,14 @@ class MGPCGSmoke {
         .set("fov", 70)
         .set("res", Vector2i(800));
     cam = create_instance<Camera>("pinhole", cam_dict);
+
     Dict dict;
-    dict.set("shadow_map_resolution", 0.5_f)
+    dict.set("shadow_map_resolution", 1.5_f)
         .set("alpha", 0.6_f)
-        .set("shadowing", 0.07_f)
+        .set("shadowing", 0.0001_f)
         .set("ambient_light", 0.3_f)
-        .set("light_direction", Vector(1, 3, 1));
+        .set("light_direction", Vector(2, 3, 1));
+
     renderer->initialize(dict);
     renderer->set_camera(cam);
     current_t = 0;
@@ -357,7 +394,7 @@ class MGPCGSmoke {
 
   // https://en.wikipedia.org/wiki/Conjugate_gradient_method
   void poisson_solve() {
-    constexpr real tolerance = 1e-6_f;
+    constexpr real tolerance = 1e-4_f;
     bool use_preconditioner = true;
     real initial_residual_norm = norm(CH_B);
     TC_P(initial_residual_norm);
@@ -449,12 +486,14 @@ class MGPCGSmoke {
                    dt * sample_velocity(pos -
                                         (dt * 0.5_f) * sample_velocity(pos));
           };
+          auto offset = Vector3i(Block::size);
           for (auto ind : b.local_region()) {
-            auto node = b.node_local(ind);
-            node[CH_VX + 0] = u.sample(backtrace(u.node_pos(ind)));
-            node[CH_VX + 1] = v.sample(backtrace(v.node_pos(ind)));
-            node[CH_VX + 2] = w.sample(backtrace(w.node_pos(ind)));
-            node[CH_VX + 3] = rho.sample_global(backtrace(rho.node_pos(ind)));
+            auto &node = b.node_local(ind);
+            node[CH_VX] = u.sample(backtrace(u.node_pos(ind + offset)));
+            node[CH_VY] = v.sample(backtrace(v.node_pos(ind + offset)));
+            node[CH_VZ] = w.sample(backtrace(w.node_pos(ind + offset)));
+            node[CH_DENSITY] =
+                rho.sample(backtrace(rho.node_pos(ind + offset)));
           }
 
           Vector particle_range[] = {
@@ -520,10 +559,12 @@ class MGPCGSmoke {
 
         },
         false, true);
-    compute_b(true);
-    real after_projection = norm(CH_B);
-    if (after_projection > 1e-4_f) {
-      TC_WARN("After projection: {}", after_projection);
+    if (false) {
+      compute_b(true);
+      real after_projection = norm(CH_B);
+      if (after_projection > 1e-4_f) {
+        TC_WARN("After projection: {}", after_projection);
+      }
     }
   }
 
@@ -536,33 +577,41 @@ class MGPCGSmoke {
           b.node_local(ind)[CH_VZ] = 0;
         }
       }
-      if (b.base_coord == VectorI(0)) {
+      if (b.base_coord == VectorI(0, -n * 2 + 8, 0)) {
         // Sample some particles
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 2500; i++) {
           Vector pos =
               (b.base_coord.template cast<real>() +
                Vector::rand() * VectorI(Block::size).template cast<real>()) *
               dx;
+          pos[3] = current_t;
           b.add_particle(Particle{pos});
         }
-        if (current_t == 0) {
-          for (auto ind : b.local_region()) {
-            b.node_local(ind)[CH_VX] = 0;
-            b.node_local(ind)[CH_VY] = 1;
-            b.node_local(ind)[CH_VZ] = 0;
-          }
+        // if (current_t == 0) {
+        for (auto ind : b.local_region()) {
+          b.node_local(ind)[CH_VX] = 0;
+          b.node_local(ind)[CH_VY] = 10;
+          b.node_local(ind)[CH_VZ] = 0;
+          b.node_local(ind)[CH_DENSITY] = 1;
         }
+      }
+      for (auto ind : b.local_region()) {
+        b.node_local(ind)[CH_VY] -=
+            b.node_local(ind)[CH_DENSITY] * gravity * dt;
       }
     });
   }
 
   void render(Canvas &canvas) {
     auto res = canvas.img.get_res();
-    Array2D<Vector3> image(Vector2i(res), Vector3(0.7));
+    Array2D<Vector3> image(Vector2i(res),
+                           Vector3(0.7, 0.7, 0.7) - Vector3(0.7_f));
     std::vector<RenderParticle> particles;
     for (auto &p : grids[0]->gather_particles()) {
-      particles.push_back(RenderParticle(p.pos * Vector(0.1_f),
-                                         Vector4(1.0_f, 1.0_f, 0.0_f, 0.5_f)));
+      auto t = p.pos[3];
+      auto color = hsv2rgb(Vector(fract(t) * 2, 0.7_f, 0.9_f));
+      particles.push_back(
+          RenderParticle(p.pos * Vector(0.16_f), Vector4(color, 0.5_f)));
     }
     renderer->render(image, particles);
     for (auto &ind : image.get_region()) {
@@ -580,7 +629,7 @@ class MGPCGSmoke {
   void test_renderer() {
     int res = 800;
     GUI gui("Rendering Test", res, res);
-    Array2D<Vector3> image(Vector2i(res), Vector3(0.7));
+    Array2D<Vector3> image(Vector2i(res), Vector3(0.5));
     std::vector<RenderParticle> particles;
     for (int i = 0; i < 1000000; i++) {
       Vector3 pos = Vector::rand() - Vector3(0.5_f);
@@ -595,6 +644,25 @@ class MGPCGSmoke {
     while (1) {
       gui.update();
     }
+  }
+
+  Array2D<Vector3> render_density_field() {
+    Array2D<Vector3> img;
+    img.initialize(Vector2i(n * 2, n * 4));
+    grids[0]->for_each_block([&](Block &b) {
+      if (b.base_coord.z != 0) {
+        return;
+      }
+      for (int i = 0; i < b.size[0]; i++) {
+        for (int j = 0; j < b.size[1]; j++) {
+          auto node = b.node_local(Vector3i(i, j, 0));
+          auto vel = Vector3(node[CH_DENSITY]);
+          img[Vector2i(b.base_coord.x, b.base_coord.y) +
+              Vector2i(n + i, n * 2 + j)] = vel * Vector3(1);
+        }
+      }
+    });
+    return img;
   }
 
   Array2D<Vector3> render_velocity_field() {
@@ -615,6 +683,7 @@ class MGPCGSmoke {
     });
     return img;
   }
+
   Array2D<Vector3> render_pressure_field() {
     Array2D<Vector3> img;
     img.initialize(Vector2i(n * 2, n * 4));
@@ -656,17 +725,22 @@ auto smoke = [](const std::vector<std::string> &params) {
   std::unique_ptr<MGPCGSmoke> smoke;
   smoke = std::make_unique<MGPCGSmoke>();
   GUI gui("MGPCG Smoke", 800, 800);
-  GUI gui2("MGPCG Smoke", 256, 512);
+  GUI gui2("Velocity", 256, 512);
+  GUI gui3("Density", 256, 512);
   while (1) {
     TC_TIME(smoke->step());
     smoke->render(gui.get_canvas());
     gui.update();
-    // auto img = smoke->render_velocity_field();
-    auto img = smoke->render_pressure_field();
+    auto img = smoke->render_velocity_field();
     for (auto ind : gui2.get_canvas().img.get_region()) {
       gui2.get_canvas().img[ind] = Vector3(img[Vector2i(ind) / Vector2i(4)]);
     }
     gui2.update();
+    img = smoke->render_density_field();
+    for (auto ind : gui3.get_canvas().img.get_region()) {
+      gui3.get_canvas().img[ind] = Vector3(img[Vector2i(ind) / Vector2i(4)]);
+    }
+    gui3.update();
   }
 };
 

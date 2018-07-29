@@ -3,3 +3,5 @@
 *.tcb
 *.tcbz
 taichi.h
+tmp
+

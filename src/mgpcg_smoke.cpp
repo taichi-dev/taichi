@@ -8,8 +8,8 @@
 
 TC_NAMESPACE_BEGIN
 
-real gravity = 3;
-real buoyancy = 10;
+real gravity = 600;
+real buoyancy = 700;
 real temperature_decay = 3;
 // TODO: u, v, w have different sizes
 
@@ -122,11 +122,11 @@ class MGPCGSmoke {
     cam = create_instance<Camera>("pinhole", cam_dict);
 
     Dict dict;
-    dict.set("shadow_map_resolution", 1.5_f)
+    dict.set("shadow_map_resolution", 0.005_f)
         .set("alpha", 0.6_f)
-        .set("shadowing", 0.0001_f)
+        .set("shadowing", 0.01_f)
         .set("ambient_light", 0.3_f)
-        .set("light_direction", Vector(2, 0, 1));
+        .set("light_direction", Vector(1, 2, 0.5));
 
     renderer->initialize(dict);
     renderer->set_camera(cam);
@@ -584,7 +584,7 @@ class MGPCGSmoke {
       }
       if (b.base_coord == VectorI(0, -n * 2 + 8, 0)) {
         // Sample some particles
-        for (int i = 0; i < 2500; i++) {
+        for (int i = 0; i < 2000; i++) {
           Vector pos =
               (b.base_coord.template cast<real>() +
                Vector::rand() * VectorI(Block::size).template cast<real>()) *
@@ -594,8 +594,8 @@ class MGPCGSmoke {
         }
         // if (current_t == 0) {
         for (auto ind : b.local_region()) {
-          b.node_local(ind)[CH_VX] = -10;
-          b.node_local(ind)[CH_VY] = 10;
+          b.node_local(ind)[CH_VX] = 0;
+          b.node_local(ind)[CH_VY] = 0;
           b.node_local(ind)[CH_VZ] = 0;
           b.node_local(ind)[CH_RHO] = 1;
           b.node_local(ind)[CH_T] = 1;
@@ -642,7 +642,7 @@ class MGPCGSmoke {
     std::vector<RenderParticle> particles;
     for (int i = 0; i < 1000000; i++) {
       Vector3 pos = Vector::rand() - Vector3(0.5_f);
-      particles.push_back(RenderParticle(pos * Vector(0.1_f),
+      particles.push_back(RenderParticle(pos * Vector(10_f),
                                          Vector4(1.0_f, 1.0_f, 0.0_f, 0.5_f)));
     }
     renderer->render(image, particles);
@@ -737,8 +737,10 @@ auto smoke = [](const std::vector<std::string> &params) {
   GUI gui("MGPCG Smoke", 800, 800);
   GUI gui2("Velocity", 256, 512);
   GUI gui3("Density", 256, 512);
-  while (1) {
+
+  for (int frame = 0;; frame++) {
     TC_PROFILE("step", smoke->step());
+    gui.get_canvas().img.write_as_image(fmt::format("tmp/{:05d}.png", frame));
     TC_PROFILE("render", smoke->render(gui.get_canvas()));
     {
       TC_PROFILER("debug");

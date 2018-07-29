@@ -357,7 +357,7 @@ class MGPCGSmoke {
 
   // https://en.wikipedia.org/wiki/Conjugate_gradient_method
   void poisson_solve() {
-    constexpr real tolerance = 1e-4_f;
+    constexpr real tolerance = 1e-6_f;
     bool use_preconditioner = true;
     real initial_residual_norm = norm(CH_B);
     TC_P(initial_residual_norm);
@@ -477,18 +477,22 @@ class MGPCGSmoke {
         false);
   }
 
-  void compute_b() {
+  void compute_b(bool debug = false) {
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
           Grid::GridScratchPad scratch(an);
           for (auto &ind : b.get_local_region()) {
             auto center = VectorI(ind);
             auto div = 0;
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < dim; i++) {
               div += scratch.node(center)[CH_VX + i] -
                      scratch.node(center + VectorI::axis(i))[CH_VX + i];
             }
             b.node_local(ind)[CH_B] = div;
+            if (debug && std::abs(div) > 1e-4_f) {
+              TC_P(b.base_coord + ind);
+              TC_P(div);
+            }
           }
         },
         false, true);
@@ -516,7 +520,7 @@ class MGPCGSmoke {
 
         },
         false, true);
-    compute_b();
+    compute_b(true);
     real after_projection = norm(CH_B);
     if (after_projection > 1e-4_f) {
       TC_WARN("After projection: {}", after_projection);
@@ -602,8 +606,26 @@ class MGPCGSmoke {
         for (int j = 0; j < b.size[1]; j++) {
           auto node = b.node_local(Vector3i(i, j, 0));
           auto vel = Vector3(node[CH_VX], node[CH_VY], node[CH_VZ]);
-          img[Vector2i(b.base_coord.x, b.base_coord.y) + Vector2i(n + i, n * 2 + j)] =
-              vel * Vector3(15) + Vector3(0.5_f);
+          img[Vector2i(b.base_coord.x, b.base_coord.y) +
+              Vector2i(n + i, n * 2 + j)] = vel * Vector3(1) + Vector3(0.5_f);
+        }
+      }
+    });
+    return img;
+  }
+  Array2D<Vector3> render_pressure_field() {
+    Array2D<Vector3> img;
+    img.initialize(Vector2i(n * 2, n * 4));
+    grids[0]->for_each_block([&](Block &b) {
+      if (b.base_coord.z != 0) {
+        return;
+      }
+      for (int i = 0; i < b.size[0]; i++) {
+        for (int j = 0; j < b.size[1]; j++) {
+          auto node = b.node_local(Vector3i(i, j, 0));
+          auto vel = Vector3(node[CH_X]);
+          img[Vector2i(b.base_coord.x, b.base_coord.y) +
+              Vector2i(n + i, n * 2 + j)] = vel * Vector3(10) + Vector3(0.5_f);
         }
       }
     });
@@ -616,6 +638,13 @@ auto mgpcg = [](const std::vector<std::string> &params) {
   std::unique_ptr<MGPCGSmoke> mgpcg;
   mgpcg = std::make_unique<MGPCGSmoke>();
   TC_TIME(mgpcg->test_pcg());
+  GUI gui2("Pressure", 256, 512);
+  auto img = mgpcg->render_pressure_field();
+  for (auto ind : gui2.get_canvas().img.get_region()) {
+    gui2.get_canvas().img[ind] = Vector3(img[Vector2i(ind) / Vector2i(4)]);
+  }
+  while (1)
+    gui2.update();
 };
 
 TC_REGISTER_TASK(mgpcg);
@@ -631,7 +660,7 @@ auto smoke = [](const std::vector<std::string> &params) {
     smoke->render(gui.get_canvas());
     gui.update();
     auto img = smoke->render_velocity_field();
-    for (auto ind: gui2.get_canvas().img.get_region()) {
+    for (auto ind : gui2.get_canvas().img.get_region()) {
       gui2.get_canvas().img[ind] = Vector3(img[Vector2i(ind) / Vector2i(4)]);
     }
     gui2.update();

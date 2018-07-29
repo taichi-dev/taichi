@@ -74,7 +74,7 @@ Vector3 hsv2rgb(Vector3 hsv) {
   return Vector3(r, g, b);
 }
 
-using Block = TBlock<Node, Particle, TSize3D<8>, 0, 64, BlockFlags>;
+using Block = TBlock<Node, Particle, TSize3D<8>, 0, 128, BlockFlags>;
 
 class MGPCGSmoke {
  public:
@@ -91,11 +91,11 @@ class MGPCGSmoke {
   using Vectori = VectorI;
   using GridScratchPad = TGridScratchPad<Block>;
 
-  const int n = 32;
+  const int n = 64;
 
   std::shared_ptr<Camera> cam;
   real current_t;
-  real dt = 3e-3_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+  real dt = 2e-3_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
 
   std::unique_ptr<ParticleRenderer> renderer;
 
@@ -624,16 +624,16 @@ class MGPCGSmoke {
         }
         // if (current_t == 0) {
         for (auto ind : b.local_region()) {
-          // b.node_local(ind)[CH_VX] = std::cos(current_t * 50);
+          b.node_local(ind)[CH_VX] = std::sin(current_t * 50);
           b.node_local(ind)[CH_VY] = 0;
           b.node_local(ind)[CH_VZ] = 0;
           b.node_local(ind)[CH_RHO] = 1;
-          b.node_local(ind)[CH_T] = (std::sin(current_t * 30)) * 0.2_f + 1_f;
+          b.node_local(ind)[CH_T] = (std::cos(current_t * 30)) * 0.2_f + 1_f;
         }
       }
       real scale = std::exp(-temperature_decay * dt);
       for (auto ind : b.local_region()) {
-        b.node_local(ind)[CH_VX] += (b.node_local(ind)[CH_T] * buoyancy -
+        b.node_local(ind)[CH_VY] += (b.node_local(ind)[CH_T] * buoyancy -
                                      b.node_local(ind)[CH_RHO] * gravity) *
                                     dt;
         b.node_local(ind)[CH_T] *= scale;

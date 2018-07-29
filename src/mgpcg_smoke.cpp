@@ -13,6 +13,12 @@ real buoyancy = 700;
 real temperature_decay = 1;
 // TODO: u, v, w have different sizes
 
+struct BlockFlags : public bit::Bits<32> {
+  using Base = bit::Bits<32>;
+  // TC_BIT_FIELD(uint8, num_effective_neighbours, 0);
+  TC_BIT_FIELD(bool, has_effective_cell, 8);
+};
+
 struct NodeFlags : public bit::Bits<32> {
   using Base = bit::Bits<32>;
   TC_BIT_FIELD(uint8, num_effective_neighbours, 0);
@@ -68,7 +74,7 @@ Vector3 hsv2rgb(Vector3 hsv) {
   return Vector3(r, g, b);
 }
 
-using Block = TBlock<Node, Particle, TSize3D<8>, 0, 64>;
+using Block = TBlock<Node, Particle, TSize3D<8>, 0, 64, BlockFlags>;
 
 class MGPCGSmoke {
  public:
@@ -597,7 +603,7 @@ class MGPCGSmoke {
         }
         // if (current_t == 0) {
         for (auto ind : b.local_region()) {
-          b.node_local(ind)[CH_VX] = std::cos(current_t * 50);
+          // b.node_local(ind)[CH_VX] = std::cos(current_t * 50);
           b.node_local(ind)[CH_VY] = 0;
           b.node_local(ind)[CH_VZ] = 0;
           b.node_local(ind)[CH_RHO] = 1;
@@ -606,7 +612,7 @@ class MGPCGSmoke {
       }
       real scale = std::exp(-temperature_decay * dt);
       for (auto ind : b.local_region()) {
-        b.node_local(ind)[CH_VY] += (b.node_local(ind)[CH_T] * buoyancy -
+        b.node_local(ind)[CH_VX] += (b.node_local(ind)[CH_T] * buoyancy -
                                      b.node_local(ind)[CH_RHO] * gravity) *
                                     dt;
         b.node_local(ind)[CH_T] *= scale;

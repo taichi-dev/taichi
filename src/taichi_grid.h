@@ -100,7 +100,8 @@ template <typename Node_,
           typename Particle_,
           typename block_size_ = TSize3D<8>,
           int dilation_ = 0,
-          int max_particles_per_node_ = 12>
+          int max_particles_per_node_ = 12,
+          typename Meta_ = char>
 struct TBlock {
   static constexpr int dim = 3;
   static constexpr int dilation = dilation_;
@@ -111,6 +112,7 @@ struct TBlock {
   using Particle = Particle_;
   using block_size = block_size_;
   using particle_to_grid_func = std::function<TVector<int, dim>(Particle &)>;
+  using Meta = Meta_;
 
   static constexpr const std::array<int, dim> size = {
       block_size_::x(), block_size_::y(), block_size_::z()};
@@ -132,6 +134,7 @@ struct TBlock {
   int timestamp;
   bool killed;
   bool computed;
+  Meta meta;
 
   // Grid data
   Node nodes[num_nodes];
@@ -979,13 +982,17 @@ class TaichiGrid {
         }
       }
       auto direct_ancestor = ancestors[VectorI(0)];
-      if (carry_particles && direct_ancestor) {
-        std::memcpy(block->particles, direct_ancestor->particles,
-                    direct_ancestor->particle_count * sizeof(Particle));
-        block->particle_count = direct_ancestor->particle_count;
-      }
-      if (carry_nodes && direct_ancestor) {
-        std::memcpy(block->nodes, direct_ancestor->nodes, sizeof(Block::nodes));
+      if (direct_ancestor) {
+        if (carry_particles) {
+          std::memcpy(block->particles, direct_ancestor->particles,
+                      direct_ancestor->particle_count * sizeof(Particle));
+          block->particle_count = direct_ancestor->particle_count;
+        }
+        if (carry_nodes) {
+          std::memcpy(block->nodes, direct_ancestor->nodes,
+                      sizeof(Block::nodes));
+        }
+        block->meta = direct_ancestor->meta;
       }
       t(*block, ancestors);
       block->computed = true;

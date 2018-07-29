@@ -952,6 +952,8 @@ class TaichiGrid {
     using result_type = std::result_of_t<T(Block &, Ancestors &)>;
     TC_STATIC_ASSERT((std::is_same<result_type, void>::value));
 
+    TC_PROFILER("advance");
+
     const int old_timestamp = current_timestamp;
     const int new_timestamp = current_timestamp + 1;
 

@@ -768,7 +768,7 @@ TC_REGISTER_TASK(mgpcg);
 
 auto smoke = [](const std::vector<std::string> &params) {
   TC_PROFILER("smoke");
-  // ThreadedTaskManager::TbbParallelismControl _(1);
+  ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGSmoke> smoke;
   smoke = std::make_unique<MGPCGSmoke>();
   GUI gui("MGPCG Smoke", 800, 800);

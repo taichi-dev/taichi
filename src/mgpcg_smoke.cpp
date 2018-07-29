@@ -120,8 +120,8 @@ class MGPCGSmoke {
 
     Dict dict;
     dict.set("shadow_map_resolution", 1.5_f)
-        .set("alpha", 0.6_f)
-        .set("shadowing", 0.0001_f)
+        .set("alpha", 0.4_f)
+        .set("shadowing", 0.00001_f)
         .set("ambient_light", 0.3_f)
         .set("light_direction", Vector(2, 3, 1));
 
@@ -611,7 +611,7 @@ class MGPCGSmoke {
       auto t = p.pos[3];
       auto color = hsv2rgb(Vector(fract(t) * 2, 0.7_f, 0.9_f));
       particles.push_back(
-          RenderParticle(p.pos * Vector(0.16_f), Vector4(color, 0.5_f)));
+          RenderParticle(p.pos * Vector(0.16_f), Vector4(color)));
     }
     renderer->render(image, particles);
     for (auto &ind : image.get_region()) {
@@ -620,9 +620,9 @@ class MGPCGSmoke {
   }
 
   void step() {
-    enforce_boundary_condition();
-    advect();
-    project();
+    TC_PROFILE("BC", enforce_boundary_condition());
+    TC_PROFILE("Advection", advect());
+    TC_PROFILE("Project", project());
     current_t += dt;
   }
 
@@ -721,6 +721,7 @@ auto mgpcg = [](const std::vector<std::string> &params) {
 TC_REGISTER_TASK(mgpcg);
 
 auto smoke = [](const std::vector<std::string> &params) {
+  TC_PROFILER("smoke");
   // ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGSmoke> smoke;
   smoke = std::make_unique<MGPCGSmoke>();
@@ -728,19 +729,23 @@ auto smoke = [](const std::vector<std::string> &params) {
   GUI gui2("Velocity", 256, 512);
   GUI gui3("Density", 256, 512);
   while (1) {
-    TC_TIME(smoke->step());
-    smoke->render(gui.get_canvas());
-    gui.update();
-    auto img = smoke->render_velocity_field();
-    for (auto ind : gui2.get_canvas().img.get_region()) {
-      gui2.get_canvas().img[ind] = Vector3(img[Vector2i(ind) / Vector2i(4)]);
+    TC_PROFILE("step", smoke->step());
+    TC_PROFILE("render", smoke->render(gui.get_canvas()));
+    {
+      TC_PROFILER("debug");
+      gui.update();
+      auto img = smoke->render_velocity_field();
+      for (auto ind : gui2.get_canvas().img.get_region()) {
+        gui2.get_canvas().img[ind] = Vector3(img[Vector2i(ind) / Vector2i(4)]);
+      }
+      gui2.update();
+      img = smoke->render_density_field();
+      for (auto ind : gui3.get_canvas().img.get_region()) {
+        gui3.get_canvas().img[ind] = Vector3(img[Vector2i(ind) / Vector2i(4)]);
+      }
+      gui3.update();
     }
-    gui2.update();
-    img = smoke->render_density_field();
-    for (auto ind : gui3.get_canvas().img.get_region()) {
-      gui3.get_canvas().img[ind] = Vector3(img[Vector2i(ind) / Vector2i(4)]);
-    }
-    gui3.update();
+    print_profile_info();
   }
 };
 

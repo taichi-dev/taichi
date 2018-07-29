@@ -43,8 +43,8 @@ class ParticleShadowMapRenderer : public ParticleRenderer {
       return;
     }
     TC_ASSERT(camera);
-    Vector2 uv_lowerbound(2000 * shadow_map_resolution);
-    Vector2 uv_upperbound(-2000 * shadow_map_resolution);
+    Vector2 uv_lowerbound(0);
+    Vector2 uv_upperbound(0);
 
     std::vector<std::pair<real, int>> indices(particles.size());
     for (int i = 0; i < (int)indices.size(); i++) {
@@ -59,6 +59,10 @@ class ParticleShadowMapRenderer : public ParticleRenderer {
     }
     std::sort(indices.begin(), indices.end());
     Vector2 res = (uv_upperbound - uv_lowerbound) / shadow_map_resolution;
+    if (res.max() < 10) {
+      TC_WARN("Shadow map resolution too low");
+      TC_P(res);
+    }
     Array2D<real> occlusion_buffer(
         Vector2i((int)std::ceil(res.x) + 1, (int)std::ceil(res.y) + 1), 1.0_f);
     real shadow_map_scaling = 1.0_f / shadow_map_resolution;

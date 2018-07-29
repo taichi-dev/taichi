@@ -9,6 +9,8 @@
 TC_NAMESPACE_BEGIN
 
 real gravity = 3;
+real buoyancy = 10;
+real temperature_decay = 3;
 // TODO: u, v, w have different sizes
 
 struct NodeFlags : public bit::Bits<32> {
@@ -103,7 +105,8 @@ class MGPCGSmoke {
     CH_VX,
     CH_VY,
     CH_VZ,
-    CH_DENSITY
+    CH_RHO,
+    CH_T
   };
 
   MGPCGSmoke() {
@@ -120,10 +123,10 @@ class MGPCGSmoke {
 
     Dict dict;
     dict.set("shadow_map_resolution", 1.5_f)
-        .set("alpha", 0.4_f)
-        .set("shadowing", 0.00001_f)
+        .set("alpha", 0.6_f)
+        .set("shadowing", 0.0001_f)
         .set("ambient_light", 0.3_f)
-        .set("light_direction", Vector(2, 3, 1));
+        .set("light_direction", Vector(2, 0, 1));
 
     renderer->initialize(dict);
     renderer->set_camera(cam);
@@ -440,7 +443,8 @@ class MGPCGSmoke {
   }
 
   TC_FORCE_INLINE Vector3 storage_offset(int axis) {
-    return axis < 3 ? Vector3::axis(axis) * 0.5_f : Vector3(0.5_f);
+    return axis < 3 ? (Vector3(1) - Vector3::axis(axis)) * 0.5_f
+                    : Vector3(0.5_f);
   }
 
   void advect() {
@@ -452,14 +456,11 @@ class MGPCGSmoke {
                         VectorI(Block::size).template cast<real>();
 
           // Unfortunately, ux, uy, uz and density are not collocated...
-          LerpField<real, TSize3D<24>> u(scale,
-                                         corner + Vector(0.5_f, 0.0_f, 0.0_f));
-          LerpField<real, TSize3D<24>> v(scale,
-                                         corner + Vector(0.0_f, 0.5_f, 0.0_f));
-          LerpField<real, TSize3D<24>> w(scale,
-                                         corner + Vector(0.0_f, 0.0_f, 0.5_f));
-          LerpField<real, TSize3D<24>> rho(
-              scale, corner + Vector(0.5_f, 0.5_f, 0.5_f));
+          LerpField<real, TSize3D<24>> u(scale, corner + storage_offset(0));
+          LerpField<real, TSize3D<24>> v(scale, corner + storage_offset(1));
+          LerpField<real, TSize3D<24>> w(scale, corner + storage_offset(2));
+          LerpField<real, TSize3D<24>> rho(scale, corner + storage_offset(3));
+          LerpField<real, TSize3D<24>> T(scale, corner + storage_offset(3));
 
           for (auto ind : Region3D(VectorI(0), VectorI(24))) {
             auto ab = an[VectorI(ind) / VectorI(Block::size) - VectorI(1)];
@@ -468,12 +469,14 @@ class MGPCGSmoke {
               v.node(ind) = 0;
               w.node(ind) = 0;
               rho.node(ind) = 0;
+              T.node(ind) = 0;
             } else {
               auto node = ab->node_local(VectorI(ind) % VectorI(Block::size));
               u.node(ind) = node[CH_VX];
               v.node(ind) = node[CH_VY];
               w.node(ind) = node[CH_VZ];
-              rho.node(ind) = node[CH_DENSITY];
+              rho.node(ind) = node[CH_RHO];
+              T.node(ind) = node[CH_T];
             }
           }
 
@@ -492,8 +495,8 @@ class MGPCGSmoke {
             node[CH_VX] = u.sample(backtrace(u.node_pos(ind + offset)));
             node[CH_VY] = v.sample(backtrace(v.node_pos(ind + offset)));
             node[CH_VZ] = w.sample(backtrace(w.node_pos(ind + offset)));
-            node[CH_DENSITY] =
-                rho.sample(backtrace(rho.node_pos(ind + offset)));
+            node[CH_RHO] = rho.sample(backtrace(rho.node_pos(ind + offset)));
+            node[CH_T] = rho.sample(backtrace(T.node_pos(ind + offset)));
           }
 
           Vector particle_range[] = {
@@ -575,6 +578,8 @@ class MGPCGSmoke {
           b.node_local(ind)[CH_VX] = 0;
           b.node_local(ind)[CH_VY] = 0;
           b.node_local(ind)[CH_VZ] = 0;
+          b.node_local(ind)[CH_RHO] = 0;
+          b.node_local(ind)[CH_T] = 0;
         }
       }
       if (b.base_coord == VectorI(0, -n * 2 + 8, 0)) {
@@ -589,15 +594,19 @@ class MGPCGSmoke {
         }
         // if (current_t == 0) {
         for (auto ind : b.local_region()) {
-          b.node_local(ind)[CH_VX] = 0;
+          b.node_local(ind)[CH_VX] = -10;
           b.node_local(ind)[CH_VY] = 10;
           b.node_local(ind)[CH_VZ] = 0;
-          b.node_local(ind)[CH_DENSITY] = 1;
+          b.node_local(ind)[CH_RHO] = 1;
+          b.node_local(ind)[CH_T] = 1;
         }
       }
+      real scale = std::exp(-temperature_decay * dt);
       for (auto ind : b.local_region()) {
-        b.node_local(ind)[CH_VY] -=
-            b.node_local(ind)[CH_DENSITY] * gravity * dt;
+        b.node_local(ind)[CH_VY] += (b.node_local(ind)[CH_T] * buoyancy -
+                                     b.node_local(ind)[CH_RHO] * gravity) *
+                                    dt;
+        b.node_local(ind)[CH_RHO] *= scale;
       }
     });
   }
@@ -611,7 +620,7 @@ class MGPCGSmoke {
       auto t = p.pos[3];
       auto color = hsv2rgb(Vector(fract(t) * 2, 0.7_f, 0.9_f));
       particles.push_back(
-          RenderParticle(p.pos * Vector(0.16_f), Vector4(color)));
+          RenderParticle(p.pos * Vector(0.16_f), Vector4(color, 1.0_f)));
     }
     renderer->render(image, particles);
     for (auto &ind : image.get_region()) {
@@ -656,7 +665,7 @@ class MGPCGSmoke {
       for (int i = 0; i < b.size[0]; i++) {
         for (int j = 0; j < b.size[1]; j++) {
           auto node = b.node_local(Vector3i(i, j, 0));
-          auto vel = Vector3(node[CH_DENSITY]);
+          auto vel = Vector3(node[CH_T]);
           img[Vector2i(b.base_coord.x, b.base_coord.y) +
               Vector2i(n + i, n * 2 + j)] = vel * Vector3(1);
         }

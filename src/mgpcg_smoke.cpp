@@ -95,7 +95,7 @@ class MGPCGSmoke {
 
   std::shared_ptr<Camera> cam;
   real current_t;
-  real dt = 1e-2_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+  real dt = 3e-3_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
 
   std::unique_ptr<ParticleRenderer> renderer;
 
@@ -523,18 +523,21 @@ class MGPCGSmoke {
             node[CH_T] = T.sample(backtrace(T.node_pos(ind + offset)));
           }
 
-          Vector particle_range[] = {
-              b.base_coord.template cast<real>() * dx,
-              (b.base_coord + VectorI(Block::size)).template cast<real>() * dx};
-          // Gather and move particles
-          for (auto ab : an.data) {
-            if (ab) {
-              for (std::size_t i = 0; i < ab->particle_count; i++) {
-                // Copy
-                auto p = ab->particles[i];
-                if (particle_range[0] < p.pos && p.pos < particle_range[1]) {
-                  p.pos += sample_velocity(p.pos) * dt;
-                  b.add_particle(p);
+          if (b.meta.get_has_effective_cell()) {
+            Vector particle_range[] = {
+                b.base_coord.template cast<real>() * dx,
+                (b.base_coord + VectorI(Block::size)).template cast<real>() *
+                    dx};
+            // Gather and move particles
+            for (auto ab : an.data) {
+              if (ab) {
+                for (std::size_t i = 0; i < ab->particle_count; i++) {
+                  // Copy
+                  auto p = ab->particles[i];
+                  if (particle_range[0] < p.pos && p.pos < particle_range[1]) {
+                    p.pos += sample_velocity(p.pos) * dt;
+                    b.add_particle(p);
+                  }
                 }
               }
             }

@@ -51,9 +51,11 @@ TC_TEST("dilated block") {
   }
 
   // Do grid exchange here
+  grid.gc();
   CHECK(grid.root.size() == 1);
   grid.advance(
       [](Block &b, TAncestors<Block> &an) { stitch_dilated_grids(b, an); });
+  grid.gc();
   CHECK(grid.root.size() == 1);
 
   for (auto b_ind : block_region) {
@@ -255,6 +257,7 @@ TC_TEST("Propagate") {
   grid.touch(Vector3i(0));
   grid.node(Vector3i(0)).x = 100;
   for (int i = 0; i < 10; i++) {
+    grid.gc();
     if (i == 0)
       CHECK(grid.num_active_blocks() == 1);
     if (i == 1)
@@ -304,6 +307,7 @@ TC_TEST("Propagate") {
   CHECK(int(grid.node(Vector3i(0, 5, 5)).x) == 100);
   CHECK(int(grid.node(Vector3i(0, 6, 5)).x) == 0);
 
+  grid.gc();
   CHECK(grid.root.size() == 8);
 }
 

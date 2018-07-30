@@ -495,10 +495,6 @@ class TaichiGrid {
   using PartitionFunction = std::function<int(VectorI)>;
   PartitionFunction part_func;
 
-  void gc() {
-    TC_NOT_IMPLEMENTED
-  }
-
   int world_size;  // aka num. machines (processes)
   int world_rank;
   static constexpr int master_rank = 0;
@@ -545,13 +541,13 @@ class TaichiGrid {
   ~TaichiGrid() {
   }
 
-  // NOTE: current timestamp will be mod by 2
+  // NOTE: current timestamp will be mod by 4
   TC_FORCE_INLINE uint64 domain_hash(VectorI coord, int timestamp) {
-    TC_ASSERT(((current_timestamp - 2 < timestamp) &&
+    TC_ASSERT(((current_timestamp - 4 < timestamp) &&
                (timestamp <= current_timestamp)));
     VectorI bucket_coord = div_floor(coord, bucket_size::VectorI());
     constexpr int coord_width = 20;
-    uint64 rep = uint(timestamp % 2);
+    uint64 rep = uint(timestamp % 4);
     for (int i = 0; i < dim; i++) {
       if (grid_debug) {
         bool ok = -(1 << (coord_width - 1)) <= bucket_coord[i] &&
@@ -707,12 +703,22 @@ class TaichiGrid {
       std::lock_guard<std::mutex> _(root_lock);
 
       if (root.find(h) == root.end()) {
-        // TODO: support staggered blocks here
-        // create_domain
-        // TC_TRACE("creating domain");
-        auto base_coord =
-            div_floor(coord, bucket_size::VectorI()) * bucket_size::VectorI();
-        root[h] = std::make_unique<RootDomain>(base_coord, timestamp);
+        auto old_h = domain_hash(coord, timestamp - 2);
+        auto old_iter = root.find(old_h);
+        if (old_iter == root.end()) {
+          // TODO: support staggered blocks here
+          // create_domain
+          // TC_TRACE("creating domain");
+          auto base_coord =
+              div_floor(coord, bucket_size::VectorI()) * bucket_size::VectorI();
+          root[h] = std::make_unique<RootDomain>(base_coord, timestamp);
+        } else {
+          auto reused_root = std::move(old_iter->second);
+          root.erase(old_iter);
+          reused_root->timestamp = current_timestamp;
+          reused_root->reset();
+          root[h] = std::move(reused_root);
+        }
       }
       auto &domain = get_root_domain(coord, timestamp);
       domain.touch(coord);
@@ -1071,18 +1077,26 @@ class TaichiGrid {
     }
     TC_PROFILE("clear_killed_blocks", clear_killed_blocks());
     {
-      TC_PROFILER("make new root");
-      // This may be slow due to destructor invocations (RootDomain, Block)
-      RootDomains new_root;
-      for (auto &kv : root) {
-        auto &b = *kv.second;
-        // Note: this works only for synchronous...
-        if (b.timestamp == current_timestamp) {
-          new_root.insert(std::move(kv));
-        }
-      }
-      root = std::move(new_root);
+      TC_PROFILER("gc");
+      gc(old_timestamp);
+      //gc();
     }
+  }
+
+  void gc(int time_step_threshold=-1) {
+    if (time_step_threshold == -1) {
+      time_step_threshold = current_timestamp;
+    }
+    // This may be slow due to destructor invocations (RootDomain, Block)
+    RootDomains new_root;
+    for (auto &kv : root) {
+      auto &b = *kv.second;
+      // Note: keep domains from the old time stamp to reuse..
+      if (b.timestamp >= time_step_threshold) {
+        new_root.insert(std::move(kv));
+      }
+    }
+    root = std::move(new_root);
   }
 
   std::size_t num_particles() {

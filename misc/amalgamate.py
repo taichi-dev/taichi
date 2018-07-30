@@ -10,7 +10,9 @@ files_to_include = [
   'src/core/core.cpp',
   'src/core/logging.cpp',
   'src/system/traceback.cpp',
+  'src/gui/gui.cpp',
   'include/taichi/visual/gui.h',
+  'include/taichi/visualization/image_buffer.cpp',
 ]
 
 output_fn = 'build/taichi.h'
@@ -114,7 +116,7 @@ int main() {
   TC_P(x);
 }
 ''')
-    os.system('g++ build/test_amal.cpp -o build/test_amal -std=c++14 -g -lpthread && ./build/test_amal')
+    os.system('g++ build/test_amal.cpp -o build/test_amal -std=c++14 -g -lpthread -lX11 && ./build/test_amal')
 
     stat = os.stat('build/taichi.h')
     with open(output_fn) as f:

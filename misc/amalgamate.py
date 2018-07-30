@@ -5,6 +5,7 @@ import sys
 import re
 
 files_to_include = [
+  'include/taichi/common/util.h',
   'include/taichi/common/*',
   'src/system/timer.cpp',
   'src/core/core.cpp',

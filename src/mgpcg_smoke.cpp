@@ -293,6 +293,7 @@ class MGPCGSmoke {
   }
 
   void smooth(int level, int U, int B) {
+    TC_PROFILER("smoothing")
     // TODO: this supports zero-Dirichlet BC only!
     grids[level]->advance(
         [&](Grid::Block &b, Grid::Ancestors &an) {
@@ -338,6 +339,7 @@ class MGPCGSmoke {
 
   // B[level + 1] = coarsened(R[level])
   void restrict(int level, int R_in, int B_out) {
+    TC_PROFILER("restriction");
     // NOTE: supports POT grids only
     // sum residual
     clear(level + 1, B_out);
@@ -364,6 +366,7 @@ class MGPCGSmoke {
 
   // U[level] += refined(U]level + 1]);
   void prolongate(int level, int U) {
+    TC_PROFILER("prolongation");
     real scale = 0.5_f;
     // upsample and apply correction
     grids[level]->refine_from(
@@ -402,9 +405,11 @@ class MGPCGSmoke {
       clear(i + 1, U);
     }
 
-    // Bottom solve
-    for (int j = 0; j < bottom_smoothing_iter; j++) {
-      smooth(mg_lv - 1, U, B);
+    {
+      TC_PROFILER("bottom smoothing");
+      for (int j = 0; j < bottom_smoothing_iter; j++) {
+        smooth(mg_lv - 1, U, B);
+      }
     }
 
     for (int i = mg_lv - 2; i >= 0; i--) {
@@ -755,7 +760,7 @@ class MGPCGSmoke {
 };
 
 auto mgpcg = [](const std::vector<std::string> &params) {
-  ThreadedTaskManager::TbbParallelismControl _(4);
+  // ThreadedTaskManager::TbbParallelismControl _(4);
   std::unique_ptr<MGPCGSmoke> mgpcg;
   mgpcg = std::make_unique<MGPCGSmoke>();
   while (true) {

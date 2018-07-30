@@ -282,7 +282,7 @@ struct TRootDomain {
     // TC_P(num_blocks);
     bitmap.resize((num_blocks + 63) / 64);
     {
-      TC_PROFILER("memory allocation");
+      // TC_PROFILER("memory allocation");
       allocator =
           std::make_unique<VirtualMemoryAllocator>(num_blocks * sizeof(Block));
     }
@@ -322,7 +322,7 @@ struct TRootDomain {
   }
 
   void touch(VectorI global_coord) {
-    TC_PROFILER("touch block");
+    //TC_PROFILER("touch block");
     std::lock_guard<std::mutex> _(lock);
     auto local_coord = global_coord - base_coord;
     auto bid = local_coord_to_block_id(local_coord);
@@ -331,8 +331,10 @@ struct TRootDomain {
     } else {
       auto block_base_coord = to_global(
           div_floor(local_coord, VectorI(block_size)) * VectorI(block_size));
-      TC_PROFILE("Initialize block",
-                  data[bid].initialize(block_base_coord, timestamp));
+      {
+        //TC_PROFILER("Initialize block");
+        data[bid].initialize(block_base_coord, timestamp);
+      }
       set_block_activity(bid, true);
     }
   }
@@ -1079,11 +1081,11 @@ class TaichiGrid {
     {
       TC_PROFILER("gc");
       gc(old_timestamp);
-      //gc();
+      // gc();
     }
   }
 
-  void gc(int time_step_threshold=-1) {
+  void gc(int time_step_threshold = -1) {
     if (time_step_threshold == -1) {
       time_step_threshold = current_timestamp;
     }

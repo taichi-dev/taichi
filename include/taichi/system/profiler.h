@@ -121,8 +121,13 @@ class ProfilerRecords {
       for (auto &ch : node->childs) {
         make_indent(1);
         auto child_time = ch->total_time;
-        fmt::print_colored(fmt::CYAN, "{} {}\n", get_readable_time(child_time),
-                           ch->name);
+        auto bulk_statistics =
+            fmt::format("{} {}", get_readable_time(child_time), ch->name);
+        fmt::print_colored(fmt::CYAN, "{:40}", bulk_statistics);
+        fmt::print_colored(
+            fmt::BLUE, " [{} x {}]\n", ch->num_samples,
+            get_readable_time_with_scale(ch->get_averaged(),
+                                         get_time_scale(ch->get_averaged())));
         print(ch.get(), depth + 1);
       }
     } else {
@@ -136,7 +141,7 @@ class ProfilerRecords {
             child_time * 100.0 / total_time, ch->name);
         fmt::print_colored(fmt::CYAN, "{:40}", bulk_statistics);
         fmt::print_colored(
-            fmt::BLUE, "         [{} x {}]\n", ch->num_samples,
+            fmt::BLUE, " [{} x {}]\n", ch->num_samples,
             get_readable_time_with_scale(ch->get_averaged(),
                                          get_time_scale(ch->get_averaged())));
         if (ch->account_tpe) {

@@ -961,16 +961,16 @@ struct MatrixND {
   // Function intialization
   template <typename F,
             std::enable_if_t<
-                std::is_convertible<F, std::function<Vector(int)>>::value,
+                std::is_convertible<F, std::function<VectorND<dim__, T, ISE>(int)>>::value,
                 int> = 0>
-  TC_FORCE_INLINE MatrixND(const F &f) {
+  TC_FORCE_INLINE explicit MatrixND(const F &f) {
     for (int i = 0; i < dim; i++)
       this->d[i] = f(i);
   }
 
   template <typename F,
             std::enable_if_t<
-                std::is_convertible<F, std::function<Vector(int)>>::value,
+                std::is_convertible<F, std::function<VectorND<dim__, T, ISE>(int)>>::value,
                 int> = 0>
   TC_FORCE_INLINE MatrixND &set(const F &f) {
     for (int i = 0; i < dim; i++)

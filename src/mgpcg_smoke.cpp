@@ -75,7 +75,7 @@ Vector3 hsv2rgb(Vector3 hsv) {
   return Vector3(r, g, b);
 }
 
-using Block = TBlock<Node, Particle, TSize3D<8>, 0, 128, BlockFlags>;
+using Block = TBlock<Node, Particle, TSize3D<8>, 0, 1024, BlockFlags>;
 
 class MGPCGSmoke {
  public:
@@ -86,7 +86,7 @@ class MGPCGSmoke {
   using Grid = TaichiGrid<Block>;
 
   std::vector<std::unique_ptr<Grid>> grids;
-  static constexpr int mg_lv = 3;
+  static constexpr int mg_lv = 4;
 
   using VectorI = Vector3i;
   using Vectori = VectorI;
@@ -189,6 +189,7 @@ class MGPCGSmoke {
   }
 
   void residual(int level, int U, int B, int R) {
+    TC_PROFILER("residual");
     grids[level]->advance(
         [&](Block &b, Grid::Ancestors &an) {
           if (!b.meta.get_has_effective_cell())
@@ -218,6 +219,7 @@ class MGPCGSmoke {
   }
 
   void multiply(int channel_out, int channel_in) {
+    TC_PROFILER("multiply");
     // TODO: this supports zero-Dirichlet BC only!
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
@@ -391,7 +393,7 @@ class MGPCGSmoke {
                bool use_as_preconditioner = true) {
     copy(CH_MG_B, channel_in);
     constexpr int U = CH_MG_U, B = CH_MG_B, R = CH_MG_R;
-    constexpr int smoothing_iters = 3, bottom_smoothing_iter = 50;
+    constexpr int smoothing_iters = 2, bottom_smoothing_iter = 150;
     if (use_as_preconditioner) {
       clear(0, U);
     }

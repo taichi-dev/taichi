@@ -123,9 +123,9 @@ class ProfilerRecords {
         auto child_time = ch->total_time;
         auto bulk_statistics =
             fmt::format("{} {}", get_readable_time(child_time), ch->name);
-        fmt::print_colored(fmt::CYAN, "{:40}", bulk_statistics);
+        fmt::print_colored(fmt::YELLOW, "{:40}", bulk_statistics);
         fmt::print_colored(
-            fmt::BLUE, " [{} x {}]\n", ch->num_samples,
+            fmt::CYAN, " [{} x {}]\n", ch->num_samples,
             get_readable_time_with_scale(ch->get_averaged(),
                                          get_time_scale(ch->get_averaged())));
         print(ch.get(), depth + 1);
@@ -139,9 +139,9 @@ class ProfilerRecords {
         std::string bulk_statistics = fmt::format(
             "{} {:5.2f}%  {}", get_readable_time_with_scale(child_time, scale),
             child_time * 100.0 / total_time, ch->name);
-        fmt::print_colored(fmt::CYAN, "{:40}", bulk_statistics);
+        fmt::print_colored(fmt::YELLOW, "{:40}", bulk_statistics);
         fmt::print_colored(
-            fmt::BLUE, " [{} x {}]\n", ch->num_samples,
+            fmt::CYAN, " [{} x {}]\n", ch->num_samples,
             get_readable_time_with_scale(ch->get_averaged(),
                                          get_time_scale(ch->get_averaged())));
         if (ch->account_tpe) {
@@ -154,7 +154,7 @@ class ProfilerRecords {
       }
       if (!node->childs.empty() && (unaccounted > total_time * 0.005)) {
         make_indent(1);
-        fmt::print_colored(fmt::YELLOW, "{} {:5.2f}%  {}\n",
+        fmt::print_colored(fmt::BLUE, "{} {:5.2f}%  {}\n",
                            get_readable_time_with_scale(unaccounted, scale),
                            unaccounted * 100.0 / total_time, "[unaccounted]");
       }

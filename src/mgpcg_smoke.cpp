@@ -14,8 +14,6 @@ real temperature_decay = 1;
 
 static constexpr bool debug = false;
 
-// TODO: u, v, w have different sizes
-
 struct BlockFlags : public bit::Bits<32> {
   using Base = bit::Bits<32>;
   // TC_BIT_FIELD(uint8, num_effective_neighbours, 0);
@@ -275,6 +273,7 @@ class MGPCGSmoke {
 
   // out += a + scale * b
   void copy(int channel_out, int channel_a) {
+    TC_PROFILER("copy")
     grids[0]->map([&](Block &b) {
       for (auto &n : b.nodes) {
         n[channel_out] = n[channel_a];
@@ -304,7 +303,8 @@ class MGPCGSmoke {
           for (int i = 0; i < Block::size[0]; i++) {
             for (int j = 0; j < Block::size[1]; j++) {
               for (int k = 0; k < Block::size[2]; k++) {
-                if (debug)TC_ASSERT(scratch.data[i][j][k].flags().get_effective());
+                if (debug)
+                  TC_ASSERT(scratch.data[i][j][k].flags().get_effective());
                 int count = 0;
                 // (B - Lu) / Diag
                 real tmp = scratch.data[i][j][k][B];
@@ -330,7 +330,7 @@ class MGPCGSmoke {
             }
           }
         },
-        false, true); // carry nodes only if on finest level
+        false, true);  // carry nodes only if on finest level
   }
 
   void clear(int level, int channel) {

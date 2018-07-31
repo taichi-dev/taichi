@@ -274,7 +274,7 @@ struct TRootDomain {
 
   TRootDomain(VectorI base_coord, int timestamp)
       : base_coord(base_coord), timestamp(timestamp) {
-    TC_PROFILER("RootDomain Ctor");
+    // TC_PROFILER("RootDomain Ctor");
     TC_ASSERT(num_blocks ==
               (bucket_size::x() / block_size[0]) *
                   (bucket_size::y() / block_size[1]) *
@@ -322,7 +322,7 @@ struct TRootDomain {
   }
 
   void touch(VectorI global_coord) {
-    //TC_PROFILER("touch block");
+    // TC_PROFILER("touch block");
     std::lock_guard<std::mutex> _(lock);
     auto local_coord = global_coord - base_coord;
     auto bid = local_coord_to_block_id(local_coord);
@@ -332,7 +332,7 @@ struct TRootDomain {
       auto block_base_coord = to_global(
           div_floor(local_coord, VectorI(block_size)) * VectorI(block_size));
       {
-        //TC_PROFILER("Initialize block");
+        // TC_PROFILER("Initialize block");
         data[bid].initialize(block_base_coord, timestamp);
       }
       set_block_activity(bid, true);
@@ -975,10 +975,10 @@ class TaichiGrid {
     current_timestamp += 1;
     // Populate blocks at the next time step, if NOT killed
     {
-      TC_PROFILER("populate new grid1");
+      // TC_PROFILER("populate new grid1");
       auto list = get_block_list(old_timestamp);
       {
-        TC_PROFILER("touch");
+        // TC_PROFILER("touch");
         for (auto b : list) {
           if (!b->killed) {
             touch(b->base_coord, new_timestamp);
@@ -1077,9 +1077,12 @@ class TaichiGrid {
                                  compute_block(block);
                              });
     }
-    TC_PROFILE("clear_killed_blocks", clear_killed_blocks());
     {
-      TC_PROFILER("gc");
+      // TC_PROFILER("clear killed blocks");
+      clear_killed_blocks();
+    }
+    {
+      // TC_PROFILER("gc");
       gc(old_timestamp);
       // gc();
     }

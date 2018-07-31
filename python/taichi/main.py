@@ -155,9 +155,14 @@ def main():
   elif mode == "video":
     files = sorted(os.listdir('.'))
     files = list(filter(lambda x: x.endswith('.png'), files))
+    if len(sys.argv) >= 3:
+      frame_rate = int(sys.argv[2])
+    else:
+      frame_rate = 24
     tc.info('Making video using {} png files...', len(files))
+    tc.info("frame_rate={}", frame_rate)
     output_fn = 'video.mp4'
-    make_video(files, output_path=output_fn)
+    make_video(files, output_path=output_fn, frame_rate=frame_rate)
     tc.info('Done! Output video file = {}', output_fn)
   elif mode == "convert":
     # http://www.commandlinefu.com/commands/view/3584/remove-color-codes-special-characters-with-sed

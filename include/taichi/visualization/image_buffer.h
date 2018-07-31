@@ -9,8 +9,6 @@
 #include <taichi/math/math.h>
 #include <taichi/math/array_2d.h>
 #include <taichi/system/threading.h>
-#include <stb_image.h>
-#include <stb_image_write.h>
 
 TC_NAMESPACE_BEGIN
 

@@ -174,7 +174,7 @@ struct TBlock {
 
   // Grid data
   NodesType nodes;
-  
+
   using VolumeNodeType = Node[grid_size[0]][grid_size[1]][grid_size[2]];
 
   static constexpr int max_num_particles = max_particles_per_node * num_nodes;

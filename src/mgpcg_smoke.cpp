@@ -261,8 +261,9 @@ class MGPCGSmoke {
   void saxpy(int channel_out, int channel_a, int channel_b, real scale) {
     TC_ASSERT(!with_mpi());
     grids[0]->map([&](Block &b) {
-      for (auto &n : b.nodes) {
-        n[channel_out] = n[channel_a] + scale * n[channel_b];
+      for (int i = 0; i < b.num_nodes; i++) {
+        b.nodes[channel_out][i] =
+            b.nodes[channel_a][i] + scale * b.nodes[channel_b][i];
       }
     });
   }

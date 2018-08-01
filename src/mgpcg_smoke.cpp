@@ -110,7 +110,6 @@ class MGPCGSmoke {
   using GridScratchPad = TGridScratchPad<Block>;
   using GridScratchPadCh = TGridScratchPad<Block, real>;
 
-
   std::shared_ptr<Camera> cam;
   real current_t;
   real dt = 2e-3_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
@@ -306,28 +305,26 @@ class MGPCGSmoke {
           // 6 neighbours
           for (int i = 0; i < Block::size[0]; i++) {
             for (int j = 0; j < Block::size[1]; j++) {
+              __m256 sum_z =
+                  _mm256_add_ps(_mm256_loadu_ps(&scratchU.data[i][j][-1]),
+                                _mm256_loadu_ps(&scratchU.data[i][j][1]));
+              __m256 sum_y =
+                  _mm256_add_ps(_mm256_loadu_ps(&scratchU.data[i][j-1][0]),
+                                _mm256_loadu_ps(&scratchU.data[i][j+1][0]));
+              __m256 sum_x =
+                  _mm256_add_ps(_mm256_loadu_ps(&scratchU.data[i-1][j][0]),
+                                _mm256_loadu_ps(&scratchU.data[i+1][j][0]));
+
+              auto sum = _mm256_add_ps(_mm256_add_ps(sum_z, sum_y), sum_x);
+              real *psum = (real *)&sum;
               for (int k = 0; k < Block::size[2]; k++) {
-                int count = 0;
                 // (B - Lu) / Diag
-                real tmp = scratchB.data[i][j][k];
-                auto fetch = [&](int ii, int jj, int kk) {
-                  count += 1;
-                  tmp += scratchU.data[i + ii][j + jj][k + kk];
-                };
-                fetch(0, 0, 1);
-                fetch(0, 0, -1);
-                fetch(0, 1, 0);
-                fetch(0, -1, 0);
-                fetch(1, 0, 0);
-                fetch(-1, 0, 0);
+                real tmp = scratchB.data[i][j][k] + psum[k];
                 auto original = scratchU.data[i][j][k];
-                if (debug) {
-                  TC_ASSERT(count != 0);
-                }
                 auto &o = b.get_node_volume()[i][j][k][U];
                 // Damping is important. It brings down #iterations to 1e-7 from
                 // 91 to 10...
-                o = original + (tmp / count - original) * (2.0_f / 3_f);
+                o = original + (tmp * (1.0_f / 6) - original) * (2.0_f / 3_f);
               }
             }
           }
@@ -786,8 +783,8 @@ auto smoke = [](const std::vector<std::string> &params) {
   std::unique_ptr<MGPCGSmoke> smoke;
   smoke = std::make_unique<MGPCGSmoke>();
   GUI gui("MGPCG Smoke", 800, 800);
-  //GUI gui2("Velocity", 256, 512);
-  //GUI gui3("Density", 256, 512);
+  // GUI gui2("Velocity", 256, 512);
+  // GUI gui3("Density", 256, 512);
 
   for (int frame = 0;; frame++) {
     TC_PROFILE("step", smoke->step());

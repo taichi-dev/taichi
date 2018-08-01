@@ -421,8 +421,13 @@ TC_TEST("soa") {
 
   TArray<int, 3> gt(Vector3i(100));
 
-  auto address = &grid.node(Vector3i(3, 4, 5))[1];
-
+  grid.touch(Vector3i(3, 4, 5));
+  grid.touch(Vector3i(3, 4, 6));
+  auto address1 = &grid.node(Vector3i(3, 4, 5))[1];
+  auto address2 = &grid.node(Vector3i(3, 4, 5))[2];
+  auto address3 = &grid.node(Vector3i(3, 4, 6))[2];
+  TC_CHECK(address2 - address1 == block_size.prod());
+  TC_CHECK(address3 - address2 == 1);
 }
 
 TC_NAMESPACE_END

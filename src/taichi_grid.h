@@ -248,8 +248,7 @@ struct TBlock {
   template <typename Node__ = Node_>
   TC_FORCE_INLINE std::enable_if_t<is_SOA<Node__>(), NodeAccessorType>
   node_accessor(int linearized_coord) {
-    return NodeAccessorType(
-        &nodes[0][0] + sizeof(typename Node::element_type) * linearized_coord);
+    return NodeAccessorType(&nodes[0][0] + linearized_coord);
   }
 
   TC_FORCE_INLINE NodeAccessorType node_local(const VectorI local_coord) {

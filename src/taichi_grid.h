@@ -104,11 +104,21 @@ struct TSize3D {
 template <typename T, int num_nodes, typename = std::true_type>
 struct TNodesType {
   using type = T[num_nodes];
+  using accessor_type = T &;
 };
 
 template <typename T, int num_nodes>
 struct TNodesType<T, num_nodes, std::enable_if_t<is_SOA<T>(), int>> {
   using type = typename T::element_type[T::num_channels][num_nodes];
+  struct Accessor {
+    typename T::element_type *base;
+    TC_FORCE_INLINE Accessor(typename T::element_type *base) : base(base) {
+    }
+    TC_FORCE_INLINE typename T::element_type &operator[](int i) {
+      return *(base + num_nodes * i);
+    }
+  };
+  using accessor_type = Accessor;
 };
 
 template <typename Node_,
@@ -154,6 +164,7 @@ struct TBlock {
   Meta meta;
 
   using NodesType = typename TNodesType<Node, num_nodes>::type;
+  using NodeAccessorType = typename TNodesType<Node, num_nodes>::accessor_type;
 
   // Grid data
   NodesType nodes;
@@ -176,7 +187,9 @@ struct TBlock {
     initialize(base_coord, timestamp);
   }
 
-  TC_FORCE_INLINE VolumeNodeType &get_node_volume() {
+  template <typename Node__ = Node_>
+  TC_FORCE_INLINE std::enable_if_t<!is_SOA<Node__>(), VolumeNodeType &>
+  get_node_volume() {
     return *reinterpret_cast<VolumeNodeType *>(
         &nodes[grid_size[1] * grid_size[2] * dilation +
                grid_size[2] * dilation + dilation]);
@@ -220,24 +233,36 @@ struct TBlock {
     return linearize_local(to_local(global_coord));
   }
 
-  TC_FORCE_INLINE Node &node_local(const VectorI local_coord) {
+  template <typename Node__ = Node_>
+  TC_FORCE_INLINE std::enable_if_t<!is_SOA<Node__>(), NodeAccessorType>
+  node_accessor(int linearized_coord) {
+    return nodes[linearized_coord];
+  }
+
+  template <typename Node__ = Node_>
+  TC_FORCE_INLINE std::enable_if_t<is_SOA<Node__>(), NodeAccessorType>
+  node_accessor(int linearized_coord) {
+    return NodeAccessorType(&nodes + Node::element_type * linearized_coord);
+  }
+
+  TC_FORCE_INLINE NodeAccessorType node_local(const VectorI local_coord) {
     if (grid_debug) {
       TC_ASSERT(inside_dilated_local(local_coord));
     }
-    return nodes[linearize_local(local_coord)];
+    return node_accessor(linearize_local(local_coord));
   }
 
-  TC_FORCE_INLINE Node &node_global(const VectorI global_coord) {
+  TC_FORCE_INLINE NodeAccessorType node_global(const VectorI global_coord) {
     if (grid_debug) {
       TC_ASSERT(inside_dilated_global(global_coord));
     }
-    return nodes[linearize_global(global_coord)];
+    return node_accessor(linearize_global(global_coord));
   }
 
   template <typename T>
   TC_FORCE_INLINE void for_each_node(const T &t) {
     for (int i = 0; i < num_nodes; i++) {
-      t(nodes[i]);
+      t(node_accessor(i));
     }
   }
 

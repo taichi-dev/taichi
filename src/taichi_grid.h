@@ -118,7 +118,7 @@ struct TNodesType<T, num_nodes, true> {
     typename T::element_type *base;
     TC_FORCE_INLINE Accessor(typename T::element_type *base) : base(base) {
     }
-    TC_FORCE_INLINE typename T::element_type &operator[](int i) {
+    TC_FORCE_INLINE typename T::element_type &operator[](int i) const {
       return *(base + num_nodes * i);
     }
   };
@@ -527,6 +527,9 @@ struct TGridScratchPad {
                                   typename Block::Node,
                                   ComponentType>;
 
+  // For SOA, we only allow gathering single channel
+  TC_STATIC_ASSERT(!(Block::soa && std::is_same<ComponentType, void>::value));
+
   static constexpr std::array<int, 3> scratch_size{
       Block::size[0] + 2, Block::size[1] + 2, Block::size[2] + 2};
 
@@ -539,55 +542,16 @@ struct TGridScratchPad {
       &linearized_data[scratch_size[1] * scratch_size[2] + scratch_size[2] +
                        1]);
 
-  /*
-  TGridScratchPad(TAncestors<Block> &ancestors, int component_offset=0) {
-    // Gather linearized data
-    TC_ASSERT(!(component_offset != 0 &&
-                       std::is_same<ComponentType, void>::value));
-    RegionND<dim> region(VectorI(-1), VectorI(Block::size) + VectorI(1));
-    auto bs = VectorI(Block::size);
-    int p = 0;
-    for (auto &ind : region) {
-      VectorI block_offset = (ind.get_ipos() + bs) / bs - VectorI(1);
-      Block *an_b = ancestors[block_offset];
-      auto local_coord = (ind.get_ipos() + bs) % bs;
-      if (an_b) {
-        linearized_data[p] = *reinterpret_cast<Node *>(
-            reinterpret_cast<uint8 *>(&an_b->node_local(local_coord)) +
-            component_offset);
-      } else {
-        std::memset(&linearized_data[p], 0, sizeof(linearized_data[p]));
-      }
-      p++;
-    }
-  }
-  */
   TGridScratchPad(TAncestors<Block> &ancestors, int component_offset = 0) {
     // Gather linearized data
     TC_ASSERT(
         !(component_offset != 0 && std::is_same<ComponentType, void>::value));
-/*
-RegionND<dim> region(VectorI(-1), VectorI(Block::size) + VectorI(1));
-auto bs = VectorI(Block::size);
-int p = 0;
-for (auto &ind : region) {
-  VectorI block_offset = (ind.get_ipos() + bs) / bs - VectorI(1);
-  Block *an_b = ancestors[block_offset];
-  auto local_coord = (ind.get_ipos() + bs) % bs;
-  if (an_b) {
-    linearized_data[p] = *reinterpret_cast<Node *>(
-        reinterpret_cast<uint8 *>(&an_b->node_local(local_coord)) +
-        component_offset);
-  } else {
-    std::memset(&linearized_data[p], 0, sizeof(linearized_data[p]));
-  }
-  p++;
-}
-*/
 
 #define GATHER(I)                                                \
   gather<(I) / 9 - 1, ((I) / 3) % 3 - 1, (I) % 3 - 1>(ancestors, \
                                                       component_offset)
+
+    std::memset(&linearized_data[0], 0, sizeof(linearized_data));
     TC_REPEAT27(GATHER);
 #undef GATHER
   }
@@ -603,17 +567,28 @@ for (auto &ind : region) {
     constexpr int ek = std::min(Block::size[2] + 1, (k + 1) * Block::size[2]);
     auto ab = ancestors[VectorI(i, j, k)];
     if (!ab) {
+      return;
+    }
+    TC_STATIC_IF(Block::soa) {
+      if (grid_debug) {
+        TC_ASSERT(
+            component_offset % sizeof(typename Block::Node::element_type) == 0);
+      }
       for (int p = si; p < ei; p++) {
         for (int q = sj; q < ej; q++) {
           for (int r = sk; r < ek; r++) {
             int x = p - i * Block::size[0];
             int y = q - j * Block::size[1];
             int z = r - k * Block::size[2];
-            std::memset(&data[p][q][r], 0, sizeof(data[p][q][r]));
+            data[p][q][r] = *reinterpret_cast<Node *>(
+                reinterpret_cast<uint8 *>(&ab->node_local(Vector3i(
+                    x, y, z))[component_offset /
+                              sizeof(typename Block::Node::element_type)]));
           }
         }
       }
-    } else {
+    }
+    TC_STATIC_ELSE {
       constexpr int stride = sizeof(typename Block::Node);
       __m256i i32offset = _mm256_set_epi32(
           component_offset + stride * 7, component_offset + stride * 6,
@@ -644,8 +619,10 @@ for (auto &ind : region) {
         }
       }
     }
+    TC_STATIC_END_IF
   };
 
+  template <typename T = void>
   Node &node(VectorI ind) {
     return data[ind.x][ind.y][ind.z];
   }

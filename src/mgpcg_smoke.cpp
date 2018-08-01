@@ -27,19 +27,20 @@ struct NodeFlags : public bit::Bits<32> {
 };
 
 struct Node {
-  real channels[16];
+  // real channels[16];
+  constexpr static int num_channels = 16;
+  using element_type = real;
 
-  real &operator[](int i) {
-    return channels[i];
-  }
-
+  /*
   NodeFlags &flags() {
     return bit::reinterpret_bits<NodeFlags>(channels[15]);
   }
+  */
 };
 
-template<> constexpr bool is_SOA<Node>() {
-  return false;
+template <>
+constexpr bool is_SOA<Node>() {
+  return true;
 }
 
 struct Particle {
@@ -152,7 +153,7 @@ class MGPCGSmoke {
     Region3D active_region(VectorI(-n, -n * 2, -n), VectorI(n, n * 2, n));
     for (auto ind : active_region) {
       grids[0]->touch(ind);
-      grids[0]->node(ind).flags().set_effective(true);
+      // grids[0]->node(ind).flags().set_effective(true);
       grids[0]->get_block_if_exist(ind)->meta.set_has_effective_cell(true);
     }
     set_up_hierechy();
@@ -180,13 +181,13 @@ class MGPCGSmoke {
   void set_up_hierechy() {
     std::size_t total_blocks = grids[0]->num_active_blocks();
     for (int i = 0; i < mg_lv - 1; i++) {
-      grids[i]->coarsen_to(
-          *grids[i + 1], [&](Block &b, Grid::PyramidAncestors &an) {
-            for (auto ind : b.local_region()) {
-              b.node_local(ind.get_ipos()).flags().set_effective(true);
-            }
-            b.meta.set_has_effective_cell(true);
-          });
+      grids[i]->coarsen_to(*grids[i + 1],
+                           [&](Block &b, Grid::PyramidAncestors &an) {
+                             for (auto ind : b.local_region()) {
+                               // b.node_local(ind.get_ipos()).flags().set_effective(true);
+                             }
+                             b.meta.set_has_effective_cell(true);
+                           });
       total_blocks /= 8;
       TC_ASSERT(grids[i + 1]->num_active_blocks() == total_blocks);
     }
@@ -198,15 +199,15 @@ class MGPCGSmoke {
         [&](Block &b, Grid::Ancestors &an) {
           if (!b.meta.get_has_effective_cell())
             return;
-          GridScratchPad scratch(an);
+          GridScratchPadCh scratch(an, sizeof(real) * U);
           // 6 neighbours
           for (int i = 0; i < Block::size[0]; i++) {
             for (int j = 0; j < Block::size[1]; j++) {
               for (int k = 0; k < Block::size[2]; k++) {
-                auto rhs = b.get_node_volume()[i][j][k][B];
-                auto c = b.get_node_volume()[i][j][k][U];
+                auto rhs = b.node_local(Vector3i(i, j, k))[B];
+                auto c = b.node_local(Vector3i(i, j, k))[U];
                 auto fetch = [&](int ii, int jj, int kk) {
-                  rhs += (scratch.data[i + ii][j + jj][k + kk][U] - c);
+                  rhs += (scratch.data[i + ii][j + jj][k + kk] - c);
                 };
                 fetch(0, 0, 1);
                 fetch(0, 0, -1);
@@ -214,7 +215,7 @@ class MGPCGSmoke {
                 fetch(0, -1, 0);
                 fetch(1, 0, 0);
                 fetch(-1, 0, 0);
-                b.get_node_volume()[i][j][k][R] = rhs;
+                b.node_local(Vector3i(i, j, k))[R] = rhs;
               }
             }
           }
@@ -229,7 +230,7 @@ class MGPCGSmoke {
         [&](Block &b, Grid::Ancestors &an) {
           if (!b.meta.get_has_effective_cell())
             return;
-          GridScratchPad scratch(an);
+          GridScratchPadCh scratch(an, sizeof(real) * channel_in);
           // 6 neighbours
           for (int i = 0; i < Block::size[0]; i++) {
             for (int j = 0; j < Block::size[1]; j++) {
@@ -239,7 +240,7 @@ class MGPCGSmoke {
                 auto fetch = [&](int ii, int jj, int kk) {
                   auto &n = scratch.data[i + (ii)][j + (jj)][k + (kk)];
                   count++;
-                  tmp += n[channel_in];
+                  tmp += n;
                 };
                 fetch(0, 0, 1);
                 fetch(0, 0, -1);
@@ -247,19 +248,8 @@ class MGPCGSmoke {
                 fetch(0, -1, 0);
                 fetch(1, 0, 0);
                 fetch(-1, 0, 0);
-                auto &o = b.get_node_volume()[i][j][k][channel_out];
-                o = count * scratch.data[i][j][k][channel_in] - tmp;
-                if (debug) {
-                  if (o != o) {
-                    TC_P(b.base_coord);
-                    TC_P(scratch.data[i][j][k][channel_in]);
-                    TC_P(o);
-                    TC_P(i);
-                    TC_P(j);
-                    TC_P(k);
-                    Time::sleep(0.01);
-                  }
-                }
+                auto &o = b.node_local(Vector3i(i, j, k))[channel_out];
+                o = count * scratch.data[i][j][k] - tmp;
               }
             }
           }
@@ -337,18 +327,19 @@ class MGPCGSmoke {
               real *psum = (real *)&sum;
               for (int k = 0; k < Block::size[2]; k++) {
                 // (B - Lu) / Diag
-                b.get_node_volume()[i][j][k][U] = psum[k];
+                b.node_local(Vector3i(i, j, k))[U] = psum[k];
                 // Damping is important. It brings down #iterations to 1e-7 from
                 // 91 to 10...
               }
             }
           }
         },
-        false, level==0);  // carry nodes only if on finest level
+        false, level == 0);  // carry nodes only if on finest level
   }
 
   void clear(int level, int channel) {
-    grids[level]->for_each_node([&](Block::Node &n) { n[channel] = 0; });
+    grids[level]->for_each_node(
+        [&](const Block::NodeAccessorType &n) { n[channel] = 0; });
   }
 
   // B[level + 1] = coarsened(R[level])
@@ -371,7 +362,7 @@ class MGPCGSmoke {
               auto coarse_coord = div_floor(
                   ind.get_ipos() * Vector3i(Block::size) + j.get_ipos(),
                   Vector3i(2));
-              block.node_local(coarse_coord).channels[B_out] +=
+              block.node_local(coarse_coord)[B_out] +=
                   ab.node_local(j.get_ipos())[R_in];
             }
           }
@@ -551,7 +542,7 @@ class MGPCGSmoke {
           };
           auto offset = Vector3i(Block::size);
           for (auto ind : b.local_region()) {
-            auto &node = b.node_local(ind);
+            const auto &node = b.node_local(ind);
             node[CH_VX] = u.sample(backtrace(u.node_pos(ind + offset)));
             node[CH_VY] = v.sample(backtrace(v.node_pos(ind + offset)));
             node[CH_VZ] = w.sample(backtrace(w.node_pos(ind + offset)));
@@ -585,14 +576,18 @@ class MGPCGSmoke {
   void compute_b(bool debug = false) {
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
-          Grid::GridScratchPad scratch(an);
+          GridScratchPadCh scratchX(an, sizeof(real) * CH_VX);
+          GridScratchPadCh scratchY(an, sizeof(real) * CH_VY);
+          GridScratchPadCh scratchZ(an, sizeof(real) * CH_VZ);
           for (auto &ind : b.local_region()) {
             auto center = VectorI(ind);
             auto div = 0.0_f;
-            for (int i = 0; i < dim; i++) {
-              div += scratch.node(center)[CH_VX + i] -
-                     scratch.node(center + VectorI::axis(i))[CH_VX + i];
-            }
+            div += scratchX.node(center) -
+                   scratchX.node(center + VectorI::axis(0));
+            div += scratchY.node(center) -
+                   scratchY.node(center + VectorI::axis(1));
+            div += scratchZ.node(center) -
+                   scratchZ.node(center + VectorI::axis(2));
             b.node_local(ind)[CH_B] = div;
             if (debug && std::abs(div) > 1e-3_f) {
               TC_P(b.base_coord + ind);
@@ -613,13 +608,13 @@ class MGPCGSmoke {
     // Apply pressure
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
-          Grid::GridScratchPad scratch(an);
+          GridScratchPadCh scratch(an, sizeof(real) * CH_X);
           for (auto &ind : b.local_region()) {
             auto center = VectorI(ind);
             for (int k = 0; k < dim; k++) {
               b.node_local(ind)[CH_VX + k] -=
-                  scratch.node(center)[CH_X] -
-                  scratch.node(center - VectorI::axis(k))[CH_X];
+                  scratch.node(center) -
+                  scratch.node(center - VectorI::axis(k));
             }
           }
 

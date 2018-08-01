@@ -545,13 +545,13 @@ for (auto &ind : region) {
   template <int i, int j, int k>
   TC_FORCE_INLINE void gather(TAncestors<Block> &ancestors,
                               int component_offset) {
+    constexpr int si = std::max(-1, i * Block::size[0]);
+    constexpr int sj = std::max(-1, j * Block::size[1]);
+    constexpr int sk = std::max(-1, k * Block::size[2]);
+    constexpr int ei = std::min(Block::size[0] + 1, (i + 1) * Block::size[0]);
+    constexpr int ej = std::min(Block::size[1] + 1, (j + 1) * Block::size[1]);
+    constexpr int ek = std::min(Block::size[2] + 1, (k + 1) * Block::size[2]);
     auto ab = ancestors[VectorI(i, j, k)];
-    int si = std::max(-1, i * Block::size[0]);
-    int sj = std::max(-1, j * Block::size[1]);
-    int sk = std::max(-1, k * Block::size[2]);
-    int ei = std::min(Block::size[0] + 1, (i + 1) * Block::size[0]);
-    int ej = std::min(Block::size[1] + 1, (j + 1) * Block::size[1]);
-    int ek = std::min(Block::size[2] + 1, (k + 1) * Block::size[2]);
     if (!ab) {
       for (int p = si; p < ei; p++) {
         for (int q = sj; q < ej; q++) {
@@ -564,16 +564,33 @@ for (auto &ind : region) {
         }
       }
     } else {
+      constexpr int stride = sizeof(typename Block::Node);
+      __m256i i32offset = _mm256_set_epi32(
+          component_offset + stride * 7, component_offset + stride * 6,
+          component_offset + stride * 5, component_offset + stride * 4,
+          component_offset + stride * 3, component_offset + stride * 2,
+          component_offset + stride * 1, component_offset + stride * 0);
+      constexpr bool use_avx2 =
+          sk == 0 && ek == 8 && std::is_same<Node, float32>::value;
       for (int p = si; p < ei; p++) {
         for (int q = sj; q < ej; q++) {
-          for (int r = sk; r < ek; r++) {
-            int x = p - i * Block::size[0];
-            int y = q - j * Block::size[1];
-            int z = r - k * Block::size[2];
-            data[p][q][r] = *reinterpret_cast<Node *>(
-                reinterpret_cast<uint8 *>(&ab->get_node_volume()[x][y][z]) +
-                component_offset);
+          int x = p - i * Block::size[0];
+          int y = q - j * Block::size[1];
+          TC_STATIC_IF(use_avx2) {
+            _mm256_storeu_ps(
+                &data[p][q][0],
+                _mm256_i32gather_ps((float32 *)&ab->get_node_volume()[x][y][0],
+                                    i32offset, 1));
           }
+          TC_STATIC_ELSE {
+            for (int r = sk; r < ek; r++) {
+              int z = r - k * Block::size[2];
+              data[p][q][r] = *reinterpret_cast<Node *>(
+                  reinterpret_cast<uint8 *>(&ab->get_node_volume()[x][y][z]) +
+                  component_offset);
+            }
+          }
+          TC_STATIC_END_IF
         }
       }
     }

@@ -101,14 +101,18 @@ struct TSize3D {
   }
 };
 
-template <typename T, int num_nodes, typename = std::true_type>
-struct TNodesType {
+template <typename T, int num_nodes, bool soa_>
+struct TNodesType;
+
+template <typename T, int num_nodes>
+struct TNodesType<T, num_nodes, false> {
   using type = T[num_nodes];
   using accessor_type = T &;
+  constexpr static bool soa = false;
 };
 
 template <typename T, int num_nodes>
-struct TNodesType<T, num_nodes, std::enable_if_t<is_SOA<T>(), int>> {
+struct TNodesType<T, num_nodes, true> {
   using type = typename T::element_type[T::num_channels][num_nodes];
   struct Accessor {
     typename T::element_type *base;
@@ -119,6 +123,7 @@ struct TNodesType<T, num_nodes, std::enable_if_t<is_SOA<T>(), int>> {
     }
   };
   using accessor_type = Accessor;
+  constexpr static bool soa = true;
 };
 
 template <typename Node_,
@@ -138,8 +143,6 @@ struct TBlock {
   using block_size = block_size_;
   using particle_to_grid_func = std::function<TVector<int, dim>(Particle &)>;
   using Meta = Meta_;
-
-  static const bool soa = is_SOA<Node>();
 
   static constexpr const std::array<int, dim> size = {
       block_size_::x(), block_size_::y(), block_size_::z()};
@@ -163,8 +166,11 @@ struct TBlock {
   bool computed;
   Meta meta;
 
-  using NodesType = typename TNodesType<Node, num_nodes>::type;
-  using NodeAccessorType = typename TNodesType<Node, num_nodes>::accessor_type;
+  static const bool soa = is_SOA<Node_>();
+  TC_STATIC_ASSERT((soa == TNodesType<Node, num_nodes, soa>::soa));
+  using NodesType = typename TNodesType<Node, num_nodes, soa>::type;
+  using NodeAccessorType =
+      typename TNodesType<Node, num_nodes, soa>::accessor_type;
 
   // Grid data
   NodesType nodes;
@@ -242,7 +248,8 @@ struct TBlock {
   template <typename Node__ = Node_>
   TC_FORCE_INLINE std::enable_if_t<is_SOA<Node__>(), NodeAccessorType>
   node_accessor(int linearized_coord) {
-    return NodeAccessorType(&nodes + Node::element_type * linearized_coord);
+    return NodeAccessorType(
+        &nodes[0][0] + sizeof(typename Node::element_type) * linearized_coord);
   }
 
   TC_FORCE_INLINE NodeAccessorType node_local(const VectorI local_coord) {
@@ -765,7 +772,8 @@ class TaichiGrid {
     return nullptr;
   }
 
-  TC_FORCE_INLINE Node &node(const VectorI &coord, int timestamp = -1) {
+  TC_FORCE_INLINE typename Block::NodeAccessorType node(const VectorI &coord,
+                                                        int timestamp = -1) {
     if (timestamp == -1) {
       timestamp = current_timestamp;
     }

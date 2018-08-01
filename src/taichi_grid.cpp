@@ -398,4 +398,31 @@ TC_TEST("Interpolation") {
   }
 }
 
+struct NodeSOA {
+  constexpr static int num_channels = 8;
+  using element_type = real;
+};
+
+template <> constexpr bool is_SOA<NodeSOA>() {
+  return true;
+}
+
+TC_TEST("soa") {
+  if (with_mpi())
+    return;
+  using Block = TBlock<NodeSOA, char, TSize3D<8>>;
+  TC_STATIC_ASSERT(Block::soa);
+
+  using Grid = TaichiGrid<Block>;
+  Grid grid;
+  Vector3i block_size(8);
+  Region3D block_region(Vector3i(7), Vector3i(10));
+  Region3D local_grid_region(Vector3i(-1), Vector3i(1) + block_size);
+
+  TArray<int, 3> gt(Vector3i(100));
+
+  auto address = &grid.node(Vector3i(3, 4, 5))[1];
+
+}
+
 TC_NAMESPACE_END

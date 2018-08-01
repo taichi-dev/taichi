@@ -75,7 +75,7 @@ Vector3 hsv2rgb(Vector3 hsv) {
   return Vector3(r, g, b);
 }
 
-using Block = TBlock<Node, Particle, TSize3D<8>, 0, 1024, BlockFlags>;
+using Block = TBlock<Node, Particle, TSize3D<8>, 0, 1, BlockFlags>;
 
 class MGPCGSmoke {
  public:
@@ -303,28 +303,39 @@ class MGPCGSmoke {
           GridScratchPadCh scratchB(an, B * sizeof(real));
           GridScratchPadCh scratchU(an, U * sizeof(real));
           // 6 neighbours
+          TC_STATIC_ASSERT(sizeof(real) == 4);
+          TC_STATIC_ASSERT(Block::size[2] == 8);
           for (int i = 0; i < Block::size[0]; i++) {
             for (int j = 0; j < Block::size[1]; j++) {
               __m256 sum_z =
                   _mm256_add_ps(_mm256_loadu_ps(&scratchU.data[i][j][-1]),
                                 _mm256_loadu_ps(&scratchU.data[i][j][1]));
               __m256 sum_y =
-                  _mm256_add_ps(_mm256_loadu_ps(&scratchU.data[i][j-1][0]),
-                                _mm256_loadu_ps(&scratchU.data[i][j+1][0]));
+                  _mm256_add_ps(_mm256_loadu_ps(&scratchU.data[i][j - 1][0]),
+                                _mm256_loadu_ps(&scratchU.data[i][j + 1][0]));
               __m256 sum_x =
-                  _mm256_add_ps(_mm256_loadu_ps(&scratchU.data[i-1][j][0]),
-                                _mm256_loadu_ps(&scratchU.data[i+1][j][0]));
+                  _mm256_add_ps(_mm256_loadu_ps(&scratchU.data[i - 1][j][0]),
+                                _mm256_loadu_ps(&scratchU.data[i + 1][j][0]));
 
-              auto sum = _mm256_add_ps(_mm256_add_ps(sum_z, sum_y), sum_x);
+              auto sum = _mm256_add_ps(
+                  _mm256_add_ps(sum_z, sum_y),
+                  _mm256_add_ps(sum_x,
+                                _mm256_loadu_ps(&scratchB.data[i][j][0])));
+              auto original = _mm256_loadu_ps(&scratchU.data[i][j][0]);
+
+              // o = original + (tmp * (1.0_f / 6) - original) * (2.0_f / 3_f);
+              sum = _mm256_add_ps(
+                  original,
+                  _mm256_mul_ps(_mm256_sub_ps(_mm256_mul_ps(sum, _mm256_set1_ps(
+                                                                     1.0f / 6)),
+                                              original),
+                                _mm256_set1_ps(2.0f / 3)));
               real *psum = (real *)&sum;
               for (int k = 0; k < Block::size[2]; k++) {
                 // (B - Lu) / Diag
-                real tmp = scratchB.data[i][j][k] + psum[k];
-                auto original = scratchU.data[i][j][k];
-                auto &o = b.get_node_volume()[i][j][k][U];
+                b.get_node_volume()[i][j][k][U] = psum[k];
                 // Damping is important. It brings down #iterations to 1e-7 from
                 // 91 to 10...
-                o = original + (tmp * (1.0_f / 6) - original) * (2.0_f / 3_f);
               }
             }
           }
@@ -759,7 +770,7 @@ class MGPCGSmoke {
 };
 
 auto mgpcg = [](const std::vector<std::string> &params) {
-  // ThreadedTaskManager::TbbParallelismControl _(4);
+  ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGSmoke> mgpcg;
   mgpcg = std::make_unique<MGPCGSmoke>();
   while (true) {

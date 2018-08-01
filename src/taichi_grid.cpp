@@ -403,7 +403,8 @@ struct NodeSOA {
   using element_type = real;
 };
 
-template <> constexpr bool is_SOA<NodeSOA>() {
+template <>
+constexpr bool is_SOA<NodeSOA>() {
   return true;
 }
 
@@ -428,6 +429,8 @@ TC_TEST("soa") {
   auto address3 = &grid.node(Vector3i(3, 4, 6))[2];
   TC_CHECK(address2 - address1 == block_size.prod());
   TC_CHECK(address3 - address2 == 1);
+  grid.node(Vector3i(3, 4, 6))[2] = 1235423;
+  TC_CHECK(grid.node(Vector3i(3, 4, 6))[2] == 1235423);
 }
 
 TC_NAMESPACE_END

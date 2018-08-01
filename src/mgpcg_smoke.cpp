@@ -271,8 +271,8 @@ class MGPCGSmoke {
   void copy(int channel_out, int channel_a) {
     TC_PROFILER("copy")
     grids[0]->map([&](Block &b) {
-      for (auto &n : b.nodes) {
-        n[channel_out] = n[channel_a];
+      for (int i = 0; i < b.num_nodes; i++) {
+        b.nodes[channel_out][i] = b.nodes[channel_a][i];
       }
     });
   }
@@ -280,8 +280,8 @@ class MGPCGSmoke {
   float64 dot_product(int channel_a, int channel_b) {
     return grids[0]->reduce([&](Block &b) -> float64 {
       float64 sum = 0;
-      for (auto &n : b.nodes) {
-        sum += n[channel_a] * n[channel_b];
+      for (int i = 0; i < b.num_nodes; i++) {
+        sum += b.nodes[channel_a][i] * b.nodes[channel_b][i];
       }
       return sum;
     });

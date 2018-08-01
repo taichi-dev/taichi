@@ -439,8 +439,7 @@ struct TAncestors {
 };
 
 // If ComponentType is void, gather the whole node.
-template <typename Block,
-          typename ComponentType = void>
+template <typename Block, typename ComponentType = void>
 struct TGridScratchPad {
   static constexpr int dim = Block::dim;
   TC_STATIC_ASSERT(dim == 3);
@@ -461,6 +460,7 @@ struct TGridScratchPad {
       &linearized_data[scratch_size[1] * scratch_size[2] + scratch_size[2] +
                        1]);
 
+  /*
   TGridScratchPad(TAncestors<Block> &ancestors, int component_offset=0) {
     // Gather linearized data
     TC_ASSERT(!(component_offset != 0 &&
@@ -480,6 +480,60 @@ struct TGridScratchPad {
         std::memset(&linearized_data[p], 0, sizeof(linearized_data[p]));
       }
       p++;
+    }
+  }
+  */
+  TGridScratchPad(TAncestors<Block> &ancestors, int component_offset = 0) {
+    // Gather linearized data
+    TC_ASSERT(
+        !(component_offset != 0 && std::is_same<ComponentType, void>::value));
+    /*
+    RegionND<dim> region(VectorI(-1), VectorI(Block::size) + VectorI(1));
+    auto bs = VectorI(Block::size);
+    int p = 0;
+    for (auto &ind : region) {
+      VectorI block_offset = (ind.get_ipos() + bs) / bs - VectorI(1);
+      Block *an_b = ancestors[block_offset];
+      auto local_coord = (ind.get_ipos() + bs) % bs;
+      if (an_b) {
+        linearized_data[p] = *reinterpret_cast<Node *>(
+            reinterpret_cast<uint8 *>(&an_b->node_local(local_coord)) +
+            component_offset);
+      } else {
+        std::memset(&linearized_data[p], 0, sizeof(linearized_data[p]));
+      }
+      p++;
+    }
+    */
+
+    std::memset(&linearized_data[0], 0, sizeof(linearized_data));
+    for (int i = -1; i < 2; i++) {
+      for (int j = -1; j < 2; j++) {
+        for (int k = -1; k < 2; k++) {
+          auto ab = ancestors[VectorI(i, j, k)];
+          if (!ab) {
+            continue;
+          }
+          int si = std::max(-1, i * Block::size[0]);
+          int sj = std::max(-1, j * Block::size[1]);
+          int sk = std::max(-1, k * Block::size[2]);
+          int ei = std::min(Block::size[0] + 1, (i + 1) * Block::size[0]);
+          int ej = std::min(Block::size[1] + 1, (j + 1) * Block::size[1]);
+          int ek = std::min(Block::size[2] + 1, (k + 1) * Block::size[2]);
+          for (int p = si; p < ei; p++) {
+            for (int q = sj; q < ej; q++) {
+              for (int r = sk; r < ek; r++) {
+                int x = p - i * Block::size[0];
+                int y = q - j * Block::size[1];
+                int z = r - k * Block::size[2];
+                data[p][q][r] = *reinterpret_cast<Node *>(
+                    reinterpret_cast<uint8 *>(&ab->get_node_volume()[x][y][z]) +
+                    component_offset);
+              }
+            }
+          }
+        }
+      }
     }
   }
 

@@ -159,6 +159,9 @@ def main():
       frame_rate = int(sys.argv[2])
     else:
       frame_rate = 24
+    if len(sys.argv) >= 4:
+      trunc = int(sys.argv[3])
+      files = files[:trunc]
     tc.info('Making video using {} png files...', len(files))
     tc.info("frame_rate={}", frame_rate)
     output_fn = 'video.mp4'

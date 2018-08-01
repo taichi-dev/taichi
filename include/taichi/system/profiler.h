@@ -96,9 +96,9 @@ class ProfilerRecords {
       } else if (t < 60) {
         return std::make_pair(1_f, " s");
       } else if (t < 3600) {
-        return std::make_pair(60_f, " m");
+        return std::make_pair(1.0_f / 60_f, " m");
       } else {
-        return std::make_pair(3600_f, "h");
+        return std::make_pair(1.0_f / 3600_f, "h");
       }
     };
 

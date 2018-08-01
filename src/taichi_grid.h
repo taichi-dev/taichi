@@ -18,6 +18,11 @@ TC_NAMESPACE_BEGIN
 
 constexpr bool grid_debug = true;
 
+template <typename T>
+constexpr bool is_SOA() {
+  return false;
+}
+
 template <typename T, int N>
 TC_FORCE_INLINE constexpr T product(const std::array<T, N> arr) {
   T ret(1);
@@ -96,6 +101,16 @@ struct TSize3D {
   }
 };
 
+template <typename T, int num_nodes, typename = std::true_type>
+struct TNodesType {
+  using type = T[num_nodes];
+};
+
+template <typename T, int num_nodes>
+struct TNodesType<T, num_nodes, std::enable_if_t<is_SOA<T>(), int>> {
+  using type = typename T::element_type[T::num_channels][num_nodes];
+};
+
 template <typename Node_,
           typename Particle_,
           typename block_size_ = TSize3D<8>,
@@ -113,6 +128,8 @@ struct TBlock {
   using block_size = block_size_;
   using particle_to_grid_func = std::function<TVector<int, dim>(Particle &)>;
   using Meta = Meta_;
+
+  static const bool soa = is_SOA<Node>();
 
   static constexpr const std::array<int, dim> size = {
       block_size_::x(), block_size_::y(), block_size_::z()};
@@ -136,8 +153,10 @@ struct TBlock {
   bool computed;
   Meta meta;
 
+  using NodesType = typename TNodesType<Node, num_nodes>::type;
+
   // Grid data
-  Node nodes[num_nodes];
+  NodesType nodes;
   using VolumeNodeType = Node[grid_size[0]][grid_size[1]][grid_size[2]];
 
   static constexpr int max_num_particles = max_particles_per_node * num_nodes;

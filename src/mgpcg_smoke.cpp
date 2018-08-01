@@ -85,20 +85,9 @@ class MGPCGSmoke {
   using Matrix = TMatrix<real, dim>;
   using Grid = TaichiGrid<Block>;
 
-  std::vector<std::unique_ptr<Grid>> grids;
-  static constexpr int mg_lv = 4;
-
-  using VectorI = Vector3i;
-  using Vectori = VectorI;
-  using GridScratchPad = TGridScratchPad<Block>;
-
   const int n = 64;
-
-  std::shared_ptr<Camera> cam;
-  real current_t;
-  real dt = 2e-3_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
-
-  std::unique_ptr<ParticleRenderer> renderer;
+  static constexpr int mg_lv = 4;
+  std::vector<std::unique_ptr<Grid>> grids;
 
   enum {
     CH_R,
@@ -115,6 +104,18 @@ class MGPCGSmoke {
     CH_RHO,
     CH_T
   };
+
+  using VectorI = Vector3i;
+  using Vectori = VectorI;
+  using GridScratchPad = TGridScratchPad<Block>;
+  using GridScratchPadCh = TGridScratchPad<Block, real>;
+
+
+  std::shared_ptr<Camera> cam;
+  real current_t;
+  real dt = 2e-3_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+
+  std::unique_ptr<ParticleRenderer> renderer;
 
   MGPCGSmoke() {
     renderer = create_instance_unique<ParticleRenderer>("shadow_map");
@@ -300,19 +301,18 @@ class MGPCGSmoke {
         [&](Grid::Block &b, Grid::Ancestors &an) {
           if (!b.meta.get_has_effective_cell())
             return;
-          GridScratchPad scratch(an);
+          GridScratchPadCh scratchB(an, B * sizeof(real));
+          GridScratchPadCh scratchU(an, U * sizeof(real));
           // 6 neighbours
           for (int i = 0; i < Block::size[0]; i++) {
             for (int j = 0; j < Block::size[1]; j++) {
               for (int k = 0; k < Block::size[2]; k++) {
-                if (debug)
-                  TC_ASSERT(scratch.data[i][j][k].flags().get_effective());
                 int count = 0;
                 // (B - Lu) / Diag
-                real tmp = scratch.data[i][j][k][B];
+                real tmp = scratchB.data[i][j][k];
                 auto fetch = [&](int ii, int jj, int kk) {
                   count += 1;
-                  tmp += scratch.data[i + ii][j + jj][k + kk][U];
+                  tmp += scratchU.data[i + ii][j + jj][k + kk];
                 };
                 fetch(0, 0, 1);
                 fetch(0, 0, -1);
@@ -320,7 +320,7 @@ class MGPCGSmoke {
                 fetch(0, -1, 0);
                 fetch(1, 0, 0);
                 fetch(-1, 0, 0);
-                auto original = scratch.data[i][j][k][U];
+                auto original = scratchU.data[i][j][k];
                 if (debug) {
                   TC_ASSERT(count != 0);
                 }
@@ -782,20 +782,21 @@ TC_REGISTER_TASK(mgpcg);
 
 auto smoke = [](const std::vector<std::string> &params) {
   TC_PROFILER("smoke");
-  ThreadedTaskManager::TbbParallelismControl _(1);
+  // ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGSmoke> smoke;
   smoke = std::make_unique<MGPCGSmoke>();
   GUI gui("MGPCG Smoke", 800, 800);
-  GUI gui2("Velocity", 256, 512);
-  GUI gui3("Density", 256, 512);
+  //GUI gui2("Velocity", 256, 512);
+  //GUI gui3("Density", 256, 512);
 
   for (int frame = 0;; frame++) {
     TC_PROFILE("step", smoke->step());
     gui.get_canvas().img.write_as_image(fmt::format("tmp/{:05d}.png", frame));
     TC_PROFILE("render", smoke->render(gui.get_canvas()));
+    gui.update();
     {
+      /*
       TC_PROFILER("debug");
-      gui.update();
       auto img = smoke->render_velocity_field();
       for (auto ind : gui2.get_canvas().img.get_region()) {
         gui2.get_canvas().img[ind] = Vector3(img[Vector2i(ind) / Vector2i(4)]);
@@ -806,6 +807,7 @@ auto smoke = [](const std::vector<std::string> &params) {
         gui3.get_canvas().img[ind] = Vector3(img[Vector2i(ind) / Vector2i(4)]);
       }
       gui3.update();
+      */
     }
     print_profile_info();
   }

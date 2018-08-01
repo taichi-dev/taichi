@@ -438,12 +438,16 @@ struct TAncestors {
   }
 };
 
-template <typename Block>
+// If ComponentType is void, gather the whole node.
+template <typename Block,
+          typename ComponentType = void>
 struct TGridScratchPad {
   static constexpr int dim = Block::dim;
   TC_STATIC_ASSERT(dim == 3);
   using VectorI = typename Block::VectorI;
-  using Node = typename Block::Node;
+  using Node = std::conditional_t<std::is_same<ComponentType, void>::value,
+                                  typename Block::Node,
+                                  ComponentType>;
 
   static constexpr std::array<int, 3> scratch_size{
       Block::size[0] + 2, Block::size[1] + 2, Block::size[2] + 2};
@@ -457,9 +461,10 @@ struct TGridScratchPad {
       &linearized_data[scratch_size[1] * scratch_size[2] + scratch_size[2] +
                        1]);
 
-  TGridScratchPad(TAncestors<Block> &ancestors) {
-    // TC_P(ancestors.data);
+  TGridScratchPad(TAncestors<Block> &ancestors, int component_offset=0) {
     // Gather linearized data
+    TC_ASSERT(!(component_offset != 0 &&
+                       std::is_same<ComponentType, void>::value));
     RegionND<dim> region(VectorI(-1), VectorI(Block::size) + VectorI(1));
     auto bs = VectorI(Block::size);
     int p = 0;
@@ -468,7 +473,9 @@ struct TGridScratchPad {
       Block *an_b = ancestors[block_offset];
       auto local_coord = (ind.get_ipos() + bs) % bs;
       if (an_b) {
-        linearized_data[p] = an_b->node_local(local_coord);
+        linearized_data[p] = *reinterpret_cast<Node *>(
+            reinterpret_cast<uint8 *>(&an_b->node_local(local_coord)) +
+            component_offset);
       } else {
         std::memset(&linearized_data[p], 0, sizeof(linearized_data[p]));
       }
@@ -1121,8 +1128,13 @@ class TaichiGrid {
     // TODO: fix alignment issues here
     std::vector<Particle> particles;
     for (auto b : get_block_list()) {
-      particles.insert(particles.end(), b->particles,
-                       b->particles + b->particle_count);
+      // TC_P(b->particle_count);
+      for (std::size_t i = 0; i < b->particle_count; i++) {
+        particles.push_back(b->particles[i]);
+      }
+      // particles.insert(particles.end(), b->particles,
+      //                 b->particles + b->particle_count);
+      // TC_INFO("inserted");
     }
     if (with_mpi()) {
       MPI_Request req;

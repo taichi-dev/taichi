@@ -407,8 +407,8 @@ class MGPCGSmoke {
     }
     for (int i = 0; i < mg_lv - 1; i++) {
       // pre-smoothing
-      for (int j = 0; j < smoothing_iters; j++) {
-        smooth(i, U, B);
+      for (int j = 0; j < smoothing_iters * 1000000; j++) {
+        TC_TIME(smooth(i, U, B));
       }
       residual(i, U, B, R);
       restrict(i, R, B);

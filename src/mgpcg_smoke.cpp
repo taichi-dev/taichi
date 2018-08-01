@@ -27,10 +27,8 @@ struct NodeFlags : public bit::Bits<32> {
 };
 
 struct Node {
-  // real channels[16];
   constexpr static int num_channels = 16;
   using element_type = real;
-
   /*
   NodeFlags &flags() {
     return bit::reinterpret_bits<NodeFlags>(channels[15]);
@@ -90,8 +88,8 @@ class MGPCGSmoke {
   using Matrix = TMatrix<real, dim>;
   using Grid = TaichiGrid<Block>;
 
-  const int n = 64;
-  static constexpr int mg_lv = 4;
+  const int n = 128;
+  static constexpr int mg_lv = 5;
   std::vector<std::unique_ptr<Grid>> grids;
 
   enum {
@@ -117,7 +115,7 @@ class MGPCGSmoke {
 
   std::shared_ptr<Camera> cam;
   real current_t;
-  real dt = 2e-3_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+  real dt = 3e-3_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
 
   std::unique_ptr<ParticleRenderer> renderer;
 
@@ -325,13 +323,10 @@ class MGPCGSmoke {
                                                                      1.0f / 6)),
                                               original),
                                 _mm256_set1_ps(2.0f / 3)));
-              real *psum = (real *)&sum;
-              for (int k = 0; k < Block::size[2]; k++) {
-                // (B - Lu) / Diag
-                b.node_local(Vector3i(i, j, k))[U] = psum[k];
-                // Damping is important. It brings down #iterations to 1e-7 from
-                // 91 to 10...
-              }
+              _mm256_storeu_ps(&b.node_local(Vector3i(i, j, 0))[U], sum);
+              // (B - Lu) / Diag
+              // Damping is important. It brings down #iterations to 1e-7 from
+              // 91 to 10...
             }
           }
         },
@@ -643,7 +638,7 @@ class MGPCGSmoke {
       }
       if (b.base_coord == VectorI(0, -n * 2 + 8, 0)) {
         // Sample some particles
-        for (int i = 0; i < 3e5 * dt; i++) {
+        for (int i = 0; i < 6e5 * dt; i++) {
           auto r = Vector::rand();
           if (length(r - Vector(0.5_f)) > 0.5) {
             continue;
@@ -776,7 +771,7 @@ class MGPCGSmoke {
 };
 
 auto mgpcg = [](const std::vector<std::string> &params) {
-  ThreadedTaskManager::TbbParallelismControl _(1);
+  // ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGSmoke> mgpcg;
   mgpcg = std::make_unique<MGPCGSmoke>();
   while (true) {

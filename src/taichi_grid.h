@@ -438,6 +438,35 @@ struct TAncestors {
   }
 };
 
+#define TC_REPEAT27(F) \
+  F(0);                \
+  F(1);                \
+  F(2);                \
+  F(3);                \
+  F(4);                \
+  F(5);                \
+  F(6);                \
+  F(7);                \
+  F(8);                \
+  F(9);                \
+  F(10);               \
+  F(11);               \
+  F(12);               \
+  F(13);               \
+  F(14);               \
+  F(15);               \
+  F(16);               \
+  F(17);               \
+  F(18);               \
+  F(19);               \
+  F(20);               \
+  F(21);               \
+  F(22);               \
+  F(23);               \
+  F(24);               \
+  F(25);               \
+  F(26);
+
 // If ComponentType is void, gather the whole node.
 template <typename Block, typename ComponentType = void>
 struct TGridScratchPad {
@@ -507,35 +536,39 @@ struct TGridScratchPad {
     */
 
     std::memset(&linearized_data[0], 0, sizeof(linearized_data));
-    for (int i = -1; i < 2; i++) {
-      for (int j = -1; j < 2; j++) {
-        for (int k = -1; k < 2; k++) {
-          auto ab = ancestors[VectorI(i, j, k)];
-          if (!ab) {
-            continue;
-          }
-          int si = std::max(-1, i * Block::size[0]);
-          int sj = std::max(-1, j * Block::size[1]);
-          int sk = std::max(-1, k * Block::size[2]);
-          int ei = std::min(Block::size[0] + 1, (i + 1) * Block::size[0]);
-          int ej = std::min(Block::size[1] + 1, (j + 1) * Block::size[1]);
-          int ek = std::min(Block::size[2] + 1, (k + 1) * Block::size[2]);
-          for (int p = si; p < ei; p++) {
-            for (int q = sj; q < ej; q++) {
-              for (int r = sk; r < ek; r++) {
-                int x = p - i * Block::size[0];
-                int y = q - j * Block::size[1];
-                int z = r - k * Block::size[2];
-                data[p][q][r] = *reinterpret_cast<Node *>(
-                    reinterpret_cast<uint8 *>(&ab->get_node_volume()[x][y][z]) +
-                    component_offset);
-              }
-            }
-          }
+#define GATHER(I)                                                \
+  gather<(I) / 9 - 1, ((I) / 3) % 3 - 1, (I) % 3 - 1>(ancestors, \
+                                                      component_offset)
+    TC_REPEAT27(GATHER);
+#undef GATHER
+  }
+
+  template <int i, int j, int k>
+  TC_FORCE_INLINE void gather(TAncestors<Block> &ancestors,
+                              int component_offset) {
+    auto ab = ancestors[VectorI(i, j, k)];
+    if (!ab) {
+      return;
+    }
+    int si = std::max(-1, i * Block::size[0]);
+    int sj = std::max(-1, j * Block::size[1]);
+    int sk = std::max(-1, k * Block::size[2]);
+    int ei = std::min(Block::size[0] + 1, (i + 1) * Block::size[0]);
+    int ej = std::min(Block::size[1] + 1, (j + 1) * Block::size[1]);
+    int ek = std::min(Block::size[2] + 1, (k + 1) * Block::size[2]);
+    for (int p = si; p < ei; p++) {
+      for (int q = sj; q < ej; q++) {
+        for (int r = sk; r < ek; r++) {
+          int x = p - i * Block::size[0];
+          int y = q - j * Block::size[1];
+          int z = r - k * Block::size[2];
+          data[p][q][r] = *reinterpret_cast<Node *>(
+              reinterpret_cast<uint8 *>(&ab->get_node_volume()[x][y][z]) +
+              component_offset);
         }
       }
     }
-  }
+  };
 
   Node &node(VectorI ind) {
     return data[ind.x][ind.y][ind.z];

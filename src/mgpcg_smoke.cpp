@@ -407,8 +407,14 @@ class MGPCGSmoke {
     }
     for (int i = 0; i < mg_lv - 1; i++) {
       // pre-smoothing
-      for (int j = 0; j < smoothing_iters; j++) {
-        smooth(i, U, B);
+      if (false) {
+        for (int j = 0; j < smoothing_iters; j++) {
+          smooth(i, U, B);
+        }
+      } else {
+        for (;;) {
+          TC_TIME(smooth(i, U, B));
+        }
       }
       residual(i, U, B, R);
       restrict(i, R, B);
@@ -770,7 +776,7 @@ class MGPCGSmoke {
 };
 
 auto mgpcg = [](const std::vector<std::string> &params) {
-  //ThreadedTaskManager::TbbParallelismControl _(1);
+  ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGSmoke> mgpcg;
   mgpcg = std::make_unique<MGPCGSmoke>();
   while (true) {

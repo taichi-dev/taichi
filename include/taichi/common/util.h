@@ -421,6 +421,12 @@ public:
 
 #define TC_DEFER(x) taichi::DeferedExecution _defered([&]() {x;});
 
+inline std::string absolute_path(std::string path) {
+  if (path[0] != '.') {
+    path = std::string(std::getenv("TAICHI_REPO_DIR")) + "/" + path;
+  }
+  return path;
+}
 
 TC_NAMESPACE_END
 

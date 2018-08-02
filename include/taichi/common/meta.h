@@ -141,12 +141,12 @@ using copy_refcv_t = typename copy_refcv<T, G>::type;
 TC_STATIC_ASSERT((std::is_same<const volatile int, volatile const int>::value));
 TC_STATIC_ASSERT(
     (std::is_same<int,
-        std::remove_volatile_t<
-            std::remove_const_t<const volatile int>>>::value));
+                  std::remove_volatile_t<
+                      std::remove_const_t<const volatile int>>>::value));
 TC_STATIC_ASSERT(
     (std::is_same<int,
-        std::remove_const_t<
-            std::remove_volatile_t<const volatile int>>>::value));
+                  std::remove_const_t<
+                      std::remove_volatile_t<const volatile int>>>::value));
 TC_STATIC_ASSERT((std::is_same<int &, std::add_const_t<int &>>::value));
 TC_STATIC_ASSERT((std::is_same<copy_refcv_t<int, real>, real>::value));
 TC_STATIC_ASSERT((std::is_same<copy_refcv_t<int &, real>, real &>::value));
@@ -156,6 +156,65 @@ TC_STATIC_ASSERT(
 TC_STATIC_ASSERT(
     (std::is_same<copy_refcv_t<const int &, real>, const real &>::value));
 TC_STATIC_ASSERT((std::is_same<copy_refcv_t<const volatile int &, real>,
-    const volatile real &>::value));
+                               const volatile real &>::value));
 
+// clang-format off
+#define TC_REPEAT27(F) \
+  F(0);                \
+  F(1);                \
+  F(2);                \
+  F(3);                \
+  F(4);                \
+  F(5);                \
+  F(6);                \
+  F(7);                \
+  F(8);                \
+  F(9);                \
+  F(10);               \
+  F(11);               \
+  F(12);               \
+  F(13);               \
+  F(14);               \
+  F(15);               \
+  F(16);               \
+  F(17);               \
+  F(18);               \
+  F(19);               \
+  F(20);               \
+  F(21);               \
+  F(22);               \
+  F(23);               \
+  F(24);               \
+  F(25);               \
+  F(26);
+
+#define TC_LIST27(F)   \
+  F(0),             \
+  F(1),             \
+  F(2),             \
+  F(3),             \
+  F(4),             \
+  F(5),             \
+  F(6),             \
+  F(7),             \
+  F(8),             \
+  F(9),             \
+  F(10),            \
+  F(11),            \
+  F(12),            \
+  F(13),            \
+  F(14),            \
+  F(15),            \
+  F(16),            \
+  F(17),            \
+  F(18),            \
+  F(19),            \
+  F(20),            \
+  F(21),            \
+  F(22),            \
+  F(23),            \
+  F(24),            \
+  F(25),            \
+  F(26)
+// clang-format on
 }

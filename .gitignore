@@ -4,4 +4,6 @@
 *.tcbz
 taichi.h
 tmp
+saxpy
+results
 

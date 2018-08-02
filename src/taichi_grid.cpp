@@ -433,4 +433,46 @@ TC_TEST("soa") {
   TC_CHECK(grid.node(Vector3i(3, 4, 6))[2] == 1235423);
 }
 
+struct SaxpyNode {
+  constexpr static int num_channels = 2;
+  using element_type = real;
+};
+
+template <>
+constexpr bool is_SOA<SaxpyNode>() {
+  return true;
+}
+
+auto saxpy = [](const std::vector<std::string> &param) {
+  constexpr int bs = 8;
+  using Block = TBlock<SaxpyNode, char, TSize3D<bs>>;
+  using Grid = TaichiGrid<Block>;
+
+  Grid grid;
+  for (auto ind : TRegion<3>(Vector3i(0), Vector3i(1024 / 8))) {
+    grid.touch(Vector3i(ind) * Vector3i(bs));
+    // grid.node(ind)[0] = ind.i;
+    // grid.node(ind)[1] = ind.j;
+  }
+
+  auto task = [&](real alpha) {
+    grid.map([&](Block &b) {
+      for (int i = 0; i < bs; i++) {
+        for (int j = 0; j < bs; j++) {
+          for (int k = 0; k < bs; k++) {
+            auto n = b.node_local(Vector3i(i, j, k));
+            n[1] += alpha * n[0];
+          }
+        }
+      }
+    });
+  };
+
+  for (int i = 0;; i++) {
+    TC_TIME(task(i));
+  }
+};
+
+TC_REGISTER_TASK(saxpy);
+
 TC_NAMESPACE_END

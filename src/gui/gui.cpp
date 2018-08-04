@@ -67,7 +67,7 @@ GUI::GUI(const std::string &window_name, int width, int height)
       width(width),
       height(height),
       key_pressed(false) {
-  display = XOpenDisplay(NULL);
+  display = XOpenDisplay(nullptr);
   visual = DefaultVisual(display, 0);
   window =
       XCreateSimpleWindow((Display *)display, RootWindow((Display *)display, 0),
@@ -80,7 +80,12 @@ GUI::GUI(const std::string &window_name, int width, int height)
                                   height);
   start_time = taichi::Time::get_time();
   buffer.initialize(Vector2i(width, height));
-  canvas = std::make_unique<Canvas>(buffer);
+  this->canvas = std::make_unique<Canvas>(buffer);
+  TC_P(canvas.get());
+  TC_P(this->canvas.get());
+  TC_P(&this->canvas);
+  TC_P(&canvas);
+  TC_P(this);
   last_frame_time = taichi::Time::get_time();
 }
 

@@ -76,6 +76,10 @@ class Canvas {
   void clear(Vector4 color) {
     img.reset(color);
   }
+
+  ~Canvas() {
+    TC_INFO("Canvas Dtor");
+  }
 };
 
 class CXImage;

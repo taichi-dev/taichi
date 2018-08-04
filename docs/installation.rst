@@ -28,7 +28,7 @@ Add ``%TAICHI_REPO_DIR%/python`` to ``PYTHONPATH``, ``%TAICHI_REPO_DIR%/bin`` to
 Restart cmd and you should be able to run command ``ti``.
 
 Build with Double Precision (64 bit) Float Point
-------------------------------
+---------------------------------------------------
 .. code-block:: bash
 
    export TC_USE_DOUBLE=1

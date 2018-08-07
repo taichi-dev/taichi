@@ -521,6 +521,9 @@ struct TGridScratchPad {
                        (scratch_size[1] * scratch_size[2] + scratch_size[2] +
                         1)]);
 
+  TGridScratchPad() {
+  }
+
   TGridScratchPad(TAncestors<Block> &ancestors, int component_offset = 0) {
     // Gather linearized data
     TC_ASSERT(
@@ -607,6 +610,17 @@ struct TGridScratchPad {
   template <typename T = void>
   Node &node(VectorI ind) {
     return data[ind.x][ind.y][ind.z];
+  }
+
+  template <int i, int j, int k>
+  static constexpr int linear_offset() {
+    return (expansion + i) * scratch_size[1] * scratch_size[2] +
+           (expansion + j) * scratch_size[2] + expansion + k;
+  }
+
+  template <int i, int j, int k>
+  static constexpr int relative_offset() {
+    return i * scratch_size[1] * scratch_size[2] + j * scratch_size[2] + k;
   }
 };
 

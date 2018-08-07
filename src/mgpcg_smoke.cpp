@@ -287,6 +287,7 @@ class MGPCGSmoke {
     });
   }
 
+  /*
   void smooth(int level, int U, int B) {
     TC_PROFILER("smoothing")
     // TODO: this supports zero-Dirichlet BC only!
@@ -358,6 +359,54 @@ class MGPCGSmoke {
                   _mm256_add_ps(sum_x,
                                 _mm256_loadu_ps(&scratchB.data[i][j][0])));
               auto original = _mm256_loadu_ps(&scratchV.data[i][j][0]);
+
+              // o = original + (tmp * (1.0_f / 6) - original) * (2.0_f / 3_f);
+              sum = _mm256_add_ps(
+                  original,
+                  _mm256_mul_ps(_mm256_sub_ps(_mm256_mul_ps(sum, _mm256_set1_ps(
+                                                                     1.0f / 6)),
+                                              original),
+                                _mm256_set1_ps(2.0f / 3)));
+              _mm256_storeu_ps(&b.node_local(Vector3i(i, j, 0))[U], sum);
+              // (B - Lu) / Diag
+              // Damping is important. It brings down #iterations to 1e-7 from
+              // 91 to 10...
+            }
+          }
+        },
+        false, level == 0);  // carry nodes only if on finest level
+  }
+   */
+
+  void smooth(int level, int U, int B) {
+    TC_PROFILER("smoothing")
+    // TODO: this supports zero-Dirichlet BC only!
+    grids[level]->advance(
+        [&](Grid::Block &b, Grid::Ancestors &an) {
+          if (!b.meta.get_has_effective_cell())
+            return;
+          GridScratchPadCh2 scratchB(an, B * sizeof(real));
+          GridScratchPadCh2 scratchU(an, U * sizeof(real));
+          // 6 neighbours
+          TC_STATIC_ASSERT(sizeof(real) == 4);
+          TC_STATIC_ASSERT(Block::size[2] == 8);
+          for (int i = 0; i < Block::size[0]; i++) {
+            for (int j = 0; j < Block::size[1]; j++) {
+              __m256 sum_z =
+                  _mm256_add_ps(_mm256_loadu_ps(&scratchU.data[i][j][-1]),
+                                _mm256_loadu_ps(&scratchU.data[i][j][1]));
+              __m256 sum_y =
+                  _mm256_add_ps(_mm256_loadu_ps(&scratchU.data[i][j - 1][0]),
+                                _mm256_loadu_ps(&scratchU.data[i][j + 1][0]));
+              __m256 sum_x =
+                  _mm256_add_ps(_mm256_loadu_ps(&scratchU.data[i - 1][j][0]),
+                                _mm256_loadu_ps(&scratchU.data[i + 1][j][0]));
+
+              auto sum = _mm256_add_ps(
+                  _mm256_add_ps(sum_z, sum_y),
+                  _mm256_add_ps(sum_x,
+                                _mm256_loadu_ps(&scratchB.data[i][j][0])));
+              auto original = _mm256_loadu_ps(&scratchU.data[i][j][0]);
 
               // o = original + (tmp * (1.0_f / 6) - original) * (2.0_f / 3_f);
               sum = _mm256_add_ps(

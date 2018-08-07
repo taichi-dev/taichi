@@ -287,7 +287,6 @@ class MGPCGSmoke {
     });
   }
 
-  /*
   void smooth(int level, int U, int B) {
     TC_PROFILER("smoothing")
     // TODO: this supports zero-Dirichlet BC only!
@@ -376,8 +375,8 @@ class MGPCGSmoke {
         },
         false, level == 0);  // carry nodes only if on finest level
   }
-   */
 
+  /*
   void smooth(int level, int U, int B) {
     TC_PROFILER("smoothing")
     // TODO: this supports zero-Dirichlet BC only!
@@ -424,6 +423,7 @@ class MGPCGSmoke {
         },
         false, level == 0);  // carry nodes only if on finest level
   }
+   */
 
   void clear(int level, int channel) {
     grids[level]->for_each_node(

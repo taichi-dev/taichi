@@ -494,9 +494,10 @@ struct TAncestors {
 };
 
 // If ComponentType is void, gather the whole node.
-template <typename Block, typename ComponentType = void>
+template <typename Block, typename ComponentType = void, int _expansion = 1>
 struct TGridScratchPad {
   static constexpr int dim = Block::dim;
+  static constexpr int expansion = _expansion;
   TC_STATIC_ASSERT(dim == 3);
   using VectorI = typename Block::VectorI;
   using Node = std::conditional_t<std::is_same<ComponentType, void>::value,
@@ -507,7 +508,8 @@ struct TGridScratchPad {
   TC_STATIC_ASSERT(!(Block::soa && std::is_same<ComponentType, void>::value));
 
   static constexpr std::array<int, 3> scratch_size{
-      Block::size[0] + 2, Block::size[1] + 2, Block::size[2] + 2};
+      Block::size[0] + expansion * 2, Block::size[1] + expansion * 2,
+      Block::size[2] + expansion * 2};
 
   using VolumeData = Node[scratch_size[0]][scratch_size[1]][scratch_size[2]];
 
@@ -535,12 +537,15 @@ struct TGridScratchPad {
   template <int i, int j, int k>
   TC_FORCE_INLINE void gather(TAncestors<Block> &ancestors,
                               int component_offset) {
-    constexpr int si = std::max(-1, i * Block::size[0]);
-    constexpr int sj = std::max(-1, j * Block::size[1]);
-    constexpr int sk = std::max(-1, k * Block::size[2]);
-    constexpr int ei = std::min(Block::size[0] + 1, (i + 1) * Block::size[0]);
-    constexpr int ej = std::min(Block::size[1] + 1, (j + 1) * Block::size[1]);
-    constexpr int ek = std::min(Block::size[2] + 1, (k + 1) * Block::size[2]);
+    constexpr int si = std::max(-expansion, i * Block::size[0]);
+    constexpr int sj = std::max(-expansion, j * Block::size[1]);
+    constexpr int sk = std::max(-expansion, k * Block::size[2]);
+    constexpr int ei =
+        std::min(Block::size[0] + expansion, (i + 1) * Block::size[0]);
+    constexpr int ej =
+        std::min(Block::size[1] + expansion, (j + 1) * Block::size[1]);
+    constexpr int ek =
+        std::min(Block::size[2] + expansion, (k + 1) * Block::size[2]);
     auto ab = ancestors[VectorI(i, j, k)];
     if (!ab) {
       return;

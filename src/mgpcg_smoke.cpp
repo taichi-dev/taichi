@@ -88,8 +88,8 @@ class MGPCGSmoke {
   using Matrix = TMatrix<real, dim>;
   using Grid = TaichiGrid<Block>;
 
-  const int n = 128;
-  static constexpr int mg_lv = 5;
+  const int n = 64;
+  const int mg_lv = log2int(n) - 2;
   std::vector<std::unique_ptr<Grid>> grids;
 
   enum {

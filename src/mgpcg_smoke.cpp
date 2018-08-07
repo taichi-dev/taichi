@@ -112,6 +112,7 @@ class MGPCGSmoke {
   using Vectori = VectorI;
   using GridScratchPad = TGridScratchPad<Block>;
   using GridScratchPadCh = TGridScratchPad<Block, real>;
+  using GridScratchPadCh2 = TGridScratchPad<Block, real, 2>;
 
   std::shared_ptr<Camera> cam;
   real current_t;
@@ -293,8 +294,8 @@ class MGPCGSmoke {
         [&](Grid::Block &b, Grid::Ancestors &an) {
           if (!b.meta.get_has_effective_cell())
             return;
-          GridScratchPadCh scratchB(an, B * sizeof(real));
-          GridScratchPadCh scratchU(an, U * sizeof(real));
+          GridScratchPadCh2 scratchB(an, B * sizeof(real));
+          GridScratchPadCh2 scratchU(an, U * sizeof(real));
           // 6 neighbours
           TC_STATIC_ASSERT(sizeof(real) == 4);
           TC_STATIC_ASSERT(Block::size[2] == 8);

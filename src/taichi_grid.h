@@ -517,8 +517,9 @@ struct TGridScratchPad {
 
   TC_STATIC_ASSERT(sizeof(VolumeData) == sizeof(linearized_data));
   VolumeData &data = *reinterpret_cast<VolumeData *>(
-      &linearized_data[scratch_size[1] * scratch_size[2] + scratch_size[2] +
-                       1]);
+      &linearized_data[expansion *
+                       (scratch_size[1] * scratch_size[2] + scratch_size[2] +
+                        1)]);
 
   TGridScratchPad(TAncestors<Block> &ancestors, int component_offset = 0) {
     // Gather linearized data

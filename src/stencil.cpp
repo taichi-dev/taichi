@@ -82,21 +82,26 @@ using Block = TBlock<Node, char, TSize3D<8>, 0, 1>;
 auto stencil = [](const std::vector<std::string> &params) {
   using namespace stencilang;
   auto left = Input<0, Offset<0, 0, -1>>();
-  auto right = Input<0, Offset<0, 0, 1>>();
+  auto right = Input<1, Offset<0, 0, 1>>();
   auto sum = left + right;
   TC_P(sum.serialize());
 
   using GridScratchPadCh = TGridScratchPad<Block, real>;
   using GridScratchPadCh2 = TGridScratchPad<Block, real, 2>;
 
-  GridScratchPadCh2 pad;
-  for (auto ind : pad.region()) {
-    pad.node(ind) = ind.k;
+  GridScratchPadCh2 pad1;
+  for (auto ind : pad1.region()) {
+    pad1.node(ind) = ind.k;
+  }
+
+  GridScratchPadCh2 pad2;
+  for (auto ind : pad1.region()) {
+    pad2.node(ind) = -ind.k;
   }
 
   float32 _ret[8];
   auto ret = (__m256 *)&_ret[0];
-  *ret = sum.evaluate(1, pad);
+  *ret = sum.evaluate(1, pad1, pad2);
   TC_P(_ret);
 };
 

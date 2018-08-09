@@ -5,6 +5,7 @@
 #include <taichi/math/svd.h>
 #include <taichi/visualization/particle_visualization.h>
 #include <taichi/visual/gui.h>
+#include "stencil.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -302,10 +303,13 @@ class MGPCGSmoke {
           TC_STATIC_ASSERT(sizeof(real) == 4);
           TC_STATIC_ASSERT(Block::size[2] == 8);
 
+          using namespace stencilang;
           // PartI:
+          /*
           constexpr int start = Pad::linear_offset<-1, -1, -1>();
           constexpr int end = Pad::linear_offset<Block::size[0], Block::size[1],
                                                  Block::size[2]>();
+          // TODO: there is a +1 missing after Block::size!!
 
           for (int p = start; p < end; p += 8) {
             __m256 sum_z = _mm256_add_ps(
@@ -339,6 +343,22 @@ class MGPCGSmoke {
                     _mm256_set1_ps(2.0f / 3)));
             _mm256_storeu_ps(&scratchV.linearized_data[p], sum);
           }
+          */
+          constexpr int ChU = 0;
+          constexpr int ChB = 1;
+          // clang-format off
+          auto sum =
+              (input_stream<ChU, Offset<0, 0, 1>> + input_stream<ChU, Offset<0, 0, -1>>) +
+              (input_stream<ChU, Offset<0, 1, 0>> + input_stream<ChU, Offset<0, -1, 0>>) +
+              (input_stream<ChU, Offset<1, 0, 0>> + input_stream<ChU, Offset<-1, 0, 0>>) +
+              input_stream<ChB>;
+          auto jacobi = sum * ratio<1, 6>;
+          auto original = input_stream<ChU>;
+          auto damped_jacobi = original + ratio<2, 3> * (jacobi - original);
+          // clang-format on
+          auto region =
+              Region3D(Vector3i(-1), Vector3i(Block::size) + Vector3i(1));
+          map(scratchV, damped_jacobi, region, scratchU, scratchB);
 
           // PartII:
           for (int i = 0; i < Block::size[0]; i++) {

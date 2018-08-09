@@ -117,9 +117,9 @@ struct Input : public OpBase<Input<_channel, _offset>> {
   TC_FORCE_INLINE static __m256 evaluate(Args const &... args) {
     int base = std::get<0>(std::tuple<Args const &...>(args...));
     using pad_type = typename std::decay_t<decltype(
-    std::get<channel + 1>(std::tuple<Args const &...>(args...)))>;
+        std::get<channel + 1>(std::tuple<Args const &...>(args...)))>;
     auto const &pad =
-    std::get<channel + 1>(std::tuple<Args const &...>(args...));
+        std::get<channel + 1>(std::tuple<Args const &...>(args...));
     constexpr int offset =
         pad_type::template relative_offset<offset::i, offset::j, offset::k>();
     return _mm256_loadu_ps(&pad.linearized_data[base + offset]);
@@ -138,16 +138,25 @@ struct Ratio : public OpBase<Ratio<a, b>> {
     return _mm256_set1_ps(val);
   }
 };
-}
 
 template <typename Op, typename Output, typename... Args>
-void map(Output &output, TRegion<3> region, Args const &... args) {
+void map(Output &output,
+         const Op &op,
+         TRegion<3> region,
+         Args const &... args) {
   int start = Output::linear_offset(region.begin());
   int end = Output::linear_offset(region.end());
   for (int i = start; i < end; i += 8) {
     auto ret = Op::evaluate(i, args...);
     _mm256_storeu_ps(&output.linearized_data[i], ret);
   }
+}
+
+template <int channel, typename offset = Offset<0, 0, 0>>
+Input<channel, offset> input_stream;
+
+template <int a, int b>
+Ratio<a, b> ratio;
 }
 
 TC_NAMESPACE_END

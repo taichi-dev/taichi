@@ -153,7 +153,7 @@ void map(Output &output,
 }
 
 template <int channel, typename offset = Offset<0, 0, 0>>
-Input<channel, offset> input_stream;
+Input<channel, offset> input;
 
 template <int a, int b>
 Ratio<a, b> ratio;

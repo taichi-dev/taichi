@@ -349,12 +349,12 @@ class MGPCGSmoke {
           constexpr int ChB = 1;
           // clang-format off
           auto sum =
-              (input_stream<ChU, Offset<0, 0, 1>> + input_stream<ChU, Offset<0, 0, -1>>) +
-              (input_stream<ChU, Offset<0, 1, 0>> + input_stream<ChU, Offset<0, -1, 0>>) +
-              (input_stream<ChU, Offset<1, 0, 0>> + input_stream<ChU, Offset<-1, 0, 0>>) +
-              input_stream<ChB>;
+              (input<ChU, Offset<0, 0, 1>> + input<ChU, Offset<0, 0, -1>>) +
+              (input<ChU, Offset<0, 1, 0>> + input<ChU, Offset<0, -1, 0>>) +
+              (input<ChU, Offset<1, 0, 0>> + input<ChU, Offset<-1, 0, 0>>) +
+              input<ChB>;
           auto jacobi = sum * ratio<1, 6>;
-          auto original = input_stream<ChU>;
+          auto original = input<ChU>;
           auto damped_jacobi = original + ratio<2, 3> * (jacobi - original);
           // clang-format on
 

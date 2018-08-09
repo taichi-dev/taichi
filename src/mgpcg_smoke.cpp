@@ -12,6 +12,7 @@ TC_NAMESPACE_BEGIN
 real gravity = 100;
 real buoyancy = 700;
 real temperature_decay = 1;
+Vector2i cam_res(720, 1280);
 
 static constexpr bool debug = false;
 
@@ -79,7 +80,7 @@ Vector3 hsv2rgb(Vector3 hsv) {
   return Vector3(r, g, b);
 }
 
-using Block = TBlock<Node, Particle, TSize3D<8>, 0, 1024, BlockFlags>;
+using Block = TBlock<Node, Particle, TSize3D<8>, 0, 2048, BlockFlags>;
 
 class MGPCGSmoke {
  public:
@@ -131,7 +132,7 @@ class MGPCGSmoke {
         .set("look_at", Vector(0, 0, 0))
         .set("up", Vector(0, 1, 0))
         .set("fov", 70)
-        .set("res", Vector2i(800));
+        .set("res", cam_res);
     cam = create_instance<Camera>("pinhole", cam_dict);
 
     Dict dict;
@@ -514,7 +515,7 @@ class MGPCGSmoke {
                bool use_as_preconditioner = true) {
     copy(CH_MG_B, channel_in);
     constexpr int U = CH_MG_U, B = CH_MG_B, R = CH_MG_R;
-    constexpr int smoothing_iters = 1, bottom_smoothing_iter = 150 / 2;
+    constexpr int smoothing_iters = 2, bottom_smoothing_iter = 150;
     if (use_as_preconditioner) {
       clear(0, U);
     }
@@ -760,7 +761,7 @@ class MGPCGSmoke {
       }
       if (b.base_coord == VectorI(0, -n * 2 + 8, 0)) {
         // Sample some particles
-        for (int i = 0; i < 6e5 * dt; i++) {
+        for (int i = 0; i < 24e5 * dt; i++) {
           auto r = Vector::rand();
           if (length(r - Vector(0.5_f)) > 0.5) {
             continue;
@@ -792,15 +793,17 @@ class MGPCGSmoke {
 
   void render(Canvas &canvas) {
     auto res = canvas.img.get_res();
-    Array2D<Vector3> image(Vector2i(res),
-                           Vector3(0.7, 0.7, 0.7) - Vector3(0.7_f));
+    Array2D<Vector3> image(Vector2i(res), Vector3(1) - Vector3(0.0_f));
     std::vector<RenderParticle> particles;
     for (auto &p : grids[0]->gather_particles()) {
       auto t = p.pos[3];
-      auto color = hsv2rgb(Vector(fract(t) * 2, 0.7_f, 0.9_f));
+      auto color = hsv2rgb(Vector(fract(t / 4) * 2, 0.7_f, 0.9_f));
       particles.push_back(
           RenderParticle(p.pos * Vector(0.16_f), Vector4(color, 1.0_f)));
     }
+    static int counter = 0;
+    counter += 1;
+    write_to_binary_file(particles, fmt::format("outputs/{:06d}.tcb", counter));
     renderer->render(image, particles);
     for (auto &ind : image.get_region()) {
       canvas.img[ind] = Vector4(image[ind]);
@@ -812,26 +815,6 @@ class MGPCGSmoke {
     TC_PROFILE("Advection", advect());
     TC_PROFILE("Project", project());
     current_t += dt;
-  }
-
-  void test_renderer() {
-    int res = 800;
-    GUI gui("Rendering Test", res, res);
-    Array2D<Vector3> image(Vector2i(res), Vector3(0.5));
-    std::vector<RenderParticle> particles;
-    for (int i = 0; i < 1000000; i++) {
-      Vector3 pos = Vector::rand() - Vector3(0.5_f);
-      particles.push_back(RenderParticle(pos * Vector(10_f),
-                                         Vector4(1.0_f, 1.0_f, 0.0_f, 0.5_f)));
-    }
-    renderer->render(image, particles);
-    auto &canvas = gui.get_canvas().img;
-    for (auto &ind : image.get_region()) {
-      canvas[ind] = Vector4(image[ind]);
-    }
-    while (1) {
-      gui.update();
-    }
   }
 
   Array2D<Vector3> render_density_field() {
@@ -916,15 +899,15 @@ auto smoke = [](const std::vector<std::string> &params) {
   // ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGSmoke> smoke;
   smoke = std::make_unique<MGPCGSmoke>();
-  GUI gui("MGPCG Smoke", 800, 800);
+  GUI gui("MGPCG Smoke", cam_res);
   // GUI gui2("Velocity", 256, 512);
   // GUI gui3("Density", 256, 512);
 
   for (int frame = 0;; frame++) {
     TC_PROFILE("step", smoke->step());
-    gui.get_canvas().img.write_as_image(fmt::format("tmp/{:05d}.png", frame));
     TC_PROFILE("render", smoke->render(gui.get_canvas()));
     gui.update();
+    gui.get_canvas().img.write_as_image(fmt::format("tmp/{:05d}.png", frame));
     {
       /*
       TC_PROFILER("debug");
@@ -946,12 +929,46 @@ auto smoke = [](const std::vector<std::string> &params) {
 
 TC_REGISTER_TASK(smoke);
 
-auto test_volume_rendering = [](const std::vector<std::string> &params) {
-  std::unique_ptr<MGPCGSmoke> smoke;
-  smoke = std::make_unique<MGPCGSmoke>();
-  smoke->test_renderer();
+auto render_smoke = [](const std::vector<std::string> &params) {
+  TC_PROFILER("smoke");
+  GUI gui("MGPCG Smoke", cam_res);
+
+  auto renderer = create_instance_unique<ParticleRenderer>("shadow_map");
+  auto radius = 1.0_f;
+
+  Dict cam_dict;
+  cam_dict.set("origin", Vector3(0, radius * 0.3_f, radius * 1_f))
+      .set("look_at", Vector3(0, 0, 0))
+      .set("up", Vector3(0, 1, 0))
+      .set("fov", 70)
+      .set("res", cam_res);
+  auto cam = create_instance<Camera>("pinhole", cam_dict);
+
+  Dict dict;
+  dict.set("shadow_map_resolution", 0.005_f)
+      .set("alpha", 0.3_f)
+      .set("shadowing", 0.0008_f)
+      .set("ambient_light", 0.2_f)
+      .set("light_direction", Vector3(1, 0.5, 0.5));
+
+  renderer->initialize(dict);
+  renderer->set_camera(cam);
+
+  auto &canvas = gui.get_canvas();
+  for (int frame = 1;; frame++) {
+    auto res = canvas.img.get_res();
+    Array2D<Vector3> image(Vector2i(res), Vector3(1) - Vector3(0.0_f));
+    std::vector<RenderParticle> particles;
+    read_from_binary_file(particles, fmt::format("outputs/{:06d}.tcb", frame));
+    renderer->render(image, particles);
+    for (auto &ind : image.get_region()) {
+      canvas.img[ind] = Vector4(image[ind]);
+    }
+    gui.update();
+    gui.get_canvas().img.write_as_image(fmt::format("tmp/{:05d}.png", frame));
+  }
 };
 
-TC_REGISTER_TASK(test_volume_rendering);
+TC_REGISTER_TASK(render_smoke)
 
 TC_NAMESPACE_END

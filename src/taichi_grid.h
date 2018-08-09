@@ -146,6 +146,7 @@ struct TBlock {
   using Particle = Particle_;
   using block_size = block_size_;
   using particle_to_grid_func = std::function<TVector<int, dim>(Particle &)>;
+  using Region = TRegion<dim>;
   using Meta = Meta_;
 
   static constexpr const std::array<int, dim> size = {
@@ -504,6 +505,8 @@ struct TGridScratchPad {
                                   typename Block::Node,
                                   ComponentType>;
 
+  using Region = typename Block::Region;
+
   // For SOA, we only allow gathering single channel
   TC_STATIC_ASSERT(!(Block::soa && std::is_same<ComponentType, void>::value));
 
@@ -621,6 +624,11 @@ struct TGridScratchPad {
   template <int i, int j, int k>
   static constexpr int relative_offset() {
     return i * scratch_size[1] * scratch_size[2] + j * scratch_size[2] + k;
+  }
+
+  TC_FORCE_INLINE Region region() const {
+    return Region(VectorI(-expansion),
+                  VectorI(Block::size) + VectorI(expansion));
   }
 };
 

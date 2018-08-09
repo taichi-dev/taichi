@@ -89,7 +89,7 @@ class MGPCGSmoke {
   using Matrix = TMatrix<real, dim>;
   using Grid = TaichiGrid<Block>;
 
-  const int n = 64;
+  const int n = 128;
   const int mg_lv = log2int(n) - 2;
   std::vector<std::unique_ptr<Grid>> grids;
 
@@ -114,6 +114,7 @@ class MGPCGSmoke {
   using GridScratchPad = TGridScratchPad<Block>;
   using GridScratchPadCh = TGridScratchPad<Block, real>;
   using GridScratchPadCh2 = TGridScratchPad<Block, real, 2>;
+  using GridScratchPadCh4 = TGridScratchPad<Block, real, 4>;
 
   std::shared_ptr<Camera> cam;
   real current_t;
@@ -295,10 +296,10 @@ class MGPCGSmoke {
         [&](Grid::Block &b, Grid::Ancestors &an) {
           if (!b.meta.get_has_effective_cell())
             return;
-          GridScratchPadCh2 scratchB(an, B * sizeof(real));
-          GridScratchPadCh2 scratchU(an, U * sizeof(real));
-          GridScratchPadCh2 scratchV;  // For iteration
-          using Pad = GridScratchPadCh2;
+          GridScratchPadCh4 scratchB(an, B * sizeof(real));
+          GridScratchPadCh4 scratchU(an, U * sizeof(real));
+          GridScratchPadCh4 scratchV;  // For iteration
+          using Pad = GridScratchPadCh4;
           // 6 neighbours
           TC_STATIC_ASSERT(sizeof(real) == 4);
           TC_STATIC_ASSERT(Block::size[2] == 8);
@@ -356,9 +357,18 @@ class MGPCGSmoke {
           auto original = input_stream<ChU>;
           auto damped_jacobi = original + ratio<2, 3> * (jacobi - original);
           // clang-format on
-          auto region =
-              Region3D(Vector3i(-1), Vector3i(Block::size) + Vector3i(1));
-          map(scratchV, damped_jacobi, region, scratchU, scratchB);
+
+          map(scratchV, damped_jacobi,
+              Region3D(Vector3i(-3), Vector3i(Block::size) + Vector3i(3)),
+              scratchU, scratchB);
+
+          map(scratchU, damped_jacobi,
+              Region3D(Vector3i(-2), Vector3i(Block::size) + Vector3i(2)),
+              scratchV, scratchB);
+
+          map(scratchV, damped_jacobi,
+              Region3D(Vector3i(-1), Vector3i(Block::size) + Vector3i(1)),
+              scratchU, scratchB);
 
           // PartII:
           for (int i = 0; i < Block::size[0]; i++) {
@@ -504,7 +514,7 @@ class MGPCGSmoke {
                bool use_as_preconditioner = true) {
     copy(CH_MG_B, channel_in);
     constexpr int U = CH_MG_U, B = CH_MG_B, R = CH_MG_R;
-    constexpr int smoothing_iters = 2, bottom_smoothing_iter = 150;
+    constexpr int smoothing_iters = 1, bottom_smoothing_iter = 150 / 2;
     if (use_as_preconditioner) {
       clear(0, U);
     }

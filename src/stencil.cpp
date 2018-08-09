@@ -14,7 +14,34 @@ struct Offset {
 };
 
 template <typename _a, typename _b>
-struct Add {
+struct Add;
+
+template <typename _a, typename _b>
+struct Sub;
+
+template <typename _a, typename _b>
+struct Mul;
+
+template <typename Op>
+struct OpBase {
+  template <typename O>
+  auto operator+(const O &o) {
+    return Add<Op, O>();
+  }
+
+  template <typename O>
+  auto operator-(const O &o) {
+    return Sub<Op, O>();
+  }
+
+  template <typename O>
+  auto operator*(const O &o) {
+    return Mul<Op, O>();
+  }
+};
+
+template <typename _a, typename _b>
+struct Add : public OpBase<Add<_a, _b>> {
   using a = _a;
   using b = _b;
 
@@ -34,15 +61,52 @@ struct Add {
   }
 };
 
+template <typename _a, typename _b>
+struct Mul : public OpBase<Mul<_a, _b>> {
+  using a = _a;
+  using b = _b;
+
+  static std::string serialize() {
+    return a::serialize() + " * " + b::serialize();
+  }
+
+  // args:
+  // 0: linearized based (output) address
+  // 1, ...: channels
+
+  template <typename... Args>
+  TC_FORCE_INLINE static auto evaluate(Args const &... args) {
+    auto ret_a = a::evaluate(args...);
+    auto ret_b = b::evaluate(args...);
+    return _mm256_mul_ps(ret_a, ret_b);
+  }
+};
+
+template <typename _a, typename _b>
+struct Sub : public OpBase<Sub<_a, _b>> {
+  using a = _a;
+  using b = _b;
+
+  static std::string serialize() {
+    return a::serialize() + " - " + b::serialize();
+  }
+
+  // args:
+  // 0: linearized based (output) address
+  // 1, ...: channels
+
+  template <typename... Args>
+  TC_FORCE_INLINE static auto evaluate(Args const &... args) {
+    auto ret_a = a::evaluate(args...);
+    auto ret_b = b::evaluate(args...);
+    return _mm256_sub_ps(ret_a, ret_b);
+  }
+};
+
 template <int _channel, typename _offset>
-struct Input {
+struct Input : public OpBase<Input<_channel, _offset>> {
   static constexpr int channel = _channel;
   using offset = _offset;
-
-  template <typename O>
-  auto operator+(const O &o) {
-    return Add<Input, O>();
-  }
 
   static std::string serialize() {
     return fmt::format("D{}({:+},{:+},{:+})", channel, offset::i, offset::j,
@@ -66,11 +130,6 @@ struct Input {
 struct Node {
   constexpr static int num_channels = 16;
   using element_type = real;
-  /*
-  NodeFlags &flags() {
-    return bit::reinterpret_bits<NodeFlags>(channels[15]);
-  }
-  */
 };
 
 template <>
@@ -83,7 +142,9 @@ auto stencil = [](const std::vector<std::string> &params) {
   using namespace stencilang;
   auto left = Input<0, Offset<0, 0, -1>>();
   auto right = Input<1, Offset<0, 0, 1>>();
-  auto sum = left + right;
+  auto top = Input<1, Offset<0, 1, 0>>();
+  auto bottom = Input<0, Offset<0, -1, 0>>();
+  auto sum = (left + right) * top;
   TC_P(sum.serialize());
 
   using GridScratchPadCh = TGridScratchPad<Block, real>;
@@ -101,7 +162,8 @@ auto stencil = [](const std::vector<std::string> &params) {
 
   float32 _ret[8];
   auto ret = (__m256 *)&_ret[0];
-  *ret = sum.evaluate(1, pad1, pad2);
+  int base = GridScratchPadCh2::linear_offset<1, 1, 1>();
+  *ret = sum.evaluate(base, pad1, pad2);
   TC_P(_ret);
 };
 

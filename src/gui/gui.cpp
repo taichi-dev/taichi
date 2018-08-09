@@ -80,12 +80,7 @@ GUI::GUI(const std::string &window_name, int width, int height)
                                   height);
   start_time = taichi::Time::get_time();
   buffer.initialize(Vector2i(width, height));
-  this->canvas = std::make_unique<Canvas>(buffer);
-  TC_P(canvas.get());
-  TC_P(this->canvas.get());
-  TC_P(&this->canvas);
-  TC_P(&canvas);
-  TC_P(this);
+  canvas = std::make_unique<Canvas>(buffer);
   last_frame_time = taichi::Time::get_time();
 }
 

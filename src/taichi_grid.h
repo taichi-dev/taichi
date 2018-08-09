@@ -516,9 +516,13 @@ struct TGridScratchPad {
 
   using VolumeData = Node[scratch_size[0]][scratch_size[1]][scratch_size[2]];
 
-  Node linearized_data[scratch_size[0] * scratch_size[1] * scratch_size[2]];
+  // Add 8 extra elements for AVX2.
+  static constexpr int padding =
+      (1 - int(std::is_same<void, ComponentType>())) * 8;
+  Node linearized_data[scratch_size[0] * scratch_size[1] * scratch_size[2] +
+                       padding];
 
-  TC_STATIC_ASSERT(sizeof(VolumeData) == sizeof(linearized_data));
+  TC_STATIC_ASSERT(sizeof(VolumeData) <= sizeof(linearized_data));
   VolumeData &data = *reinterpret_cast<VolumeData *>(
       &linearized_data[expansion *
                        (scratch_size[1] * scratch_size[2] + scratch_size[2] +
@@ -619,6 +623,11 @@ struct TGridScratchPad {
   static constexpr int linear_offset() {
     return (expansion + i) * scratch_size[1] * scratch_size[2] +
            (expansion + j) * scratch_size[2] + expansion + k;
+  }
+
+  static constexpr int linear_offset(Vector3i v) {
+    return (expansion + v.x) * scratch_size[1] * scratch_size[2] +
+           (expansion + v.y) * scratch_size[2] + expansion + v.z;
   }
 
   template <int i, int j, int k>

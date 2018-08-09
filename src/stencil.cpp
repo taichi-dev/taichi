@@ -46,7 +46,7 @@ struct Add : public OpBase<Add<_a, _b>> {
   using b = _b;
 
   static std::string serialize() {
-    return a::serialize() + " + " + b::serialize();
+    return "(" + a::serialize() + " + " + b::serialize() + ")";
   }
 
   // args:
@@ -67,7 +67,7 @@ struct Mul : public OpBase<Mul<_a, _b>> {
   using b = _b;
 
   static std::string serialize() {
-    return a::serialize() + " * " + b::serialize();
+    return "(" + a::serialize() + " * " + b::serialize() + ")";
   }
 
   // args:
@@ -88,7 +88,7 @@ struct Sub : public OpBase<Sub<_a, _b>> {
   using b = _b;
 
   static std::string serialize() {
-    return a::serialize() + " - " + b::serialize();
+    return "(" + a::serialize() + " - " + b::serialize() + ")";
   }
 
   // args:
@@ -125,6 +125,29 @@ struct Input : public OpBase<Input<_channel, _offset>> {
     return _mm256_loadu_ps(&pad.linearized_data[base + offset]);
   }
 };
+
+template <int a, int b>
+struct Ratio : public OpBase<Ratio<a, b>> {
+  static std::string serialize() {
+    return fmt::format("({}/{})", a, b);
+  };
+
+  template <typename... Args>
+  TC_FORCE_INLINE static __m256 evaluate(Args const &... args) {
+    auto constexpr val = (float32)a / b;
+    return _mm256_set1_ps(val);
+  }
+};
+}
+
+template <typename Op, typename Output, typename... Args>
+void map(Output &output, TRegion<3> region, Args const &... args) {
+  int start = Output::linear_offset(region.begin());
+  int end = Output::linear_offset(region.end());
+  for (int i = start; i < end; i += 8) {
+    auto ret = Op::evaluate(i, args...);
+    _mm256_storeu_ps(&output.linearized_data[i], ret);
+  }
 }
 
 struct Node {
@@ -144,7 +167,7 @@ auto stencil = [](const std::vector<std::string> &params) {
   auto right = Input<1, Offset<0, 0, 1>>();
   auto top = Input<1, Offset<0, 1, 0>>();
   auto bottom = Input<0, Offset<0, -1, 0>>();
-  auto sum = (left + right) * top;
+  auto sum = (left + right) * top + Ratio<1, 3>();
   TC_P(sum.serialize());
 
   using GridScratchPadCh = TGridScratchPad<Block, real>;
@@ -168,5 +191,14 @@ auto stencil = [](const std::vector<std::string> &params) {
 };
 
 TC_REGISTER_TASK(stencil);
+
+TC_TEST("stencil") {
+  using namespace stencilang;
+  auto left = Input<0, Offset<0, 0, -1>>();
+  auto right = Input<1, Offset<0, 0, 1>>();
+  auto top = Input<1, Offset<0, 1, 0>>();
+  auto bottom = Input<0, Offset<0, -1, 0>>();
+
+}
 
 TC_NAMESPACE_END

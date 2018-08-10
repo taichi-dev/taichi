@@ -795,15 +795,17 @@ class MGPCGSmoke {
     auto res = canvas.img.get_res();
     Array2D<Vector3> image(Vector2i(res), Vector3(1) - Vector3(0.0_f));
     std::vector<RenderParticle> particles;
+    auto raw_particles = grids[0]->gather_particles();
+    static int counter = 0;
+    write_to_binary_file(raw_particles, fmt::format("outputs/{:06d}.tcb", counter));
+    counter += 1;
     for (auto &p : grids[0]->gather_particles()) {
       auto t = p.pos[3];
       auto color = hsv2rgb(Vector(fract(t / 4) * 2, 0.7_f, 0.9_f));
       particles.push_back(
           RenderParticle(p.pos * Vector(0.16_f), Vector4(color, 1.0_f)));
     }
-    static int counter = 0;
-    counter += 1;
-    write_to_binary_file(particles, fmt::format("outputs/{:06d}.tcb", counter));
+    //write_to_binary_file(particles, fmt::format("outputs/{:06d}.tcb", counter));
     renderer->render(image, particles);
     for (auto &ind : image.get_region()) {
       canvas.img[ind] = Vector4(image[ind]);

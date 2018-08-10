@@ -14,7 +14,7 @@ real buoyancy = 700;
 real temperature_decay = 1;
 Vector2i cam_res(720, 1280);
 
-constexpr int smoothing_fusion = 2;
+constexpr int smoothing_fusion = 1;
 constexpr bool debug = false;
 
 struct BlockFlags : public bit::Bits<32> {
@@ -292,15 +292,7 @@ class MGPCGSmoke {
   }
 
   void smooth(int level, int U, int B) {
-    if (smoothing_fusion == 1) {
-      smooth_single(level, U, B);
-    } else {
-      static_assert(4 % smoothing_fusion == 0);
-      smooth_multiple(level, U, B);
-    }
-  }
-
-  void smooth_multiple(int level, int U, int B) {
+    static_assert(4 % smoothing_fusion == 0);
     TC_PROFILER("smoothing")
     // TODO: this supports zero-Dirichlet BC only!
     grids[level]->advance(
@@ -332,102 +324,25 @@ class MGPCGSmoke {
           auto damped_jacobi = original + ratio<2, 3> * (jacobi - original);
           // clang-format on
 
-          if (smoothing_fusion >= 4) {
-            map(scratchV, damped_jacobi,
-                Region3D(Vector3i(-3), Vector3i(Block::size) + Vector3i(3)),
-                scratchU, scratchB);
-            map(scratchU, damped_jacobi,
-                Region3D(Vector3i(-2), Vector3i(Block::size) + Vector3i(2)),
-                scratchV, scratchB);
-          }
-
-          if (smoothing_fusion >= 2) {
-            map(scratchV, damped_jacobi,
-                Region3D(Vector3i(-1), Vector3i(Block::size) + Vector3i(1)),
-                scratchU, scratchB);
-          }
-
-          // PartII:
-          /*)
-          for (int i = 0; i < Block::size[0]; i++) {
-            for (int j = 0; j < Block::size[1]; j++) {
-              __m256 sum_z =
-                  _mm256_add_ps(_mm256_loadu_ps(&scratchV.data[i][j][-1]),
-                                _mm256_loadu_ps(&scratchV.data[i][j][1]));
-              __m256 sum_y =
-                  _mm256_add_ps(_mm256_loadu_ps(&scratchV.data[i][j - 1][0]),
-                                _mm256_loadu_ps(&scratchV.data[i][j + 1][0]));
-              __m256 sum_x =
-                  _mm256_add_ps(_mm256_loadu_ps(&scratchV.data[i - 1][j][0]),
-                                _mm256_loadu_ps(&scratchV.data[i + 1][j][0]));
-
-              auto sum = _mm256_add_ps(
-                  _mm256_add_ps(sum_z, sum_y),
-                  _mm256_add_ps(sum_x,
-                                _mm256_loadu_ps(&scratchB.data[i][j][0])));
-              auto original = _mm256_loadu_ps(&scratchV.data[i][j][0]);
-
-              // o = original + (tmp * (1.0_f / 6) - original) * (2.0_f / 3_f);
-              sum = _mm256_add_ps(
-                  original,
-                  _mm256_mul_ps(_mm256_sub_ps(_mm256_mul_ps(sum, _mm256_set1_ps(
-                                                                     1.0f / 6)),
-                                              original),
-                                _mm256_set1_ps(2.0f / 3)));
-              _mm256_storeu_ps(&b.node_local(Vector3i(i, j, 0))[U], sum);
-              // (B - Lu) / Diag
-              // Damping is important. It brings down #iterations to 1e-7 from
-              // 91 to 10...
+          if (smoothing_fusion == 1) {
+            map_block(b, U, damped_jacobi, scratchU, scratchB);
+          } else {
+            if (smoothing_fusion >= 4) {
+              map(scratchV, damped_jacobi,
+                  Region3D(Vector3i(-3), Vector3i(Block::size) + Vector3i(3)),
+                  scratchU, scratchB);
+              map(scratchU, damped_jacobi,
+                  Region3D(Vector3i(-2), Vector3i(Block::size) + Vector3i(2)),
+                  scratchV, scratchB);
             }
-          }
-          */
-          map_block(b, U, damped_jacobi, scratchV, scratchB);
-        },
-        false, level == 0);  // carry nodes only if on finest level
-  }
 
-  void smooth_single(int level, int U, int B) {
-    TC_PROFILER("smoothing")
-    // TODO: this supports zero-Dirichlet BC only!
-    grids[level]->advance(
-        [&](Grid::Block &b, Grid::Ancestors &an) {
-          if (!b.meta.get_has_effective_cell())
-            return;
-          GridScratchPadCh scratchB(an, B * sizeof(real));
-          GridScratchPadCh scratchU(an, U * sizeof(real));
-          // 6 neighbours
-          TC_STATIC_ASSERT(sizeof(real) == 4);
-          TC_STATIC_ASSERT(Block::size[2] == 8);
-          for (int i = 0; i < Block::size[0]; i++) {
-            for (int j = 0; j < Block::size[1]; j++) {
-              __m256 sum_z =
-                  _mm256_add_ps(_mm256_loadu_ps(&scratchU.data[i][j][-1]),
-                                _mm256_loadu_ps(&scratchU.data[i][j][1]));
-              __m256 sum_y =
-                  _mm256_add_ps(_mm256_loadu_ps(&scratchU.data[i][j - 1][0]),
-                                _mm256_loadu_ps(&scratchU.data[i][j + 1][0]));
-              __m256 sum_x =
-                  _mm256_add_ps(_mm256_loadu_ps(&scratchU.data[i - 1][j][0]),
-                                _mm256_loadu_ps(&scratchU.data[i + 1][j][0]));
-
-              auto sum = _mm256_add_ps(
-                  _mm256_add_ps(sum_z, sum_y),
-                  _mm256_add_ps(sum_x,
-                                _mm256_loadu_ps(&scratchB.data[i][j][0])));
-              auto original = _mm256_loadu_ps(&scratchU.data[i][j][0]);
-
-              // o = original + (tmp * (1.0_f / 6) - original) * (2.0_f / 3_f);
-              sum = _mm256_add_ps(
-                  original,
-                  _mm256_mul_ps(_mm256_sub_ps(_mm256_mul_ps(sum, _mm256_set1_ps(
-                                                                     1.0f / 6)),
-                                              original),
-                                _mm256_set1_ps(2.0f / 3)));
-              _mm256_storeu_ps(&b.node_local(Vector3i(i, j, 0))[U], sum);
-              // (B - Lu) / Diag
-              // Damping is important. It brings down #iterations to 1e-7 from
-              // 91 to 10...
+            if (smoothing_fusion >= 2) {
+              map(scratchV, damped_jacobi,
+                  Region3D(Vector3i(-1), Vector3i(Block::size) + Vector3i(1)),
+                  scratchU, scratchB);
             }
+
+            map_block(b, U, damped_jacobi, scratchV, scratchB);
           }
         },
         false, level == 0);  // carry nodes only if on finest level

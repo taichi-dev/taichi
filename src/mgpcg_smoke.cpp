@@ -14,7 +14,8 @@ real buoyancy = 700;
 real temperature_decay = 1;
 Vector2i cam_res(720, 1280);
 
-static constexpr bool debug = false;
+constexpr int smoothing_fusion = 1;
+constexpr bool debug = false;
 
 struct BlockFlags : public bit::Bits<32> {
   using Base = bit::Bits<32>;
@@ -90,7 +91,7 @@ class MGPCGSmoke {
   using Matrix = TMatrix<real, dim>;
   using Grid = TaichiGrid<Block>;
 
-  const int n = 128;
+  const int n = 64;
   const int mg_lv = log2int(n) - 2;
   std::vector<std::unique_ptr<Grid>> grids;
 
@@ -291,61 +292,30 @@ class MGPCGSmoke {
   }
 
   void smooth(int level, int U, int B) {
+    if (smoothing_fusion == 1) {
+      smooth_single(level, U, B);
+    } else {
+      static_assert(4 % smoothing_fusion == 0);
+      smooth_multiple(level, U, B);
+    }
+  }
+
+  void smooth_multiple(int level, int U, int B) {
     TC_PROFILER("smoothing")
     // TODO: this supports zero-Dirichlet BC only!
     grids[level]->advance(
         [&](Grid::Block &b, Grid::Ancestors &an) {
           if (!b.meta.get_has_effective_cell())
             return;
-          GridScratchPadCh4 scratchB(an, B * sizeof(real));
-          GridScratchPadCh4 scratchU(an, U * sizeof(real));
-          GridScratchPadCh4 scratchV;  // For iteration
-          using Pad = GridScratchPadCh4;
+          using Scratch = TGridScratchPad<Block, real, smoothing_fusion>;
+          Scratch scratchB(an, B * sizeof(real));
+          Scratch scratchU(an, U * sizeof(real));
+          Scratch scratchV;  // For iteration
           // 6 neighbours
           TC_STATIC_ASSERT(sizeof(real) == 4);
           TC_STATIC_ASSERT(Block::size[2] == 8);
 
           using namespace stencilang;
-          // PartI:
-          /*
-          constexpr int start = Pad::linear_offset<-1, -1, -1>();
-          constexpr int end = Pad::linear_offset<Block::size[0], Block::size[1],
-                                                 Block::size[2]>();
-          // TODO: there is a +1 missing after Block::size!!
-
-          for (int p = start; p < end; p += 8) {
-            __m256 sum_z = _mm256_add_ps(
-                _mm256_loadu_ps(&scratchU.linearized_data
-                                     [p + Pad::relative_offset<0, 0, -1>()]),
-                _mm256_loadu_ps(&scratchU.linearized_data
-                                     [p + Pad::relative_offset<0, 0, 1>()]));
-            __m256 sum_y = _mm256_add_ps(
-                _mm256_loadu_ps(&scratchU.linearized_data
-                                     [p + Pad::relative_offset<0, -1, 0>()]),
-                _mm256_loadu_ps(&scratchU.linearized_data
-                                     [p + Pad::relative_offset<0, 1, 0>()]));
-            __m256 sum_x = _mm256_add_ps(
-                _mm256_loadu_ps(&scratchU.linearized_data
-                                     [p + Pad::relative_offset<-1, 0, 0>()]),
-                _mm256_loadu_ps(&scratchU.linearized_data
-                                     [p + Pad::relative_offset<1, 0, 0>()]));
-
-            auto sum = _mm256_add_ps(
-                _mm256_add_ps(sum_z, sum_y),
-                _mm256_add_ps(sum_x,
-                              _mm256_loadu_ps(&scratchB.linearized_data[p])));
-            auto original = _mm256_loadu_ps(&scratchU.linearized_data[p]);
-
-            // o = original + (tmp * (1.0_f / 6) - original) * (2.0_f / 3_f);
-            sum = _mm256_add_ps(
-                original,
-                _mm256_mul_ps(
-                    _mm256_sub_ps(_mm256_mul_ps(sum, _mm256_set1_ps(1.0f / 6)),
-                                  original),
-                    _mm256_set1_ps(2.0f / 3)));
-            _mm256_storeu_ps(&scratchV.linearized_data[p], sum);
-          }
-          */
           constexpr int ChU = 0;
           constexpr int ChB = 1;
           // clang-format off
@@ -359,17 +329,17 @@ class MGPCGSmoke {
           auto damped_jacobi = original + ratio<2, 3> * (jacobi - original);
           // clang-format on
 
-          map(scratchV, damped_jacobi,
-              Region3D(Vector3i(-3), Vector3i(Block::size) + Vector3i(3)),
-              scratchU, scratchB);
+          if (smoothing_fusion >= 4) {
+            map(scratchV, damped_jacobi,
+                Region3D(Vector3i(-3), Vector3i(Block::size) + Vector3i(3)),
+                scratchU, scratchB);
+          }
 
-          map(scratchU, damped_jacobi,
-              Region3D(Vector3i(-2), Vector3i(Block::size) + Vector3i(2)),
-              scratchV, scratchB);
-
-          map(scratchV, damped_jacobi,
-              Region3D(Vector3i(-1), Vector3i(Block::size) + Vector3i(1)),
-              scratchU, scratchB);
+          if (smoothing_fusion >= 2) {
+            map(scratchV, damped_jacobi,
+                Region3D(Vector3i(-1), Vector3i(Block::size) + Vector3i(1)),
+                scratchU, scratchB);
+          }
 
           // PartII:
           for (int i = 0; i < Block::size[0]; i++) {
@@ -407,16 +377,15 @@ class MGPCGSmoke {
         false, level == 0);  // carry nodes only if on finest level
   }
 
-  /*
-  void smooth(int level, int U, int B) {
+  void smooth_single(int level, int U, int B) {
     TC_PROFILER("smoothing")
     // TODO: this supports zero-Dirichlet BC only!
     grids[level]->advance(
         [&](Grid::Block &b, Grid::Ancestors &an) {
           if (!b.meta.get_has_effective_cell())
             return;
-          GridScratchPadCh2 scratchB(an, B * sizeof(real));
-          GridScratchPadCh2 scratchU(an, U * sizeof(real));
+          GridScratchPadCh scratchB(an, B * sizeof(real));
+          GridScratchPadCh scratchU(an, U * sizeof(real));
           // 6 neighbours
           TC_STATIC_ASSERT(sizeof(real) == 4);
           TC_STATIC_ASSERT(Block::size[2] == 8);
@@ -454,7 +423,6 @@ class MGPCGSmoke {
         },
         false, level == 0);  // carry nodes only if on finest level
   }
-   */
 
   void clear(int level, int channel) {
     grids[level]->for_each_node(
@@ -515,7 +483,8 @@ class MGPCGSmoke {
                bool use_as_preconditioner = true) {
     copy(CH_MG_B, channel_in);
     constexpr int U = CH_MG_U, B = CH_MG_B, R = CH_MG_R;
-    constexpr int smoothing_iters = 2, bottom_smoothing_iter = 150;
+    constexpr int smoothing_iters = 12 / smoothing_fusion,
+                  bottom_smoothing_iter = 120 / smoothing_fusion;
     if (use_as_preconditioner) {
       clear(0, U);
     }
@@ -567,7 +536,7 @@ class MGPCGSmoke {
   // https://en.wikipedia.org/wiki/Conjugate_gradient_method
   void poisson_solve() {
     TC_PROFILER("Poisson Solve");
-    constexpr real tolerance = 1e-4_f;
+    constexpr real tolerance = 1e-7_f;
     bool use_preconditioner = true;
     real initial_residual_norm = norm(CH_B);
     TC_P(initial_residual_norm);
@@ -797,7 +766,8 @@ class MGPCGSmoke {
     std::vector<RenderParticle> particles;
     auto raw_particles = grids[0]->gather_particles();
     static int counter = 0;
-    write_to_binary_file(raw_particles, fmt::format("outputs/{:06d}.tcb", counter));
+    write_to_binary_file(raw_particles,
+                         fmt::format("outputs/{:06d}.tcb", counter));
     counter += 1;
     for (auto &p : grids[0]->gather_particles()) {
       auto t = p.pos[3];
@@ -805,7 +775,8 @@ class MGPCGSmoke {
       particles.push_back(
           RenderParticle(p.pos * Vector(0.16_f), Vector4(color, 1.0_f)));
     }
-    //write_to_binary_file(particles, fmt::format("outputs/{:06d}.tcb", counter));
+    // write_to_binary_file(particles, fmt::format("outputs/{:06d}.tcb",
+    // counter));
     renderer->render(image, particles);
     for (auto &ind : image.get_region()) {
       canvas.img[ind] = Vector4(image[ind]);

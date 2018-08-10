@@ -46,11 +46,38 @@ TC_REGISTER_TASK(stencil);
 
 TC_TEST("stencil") {
   using namespace stencilang;
-  auto left = Input<0, Offset<0, 0, -1>>();
-  auto right = Input<1, Offset<0, 0, 1>>();
-  auto top = Input<1, Offset<0, 1, 0>>();
-  auto bottom = Input<0, Offset<0, -1, 0>>();
+  constexpr int ChU = 0;
 
+  using Scratch = TGridScratchPad<Block, real, 2>;
+
+  Scratch scratchU;
+  Scratch scratchV;  // For iteration
+  scratchU.linearized_data[Scratch::linear_offset<3, 3, 3>()] = 1;
+
+  // clang-format off
+  auto sum =
+      (input<ChU, Offset<0, 0, 1>> + input<ChU, Offset<0, 0, -1>>) +
+      (input<ChU, Offset<0, 1, 0>> + input<ChU, Offset<0, -1, 0>>) +
+      (input<ChU, Offset<1, 0, 0>> + input<ChU, Offset<-1, 0, 0>>);
+  auto jacobi = sum * ratio<1, 6>;
+
+  map(scratchV, jacobi,
+      Region3D(Vector3i(-1), Vector3i(Block::size) + Vector3i(1)),
+      scratchU);
+  map(scratchU, jacobi,
+      Region3D(Vector3i(0), Vector3i(Block::size) + Vector3i(0)),
+      scratchV);
+
+  Scratch _scratchU;
+  Scratch _scratchV;  // For iteration
+  for (int i = 0; i < Scratch::scratch_size[0]; i++) {
+    for (int j = 0; j < Scratch::scratch_size[1]; j++) {
+      for (int k = 0; k < Scratch::scratch_size[2]; k++) {
+
+        // TODO: finish this
+      }
+    }
+  }
 }
 
 TC_NAMESPACE_END

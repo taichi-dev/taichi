@@ -106,6 +106,10 @@ class GUI {
 
   GUI(const std::string &window_name, int width = 800, int height = 800);
 
+  GUI(const std::string &window_name, Vector2i res)
+      : GUI(window_name, res[0], res[1]) {
+  }
+
   Canvas &get_canvas() {
     return *canvas;
   }

@@ -15,6 +15,7 @@ TC_NAMESPACE_BEGIN
 struct RenderParticle {
   Vector3 position;
   Vector4 color;
+  TC_IO_DEF(position, color);
   RenderParticle() {
   }
   RenderParticle(const Vector3 &position, const Vector4 &color)

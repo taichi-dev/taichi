@@ -152,6 +152,35 @@ void map(Output &output,
   }
 }
 
+template <typename Op, typename Output, typename... Args>
+void map_block(Output &output,
+               int channel,
+               const Op &op,
+               Args const &... args) {
+  TC_STATIC_ASSERT(Output::soa);
+  TC_STATIC_ASSERT(Output::dilation == 0);
+  TC_STATIC_ASSERT(Output::size[2] == 8);
+  using pad = typename std::decay_t<decltype(
+      std::get<0>(std::tuple<Args const &...>(args...)))>;
+  constexpr int inc_x =
+      (pad::expansion - Output::dilation) * pad::scratch_size[2] * 2;
+  constexpr int inc_y = pad::scratch_size[2];
+
+  auto input_offset = pad::template linear_offset<0, 0, 0>();
+  auto output_ptr = &output.node_local(Vector3i(0))[channel];
+
+  for (int i = 0; i < Output::size[0]; i++) {
+    for (int j = 0; j < Output::size[1]; j++) {
+      auto ret = Op::evaluate(input_offset, args...);
+      _mm256_storeu_ps(output_ptr, ret);
+
+      output_ptr += 8;
+      input_offset += inc_y;
+    }
+    input_offset += inc_x;
+  }
+}
+
 template <int channel, typename offset = Offset<0, 0, 0>>
 Input<channel, offset> input;
 

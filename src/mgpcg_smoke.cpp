@@ -14,7 +14,7 @@ real buoyancy = 700;
 real temperature_decay = 1;
 Vector2i cam_res(720, 1280);
 
-constexpr int smoothing_fusion = 1;
+constexpr int smoothing_fusion = 2;
 constexpr bool debug = false;
 
 struct BlockFlags : public bit::Bits<32> {
@@ -307,17 +307,20 @@ class MGPCGSmoke {
         [&](Grid::Block &b, Grid::Ancestors &an) {
           if (!b.meta.get_has_effective_cell())
             return;
+
           using Scratch = TGridScratchPad<Block, real, smoothing_fusion>;
+
           Scratch scratchB(an, B * sizeof(real));
           Scratch scratchU(an, U * sizeof(real));
           Scratch scratchV;  // For iteration
-          // 6 neighbours
+
           TC_STATIC_ASSERT(sizeof(real) == 4);
           TC_STATIC_ASSERT(Block::size[2] == 8);
 
           using namespace stencilang;
           constexpr int ChU = 0;
           constexpr int ChB = 1;
+
           // clang-format off
           auto sum =
               (input<ChU, Offset<0, 0, 1>> + input<ChU, Offset<0, 0, -1>>) +
@@ -333,6 +336,9 @@ class MGPCGSmoke {
             map(scratchV, damped_jacobi,
                 Region3D(Vector3i(-3), Vector3i(Block::size) + Vector3i(3)),
                 scratchU, scratchB);
+            map(scratchU, damped_jacobi,
+                Region3D(Vector3i(-2), Vector3i(Block::size) + Vector3i(2)),
+                scratchV, scratchB);
           }
 
           if (smoothing_fusion >= 2) {
@@ -342,6 +348,7 @@ class MGPCGSmoke {
           }
 
           // PartII:
+          /*)
           for (int i = 0; i < Block::size[0]; i++) {
             for (int j = 0; j < Block::size[1]; j++) {
               __m256 sum_z =
@@ -373,6 +380,8 @@ class MGPCGSmoke {
               // 91 to 10...
             }
           }
+          */
+          map_block(b, U, damped_jacobi, scratchV, scratchB);
         },
         false, level == 0);  // carry nodes only if on finest level
   }

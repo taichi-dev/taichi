@@ -512,6 +512,7 @@ struct TGridScratchPad {
   // For SOA, we only allow gathering single channel
   TC_STATIC_ASSERT(!(Block::soa && std::is_same<ComponentType, void>::value));
 
+  static constexpr std::array<int, 3> block_size = Block::size;
   static constexpr std::array<int, 3> scratch_size{
       Block::size[0] + expansion * 2, Block::size[1] + expansion * 2,
       Block::size[2] + expansion * 2};

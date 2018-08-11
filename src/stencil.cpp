@@ -53,12 +53,16 @@ TC_TEST("stencil") {
   Scratch scratchU;
   Scratch scratchV;  // For iteration
 
-  for (int i = 0; i < sizeof(Scratch::data) / sizeof(real); i++) {
-    scratchU.linearized_data[i] = rand();
+  auto c = sizeof(Scratch::linearized_data) / sizeof(real);
+  for (int i = 0; i < c; i++) {
+    auto d = rand();
+    scratchU.linearized_data[i] = d;
+    TC_CHECK(d == d);
   }
 
   Scratch _scratchU;
-  std::memcpy(&_scratchU, &scratchU, sizeof(scratchU));
+  std::memcpy(_scratchU.linearized_data, scratchU.linearized_data,
+              sizeof(scratchU.linearized_data));
   Scratch _scratchV;  // For iteration
 
   // clang-format off
@@ -75,9 +79,9 @@ TC_TEST("stencil") {
       Region3D(Vector3i(0), Vector3i(Block::size) + Vector3i(0)),
       _scratchV);
 
-  for (int i = -1; i < Scratch::scratch_size[0] + 1; i++) {
-    for (int j = -1; j < Scratch::scratch_size[1] + 1; j++) {
-      for (int k = -1; k < Scratch::scratch_size[2] + 1; k++) {
+  for (int i = -1; i < Scratch::block_size[0] + 1; i++) {
+    for (int j = -1; j < Scratch::block_size[1] + 1; j++) {
+      for (int k = -1; k < Scratch::block_size[2] + 1; k++) {
         scratchV.data[i][j][k] = 1.0_f / 6 * (
                                                  scratchU.data[i][j][k - 1] +
                                                      scratchU.data[i][j][k + 1] +
@@ -89,9 +93,9 @@ TC_TEST("stencil") {
       }
     }
   }
-  for (int i = 0; i < Scratch::scratch_size[0]; i++) {
-    for (int j = 0; j < Scratch::scratch_size[1]; j++) {
-      for (int k = 0; k < Scratch::scratch_size[2]; k++) {
+  for (int i = 0; i < Scratch::block_size[0]; i++) {
+    for (int j = 0; j < Scratch::block_size[1]; j++) {
+      for (int k = 0; k < Scratch::block_size[2]; k++) {
         auto ret = 1.0_f / 6 * (
             scratchV.data[i][j][k - 1] +
             scratchV.data[i][j][k + 1] +
@@ -100,7 +104,8 @@ TC_TEST("stencil") {
             scratchV.data[i - 1][j][k] +
             scratchV.data[i + 1][j][k]
         );
-        TC_CHECK_EQUAL(ret, _scratchU.data[i][j][k], 1e-5_f);
+        TC_CHECK_EQUAL(ret, _scratchU.data[i][j][k], 1e-4_f);
+        //TC_CHECK(ret == _scratchU.data[i][j][k]);
       }
     }
   }

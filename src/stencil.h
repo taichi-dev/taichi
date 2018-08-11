@@ -140,10 +140,10 @@ struct Ratio : public OpBase<Ratio<a, b>> {
 };
 
 template <typename Op, typename Output, typename... Args>
-void map(Output &output,
-         const Op &op,
-         TRegion<3> region,
-         Args const &... args) {
+TC_FORCE_INLINE void map(Output &output,
+                         const Op &op,
+                         TRegion<3> region,
+                         Args const &... args) {
   int start = Output::linear_offset(region.begin());
   int end = Output::linear_offset(region.end());
   for (int i = start; i < end; i += 8) {
@@ -153,10 +153,10 @@ void map(Output &output,
 }
 
 template <typename Op, typename Output, typename... Args>
-void map_block(Output &output,
-               int channel,
-               const Op &op,
-               Args const &... args) {
+TC_FORCE_INLINE void map_block(Output &output,
+                               int channel,
+                               const Op &op,
+                               Args const &... args) {
   TC_STATIC_ASSERT(Output::soa);
   TC_STATIC_ASSERT(Output::dilation == 0);
   TC_STATIC_ASSERT(Output::size[2] == 8);

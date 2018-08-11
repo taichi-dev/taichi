@@ -52,7 +52,14 @@ TC_TEST("stencil") {
 
   Scratch scratchU;
   Scratch scratchV;  // For iteration
-  scratchU.linearized_data[Scratch::linear_offset<3, 3, 3>()] = 1;
+
+  for (int i = 0; i < sizeof(Scratch::data) / sizeof(real); i++) {
+    scratchU.linearized_data[i] = rand();
+  }
+
+  Scratch _scratchU;
+  std::memcpy(&_scratchU, &scratchU, sizeof(scratchU));
+  Scratch _scratchV;  // For iteration
 
   // clang-format off
   auto sum =
@@ -61,20 +68,39 @@ TC_TEST("stencil") {
       (input<ChU, Offset<1, 0, 0>> + input<ChU, Offset<-1, 0, 0>>);
   auto jacobi = sum * ratio<1, 6>;
 
-  map(scratchV, jacobi,
+  map(_scratchV, jacobi,
       Region3D(Vector3i(-1), Vector3i(Block::size) + Vector3i(1)),
-      scratchU);
-  map(scratchU, jacobi,
+      _scratchU);
+  map(_scratchU, jacobi,
       Region3D(Vector3i(0), Vector3i(Block::size) + Vector3i(0)),
-      scratchV);
+      _scratchV);
 
-  Scratch _scratchU;
-  Scratch _scratchV;  // For iteration
+  for (int i = -1; i < Scratch::scratch_size[0] + 1; i++) {
+    for (int j = -1; j < Scratch::scratch_size[1] + 1; j++) {
+      for (int k = -1; k < Scratch::scratch_size[2] + 1; k++) {
+        scratchV.data[i][j][k] = 1.0_f / 6 * (
+                                                 scratchU.data[i][j][k - 1] +
+                                                     scratchU.data[i][j][k + 1] +
+                                                     scratchU.data[i][j - 1][k] +
+                                                     scratchU.data[i][j + 1][k] +
+                                                     scratchU.data[i - 1][j][k] +
+                                                     scratchU.data[i + 1][j][k]
+                                             );
+      }
+    }
+  }
   for (int i = 0; i < Scratch::scratch_size[0]; i++) {
     for (int j = 0; j < Scratch::scratch_size[1]; j++) {
       for (int k = 0; k < Scratch::scratch_size[2]; k++) {
-
-        // TODO: finish this
+        auto ret = 1.0_f / 6 * (
+            scratchV.data[i][j][k - 1] +
+            scratchV.data[i][j][k + 1] +
+            scratchV.data[i][j - 1][k] +
+            scratchV.data[i][j + 1][k] +
+            scratchV.data[i - 1][j][k] +
+            scratchV.data[i + 1][j][k]
+        );
+        TC_CHECK_EQUAL(ret, _scratchU.data[i][j][k], 1e-5_f);
       }
     }
   }

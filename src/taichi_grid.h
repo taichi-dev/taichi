@@ -548,7 +548,20 @@ struct TGridScratchPad {
 #undef GATHER
   }
 
-  template <int i, int j, int k>
+  template <typename _ = void>
+  void set_as_mask(TAncestors<Block> &ancestors) {
+    // set effective cells as one
+    TC_ASSERT(!(std::is_same<ComponentType, void>::value));
+
+#define GATHER(I) \
+  gather<(I) / 9 - 1, ((I) / 3) % 3 - 1, (I) % 3 - 1, true>(ancestors, 0)
+
+    std::memset(&linearized_data[0], 0, sizeof(linearized_data));
+    TC_REPEAT27(GATHER);
+#undef GATHER
+  }
+
+  template <int i, int j, int k, bool override_as_one = false>
   TC_FORCE_INLINE void gather(TAncestors<Block> &ancestors,
                               int component_offset) {
     constexpr int si = std::max(-expansion, i * Block::size[0]);
@@ -575,15 +588,20 @@ struct TGridScratchPad {
             int x = p - i * Block::size[0];
             int y = q - j * Block::size[1];
             int z = r - k * Block::size[2];
-            data[p][q][r] = *reinterpret_cast<Node *>(
-                reinterpret_cast<uint8 *>(&ab->node_local(Vector3i(
-                    x, y, z))[component_offset /
-                              sizeof(typename Block::Node::element_type)]));
+            if (!override_as_one) {
+              data[p][q][r] = *reinterpret_cast<Node *>(
+                  reinterpret_cast<uint8 *>(&ab->node_local(Vector3i(
+                      x, y, z))[component_offset /
+                                sizeof(typename Block::Node::element_type)]));
+            } else if (ab->meta.get_has_effective_cell()) {
+              data[p][q][r] = 1.0_f;
+            }
           }
         }
       }
     }
     TC_STATIC_ELSE {
+      TC_STATIC_ASSERT(!override_as_one);
       constexpr int stride = sizeof(typename Block::Node);
       __m256i i32offset = _mm256_set_epi32(
           component_offset + stride * 7, component_offset + stride * 6,

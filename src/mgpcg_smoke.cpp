@@ -14,7 +14,7 @@ real buoyancy = 700;
 real temperature_decay = 1;
 Vector2i cam_res(720, 1280);
 
-constexpr int smoothing_fusion = 2;
+constexpr int smoothing_fusion = 4;
 constexpr bool debug = false;
 
 struct BlockFlags : public bit::Bits<32> {
@@ -304,7 +304,9 @@ class MGPCGSmoke {
 
           Scratch scratchB(an, B * sizeof(real));
           Scratch scratchU(an, U * sizeof(real));
-          Scratch scratchV;  // For iteration
+          Scratch scratchV;
+          Scratch scratchM;  // mask
+          scratchM.set_as_mask(an);
 
           TC_STATIC_ASSERT(sizeof(real) == 4);
           TC_STATIC_ASSERT(Block::size[2] == 8);
@@ -312,6 +314,7 @@ class MGPCGSmoke {
           using namespace stencilang;
           constexpr int ChU = 0;
           constexpr int ChB = 1;
+          constexpr int ChM = 2;
 
           // clang-format off
           auto sum =
@@ -321,25 +324,26 @@ class MGPCGSmoke {
               input<ChB>;
           auto jacobi = sum * ratio<1, 6>;
           auto original = input<ChU>;
-          auto damped_jacobi = original + ratio<2, 3> * (jacobi - original);
-          // clang-format on
+          auto damped_jacobi = (original + ratio<2, 3> * (jacobi - original));
+          auto damped_jacobi_mask = damped_jacobi * input<ChM>;
 
+          // clang-format on
           if (smoothing_fusion == 1) {
             map_block(b, U, damped_jacobi, scratchU, scratchB);
           } else {
             if (smoothing_fusion >= 4) {
-              map(scratchV, damped_jacobi,
+              map(scratchV, damped_jacobi_mask,
                   Region3D(Vector3i(-3), Vector3i(Block::size) + Vector3i(3)),
-                  scratchU, scratchB);
-              map(scratchU, damped_jacobi,
+                  scratchU, scratchB, scratchM);
+              map(scratchU, damped_jacobi_mask,
                   Region3D(Vector3i(-2), Vector3i(Block::size) + Vector3i(2)),
-                  scratchV, scratchB);
+                  scratchV, scratchB, scratchM);
             }
 
             if (smoothing_fusion >= 2) {
-              map(scratchV, damped_jacobi,
+              map(scratchV, damped_jacobi_mask,
                   Region3D(Vector3i(-1), Vector3i(Block::size) + Vector3i(1)),
-                  scratchU, scratchB);
+                  scratchU, scratchB, scratchM);
             }
 
             map_block(b, U, damped_jacobi, scratchV, scratchB);

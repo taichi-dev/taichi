@@ -4,10 +4,10 @@ import os
 import sys
 import re
 import sys
+import time
 
 files_to_include = [
   'include/taichi/common/util.h',
-  'include/taichi/common/*',
   'src/system/timer.cpp',
   'src/core/core.cpp',
   'src/core/logging.cpp',
@@ -97,6 +97,7 @@ class Amalgamator:
     print("// DO NOT EDIT BY HAND, unless you know that you are doing.", file=self.output_f)
     print("#define TC_INCLUDED", file=self.output_f)
     print("#define TC_AMALGAMATED", file=self.output_f)
+    print("#define TC_ISE_NONE", file=self.output_f)
     for f in self.files:
       self.include(f)
     print("Included files:")
@@ -118,14 +119,16 @@ int main() {
   TC_P(x);
 }
 ''')
+    t = time.time()
     if sys.platform.startswith('darwin'):
       os.system('g++ build/test_amal.cpp -o build/test_amal -std=c++14 -g -lpthread -I/opt/X11/include -L/opt/X11/lib -lX11  && ./build/test_amal')
     else:
-      os.system('g++ build/test_amal.cpp -o build/test_amal -std=c++14 -g -lpthread -lX11  && ./build/test_amal')
+      os.system('g++ build/test_amal.cpp -o build/test_amal -std=c++14 -g -lpthread -lX11 -O2  && ./build/test_amal')
 
     stat = os.stat('build/taichi.h')
     with open(output_fn) as f:
       print("taichi.h size: {} KB   LOC: {}".format(stat.st_size // 1024, len(list(f.readlines()))))
+    print("Compilation time: {:.2f} seconds".format(time.time() - t))
 
 if __name__ == '__main__':
   ama = Amalgamator()

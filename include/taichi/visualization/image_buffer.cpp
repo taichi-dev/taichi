@@ -7,23 +7,21 @@
 #include <taichi/math/math.h>
 #include <taichi/math/vector.h>
 
+#if !defined(TC_AMALGAMATED)
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_FAILURE_USERMSG
-
 #include <stb_image.h>
-
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-
 #include <stb_image_write.h>
-
 #define STB_TRUETYPE_IMPLEMENTATION
-
 #include <stb_truetype.h>
+#endif
 
 TC_NAMESPACE_BEGIN
 
 template <typename T>
 void Array2D<T>::load_image(const std::string &filename, bool linearize) {
+#if !defined(TC_AMALGAMATED)
   int channels;
   FILE *f = fopen(filename.c_str(), "rb");
   assert_info(f != nullptr, "Image file not found: " + filename);
@@ -59,10 +57,14 @@ void Array2D<T>::load_image(const std::string &filename, bool linearize) {
   }
 
   stbi_image_free(data);
+#else
+  TC_NOT_IMPLEMENTED
+#endif
 }
 
 template <typename T>
 void Array2D<T>::write_as_image(const std::string &filename) {
+#if !defined(TC_AMALGAMATED)
   int comp = 3;
   std::vector<unsigned char> data(this->res[0] * this->res[1] * comp);
   for (int i = 0; i < this->res[0]; i++) {
@@ -96,6 +98,9 @@ void Array2D<T>::write_as_image(const std::string &filename) {
   }
 
   TC_ASSERT_INFO((bool)write_result, "Can not write image file");
+#else
+  TC_NOT_IMPLEMENTED
+#endif
 }
 
 template <typename T>
@@ -105,6 +110,7 @@ void Array2D<T>::write_text(const std::string &font_fn,
                             int dx,
                             int dy,
                             T color) {
+#if !defined(TC_AMALGAMATED)
   std::vector<unsigned char> buffer(24 << 20, (unsigned char)0);
   std::vector<unsigned char> screen_buffer(
       (size_t)(this->res[0] * this->res[1]), (unsigned char)0);
@@ -159,8 +165,12 @@ void Array2D<T>::write_text(const std::string &font_fn,
       }
     }
   }
+#else
+  TC_NOT_IMPLEMENTED
+#endif
 }
 
+#if !defined(TC_AMALGAMATED)
 template void Array2D<Vector3>::write_text(const std::string &font_fn,
                                            const std::string &content_,
                                            real size,
@@ -194,6 +204,7 @@ template void Array2D<Vector4f>::write_as_image(const std::string &filename);
 template void Array2D<Vector3d>::write_as_image(const std::string &filename);
 
 template void Array2D<Vector4d>::write_as_image(const std::string &filename);
+#endif
 
 void write_pgm(Array2D<real> img, const std::string &fn) {
   std::ofstream fs(fn, std::ios_base::binary);

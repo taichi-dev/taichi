@@ -61,4 +61,4 @@ Dont’s
 
 Documentation
 -------------------------------------------------------------------------------
-- To build the documentation: ``cd docs && sphinx-build -b html . build``.
+- To build the documentation: ``ti doc`` or ``cd docs && sphinx-build -b html . build``.

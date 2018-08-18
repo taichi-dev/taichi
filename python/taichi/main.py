@@ -81,6 +81,7 @@ def main():
         "                                         (C++ source and python scripts)\n"
         "           ti statement [statement]  |-> Execute a single statement (with taichi imported as tc\n"
         "           ti [script.py]            |-> Run script\n"
+        "           ti doc                    |-> Build documentation\n"
         "           ti debug [script.py]      |-> Debug script\n")
     exit(-1)
   mode = sys.argv[1]
@@ -152,6 +153,8 @@ def main():
     subprocess.call([os.path.join(folder, exec_name)] + sys.argv[3:])
   elif mode == "interpolate":
     interpolate_frames('.')
+  elif mode == "doc":
+    os.system('cd docs && sphinx-build -b html . build')
   elif mode == "video":
     files = sorted(os.listdir('.'))
     files = list(filter(lambda x: x.endswith('.png'), files))

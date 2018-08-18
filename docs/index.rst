@@ -29,3 +29,4 @@ Taichi --- Open-Source Computer Graphics Library
    :maxdepth: 2
 
    contributor_guide
+   acknowledgments

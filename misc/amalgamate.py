@@ -3,6 +3,7 @@
 import os
 import sys
 import re
+import sys
 
 files_to_include = [
   'include/taichi/common/util.h',
@@ -117,7 +118,10 @@ int main() {
   TC_P(x);
 }
 ''')
-    os.system('g++ build/test_amal.cpp -o build/test_amal -std=c++14 -g -lpthread -lX11 && ./build/test_amal')
+    if sys.platform.startswith('darwin'):
+      os.system('g++ build/test_amal.cpp -o build/test_amal -std=c++14 -g -lpthread -I/opt/X11/include -L/opt/X11/lib -lX11  && ./build/test_amal')
+    else:
+      os.system('g++ build/test_amal.cpp -o build/test_amal -std=c++14 -g -lpthread -lX11  && ./build/test_amal')
 
     stat = os.stat('build/taichi.h')
     with open(output_fn) as f:

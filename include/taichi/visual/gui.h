@@ -5,7 +5,7 @@
 
 TC_NAMESPACE_BEGIN
 
-#if defined(TC_PLATFORM_LINUX)
+#if defined(TC_PLATFORM_LINUX) || defined(TC_PLATFORM_OSX)
 
 class Canvas {
  public:

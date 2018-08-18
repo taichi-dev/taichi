@@ -5,6 +5,10 @@ import random
 from taichi.tools.video import make_video, interpolate_frames
 from taichi.core.util import get_projects, activate_package, deactivate_package
 
+packages = {
+  'mpm': 'https://github.com/yuanming-hu/taichi_mpm'
+}
+
 def print_all_projects():
   from colorama import Fore, Back, Style
   print(Fore.GREEN, end='')
@@ -67,6 +71,7 @@ def main():
         "    Usage: ti run [task name]        |-> Run a specific task\n"
         "           ti test                   |-> Run tests\n"
         "           ti daemon                 |-> Start daemon process\n"
+        "           ti install                |-> Install package\n"
         "           ti proj                   |-> List all projects\n"
         "           ti proj activate [name]   |-> Activate project\n"
         "           ti proj deactivate [name] |-> Deactivate project\n"
@@ -142,6 +147,16 @@ def main():
     plot(sys.argv[2])
   elif mode == "update":
     tc.core.update(True)
+    tc.core.build()
+  elif mode == "install":
+    os.chdir(tc.get_directory('projects'))
+    pkg = sys.argv[2]
+    if pkg not in packages:
+      tc.error('package {} not found.'.format(pkg))
+    else:
+      tc.info('Installing package {}...'.format(pkg))
+      url = packages[pkg]
+    os.system('git clone {} {}'.format(url, pkg))
     tc.core.build()
   elif mode == "asm":
     fn = sys.argv[2]

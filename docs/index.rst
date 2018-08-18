@@ -6,13 +6,11 @@ Taichi --- Open-Source Computer Graphics Library
    :maxdepth: 2
 
    installation
-   utilities
 
 .. toctree::
    :caption: INFRASTRUCTURES
    :maxdepth: 2
-
-   installation
+   utilities
 
 .. toctree::
    :caption: APPLICATIONS

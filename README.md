@@ -8,6 +8,9 @@
 |---------------------|------------------|----------------|------------------|
 |[![Build Status](https://travis-ci.org/yuanming-hu/taichi.svg?branch=master)](https://travis-ci.org/yuanming-hu/taichi)|[![Build Status](https://ci.appveyor.com/api/projects/status/github/yuanming-hu/taichi?branch=master&svg=true)](https://ci.appveyor.com/project/IteratorAdvance/taichi)|[![Documentation Status](https://readthedocs.org/projects/taichi/badge/?version=latest)](http://taichi.readthedocs.io/en/latest/?badge=latest)|[![Join the chat at https://gitter.im/taichi-dev/Lobby](https://badges.gitter.im/taichi-dev/Lobby.svg)](https://gitter.im/taichi-dev/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)|
 
+## News
+ - August 14, 2018: [MPM solver](https://github.com/yuanming-hu/taichi_mpm) reloaded! We made it closed-source for a while, which is required by anonymous peer review. We apologize for that, and hopefully the 14x performance boost can compensate you guys! :-)
+
 ## Gallery [(More...)](http://taichi.graphics/gallery/)
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/smoke_cropped.gif)
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/microfacet.gif)

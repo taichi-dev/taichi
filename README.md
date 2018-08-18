@@ -10,10 +10,10 @@
 
 ## News
  - August 14, 2018: [MPM solver](https://github.com/yuanming-hu/taichi_mpm) reloaded! We made it closed-source for a while, which is required by anonymous peer review. We apologize for that, and hopefully the 14x performance boost can compensate you guys! :-)
+ 
+## [Getting Started](https://taichi.readthedocs.io/en/latest/installation.html#)
 
 ## Gallery [(More...)](http://taichi.graphics/gallery/)
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/smoke_cropped.gif)
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/microfacet.gif)
 ![image](https://github.com/yuanming-hu/taichi_assets/raw/master/demos/paper-cut.png)
-
-# [Quick Start](https://taichi.readthedocs.io/en/latest/installation.html#)

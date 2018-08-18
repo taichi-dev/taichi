@@ -1,7 +1,7 @@
 #include <taichi/visual/gui.h>
 #include <numeric>
 
-#if defined(TC_PLATFORM_LINUX) || defined(TC_PLATFORM_OSX)
+#if defined(TC_GUI_X11)
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 

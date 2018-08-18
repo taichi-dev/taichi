@@ -5,7 +5,11 @@
 
 TC_NAMESPACE_BEGIN
 
-#if defined(TC_PLATFORM_LINUX) || defined(TC_PLATFORM_OSX)
+#if defined(TC_PLATFORM_LINUX) || (defined(TC_PLATFORM_OSX) && defined(TC_AMALGAMATED))
+#define TC_GUI_X11
+#endif
+
+#if defined(TC_GUI_X11)
 
 class Canvas {
  public:

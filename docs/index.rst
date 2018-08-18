@@ -15,12 +15,6 @@ Taichi --- Open-Source Computer Graphics Library
    installation
 
 .. toctree::
-   :caption: TUTORIALS
-   :maxdepth: 2
-
-   tutorials/mls-mpm
-
-.. toctree::
    :caption: APPLICATIONS
    :maxdepth: 2
 

@@ -71,6 +71,7 @@ def main():
         "           ti proj activate [name]   |-> Activate project\n"
         "           ti proj deactivate [name] |-> Deactivate project\n"
         "           ti build                  |-> Build C++ files\n"
+        "           ti amal                   |-> Generate amalgamated taichi.h\n"
         "           ti clean asm [*.s]        |-> Clean up gcc ASM\n"
         "           ti plot [*.txt]           |-> Plot a memory usage curve\n"
         "           ti update                 |-> Update taichi and projects\n"
@@ -153,6 +154,12 @@ def main():
     subprocess.call([os.path.join(folder, exec_name)] + sys.argv[3:])
   elif mode == "interpolate":
     interpolate_frames('.')
+  elif mode == "amal":
+    os.chdir(tc.get_repo_directory())
+    with open('misc/amalgamate.py') as script:
+      script = script.read()
+    exec(script, {'__name__': '__main__'})
+    exit()
   elif mode == "doc":
     os.system('cd docs && sphinx-build -b html . build')
   elif mode == "video":

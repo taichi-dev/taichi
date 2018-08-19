@@ -99,10 +99,10 @@ class MGPCGSmoke {
     CH_R,
     CH_Z,
     CH_X,
-    CH_Y,  // Y is a copy of X, for smoothing iterations
     CH_B,
     CH_P,
     CH_MG_U,
+    CH_MG_V,  // V  is a copy of U, for smoothing iterations
     CH_MG_B,
     CH_MG_R,
     CH_VX,
@@ -292,7 +292,7 @@ class MGPCGSmoke {
     });
   }
 
-  void smooth(int level, int U, int B) {
+  void smooth(int level, int U, int Uout, int B) {
     static_assert(4 % smoothing_fusion == 0);
     TC_PROFILER("smoothing")
     // TODO: this supports zero-Dirichlet BC only!
@@ -347,7 +347,7 @@ class MGPCGSmoke {
                   scratchU, scratchB, scratchM);
             }
 
-            map_block(b, U, damped_jacobi, scratchV, scratchB);
+            map_block(b, Uout, damped_jacobi, scratchV, scratchB);
           }
         },
         false, level == 0, true,
@@ -412,7 +412,7 @@ class MGPCGSmoke {
                int channel_out,
                bool use_as_preconditioner = true) {
     copy(CH_MG_B, channel_in);
-    constexpr int U = CH_MG_U, B = CH_MG_B, R = CH_MG_R;
+    constexpr int U = CH_MG_U, V = CH_MG_V, B = CH_MG_B, R = CH_MG_R;
     constexpr int smoothing_iters = 8 / smoothing_fusion,
                   bottom_smoothing_iter = 120 / smoothing_fusion;
     TC_STATIC_ASSERT(smoothing_iters % 2 == 0);
@@ -423,12 +423,13 @@ class MGPCGSmoke {
     for (int i = 0; i < mg_lv - 1; i++) {
       // pre-smoothing
       if (true) {
-        for (int j = 0; j < smoothing_iters; j++) {
-          smooth(i, U, B);
+        for (int j = 0; j < smoothing_iters / 2; j++) {
+          smooth(i, U, V, B);
+          smooth(i, V, U, B);
         }
       } else {
         for (;;) {
-          TC_TIME(smooth(i, U, B));
+          TC_TIME(smooth(i, U, V, B));
         }
       }
       residual(i, U, B, R);
@@ -438,16 +439,18 @@ class MGPCGSmoke {
 
     {
       TC_PROFILER("bottom smoothing");
-      for (int j = 0; j < bottom_smoothing_iter; j++) {
-        smooth(mg_lv - 1, U, B);
+      for (int j = 0; j < bottom_smoothing_iter / 2; j++) {
+        smooth(mg_lv - 1, U, V, B);
+        smooth(mg_lv - 1, V, U, B);
       }
     }
 
     for (int i = mg_lv - 2; i >= 0; i--) {
       prolongate(i, U);
       // post-smoothing
-      for (int j = 0; j < smoothing_iters; j++) {
-        smooth(i, U, B);
+      for (int j = 0; j < smoothing_iters / 2; j++) {
+        smooth(i, U, V, B);
+        smooth(i, V, U, B);
       }
     }
     copy(channel_out, CH_MG_U);

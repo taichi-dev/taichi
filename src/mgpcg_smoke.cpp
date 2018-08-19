@@ -99,6 +99,7 @@ class MGPCGSmoke {
     CH_R,
     CH_Z,
     CH_X,
+    CH_Y,  // Y is a copy of X, for smoothing iterations
     CH_B,
     CH_P,
     CH_MG_U,
@@ -349,7 +350,8 @@ class MGPCGSmoke {
             map_block(b, U, damped_jacobi, scratchV, scratchB);
           }
         },
-        false, level == 0);  // carry nodes only if on finest level
+        false, level == 0, true,
+        false);  // carry particles only if on finest level
   }
 
   void clear(int level, int channel) {
@@ -411,8 +413,10 @@ class MGPCGSmoke {
                bool use_as_preconditioner = true) {
     copy(CH_MG_B, channel_in);
     constexpr int U = CH_MG_U, B = CH_MG_B, R = CH_MG_R;
-    constexpr int smoothing_iters = 12 / smoothing_fusion,
+    constexpr int smoothing_iters = 8 / smoothing_fusion,
                   bottom_smoothing_iter = 120 / smoothing_fusion;
+    TC_STATIC_ASSERT(smoothing_iters % 2 == 0);
+    TC_STATIC_ASSERT(bottom_smoothing_iter % 2 == 0);
     if (use_as_preconditioner) {
       clear(0, U);
     }

@@ -1144,7 +1144,8 @@ class TaichiGrid {
   void advance(const T &t,
                bool needs_expand = true,
                bool carry_particles = false,
-               bool carry_nodes = true) {
+               bool carry_nodes = true,
+               bool inplace = false) {
     // T takes (base_coord, Ancestor) and should return void
     using result_type = std::result_of_t<T(Block &, Ancestors &)>;
     TC_STATIC_ASSERT((std::is_same<result_type, void>::value));
@@ -1152,11 +1153,11 @@ class TaichiGrid {
     TC_PROFILER("advance");
 
     const int old_timestamp = current_timestamp;
-    const int new_timestamp = current_timestamp + 1;
+    const int new_timestamp = current_timestamp + (inplace ? 0 : 1);
 
-    current_timestamp += 1;
+    current_timestamp += inplace ? 0 : 1;
     // Populate blocks at the next time step, if NOT killed
-    {
+    if (!inplace) {
       // TC_PROFILER("populate new grid1");
       auto list = get_block_list(old_timestamp);
       {
@@ -1193,7 +1194,7 @@ class TaichiGrid {
         }
       }
       auto direct_ancestor = ancestors[VectorI(0)];
-      if (direct_ancestor) {
+      if (direct_ancestor && !inplace) {
         if (carry_particles) {
           std::memcpy(block->particles, direct_ancestor->particles,
                       direct_ancestor->particle_count * sizeof(Particle));
@@ -1263,7 +1264,7 @@ class TaichiGrid {
       // TC_PROFILER("clear killed blocks");
       clear_killed_blocks();
     }
-    {
+    if (!inplace) {
       // TC_PROFILER("gc");
       gc(old_timestamp);
       // gc();

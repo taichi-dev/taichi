@@ -351,7 +351,7 @@ class MGPCGSmoke {
           }
         },
         false, level == 0, true,
-        false);  // carry particles only if on finest level
+        true);  // carry particles only if on finest level
   }
 
   void clear(int level, int channel) {

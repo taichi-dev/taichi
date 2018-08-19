@@ -1157,15 +1157,17 @@ class TaichiGrid {
 
     current_timestamp += inplace ? 0 : 1;
     // Populate blocks at the next time step, if NOT killed
-    if (!inplace) {
-      // TC_PROFILER("populate new grid1");
-      auto list = get_block_list(old_timestamp);
-      {
-        // TC_PROFILER("touch");
-        for (auto b : list) {
+    // TC_PROFILER("populate new grid1");
+    auto list = get_block_list(old_timestamp);
+    {
+      // TC_PROFILER("touch");
+      for (auto b : list) {
+        if (!inplace) {
           if (!b->killed) {
             touch(b->base_coord, new_timestamp);
           }
+        } else {
+          b->computed = false;
         }
         /*
         tbb::parallel_for(0, (int)list.size(), [&](int i) {

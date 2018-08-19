@@ -129,3 +129,52 @@ for (int i = 0; i < Block::size[0]; i++) {
         false, level == 0);  // carry nodes only if on finest level
   }
 */
+
+// Residual
+/*
+// 6 neighbours
+for (int i = 0; i < Block::size[0]; i++) {
+  for (int j = 0; j < Block::size[1]; j++) {
+    for (int k = 0; k < Block::size[2]; k++) {
+      auto rhs = b.node_local(Vector3i(i, j, k))[B];
+      auto c = b.node_local(Vector3i(i, j, k))[U];
+      auto fetch = [&](int ii, int jj, int kk) {
+        rhs += (scratch.data[i + ii][j + jj][k + kk] - c);
+      };
+      fetch(0, 0, 1);
+      fetch(0, 0, -1);
+      fetch(0, 1, 0);
+      fetch(0, -1, 0);
+      fetch(1, 0, 0);
+      fetch(-1, 0, 0);
+      b.node_local(Vector3i(i, j, k))[R] = rhs;
+    }
+  }
+}
+*/
+
+// Multiply
+/*
+// 6 neighbours
+for (int i = 0; i < Block::size[0]; i++) {
+  for (int j = 0; j < Block::size[1]; j++) {
+    for (int k = 0; k < Block::size[2]; k++) {
+      int count = 0;
+      real tmp = 0;
+      auto fetch = [&](int ii, int jj, int kk) {
+        auto &n = scratch.data[i + (ii)][j + (jj)][k + (kk)];
+        count++;
+        tmp += n;
+      };
+      fetch(0, 0, 1);
+      fetch(0, 0, -1);
+      fetch(0, 1, 0);
+      fetch(0, -1, 0);
+      fetch(1, 0, 0);
+      fetch(-1, 0, 0);
+      auto &o = b.node_local(Vector3i(i, j, k))[channel_out];
+      o = 6 * scratch.data[i][j][k] - tmp;
+    }
+  }
+}
+*/

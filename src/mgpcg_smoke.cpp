@@ -203,26 +203,19 @@ class MGPCGSmoke {
         [&](Block &b, Grid::Ancestors &an) {
           if (!b.meta.get_has_effective_cell())
             return;
-          GridScratchPadCh scratch(an, sizeof(real) * U);
-          // 6 neighbours
-          for (int i = 0; i < Block::size[0]; i++) {
-            for (int j = 0; j < Block::size[1]; j++) {
-              for (int k = 0; k < Block::size[2]; k++) {
-                auto rhs = b.node_local(Vector3i(i, j, k))[B];
-                auto c = b.node_local(Vector3i(i, j, k))[U];
-                auto fetch = [&](int ii, int jj, int kk) {
-                  rhs += (scratch.data[i + ii][j + jj][k + kk] - c);
-                };
-                fetch(0, 0, 1);
-                fetch(0, 0, -1);
-                fetch(0, 1, 0);
-                fetch(0, -1, 0);
-                fetch(1, 0, 0);
-                fetch(-1, 0, 0);
-                b.node_local(Vector3i(i, j, k))[R] = rhs;
-              }
-            }
-          }
+          GridScratchPadCh scratchU(an, sizeof(real) * U);
+          GridScratchPadCh scratchB(an, sizeof(real) * B);
+          constexpr int ChU = 0, ChB = 1;
+          using namespace stencilang;
+          // clang-format off
+          auto sum =
+              (input<ChU, Offset<0, 0, 1>> + input<ChU, Offset<0, 0, -1>>) +
+              (input<ChU, Offset<0, 1, 0>> + input<ChU, Offset<0, -1, 0>>) +
+              (input<ChU, Offset<1, 0, 0>> + input<ChU, Offset<-1, 0, 0>>);
+          auto out = input<ChB, Offset<0, 0, 0>> + sum -
+              ratio<6, 1> * input<ChU, Offset<0, 0, 0>>;
+          // clang-format on
+          map_block(b, R, out, scratchU, scratchB);
         },
         false, false, false, true);
   }
@@ -235,30 +228,6 @@ class MGPCGSmoke {
           if (!b.meta.get_has_effective_cell())
             return;
           GridScratchPadCh scratch(an, sizeof(real) * channel_in);
-          /*
-          // 6 neighbours
-          for (int i = 0; i < Block::size[0]; i++) {
-            for (int j = 0; j < Block::size[1]; j++) {
-              for (int k = 0; k < Block::size[2]; k++) {
-                int count = 0;
-                real tmp = 0;
-                auto fetch = [&](int ii, int jj, int kk) {
-                  auto &n = scratch.data[i + (ii)][j + (jj)][k + (kk)];
-                  count++;
-                  tmp += n;
-                };
-                fetch(0, 0, 1);
-                fetch(0, 0, -1);
-                fetch(0, 1, 0);
-                fetch(0, -1, 0);
-                fetch(1, 0, 0);
-                fetch(-1, 0, 0);
-                auto &o = b.node_local(Vector3i(i, j, k))[channel_out];
-                o = 6 * scratch.data[i][j][k] - tmp;
-              }
-            }
-          }
-          */
           constexpr int ChU = 0;
           using namespace stencilang;
           // clang-format off
@@ -268,7 +237,7 @@ class MGPCGSmoke {
               (input<ChU, Offset<1, 0, 0>> + input<ChU, Offset<-1, 0, 0>>);
           auto out = ratio<6, 1> * input<ChU, Offset<0, 0, 0>> - sum;
           // clang-format on
-            map_block(b, channel_out, out, scratch);
+          map_block(b, channel_out, out, scratch);
         },
         false, false, false, true);
   }

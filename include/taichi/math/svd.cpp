@@ -45,7 +45,7 @@ TC_FORCE_INLINE void ensure_non_negative_singular_values(MatrixND<dim, T> &u,
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
-// m can not be const here, otherwise JIXIE::singularValueDecomposition will
+// m cannot be const here, otherwise JIXIE::singularValueDecomposition will
 // cause a error due to const_cast
 template <int dim, typename T>
 void imp_svd(const MatrixND<dim, T> &m_,

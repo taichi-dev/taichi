@@ -14,7 +14,7 @@ std::vector<Triangle> Mesh3D::generate(const Vector2i res,
                                        bool smooth_normal) {
   const Vector2 dp = Vector2(1.0) / res.cast<real>();
 
-  assert_info(surf != nullptr, "Surface function can not be null");
+  assert_info(surf != nullptr, "Surface function cannot be null");
 
   auto get_normal_at = [&](const Vector2 &p) -> Vector3 {
     if (norm) {

@@ -81,7 +81,7 @@ if (NOT PYBIND11_IMPORT_RET)
     # returns zero if success
     message("    pybind11 include: ${PYBIND11_INCLUDE_DIR}")
 else ()
-    message(FATAL_ERROR "Can not import pybind11. Please install. ([sudo] pip install pybind11)")
+    message(FATAL_ERROR "Cannot import pybind11. Please install. ([sudo] pip install pybind11)")
 endif ()
 
 include_directories(${PYBIND11_INCLUDE_DIR})

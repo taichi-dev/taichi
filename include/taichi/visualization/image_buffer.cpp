@@ -97,7 +97,7 @@ void Array2D<T>::write_as_image(const std::string &filename) {
     TC_ERROR("Unknown suffix {}", suffix);
   }
 
-  TC_ASSERT_INFO((bool)write_result, "Can not write image file");
+  TC_ASSERT_INFO((bool)write_result, "Cannot write image file");
 #else
   TC_NOT_IMPLEMENTED
 #endif

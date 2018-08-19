@@ -67,7 +67,7 @@ class VoxelVolumeMaterial : public VolumeMaterial {
     Vector3 inv = Vector3(1.0_f) / resolution.cast<real>();
     for (auto &ind : voxels.get_region()) {
       voxels[ind] = tex->sample(ind.get_pos() * inv).x;
-      assert_info(voxels[ind] >= 0.0_f, "Density can not be negative.");
+      assert_info(voxels[ind] >= 0.0_f, "Density cannot be negative.");
       maximum = std::max(maximum, voxels[ind]);
     }
   }

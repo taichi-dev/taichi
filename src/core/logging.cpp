@@ -18,7 +18,7 @@ void signal_handler(int signo);
 #define TC_REGISTER_SIGNAL_HANDLER(name, handler)                    \
   {                                                                  \
     if (std::signal(name, handler) == SIG_ERR)                       \
-      std::printf("Can not register signal handler for" #name "\n"); \
+      std::printf("Cannot register signal handler for" #name "\n"); \
   }
 
 void Logger::set_level(const std::string &level) {

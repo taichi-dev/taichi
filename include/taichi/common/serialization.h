@@ -211,7 +211,7 @@ inline void write_data_to_file(const std::string &fn, uint8_t *data, std::size_t
   std::FILE *f = fopen(fn.c_str(), "wb");
   if (f == nullptr) {
     TC_ERROR(
-        "Can not open file [{}] for writing. (Does the directory exist?)",
+        "Cannot open file [{}] for writing. (Does the directory exist?)",
         fn);
     assert(f != nullptr);
   }

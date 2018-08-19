@@ -224,7 +224,7 @@ class MGPCGSmoke {
             }
           }
         },
-        false, true);
+        false, false, false, true);
   }
 
   void multiply(int channel_out, int channel_in) {
@@ -235,6 +235,7 @@ class MGPCGSmoke {
           if (!b.meta.get_has_effective_cell())
             return;
           GridScratchPadCh scratch(an, sizeof(real) * channel_in);
+          /*
           // 6 neighbours
           for (int i = 0; i < Block::size[0]; i++) {
             for (int j = 0; j < Block::size[1]; j++) {
@@ -253,12 +254,23 @@ class MGPCGSmoke {
                 fetch(1, 0, 0);
                 fetch(-1, 0, 0);
                 auto &o = b.node_local(Vector3i(i, j, k))[channel_out];
-                o = count * scratch.data[i][j][k] - tmp;
+                o = 6 * scratch.data[i][j][k] - tmp;
               }
             }
           }
+          */
+          constexpr int ChU = 0;
+          using namespace stencilang;
+          // clang-format off
+          auto sum =
+              (input<ChU, Offset<0, 0, 1>> + input<ChU, Offset<0, 0, -1>>) +
+              (input<ChU, Offset<0, 1, 0>> + input<ChU, Offset<0, -1, 0>>) +
+              (input<ChU, Offset<1, 0, 0>> + input<ChU, Offset<-1, 0, 0>>);
+          auto out = ratio<6, 1> * input<ChU, Offset<0, 0, 0>> - sum;
+          // clang-format on
+            map_block(b, channel_out, out, scratch);
         },
-        false, true);
+        false, false, false, true);
   }
 
   // out += a + scale * b

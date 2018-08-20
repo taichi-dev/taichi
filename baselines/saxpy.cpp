@@ -4,6 +4,7 @@
 #include <cmath>
 #include <vector>
 #include <unistd.h>
+#include <cstring>
 #include <sys/time.h>
 
 double get_time() {
@@ -28,12 +29,24 @@ int main() {
     }
   }
   printf("Correct!\n");
-  for (int i = 0; ; i++) {
+  float trash = 0;
+  for (int i = 0; i < 10000000; i++) {
     if (i > 5) {
     }
     double t = get_time();
     cblas_saxpy(n, 2, x.data(), 1, y.data(), 1);
-    printf("%f\n", get_time() - t);
+    auto saxpy = get_time() - t;
+    t = get_time();
+    trash += cblas_sasum(n, x.data(), 1);
+    double sasum = get_time() - t;
+    t = get_time();
+    cblas_sscal(n, 0.99f, x.data(), 1);
+    double sscal = get_time() - t;
+    t = get_time();
+    std::memset(x.data(), 0, sizeof(float) * n);
+    double memset = get_time() - t;
+    printf("saxpy %f sasum %f sscal %f memset %f\n", saxpy, sasum, sscal, memset);
   }
+  printf("trash %f", trash);
   return 0;
 }

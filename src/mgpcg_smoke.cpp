@@ -81,7 +81,7 @@ Vector3 hsv2rgb(Vector3 hsv) {
   return Vector3(r, g, b);
 }
 
-using Block = TBlock<Node, Particle, TSize3D<8>, 0, 2048, BlockFlags>;
+using Block = TBlock<Node, Particle, TSize3D<8>, 0, 0, BlockFlags>;
 
 class MGPCGSmoke {
  public:
@@ -91,7 +91,7 @@ class MGPCGSmoke {
   using Matrix = TMatrix<real, dim>;
   using Grid = TaichiGrid<Block>;
 
-  const int n = 64;
+  const int n = 128;
   const int mg_lv = log2int(n) - 2;
   std::vector<std::unique_ptr<Grid>> grids;
 
@@ -314,12 +314,6 @@ class MGPCGSmoke {
             map_block(b, U, damped_jacobi, scratchU, scratchB);
           } else {
             if (smoothing_fusion >= 4) {
-              map(scratchV, damped_jacobi_mask,
-                  Region3D(Vector3i(-3), Vector3i(Block::size) + Vector3i(3)),
-                  scratchU, scratchB, scratchM);
-              map(scratchU, damped_jacobi_mask,
-                  Region3D(Vector3i(-2), Vector3i(Block::size) + Vector3i(2)),
-                  scratchV, scratchB, scratchM);
             }
 
             if (smoothing_fusion >= 2) {
@@ -403,7 +397,7 @@ class MGPCGSmoke {
     }
     for (int i = 0; i < mg_lv - 1; i++) {
       // pre-smoothing
-      if (true) {
+      if (false) {
         for (int j = 0; j < smoothing_iters / 2; j++) {
           smooth(i, U, V, B);
           smooth(i, V, U, B);
@@ -452,7 +446,7 @@ class MGPCGSmoke {
   // https://en.wikipedia.org/wiki/Conjugate_gradient_method
   void poisson_solve() {
     TC_PROFILER("Poisson Solve");
-    constexpr real tolerance = 1e-7_f;
+    constexpr real tolerance = 1e-4_f;
     bool use_preconditioner = true;
     real initial_residual_norm = norm(CH_B);
     TC_P(initial_residual_norm);
@@ -765,7 +759,7 @@ class MGPCGSmoke {
 };
 
 auto mgpcg = [](const std::vector<std::string> &params) {
-  // ThreadedTaskManager::TbbParallelismControl _(1);
+  //ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGSmoke> mgpcg;
   mgpcg = std::make_unique<MGPCGSmoke>();
   while (true) {

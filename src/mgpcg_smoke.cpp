@@ -756,7 +756,41 @@ class MGPCGSmoke {
     });
     return img;
   }
+
+  template<int dilation>
+  void test_gather() {
+    grids[0]->advance(
+        [&](Grid::Block &b, Grid::Ancestors &an) {
+          if (!b.meta.get_has_effective_cell())
+            return;
+          using Scratch = TGridScratchPad<Block, real, dilation>;
+          //Scratch scratchB(an, 0 * sizeof(real));
+          //Scratch scratchU(an, 1 * sizeof(real));
+          //Scratch scratchV;
+          //Scratch scratchM;  // mask
+          //scratchM.set_as_mask(an);
+        },
+        false, false, false,
+        true);  // carry particles only if on finest level
+
+  }
 };
+
+auto gather_scratch = [](const std::vector<std::string> &params) {
+  //ThreadedTaskManager::TbbParallelismControl _(1);
+  std::unique_ptr<MGPCGSmoke> mgpcg;
+  mgpcg = std::make_unique<MGPCGSmoke>();
+  while (true) {
+    TC_PROFILE("0", mgpcg->test_gather<0>());
+    TC_PROFILE("1", mgpcg->test_gather<1>());
+    TC_PROFILE("2", mgpcg->test_gather<2>());
+    TC_PROFILE("3", mgpcg->test_gather<3>());
+    TC_PROFILE("4", mgpcg->test_gather<4>());
+    print_profile_info();
+  }
+};
+
+TC_REGISTER_TASK(gather_scratch);
 
 auto mgpcg = [](const std::vector<std::string> &params) {
   //ThreadedTaskManager::TbbParallelismControl _(1);

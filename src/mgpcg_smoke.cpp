@@ -15,7 +15,7 @@ real temperature_decay = 1;
 Vector2i cam_res(720, 1280);
 int zero = 0;
 
-constexpr int smoothing_fusion = 4;
+constexpr int smoothing_fusion = 2;
 constexpr bool debug = false;
 
 struct BlockFlags : public bit::Bits<32> {

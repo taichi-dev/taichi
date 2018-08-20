@@ -13,6 +13,7 @@ real gravity = 100;
 real buoyancy = 700;
 real temperature_decay = 1;
 Vector2i cam_res(720, 1280);
+int zero = 0;
 
 constexpr int smoothing_fusion = 4;
 constexpr bool debug = false;
@@ -81,7 +82,7 @@ Vector3 hsv2rgb(Vector3 hsv) {
   return Vector3(r, g, b);
 }
 
-using Block = TBlock<Node, Particle, TSize3D<8>, 0, 0, BlockFlags>;
+using Block = TBlock<Node, Particle, TSize3D<8>, 0, 2048, BlockFlags>;
 
 class MGPCGSmoke {
  public:
@@ -397,7 +398,7 @@ class MGPCGSmoke {
     }
     for (int i = 0; i < mg_lv - 1; i++) {
       // pre-smoothing
-      if (false) {
+      if (true) {
         for (int j = 0; j < smoothing_iters / 2; j++) {
           smooth(i, U, V, B);
           smooth(i, V, U, B);
@@ -764,7 +765,8 @@ class MGPCGSmoke {
           if (!b.meta.get_has_effective_cell())
             return;
           using Scratch = TGridScratchPad<Block, real, dilation>;
-          //Scratch scratchB(an, 0 * sizeof(real));
+          Scratch scratchB(an, 0 * sizeof(real));
+          trash(scratchB.linearized_data[zero]);
           //Scratch scratchU(an, 1 * sizeof(real));
           //Scratch scratchV;
           //Scratch scratchM;  // mask
@@ -800,13 +802,6 @@ auto mgpcg = [](const std::vector<std::string> &params) {
     TC_TIME(mgpcg->test_pcg());
     print_profile_info();
   }
-  GUI gui2("Pressure", 256, 512);
-  auto img = mgpcg->render_pressure_field();
-  for (auto ind : gui2.get_canvas().img.get_region()) {
-    gui2.get_canvas().img[ind] = Vector3(img[Vector2i(ind) / Vector2i(4)]);
-  }
-  while (1)
-    gui2.update();
 };
 
 TC_REGISTER_TASK(mgpcg);

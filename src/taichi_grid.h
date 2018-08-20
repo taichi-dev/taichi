@@ -757,7 +757,8 @@ class TaichiGrid {
                                                        int timestamp) {
     auto h = domain_hash(coord, timestamp);
     // critical region
-    std::lock_guard<std::mutex> _(root_lock);
+    // TODO: quick & safe
+    // std::lock_guard<std::mutex> _(root_lock);
     auto p = root.find(h);
     if (p == root.end()) {
       return nullptr;

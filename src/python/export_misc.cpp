@@ -68,7 +68,6 @@ void print_all_units() {
   std::cout << all_units << " units in all." << std::endl;
 }
 
-
 void duplicate_stdout_to_file(const std::string &fn) {
 /*
 static int stdout_fd = -1;
@@ -102,8 +101,9 @@ void export_misc(py::module &m) {
 
   py::class_<Task, std::shared_ptr<Task>>(m, "Task")
       .def("initialize", &Task::initialize)
-      .def("run", static_cast<void (Task::*)(const std::vector<std::string> &)>(
-                      &Task::run));
+      .def("run",
+           static_cast<std::string (Task::*)(const std::vector<std::string> &)>(
+               &Task::run));
 
   py::class_<ToneMapper, std::shared_ptr<ToneMapper>>(m, "ToneMapper")
       .def("initialize", &ToneMapper::initialize)

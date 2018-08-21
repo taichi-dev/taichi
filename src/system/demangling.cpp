@@ -14,7 +14,7 @@ TC_NAMESPACE_BEGIN
 // From https://en.wikipedia.org/wiki/Name_mangling
 
 class Demangling : public Task {
-  virtual void run(const std::vector<std::string> &parameters) {
+  virtual std::string run(const std::vector<std::string> &parameters) {
     if (parameters.size() == 0) {
       printf("There should be at least one parameter for demangling.\n");
     }
@@ -30,6 +30,7 @@ class Demangling : public Task {
       TC_NOT_IMPLEMENTED
 #endif
     }
+    return "";
   }
 };
 

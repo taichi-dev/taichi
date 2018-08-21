@@ -8,7 +8,7 @@
 TC_NAMESPACE_BEGIN
 
 class TestPLY : public Task {
-  void run() override {
+  std::string run() override {
     PLYWriter ply("/tmp/test.ply");
 
     using Vert = PLYWriter::Vertex;
@@ -18,6 +18,7 @@ class TestPLY : public Task {
                     Vert(Vector3(0, 1 + i, 0), Vector3(0, 1, 0)),
                     Vert(Vector3(0, 0, 1 + i), Vector3(0, 0, i % 5 * 0.2f))});
     }
+    return "";
   }
 };
 

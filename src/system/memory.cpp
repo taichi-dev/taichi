@@ -88,7 +88,7 @@ void start_memory_monitoring(std::string output_fn, int pid, real interval) {
 
 class MemoryTest : public Task {
  public:
-  void run(const std::vector<std::string> &parameters) override {
+  std::string run(const std::vector<std::string> &parameters) override {
     TC_P(get_memory_usage());
     Time::sleep(3);
     std::vector<uint8> a(1024ul * 1024 * 1024 * 10, 3);
@@ -99,7 +99,7 @@ class MemoryTest : public Task {
 
 class MemoryTest2 : public Task {
  public:
-  void run(const std::vector<std::string> &parameters) override {
+  std::string run(const std::vector<std::string> &parameters) override {
     start_memory_monitoring("test.txt");
     std::vector<uint8> a;
     for (int i = 0; i < 10; i++) {

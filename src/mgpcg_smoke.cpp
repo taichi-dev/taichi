@@ -92,7 +92,7 @@ class MGPCGSmoke {
   using Matrix = TMatrix<real, dim>;
   using Grid = TaichiGrid<Block>;
 
-  const int n = 128;
+  const int n = 64;
   const int mg_lv = log2int(n) - 2;
   std::vector<std::unique_ptr<Grid>> grids;
 
@@ -530,14 +530,20 @@ class MGPCGSmoke {
             }
           }
 
+#define sample_velocity(pos) Vector3(u.sample(pos), v.sample(pos), w.sample(pos))
+          /*
           auto sample_velocity = [&](Vector3 pos) -> Vector3 {
             return Vector3(u.sample(pos), v.sample(pos), w.sample(pos));
           };
+          */
           auto backtrace = [&](Vector3 pos) {
+            /*
             // RK2
             return pos -
                    dt * sample_velocity(pos -
                                         (dt * 0.5_f) * sample_velocity(pos));
+            */
+            return pos - dt * sample_velocity(pos);
           };
           auto offset = Vector3i(Block::size);
           for (auto ind : b.local_region()) {
@@ -770,8 +776,8 @@ class MGPCGSmoke {
           Scratch scratchU(an, 1 * sizeof(real));
           trash(scratchU.linearized_data[zero]);
           //Scratch scratchV;
-          //Scratch scratchM;  // mask
-          //scratchM.set_as_mask(an);
+          Scratch scratchM;  // mask
+          scratchM.set_as_mask(an);
         },
         false, false, false,
         true);  // carry particles only if on finest level

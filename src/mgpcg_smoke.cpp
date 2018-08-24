@@ -767,7 +767,8 @@ class MGPCGSmoke {
           using Scratch = TGridScratchPad<Block, real, dilation>;
           Scratch scratchB(an, 0 * sizeof(real));
           trash(scratchB.linearized_data[zero]);
-          //Scratch scratchU(an, 1 * sizeof(real));
+          Scratch scratchU(an, 1 * sizeof(real));
+          trash(scratchU.linearized_data[zero]);
           //Scratch scratchV;
           //Scratch scratchM;  // mask
           //scratchM.set_as_mask(an);
@@ -784,10 +785,12 @@ auto gather_scratch = [](const std::vector<std::string> &params) {
   mgpcg = std::make_unique<MGPCGSmoke>();
   while (true) {
     TC_PROFILE("0", mgpcg->test_gather<0>());
+    /*
     TC_PROFILE("1", mgpcg->test_gather<1>());
     TC_PROFILE("2", mgpcg->test_gather<2>());
     TC_PROFILE("3", mgpcg->test_gather<3>());
     TC_PROFILE("4", mgpcg->test_gather<4>());
+     */
     print_profile_info();
   }
 };

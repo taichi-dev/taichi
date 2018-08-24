@@ -18,7 +18,7 @@
 
 TC_NAMESPACE_BEGIN
 
-constexpr bool grid_debug = true;
+constexpr bool grid_debug = false;
 
 template <typename T>
 constexpr bool is_SOA() {
@@ -538,11 +538,9 @@ struct TGridScratchPad {
     // Gather linearized data
     TC_ASSERT(
         !(component_offset != 0 && std::is_same<ComponentType, void>::value));
-
 #define GATHER(I)                                                \
   gather<(I) / 9 - 1, ((I) / 3) % 3 - 1, (I) % 3 - 1>(ancestors, \
                                                       component_offset)
-
     std::memset(&linearized_data[0], 0, sizeof(linearized_data));
     TC_REPEAT27(GATHER);
 #undef GATHER
@@ -582,18 +580,35 @@ struct TGridScratchPad {
         TC_ASSERT(
             component_offset % sizeof(typename Block::Node::element_type) == 0);
       }
-      for (int p = si; p < ei; p++) {
-        for (int q = sj; q < ej; q++) {
-          for (int r = sk; r < ek; r++) {
-            int x = p - i * Block::size[0];
-            int y = q - j * Block::size[1];
-            int z = r - k * Block::size[2];
-            if (!override_as_one) {
+      if (i == 0 && j == 0 && k == 0) {
+        // TODO: this wrong!
+        /*
+        std::memcpy(data, &ab->node_local(Vector3i(0, 0, 0))[0],
+                    sizeof(linearized_data));
+        return;
+        */
+      }
+      if (!override_as_one) {
+        for (int p = si; p < ei; p++) {
+          for (int q = sj; q < ej; q++) {
+            for (int r = sk; r < ek; r++) {
+              int x = p - i * Block::size[0];
+              int y = q - j * Block::size[1];
+              int z = r - k * Block::size[2];
               data[p][q][r] = *reinterpret_cast<Node *>(
                   reinterpret_cast<uint8 *>(&ab->node_local(Vector3i(
                       x, y, z))[component_offset /
                                 sizeof(typename Block::Node::element_type)]));
-            } else if (ab->meta.get_has_effective_cell()) {
+            }
+          }
+        }
+      } else if (ab->meta.get_has_effective_cell()) {
+        for (int p = si; p < ei; p++) {
+          for (int q = sj; q < ej; q++) {
+            for (int r = sk; r < ek; r++) {
+              int x = p - i * Block::size[0];
+              int y = q - j * Block::size[1];
+              int z = r - k * Block::size[2];
               data[p][q][r] = 1.0_f;
             }
           }

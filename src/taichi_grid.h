@@ -1457,6 +1457,25 @@ class MPIEnvironment {
   }
 };
 
+// https://stackoverflow.com/questions/6996764/fastest-way-to-do-horizontal-float-vector-sum-on-x86
+TC_FORCE_INLINE float hsum_ps_sse3(__m128 v) {
+  __m128 shuf = _mm_movehdup_ps(v);  // broadcast elements 3,1 to 2,0
+  __m128 sums = _mm_add_ps(v, shuf);
+  shuf = _mm_movehl_ps(shuf, sums);  // high half -> low half
+  sums = _mm_add_ss(sums, shuf);
+  return _mm_cvtss_f32(sums);
+}
+
+TC_FORCE_INLINE float hsum256_ps_avx(__m256 v) {
+  __m128 vlow = _mm256_castps256_ps128(v);
+  __m128 vhigh = _mm256_extractf128_ps(v, 1);  // high 128
+  vlow = _mm_add_ps(vlow, vhigh);              // add the low 128
+  return hsum_ps_sse3(
+      vlow);  // and inline the sse3 version, which is optimal for AVX
+  // (no wasted instructions, and all of them are the 4B minimum)
+}
+// End of reference
+
 template <typename T, typename block_size_>
 struct LerpField {
   using block_size = block_size_;
@@ -1496,6 +1515,8 @@ struct LerpField {
     const auto &rx = fract.x;
     const auto &ry = fract.y;
     const auto &rz = fract.z;
+    // Scalar version
+    /*
 #define V(i, j, k)                                               \
   (linear_data()[ind + i * (block_size::y() * block_size::z()) + \
                  j * block_size::z() + k])
@@ -1505,6 +1526,38 @@ struct LerpField {
             ry * ((1 - rz) * V(1, 1, 0) + rz * V(1, 1, 1));
 #undef V
     return (1 - rx) * vx0 + rx * vx1;
+    */
+    // AVX2 version
+#define V(i)                                               \
+  (linear_data()[ind + (i / 4) * (block_size::y() * block_size::z()) + \
+                 (i / 2 % 2) * block_size::z() + (i % 2)])
+    __m256 data = _mm256_set_ps(
+        V(7),
+        V(6),
+        V(5),
+        V(4),
+        V(3),
+        V(2),
+        V(1),
+        V(0)
+    );
+#undef V
+    // gather data..
+    // compute weights
+    __m256
+        weight_x0 = _mm256_set1_ps(rx),
+        weight_x1 = _mm256_set1_ps(1.0f - rx),
+        weight_y0 = _mm256_set1_ps(ry),
+        weight_y1 = _mm256_set1_ps(1.0f - ry),
+        weight_z0 = _mm256_set1_ps(rz),
+        weight_z1 = _mm256_set1_ps(1.0f - rz);
+    __m256 weight_x = _mm256_blend_ps(weight_x0, weight_x1, 0b00001111);
+    __m256 weight_y = _mm256_blend_ps(weight_y0, weight_y1, 0b00110011);
+    __m256 weight_z = _mm256_blend_ps(weight_z0, weight_z1, 0b01010101);
+
+    data = _mm256_mul_ps(_mm256_mul_ps(data, weight_x),
+                         _mm256_mul_ps(weight_y, weight_z));
+    return hsum256_ps_avx(data);
   }
 
   Region local_region() {

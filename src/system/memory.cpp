@@ -94,6 +94,7 @@ class MemoryTest : public Task {
     std::vector<uint8> a(1024ul * 1024 * 1024 * 10, 3);
     TC_P(get_memory_usage());
     Time::sleep(3);
+    return "";
   }
 };
 
@@ -107,6 +108,7 @@ class MemoryTest2 : public Task {
       std::fill(std::begin(a), std::end(a), 3);
       Time::sleep(0.5);
     }
+    return "";
   }
 };
 

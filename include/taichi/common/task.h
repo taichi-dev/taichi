@@ -24,10 +24,34 @@ class Task : public Unit {
 
 TC_INTERFACE(Task)
 
+inline std::string task_invoke(
+    const std::function<std::string(const std::vector<std::string>)> &func,
+    const std::vector<std::string> &params) {
+  return func(params);
+}
+
+inline std::string task_invoke(
+    const std::function<void(const std::vector<std::string>)> &func,
+    const std::vector<std::string> &params) {
+  func(params);
+  return "";
+}
+
+inline std::string task_invoke(const std::function<void()> &func,
+                               const std::vector<std::string> &params) {
+  func();
+  return "";
+}
+
+inline std::string task_invoke(const std::function<std::string()> &func,
+                               const std::vector<std::string> &params) {
+  return func();
+}
+
 #define TC_REGISTER_TASK(task)                                             \
   class Task_##task : public taichi::Task {                                \
     std::string run(const std::vector<std::string> &parameters) override { \
-      return task(parameters);                                             \
+      return task_invoke(task, parameters);                                     \
     }                                                                      \
   };                                                                       \
   TC_IMPLEMENTATION(Task, Task_##task, #task)

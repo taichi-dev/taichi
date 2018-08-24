@@ -92,7 +92,7 @@ class MGPCGSmoke {
   using Matrix = TMatrix<real, dim>;
   using Grid = TaichiGrid<Block>;
 
-  const int n = 64;
+  const int n = 128;
   const int mg_lv = log2int(n) - 2;
   std::vector<std::unique_ptr<Grid>> grids;
 
@@ -530,20 +530,19 @@ class MGPCGSmoke {
             }
           }
 
-#define sample_velocity(pos) Vector3(u.sample(pos), v.sample(pos), w.sample(pos))
-          /*
+          //#define sample_velocity(pos) Vector3(u.sample(pos), v.sample(pos),
+          //w.sample(pos))
           auto sample_velocity = [&](Vector3 pos) -> Vector3 {
             return Vector3(u.sample(pos), v.sample(pos), w.sample(pos));
           };
-          */
           auto backtrace = [&](Vector3 pos) {
-            /*
             // RK2
             return pos -
                    dt * sample_velocity(pos -
                                         (dt * 0.5_f) * sample_velocity(pos));
-            */
+            /*
             return pos - dt * sample_velocity(pos);
+        */
           };
           auto offset = Vector3i(Block::size);
           for (auto ind : b.local_region()) {
@@ -764,7 +763,7 @@ class MGPCGSmoke {
     return img;
   }
 
-  template<int dilation>
+  template <int dilation>
   void test_gather() {
     grids[0]->advance(
         [&](Grid::Block &b, Grid::Ancestors &an) {
@@ -775,18 +774,17 @@ class MGPCGSmoke {
           trash(scratchB.linearized_data[zero]);
           Scratch scratchU(an, 1 * sizeof(real));
           trash(scratchU.linearized_data[zero]);
-          //Scratch scratchV;
+          // Scratch scratchV;
           Scratch scratchM;  // mask
           scratchM.set_as_mask(an);
         },
         false, false, false,
         true);  // carry particles only if on finest level
-
   }
 };
 
 auto gather_scratch = [](const std::vector<std::string> &params) {
-  //ThreadedTaskManager::TbbParallelismControl _(1);
+  // ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGSmoke> mgpcg;
   mgpcg = std::make_unique<MGPCGSmoke>();
   while (true) {
@@ -804,7 +802,7 @@ auto gather_scratch = [](const std::vector<std::string> &params) {
 TC_REGISTER_TASK(gather_scratch);
 
 auto mgpcg = [](const std::vector<std::string> &params) {
-  //ThreadedTaskManager::TbbParallelismControl _(1);
+  // ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGSmoke> mgpcg;
   mgpcg = std::make_unique<MGPCGSmoke>();
   while (true) {

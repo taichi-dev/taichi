@@ -1515,8 +1515,7 @@ struct LerpField {
     const auto &rx = fract.x;
     const auto &ry = fract.y;
     const auto &rz = fract.z;
-    // Scalar version
-    /*
+// Scalar version
 #define V(i, j, k)                                               \
   (linear_data()[ind + i * (block_size::y() * block_size::z()) + \
                  j * block_size::z() + k])
@@ -1526,31 +1525,24 @@ struct LerpField {
             ry * ((1 - rz) * V(1, 1, 0) + rz * V(1, 1, 1));
 #undef V
     return (1 - rx) * vx0 + rx * vx1;
-    */
+    /*
     // AVX2 version
-#define V(i)                                               \
-  (linear_data()[ind + (i / 4) * (block_size::y() * block_size::z()) + \
-                 (i / 2 % 2) * block_size::z() + (i % 2)])
-    __m256 data = _mm256_set_ps(
-        V(7),
-        V(6),
-        V(5),
-        V(4),
-        V(3),
-        V(2),
-        V(1),
-        V(0)
-    );
+    __m256 weight_x0 = _mm256_set1_ps(rx),
+           weight_x1 = _mm256_set1_ps(1.0f - rx),
+           weight_y0 = _mm256_set1_ps(ry),
+           weight_y1 = _mm256_set1_ps(1.0f - ry),
+           weight_z0 = _mm256_set1_ps(rz),
+           weight_z1 = _mm256_set1_ps(1.0f - rz);
+#define V(i)                                       \
+  ((i / 4) * (block_size::y() * block_size::z()) + \
+   (i / 2 % 2) * block_size::z() + (i % 2)) *      \
+      4
+    const auto offsets =
+        _mm256_set_epi32(V(7), V(6), V(5), V(4), V(3), V(2), V(1), V(0));
 #undef V
+    __m256 data = _mm256_i32gather_ps(linear_data() + ind, offsets, 1);
     // gather data..
     // compute weights
-    __m256
-        weight_x0 = _mm256_set1_ps(rx),
-        weight_x1 = _mm256_set1_ps(1.0f - rx),
-        weight_y0 = _mm256_set1_ps(ry),
-        weight_y1 = _mm256_set1_ps(1.0f - ry),
-        weight_z0 = _mm256_set1_ps(rz),
-        weight_z1 = _mm256_set1_ps(1.0f - rz);
     __m256 weight_x = _mm256_blend_ps(weight_x0, weight_x1, 0b00001111);
     __m256 weight_y = _mm256_blend_ps(weight_y0, weight_y1, 0b00110011);
     __m256 weight_z = _mm256_blend_ps(weight_z0, weight_z1, 0b01010101);
@@ -1558,6 +1550,7 @@ struct LerpField {
     data = _mm256_mul_ps(_mm256_mul_ps(data, weight_x),
                          _mm256_mul_ps(weight_y, weight_z));
     return hsum256_ps_avx(data);
+    */
   }
 
   Region local_region() {

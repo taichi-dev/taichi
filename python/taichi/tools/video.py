@@ -141,6 +141,12 @@ def make_video(input_files,
     import shutil
     tmp_dir = 'tmp_ffmpeg_dir'
     os.mkdir(tmp_dir)
+    if width % 2 != 0:
+      print("Width ({}) not divisible by 2".format(width))
+      width -= 1
+    if height % 2 != 0:
+      print("Height ({}) not divisible by 2".format(width))
+      height -= 1
     for i, inp in enumerate(input_files):
       shutil.copy(inp, os.path.join(tmp_dir, '%06d.png' % i))
     command = (get_ffmpeg_path() + " -y -loglevel panic -framerate %d -i " % frame_rate) + tmp_dir + "/%06d.png" + \

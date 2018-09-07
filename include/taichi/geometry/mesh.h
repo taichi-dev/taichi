@@ -56,7 +56,7 @@ struct Element {
       ret = normalized(Vector(d[1], -d[0]));
     }
     TC_STATIC_ELSE {
-      Vector n = cross(v[1] - v[0], v[2] - v[1]);
+      Vector n = cross(id(v[1] - v[0]), id(v[2] - v[1]));
       ret = normalized(n);
     }
     TC_STATIC_END_IF

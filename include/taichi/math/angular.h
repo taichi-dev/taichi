@@ -52,7 +52,7 @@ class AngularVelocity {
       ret = Vector(-input.y, input.x) * value;
     }
     TC_STATIC_ELSE {
-      ret = taichi::cross(value, input);
+      ret = taichi::cross(id(value), id(input));
     }
     TC_STATIC_END_IF;
     return ret;
@@ -77,7 +77,7 @@ class Rotation {
       value = 0;
     }
     TC_STATIC_ELSE {
-      value = Eigen::Quaternion<real>(1, 0, 0, 0);
+      value = id(Eigen::Quaternion<real>(1, 0, 0, 0));
     }
     TC_STATIC_END_IF
     return;
@@ -125,10 +125,10 @@ class Rotation {
 
   void apply_angular_velocity(const AngVel &vel, real dt) {
     TC_STATIC_IF(dim == 2) {
-      value += dt * vel.value;
+      value += id(dt * vel.value);
     }
     TC_STATIC_ELSE {
-      Vector3 axis(vel.value[0], vel.value[1], vel.value[2]);
+      Vector3 axis(id(vel).value[0], id(vel).value[1], id(vel).value[2]);
       real angle = length(axis);
       if (angle < 1e-10_f) {
         return;
@@ -138,7 +138,7 @@ class Rotation {
       real s = std::sin(ot / 2);
       real c = std::cos(ot / 2);
       Eigen::Quaternion<real> omega_t(c, s * axis[0], s * axis[1], s * axis[2]);
-      value = omega_t * value;
+      value = id(omega_t) * value;
     }
     TC_STATIC_END_IF
     return;

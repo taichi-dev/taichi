@@ -1210,7 +1210,7 @@ struct MatrixND {
           line += fmt::format("{}   ", d[j][i]);
         }
         line += "]";
-        serializer.add_line(line);
+        id(serializer).add_line(id(line));
       }
     }
     TC_STATIC_ELSE {

@@ -123,7 +123,7 @@ struct RigidBody {
     TC_STATIC_ELSE {
       // "Rotate" the inertia_tensor
       Matrix rotation_matrix = rotation.get_rotation_matrix();
-      ret = rotation_matrix * inertia * transposed(rotation_matrix);
+      id(ret) = rotation_matrix * inertia * transposed(rotation_matrix);
     };
     TC_STATIC_END_IF
     return ret;
@@ -137,8 +137,8 @@ struct RigidBody {
     TC_STATIC_ELSE {
       // "Rotate" the inertia_tensor
       Matrix rotation_matrix = rotation.get_rotation_matrix();
-      ret = rotation_matrix * this->get_inv_inertia() *
-            transposed(rotation_matrix);
+      ret = id(rotation_matrix) * id(this->get_inv_inertia()) *
+            id(transposed(rotation_matrix));
     };
     TC_STATIC_END_IF
     return ret;
@@ -180,7 +180,7 @@ struct RigidBody {
     if (rot_func) {
       TC_STATIC_IF(dim == 3) {
         auto rot_quat = [&](real t) {
-          Vector r = radians(this->rot_func(t));
+          Vector r = id(radians(this->rot_func(t)));
           Eigen::AngleAxis<real> angleAxisX(r[0],
                                             Eigen::Matrix<real, 3, 1>::UnitX());
           Eigen::AngleAxis<real> angleAxisY(r[1],
@@ -201,10 +201,10 @@ struct RigidBody {
               "Rotation not differentiable at time {}. (Magnitude {} at d = "
               "{})",
               t, len_rot, d);
-          angular_velocity.value = Vector(0);
+          angular_velocity.value = id(Vector(0));
         } else {
           for (int i = 0; i < dim; i++) {
-            angular_velocity.value[i] =
+            id(angular_velocity).value[i] =
                 angle_axis.angle() * angle_axis.axis()(i);
           }
         }
@@ -220,9 +220,9 @@ struct RigidBody {
               "Rotation not differentiable at time {}. (Magnitude {} at d = "
               "{})",
               t, len_rot, d);
-          angular_velocity.value = 0;
+          id(angular_velocity.value) = 0;
         } else {
-          angular_velocity.value = rot;
+          angular_velocity.value = id(rot);
         }
       }
       TC_STATIC_END_IF
@@ -286,7 +286,7 @@ struct RigidBody {
     direction = normalized(direction);
     TC_STATIC_IF(dim == 3) {
       angular_velocity.value =
-          dot(angular_velocity.value, direction) * direction;
+          dot(id(angular_velocity.value), id(direction)) * direction;
     }
     TC_STATIC_END_IF
   }
@@ -296,12 +296,12 @@ struct RigidBody {
     real ret;
     TC_STATIC_IF(dim == 2) {
       ret =
-          this->get_inv_mass() + length2(cross(r, n)) * this->get_inv_inertia();
+          this->get_inv_mass() + length2(cross(id(r), id(n))) * this->get_inv_inertia();
     }
     TC_STATIC_ELSE {
       ret = inv_mass;
       InertiaType inversed_inertia = this->get_transformed_inversed_inertia();
-      auto rn = cross_product_matrix(r);
+      auto rn = cross_product_matrix(id(r));
       inversed_inertia = transposed(rn) * inversed_inertia * rn;
       ret += dot(n, inversed_inertia * n);
     }

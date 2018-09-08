@@ -56,6 +56,11 @@ if ($ENV{TC_USE_DOUBLE})
     message("Using float64 precision")
 endif()
 
+if ($ENV{TC_WITH_TF})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
+    message("Using -D_GLIBCXX_USE_CXX11_ABI=0")
+endif()
+
 if (TC_USE_MPI)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_USE_MPI")
     message("Using MPI")

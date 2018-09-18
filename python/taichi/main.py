@@ -6,7 +6,8 @@ from taichi.tools.video import make_video, interpolate_frames
 from taichi.core.util import get_projects, activate_package, deactivate_package
 
 packages = {
-  'mpm': 'https://github.com/yuanming-hu/taichi_mpm'
+  'mpm': 'https://github.com/yuanming-hu/taichi_mpm',
+  'wushi': 'https://github.com/yuanming-hu/taichi_wushi'
 }
 
 def print_all_projects():

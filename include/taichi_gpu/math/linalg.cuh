@@ -121,8 +121,8 @@ class TVector {
 };
 
 template <typename T, int dim>
-TC_FORCE_INLINE __host__ __device__ TVector<T, dim> operator*(real alpha,
-                                                     const TVector<T, dim> &o) {
+TC_FORCE_INLINE __host__ __device__ TVector<T, dim> operator
+    *(real alpha, const TVector<T, dim> &o) {
   TVector<T, dim> ret;
   for (int i = 0; i < dim; i++) {
     ret[i] = alpha * o[i];
@@ -356,3 +356,6 @@ TC_FORCE_INLINE __device__ __host__ int linearized_index(
   return ret;
 }
 
+TC_FORCE_INLINE __host__ __device__ float fract(float x) {
+  return x - floorf(x);
+}

@@ -99,6 +99,14 @@ TC_FORCE_INLINE __device__ TVector<T, dim> operator*(real alpha,
   return ret;
 }
 
+using Vector2 = TVector<real, 2>;
+using Vector3 = TVector<real, 3>;
+using Vector4 = TVector<real, 4>;
+
+using Vector2i = TVector<int, 2>;
+using Vector3i = TVector<int, 3>;
+using Vector4i = TVector<int, 4>;
+
 template <typename T, int dim_>
 class TMatrix {
  public:

@@ -10,7 +10,7 @@ class TVector {
 
   T d[dim];
 
-  TC_FORCE_INLINE __device__ TVector(T *val) {
+  TC_FORCE_INLINE __host__ __device__ TVector(T *val) {
     for (int i = 0; i < dim; i++) {
       d[i] = val[i];
     }
@@ -21,21 +21,21 @@ class TVector {
   }
 
   template <int dim__ = dim_>
-  TC_FORCE_INLINE __device__ TVector(T x, T y) {
+  TC_FORCE_INLINE __host__ __device__ TVector(T x, T y) {
     static_assert(dim__ == 2, "");
     d[0] = x;
     d[1] = y;
   }
 
   template <int dim__ = dim_>
-  TC_FORCE_INLINE __device__ TVector(T x, T y, T z) {
+  TC_FORCE_INLINE __host__ __device__ TVector(T x, T y, T z) {
     static_assert(dim__ == 3, "");
     d[0] = x;
     d[1] = y;
     d[2] = z;
   }
 
-  TC_FORCE_INLINE __device__ TVector(T x = 0) {
+  TC_FORCE_INLINE __host__ __device__ TVector(T x = 0) {
     for (int i = 0; i < dim; i++) {
       d[i] = x;
     }
@@ -49,14 +49,14 @@ class TVector {
     return d[i];
   }
 
-  TC_FORCE_INLINE __device__ TVector &operator+=(const TVector &o) {
+  TC_FORCE_INLINE __host__ __device__ TVector &operator+=(const TVector &o) {
     for (int i = 0; i < dim; i++) {
       d[i] += o[i];
     }
     return *this;
   }
 
-  TC_FORCE_INLINE __device__ TVector operator+(const TVector &o) {
+  TC_FORCE_INLINE __host__ __device__ TVector operator+(const TVector &o) {
     TVector ret;
     for (int i = 0; i < dim; i++) {
       ret[i] = d[i] + o[i];
@@ -64,7 +64,7 @@ class TVector {
     return ret;
   }
 
-  TC_FORCE_INLINE __device__ TVector operator-(const TVector &o) {
+  TC_FORCE_INLINE __host__ __device__ TVector operator-(const TVector &o) {
     TVector ret;
     for (int i = 0; i < dim; i++) {
       ret[i] = d[i] - o[i];
@@ -72,7 +72,7 @@ class TVector {
     return ret;
   }
 
-  __device__ T length2() const {
+  TC_FORCE_INLINE __host__ __device__ T length2() const {
     T ret = 0;
     for (int i = 0; i < dim; i++) {
       ret += d[i] * d[i];
@@ -80,10 +80,26 @@ class TVector {
     return ret;
   }
 
-  __device__ T dot(TVector &other) const {
+  TC_FORCE_INLINE __host__ __device__ T dot(TVector &other) const {
     T ret = 0;
     for (int i = 0; i < dim; i++) {
       ret += d[i] * other[i];
+    }
+    return ret;
+  }
+
+  TC_FORCE_INLINE T __host__ __device__ __host__ prod() {
+    T ret = d[0];
+    for (int i = 1; i < dim; i++) {
+      ret *= d[i];
+    }
+    return ret;
+  }
+
+  TC_FORCE_INLINE T __device__ __host__ sum() {
+    T ret = d[0];
+    for (int i = 1; i < dim; i++) {
+      ret += d[i];
     }
     return ret;
   }
@@ -298,14 +314,14 @@ TC_FORCE_INLINE __device__ TMatrix<real, 3> inversed(
   real det = determinant(mat);
   return 1.0f / det *
          TMatrix<real, 3>(mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2],
-      mat[2][1] * mat[0][2] - mat[0][1] * mat[2][2],
-      mat[0][1] * mat[1][2] - mat[1][1] * mat[0][2],
-      mat[2][0] * mat[1][2] - mat[1][0] * mat[2][2],
-      mat[0][0] * mat[2][2] - mat[2][0] * mat[0][2],
-      mat[1][0] * mat[0][2] - mat[0][0] * mat[1][2],
-      mat[1][0] * mat[2][1] - mat[2][0] * mat[1][1],
-      mat[2][0] * mat[0][1] - mat[0][0] * mat[2][1],
-      mat[0][0] * mat[1][1] - mat[1][0] * mat[0][1]);
+                          mat[2][1] * mat[0][2] - mat[0][1] * mat[2][2],
+                          mat[0][1] * mat[1][2] - mat[1][1] * mat[0][2],
+                          mat[2][0] * mat[1][2] - mat[1][0] * mat[2][2],
+                          mat[0][0] * mat[2][2] - mat[2][0] * mat[0][2],
+                          mat[1][0] * mat[0][2] - mat[0][0] * mat[1][2],
+                          mat[1][0] * mat[2][1] - mat[2][0] * mat[1][1],
+                          mat[2][0] * mat[0][1] - mat[0][0] * mat[2][1],
+                          mat[0][0] * mat[1][1] - mat[1][0] * mat[0][1]);
 }
 
 TC_FORCE_INLINE __device__ real sgn(real x) {

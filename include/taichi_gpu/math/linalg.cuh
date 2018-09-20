@@ -121,7 +121,7 @@ class TVector {
 };
 
 template <typename T, int dim>
-TC_FORCE_INLINE __device__ TVector<T, dim> operator*(real alpha,
+TC_FORCE_INLINE __host__ __device__ TVector<T, dim> operator*(real alpha,
                                                      const TVector<T, dim> &o) {
   TVector<T, dim> ret;
   for (int i = 0; i < dim; i++) {
@@ -342,3 +342,17 @@ TC_FORCE_INLINE __device__ TMatrix<real, 3> inversed(
 TC_FORCE_INLINE __device__ real sgn(real x) {
   return x > 0 ? 1 : -1;
 }
+
+template <int dim>
+TC_FORCE_INLINE __device__ __host__ int linearized_index(
+    TVector<int, dim> res,
+    TVector<int, dim> idx) {
+  int ret = idx[0];
+#pragma unroll
+  for (int i = 1; i < dim; i++) {
+    ret *= res[i];
+    ret += idx[i];
+  }
+  return ret;
+}
+

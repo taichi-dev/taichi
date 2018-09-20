@@ -56,7 +56,8 @@ class TVector {
     return *this;
   }
 
-  TC_FORCE_INLINE __host__ __device__ TVector operator+(const TVector &o) {
+  TC_FORCE_INLINE __host__ __device__ TVector
+  operator+(const TVector &o) const {
     TVector ret;
     for (int i = 0; i < dim; i++) {
       ret[i] = d[i] + o[i];
@@ -64,7 +65,8 @@ class TVector {
     return ret;
   }
 
-  TC_FORCE_INLINE __host__ __device__ TVector operator-(const TVector &o) {
+  TC_FORCE_INLINE __host__ __device__ TVector
+  operator-(const TVector &o) const {
     TVector ret;
     for (int i = 0; i < dim; i++) {
       ret[i] = d[i] - o[i];
@@ -80,6 +82,10 @@ class TVector {
     return ret;
   }
 
+  TC_FORCE_INLINE __host__ __device__ T length() const {
+    return sqrt(length2());
+  }
+
   TC_FORCE_INLINE __host__ __device__ T dot(TVector &other) const {
     T ret = 0;
     for (int i = 0; i < dim; i++) {
@@ -88,7 +94,7 @@ class TVector {
     return ret;
   }
 
-  TC_FORCE_INLINE T __host__ __device__ __host__ prod() {
+  TC_FORCE_INLINE T __host__ __device__ __host__ prod() const {
     T ret = d[0];
     for (int i = 1; i < dim; i++) {
       ret *= d[i];
@@ -96,10 +102,19 @@ class TVector {
     return ret;
   }
 
-  TC_FORCE_INLINE T __device__ __host__ sum() {
+  TC_FORCE_INLINE T __device__ __host__ sum() const {
     T ret = d[0];
     for (int i = 1; i < dim; i++) {
       ret += d[i];
+    }
+    return ret;
+  }
+
+  template <typename G>
+  TC_FORCE_INLINE TVector<G, dim> __device__ __host__ cast() const {
+    TVector<G, dim> ret;
+    for (int i = 0; i < dim; i++) {
+      ret[i] = static_cast<G>(d[i]);
     }
     return ret;
   }

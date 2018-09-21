@@ -110,7 +110,7 @@ class TVector : public TVectorBase<T, dim_> {
     return d[i];
   }
 
-  TC_FORCE_INLINE __host__ __device__ TVector operator/(const T &t) {
+  TC_FORCE_INLINE __host__ __device__ TVector operator/(const T &t) const {
     TVector ret;
     t = T(1.0) / t;
     for (int i = 0; i < dim; i++) {
@@ -119,7 +119,7 @@ class TVector : public TVectorBase<T, dim_> {
     return ret;
   }
 
-  TC_FORCE_INLINE __host__ __device__ TVector operator/(const TVector &t) {
+  TC_FORCE_INLINE __host__ __device__ TVector operator/(const TVector &t) const {
     TVector ret;
     for (int i = 0; i < dim; i++) {
       ret.d[i] = d[i] / t[i];
@@ -127,7 +127,7 @@ class TVector : public TVectorBase<T, dim_> {
     return ret;
   }
 
-  TC_FORCE_INLINE __host__ __device__ TVector operator*(const TVector &t) {
+  TC_FORCE_INLINE __host__ __device__ TVector operator*(const TVector &t) const {
     TVector ret;
     for (int i = 0; i < dim; i++) {
       ret.d[i] = d[i] * t[i];
@@ -156,7 +156,7 @@ class TVector : public TVectorBase<T, dim_> {
     return *this;
   }
 
-  TC_FORCE_INLINE __host__ __device__ TVector operator-() {
+  TC_FORCE_INLINE __host__ __device__ TVector operator-() const {
     TVector ret;
     for (int i = 0; i < dim; i++) {
       ret[i] = -d[i];

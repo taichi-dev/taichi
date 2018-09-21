@@ -151,7 +151,7 @@ class TVector : public TVectorBase<T, dim_> {
 
   TC_FORCE_INLINE __host__ __device__ TVector &operator*=(const T &o) {
     for (int i = 0; i < dim; i++) {
-      d[i] += o;
+      d[i] *= o;
     }
     return *this;
   }
@@ -253,7 +253,7 @@ TC_FORCE_INLINE __host__ __device__ TVector<T, dim>
 clamp(const TVector<T, dim> &v, T low, T high) {
   TVector<T, dim> ret;
   for (int i = 0; i < dim; i++) {
-    ret[i] += min(max(v[i], low), high);
+    ret[i] = min(max(v[i], low), high);
   }
   return ret;
 };
@@ -263,6 +263,30 @@ TC_FORCE_INLINE __host__ __device__ TVector<T, dim> normalized(
     const TVector<T, dim> &v) {
   return (T)(1) / v.length() * v;
 };
+
+template <typename T, int dim>
+TC_FORCE_INLINE TVector<T, dim> __device__ __host__
+min(const TVector<T, dim> &a, const TVector<T, dim> &b) {
+  TVector<T, dim> ret;
+  for (int i = 0; i < dim; i++) {
+    ret[i] = min(a[i], b[i]);
+  }
+  return ret;
+};
+
+template <typename T, int dim>
+TC_FORCE_INLINE TVector<T, dim> __device__ __host__
+max(const TVector<T, dim> &a, const TVector<T, dim> &b) {
+  TVector<T, dim> ret;
+  for (int i = 0; i < dim; i++) {
+    ret[i] = max(a[i], b[i]);
+  }
+  return ret;
+};
+
+TC_FORCE_INLINE __host__ __device__ float sign(float x) {
+  return x > 0 ? 1 : (x < 0 ? -1 : 0);
+}
 
 using Vector2 = TVector<real, 2>;
 using Vector3 = TVector<real, 3>;

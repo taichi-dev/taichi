@@ -218,6 +218,22 @@ class TVector : public TVectorBase<T, dim_> {
     return ret;
   }
 
+  TC_FORCE_INLINE T __device__ __host__ min() const {
+    T ret = d[0];
+    for (int i = 1; i < dim; i++) {
+      ret = ret < d[i] ? ret : d[i];
+    }
+    return ret;
+  }
+
+  TC_FORCE_INLINE T __device__ __host__ max() const {
+    T ret = d[0];
+    for (int i = 1; i < dim; i++) {
+      ret = ret > d[i] ? ret : d[i];
+    }
+    return ret;
+  }
+
   template <typename G>
   TC_FORCE_INLINE TVector<G, dim> __device__ __host__ cast() const {
     TVector<G, dim> ret;
@@ -522,10 +538,22 @@ TC_FORCE_INLINE __device__ __host__ int linearized_index(
     TVector<int, dim> res,
     TVector<int, dim> idx) {
   int ret = idx[0];
-#pragma unroll
   for (int i = 1; i < dim; i++) {
     ret *= res[i];
     ret += idx[i];
+  }
+  return ret;
+}
+
+template <int dim>
+TC_FORCE_INLINE __device__ __host__ TVector<int, dim> vectorized_index(
+    TVector<int, dim> res,
+    int idx) {
+  TVector<int, dim> ret;
+  for (int i = dim - 1; i >= 0; i--) {
+    int idx_ = idx / res[i];
+    ret[i] = idx - idx_ * res[i];
+    idx = idx_;
   }
   return ret;
 }

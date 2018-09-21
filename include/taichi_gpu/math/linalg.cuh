@@ -3,14 +3,66 @@
 #define TC_FORCE_INLINE __forceinline__
 using real = float;
 
+template <typename T, int dim>
+struct TVectorBase;
+
+template <typename T>
+struct TVectorBase<T, 1> {
+  union {
+    T d[1];
+    struct {
+      T x;
+    };
+  };
+};
+
+template <typename T>
+struct TVectorBase<T, 2> {
+  union {
+    T d[2];
+    struct {
+      T x, y;
+    };
+  };
+};
+
+template <typename T>
+struct TVectorBase<T, 3> {
+  union {
+    T d[3];
+    struct {
+      T x, y, z;
+    };
+  };
+};
+
+template <typename T>
+struct TVectorBase<T, 4> {
+  union {
+    T d[4];
+    struct {
+      T x, y, z, w;
+    };
+  };
+};
+
 template <typename T, int dim_>
-class TVector {
+class TVector : public TVectorBase<T, dim_> {
  public:
   static constexpr int dim = dim_;
 
-  T d[dim];
+  using Base = TVectorBase<T, dim>;
+  using Base::d;
 
-  TC_FORCE_INLINE __host__ __device__ TVector(T *val) {
+  TC_FORCE_INLINE __host__ __device__ TVector(const TVector<T, dim - 1> &v,
+                                              T a) {
+    for (int i = 0; i < dim - 1; i++) {
+      d[i] = v[i];
+    }
+    d[dim - 1] = a;
+  }
+
+  TC_FORCE_INLINE __host__ __device__ TVector(const T *val) {
     for (int i = 0; i < dim; i++) {
       d[i] = val[i];
     }
@@ -35,6 +87,15 @@ class TVector {
     d[2] = z;
   }
 
+  template <int dim__ = dim_>
+  TC_FORCE_INLINE __host__ __device__ TVector(T x, T y, T z, T w) {
+    static_assert(dim__ == 4, "");
+    d[0] = x;
+    d[1] = y;
+    d[2] = z;
+    d[3] = w;
+  }
+
   TC_FORCE_INLINE __host__ __device__ TVector(T x = 0) {
     for (int i = 0; i < dim; i++) {
       d[i] = x;
@@ -49,11 +110,58 @@ class TVector {
     return d[i];
   }
 
+  TC_FORCE_INLINE __host__ __device__ TVector operator/(const T &t) {
+    TVector ret;
+    t = T(1.0) / t;
+    for (int i = 0; i < dim; i++) {
+      ret.d[i] = d[i] * t;
+    }
+    return ret;
+  }
+
+  TC_FORCE_INLINE __host__ __device__ TVector operator/(const TVector &t) {
+    TVector ret;
+    for (int i = 0; i < dim; i++) {
+      ret.d[i] = d[i] / t[i];
+    }
+    return ret;
+  }
+
+  TC_FORCE_INLINE __host__ __device__ TVector operator*(const TVector &t) {
+    TVector ret;
+    for (int i = 0; i < dim; i++) {
+      ret.d[i] = d[i] * t[i];
+    }
+    return ret;
+  }
+
   TC_FORCE_INLINE __host__ __device__ TVector &operator+=(const TVector &o) {
     for (int i = 0; i < dim; i++) {
       d[i] += o[i];
     }
     return *this;
+  }
+
+  TC_FORCE_INLINE __host__ __device__ TVector &operator-=(const TVector &o) {
+    for (int i = 0; i < dim; i++) {
+      d[i] -= o[i];
+    }
+    return *this;
+  }
+
+  TC_FORCE_INLINE __host__ __device__ TVector &operator*=(const T &o) {
+    for (int i = 0; i < dim; i++) {
+      d[i] += o;
+    }
+    return *this;
+  }
+
+  TC_FORCE_INLINE __host__ __device__ TVector operator-() {
+    TVector ret;
+    for (int i = 0; i < dim; i++) {
+      ret[i] = -d[i];
+    }
+    return ret;
   }
 
   TC_FORCE_INLINE __host__ __device__ TVector
@@ -130,6 +238,32 @@ TC_FORCE_INLINE __host__ __device__ TVector<T, dim> operator
   return ret;
 }
 
+template <typename T, int dim>
+TC_FORCE_INLINE __host__ __device__ T dot(const TVector<T, dim> &a,
+                                          const TVector<T, dim> &b) {
+  T ret(0);
+  for (int i = 0; i < dim; i++) {
+    ret += a[i] * b[i];
+  }
+  return ret;
+};
+
+template <typename T, int dim>
+TC_FORCE_INLINE __host__ __device__ TVector<T, dim>
+clamp(const TVector<T, dim> &v, T low, T high) {
+  TVector<T, dim> ret;
+  for (int i = 0; i < dim; i++) {
+    ret[i] += min(max(v[i], low), high);
+  }
+  return ret;
+};
+
+template <typename T, int dim>
+TC_FORCE_INLINE __host__ __device__ TVector<T, dim> normalized(
+    const TVector<T, dim> &v) {
+  return (T)(1) / v.length() * v;
+};
+
 using Vector2 = TVector<real, 2>;
 using Vector3 = TVector<real, 3>;
 using Vector4 = TVector<real, 4>;
@@ -138,31 +272,32 @@ using Vector2i = TVector<int, 2>;
 using Vector3i = TVector<int, 3>;
 using Vector4i = TVector<int, 4>;
 
-template <typename T, int dim_>
+template <typename T, int row_, int column_ = row_>
 class TMatrix {
  public:
-  static constexpr int dim = dim_;
-  using Vector = TVector<T, dim>;
+  static constexpr int row = row_;
+  static constexpr int column = column_;
+  using Vector = TVector<T, column>;
 
-  T d[dim][dim];
+  T d[row][column];
 
   TC_FORCE_INLINE __device__ __host__ T *data() {
     return &d[0][0];
   }
 
-  template <int dim__ = dim_>
+  template <int row__ = row_>
   TC_FORCE_INLINE __device__ TMatrix(T a00, T a01, T a10, T a11) {
-    static_assert(dim__ == 2, "");
+    static_assert(row == 2 && column == 2, "");
     d[0][0] = a00;
     d[0][1] = a01;
     d[1][0] = a10;
     d[1][1] = a11;
   }
 
-  template <int dim__ = dim_>
+  template <int row__ = row>
   TC_FORCE_INLINE __device__
   TMatrix(T a00, T a01, T a02, T a10, T a11, T a12, T a20, T a21, T a22) {
-    static_assert(dim__ == 3, "");
+    static_assert(row_ == 3 && column_ == 3, "");
     d[0][0] = a00;
     d[0][1] = a01;
     d[0][2] = a02;
@@ -174,9 +309,19 @@ class TMatrix {
     d[2][2] = a22;
   }
 
-  TC_FORCE_INLINE __host__ __device__ TMatrix(T x = 0) {
-    for (int i = 0; i < dim; i++) {
-      for (int j = 0; j < dim; j++) {
+  TC_FORCE_INLINE __host__ __device__ TMatrix() {
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < column; j++) {
+        d[i][j] = 0;
+      }
+    }
+  }
+
+  template <int _ = 0>
+  TC_FORCE_INLINE __host__ __device__ TMatrix(T x) {
+    static_assert(row == column, "");
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < column; j++) {
         d[i][j] = (i == j) ? x : 0;
       }
     }
@@ -190,11 +335,13 @@ class TMatrix {
     return d[i];
   }
 
-  TC_FORCE_INLINE __device__ TMatrix operator*(const TMatrix &o) {
-    TMatrix ret;
-    for (int i = 0; i < dim; i++) {
-      for (int j = 0; j < dim; j++) {
-        for (int k = 0; k < dim; k++) {
+  template <int r>
+  TC_FORCE_INLINE __device__ TMatrix<T, row, r> operator*(
+      const TMatrix<T, column, r> &o) const {
+    TMatrix<T, row, r> ret;
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < r; j++) {
+        for (int k = 0; k < column; k++) {
           ret[i][j] += d[i][k] * o[k][j];
         }
       }
@@ -202,30 +349,31 @@ class TMatrix {
     return ret;
   }
 
-  TC_FORCE_INLINE __device__ TMatrix operator+(const TMatrix &o) {
+  TC_FORCE_INLINE __device__ TMatrix operator+(const TMatrix &o) const {
     TMatrix ret;
-    for (int i = 0; i < dim; i++) {
-      for (int j = 0; j < dim; j++) {
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < column; j++) {
         ret[i][j] = d[i][j] + o[i][j];
       }
     }
     return ret;
   }
 
-  TC_FORCE_INLINE __device__ TMatrix operator-(const TMatrix &o) {
+  TC_FORCE_INLINE __device__ TMatrix operator-(const TMatrix &o) const {
     TMatrix ret;
-    for (int i = 0; i < dim; i++) {
-      for (int j = 0; j < dim; j++) {
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < column; j++) {
         ret[i][j] = d[i][j] - o[i][j];
       }
     }
     return ret;
   }
 
-  TC_FORCE_INLINE __device__ Vector operator*(const Vector &v) {
-    Vector ret;
-    for (int i = 0; i < dim; i++) {
-      for (int j = 0; j < dim; j++) {
+  TC_FORCE_INLINE __device__ TVector<T, row> operator*(
+      const TVector<T, column> &v) const {
+    TVector<T, row> ret;
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < column; j++) {
         ret[i] += d[i][j] * v[j];
       }
     }
@@ -240,21 +388,23 @@ class TMatrix {
     return d[i][j];
   }
 
-  static __device__ TMatrix outer_product(const Vector &col,
-                                          const Vector &row) {
+  template <int _ = 0>
+  static __host__ __device__ TMatrix outer_product(const Vector &colvec,
+                                                   const Vector &rowvec) {
+    static_assert(row == column, "");
     TMatrix ret;
-    for (int i = 0; i < dim; i++) {
-      for (int j = 0; j < dim; j++) {
-        ret[i][j] = col[i] * row[j];
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < column; j++) {
+        ret[i][j] = colvec[i] * rowvec[j];
       }
     }
     return ret;
   }
 
-  TC_FORCE_INLINE __device__ TMatrix elementwise_dot(TMatrix o) {
+  TC_FORCE_INLINE __host__ __device__ TMatrix elementwise_dot(TMatrix o) {
     T ret = 0;
-    for (int i = 0; i < dim; i++) {
-      for (int j = 0; j < dim; j++) {
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < column; j++) {
         ret += (*this)[i][j] * o[i][j];
       }
     }
@@ -289,12 +439,12 @@ TC_FORCE_INLINE __device__ T determinant(const TMatrix<T, 3> &mat) {
          mat[2][0] * (mat[0][1] * mat[1][2] - mat[1][1] * mat[0][2]);
 }
 
-template <typename T, int dim>
-TC_FORCE_INLINE __device__ TMatrix<T, dim> operator*(T alpha,
-                                                     const TMatrix<T, dim> &o) {
-  TMatrix<T, dim> ret;
-  for (int i = 0; i < dim; i++) {
-    for (int j = 0; j < dim; j++) {
+template <typename T, int row, int column>
+TC_FORCE_INLINE __device__ TMatrix<T, row, column> operator
+    *(T alpha, const TMatrix<T, row, column> &o) {
+  TMatrix<T, row, column> ret;
+  for (int i = 0; i < row; i++) {
+    for (int j = 0; j < column; j++) {
       ret[i][j] = alpha * o[i][j];
     }
   }

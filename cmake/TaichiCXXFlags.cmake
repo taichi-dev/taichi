@@ -53,7 +53,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_INCLUDED")
 
 if ($ENV{TC_USE_DOUBLE})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_USE_DOUBLE")
-    message("Using float64 precision")
+    message("Using float64 (double) precision as real")
+else()
+    message("Using float32 (single) precision as real")
 endif()
 
 if ($ENV{TC_WITH_TF})

@@ -55,9 +55,9 @@ endif()
 
 # Creating python enters
 file(MAKE_DIRECTORY bin)
-file(WRITE bin/ti "#!${PYTHON_EXECUTABLE_PATH}\nimport taichi\ntaichi.main()")
-execute_process(COMMAND chmod +x ../bin/ti)
-execute_process(COMMAND cp ../bin/ti ../bin/taichi)
+file(WRITE ${CMAKE_SOURCE_DIR}/bin/ti "#!${PYTHON_EXECUTABLE_PATH}\nimport taichi\ntaichi.main()")
+execute_process(COMMAND chmod +x ${CMAKE_SOURCE_DIR}/bin/ti)
+execute_process(COMMAND cp ${CMAKE_SOURCE_DIR}/bin/ti ${CMAKE_SOURCE_DIR}/bin/taichi)
 
 
 include_directories(${PYTHON_INCLUDE_DIRS})

@@ -1,0 +1,26 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+"pybind11" = "*"
+numpy = "*"
+image = "*"
+scipy = "*"
+flask = "*"
+flask-cors = "*"
+pygit = "*"
+colorama = "*"
+pillow = "*"
+gitpython = "*"
+yapf = "*"
+distro = "*"
+requests = "*"
+"pyqt5" = "*"
+psutil = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.6"

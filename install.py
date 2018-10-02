@@ -179,26 +179,28 @@ class Installer:
       check_command_existence('cmake')
     elif get_os_name() == 'linux':
       check_command_existence('sudo')
-      execute_command('sudo apt-get update')
       # TODO: this works for Ubuntu only
       if self.build_type != 'ci':
         import distro
         dist = distro.id()
       else:
         dist = 'ubuntu'
-      print("Linux distribution '{}' detected", dist)
+      print("Linux distribution '{}' detected".format(dist))
       if dist == 'ubuntu':
+          execute_command('sudo apt-get update')
           if self.build_type == 'ci':
             execute_command('sudo apt-get install -y python3-dev libx11-dev')
           else:
             execute_command('sudo apt-get install -y python3-dev git build-essential cmake make g++ libx11-dev')
       elif dist == 'arch':
         execute_command('sudo pacman --needed -S git cmake make gcc')
+      elif dist == 'fedora':
+          execute_command('sudo dnf install python3-devel git cmake libX11-devel')
       else:
         print("Unsupported Linux distribution.")
 
     subprocess.run([get_python_executable(), "-m", "pip", "install", "--user", "psutil"])
-        
+
     self.detect_or_setup_repo()
 
 

@@ -19,11 +19,9 @@
 #include <csignal>
 #include <vector>
 
-
 //******************************************************************************
 //                                 System State
 //******************************************************************************
-
 
 // Reference:
 // https://blog.kowalczyk.info/article/j/guide-to-predefined-macros-in-c-compilers-gcc-clang-msvc-etc..html
@@ -138,7 +136,6 @@ static_assert(false, "32-bit Windows systems are not supported")
 #define TC_NAMESPACE_END }
 
 TC_EXPORT void taichi_raise_assertion_failure_in_python(const char *msg);
-
 
 TC_NAMESPACE_BEGIN
 
@@ -421,8 +418,23 @@ public:
 
 #define TC_DEFER(x) taichi::DeferedExecution _defered([&]() {x;});
 
+inline bool running_on_windows() {
+#if defined(TC_PLATFORM_WINDOWS)
+  return true;
+#else
+  return false;
+#endif
+}
+
 inline std::string absolute_path(std::string path) {
-  if (path[0] != '.' && path[0] != '/') {
+  // If 'path' is actually relative to TAICHI_REPO_DIR, convert it to an absolute one.
+  // There are three types of paths:
+  //    A. Those who start with / or "C:/" are absolute paths
+  //    B. Those who start with "." are relative to cwd
+  //    C. Others are relative to $ENV{TAICHI_REPO_DIR}
+
+  // Here we convert type C paths to absolute paths.
+  if (path[0] != '.' && path[0] !='/' && (path.size() >= 2 && path[1] != ':')) {
     path = std::string(std::getenv("TAICHI_REPO_DIR")) + "/" + path;
   }
   return path;

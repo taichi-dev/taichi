@@ -4,7 +4,7 @@
 *******************************************************************************/
 
 #include "common/util.h"
-#include "math/vector.h"
+#include "taichi/math/linalg.h"
 #include "math/scalar.h"
 #include "math/array.h"
 #include "system/threading.h"

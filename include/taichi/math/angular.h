@@ -8,7 +8,7 @@
 #include <cmath>
 #include <taichi/util.h>
 #include "math.h"
-#include "vector.h"
+#include "linalg.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #pragma GCC diagnostic ignored "-Wmisleading-indentation"

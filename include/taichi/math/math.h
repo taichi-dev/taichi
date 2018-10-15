@@ -8,7 +8,7 @@
 #include <taichi/common/util.h>
 #include "geometry_util.h"
 #include "array.h"
-#include "vector.h"
+#include "linalg.h"
 
 TC_NAMESPACE_BEGIN
 

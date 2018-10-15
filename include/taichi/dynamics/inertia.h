@@ -7,7 +7,7 @@
 
 #include <taichi/util.h>
 #include <taichi/math/math.h>
-#include <taichi/math/vector.h>
+#include <taichi/math/linalg.h>
 
 TC_NAMESPACE_BEGIN
 

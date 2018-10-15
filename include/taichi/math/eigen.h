@@ -5,7 +5,7 @@
 #pragma once
 
 #include <taichi/util.h>
-#include "vector.h"
+#include "linalg.h"
 #include <Eigen/Dense>
 
 TC_NAMESPACE_BEGIN

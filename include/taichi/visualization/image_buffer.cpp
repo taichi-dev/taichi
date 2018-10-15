@@ -5,7 +5,7 @@
 
 #include <taichi/visualization/image_buffer.h>
 #include <taichi/math/math.h>
-#include <taichi/math/vector.h>
+#include <taichi/math/linalg.h>
 
 #if !defined(TC_AMALGAMATED)
 #define STB_IMAGE_IMPLEMENTATION

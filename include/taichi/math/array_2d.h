@@ -12,7 +12,7 @@
 #include <iterator>
 
 #include "array_fwd.h"
-#include "vector.h"
+#include "linalg.h"
 
 TC_NAMESPACE_BEGIN
 

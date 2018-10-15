@@ -8,7 +8,7 @@
 #include <vector>
 
 #include <taichi/common/util.h>
-#include "vector.h"
+#include "linalg.h"
 
 TC_NAMESPACE_BEGIN
 

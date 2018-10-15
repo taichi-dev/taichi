@@ -20,10 +20,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
   switch (uMsg) {
     case WM_DESTROY:
       PostQuitMessage(0);
+      exit(0);
       return 0;
-
     case WM_PAINT: {
-      gui_from_hwnd[hwnd]->redraw();
     }
      return 0;
   }
@@ -33,21 +32,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
 TC_NAMESPACE_BEGIN
 
 void GUI::process_event() {
-  /*
-  while (XPending((Display *)display)) {
-    XEvent ev;
-    XNextEvent((Display *)display, &ev);
-    switch (ev.type) {
-      case Expose:
-        break;
-      case ButtonPress:
-        break;
-      case KeyPress:
-        key_pressed = true;
-        break;
-    }
+  MSG msg;
+  if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+    TranslateMessage(&msg);
+    DispatchMessage(&msg);
   }
-  */
 }
 
 GUI::GUI(const std::string &window_name, int width, int height)
@@ -116,7 +105,8 @@ void GUI::update() {
   frame_id++;
   while (taichi::Time::get_time() < start_time + frame_id / (real)fps) {
   }
-  SendMessage(hwnd, WM_PAINT, 0, 0);
+  redraw();
+  UpdateWindow(hwnd);
   process_event();
   while (last_frame_interval.size() > 30) {
     last_frame_interval.erase(last_frame_interval.begin());
@@ -153,7 +143,7 @@ auto win32guitest = []() {
   GUI gui("Test2", 800, 300);
   auto &canvas = gui.get_canvas();
   canvas.clear(Vector4(0, 1, 0, 0));
-  for (int i = 0; i < 200; i++) {
+  for (int i = 0; i < 2000; i++) {
     canvas.line(Vector2(0, 0), Vector2(1, i * 0.01_f),
                           Vector4(0, 0, i * 0.01_f, 0));
     gui.update();

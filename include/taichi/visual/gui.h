@@ -100,7 +100,7 @@ class GUIBaseX11 {
   std::unique_ptr<CXImage> img;
 };
 
-using GUIBase = GuiBaseX11;
+using GUIBase = GUIBaseX11;
 
 #endif
 

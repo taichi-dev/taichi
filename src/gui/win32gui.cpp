@@ -100,9 +100,9 @@ void GUI::redraw() {
   for (int i = 0; i < width; i++) {
     for (int j = 0; j < height; j++) {
       auto c = reinterpret_cast<unsigned char *>(data + (j * width) + i);
-      c[0] = (unsigned char)(canvas->img[i][j][2] * 255.0_f);
-      c[1] = (unsigned char)(canvas->img[i][j][1] * 255.0_f);
-      c[2] = (unsigned char)(canvas->img[i][j][0] * 255.0_f);
+      c[0] = (unsigned char)(canvas->img[i][height - j - 1][2] * 255.0_f);
+      c[1] = (unsigned char)(canvas->img[i][height - j - 1][1] * 255.0_f);
+      c[2] = (unsigned char)(canvas->img[i][height - j - 1][0] * 255.0_f);
       c[3] = 0;
     }
   }

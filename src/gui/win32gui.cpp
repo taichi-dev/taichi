@@ -149,6 +149,7 @@ GUI::~GUI() {
   gui_from_hwnd.erase(hwnd);
 }
 
+#if !defined(TC_AMALGAMATED)
 auto win32guitest = []() {
   GUI gui("Test2", 800, 300);
   auto &canvas = gui.get_canvas();
@@ -160,6 +161,7 @@ auto win32guitest = []() {
   }
 };
 TC_REGISTER_TASK(win32guitest);
+#endif
 
 TC_NAMESPACE_END
 

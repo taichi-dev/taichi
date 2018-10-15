@@ -13,6 +13,7 @@ files_to_include = [
   'src/core/logging.cpp',
   'src/system/traceback.cpp',
   'src/gui/gui.cpp',
+  'src/gui/win32gui.cpp',
   'include/taichi/visual/gui.h',
   'include/taichi/visualization/image_buffer.cpp',
 ]
@@ -122,6 +123,8 @@ int main() {
     t = time.time()
     if sys.platform.startswith('darwin'):
       os.system('g++ build/test_amal.cpp -o build/test_amal -std=c++14 -g -lpthread -I/opt/X11/include -L/opt/X11/lib -lX11  && ./build/test_amal')
+    if sys.platform.startswith('win'):
+      os.system('g++ build/test_amal.cpp -o build/test_amal -std=c++14 -g -lpthread -lgdi32 && .\\build\\test_amal.exe')
     else:
       os.system('g++ build/test_amal.cpp -o build/test_amal -std=c++14 -g -lpthread -lX11 -O2  && ./build/test_amal')
 

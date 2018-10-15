@@ -12,8 +12,9 @@ files_to_include = [
   'src/core/core.cpp',
   'src/core/logging.cpp',
   'src/system/traceback.cpp',
-  'src/gui/gui.cpp',
-  'src/gui/win32gui.cpp',
+  'src/gui/x11.cpp',
+  'src/gui/win32.cpp',
+  'src/gui/cocoa.cpp',
   'include/taichi/visual/gui.h',
   'include/taichi/visualization/image_buffer.cpp',
 ]

@@ -14,6 +14,10 @@ TC_NAMESPACE_BEGIN
 #define TC_GUI_WIN32
 #endif
 
+#if defined(TC_PLATFORM_OSX)
+#define TC_GUI_COCOA
+#endif
+
 class Canvas {
  public:
   Array2D<Vector4> &img;

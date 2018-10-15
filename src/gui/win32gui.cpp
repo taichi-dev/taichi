@@ -25,7 +25,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
     case WM_PAINT: {
       gui_from_hwnd[hwnd]->redraw();
     }
-      return 0;
+     return 0;
   }
   return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
@@ -71,7 +71,6 @@ GUI::GUI(const std::string &window_name, int width, int height)
                         WS_OVERLAPPEDWINDOW,  // Window style
                         // Size and position
                         CW_USEDEFAULT, CW_USEDEFAULT, width + 16, height + 32,
-
                         NULL,                // Parent window
                         NULL,                // Menu
                         GetModuleHandle(0),  // Instance handle
@@ -93,6 +92,7 @@ GUI::GUI(const std::string &window_name, int width, int height)
   canvas = std::make_unique<Canvas>(buffer);
   last_frame_time = taichi::Time::get_time();
   data = (COLORREF *)calloc(width * height, sizeof(COLORREF));
+  src = CreateCompatibleDC(hdc);
 }
 
 void GUI::redraw() {
@@ -106,12 +106,10 @@ void GUI::redraw() {
       c[3] = 0;
     }
   }
-
-  HBITMAP bitmap = CreateBitmap(width, height, 1, 32, (void *)data);
-  HDC src = CreateCompatibleDC(hdc);
+  bitmap = CreateBitmap(width, height, 1, 32, (void *)data);
   SelectObject(src, bitmap);
   BitBlt(hdc, 0, 0, width, height, src, 0, 0, SRCCOPY);
-  DeleteDC(src);
+  DeleteObject(bitmap);
 }
 
 void GUI::update() {
@@ -146,6 +144,7 @@ void GUI::wait_key() {
 
 GUI::~GUI() {
   std::free(data);
+  DeleteDC(src);
   gui_from_hwnd.erase(hwnd);
 }
 

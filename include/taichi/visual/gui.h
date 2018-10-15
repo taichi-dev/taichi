@@ -85,7 +85,6 @@ class Canvas {
   }
 
   ~Canvas() {
-    TC_INFO("Canvas Dtor");
   }
 };
 
@@ -111,6 +110,8 @@ class GUIBaseWin32 {
   HWND hwnd;
   HDC hdc;
   COLORREF *data;
+  HDC src;
+  HBITMAP bitmap;
 };
 
 using GUIBase = GUIBaseWin32;

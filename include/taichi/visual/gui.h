@@ -121,6 +121,14 @@ class GUIBaseWin32 {
 using GUIBase = GUIBaseWin32;
 #endif
 
+#if defined(TC_GUI_COCOA)
+class GUIBaseCocoa {
+ public:
+};
+
+using GUIBase = GUIBaseCocoa;
+#endif
+
 class GUI : public GUIBase {
  public:
   std::string window_name;

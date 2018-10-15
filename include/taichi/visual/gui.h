@@ -9,8 +9,6 @@ TC_NAMESPACE_BEGIN
 #define TC_GUI_X11
 #endif
 
-#if defined(TC_GUI_X11)
-
 class Canvas {
  public:
   Array2D<Vector4> &img;
@@ -86,16 +84,37 @@ class Canvas {
   }
 };
 
+#if defined(TC_GUI_X11)
+
 class CXImage;
 
-class GUI {
- public:
-  std::string window_name;
-  int width, height;
+class GUIBaseX11 {
   void *display;
   void *visual;
   unsigned long window;
   std::unique_ptr<CXImage> img;
+};
+
+using GUIBase = GuiBaseX11;
+
+#else
+
+// Assuming Win32
+
+class GUIBaseWin32 {
+  HWND hwnd;
+  HDC hdc;
+
+};
+
+using GUIBase = GUIBaseWin32;
+
+#endif
+
+class GUI : public GUIBase {
+ public:
+  std::string window_name;
+  int width, height;
   int frame_id = 0;
   const int fps = 60;
   float64 start_time;
@@ -122,7 +141,11 @@ class GUI {
 
   void wait_key();
 
-  void draw_log();
+  void draw_log() {
+    for (int i = 0; i < (int)log_entries.size(); i++) {
+      canvas->text(log_entries[i], Vector2(0.0, -0.02_f * i), 15, Vector4(0));
+    }
+  }
 
   void log(std::string entry) {
     log_entries.push_back(entry);
@@ -133,7 +156,5 @@ class GUI {
 
   ~GUI();
 };
-
-#endif
 
 TC_NAMESPACE_END

@@ -1,4 +1,7 @@
 #include <taichi/common/util.h>
+
+#if defined(TC_PLATFORM_WINDOWS)
+
 #include <taichi/common/task.h>
 #include <taichi/visual/gui.h>
 #include <map>
@@ -159,3 +162,5 @@ auto win32guitest = []() {
 TC_REGISTER_TASK(win32guitest);
 
 TC_NAMESPACE_END
+
+#endif

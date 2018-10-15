@@ -10,6 +10,10 @@ TC_NAMESPACE_BEGIN
 #define TC_GUI_X11
 #endif
 
+#if defined(TC_PLATFORM_WINDOWS)
+#define TC_GUI_WIN32
+#endif
+
 class Canvas {
  public:
   Array2D<Vector4> &img;
@@ -99,10 +103,9 @@ class GUIBaseX11 {
 
 using GUIBase = GuiBaseX11;
 
-#else
+#endif
 
-// Assuming Win32
-
+#if defined(TC_GUI_WIN32)
 class GUIBaseWin32 {
  public:
   HWND hwnd;
@@ -111,7 +114,6 @@ class GUIBaseWin32 {
 };
 
 using GUIBase = GUIBaseWin32;
-
 #endif
 
 class GUI : public GUIBase {

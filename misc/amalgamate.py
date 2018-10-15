@@ -41,10 +41,10 @@ class Amalgamator:
 
   def include(self, fn):
     if fn in self.included:
-      print('Skipping {}'.format(fn))
+      print('  S - Skipping {}'.format(fn))
       return
     self.included.add(fn)
-    print('Including {}'.format(fn))
+    print('  I - Including {}'.format(fn))
     with open(fn, 'r') as f:
       lines = f.readlines()
       protected = False
@@ -66,7 +66,7 @@ class Amalgamator:
           local = (match.group(1) == '\"')
           includee = match.group(2)
           
-          local_dir = fn[:fn.rfind('/')]
+          local_dir = os.path.dirname(fn)
           local_search_directories = search_directories
           if local:
             local_search_directories = [local_dir] + local_search_directories
@@ -81,7 +81,7 @@ class Amalgamator:
             else:
               pass # Should be system header
           if not found:
-            print("  X - Classified as stdc++ header: {}".format(includee))
+            print("  E - Classified as stdc++ header: {}".format(includee))
             #print("  ({})".format(l))
             need_expand = False
             

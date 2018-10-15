@@ -22,10 +22,10 @@ Windows
 -------------------------------
 Download and execute `this script <https://raw.githubusercontent.com/yuanming-hu/taichi/master/install.py>`_ with python3.
 
-Additional environment variables: (assuming taichi is installed in ``DIR\taichi``)
-Set ``TAICHI_REPO_DIR`` as  ``DIR\taichi`` (e.g. ``E:/repos/taichi``).
-Add ``%TAICHI_REPO_DIR%/python`` to ``PYTHONPATH``, ``%TAICHI_REPO_DIR%/bin`` to ``PATH``.
-Restart cmd and you should be able to run command ``ti``.
+Additional environment variables: (assuming taichi is installed in ``DIR/taichi``)
+Set ``TAICHI_REPO_DIR`` as  ``DIR/taichi`` (e.g. ``E:/repos/taichi``).
+Add ``%TAICHI_REPO_DIR%/python`` to ``PYTHONPATH``, ``DIR/taichi/bin`` (e.g. ``E:/repos/taichi/bin``) to ``PATH``.
+Restart cmd or PowerShell, and you should be able to run command ``ti``.
 
 Build with Double Precision (64 bit) Float Point
 ---------------------------------------------------

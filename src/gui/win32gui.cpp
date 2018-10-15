@@ -124,10 +124,7 @@ void GUI::update() {
                   (std::accumulate(last_frame_interval.begin(),
                                    last_frame_interval.end(), 0.0_f));
 
-  /*
-  XStoreName((Display *)display, window,
-             fmt::format("{} ({:.02f} FPS)", window_name, real_fps).c_str());
-  */
+  SetWindowText(hwnd, fmt::format("{} ({:.02f} FPS)", window_name, real_fps).c_str());
   if (last_frame_time != 0) {
     last_frame_interval.push_back(taichi::Time::get_time() - last_frame_time);
   }
@@ -153,7 +150,7 @@ auto win32guitest = []() {
   GUI gui("Test2", 800, 300);
   auto &canvas = gui.get_canvas();
   canvas.clear(Vector4(0, 1, 0, 0));
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 200; i++) {
     canvas.line(Vector2(0, 0), Vector2(1, i * 0.01_f),
                           Vector4(0, 0, i * 0.01_f, 0));
     gui.update();

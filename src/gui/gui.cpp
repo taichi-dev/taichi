@@ -84,13 +84,17 @@ GUI::GUI(const std::string &window_name, int width, int height)
   last_frame_time = taichi::Time::get_time();
 }
 
+void GUI::redraw() {
+  XPutImage((Display *)display, window, DefaultGC(display, 0), img->image, 0, 0,
+            0, 0, width, height);
+}
+
 void GUI::update() {
   img->set_data(buffer);
   frame_id++;
   while (taichi::Time::get_time() < start_time + frame_id / (real)fps) {
   }
-  XPutImage((Display *)display, window, DefaultGC(display, 0), img->image, 0, 0,
-            0, 0, width, height);
+  redraw();
   process_event();
   while (last_frame_interval.size() > 30) {
     last_frame_interval.erase(last_frame_interval.begin());

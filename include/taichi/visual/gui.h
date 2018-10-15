@@ -5,7 +5,8 @@
 
 TC_NAMESPACE_BEGIN
 
-#if defined(TC_PLATFORM_LINUX) || (defined(TC_PLATFORM_OSX) && defined(TC_AMALGAMATED))
+#if defined(TC_PLATFORM_LINUX) || \
+    (defined(TC_PLATFORM_OSX) && defined(TC_AMALGAMATED))
 #define TC_GUI_X11
 #endif
 
@@ -51,8 +52,8 @@ class Canvas {
     limits[0].y = min(a.y, min(b.y, c.y));
     limits[1].x = max(a.x, max(b.x, c.x));
     limits[1].y = max(a.y, max(b.y, c.y));
-    for (int i = std::floor(limits[0].x); i < std::ceil(limits[1].x); i++) {
-      for (int j = std::floor(limits[0].y); j < std::ceil(limits[1].y); j++) {
+    for (int i = (int)std::floor(limits[0].x); i < (int)std::ceil(limits[1].x); i++) {
+      for (int j = (int)std::floor(limits[0].y); j < (int)std::ceil(limits[1].y); j++) {
         Vector2 pixel(i + 0.5_f, j + 0.5_f);
         bool inside_a = cross(pixel - a, b - a) <= 0;
         bool inside_b = cross(pixel - b, c - b) <= 0;
@@ -89,6 +90,7 @@ class Canvas {
 class CXImage;
 
 class GUIBaseX11 {
+ public:
   void *display;
   void *visual;
   unsigned long window;
@@ -102,9 +104,10 @@ using GUIBase = GuiBaseX11;
 // Assuming Win32
 
 class GUIBaseWin32 {
+ public:
   HWND hwnd;
   HDC hdc;
-
+  COLORREF *data;
 };
 
 using GUIBase = GUIBaseWin32;
@@ -136,6 +139,8 @@ class GUI : public GUIBase {
   Canvas &get_canvas() {
     return *canvas;
   }
+
+  void redraw();
 
   void update();
 

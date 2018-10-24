@@ -324,9 +324,6 @@ def at_startup():
   f.close()
 
 
-at_startup()
-
-
 def start_memory_monitoring(output_fn, pid=-1, interval=1):
   import os, psutil, time
   if pid == -1:
@@ -350,3 +347,5 @@ def start_memory_monitoring(output_fn, pid=-1, interval=1):
 @atexit.register
 def clean_libs():
   pass
+
+at_startup()

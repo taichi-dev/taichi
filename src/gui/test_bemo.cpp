@@ -14,13 +14,13 @@ auto test_bemo = []() {
 
     for (int i = 0; i < 60; i++) {
       canvas.circle(i * 10 + 100, 200 + std::sin(t + i * 0.1) * 50)
-          .color(0.7, 0.9, 0.0, 0.5)
+          .color(0.7, 0.2, 0.0, 0.9)
           .radius(5);
 
-      canvas.line(100, 100, 200, 75 + std::cos(t) * 50)
-          .color(0.1, 0.6, 0.3)
-          .width(4);
     }
+    canvas.line(100, 100, 200, 75 + std::cos(t) * 50)
+        .color(0.0, 0.0, 0.0, 0.5)
+        .width(5);
     gui.update();
   }
 };

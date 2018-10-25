@@ -19,6 +19,21 @@ TC_NAMESPACE_BEGIN
 #endif
 
 class Canvas {
+  struct Circle {
+    const Canvas &canvas;
+    real radius;
+    Vector2 center;
+    Vector2 color;
+
+    TC_FORCE_INLINE Circle(Canvas &canvas, Vector2 center)
+        : canvas(canvas), center(center) {
+    }
+
+    ~Circle() {
+      canvas.img[center.template cast<int>()] = Vector4(1);
+    }
+  };
+
  public:
   Array2D<Vector4> &img;
   Matrix3 transform_matrix;
@@ -29,6 +44,10 @@ class Canvas {
 
   TC_FORCE_INLINE Vector2 transform(Vector2 x) {
     return Vector2(transform_matrix * Vector3(x, 1.0_f));
+  }
+
+  Circle circle(Vector2 center) {
+    return Circle(*this, center);
   }
 
   void line(Vector2 start, Vector2 end, Vector4 color) {
@@ -60,8 +79,10 @@ class Canvas {
     limits[0].y = min(a.y, min(b.y, c.y));
     limits[1].x = max(a.x, max(b.x, c.x));
     limits[1].y = max(a.y, max(b.y, c.y));
-    for (int i = (int)std::floor(limits[0].x); i < (int)std::ceil(limits[1].x); i++) {
-      for (int j = (int)std::floor(limits[0].y); j < (int)std::ceil(limits[1].y); j++) {
+    for (int i = (int)std::floor(limits[0].x); i < (int)std::ceil(limits[1].x);
+         i++) {
+      for (int j = (int)std::floor(limits[0].y);
+           j < (int)std::ceil(limits[1].y); j++) {
         Vector2 pixel(i + 0.5_f, j + 0.5_f);
         bool inside_a = cross(pixel - a, b - a) <= 0;
         bool inside_b = cross(pixel - b, c - b) <= 0;

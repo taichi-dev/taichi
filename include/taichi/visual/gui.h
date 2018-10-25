@@ -21,16 +21,39 @@ TC_NAMESPACE_BEGIN
 class Canvas {
   struct Circle {
     const Canvas &canvas;
-    real radius;
-    Vector2 center;
-    Vector2 color;
+    Vector2 _center;
+    Vector4 _color;
+    real _radius;
 
     TC_FORCE_INLINE Circle(Canvas &canvas, Vector2 center)
-        : canvas(canvas), center(center) {
+        : canvas(canvas),
+          _center(center),
+          _color(Vector4(1)),  // TODO: change this to canvas default color
+          _radius(1) {
+    }
+
+    TC_FORCE_INLINE Circle &color(Vector4 color) {
+      _color = color;
+      return *this;
+    }
+
+    TC_FORCE_INLINE Circle &radius(real radius) {
+      _radius = radius;
+      return *this;
     }
 
     ~Circle() {
-      canvas.img[center.template cast<int>()] = Vector4(1);
+      auto center_i = (_center + Vector2(0.5_f)).template cast<int>();
+      auto radius_i = (int)std::ceil(_radius + 0.5_f);
+      for (int i = -radius_i; i <= radius_i; i++) {
+        for (int j = -radius_i; j <= radius_i; j++) {
+          real dist =
+              length(_center - center_i.template cast<real>() - Vector2(i, j));
+          auto alpha = _color.w * clamp(_radius + 0.5_f - dist);
+          auto &dest = canvas.img[center_i + Vector2i(i, j)];
+          dest = lerp(alpha, dest, _color);
+        }
+      }
     }
   };
 

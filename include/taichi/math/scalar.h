@@ -54,12 +54,17 @@ TC_FORCE_INLINE T clamp(const T &a, const T &min, const T &max) noexcept {
 }
 
 template <typename T>
-TC_FORCE_INLINE T clamp(const T &a) noexcept {
+TC_FORCE_INLINE T clamp01(const T &a) noexcept {
   if (a < T(0))
     return T(0);
   if (a > T(1))
     return T(1);
   return a;
+}
+
+template <typename T>
+TC_FORCE_INLINE T clamp(const T &a) noexcept {
+  return clamp01(a);
 }
 
 template <typename T, typename V>

@@ -37,6 +37,16 @@ class Canvas {
       return *this;
     }
 
+    TC_FORCE_INLINE Circle &color(real r, real g, real b, real a = 1) {
+      _color = Vector4(r, g, b, a);
+      return *this;
+    }
+
+    TC_FORCE_INLINE Circle &color(int r, int g, int b, int a = 255) {
+      _color = (1.0_f / 255) * Vector4(r, g, b, a);
+      return *this;
+    }
+
     TC_FORCE_INLINE Circle &radius(real radius) {
       _radius = radius;
       return *this;
@@ -49,7 +59,7 @@ class Canvas {
         for (int j = -radius_i; j <= radius_i; j++) {
           real dist =
               length(_center - center_i.template cast<real>() - Vector2(i, j));
-          auto alpha = _color.w * clamp(_radius + 0.5_f - dist);
+          auto alpha = _color.w * clamp(_radius - dist);
           auto &dest = canvas.img[center_i + Vector2i(i, j)];
           dest = lerp(alpha, dest, _color);
         }
@@ -71,6 +81,10 @@ class Canvas {
 
   Circle circle(Vector2 center) {
     return Circle(*this, center);
+  }
+
+  Circle circle(real x, real y) {
+    return Circle(*this, Vector2(x, y));
   }
 
   void line(Vector2 start, Vector2 end, Vector4 color) {

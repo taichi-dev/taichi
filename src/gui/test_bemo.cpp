@@ -7,12 +7,19 @@ auto test_bemo = []() {
   GUI gui("Bemo Test", 800, 400);
   auto canvas = *gui.canvas;
   real t = 0;
+
   while (1) {
     t += 0.02_f;
-    canvas.clear(Vector4(1, 1, 1, 1));
+    canvas.clear(Vector4(0.95));
 
     for (int i = 0; i < 60; i++) {
-      canvas.circle(i * 10 + 100, 200 + std::sin(t + i * 0.1) * 50).color(0.3, 0.2, 0.0, 0.5).radius(5);
+      canvas.circle(i * 10 + 100, 200 + std::sin(t + i * 0.1) * 50)
+          .color(0.7, 0.9, 0.0, 0.5)
+          .radius(5);
+
+      canvas.line(100, 100, 200, 75 + std::cos(t) * 50)
+          .color(0.1, 0.6, 0.3)
+          .width(4);
     }
     gui.update();
   }

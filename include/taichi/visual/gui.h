@@ -19,6 +19,71 @@ TC_NAMESPACE_BEGIN
 #endif
 
 class Canvas {
+  struct Line {
+    const Canvas &canvas;
+    Vector2 a, b;
+    Vector4 _color;
+    real _width;
+
+    TC_FORCE_INLINE Line(Canvas &canvas, Vector2 a, Vector2 b)
+        : canvas(canvas),
+          a(a),
+          b(b),
+          _color(Vector4(1)),  // TODO: change this to canvas default color
+          _width(1) {
+    }
+
+    TC_FORCE_INLINE Line &color(Vector4 color) {
+      _color = color;
+      return *this;
+    }
+
+    TC_FORCE_INLINE Line &color(real r, real g, real b, real a = 1) {
+      _color = Vector4(r, g, b, a);
+      return *this;
+    }
+
+    TC_FORCE_INLINE Line &color(int r, int g, int b, int a = 255) {
+      _color = (1.0_f / 255) * Vector4(r, g, b, a);
+      return *this;
+    }
+
+    TC_FORCE_INLINE Line &width(real width) {
+      _width = width;
+      return *this;
+    }
+
+    // TODO: end style e.g. arrow
+
+    TC_FORCE_INLINE ~Line() {
+      // TODO: accelerate
+      auto a_i = (a + Vector2(0.5_f)).template cast<int>();
+      auto b_i = (b + Vector2(0.5_f)).template cast<int>();
+      auto radius_i = (int)std::ceil(_width + 0.5_f);
+      auto range_lower = Vector2i(std::min(a_i.x, b_i.x) - radius_i,
+                                  std::min(a_i.y, b_i.y) - radius_i);
+      auto range_higher = Vector2i(std::max(a_i.x, b_i.x) + radius_i,
+                                   std::max(a_i.y, b_i.y) + radius_i);
+      auto direction = normalized(b - a);
+      auto l = length(b - a);
+      auto tangent = Vector2(-direction.y, direction.x);
+      for (int i = range_lower.x; i <= range_higher.x; i++) {
+        for (int j = range_lower.y; j <= range_higher.y; j++) {
+          auto pixel_coord = Vector2(i + 0.5_f, j + 0.5_f) - a;
+          auto u = dot(tangent, pixel_coord);
+          auto v = dot(direction, pixel_coord);
+          if (v > 0) {
+            v = std::max(0.0_f, v - l);
+          }
+          real dist = length(Vector2(u, v));
+          auto alpha = _color.w * clamp(0.5_f * _width - dist);
+          auto &dest = canvas.img[Vector2i(i, j)];
+          dest = lerp(alpha, dest, _color);
+        }
+      }
+    }
+  };
+
   struct Circle {
     const Canvas &canvas;
     Vector2 _center;
@@ -52,7 +117,7 @@ class Canvas {
       return *this;
     }
 
-    ~Circle() {
+    TC_FORCE_INLINE ~Circle() {
       auto center_i = (_center + Vector2(0.5_f)).template cast<int>();
       auto radius_i = (int)std::ceil(_radius + 0.5_f);
       for (int i = -radius_i; i <= radius_i; i++) {
@@ -85,6 +150,14 @@ class Canvas {
 
   Circle circle(real x, real y) {
     return Circle(*this, Vector2(x, y));
+  }
+
+  Line line(real xa, real ya, real xb, real yb) {
+    return line(Vector2(xa, ya), Vector2(xb, yb));
+  }
+
+  Line line(Vector2 a, Vector2 b) {
+    return Line(*this, a, b);
   }
 
   void line(Vector2 start, Vector2 end, Vector4 color) {

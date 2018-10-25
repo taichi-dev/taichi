@@ -19,18 +19,46 @@ TC_NAMESPACE_BEGIN
 #endif
 
 class Canvas {
+  struct Context {
+    Vector4 _color;
+    real _radius;
+  };
+
+ public:
+  Context context;
+
+  Canvas &color(Vector4 val) {
+    context._color = val;
+    return *this;
+  }
+
+  TC_FORCE_INLINE Canvas &color(real r, real g, real b, real a = 1) {
+    context._color = Vector4(r, g, b, a);
+    return *this;
+  }
+
+  TC_FORCE_INLINE Canvas &color(int r, int g, int b, int a = 255) {
+    context._color = (1.0_f / 255) * Vector4(r, g, b, a);
+    return *this;
+  }
+
+  TC_FORCE_INLINE Canvas &radius(real radius) {
+    context._radius = radius;
+    return *this;
+  }
+
   struct Line {
     const Canvas &canvas;
     Vector2 a, b;
     Vector4 _color;
-    real _width;
+    real _radius;
 
     TC_FORCE_INLINE Line(Canvas &canvas, Vector2 a, Vector2 b)
         : canvas(canvas),
           a(a),
           b(b),
-          _color(Vector4(1)),  // TODO: change this to canvas default color
-          _width(1) {
+          _color(canvas.context._color),
+          _radius(canvas.context._radius) {
     }
 
     TC_FORCE_INLINE Line &color(Vector4 color) {
@@ -49,7 +77,12 @@ class Canvas {
     }
 
     TC_FORCE_INLINE Line &width(real width) {
-      _width = width;
+      _radius = width * 0.5;
+      return *this;
+    }
+
+    TC_FORCE_INLINE Line &radius(real radius) {
+      _radius = radius;
       return *this;
     }
 
@@ -59,7 +92,7 @@ class Canvas {
       // TODO: accelerate
       auto a_i = (a + Vector2(0.5_f)).template cast<int>();
       auto b_i = (b + Vector2(0.5_f)).template cast<int>();
-      auto radius_i = (int)std::ceil(_width + 0.5_f);
+      auto radius_i = (int)std::ceil(_radius + 0.5_f);
       auto range_lower = Vector2i(std::min(a_i.x, b_i.x) - radius_i,
                                   std::min(a_i.y, b_i.y) - radius_i);
       auto range_higher = Vector2i(std::max(a_i.x, b_i.x) + radius_i,
@@ -76,7 +109,7 @@ class Canvas {
             v = std::max(0.0_f, v - l);
           }
           real dist = length(Vector2(u, v));
-          auto alpha = _color.w * clamp(0.5_f * _width - dist);
+          auto alpha = _color.w * clamp(_radius - dist);
           auto &dest = canvas.img[Vector2i(i, j)];
           dest = lerp(alpha, dest, _color);
         }
@@ -93,8 +126,8 @@ class Canvas {
     TC_FORCE_INLINE Circle(Canvas &canvas, Vector2 center)
         : canvas(canvas),
           _center(center),
-          _color(Vector4(1)),  // TODO: change this to canvas default color
-          _radius(1) {
+          _color(canvas.context._color),
+          _radius(canvas.context._radius) {
     }
 
     TC_FORCE_INLINE Circle &color(Vector4 color) {

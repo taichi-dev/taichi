@@ -49,16 +49,52 @@ class Canvas {
 
   struct Line {
     const Canvas &canvas;
-    Vector2 a, b;
+    int n_vertices;
+    Vector2 vertices[128];
     Vector4 _color;
     real _radius;
 
-    TC_FORCE_INLINE Line(Canvas &canvas, Vector2 a, Vector2 b)
+    TC_FORCE_INLINE Line(Canvas &canvas)
         : canvas(canvas),
-          a(a),
-          b(b),
           _color(canvas.context._color),
           _radius(canvas.context._radius) {
+      n_vertices = 0;
+    }
+
+    TC_FORCE_INLINE void push(Vector2 vec) {
+      vertices[n_vertices++] = vec;
+    }
+
+    TC_FORCE_INLINE Line &path(Vector2 a) {
+      push(a);
+      return *this;
+    }
+
+    TC_FORCE_INLINE Line &path(Vector2 a, Vector2 b) {
+      push(a);
+      push(b);
+      return *this;
+    }
+
+    TC_FORCE_INLINE Line &path(Vector2 a, Vector2 b, Vector2 c) {
+      push(a);
+      push(b);
+      push(c);
+      return *this;
+    }
+
+    TC_FORCE_INLINE Line &path(Vector2 a, Vector2 b, Vector2 c, Vector2 d) {
+      push(a);
+      push(b);
+      push(c);
+      push(d);
+      return *this;
+    }
+
+    TC_FORCE_INLINE Line &close() {
+      TC_ASSERT(n_vertices > 0);
+      push(vertices[0]);
+      return *this;
     }
 
     TC_FORCE_INLINE Line &color(Vector4 color) {
@@ -88,7 +124,7 @@ class Canvas {
 
     // TODO: end style e.g. arrow
 
-    TC_FORCE_INLINE ~Line() {
+    void stroke(Vector2 a, Vector2 b) {
       // TODO: accelerate
       auto a_i = (a + Vector2(0.5_f)).template cast<int>();
       auto b_i = (b + Vector2(0.5_f)).template cast<int>();
@@ -113,6 +149,12 @@ class Canvas {
           auto &dest = canvas.img[Vector2i(i, j)];
           dest = lerp(alpha, dest, _color);
         }
+      }
+    }
+
+    TC_FORCE_INLINE ~Line() {
+      for (int i = 0; i + 1 < n_vertices; i++) {
+        stroke(vertices[i], vertices[i + 1]);
       }
     }
   };
@@ -189,8 +231,12 @@ class Canvas {
     return line(Vector2(xa, ya), Vector2(xb, yb));
   }
 
+  Line line() {
+    return Line(*this);
+  }
+
   Line line(Vector2 a, Vector2 b) {
-    return Line(*this, a, b);
+    return Line(*this).path(a, b);
   }
 
   void line(Vector2 start, Vector2 end, Vector4 color) {

@@ -17,7 +17,10 @@ auto test_bemo = []() {
           .color(0.7, 0.2, 0.0, 0.9)
           .radius(5);
     }
-    canvas.line(100, 100, 200, 75 + std::cos(t) * 50)
+    canvas.line()
+        .path(Vector2(100, 100), Vector2(200, 75 + std::cos(t) * 50),
+              Vector2(300, 75 + std::cos(t) * 50))
+        .close()
         .color(0.0, 0.0, 0.0, 0.5)
         .width(5);
 

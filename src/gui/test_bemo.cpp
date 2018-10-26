@@ -13,20 +13,20 @@ auto test_bemo = []() {
     canvas.clear(Vector4(0.95));
 
     for (int i = 0; i < 30; i++) {
-      canvas.circle(i * 10 + 100, 250 + std::sin(t + i * 0.1) * 50)
-          .color(0.7, 0.2, 0.0, 0.9)
+      canvas.circle(i * 10 + 100, 250 + std::sin(t + i * 0.1_f) * 50_f)
+          .color(0.7_f, 0.2_f, 0.0_f, 0.9_f)
           .radius(5);
     }
-    canvas.color(0.0, 0.0, 1.0, 1.0).radius(5 + 2 * std::sin(t * 10));
+    canvas.color(0.0, 0.0, 1.0, 1.0).radius(5 + 2 * std::sin(t * 10_f));
     canvas.path()
-        .path(Vector2(100, 100), Vector2(200, 75 + std::cos(t) * 50),
-              Vector2(300, 75 + std::cos(t) * 50))
+        .path(Vector2(100, 100), Vector2(200, 75 + std::cos(t) * 50_f),
+              Vector2(300, 75 + std::cos(t) * 50_f))
         .close()
-        .color(0.0, 0.0, 0.0)
+        .color(0, 0, 0)
         .width(5);
 
     for (int i = 0; i < 60; i++) {
-      canvas.circle(i * 10 + 100, 150 + std::sin(t + i * 0.1) * 50);
+      canvas.circle(i * 10 + 100, 150 + std::sin(t + i * 0.1_f) * 50_f);
     }
     gui.update();
   }

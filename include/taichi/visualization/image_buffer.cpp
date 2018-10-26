@@ -8,6 +8,10 @@
 #include <taichi/math/linalg.h>
 
 #if !defined(TC_AMALGAMATED)
+#define TC_IMAGE_IO
+#endif
+
+#if defined(TC_IMAGE_IO)
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_FAILURE_USERMSG
 #include <stb_image.h>
@@ -64,7 +68,7 @@ void Array2D<T>::load_image(const std::string &filename, bool linearize) {
 
 template <typename T>
 void Array2D<T>::write_as_image(const std::string &filename) {
-#if !defined(TC_AMALGAMATED)
+#if defined(TC_IMAGE_IO)
   int comp = 3;
   std::vector<unsigned char> data(this->res[0] * this->res[1] * comp);
   for (int i = 0; i < this->res[0]; i++) {
@@ -99,7 +103,9 @@ void Array2D<T>::write_as_image(const std::string &filename) {
 
   TC_ASSERT_INFO((bool)write_result, "Cannot write image file");
 #else
-  TC_NOT_IMPLEMENTED
+  TC_ERROR(
+      "'write_as_image' is not implemented. Append -DTC_IMAGE_IO to "
+      "compiler operations if using taichi.h.");
 #endif
 }
 

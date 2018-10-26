@@ -49,16 +49,40 @@ class Canvas {
 
   struct Line {
     const Canvas &canvas;
-    int n_vertices;
-    Vector2 vertices[128];
     Vector4 _color;
     real _radius;
+    int n_vertices;
+    static Vector2 vertices[128];  // TODO: ...
 
     TC_FORCE_INLINE Line(Canvas &canvas)
         : canvas(canvas),
           _color(canvas.context._color),
           _radius(canvas.context._radius) {
       n_vertices = 0;
+    }
+
+    TC_FORCE_INLINE Line(Canvas &canvas, Vector2 a, Vector2 b) : Line(canvas) {
+      push(a);
+      push(b);
+    }
+
+    TC_FORCE_INLINE Line(Canvas &canvas, Vector2 a, Vector2 b, Vector2 c)
+        : Line(canvas) {
+      push(a);
+      push(b);
+      push(c);
+    }
+
+    TC_FORCE_INLINE Line(Canvas &canvas,
+                         Vector2 a,
+                         Vector2 b,
+                         Vector2 c,
+                         Vector2 d)
+        : Line(canvas) {
+      push(a);
+      push(b);
+      push(c);
+      push(d);
     }
 
     TC_FORCE_INLINE void push(Vector2 vec) {
@@ -227,16 +251,24 @@ class Canvas {
     return Circle(*this, Vector2(x, y));
   }
 
-  Line line(real xa, real ya, real xb, real yb) {
-    return line(Vector2(xa, ya), Vector2(xb, yb));
+  Line path(real xa, real ya, real xb, real yb) {
+    return path(Vector2(xa, ya), Vector2(xb, yb));
   }
 
-  Line line() {
+  Line path() {
     return Line(*this);
   }
 
-  Line line(Vector2 a, Vector2 b) {
+  Line path(Vector2 a, Vector2 b) {
     return Line(*this).path(a, b);
+  }
+
+  Line path(Vector2 a, Vector2 b, Vector2 c) {
+    return Line(*this, a, b, c);
+  }
+
+  Line path(Vector2 a, Vector2 b, Vector2 c, Vector2 d) {
+    return Line(*this, a, b, c, d);
   }
 
   void line(Vector2 start, Vector2 end, Vector4 color) {

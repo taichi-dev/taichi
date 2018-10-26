@@ -82,6 +82,9 @@ GUI::GUI(const std::string &window_name, int width, int height)
   last_frame_time = taichi::Time::get_time();
   data = (COLORREF *)calloc(width * height, sizeof(COLORREF));
   src = CreateCompatibleDC(hdc);
+  if (!normalized_coord) {
+    canvas->set_idendity_transform_matrix();
+  }
 }
 
 void GUI::redraw() {

@@ -48,7 +48,7 @@ class Canvas {
   }
 
   struct Line {
-    const Canvas &canvas;
+    Canvas &canvas;
     Vector4 _color;
     real _radius;
     int n_vertices;
@@ -126,6 +126,10 @@ class Canvas {
       return *this;
     }
 
+    TC_FORCE_INLINE Line &color(int c) {
+      return color(c / 65536, c / 256 % 256, c % 256, 255);
+    }
+
     TC_FORCE_INLINE Line &color(real r, real g, real b, real a = 1) {
       _color = Vector4(r, g, b, a);
       return *this;
@@ -178,13 +182,14 @@ class Canvas {
 
     TC_FORCE_INLINE ~Line() {
       for (int i = 0; i + 1 < n_vertices; i++) {
-        stroke(vertices[i], vertices[i + 1]);
+        stroke(canvas.transform(vertices[i]),
+               canvas.transform(vertices[i + 1]));
       }
     }
   };
 
   struct Circle {
-    const Canvas &canvas;
+    Canvas &canvas;
     Vector2 _center;
     Vector4 _color;
     real _radius;
@@ -211,18 +216,23 @@ class Canvas {
       return *this;
     }
 
+    TC_FORCE_INLINE Circle &color(int c) {
+      return color(c / 65536, c / 256 % 256, c % 256, 255);
+    }
+
     TC_FORCE_INLINE Circle &radius(real radius) {
       _radius = radius;
       return *this;
     }
 
     TC_FORCE_INLINE ~Circle() {
-      auto center_i = (_center + Vector2(0.5_f)).template cast<int>();
+      auto center = canvas.transform(_center);
+      auto center_i = (center + Vector2(0.5_f)).template cast<int>();
       auto radius_i = (int)std::ceil(_radius + 0.5_f);
       for (int i = -radius_i; i <= radius_i; i++) {
         for (int j = -radius_i; j <= radius_i; j++) {
           real dist =
-              length(_center - center_i.template cast<real>() - Vector2(i, j));
+              length(center - center_i.template cast<real>() - Vector2(i, j));
           auto alpha = _color.w * clamp(_radius - dist);
           auto &dest = canvas.img[center_i + Vector2i(i, j)];
           dest = lerp(alpha, dest, _color);
@@ -239,7 +249,7 @@ class Canvas {
     transform_matrix = Matrix3(Vector3(img.get_res().cast<real>(), 1.0_f));
   }
 
-  TC_FORCE_INLINE Vector2 transform(Vector2 x) {
+  TC_FORCE_INLINE Vector2 transform(Vector2 x) const {
     return Vector2(transform_matrix * Vector3(x, 1.0_f));
   }
 
@@ -269,6 +279,10 @@ class Canvas {
 
   Line path(Vector2 a, Vector2 b, Vector2 c, Vector2 d) {
     return Line(*this, a, b, c, d);
+  }
+
+  Line rect(Vector2 a, Vector2 b) {
+    return Line(*this, a, Vector2(a.x, b.y), b, Vector2(b.x, a.y));
   }
 
   void line(Vector2 start, Vector2 end, Vector4 color) {
@@ -330,7 +344,15 @@ class Canvas {
     img.reset(color);
   }
 
+  void clear(int c) {
+    img.reset((1.0_f / 255) * Vector4(c / 65536, c / 256 % 256, c % 256, 255));
+  }
+
   ~Canvas() {
+  }
+
+  void set_idendity_transform_matrix() {
+    transform_matrix = Matrix3(1);
   }
 };
 
@@ -387,10 +409,15 @@ class GUI : public GUIBase {
 
   void process_event();
 
-  GUI(const std::string &window_name, int width = 800, int height = 800);
+  GUI(const std::string &window_name,
+      int width = 800,
+      int height = 800,
+      bool normalized_coord = true);
 
-  GUI(const std::string &window_name, Vector2i res)
-      : GUI(window_name, res[0], res[1]) {
+  GUI(const std::string &window_name,
+      Vector2i res,
+      bool normalized_coord = true)
+      : GUI(window_name, res[0], res[1], normalized_coord) {
   }
 
   Canvas &get_canvas() {

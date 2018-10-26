@@ -4,7 +4,7 @@
 TC_NAMESPACE_BEGIN
 
 auto test_bemo = []() {
-  GUI gui("Bemo Test", 800, 400);
+  GUI gui("Bemo Test", 800, 400, false);
   auto canvas = *gui.canvas;
   real t = 0;
 

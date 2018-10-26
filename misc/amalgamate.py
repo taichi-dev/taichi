@@ -15,6 +15,7 @@ files_to_include = [
   'src/gui/x11.cpp',
   'src/gui/win32.cpp',
   'src/gui/cocoa.cpp',
+  'src/gui/gui.cpp',
   'include/taichi/visual/gui.h',
   'include/taichi/visualization/image_buffer.cpp',
 ]

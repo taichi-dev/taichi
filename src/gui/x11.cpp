@@ -62,7 +62,7 @@ void GUI::process_event() {
   }
 }
 
-GUI::GUI(const std::string &window_name, int width, int height)
+GUI::GUI(const std::string &window_name, int width, int height, bool normalized_coord)
     : window_name(window_name),
       width(width),
       height(height),
@@ -82,6 +82,9 @@ GUI::GUI(const std::string &window_name, int width, int height)
   buffer.initialize(Vector2i(width, height));
   canvas = std::make_unique<Canvas>(buffer);
   last_frame_time = taichi::Time::get_time();
+  if (!normalized_coord) {
+    canvas->set_idendity_transform_matrix();
+  }
 }
 
 void GUI::redraw() {

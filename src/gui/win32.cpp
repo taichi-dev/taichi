@@ -39,7 +39,7 @@ void GUI::process_event() {
   }
 }
 
-GUI::GUI(const std::string &window_name, int width, int height)
+GUI::GUI(const std::string &window_name, int width, int height, bool normalized_coord)
     : window_name(window_name),
       width(width),
       height(height),

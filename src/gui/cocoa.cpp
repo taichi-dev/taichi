@@ -3,7 +3,6 @@
 
 #if defined(TC_GUI_COCOA)
 
-#include <numeric>
 // https://stackoverflow.com/questions/4356441/mac-os-cocoa-draw-a-simple-pixel-on-a-canvas
 // http://cocoadevcentral.com/d/intro_to_quartz/
 // Modified based on
@@ -91,6 +90,7 @@ void redraw(id self, SEL _, CGRect __) {
   CGDataProviderRelease(provider);
 }
 
+Class AppDelClass;
 __attribute__((constructor))
 static void initView() {
   ViewClass = objc_allocateClassPair((Class)objc_getClass("NSView"), "View", 0);
@@ -101,16 +101,13 @@ static void initView() {
   // parameter of the method may not get passed properly.
   class_addMethod(ViewClass, sel_getUid("drawRect:"), (IMP)redraw, "v@:");
   objc_registerClassPair(ViewClass);
-}
 
-Class AppDelClass;
-
-static void CreateAppDelegate() {
   AppDelClass = objc_allocateClassPair((Class)objc_getClass("NSObject"), "AppDelegate", 0);
   objc_registerClassPair(AppDelClass);
 }
 
-void RunApplication(void) {
+
+void run(void) {
   call("NSApplication", "sharedApplication");
   if (NSApp == nullptr) {
     fprintf(stderr,"Failed to initialized NSApplication.\nterminating.\n");
@@ -171,8 +168,7 @@ GUI::~GUI() {
 }
 
 auto test_cocoa_gui = []() {
-  CreateAppDelegate();
-  RunApplication();
+  run();
 };
 
 TC_REGISTER_TASK(test_cocoa_gui);

@@ -1,5 +1,6 @@
 #include <taichi/visual/gui.h>
 #include <taichi/common/task.h>
+#include <taichi/common/bit.h>
 
 #if defined(TC_GUI_COCOA)
 
@@ -41,6 +42,17 @@ typedef struct AppDel {
   id window;
 } AppDelegate;
 
+class IdComparator {
+public:
+  bool operator() (id a, id b) const {
+    TC_STATIC_ASSERT(sizeof(a) == sizeof(taichi::int64));
+    return taichi::bit::reinterpret_bits<taichi::int64>(a) <
+           taichi::bit::reinterpret_bits<taichi::int64>(b);
+  }
+};
+
+std::map<id, taichi::GUI *, IdComparator> gui_from_id;
+
 enum {
   NSBorderlessWindowMask		= 0,
   NSTitledWindowMask			= 1 << 0,
@@ -58,7 +70,8 @@ Class ViewClass;
 // stuck with the C-based mentality of the application.
 
 void redraw(id self, SEL _, CGRect __) {
-  auto width = 800, height = 400;
+  auto *gui = gui_from_id[self];
+  auto width = gui->width, height = gui->height;
   NSInteger dataLength = width * height * 4;
   UInt8 *data = (UInt8*)malloc(dataLength * sizeof(UInt8));
   static int t = 0;
@@ -123,10 +136,10 @@ GUI::GUI(const std::string &window_name, int width, int height, bool normalized_
   auto rect = (CGRect){{0,0},{CGFloat(width),CGFloat(height)}};
   call(window, "initWithContentRect:styleMask:backing:defer:", rect, (NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask | NSMiniaturizableWindowMask), 0, false);
   view = call(call("View", "alloc"), "initWithFrame:", rect);
+  gui_from_id[view] = this;
   call(window, "setContentView:", view);
   call(window, "becomeFirstResponder");
   call(window, "makeKeyAndOrderFront:", window);
-
 }
 
 void GUI::redraw() {
@@ -134,7 +147,6 @@ void GUI::redraw() {
 }
 
 void GUI::update() {
-  //call(call((id)objc_getClass("NSRunLoop"), "currentRunLoop"), "run");
   printf("1\n");
   call(call((id)objc_getClass("NSRunLoop"), "currentRunLoop"), "runMode:beforeDate:", NSDefaultRunLoopMode, call("NSDate", "distantPast"));
   printf("2\n");
@@ -157,7 +169,6 @@ GUI::~GUI() {
 }
 
 auto test_cocoa_gui = []() {
-  TC_P(sizeof(id));
   GUI gui("Cocoa test", 800, 400);
   while (1) {
     gui.update();

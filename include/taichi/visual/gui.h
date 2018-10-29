@@ -1,9 +1,6 @@
 #pragma once
 
 #include <taichi/taichi>
-#include <numeric>
-
-TC_NAMESPACE_BEGIN
 
 #if defined(TC_PLATFORM_LINUX) || \
     (defined(TC_PLATFORM_OSX) && defined(TC_AMALGAMATED))
@@ -16,8 +13,10 @@ TC_NAMESPACE_BEGIN
 
 #if defined(TC_PLATFORM_OSX)
 #define TC_GUI_COCOA
+#include <objc/objc.h>
 #endif
 
+TC_NAMESPACE_BEGIN
 class Canvas {
   struct Context {
     Vector4 _color;
@@ -388,6 +387,7 @@ using GUIBase = GUIBaseWin32;
 #if defined(TC_GUI_COCOA)
 class GUIBaseCocoa {
  public:
+  id view;
 };
 
 using GUIBase = GUIBaseCocoa;

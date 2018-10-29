@@ -11,9 +11,9 @@
 // Obj-c runtime doc:
 // https://developer.apple.com/documentation/objectivec/objective-c_runtime?language=objc
 
+#include <objc/objc.h>
 #include <objc/message.h>
 #include <objc/runtime.h>
-#include <objc/objc.h>
 #include <objc/runtime.h>
 #include <objc/message.h>
 #include <objc/NSObjCRuntime.h>
@@ -35,10 +35,6 @@ C call(const char *class_name, const char *select, Args ... args) {
 
 extern id NSApp;
 extern id const NSDefaultRunLoopMode;
-
-static NSInteger width = 800;
-static NSInteger height = 400;
-
 
 typedef struct AppDel {
   Class isa;
@@ -62,6 +58,7 @@ Class ViewClass;
 // stuck with the C-based mentality of the application.
 
 void redraw(id self, SEL _, CGRect __) {
+  auto width = 800, height = 400;
   NSInteger dataLength = width * height * 4;
   UInt8 *data = (UInt8*)malloc(dataLength * sizeof(UInt8));
   static int t = 0;
@@ -107,7 +104,13 @@ static void initView() {
 }
 
 
-void run(void) {
+TC_NAMESPACE_BEGIN
+
+GUI::GUI(const std::string &window_name, int width, int height, bool normalized_coord)
+    : window_name(window_name),
+      width(width),
+      height(height),
+      key_pressed(false) {
   call("NSApplication", "sharedApplication");
   if (NSApp == nullptr) {
     fprintf(stderr,"Failed to initialized NSApplication.\nterminating.\n");
@@ -119,39 +122,10 @@ void run(void) {
   auto window = call("NSWindow", "alloc");
   auto rect = (CGRect){{0,0},{CGFloat(width),CGFloat(height)}};
   call(window, "initWithContentRect:styleMask:backing:defer:", rect, (NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask | NSMiniaturizableWindowMask), 0, false);
-  auto view = call(call("View", "alloc"), "initWithFrame:", rect);
+  view = call(call("View", "alloc"), "initWithFrame:", rect);
   call(window, "setContentView:", view);
   call(window, "becomeFirstResponder");
   call(window, "makeKeyAndOrderFront:", window);
-
-  //call(call((id)objc_getClass("NSRunLoop"), "currentRunLoop"), "run");
-  call(call((id)objc_getClass("NSRunLoop"), "currentRunLoop"), "runMode:beforeDate:", NSDefaultRunLoopMode, call("NSDate", "distantPast"));
-  for (;;) {
-    printf("1\n");
-    call(call((id)objc_getClass("NSRunLoop"), "currentRunLoop"), "runMode:beforeDate:", NSDefaultRunLoopMode, call("NSDate", "distantPast"));
-    printf("2\n");
-    auto event = call("NSApp",
-                      "nextEventMatchingMask:untilDate:inMode:dequeue:",
-                      NSUIntegerMax,
-                      call("NSDate", "distantPast"),
-                      NSDefaultRunLoopMode,
-                      YES);
-    call(view, "setNeedsDisplay:", YES);
-
-    if (event != nullptr) {
-      call("NSApp", "sendEvent:event", event);
-    }
-    // call("NSApp", "updateWindows");
-  }
-}
-
-TC_NAMESPACE_BEGIN
-
-GUI::GUI(const std::string &window_name, int width, int height, bool normalized_coord)
-    : window_name(window_name),
-      width(width),
-      height(height),
-      key_pressed(false) {
 
 }
 
@@ -160,7 +134,22 @@ void GUI::redraw() {
 }
 
 void GUI::update() {
+  //call(call((id)objc_getClass("NSRunLoop"), "currentRunLoop"), "run");
+  printf("1\n");
+  call(call((id)objc_getClass("NSRunLoop"), "currentRunLoop"), "runMode:beforeDate:", NSDefaultRunLoopMode, call("NSDate", "distantPast"));
+  printf("2\n");
+  auto event = call("NSApp",
+                    "nextEventMatchingMask:untilDate:inMode:dequeue:",
+                    NSUIntegerMax,
+                    call("NSDate", "distantPast"),
+                    NSDefaultRunLoopMode,
+                    YES);
+  call(view, "setNeedsDisplay:", YES);
 
+  if (event != nullptr) {
+    call("NSApp", "sendEvent:event", event);
+  }
+  // call("NSApp", "updateWindows");
 }
 
 GUI::~GUI() {
@@ -168,7 +157,11 @@ GUI::~GUI() {
 }
 
 auto test_cocoa_gui = []() {
-  run();
+  TC_P(sizeof(id));
+  GUI gui("Cocoa test", 800, 400);
+  while (1) {
+    gui.update();
+  }
 };
 
 TC_REGISTER_TASK(test_cocoa_gui);

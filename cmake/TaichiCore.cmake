@@ -42,6 +42,10 @@ if (USE_OPENGL)
     endif ()
 endif ()
 
+if (APPLE)
+    target_link_libraries(${CORE_LIBRARY_NAME} "-framework Cocoa")
+endif ()
+
 if (NOT WIN32)
     target_link_libraries(${CORE_LIBRARY_NAME} pthread stdc++)
     if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/lib)

@@ -65,7 +65,7 @@ task_invoke(const T &func, const std::vector<std::string> &params) {
 #define TC_REGISTER_TASK(task)                                             \
   class Task_##task : public taichi::Task {                                \
     std::string run(const std::vector<std::string> &parameters) override { \
-      return task_invoke<decltype(task)>(task, parameters);                \
+      return taichi::task_invoke<decltype(task)>(task, parameters);                \
     }                                                                      \
   };                                                                       \
   TC_IMPLEMENTATION(Task, Task_##task, #task)

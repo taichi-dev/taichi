@@ -1,5 +1,4 @@
 #include <taichi/visual/gui.h>
-#include <numeric>
 
 #if defined(TC_GUI_X11)
 #include <X11/Xlib.h>

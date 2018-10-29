@@ -91,6 +91,18 @@ void redraw(id self, SEL _, CGRect __) {
   CGDataProviderRelease(provider);
 }
 
+__attribute__((constructor))
+static void initView() {
+  ViewClass = objc_allocateClassPair((Class)objc_getClass("NSView"), "View", 0);
+  // and again, we tell the runtime to add a function called -drawRect:
+  // to our custom view. Note that there is an error in the type-specification
+  // of this method, as I do not know the @encode sequence of 'CGRect' off
+  // of the top of my head. As a result, there is a chance that the rect
+  // parameter of the method may not get passed properly.
+  class_addMethod(ViewClass, sel_getUid("drawRect:"), (IMP)redraw, "v@:");
+  objc_registerClassPair(ViewClass);
+}
+
 Class AppDelClass;
 
 static void CreateAppDelegate() {

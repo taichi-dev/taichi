@@ -87,40 +87,15 @@ GUI::GUI(const std::string &window_name, int width, int height, bool normalized_
 }
 
 void GUI::redraw() {
+  img->set_data(buffer);
   XPutImage((Display *)display, window, DefaultGC(display, 0), img->image, 0, 0,
             0, 0, width, height);
 }
 
-void GUI::update() {
-  img->set_data(buffer);
-  frame_id++;
-  while (taichi::Time::get_time() < start_time + frame_id / (real)fps) {
-  }
-  redraw();
-  process_event();
-  while (last_frame_interval.size() > 30) {
-    last_frame_interval.erase(last_frame_interval.begin());
-  }
-  auto real_fps = last_frame_interval.size() /
-                  (std::accumulate(last_frame_interval.begin(),
-                                   last_frame_interval.end(), 0.0_f));
-  XStoreName((Display *)display, window,
-             fmt::format("{} ({:.02f} FPS)", window_name, real_fps).c_str());
-  if (last_frame_time != 0) {
-    last_frame_interval.push_back(taichi::Time::get_time() - last_frame_time);
-  }
-  last_frame_time = taichi::Time::get_time();
+void GUI::set_title(std::string title) {
+  XStoreName((Display *)display, window, title.c_str());
 }
 
-void GUI::wait_key() {
-  while (true) {
-    key_pressed = false;
-    update();
-    if (key_pressed) {
-      break;
-    }
-  }
-}
 
 GUI::~GUI() {
 }

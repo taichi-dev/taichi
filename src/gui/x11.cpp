@@ -61,68 +61,30 @@ void GUI::process_event() {
   }
 }
 
-GUI::GUI(const std::string &window_name, int width, int height, bool normalized_coord)
-    : window_name(window_name),
-      width(width),
-      height(height),
-      key_pressed(false) {
+void GUI::create_window() {
   display = XOpenDisplay(nullptr);
   visual = DefaultVisual(display, 0);
   window =
       XCreateSimpleWindow((Display *)display, RootWindow((Display *)display, 0),
                           0, 0, width, height, 1, 0, 0);
-  XStoreName((Display *)display, window, window_name.c_str());
   XSelectInput((Display *)display, window,
                ButtonPressMask | ExposureMask | KeyPressMask | KeyReleaseMask);
   XMapWindow((Display *)display, window);
-  img = std::make_unique<CXImage>((Display *)display, (Visual *)visual, width,
-                                  height);
-  start_time = taichi::Time::get_time();
-  buffer.initialize(Vector2i(width, height));
-  canvas = std::make_unique<Canvas>(buffer);
-  last_frame_time = taichi::Time::get_time();
-  if (!normalized_coord) {
-    canvas->set_idendity_transform_matrix();
-  }
+  img = new CXImage((Display *)display, (Visual *)visual, width, height);
 }
 
 void GUI::redraw() {
+  img->set_data(buffer);
   XPutImage((Display *)display, window, DefaultGC(display, 0), img->image, 0, 0,
             0, 0, width, height);
 }
 
-void GUI::update() {
-  img->set_data(buffer);
-  frame_id++;
-  while (taichi::Time::get_time() < start_time + frame_id / (real)fps) {
-  }
-  redraw();
-  process_event();
-  while (last_frame_interval.size() > 30) {
-    last_frame_interval.erase(last_frame_interval.begin());
-  }
-  auto real_fps = last_frame_interval.size() /
-                  (std::accumulate(last_frame_interval.begin(),
-                                   last_frame_interval.end(), 0.0_f));
-  XStoreName((Display *)display, window,
-             fmt::format("{} ({:.02f} FPS)", window_name, real_fps).c_str());
-  if (last_frame_time != 0) {
-    last_frame_interval.push_back(taichi::Time::get_time() - last_frame_time);
-  }
-  last_frame_time = taichi::Time::get_time();
-}
-
-void GUI::wait_key() {
-  while (true) {
-    key_pressed = false;
-    update();
-    if (key_pressed) {
-      break;
-    }
-  }
+void GUI::set_title(std::string title) {
+  XStoreName((Display *)display, window, title.c_str());
 }
 
 GUI::~GUI() {
+  delete img;
 }
 
 TC_NAMESPACE_END

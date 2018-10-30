@@ -1,6 +1,7 @@
 #pragma once
 
 #include <taichi/taichi>
+#include <numeric>
 
 #if defined(TC_PLATFORM_LINUX) || \
     (defined(TC_PLATFORM_OSX) && defined(TC_AMALGAMATED))
@@ -364,7 +365,7 @@ class GUIBaseX11 {
   void *display;
   void *visual;
   unsigned long window;
-  std::unique_ptr<CXImage> img;
+  CXImage *img;
 };
 
 using GUIBase = GUIBaseX11;
@@ -409,16 +410,29 @@ class GUI : public GUIBase {
 
   void process_event();
 
-  GUI(const std::string &window_name,
-      int width = 800,
-      int height = 800,
-      bool normalized_coord = true);
+  explicit GUI(const std::string &window_name,
+               int width = 800,
+               int height = 800,
+               bool normalized_coord = true)
+      : window_name(window_name), width(width), height(height) {
+    create_window();
+    set_title(window_name);
+    start_time = taichi::Time::get_time();
+    buffer.initialize(Vector2i(width, height));
+    canvas = std::make_unique<Canvas>(buffer);
+    last_frame_time = taichi::Time::get_time();
+    if (!normalized_coord) {
+      canvas->set_idendity_transform_matrix();
+    }
+  }
 
-  GUI(const std::string &window_name,
-      Vector2i res,
-      bool normalized_coord = true)
+  explicit GUI(const std::string &window_name,
+               Vector2i res,
+               bool normalized_coord = true)
       : GUI(window_name, res[0], res[1], normalized_coord) {
   }
+
+  void create_window();
 
   Canvas &get_canvas() {
     return *canvas;
@@ -426,9 +440,36 @@ class GUI : public GUIBase {
 
   void redraw();
 
-  void update();
+  void set_title(std::string title);
 
-  void wait_key();
+  void update() {
+    frame_id++;
+    while (taichi::Time::get_time() < start_time + frame_id / (real)fps)
+      ;
+    redraw();
+    process_event();
+    while (last_frame_interval.size() > 30) {
+      last_frame_interval.erase(last_frame_interval.begin());
+    }
+    auto real_fps = last_frame_interval.size() /
+                    (std::accumulate(last_frame_interval.begin(),
+                                     last_frame_interval.end(), 0.0_f));
+    set_title(fmt::format("{} ({:.02f} FPS)", window_name, real_fps));
+    if (last_frame_time != 0) {
+      last_frame_interval.push_back(taichi::Time::get_time() - last_frame_time);
+    }
+    last_frame_time = taichi::Time::get_time();
+  }
+
+  void wait_key() {
+    while (true) {
+      key_pressed = false;
+      update();
+      if (key_pressed) {
+        break;
+      }
+    }
+  }
 
   void draw_log() {
     for (int i = 0; i < (int)log_entries.size(); i++) {

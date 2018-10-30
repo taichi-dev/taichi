@@ -414,7 +414,10 @@ class GUI : public GUIBase {
                int width = 800,
                int height = 800,
                bool normalized_coord = true)
-      : window_name(window_name), width(width), height(height) {
+      : window_name(window_name),
+        width(width),
+        height(height),
+        key_pressed(false) {
     create_window();
     set_title(window_name);
     start_time = taichi::Time::get_time();

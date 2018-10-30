@@ -413,13 +413,25 @@ class GUI : public GUIBase {
   GUI(const std::string &window_name,
       int width = 800,
       int height = 800,
-      bool normalized_coord = true);
+      bool normalized_coord = true) {
+    create_window();
+    set_title(window_name.c_str());
+    start_time = taichi::Time::get_time();
+    buffer.initialize(Vector2i(width, height));
+    canvas = std::make_unique<Canvas>(buffer);
+    last_frame_time = taichi::Time::get_time();
+    if (!normalized_coord) {
+      canvas->set_idendity_transform_matrix();
+    }
+  }
 
   GUI(const std::string &window_name,
       Vector2i res,
       bool normalized_coord = true)
       : GUI(window_name, res[0], res[1], normalized_coord) {
   }
+
+  void create_window();
 
   Canvas &get_canvas() {
     return *canvas;

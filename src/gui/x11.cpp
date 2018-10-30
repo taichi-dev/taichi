@@ -61,29 +61,17 @@ void GUI::process_event() {
   }
 }
 
-GUI::GUI(const std::string &window_name, int width, int height, bool normalized_coord)
-    : window_name(window_name),
-      width(width),
-      height(height),
-      key_pressed(false) {
+void GUI::create_window() {
   display = XOpenDisplay(nullptr);
   visual = DefaultVisual(display, 0);
   window =
       XCreateSimpleWindow((Display *)display, RootWindow((Display *)display, 0),
                           0, 0, width, height, 1, 0, 0);
-  XStoreName((Display *)display, window, window_name.c_str());
   XSelectInput((Display *)display, window,
                ButtonPressMask | ExposureMask | KeyPressMask | KeyReleaseMask);
   XMapWindow((Display *)display, window);
   img = std::make_unique<CXImage>((Display *)display, (Visual *)visual, width,
                                   height);
-  start_time = taichi::Time::get_time();
-  buffer.initialize(Vector2i(width, height));
-  canvas = std::make_unique<Canvas>(buffer);
-  last_frame_time = taichi::Time::get_time();
-  if (!normalized_coord) {
-    canvas->set_idendity_transform_matrix();
-  }
 }
 
 void GUI::redraw() {
@@ -95,7 +83,6 @@ void GUI::redraw() {
 void GUI::set_title(std::string title) {
   XStoreName((Display *)display, window, title.c_str());
 }
-
 
 GUI::~GUI() {
 }

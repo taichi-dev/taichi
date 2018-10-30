@@ -70,8 +70,7 @@ void GUI::create_window() {
   XSelectInput((Display *)display, window,
                ButtonPressMask | ExposureMask | KeyPressMask | KeyReleaseMask);
   XMapWindow((Display *)display, window);
-  img = std::make_unique<CXImage>((Display *)display, (Visual *)visual, width,
-                                  height);
+  img = new CXImage((Display *)display, (Visual *)visual, width, height);
 }
 
 void GUI::redraw() {
@@ -85,6 +84,7 @@ void GUI::set_title(std::string title) {
 }
 
 GUI::~GUI() {
+  delete img;
 }
 
 TC_NAMESPACE_END

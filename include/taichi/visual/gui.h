@@ -365,7 +365,7 @@ class GUIBaseX11 {
   void *display;
   void *visual;
   unsigned long window;
-  std::unique_ptr<CXImage> img;
+  CXImage *img;
 };
 
 using GUIBase = GUIBaseX11;
@@ -410,12 +410,13 @@ class GUI : public GUIBase {
 
   void process_event();
 
-  GUI(const std::string &window_name,
-      int width = 800,
-      int height = 800,
-      bool normalized_coord = true) {
+  explicit GUI(const std::string &window_name,
+               int width = 800,
+               int height = 800,
+               bool normalized_coord = true)
+      : window_name(window_name), width(width), height(height) {
     create_window();
-    set_title(window_name.c_str());
+    set_title(window_name);
     start_time = taichi::Time::get_time();
     buffer.initialize(Vector2i(width, height));
     canvas = std::make_unique<Canvas>(buffer);
@@ -425,9 +426,9 @@ class GUI : public GUIBase {
     }
   }
 
-  GUI(const std::string &window_name,
-      Vector2i res,
-      bool normalized_coord = true)
+  explicit GUI(const std::string &window_name,
+               Vector2i res,
+               bool normalized_coord = true)
       : GUI(window_name, res[0], res[1], normalized_coord) {
   }
 

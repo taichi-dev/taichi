@@ -147,25 +147,25 @@ void GUI::redraw() {
 }
 
 void GUI::update() {
-  printf("1\n");
   call(call((id)objc_getClass("NSRunLoop"), "currentRunLoop"), "runMode:beforeDate:", NSDefaultRunLoopMode, call("NSDate", "distantPast"));
-  printf("2\n");
-  auto event = call("NSApp",
-                    "nextEventMatchingMask:untilDate:inMode:dequeue:",
-                    NSUIntegerMax,
-                    call("NSDate", "distantPast"),
-                    NSDefaultRunLoopMode,
-                    YES);
-  call(view, "setNeedsDisplay:", YES);
-
-  if (event != nullptr) {
-    call("NSApp", "sendEvent:event", event);
+  while (1) {
+    auto event = call("NSApp",
+                      "nextEventMatchingMask:untilDate:inMode:dequeue:",
+                      NSUIntegerMax,
+                      call("NSDate", "distantPast"),
+                      NSDefaultRunLoopMode,
+                      YES);
+    call(view, "setNeedsDisplay:", YES);
+    if (event != nullptr) {
+      call("NSApp", "sendEvent:event", event);
+    } else {
+      break;
+    }
   }
   // call("NSApp", "updateWindows");
 }
 
 GUI::~GUI() {
-
 }
 
 auto test_cocoa_gui = []() {

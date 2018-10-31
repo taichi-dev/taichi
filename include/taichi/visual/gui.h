@@ -388,7 +388,7 @@ using GUIBase = GUIBaseWin32;
 #if defined(TC_GUI_COCOA)
 class GUIBaseCocoa {
  public:
-  id view;
+  id window, view;
 };
 
 using GUIBase = GUIBaseCocoa;

@@ -74,15 +74,15 @@ void redraw(id self, SEL _, CGRect __) {
   auto width = gui->width, height = gui->height;
   NSInteger dataLength = width * height * 4;
   UInt8 *data = (UInt8*)malloc(dataLength * sizeof(UInt8));
-  static int t = 0;
-  t++;
-  for (int j=0; j < height; j++) {
-    for (int i=0; i < width; i++) {
+  auto &img = gui->canvas->img;
+  for (int j = 0; j < height; j++) {
+    for (int i = 0; i < width; i++) {
       int index = 4 * (i + j * width);
-      data[index] = 255; //red
-      data[++index] = (i + t * 100) % 255; //green
-      data[++index] = 0;       //blue
-      data[++index] = 255;     //alpha
+      auto pixel = img[i][height - j - 1];
+      data[index++] = pixel[0] * 255; // red
+      data[index++] = pixel[1] * 255; // green
+      data[index++] = pixel[2] * 255; // blue
+      data[index++] = 255; // alpha
     }
   }
 
@@ -119,11 +119,7 @@ static void initView() {
 
 TC_NAMESPACE_BEGIN
 
-GUI::GUI(const std::string &window_name, int width, int height, bool normalized_coord)
-    : window_name(window_name),
-      width(width),
-      height(height),
-      key_pressed(false) {
+void GUI::create_window() {
   call("NSApplication", "sharedApplication");
   if (NSApp == nullptr) {
     fprintf(stderr,"Failed to initialized NSApplication.\nterminating.\n");
@@ -132,7 +128,7 @@ GUI::GUI(const std::string &window_name, int width, int height, bool normalized_
   auto appDelObj = call("AppDelegate", "alloc");
   appDelObj = call(appDelObj, "init");
   call(NSApp, "setDelegate:", appDelObj);
-  auto window = call("NSWindow", "alloc");
+  window = call("NSWindow", "alloc");
   auto rect = (CGRect){{0,0},{CGFloat(width),CGFloat(height)}};
   call(window, "initWithContentRect:styleMask:backing:defer:", rect, (NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask | NSMiniaturizableWindowMask), 0, false);
   view = call(call("View", "alloc"), "initWithFrame:", rect);
@@ -142,40 +138,33 @@ GUI::GUI(const std::string &window_name, int width, int height, bool normalized_
   call(window, "makeKeyAndOrderFront:", window);
 }
 
-void GUI::redraw() {
-
+void GUI::process_event() {
+  call(call((id)objc_getClass("NSRunLoop"), "currentRunLoop"), "runMode:beforeDate:", NSDefaultRunLoopMode, call("NSDate", "distantPast"));
+  while (1) {
+    auto event = call("NSApp",
+                      "nextEventMatchingMask:untilDate:inMode:dequeue:",
+                      NSUIntegerMax,
+                      call("NSDate", "distantPast"),
+                      NSDefaultRunLoopMode,
+                      YES);
+    if (event != nullptr) {
+      call("NSApp", "sendEvent:event", event);
+    } else {
+      break;
+    }
+  }
 }
 
-void GUI::update() {
-  printf("1\n");
-  call(call((id)objc_getClass("NSRunLoop"), "currentRunLoop"), "runMode:beforeDate:", NSDefaultRunLoopMode, call("NSDate", "distantPast"));
-  printf("2\n");
-  auto event = call("NSApp",
-                    "nextEventMatchingMask:untilDate:inMode:dequeue:",
-                    NSUIntegerMax,
-                    call("NSDate", "distantPast"),
-                    NSDefaultRunLoopMode,
-                    YES);
-  call(view, "setNeedsDisplay:", YES);
+void GUI::set_title(std::string title) {
+  //call(window, "title:", title.c_str());
+}
 
-  if (event != nullptr) {
-    call("NSApp", "sendEvent:event", event);
-  }
-  // call("NSApp", "updateWindows");
+void GUI::redraw() {
+  call(view, "setNeedsDisplay:", YES);
 }
 
 GUI::~GUI() {
-
 }
-
-auto test_cocoa_gui = []() {
-  GUI gui("Cocoa test", 800, 400);
-  while (1) {
-    gui.update();
-  }
-};
-
-TC_REGISTER_TASK(test_cocoa_gui);
 
 TC_NAMESPACE_END
 

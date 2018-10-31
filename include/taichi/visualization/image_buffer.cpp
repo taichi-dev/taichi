@@ -105,7 +105,7 @@ void Array2D<T>::write_as_image(const std::string &filename) {
 #else
   TC_ERROR(
       "'write_as_image' is not implemented. Append -DTC_IMAGE_IO to "
-      "compiler operations if using taichi.h.");
+      "compiler options if you are using taichi.h.");
 #endif
 }
 

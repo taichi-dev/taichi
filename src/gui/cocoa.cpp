@@ -22,16 +22,17 @@
 #include <CoreGraphics/CGGeometry.h>
 #include <ApplicationServices/ApplicationServices.h>
 
-template <typename C=id, typename ... Args>
-C call(id i, const char *select, Args ... args) {
+template <typename C = id, typename... Args>
+C call(id i, const char *select, Args... args) {
   using func = C(id, SEL, Args...);
   return ((func *)(objc_msgSend))(i, sel_getUid(select), args...);
 }
 
-template <typename C=id, typename ... Args>
-C call(const char *class_name, const char *select, Args ... args) {
+template <typename C = id, typename... Args>
+C call(const char *class_name, const char *select, Args... args) {
   using func = C(id, SEL, Args...);
-  return ((func *)(objc_msgSend))((id)objc_getClass(class_name), sel_getUid(select), args...);
+  return ((func *)(objc_msgSend))((id)objc_getClass(class_name),
+                                  sel_getUid(select), args...);
 }
 
 extern id NSApp;
@@ -43,8 +44,8 @@ typedef struct AppDel {
 } AppDelegate;
 
 class IdComparator {
-public:
-  bool operator() (id a, id b) const {
+ public:
+  bool operator()(id a, id b) const {
     TC_STATIC_ASSERT(sizeof(a) == sizeof(taichi::int64));
     return taichi::bit::reinterpret_bits<taichi::int64>(a) <
            taichi::bit::reinterpret_bits<taichi::int64>(b);
@@ -54,11 +55,11 @@ public:
 std::map<id, taichi::GUI *, IdComparator> gui_from_id;
 
 enum {
-  NSBorderlessWindowMask		= 0,
-  NSTitledWindowMask			= 1 << 0,
-  NSClosableWindowMask		= 1 << 1,
-  NSMiniaturizableWindowMask	= 1 << 2,
-  NSResizableWindowMask		= 1 << 3,
+  NSBorderlessWindowMask = 0,
+  NSTitledWindowMask = 1 << 0,
+  NSClosableWindowMask = 1 << 1,
+  NSMiniaturizableWindowMask = 1 << 2,
+  NSResizableWindowMask = 1 << 3,
 };
 
 // This is a strong reference to the class of our custom view,
@@ -78,19 +79,23 @@ void redraw(id self, SEL _, CGRect __) {
     for (int i = 0; i < width; i++) {
       int index = 4 * (i + j * width);
       auto pixel = img[i][height - j - 1];
-      data[index++] = pixel[0] * 255; // red
-      data[index++] = pixel[1] * 255; // green
-      data[index++] = pixel[2] * 255; // blue
-      data[index++] = 255; // alpha
+      data[index++] = uint8(clamp(int(p[0] * 255.0_f), 0, 255));
+      data[index++] = uint8(clamp(int(p[1] * 255.0_f), 0, 255));
+      data[index++] = uint8(clamp(int(p[2] * 255.0_f), 0, 255));
+      data[index++] = 255;  // alpha
     }
   }
 
-  CGDataProviderRef provider = CGDataProviderCreateWithData(nullptr, data.data(), gui->img_data_length, nullptr);
+  CGDataProviderRef provider = CGDataProviderCreateWithData(
+      nullptr, data.data(), gui->img_data_length, nullptr);
   CGColorSpaceRef colorspace = CGColorSpaceCreateDeviceRGB();
-  CGImageRef image = CGImageCreate(width, height, 8, 32, width * 4, colorspace,
-                                   kCGBitmapByteOrder32Big | kCGImageAlphaPremultipliedLast,
-                                   provider, nullptr, true, kCGRenderingIntentDefault);
-  CGContextRef context = call<CGContextRef>(call((id)objc_getClass("NSGraphicsContext"), "currentContext"), "graphicsPort");
+  CGImageRef image =
+      CGImageCreate(width, height, 8, 32, width * 4, colorspace,
+                    kCGBitmapByteOrder32Big | kCGImageAlphaPremultipliedLast,
+                    provider, nullptr, true, kCGRenderingIntentDefault);
+  CGContextRef context = call<CGContextRef>(
+      call((id)objc_getClass("NSGraphicsContext"), "currentContext"),
+      "graphicsPort");
 
   CGRect rect{{0, 0}, {CGFloat(width), CGFloat(height)}};
   CGContextDrawImage(context, rect, image);
@@ -101,8 +106,7 @@ void redraw(id self, SEL _, CGRect __) {
 }
 
 Class AppDelClass;
-__attribute__((constructor))
-static void initView() {
+__attribute__((constructor)) static void initView() {
   ViewClass = objc_allocateClassPair((Class)objc_getClass("NSView"), "View", 0);
   // and again, we tell the runtime to add a function called -drawRect:
   // to our custom view. Note that there is an error in the type-specification
@@ -112,25 +116,28 @@ static void initView() {
   class_addMethod(ViewClass, sel_getUid("drawRect:"), (IMP)redraw, "v@:");
   objc_registerClassPair(ViewClass);
 
-  AppDelClass = objc_allocateClassPair((Class)objc_getClass("NSObject"), "AppDelegate", 0);
+  AppDelClass = objc_allocateClassPair((Class)objc_getClass("NSObject"),
+                                       "AppDelegate", 0);
   objc_registerClassPair(AppDelClass);
 }
-
 
 TC_NAMESPACE_BEGIN
 
 void GUI::create_window() {
   call("NSApplication", "sharedApplication");
   if (NSApp == nullptr) {
-    fprintf(stderr,"Failed to initialized NSApplication.\nterminating.\n");
+    fprintf(stderr, "Failed to initialized NSApplication.\nterminating.\n");
     return;
   }
   auto appDelObj = call("AppDelegate", "alloc");
   appDelObj = call(appDelObj, "init");
   call(NSApp, "setDelegate:", appDelObj);
   window = call("NSWindow", "alloc");
-  auto rect = (CGRect){{0,0},{CGFloat(width),CGFloat(height)}};
-  call(window, "initWithContentRect:styleMask:backing:defer:", rect, (NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask | NSMiniaturizableWindowMask), 0, false);
+  auto rect = (CGRect){{0, 0}, {CGFloat(width), CGFloat(height)}};
+  call(window, "initWithContentRect:styleMask:backing:defer:", rect,
+       (NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask |
+        NSMiniaturizableWindowMask),
+       0, false);
   view = call(call("View", "alloc"), "initWithFrame:", rect);
   gui_from_id[view] = this;
   call(window, "setContentView:", view);
@@ -141,14 +148,14 @@ void GUI::create_window() {
 }
 
 void GUI::process_event() {
-  call(call((id)objc_getClass("NSRunLoop"), "currentRunLoop"), "runMode:beforeDate:", NSDefaultRunLoopMode, call("NSDate", "distantPast"));
+  call(call((id)objc_getClass("NSRunLoop"), "currentRunLoop"),
+       "runMode:beforeDate:", NSDefaultRunLoopMode,
+       call("NSDate", "distantPast"));
   while (1) {
-    auto event = call("NSApp",
-                      "nextEventMatchingMask:untilDate:inMode:dequeue:",
-                      NSUIntegerMax,
-                      call("NSDate", "distantPast"),
-                      NSDefaultRunLoopMode,
-                      YES);
+    auto event =
+        call("NSApp",
+             "nextEventMatchingMask:untilDate:inMode:dequeue:", NSUIntegerMax,
+             call("NSDate", "distantPast"), NSDefaultRunLoopMode, YES);
     if (event != nullptr) {
       call("NSApp", "sendEvent:event", event);
     } else {
@@ -171,6 +178,5 @@ GUI::~GUI() {
 }
 
 TC_NAMESPACE_END
-
 
 #endif

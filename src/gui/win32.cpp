@@ -39,11 +39,7 @@ void GUI::process_event() {
   }
 }
 
-GUI::GUI(const std::string &window_name, int width, int height, bool normalized_coord)
-    : window_name(window_name),
-      width(width),
-      height(height),
-      key_pressed(false) {
+void GUI::create_window() {
   const char CLASS_NAME[] = "Taichi Win32 Window";
 
   WNDCLASS wc = {};
@@ -73,18 +69,9 @@ GUI::GUI(const std::string &window_name, int width, int height, bool normalized_
   }
 
   ShowWindow(hwnd, SW_SHOWDEFAULT);
-
   hdc = GetDC(hwnd);
-
-  start_time = taichi::Time::get_time();
-  buffer.initialize(Vector2i(width, height));
-  canvas = std::make_unique<Canvas>(buffer);
-  last_frame_time = taichi::Time::get_time();
   data = (COLORREF *)calloc(width * height, sizeof(COLORREF));
   src = CreateCompatibleDC(hdc);
-  if (!normalized_coord) {
-    canvas->set_idendity_transform_matrix();
-  }
 }
 
 void GUI::redraw() {

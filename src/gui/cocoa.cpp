@@ -71,6 +71,7 @@ Class ViewClass;
 // stuck with the C-based mentality of the application.
 
 void redraw(id self, SEL _, CGRect __) {
+  using namespace taichi;
   auto *gui = gui_from_id[self];
   auto width = gui->width, height = gui->height;
   auto &img = gui->canvas->img;
@@ -79,9 +80,9 @@ void redraw(id self, SEL _, CGRect __) {
     for (int i = 0; i < width; i++) {
       int index = 4 * (i + j * width);
       auto pixel = img[i][height - j - 1];
-      data[index++] = uint8(clamp(int(p[0] * 255.0_f), 0, 255));
-      data[index++] = uint8(clamp(int(p[1] * 255.0_f), 0, 255));
-      data[index++] = uint8(clamp(int(p[2] * 255.0_f), 0, 255));
+      data[index++] = uint8(clamp(int(pixel[0] * 255.0_f), 0, 255));
+      data[index++] = uint8(clamp(int(pixel[1] * 255.0_f), 0, 255));
+      data[index++] = uint8(clamp(int(pixel[2] * 255.0_f), 0, 255));
       data[index++] = 255;  // alpha
     }
   }

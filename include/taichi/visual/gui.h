@@ -389,6 +389,8 @@ using GUIBase = GUIBaseWin32;
 class GUIBaseCocoa {
  public:
   id window, view;
+  std::size_t img_data_length;
+  std::vector<uint8_t> img_data;
 };
 
 using GUIBase = GUIBaseCocoa;

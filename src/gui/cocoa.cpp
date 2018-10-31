@@ -72,9 +72,8 @@ Class ViewClass;
 void redraw(id self, SEL _, CGRect __) {
   auto *gui = gui_from_id[self];
   auto width = gui->width, height = gui->height;
-  NSInteger dataLength = width * height * 4;
-  UInt8 *data = (UInt8*)malloc(dataLength * sizeof(UInt8));
   auto &img = gui->canvas->img;
+  auto &data = gui->img_data;
   for (int j = 0; j < height; j++) {
     for (int i = 0; i < width; i++) {
       int index = 4 * (i + j * width);
@@ -86,18 +85,19 @@ void redraw(id self, SEL _, CGRect __) {
     }
   }
 
-  CGDataProviderRef provider = CGDataProviderCreateWithData(nullptr, data, dataLength, nullptr);
+  CGDataProviderRef provider = CGDataProviderCreateWithData(nullptr, data.data(), gui->img_data_length, nullptr);
   CGColorSpaceRef colorspace = CGColorSpaceCreateDeviceRGB();
   CGImageRef image = CGImageCreate(width, height, 8, 32, width * 4, colorspace,
                                    kCGBitmapByteOrder32Big | kCGImageAlphaPremultipliedLast,
                                    provider, nullptr, true, kCGRenderingIntentDefault);
-
   CGContextRef context = call<CGContextRef>(call((id)objc_getClass("NSGraphicsContext"), "currentContext"), "graphicsPort");
+
   CGRect rect{{0, 0}, {CGFloat(width), CGFloat(height)}};
   CGContextDrawImage(context, rect, image);
 
-  CGColorSpaceRelease(colorspace);
+  CGImageRelease(image);
   CGDataProviderRelease(provider);
+  CGColorSpaceRelease(colorspace);
 }
 
 Class AppDelClass;
@@ -136,6 +136,8 @@ void GUI::create_window() {
   call(window, "setContentView:", view);
   call(window, "becomeFirstResponder");
   call(window, "makeKeyAndOrderFront:", window);
+  img_data_length = width * height * 4;
+  img_data.resize(img_data_length);
 }
 
 void GUI::process_event() {
@@ -156,7 +158,9 @@ void GUI::process_event() {
 }
 
 void GUI::set_title(std::string title) {
-  //call(window, "title:", title.c_str());
+  auto str = call("NSString", "stringWithUTF8String:", title.c_str());
+  call(window, "setTitle:", str);
+  call(str, "release");
 }
 
 void GUI::redraw() {

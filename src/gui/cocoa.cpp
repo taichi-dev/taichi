@@ -119,11 +119,7 @@ static void initView() {
 
 TC_NAMESPACE_BEGIN
 
-GUI::GUI(const std::string &window_name, int width, int height, bool normalized_coord)
-    : window_name(window_name),
-      width(width),
-      height(height),
-      key_pressed(false) {
+void GUI::create_window() {
   call("NSApplication", "sharedApplication");
   if (NSApp == nullptr) {
     fprintf(stderr,"Failed to initialized NSApplication.\nterminating.\n");
@@ -132,7 +128,7 @@ GUI::GUI(const std::string &window_name, int width, int height, bool normalized_
   auto appDelObj = call("AppDelegate", "alloc");
   appDelObj = call(appDelObj, "init");
   call(NSApp, "setDelegate:", appDelObj);
-  auto window = call("NSWindow", "alloc");
+  window = call("NSWindow", "alloc");
   auto rect = (CGRect){{0,0},{CGFloat(width),CGFloat(height)}};
   call(window, "initWithContentRect:styleMask:backing:defer:", rect, (NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask | NSMiniaturizableWindowMask), 0, false);
   view = call(call("View", "alloc"), "initWithFrame:", rect);
@@ -142,11 +138,7 @@ GUI::GUI(const std::string &window_name, int width, int height, bool normalized_
   call(window, "makeKeyAndOrderFront:", window);
 }
 
-void GUI::redraw() {
-
-}
-
-void GUI::update() {
+void GUI::process_event() {
   call(call((id)objc_getClass("NSRunLoop"), "currentRunLoop"), "runMode:beforeDate:", NSDefaultRunLoopMode, call("NSDate", "distantPast"));
   while (1) {
     auto event = call("NSApp",
@@ -155,14 +147,20 @@ void GUI::update() {
                       call("NSDate", "distantPast"),
                       NSDefaultRunLoopMode,
                       YES);
-    call(view, "setNeedsDisplay:", YES);
     if (event != nullptr) {
       call("NSApp", "sendEvent:event", event);
     } else {
       break;
     }
   }
-  // call("NSApp", "updateWindows");
+}
+
+void GUI::set_title(std::string title) {
+  //call(window, "title:", title.c_str());
+}
+
+void GUI::redraw() {
+  call(view, "setNeedsDisplay:", YES);
 }
 
 GUI::~GUI() {

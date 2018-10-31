@@ -3,8 +3,7 @@
 #include <taichi/taichi>
 #include <numeric>
 
-#if defined(TC_PLATFORM_LINUX) || \
-    (defined(TC_PLATFORM_OSX) && defined(TC_AMALGAMATED))
+#if defined(TC_PLATFORM_LINUX)
 #define TC_GUI_X11
 #endif
 

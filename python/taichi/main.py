@@ -89,6 +89,7 @@ def main():
         "           ti statement [statement]  |-> Execute a single statement (with taichi imported as tc\n"
         "           ti [script.py]            |-> Run script\n"
         "           ti doc                    |-> Build documentation\n"
+        "           ti merge                  |-> Merge images in folders horizontally\n"
         "           ti debug [script.py]      |-> Debug script\n")
     exit(-1)
   mode = sys.argv[1]
@@ -202,6 +203,18 @@ def main():
       shutil.move(fn, tmp_fn)
       command = r'sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g"'
       os.system('{} {} > {}'.format(command, tmp_fn, fn))
+  elif mode == "merge":
+    import cv2 # TODO: remove this dependency
+    import numpy as np
+    folders = sys.argv[2:]
+    os.makedirs('merged', exist_ok=True)
+    for fn in sorted(os.listdir(folders[0])):
+      imgs = []
+      for fld in folders:
+        img = cv2.imread(os.path.join(fld, fn))
+        imgs.append(img)
+      img = np.hstack(imgs)
+      cv2.imwrite(os.path.join('merged', fn), img)
   else:
     print("Unknown command '{}'".format(mode))
     exit(-1)

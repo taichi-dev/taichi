@@ -1,4 +1,4 @@
-# This file generates a taichi header (analgamation)
+# This file generates a taichi header (amalgamation)
 
 import os
 import sys

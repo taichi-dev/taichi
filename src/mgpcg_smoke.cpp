@@ -3,6 +3,7 @@
 #include <taichi/system/threading.h>
 #include <taichi/util.h>
 #include <taichi/math/svd.h>
+#include <experimental/filesystem>
 #include <taichi/visualization/particle_visualization.h>
 #include <taichi/visual/gui.h>
 #include "stencil.h"
@@ -92,7 +93,7 @@ class MGPCGSmoke {
   using Matrix = TMatrix<real, dim>;
   using Grid = TaichiGrid<Block>;
 
-  const int n = 128;
+  const int n = 32;
   const int mg_lv = log2int(n) - 2;
   std::vector<std::unique_ptr<Grid>> grids;
 
@@ -122,6 +123,7 @@ class MGPCGSmoke {
 
   std::shared_ptr<Camera> cam;
   real current_t;
+  int step_count;
   real dt = 3e-3_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
 
   std::unique_ptr<ParticleRenderer> renderer;
@@ -148,6 +150,7 @@ class MGPCGSmoke {
     renderer->initialize(dict);
     renderer->set_camera(cam);
     current_t = 0;
+    step_count = 0;
     // Span a region in
     grids.resize(mg_lv);
     for (int i = 0; i < mg_lv; i++) {
@@ -531,7 +534,7 @@ class MGPCGSmoke {
           }
 
           //#define sample_velocity(pos) Vector3(u.sample(pos), v.sample(pos),
-          //w.sample(pos))
+          // w.sample(pos))
           auto sample_velocity = [&](Vector3 pos) -> Vector3 {
             return Vector3(u.sample(pos), v.sample(pos), w.sample(pos));
           };
@@ -610,6 +613,7 @@ class MGPCGSmoke {
     // Solve Poisson
     poisson_solve();
     // Apply pressure
+    real scale = 1 + (step_count + 1) % 2;
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
           GridScratchPadCh scratch(an, sizeof(real) * CH_X);
@@ -617,8 +621,8 @@ class MGPCGSmoke {
             auto center = VectorI(ind);
             for (int k = 0; k < dim; k++) {
               b.node_local(ind)[CH_VX + k] -=
-                  scratch.node(center) -
-                  scratch.node(center - VectorI::axis(k));
+                  scale * (scratch.node(center) -
+                           scratch.node(center - VectorI::axis(k)));
             }
           }
 
@@ -704,6 +708,7 @@ class MGPCGSmoke {
     TC_PROFILE("Advection", advect());
     TC_PROFILE("Project", project());
     current_t += dt;
+    step_count += 1;
   }
 
   Array2D<Vector3> render_density_field() {
@@ -852,6 +857,9 @@ auto render_smoke = [](const std::vector<std::string> &params) {
   TC_PROFILER("smoke");
   GUI gui("MGPCG Smoke", cam_res);
 
+  TC_ASSERT(!params.empty());
+  auto folder = params[0];
+
   auto renderer = create_instance_unique<ParticleRenderer>("shadow_map");
   auto radius = 1.0_f;
 
@@ -877,14 +885,25 @@ auto render_smoke = [](const std::vector<std::string> &params) {
   for (int frame = 1;; frame++) {
     auto res = canvas.img.get_res();
     Array2D<Vector3> image(Vector2i(res), Vector3(1) - Vector3(0.0_f));
-    std::vector<RenderParticle> particles;
-    read_from_binary_file(particles, fmt::format("outputs/{:06d}.tcb", frame));
-    renderer->render(image, particles);
+    std::vector<Particle> particles;
+    read_from_binary_file(particles,
+                          fmt::format("{}/{:06d}.tcb", folder, frame));
+    std::vector<RenderParticle> render_particles;
+    for (auto &p : particles) {
+      auto color = hsv2rgb(Vector3(fract(p.pos[3] / 4) * 2, 0.7_f, 0.9_f));
+      render_particles.push_back(
+          RenderParticle(p.pos * Vector3(0.16_f), Vector4(color, 1.0_f)));
+    }
+
+    renderer->render(image, render_particles);
     for (auto &ind : image.get_region()) {
       canvas.img[ind] = Vector4(image[ind]);
     }
     gui.update();
-    gui.get_canvas().img.write_as_image(fmt::format("tmp/{:05d}.png", frame));
+    auto render_dir = fmt::format("{}_rendered", folder);
+    std::experimental::filesystem::create_directory(render_dir);
+    gui.get_canvas().img.write_as_image(
+        fmt::format("{}/{:05d}.png", render_dir, frame));
   }
 };
 

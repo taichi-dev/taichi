@@ -218,7 +218,7 @@ if get_os_name() == 'osx':
   os.chdir(tmp_cwd)
 elif get_os_name() == 'linux':
   bin_dir = get_bin_directory()
-  os.environ['LD_LIBRARY_PATH'] = '/usr/lib64/'
+  os.environ['LD_LIBRARY_PATH'] += ':/usr/lib64/'
   if not os.path.exists(os.path.join(bin_dir, 'libtaichi_core.so')):
     build()
   tmp_cwd = os.getcwd()

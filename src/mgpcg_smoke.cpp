@@ -94,7 +94,7 @@ class MGPCGSmoke {
   using Grid = TaichiGrid<Block>;
   std::string folder;
 
-  const int n = 64;
+  const int n = 32;
   const int mg_lv = log2int(n) - 2;
   std::vector<std::unique_ptr<Grid>> grids;
   const bool reflection = false;
@@ -113,7 +113,6 @@ class MGPCGSmoke {
     CH_VY,
     CH_VZ,
     CH_RHO,
-    CH_T
   };
 
   using VectorI = Vector3i;
@@ -531,7 +530,6 @@ class MGPCGSmoke {
               v.node(ind) = node[CH_VY];
               w.node(ind) = node[CH_VZ];
               rho.node(ind) = node[CH_RHO];
-              T.node(ind) = node[CH_T];
             }
           }
 
@@ -556,7 +554,6 @@ class MGPCGSmoke {
             node[CH_VY] = v.sample(backtrace(v.node_pos(ind + offset)));
             node[CH_VZ] = w.sample(backtrace(w.node_pos(ind + offset)));
             node[CH_RHO] = rho.sample(backtrace(rho.node_pos(ind + offset)));
-            node[CH_T] = T.sample(backtrace(T.node_pos(ind + offset)));
           }
 
           if (b.meta.get_has_effective_cell()) {
@@ -647,7 +644,6 @@ class MGPCGSmoke {
           b.node_local(ind)[CH_VY] = 0;
           b.node_local(ind)[CH_VZ] = 0;
           b.node_local(ind)[CH_RHO] = 0;
-          b.node_local(ind)[CH_T] = 0;
         }
       }
       if (b.base_coord == VectorI(0, -n * 2 + 8, 0)) {
@@ -669,15 +665,11 @@ class MGPCGSmoke {
           b.node_local(ind)[CH_VY] = 0;
           b.node_local(ind)[CH_VZ] = 0;
           b.node_local(ind)[CH_RHO] = 1;
-          b.node_local(ind)[CH_T] = (std::cos(current_t * 30)) * 0.2_f + 1_f;
         }
       }
       real scale = std::exp(-temperature_decay * dt);
       for (auto ind : b.local_region()) {
-        b.node_local(ind)[CH_VY] += (b.node_local(ind)[CH_T] * buoyancy -
-                                     b.node_local(ind)[CH_RHO] * gravity) *
-                                    dt;
-        b.node_local(ind)[CH_T] *= scale;
+        b.node_local(ind)[CH_VY] += (b.node_local(ind)[CH_RHO] * buoyancy) * dt;
       }
     });
   }
@@ -837,7 +829,8 @@ auto smoke = [](const std::vector<std::string> &params) {
     TC_PROFILE("step", smoke->step());
     TC_PROFILE("render", smoke->render(gui.get_canvas()));
     gui.update();
-    gui.get_canvas().img.write_as_image(fmt::format("tmp/{:05d}.png", frame));
+    // gui.get_canvas().img.write_as_image(fmt::format("tmp/{:05d}.png",
+    // frame));
     {
       /*
       TC_PROFILER("debug");

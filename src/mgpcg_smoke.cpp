@@ -92,10 +92,12 @@ class MGPCGSmoke {
   using VectorP = TVector<real, dim + 1>;
   using Matrix = TMatrix<real, dim>;
   using Grid = TaichiGrid<Block>;
+  std::string folder;
 
-  const int n = 32;
+  const int n = 64;
   const int mg_lv = log2int(n) - 2;
   std::vector<std::unique_ptr<Grid>> grids;
+  const bool reflection = false;
 
   enum {
     CH_R,
@@ -613,7 +615,7 @@ class MGPCGSmoke {
     // Solve Poisson
     poisson_solve();
     // Apply pressure
-    real scale = 1 + (step_count + 1) % 2;
+    real scale = 1 + (step_count + 1) % 2 * (int)reflection;
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
           GridScratchPadCh scratch(an, sizeof(real) * CH_X);
@@ -687,7 +689,7 @@ class MGPCGSmoke {
     auto raw_particles = grids[0]->gather_particles();
     static int counter = 0;
     write_to_binary_file(raw_particles,
-                         fmt::format("outputs/{:06d}.tcb", counter));
+                         fmt::format("{}/{:06d}.tcb", folder, counter));
     counter += 1;
     for (auto &p : grids[0]->gather_particles()) {
       auto t = p.pos[3];
@@ -826,6 +828,10 @@ auto smoke = [](const std::vector<std::string> &params) {
   GUI gui("MGPCG Smoke", cam_res);
   // GUI gui2("Velocity", 256, 512);
   // GUI gui3("Density", 256, 512);
+  TC_ASSERT(!params.empty());
+  auto folder = params[0];
+  std::experimental::filesystem::create_directory(folder);
+  smoke->folder = folder;
 
   for (int frame = 0;; frame++) {
     TC_PROFILE("step", smoke->step());

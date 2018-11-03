@@ -17,6 +17,7 @@
 #endif
 
 TC_NAMESPACE_BEGIN
+
 class Canvas {
   struct Context {
     Vector4 _color;
@@ -409,7 +410,76 @@ class GUI : public GUIBase {
   bool key_pressed;
   std::vector<std::string> log_entries;
 
+  Vector2i widget_size = Vector2i(200, 20);
+
+  struct MouseEvent {
+    enum class Type { move, press, release };
+    Type type;
+    Vector2i pos;
+  };
+
+  struct Rect {
+    Vector2i pos;
+    Vector2i size;
+    Rect(Vector2i pos, Vector2i size) : pos(pos), size(size) {
+    }
+    bool inside(Vector2i p) {
+      return pos <= p && p < pos + size;
+    }
+  };
+
+  class Widget {
+   public:
+    Rect rect;
+    Widget(Rect rect) : rect(rect){};
+    bool inside(Vector2i p) {
+      return rect.inside(p);
+    }
+    virtual void mouse_event(MouseEvent &e) {
+    }
+  };
+
+  std::vector<std::unique_ptr<Widget>> widgets;
+
+  class Button : public Widget {
+   public:
+    std::string text;
+
+    using CallbackType = std::function<void()>;
+    CallbackType callback;
+
+    Button(Rect rect, const std::string text, const CallbackType &callback)
+        : Widget(rect), text(text), callback(callback) {
+    }
+
+    virtual void mouse_event(MouseEvent e) {
+      if (e.type == MouseEvent::Type::release) {
+        callback();
+      }
+    }
+  };
+
+  Rect make_widget_rect() {
+    return Rect(Vector2i(width - widget_size[0],
+                         height - widgets.size() * widget_size[1]),
+                widget_size);
+  }
+
+  GUI &button(std::string text, const Button::CallbackType &callback) {
+    widgets.push_back(
+        std::make_unique<Button>(make_widget_rect(), text, callback));
+    return *this;
+  }
+
   void process_event();
+
+  void mouse_event(MouseEvent e) {
+    for (auto &w : widgets) {
+      if (w->inside(e.pos)) {
+        w->mouse_event(e);
+      }
+    }
+  }
 
   explicit GUI(const std::string &window_name,
                int width = 800,

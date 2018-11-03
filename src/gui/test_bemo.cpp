@@ -8,6 +8,8 @@ auto test_bemo = []() {
   auto canvas = *gui.canvas;
   real t = 0;
 
+  gui.button("test", [] { TC_INFO("Triggered"); });
+
   while (1) {
     t += 0.02_f;
     canvas.clear(Vector4(0.95));

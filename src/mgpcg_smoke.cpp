@@ -11,7 +11,7 @@
 TC_NAMESPACE_BEGIN
 
 real gravity = 100;
-real buoyancy = 700;
+real buoyancy = 300;
 real temperature_decay = 1;
 Vector2i cam_res(720, 1280);
 int zero = 0;
@@ -451,11 +451,11 @@ class MGPCGSmoke {
   // https://en.wikipedia.org/wiki/Conjugate_gradient_method
   void poisson_solve() {
     TC_PROFILER("Poisson Solve");
-    constexpr real tolerance = 1e-4_f;
+    constexpr real tolerance = 1e-14_f;
     bool use_preconditioner = true;
     real initial_residual_norm = norm(CH_B);
     TC_P(initial_residual_norm);
-    if (initial_residual_norm < 1e-20_f) {
+    if (initial_residual_norm < 1e-30_f) {
       return;
     }
     clear(0, CH_X);
@@ -595,7 +595,7 @@ class MGPCGSmoke {
             div += scratchZ.node(center) -
                    scratchZ.node(center + VectorI::axis(2));
             b.node_local(ind)[CH_B] = div;
-            if (debug && std::abs(div) > 1e-3_f) {
+            if (debug && std::abs(div) > 1e-5_f) {
               TC_P(b.base_coord + ind);
               TC_P(div);
             }
@@ -613,6 +613,7 @@ class MGPCGSmoke {
     poisson_solve();
     // Apply pressure
     real scale = 1 + (step_count + 1) % 2 * (int)reflection;
+    TC_P(scale);
     grids[0]->advance(
         [&](Block &b, Grid::Ancestors &an) {
           GridScratchPadCh scratch(an, sizeof(real) * CH_X);
@@ -627,12 +628,13 @@ class MGPCGSmoke {
 
         },
         false, true);
-    if (false) {
+    if (true) {
       compute_b(true);
       real after_projection = norm(CH_B);
-      if (after_projection > 1e-4_f) {
-        TC_WARN("After projection: {}", after_projection);
-      }
+      //if (after_projection > 1e-4_f) {
+      TC_WARN("Before projection: {}", before_projection);
+      TC_WARN("After projection: {}", after_projection);
+      //}
     }
   }
 
@@ -667,7 +669,6 @@ class MGPCGSmoke {
           b.node_local(ind)[CH_RHO] = 1;
         }
       }
-      real scale = std::exp(-temperature_decay * dt);
       for (auto ind : b.local_region()) {
         b.node_local(ind)[CH_VY] += (b.node_local(ind)[CH_RHO] * buoyancy) * dt;
       }

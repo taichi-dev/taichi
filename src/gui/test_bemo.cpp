@@ -4,11 +4,12 @@
 TC_NAMESPACE_BEGIN
 
 auto test_bemo = []() {
-  GUI gui("Bemo Test", 800, 400, false);
+  GUI gui("Bemo Test", 1000, 400, false);
   auto canvas = *gui.canvas;
   real t = 0;
 
   gui.button("test", [] { TC_INFO("Triggered"); });
+  gui.button("test2", [] { TC_INFO("Triggered2"); });
 
   while (1) {
     t += 0.02_f;

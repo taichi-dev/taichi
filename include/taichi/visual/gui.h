@@ -421,6 +421,7 @@ class GUI : public GUIBase {
   struct Rect {
     Vector2i pos;
     Vector2i size;
+    TC_IO_DEF(pos, size);
     Rect(Vector2i pos, Vector2i size) : pos(pos), size(size) {
     }
     bool inside(Vector2i p) {
@@ -435,7 +436,15 @@ class GUI : public GUIBase {
     bool inside(Vector2i p) {
       return rect.inside(p);
     }
-    virtual void mouse_event(MouseEvent &e) {
+    virtual void mouse_event(MouseEvent e) {
+    }
+    virtual void redraw(Canvas &canvas) {
+      canvas
+          .rect(rect.pos.template cast<real>(),
+                (rect.pos + rect.size).template cast<real>())
+          .color(Vector4(1.0, 0.0, 0.0, 1))
+          .close()
+          .radius(3);
     }
   };
 
@@ -452,16 +461,21 @@ class GUI : public GUIBase {
         : Widget(rect), text(text), callback(callback) {
     }
 
-    virtual void mouse_event(MouseEvent e) {
+    void mouse_event(MouseEvent e) override {
       if (e.type == MouseEvent::Type::release) {
         callback();
       }
+    }
+
+    void redraw(Canvas &canvas) override {
+      Widget::redraw(canvas);
     }
   };
 
   Rect make_widget_rect() {
     return Rect(Vector2i(width - widget_size[0],
-                         height - widgets.size() * widget_size[1]),
+                         height - (widgets.size() + 1) * widget_size[1]) -
+                    Vector2i(5),
                 widget_size);
   }
 
@@ -516,8 +530,15 @@ class GUI : public GUIBase {
 
   void set_title(std::string title);
 
+  void redraw_widgets() {
+    for (auto &w : widgets) {
+      w->redraw(*canvas);
+    }
+  }
+
   void update() {
     frame_id++;
+    redraw_widgets();
     while (taichi::Time::get_time() < start_time + frame_id / (real)fps)
       ;
     redraw();

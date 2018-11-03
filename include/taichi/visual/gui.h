@@ -409,6 +409,11 @@ class GUI : public GUIBase {
   float64 last_frame_time;
   bool key_pressed;
   std::vector<std::string> log_entries;
+  Vector2i cursor_pos;
+
+  void set_mouse_pos(int x, int y) {
+    cursor_pos = Vector2i(x, y);
+  }
 
   Vector2i widget_size = Vector2i(200, 20);
 

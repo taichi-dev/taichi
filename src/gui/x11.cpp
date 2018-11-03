@@ -52,7 +52,12 @@ void GUI::process_event() {
     switch (ev.type) {
       case Expose:
         break;
+      case MotionNotify:
+        set_mouse_pos(ev.xbutton.x, height - ev.xbutton.y - 1);
       case ButtonPress:
+        break;
+      case ButtonRelease:
+        mouse_event(MouseEvent{MouseEvent::Type::release, cursor_pos});
         break;
       case KeyPress:
         key_pressed = true;
@@ -68,7 +73,9 @@ void GUI::create_window() {
       XCreateSimpleWindow((Display *)display, RootWindow((Display *)display, 0),
                           0, 0, width, height, 1, 0, 0);
   XSelectInput((Display *)display, window,
-               ButtonPressMask | ExposureMask | KeyPressMask | KeyReleaseMask);
+               ButtonPressMask | ExposureMask | KeyPressMask | KeyReleaseMask |
+                   ButtonPress | ButtonReleaseMask | EnterWindowMask |
+                   LeaveWindowMask | PointerMotionMask);
   XMapWindow((Display *)display, window);
   img = new CXImage((Display *)display, (Visual *)visual, width, height);
 }

@@ -19,6 +19,7 @@
 
 TC_NAMESPACE_BEGIN
 
+// https://color.adobe.com/sea-waves-color-theme-11521801/edit/?copy=true&base=2&rule=Custom&selected=1&name=Copy%20of%20sea%20waves&mode=hsv&rgbvalues=0.009800000000000008,0.32993205279993043,0.49,0.006600000000000006,0.5184304355999791,0.66,0.007700000000000007,0.7445879672002016,0.77,0.6643,0.91,0.8608604914000435,0.8827,0.97,0.9059801164000182&swatchOrder=0,1,2,3,4
 TC_FORCE_INLINE Vector4 color_from_hex(uint32 c) {
   return Vector4(c / 65536, c / 256 % 256, c % 256, 255) * (1 / 255.0_f);
 }
@@ -446,13 +447,16 @@ class GUI : public GUIBase {
   class Widget {
    public:
     Rect rect;
-    Widget(Rect rect) : rect(rect){};
     bool hover;
     Vector4 text_color;
 
     Widget() {
       hover = false;
       text_color = color_from_hex(0x02547D);
+    }
+
+    Widget(Rect rect) : Widget() {
+      this->rect = rect;
     }
 
     bool inside(Vector2i p) {

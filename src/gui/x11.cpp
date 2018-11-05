@@ -54,7 +54,10 @@ void GUI::process_event() {
         break;
       case MotionNotify:
         set_mouse_pos(ev.xbutton.x, height - ev.xbutton.y - 1);
+        mouse_event(MouseEvent{MouseEvent::Type::move, cursor_pos});
+        break;
       case ButtonPress:
+        mouse_event(MouseEvent{MouseEvent::Type::press, cursor_pos});
         break;
       case ButtonRelease:
         mouse_event(MouseEvent{MouseEvent::Type::release, cursor_pos});

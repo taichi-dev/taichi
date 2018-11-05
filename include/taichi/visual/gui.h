@@ -411,6 +411,7 @@ class GUI : public GUIBase {
   bool key_pressed;
   std::vector<std::string> log_entries;
   Vector2i cursor_pos;
+  bool button_status[3];
 
   void set_mouse_pos(int x, int y) {
     cursor_pos = Vector2i(x, y);
@@ -422,6 +423,7 @@ class GUI : public GUIBase {
     enum class Type { move, press, release };
     Type type;
     Vector2i pos;
+    bool button_status[3];
   };
 
   struct Rect {
@@ -455,14 +457,6 @@ class GUI : public GUIBase {
     }
 
     virtual void redraw(Canvas &canvas) {
-      /*
-      canvas
-          .rect(rect.pos.template cast<real>(),
-                (rect.pos + rect.size).template cast<real>())
-          .color(Vector4(1.0, 0.0, 0.0, 1))
-          .close()
-          .radius(3);
-      */
       for (int i = 1; i < rect.size[0] - 1; i++) {
         for (int j = 1; j < rect.size[1] - 1; j++) {
           canvas.img[rect.pos[0] + i][rect.pos[1] + j] =
@@ -515,6 +509,8 @@ class GUI : public GUIBase {
     using CallbackType = std::function<void()>;
     CallbackType callback;
 
+    const int slider_padding = 5;
+
     Slider(Rect rect,
            const std::string text,
            T &val,
@@ -530,10 +526,12 @@ class GUI : public GUIBase {
     }
 
     void mouse_event(MouseEvent e) override {
-      if (e.type == MouseEvent::Type::press) {
-        // Compute val
-        T new_val = minimum;
-        val = new_val;
+      if ((e.type == MouseEvent::Type::press ||
+           e.type == MouseEvent::Type::move) &&
+          e.button_status[0]) {
+        real alpha = clamp(real(e.pos[0] - rect.pos[0] - slider_padding) /
+                           (rect.size[0] - slider_padding * 2));
+        val = static_cast<T>(alpha * (maximum - minimum) + minimum);
       }
     }
 
@@ -550,7 +548,6 @@ class GUI : public GUIBase {
           text_with_value,
           (rect.pos + Vector2i(2, rect.size[1] - 2)).template cast<real>(), s,
           Vector4f(0));
-      auto slider_padding = 5;
       int slider_start = slider_padding,
           slider_end = rect.size[0] - slider_padding;
       for (int i = slider_start; i < slider_end; i++) {
@@ -558,9 +555,7 @@ class GUI : public GUIBase {
           canvas.img[rect.pos[0] + i][rect.pos[1] + j] = Vector4(1, 0, 0, 1);
         }
       }
-      static int t = 0;
-      auto alpha = 0.5 * std::sin((t++) * 0.01) + 0.5;
-      val = static_cast<T>(alpha * (maximum - minimum) + minimum);
+      auto alpha = (val - minimum) / real(maximum - minimum);
       canvas
           .circle(rect.pos.template cast<real>() +
                   Vector2(lerp(alpha, slider_start, slider_end),
@@ -593,6 +588,13 @@ class GUI : public GUIBase {
   void process_event();
 
   void mouse_event(MouseEvent e) {
+    if (e.type == MouseEvent::Type::press) {
+      button_status[0] = true;
+    }
+    if (e.type == MouseEvent::Type::release) {
+      button_status[0] = false;
+    }
+    e.button_status[0] = button_status[0];
     for (auto &w : widgets) {
       if (w->inside(e.pos)) {
         w->mouse_event(e);
@@ -608,6 +610,7 @@ class GUI : public GUIBase {
         width(width),
         height(height),
         key_pressed(false) {
+    memset(button_status, 0, sizeof(button_status));
     create_window();
     set_title(window_name);
     start_time = taichi::Time::get_time();

@@ -9,7 +9,6 @@ auto test_bemo = []() {
   real t = 0;
 
   int circle_count = 10;
-  gui.button("abc", [] { TC_INFO("Triggered"); });
   gui.button("ABC", [] { TC_INFO("Triggered"); });
   gui.slider("Circles", circle_count, 0, 60);
   // gui.button("abc", [] { TC_INFO("Triggered"); });

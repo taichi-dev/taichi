@@ -19,6 +19,10 @@
 
 TC_NAMESPACE_BEGIN
 
+TC_FORCE_INLINE Vector4 color_from_hex(uint32 c) {
+  return Vector4(c / 65536, c / 256 % 256, c % 256, 255) * (1 / 255.0_f);
+}
+
 class Canvas {
   struct Context {
     Vector4 _color;
@@ -444,9 +448,11 @@ class GUI : public GUIBase {
     Rect rect;
     Widget(Rect rect) : rect(rect){};
     bool hover;
+    Vector4 text_color;
 
     Widget() {
       hover = false;
+      text_color = color_from_hex(0x02547D);
     }
 
     bool inside(Vector2i p) {
@@ -457,10 +463,11 @@ class GUI : public GUIBase {
     }
 
     virtual void redraw(Canvas &canvas) {
+      Vector4 color =
+          hover ? color_from_hex(0x02BEC4) : color_from_hex(0xA9E8DC);
       for (int i = 1; i < rect.size[0] - 1; i++) {
         for (int j = 1; j < rect.size[1] - 1; j++) {
-          canvas.img[rect.pos[0] + i][rect.pos[1] + j] =
-              Vector4(0.5, 0.5 + 0.3 * real(hover), 0.5, 1);
+          canvas.img[rect.pos[0] + i][rect.pos[1] + j] = color;
         }
       }
     }
@@ -495,7 +502,7 @@ class GUI : public GUIBase {
       canvas.text(
           text,
           (rect.pos + Vector2i(2, rect.size[1] - 2)).template cast<real>(), s,
-          Vector4f(0));
+          text_color);
     }
   };
 
@@ -547,12 +554,12 @@ class GUI : public GUIBase {
       canvas.text(
           text_with_value,
           (rect.pos + Vector2i(2, rect.size[1] - 2)).template cast<real>(), s,
-          Vector4f(0));
+          text_color);
       int slider_start = slider_padding,
           slider_end = rect.size[0] - slider_padding;
       for (int i = slider_start; i < slider_end; i++) {
         for (int j = slider_padding; j < slider_padding + 3; j++) {
-          canvas.img[rect.pos[0] + i][rect.pos[1] + j] = Vector4(1, 0, 0, 1);
+          canvas.img[rect.pos[0] + i][rect.pos[1] + j] = text_color;
         }
       }
       auto alpha = (val - minimum) / real(maximum - minimum);
@@ -561,7 +568,7 @@ class GUI : public GUIBase {
                   Vector2(lerp(alpha, slider_start, slider_end),
                           slider_padding + 1))
           .radius(5)
-          .color(Vector4(0, 1, 0, 0.8));
+          .color(color_from_hex(0x0284A8));
     }
   };
 

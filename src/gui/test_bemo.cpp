@@ -11,6 +11,8 @@ auto test_bemo = []() {
   int circle_count = 10;
   gui.button("ABC", [] { TC_INFO("Triggered"); });
   gui.slider("Circles", circle_count, 0, 60);
+  real radius = 3;
+  gui.slider("Radius", radius, 0.0_f, 10.0_f);
   // gui.button("abc", [] { TC_INFO("Triggered"); });
   // gui.button("TEST TEST TEST", [] { TC_INFO("Triggered2"); });
 
@@ -32,7 +34,8 @@ auto test_bemo = []() {
         .width(5);
 
     for (int i = 0; i < circle_count; i++) {
-      canvas.circle(i * 10 + 100, 150 + std::sin(t + i * 0.1_f) * 50_f);
+      canvas.circle(i * 10 + 100, 150 + std::sin(t + i * 0.1_f) * 50_f)
+          .radius(radius);
     }
     gui.update();
   }

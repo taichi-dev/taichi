@@ -1,6 +1,7 @@
 #pragma once
 
-#include <taichi/taichi>
+#include <taichi/math.h>
+#include <taichi/system/timer.h>
 #include <numeric>
 
 #if defined(TC_PLATFORM_LINUX)
@@ -474,6 +475,9 @@ class GUI : public GUIBase {
 
     void redraw(Canvas &canvas) override {
       Widget::redraw(canvas);
+      canvas.text("ABC",
+          //(rect.pos + rect.size / Vector2i(2)).template cast<real>(),
+                  Vector2(100, -10), 20, Vector4f(0));
     }
   };
 

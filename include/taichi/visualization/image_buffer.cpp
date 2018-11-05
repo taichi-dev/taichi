@@ -134,7 +134,7 @@ void Array2D<T>::write_text(const std::string &font_fn,
 
   real scale = stbtt_ScaleForPixelHeight(&font, size);
 
-  stbtt_GetFontVMetrics(&font, &ascent, 0, 0);
+  stbtt_GetFontVMetrics(&font, &ascent, nullptr, nullptr);
   baseline = (int)(ascent * scale);
   const std::string c_content = content_;
   const char *content = c_content.c_str();
@@ -146,8 +146,8 @@ void Array2D<T>::write_text(const std::string &font_fn,
                                         x_shift, 0, &x0, &y0, &x1, &y1);
     stbtt_MakeCodepointBitmapSubpixel(
         &font,
-        &screen_buffer[0] + this->res[0] * (baseline + y0) + (int)xpos + x0,
-        x1 - x0, y1 - y0, this->res[1], scale, scale, x_shift, 0, content[ch]);
+        &screen_buffer[0] + this->res[1] * (baseline + y0) + (int)xpos + x0,
+        x1 - x0, y1 - y0, this->res[0], scale, scale, x_shift, 0, content[ch]);
     // note that this stomps the old data, so where character boxes overlap
     // (e.g. 'lj') it's wrong
     // because this API is really for baking character bitmaps into textures. if

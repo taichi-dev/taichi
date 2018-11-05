@@ -156,15 +156,10 @@ void Array2D<T>::write_text(const std::string &font_fn,
                                         x_shift, 0, &x0, &y0, &x1, &y1);
     stbtt_MakeCodepointBitmapSubpixel(
         &font,
-        &screen_buffer[0] + this->res[1] * (baseline + y0) + (int)xpos + x0,
+        &screen_buffer[0] + this->res[0] * (baseline + y0) + (int)xpos + x0,
         x1 - x0, y1 - y0, this->res[0], scale, scale, x_shift, 0, content[ch]);
     // note that this stomps the old data, so where character boxes overlap
     // (e.g. 'lj') it's wrong
-    // because this API is really for baking character bitmaps into textures. if
-    // you want to render
-    // a sequence of characters, you really need to render each bitmap to a temp
-    // buffer, then
-    // "alpha blend" that into the working buffer
     xpos += (advance * scale);
     if (content[ch + 1])
       xpos += scale * stbtt_GetCodepointKernAdvance(&font, content[ch],
@@ -173,7 +168,7 @@ void Array2D<T>::write_text(const std::string &font_fn,
   }
   for (j = 0; j < this->res[1]; ++j) {
     for (i = 0; i < this->res[0]; ++i) {
-      int x = dx + i, y = dy + j;
+      int x = dx + i, y = dy + j - this->res[1];
       auto index = ((this->res[1] - j - 1) * this->res[0] + i);
       real alpha = screen_buffer[index] / 255.0f;
       if (inside(x, y) && alpha != 0) {

@@ -8,8 +8,10 @@ auto test_bemo = []() {
   auto canvas = *gui.canvas;
   real t = 0;
 
-  gui.button("test", [] { TC_INFO("Triggered"); });
-  gui.button("test2", [] { TC_INFO("Triggered2"); });
+  gui.button("abc", [] { TC_INFO("Triggered"); });
+  gui.button("ABC", [] { TC_INFO("Triggered"); });
+  //gui.button("abc", [] { TC_INFO("Triggered"); });
+  //gui.button("TEST TEST TEST", [] { TC_INFO("Triggered2"); });
 
   while (1) {
     t += 0.02_f;

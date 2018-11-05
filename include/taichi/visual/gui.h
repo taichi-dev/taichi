@@ -416,7 +416,7 @@ class GUI : public GUIBase {
     cursor_pos = Vector2i(x, y);
   }
 
-  Vector2i widget_size = Vector2i(200, 20);
+  Vector2i widget_size = Vector2i(200, 30);
 
   struct MouseEvent {
     enum class Type { move, press, release };
@@ -475,9 +475,8 @@ class GUI : public GUIBase {
 
     void redraw(Canvas &canvas) override {
       Widget::redraw(canvas);
-      canvas.text("ABC",
-          //(rect.pos + rect.size / Vector2i(2)).template cast<real>(),
-                  Vector2(10, -10), 20, Vector4f(0));
+      canvas.text(text, (rect.pos + Vector2i(0, 20)).template cast<real>(),
+                  20, Vector4f(0));
     }
   };
 

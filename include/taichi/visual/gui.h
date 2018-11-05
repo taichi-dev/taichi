@@ -477,7 +477,7 @@ class GUI : public GUIBase {
       Widget::redraw(canvas);
       canvas.text("ABC",
           //(rect.pos + rect.size / Vector2i(2)).template cast<real>(),
-                  Vector2(100, -10), 20, Vector4f(0));
+                  Vector2(10, -10), 20, Vector4f(0));
     }
   };
 

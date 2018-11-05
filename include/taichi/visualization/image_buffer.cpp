@@ -109,6 +109,9 @@ void Array2D<T>::write_as_image(const std::string &filename) {
 #endif
 }
 
+std::map<std::string, stbtt_fontinfo> fonts;
+std::map<std::string, std::vector<uint8>> font_buffers;
+
 template <typename T>
 void Array2D<T>::write_text(const std::string &font_fn,
                             const std::string &content_,
@@ -117,20 +120,27 @@ void Array2D<T>::write_text(const std::string &font_fn,
                             int dy,
                             T color) {
 #if !defined(TC_AMALGAMATED)
-  std::vector<unsigned char> buffer(24 << 20, (unsigned char)0);
+
   std::vector<unsigned char> screen_buffer(
       (size_t)(this->res[0] * this->res[1]), (unsigned char)0);
 
-  static stbtt_fontinfo font;
   int i, j, ascent, baseline, ch = 0;
   float xpos = 2;  // leave a little padding in case the character extends left
-  // TODO: cache loaded fonts?
-  FILE *font_file = fopen(font_fn.c_str(), "rb");
-  TC_ASSERT_INFO(font_file != nullptr,
-                 "Font file not found: " + std::string(font_fn));
-  trash(fread(&buffer[0], 1, 24 << 20, font_file));
-  fclose(font_file);
-  stbtt_InitFont(&font, &buffer[0], 0);
+
+  stbtt_fontinfo font;
+  if (fonts.find(font_fn) == fonts.end()) {
+    FILE *font_file = fopen(font_fn.c_str(), "rb");
+    TC_ASSERT_INFO(font_file != nullptr,
+                   "Font file not found: " + std::string(font_fn));
+    font_buffers[font_fn] =
+        std::vector<unsigned char>(24 << 20, (unsigned char)0);
+    trash(fread(&font_buffers[font_fn][0], 1, 24 << 20, font_file));
+    fclose(font_file);
+    stbtt_InitFont(&font, &font_buffers[font_fn][0], 0);
+    fonts[font_fn] = font;
+  } else {
+    font = fonts[font_fn];
+  }
 
   real scale = stbtt_ScaleForPixelHeight(&font, size);
 

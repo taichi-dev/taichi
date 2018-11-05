@@ -8,8 +8,10 @@ auto test_bemo = []() {
   auto canvas = *gui.canvas;
   real t = 0;
 
+  int circle_count = 10;
   gui.button("abc", [] { TC_INFO("Triggered"); });
   gui.button("ABC", [] { TC_INFO("Triggered"); });
+  gui.slider("Circles", circle_count, 1, 100);
   //gui.button("abc", [] { TC_INFO("Triggered"); });
   //gui.button("TEST TEST TEST", [] { TC_INFO("Triggered2"); });
 

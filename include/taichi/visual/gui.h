@@ -337,8 +337,8 @@ class Canvas {
     position = transform(position);
     char *root_dir = std::getenv("TAICHI_REPO_DIR");
     TC_ASSERT(root_dir != nullptr);
-    img.write_text(root_dir + std::string("/assets/fonts/go/Go-Bold.ttf"), str,
-                   size, position.x, position.y, color);
+    img.write_text(root_dir + std::string("/assets/fonts/go/Go-Regular.ttf"),
+                   str, size, position.x, position.y, color);
   }
 
   void clear(Vector4 color) {
@@ -416,7 +416,7 @@ class GUI : public GUIBase {
     cursor_pos = Vector2i(x, y);
   }
 
-  Vector2i widget_size = Vector2i(200, 30);
+  Vector2i widget_size = Vector2i(200, 40);
 
   struct MouseEvent {
     enum class Type { move, press, release };
@@ -445,12 +445,20 @@ class GUI : public GUIBase {
     virtual void mouse_event(MouseEvent e) {
     }
     virtual void redraw(Canvas &canvas) {
+      /*
       canvas
           .rect(rect.pos.template cast<real>(),
                 (rect.pos + rect.size).template cast<real>())
           .color(Vector4(1.0, 0.0, 0.0, 1))
           .close()
           .radius(3);
+      */
+      for (int i = 1; i < rect.size[0] - 1; i++) {
+        for (int j = 1; j < rect.size[1] - 1; j++) {
+          canvas.img[rect.pos[0] + i][rect.pos[1] + j] =
+              Vector4(0.5, 0.5, 0.5, 1);
+        }
+      }
     }
   };
 
@@ -475,8 +483,53 @@ class GUI : public GUIBase {
 
     void redraw(Canvas &canvas) override {
       Widget::redraw(canvas);
-      canvas.text(text, (rect.pos + Vector2i(0, 20)).template cast<real>(),
-                  20, Vector4f(0));
+      int s = 32;
+      canvas.text(
+          text,
+          (rect.pos + Vector2i(2, rect.size[1] - 2)).template cast<real>(), s,
+          Vector4f(0));
+    }
+  };
+
+  template <typename T>
+  class Slider : public Widget {
+   public:
+    std::string text;
+    T &val;
+    T minimum, maximum, step;
+
+    using CallbackType = std::function<void()>;
+    CallbackType callback;
+
+    Slider(Rect rect,
+           const std::string text,
+           T &val,
+           T minimum,
+           T maximum,
+           T step)
+        : Widget(rect),
+          text(text),
+          val(val),
+          minimum(minimum),
+          maximum(maximum),
+          step(step) {
+    }
+
+    void mouse_event(MouseEvent e) override {
+      if (e.type == MouseEvent::Type::press) {
+        // Compute val
+        T new_val = minimum;
+        val = new_val;
+      }
+    }
+
+    void redraw(Canvas &canvas) override {
+      Widget::redraw(canvas);
+      int s = 16;
+      canvas.text(
+          text,
+          (rect.pos + Vector2i(2, rect.size[1] - 2)).template cast<real>(), s,
+          Vector4f(0));
     }
   };
 
@@ -490,6 +543,13 @@ class GUI : public GUIBase {
   GUI &button(std::string text, const Button::CallbackType &callback) {
     widgets.push_back(
         std::make_unique<Button>(make_widget_rect(), text, callback));
+    return *this;
+  }
+
+  template <typename T>
+  GUI &slider(std::string text, T &val, T minimum, T maximum, T step = 1) {
+    widgets.push_back(std::make_unique<Slider<T>>(make_widget_rect(), text, val,
+                                                  minimum, maximum, step));
     return *this;
   }
 

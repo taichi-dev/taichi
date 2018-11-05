@@ -428,6 +428,8 @@ class GUI : public GUIBase {
     Vector2i pos;
     Vector2i size;
     TC_IO_DEF(pos, size);
+    Rect() {
+    }
     Rect(Vector2i pos, Vector2i size) : pos(pos), size(size) {
     }
     bool inside(Vector2i p) {
@@ -439,11 +441,19 @@ class GUI : public GUIBase {
    public:
     Rect rect;
     Widget(Rect rect) : rect(rect){};
+    bool hover;
+
+    Widget() {
+      hover = false;
+    }
+
     bool inside(Vector2i p) {
       return rect.inside(p);
     }
+
     virtual void mouse_event(MouseEvent e) {
     }
+
     virtual void redraw(Canvas &canvas) {
       /*
       canvas
@@ -456,9 +466,13 @@ class GUI : public GUIBase {
       for (int i = 1; i < rect.size[0] - 1; i++) {
         for (int j = 1; j < rect.size[1] - 1; j++) {
           canvas.img[rect.pos[0] + i][rect.pos[1] + j] =
-              Vector4(0.5, 0.5, 0.5, 1);
+              Vector4(0.5, 0.5 + 0.3 * real(hover), 0.5, 1);
         }
       }
+    }
+
+    void set_hover(bool val) {
+      hover = val;
     }
   };
 
@@ -600,6 +614,7 @@ class GUI : public GUIBase {
 
   void redraw_widgets() {
     for (auto &w : widgets) {
+      w->set_hover(w->inside(cursor_pos));
       w->redraw(*canvas);
     }
   }

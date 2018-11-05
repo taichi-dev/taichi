@@ -544,6 +544,22 @@ class GUI : public GUIBase {
           text,
           (rect.pos + Vector2i(2, rect.size[1] - 2)).template cast<real>(), s,
           Vector4f(0));
+      auto slider_padding = 5;
+      int slider_start = slider_padding,
+          slider_end = rect.size[0] - slider_padding;
+      for (int i = slider_start; i < slider_end; i++) {
+        for (int j = slider_padding; j < slider_padding + 3; j++) {
+          canvas.img[rect.pos[0] + i][rect.pos[1] + j] = Vector4(1, 0, 0, 1);
+        }
+      }
+      static int t = 0;
+      auto alpha = 0.5 * std::sin((t++) * 0.01) + 0.5;
+      canvas
+          .circle(rect.pos.template cast<real>() +
+                  Vector2(lerp(alpha, slider_start, slider_end),
+                          slider_padding + 1))
+          .radius(5)
+          .color(Vector4(0, 1, 0, 0.8));
     }
   };
 

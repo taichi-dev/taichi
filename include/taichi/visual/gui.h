@@ -540,8 +540,14 @@ class GUI : public GUIBase {
     void redraw(Canvas &canvas) override {
       Widget::redraw(canvas);
       int s = 16;
+      auto text_with_value = text;
+      if (std::is_integral<T>::value) {
+        text_with_value += fmt::format(": {}", val);
+      } else {
+        text_with_value += fmt::format(": {:.3f}", val);
+      }
       canvas.text(
-          text,
+          text_with_value,
           (rect.pos + Vector2i(2, rect.size[1] - 2)).template cast<real>(), s,
           Vector4f(0));
       auto slider_padding = 5;
@@ -554,6 +560,7 @@ class GUI : public GUIBase {
       }
       static int t = 0;
       auto alpha = 0.5 * std::sin((t++) * 0.01) + 0.5;
+      val = static_cast<T>(alpha * (maximum - minimum) + minimum);
       canvas
           .circle(rect.pos.template cast<real>() +
                   Vector2(lerp(alpha, slider_start, slider_end),

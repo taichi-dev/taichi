@@ -593,6 +593,34 @@ class GUI : public GUIBase {
     }
   };
 
+  template <typename T>
+  class Label : public Widget {
+   public:
+    std::string text;
+    T &val;
+
+    const int slider_padding = 5;
+
+    Label(Rect rect, const std::string text, T &val)
+        : Widget(rect), text(text), val(val) {
+    }
+
+    void redraw(Canvas &canvas) override {
+      Widget::redraw(canvas);
+      int s = 16;
+      auto text_with_value = text;
+      if (std::is_integral<T>::value) {
+        text_with_value += fmt::format(": {}", val);
+      } else {
+        text_with_value += fmt::format(": {:.3f}", val);
+      }
+      canvas.text(
+          text_with_value,
+          (rect.pos + Vector2i(2, rect.size[1] - 2)).template cast<real>(), s,
+          color_from_hex(text_color));
+    }
+  };
+
   Rect make_widget_rect() {
     return Rect(Vector2i(width - widget_size[0],
                          height - (widgets.size() + 1) * widget_size[1]),
@@ -609,6 +637,13 @@ class GUI : public GUIBase {
   GUI &slider(std::string text, T &val, T minimum, T maximum, T step = 1) {
     widgets.push_back(std::make_unique<Slider<T>>(make_widget_rect(), text, val,
                                                   minimum, maximum, step));
+    return *this;
+  }
+
+  template <typename T>
+  GUI &label(std::string text, T &val) {
+    widgets.push_back(
+        std::make_unique<Label<T>>(make_widget_rect(), text, val));
     return *this;
   }
 

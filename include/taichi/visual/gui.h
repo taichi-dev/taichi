@@ -431,6 +431,7 @@ class GUI : public GUIBase {
   std::vector<std::string> log_entries;
   Vector2i cursor_pos;
   bool button_status[3];
+  int widget_height;
 
   void set_mouse_pos(int x, int y) {
     cursor_pos = Vector2i(x, y);
@@ -621,29 +622,29 @@ class GUI : public GUIBase {
     }
   };
 
-  Rect make_widget_rect() {
-    return Rect(Vector2i(width - widget_size[0],
-                         height - (widgets.size() + 1) * widget_size[1]),
-                widget_size);
+  Rect make_widget_rect(int h) {
+    widget_height += h;
+    return Rect(Vector2i(width - widget_size[0], height - widget_height),
+                Vector2i(widget_size[0], h));
   }
 
   GUI &button(std::string text, const Button::CallbackType &callback) {
-    widgets.push_back(
-        std::make_unique<Button>(make_widget_rect(), text, callback));
+    widgets.push_back(std::make_unique<Button>(make_widget_rect(widget_size[1]),
+                                               text, callback));
     return *this;
   }
 
   template <typename T>
   GUI &slider(std::string text, T &val, T minimum, T maximum, T step = 1) {
-    widgets.push_back(std::make_unique<Slider<T>>(make_widget_rect(), text, val,
-                                                  minimum, maximum, step));
+    widgets.push_back(std::make_unique<Slider<T>>(
+        make_widget_rect(widget_size[1]), text, val, minimum, maximum, step));
     return *this;
   }
 
   template <typename T>
   GUI &label(std::string text, T &val) {
-    widgets.push_back(
-        std::make_unique<Label<T>>(make_widget_rect(), text, val));
+    widgets.push_back(std::make_unique<Label<T>>(
+        make_widget_rect(widget_size[1] / 2), text, val));
     return *this;
   }
 
@@ -682,6 +683,7 @@ class GUI : public GUIBase {
     if (!normalized_coord) {
       canvas->set_idendity_transform_matrix();
     }
+    widget_height = 0;
   }
 
   explicit GUI(const std::string &window_name,

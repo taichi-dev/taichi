@@ -153,7 +153,6 @@ void GUI::process_event() {
              call("NSDate", "distantPast"), NSDefaultRunLoopMode, YES);
     if (event != nullptr) {
       auto event_type = call<NSInteger>(event, "type");
-      TC_P(event_type);
       call(NSApp, "sendEvent:", event);
       call(NSApp, "updateWindows");
       switch (event_type) {
@@ -169,6 +168,7 @@ void GUI::process_event() {
         case 27: // NSNSOtherMouseDragged
           auto p = call<CGPoint>(event, "locationInWindow");
           set_mouse_pos(p.x, p.y);
+          mouse_event(MouseEvent{MouseEvent::Type::move, Vector2i(p.x, p.y)});
           break;
       }
     } else {

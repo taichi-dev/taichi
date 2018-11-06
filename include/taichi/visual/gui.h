@@ -24,6 +24,20 @@ TC_FORCE_INLINE Vector4 color_from_hex(uint32 c) {
   return Vector4(c / 65536, c / 256 % 256, c % 256, 255) * (1 / 255.0_f);
 }
 
+#if (false)
+constexpr uint32 text_color = 0x02547D;
+constexpr uint32 widget_bg = 0x02BEC4;
+constexpr uint32 widget_hover = 0xA9E8DC;
+constexpr uint32 slider_bar_color = text_color;
+constexpr uint32 slider_circle_color = 0x0284A8;
+#else
+constexpr uint32 text_color = 0x111111;
+constexpr uint32 widget_bg = 0xAAAAAA;
+constexpr uint32 widget_hover = 0xCCCCCC;
+constexpr uint32 slider_bar_color = 0x333333;
+constexpr uint32 slider_circle_color = 0x555555;
+#endif
+
 class Canvas {
   struct Context {
     Vector4 _color;
@@ -448,11 +462,9 @@ class GUI : public GUIBase {
    public:
     Rect rect;
     bool hover;
-    Vector4 text_color;
 
     Widget() {
       hover = false;
-      text_color = color_from_hex(0x02547D);
     }
 
     Widget(Rect rect) : Widget() {
@@ -468,7 +480,7 @@ class GUI : public GUIBase {
 
     virtual void redraw(Canvas &canvas) {
       Vector4 color =
-          hover ? color_from_hex(0x02BEC4) : color_from_hex(0xA9E8DC);
+          hover ? color_from_hex(widget_bg) : color_from_hex(widget_hover);
       for (int i = 1; i < rect.size[0] - 1; i++) {
         for (int j = 1; j < rect.size[1] - 1; j++) {
           canvas.img[rect.pos[0] + i][rect.pos[1] + j] = color;
@@ -506,7 +518,7 @@ class GUI : public GUIBase {
       canvas.text(
           text,
           (rect.pos + Vector2i(2, rect.size[1] - 2)).template cast<real>(), s,
-          text_color);
+          color_from_hex(text_color));
     }
   };
 
@@ -546,8 +558,7 @@ class GUI : public GUIBase {
         if (std::is_integral<T>::value) {
           offset = 0.5_f;
         }
-        val = static_cast<T>(alpha * (maximum - minimum) +
-                             minimum + offset);
+        val = static_cast<T>(alpha * (maximum - minimum) + minimum + offset);
       }
     }
 
@@ -563,12 +574,13 @@ class GUI : public GUIBase {
       canvas.text(
           text_with_value,
           (rect.pos + Vector2i(2, rect.size[1] - 2)).template cast<real>(), s,
-          text_color);
+          color_from_hex(text_color));
       int slider_start = slider_padding,
           slider_end = rect.size[0] - slider_padding;
       for (int i = slider_start; i < slider_end; i++) {
         for (int j = slider_padding; j < slider_padding + 3; j++) {
-          canvas.img[rect.pos[0] + i][rect.pos[1] + j] = text_color;
+          canvas.img[rect.pos[0] + i][rect.pos[1] + j] =
+              color_from_hex(slider_bar_color);
         }
       }
       auto alpha = (val - minimum) / real(maximum - minimum);
@@ -577,7 +589,7 @@ class GUI : public GUIBase {
                   Vector2(lerp(alpha, slider_start, slider_end),
                           slider_padding + 1))
           .radius(5)
-          .color(color_from_hex(0x0284A8));
+          .color(color_from_hex(slider_circle_color));
     }
   };
 

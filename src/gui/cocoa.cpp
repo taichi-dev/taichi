@@ -147,25 +147,24 @@ void GUI::process_event() {
        "runMode:beforeDate:", NSDefaultRunLoopMode,
        call("NSDate", "distantPast"));
   while (1) {
-    auto event =
-        call(NSApp,
-             "nextEventMatchingMask:untilDate:inMode:dequeue:", NSUIntegerMax,
-             call("NSDate", "distantPast"), NSDefaultRunLoopMode, YES);
+    auto event = call(
+        NSApp, "nextEventMatchingMask:untilDate:inMode:dequeue:", NSUIntegerMax,
+        call("NSDate", "distantPast"), NSDefaultRunLoopMode, YES);
     if (event != nullptr) {
       auto event_type = call<NSInteger>(event, "type");
       call(NSApp, "sendEvent:", event);
       call(NSApp, "updateWindows");
       switch (event_type) {
-        case 1: // NSLeftMouseDown
+        case 1:  // NSLeftMouseDown
           mouse_event(MouseEvent{MouseEvent::Type::press, cursor_pos});
           break;
-        case 2: // NSLeftMouseUp
+        case 2:  // NSLeftMouseUp
           mouse_event(MouseEvent{MouseEvent::Type::release, cursor_pos});
           break;
-        case 5:  // NSMouseMoved
-        case 6:  // NSLeftMouseDragged
-        case 7:  // NSRightMouseDragged
-        case 27: // NSNSOtherMouseDragged
+        case 5:   // NSMouseMoved
+        case 6:   // NSLeftMouseDragged
+        case 7:   // NSRightMouseDragged
+        case 27:  // NSNSOtherMouseDragged
           auto p = call<CGPoint>(event, "locationInWindow");
           set_mouse_pos(p.x, p.y);
           mouse_event(MouseEvent{MouseEvent::Type::move, Vector2i(p.x, p.y)});

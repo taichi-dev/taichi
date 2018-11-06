@@ -546,7 +546,8 @@ class GUI : public GUIBase {
         if (std::is_integral<T>::value) {
           offset = 0.5_f;
         }
-        val = static_cast<T>(alpha * (maximum - minimum + offset) + minimum);
+        val = static_cast<T>(alpha * (maximum - minimum) +
+                             minimum + offset);
       }
     }
 

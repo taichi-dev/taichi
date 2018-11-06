@@ -62,13 +62,7 @@ enum {
   NSResizableWindowMask = 1 << 3,
 };
 
-// This is a strong reference to the class of our custom view,
-// In case we need it in the future.
 Class ViewClass;
-
-// This is a simple -drawRect implementation for our class. We could have
-// used a NSTextField  or something of that sort instead, but I felt that this
-// stuck with the C-based mentality of the application.
 
 void redraw(id self, SEL _, CGRect __) {
   using namespace taichi;
@@ -149,16 +143,34 @@ void GUI::create_window() {
 }
 
 void GUI::process_event() {
-  call(call((id)objc_getClass("NSRunLoop"), "currentRunLoop"),
+  call(call("NSRunLoop", "currentRunLoop"),
        "runMode:beforeDate:", NSDefaultRunLoopMode,
        call("NSDate", "distantPast"));
   while (1) {
     auto event =
-        call("NSApp",
+        call(NSApp,
              "nextEventMatchingMask:untilDate:inMode:dequeue:", NSUIntegerMax,
              call("NSDate", "distantPast"), NSDefaultRunLoopMode, YES);
     if (event != nullptr) {
-      call("NSApp", "sendEvent:event", event);
+      auto event_type = call<NSInteger>(event, "type");
+      TC_P(event_type);
+      call(NSApp, "sendEvent:", event);
+      call(NSApp, "updateWindows");
+      switch (event_type) {
+        case 1: // NSLeftMouseDown
+          mouse_event(MouseEvent{MouseEvent::Type::press, cursor_pos});
+          break;
+        case 2: // NSLeftMouseUp
+          mouse_event(MouseEvent{MouseEvent::Type::release, cursor_pos});
+          break;
+        case 5:  // NSMouseMoved
+        case 6:  // NSLeftMouseDragged
+        case 7:  // NSRightMouseDragged
+        case 27: // NSNSOtherMouseDragged
+          auto p = call<CGPoint>(event, "locationInWindow");
+          set_mouse_pos(p.x, p.y);
+          break;
+      }
     } else {
       break;
     }

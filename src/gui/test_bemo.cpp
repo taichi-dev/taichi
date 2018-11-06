@@ -13,8 +13,6 @@ auto test_bemo = []() {
   gui.slider("Circles", circle_count, 0, 60);
   real radius = 3;
   gui.slider("Radius", radius, 0.0_f, 10.0_f);
-  // gui.button("abc", [] { TC_INFO("Triggered"); });
-  // gui.button("TEST TEST TEST", [] { TC_INFO("Triggered2"); });
 
   while (1) {
     t += 0.02_f;

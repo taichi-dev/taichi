@@ -542,7 +542,11 @@ class GUI : public GUIBase {
           e.button_status[0]) {
         real alpha = clamp(real(e.pos[0] - rect.pos[0] - slider_padding) /
                            (rect.size[0] - slider_padding * 2));
-        val = static_cast<T>(alpha * (maximum - minimum) + minimum);
+        real offset = 0.0_f;
+        if (std::is_integral<T>::value) {
+          offset = 0.5_f;
+        }
+        val = static_cast<T>(alpha * (maximum - minimum + offset) + minimum);
       }
     }
 
@@ -578,8 +582,7 @@ class GUI : public GUIBase {
 
   Rect make_widget_rect() {
     return Rect(Vector2i(width - widget_size[0],
-                         height - (widgets.size() + 1) * widget_size[1]) -
-                    Vector2i(5),
+                         height - (widgets.size() + 1) * widget_size[1]),
                 widget_size);
   }
 

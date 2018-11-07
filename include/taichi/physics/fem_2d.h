@@ -118,10 +118,6 @@ class HexFEMSolver {
     return ret * dim + d;
   }
 
-  virtual Array<Vector> solve(const Array<real> &density,
-                              const Array<Vector> &f,
-                              const Array<Vector> &initial_guess) = 0;
-
   virtual void set_boundary_condition(
       const BoundaryCondition &boundary_condition) {
     this->boundary_condition = boundary_condition;
@@ -324,7 +320,9 @@ class CPUCGHexFEMSolver : public HexFEMSolver<dim> {
 
   Array<Vector> solve(const Array<real> &density,
                       const Array<Vector> &f_,
-                      const Array<Vector> &initial_guess) {
+                      const Array<Vector> &initial_guess,
+                      Array<real> &dc,
+                      real &objective_out) {
     Array<Vector> x = initial_guess;
     Array<Vector> r;
     Array<Vector> p;
@@ -408,6 +406,29 @@ class CPUCGHexFEMSolver : public HexFEMSolver<dim> {
                      "Time per cg iteration: {:.4f} ms",
                      1000 * (Time::get_time() - t_start) / num_iterations)
               << std::endl;
+
+    real objective = 0;
+    for (auto &ind : density.get_region()) {
+      Region offset_region(Vectori(0), Vectori(2));
+      real dc_tmp = 0.0f;
+      for (auto &offset_Kx : offset_region) {
+        for (auto &offset_x : offset_region) {
+          for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+              int row = get_index(offset_Kx, i);
+              int column = get_index(offset_x, j);
+              real coeff = Ke(row, column);
+              dc_tmp += x[ind + offset_Kx.get_ipos()][i] * coeff *
+                        x[ind + offset_x.get_ipos()][j];
+            }
+          }
+        }
+      }
+      dc[ind] = dc_tmp * std::pow(density[ind], penalty - 1) * penalty;
+      objective += dc_tmp * std::pow(density[ind], penalty);
+    }
+
+    objective_out = objective;
     return x;
   }
 };

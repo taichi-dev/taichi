@@ -172,10 +172,13 @@ def main():
   elif mode == "interpolate":
     interpolate_frames('.')
   elif mode == "amal":
+    cwd = os.getcwd()
     os.chdir(tc.get_repo_directory())
     with open('misc/amalgamate.py') as script:
       script = script.read()
     exec(script, {'__name__': '__main__'})
+    os.chdir(cwd)
+    shutil.copy(os.path.join(tc.get_repo_directory(), 'build/taichi.h'), './taichi.h')
     exit()
   elif mode == "doc":
     os.system('cd docs && sphinx-build -b html . build')

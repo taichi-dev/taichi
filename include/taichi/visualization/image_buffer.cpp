@@ -119,7 +119,7 @@ void Array2D<T>::write_text(const std::string &font_fn,
                             int dx,
                             int dy,
                             T color) {
-#if !defined(TC_AMALGAMATED)
+#if defined(TC_IMAGE_IO)
 
   std::vector<unsigned char> screen_buffer(
       (size_t)(this->res[0] * this->res[1]), (unsigned char)0);

@@ -356,8 +356,12 @@ class Canvas {
     position = transform(position);
     char *root_dir = std::getenv("TAICHI_REPO_DIR");
     TC_ASSERT(root_dir != nullptr);
-    img.write_text(root_dir + std::string("/assets/fonts/go/Go-Regular.ttf"),
-                   str, size, position.x, position.y, color);
+#if defined(TC_AMALGAMATED)
+    auto ttf_path = std::string("./font.ttf");
+#else
+    auto ttf_path = root_dir + std::string("/assets/fonts/go/Go-Regular.ttf");
+#endif
+    img.write_text(ttf_path, str, size, position.x, position.y, color);
   }
 
   void clear(Vector4 color) {
@@ -533,7 +537,7 @@ class GUI : public GUIBase {
     using CallbackType = std::function<void()>;
     CallbackType callback;
 
-    const int slider_padding = 5;
+    const int slider_padding = 10;
 
     Slider(Rect rect,
            const std::string text,

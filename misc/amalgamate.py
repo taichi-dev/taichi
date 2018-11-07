@@ -17,6 +17,7 @@ files_to_include = [
   'src/gui/cocoa.cpp',
   'src/gui/gui.cpp',
   'include/taichi/visual/gui.h',
+  'include/taichi/physics/fem_2d.h',
   'include/taichi/visualization/image_buffer.cpp',
 ]
 

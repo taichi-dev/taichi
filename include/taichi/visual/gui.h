@@ -757,12 +757,16 @@ class GUI : public GUIBase {
     }
   }
 
-  void screenshot() {
-    char timestamp[80];
-    std::time_t t = std::time(nullptr);
-    std::tm tstruct = *localtime(&t);
-    std::strftime(timestamp, sizeof(timestamp), "%Y-%m-%d_%H-%M-%S", &tstruct);
-    canvas->img.write_as_image(std::string(timestamp) + ".png");
+  void screenshot(std::string filename = "") {
+    if (filename == "") {
+      char timestamp[80];
+      std::time_t t = std::time(nullptr);
+      std::tm tstruct = *localtime(&t);
+      std::strftime(timestamp, sizeof(timestamp), "%Y-%m-%d_%H-%M-%S",
+                    &tstruct);
+      filename = std::string(timestamp) + ".png";
+    }
+    canvas->img.write_as_image(filename);
   }
 
   ~GUI();

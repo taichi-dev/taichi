@@ -2,6 +2,7 @@
 
 #include <taichi/math.h>
 #include <taichi/system/timer.h>
+#include <ctime>
 #include <numeric>
 
 #if defined(TC_PLATFORM_LINUX)
@@ -754,6 +755,14 @@ class GUI : public GUIBase {
     if (log_entries.size() > 15) {
       log_entries.erase(log_entries.begin());
     }
+  }
+
+  void screenshot() {
+    char timestamp[80];
+    std::time_t t = std::time(nullptr);
+    std::tm tstruct = *localtime(&t);
+    std::strftime(timestamp, sizeof(timestamp), "%Y-%m-%d_%H-%M-%S", &tstruct);
+    canvas->img.write_as_image(std::string(timestamp) + ".png");
   }
 
   ~GUI();

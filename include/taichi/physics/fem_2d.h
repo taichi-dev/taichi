@@ -424,7 +424,8 @@ class CPUCGHexFEMSolver : public HexFEMSolver<dim> {
           }
         }
       }
-      dc[ind] = dc_tmp * std::pow(density[ind], penalty - 1) * penalty;
+      dc[ind] = std::max(
+          0.0_f, dc_tmp * std::pow(density[ind], penalty - 1) * penalty);
       objective += dc_tmp * std::pow(density[ind], penalty);
     }
 

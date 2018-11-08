@@ -18,6 +18,7 @@ files_to_include = [
   'src/gui/gui.cpp',
   'include/taichi/visual/gui.h',
   'include/taichi/physics/fem_2d.h',
+  'build/font.cpp',
   'include/taichi/visualization/image_buffer.cpp',
 ]
 
@@ -137,6 +138,7 @@ int main() {
     print("Compilation time: {:.2f} seconds".format(time.time() - t))
 
 if __name__ == '__main__':
+  os.system("ti run amal_base64 assets/fonts/go/Go-Regular.ttf go_font_str build/font.cpp")
   ama = Amalgamator()
   ama.run()
   ama.test()

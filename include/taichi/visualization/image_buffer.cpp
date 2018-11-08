@@ -6,6 +6,7 @@
 #include <taichi/visualization/image_buffer.h>
 #include <taichi/math/math.h>
 #include <taichi/math/linalg.h>
+#include <taichi/io/base64.h>
 
 #if !defined(TC_AMALGAMATED)
 #define TC_IMAGE_IO
@@ -129,13 +130,24 @@ void Array2D<T>::write_text(const std::string &font_fn,
 
   stbtt_fontinfo font;
   if (fonts.find(font_fn) == fonts.end()) {
-    FILE *font_file = fopen(font_fn.c_str(), "rb");
-    TC_ASSERT_INFO(font_file != nullptr,
-                   "Font file not found: " + std::string(font_fn));
+    auto buffer_size = 24 << 20;
     font_buffers[font_fn] =
-        std::vector<unsigned char>(24 << 20, (unsigned char)0);
-    trash(fread(&font_buffers[font_fn][0], 1, 24 << 20, font_file));
-    fclose(font_file);
+        std::vector<unsigned char>(buffer_size, (unsigned char)0);
+    if (font_fn != "") {
+      FILE *font_file = fopen(font_fn.c_str(), "rb");
+      TC_ASSERT_INFO(font_file != nullptr,
+                     "Font file not found: " + std::string(font_fn));
+      trash(fread(&font_buffers[font_fn][0], 1, buffer_size, font_file));
+      fclose(font_file);
+    } else {
+#if defined(TC_AMALGAMATED)
+      std::string decoded = base64_decode(go_font_str);
+      TC_ASSERT(decoded.size() < buffer_size);
+      std::memcpy(&font_buffers[font_fn][0], &decoded[0], decoded.size() * sizeof(char));
+#else
+      TC_NOT_IMPLEMENTED
+#endif
+    }
     stbtt_InitFont(&font, &font_buffers[font_fn][0], 0);
     fonts[font_fn] = font;
   } else {

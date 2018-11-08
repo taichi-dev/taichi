@@ -358,7 +358,7 @@ class Canvas {
     char *root_dir = std::getenv("TAICHI_REPO_DIR");
     TC_ASSERT(root_dir != nullptr);
 #if defined(TC_AMALGAMATED)
-    auto ttf_path = std::string("./font.ttf");
+    auto ttf_path = std::string(""); // use amalgamated font
 #else
     auto ttf_path = root_dir + std::string("/assets/fonts/go/Go-Regular.ttf");
 #endif

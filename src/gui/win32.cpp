@@ -1,7 +1,7 @@
 #include <taichi/common/util.h>
 
 #if defined(TC_PLATFORM_WINDOWS)
-
+#include <windowsx.h>
 #include <taichi/common/task.h>
 #include <taichi/visual/gui.h>
 #include <map>
@@ -16,15 +16,31 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
                             WPARAM wParam,
                             LPARAM lParam) {
   auto dc = GetDC(hwnd);
-
+  auto gui = gui_from_hwnd[hwnd];
+  using namespace taichi;
+  int x, y;
   switch (uMsg) {
     case WM_DESTROY:
       PostQuitMessage(0);
       exit(0);
       return 0;
-    case WM_PAINT: {
-    }
-     return 0;
+    case WM_LBUTTONDOWN:
+      gui->mouse_event(
+          GUI::MouseEvent{GUI::MouseEvent::Type::press, gui->cursor_pos});
+      break;
+    case WM_LBUTTONUP:
+      gui->mouse_event(
+          GUI::MouseEvent{GUI::MouseEvent::Type::release, gui->cursor_pos});
+      break;
+    case WM_MOUSEMOVE:
+      x = GET_X_LPARAM(lParam);
+      y = GET_Y_LPARAM(lParam);
+      gui->set_mouse_pos(x, gui->height - 1 - y);
+      gui->mouse_event(
+          GUI::MouseEvent{GUI::MouseEvent::Type::move, gui->cursor_pos});
+      break;
+    case WM_PAINT:
+      break;
   }
   return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
@@ -33,7 +49,7 @@ TC_NAMESPACE_BEGIN
 
 void GUI::process_event() {
   MSG msg;
-  if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+  if (PeekMessage(&msg, hwnd, 0, 0, PM_REMOVE)) {
     TranslateMessage(&msg);
     DispatchMessage(&msg);
   }
@@ -101,20 +117,6 @@ GUI::~GUI() {
   DeleteDC(src);
   gui_from_hwnd.erase(hwnd);
 }
-
-#if !defined(TC_AMALGAMATED)
-auto win32guitest = []() {
-  GUI gui("Test2", 800, 300);
-  auto &canvas = gui.get_canvas();
-  canvas.clear(Vector4(0, 1, 0, 0));
-  for (int i = 0; i < 2000; i++) {
-    canvas.line(Vector2(0, 0), Vector2(1, i * 0.01_f),
-                          Vector4(0, 0, i * 0.01_f, 0));
-    gui.update();
-  }
-};
-TC_REGISTER_TASK(win32guitest);
-#endif
 
 TC_NAMESPACE_END
 

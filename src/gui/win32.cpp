@@ -41,6 +41,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
       break;
     case WM_PAINT:
       break;
+    case WM_CLOSE:
+      exit(0);
+      break;
   }
   return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }

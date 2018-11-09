@@ -138,6 +138,7 @@ void GUI::create_window() {
   call(window, "setContentView:", view);
   call(window, "becomeFirstResponder");
   call(window, "makeKeyAndOrderFront:", window);
+  call(window, "setAcceptsMouseMovedEvents:", YES);
   img_data_length = width * height * 4;
   img_data.resize(img_data_length);
 }
@@ -154,18 +155,20 @@ void GUI::process_event() {
       auto event_type = call<NSInteger>(event, "type");
       call(NSApp, "sendEvent:", event);
       call(NSApp, "updateWindows");
+      auto p = call<CGPoint>(event, "locationInWindow");
       switch (event_type) {
         case 1:  // NSLeftMouseDown
+          set_mouse_pos(p.x, p.y);
           mouse_event(MouseEvent{MouseEvent::Type::press, cursor_pos});
           break;
         case 2:  // NSLeftMouseUp
+          set_mouse_pos(p.x, p.y);
           mouse_event(MouseEvent{MouseEvent::Type::release, cursor_pos});
           break;
         case 5:   // NSMouseMoved
         case 6:   // NSLeftMouseDragged
         case 7:   // NSRightMouseDragged
         case 27:  // NSNSOtherMouseDragged
-          auto p = call<CGPoint>(event, "locationInWindow");
           set_mouse_pos(p.x, p.y);
           mouse_event(MouseEvent{MouseEvent::Type::move, Vector2i(p.x, p.y)});
           break;

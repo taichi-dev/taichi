@@ -6,8 +6,6 @@
 
 TC_NAMESPACE_BEGIN
 
-static_assert(sizeof(real) == 8, "Please compile with double precision");
-
 template <int dim>
 constexpr int ke_size() {
   return pow<dim>(2) * dim;

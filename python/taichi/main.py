@@ -100,6 +100,14 @@ def main():
     exec(script, {'__name__': '__main__'})
     exit()
 
+  if mode.endswith('.cpp'):
+    command = 'g++ {} -o {} -g -std=c++14 -O3 -lX11 -lpthread'.format(mode, mode[:-4])
+    print(command)
+    ret = os.system(command)
+    if ret == 0:
+      os.system('./{}'.format(mode[:-4]))
+    exit()
+
   if mode == "run":
     if argc <= 2:
       print("Please specify [task name], e.g. test_math")

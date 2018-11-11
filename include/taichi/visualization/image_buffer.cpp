@@ -110,8 +110,10 @@ void Array2D<T>::write_as_image(const std::string &filename) {
 #endif
 }
 
+#if defined(TC_IMAGE_IO)
 std::map<std::string, stbtt_fontinfo> fonts;
 std::map<std::string, std::vector<uint8>> font_buffers;
+#endif
 
 template <typename T>
 void Array2D<T>::write_text(const std::string &font_fn,

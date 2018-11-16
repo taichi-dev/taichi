@@ -65,4 +65,6 @@ bool read_vector_from_disk(std::vector<T> *p_vec, std::string fn) {
   return true;
 }
 
+using WushiParticles = std::map<std::string, std::vector<float32>>;
+
 TC_NAMESPACE_END

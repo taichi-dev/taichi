@@ -43,11 +43,18 @@ real taichi_matmatmul() {
 
 class AlignedAllocator {
   std::vector<uint8> _data;
-
   void *data;
 
-  AlignedAllocator(int size) {
+ public:
+  AlignedAllocator(std::size_t size) {
     _data.resize(size + 4096);
+    auto p = reinterpret_cast<uint64>(_data.data());
+    data = (void *)(p + (4096 - p % 4096));
+  }
+
+  template <typename T>
+  T *get() {
+    return reinterpret_cast<T *>(data);
   }
 };
 
@@ -60,8 +67,8 @@ void AOSOA_matmul(float32 *A, float32 *B, float32 *C) {
       __m256 a[dim * dim], b[dim * dim];
       const int p = dim * dim * simd_width * t;
       for (int i = 0; i < dim * dim; i++) {
-        a[i] = _mm256_loadu_ps(&A[p + simd_width * i]);
-        b[i] = _mm256_loadu_ps(&B[p + simd_width * i]);
+        a[i] = _mm256_load_ps(&A[p + simd_width * i]);
+        b[i] = _mm256_load_ps(&B[p + simd_width * i]);
       }
       for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
@@ -69,7 +76,7 @@ void AOSOA_matmul(float32 *A, float32 *B, float32 *C) {
           for (int k = 1; k < dim; k++) {
             c = _mm256_fmadd_ps(a[i * dim + k], b[k * dim + j], c);
           }
-          _mm256_storeu_ps(&C[p + simd_width * (i * dim + j)], c);
+          _mm256_store_ps(&C[p + simd_width * (i * dim + j)], c);
         }
       }
     }
@@ -78,13 +85,12 @@ void AOSOA_matmul(float32 *A, float32 *B, float32 *C) {
 
 template <int dim, typename T>
 real AOSOA_matmatmul() {
-  std::vector<T> A, B, C;
-  A.resize(N * dim * dim);
-  B.resize(N * dim * dim);
-  C.resize(N * dim * dim);
+  AlignedAllocator A(sizeof(T) * N * dim * dim);
+  AlignedAllocator B(sizeof(T) * N * dim * dim);
+  AlignedAllocator C(sizeof(T) * N * dim * dim);
 
   auto t = Time::get_time();
-  AOSOA_matmul<dim>(A.data(), B.data(), C.data());
+  AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), C.get<T>());
   return Time::get_time() - t;
 };
 

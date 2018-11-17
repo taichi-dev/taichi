@@ -6,8 +6,8 @@
 
 TC_NAMESPACE_BEGIN
 
-constexpr int rounds = 16384;
-constexpr int N = 1024;
+constexpr int rounds = 16384 * 20;
+constexpr int N = 512;
 
 template <int dim, typename T>
 real eigen_matmatmul() {
@@ -41,24 +41,35 @@ real taichi_matmatmul() {
   return Time::get_time() - t;
 };
 
+class AlignedAllocator {
+  std::vector<uint8> _data;
+
+  void *data;
+
+  AlignedAllocator(int size) {
+    _data.resize(size + 4096);
+  }
+};
+
 // array of dim * dim * 8 * float32
 template <int dim>
 void AOSOA_matmul(float32 *A, float32 *B, float32 *C) {
+  constexpr int simd_width = 8;
   for (int r = 0; r < rounds; r++) {
-    for (int t = 0; t < N / 8; t++) {
+    for (int t = 0; t < N / simd_width; t++) {
       __m256 a[dim * dim], b[dim * dim];
-      const int p = dim * dim * 8 * t;
+      const int p = dim * dim * simd_width * t;
       for (int i = 0; i < dim * dim; i++) {
-        a[i] = _mm256_loadu_ps(&A[p + 8 * i]);
-        b[i] = _mm256_loadu_ps(&B[p + 8 * i]);
+        a[i] = _mm256_loadu_ps(&A[p + simd_width * i]);
+        b[i] = _mm256_loadu_ps(&B[p + simd_width * i]);
       }
       for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
           __m256 c = a[i * dim] * b[j];
-          for (int k = 0; k < dim - 1; k++) {
+          for (int k = 1; k < dim; k++) {
             c = _mm256_fmadd_ps(a[i * dim + k], b[k * dim + j], c);
           }
-          _mm256_storeu_ps(&C[p + 8 * (i * dim + j)], c);
+          _mm256_storeu_ps(&C[p + simd_width * (i * dim + j)], c);
         }
       }
     }
@@ -77,11 +88,12 @@ real AOSOA_matmatmul() {
   return Time::get_time() - t;
 };
 
-#define BENCHMARK(x)                                                      \
-  {                                                                       \
-    real t = x##_matmatmul<dim, T>();                                     \
-    fmt::print("Matrix<{}, {}> {:10s} = {:8.3f} ms\n", dim,                     \
-               sizeof(T) == 4 ? "float32" : "float64", #x, t * 1000.0_f); \
+#define BENCHMARK(x)                                                          \
+  {                                                                           \
+    real t = x##_matmatmul<dim, T>();                                         \
+    fmt::print("Matrix<{}, {}>    {:8s} = {:8.3f} ms  {:8.3f} cyc / elem \n", \
+               dim, sizeof(T) == 4 ? "float32" : "float64", #x, t * 1000.0_f, \
+               4.2 * 1e9 * t / rounds / N);                                   \
   }
 
 template <int dim, typename T>

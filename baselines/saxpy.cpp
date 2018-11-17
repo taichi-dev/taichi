@@ -14,7 +14,6 @@ double get_time() {
 }
 constexpr int n = 1024 * 1024 * 1024;
 
-
 int main() {
   auto x = std::vector<float>(n), y = std::vector<float>(n);
   for (int i = 0; i < n; i++) {
@@ -45,7 +44,8 @@ int main() {
     t = get_time();
     std::memset(x.data(), 0, sizeof(float) * n);
     double memset = get_time() - t;
-    printf("saxpy %f sasum %f sscal %f memset %f\n", saxpy, sasum, sscal, memset);
+    printf("saxpy %f sasum %f sscal %f memset %f\n", saxpy, sasum, sscal,
+           memset);
   }
   printf("trash %f", trash);
   return 0;

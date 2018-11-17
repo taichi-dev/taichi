@@ -631,7 +631,7 @@ class MGPCGSmoke {
     if (true) {
       compute_b(true);
       real after_projection = norm(CH_B);
-      //if (after_projection > 1e-4_f) {
+      // if (after_projection > 1e-4_f) {
       TC_WARN("Before projection: {}", before_projection);
       TC_WARN("After projection: {}", after_projection);
       //}

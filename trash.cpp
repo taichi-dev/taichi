@@ -46,8 +46,6 @@ for (int p = start; p < end; p += 8) {
 }
 */
 
-
-
 // PartII:
 /*)
 for (int i = 0; i < Block::size[0]; i++) {

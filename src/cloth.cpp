@@ -345,4 +345,3 @@ auto test_cloth = [](const std::vector<std::string> &parameters) {
 TC_REGISTER_TASK(test_cloth);
 
 TC_NAMESPACE_END
-

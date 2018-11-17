@@ -156,9 +156,9 @@ struct VectorND : public VectorNDBase<dim__, T, ISE> {
   using ScalarType = T;
 
   template <int dim_, typename T_, InstSetExt ISE_>
-  static constexpr bool SIMD_4_32F =
-      (dim_ == 3 || dim_ == 4) && std::is_same<T_, float32>::value &&ISE_
-                                      >= InstSetExt::SSE;
+  static constexpr bool SIMD_4_32F = (dim_ == 3 || dim_ == 4) &&
+                                     std::is_same<T_, float32>::value &&ISE_
+                                         >= InstSetExt::SSE;
 
   template <int dim_, typename T_, InstSetExt ISE_>
   static constexpr bool SIMD_NONE = !SIMD_4_32F<dim_, T_, ISE_>;
@@ -959,19 +959,23 @@ struct MatrixND {
   }
 
   // Function intialization
-  template <typename F,
-            std::enable_if_t<
-                std::is_convertible<F, std::function<VectorND<dim__, T, ISE>(int)>>::value,
-                int> = 0>
+  template <
+      typename F,
+      std::enable_if_t<std::is_convertible<
+                           F,
+                           std::function<VectorND<dim__, T, ISE>(int)>>::value,
+                       int> = 0>
   TC_FORCE_INLINE explicit MatrixND(const F &f) {
     for (int i = 0; i < dim; i++)
       this->d[i] = f(i);
   }
 
-  template <typename F,
-            std::enable_if_t<
-                std::is_convertible<F, std::function<VectorND<dim__, T, ISE>(int)>>::value,
-                int> = 0>
+  template <
+      typename F,
+      std::enable_if_t<std::is_convertible<
+                           F,
+                           std::function<VectorND<dim__, T, ISE>(int)>>::value,
+                       int> = 0>
   TC_FORCE_INLINE MatrixND &set(const F &f) {
     for (int i = 0; i < dim; i++)
       this->d[i] = f(i);
@@ -1053,8 +1057,33 @@ struct MatrixND {
     return ret;
   }
 
+  template <int dim_ = dim,
+            typename T_ = T,
+            InstSetExt ISE_ = ISE,
+            typename std::enable_if_t<SIMD_4_32F<dim_, T_, ISE_> && dim_ == 3,
+                                      int> = 0>
   TC_FORCE_INLINE MatrixND operator*(const MatrixND &o) const {
     return MatrixND([&](int i) { return (*this) * o[i]; });
+  }
+
+  template <
+      int dim_ = dim,
+      typename T_ = T,
+      InstSetExt ISE_ = ISE,
+      typename std::enable_if_t<!(SIMD_4_32F<dim_, T_, ISE_> && dim_ == 3),
+                                int> = 0>
+  TC_FORCE_INLINE MatrixND operator*(const MatrixND &o) const {
+    MatrixND ret;
+    for (int i = 0; i < dim; i++) {
+      for (int j = 0; j < dim; j++) {
+        T tmp = 0;
+        for (int k = 0; k < dim; k++) {
+          tmp += (*this)[k][j] * o[i][k];
+        }
+        ret[i][j] = tmp;
+      }
+    }
+    return ret;
   }
 
   TC_FORCE_INLINE static MatrixND outer_product(Vector column, Vector row) {

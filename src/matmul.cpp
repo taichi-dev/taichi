@@ -39,7 +39,35 @@ real taichi_matmatmul() {
     }
   }
   return Time::get_time() - t;
-};
+}
+
+
+template <int dim, typename T>
+real AOS_matmatmul() {
+  struct Mat {
+    T d[dim][dim];
+  };
+  std::vector<Mat> A, B, C;
+  A.resize(N);
+  B.resize(N);
+  C.resize(N);
+
+  auto t = Time::get_time();
+  for (int r = 0; r < rounds; r++) {
+    for (int t = 0; t < N; t++) {
+      for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+          T sum = 0;
+          for (int k = 0; k < dim; k++) {
+            sum += A[t].d[i][k] * B[t].d[k][j];
+          }
+          C[t].d[i][j] = sum;
+        }
+      }
+    }
+  }
+  return Time::get_time() - t;
+}
 
 class AlignedAllocator {
   std::vector<uint8> _data;
@@ -194,6 +222,7 @@ template <int dim, typename T>
 void run() {
   BENCHMARK(eigen);
   BENCHMARK(taichi);
+  BENCHMARK(AOS);
   BENCHMARK(SOA);
   BENCHMARK(AOSOA);
   fmt::print("\n");

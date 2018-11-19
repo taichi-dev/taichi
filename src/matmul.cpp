@@ -2,6 +2,7 @@
 #include <taichi/common/task.h>
 #include <taichi/math.h>
 #include <taichi/system/timer.h>
+#include "tlang.h"
 #include <Eigen/Dense>
 
 TC_NAMESPACE_BEGIN
@@ -40,7 +41,6 @@ real taichi_matmatmul() {
   }
   return Time::get_time() - t;
 }
-
 
 template <int dim, typename T>
 real AOS_matmatmul() {
@@ -244,6 +244,62 @@ real SOA_matmatmul() {
   return Time::get_time() - t;
 };
 
+template <int dim, typename T>
+real Tlang_matmatmul() {
+  using namespace Tlang;
+
+  Expr a[dim][dim], b[dim][dim], c[dim][dim];
+
+  int simd_width = 32 / sizeof(float32);
+
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      a[i][j] = load(0, dim * dim, simd_width * (i * dim + j));
+      b[i][j] = load(1, dim * dim, simd_width * (i * dim + j));
+    }
+  }
+
+  Expr ret;
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      auto sum = a[i][0] * b[0][j];
+      for (int k = 1; k < dim; k++) {
+        sum = sum + a[i][k] * b[k][j];
+      }
+      ret.store(sum, 2, dim * dim, simd_width * (i * dim + j));
+    }
+  }
+
+  CodeGen cg;
+  auto func = cg.get(ret);
+
+  AlignedAllocator A(sizeof(T) * N * dim * dim);
+  AlignedAllocator B(sizeof(T) * N * dim * dim);
+  AlignedAllocator C(sizeof(T) * N * dim * dim);
+  AlignedAllocator D(sizeof(T) * N * dim * dim);
+
+  for (int i = 0; i < N * dim * dim; i++) {
+    A.get<T>()[i] = rand();
+    B.get<T>()[i] = rand();
+  }
+
+  AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), D.get<T>());
+
+  auto t = Time::get_time();
+  func(A.get<T>(), B.get<T>(), C.get<T>(), N);
+  t = Time::get_time() - t;
+
+  for (int i = 0; i < N * dim * dim; i++) {
+    auto a = C.get<T>()[i];
+    auto b = D.get<T>()[i];
+    TC_P(a);
+    TC_P(b);
+    TC_ASSERT(std::abs(a - b) < 1e-5_f);
+  }
+
+  return t;
+}
+
 #define BENCHMARK(x)                                                          \
   {                                                                           \
     real t = x##_matmatmul<dim, T>();                                         \
@@ -260,6 +316,7 @@ void run() {
   BENCHMARK(AOS2);
   BENCHMARK(SOA);
   BENCHMARK(AOSOA);
+  BENCHMARK(Tlang);
   fmt::print("\n");
 }
 
@@ -267,9 +324,11 @@ auto benchmark_matmul = []() {
   run<2, float32>();
   run<3, float32>();
   run<4, float32>();
+  /*
   run<2, float64>();
   run<3, float64>();
   run<4, float64>();
+  */
 };
 TC_REGISTER_TASK(benchmark_matmul);
 

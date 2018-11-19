@@ -65,7 +65,7 @@ class Expr {
   }
 };
 
-Expr load(int stream_id, int stride, int offset) {
+inline Expr load(int stream_id, int stride, int offset) {
   auto n = std::make_shared<Node>(NodeType::load);
   n->stream_id = stream_id;
   n->stride = stride;
@@ -126,7 +126,7 @@ class CodeGen {
     } else if (node->type == NodeType::load) {
       auto stream_name = fmt::format("stream{:02d}", node->stream_id);
       code +=
-          fmt::format("__m256 {} = _mm256_load_ps(&{}[{} * i + {}]);\n",
+          fmt::format("auto {} = _mm256_load_ps(&{}[{} * i + {}]);\n",
                       node->var_name, stream_name, node->stride, node->offset);
     } else if (node->type == NodeType::store) {
       auto stream_name = fmt::format("stream{:02d}", node->stream_id);

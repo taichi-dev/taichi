@@ -1,4 +1,5 @@
 #include <taichi/common/util.h>
+#include <dlfcn.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -85,12 +86,15 @@ class CodeGen {
     return fmt::format("var_{:04d}", var_count++);
   }
 
+  using FunctionType = void (*)(float32 *, float32 *, float32 *, int);
+
   std::string run(const Expr &e) {
     code = "#include <immintrin.h>\n\n";
     code += "using float32 = float;\n";
     code += "using float64 = double;\n\n";
     code +=
-        "void func(float32 *stream00, float32 *stream01, float32 *stream02, "
+        "extern \"C\" void func(float32 *stream00, float32 *stream01, float32 "
+        "*stream02, "
         "int n) {\n";
     code += "for (int i = 0; i < n; i += 8) {\n";
     visit(e.node);
@@ -106,7 +110,7 @@ class CodeGen {
     if (node->var_name == "")
       node->var_name = create_variable();
     else
-      return; // visited
+      return;  // visited
     if (node->type == NodeType::add) {
       code += fmt::format("auto {} = {} + {};\n", node->var_name,
                           node->ch[0]->var_name, node->ch[1]->var_name);
@@ -134,6 +138,21 @@ class CodeGen {
     } else {
       TC_NOT_IMPLEMENTED;
     }
+  }
+
+  FunctionType get(const Expr &e) {
+    run(e);
+    std::ofstream of("tmp.cpp");
+    of << code;
+    std::system("clang-format-4.0 -i tmp.cpp");
+    auto compile_ret =
+        std::system("g++ tmp.cpp -std=c++14 -shared -fPIC -o tmp.so -march=native");
+    TC_ASSERT(compile_ret == 0);
+    auto dll = dlopen("./tmp.so", RTLD_LAZY);
+    TC_ASSERT(dll != nullptr);
+    auto ret = dlsym(dll, "func");
+    TC_ASSERT(ret != nullptr);
+    return (FunctionType)ret;
   }
 };
 }

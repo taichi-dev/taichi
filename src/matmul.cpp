@@ -279,10 +279,8 @@ real Tlang_matmatmul() {
   AlignedAllocator D(sizeof(T) * N * dim * dim);
 
   for (int i = 0; i < N * dim * dim; i++) {
-    //A.get<T>()[i] = rand();
-    //B.get<T>()[i] = rand();
-    A.get<T>()[i] = 1;
-    B.get<T>()[i] = 1;
+    A.get<T>()[i] = rand();
+    B.get<T>()[i] = rand();
   }
 
   auto t = Time::get_time();

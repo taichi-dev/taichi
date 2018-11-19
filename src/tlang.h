@@ -158,7 +158,7 @@ class CodeGen {
     TC_ASSERT(dl_counter < 10000);
     auto dl_name = fmt::format("tmp{:04d}.so", dl_counter);
     auto cmd =
-        "g++ tmp.cpp -std=c++14 -shared -fPIC -o " + dl_name + " -march=native";
+        "g++ tmp.cpp -std=c++14 -shared -fPIC -O3 -o " + dl_name + " -march=native";
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
     auto dll = dlopen(("./" + dl_name).c_str(), RTLD_LAZY);

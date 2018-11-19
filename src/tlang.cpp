@@ -34,6 +34,9 @@ void compile(int dim) {
   CodeGen gen;
   auto code = gen.run(ret);
   std::cout << code << std::endl;
+  std::ofstream of("tmp.cpp");
+  of << code;
+  std::system("clang-format-4.0 -i tmp.cpp");
   TC_INFO("Generated Code:\n{}", code);
 }
 
@@ -42,3 +45,6 @@ auto tlang = []() { compile<float32>(3); };
 TC_REGISTER_TASK(tlang);
 
 TC_NAMESPACE_END
+
+
+//ti run tlang && g++ tmp.cpp -std=c++14 -c -fPIC -o tmp.so -march=native

@@ -9,7 +9,7 @@ using Handle = std::shared_ptr<T>;
 
 class Node {
  public:
-  enum class Type : int { input, mul, add, sub, div, load, store, combine };
+  enum class Type : int { mul, add, sub, div, load, store, combine };
 
   std::vector<Handle<Node>> ch;  // Four child max
   Type type;
@@ -86,12 +86,15 @@ class CodeGen {
   }
 
   std::string run(const Expr &e) {
-    code = "";
+    code = "#include <immintrin.h>\n\n";
+    code += "using float32 = float;\n";
+    code += "using float64 = double;\n\n";
     code +=
         "void func(float32 *stream00, float32 *stream01, float32 *stream02, "
         "int n) {\n";
+    code += "for (int i = 0; i < n; i += 8) {\n";
     visit(e.node);
-    code += "}\n";
+    code += "}\n}\n";
     return code;
   }
 
@@ -102,30 +105,30 @@ class CodeGen {
     }
     if (node->var_name == "")
       node->var_name = create_variable();
-    if (node->type == NodeType::input) {
-      code += fmt::format("__m256 {};\n", node->var_name);
-    } else if (node->type == NodeType::add) {
-      code += fmt::format("{} = {} + {};\n", node->var_name,
+    else
+      return; // visited
+    if (node->type == NodeType::add) {
+      code += fmt::format("auto {} = {} + {};\n", node->var_name,
                           node->ch[0]->var_name, node->ch[1]->var_name);
     } else if (node->type == NodeType::mul) {
-      code += fmt::format("{} = {} * {};\n", node->var_name,
+      code += fmt::format("auto {} = {} * {};\n", node->var_name,
                           node->ch[0]->var_name, node->ch[1]->var_name);
     } else if (node->type == NodeType::sub) {
-      code += fmt::format("{} = {} - {};\n", node->var_name,
+      code += fmt::format("auto {} = {} - {};\n", node->var_name,
                           node->ch[0]->var_name, node->ch[1]->var_name);
     } else if (node->type == NodeType::div) {
-      code += fmt::format("{} = {} / {};\n", node->var_name,
+      code += fmt::format("auto {} = {} / {};\n", node->var_name,
                           node->ch[0]->var_name, node->ch[1]->var_name);
     } else if (node->type == NodeType::load) {
       auto stream_name = fmt::format("stream{:02d}", node->stream_id);
       code +=
-          fmt::format("{} = _mm256_load_ps(&{}[{} * i + {}]);\n",
+          fmt::format("__m256 {} = _mm256_load_ps(&{}[{} * i + {}]);\n",
                       node->var_name, stream_name, node->stride, node->offset);
     } else if (node->type == NodeType::store) {
       auto stream_name = fmt::format("stream{:02d}", node->stream_id);
-      code += fmt::format("_mm256_store_ps({}, &{}[{} * i + {}]);\n",
-                          node->ch[0]->var_name, stream_name, node->stride,
-                          node->offset);
+      code +=
+          fmt::format("_mm256_store_ps(&{}[{} * i + {}], {});\n", stream_name,
+                      node->stride, node->offset, node->ch[0]->var_name);
     } else if (node->type == NodeType::combine) {
       // do nothing
     } else {

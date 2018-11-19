@@ -78,7 +78,13 @@ class CodeGen {
   std::string code;
 
  public:
+  std::string func_name;
+
   CodeGen() : var_count(0) {
+    static int func_counter = 0;
+    func_counter += 1;
+    TC_ASSERT(func_counter < 1000000);
+    func_name = fmt::format("func{:06d}", func_counter);
   }
 
   std::string create_variable() {
@@ -92,10 +98,10 @@ class CodeGen {
     code = "#include <immintrin.h>\n\n";
     code += "using float32 = float;\n";
     code += "using float64 = double;\n\n";
-    code +=
-        "extern \"C\" void func(float32 *stream00, float32 *stream01, float32 "
-        "*stream02, "
-        "int n) {\n";
+    code += "extern \"C\" void " + func_name +
+            "(float32 *stream00, float32 *stream01, float32 "
+            "*stream02, "
+            "int n) {\n";
     code += "for (int i = 0; i < n; i += 8) {\n";
     visit(e.node);
     code += "}\n}\n";
@@ -147,12 +153,17 @@ class CodeGen {
       of << code;
     }
     std::system("clang-format-4.0 -i tmp.cpp");
-    auto compile_ret =
-        std::system("g++ tmp.cpp -std=c++14 -shared -fPIC -o tmp.so -march=native");
+    static int dl_counter = 0;
+    dl_counter += 1;
+    TC_ASSERT(dl_counter < 10000);
+    auto dl_name = fmt::format("tmp{:04d}.so", dl_counter);
+    auto cmd =
+        "g++ tmp.cpp -std=c++14 -shared -fPIC -o " + dl_name + " -march=native";
+    auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
-    auto dll = dlopen("./tmp.so", RTLD_LAZY);
+    auto dll = dlopen(("./" + dl_name).c_str(), RTLD_LAZY);
     TC_ASSERT(dll != nullptr);
-    auto ret = dlsym(dll, "func");
+    auto ret = dlsym(dll, func_name.c_str());
     TC_ASSERT(ret != nullptr);
     return (FunctionType)ret;
   }

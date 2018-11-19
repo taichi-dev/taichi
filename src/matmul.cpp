@@ -248,7 +248,7 @@ template <int dim, typename T>
 real Tlang_matmatmul() {
   using namespace Tlang;
 
-  Expr a[dim][dim], b[dim][dim], c[dim][dim];
+  Expr a[dim][dim], b[dim][dim];
 
   int simd_width = 32 / sizeof(float32);
 
@@ -279,21 +279,23 @@ real Tlang_matmatmul() {
   AlignedAllocator D(sizeof(T) * N * dim * dim);
 
   for (int i = 0; i < N * dim * dim; i++) {
-    A.get<T>()[i] = rand();
-    B.get<T>()[i] = rand();
+    //A.get<T>()[i] = rand();
+    //B.get<T>()[i] = rand();
+    A.get<T>()[i] = 1;
+    B.get<T>()[i] = 1;
   }
 
-  AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), D.get<T>());
-
   auto t = Time::get_time();
-  func(A.get<T>(), B.get<T>(), C.get<T>(), N);
+  for (int i = 0; i < rounds; i++) {
+    func(A.get<T>(), B.get<T>(), C.get<T>(), N);
+  }
   t = Time::get_time() - t;
+
+  AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), D.get<T>());
 
   for (int i = 0; i < N * dim * dim; i++) {
     auto a = C.get<T>()[i];
     auto b = D.get<T>()[i];
-    TC_P(a);
-    TC_P(b);
     TC_ASSERT(std::abs(a - b) < 1e-5_f);
   }
 

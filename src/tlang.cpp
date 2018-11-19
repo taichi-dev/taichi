@@ -14,8 +14,8 @@ Expr compile(int dim) {
 
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
-      a[i][j] = load(0, simd_width * dim * dim, simd_width * (i * dim + j));
-      b[i][j] = load(1, simd_width * dim * dim, simd_width * (i * dim + j));
+      a[i][j] = load(0, 1, simd_width * (i * dim + j));
+      b[i][j] = load(1, 1, simd_width * (i * dim + j));
     }
   }
 
@@ -26,7 +26,7 @@ Expr compile(int dim) {
       for (int k = 1; k < dim; k++) {
         sum = sum + a[i][k] * a[k][j];
       }
-      ret.store(sum, 2, simd_width * dim * dim, simd_width * (i * dim + j));
+      ret.store(sum, 2, 1, simd_width * (i * dim + j));
     }
   }
   return ret;
@@ -38,9 +38,27 @@ auto tlang = []() {
   auto func = cg.get(expr);
   TC_P(func);
 };
-
 TC_REGISTER_TASK(tlang);
 
-TC_NAMESPACE_END
+auto test_tlang = []() {
+  Expr a = load(0, 1, 0);
+  Expr b = load(1, 1, 0);
+  auto c = a + b;
+  Expr ret;
+  ret.store(c, 2, 1, 0);
+  CodeGen cg;
+  auto func = cg.get(ret);
 
-// ti run tlang && g++ tmp.cpp -std=c++14 -c -fPIC -o tmp.so -march=native
+  float32 x[16], y[16], z[16];
+  for (int i = 0; i < 16; i++) {
+    x[i] = i;
+    y[i] = -2 * i;
+  }
+  func(x, y, z, 16);
+  for (int i = 0; i < 16; i++) {
+    TC_P(z[i]);
+  }
+};
+TC_REGISTER_TASK(test_tlang);
+
+TC_NAMESPACE_END

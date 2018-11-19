@@ -142,8 +142,10 @@ class CodeGen {
 
   FunctionType get(const Expr &e) {
     run(e);
-    std::ofstream of("tmp.cpp");
-    of << code;
+    {
+      std::ofstream of("tmp.cpp");
+      of << code;
+    }
     std::system("clang-format-4.0 -i tmp.cpp");
     auto compile_ret =
         std::system("g++ tmp.cpp -std=c++14 -shared -fPIC -o tmp.so -march=native");

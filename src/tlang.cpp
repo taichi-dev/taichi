@@ -3,19 +3,42 @@
 
 TC_NAMESPACE_BEGIN
 
-auto test_tlang = []() {
-  using namespace T;
-  Expr a, b, c, d;
+// if branching is not supported
 
-  auto ret = (a * b + c) / d;
-  auto ret2 = ret - ret;
+template <typename T>
+void compile(int dim) {
+  using namespace Tlang;
+
+  Expr a[dim][dim], b[dim][dim], c[dim][dim];
+
+  int simd_width = 32 / sizeof(float32);
+
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      a[i][j] = load(0, simd_width, 0);
+      b[i][j] = load(1, simd_width, 0);
+    }
+  }
+
+  Expr ret;
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      auto sum = a[i][0] * b[0][j];
+      for (int k = 1; k < dim; k++) {
+        sum = sum + a[i][k] * a[k][j];
+      }
+      ret.store(sum, 2, simd_width, 0);
+    }
+  }
 
   CodeGen gen;
-  auto code = gen.run(ret2);
+  auto code = gen.run(ret);
   std::cout << code << std::endl;
   TC_INFO("Generated Code:\n{}", code);
-};
+}
 
-TC_REGISTER_TASK(test_tlang);
+auto tlang = []() { compile<float32>(3); };
+
+TC_REGISTER_TASK(tlang);
 
 TC_NAMESPACE_END

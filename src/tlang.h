@@ -2,23 +2,25 @@
 
 TC_NAMESPACE_BEGIN
 
-namespace T {
+namespace Tlang {
 
 template <typename T>
 using Handle = std::shared_ptr<T>;
 
 class Node {
  public:
-  enum class Type : int { input, mul, add, sub, div };
+  enum class Type : int { input, mul, add, sub, div, load, store, combine };
 
-  Handle<Node> ch[4];  // Four child max
+  std::vector<Handle<Node>> ch;  // Four child max
   Type type;
   std::string var_name;
+  int stream_id, stride, offset;
 
   Node(Type type) : type(type) {
   }
 
   Node(Type type, Handle<Node> ch0, Handle<Node> ch1) : type(type) {
+    ch.resize(2);
     ch[0] = ch0;
     ch[1] = ch1;
   }
@@ -31,8 +33,7 @@ class Expr {
  public:
   Handle<Node> node;
 
-  Expr() {  // Plain input node
-    node = std::make_shared<Node>(NodeType::input);
+  Expr() {
   }
 
   Expr(Handle<Node> node) : node(node) {
@@ -48,7 +49,28 @@ class Expr {
   BINARY_OP(-, sub);
   BINARY_OP(/, div);
 #undef BINARY
+
+  void store(const Expr &e, int stream_id, int stride, int offset) {
+    if (!node) {
+      node = std::make_shared<Node>(NodeType::combine);
+    }
+    auto n = std::make_shared<Node>(NodeType::store);
+    n->ch.push_back(e.node);
+    n->stream_id = stream_id;
+    n->stride = stride;
+    n->offset = offset;
+    Expr store_e(n);
+    node->ch.push_back(n);
+  }
 };
+
+Expr load(int stream_id, int stride, int offset) {
+  auto n = std::make_shared<Node>(NodeType::load);
+  n->stream_id = stream_id;
+  n->stride = stride;
+  n->offset = offset;
+  return Expr(n);
+}
 
 class CodeGen {
   int var_count;
@@ -65,10 +87,11 @@ class CodeGen {
 
   std::string run(const Expr &e) {
     code = "";
-    code += "{\n";
+    code +=
+        "void func(float32 *stream00, float32 *stream01, float32 *stream02, "
+        "int n) {\n";
     visit(e.node);
     code += "}\n";
-
     return code;
   }
 
@@ -93,6 +116,18 @@ class CodeGen {
     } else if (node->type == NodeType::div) {
       code += fmt::format("{} = {} / {};\n", node->var_name,
                           node->ch[0]->var_name, node->ch[1]->var_name);
+    } else if (node->type == NodeType::load) {
+      auto stream_name = fmt::format("stream{:02d}", node->stream_id);
+      code +=
+          fmt::format("{} = _mm256_load_ps(&{}[{} * i + {}]);\n",
+                      node->var_name, stream_name, node->stride, node->offset);
+    } else if (node->type == NodeType::store) {
+      auto stream_name = fmt::format("stream{:02d}", node->stream_id);
+      code += fmt::format("_mm256_store_ps({}, &{}[{} * i + {}]);\n",
+                          node->ch[0]->var_name, stream_name, node->stride,
+                          node->offset);
+    } else if (node->type == NodeType::combine) {
+      // do nothing
     } else {
       TC_NOT_IMPLEMENTED;
     }

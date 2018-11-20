@@ -47,7 +47,7 @@ TC_FORCE_INLINE void polar_decomp<2, float32>(const MatrixND<2, float32> &m,
   auto scale = 1.0f / std::sqrt(x * x + y * y);
   auto c = x * scale;
   auto s = y * scale;
-  R = Matrix2(Vector2(c, s), Vector2(-s, c));
+  R = Matrix2f(Vector2f(c, s), Vector2f(-s, c));
   S = transposed(R) * m;
 }
 

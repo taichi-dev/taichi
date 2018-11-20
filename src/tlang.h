@@ -145,14 +145,32 @@ class CodeGen {
       }
     } else if (node->type == NodeType::load) {
       auto stream_name = fmt::format("stream{:02d}", node->stream_id);
-      code +=
-          fmt::format("auto {} = _mm256_load_ps(&{}[{} * i + {}]);\n",
-                      node->var_name, stream_name, node->stride, node->offset);
+      if (mode == Mode::vector) {
+        code += fmt::format("auto {} = _mm256_load_ps(&{}[{} * i + {}]);\n",
+                            node->var_name, stream_name, node->stride,
+                            node->offset);
+      } else {
+        for (int i = 0; i < simd_width; i++) {
+          auto suf = get_scalar_suffix(i);
+          code += fmt::format("auto {} = {}[{} * i + {} + {}];\n",
+                              node->var_name + suf, stream_name, node->stride,
+                              node->offset, i);
+        }
+      }
     } else if (node->type == NodeType::store) {
       auto stream_name = fmt::format("stream{:02d}", node->stream_id);
-      code +=
-          fmt::format("_mm256_store_ps(&{}[{} * i + {}], {});\n", stream_name,
-                      node->stride, node->offset, node->ch[0]->var_name);
+      if (mode == Mode::vector) {
+        code +=
+            fmt::format("_mm256_store_ps(&{}[{} * i + {}], {});\n", stream_name,
+                        node->stride, node->offset, node->ch[0]->var_name);
+      } else {
+        for (int i = 0; i < simd_width; i++) {
+          auto suf = get_scalar_suffix(i);
+          code += fmt::format("{}[{} * i + {} + {}] = {};\n", stream_name,
+                              node->stride, node->offset, i,
+                              node->ch[0]->var_name + suf);
+        }
+      }
     } else if (node->type == NodeType::combine) {
       // do nothing
     } else {

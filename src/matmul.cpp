@@ -248,7 +248,7 @@ real SOA_matmatmul() {
 };
 
 template <int dim, typename T>
-real Tlang_matmatmul() {
+real Tlang_matmatmul(Tlang::CodeGen::Mode mode) {
   using namespace Tlang;
 
   Expr a[dim][dim], b[dim][dim];
@@ -273,7 +273,7 @@ real Tlang_matmatmul() {
     }
   }
 
-  CodeGen cg;
+  CodeGen cg(mode);
   auto func = cg.get(ret);
 
   AlignedAllocator A(sizeof(T) * N * dim * dim);
@@ -303,23 +303,34 @@ real Tlang_matmatmul() {
   return t;
 }
 
+template <int dim, typename T>
+real TlangVector_matmatmul() {
+  return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::vector);
+}
+
+template <int dim, typename T>
+real TlangScalar_matmatmul() {
+  return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::scalar);
+}
+
 #define BENCHMARK(x)                                                          \
   {                                                                           \
     real t = x##_matmatmul<dim, T>();                                         \
-    fmt::print("Matrix<{}, {}>    {:8s} = {:8.3f} ms  {:8.3f} cyc / elem \n", \
+    fmt::print("Matrix<{}, {}>  {:12s} = {:8.3f} ms  {:8.3f} cyc / elem \n",  \
                dim, sizeof(T) == 4 ? "float32" : "float64", #x, t * 1000.0_f, \
-               3.6 * 1e9 * t / rounds / N);                                   \
+               cpu_frequency * 1e9 * t / rounds / N);                         \
   }
 
 template <int dim, typename T>
 void run() {
   BENCHMARK(eigen);
-  //BENCHMARK(taichi);
-  //BENCHMARK(AOS);
-  //BENCHMARK(AOS2);
+  // BENCHMARK(taichi);
+  // BENCHMARK(AOS);
+  // BENCHMARK(AOS2);
   BENCHMARK(SOA);
   BENCHMARK(AOSOA);
-  BENCHMARK(Tlang);
+  BENCHMARK(TlangVector);
+  BENCHMARK(TlangScalar);
   fmt::print("\n");
 }
 
@@ -327,7 +338,8 @@ auto benchmark_matmul = []() {
   std::ifstream noturbo("/sys/devices/system/cpu/intel_pstate/no_turbo");
   char c;
   noturbo >> c;
-  TC_WARN_IF(c != '1', "You seem to be running the benchmark with Intel Turboboost.");
+  TC_WARN_IF(c != '1',
+             "You seem to be running the benchmark with Intel Turboboost.");
 
   run<2, float32>();
   run<3, float32>();

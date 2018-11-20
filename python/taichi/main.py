@@ -227,9 +227,10 @@ def main():
       img = np.hstack(imgs)
       cv2.imwrite(os.path.join('merged', fn), img)
   else:
-    print("Unknown command '{}'".format(mode))
-    exit(-1)
-
+    name = sys.argv[1]
+    print('Running task [{}]...'.format(name))
+    task = tc.Task(name)
+    task.run(*sys.argv[2:])
 
 if __name__ == '__main__':
   main()

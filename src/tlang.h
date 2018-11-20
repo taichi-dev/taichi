@@ -83,12 +83,17 @@ class CodeGen {
 
   Mode mode;
   static constexpr int simd_width = 8;
+  std::map<NodeType, std::string> binary_ops;
 
   CodeGen(Mode mode = Mode::vector) : var_count(0), mode(mode) {
     static int func_counter = 0;
     func_counter += 1;
     TC_ASSERT(func_counter < 1000000);
     func_name = fmt::format("func{:06d}", func_counter);
+    binary_ops[NodeType::add] = "+";
+    binary_ops[NodeType::sub] = "-";
+    binary_ops[NodeType::mul] = "*";
+    binary_ops[NodeType::div] = "/";
   }
 
   std::string create_variable() {
@@ -125,27 +130,19 @@ class CodeGen {
       node->var_name = create_variable();
     else
       return;  // visited
-    if (node->type == NodeType::add) {
+    if (binary_ops.find(node->type) != binary_ops.end()) {
+      auto op = binary_ops[node->type];
       if (mode == Mode::vector) {
-        code += fmt::format("auto {} = {} + {};\n", node->var_name,
-                            node->ch[0]->var_name, node->ch[1]->var_name);
+        code += fmt::format("auto {} = {} {} {};\n", node->var_name,
+                            node->ch[0]->var_name, op, node->ch[1]->var_name);
       } else if (mode == Mode::scalar) {
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
-          code += fmt::format("auto {} = {} + {};\n", node->var_name + suf,
-                              node->ch[0]->var_name + suf,
+          code += fmt::format("auto {} = {} {} {};\n", node->var_name + suf,
+                              node->ch[0]->var_name + suf, op,
                               node->ch[1]->var_name + suf);
         }
       }
-    } else if (node->type == NodeType::mul) {
-      code += fmt::format("auto {} = {} * {};\n", node->var_name,
-                          node->ch[0]->var_name, node->ch[1]->var_name);
-    } else if (node->type == NodeType::sub) {
-      code += fmt::format("auto {} = {} - {};\n", node->var_name,
-                          node->ch[0]->var_name, node->ch[1]->var_name);
-    } else if (node->type == NodeType::div) {
-      code += fmt::format("auto {} = {} / {};\n", node->var_name,
-                          node->ch[0]->var_name, node->ch[1]->var_name);
     } else if (node->type == NodeType::load) {
       auto stream_name = fmt::format("stream{:02d}", node->stream_id);
       code +=
@@ -169,7 +166,7 @@ class CodeGen {
       std::ofstream of("tmp.cpp");
       of << code;
     }
-    std::system("clang-format-4.0 -i tmp.cpp");
+    std::system("clang-format -i tmp.cpp");
     static int dl_counter = 0;
     dl_counter += 1;
     TC_ASSERT(dl_counter < 10000);
@@ -186,6 +183,6 @@ class CodeGen {
     return (FunctionType)ret;
   }
 };
-}
+}  // namespace Tlang
 
 TC_NAMESPACE_END

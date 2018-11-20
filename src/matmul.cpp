@@ -1,3 +1,4 @@
+#include <fstream>
 #include <taichi/common/util.h>
 #include <taichi/common/task.h>
 #include <taichi/math.h>
@@ -6,6 +7,8 @@
 #include <Eigen/Dense>
 
 TC_NAMESPACE_BEGIN
+
+constexpr real cpu_frequency = 3.6;
 
 constexpr int rounds = 16384 * 20;
 constexpr int N = 512;
@@ -305,7 +308,7 @@ real Tlang_matmatmul() {
     real t = x##_matmatmul<dim, T>();                                         \
     fmt::print("Matrix<{}, {}>    {:8s} = {:8.3f} ms  {:8.3f} cyc / elem \n", \
                dim, sizeof(T) == 4 ? "float32" : "float64", #x, t * 1000.0_f, \
-               4.2 * 1e9 * t / rounds / N);                                   \
+               3.6 * 1e9 * t / rounds / N);                                   \
   }
 
 template <int dim, typename T>
@@ -321,18 +324,21 @@ void run() {
 }
 
 auto benchmark_matmul = []() {
-  /*
+  std::ifstream noturbo("/sys/devices/system/cpu/intel_pstate/no_turbo");
+  char c;
+  noturbo >> c;
+  TC_WARN_IF(c != '1', "You seem to be running the benchmark with Intel Turboboost.");
+
   run<2, float32>();
   run<3, float32>();
   run<4, float32>();
   run<5, float32>();
+  /*
   run<6, float32>();
   run<7, float32>();
   run<8, float32>();
-   */
   run<9, float32>();
   run<10, float32>();
-  /*
   run<2, float64>();
   run<3, float64>();
   run<4, float64>();

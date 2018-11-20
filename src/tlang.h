@@ -79,8 +79,12 @@ class CodeGen {
 
  public:
   std::string func_name;
+  enum class Mode : int { scalar, vector };
 
-  CodeGen() : var_count(0) {
+  Mode mode;
+  static constexpr int simd_width = 8;
+
+  CodeGen(Mode mode = Mode::vector) : var_count(0), mode(mode) {
     static int func_counter = 0;
     func_counter += 1;
     TC_ASSERT(func_counter < 1000000);
@@ -108,6 +112,10 @@ class CodeGen {
     return code;
   }
 
+  std::string get_scalar_suffix(int i) {
+    return fmt::format("_{:03d}", i);
+  }
+
   void visit(const Handle<Node> &node) {
     for (auto &c : node->ch) {
       if (c)
@@ -118,8 +126,17 @@ class CodeGen {
     else
       return;  // visited
     if (node->type == NodeType::add) {
-      code += fmt::format("auto {} = {} + {};\n", node->var_name,
-                          node->ch[0]->var_name, node->ch[1]->var_name);
+      if (mode == Mode::vector) {
+        code += fmt::format("auto {} = {} + {};\n", node->var_name,
+                            node->ch[0]->var_name, node->ch[1]->var_name);
+      } else if (mode == Mode::scalar) {
+        for (int i = 0; i < simd_width; i++) {
+          auto suf = get_scalar_suffix(i);
+          code += fmt::format("auto {} = {} + {};\n", node->var_name + suf,
+                              node->ch[0]->var_name + suf,
+                              node->ch[1]->var_name + suf);
+        }
+      }
     } else if (node->type == NodeType::mul) {
       code += fmt::format("auto {} = {} * {};\n", node->var_name,
                           node->ch[0]->var_name, node->ch[1]->var_name);
@@ -157,10 +174,11 @@ class CodeGen {
     dl_counter += 1;
     TC_ASSERT(dl_counter < 10000);
     auto dl_name = fmt::format("tmp{:04d}.so", dl_counter);
-    auto cmd =
-        "g++ tmp.cpp -std=c++14 -shared -fPIC -O3 -o " + dl_name + " -march=native";
+    auto cmd = "g++ tmp.cpp -std=c++14 -shared -fPIC -O3 -o " + dl_name +
+               " -march=native";
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
+    system(fmt::format("objdump {} -d > {}.s", dl_name, dl_name).c_str());
     auto dll = dlopen(("./" + dl_name).c_str(), RTLD_LAZY);
     TC_ASSERT(dll != nullptr);
     auto ret = dlsym(dll, func_name.c_str());

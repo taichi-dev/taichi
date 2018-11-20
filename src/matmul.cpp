@@ -311,9 +311,9 @@ real Tlang_matmatmul() {
 template <int dim, typename T>
 void run() {
   BENCHMARK(eigen);
-  BENCHMARK(taichi);
-  BENCHMARK(AOS);
-  BENCHMARK(AOS2);
+  //BENCHMARK(taichi);
+  //BENCHMARK(AOS);
+  //BENCHMARK(AOS2);
   BENCHMARK(SOA);
   BENCHMARK(AOSOA);
   BENCHMARK(Tlang);
@@ -321,9 +321,17 @@ void run() {
 }
 
 auto benchmark_matmul = []() {
+  /*
   run<2, float32>();
   run<3, float32>();
   run<4, float32>();
+  run<5, float32>();
+  run<6, float32>();
+  run<7, float32>();
+  run<8, float32>();
+   */
+  run<9, float32>();
+  run<10, float32>();
   /*
   run<2, float64>();
   run<3, float64>();

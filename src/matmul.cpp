@@ -395,6 +395,8 @@ auto benchmark_matmul = []() {
 
   TC_INFO("Eigen Version {}.{}.{}", EIGEN_WORLD_VERSION, EIGEN_MAJOR_VERSION,
           EIGEN_MINOR_VERSION);
+  TC_INFO("GCC   Version {}.{}.{}", __GNUC__, __GNUC_MINOR__,
+          __GNUC_PATCHLEVEL__);
 
   run<2, float32>();
   run<3, float32>();

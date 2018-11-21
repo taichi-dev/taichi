@@ -11,12 +11,13 @@ using Handle = std::shared_ptr<T>;
 
 class Node {
  public:
-  enum class Type : int { mul, add, sub, div, load, store, combine };
+  enum class Type : int { mul, add, sub, div, load, store, combine, constant };
 
   std::vector<Handle<Node>> ch;  // Four child max
   Type type;
   std::string var_name;
   int stream_id, stride, offset;
+  float64 value;
 
   Node(Type type) : type(type) {
   }
@@ -36,6 +37,12 @@ class Expr {
   Handle<Node> node;
 
   Expr() {
+  }
+
+  Expr(float64 val) {
+    // cretea a constant node
+    node = std::make_shared<Node>(NodeType::constant);
+    node->value = val;
   }
 
   Expr(Handle<Node> node) : node(node) {

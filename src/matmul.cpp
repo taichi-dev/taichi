@@ -285,27 +285,57 @@ real SOA_AVX2_matmatmul() {
   return Time::get_time() - t;
 };
 
+namespace Tlang {
+struct Matrix {
+  int n, m;
+  std::vector<Expr> entries;
+  Matrix(int n, int m) : n(n), m(m) {
+    entries.resize(n * m);
+  }
+
+  Expr &operator()(int i, int j) {
+    return entries[i * m + j];
+  }
+
+  const Expr &operator()(int i, int j) const {
+    return entries[i * m + j];
+  }
+};
+
+Matrix operator*(const Matrix &A, const Matrix &B) {
+  TC_ASSERT(A.m == B.n);
+  Matrix C(A.n, B.m);
+  for (int i = 0; i < A.n; i++) {
+    for (int j = 0; j < B.m; j++) {
+      C(i, j) = A(i, 0) * B(0, j);
+      for (int k = 1; k < A.m; k++) {
+        C(i, j) = C(i, j) + A(i, k) * B(k, j);
+      }
+    }
+  }
+  return C;
+}
+}
+
 template <int dim, typename T>
 real Tlang_matmatmul(Tlang::CodeGen::Mode mode, int simd_width) {
   using namespace Tlang;
 
-  Expr a[dim][dim], b[dim][dim];
+  Matrix a(dim, dim), b(dim, dim);
 
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
-      a[i][j] = load(0, dim * dim, simd_width * (i * dim + j));
-      b[i][j] = load(1, dim * dim, simd_width * (i * dim + j));
+      a(i, j) = load(0, dim * dim, simd_width * (i * dim + j));
+      b(i, j) = load(1, dim * dim, simd_width * (i * dim + j));
     }
   }
+
+  auto c = a * b;
 
   Expr ret;
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
-      auto sum = a[i][0] * b[0][j];
-      for (int k = 1; k < dim; k++) {
-        sum = sum + a[i][k] * b[k][j];
-      }
-      ret.store(sum, 2, dim * dim, simd_width * (i * dim + j));
+      ret.store(c(i, j), 2, dim * dim, simd_width * (i * dim + j));
     }
   }
 

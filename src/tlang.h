@@ -49,7 +49,7 @@ class Expr {
   }
 
 #define BINARY_OP(op, name)                                            \
-  Expr operator op(const Expr &o) {                                    \
+  Expr operator op(const Expr &o) const {                              \
     return Expr(std::make_shared<Node>(NodeType::name, node, o.node)); \
   }
 

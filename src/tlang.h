@@ -73,6 +73,12 @@ inline Expr load(int stream_id, int stride, int offset) {
   return Expr(n);
 }
 
+inline int get_code_gen_id() {
+  static int id = 0;
+  TC_ASSERT(id < 10000);
+  return id++;
+}
+
 class CodeGen {
   int var_count;
   std::string code;
@@ -83,14 +89,13 @@ class CodeGen {
 
   Mode mode;
   int simd_width;
+  int id;
   std::map<NodeType, std::string> binary_ops;
 
   CodeGen(Mode mode = Mode::vector, int simd_width = 8)
       : var_count(0), mode(mode), simd_width(simd_width) {
-    static int func_counter = 0;
-    func_counter += 1;
-    TC_ASSERT(func_counter < 1000000);
-    func_name = fmt::format("func{:06d}", func_counter);
+    id = get_code_gen_id();
+    func_name = fmt::format("func{:06d}", id);
     binary_ops[NodeType::add] = "+";
     binary_ops[NodeType::sub] = "-";
     binary_ops[NodeType::mul] = "*";
@@ -183,19 +188,21 @@ class CodeGen {
     }
   }
 
+  std::string get_source_name() {
+    return fmt::format("tmp{:04d}.cpp", id);
+  }
+
   FunctionType get(const Expr &e) {
     run(e);
     {
-      std::ofstream of("tmp.cpp");
+      std::ofstream of(get_source_name());
       of << code;
     }
-    std::system("clang-format -i tmp.cpp");
-    static int dl_counter = 0;
-    dl_counter += 1;
-    TC_ASSERT(dl_counter < 10000);
-    auto dl_name = fmt::format("tmp{:04d}.so", dl_counter);
-    auto cmd = "g++ tmp.cpp -std=c++14 -shared -fPIC -O3 -o " + dl_name +
-               " -march=native";
+    std::system(fmt::format("clang-format -i {}", get_source_name()).c_str());
+    auto dl_name = fmt::format("tmp{:04d}.so", id);
+    auto cmd =
+        fmt::format("g++ {} -std=c++14 -shared -fPIC -O3 -march=native -o {}",
+                    get_source_name(), dl_name);
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
     system(fmt::format("objdump {} -d > {}.s", dl_name, dl_name).c_str());

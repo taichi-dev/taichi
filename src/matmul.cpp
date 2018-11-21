@@ -8,11 +8,11 @@
 
 TC_NAMESPACE_BEGIN
 
-constexpr real cpu_frequency = 3.6;
+constexpr real cpu_frequency = 4.2_f;
 
-//constexpr int enlarge = 4096;
+// constexpr int enlarge = 4096;
 constexpr int enlarge = 1;
-constexpr int rounds = 16384 * 50 / enlarge;
+constexpr int rounds = 16384 * 20 / enlarge;
 constexpr int N = 256 * enlarge;
 
 template <int dim, typename T>
@@ -214,7 +214,7 @@ void AOSOA_matmul(float64 *A, float64 *B, float64 *C) {
 }
 
 template <int dim, typename T>
-real AOSOA_matmatmul() {
+real AOSOA_AVX2_matmatmul() {
   AlignedAllocator A(sizeof(T) * N * dim * dim);
   AlignedAllocator B(sizeof(T) * N * dim * dim);
   AlignedAllocator C(sizeof(T) * N * dim * dim);
@@ -275,7 +275,7 @@ void SOA_matmul(float64 *A, float64 *B, float64 *C) {
 }
 
 template <int dim, typename T>
-real SOA_matmatmul() {
+real SOA_AVX2_matmatmul() {
   AlignedAllocator A(sizeof(T) * N * dim * dim);
   AlignedAllocator B(sizeof(T) * N * dim * dim);
   AlignedAllocator C(sizeof(T) * N * dim * dim);
@@ -364,7 +364,7 @@ real TlangSca16_matmatmul() {
 #define BENCHMARK(x)                                                 \
   {                                                                  \
     real t = x##_matmatmul<dim, T>();                                \
-    fmt::print("  {:12s} = {:10.3f} ms  {:10.3f} cyc / elem \n", #x, \
+    fmt::print("  {:18s} = {:10.3f} ms  {:10.3f} cyc / elem \n", #x, \
                t * 1000.0_f, cpu_frequency * 1e9 * t / rounds / N);  \
   }
 
@@ -377,11 +377,11 @@ void run() {
   // BENCHMARK(taichi);
   // BENCHMARK(AOS);
   // BENCHMARK(AOS2);
-  BENCHMARK(SOA);
-  BENCHMARK(AOSOA);
+  BENCHMARK(SOA_AVX2);
+  BENCHMARK(AOSOA_AVX2);
   BENCHMARK(TlangVec8);
   BENCHMARK(TlangSca8);
-  BENCHMARK(TlangVec16);
+  // BENCHMARK(TlangVec16);
   BENCHMARK(TlangSca16);
   fmt::print("\n");
 }
@@ -392,6 +392,9 @@ auto benchmark_matmul = []() {
   noturbo >> c;
   TC_WARN_IF(c != '1',
              "You seem to be running the benchmark with Intel Turboboost.");
+
+  TC_INFO("Eigen Version {}.{}.{}", EIGEN_WORLD_VERSION, EIGEN_MAJOR_VERSION,
+          EIGEN_MINOR_VERSION);
 
   run<2, float32>();
   run<3, float32>();

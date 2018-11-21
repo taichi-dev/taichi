@@ -1,4 +1,5 @@
 #include <taichi/common/util.h>
+#include <experimental/filesystem>
 #include <dlfcn.h>
 
 TC_NAMESPACE_BEGIN
@@ -91,6 +92,7 @@ class CodeGen {
   int simd_width;
   int id;
   std::map<NodeType, std::string> binary_ops;
+  std::string folder;
 
   CodeGen(Mode mode = Mode::vector, int simd_width = 8)
       : var_count(0), mode(mode), simd_width(simd_width) {
@@ -100,6 +102,8 @@ class CodeGen {
     binary_ops[NodeType::sub] = "-";
     binary_ops[NodeType::mul] = "*";
     binary_ops[NodeType::div] = "/";
+    folder = "_tlang_cache/";
+    std::experimental::filesystem::create_directories(folder);
   }
 
   std::string create_variable() {
@@ -188,25 +192,30 @@ class CodeGen {
     }
   }
 
-  std::string get_source_name() {
-    return fmt::format("tmp{:04d}.cpp", id);
+  std::string get_source_fn() {
+    return fmt::format("{}/tmp{:04d}.cpp", folder, id);
+  }
+
+  std::string get_library_fn() {
+    return fmt::format("{}/tmp{:04d}.so", folder, id);
   }
 
   FunctionType get(const Expr &e) {
     run(e);
     {
-      std::ofstream of(get_source_name());
+      std::ofstream of(get_source_fn());
       of << code;
     }
-    std::system(fmt::format("clang-format -i {}", get_source_name()).c_str());
-    auto dl_name = fmt::format("tmp{:04d}.so", id);
+    std::system(fmt::format("clang-format -i {}", get_source_fn()).c_str());
     auto cmd =
         fmt::format("g++ {} -std=c++14 -shared -fPIC -O3 -march=native -o {}",
-                    get_source_name(), dl_name);
+                    get_source_fn(), get_library_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
-    system(fmt::format("objdump {} -d > {}.s", dl_name, dl_name).c_str());
-    auto dll = dlopen(("./" + dl_name).c_str(), RTLD_LAZY);
+    system(
+        fmt::format("objdump {} -d > {}.s", get_library_fn(), get_library_fn())
+            .c_str());
+    auto dll = dlopen(("./" + get_library_fn()).c_str(), RTLD_LAZY);
     TC_ASSERT(dll != nullptr);
     auto ret = dlsym(dll, func_name.c_str());
     TC_ASSERT(ret != nullptr);

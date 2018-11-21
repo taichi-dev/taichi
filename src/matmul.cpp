@@ -10,11 +10,13 @@ TC_NAMESPACE_BEGIN
 
 constexpr real cpu_frequency = 3.6;
 
-constexpr int rounds = 16384 * 20;
-constexpr int N = 512;
+//constexpr int enlarge = 4096;
+constexpr int enlarge = 1;
+constexpr int rounds = 16384 * 50 / enlarge;
+constexpr int N = 256 * enlarge;
 
 template <int dim, typename T>
-real eigen_matmatmul() {
+real AOS_eigen_matmatmul() {
   std::vector<Eigen::Matrix<T, dim, dim>> A, B, C;
   A.resize(N);
   B.resize(N);
@@ -24,6 +26,42 @@ real eigen_matmatmul() {
   for (int r = 0; r < rounds; r++) {
     for (int i = 0; i < N; i++) {
       C[i] = A[i] * B[i];
+    }
+  }
+  return Time::get_time() - t;
+};
+
+template <int dim, typename T>
+real AOS_eigen_unroll2_matmatmul() {
+  std::vector<Eigen::Matrix<T, dim, dim>> A, B, C;
+  A.resize(N);
+  B.resize(N);
+  C.resize(N);
+
+  auto t = Time::get_time();
+  for (int r = 0; r < rounds; r++) {
+    for (int i = 0; i < N; i += 2) {
+      C[i] = A[i] * B[i];
+      C[i + 1] = A[i + 1] * B[i + 1];
+    }
+  }
+  return Time::get_time() - t;
+};
+
+template <int dim, typename T>
+real AOS_eigen_unroll4_matmatmul() {
+  std::vector<Eigen::Matrix<T, dim, dim>> A, B, C;
+  A.resize(N);
+  B.resize(N);
+  C.resize(N);
+
+  auto t = Time::get_time();
+  for (int r = 0; r < rounds; r++) {
+    for (int i = 0; i < N; i += 4) {
+      C[i] = A[i] * B[i];
+      C[i + 1] = A[i + 1] * B[i + 1];
+      C[i + 2] = A[i + 2] * B[i + 2];
+      C[i + 3] = A[i + 3] * B[i + 3];
     }
   }
   return Time::get_time() - t;
@@ -248,12 +286,10 @@ real SOA_matmatmul() {
 };
 
 template <int dim, typename T>
-real Tlang_matmatmul(Tlang::CodeGen::Mode mode) {
+real Tlang_matmatmul(Tlang::CodeGen::Mode mode, int simd_width) {
   using namespace Tlang;
 
   Expr a[dim][dim], b[dim][dim];
-
-  int simd_width = 32 / sizeof(float32);
 
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
@@ -273,7 +309,7 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode) {
     }
   }
 
-  CodeGen cg(mode);
+  CodeGen cg(mode, simd_width);
   auto func = cg.get(ret);
 
   AlignedAllocator A(sizeof(T) * N * dim * dim);
@@ -292,45 +328,61 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode) {
   }
   t = Time::get_time() - t;
 
-  AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), D.get<T>());
+  if (simd_width == 8) {
+    AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), D.get<T>());
 
-  for (int i = 0; i < N * dim * dim; i++) {
-    auto a = C.get<T>()[i];
-    auto b = D.get<T>()[i];
-    TC_ASSERT(std::abs(a - b) < 1e-5_f);
+    for (int i = 0; i < N * dim * dim; i++) {
+      auto a = C.get<T>()[i];
+      auto b = D.get<T>()[i];
+      TC_ASSERT(std::abs(a - b) < 1e-5_f);
+    }
   }
 
   return t;
 }
 
 template <int dim, typename T>
-real TlangVector_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::vector);
+real TlangVec8_matmatmul() {
+  return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::vector, 8);
 }
 
 template <int dim, typename T>
-real TlangScalar_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::scalar);
+real TlangSca8_matmatmul() {
+  return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::scalar, 8);
 }
 
-#define BENCHMARK(x)                                                          \
-  {                                                                           \
-    real t = x##_matmatmul<dim, T>();                                         \
-    fmt::print("Matrix<{}, {}>  {:12s} = {:8.3f} ms  {:8.3f} cyc / elem \n",  \
-               dim, sizeof(T) == 4 ? "float32" : "float64", #x, t * 1000.0_f, \
-               cpu_frequency * 1e9 * t / rounds / N);                         \
+template <int dim, typename T>
+real TlangVec16_matmatmul() {
+  return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::vector, 16);
+}
+
+template <int dim, typename T>
+real TlangSca16_matmatmul() {
+  return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::scalar, 16);
+}
+
+#define BENCHMARK(x)                                                 \
+  {                                                                  \
+    real t = x##_matmatmul<dim, T>();                                \
+    fmt::print("  {:12s} = {:10.3f} ms  {:10.3f} cyc / elem \n", #x, \
+               t * 1000.0_f, cpu_frequency * 1e9 * t / rounds / N);  \
   }
 
 template <int dim, typename T>
 void run() {
-  BENCHMARK(eigen);
+  fmt::print("Matrix<{}, {}>:\n", dim, sizeof(T) == 4 ? "float32" : "float64");
+  BENCHMARK(AOS_eigen);
+  BENCHMARK(AOS_eigen_unroll2);
+  BENCHMARK(AOS_eigen_unroll4);
   // BENCHMARK(taichi);
   // BENCHMARK(AOS);
   // BENCHMARK(AOS2);
   BENCHMARK(SOA);
   BENCHMARK(AOSOA);
-  BENCHMARK(TlangVector);
-  BENCHMARK(TlangScalar);
+  BENCHMARK(TlangVec8);
+  BENCHMARK(TlangSca8);
+  BENCHMARK(TlangVec16);
+  BENCHMARK(TlangSca16);
   fmt::print("\n");
 }
 

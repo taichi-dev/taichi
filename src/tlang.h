@@ -82,10 +82,11 @@ class CodeGen {
   enum class Mode : int { scalar, vector };
 
   Mode mode;
-  static constexpr int simd_width = 8;
+  int simd_width;
   std::map<NodeType, std::string> binary_ops;
 
-  CodeGen(Mode mode = Mode::vector) : var_count(0), mode(mode) {
+  CodeGen(Mode mode = Mode::vector, int simd_width = 8)
+      : var_count(0), mode(mode), simd_width(simd_width) {
     static int func_counter = 0;
     func_counter += 1;
     TC_ASSERT(func_counter < 1000000);
@@ -111,7 +112,7 @@ class CodeGen {
             "(float32 *stream00, float32 *stream01, float32 "
             "*stream02, "
             "int n) {\n";
-    code += "for (int i = 0; i < n; i += 8) {\n";
+    code += fmt::format("for (int i = 0; i < n; i += {}) {{\n", simd_width);
     visit(e.node);
     code += "}\n}\n";
     return code;
@@ -146,9 +147,11 @@ class CodeGen {
     } else if (node->type == NodeType::load) {
       auto stream_name = fmt::format("stream{:02d}", node->stream_id);
       if (mode == Mode::vector) {
-        code += fmt::format("auto {} = _mm256_load_ps(&{}[{} * i + {}]);\n",
-                            node->var_name, stream_name, node->stride,
-                            node->offset);
+        std::string load_instr =
+            simd_width == 8 ? "_mm256_load_ps" : "_mm512_load_ps";
+        code +=
+            fmt::format("auto {} = {}(&{}[{} * i + {}]);\n", node->var_name,
+                        load_instr, stream_name, node->stride, node->offset);
       } else {
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
@@ -160,8 +163,10 @@ class CodeGen {
     } else if (node->type == NodeType::store) {
       auto stream_name = fmt::format("stream{:02d}", node->stream_id);
       if (mode == Mode::vector) {
+        std::string store_instr =
+            simd_width == 8 ? "_mm256_store_ps" : "_mm512_store_ps";
         code +=
-            fmt::format("_mm256_store_ps(&{}[{} * i + {}], {});\n", stream_name,
+            fmt::format("{}(&{}[{} * i + {}], {});\n", store_instr, stream_name,
                         node->stride, node->offset, node->ch[0]->var_name);
       } else {
         for (int i = 0; i < simd_width; i++) {

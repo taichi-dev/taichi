@@ -9,11 +9,13 @@ constexpr int n = 100;
 constexpr real room_size = 10.0_f;
 constexpr real dx = room_size / n;
 constexpr real c = 340;
-constexpr real alpha = 0.001;
+constexpr real alpha = 0.0001;
 
 Array2D<real> p, q, r;
 
 void advance(real dt) {
+  std::swap(p.data, q.data);
+  std::swap(q.data, r.data);
   r.reset_zero();
   constexpr real inv_dx2 = pow<2>(1.0_f / dx);
   for (int i = 1; i < n - 1; i++) {
@@ -27,8 +29,6 @@ void advance(real dt) {
                 p[i][j] - c * alpha * dt * laplacian_p;
     }
   }
-  std::swap(p.data, q.data);
-  std::swap(q.data, r.data);
 }
 
 auto sound = []() {
@@ -46,12 +46,12 @@ auto sound = []() {
 
   for (int T = 0; T < 1000; T++) {
     for (int i = 0; i < 2000; i++) {
-      real l, r;
-      fscanf(f, "%f%f", &l, &r);
-      q[n / 4][n / 2] = (l + r) / 65536.0;
+      real left, right;
+      fscanf(f, "%f%f", &left, &right);
       advance(dt);
+      r[n / 4][n / 2] = (left + right) / 65536.0;
       t += dt;
-      wav_file.add_sound(dt, q[n / 4 * 3][n / 2] * 10);
+      wav_file.add_sound(dt, r[n / 4 + 4][n / 2]);
       // wav_file.add_sound(dt, std::sin(t * 10000));
     }
     for (int i = 0; i < window_size; i++) {

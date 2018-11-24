@@ -7,7 +7,7 @@ TC_NAMESPACE_BEGIN
 constexpr int n = 100;
 constexpr real dx = 1.0_f / n;
 constexpr real c = 340;
-constexpr real alpha = 0.01;
+constexpr real alpha = 0.001;
 
 Array2D<real> p, q, r;
 

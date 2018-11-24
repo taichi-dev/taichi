@@ -1,11 +1,12 @@
 #include <taichi/common/util.h>
 #include <taichi/common/task.h>
 #include <taichi/visual/gui.h>
+#include "sound.h"
 
 TC_NAMESPACE_BEGIN
 
 constexpr int n = 100;
-constexpr real room_size = 20.0_f;
+constexpr real room_size = 10.0_f;
 constexpr real dx = room_size / n;
 constexpr real c = 340;
 constexpr real alpha = 0.001;
@@ -39,14 +40,20 @@ auto sound = []() {
   real t = 0, dt = (std::sqrt(alpha * alpha + dx * dx / 3) - alpha) / c;
   // p[n / 2][n / 2] = std::sin(t);
   FILE *f = fopen("data/wave.txt", "r");
-  while (1) {
-    for (int i = 0; i < 1000; i++) {
+  WaveFile wav_file("output.wav");
+  dt = 1_f / 44100;
+  TC_P(dt);
+
+  for (int T = 0; T < 1000; T++) {
+    for (int i = 0; i < 2000; i++) {
       real l, r;
       fscanf(f, "%f%f", &l, &r);
-      q[n / 2][n / 2] = (l + r) / 65536.0;
+      q[n / 4][n / 2] = (l + r) / 65536.0;
       advance(dt);
+      t += dt;
+      wav_file.add_sound(dt, q[n / 4 * 3][n / 2] * 10);
+      // wav_file.add_sound(dt, std::sin(t * 10000));
     }
-    t += dt;
     for (int i = 0; i < window_size; i++) {
       for (int j = 0; j < window_size; j++) {
         auto c = p[i / scale][j / scale];
@@ -54,6 +61,8 @@ auto sound = []() {
       }
     }
     gui.update();
+    if (T % 100 == 0)
+      wav_file.flush();
   }
 };
 

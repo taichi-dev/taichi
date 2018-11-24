@@ -41,7 +41,7 @@ class WaveFile {
     int begin = current_t * sample_rate;
     int end = (current_t + dt) * sample_rate;
     for (int i = begin; i < end; i++) {
-      data.push_back(rand() * magnitude);
+      data.push_back(magnitude);
     }
     current_t += dt;
   }
@@ -65,7 +65,7 @@ class WaveFile {
     f << "data----";  // (chunk size to be filled in later)
 
     for (int i = 0; i < (int)data.size(); i++) {
-      real value = max_amplitude * clamp(data[i], 0.0_f, 1.0_f);
+      real value = max_amplitude * clamp(data[i], -1.0_f, 1.0_f);
       write_word(f, (int)value, 2);
       write_word(f, (int)value, 2);
     }

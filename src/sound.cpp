@@ -5,7 +5,8 @@
 TC_NAMESPACE_BEGIN
 
 constexpr int n = 100;
-constexpr real dx = 1.0_f / n;
+constexpr real room_size = 20.0_f;
+constexpr real dx = room_size / n;
 constexpr real c = 340;
 constexpr real alpha = 0.001;
 
@@ -37,9 +38,12 @@ auto sound = []() {
   GUI gui("Sound simulation", Vector2i(window_size));
   real t = 0, dt = (std::sqrt(alpha * alpha + dx * dx / 3) - alpha) / c;
   // p[n / 2][n / 2] = std::sin(t);
-  p[n / 2][n / 2] = 1;
+  FILE *f = fopen("data/wave.txt", "r");
   while (1) {
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 1000; i++) {
+      real l, r;
+      fscanf(f, "%f%f", &l, &r);
+      q[n / 2][n / 2] = (l + r) / 65536.0;
       advance(dt);
     }
     t += dt;

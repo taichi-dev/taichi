@@ -18,6 +18,7 @@ int zero = 0;
 
 constexpr int smoothing_fusion = 2;
 constexpr bool debug = false;
+constexpr bool use_preconditioner = false;
 
 struct BlockFlags : public bit::Bits<32> {
   using Base = bit::Bits<32>;
@@ -94,8 +95,8 @@ class MGPCGSmoke {
   using Grid = TaichiGrid<Block>;
   std::string folder;
 
-  const int n = 32;
-  const int mg_lv = log2int(n) - 2;
+  const int n = 128;
+  int mg_lv = log2int(n) - 2;
   std::vector<std::unique_ptr<Grid>> grids;
   const bool reflection = false;
 
@@ -153,6 +154,9 @@ class MGPCGSmoke {
     current_t = 0;
     step_count = 0;
     // Span a region in
+    if (!use_preconditioner) {
+      mg_lv = 1;
+    }
     grids.resize(mg_lv);
     for (int i = 0; i < mg_lv; i++) {
       grids[i] = std::make_unique<Grid>();
@@ -161,16 +165,20 @@ class MGPCGSmoke {
     TC_ASSERT_INFO(bit::is_power_of_two(n), "Only POT grid sizes supported");
     Region3D active_region(VectorI(-n, -n * 2, -n), VectorI(n, n * 2, n));
     for (auto ind : active_region) {
-      grids[0]->touch(ind);
-      // grids[0]->node(ind).flags().set_effective(true);
-      grids[0]->get_block_if_exist(ind)->meta.set_has_effective_cell(true);
+      if (grids[0]->inside(ind)) {
+        grids[0]->touch(ind);
+        // grids[0]->node(ind).flags().set_effective(true);
+        grids[0]->get_block_if_exist(ind)->meta.set_has_effective_cell(true);
+      }
     }
-    set_up_hierechy();
+    if (use_preconditioner)
+      set_up_hierechy();
     Region3D buffer_region(VectorI(-n, -n * 2, -n),
                            VectorI(n, n * 2, n) + VectorI(1));
     // Touch extra faces for u, v, w
     for (auto ind : buffer_region) {
-      grids[0]->touch(ind);
+      if (grids[0]->inside(ind))
+        grids[0]->touch(ind);
     }
   }
 
@@ -451,8 +459,7 @@ class MGPCGSmoke {
   // https://en.wikipedia.org/wiki/Conjugate_gradient_method
   void poisson_solve() {
     TC_PROFILER("Poisson Solve");
-    constexpr real tolerance = 1e-14_f;
-    bool use_preconditioner = true;
+    constexpr real tolerance = 1e-3_f;
     real initial_residual_norm = norm(CH_B);
     TC_P(initial_residual_norm);
     if (initial_residual_norm < 1e-30_f) {

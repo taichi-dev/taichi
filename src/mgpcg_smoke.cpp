@@ -84,7 +84,9 @@ Vector3 hsv2rgb(Vector3 hsv) {
   return Vector3(r, g, b);
 }
 
-using Block = TBlock<Node, Particle, TSize3D<8>, 0, 2048, BlockFlags>;
+constexpr int per_block_particles = 0; // 2048
+
+using Block = TBlock<Node, Particle, TSize3D<8>, 0, per_block_particles, BlockFlags>;
 
 class MGPCGSmoke {
  public:
@@ -657,16 +659,18 @@ class MGPCGSmoke {
       }
       if (b.base_coord == VectorI(0, -n * 2 + 8, 0)) {
         // Sample some particles
-        for (int i = 0; i < 24e5 * dt; i++) {
-          auto r = Vector::rand();
-          if (length(r - Vector(0.5_f)) > 0.5) {
-            continue;
+        if (per_block_particles) {
+          for (int i = 0; i < 24e5 * dt; i++) {
+            auto r = Vector::rand();
+            if (length(r - Vector(0.5_f)) > 0.5) {
+              continue;
+            }
+            Vector pos = (b.base_coord.template cast<real>() +
+                          r * VectorI(Block::size).template cast<real>()) *
+                         dx;
+            pos[3] = current_t;
+            b.add_particle(Particle{pos});
           }
-          Vector pos = (b.base_coord.template cast<real>() +
-                        r * VectorI(Block::size).template cast<real>()) *
-                       dx;
-          pos[3] = current_t;
-          b.add_particle(Particle{pos});
         }
         // if (current_t == 0) {
         for (auto ind : b.local_region()) {

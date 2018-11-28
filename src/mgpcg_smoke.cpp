@@ -781,6 +781,42 @@ class MGPCGSmoke {
         false, false, false,
         true);  // carry particles only if on finest level
   }
+
+  MGPCGSmoke(bool T) {
+    // initialize as grid for benchmarking
+    int mg_lv = 1;
+    int n = 128;
+    grids.resize(mg_lv);
+    for (int i = 0; i < mg_lv; i++) {
+      grids[i] = std::make_unique<Grid>();
+    }
+    TC_ASSERT(mg_lv >= 1);
+    TC_ASSERT_INFO(bit::is_power_of_two(n), "Only POT grid sizes supported");
+    Region3D active_region(VectorI(-n, -n * 2, -n), VectorI(n, n * 2, n));
+    TC_INFO("# cells: {} M", 2.0_f * 2 * 4 * pow<3>(n) / pow<2>(1024));
+    for (auto ind : active_region) {
+      grids[0]->touch(ind);
+    }
+  }
+
+  void benchmark_map() {
+    grids[0]->map([&](Grid::Block &b) {
+      for (auto &ind: b.local_region()) {
+        b.node_local(ind)[0] += 1;
+      }
+    });
+  }
+
+  void benchmark_reduce() {
+    auto ret = grids[0]->reduce([&](Grid::Block &b) {
+      real sum = 0;
+      for (auto &ind: b.local_region()) {
+        sum += b.node_local(ind)[0];
+      }
+      return sum;
+    });
+    TC_INFO("Sum = {}", ret);
+  }
 };
 
 auto gather_scratch = [](const std::vector<std::string> &params) {
@@ -812,6 +848,17 @@ auto mgpcg = [](const std::vector<std::string> &params) {
 };
 
 TC_REGISTER_TASK(mgpcg);
+
+auto benchmark_pangu = []() {
+  std::unique_ptr<MGPCGSmoke> mgpcg;
+  mgpcg = std::make_unique<MGPCGSmoke>(true);
+  while (true) {
+    TC_TIME(mgpcg->benchmark_map());
+    TC_TIME(mgpcg->benchmark_reduce());
+  }
+};
+
+TC_REGISTER_TASK(benchmark_pangu);
 
 auto smoke = [](const std::vector<std::string> &params) {
   TC_PROFILER("smoke");

@@ -807,6 +807,10 @@ class MGPCGSmoke {
     }
   }
 
+  void benchmark_advance() {
+    residual(0, CH_B, CH_B, CH_B);
+  }
+
   void benchmark_map() {
     grids[0]->map([&](Grid::Block &b) {
       for (auto &ind : b.local_region()) {
@@ -863,6 +867,7 @@ auto benchmark_pangu = []() {
   for (int i = 0;; i++) {
     TC_TIME(mgpcg->benchmark_map());
     TC_TIME(mgpcg->benchmark_reduce());
+    TC_TIME(mgpcg->benchmark_advance());
     TC_INFO("# Active blocks {}", mgpcg->grids[0]->num_active_blocks());
     TC_INFO("Sum should be {}", (i + 1) * 32 * 1024 * 1024.0);
   }

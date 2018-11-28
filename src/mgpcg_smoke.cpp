@@ -883,9 +883,7 @@ auto smoke = [](const std::vector<std::string> &params) {
   // ThreadedTaskManager::TbbParallelismControl _(1);
   std::unique_ptr<MGPCGSmoke> smoke;
   smoke = std::make_unique<MGPCGSmoke>();
-  GUI gui("MGPCG Smoke", cam_res);
-  // GUI gui2("Velocity", 256, 512);
-  // GUI gui3("Density", 256, 512);
+  // GUI gui("MGPCG Smoke", cam_res);
   TC_ASSERT(!params.empty());
   auto folder = params[0];
   std::experimental::filesystem::create_directory(folder);
@@ -893,25 +891,8 @@ auto smoke = [](const std::vector<std::string> &params) {
 
   for (int frame = 0;; frame++) {
     TC_PROFILE("step", smoke->step());
-    TC_PROFILE("render", smoke->render(gui.get_canvas()));
-    gui.update();
-    // gui.get_canvas().img.write_as_image(fmt::format("tmp/{:05d}.png",
-    // frame));
-    {
-      /*
-      TC_PROFILER("debug");
-      auto img = smoke->render_velocity_field();
-      for (auto ind : gui2.get_canvas().img.get_region()) {
-        gui2.get_canvas().img[ind] = Vector3(img[Vector2i(ind) / Vector2i(4)]);
-      }
-      gui2.update();
-      img = smoke->render_density_field();
-      for (auto ind : gui3.get_canvas().img.get_region()) {
-        gui3.get_canvas().img[ind] = Vector3(img[Vector2i(ind) / Vector2i(4)]);
-      }
-      gui3.update();
-      */
-    }
+    // TC_PROFILE("render", smoke->render(gui.get_canvas()));
+    // gui.update();
     print_profile_info();
   }
 };

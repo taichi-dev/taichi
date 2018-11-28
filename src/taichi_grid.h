@@ -842,7 +842,7 @@ class TaichiGrid {
                                       std::result_of_t<T(Block &)> v) {
     using V = std::result_of_t<T(Block &)>;
     auto blocks = get_block_list();
-    return tbb::parallel_reduce(
+    V ret = tbb::parallel_reduce(
         tbb::blocked_range<std::size_t>(std::size_t(0), blocks.size()), v,
         [&](tbb::blocked_range<std::size_t> &range, V v) {
           for (std::size_t i = range.begin(); i < range.end(); i++) {
@@ -851,6 +851,33 @@ class TaichiGrid {
           return v;
         },
         r);
+    if (with_mpi()) {
+      // gather/send results
+      MPI_Status status;
+      MPI_Request request;
+      if (world_rank == 0) {
+        for (int i = 1; i < world_size; i++) {
+          V peer_ret = 0;
+          MPI_Recv(&peer_ret, sizeof(V), MPI_UINT8_T, i, TAG_REDUCE_DATA,
+                   MPI_COMM_WORLD, &status);
+          ret = r(ret, peer_ret);
+        }
+        // send resutls to peers
+        for (int i = 1; i < world_size; i++) {
+          MPI_Isend(&ret, sizeof(V), MPI_UINT8_T, i, TAG_REDUCE_DATA_REDUCED,
+                    MPI_COMM_WORLD, &request);
+        }
+        return ret;
+      } else {
+        MPI_Isend(&ret, sizeof(V), MPI_UINT8_T, 0, TAG_REDUCE_DATA,
+                  MPI_COMM_WORLD, &request);
+        V reduced;
+        MPI_Recv(&reduced, sizeof(V), MPI_UINT8_T, 0, TAG_REDUCE_DATA_REDUCED,
+                 MPI_COMM_WORLD, &status);
+        return reduced;
+      }
+    }
+    return ret;
   }
 
   template <typename T, typename R>
@@ -966,7 +993,9 @@ class TaichiGrid {
     TAG_REPLY_BLOCK_NUM,
     TAG_REPLY_BLOCKS,
     TAG_REPLY_PARTICLE_NUM,
-    TAG_REPLY_PARTICLES
+    TAG_REPLY_PARTICLES,
+    TAG_REDUCE_DATA,
+    TAG_REDUCE_DATA_REDUCED,
   };
 
   std::vector<std::vector<VectorI>> requested_blocks;

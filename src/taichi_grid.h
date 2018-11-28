@@ -162,9 +162,9 @@ struct TBlock {
   // This does NOT account for dilation
   static constexpr int num_nodes = product<int, dim>(grid_size);
 
-  static_assert(bit::is_power_of_two(block_size::x()), "");
-  static_assert(bit::is_power_of_two(block_size::y()), "");
-  static_assert(bit::is_power_of_two(block_size::z()), "");
+  TC_STATIC_ASSERT(bit::is_power_of_two(block_size::x()));
+  TC_STATIC_ASSERT(bit::is_power_of_two(block_size::y()));
+  TC_STATIC_ASSERT(bit::is_power_of_two(block_size::z()));
 
   // Meta data
   VectorI base_coord;  // smallest coordinate
@@ -367,8 +367,8 @@ struct TRootDomain {
     ret |= pdep((uint32)coord[1] >> log2int(block_size[1]), coord_mask << 1);
     if (dim == 3)
       ret |= pdep((uint32)coord[2] >> log2int(block_size[2]), coord_mask << 2);
-    static_assert((coord_mask & (coord_mask << 1)) == 0);
-    static_assert((coord_mask & (coord_mask >> 1)) == 0);
+    TC_STATIC_ASSERT((coord_mask & (coord_mask << 1)) == 0);
+    TC_STATIC_ASSERT((coord_mask & (coord_mask >> 1)) == 0);
     bool ok = 0 <= ret && ret < num_blocks;
     if (grid_debug && !ok) {
       TC_P(ret);

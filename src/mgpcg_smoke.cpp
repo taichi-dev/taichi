@@ -279,7 +279,7 @@ class MGPCGSmoke {
   }
 
   void smooth(int level, int U, int Uout, int B) {
-    static_assert(4 % smoothing_fusion == 0);
+    TC_STATIC_ASSERT(4 % smoothing_fusion == 0);
     TC_PROFILER("smoothing")
     // TODO: this supports zero-Dirichlet BC only!
     grids[level]->advance(

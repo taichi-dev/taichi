@@ -144,7 +144,7 @@ class ClothSimulation {
 };
 
 constexpr auto block_size = 16;
-static_assert(n % block_size == 0);
+TC_STATIC_ASSERT(n % block_size == 0);
 
 struct BlockedCloth {
   static constexpr auto scratch_size = pow<2>(block_size + 2);
@@ -154,7 +154,7 @@ struct BlockedCloth {
   TC_FORCE_INLINE LinearizedScratchType &linearized_scratch() {
     return *reinterpret_cast<LinearizedScratchType *>(&scratch[0][0]);
   }
-  static_assert(sizeof(scratch) == sizeof(LinearizedScratchType));
+  TC_STATIC_ASSERT(sizeof(scratch) == sizeof(LinearizedScratchType));
 
   TC_FORCE_INLINE static constexpr int linearized_offset(int x, int y) {
     return x * (block_size + 2) + y;

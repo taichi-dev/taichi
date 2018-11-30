@@ -291,8 +291,12 @@ elif get_os_name() == 'win':
 def get_dll_name(name):
   if get_os_name() == 'linux':
     return 'libtaichi_%s.so' % name
+  elif get_os_name() == 'osx':
+    return 'libtaichi_%s.dylib' % name
+  elif get_os_name() == 'win':
+    return 'taichi_%s.dll' % name
   else:
-    assert False
+    assert False, "Unknown OS"
 
 def load_module(name, verbose=True):
   if verbose:

@@ -17,7 +17,7 @@
 
 TC_NAMESPACE_BEGIN
 
-void create_directories(const std::string &dir) {
+inline void create_directories(const std::string &dir) {
 #if !defined(TC_PLATFORM_OSX)
   std::experimental::filesystem::create_directories(folder);
 #else

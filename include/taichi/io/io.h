@@ -11,7 +11,19 @@
 #include <cstdio>
 #include <cstdlib>
 
+#if !defined(TC_PLATFORM_OSX)
+#include <experimental/filesystem>
+#endif
+
 TC_NAMESPACE_BEGIN
+
+void create_directories(const std::string &dir) {
+#if !defined(TC_PLATFORM_OSX)
+  std::experimental::filesystem::create_directories(folder);
+#else
+  std::system(fmt::format("mkdir -p {}", dir).c_str());
+#endif
+}
 
 template <typename T>
 void write_to_disk(const T &dat, std::string fn) {

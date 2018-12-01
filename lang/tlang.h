@@ -282,9 +282,6 @@ class CodeGen {
   bool prior_to(Expr &a, Expr &b) {
     auto address1 = a.node->addr;
     auto address2 = b.node->addr;
-    TC_P(address1.same_type(address2));
-    TC_P(address1.offset());
-    TC_P(address2.offset())
     return address1.same_type(address2) &&
            address1.offset() + 1 == address2.offset();
   }
@@ -293,28 +290,19 @@ class CodeGen {
     std::vector<Expr> inst;
     std::set<void *> visited;
 
-    TC_TAG;
-
     std::function<void(Expr)> walk = [&](Expr expr) -> void {
-      TC_TAG;
       TC_ASSERT(expr.node != nullptr);
       TC_P((int)expr.node->type);
-      TC_TAG;
       if (visited.find(expr.node.get()) != visited.end())
         return;
       visited.insert(expr.node.get());
       for (auto &ch : expr.node->ch) {
-        TC_TAG;
         walk(ch);
-        TC_TAG;
       }
       inst.push_back(expr);
-      TC_TAG;
     };
 
-    TC_TAG;
     walk(root_expr);
-    TC_TAG;
 
     return inst;
   }

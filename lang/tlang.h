@@ -1,6 +1,7 @@
 #include <taichi/common/util.h>
 #include <taichi/io/io.h>
 #include <dlfcn.h>
+#include <set>
 
 TC_NAMESPACE_BEGIN
 
@@ -205,15 +206,15 @@ class CodeGen {
       if (mode == Mode::vector) {
         std::string load_instr =
             simd_width == 8 ? "_mm256_load_ps" : "_mm512_load_ps";
-        code +=
-            fmt::format("auto {} = {}(&{}[{} * i + {}]);\n", node->var_name,
-                        load_instr, stream_name, node->addr.coeff_i, node->addr.coeff_const);
+        code += fmt::format("auto {} = {}(&{}[{} * i + {}]);\n", node->var_name,
+                            load_instr, stream_name, node->addr.coeff_i,
+                            node->addr.coeff_const);
       } else {
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
           code += fmt::format("auto {} = {}[{} * i + {} + {}];\n",
-                              node->var_name + suf, stream_name, node->addr.coeff_i,
-                              node->addr.coeff_const, i);
+                              node->var_name + suf, stream_name,
+                              node->addr.coeff_i, node->addr.coeff_const, i);
         }
       }
     } else if (node->type == NodeType::store) {
@@ -221,9 +222,9 @@ class CodeGen {
       if (mode == Mode::vector) {
         std::string store_instr =
             simd_width == 8 ? "_mm256_store_ps" : "_mm512_store_ps";
-        code +=
-            fmt::format("{}(&{}[{} * i + {}], {});\n", store_instr, stream_name,
-                        node->addr.coeff_i, node->addr.coeff_const, node->ch[0]->var_name);
+        code += fmt::format("{}(&{}[{} * i + {}], {});\n", store_instr,
+                            stream_name, node->addr.coeff_i,
+                            node->addr.coeff_const, node->ch[0]->var_name);
       } else {
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
@@ -260,9 +261,10 @@ class CodeGen {
       of << code;
     }
     std::system(fmt::format("clang-format -i {}", get_source_fn()).c_str());
-    auto cmd =
-        fmt::format("g++ {} -std=c++14 -shared -fPIC -O3 -march=native -D_GLIBCXX_USE_CXX11_ABI=0 -o {}",
-                    get_source_fn(), get_library_fn());
+    auto cmd = fmt::format(
+        "g++ {} -std=c++14 -shared -fPIC -O3 -march=native "
+        "-D_GLIBCXX_USE_CXX11_ABI=0 -o {}",
+        get_source_fn(), get_library_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
     /*
@@ -280,21 +282,39 @@ class CodeGen {
   bool prior_to(Expr &a, Expr &b) {
     auto address1 = a.node->addr;
     auto address2 = b.node->addr;
+    TC_P(address1.same_type(address2));
+    TC_P(address1.offset());
+    TC_P(address2.offset())
     return address1.same_type(address2) &&
            address1.offset() + 1 == address2.offset();
   }
 
   std::vector<Expr> extract_instructions(Expr root_expr) {
     std::vector<Expr> inst;
+    std::set<void *> visited;
+
+    TC_TAG;
 
     std::function<void(Expr)> walk = [&](Expr expr) -> void {
-      inst.push_back(expr);
+      TC_TAG;
+      TC_ASSERT(expr.node != nullptr);
+      TC_P((int)expr.node->type);
+      TC_TAG;
+      if (visited.find(expr.node.get()) != visited.end())
+        return;
+      visited.insert(expr.node.get());
       for (auto &ch : expr.node->ch) {
+        TC_TAG;
         walk(ch);
+        TC_TAG;
       }
+      inst.push_back(expr);
+      TC_TAG;
     };
 
+    TC_TAG;
     walk(root_expr);
+    TC_TAG;
 
     return inst;
   }

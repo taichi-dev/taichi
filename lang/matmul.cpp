@@ -290,16 +290,33 @@ namespace Tlang {
 struct Matrix {
   int n, m;
   std::vector<Expr> entries;
+
   Matrix(int n, int m) : n(n), m(m) {
-    entries.resize(n * m);
+    entries.resize(n * m, Expr());
   }
 
   Expr &operator()(int i, int j) {
+    TC_ASSERT(0 <= i && i < n);
+    TC_ASSERT(0 <= j && j < n);
     return entries[i * m + j];
   }
 
   const Expr &operator()(int i, int j) const {
+    TC_ASSERT(0 <= i && i < n);
+    TC_ASSERT(0 <= j && j < n);
     return entries[i * m + j];
+  }
+
+  Expr &operator()(int i) {
+    TC_ASSERT(0 <= i && i < n * m);
+    TC_ASSERT(n == 1 || m == 1);
+    return entries[i];
+  }
+
+  const Expr &operator()(int i) const {
+    TC_ASSERT(0 <= i && i < n * m);
+    TC_ASSERT(n == 1 || m == 1);
+    return entries[i];
   }
 };
 
@@ -316,6 +333,20 @@ Matrix operator*(const Matrix &A, const Matrix &B) {
   }
   return C;
 }
+
+Matrix operator+(const Matrix &A, const Matrix &B) {
+  TC_ASSERT(A.n == B.n);
+  TC_ASSERT(A.m == B.m);
+  Matrix C(A.n, A.m);
+  for (int i = 0; i < A.n; i++) {
+    for (int j = 0; j < A.m; j++) {
+      C(i, j) = A(i, j) + B(i, j);
+      TC_P(C(i, j).node.get());
+    }
+  }
+  return C;
+}
+
 }  // namespace Tlang
 
 template <int dim, typename T>
@@ -487,5 +518,51 @@ auto test_tlang = []() {
   }
 };
 TC_REGISTER_TASK(test_tlang);
+
+auto test_slp = []() {
+  using namespace Tlang;
+  int M = 4;
+  Matrix vec_a(M, 1);
+  Matrix vec_b(M, 1);
+  Expr ret;
+  for (int i = 0; i < M; i++) {
+    Address addr;
+    addr.coeff_i = 1;
+    addr.coeff_const = i;
+
+    addr.stream_id = 0;
+    vec_a(i) = load(addr);
+
+    addr.stream_id = 1;
+    vec_b(i) = load(addr);
+  }
+  Matrix vec_c = vec_a + vec_b;
+  for (int i = 0; i < M; i++) {
+    Address addr;
+    addr.coeff_i = 1;
+    addr.coeff_const = i;
+
+    addr.stream_id = 2;
+    TC_P(vec_c(i).node.get());
+    TC_P((int)vec_c(i).node->type);
+    ret.store(vec_c(i), addr);
+  }
+
+  CodeGen cg;
+  auto func = cg.get(ret, 4);
+
+  constexpr int n = 16;
+  TC_ALIGNED(64) float32 x[n], y[n], z[n];
+  for (int i = 0; i < n; i++) {
+    x[i] = i;
+    y[i] = -2 * i;
+  }
+  func(x, y, z, n);
+  for (int i = 0; i < n; i++) {
+    TC_INFO("z[{}] = {}", i, z[i]);
+  }
+};
+
+TC_REGISTER_TASK(test_slp)
 
 TC_NAMESPACE_END

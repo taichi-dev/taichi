@@ -161,7 +161,7 @@ class CodeGen {
   using FunctionType = void (*)(float32 *, float32 *, float32 *, int);
 
   std::string run(const Expr &e) {
-    code = "#include <immintrin.h>\n\n";
+    code = "#include <immintrin.h>\n#include <cstdio>\n";
     code += "using float32 = float;\n";
     code += "using float64 = double;\n\n";
     code += "extern \"C\" void " + func_name +
@@ -244,7 +244,12 @@ class CodeGen {
   }
 
   std::string get_library_fn() {
+#if defined(TC_PLATFORM_OSX)
+    // Note: use .so here will lead to wired behavior...
+    return fmt::format("{}/tmp{:04d}.dylib", folder, id);
+#else
     return fmt::format("{}/tmp{:04d}.so", folder, id);
+#endif
   }
 
   FunctionType get(const Expr &e, int group_size = 4) {
@@ -256,7 +261,7 @@ class CodeGen {
     }
     std::system(fmt::format("clang-format -i {}", get_source_fn()).c_str());
     auto cmd =
-        fmt::format("g++ {} -std=c++14 -shared -fPIC -O3 -march=native -o {}",
+        fmt::format("g++ {} -std=c++14 -shared -fPIC -O3 -march=native -D_GLIBCXX_USE_CXX11_ABI=0 -o {}",
                     get_source_fn(), get_library_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);

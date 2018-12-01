@@ -7,6 +7,8 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
+constexpr int n = 16;
+
 auto test_tlang = []() {
   Address addr;
   addr.stream_id = 0;
@@ -21,15 +23,14 @@ auto test_tlang = []() {
   CodeGen cg;
   auto func = cg.get(ret, 8);
 
-  float32 x[16], y[16], z[16];
-  for (int i = 0; i < 16; i++) {
+  TC_ALIGNED(64) float32 x[n], y[n], z[n];
+  for (int i = 0; i < n; i++) {
     x[i] = i;
     y[i] = -2 * i;
   }
-  func(x, y, z, 16);
-  for (int i = 0; i < 16; i++) {
-    TC_P(i);
-    TC_P(z[i]);
+  func(x, y, z, n);
+  for (int i = 0; i < n; i++) {
+    TC_INFO("z[{}] = {}", i, z[i]);
   }
 };
 TC_REGISTER_TASK(test_tlang);

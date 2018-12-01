@@ -333,7 +333,6 @@ class CodeGen {
   }
 
   void SLP(Expr expr, int group_size) {
-    return;
     inst = extract_instructions(expr);
     TC_INFO("# instructions = {}", inst.size());
     grouped = std::vector<bool>(inst.size(), false);

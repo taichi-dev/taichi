@@ -13,17 +13,36 @@ struct Address {
   int64 stream_id;
   int64 coeff_i;
   int64 coeff_imax;
-  int64 coeff_const; // offset
+  int64 coeff_const;  // offset
 
   // AOSOA: i / a * b
   int64 coeff_aosoa_group_size;
   int64 coeff_aosoa_stride;
+
+  TC_FORCE_INLINE bool same_type(Address o) {
+    return stream_id == o.stream_id && coeff_i == o.coeff_i &&
+           coeff_imax == o.coeff_imax &&
+           coeff_aosoa_group_size == o.coeff_aosoa_group_size &&
+           coeff_aosoa_stride == o.coeff_aosoa_group_size;
+  }
+
+  TC_FORCE_INLINE bool operator==(Address o) {
+    return stream_id == o.stream_id && coeff_i == o.coeff_i &&
+           coeff_imax == o.coeff_imax && coeff_const == o.coeff_const &&
+           coeff_aosoa_group_size == o.coeff_aosoa_group_size &&
+           coeff_aosoa_stride == o.coeff_aosoa_group_size;
+  }
+
+  TC_FORCE_INLINE int64 offset() {
+    return coeff_const;
+  }
 };
 
 class Node {
  public:
   enum class Type : int { mul, add, sub, div, load, store, combine, constant };
 
+  Address addr;
   std::vector<Handle<Node>> ch;  // Four child max
   Type type;
   std::string var_name;
@@ -219,14 +238,13 @@ class CodeGen {
   }
 
   FunctionType get(const Expr &e) {
+    SLP(e);
     run(e);
     {
       std::ofstream of(get_source_fn());
       of << code;
     }
-    /*
     std::system(fmt::format("clang-format -i {}", get_source_fn()).c_str());
-     */
     auto cmd =
         fmt::format("g++ {} -std=c++14 -shared -fPIC -O3 -march=native -o {}",
                     get_source_fn(), get_library_fn());
@@ -244,6 +262,44 @@ class CodeGen {
     return (FunctionType)ret;
   }
 
+  bool prior_to(Expr &a, Expr &b) {
+    auto address1 = a.node->addr;
+    auto address2 = b.node->addr;
+    return address1.same_type(address2) &&
+           address1.offset() + 1 == address2.offset();
+  }
+
+  void group_loads() {
+  }
+
+  void propagate() {
+  }
+
+  std::vector<Expr> extract_instructions(Expr root_expr) {
+    std::vector<Expr> inst;
+
+    std::function<void(Expr)> walk = [&](Expr expr) -> void {
+      inst.push_back(expr);
+      for (auto &ch : expr.node->ch) {
+        walk(ch);
+      }
+    };
+
+    walk(root_expr);
+
+    return inst;
+  }
+
+  void SLP(Expr expr) {
+    auto inst = extract_instructions(expr);
+    TC_INFO("# instructions = {}", inst.size());
+    group_loads();
+    /*
+    while (true) {
+      propagate();
+    }
+    */
+  }
 };
 }  // namespace Tlang
 

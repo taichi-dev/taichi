@@ -4,6 +4,7 @@
 #include <taichi/math.h>
 #include <taichi/system/timer.h>
 #include "tlang.h"
+#include <taichi/testing.h>
 #include <Eigen/Dense>
 
 TC_NAMESPACE_BEGIN
@@ -445,5 +446,9 @@ auto benchmark_matmul = []() {
   */
 };
 TC_REGISTER_TASK(benchmark_matmul);
+
+TC_TEST("Address allocation") {
+  TC_CHECK(1 + 1 == 2);
+}
 
 TC_NAMESPACE_END

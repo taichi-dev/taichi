@@ -21,10 +21,11 @@ struct Address {
 
   Address() {
     stream_id = -1;
-  }
-
-  Address(int stream_id, int coeff_i, int coeff_const) {
-    // TODO:
+    coeff_i = 0;
+    coeff_imax = 0;
+    coeff_const = 0;
+    coeff_aosoa_group_size = 0;
+    coeff_aosoa_stride = 0;
   }
 
   bool initialized() {
@@ -58,7 +59,6 @@ class Node {
   std::vector<Handle<Node>> ch;  // Four child max
   Type type;
   std::string var_name;
-  int stream_id, stride, offset;
   float64 value;
 
   Node(Type type) : type(type) {
@@ -101,25 +101,23 @@ class Expr {
   BINARY_OP(/, div);
 #undef BINARY
 
-  void store(const Expr &e, int stream_id, int stride, int offset) {
+  void store(const Expr &e, Address addr) {
     if (!node) {
       node = std::make_shared<Node>(NodeType::combine);
     }
     auto n = std::make_shared<Node>(NodeType::store);
     n->ch.push_back(e.node);
-    n->stream_id = stream_id;
-    n->stride = stride;
-    n->offset = offset;
+    n->addr = addr;
     Expr store_e(n);
     node->ch.push_back(n);
   }
 };
 
-inline Expr load(int stream_id, int stride, int offset) {
+inline Expr load(Address addr) {
   auto n = std::make_shared<Node>(NodeType::load);
-  n->stream_id = stream_id;
-  n->stride = stride;
-  n->offset = offset;
+  TC_ASSERT(addr.initialized());
+  n->addr = addr;
+  TC_ASSERT(0 <= addr.stream_id && addr.stream_id < 3);
   return Expr(n);
 }
 
@@ -203,34 +201,34 @@ class CodeGen {
         }
       }
     } else if (node->type == NodeType::load) {
-      auto stream_name = fmt::format("stream{:02d}", node->stream_id);
+      auto stream_name = fmt::format("stream{:02d}", node->addr.stream_id);
       if (mode == Mode::vector) {
         std::string load_instr =
             simd_width == 8 ? "_mm256_load_ps" : "_mm512_load_ps";
         code +=
             fmt::format("auto {} = {}(&{}[{} * i + {}]);\n", node->var_name,
-                        load_instr, stream_name, node->stride, node->offset);
+                        load_instr, stream_name, node->addr.coeff_i, node->addr.coeff_const);
       } else {
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
           code += fmt::format("auto {} = {}[{} * i + {} + {}];\n",
-                              node->var_name + suf, stream_name, node->stride,
-                              node->offset, i);
+                              node->var_name + suf, stream_name, node->addr.coeff_i,
+                              node->addr.coeff_const, i);
         }
       }
     } else if (node->type == NodeType::store) {
-      auto stream_name = fmt::format("stream{:02d}", node->stream_id);
+      auto stream_name = fmt::format("stream{:02d}", node->addr.stream_id);
       if (mode == Mode::vector) {
         std::string store_instr =
             simd_width == 8 ? "_mm256_store_ps" : "_mm512_store_ps";
         code +=
             fmt::format("{}(&{}[{} * i + {}], {});\n", store_instr, stream_name,
-                        node->stride, node->offset, node->ch[0]->var_name);
+                        node->addr.coeff_i, node->addr.coeff_const, node->ch[0]->var_name);
       } else {
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
           code += fmt::format("{}[{} * i + {} + {}] = {};\n", stream_name,
-                              node->stride, node->offset, i,
+                              node->addr.coeff_i, node->addr.coeff_const, i,
                               node->ch[0]->var_name + suf);
         }
       }
@@ -330,6 +328,7 @@ class CodeGen {
   }
 
   void SLP(Expr expr, int group_size) {
+    return;
     inst = extract_instructions(expr);
     TC_INFO("# instructions = {}", inst.size());
     grouped = std::vector<bool>(inst.size(), false);
@@ -352,9 +351,9 @@ class CodeGen {
       // Extend
       if (inst_with_max_length != -1) {
         // Pack
-        TC_ASSERT(C.size() % group_size == 0);
+        TC_WARN_IF(C.size() % group_size != 0, "C.size() = {}", C.size());
         groups.push_back(std::vector<int>());
-        for (int i = 0; i < group_size; i++) {
+        for (int i = 0; i < C.size(); i++) {
           grouped[C[i]] = true;
           groups.back().push_back(C[i]);
         }
@@ -363,7 +362,10 @@ class CodeGen {
       }
     }
 
-    TC_INFO("# groups", groups.size());
+    TC_INFO("# groups {}", groups.size());
+    for (int i = 0; i < groups.size(); i++) {
+      TC_INFO("Group {} size = {}", i, groups[i].size());
+    }
 
     /*
     while (true) {

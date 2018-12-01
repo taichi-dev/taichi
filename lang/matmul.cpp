@@ -326,9 +326,13 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode, int simd_width) {
 
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
-      Address a();
-      a(i, j) = load(0, dim * dim, simd_width * (i * dim + j));
-      b(i, j) = load(1, dim * dim, simd_width * (i * dim + j));
+      Address addr;
+      addr.stream_id = 0;
+      addr.coeff_i = dim * dim;
+      addr.coeff_const = simd_width * (i * dim + j);
+      a(i, j) = load(addr);
+      addr.stream_id = 1;
+      b(i, j) = load(addr);
     }
   }
 
@@ -337,7 +341,11 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode, int simd_width) {
   Expr ret;
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
-      ret.store(c(i, j), 2, dim * dim, simd_width * (i * dim + j));
+      Address addr;
+      addr.stream_id = 2;
+      addr.coeff_i = dim * dim;
+      addr.coeff_const = simd_width * (i * dim + j);
+      ret.store(c(i, j), addr);
     }
   }
 

@@ -8,13 +8,18 @@ TC_NAMESPACE_BEGIN
 using namespace Tlang;
 
 auto test_tlang = []() {
-  Expr a = load(0, 1, 0);
-  Expr b = load(1, 1, 0);
+  Address addr;
+  addr.stream_id = 0;
+  addr.coeff_i = 1;
+  Expr a = load(addr);
+  addr.stream_id = 1;
+  Expr b = load(addr);
   auto c = a + b;
   Expr ret;
-  ret.store(c, 2, 1, 0);
+  addr.stream_id = 2;
+  ret.store(c, addr);
   CodeGen cg;
-  auto func = cg.get(ret);
+  auto func = cg.get(ret, 8);
 
   float32 x[16], y[16], z[16];
   for (int i = 0; i < 16; i++) {
@@ -23,6 +28,7 @@ auto test_tlang = []() {
   }
   func(x, y, z, 16);
   for (int i = 0; i < 16; i++) {
+    TC_P(i);
     TC_P(z[i]);
   }
 };

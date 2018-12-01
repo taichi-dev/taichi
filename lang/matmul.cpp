@@ -326,6 +326,7 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode, int simd_width) {
 
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
+      Address a();
       a(i, j) = load(0, dim * dim, simd_width * (i * dim + j));
       b(i, j) = load(1, dim * dim, simd_width * (i * dim + j));
     }
@@ -341,7 +342,7 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode, int simd_width) {
   }
 
   CodeGen cg(mode, simd_width);
-  auto func = cg.get(ret);
+  auto func = cg.get(ret, dim);
 
   AlignedAllocator A(sizeof(T) * N * dim * dim);
   AlignedAllocator B(sizeof(T) * N * dim * dim);
@@ -402,6 +403,10 @@ real TlangSca16_matmatmul() {
 template <int dim, typename T>
 void run() {
   fmt::print("Matrix<{}, {}>:\n", dim, sizeof(T) == 4 ? "float32" : "float64");
+  BENCHMARK(TlangVec8);
+  BENCHMARK(TlangSca8);
+  // BENCHMARK(TlangVec16);
+  BENCHMARK(TlangSca16);
   BENCHMARK(AOS_eigen);
   BENCHMARK(AOS_eigen_unroll2);
   BENCHMARK(AOS_eigen_unroll4);
@@ -410,10 +415,6 @@ void run() {
   // BENCHMARK(AOS2);
   BENCHMARK(SOA_AVX2);
   BENCHMARK(AOSOA_AVX2);
-  BENCHMARK(TlangVec8);
-  BENCHMARK(TlangSca8);
-  // BENCHMARK(TlangVec16);
-  BENCHMARK(TlangSca16);
   fmt::print("\n");
 }
 

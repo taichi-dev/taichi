@@ -19,6 +19,18 @@ struct Address {
   int64 coeff_aosoa_group_size;
   int64 coeff_aosoa_stride;
 
+  Address() {
+    stream_id = -1;
+  }
+
+  Address(int stream_id, int coeff_i, int coeff_const) {
+    // TODO:
+  }
+
+  bool initialized() {
+    return stream_id != -1;
+  }
+
   TC_FORCE_INLINE bool same_type(Address o) {
     return stream_id == o.stream_id && coeff_i == o.coeff_i &&
            coeff_imax == o.coeff_imax &&
@@ -237,8 +249,8 @@ class CodeGen {
     return fmt::format("{}/tmp{:04d}.so", folder, id);
   }
 
-  FunctionType get(const Expr &e) {
-    SLP(e);
+  FunctionType get(const Expr &e, int group_size = 4) {
+    SLP(e, group_size);
     run(e);
     {
       std::ofstream of(get_source_fn());
@@ -269,12 +281,6 @@ class CodeGen {
            address1.offset() + 1 == address2.offset();
   }
 
-  void group_loads() {
-  }
-
-  void propagate() {
-  }
-
   std::vector<Expr> extract_instructions(Expr root_expr) {
     std::vector<Expr> inst;
 
@@ -290,10 +296,75 @@ class CodeGen {
     return inst;
   }
 
-  void SLP(Expr expr) {
-    auto inst = extract_instructions(expr);
+  void propagate() {
+  }
+
+  std::vector<Expr> inst;
+  std::vector<std::vector<int>> groups;
+  std::vector<bool> grouped;
+
+  std::vector<int> continuous_loads(int i) {
+    std::vector<int> ret;
+    if (grouped[i] || inst[i].node->type != NodeType::load) {
+      return ret;
+    }
+    ret.push_back(i);
+    while (1) {
+      bool found = false;
+      for (int j = 0; j < inst.size(); j++) {
+        if (grouped[j] || i == j || inst[i].node->type != NodeType::load) {
+          continue;
+        }
+        if (prior_to(inst[i], inst[j])) {
+          ret.push_back(j);
+          i = j;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        break;
+      }
+    }
+    return ret;
+  }
+
+  void SLP(Expr expr, int group_size) {
+    inst = extract_instructions(expr);
     TC_INFO("# instructions = {}", inst.size());
-    group_loads();
+    grouped = std::vector<bool>(inst.size(), false);
+
+    while (true) {
+      // Enumerate the instructions
+      int maximum_length = 0;
+      int inst_with_max_length = -1;
+      std::vector<int> C;
+      for (int i = 0; i < inst.size(); i++) {
+        auto c = continuous_loads(i);
+        if (c.size() > maximum_length) {
+          maximum_length = c.size();
+          inst_with_max_length = i;
+          C = c;
+        }
+      }
+      TC_P(C);
+
+      // Extend
+      if (inst_with_max_length != -1) {
+        // Pack
+        TC_ASSERT(C.size() % group_size == 0);
+        groups.push_back(std::vector<int>());
+        for (int i = 0; i < group_size; i++) {
+          grouped[C[i]] = true;
+          groups.back().push_back(C[i]);
+        }
+      } else {
+        break;
+      }
+    }
+
+    TC_INFO("# groups", groups.size());
+
     /*
     while (true) {
       propagate();

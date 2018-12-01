@@ -9,6 +9,17 @@ namespace Tlang {
 template <typename T>
 using Handle = std::shared_ptr<T>;
 
+struct Address {
+  int64 stream_id;
+  int64 coeff_i;
+  int64 coeff_imax;
+  int64 coeff_const; // offset
+
+  // AOSOA: i / a * b
+  int64 coeff_aosoa_group_size;
+  int64 coeff_aosoa_stride;
+};
+
 class Node {
  public:
   enum class Type : int { mul, add, sub, div, load, store, combine, constant };
@@ -213,21 +224,26 @@ class CodeGen {
       std::ofstream of(get_source_fn());
       of << code;
     }
+    /*
     std::system(fmt::format("clang-format -i {}", get_source_fn()).c_str());
+     */
     auto cmd =
         fmt::format("g++ {} -std=c++14 -shared -fPIC -O3 -march=native -o {}",
                     get_source_fn(), get_library_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
+    /*
     system(
         fmt::format("objdump {} -d > {}.s", get_library_fn(), get_library_fn())
             .c_str());
+            */
     auto dll = dlopen(("./" + get_library_fn()).c_str(), RTLD_LAZY);
     TC_ASSERT(dll != nullptr);
     auto ret = dlsym(dll, func_name.c_str());
     TC_ASSERT(ret != nullptr);
     return (FunctionType)ret;
   }
+
 };
 }  // namespace Tlang
 

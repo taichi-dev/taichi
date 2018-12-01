@@ -417,12 +417,13 @@ void run() {
 }
 
 auto benchmark_matmul = []() {
+#if defined(TC_PLATFORM_LINUX)
   std::ifstream noturbo("/sys/devices/system/cpu/intel_pstate/no_turbo");
   char c;
   noturbo >> c;
   TC_WARN_IF(c != '1',
              "You seem to be running the benchmark with Intel Turboboost.");
-
+#endif
   TC_INFO("Eigen Version {}.{}.{}", EIGEN_WORLD_VERSION, EIGEN_MAJOR_VERSION,
           EIGEN_MINOR_VERSION);
   TC_INFO("GCC   Version {}.{}.{}", __GNUC__, __GNUC_MINOR__,

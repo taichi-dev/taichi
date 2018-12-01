@@ -3,9 +3,9 @@
 #include <taichi/system/threading.h>
 #include <taichi/util.h>
 #include <taichi/math/svd.h>
-#include <experimental/filesystem>
 #include <taichi/visualization/particle_visualization.h>
 #include <taichi/visual/gui.h>
+#include <taichi/io/io.h>
 #include "stencil.h"
 
 TC_NAMESPACE_BEGIN
@@ -886,7 +886,7 @@ auto smoke = [](const std::vector<std::string> &params) {
   // GUI gui("MGPCG Smoke", cam_res);
   TC_ASSERT(!params.empty());
   auto folder = params[0];
-  std::experimental::filesystem::create_directory(folder);
+  create_directories(folder);
   smoke->folder = folder;
 
   for (int frame = 0;; frame++) {
@@ -947,7 +947,7 @@ auto render_smoke = [](const std::vector<std::string> &params) {
     }
     gui.update();
     auto render_dir = fmt::format("{}_rendered", folder);
-    std::experimental::filesystem::create_directory(render_dir);
+    create_directories(render_dir);
     gui.get_canvas().img.write_as_image(
         fmt::format("{}/{:05d}.png", render_dir, frame));
   }

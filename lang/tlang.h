@@ -1,5 +1,5 @@
 #include <taichi/common/util.h>
-#include <experimental/filesystem>
+#include <taichi/io/io.h>
 #include <dlfcn.h>
 
 TC_NAMESPACE_BEGIN
@@ -110,7 +110,7 @@ class CodeGen {
     binary_ops[NodeType::mul] = "*";
     binary_ops[NodeType::div] = "/";
     folder = "_tlang_cache/";
-    std::experimental::filesystem::create_directories(folder);
+    create_directories(folder);
   }
 
   std::string create_variable() {

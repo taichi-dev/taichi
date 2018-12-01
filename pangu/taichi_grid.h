@@ -4,7 +4,6 @@
 #include <mutex>
 #include <functional>
 #include <unordered_map>
-#include <experimental/filesystem>
 #include <tbb/tbb.h>
 #include <taichi/util.h>
 #include <taichi/system/virtual_memory.h>

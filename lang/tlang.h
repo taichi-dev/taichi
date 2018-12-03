@@ -54,6 +54,7 @@ struct Address {
 
 class Expr;
 
+// TODO: do we need polymorphism here?
 class Node {
  public:
   enum class Type : int { mul, add, sub, div, load, store, combine, constant };
@@ -64,11 +65,15 @@ class Node {
   Type type;
   std::string var_name;
   float64 value;
+  bool is_vectorized;
 
   Node(Type type) : type(type) {
+    is_vectorized = false;
   }
 
   Node(Type type, Expr ch0, Expr ch1);
+
+  int member_id(const Expr &expr) const;
 };
 
 using NodeType = Node::Type;
@@ -79,7 +84,6 @@ class Expr {
   Handle<Node> node;
 
  public:
-
   Expr() {
   }
 
@@ -93,12 +97,12 @@ class Expr {
   }
 
   template <typename... Args>
-  static Expr create(Args&&... args) {
+  static Expr create(Args &&... args) {
     return Expr(std::make_shared<Node>(std::forward<Args>(args)...));
   }
 
-#define BINARY_OP(op, name)                    \
-  Expr operator op(const Expr &o) const {      \
+#define BINARY_OP(op, name)                            \
+  Expr operator op(const Expr &o) const {              \
     return Expr::create(NodeType::name, node, o.node); \
   }
 
@@ -138,9 +142,13 @@ class Expr {
   operator void *() const {
     return (void *)node.get();
   }
+
+  bool operator==(const Expr &o) const {
+    return (void *)(*this) == (void *)o;
+  }
 };
 
-Node::Node(Type type, Expr ch0, Expr ch1) : type(type) {
+Node::Node(Type type, Expr ch0, Expr ch1) : Node(type) {
   ch.resize(2);
   ch[0] = ch0;
   ch[1] = ch1;
@@ -152,6 +160,15 @@ inline Expr load(Address addr) {
   n->addr = addr;
   TC_ASSERT(0 <= addr.stream_id && addr.stream_id < 3);
   return Expr(n);
+}
+
+int Node::member_id(const Expr &expr) const {
+  for (int i = 0; i < members.size(); i++) {
+    if (members[i] == expr) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 inline int get_code_gen_id() {
@@ -221,8 +238,7 @@ class CodeGen {
       visited.insert(expr);
       ret.push_back(expr);
       for (auto c : expr->ch) {
-        // TODO: refactor...
-        // visit(c);
+        visit(c);
       }
     };
     visit(expr);
@@ -230,23 +246,84 @@ class CodeGen {
   }
 
   Expr repeat(Expr &expr, int offset) {
+    TC_NOT_IMPLEMENTED
     std::set<Expr> visited;
+    Expr new_expr;
+
+    // Copy with duplication detection
+
+    return new_expr;
   }
 
+  std::map<Expr, Expr> scalar_to_vector;
   // Create vectorized IR
   // the vector width should be the final SIMD instruction width
   void vectorize(Expr &expr, int group_size, int num_groups) {
+    scalar_to_vector.clear();
     // expr should be a ret Op, with its children store Ops.
     // The stores are repeated by a factor of 'pack_size'
     TC_ASSERT(expr->ch.size() == group_size);
 
-    // repeat
+    // TODO: repeat by a factor of num_groups
 
+    TC_ASSERT(expr->type == NodeType::combine);
     // Create the root group
+    auto root = Expr::create(NodeType::store);
+    root->is_vectorized = true;
     for (int i = 0; i < group_size; i++) {
+      auto ch = expr->ch[i];
+      TC_ASSERT(ch->type == NodeType::store);
+      root->members.push_back(ch);
+      if (i > 0) {
+        TC_ASSERT(prior_to(root->members[i - 1], root->members[i]));
+      }
+    }
+    vectorize(root);
+  }
+
+  void vectorize(Expr &expr) {
+    // Note: expr may bt replaced by an existing vectorized Expr
+    if (scalar_to_vector.find(expr->members[0]) != scalar_to_vector.end()) {
+      auto existing = scalar_to_vector[expr->members[0]];
+      TC_ASSERT(existing->members.size() == expr->members.size());
+      for (int i = 0; i < existing->members.size(); i++) {
+        TC_ASSERT(existing->members[i] == expr->members[i]);
+      }
+      expr = existing;
+      return;
     }
 
-    // expr std::vector<Handle<Node>> &nodes;
+    TC_ASSERT(expr->is_vectorized);
+    bool first = true;
+    NodeType type;
+    std::vector<std::vector<Expr>> vectorized_children;
+
+    // Check for isomorphism
+    for (auto member : expr->members) {
+      // It must not appear to an existing vectorized expr
+      TC_ASSERT(scalar_to_vector.find(member) == scalar_to_vector.end());
+      if (first) {
+        first = false;
+        type = member->type;
+        vectorized_children.resize(member->ch.size());
+        for (int i = 0; i < member->ch.size(); i++) {
+          vectorized_children[i].push_back(member->ch[i]);
+        }
+      } else {
+        TC_ASSERT(type == member->type);
+        TC_ASSERT(vectorized_children.size() == member->ch.size());
+      }
+    }
+
+    auto vectorized_expr = Expr::create(type);
+    vectorized_expr->is_vectorized = true;
+    std::vector<Expr> children;
+    for (int i = 0; i < vectorized_children.size(); i++) {
+      auto ch = Expr::create(vectorized_children[0][0]->type);
+      ch->members = vectorized_children[i];
+      expr->ch.push_back(ch);
+      vectorize(ch);
+    }
   }
 
   void visit(Expr &node) {

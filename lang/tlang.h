@@ -110,7 +110,7 @@ class Expr {
   BINARY_OP(+, add);
   BINARY_OP(-, sub);
   BINARY_OP(/, div);
-#undef BINARY
+#undef BINARY_OP
 
   void store(const Expr &e, Address addr) {
     if (!node) {
@@ -325,65 +325,69 @@ class CodeGen {
       vectorize(ch);
     }
   }
+  
+  void vectorized_codegen(Expr &expr) {
+    
+  }
 
-  void visit(Expr &node) {
-    for (auto &c : node->ch) {
+  void visit(Expr &expr) {
+    for (auto &c : expr->ch) {
       if (c)
         visit(c);
     }
-    if (node->var_name == "")
-      node->var_name = create_variable();
+    if (expr->var_name == "")
+      expr->var_name = create_variable();
     else
       return;  // visited
-    if (binary_ops.find(node->type) != binary_ops.end()) {
-      auto op = binary_ops[node->type];
+    if (binary_ops.find(expr->type) != binary_ops.end()) {
+      auto op = binary_ops[expr->type];
       if (mode == Mode::vector) {
-        code += fmt::format("auto {} = {} {} {};\n", node->var_name,
-                            node->ch[0]->var_name, op, node->ch[1]->var_name);
+        code += fmt::format("auto {} = {} {} {};\n", expr->var_name,
+                            expr->ch[0]->var_name, op, expr->ch[1]->var_name);
       } else if (mode == Mode::scalar) {
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
-          code += fmt::format("auto {} = {} {} {};\n", node->var_name + suf,
-                              node->ch[0]->var_name + suf, op,
-                              node->ch[1]->var_name + suf);
+          code += fmt::format("auto {} = {} {} {};\n", expr->var_name + suf,
+                              expr->ch[0]->var_name + suf, op,
+                              expr->ch[1]->var_name + suf);
         }
       }
-    } else if (node->type == NodeType::load) {
-      auto stream_name = fmt::format("stream{:02d}", node->addr.stream_id);
+    } else if (expr->type == NodeType::load) {
+      auto stream_name = fmt::format("stream{:02d}", expr->addr.stream_id);
       if (mode == Mode::vector) {
         std::string load_instr =
             simd_width == 8 ? "_mm256_load_ps" : "_mm512_load_ps";
-        code += fmt::format("auto {} = {}(&{}[{} * i + {}]);\n", node->var_name,
-                            load_instr, stream_name, node->addr.coeff_i,
-                            node->addr.coeff_const);
+        code += fmt::format("auto {} = {}(&{}[{} * i + {}]);\n", expr->var_name,
+                            load_instr, stream_name, expr->addr.coeff_i,
+                            expr->addr.coeff_const);
       } else {
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
           code += fmt::format("auto {} = {}[{} * i + {} + {}];\n",
-                              node->var_name + suf, stream_name,
-                              node->addr.coeff_i, node->addr.coeff_const, i);
+                              expr->var_name + suf, stream_name,
+                              expr->addr.coeff_i, expr->addr.coeff_const, i);
         }
       }
-    } else if (node->type == NodeType::store) {
-      auto stream_name = fmt::format("stream{:02d}", node->addr.stream_id);
+    } else if (expr->type == NodeType::store) {
+      auto stream_name = fmt::format("stream{:02d}", expr->addr.stream_id);
       if (mode == Mode::vector) {
         std::string store_instr =
             simd_width == 8 ? "_mm256_store_ps" : "_mm512_store_ps";
         code += fmt::format("{}(&{}[{} * i + {}], {});\n", store_instr,
-                            stream_name, node->addr.coeff_i,
-                            node->addr.coeff_const, node->ch[0]->var_name);
+                            stream_name, expr->addr.coeff_i,
+                            expr->addr.coeff_const, expr->ch[0]->var_name);
       } else {
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
           code += fmt::format("{}[{} * i + {} + {}] = {};\n", stream_name,
-                              node->addr.coeff_i, node->addr.coeff_const, i,
-                              node->ch[0]->var_name + suf);
+                              expr->addr.coeff_i, expr->addr.coeff_const, i,
+                              expr->ch[0]->var_name + suf);
         }
       }
-    } else if (node->type == NodeType::combine) {
+    } else if (expr->type == NodeType::combine) {
       // do nothing
     } else {
-      TC_P((int)node->type);
+      TC_P((int)expr->type);
       TC_NOT_IMPLEMENTED;
     }
   }

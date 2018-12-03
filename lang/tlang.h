@@ -227,7 +227,7 @@ class CodeGen {
             "*stream02, "
             "int n) {\n";
     code += fmt::format("for (int i = 0; i < n; i += {}) {{\n", num_groups);
-    visit(expr);
+    code_gen(expr);
     code += "}\n}\n";
     return code;
   }
@@ -246,10 +246,10 @@ class CodeGen {
       visited.insert(expr);
       ret.push_back(expr);
       for (auto c : expr->ch) {
-        visit(c);
+        code_gen(c);
       }
     };
-    visit(expr);
+    code_gen(expr);
     return ret;
   }
 
@@ -348,10 +348,10 @@ class CodeGen {
   }
   */
 
-  void visit(Expr &expr) {
+  void code_gen(Expr &expr) {
     for (auto &c : expr->ch) {
       if (c)
-        visit(c);
+        code_gen(c);
     }
     if (expr->var_name == "")
       expr->var_name = create_variable();

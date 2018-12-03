@@ -441,9 +441,9 @@ template <int dim, typename T>
 void run() {
   fmt::print("Matrix<{}, {}>:\n", dim, sizeof(T) == 4 ? "float32" : "float64");
   BENCHMARK(TlangVec8);
-  BENCHMARK(TlangSca8);
+  // BENCHMARK(TlangSca8);
   // BENCHMARK(TlangVec16);
-  BENCHMARK(TlangSca16);
+  // BENCHMARK(TlangSca16);
   BENCHMARK(AOS_eigen);
   BENCHMARK(AOS_eigen_unroll2);
   BENCHMARK(AOS_eigen_unroll4);

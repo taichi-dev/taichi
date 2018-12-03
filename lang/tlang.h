@@ -187,20 +187,14 @@ class CodeGen {
 
   Mode mode;
   int simd_width;
+  int group_size;
+  int num_groups;
   int id;
   std::map<NodeType, std::string> binary_ops;
   std::string folder;
 
   CodeGen(Mode mode = Mode::vector, int simd_width = 8)
       : var_count(0), mode(mode), simd_width(simd_width) {
-    id = get_code_gen_id();
-    func_name = fmt::format("func{:06d}", id);
-    binary_ops[NodeType::add] = "+";
-    binary_ops[NodeType::sub] = "-";
-    binary_ops[NodeType::mul] = "*";
-    binary_ops[NodeType::div] = "/";
-    folder = "_tlang_cache/";
-    create_directories(folder);
   }
 
   std::string create_variable() {
@@ -210,7 +204,21 @@ class CodeGen {
 
   using FunctionType = void (*)(float32 *, float32 *, float32 *, int);
 
-  std::string run(Expr &e) {
+  std::string run(Expr &expr, int group_size = 1) {
+    TC_ASSERT(mode == Mode::vector);
+    // group_size = expr->ch.size();
+    this->group_size = group_size;
+    num_groups = simd_width / group_size;
+    TC_WARN_IF(simd_width % group_size != 0, "insufficient lane usage");
+
+    id = get_code_gen_id();
+    func_name = fmt::format("func{:06d}", id);
+    binary_ops[NodeType::add] = "+";
+    binary_ops[NodeType::sub] = "-";
+    binary_ops[NodeType::mul] = "*";
+    binary_ops[NodeType::div] = "/";
+    folder = "_tlang_cache/";
+    create_directories(folder);
     code = "#include <immintrin.h>\n#include <cstdio>\n";
     code += "using float32 = float;\n";
     code += "using float64 = double;\n\n";
@@ -218,8 +226,8 @@ class CodeGen {
             "(float32 *stream00, float32 *stream01, float32 "
             "*stream02, "
             "int n) {\n";
-    code += fmt::format("for (int i = 0; i < n; i += {}) {{\n", simd_width);
-    visit(e);
+    code += fmt::format("for (int i = 0; i < n; i += {}) {{\n", num_groups);
+    visit(expr);
     code += "}\n}\n";
     return code;
   }
@@ -282,7 +290,7 @@ class CodeGen {
   }
 
   void vectorize(Expr &expr) {
-    // Note: expr may bt replaced by an existing vectorized Expr
+    // Note: expr may be replaced by an existing vectorized Expr
     if (scalar_to_vector.find(expr->members[0]) != scalar_to_vector.end()) {
       auto existing = scalar_to_vector[expr->members[0]];
       TC_ASSERT(existing->members.size() == expr->members.size());
@@ -325,10 +333,20 @@ class CodeGen {
       vectorize(ch);
     }
   }
-  
+
+  /*
   void vectorized_codegen(Expr &expr) {
-    
+    for (auto &c: expr->ch) {
+      if (c) {
+        vectorized_codegen(c);
+      }
+    }
+    if (expr->var_name == "") {
+      expr->var_name = create_variable();
+    } else
+      return; // visited
   }
+  */
 
   void visit(Expr &expr) {
     for (auto &c : expr->ch) {
@@ -354,6 +372,9 @@ class CodeGen {
       }
     } else if (expr->type == NodeType::load) {
       auto stream_name = fmt::format("stream{:02d}", expr->addr.stream_id);
+
+      // TODO: compute address correctly
+
       if (mode == Mode::vector) {
         std::string load_instr =
             simd_width == 8 ? "_mm256_load_ps" : "_mm512_load_ps";
@@ -406,7 +427,7 @@ class CodeGen {
   }
 
   FunctionType get(Expr &e, int group_size = 4) {
-    SLP(e, group_size);
+    // SLP(e, group_size);
     run(e);
     {
       std::ofstream of(get_source_fn());

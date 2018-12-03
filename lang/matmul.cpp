@@ -341,7 +341,6 @@ Matrix operator+(const Matrix &A, const Matrix &B) {
   for (int i = 0; i < A.n; i++) {
     for (int j = 0; j < A.m; j++) {
       C(i, j) = A(i, j) + B(i, j);
-      TC_P(C(i, j).node.get());
     }
   }
   return C;
@@ -543,8 +542,6 @@ auto test_slp = []() {
     addr.coeff_const = i;
 
     addr.stream_id = 2;
-    TC_P(vec_c(i).node.get());
-    TC_P((int)vec_c(i).node->type);
     ret.store(vec_c(i), addr);
   }
 

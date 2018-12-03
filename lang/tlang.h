@@ -52,13 +52,14 @@ struct Address {
   }
 };
 
+class Expr;
+
 class Node {
  public:
   enum class Type : int { mul, add, sub, div, load, store, combine, constant };
 
   Address addr;
-  std::vector<Handle<Node>> ch;  // Four child max
-  std::vector<Handle<Node>> serial_ops;
+  std::vector<Expr> ch;  // Four child max
   Type type;
   std::string var_name;
   float64 value;
@@ -66,19 +67,17 @@ class Node {
   Node(Type type) : type(type) {
   }
 
-  Node(Type type, Handle<Node> ch0, Handle<Node> ch1) : type(type) {
-    ch.resize(2);
-    ch[0] = ch0;
-    ch[1] = ch1;
-  }
+  Node(Type type, Expr ch0, Expr ch1);
 };
 
 using NodeType = Node::Type;
 
 // Reference counted...
 class Expr {
- public:
+private:
   Handle<Node> node;
+
+public:
 
   Expr() {
   }
@@ -90,6 +89,7 @@ class Expr {
   }
 
   Expr(Handle<Node> node) : node(node) {
+    TC_P((int)node->type);
   }
 
 #define BINARY_OP(op, name)                                            \
@@ -118,10 +118,28 @@ class Expr {
     return node.get();
   }
 
+  const Node *operator->() const {
+    return node.get();
+  }
+
   bool operator<(const Expr &o) const {
     return node.get() < o.node.get();
   }
+
+  operator bool() const {
+    return node.get() != nullptr;
+  }
+
+  operator void *() const {
+    return (void *)node.get();
+  }
 };
+
+Node::Node(Type type, Expr ch0, Expr ch1) : type(type) {
+    ch.resize(2);
+    ch[0] = ch0;
+    ch[1] = ch1;
+}
 
 inline Expr load(Address addr) {
   auto n = std::make_shared<Node>(NodeType::load);
@@ -170,7 +188,7 @@ class CodeGen {
 
   using FunctionType = void (*)(float32 *, float32 *, float32 *, int);
 
-  std::string run(const Expr &e) {
+  std::string run(Expr &e) {
     code = "#include <immintrin.h>\n#include <cstdio>\n";
     code += "using float32 = float;\n";
     code += "using float64 = double;\n\n";
@@ -179,7 +197,7 @@ class CodeGen {
             "*stream02, "
             "int n) {\n";
     code += fmt::format("for (int i = 0; i < n; i += {}) {{\n", simd_width);
-    visit(e.node);
+    visit(e);
     code += "}\n}\n";
     return code;
   }
@@ -197,7 +215,7 @@ class CodeGen {
         return;
       visited.insert(expr);
       ret.push_back(expr);
-      for (auto c: expr->ch) {
+      for (auto c : expr->ch) {
         // TODO: refactor...
         // visit(c);
       }
@@ -223,10 +241,10 @@ class CodeGen {
     for (int i = 0; i < group_size; i++) {
     }
 
-    //expr std::vector<Handle<Node>> &nodes;
+    // expr std::vector<Handle<Node>> &nodes;
   }
 
-  void visit(const Handle<Node> &node) {
+  void visit(Expr &node) {
     for (auto &c : node->ch) {
       if (c)
         visit(c);
@@ -283,6 +301,7 @@ class CodeGen {
     } else if (node->type == NodeType::combine) {
       // do nothing
     } else {
+      TC_P((int)node->type);
       TC_NOT_IMPLEMENTED;
     }
   }
@@ -300,7 +319,7 @@ class CodeGen {
 #endif
   }
 
-  FunctionType get(const Expr &e, int group_size = 4) {
+  FunctionType get(Expr &e, int group_size = 4) {
     SLP(e, group_size);
     run(e);
     {
@@ -327,8 +346,8 @@ class CodeGen {
   }
 
   bool prior_to(Expr &a, Expr &b) {
-    auto address1 = a.node->addr;
-    auto address2 = b.node->addr;
+    auto address1 = a->addr;
+    auto address2 = b->addr;
     return address1.same_type(address2) &&
            address1.offset() + 1 == address2.offset();
   }
@@ -338,12 +357,11 @@ class CodeGen {
     std::set<void *> visited;
 
     std::function<void(Expr)> walk = [&](Expr expr) -> void {
-      TC_ASSERT(expr.node != nullptr);
-      TC_P((int)expr.node->type);
-      if (visited.find(expr.node.get()) != visited.end())
+      TC_ASSERT(expr);
+      if (visited.find(expr) != visited.end())
         return;
-      visited.insert(expr.node.get());
-      for (auto &ch : expr.node->ch) {
+      visited.insert(expr);
+      for (auto &ch : expr->ch) {
         walk(ch);
       }
       inst.push_back(expr);
@@ -360,14 +378,14 @@ class CodeGen {
 
   std::vector<int> continuous_loads(int i) {
     std::vector<int> ret;
-    if (grouped[i] || inst[i].node->type != NodeType::load) {
+    if (grouped[i] || inst[i]->type != NodeType::load) {
       return ret;
     }
     ret.push_back(i);
     while (1) {
       bool found = false;
       for (int j = 0; j < inst.size(); j++) {
-        if (grouped[j] || i == j || inst[i].node->type != NodeType::load) {
+        if (grouped[j] || i == j || inst[i]->type != NodeType::load) {
           continue;
         }
         if (prior_to(inst[i], inst[j])) {
@@ -433,3 +451,11 @@ class CodeGen {
 }  // namespace Tlang
 
 TC_NAMESPACE_END
+
+/*
+ Expr should be what the users play with.
+   Simply a ref-counted pointer to nodes, with some operator overloading for users to program
+ Node is the IR node, with computational graph connectivity, imm, op type etc.
+
+ No double support this time.
+ */

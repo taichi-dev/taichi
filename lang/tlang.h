@@ -59,7 +59,8 @@ class Node {
   enum class Type : int { mul, add, sub, div, load, store, combine, constant };
 
   Address addr;
-  std::vector<Expr> ch;  // Four child max
+  std::vector<Expr> ch;       // Four child max
+  std::vector<Expr> members;  // for vectorized instructions
   Type type;
   std::string var_name;
   float64 value;
@@ -74,10 +75,10 @@ using NodeType = Node::Type;
 
 // Reference counted...
 class Expr {
-private:
+ private:
   Handle<Node> node;
 
-public:
+ public:
 
   Expr() {
   }
@@ -89,12 +90,16 @@ public:
   }
 
   Expr(Handle<Node> node) : node(node) {
-    TC_P((int)node->type);
   }
 
-#define BINARY_OP(op, name)                                            \
-  Expr operator op(const Expr &o) const {                              \
-    return Expr(std::make_shared<Node>(NodeType::name, node, o.node)); \
+  template <typename... Args>
+  static Expr create(Args&&... args) {
+    return Expr(std::make_shared<Node>(std::forward<Args>(args)...));
+  }
+
+#define BINARY_OP(op, name)                    \
+  Expr operator op(const Expr &o) const {      \
+    return Expr::create(NodeType::name, node, o.node); \
   }
 
   BINARY_OP(*, mul);
@@ -136,9 +141,9 @@ public:
 };
 
 Node::Node(Type type, Expr ch0, Expr ch1) : type(type) {
-    ch.resize(2);
-    ch[0] = ch0;
-    ch[1] = ch1;
+  ch.resize(2);
+  ch[0] = ch0;
+  ch[1] = ch1;
 }
 
 inline Expr load(Address addr) {
@@ -454,8 +459,9 @@ TC_NAMESPACE_END
 
 /*
  Expr should be what the users play with.
-   Simply a ref-counted pointer to nodes, with some operator overloading for users to program
- Node is the IR node, with computational graph connectivity, imm, op type etc.
+   Simply a ref-counted pointer to nodes, with some operator overloading for
+ users to program Node is the IR node, with computational graph connectivity,
+ imm, op type etc.
 
  No double support this time.
  */

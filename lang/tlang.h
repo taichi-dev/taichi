@@ -58,6 +58,7 @@ class Node {
 
   Address addr;
   std::vector<Handle<Node>> ch;  // Four child max
+  std::vector<Handle<Node>> serial_ops;
   Type type;
   std::string var_name;
   float64 value;
@@ -111,6 +112,14 @@ class Expr {
     n->addr = addr;
     Expr store_e(n);
     node->ch.push_back(n);
+  }
+
+  Node *operator->() {
+    return node.get();
+  }
+
+  bool operator<(const Expr &o) const {
+    return node.get() < o.node.get();
   }
 };
 
@@ -177,6 +186,44 @@ class CodeGen {
 
   std::string get_scalar_suffix(int i) {
     return fmt::format("_{:03d}", i);
+  }
+
+  std::vector<Expr> reachable_exprs(Expr &expr) {
+    std::vector<Expr> ret;
+    std::set<Expr> visited;
+
+    std::function<void(Expr &)> visit = [&](Expr &expr) {
+      if (visited.find(expr) != visited.end())
+        return;
+      visited.insert(expr);
+      ret.push_back(expr);
+      for (auto c: expr->ch) {
+        // TODO: refactor...
+        // visit(c);
+      }
+    };
+    visit(expr);
+    return ret;
+  }
+
+  Expr repeat(Expr &expr, int offset) {
+    std::set<Expr> visited;
+  }
+
+  // Create vectorized IR
+  // the vector width should be the final SIMD instruction width
+  void vectorize(Expr &expr, int group_size, int num_groups) {
+    // expr should be a ret Op, with its children store Ops.
+    // The stores are repeated by a factor of 'pack_size'
+    TC_ASSERT(expr->ch.size() == group_size);
+
+    // repeat
+
+    // Create the root group
+    for (int i = 0; i < group_size; i++) {
+    }
+
+    //expr std::vector<Handle<Node>> &nodes;
   }
 
   void visit(const Handle<Node> &node) {
@@ -307,9 +354,6 @@ class CodeGen {
     return inst;
   }
 
-  void propagate() {
-  }
-
   std::vector<Expr> inst;
   std::vector<std::vector<int>> groups;
   std::vector<bool> grouped;
@@ -358,10 +402,10 @@ class CodeGen {
           C = c;
         }
       }
-      TC_P(C);
 
       // Extend
       if (inst_with_max_length != -1) {
+        TC_P(C);
         // Pack
         TC_WARN_IF(C.size() % group_size != 0, "C.size() = {}", C.size());
         groups.push_back(std::vector<int>());

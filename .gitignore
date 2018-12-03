@@ -9,3 +9,4 @@ results
 tmp*
 data
 output*
+.DS_Store

@@ -20,6 +20,13 @@ struct Address {
   int64 coeff_aosoa_group_size;
   int64 coeff_aosoa_stride;
 
+  TC_IO_DEF(stream_id,
+            coeff_i,
+            coeff_imax,
+            coeff_const,
+            coeff_aosoa_stride,
+            coeff_aosoa_group_size);
+
   Address() {
     stream_id = -1;
     coeff_i = 0;
@@ -52,7 +59,8 @@ struct Address {
   }
 
   int64 eval(int64 i, int64 n) {
-    return coeff_i * i + coeff_imax * n + coeff_const + (i / coeff_aosoa_group_size) * coeff_aosoa_stride;
+    return coeff_i * i + coeff_imax * n + coeff_const +
+           (i / coeff_aosoa_group_size) * coeff_aosoa_stride;
   }
 };
 
@@ -276,21 +284,38 @@ class CodeGen {
     scalar_to_vector.clear();
     // expr should be a ret Op, with its children store Ops.
     // The stores are repeated by a factor of 'pack_size'
-    TC_ASSERT(expr->ch.size() == group_size);
+    TC_ASSERT(expr->ch.size() % group_size == 0);
     TC_ASSERT(expr->type == NodeType::combine);
     // Create the root group
-    auto root = Expr::create(NodeType::store);
-    root->is_vectorized = true;
-    for (int i = 0; i < group_size; i++) {
-      auto ch = expr->ch[i];
-      TC_ASSERT(ch->type == NodeType::store);
-      root->members.push_back(ch);
-      if (i > 0) {
-        TC_ASSERT(prior_to(root->members[i - 1], root->members[i]));
+    auto combined = Expr::create(NodeType::combine);
+    combined->is_vectorized = true;
+    for (int k = 0; k < expr->ch.size() / group_size; k++) {
+      auto root = Expr::create(NodeType::store);
+      root->is_vectorized = true;
+      bool has_prior_to = false, has_same = false;
+      for (int i = k * group_size; i < (k + 1) * group_size; i++) {
+        auto ch = expr->ch[i];
+        TC_ASSERT(ch->type == NodeType::store);
+        root->members.push_back(ch);
+        if (i > k * group_size) {
+          if (prior_to(root->members[i - 1], root->members[i])) {
+            has_prior_to = true;
+          } else if (root->members[i - 1]->addr == root->members[i]->addr) {
+            has_same = true;
+          } else {
+            TC_P(root->members[i - 1]->addr);
+            TC_P(root->members[i]->addr);
+            TC_ERROR(
+                "Addresses in SIMD load should be either identical or "
+                "neighbouring.");
+          }
+        }
       }
+      TC_ASSERT(!(has_prior_to && has_same));
+      vectorize(root);
+      combined->ch.push_back(root);
     }
-    vectorize(root);
-    return root;
+    return combined;
   }
 
   void vectorize(Expr &expr) {

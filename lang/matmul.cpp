@@ -543,10 +543,12 @@ void test_mat_vec_mul() {
     Address addr;
     addr.stream_id = 2;
     addr.coeff_i = 1;
+    addr.coeff_imax = i;
     ret.store(mv(i), addr);
   }
-  constexpr int n = 16;
+  constexpr int n = 128;
   CodeGen cg;
+  TC_ASSERT(8 % dim == 0);
   auto func = cg.get(ret, 1);
 
   AlignedAllocator M_allocator(dim * dim * n * sizeof(float32)),
@@ -584,8 +586,8 @@ void test_mat_vec_mul() {
 }
 
 auto test_tlang = []() {
-  test_vec_add();
   test_mat_vec_mul<2>();
+  test_vec_add();
 };
 TC_REGISTER_TASK(test_tlang);
 

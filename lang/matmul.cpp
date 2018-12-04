@@ -544,7 +544,7 @@ void test_mat_vec_mul() {
     addr.stream_id = 2;
     addr.coeff_i = 1;
     addr.coeff_imax = i;
-    ret.store(mv(i), addr);
+    mv(i) = ret.store(mv(i), addr);
   }
   constexpr int n = 128;
   CodeGen cg;
@@ -565,7 +565,7 @@ void test_mat_vec_mul() {
         M_allocator.get<float32>()[m(j, k)->addr.eval(i, n)] = m_gt(j, k);
       }
       v_gt(j) = rand<float32>();
-      V_allocator.get<float32>()[m(j)->addr.eval(i, n)] = v_gt(j);
+      V_allocator.get<float32>()[v(j)->addr.eval(i, n)] = v_gt(j);
     }
     Eigen::Matrix<float32, dim, 1> mv_gt = m_gt * v_gt;
     ground_truth[i] = mv_gt;
@@ -576,16 +576,19 @@ void test_mat_vec_mul() {
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < dim; j++) {
-      auto computed = MV_allocator.get<float32>()[mv(i)->addr.eval(i, n)];
+      auto computed = MV_allocator.get<float32>()[mv(j)->addr.eval(i, n)];
       auto gt = ground_truth[i](j);
-      TC_P(computed);
-      TC_P(gt);
-      TC_ASSERT(computed == gt);
+      if (std::abs(computed - gt) > 1e-4_f) {
+        TC_P(computed);
+        TC_P(gt);
+        TC_ERROR("Failed!");
+      }
     }
   }
 }
 
 auto test_tlang = []() {
+  test_mat_vec_mul<1>();
   test_mat_vec_mul<2>();
   test_vec_add();
 };

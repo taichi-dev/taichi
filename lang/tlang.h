@@ -59,8 +59,13 @@ struct Address {
   }
 
   int64 eval(int64 i, int64 n) {
-    return coeff_i * i + coeff_imax * n + coeff_const +
-           (i / coeff_aosoa_group_size) * coeff_aosoa_stride;
+    TC_ASSERT(initialized());
+    if (coeff_aosoa_stride != 0) {
+      return coeff_i * i + coeff_imax * n + coeff_const +
+             (i / coeff_aosoa_group_size) * coeff_aosoa_stride;
+    } else {
+      return coeff_i * i + coeff_imax * n + coeff_const;
+    }
   }
 };
 
@@ -124,7 +129,7 @@ class Expr {
   BINARY_OP(/, div);
 #undef BINARY_OP
 
-  void store(const Expr &e, Address addr) {
+  Expr store(const Expr &e, Address addr) {
     if (!node) {
       node = std::make_shared<Node>(NodeType::combine);
     }
@@ -133,6 +138,7 @@ class Expr {
     n->addr = addr;
     Expr store_e(n);
     node->ch.push_back(n);
+    return store_e;
   }
 
   Node *operator->() {
@@ -218,6 +224,7 @@ class CodeGen {
 
   std::string run(Expr &expr, int group_size = 1) {
     TC_ASSERT(mode == Mode::vector);
+    TC_ASSERT(group_size != 0);
     // group_size = expr->ch.size();
     this->group_size = group_size;
     num_groups = simd_width / group_size;

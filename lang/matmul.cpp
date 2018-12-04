@@ -535,6 +535,7 @@ void test_mat_vec_mul() {
     Address addr;
     addr.stream_id = 1;
     addr.coeff_i = 1;
+    addr.coeff_imax = i;
     v(i) = load(addr);
   }
   Expr ret;

@@ -290,6 +290,7 @@ class CodeGen {
   }
 
   void vectorize(Expr &expr) {
+    TC_P((int)expr->type);
     // Note: expr may be replaced by an existing vectorized Expr
     if (scalar_to_vector.find(expr->members[0]) != scalar_to_vector.end()) {
       auto existing = scalar_to_vector[expr->members[0]];

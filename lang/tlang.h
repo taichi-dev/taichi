@@ -324,22 +324,21 @@ class CodeGen {
       }
     }
 
-    auto vectorized_expr = Expr::create(type);
-    vectorized_expr->is_vectorized = true;
+    expr->is_vectorized = true;
 
     for (int i = 0; i < vectorized_children.size(); i++) {
+      TC_P(i);
       auto ch = Expr::create(vectorized_children[i][0]->type);
       ch->members = vectorized_children[i];
       expr->ch.push_back(ch);
       vectorize(ch);
     }
 
-    vectorized_expr->addr = expr->members[0]->addr;
-    if (vectorized_expr->addr.coeff_aosoa_group_size == 0) {
-      vectorized_expr->addr.coeff_aosoa_group_size = group_size;
-      vectorized_expr->addr.coeff_aosoa_stride = 0;
+    expr->addr = expr->members[0]->addr;
+    if (expr->addr.coeff_aosoa_group_size == 0) {
+      expr->addr.coeff_aosoa_group_size = num_groups;
+      expr->addr.coeff_aosoa_stride = 0;
     }
-    expr = vectorized_expr;
   }
 
   /*
@@ -361,12 +360,13 @@ class CodeGen {
     auto stride = addr.coeff_i + group_size / addr.coeff_aosoa_group_size *
                                      addr.coeff_aosoa_stride;
     auto offset = addr.coeff_const;
-    return fmt::format("(&{}[{} * n + {} * i + {}])\n", stream_name,
+    return fmt::format("&{}[{} * n + {} * i + {}]\n", stream_name,
                        addr.coeff_imax, stride, offset);
   }
 
   void code_gen(Expr &expr) {
     TC_ASSERT(expr->is_vectorized);
+    TC_P(expr->ch.size());
     for (auto &c : expr->ch) {
       if (c)
         code_gen(c);
@@ -397,12 +397,14 @@ class CodeGen {
         }
         auto addr = expr->addr;
         auto i_stride = num_groups;
+        TC_P(i_stride);
+        TC_P(addr.coeff_aosoa_group_size);
         TC_ASSERT(i_stride == addr.coeff_aosoa_group_size);
         // TC_ASSERT(expr->members[0]->addr.coeff_i);
         std::string load_instr =
             simd_width == 8 ? "_mm256_load_ps" : "_mm512_load_ps";
-        code +=
-            fmt::format("auto {} = {}({});\n", get_vectorized_address(addr));
+        code += fmt::format("auto {} = {}({});\n", expr->var_name, load_instr,
+                            get_vectorized_address(addr));
       } else {
         TC_NOT_IMPLEMENTED
         for (int i = 0; i < simd_width; i++) {
@@ -417,8 +419,9 @@ class CodeGen {
       if (mode == Mode::vector) {
         std::string store_instr =
             simd_width == 8 ? "_mm256_store_ps" : "_mm512_store_ps";
-        code += fmt::format("{}({});\n", store_instr,
-                            get_vectorized_address(expr->addr));
+        code += fmt::format("{}({}, {});\n", store_instr,
+                            get_vectorized_address(expr->addr),
+                            expr->ch[0]->var_name);
       } else {
         TC_NOT_IMPLEMENTED
         for (int i = 0; i < simd_width; i++) {

@@ -50,6 +50,10 @@ struct Address {
   TC_FORCE_INLINE int64 offset() {
     return coeff_const;
   }
+
+  int64 eval(int64 i, int64 n) {
+    return coeff_i * i + coeff_imax * n + coeff_const + (i / coeff_aosoa_group_size) * coeff_aosoa_stride;
+  }
 };
 
 class Expr;
@@ -290,7 +294,7 @@ class CodeGen {
   }
 
   void vectorize(Expr &expr) {
-    TC_P((int)expr->type);
+    // TC_P((int)expr->type);
     // Note: expr may be replaced by an existing vectorized Expr
     if (scalar_to_vector.find(expr->members[0]) != scalar_to_vector.end()) {
       auto existing = scalar_to_vector[expr->members[0]];
@@ -327,7 +331,7 @@ class CodeGen {
     expr->is_vectorized = true;
 
     for (int i = 0; i < vectorized_children.size(); i++) {
-      TC_P(i);
+      // TC_P(i);
       auto ch = Expr::create(vectorized_children[i][0]->type);
       ch->members = vectorized_children[i];
       expr->ch.push_back(ch);
@@ -366,7 +370,7 @@ class CodeGen {
 
   void code_gen(Expr &expr) {
     TC_ASSERT(expr->is_vectorized);
-    TC_P(expr->ch.size());
+    // TC_P(expr->ch.size());
     for (auto &c : expr->ch) {
       if (c)
         code_gen(c);
@@ -397,8 +401,8 @@ class CodeGen {
         }
         auto addr = expr->addr;
         auto i_stride = num_groups;
-        TC_P(i_stride);
-        TC_P(addr.coeff_aosoa_group_size);
+        // TC_P(i_stride);
+        // TC_P(addr.coeff_aosoa_group_size);
         TC_ASSERT(i_stride == addr.coeff_aosoa_group_size);
         // TC_ASSERT(expr->members[0]->addr.coeff_i);
         std::string load_instr =
@@ -452,9 +456,9 @@ class CodeGen {
 #endif
   }
 
-  FunctionType get(Expr &e, int group_size = 4) {
+  FunctionType get(Expr &e, int group_size) {
     // SLP(e, group_size);
-    run(e);
+    run(e, group_size);
     {
       std::ofstream of(get_source_fn());
       of << code;

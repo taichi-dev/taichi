@@ -290,7 +290,7 @@ struct Matrix {
   int n, m;
   std::vector<Expr> entries;
 
-  Matrix(int n, int m) : n(n), m(m) {
+  Matrix(int n, int m = 1) : n(n), m(m) {
     entries.resize(n * m, Expr());
   }
 
@@ -493,7 +493,7 @@ TC_TEST("Address allocation") {
 }
 */
 
-auto test_tlang = []() {
+void test_vec_add() {
   using namespace Tlang;
   constexpr int n = 16;
   Address addr;
@@ -507,7 +507,7 @@ auto test_tlang = []() {
   addr.stream_id = 2;
   ret.store(c, addr);
   CodeGen cg;
-  auto func = cg.get(ret, 8);
+  auto func = cg.get(ret, 1);
 
   TC_ALIGNED(64) float32 x[n], y[n], z[n];
   for (int i = 0; i < n; i++) {
@@ -516,8 +516,76 @@ auto test_tlang = []() {
   }
   func(x, y, z, n);
   for (int i = 0; i < n; i++) {
-    TC_INFO("z[{}] = {}", i, z[i]);
+    TC_ASSERT(z[i] == -i);
   }
+}
+
+template <int dim>
+void test_mat_vec_mul() {
+  using namespace Tlang;
+  Matrix m(dim, dim), v(dim);
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      Address addr;
+      addr.stream_id = 0;
+      addr.coeff_i = 1;
+      addr.coeff_imax = i * dim + j;
+      m(i, j) = load(addr);
+    }
+    Address addr;
+    addr.stream_id = 1;
+    addr.coeff_i = 1;
+    v(i) = load(addr);
+  }
+  Expr ret;
+  auto mv = m * v;
+  for (int i = 0; i < dim; i++) {
+    Address addr;
+    addr.stream_id = 2;
+    addr.coeff_i = 1;
+    ret.store(mv(i), addr);
+  }
+  constexpr int n = 16;
+  CodeGen cg;
+  auto func = cg.get(ret, 1);
+
+  AlignedAllocator M_allocator(dim * dim * n * sizeof(float32)),
+      V_allocator(dim * n * sizeof(float32)),
+      MV_allocator(dim * n * sizeof(float32));
+
+  std::vector<Eigen::Matrix<float32, dim, 1>> ground_truth(n);
+  for (int i = 0; i < n; i++) {
+    Eigen::Matrix<float32, dim, dim> m_gt;
+    Eigen::Matrix<float32, dim, 1> v_gt;
+    for (int j = 0; j < dim; j++) {
+      for (int k = 0; k < dim; k++) {
+        m_gt(j, k) = rand<float32>();
+        M_allocator.get<float32>()[m(j, k)->addr.eval(i, n)] = m_gt(j, k);
+      }
+      v_gt(j) = rand<float32>();
+      V_allocator.get<float32>()[m(j)->addr.eval(i, n)] = v_gt(j);
+    }
+    Eigen::Matrix<float32, dim, 1> mv_gt = m_gt * v_gt;
+    ground_truth[i] = mv_gt;
+  }
+
+  func(M_allocator.get<float32>(), V_allocator.get<float32>(),
+       MV_allocator.get<float32>(), n);
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < dim; j++) {
+      auto computed = MV_allocator.get<float32>()[mv(i)->addr.eval(i, n)];
+      auto gt = ground_truth[i](j);
+      TC_P(computed);
+      TC_P(gt);
+      TC_ASSERT(computed == gt);
+    }
+  }
+}
+
+auto test_tlang = []() {
+  test_vec_add();
+  test_mat_vec_mul<2>();
 };
 TC_REGISTER_TASK(test_tlang);
 

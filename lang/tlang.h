@@ -227,7 +227,8 @@ class CodeGen {
             "*stream02, "
             "int n) {\n";
     code += fmt::format("for (int i = 0; i < n; i += {}) {{\n", num_groups);
-    code_gen(expr);
+    auto vectorized_expr = vectorize(expr, group_size, num_groups);
+    code_gen(vectorized_expr);
     code += "}\n}\n";
     return code;
   }
@@ -266,14 +267,12 @@ class CodeGen {
   std::map<Expr, Expr> scalar_to_vector;
   // Create vectorized IR
   // the vector width should be the final SIMD instruction width
-  void vectorize(Expr &expr, int group_size, int num_groups) {
+  Expr vectorize(Expr &expr, int group_size, int num_groups) {
+    TC_ASSERT(group_size * num_groups == simd_width);
     scalar_to_vector.clear();
     // expr should be a ret Op, with its children store Ops.
     // The stores are repeated by a factor of 'pack_size'
     TC_ASSERT(expr->ch.size() == group_size);
-
-    // TODO: repeat by a factor of num_groups
-
     TC_ASSERT(expr->type == NodeType::combine);
     // Create the root group
     auto root = Expr::create(NodeType::store);
@@ -287,6 +286,7 @@ class CodeGen {
       }
     }
     vectorize(root);
+    return root;
   }
 
   void vectorize(Expr &expr) {
@@ -301,7 +301,7 @@ class CodeGen {
       return;
     }
 
-    TC_ASSERT(expr->is_vectorized);
+    expr->is_vectorized = true;
     bool first = true;
     NodeType type;
     std::vector<std::vector<Expr>> vectorized_children;
@@ -325,13 +325,20 @@ class CodeGen {
 
     auto vectorized_expr = Expr::create(type);
     vectorized_expr->is_vectorized = true;
-    std::vector<Expr> children;
+
     for (int i = 0; i < vectorized_children.size(); i++) {
-      auto ch = Expr::create(vectorized_children[0][0]->type);
+      auto ch = Expr::create(vectorized_children[i][0]->type);
       ch->members = vectorized_children[i];
       expr->ch.push_back(ch);
       vectorize(ch);
     }
+
+    vectorized_expr->addr = expr->members[0]->addr;
+    if (vectorized_expr->addr.coeff_aosoa_group_size == 0) {
+      vectorized_expr->addr.coeff_aosoa_group_size = group_size;
+      vectorized_expr->addr.coeff_aosoa_stride = 0;
+    }
+    expr = vectorized_expr;
   }
 
   /*
@@ -348,7 +355,17 @@ class CodeGen {
   }
   */
 
+  std::string get_vectorized_address(Address addr) {
+    auto stream_name = fmt::format("stream{:02d}", addr.stream_id);
+    auto stride = addr.coeff_i + group_size / addr.coeff_aosoa_group_size *
+                                     addr.coeff_aosoa_stride;
+    auto offset = addr.coeff_const;
+    return fmt::format("(&{}[{} * n + {} * i + {}])\n", stream_name,
+                       addr.coeff_imax, stride, offset);
+  }
+
   void code_gen(Expr &expr) {
+    TC_ASSERT(expr->is_vectorized);
     for (auto &c : expr->ch) {
       if (c)
         code_gen(c);
@@ -373,15 +390,20 @@ class CodeGen {
     } else if (expr->type == NodeType::load) {
       auto stream_name = fmt::format("stream{:02d}", expr->addr.stream_id);
 
-      // TODO: compute address correctly
-
       if (mode == Mode::vector) {
+        for (int i = 0; i + 1 < (int)expr->members.size(); i++) {
+          TC_ASSERT(prior_to(expr->members[i], expr->members[i + 1]));
+        }
+        auto addr = expr->addr;
+        auto i_stride = num_groups;
+        TC_ASSERT(i_stride == addr.coeff_aosoa_group_size);
+        // TC_ASSERT(expr->members[0]->addr.coeff_i);
         std::string load_instr =
             simd_width == 8 ? "_mm256_load_ps" : "_mm512_load_ps";
-        code += fmt::format("auto {} = {}(&{}[{} * i + {}]);\n", expr->var_name,
-                            load_instr, stream_name, expr->addr.coeff_i,
-                            expr->addr.coeff_const);
+        code +=
+            fmt::format("auto {} = {}({});\n", get_vectorized_address(addr));
       } else {
+        TC_NOT_IMPLEMENTED
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
           code += fmt::format("auto {} = {}[{} * i + {} + {}];\n",
@@ -394,10 +416,10 @@ class CodeGen {
       if (mode == Mode::vector) {
         std::string store_instr =
             simd_width == 8 ? "_mm256_store_ps" : "_mm512_store_ps";
-        code += fmt::format("{}(&{}[{} * i + {}], {});\n", store_instr,
-                            stream_name, expr->addr.coeff_i,
-                            expr->addr.coeff_const, expr->ch[0]->var_name);
+        code += fmt::format("{}({});\n", store_instr,
+                            get_vectorized_address(expr->addr));
       } else {
+        TC_NOT_IMPLEMENTED
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
           code += fmt::format("{}[{} * i + {} + {}] = {};\n", stream_name,

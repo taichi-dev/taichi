@@ -357,7 +357,9 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode, int simd_width) {
     for (int j = 0; j < dim; j++) {
       Address addr;
       addr.stream_id = 0;
-      addr.coeff_i = dim * dim;
+      addr.coeff_i = 1;
+      addr.coeff_aosoa_stride = simd_width * dim * dim;
+      addr.coeff_aosoa_group_size = simd_width;
       addr.coeff_const = simd_width * (i * dim + j);
       a(i, j) = load(addr);
       addr.stream_id = 1;

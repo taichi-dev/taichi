@@ -521,21 +521,34 @@ void test_vec_add() {
 }
 
 template <int dim>
-void test_mat_vec_mul() {
+void test_mat_vec_mul(bool aosoa = false) {
   using namespace Tlang;
+  constexpr int simd_width = 8;
   Matrix m(dim, dim), v(dim);
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       Address addr;
       addr.stream_id = 0;
-      addr.coeff_i = 1;
-      addr.coeff_imax = i * dim + j;
+      if (aosoa) {
+        addr.coeff_i = dim;
+        addr.coeff_aosoa_group_size = simd_width / dim;
+        addr.coeff_aosoa_stride = simd_width * (dim - 1);
+        addr.coeff_const = j * simd_width + i;
+      } else {
+        addr.coeff_i = 1;
+        addr.coeff_imax = i * dim + j;
+      }
       m(i, j) = load(addr);
     }
     Address addr;
     addr.stream_id = 1;
-    addr.coeff_i = 1;
-    addr.coeff_imax = i;
+    if (aosoa) {
+      addr.coeff_i = dim;
+      addr.coeff_const = i;
+    } else {
+      addr.coeff_i = 1;
+      addr.coeff_imax = i;
+    }
     v(i) = load(addr);
   }
   Expr ret;
@@ -543,14 +556,19 @@ void test_mat_vec_mul() {
   for (int i = 0; i < dim; i++) {
     Address addr;
     addr.stream_id = 2;
-    addr.coeff_i = 1;
-    addr.coeff_imax = i;
+    if (aosoa) {
+      addr.coeff_i = dim;
+      addr.coeff_const = i;
+    } else {
+      addr.coeff_i = 1;
+      addr.coeff_imax = i;
+    }
     mv(i) = ret.store(mv(i), addr);
   }
   constexpr int n = 128;
   CodeGen cg;
   TC_ASSERT(8 % dim == 0);
-  auto func = cg.get(ret, 1);
+  auto func = cg.get(ret, aosoa ? dim : 1);
 
   AlignedAllocator M_allocator(dim * dim * n * sizeof(float32)),
       V_allocator(dim * n * sizeof(float32)),
@@ -589,8 +607,10 @@ void test_mat_vec_mul() {
 }
 
 auto test_tlang = []() {
-  test_mat_vec_mul<1>();
-  test_mat_vec_mul<2>();
+  test_mat_vec_mul<1>(false);
+  test_mat_vec_mul<1>(true);
+  test_mat_vec_mul<2>(false);
+  test_mat_vec_mul<2>(true);
   test_vec_add();
 };
 TC_REGISTER_TASK(test_tlang);

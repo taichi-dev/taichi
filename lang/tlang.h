@@ -578,11 +578,11 @@ class CodeGen {
         get_source_fn(), get_library_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
-    /*
+#if defined(TC_PLATFORM_UNIX)
     system(
         fmt::format("objdump {} -d > {}.s", get_library_fn(), get_library_fn())
             .c_str());
-            */
+#endif
     auto dll = dlopen(("./" + get_library_fn()).c_str(), RTLD_LAZY);
     TC_ASSERT(dll != nullptr);
     auto ret = dlsym(dll, func_name.c_str());

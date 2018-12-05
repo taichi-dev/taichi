@@ -8,7 +8,7 @@
 
 TC_NAMESPACE_BEGIN
 
-constexpr real cpu_frequency = 4.2_f;
+constexpr real cpu_frequency = 2.6_f;
 
 // constexpr int enlarge = 4096;
 constexpr int enlarge = 1;
@@ -521,8 +521,9 @@ void test_vec_add() {
 }
 
 template <int dim>
-void test_mat_vec_mul(bool aosoa = false) {
-  TC_INFO("Testing Mat Vec Mul  dim={} aosoa={}", dim, aosoa);
+void test_mat_vec_mul(bool aosoa, bool in_cache) {
+  TC_INFO("Testing Mat Vec Mul  dim={} aosoa={} in_cache={}", dim, aosoa,
+          in_cache);
   using namespace Tlang;
   constexpr int simd_width = 8;
   Matrix m(dim, dim), v(dim);
@@ -566,7 +567,10 @@ void test_mat_vec_mul(bool aosoa = false) {
     }
     mv(i) = ret.store(mv(i), addr);
   }
-  constexpr int n = 128;
+
+  int enlarge = in_cache ? 1 : 4096;
+  int n = taichi::N * enlarge;
+  int rounds = taichi::rounds / enlarge / dim / dim;
   CodeGen cg;
   TC_ASSERT(8 % dim == 0);
   auto func = cg.get(ret, aosoa ? dim : 1);
@@ -591,8 +595,16 @@ void test_mat_vec_mul(bool aosoa = false) {
     ground_truth[i] = mv_gt;
   }
 
-  func(M_allocator.get<float32>(), V_allocator.get<float32>(),
-       MV_allocator.get<float32>(), n);
+  for (int K = 0; K < 3; K++) {
+    float64 t = Time::get_time();
+    for (int i = 0; i < rounds; i++) {
+      func(M_allocator.get<float32>(), V_allocator.get<float32>(),
+           MV_allocator.get<float32>(), n);
+    }
+    t = Time::get_time() - t;
+    fmt::print("  time = {:10.3f} ms  {:10.3f} cyc / elem \n", t * 1000.0_f,
+               cpu_frequency * 1e9 * t / rounds / n);
+  }
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < dim; j++) {
@@ -609,11 +621,18 @@ void test_mat_vec_mul(bool aosoa = false) {
   }
 }
 
+template <int dim>
+void test_mat_vec_mul_all() {
+  test_mat_vec_mul<dim>(false, false);
+  test_mat_vec_mul<dim>(true, false);
+  test_mat_vec_mul<dim>(false, true);
+  test_mat_vec_mul<dim>(true, true);
+}
+
 auto test_tlang = []() {
-  test_mat_vec_mul<1>(false);
-  test_mat_vec_mul<1>(true);
-  test_mat_vec_mul<2>(false);
-  test_mat_vec_mul<2>(true);
+  test_mat_vec_mul_all<1>();
+  test_mat_vec_mul_all<2>();
+  test_mat_vec_mul_all<4>();
   test_vec_add();
 };
 TC_REGISTER_TASK(test_tlang);

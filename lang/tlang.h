@@ -468,25 +468,51 @@ class CodeGen {
           code += fmt::format("auto {} = {}_immediate;\n", expr->var_name,
                               expr->var_name);
         } else {
-          TC_ASSERT(group_size <= 2);
+          TC_ASSERT(group_size <= 4);
           // detect patterns
           int offset_const = offsets[0] % simd_width;
           int offset_inc = offsets[1] - offsets[0];
-          if (offset_const == 0 && offset_inc == 1) {
-            code += fmt::format("auto {} = {}_immediate;\n", expr->var_name,
-                                expr->var_name);
-          } else if (offset_inc == 0) {
-            if (offset_const == 0) {
-              emit_shuffle("0xA0");
-            } else if (offset_const == 1) {
-              emit_shuffle("0xF5");
+          if (group_size == 2) {
+            if (offset_const == 0 && offset_inc == 1) {
+              code += fmt::format("auto {} = {}_immediate;\n", expr->var_name,
+                                  expr->var_name);
+            } else if (offset_inc == 0) {
+              if (offset_const == 0) {
+                emit_shuffle("0xA0");
+              } else if (offset_const == 1) {
+                emit_shuffle("0xF5");
+              } else {
+                TC_NOT_IMPLEMENTED;
+              }
             } else {
+              TC_P(offset_const);
+              TC_P(offset_inc);
               TC_NOT_IMPLEMENTED;
             }
+          } else if (group_size == 4) {
+            if (offset_const == 0 && offset_inc == 1) {
+              code += fmt::format("auto {} = {}_immediate;\n", expr->var_name,
+                                  expr->var_name);
+            } else if (offset_inc == 0) {
+              if (offset_const == 0) {
+                emit_shuffle("0x00");
+              } else if (offset_const == 1) {
+                emit_shuffle("0x55");
+              } else if (offset_const == 2) {
+                emit_shuffle("0xAA");
+              } else if (offset_const == 3) {
+                emit_shuffle("0xFF");
+              } else {
+                TC_NOT_IMPLEMENTED;
+              }
+            } else {
+              TC_P(offset_const);
+              TC_P(offset_inc);
+              TC_NOT_IMPLEMENTED;
+            }
+
           } else {
-            TC_P(offset_const);
-            TC_P(offset_inc);
-            TC_NOT_IMPLEMENTED;
+            TC_NOT_IMPLEMENTED
           }
           TC_ASSERT(needs_shuffle == false);
         }

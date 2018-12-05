@@ -16,7 +16,7 @@ constexpr real cpu_frequency = 3.6_f;
 
 // constexpr int enlarge = 4096;
 constexpr int enlarge = 1;
-constexpr int rounds = 16384 * 200 / enlarge;
+constexpr int rounds = 16384 * 2048 / enlarge;
 constexpr int N = 256 * enlarge;
 
 template <int dim, typename T>
@@ -531,18 +531,18 @@ void print_time(float64 t, int64 elements) {
 
 template <int dim>
 void test_mat_vec_mul_eigen(bool in_cache) {
-  fmt::print("MatVecMul dim={} Eigen in_cache={}\n", dim, in_cache);
+  fmt::print("dim={} Eigen in_cache={}\n", dim, in_cache);
   using namespace Tlang;
 
   int enlarge = in_cache ? 1 : 4096;
-  int n = taichi::N * enlarge;
-  int rounds = taichi::rounds / enlarge / dim / dim / (in_cache ? 1 : 5);
+  int64 n = taichi::N * enlarge;
+  int64 rounds = taichi::rounds / enlarge / dim / dim / (in_cache ? 1 : 5) / 2;
 
   EigenVector<Eigen::Matrix<float32, dim, dim>> m(n);
   EigenVector<Eigen::Matrix<float32, dim, 1>> v(n);
   EigenVector<Eigen::Matrix<float32, dim, 1>> mv(n);
 
-  for (int K = 0; K < 3; K++) {
+  for (int K = 0; K < 1; K++) {
     float64 t = Time::get_time();
     for (int i = 0; i < rounds; i++) {
       for (int i = 0; i < n; i++) {
@@ -556,7 +556,7 @@ void test_mat_vec_mul_eigen(bool in_cache) {
 
 template <int dim>
 void test_mat_vec_mul(bool aosoa, bool in_cache, int unroll) {
-  fmt::print("MatVecMul dim={} {} in_cache={} unroll={}\n", dim, aosoa ? "aosoa" : "soa", (int)in_cache, unroll);
+  fmt::print("dim={} {} in_cache={} unroll={}\n", dim, aosoa ? "aosoa" : "soa", (int)in_cache, unroll);
   using namespace Tlang;
   constexpr int simd_width = 8;
   Matrix m(dim, dim), v(dim);
@@ -601,9 +601,9 @@ void test_mat_vec_mul(bool aosoa, bool in_cache, int unroll) {
     mv(i) = ret.store(mv(i), addr);
   }
 
-  int enlarge = in_cache ? 1 : 4096;
-  int n = taichi::N * enlarge;
-  int rounds = taichi::rounds / enlarge / dim / dim / (in_cache ? 1 : 5);
+  int64 enlarge = in_cache ? 1 : 4096;
+  int64 n = taichi::N * enlarge;
+  int64 rounds = taichi::rounds / enlarge / dim / dim / (in_cache ? 1 : 5);
   CodeGen cg;
   cg.unroll = unroll;
   TC_ASSERT(8 % dim == 0);
@@ -629,14 +629,18 @@ void test_mat_vec_mul(bool aosoa, bool in_cache, int unroll) {
     ground_truth[i] = mv_gt;
   }
 
-  for (int K = 0; K < 3; K++) {
+  // warm up
+  for (int i = 0; i < 10; i++)
+    func(M_allocator.get<float32>(), V_allocator.get<float32>(),
+         MV_allocator.get<float32>(), n);
+
+  for (int K = 0; K < 1; K++) {
     float64 t = Time::get_time();
     for (int i = 0; i < rounds; i++) {
       func(M_allocator.get<float32>(), V_allocator.get<float32>(),
            MV_allocator.get<float32>(), n);
     }
-    t = Time::get_time() - t;
-    print_time(t, n * rounds);
+    print_time(Time::get_time() - t, n * rounds);
   }
 
   for (int i = 0; i < n; i++) {
@@ -660,12 +664,24 @@ void test_mat_vec_mul_all() {
   test_mat_vec_mul<dim>(false, true, 1);
   test_mat_vec_mul<dim>(false, true, 2);
   test_mat_vec_mul<dim>(false, true, 4);
+  test_mat_vec_mul<dim>(false, true, 8);
+  test_mat_vec_mul<dim>(false, true, 16);
   test_mat_vec_mul<dim>(true, true, 1);
   test_mat_vec_mul<dim>(true, true, 2);
   test_mat_vec_mul<dim>(true, true, 4);
+  test_mat_vec_mul<dim>(true, true, 8);
+  test_mat_vec_mul<dim>(true, true, 16);
   test_mat_vec_mul_eigen<dim>(false);
   test_mat_vec_mul<dim>(false, false, 1);
+  test_mat_vec_mul<dim>(false, false, 2);
+  test_mat_vec_mul<dim>(false, false, 4);
+  test_mat_vec_mul<dim>(false, false, 8);
+  test_mat_vec_mul<dim>(false, false, 16);
   test_mat_vec_mul<dim>(true, false, 1);
+  test_mat_vec_mul<dim>(true, false, 2);
+  test_mat_vec_mul<dim>(true, false, 4);
+  test_mat_vec_mul<dim>(true, false, 8);
+  test_mat_vec_mul<dim>(true, false, 16);
   fmt::print("\n");
 }
 

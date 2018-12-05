@@ -213,7 +213,7 @@ class CodeGen {
   std::string folder;
 
   CodeGen(Mode mode = Mode::vector, int simd_width = 8)
-      : var_count(0), mode(mode), simd_width(simd_width) {
+      : var_count(0), mode(mode), simd_width(simd_width), unroll(1) {
   }
 
   std::string create_variable() {
@@ -230,7 +230,6 @@ class CodeGen {
     // group_size = expr->ch.size();
     num_groups = simd_width / group_size;
     TC_WARN_IF(simd_width % group_size != 0, "insufficient lane usage");
-    unroll = 1;
 
     id = get_code_gen_id();
     func_name = fmt::format("func{:06d}", id);
@@ -247,13 +246,13 @@ class CodeGen {
             "(float32 *stream00, float32 *stream01, float32 "
             "*stream02, "
             "int n) {\n";
-    code += "#define LOOP(unroll_index) {\\\n";
+    code += "#define LOOP {\\\n";
     auto vectorized_expr = vectorize(expr, group_size, num_groups);
     code_gen(vectorized_expr);
     code += "}\n";
     code += fmt::format("for (int i = 0, g = 0; i < n; ) {{\n", num_groups);
     for (int i = 0; i < unroll; i++) {
-      code += fmt::format("LOOP({});", i);
+      code += fmt::format("LOOP;", i);
       code += fmt::format("i += {}; g++;", num_groups);
     }
     code += "}\n}\n";
@@ -409,7 +408,7 @@ class CodeGen {
                                                   addr.coeff_aosoa_group_size *
                                                   addr.coeff_aosoa_stride;
     auto offset = addr.coeff_const;
-    return fmt::format("&{}[{} * n + {} * (g + unroll_index) + {}]",
+    return fmt::format("&{}[{} * n + {} * (g) + {}]",
                        stream_name, addr.coeff_imax, stride, offset);
   }
 
@@ -661,6 +660,7 @@ class CodeGen {
     return ret;
   }
 
+  /*
   void SLP(Expr expr, int group_size) {
     inst = extract_instructions(expr);
     TC_INFO("# instructions = {}", inst.size());
@@ -700,14 +700,14 @@ class CodeGen {
       TC_INFO("Group {} size = {}", i, groups[i].size());
     }
 
-    /*
     while (true) {
       propagate();
     }
-    */
   }
+  */
 };
 }  // namespace Tlang
+
 
 TC_NAMESPACE_END
 

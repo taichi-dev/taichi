@@ -522,6 +522,7 @@ void test_vec_add() {
 
 template <int dim>
 void test_mat_vec_mul(bool aosoa = false) {
+  TC_INFO("Testing Mat Vec Mul  dim={} aosoa={}", dim, aosoa);
   using namespace Tlang;
   constexpr int simd_width = 8;
   Matrix m(dim, dim), v(dim);
@@ -598,6 +599,8 @@ void test_mat_vec_mul(bool aosoa = false) {
       auto computed = MV_allocator.get<float32>()[mv(j)->addr.eval(i, n)];
       auto gt = ground_truth[i](j);
       if (std::abs(computed - gt) > 1e-4_f) {
+        TC_P(i);
+        TC_P(j);
         TC_P(computed);
         TC_P(gt);
         TC_ERROR("Failed!");
@@ -607,9 +610,9 @@ void test_mat_vec_mul(bool aosoa = false) {
 }
 
 auto test_tlang = []() {
-  // test_mat_vec_mul<1>(false);
-  // test_mat_vec_mul<1>(true);
-  // test_mat_vec_mul<2>(false);
+  test_mat_vec_mul<1>(false);
+  test_mat_vec_mul<1>(true);
+  test_mat_vec_mul<2>(false);
   test_mat_vec_mul<2>(true);
   test_vec_add();
 };

@@ -245,7 +245,8 @@ class CodeGen {
             "(float32 *stream00, float32 *stream01, float32 "
             "*stream02, "
             "int n) {\n";
-    code += fmt::format("for (int i = 0; i < n; i += {}) {{\n", num_groups);
+    code += fmt::format("for (int i = 0, g = 0; i < n; i += {}, g++) {{\n",
+                        num_groups);
     auto vectorized_expr = vectorize(expr, group_size, num_groups);
     code_gen(vectorized_expr);
     code += "}\n}\n";
@@ -396,10 +397,11 @@ class CodeGen {
 
   std::string get_vectorized_address(Address addr) {
     auto stream_name = fmt::format("stream{:02d}", addr.stream_id);
-    auto stride = addr.coeff_i + group_size / addr.coeff_aosoa_group_size *
-                                     addr.coeff_aosoa_stride;
+    auto stride = addr.coeff_i * num_groups + simd_width /
+                                                  addr.coeff_aosoa_group_size *
+                                                  addr.coeff_aosoa_stride;
     auto offset = addr.coeff_const;
-    return fmt::format("&{}[{} * n + {} * i + {}]\n", stream_name,
+    return fmt::format("&{}[{} * n + {} * g + {}]\n", stream_name,
                        addr.coeff_imax, stride, offset);
   }
 
@@ -435,7 +437,8 @@ class CodeGen {
         // TC_P(expr->members.size());
         std::vector<int> offsets;
         for (int i = 0; i + 1 < (int)expr->members.size(); i++) {
-          TC_ASSERT(expr->members[i]->addr.same_type(expr->members[i + 1]->addr));
+          TC_ASSERT(
+              expr->members[i]->addr.same_type(expr->members[i + 1]->addr));
         }
         for (int i = 0; i < (int)expr->members.size(); i++) {
           offsets.push_back(expr->members[i]->addr.offset());
@@ -453,21 +456,25 @@ class CodeGen {
           addr.coeff_const -= addr.coeff_const % simd_width;
           needs_shuffle = true;
         }
-        code += fmt::format("auto {}_immediate = {}({});\n", expr->var_name, load_instr,
-                            get_vectorized_address(addr));
+        code += fmt::format("auto {}_immediate = {}({});\n", expr->var_name,
+                            load_instr, get_vectorized_address(addr));
         auto emit_shuffle = [&](std::string imm) {
-          code += fmt::format("auto {} = _mm256_shuffle_ps({}_immediate, {}_immediate, {});\n", expr->var_name, expr->var_name, expr->var_name, imm);
+          code += fmt::format(
+              "auto {} = _mm256_shuffle_ps({}_immediate, {}_immediate, {});\n",
+              expr->var_name, expr->var_name, expr->var_name, imm);
           needs_shuffle = false;
         };
         if (group_size == 1) {
-          code += fmt::format("auto {} = {}_immediate;\n", expr->var_name, expr->var_name);
+          code += fmt::format("auto {} = {}_immediate;\n", expr->var_name,
+                              expr->var_name);
         } else {
           TC_ASSERT(group_size <= 2);
           // detect patterns
           int offset_const = offsets[0] % simd_width;
           int offset_inc = offsets[1] - offsets[0];
           if (offset_const == 0 && offset_inc == 1) {
-            code += fmt::format("auto {} = {}_immediate;\n", expr->var_name, expr->var_name);
+            code += fmt::format("auto {} = {}_immediate;\n", expr->var_name,
+                                expr->var_name);
           } else if (offset_inc == 0) {
             if (offset_const == 0) {
               emit_shuffle("0xA0");
@@ -483,7 +490,6 @@ class CodeGen {
           }
           TC_ASSERT(needs_shuffle == false);
         }
-
 
       } else {
         TC_NOT_IMPLEMENTED

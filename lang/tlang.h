@@ -181,7 +181,7 @@ inline Expr load(Address addr) {
 }
 
 int Node::member_id(const Expr &expr) const {
-  for (int i = 0; i < members.size(); i++) {
+  for (int i = 0; i < (int)members.size(); i++) {
     if (members[i] == expr) {
       return i;
     }
@@ -297,7 +297,7 @@ class CodeGen {
     // Create the root group
     auto combined = Expr::create(NodeType::combine);
     combined->is_vectorized = true;
-    for (int k = 0; k < expr->ch.size() / group_size; k++) {
+    for (int k = 0; k < (int)expr->ch.size() / group_size; k++) {
       auto root = Expr::create(NodeType::store);
       root->is_vectorized = true;
       bool has_prior_to = false, has_same = false;
@@ -334,7 +334,7 @@ class CodeGen {
     if (scalar_to_vector.find(expr->members[0]) != scalar_to_vector.end()) {
       auto existing = scalar_to_vector[expr->members[0]];
       TC_ASSERT(existing->members.size() == expr->members.size());
-      for (int i = 0; i < existing->members.size(); i++) {
+      for (int i = 0; i < (int)existing->members.size(); i++) {
         TC_ASSERT(existing->members[i] == expr->members[i]);
       }
       expr = existing;
@@ -358,7 +358,7 @@ class CodeGen {
         TC_ASSERT(type == member->type);
         TC_ASSERT(vectorized_children.size() == member->ch.size());
       }
-      for (int i = 0; i < member->ch.size(); i++) {
+      for (int i = 0; i < (int)member->ch.size(); i++) {
         vectorized_children[i].push_back(member->ch[i]);
       }
     }
@@ -366,7 +366,7 @@ class CodeGen {
     expr->is_vectorized = true;
     TC_ASSERT(expr->members.size() % group_size == 0);
 
-    for (int i = 0; i < vectorized_children.size(); i++) {
+    for (int i = 0; i < (int)vectorized_children.size(); i++) {
       // TC_P(i);
       auto ch = Expr::create(vectorized_children[i][0]->type);
       ch->members = vectorized_children[i];
@@ -629,7 +629,7 @@ class CodeGen {
     ret.push_back(i);
     while (1) {
       bool found = false;
-      for (int j = 0; j < inst.size(); j++) {
+      for (int j = 0; j < (int)inst.size(); j++) {
         if (grouped[j] || i == j || inst[i]->type != NodeType::load) {
           continue;
         }
@@ -657,7 +657,7 @@ class CodeGen {
       int maximum_length = 0;
       int inst_with_max_length = -1;
       std::vector<int> C;
-      for (int i = 0; i < inst.size(); i++) {
+      for (int i = 0; i < (int)inst.size(); i++) {
         auto c = continuous_loads(i);
         if (c.size() > maximum_length) {
           maximum_length = c.size();
@@ -672,7 +672,7 @@ class CodeGen {
         // Pack
         TC_WARN_IF(C.size() % group_size != 0, "C.size() = {}", C.size());
         groups.push_back(std::vector<int>());
-        for (int i = 0; i < C.size(); i++) {
+        for (int i = 0; i < (int)C.size(); i++) {
           grouped[C[i]] = true;
           groups.back().push_back(C[i]);
         }
@@ -682,7 +682,7 @@ class CodeGen {
     }
 
     TC_INFO("# groups {}", groups.size());
-    for (int i = 0; i < groups.size(); i++) {
+    for (int i = 0; i < (int)groups.size(); i++) {
       TC_INFO("Group {} size = {}", i, groups[i].size());
     }
 

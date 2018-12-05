@@ -2,17 +2,21 @@
 #include <taichi/common/util.h>
 #include <taichi/common/task.h>
 #include <taichi/system/timer.h>
+#include<Eigen/StdVector>
 #include "tlang.h"
 // #include <taichi/testing.h>
 #include <Eigen/Dense>
 
 TC_NAMESPACE_BEGIN
 
-constexpr real cpu_frequency = 2.6_f;
+template <typename T>
+using EigenVector = std::vector<T, Eigen::aligned_allocator<T>>;
+
+constexpr real cpu_frequency = 3.6_f;
 
 // constexpr int enlarge = 4096;
 constexpr int enlarge = 1;
-constexpr int rounds = 16384 * 20 / enlarge;
+constexpr int rounds = 16384 * 200 / enlarge;
 constexpr int N = 256 * enlarge;
 
 template <int dim, typename T>
@@ -521,8 +525,8 @@ void test_vec_add() {
 }
 
 void print_time(float64 t, int64 elements) {
-  fmt::print("  time = {:10.3f} ms  {:10.3f} cyc / elem \n", t * 1000.0_f,
-             cpu_frequency * 1e9 * t / elements);
+  fmt::print("   {:10.3f} cyc / elem      [adjusted run time = {:10.3f} ms] \n",
+             cpu_frequency * 1e9 * t / elements, t * 1000.0_f);
 }
 
 template <int dim>
@@ -532,11 +536,11 @@ void test_mat_vec_mul_eigen(bool in_cache) {
 
   int enlarge = in_cache ? 1 : 4096;
   int n = taichi::N * enlarge;
-  int rounds = taichi::rounds / enlarge / dim / dim;
+  int rounds = taichi::rounds / enlarge / dim / dim / (in_cache ? 1 : 5);
 
-  std::vector<Eigen::Matrix<float32, dim, dim>> m(n);
-  std::vector<Eigen::Matrix<float32, dim, 1>> v(n);
-  std::vector<Eigen::Matrix<float32, dim, 1>> mv(n);
+  EigenVector<Eigen::Matrix<float32, dim, dim>> m(n);
+  EigenVector<Eigen::Matrix<float32, dim, 1>> v(n);
+  EigenVector<Eigen::Matrix<float32, dim, 1>> mv(n);
 
   for (int K = 0; K < 3; K++) {
     float64 t = Time::get_time();
@@ -545,14 +549,14 @@ void test_mat_vec_mul_eigen(bool in_cache) {
         mv[i] = m[i] * v[i];
       }
     }
-    taichi::trash(mv[rand<int>() % n]);
+    taichi::trash(mv[5]);
     print_time(Time::get_time() - t, n * rounds);
   }
 }
 
 template <int dim>
 void test_mat_vec_mul(bool aosoa, bool in_cache) {
-  fmt::print("MatVecMul dim={} aosoa={} in_cache={}\n", dim, aosoa, in_cache);
+  fmt::print("MatVecMul dim={} {} in_cache={}\n", dim, aosoa ? "aosoa" : "soa", (int)in_cache);
   using namespace Tlang;
   constexpr int simd_width = 8;
   Matrix m(dim, dim), v(dim);
@@ -599,7 +603,7 @@ void test_mat_vec_mul(bool aosoa, bool in_cache) {
 
   int enlarge = in_cache ? 1 : 4096;
   int n = taichi::N * enlarge;
-  int rounds = taichi::rounds / enlarge / dim / dim;
+  int rounds = taichi::rounds / enlarge / dim / dim / (in_cache ? 1 : 5);
   CodeGen cg;
   TC_ASSERT(8 % dim == 0);
   auto func = cg.get(ret, aosoa ? dim : 1);
@@ -631,8 +635,7 @@ void test_mat_vec_mul(bool aosoa, bool in_cache) {
            MV_allocator.get<float32>(), n);
     }
     t = Time::get_time() - t;
-    fmt::print("  time = {:10.3f} ms  {:10.3f} cyc / elem \n", t * 1000.0_f,
-               cpu_frequency * 1e9 * t / rounds / n);
+    print_time(t, n * rounds);
   }
 
   for (int i = 0; i < n; i++) {

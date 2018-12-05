@@ -319,11 +319,11 @@ class CodeGen {
         }
       }
       TC_ASSERT(!(has_prior_to && has_same));
-      TC_P(root->members.size());
+      // TC_P(root->members.size());
       vectorize(root);
       combined->ch.push_back(root);
     }
-    TC_P(combined->ch.size());
+    // TC_P(combined->ch.size());
     return combined;
   }
 
@@ -432,11 +432,13 @@ class CodeGen {
       auto stream_name = fmt::format("stream{:02d}", expr->addr.stream_id);
 
       if (mode == Mode::vector) {
-        TC_P(expr->members.size());
+        // TC_P(expr->members.size());
+        std::vector<int> offsets;
         for (int i = 0; i + 1 < (int)expr->members.size(); i++) {
-          TC_P(expr->members[i]->addr);
-          TC_P(expr->members[i + 1]->addr);
-          TC_ASSERT(prior_to(expr->members[i], expr->members[i + 1]));
+          TC_ASSERT(expr->members[i]->addr.same_type(expr->members[i + 1]->addr));
+        }
+        for (int i = 0; i < (int)expr->members.size(); i++) {
+          offsets.push_back(expr->members[i]->addr.offset());
         }
         auto addr = expr->addr;
         auto i_stride = num_groups;
@@ -446,8 +448,43 @@ class CodeGen {
         // TC_ASSERT(expr->members[0]->addr.coeff_i);
         std::string load_instr =
             simd_width == 8 ? "_mm256_load_ps" : "_mm512_load_ps";
-        code += fmt::format("auto {} = {}({});\n", expr->var_name, load_instr,
+        bool needs_shuffle = false;
+        if (addr.coeff_const % simd_width != 0) {
+          addr.coeff_const -= addr.coeff_const % simd_width;
+          needs_shuffle = true;
+        }
+        code += fmt::format("auto {}_immediate = {}({});\n", expr->var_name, load_instr,
                             get_vectorized_address(addr));
+        auto emit_shuffle = [&](std::string imm) {
+          code += fmt::format("auto {} = _mm256_shuffle_ps({}_immediate, {}_immediate, {});\n", expr->var_name, expr->var_name, expr->var_name, imm);
+          needs_shuffle = false;
+        };
+        if (group_size == 1) {
+          code += fmt::format("auto {} = {}_immediate;\n", expr->var_name, expr->var_name);
+        } else {
+          TC_ASSERT(group_size <= 2);
+          // detect patterns
+          int offset_const = offsets[0] % simd_width;
+          int offset_inc = offsets[1] - offsets[0];
+          if (offset_const == 0 && offset_inc == 1) {
+            code += fmt::format("auto {} = {}_immediate;\n", expr->var_name, expr->var_name);
+          } else if (offset_inc == 0) {
+            if (offset_const == 0) {
+              emit_shuffle("0xA0");
+            } else if (offset_const == 1) {
+              emit_shuffle("0xF5");
+            } else {
+              TC_NOT_IMPLEMENTED;
+            }
+          } else {
+            TC_P(offset_const);
+            TC_P(offset_inc);
+            TC_NOT_IMPLEMENTED;
+          }
+          TC_ASSERT(needs_shuffle == false);
+        }
+
+
       } else {
         TC_NOT_IMPLEMENTED
         for (int i = 0; i < simd_width; i++) {

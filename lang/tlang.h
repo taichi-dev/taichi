@@ -397,7 +397,7 @@ class CodeGen {
 
   std::string get_vectorized_address(Address addr) {
     auto stream_name = fmt::format("stream{:02d}", addr.stream_id);
-    auto stride = addr.coeff_i * num_groups + simd_width /
+    auto stride = addr.coeff_i * num_groups + group_size /
                                                   addr.coeff_aosoa_group_size *
                                                   addr.coeff_aosoa_stride;
     auto offset = addr.coeff_const;

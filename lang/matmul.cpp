@@ -520,10 +520,39 @@ void test_vec_add() {
   }
 }
 
+void print_time(float64 t, int64 elements) {
+  fmt::print("  time = {:10.3f} ms  {:10.3f} cyc / elem \n", t * 1000.0_f,
+             cpu_frequency * 1e9 * t / elements);
+}
+
+template <int dim>
+void test_mat_vec_mul_eigen(bool in_cache) {
+  fmt::print("MatVecMul dim={} Eigen in_cache={}\n", dim, in_cache);
+  using namespace Tlang;
+
+  int enlarge = in_cache ? 1 : 4096;
+  int n = taichi::N * enlarge;
+  int rounds = taichi::rounds / enlarge / dim / dim;
+
+  std::vector<Eigen::Matrix<float32, dim, dim>> m(n);
+  std::vector<Eigen::Matrix<float32, dim, 1>> v(n);
+  std::vector<Eigen::Matrix<float32, dim, 1>> mv(n);
+
+  for (int K = 0; K < 3; K++) {
+    float64 t = Time::get_time();
+    for (int i = 0; i < rounds; i++) {
+      for (int i = 0; i < n; i++) {
+        mv[i] = m[i] * v[i];
+      }
+    }
+    taichi::trash(mv[rand<int>() % n]);
+    print_time(Time::get_time() - t, n * rounds);
+  }
+}
+
 template <int dim>
 void test_mat_vec_mul(bool aosoa, bool in_cache) {
-  TC_INFO("Testing Mat Vec Mul  dim={} aosoa={} in_cache={}", dim, aosoa,
-          in_cache);
+  fmt::print("MatVecMul dim={} aosoa={} in_cache={}\n", dim, aosoa, in_cache);
   using namespace Tlang;
   constexpr int simd_width = 8;
   Matrix m(dim, dim), v(dim);
@@ -623,10 +652,13 @@ void test_mat_vec_mul(bool aosoa, bool in_cache) {
 
 template <int dim>
 void test_mat_vec_mul_all() {
-  test_mat_vec_mul<dim>(false, false);
-  test_mat_vec_mul<dim>(true, false);
+  test_mat_vec_mul_eigen<dim>(true);
   test_mat_vec_mul<dim>(false, true);
   test_mat_vec_mul<dim>(true, true);
+  test_mat_vec_mul_eigen<dim>(false);
+  test_mat_vec_mul<dim>(false, false);
+  test_mat_vec_mul<dim>(true, false);
+  fmt::print("\n");
 }
 
 auto test_tlang = []() {

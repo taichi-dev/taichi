@@ -44,7 +44,7 @@ struct Address {
     return stream_id == o.stream_id && coeff_i == o.coeff_i &&
            coeff_imax == o.coeff_imax &&
            coeff_aosoa_group_size == o.coeff_aosoa_group_size &&
-           coeff_aosoa_stride == o.coeff_aosoa_group_size;
+           coeff_aosoa_stride == o.coeff_aosoa_stride;
   }
 
   TC_FORCE_INLINE bool operator==(Address o) {

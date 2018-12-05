@@ -555,8 +555,8 @@ void test_mat_vec_mul_eigen(bool in_cache) {
 }
 
 template <int dim>
-void test_mat_vec_mul(bool aosoa, bool in_cache) {
-  fmt::print("MatVecMul dim={} {} in_cache={}\n", dim, aosoa ? "aosoa" : "soa", (int)in_cache);
+void test_mat_vec_mul(bool aosoa, bool in_cache, int unroll) {
+  fmt::print("MatVecMul dim={} {} in_cache={} unroll={}\n", dim, aosoa ? "aosoa" : "soa", (int)in_cache, unroll);
   using namespace Tlang;
   constexpr int simd_width = 8;
   Matrix m(dim, dim), v(dim);
@@ -605,6 +605,7 @@ void test_mat_vec_mul(bool aosoa, bool in_cache) {
   int n = taichi::N * enlarge;
   int rounds = taichi::rounds / enlarge / dim / dim / (in_cache ? 1 : 5);
   CodeGen cg;
+  cg.unroll = unroll;
   TC_ASSERT(8 % dim == 0);
   auto func = cg.get(ret, aosoa ? dim : 1);
 
@@ -656,11 +657,15 @@ void test_mat_vec_mul(bool aosoa, bool in_cache) {
 template <int dim>
 void test_mat_vec_mul_all() {
   test_mat_vec_mul_eigen<dim>(true);
-  test_mat_vec_mul<dim>(false, true);
-  test_mat_vec_mul<dim>(true, true);
+  test_mat_vec_mul<dim>(false, true, 1);
+  test_mat_vec_mul<dim>(false, true, 2);
+  test_mat_vec_mul<dim>(false, true, 4);
+  test_mat_vec_mul<dim>(true, true, 1);
+  test_mat_vec_mul<dim>(true, true, 2);
+  test_mat_vec_mul<dim>(true, true, 4);
   test_mat_vec_mul_eigen<dim>(false);
-  test_mat_vec_mul<dim>(false, false);
-  test_mat_vec_mul<dim>(true, false);
+  test_mat_vec_mul<dim>(false, false, 1);
+  test_mat_vec_mul<dim>(true, false, 1);
   fmt::print("\n");
 }
 

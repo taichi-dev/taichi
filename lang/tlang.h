@@ -208,6 +208,7 @@ class CodeGen {
   int group_size;
   int num_groups;
   int id;
+  int unroll;
   std::map<NodeType, std::string> binary_ops;
   std::string folder;
 
@@ -229,6 +230,7 @@ class CodeGen {
     // group_size = expr->ch.size();
     num_groups = simd_width / group_size;
     TC_WARN_IF(simd_width % group_size != 0, "insufficient lane usage");
+    unroll = 1;
 
     id = get_code_gen_id();
     func_name = fmt::format("func{:06d}", id);
@@ -245,11 +247,17 @@ class CodeGen {
             "(float32 *stream00, float32 *stream01, float32 "
             "*stream02, "
             "int n) {\n";
-    code += fmt::format("for (int i = 0, g = 0; i < n; i += {}, g++) {{\n",
-                        num_groups);
+    code += "#define LOOP(unroll_index) {\\\n";
     auto vectorized_expr = vectorize(expr, group_size, num_groups);
     code_gen(vectorized_expr);
+    code += "}\n";
+    code += fmt::format("for (int i = 0, g = 0; i < n; ) {{\n", num_groups);
+    for (int i = 0; i < unroll; i++) {
+      code += fmt::format("LOOP({});", i);
+      code += fmt::format("i += {}; g++;", num_groups);
+    }
     code += "}\n}\n";
+    code += "#undef LOOP";
     return code;
   }
 
@@ -401,8 +409,13 @@ class CodeGen {
                                                   addr.coeff_aosoa_group_size *
                                                   addr.coeff_aosoa_stride;
     auto offset = addr.coeff_const;
-    return fmt::format("&{}[{} * n + {} * g + {}]\n", stream_name,
-                       addr.coeff_imax, stride, offset);
+    return fmt::format("&{}[{} * n + {} * (g + unroll_index) + {}]",
+                       stream_name, addr.coeff_imax, stride, offset);
+  }
+
+  template <typename ... Args>
+  void emit_code(std::string, Args&&... args) {
+    TC_NOT_IMPLEMENTED
   }
 
   void code_gen(Expr &expr) {
@@ -420,12 +433,12 @@ class CodeGen {
     if (binary_ops.find(expr->type) != binary_ops.end()) {
       auto op = binary_ops[expr->type];
       if (mode == Mode::vector) {
-        code += fmt::format("auto {} = {} {} {};\n", expr->var_name,
+        code += fmt::format("auto {} = {} {} {}; \\\n", expr->var_name,
                             expr->ch[0]->var_name, op, expr->ch[1]->var_name);
       } else if (mode == Mode::scalar) {
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
-          code += fmt::format("auto {} = {} {} {};\n", expr->var_name + suf,
+          code += fmt::format("auto {} = {} {} {}; \\\n", expr->var_name + suf,
                               expr->ch[0]->var_name + suf, op,
                               expr->ch[1]->var_name + suf);
         }
@@ -456,16 +469,17 @@ class CodeGen {
           addr.coeff_const -= addr.coeff_const % simd_width;
           needs_shuffle = true;
         }
-        code += fmt::format("auto {}_immediate = {}({});\n", expr->var_name,
+        code += fmt::format("auto {}_immediate = {}({}); \\\n", expr->var_name,
                             load_instr, get_vectorized_address(addr));
         auto emit_shuffle = [&](std::string imm) {
           code += fmt::format(
-              "auto {} = _mm256_shuffle_ps({}_immediate, {}_immediate, {});\n",
+              "auto {} = _mm256_shuffle_ps({}_immediate, {}_immediate, "
+              "{});\\\n",
               expr->var_name, expr->var_name, expr->var_name, imm);
           needs_shuffle = false;
         };
         if (group_size == 1) {
-          code += fmt::format("auto {} = {}_immediate;\n", expr->var_name,
+          code += fmt::format("auto {} = {}_immediate; \\\n", expr->var_name,
                               expr->var_name);
         } else {
           TC_ASSERT(group_size <= 4);
@@ -474,7 +488,7 @@ class CodeGen {
           int offset_inc = offsets[1] - offsets[0];
           if (group_size == 2) {
             if (offset_const == 0 && offset_inc == 1) {
-              code += fmt::format("auto {} = {}_immediate;\n", expr->var_name,
+              code += fmt::format("auto {} = {}_immediate; \\\n", expr->var_name,
                                   expr->var_name);
             } else if (offset_inc == 0) {
               if (offset_const == 0) {
@@ -491,7 +505,7 @@ class CodeGen {
             }
           } else if (group_size == 4) {
             if (offset_const == 0 && offset_inc == 1) {
-              code += fmt::format("auto {} = {}_immediate;\n", expr->var_name,
+              code += fmt::format("auto {} = {}_immediate;\\\n", expr->var_name,
                                   expr->var_name);
             } else if (offset_inc == 0) {
               if (offset_const == 0) {
@@ -521,7 +535,7 @@ class CodeGen {
         TC_NOT_IMPLEMENTED
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
-          code += fmt::format("auto {} = {}[{} * i + {} + {}];\n",
+          code += fmt::format("auto {} = {}[{} * i + {} + {}];\\\n",
                               expr->var_name + suf, stream_name,
                               expr->addr.coeff_i, expr->addr.coeff_const, i);
         }
@@ -531,14 +545,14 @@ class CodeGen {
       if (mode == Mode::vector) {
         std::string store_instr =
             simd_width == 8 ? "_mm256_store_ps" : "_mm512_store_ps";
-        code += fmt::format("{}({}, {});\n", store_instr,
+        code += fmt::format("{}({}, {}); \\\n", store_instr,
                             get_vectorized_address(expr->addr),
                             expr->ch[0]->var_name);
       } else {
         TC_NOT_IMPLEMENTED
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
-          code += fmt::format("{}[{} * i + {} + {}] = {};\n", stream_name,
+          code += fmt::format("{}[{} * i + {} + {}] = {}; \\\n", stream_name,
                               expr->addr.coeff_i, expr->addr.coeff_const, i,
                               expr->ch[0]->var_name + suf);
         }
@@ -578,7 +592,7 @@ class CodeGen {
         get_source_fn(), get_library_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
-#if defined(TC_PLATFORM_UNIX)
+#if defined(TC_PLATFORM_LINUX)
     system(
         fmt::format("objdump {} -d > {}.s", get_library_fn(), get_library_fn())
             .c_str());

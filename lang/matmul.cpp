@@ -607,9 +607,9 @@ void test_mat_vec_mul(bool aosoa = false) {
 }
 
 auto test_tlang = []() {
-  test_mat_vec_mul<1>(false);
-  test_mat_vec_mul<1>(true);
-  test_mat_vec_mul<2>(false);
+  // test_mat_vec_mul<1>(false);
+  // test_mat_vec_mul<1>(true);
+  // test_mat_vec_mul<2>(false);
   test_mat_vec_mul<2>(true);
   test_vec_add();
 };

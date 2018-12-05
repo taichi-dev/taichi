@@ -224,9 +224,9 @@ class CodeGen {
 
   std::string run(Expr &expr, int group_size = 1) {
     TC_ASSERT(mode == Mode::vector);
+    this->group_size = group_size;
     TC_ASSERT(group_size != 0);
     // group_size = expr->ch.size();
-    this->group_size = group_size;
     num_groups = simd_width / group_size;
     TC_WARN_IF(simd_width % group_size != 0, "insufficient lane usage");
 
@@ -319,9 +319,11 @@ class CodeGen {
         }
       }
       TC_ASSERT(!(has_prior_to && has_same));
+      TC_P(root->members.size());
       vectorize(root);
       combined->ch.push_back(root);
     }
+    TC_P(combined->ch.size());
     return combined;
   }
 
@@ -351,16 +353,17 @@ class CodeGen {
         first = false;
         type = member->type;
         vectorized_children.resize(member->ch.size());
-        for (int i = 0; i < member->ch.size(); i++) {
-          vectorized_children[i].push_back(member->ch[i]);
-        }
       } else {
         TC_ASSERT(type == member->type);
         TC_ASSERT(vectorized_children.size() == member->ch.size());
       }
+      for (int i = 0; i < member->ch.size(); i++) {
+        vectorized_children[i].push_back(member->ch[i]);
+      }
     }
 
     expr->is_vectorized = true;
+    TC_ASSERT(expr->members.size() % group_size == 0);
 
     for (int i = 0; i < vectorized_children.size(); i++) {
       // TC_P(i);
@@ -402,6 +405,7 @@ class CodeGen {
 
   void code_gen(Expr &expr) {
     TC_ASSERT(expr->is_vectorized);
+    TC_ASSERT(expr->members.size() == 0 || expr->members.size() == group_size);
     // TC_P(expr->ch.size());
     for (auto &c : expr->ch) {
       if (c)
@@ -428,7 +432,10 @@ class CodeGen {
       auto stream_name = fmt::format("stream{:02d}", expr->addr.stream_id);
 
       if (mode == Mode::vector) {
+        TC_P(expr->members.size());
         for (int i = 0; i + 1 < (int)expr->members.size(); i++) {
+          TC_P(expr->members[i]->addr);
+          TC_P(expr->members[i + 1]->addr);
           TC_ASSERT(prior_to(expr->members[i], expr->members[i + 1]));
         }
         auto addr = expr->addr;

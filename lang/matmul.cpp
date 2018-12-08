@@ -2,7 +2,7 @@
 #include <taichi/common/util.h>
 #include <taichi/common/task.h>
 #include <taichi/system/timer.h>
-#include<Eigen/StdVector>
+#include <Eigen/StdVector>
 #include "tlang.h"
 // #include <taichi/testing.h>
 #include <Eigen/Dense>
@@ -159,7 +159,7 @@ class AlignedAllocator {
     data = (void *)(p + (4096 - p % 4096));
   }
 
-  template <typename T>
+  template <typename T = void>
   T *get() {
     return reinterpret_cast<T *>(data);
   }
@@ -555,8 +555,9 @@ void test_mat_vec_mul_eigen(bool in_cache) {
 }
 
 template <int dim>
-void test_mat_vec_mul(bool aosoa, bool in_cache, int unroll) {
-  fmt::print("dim={} {} in_cache={} unroll={}\n", dim, aosoa ? "aosoa" : "soa", (int)in_cache, unroll);
+void test_mat_vec_mul(bool aosoa, bool in_cache, int unroll, int prefetch) {
+  fmt::print("dim={} {} in_cache={} unroll={} prefetch={}\n", dim,
+             aosoa ? "aosoa" : "soa", (int)in_cache, unroll, prefetch);
   using namespace Tlang;
   constexpr int simd_width = 8;
   Matrix m(dim, dim), v(dim);
@@ -606,6 +607,7 @@ void test_mat_vec_mul(bool aosoa, bool in_cache, int unroll) {
   int64 rounds = taichi::rounds / enlarge / dim / dim / (in_cache ? 1 : 5);
   CodeGen cg;
   cg.unroll = unroll;
+  cg.prefetch = prefetch;
   TC_ASSERT(8 % dim == 0);
   auto func = cg.get(ret, aosoa ? dim : 1);
 
@@ -660,29 +662,15 @@ void test_mat_vec_mul(bool aosoa, bool in_cache, int unroll) {
 
 template <int dim>
 void test_mat_vec_mul_all() {
-  test_mat_vec_mul_eigen<dim>(true);
-  test_mat_vec_mul<dim>(false, true, 1);
-  test_mat_vec_mul<dim>(false, true, 2);
-  test_mat_vec_mul<dim>(false, true, 4);
-  test_mat_vec_mul<dim>(false, true, 8);
-  test_mat_vec_mul<dim>(false, true, 16);
-  test_mat_vec_mul<dim>(true, true, 1);
-  test_mat_vec_mul<dim>(true, true, 2);
-  test_mat_vec_mul<dim>(true, true, 4);
-  test_mat_vec_mul<dim>(true, true, 8);
-  test_mat_vec_mul<dim>(true, true, 16);
-  test_mat_vec_mul_eigen<dim>(false);
-  test_mat_vec_mul<dim>(false, false, 1);
-  test_mat_vec_mul<dim>(false, false, 2);
-  test_mat_vec_mul<dim>(false, false, 4);
-  test_mat_vec_mul<dim>(false, false, 8);
-  test_mat_vec_mul<dim>(false, false, 16);
-  test_mat_vec_mul<dim>(true, false, 1);
-  test_mat_vec_mul<dim>(true, false, 2);
-  test_mat_vec_mul<dim>(true, false, 4);
-  test_mat_vec_mul<dim>(true, false, 8);
-  test_mat_vec_mul<dim>(true, false, 16);
-  fmt::print("\n");
+  for (auto in_cache : {false, true}) {
+    test_mat_vec_mul_eigen<dim>(in_cache);
+    for (auto aosoa : {false, true}) {
+      for (auto unroll : {1, 4, 16})
+        for (auto prefetch : {0, 16, 64})
+          test_mat_vec_mul<dim>(aosoa, in_cache, unroll, prefetch);
+    }
+    fmt::print("\n");
+  }
 }
 
 auto test_tlang = []() {
@@ -736,5 +724,71 @@ auto test_slp = []() {
 };
 
 TC_REGISTER_TASK(test_slp)
+
+void memcpy_intel(void *a_, void *b_, std::size_t size) {
+  constexpr int PAGESIZE = 4096;
+  constexpr int NUMPERPAGE = 512;  // # of elements to fit a page
+  std::size_t N = size / 8;
+  double *a = (double *)a_;
+  double *b = (double *)b_;
+  double temp;
+  for (int kk = 0; kk < N; kk += NUMPERPAGE) {
+    temp = a[kk + NUMPERPAGE];  // TLB priming
+    trash(temp);
+    // use block size = page size,
+    // prefetch entire block, one cache line per loop
+    for (int j = kk + 16; j < kk + NUMPERPAGE; j += 16) {
+      _mm_prefetch((char *)&a[j], _MM_HINT_NTA);
+    }
+    // copy 128 byte per loop
+    for (int j = kk; j < kk + NUMPERPAGE; j += 16) {
+      _mm_stream_ps((float *)&b[j], _mm_load_ps((float *)&a[j]));
+      _mm_stream_ps((float *)&b[j + 2], _mm_load_ps((float *)&a[j + 2]));
+      _mm_stream_ps((float *)&b[j + 4], _mm_load_ps((float *)&a[j + 4]));
+      _mm_stream_ps((float *)&b[j + 6], _mm_load_ps((float *)&a[j + 6]));
+      _mm_stream_ps((float *)&b[j + 8], _mm_load_ps((float *)&a[j + 8]));
+      _mm_stream_ps((float *)&b[j + 10], _mm_load_ps((float *)&a[j + 10]));
+      _mm_stream_ps((float *)&b[j + 12], _mm_load_ps((float *)&a[j + 12]));
+      _mm_stream_ps((float *)&b[j + 14], _mm_load_ps((float *)&a[j + 14]));
+    }  // finished copying one block
+  }    // finished copying N elements
+  _mm_sfence();
+}
+
+auto memcpy_test = []() {
+  auto size = 1024 * 1024 * 1024;
+  AlignedAllocator a(size), b(size);
+
+  int repeat = 100;
+  float64 t;
+
+  t = Time::get_time();
+  for (int i = 0; i < repeat; i++) {
+    memcpy(a.get(), b.get(), size);
+  }
+  TC_P(Time::get_time() - t);
+
+  t = Time::get_time();
+  for (int i = 0; i < repeat; i++) {
+    memset(a.get(), 0, size);
+  }
+  TC_P(Time::get_time() - t);
+
+  t = Time::get_time();
+  for (int i = 0; i < repeat; i++) {
+    memcpy_intel(a.get(), b.get(), size);
+  }
+  TC_P(Time::get_time() - t);
+
+  t = Time::get_time();
+  for (int i = 0; i < repeat; i++) {
+    for (int j = 0; j < size / 8; j++) {
+      a.get<double>()[j] = b.get<double>()[j];
+    }
+  }
+  TC_P(Time::get_time() - t);
+};
+
+TC_REGISTER_TASK(memcpy_test);
 
 TC_NAMESPACE_END

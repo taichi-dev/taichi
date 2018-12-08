@@ -209,6 +209,7 @@ class CodeGen {
   int num_groups;
   int id;
   int unroll;
+  int prefetch;
   std::map<NodeType, std::string> binary_ops;
   std::string folder;
 
@@ -246,15 +247,15 @@ class CodeGen {
             "(float32 *stream00, float32 *stream01, float32 "
             "*stream02, "
             "int n) {\n";
-    code += "#define LOOP {\\\n";
+    code += "#define LOOP(loop_index) {\\\n";
     auto vectorized_expr = vectorize(expr, group_size, num_groups);
     code_gen(vectorized_expr);
     code += "}\n";
     code += fmt::format("for (int i = 0, g = 0; i < n; ) {{\n", num_groups);
     for (int i = 0; i < unroll; i++) {
-      code += fmt::format("LOOP;", i);
-      code += fmt::format("i += {}; g++;", num_groups);
+      code += fmt::format("LOOP({});", i);
     }
+    code += fmt::format("i += {}; g += {};", num_groups * unroll, unroll);
     code += "}\n}\n";
     code += "#undef LOOP";
     return code;
@@ -402,18 +403,19 @@ class CodeGen {
   }
   */
 
-  std::string get_vectorized_address(Address addr) {
+  std::string get_vectorized_address(Address addr, int extra_offset = 0) {
     auto stream_name = fmt::format("stream{:02d}", addr.stream_id);
     auto stride = addr.coeff_i * num_groups + num_groups /
                                                   addr.coeff_aosoa_group_size *
                                                   addr.coeff_aosoa_stride;
     auto offset = addr.coeff_const;
-    return fmt::format("&{}[{} * n + {} * (g) + {}]",
-                       stream_name, addr.coeff_imax, stride, offset);
+    return fmt::format("&{}[{} * n + {} * (g + loop_index) + {} + {}]",
+                       stream_name, addr.coeff_imax, stride, offset,
+                       extra_offset);
   }
 
-  template <typename ... Args>
-  void emit_code(std::string, Args&&... args) {
+  template <typename... Args>
+  void emit_code(std::string, Args &&... args) {
     TC_NOT_IMPLEMENTED
   }
 
@@ -468,6 +470,12 @@ class CodeGen {
           addr.coeff_const -= addr.coeff_const % simd_width;
           needs_shuffle = true;
         }
+        if (prefetch != 0) {
+          // https://stackoverflow.com/questions/46521694/what-are-mm-prefetch-locality-hints
+          code += fmt::format(
+              "if (loop_index == 0) _mm_prefetch({}, _MM_HINT_NTA); \\\n",
+              get_vectorized_address(addr, prefetch));
+        }
         code += fmt::format("auto {}_immediate = {}({}); \\\n", expr->var_name,
                             load_instr, get_vectorized_address(addr));
         auto emit_shuffle = [&](std::string imm) {
@@ -487,8 +495,8 @@ class CodeGen {
           int offset_inc = offsets[1] - offsets[0];
           if (group_size == 2) {
             if (offset_const == 0 && offset_inc == 1) {
-              code += fmt::format("auto {} = {}_immediate; \\\n", expr->var_name,
-                                  expr->var_name);
+              code += fmt::format("auto {} = {}_immediate; \\\n",
+                                  expr->var_name, expr->var_name);
             } else if (offset_inc == 0) {
               if (offset_const == 0) {
                 emit_shuffle("0xA0");
@@ -543,6 +551,7 @@ class CodeGen {
       auto stream_name = fmt::format("stream{:02d}", expr->addr.stream_id);
       if (mode == Mode::vector) {
         std::string store_instr =
+            // simd_width == 8 ? "_mm256_stream_ps" : "_mm512_stream_ps";
             simd_width == 8 ? "_mm256_store_ps" : "_mm512_store_ps";
         code += fmt::format("{}({}, {}); \\\n", store_instr,
                             get_vectorized_address(expr->addr),
@@ -708,7 +717,6 @@ class CodeGen {
 };
 }  // namespace Tlang
 
-
 TC_NAMESPACE_END
 
 /*
@@ -719,3 +727,4 @@ TC_NAMESPACE_END
 
  No double support this time.
  */
+

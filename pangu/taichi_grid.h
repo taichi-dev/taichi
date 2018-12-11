@@ -852,31 +852,34 @@ class TaichiGrid {
         r);
     if (with_mpi()) {
       // gather/send results
-      MPI_Status status;
-      MPI_Request request;
+      // MPI_Status status;
+      // MPI_Request request;
       if (world_rank == 0) {
         for (int i = 1; i < world_size; i++) {
           V peer_ret = 0;
-          MPI_Recv(&peer_ret, sizeof(V), MPI_UINT8_T, i, TAG_REDUCE_DATA,
-                   MPI_COMM_WORLD, &status);
+          TC_ASSERT(MPI_Recv(&peer_ret, sizeof(V), MPI_CHAR, i, TAG_REDUCE_DATA,
+                   MPI_COMM_WORLD, MPI_STATUS_IGNORE) == MPI_SUCCESS);
           ret = r(ret, peer_ret);
         }
         // send resutls to peers
         for (int i = 1; i < world_size; i++) {
-          MPI_Isend(&ret, sizeof(V), MPI_UINT8_T, i, TAG_REDUCE_DATA_REDUCED,
-                    MPI_COMM_WORLD, &request);
+          TC_ASSERT(MPI_Send(&ret, sizeof(V), MPI_CHAR, i, TAG_REDUCE_DATA_REDUCED,
+                    MPI_COMM_WORLD) == MPI_SUCCESS);
         }
+MPI_Barrier(MPI_COMM_WORLD);
         return ret;
       } else {
-        MPI_Isend(&ret, sizeof(V), MPI_UINT8_T, 0, TAG_REDUCE_DATA,
-                  MPI_COMM_WORLD, &request);
+        TC_ASSERT(MPI_Send(&ret, sizeof(V), MPI_CHAR, 0, TAG_REDUCE_DATA,
+                  MPI_COMM_WORLD) == MPI_SUCCESS);
         V reduced;
-        MPI_Recv(&reduced, sizeof(V), MPI_UINT8_T, 0, TAG_REDUCE_DATA_REDUCED,
-                 MPI_COMM_WORLD, &status);
+        TC_ASSERT(MPI_Recv(&reduced, sizeof(V), MPI_CHAR, 0, TAG_REDUCE_DATA_REDUCED,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE) == MPI_SUCCESS);
+MPI_Barrier(MPI_COMM_WORLD);
         return reduced;
       }
+    } else {
+	    return ret;
     }
-    return ret;
   }
 
   template <typename T, typename R>

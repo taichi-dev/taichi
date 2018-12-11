@@ -830,8 +830,7 @@ auto allocator_test = []() {
     auto &buffer = alloc.buffer(0);
     auto &bundle = buffer.stream().group().repeat(4);
     Expr A = placeholder(), B = placeholder(), C = placeholder();
-    bundle.place(A);
-    bundle.place(B);
+    bundle.place(A, B);
     buffer.stream().group().place(C);
     alloc.materialize();
     TC_P(A->addr);

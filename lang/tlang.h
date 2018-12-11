@@ -126,7 +126,7 @@ struct AddrNode {
             group_size * (bundle_num_variables - node->coeff_i);
       }
       for (auto c : node->ch) {
-        if (c->depth == 2) {               // stream
+        if (c->depth == 2) {  // stream
           bundle_num_variables = c->num_variables;
         }
         walk(c.get());
@@ -164,11 +164,15 @@ struct AddrNode {
   AddrNode &place(Expr &expr);
 
   template <typename... Args>
+  AddrNode &place(Expr &expr, Args &&... args) {
+    return place(expr).place(std::forward<Args>(args)...);
+  }
+
+  template <typename... Args>
   static Handle<AddrNode> create(Args &&... args) {
     return std::make_shared<AddrNode>(std::forward<Args>(args)...);
   }
 };
-
 
 struct MemoryAllocator {
   // A tree-like structure that describes the minimal repeating unit in the
@@ -194,7 +198,6 @@ struct MemoryAllocator {
     root->set();
   }
 };
-
 
 // TODO: do we need polymorphism here?
 class Node {

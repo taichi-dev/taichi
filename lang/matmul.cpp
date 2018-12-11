@@ -16,7 +16,7 @@ constexpr real cpu_frequency = 3.6_f;
 
 // constexpr int enlarge = 4096;
 constexpr int enlarge = 1;
-constexpr int rounds = 16384 * 2048 / enlarge;
+constexpr int rounds = 4 * 16384 * 2048 / enlarge;
 constexpr int N = 256 * enlarge;
 
 template <int dim, typename T>
@@ -525,13 +525,16 @@ void test_vec_add() {
 }
 
 void print_time(float64 t, int64 elements) {
+  /*
   fmt::print("   {:10.3f} cyc / elem      [adjusted run time = {:10.3f} ms] \n",
              cpu_frequency * 1e9 * t / elements, t * 1000.0_f);
+             */
+  fmt::print("   {:10.3f} cyc / elem  \n", cpu_frequency * 1e9 * t / elements);
 }
 
 template <int dim>
 void test_mat_vec_mul_eigen(bool in_cache) {
-  fmt::print("dim={} Eigen in_cache={}\n", dim, in_cache);
+  fmt::print("dim={} Eigen in_cache={}                   ", dim, in_cache);
   using namespace Tlang;
 
   int enlarge = in_cache ? 1 : 4096;
@@ -555,9 +558,17 @@ void test_mat_vec_mul_eigen(bool in_cache) {
 }
 
 template <int dim>
-void test_mat_vec_mul(bool aosoa, bool in_cache, int unroll, int prefetch) {
-  fmt::print("dim={} {} in_cache={} unroll={} prefetch={}\n", dim,
-             aosoa ? "aosoa" : "soa", (int)in_cache, unroll, prefetch);
+void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
+  std::string layout_name = "";
+  if (layout == 0) {
+    layout_name = "  soa";
+  } else if (layout == 1) {
+    layout_name = "aosoa";
+  } else {
+    layout_name = "inter";
+  }
+  fmt::print("dim={} {} in_cache={} unroll={} prefetch={:2d} ", dim,
+             layout_name, (int)in_cache, unroll, prefetch);
   using namespace Tlang;
   constexpr int simd_width = 8;
   Matrix m(dim, dim), v(dim);
@@ -565,25 +576,35 @@ void test_mat_vec_mul(bool aosoa, bool in_cache, int unroll, int prefetch) {
     for (int j = 0; j < dim; j++) {
       Address addr;
       addr.stream_id = 0;
-      if (aosoa) {
+      if (layout == 0) {
+        addr.coeff_i = 1;
+        addr.coeff_imax = i * dim + j;
+      } else if (layout == 1) {
+        addr.coeff_i = 1;
+        addr.coeff_const = (i * dim + j) * simd_width;
+        addr.coeff_aosoa_group_size = simd_width;
+        addr.coeff_aosoa_stride = (dim * dim - 1) * simd_width;
+      } else {
         addr.coeff_i = dim;
         addr.coeff_aosoa_group_size = simd_width / dim;
         addr.coeff_aosoa_stride = simd_width * (dim - 1);
         addr.coeff_const = j * simd_width + i;
-      } else {
-        addr.coeff_i = 1;
-        addr.coeff_imax = i * dim + j;
       }
       m(i, j) = load(addr);
     }
     Address addr;
     addr.stream_id = 1;
-    if (aosoa) {
-      addr.coeff_i = dim;
-      addr.coeff_const = i;
-    } else {
+    if (layout == 0) {
       addr.coeff_i = 1;
       addr.coeff_imax = i;
+    } else if (layout == 1) {
+      addr.coeff_i = 1;
+      addr.coeff_aosoa_group_size = simd_width;
+      addr.coeff_aosoa_stride = (dim - 1) * simd_width;
+      addr.coeff_const = i * simd_width;
+    } else {
+      addr.coeff_i = dim;
+      addr.coeff_const = i;
     }
     v(i) = load(addr);
   }
@@ -592,12 +613,17 @@ void test_mat_vec_mul(bool aosoa, bool in_cache, int unroll, int prefetch) {
   for (int i = 0; i < dim; i++) {
     Address addr;
     addr.stream_id = 2;
-    if (aosoa) {
-      addr.coeff_i = dim;
-      addr.coeff_const = i;
-    } else {
+    if (layout == 0) {
       addr.coeff_i = 1;
       addr.coeff_imax = i;
+    } else if (layout == 1) {
+      addr.coeff_i = 1;
+      addr.coeff_aosoa_group_size = simd_width;
+      addr.coeff_aosoa_stride = (dim - 1) * simd_width;
+      addr.coeff_const = i * simd_width;
+    } else {
+      addr.coeff_i = dim;
+      addr.coeff_const = i;
     }
     mv(i) = ret.store(mv(i), addr);
   }
@@ -609,7 +635,13 @@ void test_mat_vec_mul(bool aosoa, bool in_cache, int unroll, int prefetch) {
   cg.unroll = unroll;
   cg.prefetch = prefetch;
   TC_ASSERT(8 % dim == 0);
-  auto func = cg.get(ret, aosoa ? dim : 1);
+  int gs = 1;
+  if (layout == 1) {
+    gs = 1;
+  } else if (layout == 2) {
+    gs = dim;
+  }
+  auto func = cg.get(ret, gs);
 
   AlignedAllocator M_allocator(dim * dim * n * sizeof(float32)),
       V_allocator(dim * n * sizeof(float32)),
@@ -664,10 +696,10 @@ template <int dim>
 void test_mat_vec_mul_all() {
   for (auto in_cache : {false, true}) {
     test_mat_vec_mul_eigen<dim>(in_cache);
-    for (auto aosoa : {false, true}) {
-      for (auto unroll : {1, 4, 16})
-        for (auto prefetch : {0, 16, 64})
-          test_mat_vec_mul<dim>(aosoa, in_cache, unroll, prefetch);
+    for (auto layout : {0, 1, 2}) {
+      for (auto unroll : {1, 4})
+        for (auto prefetch : {0})
+          test_mat_vec_mul<dim>(layout, in_cache, unroll, prefetch);
     }
     fmt::print("\n");
   }
@@ -791,7 +823,7 @@ auto memcpy_test = []() {
 
 TC_REGISTER_TASK(memcpy_test);
 
-auto allocator_test  = []() {
+auto allocator_test = []() {
   using namespace Tlang;
   MemoryAllocator alloc;
   auto &bundle = alloc.buffer(0).stream().group().repeat(4);

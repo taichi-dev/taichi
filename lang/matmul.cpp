@@ -571,14 +571,15 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
              layout_name, (int)in_cache, unroll, prefetch);
   using namespace Tlang;
   constexpr int simd_width = 8;
+  MemoryAllocator alloc;
+  auto &buffer = alloc.buffer(0);
   Matrix m(dim, dim), v(dim);
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       Address addr;
       addr.stream_id = 0;
       if (layout == 0) {
-        addr.coeff_i = 1;
-        addr.coeff_imax = i * dim + j;
+        buffer.stream().group().place(m(i, j));
       } else if (layout == 1) {
         addr.coeff_i = 1;
         addr.coeff_const = (i * dim + j) * simd_width;
@@ -590,13 +591,12 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
         addr.coeff_aosoa_stride = simd_width * (dim - 1);
         addr.coeff_const = j * simd_width + i;
       }
-      m(i, j) = load(addr);
+      // m(i, j) = load(addr);
     }
     Address addr;
     addr.stream_id = 1;
     if (layout == 0) {
-      addr.coeff_i = 1;
-      addr.coeff_imax = i;
+      alloc.buffer(1).stream().group().place(v(i));
     } else if (layout == 1) {
       addr.coeff_i = 1;
       addr.coeff_aosoa_group_size = simd_width;
@@ -606,16 +606,16 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
       addr.coeff_i = dim;
       addr.coeff_const = i;
     }
-    v(i) = load(addr);
+    // v(i) = load(addr);
   }
   Expr ret;
   auto mv = m * v;
   for (int i = 0; i < dim; i++) {
     Address addr;
     addr.stream_id = 2;
+    mv(i) = ret.store(mv(i));
     if (layout == 0) {
-      addr.coeff_i = 1;
-      addr.coeff_imax = i;
+      alloc.buffer(2).stream().group().place(mv(i));
     } else if (layout == 1) {
       addr.coeff_i = 1;
       addr.coeff_aosoa_group_size = simd_width;
@@ -625,8 +625,13 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
       addr.coeff_i = dim;
       addr.coeff_const = i;
     }
-    mv(i) = ret.store(mv(i), addr);
   }
+
+  alloc.materialize();
+
+  TC_P(m(0, 0)->addr);
+  TC_P(v(0)->addr);
+  TC_P(mv(0)->addr);
 
   int64 enlarge = in_cache ? 1 : 4096;
   int64 n = taichi::N * enlarge;
@@ -829,7 +834,7 @@ auto allocator_test = []() {
     MemoryAllocator alloc;
     auto &buffer = alloc.buffer(0);
     auto &bundle = buffer.stream().group().repeat(4);
-    Expr A = placeholder(), B = placeholder(), C = placeholder();
+    Expr A, B, C;
     bundle.place(A, B);
     buffer.stream().group().place(C);
     alloc.materialize();
@@ -841,7 +846,7 @@ auto allocator_test = []() {
     MemoryAllocator alloc;
     auto &buffer = alloc.buffer(0);
     auto &g = buffer.stream();
-    Expr A = placeholder(), B = placeholder(), C = placeholder(), D = placeholder();
+    Expr A, B, C, D;
     g.group().repeat(4).place(A, C);
     g.group().repeat(4).place(B, D);
     alloc.materialize();

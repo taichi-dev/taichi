@@ -129,9 +129,11 @@ struct AddrNode {
         if (c->depth == 2) {  // stream
           bundle_num_variables = c->num_variables;
         }
-        walk(c.get());
         if (c->depth == 1) {  // buffer
           buffer_id = c->buffer_id;
+        }
+        walk(c.get());
+        if (c->depth == 1) {  // buffer
           coeff_imax = 0;
         } else if (c->depth == 2) {        // stream
           coeff_imax += c->num_variables;  // stream attr update
@@ -233,7 +235,7 @@ class Expr {
   }
 
   Expr(float64 val) {
-    // cretea a constant node
+    // create a constant node
     node = std::make_shared<Node>(NodeType::constant);
     node->value = val;
   }
@@ -256,6 +258,17 @@ class Expr {
   BINARY_OP(-, sub);
   BINARY_OP(/, div);
 #undef BINARY_OP
+
+  Expr store(const Expr &e) {
+    if (!node) {
+      node = std::make_shared<Node>(NodeType::combine);
+    }
+    auto n = std::make_shared<Node>(NodeType::store);
+    n->ch.push_back(e.node);
+    Expr store_e(n);
+    node->ch.push_back(n);
+    return store_e;
+  }
 
   Expr store(const Expr &e, Address addr) {
     if (!node) {
@@ -294,13 +307,6 @@ class Expr {
   }
 };
 
-AddrNode &AddrNode::place(Expr &expr) {
-  TC_ASSERT(depth >= 3);
-  TC_ASSERT(this->addr == nullptr);
-  ch.push_back(create(depth + 1, &expr->addr));
-  return *this;
-}
-
 Node::Node(Type type, Expr ch0, Expr ch1) : Node(type) {
   ch.resize(2);
   ch[0] = ch0;
@@ -318,6 +324,16 @@ inline Expr load(Address addr) {
   n->addr = addr;
   TC_ASSERT(0 <= addr.stream_id && addr.stream_id < 3);
   return Expr(n);
+}
+
+AddrNode &AddrNode::place(Expr &expr) {
+  if (!expr) {
+    expr = placeholder();
+  }
+  TC_ASSERT(depth >= 3);
+  TC_ASSERT(this->addr == nullptr);
+  ch.push_back(create(depth + 1, &expr->addr));
+  return *this;
 }
 
 int Node::member_id(const Expr &expr) const {
@@ -523,7 +539,8 @@ class CodeGen {
     }
 
     expr->addr = expr->members[0]->addr;
-    if (expr->addr.coeff_aosoa_group_size == 0) {
+    if (expr->addr.coeff_aosoa_group_size == 0 ||
+        expr->addr.coeff_aosoa_stride == 0) {
       expr->addr.coeff_aosoa_group_size = num_groups;
       expr->addr.coeff_aosoa_stride = 0;
     }

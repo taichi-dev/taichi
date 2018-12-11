@@ -865,6 +865,7 @@ auto mgpcg = [](const std::vector<std::string> &params) {
 TC_REGISTER_TASK(mgpcg);
 
 auto benchmark_pangu = []() {
+  TC_P(sizeof(Block));
   std::unique_ptr<MGPCGSmoke> mgpcg;
   mgpcg = std::make_unique<MGPCGSmoke>(true);
   for (int i = 0;; i++) {

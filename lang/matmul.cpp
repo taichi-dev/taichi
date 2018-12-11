@@ -791,4 +791,11 @@ auto memcpy_test = []() {
 
 TC_REGISTER_TASK(memcpy_test);
 
+auto allocator_test  = []() {
+  using namespace Tlang;
+  MemoryAllocator alloc;
+};
+
+TC_REGISTER_TASK(allocator_test);
+
 TC_NAMESPACE_END

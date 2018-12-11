@@ -10,68 +10,6 @@ namespace Tlang {
 template <typename T>
 using Handle = std::shared_ptr<T>;
 
-struct MemoryAllocator {
-  struct Node {
-    bool is_root;
-    std::vector<Handle<Node>> ch;
-    Address *addr;
-
-    int data_size; // repeat included
-    int group_size;
-    int repeat_factor;
-    int offset;
-
-    Node() {
-      is_root = false;
-    }
-
-    void materialize() {
-      TC_ASSERT(ch.size());
-      TC_ASSERT(addr);
-      data_size = 0;
-      for (auto &ch: ch) {
-        ch->offset = offset;
-        ch->materialize();
-        offset += ch->data_size;
-      }
-      data_size = offset * repeat_factor;
-      group_size = ch[0]->group_size * repeat_factor;
-    }
-
-    void set() {
-
-    }
-  };
-
-  Handle<Node> root;
-
-  template <typename... Args>
-  static Handle<Node> create(Args &&... args) {
-    return std::make_shared<Node>(std::forward<Args>(args)...);
-  }
-
-  MemoryAllocator() {
-    // streams are specialized groups, with discontinuous parts in memory
-    root = create();
-    root->is_root = true;
-  }
-
-  Handle<Node> stream(int id) {
-    while (root->ch.size() <= id) {
-      root->ch.push_back(create());
-    }
-    auto ret = root->ch[id];
-    TC_ASSERT(ret->type == Node::Type::stream);
-    return ret;
-  }
-
-  void materialize() {
-    for (auto &stream : root->ch) {
-      stream->materialize();
-    }
-  }
-};
-
 struct Address {
   int64 stream_id;
   int64 coeff_i;
@@ -127,6 +65,121 @@ struct Address {
              (i / coeff_aosoa_group_size) * coeff_aosoa_stride;
     } else {
       return coeff_i * i + coeff_imax * n + coeff_const;
+    }
+  }
+};
+
+struct MemoryAllocator {
+  // A tree-like structure that describes the minimal repeating unit in the
+  // stream
+  struct Node {
+    bool is_root;
+    std::vector<Handle<Node>> ch;
+    Address *addr;
+
+    int group_size;
+    int repeat_factor;
+    int num_variables;
+    int offset;
+    int stream_id;
+    int coeff_i;
+    int depth;
+    // repeat included
+    int data_size;
+
+    Node(int depth, Address *addr = nullptr) : depth(depth), addr(addr) {
+      is_root = false;
+      num_variables = 0;
+    }
+
+    void materialize() {
+      TC_ASSERT(bool(addr) ^ bool(ch.size() == 0));
+      TC_ASSERT(ch.size());
+      TC_ASSERT(addr);
+      data_size = 0;
+      for (auto &ch : ch) {
+        ch->offset = offset;
+        ch->materialize();
+        num_variables += ch->num_variables;
+        offset += ch->data_size;
+      }
+      data_size = offset * repeat_factor;
+      group_size = ch[0]->group_size * repeat_factor;
+    }
+
+    void set() {
+      int coeff_imax = 0;
+      std::function<void(Node *)> walk = [&](Node *node) {
+        if (node->addr) {
+          node->addr->stream_id = stream_id;
+          node->addr->coeff_i = node->coeff_i;
+          node->addr->coeff_imax = coeff_imax;
+          node->addr->coeff_aosoa_group_size = group_size;
+          node->addr->coeff_const = node->offset;
+          // Note: use root->data_size here
+          node->addr->coeff_aosoa_stride =
+              group_size * (num_variables - node->coeff_i);
+        }
+        for (auto c : node->ch) {
+          walk(c.get());
+          if (c->depth == 0) {  // buffer node
+            coeff_imax += num_variables;
+          }
+        }
+      };
+
+      walk(this);
+    }
+
+    Node &group() {
+      TC_ASSERT(depth >= 3);
+      auto n = create(depth + 1);
+      ch.push_back(n);
+      return *n;
+    }
+
+    Node &stream() {
+      TC_ASSERT(depth == 2);
+      auto n = create(depth + 1);
+      ch.push_back(n);
+      return *n;
+    }
+
+    Node &repeat(int repeat_factor) {
+      this->repeat_factor = repeat_factor;
+      return *this;
+    }
+
+    void place(Address &addr) {
+      TC_ASSERT(this->addr == nullptr);
+      ch.push_back(create(depth + 1, &addr));
+    }
+  };
+
+  Handle<Node> root;
+
+  template <typename... Args>
+  static Handle<Node> create(Args &&... args) {
+    return std::make_shared<Node>(std::forward<Args>(args)...);
+  }
+
+  MemoryAllocator() {
+    // streams are specialized groups, with discontinuous parts in memory
+    root = create(0);
+    root->is_root = true;
+  }
+
+  Handle<Node> buffer(int id) {
+    while (root->ch.size() <= id) {
+      root->ch.push_back(create(1));
+    }
+    auto ret = root->ch[id];
+    return ret;
+  }
+
+  void materialize() {
+    for (auto &stream : root->ch) {
+      stream->materialize();
     }
   }
 };
@@ -467,9 +520,9 @@ class CodeGen {
 
   std::string get_vectorized_address(Address addr, int extra_offset = 0) {
     auto stream_name = fmt::format("stream{:02d}", addr.stream_id);
-    auto stride = addr.coeff_i * num_groups + num_groups /
-                                                  addr.coeff_aosoa_group_size *
-                                                  addr.coeff_aosoa_stride;
+    auto stride =
+        addr.coeff_i * num_groups +
+        num_groups / addr.coeff_aosoa_group_size * addr.coeff_aosoa_stride;
     auto offset = addr.coeff_const;
     return fmt::format("&{}[{} * n + {} * (g + loop_index) + {} + {}]",
                        stream_name, addr.coeff_imax, stride, offset,

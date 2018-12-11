@@ -10,6 +10,68 @@ namespace Tlang {
 template <typename T>
 using Handle = std::shared_ptr<T>;
 
+struct MemoryAllocator {
+  struct Node {
+    bool is_root;
+    std::vector<Handle<Node>> ch;
+    Address *addr;
+
+    int data_size; // repeat included
+    int group_size;
+    int repeat_factor;
+    int offset;
+
+    Node() {
+      is_root = false;
+    }
+
+    void materialize() {
+      TC_ASSERT(ch.size());
+      TC_ASSERT(addr);
+      data_size = 0;
+      for (auto &ch: ch) {
+        ch->offset = offset;
+        ch->materialize();
+        offset += ch->data_size;
+      }
+      data_size = offset * repeat_factor;
+      group_size = ch[0]->group_size * repeat_factor;
+    }
+
+    void set() {
+
+    }
+  };
+
+  Handle<Node> root;
+
+  template <typename... Args>
+  static Handle<Node> create(Args &&... args) {
+    return std::make_shared<Node>(std::forward<Args>(args)...);
+  }
+
+  MemoryAllocator() {
+    // streams are specialized groups, with discontinuous parts in memory
+    root = create();
+    root->is_root = true;
+  }
+
+  Handle<Node> stream(int id) {
+    while (root->ch.size() <= id) {
+      root->ch.push_back(create());
+    }
+    auto ret = root->ch[id];
+    TC_ASSERT(ret->type == Node::Type::stream);
+    return ret;
+  }
+
+  void materialize() {
+    for (auto &stream : root->ch) {
+      stream->materialize();
+    }
+  }
+};
+
 struct Address {
   int64 stream_id;
   int64 coeff_i;
@@ -727,4 +789,3 @@ TC_NAMESPACE_END
 
  No double support this time.
  */
-

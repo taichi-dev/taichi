@@ -837,22 +837,19 @@ auto allocator_test = []() {
     TC_P(B->addr);
     TC_P(C->addr);
   }
-  /*
   {
     MemoryAllocator alloc;
     auto &buffer = alloc.buffer(0);
-    auto &g = buffer.stream().group();
+    auto &g = buffer.stream();
     Expr A = placeholder(), B = placeholder(), C = placeholder(), D = placeholder();
-    g.group();
-    bundle.place(A);
-    bundle.place(B);
-    buffer.stream().group().place(C->addr);
+    g.group().repeat(4).place(A, C);
+    g.group().repeat(4).place(B, D);
     alloc.materialize();
     TC_P(A->addr);
     TC_P(B->addr);
     TC_P(C->addr);
+    TC_P(D->addr);
   }
-  */
 };
 
 TC_REGISTER_TASK(allocator_test);

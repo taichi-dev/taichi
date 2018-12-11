@@ -90,28 +90,37 @@ struct MemoryAllocator {
     Node(int depth, Address *addr = nullptr) : depth(depth), addr(addr) {
       is_root = false;
       num_variables = 0;
+      if (addr) {
+        num_variables += 1;
+      }
+      offset = 0;
+      repeat_factor = 1;
     }
 
     void materialize() {
-      TC_P(depth);
-      TC_P(addr);
-      TC_P(ch.size());
       TC_ASSERT(bool(addr == nullptr) ^ bool(ch.size() == 0));
-      data_size = 0;
-      for (auto &ch : ch) {
-        ch->offset = offset;
-        ch->materialize();
-        num_variables += ch->num_variables;
-        offset += ch->data_size;
+      for (auto &c : ch) {
+        c->offset = offset;
+        c->materialize();
+        c->coeff_i = ch.size();
+        num_variables += c->num_variables;
+        offset += c->data_size;
       }
-      data_size = offset * repeat_factor;
+      data_size = num_variables * repeat_factor;
       group_size = (ch.size() ? ch[0]->group_size : 1) * repeat_factor;
+      TC_P(num_variables);
+      TC_P(repeat_factor);
+      TC_P(depth);
+      TC_P(data_size);
+      TC_P(offset);
     }
 
     void set() {
       int coeff_imax = 0;
+      int stream_id = 0;
       std::function<void(Node *)> walk = [&](Node *node) {
         if (node->addr) {
+          TC_TAG;
           node->addr->stream_id = stream_id;
           node->addr->coeff_i = node->coeff_i;
           node->addr->coeff_imax = coeff_imax;
@@ -122,9 +131,14 @@ struct MemoryAllocator {
               group_size * (num_variables - node->coeff_i);
         }
         for (auto c : node->ch) {
+          if (c->depth == 2) {  // stream node
+            stream_id = c->stream_id;
+            TC_P(stream_id);
+          }
           walk(c.get());
-          if (c->depth == 0) {  // buffer node
-            coeff_imax += num_variables;
+          if (c->depth == 1) {  // buffer node
+            coeff_imax += c->num_variables;
+            TC_P(coeff_imax);
           }
         }
       };
@@ -143,6 +157,7 @@ struct MemoryAllocator {
       TC_ASSERT(depth == 1);
       auto n = create(depth + 1);
       ch.push_back(n);
+      ch.back()->stream_id = ch.size() - 1;
       return *n;
     }
 

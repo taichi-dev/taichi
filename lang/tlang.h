@@ -10,6 +10,8 @@ namespace Tlang {
 template <typename T>
 using Handle = std::shared_ptr<T>;
 
+class Expr;
+
 struct Address {
   int64 stream_id;
   int64 coeff_i;
@@ -69,128 +71,118 @@ struct Address {
   }
 };
 
+struct AddrNode {
+  std::vector<Handle<AddrNode>> ch;
+  Address *addr;
+
+  int group_size;
+  int repeat_factor;
+  int num_variables;
+  int offset;
+  int buffer_id;
+  int coeff_i;
+  int depth;
+  // repeat included
+  int data_size;
+
+  AddrNode(int depth, Address *addr = nullptr) : depth(depth), addr(addr) {
+    num_variables = 0;
+    if (addr) {
+      num_variables += 1;
+    }
+    offset = 0;
+    repeat_factor = 1;
+  }
+
+  void materialize() {
+    TC_ASSERT(bool(addr == nullptr) ^ bool(ch.size() == 0));
+    if (depth == 2) {  // stream
+      offset = 0;
+    }
+    for (auto &c : ch) {
+      c->offset = offset;
+      c->materialize();
+      c->coeff_i = ch.size();
+      num_variables += c->num_variables;
+      offset += c->data_size;
+    }
+    data_size = num_variables * repeat_factor;
+    group_size = (ch.size() ? ch[0]->group_size : 1) * repeat_factor;
+  }
+
+  void set() {
+    int coeff_imax = 0;
+    int buffer_id = 0;
+    int bundle_num_variables = -1;
+    std::function<void(AddrNode *)> walk = [&](AddrNode *node) {
+      if (node->addr) {
+        node->addr->stream_id = buffer_id;
+        node->addr->coeff_i = node->coeff_i;
+        node->addr->coeff_imax = coeff_imax;
+        node->addr->coeff_aosoa_group_size = group_size;
+        node->addr->coeff_const = node->offset;
+        // Note: use root->data_size here
+        node->addr->coeff_aosoa_stride =
+            group_size * (bundle_num_variables - node->coeff_i);
+      }
+      for (auto c : node->ch) {
+        if (c->depth == 2) {               // stream
+          bundle_num_variables = c->num_variables;
+        }
+        walk(c.get());
+        if (c->depth == 1) {  // buffer
+          buffer_id = c->buffer_id;
+          coeff_imax = 0;
+        } else if (c->depth == 2) {        // stream
+          coeff_imax += c->num_variables;  // stream attr update
+        }
+      }
+    };
+
+    walk(this);
+  }
+
+  AddrNode &group() {
+    TC_ASSERT(depth >= 2);
+    auto n = create(depth + 1);
+    ch.push_back(n);
+    return *n;
+  }
+
+  AddrNode &stream() {
+    TC_ASSERT(depth == 1);
+    auto n = create(depth + 1);
+    ch.push_back(n);
+    return *n;
+  }
+
+  AddrNode &repeat(int repeat_factor) {
+    this->repeat_factor = repeat_factor;
+    return *this;
+  }
+
+  AddrNode &place(Expr &expr);
+
+  template <typename... Args>
+  static Handle<AddrNode> create(Args &&... args) {
+    return std::make_shared<AddrNode>(std::forward<Args>(args)...);
+  }
+};
+
+
 struct MemoryAllocator {
   // A tree-like structure that describes the minimal repeating unit in the
   // stream
-  struct Node {
-    bool is_root;
-    std::vector<Handle<Node>> ch;
-    Node *parent;
-    Address *addr;
-
-    int group_size;
-    int repeat_factor;
-    int num_variables;
-    int offset;
-    int buffer_id;
-    int coeff_i;
-    int depth;
-    // repeat included
-    int data_size;
-
-    Node(int depth, Address *addr = nullptr) : depth(depth), addr(addr) {
-      is_root = false;
-      parent = nullptr;
-      num_variables = 0;
-      if (addr) {
-        num_variables += 1;
-      }
-      offset = 0;
-      repeat_factor = 1;
-    }
-
-    void materialize() {
-      TC_ASSERT(bool(addr == nullptr) ^ bool(ch.size() == 0));
-      if (depth == 2) {  // stream
-        offset = 0;
-      }
-      for (auto &c : ch) {
-        c->offset = offset;
-        c->materialize();
-        c->coeff_i = ch.size();
-        c->parent = this;
-        num_variables += c->num_variables;
-        offset += c->data_size;
-      }
-      data_size = num_variables * repeat_factor;
-      group_size = (ch.size() ? ch[0]->group_size : 1) * repeat_factor;
-    }
-
-    void set() {
-      int coeff_imax = 0;
-      int buffer_id = 0;
-      int bundle_num_variables = -1;
-      std::function<void(Node *)> walk = [&](Node *node) {
-        if (node->addr) {
-          node->addr->stream_id = buffer_id;
-          node->addr->coeff_i = node->coeff_i;
-          node->addr->coeff_imax = coeff_imax;
-          node->addr->coeff_aosoa_group_size = group_size;
-          node->addr->coeff_const = node->offset;
-          // Note: use root->data_size here
-          node->addr->coeff_aosoa_stride =
-              group_size * (node->parent->num_variables - node->coeff_i);
-        }
-        for (auto c : node->ch) {
-          if (c->depth == 2) {               // stream
-            bundle_num_variables = c->num_variables;
-          }
-          walk(c.get());
-          if (c->depth == 1) {  // buffer
-            buffer_id = c->buffer_id;
-            coeff_imax = 0;
-          } else if (c->depth == 2) {        // stream
-            coeff_imax += c->num_variables;  // stream attr update
-          }
-        }
-      };
-
-      walk(this);
-    }
-
-    Node &group() {
-      TC_ASSERT(depth >= 2);
-      auto n = create(depth + 1);
-      ch.push_back(n);
-      return *n;
-    }
-
-    Node &stream() {
-      TC_ASSERT(depth == 1);
-      auto n = create(depth + 1);
-      ch.push_back(n);
-      return *n;
-    }
-
-    Node &repeat(int repeat_factor) {
-      this->repeat_factor = repeat_factor;
-      return *this;
-    }
-
-    Node &place(Address &new_addr) {
-      TC_ASSERT(depth >= 3);
-      TC_ASSERT(this->addr == nullptr);
-      ch.push_back(create(depth + 1, &new_addr));
-      return *this;
-    }
-  };
-
-  Handle<Node> root;
-
-  template <typename... Args>
-  static Handle<Node> create(Args &&... args) {
-    return std::make_shared<Node>(std::forward<Args>(args)...);
-  }
+  Handle<AddrNode> root;
 
   MemoryAllocator() {
     // streams are specialized groups, with discontinuous parts in memory
-    root = create(0);
-    root->is_root = true;
+    root = AddrNode::create(0);
   }
 
-  Node &buffer(int id) {
+  AddrNode &buffer(int id) {
     while (root->ch.size() <= id) {
-      root->ch.push_back(create(1));
+      root->ch.push_back(AddrNode::create(1));
       root->ch.back()->buffer_id = root->ch.size() - 1;
     }
     auto ret = root->ch[id];
@@ -203,7 +195,6 @@ struct MemoryAllocator {
   }
 };
 
-class Expr;
 
 // TODO: do we need polymorphism here?
 class Node {
@@ -299,6 +290,13 @@ class Expr {
     return (void *)(*this) == (void *)o;
   }
 };
+
+AddrNode &AddrNode::place(Expr &expr) {
+  TC_ASSERT(depth >= 3);
+  TC_ASSERT(this->addr == nullptr);
+  ch.push_back(create(depth + 1, &expr->addr));
+  return *this;
+}
 
 Node::Node(Type type, Expr ch0, Expr ch1) : Node(type) {
   ch.resize(2);

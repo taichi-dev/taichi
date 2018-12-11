@@ -825,17 +825,35 @@ TC_REGISTER_TASK(memcpy_test);
 
 auto allocator_test = []() {
   using namespace Tlang;
-  MemoryAllocator alloc;
-  auto &buffer = alloc.buffer(0);
-  auto &bundle = buffer.stream().group().repeat(4);
-  Expr A = placeholder(), B = placeholder(), C = placeholder();
-  bundle.place(A->addr);
-  bundle.place(B->addr);
-  buffer.stream().group().place(C->addr);
-  alloc.materialize();
-  TC_P(A->addr);
-  TC_P(B->addr);
-  TC_P(C->addr);
+  {
+    MemoryAllocator alloc;
+    auto &buffer = alloc.buffer(0);
+    auto &bundle = buffer.stream().group().repeat(4);
+    Expr A = placeholder(), B = placeholder(), C = placeholder();
+    bundle.place(A);
+    bundle.place(B);
+    buffer.stream().group().place(C);
+    alloc.materialize();
+    TC_P(A->addr);
+    TC_P(B->addr);
+    TC_P(C->addr);
+  }
+  /*
+  {
+    MemoryAllocator alloc;
+    auto &buffer = alloc.buffer(0);
+    auto &g = buffer.stream().group();
+    Expr A = placeholder(), B = placeholder(), C = placeholder(), D = placeholder();
+    g.group();
+    bundle.place(A);
+    bundle.place(B);
+    buffer.stream().group().place(C->addr);
+    alloc.materialize();
+    TC_P(A->addr);
+    TC_P(B->addr);
+    TC_P(C->addr);
+  }
+  */
 };
 
 TC_REGISTER_TASK(allocator_test);

@@ -75,13 +75,14 @@ struct MemoryAllocator {
   struct Node {
     bool is_root;
     std::vector<Handle<Node>> ch;
+    Node *parent;
     Address *addr;
 
     int group_size;
     int repeat_factor;
     int num_variables;
     int offset;
-    int stream_id;
+    int buffer_id;
     int coeff_i;
     int depth;
     // repeat included
@@ -89,6 +90,7 @@ struct MemoryAllocator {
 
     Node(int depth, Address *addr = nullptr) : depth(depth), addr(addr) {
       is_root = false;
+      parent = nullptr;
       num_variables = 0;
       if (addr) {
         num_variables += 1;
@@ -99,46 +101,46 @@ struct MemoryAllocator {
 
     void materialize() {
       TC_ASSERT(bool(addr == nullptr) ^ bool(ch.size() == 0));
+      if (depth == 2) {  // stream
+        offset = 0;
+      }
       for (auto &c : ch) {
         c->offset = offset;
         c->materialize();
         c->coeff_i = ch.size();
+        c->parent = this;
         num_variables += c->num_variables;
         offset += c->data_size;
       }
       data_size = num_variables * repeat_factor;
       group_size = (ch.size() ? ch[0]->group_size : 1) * repeat_factor;
-      TC_P(num_variables);
-      TC_P(repeat_factor);
-      TC_P(depth);
-      TC_P(data_size);
-      TC_P(offset);
     }
 
     void set() {
       int coeff_imax = 0;
-      int stream_id = 0;
+      int buffer_id = 0;
+      int bundle_num_variables = -1;
       std::function<void(Node *)> walk = [&](Node *node) {
         if (node->addr) {
-          TC_TAG;
-          node->addr->stream_id = stream_id;
+          node->addr->stream_id = buffer_id;
           node->addr->coeff_i = node->coeff_i;
           node->addr->coeff_imax = coeff_imax;
           node->addr->coeff_aosoa_group_size = group_size;
           node->addr->coeff_const = node->offset;
           // Note: use root->data_size here
           node->addr->coeff_aosoa_stride =
-              group_size * (num_variables - node->coeff_i);
+              group_size * (node->parent->num_variables - node->coeff_i);
         }
         for (auto c : node->ch) {
-          if (c->depth == 2) {  // stream node
-            stream_id = c->stream_id;
-            TC_P(stream_id);
+          if (c->depth == 2) {               // stream
+            bundle_num_variables = c->num_variables;
           }
           walk(c.get());
-          if (c->depth == 1) {  // buffer node
-            coeff_imax += c->num_variables;
-            TC_P(coeff_imax);
+          if (c->depth == 1) {  // buffer
+            buffer_id = c->buffer_id;
+            coeff_imax = 0;
+          } else if (c->depth == 2) {        // stream
+            coeff_imax += c->num_variables;  // stream attr update
           }
         }
       };
@@ -157,7 +159,6 @@ struct MemoryAllocator {
       TC_ASSERT(depth == 1);
       auto n = create(depth + 1);
       ch.push_back(n);
-      ch.back()->stream_id = ch.size() - 1;
       return *n;
     }
 
@@ -190,6 +191,7 @@ struct MemoryAllocator {
   Node &buffer(int id) {
     while (root->ch.size() <= id) {
       root->ch.push_back(create(1));
+      root->ch.back()->buffer_id = root->ch.size() - 1;
     }
     auto ret = root->ch[id];
     return *ret;

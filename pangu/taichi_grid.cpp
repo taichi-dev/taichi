@@ -3,9 +3,11 @@
 
 TC_NAMESPACE_BEGIN
 
+MPIEnvironment mpi_env;
+
+/*
 using Block = TestGrid::Block;
 
-MPIEnvironment mpi_env;
 
 TC_TEST("dilated block") {
   if (with_mpi())
@@ -474,5 +476,6 @@ auto saxpy = [](const std::vector<std::string> &param) {
 };
 
 TC_REGISTER_TASK(saxpy);
+ */
 
 TC_NAMESPACE_END

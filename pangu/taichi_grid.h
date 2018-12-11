@@ -171,6 +171,7 @@ struct TBlock {
   bool killed;
   bool computed;
   Meta meta;
+  std::size_t particle_count;
 
   static const bool soa = is_SOA<Node_>();
   TC_STATIC_ASSERT((soa == TNodesType<Node, num_nodes, soa>::soa));
@@ -186,7 +187,6 @@ struct TBlock {
   static constexpr int max_num_particles = max_particles_per_node * num_nodes;
   Particle particles[max_num_particles];
   // Particle data
-  std::size_t particle_count;
 
   TC_FORCE_INLINE void kill() {
     TC_ASSERT(!killed);
@@ -694,6 +694,7 @@ class TaichiGrid {
 
   int world_size;  // aka num. machines (processes)
   int world_rank;
+  int data_comm_mask;
   static constexpr int master_rank = 0;
 
   // TODO: remove
@@ -710,6 +711,7 @@ class TaichiGrid {
   int current_timestamp;
 
   TaichiGrid() {
+    data_comm_mask = -1;
     current_timestamp = 0;
     blocks_dirty = false;
     if (with_mpi()) {
@@ -852,31 +854,36 @@ class TaichiGrid {
         r);
     if (with_mpi()) {
       // gather/send results
-      MPI_Status status;
-      MPI_Request request;
+      // MPI_Status status;
+      // MPI_Request request;
       if (world_rank == 0) {
         for (int i = 1; i < world_size; i++) {
           V peer_ret = 0;
-          MPI_Recv(&peer_ret, sizeof(V), MPI_UINT8_T, i, TAG_REDUCE_DATA,
-                   MPI_COMM_WORLD, &status);
+          TC_ASSERT(MPI_Recv(&peer_ret, sizeof(V), MPI_CHAR, i, TAG_REDUCE_DATA,
+                             MPI_COMM_WORLD, MPI_STATUS_IGNORE) == MPI_SUCCESS);
           ret = r(ret, peer_ret);
         }
         // send resutls to peers
         for (int i = 1; i < world_size; i++) {
-          MPI_Isend(&ret, sizeof(V), MPI_UINT8_T, i, TAG_REDUCE_DATA_REDUCED,
-                    MPI_COMM_WORLD, &request);
+          TC_ASSERT(MPI_Send(&ret, sizeof(V), MPI_CHAR, i,
+                             TAG_REDUCE_DATA_REDUCED,
+                             MPI_COMM_WORLD) == MPI_SUCCESS);
         }
+        MPI_Barrier(MPI_COMM_WORLD);
         return ret;
       } else {
-        MPI_Isend(&ret, sizeof(V), MPI_UINT8_T, 0, TAG_REDUCE_DATA,
-                  MPI_COMM_WORLD, &request);
+        TC_ASSERT(MPI_Send(&ret, sizeof(V), MPI_CHAR, 0, TAG_REDUCE_DATA,
+                           MPI_COMM_WORLD) == MPI_SUCCESS);
         V reduced;
-        MPI_Recv(&reduced, sizeof(V), MPI_UINT8_T, 0, TAG_REDUCE_DATA_REDUCED,
-                 MPI_COMM_WORLD, &status);
+        TC_ASSERT(MPI_Recv(&reduced, sizeof(V), MPI_CHAR, 0,
+                           TAG_REDUCE_DATA_REDUCED, MPI_COMM_WORLD,
+                           MPI_STATUS_IGNORE) == MPI_SUCCESS);
+        MPI_Barrier(MPI_COMM_WORLD);
         return reduced;
       }
+    } else {
+      return ret;
     }
-    return ret;
   }
 
   template <typename T, typename R>
@@ -998,12 +1005,42 @@ class TaichiGrid {
   };
 
   std::vector<std::vector<VectorI>> requested_blocks;
-  std::vector<std::vector<Block>> block_buffers;
+  std::vector<std::vector<uint8>> block_buffers;
+
+  TC_FORCE_INLINE bool need_sending_channel(int i) {
+    return (data_comm_mask >> i) & 1;
+  }
 
   std::vector<Block *> fetch_neighbours(int timestamp) {
+    TC_ASSERT(Block::soa);
     constexpr bool debug = false;
     TC_ASSERT(with_mpi());
     requested_blocks.resize(world_size);
+
+    // hacl
+    // constexpr int num_channels = Block::Node::num_channels;
+    constexpr int num_channels = 16;
+
+    int num_useful_channels = 0;
+    int useful_channels[64];
+
+    for (int i = 0; i < num_channels; i++) {
+      if (need_sending_channel(i)) {
+        useful_channels[num_useful_channels++] = i;
+      }
+    }
+
+    // hack
+    using element_type = float32;
+    int header_size = 64;
+    int data_size_per_block =
+        header_size +
+        Block::num_nodes * sizeof(element_type) * num_useful_channels;
+
+    TC_P(data_size_per_block);
+    TC_P(sizeof(Block));
+
+    std::size_t channel_size = sizeof(element_type) * Block::num_nodes;
 
     {
       TC_PROFILER("calc blocks to fetch");
@@ -1028,7 +1065,7 @@ class TaichiGrid {
     MPI_Status stats[world_size];
     std::size_t num_sent_blocks[world_size];
     std::size_t num_requested_blocks[world_size];
-    std::vector<Block> recv_blocks;
+    std::vector<uint8> recv_blocks;
 
     const auto coord_buffer_size = 1000000;
 
@@ -1099,8 +1136,8 @@ class TaichiGrid {
         auto &block_buffer = block_buffers[p];
         {
           TC_PROFILER("resize coord buffer");
-          if (count > (int)block_buffer.size())
-            block_buffer.resize(count);
+          if (count * data_size_per_block > (int)block_buffer.size())
+            block_buffer.resize(count * data_size_per_block);
         }
         num_sent_blocks[p] = 0;
         {
@@ -1110,8 +1147,13 @@ class TaichiGrid {
             auto b = get_block_if_exist(coord, timestamp);
             if (b != nullptr) {
               // TC_P(coord);
-              std::memcpy(&block_buffer[num_sent_blocks[p]++], b,
-                          sizeof(Block));
+              auto dest = reinterpret_cast<Block *>(
+                  &block_buffer[data_size_per_block * num_sent_blocks[p]++]);
+              std::memcpy(dest, b, header_size);
+              for (int j = 0; j < num_useful_channels; j++) {
+                std::memcpy(dest->nodes[j], &b->nodes[useful_channels[j]],
+                            channel_size);
+              }
             }
           }
         }
@@ -1122,15 +1164,13 @@ class TaichiGrid {
         TC_PROFILE("Isend count",
                    MPI_Isend(&num_sent_blocks[p], 1, MPI_INT32_T, p,
                              TAG_REPLY_BLOCK_NUM, MPI_COMM_WORLD, &reqs[p]));
-        TC_PROFILE(
-            "Isend blocks",
-            MPI_Isend(block_buffer.data(), num_sent_blocks[p] * sizeof(Block),
-                      MPI_CHAR, p, TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &reqs[p]));
+        TC_PROFILE("Isend blocks",
+                   MPI_Isend(block_buffer.data(),
+                             num_sent_blocks[p] * data_size_per_block, MPI_CHAR,
+                             p, TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &reqs[p]));
         if (debug)
           TC_INFO("Rank {} sent {} blocks to rank {}", world_rank,
                   num_sent_blocks[p], p);
-        // TODO: serialize to save communication. For now, we just take the
-        // whole block
       }
       // TC_P(sizeof(Block));
     }
@@ -1147,12 +1187,11 @@ class TaichiGrid {
                             MPI_COMM_WORLD, &stats[p]));
         if (debug) {
           TC_WARN("rank {} Receiving {} blocks", world_rank, num_blocks);
-          TC_P(sizeof(Block));
         }
         {
           TC_PROFILER("Resize buffer")
-          if (num_blocks > (int)recv_blocks.size()) {
-            recv_blocks.resize(num_blocks);
+          if (num_blocks * data_size_per_block > (int)recv_blocks.size()) {
+            recv_blocks.resize(num_blocks * data_size_per_block);
           }
         }
 
@@ -1161,20 +1200,26 @@ class TaichiGrid {
 
         {
           TC_PROFILER("Recv blocks");
-          MPI_Recv(&recv_blocks[0], num_blocks * sizeof(Block), MPI_CHAR, p,
-                   TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &stats[p]);
+          MPI_Recv(&recv_blocks[0], num_blocks * data_size_per_block, MPI_CHAR,
+                   p, TAG_REPLY_BLOCKS, MPI_COMM_WORLD, &stats[p]);
         }
         if (debug)
           TC_WARN("rank {} Received {} blocks", world_rank, num_blocks);
         {
           TC_PROFILER("save blocks");
           for (int i = 0; i < num_blocks; i++) {
-            touch(recv_blocks[i].base_coord, timestamp);
-            auto local_b =
-                get_block_if_exist(recv_blocks[i].base_coord, timestamp);
-            TC_ASSERT(local_b);
-            new_blocks.push_back(local_b);
-            std::memcpy(local_b, &recv_blocks[i], sizeof(Block));
+            auto &r = *reinterpret_cast<Block *>(recv_blocks.data() +
+                                                 data_size_per_block * i);
+            touch(r.base_coord, timestamp);
+            auto &local_b = *get_block_if_exist(r.base_coord, timestamp);
+            TC_ASSERT(&local_b != nullptr);
+            new_blocks.push_back(&local_b);
+            std::memcpy(&local_b, &r, header_size);
+
+            for (int j = 0; j < num_useful_channels; j++) {
+              std::memcpy(local_b.nodes[useful_channels[j]], &r.nodes[j],
+                          channel_size);
+            }
           }
         }
       }
@@ -1433,8 +1478,10 @@ struct TestParticle {
   Vector3f position, velocity;
 };
 
+/*
 using TestGrid =
     TaichiGrid<TBlock<Vector3f, TestParticle>, TSize3D<128, 128, 128>>;
+    */
 
 template <typename Block>
 void stitch_dilated_grids(Block &b, TAncestors<Block> &an) {

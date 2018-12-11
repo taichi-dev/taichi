@@ -1,4 +1,5 @@
 #include "taichi_grid.h"
+#include <taichi/io/io.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -125,7 +126,7 @@ class ClothSimulation {
   }
 
   void run() {
-    std::experimental::filesystem::create_directories("/tmp/outputs");
+    create_directories("/tmp/outputs");
     for (int i = 0; i < num_frames; i++) {
       {
         TC_PROFILER("simulation");

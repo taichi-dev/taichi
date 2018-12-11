@@ -1,6 +1,6 @@
 set(TAICHI_PROJECT_NAME "pangu")
 
-file(GLOB_RECURSE PROJECT_SOURCES "lang/*.cpp" "lang/*.h")
+file(GLOB_RECURSE PROJECT_SOURCES "lang/*.cpp" "lang/*.h" "pangu/*.cpp" "pangu/*.h")
 
 include_directories(include)
 

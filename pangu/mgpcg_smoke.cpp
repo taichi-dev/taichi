@@ -84,9 +84,10 @@ Vector3 hsv2rgb(Vector3 hsv) {
   return Vector3(r, g, b);
 }
 
-constexpr int per_block_particles = 0; // 2048
+constexpr int per_block_particles = 0;  // 2048
 
-using Block = TBlock<Node, Particle, TSize3D<8>, 0, per_block_particles, BlockFlags>;
+using Block =
+    TBlock<Node, Particle, TSize3D<8>, 0, per_block_particles, BlockFlags>;
 
 class MGPCGSmoke {
  public:
@@ -213,6 +214,7 @@ class MGPCGSmoke {
   }
 
   void residual(int level, int U, int B, int R) {
+    grids[level]->data_comm_mask = (1 << U) + (1 << B) + (1 << R);
     TC_PROFILER("residual");
     grids[level]->advance(
         [&](Block &b, Grid::Ancestors &an) {
@@ -233,6 +235,7 @@ class MGPCGSmoke {
           map_block(b, R, out, scratchU, scratchB);
         },
         false, false, false, true);
+    grids[level]->data_comm_mask = -1;
   }
 
   void multiply(int channel_out, int channel_in) {
@@ -865,14 +868,16 @@ auto mgpcg = [](const std::vector<std::string> &params) {
 TC_REGISTER_TASK(mgpcg);
 
 auto benchmark_pangu = []() {
+  TC_P(sizeof(Block));
   std::unique_ptr<MGPCGSmoke> mgpcg;
   mgpcg = std::make_unique<MGPCGSmoke>(true);
   for (int i = 0;; i++) {
     TC_TIME(mgpcg->benchmark_map());
     TC_TIME(mgpcg->benchmark_reduce());
     TC_TIME(mgpcg->benchmark_advance());
-    TC_INFO("# Active blocks {}", mgpcg->grids[0]->num_active_blocks());
-    TC_INFO("Sum should be {}", (i + 1) * 32 * 1024 * 1024.0);
+    TC_INFO("iter {} # Active blocks {}", i,
+            mgpcg->grids[0]->num_active_blocks());
+    TC_INFO("iter {} Sum should be {}", i, (i + 1) * 32 * 1024 * 1024.0);
   }
 };
 

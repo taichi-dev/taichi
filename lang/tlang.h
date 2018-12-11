@@ -93,9 +93,10 @@ struct MemoryAllocator {
     }
 
     void materialize() {
-      TC_ASSERT(bool(addr) ^ bool(ch.size() == 0));
-      TC_ASSERT(ch.size());
-      TC_ASSERT(addr);
+      TC_P(depth);
+      TC_P(addr);
+      TC_P(ch.size());
+      TC_ASSERT(bool(addr == nullptr) ^ bool(ch.size() == 0));
       data_size = 0;
       for (auto &ch : ch) {
         ch->offset = offset;
@@ -104,7 +105,7 @@ struct MemoryAllocator {
         offset += ch->data_size;
       }
       data_size = offset * repeat_factor;
-      group_size = ch[0]->group_size * repeat_factor;
+      group_size = (ch.size() ? ch[0]->group_size : 1) * repeat_factor;
     }
 
     void set() {
@@ -132,14 +133,14 @@ struct MemoryAllocator {
     }
 
     Node &group() {
-      TC_ASSERT(depth >= 3);
+      TC_ASSERT(depth >= 2);
       auto n = create(depth + 1);
       ch.push_back(n);
       return *n;
     }
 
     Node &stream() {
-      TC_ASSERT(depth == 2);
+      TC_ASSERT(depth == 1);
       auto n = create(depth + 1);
       ch.push_back(n);
       return *n;
@@ -150,9 +151,11 @@ struct MemoryAllocator {
       return *this;
     }
 
-    void place(Address &addr) {
+    Node &place(Address &new_addr) {
+      TC_ASSERT(depth >= 3);
       TC_ASSERT(this->addr == nullptr);
-      ch.push_back(create(depth + 1, &addr));
+      ch.push_back(create(depth + 1, &new_addr));
+      return *this;
     }
   };
 
@@ -169,18 +172,17 @@ struct MemoryAllocator {
     root->is_root = true;
   }
 
-  Handle<Node> buffer(int id) {
+  Node &buffer(int id) {
     while (root->ch.size() <= id) {
       root->ch.push_back(create(1));
     }
     auto ret = root->ch[id];
-    return ret;
+    return *ret;
   }
 
   void materialize() {
-    for (auto &stream : root->ch) {
-      stream->materialize();
-    }
+    root->materialize();
+    root->set();
   }
 };
 
@@ -285,6 +287,11 @@ Node::Node(Type type, Expr ch0, Expr ch1) : Node(type) {
   ch.resize(2);
   ch[0] = ch0;
   ch[1] = ch1;
+}
+
+inline Expr placeholder() {
+  auto n = std::make_shared<Node>(NodeType::load);
+  return Expr(n);
 }
 
 inline Expr load(Address addr) {

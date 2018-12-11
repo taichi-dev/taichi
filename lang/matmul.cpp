@@ -794,6 +794,14 @@ TC_REGISTER_TASK(memcpy_test);
 auto allocator_test  = []() {
   using namespace Tlang;
   MemoryAllocator alloc;
+  auto &bundle = alloc.buffer(0).stream().group().repeat(4);
+  Expr A = placeholder(), B = placeholder();
+  bundle.place(A->addr);
+  bundle.place(B->addr);
+  alloc.materialize();
+
+  TC_P(A->addr);
+  TC_P(B->addr);
 };
 
 TC_REGISTER_TASK(allocator_test);

@@ -532,6 +532,7 @@ class CodeGenBase : public Visitor {
   std::string func_name;
   int id;
   MemoryAllocator alloc;
+  using FunctionType = void (*)(float32 *, float32 *, float32 *, int);
 
   CodeGenBase() : Visitor(Visitor::Order::child_first) {
     code = "";
@@ -566,6 +567,33 @@ class CodeGenBase : public Visitor {
     return fmt::format("{}/tmp{:04d}.so", folder, id);
 #endif
   }
+
+  template <typename... Args>
+  void emit_code(std::string f, Args &&... args) {
+    if (sizeof...(args)) {
+      code += fmt::format(f, std::forward<Args>(args)...);
+    } else {
+      code += f;
+    }
+  }
+
+  void write_code_to_file() {
+    {
+      std::ofstream of(get_source_fn());
+      of << code;
+    }
+    auto format_ret =
+        std::system(fmt::format("clang-format -i {}", get_source_fn()).c_str());
+    trash(format_ret);
+  }
+
+  FunctionType load_function() {
+    auto dll = dlopen(("./" + get_library_fn()).c_str(), RTLD_LAZY);
+    TC_ASSERT(dll != nullptr);
+    auto ret = dlsym(dll, func_name.c_str());
+    TC_ASSERT(ret != nullptr);
+    return (FunctionType)ret;
+  }
 };
 
 class CPUCodeGen : public CodeGenBase {
@@ -577,8 +605,6 @@ class CPUCodeGen : public CodeGenBase {
   int simd_width;
   int group_size;
   int num_groups;
-
-  using FunctionType = void (*)(float32 *, float32 *, float32 *, int);
 
  public:
   CPUCodeGen() : CodeGenBase() {
@@ -629,15 +655,6 @@ class CPUCodeGen : public CodeGenBase {
     return fmt::format("&{}[{} * n + {} * (g + loop_index) + {} + {}]",
                        buffer_name, addr.coeff_imax, stride, offset,
                        extra_offset);
-  }
-
-  template <typename... Args>
-  void emit_code(std::string f, Args &&... args) {
-    if (sizeof...(args)) {
-      code += fmt::format(f, std::forward<Args>(args)...);
-    } else {
-      code += f;
-    }
   }
 
   void visit(Expr &expr) override {
@@ -790,13 +807,7 @@ class CPUCodeGen : public CodeGenBase {
 
   // group_size should be batch_size here...
   FunctionType compile() {
-    {
-      std::ofstream of(get_source_fn());
-      of << code;
-    }
-    auto format_ret =
-        std::system(fmt::format("clang-format -i {}", get_source_fn()).c_str());
-    trash(format_ret);
+    write_code_to_file();
     auto cmd = fmt::format(
         "g++ {} -std=c++14 -shared -fPIC -O3 -march=native "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -o {}",
@@ -809,11 +820,7 @@ class CPUCodeGen : public CodeGenBase {
             .c_str());
     trash(objdump_ret);
 #endif
-    auto dll = dlopen(("./" + get_library_fn()).c_str(), RTLD_LAZY);
-    TC_ASSERT(dll != nullptr);
-    auto ret = dlsym(dll, func_name.c_str());
-    TC_ASSERT(ret != nullptr);
-    return (FunctionType)ret;
+    return load_function();
   }
 
   FunctionType get(Expr &e,

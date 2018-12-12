@@ -471,16 +471,6 @@ class CodeGen {
     return ret;
   }
 
-  Expr repeat(Expr &expr, int offset) {
-    TC_NOT_IMPLEMENTED
-    std::set<Expr> visited;
-    Expr new_expr;
-
-    // Copy with duplication detection
-
-    return new_expr;
-  }
-
   std::map<Expr, Expr> scalar_to_vector;
   // Create vectorized IR for the root node
   // the vector width should be the final SIMD instruction width
@@ -580,20 +570,6 @@ class CodeGen {
       expr->addr.coeff_aosoa_stride = 0;
     }
   }
-
-  /*
-  void vectorized_codegen(Expr &expr) {
-    for (auto &c: expr->ch) {
-      if (c) {
-        vectorized_codegen(c);
-      }
-    }
-    if (expr->var_name == "") {
-      expr->var_name = create_variable();
-    } else
-      return; // visited
-  }
-  */
 
   std::string get_vectorized_address(Address addr, int extra_offset = 0) {
     TC_ASSERT(addr.buffer_id != -1);
@@ -863,52 +839,6 @@ class CodeGen {
     }
     return ret;
   }
-
-  /*
-  void SLP(Expr expr, int group_size) {
-    inst = extract_instructions(expr);
-    TC_INFO("# instructions = {}", inst.size());
-    grouped = std::vector<bool>(inst.size(), false);
-
-    while (true) {
-      // Enumerate the instructions
-      int maximum_length = 0;
-      int inst_with_max_length = -1;
-      std::vector<int> C;
-      for (int i = 0; i < (int)inst.size(); i++) {
-        auto c = continuous_loads(i);
-        if (c.size() > maximum_length) {
-          maximum_length = c.size();
-          inst_with_max_length = i;
-          C = c;
-        }
-      }
-
-      // Extend
-      if (inst_with_max_length != -1) {
-        TC_P(C);
-        // Pack
-        TC_WARN_IF(C.size() % group_size != 0, "C.size() = {}", C.size());
-        groups.push_back(std::vector<int>());
-        for (int i = 0; i < (int)C.size(); i++) {
-          grouped[C[i]] = true;
-          groups.back().push_back(C[i]);
-        }
-      } else {
-        break;
-      }
-    }
-
-    TC_INFO("# groups {}", groups.size());
-    for (int i = 0; i < (int)groups.size(); i++) {
-      TC_INFO("Group {} size = {}", i, groups[i].size());
-    }
-
-    while (true) {
-      propagate();
-    }
-  }
-  */
 };
 }  // namespace Tlang
 

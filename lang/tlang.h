@@ -789,56 +789,6 @@ class CodeGen {
     return address1.same_type(address2) &&
            address1.offset() + 1 == address2.offset();
   }
-
-  std::vector<Expr> extract_instructions(Expr root_expr) {
-    std::vector<Expr> inst;
-    std::set<void *> visited;
-
-    std::function<void(Expr)> walk = [&](Expr expr) -> void {
-      TC_ASSERT(expr);
-      if (visited.find(expr) != visited.end())
-        return;
-      visited.insert(expr);
-      for (auto &ch : expr->ch) {
-        walk(ch);
-      }
-      inst.push_back(expr);
-    };
-
-    walk(root_expr);
-
-    return inst;
-  }
-
-  std::vector<Expr> inst;
-  std::vector<std::vector<int>> groups;
-  std::vector<bool> grouped;
-
-  std::vector<int> continuous_loads(int i) {
-    std::vector<int> ret;
-    if (grouped[i] || inst[i]->type != NodeType::load) {
-      return ret;
-    }
-    ret.push_back(i);
-    while (1) {
-      bool found = false;
-      for (int j = 0; j < (int)inst.size(); j++) {
-        if (grouped[j] || i == j || inst[i]->type != NodeType::load) {
-          continue;
-        }
-        if (prior_to(inst[i], inst[j])) {
-          ret.push_back(j);
-          i = j;
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        break;
-      }
-    }
-    return ret;
-  }
 };
 }  // namespace Tlang
 

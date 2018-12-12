@@ -433,9 +433,8 @@ class CodeGen {
     code += "using float32 = float;\n";
     code += "using float64 = double;\n\n";
     code += "extern \"C\" void " + func_name +
-            "(float32 *buffer00, float32 *buffer01, float32 "
-            "*buffer02, "
-            "int n) {\n";
+            "(float32 * __restrict__ buffer00, float32 * __restrict__ buffer01, "
+            "float32 * __restrict__ buffer02, int n) {\n";
     code += "#define LOOP(loop_index) {\\\n";
     auto vectorized_expr = vectorize(expr, group_size, num_groups);
     code_gen(vectorized_expr);
@@ -482,7 +481,7 @@ class CodeGen {
   }
 
   std::map<Expr, Expr> scalar_to_vector;
-  // Create vectorized IR
+  // Create vectorized IR for the root node
   // the vector width should be the final SIMD instruction width
   Expr vectorize(Expr &expr, int group_size, int num_groups) {
     TC_ASSERT(group_size * num_groups == simd_width);
@@ -494,14 +493,16 @@ class CodeGen {
     // Create the root group
     auto combined = Expr::create(NodeType::combine);
     combined->is_vectorized = true;
+    // for each batch (group)
     for (int k = 0; k < (int)expr->ch.size() / group_size; k++) {
       auto root = Expr::create(NodeType::store);
       root->is_vectorized = true;
       bool has_prior_to = false, has_same = false;
-      for (int i = k * group_size; i < (k + 1) * group_size; i++) {
-        auto ch = expr->ch[i];
+      for (int i = 0; i < group_size; i++) {
+        auto ch = expr->ch[k * group_size + i];
         TC_ASSERT(ch->type == NodeType::store);
-        root->members.push_back(ch);
+        root->members.push_back(ch); // put scalar inst into vector members
+        TC_ASSERT(i < root->members.size());
         if (i > k * group_size) {
           if (prior_to(root->members[i - 1], root->members[i])) {
             has_prior_to = true;

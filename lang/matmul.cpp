@@ -16,7 +16,7 @@ constexpr real cpu_frequency = 4.2_f;
 
 // constexpr int enlarge = 4096;
 constexpr int enlarge = 1;
-constexpr int rounds = 16384 * 2048 / enlarge;
+constexpr int rounds = 16384 / 8 * 2048 / enlarge;
 constexpr int N = 256 * enlarge;
 
 template <int dim, typename T>
@@ -352,27 +352,42 @@ Matrix operator+(const Matrix &A, const Matrix &B) {
 }  // namespace Tlang
 
 template <int dim, typename T>
-real Tlang_matmatmul(Tlang::CodeGen::Mode mode, int simd_width) {
+real Tlang_matmatmul(Tlang::CodeGen::Mode mode,
+                     int simd_width,
+                     int layout = 0) {
   using namespace Tlang;
 
   Matrix a(dim, dim), b(dim, dim);
 
   MemoryAllocator alloc;
-  // AOSOA
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
-      alloc.buffer(0)
-          .stream(0)
-          .group(0)
-          .group(i * dim + j)
-          .repeat(simd_width)
-          .place(a(i, j));
-      alloc.buffer(1)
-          .stream(0)
-          .group(0)
-          .group(i * dim + j)
-          .repeat(simd_width)
-          .place(b(i, j));
+      if (layout == 0) {
+        // AOSOA
+        alloc.buffer(0)
+            .stream(0)
+            .group(0)
+            .group(i * dim + j)
+            .repeat(simd_width)
+            .place(a(i, j));
+        alloc.buffer(1)
+            .stream(0)
+            .group(0)
+            .group(i * dim + j)
+            .repeat(simd_width)
+            .place(b(i, j));
+      } else {
+        alloc.buffer(0)
+            .stream(0)
+            .group(j)
+            .repeat(simd_width / dim)
+            .place(a(i, j));
+        alloc.buffer(1)
+            .stream(0)
+            .group(j)
+            .repeat(simd_width / dim)
+            .place(b(i, j));
+      }
     }
   }
 
@@ -381,20 +396,36 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode, int simd_width) {
   Expr ret;
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
-      c(i, j) = ret.store(c(i, j));
-      alloc.buffer(2)
-          .stream(0)
-          .group(0)
-          .group(i * dim + j)
-          .repeat(simd_width)
-          .place(c(i, j));
+      if (layout == 0) {
+        c(i, j) = ret.store(c(i, j));
+      } else {
+        c(j, i) = ret.store(c(j, i));
+      }
+    }
+  }
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      if (layout == 0) {
+        alloc.buffer(2)
+            .stream(0)
+            .group(0)
+            .group(i * dim + j)
+            .repeat(simd_width)
+            .place(c(i, j));
+      } else {
+        alloc.buffer(2)
+            .stream(0)
+            .group(j)
+            .repeat(simd_width / dim)
+            .place(c(i, j));
+      }
     }
   }
 
   alloc.materialize();
 
   CodeGen cg(mode);
-  auto func = cg.get(ret, 1);
+  auto func = cg.get(ret, layout == 0 ? 1 : dim);
 
   AlignedAllocator A(sizeof(T) * N * dim * dim);
   AlignedAllocator B(sizeof(T) * N * dim * dim);
@@ -412,7 +443,7 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode, int simd_width) {
   }
   t = Time::get_time() - t;
 
-  if (simd_width == 8) {
+  if (simd_width == 8 && layout == 0) {  // TODO: test layout = 1
     AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), D.get<T>());
 
     for (int i = 0; i < N * dim * dim; i++) {
@@ -426,8 +457,13 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode, int simd_width) {
 }
 
 template <int dim, typename T>
-real TlangVec8_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::vector, 8);
+real TlangVec8AOSOA_matmatmul() {
+  return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::vector, 8, 0);
+}
+
+template <int dim, typename T>
+real TlangVec8Inter_matmatmul() {
+  return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::vector, 8, 1);
 }
 
 template <int dim, typename T>
@@ -455,7 +491,8 @@ real TlangSca16_matmatmul() {
 template <int dim, typename T>
 void run() {
   fmt::print("Matrix<{}, {}>:\n", dim, sizeof(T) == 4 ? "float32" : "float64");
-  BENCHMARK(TlangVec8);
+  BENCHMARK(TlangVec8AOSOA);
+  BENCHMARK(TlangVec8Inter);
   // BENCHMARK(TlangSca8);
   // BENCHMARK(TlangVec16);
   // BENCHMARK(TlangSca16);
@@ -484,9 +521,10 @@ auto benchmark_matmul = []() {
           __GNUC_PATCHLEVEL__);
 
   run<2, float32>();
-  run<3, float32>();
+  // run<3, float32>();
   run<4, float32>();
-  run<5, float32>();
+  run<8, float32>();
+  // run<5, float32>();
   /*
   run<6, float32>();
   run<7, float32>();
@@ -849,7 +887,8 @@ TC_NAMESPACE_END
 
 /*
 TODO:
-
  vec3
  why eigen large variance
+ check unplaced variable
+ auto batch sorting
  */

@@ -1,5 +1,7 @@
 #pragma once
 
+#define FUNC_DECL
+
 #if !defined(TC_INCLUDED)
 
 #include <cstdio>
@@ -15,6 +17,8 @@ using uint64 = unsigned long long;
 
 #if defined(TLANG_GPU)
 #include <cuda_runtime.h>
+#undef FUNC_DECL
+#define FUNC_DECL __host__ __device__
 #endif
 
 #endif
@@ -45,16 +49,16 @@ struct Context {
   }
 
   template <typename T>
-  T *get_buffer(int i) {
+  FUNC_DECL T *get_buffer(int i) {
     return reinterpret_cast<T *>(buffers[i]);
   }
 
   template <typename T>
-  T &get_parameter(int i) {
+  FUNC_DECL T &get_parameter(int i) {
     return *reinterpret_cast<T *>(&parameters[i]);
   }
 
-  uint64 &get_range(int i) {
+  FUNC_DECL uint64 &get_range(int i) {
     return ranges[i];
   }
 };

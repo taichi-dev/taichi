@@ -581,12 +581,6 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
       if (layout == 0) {
         buffer.stream().group().place(m(i, j));
       } else if (layout == 1) {
-        /*
-        addr.coeff_i = 1;
-        addr.coeff_const = (i * dim + j) * simd_width;
-        addr.coeff_aosoa_group_size = simd_width;
-        addr.coeff_aosoa_stride = (dim * dim - 1) * simd_width;
-        */
         buffer.stream(0)
             .group(j)
             .repeat(simd_width / dim)
@@ -604,12 +598,6 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
     if (layout == 0) {
       alloc.buffer(1).stream().group().place(v(i));
     } else if (layout == 1) {
-      /*
-      addr.coeff_i = 1;
-      addr.coeff_aosoa_group_size = simd_width;
-      addr.coeff_aosoa_stride = (dim - 1) * simd_width;
-      addr.coeff_const = i * simd_width;
-      */
       alloc.buffer(1).stream(0).group(0).repeat(simd_width / dim).place(v(i));
     } else {
       addr.coeff_i = dim;
@@ -626,12 +614,6 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
     if (layout == 0) {
       alloc.buffer(2).stream().group().place(mv(i));
     } else if (layout == 1) {
-      /*
-      addr.coeff_i = 1;
-      addr.coeff_aosoa_group_size = simd_width;
-      addr.coeff_aosoa_stride = (dim - 1) * simd_width;
-      addr.coeff_const = i * simd_width;
-      */
       alloc.buffer(2).stream(0).group(0).repeat(simd_width / dim).place(mv(i));
     } else {
       addr.coeff_i = dim;

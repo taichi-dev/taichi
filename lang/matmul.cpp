@@ -474,8 +474,8 @@ real Tlang_matmatmul(Tlang::CPUCodeGen::Mode mode,
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
         int ind1 = c(j, k)->addr.eval(i, N);
-        int ind2 = (i / simd_width * dim * dim + j * dim + k) * simd_width +
-                   i % simd_width;
+        int ind2 = (i / 8 * dim * dim + j * dim + k) * 8 +
+                   i % 8;
         A_.get<float32>()[ind1] = A.get<float32>()[ind2];
         B_.get<float32>()[ind1] = B.get<float32>()[ind2];
       }
@@ -575,7 +575,7 @@ void initialize_benchmark() {
 auto tlang_matmatmul = []() {
   initialize_benchmark();
 
-  run_matmatmul<1, float32>();
+  // run_matmatmul<1, float32>();
   run_matmatmul<2, float32>();
   run_matmatmul<4, float32>();
   // run_matmatmul<8, float32>();

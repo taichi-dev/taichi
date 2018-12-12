@@ -456,6 +456,7 @@ class GPUCodeGen : public CodeGenBase {
  public:
   GPUCodeGen() : CodeGenBase() {
     suffix = "cu";
+    simd_width = 32;
   }
 
   std::string kernel_name() {
@@ -477,8 +478,9 @@ class GPUCodeGen : public CodeGenBase {
     emit_code("auto n = context.get_range(0);\n");
     emit_code("auto linear_idx = blockIdx.x * blockDim.x + threadIdx.x;\n");
     emit_code("if (linear_idx >= n) return;\n");
-    emit_code("auto g = linear_idx / (32 / {}); \n", group_size);
-    emit_code("auto sub_g_id = linear_idx % (32 / {}); \n", group_size);
+    emit_code("auto g = linear_idx / ({} / {}); \n", simd_width, group_size);
+    emit_code("auto sub_g_id = linear_idx % ({} / {}); \n", simd_width,
+              group_size);
     emit_code("auto g_idx = linear_idx % {}; \n", group_size);
     emit_code("int l = threadIdx.x & 0x1f;\n");
     emit_code("int loop_index = 0;");
@@ -574,8 +576,8 @@ class GPUCodeGen : public CodeGenBase {
   FunctionType get(Expr &e,
                    int group_size,
                    CPUCodeGen::Mode mode = CPUCodeGen::Mode::vector,
-                   int simd_width = 8) {
-    this->simd_width = simd_width;
+                   int simd_width = 32) {
+    TC_ASSERT(simd_width == 32);
     alloc.materialize();
     auto vectorized_expr = Vectorizer(simd_width).run(e, group_size);
     codegen(vectorized_expr, group_size);
@@ -595,8 +597,10 @@ class GPUCodeGen : public CodeGenBase {
         num_groups / addr.coeff_aosoa_group_size * addr.coeff_aosoa_stride;
     auto offset = addr.coeff_const;
     return fmt::format(
-        "{}[{} * n + {} * (g + loop_index) + sub_g_id * {} + {} + {} + g_idx * {}]",
-        buffer_name, addr.coeff_imax, warp_stride, addr.coeff_i, offset, extra_offset, g_idx_inc);
+        "{}[{} * n + {} * (g + loop_index) + sub_g_id * {} + {} + {} + g_idx * "
+        "{}]",
+        buffer_name, addr.coeff_imax, warp_stride, addr.coeff_i, offset,
+        extra_offset, g_idx_inc);
   }
 };
 

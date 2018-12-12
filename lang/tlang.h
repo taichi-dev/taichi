@@ -13,7 +13,7 @@ using Handle = std::shared_ptr<T>;
 class Expr;
 
 struct Address {
-  int64 stream_id;
+  int64 buffer_id;
   int64 coeff_i;
   int64 coeff_imax;
   int64 coeff_const;  // offset
@@ -22,7 +22,7 @@ struct Address {
   int64 coeff_aosoa_group_size;
   int64 coeff_aosoa_stride;
 
-  TC_IO_DEF(stream_id,
+  TC_IO_DEF(buffer_id,
             coeff_i,
             coeff_imax,
             coeff_const,
@@ -30,7 +30,7 @@ struct Address {
             coeff_aosoa_group_size);
 
   Address() {
-    stream_id = -1;
+    buffer_id = -1;
     coeff_i = 0;
     coeff_imax = 0;
     coeff_const = 0;
@@ -39,18 +39,18 @@ struct Address {
   }
 
   bool initialized() {
-    return stream_id != -1;
+    return buffer_id != -1;
   }
 
   TC_FORCE_INLINE bool same_type(Address o) {
-    return stream_id == o.stream_id && coeff_i == o.coeff_i &&
+    return buffer_id == o.buffer_id && coeff_i == o.coeff_i &&
            coeff_imax == o.coeff_imax &&
            coeff_aosoa_group_size == o.coeff_aosoa_group_size &&
            coeff_aosoa_stride == o.coeff_aosoa_stride;
   }
 
   TC_FORCE_INLINE bool operator==(Address o) {
-    return stream_id == o.stream_id && coeff_i == o.coeff_i &&
+    return buffer_id == o.buffer_id && coeff_i == o.coeff_i &&
            coeff_imax == o.coeff_imax && coeff_const == o.coeff_const &&
            coeff_aosoa_group_size == o.coeff_aosoa_group_size &&
            coeff_aosoa_stride == o.coeff_aosoa_group_size;
@@ -116,7 +116,7 @@ struct AddrNode {
     int bundle_num_variables = -1;
     std::function<void(AddrNode *)> walk = [&](AddrNode *node) {
       if (node->addr) {
-        node->addr->stream_id = buffer_id;
+        node->addr->buffer_id = buffer_id;
         node->addr->coeff_i = node->coeff_i;
         node->addr->coeff_imax = coeff_imax;
         node->addr->coeff_aosoa_group_size = group_size;
@@ -338,7 +338,7 @@ inline Expr load(Address addr) {
   auto n = std::make_shared<Node>(NodeType::load);
   TC_ASSERT(addr.initialized());
   n->addr = addr;
-  TC_ASSERT(0 <= addr.stream_id && addr.stream_id < 3);
+  TC_ASSERT(0 <= addr.buffer_id && addr.buffer_id < 3);
   return Expr(n);
 }
 
@@ -416,8 +416,8 @@ class CodeGen {
     code += "using float32 = float;\n";
     code += "using float64 = double;\n\n";
     code += "extern \"C\" void " + func_name +
-            "(float32 *stream00, float32 *stream01, float32 "
-            "*stream02, "
+            "(float32 *buffer00, float32 *buffer01, float32 "
+            "*buffer02, "
             "int n) {\n";
     code += "#define LOOP(loop_index) {\\\n";
     auto vectorized_expr = vectorize(expr, group_size, num_groups);
@@ -577,14 +577,14 @@ class CodeGen {
   */
 
   std::string get_vectorized_address(Address addr, int extra_offset = 0) {
-    TC_ASSERT(addr.stream_id != -1);
-    auto stream_name = fmt::format("stream{:02d}", addr.stream_id);
+    TC_ASSERT(addr.buffer_id != -1);
+    auto buffer_name = fmt::format("buffer{:02d}", addr.buffer_id);
     auto stride =
         addr.coeff_i * num_groups +
         num_groups / addr.coeff_aosoa_group_size * addr.coeff_aosoa_stride;
     auto offset = addr.coeff_const;
     return fmt::format("&{}[{} * n + {} * (g + loop_index) + {} + {}]",
-                       stream_name, addr.coeff_imax, stride, offset,
+                       buffer_name, addr.coeff_imax, stride, offset,
                        extra_offset);
   }
 
@@ -619,7 +619,7 @@ class CodeGen {
         }
       }
     } else if (expr->type == NodeType::load) {
-      auto stream_name = fmt::format("stream{:02d}", expr->addr.stream_id);
+      auto buffer_name = fmt::format("buffer{:02d}", expr->addr.buffer_id);
 
       if (mode == Mode::vector) {
         // TC_P(expr->members.size());
@@ -717,12 +717,12 @@ class CodeGen {
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
           code += fmt::format("auto {} = {}[{} * i + {} + {}];\\\n",
-                              expr->var_name + suf, stream_name,
+                              expr->var_name + suf, buffer_name,
                               expr->addr.coeff_i, expr->addr.coeff_const, i);
         }
       }
     } else if (expr->type == NodeType::store) {
-      auto stream_name = fmt::format("stream{:02d}", expr->addr.stream_id);
+      auto buffer_name = fmt::format("buffer{:02d}", expr->addr.buffer_id);
       if (mode == Mode::vector) {
         std::string store_instr =
             // simd_width == 8 ? "_mm256_stream_ps" : "_mm512_stream_ps";
@@ -734,7 +734,7 @@ class CodeGen {
         TC_NOT_IMPLEMENTED
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
-          code += fmt::format("{}[{} * i + {} + {}] = {}; \\\n", stream_name,
+          code += fmt::format("{}[{} * i + {} + {}] = {}; \\\n", buffer_name,
                               expr->addr.coeff_i, expr->addr.coeff_const, i,
                               expr->ch[0]->var_name + suf);
         }

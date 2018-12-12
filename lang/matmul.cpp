@@ -360,13 +360,13 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode, int simd_width) {
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       Address addr;
-      addr.stream_id = 0;
+      addr.buffer_id = 0;
       addr.coeff_i = 1;
       addr.coeff_aosoa_stride = simd_width * dim * dim;
       addr.coeff_aosoa_group_size = simd_width;
       addr.coeff_const = simd_width * (i * dim + j);
       a(i, j) = load(addr);
-      addr.stream_id = 1;
+      addr.buffer_id = 1;
       b(i, j) = load(addr);
     }
   }
@@ -377,7 +377,7 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode, int simd_width) {
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       Address addr;
-      addr.stream_id = 2;
+      addr.buffer_id = 2;
       addr.coeff_i = dim * dim;
       addr.coeff_const = simd_width * (i * dim + j);
       ret.store(c(i, j), addr);
@@ -501,14 +501,14 @@ void test_vec_add() {
   using namespace Tlang;
   constexpr int n = 16;
   Address addr;
-  addr.stream_id = 0;
+  addr.buffer_id = 0;
   addr.coeff_i = 1;
   Expr a = load(addr);
-  addr.stream_id = 1;
+  addr.buffer_id = 1;
   Expr b = load(addr);
   auto c = a + b;
   Expr ret;
-  addr.stream_id = 2;
+  addr.buffer_id = 2;
   ret.store(c, addr);
   CodeGen cg;
   auto func = cg.get(ret, 1);
@@ -577,7 +577,7 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       Address addr;
-      addr.stream_id = 0;
+      addr.buffer_id = 0;
       if (layout == 0) {
         buffer.stream().group().place(m(i, j));
       } else if (layout == 1) {
@@ -601,7 +601,7 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
       // m(i, j) = load(addr);
     }
     Address addr;
-    addr.stream_id = 1;
+    addr.buffer_id = 1;
     if (layout == 0) {
       alloc.buffer(1).stream().group().place(v(i));
     } else if (layout == 1) {
@@ -622,7 +622,7 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
   auto mv = m * v;
   for (int i = 0; i < dim; i++) {
     Address addr;
-    addr.stream_id = 2;
+    addr.buffer_id = 2;
     mv(i) = ret.store(mv(i));
     if (layout == 0) {
       alloc.buffer(2).stream(0).group().place(mv(i));
@@ -742,10 +742,10 @@ auto test_slp = []() {
     addr.coeff_i = 1;
     addr.coeff_const = i;
 
-    addr.stream_id = 0;
+    addr.buffer_id = 0;
     vec_a(i) = load(addr);
 
-    addr.stream_id = 1;
+    addr.buffer_id = 1;
     vec_b(i) = load(addr);
   }
   Matrix vec_c = vec_a + vec_b;
@@ -754,7 +754,7 @@ auto test_slp = []() {
     addr.coeff_i = 1;
     addr.coeff_const = i;
 
-    addr.stream_id = 2;
+    addr.buffer_id = 2;
     ret.store(vec_c(i), addr);
   }
 

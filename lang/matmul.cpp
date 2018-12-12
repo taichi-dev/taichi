@@ -689,7 +689,6 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
 
   int64 enlarge = in_cache ? 1 : 4096;
   int64 n = taichi::N * enlarge;
-  int64 rounds = taichi::rounds / enlarge / dim / dim / (in_cache ? 1 : 5);
   TC_ASSERT(8 % dim == 0);
   int bs = 1;
   if (layout == 2) {  // interleaved
@@ -805,9 +804,8 @@ auto test_slp = []() {
 TC_REGISTER_TASK(test_slp)
 
 void memcpy_intel(void *a_, void *b_, std::size_t size) {
-  constexpr int PAGESIZE = 4096;
   constexpr int NUMPERPAGE = 512;  // # of elements to fit a page
-  std::size_t N = size / 8;
+  auto N = (int)size / 8;
   double *a = (double *)a_;
   double *b = (double *)b_;
   double temp;

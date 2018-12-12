@@ -73,6 +73,7 @@ struct Address {
 
 struct AddrNode {
   std::vector<Handle<AddrNode>> ch;
+  int depth;
   Address *addr;
 
   int group_size;
@@ -81,7 +82,6 @@ struct AddrNode {
   int offset;
   int buffer_id;
   int coeff_i;
-  int depth;
   // repeat included
   int data_size;
 
@@ -152,7 +152,7 @@ struct AddrNode {
       ch.push_back(n);
       return *n;
     } else {
-      while (ch.size() <= id) {
+      while ((int)ch.size() <= id) {
         auto n = create(depth + 1);
         ch.push_back(n);
       }
@@ -167,7 +167,7 @@ struct AddrNode {
       ch.push_back(n);
       return *n;
     } else {
-      while (ch.size() <= id) {
+      while ((int)ch.size() <= id) {
         auto n = create(depth + 1);
         ch.push_back(n);
       }
@@ -215,7 +215,7 @@ struct MemoryAllocator {
   }
 
   AddrNode &buffer(int id) {
-    while (root->ch.size() <= id) {
+    while ((int)root->ch.size() <= id) {
       root->ch.push_back(AddrNode::create(1));
       root->ch.back()->buffer_id = root->ch.size() - 1;
     }
@@ -446,7 +446,7 @@ class Vectorizer : public Visitor {
         auto ch = expr->ch[k * group_size + i];
         TC_ASSERT(ch->type == NodeType::store);
         root->members.push_back(ch);  // put scalar inst into vector members
-        TC_ASSERT(i < root->members.size());
+        TC_ASSERT(i < (int)root->members.size());
         if (i > k * group_size) {
           if (prior_to(root->members[i - 1], root->members[i])) {
             has_prior_to = true;
@@ -616,7 +616,7 @@ class CPUCodeGen : public Visitor {
 
   void visit(Expr &expr) override {
     TC_ASSERT(expr->is_vectorized);
-    TC_ASSERT(expr->members.size() == 0 || expr->members.size() == group_size);
+    TC_ASSERT(expr->members.size() == 0 || (int)expr->members.size() == group_size);
     // TC_P(expr->ch.size());
     if (expr->var_name == "")
       expr->var_name = create_variable();
@@ -783,7 +783,8 @@ class CPUCodeGen : public Visitor {
       std::ofstream of(get_source_fn());
       of << code;
     }
-    std::system(fmt::format("clang-format -i {}", get_source_fn()).c_str());
+    auto format_ret = std::system(fmt::format("clang-format -i {}", get_source_fn()).c_str());
+    trash(format_ret);
     auto cmd = fmt::format(
         "g++ {} -std=c++14 -shared -fPIC -O3 -march=native "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -o {}",
@@ -791,9 +792,10 @@ class CPUCodeGen : public Visitor {
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
 #if defined(TC_PLATFORM_LINUX)
-    system(
+    auto objdump_ret = system(
         fmt::format("objdump {} -d > {}.s", get_library_fn(), get_library_fn())
             .c_str());
+    trash(objdump_ret);
 #endif
     auto dll = dlopen(("./" + get_library_fn()).c_str(), RTLD_LAZY);
     TC_ASSERT(dll != nullptr);

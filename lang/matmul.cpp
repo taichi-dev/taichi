@@ -23,7 +23,7 @@ constexpr int N = 256 * enlarge;
 
 real measure_cpe(std::function<void()> target,
                  int64 elements_per_call,
-                 real time_second = 1) {
+                 real time_second = 0.5) {
   // first make rough estimate of run time.
   int64 batch_size = 1;
   while (true) {
@@ -58,13 +58,13 @@ real AOS_eigen_matmatmul() {
   B.resize(N);
   C.resize(N);
 
-  auto t = Time::get_time();
-  for (int r = 0; r < rounds; r++) {
-    for (int i = 0; i < N; i++) {
-      C[i] = A[i] * B[i];
-    }
-  }
-  return Time::get_time() - t;
+  return measure_cpe(
+      [&]() {
+        for (int i = 0; i < N; i++) {
+          C[i] = A[i] * B[i];
+        }
+      },
+      N);
 };
 
 template <int dim, typename T>
@@ -74,14 +74,14 @@ real AOS_eigen_unroll2_matmatmul() {
   B.resize(N);
   C.resize(N);
 
-  auto t = Time::get_time();
-  for (int r = 0; r < rounds; r++) {
-    for (int i = 0; i < N; i += 2) {
-      C[i] = A[i] * B[i];
-      C[i + 1] = A[i + 1] * B[i + 1];
-    }
-  }
-  return Time::get_time() - t;
+  return measure_cpe(
+      [&]() {
+        for (int i = 0; i < N; i += 2) {
+          C[i] = A[i] * B[i];
+          C[i + 1] = A[i + 1] * B[i + 1];
+        }
+      },
+      N);
 };
 
 template <int dim, typename T>
@@ -91,33 +91,17 @@ real AOS_eigen_unroll4_matmatmul() {
   B.resize(N);
   C.resize(N);
 
-  auto t = Time::get_time();
-  for (int r = 0; r < rounds; r++) {
-    for (int i = 0; i < N; i += 4) {
-      C[i] = A[i] * B[i];
-      C[i + 1] = A[i + 1] * B[i + 1];
-      C[i + 2] = A[i + 2] * B[i + 2];
-      C[i + 3] = A[i + 3] * B[i + 3];
-    }
-  }
-  return Time::get_time() - t;
+  return measure_cpe(
+      [&]() {
+        for (int i = 0; i < N; i += 4) {
+          C[i] = A[i] * B[i];
+          C[i + 1] = A[i + 1] * B[i + 1];
+          C[i + 2] = A[i + 2] * B[i + 2];
+          C[i + 3] = A[i + 3] * B[i + 3];
+        }
+      },
+      N);
 };
-
-template <int dim, typename T>
-real taichi_matmatmul() {
-  std::vector<TMatrix<T, dim>> A, B, C;
-  A.resize(N);
-  B.resize(N);
-  C.resize(N);
-
-  auto t = Time::get_time();
-  for (int r = 0; r < rounds; r++) {
-    for (int i = 0; i < N; i++) {
-      C[i] = A[i] * B[i];
-    }
-  }
-  return Time::get_time() - t;
-}
 
 template <int dim, typename T>
 real AOS_matmatmul() {
@@ -129,21 +113,21 @@ real AOS_matmatmul() {
   B.resize(N);
   C.resize(N);
 
-  auto t = Time::get_time();
-  for (int r = 0; r < rounds; r++) {
-    for (int t = 0; t < N; t++) {
-      for (int i = 0; i < dim; i++) {
-        for (int j = 0; j < dim; j++) {
-          T sum = 0;
-          for (int k = 0; k < dim; k++) {
-            sum += A[t].d[i][k] * B[t].d[k][j];
+  return measure_cpe(
+      [&]() {
+        for (int t = 0; t < N; t++) {
+          for (int i = 0; i < dim; i++) {
+            for (int j = 0; j < dim; j++) {
+              T sum = 0;
+              for (int k = 0; k < dim; k++) {
+                sum += A[t].d[i][k] * B[t].d[k][j];
+              }
+              C[t].d[i][j] = sum;
+            }
           }
-          C[t].d[i][j] = sum;
         }
-      }
-    }
-  }
-  return Time::get_time() - t;
+      },
+      N);
 }
 
 template <int dim, typename T>
@@ -199,9 +183,9 @@ class AlignedAllocator {
 
 // array of N * dim * dim * 8 * float32
 template <int dim>
-void AOSOA_matmul(float32 *A, float32 *B, float32 *C) {
+real AOSOA_matmul(float32 *A, float32 *B, float32 *C) {
   constexpr int simd_width = 8;
-  for (int r = 0; r < rounds; r++) {
+  auto task = [&]() {
     for (int t = 0; t < N / simd_width; t++) {
       __m256 a[dim * dim], b[dim * dim];
       const int p = dim * dim * simd_width * t;
@@ -220,10 +204,12 @@ void AOSOA_matmul(float32 *A, float32 *B, float32 *C) {
         }
       }
     }
-  }
+  };
+  return measure_cpe(task, N);
 }
 
 // array of N * dim * dim * 8 * float64
+/*
 template <int dim>
 void AOSOA_matmul(float64 *A, float64 *B, float64 *C) {
   constexpr int simd_width = 4;
@@ -248,6 +234,7 @@ void AOSOA_matmul(float64 *A, float64 *B, float64 *C) {
     }
   }
 }
+*/
 
 template <int dim, typename T>
 real AOSOA_AVX2_matmatmul() {
@@ -255,16 +242,14 @@ real AOSOA_AVX2_matmatmul() {
   AlignedAllocator B(sizeof(T) * N * dim * dim);
   AlignedAllocator C(sizeof(T) * N * dim * dim);
 
-  auto t = Time::get_time();
-  AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), C.get<T>());
-  return Time::get_time() - t;
+  return AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), C.get<T>());
 };
 
 // array of N * dim * dim * 8 * float32
 template <int dim>
-void SOA_matmul(float32 *A, float32 *B, float32 *C) {
+real SOA_matmul(float32 *A, float32 *B, float32 *C) {
   constexpr int simd_width = 8;
-  for (int r = 0; r < rounds; r++) {
+  auto task = [&]() {
     for (int t = 0; t < N / simd_width; t++) {
       __m256 a[dim * dim], b[dim * dim];
       for (int i = 0; i < dim * dim; i++) {
@@ -282,9 +267,11 @@ void SOA_matmul(float32 *A, float32 *B, float32 *C) {
         }
       }
     }
-  }
+  };
+  return measure_cpe(task, N);
 }
 
+/*
 // array of N * dim * dim * 8 * float64
 template <int dim>
 void SOA_matmul(float64 *A, float64 *B, float64 *C) {
@@ -309,6 +296,7 @@ void SOA_matmul(float64 *A, float64 *B, float64 *C) {
     }
   }
 }
+*/
 
 template <int dim, typename T>
 real SOA_AVX2_matmatmul() {
@@ -316,9 +304,7 @@ real SOA_AVX2_matmatmul() {
   AlignedAllocator B(sizeof(T) * N * dim * dim);
   AlignedAllocator C(sizeof(T) * N * dim * dim);
 
-  auto t = Time::get_time();
-  SOA_matmul<dim>(A.get<T>(), B.get<T>(), C.get<T>());
-  return Time::get_time() - t;
+  return SOA_matmul<dim>(A.get<T>(), B.get<T>(), C.get<T>());
 };
 
 namespace Tlang {
@@ -482,11 +468,8 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode,
     }
   }
 
-  auto t = Time::get_time();
-  for (int i = 0; i < rounds; i++) {
-    func(A_.get<T>(), B_.get<T>(), C.get<T>(), N);
-  }
-  t = Time::get_time() - t;
+  auto cpe =
+      measure_cpe([&]() { func(A_.get<T>(), B_.get<T>(), C.get<T>(), N); }, N);
 
   if (simd_width == 8) {
     AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), D.get<T>());
@@ -509,7 +492,7 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode,
     }
   }
 
-  return t;
+  return cpe;
 }
 
 template <int dim, typename T>
@@ -536,16 +519,14 @@ template <int dim, typename T>
 real TlangSca16_matmatmul() {
   return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::scalar, 16);
 }
-
-#define BENCHMARK(x)                                                 \
-  {                                                                  \
-    real t = x##_matmatmul<dim, T>();                                \
-    fmt::print("  {:18s} = {:10.3f} ms  {:10.3f} cyc / elem \n", #x, \
-               t * 1000.0_f, cpu_frequency * 1e9 * t / rounds / N);  \
+#define BENCHMARK(x)                                        \
+  {                                                         \
+    real t = x##_matmatmul<dim, T>();                       \
+    fmt::print("  {:18s} = {:10.3f} cyc / elem \n", #x, t); \
   }
 
 template <int dim, typename T>
-void run() {
+void run_matmatmul() {
   fmt::print("Matrix<{}, {}>:\n", dim, sizeof(T) == 4 ? "float32" : "float64");
   BENCHMARK(TlangVec8AOSOA);
   BENCHMARK(TlangVec8Inter);
@@ -576,21 +557,9 @@ auto benchmark_matmul = []() {
   TC_INFO("GCC   Version {}.{}.{}", __GNUC__, __GNUC_MINOR__,
           __GNUC_PATCHLEVEL__);
 
-  run<2, float32>();
-  // run<3, float32>();
-  run<4, float32>();
-  run<8, float32>();
-  // run<5, float32>();
-  /*
-  run<6, float32>();
-  run<7, float32>();
-  run<8, float32>();
-  run<9, float32>();
-  run<10, float32>();
-  run<2, float64>();
-  run<3, float64>();
-  run<4, float64>();
-  */
+  run_matmatmul<2, float32>();
+  run_matmatmul<4, float32>();
+  // run_matmatmul<8, float32>();
 };
 TC_REGISTER_TASK(benchmark_matmul);
 
@@ -641,22 +610,18 @@ void test_mat_vec_mul_eigen(int in_cache) {
 
   int enlarge = in_cache ? 1 : 4096;
   int64 n = taichi::N * enlarge;
-  int64 rounds = taichi::rounds / enlarge / dim / dim / (in_cache ? 1 : 5);
 
   EigenVector<Eigen::Matrix<float32, dim, dim>> m(n);
   EigenVector<Eigen::Matrix<float32, dim, 1>> v(n);
   EigenVector<Eigen::Matrix<float32, dim, 1>> mv(n);
 
-  for (int K = 0; K < 1; K++) {
-    float64 t = Time::get_time();
-    for (int i = 0; i < rounds; i++) {
-      for (int i = 0; i < n; i++) {
-        mv[i] = m[i] * v[i];
-      }
-    }
-    taichi::trash(mv[5]);
-    print_time(Time::get_time() - t, n * rounds);
-  }
+  print_cpe(measure_cpe(
+      [&]() {
+        for (int i = 0; i < n; i++) {
+          mv[i] = m[i] * v[i];
+        }
+      },
+      n));
 }
 
 template <int dim>

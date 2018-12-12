@@ -63,7 +63,8 @@ real measure_cpe(std::function<void()> target,
 template <int dim, typename T>
 real AOS_eigen_matmatmul() {
   using Matrix = Eigen::Matrix<T, dim, dim>;
-  EigenVector<Matrix> A(N, Matrix::Zero()), B(N, Matrix::Ones()), C(N, Matrix::Ones());
+  EigenVector<Matrix> A(N, Matrix::Zero()), B(N, Matrix::Ones()),
+      C(N, Matrix::Ones());
 
   return measure_cpe(
       [&]() {
@@ -77,7 +78,8 @@ real AOS_eigen_matmatmul() {
 template <int dim, typename T>
 real AOS_eigen_unroll2_matmatmul() {
   using Matrix = Eigen::Matrix<T, dim, dim>;
-  EigenVector<Matrix> A(N, Matrix::Zero()), B(N, Matrix::Ones()), C(N, Matrix::Ones());
+  EigenVector<Matrix> A(N, Matrix::Zero()), B(N, Matrix::Ones()),
+      C(N, Matrix::Ones());
 
   return measure_cpe(
       [&]() {
@@ -92,7 +94,8 @@ real AOS_eigen_unroll2_matmatmul() {
 template <int dim, typename T>
 real AOS_eigen_unroll4_matmatmul() {
   using Matrix = Eigen::Matrix<T, dim, dim>;
-  EigenVector<Matrix> A(N, Matrix::Zero()), B(N, Matrix::Ones()), C(N, Matrix::Ones());
+  EigenVector<Matrix> A(N, Matrix::Zero()), B(N, Matrix::Ones()),
+      C(N, Matrix::Ones());
 
   return measure_cpe(
       [&]() {
@@ -621,9 +624,12 @@ void test_mat_vec_mul_eigen(int in_cache) {
   int enlarge = in_cache ? 1 : 4096;
   int64 n = taichi::N * enlarge;
 
-  EigenVector<Eigen::Matrix<float32, dim, dim>> m(n);
-  EigenVector<Eigen::Matrix<float32, dim, 1>> v(n);
-  EigenVector<Eigen::Matrix<float32, dim, 1>> mv(n);
+  EigenVector<Eigen::Matrix<float32, dim, dim>> m(
+      n, Eigen::Matrix<float32, dim, dim>::Ones());
+  EigenVector<Eigen::Matrix<float32, dim, 1>> v(
+      n, Eigen::Matrix<float32, dim, 1>::Ones());
+  EigenVector<Eigen::Matrix<float32, dim, 1>> mv(
+      n, Eigen::Matrix<float32, dim, 1>::Ones());
 
   print_cpe(measure_cpe(
       [&]() {
@@ -972,8 +978,6 @@ TODO:
  Address Node
  imm
  vec3
- why eigen large variance
- why eigen so slow
  check unplaced variable
  auto batch sorting
 */

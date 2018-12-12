@@ -2,6 +2,7 @@
 #include <taichi/io/io.h>
 #include <dlfcn.h>
 #include <set>
+#include "../headers/common.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -559,6 +560,10 @@ class CodeGenBase : public Visitor {
     return fmt::format("{}/tmp{:04d}.cpp", folder, id);
   }
 
+  std::string get_project_fn() {
+    return fmt::format("{}/projects/taichi_lang/", get_repo_dir());
+  }
+
   std::string get_library_fn() {
 #if defined(TC_PLATFORM_OSX)
     // Note: use .so here will lead to wired behavior...
@@ -621,9 +626,7 @@ class CPUCodeGen : public CodeGenBase {
     num_groups = simd_width / group_size;
     TC_WARN_IF(simd_width % group_size != 0, "insufficient lane usage");
 
-    emit_code("#include <immintrin.h>\n#include <cstdio>\n");
-    emit_code("using float32 = float;\n");
-    emit_code("using float64 = double;\n\n");
+    emit_code("#include <common.h>\n");
     emit_code(
         "extern \"C\" void " + func_name +
         "(float32 * __restrict__ buffer00, float32 * __restrict__ buffer01, "
@@ -809,9 +812,9 @@ class CPUCodeGen : public CodeGenBase {
   FunctionType compile() {
     write_code_to_file();
     auto cmd = fmt::format(
-        "g++ {} -std=c++14 -shared -fPIC -O3 -march=native "
+        "g++ {} -std=c++14 -shared -fPIC -O3 -march=native -I {}/headers "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -o {}",
-        get_source_fn(), get_library_fn());
+        get_source_fn(), get_project_fn(), get_library_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
 #if defined(TC_PLATFORM_LINUX)

@@ -108,7 +108,6 @@ struct AddrNode {
     }
     data_size = num_variables * repeat_factor;
     group_size = (ch.size() ? ch[0]->group_size : 1) * repeat_factor;
-    TC_P(num_variables);
   }
 
   void set() {
@@ -123,8 +122,6 @@ struct AddrNode {
         node->addr->coeff_aosoa_group_size = group_size;
         node->addr->coeff_const = node->offset;
         // Note: use root->data_size here
-        TC_P(bundle_num_variables);
-        TC_P(node->coeff_i);
         node->addr->coeff_aosoa_stride =
             group_size * (bundle_num_variables - node->coeff_i);
       }
@@ -180,7 +177,6 @@ struct AddrNode {
 
   AddrNode &repeat(int repeat_factor) {
     this->repeat_factor = repeat_factor;
-    TC_P(repeat_factor);
     return *this;
   }
 
@@ -780,6 +776,7 @@ class CodeGen {
 #endif
   }
 
+  // group_size should be batch_size here...
   FunctionType get(Expr &e, int group_size) {
     // SLP(e, group_size);
     run(e, group_size);

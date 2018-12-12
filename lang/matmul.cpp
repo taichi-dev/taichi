@@ -491,12 +491,6 @@ auto benchmark_matmul = []() {
 };
 TC_REGISTER_TASK(benchmark_matmul);
 
-/*
-TC_TEST("Address allocation") {
-  TC_CHECK(1 + 1 == 2);
-}
-*/
-
 void test_vec_add() {
   using namespace Tlang;
   constexpr int n = 16;
@@ -533,13 +527,13 @@ void print_time(float64 t, int64 elements) {
 }
 
 template <int dim>
-void test_mat_vec_mul_eigen(bool in_cache) {
-  fmt::print("dim={} Eigen in_cache={}                   ", dim, in_cache);
+void test_mat_vec_mul_eigen(int in_cache) {
+  fmt::print("dim={} eigen in_cache={}                      ", dim, in_cache);
   using namespace Tlang;
 
   int enlarge = in_cache ? 1 : 4096;
   int64 n = taichi::N * enlarge;
-  int64 rounds = taichi::rounds / enlarge / dim / dim / (in_cache ? 1 : 5) / 2;
+  int64 rounds = taichi::rounds / enlarge / dim / dim / (in_cache ? 1 : 5);
 
   EigenVector<Eigen::Matrix<float32, dim, dim>> m(n);
   EigenVector<Eigen::Matrix<float32, dim, 1>> v(n);
@@ -558,7 +552,7 @@ void test_mat_vec_mul_eigen(bool in_cache) {
 }
 
 template <int dim>
-void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
+void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
   std::string layout_name = "";
   if (layout == 0) {
     layout_name = "  soa";
@@ -568,7 +562,7 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
     layout_name = "inter";
   }
   fmt::print("dim={} {} in_cache={} unroll={} prefetch={:2d} ", dim,
-             layout_name, (int)in_cache, unroll, prefetch);
+             layout_name, in_cache, unroll, prefetch);
   using namespace Tlang;
   constexpr int simd_width = 8;
   MemoryAllocator alloc;
@@ -616,14 +610,7 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
   }
 
   alloc.materialize();
-  alloc.print();
-
-  TC_P(m(0, 0)->addr);
-  TC_P(m(1, 1)->addr);
-  TC_P(v(0)->addr);
-  TC_P(v(1)->addr);
-  TC_P(mv(0)->addr);
-  TC_P(mv(1)->addr);
+  // alloc.print();
 
   int64 enlarge = in_cache ? 1 : 4096;
   int64 n = taichi::N * enlarge;
@@ -632,13 +619,11 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
   cg.unroll = unroll;
   cg.prefetch = prefetch;
   TC_ASSERT(8 % dim == 0);
-  int gs = 1;
-  if (layout == 1) {
-    gs = 1;
-  } else if (layout == 2) {
-    gs = dim;
+  int bs = 1;
+  if (layout == 2) {  // interleaved
+    bs = dim;
   }
-  auto func = cg.get(ret, gs);
+  auto func = cg.get(ret, bs);
 
   AlignedAllocator M_allocator(dim * dim * n * sizeof(float32)),
       V_allocator(dim * n * sizeof(float32)),
@@ -691,10 +676,10 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
 
 template <int dim>
 void test_mat_vec_mul_all() {
-  for (auto in_cache : {true}) {
+  for (auto in_cache : {0, 1}) {
     test_mat_vec_mul_eigen<dim>(in_cache);
     for (auto layout : {0, 1, 2}) {
-      for (auto unroll : {1})
+      for (auto unroll : {1, 4})
         for (auto prefetch : {0})
           test_mat_vec_mul<dim>(layout, in_cache, unroll, prefetch);
     }
@@ -703,7 +688,7 @@ void test_mat_vec_mul_all() {
 }
 
 auto test_tlang = []() {
-  // test_mat_vec_mul_all<1>();
+  test_mat_vec_mul_all<1>();
   test_mat_vec_mul_all<2>();
   test_mat_vec_mul_all<4>();
   test_vec_add();
@@ -852,3 +837,10 @@ auto allocator_test = []() {
 TC_REGISTER_TASK(allocator_test);
 
 TC_NAMESPACE_END
+
+/*
+TODO:
+
+ vec3
+ why eigen large variance
+ */

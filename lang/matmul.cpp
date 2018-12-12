@@ -432,24 +432,50 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode,
   AlignedAllocator C(sizeof(T) * N * dim * dim);
   AlignedAllocator D(sizeof(T) * N * dim * dim);
 
+  AlignedAllocator A_(sizeof(T) * N * dim * dim);
+  AlignedAllocator B_(sizeof(T) * N * dim * dim);
+
   for (int i = 0; i < N * dim * dim; i++) {
     A.get<T>()[i] = rand();
     B.get<T>()[i] = rand();
   }
 
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j < dim; j++) {
+      for (int k = 0; k < dim; k++) {
+        int ind1 = c(j, k)->addr.eval(i, N);
+        int ind2 = (i / simd_width * dim * dim + j * dim + k) * simd_width +
+                   i % simd_width;
+        A_.get<float32>()[ind1] = A.get<float32>()[ind2];
+        B_.get<float32>()[ind1] = B.get<float32>()[ind2];
+      }
+    }
+  }
+
   auto t = Time::get_time();
   for (int i = 0; i < rounds; i++) {
-    func(A.get<T>(), B.get<T>(), C.get<T>(), N);
+    func(A_.get<T>(), B_.get<T>(), C.get<T>(), N);
   }
   t = Time::get_time() - t;
 
-  if (simd_width == 8 && layout == 0) {  // TODO: test layout = 1
+  if (simd_width == 8) {
     AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), D.get<T>());
 
-    for (int i = 0; i < N * dim * dim; i++) {
-      auto a = C.get<T>()[i];
-      auto b = D.get<T>()[i];
-      TC_ASSERT(std::abs(a - b) < 1e-5_f);
+    for (int i = 0; i < N; i++) {
+      for (int j = 0; j < dim; j++) {
+        for (int k = 0; k < dim; k++) {
+          int ind1 = c(j, k)->addr.eval(i, N);
+          int ind2 = (i / simd_width * dim * dim + j * dim + k) * simd_width +
+                     i % simd_width;
+          auto a = C.get<float32>()[ind1];
+          auto b = D.get<T>()[ind2];
+          if (std::abs(a - b) >= 1e-5_f) {
+            TC_P(a);
+            TC_P(b);
+          }
+          TC_ASSERT(std::abs(a - b) < 1e-5_f);
+        }
+      }
     }
   }
 
@@ -567,7 +593,8 @@ void test_vec_add() {
 
 void print_time(float64 t, int64 elements) {
   /*
-  fmt::print("   {:10.3f} cyc / elem      [adjusted run time = {:10.3f} ms] \n",
+  fmt::print("   {:10.3f} cyc / elem      [adjusted run time = {:10.3f} ms]
+  \n",
              cpu_frequency * 1e9 * t / elements, t * 1000.0_f);
              */
   fmt::print("   {:10.3f} cyc / elem  \n", cpu_frequency * 1e9 * t / elements);

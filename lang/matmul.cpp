@@ -40,6 +40,14 @@ real measure_cpe(std::function<void()> target,
       break;
     }
   }
+  {
+    float64 t = Time::get_time();
+    for (int64 i = 0; i < 16; i++) {
+      target();
+    }
+    t = Time::get_time() - t;
+    TC_P(t);
+  }
 
   int64 total_batches = 0;
   float64 start_t = Time::get_time();
@@ -49,13 +57,16 @@ real measure_cpe(std::function<void()> target,
     }
     total_batches += batch_size;
   }
-  return (Time::get_time() - start_t) / (total_batches * elements_per_call) *
-         1e9_f64 * cpu_frequency;
+  TC_P(batch_size);
+  TC_P(total_batches);
+  TC_P(elements_per_call);
+  auto elasped_cycles = (Time::get_time() - start_t) * 1e9_f64 * cpu_frequency;
+  return elasped_cycles / float64(total_batches * elements_per_call);
 }
 
 template <int dim, typename T>
 real AOS_eigen_matmatmul() {
-  std::vector<Eigen::Matrix<T, dim, dim>> A, B, C;
+  EigenVector<Eigen::Matrix<T, dim, dim>> A, B, C;
   A.resize(N);
   B.resize(N);
   C.resize(N);
@@ -71,7 +82,7 @@ real AOS_eigen_matmatmul() {
 
 template <int dim, typename T>
 real AOS_eigen_unroll2_matmatmul() {
-  std::vector<Eigen::Matrix<T, dim, dim>> A, B, C;
+  EigenVector<Eigen::Matrix<T, dim, dim>> A, B, C;
   A.resize(N);
   B.resize(N);
   C.resize(N);
@@ -88,7 +99,7 @@ real AOS_eigen_unroll2_matmatmul() {
 
 template <int dim, typename T>
 real AOS_eigen_unroll4_matmatmul() {
-  std::vector<Eigen::Matrix<T, dim, dim>> A, B, C;
+  EigenVector<Eigen::Matrix<T, dim, dim>> A, B, C;
   A.resize(N);
   B.resize(N);
   C.resize(N);

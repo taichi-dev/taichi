@@ -495,6 +495,7 @@ real Tlang_matmatmul(Tlang::CPUCodeGen::Mode mode,
         auto a = C.get<float32>()[ind1];
         auto b = D.get<T>()[ind2];
         if (std::abs(a - b) >= 1e-5_f) {
+          TC_P(i);
           TC_P(a);
           TC_P(b);
         }
@@ -988,4 +989,5 @@ TODO:
  vec3
  check unplaced variable
  auto batch sorting
+ assert n % 256 = 0
 */

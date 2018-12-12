@@ -430,6 +430,13 @@ inline bool running_on_windows() {
 #endif
 }
 
+inline std::string get_repo_dir() {
+  auto dir = std::getenv("TAICHI_REPO_DIR");
+  TC_ASSERT_INFO(dir != nullptr,
+                 "TAICHI_REPO_DIR is not specified in environment variables.");
+  return std::string(dir);
+}
+
 inline std::string absolute_path(std::string path) {
   // If 'path' is actually relative to TAICHI_REPO_DIR, convert it to an absolute one.
   // There are three types of paths:

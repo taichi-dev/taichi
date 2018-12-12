@@ -21,9 +21,11 @@ constexpr int enlarge = 1;
 constexpr int rounds = 16384 / 8 * 2048 / enlarge;
 constexpr int N = 256 * enlarge;
 
+real default_measurement_time = 1;
+
 real measure_cpe(std::function<void()> target,
                  int64 elements_per_call,
-                 real time_second = 0.5) {
+                 real time_second = default_measurement_time) {
   // first make rough estimate of run time.
   int64 batch_size = 1;
   while (true) {
@@ -544,7 +546,7 @@ void run_matmatmul() {
   fmt::print("\n");
 }
 
-auto benchmark_matmul = []() {
+auto tlang_matmatmul = []() {
 #if defined(TC_PLATFORM_LINUX)
   std::ifstream noturbo("/sys/devices/system/cpu/intel_pstate/no_turbo");
   char c;
@@ -561,7 +563,7 @@ auto benchmark_matmul = []() {
   run_matmatmul<4, float32>();
   // run_matmatmul<8, float32>();
 };
-TC_REGISTER_TASK(benchmark_matmul);
+TC_REGISTER_TASK(tlang_matmatmul);
 
 void test_vec_add() {
   using namespace Tlang;
@@ -751,13 +753,27 @@ void test_mat_vec_mul_all() {
   }
 }
 
-auto test_tlang = []() {
+auto tlang_matvecmul = []() {
   test_vec_add();
   test_mat_vec_mul_all<1>();
   test_mat_vec_mul_all<2>();
   test_mat_vec_mul_all<4>();
 };
-TC_REGISTER_TASK(test_tlang);
+TC_REGISTER_TASK(tlang_matvecmul);
+
+auto tlang_test = []() {
+  default_measurement_time = 0;
+  tlang_matvecmul();
+  tlang_matmatmul();
+};
+TC_REGISTER_TASK(tlang_test);
+
+auto tlang_benchmark = []() {
+  default_measurement_time = 2;
+  tlang_matvecmul();
+  tlang_matmatmul();
+};
+TC_REGISTER_TASK(tlang_benchmark);
 
 auto test_slp = []() {
   using namespace Tlang;

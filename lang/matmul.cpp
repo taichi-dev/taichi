@@ -383,7 +383,7 @@ real Tlang_matmatmul(Tlang::CPUCodeGen::Mode mode,
 
   Matrix a(dim, dim), b(dim, dim);
 
-  CodeGen cg;
+  GPUCodeGen cg;
   auto &alloc = cg.alloc;
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {

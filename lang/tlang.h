@@ -233,6 +233,15 @@ struct MemoryAllocator {
   }
 };
 
+class Visitor {
+public:
+  Visitor() {
+
+  }
+
+  virtual void visit(Expr &expr) = 0;
+};
+
 // TODO: do we need polymorphism here?
 class Node {
  public:
@@ -253,6 +262,7 @@ class Node {
   Node(Type type, Expr ch0, Expr ch1);
 
   int member_id(const Expr &expr) const;
+
 };
 
 using NodeType = Node::Type;
@@ -337,6 +347,13 @@ class Expr {
   bool operator==(const Expr &o) const {
     return (void *)(*this) == (void *)o;
   }
+
+  void accept(Visitor &visitor) {
+    visitor.visit(*this);
+    for (auto &c: this->node->ch) {
+      c.accept(visitor);
+    }
+  }
 };
 
 inline bool prior_to(Expr &a, Expr &b) {
@@ -390,13 +407,6 @@ inline int get_code_gen_id() {
   return id++;
 }
 
-class Visitor {
-public:
-  Visitor() {
-
-  }
-};
-
 class Vectorizer : public Visitor {
 public:
   std::map<Expr, Expr> scalar_to_vector;
@@ -446,15 +456,14 @@ public:
       }
       TC_ASSERT(!(has_prior_to && has_same));
       // TC_P(root->members.size());
-      vectorize(root);
+      root.accept(*this);
       combined->ch.push_back(root);
     }
     // TC_P(combined->ch.size());
     return combined;
   }
 
-  void vectorize(Expr &expr) {
-    // TC_P((int)expr->type);
+  void visit(Expr &expr) override {
     // Note: expr may be replaced by an existing vectorized Expr
     if (scalar_to_vector.find(expr->members[0]) != scalar_to_vector.end()) {
       auto existing = scalar_to_vector[expr->members[0]];
@@ -496,7 +505,6 @@ public:
       auto ch = Expr::create(vectorized_children[i][0]->type);
       ch->members = vectorized_children[i];
       expr->ch.push_back(ch);
-      vectorize(ch);
     }
 
     expr->addr = expr->members[0]->addr;

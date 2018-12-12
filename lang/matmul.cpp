@@ -474,8 +474,8 @@ real Tlang_matmatmul(Tlang::CPUCodeGen::Mode mode,
     }
   }
 
-  auto cpe =
-      measure_cpe([&]() { func(A_.get<T>(), B_.get<T>(), C.get<T>(), N); }, N);
+  auto cpe = measure_cpe(
+      [&]() { func(Context(A_.get<T>(), B_.get<T>(), C.get<T>(), N)); }, N);
 
   if (simd_width == 8) {
     AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), D.get<T>());
@@ -597,7 +597,9 @@ void test_vec_add() {
     x[i] = i;
     y[i] = -2 * i;
   }
-  func(x, y, z, n);
+
+  Context context(x, y, z, n);
+  func(context);
   for (int i = 0; i < n; i++) {
     TC_ASSERT(z[i] == -i);
   }
@@ -734,8 +736,8 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
 
   print_cpe(measure_cpe(
       [&]() {
-        func(M_allocator.get<float32>(), V_allocator.get<float32>(),
-             MV_allocator.get<float32>(), n);
+        func(Context(M_allocator.get<float32>(), V_allocator.get<float32>(),
+                     MV_allocator.get<float32>(), n));
       },
       n));
 
@@ -826,7 +828,8 @@ auto test_slp = []() {
     x[i] = i;
     y[i] = -2 * i;
   }
-  func(x, y, z, n);
+  Context context;
+  func(Context(x, y, z, n));
   for (int i = 0; i < n; i++) {
     TC_INFO("z[{}] = {}", i, z[i]);
   }

@@ -137,7 +137,7 @@ class CodeGenBase : public Visitor {
   std::string func_name;
   int id;
   MemoryAllocator alloc;
-  using FunctionType = void (*)(float32 *, float32 *, float32 *, int);
+  using FunctionType = void (*)(Context);
 
   CodeGenBase() : Visitor(Visitor::Order::child_first) {
     code = "";
@@ -230,17 +230,17 @@ class CPUCodeGen : public CodeGenBase {
     num_groups = simd_width / group_size;
     TC_WARN_IF(simd_width % group_size != 0, "insufficient lane usage");
 
-    emit_code("#include <common.h>\n");
     emit_code(
-        "extern \"C\" void " + func_name +
-        "(float32 * __restrict__ buffer00, float32 * __restrict__ buffer01, "
-        "float32 * __restrict__ buffer02, int n) {\n");
+        "#include <common.h>\n using namespace taichi; using namespace Tlang;");
+    emit_code("extern \"C\" void " + func_name +
+              "(Context context) {\n");
     emit_code("#define LOOP(loop_index) {\\\n");
 
     // Body
     vectorized_expr.accept(*this);
 
     emit_code("}\n");
+    emit_code("auto n = context.get_range(0);\n");
     emit_code("for (int i = 0, g = 0; i < n; ) {{\n", num_groups);
     for (int i = 0; i < unroll; i++) {
       emit_code("LOOP({});", i);
@@ -254,7 +254,8 @@ class CPUCodeGen : public CodeGenBase {
   // the vector width should be the final SIMD instruction width
   std::string get_vectorized_address(Address addr, int extra_offset = 0) {
     TC_ASSERT(addr.buffer_id != -1);
-    auto buffer_name = fmt::format("buffer{:02d}", addr.buffer_id);
+    auto buffer_name =
+        fmt::format("context.get_buffer<float32>({:02d})", addr.buffer_id);
     auto stride =
         addr.coeff_i * num_groups +
         num_groups / addr.coeff_aosoa_group_size * addr.coeff_aosoa_stride;

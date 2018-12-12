@@ -9,6 +9,8 @@
 
 TC_NAMESPACE_BEGIN
 
+constexpr int simd_width = 8;
+
 template <typename T>
 using EigenVector = std::vector<T, Eigen::aligned_allocator<T>>;
 
@@ -18,6 +20,36 @@ constexpr real cpu_frequency = 4.2_f;
 constexpr int enlarge = 1;
 constexpr int rounds = 16384 / 8 * 2048 / enlarge;
 constexpr int N = 256 * enlarge;
+
+real measure_cpe(std::function<void()> target,
+                 int64 elements_per_call,
+                 real time_second = 1) {
+  // first make rough estimate of run time.
+  int64 batch_size = 1;
+  while (true) {
+    float64 t = Time::get_time();
+    for (int64 i = 0; i < batch_size; i++) {
+      target();
+    }
+    t = Time::get_time() - t;
+    if (t < 0.05) {
+      batch_size *= 2;
+    } else {
+      break;
+    }
+  }
+
+  int64 total_batches = 0;
+  float64 start_t = Time::get_time();
+  while (Time::get_time() - start_t < time_second) {
+    for (int i = 0; i < batch_size; i++) {
+      target();
+    }
+    total_batches += batch_size;
+  }
+  return (Time::get_time() - start_t) / (total_batches * elements_per_call) *
+         1e9_f64 * cpu_frequency;
+}
 
 template <int dim, typename T>
 real AOS_eigen_matmatmul() {
@@ -359,7 +391,8 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode,
 
   Matrix a(dim, dim), b(dim, dim);
 
-  MemoryAllocator alloc;
+  CodeGen cg(mode);
+  auto &alloc = cg.alloc;
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       if (layout == 0) {
@@ -422,9 +455,6 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode,
     }
   }
 
-  alloc.materialize();
-
-  CodeGen cg(mode);
   auto func = cg.get(ret, layout == 0 ? 1 : dim);
 
   AlignedAllocator A(sizeof(T) * N * dim * dim);
@@ -639,7 +669,10 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
              layout_name, in_cache, unroll, prefetch);
   using namespace Tlang;
   constexpr int simd_width = 8;
-  MemoryAllocator alloc;
+  CodeGen cg;
+  cg.unroll = unroll;
+  cg.prefetch = prefetch;
+  auto &alloc = cg.alloc;
   auto &buffer = alloc.buffer(0);
   Matrix m(dim, dim), v(dim);
   for (int i = 0; i < dim; i++) {
@@ -683,15 +716,11 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
     }
   }
 
-  alloc.materialize();
   // alloc.print();
 
   int64 enlarge = in_cache ? 1 : 4096;
   int64 n = taichi::N * enlarge;
   int64 rounds = taichi::rounds / enlarge / dim / dim / (in_cache ? 1 : 5);
-  CodeGen cg;
-  cg.unroll = unroll;
-  cg.prefetch = prefetch;
   TC_ASSERT(8 % dim == 0);
   int bs = 1;
   if (layout == 2) {  // interleaved
@@ -910,12 +939,56 @@ auto allocator_test = []() {
 
 TC_REGISTER_TASK(allocator_test);
 
+/*
+auto test_saxpy = []() {
+  // fmt::print("dim={} {} in_cache={} unroll={} prefetch={:2d} ",);
+  using namespace Tlang;
+  CodeGen cg;
+  auto alloc = cg.alloc;
+  auto &buffer = alloc.buffer(0);
+
+  int64 enlarge = 4096;
+  int64 n = taichi::N * enlarge;
+  int64 rounds = taichi::rounds / enlarge;
+  cg.unroll = 4;
+  cg.prefetch = 0;
+
+  Expr ret;
+  alloc.buffer(1).stream(0).place()
+
+  AlignedAllocator A_allocator(n * sizeof(float32)),
+      B_allocator(n * sizeof(float32));
+
+  auto func = cg.get(ret);
+  for (int i = 0; i < 10; i++)
+    func(M_allocator.get<float32>(), V_allocator.get<float32>(),
+         MV_allocator.get<float32>(), n);
+
+  for (int K = 0; K < 1; K++) {
+    float64 t = Time::get_time();
+    for (int i = 0; i < rounds; i++) {
+      func(M_allocator.get<float32>(), V_allocator.get<float32>(),
+           MV_allocator.get<float32>(), n);
+    }
+    print_time(Time::get_time() - t, n * rounds);
+  }
+
+  for (int i = 0; i < n; i++) {
+    auto computed = MV_allocator.get<float32>()[mv(j)->addr.eval(i, n)];
+  }
+};
+*/
+
 TC_NAMESPACE_END
 
 /*
 TODO:
+ CUDA backend
+ Address Node
+ imm
  vec3
  why eigen large variance
+ why eigen so slow
  check unplaced variable
  auto batch sorting
  */

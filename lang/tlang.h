@@ -388,6 +388,7 @@ class CodeGen {
   std::string code;
 
  public:
+  MemoryAllocator alloc;
   std::string func_name;
   enum class Mode : int { scalar, vector };
 
@@ -780,6 +781,7 @@ class CodeGen {
 
   // group_size should be batch_size here...
   FunctionType get(Expr &e, int group_size) {
+    alloc.materialize();
     // SLP(e, group_size);
     run(e, group_size);
     {

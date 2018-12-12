@@ -30,8 +30,6 @@ int main() {
   printf("Correct!\n");
   float trash = 0;
   for (int i = 0; i < 10000000; i++) {
-    if (i > 5) {
-    }
     double t = get_time();
     cblas_saxpy(n, 2, x.data(), 1, y.data(), 1);
     auto saxpy = get_time() - t;
@@ -44,8 +42,11 @@ int main() {
     t = get_time();
     std::memset(x.data(), 0, sizeof(float) * n);
     double memset = get_time() - t;
-    printf("saxpy %f sasum %f sscal %f memset %f\n", saxpy, sasum, sscal,
-           memset);
+    t = get_time();
+    std::memcpy(x.data(), y.data(), sizeof(float) * n);
+    double memcpy = get_time() - t;
+    printf("saxpy %f sasum %f sscal %f memset %f memcpy %f\n", saxpy, sasum,
+           sscal, memset, memcpy);
   }
   printf("trash %f", trash);
   return 0;

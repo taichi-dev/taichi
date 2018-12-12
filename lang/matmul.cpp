@@ -582,28 +582,23 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
         buffer.stream().group().place(m(i, j));
       } else if (layout == 1) {
         buffer.stream(0)
-            .group(j)
-            .repeat(simd_width / dim)
+            .group(0)
+            .group(i * dim + j)
+            .repeat(simd_width)
             .place(m(i, j));
       } else {
-        addr.coeff_i = dim;
-        addr.coeff_aosoa_group_size = simd_width / dim;
-        addr.coeff_aosoa_stride = simd_width * (dim - 1);
-        addr.coeff_const = j * simd_width + i;
+        buffer.stream(0).group(j).repeat(simd_width / dim).place(m(i, j));
       }
-      // m(i, j) = load(addr);
     }
     Address addr;
     addr.buffer_id = 1;
     if (layout == 0) {
       alloc.buffer(1).stream().group().place(v(i));
     } else if (layout == 1) {
-      alloc.buffer(1).stream(0).group(0).repeat(simd_width / dim).place(v(i));
+      alloc.buffer(1).stream(0).group(i).repeat(simd_width).place(v(i));
     } else {
-      addr.coeff_i = dim;
-      addr.coeff_const = i;
+      alloc.buffer(1).stream(0).group(0).repeat(simd_width / dim).place(v(i));
     }
-    // v(i) = load(addr);
   }
   Expr ret;
   auto mv = m * v;
@@ -614,10 +609,9 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
     if (layout == 0) {
       alloc.buffer(2).stream().group().place(mv(i));
     } else if (layout == 1) {
-      alloc.buffer(2).stream(0).group(0).repeat(simd_width / dim).place(mv(i));
+      alloc.buffer(2).stream(0).group(i).repeat(simd_width).place(mv(i));
     } else {
-      addr.coeff_i = dim;
-      addr.coeff_const = i;
+      alloc.buffer(2).stream(0).group(0).repeat(simd_width / dim).place(mv(i));
     }
   }
 
@@ -640,7 +634,7 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
   TC_ASSERT(8 % dim == 0);
   int gs = 1;
   if (layout == 1) {
-    gs = dim;
+    gs = 1;
   } else if (layout == 2) {
     gs = dim;
   }
@@ -699,7 +693,7 @@ template <int dim>
 void test_mat_vec_mul_all() {
   for (auto in_cache : {true}) {
     test_mat_vec_mul_eigen<dim>(in_cache);
-    for (auto layout : {0, 1}) {
+    for (auto layout : {0, 1, 2}) {
       for (auto unroll : {1})
         for (auto prefetch : {0})
           test_mat_vec_mul<dim>(layout, in_cache, unroll, prefetch);

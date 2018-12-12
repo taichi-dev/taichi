@@ -12,7 +12,7 @@ TC_NAMESPACE_BEGIN
 template <typename T>
 using EigenVector = std::vector<T, Eigen::aligned_allocator<T>>;
 
-constexpr real cpu_frequency = 3.6_f;
+constexpr real cpu_frequency = 4.2_f;
 
 // constexpr int enlarge = 4096;
 constexpr int enlarge = 1;
@@ -357,17 +357,22 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode, int simd_width) {
 
   Matrix a(dim, dim), b(dim, dim);
 
+  MemoryAllocator alloc;
+  // AOSOA
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
-      Address addr;
-      addr.buffer_id = 0;
-      addr.coeff_i = 1;
-      addr.coeff_aosoa_stride = simd_width * dim * dim;
-      addr.coeff_aosoa_group_size = simd_width;
-      addr.coeff_const = simd_width * (i * dim + j);
-      a(i, j) = load(addr);
-      addr.buffer_id = 1;
-      b(i, j) = load(addr);
+      alloc.buffer(0)
+          .stream(0)
+          .group(0)
+          .group(i * dim + j)
+          .repeat(simd_width)
+          .place(a(i, j));
+      alloc.buffer(1)
+          .stream(0)
+          .group(0)
+          .group(i * dim + j)
+          .repeat(simd_width)
+          .place(b(i, j));
     }
   }
 
@@ -376,16 +381,20 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode, int simd_width) {
   Expr ret;
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
-      Address addr;
-      addr.buffer_id = 2;
-      addr.coeff_i = dim * dim;
-      addr.coeff_const = simd_width * (i * dim + j);
-      ret.store(c(i, j), addr);
+      c(i, j) = ret.store(c(i, j));
+      alloc.buffer(2)
+          .stream(0)
+          .group(0)
+          .group(i * dim + j)
+          .repeat(simd_width)
+          .place(c(i, j));
     }
   }
 
-  CodeGen cg(mode, simd_width);
-  auto func = cg.get(ret, dim);
+  alloc.materialize();
+
+  CodeGen cg(mode);
+  auto func = cg.get(ret, 1);
 
   AlignedAllocator A(sizeof(T) * N * dim * dim);
   AlignedAllocator B(sizeof(T) * N * dim * dim);

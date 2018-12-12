@@ -403,6 +403,7 @@ class CodeGen {
 
   CodeGen(Mode mode = Mode::vector, int simd_width = 8)
       : var_count(0), mode(mode), simd_width(simd_width), unroll(1) {
+    prefetch = 0;
   }
 
   std::string create_variable() {

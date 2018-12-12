@@ -108,6 +108,7 @@ struct AddrNode {
     }
     data_size = num_variables * repeat_factor;
     group_size = (ch.size() ? ch[0]->group_size : 1) * repeat_factor;
+    TC_P(num_variables);
   }
 
   void set() {
@@ -122,6 +123,8 @@ struct AddrNode {
         node->addr->coeff_aosoa_group_size = group_size;
         node->addr->coeff_const = node->offset;
         // Note: use root->data_size here
+        TC_P(bundle_num_variables);
+        TC_P(node->coeff_i);
         node->addr->coeff_aosoa_stride =
             group_size * (bundle_num_variables - node->coeff_i);
       }
@@ -190,6 +193,16 @@ struct AddrNode {
   static Handle<AddrNode> create(Args &&... args) {
     return std::make_shared<AddrNode>(std::forward<Args>(args)...);
   }
+
+  void print() {
+    for (int i = 0; i < depth; i++) {
+      fmt::print("  ");
+    }
+    fmt::print("  num_variables={} data_size={} repeat={} offset={}\n", num_variables, data_size, repeat_factor, offset);
+    for (auto c : ch) {
+      c->print();
+    }
+  }
 };
 
 struct MemoryAllocator {
@@ -214,6 +227,10 @@ struct MemoryAllocator {
   void materialize() {
     root->materialize();
     root->set();
+  }
+
+  void print() {
+    root->print();
   }
 };
 

@@ -641,6 +641,7 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
   }
 
   alloc.materialize();
+  alloc.print();
 
   TC_P(m(0, 0)->addr);
   TC_P(v(0)->addr);

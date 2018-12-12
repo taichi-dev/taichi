@@ -370,14 +370,14 @@ Matrix operator+(const Matrix &A, const Matrix &B) {
 }  // namespace Tlang
 
 template <int dim, typename T>
-real Tlang_matmatmul(Tlang::CodeGen::Mode mode,
+real Tlang_matmatmul(Tlang::CPUCodeGen::Mode mode,
                      int simd_width,
                      int layout = 0) {
   using namespace Tlang;
 
   Matrix a(dim, dim), b(dim, dim);
 
-  CodeGen cg(mode);
+  CodeGen cg;
   auto &alloc = cg.alloc;
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
@@ -441,7 +441,7 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode,
     }
   }
 
-  auto func = cg.get(ret, layout == 0 ? 1 : dim);
+  auto func = cg.get(ret, layout == 0 ? 1 : dim, mode, simd_width);
 
   AlignedAllocator A(sizeof(T) * N * dim * dim);
   AlignedAllocator B(sizeof(T) * N * dim * dim);
@@ -497,27 +497,27 @@ real Tlang_matmatmul(Tlang::CodeGen::Mode mode,
 
 template <int dim, typename T>
 real TlangVec8AOSOA_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::vector, 8, 0);
+  return Tlang_matmatmul<dim, T>(Tlang::CPUCodeGen::Mode::vector, 8, 0);
 }
 
 template <int dim, typename T>
 real TlangVec8Inter_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::vector, 8, 1);
+  return Tlang_matmatmul<dim, T>(Tlang::CPUCodeGen::Mode::vector, 8, 1);
 }
 
 template <int dim, typename T>
 real TlangSca8_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::scalar, 8);
+  return Tlang_matmatmul<dim, T>(Tlang::CPUCodeGen::Mode::scalar, 8);
 }
 
 template <int dim, typename T>
 real TlangVec16_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::vector, 16);
+  return Tlang_matmatmul<dim, T>(Tlang::CPUCodeGen::Mode::vector, 16);
 }
 
 template <int dim, typename T>
 real TlangSca16_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Tlang::CodeGen::Mode::scalar, 16);
+  return Tlang_matmatmul<dim, T>(Tlang::CPUCodeGen::Mode::scalar, 16);
 }
 #define BENCHMARK(x)                                        \
   {                                                         \

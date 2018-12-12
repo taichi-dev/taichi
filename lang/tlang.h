@@ -234,9 +234,12 @@ struct MemoryAllocator {
 };
 
 class Visitor {
-public:
-  Visitor() {
+ public:
+  enum class Order { parent_first, child_first };
 
+  Order order;
+
+  Visitor(Order order = Order::parent_first) : order(order) {
   }
 
   virtual void visit(Expr &expr) = 0;
@@ -262,7 +265,6 @@ class Node {
   Node(Type type, Expr ch0, Expr ch1);
 
   int member_id(const Expr &expr) const;
-
 };
 
 using NodeType = Node::Type;
@@ -349,9 +351,14 @@ class Expr {
   }
 
   void accept(Visitor &visitor) {
-    visitor.visit(*this);
-    for (auto &c: this->node->ch) {
+    if (visitor.order == Visitor::Order::parent_first) {
+      visitor.visit(*this);
+    }
+    for (auto &c : this->node->ch) {
       c.accept(visitor);
+    }
+    if (visitor.order == Visitor::Order::child_first) {
+      visitor.visit(*this);
     }
   }
 };
@@ -408,19 +415,19 @@ inline int get_code_gen_id() {
 }
 
 class Vectorizer : public Visitor {
-public:
+ public:
   std::map<Expr, Expr> scalar_to_vector;
   int simd_width;
   int group_size;
   int num_groups;
 
-  Vectorizer(int simd_width): Visitor(), simd_width(simd_width) {
-
+  Vectorizer(int simd_width)
+      : Visitor(Visitor::Order::parent_first), simd_width(simd_width) {
   }
 
-  Expr run(Expr &expr, int group_size, int num_groups) {
+  Expr run(Expr &expr, int group_size) {
     this->group_size = group_size;
-    this->num_groups = num_groups;
+    this->num_groups = simd_width / group_size;
     TC_ASSERT(group_size * num_groups == simd_width);
     scalar_to_vector.clear();
     // expr should be a ret Op, with its children store Ops.
@@ -438,7 +445,7 @@ public:
       for (int i = 0; i < group_size; i++) {
         auto ch = expr->ch[k * group_size + i];
         TC_ASSERT(ch->type == NodeType::store);
-        root->members.push_back(ch); // put scalar inst into vector members
+        root->members.push_back(ch);  // put scalar inst into vector members
         TC_ASSERT(i < root->members.size());
         if (i > k * group_size) {
           if (prior_to(root->members[i - 1], root->members[i])) {
@@ -450,7 +457,7 @@ public:
             TC_P(root->members[i]->addr);
             TC_ERROR(
                 "Addresses in SIMD load should be either identical or "
-                    "neighbouring.");
+                "neighbouring.");
           }
         }
       }
@@ -514,32 +521,25 @@ public:
       expr->addr.coeff_aosoa_stride = 0;
     }
   }
-
 };
 
-class CodeGen {
+class CPUCodeGen : public Visitor {
+ public:
   int var_count;
   std::string code;
-
- public:
-  MemoryAllocator alloc;
+  int unroll;
+  int prefetch;
+  std::map<NodeType, std::string> binary_ops;
+  std::string folder;
   std::string func_name;
   enum class Mode : int { scalar, vector };
-
   Mode mode;
   int simd_width;
   int group_size;
   int num_groups;
   int id;
-  int unroll;
-  int prefetch;
-  std::map<NodeType, std::string> binary_ops;
-  std::string folder;
 
-  CodeGen(Mode mode = Mode::vector, int simd_width = 8)
-      : var_count(0), mode(mode), simd_width(simd_width), unroll(1) {
-    prefetch = 0;
-  }
+  MemoryAllocator alloc;
 
   std::string create_variable() {
     TC_ASSERT(var_count < 10000);
@@ -548,7 +548,18 @@ class CodeGen {
 
   using FunctionType = void (*)(float32 *, float32 *, float32 *, int);
 
-  std::string run(Expr &expr, int group_size = 1) {
+ public:
+  CPUCodeGen() : Visitor(Visitor::Order::child_first) {
+    prefetch = 0;
+    unroll = 1;
+    var_count = 0;
+  }
+
+  std::string get_scalar_suffix(int i) {
+    return fmt::format("_{:03d}", i);
+  }
+
+  FunctionType run(Expr &vectorized_expr, int group_size = 1) {
     TC_ASSERT(mode == Mode::vector);
     this->group_size = group_size;
     TC_ASSERT(group_size != 0);
@@ -567,12 +578,12 @@ class CodeGen {
     code = "#include <immintrin.h>\n#include <cstdio>\n";
     code += "using float32 = float;\n";
     code += "using float64 = double;\n\n";
-    code += "extern \"C\" void " + func_name +
-            "(float32 * __restrict__ buffer00, float32 * __restrict__ buffer01, "
-            "float32 * __restrict__ buffer02, int n) {\n";
+    code +=
+        "extern \"C\" void " + func_name +
+        "(float32 * __restrict__ buffer00, float32 * __restrict__ buffer01, "
+        "float32 * __restrict__ buffer02, int n) {\n";
     code += "#define LOOP(loop_index) {\\\n";
-    auto vectorized_expr = Vectorizer(simd_width).run(expr, group_size, num_groups);
-    code_gen(vectorized_expr);
+    vectorized_expr.accept(*this);
     code += "}\n";
     code += fmt::format("for (int i = 0, g = 0; i < n; ) {{\n", num_groups);
     for (int i = 0; i < unroll; i++) {
@@ -581,28 +592,7 @@ class CodeGen {
     code += fmt::format("i += {}; g += {};", num_groups * unroll, unroll);
     code += "}\n}\n";
     code += "#undef LOOP";
-    return code;
-  }
-
-  std::string get_scalar_suffix(int i) {
-    return fmt::format("_{:03d}", i);
-  }
-
-  std::vector<Expr> reachable_exprs(Expr &expr) {
-    std::vector<Expr> ret;
-    std::set<Expr> visited;
-
-    std::function<void(Expr &)> visit = [&](Expr &expr) {
-      if (visited.find(expr) != visited.end())
-        return;
-      visited.insert(expr);
-      ret.push_back(expr);
-      for (auto c : expr->ch) {
-        code_gen(c);
-      }
-    };
-    code_gen(expr);
-    return ret;
+    return get();
   }
 
   // Create vectorized IR for the root node
@@ -624,14 +614,10 @@ class CodeGen {
     TC_NOT_IMPLEMENTED
   }
 
-  void code_gen(Expr &expr) {
+  void visit(Expr &expr) override {
     TC_ASSERT(expr->is_vectorized);
     TC_ASSERT(expr->members.size() == 0 || expr->members.size() == group_size);
     // TC_P(expr->ch.size());
-    for (auto &c : expr->ch) {
-      if (c)
-        code_gen(c);
-    }
     if (expr->var_name == "")
       expr->var_name = create_variable();
     else
@@ -792,10 +778,7 @@ class CodeGen {
   }
 
   // group_size should be batch_size here...
-  FunctionType get(Expr &e, int group_size) {
-    alloc.materialize();
-    // SLP(e, group_size);
-    run(e, group_size);
+  FunctionType get() {
     {
       std::ofstream of(get_source_fn());
       of << code;
@@ -819,7 +802,20 @@ class CodeGen {
     return (FunctionType)ret;
   }
 
+  FunctionType get(Expr &e,
+                   int group_size,
+                   CPUCodeGen::Mode mode = CPUCodeGen::Mode::vector,
+                   int simd_width = 8) {
+    this->mode = mode;
+    this->simd_width = simd_width;
+    alloc.materialize();
+    auto vectorized_expr = Vectorizer(simd_width).run(e, group_size);
+    return run(vectorized_expr, group_size);
+  }
 };
+
+using CodeGen = CPUCodeGen;
+
 }  // namespace Tlang
 
 TC_NAMESPACE_END

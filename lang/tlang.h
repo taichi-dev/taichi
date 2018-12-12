@@ -523,40 +523,59 @@ class Vectorizer : public Visitor {
   }
 };
 
-class CPUCodeGen : public Visitor {
+class CodeGenBase : public Visitor {
  public:
   int var_count;
   std::string code;
-  int unroll;
-  int prefetch;
   std::map<NodeType, std::string> binary_ops;
   std::string folder;
   std::string func_name;
-  enum class Mode : int { scalar, vector };
-  Mode mode;
-  int simd_width;
-  int group_size;
-  int num_groups;
   int id;
-
   MemoryAllocator alloc;
+
+  CodeGenBase() : Visitor(Visitor::Order::child_first) {
+  }
 
   std::string create_variable() {
     TC_ASSERT(var_count < 10000);
     return fmt::format("var_{:04d}", var_count++);
   }
 
+  std::string get_scalar_suffix(int i) {
+    return fmt::format("_{:03d}", i);
+  }
+
+  std::string get_source_fn() {
+    return fmt::format("{}/tmp{:04d}.cpp", folder, id);
+  }
+
+  std::string get_library_fn() {
+#if defined(TC_PLATFORM_OSX)
+    // Note: use .so here will lead to wired behavior...
+    return fmt::format("{}/tmp{:04d}.dylib", folder, id);
+#else
+    return fmt::format("{}/tmp{:04d}.so", folder, id);
+#endif
+  }
+};
+
+class CPUCodeGen : public CodeGenBase {
+ public:
+  int unroll;
+  int prefetch;
+  enum class Mode : int { scalar, vector };
+  Mode mode;
+  int simd_width;
+  int group_size;
+  int num_groups;
+
   using FunctionType = void (*)(float32 *, float32 *, float32 *, int);
 
  public:
-  CPUCodeGen() : Visitor(Visitor::Order::child_first) {
+  CPUCodeGen() : CodeGenBase() {
     prefetch = 0;
     unroll = 1;
     var_count = 0;
-  }
-
-  std::string get_scalar_suffix(int i) {
-    return fmt::format("_{:03d}", i);
   }
 
   FunctionType run(Expr &vectorized_expr, int group_size = 1) {
@@ -616,7 +635,8 @@ class CPUCodeGen : public Visitor {
 
   void visit(Expr &expr) override {
     TC_ASSERT(expr->is_vectorized);
-    TC_ASSERT(expr->members.size() == 0 || (int)expr->members.size() == group_size);
+    TC_ASSERT(expr->members.size() == 0 ||
+              (int)expr->members.size() == group_size);
     // TC_P(expr->ch.size());
     if (expr->var_name == "")
       expr->var_name = create_variable();
@@ -764,26 +784,14 @@ class CPUCodeGen : public Visitor {
     }
   }
 
-  std::string get_source_fn() {
-    return fmt::format("{}/tmp{:04d}.cpp", folder, id);
-  }
-
-  std::string get_library_fn() {
-#if defined(TC_PLATFORM_OSX)
-    // Note: use .so here will lead to wired behavior...
-    return fmt::format("{}/tmp{:04d}.dylib", folder, id);
-#else
-    return fmt::format("{}/tmp{:04d}.so", folder, id);
-#endif
-  }
-
   // group_size should be batch_size here...
   FunctionType get() {
     {
       std::ofstream of(get_source_fn());
       of << code;
     }
-    auto format_ret = std::system(fmt::format("clang-format -i {}", get_source_fn()).c_str());
+    auto format_ret =
+        std::system(fmt::format("clang-format -i {}", get_source_fn()).c_str());
     trash(format_ret);
     auto cmd = fmt::format(
         "g++ {} -std=c++14 -shared -fPIC -O3 -march=native "

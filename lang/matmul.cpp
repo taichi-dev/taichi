@@ -42,11 +42,10 @@ real measure_cpe(std::function<void()> target,
   }
   {
     float64 t = Time::get_time();
-    for (int64 i = 0; i < 16; i++) {
+    for (int64 i = 0; i < 1600; i++) {
       target();
     }
     t = Time::get_time() - t;
-    TC_P(t);
   }
 
   int64 total_batches = 0;
@@ -57,19 +56,14 @@ real measure_cpe(std::function<void()> target,
     }
     total_batches += batch_size;
   }
-  TC_P(batch_size);
-  TC_P(total_batches);
-  TC_P(elements_per_call);
   auto elasped_cycles = (Time::get_time() - start_t) * 1e9_f64 * cpu_frequency;
   return elasped_cycles / float64(total_batches * elements_per_call);
 }
 
 template <int dim, typename T>
 real AOS_eigen_matmatmul() {
-  EigenVector<Eigen::Matrix<T, dim, dim>> A, B, C;
-  A.resize(N);
-  B.resize(N);
-  C.resize(N);
+  using Matrix = Eigen::Matrix<T, dim, dim>;
+  EigenVector<Matrix> A(N, Matrix::Zero()), B(N, Matrix::Ones()), C(N, Matrix::Ones());
 
   return measure_cpe(
       [&]() {
@@ -82,10 +76,8 @@ real AOS_eigen_matmatmul() {
 
 template <int dim, typename T>
 real AOS_eigen_unroll2_matmatmul() {
-  EigenVector<Eigen::Matrix<T, dim, dim>> A, B, C;
-  A.resize(N);
-  B.resize(N);
-  C.resize(N);
+  using Matrix = Eigen::Matrix<T, dim, dim>;
+  EigenVector<Matrix> A(N, Matrix::Zero()), B(N, Matrix::Ones()), C(N, Matrix::Ones());
 
   return measure_cpe(
       [&]() {
@@ -99,10 +91,8 @@ real AOS_eigen_unroll2_matmatmul() {
 
 template <int dim, typename T>
 real AOS_eigen_unroll4_matmatmul() {
-  EigenVector<Eigen::Matrix<T, dim, dim>> A, B, C;
-  A.resize(N);
-  B.resize(N);
-  C.resize(N);
+  using Matrix = Eigen::Matrix<T, dim, dim>;
+  EigenVector<Matrix> A(N, Matrix::Zero()), B(N, Matrix::Ones()), C(N, Matrix::Ones());
 
   return measure_cpe(
       [&]() {
@@ -541,8 +531,10 @@ real TlangSca16_matmatmul() {
 template <int dim, typename T>
 void run_matmatmul() {
   fmt::print("Matrix<{}, {}>:\n", dim, sizeof(T) == 4 ? "float32" : "float64");
+
   BENCHMARK(TlangVec8AOSOA);
   BENCHMARK(TlangVec8Inter);
+
   // BENCHMARK(TlangSca8);
   // BENCHMARK(TlangVec16);
   // BENCHMARK(TlangSca16);
@@ -552,12 +544,13 @@ void run_matmatmul() {
   // BENCHMARK(taichi);
   // BENCHMARK(AOS);
   // BENCHMARK(AOS2);
+
   BENCHMARK(SOA_AVX2);
   BENCHMARK(AOSOA_AVX2);
   fmt::print("\n");
 }
 
-auto tlang_matmatmul = []() {
+void initialize_benchmark() {
 #if defined(TC_PLATFORM_LINUX)
   std::ifstream noturbo("/sys/devices/system/cpu/intel_pstate/no_turbo");
   char c;
@@ -569,6 +562,10 @@ auto tlang_matmatmul = []() {
           EIGEN_MINOR_VERSION);
   TC_INFO("GCC   Version {}.{}.{}", __GNUC__, __GNUC_MINOR__,
           __GNUC_PATCHLEVEL__);
+}
+
+auto tlang_matmatmul = []() {
+  initialize_benchmark();
 
   run_matmatmul<2, float32>();
   run_matmatmul<4, float32>();
@@ -765,6 +762,7 @@ void test_mat_vec_mul_all() {
 }
 
 auto tlang_matvecmul = []() {
+  initialize_benchmark();
   test_vec_add();
   test_mat_vec_mul_all<1>();
   test_mat_vec_mul_all<2>();

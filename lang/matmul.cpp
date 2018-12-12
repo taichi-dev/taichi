@@ -597,17 +597,17 @@ TC_REGISTER_TASK(benchmark_matmul);
 void test_vec_add() {
   using namespace Tlang;
   constexpr int n = 16;
-  Address addr;
-  addr.buffer_id = 0;
-  addr.coeff_i = 1;
-  Expr a = load(addr);
-  addr.buffer_id = 1;
-  Expr b = load(addr);
+
+  CodeGen cg;
+  auto &alloc = cg.alloc;
+  Expr a;
+  Expr b;
+  alloc.buffer(0).stream(0).group().place(a);
+  alloc.buffer(1).stream(0).group().place(b);
   auto c = a + b;
   Expr ret;
-  addr.buffer_id = 2;
-  ret.store(c, addr);
-  CodeGen cg;
+  c = ret.store(c);
+  alloc.buffer(2).stream(0).group().place(c);
   auto func = cg.get(ret, 1);
 
   TC_ALIGNED(64) float32 x[n], y[n], z[n];
@@ -628,6 +628,10 @@ void print_time(float64 t, int64 elements) {
              cpu_frequency * 1e9 * t / elements, t * 1000.0_f);
              */
   fmt::print("   {:10.3f} cyc / elem  \n", cpu_frequency * 1e9 * t / elements);
+}
+
+void print_cpe(float64 cpe) {
+  fmt::print("   {:10.3f} cyc / elem  \n", cpe);
 }
 
 template <int dim>
@@ -748,19 +752,12 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
     ground_truth[i] = mv_gt;
   }
 
-  // warm up
-  for (int i = 0; i < 10; i++)
-    func(M_allocator.get<float32>(), V_allocator.get<float32>(),
-         MV_allocator.get<float32>(), n);
-
-  for (int K = 0; K < 1; K++) {
-    float64 t = Time::get_time();
-    for (int i = 0; i < rounds; i++) {
-      func(M_allocator.get<float32>(), V_allocator.get<float32>(),
-           MV_allocator.get<float32>(), n);
-    }
-    print_time(Time::get_time() - t, n * rounds);
-  }
+  print_cpe(measure_cpe(
+      [&]() {
+        func(M_allocator.get<float32>(), V_allocator.get<float32>(),
+             MV_allocator.get<float32>(), n);
+      },
+      n));
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < dim; j++) {
@@ -791,10 +788,10 @@ void test_mat_vec_mul_all() {
 }
 
 auto test_tlang = []() {
+  test_vec_add();
   test_mat_vec_mul_all<1>();
   test_mat_vec_mul_all<2>();
   test_mat_vec_mul_all<4>();
-  test_vec_add();
 };
 TC_REGISTER_TASK(test_tlang);
 

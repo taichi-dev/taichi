@@ -16,7 +16,7 @@ constexpr real cpu_frequency = 3.6_f;
 
 // constexpr int enlarge = 4096;
 constexpr int enlarge = 1;
-constexpr int rounds = 4 * 16384 * 2048 / enlarge;
+constexpr int rounds = 16384 * 2048 / enlarge;
 constexpr int N = 256 * enlarge;
 
 template <int dim, typename T>
@@ -581,10 +581,17 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
       if (layout == 0) {
         buffer.stream().group().place(m(i, j));
       } else if (layout == 1) {
+        /*
         addr.coeff_i = 1;
         addr.coeff_const = (i * dim + j) * simd_width;
         addr.coeff_aosoa_group_size = simd_width;
         addr.coeff_aosoa_stride = (dim * dim - 1) * simd_width;
+        */
+        buffer.stream(0)
+            .group(j)
+            .group(i)
+            .repeat(simd_width / dim)
+            .place(m(i, j));
       } else {
         addr.coeff_i = dim;
         addr.coeff_aosoa_group_size = simd_width / dim;
@@ -598,10 +605,13 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
     if (layout == 0) {
       alloc.buffer(1).stream().group().place(v(i));
     } else if (layout == 1) {
+      /*
       addr.coeff_i = 1;
       addr.coeff_aosoa_group_size = simd_width;
       addr.coeff_aosoa_stride = (dim - 1) * simd_width;
       addr.coeff_const = i * simd_width;
+      */
+      alloc.buffer(1).stream(0).group().repeat(simd_width / dim).place(v(i));
     } else {
       addr.coeff_i = dim;
       addr.coeff_const = i;
@@ -615,12 +625,15 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
     addr.stream_id = 2;
     mv(i) = ret.store(mv(i));
     if (layout == 0) {
-      alloc.buffer(2).stream().group().place(mv(i));
+      alloc.buffer(2).stream(0).group().place(mv(i));
     } else if (layout == 1) {
+      /*
       addr.coeff_i = 1;
       addr.coeff_aosoa_group_size = simd_width;
       addr.coeff_aosoa_stride = (dim - 1) * simd_width;
       addr.coeff_const = i * simd_width;
+      */
+      alloc.buffer(2).stream(0).group().repeat(simd_width / dim).place(mv(i));
     } else {
       addr.coeff_i = dim;
       addr.coeff_const = i;
@@ -699,10 +712,10 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
 
 template <int dim>
 void test_mat_vec_mul_all() {
-  for (auto in_cache : {false, true}) {
+  for (auto in_cache : {true}) {
     test_mat_vec_mul_eigen<dim>(in_cache);
-    for (auto layout : {0, 1, 2}) {
-      for (auto unroll : {1, 4})
+    for (auto layout : {0, 1}) {
+      for (auto unroll : {1})
         for (auto prefetch : {0})
           test_mat_vec_mul<dim>(layout, in_cache, unroll, prefetch);
     }
@@ -711,7 +724,7 @@ void test_mat_vec_mul_all() {
 }
 
 auto test_tlang = []() {
-  test_mat_vec_mul_all<1>();
+  // test_mat_vec_mul_all<1>();
   test_mat_vec_mul_all<2>();
   test_mat_vec_mul_all<4>();
   test_vec_add();

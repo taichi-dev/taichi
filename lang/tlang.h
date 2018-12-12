@@ -144,18 +144,34 @@ struct AddrNode {
     walk(this);
   }
 
-  AddrNode &group() {
+  AddrNode &group(int id = -1) {
     TC_ASSERT(depth >= 2);
-    auto n = create(depth + 1);
-    ch.push_back(n);
-    return *n;
+    if (id == -1) {
+      auto n = create(depth + 1);
+      ch.push_back(n);
+      return *n;
+    } else {
+      while (ch.size() <= id) {
+        auto n = create(depth + 1);
+        ch.push_back(n);
+      }
+      return *ch[id];
+    }
   }
 
-  AddrNode &stream() {
+  AddrNode &stream(int id = -1) {
     TC_ASSERT(depth == 1);
-    auto n = create(depth + 1);
-    ch.push_back(n);
-    return *n;
+    if (id == -1) {
+      auto n = create(depth + 1);
+      ch.push_back(n);
+      return *n;
+    } else {
+      while (ch.size() <= id) {
+        auto n = create(depth + 1);
+        ch.push_back(n);
+      }
+      return *ch[id];
+    }
   }
 
   AddrNode &repeat(int repeat_factor) {
@@ -561,6 +577,7 @@ class CodeGen {
   */
 
   std::string get_vectorized_address(Address addr, int extra_offset = 0) {
+    TC_ASSERT(addr.stream_id != -1);
     auto stream_name = fmt::format("stream{:02d}", addr.stream_id);
     auto stride =
         addr.coeff_i * num_groups +

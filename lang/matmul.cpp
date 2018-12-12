@@ -6,6 +6,7 @@
 #include "tlang.h"
 // #include <taichi/testing.h>
 #include <Eigen/Dense>
+#include <cuda_runtime.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -176,9 +177,16 @@ class AlignedAllocator {
 
  public:
   AlignedAllocator(std::size_t size) {
+    /*
     _data.resize(size + 4096);
     auto p = reinterpret_cast<uint64>(_data.data());
     data = (void *)(p + (4096 - p % 4096));
+    */
+    cudaMallocManaged(&data, size);
+  }
+
+  ~AlignedAllocator() {
+    cudaFree(data);
   }
 
   template <typename T = void>
@@ -477,23 +485,20 @@ real Tlang_matmatmul(Tlang::CPUCodeGen::Mode mode,
   auto cpe = measure_cpe(
       [&]() { func(Context(A_.get<T>(), B_.get<T>(), C.get<T>(), N)); }, N);
 
-  if (simd_width == 8) {
-    AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), D.get<T>());
+  AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), D.get<T>());
 
-    for (int i = 0; i < N; i++) {
-      for (int j = 0; j < dim; j++) {
-        for (int k = 0; k < dim; k++) {
-          int ind1 = c(j, k)->addr.eval(i, N);
-          int ind2 = (i / simd_width * dim * dim + j * dim + k) * simd_width +
-                     i % simd_width;
-          auto a = C.get<float32>()[ind1];
-          auto b = D.get<T>()[ind2];
-          if (std::abs(a - b) >= 1e-5_f) {
-            TC_P(a);
-            TC_P(b);
-          }
-          TC_ASSERT(std::abs(a - b) < 1e-5_f);
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j < dim; j++) {
+      for (int k = 0; k < dim; k++) {
+        int ind1 = c(j, k)->addr.eval(i, N);
+        int ind2 = (i / 8 * dim * dim + j * dim + k) * 8 + i % 8;
+        auto a = C.get<float32>()[ind1];
+        auto b = D.get<T>()[ind2];
+        if (std::abs(a - b) >= 1e-5_f) {
+          TC_P(a);
+          TC_P(b);
         }
+        TC_ASSERT(std::abs(a - b) < 1e-5_f);
       }
     }
   }
@@ -503,12 +508,12 @@ real Tlang_matmatmul(Tlang::CPUCodeGen::Mode mode,
 
 template <int dim, typename T>
 real TlangVec8AOSOA_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Tlang::CPUCodeGen::Mode::vector, 8, 0);
+  return Tlang_matmatmul<dim, T>(Tlang::CPUCodeGen::Mode::vector, 32, 0);
 }
 
 template <int dim, typename T>
 real TlangVec8Inter_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Tlang::CPUCodeGen::Mode::vector, 8, 1);
+  return Tlang_matmatmul<dim, T>(Tlang::CPUCodeGen::Mode::vector, 32, 1);
 }
 
 template <int dim, typename T>
@@ -570,6 +575,7 @@ void initialize_benchmark() {
 auto tlang_matmatmul = []() {
   initialize_benchmark();
 
+  run_matmatmul<1, float32>();
   run_matmatmul<2, float32>();
   run_matmatmul<4, float32>();
   // run_matmatmul<8, float32>();
@@ -977,7 +983,6 @@ TC_NAMESPACE_END
 
 /*
 TODO:
- CUDA backend
  Address Node
  imm
  vec3

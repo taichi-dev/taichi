@@ -475,7 +475,11 @@ class GPUCodeGen : public CodeGenBase {
 
     emit_code("__global__ void {}(Context context) {{", kernel_name());
     emit_code("auto n = context.get_range(0);\n");
-    emit_code("auto g = blockIdx.x * blockDim.x + threadIdx.x;\n");
+    emit_code("auto linear_idx = blockIdx.x * blockDim.x + threadIdx.x;\n");
+    emit_code("if (linear_idx >= n) return;\n");
+    emit_code("auto g = linear_idx / (32 / {}); \n", group_size);
+    emit_code("auto sub_g_id = linear_idx % (32 / {}); \n", group_size);
+    emit_code("auto g_idx = linear_idx % {}; \n", group_size);
     emit_code("int l = threadIdx.x & 0x1f;\n");
     emit_code("int loop_index = 0;");
 
@@ -486,9 +490,10 @@ class GPUCodeGen : public CodeGenBase {
 
     emit_code("extern \"C\" void " + func_name + "(Context context) {\n");
     emit_code("auto n = context.get_range(0);\n");
-    int block_size = 512;
+    int block_size = 256;
     emit_code("{}<<<n / {}, {}>>>(context);", kernel_name(), block_size,
               block_size);
+    emit_code("cudaDeviceSynchronize();\n");
 
     emit_code("}\n");
   }
@@ -522,15 +527,19 @@ class GPUCodeGen : public CodeGenBase {
         addr.coeff_const -= addr.coeff_const % simd_width;
       }
 
-      TC_ASSERT(group_size <= 4);
-      // detect patterns
-      int offset_const = offsets[0] % simd_width;
-      int offset_inc = offsets[1] - offsets[0];
-      for (int i = 0; i + 1 < offsets.size(); i++) {
-        TC_ASSERT(offset_inc == offsets[i + 1] - offsets[i]);
+      if (group_size > 1) {
+        // detect patterns
+        int offset_const = offsets[0] % simd_width;
+        int offset_inc = offsets[1] - offsets[0];
+        for (int i = 0; i + 1 < (int)offsets.size(); i++) {
+          TC_ASSERT(offset_inc == offsets[i + 1] - offsets[i]);
+        }
+        emit_code("auto {} = {}; \\\n", expr->var_name,
+                  get_vectorized_address(addr, offset_const, offset_inc));
+      } else {
+        emit_code("auto {} = {}; \\\n", expr->var_name,
+                  get_vectorized_address(addr));
       }
-      emit_code("auto {} = {}; \\\n", expr->var_name,
-                get_vectorized_address(addr));
     } else if (expr->type == NodeType::store) {
       emit_code("{} = {}; \\\n", get_vectorized_address(expr->addr),
                 expr->ch[0]->var_name);
@@ -575,17 +584,19 @@ class GPUCodeGen : public CodeGenBase {
 
   // Create vectorized IR for the root node
   // the vector width should be the final SIMD instruction width
-  std::string get_vectorized_address(Address addr, int extra_offset = 0) {
+  std::string get_vectorized_address(Address addr,
+                                     int extra_offset = 0,
+                                     int g_idx_inc = 1) {
     TC_ASSERT(addr.buffer_id != -1);
     auto buffer_name =
         fmt::format("context.get_buffer<float32>({:02d})", addr.buffer_id);
-    auto stride =
+    auto warp_stride =
         addr.coeff_i * num_groups +
         num_groups / addr.coeff_aosoa_group_size * addr.coeff_aosoa_stride;
     auto offset = addr.coeff_const;
-    return fmt::format("{}[{} * n + {} * (g + loop_index) + {} + {}]",
-                       buffer_name, addr.coeff_imax, stride, offset,
-                       extra_offset);
+    return fmt::format(
+        "{}[{} * n + {} * (g + loop_index) + sub_g_id * {} + {} + {} + g_idx * {}]",
+        buffer_name, addr.coeff_imax, warp_stride, addr.coeff_i, offset, extra_offset, g_idx_inc);
   }
 };
 

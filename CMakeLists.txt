@@ -12,9 +12,11 @@ set(${CUDA_ARCH} 61)
 
 find_package(MPI)
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
+include_directories(/usr/local/cuda/include)
+
 
 add_library(taichi_pangu SHARED ${PROJECT_SOURCES})
 target_link_libraries(taichi_pangu ${CORE_LIBRARY_NAME})
-target_link_libraries(taichi_pangu ${MPI_C_LIBRARIES})
+target_link_libraries(taichi_pangu ${MPI_C_LIBRARIES} /usr/local/cuda/lib64/libcudart.so)
 
 

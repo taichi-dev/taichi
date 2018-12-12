@@ -589,7 +589,6 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
         */
         buffer.stream(0)
             .group(j)
-            .group(i)
             .repeat(simd_width / dim)
             .place(m(i, j));
       } else {
@@ -611,7 +610,7 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
       addr.coeff_aosoa_stride = (dim - 1) * simd_width;
       addr.coeff_const = i * simd_width;
       */
-      alloc.buffer(1).stream(0).group().repeat(simd_width / dim).place(v(i));
+      alloc.buffer(1).stream(0).group(0).repeat(simd_width / dim).place(v(i));
     } else {
       addr.coeff_i = dim;
       addr.coeff_const = i;
@@ -625,7 +624,7 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
     addr.buffer_id = 2;
     mv(i) = ret.store(mv(i));
     if (layout == 0) {
-      alloc.buffer(2).stream(0).group().place(mv(i));
+      alloc.buffer(2).stream().group().place(mv(i));
     } else if (layout == 1) {
       /*
       addr.coeff_i = 1;
@@ -633,7 +632,7 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
       addr.coeff_aosoa_stride = (dim - 1) * simd_width;
       addr.coeff_const = i * simd_width;
       */
-      alloc.buffer(2).stream(0).group().repeat(simd_width / dim).place(mv(i));
+      alloc.buffer(2).stream(0).group(0).repeat(simd_width / dim).place(mv(i));
     } else {
       addr.coeff_i = dim;
       addr.coeff_const = i;
@@ -644,8 +643,11 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
   alloc.print();
 
   TC_P(m(0, 0)->addr);
+  TC_P(m(1, 1)->addr);
   TC_P(v(0)->addr);
+  TC_P(v(1)->addr);
   TC_P(mv(0)->addr);
+  TC_P(mv(1)->addr);
 
   int64 enlarge = in_cache ? 1 : 4096;
   int64 n = taichi::N * enlarge;
@@ -656,7 +658,7 @@ void test_mat_vec_mul(int layout, bool in_cache, int unroll, int prefetch) {
   TC_ASSERT(8 % dim == 0);
   int gs = 1;
   if (layout == 1) {
-    gs = 1;
+    gs = dim;
   } else if (layout == 2) {
     gs = dim;
   }

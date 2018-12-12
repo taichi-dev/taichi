@@ -96,15 +96,15 @@ struct AddrNode {
 
   void materialize() {
     TC_ASSERT(bool(addr == nullptr) ^ bool(ch.size() == 0));
-    if (depth == 2) {  // stream
+    if (depth == 2) {  // stream, reset offset
       offset = 0;
     }
+    int acc_offset = offset;
     for (auto &c : ch) {
-      c->offset = offset;
+      c->offset = acc_offset;
       c->materialize();
-      c->coeff_i = ch.size();
       num_variables += c->num_variables;
-      offset += c->data_size;
+      acc_offset += c->data_size;
     }
     data_size = num_variables * repeat_factor;
     group_size = (ch.size() ? ch[0]->group_size : 1) * repeat_factor;
@@ -135,6 +135,7 @@ struct AddrNode {
         if (c->depth == 1) {  // buffer
           buffer_id = c->buffer_id;
         }
+        c->coeff_i = node->num_variables;
         walk(c.get());
         if (c->depth == 1) {  // buffer
           coeff_imax = 0;
@@ -179,6 +180,7 @@ struct AddrNode {
 
   AddrNode &repeat(int repeat_factor) {
     this->repeat_factor = repeat_factor;
+    TC_P(repeat_factor);
     return *this;
   }
 
@@ -198,7 +200,8 @@ struct AddrNode {
     for (int i = 0; i < depth; i++) {
       fmt::print("  ");
     }
-    fmt::print("  num_variables={} data_size={} repeat={} offset={}\n", num_variables, data_size, repeat_factor, offset);
+    fmt::print("  num_variables={} data_size={} repeat={} offset={} addr={}\n",
+               num_variables, data_size, repeat_factor, offset, (uint64)addr);
     for (auto c : ch) {
       c->print();
     }

@@ -339,6 +339,13 @@ class Expr {
   }
 };
 
+inline bool prior_to(Expr &a, Expr &b) {
+  auto address1 = a->addr;
+  auto address2 = b->addr;
+  return address1.same_type(address2) &&
+         address1.offset() + 1 == address2.offset();
+}
+
 Node::Node(Type type, Expr ch0, Expr ch1) : Node(type) {
   ch.resize(2);
   ch[0] = ch0;
@@ -383,98 +390,27 @@ inline int get_code_gen_id() {
   return id++;
 }
 
-class CodeGen {
-  int var_count;
-  std::string code;
+class Visitor {
+public:
+  Visitor() {
 
- public:
-  MemoryAllocator alloc;
-  std::string func_name;
-  enum class Mode : int { scalar, vector };
+  }
+};
 
-  Mode mode;
+class Vectorizer : public Visitor {
+public:
+  std::map<Expr, Expr> scalar_to_vector;
   int simd_width;
   int group_size;
   int num_groups;
-  int id;
-  int unroll;
-  int prefetch;
-  std::map<NodeType, std::string> binary_ops;
-  std::string folder;
 
-  CodeGen(Mode mode = Mode::vector, int simd_width = 8)
-      : var_count(0), mode(mode), simd_width(simd_width), unroll(1) {
-    prefetch = 0;
+  Vectorizer(int simd_width): Visitor(), simd_width(simd_width) {
+
   }
 
-  std::string create_variable() {
-    TC_ASSERT(var_count < 10000);
-    return fmt::format("var_{:04d}", var_count++);
-  }
-
-  using FunctionType = void (*)(float32 *, float32 *, float32 *, int);
-
-  std::string run(Expr &expr, int group_size = 1) {
-    TC_ASSERT(mode == Mode::vector);
+  Expr run(Expr &expr, int group_size, int num_groups) {
     this->group_size = group_size;
-    TC_ASSERT(group_size != 0);
-    // group_size = expr->ch.size();
-    num_groups = simd_width / group_size;
-    TC_WARN_IF(simd_width % group_size != 0, "insufficient lane usage");
-
-    id = get_code_gen_id();
-    func_name = fmt::format("func{:06d}", id);
-    binary_ops[NodeType::add] = "+";
-    binary_ops[NodeType::sub] = "-";
-    binary_ops[NodeType::mul] = "*";
-    binary_ops[NodeType::div] = "/";
-    folder = "_tlang_cache/";
-    create_directories(folder);
-    code = "#include <immintrin.h>\n#include <cstdio>\n";
-    code += "using float32 = float;\n";
-    code += "using float64 = double;\n\n";
-    code += "extern \"C\" void " + func_name +
-            "(float32 * __restrict__ buffer00, float32 * __restrict__ buffer01, "
-            "float32 * __restrict__ buffer02, int n) {\n";
-    code += "#define LOOP(loop_index) {\\\n";
-    auto vectorized_expr = vectorize(expr, group_size, num_groups);
-    code_gen(vectorized_expr);
-    code += "}\n";
-    code += fmt::format("for (int i = 0, g = 0; i < n; ) {{\n", num_groups);
-    for (int i = 0; i < unroll; i++) {
-      code += fmt::format("LOOP({});", i);
-    }
-    code += fmt::format("i += {}; g += {};", num_groups * unroll, unroll);
-    code += "}\n}\n";
-    code += "#undef LOOP";
-    return code;
-  }
-
-  std::string get_scalar_suffix(int i) {
-    return fmt::format("_{:03d}", i);
-  }
-
-  std::vector<Expr> reachable_exprs(Expr &expr) {
-    std::vector<Expr> ret;
-    std::set<Expr> visited;
-
-    std::function<void(Expr &)> visit = [&](Expr &expr) {
-      if (visited.find(expr) != visited.end())
-        return;
-      visited.insert(expr);
-      ret.push_back(expr);
-      for (auto c : expr->ch) {
-        code_gen(c);
-      }
-    };
-    code_gen(expr);
-    return ret;
-  }
-
-  std::map<Expr, Expr> scalar_to_vector;
-  // Create vectorized IR for the root node
-  // the vector width should be the final SIMD instruction width
-  Expr vectorize(Expr &expr, int group_size, int num_groups) {
+    this->num_groups = num_groups;
     TC_ASSERT(group_size * num_groups == simd_width);
     scalar_to_vector.clear();
     // expr should be a ret Op, with its children store Ops.
@@ -504,7 +440,7 @@ class CodeGen {
             TC_P(root->members[i]->addr);
             TC_ERROR(
                 "Addresses in SIMD load should be either identical or "
-                "neighbouring.");
+                    "neighbouring.");
           }
         }
       }
@@ -571,6 +507,98 @@ class CodeGen {
     }
   }
 
+};
+
+class CodeGen {
+  int var_count;
+  std::string code;
+
+ public:
+  MemoryAllocator alloc;
+  std::string func_name;
+  enum class Mode : int { scalar, vector };
+
+  Mode mode;
+  int simd_width;
+  int group_size;
+  int num_groups;
+  int id;
+  int unroll;
+  int prefetch;
+  std::map<NodeType, std::string> binary_ops;
+  std::string folder;
+
+  CodeGen(Mode mode = Mode::vector, int simd_width = 8)
+      : var_count(0), mode(mode), simd_width(simd_width), unroll(1) {
+    prefetch = 0;
+  }
+
+  std::string create_variable() {
+    TC_ASSERT(var_count < 10000);
+    return fmt::format("var_{:04d}", var_count++);
+  }
+
+  using FunctionType = void (*)(float32 *, float32 *, float32 *, int);
+
+  std::string run(Expr &expr, int group_size = 1) {
+    TC_ASSERT(mode == Mode::vector);
+    this->group_size = group_size;
+    TC_ASSERT(group_size != 0);
+    // group_size = expr->ch.size();
+    num_groups = simd_width / group_size;
+    TC_WARN_IF(simd_width % group_size != 0, "insufficient lane usage");
+
+    id = get_code_gen_id();
+    func_name = fmt::format("func{:06d}", id);
+    binary_ops[NodeType::add] = "+";
+    binary_ops[NodeType::sub] = "-";
+    binary_ops[NodeType::mul] = "*";
+    binary_ops[NodeType::div] = "/";
+    folder = "_tlang_cache/";
+    create_directories(folder);
+    code = "#include <immintrin.h>\n#include <cstdio>\n";
+    code += "using float32 = float;\n";
+    code += "using float64 = double;\n\n";
+    code += "extern \"C\" void " + func_name +
+            "(float32 * __restrict__ buffer00, float32 * __restrict__ buffer01, "
+            "float32 * __restrict__ buffer02, int n) {\n";
+    code += "#define LOOP(loop_index) {\\\n";
+    auto vectorized_expr = Vectorizer(simd_width).run(expr, group_size, num_groups);
+    code_gen(vectorized_expr);
+    code += "}\n";
+    code += fmt::format("for (int i = 0, g = 0; i < n; ) {{\n", num_groups);
+    for (int i = 0; i < unroll; i++) {
+      code += fmt::format("LOOP({});", i);
+    }
+    code += fmt::format("i += {}; g += {};", num_groups * unroll, unroll);
+    code += "}\n}\n";
+    code += "#undef LOOP";
+    return code;
+  }
+
+  std::string get_scalar_suffix(int i) {
+    return fmt::format("_{:03d}", i);
+  }
+
+  std::vector<Expr> reachable_exprs(Expr &expr) {
+    std::vector<Expr> ret;
+    std::set<Expr> visited;
+
+    std::function<void(Expr &)> visit = [&](Expr &expr) {
+      if (visited.find(expr) != visited.end())
+        return;
+      visited.insert(expr);
+      ret.push_back(expr);
+      for (auto c : expr->ch) {
+        code_gen(c);
+      }
+    };
+    code_gen(expr);
+    return ret;
+  }
+
+  // Create vectorized IR for the root node
+  // the vector width should be the final SIMD instruction width
   std::string get_vectorized_address(Address addr, int extra_offset = 0) {
     TC_ASSERT(addr.buffer_id != -1);
     auto buffer_name = fmt::format("buffer{:02d}", addr.buffer_id);
@@ -783,12 +811,6 @@ class CodeGen {
     return (FunctionType)ret;
   }
 
-  bool prior_to(Expr &a, Expr &b) {
-    auto address1 = a->addr;
-    auto address2 = b->addr;
-    return address1.same_type(address2) &&
-           address1.offset() + 1 == address2.offset();
-  }
 };
 }  // namespace Tlang
 

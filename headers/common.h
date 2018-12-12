@@ -2,13 +2,20 @@
 
 #if !defined(TC_INCLUDED)
 
-#include <immintrin.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 using float32 = float;
 using float64 = double;
 using uint64 = unsigned long long;
+
+#if defined(TLANG_CPU)
+#include <immintrin.h>
+#endif
+
+#if defined(TLANG_GPU)
+#include <cuda_runtime.h>
+#endif
 
 #endif
 

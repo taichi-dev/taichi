@@ -420,7 +420,7 @@ class CPUCodeGen : public CodeGenBase {
     write_code_to_file();
     auto cmd = fmt::format(
         "g++ {} -std=c++14 -shared -fPIC -O3 -march=native -I {}/headers "
-        "-D_GLIBCXX_USE_CXX11_ABI=0 -o {}",
+        "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {}",
         get_source_fn(), get_project_fn(), get_library_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
@@ -600,8 +600,8 @@ class GPUCodeGen : public CodeGenBase {
     write_code_to_file();
     auto cmd = fmt::format(
         "nvcc {} -std=c++14 -shared -O3 -Xcompiler \"-fPIC\" --use_fast_math "
-        "--ptxas-options=-allow-expensive-optimizations=true,-O3 -I {}/headers "
-        "-D_GLIBCXX_USE_CXX11_ABI=0 -o {}",
+        "--ptxas-options=-allow-expensive-optimizations=true,-O3 -I {}/headers -ccbin g++-6 "
+        "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_GPU -o {}",
         get_source_fn(), get_project_fn(), get_library_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);

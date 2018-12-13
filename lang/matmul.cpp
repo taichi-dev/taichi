@@ -16,7 +16,7 @@ using EigenVector = std::vector<T, Eigen::aligned_allocator<T>>;
 
 constexpr real cpu_frequency = 4.2_f;
 
-constexpr int N = 256;
+constexpr int N = 256 * 4096;
 
 real default_measurement_time = 1;
 
@@ -207,7 +207,9 @@ real Tlang_matmatmul(Arch arch, int layout, int in_cache) {
 
   int simd_width = default_simd_width(arch);
 
-  Program prog(arch, N);
+  int n = N;
+
+  Program prog(arch, n);
   prog.config.group_size = layout == 0 ? 1 : dim;
 
   for (int i = 0; i < dim; i++) {
@@ -273,9 +275,9 @@ real Tlang_matmatmul(Arch arch, int layout, int in_cache) {
 
   prog.compile();
 
-  AlignedAllocator A(sizeof(T) * N * dim * dim);
-  AlignedAllocator B(sizeof(T) * N * dim * dim);
-  AlignedAllocator D(sizeof(T) * N * dim * dim);
+  AlignedAllocator A(sizeof(T) * n * dim * dim);
+  AlignedAllocator B(sizeof(T) * n * dim * dim);
+  AlignedAllocator D(sizeof(T) * n * dim * dim);
 
   for (int i = 0; i < N * dim * dim; i++) {
     A.get<T>()[i] = rand();
@@ -292,7 +294,7 @@ real Tlang_matmatmul(Arch arch, int layout, int in_cache) {
     }
   }
 
-  auto cpe = measure_cpe([&]() { prog(); }, N);
+  auto cpe = measure_cpe([&]() { prog(); }, n);
 
   AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), D.get<T>());
 

@@ -202,10 +202,12 @@ real SOA_AVX2_matmatmul() {
 };
 
 template <int dim, typename T>
-real Tlang_matmatmul(int simd_width, int layout = 0) {
+real Tlang_matmatmul(Arch arch, int layout, int in_cache) {
   Matrix a(dim, dim), b(dim, dim);
 
-  Program prog(Arch::x86_64, N);
+  int simd_width = default_simd_width(arch);
+
+  Program prog(arch, N);
   prog.config.group_size = layout == 0 ? 1 : dim;
 
   for (int i = 0; i < dim; i++) {
@@ -313,13 +315,23 @@ real Tlang_matmatmul(int simd_width, int layout = 0) {
 }
 
 template <int dim, typename T>
-real TlangVecAOSOA_matmatmul() {
-  return Tlang_matmatmul<dim, T>(8, 0);
+real TlangCPUAOSOA_matmatmul() {
+  return Tlang_matmatmul<dim, T>(Arch::x86_64, 0, 0);
 }
 
 template <int dim, typename T>
-real TlangVecInter_matmatmul() {
-  return Tlang_matmatmul<dim, T>(8, 1);
+real TlangCPUInter_matmatmul() {
+  return Tlang_matmatmul<dim, T>(Arch::x86_64, 1, 0);
+}
+
+template <int dim, typename T>
+real TlangGPUAOSOA_matmatmul() {
+  return Tlang_matmatmul<dim, T>(Arch::gpu, 0, 0);
+}
+
+template <int dim, typename T>
+real TlangGPUInter_matmatmul() {
+  return Tlang_matmatmul<dim, T>(Arch::gpu, 1, 0);
 }
 
 #define BENCHMARK(x)                                        \
@@ -332,8 +344,11 @@ template <int dim, typename T>
 void run_matmatmul() {
   fmt::print("Matrix<{}, {}>:\n", dim, sizeof(T) == 4 ? "float32" : "float64");
 
-  BENCHMARK(TlangVecAOSOA);
-  BENCHMARK(TlangVecInter);
+  BENCHMARK(TlangCPUAOSOA);
+  BENCHMARK(TlangCPUInter);
+
+  BENCHMARK(TlangGPUAOSOA);
+  BENCHMARK(TlangGPUInter);
 
   // BENCHMARK(TlangSca8);
   // BENCHMARK(TlangVec16);

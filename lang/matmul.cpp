@@ -571,10 +571,10 @@ void initialize_benchmark() {
 auto tlang_matmatmul = []() {
   initialize_benchmark();
 
-  // run_matmatmul<1, float32>();
+  run_matmatmul<1, float32>();
   run_matmatmul<2, float32>();
   run_matmatmul<4, float32>();
-  // run_matmatmul<8, float32>();
+  run_matmatmul<8, float32>();
 };
 TC_REGISTER_TASK(tlang_matmatmul);
 

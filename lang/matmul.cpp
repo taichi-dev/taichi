@@ -267,6 +267,8 @@ real Tlang_matmatmul(int simd_width, int layout = 0) {
   Matrix a(dim, dim), b(dim, dim);
 
   Program prog(Arch::x86_64, N);
+  prog.config.group_size = layout == 0 ? 1 : dim;
+
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       if (layout == 0) {
@@ -328,16 +330,11 @@ real Tlang_matmatmul(int simd_width, int layout = 0) {
     }
   }
 
-  prog.config.group_size = layout == 0 ? 1 : dim;
   prog.compile();
 
   AlignedAllocator A(sizeof(T) * N * dim * dim);
   AlignedAllocator B(sizeof(T) * N * dim * dim);
-  AlignedAllocator C(sizeof(T) * N * dim * dim);
   AlignedAllocator D(sizeof(T) * N * dim * dim);
-
-  AlignedAllocator A_(sizeof(T) * N * dim * dim);
-  AlignedAllocator B_(sizeof(T) * N * dim * dim);
 
   for (int i = 0; i < N * dim * dim; i++) {
     A.get<T>()[i] = rand();
@@ -349,23 +346,21 @@ real Tlang_matmatmul(int simd_width, int layout = 0) {
       for (int k = 0; k < dim; k++) {
         int ind1 = c(j, k)->addr.eval(i, N);
         int ind2 = (i / 8 * dim * dim + j * dim + k) * 8 + i % 8;
-        A_.get<float32>()[ind1] = A.get<float32>()[ind2];
-        B_.get<float32>()[ind1] = B.get<float32>()[ind2];
+        prog.data(a(j, k), i) = A.get<float32>()[ind2];
+        prog.data(b(j, k), i) = B.get<float32>()[ind2];
       }
     }
   }
 
-  auto cpe = measure_cpe(
-      [&]() { prog(Context(A_.get<T>(), B_.get<T>(), C.get<T>(), N)); }, N);
+  auto cpe = measure_cpe([&]() { prog(); }, N);
 
   AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), D.get<T>());
 
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
-        int ind1 = c(j, k)->addr.eval(i, N);
         int ind2 = (i / 8 * dim * dim + j * dim + k) * 8 + i % 8;
-        auto a = C.get<float32>()[ind1];
+        auto a = prog.data(c(j, k), i);
         auto b = D.get<T>()[ind2];
         if (std::abs(a - b) >= 1e-5_f) {
           TC_P(a);

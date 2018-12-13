@@ -228,6 +228,8 @@ class AlignedAllocator {
   void *data;
 
  public:
+  Device device;
+
   AlignedAllocator() {
     data = nullptr;
   }
@@ -236,12 +238,31 @@ class AlignedAllocator {
 
   ~AlignedAllocator();
 
+  bool initialized() const {
+    return data != nullptr;
+  }
+
   template <typename T = void>
   T *get() {
-    TC_ASSERT(data);
+    TC_ASSERT(initialized());
     return reinterpret_cast<T *>(data);
   }
+
+  AlignedAllocator operator=(const AlignedAllocator &) = delete;
+
+  AlignedAllocator(AlignedAllocator &&o) noexcept {
+    (*this) = std::move(o);
+  }
+
+  AlignedAllocator &operator=(AlignedAllocator &&o) noexcept {
+    std::swap(_data, o._data);
+    data = o.data;
+    o.data = nullptr;
+    device = o.device;
+  }
 };
+
+using Arch = CompileConfig::Arch;
 
 struct Program {
   CompileConfig config;
@@ -264,6 +285,13 @@ struct Program {
 
   Program(CompileConfig::Arch arch, int n) : n(n) {
     config.arch = arch;
+    if (config.arch == Arch::x86_64) {
+      device = Device::cpu;
+    } else if (config.arch == Arch::gpu) {
+      device = Device::gpu;
+    } else {
+      TC_NOT_IMPLEMENTED;
+    }
     function = nullptr;
   }
 
@@ -280,11 +308,9 @@ struct Program {
     if (function == nullptr) {
       compile();
     }
-    buffers.resize(num_buffers());
     Context context;
     for (int i = 0; i < num_buffers(); i++) {
-      buffers[i] = AlignedAllocator(n * sizeof(float32) *
-                                    alloc.root->ch[i]->num_variables);
+      allocate_buffer(i);
       context.buffers[i] = buffers[i].get();
     }
     context.ranges[0] = n;
@@ -301,15 +327,19 @@ struct Program {
   void compile();
 
   void allocate_buffer(int i) {
+    while (buffers.size() <= i) {
+      buffers.emplace_back();
+    }
+    if (!buffers[i].initialized()) {
+      buffers[i] = std::move(AlignedAllocator(
+          alloc.buffer(i).num_variables * n * sizeof(float32), device));
+    }
   }
 
-  float32 &data(Expr &expr, int i, int n) {
+  float32 &data(Expr &expr, int i) {
     auto &addr = expr->addr;
     TC_ASSERT(addr.initialized());
-    while (buffers.size() <= expr->addr.buffer_id) {
-      buffers.push_back(AlignedAllocator(
-          alloc.buffer(addr.buffer_id).num_variables * n * sizeof(float32)));
-    }
+    allocate_buffer(addr.buffer_id);
     return buffers[addr.buffer_id].get<float32>()[addr.eval(i, n)];
   }
 };
@@ -319,8 +349,6 @@ extern Program *current_program;
 TC_FORCE_INLINE Program &get_current_program() {
   return *current_program;
 }
-
-using Arch = CompileConfig::Arch;
 
 }  // namespace Tlang
 

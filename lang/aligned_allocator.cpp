@@ -5,7 +5,8 @@ TC_NAMESPACE_BEGIN
 
 namespace Tlang {
 
-AlignedAllocator::AlignedAllocator(std::size_t size, Device device) {
+AlignedAllocator::AlignedAllocator(std::size_t size, Device device)
+    : device(device) {
   if (device == Device::cpu) {
     _data.resize(size + 4096);
     auto p = reinterpret_cast<uint64>(_data.data());
@@ -18,8 +19,16 @@ AlignedAllocator::AlignedAllocator(std::size_t size, Device device) {
 }
 
 AlignedAllocator::~AlignedAllocator() {
-  cudaFree(data);
+  if (!initialized()) {
+    return;
+  }
+  if (device == Device::cpu) {
+  } else {
+    TC_ASSERT(device == Device::gpu);
+    cudaFree(data);
+  }
 }
+
 }
 
 TC_NAMESPACE_END

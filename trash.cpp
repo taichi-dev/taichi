@@ -176,3 +176,145 @@ for (int i = 0; i < Block::size[0]; i++) {
   }
 }
 */
+
+
+
+
+// -----------------------------------------------------------------------------
+
+
+/*
+template <int dim, typename T>
+real AOS2_matmatmul() {
+  struct Mat {
+    T d[dim][dim];
+  };
+  std::vector<Mat> A, B, C;
+  A.resize(N);
+  B.resize(N);
+  C.resize(N);
+
+  auto t = Time::get_time();
+  for (int r = 0; r < rounds; r++) {
+    for (int t = 0; t < N; t++) {
+      Mat X, Y;
+      for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+          X.d[i][j] = A[t].d[i][j];
+          Y.d[i][j] = B[t].d[i][j];
+        }
+      }
+      for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+          T sum = 0;
+          for (int k = 0; k < dim; k++) {
+            sum += X.d[i][k] * Y.d[k][j];
+          }
+          C[t].d[i][j] = sum;
+        }
+      }
+    }
+  }
+  return Time::get_time() - t;
+}
+*/
+
+
+
+/*
+auto test_saxpy = []() {
+  // fmt::print("dim={} {} in_cache={} unroll={} prefetch={:2d} ",);
+  using namespace Tlang;
+  CodeGen cg;
+  auto alloc = cg.alloc;
+  auto &buffer = alloc.buffer(0);
+
+  int64 enlarge = 4096;
+  int64 n = taichi::N * enlarge;
+  int64 rounds = taichi::rounds / enlarge;
+  cg.unroll = 4;
+  cg.prefetch = 0;
+
+  Expr ret;
+  alloc.buffer(1).stream(0).place()
+
+  AlignedAllocator A_allocator(n * sizeof(float32)),
+      B_allocator(n * sizeof(float32));
+
+  auto func = cg.get(ret);
+  for (int i = 0; i < 10; i++)
+    func(M_allocator.get<float32>(), V_allocator.get<float32>(),
+         MV_allocator.get<float32>(), n);
+
+  for (int K = 0; K < 1; K++) {
+    float64 t = Time::get_time();
+    for (int i = 0; i < rounds; i++) {
+      func(M_allocator.get<float32>(), V_allocator.get<float32>(),
+           MV_allocator.get<float32>(), n);
+    }
+    print_time(Time::get_time() - t, n * rounds);
+  }
+
+  for (int i = 0; i < n; i++) {
+    auto computed = MV_allocator.get<float32>()[mv(j)->addr.eval(i, n)];
+  }
+};
+*/
+
+
+// array of N * dim * dim * 8 * float64
+/*
+template <int dim>
+void AOSOA_matmul(float64 *A, float64 *B, float64 *C) {
+  constexpr int simd_width = 4;
+  for (int r = 0; r < rounds; r++) {
+    for (int t = 0; t < N / simd_width; t++) {
+      __m256d a[dim * dim], b[dim * dim];
+      const int p = dim * dim * simd_width * t;
+      for (int i = 0; i < dim * dim; i++) {
+        a[i] = _mm256_load_pd(&A[p + simd_width * i]);
+        b[i] = _mm256_load_pd(&B[p + simd_width * i]);
+      }
+      for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+          __m256d c = a[i * dim] * b[j];
+          for (int k = 1; k < dim; k++) {
+            c = c + a[i * dim + k] * b[k * dim + j];
+            // c = _mm256_fmadd_ps(a[i * dim + k], b[k * dim + j], c);
+          }
+          _mm256_store_pd(&C[p + simd_width * (i * dim + j)], c);
+        }
+      }
+    }
+  }
+}
+*/
+
+
+/*
+// array of N * dim * dim * 8 * float64
+template <int dim>
+void SOA_matmul(float64 *A, float64 *B, float64 *C) {
+  constexpr int simd_width = 4;
+  for (int r = 0; r < rounds; r++) {
+    for (int t = 0; t < N / simd_width; t++) {
+      __m256d a[dim * dim], b[dim * dim];
+      for (int i = 0; i < dim * dim; i++) {
+        a[i] = _mm256_load_pd(&A[i * N + t * simd_width]);
+        b[i] = _mm256_load_pd(&B[i * N + t * simd_width]);
+      }
+      for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+          __m256d c = a[i * dim] * b[j];
+          for (int k = 1; k < dim; k++) {
+            c = c + a[i * dim + k] * b[k * dim + j];
+            // c = _mm256_fmadd_ps(a[i * dim + k], b[k * dim + j], c);
+          }
+          _mm256_store_pd(&C[(i * dim + j) * N + t * simd_width], c);
+        }
+      }
+    }
+  }
+}
+*/
+

@@ -366,8 +366,8 @@ class GPUCodeGen : public CodeGenBase {
         "nvcc {} -std=c++14 -shared -O3 -Xcompiler \"-fPIC\" --use_fast_math "
         "--ptxas-options=-allow-expensive-optimizations=true,-O3 -I {}/headers "
         "-ccbin g++-6 "
-        "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_GPU -o {}",
-        get_source_fn(), get_project_fn(), get_library_fn());
+        "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_GPU -o {} 2> {}.log",
+        get_source_fn(), get_project_fn(), get_library_fn(), get_source_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
 #if defined(TC_PLATFORM_LINUX)

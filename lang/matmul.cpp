@@ -5,6 +5,7 @@
 #include <Eigen/StdVector>
 #include "tlang.h"
 #include <Eigen/Dense>
+// #include <cuda_runtime.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -366,6 +367,9 @@ void initialize_benchmark() {
           EIGEN_MINOR_VERSION);
   TC_INFO("GCC   Version {}.{}.{}", __GNUC__, __GNUC_MINOR__,
           __GNUC_PATCHLEVEL__);
+  // TC_INFO("NVCC  Version {}.{}.{}", __CUDACC_VER_MAJOR__,
+  // __CUDACC_VER_MINOR__,
+  //        __CUDACC_VER_BUILD__);
 }
 
 auto tlang_matmatmul = []() {
@@ -419,7 +423,7 @@ void print_cpe(float64 cpe) {
 
 template <int dim>
 void test_mat_vec_mul_eigen(int in_cache) {
-  fmt::print("dim={} eigen in_cache={}                      ", dim, in_cache);
+  fmt::print("dim={} eigen in_cache={}          ", dim, in_cache);
 
   int enlarge = in_cache ? 1 : 4096;
   int64 n = taichi::N * enlarge;
@@ -547,7 +551,13 @@ void test_mat_vec_mul_all() {
   for (auto in_cache : {0, 1}) {
     test_mat_vec_mul_eigen<dim>(in_cache);
     for (auto layout : {0, 1, 2}) {
-      for (auto arch : {Arch::x86_64, Arch::gpu})
+      std::vector<Arch> archs;
+      if (in_cache) {
+        archs = {Arch::x86_64};
+      } else {
+        archs = {Arch::x86_64, Arch::gpu};
+      }
+      for (auto arch : archs)
         test_mat_vec_mul<dim>(arch, layout, in_cache);
     }
     fmt::print("\n");

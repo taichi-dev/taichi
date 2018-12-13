@@ -131,7 +131,7 @@ inline bool prior_to(Expr &a, Expr &b) {
          address1.offset() + 1 == address2.offset();
 }
 
-Node::Node(Type type, Expr ch0, Expr ch1) : Node(type) {
+inline Node::Node(Type type, Expr ch0, Expr ch1) : Node(type) {
   ch.resize(2);
   ch[0] = ch0;
   ch[1] = ch1;
@@ -150,7 +150,7 @@ inline Expr load(Address addr) {
   return Expr(n);
 }
 
-AddrNode &AddrNode::place(Expr &expr) {
+inline AddrNode &AddrNode::place(Expr &expr) {
   if (!expr) {
     expr = placeholder();
   }
@@ -160,7 +160,7 @@ AddrNode &AddrNode::place(Expr &expr) {
   return *this;
 }
 
-int Node::member_id(const Expr &expr) const {
+inline int Node::member_id(const Expr &expr) const {
   for (int i = 0; i < (int)members.size(); i++) {
     if (members[i] == expr) {
       return i;

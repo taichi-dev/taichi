@@ -97,7 +97,8 @@ struct AddrNode {
   }
 
   void materialize() {
-    TC_ASSERT(bool(addr == nullptr) ^ bool(ch.size() == 0));
+    TC_ASSERT(bool(addr == nullptr) || bool(ch.size() == 0));
+    TC_ASSERT(!(bool(addr == nullptr) && bool(ch.size() == 0)));
     if (depth == 2) {  // stream, reset offset
       offset = 0;
     }
@@ -198,7 +199,7 @@ struct AddrNode {
     for (int i = 0; i < depth; i++) {
       fmt::print("  ");
     }
-    fmt::print("  num_variables={} data_size={} repeat={} offset={} addr={}\n",
+    fmt::print("num_variables={} data_size={} repeat={} offset={} addr={}\n",
                num_variables, data_size, repeat_factor, offset, (uint64)addr);
     for (auto c : ch) {
       c->print();

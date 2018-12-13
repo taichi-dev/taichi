@@ -287,38 +287,36 @@ Matrix operator+(const Matrix &A, const Matrix &B) {
 }  // namespace Tlang
 
 template <int dim, typename T>
-real Tlang_matmatmul(Tlang::CPUCodeGen::Mode mode,
-                     int simd_width,
+real Tlang_matmatmul(int simd_width,
                      int layout = 0) {
   using namespace Tlang;
 
   Matrix a(dim, dim), b(dim, dim);
 
-  GPUCodeGen cg;
-  auto &alloc = cg.alloc;
+  Program prog;
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       if (layout == 0) {
         // AOSOA
-        alloc.buffer(0)
+        prog.buffer(0)
             .stream(0)
             .group(0)
             .group(i * dim + j)
             .repeat(simd_width)
             .place(a(i, j));
-        alloc.buffer(1)
+        prog.buffer(1)
             .stream(0)
             .group(0)
             .group(i * dim + j)
             .repeat(simd_width)
             .place(b(i, j));
       } else {
-        alloc.buffer(0)
+        prog.buffer(0)
             .stream(0)
             .group(j)
             .repeat(simd_width / dim)
             .place(a(i, j));
-        alloc.buffer(1)
+        prog.buffer(1)
             .stream(0)
             .group(j)
             .repeat(simd_width / dim)
@@ -329,27 +327,26 @@ real Tlang_matmatmul(Tlang::CPUCodeGen::Mode mode,
 
   auto c = a * b;
 
-  Expr ret;
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       if (layout == 0) {
-        c(i, j) = ret.store(c(i, j));
+        c(i, j) = prog.store(c(i, j));
       } else {
-        c(j, i) = ret.store(c(j, i));
+        c(j, i) = prog.store(c(j, i));
       }
     }
   }
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       if (layout == 0) {
-        alloc.buffer(2)
+        prog.buffer(2)
             .stream(0)
             .group(0)
             .group(i * dim + j)
             .repeat(simd_width)
             .place(c(i, j));
       } else {
-        alloc.buffer(2)
+        prog.buffer(2)
             .stream(0)
             .group(j)
             .repeat(simd_width / dim)
@@ -358,7 +355,9 @@ real Tlang_matmatmul(Tlang::CPUCodeGen::Mode mode,
     }
   }
 
-  auto func = cg.get(ret, layout == 0 ? 1 : dim, mode, simd_width);
+  prog.config.simd_width = 8;
+  prog.config.group_size = layout == 0 ? 1 : dim;
+  prog.compile();
 
   AlignedAllocator A(sizeof(T) * N * dim * dim);
   AlignedAllocator B(sizeof(T) * N * dim * dim);
@@ -386,7 +385,7 @@ real Tlang_matmatmul(Tlang::CPUCodeGen::Mode mode,
   }
 
   auto cpe = measure_cpe(
-      [&]() { func(Context(A_.get<T>(), B_.get<T>(), C.get<T>(), N)); }, N);
+      [&]() { prog(Context(A_.get<T>(), B_.get<T>(), C.get<T>(), N)); }, N);
 
   AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), D.get<T>());
 
@@ -411,28 +410,14 @@ real Tlang_matmatmul(Tlang::CPUCodeGen::Mode mode,
 
 template <int dim, typename T>
 real TlangVec8AOSOA_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Tlang::CPUCodeGen::Mode::vector, 32, 0);
+  return Tlang_matmatmul<dim, T>(8, 0);
 }
 
 template <int dim, typename T>
 real TlangVec8Inter_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Tlang::CPUCodeGen::Mode::vector, 32, 1);
+  return Tlang_matmatmul<dim, T>(8, 1);
 }
 
-template <int dim, typename T>
-real TlangSca8_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Tlang::CPUCodeGen::Mode::scalar, 8);
-}
-
-template <int dim, typename T>
-real TlangVec16_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Tlang::CPUCodeGen::Mode::vector, 16);
-}
-
-template <int dim, typename T>
-real TlangSca16_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Tlang::CPUCodeGen::Mode::scalar, 16);
-}
 #define BENCHMARK(x)                                        \
   {                                                         \
     real t = x##_matmatmul<dim, T>();                       \
@@ -481,7 +466,7 @@ auto tlang_matmatmul = []() {
   run_matmatmul<1, float32>();
   run_matmatmul<2, float32>();
   run_matmatmul<4, float32>();
-  run_matmatmul<8, float32>();
+  // run_matmatmul<8, float32>();
 };
 TC_REGISTER_TASK(tlang_matmatmul);
 
@@ -489,17 +474,17 @@ void test_vec_add() {
   using namespace Tlang;
   constexpr int n = 16;
 
-  CodeGen cg;
-  auto &alloc = cg.alloc;
+  Program prog;
   Expr a;
   Expr b;
-  alloc.buffer(0).stream(0).group().place(a);
-  alloc.buffer(1).stream(0).group().place(b);
+  prog.buffer(0).stream(0).group().place(a);
+  prog.buffer(1).stream(0).group().place(b);
   auto c = a + b;
-  Expr ret;
-  c = ret.store(c);
-  alloc.buffer(2).stream(0).group().place(c);
-  auto func = cg.get(ret, 1);
+  c = prog.store(c);
+  prog.buffer(2).stream(0).group().place(c);
+
+  prog.config.simd_width = 8;
+  prog.config.group_size = 1;
 
   TC_ALIGNED(64) float32 x[n], y[n], z[n];
   for (int i = 0; i < n; i++) {
@@ -507,8 +492,7 @@ void test_vec_add() {
     y[i] = -2 * i;
   }
 
-  Context context(x, y, z, n);
-  func(context);
+  prog(Context(x, y, z, n));
   for (int i = 0; i < n; i++) {
     TC_ASSERT(z[i] == -i);
   }
@@ -565,10 +549,11 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
              layout_name, in_cache, unroll, prefetch);
   using namespace Tlang;
   constexpr int simd_width = 8;
-  CodeGen cg;
-  cg.unroll = unroll;
-  cg.prefetch = prefetch;
-  auto &alloc = cg.alloc;
+
+  Program prog;
+  //cg.unroll = unroll;
+  //cg.prefetch = prefetch;
+  auto &alloc = prog;
   auto &buffer = alloc.buffer(0);
   Matrix m(dim, dim), v(dim);
   for (int i = 0; i < dim; i++) {
@@ -597,12 +582,12 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
       alloc.buffer(1).stream(0).group(0).repeat(simd_width / dim).place(v(i));
     }
   }
-  Expr ret;
+
   auto mv = m * v;
   for (int i = 0; i < dim; i++) {
     Address addr;
     addr.buffer_id = 2;
-    mv(i) = ret.store(mv(i));
+    mv(i) = prog.store(mv(i));
     if (layout == 0) {
       alloc.buffer(2).stream().group().place(mv(i));
     } else if (layout == 1) {
@@ -621,7 +606,10 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
   if (layout == 2) {  // interleaved
     bs = dim;
   }
-  auto func = cg.get(ret, bs);
+  prog.config.simd_width = 8;
+  prog.config.group_size = bs;
+
+  prog.compile();
 
   AlignedAllocator M_allocator(dim * dim * n * sizeof(float32)),
       V_allocator(dim * n * sizeof(float32)),
@@ -645,7 +633,7 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
 
   print_cpe(measure_cpe(
       [&]() {
-        func(Context(M_allocator.get<float32>(), V_allocator.get<float32>(),
+        prog(Context(M_allocator.get<float32>(), V_allocator.get<float32>(),
                      MV_allocator.get<float32>(), n));
       },
       n));
@@ -701,6 +689,7 @@ auto tlang_benchmark = []() {
 };
 TC_REGISTER_TASK(tlang_benchmark);
 
+/*
 auto test_slp = []() {
   using namespace Tlang;
   int M = 4;
@@ -744,6 +733,7 @@ auto test_slp = []() {
 };
 
 TC_REGISTER_TASK(test_slp)
+*/
 
 void memcpy_intel(void *a_, void *b_, std::size_t size) {
   constexpr int NUMPERPAGE = 512;  // # of elements to fit a page

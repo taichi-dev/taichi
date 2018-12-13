@@ -9,13 +9,14 @@ AlignedAllocator::AlignedAllocator(std::size_t size, Device device)
     : device(device) {
   if (device == Device::cpu) {
     _data.resize(size + 4096);
-    auto p = reinterpret_cast<uint64>(_data.data());
-    data = (void *)(p + (4096 - p % 4096));
+    data = _data.data();
   } else {
     TC_ASSERT(device == Device::gpu);
-    cudaMallocManaged(&data, size);
-    TC_ASSERT(uint64(data) % 4096 == 0);
+    cudaMallocManaged(&_cuda_data, size + 4096);
+    data = _cuda_data;
   }
+  auto p = reinterpret_cast<uint64>(data);
+  data = (void *)(p + (4096 - p % 4096));
 }
 
 AlignedAllocator::~AlignedAllocator() {
@@ -25,10 +26,9 @@ AlignedAllocator::~AlignedAllocator() {
   if (device == Device::cpu) {
   } else {
     TC_ASSERT(device == Device::gpu);
-    cudaFree(data);
+    cudaFree(_cuda_data);
   }
 }
-
 }
 
 TC_NAMESPACE_END

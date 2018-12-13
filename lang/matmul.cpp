@@ -312,12 +312,12 @@ real Tlang_matmatmul(int simd_width, int layout = 0) {
 }
 
 template <int dim, typename T>
-real TlangVec8AOSOA_matmatmul() {
+real TlangVecAOSOA_matmatmul() {
   return Tlang_matmatmul<dim, T>(8, 0);
 }
 
 template <int dim, typename T>
-real TlangVec8Inter_matmatmul() {
+real TlangVecInter_matmatmul() {
   return Tlang_matmatmul<dim, T>(8, 1);
 }
 
@@ -331,8 +331,8 @@ template <int dim, typename T>
 void run_matmatmul() {
   fmt::print("Matrix<{}, {}>:\n", dim, sizeof(T) == 4 ? "float32" : "float64");
 
-  BENCHMARK(TlangVec8AOSOA);
-  BENCHMARK(TlangVec8Inter);
+  BENCHMARK(TlangVecAOSOA);
+  BENCHMARK(TlangVecInter);
 
   // BENCHMARK(TlangSca8);
   // BENCHMARK(TlangVec16);
@@ -441,7 +441,7 @@ void test_mat_vec_mul_eigen(int in_cache) {
 }
 
 template <int dim>
-void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
+void test_mat_vec_mul(Arch arch, int layout, int in_cache) {
   std::string layout_name = "";
   if (layout == 0) {
     layout_name = "  soa";
@@ -450,13 +450,13 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
   } else {
     layout_name = "inter";
   }
-  fmt::print("dim={} {} in_cache={} unroll={} prefetch={:2d} ", dim,
-             layout_name, in_cache, unroll, prefetch);
-  constexpr int simd_width = 8;
+  fmt::print("dim={} {} in_cache={} arch={} ", dim, layout_name, in_cache,
+             arch == Arch::x86_64 ? "CPU" : "GPU");
+  int simd_width = default_simd_width(arch);
 
   int64 enlarge = in_cache ? 1 : 4096;
   int64 n = taichi::N * enlarge;
-  Program prog(Arch::x86_64, n);
+  Program prog(arch, n);
   // cg.unroll = unroll;
   // cg.prefetch = prefetch;
   auto &alloc = prog;
@@ -547,9 +547,8 @@ void test_mat_vec_mul_all() {
   for (auto in_cache : {0, 1}) {
     test_mat_vec_mul_eigen<dim>(in_cache);
     for (auto layout : {0, 1, 2}) {
-      for (auto unroll : {1, 4})
-        for (auto prefetch : {0})
-          test_mat_vec_mul<dim>(layout, in_cache, unroll, prefetch);
+      for (auto arch : {Arch::x86_64, Arch::gpu})
+        test_mat_vec_mul<dim>(arch, layout, in_cache);
     }
     fmt::print("\n");
   }

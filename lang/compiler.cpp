@@ -430,18 +430,13 @@ class GPUCodeGen : public CodeGenBase {
 
 void Program::compile() {
   alloc.materialize();
-  if (config.simd_width  == -1) {
-    if (config.arch == CompileConfig::Arch::x86_64) {
-      config.simd_width = 8; // AVX2
-    } else if (config.arch == CompileConfig::Arch::gpu) {
-      config.simd_width = 32;
-    } else {
-      TC_NOT_IMPLEMENTED;
-    }
+  if (config.simd_width == -1) {
+    config.simd_width = default_simd_width(config.arch);
   }
   TC_ASSERT(config.group_size > 0);
   if (config.arch == CompileConfig::Arch::x86_64) {
     CPUCodeGen codegen;
+    codegen.unroll = 4;
     function = codegen.get(ret, config.group_size);
   } else if (config.arch == CompileConfig::Arch::gpu) {
     GPUCodeGen codegen;

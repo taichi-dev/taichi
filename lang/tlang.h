@@ -226,6 +226,7 @@ enum class Device { cpu, gpu };
 class AlignedAllocator {
   std::vector<uint8> _data;
   void *data;
+  void *_cuda_data;
 
  public:
   Device device;
@@ -259,10 +260,22 @@ class AlignedAllocator {
     data = o.data;
     o.data = nullptr;
     device = o.device;
+    return *this;
   }
 };
 
 using Arch = CompileConfig::Arch;
+
+inline int default_simd_width(Arch arch) {
+  if (arch == CompileConfig::Arch::x86_64) {
+    return 8; // AVX2
+  } else if (arch == CompileConfig::Arch::gpu) {
+    return 32;
+  } else {
+    TC_NOT_IMPLEMENTED;
+    return -1;
+  }
+}
 
 struct Program {
   CompileConfig config;
@@ -328,7 +341,7 @@ struct Program {
   void compile();
 
   void allocate_buffer(int i) {
-    while (buffers.size() <= i) {
+    while ((int)buffers.size() <= i) {
       buffers.emplace_back();
     }
     if (!buffers[i].initialized()) {

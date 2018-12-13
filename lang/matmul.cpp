@@ -41,13 +41,6 @@ real measure_cpe(std::function<void()> target,
       break;
     }
   }
-  {
-    float64 t = Time::get_time();
-    for (int64 i = 0; i < 1600; i++) {
-      target();
-    }
-    t = Time::get_time() - t;
-  }
 
   int64 total_batches = 0;
   float64 start_t = Time::get_time();
@@ -835,7 +828,6 @@ auto test_slp = []() {
     x[i] = i;
     y[i] = -2 * i;
   }
-  Context context;
   func(Context(x, y, z, n));
   for (int i = 0; i < n; i++) {
     TC_INFO("z[{}] = {}", i, z[i]);

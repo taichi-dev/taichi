@@ -479,8 +479,8 @@ class GPUCodeGen : public CodeGenBase {
     emit_code("auto linear_idx = blockIdx.x * blockDim.x + threadIdx.x;\n");
     emit_code("if (linear_idx >= n) return;\n");
     emit_code("auto g = linear_idx / ({} / {}); \n", simd_width, group_size);
-    emit_code("auto sub_g_id = linear_idx % ({} / {}); \n", simd_width,
-              group_size);
+    emit_code("auto sub_g_id = linear_idx / {} % ({} / {}); \n", group_size,
+              simd_width, group_size);
     emit_code("auto g_idx = linear_idx % {}; \n", group_size);
     emit_code("int l = threadIdx.x & 0x1f;\n");
     emit_code("int loop_index = 0;");
@@ -545,6 +545,9 @@ class GPUCodeGen : public CodeGenBase {
     } else if (expr->type == NodeType::store) {
       emit_code("{} = {}; \\\n", get_vectorized_address(expr->addr),
                 expr->ch[0]->var_name);
+      // emit_code("printf(\"%f\\n\", {}); \\\n", expr->ch[0]->var_name);
+      emit_code("printf(\"%d\\n\", {}); \\\n",
+                get_vectorized_index(expr->addr));
     } else if (expr->type == NodeType::combine) {
       // do nothing
     } else {
@@ -588,7 +591,7 @@ class GPUCodeGen : public CodeGenBase {
   // the vector width should be the final SIMD instruction width
   std::string get_vectorized_address(Address addr,
                                      int extra_offset = 0,
-                                     int g_idx_inc = 1) {
+                                     int g_idx_inc = 0) {
     TC_ASSERT(addr.buffer_id != -1);
     auto buffer_name =
         fmt::format("context.get_buffer<float32>({:02d})", addr.buffer_id);
@@ -600,7 +603,24 @@ class GPUCodeGen : public CodeGenBase {
         "{}[{} * n + {} * (g + loop_index) + sub_g_id * {} + {} + {} + g_idx * "
         "{}]",
         buffer_name, addr.coeff_imax, warp_stride, addr.coeff_i, offset,
-        extra_offset, g_idx_inc);
+        extra_offset, (g_idx_inc));
+  }
+
+  std::string get_vectorized_index(Address addr,
+                                   int extra_offset = 0,
+                                   int g_idx_inc = 1) {
+    TC_ASSERT(addr.buffer_id != -1);
+    auto buffer_name =
+        fmt::format("context.get_buffer<float32>({:02d})", addr.buffer_id);
+    auto warp_stride =
+        addr.coeff_i * num_groups +
+        num_groups / addr.coeff_aosoa_group_size * addr.coeff_aosoa_stride;
+    auto offset = addr.coeff_const;
+    return fmt::format(
+        "{} * n + {} * (g + loop_index) + sub_g_id * {} + {} + {} + g_idx * "
+        "{}",
+        addr.coeff_imax, warp_stride, addr.coeff_i, offset, extra_offset,
+        g_idx_inc);
   }
 };
 

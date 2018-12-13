@@ -477,8 +477,9 @@ class GPUCodeGen : public CodeGenBase {
     emit_code("__global__ void {}(Context context) {{", kernel_name());
     emit_code("auto n = context.get_range(0);\n");
     emit_code("auto linear_idx = blockIdx.x * blockDim.x + threadIdx.x;\n");
-    emit_code("if (linear_idx >= n) return;\n");
-    emit_code("auto g = linear_idx / ({} / {}); \n", simd_width, group_size);
+    emit_code("if (linear_idx >= n * {}) return;\n", group_size);
+    emit_code("auto g = linear_idx / {} / ({} / {}); \n", group_size,
+              simd_width, group_size);
     emit_code("auto sub_g_id = linear_idx / {} % ({} / {}); \n", group_size,
               simd_width, group_size);
     emit_code("auto g_idx = linear_idx % {}; \n", group_size);
@@ -493,8 +494,8 @@ class GPUCodeGen : public CodeGenBase {
     emit_code("extern \"C\" void " + func_name + "(Context context) {\n");
     emit_code("auto n = context.get_range(0);\n");
     int block_size = 256;
-    emit_code("{}<<<n / {}, {}>>>(context);", kernel_name(), block_size,
-              block_size);
+    emit_code("{}<<<n * {} / {}, {}>>>(context);", kernel_name(), group_size,
+              block_size, block_size);
     emit_code("cudaDeviceSynchronize();\n");
 
     emit_code("}\n");
@@ -546,8 +547,8 @@ class GPUCodeGen : public CodeGenBase {
       emit_code("{} = {}; \\\n", get_vectorized_address(expr->addr),
                 expr->ch[0]->var_name);
       // emit_code("printf(\"%f\\n\", {}); \\\n", expr->ch[0]->var_name);
-      emit_code("printf(\"%d\\n\", {}); \\\n",
-                get_vectorized_index(expr->addr));
+      // emit_code("printf(\"%d <- %f\\n\", {}, {}); \\\n",
+      //        get_vectorized_index(expr->addr), expr->ch[0]->var_name);
     } else if (expr->type == NodeType::combine) {
       // do nothing
     } else {
@@ -591,7 +592,7 @@ class GPUCodeGen : public CodeGenBase {
   // the vector width should be the final SIMD instruction width
   std::string get_vectorized_address(Address addr,
                                      int extra_offset = 0,
-                                     int g_idx_inc = 0) {
+                                     int g_idx_inc = 1) {
     TC_ASSERT(addr.buffer_id != -1);
     auto buffer_name =
         fmt::format("context.get_buffer<float32>({:02d})", addr.buffer_id);
@@ -606,6 +607,7 @@ class GPUCodeGen : public CodeGenBase {
         extra_offset, (g_idx_inc));
   }
 
+  /*
   std::string get_vectorized_index(Address addr,
                                    int extra_offset = 0,
                                    int g_idx_inc = 1) {
@@ -622,6 +624,7 @@ class GPUCodeGen : public CodeGenBase {
         addr.coeff_imax, warp_stride, addr.coeff_i, offset, extra_offset,
         g_idx_inc);
   }
+  */
 };
 
 }  // namespace Tlang

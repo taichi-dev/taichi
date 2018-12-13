@@ -17,16 +17,17 @@ using EigenVector = std::vector<T, Eigen::aligned_allocator<T>>;
 
 constexpr real cpu_frequency = 4.2_f;
 
-// constexpr int enlarge = 4096;
-constexpr int enlarge = 1;
-constexpr int rounds = 16384 / 8 * 2048 / enlarge;
-constexpr int N = 256 * enlarge;
+constexpr int N = 256;
 
 real default_measurement_time = 1;
 
 real measure_cpe(std::function<void()> target,
                  int64 elements_per_call,
                  real time_second = default_measurement_time) {
+  if (time_second == 0) {
+    target();
+    return std::numeric_limits<real>::quiet_NaN();
+  }
   // first make rough estimate of run time.
   int64 batch_size = 1;
   while (true) {
@@ -35,7 +36,7 @@ real measure_cpe(std::function<void()> target,
       target();
     }
     t = Time::get_time() - t;
-    if (t < 0.05) {
+    if (t < 0.05 * time_second) {
       batch_size *= 2;
     } else {
       break;
@@ -130,6 +131,7 @@ real AOS_matmatmul() {
       N);
 }
 
+/*
 template <int dim, typename T>
 real AOS2_matmatmul() {
   struct Mat {
@@ -163,6 +165,7 @@ real AOS2_matmatmul() {
   }
   return Time::get_time() - t;
 }
+*/
 
 class AlignedAllocator {
   std::vector<uint8> _data;
@@ -488,7 +491,6 @@ real Tlang_matmatmul(Tlang::CPUCodeGen::Mode mode,
         auto a = C.get<float32>()[ind1];
         auto b = D.get<T>()[ind2];
         if (std::abs(a - b) >= 1e-5_f) {
-          TC_P(i);
           TC_P(a);
           TC_P(b);
         }
@@ -780,15 +782,15 @@ TC_REGISTER_TASK(tlang_matvecmul);
 
 auto tlang_test = []() {
   default_measurement_time = 0;
-  tlang_matvecmul();
   tlang_matmatmul();
+  tlang_matvecmul();
 };
 TC_REGISTER_TASK(tlang_test);
 
 auto tlang_benchmark = []() {
   default_measurement_time = 2;
-  tlang_matvecmul();
   tlang_matmatmul();
+  tlang_matvecmul();
 };
 TC_REGISTER_TASK(tlang_benchmark);
 

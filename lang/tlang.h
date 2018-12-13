@@ -221,11 +221,36 @@ struct CompileConfig {
   }
 };
 
+enum class Device { cpu, gpu };
+
+class AlignedAllocator {
+  std::vector<uint8> _data;
+  void *data;
+
+ public:
+  AlignedAllocator() {
+    data = nullptr;
+  }
+
+  AlignedAllocator(std::size_t size, Device device = Device::cpu);
+
+  ~AlignedAllocator();
+
+  template <typename T = void>
+  T *get() {
+    TC_ASSERT(data);
+    return reinterpret_cast<T *>(data);
+  }
+};
+
 struct Program {
   CompileConfig config;
   CodeGenBase::FunctionType function;
-
+  int n;
   MemoryAllocator alloc;
+  Device device;
+
+  std::vector<AlignedAllocator> buffers;
 
   Expr ret;
 
@@ -233,16 +258,37 @@ struct Program {
     return ret.store(e);
   }
 
-  Expr store(const Expr &e, Address addr) {
-    return ret.store(e, addr);
-  }
-
   AddrNode &buffer(int i) {
     return alloc.buffer(i);
   }
 
-  Program() {
+  Program(CompileConfig::Arch arch, int n) : n(n) {
+    config.arch = arch;
     function = nullptr;
+  }
+
+  void set_n(int n) {
+    this->n = n;
+    // TODO: resize buffers
+  }
+
+  int num_buffers() {
+    return (int)alloc.root->ch.size();
+  }
+
+  void operator()() {
+    if (function == nullptr) {
+      compile();
+    }
+    buffers.resize(num_buffers());
+    Context context;
+    for (int i = 0; i < num_buffers(); i++) {
+      buffers[i] = AlignedAllocator(n * sizeof(float32) *
+                                    alloc.root->ch[i]->num_variables);
+      context.buffers[i] = buffers[i].get();
+    }
+    context.ranges[0] = n;
+    function(context);
   }
 
   void operator()(Context context) {
@@ -253,6 +299,19 @@ struct Program {
   }
 
   void compile();
+
+  void allocate_buffer(int i) {
+  }
+
+  float32 &data(Expr &expr, int i, int n) {
+    auto &addr = expr->addr;
+    TC_ASSERT(addr.initialized());
+    while (buffers.size() <= expr->addr.buffer_id) {
+      buffers.push_back(AlignedAllocator(
+          alloc.buffer(addr.buffer_id).num_variables * n * sizeof(float32)));
+    }
+    return buffers[addr.buffer_id].get<float32>()[addr.eval(i, n)];
+  }
 };
 
 extern Program *current_program;
@@ -261,22 +320,7 @@ TC_FORCE_INLINE Program &get_current_program() {
   return *current_program;
 }
 
-enum class Device { cpu, gpu };
-
-class AlignedAllocator {
-  std::vector<uint8> _data;
-  void *data;
-
- public:
-  AlignedAllocator(std::size_t size, Device device = Device::cpu);
-
-  ~AlignedAllocator();
-
-  template <typename T = void>
-  T *get() {
-    return reinterpret_cast<T *>(data);
-  }
-};
+using Arch = CompileConfig::Arch;
 
 }  // namespace Tlang
 

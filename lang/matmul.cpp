@@ -266,7 +266,7 @@ template <int dim, typename T>
 real Tlang_matmatmul(int simd_width, int layout = 0) {
   Matrix a(dim, dim), b(dim, dim);
 
-  Program prog;
+  Program prog(Arch::x86_64, N);
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       if (layout == 0) {
@@ -449,7 +449,7 @@ TC_REGISTER_TASK(tlang_matmatmul);
 void test_vec_add() {
   constexpr int n = 16;
 
-  Program prog;
+  Program prog(Arch::x86_64, n);
   Expr a;
   Expr b;
   prog.buffer(0).stream(0).group().place(a);
@@ -522,7 +522,9 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
              layout_name, in_cache, unroll, prefetch);
   constexpr int simd_width = 8;
 
-  Program prog;
+  int64 enlarge = in_cache ? 1 : 4096;
+  int64 n = taichi::N * enlarge;
+  Program prog(Arch::x86_64, n);
   // cg.unroll = unroll;
   // cg.prefetch = prefetch;
   auto &alloc = prog;
@@ -565,8 +567,6 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
 
   // alloc.print();
 
-  int64 enlarge = in_cache ? 1 : 4096;
-  int64 n = taichi::N * enlarge;
   TC_ASSERT(8 % dim == 0);
   int bs = 1;
   if (layout == 2) {  // interleaved

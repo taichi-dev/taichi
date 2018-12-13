@@ -4,11 +4,11 @@
 #include <taichi/system/timer.h>
 #include <Eigen/StdVector>
 #include "tlang.h"
-// #include <taichi/testing.h>
 #include <Eigen/Dense>
-#include <cuda_runtime.h>
 
 TC_NAMESPACE_BEGIN
+
+using namespace Tlang;
 
 template <typename T>
 using EigenVector = std::vector<T, Eigen::aligned_allocator<T>>;
@@ -128,30 +128,6 @@ real AOS_matmatmul() {
       },
       N);
 }
-
-class AlignedAllocator {
-  std::vector<uint8> _data;
-  void *data;
-
- public:
-  AlignedAllocator(std::size_t size) {
-    /*
-    _data.resize(size + 4096);
-    auto p = reinterpret_cast<uint64>(_data.data());
-    data = (void *)(p + (4096 - p % 4096));
-    */
-    cudaMallocManaged(&data, size);
-  }
-
-  ~AlignedAllocator() {
-    cudaFree(data);
-  }
-
-  template <typename T = void>
-  T *get() {
-    return reinterpret_cast<T *>(data);
-  }
-};
 
 // array of N * dim * dim * 8 * float32
 template <int dim>
@@ -289,7 +265,6 @@ Matrix operator+(const Matrix &A, const Matrix &B) {
 template <int dim, typename T>
 real Tlang_matmatmul(int simd_width,
                      int layout = 0) {
-  using namespace Tlang;
 
   Matrix a(dim, dim), b(dim, dim);
 
@@ -471,7 +446,6 @@ auto tlang_matmatmul = []() {
 TC_REGISTER_TASK(tlang_matmatmul);
 
 void test_vec_add() {
-  using namespace Tlang;
   constexpr int n = 16;
 
   Program prog;
@@ -514,7 +488,6 @@ void print_cpe(float64 cpe) {
 template <int dim>
 void test_mat_vec_mul_eigen(int in_cache) {
   fmt::print("dim={} eigen in_cache={}                      ", dim, in_cache);
-  using namespace Tlang;
 
   int enlarge = in_cache ? 1 : 4096;
   int64 n = taichi::N * enlarge;
@@ -547,7 +520,6 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
   }
   fmt::print("dim={} {} in_cache={} unroll={} prefetch={:2d} ", dim,
              layout_name, in_cache, unroll, prefetch);
-  using namespace Tlang;
   constexpr int simd_width = 8;
 
   Program prog;
@@ -558,8 +530,6 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
   Matrix m(dim, dim), v(dim);
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
-      Address addr;
-      addr.buffer_id = 0;
       if (layout == 0) {
         buffer.stream().group().place(m(i, j));
       } else if (layout == 1) {
@@ -572,8 +542,6 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
         buffer.stream(0).group(j).repeat(simd_width / dim).place(m(i, j));
       }
     }
-    Address addr;
-    addr.buffer_id = 1;
     if (layout == 0) {
       alloc.buffer(1).stream().group().place(v(i));
     } else if (layout == 1) {
@@ -585,8 +553,6 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
 
   auto mv = m * v;
   for (int i = 0; i < dim; i++) {
-    Address addr;
-    addr.buffer_id = 2;
     mv(i) = prog.store(mv(i));
     if (layout == 0) {
       alloc.buffer(2).stream().group().place(mv(i));
@@ -801,7 +767,6 @@ auto memcpy_test = []() {
 TC_REGISTER_TASK(memcpy_test);
 
 auto allocator_test = []() {
-  using namespace Tlang;
   {
     MemoryAllocator alloc;
     auto &buffer = alloc.buffer(0);

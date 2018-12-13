@@ -254,6 +254,23 @@ TC_FORCE_INLINE Program &get_current_program() {
   return *current_program;
 }
 
+enum class Device { cpu, gpu };
+
+class AlignedAllocator {
+  std::vector<uint8> _data;
+  void *data;
+
+ public:
+  AlignedAllocator(std::size_t size, Device device = Device::cpu);
+
+  ~AlignedAllocator();
+
+  template <typename T = void>
+  T *get() {
+    return reinterpret_cast<T *>(data);
+  }
+};
+
 }  // namespace Tlang
 
 TC_NAMESPACE_END

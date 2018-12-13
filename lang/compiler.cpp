@@ -430,10 +430,18 @@ class GPUCodeGen : public CodeGenBase {
 
 void Program::compile() {
   alloc.materialize();
-  CPUCodeGen codegen;
-  function = codegen.get(ret, config.group_size);
+  TC_ASSERT(config.simd_width > 0);
+  TC_ASSERT(config.group_size > 0);
+  if (config.arch == CompileConfig::Arch::x86_64) {
+    CPUCodeGen codegen;
+    function = codegen.get(ret, config.group_size);
+  } else if (config.arch == CompileConfig::Arch::gpu) {
+    GPUCodeGen codegen;
+    function = codegen.get(ret, config.group_size);
+  } else {
+    TC_NOT_IMPLEMENTED;
+  }
 }
-
 }
 
 TC_NAMESPACE_END

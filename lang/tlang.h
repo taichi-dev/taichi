@@ -210,8 +210,15 @@ class CodeGenBase : public Visitor {
 struct CompileConfig {
   enum class Arch { x86_64, gpu };
 
+  Arch arch;
   int simd_width;
   int group_size;
+
+  CompileConfig() {
+    arch = Arch::x86_64;
+    simd_width = -1;
+    group_size = -1;
+  }
 };
 
 struct Program {

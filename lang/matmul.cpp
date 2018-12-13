@@ -200,68 +200,6 @@ real SOA_AVX2_matmatmul() {
   return SOA_matmul<dim>(A.get<T>(), B.get<T>(), C.get<T>());
 };
 
-namespace Tlang {
-struct Matrix {
-  int n, m;
-  std::vector<Expr> entries;
-
-  Matrix(int n, int m = 1) : n(n), m(m) {
-    entries.resize(n * m, Expr());
-  }
-
-  Expr &operator()(int i, int j) {
-    TC_ASSERT(0 <= i && i < n);
-    TC_ASSERT(0 <= j && j < n);
-    return entries[i * m + j];
-  }
-
-  const Expr &operator()(int i, int j) const {
-    TC_ASSERT(0 <= i && i < n);
-    TC_ASSERT(0 <= j && j < n);
-    return entries[i * m + j];
-  }
-
-  Expr &operator()(int i) {
-    TC_ASSERT(0 <= i && i < n * m);
-    TC_ASSERT(n == 1 || m == 1);
-    return entries[i];
-  }
-
-  const Expr &operator()(int i) const {
-    TC_ASSERT(0 <= i && i < n * m);
-    TC_ASSERT(n == 1 || m == 1);
-    return entries[i];
-  }
-};
-
-Matrix operator*(const Matrix &A, const Matrix &B) {
-  TC_ASSERT(A.m == B.n);
-  Matrix C(A.n, B.m);
-  for (int i = 0; i < A.n; i++) {
-    for (int j = 0; j < B.m; j++) {
-      C(i, j) = A(i, 0) * B(0, j);
-      for (int k = 1; k < A.m; k++) {
-        C(i, j) = C(i, j) + A(i, k) * B(k, j);
-      }
-    }
-  }
-  return C;
-}
-
-Matrix operator+(const Matrix &A, const Matrix &B) {
-  TC_ASSERT(A.n == B.n);
-  TC_ASSERT(A.m == B.m);
-  Matrix C(A.n, A.m);
-  for (int i = 0; i < A.n; i++) {
-    for (int j = 0; j < A.m; j++) {
-      C(i, j) = A(i, j) + B(i, j);
-    }
-  }
-  return C;
-}
-
-}  // namespace Tlang
-
 template <int dim, typename T>
 real Tlang_matmatmul(int simd_width, int layout = 0) {
   Matrix a(dim, dim), b(dim, dim);
@@ -344,7 +282,6 @@ real Tlang_matmatmul(int simd_width, int layout = 0) {
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
-        int ind1 = c(j, k)->addr.eval(i, N);
         int ind2 = (i / 8 * dim * dim + j * dim + k) * 8 + i % 8;
         prog.data(a(j, k), i) = A.get<float32>()[ind2];
         prog.data(b(j, k), i) = B.get<float32>()[ind2];
@@ -572,10 +509,6 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
 
   prog.compile();
 
-  AlignedAllocator M_allocator(dim * dim * n * sizeof(float32)),
-      V_allocator(dim * n * sizeof(float32)),
-      MV_allocator(dim * n * sizeof(float32));
-
   std::vector<Eigen::Matrix<float32, dim, 1>> ground_truth(n);
   for (int i = 0; i < n; i++) {
     Eigen::Matrix<float32, dim, dim> m_gt;
@@ -583,25 +516,20 @@ void test_mat_vec_mul(int layout, int in_cache, int unroll, int prefetch) {
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
         m_gt(j, k) = rand<float32>();
-        M_allocator.get<float32>()[m(j, k)->addr.eval(i, n)] = m_gt(j, k);
+        prog.data(m(j, k), i) = m_gt(j, k);
       }
       v_gt(j) = rand<float32>();
-      V_allocator.get<float32>()[v(j)->addr.eval(i, n)] = v_gt(j);
+      prog.data(v(j), i) = v_gt(j);
     }
     Eigen::Matrix<float32, dim, 1> mv_gt = m_gt * v_gt;
     ground_truth[i] = mv_gt;
   }
 
-  print_cpe(measure_cpe(
-      [&]() {
-        prog(Context(M_allocator.get<float32>(), V_allocator.get<float32>(),
-                     MV_allocator.get<float32>(), n));
-      },
-      n));
+  print_cpe(measure_cpe([&]() { prog(); }, n));
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < dim; j++) {
-      auto computed = MV_allocator.get<float32>()[mv(j)->addr.eval(i, n)];
+      auto computed = prog.data(mv(j), i);
       auto gt = ground_truth[i](j);
       if (std::abs(computed - gt) > 1e-4_f) {
         TC_P(i);

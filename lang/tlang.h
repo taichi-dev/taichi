@@ -298,6 +298,7 @@ struct Program {
   void set_n(int n) {
     this->n = n;
     // TODO: resize buffers
+    TC_NOT_IMPLEMENTED
   }
 
   int num_buffers() {
@@ -348,6 +349,68 @@ extern Program *current_program;
 
 TC_FORCE_INLINE Program &get_current_program() {
   return *current_program;
+}
+
+}  // namespace Tlang
+
+namespace Tlang {
+struct Matrix {
+  int n, m;
+  std::vector<Expr> entries;
+
+  Matrix(int n, int m = 1) : n(n), m(m) {
+    entries.resize(n * m, Expr());
+  }
+
+  Expr &operator()(int i, int j) {
+    TC_ASSERT(0 <= i && i < n);
+    TC_ASSERT(0 <= j && j < n);
+    return entries[i * m + j];
+  }
+
+  const Expr &operator()(int i, int j) const {
+    TC_ASSERT(0 <= i && i < n);
+    TC_ASSERT(0 <= j && j < n);
+    return entries[i * m + j];
+  }
+
+  Expr &operator()(int i) {
+    TC_ASSERT(0 <= i && i < n * m);
+    TC_ASSERT(n == 1 || m == 1);
+    return entries[i];
+  }
+
+  const Expr &operator()(int i) const {
+    TC_ASSERT(0 <= i && i < n * m);
+    TC_ASSERT(n == 1 || m == 1);
+    return entries[i];
+  }
+};
+
+inline Matrix operator*(const Matrix &A, const Matrix &B) {
+  TC_ASSERT(A.m == B.n);
+  Matrix C(A.n, B.m);
+  for (int i = 0; i < A.n; i++) {
+    for (int j = 0; j < B.m; j++) {
+      C(i, j) = A(i, 0) * B(0, j);
+      for (int k = 1; k < A.m; k++) {
+        C(i, j) = C(i, j) + A(i, k) * B(k, j);
+      }
+    }
+  }
+  return C;
+}
+
+inline Matrix operator+(const Matrix &A, const Matrix &B) {
+  TC_ASSERT(A.n == B.n);
+  TC_ASSERT(A.m == B.m);
+  Matrix C(A.n, A.m);
+  for (int i = 0; i < A.n; i++) {
+    for (int j = 0; j < A.m; j++) {
+      C(i, j) = A(i, j) + B(i, j);
+    }
+  }
+  return C;
 }
 
 }  // namespace Tlang

@@ -318,3 +318,114 @@ void SOA_matmul(float64 *A, float64 *B, float64 *C) {
 }
 */
 
+
+/*
+auto test_slp = []() {
+  using namespace Tlang;
+  int M = 4;
+  Matrix vec_a(M, 1);
+  Matrix vec_b(M, 1);
+  Expr ret;
+  for (int i = 0; i < M; i++) {
+    Address addr;
+    addr.coeff_i = 1;
+    addr.coeff_const = i;
+
+    addr.buffer_id = 0;
+    vec_a(i) = load(addr);
+
+    addr.buffer_id = 1;
+    vec_b(i) = load(addr);
+  }
+  Matrix vec_c = vec_a + vec_b;
+  for (int i = 0; i < M; i++) {
+    Address addr;
+    addr.coeff_i = 1;
+    addr.coeff_const = i;
+
+    addr.buffer_id = 2;
+    ret.store(vec_c(i), addr);
+  }
+
+  CodeGen cg;
+  auto func = cg.get(ret, 4);
+
+  constexpr int n = 16;
+  TC_ALIGNED(64) float32 x[n], y[n], z[n];
+  for (int i = 0; i < n; i++) {
+    x[i] = i;
+    y[i] = -2 * i;
+  }
+  func(Context(x, y, z, n));
+  for (int i = 0; i < n; i++) {
+    TC_INFO("z[{}] = {}", i, z[i]);
+  }
+};
+
+TC_REGISTER_TASK(test_slp)
+*/
+
+void memcpy_intel(void *a_, void *b_, std::size_t size) {
+  constexpr int NUMPERPAGE = 512;  // # of elements to fit a page
+  auto N = (int)size / 8;
+  double *a = (double *)a_;
+  double *b = (double *)b_;
+  double temp;
+  for (int kk = 0; kk < N; kk += NUMPERPAGE) {
+    temp = a[kk + NUMPERPAGE];  // TLB priming
+    trash(temp);
+    // use block size = page size,
+    // prefetch entire block, one cache line per loop
+    for (int j = kk + 16; j < kk + NUMPERPAGE; j += 16) {
+      _mm_prefetch((char *)&a[j], _MM_HINT_NTA);
+    }
+    // copy 128 byte per loop
+    for (int j = kk; j < kk + NUMPERPAGE; j += 16) {
+      _mm_stream_ps((float *)&b[j], _mm_load_ps((float *)&a[j]));
+      _mm_stream_ps((float *)&b[j + 2], _mm_load_ps((float *)&a[j + 2]));
+      _mm_stream_ps((float *)&b[j + 4], _mm_load_ps((float *)&a[j + 4]));
+      _mm_stream_ps((float *)&b[j + 6], _mm_load_ps((float *)&a[j + 6]));
+      _mm_stream_ps((float *)&b[j + 8], _mm_load_ps((float *)&a[j + 8]));
+      _mm_stream_ps((float *)&b[j + 10], _mm_load_ps((float *)&a[j + 10]));
+      _mm_stream_ps((float *)&b[j + 12], _mm_load_ps((float *)&a[j + 12]));
+      _mm_stream_ps((float *)&b[j + 14], _mm_load_ps((float *)&a[j + 14]));
+    }  // finished copying one block
+  }    // finished copying N elements
+  _mm_sfence();
+}
+
+auto memcpy_test = []() {
+  auto size = 1024 * 1024 * 1024;
+  AlignedAllocator a(size), b(size);
+
+  int repeat = 100;
+  float64 t;
+
+  t = Time::get_time();
+  for (int i = 0; i < repeat; i++) {
+    memcpy(a.get(), b.get(), size);
+  }
+  TC_P(Time::get_time() - t);
+
+  t = Time::get_time();
+  for (int i = 0; i < repeat; i++) {
+    memset(a.get(), 0, size);
+  }
+  TC_P(Time::get_time() - t);
+
+  t = Time::get_time();
+  for (int i = 0; i < repeat; i++) {
+    memcpy_intel(a.get(), b.get(), size);
+  }
+  TC_P(Time::get_time() - t);
+
+  t = Time::get_time();
+  for (int i = 0; i < repeat; i++) {
+    for (int j = 0; j < size / 8; j++) {
+      a.get<double>()[j] = b.get<double>()[j];
+    }
+  }
+  TC_P(Time::get_time() - t);
+};
+
+TC_REGISTER_TASK(memcpy_test);

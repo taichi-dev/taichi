@@ -16,8 +16,6 @@ using EigenVector = std::vector<T, Eigen::aligned_allocator<T>>;
 
 constexpr real cpu_frequency = 4.2_f;
 
-constexpr int N = 256 * 4096;
-
 real default_measurement_time = 1;
 
 real measure_cpe(std::function<void()> target,
@@ -55,7 +53,7 @@ real measure_cpe(std::function<void()> target,
 }
 
 template <int dim, typename T>
-real AOS_eigen_matmatmul() {
+real AOS_eigen_matmatmul(std::size_t N) {
   using Matrix = Eigen::Matrix<T, dim, dim>;
   EigenVector<Matrix> A(N, Matrix::Zero()), B(N, Matrix::Ones()),
       C(N, Matrix::Ones());
@@ -70,7 +68,7 @@ real AOS_eigen_matmatmul() {
 };
 
 template <int dim, typename T>
-real AOS_eigen_unroll2_matmatmul() {
+real AOS_eigen_unroll2_matmatmul(std::size_t N) {
   using Matrix = Eigen::Matrix<T, dim, dim>;
   EigenVector<Matrix> A(N, Matrix::Zero()), B(N, Matrix::Ones()),
       C(N, Matrix::Ones());
@@ -86,7 +84,7 @@ real AOS_eigen_unroll2_matmatmul() {
 };
 
 template <int dim, typename T>
-real AOS_eigen_unroll4_matmatmul() {
+real AOS_eigen_unroll4_matmatmul(std::size_t N) {
   using Matrix = Eigen::Matrix<T, dim, dim>;
   EigenVector<Matrix> A(N, Matrix::Zero()), B(N, Matrix::Ones()),
       C(N, Matrix::Ones());
@@ -104,7 +102,7 @@ real AOS_eigen_unroll4_matmatmul() {
 };
 
 template <int dim, typename T>
-real AOS_matmatmul() {
+real AOS_matmatmul(std::size_t N) {
   struct Mat {
     T d[dim][dim];
   };
@@ -132,7 +130,7 @@ real AOS_matmatmul() {
 
 // array of N * dim * dim * 8 * float32
 template <int dim>
-real AOSOA_matmul(float32 *A, float32 *B, float32 *C) {
+real AOSOA_matmul(std::size_t N, float32 *A, float32 *B, float32 *C) {
   constexpr int simd_width = 8;
   auto task = [&]() {
     for (int t = 0; t < N / simd_width; t++) {
@@ -158,24 +156,27 @@ real AOSOA_matmul(float32 *A, float32 *B, float32 *C) {
 }
 
 template <int dim, typename T>
-real AOSOA_AVX2_matmatmul() {
+real AOSOA_AVX2_matmatmul(std::size_t N) {
   AlignedAllocator A(sizeof(T) * N * dim * dim);
   AlignedAllocator B(sizeof(T) * N * dim * dim);
   AlignedAllocator C(sizeof(T) * N * dim * dim);
 
-  return AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), C.get<T>());
+  return AOSOA_matmul<dim>(N, A.get<T>(), B.get<T>(), C.get<T>());
 };
 
-// array of N * dim * dim * 8 * float32
-template <int dim>
-real SOA_matmul(float32 *A, float32 *B, float32 *C) {
+template <int dim, typename T>
+real SOA_AVX2_matmatmul(std::size_t N) {
+  AlignedAllocator A(sizeof(T) * N * dim * dim);
+  AlignedAllocator B(sizeof(T) * N * dim * dim);
+  AlignedAllocator C(sizeof(T) * N * dim * dim);
+
   constexpr int simd_width = 8;
   auto task = [&]() {
     for (int t = 0; t < N / simd_width; t++) {
       __m256 a[dim * dim], b[dim * dim];
       for (int i = 0; i < dim * dim; i++) {
-        a[i] = _mm256_load_ps(&A[i * N + t * simd_width]);
-        b[i] = _mm256_load_ps(&B[i * N + t * simd_width]);
+        a[i] = _mm256_load_ps(&A.get<float32>()[i * N + t * simd_width]);
+        b[i] = _mm256_load_ps(&B.get<float32>()[i * N + t * simd_width]);
       }
       for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
@@ -184,25 +185,17 @@ real SOA_matmul(float32 *A, float32 *B, float32 *C) {
             c = c + a[i * dim + k] * b[k * dim + j];
             // c = _mm256_fmadd_ps(a[i * dim + k], b[k * dim + j], c);
           }
-          _mm256_store_ps(&C[(i * dim + j) * N + t * simd_width], c);
+          _mm256_store_ps(&C.get<float32>()[(i * dim + j) * N + t * simd_width],
+                          c);
         }
       }
     }
   };
   return measure_cpe(task, N);
-}
-
-template <int dim, typename T>
-real SOA_AVX2_matmatmul() {
-  AlignedAllocator A(sizeof(T) * N * dim * dim);
-  AlignedAllocator B(sizeof(T) * N * dim * dim);
-  AlignedAllocator C(sizeof(T) * N * dim * dim);
-
-  return SOA_matmul<dim>(A.get<T>(), B.get<T>(), C.get<T>());
 };
 
 template <int dim, typename T>
-real Tlang_matmatmul(Arch arch, int layout, int in_cache) {
+real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
   Matrix a(dim, dim), b(dim, dim);
 
   int simd_width = default_simd_width(arch);
@@ -296,7 +289,7 @@ real Tlang_matmatmul(Arch arch, int layout, int in_cache) {
 
   auto cpe = measure_cpe([&]() { prog(); }, n);
 
-  AOSOA_matmul<dim>(A.get<T>(), B.get<T>(), D.get<T>());
+  AOSOA_matmul<dim>(N, A.get<T>(), B.get<T>(), D.get<T>());
 
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < dim; j++) {
@@ -307,6 +300,7 @@ real Tlang_matmatmul(Arch arch, int layout, int in_cache) {
         if (std::abs(a - b) >= 1e-5_f) {
           TC_P(a);
           TC_P(b);
+          TC_P(i);
         }
         TC_ASSERT(std::abs(a - b) < 1e-5_f);
       }
@@ -317,28 +311,28 @@ real Tlang_matmatmul(Arch arch, int layout, int in_cache) {
 }
 
 template <int dim, typename T>
-real TlangCPUAOSOA_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Arch::x86_64, 0, 0);
+real TlangCPUAOSOA_matmatmul(std::size_t N) {
+  return Tlang_matmatmul<dim, T>(N, Arch::x86_64, 0, 0);
 }
 
 template <int dim, typename T>
-real TlangCPUInter_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Arch::x86_64, 1, 0);
+real TlangCPUInter_matmatmul(std::size_t N) {
+  return Tlang_matmatmul<dim, T>(N, Arch::x86_64, 1, 0);
 }
 
 template <int dim, typename T>
-real TlangGPUAOSOA_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Arch::gpu, 0, 0);
+real TlangGPUAOSOA_matmatmul(std::size_t N) {
+  return Tlang_matmatmul<dim, T>(N, Arch::gpu, 0, 0);
 }
 
 template <int dim, typename T>
-real TlangGPUInter_matmatmul() {
-  return Tlang_matmatmul<dim, T>(Arch::gpu, 1, 0);
+real TlangGPUInter_matmatmul(std::size_t N) {
+  return Tlang_matmatmul<dim, T>(N, Arch::gpu, 1, 0);
 }
 
 #define BENCHMARK(x)                                        \
   {                                                         \
-    real t = x##_matmatmul<dim, T>();                       \
+    real t = x##_matmatmul<dim, T>(256 * 4096);             \
     fmt::print("  {:18s} = {:10.3f} cyc / elem \n", #x, t); \
   }
 
@@ -425,17 +419,8 @@ void test_vec_add() {
   }
 }
 
-void print_time(float64 t, int64 elements) {
-  /*
-  fmt::print("   {:10.3f} cyc / elem      [adjusted run time = {:10.3f} ms]
-  \n",
-             cpu_frequency * 1e9 * t / elements, t * 1000.0_f);
-             */
-  fmt::print("   {:10.3f} cyc / elem  \n", cpu_frequency * 1e9 * t / elements);
-}
-
 void print_cpe(float64 cpe) {
-  fmt::print("   {:10.3f} cyc / elem  \n", cpe);
+  fmt::print(" {:10.3f} cyc / elem\n", cpe);
 }
 
 template <int dim>
@@ -443,7 +428,7 @@ void test_mat_vec_mul_eigen(int in_cache) {
   fmt::print("dim={} eigen in_cache={}          ", dim, in_cache);
 
   int enlarge = in_cache ? 1 : 4096;
-  int64 n = taichi::N * enlarge;
+  int64 n = 256 * enlarge;
 
   EigenVector<Eigen::Matrix<float32, dim, dim>> m(
       n, Eigen::Matrix<float32, dim, dim>::Ones());
@@ -476,7 +461,7 @@ void test_mat_vec_mul(Arch arch, int layout, int in_cache) {
   int simd_width = default_simd_width(arch);
 
   int64 enlarge = in_cache ? 1 : 4096;
-  int64 n = taichi::N * enlarge;
+  int64 n = 256 * enlarge;
   Program prog(arch, n);
   // cg.unroll = unroll;
   // cg.prefetch = prefetch;

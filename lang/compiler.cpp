@@ -267,6 +267,9 @@ class GPUCodeGen : public CodeGenBase {
 
  public:
   GPUCodeGen() : CodeGenBase() {
+#if !defined(CUDA_FOUND)
+    TC_ERROR("No GPU/CUDA support.");
+#endif
     suffix = "cu";
     simd_width = 32;
   }

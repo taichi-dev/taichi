@@ -8,15 +8,22 @@ set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 set(TAICHI_PROJECT_LIBRARIES ${TAICHI_PROJECT_LIBRARIES} ${TAICHI_PROJECT_NAME} PARENT_SCOPE)
 
-set(${CUDA_ARCH} 61)
 
 find_package(MPI)
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
-include_directories(/usr/local/cuda/include)
-
 
 add_library(taichi_pangu SHARED ${PROJECT_SOURCES})
 target_link_libraries(taichi_pangu ${CORE_LIBRARY_NAME})
-target_link_libraries(taichi_pangu ${MPI_C_LIBRARIES} /usr/local/cuda/lib64/libcudart.so)
+target_link_libraries(taichi_pangu /usr/local/cuda/lib64/libcudart.so)
 
 
+find_package(CUDA 8.0 REQUIRED)
+if (CUDA_FOUND)
+    set(CUDA_ARCH 61)
+    message("Found CUDA. Arch = ${CUDA_ARCH}")
+    include_directories(/usr/local/cuda/include)
+    target_link_libraries(taichi_pangu ${MPI_C_LIBRARIES})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCUDA_FOUND")
+else()
+    message("CUDA Not Found.")
+endif()

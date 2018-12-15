@@ -5,7 +5,6 @@
 #include <Eigen/StdVector>
 #include "tlang.h"
 #include <Eigen/Dense>
-// #include <cuda_runtime.h>
 
 TC_NAMESPACE_BEGIN
 

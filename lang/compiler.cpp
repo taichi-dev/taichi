@@ -135,7 +135,7 @@ class CPUCodeGen : public CodeGenBase {
           emit_code("auto {} = {}_immediate; \\\n", expr->var_name,
                     expr->var_name);
         } else {
-          TC_ASSERT(group_size <= 4);
+          TC_ASSERT(group_size <= 8);
           // detect patterns
           int offset_const = offsets[0] % simd_width;
           int offset_inc = offsets[1] - offsets[0];
@@ -177,7 +177,17 @@ class CPUCodeGen : public CodeGenBase {
               TC_P(offset_inc);
               TC_NOT_IMPLEMENTED;
             }
-
+          } else if (group_size == 8) {
+            if (offset_inc == 1) {
+              TC_ASSERT(offset_const == 0);
+              emit_code("auto {} = {}_immediate;\\\n", expr->var_name,
+                        expr->var_name);
+            } else {
+              TC_ASSERT(offset_inc == 0);
+              needs_shuffle = false;
+              emit_code("auto {} = _mm256_broadcast_ss({});\\\n",
+                        expr->var_name, get_vectorized_address(expr->addr));
+            }
           } else {
             TC_NOT_IMPLEMENTED
           }

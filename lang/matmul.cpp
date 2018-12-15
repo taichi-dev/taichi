@@ -14,7 +14,7 @@ using namespace Tlang;
 template <typename T>
 using EigenVector = std::vector<T, Eigen::aligned_allocator<T>>;
 
-constexpr real cpu_frequency = 4.2_f;
+real cpu_frequency = 4.2_f;
 
 real default_measurement_time = 1;
 
@@ -221,7 +221,7 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
             .group(i * dim + j)
             .repeat(simd_width)
             .place(b(i, j));
-      } else if (layout == 1) { // Inter
+      } else if (layout == 1) {  // Inter
         prog.buffer(0)
             .stream(0)
             .group(j)
@@ -232,16 +232,9 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
             .group(j)
             .repeat(simd_width / dim)
             .place(b(i, j));
-      } else { // SOA
-        prog.buffer(0)
-            .stream(i * dim + j)
-            .group()
-            .place(a(i, j));
-        prog.buffer(1)
-            .stream(i * dim + j)
-            .group()
-            .place(b(i, j));
-
+      } else {  // SOA
+        prog.buffer(0).stream(i * dim + j).group().place(a(i, j));
+        prog.buffer(1).stream(i * dim + j).group().place(b(i, j));
       }
     }
   }
@@ -266,17 +259,14 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
             .group(i * dim + j)
             .repeat(simd_width)
             .place(c(i, j));
-      } else if (layout == 1){
+      } else if (layout == 1) {
         prog.buffer(2)
             .stream(0)
             .group(j)
             .repeat(simd_width / dim)
             .place(c(i, j));
       } else {
-        prog.buffer(2)
-            .stream(i * dim + j)
-            .group()
-            .place(c(i, j));
+        prog.buffer(2).stream(i * dim + j).group().place(c(i, j));
       }
     }
   }
@@ -408,6 +398,13 @@ void initialize_benchmark() {
   // TC_INFO("NVCC  Version {}.{}.{}", __CUDACC_VER_MAJOR__,
   // __CUDACC_VER_MINOR__,
   //        __CUDACC_VER_BUILD__);
+  uint64 cycles = Time::get_cycles();
+  Time::sleep(1);
+  uint64 elapsed_cycles = Time::get_cycles() - cycles;
+  auto frequency = real(std::round(elapsed_cycles / 1e8_f64) / 10.0_f64);
+  TC_INFO("CPU frequency = {:.1f} GHz ({} cycles per second)", frequency,
+          elapsed_cycles);
+  cpu_frequency = frequency;
 }
 
 auto tlang_matmatmul = []() {

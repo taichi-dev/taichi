@@ -203,7 +203,7 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
   int n = N;
 
   Program prog(arch, n);
-  prog.config.group_size = layout == 0 ? 1 : dim;
+  prog.config.group_size = layout == 1 ? dim : 1;
 
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
@@ -221,7 +221,7 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
             .group(i * dim + j)
             .repeat(simd_width)
             .place(b(i, j));
-      } else {
+      } else if (layout == 1) { // Inter
         prog.buffer(0)
             .stream(0)
             .group(j)
@@ -232,6 +232,16 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
             .group(j)
             .repeat(simd_width / dim)
             .place(b(i, j));
+      } else { // SOA
+        prog.buffer(0)
+            .stream(i * dim + j)
+            .group()
+            .place(a(i, j));
+        prog.buffer(1)
+            .stream(i * dim + j)
+            .group()
+            .place(b(i, j));
+
       }
     }
   }
@@ -256,11 +266,16 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
             .group(i * dim + j)
             .repeat(simd_width)
             .place(c(i, j));
-      } else {
+      } else if (layout == 1){
         prog.buffer(2)
             .stream(0)
             .group(j)
             .repeat(simd_width / dim)
+            .place(c(i, j));
+      } else {
+        prog.buffer(2)
+            .stream(i * dim + j)
+            .group()
             .place(c(i, j));
       }
     }
@@ -321,6 +336,11 @@ real TlangCPUInter_matmatmul(std::size_t N) {
 }
 
 template <int dim, typename T>
+real TlangCPUSOA_matmatmul(std::size_t N) {
+  return Tlang_matmatmul<dim, T>(N, Arch::x86_64, 2, 0);
+}
+
+template <int dim, typename T>
 real TlangGPUAOSOA_matmatmul(std::size_t N) {
   return Tlang_matmatmul<dim, T>(N, Arch::gpu, 0, 0);
 }
@@ -328,6 +348,11 @@ real TlangGPUAOSOA_matmatmul(std::size_t N) {
 template <int dim, typename T>
 real TlangGPUInter_matmatmul(std::size_t N) {
   return Tlang_matmatmul<dim, T>(N, Arch::gpu, 1, 0);
+}
+
+template <int dim, typename T>
+real TlangGPUSOA_matmatmul(std::size_t N) {
+  return Tlang_matmatmul<dim, T>(N, Arch::gpu, 2, 0);
 }
 
 #define BENCHMARK(x)                                        \
@@ -342,9 +367,11 @@ void run_matmatmul() {
 
   BENCHMARK(TlangCPUAOSOA);
   BENCHMARK(TlangCPUInter);
+  BENCHMARK(TlangCPUSOA);
 
   BENCHMARK(TlangGPUAOSOA);
   BENCHMARK(TlangGPUInter);
+  BENCHMARK(TlangGPUSOA);
 
   // BENCHMARK(TlangSca8);
   // BENCHMARK(TlangVec16);

@@ -322,10 +322,12 @@ class GPUCodeGen : public CodeGenBase {
   }
 
   void visit(Expr &expr) override {
-    /*
     TC_ASSERT(expr->is_vectorized);
     TC_ASSERT(expr->members.size() == 0 ||
               (int)expr->members.size() == group_size);
+    if (expr->type == NodeType::addr) {
+      return;
+    }
     // TC_P(expr->ch.size());
     if (expr->var_name == "")
       expr->var_name = create_variable();
@@ -344,7 +346,7 @@ class GPUCodeGen : public CodeGenBase {
       for (int i = 0; i < (int)expr->members.size(); i++) {
         offsets.push_back(expr->members[i]->addr().offset());
       }
-      auto addr = expr->addr;
+      auto addr = expr->addr();
       auto i_stride = num_groups;
       TC_ASSERT(i_stride == addr.coeff_aosoa_group_size);
       if (addr.coeff_const % simd_width != 0) {
@@ -365,18 +367,14 @@ class GPUCodeGen : public CodeGenBase {
                   get_vectorized_address(addr));
       }
     } else if (expr->type == NodeType::store) {
-      emit_code("{} = {}; \\\n", get_vectorized_address(expr->addr),
-                expr->ch[0]->var_name);
-      // emit_code("printf(\"%f\\n\", {}); \\\n", expr->ch[0]->var_name);
-      // emit_code("printf(\"%d <- %f\\n\", {}, {}); \\\n",
-      //        get_vectorized_index(expr->addr), expr->ch[0]->var_name);
+      emit_code("{} = {}; \\\n", get_vectorized_address(expr->addr()),
+                expr->ch[1]->var_name);
     } else if (expr->type == NodeType::combine) {
       // do nothing
     } else {
       TC_P((int)expr->type);
       TC_NOT_IMPLEMENTED;
     }
-    */
   }
 
   // group_size should be batch_size here...

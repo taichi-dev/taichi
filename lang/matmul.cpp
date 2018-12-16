@@ -336,13 +336,13 @@ template <int dim, typename T>
 void run_matmatmul() {
   fmt::print("Matrix<{}, {}>:\n", dim, sizeof(T) == 4 ? "float32" : "float64");
 
+  BENCHMARK(TlangGPUAOSOA);
+  BENCHMARK(TlangGPUInter);
+  BENCHMARK(TlangGPUSOA);
+
   BENCHMARK(TlangCPUAOSOA);
   BENCHMARK(TlangCPUInter);
   BENCHMARK(TlangCPUSOA);
-
-  // BENCHMARK(TlangGPUAOSOA);
-  // BENCHMARK(TlangGPUInter);
-  // BENCHMARK(TlangGPUSOA);
 
   // BENCHMARK(TlangSca8);
   // BENCHMARK(TlangVec16);

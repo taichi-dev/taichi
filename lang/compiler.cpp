@@ -70,7 +70,7 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void visit(Expr &expr) override {
-    TC_P((int)expr->type);
+    // TC_P((int)expr->type);
     // TC_P(expr->get_address());
     TC_ASSERT(expr->is_vectorized);
     TC_ASSERT(expr->members.size() == 0 ||

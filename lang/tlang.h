@@ -53,7 +53,7 @@ class Vectorizer : public Visitor {
         root->members.push_back(ch);  // put scalar inst into vector members
         TC_ASSERT(i < (int)root->members.size());
         if (i > k * group_size) {
-          if (prior_to(root->members[i - 1], root->members[i])) {
+          if (prior_to(root->members[i - 1]->ch[0], root->members[i]->ch[0])) {
             has_prior_to = true;
           } else if (root->members[i - 1]->ch[0]->get_address() ==
                      root->members[i]->ch[0]->get_address()) {
@@ -122,8 +122,7 @@ class Vectorizer : public Visitor {
 
     if (expr->type == NodeType::addr) {
       auto addr = expr->members[0]->get_address();
-      if (addr.coeff_aosoa_group_size == 0 ||
-          addr.coeff_aosoa_stride == 0) {
+      if (addr.coeff_aosoa_group_size == 0 || addr.coeff_aosoa_stride == 0) {
         addr.coeff_aosoa_group_size = num_groups;
         addr.coeff_aosoa_stride = 0;
       }

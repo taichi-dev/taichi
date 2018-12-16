@@ -299,8 +299,8 @@ struct Program {
 
   Expr ret;
 
-  Expr store(const Expr &e) {
-    return ret.store(e);
+  Expr store(const Expr &ad, const Expr &e) {
+    return ret.store(ad, e);
   }
 
   AddrNode &buffer(int i) {

@@ -242,10 +242,11 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
 
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
+      TC_NOT_IMPLEMENTED
       if (layout == 0) {
-        c(i, j) = prog.store(c(i, j));
+        // c(i, j) = prog.store(c(i, j));
       } else {
-        c(j, i) = prog.store(c(j, i));
+        // c(j, i) = prog.store(c(j, i));
       }
     }
   }
@@ -432,7 +433,7 @@ void test_vec_add() {
   TC_P(b->get_address());
   TC_P(c->get_address());
 
-  c = a + b;
+  c = load(a) + load(b);
 
   prog.config.group_size = 1;
 
@@ -523,7 +524,8 @@ void test_mat_vec_mul(Arch arch, int layout, int in_cache) {
   Matrix mv(dim, 1);
 
   for (int i = 0; i < dim; i++) {
-    mv(i) = prog.store(mv(i));
+    TC_NOT_IMPLEMENTED
+    // mv(i) = prog.store(mv(i));
     if (layout == 0) {
       alloc.buffer(2).stream().group().place(mv(i));
     } else if (layout == 1) {

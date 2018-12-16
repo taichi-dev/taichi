@@ -87,20 +87,22 @@ class Expr {
   BINARY_OP(/, div);
 #undef BINARY_OP
 
-  Expr store(const Expr &e) {
-    if (!node) {
-      node = std::make_shared<Node>(NodeType::combine);
+  /*
+    Expr store(const Expr &e) {
+      if (!node) {
+        node = std::make_shared<Node>(NodeType::combine);
+      }
+      auto n = std::make_shared<Node>(NodeType::store);
+      n->ch.push_back(e);
+      Expr store_e(n);
+      node->ch.push_back(n);
+      return store_e;
     }
-    auto n = std::make_shared<Node>(NodeType::store);
-    n->ch.push_back(e.node);
-    Expr store_e(n);
-    node->ch.push_back(n);
-    return store_e;
-  }
+    */
 
   // ch[0] = address
   // ch[1] = data
-  Expr store(const Expr &e, const Expr &addr) {
+  Expr store(const Expr &addr, const Expr &e) {
     if (!node) {
       node = std::make_shared<Node>(NodeType::combine);
     }
@@ -182,6 +184,12 @@ inline Address &Node::addr() {
   TC_ASSERT(type == Type::load || type == Type::store);
   TC_ASSERT(ch.size());
   return ch[0]->get_address();
+}
+
+inline Expr load(Expr &addr) {
+  auto expr = Expr::create(NodeType::load);
+  expr->ch.push_back(addr);
+  return expr;
 }
 }
 

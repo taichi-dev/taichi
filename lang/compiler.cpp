@@ -70,8 +70,8 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void visit(Expr &expr) override {
-    // TC_P((int)expr->type);
-    // TC_P(expr->addr);
+    TC_P((int)expr->type);
+    // TC_P(expr->get_address());
     TC_ASSERT(expr->is_vectorized);
     TC_ASSERT(expr->members.size() == 0 ||
               (int)expr->members.size() == group_size);
@@ -214,7 +214,7 @@ class CPUCodeGen : public CodeGenBase {
             // simd_width == 8 ? "_mm256_stream_ps" : "_mm512_stream_ps";
             simd_width == 8 ? "_mm256_store_ps" : "_mm512_store_ps";
         emit_code("{}({}, {}); \\\n", store_instr,
-                  get_vectorized_address(expr->addr()), expr->ch[0]->var_name);
+                  get_vectorized_address(expr->addr()), expr->ch[1]->var_name);
       } else {
         TC_NOT_IMPLEMENTED
         for (int i = 0; i < simd_width; i++) {

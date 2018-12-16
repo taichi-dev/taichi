@@ -13,7 +13,7 @@ Expr &Expr::operator=(const Expr &o) {
     auto &prog = get_current_program();
     TC_ASSERT(&prog != nullptr);
     TC_ASSERT(node->get_address().initialized());
-    prog.store(o);
+    prog.store(*this, o);
   }
   return *this;
 }

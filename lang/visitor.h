@@ -1,11 +1,12 @@
 #pragma once
 
 #include <taichi/common/util.h>
-#include "../headers/common.h"
 
 TC_NAMESPACE_BEGIN
 
 namespace Tlang {
+
+class Expr;
 
 class Visitor {
 public:

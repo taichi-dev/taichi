@@ -2,6 +2,7 @@
 
 #include <taichi/common/util.h>
 #include "../headers/common.h"
+#include "addr_node.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -11,8 +12,10 @@ struct MemoryAllocator {
   // A tree-like structure that describes the minimal repeating unit in the
   // stream
   Handle<AddrNode> root;
+  bool materialized;
 
   MemoryAllocator() {
+    materialized = false;
     // streams are specialized groups, with discontinuous parts in memory
     root = AddrNode::create(0);
   }
@@ -27,8 +30,12 @@ struct MemoryAllocator {
   }
 
   void materialize() {
+    if (materialized) {
+      return;
+    }
     root->materialize();
     root->set();
+    materialized = true;
   }
 
   void print() {

@@ -70,9 +70,14 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void visit(Expr &expr) override {
+    // TC_P((int)expr->type);
+    // TC_P(expr->addr);
     TC_ASSERT(expr->is_vectorized);
     TC_ASSERT(expr->members.size() == 0 ||
               (int)expr->members.size() == group_size);
+    if (expr->type == NodeType::addr) {
+      return;
+    }
     // TC_P(expr->ch.size());
     if (expr->var_name == "")
       expr->var_name = create_variable();
@@ -92,19 +97,19 @@ class CPUCodeGen : public CodeGenBase {
         }
       }
     } else if (expr->type == NodeType::load) {
-      auto buffer_name = fmt::format("buffer{:02d}", expr->addr.buffer_id);
+      auto buffer_name = fmt::format("buffer{:02d}", expr->addr().buffer_id);
 
       if (mode == Mode::vector) {
         // TC_P(expr->members.size());
         std::vector<int> offsets;
         for (int i = 0; i + 1 < (int)expr->members.size(); i++) {
           TC_ASSERT(
-              expr->members[i]->addr.same_type(expr->members[i + 1]->addr));
+              expr->members[i]->addr().same_type(expr->members[i + 1]->addr()));
         }
         for (int i = 0; i < (int)expr->members.size(); i++) {
-          offsets.push_back(expr->members[i]->addr.offset());
+          offsets.push_back(expr->members[i]->addr().offset());
         }
-        auto addr = expr->addr;
+        auto addr = expr->addr();
         auto i_stride = num_groups;
         // TC_P(i_stride);
         // TC_P(addr.coeff_aosoa_group_size);
@@ -186,7 +191,7 @@ class CPUCodeGen : public CodeGenBase {
               TC_ASSERT(offset_inc == 0);
               needs_shuffle = false;
               emit_code("auto {} = _mm256_broadcast_ss({});\\\n",
-                        expr->var_name, get_vectorized_address(expr->addr));
+                        expr->var_name, get_vectorized_address(expr->addr()));
             }
           } else {
             TC_NOT_IMPLEMENTED
@@ -199,23 +204,23 @@ class CPUCodeGen : public CodeGenBase {
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
           emit_code("auto {} = {}[{} * i + {} + {}];\\\n", expr->var_name + suf,
-                    buffer_name, expr->addr.coeff_i, expr->addr.coeff_const, i);
+                    buffer_name, expr->addr().coeff_i, expr->addr().coeff_const, i);
         }
       }
     } else if (expr->type == NodeType::store) {
-      auto buffer_name = fmt::format("buffer{:02d}", expr->addr.buffer_id);
+      auto buffer_name = fmt::format("buffer{:02d}", expr->addr().buffer_id);
       if (mode == Mode::vector) {
         std::string store_instr =
             // simd_width == 8 ? "_mm256_stream_ps" : "_mm512_stream_ps";
             simd_width == 8 ? "_mm256_store_ps" : "_mm512_store_ps";
         emit_code("{}({}, {}); \\\n", store_instr,
-                  get_vectorized_address(expr->addr), expr->ch[0]->var_name);
+                  get_vectorized_address(expr->addr()), expr->ch[0]->var_name);
       } else {
         TC_NOT_IMPLEMENTED
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
           emit_code("{}[{} * i + {} + {}] = {}; \\\n", buffer_name,
-                    expr->addr.coeff_i, expr->addr.coeff_const, i,
+                    expr->addr().coeff_i, expr->addr().coeff_const, i,
                     expr->ch[0]->var_name + suf);
         }
       }
@@ -317,6 +322,7 @@ class GPUCodeGen : public CodeGenBase {
   }
 
   void visit(Expr &expr) override {
+    /*
     TC_ASSERT(expr->is_vectorized);
     TC_ASSERT(expr->members.size() == 0 ||
               (int)expr->members.size() == group_size);
@@ -330,13 +336,13 @@ class GPUCodeGen : public CodeGenBase {
       emit_code("auto {} = {} {} {}; \\\n", expr->var_name,
                 expr->ch[0]->var_name, op, expr->ch[1]->var_name);
     } else if (expr->type == NodeType::load) {
-      auto buffer_name = fmt::format("buffer{:02d}", expr->addr.buffer_id);
+      auto buffer_name = fmt::format("buffer{:02d}", expr->addr().buffer_id);
       std::vector<int> offsets;
       for (int i = 0; i + 1 < (int)expr->members.size(); i++) {
-        TC_ASSERT(expr->members[i]->addr.same_type(expr->members[i + 1]->addr));
+        TC_ASSERT(expr->members[i]->addr().same_type(expr->members[i + 1]->addr()));
       }
       for (int i = 0; i < (int)expr->members.size(); i++) {
-        offsets.push_back(expr->members[i]->addr.offset());
+        offsets.push_back(expr->members[i]->addr().offset());
       }
       auto addr = expr->addr;
       auto i_stride = num_groups;
@@ -370,6 +376,7 @@ class GPUCodeGen : public CodeGenBase {
       TC_P((int)expr->type);
       TC_NOT_IMPLEMENTED;
     }
+    */
   }
 
   // group_size should be batch_size here...
@@ -442,7 +449,7 @@ class GPUCodeGen : public CodeGenBase {
 };
 
 void Program::compile() {
-  alloc.materialize();
+  materialize_layout();
   if (config.simd_width == -1) {
     config.simd_width = default_simd_width(config.arch);
   }

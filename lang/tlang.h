@@ -3,10 +3,10 @@
 #include <set>
 #include <dlfcn.h>
 
-#include "address.h"
-#include "memory_allocator.h"
 #include "visitor.h"
 #include "expr.h"
+#include "address.h"
+#include "memory_allocator.h"
 #include "../headers/common.h"
 
 TC_NAMESPACE_BEGIN
@@ -55,11 +55,12 @@ class Vectorizer : public Visitor {
         if (i > k * group_size) {
           if (prior_to(root->members[i - 1], root->members[i])) {
             has_prior_to = true;
-          } else if (root->members[i - 1]->addr == root->members[i]->addr) {
+          } else if (root->members[i - 1]->ch[0]->get_address() ==
+                     root->members[i]->ch[0]->get_address()) {
             has_same = true;
           } else {
-            TC_P(root->members[i - 1]->addr);
-            TC_P(root->members[i]->addr);
+            TC_P(root->members[i - 1]->ch[0]->get_address());
+            TC_P(root->members[i]->ch[0]->get_address());
             TC_ERROR(
                 "Addresses in SIMD load should be either identical or "
                 "neighbouring.");
@@ -119,11 +120,14 @@ class Vectorizer : public Visitor {
       expr->ch.push_back(ch);
     }
 
-    expr->addr = expr->members[0]->addr;
-    if (expr->addr.coeff_aosoa_group_size == 0 ||
-        expr->addr.coeff_aosoa_stride == 0) {
-      expr->addr.coeff_aosoa_group_size = num_groups;
-      expr->addr.coeff_aosoa_stride = 0;
+    if (expr->type == NodeType::addr) {
+      auto addr = expr->members[0]->get_address();
+      if (addr.coeff_aosoa_group_size == 0 ||
+          addr.coeff_aosoa_stride == 0) {
+        addr.coeff_aosoa_group_size = num_groups;
+        addr.coeff_aosoa_stride = 0;
+      }
+      expr->get_address() = addr;
     }
   }
 };
@@ -268,13 +272,20 @@ using Arch = CompileConfig::Arch;
 
 inline int default_simd_width(Arch arch) {
   if (arch == CompileConfig::Arch::x86_64) {
-    return 8; // AVX2
+    return 8;  // AVX2
   } else if (arch == CompileConfig::Arch::gpu) {
     return 32;
   } else {
     TC_NOT_IMPLEMENTED;
     return -1;
   }
+}
+
+struct Program;
+extern Program *current_program;
+
+TC_FORCE_INLINE Program &get_current_program() {
+  return *current_program;
 }
 
 struct Program {
@@ -297,6 +308,8 @@ struct Program {
   }
 
   Program(CompileConfig::Arch arch, int n) : n(n) {
+    TC_ASSERT(current_program == nullptr);
+    current_program = this;
     config.arch = arch;
     if (config.arch == Arch::x86_64) {
       device = Device::cpu;
@@ -306,6 +319,10 @@ struct Program {
       TC_NOT_IMPLEMENTED;
     }
     function = nullptr;
+  }
+
+  ~Program() {
+    current_program = nullptr;
   }
 
   void set_n(int n) {
@@ -351,18 +368,16 @@ struct Program {
   }
 
   float32 &data(Expr &expr, int i) {
-    auto &addr = expr->addr;
+    auto &addr = expr->get_address();
     TC_ASSERT(addr.initialized());
     allocate_buffer(addr.buffer_id);
     return buffers[addr.buffer_id].get<float32>()[addr.eval(i, n)];
   }
+
+  void materialize_layout() {
+    alloc.materialize();
+  }
 };
-
-extern Program *current_program;
-
-TC_FORCE_INLINE Program &get_current_program() {
-  return *current_program;
-}
 
 }  // namespace Tlang
 

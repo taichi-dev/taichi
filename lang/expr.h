@@ -2,16 +2,30 @@
 
 #include <taichi/common/util.h>
 #include "../headers/common.h"
+#include "address.h"
+#include "visitor.h"
 
 TC_NAMESPACE_BEGIN
 
 namespace Tlang {
 // TODO: do we need polymorphism here?
 class Node {
-public:
-  enum class Type : int { mul, add, sub, div, load, store, combine, constant };
+ private:
+  Address _addr;
 
-  Address addr;
+ public:
+  enum class Type : int {
+    mul,
+    add,
+    sub,
+    div,
+    load,
+    store,
+    combine,
+    constant,
+    addr
+  };
+
   std::vector<Expr> ch;       // Four child max
   std::vector<Expr> members;  // for vectorized instructions
   Type type;
@@ -23,6 +37,13 @@ public:
     is_vectorized = false;
   }
 
+  Address &get_address() {
+    TC_ASSERT(type == Type::addr);
+    return _addr;
+  }
+
+  Address &addr();
+
   Node(Type type, Expr ch0, Expr ch1);
 
   int member_id(const Expr &expr) const;
@@ -30,12 +51,14 @@ public:
 
 using NodeType = Node::Type;
 
+class Visitor;
+
 // Reference counted...
 class Expr {
-private:
+ private:
   Handle<Node> node;
 
-public:
+ public:
   Expr() {
   }
 
@@ -75,13 +98,15 @@ public:
     return store_e;
   }
 
-  Expr store(const Expr &e, Address addr) {
+  // ch[0] = address
+  // ch[1] = data
+  Expr store(const Expr &e, const Expr &addr) {
     if (!node) {
       node = std::make_shared<Node>(NodeType::combine);
     }
     auto n = std::make_shared<Node>(NodeType::store);
+    n->ch.push_back(addr);
     n->ch.push_back(e.node);
-    n->addr = addr;
     Expr store_e(n);
     node->ch.push_back(n);
     return store_e;
@@ -122,11 +147,13 @@ public:
       visitor.visit(*this);
     }
   }
+
+  Expr &operator=(const Expr &o);
 };
 
 inline bool prior_to(Expr &a, Expr &b) {
-  auto address1 = a->addr;
-  auto address2 = b->addr;
+  auto address1 = a->get_address();
+  auto address2 = b->get_address();
   return address1.same_type(address2) &&
          address1.offset() + 1 == address2.offset();
 }
@@ -138,26 +165,8 @@ inline Node::Node(Type type, Expr ch0, Expr ch1) : Node(type) {
 }
 
 inline Expr placeholder() {
-  auto n = std::make_shared<Node>(NodeType::load);
+  auto n = std::make_shared<Node>(NodeType::addr);
   return Expr(n);
-}
-
-inline Expr load(Address addr) {
-  auto n = std::make_shared<Node>(NodeType::load);
-  TC_ASSERT(addr.initialized());
-  n->addr = addr;
-  TC_ASSERT(0 <= addr.buffer_id && addr.buffer_id < 3);
-  return Expr(n);
-}
-
-inline AddrNode &AddrNode::place(Expr &expr) {
-  if (!expr) {
-    expr = placeholder();
-  }
-  TC_ASSERT(depth >= 3);
-  TC_ASSERT(this->addr == nullptr);
-  ch.push_back(create(depth + 1, &expr->addr));
-  return *this;
 }
 
 inline int Node::member_id(const Expr &expr) const {
@@ -169,6 +178,11 @@ inline int Node::member_id(const Expr &expr) const {
   return -1;
 }
 
+inline Address &Node::addr() {
+  TC_ASSERT(type == Type::load || type == Type::store);
+  TC_ASSERT(ch.size());
+  return ch[0]->get_address();
+}
 }
 
 TC_NAMESPACE_END

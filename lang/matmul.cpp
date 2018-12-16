@@ -13,7 +13,7 @@ using namespace Tlang;
 template <typename T>
 using EigenVector = std::vector<T, Eigen::aligned_allocator<T>>;
 
-real cpu_frequency = 4.2_f;
+real cpu_frequency = 0;
 
 real default_measurement_time = 1;
 
@@ -249,6 +249,7 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
       }
     }
   }
+
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       if (layout == 0) {
@@ -420,13 +421,18 @@ void test_vec_add() {
   constexpr int n = 16;
 
   Program prog(Arch::x86_64, n);
-  Expr a;
-  Expr b;
+  Expr a, b, c;
   prog.buffer(0).stream(0).group().place(a);
   prog.buffer(1).stream(0).group().place(b);
-  auto c = a + b;
-  c = prog.store(c);
   prog.buffer(2).stream(0).group().place(c);
+  prog.materialize_layout();
+
+  TC_P(bool(c));
+  TC_P(a->get_address());
+  TC_P(b->get_address());
+  TC_P(c->get_address());
+
+  c = a + b;
 
   prog.config.group_size = 1;
 
@@ -514,7 +520,8 @@ void test_mat_vec_mul(Arch arch, int layout, int in_cache) {
     }
   }
 
-  auto mv = m * v;
+  Matrix mv(dim, 1);
+
   for (int i = 0; i < dim; i++) {
     mv(i) = prog.store(mv(i));
     if (layout == 0) {
@@ -525,6 +532,10 @@ void test_mat_vec_mul(Arch arch, int layout, int in_cache) {
       alloc.buffer(2).stream(0).group(0).repeat(simd_width / dim).place(mv(i));
     }
   }
+
+  prog.materialize_layout();
+
+  mv = m * v;
 
   // alloc.print();
 
@@ -622,9 +633,9 @@ auto allocator_test = []() {
     bundle.place(A, B);
     buffer.stream().group().place(C);
     alloc.materialize();
-    TC_P(A->addr);
-    TC_P(B->addr);
-    TC_P(C->addr);
+    TC_P(A->get_address());
+    TC_P(B->get_address());
+    TC_P(C->get_address());
   }
   {
     MemoryAllocator alloc;
@@ -634,10 +645,10 @@ auto allocator_test = []() {
     g.group().repeat(4).place(A, C);
     g.group().repeat(4).place(B, D);
     alloc.materialize();
-    TC_P(A->addr);
-    TC_P(B->addr);
-    TC_P(C->addr);
-    TC_P(D->addr);
+    TC_P(A->get_address());
+    TC_P(B->get_address());
+    TC_P(C->get_address());
+    TC_P(D->get_address());
   }
 };
 
@@ -653,4 +664,5 @@ TODO:
  check unplaced variable
  auto batch sorting
  assert n % 256 = 0
+ how to deal with multi dimensional indices
 */

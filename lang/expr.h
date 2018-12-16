@@ -186,7 +186,7 @@ inline Address &Node::addr() {
   return ch[0]->get_address();
 }
 
-inline Expr load(Expr &addr) {
+inline Expr load(const Expr &addr) {
   auto expr = Expr::create(NodeType::load);
   expr->ch.push_back(addr);
   return expr;

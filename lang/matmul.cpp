@@ -426,12 +426,6 @@ void test_vec_add() {
   prog.buffer(0).stream(0).group().place(a);
   prog.buffer(1).stream(0).group().place(b);
   prog.buffer(2).stream(0).group().place(c);
-  prog.materialize_layout();
-
-  TC_P(bool(c));
-  TC_P(a->get_address());
-  TC_P(b->get_address());
-  TC_P(c->get_address());
 
   c = load(a) + load(b);
 
@@ -524,8 +518,6 @@ void test_mat_vec_mul(Arch arch, int layout, int in_cache) {
   Matrix mv(dim, 1);
 
   for (int i = 0; i < dim; i++) {
-    TC_NOT_IMPLEMENTED
-    // mv(i) = prog.store(mv(i));
     if (layout == 0) {
       alloc.buffer(2).stream().group().place(mv(i));
     } else if (layout == 1) {
@@ -593,7 +585,8 @@ void test_mat_vec_mul_all() {
       if (in_cache) {
         archs = {Arch::x86_64};
       } else {
-        archs = {Arch::x86_64, Arch::gpu};
+        //archs = {Arch::x86_64, Arch::gpu};
+        archs = {Arch::x86_64};
       }
       for (auto arch : archs)
         test_mat_vec_mul<dim>(arch, layout, in_cache);

@@ -153,11 +153,13 @@ class Expr {
   Expr &operator=(const Expr &o);
 };
 
-inline bool prior_to(Expr &a, Expr &b) {
-  auto address1 = a->get_address();
-  auto address2 = b->get_address();
+inline bool prior_to(Address address1, Address address2) {
   return address1.same_type(address2) &&
          address1.offset() + 1 == address2.offset();
+}
+
+inline bool prior_to(Expr &a, Expr &b) {
+  return prior_to(a->get_address(), b->get_address());
 }
 
 inline Node::Node(Type type, Expr ch0, Expr ch1) : Node(type) {

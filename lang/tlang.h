@@ -30,10 +30,48 @@ class Vectorizer : public Visitor {
       : Visitor(Visitor::Order::parent_first), simd_width(simd_width) {
   }
 
+  void sort(Expr &expr) {
+    auto ch = expr->ch;
+    std::vector<Expr> sorted;
+
+    while (!ch.empty()) {
+      std::vector<Expr> group;
+      group.push_back(ch[0]);
+      ch.erase(ch.begin());
+      bool progress = false;
+      while (true) { // grow
+        bool found = false;
+        for (int i = 0; i < ch.size(); i++) { // search
+          if (prior_to(ch[i]->addr(), group.front()->addr())) {
+            group.insert(group.begin(), ch[i]);
+            ch.erase(ch.begin() + i);
+            found = true;
+            break;
+          }
+          if (prior_to(group.back()->addr(), ch[i]->addr())) {
+            group.insert(group.end(), ch[i]);
+            ch.erase(ch.begin() + i);
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          break;
+        }
+      }
+      TC_ASSERT(group.size() % group_size == 0);
+      sorted.insert(sorted.end(), group.begin(), group.end());
+    }
+    expr->ch = sorted;
+  }
+
   Expr run(Expr &expr, int group_size) {
     this->group_size = group_size;
     this->num_groups = simd_width / group_size;
     TC_ASSERT(group_size * num_groups == simd_width);
+
+    sort(expr);
+
     scalar_to_vector.clear();
     // expr should be a ret Op, with its children store Ops.
     // The stores are repeated by a factor of 'pack_size'

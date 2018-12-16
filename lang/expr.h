@@ -44,6 +44,8 @@ class Node {
 
   Address &addr();
 
+  Node(Type type, Expr ch0);
+
   Node(Type type, Expr ch0, Expr ch1);
 
   int member_id(const Expr &expr) const;
@@ -76,9 +78,18 @@ class Expr {
     return Expr(std::make_shared<Node>(std::forward<Args>(args)...));
   }
 
-#define BINARY_OP(op, name)                            \
-  Expr operator op(const Expr &o) const {              \
-    return Expr::create(NodeType::name, node, o.node); \
+  static Expr load_if_addr(const Expr &in) {
+    if (in->type == NodeType::addr) {
+      return create(NodeType::load, in);
+    } else {
+      return in;
+    }
+  }
+
+#define BINARY_OP(op, name)                                 \
+  Expr operator op(const Expr &o) const {                   \
+    return Expr::create(NodeType::name, load_if_addr(node), \
+                        load_if_addr(o.node));              \
   }
 
   BINARY_OP(*, mul);
@@ -86,19 +97,6 @@ class Expr {
   BINARY_OP(-, sub);
   BINARY_OP(/, div);
 #undef BINARY_OP
-
-  /*
-    Expr store(const Expr &e) {
-      if (!node) {
-        node = std::make_shared<Node>(NodeType::combine);
-      }
-      auto n = std::make_shared<Node>(NodeType::store);
-      n->ch.push_back(e);
-      Expr store_e(n);
-      node->ch.push_back(n);
-      return store_e;
-    }
-    */
 
   // ch[0] = address
   // ch[1] = data
@@ -160,6 +158,11 @@ inline bool prior_to(Address address1, Address address2) {
 
 inline bool prior_to(Expr &a, Expr &b) {
   return prior_to(a->get_address(), b->get_address());
+}
+
+inline Node::Node(Type type, Expr ch0) : Node(type) {
+  ch.resize(1);
+  ch[0] = ch0;
 }
 
 inline Node::Node(Type type, Expr ch0, Expr ch1) : Node(type) {

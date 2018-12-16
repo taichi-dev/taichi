@@ -480,9 +480,9 @@ inline Matrix operator*(const Matrix &A, const Matrix &B) {
   Matrix C(A.n, B.m);
   for (int i = 0; i < A.n; i++) {
     for (int j = 0; j < B.m; j++) {
-      C(i, j) = load(A(i, 0)) * load(B(0, j));
+      C(i, j) = A(i, 0) * B(0, j);
       for (int k = 1; k < A.m; k++) {
-        C(i, j) = C(i, j) + load(A(i, k)) * load(B(k, j));
+        C(i, j) = C(i, j) + A(i, k) * B(k, j);
       }
     }
   }

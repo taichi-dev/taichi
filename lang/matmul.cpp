@@ -195,7 +195,7 @@ real SOA_AVX2_matmatmul(std::size_t N) {
 
 template <int dim, typename T>
 real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
-  Matrix a(dim, dim), b(dim, dim);
+  Matrix a(dim, dim), b(dim, dim), c(dim, dim);
 
   int simd_width = default_simd_width(arch);
 
@@ -220,6 +220,12 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
             .group(i * dim + j)
             .repeat(simd_width)
             .place(b(i, j));
+        prog.buffer(2)
+            .stream(0)
+            .group(0)
+            .group(i * dim + j)
+            .repeat(simd_width)
+            .place(c(i, j));
       } else if (layout == 1) {  // Inter
         prog.buffer(0)
             .stream(0)
@@ -231,46 +237,20 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
             .group(j)
             .repeat(simd_width / dim)
             .place(b(i, j));
-      } else {  // SOA
-        prog.buffer(0).stream(i * dim + j).group().place(a(i, j));
-        prog.buffer(1).stream(i * dim + j).group().place(b(i, j));
-      }
-    }
-  }
-
-  auto c = a * b;
-
-  for (int i = 0; i < dim; i++) {
-    for (int j = 0; j < dim; j++) {
-      TC_NOT_IMPLEMENTED
-      if (layout == 0) {
-        // c(i, j) = prog.store(c(i, j));
-      } else {
-        // c(j, i) = prog.store(c(j, i));
-      }
-    }
-  }
-
-  for (int i = 0; i < dim; i++) {
-    for (int j = 0; j < dim; j++) {
-      if (layout == 0) {
-        prog.buffer(2)
-            .stream(0)
-            .group(0)
-            .group(i * dim + j)
-            .repeat(simd_width)
-            .place(c(i, j));
-      } else if (layout == 1) {
         prog.buffer(2)
             .stream(0)
             .group(j)
             .repeat(simd_width / dim)
             .place(c(i, j));
-      } else {
+      } else {  // SOA
+        prog.buffer(0).stream(i * dim + j).group().place(a(i, j));
+        prog.buffer(1).stream(i * dim + j).group().place(b(i, j));
         prog.buffer(2).stream(i * dim + j).group().place(c(i, j));
       }
     }
   }
+
+  c = a * b;
 
   prog.compile();
 
@@ -360,9 +340,9 @@ void run_matmatmul() {
   BENCHMARK(TlangCPUInter);
   BENCHMARK(TlangCPUSOA);
 
-  BENCHMARK(TlangGPUAOSOA);
-  BENCHMARK(TlangGPUInter);
-  BENCHMARK(TlangGPUSOA);
+  // BENCHMARK(TlangGPUAOSOA);
+  // BENCHMARK(TlangGPUInter);
+  // BENCHMARK(TlangGPUSOA);
 
   // BENCHMARK(TlangSca8);
   // BENCHMARK(TlangVec16);
@@ -411,10 +391,10 @@ void initialize_benchmark() {
 auto tlang_matmatmul = []() {
   initialize_benchmark();
 
-  run_matmatmul<8, float32>();
   run_matmatmul<1, float32>();
   run_matmatmul<2, float32>();
   run_matmatmul<4, float32>();
+  run_matmatmul<8, float32>();
 };
 TC_REGISTER_TASK(tlang_matmatmul);
 
@@ -653,7 +633,7 @@ TC_NAMESPACE_END
 
 /*
 TODO:
- Address Node
+ alert if address assigned multiple times
  imm
  vec3
  check unplaced variable

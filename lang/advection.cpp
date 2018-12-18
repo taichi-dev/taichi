@@ -62,24 +62,26 @@ TC_REGISTER_TASK(advection);
 
 auto test_cache = []() {
   Float a, b;
-  Vector v(4);
+  int vec_size = 8;
+  Vector v(vec_size);
 
   int n = 16;
 
   Program prog(Arch::x86_64, 2048);
+  prog.config.group_size = 8;
 
   prog.buffer(0).stream(0).group(0).place(a, b);
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < vec_size; i++)
     prog.buffer(1).stream(0).group(0).place(v(i));
 
   // cache
-  auto &c = prog.cache(1);  // group_size = 1
+  auto &c = prog.cache(0);  // TODO: specify group_size = 1
   c.store(a * b, 0);
 
   auto ab = c.load(0);  // 0th element
 
-  for (int i = 0; i < 4; i++) {
-    prog.store(v(i), ab * v(i));
+  for (int i = 0; i < vec_size; i++) {
+    v(i) = ab * v(i);
   }
 
   prog.materialize_layout();
@@ -87,7 +89,7 @@ auto test_cache = []() {
   for (int i = 0; i < n; i++) {
     prog.data(a, i) = i;
     prog.data(b, i) = i * 2;
-    for (int j = 0; j < 4; j++) {
+    for (int j = 0; j < vec_size; j++) {
       prog.data(v(j), j) = 1.0_f * j / i;
     }
   }
@@ -95,7 +97,7 @@ auto test_cache = []() {
   prog();
 
   for (int i = 0; i < n; i++) {
-    for (int j = 0; j < 4; j++) {
+    for (int j = 0; j < vec_size; j++) {
       auto val = prog.data(v(j), i);
       auto gt = i * j * 2;
       if (abs(gt - val) > 1e-5_f) {
@@ -103,6 +105,7 @@ auto test_cache = []() {
         TC_P(j);
         TC_P(val);
         TC_P(gt);
+        TC_ERROR("");
       }
     }
   }

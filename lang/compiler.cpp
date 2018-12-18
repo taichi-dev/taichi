@@ -53,43 +53,67 @@ class CPUCodeGen : public CodeGenBase {
     emit_code(
         "#include <common.h>\n using namespace taichi; using namespace Tlang;");
     emit_code("extern \"C\" void " + func_name + "(Context context) {\n");
+    emit_code("auto n = context.get_range(0);\n");
+    emit_code("for (int i = 0, g = 0; i < n; ) {{\n", num_groups);
   }
 
   void generate_tail() {
+    emit_code("i += {}; g += {};", num_groups * unroll, unroll);
+    emit_code("}\n}\n");
+  }
+
+  std::string get_cache_name(int i) {
+    TC_ASSERT(i < 10000);
+    return fmt::format("cache{:04d}", i);
+  }
+
+  void start_macro_loop() {
+    code_suffix = " \\\n";
+    emit_code("#define LOOP(loop_index) {");
+  }
+
+  void end_macro_loop(int unroll) {
+    code_suffix = "\n";
     emit_code("}\n");
-    emit_code("auto n = context.get_range(0);\n");
-    emit_code("for (int i = 0, g = 0; i < n; ) {{\n", num_groups);
     for (int i = 0; i < unroll; i++) {
       emit_code("LOOP({});", i);
     }
-    emit_code("i += {}; g += {};", num_groups * unroll, unroll);
-    emit_code("}\n}\n");
-    emit_code("#undef LOOP");
+    emit_code("#undef LOOP\n");
   }
 
-  void codegen(Expr &vectorized_expr, int group_size = 1) {
-    this->group_size = group_size;
+  void codegen(Program &prog, int group_size = 1) {
 
+    this->group_size = group_size;
     generate_header();
 
-    code_suffix = " \\\n";
-    emit_code("#define LOOP(loop_index) {");
-    code_suffix = "";
+    emit_code("float32 {}[128];", get_cache_name(0));
 
     // Body
-    /*
-    for (auto cache: program.caches) {
-      vectorized_expr.accept(*this);
+    for (auto cache : prog.caches) {
+      this->group_size = 1;
+      TC_P(cache.stores->ch.size());
+      auto vectorized_cache_stores =
+          Vectorizer(simd_width).run(cache.stores, 1);
+
+      start_macro_loop();
+      vectorized_cache_stores.accept(*this);
+      end_macro_loop(1);
     }
-    */
-    vectorized_expr.accept(*this);
 
+    {
+      this->group_size = group_size;
+      auto vectorized_stores = Vectorizer(simd_width).run(prog.ret, 1);
+      start_macro_loop();
+      vectorized_stores.accept(*this);
+      end_macro_loop(8);
+    }
 
+    code_suffix = "";
     generate_tail();
   }
 
   void visit(Expr &expr) override {
-    // TC_P((int)expr->type);
+    TC_P((int)expr->type);
     // TC_P(expr->get_address());
     TC_ASSERT(expr->is_vectorized);
     TC_ASSERT(expr->members.size() == 0 ||
@@ -115,9 +139,12 @@ class CPUCodeGen : public CodeGenBase {
                     expr->ch[1]->var_name + suf);
         }
       }
+    } else if (expr->type == NodeType::cache_load) {
+      emit_code("auto {} = _mm256_broadcast_ss(&{}[loop_index]);",
+                expr->var_name, get_cache_name(0));
+      // emit_code("auto {} = _{}");
     } else if (expr->type == NodeType::load) {
       auto buffer_name = fmt::format("buffer{:02d}", expr->addr().buffer_id);
-
       if (mode == Mode::vector) {
         // TC_P(expr->members.size());
         std::vector<int> offsets;
@@ -226,6 +253,10 @@ class CPUCodeGen : public CodeGenBase {
                     i);
         }
       }
+    } else if (expr->type == NodeType::cache_store) {
+      // TODO: fully implement
+      emit_code("_mm256_store_ps(&{}[0], {});", get_cache_name(0),
+                expr->ch[1]->var_name);
     } else if (expr->type == NodeType::store) {
       auto buffer_name = fmt::format("buffer{:02d}", expr->addr().buffer_id);
       if (mode == Mode::vector) {
@@ -244,6 +275,8 @@ class CPUCodeGen : public CodeGenBase {
         }
       }
     } else if (expr->type == NodeType::combine) {
+      // do nothing
+    } else if (expr->type == NodeType::imm) {
       // do nothing
     } else {
       TC_P((int)expr->type);
@@ -270,14 +303,12 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   FunctionType get(Program &prog) {
-    auto e = prog.ret;
     auto group_size = prog.config.group_size;
     auto mode = CPUCodeGen::Mode::vector;
     auto simd_width = 8;
     this->mode = mode;
     this->simd_width = simd_width;
-    auto vectorized_expr = Vectorizer(simd_width).run(e, group_size);
-    codegen(vectorized_expr, group_size);
+    codegen(prog);
     return compile();
   }
 };

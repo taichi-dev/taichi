@@ -69,8 +69,6 @@ class Vectorizer : public Visitor {
     this->num_groups = simd_width / group_size;
     TC_ASSERT(group_size * num_groups == simd_width);
 
-    sort(expr);
-
     scalar_to_vector.clear();
     // expr should be a ret Op, with its children store Ops.
     // The stores are repeated by a factor of 'pack_size'
@@ -79,37 +77,62 @@ class Vectorizer : public Visitor {
     // Create the root group
     auto combined = Expr::create(NodeType::combine);
     combined->is_vectorized = true;
-    // for each batch (group)
-    for (int k = 0; k < (int)expr->ch.size() / group_size; k++) {
-      auto root = Expr::create(NodeType::store);
-      root->is_vectorized = true;
-      bool has_prior_to = false, has_same = false;
-      for (int i = 0; i < group_size; i++) {
-        auto ch = expr->ch[k * group_size + i];
-        TC_ASSERT(ch->type == NodeType::store);
-        root->members.push_back(ch);  // put scalar inst into vector members
-        TC_ASSERT(i < (int)root->members.size());
-        if (i > k * group_size) {
-          if (prior_to(root->members[i - 1]->ch[0], root->members[i]->ch[0])) {
-            has_prior_to = true;
-          } else if (root->members[i - 1]->ch[0]->get_address() ==
-                     root->members[i]->ch[0]->get_address()) {
-            has_same = true;
-          } else {
-            TC_P(root->members[i - 1]->ch[0]->get_address());
-            TC_P(root->members[i]->ch[0]->get_address());
-            TC_ERROR(
-                "Addresses in SIMD load should be either identical or "
-                "neighbouring.");
+
+    TC_ASSERT(expr->ch.size());
+    if (expr->ch[0]->type == NodeType::cache_store) {
+      // cache store
+      // for each batch (group)
+      for (int k = 0; k < (int)expr->ch.size() / group_size; k++) {
+        auto root = Expr::create(NodeType::cache_store);
+        root->is_vectorized = true;
+        bool has_prior_to = false, has_same = false;
+        for (int i = 0; i < group_size; i++) {
+          auto ch = expr->ch[k * group_size + i];
+          TC_ASSERT(ch->type == NodeType::cache_store);
+          root->members.push_back(ch);  // put scalar inst into vector members
+          TC_ASSERT(i < (int)root->members.size());
+        }
+        root.accept(*this);
+        combined->ch.push_back(root);
+      }
+    } else {
+      // main memory store
+      sort(expr);
+
+      // for each batch (group)
+      for (int k = 0; k < (int)expr->ch.size() / group_size; k++) {
+        auto root = Expr::create(NodeType::store);
+        root->is_vectorized = true;
+        bool has_prior_to = false, has_same = false;
+        for (int i = 0; i < group_size; i++) {
+          auto ch = expr->ch[k * group_size + i];
+          TC_ASSERT(ch->type == NodeType::store);
+          root->members.push_back(ch);  // put scalar inst into vector members
+          TC_ASSERT(i < (int)root->members.size());
+          if (i > k * group_size) {
+            if (prior_to(root->members[i - 1]->ch[0],
+                         root->members[i]->ch[0])) {
+              has_prior_to = true;
+            } else if (root->members[i - 1]->ch[0]->get_address() ==
+                       root->members[i]->ch[0]->get_address()) {
+              has_same = true;
+            } else {
+              TC_P(root->members[i - 1]->ch[0]->get_address());
+              TC_P(root->members[i]->ch[0]->get_address());
+              TC_ERROR(
+                  "Addresses in SIMD load should be either identical or "
+                  "neighbouring.");
+            }
           }
         }
+        TC_ASSERT(!(has_prior_to && has_same));
+        // TC_P(root->members.size());
+        root.accept(*this);
+        combined->ch.push_back(root);
       }
-      TC_ASSERT(!(has_prior_to && has_same));
-      // TC_P(root->members.size());
-      root.accept(*this);
-      combined->ch.push_back(root);
     }
-    // TC_P(combined->ch.size());
+
+    TC_P(combined->ch.size());
     return combined;
   }
 
@@ -191,6 +214,7 @@ class CodeGenBase : public Visitor {
     folder = "_tlang_cache/";
     create_directories(folder);
     var_count = 0;
+    code_suffix = "\n";
   }
 
   std::string create_variable() {
@@ -233,6 +257,9 @@ class CodeGenBase : public Visitor {
       std::ofstream of(get_source_fn());
       of << code;
     }
+    trash(std::system(
+        fmt::format("cp {} {}_unformated", get_source_fn(), get_source_fn())
+            .c_str()));
     auto format_ret =
         std::system(fmt::format("clang-format -i {}", get_source_fn()).c_str());
     trash(format_ret);
@@ -335,8 +362,8 @@ struct Cache {
   }
 
   void store(const Expr &e, int i) {
-    stores->ch.push_back(
-        Expr::create(NodeType::cache_store, e, Expr::create_imm(i)));
+    auto n = Expr::create(NodeType::cache_store, e, Expr::create_imm(i));
+    stores->ch.push_back(n);
   }
 
   Expr load(int i) {

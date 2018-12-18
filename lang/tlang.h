@@ -171,7 +171,7 @@ class Vectorizer : public Visitor {
 class CodeGenBase : public Visitor {
  public:
   int var_count;
-  std::string code;
+  std::string code, code_suffix;
   std::map<NodeType, std::string> binary_ops;
   std::string folder;
   std::string func_name;
@@ -222,9 +222,9 @@ class CodeGenBase : public Visitor {
   template <typename... Args>
   void emit_code(std::string f, Args &&... args) {
     if (sizeof...(args)) {
-      code += fmt::format(f, std::forward<Args>(args)...);
+      code += fmt::format(f, std::forward<Args>(args)...) + code_suffix;
     } else {
-      code += f;
+      code += f + code_suffix;
     }
   }
 

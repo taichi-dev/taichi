@@ -53,7 +53,9 @@ class CPUCodeGen : public CodeGenBase {
     emit_code(
         "#include <common.h>\n using namespace taichi; using namespace Tlang;");
     emit_code("extern \"C\" void " + func_name + "(Context context) {\n");
-    emit_code("#define LOOP(loop_index) {\\\n");
+    code_suffix = " \\\n";
+    emit_code("#define LOOP(loop_index) {");
+    code_suffix = "";
 
     // Body
     vectorized_expr.accept(*this);
@@ -86,12 +88,12 @@ class CPUCodeGen : public CodeGenBase {
     if (binary_ops.find(expr->type) != binary_ops.end()) {
       auto op = binary_ops[expr->type];
       if (mode == Mode::vector) {
-        emit_code("auto {} = {} {} {}; \\\n", expr->var_name,
-                  expr->ch[0]->var_name, op, expr->ch[1]->var_name);
+        emit_code("auto {} = {} {} {};", expr->var_name, expr->ch[0]->var_name,
+                  op, expr->ch[1]->var_name);
       } else if (mode == Mode::scalar) {
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
-          emit_code("auto {} = {} {} {}; \\\n", expr->var_name + suf,
+          emit_code("auto {} = {} {} {};", expr->var_name + suf,
                     expr->ch[0]->var_name + suf, op,
                     expr->ch[1]->var_name + suf);
         }
@@ -124,21 +126,20 @@ class CPUCodeGen : public CodeGenBase {
         }
         if (prefetch != 0) {
           // https://stackoverflow.com/questions/46521694/what-are-mm-prefetch-locality-hints
-          emit_code("if (loop_index == 0) _mm_prefetch({}, _MM_HINT_NTA); \\\n",
+          emit_code("if (loop_index == 0) _mm_prefetch({}, _MM_HINT_NTA);",
                     get_vectorized_address(addr, prefetch));
         }
-        emit_code("auto {}_immediate = {}({}); \\\n", expr->var_name,
-                  load_instr, get_vectorized_address(addr));
+        emit_code("auto {}_immediate = {}({});", expr->var_name, load_instr,
+                  get_vectorized_address(addr));
         auto emit_shuffle = [&](std::string imm) {
           emit_code(
               "auto {} = _mm256_shuffle_ps({}_immediate, {}_immediate, "
-              "{});\\\n",
+              "{});",
               expr->var_name, expr->var_name, expr->var_name, imm);
           needs_shuffle = false;
         };
         if (group_size == 1) {
-          emit_code("auto {} = {}_immediate; \\\n", expr->var_name,
-                    expr->var_name);
+          emit_code("auto {} = {}_immediate;", expr->var_name, expr->var_name);
         } else {
           TC_ASSERT(group_size <= 8);
           // detect patterns
@@ -146,7 +147,7 @@ class CPUCodeGen : public CodeGenBase {
           int offset_inc = offsets[1] - offsets[0];
           if (group_size == 2) {
             if (offset_const == 0 && offset_inc == 1) {
-              emit_code("auto {} = {}_immediate; \\\n", expr->var_name,
+              emit_code("auto {} = {}_immediate;", expr->var_name,
                         expr->var_name);
             } else if (offset_inc == 0) {
               if (offset_const == 0) {
@@ -163,7 +164,7 @@ class CPUCodeGen : public CodeGenBase {
             }
           } else if (group_size == 4) {
             if (offset_const == 0 && offset_inc == 1) {
-              emit_code("auto {} = {}_immediate;\\\n", expr->var_name,
+              emit_code("auto {} = {}_immediate;", expr->var_name,
                         expr->var_name);
             } else if (offset_inc == 0) {
               if (offset_const == 0) {
@@ -185,13 +186,13 @@ class CPUCodeGen : public CodeGenBase {
           } else if (group_size == 8) {
             if (offset_inc == 1) {
               TC_ASSERT(offset_const == 0);
-              emit_code("auto {} = {}_immediate;\\\n", expr->var_name,
+              emit_code("auto {} = {}_immediate;", expr->var_name,
                         expr->var_name);
             } else {
               TC_ASSERT(offset_inc == 0);
               needs_shuffle = false;
-              emit_code("auto {} = _mm256_broadcast_ss({});\\\n",
-                        expr->var_name, get_vectorized_address(expr->addr()));
+              emit_code("auto {} = _mm256_broadcast_ss({});", expr->var_name,
+                        get_vectorized_address(expr->addr()));
             }
           } else {
             TC_NOT_IMPLEMENTED
@@ -203,7 +204,7 @@ class CPUCodeGen : public CodeGenBase {
         TC_NOT_IMPLEMENTED
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
-          emit_code("auto {} = {}[{} * i + {} + {}];\\\n", expr->var_name + suf,
+          emit_code("auto {} = {}[{} * i + {} + {}];", expr->var_name + suf,
                     buffer_name, expr->addr().coeff_i, expr->addr().coeff_const,
                     i);
         }
@@ -214,13 +215,13 @@ class CPUCodeGen : public CodeGenBase {
         std::string store_instr =
             // simd_width == 8 ? "_mm256_stream_ps" : "_mm512_stream_ps";
             simd_width == 8 ? "_mm256_store_ps" : "_mm512_store_ps";
-        emit_code("{}({}, {}); \\\n", store_instr,
+        emit_code("{}({}, {});", store_instr,
                   get_vectorized_address(expr->addr()), expr->ch[1]->var_name);
       } else {
         TC_NOT_IMPLEMENTED
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
-          emit_code("{}[{} * i + {} + {}] = {}; \\\n", buffer_name,
+          emit_code("{}[{} * i + {} + {}] = {};", buffer_name,
                     expr->addr().coeff_i, expr->addr().coeff_const, i,
                     expr->ch[0]->var_name + suf);
         }

@@ -42,7 +42,7 @@ class CPUCodeGen : public CodeGenBase {
     var_count = 0;
   }
 
-  void codegen(Expr &vectorized_expr, int group_size = 1) {
+  void generate_header() {
     TC_ASSERT(mode == Mode::vector);
     this->group_size = group_size;
     TC_ASSERT(group_size != 0);
@@ -53,13 +53,9 @@ class CPUCodeGen : public CodeGenBase {
     emit_code(
         "#include <common.h>\n using namespace taichi; using namespace Tlang;");
     emit_code("extern \"C\" void " + func_name + "(Context context) {\n");
-    code_suffix = " \\\n";
-    emit_code("#define LOOP(loop_index) {");
-    code_suffix = "";
+  }
 
-    // Body
-    vectorized_expr.accept(*this);
-
+  void generate_tail() {
     emit_code("}\n");
     emit_code("auto n = context.get_range(0);\n");
     emit_code("for (int i = 0, g = 0; i < n; ) {{\n", num_groups);
@@ -69,6 +65,27 @@ class CPUCodeGen : public CodeGenBase {
     emit_code("i += {}; g += {};", num_groups * unroll, unroll);
     emit_code("}\n}\n");
     emit_code("#undef LOOP");
+  }
+
+  void codegen(Expr &vectorized_expr, int group_size = 1) {
+    this->group_size = group_size;
+
+    generate_header();
+
+    code_suffix = " \\\n";
+    emit_code("#define LOOP(loop_index) {");
+    code_suffix = "";
+
+    // Body
+    /*
+    for (auto cache: program.caches) {
+      vectorized_expr.accept(*this);
+    }
+    */
+    vectorized_expr.accept(*this);
+
+
+    generate_tail();
   }
 
   void visit(Expr &expr) override {

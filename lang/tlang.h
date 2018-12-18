@@ -38,10 +38,9 @@ class Vectorizer : public Visitor {
       std::vector<Expr> group;
       group.push_back(ch[0]);
       ch.erase(ch.begin());
-      bool progress = false;
-      while (true) { // grow
+      while (true) {  // grow
         bool found = false;
-        for (int i = 0; i < ch.size(); i++) { // search
+        for (int i = 0; i < (int)ch.size(); i++) {  // search
           if (prior_to(ch[i]->addr(), group.front()->addr())) {
             group.insert(group.begin(), ch[i]);
             ch.erase(ch.begin() + i);
@@ -500,6 +499,14 @@ inline Matrix operator+(const Matrix &A, const Matrix &B) {
   }
   return C;
 }
+
+real get_cpu_frequency();
+
+extern real default_measurement_time;
+
+real measure_cpe(std::function<void()> target,
+                 int64 elements_per_call,
+                 real time_second = default_measurement_time);
 
 }  // namespace Tlang
 

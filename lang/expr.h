@@ -22,15 +22,17 @@ class Node {
     load,
     store,
     combine,
-    constant,
-    addr
+    addr,
+    cache_store,
+    cache_load,
+    imm
   };
 
   std::vector<Expr> ch;       // Four child max
   std::vector<Expr> members;  // for vectorized instructions
   Type type;
   std::string var_name;
-  float64 value;
+  float64 _value;
   bool is_vectorized;
 
   Node(Type type) : type(type) {
@@ -49,6 +51,11 @@ class Node {
   Node(Type type, Expr ch0, Expr ch1);
 
   int member_id(const Expr &expr) const;
+
+  template <typename T>
+  T &value() {
+    return *reinterpret_cast<T *>(&_value);
+  }
 };
 
 using NodeType = Node::Type;
@@ -61,13 +68,15 @@ class Expr {
   Handle<Node> node;
 
  public:
+  using Type = Node::Type;
+
   Expr() {
   }
 
   Expr(float64 val) {
     // create a constant node
-    node = std::make_shared<Node>(NodeType::constant);
-    node->value = val;
+    node = std::make_shared<Node>(NodeType::imm);
+    node->value<float64>() = val;
   }
 
   Expr(Handle<Node> node) : node(node) {
@@ -76,6 +85,13 @@ class Expr {
   template <typename... Args>
   static Expr create(Args &&... args) {
     return Expr(std::make_shared<Node>(std::forward<Args>(args)...));
+  }
+
+  template <typename T>
+  static Expr create_imm(T t) {
+    auto e = create(Type::imm);
+    e->value<T>() = t;
+    return e;
   }
 
   static Expr load_if_addr(const Expr &in) {

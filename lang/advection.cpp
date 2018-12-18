@@ -1,4 +1,5 @@
 #include "tlang.h"
+#include <taichi/util.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -48,7 +49,8 @@ auto advection = []() {
   };
 
   for (int i = 0; i < nattr; i++) {
-    auto new_attr = w00 * load(i, 0, 0) + w01 * load(i, 0, 1) + w10 * load(i, 1, 0) +
+    auto new_attr = w00 * load(i, 0, 0) + w01 * load(i, 0, 1) + w10 * load(i, 1,
+0) +
                w11 * load(i, 1, 1);
     prog.store(new_attr, new_addr[i]);
   }
@@ -57,5 +59,31 @@ auto advection = []() {
 };
 TC_REGISTER_TASK(advection);
 */
+
+auto test_cache = []() {
+  Float a, b;
+  Vector v(4);
+
+  Program prog(Arch::x86_64, 2048);
+
+  prog.buffer(0).stream(0).group(0).place(a, b);
+  for (int i = 0; i < 4; i++)
+    prog.buffer(1).stream(0).group(0).place(v(i));
+
+  // cache
+  auto &c = prog.cache(1); // group_size = 1
+  c.store(a * b, 0);
+
+  auto ab = c.load(0); // 0th element
+
+  for (int i = 0; i < 4; i++) {
+    prog.store(v(i), ab * v(i));
+  }
+
+};
+
+// TODO: random access
+
+TC_REGISTER_TASK(test_cache);
 
 TC_NAMESPACE_END

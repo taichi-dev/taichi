@@ -324,24 +324,35 @@ TC_FORCE_INLINE Program &get_current_program() {
   return *current_program;
 }
 
+struct Cache {
+  Expr stores;
+
+  Cache() {
+    stores = Expr::create(Expr::Type::combine);
+  }
+
+  void group_size() {
+  }
+
+  void store(const Expr &e, int i) {
+    stores->ch.push_back(
+        Expr::create(NodeType::cache_store, e, Expr::create_imm(i)));
+  }
+
+  Expr load(int i) {
+    return Expr::create(NodeType::cache_load, Expr::create_imm(i));
+  }
+};
+
 struct Program {
   CompileConfig config;
   CodeGenBase::FunctionType function;
   int n;
   MemoryAllocator alloc;
   Device device;
-
   std::vector<AlignedAllocator> buffers;
-
   Expr ret;
-
-  Expr store(const Expr &ad, const Expr &e) {
-    return ret.store(ad, e);
-  }
-
-  AddrNode &buffer(int i) {
-    return alloc.buffer(i);
-  }
+  std::vector<Cache> caches;
 
   Program(CompileConfig::Arch arch, int n) : n(n) {
     TC_ASSERT(current_program == nullptr);
@@ -359,6 +370,17 @@ struct Program {
 
   ~Program() {
     current_program = nullptr;
+  }
+
+  Cache &cache(int i) {
+  }
+
+  Expr store(const Expr &ad, const Expr &e) {
+    return ret.store(ad, e);
+  }
+
+  AddrNode &buffer(int i) {
+    return alloc.buffer(i);
   }
 
   void set_n(int n) {
@@ -415,12 +437,20 @@ struct Program {
   }
 };
 
-}  // namespace Tlang
+using Real = Expr;
 
-namespace Tlang {
+template <typename T>
+using Var = Expr;
+
+using Float32 = Var<float32>;
+using Float = Float32;
+using Int32 = Var<int32>;
+using Int = Int32;
+
 struct Matrix {
+  using T = Float;
   int n, m;
-  std::vector<Expr> entries;
+  std::vector<T> entries;
 
   Matrix() {
     n = m = 0;
@@ -432,28 +462,28 @@ struct Matrix {
 
   Matrix(int n, int m = 1) : n(n), m(m) {
     TC_ASSERT(n * m >= 1);
-    entries.resize(n * m, Expr());
+    entries.resize(n * m, T());
   }
 
-  Expr &operator()(int i, int j) {
+  T &operator()(int i, int j) {
     TC_ASSERT(0 <= i && i < n);
     TC_ASSERT(0 <= j && j < n);
     return entries[i * m + j];
   }
 
-  const Expr &operator()(int i, int j) const {
+  const T &operator()(int i, int j) const {
     TC_ASSERT(0 <= i && i < n);
     TC_ASSERT(0 <= j && j < n);
     return entries[i * m + j];
   }
 
-  Expr &operator()(int i) {
+  T &operator()(int i) {
     TC_ASSERT(0 <= i && i < n * m);
     TC_ASSERT(n == 1 || m == 1);
     return entries[i];
   }
 
-  const Expr &operator()(int i) const {
+  const T &operator()(int i) const {
     TC_ASSERT(0 <= i && i < n * m);
     TC_ASSERT(n == 1 || m == 1);
     return entries[i];
@@ -473,7 +503,7 @@ struct Matrix {
     return *this;
   }
 
-  Matrix &element_wise_prod(const Matrix &o) {
+  Matrix element_wise_prod(const Matrix &o) {
     TC_ASSERT(n == o.n && m == o.m);
     Matrix ret(n, m);
     for (int i = 0; i < n; i++) {
@@ -511,6 +541,8 @@ inline Matrix operator+(const Matrix &A, const Matrix &B) {
   return C;
 }
 
+using Vector = Matrix;
+
 real get_cpu_frequency();
 
 extern real default_measurement_time;
@@ -519,18 +551,9 @@ real measure_cpe(std::function<void()> target,
                  int64 elements_per_call,
                  real time_second = default_measurement_time);
 
-using Real = Expr;
-
-template <typename T>
-using Var = Expr;
-
-using Float32 = Var<float32>;
-using Float = Float32;
-
 inline Float32 lerp(Float a, Float x0, Float x1) {
   return (1 - a) * x0 + a * x1;
 }
-
 
 }  // namespace Tlang
 

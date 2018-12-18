@@ -39,6 +39,37 @@ class Node {
     is_vectorized = false;
   }
 
+  std::string type_name() {
+    if (type == Type::mul) {
+      return "mul";
+    } else if (type == Type::add) {
+      return "add";
+    } else if (type == Type::sub) {
+      return "sub";
+    } else if (type == Type::div) {
+      return "div";
+    } else if (type == Type::load) {
+      return "load";
+    } else if (type == Type::store) {
+      return "store";
+    } else if (type == Type::combine) {
+      return "combine";
+    } else if (type == Type::addr) {
+      return "addr";
+    } else if (type == Type::combine) {
+      return "addr";
+    } else if (type == Type::cache_store) {
+      return "cache_store";
+    } else if (type == Type::cache_load) {
+      return "cache_load";
+    } else if (type == Type::imm) {
+      return "imm";
+    } else {
+      TC_NOT_IMPLEMENTED;
+    }
+    return "X";
+  }
+
   Address &get_address() {
     TC_ASSERT(type == Type::addr);
     return _addr;

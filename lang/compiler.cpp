@@ -113,7 +113,6 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void visit(Expr &expr) override {
-    TC_P((int)expr->type);
     // TC_P(expr->get_address());
     TC_ASSERT(expr->is_vectorized);
     TC_ASSERT(expr->members.size() == 0 ||
@@ -122,8 +121,10 @@ class CPUCodeGen : public CodeGenBase {
       return;
     }
     // TC_P(expr->ch.size());
-    if (expr->var_name == "")
+    if (expr->var_name == "") {
       expr->var_name = create_variable();
+      fmt::print("{:12s} : {}\n", expr->type_name(), expr->var_name);
+    }
     else
       return;  // visited
     if (binary_ops.find(expr->type) != binary_ops.end()) {
@@ -256,7 +257,7 @@ class CPUCodeGen : public CodeGenBase {
     } else if (expr->type == NodeType::cache_store) {
       // TODO: fully implement
       emit_code("_mm256_store_ps(&{}[0], {});", get_cache_name(0),
-                expr->ch[1]->var_name);
+                expr->ch[0]->var_name);
     } else if (expr->type == NodeType::store) {
       auto buffer_name = fmt::format("buffer{:02d}", expr->addr().buffer_id);
       if (mode == Mode::vector) {

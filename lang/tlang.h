@@ -472,6 +472,17 @@ struct Matrix {
     }
     return *this;
   }
+
+  Matrix &element_wise_prod(const Matrix &o) {
+    TC_ASSERT(n == o.n && m == o.m);
+    Matrix ret(n, m);
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < m; j++) {
+        ret(i, j) = (*this)(i, j) + o(i, j);
+      }
+    }
+    return ret;
+  }
 };
 
 inline Matrix operator*(const Matrix &A, const Matrix &B) {
@@ -507,6 +518,19 @@ extern real default_measurement_time;
 real measure_cpe(std::function<void()> target,
                  int64 elements_per_call,
                  real time_second = default_measurement_time);
+
+using Real = Expr;
+
+template <typename T>
+using Var = Expr;
+
+using Float32 = Var<float32>;
+using Float = Float32;
+
+inline Float32 lerp(Float a, Float x0, Float x1) {
+  return (1 - a) * x0 + a * x1;
+}
+
 
 }  // namespace Tlang
 

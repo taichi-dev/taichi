@@ -64,6 +64,8 @@ auto test_cache = []() {
   Float a, b;
   Vector v(4);
 
+  int n = 16;
+
   Program prog(Arch::x86_64, 2048);
 
   prog.buffer(0).stream(0).group(0).place(a, b);
@@ -71,15 +73,39 @@ auto test_cache = []() {
     prog.buffer(1).stream(0).group(0).place(v(i));
 
   // cache
-  auto &c = prog.cache(1); // group_size = 1
+  auto &c = prog.cache(1);  // group_size = 1
   c.store(a * b, 0);
 
-  auto ab = c.load(0); // 0th element
+  auto ab = c.load(0);  // 0th element
 
   for (int i = 0; i < 4; i++) {
     prog.store(v(i), ab * v(i));
   }
 
+  prog.materialize_layout();
+
+  for (int i = 0; i < n; i++) {
+    prog.data(a, i) = i;
+    prog.data(b, i) = i * 2;
+    for (int j = 0; j < 4; j++) {
+      prog.data(v(j), j) = 1.0_f * j / i;
+    }
+  }
+
+  prog();
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < 4; j++) {
+      auto val = prog.data(v(j), i);
+      auto gt = i * j * 2;
+      if (abs(gt - val) > 1e-5_f) {
+        TC_P(i);
+        TC_P(j);
+        TC_P(val);
+        TC_P(gt);
+      }
+    }
+  }
 };
 
 // TODO: random access

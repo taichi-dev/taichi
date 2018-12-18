@@ -204,7 +204,8 @@ class CPUCodeGen : public CodeGenBase {
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
           emit_code("auto {} = {}[{} * i + {} + {}];\\\n", expr->var_name + suf,
-                    buffer_name, expr->addr().coeff_i, expr->addr().coeff_const, i);
+                    buffer_name, expr->addr().coeff_i, expr->addr().coeff_const,
+                    i);
         }
       }
     } else if (expr->type == NodeType::store) {
@@ -250,10 +251,11 @@ class CPUCodeGen : public CodeGenBase {
     return load_function();
   }
 
-  FunctionType get(Expr &e,
-                   int group_size,
-                   CPUCodeGen::Mode mode = CPUCodeGen::Mode::vector,
-                   int simd_width = 8) {
+  FunctionType get(Program &prog) {
+    auto e = prog.ret;
+    auto group_size = prog.config.group_size;
+    auto mode = CPUCodeGen::Mode::vector;
+    auto simd_width = 8;
     this->mode = mode;
     this->simd_width = simd_width;
     auto vectorized_expr = Vectorizer(simd_width).run(e, group_size);
@@ -341,7 +343,8 @@ class GPUCodeGen : public CodeGenBase {
       auto buffer_name = fmt::format("buffer{:02d}", expr->addr().buffer_id);
       std::vector<int> offsets;
       for (int i = 0; i + 1 < (int)expr->members.size(); i++) {
-        TC_ASSERT(expr->members[i]->addr().same_type(expr->members[i + 1]->addr()));
+        TC_ASSERT(
+            expr->members[i]->addr().same_type(expr->members[i + 1]->addr()));
       }
       for (int i = 0; i < (int)expr->members.size(); i++) {
         offsets.push_back(expr->members[i]->addr().offset());
@@ -397,10 +400,10 @@ class GPUCodeGen : public CodeGenBase {
     return load_function();
   }
 
-  FunctionType get(Expr &e,
-                   int group_size,
-                   CPUCodeGen::Mode mode = CPUCodeGen::Mode::vector,
-                   int simd_width = 32) {
+  FunctionType get(Program &prog) {
+    auto e = prog.ret;
+    group_size = prog.config.group_size;
+    simd_width = 32;
     TC_ASSERT(simd_width == 32);
     auto vectorized_expr = Vectorizer(simd_width).run(e, group_size);
     codegen(vectorized_expr, group_size);
@@ -455,10 +458,10 @@ void Program::compile() {
   if (config.arch == CompileConfig::Arch::x86_64) {
     CPUCodeGen codegen;
     codegen.unroll = 4;
-    function = codegen.get(ret, config.group_size);
+    function = codegen.get(*this);
   } else if (config.arch == CompileConfig::Arch::gpu) {
     GPUCodeGen codegen;
-    function = codegen.get(ret, config.group_size);
+    function = codegen.get(*this);
   } else {
     TC_NOT_IMPLEMENTED;
   }

@@ -373,6 +373,10 @@ struct Program {
   }
 
   Cache &cache(int i) {
+    while (caches.size() <= i) {
+      caches.push_back(Cache());
+    }
+    return caches[i];
   }
 
   Expr store(const Expr &ad, const Expr &e) {

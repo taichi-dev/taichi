@@ -9,7 +9,10 @@
 #include <cstring>
 using float32 = float;
 using float64 = double;
+using int32 = int;
 using uint64 = unsigned long long;
+
+#include <array>
 
 #if defined(TLANG_CPU)
 #include <immintrin.h>
@@ -85,6 +88,10 @@ struct VV {  // Virtual Vector
   }
 
   T &operator[](int i) {
+    return d[i];
+  }
+
+  const T &operator[](int i) const {
     return d[i];
   }
 };

@@ -97,11 +97,11 @@ class CPUCodeGen : public CodeGenBase {
         "#include <common.h>\n using namespace taichi; using namespace Tlang;");
     emit_code("extern \"C\" void " + func_name + "(Context context) {\n");
     emit_code("auto n = context.get_range(0);\n");
-    emit_code("for (int i = 0, g = 0; i < n; ) {{\n", num_groups);
+    emit_code("for (int i = 0, b = 0; i < n; ) {{\n", num_groups);
   }
 
   void generate_tail() {
-    emit_code("i += {}; g += {};", num_groups * unroll, unroll);
+    emit_code("i += {}; b += {};", num_groups * unroll, unroll);
     emit_code("}\n}\n");
   }
 
@@ -115,7 +115,7 @@ class CPUCodeGen : public CodeGenBase {
     emit_code("#define LOOP(loop_index) {");
   }
 
-  void end_macro_loop(int unroll) {
+  void end_macro_loop() {
     code_suffix = "\n";
     emit_code("}\n");
     for (int i = 0; i < unroll; i++) {
@@ -139,7 +139,7 @@ class CPUCodeGen : public CodeGenBase {
 
       start_macro_loop();
       vectorized_cache_stores.accept(*this);
-      end_macro_loop(1);
+      end_macro_loop();
     }
 
     {
@@ -150,7 +150,7 @@ class CPUCodeGen : public CodeGenBase {
       visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
       start_macro_loop();
       vectorized_stores.accept(*this);
-      end_macro_loop(8);
+      end_macro_loop();
     }
 
     code_suffix = "";
@@ -187,18 +187,10 @@ class CPUCodeGen : public CodeGenBase {
       emit_code("auto {} = {} {} {};", expr->var_name, expr->ch[0]->var_name,
                 op, expr->ch[1]->var_name);
     } else if (expr->type == NodeType::load) {
-      auto buffer_name = fmt::format("buffer{:02d}", expr->addr().buffer_id);
-      std::vector<int> offsets;
-      for (int i = 0; i + 1 < (int)expr->members.size(); i++) {
-        TC_ASSERT(
-            expr->members[i]->addr().same_type(expr->members[i + 1]->addr()));
-      }
-      for (int i = 0; i < (int)expr->members.size(); i++) {
-        offsets.push_back(expr->members[i]->addr().offset());
-      }
-      auto addr = expr->addr();
-      emit_code("auto {}_immediate = {}({});", expr->var_name, "X",
-                get_vectorized_address(addr));
+      emit_code("auto {} = load<{}, {}>({}_base, {}_offsets);", expr->var_name,
+                expr->group_size() * num_groups,
+                data_type_name(expr->data_type), expr[0]->var_name,
+                expr[0]->var_name);
     } else if (expr->type == NodeType::store) {
       auto addr = expr->addr();
       emit_code("store({}, {}_base, {}_offsets);", expr->ch[1]->var_name,
@@ -221,21 +213,20 @@ class CPUCodeGen : public CodeGenBase {
         }
       }
       members += "}";
-      emit_code("auto {} = {}({})", expr->var_name,
+      emit_code("auto {} = {}({});", expr->var_name,
                 vv_type_str(num_groups * expr->group_size(), DataType::i32),
                 members);
     } else if (expr->type == NodeType::pointer) {
       // emit base pointer and offsets
       auto addr = expr[0]->get_address_();
-      auto buffer_name = fmt::format("buffer{:02d}", addr.buffer_id);
-      emit_code("{} *{}_base = &{}[0] + {} + {} * n;",
-                vv_type_str(expr->group_size() * num_groups, DataType::i32),
-                expr->var_name, buffer_name, addr.coeff_const, addr.coeff_imax);
+      auto buffer_name = fmt::format("context.buffers[{:02d}]", addr.buffer_id);
+      emit_code("auto *{}_base = ({} *){} + {} + {} * n;", expr->var_name,
+                data_type_name(expr->data_type), buffer_name, addr.coeff_const,
+                addr.coeff_imax);
 
       auto index = expr->ch[1]->var_name;
       if (addr.coeff_aosoa_stride != 0) {
-        emit_code("auto {}_offsets = {} * {} + {} / {} * {}",
-                  expr->var_name,
+        emit_code("auto {}_offsets = {} * {} + {} / {} * {};", expr->var_name,
                   vv_constant_str(num_groups * expr->group_size(),
                                   DataType::i32, addr.coeff_i),
                   index, index,
@@ -244,7 +235,7 @@ class CPUCodeGen : public CodeGenBase {
                   vv_constant_str(num_groups * expr->group_size(),
                                   DataType::i32, addr.coeff_aosoa_stride));
       } else {
-        emit_code("auto {}_offsets = {} * {}", expr->var_name,
+        emit_code("auto {}_offsets = {} * {};", expr->var_name,
                   vv_constant_str(num_groups * expr->group_size(),
                                   DataType::i32, addr.coeff_i),
                   index);
@@ -487,7 +478,7 @@ void Program::compile() {
   TC_ASSERT(config.group_size > 0);
   if (config.arch == CompileConfig::Arch::x86_64) {
     CPUCodeGen codegen;
-    codegen.unroll = 4;
+    codegen.unroll = 1;
     function = codegen.get(*this);
   } else if (config.arch == CompileConfig::Arch::gpu) {
     TC_NOT_IMPLEMENTED

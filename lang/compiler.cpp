@@ -101,7 +101,6 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void generate_tail() {
-    emit_code("i += {}; b += {};", num_groups * unroll, unroll);
     emit_code("}\n}\n");
   }
 
@@ -116,6 +115,7 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void end_macro_loop() {
+    emit_code("i += {}; b += {};", num_groups * unroll, unroll);
     code_suffix = "\n";
     emit_code("}\n");
     for (int i = 0; i < unroll; i++) {
@@ -128,7 +128,7 @@ class CPUCodeGen : public CodeGenBase {
     this->group_size = group_size;
     generate_header();
 
-    emit_code("float32 {}[128];", get_cache_name(0));
+    // emit_code("float32 {}[128];", get_cache_name(0));
 
     // Body
     for (auto cache : prog.caches) {

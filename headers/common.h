@@ -103,6 +103,7 @@ struct VV {  // Virtual Vector
     for (int i = 0; i < dim; i++) {                                         \
       c[i] = a[i] OP b[i];                                                  \
     }                                                                       \
+    return c;                                                               \
   }
 
 BINARY_OP(add, +);

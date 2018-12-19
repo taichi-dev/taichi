@@ -107,7 +107,9 @@ class Node {
 
   Address &get_address() {
     TC_ASSERT(type == Type::addr);
-    TC_ERROR_UNLESS(ch.size() == 1, "Should have exactly one index child");
+    TC_ERROR_UNLESS(ch.size() == 1,
+                    "Should have exactly one index child, instead of {}",
+                    ch.size());
     return _addr;
   }
 
@@ -171,18 +173,18 @@ class Expr {
     return e;
   }
 
-  static Expr load_if_addr(const Expr &in) {
-    if (in->type == NodeType::addr) {
+  static Expr load_if_pointer(const Expr &in) {
+    if (in->type == NodeType::pointer) {
       return create(NodeType::load, in);
     } else {
       return in;
     }
   }
 
-#define BINARY_OP(op, name)                                 \
-  Expr operator op(const Expr &o) const {                   \
-    return Expr::create(NodeType::name, load_if_addr(node), \
-                        load_if_addr(o.node));              \
+#define BINARY_OP(op, name)                                    \
+  Expr operator op(const Expr &o) const {                      \
+    return Expr::create(NodeType::name, load_if_pointer(node), \
+                        load_if_pointer(o.node));              \
   }
 
   BINARY_OP(*, mul);
@@ -193,13 +195,14 @@ class Expr {
 
   // ch[0] = address
   // ch[1] = data
-  Expr store(const Expr &addr, const Expr &e) {
+  Expr store(const Expr &pointer, const Expr &e) {
     if (!node) {
       node = std::make_shared<Node>(NodeType::combine);
     }
     auto n = std::make_shared<Node>(NodeType::store);
-    n->ch.push_back(addr);
-    n->ch.push_back(e.node);
+    TC_ASSERT(pointer->type == NodeType::pointer);
+    n->ch.push_back(pointer);
+    n->ch.push_back(e);
     Expr store_e(n);
     node->ch.push_back(n);
     return store_e;
@@ -287,7 +290,7 @@ inline Address &Node::addr() {
   TC_ASSERT(type == Type::load || type == Type::store);
   TC_ASSERT(ch.size());
   TC_ASSERT(ch[0]->type == Type::pointer);
-  return ch[0]->get_address();
+  return ch[0]->ch[0]->get_address();
 }
 
 inline Expr load(const Expr &addr) {

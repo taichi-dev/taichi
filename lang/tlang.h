@@ -36,17 +36,11 @@ class Vectorizer : public Visitor {
 
     while (!ch.empty()) {
       std::vector<Expr> group;
-      TC_TAG;
       group.push_back(ch[0]);
-      TC_TAG;
       ch.erase(ch.begin());
-      TC_TAG;
       while (true) {  // grow
-        TC_TAG;
         bool found = false;
-        TC_TAG;
         for (int i = 0; i < (int)ch.size(); i++) {  // search
-          TC_TAG;
           if (prior_to(ch[i]->addr(), group.front()->addr())) {
             group.insert(group.begin(), ch[i]);
             ch.erase(ch.begin() + i);
@@ -65,13 +59,9 @@ class Vectorizer : public Visitor {
         }
       }
       TC_ASSERT(group.size() % group_size == 0);
-      TC_TAG;
       sorted.insert(sorted.end(), group.begin(), group.end());
-      TC_TAG;
     }
-    TC_TAG;
     expr->ch = sorted;
-    TC_TAG;
   }
 
   Expr run(Expr &expr, int group_size) {
@@ -108,9 +98,7 @@ class Vectorizer : public Visitor {
       }
     } else {
       // main memory store
-      TC_TAG;
       sort(expr);
-      TC_TAG;
 
       // for each batch (group)
       for (int k = 0; k < (int)expr->ch.size() / group_size; k++) {
@@ -150,6 +138,7 @@ class Vectorizer : public Visitor {
   }
 
   void visit(Expr &expr) override {
+    TC_P(expr->node_type_name());
     // Note: expr may be replaced by an existing vectorized Expr
     if (scalar_to_vector.find(expr->members[0]) != scalar_to_vector.end()) {
       auto existing = scalar_to_vector[expr->members[0]];
@@ -194,12 +183,12 @@ class Vectorizer : public Visitor {
     }
 
     if (expr->type == NodeType::addr) {
-      auto addr = expr->members[0]->get_address();
+      auto addr = expr->members[0]->get_address_(); // TODO:
       if (addr.coeff_aosoa_group_size == 0 || addr.coeff_aosoa_stride == 0) {
         addr.coeff_aosoa_group_size = num_groups;
         addr.coeff_aosoa_stride = 0;
       }
-      expr->get_address() = addr;
+      expr->get_address_() = addr;
     }
   }
 };
@@ -606,7 +595,9 @@ inline std::pair<int64, int64> range(int64 start, int64 end) {
 using ForBody = std::function<void()>;
 inline void for_loop(Index &index, std::pair<int64, int64> r, const ForBody &body) {
   auto &prog = get_current_program();
-
+  TC_ASSERT(r.first == 0);
+  TC_ASSERT(prog.n == r.second);
+  body();
 }
 
 }  // namespace Tlang

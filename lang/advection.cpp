@@ -11,16 +11,12 @@ auto test_loop = []() {
 
   int n = 16;
 
-  Program prog(Arch::x86_64, 2048);
+  Program prog(Arch::x86_64, n);
   prog.config.group_size = 8;
 
-  TC_TAG;
   prog.buffer(0).stream(0).group(0).place(a, b);
-  TC_TAG;
 
   Expr i = Expr::index(0);
-  TC_P(a[i].get_node().get());
-  TC_WARN("");
   for_loop(i, range(0, n), [&]() {
     // ***
     a[i] = a[i] * b[i];

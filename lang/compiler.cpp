@@ -100,6 +100,7 @@ class CPUCodeGen : public CodeGenBase {
     }
 
     {
+      TC_ASSERT(prog.ret);
       this->group_size = group_size;
       auto vectorized_stores = Vectorizer(simd_width).run(prog.ret, 1);
       start_macro_loop();
@@ -257,7 +258,8 @@ class CPUCodeGen : public CodeGenBase {
       emit_code("_mm256_store_ps(&{}[0], {});", get_cache_name(0),
                 expr->ch[0]->var_name);
     } else if (expr->type == NodeType::store) {
-      auto buffer_name = fmt::format("buffer{:02d}", expr->addr().buffer_id);
+      auto addr = expr->addr();
+      auto buffer_name = fmt::format("buffer{:02d}", addr.buffer_id);
       if (mode == Mode::vector) {
         std::string store_instr =
             // simd_width == 8 ? "_mm256_stream_ps" : "_mm512_stream_ps";
@@ -269,7 +271,7 @@ class CPUCodeGen : public CodeGenBase {
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
           emit_code("{}[{} * i + {} + {}] = {};", buffer_name,
-                    expr->addr().coeff_i, expr->addr().coeff_const, i,
+                    addr.coeff_i, addr.coeff_const, i,
                     expr->ch[0]->var_name + suf);
         }
       }
@@ -277,9 +279,12 @@ class CPUCodeGen : public CodeGenBase {
       // do nothing
     } else if (expr->type == NodeType::imm) {
       // do nothing
+    } else if (expr->type == NodeType::index) {
+      // do nothing
+    } else if (expr->type == NodeType::pointer) {
+      // do nothing
     } else {
-      TC_P((int)expr->type);
-      TC_NOT_IMPLEMENTED;
+      TC_ERROR("Node {} cannot be visited.", expr->node_type_name());
     }
   }
 

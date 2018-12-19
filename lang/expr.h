@@ -9,6 +9,41 @@ TC_NAMESPACE_BEGIN
 
 namespace Tlang {
 
+enum class DataType : int {
+  f16,
+  f32,
+  f64,
+  i8,
+  i16,
+  i32,
+  i64,
+  u8,
+  u16,
+  u32,
+  u64
+};
+
+
+inline std::string data_type_name(DataType t) {
+  static std::map<DataType, std::string> data_type_names;
+  if (data_type_names.empty()) {
+#define REGISTER_DATA_TYPE(i, j) data_type_names[DataType::i] = #j;
+    REGISTER_DATA_TYPE(f16, float16);
+    REGISTER_DATA_TYPE(f32, float32);
+    REGISTER_DATA_TYPE(f64, float64);
+    REGISTER_DATA_TYPE(i8, int8);
+    REGISTER_DATA_TYPE(i16, int16);
+    REGISTER_DATA_TYPE(i32, int32);
+    REGISTER_DATA_TYPE(i64, int64);
+    REGISTER_DATA_TYPE(u8, uint8);
+    REGISTER_DATA_TYPE(u16, uint16);
+    REGISTER_DATA_TYPE(u32, uint32);
+    REGISTER_DATA_TYPE(u64, uint64);
+#undef REGISTER_DATA_TYPE
+  }
+  return data_type_names[t];
+}
+
 // TODO: do we need polymorphism here?
 class Node {
  private:
@@ -35,20 +70,6 @@ class Node {
 
   using NodeType = Type;
 
-  enum class DataType : int {
-    f16,
-    f32,
-    f64,
-    i8,
-    i16,
-    i32,
-    i64,
-    u8,
-    u16,
-    u32,
-    u64
-  };
-
   std::vector<Expr> ch;       // Four child max
   std::vector<Expr> members;  // for vectorized instructions
   Type type;
@@ -57,7 +78,6 @@ class Node {
   float64 _value;
   int id;
   bool is_vectorized;
-  static std::map<DataType, std::string> data_type_names;
   static std::map<Type, std::string> node_type_names;
 
   Node(Type type) : type(type) {
@@ -67,21 +87,7 @@ class Node {
   }
 
   std::string data_type_name() {
-    if (data_type_names.empty()) {
-#define REGISTER_DATA_TYPE(i) data_type_names[DataType::i] = #i;
-      REGISTER_DATA_TYPE(f16);
-      REGISTER_DATA_TYPE(f32);
-      REGISTER_DATA_TYPE(f64);
-      REGISTER_DATA_TYPE(i8);
-      REGISTER_DATA_TYPE(i16);
-      REGISTER_DATA_TYPE(i32);
-      REGISTER_DATA_TYPE(i64);
-      REGISTER_DATA_TYPE(u8);
-      REGISTER_DATA_TYPE(u16);
-      REGISTER_DATA_TYPE(u32);
-      REGISTER_DATA_TYPE(u64);
-    }
-    return data_type_names[data_type];
+    return taichi::Tlang::data_type_name(data_type);
   }
 
   std::string node_type_name() {
@@ -298,6 +304,8 @@ inline Expr load(const Expr &addr) {
   expr->ch.push_back(addr);
   return expr;
 }
+
 }
+
 
 TC_NAMESPACE_END

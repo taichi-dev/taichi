@@ -4,7 +4,6 @@ TC_NAMESPACE_BEGIN
 namespace Tlang {
 
 int Node::counter = 0;
-std::map<Node::DataType, std::string> Node::data_type_names;
 std::map<Node::Type, std::string> Node::node_type_names;
 
 Expr &Expr::operator=(const Expr &o) {

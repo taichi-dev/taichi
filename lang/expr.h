@@ -25,11 +25,14 @@ class Node {
     store,
     pointer,
     combine,
+    index,
     addr,
     cache_store,  // -> adapter
     cache_load,
     imm
   };
+
+  using NodeType = Type;
 
   enum class DataType : int {
     f16,
@@ -53,6 +56,7 @@ class Node {
   float64 _value;
   bool is_vectorized;
   static std::map<DataType, std::string> data_type_names;
+  static std::map<Type, std::string> node_type_names;
 
   Node(Type type) : type(type) {
     is_vectorized = false;
@@ -77,40 +81,27 @@ class Node {
     return data_type_names[data_type];
   }
 
-  std::string type_name() {
-    if (type == Type::mul) {
-      return "mul";
-    } else if (type == Type::add) {
-      return "add";
-    } else if (type == Type::sub) {
-      return "sub";
-    } else if (type == Type::div) {
-      return "div";
-    } else if (type == Type::load) {
-      return "load";
-    } else if (type == Type::store) {
-      return "store";
-    } else if (type == Type::combine) {
-      return "combine";
-    } else if (type == Type::addr) {
-      return "addr";
-    } else if (type == Type::pointer) {
-      return "pointer";
-    } else if (type == Type::combine) {
-      return "addr";
-    } else if (type == Type::cache_store) {
-      return "cache_store";
-    } else if (type == Type::cache_load) {
-      return "cache_load";
-    } else if (type == Type::imm) {
-      return "imm";
-    } else {
-      TC_NOT_IMPLEMENTED;
+  std::string node_type_name() {
+    if (node_type_names.empty()) {
+#define REGISTER_NODE_TYPE(i) node_type_names[NodeType::i] = #i;
+      REGISTER_NODE_TYPE(mul);
+      REGISTER_NODE_TYPE(add);
+      REGISTER_NODE_TYPE(sub);
+      REGISTER_NODE_TYPE(div);
+      REGISTER_NODE_TYPE(load);
+      REGISTER_NODE_TYPE(store);
+      REGISTER_NODE_TYPE(combine);
+      REGISTER_NODE_TYPE(addr);
+      REGISTER_NODE_TYPE(pointer);
+      REGISTER_NODE_TYPE(cache_store);
+      REGISTER_NODE_TYPE(cache_load);
+      REGISTER_NODE_TYPE(imm);
+      REGISTER_NODE_TYPE(index);
     }
-    return "X";
+    return node_type_names[type];
   }
 
-  Address &get_address_() { // TODO: remove this hack
+  Address &get_address_() {  // TODO: remove this hack
     return _addr;
   }
 
@@ -146,6 +137,10 @@ class Expr {
  public:
   using Type = Node::Type;
 
+  auto &get_node() {
+    return node;
+  }
+
   Expr() {
   }
 
@@ -167,6 +162,12 @@ class Expr {
   static Expr create_imm(T t) {
     auto e = create(Type::imm);
     e->value<T>() = t;
+    return e;
+  }
+
+  static Expr index(int i) {
+    auto e = create(Type::index);
+    e->value<int>() = i;
     return e;
   }
 
@@ -242,7 +243,7 @@ class Expr {
 
   Expr &operator=(const Expr &o);
 
-  Expr operator[](const Expr &i);
+  Expr &&operator[](const Expr &i);
 };
 
 using Index = Expr;
@@ -285,6 +286,7 @@ inline int Node::member_id(const Expr &expr) const {
 inline Address &Node::addr() {
   TC_ASSERT(type == Type::load || type == Type::store);
   TC_ASSERT(ch.size());
+  TC_ASSERT(ch[0]->type == Type::pointer);
   return ch[0]->get_address();
 }
 

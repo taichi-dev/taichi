@@ -5,6 +5,50 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
+auto test_loop = []() {
+  Float a, b;
+
+  int n = 16;
+
+  Program prog(Arch::x86_64, 2048);
+  prog.config.group_size = 8;
+
+  TC_TAG;
+  prog.buffer(0).stream(0).group(0).place(a, b);
+  TC_TAG;
+
+  Expr i = Expr::index(0);
+  TC_P(a[i].get_node().get());
+  TC_WARN("");
+  for_loop(i, range(0, n), [&]() {
+    // ***
+    a[i] = a[i] * b[i];
+  });
+
+  prog.materialize_layout();
+
+  for (int i = 0; i < n; i++) {
+    prog.data(a, i) = i;
+    prog.data(b, i) = i * 2;
+  }
+
+  prog();
+
+  for (int i = 0; i < n; i++) {
+    auto val = prog.data(a, i);
+    auto gt = i * i * 2;
+    if (abs(gt - val) > 1e-5_f) {
+      TC_P(i);
+      TC_P(val);
+      TC_P(gt);
+      TC_ERROR("");
+    }
+  }
+};
+
+TC_REGISTER_TASK(test_loop);
+
+
 /*
 auto advection = []() {
   int n = 128, nattr = 4;
@@ -122,44 +166,5 @@ TC_REGISTER_TASK(test_adapter);
 
 #define End )
 */
-
-auto test_loop = []() {
-  Float a, b;
-
-  int n = 16;
-
-  Program prog(Arch::x86_64, 2048);
-  prog.config.group_size = 8;
-
-  prog.buffer(0).stream(0).group(0).place(a, b);
-
-  Index i;
-  for_loop(i, range(0, n), [&]() {
-    // ***
-    a[i] = a[i] * b[i];
-  });
-
-  prog.materialize_layout();
-
-  for (int i = 0; i < n; i++) {
-    prog.data(a, i) = i;
-    prog.data(b, i) = i * 2;
-  }
-
-  prog();
-
-  for (int i = 0; i < n; i++) {
-    auto val = prog.data(a, i);
-    auto gt = i * i * 2;
-    if (abs(gt - val) > 1e-5_f) {
-      TC_P(i);
-      TC_P(val);
-      TC_P(gt);
-      TC_ERROR("");
-    }
-  }
-};
-
-TC_REGISTER_TASK(test_loop);
 
 TC_NAMESPACE_END

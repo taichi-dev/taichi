@@ -82,7 +82,6 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void codegen(Program &prog, int group_size = 1) {
-
     this->group_size = group_size;
     generate_header();
 
@@ -123,9 +122,8 @@ class CPUCodeGen : public CodeGenBase {
     // TC_P(expr->ch.size());
     if (expr->var_name == "") {
       expr->var_name = create_variable();
-      fmt::print("{:12s} : {}\n", expr->type_name(), expr->var_name);
-    }
-    else
+      fmt::print("{:12s} : {}\n", expr->node_type_name(), expr->var_name);
+    } else
       return;  // visited
     if (binary_ops.find(expr->type) != binary_ops.end()) {
       auto op = binary_ops[expr->type];
@@ -316,6 +314,7 @@ class CPUCodeGen : public CodeGenBase {
 
 using CodeGen = CPUCodeGen;
 
+#if (0)
 // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#warp-shuffle-functions
 class GPUCodeGen : public CodeGenBase {
  public:
@@ -359,7 +358,9 @@ class GPUCodeGen : public CodeGenBase {
     emit_code("int loop_index = 0;");
 
     // Body
+    TC_DEBUG("Vectorizing");
     vectorized_expr.accept(*this);
+    TC_DEBUG("Vectorizing");
 
     emit_code("}\n\n");
 
@@ -500,6 +501,7 @@ class GPUCodeGen : public CodeGenBase {
   }
   */
 };
+#endif
 
 void Program::compile() {
   materialize_layout();
@@ -512,8 +514,9 @@ void Program::compile() {
     codegen.unroll = 4;
     function = codegen.get(*this);
   } else if (config.arch == CompileConfig::Arch::gpu) {
-    GPUCodeGen codegen;
-    function = codegen.get(*this);
+    TC_NOT_IMPLEMENTED
+    // GPUCodeGen codegen;
+    // function = codegen.get(*this);
   } else {
     TC_NOT_IMPLEMENTED;
   }

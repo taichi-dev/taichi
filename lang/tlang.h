@@ -31,16 +31,22 @@ class Vectorizer : public Visitor {
   }
 
   void sort(Expr &expr) {
-    auto ch = expr->ch;
+    auto ch = expr->ch; // a bunch of store nodes
     std::vector<Expr> sorted;
 
     while (!ch.empty()) {
       std::vector<Expr> group;
+      TC_TAG;
       group.push_back(ch[0]);
+      TC_TAG;
       ch.erase(ch.begin());
+      TC_TAG;
       while (true) {  // grow
+        TC_TAG;
         bool found = false;
+        TC_TAG;
         for (int i = 0; i < (int)ch.size(); i++) {  // search
+          TC_TAG;
           if (prior_to(ch[i]->addr(), group.front()->addr())) {
             group.insert(group.begin(), ch[i]);
             ch.erase(ch.begin() + i);
@@ -59,12 +65,17 @@ class Vectorizer : public Visitor {
         }
       }
       TC_ASSERT(group.size() % group_size == 0);
+      TC_TAG;
       sorted.insert(sorted.end(), group.begin(), group.end());
+      TC_TAG;
     }
+    TC_TAG;
     expr->ch = sorted;
+    TC_TAG;
   }
 
   Expr run(Expr &expr, int group_size) {
+    TC_ASSERT(expr);
     this->group_size = group_size;
     this->num_groups = simd_width / group_size;
     TC_ASSERT(group_size * num_groups == simd_width);
@@ -97,7 +108,9 @@ class Vectorizer : public Visitor {
       }
     } else {
       // main memory store
+      TC_TAG;
       sort(expr);
+      TC_TAG;
 
       // for each batch (group)
       for (int k = 0; k < (int)expr->ch.size() / group_size; k++) {

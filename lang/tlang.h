@@ -19,6 +19,7 @@ inline int get_code_gen_id() {
   return id++;
 }
 
+
 class Vectorizer : public Visitor {
  public:
   std::map<Expr, Expr> scalar_to_vector;
@@ -584,6 +585,15 @@ real measure_cpe(std::function<void()> target,
 
 inline Float32 lerp(Float a, Float x0, Float x1) {
   return (1 - a) * x0 + a * x1;
+}
+
+inline std::pair<int64, int64> range(int64 start, int64 end) {
+  return {start, end};
+}
+
+using ForBody = std::function<void()>;
+inline void for_loop(Index &index, std::pair<int64, int64> r, const ForBody &body) {
+
 }
 
 }  // namespace Tlang

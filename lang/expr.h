@@ -8,6 +8,11 @@
 TC_NAMESPACE_BEGIN
 
 namespace Tlang {
+
+struct Index {
+
+};
+
 // TODO: do we need polymorphism here?
 class Node {
  private:
@@ -196,6 +201,8 @@ class Expr {
   }
 
   Expr &operator=(const Expr &o);
+
+  Expr operator[](Index i);
 };
 
 inline bool prior_to(Address address1, Address address2) {

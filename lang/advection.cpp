@@ -58,9 +58,8 @@ auto advection = []() {
   prog();
 };
 TC_REGISTER_TASK(advection);
-*/
 
-auto test_cache = []() {
+auto test_adapter = []() {
   Float a, b;
   int vec_size = 8;
   Vector v(vec_size);
@@ -80,8 +79,8 @@ auto test_cache = []() {
 
   auto ab = c.load(0);  // 0th element
 
-  for (int i = 0; i < vec_size; i++) {
-    v(i) = ab * v(i);
+  for (int d = 0; d < vec_size; d++) {
+    v(d) = ab * v(d);
   }
 
   prog.materialize_layout();
@@ -113,6 +112,51 @@ auto test_cache = []() {
 
 // TODO: random access
 
-TC_REGISTER_TASK(test_cache);
+TC_REGISTER_TASK(test_adapter);
+*/
+
+/*
+#define For(i, range) \
+  {                   \
+    Index i; for_loop(i, range, [&](Index i)
+
+#define End )
+*/
+
+auto test_loop = []() {
+  Float a, b;
+
+  int n = 16;
+
+  Program prog(Arch::x86_64, 2048);
+  prog.config.group_size = 8;
+
+  prog.buffer(0).stream(0).group(0).place(a, b);
+
+  Index i;
+  for_loop(i, range(0, n), [&]() { a[i] = a[i] * b[i]; });
+
+  prog.materialize_layout();
+
+  for (int i = 0; i < n; i++) {
+    prog.data(a, i) = i;
+    prog.data(b, i) = i * 2;
+  }
+
+  prog();
+
+  for (int i = 0; i < n; i++) {
+    auto val = prog.data(a, i);
+    auto gt = i * i * 2;
+    if (abs(gt - val) > 1e-5_f) {
+      TC_P(i);
+      TC_P(val);
+      TC_P(gt);
+      TC_ERROR("");
+    }
+  }
+};
+
+TC_REGISTER_TASK(test_loop);
 
 TC_NAMESPACE_END

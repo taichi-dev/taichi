@@ -16,5 +16,8 @@ Expr &Expr::operator=(const Expr &o) {
   }
   return *this;
 }
+
+Expr Expr::operator[](Index i) {
+}
 }
 TC_NAMESPACE_END

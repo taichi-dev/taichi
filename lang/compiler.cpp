@@ -374,6 +374,7 @@ class GPUCodeGen : public CodeGenBase {
   }
 
   void visit(Expr &expr) override {
+    /*
     TC_ASSERT(expr->is_vectorized);
     TC_ASSERT(expr->members.size() == 0 ||
               (int)expr->members.size() == group_size);
@@ -428,6 +429,7 @@ class GPUCodeGen : public CodeGenBase {
       TC_P((int)expr->type);
       TC_NOT_IMPLEMENTED;
     }
+    */
   }
 
   // group_size should be batch_size here...

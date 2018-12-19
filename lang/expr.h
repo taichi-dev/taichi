@@ -25,6 +25,7 @@ class Node {
     sub,
     div,
     load,
+    pointer,
     store,
     combine,
     addr,
@@ -33,15 +34,50 @@ class Node {
     imm
   };
 
+  enum class DataType : int {
+    f16,
+    f32,
+    f64,
+    i8,
+    i16,
+    i32,
+    i64,
+    u8,
+    u16,
+    u32,
+    u64
+  };
+
   std::vector<Expr> ch;       // Four child max
   std::vector<Expr> members;  // for vectorized instructions
   Type type;
+  DataType data_type;
   std::string var_name;
   float64 _value;
   bool is_vectorized;
+  static std::map<DataType, std::string> data_type_names;
 
   Node(Type type) : type(type) {
     is_vectorized = false;
+    data_type = DataType::f32;
+  }
+
+  std::string data_type_name() {
+    if (data_type_names.empty()) {
+#define REGISTER_DATA_TYPE(i) data_type_names[DataType::i] = #i;
+      REGISTER_DATA_TYPE(f16);
+      REGISTER_DATA_TYPE(f32);
+      REGISTER_DATA_TYPE(f64);
+      REGISTER_DATA_TYPE(i8);
+      REGISTER_DATA_TYPE(i16);
+      REGISTER_DATA_TYPE(i32);
+      REGISTER_DATA_TYPE(i64);
+      REGISTER_DATA_TYPE(u8);
+      REGISTER_DATA_TYPE(u16);
+      REGISTER_DATA_TYPE(u32);
+      REGISTER_DATA_TYPE(u64);
+    }
+    return data_type_names[data_type];
   }
 
   std::string type_name() {
@@ -61,6 +97,8 @@ class Node {
       return "combine";
     } else if (type == Type::addr) {
       return "addr";
+    } else if (type == Type::pointer) {
+      return "pointer";
     } else if (type == Type::combine) {
       return "addr";
     } else if (type == Type::cache_store) {

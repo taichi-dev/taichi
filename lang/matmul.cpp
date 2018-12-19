@@ -1,3 +1,4 @@
+#if (0)
 #include <fstream>
 #include <taichi/common/util.h>
 #include <taichi/common/task.h>
@@ -10,9 +11,8 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-template<typename T>
-using EigenVector = std::vector<T, Eigen::aligned_allocator < T>>;
-
+template <typename T>
+using EigenVector = std::vector<T, Eigen::aligned_allocator<T>>;
 
 template <int dim, typename T>
 real AOS_eigen_matmatmul(std::size_t N) {
@@ -521,7 +521,7 @@ void test_mat_vec_mul_all() {
       if (in_cache) {
         archs = {Arch::x86_64};
       } else {
-        //archs = {Arch::x86_64, Arch::gpu};
+        // archs = {Arch::x86_64, Arch::gpu};
         archs = {Arch::x86_64};
       }
       for (auto arch : archs)
@@ -597,3 +597,4 @@ TODO:
  assert n % 256 = 0
  how to deal with multi dimensional indices
 */
+#endif

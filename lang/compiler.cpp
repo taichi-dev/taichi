@@ -32,7 +32,9 @@ class TikzGen : public Visitor {
 void visualize_IR(std::string fn, Expr &expr) {
   TikzGen gen;
   expr.accept(gen);
-  auto cmd = fmt::format("python3 {}/projects/taichi_lang/make_graph.py {} '{}'", fn, gen.graph);
+  auto cmd =
+      fmt::format("python3 {}/projects/taichi_lang/make_graph.py {} '{}'",
+                  get_repo_dir(), fn, gen.graph);
   system(cmd.c_str());
 }
 
@@ -129,6 +131,7 @@ class CPUCodeGen : public CodeGenBase {
 
     {
       TC_ASSERT(prog.ret);
+      visualize_IR(get_source_fn() + ".pdf", prog.ret);
       this->group_size = group_size;
       auto vectorized_stores = Vectorizer(simd_width).run(prog.ret, 1);
       start_macro_loop();

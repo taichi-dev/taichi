@@ -3,6 +3,9 @@
 TC_NAMESPACE_BEGIN
 namespace Tlang {
 
+std::map<Node::DataType, std::string> Node::data_type_names;
+std::map<Node::Type, std::string> Node::node_type_names;
+
 Expr &Expr::operator=(const Expr &o) {
   if (!node || node->type != NodeType::pointer) {
     TC_TAG;

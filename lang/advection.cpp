@@ -6,6 +6,7 @@ TC_NAMESPACE_BEGIN
 using namespace Tlang;
 
 auto test_loop = []() {
+  CoreState::set_trigger_gdb_when_crash(true);
   Float a, b;
 
   int n = 16;

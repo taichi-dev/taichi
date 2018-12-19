@@ -243,7 +243,7 @@ class Expr {
 
   Expr &operator=(const Expr &o);
 
-  Expr &&operator[](const Expr &i);
+  Expr operator[](const Expr &i);
 };
 
 using Index = Expr;

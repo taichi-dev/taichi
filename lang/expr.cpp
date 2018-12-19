@@ -23,7 +23,7 @@ Expr &Expr::operator=(const Expr &o) {
   return *this;
 }
 
-Expr &&Expr::operator[](const Expr &i) {
+Expr Expr::operator[](const Expr &i) {
   return create(Type::pointer, *this, i);
 }
 

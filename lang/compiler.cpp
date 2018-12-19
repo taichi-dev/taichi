@@ -169,7 +169,6 @@ class CPUCodeGen : public CodeGenBase {
     if (expr->type == NodeType::addr) {
       return;
     }
-    // TC_P(expr->ch.size());
     if (expr->var_name == "") {
       expr->var_name = create_variable();
       fmt::print("{:12s} : {}\n", expr->node_type_name(), expr->var_name);
@@ -179,10 +178,6 @@ class CPUCodeGen : public CodeGenBase {
       auto op = binary_ops[expr->type];
       emit_code("auto {} = {} {} {};", expr->var_name, expr->ch[0]->var_name,
                 op, expr->ch[1]->var_name);
-    } else if (expr->type == NodeType::cache_load) {
-      emit_code("auto {} = _mm256_broadcast_ss(&{}[loop_index]);",
-                expr->var_name, get_cache_name(0));
-      // emit_code("auto {} = _{}");
     } else if (expr->type == NodeType::load) {
       auto buffer_name = fmt::format("buffer{:02d}", expr->addr().buffer_id);
       // TC_P(expr->members.size());
@@ -206,11 +201,6 @@ class CPUCodeGen : public CodeGenBase {
       if (addr.coeff_const % simd_width != 0) {
         addr.coeff_const -= addr.coeff_const % simd_width;
         needs_shuffle = true;
-      }
-      if (prefetch != 0) {
-        // https://stackoverflow.com/questions/46521694/what-are-mm-prefetch-locality-hints
-        emit_code("if (loop_index == 0) _mm_prefetch({}, _MM_HINT_NTA);",
-                  get_vectorized_address(addr, prefetch));
       }
       emit_code("auto {}_immediate = {}({});", expr->var_name, load_instr,
                 get_vectorized_address(addr));
@@ -282,11 +272,6 @@ class CPUCodeGen : public CodeGenBase {
         }
         TC_ASSERT(needs_shuffle == false);
       }
-    } else if (expr->type == NodeType::cache_store) {
-      TC_NOT_IMPLEMENTED
-      // TODO: fully implement
-      emit_code("_mm256_store_ps(&{}[0], {});", get_cache_name(0),
-                expr->ch[0]->var_name);
     } else if (expr->type == NodeType::store) {
       auto addr = expr->addr();
       auto buffer_name = fmt::format("buffer{:02d}", addr.buffer_id);
@@ -295,6 +280,15 @@ class CPUCodeGen : public CodeGenBase {
           simd_width == 8 ? "_mm256_store_ps" : "_mm512_store_ps";
       emit_code("{}({}, {});", store_instr,
                 get_vectorized_address(expr->addr()), expr->ch[1]->var_name);
+    } else if (expr->type == NodeType::cache_load) {
+      emit_code("auto {} = _mm256_broadcast_ss(&{}[loop_index]);",
+                expr->var_name, get_cache_name(0));
+      // emit_code("auto {} = _{}");
+    } else if (expr->type == NodeType::cache_store) {
+      TC_NOT_IMPLEMENTED
+      // TODO: fully implement
+      emit_code("_mm256_store_ps(&{}[0], {});", get_cache_name(0),
+                expr->ch[0]->var_name);
     } else if (expr->type == NodeType::combine) {
       // do nothing
     } else if (expr->type == NodeType::imm) {

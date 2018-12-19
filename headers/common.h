@@ -75,7 +75,7 @@ struct VV { // Virtual Vector
 };
 
 #define BINARY_OP(OPNAME, OP) template<int dim, typename T> \
-inline VV<dim, T> OPNAME(const VV<dim, T> &a, const VV<dim, T> &b) { \
+inline VV<dim, T> operator OP(const VV<dim, T> &a, const VV<dim, T> &b) { \
   VV<dim, T> c; \
   for (int i = 0; i < dim; i++) { \
     c[i] = a[i] OP b[i]; \

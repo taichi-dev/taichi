@@ -17,11 +17,17 @@ class TikzGen : public Visitor {
   std::string expr_name(Expr expr) {
     std::string members = "";
     if (expr->is_vectorized) {
+      members = "[";
+      bool first = true;
       for (auto m : expr->members) {
-        members += fmt::format(" {}", m->id);
+        members += fmt::format("{}", m->id);
+        if (!first)
+          members += ",";
+        first = false;
       }
+      members += "]";
     }
-    return fmt::format("\"[{} {}]{}\"", expr->id, members,
+    return fmt::format("\"({}){}{}\"", expr->id, members,
                        expr->node_type_name());
   }
 

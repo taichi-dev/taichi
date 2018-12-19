@@ -13,6 +13,7 @@ namespace Tlang {
 class Node {
  private:
   Address _addr;
+  static int counter = 0;
 
  public:
   // TODO: rename
@@ -54,6 +55,7 @@ class Node {
   DataType data_type;
   std::string var_name;
   float64 _value;
+  int id;
   bool is_vectorized;
   static std::map<DataType, std::string> data_type_names;
   static std::map<Type, std::string> node_type_names;
@@ -61,6 +63,7 @@ class Node {
   Node(Type type) : type(type) {
     is_vectorized = false;
     data_type = DataType::f32;
+    id = counter++;
   }
 
   std::string data_type_name() {

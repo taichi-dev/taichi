@@ -8,6 +8,13 @@ TC_NAMESPACE_BEGIN
 
 namespace Tlang {
 
+""
+
+
+class TikzGen : public Visitor {
+
+};
+
 Program *current_program = nullptr;
 
 class CPUCodeGen : public CodeGenBase {

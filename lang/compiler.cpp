@@ -8,12 +8,33 @@ TC_NAMESPACE_BEGIN
 
 namespace Tlang {
 
-""
-
-
 class TikzGen : public Visitor {
+ public:
+  std::string graph;
+  TikzGen() : Visitor(Visitor::Order::parent_first) {
+  }
 
+  std::string expr_name(Expr expr) {
+    return fmt::format("\"[{}]{}\"", expr->id, expr->node_type_name());
+  }
+
+  void link(Expr a, Expr b) {
+    graph += fmt::format("{} -- {}; ", expr_name(a), expr_name(b));
+  }
+
+  void visit(Expr &expr) override {
+    for (auto &ch : expr->ch) {
+      link(expr, ch);
+    }
+  }
 };
+
+void visualize_IR(std::string fn, Expr &expr) {
+  TikzGen gen;
+  expr.accept(gen);
+  auto cmd = fmt::format("python3 {}/projects/taichi_lang/make_graph.py {} '{}'", fn, gen.graph);
+  system(cmd.c_str());
+}
 
 Program *current_program = nullptr;
 
@@ -277,9 +298,8 @@ class CPUCodeGen : public CodeGenBase {
         TC_NOT_IMPLEMENTED
         for (int i = 0; i < simd_width; i++) {
           auto suf = get_scalar_suffix(i);
-          emit_code("{}[{} * i + {} + {}] = {};", buffer_name,
-                    addr.coeff_i, addr.coeff_const, i,
-                    expr->ch[0]->var_name + suf);
+          emit_code("{}[{} * i + {} + {}] = {};", buffer_name, addr.coeff_i,
+                    addr.coeff_const, i, expr->ch[0]->var_name + suf);
         }
       }
     } else if (expr->type == NodeType::combine) {

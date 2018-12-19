@@ -13,7 +13,7 @@ namespace Tlang {
 class Node {
  private:
   Address _addr;
-  static int counter = 0;
+  static int counter;
 
  public:
   // TODO: rename

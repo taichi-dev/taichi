@@ -31,7 +31,6 @@ head = r'''
 %\tikz
 \graph [layered layout, components go right top aligned, nodes=draw, edges=rounded corners]
 {
-%    first root -> {1 -> {2, 3, 7} -> {4, 5}, 6 }, 4 -- 5, 7 -- 4;
 
 '''
 

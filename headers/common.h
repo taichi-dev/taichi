@@ -66,21 +66,37 @@ struct Context {
 // Virtual Vectors
 
 template <int dim, typename T>
-struct VV { // Virtual Vector
+struct VV {  // Virtual Vector
   T d[dim];
+
+  VV() {
+  }
+
+  VV(T v) {
+    for (int i = 0; i < dim; i++) {
+      d[i] = v;
+    }
+  }
+
+  VV(std::array<T, dim> val) {
+    for (int i = 0; i < dim; i++) {
+      d[i] = val[i];
+    }
+  }
 
   T &operator[](int i) {
     return d[i];
   }
 };
 
-#define BINARY_OP(OPNAME, OP) template<int dim, typename T> \
-inline VV<dim, T> operator OP(const VV<dim, T> &a, const VV<dim, T> &b) { \
-  VV<dim, T> c; \
-  for (int i = 0; i < dim; i++) { \
-    c[i] = a[i] OP b[i]; \
-  } \
-}
+#define BINARY_OP(OPNAME, OP)                                               \
+  template <int dim, typename T>                                            \
+  inline VV<dim, T> operator OP(const VV<dim, T> &a, const VV<dim, T> &b) { \
+    VV<dim, T> c;                                                           \
+    for (int i = 0; i < dim; i++) {                                         \
+      c[i] = a[i] OP b[i];                                                  \
+    }                                                                       \
+  }
 
 BINARY_OP(add, +);
 BINARY_OP(sub, -);
@@ -107,8 +123,6 @@ inline void store(VV<dim, T> a, T *base_address, VV<dim, int> offsets) {
 
 // TODO: adapters
 
-
 // End Virtual Vectors
-
 }
 }

@@ -77,8 +77,21 @@ class Node {
   std::string var_name;
   float64 _value;
   int id;
+  int num_groups_;
   bool is_vectorized;
   static std::map<Type, std::string> node_type_names;
+
+  int group_size() {
+    return (int)members.size();
+  }
+
+  int &num_groups() {
+    return num_groups_;
+  }
+
+  int vv_width() {
+    return group_size() * num_groups();
+  }
 
   Node(Type type) : type(type) {
     is_vectorized = false;
@@ -253,6 +266,11 @@ class Expr {
   Expr &operator=(const Expr &o);
 
   Expr operator[](const Expr &i);
+
+  Expr &operator[](int i) {
+    TC_ASSERT(0 <= i && i < node->ch.size());
+    return node->ch[i];
+  }
 };
 
 using Index = Expr;

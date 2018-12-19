@@ -161,6 +161,14 @@ class CPUCodeGen : public CodeGenBase {
     return fmt::format("VV<{}, {}>", width, data_type_name(data_type));
   }
 
+  std::string vv_constant_str(int width, DataType data_type, int64 val) {
+    return fmt::format("VV<{}, {}>({})", width, data_type_name(data_type), val);
+  }
+
+  std::string vv_constant_str(int width, DataType data_type, float64 val) {
+    return fmt::format("VV<{}, {}>({})", width, data_type_name(data_type), val);
+  }
+
   void visit(Expr &expr) override {
     // TC_P(expr->get_address());
     TC_ASSERT(expr->is_vectorized);
@@ -180,7 +188,6 @@ class CPUCodeGen : public CodeGenBase {
                 op, expr->ch[1]->var_name);
     } else if (expr->type == NodeType::load) {
       auto buffer_name = fmt::format("buffer{:02d}", expr->addr().buffer_id);
-      // TC_P(expr->members.size());
       std::vector<int> offsets;
       for (int i = 0; i + 1 < (int)expr->members.size(); i++) {
         TC_ASSERT(
@@ -194,12 +201,8 @@ class CPUCodeGen : public CodeGenBase {
                 get_vectorized_address(addr));
     } else if (expr->type == NodeType::store) {
       auto addr = expr->addr();
-      auto buffer_name = fmt::format("buffer{:02d}", addr.buffer_id);
-      std::string store_instr =
-          // simd_width == 8 ? "_mm256_stream_ps" : "_mm512_stream_ps";
-          simd_width == 8 ? "_mm256_store_ps" : "_mm512_store_ps";
-      emit_code("{}({}, {});", store_instr,
-                get_vectorized_address(expr->addr()), expr->ch[1]->var_name);
+      emit_code("store({}, {}_base, {}_offsets);", expr->ch[1]->var_name,
+                expr->ch[0]->var_name, expr->ch[0]->var_name);
     } else if (expr->type == NodeType::combine) {
       // do nothing
     } else if (expr->type == NodeType::imm) {
@@ -211,15 +214,36 @@ class CPUCodeGen : public CodeGenBase {
     } else if (expr->type == NodeType::pointer) {
       TC_NOT_IMPLEMENTED
       // emit base pointer and offsets
+      auto buffer_name = fmt::format("buffer{:02d}", expr->addr().buffer_id);
+      auto addr = expr[0]->get_address_();
+      emit_code("{} *{}_base = &{}[0] + buffer_name + {} + {} * n;",
+                addr.coeff_const, addr.coeff_imax);
+
+      auto index = expr->ch[1]->var_name;
+      if (addr.coeff_aosoa_stride != 0) {
+        emit_code("auto {}_offsets_val = {} * {} + {} / {} * {}",
+                  expr->var_name,
+                  vv_constant_str(num_groups * expr->group_size(),
+                                  DataType::i32, addr.coeff_i),
+                  index, index,
+                  vv_constant_str(num_groups * expr->group_size(),
+                                  DataType::i32, addr.coeff_aosoa_group_size),
+                  vv_constant_str(num_groups * expr->group_size(),
+                                  DataType::i32, addr.coeff_aosoa_stride));
+      } else {
+        emit_code("auto {}_offsets_val = {} * {}", expr->var_name,
+                  vv_constant_str(num_groups * expr->group_size(),
+                                  DataType::i32, addr.coeff_i),
+                  index);
+      }
+      emit_code("{} {}_offsets({}_offsets_val)",
+                vv_type_str(expr->group_size() * num_groups, DataType::i32),
+                expr->var_name);
     } else if (expr->type == NodeType::cache_load) {
-      emit_code("auto {} = _mm256_broadcast_ss(&{}[loop_index]);",
-                expr->var_name, get_cache_name(0));
       // emit_code("auto {} = _{}");
     } else if (expr->type == NodeType::cache_store) {
       TC_NOT_IMPLEMENTED
       // TODO: fully implement
-      emit_code("_mm256_store_ps(&{}[0], {});", get_cache_name(0),
-                expr->ch[0]->var_name);
     } else {
       TC_ERROR("Node {} cannot be visited.", expr->node_type_name());
     }

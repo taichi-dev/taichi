@@ -19,7 +19,6 @@ inline int get_code_gen_id() {
   return id++;
 }
 
-
 class Vectorizer : public Visitor {
  public:
   std::map<Expr, Expr> scalar_to_vector;
@@ -458,7 +457,7 @@ struct Program {
   }
 
   float32 &data(Expr &expr, int i) {
-    auto &addr = expr->get_address();
+    auto &addr = expr->get_address_(); // TODO:...
     TC_ASSERT(addr.initialized());
     allocate_buffer(addr.buffer_id);
     return buffers[addr.buffer_id].get<float32>()[addr.eval(i, n)];
@@ -593,6 +592,7 @@ inline std::pair<int64, int64> range(int64 start, int64 end) {
 
 using ForBody = std::function<void()>;
 inline void for_loop(Index &index, std::pair<int64, int64> r, const ForBody &body) {
+  auto &prog = get_current_program();
 
 }
 

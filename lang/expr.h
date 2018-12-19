@@ -9,27 +9,24 @@ TC_NAMESPACE_BEGIN
 
 namespace Tlang {
 
-struct Index {
-
-};
-
 // TODO: do we need polymorphism here?
 class Node {
  private:
   Address _addr;
 
  public:
+  // TODO: rename
   enum class Type : int {
     mul,
     add,
     sub,
     div,
     load,
-    pointer,
     store,
+    pointer,
     combine,
     addr,
-    cache_store,
+    cache_store,  // -> adapter
     cache_load,
     imm
   };
@@ -113,8 +110,13 @@ class Node {
     return "X";
   }
 
+  Address &get_address_() { // TODO: remove this hack
+    return _addr;
+  }
+
   Address &get_address() {
     TC_ASSERT(type == Type::addr);
+    TC_ERROR_UNLESS(ch.size() == 1, "Should have exactly one index child");
     return _addr;
   }
 
@@ -240,8 +242,10 @@ class Expr {
 
   Expr &operator=(const Expr &o);
 
-  Expr operator[](Index i);
+  Expr operator[](const Expr &i);
 };
+
+using Index = Expr;
 
 inline bool prior_to(Address address1, Address address2) {
   return address1.same_type(address2) &&
@@ -249,7 +253,8 @@ inline bool prior_to(Address address1, Address address2) {
 }
 
 inline bool prior_to(Expr &a, Expr &b) {
-  return prior_to(a->get_address(), b->get_address());
+  TC_ASSERT(a->type == NodeType::pointer && b->type == NodeType::pointer);
+  return prior_to(a->ch[0]->get_address(), b->ch[0]->get_address());
 }
 
 inline Node::Node(Type type, Expr ch0) : Node(type) {

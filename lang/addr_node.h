@@ -49,7 +49,7 @@ struct AddrNode {
     int bundle_num_variables = -1;
     std::function<void(AddrNode *)> walk = [&](AddrNode *node) {
       if (node->addr) {
-        auto &ad = node->addr->get_address();
+        auto &ad = node->addr->get_address_(); // TODO: remove this hack
         ad.buffer_id = buffer_id;
         ad.coeff_i = node->coeff_i;
         ad.coeff_imax = coeff_imax;

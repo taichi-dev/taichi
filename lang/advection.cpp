@@ -134,7 +134,10 @@ auto test_loop = []() {
   prog.buffer(0).stream(0).group(0).place(a, b);
 
   Index i;
-  for_loop(i, range(0, n), [&]() { a[i] = a[i] * b[i]; });
+  for_loop(i, range(0, n), [&]() {
+    // ***
+    a[i] = a[i] * b[i];
+  });
 
   prog.materialize_layout();
 

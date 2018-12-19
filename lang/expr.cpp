@@ -17,7 +17,10 @@ Expr &Expr::operator=(const Expr &o) {
   return *this;
 }
 
-Expr Expr::operator[](Index i) {
+Expr Expr::operator[](const Expr &i) {
+  return create(Type::pointer, *this, i);
 }
+
 }
+
 TC_NAMESPACE_END

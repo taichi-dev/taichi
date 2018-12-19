@@ -190,88 +190,8 @@ class CPUCodeGen : public CodeGenBase {
         offsets.push_back(expr->members[i]->addr().offset());
       }
       auto addr = expr->addr();
-      auto i_stride = num_groups;
-      // TC_P(i_stride);
-      // TC_P(addr.coeff_aosoa_group_size);
-      TC_ASSERT(i_stride == addr.coeff_aosoa_group_size);
-      // TC_ASSERT(expr->members[0]->addr.coeff_i);
-      std::string load_instr =
-          simd_width == 8 ? "_mm256_load_ps" : "_mm512_load_ps";
-      bool needs_shuffle = false;
-      if (addr.coeff_const % simd_width != 0) {
-        addr.coeff_const -= addr.coeff_const % simd_width;
-        needs_shuffle = true;
-      }
-      emit_code("auto {}_immediate = {}({});", expr->var_name, load_instr,
+      emit_code("auto {}_immediate = {}({});", expr->var_name, "X",
                 get_vectorized_address(addr));
-      auto emit_shuffle = [&](std::string imm) {
-        emit_code(
-            "auto {} = _mm256_shuffle_ps({}_immediate, {}_immediate, "
-            "{});",
-            expr->var_name, expr->var_name, expr->var_name, imm);
-        needs_shuffle = false;
-      };
-      if (group_size == 1) {
-        emit_code("auto {} = {}_immediate;", expr->var_name, expr->var_name);
-      } else {
-        TC_ASSERT(group_size <= 8);
-        // detect patterns
-        int offset_const = offsets[0] % simd_width;
-        int offset_inc = offsets[1] - offsets[0];
-        if (group_size == 2) {
-          if (offset_const == 0 && offset_inc == 1) {
-            emit_code("auto {} = {}_immediate;", expr->var_name,
-                      expr->var_name);
-          } else if (offset_inc == 0) {
-            if (offset_const == 0) {
-              emit_shuffle("0xA0");
-            } else if (offset_const == 1) {
-              emit_shuffle("0xF5");
-            } else {
-              TC_NOT_IMPLEMENTED;
-            }
-          } else {
-            TC_P(offset_const);
-            TC_P(offset_inc);
-            TC_NOT_IMPLEMENTED;
-          }
-        } else if (group_size == 4) {
-          if (offset_const == 0 && offset_inc == 1) {
-            emit_code("auto {} = {}_immediate;", expr->var_name,
-                      expr->var_name);
-          } else if (offset_inc == 0) {
-            if (offset_const == 0) {
-              emit_shuffle("0x00");
-            } else if (offset_const == 1) {
-              emit_shuffle("0x55");
-            } else if (offset_const == 2) {
-              emit_shuffle("0xAA");
-            } else if (offset_const == 3) {
-              emit_shuffle("0xFF");
-            } else {
-              TC_NOT_IMPLEMENTED;
-            }
-          } else {
-            TC_P(offset_const);
-            TC_P(offset_inc);
-            TC_NOT_IMPLEMENTED;
-          }
-        } else if (group_size == 8) {
-          if (offset_inc == 1) {
-            TC_ASSERT(offset_const == 0);
-            emit_code("auto {} = {}_immediate;", expr->var_name,
-                      expr->var_name);
-          } else {
-            TC_ASSERT(offset_inc == 0);
-            needs_shuffle = false;
-            emit_code("auto {} = _mm256_broadcast_ss({});", expr->var_name,
-                      get_vectorized_address(expr->addr()));
-          }
-        } else {
-          TC_NOT_IMPLEMENTED
-        }
-        TC_ASSERT(needs_shuffle == false);
-      }
     } else if (expr->type == NodeType::store) {
       auto addr = expr->addr();
       auto buffer_name = fmt::format("buffer{:02d}", addr.buffer_id);
@@ -280,6 +200,17 @@ class CPUCodeGen : public CodeGenBase {
           simd_width == 8 ? "_mm256_store_ps" : "_mm512_store_ps";
       emit_code("{}({}, {});", store_instr,
                 get_vectorized_address(expr->addr()), expr->ch[1]->var_name);
+    } else if (expr->type == NodeType::combine) {
+      // do nothing
+    } else if (expr->type == NodeType::imm) {
+      TC_NOT_IMPLEMENTED
+      // do nothing
+    } else if (expr->type == NodeType::index) {
+      TC_NOT_IMPLEMENTED
+      // do nothing
+    } else if (expr->type == NodeType::pointer) {
+      TC_NOT_IMPLEMENTED
+      // emit base pointer and offsets
     } else if (expr->type == NodeType::cache_load) {
       emit_code("auto {} = _mm256_broadcast_ss(&{}[loop_index]);",
                 expr->var_name, get_cache_name(0));
@@ -289,14 +220,6 @@ class CPUCodeGen : public CodeGenBase {
       // TODO: fully implement
       emit_code("_mm256_store_ps(&{}[0], {});", get_cache_name(0),
                 expr->ch[0]->var_name);
-    } else if (expr->type == NodeType::combine) {
-      // do nothing
-    } else if (expr->type == NodeType::imm) {
-      // do nothing
-    } else if (expr->type == NodeType::index) {
-      // do nothing
-    } else if (expr->type == NodeType::pointer) {
-      // do nothing
     } else {
       TC_ERROR("Node {} cannot be visited.", expr->node_type_name());
     }

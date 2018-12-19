@@ -170,7 +170,7 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void visit(Expr &expr) override {
-    // TC_P(expr->get_address());
+    TC_P(expr->id);
     TC_ASSERT(expr->is_vectorized);
     TC_ASSERT(expr->members.size() == 0 ||
               (int)expr->members.size() == group_size);
@@ -209,19 +209,32 @@ class CPUCodeGen : public CodeGenBase {
       TC_NOT_IMPLEMENTED
       // do nothing
     } else if (expr->type == NodeType::index) {
-      TC_NOT_IMPLEMENTED
-      // do nothing
+      std::string members = "{";
+      bool first = true;
+      for (int i = 0; i < num_groups; i++) {
+        for (int j = 0; j < expr->group_size(); j++) {
+          if (!first) {
+            members += ",";
+          }
+          first = false;
+          members += fmt::format("b * {} + {}", num_groups, i);
+        }
+      }
+      members += "}";
+      emit_code("auto {} = {}({})", expr->var_name,
+                vv_type_str(num_groups * expr->group_size(), DataType::i32),
+                members);
     } else if (expr->type == NodeType::pointer) {
-      TC_NOT_IMPLEMENTED
       // emit base pointer and offsets
-      auto buffer_name = fmt::format("buffer{:02d}", expr->addr().buffer_id);
       auto addr = expr[0]->get_address_();
-      emit_code("{} *{}_base = &{}[0] + buffer_name + {} + {} * n;",
-                addr.coeff_const, addr.coeff_imax);
+      auto buffer_name = fmt::format("buffer{:02d}", addr.buffer_id);
+      emit_code("{} *{}_base = &{}[0] + {} + {} * n;",
+                vv_type_str(expr->group_size() * num_groups, DataType::i32),
+                expr->var_name, buffer_name, addr.coeff_const, addr.coeff_imax);
 
       auto index = expr->ch[1]->var_name;
       if (addr.coeff_aosoa_stride != 0) {
-        emit_code("auto {}_offsets_val = {} * {} + {} / {} * {}",
+        emit_code("auto {}_offsets = {} * {} + {} / {} * {}",
                   expr->var_name,
                   vv_constant_str(num_groups * expr->group_size(),
                                   DataType::i32, addr.coeff_i),
@@ -231,14 +244,11 @@ class CPUCodeGen : public CodeGenBase {
                   vv_constant_str(num_groups * expr->group_size(),
                                   DataType::i32, addr.coeff_aosoa_stride));
       } else {
-        emit_code("auto {}_offsets_val = {} * {}", expr->var_name,
+        emit_code("auto {}_offsets = {} * {}", expr->var_name,
                   vv_constant_str(num_groups * expr->group_size(),
                                   DataType::i32, addr.coeff_i),
                   index);
       }
-      emit_code("{} {}_offsets({}_offsets_val)",
-                vv_type_str(expr->group_size() * num_groups, DataType::i32),
-                expr->var_name);
     } else if (expr->type == NodeType::cache_load) {
       // emit_code("auto {} = _{}");
     } else if (expr->type == NodeType::cache_store) {

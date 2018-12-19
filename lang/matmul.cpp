@@ -1,4 +1,3 @@
-#if (0)
 #include <fstream>
 #include <taichi/common/util.h>
 #include <taichi/common/task.h>
@@ -299,9 +298,9 @@ template <int dim, typename T>
 void run_matmatmul() {
   fmt::print("Matrix<{}, {}>:\n", dim, sizeof(T) == 4 ? "float32" : "float64");
 
-  BENCHMARK(TlangGPUAOSOA);
-  BENCHMARK(TlangGPUInter);
-  BENCHMARK(TlangGPUSOA);
+  // BENCHMARK(TlangGPUAOSOA);
+  // BENCHMARK(TlangGPUInter);
+  // BENCHMARK(TlangGPUSOA);
 
   BENCHMARK(TlangCPUAOSOA);
   BENCHMARK(TlangCPUInter);
@@ -597,4 +596,3 @@ TODO:
  assert n % 256 = 0
  how to deal with multi dimensional indices
 */
-#endif

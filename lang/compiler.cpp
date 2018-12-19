@@ -15,7 +15,14 @@ class TikzGen : public Visitor {
   }
 
   std::string expr_name(Expr expr) {
-    return fmt::format("\"[{}]{}\"", expr->id, expr->node_type_name());
+    std::string members = "";
+    if (expr->is_vectorized) {
+      for (auto m : expr->members) {
+        members += fmt::format(" {}", m->id);
+      }
+    }
+    return fmt::format("\"[{} {}]{}\"", expr->id, members,
+                       expr->node_type_name());
   }
 
   void link(Expr a, Expr b) {
@@ -131,9 +138,10 @@ class CPUCodeGen : public CodeGenBase {
 
     {
       TC_ASSERT(prog.ret);
-      visualize_IR(get_source_fn() + ".pdf", prog.ret);
+      visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
       this->group_size = group_size;
       auto vectorized_stores = Vectorizer(simd_width).run(prog.ret, 1);
+      visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
       start_macro_loop();
       vectorized_stores.accept(*this);
       end_macro_loop(8);

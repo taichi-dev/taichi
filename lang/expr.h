@@ -110,9 +110,6 @@ class Node {
 
   Address &get_address() {
     TC_ASSERT(type == Type::addr);
-    TC_ERROR_UNLESS(ch.size() == 1,
-                    "Should have exactly one index child, instead of {}",
-                    ch.size());
     return _addr;
   }
 

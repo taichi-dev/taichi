@@ -19,14 +19,13 @@ head = r'''
 \usetikzlibrary{shapes.multipart}
 \usepackage[utf8]{inputenc}
 
-\title{IR Graphs}
+\title{IR Visualization}
 
 \begin{document}
 
 \maketitle
 
-\section{Scalar IR}
-
+\begin{center}
 \tikz []
 %\tikz
 \graph [layered layout, components go right top aligned, nodes=draw, edges=rounded corners]
@@ -36,8 +35,7 @@ head = r'''
 
 tail = r'''
 };
-
-\section{Vector IR}
+\end{center}
 
 \end{document}
 
@@ -55,6 +53,6 @@ with open(os.path.join(folder_name, "main.tex"), 'w') as f:
     f.write(sys.argv[2])
     f.write(tail)
 
-os.system("cd {} && lualatex main.tex".format(folder_name))
+os.system("cd {} && lualatex main.tex > /dev/null".format(folder_name))
 os.system("cp {}/main.pdf {}".format(folder_name, sys.argv[1]))
 os.system("rm -rf {}".format(folder_name))

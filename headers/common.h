@@ -62,5 +62,53 @@ struct Context {
     return ranges[i];
   }
 };
+
+// Virtual Vectors
+
+template <int dim, typename T>
+struct VV { // Virtual Vector
+  T d[dim];
+
+  T &operator[](int i) {
+    return d[i];
+  }
+};
+
+#define BINARY_OP(OPNAME, OP) template<int dim, typename T> \
+inline VV<dim, T> OPNAME(const VV<dim, T> &a, const VV<dim, T> &b) { \
+  VV<dim, T> c; \
+  for (int i = 0; i < dim; i++) { \
+    c[i] = a[i] OP b[i]; \
+  } \
+}
+
+BINARY_OP(add, +);
+BINARY_OP(sub, -);
+BINARY_OP(mul, *);
+BINARY_OP(div, /);
+
+#undef BINARY_OP
+
+template <int dim, typename T>
+inline VV<dim, T> load(T *base_address, VV<dim, int> offsets) {
+  VV<dim, T> ret;
+  for (int i = 0; i < dim; i++) {
+    ret[i] = *(base_address + offsets[i]);
+  }
+  return ret;
+};
+
+template <int dim, typename T>
+inline void store(VV<dim, T> a, T *base_address, VV<dim, int> offsets) {
+  for (int i = 0; i < dim; i++) {
+    *(base_address + offsets[i]) = a[i];
+  }
+};
+
+// TODO: adapters
+
+
+// End Virtual Vectors
+
 }
 }

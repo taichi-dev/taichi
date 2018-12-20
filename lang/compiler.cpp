@@ -218,6 +218,8 @@ class CPUCodeGen : public CodeGenBase {
                 expr[1]->var_name);
     } else if (expr->type == NodeType::floor) {
       emit_code("auto {} = floor({});", expr->var_name, expr[0]->var_name);
+    } else if (expr->type == NodeType::cast) {
+      emit_code("auto {} = cast<int32>({});", expr->var_name, expr[0]->var_name);
     } else if (expr->type == NodeType::load) {
       emit_code("auto {} = load<{}, {}>({}_base, {}_offsets);", expr->var_name,
                 expr->group_size() * num_groups,
@@ -234,7 +236,7 @@ class CPUCodeGen : public CodeGenBase {
                   vv_constant_str(num_groups, DataType::i32,
                                   (int64)expr->value<int32>()));
       } else {
-        emit_code("auto {} = {};", expr->var_name,
+        emit_code("auto {} = {}; /*f32*/ ", expr->var_name,
                   vv_constant_str(num_groups, DataType::f32,
                                   (float64)expr->value<float32>()));
       }

@@ -68,14 +68,14 @@ auto advection = []() {
 
   auto offset_x = floor(v[0]);
   auto offset_y = floor(v[1]);
-  auto offset = offset_x * imm(n) + offset_y * imm(1);
+  auto offset = cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
   auto wx = v[0] - offset_x;
   auto wy = v[1] - offset_y;
 
   // weights
-  auto w00 = (imm(1.0) - wx) * (imm(1.0) - wy);
-  auto w01 = (imm(1.0) - wx) * wy;
-  auto w10 = wx * (imm(1.0) - wy);
+  auto w00 = (imm(1.0f) - wx) * (imm(1.0f) - wy);
+  auto w01 = (imm(1.0f) - wx) * wy;
+  auto w10 = wx * (imm(1.0f) - wy);
   auto w11 = wx * wy;
 
   auto address = index + offset;
@@ -92,7 +92,7 @@ auto advection = []() {
   }
   */
 
-  attr[1][0][index] = attr[0][0][index];
+  attr[1][1][index] = imm(1.0_f) - attr[0][1][index];
 
   prog.compile();
 

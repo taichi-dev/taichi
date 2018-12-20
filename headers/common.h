@@ -141,6 +141,15 @@ inline VV<dim, T> floor(const VV<dim, T> &a) {
   return c;
 }
 
+template <int dim, typename T, typename G>
+inline VV<dim, T> cast(const VV<dim, G> &a) {
+  VV<dim, T> c;
+  for (int i = 0; i < dim; i++) {
+    c[i] = (T)a[i];
+  }
+  return c;
+}
+
 template <int dim, typename T>
 inline VV<dim, T> load(T *base_address, VV<dim, int> offsets) {
   VV<dim, T> ret;

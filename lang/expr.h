@@ -23,7 +23,6 @@ enum class DataType : int {
   u64
 };
 
-
 inline std::string data_type_name(DataType t) {
   static std::map<DataType, std::string> data_type_names;
   if (data_type_names.empty()) {
@@ -68,7 +67,8 @@ class Node {
     imm,
     floor,
     max,
-    min
+    min,
+    cast
   };
 
   using NodeType = Type;
@@ -125,6 +125,7 @@ class Node {
       REGISTER_NODE_TYPE(floor);
       REGISTER_NODE_TYPE(max);
       REGISTER_NODE_TYPE(min);
+      REGISTER_NODE_TYPE(cast);
     }
     return node_type_names[type];
   }
@@ -208,6 +209,7 @@ class Expr {
 
 #define BINARY_OP(op, name)                                    \
   Expr operator op(const Expr &o) const {                      \
+    TC_ASSERT(node->data_type == o->data_type)                 \
     return Expr::create(NodeType::name, load_if_pointer(node), \
                         load_if_pointer(o.node));              \
   }
@@ -328,8 +330,6 @@ inline Expr load(const Expr &addr) {
   expr->ch.push_back(addr);
   return expr;
 }
-
 }
-
 
 TC_NAMESPACE_END

@@ -627,10 +627,18 @@ inline Expr imm(int i) {
   return n;
 }
 
-inline Expr imm(double i) {
+inline Expr imm(float32 i) {
   auto  n =  Expr::create(NodeType::imm, i);
-  n->value<float32>() = i;
   n->data_type = DataType::f32;
+  n->value<float32>() = i;
+  return n;
+}
+
+template <typename T>
+inline Expr cast(Expr &i) {
+  TC_STATIC_ASSERT((std::is_same<T, int32>()));
+  auto  n =  Expr::create(NodeType::cast, i);
+  n->data_type = DataType::i32;
   return n;
 }
 

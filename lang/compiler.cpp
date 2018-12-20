@@ -148,11 +148,11 @@ class CPUCodeGen : public CodeGenBase {
 
     {
       TC_ASSERT(prog.ret);
-      // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
+      visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
       this->group_size = group_size;
       auto vectorized_stores =
           Vectorizer(simd_width).run(prog.ret, prog.config.group_size);
-      // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
+      visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
       start_macro_loop();
       vectorized_stores.accept(*this);
       end_macro_loop();
@@ -170,7 +170,7 @@ class CPUCodeGen : public CodeGenBase {
     return fmt::format("VV<{}, {}>({})", width, data_type_name(data_type), val);
   }
 
-  std::string vv_constant_str(int width, DataType data_type, float64 val) {
+  std::string vv_constant_str(int width, DataType data_type, float32 val) {
     return fmt::format("VV<{}, {}>({})", width, data_type_name(data_type), val);
   }
 
@@ -231,14 +231,15 @@ class CPUCodeGen : public CodeGenBase {
     } else if (expr->type == NodeType::combine) {
       // do nothing
     } else if (expr->type == NodeType::imm) {
+      TC_WARN("Using member imm");
       if (expr->data_type == DataType::i32) {
         emit_code("auto {} = {};", expr->var_name,
                   vv_constant_str(num_groups, DataType::i32,
-                                  (int64)expr->value<int32>()));
+                                  (int64)expr->members[0]->value<int32>()));
       } else {
         emit_code("auto {} = {}; /*f32*/ ", expr->var_name,
                   vv_constant_str(num_groups, DataType::f32,
-                                  (float64)expr->value<float32>()));
+                                  expr->members[0]->value<float32>()));
       }
     } else if (expr->type == NodeType::index) {
       std::string members = "{";

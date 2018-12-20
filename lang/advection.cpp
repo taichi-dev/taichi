@@ -105,16 +105,20 @@ auto advection = []() {
   }
 
   GUI gui("Advection", n, n);
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      for (int k = 0; k < nattr; k++) {
-        gui.buffer[i][j][k] = prog.data(attr[1][k], i * n + j);
-      }
-    }
-  }
 
   while (1) {
-    // prog();
+    prog();
+
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        for (int k = 0; k < nattr; k++) {
+          gui.buffer[i][j][k] = prog.data(attr[1][k], i * n + j);
+        }
+      }
+    }
+
+    std::swap(prog.buffers[0], prog.buffers[1]);
+
     gui.update();
   }
 };

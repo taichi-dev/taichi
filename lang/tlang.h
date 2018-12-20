@@ -628,7 +628,7 @@ inline Expr imm(int i) {
 }
 
 inline Expr imm(float32 i) {
-  auto  n =  Expr::create(NodeType::imm, i);
+  auto  n =  Expr::create(NodeType::imm);
   n->data_type = DataType::f32;
   n->value<float32>() = i;
   return n;

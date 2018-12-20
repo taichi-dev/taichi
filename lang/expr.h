@@ -78,7 +78,7 @@ class Node {
   Type type;
   DataType data_type;
   std::string var_name;
-  float64 _value;
+  float32 _value;
   int id;
   int num_groups_;
   bool is_vectorized;

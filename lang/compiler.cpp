@@ -23,9 +23,9 @@ class TikzGen : public Visitor {
       members = "[";
       bool first = true;
       for (auto m : expr->members) {
-        members += fmt::format("{}", m->id);
         if (!first)
-          members += ",";
+          members += ", ";
+        members += fmt::format("{}", m->id);
         first = false;
       }
       members += "]";
@@ -127,7 +127,7 @@ class CPUCodeGen : public CodeGenBase {
     emit_code("#undef LOOP\n");
   }
 
-  void codegen(Program &prog, int group_size = 1) {
+  void codegen(Program &prog, int group_size) {
     this->group_size = group_size;
     generate_header();
 
@@ -135,6 +135,7 @@ class CPUCodeGen : public CodeGenBase {
 
     // Body
     for (auto cache : prog.caches) {
+      TC_NOT_IMPLEMENTED;
       this->group_size = 1;
       TC_P(cache.stores->ch.size());
       auto vectorized_cache_stores =
@@ -147,10 +148,12 @@ class CPUCodeGen : public CodeGenBase {
 
     {
       TC_ASSERT(prog.ret);
-      // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
+      visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
       this->group_size = group_size;
-      auto vectorized_stores = Vectorizer(simd_width).run(prog.ret, 1);
-      // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
+      TC_P(group_size);
+      auto vectorized_stores =
+          Vectorizer(simd_width).run(prog.ret, prog.config.group_size);
+      visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
       start_macro_loop();
       vectorized_stores.accept(*this);
       end_macro_loop();
@@ -276,7 +279,7 @@ class CPUCodeGen : public CodeGenBase {
     auto simd_width = 8;
     this->mode = mode;
     this->simd_width = simd_width;
-    codegen(prog);
+    codegen(prog, group_size);
     return compile();
   }
 };

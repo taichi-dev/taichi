@@ -355,7 +355,7 @@ auto tlang_matmatmul = []() {
   run_matmatmul<1, float32>();
   run_matmatmul<2, float32>();
   run_matmatmul<4, float32>();
-  run_matmatmul<8, float32>();
+  // run_matmatmul<8, float32>();
 };
 TC_REGISTER_TASK(tlang_matmatmul);
 
@@ -368,7 +368,8 @@ void test_vec_add() {
   prog.buffer(1).stream(0).group().place(b);
   prog.buffer(2).stream(0).group().place(c);
 
-  c = load(a) + load(b);
+  Index ind = Expr::index(0);
+  c[ind] = a[ind] + b[ind];
 
   prog.config.group_size = 1;
 
@@ -470,7 +471,8 @@ void test_mat_vec_mul(Arch arch, int layout, int in_cache) {
 
   prog.materialize_layout();
 
-  mv = m * v;
+  Index ind = Expr::index(0);
+  mv[ind] = m[ind] * v[ind];
 
   // alloc.print();
 
@@ -538,17 +540,17 @@ void test_mat_vec_mul_all() {
 
 auto tlang_matvecmul = []() {
   initialize_benchmark();
-  test_vec_add();
-  test_mat_vec_mul_all<1>();
+  // test_vec_add();
+  // test_mat_vec_mul_all<1>();
   test_mat_vec_mul_all<2>();
   test_mat_vec_mul_all<4>();
-  test_mat_vec_mul_all<8>();
+  // test_mat_vec_mul_all<8>();
 };
 TC_REGISTER_TASK(tlang_matvecmul);
 
 auto tlang_test = []() {
   default_measurement_time = 0;
-  tlang_matmatmul();
+  // tlang_matmatmul();
   tlang_matvecmul();
 };
 TC_REGISTER_TASK(tlang_test);

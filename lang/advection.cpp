@@ -61,10 +61,9 @@ auto advection = []() {
   }
   prog.config.group_size = 1;
 
-
   auto index = Expr::index(0);
-
-  // TODO: inv_dx, t
+  Int32 xi = index % imm(n);
+  Int32 yi = index / imm(n);
 
   auto offset_x = floor(v[0]);
   auto offset_y = floor(v[1]);
@@ -92,14 +91,17 @@ auto advection = []() {
   }
   */
 
-  attr[1][1][index] = imm(1.0_f) - attr[0][1][index];
+  for (int k = 0; k < nattr; k++) {
+    attr[1][k][index] =
+        cast<float32>(xi + yi * imm(2)) / imm(3.0f * n);  // imm(0.001_f) + attr[0][k][index];
+  }
 
   prog.compile();
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       for (int k = 0; k < nattr; k++) {
-        prog.data(attr[1][k], i * n + j) = ((float32)(i + j) / (2 * n));
+        // prog.data(attr[1][k], i * n + j) = ((float32)(i + j) / (2 * n));
       }
     }
   }
@@ -117,9 +119,8 @@ auto advection = []() {
       }
     }
 
-    std::swap(prog.buffers[0], prog.buffers[1]);
-
     gui.update();
+    std::swap(prog.buffers[0], prog.buffers[1]);
   }
 };
 TC_REGISTER_TASK(advection);

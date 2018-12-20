@@ -171,6 +171,7 @@ class Vectorizer : public Visitor {
     }
 
     expr->is_vectorized = true;
+    expr->data_type = expr->members[0]->data_type;
     TC_ASSERT(expr->members.size() % group_size == 0);
 
     for (int i = 0; i < (int)vectorized_children.size(); i++) {
@@ -211,6 +212,7 @@ class CodeGenBase : public Visitor {
     binary_ops[NodeType::sub] = "-";
     binary_ops[NodeType::mul] = "*";
     binary_ops[NodeType::div] = "/";
+    binary_ops[NodeType::mod] = "%";
     folder = "_tlang_cache/";
     create_directories(folder);
     var_count = 0;
@@ -590,10 +592,6 @@ real measure_cpe(std::function<void()> target,
                  int64 elements_per_call,
                  real time_second = default_measurement_time);
 
-inline Float32 lerp(Float a, Float x0, Float x1) {
-  return (1 - a) * x0 + a * x1;
-}
-
 inline std::pair<int64, int64> range(int64 start, int64 end) {
   return {start, end};
 }
@@ -621,6 +619,7 @@ inline Expr min(Expr &a, Expr &b) {
 }
 
 inline Expr imm(int i) {
+  TC_TAG;
   auto n = Expr::create(NodeType::imm);
   n->value<int32>() = i;
   n->data_type = DataType::i32;
@@ -628,19 +627,27 @@ inline Expr imm(int i) {
 }
 
 inline Expr imm(float32 i) {
-  auto  n =  Expr::create(NodeType::imm);
+  auto n = Expr::create(NodeType::imm);
   n->data_type = DataType::f32;
   n->value<float32>() = i;
   return n;
 }
 
 template <typename T>
-inline Expr cast(Expr &i) {
-  TC_STATIC_ASSERT((std::is_same<T, int32>()));
-  auto  n =  Expr::create(NodeType::cast, i);
-  n->data_type = DataType::i32;
+inline Expr cast(const Expr &i) {
+  auto n = Expr::create(NodeType::cast, i);
+  if (std::is_same<T, int32>()) {
+    n->data_type = DataType::i32;
+  } else {
+    n->data_type = DataType::f32;
+  }
   return n;
 }
+
+inline Float32 lerp(Float a, Float x0, Float x1) {
+  return (imm(1.0_f) - a) * x0 + a * x1;
+}
+
 
 }  // namespace Tlang
 

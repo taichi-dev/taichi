@@ -56,6 +56,7 @@ class Node {
     add,
     sub,
     div,
+    mod,
     load,
     store,
     pointer,
@@ -113,6 +114,7 @@ class Node {
       REGISTER_NODE_TYPE(add);
       REGISTER_NODE_TYPE(sub);
       REGISTER_NODE_TYPE(div);
+      REGISTER_NODE_TYPE(mod);
       REGISTER_NODE_TYPE(load);
       REGISTER_NODE_TYPE(store);
       REGISTER_NODE_TYPE(combine);
@@ -172,11 +174,13 @@ class Expr {
   Expr() {
   }
 
+  /*
   Expr(float64 val) {
     // create a constant node
     node = std::make_shared<Node>(NodeType::imm);
     node->value<float64>() = val;
   }
+  */
 
   Expr(Handle<Node> node) : node(node) {
   }
@@ -196,6 +200,7 @@ class Expr {
   static Expr index(int i) {
     auto e = create(Type::index);
     e->value<int>() = i;
+    e->data_type = DataType::i32;
     return e;
   }
 
@@ -207,17 +212,20 @@ class Expr {
     }
   }
 
-#define BINARY_OP(op, name)                                    \
-  Expr operator op(const Expr &o) const {                      \
-    TC_ASSERT(node->data_type == o->data_type)                 \
-    return Expr::create(NodeType::name, load_if_pointer(node), \
-                        load_if_pointer(o.node));              \
+#define BINARY_OP(op, name)                                      \
+  Expr operator op(const Expr &o) const {                        \
+    TC_ASSERT(node->data_type == o->data_type)                   \
+    auto t = Expr::create(NodeType::name, load_if_pointer(node), \
+                          load_if_pointer(o.node));              \
+    t->data_type = o->data_type;                                 \
+    return t;                                                    \
   }
 
   BINARY_OP(*, mul);
   BINARY_OP(+, add);
   BINARY_OP(-, sub);
   BINARY_OP(/, div);
+  BINARY_OP(%, mod);
 #undef BINARY_OP
 
   // ch[0] = address

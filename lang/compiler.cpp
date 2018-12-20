@@ -219,7 +219,15 @@ class CPUCodeGen : public CodeGenBase {
     } else if (expr->type == NodeType::floor) {
       emit_code("auto {} = floor({});", expr->var_name, expr[0]->var_name);
     } else if (expr->type == NodeType::cast) {
-      emit_code("auto {} = cast<int32>({});", expr->var_name, expr[0]->var_name);
+      if (expr->data_type == DataType::i32) {
+        emit_code("auto {} = cast<int32>({});", expr->var_name,
+                  expr[0]->var_name);
+      } else if (expr->data_type == DataType::f32) {
+        emit_code("auto {} = cast<float32>({});", expr->var_name,
+                  expr[0]->var_name);
+      } else {
+        TC_NOT_IMPLEMENTED
+      }
     } else if (expr->type == NodeType::load) {
       emit_code("auto {} = load<{}, {}>({}_base, {}_offsets);", expr->var_name,
                 expr->group_size() * num_groups,
@@ -233,7 +241,7 @@ class CPUCodeGen : public CodeGenBase {
     } else if (expr->type == NodeType::imm) {
       TC_WARN("Using member imm");
       if (expr->data_type == DataType::i32) {
-        emit_code("auto {} = {};", expr->var_name,
+        emit_code("auto {} = {}; /*i32*/ ", expr->var_name,
                   vv_constant_str(num_groups, DataType::i32,
                                   (int64)expr->members[0]->value<int32>()));
       } else {

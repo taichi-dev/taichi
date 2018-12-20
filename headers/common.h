@@ -111,6 +111,7 @@ BINARY_OP(add, +);
 BINARY_OP(sub, -);
 BINARY_OP(mul, *);
 BINARY_OP(div, /);
+BINARY_OP(mod, %);
 
 #undef BINARY_OP
 
@@ -141,7 +142,7 @@ inline VV<dim, T> floor(const VV<dim, T> &a) {
   return c;
 }
 
-template <int dim, typename T, typename G>
+template <typename T, typename G, int dim>
 inline VV<dim, T> cast(const VV<dim, G> &a) {
   VV<dim, T> c;
   for (int i = 0; i < dim; i++) {

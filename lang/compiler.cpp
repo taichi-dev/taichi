@@ -175,8 +175,26 @@ class CPUCodeGen : public CodeGenBase {
     return fmt::format("VV<{}, {}>({})", width, data_type_name(data_type), val);
   }
 
+  std::string vv_constant_str(int width,
+                              DataType data_type,
+                              std::vector<int> val) {
+    std::string members = "{";
+    bool first = true;
+    for (int i = 0; i < val.size(); i++) {
+      if (!first) {
+        members += ",";
+      }
+      first = false;
+      members += fmt::format("{}", val[i]);
+    }
+    members += "}";
+    return fmt::format("VV<{}, {}>({})", width, data_type_name(data_type),
+                       members);
+  }
+
   void visit(Expr &expr) override {
     // TC_P(expr->id);
+    auto vv_width = num_groups * expr->group_size();
     TC_ASSERT(expr->is_vectorized);
     TC_ASSERT(expr->members.size() == 0 ||
               (int)expr->members.size() == group_size);
@@ -225,22 +243,27 @@ class CPUCodeGen : public CodeGenBase {
       // emit base pointer and offsets
       auto addr = expr[0]->get_address_();
       auto buffer_name = fmt::format("context.buffers[{:02d}]", addr.buffer_id);
-      emit_code("auto *{}_base = ({} *){} + {} + {} * n;", expr->var_name,
-                data_type_name(expr->data_type), buffer_name, addr.coeff_const,
-                addr.coeff_imax);
+      emit_code("auto *{}_base = ({} *){} + {} * n;", expr->var_name,
+                data_type_name(expr->data_type), buffer_name, addr.coeff_imax);
 
       auto index = expr->ch[1]->var_name;
+
+      std::vector<int> coeff_const;
+      for (int i = 0; i < num_groups; i++) {
+        for (auto &m : expr->ch[0]->members) {
+          coeff_const.push_back(m->get_address_().coeff_const);
+        }
+      }
+      auto offset_var = vv_constant_str(vv_width, DataType::i32, coeff_const);
       if (addr.coeff_aosoa_stride != 0) {
-        emit_code("auto {}_offsets = {} * {} + {} / {} * {};", expr->var_name,
-                  vv_constant_str(num_groups * expr->group_size(),
-                                  DataType::i32, addr.coeff_i),
-                  index, index,
-                  vv_constant_str(num_groups * expr->group_size(),
-                                  DataType::i32, addr.coeff_aosoa_group_size),
-                  vv_constant_str(num_groups * expr->group_size(),
-                                  DataType::i32, addr.coeff_aosoa_stride));
+        emit_code(
+            "auto {}_offsets = {} + {} * {} + {} / {} * {};", expr->var_name,
+            offset_var, vv_constant_str(vv_width, DataType::i32, addr.coeff_i),
+            index, index, vv_constant_str(vv_width, DataType::i32,
+                                          addr.coeff_aosoa_group_size),
+            vv_constant_str(vv_width, DataType::i32, addr.coeff_aosoa_stride));
       } else {
-        emit_code("auto {}_offsets = {} * {};", expr->var_name,
+        emit_code("auto {}_offsets = {} + {} * {};", expr->var_name, offset_var,
                   vv_constant_str(num_groups * expr->group_size(),
                                   DataType::i32, addr.coeff_i),
                   index);

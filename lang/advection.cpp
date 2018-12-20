@@ -47,7 +47,7 @@ auto test_loop = []() {
 TC_REGISTER_TASK(test_loop);
 
 auto advection = []() {
-  const int n = 512, nattr = 4;
+  const int n = 512, nattr = 1;
 
   Float attr[2][nattr], v[2];  // ; vx, vy
 
@@ -92,8 +92,9 @@ auto advection = []() {
   */
 
   for (int k = 0; k < nattr; k++) {
-    attr[1][k][index] =
-        cast<float32>(xi + yi * imm(2)) / imm(3.0f * n);  // imm(0.001_f) + attr[0][k][index];
+    attr[1][k][index] = attr[0][k][index - imm(1)];
+    // cast<float32>(xi + yi * imm(2)) / imm(3.0f * n);  // imm(0.001_f) +
+    // attr[0][k][index];
   }
 
   prog.compile();
@@ -101,7 +102,7 @@ auto advection = []() {
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       for (int k = 0; k < nattr; k++) {
-        // prog.data(attr[1][k], i * n + j) = ((float32)(i + j) / (2 * n));
+        prog.data(attr[0][k], i * n + j) = ((float32)(i + j) / (2 * n));
       }
     }
   }
@@ -114,7 +115,7 @@ auto advection = []() {
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
         for (int k = 0; k < nattr; k++) {
-          gui.buffer[i][j][k] = prog.data(attr[1][k], i * n + j);
+          gui.buffer[i][j] = Vector4(prog.data(attr[1][k], i * n + j));
         }
       }
     }

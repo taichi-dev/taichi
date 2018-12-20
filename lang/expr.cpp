@@ -23,7 +23,7 @@ Expr &Expr::operator=(const Expr &o) {
 
 Expr Expr::operator[](const Expr &i) {
   TC_ASSERT(i);
-  TC_ASSERT(i->type == NodeType::index);
+  TC_ASSERT(i->type == NodeType::index || i->data_type == DataType::i32);
   return create(Type::pointer, *this, i);
 }
 

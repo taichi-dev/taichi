@@ -65,7 +65,10 @@ class Node {
     addr,
     cache_store,  // -> adapter
     cache_load,
-    imm
+    imm,
+    floor,
+    max,
+    min
   };
 
   using NodeType = Type;
@@ -119,6 +122,9 @@ class Node {
       REGISTER_NODE_TYPE(cache_load);
       REGISTER_NODE_TYPE(imm);
       REGISTER_NODE_TYPE(index);
+      REGISTER_NODE_TYPE(floor);
+      REGISTER_NODE_TYPE(max);
+      REGISTER_NODE_TYPE(min);
     }
     return node_type_names[type];
   }

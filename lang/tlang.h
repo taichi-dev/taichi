@@ -609,6 +609,32 @@ inline void for_loop(Index &index,
   body();
 }
 
+inline Expr floor(Expr &a) {
+  return Expr::create(NodeType::floor, a);
+}
+
+inline Expr max(Expr &a, Expr &b) {
+  return Expr::create(NodeType::max, a, b);
+}
+
+inline Expr min(Expr &a, Expr &b) {
+  return Expr::create(NodeType::min, a, b);
+}
+
+inline Expr imm(int i) {
+  auto n = Expr::create(NodeType::imm);
+  n->value<int32>() = i;
+  n->data_type = DataType::i32;
+  return n;
+}
+
+inline Expr imm(double i) {
+  auto  n =  Expr::create(NodeType::imm, i);
+  n->value<float32>() = i;
+  n->data_type = DataType::f32;
+  return n;
+}
+
 }  // namespace Tlang
 
 TC_NAMESPACE_END

@@ -114,6 +114,33 @@ BINARY_OP(div, /);
 #undef BINARY_OP
 
 template <int dim, typename T>
+inline VV<dim, T> min(const VV<dim, T> &a, const VV<dim, T> &b) {
+  VV<dim, T> c;
+  for (int i = 0; i < dim; i++) {
+    c[i] = std::min(a[i], b[i]);
+  }
+  return c;
+}
+
+template <int dim, typename T>
+inline VV<dim, T> max(const VV<dim, T> &a, const VV<dim, T> &b) {
+  VV<dim, T> c;
+  for (int i = 0; i < dim; i++) {
+    c[i] = std::max(a[i], b[i]);
+  }
+  return c;
+}
+
+template <int dim, typename T>
+inline VV<dim, T> floor(const VV<dim, T> &a) {
+  VV<dim, T> c;
+  for (int i = 0; i < dim; i++) {
+    c[i] = std::floor(a[i]);
+  }
+  return c;
+}
+
+template <int dim, typename T>
 inline VV<dim, T> load(T *base_address, VV<dim, int> offsets) {
   VV<dim, T> ret;
   for (int i = 0; i < dim; i++) {

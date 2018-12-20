@@ -208,6 +208,14 @@ class CPUCodeGen : public CodeGenBase {
       auto op = binary_ops[expr->type];
       emit_code("auto {} = {} {} {};", expr->var_name, expr->ch[0]->var_name,
                 op, expr->ch[1]->var_name);
+    } else if (expr->type == NodeType::max) {
+      emit_code("auto {} = max({}, {});", expr->var_name, expr[0]->var_name,
+                expr[1]->var_name);
+    } else if (expr->type == NodeType::min) {
+      emit_code("auto {} = min({}, {});", expr->var_name, expr[0]->var_name,
+                expr[1]->var_name);
+    } else if (expr->type == NodeType::floor) {
+      emit_code("auto {} = floor({});", expr->var_name, expr[0]->var_name);
     } else if (expr->type == NodeType::load) {
       emit_code("auto {} = load<{}, {}>({}_base, {}_offsets);", expr->var_name,
                 expr->group_size() * num_groups,
@@ -220,8 +228,15 @@ class CPUCodeGen : public CodeGenBase {
     } else if (expr->type == NodeType::combine) {
       // do nothing
     } else if (expr->type == NodeType::imm) {
-      TC_NOT_IMPLEMENTED
-      // do nothing
+      if (expr->data_type == DataType::i32) {
+        emit_code("auto {} = {};", expr->var_name,
+                  vv_constant_str(num_groups, DataType::i32,
+                                  (int64)expr->value<int32>()));
+      } else {
+        emit_code("auto {} = {};", expr->var_name,
+                  vv_constant_str(num_groups, DataType::f32,
+                                  (float64)expr->value<float32>()));
+      }
     } else if (expr->type == NodeType::index) {
       std::string members = "{";
       bool first = true;

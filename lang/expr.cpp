@@ -14,7 +14,7 @@ Expr &Expr::operator=(const Expr &o) {
     // store to pointed addr
     TC_ASSERT(node->type == NodeType::pointer);
     auto &prog = get_current_program();
-    TC_ASSERT(&prog != nullptr);
+    // TC_ASSERT(&prog != nullptr);
     // TC_ASSERT(node->get_address().initialized());
     prog.store(*this, o);
   }

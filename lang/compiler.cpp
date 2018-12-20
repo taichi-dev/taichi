@@ -179,7 +179,7 @@ class CPUCodeGen : public CodeGenBase {
                               std::vector<int> val) {
     std::string members = "{";
     bool first = true;
-    for (int i = 0; i < val.size(); i++) {
+    for (int i = 0; i < (int)val.size(); i++) {
       if (!first) {
         members += ",";
       }
@@ -222,7 +222,6 @@ class CPUCodeGen : public CodeGenBase {
                 data_type_name(expr->data_type), expr[0]->var_name,
                 expr[0]->var_name);
     } else if (expr->type == NodeType::store) {
-      auto addr = expr->addr();
       emit_code("store({}, {}_base, {}_offsets);", expr->ch[1]->var_name,
                 expr->ch[0]->var_name, expr->ch[0]->var_name);
     } else if (expr->type == NodeType::combine) {

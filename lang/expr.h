@@ -274,7 +274,7 @@ class Expr {
   Expr operator[](const Expr &i);
 
   Expr &operator[](int i) {
-    TC_ASSERT(0 <= i && i < node->ch.size());
+    TC_ASSERT(0 <= i && i < (int)node->ch.size());
     return node->ch[i];
   }
 };

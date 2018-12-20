@@ -46,13 +46,13 @@ auto test_loop = []() {
 TC_REGISTER_TASK(test_loop);
 
 auto advection = []() {
-  int n = 128, nattr = 4;
+  const int n = 128, nattr = 4;
 
-  Float attr[4], v[2];  // ; vx, vy
+  Float attr[nattr], v[2];  // ; vx, vy
 
   Program prog(Arch::x86_64, n);
 
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < nattr; i++) {
     prog.buffer(0).stream(0).group(0).place(attr[i]);
   }
 

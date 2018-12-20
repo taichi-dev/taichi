@@ -86,7 +86,6 @@ class Vectorizer : public Visitor {
       for (int k = 0; k < (int)expr->ch.size() / group_size; k++) {
         auto root = Expr::create(NodeType::cache_store);
         root->is_vectorized = true;
-        bool has_prior_to = false, has_same = false;
         for (int i = 0; i < group_size; i++) {
           auto ch = expr->ch[k * group_size + i];
           TC_ASSERT(ch->type == NodeType::cache_store);
@@ -401,7 +400,7 @@ struct Program {
   }
 
   Cache &cache(int i) {
-    while (caches.size() <= i) {
+    while ((int)caches.size() <= i) {
       caches.push_back(Cache());
     }
     return caches[i];

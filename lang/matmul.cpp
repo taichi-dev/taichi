@@ -550,7 +550,7 @@ TC_REGISTER_TASK(tlang_matvecmul);
 
 auto tlang_test = []() {
   default_measurement_time = 0;
-  // tlang_matmatmul();
+  tlang_matmatmul();
   tlang_matvecmul();
 };
 TC_REGISTER_TASK(tlang_test);

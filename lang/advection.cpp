@@ -89,8 +89,15 @@ auto advection = []() {
   }
   */
 
+  auto clamp = [](const Expr &e) {
+    return min(max(imm(2), e), imm(n - 2));
+  };
+
   for (int k = 0; k < nattr; k++) {
     Expr node = index + offset;
+    Int32 i = clamp(node / imm(n));
+    Int32 j = clamp(node % imm(n));
+    node = i * imm(n) + j;
 
     auto v00 = attr[0][k][node];
     auto v01 = attr[0][k][node + imm(1)];
@@ -118,7 +125,7 @@ auto advection = []() {
 
   GUI gui("Advection", n, n);
 
-  while (1) {
+  for (int f = 0; f < 1000; f++) {
     prog();
 
     for (int i = 0; i < n; i++) {
@@ -130,6 +137,7 @@ auto advection = []() {
     }
 
     gui.update();
+    gui.screenshot(fmt::format("images/{:04d}.png", f));
     std::swap(prog.buffers[0], prog.buffers[1]);
   }
 };

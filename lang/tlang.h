@@ -611,11 +611,15 @@ inline Expr floor(const Expr &a) {
 }
 
 inline Expr max(const Expr &a, const Expr &b) {
-  return Expr::create(NodeType::max, a, b);
+  auto n = Expr::create(NodeType::max, a, b);
+  n->data_type = a->data_type;
+  return n;
 }
 
 inline Expr min(const Expr &a, const Expr &b) {
-  return Expr::create(NodeType::min, a, b);
+  auto n = Expr::create(NodeType::min, a, b);
+  n->data_type = a->data_type;
+  return n;
 }
 
 inline Expr imm(int i) {

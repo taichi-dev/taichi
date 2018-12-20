@@ -1,5 +1,6 @@
 #include "tlang.h"
 #include <taichi/util.h>
+#include <taichi/visual/gui.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -46,17 +47,20 @@ auto test_loop = []() {
 TC_REGISTER_TASK(test_loop);
 
 auto advection = []() {
-  const int n = 128, nattr = 4;
+  const int n = 512, nattr = 4;
 
-  Float attr[nattr], v[2];  // ; vx, vy
+  Float attr[2][nattr], v[2];  // ; vx, vy
 
-  Program prog(Arch::x86_64, n);
+  Program prog(Arch::x86_64, n * n);
 
-  for (int i = 0; i < nattr; i++) {
-    prog.buffer(0).stream(0).group(0).place(attr[i]);
+  for (int k = 0; k < 2; k++) {
+    for (int i = 0; i < nattr; i++) {
+      prog.buffer(k).stream(0).group(0).place(attr[k][i]);
+    }
+    prog.buffer(2).stream(0).group(0).place(v[k]);
   }
+  prog.config.group_size = 1;
 
-  prog.buffer(0).stream(1).group(0).place(v[0], v[1]);
 
   auto index = Expr::index(0);
 
@@ -74,8 +78,6 @@ auto advection = []() {
   auto w10 = wx * (imm(1.0) - wy);
   auto w11 = wx * wy;
 
-  // change of SIMD width
-
   auto address = index + offset;
 
   /*
@@ -83,15 +85,38 @@ auto advection = []() {
     return prog.load(attr[i], address + offset_x * n + offset_y);
   };
 
-
   for (int i = 0; i < nattr; i++) {
     auto new_attr = w00 * load(i, 0, 0) + w01 * load(i, 0, 1) +
                     w10 * load(i, 1, 0) + w11 * load(i, 1, 1);
     // prog.store(new_attr, new_addr[i]);
   }
-   */
+  */
 
-  prog();
+  attr[1][0][index] = attr[0][0][index];
+
+  prog.compile();
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      for (int k = 0; k < nattr; k++) {
+        prog.data(attr[1][k], i * n + j) = ((float32)(i + j) / (2 * n));
+      }
+    }
+  }
+
+  GUI gui("Advection", n);
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      for (int k = 0; k < nattr; k++) {
+        gui.buffer[i][j][k] = prog.data(attr[1][k], i * n + j);
+      }
+    }
+  }
+
+  while (1) {
+    // prog();
+    gui.update();
+  }
 };
 TC_REGISTER_TASK(advection);
 

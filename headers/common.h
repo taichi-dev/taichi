@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 using float32 = float;
 using float64 = double;
 using int32 = int;

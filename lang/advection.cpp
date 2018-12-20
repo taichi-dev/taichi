@@ -68,8 +68,10 @@ auto advection = []() {
   auto offset_x = floor(v[0]);
   auto offset_y = floor(v[1]);
   auto offset = cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
-  auto wx = v[0] - offset_x;
-  auto wy = v[1] - offset_y;
+  // auto wx = v[0] - offset_x;
+  // auto wy = v[1] - offset_y;
+  auto wx = imm(0.5f);
+  auto wy = imm(0.5f);
 
   // weights
   auto w00 = (imm(1.0f) - wx) * (imm(1.0f) - wy);
@@ -92,7 +94,15 @@ auto advection = []() {
   */
 
   for (int k = 0; k < nattr; k++) {
-    attr[1][k][index] = attr[0][k][index - imm(1)];
+    Expr node = index - imm(2 * n - 2);
+
+    auto v00 = attr[0][k][node];
+    auto v01 = attr[0][k][node + imm(1)];
+    auto v10 = attr[0][k][node + imm(n)];
+    auto v11 = attr[0][k][node + imm(n + 1)];
+
+    attr[1][k][index] =
+        w00 * v00 + w01 * v01 + w10 * v10 + w11 * v11;
     // cast<float32>(xi + yi * imm(2)) / imm(3.0f * n);  // imm(0.001_f) +
     // attr[0][k][index];
   }
@@ -102,8 +112,11 @@ auto advection = []() {
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       for (int k = 0; k < nattr; k++) {
-        prog.data(attr[0][k], i * n + j) = ((float32)(i + j) / (2 * n));
+        prog.data(attr[0][k], i * n + j) = (i) % 128 / 128.0_f;
       }
+      real s = 1.0_f / n;
+      prog.data(v[0], i * n + j) = s * (j - n / 2);
+      prog.data(v[1], i * n + j) = -s * (i - n / 2);
     }
   }
 

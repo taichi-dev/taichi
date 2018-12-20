@@ -202,6 +202,8 @@ class CPUCodeGen : public CodeGenBase {
     }
     if (expr->var_name == "") {
       expr->var_name = create_variable();
+      TC_INFO("{} {} {} -> {}", expr->id, expr->node_type_name(),
+              expr->data_type_name(), expr->var_name);
     } else
       return;  // visited
     if (binary_ops.find(expr->type) != binary_ops.end()) {

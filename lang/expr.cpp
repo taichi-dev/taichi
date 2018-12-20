@@ -12,6 +12,7 @@ Expr &Expr::operator=(const Expr &o) {
     node = o.node;
   } else {
     // store to pointed addr
+    TC_ASSERT(node->type == NodeType::pointer);
     auto &prog = get_current_program();
     TC_ASSERT(&prog != nullptr);
     // TC_ASSERT(node->get_address().initialized());
@@ -21,6 +22,8 @@ Expr &Expr::operator=(const Expr &o) {
 }
 
 Expr Expr::operator[](const Expr &i) {
+  TC_ASSERT(i);
+  TC_ASSERT(i->type == NodeType::index);
   return create(Type::pointer, *this, i);
 }
 

@@ -16,6 +16,9 @@ class TikzGen : public Visitor {
 
   std::string expr_name(Expr expr) {
     std::string members = "";
+    if (!expr) {
+      TC_ERROR("expr = 0");
+    }
     if (expr->is_vectorized) {
       members = "[";
       bool first = true;
@@ -144,10 +147,10 @@ class CPUCodeGen : public CodeGenBase {
 
     {
       TC_ASSERT(prog.ret);
-      visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
+      // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
       this->group_size = group_size;
       auto vectorized_stores = Vectorizer(simd_width).run(prog.ret, 1);
-      visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
+      // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
       start_macro_loop();
       vectorized_stores.accept(*this);
       end_macro_loop();
@@ -170,7 +173,7 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void visit(Expr &expr) override {
-    TC_P(expr->id);
+    // TC_P(expr->id);
     TC_ASSERT(expr->is_vectorized);
     TC_ASSERT(expr->members.size() == 0 ||
               (int)expr->members.size() == group_size);
@@ -179,7 +182,6 @@ class CPUCodeGen : public CodeGenBase {
     }
     if (expr->var_name == "") {
       expr->var_name = create_variable();
-      fmt::print("{:12s} : {}\n", expr->node_type_name(), expr->var_name);
     } else
       return;  // visited
     if (binary_ops.find(expr->type) != binary_ops.end()) {

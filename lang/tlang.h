@@ -31,7 +31,7 @@ class Vectorizer : public Visitor {
   }
 
   void sort(Expr &expr) {
-    auto ch = expr->ch; // a bunch of store nodes
+    auto ch = expr->ch;  // a bunch of store nodes
     std::vector<Expr> sorted;
 
     while (!ch.empty()) {
@@ -132,13 +132,12 @@ class Vectorizer : public Visitor {
         combined->ch.push_back(root);
       }
     }
-
-    TC_P(combined->ch.size());
+    // TC_P(combined->ch.size());
     return combined;
   }
 
   void visit(Expr &expr) override {
-    TC_P(expr->node_type_name());
+    // TC_P(expr->node_type_name());
     // Note: expr may be replaced by an existing vectorized Expr
     if (scalar_to_vector.find(expr->members[0]) != scalar_to_vector.end()) {
       auto existing = scalar_to_vector[expr->members[0]];
@@ -183,7 +182,7 @@ class Vectorizer : public Visitor {
     }
 
     if (expr->type == NodeType::addr) {
-      auto addr = expr->members[0]->get_address_(); // TODO:
+      auto addr = expr->members[0]->get_address_();  // TODO:
       if (addr.coeff_aosoa_group_size == 0 || addr.coeff_aosoa_stride == 0) {
         addr.coeff_aosoa_group_size = num_groups;
         addr.coeff_aosoa_stride = 0;
@@ -459,7 +458,7 @@ struct Program {
   }
 
   float32 &data(Expr &expr, int i) {
-    auto &addr = expr->get_address_(); // TODO:...
+    auto &addr = expr->get_address_();  // TODO:...
     TC_ASSERT(addr.initialized());
     allocate_buffer(addr.buffer_id);
     return buffers[addr.buffer_id].get<float32>()[addr.eval(i, n)];
@@ -546,6 +545,14 @@ struct Matrix {
     }
     return ret;
   }
+
+  Matrix operator[](Expr index) {
+    Matrix ret(n, m);
+    for (int i = 0; i < n * m; i++) {
+      ret.entries[i] = entries[i][index];
+    }
+    return ret;
+  }
 };
 
 inline Matrix operator*(const Matrix &A, const Matrix &B) {
@@ -593,7 +600,9 @@ inline std::pair<int64, int64> range(int64 start, int64 end) {
 }
 
 using ForBody = std::function<void()>;
-inline void for_loop(Index &index, std::pair<int64, int64> r, const ForBody &body) {
+inline void for_loop(Index &index,
+                     std::pair<int64, int64> r,
+                     const ForBody &body) {
   auto &prog = get_current_program();
   TC_ASSERT(r.first == 0);
   TC_ASSERT(prog.n == r.second);

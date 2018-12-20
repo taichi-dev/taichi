@@ -212,8 +212,13 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
     }
   }
 
-  c = a * b;
+  Expr ind = Expr::index(0);
+  for_loop(ind, {0, n}, [&]() {
+    c[ind] = a[ind] * b[ind];
+  });
 
+
+  prog.materialize_layout();
   prog.compile();
 
   AlignedAllocator A(sizeof(T) * n * dim * dim);
@@ -322,6 +327,7 @@ void run_matmatmul() {
 }
 
 void initialize_benchmark() {
+  CoreState::set_trigger_gdb_when_crash(true);
   static bool initialized = false;
   if (initialized) {
     return;

@@ -606,15 +606,15 @@ inline void for_loop(Index &index,
   body();
 }
 
-inline Expr floor(Expr &a) {
-  return Expr::create(NodeType::floor, a);
+inline Expr floor(const Expr &a) {
+  return Expr::create(NodeType::floor, Expr::load_if_pointer(a));
 }
 
-inline Expr max(Expr &a, Expr &b) {
+inline Expr max(const Expr &a, const Expr &b) {
   return Expr::create(NodeType::max, a, b);
 }
 
-inline Expr min(Expr &a, Expr &b) {
+inline Expr min(const Expr &a, const Expr &b) {
   return Expr::create(NodeType::min, a, b);
 }
 

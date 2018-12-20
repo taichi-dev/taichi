@@ -65,21 +65,17 @@ auto advection = []() {
   Int32 xi = index % imm(n);
   Int32 yi = index / imm(n);
 
-  auto offset_x = floor(v[0]);
-  auto offset_y = floor(v[1]);
+  auto offset_x = floor(v[0][index]);
+  auto offset_y = floor(v[1][index]);
   auto offset = cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
-  // auto wx = v[0] - offset_x;
-  // auto wy = v[1] - offset_y;
-  auto wx = imm(0.5f);
-  auto wy = imm(0.5f);
+  auto wx = v[0][index] - offset_x;
+  auto wy = v[1][index] - offset_y;
 
   // weights
   auto w00 = (imm(1.0f) - wx) * (imm(1.0f) - wy);
   auto w01 = (imm(1.0f) - wx) * wy;
   auto w10 = wx * (imm(1.0f) - wy);
   auto w11 = wx * wy;
-
-  auto address = index + offset;
 
   /*
   auto load = [&](int i, int offset_x, int offset_y) {
@@ -94,7 +90,7 @@ auto advection = []() {
   */
 
   for (int k = 0; k < nattr; k++) {
-    Expr node = index - imm(2 * n - 2);
+    Expr node = index + offset;
 
     auto v00 = attr[0][k][node];
     auto v01 = attr[0][k][node + imm(1)];

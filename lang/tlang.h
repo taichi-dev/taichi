@@ -623,7 +623,6 @@ inline Expr min(const Expr &a, const Expr &b) {
 }
 
 inline Expr imm(int i) {
-  TC_TAG;
   auto n = Expr::create(NodeType::imm);
   n->value<int32>() = i;
   n->data_type = DataType::i32;

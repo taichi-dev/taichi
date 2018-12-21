@@ -468,6 +468,10 @@ struct Program {
   void materialize_layout() {
     alloc.materialize();
   }
+
+  void swap_buffers(int i, int j) {
+    std::swap(buffers[i], buffers[j]);
+  }
 };
 
 using Real = Expr;

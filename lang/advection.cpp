@@ -49,7 +49,7 @@ TC_REGISTER_TASK(test_loop);
 auto advection = []() {
   const int n = 512, nattr = 1;
 
-  Float attr[2][nattr], v[2];  // ; vx, vy
+  Float attr[2][nattr], v[2];
 
   Program prog(Arch::x86_64, n * n);
 
@@ -62,14 +62,20 @@ auto advection = []() {
   prog.config.group_size = 1;
 
   auto index = Expr::index(0);
-  Int32 xi = index % imm(n);
-  Int32 yi = index / imm(n);
+  Int32 xi = index % imm(n) / imm(1);
+  Int32 yi = index % imm(n * n) / imm(n);
 
   auto offset_x = floor(v[0][index]);
   auto offset_y = floor(v[1][index]);
-  auto offset = cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
   auto wx = v[0][index] - offset_x;
   auto wy = v[1][index] - offset_y;
+
+  // before computing offset, convert to gs=1
+  // prog.adapt(offset_x, offset_y, 1); // convert to group_size = 1
+  auto offset = cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
+
+  // Adapter
+  // Adapter adapter;
 
   // weights
   auto w00 = (imm(1.0f) - wx) * (imm(1.0f) - wy);
@@ -77,17 +83,10 @@ auto advection = []() {
   auto w10 = wx * (imm(1.0f) - wy);
   auto w11 = wx * wy;
 
-  /*
-  auto load = [&](int i, int offset_x, int offset_y) {
-    return prog.load(attr[i], address + offset_x * n + offset_y);
-  };
-
-  for (int i = 0; i < nattr; i++) {
-    auto new_attr = w00 * load(i, 0, 0) + w01 * load(i, 0, 1) +
-                    w10 * load(i, 1, 0) + w11 * load(i, 1, 1);
-    // prog.store(new_attr, new_addr[i]);
-  }
-  */
+  // adapter(w00);
+  // adapter(w01);
+  // adapter(w10);
+  // adapter(w11);
 
   auto clamp = [](const Expr &e) {
     return min(max(imm(2), e), imm(n - 2));
@@ -99,15 +98,14 @@ auto advection = []() {
     Int32 j = clamp(node % imm(n));
     node = i * imm(n) + j;
 
-    auto v00 = attr[0][k][node];
+    auto v00 = attr[0][k][node + imm(0)];
     auto v01 = attr[0][k][node + imm(1)];
     auto v10 = attr[0][k][node + imm(n)];
     auto v11 = attr[0][k][node + imm(n + 1)];
 
     attr[1][k][index] =
         w00 * v00 + w01 * v01 + w10 * v10 + w11 * v11;
-    // cast<float32>(xi + yi * imm(2)) / imm(3.0f * n);  // imm(0.001_f) +
-    // attr[0][k][index];
+
   }
 
   prog.compile();
@@ -115,7 +113,7 @@ auto advection = []() {
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       for (int k = 0; k < nattr; k++) {
-        prog.data(attr[0][k], i * n + j) = (i) % 128 / 128.0_f;
+        prog.data(attr[0][k], i * n + j) = i % 128 / 128.0_f;
       }
       real s = 1.0_f / n;
       prog.data(v[0], i * n + j) = s * (j - n / 2);
@@ -138,7 +136,7 @@ auto advection = []() {
 
     gui.update();
     gui.screenshot(fmt::format("images/{:04d}.png", f));
-    std::swap(prog.buffers[0], prog.buffers[1]);
+    prog.swap_buffers(0, 1);
   }
 };
 TC_REGISTER_TASK(advection);

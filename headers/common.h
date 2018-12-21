@@ -227,6 +227,10 @@ struct Adapter {
     static_assert(0 <= i && i < num_outputs, "");
     return outputs[i];
   }
+
+  auto get(int i) {
+    return outputs[i];
+  }
 };
 
 // End Virtual Vectors

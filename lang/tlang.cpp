@@ -1,5 +1,6 @@
 #include "tlang.h"
 #include <taichi/system/timer.h>
+#include <taichi/testing.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -54,6 +55,22 @@ real measure_cpe(std::function<void()> target,
   auto elasped_cycles =
       (Time::get_time() - start_t) * 1e9_f64 * get_cpu_frequency();
   return elasped_cycles / float64(total_batches * elements_per_call);
+}
+
+TC_TEST("Adapter") {
+  // num_groups, num_inputs, input_group_size, output_group_size
+  VV<32, int> input0;
+  for (int i = 0; i < 32; i++) {
+    input0[i] = i;
+  }
+  Adapter<int, 8, 1, 4, 1> adapter;
+  adapter.set<0>(input0);
+  adapter.shuffle();
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 8; j++) {
+      TC_CHECK(adapter.get(i)[j] == i + j * 4);
+    }
+  }
 }
 }
 

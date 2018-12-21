@@ -189,6 +189,10 @@ struct Adapter {
     inputs[i] = v;
   }
 
+  void set(int i, const VV<input_dim, T> &v) {
+    inputs[i] = v;
+  }
+
   void shuffle() {
     constexpr int num_elements = num_inputs * input_group_size;
     static_assert(num_inputs * num_elements * input_group_size ==

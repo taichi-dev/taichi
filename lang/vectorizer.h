@@ -8,12 +8,9 @@ namespace taichi::Tlang {
 class Vectorizer : public Visitor {
  public:
   std::map<Expr, Expr> scalar_to_vector;
-  int simd_width;
   int group_size;
-  int num_groups;
 
-  Vectorizer(int simd_width)
-      : Visitor(Visitor::Order::parent_first), simd_width(simd_width) {
+  Vectorizer() : Visitor(Visitor::Order::parent_first) {
   }
 
   void sort(Expr &expr);

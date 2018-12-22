@@ -39,8 +39,6 @@ void Vectorizer::sort(Expr &expr) {
 Expr Vectorizer::run(Expr &expr, int group_size) {
   TC_ASSERT(expr);
   this->group_size = group_size;
-  this->num_groups = simd_width / group_size;
-  TC_ASSERT(group_size * num_groups == simd_width);
 
   scalar_to_vector.clear();
   // expr should be a ret Op, with its children store Ops.
@@ -173,7 +171,7 @@ void Vectorizer::visit(Expr &expr) {
   if (expr->type == NodeType::addr) {
     auto addr = expr->members[0]->get_address_();  // TODO:
     if (addr.coeff_aosoa_group_size == 0 || addr.coeff_aosoa_stride == 0) {
-      addr.coeff_aosoa_group_size = num_groups;
+      addr.coeff_aosoa_group_size = 0;
       addr.coeff_aosoa_stride = 0;
     }
     expr->get_address_() = addr;

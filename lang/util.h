@@ -17,7 +17,6 @@ inline int default_simd_width(Arch arch) {
   }
 }
 
-
 struct CompileConfig {
 
   Arch arch;

@@ -141,7 +141,7 @@ class CPUCodeGen : public CodeGenBase {
       this->group_size = 1;
       TC_P(cache.stores->ch.size());
       auto vectorized_cache_stores =
-          Vectorizer(simd_width).run(cache.stores, 1);
+          Vectorizer().run(cache.stores, 1);
 
       start_macro_loop();
       vectorized_cache_stores.accept(*this);
@@ -153,7 +153,7 @@ class CPUCodeGen : public CodeGenBase {
       // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
       this->group_size = group_size;
       auto vectorized_stores =
-          Vectorizer(simd_width).run(prog.ret, prog.config.group_size);
+          Vectorizer().run(prog.ret, prog.config.group_size);
       // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
       start_macro_loop();
       vectorized_stores.accept(*this);

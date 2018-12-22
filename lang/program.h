@@ -34,12 +34,14 @@ struct Adapter {
 
 struct Program {
   int n;
+
   CompileConfig config;
   FunctionType function;
   MemoryAllocator alloc;
   Device device;
-  std::vector<AlignedAllocator> buffers;
   Expr ret;
+
+  std::vector<AlignedAllocator> buffers;
   std::vector<Adapter> adapters;
 
   Program(Arch arch, int n) : n(n) {
@@ -61,7 +63,7 @@ struct Program {
     current_program = nullptr;
   }
 
-  Adapter &cache(int i) {
+  Adapter &adapter(int i) {
     while ((int)adapters.size() <= i) {
       adapters.push_back(Adapter());
     }

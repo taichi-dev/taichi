@@ -136,7 +136,7 @@ class CPUCodeGen : public CodeGenBase {
     // emit_code("float32 {}[128];", get_cache_name(0));
 
     // Body
-    for (auto cache : prog.caches) {
+    for (auto cache : prog.adapters) {
       TC_NOT_IMPLEMENTED;
       this->group_size = 1;
       TC_P(cache.stores->ch.size());

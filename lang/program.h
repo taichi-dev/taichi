@@ -12,10 +12,10 @@ TC_FORCE_INLINE Program &get_current_program() {
   return *current_program;
 }
 
-struct Cache {
+struct Adapter {
   Expr stores;
 
-  Cache() {
+  Adapter() {
     stores = Expr::create(Expr::Type::combine);
   }
 
@@ -33,14 +33,14 @@ struct Cache {
 };
 
 struct Program {
+  int n;
   CompileConfig config;
   FunctionType function;
-  int n;
   MemoryAllocator alloc;
   Device device;
   std::vector<AlignedAllocator> buffers;
   Expr ret;
-  std::vector<Cache> caches;
+  std::vector<Adapter> adapters;
 
   Program(Arch arch, int n) : n(n) {
     Node::reset_counter();
@@ -61,11 +61,11 @@ struct Program {
     current_program = nullptr;
   }
 
-  Cache &cache(int i) {
-    while ((int)caches.size() <= i) {
-      caches.push_back(Cache());
+  Adapter &cache(int i) {
+    while ((int)adapters.size() <= i) {
+      adapters.push_back(Adapter());
     }
-    return caches[i];
+    return adapters[i];
   }
 
   Expr store(const Expr &ad, const Expr &e) {
@@ -133,6 +133,5 @@ struct Program {
     std::swap(buffers[i], buffers[j]);
   }
 };
-
 
 }

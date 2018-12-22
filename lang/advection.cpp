@@ -70,7 +70,7 @@ auto advection = []() {
   auto wx = v[0][index] - offset_x;
   auto wy = v[1][index] - offset_y;
 
-  // before computing offset, convert to gs=1
+  // ** gs=1
   // prog.adapt(offset_x, offset_y, 1); // convert to group_size = 1
   auto offset = cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
 
@@ -88,9 +88,7 @@ auto advection = []() {
   // adapter(w10);
   // adapter(w11);
 
-  auto clamp = [](const Expr &e) {
-    return min(max(imm(2), e), imm(n - 2));
-  };
+  auto clamp = [](const Expr &e) { return min(max(imm(2), e), imm(n - 2)); };
 
   for (int k = 0; k < nattr; k++) {
     Expr node = index + offset;
@@ -103,9 +101,7 @@ auto advection = []() {
     auto v10 = attr[0][k][node + imm(n)];
     auto v11 = attr[0][k][node + imm(n + 1)];
 
-    attr[1][k][index] =
-        w00 * v00 + w01 * v01 + w10 * v10 + w11 * v11;
-
+    attr[1][k][index] = w00 * v00 + w01 * v01 + w10 * v10 + w11 * v11;
   }
 
   prog.compile();
@@ -115,7 +111,7 @@ auto advection = []() {
       for (int k = 0; k < nattr; k++) {
         prog.data(attr[0][k], i * n + j) = i % 128 / 128.0_f;
       }
-      real s = 1.0_f / n;
+      real s = 3.0_f / n;
       prog.data(v[0], i * n + j) = s * (j - n / 2);
       prog.data(v[1], i * n + j) = -s * (i - n / 2);
     }
@@ -124,12 +120,14 @@ auto advection = []() {
   GUI gui("Advection", n, n);
 
   for (int f = 0; f < 1000; f++) {
-    prog();
+    for (int t = 0; t < 3; t++) {
+      prog();
 
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < n; j++) {
-        for (int k = 0; k < nattr; k++) {
-          gui.buffer[i][j] = Vector4(prog.data(attr[1][k], i * n + j));
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+          for (int k = 0; k < nattr; k++) {
+            gui.buffer[i][j] = Vector4(prog.data(attr[1][k], i * n + j));
+          }
         }
       }
     }
@@ -141,38 +139,42 @@ auto advection = []() {
 };
 TC_REGISTER_TASK(advection);
 
-/*
 auto test_adapter = []() {
   Float a, b;
-  int vec_size = 8;
-  Vector v(vec_size);
+  int vec_size = 1;
+  Vector v(vec_size), u(vec_size);
 
   int n = 16;
 
   Program prog(Arch::x86_64, 2048);
-  prog.config.group_size = 8;
+  prog.config.group_size = 1;
 
   prog.buffer(0).stream(0).group(0).place(a, b);
-  for (int i = 0; i < vec_size; i++)
+  for (int i = 0; i < vec_size; i++) {
     prog.buffer(1).stream(0).group(0).place(v(i));
+    prog.buffer(2).stream(0).group(0).place(u(i));
+  }
 
   // cache
-  auto &c = prog.cache(0);  // TODO: specify group_size = 1
-  c.store(a * b, 0);
+  // auto &c = prog.cache(0);  // TODO: specify group_size = 1
+  // c.store(a * b, 0);
 
-  auto ab = c.load(0);  // 0th element
+  auto ind = Expr::index(0);
+
+  // auto ab = c.load(0);  // 0th element
+  auto ab = a[ind] * b[ind];
 
   for (int d = 0; d < vec_size; d++) {
-    v(d) = ab * v(d);
+    u(d)[ind] = ab * v(d)[ind];
   }
 
   prog.materialize_layout();
 
   for (int i = 0; i < n; i++) {
     prog.data(a, i) = i;
-    prog.data(b, i) = i * 2;
+    prog.data(b, i) = (i + 1) * 2;
     for (int j = 0; j < vec_size; j++) {
-      prog.data(v(j), j) = 1.0_f * j / i;
+      prog.data(v(j), i) = 1.0_f * j / (i + 1);
     }
   }
 
@@ -180,7 +182,7 @@ auto test_adapter = []() {
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < vec_size; j++) {
-      auto val = prog.data(v(j), i);
+      auto val = prog.data(u(j), i);
       auto gt = i * j * 2;
       if (abs(gt - val) > 1e-5_f) {
         TC_P(i);
@@ -196,7 +198,6 @@ auto test_adapter = []() {
 // TODO: random access
 
 TC_REGISTER_TASK(test_adapter);
-*/
 
 /*
 #define For(i, range) \

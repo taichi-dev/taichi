@@ -57,6 +57,7 @@ Expr Vectorizer::run(Expr &expr, int group_size) {
       auto root = Expr::create(NodeType::cache_store);
       root->is_vectorized = true;
       for (int i = 0; i < group_size; i++) {
+        TC_ASSERT(expr[k]->type == NodeType::cache_store);
         auto ch = expr->ch[k * group_size + i];
         TC_ASSERT(ch->type == NodeType::cache_store);
         root->members.push_back(ch);  // put scalar inst into vector members
@@ -65,12 +66,13 @@ Expr Vectorizer::run(Expr &expr, int group_size) {
       root.accept(*this);
       combined->ch.push_back(root);
     }
-  } else {
+  } else if (expr->ch[0]->type == NodeType::store) {
     // main memory store
     sort(expr);
 
     // for each batch (group)
     for (int k = 0; k < (int)expr->ch.size() / group_size; k++) {
+      TC_ASSERT(expr[k]->type == NodeType::store);
       auto root = Expr::create(NodeType::store);
       root->is_vectorized = true;
       bool has_prior_to = false, has_same = false;
@@ -99,6 +101,8 @@ Expr Vectorizer::run(Expr &expr, int group_size) {
       root.accept(*this);
       combined->ch.push_back(root);
     }
+  } else {
+    TC_NOT_IMPLEMENTED
   }
   // TC_P(combined->ch.size());
   return combined;

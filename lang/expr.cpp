@@ -7,8 +7,8 @@ int Node::counter = 0;
 std::map<Node::Type, std::string> Node::node_type_names;
 
 Expr &Expr::operator=(const Expr &o) {
-  // TC_ASSERT(allow_assignment);
-  if (!allow_assignment || !node || node->type != NodeType::pointer) {
+  // TC_ASSERT(allow_store);
+  if (!allow_store || !node || node->type != NodeType::pointer) {
     // Expr assignment
     node = o.node;
   } else {
@@ -29,7 +29,7 @@ Expr Expr::operator[](const Expr &i) {
   return create(Type::pointer, *this, i);
 }
 
-bool Expr::allow_assignment = true;
+bool Expr::allow_store = true;
 
 }
 

@@ -540,11 +540,11 @@ void test_mat_vec_mul_all() {
 
 auto tlang_matvecmul = []() {
   initialize_benchmark();
-  // test_vec_add();
-  // test_mat_vec_mul_all<1>();
-  // test_mat_vec_mul_all<2>();
+  test_vec_add();
+  test_mat_vec_mul_all<1>();
+  test_mat_vec_mul_all<2>();
   test_mat_vec_mul_all<4>();
-  // test_mat_vec_mul_all<8>();
+  test_mat_vec_mul_all<8>();
 };
 TC_REGISTER_TASK(tlang_matvecmul);
 

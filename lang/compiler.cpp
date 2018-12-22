@@ -148,11 +148,11 @@ class CPUCodeGen : public CodeGenBase {
 
     {
       TC_ASSERT(prog.ret);
-      visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
+      // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
       this->group_size = group_size;
       auto vectorized_stores =
           Vectorizer(simd_width).run(prog.ret, prog.config.group_size);
-      visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
+      // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
       start_macro_loop();
       vectorized_stores.accept(*this);
       end_macro_loop();
@@ -528,7 +528,7 @@ class GPUCodeGen : public CodeGenBase {
 #endif
 
 void Program::compile() {
-  Expr::set_allow_assignment(false);
+  Expr::set_allow_store(false);
   materialize_layout();
   if (config.simd_width == -1) {
     config.simd_width = default_simd_width(config.arch);
@@ -545,7 +545,7 @@ void Program::compile() {
   } else {
     TC_NOT_IMPLEMENTED;
   }
-  Expr::set_allow_assignment(true);
+  Expr::set_allow_store(true);
 }
 }
 

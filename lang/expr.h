@@ -167,13 +167,13 @@ class Visitor;
 class Expr {
  private:
   Handle<Node> node;
-  static bool allow_assignment;
+  static bool allow_store;
 
  public:
   using Type = Node::Type;
 
-  static void set_allow_assignment(bool val) {
-    allow_assignment = val;
+  static void set_allow_store(bool val) {
+    allow_store = val;
   }
 
   auto &get_node() {
@@ -282,17 +282,10 @@ class Expr {
 
   void accept(Visitor &visitor) {
     if (visitor.order == Visitor::Order::parent_first) {
-      int old_id = (*this)->id;
       visitor.visit(*this);
-      int new_id = (*this)->id;
-      // TC_WARN_UNLESS(old_id == new_id, "{} -> {}", old_id, new_id);
-      // TC_WARN("{} -> {}", old_id, new_id);
     }
     for (auto &c : this->node->ch) {
-      int old_id = c->id;
       c.accept(visitor);
-      int new_id = c->id;
-      // TC_WARN_UNLESS(old_id == new_id, "{} -> {}", old_id, new_id);
     }
     if (visitor.order == Visitor::Order::child_first) {
       visitor.visit(*this);

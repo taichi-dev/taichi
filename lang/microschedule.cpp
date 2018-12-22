@@ -46,6 +46,12 @@ auto test_loop = []() {
 
 TC_REGISTER_TASK(test_loop);
 
+void mul0(int n, float *a, float *b, float *c, float *d) {
+  for (int i = 0; i < n; i += 8) {
+    _mm256_store_ps(d + i,  _mm256_load_ps(a + i) + _mm256_load_ps(b + i));
+  }
+}
+
 void mul1(int n, float *a, float *b, float *c, float *d) {
   /*
   for (int i = 0; i < n; i++) {
@@ -90,23 +96,41 @@ void mul2(int n, float *a, float *b, float *c, float *d) {
 
 void mul3(int n, float *a, float *b, float *c, float *d) {
   float buffer[8];
-  for (int i = 0; i < n; i += 8) {
-    auto va = _mm256_load_ps(a + i);
-    auto vb = _mm256_load_ps(b + i);
-    auto vab = va * vb;
-    _mm256_store_ps(buffer, vab);
+  for (int i = 0; i < n; ) {
 #define LOOP(l)        \
   _mm256_store_ps(     \
       d + 8 * (i + l), \
       _mm256_broadcast_ss(buffer + l) * _mm256_load_ps(c + 8 * (i + l)));
-    LOOP(0);
-    LOOP(1);
-    LOOP(2);
-    LOOP(3);
-    LOOP(4);
-    LOOP(5);
-    LOOP(6);
-    LOOP(7);
+    {
+      auto va = _mm256_load_ps(a + i);
+      auto vb = _mm256_load_ps(b + i);
+      auto vab = va * vb;
+      _mm256_store_ps(buffer, vab);
+      LOOP(0);
+      LOOP(1);
+      LOOP(2);
+      LOOP(3);
+      LOOP(4);
+      LOOP(5);
+      LOOP(6);
+      LOOP(7);
+      i += 8;
+    }
+    {
+      auto va = _mm256_load_ps(a + i);
+      auto vb = _mm256_load_ps(b + i);
+      auto vab = va * vb;
+      _mm256_store_ps(buffer, vab);
+      LOOP(0);
+      LOOP(1);
+      LOOP(2);
+      LOOP(3);
+      LOOP(4);
+      LOOP(5);
+      LOOP(6);
+      LOOP(7);
+      i += 8;
+    }
   }
 }
 
@@ -124,6 +148,15 @@ auto benchmark_microschedule = []() {
       C.get<float32>()[i * 8 + j] = j;
     }
   }
+
+  auto scal = measure_cpe(
+      [&]() {
+        mul0(n, A.get<float32>(), B.get<float32>(), C.get<float32>(),
+             D.get<float32>());
+      },
+      n, 1);
+
+  TC_P(scal);
 
   auto pure = measure_cpe(
       [&]() {

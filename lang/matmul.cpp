@@ -542,7 +542,7 @@ auto tlang_matvecmul = []() {
   initialize_benchmark();
   // test_vec_add();
   // test_mat_vec_mul_all<1>();
-  test_mat_vec_mul_all<2>();
+  // test_mat_vec_mul_all<2>();
   test_mat_vec_mul_all<4>();
   // test_mat_vec_mul_all<8>();
 };

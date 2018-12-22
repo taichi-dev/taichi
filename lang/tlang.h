@@ -142,9 +142,24 @@ class Vectorizer : public Visitor {
     if (scalar_to_vector.find(expr->members[0]) != scalar_to_vector.end()) {
       auto existing = scalar_to_vector[expr->members[0]];
       TC_ASSERT(existing->members.size() == expr->members.size());
+      bool mismatch = false;
       for (int i = 0; i < (int)existing->members.size(); i++) {
-        TC_ASSERT(existing->members[i] == expr->members[i]);
+        if (existing->members[i] != expr->members[i])
+          mismatch = true;
       }
+      if (mismatch) {
+        for (int i = 0; i < (int)existing->members.size(); i++) {
+          TC_P(i);
+          TC_P(existing->members[i]->id);
+          TC_P(existing->members[i]->node_type_name());
+          TC_P(expr->members[i]->id);
+          TC_P(expr->members[i]->node_type_name());
+          if (existing->members[i] != expr->members[i])
+            mismatch = true;
+          TC_WARN_UNLESS(existing->members[i] == expr->members[i], "mismatch");
+        }
+      }
+      TC_ASSERT(!mismatch);
       expr.set(existing);
       // TC_WARN("Using existing {} for {}", existing->id, expr->id);
       return;
@@ -387,6 +402,7 @@ struct Program {
   std::vector<Cache> caches;
 
   Program(CompileConfig::Arch arch, int n) : n(n) {
+    Node::reset_counter();
     TC_ASSERT(current_program == nullptr);
     current_program = this;
     config.arch = arch;
@@ -657,7 +673,6 @@ inline Expr cast(const Expr &i) {
 inline Float32 lerp(Float a, Float x0, Float x1) {
   return (imm(1.0_f) - a) * x0 + a * x1;
 }
-
 
 }  // namespace Tlang
 

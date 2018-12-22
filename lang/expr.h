@@ -50,6 +50,10 @@ class Node {
   static int counter;
 
  public:
+  static void reset_counter() {
+    counter = 0;
+  }
+
   // TODO: rename
   enum class Type : int {
     mul,
@@ -163,9 +167,14 @@ class Visitor;
 class Expr {
  private:
   Handle<Node> node;
+  static bool allow_assignment;
 
  public:
   using Type = Node::Type;
+
+  static void set_allow_assignment(bool val) {
+    allow_assignment = val;
+  }
 
   auto &get_node() {
     return node;
@@ -267,12 +276,16 @@ class Expr {
     return (void *)(*this) == (void *)o;
   }
 
+  bool operator!=(const Expr &o) const {
+    return (void *)(*this) != (void *)o;
+  }
+
   void accept(Visitor &visitor) {
     if (visitor.order == Visitor::Order::parent_first) {
       int old_id = (*this)->id;
       visitor.visit(*this);
       int new_id = (*this)->id;
-      //TC_WARN_UNLESS(old_id == new_id, "{} -> {}", old_id, new_id);
+      // TC_WARN_UNLESS(old_id == new_id, "{} -> {}", old_id, new_id);
       // TC_WARN("{} -> {}", old_id, new_id);
     }
     for (auto &c : this->node->ch) {

@@ -148,11 +148,11 @@ class CPUCodeGen : public CodeGenBase {
 
     {
       TC_ASSERT(prog.ret);
-      // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
+      visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
       this->group_size = group_size;
       auto vectorized_stores =
           Vectorizer(simd_width).run(prog.ret, prog.config.group_size);
-      // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
+      visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
       start_macro_loop();
       vectorized_stores.accept(*this);
       end_macro_loop();
@@ -192,8 +192,8 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void visit(Expr &expr) override {
-    TC_P(expr->id);
-    TC_P(expr->node_type_name());
+    // TC_P(expr->id);
+    // TC_P(expr->node_type_name());
     auto vv_width = num_groups * expr->group_size();
     TC_ASSERT(expr->is_vectorized);
     TC_ASSERT(expr->members.size() == 0 ||
@@ -203,8 +203,10 @@ class CPUCodeGen : public CodeGenBase {
     }
     if (expr->var_name == "") {
       expr->var_name = create_variable();
+      /*
       TC_INFO("{} {} {} -> {}", expr->id, expr->node_type_name(),
               expr->data_type_name(), expr->var_name);
+              */
     } else
       return;  // visited
     if (binary_ops.find(expr->type) != binary_ops.end()) {
@@ -526,6 +528,7 @@ class GPUCodeGen : public CodeGenBase {
 #endif
 
 void Program::compile() {
+  Expr::set_allow_assignment(false);
   materialize_layout();
   if (config.simd_width == -1) {
     config.simd_width = default_simd_width(config.arch);
@@ -542,6 +545,7 @@ void Program::compile() {
   } else {
     TC_NOT_IMPLEMENTED;
   }
+  Expr::set_allow_assignment(true);
 }
 }
 

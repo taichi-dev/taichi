@@ -14,7 +14,7 @@ public:
 
   Order order;
 
-  Visitor(Order order = Order::parent_first) : order(order) {
+  Visitor(Order order) : order(order) {
   }
 
   virtual void visit(Expr &expr) = 0;

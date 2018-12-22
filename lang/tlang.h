@@ -136,6 +136,7 @@ class Vectorizer : public Visitor {
   }
 
   void visit(Expr &expr) override {
+    TC_INFO("Visiting {} {}", expr->id, expr->node_type_name());
     // TC_P(expr->node_type_name());
     // Note: expr may be replaced by an existing vectorized Expr
     if (scalar_to_vector.find(expr->members[0]) != scalar_to_vector.end()) {
@@ -145,6 +146,7 @@ class Vectorizer : public Visitor {
         TC_ASSERT(existing->members[i] == expr->members[i]);
       }
       expr = existing;
+      TC_INFO("Using existing {} for {}", existing->id, expr->id);
       return;
     }
 
@@ -168,6 +170,7 @@ class Vectorizer : public Visitor {
       for (int i = 0; i < (int)member->ch.size(); i++) {
         vectorized_children[i].push_back(member->ch[i]);
       }
+      scalar_to_vector[member] = expr;
     }
 
     expr->is_vectorized = true;

@@ -272,7 +272,10 @@ class Expr {
       visitor.visit(*this);
     }
     for (auto &c : this->node->ch) {
+      int old_id = c->id;
       c.accept(visitor);
+      int new_id = c->id;
+      TC_WARN_UNLESS(old_id == new_id, "");
     }
     if (visitor.order == Visitor::Order::child_first) {
       visitor.visit(*this);

@@ -35,7 +35,7 @@ class TikzGen : public Visitor {
   }
 
   void link(Expr a, Expr b) {
-    graph += fmt::format("{} -- {}; ", expr_name(a), expr_name(b));
+    graph += fmt::format("{} -> {}; ", expr_name(a), expr_name(b));
   }
 
   void visit(Expr &expr) override {
@@ -192,7 +192,8 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void visit(Expr &expr) override {
-    // TC_P(expr->id);
+    TC_P(expr->id);
+    TC_P(expr->node_type_name());
     auto vv_width = num_groups * expr->group_size();
     TC_ASSERT(expr->is_vectorized);
     TC_ASSERT(expr->members.size() == 0 ||

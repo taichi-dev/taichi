@@ -152,7 +152,6 @@ auto test_adapter = []() {
   prog.buffer(0).stream(0).group(0).place(a, b);
   for (int i = 0; i < vec_size; i++) {
     prog.buffer(1).stream(0).group(0).place(v(i));
-    prog.buffer(2).stream(0).group(0).place(u(i));
   }
 
   // cache
@@ -165,7 +164,7 @@ auto test_adapter = []() {
   auto ab = a[ind] * b[ind];
 
   for (int d = 0; d < vec_size; d++) {
-    u(d)[ind] = ab * v(d)[ind];
+    v(d)[ind] = ab * v(d)[ind];
   }
 
   prog.materialize_layout();
@@ -182,7 +181,7 @@ auto test_adapter = []() {
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < vec_size; j++) {
-      auto val = prog.data(u(j), i);
+      auto val = prog.data(v(j), i);
       auto gt = i * j * 2;
       if (abs(gt - val) > 1e-5_f) {
         TC_P(i);

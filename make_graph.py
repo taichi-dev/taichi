@@ -18,6 +18,7 @@ head = r'''
 \usegdlibrary{layered}
 \usetikzlibrary{shapes.multipart}
 \usepackage[utf8]{inputenc}
+\usepackage{graphicx}
 
 \title{IR Visualization}
 
@@ -26,6 +27,7 @@ head = r'''
 \maketitle
 
 \begin{center}
+\scalebox{0.2}{
 \tikz []
 %\tikz
 \graph [layered layout, components go right top aligned, nodes=draw, edges=rounded corners]
@@ -34,7 +36,7 @@ head = r'''
 '''
 
 tail = r'''
-};
+};}
 \end{center}
 
 \end{document}

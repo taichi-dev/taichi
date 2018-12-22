@@ -57,7 +57,6 @@ void visualize_IR(std::string fn, Expr &expr) {
   system(cmd.c_str());
 }
 
-
 class CPUCodeGen : public CodeGenBase {
  public:
   int unroll;
@@ -129,23 +128,52 @@ class CPUCodeGen : public CodeGenBase {
     emit_code("#undef LOOP\n");
   }
 
+  std::string adapter_name(int i) {
+    TC_ASSERT(i < 100);
+    return fmt::format("adapter_{:03d}", i);
+  }
+
+  /*
+  T
+  int num_groups,
+  int num_inputs,
+  int input_group_size,
+  int output_group_size
+  */
+  std::string adapter_type(DataType dt,
+                           int num_inputs,
+                           int input_gs,
+                           int output_gs) {
+    return fmt::format("SlowAdapter<{}, {}, {}, {}, {}>",
+                       data_type_name(dt), num_groups, num_inputs, input_gs,
+                       output_gs);
+  }
+
+  void create_adapter(DataType dt, int i, int input_gs, int output_gs) {
+    auto name = adapter_name(i);
+    // TODO: fix 1
+    emit_code("{} {};", adapter_type(dt, 1, input_gs, output_gs),
+              adapter_name(i));
+  }
+
   void codegen(Program &prog, int group_size) {
     this->group_size = group_size;
     generate_header();
 
     // emit_code("float32 {}[128];", get_cache_name(0));
 
+    start_macro_loop();
     // Body
-    for (auto cache : prog.adapters) {
-      TC_NOT_IMPLEMENTED;
-      this->group_size = 1;
-      TC_P(cache.stores->ch.size());
+    for (auto adapter : prog.adapters) {
+      auto old_gs = this->group_size;
+      TC_P(adapter.stores->ch.size());
       auto vectorized_cache_stores =
-          Vectorizer().run(cache.stores, 1);
+          Vectorizer().run(adapter.stores, adapter.input_group_size);
 
-      start_macro_loop();
+      this->group_size = adapter.input_group_size;
       vectorized_cache_stores.accept(*this);
-      end_macro_loop();
+
+      this->group_size = old_gs;
     }
 
     {
@@ -155,10 +183,9 @@ class CPUCodeGen : public CodeGenBase {
       auto vectorized_stores =
           Vectorizer().run(prog.ret, prog.config.group_size);
       // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
-      start_macro_loop();
       vectorized_stores.accept(*this);
-      end_macro_loop();
     }
+    end_macro_loop();
 
     code_suffix = "";
     generate_tail();
@@ -300,10 +327,11 @@ class CPUCodeGen : public CodeGenBase {
                   index);
       }
     } else if (expr->type == NodeType::cache_load) {
-      // emit_code("auto {} = _{}");
+      emit_code("{}.shuffle();", adapter_name(0));
+      emit_code("auto {} = {}.get<0>();", expr->var_name, adapter_name(0));
     } else if (expr->type == NodeType::cache_store) {
-      TC_NOT_IMPLEMENTED
-      // TODO: fully implement
+      create_adapter(DataType::f32, 0, 1, 8);
+      emit_code("{}.set<0>({});", adapter_name(0), expr[0]->var_name);
     } else {
       TC_ERROR("Node {} cannot be visited.", expr->node_type_name());
     }

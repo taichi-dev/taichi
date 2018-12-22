@@ -175,7 +175,7 @@ template <typename T,
 struct SlowAdapter {
   static constexpr int num_outputs =
       num_inputs * input_group_size / output_group_size;
-  static_assert(num_inputs * input_group_size % output_group_size == 0, "");
+  // static_assert(num_inputs * input_group_size % output_group_size == 0, "");
 
   static constexpr int input_dim = num_groups * input_group_size;
   static constexpr int output_dim = num_groups * output_group_size;

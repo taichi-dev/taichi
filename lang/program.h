@@ -14,21 +14,26 @@ TC_FORCE_INLINE Program &get_current_program() {
 
 struct Adapter {
   Expr stores;
+  int counter = 0;
+  int input_group_size;
+  int output_group_size;
 
   Adapter() {
+    input_group_size = -1;
+    output_group_size = -1;
     stores = Expr::create(Expr::Type::combine);
   }
 
-  void group_size() {
-  }
-
-  void store(const Expr &e, int i) {
+  void convert(Expr &e) {
+    int i = counter++;
     auto n = Expr::create(NodeType::cache_store, e, Expr::create_imm(i));
     stores->ch.push_back(n);
+    e = Expr::create(NodeType::cache_load, Expr::create_imm(i));
   }
 
-  Expr load(int i) {
-    return Expr::create(NodeType::cache_load, Expr::create_imm(i));
+  void set(int input_group_size, int output_group_size) {
+    this->input_group_size = input_group_size;
+    this->output_group_size = output_group_size;
   }
 };
 
@@ -135,5 +140,4 @@ struct Program {
     std::swap(buffers[i], buffers[j]);
   }
 };
-
 }

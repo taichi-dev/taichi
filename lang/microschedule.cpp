@@ -154,14 +154,13 @@ auto test_adapter = []() {
     prog.buffer(1).stream(0).group(0).place(v(i));
   }
 
-  // cache
-  // auto &c = prog.cache(0);  // TODO: specify group_size = 1
-  // c.store(a * b, 0);
-
   auto ind = Expr::index(0);
 
-  // auto ab = c.load(0);  // 0th element
+  // auto &adapter = prog.adapter(0);
   auto ab = a[ind] * b[ind];
+
+  // adapter.convert(ab);
+  // adapter.set(1, 8);
 
   for (int d = 0; d < vec_size; d++) {
     v(d)[ind] = ab * v(d)[ind];

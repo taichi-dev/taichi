@@ -2,7 +2,10 @@
 #include <taichi/io/io.h>
 #include <set>
 
-#include "tlang.h"
+#include "codegen.h"
+#include "vectorizer.h"
+#include "util.h"
+#include "program.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -54,7 +57,6 @@ void visualize_IR(std::string fn, Expr &expr) {
   system(cmd.c_str());
 }
 
-Program *current_program = nullptr;
 
 class CPUCodeGen : public CodeGenBase {
  public:
@@ -534,11 +536,11 @@ void Program::compile() {
     config.simd_width = default_simd_width(config.arch);
   }
   TC_ASSERT(config.group_size > 0);
-  if (config.arch == CompileConfig::Arch::x86_64) {
+  if (config.arch == Arch::x86_64) {
     CPUCodeGen codegen;
     codegen.unroll = 1;
     function = codegen.get(*this);
-  } else if (config.arch == CompileConfig::Arch::gpu) {
+  } else if (config.arch == Arch::gpu) {
     TC_NOT_IMPLEMENTED
     // GPUCodeGen codegen;
     // function = codegen.get(*this);

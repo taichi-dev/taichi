@@ -136,7 +136,7 @@ class Vectorizer : public Visitor {
   }
 
   void visit(Expr &expr) override {
-    TC_INFO("Visiting {} {}", expr->id, expr->node_type_name());
+    // TC_INFO("Visiting {} {}", expr->id, expr->node_type_name());
     // TC_P(expr->node_type_name());
     // Note: expr may be replaced by an existing vectorized Expr
     if (scalar_to_vector.find(expr->members[0]) != scalar_to_vector.end()) {
@@ -145,8 +145,8 @@ class Vectorizer : public Visitor {
       for (int i = 0; i < (int)existing->members.size(); i++) {
         TC_ASSERT(existing->members[i] == expr->members[i]);
       }
-      expr = existing;
-      TC_INFO("Using existing {} for {}", existing->id, expr->id);
+      expr.set(existing);
+      // TC_WARN("Using existing {} for {}", existing->id, expr->id);
       return;
     }
 
@@ -158,7 +158,7 @@ class Vectorizer : public Visitor {
     // Check for isomorphism
     for (auto member : expr->members) {
       // It must not appear to an existing vectorized expr
-      TC_ASSERT(scalar_to_vector.find(member) == scalar_to_vector.end());
+      // TC_ASSERT(scalar_to_vector.find(member) == scalar_to_vector.end());
       if (first) {
         first = false;
         type = member->type;

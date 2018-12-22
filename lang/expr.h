@@ -269,13 +269,17 @@ class Expr {
 
   void accept(Visitor &visitor) {
     if (visitor.order == Visitor::Order::parent_first) {
+      int old_id = (*this)->id;
       visitor.visit(*this);
+      int new_id = (*this)->id;
+      //TC_WARN_UNLESS(old_id == new_id, "{} -> {}", old_id, new_id);
+      // TC_WARN("{} -> {}", old_id, new_id);
     }
     for (auto &c : this->node->ch) {
       int old_id = c->id;
       c.accept(visitor);
       int new_id = c->id;
-      TC_WARN_UNLESS(old_id == new_id, "");
+      // TC_WARN_UNLESS(old_id == new_id, "{} -> {}", old_id, new_id);
     }
     if (visitor.order == Visitor::Order::child_first) {
       visitor.visit(*this);
@@ -289,6 +293,10 @@ class Expr {
   Expr &operator[](int i) {
     TC_ASSERT(0 <= i && i < (int)node->ch.size());
     return node->ch[i];
+  }
+
+  void set(Expr &o) {
+    node = o.node;
   }
 };
 

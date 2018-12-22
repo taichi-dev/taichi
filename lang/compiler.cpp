@@ -148,11 +148,11 @@ class CPUCodeGen : public CodeGenBase {
 
     {
       TC_ASSERT(prog.ret);
-      visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
+      // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
       this->group_size = group_size;
       auto vectorized_stores =
           Vectorizer(simd_width).run(prog.ret, prog.config.group_size);
-      visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
+      // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
       start_macro_loop();
       vectorized_stores.accept(*this);
       end_macro_loop();

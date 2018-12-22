@@ -55,10 +55,42 @@ void mul1(int n, float *a, float *b, float *c, float *d) {
 }
 
 void mul2(int n, float *a, float *b, float *c, float *d) {
-  for (int i = 0; i < n; i++) {
-    auto va = _mm256_broadcast_ss(a + i);
-    auto vb = _mm256_broadcast_ss(b + i);
-    _mm256_store_ps(d + 8 * i, va * vb * _mm256_load_ps(c + 8 * i));
+  for (int i = 0; i < n; i += 8) {
+    auto va = _mm256_load_ps(a + i);
+    auto vb = _mm256_load_ps(b + i);
+    auto vab = va * vb;
+#define LOOP(l)                    \
+  _mm256_store_ps(d + 8 * (i + l), \
+                  _mm256_set1_ps(vab[l]) * _mm256_load_ps(c + 8 * (i + l)));
+    LOOP(0);
+    LOOP(1);
+    LOOP(2);
+    LOOP(3);
+    LOOP(4);
+    LOOP(5);
+    LOOP(6);
+    LOOP(7);
+  }
+}
+
+void mul3(int n, float *a, float *b, float *c, float *d) {
+  float buffer[8];
+  for (int i = 0; i < n; i += 8) {
+    auto va = _mm256_load_ps(a + i);
+    auto vb = _mm256_load_ps(b + i);
+    auto vab = va * vb;
+    _mm256_store_ps(buffer, vab);
+#define LOOP(l)                    \
+  _mm256_store_ps(d + 8 * (i + l), \
+                  _mm256_broadcast_ss(buffer + l) * _mm256_load_ps(c + 8 * (i + l)));
+    LOOP(0);
+    LOOP(1);
+    LOOP(2);
+    LOOP(3);
+    LOOP(4);
+    LOOP(5);
+    LOOP(6);
+    LOOP(7);
   }
 }
 
@@ -82,7 +114,7 @@ auto benchmark_microschedule = []() {
         mul1(n, A.get<float32>(), B.get<float32>(), C.get<float32>(),
              D.get<float32>());
       },
-      n, 3);
+      n, 1);
 
   TC_P(pure);
 
@@ -91,8 +123,26 @@ auto benchmark_microschedule = []() {
       real val = D.get<float32>()[i * 8 + j];
       real gt = 2 * j;
       TC_WARN_UNLESS(std::abs(val - gt) < 1e-6f, "");
+      D.get<float32>()[i * 8 + j] = 0;  // for second run
     }
   }
+
+  auto micro = measure_cpe(
+      [&]() {
+        mul3(n, A.get<float32>(), B.get<float32>(), C.get<float32>(),
+             D.get<float32>());
+      },
+      n, 1);
+  TC_P(micro);
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < 8; j++) {
+      real val = D.get<float32>()[i * 8 + j];
+      real gt = 2 * j;
+      TC_WARN_UNLESS(std::abs(val - gt) < 1e-6f, "");
+    }
+  }
+
 };
 
 TC_REGISTER_TASK(benchmark_microschedule);

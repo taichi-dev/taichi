@@ -47,10 +47,25 @@ auto test_loop = []() {
 TC_REGISTER_TASK(test_loop);
 
 void mul1(int n, float *a, float *b, float *c, float *d) {
+  /*
   for (int i = 0; i < n; i++) {
     auto va = _mm256_broadcast_ss(a + i);
     auto vb = _mm256_broadcast_ss(b + i);
     _mm256_store_ps(d + 8 * i, va * vb * _mm256_load_ps(c + 8 * i));
+  }
+  */
+  for (int i = 0; i < n; i += 4) {
+#define LOOP(l)                                                 \
+  {                                                             \
+    auto va = _mm256_broadcast_ss(a + i + l);                   \
+    auto vb = _mm256_broadcast_ss(b + i + l);                   \
+    _mm256_store_ps(d + 8 * (i + l),                            \
+                    va * vb * _mm256_load_ps(c + 8 * (i + l))); \
+  }
+    LOOP(0);
+    LOOP(1);
+    LOOP(2);
+    LOOP(3);
   }
 }
 
@@ -80,9 +95,10 @@ void mul3(int n, float *a, float *b, float *c, float *d) {
     auto vb = _mm256_load_ps(b + i);
     auto vab = va * vb;
     _mm256_store_ps(buffer, vab);
-#define LOOP(l)                    \
-  _mm256_store_ps(d + 8 * (i + l), \
-                  _mm256_broadcast_ss(buffer + l) * _mm256_load_ps(c + 8 * (i + l)));
+#define LOOP(l)        \
+  _mm256_store_ps(     \
+      d + 8 * (i + l), \
+      _mm256_broadcast_ss(buffer + l) * _mm256_load_ps(c + 8 * (i + l)));
     LOOP(0);
     LOOP(1);
     LOOP(2);
@@ -95,7 +111,7 @@ void mul3(int n, float *a, float *b, float *c, float *d) {
 }
 
 auto benchmark_microschedule = []() {
-  int n = 512;
+  int n = 256;
   AlignedAllocator A(sizeof(float32) * n);
   AlignedAllocator B(sizeof(float32) * n);
   AlignedAllocator C(sizeof(float32) * n * 8);

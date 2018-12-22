@@ -74,8 +74,8 @@ auto advection = []() {
   // prog.adapt(offset_x, offset_y, 1); // convert to group_size = 1
   auto offset = cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
 
-  // Adapter
-  // Adapter adapter;
+  // SlowAdapter
+  // SlowAdapter adapter;
 
   // weights
   auto w00 = (imm(1.0f) - wx) * (imm(1.0f) - wy);

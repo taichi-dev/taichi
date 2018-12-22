@@ -57,7 +57,7 @@ real measure_cpe(std::function<void()> target,
   return elasped_cycles / float64(total_batches * elements_per_call);
 }
 
-TC_TEST("Adapter") {
+TC_TEST("SlowAdapter") {
   {
     // num_groups, num_inputs, input_group_size, output_group_size
     VV<32, int> input0;
@@ -65,7 +65,7 @@ TC_TEST("Adapter") {
       input0[i] = i;
     }
     // num_groups, num_inputs, input_group_size, output_group_size
-    Adapter<int, 8, 1, 4, 1> adapter;
+    SlowAdapter<int, 8, 1, 4, 1> adapter;
     adapter.set<0>(input0);
     adapter.shuffle();
     for (int i = 0; i < 4; i++) {
@@ -76,7 +76,7 @@ TC_TEST("Adapter") {
   }
   {
     // num_groups, num_inputs, input_group_size, output_group_size
-    Adapter<int, 8, 4, 1, 4> adapter;
+    SlowAdapter<int, 8, 4, 1, 4> adapter;
     VV<8, int> inputs[4];
     for (int i = 0; i < 4; i++) {
       for (int j = 0; j < 8; j++) {

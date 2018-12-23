@@ -71,12 +71,15 @@ auto advection = []() {
   auto wx = v[0][index] - offset_x;
   auto wy = v[1][index] - offset_y;
 
+  prog.adapter(0).set(2, 1);
+  prog.adapter(0).convert(offset_x);
+  prog.adapter(0).convert(offset_y);
+  prog.adapter(0).convert(wx);
+  prog.adapter(0).convert(wy);
+
   // ** gs = 1
   // prog.adapt(offset_x, offset_y, 1); // convert to group_size = 1
   auto offset = cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
-
-  // SlowAdapter
-  // SlowAdapter adapter;
 
   // weights
   auto w00 = (imm(1.0f) - wx) * (imm(1.0f) - wy);
@@ -84,6 +87,11 @@ auto advection = []() {
   auto w10 = wx * (imm(1.0f) - wy);
   auto w11 = wx * wy;
 
+  prog.adapter(1).set(1, 4);
+  prog.adapter(1).convert(w00);
+  prog.adapter(1).convert(w01);
+  prog.adapter(1).convert(w10);
+  prog.adapter(1).convert(w11);
   // adapter(w00);
   // adapter(w01);
   // adapter(w10);
@@ -161,9 +169,9 @@ auto test_adapter = []() {
 
   auto &adapter = prog.adapter(0);
   auto ab = a[ind] * b[ind];
-
-  adapter.convert(ab);
+  
   adapter.set(1, 8);
+  adapter.convert(ab);
 
   for (int d = 0; d < vec_size; d++) {
     v(d)[ind] = ab * v(d)[ind];

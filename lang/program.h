@@ -17,24 +17,32 @@ struct Adapter {
   int counter = 0;
   int input_group_size;
   int output_group_size;
+  int id;
   DataType dt;
 
-  Adapter() {
+  Adapter(int id) : id(id) {
     input_group_size = -1;
     output_group_size = -1;
     stores = Expr::create(Expr::Type::combine);
   }
 
+  bool initialized() {
+    return input_group_size != -1 && output_group_size != -1;
+  }
+
   void convert(Expr &e) {
+    TC_ASSERT(initialized());
     if (counter == 0) {
       dt = e->data_type;
     } else {
       TC_ASSERT(dt == e->data_type);
     }
     int i = counter++;
-    auto n = Expr::create(NodeType::adapter_store, e, Expr::create_imm(i));
+    auto n = Expr::create(NodeType::adapter_store, e, Expr::create_imm(id),
+                          Expr::create_imm(i));
     stores->ch.push_back(n);
-    e = Expr::create(NodeType::adapter_load, Expr::create_imm<int>(i));
+    e = Expr::create(NodeType::adapter_load, Expr::create_imm(id),
+                     Expr::create_imm(i));
   }
 
   void set(int input_group_size, int output_group_size = -1) {
@@ -76,7 +84,7 @@ struct Program {
 
   Adapter &adapter(int i) {
     while ((int)adapters.size() <= i) {
-      adapters.push_back(Adapter());
+      adapters.push_back(Adapter((int)adapters.size()));
     }
     return adapters[i];
   }

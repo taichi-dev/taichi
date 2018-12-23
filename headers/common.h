@@ -209,7 +209,6 @@ struct SlowAdapter {
   void set(const VV<input_dim, T> &v) {
     static_assert(0 <= i && i < num_inputs, "");
     inputs[i] = v;
-    // v.print();
   }
 
   void set(int i, const VV<input_dim, T> &v) {
@@ -243,7 +242,6 @@ struct SlowAdapter {
   template <int i>
   auto get() {
     static_assert(0 <= i && i < num_outputs, "");
-    outputs[i].print();
     return outputs[i];
   }
 

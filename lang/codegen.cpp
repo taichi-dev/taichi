@@ -123,7 +123,7 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   std::string adapter_name(int i) {
-    TC_ASSERT(i < 100);
+    TC_ASSERT(i < 1000);
     return fmt::format("adapter_{:03d}", i);
   }
 
@@ -253,7 +253,7 @@ class CPUCodeGen : public CodeGenBase {
       auto op = binary_ops[expr->type];
       emit_code("auto {} = {} {} {};", expr->var_name, expr->ch[0]->var_name,
                 op, expr->ch[1]->var_name);
-      emit_code("{}.print();", expr->var_name);
+      // emit_code("{}.print();", expr->var_name);
     } else if (expr->type == NodeType::max) {
       emit_code("auto {} = max({}, {});", expr->var_name, expr[0]->var_name,
                 expr[1]->var_name);
@@ -338,6 +338,11 @@ class CPUCodeGen : public CodeGenBase {
                                   DataType::i32, addr.coeff_i),
                   index);
       }
+    } else if (expr->type == NodeType::adapter_store) {
+      // Do nothing
+      // create_adapter(DataType::f32, 0, 1, 8);
+      emit_code("{}.set<{}>({});", adapter_name(expr[1]->value<int>()),
+                expr[2]->value<int>(), expr[0]->var_name);
     } else if (expr->type == NodeType::adapter_load) {
       // generate offset
       TC_P(num_groups);
@@ -351,13 +356,10 @@ class CPUCodeGen : public CodeGenBase {
       }
       auto offsets = vv_constant_str(ad.output_group_size * num_groups,
                                      DataType::i32, offsets_val);
-      emit_code("auto {} = shuffle({}.get_input<0>(), {});", expr->var_name,
-                adapter_name(0), offsets);
+      emit_code("auto {} = shuffle({}.get_input<{}>(), {});", expr->var_name,
+                adapter_name(expr[0]->value<int>()), expr[1]->value<int>(),
+                offsets);
       // emit_code("{}.print();", expr->var_name);
-    } else if (expr->type == NodeType::adapter_store) {
-      // Do nothing
-      // create_adapter(DataType::f32, 0, 1, 8);
-      emit_code("{}.set<0>({});", adapter_name(0), expr[0]->var_name);
     } else {
       TC_ERROR("Node {} cannot be visited.", expr->node_type_name());
     }

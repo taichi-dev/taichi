@@ -151,6 +151,8 @@ class Node {
 
   Node(Type type, Expr ch0, Expr ch1);
 
+  Node(Type type, Expr ch0, Expr ch1, Expr ch2);
+
   int member_id(const Expr &expr) const;
 
   template <typename T>
@@ -327,6 +329,13 @@ inline Node::Node(Type type, Expr ch0, Expr ch1) : Node(type) {
   ch.resize(2);
   ch[0] = ch0;
   ch[1] = ch1;
+}
+
+inline Node::Node(Type type, Expr ch0, Expr ch1, Expr ch2) : Node(type) {
+  ch.resize(3);
+  ch[0] = ch0;
+  ch[1] = ch1;
+  ch[2] = ch2;
 }
 
 inline Expr placeholder() {

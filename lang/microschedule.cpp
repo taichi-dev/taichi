@@ -211,7 +211,7 @@ void test_adapter2(int vec_size) {
   int n = 64;
 
   Program prog(Arch::x86_64, n);
-  prog.config.group_size = vec_size;
+  prog.config.group_size = 1;
   prog.config.num_groups = 8;
 
   for (int i = 0; i < vec_size; i++) {
@@ -254,7 +254,7 @@ void test_adapter2(int vec_size) {
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < vec_size; j++) {
       auto val = prog.data(sum, i);
-      auto gt = j * (j - 1) / 2 + i * j;
+      auto gt = j * (j - 1) / 2 + i * vec_size;
       if (abs(gt - val) > 1e-5_f) {
         TC_P(i);
         TC_P(j);
@@ -268,6 +268,9 @@ void test_adapter2(int vec_size) {
 
 auto test_adapter = []() {
   test_adapter2(1);
+  test_adapter2(2);
+  test_adapter2(4);
+  test_adapter2(8);
 
   test_adapter1(1);
   test_adapter1(2);

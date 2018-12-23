@@ -356,7 +356,7 @@ class CPUCodeGen : public CodeGenBase {
       for (int i = 0; i < num_groups; i++) {
         for (int j = 0; j < ad.output_group_size; j++) {
           offsets_val.push_back(i * ad.input_group_size +
-                                expr[0]->members[0]->value<int>());
+                                expr[1]->members[0]->value<int>());
         }
       }
       auto offsets = vv_constant_str(ad.output_group_size * num_groups,

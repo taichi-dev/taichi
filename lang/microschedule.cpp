@@ -106,7 +106,6 @@ auto advection = []() {
 
   // ** gs = 4
   for (int k = 0; k < nattr; k++) {
-
     auto v00 = attr[0][k][node + imm(0)];
     auto v01 = attr[0][k][node + imm(1)];
     auto v10 = attr[0][k][node + imm(n)];
@@ -252,16 +251,13 @@ void test_adapter2(int vec_size) {
   prog();
 
   for (int i = 0; i < n; i++) {
-    for (int j = 0; j < vec_size; j++) {
-      auto val = prog.data(sum, i);
-      auto gt = j * (j - 1) / 2 + i * vec_size;
-      if (abs(gt - val) > 1e-5_f) {
-        TC_P(i);
-        TC_P(j);
-        TC_P(val);
-        TC_P(gt);
-        TC_ERROR("");
-      }
+    auto val = prog.data(sum, i);
+    auto gt = vec_size * (vec_size - 1) / 2 + i * vec_size;
+    if (abs(gt - val) > 1e-5_f) {
+      TC_P(i);
+      TC_P(val);
+      TC_P(gt);
+      TC_ERROR("");
     }
   }
 }

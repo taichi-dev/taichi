@@ -328,7 +328,7 @@ void test_adapter3(int vec_size) {
 
   for (int i = 0; i < n; i++) {
     real s = 0;
-    for (int j = 0; j < vec_size * 2; j++) {
+    for (int j = 0; j < vec_size; j++) {
       s += sqr(i + j + 1) - sqr(i + j);
     }
     for (int j = 0; j < vec_size * 2; j++) {

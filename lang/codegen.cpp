@@ -90,13 +90,6 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void generate_header() {
-    TC_ASSERT(mode == Mode::vector);
-    this->group_size = group_size;
-    TC_ASSERT(group_size != 0);
-    // group_size = expr->ch.size();
-    num_groups = simd_width / group_size;
-    TC_WARN_IF(simd_width % group_size != 0, "insufficient lane usage");
-
     emit_code(
         "#include <common.h>\n using namespace taichi; using namespace Tlang;");
     emit_code("extern \"C\" void " + func_name + "(Context context) {\n");
@@ -157,7 +150,13 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void codegen(Program &prog, int group_size) {
+    TC_ASSERT(mode == Mode::vector);
     this->group_size = group_size;
+    TC_ASSERT(group_size != 0);
+    // group_size = expr->ch.size();
+    num_groups = prog.config.num_groups;
+    TC_WARN_IF(simd_width % group_size != 0, "insufficient lane usage");
+
     generate_header();
 
     // emit_code("float32 {}[128];", get_cache_name(0));
@@ -562,6 +561,9 @@ void Program::compile() {
   materialize_layout();
   if (config.simd_width == -1) {
     config.simd_width = default_simd_width(config.arch);
+  }
+  if (config.num_groups == -1) {
+    config.num_groups = config.simd_width / config.group_size;
   }
   TC_ASSERT(config.group_size > 0);
   if (config.arch == Arch::x86_64) {

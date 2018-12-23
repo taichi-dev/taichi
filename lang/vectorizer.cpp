@@ -43,7 +43,7 @@ Expr Vectorizer::run(Expr &expr, int group_size) {
   scalar_to_vector.clear();
   // expr should be a ret Op, with its children store Ops.
   // The stores are repeated by a factor of 'pack_size'
-  TC_P(group_size);
+  // TC_P(group_size);
   TC_ASSERT(expr->ch.size() % group_size == 0);
   TC_ASSERT(expr->type == NodeType::combine);
   // Create the root group

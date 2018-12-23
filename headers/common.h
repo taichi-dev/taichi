@@ -158,13 +158,23 @@ inline VV<dim, T> load(T *base_address, VV<dim, int> offsets) {
     ret[i] = *(base_address + offsets[i]);
   }
   return ret;
-};
+}
 
 template <int dim, typename T>
 inline void store(VV<dim, T> a, T *base_address, VV<dim, int> offsets) {
   for (int i = 0; i < dim; i++) {
     *(base_address + offsets[i]) = a[i];
   }
+}
+
+template <int input_dim, int output_dim, typename T>
+inline VV<output_dim, T> shuffle(const VV<input_dim, T> &a,
+                                 VV<output_dim, int> offsets) {
+  VV<output_dim, T> ret;
+  for (int i = 0; i < output_dim; i++) {
+    ret[i] = a[offsets[i]];
+  }
+  return ret;
 };
 
 template <typename T,

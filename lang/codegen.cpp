@@ -65,6 +65,7 @@ class CPUCodeGen : public CodeGenBase {
   Mode mode;
   int simd_width;
   int group_size;
+  Program *prog;
 
  public:
   // Create vectorized IR for the root node
@@ -137,9 +138,8 @@ class CPUCodeGen : public CodeGenBase {
                            int num_inputs,
                            int input_gs,
                            int output_gs) {
-    return fmt::format("SlowAdapter<{}, {}, {}, {}, {}>",
-                       data_type_name(dt), num_groups, num_inputs, input_gs,
-                       output_gs);
+    return fmt::format("SlowAdapter<{}, {}, {}, {}, {}>", data_type_name(dt),
+                       num_groups, num_inputs, input_gs, output_gs);
   }
 
   void create_adapter(DataType dt, int i, int input_gs, int output_gs) {
@@ -153,6 +153,7 @@ class CPUCodeGen : public CodeGenBase {
     TC_ASSERT(mode == Mode::vector);
     this->group_size = group_size;
     TC_ASSERT(group_size != 0);
+    this->prog = &prog;
     // group_size = expr->ch.size();
     num_groups = prog.config.num_groups;
     TC_WARN_IF(simd_width % group_size != 0, "insufficient lane usage");
@@ -162,6 +163,13 @@ class CPUCodeGen : public CodeGenBase {
     // emit_code("float32 {}[128];", get_cache_name(0));
 
     start_macro_loop();
+
+    // Adapters
+    for (int i = 0; i < (int)prog.adapters.size(); i++) {
+      auto &ad = prog.adapters[i];
+      create_adapter(ad.dt, i, ad.input_group_size, ad.output_group_size);
+    }
+
     // Body
     for (auto adapter : prog.adapters) {
       auto old_gs = this->group_size;
@@ -326,10 +334,19 @@ class CPUCodeGen : public CodeGenBase {
                   index);
       }
     } else if (expr->type == NodeType::adapter_load) {
-      emit_code("{}.shuffle();", adapter_name(0));
-      emit_code("auto {} = {}.get<0>();", expr->var_name, adapter_name(0));
+      // generate offset
+      auto &ad = prog->adapters[0];
+      std::vector<int> offsets_val;
+      for (int i = 0; i < num_groups; i++) {
+        offsets_val.push_back(i * ad.input_group_size + expr[0]->value<int>());
+      }
+      auto offsets = vv_constant_str(ad.output_group_size * num_groups,
+                                     DataType::i32, offsets_val);
+      emit_code("auto {} = shuffle({}.get<0>(), {});", expr->var_name,
+                adapter_name(0), offsets);
     } else if (expr->type == NodeType::adapter_store) {
-      create_adapter(DataType::f32, 0, 1, 8);
+      // Do nothing
+      // create_adapter(DataType::f32, 0, 1, 8);
       emit_code("{}.set<0>({});", adapter_name(0), expr[0]->var_name);
     } else {
       TC_ERROR("Node {} cannot be visited.", expr->node_type_name());

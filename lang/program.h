@@ -17,6 +17,7 @@ struct Adapter {
   int counter = 0;
   int input_group_size;
   int output_group_size;
+  DataType dt;
 
   Adapter() {
     input_group_size = -1;
@@ -25,13 +26,18 @@ struct Adapter {
   }
 
   void convert(Expr &e) {
+    if (counter == 0) {
+      dt = e->data_type;
+    } else {
+      TC_ASSERT(dt == e->data_type);
+    }
     int i = counter++;
     auto n = Expr::create(NodeType::adapter_store, e, Expr::create_imm(i));
     stores->ch.push_back(n);
     e = Expr::create(NodeType::adapter_load, Expr::create_imm(i));
   }
 
-  void set(int input_group_size, int output_group_size) {
+  void set(int input_group_size, int output_group_size = -1) {
     this->input_group_size = input_group_size;
     this->output_group_size = output_group_size;
   }

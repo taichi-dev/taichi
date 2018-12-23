@@ -1,5 +1,6 @@
 #pragma once
 #include <taichi/common/util.h>
+#include <immintrin.h>
 #include "../headers/common.h"
 
 namespace taichi::Tlang{

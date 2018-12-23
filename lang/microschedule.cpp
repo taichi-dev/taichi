@@ -46,156 +46,6 @@ auto test_loop = []() {
 
 TC_REGISTER_TASK(test_loop);
 
-void mul0(int n, float *a, float *b, float *c, float *d) {
-  for (int i = 0; i < n; i += 8) {
-    _mm256_store_ps(d + i,  _mm256_load_ps(a + i) + _mm256_load_ps(b + i));
-  }
-}
-
-void mul1(int n, float *a, float *b, float *c, float *d) {
-  /*
-  for (int i = 0; i < n; i++) {
-    auto va = _mm256_broadcast_ss(a + i);
-    auto vb = _mm256_broadcast_ss(b + i);
-    _mm256_store_ps(d + 8 * i, va * vb * _mm256_load_ps(c + 8 * i));
-  }
-  */
-  for (int i = 0; i < n; i += 4) {
-#define LOOP(l)                                                 \
-  {                                                             \
-    auto va = _mm256_broadcast_ss(a + i + l);                   \
-    auto vb = _mm256_broadcast_ss(b + i + l);                   \
-    _mm256_store_ps(d + 8 * (i + l),                            \
-                    va * vb * _mm256_load_ps(c + 8 * (i + l))); \
-  }
-    LOOP(0);
-    LOOP(1);
-    LOOP(2);
-    LOOP(3);
-  }
-}
-
-void mul2(int n, float *a, float *b, float *c, float *d) {
-  for (int i = 0; i < n; i += 8) {
-    auto va = _mm256_load_ps(a + i);
-    auto vb = _mm256_load_ps(b + i);
-    auto vab = va * vb;
-#define LOOP(l)                    \
-  _mm256_store_ps(d + 8 * (i + l), \
-                  _mm256_set1_ps(vab[l]) * _mm256_load_ps(c + 8 * (i + l)));
-    LOOP(0);
-    LOOP(1);
-    LOOP(2);
-    LOOP(3);
-    LOOP(4);
-    LOOP(5);
-    LOOP(6);
-    LOOP(7);
-  }
-}
-
-void mul3(int n, float *a, float *b, float *c, float *d) {
-  float buffer[8];
-  for (int i = 0; i < n; ) {
-#define LOOP(l)        \
-  _mm256_store_ps(     \
-      d + 8 * (i + l), \
-      _mm256_broadcast_ss(buffer + l) * _mm256_load_ps(c + 8 * (i + l)));
-    {
-      auto va = _mm256_load_ps(a + i);
-      auto vb = _mm256_load_ps(b + i);
-      auto vab = va * vb;
-      _mm256_store_ps(buffer, vab);
-      LOOP(0);
-      LOOP(1);
-      LOOP(2);
-      LOOP(3);
-      LOOP(4);
-      LOOP(5);
-      LOOP(6);
-      LOOP(7);
-      i += 8;
-    }
-    {
-      auto va = _mm256_load_ps(a + i);
-      auto vb = _mm256_load_ps(b + i);
-      auto vab = va * vb;
-      _mm256_store_ps(buffer, vab);
-      LOOP(0);
-      LOOP(1);
-      LOOP(2);
-      LOOP(3);
-      LOOP(4);
-      LOOP(5);
-      LOOP(6);
-      LOOP(7);
-      i += 8;
-    }
-  }
-}
-
-auto benchmark_microschedule = []() {
-  int n = 256;
-  AlignedAllocator A(sizeof(float32) * n);
-  AlignedAllocator B(sizeof(float32) * n);
-  AlignedAllocator C(sizeof(float32) * n * 8);
-  AlignedAllocator D(sizeof(float32) * n * 8);
-
-  for (int i = 0; i < n; i++) {
-    A.get<float32>()[i] = (i + 1);
-    B.get<float32>()[i] = 2.0_f / (i + 1);
-    for (int j = 0; j < 8; j++) {
-      C.get<float32>()[i * 8 + j] = j;
-    }
-  }
-
-  auto scal = measure_cpe(
-      [&]() {
-        mul0(n, A.get<float32>(), B.get<float32>(), C.get<float32>(),
-             D.get<float32>());
-      },
-      n, 1);
-
-  TC_P(scal);
-
-  auto pure = measure_cpe(
-      [&]() {
-        mul1(n, A.get<float32>(), B.get<float32>(), C.get<float32>(),
-             D.get<float32>());
-      },
-      n, 1);
-
-  TC_P(pure);
-
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < 8; j++) {
-      real val = D.get<float32>()[i * 8 + j];
-      real gt = 2 * j;
-      TC_WARN_UNLESS(std::abs(val - gt) < 1e-6f, "");
-      D.get<float32>()[i * 8 + j] = 0;  // for second run
-    }
-  }
-
-  auto micro = measure_cpe(
-      [&]() {
-        mul3(n, A.get<float32>(), B.get<float32>(), C.get<float32>(),
-             D.get<float32>());
-      },
-      n, 1);
-  TC_P(micro);
-
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < 8; j++) {
-      real val = D.get<float32>()[i * 8 + j];
-      real gt = 2 * j;
-      TC_WARN_UNLESS(std::abs(val - gt) < 1e-6f, "");
-    }
-  }
-
-};
-
-TC_REGISTER_TASK(benchmark_microschedule);
-
 auto advection = []() {
   const int n = 512, nattr = 1;
 
@@ -211,6 +61,7 @@ auto advection = []() {
   }
   prog.config.group_size = 1;
 
+  // ** gs = 2
   auto index = Expr::index(0);
   Int32 xi = index % imm(n) / imm(1);
   Int32 yi = index % imm(n * n) / imm(n);
@@ -220,7 +71,7 @@ auto advection = []() {
   auto wx = v[0][index] - offset_x;
   auto wy = v[1][index] - offset_y;
 
-  // ** gs=1
+  // ** gs = 1
   // prog.adapt(offset_x, offset_y, 1); // convert to group_size = 1
   auto offset = cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
 
@@ -240,6 +91,7 @@ auto advection = []() {
 
   auto clamp = [](const Expr &e) { return min(max(imm(2), e), imm(n - 2)); };
 
+  // ** gs = 4
   for (int k = 0; k < nattr; k++) {
     Expr node = index + offset;
     Int32 i = clamp(node / imm(n));
@@ -306,11 +158,11 @@ auto test_adapter = []() {
 
   auto ind = Expr::index(0);
 
-  // auto &adapter = prog.adapter(0);
+  auto &adapter = prog.adapter(0);
   auto ab = a[ind] * b[ind];
 
-  // adapter.convert(ab);
-  // adapter.set(1, 8);
+  adapter.convert(ab);
+  adapter.set(1, 1);
 
   for (int d = 0; d < vec_size; d++) {
     v(d)[ind] = ab * v(d)[ind];

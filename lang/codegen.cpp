@@ -102,24 +102,19 @@ class CPUCodeGen : public CodeGenBase {
     emit_code("}\n}\n");
   }
 
-  std::string get_cache_name(int i) {
-    TC_ASSERT(i < 10000);
-    return fmt::format("cache{:04d}", i);
-  }
-
   void start_macro_loop() {
-    code_suffix = " \\\n";
-    emit_code("#define LOOP(loop_index) {");
+    // code_suffix = " \\\n";
+    // emit_code("#define LOOP(loop_index) {");
   }
 
   void end_macro_loop() {
     emit_code("i += {}; b += {};", num_groups * unroll, unroll);
     code_suffix = "\n";
-    emit_code("}\n");
+    // emit_code("}\n");
     for (int i = 0; i < unroll; i++) {
-      emit_code("LOOP({});", i);
+      // emit_code("LOOP({});", i);
     }
-    emit_code("#undef LOOP\n");
+    // emit_code("#undef LOOP\n");
   }
 
   std::string adapter_name(int i) {

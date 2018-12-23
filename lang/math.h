@@ -75,7 +75,7 @@ struct Matrix {
     Matrix ret(n, m);
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < m; j++) {
-        ret(i, j) = (*this)(i, j) + o(i, j);
+        ret(i, j) = (*this)(i, j) * o(i, j);
       }
     }
     return ret;

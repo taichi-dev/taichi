@@ -290,7 +290,7 @@ void test_adapter3(int vec_size) {
   auto bind = b[ind];
   auto cind = c[ind];
 
-  auto diff = aind - bind;
+  auto diff = aind.element_wise_prod(aind) - bind.element_wise_prod(bind);
 
   {
     auto &adapter = prog.adapter(0);
@@ -320,7 +320,7 @@ void test_adapter3(int vec_size) {
       prog.data(b(j), i) = i + j;
     }
     for (int j = 0; j < vec_size * 2; j++) {
-      prog.data(c(j), i) = i - 2;
+      prog.data(c(j), i) = i - 2 + j;
     }
   }
 
@@ -333,9 +333,10 @@ void test_adapter3(int vec_size) {
     }
     for (int j = 0; j < vec_size * 2; j++) {
       auto val = prog.data(c(j), i);
-      auto gt = s * (i - 2);
+      auto gt = s * (i - 2 + j);
       if (abs(gt - val) > 1e-3_f) {
         TC_P(i);
+        TC_P(j);
         TC_P(val);
         TC_P(gt);
         TC_ERROR("");

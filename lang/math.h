@@ -116,6 +116,18 @@ inline Matrix operator+(const Matrix &A, const Matrix &B) {
   return C;
 }
 
+inline Matrix operator-(const Matrix &A, const Matrix &B) {
+  TC_ASSERT(A.n == B.n);
+  TC_ASSERT(A.m == B.m);
+  Matrix C(A.n, A.m);
+  for (int i = 0; i < A.n; i++) {
+    for (int j = 0; j < A.m; j++) {
+      C(i, j) = A(i, j) - B(i, j);
+    }
+  }
+  return C;
+}
+
 using Vector = Matrix;
 
 inline Expr floor(const Expr &a) {

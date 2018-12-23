@@ -149,6 +149,7 @@ auto advection = []() {
 };
 TC_REGISTER_TASK(advection);
 
+// a * b * vec
 void test_adapter1(int vec_size) {
   Float a, b;
   Vector v(vec_size), u(vec_size);
@@ -203,6 +204,7 @@ void test_adapter1(int vec_size) {
   }
 }
 
+// Vec<vec_size> reduction
 void test_adapter2(int vec_size) {
   Vector v(vec_size);
   Float sum;
@@ -262,16 +264,102 @@ void test_adapter2(int vec_size) {
   }
 }
 
+// reduce(vec_a<n> - vec_b<n>) * vec_c<2n>
+void test_adapter3(int vec_size) {
+  Vector a(vec_size), b(vec_size), c(vec_size * 2);
+  Float sum;
+
+  int n = 64;
+
+  Program prog(Arch::x86_64, n);
+  prog.config.group_size = vec_size * 2;
+  prog.config.num_groups = 8;
+
+  for (int i = 0; i < vec_size; i++) {
+    prog.buffer(0).stream(0).group(0).place(a(i));
+    prog.buffer(1).stream(0).group(0).place(b(i));
+  }
+
+  for (int i = 0; i < vec_size * 2; i++) {
+    prog.buffer(2).stream(0).group(0).place(c(i));
+  }
+
+  auto ind = Expr::index(0);
+
+  auto aind = a[ind];
+  auto bind = b[ind];
+  auto cind = c[ind];
+
+  auto diff = aind - bind;
+
+  {
+    auto &adapter = prog.adapter(0);
+    adapter.set(vec_size, 1);
+    for (int i = 0; i < vec_size; i++)
+      adapter.convert(diff(i));
+  }
+
+  Expr acc = Expr::create_imm(0.0_f);
+  for (int d = 0; d < vec_size; d++) {
+    acc = acc + diff(d);
+  }
+
+  {
+    auto &adapter = prog.adapter(1);
+    adapter.set(1, vec_size * 2);
+    adapter.convert(acc);
+    for (int i = 0; i < vec_size * 2; i++)
+      c(i)[ind] = c(i)[ind] * acc;
+  }
+
+  prog.materialize_layout();
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < vec_size; j++) {
+      prog.data(a(j), i) = i + j + 1;
+      prog.data(b(j), i) = i + j;
+    }
+    for (int j = 0; j < vec_size * 2; j++) {
+      prog.data(c(j), i) = i - 2;
+    }
+  }
+
+  prog();
+
+  for (int i = 0; i < n; i++) {
+    real s = 0;
+    for (int j = 0; j < vec_size * 2; j++) {
+      s += sqr(i + j + 1) - sqr(i + j);
+    }
+    for (int j = 0; j < vec_size * 2; j++) {
+      auto val = prog.data(c(j), i);
+      auto gt = s * (i - 2);
+      if (abs(gt - val) > 1e-3_f) {
+        TC_P(i);
+        TC_P(val);
+        TC_P(gt);
+        TC_ERROR("");
+      }
+    }
+  }
+}
+
 auto test_adapter = []() {
-  test_adapter2(1);
-  test_adapter2(2);
-  test_adapter2(4);
-  test_adapter2(8);
+  test_adapter3(1);
+  test_adapter3(2);
+  test_adapter3(4);
+  test_adapter3(8);
 
   test_adapter1(1);
   test_adapter1(2);
   test_adapter1(4);
   test_adapter1(8);
+
+  test_adapter2(1);
+  test_adapter2(2);
+  test_adapter2(4);
+  test_adapter2(8);
+
 };
 
 // TODO: random access

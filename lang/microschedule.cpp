@@ -146,9 +146,9 @@ auto test_adapter = []() {
   int vec_size = 8;
   Vector v(vec_size), u(vec_size);
 
-  int n = 128;
+  int n = 8;
 
-  Program prog(Arch::x86_64, 2048);
+  Program prog(Arch::x86_64, n);
   prog.config.group_size = 8;
   prog.config.num_groups = 8;
 
@@ -173,7 +173,7 @@ auto test_adapter = []() {
 
   for (int i = 0; i < n; i++) {
     prog.data(a, i) = i;
-    prog.data(b, i) = (i + 1) * 2;
+    prog.data(b, i) = 2.0_f * (i + 1);
     for (int j = 0; j < vec_size; j++) {
       prog.data(v(j), i) = 1.0_f * j / (i + 1);
     }

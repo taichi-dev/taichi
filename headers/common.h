@@ -8,12 +8,13 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <iostream>
+#include <array>
+
 using float32 = float;
 using float64 = double;
 using int32 = int;
 using uint64 = unsigned long long;
-
-#include <array>
 
 #if defined(TLANG_CPU)
 #include <immintrin.h>
@@ -94,6 +95,14 @@ struct VV {  // Virtual Vector
 
   const T &operator[](int i) const {
     return d[i];
+  }
+
+  void print() const {
+    std::cout << "[";
+    for (int i = 0; i < dim; i++) {
+      std::cout << d[i] << ", ";
+    }
+    std::cout << "]\n";
   }
 };
 
@@ -200,6 +209,7 @@ struct SlowAdapter {
   void set(const VV<input_dim, T> &v) {
     static_assert(0 <= i && i < num_inputs, "");
     inputs[i] = v;
+    // v.print();
   }
 
   void set(int i, const VV<input_dim, T> &v) {
@@ -225,8 +235,15 @@ struct SlowAdapter {
   }
 
   template <int i>
+  auto get_input() {
+    static_assert(0 <= i && i < num_inputs, "");
+    return inputs[i];
+  }
+
+  template <int i>
   auto get() {
     static_assert(0 <= i && i < num_outputs, "");
+    outputs[i].print();
     return outputs[i];
   }
 

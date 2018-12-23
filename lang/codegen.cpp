@@ -253,6 +253,7 @@ class CPUCodeGen : public CodeGenBase {
       auto op = binary_ops[expr->type];
       emit_code("auto {} = {} {} {};", expr->var_name, expr->ch[0]->var_name,
                 op, expr->ch[1]->var_name);
+      emit_code("{}.print();", expr->var_name);
     } else if (expr->type == NodeType::max) {
       emit_code("auto {} = max({}, {});", expr->var_name, expr[0]->var_name,
                 expr[1]->var_name);
@@ -343,13 +344,16 @@ class CPUCodeGen : public CodeGenBase {
       auto &ad = prog->adapters[0];
       std::vector<int> offsets_val;
       for (int i = 0; i < num_groups; i++) {
-        offsets_val.push_back(i * ad.output_group_size +
-                              expr[0]->members[0]->value<int>());
+        for (int j = 0; j < group_size; j++) {
+          offsets_val.push_back(i * ad.input_group_size +
+                                expr[0]->members[0]->value<int>());
+        }
       }
       auto offsets = vv_constant_str(ad.output_group_size * num_groups,
                                      DataType::i32, offsets_val);
-      emit_code("auto {} = shuffle({}.get<0>(), {});", expr->var_name,
+      emit_code("auto {} = shuffle({}.get_input<0>(), {});", expr->var_name,
                 adapter_name(0), offsets);
+      // emit_code("{}.print();", expr->var_name);
     } else if (expr->type == NodeType::adapter_store) {
       // Do nothing
       // create_adapter(DataType::f32, 0, 1, 8);
@@ -363,7 +367,7 @@ class CPUCodeGen : public CodeGenBase {
   FunctionType compile() {
     write_code_to_file();
     auto cmd = fmt::format(
-        "g++ {} -std=c++14 -shared -fPIC -O3 -march=native -I {}/headers "
+        "g++ {} -std=c++14 -shared -fPIC -O3 -march=native -I {}/headers -Wall "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {}",
         get_source_fn(), get_project_fn(), get_library_fn());
     auto compile_ret = std::system(cmd.c_str());

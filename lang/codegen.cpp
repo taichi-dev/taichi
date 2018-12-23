@@ -142,10 +142,14 @@ class CPUCodeGen : public CodeGenBase {
                        num_groups, num_inputs, input_gs, output_gs);
   }
 
-  void create_adapter(DataType dt, int i, int input_gs, int output_gs) {
+  void create_adapter(DataType dt,
+                      int i,
+                      int num_inputs,
+                      int input_gs,
+                      int output_gs) {
     auto name = adapter_name(i);
     // TODO: fix 1
-    emit_code("{} {};", adapter_type(dt, 1, input_gs, output_gs),
+    emit_code("{} {};", adapter_type(dt, num_inputs, input_gs, output_gs),
               adapter_name(i));
   }
 
@@ -167,7 +171,8 @@ class CPUCodeGen : public CodeGenBase {
     // Adapters
     for (int i = 0; i < (int)prog.adapters.size(); i++) {
       auto &ad = prog.adapters[i];
-      create_adapter(ad.dt, i, ad.input_group_size, ad.output_group_size);
+      create_adapter(ad.dt, i, ad.counter / ad.input_group_size,
+                     ad.input_group_size, ad.output_group_size);
     }
 
     // Body
@@ -341,15 +346,20 @@ class CPUCodeGen : public CodeGenBase {
     } else if (expr->type == NodeType::adapter_store) {
       // Do nothing
       // create_adapter(DataType::f32, 0, 1, 8);
-      emit_code("{}.set<{}>({});", adapter_name(expr[1]->value<int>()),
-                expr[2]->value<int>(), expr[0]->var_name);
+      auto &ad = prog->adapter(expr[1]->members[0]->value<int>());
+      TC_P(ad.input_group_size);
+      TC_P(expr[2]->members[0]->value<int>());
+      emit_code("{}.set<{}>({});",
+                adapter_name(expr[1]->members[0]->value<int>()),
+                expr[2]->members[0]->value<int>() / ad.input_group_size,
+                expr[0]->var_name);
     } else if (expr->type == NodeType::adapter_load) {
       // generate offset
       TC_P(num_groups);
-      auto &ad = prog->adapters[0];
+      auto &ad = prog->adapter(expr[0]->members[0]->value<int>());
       std::vector<int> offsets_val;
       for (int i = 0; i < num_groups; i++) {
-        for (int j = 0; j < group_size; j++) {
+        for (int j = 0; j < ad.output_group_size; j++) {
           offsets_val.push_back(i * ad.input_group_size +
                                 expr[0]->members[0]->value<int>());
         }
@@ -357,7 +367,8 @@ class CPUCodeGen : public CodeGenBase {
       auto offsets = vv_constant_str(ad.output_group_size * num_groups,
                                      DataType::i32, offsets_val);
       emit_code("auto {} = shuffle({}.get_input<{}>(), {});", expr->var_name,
-                adapter_name(expr[0]->value<int>()), expr[1]->value<int>(),
+                adapter_name(expr[0]->members[0]->value<int>()),
+                expr[1]->members[0]->value<int>() / ad.input_group_size,
                 offsets);
       // emit_code("{}.print();", expr->var_name);
     } else {

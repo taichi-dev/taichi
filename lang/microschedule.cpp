@@ -47,7 +47,7 @@ auto test_loop = []() {
 TC_REGISTER_TASK(test_loop);
 
 auto advection = []() {
-  const int n = 512, nattr = 1;
+  const int n = 512, nattr = 4;
 
   Float attr[2][nattr], v[2];
 
@@ -59,7 +59,7 @@ auto advection = []() {
     }
     prog.buffer(2).stream(0).group(0).place(v[k]);
   }
-  prog.config.group_size = 1;
+  prog.config.group_size = 4;
 
   // ** gs = 2
   auto index = Expr::index(0);
@@ -74,12 +74,16 @@ auto advection = []() {
   prog.adapter(0).set(2, 1);
   prog.adapter(0).convert(offset_x);
   prog.adapter(0).convert(offset_y);
-  prog.adapter(0).convert(wx);
-  prog.adapter(0).convert(wy);
+
+  prog.adapter(1).set(2, 1);
+  prog.adapter(1).convert(wx);
+  prog.adapter(1).convert(wy);
 
   // ** gs = 1
   // prog.adapt(offset_x, offset_y, 1); // convert to group_size = 1
   auto offset = cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
+
+  auto clamp = [](const Expr &e) { return min(max(imm(2), e), imm(n - 2)); };
 
   // weights
   auto w00 = (imm(1.0f) - wx) * (imm(1.0f) - wy);
@@ -87,24 +91,27 @@ auto advection = []() {
   auto w10 = wx * (imm(1.0f) - wy);
   auto w11 = wx * wy;
 
-  prog.adapter(1).set(1, 4);
-  prog.adapter(1).convert(w00);
-  prog.adapter(1).convert(w01);
-  prog.adapter(1).convert(w10);
-  prog.adapter(1).convert(w11);
+  Expr node = index + offset;
+  Int32 i = clamp(node / imm(n));
+  Int32 j = clamp(node % imm(n));
+  node = i * imm(n) + j;
+
+  prog.adapter(2).set(1, 4);
+  prog.adapter(2).convert(w00);
+  prog.adapter(2).convert(w01);
+  prog.adapter(2).convert(w10);
+  prog.adapter(2).convert(w11);
+
+  prog.adapter(3).set(1, 4);
+  prog.adapter(3).convert(node);
   // adapter(w00);
   // adapter(w01);
   // adapter(w10);
   // adapter(w11);
 
-  auto clamp = [](const Expr &e) { return min(max(imm(2), e), imm(n - 2)); };
 
   // ** gs = 4
   for (int k = 0; k < nattr; k++) {
-    Expr node = index + offset;
-    Int32 i = clamp(node / imm(n));
-    Int32 j = clamp(node % imm(n));
-    node = i * imm(n) + j;
 
     auto v00 = attr[0][k][node + imm(0)];
     auto v01 = attr[0][k][node + imm(1)];
@@ -169,7 +176,7 @@ auto test_adapter = []() {
 
   auto &adapter = prog.adapter(0);
   auto ab = a[ind] * b[ind];
-  
+
   adapter.set(1, 8);
   adapter.convert(ab);
 

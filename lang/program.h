@@ -43,6 +43,7 @@ struct Adapter {
     stores->ch.push_back(n);
     e = Expr::create(NodeType::adapter_load, Expr::create_imm(id),
                      Expr::create_imm(i));
+    e->data_type = dt;
   }
 
   void set(int input_group_size, int output_group_size = -1) {

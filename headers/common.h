@@ -10,6 +10,7 @@
 #include <cmath>
 #include <iostream>
 #include <array>
+#include <vector>
 
 using float32 = float;
 using float64 = double;

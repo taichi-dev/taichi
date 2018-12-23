@@ -59,7 +59,7 @@ auto advection = []() {
     }
     prog.buffer(2).stream(0).group(0).place(v[k]);
   }
-  prog.config.group_size = 4;
+  prog.config.group_size = nattr;
 
   // ** gs = 2
   auto index = Expr::index(0);
@@ -90,10 +90,16 @@ auto advection = []() {
   auto w10 = wx * (imm(1.0f) - wy);
   auto w11 = wx * wy;
 
-  Expr node = index + offset;
-  Int32 i = clamp(node / imm(n));
-  Int32 j = clamp(node % imm(n));
+  w00.name("w00");
+  w01.name("w01");
+  w10.name("w10");
+  w11.name("w11");
+
+  Expr node = Expr::index(0) + offset;
+  Int32 i = clamp(node / imm(n)).name("i");
+  Int32 j = clamp(node % imm(n)).name("j");
   node = i * imm(n) + j;
+  node.name("node");
 
   prog.adapter(2).set(1, 4);
   prog.adapter(2).convert(w00);
@@ -112,6 +118,7 @@ auto advection = []() {
     auto v11 = attr[0][k][node + imm(n + 1)];
 
     attr[1][k][index] = w00 * v00 + w01 * v01 + w10 * v10 + w11 * v11;
+    attr[1][k][index].name(fmt::format("output{}", k));
   }
 
   prog.compile();

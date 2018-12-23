@@ -88,6 +88,15 @@ class Node {
   int num_groups_;
   bool is_vectorized;
   static std::map<Type, std::string> node_type_names;
+  std::string name_;
+
+  std::string name() {
+    return name_;
+  }
+
+  void name(std::string s) {
+    name_ = s;
+  }
 
   int group_size() {
     return (int)members.size();
@@ -305,6 +314,11 @@ class Expr {
 
   void set(const Expr &o) {
     node = o.node;
+  }
+
+  Expr &name(std::string s) {
+    node->name(s);
+    return *this;
   }
 };
 

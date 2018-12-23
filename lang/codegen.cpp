@@ -249,6 +249,13 @@ class CPUCodeGen : public CodeGenBase {
               */
     } else
       return;  // visited
+
+    for (auto &m : expr->members) {
+      if (!m->name().empty()) {
+        emit_code("// @ {}", m->name());
+      }
+    }
+
     if (binary_ops.find(expr->type) != binary_ops.end()) {
       auto op = binary_ops[expr->type];
       emit_code("auto {} = {} {} {};", expr->var_name, expr->ch[0]->var_name,
@@ -286,11 +293,11 @@ class CPUCodeGen : public CodeGenBase {
       TC_WARN("Using member imm");
       if (expr->data_type == DataType::i32) {
         emit_code("auto {} = {}; /*i32*/ ", expr->var_name,
-                  vv_constant_str(num_groups, DataType::i32,
+                  vv_constant_str(group_size * num_groups, DataType::i32,
                                   (int64)expr->members[0]->value<int32>()));
       } else {
         emit_code("auto {} = {}; /*f32*/ ", expr->var_name,
-                  vv_constant_str(num_groups, DataType::f32,
+                  vv_constant_str(group_size * num_groups, DataType::f32,
                                   expr->members[0]->value<float32>()));
       }
     } else if (expr->type == NodeType::index) {

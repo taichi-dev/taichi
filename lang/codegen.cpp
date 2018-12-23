@@ -171,6 +171,8 @@ class CPUCodeGen : public CodeGenBase {
     }
 
     // Body
+
+    // adapters
     for (auto adapter : prog.adapters) {
       auto old_gs = this->group_size;
       TC_P(adapter.stores->ch.size());
@@ -183,10 +185,12 @@ class CPUCodeGen : public CodeGenBase {
       this->group_size = old_gs;
     }
 
+    // main
     {
       TC_ASSERT(prog.ret);
       // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
       this->group_size = group_size;
+      TC_P(group_size);
       auto vectorized_stores =
           Vectorizer().run(prog.ret, prog.config.group_size);
       // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
@@ -335,10 +339,12 @@ class CPUCodeGen : public CodeGenBase {
       }
     } else if (expr->type == NodeType::adapter_load) {
       // generate offset
+      TC_P(num_groups);
       auto &ad = prog->adapters[0];
       std::vector<int> offsets_val;
       for (int i = 0; i < num_groups; i++) {
-        offsets_val.push_back(i * ad.input_group_size + expr[0]->value<int>());
+        offsets_val.push_back(i * ad.output_group_size +
+                              expr[0]->members[0]->value<int>());
       }
       auto offsets = vv_constant_str(ad.output_group_size * num_groups,
                                      DataType::i32, offsets_val);

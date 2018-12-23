@@ -143,13 +143,14 @@ TC_REGISTER_TASK(advection);
 
 auto test_adapter = []() {
   Float a, b;
-  int vec_size = 1;
+  int vec_size = 8;
   Vector v(vec_size), u(vec_size);
 
-  int n = 16;
+  int n = 128;
 
   Program prog(Arch::x86_64, 2048);
-  prog.config.group_size = 1;
+  prog.config.group_size = 8;
+  prog.config.num_groups = 8;
 
   prog.buffer(0).stream(0).group(0).place(a, b);
   for (int i = 0; i < vec_size; i++) {
@@ -162,7 +163,7 @@ auto test_adapter = []() {
   auto ab = a[ind] * b[ind];
 
   adapter.convert(ab);
-  adapter.set(1, 1);
+  adapter.set(1, 8);
 
   for (int d = 0; d < vec_size; d++) {
     v(d)[ind] = ab * v(d)[ind];

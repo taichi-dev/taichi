@@ -34,7 +34,7 @@ struct Adapter {
     int i = counter++;
     auto n = Expr::create(NodeType::adapter_store, e, Expr::create_imm(i));
     stores->ch.push_back(n);
-    e = Expr::create(NodeType::adapter_load, Expr::create_imm(i));
+    e = Expr::create(NodeType::adapter_load, Expr::create_imm<int>(i));
   }
 
   void set(int input_group_size, int output_group_size = -1) {

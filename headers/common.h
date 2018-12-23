@@ -183,9 +183,12 @@ template <typename T,
           int input_group_size,
           int output_group_size>
 struct SlowAdapter {
-  static constexpr int num_outputs =
-      num_inputs * input_group_size / output_group_size;
+  // static constexpr int num_outputs = num_inputs * input_group_size /
+  // output_group_size;
   // static_assert(num_inputs * input_group_size % output_group_size == 0, "");
+
+  // static constexpr int num_inputs = 8;
+  static constexpr int num_outputs = 8;
 
   static constexpr int input_dim = num_groups * input_group_size;
   static constexpr int output_dim = num_groups * output_group_size;
@@ -204,28 +207,12 @@ struct SlowAdapter {
   }
 
   void shuffle() {
+    /*
     constexpr int num_elements = num_inputs * input_group_size;
     static_assert(num_inputs * num_elements * input_group_size ==
                       num_outputs * num_elements * output_group_size,
                   "");
 
-    /*
-    if (input_group_size > output_group_size) {
-      for (int i = 0; i < num_inputs; i++) {
-        for (int j = 0; j < num_groups; j++) {
-          for (int k = 0; k < input_group_size; k++) {
-            auto v = inputs[i][j * input_group_size + k];
-            auto t = input_group_size / output_group_size;
-            int output_vec = i * t + (j / t) % t;
-            int output_item = ;
-            outputs[output_vec][output_item] = v;
-          }
-        }
-      }
-    } else {
-
-    }
-    */
     for (int i = 0; i < num_elements; i++) {
       for (int j = 0; j < num_groups; j++) {
         auto v = inputs[i / input_group_size]
@@ -234,6 +221,7 @@ struct SlowAdapter {
                [j * output_group_size + i % output_group_size] = v;
       }
     }
+    */
   }
 
   template <int i>

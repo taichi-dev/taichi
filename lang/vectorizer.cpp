@@ -51,16 +51,16 @@ Expr Vectorizer::run(Expr &expr, int group_size) {
   combined->is_vectorized = true;
 
   TC_ASSERT(expr->ch.size());
-  if (expr->ch[0]->type == NodeType::cache_store) {
+  if (expr->ch[0]->type == NodeType::adapter_store) {
     // cache store
     // for each batch (group)
     for (int k = 0; k < (int)expr->ch.size() / group_size; k++) {
-      auto root = Expr::create(NodeType::cache_store);
+      auto root = Expr::create(NodeType::adapter_store);
       root->is_vectorized = true;
       for (int i = 0; i < group_size; i++) {
-        TC_ASSERT(expr[k]->type == NodeType::cache_store);
+        TC_ASSERT(expr[k]->type == NodeType::adapter_store);
         auto ch = expr->ch[k * group_size + i];
-        TC_ASSERT(ch->type == NodeType::cache_store);
+        TC_ASSERT(ch->type == NodeType::adapter_store);
         root->members.push_back(ch);  // put scalar inst into vector members
         TC_ASSERT(i < (int)root->members.size());
       }

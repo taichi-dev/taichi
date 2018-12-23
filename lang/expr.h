@@ -67,8 +67,8 @@ class Node {
     combine,
     index,
     addr,
-    cache_store,  // -> adapter
-    cache_load,
+    adapter_store,
+    adapter_load,
     imm,
     floor,
     max,
@@ -124,8 +124,8 @@ class Node {
       REGISTER_NODE_TYPE(combine);
       REGISTER_NODE_TYPE(addr);
       REGISTER_NODE_TYPE(pointer);
-      REGISTER_NODE_TYPE(cache_store);
-      REGISTER_NODE_TYPE(cache_load);
+      REGISTER_NODE_TYPE(adapter_store);
+      REGISTER_NODE_TYPE(adapter_load);
       REGISTER_NODE_TYPE(imm);
       REGISTER_NODE_TYPE(index);
       REGISTER_NODE_TYPE(floor);

@@ -325,10 +325,10 @@ class CPUCodeGen : public CodeGenBase {
                                   DataType::i32, addr.coeff_i),
                   index);
       }
-    } else if (expr->type == NodeType::cache_load) {
+    } else if (expr->type == NodeType::adapter_load) {
       emit_code("{}.shuffle();", adapter_name(0));
       emit_code("auto {} = {}.get<0>();", expr->var_name, adapter_name(0));
-    } else if (expr->type == NodeType::cache_store) {
+    } else if (expr->type == NodeType::adapter_store) {
       create_adapter(DataType::f32, 0, 1, 8);
       emit_code("{}.set<0>({});", adapter_name(0), expr[0]->var_name);
     } else {

@@ -95,7 +95,7 @@ class CPUCodeGen : public CodeGenBase {
         "#include <common.h>\n using namespace taichi; using namespace Tlang;");
     emit_code("extern \"C\" void " + func_name + "(Context context) {\n");
     emit_code("auto n = context.get_range(0);\n");
-    emit_code("for (int i = 0, b = 0; i < n; ) {{\n", num_groups);
+    emit_code("for (int i = 0, b = 0; (unsigned)i < n; ) {{\n", num_groups);
   }
 
   void generate_tail() {

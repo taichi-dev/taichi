@@ -32,6 +32,7 @@ struct Adapter {
 
   void convert(Expr &e) {
     TC_ASSERT(initialized());
+    TC_ASSERT(e->type != NodeType::pointer);
     if (counter == 0) {
       dt = e->data_type;
     } else {
@@ -41,8 +42,8 @@ struct Adapter {
     auto n = Expr::create(NodeType::adapter_store, e, Expr::create_imm(id),
                           Expr::create_imm(i));
     stores->ch.push_back(n);
-    e = Expr::create(NodeType::adapter_load, Expr::create_imm(id),
-                     Expr::create_imm(i));
+    e.set(Expr::create(NodeType::adapter_load, Expr::create_imm(id),
+                        Expr::create_imm(i)));
     e->data_type = dt;
   }
 

@@ -80,7 +80,6 @@ auto advection = []() {
   prog.adapter(1).convert(wy);
 
   // ** gs = 1
-  // prog.adapt(offset_x, offset_y, 1); // convert to group_size = 1
   auto offset = cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
 
   auto clamp = [](const Expr &e) { return min(max(imm(2), e), imm(n - 2)); };
@@ -104,11 +103,6 @@ auto advection = []() {
 
   prog.adapter(3).set(1, 4);
   prog.adapter(3).convert(node);
-  // adapter(w00);
-  // adapter(w01);
-  // adapter(w10);
-  // adapter(w11);
-
 
   // ** gs = 4
   for (int k = 0; k < nattr; k++) {
@@ -156,15 +150,14 @@ auto advection = []() {
 };
 TC_REGISTER_TASK(advection);
 
-auto test_adapter = []() {
+void test_adapter1(int vec_size) {
   Float a, b;
-  int vec_size = 8;
   Vector v(vec_size), u(vec_size);
 
-  int n = 8;
+  int n = 128;
 
   Program prog(Arch::x86_64, n);
-  prog.config.group_size = 8;
+  prog.config.group_size = vec_size;
   prog.config.num_groups = 8;
 
   prog.buffer(0).stream(0).group(0).place(a, b);
@@ -177,7 +170,7 @@ auto test_adapter = []() {
   auto &adapter = prog.adapter(0);
   auto ab = a[ind] * b[ind];
 
-  adapter.set(1, 8);
+  adapter.set(1, vec_size);
   adapter.convert(ab);
 
   for (int d = 0; d < vec_size; d++) {
@@ -200,6 +193,68 @@ auto test_adapter = []() {
     for (int j = 0; j < vec_size; j++) {
       auto val = prog.data(v(j), i);
       auto gt = i * j * 2;
+      if (abs(gt - val) > 1e-3_f) {
+        TC_P(i);
+        TC_P(j);
+        TC_P(val);
+        TC_P(gt);
+        TC_ERROR("");
+      }
+    }
+  }
+}
+
+void test_adapter2(int vec_size) {
+  Vector v(vec_size);
+  Float sum;
+
+  int n = 64;
+
+  Program prog(Arch::x86_64, n);
+  prog.config.group_size = vec_size;
+  prog.config.num_groups = 8;
+
+  for (int i = 0; i < vec_size; i++) {
+    prog.buffer(1).stream(0).group(0).place(v(i));
+  }
+  prog.buffer(0).stream(0).group(0).place(sum);
+
+  auto ind = Expr::index(0);
+
+  auto v_ind = v[ind];
+
+  for (int i = 0; i < vec_size; i++) {
+    v_ind(i).set(Expr::load_if_pointer(v_ind(i)));
+    TC_P(v_ind(i)->node_type_name());
+  }
+
+  auto &adapter = prog.adapter(0);
+  adapter.set(vec_size, 1);
+  for (int i = 0; i < vec_size; i++) {
+    adapter.convert(v_ind(i));
+  }
+
+  Expr acc = Expr::create_imm(0.0_f);
+  for (int d = 0; d < vec_size; d++) {
+    acc = acc + v_ind(d);
+  }
+
+  sum[ind] = acc;
+
+  prog.materialize_layout();
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < vec_size; j++) {
+      prog.data(v(j), i) = j + i;
+    }
+  }
+
+  prog();
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < vec_size; j++) {
+      auto val = prog.data(sum, i);
+      auto gt = j * (j - 1) / 2 + i * j;
       if (abs(gt - val) > 1e-5_f) {
         TC_P(i);
         TC_P(j);
@@ -209,6 +264,15 @@ auto test_adapter = []() {
       }
     }
   }
+}
+
+auto test_adapter = []() {
+  test_adapter2(1);
+
+  test_adapter1(1);
+  test_adapter1(2);
+  test_adapter1(4);
+  test_adapter1(8);
 };
 
 // TODO: random access

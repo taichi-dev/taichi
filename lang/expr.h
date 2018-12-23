@@ -303,7 +303,7 @@ class Expr {
     return node->ch[i];
   }
 
-  void set(Expr &o) {
+  void set(const Expr &o) {
     node = o.node;
   }
 };

@@ -1,6 +1,7 @@
 #include "tlang.h"
 #include <taichi/util.h>
 #include <taichi/visual/gui.h>
+#include <taichi/common/bit.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -72,11 +73,8 @@ auto advection = []() {
   prog.config.num_groups = 8;
 
   // ** gs = 2
+  TC_ASSERT(bit::is_power_of_two(n));
   auto index = Expr::index(0);
-  Int32 xi = index % imm(n) / imm(1);
-  xi.name("xi");
-  Int32 yi = index % imm(n * n) / imm(n);
-  yi.name("yi");
 
   auto offset_x = floor(v[0][index]).name("offset_x");
   auto offset_y = floor(v[1][index]).name("offset_y");
@@ -94,6 +92,11 @@ auto advection = []() {
   auto offset = cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
 
   auto clamp = [](const Expr &e) { return min(max(imm(2), e), imm(n - 2)); };
+
+  Int32 xi = index % imm(n);
+  xi.name("xi");
+  Int32 yi = index / imm(n);
+  yi.name("yi");
 
   // weights
   auto w00 = (imm(1.0f) - wx) * (imm(1.0f) - wy);

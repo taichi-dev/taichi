@@ -57,6 +57,7 @@ struct Adapter {
   Adapter &convert(Expr &e, Args &&... args) {
     convert(e);
     convert(std::forward<Args>(args)...);
+    return *this;
   }
 
   Adapter &set(int input_group_size, int output_group_size = -1) {

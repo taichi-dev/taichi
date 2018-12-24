@@ -323,9 +323,19 @@ template <typename T, int dim, int n>
 struct vvec {
   vec<T, dim> d[n];
 
+  vvec() {
+  }
+
+  vvec(void *addr) {
+    for (int i = 0; i < n; i++) {
+      d[i] = load<T, dim>((void *)((uint8 *)addr + i * sizeof(vec<T, dim>)));
+    }
+  }
+
   void store(void *addr) {
     for (int i = 0; i < n; i++) {
-      store(d[i], (uint8 *)addr + i * sizeof(vec<T, dim>));
+      taichi::Tlang::store<T, dim>(
+          d[i], (void *)((uint8 *)addr + i * sizeof(vec<T, dim>)));
     }
   }
 };

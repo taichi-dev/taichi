@@ -32,7 +32,7 @@ struct Adapter {
     return input_group_size != -1 && output_group_size != -1;
   }
 
-  void convert(Expr &e) {
+  Adapter &convert(Expr &e) {
     TC_ASSERT(initialized());
     TC_ASSERT(e->type != NodeType::pointer);
     if (counter == 0) {
@@ -45,16 +45,24 @@ struct Adapter {
                           Expr::create_imm(i));
     stores->ch.push_back(n);
     e.set(Expr::create(NodeType::adapter_load, Expr::create_imm(id),
-                        Expr::create_imm(i)));
+                       Expr::create_imm(i)));
     e->data_type = dt;
     TC_P(counter);
     TC_P(input_group_size);
     store_exprs.resize(counter / input_group_size);
+    return *this;
   }
 
-  void set(int input_group_size, int output_group_size = -1) {
+  template <typename... Args>
+  Adapter &convert(Expr &e, Args &&... args) {
+    convert(e);
+    convert(std::forward<Args>(args)...);
+  }
+
+  Adapter &set(int input_group_size, int output_group_size = -1) {
     this->input_group_size = input_group_size;
     this->output_group_size = output_group_size;
+    return *this;
   }
 };
 

@@ -86,13 +86,8 @@ auto advection = []() {
   wy.name("wy");
 
   if (use_adapter) {
-    prog.adapter(0).set(2, 1);
-    prog.adapter(0).convert(offset_x);
-    prog.adapter(0).convert(offset_y);
-
-    prog.adapter(1).set(2, 1);
-    prog.adapter(1).convert(wx);
-    prog.adapter(1).convert(wy);
+    prog.adapter(0).set(2, 1).convert(offset_x, offset_y);
+    prog.adapter(1).set(2, 1).convert(wx, wy);
   }
 
   // ** gs = 1
@@ -118,14 +113,8 @@ auto advection = []() {
   node.name("node");
 
   if (use_adapter) {
-    prog.adapter(2).set(1, 4);
-    prog.adapter(2).convert(w00);
-    prog.adapter(2).convert(w01);
-    prog.adapter(2).convert(w10);
-    prog.adapter(2).convert(w11);
-
-    prog.adapter(3).set(1, 4);
-    prog.adapter(3).convert(node);
+    prog.adapter(2).set(1, 4).convert(w00, w01, w10, w11);
+    prog.adapter(3).set(1, 4).convert(node);
   }
 
   // ** gs = 4

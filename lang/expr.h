@@ -73,7 +73,9 @@ class Node {
     floor,
     max,
     min,
-    cast
+    cast,
+    land,
+    shr
   };
 
   using NodeType = Type;
@@ -246,6 +248,8 @@ class Expr {
   BINARY_OP(-, sub);
   BINARY_OP(/, div);
   BINARY_OP(%, mod);
+  BINARY_OP(&, land);
+  BINARY_OP(>>, shr);
 #undef BINARY_OP
 
   // ch[0] = address

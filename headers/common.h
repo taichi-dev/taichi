@@ -177,9 +177,8 @@ inline void store(VV<dim, T> a, T *base_address, VV<dim, int> offsets) {
   }
 }
 
-template <int input_dim, int output_dim, typename T>
-inline VV<output_dim, T> shuffle(const VV<input_dim, T> &a,
-                                 VV<output_dim, int> offsets) {
+template <typename SA, int output_dim, typename T = typename SA::T>
+inline VV<output_dim, T> shuffle(SA &a, VV<output_dim, int> offsets) {
   VV<output_dim, T> ret;
   for (int i = 0; i < output_dim; i++) {
     ret[i] = a[offsets[i]];
@@ -187,7 +186,7 @@ inline VV<output_dim, T> shuffle(const VV<input_dim, T> &a,
   return ret;
 };
 
-template <typename T,
+template <typename T_,
           int num_groups,
           int num_inputs,
           int input_group_size,
@@ -197,6 +196,7 @@ struct SlowAdapter {
   // output_group_size;
   // static_assert(num_inputs * input_group_size % output_group_size == 0, "");
 
+  using T = T_;
   // static constexpr int num_inputs = 8;
   static constexpr int num_outputs = 8;
 
@@ -248,6 +248,10 @@ struct SlowAdapter {
 
   auto get(int i) {
     return outputs[i];
+  }
+
+  inline T &operator[](int i) {
+    return inputs[i / input_dim][i % input_dim];
   }
 };
 

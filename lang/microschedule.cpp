@@ -62,6 +62,7 @@ auto advection = []() {
     prog.buffer(2).stream(0).group(0).place(v[k]);
   }
   prog.config.group_size = use_adapter ? nattr : 1;
+  prog.config.num_groups = 2;
 
   // ** gs = 2
   auto index = Expr::index(0);
@@ -123,8 +124,8 @@ auto advection = []() {
     auto v10 = attr[0][k][node + imm(n)];
     auto v11 = attr[0][k][node + imm(n + 1)];
 
-    // attr[1][k][index] = w00 * v00 + w01 * v01 + w10 * v10 + w11 * v11;
-    attr[1][k][index] = v00;
+    attr[1][k][index] = w00 * v00 + w01 * v01 + w10 * v10 + w11 * v11;
+    // attr[1][k][index] = v00;
     attr[1][k][index].name(fmt::format("output{}", k));
   }
 

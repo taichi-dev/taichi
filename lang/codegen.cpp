@@ -368,10 +368,8 @@ class CPUCodeGen : public CodeGenBase {
       }
       auto offsets = vv_constant_str(ad.output_group_size * num_groups,
                                      DataType::i32, offsets_val);
-      emit_code("auto {} = shuffle({}.get_input<{}>(), {});", expr->var_name,
-                adapter_name(expr[0]->members[0]->value<int>()),
-                expr[1]->members[0]->value<int>() / ad.input_group_size,
-                offsets);
+      emit_code("auto {} = shuffle({}, {});", expr->var_name,
+                adapter_name(expr[0]->members[0]->value<int>()), offsets);
       // emit_code("{}.print();", expr->var_name);
     } else {
       TC_ERROR("Node {} cannot be visited.", expr->node_type_name());

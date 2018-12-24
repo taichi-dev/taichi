@@ -8,6 +8,17 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
   // TC_P(expr->node_type_name());
   auto vv_width = num_groups * expr->group_size();
   TC_ASSERT(vv_width % simd_width == 0);
+  int split = vv_width / simd_width;
+  auto vv_type = [&](DataType dt) {
+    return fmt::format("vvec<{}, {}, {}>", data_type_name(dt), simd_width,
+                       split);
+  };
+  auto vvec_const_str = [&](DataType dt, auto val) {
+    return fmt::format("{}({})", vv_type(dt), val);
+  };
+  auto vvec_const_str_list = [&](DataType dt, auto val) {
+    return fmt::format("{}({})", vv_type(dt), vec_to_list_str(val));
+  };
   TC_ASSERT(expr->is_vectorized);
   TC_ASSERT(expr->members.size() == 0 ||
             (int)expr->members.size() == group_size);
@@ -38,10 +49,10 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     emit_code("auto {} = floor({});", expr->var_name, expr[0]->var_name);
   } else if (expr->type == NodeType::cast) {
     if (expr->data_type == DataType::i32) {
-      emit_code("auto {} = cast<int32>({});", expr->var_name,
+      emit_code("auto {} = {}.cast<int32>();", expr->var_name,
                 expr[0]->var_name);
     } else if (expr->data_type == DataType::f32) {
-      emit_code("auto {} = cast<float32>({});", expr->var_name,
+      emit_code("auto {} = {}.cast<float32>();", expr->var_name,
                 expr[0]->var_name);
     } else {
       TC_NOT_IMPLEMENTED
@@ -54,6 +65,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
               expr[0]->var_name);
               */
     // TC_P(expr->members.size());
+
     std::vector<int> offsets;
     for (int i = 0; i + 1 < (int)expr->members.size(); i++) {
       TC_ASSERT(
@@ -74,7 +86,6 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       addr.coeff_const -= addr.coeff_const % simd_width;
       needs_shuffle = true;
     }
-    int split = vv_width / simd_width;
     emit_code("vvec<{}, {}, {}> {}({});", expr->data_type_name(), simd_width,
               split, expr->var_name, get_vectorized_address(addr, 0, 0));
     auto emit_shuffle = [&](std::string imm) {
@@ -157,13 +168,11 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
   } else if (expr->type == NodeType::imm) {
     TC_WARN("Using member imm");
     if (expr->data_type == DataType::i32) {
-      emit_code("auto {} = {}; /*i32*/ ", expr->var_name,
-                vv_constant_str(group_size * num_groups, DataType::i32,
-                                (int64)expr->members[0]->value<int32>()));
+      emit_code("auto {} = vvec<int32, {}, {}>({}); /*i32*/ ", expr->var_name,
+                simd_width, split, (int64)expr->members[0]->value<int32>());
     } else {
-      emit_code("auto {} = {}; /*f32*/ ", expr->var_name,
-                vv_constant_str(group_size * num_groups, DataType::f32,
-                                expr->members[0]->value<float32>()));
+      emit_code("auto {} = vvec<float32, {}, {}>({}); /*i32*/ ", expr->var_name,
+                simd_width, split, (int64)expr->members[0]->value<float32>());
     }
   } else if (expr->type == NodeType::index) {
     std::string members = "{";
@@ -178,8 +187,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       }
     }
     members += "}";
-    emit_code("auto {} = {}({});", expr->var_name,
-              vv_type_str(num_groups * expr->group_size(), DataType::i32),
+    emit_code("auto {} = {}({});", expr->var_name, vv_type(expr->data_type),
               members);
   } else if (expr->type == NodeType::pointer) {
     // emit base pointer and offsets
@@ -196,19 +204,16 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
         coeff_const.push_back(m->get_address_().coeff_const);
       }
     }
-    auto offset_var = vv_constant_str(vv_width, DataType::i32, coeff_const);
+    auto offset_var = vvec_const_str_list(DataType::i32, coeff_const);
     if (addr.coeff_aosoa_stride != 0) {
-      emit_code(
-          "auto {}_offsets = {} + {} * {} + {} / {} * {};", expr->var_name,
-          offset_var, vv_constant_str(vv_width, DataType::i32, addr.coeff_i),
-          index, index,
-          vv_constant_str(vv_width, DataType::i32, addr.coeff_aosoa_group_size),
-          vv_constant_str(vv_width, DataType::i32, addr.coeff_aosoa_stride));
+      emit_code("auto {}_offsets = {} + {} * {} + {} / {} * {};",
+                expr->var_name, offset_var,
+                vvec_const_str(DataType::i32, addr.coeff_i), index, index,
+                vvec_const_str(DataType::i32, addr.coeff_aosoa_group_size),
+                vvec_const_str(DataType::i32, addr.coeff_aosoa_stride));
     } else {
       emit_code("auto {}_offsets = {} + {} * {};", expr->var_name, offset_var,
-                vv_constant_str(num_groups * expr->group_size(), DataType::i32,
-                                addr.coeff_i),
-                index);
+                vvec_const_str(DataType::i32, addr.coeff_i), index);
     }
   } else if (expr->type == NodeType::adapter_store) {
     auto &ad = prog->adapter(expr[1]->members[0]->value<int>());
@@ -232,8 +237,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
                               elem_id % ad.input_group_size);
       }
     }
-    auto offsets = vv_constant_str(ad.output_group_size * num_groups,
-                                   DataType::i32, offsets_val);
+    auto offsets = vvec_const_str_list(DataType::i32, offsets_val);
     emit_code("auto {} = shuffle({}, {});", expr->var_name,
               adapter_name(expr[0]->members[0]->value<int>()), offsets);
     // emit_code("{}.print();", expr->var_name);

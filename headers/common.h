@@ -315,7 +315,50 @@ inline vec<T, dim> floor(const vec<T, dim> &);
 template <>
 inline float32x8 floor<float32, 8>(const float32x8 &v) {
   return _mm256_floor_ps(v);
-};
+}
+
+//*****************************************************************************
+
+template <typename T, typename G, int dim>
+inline vec<G, dim> cast(const vec<T, dim> &);
+
+template <>
+inline int32x8 cast<float32, int32, 8>(const float32x8 &v) {
+  return _mm256_cvtps_epi32(v);
+}
+
+//*****************************************************************************
+
+template <typename T, int dim>
+inline vec<T, dim> set1(T);
+
+template <>
+inline float32x8 set1<float32, 8>(float32 v) {
+  return _mm256_set1_ps(v);
+}
+
+template <>
+inline int32x8 set1<int32, 8>(int32 v) {
+  return _mm256_set1_epi32(v);
+}
+
+//*****************************************************************************
+
+template <typename T, int dim>
+inline vec<T, dim> min(vec<T, dim>, vec<T, dim>);
+
+template <>
+inline int32x8 min<int32, 8>(int32x8 a, int32x8 b) {
+  return _mm256_min_epi32(a, b);
+}
+
+template <typename T, int dim>
+inline vec<T, dim> max(vec<T, dim>, vec<T, dim>);
+
+template <>
+inline int32x8 max<int32, 8>(int32x8 a, int32x8 b) {
+  return _mm256_max_epi32(a, b);
+}
 
 //*****************************************************************************
 
@@ -323,7 +366,21 @@ template <typename T, int dim, int n>
 struct vvec {
   vec<T, dim> d[n];
 
+  vvec(std::array<T, dim * n> v) {
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < dim; j++) {
+        d[i][j] = v[i * dim + j];
+      }
+    }
+  }
+
   vvec() {
+  }
+
+  vvec(T v) {
+    for (int i = 0; i < n; i++) {
+      d[i] = set1<T, dim>(v);
+    }
   }
 
   vvec(void *addr) {
@@ -338,17 +395,35 @@ struct vvec {
           d[i], (void *)((uint8 *)addr + i * sizeof(vec<T, dim>)));
     }
   }
+
+  template <typename G>
+  vvec<G, dim, n> cast() {
+    vvec<G, dim, n> ret;
+    for (int i = 0; i < n; i++) {
+      ret.d[i] = taichi::Tlang::cast<T, G, dim>(d[i]);
+    }
+    return ret;
+  }
 };
 
-#define VVEC_BINARY_OP(NAME, OP)                          \
-  template <typename T, int dim, int n>                   \
-  inline vvec<T, dim, n> NAME(const vvec<T, dim, n> &a,   \
-                              const vvec<T, dim, n> &b) { \
-    vvec<T, dim, n> ret;                                  \
-    for (int i = 0; i < n; i++) {                         \
-      ret.d[i] = a.d[i] OP b.d[i];                        \
-    }                                                     \
-    return ret;                                           \
+#define VVEC_BINARY_OP(NAME, OP)                                 \
+  template <typename T, int dim, int n>                          \
+  inline vvec<T, dim, n> operator OP(const vvec<T, dim, n> &a,   \
+                                     const vvec<T, dim, n> &b) { \
+    vvec<T, dim, n> ret;                                         \
+    for (int i = 0; i < n; i++) {                                \
+      ret.d[i] = a.d[i] OP b.d[i];                               \
+    }                                                            \
+    return ret;                                                  \
+  }                                                              \
+  template <typename T, int dim, int n>                          \
+  inline vvec<T, dim, n> NAME(const vvec<T, dim, n> &a,          \
+                              const vvec<T, dim, n> &b) {        \
+    vvec<T, dim, n> ret;                                         \
+    for (int i = 0; i < n; i++) {                                \
+      ret.d[i] = a.d[i] OP b.d[i];                               \
+    }                                                            \
+    return ret;                                                  \
   }
 
 VVEC_BINARY_OP(add, +);
@@ -356,5 +431,35 @@ VVEC_BINARY_OP(sub, -);
 VVEC_BINARY_OP(mul, *);
 VVEC_BINARY_OP(div, /);
 VVEC_BINARY_OP(mod, %);
+
+#undef VVEC_BINARY_OP
+
+#define VVEC_BINARY_FUNC(NAME)                            \
+  template <typename T, int dim, int n>                   \
+  inline vvec<T, dim, n> NAME(const vvec<T, dim, n> &a,   \
+                              const vvec<T, dim, n> &b) { \
+    vvec<T, dim, n> ret;                                  \
+    for (int i = 0; i < n; i++) {                         \
+      ret.d[i] = NAME<T, dim>(a.d[i], b.d[i]);            \
+    }                                                     \
+    return ret;                                           \
+  }
+
+VVEC_BINARY_FUNC(max);
+VVEC_BINARY_FUNC(min);
+
+#define VVEC_UNARY_OP(NAME)                               \
+  template <typename T, int dim, int n>                   \
+  inline vvec<T, dim, n> NAME(const vvec<T, dim, n> &a) { \
+    vvec<T, dim, n> ret;                                  \
+    for (int i = 0; i < n; i++) {                         \
+      ret.d[i] = NAME<T, dim>(a.d[i]);                    \
+    }                                                     \
+    return ret;                                           \
+  }
+
+VVEC_UNARY_OP(floor);
+
+#undef VVEC_UNARY_OP
 }
 }

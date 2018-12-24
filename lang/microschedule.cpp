@@ -47,7 +47,7 @@ auto test_loop = []() {
 TC_REGISTER_TASK(test_loop);
 
 auto advection = []() {
-  bool use_adapter = true;
+  bool use_adapter = false;
 
   const int n = 512, nattr = 4;
 

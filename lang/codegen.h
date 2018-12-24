@@ -217,9 +217,8 @@ class CPUCodeGen : public CodeGenBase {
     return fmt::format("VV<{}, {}>({})", width, data_type_name(data_type), val);
   }
 
-  std::string vv_constant_str(int width,
-                              DataType data_type,
-                              std::vector<int> val) {
+  template <typename T>
+  std::string vec_to_list_str(std::vector<T> val) {
     std::string members = "{";
     bool first = true;
     for (int i = 0; i < (int)val.size(); i++) {
@@ -230,8 +229,14 @@ class CPUCodeGen : public CodeGenBase {
       members += fmt::format("{}", val[i]);
     }
     members += "}";
+    return members;
+  }
+
+  std::string vv_constant_str(int width,
+                              DataType data_type,
+                              std::vector<int> val) {
     return fmt::format("VV<{}, {}>({})", width, data_type_name(data_type),
-                       members);
+                       vec_to_list_str(val));
   }
 
   void visit(Expr &expr) {

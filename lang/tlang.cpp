@@ -7,6 +7,7 @@ TC_NAMESPACE_BEGIN
 namespace Tlang {
 
 TC_TEST("SlowAdapter") {
+  /*
   {
     // num_groups, num_inputs, input_group_size, output_group_size
     VV<32, int> input0;
@@ -37,6 +38,20 @@ TC_TEST("SlowAdapter") {
     for (int i = 0; i < 32; i++) {
       TC_CHECK(adapter.get(0)[i] == i);
     }
+  }
+  */
+  auto a = set1<int32, 8>(1);
+  auto b = set1<int32, 8>(2);
+  auto c = a + b;
+  for (int i = 0; i < 8; i++) {
+    TC_P(c[i]);
+  }
+
+  auto p = vvec<int32, 8, 2>({1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1});
+  auto q = vvec<int32, 8, 2>(3);
+  auto r = p * q;
+  for (int i = 0; i < 16; i++) {
+    TC_P(r.d[i / 8][i % 8]);
   }
 }
 }

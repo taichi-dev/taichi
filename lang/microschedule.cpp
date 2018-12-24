@@ -148,10 +148,10 @@ auto advection = []() {
         prog.data(attr[0][k], i * n + j) = i % 128 / 128.0_f;
       }
       real s = 3.0_f / n;
-      // prog.data(v[0], i * n + j) = s * (j - n / 2);
-      // prog.data(v[1], i * n + j) = -s * (i - n / 2);
-      prog.data(v[0], i * n + j) = 0;
-      prog.data(v[1], i * n + j) = 0;
+      prog.data(v[0], i * n + j) = s * (j - n / 2);
+      prog.data(v[1], i * n + j) = -s * (i - n / 2);
+      // prog.data(v[0], i * n + j) = 0;
+      // prog.data(v[1], i * n + j) = 0;
     }
   }
 

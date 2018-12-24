@@ -310,7 +310,8 @@ inline vec<T, dim> gather(const void *, vec<int32, dim>);
 
 template <>
 inline float32x8 gather<float32, 8>(const void *addr, int32x8 offsets) {
-  return _mm256_i32gather_ps((float32 *)addr, offsets, 1);
+  // return _mm256_i32gather_ps((float32 *)addr, offsets, sizeof(float32));
+  return _mm256_i32gather_ps((float32 *)addr, offsets, 4);
 }
 
 //*****************************************************************************
@@ -335,7 +336,7 @@ inline void store(const vec<T, dim> &v, void *, vec<int32, dim>);
 
 template <>
 inline void store<float32, 8>(const float32x8 &v, void *addr, int32x8 offsets) {
-  _mm256_i32scatter_ps(addr, offsets, v, 1);
+  _mm256_i32scatter_ps(addr, offsets, v, sizeof(float32));
 }
 
 //*****************************************************************************
@@ -401,11 +402,10 @@ struct vvec {
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < dim; j++) {
         d[i][j] = v[i * dim + j];
-        std::cout << d[i][j] << ",";
+        // std::cout << d[i][j] << ",";
       }
     }
-    std::cout << std::endl;
-    print();
+    // std::cout << std::endl;
   }
 
   vvec() {
@@ -427,6 +427,13 @@ struct vvec {
     for (int i = 0; i < n; i++) {
       d[i] = gather<T, dim>(addr, offsets.d[i]);
     }
+    /*
+    for (int i = 0; i < 16; i++) {
+      std::cout << ((float32 *)addr)[i] << ",";
+    }
+    std::cout << std::endl;
+    offsets.print();
+    */
   }
 
   void store(void *addr) {
@@ -476,7 +483,7 @@ DEFINE_BINARY_OP(float32x8, max, _mm256_max_ps);
 
 DEFINE_BINARY_OP(int32x8, add, _mm256_add_epi32);
 DEFINE_BINARY_OP(int32x8, sub, _mm256_sub_epi32);
-DEFINE_BINARY_OP(int32x8, mul, _mm256_mul_epi32);
+DEFINE_BINARY_OP(int32x8, mul, _mm256_mullo_epi32);
 DEFINE_BINARY_OP(int32x8, min, _mm256_min_epi32);
 DEFINE_BINARY_OP(int32x8, max, _mm256_max_epi32);
 

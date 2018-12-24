@@ -62,7 +62,7 @@ auto advection = []() {
     prog.buffer(2).stream(0).group(0).place(v[k]);
   }
   prog.config.group_size = use_adapter ? nattr : 1;
-  prog.config.num_groups = 2;
+  prog.config.num_groups = 8;
 
   // ** gs = 2
   auto index = Expr::index(0);

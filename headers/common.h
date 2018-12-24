@@ -417,23 +417,21 @@ struct vvec {
     }
   }
 
-  vvec(void *addr) {
+  static vvec load(void *addr) {
+    vvec ret;
     for (int i = 0; i < n; i++) {
-      d[i] = load<T, dim>((void *)((uint8 *)addr + i * sizeof(vec<T, dim>)));
+      ret.d[i] = taichi::Tlang::load<T, dim>(
+          (void *)((uint8 *)addr + i * sizeof(vec<T, dim>)));
     }
+    return ret;
   }
 
-  vvec(void *addr, vvec<int, dim, n> offsets) {
+  static vvec load(void *addr, vvec<int, dim, n> offsets) {
+    vvec ret;
     for (int i = 0; i < n; i++) {
-      d[i] = gather<T, dim>(addr, offsets.d[i]);
+      ret.d[i] = gather<T, dim>(addr, offsets.d[i]);
     }
-    /*
-    for (int i = 0; i < 16; i++) {
-      std::cout << ((float32 *)addr)[i] << ",";
-    }
-    std::cout << std::endl;
-    offsets.print();
-    */
+    return ret;
   }
 
   void store(void *addr) {
@@ -467,6 +465,14 @@ struct vvec {
     }
     std::cout << "]" << std::endl;
   }
+
+  T &element(int i) {
+    return d[i / dim][i % dim];
+  }
+
+  const T &element(int i) const {
+    return d[i / dim][i % dim];
+  }
 };
 
 #define DEFINE_BINARY_OP(T, OP, INST) \
@@ -491,6 +497,7 @@ DEFINE_BINARY_OP(int32x8, lor, _mm256_and_si256);
 
 template <int dim>
 inline vec<int32, dim> div(vec<int32, dim> a, vec<int32, dim> b) {
+  // return _mm256_srli_epi32(a, 9);
   vec<int32, dim> ret;
   for (int i = 0; i < dim; i++)
     ret[i] = a[i] / b[i];
@@ -500,6 +507,7 @@ inline vec<int32, dim> div(vec<int32, dim> a, vec<int32, dim> b) {
 template <typename T, int dim>
 inline vec<T, dim> mod(vec<T, dim> a, vec<T, dim> b) {
   static_assert(std::is_integral<T>::value, "");
+  // return _mm256_and_si256(a, _mm256_set1_epi32(511));
   return sub(a, mul(div(a, b), b));
 };
 

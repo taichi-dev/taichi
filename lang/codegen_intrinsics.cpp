@@ -63,9 +63,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     if (expr[0]->type == NodeType::pointer &&
         expr[0][1]->type == NodeType::index) {
       regular = true;
-      TC_INFO("regular");
     } else {
-      TC_INFO("irregular");
     }
     if (regular) {
       // TODO: irregular case
@@ -96,8 +94,9 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
         addr.coeff_const -= addr.coeff_const % simd_width;
         needs_shuffle = true;
       }
-      emit_code("vvec<{}, {}, {}> {}({});", expr->data_type_name(), simd_width,
-                split, expr->var_name, get_vectorized_address(addr, 0, 0));
+      emit_code("auto {} = vvec<{}, {}, {}>::load({});", expr->var_name,
+                expr->data_type_name(), simd_width, split,
+                get_vectorized_address(addr, 0, 0));
       auto emit_shuffle = [&](std::string imm) {
         for (int i = 0; i < split; i++) {
           emit_code(
@@ -168,7 +167,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       }
     } else {
       // irregular
-      emit_code("auto {} = {}({}_base, {}_offsets);", expr->var_name,
+      emit_code("auto {} = {}::load({}_base, {}_offsets);", expr->var_name,
                 vv_type(expr->data_type), expr[0]->var_name, expr[0]->var_name);
     }
   } else if (expr->type == NodeType::store) {
@@ -239,12 +238,13 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     }
   } else if (expr->type == NodeType::adapter_store) {
     auto &ad = prog->adapter(expr[1]->members[0]->value<int>());
-    TC_P(ad.input_group_size);
-    TC_P(expr[2]->members[0]->value<int>());
-    emit_code("{}.set<{}>({});",
+    /*
+    emit_code("{}.store(&{}.inputs[{}]);", expr[0]->var_name,
               adapter_name(expr[1]->members[0]->value<int>()),
-              expr[2]->members[0]->value<int>() / ad.input_group_size,
-              expr[0]->var_name);
+              expr[2]->members[0]->value<int>() / ad.input_group_size);
+              */
+    ad.store_exprs[expr[2]->members[0]->value<int>() / ad.input_group_size].set(
+        expr[0]);
   } else if (expr->type == NodeType::adapter_load) {
     // generate offset
     TC_P(num_groups);
@@ -259,10 +259,23 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
                               elem_id % ad.input_group_size);
       }
     }
-    auto offsets = vvec_const_str_list(DataType::i32, offsets_val);
-    emit_code("auto {} = shuffle({}, {});", expr->var_name,
-              adapter_name(expr[0]->members[0]->value<int>()), offsets);
-    // emit_code("{}.print();", expr->var_name);
+    TC_P(offsets_val.size());
+    auto offsets = offsets_val;
+    emit_code("{} {};", vv_type(ad.dt), expr->var_name);
+    int input_vv_width = ad.input_group_size * num_groups;
+    for (int i = 0; i < split; i++) {
+      TC_TAG;
+      // For each
+      std::vector<int> offset_subset(
+          offsets.begin() + i * simd_width,
+          offsets.begin() + (i + 1) * simd_width);
+      for (int j = 0; j < simd_width; j++) {
+        auto o = offset_subset[j];
+        emit_code("{}.d[{}][{}] = {}.element({});", expr->var_name, i, j,
+                  ad.store_exprs[o / input_vv_width]->var_name,
+                  o % input_vv_width);
+      }
+    }
   } else {
     TC_ERROR("Node {} cannot be visited.", expr->node_type_name());
   }

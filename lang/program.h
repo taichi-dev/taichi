@@ -20,6 +20,8 @@ struct Adapter {
   int id;
   DataType dt;
 
+  std::vector<Expr> store_exprs;
+
   Adapter(int id) : id(id) {
     input_group_size = -1;
     output_group_size = -1;
@@ -45,6 +47,9 @@ struct Adapter {
     e.set(Expr::create(NodeType::adapter_load, Expr::create_imm(id),
                         Expr::create_imm(i)));
     e->data_type = dt;
+    TC_P(counter);
+    TC_P(input_group_size);
+    store_exprs.resize(counter / input_group_size);
   }
 
   void set(int input_group_size, int output_group_size = -1) {

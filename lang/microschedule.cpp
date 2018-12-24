@@ -56,10 +56,17 @@ auto advection = []() {
   Program prog(Arch::x86_64, n * n);
 
   for (int k = 0; k < 2; k++) {
-    for (int i = 0; i < nattr; i++) {
-      prog.buffer(k).stream(0).group(0).place(attr[k][i]);
+    if (use_adapter) {
+      for (int i = 0; i < nattr; i++) {
+        prog.buffer(k).stream(0).group(0).place(attr[k][i]);
+      }
+      prog.buffer(2).stream(0).group(0).place(v[k]);
+    } else {
+      for (int i = 0; i < nattr; i++) {
+        prog.buffer(k).stream(i).group(0).place(attr[k][i]);
+      }
+      prog.buffer(2).stream(k).group(0).place(v[k]);
     }
-    prog.buffer(2).stream(0).group(0).place(v[k]);
   }
   prog.config.group_size = use_adapter ? nattr : 1;
   prog.config.num_groups = 8;
@@ -67,12 +74,16 @@ auto advection = []() {
   // ** gs = 2
   auto index = Expr::index(0);
   Int32 xi = index % imm(n) / imm(1);
+  xi.name("xi");
   Int32 yi = index % imm(n * n) / imm(n);
+  yi.name("yi");
 
-  auto offset_x = floor(v[0][index]);
-  auto offset_y = floor(v[1][index]);
+  auto offset_x = floor(v[0][index]).name("offset_x");
+  auto offset_y = floor(v[1][index]).name("offset_y");
   auto wx = v[0][index] - offset_x;
   auto wy = v[1][index] - offset_y;
+  wx.name("wx");
+  wy.name("wy");
 
   if (use_adapter) {
     prog.adapter(0).set(2, 1);
@@ -119,10 +130,10 @@ auto advection = []() {
 
   // ** gs = 4
   for (int k = 0; k < nattr; k++) {
-    auto v00 = attr[0][k][node + imm(0)];
-    auto v01 = attr[0][k][node + imm(1)];
-    auto v10 = attr[0][k][node + imm(n)];
-    auto v11 = attr[0][k][node + imm(n + 1)];
+    auto v00 = attr[0][k][node + imm(0)].name("v00");
+    auto v01 = attr[0][k][node + imm(1)].name("v01");
+    auto v10 = attr[0][k][node + imm(n)].name("v10");
+    auto v11 = attr[0][k][node + imm(n + 1)].name("v11");
 
     attr[1][k][index] = w00 * v00 + w01 * v01 + w10 * v10 + w11 * v11;
     // attr[1][k][index] = v00;

@@ -296,6 +296,16 @@ inline vec<int32, 8> load<int32, 8>(const void *addr) {
 //*****************************************************************************
 
 template <typename T, int dim>
+inline vec<T, dim> gather(const void *, vec<int32, dim>);
+
+template <>
+inline float32x8 gather<float32, 8>(const void *addr, int32x8 offsets) {
+  return _mm256_i32gather_ps((float32 *)addr, offsets, 1);
+}
+
+//*****************************************************************************
+
+template <typename T, int dim>
 inline void store(const vec<T, dim> &v, const void *);
 
 template <>
@@ -307,6 +317,17 @@ template <>
 inline void store<int32, 8>(const int32x8 &v, const void *addr) {
   _mm256_store_si256((__m256i *)addr, v);
 }
+
+//*****************************************************************************
+
+template <typename T, int dim>
+inline void store(const vec<T, dim> &v, void *, vec<int32, dim>);
+
+template <>
+inline void store<float32, 8>(const float32x8 &v, void *addr, int32x8 offsets) {
+  _mm256_i32scatter_ps(addr, offsets, v, 1);
+}
+
 //*****************************************************************************
 
 template <typename T, int dim>
@@ -389,10 +410,22 @@ struct vvec {
     }
   }
 
+  vvec(void *addr, vvec<int, dim, n> offsets) {
+    for (int i = 0; i < n; i++) {
+      d[i] = gather<T, dim>(addr, offsets.d[i]);
+    }
+  }
+
   void store(void *addr) {
     for (int i = 0; i < n; i++) {
       taichi::Tlang::store<T, dim>(
           d[i], (void *)((uint8 *)addr + i * sizeof(vec<T, dim>)));
+    }
+  }
+
+  void store(void *addr, vvec<int32, dim, n> offsets) {
+    for (int i = 0; i < n; i++) {
+      taichi::Tlang::store<T, dim>(d[i], addr, offsets.d[i]);
     }
   }
 

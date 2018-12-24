@@ -26,7 +26,8 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     return;
   }
   if (expr->var_name == "") {
-    expr->var_name = create_variable();
+    // expr->var_name = create_variable();
+    expr->var_name = fmt::format("var{}", expr->id);
     /*
     TC_INFO("{} {} {} -> {}", expr->id, expr->node_type_name(),
             expr->data_type_name(), expr->var_name);
@@ -58,111 +59,125 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       TC_NOT_IMPLEMENTED
     }
   } else if (expr->type == NodeType::load) {
-    // TODO: irregular case
-    /*
-    emit_code("auto {} = load<{}, {}>({}_base, {}_offsets);", expr->var_name,
-              vv_width, data_type_name(expr->data_type), expr[0]->var_name,
-              expr[0]->var_name);
-              */
-    // TC_P(expr->members.size());
+    bool regular = false;
+    if (regular) {
+      // TODO: irregular case
+      /*
+      emit_code("auto {} = load<{}, {}>({}_base, {}_offsets);", expr->var_name,
+                vv_width, data_type_name(expr->data_type), expr[0]->var_name,
+                expr[0]->var_name);
+                */
+      // TC_P(expr->members.size());
 
-    std::vector<int> offsets;
-    for (int i = 0; i + 1 < (int)expr->members.size(); i++) {
-      TC_ASSERT(
-          expr->members[i]->addr().same_type(expr->members[i + 1]->addr()));
-    }
-    for (int i = 0; i < (int)expr->members.size(); i++) {
-      offsets.push_back(expr->members[i]->addr().offset());
-    }
-    auto addr = expr->addr();
-    // TC_P(i_stride);
-    // TC_P(addr.coeff_aosoa_group_size);
-    TC_ASSERT(addr.coeff_aosoa_group_size == 0 ||
-              num_groups == addr.coeff_aosoa_group_size);
-    // TC_ASSERT(expr->members[0]->addr.coeff_i);
-    std::string load_instr = "_mm256_load_ps";
-    bool needs_shuffle = false;
-    if (addr.coeff_const % simd_width != 0) {
-      addr.coeff_const -= addr.coeff_const % simd_width;
-      needs_shuffle = true;
-    }
-    emit_code("vvec<{}, {}, {}> {}({});", expr->data_type_name(), simd_width,
-              split, expr->var_name, get_vectorized_address(addr, 0, 0));
-    auto emit_shuffle = [&](std::string imm) {
-      for (int i = 0; i < split; i++) {
-        emit_code(
-            "{}.d[{}] = _mm256_shuffle_ps({}.d[{}], {}.d[{}], "
-            "{});",
-            expr->var_name, i, expr->var_name, i, expr->var_name, i, imm);
+      std::vector<int> offsets;
+      for (int i = 0; i + 1 < (int)expr->members.size(); i++) {
+        TC_ASSERT(
+            expr->members[i]->addr().same_type(expr->members[i + 1]->addr()));
       }
-      needs_shuffle = false;
-    };
-    if (group_size == 1) {
-      // emit_code("{}.d[0] = {}.d[0];", expr->var_name, expr->var_name);
-    } else {
-      TC_ASSERT(group_size <= 8);
-      // detect patterns
-      int offset_const = offsets[0] % simd_width;
-      int offset_inc = offsets[1] - offsets[0];
-      if (group_size == 2) {
-        if (offset_const == 0 && offset_inc == 1) {
-          // emit_code("{}.d[0] = {}.d[0];", expr->var_name, expr->var_name);
-        } else if (offset_inc == 0) {
-          if (offset_const == 0) {
-            emit_shuffle("0xA0");
-          } else if (offset_const == 1) {
-            emit_shuffle("0xF5");
-          } else {
-            TC_NOT_IMPLEMENTED;
-          }
-        } else {
-          TC_P(offset_const);
-          TC_P(offset_inc);
-          TC_NOT_IMPLEMENTED;
+      for (int i = 0; i < (int)expr->members.size(); i++) {
+        offsets.push_back(expr->members[i]->addr().offset());
+      }
+      auto addr = expr->addr();
+      // TC_P(i_stride);
+      // TC_P(addr.coeff_aosoa_group_size);
+      TC_ASSERT(addr.coeff_aosoa_group_size == 0 ||
+                num_groups == addr.coeff_aosoa_group_size);
+      // TC_ASSERT(expr->members[0]->addr.coeff_i);
+      std::string load_instr = "_mm256_load_ps";
+      bool needs_shuffle = false;
+      if (addr.coeff_const % simd_width != 0) {
+        addr.coeff_const -= addr.coeff_const % simd_width;
+        needs_shuffle = true;
+      }
+      emit_code("vvec<{}, {}, {}> {}({});", expr->data_type_name(), simd_width,
+                split, expr->var_name, get_vectorized_address(addr, 0, 0));
+      auto emit_shuffle = [&](std::string imm) {
+        for (int i = 0; i < split; i++) {
+          emit_code(
+              "{}.d[{}] = _mm256_shuffle_ps({}.d[{}], {}.d[{}], "
+              "{});",
+              expr->var_name, i, expr->var_name, i, expr->var_name, i, imm);
         }
-      } else if (group_size == 4) {
-        if (offset_const == 0 && offset_inc == 1) {
-          // emit_code("{}.d[0] = {}.d[0];", expr->var_name, expr->var_name);
-        } else if (offset_inc == 0) {
-          if (offset_const == 0) {
-            emit_shuffle("0x00");
-          } else if (offset_const == 1) {
-            emit_shuffle("0x55");
-          } else if (offset_const == 2) {
-            emit_shuffle("0xAA");
-          } else if (offset_const == 3) {
-            emit_shuffle("0xFF");
-          } else {
-            TC_NOT_IMPLEMENTED;
-          }
-        } else {
-          TC_P(offset_const);
-          TC_P(offset_inc);
-          TC_NOT_IMPLEMENTED;
-        }
-      } else if (group_size == 8) {
-        if (offset_inc == 1) {
-          TC_ASSERT(offset_const == 0);
-          // emit_code("{}.d[0] = {}.d[0];", expr->var_name, expr->var_name);
-        } else {
-          TC_ASSERT(offset_inc == 0);
-          needs_shuffle = false;
-          for (int i = 0; i < split; i++)
-            emit_code("{}.d[{}] = _mm256_broadcast_ss({});", expr->var_name, i,
-                      get_vectorized_address(expr->addr(), 0, 0));
-        }
+        needs_shuffle = false;
+      };
+      if (group_size == 1) {
+        // emit_code("{}.d[0] = {}.d[0];", expr->var_name, expr->var_name);
       } else {
-        TC_NOT_IMPLEMENTED
+        TC_ASSERT(group_size <= 8);
+        // detect patterns
+        int offset_const = offsets[0] % simd_width;
+        int offset_inc = offsets[1] - offsets[0];
+        if (group_size == 2) {
+          if (offset_const == 0 && offset_inc == 1) {
+            // emit_code("{}.d[0] = {}.d[0];", expr->var_name, expr->var_name);
+          } else if (offset_inc == 0) {
+            if (offset_const == 0) {
+              emit_shuffle("0xA0");
+            } else if (offset_const == 1) {
+              emit_shuffle("0xF5");
+            } else {
+              TC_NOT_IMPLEMENTED;
+            }
+          } else {
+            TC_P(offset_const);
+            TC_P(offset_inc);
+            TC_NOT_IMPLEMENTED;
+          }
+        } else if (group_size == 4) {
+          if (offset_const == 0 && offset_inc == 1) {
+            // emit_code("{}.d[0] = {}.d[0];", expr->var_name, expr->var_name);
+          } else if (offset_inc == 0) {
+            if (offset_const == 0) {
+              emit_shuffle("0x00");
+            } else if (offset_const == 1) {
+              emit_shuffle("0x55");
+            } else if (offset_const == 2) {
+              emit_shuffle("0xAA");
+            } else if (offset_const == 3) {
+              emit_shuffle("0xFF");
+            } else {
+              TC_NOT_IMPLEMENTED;
+            }
+          } else {
+            TC_P(offset_const);
+            TC_P(offset_inc);
+            TC_NOT_IMPLEMENTED;
+          }
+        } else if (group_size == 8) {
+          if (offset_inc == 1) {
+            TC_ASSERT(offset_const == 0);
+            // emit_code("{}.d[0] = {}.d[0];", expr->var_name, expr->var_name);
+          } else {
+            TC_ASSERT(offset_inc == 0);
+            needs_shuffle = false;
+            for (int i = 0; i < split; i++)
+              emit_code("{}.d[{}] = _mm256_broadcast_ss({});", expr->var_name,
+                        i, get_vectorized_address(expr->addr(), 0, 0));
+          }
+        } else {
+          TC_NOT_IMPLEMENTED
+        }
+        TC_ASSERT(needs_shuffle == false);
       }
-      TC_ASSERT(needs_shuffle == false);
+    } else {
+      // irregular
+      emit_code("auto {} = {}({}_base, {}_offsets);", expr->var_name,
+                vv_type(expr->data_type), expr[0]->var_name, expr[0]->var_name);
     }
   } else if (expr->type == NodeType::store) {
-    // TODO: analyze address here
-    auto addr = expr[0][0]->get_address();
-    TC_ASSERT(addr.coeff_aosoa_group_size == 0 ||
-              num_groups % addr.coeff_aosoa_group_size == 0);
-    emit_code("{}.store({});", expr->ch[1]->var_name,
-              get_vectorized_address(addr, 0, 0));
+    bool regular = true;
+    if (regular) {
+      // TODO: analyze address here
+      auto addr = expr[0][0]->get_address();
+      TC_ASSERT(addr.coeff_aosoa_group_size == 0 ||
+                num_groups % addr.coeff_aosoa_group_size == 0);
+      emit_code("{}.store({});", expr->ch[1]->var_name,
+                get_vectorized_address(addr, 0, 0));
+    } else {
+      // AVX2 has no scatter...
+      emit_code("{}.store({}_base, {}_offsets);", expr->ch[1]->var_name,
+                expr[0]->var_name, expr[0]->var_name);
+    }
   } else if (expr->type == NodeType::combine) {
     // do nothing
   } else if (expr->type == NodeType::imm) {

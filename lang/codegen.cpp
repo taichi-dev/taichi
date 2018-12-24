@@ -362,8 +362,8 @@ class CPUCodeGen : public CodeGenBase {
       std::vector<int> offsets_val;
       for (int i = 0; i < num_groups; i++) {
         for (int j = 0; j < ad.output_group_size; j++) {
-          offsets_val.push_back(i * ad.input_group_size +
-                                expr[1]->members[0]->value<int>());
+          offsets_val.push_back(
+              i + expr[1]->members[j]->value<int>() * num_groups);
         }
       }
       auto offsets = vv_constant_str(ad.output_group_size * num_groups,

@@ -401,8 +401,11 @@ struct vvec {
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < dim; j++) {
         d[i][j] = v[i * dim + j];
+        std::cout << d[i][j] << ",";
       }
     }
+    std::cout << std::endl;
+    print();
   }
 
   vvec() {
@@ -421,7 +424,6 @@ struct vvec {
   }
 
   vvec(void *addr, vvec<int, dim, n> offsets) {
-    offsets.print();
     for (int i = 0; i < n; i++) {
       d[i] = gather<T, dim>(addr, offsets.d[i]);
     }
@@ -453,8 +455,7 @@ struct vvec {
     std::cout << "[";
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < dim; j++) {
-        auto *ptr = (T *)&d[i];
-        std::cout << ptr[j] << ", ";
+        std::cout << d[i][j] << ", ";
       }
     }
     std::cout << "]" << std::endl;
@@ -470,10 +471,14 @@ DEFINE_BINARY_OP(float32x8, add, _mm256_add_ps);
 DEFINE_BINARY_OP(float32x8, sub, _mm256_sub_ps);
 DEFINE_BINARY_OP(float32x8, mul, _mm256_mul_ps);
 DEFINE_BINARY_OP(float32x8, div, _mm256_div_ps);
+DEFINE_BINARY_OP(float32x8, min, _mm256_min_ps);
+DEFINE_BINARY_OP(float32x8, max, _mm256_max_ps);
 
 DEFINE_BINARY_OP(int32x8, add, _mm256_add_epi32);
 DEFINE_BINARY_OP(int32x8, sub, _mm256_sub_epi32);
 DEFINE_BINARY_OP(int32x8, mul, _mm256_mul_epi32);
+DEFINE_BINARY_OP(int32x8, min, _mm256_min_epi32);
+DEFINE_BINARY_OP(int32x8, max, _mm256_max_epi32);
 
 template <int dim>
 inline vec<int32, dim> div(vec<int32, dim> a, vec<int32, dim> b) {
@@ -489,24 +494,28 @@ inline vec<T, dim> mod(vec<T, dim> a, vec<T, dim> b) {
   return sub(a, mul(div(a, b), b));
 };
 
-#define VVEC_BINARY_OP(NAME, OP)                                 \
-  template <typename T, int dim, int n>                          \
-  inline vvec<T, dim, n> operator OP(const vvec<T, dim, n> &a,   \
-                                     const vvec<T, dim, n> &b) { \
-    vvec<T, dim, n> ret;                                         \
-    for (int i = 0; i < n; i++) {                                \
-      ret.d[i] = NAME(a.d[i], b.d[i]);                           \
-    }                                                            \
-    return ret;                                                  \
-  }                                                              \
-  template <typename T, int dim, int n>                          \
-  inline vvec<T, dim, n> NAME(const vvec<T, dim, n> &a,          \
-                              const vvec<T, dim, n> &b) {        \
-    vvec<T, dim, n> ret;                                         \
-    for (int i = 0; i < n; i++) {                                \
-      ret.d[i] = NAME(a.d[i], b.d[i]);                           \
-    }                                                            \
-    return ret;                                                  \
+#define VVEC_BINARY_OP(NAME, OP)                                               \
+  template <typename T, int dim>                                               \
+  inline vec<T, dim> operator OP(const vec<T, dim> &a, const vec<T, dim> &b) { \
+    return NAME(a, b);                                                         \
+  }                                                                            \
+  template <typename T, int dim, int n>                                        \
+  inline vvec<T, dim, n> operator OP(const vvec<T, dim, n> &a,                 \
+                                     const vvec<T, dim, n> &b) {               \
+    vvec<T, dim, n> ret;                                                       \
+    for (int i = 0; i < n; i++) {                                              \
+      ret.d[i] = NAME(a.d[i], b.d[i]);                                         \
+    }                                                                          \
+    return ret;                                                                \
+  }                                                                            \
+  template <typename T, int dim, int n>                                        \
+  inline vvec<T, dim, n> NAME(const vvec<T, dim, n> &a,                        \
+                              const vvec<T, dim, n> &b) {                      \
+    vvec<T, dim, n> ret;                                                       \
+    for (int i = 0; i < n; i++) {                                              \
+      ret.d[i] = NAME(a.d[i], b.d[i]);                                         \
+    }                                                                          \
+    return ret;                                                                \
   }
 
 VVEC_BINARY_OP(add, +);

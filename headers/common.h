@@ -394,6 +394,26 @@ inline int32x8 max<int32, 8>(int32x8 a, int32x8 b) {
 
 //*****************************************************************************
 
+template <int i0, int i1, int i2, int i3, int i4, int i5, int i6, int i7>
+inline int32x8 shuffle8x32(int32x8 a) {
+  return _mm256_permutevar8x32_epi32(
+      a, _mm256_set_epi32(i7, i6, i5, i4, i3, i2, i1, i0));
+};
+
+template <int i0, int i1, int i2, int i3, int i4, int i5, int i6, int i7>
+inline float32x8 shuffle8x32(float32x8 a) {
+  return _mm256_permutevar8x32_ps(
+      a, _mm256_set_epi32(i7, i6, i5, i4, i3, i2, i1, i0));
+};
+
+inline float32x8 blend(float32x8 a, float32x8 b, int imm) {
+  return _mm256_blend_ps(a, b, imm);
+}
+
+inline int32x8 blend(int32x8 a, int32x8 b, int imm) {
+  return _mm256_blend_epi32(a, b, imm);
+}
+
 template <typename T, int dim, int n>
 struct vvec {
   vec<T, dim> d[n];

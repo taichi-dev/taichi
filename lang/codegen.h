@@ -218,6 +218,21 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   template <typename T>
+  std::string vec_to_list_tmp(std::vector<T> val) {
+    std::string members = "<";
+    bool first = true;
+    for (int i = 0; i < (int)val.size(); i++) {
+      if (!first) {
+        members += ",";
+      }
+      first = false;
+      members += fmt::format("{}", val[i]);
+    }
+    members += ">";
+    return members;
+  }
+
+  template <typename T>
   std::string vec_to_list_str(std::vector<T> val) {
     std::string members = "{";
     bool first = true;

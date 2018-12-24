@@ -247,7 +247,6 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
         expr[0]);
   } else if (expr->type == NodeType::adapter_load) {
     // generate offset
-    TC_P(num_groups);
     auto &ad = prog->adapter(expr[0]->members[0]->value<int>());
     std::vector<int> offsets_val;
     for (int i = 0; i < num_groups; i++) {
@@ -259,21 +258,46 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
                               elem_id % ad.input_group_size);
       }
     }
-    TC_P(offsets_val.size());
     auto offsets = offsets_val;
     emit_code("{} {};", vv_type(ad.dt), expr->var_name);
     int input_vv_width = ad.input_group_size * num_groups;
     for (int i = 0; i < split; i++) {
-      TC_TAG;
       // For each
-      std::vector<int> offset_subset(
-          offsets.begin() + i * simd_width,
-          offsets.begin() + (i + 1) * simd_width);
+      std::vector<int> offset_subset(offsets.begin() + i * simd_width,
+                                     offsets.begin() + (i + 1) * simd_width);
+
+      std::vector<int> register_id(simd_width);
+      std::vector<int> register_offset(simd_width);
+
       for (int j = 0; j < simd_width; j++) {
-        auto o = offset_subset[j];
-        emit_code("{}.d[{}][{}] = {}.element({});", expr->var_name, i, j,
-                  ad.store_exprs[o / input_vv_width]->var_name,
-                  o % input_vv_width);
+        register_id[j] = offset_subset[j] / simd_width;
+        register_offset[j] = offset_subset[j] % simd_width;
+      }
+
+      auto sorted = register_id;
+      std::sort(std::begin(sorted), std::end(sorted));
+      sorted.resize(std::unique(sorted.begin(), sorted.end()) - sorted.begin());
+
+      for (int k = 0; k < sorted.size(); k++) {
+        auto rid = sorted[k];
+        auto tmp_arg = vec_to_list_tmp(register_offset);
+        int mask = 0;
+        for (int j = 0; j < simd_width; j++) {
+          if (register_id[j] == rid) {
+            mask += 1 << j;
+          }
+        }
+        auto src = fmt::format(
+            "{}.d[{}]",
+            ad.store_exprs[rid / (input_vv_width / simd_width)]->var_name,
+            rid % (input_vv_width / simd_width));
+        auto v = fmt::format("{}.d[{}]", expr->var_name, i);
+        auto shuffled = fmt::format("shuffle8x32{}({})", tmp_arg, src);
+        if (k == 0) {
+          emit_code("{} = {};", v, shuffled);
+        } else {
+          emit_code("{} = blend({}, {}, {});", v, v, shuffled, mask);
+        }
       }
     }
   } else {

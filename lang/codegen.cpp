@@ -57,506 +57,6 @@ void visualize_IR(std::string fn, Expr &expr) {
   system(cmd.c_str());
 }
 
-class CPUCodeGen : public CodeGenBase {
- public:
-  int unroll;
-  int prefetch;
-  enum class Mode : int { vv, vector };
-  Mode mode;
-  int simd_width;
-  int group_size;
-  Program *prog;
-
- public:
-  // Create vectorized IR for the root node
-  // the vector width should be the final SIMD instruction width
-  std::string get_vectorized_address(Address addr, int extra_offset = 0) {
-    TC_ASSERT(addr.buffer_id != -1);
-    auto buffer_name =
-        fmt::format("context.get_buffer<float32>({:02d})", addr.buffer_id);
-    auto stride =
-        addr.coeff_i * num_groups +
-        num_groups / addr.coeff_aosoa_group_size * addr.coeff_aosoa_stride;
-    auto offset = addr.coeff_const;
-    return fmt::format("&{}[{} * n + {} * (g + loop_index) + {} + {}]",
-                       buffer_name, addr.coeff_imax, stride, offset,
-                       extra_offset);
-  }
-
-  CPUCodeGen() : CodeGenBase() {
-    suffix = "cpp";
-    prefetch = 0;
-    unroll = 1;
-    var_count = 0;
-  }
-
-  void generate_header() {
-    emit_code(
-        "#include <common.h>\n using namespace taichi; using namespace Tlang;");
-    emit_code("extern \"C\" void " + func_name + "(Context context) {\n");
-    emit_code("auto n = context.get_range(0);\n");
-    emit_code("for (int i = 0, b = 0; (unsigned)i < n; ) {{\n", num_groups);
-  }
-
-  void generate_tail() {
-    emit_code("}\n}\n");
-  }
-
-  void start_macro_loop() {
-    // code_suffix = " \\\n";
-    // emit_code("#define LOOP(loop_index) {");
-  }
-
-  void end_macro_loop() {
-    emit_code("i += {}; b += {};", num_groups * unroll, unroll);
-    code_suffix = "\n";
-    // emit_code("}\n");
-    for (int i = 0; i < unroll; i++) {
-      // emit_code("LOOP({});", i);
-    }
-    // emit_code("#undef LOOP\n");
-  }
-
-  std::string adapter_name(int i) {
-    TC_ASSERT(i < 1000);
-    return fmt::format("adapter_{:03d}", i);
-  }
-
-  /*
-  T
-  int num_groups,
-  int num_inputs,
-  int input_group_size,
-  int output_group_size
-  */
-  std::string adapter_type(DataType dt,
-                           int num_inputs,
-                           int input_gs,
-                           int output_gs) {
-    return fmt::format("SlowAdapter<{}, {}, {}, {}, {}>", data_type_name(dt),
-                       num_groups, num_inputs, input_gs, output_gs);
-  }
-
-  void create_adapter(DataType dt,
-                      int i,
-                      int num_inputs,
-                      int input_gs,
-                      int output_gs) {
-    auto name = adapter_name(i);
-    // TODO: fix 1
-    emit_code("{} {};", adapter_type(dt, num_inputs, input_gs, output_gs),
-              adapter_name(i));
-  }
-
-  void codegen(Program &prog, int group_size) {
-    TC_ASSERT(mode == Mode::vector);
-    this->group_size = group_size;
-    TC_ASSERT(group_size != 0);
-    this->prog = &prog;
-    // group_size = expr->ch.size();
-    num_groups = prog.config.num_groups;
-    TC_WARN_IF(simd_width % group_size != 0, "insufficient lane usage");
-
-    generate_header();
-
-    // emit_code("float32 {}[128];", get_cache_name(0));
-
-    start_macro_loop();
-
-    // Adapters
-    for (int i = 0; i < (int)prog.adapters.size(); i++) {
-      auto &ad = prog.adapters[i];
-      create_adapter(ad.dt, i, ad.counter / ad.input_group_size,
-                     ad.input_group_size, ad.output_group_size);
-    }
-
-    // Body
-
-    // adapters
-    for (auto adapter : prog.adapters) {
-      auto old_gs = this->group_size;
-      TC_P(adapter.stores->ch.size());
-      auto vectorized_cache_stores =
-          Vectorizer().run(adapter.stores, adapter.input_group_size);
-
-      this->group_size = adapter.input_group_size;
-      vectorized_cache_stores.accept(*this);
-
-      this->group_size = old_gs;
-    }
-
-    // main
-    {
-      TC_ASSERT(prog.ret);
-      // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
-      this->group_size = group_size;
-      // TC_P(group_size);
-      auto vectorized_stores =
-          Vectorizer().run(prog.ret, prog.config.group_size);
-      // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
-      vectorized_stores.accept(*this);
-    }
-    end_macro_loop();
-
-    code_suffix = "";
-    generate_tail();
-  }
-
-  std::string vv_type_str(int width, DataType data_type) {
-    return fmt::format("VV<{}, {}>", width, data_type_name(data_type));
-  }
-
-  std::string vv_constant_str(int width, DataType data_type, int64 val) {
-    return fmt::format("VV<{}, {}>({})", width, data_type_name(data_type), val);
-  }
-
-  std::string vv_constant_str(int width, DataType data_type, float32 val) {
-    return fmt::format("VV<{}, {}>({})", width, data_type_name(data_type), val);
-  }
-
-  std::string vv_constant_str(int width,
-                              DataType data_type,
-                              std::vector<int> val) {
-    std::string members = "{";
-    bool first = true;
-    for (int i = 0; i < (int)val.size(); i++) {
-      if (!first) {
-        members += ",";
-      }
-      first = false;
-      members += fmt::format("{}", val[i]);
-    }
-    members += "}";
-    return fmt::format("VV<{}, {}>({})", width, data_type_name(data_type),
-                       members);
-  }
-
-  void visit(Expr &expr) {
-    if (mode == Mode::vv) {
-      visit_vv(expr);
-    } else {
-      visit_intrinsics(expr);
-    }
-  }
-
-  void visit_intrinsics(Expr &expr) {
-    // TC_P(expr->id);
-    // TC_P(expr->node_type_name());
-    auto vv_width = num_groups * expr->group_size();
-    TC_ASSERT(expr->is_vectorized);
-    TC_ASSERT(expr->members.size() == 0 ||
-              (int)expr->members.size() == group_size);
-    if (expr->type == NodeType::addr) {
-      return;
-    }
-    if (expr->var_name == "") {
-      expr->var_name = create_variable();
-      /*
-      TC_INFO("{} {} {} -> {}", expr->id, expr->node_type_name(),
-              expr->data_type_name(), expr->var_name);
-              */
-    } else
-      return;  // visited
-
-    for (auto &m : expr->members) {
-      if (!m->name().empty()) {
-        emit_code("// @ {}", m->name());
-      }
-    }
-
-    if (binary_ops.find(expr->type) != binary_ops.end()) {
-      auto op = binary_ops[expr->type];
-      emit_code("auto {} = {}({}, {});", expr->var_name, op,
-                expr->ch[0]->var_name, expr->ch[1]->var_name);
-      // emit_code("{}.print();", expr->var_name);
-    } else if (expr->type == NodeType::floor) {
-      emit_code("auto {} = floor({});", expr->var_name, expr[0]->var_name);
-    } else if (expr->type == NodeType::cast) {
-      if (expr->data_type == DataType::i32) {
-        emit_code("auto {} = cast<int32>({});", expr->var_name,
-                  expr[0]->var_name);
-      } else if (expr->data_type == DataType::f32) {
-        emit_code("auto {} = cast<float32>({});", expr->var_name,
-                  expr[0]->var_name);
-      } else {
-        TC_NOT_IMPLEMENTED
-      }
-    } else if (expr->type == NodeType::load) {
-      emit_code("auto {} = load<{}, {}>({}_base, {}_offsets);", expr->var_name,
-                expr->group_size() * num_groups,
-                data_type_name(expr->data_type), expr[0]->var_name,
-                expr[0]->var_name);
-    } else if (expr->type == NodeType::store) {
-      emit_code("store({}, {}_base, {}_offsets);", expr->ch[1]->var_name,
-                expr->ch[0]->var_name, expr->ch[0]->var_name);
-    } else if (expr->type == NodeType::combine) {
-      // do nothing
-    } else if (expr->type == NodeType::imm) {
-      TC_WARN("Using member imm");
-      if (expr->data_type == DataType::i32) {
-        emit_code("auto {} = {}; /*i32*/ ", expr->var_name,
-                  vv_constant_str(group_size * num_groups, DataType::i32,
-                                  (int64)expr->members[0]->value<int32>()));
-      } else {
-        emit_code("auto {} = {}; /*f32*/ ", expr->var_name,
-                  vv_constant_str(group_size * num_groups, DataType::f32,
-                                  expr->members[0]->value<float32>()));
-      }
-    } else if (expr->type == NodeType::index) {
-      std::string members = "{";
-      bool first = true;
-      for (int i = 0; i < num_groups; i++) {
-        for (int j = 0; j < expr->group_size(); j++) {
-          if (!first) {
-            members += ",";
-          }
-          first = false;
-          members += fmt::format("b * {} + {}", num_groups, i);
-        }
-      }
-      members += "}";
-      emit_code("auto {} = {}({});", expr->var_name,
-                vv_type_str(num_groups * expr->group_size(), DataType::i32),
-                members);
-    } else if (expr->type == NodeType::pointer) {
-      // emit base pointer and offsets
-      auto addr = expr[0]->get_address_();
-      auto buffer_name = fmt::format("context.buffers[{:02d}]", addr.buffer_id);
-      emit_code("auto *{}_base = ({} *){} + {} * n;", expr->var_name,
-                data_type_name(expr->data_type), buffer_name, addr.coeff_imax);
-
-      auto index = expr->ch[1]->var_name;
-
-      std::vector<int> coeff_const;
-      for (int i = 0; i < num_groups; i++) {
-        for (auto &m : expr->ch[0]->members) {
-          coeff_const.push_back(m->get_address_().coeff_const);
-        }
-      }
-      auto offset_var = vv_constant_str(vv_width, DataType::i32, coeff_const);
-      if (addr.coeff_aosoa_stride != 0) {
-        emit_code(
-            "auto {}_offsets = {} + {} * {} + {} / {} * {};", expr->var_name,
-            offset_var, vv_constant_str(vv_width, DataType::i32, addr.coeff_i),
-            index, index, vv_constant_str(vv_width, DataType::i32,
-                                          addr.coeff_aosoa_group_size),
-            vv_constant_str(vv_width, DataType::i32, addr.coeff_aosoa_stride));
-      } else {
-        emit_code("auto {}_offsets = {} + {} * {};", expr->var_name, offset_var,
-                  vv_constant_str(num_groups * expr->group_size(),
-                                  DataType::i32, addr.coeff_i),
-                  index);
-      }
-    } else if (expr->type == NodeType::adapter_store) {
-      auto &ad = prog->adapter(expr[1]->members[0]->value<int>());
-      TC_P(ad.input_group_size);
-      TC_P(expr[2]->members[0]->value<int>());
-      emit_code("{}.set<{}>({});",
-                adapter_name(expr[1]->members[0]->value<int>()),
-                expr[2]->members[0]->value<int>() / ad.input_group_size,
-                expr[0]->var_name);
-    } else if (expr->type == NodeType::adapter_load) {
-      // generate offset
-      TC_P(num_groups);
-      auto &ad = prog->adapter(expr[0]->members[0]->value<int>());
-      std::vector<int> offsets_val;
-      for (int i = 0; i < num_groups; i++) {
-        for (int j = 0; j < ad.output_group_size; j++) {
-          int elem_id = expr[1]->members[j]->value<int>();
-          offsets_val.push_back(i * ad.input_group_size +
-                                elem_id / ad.input_group_size *
-                                    ad.input_group_size * num_groups +
-                                elem_id % ad.input_group_size);
-        }
-      }
-      auto offsets = vv_constant_str(ad.output_group_size * num_groups,
-                                     DataType::i32, offsets_val);
-      emit_code("auto {} = shuffle({}, {});", expr->var_name,
-                adapter_name(expr[0]->members[0]->value<int>()), offsets);
-      // emit_code("{}.print();", expr->var_name);
-    } else {
-      TC_ERROR("Node {} cannot be visited.", expr->node_type_name());
-    }
-  }
-
-  void visit_vv(Expr &expr) {
-    // TC_P(expr->id);
-    // TC_P(expr->node_type_name());
-    auto vv_width = num_groups * expr->group_size();
-    TC_ASSERT(expr->is_vectorized);
-    TC_ASSERT(expr->members.size() == 0 ||
-              (int)expr->members.size() == group_size);
-    if (expr->type == NodeType::addr) {
-      return;
-    }
-    if (expr->var_name == "") {
-      expr->var_name = create_variable();
-      /*
-      TC_INFO("{} {} {} -> {}", expr->id, expr->node_type_name(),
-              expr->data_type_name(), expr->var_name);
-              */
-    } else
-      return;  // visited
-
-    for (auto &m : expr->members) {
-      if (!m->name().empty()) {
-        emit_code("// @ {}", m->name());
-      }
-    }
-
-    if (binary_ops.find(expr->type) != binary_ops.end()) {
-      auto op = binary_ops[expr->type];
-      emit_code("auto {} = {} {} {};", expr->var_name, expr->ch[0]->var_name,
-                op, expr->ch[1]->var_name);
-      // emit_code("{}.print();", expr->var_name);
-    } else if (expr->type == NodeType::max) {
-      emit_code("auto {} = max({}, {});", expr->var_name, expr[0]->var_name,
-                expr[1]->var_name);
-    } else if (expr->type == NodeType::min) {
-      emit_code("auto {} = min({}, {});", expr->var_name, expr[0]->var_name,
-                expr[1]->var_name);
-    } else if (expr->type == NodeType::floor) {
-      emit_code("auto {} = floor({});", expr->var_name, expr[0]->var_name);
-    } else if (expr->type == NodeType::cast) {
-      if (expr->data_type == DataType::i32) {
-        emit_code("auto {} = cast<int32>({});", expr->var_name,
-                  expr[0]->var_name);
-      } else if (expr->data_type == DataType::f32) {
-        emit_code("auto {} = cast<float32>({});", expr->var_name,
-                  expr[0]->var_name);
-      } else {
-        TC_NOT_IMPLEMENTED
-      }
-    } else if (expr->type == NodeType::load) {
-      emit_code("auto {} = load<{}, {}>({}_base, {}_offsets);", expr->var_name,
-                expr->group_size() * num_groups,
-                data_type_name(expr->data_type), expr[0]->var_name,
-                expr[0]->var_name);
-    } else if (expr->type == NodeType::store) {
-      emit_code("store({}, {}_base, {}_offsets);", expr->ch[1]->var_name,
-                expr->ch[0]->var_name, expr->ch[0]->var_name);
-    } else if (expr->type == NodeType::combine) {
-      // do nothing
-    } else if (expr->type == NodeType::imm) {
-      TC_WARN("Using member imm");
-      if (expr->data_type == DataType::i32) {
-        emit_code("auto {} = {}; /*i32*/ ", expr->var_name,
-                  vv_constant_str(group_size * num_groups, DataType::i32,
-                                  (int64)expr->members[0]->value<int32>()));
-      } else {
-        emit_code("auto {} = {}; /*f32*/ ", expr->var_name,
-                  vv_constant_str(group_size * num_groups, DataType::f32,
-                                  expr->members[0]->value<float32>()));
-      }
-    } else if (expr->type == NodeType::index) {
-      std::string members = "{";
-      bool first = true;
-      for (int i = 0; i < num_groups; i++) {
-        for (int j = 0; j < expr->group_size(); j++) {
-          if (!first) {
-            members += ",";
-          }
-          first = false;
-          members += fmt::format("b * {} + {}", num_groups, i);
-        }
-      }
-      members += "}";
-      emit_code("auto {} = {}({});", expr->var_name,
-                vv_type_str(num_groups * expr->group_size(), DataType::i32),
-                members);
-    } else if (expr->type == NodeType::pointer) {
-      // emit base pointer and offsets
-      auto addr = expr[0]->get_address_();
-      auto buffer_name = fmt::format("context.buffers[{:02d}]", addr.buffer_id);
-      emit_code("auto *{}_base = ({} *){} + {} * n;", expr->var_name,
-                data_type_name(expr->data_type), buffer_name, addr.coeff_imax);
-
-      auto index = expr->ch[1]->var_name;
-
-      std::vector<int> coeff_const;
-      for (int i = 0; i < num_groups; i++) {
-        for (auto &m : expr->ch[0]->members) {
-          coeff_const.push_back(m->get_address_().coeff_const);
-        }
-      }
-      auto offset_var = vv_constant_str(vv_width, DataType::i32, coeff_const);
-      if (addr.coeff_aosoa_stride != 0) {
-        emit_code(
-            "auto {}_offsets = {} + {} * {} + {} / {} * {};", expr->var_name,
-            offset_var, vv_constant_str(vv_width, DataType::i32, addr.coeff_i),
-            index, index, vv_constant_str(vv_width, DataType::i32,
-                                          addr.coeff_aosoa_group_size),
-            vv_constant_str(vv_width, DataType::i32, addr.coeff_aosoa_stride));
-      } else {
-        emit_code("auto {}_offsets = {} + {} * {};", expr->var_name, offset_var,
-                  vv_constant_str(num_groups * expr->group_size(),
-                                  DataType::i32, addr.coeff_i),
-                  index);
-      }
-    } else if (expr->type == NodeType::adapter_store) {
-      // Do nothing
-      // create_adapter(DataType::f32, 0, 1, 8);
-      auto &ad = prog->adapter(expr[1]->members[0]->value<int>());
-      TC_P(ad.input_group_size);
-      TC_P(expr[2]->members[0]->value<int>());
-      emit_code("{}.set<{}>({});",
-                adapter_name(expr[1]->members[0]->value<int>()),
-                expr[2]->members[0]->value<int>() / ad.input_group_size,
-                expr[0]->var_name);
-    } else if (expr->type == NodeType::adapter_load) {
-      // generate offset
-      TC_P(num_groups);
-      auto &ad = prog->adapter(expr[0]->members[0]->value<int>());
-      std::vector<int> offsets_val;
-      for (int i = 0; i < num_groups; i++) {
-        for (int j = 0; j < ad.output_group_size; j++) {
-          int elem_id = expr[1]->members[j]->value<int>();
-          offsets_val.push_back(i * ad.input_group_size +
-                                elem_id / ad.input_group_size *
-                                    ad.input_group_size * num_groups +
-                                elem_id % ad.input_group_size);
-        }
-      }
-      auto offsets = vv_constant_str(ad.output_group_size * num_groups,
-                                     DataType::i32, offsets_val);
-      emit_code("auto {} = shuffle({}, {});", expr->var_name,
-                adapter_name(expr[0]->members[0]->value<int>()), offsets);
-      // emit_code("{}.print();", expr->var_name);
-    } else {
-      TC_ERROR("Node {} cannot be visited.", expr->node_type_name());
-    }
-  }
-
-  // group_size should be batch_size here...
-  FunctionType compile() {
-    write_code_to_file();
-    auto cmd = fmt::format(
-        "g++ {} -std=c++14 -shared -fPIC -O3 -march=native -I {}/headers -Wall "
-        "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {}",
-        get_source_fn(), get_project_fn(), get_library_fn());
-    auto compile_ret = std::system(cmd.c_str());
-    TC_ASSERT(compile_ret == 0);
-#if defined(TC_PLATFORM_LINUX)
-    auto objdump_ret = system(
-        fmt::format("objdump {} -d > {}.s", get_library_fn(), get_library_fn())
-            .c_str());
-    trash(objdump_ret);
-#endif
-    return load_function();
-  }
-
-  FunctionType get(Program &prog) {
-    auto group_size = prog.config.group_size;
-    auto mode = CPUCodeGen::Mode::vector;
-    auto simd_width = 8;
-    this->mode = mode;
-    this->simd_width = simd_width;
-    codegen(prog, group_size);
-    return compile();
-  }
-};
-
-using CodeGen = CPUCodeGen;
 
 #if (0)
 // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#warp-shuffle-functions
@@ -746,6 +246,71 @@ class GPUCodeGen : public CodeGenBase {
   */
 };
 #endif
+
+void CPUCodeGen::codegen(Program &prog, int group_size) {
+  // TC_ASSERT(mode == Mode::vector);
+  this->group_size = group_size;
+  TC_ASSERT(group_size != 0);
+  this->prog = &prog;
+  // group_size = expr->ch.size();
+  num_groups = prog.config.num_groups;
+  TC_WARN_IF(simd_width % group_size != 0, "insufficient lane usage");
+
+  generate_header();
+
+  // emit_code("float32 {}[128];", get_cache_name(0));
+
+  start_macro_loop();
+
+  // Adapters
+  for (int i = 0; i < (int)prog.adapters.size(); i++) {
+    auto &ad = prog.adapters[i];
+    create_adapter(ad.dt, i, ad.counter / ad.input_group_size,
+                   ad.input_group_size, ad.output_group_size);
+  }
+
+  // Body
+
+  // adapters
+  for (auto adapter : prog.adapters) {
+    auto old_gs = this->group_size;
+    TC_P(adapter.stores->ch.size());
+    auto vectorized_cache_stores =
+        Vectorizer().run(adapter.stores, adapter.input_group_size);
+
+    this->group_size = adapter.input_group_size;
+    vectorized_cache_stores.accept(*this);
+
+    this->group_size = old_gs;
+  }
+
+  // main
+  {
+    TC_ASSERT(prog.ret);
+    // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
+    this->group_size = group_size;
+    // TC_P(group_size);
+    auto vectorized_stores =
+        Vectorizer().run(prog.ret, prog.config.group_size);
+    // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
+    vectorized_stores.accept(*this);
+  }
+  end_macro_loop();
+
+  code_suffix = "";
+  generate_tail();
+}
+
+FunctionType CPUCodeGen::get(Program &prog) {
+  auto group_size = prog.config.group_size;
+  auto mode = CPUCodeGen::Mode::vv;
+  // auto mode = CPUCodeGen::Mode::intrinsics;
+  auto simd_width = 8;
+  this->mode = mode;
+  this->simd_width = simd_width;
+  codegen(prog, group_size);
+  return compile();
+}
 
 void Program::compile() {
   Expr::set_allow_store(false);

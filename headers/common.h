@@ -254,16 +254,29 @@ struct SlowAdapter {
     return inputs[i / input_dim][i % input_dim];
   }
 };
-
 // End Virtual Vectors
 
 template <typename T, int dim>
-struct vec_helper;
+struct vec;
 
-#define REGISTER_VEC(T, dim, name) \
-  template <>                      \
-  struct vec_helper<T, dim> {      \
-    using type = name;             \
+#define REGISTER_VEC(T, dim, name)     \
+  template <>                          \
+  struct vec<T, dim> {                 \
+    using type = name;                 \
+    type v;                            \
+    vec() {                            \
+    }                                  \
+    vec(type v) : v(v) {               \
+    }                                  \
+    operator type() const {            \
+      return v;                        \
+    }                                  \
+    T &operator[](int i) {             \
+      return ((T *)(&v))[i];           \
+    }                                  \
+    const T &operator[](int i) const { \
+      return ((T *)(&v))[i];           \
+    }                                  \
   };
 
 REGISTER_VEC(float32, 8, __m256);
@@ -271,9 +284,6 @@ REGISTER_VEC(int32, 8, __m256i);
 // REGISTER_VEC(uint32, 8, __m256u);
 
 //*****************************************************************************
-
-template <typename T, int dim>
-using vec = typename vec_helper<T, dim>::type;
 
 using float32x8 = vec<float32, 8>;
 using int32x8 = vec<int32, 8>;
@@ -411,6 +421,7 @@ struct vvec {
   }
 
   vvec(void *addr, vvec<int, dim, n> offsets) {
+    offsets.print();
     for (int i = 0; i < n; i++) {
       d[i] = gather<T, dim>(addr, offsets.d[i]);
     }
@@ -437,6 +448,45 @@ struct vvec {
     }
     return ret;
   }
+
+  void print() {
+    std::cout << "[";
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < dim; j++) {
+        auto *ptr = (T *)&d[i];
+        std::cout << ptr[j] << ", ";
+      }
+    }
+    std::cout << "]" << std::endl;
+  }
+};
+
+#define DEFINE_BINARY_OP(T, OP, INST) \
+  inline T OP(T a, T b) {             \
+    return INST(a, b);                \
+  }
+
+DEFINE_BINARY_OP(float32x8, add, _mm256_add_ps);
+DEFINE_BINARY_OP(float32x8, sub, _mm256_sub_ps);
+DEFINE_BINARY_OP(float32x8, mul, _mm256_mul_ps);
+DEFINE_BINARY_OP(float32x8, div, _mm256_div_ps);
+
+DEFINE_BINARY_OP(int32x8, add, _mm256_add_epi32);
+DEFINE_BINARY_OP(int32x8, sub, _mm256_sub_epi32);
+DEFINE_BINARY_OP(int32x8, mul, _mm256_mul_epi32);
+
+template <int dim>
+inline vec<int32, dim> div(vec<int32, dim> a, vec<int32, dim> b) {
+  vec<int32, dim> ret;
+  for (int i = 0; i < dim; i++)
+    ret[i] = a[i] / b[i];
+  return ret;
+}
+
+template <typename T, int dim>
+inline vec<T, dim> mod(vec<T, dim> a, vec<T, dim> b) {
+  static_assert(std::is_integral<T>::value, "");
+  return sub(a, mul(div(a, b), b));
 };
 
 #define VVEC_BINARY_OP(NAME, OP)                                 \
@@ -445,7 +495,7 @@ struct vvec {
                                      const vvec<T, dim, n> &b) { \
     vvec<T, dim, n> ret;                                         \
     for (int i = 0; i < n; i++) {                                \
-      ret.d[i] = a.d[i] OP b.d[i];                               \
+      ret.d[i] = NAME(a.d[i], b.d[i]);                           \
     }                                                            \
     return ret;                                                  \
   }                                                              \
@@ -454,7 +504,7 @@ struct vvec {
                               const vvec<T, dim, n> &b) {        \
     vvec<T, dim, n> ret;                                         \
     for (int i = 0; i < n; i++) {                                \
-      ret.d[i] = a.d[i] OP b.d[i];                               \
+      ret.d[i] = NAME(a.d[i], b.d[i]);                           \
     }                                                            \
     return ret;                                                  \
   }

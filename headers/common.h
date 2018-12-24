@@ -2,6 +2,8 @@
 
 #define FUNC_DECL
 
+#include <immintrin.h>
+
 #if !defined(TC_INCLUDED)
 
 #include <cstdio>
@@ -16,10 +18,6 @@ using float32 = float;
 using float64 = double;
 using int32 = int;
 using uint64 = unsigned long long;
-
-#if defined(TLANG_CPU)
-#include <immintrin.h>
-#endif
 
 #if defined(TLANG_GPU)
 #include <cuda_runtime.h>
@@ -256,5 +254,66 @@ struct SlowAdapter {
 };
 
 // End Virtual Vectors
+
+template <typename T, int dim>
+struct vec_helper;
+
+#define REGISTER_VEC(T, dim, name) \
+  template <>                      \
+  struct vec_helper<T, dim> {      \
+    using type = name;             \
+  };
+
+REGISTER_VEC(float32, 8, __m256);
+REGISTER_VEC(int32, 8, __m256i);
+// REGISTER_VEC(uint32, 8, __m256u);
+
+template <typename T, int dim>
+using vec = typename vec_helper<T, dim>::type;
+
+template <typename T, int dim>
+inline vec<T, dim> load(const void *);
+
+template <typename T, int dim>
+inline vec<T, dim> floor(const vec<T, dim> &);
+
+using float32x8 = vec<float32, 8>;
+
+template <>
+inline float32x8 floor<float32, 8>(const float32x8 &v) {
+  return _mm256_floor_ps(v);
+};
+
+template <>
+inline float32x8 load<float32, 8>(const void *addr) {
+  return _mm256_load_ps((float32 *)addr);
+};
+
+template <>
+inline vec<int32, 8> load<int32, 8>(const void *addr) {
+  return _mm256_load_si256((__m256i *)addr);
+};
+
+template <typename T, int dim, int n>
+struct vvec {
+  vec<T, dim> d[n];
+};
+
+#define VVEC_BINARY_OP(NAME, OP)                          \
+  template <typename T, int dim, int n>                   \
+  inline vvec<T, dim, n> NAME(const vvec<T, dim, n> &a,   \
+                              const vvec<T, dim, n> &b) { \
+    vvec<T, dim, n> ret;                                  \
+    for (int i = 0; i < n; i++) {                         \
+      ret.d[i] = a.d[i] OP b.d[i];                        \
+    }                                                     \
+    return ret;                                           \
+  }
+
+VVEC_BINARY_OP(add, +);
+VVEC_BINARY_OP(sub, -);
+VVEC_BINARY_OP(mul, *);
+VVEC_BINARY_OP(div, /);
+VVEC_BINARY_OP(mod, %);
 }
 }

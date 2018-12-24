@@ -133,7 +133,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
         } else {
           TC_ASSERT(offset_inc == 0);
           needs_shuffle = false;
-          emit_code("{}.d[0] = _mm256_broadcast_ss({}.d[0]);", expr->var_name,
+          emit_code("{}.d[0] = _mm256_broadcast_ss({});", expr->var_name,
                     get_vectorized_address(expr->addr(), 0, 0));
         }
       } else {

@@ -327,7 +327,7 @@ void run_matmatmul() {
 }
 
 void initialize_benchmark() {
-  CoreState::set_trigger_gdb_when_crash(true);
+  // CoreState::set_trigger_gdb_when_crash(true);
   static bool initialized = false;
   if (initialized) {
     return;

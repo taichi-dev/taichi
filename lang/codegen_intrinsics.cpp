@@ -7,6 +7,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
   // TC_P(expr->id);
   // TC_P(expr->node_type_name());
   auto vv_width = num_groups * expr->group_size();
+  TC_ASSERT(vv_width % simd_width == 0);
   TC_ASSERT(expr->is_vectorized);
   TC_ASSERT(expr->members.size() == 0 ||
             (int)expr->members.size() == group_size);
@@ -28,8 +29,8 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     }
   }
 
-  if (binary_ops.find(expr->type) != binary_ops.end()) {
-    auto op = binary_ops[expr->type];
+  if (binary_ops_intrinsics.find(expr->type) != binary_ops_intrinsics.end()) {
+    auto op = binary_ops_intrinsics[expr->type];
     emit_code("auto {} = {}({}, {});", expr->var_name, op,
               expr->ch[0]->var_name, expr->ch[1]->var_name);
     // emit_code("{}.print();", expr->var_name);
@@ -47,11 +48,15 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     }
   } else if (expr->type == NodeType::load) {
     emit_code("auto {} = load<{}, {}>({}_base, {}_offsets);", expr->var_name,
-              expr->group_size() * num_groups, data_type_name(expr->data_type),
-              expr[0]->var_name, expr[0]->var_name);
+              vv_width, data_type_name(expr->data_type), expr[0]->var_name,
+              expr[0]->var_name);
   } else if (expr->type == NodeType::store) {
-    emit_code("store({}, {}_base, {}_offsets);", expr->ch[1]->var_name,
-              expr->ch[0]->var_name, expr->ch[0]->var_name);
+    // TODO: analyze address here
+    auto addr = expr[0][0]->get_address();
+    TC_ASSERT(addr.coeff_aosoa_group_size == 0 ||
+              addr.coeff_aosoa_group_size == num_groups);
+    emit_code("{}.store({});", expr->ch[1]->var_name,
+              get_vectorized_address(addr, 0, 0));
   } else if (expr->type == NodeType::combine) {
     // do nothing
   } else if (expr->type == NodeType::imm) {

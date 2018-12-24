@@ -122,16 +122,20 @@ class CPUCodeGen : public CodeGenBase {
  public:
   // Create vectorized IR for the root node
   // the vector width should be the final SIMD instruction width
-  std::string get_vectorized_address(Address addr, int extra_offset = 0) {
+  std::string get_vectorized_address(Address addr,
+                                     int loop_index,
+                                     int extra_offset) {
     TC_ASSERT(addr.buffer_id != -1);
     auto buffer_name =
         fmt::format("context.get_buffer<float32>({:02d})", addr.buffer_id);
-    auto stride =
-        addr.coeff_i * num_groups +
-        num_groups / addr.coeff_aosoa_group_size * addr.coeff_aosoa_stride;
+    auto stride = addr.coeff_i * num_groups;
+    if (addr.coeff_aosoa_group_size != 0) {
+      stride +=
+          num_groups / addr.coeff_aosoa_group_size * addr.coeff_aosoa_stride;
+    }
     auto offset = addr.coeff_const;
-    return fmt::format("&{}[{} * n + {} * (g + loop_index) + {} + {}]",
-                       buffer_name, addr.coeff_imax, stride, offset,
+    return fmt::format("&{}[{} * n + {} * (b + {}) + {} + {}]", buffer_name,
+                       addr.coeff_imax, stride, loop_index, offset,
                        extra_offset);
   }
 

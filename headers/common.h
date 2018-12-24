@@ -486,6 +486,8 @@ DEFINE_BINARY_OP(int32x8, sub, _mm256_sub_epi32);
 DEFINE_BINARY_OP(int32x8, mul, _mm256_mullo_epi32);
 DEFINE_BINARY_OP(int32x8, min, _mm256_min_epi32);
 DEFINE_BINARY_OP(int32x8, max, _mm256_max_epi32);
+DEFINE_BINARY_OP(int32x8, land, _mm256_and_si256);
+DEFINE_BINARY_OP(int32x8, lor, _mm256_and_si256);
 
 template <int dim>
 inline vec<int32, dim> div(vec<int32, dim> a, vec<int32, dim> b) {

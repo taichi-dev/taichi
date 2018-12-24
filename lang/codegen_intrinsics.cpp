@@ -60,6 +60,13 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     }
   } else if (expr->type == NodeType::load) {
     bool regular = false;
+    if (expr[0]->type == NodeType::pointer &&
+        expr[0][1]->type == NodeType::index) {
+      regular = true;
+      TC_INFO("regular");
+    } else {
+      TC_INFO("irregular");
+    }
     if (regular) {
       // TODO: irregular case
       /*

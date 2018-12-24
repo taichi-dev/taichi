@@ -66,7 +66,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     // TC_P(i_stride);
     // TC_P(addr.coeff_aosoa_group_size);
     TC_ASSERT(addr.coeff_aosoa_group_size == 0 ||
-              num_groups % addr.coeff_aosoa_group_size == 0);
+              num_groups == addr.coeff_aosoa_group_size);
     // TC_ASSERT(expr->members[0]->addr.coeff_i);
     std::string load_instr = "_mm256_load_ps";
     bool needs_shuffle = false;
@@ -74,17 +74,20 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       addr.coeff_const -= addr.coeff_const % simd_width;
       needs_shuffle = true;
     }
-    emit_code("vvec<{}, 8, 1> {}({});", expr->data_type_name(), expr->var_name,
-              get_vectorized_address(addr, 0, 0));
+    int split = vv_width / simd_width;
+    emit_code("vvec<{}, {}, {}> {}({});", expr->data_type_name(), simd_width,
+              split, expr->var_name, get_vectorized_address(addr, 0, 0));
     auto emit_shuffle = [&](std::string imm) {
-      emit_code(
-          "{}.d[0] = _mm256_shuffle_ps({}.d[0], {}.d[0], "
-          "{});",
-          expr->var_name, expr->var_name, expr->var_name, imm);
+      for (int i = 0; i < split; i++) {
+        emit_code(
+            "{}.d[{}] = _mm256_shuffle_ps({}.d[{}], {}.d[{}], "
+            "{});",
+            expr->var_name, i, expr->var_name, i, expr->var_name, i, imm);
+      }
       needs_shuffle = false;
     };
     if (group_size == 1) {
-      emit_code("{}.d[0] = {}.d[0];", expr->var_name, expr->var_name);
+      // emit_code("{}.d[0] = {}.d[0];", expr->var_name, expr->var_name);
     } else {
       TC_ASSERT(group_size <= 8);
       // detect patterns
@@ -92,7 +95,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       int offset_inc = offsets[1] - offsets[0];
       if (group_size == 2) {
         if (offset_const == 0 && offset_inc == 1) {
-          emit_code("{}.d[0] = {}.d[0];", expr->var_name, expr->var_name);
+          // emit_code("{}.d[0] = {}.d[0];", expr->var_name, expr->var_name);
         } else if (offset_inc == 0) {
           if (offset_const == 0) {
             emit_shuffle("0xA0");
@@ -108,7 +111,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
         }
       } else if (group_size == 4) {
         if (offset_const == 0 && offset_inc == 1) {
-          emit_code("{}.d[0] = {}.d[0];", expr->var_name, expr->var_name);
+          // emit_code("{}.d[0] = {}.d[0];", expr->var_name, expr->var_name);
         } else if (offset_inc == 0) {
           if (offset_const == 0) {
             emit_shuffle("0x00");
@@ -129,12 +132,13 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       } else if (group_size == 8) {
         if (offset_inc == 1) {
           TC_ASSERT(offset_const == 0);
-          emit_code("{}.d[0] = {}.d[0];", expr->var_name, expr->var_name);
+          // emit_code("{}.d[0] = {}.d[0];", expr->var_name, expr->var_name);
         } else {
           TC_ASSERT(offset_inc == 0);
           needs_shuffle = false;
-          emit_code("{}.d[0] = _mm256_broadcast_ss({});", expr->var_name,
-                    get_vectorized_address(expr->addr(), 0, 0));
+          for (int i = 0; i < split; i++)
+            emit_code("{}.d[{}] = _mm256_broadcast_ss({});", expr->var_name, i,
+                      get_vectorized_address(expr->addr(), 0, 0));
         }
       } else {
         TC_NOT_IMPLEMENTED
@@ -145,7 +149,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     // TODO: analyze address here
     auto addr = expr[0][0]->get_address();
     TC_ASSERT(addr.coeff_aosoa_group_size == 0 ||
-              addr.coeff_aosoa_group_size == num_groups);
+              num_groups % addr.coeff_aosoa_group_size == 0);
     emit_code("{}.store({});", expr->ch[1]->var_name,
               get_vectorized_address(addr, 0, 0));
   } else if (expr->type == NodeType::combine) {

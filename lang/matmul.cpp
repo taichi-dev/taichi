@@ -165,6 +165,8 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
 
   Program prog(arch, n);
   prog.config.group_size = layout == 1 ? dim : 1;
+  int scale = 2;
+  prog.config.num_groups = 8 / prog.config.group_size * scale;
 
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
@@ -174,35 +176,35 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
             .stream(0)
             .group(0)
             .group(i * dim + j)
-            .repeat(simd_width)
+            .repeat(simd_width * scale)
             .place(a(i, j));
         prog.buffer(1)
             .stream(0)
             .group(0)
             .group(i * dim + j)
-            .repeat(simd_width)
+            .repeat(simd_width * scale)
             .place(b(i, j));
         prog.buffer(2)
             .stream(0)
             .group(0)
             .group(i * dim + j)
-            .repeat(simd_width)
+            .repeat(simd_width * scale)
             .place(c(i, j));
       } else if (layout == 1) {  // Inter
         prog.buffer(0)
             .stream(0)
             .group(j)
-            .repeat(simd_width / dim)
+            .repeat(simd_width / dim * scale)
             .place(a(i, j));
         prog.buffer(1)
             .stream(0)
             .group(j)
-            .repeat(simd_width / dim)
+            .repeat(simd_width / dim * scale)
             .place(b(i, j));
         prog.buffer(2)
             .stream(0)
             .group(j)
-            .repeat(simd_width / dim)
+            .repeat(simd_width / dim * scale)
             .place(c(i, j));
       } else {  // SOA
         prog.buffer(0).stream(i * dim + j).group().place(a(i, j));

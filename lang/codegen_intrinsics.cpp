@@ -244,7 +244,8 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
         }
       }
     }
-    auto offset_var = vvec_const_str_list(DataType::i32, coeff_const);
+    auto offset_var =
+        get_constant(vvec_const_str_list(DataType::i32, coeff_const));
     TC_WARN("NOT OPTIMIZED");
     if (addr.coeff_aosoa_stride != 0) {
       emit_code("auto {}_offsets = {} + {} * {} + {} / {} * {};",

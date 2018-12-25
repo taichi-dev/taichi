@@ -128,7 +128,7 @@ class CPUCodeGen : public CodeGenBase {
   std::string get_constant(std::string statement) {
     if (constant_vectors.find(statement) == constant_vectors.end()) {
       auto key = fmt::format("const{:04d}", constant_counter++);
-      emit_code_before_loop("auto {} = {};\n", key, statement);
+      emit_code_before_loop("const auto {} = {};\n", key, statement);
       constant_vectors[statement] = key;
     }
     return constant_vectors[statement];

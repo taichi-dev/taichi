@@ -53,6 +53,15 @@ TC_TEST("SlowAdapter") {
   for (int i = 0; i < 16; i++) {
     TC_P(r.d[i / 8][i % 8]);
   }
+
+  {
+    auto a = set1<int32, 8>(67);
+    auto b = land(a, 31);
+    for (int i = 0; i < 8; i++) {
+      TC_P(b[i]);
+    }
+  }
+
 }
 }
 

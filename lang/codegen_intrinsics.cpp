@@ -46,6 +46,16 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     emit_code("auto {} = {}({}, {});", expr->var_name, op,
               expr->ch[0]->var_name, expr->ch[1]->var_name);
     // emit_code("{}.print();", expr->var_name);
+  } else if (expr->type == NodeType::land) {
+    TC_ASSERT(expr[1]->type == NodeType::imm)
+    TC_WARN("member imm");
+    emit_code("auto {} = land({}, {});", expr->var_name, expr[0]->var_name,
+              expr[1]->members[0]->value<int>());
+  } else if (expr->type == NodeType::shr) {
+    TC_WARN("member imm");
+    TC_ASSERT(expr[1]->type == NodeType::imm)
+    emit_code("auto {} = shr({}, {});", expr->var_name, expr[0]->var_name,
+              expr[1]->members[0]->value<int>());
   } else if (expr->type == NodeType::floor) {
     emit_code("auto {} = floor({});", expr->var_name, expr[0]->var_name);
   } else if (expr->type == NodeType::cast) {

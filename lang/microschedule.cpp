@@ -93,11 +93,6 @@ auto advection = []() {
 
   auto clamp = [](const Expr &e) { return min(max(imm(2), e), imm(n - 2)); };
 
-  Int32 xi = index % imm(n);
-  xi.name("xi");
-  Int32 yi = index / imm(n);
-  yi.name("yi");
-
   // weights
   auto w00 = (imm(1.0f) - wx) * (imm(1.0f) - wy);
   auto w01 = (imm(1.0f) - wx) * wy;
@@ -109,9 +104,11 @@ auto advection = []() {
   w10.name("w10");
   w11.name("w11");
 
-  Expr node = Expr::index(0) + offset;
-  Int32 i = clamp(node / imm(n)).name("i");
-  Int32 j = clamp(node % imm(n)).name("j");
+  Expr node = max(Expr::index(0) + offset, imm(0));
+  Int32 i = clamp(node >> imm((int)bit::log2int(n))).name("i"); // node / n
+  // Int32 i = clamp(node / imm(n)).name("i"); // node / n
+  Int32 j = clamp(node & imm(n - 1)).name("j"); // node % n
+  /// Int32 j = clamp(node % imm(n)).name("j"); // node % n
   node = i * imm(n) + j;
   node.name("node");
 
@@ -151,7 +148,7 @@ auto advection = []() {
 
   for (int f = 0; f < 1000; f++) {
     for (int t = 0; t < 3; t++) {
-      prog();
+      TC_TIME(prog());
 
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {

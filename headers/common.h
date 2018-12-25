@@ -515,6 +515,32 @@ DEFINE_BINARY_OP(int32x8, max, _mm256_max_epi32);
 DEFINE_BINARY_OP(int32x8, land, _mm256_and_si256);
 DEFINE_BINARY_OP(int32x8, lor, _mm256_and_si256);
 
+inline int32x8 shr(int32x8 a, int b) {
+  return _mm256_srli_epi32(a, b);
+}
+
+inline int32x8 land(int32x8 a, int b) {
+  int32x8 B = _mm256_set1_epi32(b);
+  int32x8 v = _mm256_and_si256(a, B);
+  return v;
+}
+
+template <int dim, int n>
+inline vvec<int32, dim, n> shr(vvec<int32, dim, n> a, int b) {
+  vvec<int32, dim, n> ret;
+  for (int i = 0; i < n; i++)
+    ret.d[i] = shr(a.d[i], b);
+  return ret;
+}
+
+template <int dim, int n>
+inline vvec<int32, dim, n> land(vvec<int32, dim, n> a, int b) {
+  vvec<int32, dim, n> ret;
+  for (int i = 0; i < n; i++)
+    ret.d[i] = land(a.d[i], b);
+  return ret;
+}
+
 template <int dim>
 inline vec<int32, dim> div(vec<int32, dim> a, vec<int32, dim> b) {
   // return _mm256_srli_epi32(a, 9);

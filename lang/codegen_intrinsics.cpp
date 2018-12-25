@@ -256,9 +256,13 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       if (!all_zero) {
         offset_const_vec = fmt::format("{} + ", offset_var);
       }
-      emit_code("auto {}_offsets = {} {} * {};", expr->var_name,
-                offset_const_vec, vvec_const_str(DataType::i32, addr.coeff_i),
-                index);
+      std::string scale_vec = "";
+      if (addr.coeff_i != 1) {
+        scale_vec =
+            fmt::format("{} * ", vvec_const_str(DataType::i32, addr.coeff_i));
+      }
+      emit_code("auto {}_offsets = {} {} {};", expr->var_name, offset_const_vec,
+                scale_vec, index);
     }
   } else if (expr->type == NodeType::adapter_store) {
     auto &ad = prog->adapter(expr[1]->members[0]->value<int>());

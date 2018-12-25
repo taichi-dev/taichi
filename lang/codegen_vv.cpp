@@ -41,6 +41,12 @@ void CPUCodeGen::visit_vv(Expr &expr) {
               expr[1]->var_name);
   } else if (expr->type == NodeType::floor) {
     emit_code("auto {} = floor({});", expr->var_name, expr[0]->var_name);
+  } else if (expr->type == NodeType::land) {
+    emit_code("auto {} = land({}, {});", expr->var_name, expr[0]->var_name,
+              expr[1]->members[0]->value<int>());
+  } else if (expr->type == NodeType::shr) {
+    emit_code("auto {} = shr({}, {});", expr->var_name, expr[0]->var_name,
+              expr[1]->members[0]->value<int>());
   } else if (expr->type == NodeType::cast) {
     if (expr->data_type == DataType::i32) {
       emit_code("auto {} = cast<int32>({});", expr->var_name,

@@ -166,6 +166,24 @@ inline VV<dim, T> cast(const VV<dim, G> &a) {
   return c;
 }
 
+template <typename T, int dim>
+TC_FORCE_INLINE VV<dim, T> land(const VV<dim, T> &a, int b) {
+  VV<dim, T> c;
+  for (int i = 0; i < dim; i++) {
+    c[i] = a[i] & b;
+  }
+  return c;
+}
+
+template <typename T, int dim>
+TC_FORCE_INLINE VV<dim, T> shr(const VV<dim, T> &a, int b) {
+  VV<dim, T> c;
+  for (int i = 0; i < dim; i++) {
+    c[i] = a[i] >> b;
+  }
+  return c;
+}
+
 template <int dim, typename T>
 inline VV<dim, T> load(T *base_address, VV<dim, int> offsets) {
   VV<dim, T> ret;

@@ -143,6 +143,8 @@ class Node {
       REGISTER_NODE_TYPE(max);
       REGISTER_NODE_TYPE(min);
       REGISTER_NODE_TYPE(cast);
+      REGISTER_NODE_TYPE(land);
+      REGISTER_NODE_TYPE(shr);
     }
     return node_type_names[type];
   }

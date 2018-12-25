@@ -303,8 +303,8 @@ void CPUCodeGen::codegen(Program &prog, int group_size) {
 
 FunctionType CPUCodeGen::get(Program &prog) {
   auto group_size = prog.config.group_size;
-  // auto mode = CPUCodeGen::Mode::vv;
-  auto mode = CPUCodeGen::Mode::intrinsics;
+  auto mode = CPUCodeGen::Mode::vv;
+  // auto mode = CPUCodeGen::Mode::intrinsics;
   auto simd_width = 8;
   this->mode = mode;
   this->simd_width = simd_width;

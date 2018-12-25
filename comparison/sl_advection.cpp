@@ -24,11 +24,11 @@ auto advection = []() {
   prog.config.num_groups = use_adapter ? 8 : 8;
 
   // ***************************************************************************
-  // Compute part starts
+  // Compute starts
   auto index = Expr::index(0);
 
-  auto offset_x = floor(v[0][index]).name("offset_x");
-  auto offset_y = floor(v[1][index]).name("offset_y");
+  auto offset_x = floor(v[0][index]));
+  auto offset_y = floor(v[1][index]);
   auto wx = v[0][index] - offset_x;
   auto wy = v[1][index] - offset_y;
 
@@ -46,8 +46,8 @@ auto advection = []() {
   // (Technically this should happen when computing "node",
   //    but let's keep it as-is to keep track of performance changes.)
   Expr node = max(Expr::index(0) + offset, imm(0));
-  Int32 i = clamp(node / imm(n)); // node / n
-  Int32 j = clamp(node % imm(n)); // node % n
+  Int32 i = clamp(node / imm(n));
+  Int32 j = clamp(node % imm(n));
   node = i * imm(n) + j;
 
   for (int k = 0; k < nattr; k++) {
@@ -58,7 +58,7 @@ auto advection = []() {
 
     attr[1][k][index] = w00 * v00 + w01 * v01 + w10 * v10 + w11 * v11;
   }
-  // Compute part ends
+  // Compute ends
   // ***************************************************************************
 
   prog.compile();

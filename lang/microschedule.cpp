@@ -70,7 +70,7 @@ auto advection = []() {
     }
   }
   prog.config.group_size = use_adapter ? nattr : 1;
-  prog.config.num_groups = use_adapter ? 8 : 32;
+  prog.config.num_groups = use_adapter ? 8 : 8;
 
   // ** gs = 2
   TC_ASSERT(bit::is_power_of_two(n));
@@ -157,11 +157,12 @@ auto advection = []() {
           }
         }
       }
+
+      prog.swap_buffers(0, 1);
     }
 
     gui.update();
     // gui.screenshot(fmt::format("images/{:04d}.png", f));
-    prog.swap_buffers(0, 1);
   }
 };
 TC_REGISTER_TASK(advection);

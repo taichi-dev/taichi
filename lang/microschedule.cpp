@@ -108,7 +108,7 @@ auto advection = []() {
   Int32 i = clamp(node >> imm((int)bit::log2int(n))).name("i"); // node / n
   // Int32 i = clamp(node / imm(n)).name("i"); // node / n
   Int32 j = clamp(node & imm(n - 1)).name("j"); // node % n
-  /// Int32 j = clamp(node % imm(n)).name("j"); // node % n
+  // Int32 j = clamp(node % imm(n)).name("j"); // node % n
   node = i * imm(n) + j;
   node.name("node");
 

@@ -1,5 +1,6 @@
 #include "codegen.h"
 #include "program.h"
+#include <taichi/common/bit.h>
 
 namespace taichi::Tlang {
 
@@ -214,12 +215,15 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
           members += ",";
         }
         first = false;
-        members += fmt::format("b * {} + {}", num_groups, i);
+        members += fmt::format("{}", i);
       }
     }
+    TC_ASSERT(bit::is_power_of_two(num_groups));
     members += "}";
-    emit_code("auto {} = {}({});", expr->var_name, vv_type(expr->data_type),
-              members);
+    emit_code("auto {}_index = {}(b);", expr->var_name, vv_type(DataType::i32));
+    emit_code("auto {} = add(shl({}_index, {}), {}({}));", expr->var_name,
+              expr->var_name, bit::log2int(num_groups),
+              vv_type(expr->data_type), members);
   } else if (expr->type == NodeType::pointer) {
     // emit base pointer and offsets
     auto addr = expr[0]->get_address_();
@@ -236,6 +240,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       }
     }
     auto offset_var = vvec_const_str_list(DataType::i32, coeff_const);
+    TC_WARN("NOT OPTIMIZED");
     if (addr.coeff_aosoa_stride != 0) {
       emit_code("auto {}_offsets = {} + {} * {} + {} / {} * {};",
                 expr->var_name, offset_var,

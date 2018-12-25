@@ -519,6 +519,10 @@ inline int32x8 shr(int32x8 a, int b) {
   return _mm256_srli_epi32(a, b);
 }
 
+inline int32x8 shl(int32x8 a, int b) {
+  return _mm256_slli_epi32(a, b);
+}
+
 inline int32x8 land(int32x8 a, int b) {
   int32x8 B = _mm256_set1_epi32(b);
   int32x8 v = _mm256_and_si256(a, B);
@@ -530,6 +534,14 @@ inline vvec<int32, dim, n> shr(vvec<int32, dim, n> a, int b) {
   vvec<int32, dim, n> ret;
   for (int i = 0; i < n; i++)
     ret.d[i] = shr(a.d[i], b);
+  return ret;
+}
+
+template <int dim, int n>
+inline vvec<int32, dim, n> shl(vvec<int32, dim, n> a, int b) {
+  vvec<int32, dim, n> ret;
+  for (int i = 0; i < n; i++)
+    ret.d[i] = shl(a.d[i], b);
   return ret;
 }
 

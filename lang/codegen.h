@@ -74,6 +74,7 @@ class CodeGenBase : public Visitor {
 #endif
   }
 
+
   template <typename... Args>
   void emit_code(std::string f, Args &&... args) {
     if (sizeof...(args)) {
@@ -117,9 +118,22 @@ class CPUCodeGen : public CodeGenBase {
   Mode mode;
   int simd_width;
   int group_size;
+  std::string before_loop_body;
   Program *prog;
+  std::map<std::string, std::string> constant_vectors; // statement to var name
+  int constant_counter;
 
  public:
+
+  std::string get_constant(std::string statement) {
+    if (constant_vectors.find(statement) == constant_vectors.end()) {
+      auto key = fmt::format("const{:04d}", constant_counter++);
+      emit_code_before_loop("auto {} = {};\n", key, statement);
+      constant_vectors[statement] = key;
+    }
+    return constant_vectors[statement];
+  }
+
   // Create vectorized IR for the root node
   // the vector width should be the final SIMD instruction width
   std::string get_vectorized_address(Address addr,
@@ -143,6 +157,7 @@ class CPUCodeGen : public CodeGenBase {
     suffix = "cpp";
     prefetch = 0;
     unroll = 1;
+    constant_counter = 0;
     var_count = 0;
   }
 
@@ -151,11 +166,23 @@ class CPUCodeGen : public CodeGenBase {
         "#include <common.h>\n using namespace taichi; using namespace Tlang;");
     emit_code("extern \"C\" void " + func_name + "(Context context) {\n");
     emit_code("auto n = context.get_range(0);\n\n");
+    before_loop_body = code;
+    code = "";
     emit_code("for (int i = 0, b = 0; (unsigned)i < n; ) {{\n", num_groups);
+  }
+
+  template <typename... Args>
+  void emit_code_before_loop(std::string f, Args &&... args) {
+    if (sizeof...(args)) {
+      before_loop_body += fmt::format(f, std::forward<Args>(args)...);
+    } else {
+      before_loop_body += f;
+    }
   }
 
   void generate_tail() {
     emit_code("}\n}\n");
+    code = before_loop_body + code;
   }
 
   void start_macro_loop() {

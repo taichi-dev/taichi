@@ -220,9 +220,10 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     TC_ASSERT(bit::is_power_of_two(num_groups));
     members += "}";
     emit_code("auto {}_index = {}(b);", expr->var_name, vv_type(DataType::i32));
-    emit_code("auto {} = add(shl({}_index, {}), {}({}));", expr->var_name,
-              expr->var_name, bit::log2int(num_groups),
-              vv_type(expr->data_type), members);
+    auto constant =
+        get_constant(fmt::format("{}({})", vv_type(expr->data_type), members));
+    emit_code("auto {} = add(shl({}_index, {}), {});", expr->var_name,
+              expr->var_name, bit::log2int(num_groups), constant);
   } else if (expr->type == NodeType::pointer) {
     // emit base pointer and offsets
     auto addr = expr[0]->get_address_();

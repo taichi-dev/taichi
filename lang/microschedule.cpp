@@ -48,7 +48,7 @@ auto test_loop = []() {
 TC_REGISTER_TASK(test_loop);
 
 auto advection = []() {
-  bool use_adapter = true;
+  bool use_adapter = false;
 
   const int n = 512, nattr = 4;
 
@@ -70,7 +70,7 @@ auto advection = []() {
     }
   }
   prog.config.group_size = use_adapter ? nattr : 1;
-  prog.config.num_groups = 8;
+  prog.config.num_groups = use_adapter ? 8 : 32;
 
   // ** gs = 2
   TC_ASSERT(bit::is_power_of_two(n));
@@ -160,7 +160,7 @@ auto advection = []() {
     }
 
     gui.update();
-    gui.screenshot(fmt::format("images/{:04d}.png", f));
+    // gui.screenshot(fmt::format("images/{:04d}.png", f));
     prog.swap_buffers(0, 1);
   }
 };

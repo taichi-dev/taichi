@@ -6,6 +6,11 @@
 
 #if !defined(TC_INCLUDED)
 
+#ifdef _WIN64
+#define TC_FORCE_INLINE __forceinline
+#else
+#define TC_FORCE_INLINE inline __attribute__((always_inline))
+#endif
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -207,7 +212,7 @@ struct SlowAdapter {
   VV<output_dim, T> outputs[num_outputs];
 
   template <int i>
-  void set(const VV<input_dim, T> &v) {
+  TC_FORCE_INLINE void set(const VV<input_dim, T> &v) {
     static_assert(0 <= i && i < num_inputs, "");
     inputs[i] = v;
   }
@@ -418,7 +423,7 @@ template <typename T, int dim, int n>
 struct vvec {
   vec<T, dim> d[n];
 
-  vvec(std::array<T, dim * n> v) {
+  TC_FORCE_INLINE vvec(std::array<T, dim * n> v) {
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < dim; j++) {
         d[i][j] = v[i * dim + j];
@@ -431,7 +436,7 @@ struct vvec {
   vvec() {
   }
 
-  vvec(T v) {
+  TC_FORCE_INLINE vvec(T v) {
     for (int i = 0; i < n; i++) {
       d[i] = set1<T, dim>(v);
     }

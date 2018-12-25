@@ -77,7 +77,6 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     } else {
     }
     if (regular) {
-      // TODO: irregular case
       /*
       emit_code("auto {} = load<{}, {}>({}_base, {}_offsets);", expr->var_name,
                 vv_width, data_type_name(expr->data_type), expr[0]->var_name,
@@ -233,10 +232,15 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
 
     auto index = expr->ch[1]->var_name;
 
+    bool all_zero = true;
     std::vector<int> coeff_const;
     for (int i = 0; i < num_groups; i++) {
       for (auto &m : expr->ch[0]->members) {
-        coeff_const.push_back(m->get_address_().coeff_const);
+        auto off = m->get_address_().coeff_const;
+        coeff_const.push_back(off);
+        if (off != 0) {
+          all_zero = false;
+        }
       }
     }
     auto offset_var = vvec_const_str_list(DataType::i32, coeff_const);
@@ -248,8 +252,13 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
                 vvec_const_str(DataType::i32, addr.coeff_aosoa_group_size),
                 vvec_const_str(DataType::i32, addr.coeff_aosoa_stride));
     } else {
-      emit_code("auto {}_offsets = {} + {} * {};", expr->var_name, offset_var,
-                vvec_const_str(DataType::i32, addr.coeff_i), index);
+      std::string offset_const_vec = "";
+      if (!all_zero) {
+        offset_const_vec = fmt::format("{} + ", offset_var);
+      }
+      emit_code("auto {}_offsets = {} {} * {};", expr->var_name,
+                offset_const_vec, vvec_const_str(DataType::i32, addr.coeff_i),
+                index);
     }
   } else if (expr->type == NodeType::adapter_store) {
     auto &ad = prog->adapter(expr[1]->members[0]->value<int>());

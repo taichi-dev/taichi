@@ -228,8 +228,9 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     // emit base pointer and offsets
     auto addr = expr[0]->get_address_();
     auto buffer_name = fmt::format("context.buffers[{:02d}]", addr.buffer_id);
-    emit_code("auto *{}_base = ({} *){} + {} * n;", expr->var_name,
-              data_type_name(expr->data_type), buffer_name, addr.coeff_imax);
+    emit_code("auto *{}_base = ({} *){} + {} * {};", expr->var_name,
+              data_type_name(expr->data_type), buffer_name, addr.coeff_imax,
+              addr.n);
 
     auto index = expr->ch[1]->var_name;
 

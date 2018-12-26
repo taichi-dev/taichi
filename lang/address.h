@@ -16,6 +16,7 @@ class Expr;
 
 struct Address {
   int64 buffer_id;
+  int64 n;
   int64 coeff_i;
   int64 coeff_imax;
   int64 coeff_const;  // offset
@@ -32,6 +33,7 @@ struct Address {
             coeff_aosoa_group_size);
 
   Address() {
+    n = -1;
     buffer_id = -1;
     coeff_i = 0;
     coeff_imax = 0;
@@ -41,7 +43,7 @@ struct Address {
   }
 
   bool initialized() {
-    return buffer_id != -1;
+    return buffer_id != -1 && n != -1;
   }
 
   TC_FORCE_INLINE bool same_type(Address o) {
@@ -72,7 +74,6 @@ struct Address {
     }
   }
 };
-
 }
 
 TC_NAMESPACE_END

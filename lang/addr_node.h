@@ -14,17 +14,33 @@ struct AddrNode {
   int offset;
   int buffer_id;
   int coeff_i;
+  int64 n;
   // repeat included
   int data_size;
+
+  AddrNode(int depth, const Expr &addr = Expr()) : depth(depth), addr(addr) {
+    n = -1;
+    num_variables = 0;
+    if (addr) {
+      num_variables += 1;
+    }
+    offset = 0;
+    repeat_factor = 1;
+  }
 
   void materialize() {
     TC_ASSERT(bool(addr == nullptr) || bool(ch.size() == 0));
     TC_ASSERT(!(bool(addr == nullptr) && bool(ch.size() == 0)));
+    if (depth == 1) {
+      TC_ASSERT_INFO(n != -1, "Please set n for buffer.");
+    }
     if (depth == 2) {  // stream, reset offset
       offset = 0;
     }
     int acc_offset = offset;
     for (auto &c : ch) {
+      if(n != -1 && c->n == -1)
+        c->n = n;
       c->offset = acc_offset;
       c->materialize();
       num_variables += c->num_variables;
@@ -32,15 +48,6 @@ struct AddrNode {
     }
     data_size = num_variables * repeat_factor;
     group_size = (ch.size() ? ch[0]->group_size : 1) * repeat_factor;
-  }
-
-  AddrNode(int depth, const Expr &addr = Expr()) : depth(depth), addr(addr) {
-    num_variables = 0;
-    if (addr) {
-      num_variables += 1;
-    }
-    offset = 0;
-    repeat_factor = 1;
   }
 
   void set() {
@@ -51,6 +58,7 @@ struct AddrNode {
       if (node->addr) {
         auto &ad = node->addr->get_address_(); // TODO: remove this hack
         ad.buffer_id = buffer_id;
+        ad.n = node->n;
         ad.coeff_i = node->coeff_i;
         ad.coeff_imax = coeff_imax;
         ad.coeff_aosoa_group_size = group_size;
@@ -142,6 +150,12 @@ struct AddrNode {
     TC_ASSERT(depth >= 3);
     TC_ASSERT(this->addr == nullptr);
     ch.push_back(create(depth + 1, expr));
+    return *this;
+  }
+
+  AddrNode &range(int64 n) {
+    TC_ASSERT(this->depth == 1);
+    this->n = n;
     return *this;
   }
 };

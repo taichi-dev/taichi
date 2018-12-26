@@ -92,6 +92,7 @@ struct Program {
       TC_NOT_IMPLEMENTED;
     }
     function = nullptr;
+    storage_range(n);
   }
 
   ~Program() {
@@ -168,6 +169,11 @@ struct Program {
 
   void swap_buffers(int i, int j) {
     std::swap(buffers[i], buffers[j]);
+  }
+
+  Program &storage_range(int64 n) {
+    alloc.root->n = n;
+    return *this;
   }
 };
 }

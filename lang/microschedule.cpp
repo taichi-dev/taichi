@@ -8,15 +8,16 @@ TC_NAMESPACE_BEGIN
 using namespace Tlang;
 
 auto test_loop = []() {
-  CoreState::set_trigger_gdb_when_crash(true);
+  // CoreState::set_trigger_gdb_when_crash(true);
   Float a, b;
 
-  int n = 16;
+  int n = 256;
 
   Program prog(Arch::x86_64, n);
-  prog.config.group_size = 8;
+  prog.config.group_size = 1;
 
-  prog.buffer(0).stream(0).group(0).place(a, b);
+  prog.buffer(0).range(n).stream(0).group(0).place(a).place(b);
+  prog.materialize_layout();
 
   Expr i = Expr::index(0);
   for_loop(i, range(0, n), [&]() {
@@ -24,7 +25,6 @@ auto test_loop = []() {
     a[i] = a[i] * b[i];
   });
 
-  prog.materialize_layout();
 
   for (int i = 0; i < n; i++) {
     prog.data(a, i) = i;
@@ -59,14 +59,14 @@ auto advection = []() {
   for (int k = 0; k < 2; k++) {
     if (use_adapter) {
       for (int i = 0; i < nattr; i++) {
-        prog.buffer(k).stream(0).group(0).place(attr[k][i]);
+        prog.buffer(k).range(n * n).stream(0).group(0).place(attr[k][i]);
       }
-      prog.buffer(2).stream(0).group(0).place(v[k]);
+      prog.buffer(2).range(n * n).stream(0).group(0).place(v[k]);
     } else {
       for (int i = 0; i < nattr; i++) {
-        prog.buffer(k).stream(i).group(0).place(attr[k][i]);
+        prog.buffer(k).range(n * n).stream(i).group(0).place(attr[k][i]);
       }
-      prog.buffer(2).stream(k).group(0).place(v[k]);
+      prog.buffer(2).range(n * n).stream(k).group(0).place(v[k]);
     }
   }
   prog.config.group_size = use_adapter ? nattr : 1;

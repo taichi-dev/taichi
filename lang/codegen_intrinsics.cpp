@@ -182,7 +182,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     }
   } else if (expr->type == NodeType::store) {
     bool regular = true;
-    if (regular) {
+    if (regular && !prog->general_scatter) {
       // TODO: analyze address here
       auto addr = expr[0][0]->get_address();
       TC_ASSERT(addr.coeff_aosoa_group_size == 0 ||

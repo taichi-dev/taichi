@@ -69,6 +69,7 @@ struct Adapter {
 
 struct Program {
   int n;
+  bool general_scatter;
 
   // Should be copiable
   struct Function {
@@ -123,6 +124,7 @@ struct Program {
       TC_NOT_IMPLEMENTED;
     }
     storage_range(n);
+    general_scatter = false;
   }
 
   ~Program() {
@@ -143,7 +145,7 @@ struct Program {
   void start_function_definition() {
   }
 
-  FunctionType end_function_definition() {
+  void end_function_definition() {
   }
 
   Adapter &adapter(int i) {

@@ -30,6 +30,7 @@ auto mpm = []() {
 
   int n_particles = 800;
   Program prog(Arch::x86_64, n_particles);
+  prog.general_scatter = true;
 
   prog.config.group_size = 1;
   prog.config.num_groups = 8;
@@ -48,9 +49,8 @@ auto mpm = []() {
     }
     place(particle_J);
 
-    prog.buffer(1).range(n * n).stream(0).group().place(grid_v(0));
-    prog.buffer(1).range(n * n).stream(1).group().place(grid_v(1));
-    prog.buffer(1).range(n * n).stream(2).group().place(grid_m);
+    prog.buffer(1).range(n * n).stream(0).group().place(grid_v(0), grid_v(1),
+                                                        grid_m);
     /*
     for (int k = 0; k < 2; k++) {
       prog.buffer(k).range(n * n).stream(i).group(0).place(attr[k][i]);
@@ -178,11 +178,10 @@ auto mpm = []() {
 
   for (int f = 0; f < 1000; f++) {
     for (int t = 0; t < 3; t++) {
-      // TC_TIME(p2g());
+      TC_TIME(p2g());
       TC_TIME(grid_op());
       TC_TIME(g2p());
 
-      /*
       for (int i = 0; i < n * scale; i++) {
         for (int j = 0; j < n * scale; j++) {
           gui.buffer[i][j].x =
@@ -191,7 +190,6 @@ auto mpm = []() {
               prog.data(grid_v(1), i / scale * n + j / scale) + 0.5;
         }
       }
-      */
 
       // prog.swap_buffers(0, 1);
     }

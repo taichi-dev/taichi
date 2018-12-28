@@ -359,7 +359,10 @@ inline void store(const vec<T, dim> &v, void *, vec<int32, dim>);
 
 template <>
 inline void store<float32, 8>(const float32x8 &v, void *addr, int32x8 offsets) {
-  _mm256_i32scatter_ps(addr, offsets, v, sizeof(float32));
+  // _mm256_i32scatter_ps(addr, offsets, v, sizeof(float32));
+  for (int i = 0; i < 8; i++) {
+    ((float32 *)addr)[((int *)&offsets)[i]] = v[i];
+  }
 }
 
 //*****************************************************************************

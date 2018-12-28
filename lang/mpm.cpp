@@ -21,6 +21,7 @@ auto mpm = []() {
 
   Vector particle_x(dim), particle_v(dim);
   Matrix particle_F(dim, dim), particle_C(dim, dim);
+  Real particle_J;
 
   Vector grid_v(dim);
   Real grid_m;
@@ -34,7 +35,22 @@ auto mpm = []() {
   prog.config.num_groups = 8;
 
   prog.layout([&]() {
-    TC_NOT_IMPLEMENTED
+    int counter = 0;
+    auto place = [&](Expr &expr) {
+      prog.buffer(0).range(n_particles).stream(counter++).group(0).place(expr);
+    };
+    for (int i = 0; i < dim; i++) {
+      for (int j = 0; j < dim; j++) {
+        place(particle_C(i, j));
+      }
+      place(particle_x(i));
+      place(particle_v(i));
+    }
+    place(particle_J);
+
+    prog.buffer(1).range(n * n).stream(0).group().place(grid_v(0));
+    prog.buffer(1).range(n * n).stream(0).group().place(grid_v(1));
+    prog.buffer(1).range(n * n).stream(0).group().place(grid_m);
     /*
     for (int k = 0; k < 2; k++) {
       prog.buffer(k).range(n * n).stream(i).group(0).place(attr[k][i]);
@@ -45,26 +61,29 @@ auto mpm = []() {
 
   TC_ASSERT(bit::is_power_of_two(n));
 
-  auto func = prog.def([&]() {
+  auto p2g = prog.def([&]() {
     auto index = Expr::index(0);
     for_loop(index, {0, n_particles}, [&] {
 
       auto x = particle_x[index];
       auto v = particle_v[index];
-      auto F = particle_F[index];
+      // auto F = particle_F[index];
       auto C = particle_C[index];
+      auto J = particle_J[index];
 
       // ** gs = 2
+
       auto base_coord = floor(imm(inv_dx) * x - imm(0.5_f));
       auto fx = x * imm(inv_dx) - base_coord;
 
       Vector w[3];
-      w[0] = imm(0.5_f) * sqr(1.5_f - fx);
+      w[0] = imm(0.5_f) * sqr(imm(1.5_f) - fx);
       w[1] = imm(0.75_f) - sqr(fx - imm(1.0_f));
       w[2] = imm(0.5_f) * sqr(fx - imm(0.5_f));
 
-      auto J = F(0, 0) * F(1, 1) - F(1, 0) * F(0, 1);
-      auto base_offset = base_coord(0) * imm(n) + base_coord(1);
+      // auto J = F(0, 0) * F(1, 1) - F(1, 0) * F(0, 1);
+      auto base_offset =
+          cast<int>(base_coord(0)) * imm(n) + cast<int>(base_coord(1));
 
       // scatter
       for (int i = 0; i < 3; i++) {
@@ -124,32 +143,49 @@ auto mpm = []() {
     });
   });
 
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      // for (int k = 0; k < nattr; k++) {
-      //  prog.data(attr[0][k], i * n + j) = i % 128 / 128.0_f;
-      // }
-      // prog.data(v[1], i * n + j) = 0;
-    }
-  }
+  p2g();
 
-  GUI gui("Advection", n, n);
+  auto grid_op = [&]() {
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        auto &v0 = prog.data(grid_v(0), i * n + j);
+        auto &v1 = prog.data(grid_v(1), i * n + j);
+        auto &m = prog.data(grid_m, i * n + j);
+        if (m > 0) {
+          v0 /= m;
+          v1 /= m;
+        }
+        if (j < 5) {
+          v0 = 0;
+          v1 = 0;
+        }
+      }
+    }
+  };
+
+  auto g2p = []() {
+
+  };
+
+  int scale = 4;
+  GUI gui("Advection", n * 4, n * 4);
 
   for (int f = 0; f < 1000; f++) {
     for (int t = 0; t < 3; t++) {
-      TC_TIME(func());
+      TC_TIME(p2g());
+      TC_TIME(grid_op());
+      TC_TIME(g2p());
 
-      for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-          /*
-          for (int k = 0; k < nattr; k++) {
-            gui.buffer[i][j] = Vector4(prog.data(attr[1][k], i * n + j));
-          }
-          */
+      for (int i = 0; i < n * scale; i++) {
+        for (int j = 0; j < n * scale; j++) {
+          gui.buffer[i][j].x =
+              prog.data(grid_v(0), i / scale * n + j / scale) + 0.5;
+          gui.buffer[i][j].y =
+              prog.data(grid_v(1), i / scale * n + j / scale) + 0.5;
         }
       }
 
-      prog.swap_buffers(0, 1);
+      // prog.swap_buffers(0, 1);
     }
 
     gui.update();

@@ -66,7 +66,7 @@ struct Matrix {
   }
 
   Matrix &operator=(const Matrix &o) {
-    if (initialized()) {
+    if (!initialized()) {
       n = o.n;
       m = o.m;
       entries = o.entries;

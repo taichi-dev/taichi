@@ -19,8 +19,12 @@ auto mpm = []() {
 
   int dim = 2;
 
-  Vector x(dim), v(dim);
-  Matrix F(dim, dim), C(dim, dim);
+  Vector particle_x(dim), particle_v(dim);
+  Matrix particle_F(dim, dim), particle_C(dim, dim);
+
+  Vector grid_v(dim);
+  Real grid_m;
+
   Real Jp;
 
   int n_particles = 800;
@@ -44,12 +48,33 @@ auto mpm = []() {
   auto func = prog.def([&]() {
     auto index = Expr::index(0);
     for_loop(index, {0, n_particles}, [&] {
+
+      auto x = particle_x[index];
+      auto v = particle_v[index];
+      auto F = particle_F[index];
+      auto C = particle_C[index];
+
       // ** gs = 2
       auto base_coord = floor(imm(inv_dx) * x - imm(0.5_f));
       auto fx = x * imm(inv_dx) - base_coord;
 
       Vector w[3];
       w[0] = imm(0.5_f) * sqr(1.5_f - fx);
+      w[1] = imm(0.75_f) - sqr(fx - imm(1.0_f));
+      w[2] = imm(0.5_f) * sqr(fx - imm(0.5_f));
+
+      auto J = F(0, 0) * F(1, 1) - F(1, 0) * F(0, 1);
+      auto base_offset = base_coord(0) * imm(n) + base_coord(1);
+
+      // scatter
+      for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+          auto weight = w[i](0) * w[j](1);
+          auto node = base_offset + imm(i * n + j);
+          grid_v[node] = grid_v[node] + imm(particle_mass) * weight * v;
+          grid_m[node] = grid_m[node] + imm(particle_mass) * weight;
+        }
+      }
 
       // ** gs = 1
       /*

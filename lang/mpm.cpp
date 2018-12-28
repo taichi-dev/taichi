@@ -49,8 +49,8 @@ auto mpm = []() {
     place(particle_J);
 
     prog.buffer(1).range(n * n).stream(0).group().place(grid_v(0));
-    prog.buffer(1).range(n * n).stream(0).group().place(grid_v(1));
-    prog.buffer(1).range(n * n).stream(0).group().place(grid_m);
+    prog.buffer(1).range(n * n).stream(1).group().place(grid_v(1));
+    prog.buffer(1).range(n * n).stream(2).group().place(grid_m);
     /*
     for (int k = 0; k < 2; k++) {
       prog.buffer(k).range(n * n).stream(i).group(0).place(attr[k][i]);
@@ -168,14 +168,21 @@ auto mpm = []() {
   };
 
   int scale = 4;
-  GUI gui("Advection", n * 4, n * 4);
+  GUI gui("MPM", n * scale, n * scale);
+
+  for (int i = 0; i < n_particles; i++) {
+    prog.data(particle_x(0), i) = 0.4_f + rand() * 0.2_f;
+    prog.data(particle_x(1), i) = 0.4_f + rand() * 0.2_f;
+    prog.data(particle_v(1), i) = -0.3_f;
+  }
 
   for (int f = 0; f < 1000; f++) {
     for (int t = 0; t < 3; t++) {
-      TC_TIME(p2g());
+      // TC_TIME(p2g());
       TC_TIME(grid_op());
       TC_TIME(g2p());
 
+      /*
       for (int i = 0; i < n * scale; i++) {
         for (int j = 0; j < n * scale; j++) {
           gui.buffer[i][j].x =
@@ -184,6 +191,7 @@ auto mpm = []() {
               prog.data(grid_v(1), i / scale * n + j / scale) + 0.5;
         }
       }
+      */
 
       // prog.swap_buffers(0, 1);
     }

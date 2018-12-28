@@ -191,7 +191,8 @@ struct Program {
     }
     if (!buffers[i].initialized()) {
       buffers[i] = std::move(AlignedAllocator(
-          alloc.buffer(i).num_variables * n * sizeof(float32), device));
+          alloc.buffer(i).num_variables * alloc.buffer(i).n * sizeof(float32),
+          device));
     }
   }
 

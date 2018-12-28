@@ -23,6 +23,7 @@ AlignedAllocator::AlignedAllocator(std::size_t size, Device device)
   }
   auto p = reinterpret_cast<uint64>(data);
   data = (void *)(p + (4096 - p % 4096));
+  std::memset(data, 0, size);
 }
 
 AlignedAllocator::~AlignedAllocator() {

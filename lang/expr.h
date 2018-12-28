@@ -20,8 +20,21 @@ enum class DataType : int {
   u8,
   u16,
   u32,
-  u64
+  u64,
+  unknown
 };
+
+template <typename T>
+DataType get_data_type() {
+  if (std::is_same<T, float32>()) {
+    return DataType::f32;
+  } else if (std::is_same<T, int32>()) {
+    return DataType::i32;
+  } else {
+    TC_NOT_IMPLEMENTED;
+  }
+  return DataType::unknown;
+}
 
 inline std::string data_type_name(DataType t) {
   static std::map<DataType, std::string> data_type_names;
@@ -320,6 +333,10 @@ class Expr {
 
   void set(const Expr &o) {
     node = o.node;
+  }
+
+  template <typename T>
+  void set(int i, const T &t) {
   }
 
   Expr &name(std::string s) {

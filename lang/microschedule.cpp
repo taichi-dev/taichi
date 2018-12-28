@@ -25,7 +25,6 @@ auto test_loop = []() {
     a[i] = a[i] * b[i];
   });
 
-
   for (int i = 0; i < n; i++) {
     prog.data(a, i) = i;
     prog.data(b, i) = i * 2;
@@ -74,7 +73,7 @@ auto advection = []() {
 
   TC_ASSERT(bit::is_power_of_two(n));
   auto index = Expr::index(0);
-  for_loop(index, {0, n * n}, [&]{
+  for_loop(index, {0, n * n}, [&] {
     // ** gs = 2
 
     auto offset_x = floor(v[0][index]).name("offset_x");
@@ -90,7 +89,8 @@ auto advection = []() {
     }
 
     // ** gs = 1
-    auto offset = cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
+    auto offset =
+        cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
 
     auto clamp = [](const Expr &e) { return min(max(imm(2), e), imm(n - 2)); };
 
@@ -333,7 +333,6 @@ void test_adapter3(int vec_size) {
     for (int i = 0; i < vec_size * 2; i++)
       c(i)[ind] = c(i)[ind] * acc;
   }
-
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < vec_size; j++) {

@@ -30,7 +30,6 @@ Expr Expr::operator[](const Expr &i) {
 }
 
 bool Expr::allow_store = true;
-
 }
 
 TC_NAMESPACE_END

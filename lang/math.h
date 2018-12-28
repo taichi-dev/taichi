@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tlang.h"
+#include "expr.h"
 
 namespace taichi::Tlang {
 
@@ -30,6 +31,14 @@ struct Matrix {
   Matrix(int n, int m = 1) : n(n), m(m) {
     TC_ASSERT(n * m >= 1);
     entries.resize(n * m, T());
+  }
+
+  Matrix map(const std::function<Expr(const Expr &)> &f) const {
+    Matrix ret(n, m);
+    for (int i = 0; i < entries.size(); i++) {
+      ret.entries[i] = f(entries[i]);
+    }
+    return ret;
   }
 
   T &operator()(int i, int j) {
@@ -90,6 +99,56 @@ struct Matrix {
   }
 };
 
+inline Matrix operator*(const Expr &A, const Matrix &B) {
+  Matrix C(B.n, B.m);
+  for (int i = 0; i < B.n; i++) {
+    for (int j = 0; j < B.m; j++) {
+      C(i, j) = A * B(i, j);
+    }
+  }
+  return C;
+}
+
+inline Matrix operator*(const Matrix &B, const Expr &A) {
+  Matrix C(B.n, B.m);
+  for (int i = 0; i < B.n; i++) {
+    for (int j = 0; j < B.m; j++) {
+      C(i, j) = A * B(i, j);
+    }
+  }
+  return C;
+}
+
+inline Matrix operator+(const Expr &A, const Matrix &B) {
+  Matrix C(B.n, B.m);
+  for (int i = 0; i < B.n; i++) {
+    for (int j = 0; j < B.m; j++) {
+      C(i, j) = A + B(i, j);
+    }
+  }
+  return C;
+}
+
+inline Matrix operator-(const Expr &A, const Matrix &B) {
+  Matrix C(B.n, B.m);
+  for (int i = 0; i < B.n; i++) {
+    for (int j = 0; j < B.m; j++) {
+      C(i, j) = A - B(i, j);
+    }
+  }
+  return C;
+}
+
+inline Matrix operator-(const Matrix &B, const Expr &A) {
+  Matrix C(B.n, B.m);
+  for (int i = 0; i < B.n; i++) {
+    for (int j = 0; j < B.m; j++) {
+      C(i, j) = B(i, j) - A;
+    }
+  }
+  return C;
+}
+
 inline Matrix operator*(const Matrix &A, const Matrix &B) {
   TC_ASSERT(A.m == B.n);
   Matrix C(A.n, B.m);
@@ -134,6 +193,14 @@ inline Expr floor(const Expr &a) {
   return Expr::create(NodeType::floor, Expr::load_if_pointer(a));
 }
 
+inline Matrix floor(const Matrix &a) {
+  Matrix ret(a.n, a.m);
+  for (int i = 0; i < (int)a.entries.size(); i++) {
+    ret(i) = floor(a(i));
+  }
+  return ret;
+}
+
 inline Expr max(const Expr &a, const Expr &b) {
   auto n = Expr::create(NodeType::max, a, b);
   n->data_type = a->data_type;
@@ -173,5 +240,9 @@ inline Expr cast(const Expr &i) {
 
 inline Float32 lerp(Float a, Float x0, Float x1) {
   return (imm(1.0_f) - a) * x0 + a * x1;
+}
+
+inline Matrix sqr(const Matrix &M) {
+  return M.map([](Expr e) { return e * e; });
 }
 }

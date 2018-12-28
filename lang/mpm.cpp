@@ -10,55 +10,55 @@ using namespace Tlang;
 auto mpm = []() {
   bool use_adapter = true;
 
-  const int n = 1024, nattr = 4;
+  constexpr int n = 128;  // grid_resolution
+  const real dt = 3e-5_f, frame_dt = 1e-3_f, dx = 1.0_f / n,
+             inv_dx = 1.0_f / dx;
+  auto particle_mass = 1.0_f, vol = 1.0_f;
+  auto hardening = 10.0_f, E = 1e4_f, nu = 0.2_f;
+  real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
 
-  Float attr[2][nattr], v[2];
+  int dim = 2;
 
-  Program prog(Arch::x86_64, n * n);
+  Vector x(dim), v(dim);
+  Matrix F(dim, dim), C(dim, dim);
+  Real Jp;
 
-  prog.config.group_size = use_adapter ? nattr : 1;
-  prog.config.num_groups = use_adapter ? 8 : 8;
+  int n_particles = 800;
+  Program prog(Arch::x86_64, n_particles);
+
+  prog.config.group_size = 1;
+  prog.config.num_groups = 8;
 
   prog.layout([&]() {
+    TC_NOT_IMPLEMENTED
+    /*
     for (int k = 0; k < 2; k++) {
-      if (use_adapter) {
-        for (int i = 0; i < nattr; i++) {
-          prog.buffer(k).range(n * n).stream(0).group(0).place(attr[k][i]);
-        }
-        prog.buffer(2).range(n * n).stream(0).group(0).place(v[k]);
-      } else {
-        for (int i = 0; i < nattr; i++) {
-          prog.buffer(k).range(n * n).stream(i).group(0).place(attr[k][i]);
-        }
-        prog.buffer(2).range(n * n).stream(k).group(0).place(v[k]);
-      }
+      prog.buffer(k).range(n * n).stream(i).group(0).place(attr[k][i]);
     }
+    prog.buffer(2).range(n * n).stream(k).group(0).place(v[k]);
+    */
   });
 
   TC_ASSERT(bit::is_power_of_two(n));
 
   auto func = prog.def([&]() {
     auto index = Expr::index(0);
-    for_loop(index, {0, n * n}, [&] {
+    for_loop(index, {0, n_particles}, [&] {
       // ** gs = 2
+      auto base_coord = floor(imm(inv_dx) * x - imm(0.5_f));
+      auto fx = x * imm(inv_dx) - base_coord;
 
-      auto offset_x = floor(v[0][index]).name("offset_x");
-      auto offset_y = floor(v[1][index]).name("offset_y");
-      auto wx = v[0][index] - offset_x;
-      auto wy = v[1][index] - offset_y;
-      wx.name("wx");
-      wy.name("wy");
-
-      if (use_adapter) {
-        prog.adapter(0).set(2, 1).convert(offset_x, offset_y);
-        prog.adapter(1).set(2, 1).convert(wx, wy);
-      }
+      Vector w[3];
+      w[0] = imm(0.5_f) * sqr(1.5_f - fx);
 
       // ** gs = 1
+      /*
       auto offset =
           cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
 
-      auto clamp = [](const Expr &e) { return min(max(imm(2), e), imm(n - 2)); };
+      auto clamp = [](const Expr &e) {
+        return min(max(imm(2), e), imm(n - 2));
+      };
 
       // weights
       auto w00 = (imm(1.0f) - wx) * (imm(1.0f) - wy);
@@ -95,19 +95,15 @@ auto mpm = []() {
         // attr[1][k][index] = w00 * v00;
         attr[1][k][index].name(fmt::format("output{}", k));
       }
+      */
     });
   });
 
-
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
-      for (int k = 0; k < nattr; k++) {
-        prog.data(attr[0][k], i * n + j) = i % 128 / 128.0_f;
-      }
-      real s = 20.0_f / n;
-      prog.data(v[0], i * n + j) = s * (j - n / 2);
-      prog.data(v[1], i * n + j) = -s * (i - n / 2);
-      // prog.data(v[0], i * n + j) = 0;
+      // for (int k = 0; k < nattr; k++) {
+      //  prog.data(attr[0][k], i * n + j) = i % 128 / 128.0_f;
+      // }
       // prog.data(v[1], i * n + j) = 0;
     }
   }
@@ -120,9 +116,11 @@ auto mpm = []() {
 
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
+          /*
           for (int k = 0; k < nattr; k++) {
             gui.buffer[i][j] = Vector4(prog.data(attr[1][k], i * n + j));
           }
+          */
         }
       }
 

@@ -381,7 +381,8 @@ void test_vec_add() {
     y[i] = -2 * i;
   }
 
-  prog(Context(x, y, z, n));
+  TC_NOT_IMPLEMENTED
+  // prog(Context(x, y, z, n));
   for (int i = 0; i < n; i++) {
     TC_ASSERT(z[i] == -i);
   }

@@ -312,7 +312,8 @@ FunctionType CPUCodeGen::get(Program &prog) {
   return compile();
 }
 
-void Program::compile() {
+FunctionType Program::compile() {
+  FunctionType ret;
   Expr::set_allow_store(false);
   materialize_layout();
   if (config.simd_width == -1) {
@@ -325,7 +326,7 @@ void Program::compile() {
   if (config.arch == Arch::x86_64) {
     CPUCodeGen codegen;
     codegen.unroll = 1;
-    function = codegen.get(*this);
+    ret = codegen.get(*this);
   } else if (config.arch == Arch::gpu) {
     TC_NOT_IMPLEMENTED
     // GPUCodeGen codegen;
@@ -334,6 +335,7 @@ void Program::compile() {
     TC_NOT_IMPLEMENTED;
   }
   Expr::set_allow_store(true);
+  return ret;
 }
 }
 

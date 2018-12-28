@@ -70,14 +70,45 @@ struct Adapter {
 struct Program {
   int n;
 
+  // Should be copiable
+  struct Function {
+    Program &program;
+    FunctionType compiled;
+
+    Function(Program &program, std::function<void()> func) : program(program) {
+      program.start_function_definition();
+      func();
+      program.end_function_definition();
+      compile();
+    }
+
+    void compile() {
+      compiled = program.compile();
+    }
+
+    void operator()() {
+      compiled(program.get_context());
+    }
+  };
+
   CompileConfig config;
-  FunctionType function;
   MemoryAllocator alloc;
   Device device;
   Expr ret;
 
   std::vector<AlignedAllocator> buffers;
   std::vector<Adapter> adapters;
+  std::vector<Function> functions;
+
+  Context get_context() {
+    Context context;
+    for (int i = 0; i < num_buffers(); i++) {
+      allocate_buffer(i);
+      context.buffers[i] = buffers[i].get();
+    }
+    context.ranges[0] = n;
+    return context;
+  }
 
   Program(Arch arch, int n) : n(n) {
     Node::reset_counter();
@@ -91,8 +122,11 @@ struct Program {
     } else {
       TC_NOT_IMPLEMENTED;
     }
-    function = nullptr;
     storage_range(n);
+  }
+
+  ~Program() {
+    current_program = nullptr;
   }
 
   void layout(std::function<void()> func) {
@@ -100,8 +134,16 @@ struct Program {
     materialize_layout();
   }
 
-  ~Program() {
-    current_program = nullptr;
+  Function def(const std::function<void()> &body) {
+    auto func = Function(*this, body);
+    functions.push_back(func);
+    return func;
+  }
+
+  void start_function_definition() {
+  }
+
+  FunctionType end_function_definition() {
   }
 
   Adapter &adapter(int i) {
@@ -130,26 +172,18 @@ struct Program {
   }
 
   void operator()() {
-    if (function == nullptr) {
-      compile();
-    }
-    Context context;
-    for (int i = 0; i < num_buffers(); i++) {
-      allocate_buffer(i);
-      context.buffers[i] = buffers[i].get();
-    }
-    context.ranges[0] = n;
-    function(context);
   }
 
+  /*
   void operator()(Context context) {
     if (function == nullptr) {
       compile();
     }
     function(context);
   }
+  */
 
-  void compile();
+  FunctionType compile();
 
   void allocate_buffer(int i) {
     while ((int)buffers.size() <= i) {
@@ -165,7 +199,8 @@ struct Program {
   T &data(Expr &expr, int i) {
     if (get_data_type<T>() != expr->data_type) {
       TC_ERROR("Cannot access type {} as type {}",
-               data_type_name(expr->data_type), data_type_name(get_data_type<T>()));
+               data_type_name(expr->data_type),
+               data_type_name(get_data_type<T>()));
     }
     auto &addr = expr->get_address_();  // TODO:...
     TC_ASSERT(addr.initialized());

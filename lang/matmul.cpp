@@ -168,57 +168,58 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
   int scale = 2;
   prog.config.num_groups = 8 / prog.config.group_size * scale;
 
-  for (int i = 0; i < dim; i++) {
-    for (int j = 0; j < dim; j++) {
-      if (layout == 0) {
-        // AOSOA
-        prog.buffer(0)
-            .stream(0)
-            .group(0)
-            .group(i * dim + j)
-            .repeat(simd_width * scale)
-            .place(a(i, j));
-        prog.buffer(1)
-            .stream(0)
-            .group(0)
-            .group(i * dim + j)
-            .repeat(simd_width * scale)
-            .place(b(i, j));
-        prog.buffer(2)
-            .stream(0)
-            .group(0)
-            .group(i * dim + j)
-            .repeat(simd_width * scale)
-            .place(c(i, j));
-      } else if (layout == 1) {  // Inter
-        prog.buffer(0)
-            .stream(0)
-            .group(j)
-            .repeat(simd_width / dim * scale)
-            .place(a(i, j));
-        prog.buffer(1)
-            .stream(0)
-            .group(j)
-            .repeat(simd_width / dim * scale)
-            .place(b(i, j));
-        prog.buffer(2)
-            .stream(0)
-            .group(j)
-            .repeat(simd_width / dim * scale)
-            .place(c(i, j));
-      } else {  // SOA
-        prog.buffer(0).stream(i * dim + j).group().place(a(i, j));
-        prog.buffer(1).stream(i * dim + j).group().place(b(i, j));
-        prog.buffer(2).stream(i * dim + j).group().place(c(i, j));
+  prog.layout([&]() {
+    for (int i = 0; i < dim; i++) {
+      for (int j = 0; j < dim; j++) {
+        if (layout == 0) {
+          // AOSOA
+          prog.buffer(0)
+              .stream(0)
+              .group(0)
+              .group(i * dim + j)
+              .repeat(simd_width * scale)
+              .place(a(i, j));
+          prog.buffer(1)
+              .stream(0)
+              .group(0)
+              .group(i * dim + j)
+              .repeat(simd_width * scale)
+              .place(b(i, j));
+          prog.buffer(2)
+              .stream(0)
+              .group(0)
+              .group(i * dim + j)
+              .repeat(simd_width * scale)
+              .place(c(i, j));
+        } else if (layout == 1) {  // Inter
+          prog.buffer(0)
+              .stream(0)
+              .group(j)
+              .repeat(simd_width / dim * scale)
+              .place(a(i, j));
+          prog.buffer(1)
+              .stream(0)
+              .group(j)
+              .repeat(simd_width / dim * scale)
+              .place(b(i, j));
+          prog.buffer(2)
+              .stream(0)
+              .group(j)
+              .repeat(simd_width / dim * scale)
+              .place(c(i, j));
+        } else {  // SOA
+          prog.buffer(0).stream(i * dim + j).group().place(a(i, j));
+          prog.buffer(1).stream(i * dim + j).group().place(b(i, j));
+          prog.buffer(2).stream(i * dim + j).group().place(c(i, j));
+        }
       }
     }
-  }
+  });
 
-  Expr ind = Expr::index(0);
-  for_loop(ind, {0, n}, [&]() { c[ind] = a[ind] * b[ind]; });
-
-  prog.materialize_layout();
-  prog.compile();
+  auto mul = prog.def([&]() {
+    Expr ind = Expr::index(0);
+    for_loop(ind, {0, n}, [&]() { c[ind] = a[ind] * b[ind]; });
+  });
 
   AlignedAllocator A(sizeof(T) * n * dim * dim);
   AlignedAllocator B(sizeof(T) * n * dim * dim);
@@ -239,7 +240,7 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
     }
   }
 
-  auto cpe = measure_cpe([&]() { prog(); }, n);
+  auto cpe = measure_cpe([&]() { mul(); }, n);
 
   AOSOA_matmul<dim>(N, A.get<T>(), B.get<T>(), D.get<T>());
 
@@ -376,7 +377,6 @@ void test_vec_add() {
     Index ind = Expr::index(0);
     c[ind] = a[ind] + b[ind];
   });
-
 
   for (int i = 0; i < n; i++) {
     prog.data(a, i) = i;

@@ -55,19 +55,22 @@ auto advection = []() {
 
   Program prog(Arch::x86_64, n * n);
 
-  for (int k = 0; k < 2; k++) {
-    if (use_adapter) {
-      for (int i = 0; i < nattr; i++) {
-        prog.buffer(k).range(n * n).stream(0).group(0).place(attr[k][i]);
+  prog.layout([&]() {
+    for (int k = 0; k < 2; k++) {
+      if (use_adapter) {
+        for (int i = 0; i < nattr; i++) {
+          prog.buffer(k).range(n * n).stream(0).group(0).place(attr[k][i]);
+        }
+        prog.buffer(2).range(n * n).stream(0).group(0).place(v[k]);
+      } else {
+        for (int i = 0; i < nattr; i++) {
+          prog.buffer(k).range(n * n).stream(i).group(0).place(attr[k][i]);
+        }
+        prog.buffer(2).range(n * n).stream(k).group(0).place(v[k]);
       }
-      prog.buffer(2).range(n * n).stream(0).group(0).place(v[k]);
-    } else {
-      for (int i = 0; i < nattr; i++) {
-        prog.buffer(k).range(n * n).stream(i).group(0).place(attr[k][i]);
-      }
-      prog.buffer(2).range(n * n).stream(k).group(0).place(v[k]);
     }
-  }
+  });
+
   prog.config.group_size = use_adapter ? nattr : 1;
   prog.config.num_groups = use_adapter ? 8 : 8;
 
@@ -130,8 +133,6 @@ auto advection = []() {
       attr[1][k][index].name(fmt::format("output{}", k));
     }
   });
-
-  prog.compile();
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {

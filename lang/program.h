@@ -95,6 +95,11 @@ struct Program {
     storage_range(n);
   }
 
+  void layout(std::function<void()> func) {
+    func();
+    materialize_layout();
+  }
+
   ~Program() {
     current_program = nullptr;
   }

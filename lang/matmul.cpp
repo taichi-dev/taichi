@@ -215,10 +215,7 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
   }
 
   Expr ind = Expr::index(0);
-  for_loop(ind, {0, n}, [&]() {
-    c[ind] = a[ind] * b[ind];
-  });
-
+  for_loop(ind, {0, n}, [&]() { c[ind] = a[ind] * b[ind]; });
 
   prog.materialize_layout();
   prog.compile();
@@ -297,7 +294,7 @@ real TlangGPUSOA_matmatmul(std::size_t N) {
 
 #define BENCHMARK(x)                                        \
   {                                                         \
-    real t = x##_matmatmul<dim, T>(16);             \
+    real t = x##_matmatmul<dim, T>(16);                     \
     fmt::print("  {:18s} = {:10.3f} cyc / elem \n", #x, t); \
   }
 
@@ -366,25 +363,30 @@ void test_vec_add() {
 
   Program prog(Arch::x86_64, n);
   Expr a, b, c;
-  prog.buffer(0).stream(0).group().place(a);
-  prog.buffer(1).stream(0).group().place(b);
-  prog.buffer(2).stream(0).group().place(c);
 
-  Index ind = Expr::index(0);
-  c[ind] = a[ind] + b[ind];
+  prog.layout([&]() {
+    prog.buffer(0).stream(0).group().place(a);
+    prog.buffer(1).stream(0).group().place(b);
+    prog.buffer(2).stream(0).group().place(c);
+  });
 
   prog.config.group_size = 1;
 
-  TC_ALIGNED(64) float32 x[n], y[n], z[n];
+  auto add = prog.def([&]() {
+    Index ind = Expr::index(0);
+    c[ind] = a[ind] + b[ind];
+  });
+
+
   for (int i = 0; i < n; i++) {
-    x[i] = i;
-    y[i] = -2 * i;
+    prog.data(a, i) = i;
+    prog.data(b, i) = -2 * i;
   }
 
-  TC_NOT_IMPLEMENTED
-  // prog(Context(x, y, z, n));
+  add();
+
   for (int i = 0; i < n; i++) {
-    TC_ASSERT(z[i] == -i);
+    TC_ASSERT(prog.data(c, i) == -i);
   }
 }
 
@@ -436,48 +438,44 @@ void test_mat_vec_mul(Arch arch, int layout, int in_cache) {
   // cg.prefetch = prefetch;
   auto &alloc = prog;
   auto &buffer = alloc.buffer(0);
-  Matrix m(dim, dim), v(dim);
-  for (int i = 0; i < dim; i++) {
-    for (int j = 0; j < dim; j++) {
+  Matrix m(dim, dim), v(dim), mv(dim, 1);
+  prog.layout([&]() {
+    for (int i = 0; i < dim; i++) {
+      for (int j = 0; j < dim; j++) {
+        if (layout == 0) {
+          buffer.stream().group().place(m(i, j));
+        } else if (layout == 1) {
+          buffer.stream(0)
+              .group(0)
+              .group(i * dim + j)
+              .repeat(simd_width)
+              .place(m(i, j));
+        } else {
+          buffer.stream(0).group(j).repeat(simd_width / dim).place(m(i, j));
+        }
+      }
       if (layout == 0) {
-        buffer.stream().group().place(m(i, j));
+        alloc.buffer(1).stream().group().place(v(i));
       } else if (layout == 1) {
-        buffer.stream(0)
-            .group(0)
-            .group(i * dim + j)
-            .repeat(simd_width)
-            .place(m(i, j));
+        alloc.buffer(1).stream(0).group(i).repeat(simd_width).place(v(i));
       } else {
-        buffer.stream(0).group(j).repeat(simd_width / dim).place(m(i, j));
+        alloc.buffer(1).stream(0).group(0).repeat(simd_width / dim).place(v(i));
       }
     }
-    if (layout == 0) {
-      alloc.buffer(1).stream().group().place(v(i));
-    } else if (layout == 1) {
-      alloc.buffer(1).stream(0).group(i).repeat(simd_width).place(v(i));
-    } else {
-      alloc.buffer(1).stream(0).group(0).repeat(simd_width / dim).place(v(i));
+    for (int i = 0; i < dim; i++) {
+      if (layout == 0) {
+        alloc.buffer(2).stream().group().place(mv(i));
+      } else if (layout == 1) {
+        alloc.buffer(2).stream(0).group(i).repeat(simd_width).place(mv(i));
+      } else {
+        alloc.buffer(2)
+            .stream(0)
+            .group(0)
+            .repeat(simd_width / dim)
+            .place(mv(i));
+      }
     }
-  }
-
-  Matrix mv(dim, 1);
-
-  for (int i = 0; i < dim; i++) {
-    if (layout == 0) {
-      alloc.buffer(2).stream().group().place(mv(i));
-    } else if (layout == 1) {
-      alloc.buffer(2).stream(0).group(i).repeat(simd_width).place(mv(i));
-    } else {
-      alloc.buffer(2).stream(0).group(0).repeat(simd_width / dim).place(mv(i));
-    }
-  }
-
-  prog.materialize_layout();
-
-  Index ind = Expr::index(0);
-  mv[ind] = m[ind] * v[ind];
-
-  // alloc.print();
+  });
 
   TC_ASSERT(8 % dim == 0);
   int bs = 1;
@@ -487,7 +485,10 @@ void test_mat_vec_mul(Arch arch, int layout, int in_cache) {
   prog.config.simd_width = 8;
   prog.config.group_size = bs;
 
-  prog.compile();
+  auto mul = prog.def([&]() {
+    Index ind = Expr::index(0);
+    mv[ind] = m[ind] * v[ind];
+  });
 
   std::vector<Eigen::Matrix<float32, dim, 1>> ground_truth(n);
   for (int i = 0; i < n; i++) {
@@ -505,7 +506,7 @@ void test_mat_vec_mul(Arch arch, int layout, int in_cache) {
     ground_truth[i] = mv_gt;
   }
 
-  print_cpe(measure_cpe([&]() { prog(); }, n));
+  print_cpe(measure_cpe([&]() { mul(); }, n));
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < dim; j++) {

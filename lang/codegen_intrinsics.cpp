@@ -200,10 +200,10 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     TC_WARN("Using member imm");
     if (expr->data_type == DataType::i32) {
       emit_code("auto {} = vvec<int32, {}, {}>({}); /*i32*/ ", expr->var_name,
-                simd_width, split, (int64)expr->members[0]->value<int32>());
+                simd_width, split, expr->members[0]->value<int32>());
     } else {
-      emit_code("auto {} = vvec<float32, {}, {}>({}); /*i32*/ ", expr->var_name,
-                simd_width, split, (int64)expr->members[0]->value<float32>());
+      emit_code("auto {} = vvec<float32, {}, {}>({}); /*f32*/ ", expr->var_name,
+                simd_width, split, expr->members[0]->value<float32>());
     }
   } else if (expr->type == NodeType::index) {
     std::string members = "{";

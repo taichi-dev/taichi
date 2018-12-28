@@ -3,7 +3,7 @@
 #include <immintrin.h>
 #include "../headers/common.h"
 
-namespace taichi::Tlang{
+namespace taichi::Tlang {
 
 enum class Arch { x86_64, gpu };
 
@@ -19,7 +19,6 @@ inline int default_simd_width(Arch arch) {
 }
 
 struct CompileConfig {
-
   Arch arch;
   int simd_width;
   int group_size;
@@ -39,8 +38,9 @@ class AlignedAllocator {
   std::vector<uint8> _data;
   void *data;
   void *_cuda_data;
+  std::size_t size;
 
-public:
+ public:
   Device device;
 
   AlignedAllocator() {
@@ -50,6 +50,10 @@ public:
   AlignedAllocator(std::size_t size, Device device = Device::cpu);
 
   ~AlignedAllocator();
+
+  void memset(unsigned char val) {
+    std::memset(data, val, size);
+  }
 
   bool initialized() const {
     return data != nullptr;
@@ -72,6 +76,8 @@ public:
     data = o.data;
     o.data = nullptr;
     device = o.device;
+    size = o.size;
+    _cuda_data = o._cuda_data;
     return *this;
   }
 };
@@ -86,4 +92,3 @@ real measure_cpe(std::function<void()> target,
 
 using FunctionType = void (*)(Context);
 }
-

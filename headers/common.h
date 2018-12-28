@@ -361,7 +361,9 @@ template <>
 inline void store<float32, 8>(const float32x8 &v, void *addr, int32x8 offsets) {
   // _mm256_i32scatter_ps(addr, offsets, v, sizeof(float32));
   for (int i = 0; i < 8; i++) {
-    ((float32 *)addr)[((int *)&offsets)[i]] = v[i];
+    auto off = ((int *)&offsets)[i];
+    ((float32 *)addr)[off] = v[i];
+    // std::cout << off << "," << v[i] << std::endl;
   }
 }
 

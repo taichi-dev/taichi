@@ -219,6 +219,10 @@ struct Program {
     std::swap(buffers[i], buffers[j]);
   }
 
+  void clear_buffer(int i) {
+    buffers[i].memset(0);
+  }
+
   Program &storage_range(int64 n) {
     alloc.root->n = n;
     return *this;

@@ -8,7 +8,7 @@ TC_NAMESPACE_BEGIN
 namespace Tlang {
 
 AlignedAllocator::AlignedAllocator(std::size_t size, Device device)
-    : device(device) {
+    : device(device), size(size) {
   if (device == Device::cpu) {
     _data.resize(size + 4096);
     data = _data.data();
@@ -23,7 +23,7 @@ AlignedAllocator::AlignedAllocator(std::size_t size, Device device)
   }
   auto p = reinterpret_cast<uint64>(data);
   data = (void *)(p + (4096 - p % 4096));
-  std::memset(data, 0, size);
+  memset(0);
 }
 
 AlignedAllocator::~AlignedAllocator() {

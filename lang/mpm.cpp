@@ -10,7 +10,7 @@ using namespace Tlang;
 auto mpm = []() {
   bool use_adapter = true;
 
-  constexpr int n = 128;  // grid_resolution
+  constexpr int n = 64;  // grid_resolution
   const real dt = 3e-5_f, frame_dt = 1e-3_f, dx = 1.0_f / n,
              inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
@@ -28,7 +28,7 @@ auto mpm = []() {
 
   Real Jp;
 
-  int n_particles = 800;
+  int n_particles = 8;
   Program prog(Arch::x86_64, n_particles);
   prog.general_scatter = true;
 
@@ -49,7 +49,7 @@ auto mpm = []() {
     }
     place(particle_J);
 
-    prog.buffer(1).range(n * n).stream(0).group().place(grid_v(0), grid_v(1),
+    prog.buffer(1).range(n * n).stream().group().place(grid_v(0), grid_v(1),
                                                         grid_m);
     /*
     for (int k = 0; k < 2; k++) {
@@ -167,7 +167,7 @@ auto mpm = []() {
 
   };
 
-  int scale = 4;
+  int scale = 8;
   GUI gui("MPM", n * scale, n * scale);
 
   for (int i = 0; i < n_particles; i++) {
@@ -188,14 +188,16 @@ auto mpm = []() {
               prog.data(grid_v(0), i / scale * n + j / scale) + 0.5;
           gui.buffer[i][j].y =
               prog.data(grid_v(1), i / scale * n + j / scale) + 0.5;
+          gui.buffer[i][j].z = prog.data(grid_m, i / scale * n + j / scale) /
+                                   particle_mass * 0.0 +
+                               0.5;
         }
       }
-
-      // prog.swap_buffers(0, 1);
     }
 
     gui.update();
     // gui.screenshot(fmt::format("images/{:04d}.png", f));
+    prog.clear_buffer(1);
   }
 };
 TC_REGISTER_TASK(mpm);

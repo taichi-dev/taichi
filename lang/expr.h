@@ -88,7 +88,8 @@ class Node {
     min,
     cast,
     land,
-    shr
+    shr,
+    shl,
   };
 
   using NodeType = Type;
@@ -158,6 +159,7 @@ class Node {
       REGISTER_NODE_TYPE(cast);
       REGISTER_NODE_TYPE(land);
       REGISTER_NODE_TYPE(shr);
+      REGISTER_NODE_TYPE(shl);
     }
     return node_type_names[type];
   }
@@ -265,6 +267,7 @@ class Expr {
   BINARY_OP(%, mod);
   BINARY_OP(&, land);
   BINARY_OP(>>, shr);
+  BINARY_OP(<<, shl);
 #undef BINARY_OP
 
   // ch[0] = address

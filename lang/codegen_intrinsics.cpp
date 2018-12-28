@@ -57,6 +57,11 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     TC_ASSERT(expr[1]->type == NodeType::imm)
     emit_code("auto {} = shr({}, {});", expr->var_name, expr[0]->var_name,
               expr[1]->members[0]->value<int>());
+  } else if (expr->type == NodeType::shl) {
+    TC_WARN("member imm");
+    TC_ASSERT(expr[1]->type == NodeType::imm)
+    emit_code("auto {} = shl({}, {});", expr->var_name, expr[0]->var_name,
+              expr[1]->members[0]->value<int>());
   } else if (expr->type == NodeType::floor) {
     emit_code("auto {} = floor({});", expr->var_name, expr[0]->var_name);
   } else if (expr->type == NodeType::cast) {

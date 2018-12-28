@@ -115,7 +115,8 @@ auto advection = []() {
       // Int32 i = clamp(node / imm(n)).name("i"); // node / n
       Int32 j = clamp(node & imm(n - 1)).name("j");  // node % n
       // Int32 j = clamp(node % imm(n)).name("j"); // node % n
-      node = i * imm(n) + j;
+      node = (i << imm((int)bit::log2int(n))) + j;
+      // node = i * imm(n) + j;
       node.name("node");
 
       if (use_adapter) {
@@ -154,21 +155,21 @@ auto advection = []() {
   GUI gui("Advection", n, n);
 
   for (int f = 0; f < 1000; f++) {
-    for (int t = 0; t < 3; t++) {
+    for (int t = 0; t < 100; t++) {
       TC_TIME(func());
-
-      for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-          for (int k = 0; k < nattr; k++) {
-            gui.buffer[i][j] = Vector4(prog.data(attr[1][k], i * n + j));
-          }
-        }
-      }
-
       prog.swap_buffers(0, 1);
     }
 
+    /*
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        for (int k = 0; k < nattr; k++) {
+          gui.buffer[i][j] = Vector4(prog.data(attr[1][k], i * n + j));
+        }
+      }
+    }
     gui.update();
+    */
     // gui.screenshot(fmt::format("images/{:04d}.png", f));
   }
 };

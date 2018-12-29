@@ -417,12 +417,47 @@ inline int32x8 min<int32, 8>(int32x8 a, int32x8 b) {
   return _mm256_min_epi32(a, b);
 }
 
+template <>
+inline float32x8 min<float32, 8>(float32x8 a, float32x8 b) {
+  return _mm256_min_ps(a, b);
+}
+
 template <typename T, int dim>
 inline vec<T, dim> max(vec<T, dim>, vec<T, dim>);
 
 template <>
 inline int32x8 max<int32, 8>(int32x8 a, int32x8 b) {
   return _mm256_max_epi32(a, b);
+}
+
+template <>
+inline float32x8 max<float32, 8>(float32x8 a, float32x8 b) {
+  return _mm256_max_ps(a, b);
+}
+
+//*****************************************************************************
+inline int32x8 cmp_ne(float32x8 a, float32x8 b) {
+  auto ret = _mm256_cmp_ps(a, b, _CMP_NEQ_UQ);
+  return *reinterpret_cast<int32x8 *>(&ret);
+}
+
+inline int32x8 cmp_lt(float32x8 a, float32x8 b) {
+  auto ret = _mm256_cmp_ps(a, b, _CMP_LT_OQ);
+  return *reinterpret_cast<int32x8 *>(&ret);
+}
+
+//*****************************************************************************
+
+inline float32x8 select(int32x8 mask, float32x8 true_val, float32x8 false_val) {
+  return _mm256_blendv_ps(false_val, true_val,
+                          *reinterpret_cast<float32x8 *>(&mask));
+}
+
+inline int32x8 select(int32x8 mask, int32x8 true_val, int32x8 false_val) {
+  auto ret = _mm256_blendv_ps(*reinterpret_cast<float32x8 *>(&false_val),
+                              *reinterpret_cast<float32x8 *>(&true_val),
+                              *reinterpret_cast<float32x8 *>(&mask));
+  return *reinterpret_cast<int32x8 *>(&ret);
 }
 
 //*****************************************************************************
@@ -647,6 +682,37 @@ VVEC_BINARY_OP(mod, %);
 
 VVEC_BINARY_FUNC(max);
 VVEC_BINARY_FUNC(min);
+
+template <typename T, typename G, int dim, int n>
+inline vvec<T, dim, n> select(const vvec<G, dim, n> &mask,
+                              const vvec<T, dim, n> &a,
+                              const vvec<T, dim, n> &b) {
+  vvec<T, dim, n> ret;
+  for (int i = 0; i < n; i++) {
+    ret.d[i] = select(mask.d[i], a.d[i], b.d[i]);
+  }
+  return ret;
+}
+
+template <typename T, int dim, int n>
+inline vvec<int32, dim, n> cmp_ne(const vvec<T, dim, n> &a,
+                                  const vvec<T, dim, n> &b) {
+  vvec<int32, dim, n> ret;
+  for (int i = 0; i < n; i++) {
+    ret.d[i] = cmp_ne(a.d[i], b.d[i]);
+  }
+  return ret;
+}
+
+template <typename T, int dim, int n>
+inline vvec<int32, dim, n> cmp_lt(const vvec<T, dim, n> &a,
+                                  const vvec<T, dim, n> &b) {
+  vvec<int32, dim, n> ret;
+  for (int i = 0; i < n; i++) {
+    ret.d[i] = cmp_lt(a.d[i], b.d[i]);
+  }
+  return ret;
+}
 
 #define VVEC_UNARY_OP(NAME)                               \
   template <typename T, int dim, int n>                   \

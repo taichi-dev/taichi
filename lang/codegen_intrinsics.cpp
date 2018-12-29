@@ -62,6 +62,21 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     TC_ASSERT(expr[1]->type == NodeType::imm)
     emit_code("auto {} = shl({}, {});", expr->var_name, expr[0]->var_name,
               expr[1]->members[0]->value<int>());
+  } else if (expr->type == NodeType::cmp) {
+    auto t = expr->value<CmpType>();
+    TC_P((int)t);
+    if (t == CmpType::ne) {
+      emit_code("auto {} = cmp_ne({}, {});", expr->var_name, expr[0]->var_name,
+                expr[1]->var_name);
+    } else if (t == CmpType::lt) {
+      emit_code("auto {} = cmp_lt({}, {});", expr->var_name, expr[0]->var_name,
+                expr[1]->var_name);
+    } else {
+      TC_NOT_IMPLEMENTED
+    }
+  } else if (expr->type == NodeType::select) {
+    emit_code("auto {} = select({}, {}, {});", expr->var_name,
+              expr[0]->var_name, expr[1]->var_name, expr[2]->var_name);
   } else if (expr->type == NodeType::floor) {
     emit_code("auto {} = floor({});", expr->var_name, expr[0]->var_name);
   } else if (expr->type == NodeType::cast) {

@@ -122,24 +122,33 @@ auto mpm = []() {
 
   p2g();
 
-  auto grid_op = [&]() {
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < n; j++) {
-        auto &v0 = prog.data(grid_v(0), i * n + j);
-        auto &v1 = prog.data(grid_v(1), i * n + j);
-        auto &m = prog.data(grid_m, i * n + j);
-        if (m > 0) {
-          v0 /= m;
-          v1 /= m;
-          v1 += dt * -200;
-        }
-        if (j < 5 || i < 5 || i > n - 5 || j > n - 5) {
-          v0 = 0;
-          v1 = 0;
-        }
-      }
-    }
-  };
+  auto grid_op = prog.def([&]() {
+    auto node = Expr::index(0);
+    for_loop(node, {0, n * n}, [&] {
+      auto v0 = load(grid_v[node](0));
+      auto v1 = load(grid_v[node](1));
+      auto m = load(grid_m[node]);
+
+      // auto inv_m = imm(1.0_f) / max(m, imm(1e-37_f));
+      auto inv_m = imm(1.0_f) / m;
+      auto mask = cmp_ne(m, imm(0.0_f));
+      v0 = select(mask, v0 * inv_m, imm(0.0_f));
+      v1 = select(mask, v1 * inv_m + imm(dt * -200_f), imm(0.0_f));
+
+      /*
+      auto i = node >> imm((int)bit::log2int(n));
+      auto j = node & imm(n - 1);
+      auto dist =
+          min(min(i - imm(5), j - imm(5)), min(imm(n - 5) - i, imm(n - 5) - j));
+      auto mask = cast<float32>(max(min(dist, imm(1)), imm(0)));
+      v0 = v0 * mask;
+      v1 = v1 * mask;
+      */
+
+      grid_v[node](0) = v0;
+      grid_v[node](1) = v1;
+    });
+  });
 
   auto g2p = prog.def([&]() {
     auto index = Expr::index(0);

@@ -118,8 +118,13 @@ void Vectorizer::visit(Expr &expr) {
     TC_ASSERT(existing->members.size() == expr->members.size());
     bool mismatch = false;
     for (int i = 0; i < (int)existing->members.size(); i++) {
-      if (existing->members[i] != expr->members[i])
+      if (existing->members[i] != expr->members[i]) {
+        TC_P(existing->members[i]->id);
+        TC_P(expr->members[i]->id);
+        TC_P(existing.ptr());
+        TC_P(expr.ptr());
         mismatch = true;
+      }
     }
     if (mismatch) {
       for (int i = 0; i < (int)existing->members.size(); i++) {
@@ -128,8 +133,6 @@ void Vectorizer::visit(Expr &expr) {
         TC_P(existing->members[i]->node_type_name());
         TC_P(expr->members[i]->id);
         TC_P(expr->members[i]->node_type_name());
-        if (existing->members[i] != expr->members[i])
-          mismatch = true;
         TC_WARN_UNLESS(existing->members[i] == expr->members[i], "mismatch");
       }
     }
@@ -142,7 +145,9 @@ void Vectorizer::visit(Expr &expr) {
   expr->is_vectorized = true;
   bool first = true;
   NodeType type;
+  float64 value = 0;
   std::vector<std::vector<Expr>> vectorized_children;
+
 
   // Check for isomorphism
   for (auto member : expr->members) {
@@ -151,9 +156,11 @@ void Vectorizer::visit(Expr &expr) {
     if (first) {
       first = false;
       type = member->type;
+      value = member->value<float64>();
       vectorized_children.resize(member->ch.size());
     } else {
       TC_ASSERT(type == member->type);
+      TC_ASSERT(value == member->value<float64>());
       TC_ASSERT(vectorized_children.size() == member->ch.size());
     }
     for (int i = 0; i < (int)member->ch.size(); i++) {
@@ -164,6 +171,7 @@ void Vectorizer::visit(Expr &expr) {
 
   expr->is_vectorized = true;
   expr->data_type = expr->members[0]->data_type;
+  expr->value<float64>() = value;
   TC_ASSERT(expr->members.size() % group_size == 0);
 
   for (int i = 0; i < (int)vectorized_children.size(); i++) {

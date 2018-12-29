@@ -28,6 +28,7 @@ void CPUCodeGen::visit_vv(Expr &expr) {
     }
   }
 
+
   if (binary_ops.find(expr->type) != binary_ops.end()) {
     auto op = binary_ops[expr->type];
     emit_code("auto {} = {} {} {};", expr->var_name, expr->ch[0]->var_name, op,
@@ -39,6 +40,20 @@ void CPUCodeGen::visit_vv(Expr &expr) {
   } else if (expr->type == NodeType::min) {
     emit_code("auto {} = min({}, {});", expr->var_name, expr[0]->var_name,
               expr[1]->var_name);
+  } else if (expr->type == NodeType::cmp) {
+    auto t = expr->value<CmpType>();
+    if (t == CmpType::ne) {
+      emit_code("auto {} = cmp_ne({}, {});", expr->var_name, expr[0]->var_name,
+                expr[1]->var_name);
+    } else if (t == CmpType::lt) {
+      emit_code("auto {} = cmp_lt({}, {});", expr->var_name, expr[0]->var_name,
+                expr[1]->var_name);
+    } else {
+      TC_NOT_IMPLEMENTED
+    }
+  } else if (expr->type == NodeType::select) {
+    emit_code("auto {} = select({}, {}, {});", expr->var_name,
+              expr[0]->var_name, expr[1]->var_name, expr[2]->var_name);
   } else if (expr->type == NodeType::floor) {
     emit_code("auto {} = floor({});", expr->var_name, expr[0]->var_name);
   } else if (expr->type == NodeType::land) {
@@ -154,5 +169,5 @@ void CPUCodeGen::visit_vv(Expr &expr) {
   } else {
     TC_ERROR("Node {} cannot be visited.", expr->node_type_name());
   }
-}
-}
+}  // namespace taichi::Tlang
+}  // namespace taichi::Tlang

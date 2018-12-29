@@ -90,7 +90,11 @@ class Node {
     land,
     shr,
     shl,
+    cmp,
+    select,
   };
+
+  enum class CmpType { eq, ne, le, lt };
 
   using NodeType = Type;
 
@@ -99,7 +103,7 @@ class Node {
   Type type;
   DataType data_type;
   std::string var_name;
-  float32 _value;
+  float64 _value;
   int id;
   int num_groups_;
   bool is_vectorized;
@@ -126,10 +130,13 @@ class Node {
     return group_size() * num_groups();
   }
 
+  Node(const Node &) = delete;
+
   Node(Type type) : type(type) {
     is_vectorized = false;
     data_type = DataType::f32;
     id = counter++;
+    _value = 0;
   }
 
   std::string data_type_name() {
@@ -160,6 +167,8 @@ class Node {
       REGISTER_NODE_TYPE(land);
       REGISTER_NODE_TYPE(shr);
       REGISTER_NODE_TYPE(shl);
+      REGISTER_NODE_TYPE(cmp);
+      REGISTER_NODE_TYPE(select);
     }
     return node_type_names[type];
   }
@@ -190,6 +199,7 @@ class Node {
 };
 
 using NodeType = Node::Type;
+using CmpType = Node::CmpType;
 
 class Visitor;
 
@@ -346,9 +356,39 @@ class Expr {
     node->name(s);
     return *this;
   }
+
+  /*
+  Expr operator!=(const Expr &o) {
+    auto n = create(NodeType::cmp, *this, o);
+    n->value<CmpType>() = CmpType::ne;
+    return n;
+  }
+
+  Expr operator<(const Expr &o) {
+    auto n = create(NodeType::cmp, *this, o);
+    n->value<CmpType>() = CmpType::lt;
+    return n;
+  }
+  */
+
+  Node *ptr() {
+    return node.get();
+  }
 };
 
 using Index = Expr;
+
+inline Expr cmp_ne(const Expr &a, const Expr &b) {
+  auto n = Expr::create(NodeType::cmp, a, b);
+  n->value<CmpType>() = CmpType::ne;
+  return n;
+}
+
+inline Expr cmp_lt(const Expr &a, const Expr &b) {
+  auto n = Expr::create(NodeType::cmp, a, b);
+  n->value<CmpType>() = CmpType::lt;
+  return n;
+}
 
 inline bool prior_to(Address address1, Address address2) {
   return address1.same_type(address2) &&
@@ -404,6 +444,11 @@ inline Expr load(const Expr &addr) {
   expr->ch.push_back(addr);
   return expr;
 }
+
+inline Expr select(Expr mask, Expr true_val, Expr false_val) {
+  return Expr::create(NodeType::select, mask, true_val, false_val);
 }
+
+}  // namespace Tlang
 
 TC_NAMESPACE_END

@@ -68,16 +68,17 @@ struct Adapter {
 };
 
 struct Program {
-  int n;
   bool general_scatter;
 
   // Should be copiable
   struct Function {
     Program &program;
     FunctionType compiled;
+    int64 n;
 
     Function(Program &program, std::function<void()> func) : program(program) {
-      program.start_function_definition();
+      n = -1;
+      program.start_function_definition(this);
       func();
       program.end_function_definition();
       compile();
@@ -89,10 +90,14 @@ struct Program {
     }
 
     void operator()() {
-      compiled(program.get_context());
+      auto c = program.get_context();
+      TC_ASSERT(n != -1);
+      c.ranges[0] = n;
+      compiled(c);
     }
   };
 
+  Function *current_function;
   CompileConfig config;
   MemoryAllocator alloc;
   Device device;
@@ -108,11 +113,11 @@ struct Program {
       allocate_buffer(i);
       context.buffers[i] = buffers[i].get();
     }
-    context.ranges[0] = n;
     return context;
   }
 
-  Program(Arch arch, int n) : n(n) {
+  Program(Arch arch, int n = -1) {
+    TC_ASSERT(n == -1);
     Node::reset_counter();
     TC_ASSERT(current_program == nullptr);
     current_program = this;
@@ -143,10 +148,12 @@ struct Program {
     return func;
   }
 
-  void start_function_definition() {
+  void start_function_definition(Function *func) {
+    current_function = func;
   }
 
   void end_function_definition() {
+    current_function = nullptr;
   }
 
   Adapter &adapter(int i) {
@@ -162,12 +169,6 @@ struct Program {
 
   AddrNode &buffer(int i) {
     return alloc.buffer(i);
-  }
-
-  void set_n(int n) {
-    this->n = n;
-    // TODO: resize buffers
-    TC_NOT_IMPLEMENTED
   }
 
   int num_buffers() {
@@ -209,7 +210,7 @@ struct Program {
     auto &addr = expr->get_address_();  // TODO:...
     TC_ASSERT(addr.initialized());
     allocate_buffer(addr.buffer_id);
-    return buffers[addr.buffer_id].get<float32>()[addr.eval(i, n)];
+    return buffers[addr.buffer_id].get<float32>()[addr.eval(i)];
   }
 
   void materialize_layout() {
@@ -229,4 +230,4 @@ struct Program {
     return *this;
   }
 };
-}
+}  // namespace taichi::Tlang

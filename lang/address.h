@@ -64,7 +64,7 @@ struct Address {
     return coeff_const;
   }
 
-  int64 eval(int64 i, int64 n) {
+  int64 eval(int64 i) {
     TC_ASSERT(initialized());
     if (coeff_aosoa_stride != 0) {
       return coeff_i * i + coeff_imax * n + coeff_const +

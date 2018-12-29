@@ -30,7 +30,7 @@ inline void for_loop(Index &index,
                      const ForBody &body) {
   auto &prog = get_current_program();
   TC_ASSERT(r.first == 0);
-  TC_ASSERT(prog.n == r.second);
+  get_current_program().current_function->n = r.second;
   body();
 }
 }  // namespace Tlang

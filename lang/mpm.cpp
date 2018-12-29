@@ -22,7 +22,7 @@ Matrix outer_product(Vector a, Vector b) {
 auto mpm = []() {
   bool use_adapter = true;
 
-  constexpr int n = 64;  // grid_resolution
+  constexpr int n = 128;  // grid_resolution
   const real dt = 3e-5_f, frame_dt = 1e-3_f, dx = 1.0_f / n,
              inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
@@ -40,7 +40,7 @@ auto mpm = []() {
 
   Real Jp;
 
-  int n_particles = 800;
+  int n_particles = 4000;
   Program prog(Arch::x86_64, n_particles);
   prog.general_scatter = true;
 
@@ -196,8 +196,8 @@ auto mpm = []() {
   GUI gui("MPM", n * scale, n * scale);
 
   for (int i = 0; i < n_particles; i++) {
-    prog.data(particle_x(0), i) = 0.4_f + rand() * 0.2_f;
-    prog.data(particle_x(1), i) = 0.4_f + rand() * 0.2_f;
+    prog.data(particle_x(0), i) = 0.35_f + rand() * 0.3_f;
+    prog.data(particle_x(1), i) = 0.35_f + rand() * 0.3_f;
     prog.data(particle_v(1), i) = -0.3_f;
     prog.data(particle_J, i) = 1_f;
   }

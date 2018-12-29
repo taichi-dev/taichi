@@ -26,7 +26,7 @@ auto mpm = []() {
   const real dt = 3e-5_f, frame_dt = 1e-3_f, dx = 1.0_f / n,
              inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
-  auto hardening = 10.0_f, E = 1e2_f, nu = 0.2_f;
+  auto hardening = 10.0_f, E = 1e0_f, nu = 0.2_f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
 
   int dim = 2;
@@ -94,7 +94,7 @@ auto mpm = []() {
 
       auto cauchy = imm(E) * (J - imm(1.0_f));
       auto stress = imm(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
-      auto affine = stress + imm(particle_mass) * C;
+      auto affine = stress;// + imm(particle_mass) * C;
 
       // auto J = F(0, 0) * F(1, 1) - F(1, 0) * F(0, 1);
       auto base_offset =

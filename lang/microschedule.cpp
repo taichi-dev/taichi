@@ -97,7 +97,9 @@ auto advection = []() {
       auto offset =
           cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
 
-      auto clamp = [](const Expr &e) { return min(max(imm(2), e), imm(n - 2)); };
+      auto clamp = [](const Expr &e) {
+        return min(max(imm(2), e), imm(n - 2));
+      };
 
       // weights
       auto w00 = (imm(1.0f) - wx) * (imm(1.0f) - wy);
@@ -137,7 +139,6 @@ auto advection = []() {
       }
     });
   });
-
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
@@ -407,17 +408,11 @@ auto test_multiple_programs = []() {
 
   auto i = Expr::index(0);
 
-  auto func1 = prog.def([&]() {
-    b[i] = a[i] + imm(1.0_f);
-  });
+  auto func1 = prog.def([&]() { b[i] = a[i] + imm(1.0_f); });
 
-  auto func2 = prog.def([&]() {
-    c[i] = b[i] + imm(1.0_f);
-  });
+  auto func2 = prog.def([&]() { c[i] = b[i] + imm(1.0_f); });
 
-  auto func3 = prog.def([&]() {
-    d[i] = c[i] + imm(1.0_f);
-  });
+  auto func3 = prog.def([&]() { d[i] = c[i] + imm(1.0_f); });
 
   for (int i = 0; i < n; i++) {
     prog.data(a, i) = i;
@@ -434,9 +429,39 @@ auto test_multiple_programs = []() {
 
 TC_REGISTER_TASK(test_multiple_programs);
 
+auto test_select = []() {
+  int n = 128;
+  Program prog(Arch::x86_64);
+  prog.config.group_size = 1;
+
+  Real a;
+
+  prog.layout([&]() { prog.buffer(0).range(n).stream(0).group().place(a); });
+
+  auto i = Expr::index(0);
+
+  auto func1 = prog.def([&]() {
+    auto i = Expr::index(0);
+    for_loop(i, {0, n},
+             [&]() {  //
+               a[i] = select(cmp_ne(imm(0), i % imm(2)), cast<float32>(i),
+                             imm(0.0_f));
+               //
+             });
+  });
+
+  func1();
+
+  for (int i = 0; i < n; i++) {
+    TC_P(i);
+    TC_P(prog.data(a, i));
+    TC_ASSERT(prog.data(a, i) == (i % 2) * i);
+  }
+
+};
+TC_REGISTER_TASK(test_select);
 
 // TODO: random access
-
 
 /*
 #define For(i, range) \

@@ -210,7 +210,7 @@ struct Program {
     auto &addr = expr->get_address_();  // TODO:...
     TC_ASSERT(addr.initialized());
     allocate_buffer(addr.buffer_id);
-    return buffers[addr.buffer_id].get<float32>()[addr.eval(i)];
+    return buffers[addr.buffer_id].get<T>()[addr.eval(i)];
   }
 
   void materialize_layout() {

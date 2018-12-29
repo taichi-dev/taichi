@@ -441,6 +441,12 @@ inline int32x8 cmp_ne(float32x8 a, float32x8 b) {
   return *reinterpret_cast<int32x8 *>(&ret);
 }
 
+inline int32x8 cmp_ne(int32x8 a, int32x8 b) {
+  auto ret = _mm256_cmp_ps(*reinterpret_cast<float32x8 *>(&a),
+                           *reinterpret_cast<float32x8 *>(&b), _CMP_NEQ_UQ);
+  return *reinterpret_cast<int32x8 *>(&ret);
+}
+
 inline int32x8 cmp_lt(float32x8 a, float32x8 b) {
   auto ret = _mm256_cmp_ps(a, b, _CMP_LT_OQ);
   return *reinterpret_cast<int32x8 *>(&ret);

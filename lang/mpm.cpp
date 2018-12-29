@@ -131,9 +131,11 @@ auto mpm = []() {
 
       // auto inv_m = imm(1.0_f) / max(m, imm(1e-37_f));
       auto inv_m = imm(1.0_f) / m;
+      inv_m.name("inv_m");
       auto mask = cmp_ne(m, imm(0.0_f));
-      v0 = select(mask, v0 * inv_m, imm(0.0_f));
-      v1 = select(mask, v1 * inv_m + imm(dt * -200_f), imm(0.0_f));
+      mask.name("mask");
+      v0 = select(mask, v0 * inv_m, imm(0.0_f)).name("v0");
+      v1 = select(mask, v1 * inv_m + imm(dt * -200_f), imm(0.0_f)).name("v1");
 
       /*
       auto i = node >> imm((int)bit::log2int(n));

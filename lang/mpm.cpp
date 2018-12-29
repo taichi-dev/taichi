@@ -7,6 +7,18 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
+Matrix outer_product(Vector a, Vector b) {
+  TC_ASSERT(a.m == 1);
+  TC_ASSERT(b.m == 1);
+  Matrix m(a.n, b.n);
+  for (int i = 0; i < a.n; i++) {
+    for (int j = 0; j < b.n; j++) {
+      m(i, j) = a(i) * b(j);
+    }
+  }
+  return m;
+}
+
 auto mpm = []() {
   bool use_adapter = true;
 
@@ -50,7 +62,7 @@ auto mpm = []() {
     place(particle_J);
 
     prog.buffer(1).range(n * n).stream().group().place(grid_v(0), grid_v(1),
-                                                        grid_m);
+                                                       grid_m);
     /*
     for (int k = 0; k < 2; k++) {
       prog.buffer(k).range(n * n).stream(i).group(0).place(attr[k][i]);
@@ -119,8 +131,50 @@ auto mpm = []() {
   };
 
   auto g2p = prog.def([&]() {
-    auto index= Expr::index(0);
-    for_loop(index, {0, n_particles}, [&] (){
+    auto index = Expr::index(0);
+    for_loop(index, {0, n_particles}, [&]() {
+      auto x = particle_x[index];
+      auto v = Vector(dim);
+      // auto F = particle_F[index];
+      auto C = Matrix(dim, dim);
+      auto J = particle_J[index];
+
+      for (int i = 0; i < dim; i++) {
+        v(i) = imm(0.0_f);
+        for (int j = 0; j < dim; j++) {
+          C(i, j) = imm(0.0_f);
+        }
+      }
+
+      auto base_coord = floor(imm(inv_dx) * x - imm(0.5_f));
+      auto fx = x * imm(inv_dx) - base_coord;
+
+      Vector w[3];
+      w[0] = imm(0.5_f) * sqr(imm(1.5_f) - fx);
+      w[1] = imm(0.75_f) - sqr(fx - imm(1.0_f));
+      w[2] = imm(0.5_f) * sqr(fx - imm(0.5_f));
+
+      // auto J = F(0, 0) * F(1, 1) - F(1, 0) * F(0, 1);
+      auto base_offset =
+          cast<int>(base_coord(0)) * imm(n) + cast<int>(base_coord(1));
+
+      // scatter
+      for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+          auto dpos = Vector(dim);
+          dpos(0) = cast<float32>(imm(i)) - fx(0);
+          dpos(1) = cast<float32>(imm(j)) - fx(1);
+          auto weight = w[i](0) * w[j](1);
+          auto node = base_offset + imm(i * n + j);
+          v = v + weight * grid_v[index];
+          C = C + imm(4 * inv_dx) * outer_product(weight * grid_v[index], dpos);
+        }
+      }
+
+      particle_C[index] = C;
+      particle_v[index] = v;
+      x = x + imm(dt) * v;
+      particle_x[index] = x;
 
     });
   });

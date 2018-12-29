@@ -389,9 +389,54 @@ auto test_adapter = []() {
 
 };
 
+TC_REGISTER_TASK(test_adapter);
+
+auto test_multiple_programs = []() {
+  int n = 128;
+  Program prog(Arch::x86_64, n);
+  prog.config.group_size = 1;
+
+  Real a, b, c, d;
+
+  prog.layout([&]() {
+    prog.buffer(0).stream(0).group().place(a);
+    prog.buffer(0).stream(1).group().place(b);
+    prog.buffer(0).stream(2).group().place(c);
+    prog.buffer(0).stream(3).group().place(d);
+  });
+
+  auto i = Expr::index(0);
+
+  auto func1 = prog.def([&]() {
+    b[i] = a[i] + imm(1.0_f);
+  });
+
+  auto func2 = prog.def([&]() {
+    c[i] = b[i] + imm(1.0_f);
+  });
+
+  auto func3 = prog.def([&]() {
+    d[i] = c[i] + imm(1.0_f);
+  });
+
+  for (int i = 0; i < n; i++) {
+    prog.data(a, i) = i;
+  }
+
+  func1();
+  func2();
+  func3();
+
+  for (int i = 0; i < n; i++) {
+    TC_ASSERT(prog.data(d, i) == i + 3);
+  }
+};
+
+TC_REGISTER_TASK(test_multiple_programs);
+
+
 // TODO: random access
 
-TC_REGISTER_TASK(test_adapter);
 
 /*
 #define For(i, range) \

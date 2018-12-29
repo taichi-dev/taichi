@@ -81,6 +81,7 @@ struct Program {
       func();
       program.end_function_definition();
       compile();
+      program.ret = Expr(nullptr);
     }
 
     void compile() {

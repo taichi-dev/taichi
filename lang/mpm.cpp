@@ -28,7 +28,7 @@ auto mpm = []() {
 
   Real Jp;
 
-  int n_particles = 8;
+  int n_particles = 800;
   Program prog(Arch::x86_64, n_particles);
   prog.general_scatter = true;
 
@@ -108,6 +108,7 @@ auto mpm = []() {
         if (m > 0) {
           v0 /= m;
           v1 /= m;
+          v1 += dt * -200;
         }
         if (j < 5) {
           v0 = 0;
@@ -117,9 +118,12 @@ auto mpm = []() {
     }
   };
 
-  auto g2p = []() {
+  auto g2p = prog.def([&]() {
+    auto index= Expr::index(0);
+    for_loop(index, {0, n_particles}, [&] (){
 
-  };
+    });
+  });
 
   int scale = 8;
   GUI gui("MPM", n * scale, n * scale);

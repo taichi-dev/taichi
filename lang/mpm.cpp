@@ -134,6 +134,7 @@ auto mpm = []() {
     auto index = Expr::index(0);
     for_loop(index, {0, n_particles}, [&]() {
       auto x = particle_x[index];
+      /*
       auto v = Vector(dim);
       // auto F = particle_F[index];
       auto C = Matrix(dim, dim);
@@ -171,11 +172,12 @@ auto mpm = []() {
         }
       }
 
-      particle_C[index] = C;
-      particle_v[index] = v;
-      x = x + imm(dt) * v;
+      // particle_C[index] = C;
+      // particle_v[index] = v;
+      // x = x + imm(dt) * v;
+      */
+      x(0) = x(0) + imm(0.0001_f);
       particle_x[index] = x;
-
     });
   });
 

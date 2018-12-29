@@ -387,6 +387,11 @@ inline int32x8 cast<float32, int32, 8>(const float32x8 &v) {
   return _mm256_cvtps_epi32(v);
 }
 
+template <>
+inline float32x8 cast<int32, float32, 8>(const int32x8 &v) {
+  return _mm256_cvtepi32_ps(v);
+}
+
 //*****************************************************************************
 
 template <typename T, int dim>
@@ -656,5 +661,5 @@ VVEC_BINARY_FUNC(min);
 VVEC_UNARY_OP(floor);
 
 #undef VVEC_UNARY_OP
-}
-}
+}  // namespace Tlang
+}  // namespace taichi

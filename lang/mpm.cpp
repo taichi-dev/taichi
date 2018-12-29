@@ -26,7 +26,7 @@ auto mpm = []() {
   const real dt = 3e-5_f, frame_dt = 1e-3_f, dx = 1.0_f / n,
              inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
-  auto hardening = 10.0_f, E = 1e0_f, nu = 0.2_f;
+  auto hardening = 10.0_f, E = 1e3_f, nu = 0.2_f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
 
   int dim = 2;
@@ -93,8 +93,11 @@ auto mpm = []() {
       w[2] = imm(0.5_f) * sqr(fx - imm(0.5_f));
 
       auto cauchy = imm(E) * (J - imm(1.0_f));
-      auto stress = imm(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
-      auto affine = stress;// + imm(particle_mass) * C;
+      auto affine = imm(particle_mass) * C;
+      for (int i = 0; i < dim; i++) {
+        affine(i, i) =
+            affine(i, i) + imm(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
+      }
 
       // auto J = F(0, 0) * F(1, 1) - F(1, 0) * F(0, 1);
       auto base_offset =
@@ -104,11 +107,12 @@ auto mpm = []() {
       for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
           auto dpos = Vector(dim);
-          dpos(0) = cast<float32>(imm(i)) - fx(0);
-          dpos(1) = cast<float32>(imm(j)) - fx(1);
+          dpos(0) = imm(dx) * (cast<float32>(imm(i)) - fx(0));
+          dpos(1) = imm(dx) * (cast<float32>(imm(j)) - fx(1));
           auto weight = w[i](0) * w[j](1);
           auto node = base_offset + imm(i * n + j);
-          grid_v[node] = grid_v[node] + weight * v + affine * dpos;
+          grid_v[node] =
+              grid_v[node] + weight * (imm(particle_mass) * v + affine * dpos);
           grid_m[node] = grid_m[node] + imm(particle_mass) * weight;
         }
       }
@@ -180,7 +184,7 @@ auto mpm = []() {
 
       J = J * (imm(1.0_f) + imm(dt) * (C(0, 0) + C(1, 1)));
 
-      // particle_C[index] = C;
+      particle_C[index] = C;
       particle_v[index] = v;
       particle_J[index] = J;
       x = x + imm(dt) * v;
@@ -211,9 +215,9 @@ auto mpm = []() {
             prog.data(grid_v(0), i / scale * n + j / scale) + 0.5;
         gui.buffer[i][j].y =
             prog.data(grid_v(1), i / scale * n + j / scale) + 0.5;
-        gui.buffer[i][j].z = prog.data(grid_m, i / scale * n + j / scale) /
-                             particle_mass * 0.0 +
-                             0.5;
+        gui.buffer[i][j].z =
+            prog.data(grid_m, i / scale * n + j / scale) / particle_mass * 0.0 +
+            0.5;
       }
     }
 

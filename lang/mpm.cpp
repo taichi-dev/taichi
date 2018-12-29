@@ -134,7 +134,6 @@ auto mpm = []() {
     auto index = Expr::index(0);
     for_loop(index, {0, n_particles}, [&]() {
       auto x = particle_x[index];
-      /*
       auto v = Vector(dim);
       // auto F = particle_F[index];
       auto C = Matrix(dim, dim);
@@ -167,16 +166,14 @@ auto mpm = []() {
           dpos(1) = cast<float32>(imm(j)) - fx(1);
           auto weight = w[i](0) * w[j](1);
           auto node = base_offset + imm(i * n + j);
-          v = v + weight * grid_v[index];
-          C = C + imm(4 * inv_dx) * outer_product(weight * grid_v[index], dpos);
+          v = v + weight * grid_v[node];
+          C = C + imm(4 * inv_dx) * outer_product(weight * grid_v[node], dpos);
         }
       }
 
       // particle_C[index] = C;
-      // particle_v[index] = v;
-      // x = x + imm(dt) * v;
-      */
-      x(0) = x(0) + imm(0.0001_f);
+      particle_v[index] = v;
+      x = x + imm(dt) * v;
       particle_x[index] = x;
     });
   });

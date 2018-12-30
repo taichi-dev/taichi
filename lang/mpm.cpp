@@ -26,7 +26,7 @@ auto mpm = []() {
   const real dt = 3e-5_f, frame_dt = 1e-3_f, dx = 1.0_f / n,
              inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
-  auto hardening = 10.0_f, E = 1e3_f, nu = 0.2_f;
+  auto hardening = 10.0_f, E = 1e4_f, nu = 0.2_f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
 
   int dim = 2;
@@ -40,7 +40,7 @@ auto mpm = []() {
 
   Real Jp;
 
-  int n_particles = 4000;
+  int n_particles = 8000;
   Program prog(Arch::x86_64);
   prog.general_scatter = true;
 
@@ -82,8 +82,6 @@ auto mpm = []() {
       auto C = particle_C[index];
       auto J = particle_J[index];
 
-      // ** gs = 2
-
       auto base_coord = floor(imm(inv_dx) * x - imm(0.5_f));
       auto fx = x * imm(inv_dx) - base_coord;
 
@@ -99,7 +97,6 @@ auto mpm = []() {
             affine(i, i) + imm(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
       }
 
-      // auto J = F(0, 0) * F(1, 1) - F(1, 0) * F(0, 1);
       auto base_offset =
           cast<int>(base_coord(0)) * imm(n) + cast<int>(base_coord(1));
 
@@ -122,35 +119,54 @@ auto mpm = []() {
 
   p2g();
 
-  auto grid_op = prog.def([&]() {
-    auto node = Expr::index(0);
-    for_loop(node, {0, n * n}, [&] {
-      auto v0 = load(grid_v[node](0));
-      auto v1 = load(grid_v[node](1));
-      auto m = load(grid_m[node]);
+  auto grid_op = [&]() {
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        auto &v0 = prog.data(grid_v(0), i * n + j);
+        auto &v1 = prog.data(grid_v(1), i * n + j);
+        auto &m = prog.data(grid_m, i * n + j);
+        if (m > 0) {
+          v0 /= m;
+          v1 /= m;
+          v1 += dt * -200;
+        }
+        if (j < 5 || i < 5 || i > n - 5 || j > n - 5) {
+          v0 = 0;
+          v1 = 0;
+        }
+      }
+    }
+  };
 
-      // auto inv_m = imm(1.0_f) / max(m, imm(1e-37_f));
-      auto inv_m = imm(1.0_f) / m;
-      inv_m.name("inv_m");
-      auto mask = cmp_ne(m, imm(0.0_f));
-      mask.name("mask");
-      v0 = select(mask, v0 * inv_m, imm(0.0_f)).name("v0");
-      v1 = select(mask, v1 * inv_m + imm(dt * -200_f), imm(0.0_f)).name("v1");
+  /*
+auto grid_op = prog.def([&]() {
+auto node = Expr::index(0);
+for_loop(node, {0, n * n}, [&] {
+  auto v0 = load(grid_v[node](0));
+  auto v1 = load(grid_v[node](1));
+  auto m = load(grid_m[node]);
 
-      /*
-      auto i = node >> imm((int)bit::log2int(n));
-      auto j = node & imm(n - 1);
-      auto dist =
-          min(min(i - imm(5), j - imm(5)), min(imm(n - 5) - i, imm(n - 5) - j));
-      auto mask = cast<float32>(max(min(dist, imm(1)), imm(0)));
-      v0 = v0 * mask;
-      v1 = v1 * mask;
-      */
+  // auto inv_m = imm(1.0_f) / max(m, imm(1e-37_f));
+  auto inv_m = imm(1.0_f) / m;
+  inv_m.name("inv_m");
+  auto mask = cmp_lt(imm(0.0_f), m);
+  mask.name("mask");
+  v0 = select(mask, v0 * inv_m, imm(0.0_f)).name("v0");
+  v1 = select(mask, v1 * inv_m + imm(dt * -200_f), imm(0.0_f)).name("v1");
+
+  auto i = node >> imm((int)bit::log2int(n));
+  auto j = node & imm(n - 1);
+  auto dist =
+      min(min(i - imm(5), j - imm(5)), min(imm(n - 5) - i, imm(n - 5) - j));
+  auto mask = cast<float32>(max(min(dist, imm(1)), imm(0)));
+  v0 = v0 * mask;
+  v1 = v1 * mask;
 
       grid_v[node](0) = v0;
       grid_v[node](1) = v1;
     });
   });
+  */
 
   auto g2p = prog.def([&]() {
     auto index = Expr::index(0);
@@ -213,8 +229,10 @@ auto mpm = []() {
     prog.data(particle_J, i) = 1_f;
   }
 
+  auto &canvas = gui.get_canvas();
+
   for (int f = 0; f < 1000; f++) {
-    for (int t = 0; t < 100; t++) {
+    for (int t = 0; t < 200; t++) {
       prog.clear_buffer(1);
       TC_TIME(p2g());
       TC_TIME(grid_op());
@@ -223,17 +241,21 @@ auto mpm = []() {
     for (int i = 0; i < n * scale; i++) {
       for (int j = 0; j < n * scale; j++) {
         gui.buffer[i][j].x =
-            prog.data(grid_v(0), i / scale * n + j / scale) + 0.5;
+            prog.data(grid_v(0), i / scale * n + j / scale) * 0.01 + 0.5;
         gui.buffer[i][j].y =
-            prog.data(grid_v(1), i / scale * n + j / scale) + 0.5;
-        gui.buffer[i][j].z =
-            prog.data(grid_m, i / scale * n + j / scale) / particle_mass * 0.0 +
-            0.5;
+            prog.data(grid_v(1), i / scale * n + j / scale) * 0.01 + 0.5;
+        gui.buffer[i][j].z = 1.0;
       }
+    }
+    canvas.clear(0x112F41);
+    for (int i = 0; i < n_particles; i++) {
+      canvas.circle(prog.data(particle_x(0), i), prog.data(particle_x(1), i))
+          .radius(2)
+          .color(0x068587);
     }
 
     gui.update();
-    // gui.screenshot(fmt::format("images/{:04d}.png", f));
+    gui.screenshot(fmt::format("images/{:04d}.png", f));
   }
 };
 TC_REGISTER_TASK(mpm);

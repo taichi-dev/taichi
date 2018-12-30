@@ -111,6 +111,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       }
       for (int i = 0; i < (int)expr->members.size(); i++) {
         offsets.push_back(expr->members[i]->addr().offset());
+        TC_P(expr->members[i]->addr());
       }
       auto addr = expr->addr();
       // TC_P(i_stride);
@@ -124,9 +125,13 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
         addr.coeff_const -= addr.coeff_const % simd_width;
         needs_shuffle = true;
       }
+      for (int i = 0; i < offsets.size(); i++) {
+        TC_P(offsets[i]);
+      }
       emit_code("auto {} = vvec<{}, {}, {}>::load({});", expr->var_name,
                 expr->data_type_name(), simd_width, split,
-                get_vectorized_address(addr, 0, 0));
+                get_vectorized_address(addr, 0,
+                                       offsets[0] / simd_width * simd_width));
       auto emit_shuffle = [&](std::string imm) {
         for (int i = 0; i < split; i++) {
           emit_code(
@@ -355,4 +360,4 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     TC_ERROR("Node {} cannot be visited.", expr->node_type_name());
   }
 }
-}
+}  // namespace taichi::Tlang

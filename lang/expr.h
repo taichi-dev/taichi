@@ -8,9 +8,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-using NodeType = Node::NodeType;
-using CmpType = Node::CmpType;
-
 class Visitor;
 
 // Reference counted...

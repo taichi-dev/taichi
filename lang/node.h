@@ -5,6 +5,66 @@
 
 TLANG_NAMESPACE_BEGIN
 
+enum class NodeType : int {
+  mul,
+  add,
+  sub,
+  div,
+  mod,
+  load,
+  store,
+  pointer,
+  combine,
+  index,
+  addr,
+  adapter_store,
+  adapter_load,
+  imm,
+  floor,
+  max,
+  min,
+  cast,
+  land,
+  shr,
+  shl,
+  cmp,
+  select,
+};
+
+extern std::map<NodeType, std::string> node_type_names;
+
+inline std::string node_type_name(NodeType type) {
+  if (node_type_names.empty()) {
+#define REGISTER_NODE_TYPE(i) node_type_names[NodeType::i] = #i;
+    REGISTER_NODE_TYPE(mul);
+    REGISTER_NODE_TYPE(add);
+    REGISTER_NODE_TYPE(sub);
+    REGISTER_NODE_TYPE(div);
+    REGISTER_NODE_TYPE(mod);
+    REGISTER_NODE_TYPE(load);
+    REGISTER_NODE_TYPE(store);
+    REGISTER_NODE_TYPE(combine);
+    REGISTER_NODE_TYPE(addr);
+    REGISTER_NODE_TYPE(pointer);
+    REGISTER_NODE_TYPE(adapter_store);
+    REGISTER_NODE_TYPE(adapter_load);
+    REGISTER_NODE_TYPE(imm);
+    REGISTER_NODE_TYPE(index);
+    REGISTER_NODE_TYPE(floor);
+    REGISTER_NODE_TYPE(max);
+    REGISTER_NODE_TYPE(min);
+    REGISTER_NODE_TYPE(cast);
+    REGISTER_NODE_TYPE(land);
+    REGISTER_NODE_TYPE(shr);
+    REGISTER_NODE_TYPE(shl);
+    REGISTER_NODE_TYPE(cmp);
+    REGISTER_NODE_TYPE(select);
+  }
+  return node_type_names[type];
+}
+
+enum class CmpType { eq, ne, le, lt };
+
 class Node {
 private:
   Address _addr;
@@ -15,35 +75,6 @@ public:
     counter = 0;
   }
 
-  // TODO: rename
-  enum class NodeType : int {
-    mul,
-    add,
-    sub,
-    div,
-    mod,
-    load,
-    store,
-    pointer,
-    combine,
-    index,
-    addr,
-    adapter_store,
-    adapter_load,
-    imm,
-    floor,
-    max,
-    min,
-    cast,
-    land,
-    shr,
-    shl,
-    cmp,
-    select,
-  };
-
-  enum class CmpType { eq, ne, le, lt };
-
   std::vector<Expr> ch;       // Four child max
   std::vector<Expr> members;  // for vectorized instructions
   NodeType type;
@@ -53,7 +84,6 @@ public:
   int id;
   int num_groups_;
   bool is_vectorized;
-  static std::map<NodeType, std::string> node_type_names;
   std::string name_;
 
   std::string name() {
@@ -83,38 +113,12 @@ public:
     _value = 0;
   }
 
-  std::string data_type_name() {
+  std::string data_type_name() const {
     return taichi::Tlang::data_type_name(data_type);
   }
 
-  std::string node_type_name() {
-    if (node_type_names.empty()) {
-#define REGISTER_NODE_TYPE(i) node_type_names[NodeType::i] = #i;
-      REGISTER_NODE_TYPE(mul);
-      REGISTER_NODE_TYPE(add);
-      REGISTER_NODE_TYPE(sub);
-      REGISTER_NODE_TYPE(div);
-      REGISTER_NODE_TYPE(mod);
-      REGISTER_NODE_TYPE(load);
-      REGISTER_NODE_TYPE(store);
-      REGISTER_NODE_TYPE(combine);
-      REGISTER_NODE_TYPE(addr);
-      REGISTER_NODE_TYPE(pointer);
-      REGISTER_NODE_TYPE(adapter_store);
-      REGISTER_NODE_TYPE(adapter_load);
-      REGISTER_NODE_TYPE(imm);
-      REGISTER_NODE_TYPE(index);
-      REGISTER_NODE_TYPE(floor);
-      REGISTER_NODE_TYPE(max);
-      REGISTER_NODE_TYPE(min);
-      REGISTER_NODE_TYPE(cast);
-      REGISTER_NODE_TYPE(land);
-      REGISTER_NODE_TYPE(shr);
-      REGISTER_NODE_TYPE(shl);
-      REGISTER_NODE_TYPE(cmp);
-      REGISTER_NODE_TYPE(select);
-    }
-    return node_type_names[type];
+  std::string node_type_name() const {
+    return taichi::Tlang::node_type_name(type);
   }
 
   Address &get_address_() {  // TODO: remove this hack

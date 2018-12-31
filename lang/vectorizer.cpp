@@ -1,6 +1,6 @@
 #include "vectorizer.h"
 
-namespace taichi::Tlang {
+TLANG_NAMESPACE_BEGIN
 
 void Vectorizer::sort(Expr &expr) {
   auto ch = expr->ch;  // a bunch of store nodes
@@ -189,4 +189,5 @@ void Vectorizer::visit(Expr &expr) {
     expr->get_address_() = addr;
   }
 }
-}
+
+TLANG_NAMESPACE_END

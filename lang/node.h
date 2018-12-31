@@ -16,7 +16,7 @@ public:
   }
 
   // TODO: rename
-  enum class Type : int {
+  enum class NodeType : int {
     mul,
     add,
     sub,
@@ -44,18 +44,16 @@ public:
 
   enum class CmpType { eq, ne, le, lt };
 
-  using NodeType = Type;
-
   std::vector<Expr> ch;       // Four child max
   std::vector<Expr> members;  // for vectorized instructions
-  Type type;
+  NodeType type;
   DataType data_type;
   std::string var_name;
   float64 _value;
   int id;
   int num_groups_;
   bool is_vectorized;
-  static std::map<Type, std::string> node_type_names;
+  static std::map<NodeType, std::string> node_type_names;
   std::string name_;
 
   std::string name() {
@@ -78,7 +76,7 @@ public:
 
   Node(const Node &) = delete;
 
-  Node(Type type) : type(type) {
+  Node(NodeType type) : type(type) {
     is_vectorized = false;
     data_type = DataType::f32;
     id = counter++;
@@ -124,17 +122,17 @@ public:
   }
 
   Address &get_address() {
-    TC_ASSERT(type == Type::addr);
+    TC_ASSERT(type == NodeType::addr);
     return _addr;
   }
 
   Address &addr();
 
-  Node(Type type, Expr ch0);
+  Node(NodeType type, Expr ch0);
 
-  Node(Type type, Expr ch0, Expr ch1);
+  Node(NodeType type, Expr ch0, Expr ch1);
 
-  Node(Type type, Expr ch0, Expr ch1, Expr ch2);
+  Node(NodeType type, Expr ch0, Expr ch1, Expr ch2);
 
   int member_id(const Expr &expr) const;
 

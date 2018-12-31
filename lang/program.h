@@ -25,7 +25,7 @@ struct Adapter {
   Adapter(int id) : id(id) {
     input_group_size = -1;
     output_group_size = -1;
-    stores = Expr::create(Expr::Type::combine);
+    stores = Expr::create(NodeType::combine);
   }
 
   bool initialized() {

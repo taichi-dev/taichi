@@ -8,7 +8,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-using NodeType = Node::Type;
+using NodeType = Node::NodeType;
 using CmpType = Node::CmpType;
 
 class Visitor;
@@ -20,8 +20,6 @@ class Expr {
   static bool allow_store;
 
  public:
-  using Type = Node::Type;
-
   static void set_allow_store(bool val) {
     allow_store = val;
   }
@@ -51,13 +49,13 @@ class Expr {
 
   template <typename T>
   static Expr create_imm(T t) {
-    auto e = create(Type::imm);
+    auto e = create(NodeType::imm);
     e->value<T>() = t;
     return e;
   }
 
   static Expr index(int i) {
-    auto e = create(Type::index);
+    auto e = create(NodeType::index);
     e->value<int>() = i;
     e->data_type = DataType::i32;
     return e;
@@ -210,18 +208,18 @@ inline bool prior_to(Expr &a, Expr &b) {
   return prior_to(a->ch[0]->get_address(), b->ch[0]->get_address());
 }
 
-inline Node::Node(Type type, Expr ch0) : Node(type) {
+inline Node::Node(NodeType type, Expr ch0) : Node(type) {
   ch.resize(1);
   ch[0] = ch0;
 }
 
-inline Node::Node(Type type, Expr ch0, Expr ch1) : Node(type) {
+inline Node::Node(NodeType type, Expr ch0, Expr ch1) : Node(type) {
   ch.resize(2);
   ch[0] = ch0;
   ch[1] = ch1;
 }
 
-inline Node::Node(Type type, Expr ch0, Expr ch1, Expr ch2) : Node(type) {
+inline Node::Node(NodeType type, Expr ch0, Expr ch1, Expr ch2) : Node(type) {
   ch.resize(3);
   ch[0] = ch0;
   ch[1] = ch1;
@@ -243,9 +241,9 @@ inline int Node::member_id(const Expr &expr) const {
 }
 
 inline Address &Node::addr() {
-  TC_ASSERT(type == Type::load || type == Type::store);
+  TC_ASSERT(type == NodeType::load || type == NodeType::store);
   TC_ASSERT(ch.size());
-  TC_ASSERT(ch[0]->type == Type::pointer);
+  TC_ASSERT(ch[0]->type == NodeType::pointer);
   return ch[0]->ch[0]->get_address();
 }
 

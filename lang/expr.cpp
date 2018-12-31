@@ -22,7 +22,7 @@ Expr Expr::operator[](const Expr &i) {
   TC_ASSERT(i);
   TC_ASSERT(node->type == NodeType::addr);
   TC_ASSERT(i->type == NodeType::index || i->data_type == DataType::i32);
-  return create(Type::pointer, *this, i);
+  return create(NodeType::pointer, *this, i);
 }
 
 bool Expr::allow_store = true;

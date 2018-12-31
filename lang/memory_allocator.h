@@ -11,18 +11,18 @@ namespace Tlang {
 struct MemoryAllocator {
   // A tree-like structure that describes the minimal repeating unit in the
   // stream
-  Handle<AddrNode> root;
+  Handle<SNode> root;
   bool materialized;
 
   MemoryAllocator() {
     materialized = false;
     // streams are specialized groups, with discontinuous parts in memory
-    root = AddrNode::create(0);
+    root = SNode::create(0);
   }
 
-  AddrNode &buffer(int id) {
+  SNode &buffer(int id) {
     while ((int)root->ch.size() <= id) {
-      root->ch.push_back(AddrNode::create(1));
+      root->ch.push_back(SNode::create(1));
       root->ch.back()->buffer_id = root->ch.size() - 1;
     }
     auto ret = root->ch[id];

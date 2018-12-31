@@ -167,7 +167,7 @@ struct Program {
     return ret.store(ad, e);
   }
 
-  AddrNode &buffer(int i) {
+  SNode &buffer(int i) {
     return alloc.buffer(i);
   }
 

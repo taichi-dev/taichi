@@ -3,8 +3,8 @@
 TC_NAMESPACE_BEGIN
 namespace Tlang {
 
-struct AddrNode {
-  std::vector<Handle<AddrNode>> ch;
+struct SNode {
+  std::vector<Handle<SNode>> ch;
   int depth;
   Expr addr;
 
@@ -18,7 +18,7 @@ struct AddrNode {
   // repeat included
   int data_size;
 
-  AddrNode(int depth, const Expr &addr = Expr()) : depth(depth), addr(addr) {
+  SNode(int depth, const Expr &addr = Expr()) : depth(depth), addr(addr) {
     n = -1;
     num_variables = 0;
     if (addr) {
@@ -54,7 +54,7 @@ struct AddrNode {
     int coeff_imax = 0;
     int buffer_id = 0;
     int bundle_num_variables = -1;
-    std::function<void(AddrNode *)> walk = [&](AddrNode *node) {
+    std::function<void(SNode *)> walk = [&](SNode *node) {
       if (node->addr) {
         auto &ad = node->addr->get_address_(); // TODO: remove this hack
         ad.buffer_id = buffer_id;
@@ -87,7 +87,7 @@ struct AddrNode {
     walk(this);
   }
 
-  AddrNode &group(int id = -1) {
+  SNode &group(int id = -1) {
     TC_ASSERT(depth >= 2);
     if (id == -1) {
       auto n = create(depth + 1);
@@ -102,7 +102,7 @@ struct AddrNode {
     }
   }
 
-  AddrNode &stream(int id = -1) {
+  SNode &stream(int id = -1) {
     TC_ASSERT(depth == 1);
     if (id == -1) {
       auto n = create(depth + 1);
@@ -117,19 +117,19 @@ struct AddrNode {
     }
   }
 
-  AddrNode &repeat(int repeat_factor) {
+  SNode &repeat(int repeat_factor) {
     this->repeat_factor = repeat_factor;
     return *this;
   }
 
   template <typename... Args>
-  AddrNode &place(Expr &expr, Args &&... args) {
+  SNode &place(Expr &expr, Args &&... args) {
     return place(expr).place(std::forward<Args>(args)...);
   }
 
   template <typename... Args>
-  static Handle<AddrNode> create(Args &&... args) {
-    return std::make_shared<AddrNode>(std::forward<Args>(args)...);
+  static Handle<SNode> create(Args &&... args) {
+    return std::make_shared<SNode>(std::forward<Args>(args)...);
   }
 
   void print() {
@@ -143,7 +143,7 @@ struct AddrNode {
     }
   }
 
-  AddrNode &place(Expr &expr) {
+  SNode &place(Expr &expr) {
     if (!expr) {
       expr = placeholder();
     }
@@ -153,7 +153,7 @@ struct AddrNode {
     return *this;
   }
 
-  AddrNode &range(int64 n) {
+  SNode &range(int64 n) {
     TC_ASSERT(this->depth == 1);
     this->n = n;
     return *this;

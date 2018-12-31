@@ -212,10 +212,7 @@ struct Program {
     return buffers[addr.buffer_id].get<T>()[addr.eval(i)];
   }
 
-  void materialize_layout() {
-    // Should compile layout here
-
-  }
+  void materialize_layout();
 
   void swap_buffers(int i, int j) {
     std::swap(buffers[i], buffers[j]);

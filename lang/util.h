@@ -147,6 +147,7 @@ enum class SNodeType {
   fixed,
   dynamic,
   forked,
+  place,
 };
 
 inline std::string snode_type_name(SNodeType t) {
@@ -157,6 +158,7 @@ inline std::string snode_type_name(SNodeType t) {
     REGISTER_TYPE(fixed);
     REGISTER_TYPE(dynamic);
     REGISTER_TYPE(forked);
+    REGISTER_TYPE(place);
 #undef REGISTER_TYPE
   }
   return type_names[t];

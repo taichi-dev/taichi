@@ -14,6 +14,7 @@ public:
   int num_groups;
   int id;
   std::string suffix;
+  void *dll;
 
   static int get_code_gen_id() {
     static int id = 0;
@@ -26,12 +27,39 @@ public:
     id = get_code_gen_id();
     func_name = fmt::format("func{:06d}", id);
 
+    dll = nullptr;
 
     folder = "_tlang_cache/";
     create_directories(folder);
     var_count = 0;
+    snode_count = 0;
     code_suffix = "\n";
   }
+
+  template <typename T>
+  static std::string vec_to_list(std::vector<T> val, std::string brace) {
+    std::string members = brace;
+    bool first = true;
+    for (int i = 0; i < (int)val.size(); i++) {
+      if (!first) {
+        members += ",";
+      }
+      first = false;
+      members += fmt::format("{}", val[i]);
+    }
+    if (brace == "<") {
+      members += ">";
+    } else if (brace == "{") {
+      members += "}";
+    } else if (brace == "(") {
+      members += ")";
+    } else {
+      TC_P(brace);
+      TC_NOT_IMPLEMENTED
+    }
+    return members;
+  }
+
 
   std::string create_variable() {
     TC_ASSERT(var_count < 10000);
@@ -83,9 +111,16 @@ public:
     trash(format_ret);
   }
 
-  FunctionType load_function() {
+
+  void load_dll() {
     auto dll = dlopen(("./" + get_library_fn()).c_str(), RTLD_LAZY);
     TC_ASSERT(dll != nullptr);
+  }
+
+  FunctionType load_function() {
+    if (dll == nullptr) {
+      load_dll();
+    }
     auto ret = dlsym(dll, func_name.c_str());
     TC_ASSERT(ret != nullptr);
     return (FunctionType)ret;

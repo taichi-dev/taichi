@@ -66,14 +66,14 @@ class Expr {
     }
   }
 
-#define REGULAR_BINARY_OP(op, name)                              \
-  Expr operator op(const Expr &o) const {                        \
-    TC_ASSERT(node->data_type == o->data_type)                   \
+#define REGULAR_BINARY_OP(op, name)                                \
+  Expr operator op(const Expr &o) const {                          \
+    TC_ASSERT(node->data_type == o->data_type)                     \
     auto t = Expr::create(NodeType::binary, load_if_pointer(node), \
-                          load_if_pointer(o.node));              \
-    t->data_type = o->data_type;                                 \
-    t->binary_type = BinaryType::name;                           \
-    return t;                                                    \
+                          load_if_pointer(o.node));                \
+    t->data_type = o->data_type;                                   \
+    t->binary_type = BinaryType::name;                             \
+    return t;                                                      \
   }
 
 #define BINARY_OP(op, name)                                      \
@@ -111,6 +111,7 @@ class Expr {
   }
 
   Node *operator->() {
+    TC_ASSERT(node.get() != nullptr);
     return node.get();
   }
 
@@ -233,8 +234,9 @@ inline Node::Node(NodeType type, Expr ch0, Expr ch1, Expr ch2) : Node(type) {
   ch[2] = ch2;
 }
 
-inline Expr placeholder() {
+inline Expr placeholder(DataType dt) {
   auto n = std::make_shared<Node>(NodeType::addr);
+  n->data_type = dt;
   return Expr(n);
 }
 

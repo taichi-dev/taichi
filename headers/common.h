@@ -733,5 +733,41 @@ inline vvec<int32, dim, n> cmp_lt(const vvec<T, dim, n> &a,
 VVEC_UNARY_OP(floor);
 
 #undef VVEC_UNARY_OP
+
+// *****************************************************************************
+// these structures are used for maintaining metadata and sparsity.
+// Their look_up function takes a merged index, but they don't know where do the
+// bits come from.
+
+template <int n_, typename child_type>
+struct fixed {
+  static constexpr int n = n_;
+  child_type children[n];
+  TC_FORCE_INLINE child_type &look_up(int i) {  // i is flattened index
+    return children[i];
+  }
+};
+
+template <int n_, typename child_type>
+struct dynamic {
+  static constexpr int n = n_;
+  std::vector<child_type> children;
+  TC_FORCE_INLINE child_type &look_up(int i) {  // i is flattened index
+    return children[i];
+  }
+};
+
+template <typename... child_types>
+struct forked {
+  using child_type_tuple = std::tuple<child_types...>;
+  child_type_tuple children;
+
+  template <int i>
+  TC_FORCE_INLINE auto &get() {
+    return std::get<i>(children);
+  }
+};
+// *****************************************************************************
+
 }  // namespace Tlang
 }  // namespace taichi

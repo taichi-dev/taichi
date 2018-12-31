@@ -2,8 +2,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class LayoutCompiler {
-  SNode
-};
+int SNode::counter = 0;
 
 TLANG_NAMESPACE_END

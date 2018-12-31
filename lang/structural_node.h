@@ -13,6 +13,8 @@ TC_FORCE_INLINE int32 constexpr operator"" _bits(unsigned long long a) {
 struct SNode {
   std::vector<Handle<SNode>> ch;
 
+  static int counter;
+  int id;
   int depth;
 
   Expr addr;
@@ -23,6 +25,7 @@ struct SNode {
   int offset;
   int buffer_id;
   int coeff_i;
+  std::string node_type_name;
   int64 n;
 
   // repeat included
@@ -31,12 +34,15 @@ struct SNode {
   SNodeType type;
 
   SNode() {
+    id = counter++;
   }
 
   SNode(int depth, SNodeType t) : depth(depth), type(t) {
+    id = counter++;
   }
 
   SNode(int depth, const Expr &addr = Expr()) : depth(depth), addr(addr) {
+    id = counter++;
     n = -1;
     num_variables = 0;
     if (addr) {
@@ -147,6 +153,7 @@ struct SNode {
   // SNodes maintains how flattened index bits are taken from indices
   SNode &fixed(Expr ind, int size) {
     TC_ASSERT(bit::is_power_of_two(size));
+    this->n = size;
     auto &new_node = insert_children(SNodeType::fixed);
     return new_node;
   }
@@ -186,12 +193,10 @@ struct SNode {
   }
 
   SNode &place(Expr &expr) {
-    if (!expr) {
-      expr = placeholder();
-    }
-    TC_ASSERT(depth >= 3);
-    TC_ASSERT(this->addr == nullptr);
-    ch.push_back(create(depth + 1, expr));
+    TC_ASSERT(expr);
+    auto child = insert_children(SNodeType::place);
+    child.addr.set(expr);
+    TC_P(child.id);
     return *this;
   }
 

@@ -9,7 +9,7 @@ namespace Tlang {
 class Expr;
 
 class Visitor {
-public:
+ public:
   enum class Order { parent_first, child_first };
 
   Order order;
@@ -17,9 +17,11 @@ public:
   Visitor(Order order) : order(order) {
   }
 
-  virtual void visit(Expr &expr) = 0;
+  virtual void visit(Expr &expr) {
+    TC_NOT_IMPLEMENTED
+  }
 };
 
-}
+}  // namespace Tlang
 
 TC_NAMESPACE_END

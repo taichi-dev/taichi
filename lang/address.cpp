@@ -1,4 +1,6 @@
 #include "address.h"
+#include "structural_node.h"
+#include "program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -41,6 +43,8 @@ struct forked {
 // The tree is built in a bottom-up order, so that upper level can learn about
 // the size etc. of children.
 
+
+/*
 using placeholder_u = real;
 using placeholder_v = real;
 using node1 = forked<placeholder_u, placeholder_v>;
@@ -54,6 +58,25 @@ real &look_up_u(root &r, int i, int j, int k) {
   auto &n1 = r.look_up(i * 32 + j);
   auto &n2 = n1.get<1>();
   return n2;
+}
+*/
+
+// All data structure originates from a "root", which is a forked node.
+
+auto test_snode(){
+  Program prog(Arch::x86_64);
+
+  auto i = Expr::index(0);
+  Expr u;
+  u->data_type = DataType::i32;
+
+  prog.layout([&] {
+    root.fixed(i, 32).place(u);
+  });
+
+  for (int i = 0; i < 10; i++) {
+    // u.access(i);
+  }
 }
 
 TLANG_NAMESPACE_END

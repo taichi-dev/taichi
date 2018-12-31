@@ -1,3 +1,4 @@
+#if(0)
 #include "tlang.h"
 #include <taichi/util.h>
 #include <taichi/visual/gui.h>
@@ -8,6 +9,7 @@ TC_NAMESPACE_BEGIN
 using namespace Tlang;
 
 auto test_loop = []() {
+  TC_NOT_IMPLEMENTED
   // CoreState::set_trigger_gdb_when_crash(true);
   Float a, b;
 
@@ -29,8 +31,6 @@ auto test_loop = []() {
     prog.data(a, i) = i;
     prog.data(b, i) = i * 2;
   }
-
-  prog();
 
   for (int i = 0; i < n; i++) {
     auto val = prog.data(a, i);
@@ -476,3 +476,4 @@ TC_NAMESPACE_END
 /*
 TODO: arbitrary for loop (bounds using arbitrary constants)
  */
+#endif

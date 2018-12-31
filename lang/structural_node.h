@@ -1,3 +1,4 @@
+#pragma once
 #include "expr.h"
 #include <taichi/common/bit.h>
 
@@ -7,7 +8,6 @@ namespace Tlang {
 TC_FORCE_INLINE int32 constexpr operator"" _bits(unsigned long long a) {
   return 1 << a;
 }
-
 
 // "Structural" nodes
 struct SNode {
@@ -31,7 +31,9 @@ struct SNode {
   SNodeType type;
 
   SNode() {
+  }
 
+  SNode(int depth, SNodeType t) : depth(depth), type(t) {
   }
 
   SNode(int depth, const Expr &addr = Expr()) : depth(depth), addr(addr) {
@@ -133,9 +135,11 @@ struct SNode {
     }
   }
 
-  SNode &insert_children() {
-    TC_ASSERT(ch.size() == 0);
-    ch.push_back(create());
+  SNode &insert_children(SNodeType t) {
+    if (this->type != SNodeType::forked) {
+      TC_ASSERT(ch.size() == 0);
+    }
+    ch.push_back(create(depth + 1, t));
     return *ch.back();
   }
 
@@ -143,8 +147,12 @@ struct SNode {
   // SNodes maintains how flattened index bits are taken from indices
   SNode &fixed(Expr ind, int size) {
     TC_ASSERT(bit::is_power_of_two(size));
-    auto &new_node = insert_children();
-    new_node.type = SNodeType::fixed;
+    auto &new_node = insert_children(SNodeType::fixed);
+    return new_node;
+  }
+
+  SNode &forked() {
+    auto &new_node = insert_children(SNodeType::forked);
     return new_node;
   }
 
@@ -163,12 +171,15 @@ struct SNode {
     return std::make_shared<SNode>(std::forward<Args>(args)...);
   }
 
+  std::string type_name() {
+    return snode_type_name(type);
+  }
+
   void print() {
     for (int i = 0; i < depth; i++) {
       fmt::print("  ");
     }
-    fmt::print("num_variables={} data_size={} repeat={} offset={} addr={}\n",
-               num_variables, data_size, repeat_factor, offset, (uint64)addr);
+    fmt::print("{}\n", type_name());
     for (auto c : ch) {
       c->print();
     }

@@ -1,3 +1,4 @@
+#if(0)
 #include <fstream>
 #include <taichi/common/util.h>
 #include <taichi/common/task.h>
@@ -604,7 +605,7 @@ TODO:
  imm
  vec3
  check unplaced variable
- auto batch sorting
  assert n % 256 = 0
- how to deal with multi dimensional indices
 */
+#endif
+

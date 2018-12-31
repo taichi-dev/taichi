@@ -7,6 +7,7 @@ namespace taichi::Tlang {
 
 struct Program;
 extern Program *current_program;
+extern SNode root;
 
 TC_FORCE_INLINE Program &get_current_program() {
   return *current_program;
@@ -138,6 +139,7 @@ struct Program {
   }
 
   void layout(std::function<void()> func) {
+    root = SNode(0, SNodeType::forked);
     func();
     materialize_layout();
   }
@@ -173,9 +175,6 @@ struct Program {
 
   int num_buffers() {
     return (int)alloc.root->ch.size();
-  }
-
-  void operator()() {
   }
 
   /*
@@ -214,7 +213,7 @@ struct Program {
   }
 
   void materialize_layout() {
-    alloc.materialize();
+    // Should compile layout here
   }
 
   void swap_buffers(int i, int j) {

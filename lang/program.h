@@ -145,8 +145,10 @@ struct Program {
   }
 
   Function def(const std::function<void()> &body) {
+    Expr::set_allow_store(true);
     auto func = Function(*this, body);
     functions.push_back(func);
+    Expr::set_allow_store(false);
     return func;
   }
 

@@ -54,7 +54,7 @@ void visualize_IR(std::string fn, Expr &expr) {
   auto cmd =
       fmt::format("python3 {}/projects/taichi_lang/make_graph.py {} '{}'",
                   get_repo_dir(), fn, gen.graph);
-  system(cmd.c_str());
+  trash(system(cmd.c_str()));
 }
 
 
@@ -314,7 +314,6 @@ FunctionType CPUCodeGen::get(Program &prog) {
 
 FunctionType Program::compile() {
   FunctionType ret;
-  Expr::set_allow_store(false);
   materialize_layout();
   if (config.simd_width == -1) {
     config.simd_width = default_simd_width(config.arch);
@@ -334,7 +333,6 @@ FunctionType Program::compile() {
   } else {
     TC_NOT_IMPLEMENTED;
   }
-  Expr::set_allow_store(true);
   return ret;
 }
 }

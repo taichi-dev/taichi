@@ -153,8 +153,8 @@ struct SNode {
   // SNodes maintains how flattened index bits are taken from indices
   SNode &fixed(Expr ind, int size) {
     TC_ASSERT(bit::is_power_of_two(size));
-    this->n = size;
     auto &new_node = insert_children(SNodeType::fixed);
+    new_node.n = size;
     return new_node;
   }
 
@@ -194,9 +194,8 @@ struct SNode {
 
   SNode &place(Expr &expr) {
     TC_ASSERT(expr);
-    auto child = insert_children(SNodeType::place);
+    auto &child = insert_children(SNodeType::place);
     child.addr.set(expr);
-    TC_P(child.id);
     return *this;
   }
 

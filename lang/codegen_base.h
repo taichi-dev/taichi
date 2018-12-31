@@ -8,6 +8,7 @@ class CodeGenBase : public Visitor {
 public:
   int var_count;
   int snode_count;
+  int accessor_count;
   std::string code, code_suffix;
   std::string folder;
   std::string func_name;
@@ -33,6 +34,7 @@ public:
     create_directories(folder);
     var_count = 0;
     snode_count = 0;
+    accessor_count = 0;
     code_suffix = "\n";
   }
 
@@ -68,8 +70,14 @@ public:
 
   std::string create_snode() {
     TC_ASSERT(snode_count < 10000);
-    return fmt::format("snode_{:04d}", snode_count++);
+    return fmt::format("SNode{:04d}", snode_count++);
   }
+
+  std::string create_accessor() {
+    TC_ASSERT(accessor_count < 10000);
+    return fmt::format("access_{:04d}", accessor_count++);
+  }
+
 
   std::string get_source_fn() {
     return fmt::format("{}/tmp{:04d}.{}", folder, id, suffix);

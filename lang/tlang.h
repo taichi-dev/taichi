@@ -28,7 +28,6 @@ using ForBody = std::function<void()>;
 inline void for_loop(Index &index,
                      std::pair<int64, int64> r,
                      const ForBody &body) {
-  auto &prog = get_current_program();
   TC_ASSERT(r.first == 0);
   get_current_program().current_function->n = r.second;
   body();

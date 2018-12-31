@@ -743,8 +743,8 @@ template <int n_, typename child_type>
 struct fixed {
   static constexpr int n = n_;
   child_type children[n];
-  TC_FORCE_INLINE child_type &look_up(int i) {  // i is flattened index
-    return children[i];
+  TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
+    return &children[i];
   }
 };
 
@@ -752,8 +752,8 @@ template <int n_, typename child_type>
 struct dynamic {
   static constexpr int n = n_;
   std::vector<child_type> children;
-  TC_FORCE_INLINE child_type &look_up(int i) {  // i is flattened index
-    return children[i];
+  TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
+    return &children[i];
   }
 };
 

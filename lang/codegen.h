@@ -10,8 +10,6 @@ class CodeGenBase : public Visitor {
  public:
   int var_count;
   std::string code, code_suffix;
-  std::map<NodeType, std::string> binary_ops;
-  std::map<NodeType, std::string> binary_ops_intrinsics;
   std::string folder;
   std::string func_name;
   int num_groups;
@@ -28,19 +26,7 @@ class CodeGenBase : public Visitor {
     code = "";
     id = get_code_gen_id();
     func_name = fmt::format("func{:06d}", id);
-    binary_ops[NodeType::add] = "+";
-    binary_ops[NodeType::sub] = "-";
-    binary_ops[NodeType::mul] = "*";
-    binary_ops[NodeType::div] = "/";
-    binary_ops[NodeType::mod] = "%";
 
-    binary_ops_intrinsics[NodeType::add] = "add";
-    binary_ops_intrinsics[NodeType::sub] = "sub";
-    binary_ops_intrinsics[NodeType::mul] = "mul";
-    binary_ops_intrinsics[NodeType::div] = "div";
-    binary_ops_intrinsics[NodeType::mod] = "mod";
-    binary_ops_intrinsics[NodeType::min] = "min";
-    binary_ops_intrinsics[NodeType::max] = "max";
 
     folder = "_tlang_cache/";
     create_directories(folder);

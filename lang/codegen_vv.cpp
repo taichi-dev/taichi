@@ -28,18 +28,11 @@ void CPUCodeGen::visit_vv(Expr &expr) {
     }
   }
 
-
-  if (binary_ops.find(expr->type) != binary_ops.end()) {
-    auto op = binary_ops[expr->type];
+  if (expr->type == NodeType::binary) {
+    auto op = binary_type_name(expr->binary_type);
     emit_code("auto {} = {} {} {};", expr->var_name, expr->ch[0]->var_name, op,
               expr->ch[1]->var_name);
     // emit_code("{}.print();", expr->var_name);
-  } else if (expr->type == NodeType::max) {
-    emit_code("auto {} = max({}, {});", expr->var_name, expr[0]->var_name,
-              expr[1]->var_name);
-  } else if (expr->type == NodeType::min) {
-    emit_code("auto {} = min({}, {});", expr->var_name, expr[0]->var_name,
-              expr[1]->var_name);
   } else if (expr->type == NodeType::cmp) {
     auto t = expr->value<CmpType>();
     if (t == CmpType::ne) {

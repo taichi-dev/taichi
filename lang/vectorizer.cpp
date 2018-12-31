@@ -148,7 +148,6 @@ void Vectorizer::visit(Expr &expr) {
   float64 value = 0;
   std::vector<std::vector<Expr>> vectorized_children;
 
-
   // Check for isomorphism
   for (auto member : expr->members) {
     // It must not appear to an existing vectorized expr
@@ -171,11 +170,11 @@ void Vectorizer::visit(Expr &expr) {
 
   expr->is_vectorized = true;
   expr->data_type = expr->members[0]->data_type;
+  expr->binary_type = expr->members[0]->binary_type;
   expr->value<float64>() = value;
   TC_ASSERT(expr->members.size() % group_size == 0);
 
   for (int i = 0; i < (int)vectorized_children.size(); i++) {
-    // TC_P(i);
     auto ch = Expr::create(vectorized_children[i][0]->type);
     ch->members = vectorized_children[i];
     expr->ch.push_back(ch);

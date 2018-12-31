@@ -202,14 +202,16 @@ inline Matrix floor(const Matrix &a) {
 }
 
 inline Expr max(const Expr &a, const Expr &b) {
-  auto n = Expr::create(NodeType::max, a, b);
+  auto n = Expr::create(NodeType::binary, a, b);
   n->data_type = a->data_type;
+  n->binary_type = BinaryType::max;
   return n;
 }
 
 inline Expr min(const Expr &a, const Expr &b) {
-  auto n = Expr::create(NodeType::min, a, b);
+  auto n = Expr::create(NodeType::binary, a, b);
   n->data_type = a->data_type;
+  n->binary_type = BinaryType::min;
   return n;
 }
 

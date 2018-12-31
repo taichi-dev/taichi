@@ -42,8 +42,8 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     }
   }
 
-  if (binary_ops_intrinsics.find(expr->type) != binary_ops_intrinsics.end()) {
-    auto op = binary_ops_intrinsics[expr->type];
+  if (expr->type == NodeType::binary) {
+    auto op = binary_type_name(expr->binary_type);
     emit_code("auto {} = {}({}, {});", expr->var_name, op,
               expr->ch[0]->var_name, expr->ch[1]->var_name);
     // emit_code("{}.print();", expr->var_name);

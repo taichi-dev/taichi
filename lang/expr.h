@@ -66,6 +66,16 @@ class Expr {
     }
   }
 
+#define REGULAR_BINARY_OP(op, name)                              \
+  Expr operator op(const Expr &o) const {                        \
+    TC_ASSERT(node->data_type == o->data_type)                   \
+    auto t = Expr::create(NodeType::binary, load_if_pointer(node), \
+                          load_if_pointer(o.node));              \
+    t->data_type = o->data_type;                                 \
+    t->binary_type = BinaryType::name;                           \
+    return t;                                                    \
+  }
+
 #define BINARY_OP(op, name)                                      \
   Expr operator op(const Expr &o) const {                        \
     TC_ASSERT(node->data_type == o->data_type)                   \
@@ -75,11 +85,11 @@ class Expr {
     return t;                                                    \
   }
 
-  BINARY_OP(*, mul);
-  BINARY_OP(+, add);
-  BINARY_OP(-, sub);
-  BINARY_OP(/, div);
-  BINARY_OP(%, mod);
+  REGULAR_BINARY_OP(*, mul);
+  REGULAR_BINARY_OP(+, add);
+  REGULAR_BINARY_OP(-, sub);
+  REGULAR_BINARY_OP(/, div);
+  REGULAR_BINARY_OP(%, mod);
   BINARY_OP(&, land);
   BINARY_OP(>>, shr);
   BINARY_OP(<<, shl);

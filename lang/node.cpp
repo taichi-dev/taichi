@@ -4,6 +4,8 @@
 TLANG_NAMESPACE_BEGIN
 
 int Node::counter = 0;
+
+std::map<BinaryType, std::string> binary_type_names;
 std::map<NodeType, std::string> node_type_names;
 
 int Node::group_size() const {

@@ -2,7 +2,7 @@
 
 #include <taichi/common/util.h>
 #include "../headers/common.h"
-#include "addr_node.h"
+#include "structural_node.h"
 
 TC_NAMESPACE_BEGIN
 

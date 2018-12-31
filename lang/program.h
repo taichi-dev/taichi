@@ -214,6 +214,7 @@ struct Program {
 
   void materialize_layout() {
     // Should compile layout here
+
   }
 
   void swap_buffers(int i, int j) {

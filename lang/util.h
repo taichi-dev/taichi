@@ -142,4 +142,25 @@ inline std::string data_type_name(DataType t) {
   return data_type_names[t];
 }
 
+enum class SNodeType {
+  undefined,
+  fixed,
+  dynamic,
+  forked,
+};
+
+inline std::string snode_type_name(SNodeType t) {
+  static std::map<SNodeType, std::string> type_names;
+  if (type_names.empty()) {
+#define REGISTER_TYPE(i) type_names[SNodeType::i] = #i;
+    REGISTER_TYPE(undefined);
+    REGISTER_TYPE(fixed);
+    REGISTER_TYPE(dynamic);
+    REGISTER_TYPE(forked);
+#undef REGISTER_TYPE
+  }
+  return type_names[t];
+}
+
+
 TLANG_NAMESPACE_END

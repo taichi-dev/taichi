@@ -1,11 +1,20 @@
 #include "expr.h"
+#include <taichi/common/bit.h>
 
 TC_NAMESPACE_BEGIN
 namespace Tlang {
 
+TC_FORCE_INLINE int32 constexpr operator"" _bits(unsigned long long a) {
+  return 1 << a;
+}
+
+
+// "Structural" nodes
 struct SNode {
   std::vector<Handle<SNode>> ch;
+
   int depth;
+
   Expr addr;
 
   int group_size;
@@ -15,8 +24,15 @@ struct SNode {
   int buffer_id;
   int coeff_i;
   int64 n;
+
   // repeat included
   int data_size;
+
+  SNodeType type;
+
+  SNode() {
+
+  }
 
   SNode(int depth, const Expr &addr = Expr()) : depth(depth), addr(addr) {
     n = -1;
@@ -39,7 +55,7 @@ struct SNode {
     }
     int acc_offset = offset;
     for (auto &c : ch) {
-      if(n != -1 && c->n == -1)
+      if (n != -1 && c->n == -1)
         c->n = n;
       c->offset = acc_offset;
       c->materialize();
@@ -56,7 +72,7 @@ struct SNode {
     int bundle_num_variables = -1;
     std::function<void(SNode *)> walk = [&](SNode *node) {
       if (node->addr) {
-        auto &ad = node->addr->get_address_(); // TODO: remove this hack
+        auto &ad = node->addr->get_address_();  // TODO: remove this hack
         ad.buffer_id = buffer_id;
         ad.n = node->n;
         ad.coeff_i = node->coeff_i;
@@ -117,6 +133,21 @@ struct SNode {
     }
   }
 
+  SNode &insert_children() {
+    TC_ASSERT(ch.size() == 0);
+    ch.push_back(create());
+    return *ch.back();
+  }
+
+  // Let us deal with 1D case first
+  // SNodes maintains how flattened index bits are taken from indices
+  SNode &fixed(Expr ind, int size) {
+    TC_ASSERT(bit::is_power_of_two(size));
+    auto &new_node = insert_children();
+    new_node.type = SNodeType::fixed;
+    return new_node;
+  }
+
   SNode &repeat(int repeat_factor) {
     this->repeat_factor = repeat_factor;
     return *this;
@@ -159,5 +190,5 @@ struct SNode {
     return *this;
   }
 };
-}
+}  // namespace Tlang
 TC_NAMESPACE_END

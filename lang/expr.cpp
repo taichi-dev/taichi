@@ -1,10 +1,6 @@
 #include "tlang.h"
 
-TC_NAMESPACE_BEGIN
-namespace Tlang {
-
-int Node::counter = 0;
-std::map<Node::Type, std::string> Node::node_type_names;
+TLANG_NAMESPACE_BEGIN
 
 Expr &Expr::operator=(const Expr &o) {
   // TC_ASSERT(allow_store);
@@ -30,6 +26,6 @@ Expr Expr::operator[](const Expr &i) {
 }
 
 bool Expr::allow_store = true;
-}
 
-TC_NAMESPACE_END
+TLANG_NAMESPACE_END
+

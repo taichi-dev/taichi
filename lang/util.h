@@ -3,7 +3,10 @@
 #include <immintrin.h>
 #include "../headers/common.h"
 
-namespace taichi::Tlang {
+#define TLANG_NAMESPACE_BEGIN namespace taichi{namespace Tlang {
+#define TLANG_NAMESPACE_END }}
+
+TLANG_NAMESPACE_BEGIN
 
 enum class Arch { x86_64, gpu };
 
@@ -91,4 +94,52 @@ real measure_cpe(std::function<void()> target,
                  real time_second = default_measurement_time);
 
 using FunctionType = void (*)(Context);
+
+enum class DataType : int {
+  f16,
+  f32,
+  f64,
+  i8,
+  i16,
+  i32,
+  i64,
+  u8,
+  u16,
+  u32,
+  u64,
+  unknown
+};
+
+template <typename T>
+DataType get_data_type() {
+  if (std::is_same<T, float32>()) {
+    return DataType::f32;
+  } else if (std::is_same<T, int32>()) {
+    return DataType::i32;
+  } else {
+    TC_NOT_IMPLEMENTED;
+  }
+  return DataType::unknown;
 }
+
+inline std::string data_type_name(DataType t) {
+  static std::map<DataType, std::string> data_type_names;
+  if (data_type_names.empty()) {
+#define REGISTER_DATA_TYPE(i, j) data_type_names[DataType::i] = #j;
+    REGISTER_DATA_TYPE(f16, float16);
+    REGISTER_DATA_TYPE(f32, float32);
+    REGISTER_DATA_TYPE(f64, float64);
+    REGISTER_DATA_TYPE(i8, int8);
+    REGISTER_DATA_TYPE(i16, int16);
+    REGISTER_DATA_TYPE(i32, int32);
+    REGISTER_DATA_TYPE(i64, int64);
+    REGISTER_DATA_TYPE(u8, uint8);
+    REGISTER_DATA_TYPE(u16, uint16);
+    REGISTER_DATA_TYPE(u32, uint32);
+    REGISTER_DATA_TYPE(u64, uint64);
+#undef REGISTER_DATA_TYPE
+  }
+  return data_type_names[t];
+}
+
+TLANG_NAMESPACE_END

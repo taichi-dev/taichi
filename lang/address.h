@@ -5,9 +5,9 @@
 #include <dlfcn.h>
 #include <set>
 #include "../headers/common.h"
+#include "util.h"
 
-TC_NAMESPACE_BEGIN
-namespace Tlang {
+TLANG_NAMESPACE_BEGIN
 
 template <typename T>
 using Handle = std::shared_ptr<T>;
@@ -74,6 +74,5 @@ struct Address {
     }
   }
 };
-}
 
-TC_NAMESPACE_END
+TLANG_NAMESPACE_END

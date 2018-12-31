@@ -5,7 +5,7 @@
 TLANG_NAMESPACE_BEGIN
 
 class CodeGenBase : public Visitor {
-public:
+ public:
   int var_count;
   int snode_count;
   int accessor_count;
@@ -62,7 +62,6 @@ public:
     return members;
   }
 
-
   std::string create_variable() {
     TC_ASSERT(var_count < 10000);
     return fmt::format("var_{:04d}", var_count++);
@@ -77,7 +76,6 @@ public:
     TC_ASSERT(accessor_count < 10000);
     return fmt::format("access_{:04d}", accessor_count++);
   }
-
 
   std::string get_source_fn() {
     return fmt::format("{}/tmp{:04d}.{}", folder, id, suffix);
@@ -95,7 +93,6 @@ public:
     return fmt::format("{}/tmp{:04d}.so", folder, id);
 #endif
   }
-
 
   template <typename... Args>
   void emit_code(std::string f, Args &&... args) {
@@ -119,7 +116,6 @@ public:
     trash(format_ret);
   }
 
-
   void load_dll() {
     auto dll = dlopen(("./" + get_library_fn()).c_str(), RTLD_LAZY);
     TC_ASSERT(dll != nullptr);
@@ -132,6 +128,15 @@ public:
     auto ret = dlsym(dll, func_name.c_str());
     TC_ASSERT(ret != nullptr);
     return (FunctionType)ret;
+  }
+
+  void disassemble() {
+#if defined(TC_PLATFORM_LINUX)
+    auto objdump_ret = system(
+        fmt::format("objdump {} -d > {}.s", get_library_fn(), get_library_fn())
+            .c_str());
+    trash(objdump_ret);
+#endif
   }
 };
 

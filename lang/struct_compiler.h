@@ -5,6 +5,9 @@ TLANG_NAMESPACE_BEGIN
 
 class StructCompiler : public CodeGenBase {
  public:
+  std::vector<SNode *> stack;
+  std::string root_type;
+
   StructCompiler() : CodeGenBase() {
     suffix = "cpp";
     emit_code("#include <common.h>");
@@ -40,6 +43,11 @@ class StructCompiler : public CodeGenBase {
       TC_NOT_IMPLEMENTED;
     }
     emit_code("");
+  }
+
+  void generate_leaf_accessors(SNode &snode) {
+    auto type = snode.type;
+    stack.push_back(&snode);
 
     if (type != SNodeType::place) {
       // Chain accessors for non-leaf nodes
@@ -55,24 +63,48 @@ class StructCompiler : public CodeGenBase {
         for (int i = 0; i < snode.ch.size(); i++) {
           auto ch = snode.ch[i];
           emit_code("TC_FORCE_INLINE {} *access_{}({} *parent, int i) {{",
-                    ch->node_type_name, ch->node_type_name, snode.node_type_name);
-          emit_code("return parent.get<{}>();", i);
+                    ch->node_type_name, ch->node_type_name,
+                    snode.node_type_name);
+          emit_code("return parent->get<{}>();", i);
           emit_code("}");
         }
       }
+      emit_code("");
+    } else {
+      // emit end2end accessors for leaf (place) nodes, using chain accessors
+      emit_code("extern \"C\" {} * access_{}({}* root, int i) {{",
+                snode.node_type_name, snode.node_type_name, root_type);
+      emit_code("auto n0 = root;");
+      for (int i = 0; i + 1 < stack.size(); i++) {
+        emit_code("auto n{} = access_{}(n{},i);", i + 1,
+                  stack[i + 1]->node_type_name, i);
+      }
+      emit_code("return n{};", (int)stack.size() - 1);
+      emit_code("}");
+      emit_code("");
     }
-  }
 
-  void generate_leaf_accessors(SNode &snode) {
-    // emit end2end accessors for leaf (place) nodes, using chain accessors
+    for (auto ch : snode.ch) {
+      generate_leaf_accessors(*ch);
+    }
 
+    stack.pop_back();
   }
 
   void run(SNode &node) {
     // bottom to top
     visit(node);
+    root_type = node.node_type_name;
     generate_leaf_accessors(node);
     write_code_to_file();
+
+    auto cmd = fmt::format(
+        "g++ {} -std=c++14 -shared -fPIC -O3 -march=native -I {}/headers -Wall "
+        "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {}",
+        get_source_fn(), get_project_fn(), get_library_fn());
+    auto compile_ret = std::system(cmd.c_str());
+    TC_ASSERT(compile_ret == 0);
+    disassemble();
   }
 };
 

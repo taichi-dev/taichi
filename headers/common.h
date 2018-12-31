@@ -3,6 +3,7 @@
 #define FUNC_DECL
 
 #include <immintrin.h>
+#include <tuple>
 
 #if !defined(TC_INCLUDED)
 
@@ -739,7 +740,7 @@ VVEC_UNARY_OP(floor);
 // Their look_up function takes a merged index, but they don't know where do the
 // bits come from.
 
-template <int n_, typename child_type>
+template <typename child_type, int n_>
 struct fixed {
   static constexpr int n = n_;
   child_type children[n];
@@ -748,7 +749,7 @@ struct fixed {
   }
 };
 
-template <int n_, typename child_type>
+template <typename child_type, int n_>
 struct dynamic {
   static constexpr int n = n_;
   std::vector<child_type> children;
@@ -759,15 +760,15 @@ struct dynamic {
 
 template <typename... child_types>
 struct forked {
-  using child_type_tuple = std::tuple<child_types...>;
-  child_type_tuple children;
+  std::tuple<child_types...> children;
 
   template <int i>
-  TC_FORCE_INLINE auto &get() {
-    return std::get<i>(children);
+  TC_FORCE_INLINE auto *get() {
+    return &std::get<i>(children);
   }
 };
 // *****************************************************************************
 
 }  // namespace Tlang
+
 }  // namespace taichi

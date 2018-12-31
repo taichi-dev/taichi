@@ -21,11 +21,10 @@ class CPUCodeGen : public CodeGenBase {
   int group_size;
   std::string before_loop_body;
   Program *prog;
-  std::map<std::string, std::string> constant_vectors; // statement to var name
+  std::map<std::string, std::string> constant_vectors;  // statement to var name
   int constant_counter;
 
  public:
-
   std::string get_constant(std::string statement) {
     if (constant_vectors.find(statement) == constant_vectors.end()) {
       auto key = fmt::format("const{:04d}", constant_counter++);
@@ -203,12 +202,7 @@ class CPUCodeGen : public CodeGenBase {
         get_source_fn(), get_project_fn(), get_library_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
-#if defined(TC_PLATFORM_LINUX)
-    auto objdump_ret = system(
-        fmt::format("objdump {} -d > {}.s", get_library_fn(), get_library_fn())
-            .c_str());
-    trash(objdump_ret);
-#endif
+    disassemble();
     return load_function();
   }
 
@@ -216,4 +210,4 @@ class CPUCodeGen : public CodeGenBase {
 };
 
 using CodeGen = CPUCodeGen;
-}
+}  // namespace taichi::Tlang

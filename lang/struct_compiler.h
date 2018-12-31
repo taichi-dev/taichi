@@ -41,22 +41,37 @@ class StructCompiler : public CodeGenBase {
     }
     emit_code("");
 
-    for (auto ch : snode.ch) {
-      emit_code("TC_FORCE_INLINE {} *access_{}({} *parent, int i) {{",
-                ch->node_type_name, ch->node_type_name, snode.node_type_name);
-      emit_code("return parent->look_up(i);");
-      emit_code("}");
+    if (type != SNodeType::place) {
+      // Chain accessors for non-leaf nodes
+      if (type != SNodeType::forked) {
+        // Single child
+        auto ch = snode.ch[0];
+        emit_code("TC_FORCE_INLINE {} *access_{}({} *parent, int i) {{",
+                  ch->node_type_name, ch->node_type_name, snode.node_type_name);
+        emit_code("return parent->look_up(i);");
+        emit_code("}");
+      } else {
+        // fork
+        for (int i = 0; i < snode.ch.size(); i++) {
+          auto ch = snode.ch[i];
+          emit_code("TC_FORCE_INLINE {} *access_{}({} *parent, int i) {{",
+                    ch->node_type_name, ch->node_type_name, snode.node_type_name);
+          emit_code("return parent.get<{}>();", i);
+          emit_code("}");
+        }
+      }
     }
   }
 
-  void generate_accessors() {
-    // emit end2end accessors for leaf nodes, using chain accessors
+  void generate_leaf_accessors(SNode &snode) {
+    // emit end2end accessors for leaf (place) nodes, using chain accessors
+
   }
 
   void run(SNode &node) {
     // bottom to top
     visit(node);
-    generate_accessors();
+    generate_leaf_accessors(node);
     write_code_to_file();
   }
 };

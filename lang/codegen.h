@@ -4,6 +4,7 @@
 #include "visitor.h"
 #include "expr.h"
 #include "codegen_base.h"
+#include "program.h"
 
 namespace taichi::Tlang {
 
@@ -62,8 +63,11 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void generate_header() {
-    emit_code(
-        "#include <common.h>\n using namespace taichi; using namespace Tlang;");
+    emit_code("#include <common.h>\n");
+    emit_code("#include \"{}\"", prog->layout_fn);
+    emit_code("using namespace taichi; using namespace Tlang;");
+
+
     emit_code("extern \"C\" void " + func_name + "(Context context) {\n");
     emit_code("auto n = context.get_range(0);\n\n");
     before_loop_body = code;

@@ -90,6 +90,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       TC_NOT_IMPLEMENTED
     }
   } else if (expr->type == NodeType::load) {
+#if (0)
     bool regular = false;
     if (expr[0]->type == NodeType::pointer &&
         expr[0][1]->type == NodeType::index) {
@@ -205,7 +206,9 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       emit_code("auto {} = {}::load({}_base, {}_offsets);", expr->var_name,
                 vv_type(expr->data_type), expr[0]->var_name, expr[0]->var_name);
     }
+#endif
   } else if (expr->type == NodeType::store) {
+#if (0)
     bool regular = true;
     if (regular && !prog->general_scatter) {
       // TODO: analyze address here
@@ -219,6 +222,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       emit_code("{}.store({}_base, {}_offsets);", expr->ch[1]->var_name,
                 expr[0]->var_name, expr[0]->var_name);
     }
+#endif
   } else if (expr->type == NodeType::combine) {
     // do nothing
   } else if (expr->type == NodeType::imm) {
@@ -250,6 +254,13 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     emit_code("auto {} = add(shl({}_index, {}), {});", expr->var_name,
               expr->var_name, bit::log2int(num_groups), constant);
   } else if (expr->type == NodeType::pointer) {
+    emit_code("{} *{}[{}];", expr->data_type_name(), expr->var_name, vv_width);
+    TC_WARN("Vectorized pointer of  different SNodes is unsupported!");
+    emit_code("for (int v = 0; v < {}; v++)", vv_width);
+    emit_code("{}[v]=access_{}({}.elememt(v));", expr->var_name,
+              expr->ch[0]->members[0]->new_address->node_type_name,
+              expr->ch[1]->var_name);
+#if (0)
     // emit base pointer and offsets
     auto addr = expr[0]->get_address_();
     auto buffer_name = fmt::format("context.buffers[{:02d}]", addr.buffer_id);
@@ -292,6 +303,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       emit_code("auto {}_offsets = {} {} {};", expr->var_name, offset_const_vec,
                 scale_vec, index);
     }
+#endif
   } else if (expr->type == NodeType::adapter_store) {
     auto &ad = prog->adapter(expr[1]->members[0]->value<int>());
     /*

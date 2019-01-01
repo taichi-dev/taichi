@@ -108,6 +108,8 @@ struct Program {
   std::vector<Adapter> adapters;
   std::vector<Function> functions;
 
+  std::string layout_fn;
+
   Context get_context() {
     Context context;
     for (int i = 0; i < num_buffers(); i++) {

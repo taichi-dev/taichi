@@ -11,6 +11,7 @@ SNode root;
 void Program::materialize_layout() {
   StructCompiler scomp;
   scomp.run(root);
+  layout_fn = scomp.get_source_fn();
 }
 
 // All data structure originates from a "root", which is a forked node.

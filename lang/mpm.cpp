@@ -142,8 +142,8 @@ auto mpm = []() {
       {
         auto i = node >> imm((int)bit::log2int(n));
         auto j = node & imm(n - 1);
-        auto dist =
-            min(min(i - imm(5), j - imm(5)), min(imm(n - 5) - i, imm(n - 5) - j));
+        auto dist = min(min(i - imm(5), j - imm(5)),
+                        min(imm(n - 5) - i, imm(n - 5) - j));
         auto mask = cast<float32>(max(min(dist, imm(1)), imm(0)));
         v0 = v0 * mask;
         v1 = v1 * mask;

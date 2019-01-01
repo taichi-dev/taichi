@@ -73,7 +73,7 @@ class StructCompiler : public CodeGenBase {
       emit_code("");
     } else {
       // emit end2end accessors for leaf (place) nodes, using chain accessors
-      emit_code("extern \"C\" {} * access_{}(void *root, int i) {{",
+      emit_code("TLANG_ACCESSOR {} * access_{}(void *root, int i) {{",
                 snode.node_type_name, snode.node_type_name);
       emit_code("auto n0 = ({} *)root;", root_type);
       for (int i = 0; i + 1 < stack.size(); i++) {
@@ -103,6 +103,11 @@ class StructCompiler : public CodeGenBase {
   }
 
   void run(SNode &node) {
+    emit_code("#if defined(TLANG_KERNEL) ");
+    emit_code("#define TLANG_ACCESSOR TC_FORCE_INLINE");
+    emit_code("#else");
+    emit_code("#define TLANG_ACCESSOR extern \"C\"");
+    emit_code("#endif");
     // bottom to top
     visit(node);
     root_type = node.node_type_name;

@@ -73,6 +73,14 @@ auto mpm = []() {
 
   TC_ASSERT(bit::is_power_of_two(n));
 
+  auto clear_buffer = prog.def([&]() {
+    for_loop(index, {0, n * n}, [&] {
+      grid_v[index](0) = imm(0.0_f);
+      grid_v[index](1) = imm(0.0_f);
+      grid_m[index] = imm(0.0_f);
+    });
+  });
+
   auto p2g = prog.def([&]() {
     for_loop(index, {0, n_particles}, [&] {
       auto x = particle_x[index];
@@ -116,14 +124,12 @@ auto mpm = []() {
     });
   });
 
-  p2g();
-
   auto grid_op = [&]() {
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
-        auto &v0 = prog.data(grid_v(0), i * n + j);
-        auto &v1 = prog.data(grid_v(1), i * n + j);
-        auto &m = prog.data(grid_m, i * n + j);
+        auto &v0 = grid_v(0).get<float32>(i * n + j);
+        auto &v1 = grid_v(1).get<float32>(i * n + j);
+        auto &m = grid_m.get<float32>(i * n + j);
         if (m > 0) {
           v0 /= m;
           v1 /= m;
@@ -222,33 +228,36 @@ for_loop(node, {0, n * n}, [&] {
   GUI gui("MPM", n * scale, n * scale);
 
   for (int i = 0; i < n_particles; i++) {
-    prog.data(particle_x(0), i) = 0.35_f + rand() * 0.3_f;
-    prog.data(particle_x(1), i) = 0.35_f + rand() * 0.3_f;
-    prog.data(particle_v(1), i) = -0.3_f;
-    prog.data(particle_J, i) = 1_f;
+    particle_x(0).set<float32>(i, 0.35_f + rand() * 0.3_f);
+    particle_x(1).set<float32>(i, 0.35_f + rand() * 0.3_f);
+    particle_v(1).set<float32>(i, -0.3_f);
+    particle_J.set<float32>(i, 1_f);
   }
 
   auto &canvas = gui.get_canvas();
 
   for (int f = 0; f < 1000; f++) {
     for (int t = 0; t < 200; t++) {
-      prog.clear_buffer(1);
+      TC_TIME(clear_buffer());
       TC_TIME(p2g());
       TC_TIME(grid_op());
       TC_TIME(g2p());
     }
+    /*
     for (int i = 0; i < n * scale; i++) {
       for (int j = 0; j < n * scale; j++) {
         gui.buffer[i][j].x =
-            prog.data(grid_v(0), i / scale * n + j / scale) * 0.01 + 0.5;
+            grid_v(0).set<float32>(i / scale * n + j / scale) * 0.01 + 0.5;
         gui.buffer[i][j].y =
             prog.data(grid_v(1), i / scale * n + j / scale) * 0.01 + 0.5;
         gui.buffer[i][j].z = 1.0;
       }
     }
+    */
     canvas.clear(0x112F41);
     for (int i = 0; i < n_particles; i++) {
-      canvas.circle(prog.data(particle_x(0), i), prog.data(particle_x(1), i))
+      canvas
+          .circle(particle_x(0).get<float32>(i), particle_x(1).get<float32>(i))
           .radius(2)
           .color(0x068587);
     }

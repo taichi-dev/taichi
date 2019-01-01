@@ -196,7 +196,7 @@ class Expr {
   }
 
   template <typename T>
-  T get(int i) {
+  T &get(int i) {
     TC_ASSERT(get_data_type<T>() == node->data_type);
     return *(T *)evaluate_addr(i);
   }

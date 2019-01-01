@@ -81,14 +81,14 @@ struct Program {
     Kernel(Program &program, std::function<void()> func) : program(program) {
       n = -1;
       program.start_function_definition(this);
+      ret = Expr(nullptr);
       func();
       program.end_function_definition();
       compile();
-      program.ret = Expr(nullptr);
     }
 
     void compile() {
-      compiled = program.compile();
+      compiled = program.compile(*this);
     }
 
     void operator()() {
@@ -104,7 +104,6 @@ struct Program {
   CompileConfig config;
   MemoryAllocator alloc;
   Device device;
-  Expr ret;
 
   std::vector<AlignedAllocator> buffers;
   std::vector<Adapter> adapters;
@@ -114,12 +113,6 @@ struct Program {
 
   Context get_context() {
     Context context;
-    /*
-    for (int i = 0; i < num_buffers(); i++) {
-      allocate_buffer(i);
-      context.buffers[i] = buffers[i].get();
-    }
-    */
     context.buffers[0] = data_structure;
     return context;
   }
@@ -174,7 +167,7 @@ struct Program {
   }
 
   Expr store(const Expr &ad, const Expr &e) {
-    return ret.store(ad, e);
+    return get_current_kernel().ret.store(ad, e);
   }
 
   SNode &buffer(int i) {
@@ -194,7 +187,7 @@ struct Program {
   }
   */
 
-  FunctionType compile();
+  FunctionType compile(Kernel &kernel);
 
   void allocate_buffer(int i) {
     while ((int)buffers.size() <= i) {

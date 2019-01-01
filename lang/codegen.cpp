@@ -244,7 +244,7 @@ class GPUCodeGen : public CodeGenBase {
 };
 #endif
 
-void CPUCodeGen::codegen(Program &prog, int group_size) {
+void CPUCodeGen::codegen(Program &prog, Kernel &kernel, int group_size) {
   // TC_ASSERT(mode == Mode::vector);
   this->group_size = group_size;
   TC_ASSERT(group_size != 0);
@@ -283,11 +283,12 @@ void CPUCodeGen::codegen(Program &prog, int group_size) {
 
   // main
   {
-    TC_ASSERT(prog.ret);
+    TC_ASSERT(kernel.ret);
     // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
     this->group_size = group_size;
     // TC_P(group_size);
-    auto vectorized_stores = Vectorizer().run(prog.ret, prog.config.group_size);
+    auto vectorized_stores =
+        Vectorizer().run(kernel.ret, prog.config.group_size);
     // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
     vectorized_stores.accept(*this);
   }
@@ -297,18 +298,18 @@ void CPUCodeGen::codegen(Program &prog, int group_size) {
   generate_tail();
 }
 
-FunctionType CPUCodeGen::get(Program &prog) {
+FunctionType CPUCodeGen::get(Program &prog, Kernel &kernel) {
   auto group_size = prog.config.group_size;
   // auto mode = CPUCodeGen::Mode::vv;
   auto mode = CPUCodeGen::Mode::intrinsics;
   auto simd_width = 8;
   this->mode = mode;
   this->simd_width = simd_width;
-  codegen(prog, group_size);
+  codegen(prog, kernel, group_size);
   return compile();
 }
 
-FunctionType Program::compile() {
+FunctionType Program::compile(Kernel &kernel) {
   FunctionType ret = nullptr;
   if (config.simd_width == -1) {
     config.simd_width = default_simd_width(config.arch);
@@ -320,7 +321,7 @@ FunctionType Program::compile() {
   if (config.arch == Arch::x86_64) {
     CPUCodeGen codegen;
     codegen.unroll = 1;
-    ret = codegen.get(*this);
+    ret = codegen.get(*this, kernel);
   } else if (config.arch == Arch::gpu) {
     TC_NOT_IMPLEMENTED
     // GPUCodeGen codegen;

@@ -134,7 +134,7 @@ class CPUCodeGen : public CodeGenBase {
               adapter_name(i));
   }
 
-  void codegen(Program &prog, int group_size);
+  void codegen(Program &prog, Kernel &ker, int group_size);
 
   std::string vv_type_str(int width, DataType data_type) {
     return fmt::format("VV<{}, {}>", width, data_type_name(data_type));
@@ -210,7 +210,7 @@ class CPUCodeGen : public CodeGenBase {
     return load_function();
   }
 
-  FunctionType get(Program &prog);
+  FunctionType get(Program &prog, Kernel &kernel);
 };
 
 using CodeGen = CPUCodeGen;

@@ -165,4 +165,74 @@ inline std::string snode_type_name(SNodeType t) {
 }
 
 
+// Regular binary ops:
+// Operations that take two oprands, and returns a single operand with the same
+// type
+
+enum class BinaryType : int { mul, add, sub, div, mod, max, min, undefined };
+
+inline std::string binary_type_name(BinaryType type) {
+  static std::map<BinaryType, std::string> binary_type_names;
+  if (binary_type_names.empty()) {
+#define REGISTER_BINARY_TYPE(i) binary_type_names[BinaryType::i] = #i;
+    REGISTER_BINARY_TYPE(mul);
+    REGISTER_BINARY_TYPE(add);
+    REGISTER_BINARY_TYPE(sub);
+    REGISTER_BINARY_TYPE(div);
+    REGISTER_BINARY_TYPE(mod);
+    REGISTER_BINARY_TYPE(max);
+    REGISTER_BINARY_TYPE(min);
+  }
+  return binary_type_names[type];
+}
+
+enum class NodeType : int {
+  binary,  // regular binary
+  land,
+  load,
+  store,
+  pointer,
+  combine,
+  index,
+  addr,
+  adapter_store,
+  adapter_load,
+  imm,
+  floor,
+  cast,
+  shr,
+  shl,
+  cmp,
+  select,
+  undefined
+};
+
+
+inline std::string node_type_name(NodeType type) {
+  static std::map<NodeType, std::string> node_type_names;
+  if (node_type_names.empty()) {
+#define REGISTER_NODE_TYPE(i) node_type_names[NodeType::i] = #i;
+    REGISTER_NODE_TYPE(binary);
+    REGISTER_NODE_TYPE(land);
+    REGISTER_NODE_TYPE(load);
+    REGISTER_NODE_TYPE(store);
+    REGISTER_NODE_TYPE(combine);
+    REGISTER_NODE_TYPE(addr);
+    REGISTER_NODE_TYPE(pointer);
+    REGISTER_NODE_TYPE(adapter_store);
+    REGISTER_NODE_TYPE(adapter_load);
+    REGISTER_NODE_TYPE(imm);
+    REGISTER_NODE_TYPE(index);
+    REGISTER_NODE_TYPE(floor);
+    REGISTER_NODE_TYPE(cast);
+    REGISTER_NODE_TYPE(shr);
+    REGISTER_NODE_TYPE(shl);
+    REGISTER_NODE_TYPE(cmp);
+    REGISTER_NODE_TYPE(select);
+  }
+  return node_type_names[type];
+}
+
+enum class CmpType { eq, ne, le, lt };
+
 TLANG_NAMESPACE_END

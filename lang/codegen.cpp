@@ -310,7 +310,6 @@ FunctionType CPUCodeGen::get(Program &prog) {
 
 FunctionType Program::compile() {
   FunctionType ret = nullptr;
-  materialize_layout();
   if (config.simd_width == -1) {
     config.simd_width = default_simd_width(config.arch);
   }

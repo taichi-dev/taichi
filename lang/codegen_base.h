@@ -78,7 +78,8 @@ class CodeGenBase : public Visitor {
   }
 
   std::string get_source_fn() {
-    return fmt::format("{}/tmp{:04d}.{}", folder, id, suffix);
+    return fmt::format("{}/{}/tmp{:04d}.{}", get_project_fn(), folder, id,
+                       suffix);
   }
 
   std::string get_project_fn() {

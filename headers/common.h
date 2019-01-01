@@ -512,6 +512,14 @@ struct vvec {
     }
   }
 
+  static vvec load(T *addr[dim * n]) {
+    vvec ret;
+    for (int i = 0; i < dim * n; i++) {
+      ret.element(i) = *addr[i];
+    }
+    return ret;
+  }
+
   static vvec load(void *addr) {
     vvec ret;
     for (int i = 0; i < n; i++) {
@@ -539,6 +547,12 @@ struct vvec {
   void store(void *addr, vvec<int32, dim, n> offsets) {
     for (int i = 0; i < n; i++) {
       taichi::Tlang::store<T, dim>(d[i], addr, offsets.d[i]);
+    }
+  }
+
+  void store(T *addr[dim * n]) {
+    for (int i = 0; i < dim * n; i++) {
+      *addr[i] = element(i);
     }
   }
 

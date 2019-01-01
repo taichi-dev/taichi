@@ -90,6 +90,8 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       TC_NOT_IMPLEMENTED
     }
   } else if (expr->type == NodeType::load) {
+    emit_code("auto {} = {}::load({});", expr->var_name,
+              vv_type(expr->data_type), expr[0]->var_name);
 #if (0)
     bool regular = false;
     if (expr[0]->type == NodeType::pointer &&
@@ -208,6 +210,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     }
 #endif
   } else if (expr->type == NodeType::store) {
+    emit_code("{}.store({});", expr->ch[1]->var_name, expr[0]->var_name);
 #if (0)
     bool regular = true;
     if (regular && !prog->general_scatter) {
@@ -257,7 +260,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     emit_code("{} *{}[{}];", expr->data_type_name(), expr->var_name, vv_width);
     TC_WARN("Vectorized pointer of  different SNodes is unsupported!");
     emit_code("for (int v = 0; v < {}; v++)", vv_width);
-    emit_code("{}[v]=access_{}({}.elememt(v));", expr->var_name,
+    emit_code("{}[v]=access_{}({}.element(v));", expr->var_name,
               expr->ch[0]->members[0]->new_address->node_type_name,
               expr->ch[1]->var_name);
 #if (0)

@@ -25,6 +25,11 @@ Expr Expr::operator[](const Expr &i) {
   return create(NodeType::pointer, *this, i);
 }
 
+void *Expr::evaluate_addr(int i) {
+  TC_ASSERT(node->new_address);
+  return node->new_address->evaluate(i);
+}
+
 bool Expr::allow_store = false;
 // assignment should not be used outside function definition; use "Expr::set"
 // instead

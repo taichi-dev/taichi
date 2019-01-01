@@ -21,11 +21,18 @@ auto test_snode = [&]() {
   auto i = Expr::index(0);
   auto u = placeholder(DataType::i32);
 
-  prog.layout([&] { root.fixed(i, 128).place(u); });
+  int n = 128;
 
-  for (int i = 0; i < 10; i++) {
-    // u.access(i);
+  prog.layout([&] { root.fixed(i, n).place(u); });
+
+  for (int i = 0; i < n; i++) {
+    u.set<int32>(i, i + 1);
   }
+
+  for (int i = 0; i < n; i++) {
+    TC_ASSERT(u.get<int32>(i) == i + 1);
+  }
+
 };
 
 TC_REGISTER_TASK(test_snode);

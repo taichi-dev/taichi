@@ -72,9 +72,9 @@ class StructCompiler : public CodeGenBase {
       emit_code("");
     } else {
       // emit end2end accessors for leaf (place) nodes, using chain accessors
-      emit_code("extern \"C\" {} * access_{}({}* root, int i) {{",
-                snode.node_type_name, snode.node_type_name, root_type);
-      emit_code("auto n0 = root;");
+      emit_code("extern \"C\" {} * access_{}(int i) {{", snode.node_type_name,
+                snode.node_type_name);
+      emit_code("auto n0 = &root;");
       for (int i = 0; i + 1 < stack.size(); i++) {
         emit_code("auto n{} = access_{}(n{},i);", i + 1,
                   stack[i + 1]->node_type_name, i);
@@ -105,6 +105,7 @@ class StructCompiler : public CodeGenBase {
     // bottom to top
     visit(node);
     root_type = node.node_type_name;
+    emit_code("{} root;", root_type);
     generate_leaf_accessors(node);
     write_code_to_file();
 

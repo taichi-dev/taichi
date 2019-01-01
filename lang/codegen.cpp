@@ -7,9 +7,7 @@
 #include "util.h"
 #include "program.h"
 
-TC_NAMESPACE_BEGIN
-
-namespace Tlang {
+TLANG_NAMESPACE_BEGIN
 
 class TikzGen : public Visitor {
  public:
@@ -56,7 +54,6 @@ void visualize_IR(std::string fn, Expr &expr) {
                   get_repo_dir(), fn, gen.graph);
   trash(system(cmd.c_str()));
 }
-
 
 #if (0)
 // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#warp-shuffle-functions
@@ -290,8 +287,7 @@ void CPUCodeGen::codegen(Program &prog, int group_size) {
     // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
     this->group_size = group_size;
     // TC_P(group_size);
-    auto vectorized_stores =
-        Vectorizer().run(prog.ret, prog.config.group_size);
+    auto vectorized_stores = Vectorizer().run(prog.ret, prog.config.group_size);
     // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
     vectorized_stores.accept(*this);
   }
@@ -336,6 +332,5 @@ FunctionType Program::compile() {
   TC_ASSERT(ret);
   return ret;
 }
-}
 
-TC_NAMESPACE_END
+TLANG_NAMESPACE_END

@@ -200,6 +200,7 @@ struct SNode {
   SNode &place(Expr &expr) {
     TC_ASSERT(expr);
     auto &child = insert_children(SNodeType::place);
+    expr->new_address = &child;
     child.addr.set(expr);
     return *this;
   }
@@ -210,7 +211,7 @@ struct SNode {
     return *this;
   }
 
-  void *evaluate(int i) {
+  TC_FORCE_INLINE void *evaluate(int i) {
     TC_ASSERT(func);
     return func(i);
   }

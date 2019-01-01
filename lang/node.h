@@ -6,18 +6,10 @@
 TLANG_NAMESPACE_BEGIN
 
 // Regular binary ops:
-// Operations that take two oprands, and returns a single operand with the same type
+// Operations that take two oprands, and returns a single operand with the same
+// type
 
-enum class BinaryType : int {
-  mul,
-  add,
-  sub,
-  div,
-  mod,
-  max,
-  min,
-  undefined
-};
+enum class BinaryType : int { mul, add, sub, div, mod, max, min, undefined };
 
 extern std::map<BinaryType, std::string> binary_type_names;
 
@@ -36,7 +28,7 @@ inline std::string binary_type_name(BinaryType type) {
 }
 
 enum class NodeType : int {
-  binary, // regular binary
+  binary,  // regular binary
   land,
   load,
   store,
@@ -84,12 +76,14 @@ inline std::string node_type_name(NodeType type) {
 
 enum class CmpType { eq, ne, le, lt };
 
+class SNode;
+
 class Node {
-private:
+ private:
   Address _addr;
   static int counter;
 
-public:
+ public:
   static void reset_counter() {
     counter = 0;
   }
@@ -105,6 +99,7 @@ public:
   int num_groups_;
   bool is_vectorized;
   std::string name_;
+  SNode *new_address;
 
   std::string name() {
     return name_;
@@ -132,6 +127,7 @@ public:
     binary_type = BinaryType::undefined;
     id = counter++;
     _value = 0;
+    new_address = nullptr;
   }
 
   std::string data_type_name() const {

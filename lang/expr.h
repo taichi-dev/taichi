@@ -164,10 +164,6 @@ class Expr {
     node = o.node;
   }
 
-  template <typename T>
-  void set(int i, const T &t) {
-  }
-
   Expr &name(std::string s) {
     node->name(s);
     return *this;
@@ -189,6 +185,20 @@ class Expr {
 
   Node *ptr() {
     return node.get();
+  }
+
+  void *evaluate_addr(int i);
+
+  template <typename T>
+  void set(int i, T t) {
+    TC_ASSERT(get_data_type<T>() == node->data_type);
+    *(T *)evaluate_addr(i) = t;
+  }
+
+  template <typename T>
+  T get(int i) {
+    TC_ASSERT(get_data_type<T>() == node->data_type);
+    return *(T *)evaluate_addr(i);
   }
 };
 

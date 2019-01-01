@@ -461,27 +461,23 @@ auto test_multiple_programs = []() {
   auto func1 = prog.def([&]() {
     for_loop(i, {0, n}, [&] { b[i] = a[i] + imm(1.0_f); });
   });
-  /*
   auto func2 = prog.def([&]() {
     for_loop(i, {0, n}, [&] { c[i] = b[i] + imm(1.0_f); });
   });
   auto func3 = prog.def([&]() {
     for_loop(i, {0, n}, [&] { d[i] = c[i] + imm(1.0_f); });
   });
-  */
 
   for (int i = 0; i < n; i++) {
     a.set<float32>(i, i);
   }
 
   func1();
-  // func2();
-  // func3();
+  func2();
+  func3();
 
   for (int i = 0; i < n; i++) {
-    TC_P(i);
-    TC_P(b.get<float32>(i));
-    TC_ASSERT(b.get<float32>(i) == i + 1);
+    TC_ASSERT(d.get<float32>(i) == i + 3);
   }
 };
 

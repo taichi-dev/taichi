@@ -2,7 +2,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-void Vectorizer::sort(Expr &expr) {
+void SLPVectorizer::sort(Expr &expr) {
   auto ch = expr->ch;  // a bunch of store nodes
   std::vector<Expr> sorted;
 
@@ -36,7 +36,7 @@ void Vectorizer::sort(Expr &expr) {
   expr->ch = sorted;
 }
 
-Expr Vectorizer::run(Expr &expr, int group_size) {
+Expr SLPVectorizer::run(Expr &expr, int group_size) {
   TC_ASSERT(expr);
   this->group_size = group_size;
 
@@ -109,7 +109,7 @@ Expr Vectorizer::run(Expr &expr, int group_size) {
   return combined;
 }
 
-void Vectorizer::visit(Expr &expr) {
+void SLPVectorizer::visit(Expr &expr) {
   // TC_INFO("Visiting {} {}", expr->id, expr->node_type_name());
   // TC_P(expr->node_type_name());
   // Note: expr may be replaced by an existing vectorized Expr

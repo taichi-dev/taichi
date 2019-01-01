@@ -5,12 +5,12 @@
 
 namespace taichi::Tlang {
 
-class Vectorizer : public Visitor {
+class SLPVectorizer : public Visitor {
  public:
   std::map<Expr, Expr> scalar_to_vector;
   int group_size;
 
-  Vectorizer() : Visitor(Visitor::Order::parent_first) {
+  SLPVectorizer() : Visitor(Visitor::Order::parent_first) {
   }
 
   void sort(Expr &expr);

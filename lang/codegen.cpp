@@ -199,7 +199,7 @@ class GPUCodeGen : public CodeGenBase {
     group_size = prog.config.group_size;
     simd_width = 32;
     TC_ASSERT(simd_width == 32);
-    auto vectorized_expr = Vectorizer(simd_width).run(e, group_size);
+    auto vectorized_expr = SLPVectorizer(simd_width).run(e, group_size);
     codegen(vectorized_expr, group_size);
     return compile();
   }
@@ -273,7 +273,7 @@ void CPUCodeGen::codegen(Program &prog, Kernel &kernel, int group_size) {
     auto old_gs = this->group_size;
     TC_P(adapter.stores->ch.size());
     auto vectorized_cache_stores =
-        Vectorizer().run(adapter.stores, adapter.input_group_size);
+        SLPVectorizer().run(adapter.stores, adapter.input_group_size);
 
     this->group_size = adapter.input_group_size;
     vectorized_cache_stores.accept(*this);
@@ -288,7 +288,7 @@ void CPUCodeGen::codegen(Program &prog, Kernel &kernel, int group_size) {
     this->group_size = group_size;
     // TC_P(group_size);
     auto vectorized_stores =
-        Vectorizer().run(kernel.ret, prog.config.group_size);
+        SLPVectorizer().run(kernel.ret, prog.config.group_size);
     // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
     vectorized_stores.accept(*this);
   }

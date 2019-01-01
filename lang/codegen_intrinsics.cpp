@@ -14,12 +14,6 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     return fmt::format("vvec<{}, {}, {}>", data_type_name(dt), simd_width,
                        split);
   };
-  auto vvec_const_str = [&](DataType dt, auto val) {
-    return fmt::format("{}({})", vv_type(dt), val);
-  };
-  auto vvec_const_str_list = [&](DataType dt, auto val) {
-    return fmt::format("{}({})", vv_type(dt), vec_to_list_str(val));
-  };
   TC_ASSERT(expr->is_vectorized);
   TC_ASSERT(expr->members.size() == 0 ||
             (int)expr->members.size() == group_size);
@@ -211,21 +205,6 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
 #endif
   } else if (expr->type == NodeType::store) {
     emit_code("{}.store({});", expr->ch[1]->var_name, expr[0]->var_name);
-#if (0)
-    bool regular = true;
-    if (regular && !prog->general_scatter) {
-      // TODO: analyze address here
-      auto addr = expr[0][0]->get_address();
-      TC_ASSERT(addr.coeff_aosoa_group_size == 0 ||
-                num_groups % addr.coeff_aosoa_group_size == 0);
-      emit_code("{}.store({});", expr->ch[1]->var_name,
-                get_vectorized_address(addr, 0, 0));
-    } else {
-      // AVX2 has no scatter...
-      emit_code("{}.store({}_base, {}_offsets);", expr->ch[1]->var_name,
-                expr[0]->var_name, expr[0]->var_name);
-    }
-#endif
   } else if (expr->type == NodeType::combine) {
     // do nothing
   } else if (expr->type == NodeType::imm) {
@@ -264,50 +243,6 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
               expr->var_name,
               expr->ch[0]->members[0]->new_address->node_type_name,
               expr->ch[1]->var_name);
-#if (0)
-    // emit base pointer and offsets
-    auto addr = expr[0]->get_address_();
-    auto buffer_name = fmt::format("context.buffers[{:02d}]", addr.buffer_id);
-    emit_code("auto *{}_base = ({} *){} + {} * {};", expr->var_name,
-              data_type_name(expr->data_type), buffer_name, addr.coeff_imax,
-              addr.n);
-
-    auto index = expr->ch[1]->var_name;
-
-    bool all_zero = true;
-    std::vector<int> coeff_const;
-    for (int i = 0; i < num_groups; i++) {
-      for (auto &m : expr->ch[0]->members) {
-        auto off = m->get_address_().coeff_const;
-        coeff_const.push_back(off);
-        if (off != 0) {
-          all_zero = false;
-        }
-      }
-    }
-    auto offset_var =
-        get_constant(vvec_const_str_list(DataType::i32, coeff_const));
-    TC_WARN("NOT OPTIMIZED");
-    if (addr.coeff_aosoa_stride != 0) {
-      emit_code("auto {}_offsets = {} + {} * {} + {} / {} * {};",
-                expr->var_name, offset_var,
-                vvec_const_str(DataType::i32, addr.coeff_i), index, index,
-                vvec_const_str(DataType::i32, addr.coeff_aosoa_group_size),
-                vvec_const_str(DataType::i32, addr.coeff_aosoa_stride));
-    } else {
-      std::string offset_const_vec = "";
-      if (!all_zero) {
-        offset_const_vec = fmt::format("{} + ", offset_var);
-      }
-      std::string scale_vec = "";
-      if (addr.coeff_i != 1) {
-        scale_vec =
-            fmt::format("{} * ", vvec_const_str(DataType::i32, addr.coeff_i));
-      }
-      emit_code("auto {}_offsets = {} {} {};", expr->var_name, offset_const_vec,
-                scale_vec, index);
-    }
-#endif
   } else if (expr->type == NodeType::adapter_store) {
     auto &ad = prog->adapter(expr[1]->members[0]->value<int>());
     /*

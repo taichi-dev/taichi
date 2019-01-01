@@ -23,7 +23,7 @@ class Node {
   DataType data_type;
   BinaryType binary_type;
   std::string var_name;
-  std::vector<float64> _values;
+  std::vector<float64> values;
   int lanes;
   int id;
   int num_groups_;
@@ -47,8 +47,8 @@ class Node {
     this->lanes = lanes;
     new_addresses.resize(lanes);
     std::fill(new_addresses.begin(), new_addresses.end(), nullptr);
-    _values.resize(lanes);
-    std::fill(_values.begin(), _values.end(), 0.0_f64);
+    values.resize(lanes);
+    std::fill(values.begin(), values.end(), 0.0_f64);
   }
 
   std::string name() {
@@ -98,7 +98,7 @@ class Node {
 
   template <typename T>
   T &value() {
-    return *reinterpret_cast<T *>(&_values[0]);
+    return *reinterpret_cast<T *>(&values[0]);
   }
 };
 

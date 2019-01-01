@@ -117,17 +117,22 @@ class CodeGenBase : public Visitor {
   }
 
   void load_dll() {
-    auto dll = dlopen(("./" + get_library_fn()).c_str(), RTLD_LAZY);
+    dll = dlopen(("./" + get_library_fn()).c_str(), RTLD_LAZY);
     TC_ASSERT(dll != nullptr);
   }
 
-  FunctionType load_function() {
+  template <typename T>
+  T load_function(std::string name) {
     if (dll == nullptr) {
       load_dll();
     }
-    auto ret = dlsym(dll, func_name.c_str());
+    auto ret = dlsym(dll, name.c_str());
     TC_ASSERT(ret != nullptr);
-    return (FunctionType)ret;
+    return (T)ret;
+  }
+
+  FunctionType load_function() {
+    return load_function<FunctionType>(func_name);
   }
 
   void disassemble() {

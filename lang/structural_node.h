@@ -19,6 +19,9 @@ struct SNode {
 
   Expr addr;
 
+  using AccessorFunction = void *(*)(int);
+  AccessorFunction func;
+
   int group_size;
   int repeat_factor;
   int num_variables;
@@ -39,9 +42,11 @@ struct SNode {
 
   SNode(int depth, SNodeType t) : depth(depth), type(t) {
     id = counter++;
+    func = nullptr;
   }
 
   SNode(int depth, const Expr &addr = Expr()) : depth(depth), addr(addr) {
+    func = nullptr;
     id = counter++;
     n = -1;
     num_variables = 0;
@@ -203,6 +208,11 @@ struct SNode {
     TC_ASSERT(this->depth == 1);
     this->n = n;
     return *this;
+  }
+
+  void *evaluate(int i) {
+    TC_ASSERT(func);
+    return func(i);
   }
 };
 }  // namespace Tlang

@@ -91,6 +91,16 @@ class StructCompiler : public CodeGenBase {
     stack.pop_back();
   }
 
+  void load_accessors(SNode &snode) {
+    for (auto ch : snode.ch) {
+      load_accessors(*ch);
+    }
+    if (snode.type == SNodeType::place) {
+      snode.func = load_function<SNode::AccessorFunction>(
+          fmt::format("access_{}", snode.node_type_name));
+    }
+  }
+
   void run(SNode &node) {
     // bottom to top
     visit(node);
@@ -105,6 +115,8 @@ class StructCompiler : public CodeGenBase {
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
     disassemble();
+    load_dll();
+    load_accessors(node);
   }
 };
 

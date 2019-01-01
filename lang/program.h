@@ -72,12 +72,12 @@ struct Program {
   bool general_scatter;
 
   // Should be copiable
-  struct Function {
+  struct Kernel {
     Program &program;
     FunctionType compiled;
     int64 n;
 
-    Function(Program &program, std::function<void()> func) : program(program) {
+    Kernel(Program &program, std::function<void()> func) : program(program) {
       n = -1;
       program.start_function_definition(this);
       func();
@@ -98,7 +98,7 @@ struct Program {
     }
   };
 
-  Function *current_function;
+  Kernel *current_function;
   void *data_structure;
   CompileConfig config;
   MemoryAllocator alloc;
@@ -107,7 +107,7 @@ struct Program {
 
   std::vector<AlignedAllocator> buffers;
   std::vector<Adapter> adapters;
-  std::vector<Function> functions;
+  std::vector<Kernel> functions;
 
   std::string layout_fn;
 
@@ -148,15 +148,15 @@ struct Program {
     materialize_layout();
   }
 
-  Function def(const std::function<void()> &body) {
+  Kernel def(const std::function<void()> &body) {
     Expr::set_allow_store(true);
-    auto func = Function(*this, body);
+    auto func = Kernel(*this, body);
     functions.push_back(func);
     Expr::set_allow_store(false);
     return func;
   }
 
-  void start_function_definition(Function *func) {
+  void start_function_definition(Kernel *func) {
     current_function = func;
   }
 

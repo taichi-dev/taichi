@@ -1,4 +1,3 @@
-#if(0)
 #include "tlang.h"
 #include <taichi/util.h>
 #include <taichi/visual/gui.h>
@@ -8,6 +7,7 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
+#if (0)
 auto test_loop = []() {
   TC_NOT_IMPLEMENTED
   // CoreState::set_trigger_gdb_when_crash(true);
@@ -392,43 +392,6 @@ auto test_adapter = []() {
 
 TC_REGISTER_TASK(test_adapter);
 
-auto test_multiple_programs = []() {
-  int n = 128;
-  Program prog(Arch::x86_64, n);
-  prog.config.group_size = 1;
-
-  Real a, b, c, d;
-
-  prog.layout([&]() {
-    prog.buffer(0).stream(0).group().place(a);
-    prog.buffer(0).stream(1).group().place(b);
-    prog.buffer(0).stream(2).group().place(c);
-    prog.buffer(0).stream(3).group().place(d);
-  });
-
-  auto i = Expr::index(0);
-
-  auto func1 = prog.def([&]() { b[i] = a[i] + imm(1.0_f); });
-
-  auto func2 = prog.def([&]() { c[i] = b[i] + imm(1.0_f); });
-
-  auto func3 = prog.def([&]() { d[i] = c[i] + imm(1.0_f); });
-
-  for (int i = 0; i < n; i++) {
-    prog.data(a, i) = i;
-  }
-
-  func1();
-  func2();
-  func3();
-
-  for (int i = 0; i < n; i++) {
-    TC_ASSERT(prog.data(d, i) == i + 3);
-  }
-};
-
-TC_REGISTER_TASK(test_multiple_programs);
-
 auto test_select = []() {
   int n = 128;
   Program prog(Arch::x86_64);
@@ -460,6 +423,7 @@ auto test_select = []() {
 
 };
 TC_REGISTER_TASK(test_select);
+#endif
 
 // TODO: random access
 
@@ -471,9 +435,56 @@ TC_REGISTER_TASK(test_select);
 #define End )
 */
 
-TC_NAMESPACE_END
-
 /*
 TODO: arbitrary for loop (bounds using arbitrary constants)
  */
-#endif
+auto test_multiple_programs = []() {
+  int n = 128;
+  Program prog(Arch::x86_64);
+  prog.config.group_size = 1;
+
+  Real a, b, c, d;
+  a = placeholder(DataType::f32);
+  b = placeholder(DataType::f32);
+  c = placeholder(DataType::f32);
+  d = placeholder(DataType::f32);
+
+  auto i = Expr::index(0);
+
+  prog.layout([&]() {
+    root.fixed(i, n).place(a);
+    root.fixed(i, n).place(b);
+    root.fixed(i, n).place(c);
+    root.fixed(i, n).place(d);
+  });
+
+  auto func1 = prog.def([&]() {
+    for_loop(i, {0, n}, [&] { b[i] = a[i] + imm(1.0_f); });
+  });
+  /*
+  auto func2 = prog.def([&]() {
+    for_loop(i, {0, n}, [&] { c[i] = b[i] + imm(1.0_f); });
+  });
+  auto func3 = prog.def([&]() {
+    for_loop(i, {0, n}, [&] { d[i] = c[i] + imm(1.0_f); });
+  });
+  */
+
+  for (int i = 0; i < n; i++) {
+    a.set<float32>(i, i);
+  }
+
+  func1();
+  // func2();
+  // func3();
+
+  for (int i = 0; i < n; i++) {
+    TC_P(i);
+    TC_P(b.get<float32>(i));
+    TC_ASSERT(b.get<float32>(i) == i + 1);
+  }
+};
+
+TC_REGISTER_TASK(test_multiple_programs);
+
+TC_NAMESPACE_END

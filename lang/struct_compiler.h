@@ -105,7 +105,11 @@ class StructCompiler : public CodeGenBase {
     // bottom to top
     visit(node);
     root_type = node.node_type_name;
+    emit_code("#if defined(TLANG_KERNEL)");
+    emit_code("extern {} root;", root_type);
+    emit_code("#else");
     emit_code("{} root;", root_type);
+    emit_code("#endif");
     generate_leaf_accessors(node);
     write_code_to_file();
 

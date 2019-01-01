@@ -259,8 +259,26 @@ for_loop(node, {0, n * n}, [&] {
 };
 TC_REGISTER_TASK(mpm);
 
-TC_NAMESPACE_END
+auto test_snode = [&]() {
+  Program prog(Arch::x86_64);
 
-/*
-TODO: arbitrary for loop (bounds using arbitrary constants)
- */
+  auto i = Expr::index(0);
+  auto u = variable(DataType::i32);
+
+  int n = 128;
+
+  // All data structure originates from a "root", which is a forked node.
+  prog.layout([&] { root.fixed(i, n).place(u); });
+
+  for (int i = 0; i < n; i++) {
+    u.set<int32>(i, i + 1);
+  }
+
+  for (int i = 0; i < n; i++) {
+    TC_ASSERT(u.get<int32>(i) == i + 1);
+  }
+};
+
+TC_REGISTER_TASK(test_snode);
+
+TC_NAMESPACE_END

@@ -119,8 +119,7 @@ struct Program {
     return context;
   }
 
-  Program(Arch arch, int n = -1) {
-    TC_ASSERT(n == -1);
+  Program(Arch arch) {
     Node::reset_counter();
     TC_ASSERT(current_program == nullptr);
     current_program = this;
@@ -132,7 +131,6 @@ struct Program {
     } else {
       TC_NOT_IMPLEMENTED;
     }
-    storage_range(n);
     general_scatter = false;
   }
 
@@ -205,6 +203,7 @@ struct Program {
 
   template <typename T = float32>
   T &data(Expr &expr, int i) {
+    TC_NOT_IMPLEMENTED
     if (get_data_type<T>() != expr->data_type) {
       TC_ERROR("Cannot access type {} as type {}",
                data_type_name(expr->data_type),

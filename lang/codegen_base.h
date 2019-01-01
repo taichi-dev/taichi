@@ -119,6 +119,9 @@ class CodeGenBase : public Visitor {
 
   void load_dll() {
     dll = dlopen(("./" + get_library_fn()).c_str(), RTLD_LAZY);
+    if (dll == nullptr) {
+      TC_ERROR("{}", dlerror());
+    }
     TC_ASSERT(dll != nullptr);
   }
 

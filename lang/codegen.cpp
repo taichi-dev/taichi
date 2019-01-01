@@ -3,7 +3,7 @@
 #include <set>
 
 #include "codegen.h"
-#include "vectorizer.h"
+#include "slp_vectorizer.h"
 #include "util.h"
 #include "program.h"
 

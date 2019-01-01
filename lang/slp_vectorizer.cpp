@@ -1,4 +1,4 @@
-#include "vectorizer.h"
+#include "slp_vectorizer.h"
 
 TLANG_NAMESPACE_BEGIN
 

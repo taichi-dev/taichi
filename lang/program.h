@@ -77,9 +77,11 @@ struct Program {
     FunctionType compiled;
     Expr ret;
     int64 n;
+    int stride;
 
     Kernel(Program &program, std::function<void()> func) : program(program) {
       n = -1;
+      stride = 1;
       program.start_function_definition(this);
       ret = Expr(nullptr);
       func();

@@ -3,7 +3,7 @@
 #include "expr.h"
 #include "visitor.h"
 
-namespace taichi::Tlang {
+TLANG_NAMESPACE_BEGIN
 
 class SLPVectorizer : public Visitor {
  public:
@@ -19,4 +19,5 @@ class SLPVectorizer : public Visitor {
 
   void visit(Expr &expr) override;
 };
-}
+
+TLANG_NAMESPACE_END

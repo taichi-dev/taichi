@@ -10,7 +10,7 @@
 #include "expr.h"
 #include "address.h"
 #include "memory_allocator.h"
-#include "vectorizer.h"
+#include "slp_vectorizer.h"
 #include "math.h"
 #include "codegen.h"
 #include "program.h"

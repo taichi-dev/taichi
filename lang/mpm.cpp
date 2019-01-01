@@ -40,17 +40,20 @@ auto mpm = []() {
 
   Real Jp;
 
-  int n_particles = 8000;
+  int n_particles = 8192;
   Program prog(Arch::x86_64);
   prog.general_scatter = true;
 
   prog.config.group_size = 1;
   prog.config.num_groups = 8;
 
+  auto index = Expr::index(0);
+
   prog.layout([&]() {
     int counter = 0;
     auto place = [&](Expr &expr) {
-      prog.buffer(0).range(n_particles).stream(counter++).group(0).place(expr);
+      expr = variable(DataType::f32);
+      root.fixed(index, n_particles).place(expr);
     };
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
@@ -61,20 +64,16 @@ auto mpm = []() {
     }
     place(particle_J);
 
-    prog.buffer(1).range(n * n).stream().group().place(grid_v(0), grid_v(1),
-                                                       grid_m);
-    /*
-    for (int k = 0; k < 2; k++) {
-      prog.buffer(k).range(n * n).stream(i).group(0).place(attr[k][i]);
-    }
-    prog.buffer(2).range(n * n).stream(k).group(0).place(v[k]);
-    */
+    grid_v(0) = variable(DataType::f32);
+    grid_v(1) = variable(DataType::f32);
+    grid_m = variable(DataType::f32);
+
+    root.fixed(index, n * n).forked().place(grid_v(0), grid_v(1), grid_m);
   });
 
   TC_ASSERT(bit::is_power_of_two(n));
 
   auto p2g = prog.def([&]() {
-    auto index = Expr::index(0);
     for_loop(index, {0, n_particles}, [&] {
       auto x = particle_x[index];
       auto v = particle_v[index];

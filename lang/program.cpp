@@ -19,7 +19,7 @@ auto test_snode = [&]() {
   Program prog(Arch::x86_64);
 
   auto i = Expr::index(0);
-  auto u = placeholder(DataType::i32);
+  auto u = variable(DataType::i32);
 
   int n = 128;
 
@@ -32,7 +32,6 @@ auto test_snode = [&]() {
   for (int i = 0; i < n; i++) {
     TC_ASSERT(u.get<int32>(i) == i + 1);
   }
-
 };
 
 TC_REGISTER_TASK(test_snode);

@@ -250,6 +250,10 @@ inline Expr placeholder(DataType dt) {
   return Expr(n);
 }
 
+inline Expr variable(DataType dt) {
+  return placeholder(dt);
+}
+
 inline int Node::member_id(const Expr &expr) const {
   for (int i = 0; i < (int)members.size(); i++) {
     if (members[i] == expr) {

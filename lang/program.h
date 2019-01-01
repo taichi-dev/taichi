@@ -75,6 +75,7 @@ struct Program {
   struct Kernel {
     Program &program;
     FunctionType compiled;
+    Expr ret;
     int64 n;
 
     Kernel(Program &program, std::function<void()> func) : program(program) {
@@ -98,7 +99,7 @@ struct Program {
     }
   };
 
-  Kernel *current_function;
+  Kernel *current_kernel;
   void *data_structure;
   CompileConfig config;
   MemoryAllocator alloc;
@@ -136,6 +137,7 @@ struct Program {
       TC_NOT_IMPLEMENTED;
     }
     general_scatter = false;
+    current_kernel = nullptr;
   }
 
   ~Program() {
@@ -157,11 +159,11 @@ struct Program {
   }
 
   void start_function_definition(Kernel *func) {
-    current_function = func;
+    current_kernel = func;
   }
 
   void end_function_definition() {
-    current_function = nullptr;
+    current_kernel = nullptr;
   }
 
   Adapter &adapter(int i) {
@@ -233,6 +235,14 @@ struct Program {
     alloc.root->n = n;
     return *this;
   }
+
+  inline Kernel &get_current_kernel() {
+    TC_ASSERT(current_kernel);
+    return *current_kernel;
+  }
+
 };
+
+using Kernel = Program::Kernel;
 
 TLANG_NAMESPACE_END

@@ -3,7 +3,7 @@
 #include "util.h"
 #include "memory_allocator.h"
 
-namespace taichi::Tlang {
+TLANG_NAMESPACE_BEGIN
 
 struct Program;
 extern Program *current_program;
@@ -234,4 +234,5 @@ struct Program {
     return *this;
   }
 };
-}  // namespace taichi::Tlang
+
+TLANG_NAMESPACE_END

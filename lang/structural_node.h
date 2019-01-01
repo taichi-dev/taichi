@@ -2,8 +2,7 @@
 #include "expr.h"
 #include <taichi/common/bit.h>
 
-TC_NAMESPACE_BEGIN
-namespace Tlang {
+TLANG_NAMESPACE_BEGIN
 
 TC_FORCE_INLINE int32 constexpr operator"" _bits(unsigned long long a) {
   return 1 << a;
@@ -19,7 +18,7 @@ struct SNode {
 
   Expr addr;
 
-  using AccessorFunction = void *(*)(int);
+  using AccessorFunction = void *(*)(void *, int);
   AccessorFunction func;
 
   int group_size;
@@ -211,10 +210,10 @@ struct SNode {
     return *this;
   }
 
-  TC_FORCE_INLINE void *evaluate(int i) {
+  TC_FORCE_INLINE void *evaluate(void *ds, int i) {
     TC_ASSERT(func);
-    return func(i);
+    return func(ds, i);
   }
 };
-}  // namespace Tlang
-TC_NAMESPACE_END
+
+TLANG_NAMESPACE_END

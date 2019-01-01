@@ -2,7 +2,7 @@
 #include "program.h"
 #include <taichi/common/bit.h>
 
-namespace taichi::Tlang {
+TLANG_NAMESPACE_BEGIN
 
 void CPUCodeGen::visit_intrinsics(Expr &expr) {
   // TC_P(expr->id);
@@ -376,4 +376,5 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     TC_ERROR("Node {} cannot be visited.", expr->node_type_name());
   }
 }
-}  // namespace taichi::Tlang
+
+TLANG_NAMESPACE_END

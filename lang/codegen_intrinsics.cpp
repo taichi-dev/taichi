@@ -260,7 +260,8 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     emit_code("{} *{}[{}];", expr->data_type_name(), expr->var_name, vv_width);
     TC_WARN("Vectorized pointer of  different SNodes is unsupported!");
     emit_code("for (int v = 0; v < {}; v++)", vv_width);
-    emit_code("{}[v]=access_{}({}.element(v));", expr->var_name,
+    emit_code("{}[v]=access_{}(context.buffers[0], {}.element(v));",
+              expr->var_name,
               expr->ch[0]->members[0]->new_address->node_type_name,
               expr->ch[1]->var_name);
 #if (0)

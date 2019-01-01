@@ -12,6 +12,7 @@ void Program::materialize_layout() {
   StructCompiler scomp;
   scomp.run(root);
   layout_fn = scomp.get_source_fn();
+  data_structure = scomp.creator();
 }
 
 TLANG_NAMESPACE_END

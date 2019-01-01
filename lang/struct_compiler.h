@@ -7,6 +7,7 @@ class StructCompiler : public CodeGenBase {
  public:
   std::vector<SNode *> stack;
   std::string root_type;
+  void *(*creator)();
 
   StructCompiler() : CodeGenBase() {
     suffix = "cpp";
@@ -72,9 +73,9 @@ class StructCompiler : public CodeGenBase {
       emit_code("");
     } else {
       // emit end2end accessors for leaf (place) nodes, using chain accessors
-      emit_code("extern \"C\" {} * access_{}(int i) {{", snode.node_type_name,
-                snode.node_type_name);
-      emit_code("auto n0 = &root;");
+      emit_code("extern \"C\" {} * access_{}(void *root, int i) {{",
+                snode.node_type_name, snode.node_type_name);
+      emit_code("auto n0 = ({} *)root;", root_type);
       for (int i = 0; i + 1 < stack.size(); i++) {
         emit_code("auto n{} = access_{}(n{},i);", i + 1,
                   stack[i + 1]->node_type_name, i);
@@ -105,12 +106,13 @@ class StructCompiler : public CodeGenBase {
     // bottom to top
     visit(node);
     root_type = node.node_type_name;
-    emit_code("#if defined(TLANG_KERNEL)");
-    emit_code("extern {} root;", root_type);
-    emit_code("#else");
-    emit_code("{} root;", root_type);
-    emit_code("#endif");
     generate_leaf_accessors(node);
+    emit_code("extern \"C\" void *create_data_structure() {{return new {};}}",
+              root_type);
+    emit_code(
+        "extern \"C\" void release_data_structure(void *ds) {{delete ({} "
+        "*)ds;}}",
+        root_type);
     write_code_to_file();
 
     auto cmd = fmt::format(
@@ -121,6 +123,7 @@ class StructCompiler : public CodeGenBase {
     TC_ASSERT(compile_ret == 0);
     disassemble();
     load_dll();
+    creator = load_function<void *(*)()>("create_data_structure");
     load_accessors(node);
   }
 };

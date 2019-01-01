@@ -99,6 +99,7 @@ struct Program {
   };
 
   Function *current_function;
+  void *data_structure;
   CompileConfig config;
   MemoryAllocator alloc;
   Device device;
@@ -112,10 +113,13 @@ struct Program {
 
   Context get_context() {
     Context context;
+    /*
     for (int i = 0; i < num_buffers(); i++) {
       allocate_buffer(i);
       context.buffers[i] = buffers[i].get();
     }
+    */
+    context.buffers[0] = data_structure;
     return context;
   }
 

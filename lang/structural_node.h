@@ -199,7 +199,7 @@ struct SNode {
   SNode &place(Expr &expr) {
     TC_ASSERT(expr);
     auto &child = insert_children(SNodeType::place);
-    expr->new_address = &child;
+    expr->new_addresses[0] = &child;
     child.addr.set(expr);
     return *this;
   }

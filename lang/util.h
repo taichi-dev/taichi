@@ -3,8 +3,12 @@
 #include <immintrin.h>
 #include "../headers/common.h"
 
-#define TLANG_NAMESPACE_BEGIN namespace taichi{namespace Tlang {
-#define TLANG_NAMESPACE_END }}
+#define TLANG_NAMESPACE_BEGIN \
+  namespace taichi {          \
+  namespace Tlang {
+#define TLANG_NAMESPACE_END \
+  }                         \
+  }
 
 TLANG_NAMESPACE_BEGIN
 
@@ -164,7 +168,6 @@ inline std::string snode_type_name(SNodeType t) {
   return type_names[t];
 }
 
-
 // Regular binary ops:
 // Operations that take two oprands, and returns a single operand with the same
 // type
@@ -206,7 +209,6 @@ enum class NodeType : int {
   select,
   undefined
 };
-
 
 inline std::string node_type_name(NodeType type) {
   static std::map<NodeType, std::string> node_type_names;

@@ -5,7 +5,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-
 class SNode;
 
 class Node {
@@ -24,12 +23,33 @@ class Node {
   DataType data_type;
   BinaryType binary_type;
   std::string var_name;
-  float64 _value;
+  std::vector<float64> _values;
+  int lanes;
   int id;
   int num_groups_;
   bool is_vectorized;
   std::string name_;
-  SNode *new_address;
+  std::vector<SNode *> new_addresses;
+
+
+  Node(const Node &) = delete;
+
+  Node(NodeType type) : type(type) {
+    is_vectorized = false;
+    data_type = DataType::f32;
+    binary_type = BinaryType::undefined;
+    id = counter++;
+    set_lanes(1);
+  }
+
+  // erases all data
+  void set_lanes(int lanes) {
+    this->lanes = lanes;
+    new_addresses.resize(lanes);
+    std::fill(new_addresses.begin(), new_addresses.end(), nullptr);
+    _values.resize(lanes);
+    std::fill(_values.begin(), _values.end(), 0.0_f64);
+  }
 
   std::string name() {
     return name_;
@@ -47,17 +67,6 @@ class Node {
 
   int vv_width() {
     return group_size() * num_groups();
-  }
-
-  Node(const Node &) = delete;
-
-  Node(NodeType type) : type(type) {
-    is_vectorized = false;
-    data_type = DataType::f32;
-    binary_type = BinaryType::undefined;
-    id = counter++;
-    _value = 0;
-    new_address = nullptr;
   }
 
   std::string data_type_name() const {
@@ -89,7 +98,7 @@ class Node {
 
   template <typename T>
   T &value() {
-    return *reinterpret_cast<T *>(&_value);
+    return *reinterpret_cast<T *>(&_values[0]);
   }
 };
 

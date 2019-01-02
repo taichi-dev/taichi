@@ -215,6 +215,8 @@ class Expr {
     } else {
       TC_ERROR("this type does not have pointer");
     }
+    // never
+    return node->ch[0];
   }
 
   REGISTER_FIELD(address, pointer, 0);

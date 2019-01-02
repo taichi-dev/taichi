@@ -207,6 +207,9 @@ enum class NodeType : int {
   shl,
   cmp,
   select,
+  // vectorized
+  vload,
+  vstore,
   undefined
 };
 
@@ -230,6 +233,8 @@ inline std::string node_type_name(NodeType type) {
     REGISTER_NODE_TYPE(shr);
     REGISTER_NODE_TYPE(shl);
     REGISTER_NODE_TYPE(cmp);
+    REGISTER_NODE_TYPE(vload);
+    REGISTER_NODE_TYPE(vstore);
     REGISTER_NODE_TYPE(select);
   }
   return node_type_names[type];

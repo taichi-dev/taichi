@@ -108,18 +108,20 @@ class Node {
 
   int &index_id(int i) {
     TC_ASSERT(type == NodeType::index);
-    return value<int>(i);
+    return attribute<int>(0, i);
   }
 
   int &index_offset(int i) {
     TC_ASSERT(type == NodeType::index);
-    return attribute<int>(0, i);
+    return attribute<int>(1, i);
   }
 
   SNode *&new_addresses(int i) {
     TC_ASSERT(type == NodeType::addr);
     return attribute<SNode *>(0, i);
   }
+
+  void set_similar(const Expr &expr);
 };
 
 TLANG_NAMESPACE_END

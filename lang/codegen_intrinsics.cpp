@@ -86,6 +86,11 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     } else {
       TC_NOT_IMPLEMENTED
     }
+  } else if (expr->type == NodeType::vload) {
+    emit_code(
+        "auto {} = {}::load(access_{}(context.buffers[0], {}.element(0)));",
+        expr->var_name, vv_type(expr->data_type),
+        expr[0]->new_addresses(0)->node_type_name, expr[1]->var_name);
   } else if (expr->type == NodeType::load) {
     emit_code("auto {} = {}::load({});", expr->var_name,
               vv_type(expr->data_type), expr[0]->var_name);

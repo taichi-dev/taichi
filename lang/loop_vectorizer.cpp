@@ -8,11 +8,14 @@ void LoopVectorizer::run(Kernel &ker) {
 }
 
 Expr LoopVectorizer::vectorize(Expr node) {
+  TC_P(node->node_type_name());
   if (input_to_vectorized.find(node) != input_to_vectorized.end()) {
     return input_to_vectorized[node];
   }
   auto new_node = Expr::create(node->type);
   new_node->set_lanes(node->lanes * factor);
+  new_node->data_type = node->data_type;
+  new_node->binary_type = node->binary_type;
 
   for (int i = 0; i < factor; i++) {
     for (int j = 0; j < node->lanes; j++) {
@@ -32,9 +35,11 @@ Expr LoopVectorizer::vectorize(Expr node) {
     }
   }
 
-  for (int i = 0; i < new_node->ch.size(); i++) {
-    new_node->ch.push_back(vectorize(new_node->ch[i]));
+  for (int i = 0; i < node->ch.size(); i++) {
+    new_node->ch.push_back(vectorize(node->ch[i]));
   }
+
+  new_node->is_vectorized = true;
 
   input_to_vectorized[node] = new_node;
 

@@ -5,9 +5,10 @@
 TLANG_NAMESPACE_BEGIN
 
 void CPUCodeGen::visit_intrinsics(Expr &expr) {
-  // TC_P(expr->id);
-  // TC_P(expr->node_type_name());
-  auto vv_width = num_groups * expr->group_size();
+  TC_P(expr->id);
+  TC_P(expr->node_type_name());
+  TC_P(num_groups);
+  auto vv_width = expr->lanes;
   TC_ASSERT(vv_width % simd_width == 0);
   int split = vv_width / simd_width;
   auto vv_type = [&](DataType dt) {
@@ -15,8 +16,10 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
                        split);
   };
   TC_ASSERT(expr->is_vectorized);
+  /*
   TC_ASSERT(expr->members.size() == 0 ||
             (int)expr->members.size() == group_size);
+            */
   if (expr->type == NodeType::addr) {
     return;
   }
@@ -45,17 +48,17 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     TC_ASSERT(expr[1]->type == NodeType::imm)
     TC_WARN("member imm");
     emit_code("auto {} = land({}, {});", expr->var_name, expr[0]->var_name,
-              expr[1]->members[0]->value<int>());
+              expr[1]->value<int>());
   } else if (expr->type == NodeType::shr) {
     TC_WARN("member imm");
     TC_ASSERT(expr[1]->type == NodeType::imm)
     emit_code("auto {} = shr({}, {});", expr->var_name, expr[0]->var_name,
-              expr[1]->members[0]->value<int>());
+              expr[1]->value<int>());
   } else if (expr->type == NodeType::shl) {
     TC_WARN("member imm");
     TC_ASSERT(expr[1]->type == NodeType::imm)
     emit_code("auto {} = shl({}, {});", expr->var_name, expr[0]->var_name,
-              expr[1]->members[0]->value<int>());
+              expr[1]->value<int>());
   } else if (expr->type == NodeType::cmp) {
     auto t = expr->value<CmpType>();
     TC_P((int)t);
@@ -211,22 +214,20 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     TC_WARN("Using member imm");
     if (expr->data_type == DataType::i32) {
       emit_code("auto {} = vvec<int32, {}, {}>({}); /*i32*/ ", expr->var_name,
-                simd_width, split, expr->members[0]->value<int32>());
+                simd_width, split, expr->value<int32>());
     } else {
       emit_code("auto {} = vvec<float32, {}, {}>({}); /*f32*/ ", expr->var_name,
-                simd_width, split, expr->members[0]->value<float32>());
+                simd_width, split, expr->value<float32>());
     }
   } else if (expr->type == NodeType::index) {
     std::string members = "{";
     bool first = true;
-    for (int i = 0; i < num_groups; i++) {
-      for (int j = 0; j < expr->group_size(); j++) {
-        if (!first) {
-          members += ",";
-        }
-        first = false;
-        members += fmt::format("{}", i);
+    for (int i = 0; i < vv_width; i++) {
+      if (!first) {
+        members += ",";
       }
+      first = false;
+      members += fmt::format("{}", expr->index_offset(i));
     }
     TC_ASSERT(bit::is_power_of_two(num_groups));
     members += "}";
@@ -240,25 +241,23 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     TC_WARN("Vectorized pointer of  different SNodes is unsupported!");
     emit_code("for (int v = 0; v < {}; v++)", vv_width);
     emit_code("{}[v]=access_{}(context.buffers[0], {}.element(v));",
-              expr->var_name,
-              expr->ch[0]->members[0]->new_addresses(0)->node_type_name,
+              expr->var_name, expr->ch[0]->new_addresses(0)->node_type_name,
               expr->ch[1]->var_name);
   } else if (expr->type == NodeType::adapter_store) {
-    auto &ad = prog->adapter(expr[1]->members[0]->value<int>());
+    auto &ad = prog->adapter(expr[1]->value<int>());
     /*
     emit_code("{}.store(&{}.inputs[{}]);", expr[0]->var_name,
               adapter_name(expr[1]->members[0]->value<int>()),
               expr[2]->members[0]->value<int>() / ad.input_group_size);
               */
-    ad.store_exprs[expr[2]->members[0]->value<int>() / ad.input_group_size].set(
-        expr[0]);
+    ad.store_exprs[expr[2]->value<int>() / ad.input_group_size].set(expr[0]);
   } else if (expr->type == NodeType::adapter_load) {
     // generate offset
-    auto &ad = prog->adapter(expr[0]->members[0]->value<int>());
+    auto &ad = prog->adapter(expr[0]->value<int>());
     std::vector<int> offsets_val;
     for (int i = 0; i < num_groups; i++) {
       for (int j = 0; j < ad.output_group_size; j++) {
-        int elem_id = expr[1]->members[j]->value<int>();
+        int elem_id = expr[1]->value<int>();
         offsets_val.push_back(i * ad.input_group_size +
                               elem_id / ad.input_group_size *
                                   ad.input_group_size * num_groups +
@@ -285,7 +284,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       std::sort(std::begin(sorted), std::end(sorted));
       sorted.resize(std::unique(sorted.begin(), sorted.end()) - sorted.begin());
 
-      for (int k = 0; k < sorted.size(); k++) {
+      for (int k = 0; k < (int)sorted.size(); k++) {
         auto rid = sorted[k];
         auto tmp_arg = vec_to_list_tmp(register_offset);
         int mask = 0;

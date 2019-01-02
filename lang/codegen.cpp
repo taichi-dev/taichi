@@ -6,6 +6,7 @@
 #include "slp_vectorizer.h"
 #include "util.h"
 #include "program.h"
+#include "loop_vectorizer.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -259,6 +260,7 @@ void CPUCodeGen::codegen(Program &prog, Kernel &kernel, int group_size) {
 
   start_macro_loop();
 
+#if (0)
   // Adapters
   for (int i = 0; i < (int)prog.adapters.size(); i++) {
     auto &ad = prog.adapters[i];
@@ -280,6 +282,7 @@ void CPUCodeGen::codegen(Program &prog, Kernel &kernel, int group_size) {
 
     this->group_size = old_gs;
   }
+#endif
 
   // main
   {
@@ -287,10 +290,14 @@ void CPUCodeGen::codegen(Program &prog, Kernel &kernel, int group_size) {
     // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
     this->group_size = group_size;
     // TC_P(group_size);
-    auto vectorized_stores =
-        SLPVectorizer().run(kernel.ret, prog.config.group_size);
+
+    //auto vectorized_stores =
+    //    SLPVectorizer().run(kernel.ret, prog.config.group_size);
+
+    LoopVectorizer().run(kernel);
+
     // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
-    vectorized_stores.accept(*this);
+    kernel.ret.accept(*this);
   }
   end_macro_loop();
 

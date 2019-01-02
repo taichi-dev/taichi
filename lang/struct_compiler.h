@@ -61,7 +61,7 @@ class StructCompiler : public CodeGenBase {
         emit_code("}");
       } else {
         // fork
-        for (int i = 0; i < snode.ch.size(); i++) {
+        for (int i = 0; i < (int)snode.ch.size(); i++) {
           auto ch = snode.ch[i];
           emit_code("TC_FORCE_INLINE {} *access_{}({} *parent, int i) {{",
                     ch->node_type_name, ch->node_type_name,
@@ -76,7 +76,7 @@ class StructCompiler : public CodeGenBase {
       emit_code("TLANG_ACCESSOR {} * access_{}(void *root, int i) {{",
                 snode.node_type_name, snode.node_type_name);
       emit_code("auto n0 = ({} *)root;", root_type);
-      for (int i = 0; i + 1 < stack.size(); i++) {
+      for (int i = 0; i + 1 < (int)stack.size(); i++) {
         emit_code("auto n{} = access_{}(n{},i);", i + 1,
                   stack[i + 1]->node_type_name, i);
       }

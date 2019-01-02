@@ -241,7 +241,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     emit_code("for (int v = 0; v < {}; v++)", vv_width);
     emit_code("{}[v]=access_{}(context.buffers[0], {}.element(v));",
               expr->var_name,
-              expr->ch[0]->members[0]->new_addresses[0]->node_type_name,
+              expr->ch[0]->members[0]->new_addresses(0)->node_type_name,
               expr->ch[1]->var_name);
   } else if (expr->type == NodeType::adapter_store) {
     auto &ad = prog->adapter(expr[1]->members[0]->value<int>());

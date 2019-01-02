@@ -23,16 +23,14 @@ class Node {
   DataType data_type;
   BinaryType binary_type;
   std::string var_name;
-  std::vector<float64> values;
 
   static constexpr int num_additional_values = 8;
-  std::vector<float64> additional_values[num_additional_values];
+  std::vector<float64> attributes[num_additional_values];
   int lanes;
   int id;
   int num_groups_;
   bool is_vectorized;
   std::string name_;
-  std::vector<SNode *> new_addresses;
 
   Node(const Node &) = delete;
 
@@ -47,13 +45,9 @@ class Node {
   // erases all data
   void set_lanes(int lanes) {
     this->lanes = lanes;
-    new_addresses.resize(lanes);
-    std::fill(new_addresses.begin(), new_addresses.end(), nullptr);
-    values.resize(lanes);
-    std::fill(values.begin(), values.end(), 0.0_f64);
     for (int i = 0; i < num_additional_values; i++) {
-      additional_values[i].resize(lanes);
-      std::fill(additional_values[i].begin(), additional_values[i].end(), 0.0_f64);
+      attributes[i].resize(lanes);
+      std::fill(attributes[i].begin(), attributes[i].end(), 0.0_f64);
     }
   }
 
@@ -104,12 +98,12 @@ class Node {
 
   template <typename T>
   T &value(int i = 0) {
-    return *reinterpret_cast<T *>(&values[i]);
+    return attribute<T>(0, i);
   }
 
   template <typename T>
-  T &additional_value(int k, int i = 0) {
-    return *reinterpret_cast<T *>(&additional_values[k][i]);
+  T &attribute(int k, int i = 0) {
+    return *reinterpret_cast<T *>(&attributes[k][i]);
   }
 
   int &index_id(int i) {
@@ -119,7 +113,12 @@ class Node {
 
   int &index_offset(int i) {
     TC_ASSERT(type == NodeType::index);
-    return additional_value<int>(0, i);
+    return attribute<int>(0, i);
+  }
+
+  SNode *&new_addresses(int i) {
+    TC_ASSERT(type == NodeType::addr);
+    return attribute<SNode *>(0, i);
   }
 };
 

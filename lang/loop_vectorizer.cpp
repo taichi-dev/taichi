@@ -17,10 +17,8 @@ Expr LoopVectorizer::vectorize(Expr node) {
   for (int i = 0; i < factor; i++) {
     for (int j = 0; j < node->lanes; j++) {
       int new_j = i * node->lanes + j;
-      new_node->values[new_j] = node->values[j];
-      new_node->new_addresses[new_j] = node->new_addresses[j];
       for (int k = 0; k < Node::num_additional_values; k++) {
-        new_node->additional_value<double>(k, new_j) = node->additional_value<double>(k, j);
+        new_node->attribute<double>(k, new_j) = node->attribute<double>(k, j);
       }
     }
   }
@@ -29,7 +27,7 @@ Expr LoopVectorizer::vectorize(Expr node) {
     for (int i = 0; i < factor; i++) {
       for (int j = 0; j < node->lanes; j++) {
         int new_j = i * node->lanes + j;
-        new_node->index_offset(new_j) = node->index_offset(j);
+        new_node->index_offset(new_j) = node->index_offset(j) + i;
       }
     }
   }

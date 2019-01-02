@@ -27,7 +27,7 @@ Expr Expr::operator[](const Expr &i) {
 
 void *Expr::evaluate_addr(int i) {
   TC_ASSERT(node->lanes == 1);
-  return node->new_addresses[0]->evaluate(get_current_program().data_structure, i);
+  return node->new_addresses(0)->evaluate(get_current_program().data_structure, i);
 }
 
 bool Expr::allow_store = false;

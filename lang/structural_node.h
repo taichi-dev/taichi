@@ -29,22 +29,13 @@ struct SNode {
   int depth;
 
   Expr addr;
+  int64 n;
   SNode *parent;
 
   using AccessorFunction = void *(*)(void *, int);
   AccessorFunction func;
 
-  int group_size;
-  int repeat_factor;
-  int num_variables;
-  int offset;
-  int buffer_id;
-  int coeff_i;
   std::string node_type_name;
-  int64 n;
-
-  // repeat included
-  int data_size;
 
   SNodeType type;
 

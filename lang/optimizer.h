@@ -39,15 +39,16 @@ class Optimizer {
         auto snode = addr_node->new_addresses(0);
         if (all_same && incremental && offset_start == 0 && offset_inc == 1) {
           if (snode->parent->type == SNodeType::fixed) {
-            TC_INFO("Optimized");
             // replace load with vload
             if (expr->type == NodeType::load) {
+              TC_INFO("Optimized load");
               auto vload = Expr::create(NodeType::vload, addr_node, index_node);
               vload->set_similar(expr);
               vload->is_vectorized = true;
               expr = vload;
               return true;
             } else {
+              TC_INFO("Optimized store");
               auto vstore = Expr::create(NodeType::vstore, addr_node,
                                          index_node, expr->ch[1]);
               vstore->set_similar(expr);

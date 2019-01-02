@@ -319,12 +319,12 @@ inline vec<T, dim> load(const void *);
 
 template <>
 inline float32x8 load<float32, 8>(const void *addr) {
-  return _mm256_load_ps((float32 *)addr);
+  return _mm256_loadu_ps((float32 *)addr);
 }
 
 template <>
 inline vec<int32, 8> load<int32, 8>(const void *addr) {
-  return _mm256_load_si256((__m256i *)addr);
+  return _mm256_loadu_si256((__m256i *)addr);
 }
 
 //*****************************************************************************
@@ -345,12 +345,12 @@ inline void store(const vec<T, dim> &v, const void *);
 
 template <>
 inline void store<float32, 8>(const float32x8 &v, const void *addr) {
-  _mm256_store_ps((float32 *)addr, v);
+  _mm256_storeu_ps((float32 *)addr, v);
 }
 
 template <>
 inline void store<int32, 8>(const int32x8 &v, const void *addr) {
-  _mm256_store_si256((__m256i *)addr, v);
+  _mm256_storeu_si256((__m256i *)addr, v);
 }
 
 //*****************************************************************************

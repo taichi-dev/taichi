@@ -374,7 +374,6 @@ auto advection = []() {
       TC_TIME(swap_buffers());
     }
 
-    /*
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
         for (int k = 0; k < nattr; k++) {
@@ -383,7 +382,6 @@ auto advection = []() {
       }
     }
     gui.update();
-    */
     // gui.screenshot(fmt::format("images/{:04d}.png", f));
   }
 };

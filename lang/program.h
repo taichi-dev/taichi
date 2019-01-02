@@ -206,16 +206,12 @@ struct Program {
 
   template <typename T = float32>
   T &data(Expr &expr, int i) {
-    TC_NOT_IMPLEMENTED
     if (get_data_type<T>() != expr->data_type) {
       TC_ERROR("Cannot access type {} as type {}",
                data_type_name(expr->data_type),
                data_type_name(get_data_type<T>()));
     }
-    auto &addr = expr->get_address_();  // TODO:...
-    TC_ASSERT(addr.initialized());
-    allocate_buffer(addr.buffer_id);
-    return buffers[addr.buffer_id].get<T>()[addr.eval(i)];
+    return *(T *)expr.evaluate_addr(i);
   }
 
   void materialize_layout();

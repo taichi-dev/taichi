@@ -28,8 +28,9 @@ struct SNode {
   int id;
   int depth;
 
-  Expr addr;
   int64 n;
+  int total_bits;
+  Expr addr;
   SNode *parent;
 
   using AccessorFunction = void *(*)(void *, int);
@@ -45,6 +46,7 @@ struct SNode {
 
   SNode(int depth, SNodeType t) : depth(depth), type(t) {
     id = counter++;
+    total_bits = 0;
     std::memset(taken_bits, 0, sizeof(taken_bits));
     func = nullptr;
     parent = nullptr;
@@ -70,6 +72,7 @@ struct SNode {
       auto &ind = indices[i];
       TC_ASSERT(ind->lanes == 1);
       new_node.extractors[ind->index_id(0)].num_bits = size[i];
+      total_bits += bit::log2int(indices[i]);
     }
     return new_node;
   }

@@ -306,9 +306,39 @@ TC_REGISTER_TASK(test_select);
 #define End )
 */
 
-/*
-TODO: arbitrary for loop (bounds using arbitrary constants)
- */
+auto test_single_program = []() {
+  int n = 128;
+  Program prog(Arch::x86_64);
+  prog.config.group_size = 1;
+
+  Real a, b;
+  a = placeholder(DataType::f32);
+  b = placeholder(DataType::f32);
+
+  auto i = Expr::index(0);
+
+  prog.layout([&]() {
+    root.fixed(i, n).place(a);
+    root.fixed(i, n).place(b);
+  });
+
+  auto func1 = prog.def([&]() {
+    for_loop(i, {0, n}, [&] { b[i] = a[i] + imm(1.0_f); });
+  });
+
+  for (int i = 0; i < n; i++) {
+    a.set<float32>(i, i);
+  }
+
+  func1();
+
+  for (int i = 0; i < n; i++) {
+    TC_ASSERT(b.get<float32>(i) == i + 1);
+  }
+};
+
+TC_REGISTER_TASK(test_single_program);
+
 auto test_multiple_programs = []() {
   int n = 128;
   Program prog(Arch::x86_64);

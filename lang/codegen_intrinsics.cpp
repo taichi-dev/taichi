@@ -5,9 +5,9 @@
 TLANG_NAMESPACE_BEGIN
 
 void CPUCodeGen::visit_intrinsics(Expr &expr) {
-  TC_P(expr->id);
-  TC_P(expr->node_type_name());
-  TC_P(num_groups);
+  // TC_P(expr->id);
+  // TC_P(expr->node_type_name());
+  // TC_P(num_groups);
   auto vv_width = expr->lanes;
   TC_ASSERT(vv_width % simd_width == 0);
   int split = vv_width / simd_width;

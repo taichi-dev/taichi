@@ -8,7 +8,7 @@ void LoopVectorizer::run(Kernel &ker) {
 }
 
 Expr LoopVectorizer::vectorize(Expr node) {
-  TC_P(node->node_type_name());
+  // TC_P(node->node_type_name());
   if (input_to_vectorized.find(node) != input_to_vectorized.end()) {
     return input_to_vectorized[node];
   }

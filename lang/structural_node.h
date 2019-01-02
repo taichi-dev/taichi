@@ -59,65 +59,6 @@ struct SNode {
     parent = nullptr;
   }
 
-  void materialize() {
-    TC_ASSERT(bool(addr == nullptr) || bool(ch.size() == 0));
-    TC_ASSERT(!(bool(addr == nullptr) && bool(ch.size() == 0)));
-    if (depth == 1) {
-      TC_ASSERT_INFO(n != -1, "Please set n for buffer.");
-    }
-    if (depth == 2) {  // stream, reset offset
-      offset = 0;
-    }
-    int acc_offset = offset;
-    for (auto &c : ch) {
-      if (n != -1 && c->n == -1)
-        c->n = n;
-      c->offset = acc_offset;
-      c->materialize();
-      num_variables += c->num_variables;
-      acc_offset += c->data_size;
-    }
-    data_size = num_variables * repeat_factor;
-    group_size = (ch.size() ? ch[0]->group_size : 1) * repeat_factor;
-  }
-
-  void set() {
-    int coeff_imax = 0;
-    int buffer_id = 0;
-    int bundle_num_variables = -1;
-    std::function<void(SNode *)> walk = [&](SNode *node) {
-      if (node->addr) {
-        auto &ad = node->addr->get_address_();  // TODO: remove this hack
-        ad.buffer_id = buffer_id;
-        ad.n = node->n;
-        ad.coeff_i = node->coeff_i;
-        ad.coeff_imax = coeff_imax;
-        ad.coeff_aosoa_group_size = group_size;
-        ad.coeff_const = node->offset;
-        // Note: use root->data_size here
-        ad.coeff_aosoa_stride =
-            group_size * (bundle_num_variables - node->coeff_i);
-      }
-      for (auto c : node->ch) {
-        if (c->depth == 2) {  // stream
-          bundle_num_variables = c->num_variables;
-        }
-        if (c->depth == 1) {  // buffer
-          buffer_id = c->buffer_id;
-        }
-        c->coeff_i = node->num_variables;
-        walk(c.get());
-        if (c->depth == 1) {  // buffer
-          coeff_imax = 0;
-        } else if (c->depth == 2) {        // stream
-          coeff_imax += c->num_variables;  // stream attr update
-        }
-      }
-    };
-
-    walk(this);
-  }
-
   SNode &insert_children(SNodeType t) {
     if (this->type != SNodeType::forked) {
       TC_ASSERT(ch.size() == 0);
@@ -151,11 +92,6 @@ struct SNode {
     return new_node;
   }
 
-  SNode &repeat(int repeat_factor) {
-    this->repeat_factor = repeat_factor;
-    return *this;
-  }
-
   template <typename... Args>
   SNode &place(Expr &expr, Args &&... args) {
     return place(expr).place(std::forward<Args>(args)...);
@@ -185,12 +121,6 @@ struct SNode {
     auto &child = insert_children(SNodeType::place);
     expr->new_addresses(0) = &child;
     child.addr.set(expr);
-    return *this;
-  }
-
-  SNode &range(int64 n) {
-    TC_ASSERT(this->depth == 1);
-    this->n = n;
     return *this;
   }
 

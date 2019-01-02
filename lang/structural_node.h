@@ -17,6 +17,7 @@ struct SNode {
   int depth;
 
   Expr addr;
+  SNode *parent;
 
   using AccessorFunction = void *(*)(void *, int);
   AccessorFunction func;
@@ -42,18 +43,7 @@ struct SNode {
   SNode(int depth, SNodeType t) : depth(depth), type(t) {
     id = counter++;
     func = nullptr;
-  }
-
-  SNode(int depth, const Expr &addr = Expr()) : depth(depth), addr(addr) {
-    func = nullptr;
-    id = counter++;
-    n = -1;
-    num_variables = 0;
-    if (addr) {
-      num_variables += 1;
-    }
-    offset = 0;
-    repeat_factor = 1;
+    parent = nullptr;
   }
 
   void materialize() {
@@ -115,41 +105,12 @@ struct SNode {
     walk(this);
   }
 
-  SNode &group(int id = -1) {
-    TC_ASSERT(depth >= 2);
-    if (id == -1) {
-      auto n = create(depth + 1);
-      ch.push_back(n);
-      return *n;
-    } else {
-      while ((int)ch.size() <= id) {
-        auto n = create(depth + 1);
-        ch.push_back(n);
-      }
-      return *ch[id];
-    }
-  }
-
-  SNode &stream(int id = -1) {
-    TC_ASSERT(depth == 1);
-    if (id == -1) {
-      auto n = create(depth + 1);
-      ch.push_back(n);
-      return *n;
-    } else {
-      while ((int)ch.size() <= id) {
-        auto n = create(depth + 1);
-        ch.push_back(n);
-      }
-      return *ch[id];
-    }
-  }
-
   SNode &insert_children(SNodeType t) {
     if (this->type != SNodeType::forked) {
       TC_ASSERT(ch.size() == 0);
     }
     ch.push_back(create(depth + 1, t));
+    ch.back()->parent = this;
     return *ch.back();
   }
 

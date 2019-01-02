@@ -200,6 +200,25 @@ class Expr {
     TC_ASSERT(get_data_type<T>() == node->data_type);
     return *(T *)evaluate_addr(i);
   }
+
+#define REGISTER_FIELD(name, required_type, chid)     \
+  Expr &_##name() {                                   \
+    TC_ASSERT(node->type == NodeType::required_type); \
+    return node->ch[chid];                            \
+  }
+
+  Expr &_pointer() {
+    if (node->type == NodeType::load) {
+      return node->ch[0];
+    } else if (node->type == NodeType::store) {
+      return node->ch[1];
+    } else {
+      TC_ERROR("this type does not have pointer");
+    }
+  }
+
+  REGISTER_FIELD(address, pointer, 0);
+  REGISTER_FIELD(index, pointer, 1);
 };
 
 using Index = Expr;

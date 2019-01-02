@@ -1,7 +1,7 @@
 #pragma once
 
 #include "util.h"
-#include "memory_allocator.h"
+#include "structural_node.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -104,7 +104,6 @@ struct Program {
   Kernel *current_kernel;
   void *data_structure;
   CompileConfig config;
-  MemoryAllocator alloc;
   Device device;
 
   std::vector<AlignedAllocator> buffers;
@@ -172,6 +171,7 @@ struct Program {
     return get_current_kernel().ret.store(ad, e);
   }
 
+  /*
   SNode &buffer(int i) {
     return alloc.buffer(i);
   }
@@ -180,7 +180,6 @@ struct Program {
     return (int)alloc.root->ch.size();
   }
 
-  /*
   void operator()(Context context) {
     if (function == nullptr) {
       compile();
@@ -192,6 +191,7 @@ struct Program {
   FunctionType compile(Kernel &kernel);
 
   void allocate_buffer(int i) {
+    /*
     while ((int)buffers.size() <= i) {
       buffers.emplace_back();
     }
@@ -200,6 +200,8 @@ struct Program {
           alloc.buffer(i).num_variables * alloc.buffer(i).n * sizeof(float32),
           device));
     }
+    */
+    TC_NOT_IMPLEMENTED
   }
 
   template <typename T = float32>
@@ -224,11 +226,6 @@ struct Program {
 
   void clear_buffer(int i) {
     buffers[i].memset(0);
-  }
-
-  Program &storage_range(int64 n) {
-    alloc.root->n = n;
-    return *this;
   }
 
   inline Kernel &get_current_kernel() {

@@ -7,6 +7,7 @@
 #include "util.h"
 #include "program.h"
 #include "loop_vectorizer.h"
+#include "optimizer.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -295,6 +296,7 @@ void CPUCodeGen::codegen(Program &prog, Kernel &kernel, int group_size) {
     //    SLPVectorizer().run(kernel.ret, prog.config.group_size);
 
     LoopVectorizer().run(kernel);
+    Optimizer().run(kernel);
 
     // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
     kernel.ret.accept(*this);

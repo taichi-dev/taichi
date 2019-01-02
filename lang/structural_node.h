@@ -17,13 +17,12 @@ struct IndexExtractor {
   }
 };
 
-
 // "Structural" nodes
 struct SNode {
   std::vector<Handle<SNode>> ch;
 
   IndexExtractor extractors[max_num_indices];
-  int taken_bits[max_num_indices]; // counting from the tail
+  int taken_bits[max_num_indices];  // counting from the tail
 
   static int counter;
   int id;
@@ -138,8 +137,8 @@ struct SNode {
     return new_node;
   }
 
-  SNode &fixed(Expr &index, int size) {
-    return fixed({index}, {size});
+  SNode &fixed(const Expr &index, int size) {
+    return SNode::fixed(std::vector<Expr>{index}, {size});
   }
 
   SNode &forked() {

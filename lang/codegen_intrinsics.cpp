@@ -15,11 +15,6 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     return fmt::format("vvec<{}, {}, {}>", data_type_name(dt), simd_width,
                        split);
   };
-  TC_ASSERT(expr->is_vectorized);
-  /*
-  TC_ASSERT(expr->members.size() == 0 ||
-            (int)expr->members.size() == group_size);
-            */
   if (expr->type == NodeType::addr) {
     return;
   }

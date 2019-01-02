@@ -242,4 +242,6 @@ inline std::string node_type_name(NodeType type) {
 
 enum class CmpType { eq, ne, le, lt };
 
+constexpr int max_num_indices = 8;
+
 TLANG_NAMESPACE_END

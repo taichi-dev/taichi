@@ -42,7 +42,6 @@ auto mpm = []() {
 
   int n_particles = 8192;
   Program prog(Arch::x86_64);
-  prog.general_scatter = true;
 
   prog.config.group_size = 1;
   prog.config.num_groups = 8;

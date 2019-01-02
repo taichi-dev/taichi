@@ -8,9 +8,22 @@ TC_FORCE_INLINE int32 constexpr operator"" _bits(unsigned long long a) {
   return 1 << a;
 }
 
+struct IndexExtractor {
+  int start, num_bits;
+
+  IndexExtractor() {
+    start = 0;
+    num_bits = 0;
+  }
+};
+
+
 // "Structural" nodes
 struct SNode {
   std::vector<Handle<SNode>> ch;
+
+  IndexExtractor extractors[max_num_indices];
+  int taken_bits[max_num_indices]; // counting from the tail
 
   static int counter;
   int id;
@@ -42,6 +55,7 @@ struct SNode {
 
   SNode(int depth, SNodeType t) : depth(depth), type(t) {
     id = counter++;
+    std::memset(taken_bits, 0, sizeof(taken_bits));
     func = nullptr;
     parent = nullptr;
   }
@@ -116,11 +130,16 @@ struct SNode {
 
   // Let us deal with 1D case first
   // SNodes maintains how flattened index bits are taken from indices
-  SNode &fixed(Expr ind, int size) {
-    TC_ASSERT(bit::is_power_of_two(size));
+  SNode &fixed(const std::vector<Expr> &indices, const std::vector<int> &size) {
+    TC_ASSERT(size.size() == 1);
+    TC_ASSERT(bit::is_power_of_two(size[0]));
     auto &new_node = insert_children(SNodeType::fixed);
-    new_node.n = size;
+    new_node.n = size[0];
     return new_node;
+  }
+
+  SNode &fixed(Expr &index, int size) {
+    return fixed({index}, {size});
   }
 
   SNode &forked() {

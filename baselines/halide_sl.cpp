@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
                       input(c, fx + 1, fy + 1) * (      wx) * (      wy);
     // There's only one func here, not much to schedule
     output.compute_root()
-          .reorder(x, c, y).parallel(y).vectorize(x, 8);
+          .reorder(x, c, y).vectorize(x, 8);
 
     output.compile_jit();
     // Setup input & motion field

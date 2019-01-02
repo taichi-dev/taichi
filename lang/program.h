@@ -69,8 +69,6 @@ struct Adapter {
 };
 
 struct Program {
-  bool general_scatter;
-
   // Should be copiable
   struct Kernel {
     Program &program;
@@ -130,7 +128,6 @@ struct Program {
     } else {
       TC_NOT_IMPLEMENTED;
     }
-    general_scatter = false;
     current_kernel = nullptr;
   }
 
@@ -171,38 +168,7 @@ struct Program {
     return get_current_kernel().ret.store(ad, e);
   }
 
-  /*
-  SNode &buffer(int i) {
-    return alloc.buffer(i);
-  }
-
-  int num_buffers() {
-    return (int)alloc.root->ch.size();
-  }
-
-  void operator()(Context context) {
-    if (function == nullptr) {
-      compile();
-    }
-    function(context);
-  }
-  */
-
   FunctionType compile(Kernel &kernel);
-
-  void allocate_buffer(int i) {
-    /*
-    while ((int)buffers.size() <= i) {
-      buffers.emplace_back();
-    }
-    if (!buffers[i].initialized()) {
-      buffers[i] = std::move(AlignedAllocator(
-          alloc.buffer(i).num_variables * alloc.buffer(i).n * sizeof(float32),
-          device));
-    }
-    */
-    TC_NOT_IMPLEMENTED
-  }
 
   template <typename T = float32>
   T &data(Expr &expr, int i) {
@@ -215,14 +181,6 @@ struct Program {
   }
 
   void materialize_layout();
-
-  void swap_buffers(int i, int j) {
-    std::swap(buffers[i], buffers[j]);
-  }
-
-  void clear_buffer(int i) {
-    buffers[i].memset(0);
-  }
 
   inline Kernel &get_current_kernel() {
     TC_ASSERT(current_kernel);

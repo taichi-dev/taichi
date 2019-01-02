@@ -16,7 +16,7 @@ class Optimizer {
         return true;
     }
 
-    if (expr->type == NodeType::load) {
+    if (expr->type == NodeType::load || expr->type == NodeType::store) {
       auto &addr_node = expr._pointer()._address();
       bool all_same = true;
       for (int i = 0; i < addr_node->lanes; i++) {
@@ -41,11 +41,20 @@ class Optimizer {
           if (snode->parent->type == SNodeType::fixed) {
             TC_INFO("Optimized");
             // replace load with vload
-            auto vload = Expr::create(NodeType::vload, addr_node, index_node);
-            vload->set_similar(expr);
-            vload->is_vectorized = true;
-            expr = vload;
-            return true;
+            if (expr->type == NodeType::load) {
+              auto vload = Expr::create(NodeType::vload, addr_node, index_node);
+              vload->set_similar(expr);
+              vload->is_vectorized = true;
+              expr = vload;
+              return true;
+            } else {
+              auto vstore = Expr::create(NodeType::vstore, addr_node,
+                                         index_node, expr->ch[1]);
+              vstore->set_similar(expr);
+              vstore->is_vectorized = true;
+              expr = vstore;
+              return true;
+            }
           }
         }
       }

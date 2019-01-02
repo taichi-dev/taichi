@@ -211,7 +211,7 @@ class Expr {
     if (node->type == NodeType::load) {
       return node->ch[0];
     } else if (node->type == NodeType::store) {
-      return node->ch[1];
+      return node->ch[0];
     } else {
       TC_ERROR("this type does not have pointer");
     }

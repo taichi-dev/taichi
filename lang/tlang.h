@@ -28,7 +28,6 @@ inline void for_loop(Index &index,
                      std::pair<int64, int64> r,
                      const ForBody &body) {
   TC_ASSERT(r.first == 0);
-  get_current_program().get_current_kernel().n = r.second;
   body();
 }
 }  // namespace Tlang

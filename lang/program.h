@@ -126,6 +126,7 @@ struct Program {
     } else {
       TC_NOT_IMPLEMENTED;
     }
+    config.num_groups = 1;
     current_kernel = nullptr;
     snode_root = nullptr;
   }

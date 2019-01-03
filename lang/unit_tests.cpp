@@ -296,10 +296,45 @@ auto test_select = []() {
 TC_REGISTER_TASK(test_select);
 #endif
 
+TC_TEST("test_2d_blocked_array") {
+  int n = 8;
+  Program prog(Arch::x86_64);
+  bool forked = false;
+
+  auto a = var<int32>(), b = var<int32>(), i = ind(), j = ind();
+
+  layout([&] {
+    if (!forked)
+      root.fixed({i, j}, {n / 16, n * 2 / 16})
+          .fixed({i, j}, {16, 16})
+          .forked()
+          .place(a, b);
+    else {
+      root.fixed({i, j}, {n, n * 2}).forked().place(a);
+      root.fixed({i, j}, {n, n * 2}).forked().place(b);
+    }
+  });
+
+  auto inc = kernel(a, [&]() { b[i, j] = a[i, j] + i; });
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n * 2; j++) {
+      a.val<int32>(i, j) = i + j * 3;
+    }
+  }
+
+  inc();
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n * 2; j++) {
+      TC_ASSERT_EQUAL(b.val<int32>(i, j), i * 2 + j * 3, 0);
+    }
+  }
+};
+
 TC_TEST("test_2d_array") {
   int n = 8;
   Program prog(Arch::x86_64);
-  prog.config.group_size = 1;
   bool forked = true;
 
   auto a = var<int32>(), b = var<int32>(), i = ind(), j = ind();

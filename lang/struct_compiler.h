@@ -74,8 +74,8 @@ class StructCompiler : public CodeGenBase {
     } else {
       // emit end2end accessors for leaf (place) nodes, using chain accessors
       emit_code(
-          "TLANG_ACCESSOR {} * access_{}(void *root, int i0, int i1, int i2, "
-          "int i3) {{",
+          "TLANG_ACCESSOR {} * access_{}(void *root, int i0, int i1=0, int i2=0, "
+          "int i3=0) {{",
           snode.node_type_name, snode.node_type_name);
       emit_code("auto n0 = ({} *)root;", root_type);
       for (int i = 0; i + 1 < (int)stack.size(); i++) {

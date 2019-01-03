@@ -305,10 +305,15 @@ auto test_single_program = []() {
   b = placeholder(DataType::f32);
 
   auto i = Expr::index(0);
+  bool fork = true;
 
   prog.layout([&]() {
-    root.fixed(i, n).place(a);
-    root.fixed(i, n).place(b);
+    if (fork) {
+      root.fixed(i, n).forked().place(a, b);
+    } else {
+      root.fixed(i, n).place(a);
+      root.fixed(i, n).place(b);
+    }
   });
 
   auto func1 =

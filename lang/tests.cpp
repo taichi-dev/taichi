@@ -27,7 +27,8 @@ auto mpm = []() {
              inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
   auto hardening = 10.0_f, E = 1e4_f, nu = 0.2_f;
-  // real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
+  // real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 *
+  // nu));
 
   int dim = 2;
 
@@ -71,136 +72,126 @@ auto mpm = []() {
 
   TC_ASSERT(bit::is_power_of_two(n));
 
-  auto clear_buffer = prog.def([&]() {
-    for_loop(index, {0, n * n}, [&] {
-      grid_v[index](0) = imm(0.0_f);
-      grid_v[index](1) = imm(0.0_f);
-      grid_m[index] = imm(0.0_f);
-    });
+  auto clear_buffer = prog.kernel(grid_m, [&]() {
+    grid_v[index](0) = imm(0.0_f);
+    grid_v[index](1) = imm(0.0_f);
+    grid_m[index] = imm(0.0_f);
   });
 
-  auto p2g = prog.def([&]() {
-    for_loop(index, {0, n_particles}, [&] {
-      auto x = particle_x[index];
-      auto v = particle_v[index];
-      // auto F = particle_F[index];
-      auto C = particle_C[index];
-      auto J = particle_J[index];
+  auto p2g = prog.kernel(particle_x(0), [&]() {
+    auto x = particle_x[index];
+    auto v = particle_v[index];
+    // auto F = particle_F[index];
+    auto C = particle_C[index];
+    auto J = particle_J[index];
 
-      auto base_coord = floor(imm(inv_dx) * x - imm(0.5_f));
-      auto fx = x * imm(inv_dx) - base_coord;
+    auto base_coord = floor(imm(inv_dx) * x - imm(0.5_f));
+    auto fx = x * imm(inv_dx) - base_coord;
 
-      Vector w[3];
-      w[0] = imm(0.5_f) * sqr(imm(1.5_f) - fx);
-      w[1] = imm(0.75_f) - sqr(fx - imm(1.0_f));
-      w[2] = imm(0.5_f) * sqr(fx - imm(0.5_f));
+    Vector w[3];
+    w[0] = imm(0.5_f) * sqr(imm(1.5_f) - fx);
+    w[1] = imm(0.75_f) - sqr(fx - imm(1.0_f));
+    w[2] = imm(0.5_f) * sqr(fx - imm(0.5_f));
 
-      auto cauchy = imm(E) * (J - imm(1.0_f));
-      auto affine = imm(particle_mass) * C;
-      for (int i = 0; i < dim; i++) {
-        affine(i, i) =
-            affine(i, i) + imm(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
+    auto cauchy = imm(E) * (J - imm(1.0_f));
+    auto affine = imm(particle_mass) * C;
+    for (int i = 0; i < dim; i++) {
+      affine(i, i) =
+          affine(i, i) + imm(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
+    }
+
+    auto base_offset =
+        cast<int>(base_coord(0)) * imm(n) + cast<int>(base_coord(1));
+
+    // scatter
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        auto dpos = Vector(dim);
+        dpos(0) = imm(dx) * (cast<float32>(imm(i)) - fx(0));
+        dpos(1) = imm(dx) * (cast<float32>(imm(j)) - fx(1));
+        auto weight = w[i](0) * w[j](1);
+        auto node = base_offset + imm(i * n + j);
+        grid_v[node] =
+            grid_v[node] + weight * (imm(particle_mass) * v + affine * dpos);
+        grid_m[node] = grid_m[node] + imm(particle_mass) * weight;
       }
-
-      auto base_offset =
-          cast<int>(base_coord(0)) * imm(n) + cast<int>(base_coord(1));
-
-      // scatter
-      for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-          auto dpos = Vector(dim);
-          dpos(0) = imm(dx) * (cast<float32>(imm(i)) - fx(0));
-          dpos(1) = imm(dx) * (cast<float32>(imm(j)) - fx(1));
-          auto weight = w[i](0) * w[j](1);
-          auto node = base_offset + imm(i * n + j);
-          grid_v[node] =
-              grid_v[node] + weight * (imm(particle_mass) * v + affine * dpos);
-          grid_m[node] = grid_m[node] + imm(particle_mass) * weight;
-        }
-      }
-
-    });
+    }
   });
 
-  auto grid_op = prog.def([&]() {
+  auto grid_op = prog.kernel(grid_m, [&]() {
     auto node = Expr::index(0);
-    for_loop(node, {0, n * n}, [&] {
-      auto v0 = load(grid_v[node](0));
-      auto v1 = load(grid_v[node](1));
-      auto m = load(grid_m[node]);
+    auto v0 = load(grid_v[node](0));
+    auto v1 = load(grid_v[node](1));
+    auto m = load(grid_m[node]);
 
-      // auto inv_m = imm(1.0_f) / max(m, imm(1e-37_f));
-      auto inv_m = imm(1.0_f) / m;
-      inv_m.name("inv_m");
-      auto mask = cmp_lt(imm(0.0_f), m);
-      mask.name("mask");
-      v0 = select(mask, v0 * inv_m, imm(0.0_f)).name("v0");
-      v1 = select(mask, v1 * inv_m + imm(dt * -200_f), imm(0.0_f)).name("v1");
+    // auto inv_m = imm(1.0_f) / max(m, imm(1e-37_f));
+    auto inv_m = imm(1.0_f) / m;
+    inv_m.name("inv_m");
+    auto mask = cmp_lt(imm(0.0_f), m);
+    mask.name("mask");
+    v0 = select(mask, v0 * inv_m, imm(0.0_f)).name("v0");
+    v1 = select(mask, v1 * inv_m + imm(dt * -200_f), imm(0.0_f)).name("v1");
 
-      {
-        auto i = node >> imm((int)bit::log2int(n));
-        auto j = node & imm(n - 1);
-        auto dist = min(min(i - imm(5), j - imm(5)),
-                        min(imm(n - 5) - i, imm(n - 5) - j));
-        auto mask = cast<float32>(max(min(dist, imm(1)), imm(0)));
-        v0 = v0 * mask;
-        v1 = v1 * mask;
-      }
+    {
+      auto i = node >> imm((int)bit::log2int(n));
+      auto j = node & imm(n - 1);
+      auto dist =
+          min(min(i - imm(5), j - imm(5)), min(imm(n - 5) - i, imm(n - 5) - j));
+      auto mask = cast<float32>(max(min(dist, imm(1)), imm(0)));
+      v0 = v0 * mask;
+      v1 = v1 * mask;
+    }
 
-      grid_v[node](0) = v0;
-      grid_v[node](1) = v1;
-    });
+    grid_v[node](0) = v0;
+    grid_v[node](1) = v1;
   });
 
-  auto g2p = prog.def([&]() {
-    auto index = Expr::index(0);
-    for_loop(index, {0, n_particles}, [&]() {
-      auto x = particle_x[index];
-      auto v = Vector(dim);
-      // auto F = particle_F[index];
-      auto C = Matrix(dim, dim);
-      auto J = particle_J[index];
+  auto g2p = prog.kernel(particle_x(0), [&]() {
+    auto x = particle_x[index];
+    auto v = Vector(dim);
+    // auto F = particle_F[index];
+    auto C = Matrix(dim, dim);
+    auto J = particle_J[index];
 
-      for (int i = 0; i < dim; i++) {
-        v(i) = imm(0.0_f);
-        for (int j = 0; j < dim; j++) {
-          C(i, j) = imm(0.0_f);
-        }
+    for (int i = 0; i < dim; i++) {
+      v(i) = imm(0.0_f);
+      for (int j = 0; j < dim; j++) {
+        C(i, j) = imm(0.0_f);
       }
+    }
 
-      auto base_coord = floor(imm(inv_dx) * x - imm(0.5_f));
-      auto fx = x * imm(inv_dx) - base_coord;
+    auto base_coord = floor(imm(inv_dx) * x - imm(0.5_f));
+    auto fx = x * imm(inv_dx) - base_coord;
 
-      Vector w[3];
-      w[0] = imm(0.5_f) * sqr(imm(1.5_f) - fx);
-      w[1] = imm(0.75_f) - sqr(fx - imm(1.0_f));
-      w[2] = imm(0.5_f) * sqr(fx - imm(0.5_f));
+    Vector w[3];
+    w[0] = imm(0.5_f) * sqr(imm(1.5_f) - fx);
+    w[1] = imm(0.75_f) - sqr(fx - imm(1.0_f));
+    w[2] = imm(0.5_f) * sqr(fx - imm(0.5_f));
 
-      // auto J = F(0, 0) * F(1, 1) - F(1, 0) * F(0, 1);
-      auto base_offset =
-          cast<int>(base_coord(0)) * imm(n) + cast<int>(base_coord(1));
+    // auto J = F(0, 0) * F(1, 1) - F(1, 0) * F(0, 1);
+    auto base_offset =
+        cast<int>(base_coord(0)) * imm(n) + cast<int>(base_coord(1));
 
-      // scatter
-      for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-          auto dpos = Vector(dim);
-          dpos(0) = cast<float32>(imm(i)) - fx(0);
-          dpos(1) = cast<float32>(imm(j)) - fx(1);
-          auto weight = w[i](0) * w[j](1);
-          auto node = base_offset + imm(i * n + j);
-          v = v + weight * grid_v[node];
-          C = C + imm(4 * inv_dx) * outer_product(weight * grid_v[node], dpos);
-        }
+    // scatter
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        auto dpos = Vector(dim);
+        dpos(0) = cast<float32>(imm(i)) - fx(0);
+        dpos(1) = cast<float32>(imm(j)) - fx(1);
+        auto weight = w[i](0) * w[j](1);
+        auto node = base_offset + imm(i * n + j);
+        v = v + weight * grid_v[node];
+        C = C + imm(4 * inv_dx) * outer_product(weight * grid_v[node], dpos);
       }
+    }
 
-      J = J * (imm(1.0_f) + imm(dt) * (C(0, 0) + C(1, 1)));
+    J = J * (imm(1.0_f) + imm(dt) * (C(0, 0) + C(1, 1)));
 
-      particle_C[index] = C;
-      particle_v[index] = v;
-      particle_J[index] = J;
-      x = x + imm(dt) * v;
-      particle_x[index] = x;
-    });
+    particle_C[index] = C;
+    particle_v[index] = v;
+    particle_J[index] = J;
+    x = x + imm(dt) * v;
+    particle_x[index] = x;
   });
 
   int scale = 8;
@@ -266,9 +257,9 @@ auto advection = []() {
       if (use_adapter) {
         TC_NOT_IMPLEMENTED
         for (int i = 0; i < nattr; i++) {
-          //prog.buffer(k).range(n * n).stream(0).group(0).place(attr[k][i]);
+          // prog.buffer(k).range(n * n).stream(0).group(0).place(attr[k][i]);
         }
-        //prog.buffer(2).range(n * n).stream(0).group(0).place(v[k]);
+        // prog.buffer(2).range(n * n).stream(0).group(0).place(v[k]);
       } else {
         for (int i = 0; i < nattr; i++) {
           attr[k][i] = variable(DataType::f32);

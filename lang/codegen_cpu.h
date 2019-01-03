@@ -68,21 +68,21 @@ class CPUCodeGen : public CodeGenBase {
 
   void generate_loop_header(SNode *snode, bool last_level = false) {
     if (snode->parent != nullptr) {
-      generate_loop_header(snode->parent);
+      generate_loop_header(snode->parent,
+                           last_level && snode->type == SNodeType::forked);
     } else {
       return;  // no loop for root, which is a fork
-    }
-    if (snode->type == SNodeType::place) {
-      return;
     }
     auto l = loop_variable(snode);
     if (snode->type == SNodeType::forked) {
       //
     }
-    if (last_level) {
-      emit_code("for (int {} = 0, b = 0; {} < {};) {{", l, l, snode->n);
+    if (last_level && snode->type != SNodeType::forked) {
+      emit_code("for (int {} = 0, b = 0; {} < {}::n;) {{", l, l,
+                snode->node_type_name);
     } else {
-      emit_code("for (int {} = 0; {} < {}; {} += {}) {{", l, l, snode->n, l, 1);
+      emit_code("for (int {} = 0; {} < {}::n; {} += {}) {{", l, l,
+                snode->node_type_name, l, 1);
     }
     auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
     emit_code("auto {}_cache = access_{}({}, {});", snode->node_type_name,
@@ -91,17 +91,15 @@ class CPUCodeGen : public CodeGenBase {
 
   void generate_loop_tail(SNode *snode, bool last_level = false) {
     auto l = loop_variable(snode);
-    if (last_level) {
+    if (last_level && snode->type != SNodeType::forked) {
       emit_code("{} += {}; b += {};", l, num_groups * unroll, unroll);
+    }
+    if (snode->parent != nullptr) {
+      emit_code("}");
+      generate_loop_tail(snode->parent,
+                         last_level && snode->type == SNodeType::forked);
     } else {
       return;  // no loop for root, which is a fork
-    }
-    emit_code("}");
-    if (snode->parent != nullptr) {
-      generate_loop_tail(snode->parent);
-    }
-    if (snode->type == SNodeType::place) {
-      return;
     }
   }
 

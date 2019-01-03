@@ -237,12 +237,13 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     members += "}";
     auto index_id = expr->index_id(0);
     auto base = index_name(prog->current_snode, index_id);
-    emit_code("auto {}_index = {}({} + {} * 0);", expr->var_name, vv_type(DataType::i32), base, num_groups);
+    emit_code("auto {}_index = {}({} + {} * 0);", expr->var_name,
+              vv_type(DataType::i32), base, num_groups);
     auto constant =
         get_constant(fmt::format("{}({})", vv_type(expr->data_type), members));
 
-    emit_code("auto {} = add({}_index, {});", expr->var_name,
-              expr->var_name, constant);
+    emit_code("auto {} = add({}_index, {});", expr->var_name, expr->var_name,
+              constant);
   } else if (expr->type == NodeType::pointer) {
     emit_code("{} *{}[{}];", expr->data_type_name(), expr->var_name, vv_width);
     TC_WARN("Vectorized pointer of different SNodes is unsupported!");

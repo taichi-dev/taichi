@@ -28,7 +28,7 @@ class StructCompiler : public CodeGenBase {
       TC_P(ch->total_num_bits);
       if (ch_id == 0) {
         snode.total_bit_start = total_bits_start_inferred;
-      } else {
+      } else if (snode.parent != nullptr) { // root is ok
         TC_ASSERT(snode.total_bit_start == total_bits_start_inferred);
       }
       // infer extractors
@@ -38,7 +38,7 @@ class StructCompiler : public CodeGenBase {
         if (ch_id == 0) {
           snode.extractors[i].start = inferred;
           snode.extractors[i].dest_offset = snode.total_bit_start + acc_offsets;
-        } else {
+        } else if (snode.parent != nullptr) { // root is OK
           TC_ASSERT_INFO(snode.extractors[i].start == inferred,
                          "Inconsistent bit configuration");
           TC_ASSERT_INFO(snode.extractors[i].dest_offset ==

@@ -3,11 +3,27 @@
 TLANG_NAMESPACE_BEGIN
 
 void LoopVectorizer::run(Kernel &ker) {
+  // simply pick the last index to vectorize
+  bool active[max_num_indices];
+  std::memset(active, 0, sizeof(active));
+  auto s = ker.program.current_snode;
+  while (s != nullptr) {
+    for (int i = 0; i < max_num_indices; i++) {
+      if (s->extractors[i].num_bits) {
+        active[i] = true;
+        if (vectorized_id < i) {
+          vectorized_id = i;
+        }
+      }
+    }
+    s = s->parent;
+  }
   ker.ret = vectorize(ker.ret);  // vectorize
   ker.stride *= factor;
 }
 
 Expr LoopVectorizer::vectorize(Expr node) {
+  TC_ASSERT(vectorized_id != -1);
   // TC_P(node->node_type_name());
   if (input_to_vectorized.find(node) != input_to_vectorized.end()) {
     return input_to_vectorized[node];
@@ -30,7 +46,9 @@ Expr LoopVectorizer::vectorize(Expr node) {
     for (int i = 0; i < factor; i++) {
       for (int j = 0; j < node->lanes; j++) {
         int new_j = i * node->lanes + j;
-        new_node->index_offset(new_j) = node->index_offset(j) + i;
+        new_node->index_offset(new_j) =
+            node->index_offset(j) +
+            i * (node->index_id(0) == vectorized_id);
       }
     }
   }

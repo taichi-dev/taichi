@@ -302,24 +302,21 @@ auto test_2d_array = [] {
 
   auto a = var<int32>(), i = ind(), j = ind();
 
-  layout([&] { root.fixed({i, j}, {n, n}).forked().place(a); });
+  layout([&] { root.fixed({i, j}, {n, n * 2}).forked().place(a); });
 
   auto inc = kernel(a, [&]() { a[i, j] = a[i, j] + i; });
 
   for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      a.val<int32>(i, j) = i + j * 2;
+    for (int j = 0; j < n * 2; j++) {
+      a.val<int32>(i, j) = i + j * 3;
     }
   }
 
   inc();
 
   for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      TC_P(i);
-      TC_P(j);
-      TC_P(a.val<int32>(i, j));
-      TC_ASSERT(a.val<int32>(i, j) == i * 2 + j * 2);
+    for (int j = 0; j < n * 2; j++) {
+      TC_ASSERT(a.val<int32>(i, j) == i * 2 + j * 3);
     }
   }
 };

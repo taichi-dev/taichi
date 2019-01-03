@@ -248,12 +248,18 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     emit_code("{} *{}[{}];", expr->data_type_name(), expr->var_name, vv_width);
     TC_WARN("Vectorized pointer of different SNodes is unsupported!");
     emit_code("for (int v = 0; v < {}; v++)", vv_width);
-    std::string elems = "";
+    std::vector<std::string> elems(max_num_indices, ", 0");
+    auto snode = expr->ch[0]->new_addresses(0);
     for (int i = 1; i < (int)expr->ch.size(); i++) {
-      elems += fmt::format(", {}.element(v)", expr->ch[i]->var_name);
+      elems[snode->index_order[i - 1]] =
+          fmt::format(", {}.element(v)", expr->ch[i]->var_name);
+    }
+    std::string total_elem = "";
+    for (int i = 0; i < max_num_indices; i++) {
+      total_elem += elems[i];
     }
     emit_code("{}[v] = access_{}(context.buffers[0] {});", expr->var_name,
-              expr->ch[0]->new_addresses(0)->node_type_name, elems);
+              expr->ch[0]->new_addresses(0)->node_type_name, total_elem);
   } else if (expr->type == NodeType::adapter_store) {
     auto &ad = prog->adapter(expr[1]->value<int>());
     /*

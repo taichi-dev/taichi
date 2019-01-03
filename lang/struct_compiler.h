@@ -20,6 +20,27 @@ class StructCompiler : public CodeGenBase {
   void visit(SNode &snode) {
     for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {
       auto &ch = snode.ch[ch_id];
+      for (int i = 0; i < max_num_indices; i++) {
+        bool found = false;
+        for (int k = 0; k < max_num_indices; k++) {
+          if (snode.index_order[k] == i) {
+            found = true;
+            break;
+          }
+        }
+        if (found)
+          continue;
+        if (snode.extractors[i].num_bits) {
+          snode.index_order[snode.num_active_indices++] = i;
+        }
+      }
+      for (int i = 0; i < max_num_indices; i++) {
+        fmt::print("{}, ", snode.index_order[i]);
+      }
+      fmt::print("\n");
+      std::memcpy(ch->index_order, snode.index_order,
+                  sizeof(snode.index_order));
+      ch->num_active_indices = snode.num_active_indices;
       visit(*ch);
 
       TC_P(ch->type_name());
@@ -28,7 +49,7 @@ class StructCompiler : public CodeGenBase {
       TC_P(ch->total_num_bits);
       if (ch_id == 0) {
         snode.total_bit_start = total_bits_start_inferred;
-      } else if (snode.parent != nullptr) { // root is ok
+      } else if (snode.parent != nullptr) {  // root is ok
         TC_ASSERT(snode.total_bit_start == total_bits_start_inferred);
       }
       // infer extractors
@@ -38,7 +59,7 @@ class StructCompiler : public CodeGenBase {
         if (ch_id == 0) {
           snode.extractors[i].start = inferred;
           snode.extractors[i].dest_offset = snode.total_bit_start + acc_offsets;
-        } else if (snode.parent != nullptr) { // root is OK
+        } else if (snode.parent != nullptr) {  // root is OK
           TC_ASSERT_INFO(snode.extractors[i].start == inferred,
                          "Inconsistent bit configuration");
           TC_ASSERT_INFO(snode.extractors[i].dest_offset ==

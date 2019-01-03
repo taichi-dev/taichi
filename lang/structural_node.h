@@ -28,6 +28,8 @@ struct SNode {
 
   IndexExtractor extractors[max_num_indices];
   int taken_bits[max_num_indices];  // counting from the tail
+  int num_active_indices;
+  int index_order[max_num_indices]; // look_up(index[index_order[index_id]]);
 
   static int counter;
   int id;
@@ -53,7 +55,9 @@ struct SNode {
     id = counter++;
     total_num_bits = 0;
     total_bit_start = 0;
+    num_active_indices = 0;
     std::memset(taken_bits, 0, sizeof(taken_bits));
+    std::memset(index_order, -1, sizeof(index_order));
     func = nullptr;
     parent = nullptr;
   }

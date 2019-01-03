@@ -307,7 +307,7 @@ auto test_single_program = []() {
   auto i = Expr::index(0);
   bool fork = true;
 
-  prog.layout([&]() {
+  layout([&]() {
     if (fork) {
       root.fixed(i, n).forked().place(a, b);
     } else {
@@ -316,8 +316,7 @@ auto test_single_program = []() {
     }
   });
 
-  auto func1 =
-      prog.kernel(a->new_addresses(0), [&]() { b[i] = a[i] + imm(1.0_f); });
+  auto func1 = kernel(a, [&]() { b[i] = a[i] + imm(1.0_f); });
 
   for (int i = 0; i < n; i++) {
     a.set<float32>(i, i);

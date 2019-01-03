@@ -17,11 +17,12 @@
 
 TLANG_NAMESPACE_BEGIN
 
-using ForBody = std::function<void()>;
-inline void for_loop(Index &index,
-                     std::pair<int64, int64> r,
-                     const ForBody &body) {
-  TC_NOT_IMPLEMENTED;
+inline void layout(const std::function<void()> &body) {
+  get_current_program().layout(body);
+}
+
+inline Kernel kernel(Expr expr, const std::function<void()> &body) {
+  return get_current_program().kernel(expr, body);
 }
 
 TLANG_NAMESPACE_END

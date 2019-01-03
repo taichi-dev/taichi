@@ -353,13 +353,13 @@ auto test_single_program = [] {
   auto func1 = kernel(a, [&] { b[i] = a[i] + imm(1.0_f); });
 
   for (int i = 0; i < n; i++) {
-    a.set<float32>(i, i);
+    a.val<float32>(i) = i;
   }
 
   func1();
 
   for (int i = 0; i < n; i++) {
-    TC_ASSERT(b.get<float32>(i) == i + 1);
+    TC_ASSERT(b.val<float32>(i) == i + 1);
   }
 };
 
@@ -390,7 +390,7 @@ auto test_multiple_programs = []() {
   auto func3 = prog.kernel(a, [&]() { d[i] = c[i] + imm(1.0_f); });
 
   for (int i = 0; i < n; i++) {
-    a.set<float32>(i, i);
+    a.val<float32>(i) = i;
   }
 
   func1();
@@ -398,7 +398,7 @@ auto test_multiple_programs = []() {
   func3();
 
   for (int i = 0; i < n; i++) {
-    TC_ASSERT(d.get<float32>(i) == i + 3);
+    TC_ASSERT(d.val<float32>(i) == i + 3);
   }
 };
 

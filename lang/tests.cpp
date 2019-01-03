@@ -199,10 +199,10 @@ auto mpm = []() {
   GUI gui("MPM", n * scale, n * scale);
 
   for (int i = 0; i < n_particles; i++) {
-    particle_x(0).set<float32>(i, 0.35_f + rand() * 0.3_f);
-    particle_x(1).set<float32>(i, 0.35_f + rand() * 0.3_f);
-    particle_v(1).set<float32>(i, -0.3_f);
-    particle_J.set<float32>(i, 1_f);
+    particle_x(0).val<float32>(i) = 0.35_f + rand() * 0.3_f;
+    particle_x(1).val<float32>(i) = 0.35_f + rand() * 0.3_f;
+    particle_v(1).val<float32>(i) = -0.3_f;
+    particle_J.val<float32>(i) = 1_f;
   }
 
   auto &canvas = gui.get_canvas();
@@ -228,7 +228,7 @@ auto mpm = []() {
     canvas.clear(0x112F41);
     for (int i = 0; i < n_particles; i++) {
       canvas
-          .circle(particle_x(0).get<float32>(i), particle_x(1).get<float32>(i))
+          .circle(particle_x(0).val<float32>(i), particle_x(1).val<float32>(i))
           .radius(2)
           .color(0x068587);
     }
@@ -350,7 +350,7 @@ auto advection = []() {
   GUI gui("Advection", n, n);
 
   for (int f = 0; f < 1000; f++) {
-    for (int t = 0; t < 1; t++) {
+    for (int t = 0; t < 100; t++) {
       TC_TIME(func());
       TC_TIME(swap_buffers());
     }
@@ -380,11 +380,11 @@ auto test_snode = [&]() {
   prog.layout([&] { root.fixed(i, n).place(u); });
 
   for (int i = 0; i < n; i++) {
-    u.set<int32>(i, i + 1);
+    u.val<int32>(i) = i + 1;
   }
 
   for (int i = 0; i < n; i++) {
-    TC_ASSERT(u.get<int32>(i) == i + 1);
+    TC_ASSERT(u.val<int32>(i) == i + 1);
   }
 };
 

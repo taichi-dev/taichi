@@ -184,11 +184,6 @@ struct Program {
 
   FunctionType compile(Kernel &kernel);
 
-  template <typename T = float32>
-  T &data(Expr &expr, int i) {
-    return expr.val<T>(i);
-  }
-
   void materialize_layout();
 
   inline Kernel &get_current_kernel() {

@@ -201,17 +201,6 @@ class Expr {
   void *evaluate_addr(int i, int j, int k, int l);
 
   template <typename T>
-  void set(int i, T t) {
-    TC_ASSERT(get_data_type<T>() == node->data_type);
-    val<T>(i) = t;
-  }
-
-  template <typename T>
-  T &get(int i) {
-    return val<T>(i);
-  }
-
-  template <typename T>
   T &val(int i, int j = 0, int k = 0, int l = 0) {
     if (get_data_type<T>() != node->data_type) {
       TC_ERROR("Cannot access type {} as type {}",

@@ -275,20 +275,18 @@ auto advection = []() {
 
   TC_ASSERT(bit::is_power_of_two(n));
 
-  auto index = ExprGroup(x, y);
+  auto clamp = [](const Expr &e) { return min(max(imm(0), e), imm(n - 2)); };
 
   auto func = kernel(attr[0][0], [&]() {
     // ** gs = 2
 
-    auto vx = v[0][index];
-    auto vy = v[1][index];
+    auto vx = v[0][x, y];
+    auto vy = v[1][x, y];
 
-    auto offset_x = floor(vx).name("offset_x");
-    auto offset_y = floor(vy).name("offset_y");
+    auto offset_x = floor(vx);
+    auto offset_y = floor(vy);
     auto wx = vx - offset_x;
     auto wy = vy - offset_y;
-    wx.name("wx");
-    wy.name("wy");
 
     if (use_adapter) {
       prog.adapter(0).set(2, 1).convert(offset_x, offset_y);
@@ -299,7 +297,6 @@ auto advection = []() {
     auto new_x = cast<int32>(offset_x + cast<float32>(x));
     auto new_y = cast<int32>(offset_y + cast<float32>(y));
 
-    auto clamp = [](const Expr &e) { return min(max(imm(2), e), imm(n - 2)); };
 
     new_x = clamp(new_x);
     new_y = clamp(new_y);
@@ -309,11 +306,6 @@ auto advection = []() {
     auto w01 = (imm(1.0f) - wx) * wy;
     auto w10 = wx * (imm(1.0f) - wy);
     auto w11 = wx * wy;
-
-    w00.name("w00");
-    w01.name("w01");
-    w10.name("w10");
-    w11.name("w11");
 
     if (use_adapter) {
       prog.adapter(2).set(1, 4).convert(w00, w01, w10, w11);
@@ -326,13 +318,14 @@ auto advection = []() {
       auto v01 = attr[0][k][new_x, new_y + imm(1)].name("v01");
       auto v10 = attr[0][k][new_x + imm(1), new_y].name("v10");
       auto v11 = attr[0][k][new_x + imm(1), new_y + imm(1)].name("v11");
-      attr[1][k][index] = w00 * v00 + w01 * v01 + w10 * v10 + w11 * v11;
-      attr[1][k][index].name(fmt::format("output{}", k));
+      attr[1][k][x, y] = w00 * v00 + w01 * v01 + w10 * v10 + w11 * v11;
+      attr[1][k][x, y].name(fmt::format("output{}", k));
     }
   });
+
   auto swap_buffers = kernel(attr[0][0], [&] {
     for (int i = 0; i < nattr; i++) {
-      attr[0][i][index] = attr[1][i][index];
+      attr[0][i][x, y] = attr[1][i][x, y];
     }
   });
 
@@ -350,7 +343,7 @@ auto advection = []() {
   GUI gui("Advection", n, n);
 
   for (int f = 0; f < 1000; f++) {
-    for (int t = 0; t < 100; t++) {
+    for (int t = 0; t < 10; t++) {
       TC_TIME(func());
       TC_TIME(swap_buffers());
     }

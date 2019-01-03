@@ -74,14 +74,24 @@ class StructCompiler : public CodeGenBase {
     } else {
       // emit end2end accessors for leaf (place) nodes, using chain accessors
       emit_code(
-          "TLANG_ACCESSOR {} * access_{}(void *root, int i0, int i1=0, int i2=0, "
+          "TLANG_ACCESSOR {} * access_{}(void *root, int i0, int i1=0, int "
+          "i2=0, "
           "int i3=0) {{",
           snode.node_type_name, snode.node_type_name);
+      emit_code("int tmp;");
       emit_code("auto n0 = ({} *)root;", root_type);
       for (int i = 0; i + 1 < (int)stack.size(); i++) {
-        emit_code("auto tmp{} = i0;", i);
-        emit_code("auto n{} = access_{}(n{}, tmp{});", i + 1,
-                  stack[i + 1]->node_type_name, i, i);
+        emit_code("tmp = 0;", i);
+        for (int j = max_num_indices - 1; j >= 0; j--) {
+          auto e = stack[i]->extractors[j];
+          int b = e.num_bits;
+          if (b) {
+            emit_code("tmp = (tmp << {}) + ((i{} >> {}) & ((1 << {}) - 1));",
+                      e.num_bits, 0, e.start, e.num_bits); // TODO: 0 should be j
+          }
+        }
+        emit_code("auto n{} = access_{}(n{}, tmp);", i + 1,
+                  stack[i + 1]->node_type_name, i);
       }
       emit_code("return n{};", (int)stack.size() - 1);
       emit_code("}");

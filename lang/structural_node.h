@@ -67,14 +67,14 @@ struct SNode {
     auto &new_node = insert_children(SNodeType::fixed);
     TC_ASSERT(indices.size() == sizes.size())
     new_node.n = 1;
-    for (auto s: sizes) {
+    for (auto s : sizes) {
       TC_ASSERT(bit::is_power_of_two(s));
       new_node.n *= s;
     }
     for (int i = 0; i < (int)indices.size(); i++) {
       auto &ind = indices[i];
       TC_ASSERT(ind->lanes == 1);
-      new_node.extractors[ind->index_id(0)].num_bits = sizes[i];
+      new_node.extractors[ind->index_id(0)].num_bits = bit::log2int(sizes[i]);
       total_bits += bit::log2int(indices[i]);
     }
     return new_node;

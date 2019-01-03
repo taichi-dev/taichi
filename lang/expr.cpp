@@ -1,4 +1,6 @@
 #include "tlang.h"
+#include "structural_node.h"
+#include <tuple>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -55,4 +57,28 @@ bool Expr::allow_store = false;
 // assignment should not be used outside function definition; use "Expr::set"
 // instead
 
+template <typename... Indices>
+void *Expr::val_tmp(Indices... indices) {
+  TC_ASSERT(node->type == NodeType::addr);
+  SNode *snode = node->new_addresses(0);
+  TC_ASSERT(sizeof...(indices) == snode->num_active_indices);
+  int ind[max_num_indices];
+  std::memset(ind, 0, sizeof(ind));
+  auto tup = std::make_tuple(indices...);
+#define LOAD_IND(i) ind[snode->index_order[i]] = ((int *)&tup)[i];
+  LOAD_IND(0);
+  LOAD_IND(1);
+  LOAD_IND(2);
+  LOAD_IND(3);
+#undef LOAD_IND
+  TC_ASSERT(max_num_indices == 4);
+  return evaluate_addr(ind[0], ind[1], ind[2], ind[3]);
+}
+
+template void *Expr::val_tmp<int>(int);
+template void *Expr::val_tmp<int, int>(int, int);
+template void *Expr::val_tmp<int, int, int>(int, int, int);
+template void *Expr::val_tmp<int, int, int, int>(int, int, int, int);
+
 TLANG_NAMESPACE_END
+

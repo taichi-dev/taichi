@@ -67,7 +67,7 @@ class Expr {
 
   static Expr load_if_pointer(const Expr &in) {
     if (in->type == NodeType::pointer) {
-      auto n =  create(NodeType::load, in);
+      auto n = create(NodeType::load, in);
       n->data_type = in->data_type;
       return n;
     } else {
@@ -200,15 +200,19 @@ class Expr {
 
   void *evaluate_addr(int i, int j, int k, int l);
 
-  template <typename T>
-  T &val(int i, int j = 0, int k = 0, int l = 0) {
+  template <typename... Indices>
+  void *val_tmp(Indices... indices);
+
+  template <typename T, typename... Indices>
+  T &val(Indices... indices) {
     if (get_data_type<T>() != node->data_type) {
       TC_ERROR("Cannot access type {} as type {}",
                data_type_name(node->data_type),
                data_type_name(get_data_type<T>()));
     }
-    return *(T *)evaluate_addr(i, j, k, l);
+    return *(T *)val_tmp(indices...);
   }
+
 
 #define REGISTER_FIELD(name, required_type, chid)     \
   Expr &_##name() {                                   \

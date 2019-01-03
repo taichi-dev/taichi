@@ -4,6 +4,7 @@
 namespace taichi::Tlang {
 
 void CPUCodeGen::visit_vv(Expr &expr) {
+#if(0)
   // TC_P(expr->id);
   // TC_P(expr->node_type_name());
   auto vv_width = num_groups * expr->group_size();
@@ -162,5 +163,6 @@ void CPUCodeGen::visit_vv(Expr &expr) {
   } else {
     TC_ERROR("Node {} cannot be visited.", expr->node_type_name());
   }
+#endif
 }  // namespace taichi::Tlang
 }  // namespace taichi::Tlang

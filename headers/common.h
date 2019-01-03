@@ -303,6 +303,8 @@ struct vec;
     }                                  \
   };
 
+REGISTER_VEC(float32, 1, float32);
+REGISTER_VEC(int32, 1, int32);
 REGISTER_VEC(float32, 8, __m256);
 REGISTER_VEC(int32, 8, __m256i);
 // REGISTER_VEC(uint32, 8, __m256u);

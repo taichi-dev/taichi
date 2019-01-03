@@ -9,7 +9,6 @@ class SNode;
 
 class Node {
  private:
-  Address _addr;
   static int counter;
 
  public:
@@ -76,17 +75,6 @@ class Node {
   std::string node_type_name() const {
     return taichi::Tlang::node_type_name(type);
   }
-
-  Address &get_address_() {  // TODO: remove this hack
-    return _addr;
-  }
-
-  Address &get_address() {
-    TC_ASSERT(type == NodeType::addr);
-    return _addr;
-  }
-
-  Address &addr();
 
   Node(NodeType type, Expr ch0);
 

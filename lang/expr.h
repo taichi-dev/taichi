@@ -250,16 +250,6 @@ inline Expr cmp_lt(const Expr &a, const Expr &b) {
   return n;
 }
 
-inline bool prior_to(Address address1, Address address2) {
-  return address1.same_type(address2) &&
-         address1.offset() + 1 == address2.offset();
-}
-
-inline bool prior_to(Expr &a, Expr &b) {
-  TC_ASSERT(a->type == NodeType::pointer && b->type == NodeType::pointer);
-  return prior_to(a->ch[0]->get_address(), b->ch[0]->get_address());
-}
-
 inline Node::Node(NodeType type, Expr ch0) : Node(type) {
   ch.resize(1);
   ch[0] = ch0;
@@ -304,13 +294,6 @@ inline int Node::member_id(const Expr &expr) const {
     }
   }
   return -1;
-}
-
-inline Address &Node::addr() {
-  TC_ASSERT(type == NodeType::load || type == NodeType::store);
-  TC_ASSERT(ch.size());
-  TC_ASSERT(ch[0]->type == NodeType::pointer);
-  return ch[0]->ch[0]->get_address();
 }
 
 inline Expr load(const Expr &addr) {

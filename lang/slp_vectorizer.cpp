@@ -1,3 +1,4 @@
+#if(0)
 #include "slp_vectorizer.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -37,6 +38,7 @@ void SLPVectorizer::sort(Expr &expr) {
 }
 
 Expr SLPVectorizer::run(Expr &expr, int group_size) {
+
   TC_ASSERT(expr);
   this->group_size = group_size;
 
@@ -191,3 +193,4 @@ void SLPVectorizer::visit(Expr &expr) {
 }
 
 TLANG_NAMESPACE_END
+#endif

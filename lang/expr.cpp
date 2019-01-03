@@ -57,6 +57,18 @@ bool Expr::allow_store = false;
 // assignment should not be used outside function definition; use "Expr::set"
 // instead
 
+template <int i, typename... Indices>
+std::enable_if_t<(i < sizeof...(Indices)), int> get_if_exists(
+    std::tuple<Indices...> tup) {
+  return std::get<i>(tup);
+}
+
+template <int i, typename... Indices>
+std::enable_if_t<!(i < sizeof...(Indices)), int> get_if_exists(
+    std::tuple<Indices...> tup) {
+  return 0;
+}
+
 template <typename... Indices>
 void *Expr::val_tmp(Indices... indices) {
   TC_ASSERT(node->type == NodeType::addr);
@@ -65,13 +77,27 @@ void *Expr::val_tmp(Indices... indices) {
   int ind[max_num_indices];
   std::memset(ind, 0, sizeof(ind));
   auto tup = std::make_tuple(indices...);
-#define LOAD_IND(i) ind[snode->index_order[i]] = ((int *)&tup)[i];
+#define LOAD_IND(i) ind[snode->index_order[i]] = get_if_exists<i>(tup);
   LOAD_IND(0);
   LOAD_IND(1);
   LOAD_IND(2);
   LOAD_IND(3);
 #undef LOAD_IND
   TC_ASSERT(max_num_indices == 4);
+  /*
+  TC_P(snode->index_order[0]);
+  TC_P(snode->index_order[1]);
+  TC_P(snode->index_order[2]);
+  TC_P(snode->index_order[3]);
+  TC_P(ind[0]);
+  TC_P(ind[1]);
+  TC_P(ind[2]);
+  TC_P(ind[3]);
+  TC_P(((int *)&tup)[0]);
+  TC_P(((int *)&tup)[1]);
+  TC_P(((int *)&tup)[2]);
+  TC_P(((int *)&tup)[3]);
+  */
   return evaluate_addr(ind[0], ind[1], ind[2], ind[3]);
 }
 
@@ -81,4 +107,3 @@ template void *Expr::val_tmp<int, int, int>(int, int, int);
 template void *Expr::val_tmp<int, int, int, int>(int, int, int, int);
 
 TLANG_NAMESPACE_END
-

@@ -41,7 +41,7 @@ auto mpm = []() {
 
   Real Jp;
 
-  int n_particles = 8192;
+  int n_particles = 8192 * 4;
   Program prog(Arch::x86_64);
 
   prog.config.group_size = 1;

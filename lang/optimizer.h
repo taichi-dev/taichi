@@ -5,7 +5,6 @@ TLANG_NAMESPACE_BEGIN
 class Optimizer {
  public:
   virtual void run(Kernel &kernel) {
-    return;
     while (search_and_replace(kernel.ret))
       ;
   }

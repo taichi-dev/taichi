@@ -242,10 +242,12 @@ TC_REGISTER_TASK(mpm);
 auto advection = []() {
   bool use_adapter = false;
 
+  const int dim = 2;
+
   const int n = 1024, nattr = 4;
   auto x = ind(), y = ind();
 
-  Float attr[2][nattr], v[2];
+  Float attr[dim][nattr], v[dim];
 
   Program prog(Arch::x86_64);
 
@@ -253,7 +255,7 @@ auto advection = []() {
   prog.config.num_groups = use_adapter ? 8 : 8;
 
   layout([&]() {
-    for (int k = 0; k < 2; k++) {
+    for (int k = 0; k < dim; k++) {
       if (use_adapter) {
         TC_NOT_IMPLEMENTED
         for (int i = 0; i < nattr; i++) {
@@ -278,10 +280,13 @@ auto advection = []() {
   auto func = kernel(attr[0][0], [&]() {
     // ** gs = 2
 
-    auto offset_x = floor(v[0][index]).name("offset_x");
-    auto offset_y = floor(v[1][index]).name("offset_y");
-    auto wx = v[0][index] - offset_x;
-    auto wy = v[1][index] - offset_y;
+    auto vx = v[0][index];
+    auto vy = v[1][index];
+
+    auto offset_x = floor(vx).name("offset_x");
+    auto offset_y = floor(vy).name("offset_y");
+    auto wx = vx - offset_x;
+    auto wy = vy - offset_y;
     wx.name("wx");
     wy.name("wy");
 
@@ -321,13 +326,10 @@ auto advection = []() {
       auto v01 = attr[0][k][new_x, new_y + imm(1)].name("v01");
       auto v10 = attr[0][k][new_x + imm(1), new_y].name("v10");
       auto v11 = attr[0][k][new_x + imm(1), new_y + imm(1)].name("v11");
-
       attr[1][k][index] = w00 * v00 + w01 * v01 + w10 * v10 + w11 * v11;
-      // attr[1][k][index] = w00 * v00;
       attr[1][k][index].name(fmt::format("output{}", k));
     }
   });
-
   auto swap_buffers = kernel(attr[0][0], [&] {
     for (int i = 0; i < nattr; i++) {
       attr[0][i][index] = attr[1][i][index];
@@ -337,11 +339,11 @@ auto advection = []() {
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       for (int k = 0; k < nattr; k++) {
-        prog.data(attr[0][k], i * n + j) = i % 128 / 128.0_f;
+        attr[0][k].val<float32>(i, j) = i % 128 / 128.0_f;
       }
       real s = 20.0_f / n;
-      prog.data(v[0], i * n + j) = s * (j - n / 2);
-      prog.data(v[1], i * n + j) = -s * (i - n / 2);
+      v[0].val<float32>(i, j) = s * (j - n / 2);
+      v[1].val<float32>(i, j) = -s * (i - n / 2);
     }
   }
 
@@ -356,7 +358,7 @@ auto advection = []() {
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
         for (int k = 0; k < nattr; k++) {
-          gui.buffer[i][j] = Vector4(prog.data(attr[1][k], i * n + j));
+          gui.buffer[i][j] = Vector4(attr[1][k].val<float32>(i, j));
         }
       }
     }

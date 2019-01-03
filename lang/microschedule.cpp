@@ -299,12 +299,20 @@ auto test_2d_array = [] {
   int n = 8;
   Program prog(Arch::x86_64);
   prog.config.group_size = 1;
+  bool forked = true;
 
-  auto a = var<int32>(), i = ind(), j = ind();
+  auto a = var<int32>(), b = var<int32>(), i = ind(), j = ind();
 
-  layout([&] { root.fixed({i, j}, {n, n * 2}).forked().place(a); });
+  layout([&] {
+    if (!forked)
+      root.fixed({i, j}, {n, n * 2}).forked().place(a, b);
+    else {
+      root.fixed({i, j}, {n, n * 2}).forked().place(a);
+      root.fixed({i, j}, {n, n * 2}).forked().place(b);
+    }
+  });
 
-  auto inc = kernel(a, [&]() { a[i, j] = a[i, j] + i; });
+  auto inc = kernel(a, [&]() { b[i, j] = a[i, j] + i; });
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n * 2; j++) {
@@ -316,7 +324,7 @@ auto test_2d_array = [] {
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n * 2; j++) {
-      TC_ASSERT(a.val<int32>(i, j) == i * 2 + j * 3);
+      TC_ASSERT(b.val<int32>(i, j) == i * 2 + j * 3);
     }
   }
 };

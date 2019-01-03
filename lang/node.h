@@ -12,6 +12,7 @@ class Node {
   static int counter;
 
  public:
+  static constexpr int num_additional_values = 8;
   static void reset_counter() {
     counter = 0;
   }
@@ -22,19 +23,29 @@ class Node {
   DataType data_type;
   BinaryType binary_type;
   std::string var_name;
-
-  static constexpr int num_additional_values = 8;
   std::vector<float64> attributes[num_additional_values];
   int lanes;
   int id;
   int num_groups_;
-  bool is_vectorized;
   std::string name_;
+
+  void copy_to(Node &node) {
+    node.ch = ch;
+    node.members = members;
+    node.type = type;
+    node.data_type = data_type;
+    node.binary_type = binary_type;
+    node.var_name = var_name;
+    for (int i = 0; i < num_additional_values; i++) {
+      node.attributes[i] = attributes[i];
+    }
+    node.lanes= lanes;
+    node.num_groups_  = num_groups_;
+  }
 
   Node(const Node &) = delete;
 
   Node(NodeType type) : type(type) {
-    is_vectorized = false;
     data_type = DataType::f32;
     binary_type = BinaryType::undefined;
     id = counter++;

@@ -53,7 +53,6 @@ class Optimizer {
                 vload->ch[i] = ptr->ch[i];
               }
               vload->set_similar(expr);
-              vload->is_vectorized = true;
               expr = vload;
               return true;
             } else {
@@ -65,7 +64,6 @@ class Optimizer {
                 vstore->ch[i + 1] = ptr->ch[i];
               }
               vstore->set_similar(expr);
-              vstore->is_vectorized = true;
               expr = vstore;
               return true;
             }

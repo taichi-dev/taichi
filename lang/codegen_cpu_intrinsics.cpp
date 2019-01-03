@@ -12,8 +12,12 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
   TC_ASSERT(vv_width % simd_width == 0);
   int split = vv_width / simd_width;
   auto vv_type = [&](DataType dt) {
-    return fmt::format("vvec<{}, {}, {}>", data_type_name(dt), simd_width,
-                       split);
+    if (expr->lanes == 1) {
+      return fmt::format("vvec<{}, {}, {}>", data_type_name(dt), 1, 1);
+    } else {
+      return fmt::format("vvec<{}, {}, {}>", data_type_name(dt), simd_width,
+                         split);
+    }
   };
   if (expr->type == NodeType::addr) {
     return;

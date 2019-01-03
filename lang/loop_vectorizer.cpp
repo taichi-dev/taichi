@@ -57,8 +57,6 @@ Expr LoopVectorizer::vectorize(Expr node) {
     new_node->ch.push_back(vectorize(node->ch[i]));
   }
 
-  new_node->is_vectorized = true;
-
   input_to_vectorized[node] = new_node;
 
   return new_node;

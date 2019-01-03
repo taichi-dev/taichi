@@ -22,7 +22,7 @@ class TikzGen : public Visitor {
     if (!expr) {
       TC_ERROR("expr = 0");
     }
-    if (expr->is_vectorized) {
+    if (expr->members.size()) {
       members = "[";
       bool first = true;
       for (auto m : expr->members) {

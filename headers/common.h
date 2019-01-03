@@ -775,6 +775,7 @@ struct dynamic {
 template <typename... child_types>
 struct forked {
   std::tuple<child_types...> children;
+  static constexpr int n = 1;
 
   template <int i>
   TC_FORCE_INLINE auto *get() {

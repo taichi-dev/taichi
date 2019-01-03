@@ -101,6 +101,7 @@ struct Program {
 
   Kernel *current_kernel;
   SNode *current_snode;
+  SNode *snode_root;
   void *data_structure;
   CompileConfig config;
   Device device;
@@ -130,6 +131,7 @@ struct Program {
       TC_NOT_IMPLEMENTED;
     }
     current_kernel = nullptr;
+    snode_root = nullptr;
   }
 
   ~Program() {
@@ -138,6 +140,7 @@ struct Program {
 
   void layout(std::function<void()> func) {
     root = SNode(0, SNodeType::forked);
+    snode_root = &root;
     func();
     materialize_layout();
   }

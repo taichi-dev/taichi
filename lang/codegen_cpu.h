@@ -69,35 +69,40 @@ class CPUCodeGen : public CodeGenBase {
   void generate_loop_header(SNode *snode, bool last_level = false) {
     if (snode->parent != nullptr) {
       generate_loop_header(snode->parent);
+    } else {
+      return;  // no loop for root, which is a fork
     }
-    int inc = 1;
+    if (snode->type == SNodeType::place) {
+      return;
+    }
     auto l = loop_variable(snode);
     if (snode->type == SNodeType::forked) {
       //
     }
     if (last_level) {
-      emit_code("for (int {}_i = 0, b = 0; {}_i < {}; {}_i += {}) {{", l, l,
-                snode->n, l, inc);
+      emit_code("for (int {} = 0, b = 0; {} < {};) {{", l, l, snode->n);
     } else {
-      emit_code("for (int {} = 0; {} < {}; {} += {}) {{", l, l, snode->n, l,
-                inc);
+      emit_code("for (int {} = 0; {} < {}; {} += {}) {{", l, l, snode->n, l, 1);
     }
-    std::string parent = "root";
-    if (snode->parent) {
-      parent = fmt::format("{}_cache", snode->parent->node_type_name);
-    }
+    auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
     emit_code("auto {}_cache = access_{}({}, {});", snode->node_type_name,
               snode->node_type_name, parent, l);
   }
 
   void generate_loop_tail(SNode *snode, bool last_level = false) {
+    auto l = loop_variable(snode);
+    if (last_level) {
+      emit_code("{} += {}; b += {};", l, num_groups * unroll, unroll);
+    } else {
+      return;  // no loop for root, which is a fork
+    }
+    emit_code("}");
     if (snode->parent != nullptr) {
       generate_loop_tail(snode->parent);
     }
-    if (last_level) {
-      emit_code("i += {}; b += {}", num_groups * unroll, unroll);
+    if (snode->type == SNodeType::place) {
+      return;
     }
-    emit_code("}");
   }
 
   void generate_header() {
@@ -107,10 +112,19 @@ class CPUCodeGen : public CodeGenBase {
     emit_code("using namespace taichi; using namespace Tlang;");
 
     emit_code("extern \"C\" void " + func_name + "(Context context) {\n");
-    emit_code("auto root = context.buffers[0];");
+    emit_code("auto {}_cache = ({} *)context.buffers[0];",
+              prog->snode_root->node_type_name,
+              prog->snode_root->node_type_name);
     before_loop_body = code;
     code = "";
-    generate_loop_header(prog->current_snode);
+
+    TC_ASSERT(prog->current_snode);
+    while (prog->current_snode->type == SNodeType::place) {
+      prog->current_snode = prog->current_snode->parent;
+      TC_ASSERT(prog->current_snode);
+    }
+
+    generate_loop_header(prog->current_snode, true);
   }
 
   template <typename... Args>
@@ -123,7 +137,7 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void generate_tail() {
-    generate_loop_tail(prog->current_snode);
+    generate_loop_tail(prog->current_snode, true);
     emit_code("}\n");
     code = before_loop_body + code;
   }

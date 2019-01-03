@@ -42,6 +42,12 @@ class Expr {
   Expr(Handle<Node> node) : node(node) {
   }
 
+  static Expr copy_from(Expr old) {
+    auto new_expr = Expr::create(NodeType::undefined);
+    old->copy_to(*new_expr.ptr());
+    return new_expr;
+  }
+
   template <typename... Args>
   static Expr create(Args &&... args) {
     return Expr(std::make_shared<Node>(std::forward<Args>(args)...));

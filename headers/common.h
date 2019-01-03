@@ -311,6 +311,8 @@ REGISTER_VEC(int32, 8, __m256i);
 
 //*****************************************************************************
 
+using float32x1 = vec<float32, 1>;
+using int32x1 = vec<int32, 1>;
 using float32x8 = vec<float32, 8>;
 using int32x8 = vec<int32, 8>;
 
@@ -401,8 +403,18 @@ template <typename T, int dim>
 inline vec<T, dim> set1(T);
 
 template <>
+inline float32x1 set1<float32, 1>(float32 v) {
+  return v;
+}
+
+template <>
 inline float32x8 set1<float32, 8>(float32 v) {
   return _mm256_set1_ps(v);
+}
+
+template <>
+inline int32x1 set1<int32, 1>(int32 v) {
+  return v;
 }
 
 template <>
@@ -605,6 +617,14 @@ DEFINE_BINARY_OP(int32x8, min, _mm256_min_epi32);
 DEFINE_BINARY_OP(int32x8, max, _mm256_max_epi32);
 DEFINE_BINARY_OP(int32x8, land, _mm256_and_si256);
 DEFINE_BINARY_OP(int32x8, lor, _mm256_and_si256);
+
+#define DEFINE_BINARY_OP_MID(T, OP, INST) \
+  inline T OP(T a, T b) {             \
+    return a INST b;                \
+  }
+
+DEFINE_BINARY_OP_MID(float32, add, +);
+DEFINE_BINARY_OP_MID(int32, add, +);
 
 inline int32x8 shr(int32x8 a, int b) {
   return _mm256_srli_epi32(a, b);

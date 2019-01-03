@@ -9,7 +9,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
   // TC_P(expr->node_type_name());
   // TC_P(num_groups);
   auto vv_width = expr->lanes;
-  TC_ASSERT(vv_width % simd_width == 0);
+  TC_ASSERT(vv_width == 1 || vv_width % simd_width == 0);
   int split = vv_width / simd_width;
   auto vv_type = [&](DataType dt) {
     if (expr->lanes == 1) {

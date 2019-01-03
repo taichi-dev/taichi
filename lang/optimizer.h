@@ -50,7 +50,10 @@ class Optimizer {
               auto vload = Expr::create(NodeType::vload, addr_node);
               vload->ch.resize(ptr->ch.size());
               for (int i = 1; i < ptr->ch.size(); i++) {
-                vload->ch[i] = ptr->ch[i];
+                auto c = Expr::copy_from(ptr->ch[i]);
+                TC_ASSERT(c->lanes == 8);
+                c->set_lanes(1);
+                vload->ch[i] = c;
               }
               vload->set_similar(expr);
               expr = vload;
@@ -61,7 +64,10 @@ class Optimizer {
                   Expr::create(NodeType::vstore, addr_node, expr->ch[1]);
               vstore->ch.resize(ptr->ch.size() + 1);
               for (int i = 1; i < ptr->ch.size(); i++) {
-                vstore->ch[i + 1] = ptr->ch[i];
+                auto c = Expr::copy_from(ptr->ch[i]);
+                TC_ASSERT(c->lanes == 8);
+                c->set_lanes(1);
+                vstore->ch[i + 1] = c;
               }
               vstore->set_similar(expr);
               expr = vstore;

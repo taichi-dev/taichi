@@ -17,7 +17,9 @@ class Node {
     counter = 0;
   }
 
-  std::vector<Expr> ch;       // Four child max
+  // When adding members variables, make sure to modify copy_to.
+
+  std::vector<Expr> ch;
   std::vector<Expr> members;  // for vectorized instructions
   NodeType type;
   DataType data_type;

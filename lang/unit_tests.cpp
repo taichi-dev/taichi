@@ -1,4 +1,5 @@
 #include "tlang.h"
+#include <taichi/common/testing.h>
 #include <taichi/util.h>
 #include <taichi/visual/gui.h>
 #include <taichi/common/bit.h>
@@ -295,7 +296,7 @@ auto test_select = []() {
 TC_REGISTER_TASK(test_select);
 #endif
 
-auto test_2d_array = [] {
+TC_TEST("test_2d_array") {
   int n = 8;
   Program prog(Arch::x86_64);
   prog.config.group_size = 1;
@@ -324,14 +325,12 @@ auto test_2d_array = [] {
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n * 2; j++) {
-      TC_ASSERT(b.val<int32>(i, j) == i * 2 + j * 3);
+      TC_CHECK_EQUAL(b.val<int32>(i, j), i * 2 + j * 3, 0);
     }
   }
 };
 
-TC_REGISTER_TASK(test_2d_array);
-
-auto test_single_program = [] {
+TC_TEST("test_single_program") {
   int n = 128;
   Program prog(Arch::x86_64);
   prog.config.group_size = 1;
@@ -359,13 +358,11 @@ auto test_single_program = [] {
   func1();
 
   for (int i = 0; i < n; i++) {
-    TC_ASSERT(b.val<float32>(i) == i + 1);
+    TC_CHECK_EQUAL(b.val<float32>(i), i + 1.0_f, 1e-5_f);
   }
 };
 
-TC_REGISTER_TASK(test_single_program);
-
-auto test_multiple_programs = []() {
+TC_TEST("test_multiple_programs") {
   int n = 128;
   Program prog(Arch::x86_64);
   prog.config.group_size = 1;
@@ -398,12 +395,8 @@ auto test_multiple_programs = []() {
   func3();
 
   for (int i = 0; i < n; i++) {
-    TC_P(d.val<float32>(i));
-    TC_P(i + 3);
-    TC_ASSERT(d.val<float32>(i) == i + 3);
+    TC_CHECK_EQUAL(d.val<float32>(i), i + 3.0_f, 1e-5_f);
   }
 };
-
-TC_REGISTER_TASK(test_multiple_programs);
 
 TC_NAMESPACE_END

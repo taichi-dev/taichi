@@ -40,18 +40,8 @@ class CPUCodeGen : public CodeGenBase {
   std::string get_vectorized_address(Address addr,
                                      int loop_index,
                                      int extra_offset) {
-    TC_ASSERT(addr.buffer_id != -1);
-    auto buffer_name =
-        fmt::format("context.get_buffer<float32>({:02d})", addr.buffer_id);
-    auto stride = addr.coeff_i * num_groups;
-    if (addr.coeff_aosoa_group_size != 0) {
-      stride +=
-          num_groups / addr.coeff_aosoa_group_size * addr.coeff_aosoa_stride;
-    }
-    auto offset = addr.coeff_const;
-    return fmt::format("&{}[{} * n + {} * (b + {}) + {} + {}]", buffer_name,
-                       addr.coeff_imax, stride, loop_index, offset,
-                       extra_offset);
+    TC_NOT_IMPLEMENTED
+    return "";
   }
 
   CPUCodeGen() : CodeGenBase() {
@@ -82,8 +72,9 @@ class CPUCodeGen : public CodeGenBase {
       //
     }
     if (last_level && snode->type != SNodeType::forked) {
-      emit_code("for (int {} = 0, b = 0; {} < {}::n;) {{", l, l,
-                snode->node_type_name);
+      //emit_code("#pragma omp parallel for");
+      emit_code("for (int {} = 0; {} < {}::n; {} += {}) {{", l, l,
+                snode->node_type_name, l, num_groups * unroll);
     } else {
       emit_code("for (int {} = 0; {} < {}::n; {} += {}) {{", l, l,
                 snode->node_type_name, l, 1);
@@ -112,7 +103,7 @@ class CPUCodeGen : public CodeGenBase {
   void generate_loop_tail(SNode *snode, bool last_level = false) {
     auto l = loop_variable(snode);
     if (last_level && snode->type != SNodeType::forked) {
-      emit_code("{} += {}; b += {};", l, num_groups * unroll, unroll);
+      // emit_code("{} += {}; b += {};", l, num_groups * unroll, unroll);
     }
     if (snode->parent != nullptr) {
       emit_code("}");
@@ -271,7 +262,7 @@ class CPUCodeGen : public CodeGenBase {
   FunctionType compile() {
     write_code_to_file();
     auto cmd = fmt::format(
-        "g++-7 {} -std=c++14 -shared -fPIC -O3 -march=native -I {}/headers -Wall "
+        "g++-7 {} -fopenmp -std=c++14 -shared -fPIC -O3 -march=native -I {}/headers -Wall "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {}",
         get_source_fn(), get_project_fn(), get_library_fn());
     auto compile_ret = std::system(cmd.c_str());

@@ -296,19 +296,19 @@ TC_REGISTER_TASK(test_select);
 #endif
 
 auto test_2d_array = [] {
-  int n = 1024;
+  int n = 8;
   Program prog(Arch::x86_64);
   prog.config.group_size = 1;
 
-  auto a = var<float32>(), i = ind(), j = ind();
+  auto a = var<int32>(), i = ind(), j = ind();
 
   layout([&] { root.fixed({i, j}, {n, n}).forked().place(a); });
 
-  auto inc = kernel(a, [&]() { a[i, j] = a[i, j] + imm(1.0_f); });
+  auto inc = kernel(a, [&]() { a[i, j] = a[i, j] + i; });
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
-      a.val<float32>(i, j) = i + j;
+      a.val<int32>(i, j) = i + j * 2;
     }
   }
 
@@ -316,7 +316,10 @@ auto test_2d_array = [] {
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
-      TC_ASSERT(a.val<float32>(i, j) == i + j + 1);
+      TC_P(i);
+      TC_P(j);
+      TC_P(a.val<int32>(i, j));
+      TC_ASSERT(a.val<int32>(i, j) == i * 2 + j * 2);
     }
   }
 };

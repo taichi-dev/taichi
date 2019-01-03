@@ -67,7 +67,9 @@ class Expr {
 
   static Expr load_if_pointer(const Expr &in) {
     if (in->type == NodeType::pointer) {
-      return create(NodeType::load, in);
+      auto n =  create(NodeType::load, in);
+      n->data_type = in->data_type;
+      return n;
     } else {
       return in;
     }

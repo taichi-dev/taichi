@@ -35,9 +35,13 @@ Expr Expr::operator[](const ExprGroup &is) {
     TC_ASSERT(i->type == NodeType::index || i->data_type == DataType::i32);
   }
   if (is.size() == 1) {
-    return create(NodeType::pointer, *this, is.exprs[0]);
+    auto n = create(NodeType::pointer, *this, is.exprs[0]);
+    n->data_type = (*this)->data_type;
+    return n;
   } else {
-    return create(NodeType::pointer, *this, is.exprs[0], is.exprs[1]);
+    auto n = create(NodeType::pointer, *this, is.exprs[0], is.exprs[1]);
+    n->data_type = (*this)->data_type;
+    return n;
   }
 }
 

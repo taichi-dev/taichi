@@ -5,6 +5,7 @@ TLANG_NAMESPACE_BEGIN
 class Optimizer {
  public:
   virtual void run(Kernel &kernel) {
+    return;
     while (search_and_replace(kernel.ret))
       ;
   }
@@ -26,7 +27,7 @@ class Optimizer {
 
       bool incremental = true;
       auto &index_node = expr._pointer()._index();
-      if (index_node->type == NodeType::index) {
+      if (expr._pointer()->ch.size() == 2 && index_node->type == NodeType::index) {
         int offset_start = index_node->index_offset(0);
         int offset_inc = index_node->index_offset(1) - offset_start;
         for (int i = 0; i + 1 < addr_node->lanes; i++) {

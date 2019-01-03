@@ -135,7 +135,7 @@ class StructCompiler : public CodeGenBase {
       emit_code("auto n0 = ({} *)root;", root_type);
       for (int i = 0; i + 1 < (int)stack.size(); i++) {
         emit_code("tmp = 0;", i);
-        for (int j = max_num_indices - 1; j >= 0; j--) {
+        for (int j = 0; j < max_num_indices; j++) {
           auto e = stack[i]->extractors[j];
           int b = e.num_bits;
           if (b) {

@@ -296,16 +296,6 @@ auto test_select = []() {
 TC_REGISTER_TASK(test_select);
 #endif
 
-// TODO: random access
-
-/*
-#define For(i, range) \
-  {                   \
-    Index i; for_loop(i, range, [&](Index i)
-
-#define End )
-*/
-
 auto test_single_program = []() {
   int n = 128;
   Program prog(Arch::x86_64);
@@ -322,8 +312,8 @@ auto test_single_program = []() {
     root.fixed(i, n).place(b);
   });
 
-  auto func1 = prog.def([&]() {
-    for_loop(i, {0, n}, [&] { b[i] = a[i] + imm(1.0_f); });
+  auto func1 = prog.kernel(a->new_addresses(0), [&]() {
+    b[i] = a[i] + imm(1.0_f);
   });
 
   for (int i = 0; i < n; i++) {

@@ -100,6 +100,7 @@ struct Program {
   };
 
   Kernel *current_kernel;
+  SNode *current_snode;
   void *data_structure;
   CompileConfig config;
   Device device;
@@ -146,6 +147,16 @@ struct Program {
     auto func = Kernel(*this, body);
     functions.push_back(func);
     Expr::set_allow_store(false);
+    return func;
+  }
+
+  Kernel kernel(SNode *snode, const std::function<void()> &body) {
+    Expr::set_allow_store(true);
+    current_snode = snode;
+    auto func = Kernel(*this, body);
+    functions.push_back(func);
+    Expr::set_allow_store(false);
+    current_snode = nullptr;
     return func;
   }
 

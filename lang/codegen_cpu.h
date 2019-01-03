@@ -62,6 +62,44 @@ class CPUCodeGen : public CodeGenBase {
     var_count = 0;
   }
 
+  std::string loop_variable(SNode *snode) {
+    return snode->node_type_name + "_loop";
+  }
+
+  void generate_loop_header(SNode *snode, bool last_level = false) {
+    if (snode->parent != nullptr) {
+      generate_loop_header(snode->parent);
+    }
+    int inc = 1;
+    auto l = loop_variable(snode);
+    if (snode->type == SNodeType::forked) {
+      //
+    }
+    if (last_level) {
+      emit_code("for (int {}_i = 0, b = 0; {}_i < {}; {}_i += {}) {{", l, l,
+                snode->n, l, inc);
+    } else {
+      emit_code("for (int {} = 0; {} < {}; {} += {}) {{", l, l, snode->n, l,
+                inc);
+    }
+    std::string parent = "root";
+    if (snode->parent) {
+      parent = fmt::format("{}_cache", snode->parent->node_type_name);
+    }
+    emit_code("auto {}_cache = access_{}({}, {});", snode->node_type_name,
+              snode->node_type_name, parent, l);
+  }
+
+  void generate_loop_tail(SNode *snode, bool last_level = false) {
+    if (snode->parent != nullptr) {
+      generate_loop_tail(snode->parent);
+    }
+    if (last_level) {
+      emit_code("i += {}; b += {}", num_groups * unroll, unroll);
+    }
+    emit_code("}");
+  }
+
   void generate_header() {
     emit_code("#include <common.h>\n");
     emit_code("#define TLANG_KERNEL\n");
@@ -69,10 +107,10 @@ class CPUCodeGen : public CodeGenBase {
     emit_code("using namespace taichi; using namespace Tlang;");
 
     emit_code("extern \"C\" void " + func_name + "(Context context) {\n");
-    emit_code("auto n = context.get_range(0);\n\n");
+    emit_code("auto root = context.buffers[0];");
     before_loop_body = code;
     code = "";
-    emit_code("for (int i = 0, b = 0; (unsigned)i < n; ) {{\n", num_groups);
+    generate_loop_header(prog->current_snode);
   }
 
   template <typename... Args>
@@ -85,7 +123,8 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void generate_tail() {
-    emit_code("}\n}\n");
+    generate_loop_tail(prog->current_snode);
+    emit_code("}\n");
     code = before_loop_body + code;
   }
 
@@ -95,7 +134,6 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void end_macro_loop() {
-    emit_code("i += {}; b += {};", num_groups * unroll, unroll);
     code_suffix = "\n";
     // emit_code("}\n");
     for (int i = 0; i < unroll; i++) {

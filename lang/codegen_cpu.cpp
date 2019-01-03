@@ -2,7 +2,7 @@
 #include <taichi/io/io.h>
 #include <set>
 
-#include "codegen.h"
+#include "codegen_cpu.h"
 #include "slp_vectorizer.h"
 #include "util.h"
 #include "program.h"

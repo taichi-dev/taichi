@@ -11,7 +11,7 @@
 #include "address.h"
 #include "slp_vectorizer.h"
 #include "math.h"
-#include "codegen.h"
+#include "codegen_cpu.h"
 #include "program.h"
 #include "../headers/common.h"
 

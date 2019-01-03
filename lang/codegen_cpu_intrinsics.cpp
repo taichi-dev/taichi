@@ -248,8 +248,8 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     members += "}";
     auto index_id = expr->index_id(0);
     auto base = index_name(prog->current_snode, index_id);
-    emit_code("auto {}_index = {}({} + {} * 0);", expr->var_name,
-              vv_type(DataType::i32), base, num_groups);
+    emit_code("auto {}_index = {}({});", expr->var_name,
+              vv_type(DataType::i32), base);
     auto constant =
         get_constant(fmt::format("{}({})", vv_type(expr->data_type), members));
 

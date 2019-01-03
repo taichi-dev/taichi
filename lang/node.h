@@ -41,8 +41,8 @@ class Node {
     for (int i = 0; i < num_additional_values; i++) {
       node.attributes[i] = attributes[i];
     }
-    node.lanes= lanes;
-    node.num_groups_  = num_groups_;
+    node.lanes = lanes;
+    node.num_groups_ = num_groups_;
   }
 
   Node(const Node &) = delete;
@@ -54,13 +54,15 @@ class Node {
     set_lanes(1);
   }
 
-  // erases all data
   void set_lanes(int lanes) {
-    this->lanes = lanes;
     for (int i = 0; i < num_additional_values; i++) {
       attributes[i].resize(lanes);
-      std::fill(attributes[i].begin(), attributes[i].end(), 0.0_f64);
+      if (lanes > this->lanes) {
+        std::fill(attributes[i].begin() + this->lanes, attributes[i].end(),
+                  0.0_f64);
+      }
     }
+    this->lanes = lanes;
   }
 
   std::string name() {

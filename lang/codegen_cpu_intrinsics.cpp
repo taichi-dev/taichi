@@ -34,6 +34,14 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     }
   }
 
+  auto address_elements = [&](std::string index) {
+    std::string ret = "";
+    for (int i = 1; i < expr->ch.size(); i++) {
+      ret += fmt::format(", {}.element({})", expr->ch[i]->var_name, index);
+    }
+    return ret;
+  };
+
   if (expr->type == NodeType::binary) {
     auto op = binary_type_name(expr->binary_type);
     emit_code("auto {} = {}({}, {});", expr->var_name, op,
@@ -82,14 +90,12 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       TC_NOT_IMPLEMENTED
     }
   } else if (expr->type == NodeType::vload) {
-    emit_code(
-        "auto {} = {}::load(access_{}(context.buffers[0], {}.element(0)));",
-        expr->var_name, vv_type(expr->data_type),
-        expr[0]->new_addresses(0)->node_type_name, expr[1]->var_name);
+    emit_code("auto {} = {}::load(access_{}(context.buffers[0] {}));",
+              expr->var_name, vv_type(expr->data_type),
+              expr[0]->new_addresses(0)->node_type_name, address_elements("0"));
   } else if (expr->type == NodeType::vstore) {
-    emit_code("{}.store(access_{}(context.buffers[0], {}.element(0)));",
-              expr[2]->var_name, expr[0]->new_addresses(0)->node_type_name,
-              expr[1]->var_name);
+    emit_code("{}.store(access_{}(context.buffers[0] {}));", expr[2]->var_name,
+              expr[0]->new_addresses(0)->node_type_name, address_elements("0"));
   } else if (expr->type == NodeType::load) {
     emit_code("auto {} = {}::load({});", expr->var_name,
               vv_type(expr->data_type), expr[0]->var_name);

@@ -47,9 +47,10 @@ auto mpm = []() {
   prog.config.group_size = 1;
   prog.config.num_groups = 8;
 
-  auto index = Expr::index(0);
+  auto index = ind(0);
+  auto grid_index = ind(1);
 
-  prog.layout([&]() {
+  layout([&]() {
     auto place = [&](Expr &expr) {
       expr = variable(DataType::f32);
       root.fixed(index, n_particles).place(expr);
@@ -67,18 +68,18 @@ auto mpm = []() {
     grid_v(1) = variable(DataType::f32);
     grid_m = variable(DataType::f32);
 
-    root.fixed(index, n * n).forked().place(grid_v(0), grid_v(1), grid_m);
+    root.fixed(grid_index, n * n).forked().place(grid_v(0), grid_v(1), grid_m);
   });
 
   TC_ASSERT(bit::is_power_of_two(n));
 
-  auto clear_buffer = prog.kernel(grid_m, [&]() {
+  auto clear_buffer = kernel(grid_m, [&]() {
     grid_v[index](0) = imm(0.0_f);
     grid_v[index](1) = imm(0.0_f);
     grid_m[index] = imm(0.0_f);
   });
 
-  auto p2g = prog.kernel(particle_x(0), [&]() {
+  auto p2g = kernel(particle_x(0), [&]() {
     auto x = particle_x[index];
     auto v = particle_v[index];
     // auto F = particle_F[index];
@@ -118,8 +119,8 @@ auto mpm = []() {
     }
   });
 
-  auto grid_op = prog.kernel(grid_m, [&]() {
-    auto node = Expr::index(0);
+  auto grid_op = kernel(grid_m, [&]() {
+    auto node = grid_index;
     auto v0 = load(grid_v[node](0));
     auto v1 = load(grid_v[node](1));
     auto m = load(grid_m[node]);
@@ -146,7 +147,7 @@ auto mpm = []() {
     grid_v[node](1) = v1;
   });
 
-  auto g2p = prog.kernel(particle_x(0), [&]() {
+  auto g2p = kernel(particle_x(0), [&]() {
     auto x = particle_x[index];
     auto v = Vector(dim);
     // auto F = particle_F[index];
@@ -250,7 +251,7 @@ auto advection = []() {
   prog.config.group_size = use_adapter ? nattr : 1;
   prog.config.num_groups = use_adapter ? 8 : 8;
 
-  auto index = Expr::index(0);
+  auto index = ind();
 
   layout([&]() {
     for (int k = 0; k < 2; k++) {
@@ -262,10 +263,10 @@ auto advection = []() {
         // prog.buffer(2).range(n * n).stream(0).group(0).place(v[k]);
       } else {
         for (int i = 0; i < nattr; i++) {
-          attr[k][i] = variable(DataType::f32);
+          attr[k][i] = var<float32>();
           root.fixed(index, n * n).place(attr[k][i]);
         }
-        v[k] = variable(DataType::f32);
+        v[k] = var<float32>();
         root.fixed(index, n * n).place(v[k]);
       }
     }

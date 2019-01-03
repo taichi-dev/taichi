@@ -63,15 +63,18 @@ struct SNode {
 
   // Let us deal with 1D case first
   // SNodes maintains how flattened index bits are taken from indices
-  SNode &fixed(std::vector<Expr> indices, std::vector<int> size) {
-    TC_ASSERT(size.size() == 1);
-    TC_ASSERT(bit::is_power_of_two(size[0]));
+  SNode &fixed(std::vector<Expr> indices, std::vector<int> sizes) {
     auto &new_node = insert_children(SNodeType::fixed);
-    new_node.n = size[0];
+    TC_ASSERT(indices.size() == sizes.size())
+    new_node.n = 1;
+    for (auto s: sizes) {
+      TC_ASSERT(bit::is_power_of_two(s));
+      new_node.n *= s;
+    }
     for (int i = 0; i < (int)indices.size(); i++) {
       auto &ind = indices[i];
       TC_ASSERT(ind->lanes == 1);
-      new_node.extractors[ind->index_id(0)].num_bits = size[i];
+      new_node.extractors[ind->index_id(0)].num_bits = sizes[i];
       total_bits += bit::log2int(indices[i]);
     }
     return new_node;

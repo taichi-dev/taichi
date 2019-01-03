@@ -288,6 +288,10 @@ inline Expr var() {
   return placeholder(get_data_type<T>());
 }
 
+inline Expr ind(int i = -1) {
+  return Expr::index(i);
+}
+
 inline int Node::member_id(const Expr &expr) const {
   for (int i = 0; i < (int)members.size(); i++) {
     if (members[i] == expr) {

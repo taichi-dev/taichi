@@ -329,8 +329,8 @@ auto test_single_program = []() {
   prog.config.group_size = 1;
 
   auto a = var<float32>(), b = var<float32>();
+  auto i = ind(0);
 
-  auto i = Expr::index(0);
   bool fork = true;
 
   layout([&]() {

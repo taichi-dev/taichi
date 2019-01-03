@@ -298,6 +298,7 @@ TC_REGISTER_TASK(test_select);
 auto test_2d_array = [] {
   int n = 1024;
   Program prog(Arch::x86_64);
+  prog.config.group_size = 1;
 
   auto a = var<float32>(), i = ind(), j = ind();
 

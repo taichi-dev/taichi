@@ -195,7 +195,7 @@ class Expr {
     return node.get();
   }
 
-  void *evaluate_addr(int i, int j, int k);
+  void *evaluate_addr(int i, int j, int k, int l);
 
   template <typename T>
   void set(int i, T t) {
@@ -209,13 +209,13 @@ class Expr {
   }
 
   template <typename T>
-  T &val(int i, int j = 0, int k = 0) {
+  T &val(int i, int j = 0, int k = 0, int l = 0) {
     if (get_data_type<T>() != node->data_type) {
       TC_ERROR("Cannot access type {} as type {}",
                data_type_name(node->data_type),
                data_type_name(get_data_type<T>()));
     }
-    return *(T *)evaluate_addr(i, j, k);
+    return *(T *)evaluate_addr(i, j, k, l);
   }
 
 #define REGISTER_FIELD(name, required_type, chid)     \

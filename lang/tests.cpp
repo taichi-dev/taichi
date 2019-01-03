@@ -243,6 +243,7 @@ auto advection = []() {
   bool use_adapter = false;
 
   const int n = 1024, nattr = 4;
+  auto x = ind(), y = ind();
 
   Float attr[2][nattr], v[2];
 
@@ -250,8 +251,6 @@ auto advection = []() {
 
   prog.config.group_size = use_adapter ? nattr : 1;
   prog.config.num_groups = use_adapter ? 8 : 8;
-
-  auto index = ind();
 
   layout([&]() {
     for (int k = 0; k < 2; k++) {
@@ -264,15 +263,17 @@ auto advection = []() {
       } else {
         for (int i = 0; i < nattr; i++) {
           attr[k][i] = var<float32>();
-          root.fixed(index, n * n).place(attr[k][i]);
+          root.fixed({x, y}, {n, n}).place(attr[k][i]);
         }
         v[k] = var<float32>();
-        root.fixed(index, n * n).place(v[k]);
+        root.fixed({x, y}, {n, n}).place(v[k]);
       }
     }
   });
 
   TC_ASSERT(bit::is_power_of_two(n));
+
+  auto index = ExprGroup(x, y);
 
   auto func = kernel(attr[0][0], [&]() {
     // ** gs = 2
@@ -290,10 +291,13 @@ auto advection = []() {
     }
 
     // ** gs = 1
-    auto offset =
-        cast<int32>(offset_x) * imm(n) + cast<int32>(offset_y) * imm(1);
+    auto new_x = cast<int32>(offset_x + cast<float32>(x));
+    auto new_y = cast<int32>(offset_y + cast<float32>(y));
 
     auto clamp = [](const Expr &e) { return min(max(imm(2), e), imm(n - 2)); };
+
+    new_x = clamp(new_x);
+    new_y = clamp(new_y);
 
     // weights
     auto w00 = (imm(1.0f) - wx) * (imm(1.0f) - wy);
@@ -306,26 +310,17 @@ auto advection = []() {
     w10.name("w10");
     w11.name("w11");
 
-    Expr node = max(Expr::index(0) + offset, imm(0));
-    Int32 i = clamp(node >> imm((int)bit::log2int(n))).name("i");  // node / n
-    // Int32 i = clamp(node / imm(n)).name("i"); // node / n
-    Int32 j = clamp(node & imm(n - 1)).name("j");  // node % n
-    // Int32 j = clamp(node % imm(n)).name("j"); // node % n
-    node = (i << imm((int)bit::log2int(n))) + j;
-    // node = i * imm(n) + j;
-    node.name("node");
-
     if (use_adapter) {
       prog.adapter(2).set(1, 4).convert(w00, w01, w10, w11);
-      prog.adapter(3).set(1, 4).convert(node);
+      // prog.adapter(3).set(1, 4).convert(node);
     }
 
     // ** gs = 4
     for (int k = 0; k < nattr; k++) {
-      auto v00 = attr[0][k][node + imm(0)].name("v00");
-      auto v01 = attr[0][k][node + imm(1)].name("v01");
-      auto v10 = attr[0][k][node + imm(n)].name("v10");
-      auto v11 = attr[0][k][node + imm(n + 1)].name("v11");
+      auto v00 = attr[0][k][new_x, new_y].name("v00");
+      auto v01 = attr[0][k][new_x, new_y + imm(1)].name("v01");
+      auto v10 = attr[0][k][new_x + imm(1), new_y].name("v10");
+      auto v11 = attr[0][k][new_x + imm(1), new_y + imm(1)].name("v11");
 
       attr[1][k][index] = w00 * v00 + w01 * v01 + w10 * v10 + w11 * v11;
       // attr[1][k][index] = w00 * v00;
@@ -353,7 +348,7 @@ auto advection = []() {
   GUI gui("Advection", n, n);
 
   for (int f = 0; f < 1000; f++) {
-    for (int t = 0; t < 100; t++) {
+    for (int t = 0; t < 1; t++) {
       TC_TIME(func());
       TC_TIME(swap_buffers());
     }

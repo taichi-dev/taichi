@@ -51,6 +51,7 @@ class Node {
     data_type = DataType::f32;
     binary_type = BinaryType::undefined;
     id = counter++;
+    this->lanes = 0;
     set_lanes(1);
   }
 

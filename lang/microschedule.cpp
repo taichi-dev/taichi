@@ -46,7 +46,6 @@ auto test_loop = []() {
 
 TC_REGISTER_TASK(test_loop);
 
-
 // a * b * vec
 void test_adapter1(int vec_size) {
   Float a, b;
@@ -312,9 +311,8 @@ auto test_single_program = []() {
     root.fixed(i, n).place(b);
   });
 
-  auto func1 = prog.kernel(a->new_addresses(0), [&]() {
-    b[i] = a[i] + imm(1.0_f);
-  });
+  auto func1 =
+      prog.kernel(a->new_addresses(0), [&]() { b[i] = a[i] + imm(1.0_f); });
 
   for (int i = 0; i < n; i++) {
     a.set<float32>(i, i);
@@ -349,15 +347,9 @@ auto test_multiple_programs = []() {
     root.fixed(i, n).place(d);
   });
 
-  auto func1 = prog.def([&]() {
-    for_loop(i, {0, n}, [&] { b[i] = a[i] + imm(1.0_f); });
-  });
-  auto func2 = prog.def([&]() {
-    for_loop(i, {0, n}, [&] { c[i] = b[i] + imm(1.0_f); });
-  });
-  auto func3 = prog.def([&]() {
-    for_loop(i, {0, n}, [&] { d[i] = c[i] + imm(1.0_f); });
-  });
+  auto func1 = prog.kernel(a, [&]() { b[i] = a[i] + imm(1.0_f); });
+  auto func2 = prog.kernel(a, [&]() { c[i] = b[i] + imm(1.0_f); });
+  auto func3 = prog.kernel(a, [&]() { d[i] = c[i] + imm(1.0_f); });
 
   for (int i = 0; i < n; i++) {
     a.set<float32>(i, i);

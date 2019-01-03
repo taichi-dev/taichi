@@ -15,24 +15,16 @@
 #include "program.h"
 #include "../headers/common.h"
 
-TC_NAMESPACE_BEGIN
-
-namespace Tlang {
-
-inline std::pair<int64, int64> range(int64 start, int64 end) {
-  return {start, end};
-}
+TLANG_NAMESPACE_BEGIN
 
 using ForBody = std::function<void()>;
 inline void for_loop(Index &index,
                      std::pair<int64, int64> r,
                      const ForBody &body) {
-  TC_ASSERT(r.first == 0);
-  body();
+  TC_NOT_IMPLEMENTED;
 }
-}  // namespace Tlang
 
-TC_NAMESPACE_END
+TLANG_NAMESPACE_END
 
 /*
  Expr should be what the users play with.

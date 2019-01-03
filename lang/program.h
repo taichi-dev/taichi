@@ -149,6 +149,10 @@ struct Program {
     return func;
   }
 
+  Kernel kernel(Expr exp, const std::function<void()> &body) {
+    return kernel(exp->new_addresses(0), body);
+  }
+
   Kernel kernel(SNode *snode, const std::function<void()> &body) {
     Expr::set_allow_store(true);
     current_snode = snode;

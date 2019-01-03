@@ -27,7 +27,7 @@ auto mpm = []() {
              inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
   auto hardening = 10.0_f, E = 1e4_f, nu = 0.2_f;
-  real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
+  // real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
 
   int dim = 2;
 
@@ -49,7 +49,6 @@ auto mpm = []() {
   auto index = Expr::index(0);
 
   prog.layout([&]() {
-    int counter = 0;
     auto place = [&](Expr &expr) {
       expr = variable(DataType::f32);
       root.fixed(index, n_particles).place(expr);

@@ -191,7 +191,7 @@ struct Program {
                data_type_name(expr->data_type),
                data_type_name(get_data_type<T>()));
     }
-    return *(T *)expr.evaluate_addr(i);
+    return expr.val<T>(i);
   }
 
   void materialize_layout();

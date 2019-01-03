@@ -41,10 +41,10 @@ Expr Expr::operator[](const ExprGroup &is) {
   }
 }
 
-void *Expr::evaluate_addr(int i) {
+void *Expr::evaluate_addr(int i, int j, int k) {
   TC_ASSERT(node->lanes == 1);
   return node->new_addresses(0)->evaluate(get_current_program().data_structure,
-                                          i);
+                                          i, j, k);
 }
 
 bool Expr::allow_store = false;

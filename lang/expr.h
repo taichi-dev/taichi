@@ -195,18 +195,23 @@ class Expr {
     return node.get();
   }
 
-  void *evaluate_addr(int i);
+  void *evaluate_addr(int i, int j, int k);
 
   template <typename T>
   void set(int i, T t) {
     TC_ASSERT(get_data_type<T>() == node->data_type);
-    *(T *)evaluate_addr(i) = t;
+    val<T>(i) = t;
   }
 
   template <typename T>
   T &get(int i) {
+    return val<T>(i);
+  }
+
+  template <typename T>
+  T &val(int i, int j = 0, int k = 0) {
     TC_ASSERT(get_data_type<T>() == node->data_type);
-    return *(T *)evaluate_addr(i);
+    return *(T *)evaluate_addr(i, j, k);
   }
 
 #define REGISTER_FIELD(name, required_type, chid)     \

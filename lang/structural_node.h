@@ -33,7 +33,7 @@ struct SNode {
   Expr addr;
   SNode *parent;
 
-  using AccessorFunction = void *(*)(void *, int);
+  using AccessorFunction = void *(*)(void *, int, int, int);
   AccessorFunction func;
 
   std::string node_type_name;
@@ -121,9 +121,9 @@ struct SNode {
     return *this;
   }
 
-  TC_FORCE_INLINE void *evaluate(void *ds, int i) {
+  TC_FORCE_INLINE void *evaluate(void *ds, int i, int j, int k) {
     TC_ASSERT(func);
-    return func(ds, i);
+    return func(ds, i, j, k);
   }
 };
 

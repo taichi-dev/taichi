@@ -295,26 +295,23 @@ auto test_select = []() {
 TC_REGISTER_TASK(test_select);
 #endif
 
-auto test_2d_array = []() {
-  int n = 128;
+auto test_2d_array = [] {
+  int n = 1024;
   Program prog(Arch::x86_64);
-  prog.config.group_size = 1;
 
-  auto a = var<float32>();
+  auto a = var<float32>(), i = ind(), j = ind();
 
-  auto i = Expr::index(), j = Expr::index();
+  layout([&] { root.fixed({i, j}, {n, n}).forked().place(a); });
 
-  layout([&]() {
-      root.fixed({i, j}, {n, n}).forked().place(a);
-  });
-
-  auto func1 = kernel(a, [&]() { a[i, j] = a[i, j] + imm(1.0_f); });
+  auto inc = kernel(a, [&]() { a[i, j] = a[i, j] + imm(1.0_f); });
 
   for (int i = 0; i < n; i++) {
-    a.set<float32>(i, i);
+    for (int j = 0; j < n; j++) {
+      a.val<float32>(i, j) = i;
+    }
   }
 
-  func1();
+  inc();
 
   for (int i = 0; i < n; i++) {
     TC_ASSERT(a.get<float32>(i) == i + 1);
@@ -323,17 +320,16 @@ auto test_2d_array = []() {
 
 TC_REGISTER_TASK(test_2d_array);
 
-auto test_single_program = []() {
+auto test_single_program = [] {
   int n = 128;
   Program prog(Arch::x86_64);
-  prog.config.group_size = 1;
 
   auto a = var<float32>(), b = var<float32>();
   auto i = ind(0);
 
   bool fork = true;
 
-  layout([&]() {
+  layout([&] {
     if (fork) {
       root.fixed(i, n).forked().place(a, b);
     } else {
@@ -342,7 +338,7 @@ auto test_single_program = []() {
     }
   });
 
-  auto func1 = kernel(a, [&]() { b[i] = a[i] + imm(1.0_f); });
+  auto func1 = kernel(a, [&] { b[i] = a[i] + imm(1.0_f); });
 
   for (int i = 0; i < n; i++) {
     a.set<float32>(i, i);

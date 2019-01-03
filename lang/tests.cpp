@@ -47,8 +47,8 @@ auto mpm = []() {
   prog.config.group_size = 1;
   prog.config.num_groups = 8;
 
-  auto index = ind(0);
-  auto grid_index = ind(1);
+  auto index = ind();
+  auto grid_index = ind();
 
   layout([&]() {
     auto place = [&](Expr &expr) {

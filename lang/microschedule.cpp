@@ -307,14 +307,16 @@ auto test_2d_array = [] {
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
-      a.val<float32>(i, j) = i;
+      a.val<float32>(i, j) = i + j;
     }
   }
 
   inc();
 
   for (int i = 0; i < n; i++) {
-    TC_ASSERT(a.get<float32>(i) == i + 1);
+    for (int j = 0; j < n; j++) {
+      TC_ASSERT(a.val<float32>(i, j) == i + j + 1);
+    }
   }
 };
 

@@ -186,11 +186,6 @@ struct Program {
 
   template <typename T = float32>
   T &data(Expr &expr, int i) {
-    if (get_data_type<T>() != expr->data_type) {
-      TC_ERROR("Cannot access type {} as type {}",
-               data_type_name(expr->data_type),
-               data_type_name(get_data_type<T>()));
-    }
     return expr.val<T>(i);
   }
 

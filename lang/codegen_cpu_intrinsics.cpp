@@ -34,9 +34,9 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     }
   }
 
-  auto address_elements = [&](std::string index) {
+  auto address_elements = [&](std::string index, int start = 1) {
     std::string ret = "";
-    for (int i = 1; i < expr->ch.size(); i++) {
+    for (int i = start; i < expr->ch.size(); i++) {
       ret += fmt::format(", {}.element({})", expr->ch[i]->var_name, index);
     }
     return ret;
@@ -94,8 +94,9 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
               expr->var_name, vv_type(expr->data_type),
               expr[0]->new_addresses(0)->node_type_name, address_elements("0"));
   } else if (expr->type == NodeType::vstore) {
-    emit_code("{}.store(access_{}(context.buffers[0] {}));", expr[2]->var_name,
-              expr[0]->new_addresses(0)->node_type_name, address_elements("0"));
+    emit_code("{}.store(access_{}(context.buffers[0] {}));", expr[1]->var_name,
+              expr[0]->new_addresses(0)->node_type_name,
+              address_elements("0", 2));
   } else if (expr->type == NodeType::load) {
     emit_code("auto {} = {}::load({});", expr->var_name,
               vv_type(expr->data_type), expr[0]->var_name);

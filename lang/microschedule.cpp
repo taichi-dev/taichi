@@ -398,6 +398,8 @@ auto test_multiple_programs = []() {
   func3();
 
   for (int i = 0; i < n; i++) {
+    TC_P(d.val<float32>(i));
+    TC_P(i + 3);
     TC_ASSERT(d.val<float32>(i) == i + 3);
   }
 };

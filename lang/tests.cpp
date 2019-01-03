@@ -74,9 +74,9 @@ auto mpm = []() {
   TC_ASSERT(bit::is_power_of_two(n));
 
   auto clear_buffer = kernel(grid_m, [&]() {
-    grid_v[index](0) = imm(0.0_f);
-    grid_v[index](1) = imm(0.0_f);
-    grid_m[index] = imm(0.0_f);
+    grid_v[grid_index](0) = imm(0.0_f);
+    grid_v[grid_index](1) = imm(0.0_f);
+    grid_m[grid_index] = imm(0.0_f);
   });
 
   auto p2g = kernel(particle_x(0), [&]() {

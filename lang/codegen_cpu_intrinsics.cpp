@@ -235,18 +235,24 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     }
     TC_ASSERT(bit::is_power_of_two(num_groups));
     members += "}";
-    emit_code("auto {}_index = {}(b);", expr->var_name, vv_type(DataType::i32));
+    auto index_id = expr->index_id(0);
+    auto base = index_name(prog->current_snode, index_id);
+    emit_code("auto {}_index = {}({} + {} * b);", expr->var_name, vv_type(DataType::i32), base, num_groups);
     auto constant =
         get_constant(fmt::format("{}({})", vv_type(expr->data_type), members));
-    emit_code("auto {} = add(shl({}_index, {}), {});", expr->var_name,
-              expr->var_name, bit::log2int(num_groups), constant);
+
+    emit_code("auto {} = add({}_index, {});", expr->var_name,
+              expr->var_name, constant);
   } else if (expr->type == NodeType::pointer) {
     emit_code("{} *{}[{}];", expr->data_type_name(), expr->var_name, vv_width);
-    TC_WARN("Vectorized pointer of  different SNodes is unsupported!");
+    TC_WARN("Vectorized pointer of different SNodes is unsupported!");
     emit_code("for (int v = 0; v < {}; v++)", vv_width);
-    emit_code("{}[v]=access_{}(context.buffers[0], {}.element(v));",
-              expr->var_name, expr->ch[0]->new_addresses(0)->node_type_name,
-              expr->ch[1]->var_name);
+    std::string elems = "";
+    for (int i = 1; i < (int)expr->ch.size(); i++) {
+      elems += fmt::format(", {}.element(v)", expr->ch[i]->var_name);
+    }
+    emit_code("{}[v] = access_{}(context.buffers[0] {});", expr->var_name,
+              expr->ch[0]->new_addresses(0)->node_type_name, elems);
   } else if (expr->type == NodeType::adapter_store) {
     auto &ad = prog->adapter(expr[1]->value<int>());
     /*

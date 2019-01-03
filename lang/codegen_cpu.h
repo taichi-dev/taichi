@@ -66,6 +66,10 @@ class CPUCodeGen : public CodeGenBase {
     return snode->node_type_name + "_loop";
   }
 
+  std::string index_name(SNode *snode, int i) {
+    return fmt::format("index_{}_{}", snode->node_type_name, i);
+  }
+
   void generate_loop_header(SNode *snode, bool last_level = false) {
     if (snode->parent != nullptr) {
       generate_loop_header(snode->parent,
@@ -87,6 +91,22 @@ class CPUCodeGen : public CodeGenBase {
     auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
     emit_code("auto {}_cache = access_{}({}, {});", snode->node_type_name,
               snode->node_type_name, parent, l);
+
+    // update indices....
+    for (int i = 0; i < max_num_indices; i++) {
+      std::string ancester = "";
+      if (snode->parent->parent != nullptr) {
+        ancester = index_name(snode->parent, i) + "|";
+      }
+      std::string addition = "0";
+      if (snode->extractors[i].num_bits) {
+        addition = fmt::format("((({} >> {}) & ((1 << {}) - 1)) << {})", l,
+                               snode->extractors[i].dest_offset,
+                               snode->extractors[i].num_bits,
+                               snode->extractors[i].start);
+      }
+      emit_code("int {} = {} {};", index_name(snode, i), ancester, addition);
+    }
   }
 
   void generate_loop_tail(SNode *snode, bool last_level = false) {

@@ -9,11 +9,16 @@ TC_FORCE_INLINE int32 constexpr operator"" _bits(unsigned long long a) {
 }
 
 struct IndexExtractor {
-  int start, num_bits;
+  int start, num_bits, dest_offset;
+
+  TC_IO_DEF(start, num_bits, dest_offset);
+
+  // TODO: rename start to src_offset
 
   IndexExtractor() {
     start = 0;
     num_bits = 0;
+    dest_offset = 0;
   }
 };
 
@@ -29,7 +34,7 @@ struct SNode {
   int depth;
 
   int64 n;
-  int total_bits;
+  int total_num_bits, total_bit_start;
   Expr addr;
   SNode *parent;
 
@@ -46,7 +51,8 @@ struct SNode {
 
   SNode(int depth, SNodeType t) : depth(depth), type(t) {
     id = counter++;
-    total_bits = 0;
+    total_num_bits = 0;
+    total_bit_start = 0;
     std::memset(taken_bits, 0, sizeof(taken_bits));
     func = nullptr;
     parent = nullptr;
@@ -75,7 +81,6 @@ struct SNode {
       auto &ind = indices[i];
       TC_ASSERT(ind->lanes == 1);
       new_node.extractors[ind->index_id(0)].num_bits = bit::log2int(sizes[i]);
-      total_bits += bit::log2int(indices[i]);
     }
     return new_node;
   }

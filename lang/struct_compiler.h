@@ -18,8 +18,40 @@ class StructCompiler : public CodeGenBase {
   }
 
   void visit(SNode &snode) {
-    for (auto ch : snode.ch) {
+    for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {
+      auto &ch = snode.ch[ch_id];
       visit(*ch);
+
+      TC_P(ch->type_name());
+      int total_bits_start_inferred = ch->total_bit_start + ch->total_num_bits;
+      TC_P(ch->total_bit_start);
+      TC_P(ch->total_num_bits);
+      if (ch_id == 0) {
+        snode.total_bit_start = total_bits_start_inferred;
+      } else {
+        TC_ASSERT(snode.total_bit_start == total_bits_start_inferred);
+      }
+      // infer extractors
+      int acc_offsets = 0;
+      for (int i = max_num_indices - 1; i >= 0; i--) {
+        int inferred = ch->extractors[i].start + ch->extractors[i].num_bits;
+        if (ch_id == 0) {
+          snode.extractors[i].start = inferred;
+          snode.extractors[i].dest_offset = snode.total_bit_start + acc_offsets;
+        } else {
+          TC_ASSERT_INFO(snode.extractors[i].start == inferred,
+                         "Inconsistent bit configuration");
+          TC_ASSERT_INFO(snode.extractors[i].dest_offset ==
+                             snode.total_bit_start + acc_offsets,
+                         "Inconsistent bit configuration");
+        }
+        acc_offsets += snode.extractors[i].num_bits;
+      }
+    }
+
+    snode.total_num_bits = 0;
+    for (int i = 0; i < max_num_indices; i++) {
+      snode.total_num_bits += snode.extractors[i].num_bits;
     }
 
     emit_code("");
@@ -87,7 +119,8 @@ class StructCompiler : public CodeGenBase {
           int b = e.num_bits;
           if (b) {
             emit_code("tmp = (tmp << {}) + ((i{} >> {}) & ((1 << {}) - 1));",
-                      e.num_bits, 0, e.start, e.num_bits); // TODO: 0 should be j
+                      e.num_bits, j, e.start,
+                      e.num_bits);  // TODO: 0 should be j
           }
         }
         emit_code("auto n{} = access_{}(n{}, tmp);", i + 1,

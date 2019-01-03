@@ -58,6 +58,7 @@ class Expr {
     if (i == -1) {
       i = index_counter++;
     }
+    TC_ASSERT(i < max_num_indices);
     auto e = create(NodeType::index);
     e->value<int>() = i;
     e->data_type = DataType::i32;

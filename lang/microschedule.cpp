@@ -295,14 +295,40 @@ auto test_select = []() {
 TC_REGISTER_TASK(test_select);
 #endif
 
+auto test_2d_array = []() {
+  int n = 128;
+  Program prog(Arch::x86_64);
+  prog.config.group_size = 1;
+
+  auto a = var<float32>();
+
+  auto i = Expr::index(), j = Expr::index();
+
+  layout([&]() {
+      root.fixed({i, j}, {n, n}).forked().place(a);
+  });
+
+  auto func1 = kernel(a, [&]() { a[i, j] = a[i, j] + imm(1.0_f); });
+
+  for (int i = 0; i < n; i++) {
+    a.set<float32>(i, i);
+  }
+
+  func1();
+
+  for (int i = 0; i < n; i++) {
+    TC_ASSERT(a.get<float32>(i) == i + 1);
+  }
+};
+
+TC_REGISTER_TASK(test_2d_array);
+
 auto test_single_program = []() {
   int n = 128;
   Program prog(Arch::x86_64);
   prog.config.group_size = 1;
 
-  Real a, b;
-  a = placeholder(DataType::f32);
-  b = placeholder(DataType::f32);
+  auto a = var<float32>(), b = var<float32>();
 
   auto i = Expr::index(0);
   bool fork = true;

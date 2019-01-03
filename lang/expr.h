@@ -10,11 +10,14 @@ TLANG_NAMESPACE_BEGIN
 
 class Visitor;
 
+class ExprGroup;
+
 // Reference counted...
 class Expr {
  private:
   Handle<Node> node;
   static bool allow_store;
+  static int index_counter;
 
  public:
   static void set_allow_store(bool val) {
@@ -51,7 +54,10 @@ class Expr {
     return e;
   }
 
-  static Expr index(int i) {
+  static Expr index(int i = -1) {
+    if (i == -1) {
+      i = index_counter++;
+    }
     auto e = create(NodeType::index);
     e->value<int>() = i;
     e->data_type = DataType::i32;
@@ -154,6 +160,8 @@ class Expr {
   Expr &operator=(const Expr &o);
 
   Expr operator[](const Expr &i);
+
+  Expr operator[](const ExprGroup &i_group);
 
   Expr &operator[](int i) {
     TC_ASSERT(0 <= i && i < (int)node->ch.size());
@@ -275,6 +283,11 @@ inline Expr variable(DataType dt) {
   return placeholder(dt);
 }
 
+template <typename T>
+inline Expr var() {
+  return placeholder(get_data_type<T>());
+}
+
 inline int Node::member_id(const Expr &expr) const {
   for (int i = 0; i < (int)members.size(); i++) {
     if (members[i] == expr) {
@@ -300,5 +313,31 @@ inline Expr load(const Expr &addr) {
 inline Expr select(Expr mask, Expr true_val, Expr false_val) {
   return Expr::create(NodeType::select, mask, true_val, false_val);
 }
+
+class ExprGroup {
+ public:
+  std::vector<Expr> exprs;
+  ExprGroup(Expr a, Expr b) {
+    exprs.push_back(a);
+    exprs.push_back(b);
+  }
+
+  ExprGroup(Expr a, const ExprGroup &b) {
+    exprs.push_back(a);
+    exprs.insert(exprs.end(), b.exprs.begin(), b.exprs.end());
+  }
+
+  std::size_t size() const {
+    return exprs.size();
+  }
+};
+
+inline ExprGroup operator,(const Expr &a, const Expr &b) {
+  return ExprGroup(a, b);
+};
+
+inline ExprGroup operator,(const Expr &a, const ExprGroup &b) {
+  return ExprGroup(a, b);
+};
 
 TLANG_NAMESPACE_END

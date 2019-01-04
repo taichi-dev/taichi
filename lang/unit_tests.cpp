@@ -294,6 +294,26 @@ auto test_select = []() {
 TC_REGISTER_TASK(test_select);
 #endif
 
+TC_TEST("test_snode") {
+  Program prog(Arch::x86_64);
+
+  auto i = Expr::index(0);
+  auto u = variable(DataType::i32);
+
+  int n = 128;
+
+  // All data structure originates from a "root", which is a forked node.
+  prog.layout([&] { root.fixed(i, n).place(u); });
+
+  for (int i = 0; i < n; i++) {
+    u.val<int32>(i) = i + 1;
+  }
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK_EQUAL(u.val<int32>(i), i + 1, 0);
+  }
+};
+
 TC_TEST("test_2d_blocked_array") {
   int n = 32, block_size = 16;
   TC_ASSERT(n % block_size == 0);

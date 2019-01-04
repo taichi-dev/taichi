@@ -246,6 +246,7 @@ auto advection = []() {
 
   const int n = 1024, nattr = 4;
   const int block_size = 16;
+  bool blocked_channels = false;
   TC_ASSERT(n % block_size == 0);
   auto x = ind(), y = ind();
 
@@ -257,6 +258,15 @@ auto advection = []() {
   prog.config.num_groups = use_adapter ? 8 : 8;
 
   layout([&]() {
+    std::vector<Expr> all_variables;
+    for (int k = 0; k < dim; k++) {
+      for (int i = 0; i < nattr; i++) {
+        attr[k][i] = var<float32>();
+        all_variables.push_back(attr[k][i]);
+      }
+      v[k] = var<float32>();
+      all_variables.push_back(v[k]);
+    }
     for (int k = 0; k < dim; k++) {
       if (use_adapter) {
         TC_NOT_IMPLEMENTED
@@ -265,24 +275,23 @@ auto advection = []() {
         }
         // prog.buffer(2).range(n * n).stream(0).group(0).place(v[k]);
       } else {
-        if (block_size > 1) {
-          for (int i = 0; i < nattr; i++) {
-            attr[k][i] = var<float32>();
-            root.fixed({x, y}, {n / block_size, n / block_size})
-                .fixed({x, y}, {block_size, block_size})
-                .place(attr[k][i]);
-          }
-          v[k] = var<float32>();
+      }
+    }
+    if (blocked_channels) {
+      auto &f = root.fixed({x, y}, {n / block_size, n / block_size}).forked();
+      for (auto &v : all_variables) {
+        f.fixed({x, y}, {block_size, block_size}).place(v);
+      }
+    } else {
+      if (block_size > 1) {
+        for (auto &v : all_variables) {
           root.fixed({x, y}, {n / block_size, n / block_size})
               .fixed({x, y}, {block_size, block_size})
-              .place(v[k]);
-        } else {
-          for (int i = 0; i < nattr; i++) {
-            attr[k][i] = var<float32>();
-            root.fixed({x, y}, {n, n}).place(attr[k][i]);
-          }
-          v[k] = var<float32>();
-          root.fixed({x, y}, {n, n}).place(v[k]);
+              .place(v);
+        }
+      } else {
+        for (auto &v : all_variables) {
+          root.fixed({x, y}, {n, n}).place(v);
         }
       }
     }
@@ -290,7 +299,7 @@ auto advection = []() {
 
   TC_ASSERT(bit::is_power_of_two(n));
 
-  auto clamp = [](const Expr &e) { return min(max(imm(0), e), imm(n - 2)); };
+  auto clamp = [](const Float32 &e) { return min(max(imm(0), e), imm(n - 2)); };
 
   auto func = kernel(attr[0][0], [&]() {
     // ** gs = 2
@@ -375,26 +384,5 @@ auto advection = []() {
 };
 TC_REGISTER_TASK(advection);
 
-auto test_snode = [&]() {
-  Program prog(Arch::x86_64);
-
-  auto i = Expr::index(0);
-  auto u = variable(DataType::i32);
-
-  int n = 128;
-
-  // All data structure originates from a "root", which is a forked node.
-  prog.layout([&] { root.fixed(i, n).place(u); });
-
-  for (int i = 0; i < n; i++) {
-    u.val<int32>(i) = i + 1;
-  }
-
-  for (int i = 0; i < n; i++) {
-    TC_ASSERT(u.val<int32>(i) == i + 1);
-  }
-};
-
-TC_REGISTER_TASK(test_snode);
 
 TC_NAMESPACE_END

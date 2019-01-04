@@ -295,7 +295,7 @@ TC_REGISTER_TASK(test_select);
 #endif
 
 TC_TEST("test_2d_blocked_array") {
-  int n = 256, block_size = 16;
+  int n = 32, block_size = 16;
   TC_ASSERT(n % block_size == 0);
 
   Program prog(Arch::x86_64);
@@ -361,6 +361,7 @@ TC_TEST("test_2d_array") {
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n * 2; j++) {
+      TC_CHECK_EQUAL(a.val<int32>(i, j), i + j * 3, 0);
       TC_CHECK_EQUAL(b.val<int32>(i, j), i * 2 + j * 3, 0);
     }
   }

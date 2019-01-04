@@ -89,19 +89,20 @@ class CPUCodeGen : public CodeGenBase {
 
     // update indices....
     for (int i = 0; i < max_num_indices; i++) {
-      std::string ancester = "";
+      std::string ancester = "0 |";
       if (snode->parent->parent != nullptr) {
-        ancester = index_name_local(snode->parent, i) + "|";
+        ancester = index_name_global(snode->parent, i) + " |";
       }
       std::string addition = "0";
       if (snode->extractors[i].num_bits) {
         addition = fmt::format("((({} >> {}) & ((1 << {}) - 1)) << {})", l,
-                               snode->extractors[i].dest_offset,
+                               snode->extractors[i].dest_offset - snode->total_bit_start,
                                snode->extractors[i].num_bits,
                                snode->extractors[i].start);
       }
-      emit_code("int {} = {} {};", index_name_local(snode, i), ancester,
-                addition);
+      emit_code("int {} = {};", index_name_local(snode, i), addition);
+      emit_code("int {} = {} {};", index_name_global(snode, i), ancester,
+                index_name_local(snode, i));
     }
   }
 

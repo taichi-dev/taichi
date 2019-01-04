@@ -43,10 +43,10 @@ class StructCompiler : public CodeGenBase {
       ch->num_active_indices = snode.num_active_indices;
       visit(*ch);
 
-      TC_P(ch->type_name());
+      // TC_P(ch->type_name());
       int total_bits_start_inferred = ch->total_bit_start + ch->total_num_bits;
-      TC_P(ch->total_bit_start);
-      TC_P(ch->total_num_bits);
+      // TC_P(ch->total_bit_start);
+      // TC_P(ch->total_num_bits);
       if (ch_id == 0) {
         snode.total_bit_start = total_bits_start_inferred;
       } else if (snode.parent != nullptr) {  // root is ok

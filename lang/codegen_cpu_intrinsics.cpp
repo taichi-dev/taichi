@@ -247,7 +247,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     TC_ASSERT(bit::is_power_of_two(num_groups));
     members += "}";
     auto index_id = expr->index_id(0);
-    auto base = index_name_local(prog->current_snode, index_id);
+    auto base = index_name_global(prog->current_snode, index_id);
     emit_code("auto {}_index = {}({});", expr->var_name,
               vv_type(DataType::i32), base);
     auto constant =

@@ -4,9 +4,7 @@
 #include <taichi/visual/gui.h>
 #include <taichi/common/bit.h>
 
-TC_NAMESPACE_BEGIN
-
-using namespace Tlang;
+TLANG_NAMESPACE_BEGIN
 
 #if (0)
 auto test_loop = []() {
@@ -297,7 +295,9 @@ TC_REGISTER_TASK(test_select);
 #endif
 
 TC_TEST("test_2d_blocked_array") {
-  int n = 8;
+  int n = 256, block_size = 16;
+  TC_ASSERT(n % block_size == 0);
+
   Program prog(Arch::x86_64);
   bool forked = false;
 
@@ -305,8 +305,8 @@ TC_TEST("test_2d_blocked_array") {
 
   layout([&] {
     if (!forked)
-      root.fixed({i, j}, {n / 16, n * 2 / 16})
-          .fixed({i, j}, {16, 16})
+      root.fixed({i, j}, {n / block_size, n * 2 / block_size})
+          .fixed({i, j}, {block_size, block_size})
           .forked()
           .place(a, b);
     else {
@@ -328,6 +328,7 @@ TC_TEST("test_2d_blocked_array") {
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n * 2; j++) {
       TC_ASSERT_EQUAL(b.val<int32>(i, j), i * 2 + j * 3, 0);
+      TC_ASSERT_EQUAL(a.val<int32>(i, j), i + j * 3, 0);
     }
   }
 };
@@ -434,4 +435,4 @@ TC_TEST("test_multiple_programs") {
   }
 };
 
-TC_NAMESPACE_END
+TLANG_NAMESPACE_END

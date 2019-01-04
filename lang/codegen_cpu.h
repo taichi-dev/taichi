@@ -56,8 +56,12 @@ class CPUCodeGen : public CodeGenBase {
     return snode->node_type_name + "_loop";
   }
 
-  std::string index_name(SNode *snode, int i) {
-    return fmt::format("index_{}_{}", snode->node_type_name, i);
+  std::string index_name_local(SNode *snode, int i) {
+    return fmt::format("index_{}_{}_local", snode->node_type_name, i);
+  }
+
+  std::string index_name_global(SNode *snode, int i) {
+    return fmt::format("index_{}_{}_global", snode->node_type_name, i);
   }
 
   void generate_loop_header(SNode *snode, bool last_level = false) {
@@ -72,7 +76,7 @@ class CPUCodeGen : public CodeGenBase {
       //
     }
     if (last_level && snode->type != SNodeType::forked) {
-      //emit_code("#pragma omp parallel for");
+      // emit_code("#pragma omp parallel for");
       emit_code("for (int {} = 0; {} < {}::n; {} += {}) {{", l, l,
                 snode->node_type_name, l, num_groups * unroll);
     } else {
@@ -87,7 +91,7 @@ class CPUCodeGen : public CodeGenBase {
     for (int i = 0; i < max_num_indices; i++) {
       std::string ancester = "";
       if (snode->parent->parent != nullptr) {
-        ancester = index_name(snode->parent, i) + "|";
+        ancester = index_name_local(snode->parent, i) + "|";
       }
       std::string addition = "0";
       if (snode->extractors[i].num_bits) {
@@ -96,7 +100,8 @@ class CPUCodeGen : public CodeGenBase {
                                snode->extractors[i].num_bits,
                                snode->extractors[i].start);
       }
-      emit_code("int {} = {} {};", index_name(snode, i), ancester, addition);
+      emit_code("int {} = {} {};", index_name_local(snode, i), ancester,
+                addition);
     }
   }
 
@@ -262,7 +267,8 @@ class CPUCodeGen : public CodeGenBase {
   FunctionType compile() {
     write_code_to_file();
     auto cmd = fmt::format(
-        "g++-7 {} -fopenmp -std=c++14 -shared -fPIC -O3 -march=native -I {}/headers -Wall "
+        "g++-7 {} -fopenmp -std=c++14 -shared -fPIC -O3 -march=native -I "
+        "{}/headers -Wall "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {}",
         get_source_fn(), get_project_fn(), get_library_fn());
     auto compile_ret = std::system(cmd.c_str());

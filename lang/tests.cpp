@@ -245,6 +245,8 @@ auto advection = []() {
   const int dim = 2;
 
   const int n = 1024, nattr = 4;
+  const int block_size = 1;
+  TC_ASSERT(n % block_size == 0);
   auto x = ind(), y = ind();
 
   Float attr[dim][nattr], v[dim];
@@ -263,12 +265,25 @@ auto advection = []() {
         }
         // prog.buffer(2).range(n * n).stream(0).group(0).place(v[k]);
       } else {
-        for (int i = 0; i < nattr; i++) {
-          attr[k][i] = var<float32>();
-          root.fixed({x, y}, {n, n}).place(attr[k][i]);
+        if (block_size > 1) {
+          for (int i = 0; i < nattr; i++) {
+            attr[k][i] = var<float32>();
+            root.fixed({x, y}, {n / block_size, n / block_size})
+                .fixed({x, y}, {block_size, block_size})
+                .place(attr[k][i]);
+          }
+          v[k] = var<float32>();
+          root.fixed({x, y}, {n / block_size, n / block_size})
+              .fixed({x, y}, {block_size, block_size})
+              .place(v[k]);
+        } else {
+          for (int i = 0; i < nattr; i++) {
+            attr[k][i] = var<float32>();
+            root.fixed({x, y}, {n, n}).place(attr[k][i]);
+          }
+          v[k] = var<float32>();
+          root.fixed({x, y}, {n, n}).place(v[k]);
         }
-        v[k] = var<float32>();
-        root.fixed({x, y}, {n, n}).place(v[k]);
       }
     }
   });
@@ -296,7 +311,6 @@ auto advection = []() {
     // ** gs = 1
     auto new_x = cast<int32>(offset_x + cast<float32>(x));
     auto new_y = cast<int32>(offset_y + cast<float32>(y));
-
 
     new_x = clamp(new_x);
     new_y = clamp(new_y);

@@ -15,8 +15,8 @@ int main(int argc, char *argv[]) {
     Buffer<float> input(nchannels, n, n);
     Func output("output");
     Var x("x"), y("y"), c("c");
-    Expr new_x = x + motion_field(0, x, y) + 0.5f;
-    Expr new_y = y + motion_field(1, x, y) + 0.5f;
+    Expr new_x = x + motion_field(0, x, y);
+    Expr new_y = y + motion_field(1, x, y);
     Expr fx = clamp(cast<int>(floor(new_x)), 0, n - 2);
     Expr fy = clamp(cast<int>(floor(new_y)), 0, n - 2);
     Expr wx = new_x - fx;

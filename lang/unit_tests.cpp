@@ -218,7 +218,7 @@ TC_TEST("slp") {
 
 // a * b * vec
 
-auto test_adapter1 = []() {
+TC_TEST("adapter1") {
   for (auto vec_size: {1, 2, 4, 8, 16}) {
     Program prog;
 
@@ -266,19 +266,12 @@ auto test_adapter1 = []() {
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < vec_size; j++) {
         auto val = v(j).val<float32>(i);
-        auto gt = i * j * 2;
-        if (abs(gt - val) > 1e-3_f) {
-          TC_P(i);
-          TC_P(j);
-          TC_P(val);
-          TC_P(gt);
-          TC_ERROR("");
-        }
+        float32 gt = i * j * 2;
+        TC_CHECK_EQUAL(gt, val, 1e-3_f);
       }
     }
   }
-};
-TC_REGISTER_TASK(test_adapter1);
+}
 
 TLANG_NAMESPACE_END
 #if (0)

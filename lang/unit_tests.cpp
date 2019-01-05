@@ -219,60 +219,61 @@ TC_TEST("slp") {
 // a * b * vec
 
 auto test_adapter1 = []() {
-  int vec_size = 8;
-  Program prog;
+  for (auto vec_size: {1, 2, 4, 8, 16}) {
+    Program prog;
 
-  Float a, b;
-  Vector v(vec_size), u(vec_size);
+    Float a, b;
+    Vector v(vec_size), u(vec_size);
 
-  int n = 128;
-  auto ind = Expr::index(0);
+    int n = 128;
+    auto ind = Expr::index(0);
 
-  layout([&] {
-    a = var<float32>();
-    b = var<float32>();
-    root.fixed(ind, n).place(a, b);
-    for (int i = 0; i < vec_size; i++) {
-      v(i) = var<float32>();
-      root.fixed(ind, n).place(v(i));
+    layout([&] {
+      a = var<float32>();
+      b = var<float32>();
+      root.fixed(ind, n).place(a, b);
+      for (int i = 0; i < vec_size; i++) {
+        v(i) = var<float32>();
+        root.fixed(ind, n).place(v(i));
+      }
+    });
+
+    auto func = kernel(a, [&]() {
+      auto &adapter = prog.adapter(0);
+      auto ab = a[ind] * b[ind];
+
+      adapter.set(1, vec_size);
+      adapter.convert(ab);
+
+      for (int d = 0; d < vec_size; d++) {
+        v(d)[ind] = ab * v(d)[ind];
+      }
+
+      parallel_instances(8);
+      group(vec_size);
+    });
+
+    for (int i = 0; i < n; i++) {
+      a.val<float32>(i) = i;
+      b.val<float32>(i) = 2.0_f * (i + 1);
+      for (int j = 0; j < vec_size; j++) {
+        v(j).val<float32>(i) = 1.0_f * j / (i + 1);
+      }
     }
-  });
 
-  auto func = kernel(a, [&]() {
-    auto &adapter = prog.adapter(0);
-    auto ab = a[ind] * b[ind];
+    func();
 
-    adapter.set(1, vec_size);
-    adapter.convert(ab);
-
-    for (int d = 0; d < vec_size; d++) {
-      v(d)[ind] = ab * v(d)[ind];
-    }
-
-    parallel_instances(8);
-    group(8);
-  });
-
-  for (int i = 0; i < n; i++) {
-    a.val<float32>(i) = i;
-    b.val<float32>(i) = 2.0_f * (i + 1);
-    for (int j = 0; j < vec_size; j++) {
-      v(j).val<float32>(i) = 1.0_f * j / (i + 1);
-    }
-  }
-
-  func();
-
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < vec_size; j++) {
-      auto val = v(j).val<float32>(i);
-      auto gt = i * j * 2;
-      if (abs(gt - val) > 1e-3_f) {
-        TC_P(i);
-        TC_P(j);
-        TC_P(val);
-        TC_P(gt);
-        TC_ERROR("");
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < vec_size; j++) {
+        auto val = v(j).val<float32>(i);
+        auto gt = i * j * 2;
+        if (abs(gt - val) > 1e-3_f) {
+          TC_P(i);
+          TC_P(j);
+          TC_P(val);
+          TC_P(gt);
+          TC_ERROR("");
+        }
       }
     }
   }
@@ -281,6 +282,7 @@ TC_REGISTER_TASK(test_adapter1);
 
 TLANG_NAMESPACE_END
 #if (0)
+
 // Vec<vec_size> reduction
 void test_adapter2(int vec_size) {
   Vector v(vec_size);
@@ -289,8 +291,6 @@ void test_adapter2(int vec_size) {
   int n = 64;
 
   Program prog(Arch::x86_64, n);
-  prog.config.group_size = 1;
-  prog.config.num_groups = 8;
 
   for (int i = 0; i < vec_size; i++) {
     prog.buffer(1).stream(0).group(0).place(v(i));

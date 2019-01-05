@@ -240,6 +240,8 @@ auto mpm = []() {
 TC_REGISTER_TASK(mpm);
 
 auto advection = []() {
+  Program prog;
+
   bool use_adapter = false;
 
   const int dim = 2;
@@ -251,8 +253,6 @@ auto advection = []() {
   auto x = ind(), y = ind();
 
   Float attr[dim][nattr], v[dim];
-
-  Program prog(Arch::x86_64);
 
   prog.config.group_size = use_adapter ? nattr : 1;
   prog.config.num_groups = use_adapter ? 8 : 8;

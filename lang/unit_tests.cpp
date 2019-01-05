@@ -186,7 +186,7 @@ TC_TEST("test_multiple_programs") {
   }
 }
 
-auto test_slp = [] {
+TC_TEST("slp") {
   Program prog;
 
   int n = 32;
@@ -211,12 +211,10 @@ auto test_slp = [] {
   func();
 
   for (int i = 0; i < n; i++) {
-    TC_ASSERT(a.val<float32>(i) == i + 1);
-    TC_ASSERT(b.val<float32>(i) == i + 3);
+    TC_CHECK(a.val<float32>(i) == i + 1);
+    TC_CHECK(b.val<float32>(i) == i + 3);
   }
-};
-
-TC_REGISTER_TASK(test_slp);
+}
 
 TLANG_NAMESPACE_END
 

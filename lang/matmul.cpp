@@ -309,7 +309,7 @@ real TlangGPUSOA_matmatmul(std::size_t N) {
 
 #define BENCHMARK(x)                                        \
   {                                                         \
-    real t = x##_matmatmul<dim, T>(16);                     \
+    real t = x##_matmatmul<dim, T>(512);                     \
     fmt::print("  {:18s} = {:10.3f} cyc / elem \n", #x, t); \
   }
 

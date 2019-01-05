@@ -68,7 +68,6 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
               expr[1]->value<int>());
   } else if (expr->type == NodeType::cmp) {
     auto t = expr->value<CmpType>();
-    TC_P((int)t);
     if (t == CmpType::ne) {
       emit_code("auto {} = cmp_ne({}, {});", expr->var_name, expr[0]->var_name,
                 expr[1]->var_name);

@@ -7,42 +7,6 @@
 TLANG_NAMESPACE_BEGIN
 
 #if (0)
-auto test_loop = []() {
-  TC_NOT_IMPLEMENTED
-  // CoreState::set_trigger_gdb_when_crash(true);
-  Float a, b;
-
-  int n = 256;
-
-  Program prog(Arch::x86_64, n);
-  prog.config.group_size = 1;
-
-  prog.buffer(0).range(n).stream(0).group(0).place(a).place(b);
-  prog.materialize_layout();
-
-  Expr i = Expr::index(0);
-  for_loop(i, range(0, n), [&]() {
-    // ***
-    a[i] = a[i] * b[i];
-  });
-
-  for (int i = 0; i < n; i++) {
-    prog.data(a, i) = i;
-    prog.data(b, i) = i * 2;
-  }
-
-  for (int i = 0; i < n; i++) {
-    auto val = prog.data(a, i);
-    auto gt = i * i * 2;
-    if (abs(gt - val) > 1e-5_f) {
-      TC_P(i);
-      TC_P(val);
-      TC_P(gt);
-      TC_ERROR("");
-    }
-  }
-};
-
 TC_REGISTER_TASK(test_loop);
 
 // a * b * vec
@@ -260,39 +224,27 @@ auto test_adapter = []() {
 };
 
 TC_REGISTER_TASK(test_adapter);
+#endif
 
-auto test_select = []() {
+TC_TEST("select") {
   int n = 128;
   Program prog(Arch::x86_64);
-  prog.config.group_size = 1;
 
-  Real a;
+  auto a = var<float32>();
+  auto i = ind();
 
-  prog.layout([&]() { prog.buffer(0).range(n).stream(0).group().place(a); });
+  layout([&]() { root.fixed(i, n).place(a); });
 
-  auto i = Expr::index(0);
-
-  auto func1 = prog.def([&]() {
-    auto i = Expr::index(0);
-    for_loop(i, {0, n},
-             [&]() {  //
-               a[i] = select(cmp_ne(imm(0), i % imm(2)), cast<float32>(i),
-                             imm(0.0_f));
-               //
-             });
+  auto func = kernel(a, [&]() {
+    a[i] = select(cmp_ne(imm(0), i % imm(2)), cast<float32>(i), imm(0.0_f));
   });
 
-  func1();
+  func();
 
   for (int i = 0; i < n; i++) {
-    TC_P(i);
-    TC_P(prog.data(a, i));
-    TC_ASSERT(prog.data(a, i) == (i % 2) * i);
+    TC_ASSERT(a.val<float32>(i) == (i % 2) * i);
   }
-
-};
-TC_REGISTER_TASK(test_select);
-#endif
+}
 
 TC_TEST("test_snode") {
   Program prog(Arch::x86_64);
@@ -312,7 +264,7 @@ TC_TEST("test_snode") {
   for (int i = 0; i < n; i++) {
     TC_CHECK_EQUAL(u.val<int32>(i), i + 1, 0);
   }
-};
+}
 
 TC_TEST("test_2d_blocked_array") {
   int n = 32, block_size = 16;
@@ -351,7 +303,7 @@ TC_TEST("test_2d_blocked_array") {
       TC_ASSERT_EQUAL(a.val<int32>(i, j), i + j * 3, 0);
     }
   }
-};
+}
 
 TC_TEST("test_2d_array") {
   int n = 8;
@@ -385,7 +337,7 @@ TC_TEST("test_2d_array") {
       TC_CHECK_EQUAL(b.val<int32>(i, j), i * 2 + j * 3, 0);
     }
   }
-};
+}
 
 TC_TEST("test_single_program") {
   int n = 128;
@@ -417,7 +369,7 @@ TC_TEST("test_single_program") {
   for (int i = 0; i < n; i++) {
     TC_CHECK_EQUAL(b.val<float32>(i), i + 1.0_f, 1e-5_f);
   }
-};
+}
 
 TC_TEST("test_multiple_programs") {
   int n = 128;
@@ -454,6 +406,6 @@ TC_TEST("test_multiple_programs") {
   for (int i = 0; i < n; i++) {
     TC_CHECK_EQUAL(d.val<float32>(i), i + 3.0_f, 1e-5_f);
   }
-};
+}
 
 TLANG_NAMESPACE_END

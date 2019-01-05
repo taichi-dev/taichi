@@ -274,174 +274,148 @@ TC_TEST("adapter1") {
 }
 
 // Vec<vec_size> reduction
-auto test_adapter2 = []() {
+TC_TEST("adapter2") {
   int n = 64;
 
-  Program prog;
+  for (auto vec_size : {1, 2, 4, 8, 16}) {
+    Program prog;
 
-  auto vec_size = 8;
-  Vector v(vec_size);
+    Vector v(vec_size);
 
-  Float sum;
+    Float sum;
 
-  auto ind = Expr::index(0);
+    auto ind = Expr::index(0);
 
-  layout([&] {
-    for (int i = 0; i < vec_size; i++) {
-      v(i) = var<float32>();
-      root.fixed(ind, n).place(v(i));
+    layout([&] {
+      for (int i = 0; i < vec_size; i++) {
+        v(i) = var<float32>();
+        root.fixed(ind, n).place(v(i));
+      }
+      sum = var<float32>();
+      root.fixed(ind, n).place(sum);
+    });
+
+    auto func = kernel(sum, [&] {
+      auto v_ind = v[ind];
+
+      for (int i = 0; i < vec_size; i++) {
+        v_ind(i).set(load(v_ind(i)));
+      }
+
+      auto &adapter = prog.adapter(0);
+      adapter.set(vec_size, 1);
+      for (int i = 0; i < vec_size; i++) {
+        adapter.convert(v_ind(i));
+      }
+
+      Expr acc = Expr::create_imm(0.0_f);
+      for (int d = 0; d < vec_size; d++) {
+        acc = acc + v_ind(d);
+      }
+
+      sum[ind] = acc;
+
+      parallel_instances(8);
+      group(1);
+    });
+
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < vec_size; j++) {
+        v(j).val<float32>(i) = j + i;
+      }
     }
-    sum = var<float32>();
-    root.fixed(ind, n).place(sum);
-  });
 
-  auto func = kernel(sum, [&] {
-    auto v_ind = v[ind];
+    func();
 
-    for (int i = 0; i < vec_size; i++) {
-      v_ind(i).set(load(v_ind(i)));
-    }
-
-    auto &adapter = prog.adapter(0);
-    adapter.set(vec_size, 1);
-    for (int i = 0; i < vec_size; i++) {
-      adapter.convert(v_ind(i));
-    }
-
-    Expr acc = Expr::create_imm(0.0_f);
-    for (int d = 0; d < vec_size; d++) {
-      acc = acc + v_ind(d);
-    }
-
-    sum[ind] = acc;
-
-    parallel_instances(8);
-    group(1);
-  });
-
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < vec_size; j++) {
-      v(j).val<float32>(i) = j + i;
-    }
-  }
-
-  func();
-
-  for (int i = 0; i < n; i++) {
-    auto val = sum.val<float32>(i);
-    auto gt = vec_size * (vec_size - 1) / 2 + i * vec_size;
-    if (abs(gt - val) > 1e-5_f) {
-      TC_P(i);
-      TC_P(val);
-      TC_P(gt);
-      TC_ERROR("");
+    for (int i = 0; i < n; i++) {
+      auto val = sum.val<float32>(i);
+      float32 gt = vec_size * (vec_size - 1) / 2 + i * vec_size;
+      TC_CHECK_EQUAL(gt, val, 1e-5_f);
     }
   }
-};
-TC_REGISTER_TASK(test_adapter2);
-
-TLANG_NAMESPACE_END
-
-#if (0)
+}
 
 // reduce(vec_a<n> - vec_b<n>) * vec_c<2n>
-void test_adapter3(int vec_size) {
-  Vector a(vec_size), b(vec_size), c(vec_size * 2);
-  Float sum;
+TC_TEST("adapter3") {
+  for (auto vec_size : {1, 2, 4, 8}) {
+    // why vec_size = 16 fails??
+    Program prog;
 
-  int n = 64;
+    Vector a(vec_size), b(vec_size), c(vec_size * 2);
+    Float sum;
 
-  Program prog(Arch::x86_64, n);
-  prog.config.group_size = vec_size * 2;
-  prog.config.num_groups = 8;
+    int n = 64;
 
-  for (int i = 0; i < vec_size; i++) {
-    prog.buffer(0).stream(0).group(0).place(a(i));
-    prog.buffer(1).stream(0).group(0).place(b(i));
-  }
+    auto ind = Expr::index(0);
 
-  for (int i = 0; i < vec_size * 2; i++) {
-    prog.buffer(2).stream(0).group(0).place(c(i));
-  }
+    layout([&] {
+      for (int i = 0; i < vec_size; i++) {
+        a(i) = var<float32>();
+        root.fixed(ind, n).place(a(i));
+        b(i) = var<float32>();
+        root.fixed(ind, n).place(b(i));
+      }
 
-  prog.materialize_layout();
+      for (int i = 0; i < vec_size * 2; i++) {
+        c(i) = var<float32>();
+        root.fixed(ind, n).place(c(i));
+      }
+    });
 
-  auto ind = Expr::index(0);
+    auto func = kernel(a(0), [&]() {
+      auto aind = a[ind];
+      auto bind = b[ind];
+      auto cind = c[ind];
 
-  auto aind = a[ind];
-  auto bind = b[ind];
-  auto cind = c[ind];
+      auto diff = aind.element_wise_prod(aind) - bind.element_wise_prod(bind);
 
-  auto diff = aind.element_wise_prod(aind) - bind.element_wise_prod(bind);
+      {
+        auto &adapter = prog.adapter(0);
+        adapter.set(vec_size, 1);
+        for (int i = 0; i < vec_size; i++)
+          adapter.convert(diff(i));
+      }
 
-  {
-    auto &adapter = prog.adapter(0);
-    adapter.set(vec_size, 1);
-    for (int i = 0; i < vec_size; i++)
-      adapter.convert(diff(i));
-  }
+      Expr acc = Expr::create_imm(0.0_f);
+      for (int d = 0; d < vec_size; d++) {
+        acc = acc + diff(d);
+      }
 
-  Expr acc = Expr::create_imm(0.0_f);
-  for (int d = 0; d < vec_size; d++) {
-    acc = acc + diff(d);
-  }
+      {
+        auto &adapter = prog.adapter(1);
+        adapter.set(1, vec_size * 2);
+        adapter.convert(acc);
+        for (int i = 0; i < vec_size * 2; i++)
+          c(i)[ind] = c(i)[ind] * acc;
+      }
 
-  {
-    auto &adapter = prog.adapter(1);
-    adapter.set(1, vec_size * 2);
-    adapter.convert(acc);
-    for (int i = 0; i < vec_size * 2; i++)
-      c(i)[ind] = c(i)[ind] * acc;
-  }
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < vec_size; j++) {
+          a(j).val<float32>(i) = i + j + 1;
+          b(j).val<float32>(i) = i + j;
+        }
+        for (int j = 0; j < vec_size * 2; j++) {
+          c(j).val<float32>(i) = i - 2 + j;
+        }
+      }
+      group(vec_size * 2);
+      parallel_instances(8);
+    });
 
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < vec_size; j++) {
-      prog.data(a(j), i) = i + j + 1;
-      prog.data(b(j), i) = i + j;
-    }
-    for (int j = 0; j < vec_size * 2; j++) {
-      prog.data(c(j), i) = i - 2 + j;
-    }
-  }
+    func();
 
-  prog();
-
-  for (int i = 0; i < n; i++) {
-    real s = 0;
-    for (int j = 0; j < vec_size; j++) {
-      s += sqr(i + j + 1) - sqr(i + j);
-    }
-    for (int j = 0; j < vec_size * 2; j++) {
-      auto val = prog.data(c(j), i);
-      auto gt = s * (i - 2 + j);
-      if (abs(gt - val) > 1e-3_f) {
-        TC_P(i);
-        TC_P(j);
-        TC_P(val);
-        TC_P(gt);
-        TC_ERROR("");
+    for (int i = 0; i < n; i++) {
+      real s = 0;
+      for (int j = 0; j < vec_size; j++) {
+        s += taichi::sqr(i + j + 1) - taichi::sqr(i + j);
+      }
+      for (int j = 0; j < vec_size * 2; j++) {
+        auto val = c(j).val<float32>(i);
+        auto gt = s * (i - 2 + j);
+        TC_CHECK_EQUAL(gt, val, 1e-3_f);
       }
     }
   }
 }
 
-auto test_adapter = []() {
-  test_adapter3(1);
-  test_adapter3(2);
-  test_adapter3(4);
-  test_adapter3(8);
-
-  test_adapter1(1);
-  test_adapter1(2);
-  test_adapter1(4);
-  test_adapter1(8);
-
-  test_adapter2(1);
-  test_adapter2(2);
-  test_adapter2(4);
-  test_adapter2(8);
-
-};
-
-TC_REGISTER_TASK(test_adapter);
-#endif
+TLANG_NAMESPACE_END

@@ -29,6 +29,10 @@ inline void group(int n) {
   get_current_program().get_current_kernel().output_group_size = n;
 }
 
+inline void parallel_instances(int n) {
+  get_current_program().get_current_kernel().parallel_instances = n;
+}
+
 TLANG_NAMESPACE_END
 
 /*

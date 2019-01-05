@@ -5,10 +5,10 @@
 TLANG_NAMESPACE_BEGIN
 
 void CPUCodeGen::visit_intrinsics(Expr &expr) {
-  // TC_P(expr->id);
-  // TC_P(expr->node_type_name());
-  // TC_P(num_groups);
-  // TC_P(expr->lanes);
+  TC_P(expr->id);
+  TC_P(expr->node_type_name());
+  TC_P(num_groups);
+  TC_P(expr->lanes);
   auto vv_width = expr->lanes;
   TC_ASSERT(vv_width == 1 || vv_width % simd_width == 0);
   int split = vv_width / simd_width;
@@ -302,6 +302,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
                               elem_id % ad.input_group_size);
       }
     }
+
     auto offsets = offsets_val;
     emit_code("{} {};", vv_type(ad.dt), expr->var_name);
     int input_vv_width = ad.input_group_size * num_groups;
@@ -331,6 +332,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
             mask += 1 << j;
           }
         }
+        TC_ASSERT(input_vv_width / simd_width != 0);
         auto src = fmt::format(
             "{}.d[{}]",
             ad.store_exprs[rid / (input_vv_width / simd_width)]->var_name,

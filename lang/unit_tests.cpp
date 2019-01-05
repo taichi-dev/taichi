@@ -249,6 +249,7 @@ auto test_adapter1 = []() {
       v(d)[ind] = ab * v(d)[ind];
     }
 
+    parallel_instances(8);
     group(8);
   });
 

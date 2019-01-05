@@ -48,7 +48,10 @@ void SLPVectorizer::sort(Expr &expr) {
         break;
       }
     }
-    TC_ASSERT(group.size() % group_size == 0);
+    if(group.size() % group_size != 0) {
+      TC_WARN("sorting failed. Using default order.");
+      return;
+    }
     sorted.insert(sorted.end(), group.begin(), group.end());
   }
   expr->ch = sorted;

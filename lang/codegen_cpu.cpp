@@ -271,8 +271,6 @@ void CPUCodeGen::codegen(Kernel &kernel) {
 
   // adapters
   for (auto &adapter : prog->adapters) {
-    auto old_gs = this->group_size;
-    TC_P(adapter.stores->ch.size());
     adapter.stores =
         SLPVectorizer().run(adapter.stores, adapter.input_group_size);
     adapter.stores =
@@ -288,7 +286,6 @@ void CPUCodeGen::codegen(Kernel &kernel) {
     // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
     // TC_P(group_size);
 
-    this->group_size = kernel.output_group_size;
     // auto vectorized_stores =
     //    SLPVectorizer().run(kernel.ret, prog.config.group_size);
 
@@ -299,6 +296,7 @@ void CPUCodeGen::codegen(Kernel &kernel) {
         LoopVectorizer().run(kernel.ret, prog->current_snode, num_groups);
     Optimizer().run(kernel);
 
+    this->group_size = kernel.output_group_size;
     kernel.ret.accept(*this);
   }
   end_macro_loop();

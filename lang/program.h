@@ -115,7 +115,7 @@ struct Program {
     return context;
   }
 
-  Program(Arch arch) {
+  Program(Arch arch = Arch::x86_64) {
     Node::reset_counter();
     TC_ASSERT(current_program == nullptr);
     current_program = this;
@@ -193,7 +193,6 @@ struct Program {
     TC_ASSERT(current_kernel);
     return *current_kernel;
   }
-
 };
 
 using Kernel = Program::Kernel;

@@ -6,6 +6,221 @@
 
 TLANG_NAMESPACE_BEGIN
 
+TC_TEST("select") {
+  int n = 128;
+  Program prog(Arch::x86_64);
+
+  auto a = var<float32>();
+  auto i = ind();
+
+  layout([&]() { root.fixed(i, n).place(a); });
+
+  auto func = kernel(a, [&]() {
+    a[i] = select(cmp_ne(imm(0), i % imm(2)), cast<float32>(i), imm(0.0_f));
+  });
+
+  func();
+
+  for (int i = 0; i < n; i++) {
+    TC_ASSERT(a.val<float32>(i) == (i % 2) * i);
+  }
+}
+
+TC_TEST("test_snode") {
+  Program prog(Arch::x86_64);
+
+  auto i = Expr::index(0);
+  auto u = variable(DataType::i32);
+
+  int n = 128;
+
+  // All data structure originates from a "root", which is a forked node.
+  prog.layout([&] { root.fixed(i, n).place(u); });
+
+  for (int i = 0; i < n; i++) {
+    u.val<int32>(i) = i + 1;
+  }
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK_EQUAL(u.val<int32>(i), i + 1, 0);
+  }
+}
+
+TC_TEST("test_2d_blocked_array") {
+  int n = 32, block_size = 16;
+  TC_ASSERT(n % block_size == 0);
+
+  Program prog(Arch::x86_64);
+  bool forked = false;
+
+  auto a = var<int32>(), b = var<int32>(), i = ind(), j = ind();
+
+  layout([&] {
+    if (!forked)
+      root.fixed({i, j}, {n / block_size, n * 2 / block_size})
+          .fixed({i, j}, {block_size, block_size})
+          .forked()
+          .place(a, b);
+    else {
+      root.fixed({i, j}, {n, n * 2}).forked().place(a);
+      root.fixed({i, j}, {n, n * 2}).forked().place(b);
+    }
+  });
+
+  auto inc = kernel(a, [&]() { b[i, j] = a[i, j] + i; });
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n * 2; j++) {
+      a.val<int32>(i, j) = i + j * 3;
+    }
+  }
+
+  inc();
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n * 2; j++) {
+      TC_ASSERT_EQUAL(b.val<int32>(i, j), i * 2 + j * 3, 0);
+      TC_ASSERT_EQUAL(a.val<int32>(i, j), i + j * 3, 0);
+    }
+  }
+}
+
+TC_TEST("test_2d_array") {
+  int n = 8;
+  Program prog(Arch::x86_64);
+  bool forked = true;
+
+  auto a = var<int32>(), b = var<int32>(), i = ind(), j = ind();
+
+  layout([&] {
+    if (!forked)
+      root.fixed({i, j}, {n, n * 2}).forked().place(a, b);
+    else {
+      root.fixed({i, j}, {n, n * 2}).forked().place(a);
+      root.fixed({i, j}, {n, n * 2}).forked().place(b);
+    }
+  });
+
+  auto inc = kernel(a, [&]() { b[i, j] = a[i, j] + i; });
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n * 2; j++) {
+      a.val<int32>(i, j) = i + j * 3;
+    }
+  }
+
+  inc();
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n * 2; j++) {
+      TC_CHECK_EQUAL(a.val<int32>(i, j), i + j * 3, 0);
+      TC_CHECK_EQUAL(b.val<int32>(i, j), i * 2 + j * 3, 0);
+    }
+  }
+}
+
+TC_TEST("test_single_program") {
+  int n = 128;
+  Program prog(Arch::x86_64);
+  prog.config.group_size = 1;
+
+  auto a = var<float32>(), b = var<float32>();
+  auto i = ind(0);
+
+  bool fork = true;
+
+  layout([&] {
+    if (fork) {
+      root.fixed(i, n).forked().place(a, b);
+    } else {
+      root.fixed(i, n).place(a);
+      root.fixed(i, n).place(b);
+    }
+  });
+
+  auto func1 = kernel(a, [&] { b[i] = a[i] + imm(1.0_f); });
+
+  for (int i = 0; i < n; i++) {
+    a.val<float32>(i) = i;
+  }
+
+  func1();
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK_EQUAL(b.val<float32>(i), i + 1.0_f, 1e-5_f);
+  }
+}
+
+TC_TEST("test_multiple_programs") {
+  int n = 128;
+  Program prog(Arch::x86_64);
+  prog.config.group_size = 1;
+
+  Real a, b, c, d;
+  a = placeholder(DataType::f32);
+  b = placeholder(DataType::f32);
+  c = placeholder(DataType::f32);
+  d = placeholder(DataType::f32);
+
+  auto i = Expr::index(0);
+
+  layout([&]() {
+    root.fixed(i, n).place(a);
+    root.fixed(i, n).place(b);
+    root.fixed(i, n).place(c);
+    root.fixed(i, n).place(d);
+  });
+
+  auto func1 = kernel(a, [&]() { b[i] = a[i] + imm(1.0_f); });
+  auto func2 = kernel(a, [&]() { c[i] = b[i] + imm(1.0_f); });
+  auto func3 = kernel(a, [&]() { d[i] = c[i] + imm(1.0_f); });
+
+  for (int i = 0; i < n; i++) {
+    a.val<float32>(i) = i;
+  }
+
+  func1();
+  func2();
+  func3();
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK_EQUAL(d.val<float32>(i), i + 3.0_f, 1e-5_f);
+  }
+}
+
+auto test_slp = [] {
+  Program prog;
+  prog.config.group_size = 2;
+
+  int n = 32;
+  auto a = var<float32>(), b = var<float32>();
+
+  auto i = ind();
+
+  layout([&] { root.fixed(i, n).forked().place(a, b); });
+
+  for (int i = 0; i < n; i++) {
+    a.val<float32>(i) = i;
+    b.val<float32>(i) = i + 1;
+  }
+
+  auto func = kernel(a, [&]() {
+    a[i] = a[i] + imm(1.0_f);
+    b[i] = b[i] + imm(1.0_f);
+  });
+
+  func();
+
+  for (int i = 0; i < n; i++) {
+    TC_ASSERT(a.val<float32>(i) == i + 1);
+    TC_ASSERT(b.val<float32>(i) == i + 2);
+  }
+};
+
+TC_REGISTER_TASK(test_slp);
+
+TLANG_NAMESPACE_END
+
 #if (0)
 TC_REGISTER_TASK(test_loop);
 
@@ -225,187 +440,3 @@ auto test_adapter = []() {
 
 TC_REGISTER_TASK(test_adapter);
 #endif
-
-TC_TEST("select") {
-  int n = 128;
-  Program prog(Arch::x86_64);
-
-  auto a = var<float32>();
-  auto i = ind();
-
-  layout([&]() { root.fixed(i, n).place(a); });
-
-  auto func = kernel(a, [&]() {
-    a[i] = select(cmp_ne(imm(0), i % imm(2)), cast<float32>(i), imm(0.0_f));
-  });
-
-  func();
-
-  for (int i = 0; i < n; i++) {
-    TC_ASSERT(a.val<float32>(i) == (i % 2) * i);
-  }
-}
-
-TC_TEST("test_snode") {
-  Program prog(Arch::x86_64);
-
-  auto i = Expr::index(0);
-  auto u = variable(DataType::i32);
-
-  int n = 128;
-
-  // All data structure originates from a "root", which is a forked node.
-  prog.layout([&] { root.fixed(i, n).place(u); });
-
-  for (int i = 0; i < n; i++) {
-    u.val<int32>(i) = i + 1;
-  }
-
-  for (int i = 0; i < n; i++) {
-    TC_CHECK_EQUAL(u.val<int32>(i), i + 1, 0);
-  }
-}
-
-TC_TEST("test_2d_blocked_array") {
-  int n = 32, block_size = 16;
-  TC_ASSERT(n % block_size == 0);
-
-  Program prog(Arch::x86_64);
-  bool forked = false;
-
-  auto a = var<int32>(), b = var<int32>(), i = ind(), j = ind();
-
-  layout([&] {
-    if (!forked)
-      root.fixed({i, j}, {n / block_size, n * 2 / block_size})
-          .fixed({i, j}, {block_size, block_size})
-          .forked()
-          .place(a, b);
-    else {
-      root.fixed({i, j}, {n, n * 2}).forked().place(a);
-      root.fixed({i, j}, {n, n * 2}).forked().place(b);
-    }
-  });
-
-  auto inc = kernel(a, [&]() { b[i, j] = a[i, j] + i; });
-
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n * 2; j++) {
-      a.val<int32>(i, j) = i + j * 3;
-    }
-  }
-
-  inc();
-
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n * 2; j++) {
-      TC_ASSERT_EQUAL(b.val<int32>(i, j), i * 2 + j * 3, 0);
-      TC_ASSERT_EQUAL(a.val<int32>(i, j), i + j * 3, 0);
-    }
-  }
-}
-
-TC_TEST("test_2d_array") {
-  int n = 8;
-  Program prog(Arch::x86_64);
-  bool forked = true;
-
-  auto a = var<int32>(), b = var<int32>(), i = ind(), j = ind();
-
-  layout([&] {
-    if (!forked)
-      root.fixed({i, j}, {n, n * 2}).forked().place(a, b);
-    else {
-      root.fixed({i, j}, {n, n * 2}).forked().place(a);
-      root.fixed({i, j}, {n, n * 2}).forked().place(b);
-    }
-  });
-
-  auto inc = kernel(a, [&]() { b[i, j] = a[i, j] + i; });
-
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n * 2; j++) {
-      a.val<int32>(i, j) = i + j * 3;
-    }
-  }
-
-  inc();
-
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n * 2; j++) {
-      TC_CHECK_EQUAL(a.val<int32>(i, j), i + j * 3, 0);
-      TC_CHECK_EQUAL(b.val<int32>(i, j), i * 2 + j * 3, 0);
-    }
-  }
-}
-
-TC_TEST("test_single_program") {
-  int n = 128;
-  Program prog(Arch::x86_64);
-  prog.config.group_size = 1;
-
-  auto a = var<float32>(), b = var<float32>();
-  auto i = ind(0);
-
-  bool fork = true;
-
-  layout([&] {
-    if (fork) {
-      root.fixed(i, n).forked().place(a, b);
-    } else {
-      root.fixed(i, n).place(a);
-      root.fixed(i, n).place(b);
-    }
-  });
-
-  auto func1 = kernel(a, [&] { b[i] = a[i] + imm(1.0_f); });
-
-  for (int i = 0; i < n; i++) {
-    a.val<float32>(i) = i;
-  }
-
-  func1();
-
-  for (int i = 0; i < n; i++) {
-    TC_CHECK_EQUAL(b.val<float32>(i), i + 1.0_f, 1e-5_f);
-  }
-}
-
-TC_TEST("test_multiple_programs") {
-  int n = 128;
-  Program prog(Arch::x86_64);
-  prog.config.group_size = 1;
-
-  Real a, b, c, d;
-  a = placeholder(DataType::f32);
-  b = placeholder(DataType::f32);
-  c = placeholder(DataType::f32);
-  d = placeholder(DataType::f32);
-
-  auto i = Expr::index(0);
-
-  prog.layout([&]() {
-    root.fixed(i, n).place(a);
-    root.fixed(i, n).place(b);
-    root.fixed(i, n).place(c);
-    root.fixed(i, n).place(d);
-  });
-
-  auto func1 = prog.kernel(a, [&]() { b[i] = a[i] + imm(1.0_f); });
-  auto func2 = prog.kernel(a, [&]() { c[i] = b[i] + imm(1.0_f); });
-  auto func3 = prog.kernel(a, [&]() { d[i] = c[i] + imm(1.0_f); });
-
-  for (int i = 0; i < n; i++) {
-    a.val<float32>(i) = i;
-  }
-
-  func1();
-  func2();
-  func3();
-
-  for (int i = 0; i < n; i++) {
-    TC_CHECK_EQUAL(d.val<float32>(i), i + 3.0_f, 1e-5_f);
-  }
-}
-
-TLANG_NAMESPACE_END

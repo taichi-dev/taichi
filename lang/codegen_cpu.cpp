@@ -264,7 +264,7 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   for (int i = 0; i < (int)prog->adapters.size(); i++) {
     auto &ad = prog->adapters[i];
     create_adapter(ad.dt, i, ad.counter / ad.input_group_size,
-                   ad.input_group_size, ad.output_group_size);
+                   ad.input_group_size);
   }
 
   // Body

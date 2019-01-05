@@ -242,7 +242,7 @@ TC_TEST("adapter1") {
       auto &adapter = prog.adapter(0);
       auto ab = a[ind] * b[ind];
 
-      adapter.set(1, vec_size);
+      adapter.set(1);
       adapter.convert(ab);
 
       for (int d = 0; d < vec_size; d++) {
@@ -303,7 +303,7 @@ TC_TEST("adapter2") {
       }
 
       auto &adapter = prog.adapter(0);
-      adapter.set(vec_size, 1);
+      adapter.set(vec_size);
       for (int i = 0; i < vec_size; i++) {
         adapter.convert(v_ind(i));
       }
@@ -371,19 +371,19 @@ TC_TEST("adapter3") {
 
       {
         auto &adapter = prog.adapter(0);
-        adapter.set(vec_size, 1);
+        adapter.set(vec_size);
         for (int i = 0; i < vec_size; i++)
           adapter.convert(diff(i));
       }
 
-      Expr acc = Expr::create_imm(0.0_f);
+      auto acc = Expr::create_imm(0.0_f);
       for (int d = 0; d < vec_size; d++) {
         acc = acc + diff(d);
       }
 
       {
         auto &adapter = prog.adapter(1);
-        adapter.set(1, vec_size * 2);
+        adapter.set(1);
         adapter.convert(acc);
         for (int i = 0; i < vec_size * 2; i++)
           c(i)[ind] = c(i)[ind] * acc;

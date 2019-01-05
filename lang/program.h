@@ -17,7 +17,6 @@ struct Adapter {
   Expr stores;
   int counter = 0;
   int input_group_size;
-  int output_group_size;
   int id;
   DataType dt;
 
@@ -25,12 +24,11 @@ struct Adapter {
 
   Adapter(int id) : id(id) {
     input_group_size = -1;
-    output_group_size = -1;
     stores = Expr::create(NodeType::combine);
   }
 
   bool initialized() {
-    return input_group_size != -1 && output_group_size != -1;
+    return input_group_size != -1;
   }
 
   Adapter &convert(Expr &e) {
@@ -61,9 +59,8 @@ struct Adapter {
     return *this;
   }
 
-  Adapter &set(int input_group_size, int output_group_size = -1) {
+  Adapter &set(int input_group_size) {
     this->input_group_size = input_group_size;
-    this->output_group_size = output_group_size;
     return *this;
   }
 };

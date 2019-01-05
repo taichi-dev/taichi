@@ -296,7 +296,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     auto &ad = prog->adapter(expr[0]->value<int>());
     std::vector<int> offsets_val;
     for (int i = 0; i < num_groups; i++) {
-      for (int j = 0; j < ad.output_group_size; j++) {
+      for (int j = 0; j < group_size; j++) {
         int elem_id = expr[1]->value<int>();
         offsets_val.push_back(i * ad.input_group_size +
                               elem_id / ad.input_group_size *

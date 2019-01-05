@@ -213,8 +213,7 @@ inline VV<output_dim, T> shuffle(SA &a, VV<output_dim, int> offsets) {
 template <typename T_,
           int num_groups,
           int num_inputs,
-          int input_group_size,
-          int output_group_size>
+          int input_group_size>
 struct SlowAdapter {
   // static constexpr int num_outputs = num_inputs * input_group_size /
   // output_group_size;
@@ -225,10 +224,9 @@ struct SlowAdapter {
   static constexpr int num_outputs = 8;
 
   static constexpr int input_dim = num_groups * input_group_size;
-  static constexpr int output_dim = num_groups * output_group_size;
+  // static constexpr int output_dim = num_groups * output_group_size;
 
   VV<input_dim, T> inputs[num_inputs];
-  VV<output_dim, T> outputs[num_outputs];
 
   template <int i>
   TC_FORCE_INLINE void set(const VV<input_dim, T> &v) {
@@ -264,6 +262,7 @@ struct SlowAdapter {
     return inputs[i];
   }
 
+  /*
   template <int i>
   auto get() {
     static_assert(0 <= i && i < num_outputs, "");
@@ -273,6 +272,7 @@ struct SlowAdapter {
   auto get(int i) {
     return outputs[i];
   }
+  */
 
   inline T &operator[](int i) {
     return inputs[i / input_dim][i % input_dim];

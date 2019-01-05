@@ -203,7 +203,7 @@ auto test_slp = [] {
 
   auto func = kernel(a, [&]() {
     a[i] = a[i] + imm(1.0_f);
-    b[i] = b[i] + imm(1.0_f);
+    b[i] = b[i] + imm(2.0_f);
 
     group(2);
   });
@@ -212,7 +212,7 @@ auto test_slp = [] {
 
   for (int i = 0; i < n; i++) {
     TC_ASSERT(a.val<float32>(i) == i + 1);
-    TC_ASSERT(b.val<float32>(i) == i + 2);
+    TC_ASSERT(b.val<float32>(i) == i + 3);
   }
 };
 

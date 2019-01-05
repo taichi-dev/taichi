@@ -55,7 +55,7 @@ class CodeGenBase : public Visitor {
       members += "}";
     } else if (brace == "(") {
       members += ")";
-    } else {
+    } else if (brace != "") {
       TC_P(brace);
       TC_NOT_IMPLEMENTED
     }

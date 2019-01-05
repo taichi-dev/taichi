@@ -226,13 +226,22 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
   } else if (expr->type == NodeType::combine) {
     // do nothing
   } else if (expr->type == NodeType::imm) {
-    TC_WARN("Using member imm");
     if (expr->data_type == DataType::i32) {
-      emit_code("auto {} = vvec<int32, {}, {}>({}); /*i32*/ ", expr->var_name,
-                simd_width, split, expr->value<int32>());
+      std::vector<int32> values;
+      for (int i = 0; i < expr->lanes; i++) {
+        values.push_back(expr->value<int32>(i));
+      }
+      auto constant = get_constant(fmt::format(
+          "{}({})", vv_type(expr->data_type), vec_to_list(values, "{")));
+      emit_code("auto {} = {}; /*i32*/ ", expr->var_name, constant);
     } else {
-      emit_code("auto {} = vvec<float32, {}, {}>({}); /*f32*/ ", expr->var_name,
-                simd_width, split, expr->value<float32>());
+      std::vector<float32> values;
+      for (int i = 0; i < expr->lanes; i++) {
+        values.push_back(expr->value<float32>(i));
+      }
+      auto constant = get_constant(fmt::format(
+          "{}({})", vv_type(expr->data_type), vec_to_list(values, "{")));
+      emit_code("auto {} = {}; /*f32*/ ", expr->var_name, constant);
     }
   } else if (expr->type == NodeType::index) {
     std::string members = "{";
@@ -261,7 +270,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     for (int i = 0; i < vv_width; i++) {
       auto snode = expr._address()->new_addresses(i);
       std::vector<std::string> elems(max_num_indices, ", 0");
-      for (int j = 1; j < expr->ch.size(); j++) {
+      for (int j = 1; j < (int)expr->ch.size(); j++) {
         elems[snode->index_order[j - 1]] =
             fmt::format(", {}.element({})", expr->ch[j]->var_name, i);
       }

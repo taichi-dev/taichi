@@ -207,7 +207,7 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   template <typename T>
-  static std::string vec_to_list_tmp(std::vector<T> val) {
+  static std::string vec_to_list_tmp(const std::vector<T> &val) {
     std::string members = "<";
     bool first = true;
     for (int i = 0; i < (int)val.size(); i++) {
@@ -222,7 +222,7 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   template <typename T>
-  static std::string vec_to_list_str(std::vector<T> val) {
+  static std::string vec_to_list_str(const std::vector<T> &val) {
     std::string members = "{";
     bool first = true;
     for (int i = 0; i < (int)val.size(); i++) {
@@ -236,9 +236,10 @@ class CPUCodeGen : public CodeGenBase {
     return members;
   }
 
-  std::string vv_constant_str(int width,
-                              DataType data_type,
-                              std::vector<int> val) {
+  template <typename T>
+  static std::string vv_constant_str(int width,
+                                     DataType data_type,
+                                     const std::vector<T> &val) {
     return fmt::format("VV<{}, {}>({})", width, data_type_name(data_type),
                        vec_to_list_str(val));
   }

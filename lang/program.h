@@ -48,8 +48,8 @@ struct Adapter {
     e.set(Expr::create(NodeType::adapter_load, Expr::create_imm(id),
                        Expr::create_imm(i)));
     e->data_type = dt;
-    TC_P(counter);
-    TC_P(input_group_size);
+    // TC_P(counter);
+    // TC_P(input_group_size);
     store_exprs.resize(counter / input_group_size);
     return *this;
   }
@@ -96,9 +96,9 @@ struct Program {
       if (simd_lanes == -1){
         simd_lanes = output_group_size * parallel_instances;
       }
-      TC_P(output_group_size);
-      TC_P(simd_lanes);
-      TC_P(parallel_instances);
+      // TC_P(output_group_size);
+      // TC_P(simd_lanes);
+      // TC_P(parallel_instances);
 
       program.end_function_definition();
       compile();

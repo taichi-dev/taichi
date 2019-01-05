@@ -5,11 +5,11 @@
 TLANG_NAMESPACE_BEGIN
 
 void CPUCodeGen::visit_intrinsics(Expr &expr) {
-  TC_P(expr->id);
-  TC_P(expr->node_type_name());
-  TC_P(num_groups);
+  // TC_P(expr->id);
+  // TC_P(expr->node_type_name());
+  // TC_P(num_groups);
+  // TC_P(expr->lanes);
   auto vv_width = expr->lanes;
-  TC_P(expr->lanes);
   TC_ASSERT(vv_width == 1 || vv_width % simd_width == 0);
   int split = vv_width / simd_width;
   auto vv_type = [&](DataType dt) {
@@ -260,7 +260,6 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     emit_code("{} *{}[{}];", expr->data_type_name(), expr->var_name, vv_width);
     for (int i = 0; i < vv_width; i++) {
       auto snode = expr._address()->new_addresses(i);
-      TC_P(snode);
       std::vector<std::string> elems(max_num_indices, ", 0");
       for (int j = 1; j < expr->ch.size(); j++) {
         elems[snode->index_order[j - 1]] =

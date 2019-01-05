@@ -1,11 +1,26 @@
-#if(0)
 #include "slp_vectorizer.h"
 
 TLANG_NAMESPACE_BEGIN
 
+// sort all the stores
+bool prior_to(Expr &a, Expr &b) {
+  TC_ASSERT(a->lanes == 1 && b->lanes == 1);
+  TC_ASSERT(a->type == NodeType::pointer && b->type == NodeType::pointer);
+  auto sa = a->new_addresses(0), sb = a->new_addresses(0);
+  if (sa->parent && sb->parent) {
+    return sa->parent->child_id(sa) + 1 == sb->parent->child_id(sb);
+  } else {
+    return false;
+  }
+}
+
 void SLPVectorizer::sort(Expr &expr) {
   auto ch = expr->ch;  // a bunch of store nodes
   std::vector<Expr> sorted;
+
+  for (auto c : ch) {
+    TC_ASSERT(c->type == NodeType::store);
+  }
 
   while (!ch.empty()) {
     std::vector<Expr> group;
@@ -14,13 +29,13 @@ void SLPVectorizer::sort(Expr &expr) {
     while (true) {  // grow
       bool found = false;
       for (int i = 0; i < (int)ch.size(); i++) {  // search
-        if (prior_to(ch[i]->addr(), group.front()->addr())) {
+        if (prior_to(ch[i]._pointer(), group.front()._pointer())) {
           group.insert(group.begin(), ch[i]);
           ch.erase(ch.begin() + i);
           found = true;
           break;
         }
-        if (prior_to(group.back()->addr(), ch[i]->addr())) {
+        if (prior_to(group.back()._pointer(), ch[i]._pointer())) {
           group.insert(group.end(), ch[i]);
           ch.erase(ch.begin() + i);
           found = true;
@@ -37,8 +52,11 @@ void SLPVectorizer::sort(Expr &expr) {
   expr->ch = sorted;
 }
 
-Expr SLPVectorizer::run(Expr &expr, int group_size) {
-
+void SLPVectorizer::run(Kernel &kernel, int group_size) {
+  if (group_size == 1) {
+    return;
+  }
+  auto &expr = kernel.ret;
   TC_ASSERT(expr);
   this->group_size = group_size;
 
@@ -48,17 +66,18 @@ Expr SLPVectorizer::run(Expr &expr, int group_size) {
   // TC_P(group_size);
   TC_ASSERT(expr->ch.size() % group_size == 0);
   TC_ASSERT(expr->type == NodeType::combine);
-  // Create the root group
+
+  // Create the new root group
   auto combined = Expr::create(NodeType::combine);
-  combined->is_vectorized = true;
 
   TC_ASSERT(expr->ch.size());
+
   if (expr->ch[0]->type == NodeType::adapter_store) {
+    TC_NOT_IMPLEMENTED
     // cache store
     // for each batch (group)
     for (int k = 0; k < (int)expr->ch.size() / group_size; k++) {
       auto root = Expr::create(NodeType::adapter_store);
-      root->is_vectorized = true;
       for (int i = 0; i < group_size; i++) {
         TC_ASSERT(expr[k]->type == NodeType::adapter_store);
         auto ch = expr->ch[k * group_size + i];
@@ -77,30 +96,12 @@ Expr SLPVectorizer::run(Expr &expr, int group_size) {
     for (int k = 0; k < (int)expr->ch.size() / group_size; k++) {
       TC_ASSERT(expr[k]->type == NodeType::store);
       auto root = Expr::create(NodeType::store);
-      root->is_vectorized = true;
-      bool has_prior_to = false, has_same = false;
       for (int i = 0; i < group_size; i++) {
         auto ch = expr->ch[k * group_size + i];
         TC_ASSERT(ch->type == NodeType::store);
         root->members.push_back(ch);  // put scalar inst into vector members
         TC_ASSERT(i < (int)root->members.size());
-        if (i > k * group_size) {
-          if (prior_to(root->members[i - 1]->ch[0], root->members[i]->ch[0])) {
-            has_prior_to = true;
-          } else if (root->members[i - 1]->ch[0]->get_address() ==
-                     root->members[i]->ch[0]->get_address()) {
-            has_same = true;
-          } else {
-            TC_P(root->members[i - 1]->ch[0]->get_address());
-            TC_P(root->members[i]->ch[0]->get_address());
-            TC_ERROR(
-                "Addresses in SIMD load should be either identical or "
-                "neighbouring.");
-          }
-        }
       }
-      TC_ASSERT(!(has_prior_to && has_same));
-      // TC_P(root->members.size());
       root.accept(*this);
       combined->ch.push_back(root);
     }
@@ -108,7 +109,7 @@ Expr SLPVectorizer::run(Expr &expr, int group_size) {
     TC_NOT_IMPLEMENTED
   }
   // TC_P(combined->ch.size());
-  return combined;
+  kernel.ret = combined;
 }
 
 void SLPVectorizer::visit(Expr &expr) {
@@ -144,7 +145,6 @@ void SLPVectorizer::visit(Expr &expr) {
     return;
   }
 
-  expr->is_vectorized = true;
   bool first = true;
   NodeType type;
   float64 value = 0;
@@ -170,27 +170,24 @@ void SLPVectorizer::visit(Expr &expr) {
     scalar_to_vector[member] = expr;
   }
 
-  expr->is_vectorized = true;
-  expr->data_type = expr->members[0]->data_type;
-  expr->binary_type = expr->members[0]->binary_type;
-  expr->value<float64>() = value;
-  TC_ASSERT(expr->members.size() % group_size == 0);
+  auto &m = expr->members;
+  for (int i = 0; i < (int)expr->members.size(); i++) {
+    expr->data_type = m[0]->data_type;
+    expr->binary_type = m[0]->binary_type;
+    TC_ASSERT(m[0]->data_type == m[i]->data_type)
+    TC_ASSERT(m[0]->binary_type == m[i]->binary_type) // TODO: fmaddsub
+    TC_ASSERT(m[i]->lanes == 0);
+    for (int j = 0; j < Node::num_additional_values; j++) {
+      expr->attribute(j, i) = m[i]->attribute(j, 0);
+    }
+  }
 
+  TC_ASSERT(expr->members.size() % group_size == 0);
   for (int i = 0; i < (int)vectorized_children.size(); i++) {
     auto ch = Expr::create(vectorized_children[i][0]->type);
     ch->members = vectorized_children[i];
     expr->ch.push_back(ch);
   }
-
-  if (expr->type == NodeType::addr) {
-    auto addr = expr->members[0]->get_address_();  // TODO:
-    if (addr.coeff_aosoa_group_size == 0 || addr.coeff_aosoa_stride == 0) {
-      addr.coeff_aosoa_group_size = 0;
-      addr.coeff_aosoa_stride = 0;
-    }
-    expr->get_address_() = addr;
-  }
 }
 
 TLANG_NAMESPACE_END
-#endif

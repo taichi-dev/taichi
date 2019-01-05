@@ -2,6 +2,7 @@
 
 #include "expr.h"
 #include "visitor.h"
+#include "program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -15,7 +16,7 @@ class SLPVectorizer : public Visitor {
 
   void sort(Expr &expr);
 
-  Expr run(Expr &expr, int group_size);
+  void run(Kernel &kernel, int group_size);
 
   void visit(Expr &expr) override;
 };

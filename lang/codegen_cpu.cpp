@@ -295,6 +295,7 @@ void CPUCodeGen::codegen(Program &prog, Kernel &kernel, int group_size) {
     //auto vectorized_stores =
     //    SLPVectorizer().run(kernel.ret, prog.config.group_size);
 
+    SLPVectorizer().run(kernel, prog.config.group_size);
     LoopVectorizer().run(kernel);
     Optimizer().run(kernel);
 

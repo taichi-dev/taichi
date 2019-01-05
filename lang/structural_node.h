@@ -134,6 +134,15 @@ struct SNode {
     TC_ASSERT(func);
     return func(ds, i, j, k, l);
   }
+
+  int child_id(SNode *c) {
+    for (int i = 0; i < (int)ch.size(); i++) {
+      if (ch[i].get() == c) {
+        return i;
+      }
+    }
+    return -1;
+  }
 };
 
 TLANG_NAMESPACE_END

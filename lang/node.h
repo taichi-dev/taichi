@@ -25,7 +25,7 @@ class Node {
   DataType data_type;
   BinaryType binary_type;
   std::string var_name;
-  std::vector<float64> attributes[num_additional_values];
+  std::vector<uint64> attributes[num_additional_values];
   int lanes;
   int id;
   int num_groups_;
@@ -59,8 +59,7 @@ class Node {
     for (int i = 0; i < num_additional_values; i++) {
       attributes[i].resize(lanes);
       if (lanes > this->lanes) {
-        std::fill(attributes[i].begin() + this->lanes, attributes[i].end(),
-                  0.0_f64);
+        std::fill(attributes[i].begin() + this->lanes, attributes[i].end(), 0);
       }
     }
     this->lanes = lanes;
@@ -105,7 +104,7 @@ class Node {
     return attribute<T>(0, i);
   }
 
-  template <typename T>
+  template <typename T = uint64>
   T &attribute(int k, int i = 0) {
     return *reinterpret_cast<T *>(&attributes[k][i]);
   }

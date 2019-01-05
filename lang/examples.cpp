@@ -252,7 +252,7 @@ auto advection = []() {
     }
     for (int k = 0; k < dim; k++) {
       if (use_adapter) {
-        auto &at = root.fixed({x, y}, {n, n});
+        auto &at = root.fixed({x, y}, {n, n}).multi_threaded();
         for (int i = 0; i < nattr; i++) {
           at.place(attr[k][i]);
         }

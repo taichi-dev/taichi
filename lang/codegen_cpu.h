@@ -73,8 +73,15 @@ class CPUCodeGen : public CodeGenBase {
     if (snode->type == SNodeType::forked) {
       //
     }
+    if (snode->_multi_threaded) {
+      auto p = snode->parent;
+      while (p) {
+        TC_ASSERT(!p->_multi_threaded);
+        p = p->parent;
+      }
+      emit_code("#pragma omp parallel for");
+    }
     if (last_level && snode->type != SNodeType::forked) {
-      // emit_code("#pragma omp parallel for");
       emit_code("for (int {} = 0; {} < {}::n; {} += {}) {{", l, l,
                 snode->node_type_name, l, current_kernel->parallel_instances);
     } else {

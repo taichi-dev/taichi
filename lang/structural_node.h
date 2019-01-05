@@ -29,11 +29,12 @@ struct SNode {
   IndexExtractor extractors[max_num_indices];
   int taken_bits[max_num_indices];  // counting from the tail
   int num_active_indices;
-  int index_order[max_num_indices]; // look_up(index[index_order[index_id]]);
+  int index_order[max_num_indices];  // look_up(index[index_order[index_id]]);
 
   static int counter;
   int id;
   int depth;
+  bool _multi_threaded;
 
   int64 n;
   int total_num_bits, total_bit_start;
@@ -61,6 +62,7 @@ struct SNode {
     std::memset(index_order, -1, sizeof(index_order));
     func = nullptr;
     parent = nullptr;
+    _multi_threaded = false;
   }
 
   SNode &insert_children(SNodeType t) {
@@ -94,6 +96,11 @@ struct SNode {
   SNode &forked() {
     auto &new_node = insert_children(SNodeType::forked);
     return new_node;
+  }
+
+  SNode &multi_threaded(bool val = true) {
+    this->_multi_threaded = val;
+    return *this;
   }
 
   template <typename... Args>

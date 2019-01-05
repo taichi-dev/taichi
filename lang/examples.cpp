@@ -226,8 +226,9 @@ TC_REGISTER_TASK(mpm);
 
 auto advection = []() {
   Program prog;
+  prog.config.gcc_version = 5;
 
-  bool use_adapter = false;
+  bool use_adapter = true;
 
   const int dim = 2;
 
@@ -238,9 +239,6 @@ auto advection = []() {
   auto x = ind(), y = ind();
 
   Float attr[dim][nattr], v[dim];
-
-  // prog.config.group_size = use_adapter ? nattr : 1;
-  // prog.config.num_groups = use_adapter ? 8 : 8;
 
   layout([&]() {
     std::vector<Expr> all_variables;
@@ -258,7 +256,7 @@ auto advection = []() {
         for (int i = 0; i < nattr; i++) {
           at.place(attr[k][i]);
         }
-        root.fixed({x, y}, {n * n}).place(v[k]);
+        root.fixed({x, y}, {n, n}).place(v[k]);
       } else {
         if (blocked_channels) {
           auto &f = root.fixed({x, y}, {n / block_size, n / block_size});
@@ -287,7 +285,7 @@ auto advection = []() {
   auto clamp = [](const Float32 &e) { return min(max(imm(0), e), imm(n - 2)); };
 
   auto func = kernel(attr[0][0], [&]() {
-    // ** gs = 2
+    // ** gs = 1
 
     auto vx = v[0][x, y];
     auto vy = v[1][x, y];
@@ -296,16 +294,8 @@ auto advection = []() {
     auto offset_y = floor(vy);
     auto wx = vx - offset_x;
     auto wy = vy - offset_y;
-
-    if (use_adapter) {
-      adapter(0).set(2).convert(offset_x, offset_y);
-      adapter(1).set(2).convert(wx, wy);
-    }
-
-    // ** gs = 1
     auto new_x = cast<int32>(offset_x + cast<float32>(x));
     auto new_y = cast<int32>(offset_y + cast<float32>(y));
-
     new_x = clamp(new_x);
     new_y = clamp(new_y);
 
@@ -316,8 +306,8 @@ auto advection = []() {
     auto w11 = wx * wy;
 
     if (use_adapter) {
-      adapter(2).set(1).convert(w00, w01, w10, w11);
-      // prog.adapter(3).set(1, 4).convert(node);
+      adapter(0).set(1).convert(w00, w01, w10, w11);
+      adapter(1).set(1).convert(new_x, new_y);
     }
 
     // ** gs = 4
@@ -329,6 +319,9 @@ auto advection = []() {
       attr[1][k][x, y] = w00 * v00 + w01 * v01 + w10 * v10 + w11 * v11;
       attr[1][k][x, y].name(fmt::format("output{}", k));
     }
+
+    group(use_adapter ? nattr : 1);
+    parallel_instances(8);
   });
 
   auto swap_buffers = kernel(attr[0][0], [&] {

@@ -28,10 +28,12 @@ inline int default_simd_width(Arch arch) {
 struct CompileConfig {
   Arch arch;
   int simd_width;
+  int gcc_version;
 
   CompileConfig() {
     arch = Arch::x86_64;
     simd_width = -1;
+    gcc_version = 7;
   }
 };
 

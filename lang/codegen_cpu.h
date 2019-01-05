@@ -252,11 +252,12 @@ class CPUCodeGen : public CodeGenBase {
   FunctionType compile() {
     write_code_to_file();
     auto cmd = fmt::format(
-        "g++-7 {} -fopenmp -std=c++14 -shared -fPIC -O3 -march=native -I "
+        "g++-{} {} -fopenmp -std=c++14 -shared -fPIC -O3 -march=native -I "
         "{}/headers -Wall "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} 2>"
         "{}.log",
-        get_source_fn(), get_project_fn(), get_library_fn(), get_source_fn());
+        prog->config.gcc_version, get_source_fn(), get_project_fn(),
+        get_library_fn(), get_source_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
     disassemble();

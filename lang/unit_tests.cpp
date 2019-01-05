@@ -219,7 +219,7 @@ TC_TEST("slp") {
 // a * b * vec
 
 TC_TEST("adapter1") {
-  for (auto vec_size: {1, 2, 4, 8, 16}) {
+  for (auto vec_size : {1, 2, 4, 8, 16}) {
     Program prog;
 
     Float a, b;
@@ -273,57 +273,62 @@ TC_TEST("adapter1") {
   }
 }
 
-TLANG_NAMESPACE_END
-#if (0)
-
 // Vec<vec_size> reduction
-void test_adapter2(int vec_size) {
-  Vector v(vec_size);
-  Float sum;
-
+auto test_adapter2 = []() {
   int n = 64;
 
-  Program prog(Arch::x86_64, n);
+  Program prog;
 
-  for (int i = 0; i < vec_size; i++) {
-    prog.buffer(1).stream(0).group(0).place(v(i));
-  }
-  prog.buffer(0).stream(0).group(0).place(sum);
+  auto vec_size = 8;
+  Vector v(vec_size);
+
+  Float sum;
 
   auto ind = Expr::index(0);
 
-  auto v_ind = v[ind];
+  layout([&] {
+    for (int i = 0; i < vec_size; i++) {
+      v(i) = var<float32>();
+      root.fixed(ind, n).place(v(i));
+    }
+    sum = var<float32>();
+    root.fixed(ind, n).place(sum);
+  });
 
-  for (int i = 0; i < vec_size; i++) {
-    v_ind(i).set(Expr::load_if_pointer(v_ind(i)));
-    TC_P(v_ind(i)->node_type_name());
-  }
+  auto func = kernel(sum, [&] {
+    auto v_ind = v[ind];
 
-  auto &adapter = prog.adapter(0);
-  adapter.set(vec_size, 1);
-  for (int i = 0; i < vec_size; i++) {
-    adapter.convert(v_ind(i));
-  }
+    for (int i = 0; i < vec_size; i++) {
+      v_ind(i).set(load(v_ind(i)));
+    }
 
-  Expr acc = Expr::create_imm(0.0_f);
-  for (int d = 0; d < vec_size; d++) {
-    acc = acc + v_ind(d);
-  }
+    auto &adapter = prog.adapter(0);
+    adapter.set(vec_size, 1);
+    for (int i = 0; i < vec_size; i++) {
+      adapter.convert(v_ind(i));
+    }
 
-  sum[ind] = acc;
+    Expr acc = Expr::create_imm(0.0_f);
+    for (int d = 0; d < vec_size; d++) {
+      acc = acc + v_ind(d);
+    }
 
-  prog.materialize_layout();
+    sum[ind] = acc;
+
+    parallel_instances(8);
+    group(1);
+  });
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < vec_size; j++) {
-      prog.data(v(j), i) = j + i;
+      v(j).val<float32>(i) = j + i;
     }
   }
 
-  prog();
+  func();
 
   for (int i = 0; i < n; i++) {
-    auto val = prog.data(sum, i);
+    auto val = sum.val<float32>(i);
     auto gt = vec_size * (vec_size - 1) / 2 + i * vec_size;
     if (abs(gt - val) > 1e-5_f) {
       TC_P(i);
@@ -332,7 +337,12 @@ void test_adapter2(int vec_size) {
       TC_ERROR("");
     }
   }
-}
+};
+TC_REGISTER_TASK(test_adapter2);
+
+TLANG_NAMESPACE_END
+
+#if (0)
 
 // reduce(vec_a<n> - vec_b<n>) * vec_c<2n>
 void test_adapter3(int vec_size) {

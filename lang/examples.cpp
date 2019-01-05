@@ -44,9 +44,6 @@ auto mpm = []() {
   int n_particles = 8192 * 4;
   Program prog(Arch::x86_64);
 
-  prog.config.group_size = 1;
-  prog.config.num_groups = 8;
-
   auto index = ind();
   auto grid_index = ind();
 
@@ -254,8 +251,8 @@ auto advection = []() {
 
   Float attr[dim][nattr], v[dim];
 
-  prog.config.group_size = use_adapter ? nattr : 1;
-  prog.config.num_groups = use_adapter ? 8 : 8;
+  // prog.config.group_size = use_adapter ? nattr : 1;
+  // prog.config.num_groups = use_adapter ? 8 : 8;
 
   layout([&]() {
     std::vector<Expr> all_variables;

@@ -74,13 +74,32 @@ struct Program {
     Program &program;
     FunctionType compiled;
     Expr ret;
-    int stride;
+    int parallel_instances;
+    int simd_lanes;
+    int output_group_size;
 
     Kernel(Program &program, std::function<void()> func) : program(program) {
-      stride = 1;
+      parallel_instances = -1;
+      simd_lanes = -1;
+      output_group_size = -1;
       program.start_function_definition(this);
       ret = Expr(nullptr);
       func();
+
+      if (output_group_size == -1) {
+        output_group_size = 1;
+      }
+      if (parallel_instances == -1) {
+        TC_ASSERT(default_simd_width(program.config.arch) % output_group_size == 0);
+        parallel_instances = default_simd_width(program.config.arch) / output_group_size;
+      }
+      if (simd_lanes == -1){
+        simd_lanes = output_group_size * parallel_instances;
+      }
+      TC_P(output_group_size);
+      TC_P(simd_lanes);
+      TC_P(parallel_instances);
+
       program.end_function_definition();
       compile();
     }
@@ -127,7 +146,7 @@ struct Program {
     } else {
       TC_NOT_IMPLEMENTED;
     }
-    config.group_size = 1;
+    config.simd_width = default_simd_width(arch);
     current_kernel = nullptr;
     snode_root = nullptr;
     index_counter = 0;

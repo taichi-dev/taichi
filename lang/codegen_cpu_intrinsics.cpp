@@ -5,9 +5,9 @@
 TLANG_NAMESPACE_BEGIN
 
 void CPUCodeGen::visit_intrinsics(Expr &expr) {
-  // TC_P(expr->id);
-  // TC_P(expr->node_type_name());
-  // TC_P(num_groups);
+  TC_P(expr->id);
+  TC_P(expr->node_type_name());
+  TC_P(num_groups);
   auto vv_width = expr->lanes;
   TC_P(expr->lanes);
   TC_ASSERT(vv_width == 1 || vv_width % simd_width == 0);
@@ -41,7 +41,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
 
   auto address_elements = [&](std::string index, int start = 1) {
     std::string ret = "";
-    for (int i = start; i < expr->ch.size(); i++) {
+    for (int i = start; i < (int)expr->ch.size(); i++) {
       ret += fmt::format(", {}.element({})", expr->ch[i]->var_name, index);
     }
     return ret;

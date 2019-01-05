@@ -28,14 +28,10 @@ inline int default_simd_width(Arch arch) {
 struct CompileConfig {
   Arch arch;
   int simd_width;
-  int group_size;
-  int num_groups;
 
   CompileConfig() {
     arch = Arch::x86_64;
     simd_width = -1;
-    group_size = -1;
-    num_groups = -1;
   }
 };
 

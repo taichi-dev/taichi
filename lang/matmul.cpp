@@ -164,7 +164,6 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
 
   Program prog(arch);
   int scale = 1;
-  prog.config.group_size = 1;
   // prog.config.group_size = layout == 1 ? dim : 1;
   // prog.config.num_groups = 8 / prog.config.group_size * scale;
 

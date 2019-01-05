@@ -246,18 +246,14 @@ class GPUCodeGen : public CodeGenBase {
 };
 #endif
 
-void CPUCodeGen::codegen(Program &prog, Kernel &kernel, int group_size) {
+void CPUCodeGen::codegen(Kernel &kernel) {
   // TC_ASSERT(mode == Mode::vector);
-  this->group_size = group_size;
-  TC_ASSERT(group_size != 0);
-  this->prog = &prog;
-  // group_size = expr->ch.size();
-  num_groups = prog.config.num_groups;
-  TC_WARN_IF(simd_width % group_size != 0, "insufficient lane usage");
+  this->prog = &kernel.program;
+  this->current_kernel = &kernel;
+  this->simd_width = prog->config.simd_width;
+  this->num_groups = kernel.parallel_instances;
 
   generate_header();
-
-  // emit_code("float32 {}[128];", get_cache_name(0));
 
   start_macro_loop();
 
@@ -289,14 +285,14 @@ void CPUCodeGen::codegen(Program &prog, Kernel &kernel, int group_size) {
   {
     TC_ASSERT(kernel.ret);
     // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
-    this->group_size = group_size;
     // TC_P(group_size);
 
+    this->group_size = kernel.output_group_size;
     //auto vectorized_stores =
     //    SLPVectorizer().run(kernel.ret, prog.config.group_size);
 
     // visualize_IR(get_source_fn() + ".scalar.pdf", kernel.ret);
-    SLPVectorizer().run(kernel, prog.config.group_size);
+    SLPVectorizer().run(kernel, kernel.output_group_size);
     // visualize_IR(get_source_fn() + ".slp.pdf", kernel.ret);
     LoopVectorizer().run(kernel, num_groups);
     Optimizer().run(kernel);
@@ -310,28 +306,19 @@ void CPUCodeGen::codegen(Program &prog, Kernel &kernel, int group_size) {
 }
 
 FunctionType CPUCodeGen::get(Program &prog, Kernel &kernel) {
-  auto group_size = prog.config.group_size;
   // auto mode = CPUCodeGen::Mode::vv;
   auto mode = CPUCodeGen::Mode::intrinsics;
-  auto simd_width = 8;
+  auto simd_width = prog.config.simd_width;
   this->mode = mode;
   this->simd_width = simd_width;
-  codegen(prog, kernel, group_size);
+  codegen(kernel);
   return compile();
 }
 
 FunctionType Program::compile(Kernel &kernel) {
   FunctionType ret = nullptr;
-  if (config.simd_width == -1) {
-    config.simd_width = default_simd_width(config.arch);
-  }
-  if (config.num_groups == -1) {
-    config.num_groups = config.simd_width / config.group_size;
-  }
-  TC_ASSERT(config.group_size > 0);
   if (config.arch == Arch::x86_64) {
     CPUCodeGen codegen;
-    codegen.unroll = 1;
     ret = codegen.get(*this, kernel);
   } else if (config.arch == Arch::gpu) {
     TC_NOT_IMPLEMENTED

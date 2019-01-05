@@ -25,6 +25,10 @@ inline Kernel kernel(Expr expr, const std::function<void()> &body) {
   return get_current_program().kernel(expr, body);
 }
 
+inline void group(int n) {
+  get_current_program().get_current_kernel().output_group_size = n;
+}
+
 TLANG_NAMESPACE_END
 
 /*

@@ -4,7 +4,6 @@ TLANG_NAMESPACE_BEGIN
 
 void LoopVectorizer::run(Kernel &ker, int factor) {
   this->factor = factor;
-  TC_P(factor);
   // simply pick the last index to vectorize
   bool active[max_num_indices];
   std::memset(active, 0, sizeof(active));
@@ -21,7 +20,8 @@ void LoopVectorizer::run(Kernel &ker, int factor) {
     s = s->parent;
   }
   ker.ret = vectorize(ker.ret);  // vectorize
-  ker.stride *= factor;
+  ker.parallel_instances *= factor;
+  ker.simd_lanes *= factor;
 }
 
 Expr LoopVectorizer::vectorize(Expr node) {

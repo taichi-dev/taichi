@@ -14,14 +14,13 @@ class Program;
 
 class CPUCodeGen : public CodeGenBase {
  public:
-  int unroll;
-  int prefetch;
   enum class Mode : int { vv, intrinsics };
   Mode mode;
-  int simd_width;
-  int group_size;
   std::string before_loop_body;
+  int group_size;  // TODO: rename to current_group_size
+  int simd_width;  // TODO: rename to physical simd width
   Program *prog;
+  Kernel *current_kernel;
   std::map<std::string, std::string> constant_vectors;  // statement to var name
   int constant_counter;
 
@@ -46,10 +45,9 @@ class CPUCodeGen : public CodeGenBase {
 
   CPUCodeGen() : CodeGenBase() {
     suffix = "cpp";
-    prefetch = 0;
-    unroll = 1;
     constant_counter = 0;
     var_count = 0;
+    group_size = 0;
   }
 
   std::string loop_variable(SNode *snode) {
@@ -77,9 +75,8 @@ class CPUCodeGen : public CodeGenBase {
     }
     if (last_level && snode->type != SNodeType::forked) {
       // emit_code("#pragma omp parallel for");
-      TC_ASSERT(unroll == 1);
       emit_code("for (int {} = 0; {} < {}::n; {} += {}) {{", l, l,
-                snode->node_type_name, l, num_groups * unroll);
+                snode->node_type_name, l, current_kernel->parallel_instances);
     } else {
       emit_code("for (int {} = 0; {} < {}::n; {} += {}) {{", l, l,
                 snode->node_type_name, l, 1);
@@ -159,17 +156,10 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void start_macro_loop() {
-    // code_suffix = " \\\n";
-    // emit_code("#define LOOP(loop_index) {");
   }
 
   void end_macro_loop() {
     code_suffix = "\n";
-    // emit_code("}\n");
-    for (int i = 0; i < unroll; i++) {
-      // emit_code("LOOP({});", i);
-    }
-    // emit_code("#undef LOOP\n");
   }
 
   std::string adapter_name(int i) {
@@ -202,7 +192,7 @@ class CPUCodeGen : public CodeGenBase {
               adapter_name(i));
   }
 
-  void codegen(Program &prog, Kernel &ker, int group_size);
+  void codegen(Kernel &ker);
 
   std::string vv_type_str(int width, DataType data_type) {
     return fmt::format("VV<{}, {}>", width, data_type_name(data_type));

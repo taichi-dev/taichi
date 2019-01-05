@@ -122,7 +122,6 @@ TC_TEST("test_2d_array") {
 TC_TEST("test_single_program") {
   int n = 128;
   Program prog(Arch::x86_64);
-  prog.config.group_size = 1;
 
   auto a = var<float32>(), b = var<float32>();
   auto i = ind(0);
@@ -154,7 +153,6 @@ TC_TEST("test_single_program") {
 TC_TEST("test_multiple_programs") {
   int n = 128;
   Program prog(Arch::x86_64);
-  prog.config.group_size = 1;
 
   Real a, b, c, d;
   a = placeholder(DataType::f32);
@@ -190,8 +188,6 @@ TC_TEST("test_multiple_programs") {
 
 auto test_slp = [] {
   Program prog;
-  prog.config.group_size = 2;
-  prog.config.num_groups = 4;
 
   int n = 32;
   auto a = var<float32>(), b = var<float32>();
@@ -208,6 +204,8 @@ auto test_slp = [] {
   auto func = kernel(a, [&]() {
     a[i] = a[i] + imm(1.0_f);
     b[i] = b[i] + imm(1.0_f);
+
+    group(2);
   });
 
   func();

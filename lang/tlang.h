@@ -33,6 +33,10 @@ inline void parallel_instances(int n) {
   get_current_program().get_current_kernel().parallel_instances = n;
 }
 
+inline Adapter &adapter(int i) {
+  return get_current_program().get_current_kernel().adapter(i);
+}
+
 TLANG_NAMESPACE_END
 
 /*

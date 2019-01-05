@@ -239,11 +239,11 @@ TC_TEST("adapter1") {
     });
 
     auto func = kernel(a, [&]() {
-      auto &adapter = prog.adapter(0);
+      auto &ad = adapter(0);
       auto ab = a[ind] * b[ind];
 
-      adapter.set(1);
-      adapter.convert(ab);
+      ad.set(1);
+      ad.convert(ab);
 
       for (int d = 0; d < vec_size; d++) {
         v(d)[ind] = ab * v(d)[ind];
@@ -302,10 +302,10 @@ TC_TEST("adapter2") {
         v_ind(i).set(load(v_ind(i)));
       }
 
-      auto &adapter = prog.adapter(0);
-      adapter.set(vec_size);
+      auto &ad = adapter(0);
+      ad.set(vec_size);
       for (int i = 0; i < vec_size; i++) {
-        adapter.convert(v_ind(i));
+        ad.convert(v_ind(i));
       }
 
       Expr acc = Expr::create_imm(0.0_f);
@@ -370,10 +370,10 @@ TC_TEST("adapter3") {
       auto diff = aind.element_wise_prod(aind) - bind.element_wise_prod(bind);
 
       {
-        auto &adapter = prog.adapter(0);
-        adapter.set(vec_size);
+        auto &ad = adapter(0);
+        ad.set(vec_size);
         for (int i = 0; i < vec_size; i++)
-          adapter.convert(diff(i));
+          ad.convert(diff(i));
       }
 
       auto acc = Expr::create_imm(0.0_f);
@@ -382,9 +382,9 @@ TC_TEST("adapter3") {
       }
 
       {
-        auto &adapter = prog.adapter(1);
-        adapter.set(1);
-        adapter.convert(acc);
+        auto &ad = adapter(1);
+        ad.set(1);
+        ad.convert(acc);
         for (int i = 0; i < vec_size * 2; i++)
           c(i)[ind] = c(i)[ind] * acc;
       }

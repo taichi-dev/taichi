@@ -310,8 +310,8 @@ auto advection = []() {
     auto wy = vy - offset_y;
 
     if (use_adapter) {
-      prog.adapter(0).set(2).convert(offset_x, offset_y);
-      prog.adapter(1).set(2).convert(wx, wy);
+      adapter(0).set(2).convert(offset_x, offset_y);
+      adapter(1).set(2).convert(wx, wy);
     }
 
     // ** gs = 1
@@ -328,7 +328,7 @@ auto advection = []() {
     auto w11 = wx * wy;
 
     if (use_adapter) {
-      prog.adapter(2).set(1).convert(w00, w01, w10, w11);
+      adapter(2).set(1).convert(w00, w01, w10, w11);
       // prog.adapter(3).set(1, 4).convert(node);
     }
 

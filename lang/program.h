@@ -70,6 +70,7 @@ struct Program {
   struct Kernel {
     Program &program;
     FunctionType compiled;
+    std::vector<Adapter> adapters;
     Expr ret;
     int parallel_instances;
     int simd_lanes;
@@ -87,10 +88,12 @@ struct Program {
         output_group_size = 1;
       }
       if (parallel_instances == -1) {
-        TC_ASSERT(default_simd_width(program.config.arch) % output_group_size == 0);
-        parallel_instances = default_simd_width(program.config.arch) / output_group_size;
+        TC_ASSERT(default_simd_width(program.config.arch) % output_group_size ==
+                  0);
+        parallel_instances =
+            default_simd_width(program.config.arch) / output_group_size;
       }
-      if (simd_lanes == -1){
+      if (simd_lanes == -1) {
         simd_lanes = output_group_size * parallel_instances;
       }
       // TC_P(output_group_size);
@@ -109,6 +112,13 @@ struct Program {
       auto c = program.get_context();
       compiled(c);
     }
+
+    Adapter &adapter(int i) {
+      while ((int)adapters.size() <= i) {
+        adapters.push_back(Adapter((int)adapters.size()));
+      }
+      return adapters[i];
+    }
   };
 
   Kernel *current_kernel;
@@ -119,7 +129,6 @@ struct Program {
   Device device;
 
   std::vector<AlignedAllocator> buffers;
-  std::vector<Adapter> adapters;
   std::vector<Kernel> functions;
   int index_counter;
 
@@ -188,13 +197,6 @@ struct Program {
 
   void end_function_definition() {
     current_kernel = nullptr;
-  }
-
-  Adapter &adapter(int i) {
-    while ((int)adapters.size() <= i) {
-      adapters.push_back(Adapter((int)adapters.size()));
-    }
-    return adapters[i];
   }
 
   Expr store(const Expr &ad, const Expr &e) {

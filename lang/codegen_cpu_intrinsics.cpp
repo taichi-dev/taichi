@@ -284,7 +284,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
                 expr._address()->new_addresses(i)->node_type_name, total_elem);
     }
   } else if (expr->type == NodeType::adapter_store) {
-    auto &ad = prog->adapter(expr[1]->value<int>());
+    auto &ad = current_kernel->adapter(expr[1]->value<int>());
     /*
     emit_code("{}.store(&{}.inputs[{}]);", expr[0]->var_name,
               adapter_name(expr[1]->members[0]->value<int>()),
@@ -293,7 +293,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     ad.store_exprs[expr[2]->value<int>() / ad.input_group_size].set(expr[0]);
   } else if (expr->type == NodeType::adapter_load) {
     // generate offset
-    auto &ad = prog->adapter(expr[0]->value<int>());
+    auto &ad = current_kernel->adapter(expr[0]->value<int>());
     std::vector<int> offsets_val;
     for (int i = 0; i < num_groups; i++) {
       for (int j = 0; j < group_size; j++) {

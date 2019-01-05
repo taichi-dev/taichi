@@ -261,8 +261,8 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   kernel.simd_lanes *= num_groups;
 
   // Adapters
-  for (int i = 0; i < (int)prog->adapters.size(); i++) {
-    auto &ad = prog->adapters[i];
+  for (int i = 0; i < kernel.adapters.size(); i++) {
+    auto &ad = kernel.adapters[i];
     create_adapter(ad.dt, i, ad.counter / ad.input_group_size,
                    ad.input_group_size);
   }
@@ -270,7 +270,7 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   // Body
 
   // adapters
-  for (auto &adapter : prog->adapters) {
+  for (auto &adapter : kernel.adapters) {
     adapter.stores =
         SLPVectorizer().run(adapter.stores, adapter.input_group_size);
     adapter.stores =

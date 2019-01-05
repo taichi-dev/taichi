@@ -284,15 +284,14 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
                 expr._address()->new_addresses(i)->node_type_name, total_elem);
     }
   } else if (expr->type == NodeType::adapter_store) {
+    // save ch[0] to adapter ch[1]
     auto &ad = current_kernel->adapter(expr[1]->value<int>());
-    /*
-    emit_code("{}.store(&{}.inputs[{}]);", expr[0]->var_name,
-              adapter_name(expr[1]->members[0]->value<int>()),
-              expr[2]->members[0]->value<int>() / ad.input_group_size);
-              */
     ad.store_exprs[expr[2]->value<int>() / ad.input_group_size].set(expr[0]);
   } else if (expr->type == NodeType::adapter_load) {
-    // generate offset
+    // generate offsets in the linearized input adapter.
+    // (There may be multiple VV's)
+    // (This is invariant even if we do vector splitting.)
+
     auto &ad = current_kernel->adapter(expr[0]->value<int>());
     std::vector<int> offsets_val;
     for (int i = 0; i < num_groups; i++) {
@@ -309,7 +308,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     emit_code("{} {};", vv_type(ad.dt), expr->var_name);
     int input_vv_width = ad.input_group_size * num_groups;
     for (int i = 0; i < split; i++) {
-      // For each
+      // For each split (vec) of vvec
       std::vector<int> offset_subset(offsets.begin() + i * simd_width,
                                      offsets.begin() + (i + 1) * simd_width);
 
@@ -325,6 +324,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       std::sort(std::begin(sorted), std::end(sorted));
       sorted.resize(std::unique(sorted.begin(), sorted.end()) - sorted.begin());
 
+      // for each unique register_id...
       for (int k = 0; k < (int)sorted.size(); k++) {
         auto rid = sorted[k];
         auto tmp_arg = vec_to_list_tmp(register_offset);

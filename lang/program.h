@@ -37,7 +37,8 @@ struct Adapter {
     if (counter == 0) {
       dt = e->data_type;
     } else {
-      TC_ASSERT(dt == e->data_type);
+      TC_ASSERT_INFO(dt == e->data_type,
+                     "An adapter can have only one data type");
     }
     int i = counter++;
     auto n = Expr::create(NodeType::adapter_store, e, Expr::create_imm(id),
@@ -46,9 +47,7 @@ struct Adapter {
     e.set(Expr::create(NodeType::adapter_load, Expr::create_imm(id),
                        Expr::create_imm(i)));
     e->data_type = dt;
-    // TC_P(counter);
-    // TC_P(input_group_size);
-    store_exprs.resize(counter / input_group_size);
+    store_exprs.resize(counter / input_group_size); // size after SLP vectorizer
     return *this;
   }
 
@@ -101,9 +100,6 @@ struct Program {
       if (simd_lanes == -1) {
         simd_lanes = output_group_size * parallel_instances;
       }
-      // TC_P(output_group_size);
-      // TC_P(simd_lanes);
-      // TC_P(parallel_instances);
 
       program.end_function_definition();
       compile();

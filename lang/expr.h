@@ -17,7 +17,6 @@ class Expr {
  private:
   Handle<Node> node;
   static bool allow_store;
-  static int index_counter;
 
  public:
   static void set_allow_store(bool val) {
@@ -60,16 +59,7 @@ class Expr {
     return e;
   }
 
-  static Expr index(int i = -1) {
-    if (i == -1) {
-      i = index_counter++;
-    }
-    TC_ASSERT(i < max_num_indices);
-    auto e = create(NodeType::index);
-    e->value<int>() = i;
-    e->data_type = DataType::i32;
-    return e;
-  }
+  static Expr index(int i = -1);
 
   static Expr load_if_pointer(const Expr &in) {
     if (in->type == NodeType::pointer) {

@@ -163,9 +163,10 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
   int n = N;
 
   Program prog(arch);
-  prog.config.group_size = layout == 1 ? dim : 1;
   int scale = 1;
-  prog.config.num_groups = 8 / prog.config.group_size * scale;
+  prog.config.group_size = 1;
+  // prog.config.group_size = layout == 1 ? dim : 1;
+  // prog.config.num_groups = 8 / prog.config.group_size * scale;
 
   // TODO: eliminate this
   layout = 2;
@@ -229,6 +230,8 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
       }
     }
   });
+
+  TC_P(n);
 
   auto mul = kernel(c(0, 0), [&]() { c[in] = a[in] * b[in]; });
 
@@ -318,8 +321,8 @@ void run_matmatmul() {
   // BENCHMARK(TlangGPUInter);
   // BENCHMARK(TlangGPUSOA);
 
-  BENCHMARK(TlangCPUAOSOA);
-  BENCHMARK(TlangCPUInter);
+  // BENCHMARK(TlangCPUAOSOA);
+  // BENCHMARK(TlangCPUInter);
   BENCHMARK(TlangCPUSOA);
 
   // BENCHMARK(TlangSca8);

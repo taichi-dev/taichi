@@ -105,6 +105,7 @@ struct Program {
   std::vector<AlignedAllocator> buffers;
   std::vector<Adapter> adapters;
   std::vector<Kernel> functions;
+  int index_counter;
 
   std::string layout_fn;
 
@@ -129,6 +130,7 @@ struct Program {
     config.group_size = 1;
     current_kernel = nullptr;
     snode_root = nullptr;
+    index_counter = 0;
   }
 
   ~Program() {

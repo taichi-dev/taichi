@@ -95,10 +95,10 @@ class CPUCodeGen : public CodeGenBase {
       }
       std::string addition = "0";
       if (snode->extractors[i].num_bits) {
-        addition = fmt::format("((({} >> {}) & ((1 << {}) - 1)) << {})", l,
-                               snode->extractors[i].dest_offset - snode->total_bit_start,
-                               snode->extractors[i].num_bits,
-                               snode->extractors[i].start);
+        addition = fmt::format(
+            "((({} >> {}) & ((1 << {}) - 1)) << {})", l,
+            snode->extractors[i].dest_offset - snode->total_bit_start,
+            snode->extractors[i].num_bits, snode->extractors[i].start);
       }
       emit_code("int {} = {};", index_name_local(snode, i), addition);
       emit_code("int {} = {} {};", index_name_global(snode, i), ancester,
@@ -270,8 +270,9 @@ class CPUCodeGen : public CodeGenBase {
     auto cmd = fmt::format(
         "g++-7 {} -fopenmp -std=c++14 -shared -fPIC -O3 -march=native -I "
         "{}/headers -Wall "
-        "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {}",
-        get_source_fn(), get_project_fn(), get_library_fn());
+        "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} 2>"
+        "{}.log",
+        get_source_fn(), get_project_fn(), get_library_fn(), get_source_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
     disassemble();

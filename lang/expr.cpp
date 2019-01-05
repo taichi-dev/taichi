@@ -4,8 +4,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-int Expr::index_counter = 0;
-
 Expr &Expr::operator=(const Expr &o) {
   // TC_ASSERT(allow_store);
   if (!allow_store || !node || node->type != NodeType::pointer) {
@@ -105,5 +103,16 @@ template void *Expr::val_tmp<int>(int);
 template void *Expr::val_tmp<int, int>(int, int);
 template void *Expr::val_tmp<int, int, int>(int, int, int);
 template void *Expr::val_tmp<int, int, int, int>(int, int, int, int);
+
+Expr Expr::index(int i) {
+  if (i == -1) {
+    i = get_current_program().index_counter++;
+  }
+  TC_ASSERT(i < max_num_indices);
+  auto e = create(NodeType::index);
+  e->value<int>() = i;
+  e->data_type = DataType::i32;
+  return e;
+}
 
 TLANG_NAMESPACE_END

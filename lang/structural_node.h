@@ -38,6 +38,7 @@ struct SNode {
   int64 n;
   int total_num_bits, total_bit_start;
   Expr addr;
+  // Note: parent will not be set until structural nodes are compiled!
   SNode *parent;
 
   using AccessorFunction = void *(*)(void *, int, int, int, int);
@@ -63,11 +64,8 @@ struct SNode {
   }
 
   SNode &insert_children(SNodeType t) {
-    if (this->type != SNodeType::forked) {
-      TC_ASSERT(ch.size() == 0);
-    }
     ch.push_back(create(depth + 1, t));
-    ch.back()->parent = this;
+    // Note: parent will not be set until structural nodes are compiled!
     return *ch.back();
   }
 

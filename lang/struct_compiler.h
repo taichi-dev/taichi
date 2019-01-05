@@ -18,6 +18,7 @@ class StructCompiler : public CodeGenBase {
   }
 
   void visit(SNode &snode) {
+    // TC_P(snode.type_name());
     for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {
       auto &ch = snode.ch[ch_id];
       for (int i = 0; i < max_num_indices; i++) {
@@ -169,7 +170,22 @@ class StructCompiler : public CodeGenBase {
     }
   }
 
+  void insert_forks(SNode &snode) {
+    if (snode.type != SNodeType::forked && snode.ch.size() != 1) {
+      std::vector<Handle<SNode>> ch;
+      ch.swap(snode.ch);
+      auto &fork = snode.insert_children(SNodeType::forked);
+      fork.ch.swap(ch);
+    }
+    for (auto &c: snode.ch) {
+      insert_forks(*c);
+      c->parent = &snode;
+    }
+  }
+
   void run(SNode &node) {
+    insert_forks(node);
+
     emit_code("#if defined(TLANG_KERNEL) ");
     emit_code("#define TLANG_ACCESSOR TC_FORCE_INLINE");
     emit_code("#else");

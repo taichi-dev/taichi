@@ -245,7 +245,7 @@ auto advection = []() {
 
   const int n = 1024, nattr = 4;
   const int block_size = 16;
-  bool blocked_channels = false;
+  bool blocked_channels = true;
   TC_ASSERT(n % block_size == 0);
   auto x = ind(), y = ind();
 
@@ -275,7 +275,7 @@ auto advection = []() {
       }
     }
     if (blocked_channels) {
-      auto &f = root.fixed({x, y}, {n / block_size, n / block_size}).forked();
+      auto &f = root.fixed({x, y}, {n / block_size, n / block_size});
       for (auto &v : all_variables) {
         f.fixed({x, y}, {block_size, block_size}).place(v);
       }

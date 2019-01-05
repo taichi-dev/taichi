@@ -216,54 +216,55 @@ TC_TEST("slp") {
   }
 }
 
-TLANG_NAMESPACE_END
-
-#if (0)
-TC_REGISTER_TASK(test_loop);
-
 // a * b * vec
-void test_adapter1(int vec_size) {
+
+auto test_adapter1 = []() {
+  int vec_size = 8;
+  Program prog;
+
   Float a, b;
   Vector v(vec_size), u(vec_size);
 
   int n = 128;
-
-  Program prog(Arch::x86_64, n);
-  prog.config.group_size = vec_size;
-  prog.config.num_groups = 8;
-
-  prog.buffer(0).stream(0).group(0).place(a, b);
-  for (int i = 0; i < vec_size; i++) {
-    prog.buffer(1).stream(0).group(0).place(v(i));
-  }
-
   auto ind = Expr::index(0);
 
-  auto &adapter = prog.adapter(0);
-  auto ab = a[ind] * b[ind];
+  layout([&] {
+    a = var<float32>();
+    b = var<float32>();
+    root.fixed(ind, n).place(a, b);
+    for (int i = 0; i < vec_size; i++) {
+      v(i) = var<float32>();
+      root.fixed(ind, n).place(v(i));
+    }
+  });
 
-  adapter.set(1, vec_size);
-  adapter.convert(ab);
+  auto func = kernel(a, [&]() {
+    auto &adapter = prog.adapter(0);
+    auto ab = a[ind] * b[ind];
 
-  for (int d = 0; d < vec_size; d++) {
-    v(d)[ind] = ab * v(d)[ind];
-  }
+    adapter.set(1, vec_size);
+    adapter.convert(ab);
 
-  prog.materialize_layout();
+    for (int d = 0; d < vec_size; d++) {
+      v(d)[ind] = ab * v(d)[ind];
+    }
+
+    group(8);
+  });
 
   for (int i = 0; i < n; i++) {
-    prog.data(a, i) = i;
-    prog.data(b, i) = 2.0_f * (i + 1);
+    a.val<float32>(i) = i;
+    b.val<float32>(i) = 2.0_f * (i + 1);
     for (int j = 0; j < vec_size; j++) {
-      prog.data(v(j), i) = 1.0_f * j / (i + 1);
+      v(j).val<float32>(i) = 1.0_f * j / (i + 1);
     }
   }
 
-  prog();
+  func();
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < vec_size; j++) {
-      auto val = prog.data(v(j), i);
+      auto val = v(j).val<float32>(i);
       auto gt = i * j * 2;
       if (abs(gt - val) > 1e-3_f) {
         TC_P(i);
@@ -274,8 +275,11 @@ void test_adapter1(int vec_size) {
       }
     }
   }
-}
+};
+TC_REGISTER_TASK(test_adapter1);
 
+TLANG_NAMESPACE_END
+#if (0)
 // Vec<vec_size> reduction
 void test_adapter2(int vec_size) {
   Vector v(vec_size);

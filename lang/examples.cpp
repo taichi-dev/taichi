@@ -245,7 +245,7 @@ auto advection = []() {
 
   const int n = 1024, nattr = 4;
   const int block_size = 16;
-  bool blocked_channels = true;
+  bool blocked_channels = false;
   TC_ASSERT(n % block_size == 0);
   auto x = ind(), y = ind();
 

@@ -54,11 +54,10 @@ void SLPVectorizer::sort(Expr &expr) {
   expr->ch = sorted;
 }
 
-void SLPVectorizer::run(Kernel &kernel, int group_size) {
+Expr SLPVectorizer::run(Expr &expr, int group_size) {
   if (group_size == 1) {
-    return;
+    return expr;
   }
-  auto &expr = kernel.ret;
   TC_ASSERT(expr);
   this->group_size = group_size;
 
@@ -75,7 +74,6 @@ void SLPVectorizer::run(Kernel &kernel, int group_size) {
   TC_ASSERT(expr->ch.size());
 
   if (expr->ch[0]->type == NodeType::adapter_store) {
-    TC_NOT_IMPLEMENTED
     // cache store
     // for each batch (group)
     for (int k = 0; k < (int)expr->ch.size() / group_size; k++) {
@@ -112,7 +110,7 @@ void SLPVectorizer::run(Kernel &kernel, int group_size) {
   }
   // TC_P(combined->ch.size());
   combined->lanes = group_size;
-  kernel.ret = combined;
+  return combined;
 }
 
 void SLPVectorizer::visit(Expr &expr) {

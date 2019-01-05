@@ -257,10 +257,12 @@ void CPUCodeGen::codegen(Kernel &kernel) {
 
   start_macro_loop();
 
-#if (0)
+  kernel.parallel_instances *= num_groups;
+  kernel.simd_lanes *= num_groups;
+
   // Adapters
-  for (int i = 0; i < (int)prog.adapters.size(); i++) {
-    auto &ad = prog.adapters[i];
+  for (int i = 0; i < (int)prog->adapters.size(); i++) {
+    auto &ad = prog->adapters[i];
     create_adapter(ad.dt, i, ad.counter / ad.input_group_size,
                    ad.input_group_size, ad.output_group_size);
   }
@@ -268,18 +270,17 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   // Body
 
   // adapters
-  for (auto adapter : prog.adapters) {
+  for (auto &adapter : prog->adapters) {
     auto old_gs = this->group_size;
     TC_P(adapter.stores->ch.size());
-    auto vectorized_cache_stores =
+    adapter.stores =
         SLPVectorizer().run(adapter.stores, adapter.input_group_size);
+    adapter.stores =
+        LoopVectorizer().run(adapter.stores, prog->current_snode, num_groups);
 
     this->group_size = adapter.input_group_size;
-    vectorized_cache_stores.accept(*this);
-
-    this->group_size = old_gs;
+    adapter.stores.accept(*this);
   }
-#endif
 
   // main
   {
@@ -288,13 +289,14 @@ void CPUCodeGen::codegen(Kernel &kernel) {
     // TC_P(group_size);
 
     this->group_size = kernel.output_group_size;
-    //auto vectorized_stores =
+    // auto vectorized_stores =
     //    SLPVectorizer().run(kernel.ret, prog.config.group_size);
 
     // visualize_IR(get_source_fn() + ".scalar.pdf", kernel.ret);
-    SLPVectorizer().run(kernel, kernel.output_group_size);
+    kernel.ret = SLPVectorizer().run(kernel.ret, kernel.output_group_size);
     // visualize_IR(get_source_fn() + ".slp.pdf", kernel.ret);
-    LoopVectorizer().run(kernel, num_groups);
+    kernel.ret =
+        LoopVectorizer().run(kernel.ret, prog->current_snode, num_groups);
     Optimizer().run(kernel);
 
     kernel.ret.accept(*this);

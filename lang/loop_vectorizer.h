@@ -15,7 +15,9 @@ class LoopVectorizer {
     vectorized_id = -1;
   }
 
-  void run(Kernel &kernel, int factor);  // modify the kernel to be loop-vectorized
+  Expr run(Expr &ret,
+           SNode *snode,
+           int factor);  // modify the kernel to be loop-vectorized
 
   Expr vectorize(Expr expr);
 };

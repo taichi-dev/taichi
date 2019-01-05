@@ -16,7 +16,7 @@ class SLPVectorizer : public Visitor {
 
   void sort(Expr &expr);
 
-  void run(Kernel &kernel, int group_size);
+  Expr run(Expr &expr, int group_size);
 
   void visit(Expr &expr) override;
 };

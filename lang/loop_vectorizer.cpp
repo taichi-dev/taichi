@@ -2,12 +2,11 @@
 
 TLANG_NAMESPACE_BEGIN
 
-void LoopVectorizer::run(Kernel &ker, int factor) {
+Expr LoopVectorizer::run(Expr &expr, SNode *s, int factor) {
   this->factor = factor;
   // simply pick the last index to vectorize
   bool active[max_num_indices];
   std::memset(active, 0, sizeof(active));
-  auto s = ker.program.current_snode;
   while (s != nullptr) {
     for (int i = 0; i < max_num_indices; i++) {
       if (s->extractors[i].num_bits) {
@@ -19,9 +18,7 @@ void LoopVectorizer::run(Kernel &ker, int factor) {
     }
     s = s->parent;
   }
-  ker.ret = vectorize(ker.ret);  // vectorize
-  ker.parallel_instances *= factor;
-  ker.simd_lanes *= factor;
+  return vectorize(expr);  // vectorize
 }
 
 Expr LoopVectorizer::vectorize(Expr node) {

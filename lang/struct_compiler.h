@@ -35,10 +35,13 @@ class StructCompiler : public CodeGenBase {
           snode.index_order[snode.num_active_indices++] = i;
         }
       }
+      /*
+      TC_TAG;
       for (int i = 0; i < max_num_indices; i++) {
         fmt::print("{}, ", snode.index_order[i]);
       }
       fmt::print("\n");
+      */
       std::memcpy(ch->index_order, snode.index_order,
                   sizeof(snode.index_order));
       ch->num_active_indices = snode.num_active_indices;

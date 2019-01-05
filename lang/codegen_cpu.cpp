@@ -8,6 +8,7 @@
 #include "program.h"
 #include "loop_vectorizer.h"
 #include "optimizer.h"
+#include "adapter_preprocessor.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -257,11 +258,11 @@ void CPUCodeGen::codegen(Kernel &kernel) {
 
   start_macro_loop();
 
-  kernel.parallel_instances *= num_groups;
-  kernel.simd_lanes *= num_groups;
+  // kernel.parallel_instances *= num_groups;
+  // kernel.simd_lanes *= num_groups;
 
   // Adapters
-  for (int i = 0; i < kernel.adapters.size(); i++) {
+  for (int i = 0; i < (int)kernel.adapters.size(); i++) {
     auto &ad = kernel.adapters[i];
     create_adapter(ad.dt, i, ad.counter / ad.input_group_size,
                    ad.input_group_size);
@@ -275,6 +276,7 @@ void CPUCodeGen::codegen(Kernel &kernel) {
         SLPVectorizer().run(adapter.stores, adapter.input_group_size);
     adapter.stores =
         LoopVectorizer().run(adapter.stores, prog->current_snode, num_groups);
+    AdapterPreprocessor().run(kernel, adapter.stores, adapter.input_group_size);
 
     this->group_size = adapter.input_group_size;
     adapter.stores.accept(*this);
@@ -294,6 +296,7 @@ void CPUCodeGen::codegen(Kernel &kernel) {
     // visualize_IR(get_source_fn() + ".slp.pdf", kernel.ret);
     kernel.ret =
         LoopVectorizer().run(kernel.ret, prog->current_snode, num_groups);
+    AdapterPreprocessor().run(kernel, kernel.ret, kernel.output_group_size);
     Optimizer().run(kernel);
 
     this->group_size = kernel.output_group_size;

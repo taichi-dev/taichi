@@ -288,20 +288,11 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     auto &ad = current_kernel->adapter(expr[1]->value<int>());
     ad.store_exprs[expr[2]->value<int>() / ad.input_group_size].set(expr[0]);
   } else if (expr->type == NodeType::adapter_load) {
-    // generate offsets in the linearized input adapter.
-    // (There may be multiple VV's)
-    // (This is invariant even if we do vector splitting.)
-
     auto &ad = current_kernel->adapter(expr[0]->value<int>());
-    std::vector<int> offsets_val;
-    for (int i = 0; i < num_groups; i++) {
-      for (int j = 0; j < group_size; j++) {
-        int elem_id = expr[1]->value<int>();
-        offsets_val.push_back(i * ad.input_group_size +
-                              elem_id / ad.input_group_size *
-                                  ad.input_group_size * num_groups +
-                              elem_id % ad.input_group_size);
-      }
+    std::vector<int> offsets_val(vv_width);
+    for (int i = 0; i < vv_width; i++) {
+      offsets_val[i] = expr[1]->value<int>(i);
+      TC_ASSERT(expr[1]->attribute<int>(1, i));
     }
 
     auto offsets = offsets_val;

@@ -249,7 +249,6 @@ TC_TEST("adapter1") {
         v(d)[ind] = ab * v(d)[ind];
       }
 
-      parallel_instances(8);
       group(vec_size);
     });
 
@@ -315,7 +314,6 @@ TC_TEST("adapter2") {
 
       sum[ind] = acc;
 
-      parallel_instances(8);
       group(1);
     });
 
@@ -399,7 +397,6 @@ TC_TEST("adapter3") {
         }
       }
       group(vec_size * 2);
-      parallel_instances(8);
     });
 
     func();

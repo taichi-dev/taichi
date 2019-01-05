@@ -88,10 +88,15 @@ struct Program {
         output_group_size = 1;
       }
       if (parallel_instances == -1) {
-        TC_ASSERT(default_simd_width(program.config.arch) % output_group_size ==
-                  0);
+        int minimal_group_size = output_group_size;
+        for (auto &ad : adapters) {
+          minimal_group_size =
+              std::min(minimal_group_size, ad.input_group_size);
+        }
+        TC_ASSERT(
+            default_simd_width(program.config.arch) % minimal_group_size == 0);
         parallel_instances =
-            default_simd_width(program.config.arch) / output_group_size;
+            default_simd_width(program.config.arch) / minimal_group_size;
       }
       if (simd_lanes == -1) {
         simd_lanes = output_group_size * parallel_instances;

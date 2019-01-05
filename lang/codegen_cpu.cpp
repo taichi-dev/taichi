@@ -295,11 +295,12 @@ void CPUCodeGen::codegen(Program &prog, Kernel &kernel, int group_size) {
     //auto vectorized_stores =
     //    SLPVectorizer().run(kernel.ret, prog.config.group_size);
 
+    // visualize_IR(get_source_fn() + ".scalar.pdf", kernel.ret);
     SLPVectorizer().run(kernel, prog.config.group_size);
-    LoopVectorizer().run(kernel);
+    // visualize_IR(get_source_fn() + ".slp.pdf", kernel.ret);
+    LoopVectorizer().run(kernel, num_groups);
     Optimizer().run(kernel);
 
-    // visualize_IR(get_source_fn() + ".vector.pdf", vectorized_stores);
     kernel.ret.accept(*this);
   }
   end_macro_loop();

@@ -12,11 +12,10 @@ class LoopVectorizer {
   std::map<Expr, Expr> input_to_vectorized;
 
   LoopVectorizer() {
-    factor = 8;  // AVX2 only for now
     vectorized_id = -1;
   }
 
-  void run(Kernel &kernel);  // modify the kernel to be loop-vectorized
+  void run(Kernel &kernel, int factor);  // modify the kernel to be loop-vectorized
 
   Expr vectorize(Expr expr);
 };

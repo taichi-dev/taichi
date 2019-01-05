@@ -189,8 +189,8 @@ class StructCompiler : public CodeGenBase {
 
     auto cmd = fmt::format(
         "g++ {} -std=c++14 -shared -fPIC -O3 -march=native -I {}/headers -Wall "
-        "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {}",
-        get_source_fn(), get_project_fn(), get_library_fn());
+        "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} 2> {}.log",
+        get_source_fn(), get_project_fn(), get_library_fn(), get_source_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
     disassemble();

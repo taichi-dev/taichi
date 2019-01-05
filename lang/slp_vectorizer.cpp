@@ -6,8 +6,10 @@ TLANG_NAMESPACE_BEGIN
 bool prior_to(Expr &a, Expr &b) {
   TC_ASSERT(a->lanes == 1 && b->lanes == 1);
   TC_ASSERT(a->type == NodeType::pointer && b->type == NodeType::pointer);
-  auto sa = a->new_addresses(0), sb = a->new_addresses(0);
+  auto sa = a._address()->new_addresses(0), sb = b._address()->new_addresses(0);
   if (sa->parent && sb->parent) {
+    TC_P(sa->parent->child_id(sa));
+    TC_P(sb->parent->child_id(sb));
     return sa->parent->child_id(sa) + 1 == sb->parent->child_id(sb);
   } else {
     return false;
@@ -109,6 +111,7 @@ void SLPVectorizer::run(Kernel &kernel, int group_size) {
     TC_NOT_IMPLEMENTED
   }
   // TC_P(combined->ch.size());
+  combined->lanes = group_size;
   kernel.ret = combined;
 }
 
@@ -146,9 +149,25 @@ void SLPVectorizer::visit(Expr &expr) {
   }
 
   bool first = true;
-  NodeType type;
-  float64 value = 0;
   std::vector<std::vector<Expr>> vectorized_children;
+
+  expr->set_lanes(group_size);
+  auto &m = expr->members;
+  for (int i = 0; i < (int)expr->members.size(); i++) {
+    expr->data_type = m[0]->data_type;
+    expr->binary_type = m[0]->binary_type;
+    TC_ASSERT(m[0]->data_type == m[i]->data_type)
+    TC_ASSERT(m[0]->binary_type == m[i]->binary_type)  // TODO: fmaddsub
+    TC_ASSERT(m[i]->lanes == 1);
+    for (int j = 0; j < Node::num_additional_values; j++) {
+      expr->attribute(j, i) = m[i]->attribute(j, 0);
+      if (expr->type == NodeType::addr) {
+        TC_P(i);
+        TC_P(j);
+        TC_P(expr->attribute<void *>(j, i));
+      }
+    }
+  }
 
   // Check for isomorphism
   for (auto member : expr->members) {
@@ -156,30 +175,14 @@ void SLPVectorizer::visit(Expr &expr) {
     // TC_ASSERT(scalar_to_vector.find(member) == scalar_to_vector.end());
     if (first) {
       first = false;
-      type = member->type;
-      value = member->value<float64>();
       vectorized_children.resize(member->ch.size());
     } else {
-      TC_ASSERT(type == member->type);
-      TC_ASSERT(value == member->value<float64>());
       TC_ASSERT(vectorized_children.size() == member->ch.size());
     }
     for (int i = 0; i < (int)member->ch.size(); i++) {
       vectorized_children[i].push_back(member->ch[i]);
     }
     scalar_to_vector[member] = expr;
-  }
-
-  auto &m = expr->members;
-  for (int i = 0; i < (int)expr->members.size(); i++) {
-    expr->data_type = m[0]->data_type;
-    expr->binary_type = m[0]->binary_type;
-    TC_ASSERT(m[0]->data_type == m[i]->data_type)
-    TC_ASSERT(m[0]->binary_type == m[i]->binary_type) // TODO: fmaddsub
-    TC_ASSERT(m[i]->lanes == 0);
-    for (int j = 0; j < Node::num_additional_values; j++) {
-      expr->attribute(j, i) = m[i]->attribute(j, 0);
-    }
   }
 
   TC_ASSERT(expr->members.size() % group_size == 0);

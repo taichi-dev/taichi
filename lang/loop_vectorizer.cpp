@@ -2,7 +2,9 @@
 
 TLANG_NAMESPACE_BEGIN
 
-void LoopVectorizer::run(Kernel &ker) {
+void LoopVectorizer::run(Kernel &ker, int factor) {
+  this->factor = factor;
+  TC_P(factor);
   // simply pick the last index to vectorize
   bool active[max_num_indices];
   std::memset(active, 0, sizeof(active));

@@ -191,6 +191,7 @@ TC_TEST("test_multiple_programs") {
 auto test_slp = [] {
   Program prog;
   prog.config.group_size = 2;
+  prog.config.num_groups = 4;
 
   int n = 32;
   auto a = var<float32>(), b = var<float32>();

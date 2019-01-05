@@ -9,6 +9,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
   // TC_P(expr->node_type_name());
   // TC_P(num_groups);
   auto vv_width = expr->lanes;
+  TC_P(expr->lanes);
   TC_ASSERT(vv_width == 1 || vv_width % simd_width == 0);
   int split = vv_width / simd_width;
   auto vv_type = [&](DataType dt) {
@@ -247,8 +248,8 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     members += "}";
     auto index_id = expr->index_id(0);
     auto base = index_name_global(prog->current_snode, index_id);
-    emit_code("auto {}_index = {}({});", expr->var_name,
-              vv_type(DataType::i32), base);
+    emit_code("auto {}_index = {}({});", expr->var_name, vv_type(DataType::i32),
+              base);
     auto constant =
         get_constant(fmt::format("{}({})", vv_type(expr->data_type), members));
 
@@ -257,20 +258,21 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     // emit_code("{}.print();", expr->var_name);
   } else if (expr->type == NodeType::pointer) {
     emit_code("{} *{}[{}];", expr->data_type_name(), expr->var_name, vv_width);
-    TC_WARN("Vectorized pointer of different SNodes is unsupported!");
-    emit_code("for (int v = 0; v < {}; v++)", vv_width);
-    std::vector<std::string> elems(max_num_indices, ", 0");
-    auto snode = expr->ch[0]->new_addresses(0);
-    for (int i = 1; i < (int)expr->ch.size(); i++) {
-      elems[snode->index_order[i - 1]] =
-          fmt::format(", {}.element(v)", expr->ch[i]->var_name);
+    for (int i = 0; i < vv_width; i++) {
+      auto snode = expr._address()->new_addresses(i);
+      TC_P(snode);
+      std::vector<std::string> elems(max_num_indices, ", 0");
+      for (int j = 1; j < expr->ch.size(); j++) {
+        elems[snode->index_order[j - 1]] =
+            fmt::format(", {}.element({})", expr->ch[j]->var_name, i);
+      }
+      std::string total_elem = "";
+      for (int j = 0; j < max_num_indices; j++) {
+        total_elem += elems[j];
+      }
+      emit_code("{}[{}] = access_{}(context.buffers[0] {});", expr->var_name, i,
+                expr._address()->new_addresses(i)->node_type_name, total_elem);
     }
-    std::string total_elem = "";
-    for (int i = 0; i < max_num_indices; i++) {
-      total_elem += elems[i];
-    }
-    emit_code("{}[v] = access_{}(context.buffers[0] {});", expr->var_name,
-              expr->ch[0]->new_addresses(0)->node_type_name, total_elem);
   } else if (expr->type == NodeType::adapter_store) {
     auto &ad = prog->adapter(expr[1]->value<int>());
     /*

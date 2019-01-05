@@ -5,7 +5,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-#if(0)
 class SLPVectorizer : public Visitor {
  public:
   std::map<Expr, Expr> scalar_to_vector;
@@ -20,6 +19,5 @@ class SLPVectorizer : public Visitor {
 
   void visit(Expr &expr) override;
 };
-#endif
 
 TLANG_NAMESPACE_END

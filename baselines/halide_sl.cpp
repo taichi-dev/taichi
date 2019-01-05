@@ -10,7 +10,7 @@ using namespace Halide;
 using namespace Halide::Tools;
 
 int main(int argc, char *argv[]) {
-    constexpr int n = 1024, nchannels = 4;
+    constexpr int n = 1024, nchannels = 8;
     Buffer<float> motion_field(2, n, n);
     Buffer<float> input(nchannels, n, n);
     Func output("output");

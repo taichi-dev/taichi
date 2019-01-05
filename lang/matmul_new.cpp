@@ -1,11 +1,9 @@
-#if(0)
-#include <fstream>
 #include <taichi/common/util.h>
 #include <taichi/common/task.h>
 #include <taichi/system/timer.h>
 #include <Eigen/StdVector>
-#include "tlang.h"
 #include <Eigen/Dense>
+#include "tlang.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -164,16 +162,28 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
 
   int n = N;
 
-  Program prog(arch, n);
+  Program prog(arch);
   prog.config.group_size = layout == 1 ? dim : 1;
-  int scale = 2;
+  int scale = 1;
   prog.config.num_groups = 8 / prog.config.group_size * scale;
+
+  // TODO: eliminate this
+  layout = 2;
+  auto in = ind();
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      a(i, j) = var<float32>();
+      b(i, j) = var<float32>();
+      c(i, j) = var<float32>();
+    }
+  }
 
   prog.layout([&]() {
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
         if (layout == 0) {
           // AOSOA
+          /*
           prog.buffer(0)
               .stream(0)
               .group(0)
@@ -192,7 +202,9 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
               .group(i * dim + j)
               .repeat(simd_width * scale)
               .place(c(i, j));
+           */
         } else if (layout == 1) {  // Inter
+          /*
           prog.buffer(0)
               .stream(0)
               .group(j)
@@ -208,19 +220,17 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
               .group(j)
               .repeat(simd_width / dim * scale)
               .place(c(i, j));
+              */
         } else {  // SOA
-          prog.buffer(0).stream(i * dim + j).group().place(a(i, j));
-          prog.buffer(1).stream(i * dim + j).group().place(b(i, j));
-          prog.buffer(2).stream(i * dim + j).group().place(c(i, j));
+          root.fixed(in, n).place(a(i, j));
+          root.fixed(in, n).place(b(i, j));
+          root.fixed(in, n).place(c(i, j));
         }
       }
     }
   });
 
-  auto mul = prog.def([&]() {
-    Expr ind = Expr::index(0);
-    for_loop(ind, {0, n}, [&]() { c[ind] = a[ind] * b[ind]; });
-  });
+  auto mul = kernel(c(0, 0), [&]() { c[in] = a[in] * b[in]; });
 
   AlignedAllocator A(sizeof(T) * n * dim * dim);
   AlignedAllocator B(sizeof(T) * n * dim * dim);
@@ -235,8 +245,8 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
         int ind2 = (i / 8 * dim * dim + j * dim + k) * 8 + i % 8;
-        prog.data(a(j, k), i) = A.get<float32>()[ind2];
-        prog.data(b(j, k), i) = B.get<float32>()[ind2];
+        a(j, k).val<float32>(i) = A.get<float32>()[ind2];
+        b(j, k).val<float32>(i) = B.get<float32>()[ind2];
       }
     }
   }
@@ -249,7 +259,7 @@ real Tlang_matmatmul(std::size_t N, Arch arch, int layout, int in_cache) {
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
         int ind2 = (i / 8 * dim * dim + j * dim + k) * 8 + i % 8;
-        auto a = prog.data(c(j, k), i);
+        auto a = c(j, k).val<float32>(i);
         auto b = D.get<T>()[ind2];
         if (std::abs(a - b) >= 1e-5_f) {
           TC_P(a);
@@ -360,37 +370,6 @@ auto tlang_matmatmul = []() {
 };
 TC_REGISTER_TASK(tlang_matmatmul);
 
-void test_vec_add() {
-  constexpr int n = 16;
-
-  Program prog(Arch::x86_64, n);
-  Expr a, b, c;
-
-  prog.layout([&]() {
-    prog.buffer(0).stream(0).group().place(a);
-    prog.buffer(1).stream(0).group().place(b);
-    prog.buffer(2).stream(0).group().place(c);
-  });
-
-  prog.config.group_size = 1;
-
-  auto add = prog.def([&]() {
-    Index ind = Expr::index(0);
-    c[ind] = a[ind] + b[ind];
-  });
-
-  for (int i = 0; i < n; i++) {
-    prog.data(a, i) = i;
-    prog.data(b, i) = -2 * i;
-  }
-
-  add();
-
-  for (int i = 0; i < n; i++) {
-    TC_ASSERT(prog.data(c, i) == -i);
-  }
-}
-
 void print_cpe(float64 cpe) {
   fmt::print(" {:10.3f} cyc / elem\n", cpe);
 }
@@ -420,6 +399,7 @@ void test_mat_vec_mul_eigen(int in_cache) {
 
 template <int dim>
 void test_mat_vec_mul(Arch arch, int layout, int in_cache) {
+#if (0)
   std::string layout_name = "";
   if (layout == 0) {
     layout_name = "  soa";
@@ -522,6 +502,7 @@ void test_mat_vec_mul(Arch arch, int layout, int in_cache) {
       }
     }
   }
+#endif
 }
 
 template <int dim>
@@ -545,7 +526,6 @@ void test_mat_vec_mul_all() {
 
 auto tlang_matvecmul = []() {
   initialize_benchmark();
-  test_vec_add();
   test_mat_vec_mul_all<1>();
   test_mat_vec_mul_all<2>();
   test_mat_vec_mul_all<4>();
@@ -567,36 +547,6 @@ auto tlang_benchmark = []() {
 };
 TC_REGISTER_TASK(tlang_benchmark);
 
-auto allocator_test = []() {
-  {
-    MemoryAllocator alloc;
-    auto &buffer = alloc.buffer(0);
-    auto &bundle = buffer.stream().group().repeat(4);
-    Expr A, B, C;
-    bundle.place(A, B);
-    buffer.stream().group().place(C);
-    alloc.materialize();
-    TC_P(A->get_address());
-    TC_P(B->get_address());
-    TC_P(C->get_address());
-  }
-  {
-    MemoryAllocator alloc;
-    auto &buffer = alloc.buffer(0);
-    auto &g = buffer.stream();
-    Expr A, B, C, D;
-    g.group().repeat(4).place(A, C);
-    g.group().repeat(4).place(B, D);
-    alloc.materialize();
-    TC_P(A->get_address());
-    TC_P(B->get_address());
-    TC_P(C->get_address());
-    TC_P(D->get_address());
-  }
-};
-
-TC_REGISTER_TASK(allocator_test);
-
 TC_NAMESPACE_END
 
 /*
@@ -607,5 +557,3 @@ TODO:
  check unplaced variable
  assert n % 256 = 0
 */
-#endif
-

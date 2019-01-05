@@ -3,7 +3,7 @@
 #include "tlang.h"
 #include "expr.h"
 
-namespace taichi::Tlang {
+TLANG_NAMESPACE_BEGIN
 
 using Real = Expr;
 
@@ -247,4 +247,17 @@ inline Float32 lerp(Float a, Float x0, Float x1) {
 inline Matrix sqr(const Matrix &M) {
   return M.map([](Expr e) { return e * e; });
 }
+
+inline Matrix outer_product(Vector a, Vector b) {
+  TC_ASSERT(a.m == 1);
+  TC_ASSERT(b.m == 1);
+  Matrix m(a.n, b.n);
+  for (int i = 0; i < a.n; i++) {
+    for (int j = 0; j < b.n; j++) {
+      m(i, j) = a(i) * b(j);
+    }
+  }
+  return m;
 }
+
+TLANG_NAMESPACE_END

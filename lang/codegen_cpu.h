@@ -172,7 +172,6 @@ class CPUCodeGen : public CodeGenBase {
   int num_groups,
   int num_inputs,
   int input_group_size,
-  int output_group_size
   */
   std::string adapter_type(DataType dt, int num_inputs, int input_gs) {
     return fmt::format("SlowAdapter<{}, {}, {}, {}>", data_type_name(dt),

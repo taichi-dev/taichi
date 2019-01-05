@@ -7,18 +7,6 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-Matrix outer_product(Vector a, Vector b) {
-  TC_ASSERT(a.m == 1);
-  TC_ASSERT(b.m == 1);
-  Matrix m(a.n, b.n);
-  for (int i = 0; i < a.n; i++) {
-    for (int j = 0; j < b.n; j++) {
-      m(i, j) = a(i) * b(j);
-    }
-  }
-  return m;
-}
-
 auto mpm = []() {
   bool use_adapter = true;
 
@@ -266,29 +254,29 @@ auto advection = []() {
     }
     for (int k = 0; k < dim; k++) {
       if (use_adapter) {
-        TC_NOT_IMPLEMENTED
+        auto &at = root.fixed({x, y}, {n, n});
         for (int i = 0; i < nattr; i++) {
-          // prog.buffer(k).range(n * n).stream(0).group(0).place(attr[k][i]);
+          at.place(attr[k][i]);
         }
-        // prog.buffer(2).range(n * n).stream(0).group(0).place(v[k]);
+        root.fixed({x, y}, {n * n}).place(v[k]);
       } else {
-      }
-    }
-    if (blocked_channels) {
-      auto &f = root.fixed({x, y}, {n / block_size, n / block_size});
-      for (auto &v : all_variables) {
-        f.fixed({x, y}, {block_size, block_size}).place(v);
-      }
-    } else {
-      if (block_size > 1) {
-        for (auto &v : all_variables) {
-          root.fixed({x, y}, {n / block_size, n / block_size})
-              .fixed({x, y}, {block_size, block_size})
-              .place(v);
-        }
-      } else {
-        for (auto &v : all_variables) {
-          root.fixed({x, y}, {n, n}).place(v);
+        if (blocked_channels) {
+          auto &f = root.fixed({x, y}, {n / block_size, n / block_size});
+          for (auto &v : all_variables) {
+            f.fixed({x, y}, {block_size, block_size}).place(v);
+          }
+        } else {
+          if (block_size > 1) {
+            for (auto &v : all_variables) {
+              root.fixed({x, y}, {n / block_size, n / block_size})
+                  .fixed({x, y}, {block_size, block_size})
+                  .place(v);
+            }
+          } else {
+            for (auto &v : all_variables) {
+              root.fixed({x, y}, {n, n}).place(v);
+            }
+          }
         }
       }
     }

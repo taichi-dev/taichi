@@ -286,7 +286,7 @@ auto advection = []() {
 
   TC_ASSERT(bit::is_power_of_two(n));
 
-  auto clamp = [](const Float32 &e) { return min(max(imm(0), e), imm(n - 2)); };
+  auto clamp = [](const Float32 &e) { return min(max(imm(0.0_f), e), imm(n - 2.0_f)); };
 
   auto func = kernel(attr[0][0], [&]() {
     // ** gs = 1
@@ -294,14 +294,16 @@ auto advection = []() {
     auto vx = v[0][x, y];
     auto vy = v[1][x, y];
 
-    auto offset_x = floor(vx);
-    auto offset_y = floor(vy);
-    auto wx = vx - offset_x;
-    auto wy = vy - offset_y;
-    auto new_x = cast<int32>(offset_x + cast<float32>(x));
-    auto new_y = cast<int32>(offset_y + cast<float32>(y));
-    new_x = clamp(new_x);
-    new_y = clamp(new_y);
+    auto new_x_f = cast<float32>(x) + vx;
+    auto new_y_f = cast<float32>(y) + vy;
+    new_x_f = clamp(new_x_f);
+    new_y_f = clamp(new_y_f);
+
+    auto new_x = cast<int32>(floor(new_x_f));
+    auto new_y = cast<int32>(floor(new_y_f));
+
+    auto wx = new_x_f - cast<float32>(new_x);
+    auto wy = new_y_f - cast<float32>(new_y);
 
     // weights
     auto w00 = (imm(1.0f) - wx) * (imm(1.0f) - wy);

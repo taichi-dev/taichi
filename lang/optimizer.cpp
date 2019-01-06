@@ -54,7 +54,11 @@ class AddressAnalyzer : Visitor {
 };
 
 bool Optimizer::search_and_replace(Expr &expr) {
-  // TODO: remove duplicated visit
+  if (visited.find(expr) == visited.end()) {
+    visited.insert(expr);
+  } else {
+    return false;
+  }
   for (auto &ch : expr->ch) {
     bool ret = search_and_replace(ch);
     if (ret)

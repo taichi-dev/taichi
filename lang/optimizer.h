@@ -4,8 +4,8 @@ TLANG_NAMESPACE_BEGIN
 
 class Optimizer {
  public:
-  virtual void run(Kernel &kernel) {
-    while (search_and_replace(kernel.ret))
+  virtual void run(Expr &expr) {
+    while (search_and_replace(expr))
       ;
   }
 

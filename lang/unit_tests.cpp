@@ -219,7 +219,7 @@ TC_TEST("slp") {
 TC_TEST("slp2") {
   Program prog;
 
-  int n = 32;
+  int n = 8;
   Float v[8];
 
   auto i = ind();

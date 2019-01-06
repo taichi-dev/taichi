@@ -234,8 +234,8 @@ auto advection = []() {
 
   const int dim = 2;
 
-  const int n = 1024, nattr = 4;
-  const int block_size = 16;
+  const int n = 1024, nattr = 8;
+  const int block_size = 64;
   bool blocked_channels = false;
   TC_ASSERT(n % block_size == 0);
   auto x = ind(), y = ind();
@@ -323,12 +323,15 @@ auto advection = []() {
     }
 
     group(use_adapter ? nattr : 1);
-    parallel_instances(8);
   });
+
+  TC_TAG;
+  TC_WARN("here");
 
   auto swap_buffers = kernel(attr[0][0], [&] {
     for (int i = 0; i < nattr; i++) {
       attr[0][i][x, y] = attr[1][i][x, y];
+      group(nattr);
     }
   });
 

@@ -35,38 +35,59 @@ bool Optimizer::search_and_replace(Expr &expr) {
         }
       }
 
+      bool regular_elements = true;
+      for (int i = 0; i < addr_node->lanes; i++) {
+        auto p = addr_node->new_addresses(i)->parent;
+        if (p != addr_node->new_addresses(0)->parent)
+          regular_elements = false;
+        if (p->child_id(addr_node->new_addresses(i)) != i)
+          regular_elements = false;
+      }
+
       auto snode = addr_node->new_addresses(0);
-      if (all_same && incremental && offset_start == 0 && offset_inc == 1) {
-        if (snode->parent->type == SNodeType::fixed) {
-          // replace load with vload
-          if (expr->type == NodeType::load) {
-            TC_INFO("Optimized load");
-            auto vload = Expr::create(NodeType::vload, addr_node);
-            vload->ch.resize(ptr->ch.size());
-            for (int i = 1; i < (int)ptr->ch.size(); i++) {
-              auto c = Expr::copy_from(ptr->ch[i]);
-              TC_ASSERT(c->lanes == 8);
-              c->set_lanes(1);
-              vload->ch[i] = c;
-            }
-            vload->set_similar(expr);
-            expr = vload;
-            return true;
-          } else {
-            TC_INFO("Optimized store");
-            auto vstore =
-                Expr::create(NodeType::vstore, addr_node, expr->ch[1]);
-            vstore->ch.resize(ptr->ch.size() + 1);
-            for (int i = 1; i < (int)ptr->ch.size(); i++) {
-              auto c = Expr::copy_from(ptr->ch[i]);
-              TC_ASSERT(c->lanes == 8);
-              c->set_lanes(1);
-              vstore->ch[i + 1] = c;
-            }
-            vstore->set_similar(expr);
-            expr = vstore;
-            return true;
+      // continuous index, same element
+      bool vpointer_case_1 =
+          incremental && offset_start == 0 && offset_inc == 1 &&
+          snode->parent->type == SNodeType::fixed && all_same;
+      // continuous element, same index
+      bool vpointer_case_2 = regular_elements && incremental && offset_inc == 0;
+      bool vpointer = vpointer_case_1 || vpointer_case_2;
+      if (regular_elements && incremental) {
+        TC_P(all_same);
+        TC_P(offset_start);
+        TC_P(offset_inc);
+        TC_P(vpointer_case_2);
+        TC_P(vpointer);
+      }
+
+      if (vpointer) {
+        // replace load with vload
+        if (expr->type == NodeType::load) {
+          TC_INFO("Optimized load");
+          auto vload = Expr::create(NodeType::vload, addr_node);
+          vload->ch.resize(ptr->ch.size());
+          for (int i = 1; i < (int)ptr->ch.size(); i++) {
+            auto c = Expr::copy_from(ptr->ch[i]);
+            TC_ASSERT(c->lanes == 8);
+            c->set_lanes(1);
+            vload->ch[i] = c;
           }
+          vload->set_similar(expr);
+          expr = vload;
+          return true;
+        } else {
+          TC_INFO("Optimized store");
+          auto vstore = Expr::create(NodeType::vstore, addr_node, expr->ch[1]);
+          vstore->ch.resize(ptr->ch.size() + 1);
+          for (int i = 1; i < (int)ptr->ch.size(); i++) {
+            auto c = Expr::copy_from(ptr->ch[i]);
+            TC_ASSERT(c->lanes == 8);
+            c->set_lanes(1);
+            vstore->ch[i + 1] = c;
+          }
+          vstore->set_similar(expr);
+          expr = vstore;
+          return true;
         }
       }
     }

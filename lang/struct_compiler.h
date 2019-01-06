@@ -174,7 +174,7 @@ class StructCompiler : public CodeGenBase {
   }
 
   void insert_forks(SNode &snode) {
-    if (snode.type != SNodeType::forked && snode.ch.size() != 1) {
+    if (snode.type != SNodeType::forked && snode.ch.size() > 1) {
       std::vector<Handle<SNode>> ch;
       ch.swap(snode.ch);
       auto &fork = snode.insert_children(SNodeType::forked);

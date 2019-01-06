@@ -216,6 +216,49 @@ TC_TEST("slp") {
   }
 }
 
+TC_TEST("slp2") {
+  Program prog;
+
+  int n = 32;
+  Float v[8];
+
+  auto i = ind();
+
+  for (int j = 0; j < 8; j++) {
+    v[j] = var<float32>();
+  }
+
+
+  layout([&] {
+    auto &f = root.fixed(i, n).forked();
+    for (int j = 0; j < 8; j++) {
+      f.place(v[j]);
+    }
+  });
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < 8; j++) {
+      v[j].val<float32>(i) = i + j * 8;
+    }
+  }
+
+  auto func = kernel(v[0], [&]() {
+    for (int j = 0; j < 8; j++) {
+      v[j][i] = v[j][i] + imm(1.0_f);
+    }
+
+    group(8);
+  });
+
+  func();
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < 8; j++) {
+      TC_CHECK(v[j].val<float32>(i) == i + j * 8 + 1);
+    }
+  }
+}
+
 // a * b * vec
 
 TC_TEST("adapter1") {

@@ -209,9 +209,8 @@ class Expr {
     return *(T *)val_tmp(indices...);
   }
 
-
 #define REGISTER_FIELD(name, required_type, chid)     \
-  Expr &_##name() {                                   \
+  Expr &_##name() const {                             \
     TC_ASSERT(node->type == NodeType::required_type); \
     return node->ch[chid];                            \
   }
@@ -322,10 +321,12 @@ class ExprGroup {
 
 inline ExprGroup operator,(const Expr &a, const Expr &b) {
   return ExprGroup(a, b);
-};
+}
 
 inline ExprGroup operator,(const Expr &a, const ExprGroup &b) {
   return ExprGroup(a, b);
-};
+}
+
+bool prior_to(const Expr &a, const Expr &b);
 
 TLANG_NAMESPACE_END

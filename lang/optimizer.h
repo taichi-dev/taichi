@@ -20,6 +20,7 @@ class Optimizer {
       auto &ptr = expr._pointer();
       auto &addr_node = expr._pointer()._address();
       bool all_same = true;
+
       for (int i = 0; i < addr_node->lanes; i++) {
         if (addr_node->new_addresses(i) != addr_node->new_addresses(0))
           all_same = false;

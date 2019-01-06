@@ -115,4 +115,18 @@ Expr Expr::index(int i) {
   return e;
 }
 
+// sort all the stores
+bool prior_to(const Expr &a, const Expr &b) {
+  TC_ASSERT(a->lanes == 1 && b->lanes == 1);
+  TC_ASSERT(a->type == NodeType::pointer && b->type == NodeType::pointer);
+  auto sa = a._address()->new_addresses(0), sb = b._address()->new_addresses(0);
+  if (sa->parent && sb->parent) {
+    // TC_P(sa->parent->child_id(sa));
+    // TC_P(sb->parent->child_id(sb));
+    return sa->parent->child_id(sa) + 1 == sb->parent->child_id(sb);
+  } else {
+    return false;
+  }
+}
+
 TLANG_NAMESPACE_END

@@ -463,8 +463,8 @@ auto test_indirect = []() {
 
   int n = 64;
 
-  auto a = var<float32>();
-  auto sum = var<float32>();
+  auto a = var<int32>();
+  auto sum = var<int32>();
 
   auto i = ind(), j = ind();
   SNode *snode;
@@ -475,6 +475,9 @@ auto test_indirect = []() {
     root.fixed(j, n * n).place(a);
     root.fixed(i, n).place(sum);
   });
+
+  TC_P(a[i]->data_type_name());
+  TC_P(a->data_type_name());
 
   auto populate = kernel(a, [&]() {
     // the second
@@ -488,8 +491,8 @@ auto test_indirect = []() {
     sum[i] = sum[i] + a[j];
   });
 
-  populate();
-  inc();
+  // populate();
+  // inc();
 };
 TC_REGISTER_TASK(test_indirect);
 

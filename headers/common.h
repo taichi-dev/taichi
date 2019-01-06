@@ -3,7 +3,7 @@
 #define FUNC_DECL
 
 #include <immintrin.h>
-#include <tuple>
+#include <atomic>
 
 #if !defined(TC_INCLUDED)
 
@@ -210,10 +210,7 @@ inline VV<output_dim, T> shuffle(SA &a, VV<output_dim, int> offsets) {
   return ret;
 };
 
-template <typename T_,
-          int num_groups,
-          int num_inputs,
-          int input_group_size>
+template <typename T_, int num_groups, int num_inputs, int input_group_size>
 struct SlowAdapter {
   // static constexpr int num_outputs = num_inputs * input_group_size /
   // output_group_size;
@@ -619,8 +616,8 @@ DEFINE_BINARY_OP(int32x8, land, _mm256_and_si256);
 DEFINE_BINARY_OP(int32x8, lor, _mm256_and_si256);
 
 #define DEFINE_BINARY_OP_MID(T, OP, INST) \
-  inline T OP(T a, T b) {             \
-    return a INST b;                \
+  inline T OP(T a, T b) {                 \
+    return a INST b;                      \
   }
 
 DEFINE_BINARY_OP_MID(float32, add, +);
@@ -783,14 +780,49 @@ struct fixed {
   TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
     return &children[i];
   }
+
+  TC_FORCE_INLINE int get_n() const {
+    return n;
+  }
 };
 
-template <typename child_type, int n_>
+template <typename child_type, int max_n_>
 struct dynamic {
-  static constexpr int n = n_;
+  static constexpr int max_n = max_n_;
   std::vector<child_type> children;
   TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
     return &children[i];
+  }
+
+  TC_FORCE_INLINE int get_n() const {
+    return children.size();
+  }
+};
+// *****************************************************************************
+
+template <int max_n_>
+struct indirect {
+  static constexpr int max_n = max_n_;
+  int children[max_n];
+  std::atomic<int> n;
+
+  indirect() : n(0) {
+  }
+
+  TC_FORCE_INLINE int get_n() {
+    return n;
+  }
+
+  TC_FORCE_INLINE int *look_up(int i) {  // i is flattened index
+    return &children[i];
+  }
+
+  TC_FORCE_INLINE void touch(int i) {
+    return children[n++] = i;
+  }
+
+  TC_FORCE_INLINE void clear() {
+    n.store(0);
   }
 };
 // *****************************************************************************

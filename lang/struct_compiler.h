@@ -86,6 +86,8 @@ class StructCompiler : public CodeGenBase {
     if (type == SNodeType::fixed) {
       emit_code("using {} = fixed<{}, {}>;", snode.node_type_name,
                 snode.ch[0]->node_type_name, snode.n);
+    } else if (type == SNodeType::indirect) {
+      emit_code("using {} = indirect<{}>;", snode.node_type_name, snode.n);
     } else if (type == SNodeType::forked) {
       // we can not use std::tuple since it has no memory layout guarantee...
       emit_code("struct {} {{", snode.node_type_name);
@@ -113,8 +115,9 @@ class StructCompiler : public CodeGenBase {
 
     if (type != SNodeType::place) {
       // Chain accessors for non-leaf nodes
-      if (type != SNodeType::forked) {
+      if (type != SNodeType::forked && type != SNodeType::indirect) {
         // Single child
+        TC_ASSERT(snode.ch.size() > 0);
         auto ch = snode.ch[0];
         emit_code("TC_FORCE_INLINE {} *access_{}({} *parent, int i) {{",
                   ch->node_type_name, ch->node_type_name, snode.node_type_name);

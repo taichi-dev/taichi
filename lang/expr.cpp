@@ -24,7 +24,9 @@ Expr Expr::operator[](const Expr &i) {
   TC_ASSERT(i);
   TC_ASSERT(node->type == NodeType::addr);
   TC_ASSERT(i->type == NodeType::index || i->data_type == DataType::i32);
-  return create(NodeType::pointer, *this, i);
+  auto n = create(NodeType::pointer, *this, i);
+  n->data_type = node->data_type;
+  return n;
 }
 
 Expr Expr::operator[](const ExprGroup &is) {

@@ -73,7 +73,9 @@ class Expr {
 
 #define REGULAR_BINARY_OP(op, name)                                \
   Expr operator op(const Expr &o) const {                          \
-    TC_ASSERT(node->data_type == o->data_type)                     \
+    TC_ERROR_IF(node->data_type != o->data_type,                   \
+                "data type mismatch: lhs = {}, rhs = {}",          \
+                node->data_type_name(), o->data_type_name());      \
     auto t = Expr::create(NodeType::binary, load_if_pointer(node), \
                           load_if_pointer(o.node));                \
     t->data_type = o->data_type;                                   \
@@ -83,7 +85,9 @@ class Expr {
 
 #define BINARY_OP(op, name)                                      \
   Expr operator op(const Expr &o) const {                        \
-    TC_ASSERT(node->data_type == o->data_type)                   \
+    TC_ERROR_IF(node->data_type != o->data_type,                 \
+                "data type mismatch: lhs = {}, rhs = {}",        \
+                node->data_type_name(), o->data_type_name());    \
     auto t = Expr::create(NodeType::name, load_if_pointer(node), \
                           load_if_pointer(o.node));              \
     t->data_type = o->data_type;                                 \

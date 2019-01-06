@@ -25,8 +25,7 @@ bool Optimizer::search_and_replace(Expr &expr) {
     auto &index_node = expr._pointer()->ch.back();
 
     // TODO: check non-last indices are uniform
-    if (true || index_node->type == NodeType::index) {
-      /*
+    if (index_node->type == NodeType::index) {
       int offset_start = index_node->index_offset(0);
       int offset_inc = index_node->index_offset(1) - offset_start;
       for (int i = 0; i + 1 < addr_node->lanes; i++) {
@@ -60,9 +59,8 @@ bool Optimizer::search_and_replace(Expr &expr) {
         TC_P(vpointer_case_2);
         TC_P(vpointer);
       }
-       */
 
-      if (true) {
+      if (vpointer) {
         // replace load with vload
         if (expr->type == NodeType::load) {
           TC_INFO("Optimized load");
@@ -71,8 +69,7 @@ bool Optimizer::search_and_replace(Expr &expr) {
           for (int i = 1; i < (int)ptr->ch.size(); i++) {
             auto c = Expr::copy_from(ptr->ch[i]);
             TC_ASSERT(c->lanes == 8);
-            if (c->type == NodeType::index)
-              c->set_lanes(1);
+            c->set_lanes(1);
             vload->ch[i] = c;
           }
           vload->set_similar(expr);
@@ -85,8 +82,7 @@ bool Optimizer::search_and_replace(Expr &expr) {
           for (int i = 1; i < (int)ptr->ch.size(); i++) {
             auto c = Expr::copy_from(ptr->ch[i]);
             TC_ASSERT(c->lanes == 8);
-            if (c->type == NodeType::index)
-              c->set_lanes(1);
+            c->set_lanes(1);
             vstore->ch[i + 1] = c;
           }
           vstore->set_similar(expr);

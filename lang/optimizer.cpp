@@ -2,7 +2,59 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class AddressAnalyzer : Visitor {
+ public:
+  int lane_a, lane_b;
+  using result_type = std::pair<bool, int>;
+  std::map<Expr, result_type> memo;
+
+  AddressAnalyzer(int lane_a, int lane_b)
+      : Visitor(Visitor::Order::parent_first), lane_a(lane_a), lane_b(lane_b) {
+  }
+
+  result_type run(Expr &expr) {
+    expr.accept(*this);
+  }
+
+  void visit(Expr &expr) override {
+    if (memo.find(expr) != memo.end()) {
+      return;
+    }
+
+    std::vector<result_type> ch_results;
+
+    for (int i = 0; i < expr->ch.size(); i++) {
+      ch_results.push_back(memo[expr->ch[i]]);
+    }
+
+    result_type ret{false, 0};
+    auto t = expr->type;
+    if (t == NodeType::binary) {
+      // TODO: sub
+      // TODO: imm + val
+      if (expr->binary_type == BinaryType::add) {
+        if (expr[1]->type == NodeType::imm) {
+          if (ch_results[0].first) {
+            ret = {true, ch_results[0].second + expr[1]->value<int>(lane_b) -
+                             expr[1]->value<int>(lane_a)};
+          }
+        }
+      }
+    } else if (t == NodeType::adapter_load) {
+      // adapter_id
+      if (expr[0]->value<int>(lane_a) == expr[0]->value<int>(lane_b)) {
+        // adapter offset
+        if (expr[1]->value<int>(lane_a) == expr[1]->value<int>(lane_b)) {
+          ret = {true, 0};
+        }
+      }
+    }
+    memo[expr] = ret;
+  }
+};
+
 bool Optimizer::search_and_replace(Expr &expr) {
+  // TODO: remove duplicated visit
   for (auto &ch : expr->ch) {
     bool ret = search_and_replace(ch);
     if (ret)
@@ -38,7 +90,28 @@ bool Optimizer::search_and_replace(Expr &expr) {
         }
       }
     } else {
-      incremental = false;
+      // computed indices
+      // case I: adapter load
+      incremental = true;
+      offset_start = 0;  // useless
+      offset_inc = 0;
+
+      // second DFS to match two lanes
+      if (all_same) {
+        for (int i = 0; i + 1 < index_node->lanes; i++) {
+          auto ret = AddressAnalyzer(i, i + 1).run(index_node);
+          if (!ret.first) {
+            incremental = false;
+          } else {
+            if (i == 0) {
+              offset_inc = ret.second;
+            } else if (offset_inc != ret.second) {
+              incremental = false;
+              break;
+            }
+          }
+        }
+      }
     }
 
     for (int i = 0; i < addr_node->lanes; i++) {

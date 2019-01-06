@@ -286,7 +286,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
   } else if (expr->type == NodeType::adapter_store) {
     // save ch[0] to adapter ch[1]
     auto &ad = current_kernel->adapter(expr[1]->value<int>());
-    ad.store_exprs[expr[2]->value<int>() / ad.input_group_size].set(expr[0]);
+    ad.store_exprs[expr[2]->value<int>()].set(expr[0]);
   } else if (expr->type == NodeType::adapter_load) {
     auto &ad = current_kernel->adapter(expr[0]->value<int>());
     std::vector<int> offsets_val(vv_width);
@@ -298,7 +298,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
 
     auto offsets = offsets_val;
     emit_code("{} {};", vv_type(ad.dt), expr->var_name);
-    int input_vv_width = ad.input_group_size * num_groups;
+    int input_vv_width = simd_width;
     for (int i = 0; i < split; i++) {
       // For each split (vec) of vvec
       std::vector<int> offset_subset(offsets.begin() + i * simd_width,
@@ -326,11 +326,12 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
             mask += 1 << j;
           }
         }
-        TC_ASSERT(input_vv_width / simd_width != 0);
-        auto src = fmt::format(
-            "{}.d[{}]",
-            ad.store_exprs[rid / (input_vv_width / simd_width)]->var_name,
-            rid % (input_vv_width / simd_width));
+        /*
+        TC_P(ad.store_exprs.size());
+        TC_P(rid);
+        TC_P(ad.store_exprs[rid].ptr());
+        */
+        auto src = fmt::format("{}.d[{}]", ad.store_exprs[rid]->var_name, 0);
         auto v = fmt::format("{}.d[{}]", expr->var_name, i);
         auto shuffled = fmt::format("shuffle8x32{}({})", tmp_arg, src);
         if (k == 0) {

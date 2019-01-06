@@ -278,8 +278,13 @@ void CPUCodeGen::codegen(Kernel &kernel) {
     adapter.stores =
         LoopVectorizer().run(adapter.stores, prog->current_snode, num_groups);
     AdapterPreprocessor().run(kernel, adapter.stores, adapter.input_group_size);
+    adapter.stores =
+        VectorSplitter().run(kernel, adapter.stores, prog->config.simd_width);
 
     this->group_size = adapter.input_group_size;
+    adapter.store_exprs.resize(adapter.counter * simd_width / group_size *
+                               kernel.parallel_instances);
+    // size after SLP vectorizer + Vector Splitting
     adapter.stores.accept(*this);
   }
 

@@ -42,12 +42,11 @@ struct Adapter {
     }
     int i = counter++;
     auto n = Expr::create(NodeType::adapter_store, e, Expr::create_imm(id),
-                          Expr::create_imm(i));
+                          Expr::create_imm(i / input_group_size));
     stores->ch.push_back(n);
     e.set(Expr::create(NodeType::adapter_load, Expr::create_imm(id),
                        Expr::create_imm(i)));
     e->data_type = dt;
-    store_exprs.resize(counter / input_group_size); // size after SLP vectorizer
     return *this;
   }
 

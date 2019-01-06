@@ -290,6 +290,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
   } else if (expr->type == NodeType::adapter_load) {
     auto &ad = current_kernel->adapter(expr[0]->value<int>());
     std::vector<int> offsets_val(vv_width);
+
     for (int i = 0; i < vv_width; i++) {
       offsets_val[i] = expr[1]->value<int>(i);
       TC_ASSERT(expr[1]->attribute<int>(1, i));

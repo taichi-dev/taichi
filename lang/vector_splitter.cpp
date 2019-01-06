@@ -9,7 +9,7 @@ Expr VectorSplitter::run(Kernel &kernel, Expr &expr, int target_lanes) {
   this->num_splits = expr->lanes / target_lanes;
   expr.accept(*this);
 
-  Expr combined;
+  auto combined = Expr::create(NodeType::combine);
   combined->lanes = target_lanes;
   for (auto &c : expr->ch) {
     for (auto &v : split[c]) {
@@ -27,6 +27,7 @@ void VectorSplitter::visit(Expr &expr) {
   // create #num_splits splits
   std::vector<Expr> splits(num_splits);
   for (int i = 0; i < num_splits; i++) {
+    splits[i] = Expr::create(NodeType::undefined);
     expr->copy_to(*splits[i].ptr());
     for (int j = 0; j < Node::num_additional_values; j++) {
       for (int lane = 0; lane < target_lanes; lane++) {
@@ -35,8 +36,8 @@ void VectorSplitter::visit(Expr &expr) {
       }
     }
     splits[i]->set_lanes(target_lanes);
-    for (int j = 0; j < expr->ch.size(); j++) {
-      splits[i]->ch[j] = split[expr->ch[j]][i];
+    for (int j = 0; j < (int)expr->ch.size(); j++) {
+      splits[i]->ch[j].set(split[expr->ch[j]][i]);
     }
   }
 

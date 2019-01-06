@@ -62,6 +62,8 @@ auto mpm = []() {
     grid_v[grid_index](0) = imm(0.0_f);
     grid_v[grid_index](1) = imm(0.0_f);
     grid_m[grid_index] = imm(0.0_f);
+
+    parallel_instances(16);
   });
 
   auto p2g = kernel(particle_x(0), [&]() {

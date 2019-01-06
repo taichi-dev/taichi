@@ -9,6 +9,7 @@
 #include "loop_vectorizer.h"
 #include "optimizer.h"
 #include "adapter_preprocessor.h"
+#include "vector_splitter.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -297,6 +298,8 @@ void CPUCodeGen::codegen(Kernel &kernel) {
     kernel.ret =
         LoopVectorizer().run(kernel.ret, prog->current_snode, num_groups);
     AdapterPreprocessor().run(kernel, kernel.ret, kernel.output_group_size);
+    kernel.ret =
+        VectorSplitter().run(kernel, kernel.ret, prog->config.simd_width);
     Optimizer().run(kernel);
 
     this->group_size = kernel.output_group_size;

@@ -8,17 +8,17 @@ TLANG_NAMESPACE_BEGIN
 
 class VectorSplitter : public Visitor {
  public:
-  int input_lanes;
   int num_splits;
   int target_lanes;
   Kernel *kernel;
 
   std::map<Expr, std::vector<Expr>> split;
 
-  VectorSplitter() : Visitor(Visitor::Order::child_first) {
+  VectorSplitter(int target_lanes)
+      : Visitor(Visitor::Order::child_first), target_lanes(target_lanes) {
   }
 
-  Expr run(Kernel &kernel, Expr &expr, int target_lanes);
+  void run(Expr &expr);
 
   void visit(Expr &expr) override;
 };

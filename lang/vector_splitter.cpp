@@ -2,12 +2,10 @@
 
 TLANG_NAMESPACE_BEGIN
 
-Expr VectorSplitter::run(Kernel &kernel, Expr &expr, int target_lanes) {
+void VectorSplitter::run(Expr &expr) {
   if (expr->lanes == target_lanes) {
-    return expr;
+    return;
   }
-  this->kernel = &kernel;
-  this->target_lanes = target_lanes;
   TC_ASSERT(expr->lanes % target_lanes == 0);
   this->num_splits = expr->lanes / target_lanes;
   TC_INFO("Splitting {} into {}x{}", expr->lanes, num_splits, target_lanes);
@@ -20,7 +18,7 @@ Expr VectorSplitter::run(Kernel &kernel, Expr &expr, int target_lanes) {
       combined->ch.push_back(v);
     }
   }
-  return combined;
+  expr = combined;
 }
 
 void VectorSplitter::visit(Expr &expr) {
@@ -54,7 +52,6 @@ void VectorSplitter::visit(Expr &expr) {
       }
     }
   }
-
 
   split[expr] = splits;
 }

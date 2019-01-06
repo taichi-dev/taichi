@@ -278,8 +278,7 @@ void CPUCodeGen::codegen(Kernel &kernel) {
     adapter.stores =
         LoopVectorizer().run(adapter.stores, prog->current_snode, num_groups);
     AdapterPreprocessor().run(kernel, adapter.stores, adapter.input_group_size);
-    adapter.stores =
-        VectorSplitter().run(kernel, adapter.stores, prog->config.simd_width);
+    VectorSplitter(prog->config.simd_width).run(adapter.stores);
 
     this->group_size = adapter.input_group_size;
     adapter.store_exprs.resize(adapter.counter * simd_width / group_size *
@@ -303,8 +302,7 @@ void CPUCodeGen::codegen(Kernel &kernel) {
     kernel.ret =
         LoopVectorizer().run(kernel.ret, prog->current_snode, num_groups);
     AdapterPreprocessor().run(kernel, kernel.ret, kernel.output_group_size);
-    kernel.ret =
-        VectorSplitter().run(kernel, kernel.ret, prog->config.simd_width);
+    VectorSplitter(prog->config.simd_width).run(kernel.ret);
     Optimizer().run(kernel);
 
     this->group_size = kernel.output_group_size;

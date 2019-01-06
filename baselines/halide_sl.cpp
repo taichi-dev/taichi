@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
                       input(c, fx + 1, fy + 1) * (      wx) * (      wy);
     // There's only one func here, not much to schedule
     output.compute_root()
-          .reorder(x, c, y)
+          //.reorder(x, c, y)
           .parallel(y).vectorize(x, 8);
 
     output.compile_jit();
@@ -38,15 +38,15 @@ int main(int argc, char *argv[]) {
                 input(c, x, y) = y % 128 / 128.f;
             }
             float s = 20.f / n;
-            motion_field(0, x, y) =   s * (x - n / 2);
-            motion_field(1, x, y) = - s * (y - n / 2);
+            motion_field(0, x, y) =   s * (y - n / 2);
+            motion_field(1, x, y) = - s * (x - n / 2);
         }
     }
 
     // Benchmarking
     Buffer<float> out_buf(nchannels, n, n);
     int timing_iterations = 20;
-    double best_time = benchmark(timing_iterations, 10, [&]() {
+    double best_time = benchmark(timing_iterations, 30, [&]() {
         output.realize(out_buf);
     });
 

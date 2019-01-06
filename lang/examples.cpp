@@ -234,7 +234,7 @@ auto advection = []() {
 
   const int dim = 2;
 
-  const int n = 1024, nattr = 8;
+  const int n = 2048, nattr = 8;
   const int block_size = 1;
   bool blocked_channels = false;
   TC_ASSERT(n % block_size == 0);
@@ -255,7 +255,8 @@ auto advection = []() {
     for (int k = 0; k < dim; k++) {
       if (use_adapter) {
         auto &at = root.fixed({x, y}, {n / block_size, n / block_size})
-                       .multi_threaded().fixed({x, y}, {block_size, block_size});
+                       .multi_threaded()
+                       .fixed({x, y}, {block_size, block_size});
         for (int i = 0; i < nattr; i++) {
           at.place(attr[k][i]);
         }
@@ -286,7 +287,9 @@ auto advection = []() {
 
   TC_ASSERT(bit::is_power_of_two(n));
 
-  auto clamp = [](const Float32 &e) { return min(max(imm(0.0_f), e), imm(n - 2.0_f)); };
+  auto clamp = [](const Float32 &e) {
+    return min(max(imm(0.0_f), e), imm(n - 2.0_f));
+  };
 
   auto func = kernel(attr[0][0], [&]() {
     // ** gs = 1

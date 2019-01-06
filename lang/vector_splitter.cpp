@@ -7,7 +7,7 @@ Expr VectorSplitter::run(Kernel &kernel, Expr &expr, int target_lanes) {
   this->target_lanes = target_lanes;
   TC_ASSERT(expr->lanes % target_lanes == 0);
   this->num_splits = expr->lanes / target_lanes;
-  visit(expr);
+  expr.accept(*this);
 
   Expr combined;
   combined->lanes = target_lanes;
@@ -25,7 +25,6 @@ void VectorSplitter::visit(Expr &expr) {
   }
 
   // create #num_splits splits
-
   std::vector<Expr> splits(num_splits);
   for (int i = 0; i < num_splits; i++) {
     expr->copy_to(*splits[i].ptr());
@@ -38,24 +37,6 @@ void VectorSplitter::visit(Expr &expr) {
     splits[i]->set_lanes(target_lanes);
     for (int j = 0; j < expr->ch.size(); j++) {
       splits[i]->ch[j] = split[expr->ch[j]][i];
-    }
-  }
-
-  // treat adapter_load/store
-  if (expr->type == NodeType::adapter_store) {
-    for (int j = 0; j < num_splits; j++) {
-      for (int i = 0; i < target_lanes; i++) {
-        auto &offset = splits[j]->ch[2]->attribute(0, i);
-        offset = offset * num_splits + j;
-      }
-    }
-  } else if (expr->type == NodeType::adapter_load) {
-    // input_num_splits;
-    for (int j = 0; j < num_splits; j++) {
-      for (int i = 0; i < target_lanes; i++) {
-        auto &offset = splits[j]->ch[2]->attribute(0, i);
-        offset = offset * num_splits + j;
-      }
     }
   }
 

@@ -15,7 +15,7 @@ class VectorSplitter : public Visitor {
 
   std::map<Expr, std::vector<Expr>> split;
 
-  VectorSplitter() : Visitor(Visitor::Order::parent_first) {
+  VectorSplitter() : Visitor(Visitor::Order::child_first) {
   }
 
   Expr run(Kernel &kernel, Expr &expr, int target_lanes);

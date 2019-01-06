@@ -10,6 +10,7 @@ class AdapterPreprocessor : public Visitor {
  public:
   Kernel *kernel;
   int group_size;
+  std::set<Expr> visited;
 
   AdapterPreprocessor() : Visitor(Visitor::Order::parent_first) {
   }
@@ -21,6 +22,10 @@ class AdapterPreprocessor : public Visitor {
   }
 
   void visit(Expr &expr) override {
+    if (visited.find(expr) != visited.end()) {
+      return;
+    }
+    visited.insert(expr);
     if (expr->type == NodeType::adapter_load) {
       // generate offsets in the linearized input adapter.
       // (There may be multiple VV's)

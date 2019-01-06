@@ -234,7 +234,7 @@ auto advection = []() {
 
   const int dim = 2;
 
-  const int n = 2048, nattr = 8;
+  const int n = 1024, nattr = 8;
   const int block_size = 1;
   bool blocked_channels = false;
   TC_ASSERT(n % block_size == 0);
@@ -348,7 +348,7 @@ auto advection = []() {
   GUI gui("Advection", n, n);
 
   for (int f = 0; f < 1000; f++) {
-    for (int t = 0; t < 300; t++) {
+    for (int t = 0; t < 30; t++) {
       TC_TIME(func());
       swap_buffers();
     }

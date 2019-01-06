@@ -87,12 +87,16 @@ class StructCompiler : public CodeGenBase {
       emit_code("using {} = fixed<{}, {}>;", snode.node_type_name,
                 snode.ch[0]->node_type_name, snode.n);
     } else if (type == SNodeType::forked) {
-      std::vector<std::string> c;
-      for (auto ch : snode.ch) {
-        c.push_back(ch->node_type_name);
+      // we can not use std::tuple since it has no memory layout guarantee...
+      emit_code("struct {} {{", snode.node_type_name);
+      emit_code("static constexpr int n=1;");
+      for (int i = 0; i < (int)snode.ch.size(); i++) {
+        emit_code("{} member{};", snode.ch[i]->node_type_name, i);
       }
-      emit_code("using {} = forked{};", snode.node_type_name,
-                vec_to_list(c, "<"));
+      for (int i = 0; i < (int)snode.ch.size(); i++) {
+        emit_code("auto *get{}() {{return &member{};}} ", i, i);
+      }
+      emit_code("};");
     } else if (type == SNodeType::place) {
       emit_code("using {} = {};", snode.node_type_name,
                 snode.addr->data_type_name());
@@ -123,7 +127,7 @@ class StructCompiler : public CodeGenBase {
           emit_code("TC_FORCE_INLINE {} *access_{}({} *parent, int i) {{",
                     ch->node_type_name, ch->node_type_name,
                     snode.node_type_name);
-          emit_code("return parent->get<{}>();", i);
+          emit_code("return parent->get{}();", i);
           emit_code("}");
         }
       }
@@ -180,7 +184,7 @@ class StructCompiler : public CodeGenBase {
       auto &fork = snode.insert_children(SNodeType::forked);
       fork.ch.swap(ch);
     }
-    for (auto &c: snode.ch) {
+    for (auto &c : snode.ch) {
       insert_forks(*c);
       c->parent = &snode;
     }

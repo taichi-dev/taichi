@@ -75,6 +75,14 @@ struct SNode {
   // SNodes maintains how flattened index bits are taken from indices
   SNode &fixed(std::vector<Expr> indices, std::vector<int> sizes) {
     TC_ASSERT(indices.size() == sizes.size())
+    bool all_one = true;
+    for (auto s : sizes) {
+      if (s != 1) {
+        all_one = false;
+      }
+    }
+    if (all_one)
+      return *this;  // do nothing
     auto &new_node = insert_children(SNodeType::fixed);
     new_node.n = 1;
     for (auto s : sizes) {

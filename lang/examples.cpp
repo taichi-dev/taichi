@@ -234,7 +234,7 @@ auto advection = []() {
 
   const int dim = 2;
 
-  const int n = 1024, nattr = 8;
+  const int n = 2048, nattr = 8;
   const int block_size = 1;
   bool blocked_channels = false;
   TC_ASSERT(n % block_size == 0);
@@ -255,10 +255,7 @@ auto advection = []() {
     for (int k = 0; k < dim; k++) {
       if (use_adapter) {
         auto &at = root.fixed({x, y}, {n / block_size, n / block_size})
-                       .multi_threaded();
-        if (block_size != 1) {
-          at = at.fixed({x, y}, {block_size, block_size});
-        }
+                       .multi_threaded().fixed({x, y}, {block_size, block_size});
         for (int i = 0; i < nattr; i++) {
           at.place(attr[k][i]);
         }
@@ -273,12 +270,13 @@ auto advection = []() {
           if (block_size > 1) {
             for (auto &v : all_variables) {
               root.fixed({x, y}, {n / block_size, n / block_size})
+                  .multi_threaded()
                   .fixed({x, y}, {block_size, block_size})
                   .place(v);
             }
           } else {
             for (auto &v : all_variables) {
-              root.fixed({x, y}, {n, n}).place(v);
+              root.fixed({x, y}, {n, n}).multi_threaded().place(v);
             }
           }
         }
@@ -350,9 +348,9 @@ auto advection = []() {
   GUI gui("Advection", n, n);
 
   for (int f = 0; f < 1000; f++) {
-    for (int t = 0; t < 100; t++) {
+    for (int t = 0; t < 300; t++) {
       TC_TIME(func());
-      TC_TIME(swap_buffers());
+      swap_buffers();
     }
 
     for (int i = 0; i < n; i++) {

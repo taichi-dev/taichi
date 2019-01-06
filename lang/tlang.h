@@ -37,6 +37,10 @@ inline Adapter &adapter(int i) {
   return get_current_program().get_current_kernel().adapter(i);
 }
 
+inline void touch(SNode *snode, Expr i, Expr j) {
+
+}
+
 TLANG_NAMESPACE_END
 
 /*

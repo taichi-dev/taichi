@@ -228,7 +228,6 @@ TC_TEST("slp2") {
     v[j] = var<float32>();
   }
 
-
   layout([&] {
     auto &f = root.fixed(i, n).forked();
     for (int j = 0; j < 8; j++) {
@@ -457,5 +456,41 @@ TC_TEST("adapter3") {
     }
   }
 }
+
+// array of linked list
+auto test_indirect = []() {
+  Program prog;
+
+  int n = 64;
+
+  auto a = var<float32>();
+  auto sum = var<float32>();
+
+  auto i = ind(), j = ind();
+  SNode *snode;
+
+  layout([&] {
+    // indirect puts an int32
+    snode = &root.fixed(i, n).fixed(j, n).indirect(j, n);
+    root.fixed(j, n * n).place(a);
+    root.fixed(i, n).place(sum);
+  });
+
+  auto populate = kernel(a, [&]() {
+    // the second
+    touch(snode, a[j] / imm(10), j);  // put main index into snode sparsity
+  });
+
+  auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1.0_f); });
+
+  auto reduce = kernel(a, [&]() {
+    // TODO: atomic
+    sum[i] = sum[i] + a[j];
+  });
+
+  populate();
+  inc();
+};
+TC_REGISTER_TASK(test_indirect);
 
 TLANG_NAMESPACE_END

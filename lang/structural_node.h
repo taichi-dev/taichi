@@ -46,8 +46,8 @@ struct SNode {
   AccessorFunction func;
 
   std::string node_type_name;
-
   SNodeType type;
+  int index_id;
 
   SNode() {
     id = counter++;
@@ -63,6 +63,7 @@ struct SNode {
     func = nullptr;
     parent = nullptr;
     _multi_threaded = false;
+    index_id = -1;
   }
 
   SNode &insert_children(SNodeType t) {
@@ -141,6 +142,14 @@ struct SNode {
     expr->new_addresses(0) = &child;
     child.addr.set(expr);
     return *this;
+  }
+
+  SNode &indirect(Expr &expr, int n) {
+    auto &child = insert_children(SNodeType::indirect);
+    TC_ASSERT(expr->type == NodeType::index);
+    child.index_id = expr->value<int>(0);
+    child.n = n;
+    return child;
   }
 
   TC_FORCE_INLINE void *evaluate(void *ds, int i, int j, int k, int l) {

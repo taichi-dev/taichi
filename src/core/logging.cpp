@@ -127,6 +127,7 @@ void signal_handler(int signo) {
       fmt::format("Received signal {} ({})", signo, signal_name(signo)), false);
   TC_FLUSH_LOGGER;
   taichi::print_traceback();
+  fmt::print("\n\n\n");
   if (taichi::CoreState::get_instance().trigger_gdb_when_crash) {
     trash(system(fmt::format("sudo gdb -p {}", PID::get_pid()).c_str()));
   }

@@ -11,7 +11,7 @@ TC_NAMESPACE_BEGIN
 
 class RunTests : public Task {
   virtual std::string run(const std::vector<std::string> &parameters) {
-    run_tests();
+    run_tests(parameters);
     return "";
   }
 };

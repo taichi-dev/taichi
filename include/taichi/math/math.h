@@ -181,14 +181,14 @@ template <typename T>
 TC_FORCE_INLINE
     typename std::enable_if_t<!std::is_floating_point<T>::value, bool>
     equal(const T &A, const T &B, float64 tolerance) {
-  return maximum(abs(A - B)) < tolerance;
+  return maximum(abs(A - B)) <= tolerance;
 }
 
 template <typename T>
 TC_FORCE_INLINE
     typename std::enable_if_t<std::is_floating_point<T>::value, bool>
     equal(const T &A, const T &B, float64 tolerance) {
-  return std::abs(A - B) < tolerance;
+  return std::abs(A - B) <= tolerance;
 }
 
 }  // namespace math

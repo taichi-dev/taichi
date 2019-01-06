@@ -7,6 +7,7 @@ Expr VectorSplitter::run(Kernel &kernel, Expr &expr, int target_lanes) {
   this->target_lanes = target_lanes;
   TC_ASSERT(expr->lanes % target_lanes == 0);
   this->num_splits = expr->lanes / target_lanes;
+  TC_INFO("Splitting {} into {}x{}", expr->lanes, num_splits, target_lanes);
   expr.accept(*this);
 
   auto combined = Expr::create(NodeType::combine);

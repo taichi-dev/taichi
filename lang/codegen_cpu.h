@@ -244,7 +244,9 @@ class CPUCodeGen : public CodeGenBase {
 
   void visit_intrinsics(Expr &expr);
 
-  void visit_vv(Expr &expr);
+  void visit_vv(Expr &expr) {
+    TC_NOT_IMPLEMENTED
+  }
 
   // group_size should be batch_size here...
   FunctionType compile() {

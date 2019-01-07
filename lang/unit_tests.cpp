@@ -466,9 +466,7 @@ TC_TEST("index") {
 
   auto i = ind(), j = ind();
 
-  layout([&] {
-    root.fixed(j, n).place(a);
-  });
+  layout([&] { root.fixed(j, n).place(a); });
 
   auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });
 
@@ -504,14 +502,12 @@ auto test_indirect = []() {
 
   auto populate = kernel(a, [&]() {
     // the second
-    touch(snode, load(a[j]) / 8, j);  // put main index into snode sparsity
+    touch(snode, load(a[j]) , j);  // put main index into snode sparsity
   });
 
   auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });
 
-  auto reduce = kernel(snode, [&]() {
-    sum[i] = sum[i] + a[j];
-  });
+  auto reduce = kernel(snode, [&]() { sum[i] = sum[i] + a[j]; });
 
   for (int i = 0; i < n; i++) {
     a.val<int32>(i) = i;

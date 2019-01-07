@@ -271,6 +271,30 @@ inline Node::Node(NodeType type, Expr ch0, Expr ch1, Expr ch2) : Node(type) {
   ch[2] = ch2;
 }
 
+inline Node::Node(NodeType type, Expr ch0, Expr ch1, Expr ch2, Expr ch3)
+    : Node(type) {
+  ch.resize(4);
+  ch[0] = ch0;
+  ch[1] = ch1;
+  ch[2] = ch2;
+  ch[3] = ch3;
+}
+
+inline Node::Node(NodeType type,
+                  Expr ch0,
+                  Expr ch1,
+                  Expr ch2,
+                  Expr ch3,
+                  Expr ch4)
+    : Node(type) {
+  ch.resize(5);
+  ch[0] = ch0;
+  ch[1] = ch1;
+  ch[2] = ch2;
+  ch[3] = ch3;
+  ch[4] = ch4;
+}
+
 inline Expr placeholder(DataType dt) {
   auto n = std::make_shared<Node>(NodeType::addr);
   n->data_type = dt;
@@ -321,9 +345,9 @@ class ExprGroup {
     exprs.push_back(b);
   }
 
-  ExprGroup(Expr a, const ExprGroup &b) {
-    exprs.push_back(a);
-    exprs.insert(exprs.end(), b.exprs.begin(), b.exprs.end());
+  ExprGroup(ExprGroup a, const Expr &b) {
+    exprs = a.exprs;
+    exprs.push_back(b);
   }
 
   std::size_t size() const {
@@ -335,7 +359,7 @@ inline ExprGroup operator,(const Expr &a, const Expr &b) {
   return ExprGroup(a, b);
 }
 
-inline ExprGroup operator,(const Expr &a, const ExprGroup &b) {
+inline ExprGroup operator,(const ExprGroup &a, const Expr &b) {
   return ExprGroup(a, b);
 }
 

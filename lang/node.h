@@ -97,6 +97,10 @@ class Node {
 
   Node(NodeType type, Expr ch0, Expr ch1, Expr ch2);
 
+  Node(NodeType type, Expr ch0, Expr ch1, Expr ch2, Expr ch3);
+
+  Node(NodeType type, Expr ch0, Expr ch1, Expr ch2, Expr ch3, Expr ch4);
+
   int member_id(const Expr &expr) const;
 
   template <typename T>

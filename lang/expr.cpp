@@ -30,7 +30,7 @@ Expr Expr::operator[](const Expr &i) {
 }
 
 Expr Expr::operator[](const ExprGroup &is) {
-  TC_ASSERT(is.size() > 0 && is.size() <= 2);
+  TC_ASSERT(is.size() > 0);
   TC_ASSERT(node->type == NodeType::addr);
   for (auto &i : is.exprs) {
     TC_ASSERT(i);
@@ -40,17 +40,29 @@ Expr Expr::operator[](const ExprGroup &is) {
     auto n = create(NodeType::pointer, *this, is.exprs[0]);
     n->data_type = (*this)->data_type;
     return n;
-  } else {
+  } else if (is.size() == 2) {
     auto n = create(NodeType::pointer, *this, is.exprs[0], is.exprs[1]);
     n->data_type = (*this)->data_type;
     return n;
+  } else if (is.size() == 3) {
+    auto n =
+        create(NodeType::pointer, *this, is.exprs[0], is.exprs[1], is.exprs[2]);
+    n->data_type = (*this)->data_type;
+    return n;
+  } else if (is.size() == 4) {
+    auto n = create(NodeType::pointer, *this, is.exprs[0], is.exprs[1],
+                    is.exprs[2], is.exprs[3]);
+    n->data_type = (*this)->data_type;
+    return n;
+  } else {
+    TC_NOT_IMPLEMENTED
   }
 }
 
 void *Expr::evaluate_addr(int i, int j, int k, int l) {
   TC_ASSERT(node->lanes == 1);
-  return node->snode_ptr(0)->evaluate(get_current_program().data_structure,
-                                          i, j, k, l);
+  return node->snode_ptr(0)->evaluate(get_current_program().data_structure, i,
+                                      j, k, l);
 }
 
 bool Expr::allow_store = false;

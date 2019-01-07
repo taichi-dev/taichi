@@ -12,11 +12,10 @@ auto mpm3d = []() {
   prog.config.gcc_version = 7;
   bool use_adapter = true;
 
-  constexpr int n = 64;  // grid_resolution
-  const real dt = 3e-5_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+  constexpr int n = 128;  // grid_resolution
+  const real dt = 1e-4_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
-  // auto E = 1e2_f;
-  auto E = 0_f;
+  auto E = 1e3_f;
   // real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 *
   // nu));
 
@@ -31,7 +30,7 @@ auto mpm3d = []() {
 
   Real Jp;
 
-  int n_particles = 8192 / 4;
+  int n_particles = 8192 / 2;
 
   auto p = ind();
   auto i = ind(), j = ind(), k = ind();
@@ -194,7 +193,7 @@ auto mpm3d = []() {
 
   for (int i = 0; i < n_particles; i++) {
     particle_x(0).val<float32>(i) = 0.35_f + rand() * 0.3_f;
-    particle_x(1).val<float32>(i) = 0.35_f + rand() * 0.3_f;
+    particle_x(1).val<float32>(i) = 0.15_f + rand() * 0.7_f;
     particle_x(2).val<float32>(i) = 0.35_f + rand() * 0.3_f;
     particle_v(1).val<float32>(i) = -0.3_f;
     particle_J.val<float32>(i) = 1_f;
@@ -203,7 +202,7 @@ auto mpm3d = []() {
   auto &canvas = gui.get_canvas();
 
   for (int f = 0; f < 1000; f++) {
-    for (int t = 0; t < 1; t++) {
+    for (int t = 0; t < 50; t++) {
       TC_TIME(clear_buffer());
       TC_TIME(p2g());
       TC_TIME(grid_op());
@@ -223,9 +222,10 @@ auto mpm3d = []() {
     canvas.clear(0x112F41);
     for (int i = 0; i < n_particles; i++) {
       auto x = particle_x(0).val<float32>(i), y = particle_x(1).val<float32>(i);
-      TC_P(x);
-      TC_P(y);
-      canvas.circle(x, y).radius(2).color(0x068587);
+      // TC_P(x);
+      // TC_P(y);
+      if (0 < x && x < 1 && 0 < y && y < 1)
+        canvas.circle(x, y).radius(2).color(0x068587);
     }
 
     gui.update();

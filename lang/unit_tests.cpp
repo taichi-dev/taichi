@@ -498,19 +498,18 @@ auto test_indirect = []() {
   layout([&] {
     // indirect puts an int32
     snode = &root.fixed(i, n).indirect(j, n);
-    root.fixed(j, n).place(a);
+    root.fixed(j, n * 8).place(a);
     root.fixed(i, n).place(sum);
   });
 
   auto populate = kernel(a, [&]() {
     // the second
-    touch(snode, load(a[j]).print(), j);  // put main index into snode sparsity
+    touch(snode, load(a[j]) / 8, j);  // put main index into snode sparsity
   });
 
   auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });
 
   auto reduce = kernel(snode, [&]() {
-    // TODO: atomic
     sum[i] = sum[i] + a[j];
   });
 

@@ -273,7 +273,6 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
 
     emit_code("auto {} = add({}_index, {});", expr->var_name, expr->var_name,
               constant);
-    // emit_code("{}.print();", expr->var_name);
   } else if (expr->type == NodeType::pointer) {
     emit_code("{} *{}[{}];", expr->data_type_name(), expr->var_name, vv_width);
     for (int i = 0; i < vv_width; i++) {

@@ -30,13 +30,19 @@ class Expr {
   Expr() {
   }
 
-  /*
-  Expr(float64 val) {
+  Expr(int32 val) {
     // create a constant node
     node = std::make_shared<Node>(NodeType::imm);
-    node->value<float64>() = val;
+    node->value<int32>() = val;
+    node->data_type = get_data_type<int32>();
   }
-  */
+
+  Expr(float32 val) {
+    // create a constant node
+    node = std::make_shared<Node>(NodeType::imm);
+    node->value<float32>() = val;
+    node->data_type = get_data_type<float32>();
+  }
 
   Expr(Handle<Node> node) : node(node) {
   }

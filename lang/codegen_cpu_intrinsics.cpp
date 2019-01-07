@@ -41,12 +41,18 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     }
   }
 
-  auto address_elements = [&](std::string index, int start = 1) {
-    std::string ret = "";
-    for (int i = start; i < (int)expr->ch.size(); i++) {
-      ret += fmt::format(", {}.element({})", expr->ch[i]->var_name, index);
+  auto address_elements = [&](SNode *snode, std::string index, int start = 1) {
+    std::vector<std::string> elems(max_num_indices, ", 0");
+    for (int j = start; j < (int)expr->ch.size(); j++) {
+      elems[snode->index_order[j - start]] =
+          fmt::format(", {}.element({})", expr->ch[j]->var_name, index);
     }
-    return ret;
+    std::string total_elem = "";
+    for (int j = 0; j < max_num_indices; j++) {
+      total_elem += elems[j];
+    }
+
+    return total_elem;
   };
 
   if (expr->type == NodeType::binary) {
@@ -98,11 +104,12 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
   } else if (expr->type == NodeType::vload) {
     emit_code("auto {} = {}::load(access_{}(context.buffers[0] {}));",
               expr->var_name, vv_type(expr->data_type),
-              expr[0]->new_addresses(0)->node_type_name, address_elements("0"));
+              expr[0]->new_addresses(0)->node_type_name,
+              address_elements(expr[0]->new_addresses(0), "0"));
   } else if (expr->type == NodeType::vstore) {
     emit_code("{}.store(access_{}(context.buffers[0] {}));", expr[1]->var_name,
               expr[0]->new_addresses(0)->node_type_name,
-              address_elements("0", 2));
+              address_elements(expr[0]->new_addresses(0), "0", 2));
   } else if (expr->type == NodeType::load) {
     emit_code("auto {} = {}::load({});", expr->var_name,
               vv_type(expr->data_type), expr[0]->var_name);

@@ -266,7 +266,8 @@ class CPUCodeGen : public CodeGenBase {
         prog->config.gcc_version, get_source_fn(), get_project_fn(),
         get_library_fn(), get_source_fn());
     auto compile_ret = std::system(cmd.c_str());
-    TC_ASSERT(compile_ret == 0);
+    TC_ERROR_IF(compile_ret != 0, "Source {} compilation failed.",
+                get_source_fn());
     disassemble();
     return load_function();
   }

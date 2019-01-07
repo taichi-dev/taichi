@@ -337,9 +337,10 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     }
   } else if (expr->type == NodeType::touch) {
     for (int i = 0; i < simd_width; i++) {
-      emit_code("touch_{}({}.element({}), {}.element({}))",
-                expr->new_addresses(i)->node_type_name, i,
-                expr->ch[0]->var_name, i, expr->ch[1]->var_name);
+      // val comes first, then indices
+      emit_code("touch_{}(context.buffers[0], {}.element({}), {}.element({}));",
+                expr->new_addresses(i)->node_type_name, expr->ch[1]->var_name,
+                i, expr->ch[0]->var_name, i);
     }
   } else {
     TC_ERROR("Node {} cannot be visited.", expr->node_type_name());

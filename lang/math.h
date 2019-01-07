@@ -97,6 +97,14 @@ struct Matrix {
     }
     return ret;
   }
+
+  Matrix operator[](ExprGroup index) {
+    Matrix ret(n, m);
+    for (int i = 0; i < n * m; i++) {
+      ret.entries[i] = entries[i][index];
+    }
+    return ret;
+  }
 };
 
 inline Matrix operator*(const Expr &A, const Matrix &B) {

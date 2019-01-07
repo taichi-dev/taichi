@@ -13,8 +13,7 @@ auto mpm = []() {
   bool use_adapter = true;
 
   constexpr int n = 128;  // grid_resolution
-  const real dt = 3e-5_f, dx = 1.0_f / n,
-             inv_dx = 1.0_f / dx;
+  const real dt = 3e-5_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
   auto E = 1e4_f;
   // real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 *
@@ -34,7 +33,7 @@ auto mpm = []() {
   int n_particles = 8192 * 4;
 
   auto p = ind();
-  auto grid_index = ind();
+  auto i = ind(), j = ind();
 
   layout([&]() {
     auto place = [&](Expr &expr) {
@@ -54,15 +53,15 @@ auto mpm = []() {
     grid_v(1) = variable(DataType::f32);
     grid_m = variable(DataType::f32);
 
-    root.fixed(grid_index, n * n).forked().place(grid_v(0), grid_v(1), grid_m);
+    root.fixed({i, j}, {n, n}).forked().place(grid_v(0), grid_v(1), grid_m);
   });
 
   TC_ASSERT(bit::is_power_of_two(n));
 
   auto clear_buffer = kernel(grid_m, [&]() {
-    grid_v[grid_index](0) = imm(0.0_f);
-    grid_v[grid_index](1) = imm(0.0_f);
-    grid_m[grid_index] = imm(0.0_f);
+    grid_v(0)[i, j] = imm(0.0_f);
+    grid_v(1)[i, j] = imm(0.0_f);
+    grid_m[i, j] = imm(0.0_f);
 
     parallel_instances(16);
   });
@@ -89,9 +88,6 @@ auto mpm = []() {
           affine(i, i) + imm(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
     }
 
-    auto base_offset =
-        cast<int>(base_coord(0)) * imm(n) + cast<int>(base_coord(1));
-
     // scatter
     for (int i = 0; i < 3; i++) {
       for (int j = 0; j < 3; j++) {
@@ -99,7 +95,8 @@ auto mpm = []() {
         dpos(0) = imm(dx) * (imm(i * 1.0_f) - fx(0));
         dpos(1) = imm(dx) * (imm(j * 1.0_f) - fx(1));
         auto weight = w[i](0) * w[j](1);
-        auto node = base_offset + imm(i * n + j);
+        auto node = (cast<int32>(base_coord(0)) + imm(i),
+                     cast<int32>(base_coord(1)) + imm(j));
         grid_v[node] =
             grid_v[node] + weight * (imm(particle_mass) * v + affine * dpos);
         grid_m[node] = grid_m[node] + weight * imm(particle_mass);
@@ -108,10 +105,9 @@ auto mpm = []() {
   });
 
   auto grid_op = kernel(grid_m, [&]() {
-    auto node = grid_index;
-    auto v0 = load(grid_v[node](0));
-    auto v1 = load(grid_v[node](1));
-    auto m = load(grid_m[node]);
+    auto v0 = load(grid_v[i, j](0));
+    auto v1 = load(grid_v[i, j](1));
+    auto m = load(grid_m[i, j]);
 
     // auto inv_m = imm(1.0_f) / max(m, imm(1e-37_f));
     auto inv_m = imm(1.0_f) / m;
@@ -122,8 +118,6 @@ auto mpm = []() {
     v1 = select(mask, v1 * inv_m + imm(dt * -200_f), imm(0.0_f)).name("v1");
 
     {
-      auto i = node >> imm((int)bit::log2int(n));
-      auto j = node & imm(n - 1);
       auto dist =
           min(min(i - imm(5), j - imm(5)), min(imm(n - 5) - i, imm(n - 5) - j));
       auto mask = cast<float32>(max(min(dist, imm(1)), imm(0)));
@@ -131,8 +125,8 @@ auto mpm = []() {
       v1 = v1 * mask;
     }
 
-    grid_v[node](0) = v0;
-    grid_v[node](1) = v1;
+    grid_v[i, j](0) = v0;
+    grid_v[i, j](1) = v1;
   });
 
   auto g2p = kernel(particle_x(0), [&]() {
@@ -157,10 +151,6 @@ auto mpm = []() {
     w[1] = imm(0.75_f) - sqr(fx - imm(1.0_f));
     w[2] = imm(0.5_f) * sqr(fx - imm(0.5_f));
 
-    // auto J = F(0, 0) * F(1, 1) - F(1, 0) * F(0, 1);
-    auto base_offset =
-        cast<int>(base_coord(0)) * imm(n) + cast<int>(base_coord(1));
-
     // scatter
     for (int i = 0; i < 3; i++) {
       for (int j = 0; j < 3; j++) {
@@ -168,8 +158,8 @@ auto mpm = []() {
         dpos(0) = imm(i * 1.0_f) - fx(0);
         dpos(1) = imm(j * 1.0_f) - fx(1);
         auto weight = w[i](0) * w[j](1);
-        auto node = base_offset + imm(i * n + j);
-        auto wv = weight * grid_v[node];
+        auto wv = weight * grid_v[cast<int32>(base_coord(0)) + imm(i),
+                                  cast<int32>(base_coord(1)) + imm(j)];
         v = v + wv;
         C = C + imm(4 * inv_dx) * outer_product(wv, dpos);
       }

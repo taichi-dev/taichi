@@ -130,11 +130,11 @@ class Expr {
     return node.get() < o.node.get();
   }
 
-  operator bool() const {
+  explicit operator bool() const {
     return node.get() != nullptr;
   }
 
-  operator void *() const {
+  explicit operator void *() const {
     return (void *)node.get();
   }
 

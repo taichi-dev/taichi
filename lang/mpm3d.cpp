@@ -26,7 +26,7 @@ void write_partio(std::vector<Vector3> positions,
 }
 
 auto mpm3d = []() {
-  Program prog(Arch::x86_64);
+  Program prog;
   prog.config.gcc_version = 7;
   bool use_adapter = true;
 

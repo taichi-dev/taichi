@@ -290,6 +290,9 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       emit_code("{}[{}] = access_{}(context.buffers[0] {});", expr->var_name, i,
                 expr._address()->new_addresses(i)->node_type_name, total_elem);
     }
+  } else if (expr->type == NodeType::print) {
+    emit_code("auto {} = {};", expr->var_name, expr->ch[0]->var_name);
+    emit_code("{}.print();", expr->var_name);
   } else if (expr->type == NodeType::adapter_store) {
     // save ch[0] to adapter ch[1]
     auto &ad = current_kernel->adapter(expr[1]->value<int>());

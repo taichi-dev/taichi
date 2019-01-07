@@ -493,43 +493,34 @@ auto test_indirect = []() {
   auto sum = var<int32>();
 
   auto i = ind(), j = ind();
-  // auto j = ind(), i = ind();
   SNode *snode;
 
   layout([&] {
     // indirect puts an int32
-    // snode = &root.fixed(i, n).indirect(j, n);
+    snode = &root.fixed(i, n).indirect(j, n);
     root.fixed(j, n).place(a);
-    // root.fixed(i, n).place(sum);
+    root.fixed(i, n).place(sum);
   });
 
-  /*
   auto populate = kernel(a, [&]() {
     // the second
-    touch(snode, load(a[j]), j);  // put main index into snode sparsity
+    touch(snode, load(a[j]).print(), j);  // put main index into snode sparsity
   });
-  */
 
   auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });
 
-  /*
   auto reduce = kernel(snode, [&]() {
     // TODO: atomic
     sum[i] = sum[i] + a[j];
   });
-  */
 
   for (int i = 0; i < n; i++) {
     a.val<int32>(i) = i;
   }
 
-  // populate();
+  populate();
   inc();
-  for (int i = 0; i < n; i++) {
-    TC_P(i);
-    TC_P(a.val<int32>(i));
-  }
-  // reduce();
+  reduce();
 
   for (int i = 0; i < n; i++) {
     TC_INFO("{}, reduced={}", i, sum.val<int32>(i));

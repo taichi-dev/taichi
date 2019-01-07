@@ -191,6 +191,12 @@ class Expr {
   }
   */
 
+  Expr print() {
+    auto n = create(NodeType::print, *this);
+    n->set_similar(*this);
+    return n;
+  }
+
   Node *ptr() {
     return node.get();
   }
@@ -295,6 +301,7 @@ inline int Node::member_id(const Expr &expr) const {
 inline Expr load(const Expr &addr) {
   auto expr = Expr::create(NodeType::load);
   expr->ch.push_back(addr);
+  expr->data_type = addr->data_type;
   return expr;
 }
 

@@ -48,7 +48,7 @@ class Node {
   Node(const Node &) = delete;
 
   Node(NodeType type) : type(type) {
-    data_type = DataType::f32;
+    data_type = DataType::unknown;
     binary_type = BinaryType::undefined;
     id = counter++;
     this->lanes = 0;

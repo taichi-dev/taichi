@@ -6,7 +6,7 @@
 #include "codegen_base.h"
 #include "program.h"
 
-namespace taichi::Tlang {
+TLANG_NAMESPACE_BEGIN
 
 void visualize_IR(std::string fn, Expr &expr);
 
@@ -276,4 +276,5 @@ class CPUCodeGen : public CodeGenBase {
 };
 
 using CodeGen = CPUCodeGen;
-}  // namespace taichi::Tlang
+
+TLANG_NAMESPACE_END

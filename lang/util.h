@@ -211,6 +211,7 @@ enum class NodeType : int {
   vload,
   vstore,
   touch,
+  print,
   undefined
 };
 
@@ -238,6 +239,7 @@ inline std::string node_type_name(NodeType type) {
     REGISTER_NODE_TYPE(vstore);
     REGISTER_NODE_TYPE(touch);
     REGISTER_NODE_TYPE(select);
+    REGISTER_NODE_TYPE(print);
   }
   return node_type_names[type];
 }

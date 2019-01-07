@@ -134,13 +134,6 @@ bool Optimizer::search_and_replace(Expr &expr) {
     // continuous element, same index
     bool vpointer_case_2 = regular_elements && incremental && offset_inc == 0;
     bool vpointer = vpointer_case_1 || vpointer_case_2;
-    if (regular_elements && incremental) {
-      TC_P(all_same);
-      TC_P(offset_start);
-      TC_P(offset_inc);
-      TC_P(vpointer_case_2);
-      TC_P(vpointer);
-    }
 
     if (vpointer) {
       // replace load with vload

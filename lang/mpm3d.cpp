@@ -11,9 +11,7 @@ using namespace Tlang;
 void write_partio(std::vector<Vector3> positions,
                   const std::string &file_name) {
   Partio::ParticlesDataMutable *parts = Partio::create();
-  Partio::ParticleAttribute posH, vH, mH, typeH, normH, statH, boundH, distH,
-      debugH, indexH, limitH, apicH;
-  bool verbose = false;
+  Partio::ParticleAttribute posH;
   posH = parts->addAttribute("position", Partio::VECTOR, 3);
   for (auto p : positions) {
     int idx = parts->addParticle();
@@ -50,7 +48,7 @@ auto mpm3d = []() {
 
   Real Jp;
 
-  int n_particles = 8192 / 2;
+  int n_particles = 8192 * 16;
 
   auto p = ind();
   auto i = ind(), j = ind(), k = ind();
@@ -144,13 +142,13 @@ auto mpm3d = []() {
     v1 = select(mask, v1 * inv_m + imm(dt * -200_f), imm(0.0_f)).name("v1");
     v2 = select(mask, v2 * inv_m, imm(0.0_f)).name("v2");
 
-    v0 = select(cmp_lt(imm(n - 3), imm(i)), min(v0, imm(0.0_f)), v0);
-    v1 = select(cmp_lt(imm(n - 3), imm(j)), min(v1, imm(0.0_f)), v1);
-    v2 = select(cmp_lt(imm(n - 3), imm(k)), min(v2, imm(0.0_f)), v2);
+    v0 = select(cmp_lt(imm(n - 5), i), min(v0, imm(0.0_f)), v0);
+    v1 = select(cmp_lt(imm(n - 5), j), min(v1, imm(0.0_f)), v1);
+    v2 = select(cmp_lt(imm(n - 5), k), min(v2, imm(0.0_f)), v2);
 
-    v0 = select(cmp_lt(i, imm(3)), max(v0, imm(0.0_f)), v0);
-    v1 = select(cmp_lt(j, imm(3)), max(v1, imm(0.0_f)), v1);
-    v2 = select(cmp_lt(k, imm(3)), max(v2, imm(0.0_f)), v2);
+    v0 = select(cmp_lt(i, imm(5)), max(v0, imm(0.0_f)), v0);
+    v1 = select(cmp_lt(j, imm(5)), max(v1, imm(0.0_f)), v1);
+    v2 = select(cmp_lt(k, imm(5)), max(v2, imm(0.0_f)), v2);
 
     grid_v[i, j, k](0) = v0;
     grid_v[i, j, k](1) = v1;
@@ -210,9 +208,9 @@ auto mpm3d = []() {
   GUI gui("MPM", n * scale, n * scale);
 
   for (int i = 0; i < n_particles; i++) {
-    particle_x(0).val<float32>(i) = 0.35_f + rand() * 0.3_f;
-    particle_x(1).val<float32>(i) = 0.15_f + rand() * 0.7_f;
-    particle_x(2).val<float32>(i) = 0.35_f + rand() * 0.3_f;
+    particle_x(0).val<float32>(i) = 0.3_f + rand() * 0.4_f;
+    particle_x(1).val<float32>(i) = 0.15_f + rand() * 0.75_f;
+    particle_x(2).val<float32>(i) = 0.3_f + rand() * 0.4_f;
     particle_v(1).val<float32>(i) = -0.3_f;
     particle_J.val<float32>(i) = 1_f;
   }

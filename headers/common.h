@@ -466,7 +466,7 @@ inline int32x8 cmp_lt(float32x8 a, float32x8 b) {
 
 inline int32x8 cmp_lt(int32x8 a, int32x8 b) {
   auto ret = _mm256_cmpgt_epi32(b, a);
-  return *reinterpret_cast<int32x8 *>(&ret);
+  return ret;
 }
 
 //*****************************************************************************
@@ -618,7 +618,7 @@ DEFINE_BINARY_OP(int32x8, mul, _mm256_mullo_epi32);
 DEFINE_BINARY_OP(int32x8, min, _mm256_min_epi32);
 DEFINE_BINARY_OP(int32x8, max, _mm256_max_epi32);
 DEFINE_BINARY_OP(int32x8, land, _mm256_and_si256);
-DEFINE_BINARY_OP(int32x8, lor, _mm256_and_si256);
+DEFINE_BINARY_OP(int32x8, lor, _mm256_or_si256);
 
 #define DEFINE_BINARY_OP_MID(T, OP, INST) \
   inline T OP(T a, T b) {                 \

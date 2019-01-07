@@ -81,16 +81,19 @@ class CPUCodeGen : public CodeGenBase {
       }
       emit_code("#pragma omp parallel for");
     }
-    if (last_level && snode->type != SNodeType::forked) {
-      emit_code("for (int {} = 0; {} < {}::n; {} += {}) {{", l, l,
-                snode->node_type_name, l, current_kernel->parallel_instances);
-    } else {
-      emit_code("for (int {} = 0; {} < {}::n; {} += {}) {{", l, l,
-                snode->node_type_name, l, 1);
-    }
+    if (snode->parent->parent == nullptr)
+      emit_code("auto {} = 0;", loop_variable(snode->parent));
     auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
     emit_code("auto {}_cache = access_{}({}, {});", snode->node_type_name,
-              snode->node_type_name, parent, l);
+              snode->node_type_name, parent,
+              loop_variable(snode->parent));
+    if (last_level && snode->type != SNodeType::forked) {
+      emit_code("for (int {} = 0; {} < {}_cache->get_n(); {} += {}) {{", l, l,
+                snode->node_type_name, l, current_kernel->parallel_instances);
+    } else {
+      emit_code("for (int {} = 0; {} < {}_cache->get_n(); {} += {}) {{", l, l,
+                snode->node_type_name, l, 1);
+    }
 
     // update indices....
     for (int i = 0; i < max_num_indices; i++) {

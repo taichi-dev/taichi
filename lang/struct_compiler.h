@@ -98,6 +98,7 @@ class StructCompiler : public CodeGenBase {
       for (int i = 0; i < (int)snode.ch.size(); i++) {
         emit_code("auto *get{}() {{return &member{};}} ", i, i);
       }
+      emit_code("constexpr int get_n() {return 1;} ");
       emit_code("};");
     } else if (type == SNodeType::place) {
       emit_code("using {} = {};", snode.node_type_name,

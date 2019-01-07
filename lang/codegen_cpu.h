@@ -70,9 +70,12 @@ class CPUCodeGen : public CodeGenBase {
       return;  // no loop for root, which is a fork
     }
     auto l = loop_variable(snode);
-    if (snode->type == SNodeType::forked) {
-      //
-    }
+    if (snode->parent->parent == nullptr)
+      emit_code("auto {} = 0;", loop_variable(snode->parent));
+    auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
+    emit_code("auto {}_cache = access_{}({}, {});", snode->node_type_name,
+              snode->node_type_name, parent,
+              loop_variable(snode->parent));
     if (snode->_multi_threaded) {
       auto p = snode->parent;
       while (p) {
@@ -81,12 +84,6 @@ class CPUCodeGen : public CodeGenBase {
       }
       emit_code("#pragma omp parallel for");
     }
-    if (snode->parent->parent == nullptr)
-      emit_code("auto {} = 0;", loop_variable(snode->parent));
-    auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
-    emit_code("auto {}_cache = access_{}({}, {});", snode->node_type_name,
-              snode->node_type_name, parent,
-              loop_variable(snode->parent));
     if (last_level && snode->type != SNodeType::forked) {
       emit_code("for (int {} = 0; {} < {}_cache->get_n(); {} += {}) {{", l, l,
                 snode->node_type_name, l, current_kernel->parallel_instances);

@@ -2,10 +2,30 @@
 #include <taichi/util.h>
 #include <taichi/visual/gui.h>
 #include <taichi/common/bit.h>
+#include <Partio.h>
 
 TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
+
+void write_partio(std::vector<Vector3> positions,
+                  const std::string &file_name) {
+  Partio::ParticlesDataMutable *parts = Partio::create();
+  Partio::ParticleAttribute posH, vH, mH, typeH, normH, statH, boundH, distH,
+      debugH, indexH, limitH, apicH;
+  bool verbose = false;
+  posH = parts->addAttribute("position", Partio::VECTOR, 3);
+  for (auto p : positions) {
+    int idx = parts->addParticle();
+    float32 *p_p = parts->dataWrite<float32>(posH, idx);
+    for (int k = 0; k < 3; k++)
+      p_p[k] = 0.f;
+    for (int k = 0; k < 3; k++)
+      p_p[k] = p[k];
+  }
+  Partio::write(file_name.c_str(), *parts);
+  parts->release();
+}
 
 auto mpm3d = []() {
   Program prog(Arch::x86_64);
@@ -199,6 +219,7 @@ auto mpm3d = []() {
 
   auto &canvas = gui.get_canvas();
 
+  int frame = 0;
   for (int f = 0; f < 1000; f++) {
     for (int t = 0; t < 50; t++) {
       TC_TIME(clear_buffer());
@@ -218,8 +239,11 @@ auto mpm3d = []() {
     }
     */
     canvas.clear(0x112F41);
+    std::vector<Vector3> particles;
     for (int i = 0; i < n_particles; i++) {
       auto x = particle_x(0).val<float32>(i), y = particle_x(1).val<float32>(i);
+      auto z = particle_x(2).val<float32>(i);
+      particles.push_back(Vector3(x, y, z));
       // TC_P(x);
       // TC_P(y);
       if (0 < x && x < 1 && 0 < y && y < 1)
@@ -227,6 +251,9 @@ auto mpm3d = []() {
     }
 
     gui.update();
+    write_partio(particles, fmt::format("particles/{:04d}.bgeo", frame));
+    frame++;
+    // gui.screenshot(fmt::format("images/{:04d}.png", f));
     // gui.screenshot(fmt::format("images/{:04d}.png", f));
   }
 };

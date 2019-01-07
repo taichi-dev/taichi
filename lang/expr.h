@@ -56,6 +56,7 @@ class Expr {
   static Expr create_imm(T t) {
     auto e = create(NodeType::imm);
     e->value<T>() = t;
+    e->data_type = get_data_type<T>();
     return e;
   }
 

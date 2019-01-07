@@ -15,7 +15,8 @@ auto mpm3d = []() {
   constexpr int n = 64;  // grid_resolution
   const real dt = 3e-5_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
-  auto E = 1e4_f;
+  // auto E = 1e2_f;
+  auto E = 0_f;
   // real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 *
   // nu));
 
@@ -55,7 +56,6 @@ auto mpm3d = []() {
     grid_m = variable(DataType::f32);
 
     root.fixed({i, j, k}, {n, n, n})
-        .forked()
         .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
   });
 
@@ -64,6 +64,7 @@ auto mpm3d = []() {
   auto clear_buffer = kernel(grid_m, [&]() {
     grid_v(0)[i, j, k] = imm(0.0_f);
     grid_v(1)[i, j, k] = imm(0.0_f);
+    grid_v(2)[i, j, k] = imm(0.0_f);
     grid_m[i, j, k] = imm(0.0_f);
   });
 
@@ -115,7 +116,7 @@ auto mpm3d = []() {
     auto v2 = load(grid_v[i, j, k](2));
     auto m = load(grid_m[i, j, k]);
 
-    // auto inv_m = imm(1.0_f) / max(m, imm(1e-37_f));
+    // auto inv_m = imm(1.0_f) / max(m, imm(1e-20_f));
     auto inv_m = imm(1.0_f) / m;
     inv_m.name("inv_m");
     auto mask = cmp_lt(imm(0.0_f), m);
@@ -125,18 +126,18 @@ auto mpm3d = []() {
     v2 = select(mask, v2 * inv_m, imm(0.0_f)).name("v2");
 
     {
-      auto dist =
-          min(min(i - imm(5), j - imm(5)), min(min(imm(n - 5) - i, imm(n - 5) - j),
-              min(imm(n - 5) - k, imm(n - 5) - k)));
+      auto dist = min(min(i - imm(5), j - imm(5)),
+                      min(min(imm(n - 5) - i, imm(n - 5) - j),
+                          min(k - imm(5), imm(n - 5) - k)));
       auto mask = cast<float32>(max(min(dist, imm(1)), imm(0)));
       v0 = v0 * mask;
       v1 = v1 * mask;
       v2 = v2 * mask;
     }
 
-    grid_v[i, j](0) = v0;
-    grid_v[i, j](1) = v1;
-    grid_v[i, j](2) = v2;
+    grid_v[i, j, k](0) = v0;
+    grid_v[i, j, k](1) = v1;
+    grid_v[i, j, k](2) = v2;
   });
 
   auto g2p = kernel(particle_x(0), [&]() {
@@ -168,11 +169,11 @@ auto mpm3d = []() {
           auto dpos = Vector(dim);
           dpos(0) = imm(i * 1.0_f) - fx(0);
           dpos(1) = imm(j * 1.0_f) - fx(1);
-          dpos(2) = imm(k * 1.0_f) - fx(1);
+          dpos(2) = imm(k * 1.0_f) - fx(2);
           auto weight = w[i](0) * w[j](1) * w[k](2);
           auto wv = weight * grid_v[cast<int32>(base_coord(0)) + imm(i),
                                     cast<int32>(base_coord(1)) + imm(j),
-                                    cast<int32>(base_coord(2)) + imm(j)];
+                                    cast<int32>(base_coord(2)) + imm(k)];
           v = v + wv;
           C = C + imm(4 * inv_dx) * outer_product(wv, dpos);
         }
@@ -202,7 +203,7 @@ auto mpm3d = []() {
   auto &canvas = gui.get_canvas();
 
   for (int f = 0; f < 1000; f++) {
-    for (int t = 0; t < 200; t++) {
+    for (int t = 0; t < 1; t++) {
       TC_TIME(clear_buffer());
       TC_TIME(p2g());
       TC_TIME(grid_op());
@@ -221,10 +222,10 @@ auto mpm3d = []() {
     */
     canvas.clear(0x112F41);
     for (int i = 0; i < n_particles; i++) {
-      canvas
-          .circle(particle_x(0).val<float32>(i), particle_x(1).val<float32>(i))
-          .radius(2)
-          .color(0x068587);
+      auto x = particle_x(0).val<float32>(i), y = particle_x(1).val<float32>(i);
+      TC_P(x);
+      TC_P(y);
+      canvas.circle(x, y).radius(2).color(0x068587);
     }
 
     gui.update();

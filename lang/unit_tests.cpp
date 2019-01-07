@@ -486,6 +486,8 @@ auto test_indirect = []() {
   Program prog;
 
   int n = 32;
+  int k = 8;
+  int m = n * k;
 
   auto a = var<int32>();
   auto sum = var<int32>();
@@ -496,20 +498,20 @@ auto test_indirect = []() {
   layout([&] {
     // indirect puts an int32
     snode = &root.fixed(i, n).indirect(j, n);
-    root.fixed(j, n * 8).place(a);
+    root.fixed(j, m).place(a);
     root.fixed(i, n).place(sum);
   });
 
   auto populate = kernel(a, [&]() {
     // the second
-    touch(snode, load(a[j]) , j);  // put main index into snode sparsity
+    touch(snode, load(a[j]) / imm(k), j);  // put main index into snode sparsity
   });
 
   auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });
 
   auto reduce = kernel(snode, [&]() { sum[i] = sum[i] + a[j]; });
 
-  for (int i = 0; i < n; i++) {
+  for (int i = 0; i < m; i++) {
     a.val<int32>(i) = i;
   }
 

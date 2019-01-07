@@ -464,6 +464,11 @@ inline int32x8 cmp_lt(float32x8 a, float32x8 b) {
   return *reinterpret_cast<int32x8 *>(&ret);
 }
 
+inline int32x8 cmp_lt(int32x8 a, int32x8 b) {
+  auto ret = _mm256_cmpgt_epi32(b, a);
+  return *reinterpret_cast<int32x8 *>(&ret);
+}
+
 //*****************************************************************************
 
 inline float32x8 select(int32x8 mask, float32x8 true_val, float32x8 false_val) {

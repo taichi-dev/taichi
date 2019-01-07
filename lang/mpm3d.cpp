@@ -124,15 +124,17 @@ auto mpm3d = []() {
     v1 = select(mask, v1 * inv_m + imm(dt * -200_f), imm(0.0_f)).name("v1");
     v2 = select(mask, v2 * inv_m, imm(0.0_f)).name("v2");
 
-    {
-      auto dist = min(min(i - imm(5), j - imm(5)),
-                      min(min(imm(n - 5) - i, imm(n - 5) - j),
-                          min(k - imm(5), imm(n - 5) - k)));
-      auto mask = cast<float32>(max(min(dist, imm(1)), imm(0)));
-      v0 = v0 * mask;
-      v1 = v1 * mask;
-      v2 = v2 * mask;
-    }
+    v0 = select(cmp_lt(imm(n - 3), imm(i)), min(v0, imm(0.0_f)), v0);
+    // v1 = select(cmp_lt(imm(n - 3), imm(j)), min(v1, imm(0.0_f)), v1);
+    // v2 = select(cmp_lt(imm(n - 3), imm(k)), min(v2, imm(0.0_f)), v2);
+
+    v0 = min(v0, imm(0.0_f));
+    v1 = min(v1, imm(0.0_f));
+    v2 = min(v2, imm(0.0_f));
+
+    v0 = select(cmp_lt(i, imm(3)), max(v0, imm(0.0_f)), v0);
+    v1 = select(cmp_lt(j, imm(3)), max(v1, imm(0.0_f)), v1);
+    v2 = select(cmp_lt(k, imm(3)), max(v2, imm(0.0_f)), v2);
 
     grid_v[i, j, k](0) = v0;
     grid_v[i, j, k](1) = v1;

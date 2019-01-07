@@ -307,7 +307,10 @@ inline Expr load(const Expr &addr) {
 }
 
 inline Expr select(Expr mask, Expr true_val, Expr false_val) {
-  return Expr::create(NodeType::select, mask, true_val, false_val);
+  TC_ASSERT(true_val->data_type == false_val->data_type);
+  auto n = Expr::create(NodeType::select, mask, true_val, false_val);
+  n->data_type = true_val->data_type;
+  return n;
 }
 
 class ExprGroup {

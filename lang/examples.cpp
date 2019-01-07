@@ -11,10 +11,10 @@ auto mpm = []() {
   bool use_adapter = true;
 
   constexpr int n = 128;  // grid_resolution
-  const real dt = 3e-5_f, frame_dt = 1e-3_f, dx = 1.0_f / n,
+  const real dt = 3e-5_f, dx = 1.0_f / n,
              inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
-  auto hardening = 10.0_f, E = 1e4_f, nu = 0.2_f;
+  auto E = 1e4_f;
   // real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 *
   // nu));
 
@@ -221,7 +221,7 @@ auto mpm = []() {
     }
 
     gui.update();
-    gui.screenshot(fmt::format("images/{:04d}.png", f));
+    // gui.screenshot(fmt::format("images/{:04d}.png", f));
   }
 };
 TC_REGISTER_TASK(mpm);

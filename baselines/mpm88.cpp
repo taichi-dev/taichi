@@ -7,8 +7,7 @@ using namespace taichi;  // You only need [taichi.h] - see below for
 const int n = 128 /*grid resolution (cells)*/, window_size = 1024;
 const real dt = 3e-5_f, frame_dt = 1e-3_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
 auto particle_mass = 1.0_f, vol = 1.0_f;
-auto hardening = 10.0_f, E = 1e4_f, nu = 0.2_f;
-real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
+auto E = 1e4_f;
 using Vec = Vector2;
 using Mat = Matrix2;
 bool plastic = true;
@@ -52,7 +51,7 @@ void advance(real dt) {
       if (g[2] > 0) {                   // No need for epsilon here
         g /= g[2];                      //        Normalize by mass
         g += dt * Vector3(0, -200, 0);  //                  Gravity
-        real boundary = 0.05, x = (real)i / n,
+        real boundary = 5.0_f / n, x = (real)i / n,
              y = real(j) / n;  // boundary thick.,node coord
         if (x < boundary || x > 1 - boundary || y > 1 - boundary)
           g = Vector3(0);  // Sticky

@@ -145,6 +145,7 @@ inline std::string data_type_name(DataType t) {
     REGISTER_DATA_TYPE(u16, uint16);
     REGISTER_DATA_TYPE(u32, uint32);
     REGISTER_DATA_TYPE(u64, uint64);
+    REGISTER_DATA_TYPE(unknown, unknown);
 #undef REGISTER_DATA_TYPE
   }
   return data_type_names[t];

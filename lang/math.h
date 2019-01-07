@@ -190,7 +190,9 @@ inline Matrix operator-(const Matrix &A, const Matrix &B) {
 using Vector = Matrix;
 
 inline Expr floor(const Expr &a) {
-  return Expr::create(NodeType::floor, Expr::load_if_pointer(a));
+  auto n = Expr::create(NodeType::floor, Expr::load_if_pointer(a));
+  n->data_type = a->data_type;
+  return n;
 }
 
 inline Matrix floor(const Matrix &a) {

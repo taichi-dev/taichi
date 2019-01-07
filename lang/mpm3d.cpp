@@ -125,12 +125,8 @@ auto mpm3d = []() {
     v2 = select(mask, v2 * inv_m, imm(0.0_f)).name("v2");
 
     v0 = select(cmp_lt(imm(n - 3), imm(i)), min(v0, imm(0.0_f)), v0);
-    // v1 = select(cmp_lt(imm(n - 3), imm(j)), min(v1, imm(0.0_f)), v1);
-    // v2 = select(cmp_lt(imm(n - 3), imm(k)), min(v2, imm(0.0_f)), v2);
-
-    v0 = min(v0, imm(0.0_f));
-    v1 = min(v1, imm(0.0_f));
-    v2 = min(v2, imm(0.0_f));
+    v1 = select(cmp_lt(imm(n - 3), imm(j)), min(v1, imm(0.0_f)), v1);
+    v2 = select(cmp_lt(imm(n - 3), imm(k)), min(v2, imm(0.0_f)), v2);
 
     v0 = select(cmp_lt(i, imm(3)), max(v0, imm(0.0_f)), v0);
     v1 = select(cmp_lt(j, imm(3)), max(v1, imm(0.0_f)), v1);

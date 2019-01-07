@@ -5,8 +5,11 @@ include_directories(include)
 set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(TAICHI_PROJECT_LIBRARIES ${TAICHI_PROJECT_LIBRARIES} ${TAICHI_PROJECT_NAME} PARENT_SCOPE)
 
+add_subdirectory(external/partio)
+include_directories(external/partio/include)
+
 add_library(taichi_pangu SHARED ${PROJECT_SOURCES})
-target_link_libraries(taichi_pangu ${CORE_LIBRARY_NAME})
+target_link_libraries(taichi_pangu ${CORE_LIBRARY_NAME} partio)
 
 find_package(CUDA 8.0)
 if (CUDA_FOUND)

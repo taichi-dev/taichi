@@ -8,6 +8,8 @@ TC_NAMESPACE_BEGIN
 using namespace Tlang;
 
 auto mpm = []() {
+  Program prog(Arch::x86_64);
+  prog.config.gcc_version = 7;
   bool use_adapter = true;
 
   constexpr int n = 128;  // grid_resolution
@@ -30,7 +32,6 @@ auto mpm = []() {
   Real Jp;
 
   int n_particles = 8192 * 4;
-  Program prog(Arch::x86_64);
 
   auto index = ind();
   auto grid_index = ind();
@@ -95,13 +96,13 @@ auto mpm = []() {
     for (int i = 0; i < 3; i++) {
       for (int j = 0; j < 3; j++) {
         auto dpos = Vector(dim);
-        dpos(0) = imm(dx) * (cast<float32>(imm(i)) - fx(0));
-        dpos(1) = imm(dx) * (cast<float32>(imm(j)) - fx(1));
+        dpos(0) = imm(dx) * (imm(i * 1.0_f) - fx(0));
+        dpos(1) = imm(dx) * (imm(j * 1.0_f) - fx(1));
         auto weight = w[i](0) * w[j](1);
         auto node = base_offset + imm(i * n + j);
         grid_v[node] =
             grid_v[node] + weight * (imm(particle_mass) * v + affine * dpos);
-        grid_m[node] = grid_m[node] + imm(particle_mass) * weight;
+        grid_m[node] = grid_m[node] + weight * imm(particle_mass);
       }
     }
   });
@@ -164,21 +165,22 @@ auto mpm = []() {
     for (int i = 0; i < 3; i++) {
       for (int j = 0; j < 3; j++) {
         auto dpos = Vector(dim);
-        dpos(0) = cast<float32>(imm(i)) - fx(0);
-        dpos(1) = cast<float32>(imm(j)) - fx(1);
+        dpos(0) = imm(i * 1.0_f) - fx(0);
+        dpos(1) = imm(j * 1.0_f) - fx(1);
         auto weight = w[i](0) * w[j](1);
         auto node = base_offset + imm(i * n + j);
-        v = v + weight * grid_v[node];
-        C = C + imm(4 * inv_dx) * outer_product(weight * grid_v[node], dpos);
+        auto wv = weight * grid_v[node];
+        v = v + wv;
+        C = C + imm(4 * inv_dx) * outer_product(wv, dpos);
       }
     }
 
     J = J * (imm(1.0_f) + imm(dt) * (C(0, 0) + C(1, 1)));
+    x = x + imm(dt) * v;
 
     particle_C[index] = C;
     particle_v[index] = v;
     particle_J[index] = J;
-    x = x + imm(dt) * v;
     particle_x[index] = x;
   });
 

@@ -34,15 +34,6 @@ class CPUCodeGen : public CodeGenBase {
     return constant_vectors[statement];
   }
 
-  // Create vectorized IR for the root node
-  // the vector width should be the final SIMD instruction width
-  std::string get_vectorized_address(Address addr,
-                                     int loop_index,
-                                     int extra_offset) {
-    TC_NOT_IMPLEMENTED
-    return "";
-  }
-
   CPUCodeGen() : CodeGenBase() {
     suffix = "cpp";
     constant_counter = 0;

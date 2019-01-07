@@ -2,14 +2,14 @@
 
 #include <taichi/common/util.h>
 #include "../headers/common.h"
-#include "address.h"
+#include "util.h"
 #include "visitor.h"
 #include "node.h"
 
 TLANG_NAMESPACE_BEGIN
 
 class Visitor;
-
+class Node;
 class ExprGroup;
 
 // Reference counted...

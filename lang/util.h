@@ -1,5 +1,6 @@
 #pragma once
 #include <taichi/common/util.h>
+#include <taichi/io/io.h>
 #include <immintrin.h>
 #include "../headers/common.h"
 
@@ -11,6 +12,11 @@
   }
 
 TLANG_NAMESPACE_BEGIN
+
+template <typename T>
+using Handle = std::shared_ptr<T>;
+
+class Expr;
 
 enum class Arch { x86_64, gpu };
 

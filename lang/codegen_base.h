@@ -1,6 +1,7 @@
 #include "util.h"
 #include "visitor.h"
 #include "expr.h"
+#include <dlfcn.h>
 
 TLANG_NAMESPACE_BEGIN
 

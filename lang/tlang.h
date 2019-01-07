@@ -8,7 +8,6 @@
 #include "util.h"
 #include "visitor.h"
 #include "expr.h"
-#include "address.h"
 #include "slp_vectorizer.h"
 #include "math.h"
 #include "codegen_cpu.h"

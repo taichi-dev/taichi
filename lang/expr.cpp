@@ -49,7 +49,7 @@ Expr Expr::operator[](const ExprGroup &is) {
 
 void *Expr::evaluate_addr(int i, int j, int k, int l) {
   TC_ASSERT(node->lanes == 1);
-  return node->new_addresses(0)->evaluate(get_current_program().data_structure,
+  return node->snode_ptr(0)->evaluate(get_current_program().data_structure,
                                           i, j, k, l);
 }
 
@@ -72,7 +72,7 @@ std::enable_if_t<!(i < sizeof...(Indices)), int> get_if_exists(
 template <typename... Indices>
 void *Expr::val_tmp(Indices... indices) {
   TC_ASSERT(node->type == NodeType::addr);
-  SNode *snode = node->new_addresses(0);
+  SNode *snode = node->snode_ptr(0);
   TC_ASSERT(sizeof...(indices) == snode->num_active_indices);
   int ind[max_num_indices];
   std::memset(ind, 0, sizeof(ind));
@@ -121,7 +121,7 @@ Expr Expr::index(int i) {
 bool prior_to(const Expr &a, const Expr &b) {
   TC_ASSERT(a->lanes == 1 && b->lanes == 1);
   TC_ASSERT(a->type == NodeType::pointer && b->type == NodeType::pointer);
-  auto sa = a._address()->new_addresses(0), sb = b._address()->new_addresses(0);
+  auto sa = a._address()->snode_ptr(0), sb = b._address()->snode_ptr(0);
   if (sa->parent && sb->parent) {
     // TC_P(sa->parent->child_id(sa));
     // TC_P(sb->parent->child_id(sb));

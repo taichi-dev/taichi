@@ -71,7 +71,7 @@ bool Optimizer::search_and_replace(Expr &expr) {
     bool all_same = true;
 
     for (int i = 0; i < addr_node->lanes; i++) {
-      if (addr_node->new_addresses(i) != addr_node->new_addresses(0))
+      if (addr_node->snode_ptr(i) != addr_node->snode_ptr(0))
         all_same = false;
     }
 
@@ -119,14 +119,14 @@ bool Optimizer::search_and_replace(Expr &expr) {
     }
 
     for (int i = 0; i < addr_node->lanes; i++) {
-      auto p = addr_node->new_addresses(i)->parent;
-      if (p != addr_node->new_addresses(0)->parent)
+      auto p = addr_node->snode_ptr(i)->parent;
+      if (p != addr_node->snode_ptr(0)->parent)
         regular_elements = false;
-      if (p->child_id(addr_node->new_addresses(i)) != i)
+      if (p->child_id(addr_node->snode_ptr(i)) != i)
         regular_elements = false;
     }
 
-    auto snode = addr_node->new_addresses(0);
+    auto snode = addr_node->snode_ptr(0);
     // continuous index, same element
     bool vpointer_case_1 = incremental && offset_start == 0 &&
                            offset_inc == 1 &&

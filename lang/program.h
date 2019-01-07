@@ -180,7 +180,7 @@ struct Program {
   }
 
   Kernel kernel(Expr exp, const std::function<void()> &body) {
-    return kernel(exp->new_addresses(0), body);
+    return kernel(exp->snode_ptr(0), body);
   }
 
   Kernel kernel(SNode *snode, const std::function<void()> &body) {

@@ -120,7 +120,7 @@ class Node {
     return attribute<int>(1, i);
   }
 
-  SNode *&new_addresses(int i) {
+  SNode *&snode_ptr(int i) {
     TC_ASSERT(type == NodeType::addr || type == NodeType::touch);
     return attribute<SNode *>(0, i);
   }

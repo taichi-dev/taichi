@@ -25,6 +25,10 @@ inline Kernel kernel(Expr expr, const std::function<void()> &body) {
   return get_current_program().kernel(expr, body);
 }
 
+inline Kernel kernel(SNode *snode, const std::function<void()> &body) {
+  return get_current_program().kernel(snode, body);
+}
+
 inline void group(int n) {
   get_current_program().get_current_kernel().output_group_size = n;
 }
@@ -38,7 +42,11 @@ inline Adapter &adapter(int i) {
 }
 
 inline void touch(SNode *snode, Expr i, Expr j) {
-
+  auto e = Expr::create(NodeType::touch, i, j);
+  e->new_addresses(0) = snode;
+  auto &ker = get_current_program().get_current_kernel();
+  ker.has_touch = true;
+  return ker.ret->ch.push_back(e);
 }
 
 TLANG_NAMESPACE_END

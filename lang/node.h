@@ -79,6 +79,7 @@ class Node {
     return num_groups_;
   }
 
+  // TODO: remove this
   int vv_width() {
     return group_size() * num_groups();
   }
@@ -120,7 +121,7 @@ class Node {
   }
 
   SNode *&new_addresses(int i) {
-    TC_ASSERT(type == NodeType::addr);
+    TC_ASSERT(type == NodeType::addr || type == NodeType::touch);
     return attribute<SNode *>(0, i);
   }
 

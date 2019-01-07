@@ -107,9 +107,6 @@ class Expr {
   // ch[0] = address
   // ch[1] = data
   Expr store(const Expr &pointer, const Expr &e) {
-    if (!node) {
-      node = std::make_shared<Node>(NodeType::combine);
-    }
     auto n = std::make_shared<Node>(NodeType::store);
     TC_ASSERT(pointer->type == NodeType::pointer);
     n->ch.push_back(pointer);

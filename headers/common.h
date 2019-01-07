@@ -818,7 +818,7 @@ struct indirect {
   }
 
   TC_FORCE_INLINE void touch(int i) {
-    return children[n++] = i;
+    children[n++] = i;
   }
 
   TC_FORCE_INLINE void clear() {

@@ -476,20 +476,23 @@ auto test_indirect = []() {
     root.fixed(i, n).place(sum);
   });
 
-  TC_P(a[i]->data_type_name());
-  TC_P(a->data_type_name());
-
+  TC_TAG;
   auto populate = kernel(a, [&]() {
     // the second
+    TC_TAG;
     touch(snode, a[j] / imm(10), j);  // put main index into snode sparsity
+    TC_TAG;
   });
+  TC_TAG;
 
   auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1.0_f); });
+  TC_TAG;
 
   auto reduce = kernel(a, [&]() {
     // TODO: atomic
     sum[i] = sum[i] + a[j];
   });
+  TC_TAG;
 
   // populate();
   // inc();

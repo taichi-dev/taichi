@@ -298,7 +298,6 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
 
     auto offsets = offsets_val;
     emit_code("{} {};", vv_type(ad.dt), expr->var_name);
-    int input_vv_width = simd_width;
     for (int i = 0; i < split; i++) {
       // For each split (vec) of vvec
       std::vector<int> offset_subset(offsets.begin() + i * simd_width,
@@ -326,11 +325,6 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
             mask += 1 << j;
           }
         }
-        /*
-        TC_P(ad.store_exprs.size());
-        TC_P(rid);
-        TC_P(ad.store_exprs[rid].ptr());
-        */
         auto src = fmt::format("{}.d[{}]", ad.store_exprs[rid]->var_name, 0);
         auto v = fmt::format("{}.d[{}]", expr->var_name, i);
         auto shuffled = fmt::format("shuffle8x32{}({})", tmp_arg, src);
@@ -340,6 +334,12 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
           emit_code("{} = blend({}, {}, {});", v, v, shuffled, mask);
         }
       }
+    }
+  } else if (expr->type == NodeType::touch) {
+    for (int i = 0; i < simd_width; i++) {
+      emit_code("touch_{}({}.element({}), {}.element({}))",
+                expr->new_addresses(i)->node_type_name, i,
+                expr->ch[0]->var_name, i, expr->ch[1]->var_name);
     }
   } else {
     TC_ERROR("Node {} cannot be visited.", expr->node_type_name());

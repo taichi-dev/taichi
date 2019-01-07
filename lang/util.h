@@ -210,6 +210,7 @@ enum class NodeType : int {
   // vectorized
   vload,
   vstore,
+  touch,
   undefined
 };
 
@@ -235,6 +236,7 @@ inline std::string node_type_name(NodeType type) {
     REGISTER_NODE_TYPE(cmp);
     REGISTER_NODE_TYPE(vload);
     REGISTER_NODE_TYPE(vstore);
+    REGISTER_NODE_TYPE(touch);
     REGISTER_NODE_TYPE(select);
   }
   return node_type_names[type];

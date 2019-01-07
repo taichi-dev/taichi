@@ -73,13 +73,15 @@ struct Program {
     int parallel_instances;
     int simd_lanes;
     int output_group_size;
+    bool has_touch;
 
     Kernel(Program &program, std::function<void()> func) : program(program) {
+      has_touch = false;
       parallel_instances = -1;
       simd_lanes = -1;
       output_group_size = -1;
       program.start_function_definition(this);
-      ret = Expr(nullptr);
+      ret = Expr::create(NodeType::combine);
       func();
 
       if (output_group_size == -1) {
@@ -185,8 +187,8 @@ struct Program {
     Expr::set_allow_store(true);
     current_snode = snode;
     auto func = Kernel(*this, body);
-    functions.push_back(func);
     Expr::set_allow_store(false);
+    functions.push_back(func);
     current_snode = nullptr;
     return func;
   }

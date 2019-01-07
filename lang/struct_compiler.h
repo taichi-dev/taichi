@@ -113,9 +113,11 @@ class StructCompiler : public CodeGenBase {
     auto type = snode.type;
     stack.push_back(&snode);
 
-    if (type != SNodeType::place) {
+    bool is_leaf = type == SNodeType::place || type == SNodeType ::indirect;
+
+    if (!is_leaf) {
       // Chain accessors for non-leaf nodes
-      if (type != SNodeType::forked && type != SNodeType::indirect) {
+      if (type != SNodeType::forked) {
         // Single child
         TC_ASSERT(snode.ch.size() > 0);
         auto ch = snode.ch[0];
@@ -135,7 +137,7 @@ class StructCompiler : public CodeGenBase {
         }
       }
       emit_code("");
-    } else {
+    } else {  // SNode::place & indirect
       // emit end2end accessors for leaf (place) nodes, using chain accessors
       emit_code(
           "TLANG_ACCESSOR {} * access_{}(void *root, int i0, int i1=0, int "
@@ -161,6 +163,19 @@ class StructCompiler : public CodeGenBase {
       emit_code("return n{};", (int)stack.size() - 1);
       emit_code("}");
       emit_code("");
+    }
+
+    if (type == SNodeType::indirect) {  // toucher
+      emit_code(
+          "TLANG_ACCESSOR void touch_{}(void *root, int val, int i0, int "
+          "i1=0, int "
+          "i2=0, "
+          "int i3=0) {{",
+          snode.node_type_name);
+      emit_code("auto node = access_{}(root, i0, i1, i2, i3);",
+                snode.node_type_name);
+      emit_code("node->touch(val);");
+      emit_code("}");
     }
 
     for (auto ch : snode.ch) {
@@ -214,7 +229,8 @@ class StructCompiler : public CodeGenBase {
     write_code_to_file();
 
     auto cmd = fmt::format(
-        "g++ {} -std=c++14 -shared -fPIC -O3 -march=native -I {}/headers -Wall "
+        "g++ {} -std=c++14 -shared -fPIC -O3 -march=native -I {}/headers "
+        "-Wall "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} 2> {}.log",
         get_source_fn(), get_project_fn(), get_library_fn(), get_source_fn());
     auto compile_ret = std::system(cmd.c_str());

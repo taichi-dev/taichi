@@ -33,13 +33,13 @@ auto mpm = []() {
 
   int n_particles = 8192 * 4;
 
-  auto index = ind();
+  auto p = ind();
   auto grid_index = ind();
 
   layout([&]() {
     auto place = [&](Expr &expr) {
       expr = variable(DataType::f32);
-      root.fixed(index, n_particles).place(expr);
+      root.fixed(p, n_particles).place(expr);
     };
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
@@ -68,11 +68,11 @@ auto mpm = []() {
   });
 
   auto p2g = kernel(particle_x(0), [&]() {
-    auto x = particle_x[index];
-    auto v = particle_v[index];
-    // auto F = particle_F[index];
-    auto C = particle_C[index];
-    auto J = particle_J[index];
+    auto x = particle_x[p];
+    auto v = particle_v[p];
+    // auto F = particle_F[p];
+    auto C = particle_C[p];
+    auto J = particle_J[p];
 
     auto base_coord = floor(imm(inv_dx) * x - imm(0.5_f));
     auto fx = x * imm(inv_dx) - base_coord;
@@ -136,11 +136,11 @@ auto mpm = []() {
   });
 
   auto g2p = kernel(particle_x(0), [&]() {
-    auto x = particle_x[index];
+    auto x = particle_x[p];
     auto v = Vector(dim);
-    // auto F = particle_F[index];
+    // auto F = particle_F[p];
     auto C = Matrix(dim, dim);
-    auto J = particle_J[index];
+    auto J = particle_J[p];
 
     for (int i = 0; i < dim; i++) {
       v(i) = imm(0.0_f);
@@ -178,10 +178,10 @@ auto mpm = []() {
     J = J * (imm(1.0_f) + imm(dt) * (C(0, 0) + C(1, 1)));
     x = x + imm(dt) * v;
 
-    particle_C[index] = C;
-    particle_v[index] = v;
-    particle_J[index] = J;
-    particle_x[index] = x;
+    particle_C[p] = C;
+    particle_v[p] = v;
+    particle_J[p] = J;
+    particle_x[p] = x;
   });
 
   int scale = 8;

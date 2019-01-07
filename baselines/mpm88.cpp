@@ -32,15 +32,11 @@ void advance(real dt) {
     // Quadratic kernels  [http://mpm.graphics   Eqn. 123, with x=fx, fx-1,fx-2]
     Vec w[3]{Vec(0.5) * sqr(Vec(1.5) - fx), Vec(0.75) - sqr(fx - Vec(1.0)),
              Vec(0.5) * sqr(fx - Vec(0.5))};
-    auto e = std::exp(hardening * (1.0_f - p.Jp)), mu = mu_0 * e,
-         lambda = lambda_0 * e;
-    real J = determinant(p.F);  //                         Current volume
     Mat r, s;
-    polar_decomp(p.F, r, s);  // Polar decomp. for fixed corotated model
-    auto stress =             // Cauchy stress times dt and inv_dx
-        -4 * inv_dx * inv_dx * dt * vol *
-        (2 * mu * (p.F - r) * transposed(p.F) + lambda * (J - 1) * J);
-    auto affine = stress + particle_mass * p.C;
+    auto affine = particle_mass * p.C;
+    for (int i = 0; i < 2; i++) {
+      affine(i, i) -= 4 * inv_dx * inv_dx * dt * vol * E * (p.Jp - 1.0_f);
+    }
     for (int i = 0; i < 3; i++)
       for (int j = 0; j < 3; j++) {  // Scatter to grid
         auto dpos = (Vec(i, j) - fx) * dx;
@@ -81,17 +77,8 @@ void advance(real dt) {
         p.C +=
             4 * inv_dx * Mat::outer_product(weight * grid_v, dpos);  // APIC C
       }
-    p.x += dt * p.v;                     // Advection
-    auto F = (Mat(1) + dt * p.C) * p.F;  // MLS-MPM F-update
-    Mat svd_u, sig, svd_v;
-    svd(F, svd_u, sig, svd_v);
-    for (int i = 0; i < 2 * int(plastic); i++)  // Snow Plasticity
-      sig[i][i] = clamp(sig[i][i], 1.0_f - 2.5e-2_f, 1.0_f + 7.5e-3_f);
-    real oldJ = determinant(F);
-    F = svd_u * sig * transposed(svd_v);
-    real Jp_new = clamp(p.Jp * oldJ / determinant(F), 0.6_f, 20.0_f);
-    p.Jp = Jp_new;
-    p.F = F;
+    p.x += dt * p.v;  // Advection
+    p.Jp = p.Jp * (1.0_f + dt * (p.C(0, 0) + p.C(1, 1)));
   }
 }
 

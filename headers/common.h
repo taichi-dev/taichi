@@ -819,6 +819,8 @@ struct indirect {
 
   TC_FORCE_INLINE void touch(int i) {
     children[n++] = i;
+    printf("p=%p\n", &n);
+    printf("n=%d, i=%d\n", (int)n, i);
   }
 
   TC_FORCE_INLINE void clear() {

@@ -457,6 +457,32 @@ TC_TEST("adapter3") {
   }
 }
 
+TC_TEST("index") {
+  Program prog;
+
+  int n = 32;
+
+  auto a = var<int32>();
+
+  auto i = ind(), j = ind();
+
+  layout([&] {
+    root.fixed(j, n).place(a);
+  });
+
+  auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });
+
+  for (int i = 0; i < n; i++) {
+    a.val<int32>(i) = i * 2;
+  }
+
+  inc();
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK(a.val<int32>(i) == i * 2 + 1);
+  }
+}
+
 // array of linked list
 auto test_indirect = []() {
   Program prog;
@@ -467,34 +493,46 @@ auto test_indirect = []() {
   auto sum = var<int32>();
 
   auto i = ind(), j = ind();
+  // auto j = ind(), i = ind();
   SNode *snode;
 
   layout([&] {
     // indirect puts an int32
-    snode = &root.fixed(i, n).fixed(j, n).indirect(j, n);
-    root.fixed(j, n * n).place(a);
-    root.fixed(i, n).place(sum);
+    // snode = &root.fixed(i, n).indirect(j, n);
+    root.fixed(j, n).place(a);
+    // root.fixed(i, n).place(sum);
   });
 
+  /*
   auto populate = kernel(a, [&]() {
     // the second
-    touch(snode, a[j] / imm(10), j);  // put main index into snode sparsity
+    touch(snode, load(a[j]), j);  // put main index into snode sparsity
   });
+  */
 
   auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });
 
+  /*
   auto reduce = kernel(snode, [&]() {
     // TODO: atomic
     sum[i] = sum[i] + a[j];
   });
-
-
-  populate();
-  inc();
-  reduce();
+  */
 
   for (int i = 0; i < n; i++) {
-    TC_INFO("{}, reduced={}", i, sum.val<float32>(i));
+    a.val<int32>(i) = i;
+  }
+
+  // populate();
+  inc();
+  for (int i = 0; i < n; i++) {
+    TC_P(i);
+    TC_P(a.val<int32>(i));
+  }
+  // reduce();
+
+  for (int i = 0; i < n; i++) {
+    TC_INFO("{}, reduced={}", i, sum.val<int32>(i));
   }
 };
 TC_REGISTER_TASK(test_indirect);

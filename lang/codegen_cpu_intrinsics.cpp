@@ -13,8 +13,6 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
   */
   auto vv_width = expr->lanes;
   TC_ASSERT(vv_width == 1 || vv_width == simd_width);
-  int split = vv_width / simd_width;
-  TC_ASSERT(split == 0 || split == 1);
   auto vv_type = [&](DataType dt) {
     if (expr->lanes == 1) {
       return fmt::format("vec<{}, {}>", data_type_name(dt), 1);
@@ -269,20 +267,21 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     if (prog->current_snode->type == SNodeType::indirect) {
       // indirect node, needs an load from "pointer" array
       auto base = loop_variable(prog->current_snode);
-      emit_code("auto {}_index = {}({});", expr->var_name, vv_type(DataType::i32),
-                base);
-      auto constant =
-          get_constant(fmt::format("{}({})", vv_type(expr->data_type), members));
+      emit_code("auto {}_index = {}({});", expr->var_name,
+                vv_type(DataType::i32), base);
+      auto constant = get_constant(
+          fmt::format("{}({})", vv_type(expr->data_type), members));
 
-      emit_code("auto {}_indirect = add({}_index, {});", expr->var_name, expr->var_name,
-                constant);
-      emit_code("auto {} = gather({}_index, {});", expr->var_name, expr->var_name);
+      emit_code("auto {}_indirect = add({}_index, {});", expr->var_name,
+                expr->var_name, constant);
+      emit_code("auto {} = gather({}_index, {});", expr->var_name,
+                expr->var_name);
     } else {
       auto base = index_name_global(prog->current_snode, index_id);
-      emit_code("auto {}_index = {}({});", expr->var_name, vv_type(DataType::i32),
-                base);
-      auto constant =
-          get_constant(fmt::format("{}({})", vv_type(expr->data_type), members));
+      emit_code("auto {}_index = {}({});", expr->var_name,
+                vv_type(DataType::i32), base);
+      auto constant = get_constant(
+          fmt::format("{}({})", vv_type(expr->data_type), members));
 
       emit_code("auto {} = add({}_index, {});", expr->var_name, expr->var_name,
                 constant);
@@ -321,49 +320,48 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
 
     auto offsets = offsets_val;
     emit_code("{} {};", vv_type(ad.dt), expr->var_name);
-    for (int i = 0; i < split; i++) {
-      // For each split (vec) of vvec
-      std::vector<int> offset_subset(offsets.begin() + i * simd_width,
-                                     offsets.begin() + (i + 1) * simd_width);
 
-      std::vector<int> register_id(simd_width);
-      std::vector<int> register_offset(simd_width);
+    // For each split (vec) of vvec
+    std::vector<int> offset_subset(offsets.begin(),
+                                   offsets.begin() + simd_width);
 
+    std::vector<int> register_id(simd_width);
+    std::vector<int> register_offset(simd_width);
+
+    for (int j = 0; j < simd_width; j++) {
+      register_id[j] = offset_subset[j] / simd_width;
+      register_offset[j] = offset_subset[j] % simd_width;
+    }
+
+    auto sorted = register_id;
+    std::sort(std::begin(sorted), std::end(sorted));
+    sorted.resize(std::unique(sorted.begin(), sorted.end()) - sorted.begin());
+
+    // for each unique register_id...
+    for (int k = 0; k < (int)sorted.size(); k++) {
+      auto rid = sorted[k];
+      auto tmp_arg = vec_to_list_tmp(register_offset);
+      int mask = 0;
       for (int j = 0; j < simd_width; j++) {
-        register_id[j] = offset_subset[j] / simd_width;
-        register_offset[j] = offset_subset[j] % simd_width;
+        if (register_id[j] == rid) {
+          mask += 1 << j;
+        }
       }
-
-      auto sorted = register_id;
-      std::sort(std::begin(sorted), std::end(sorted));
-      sorted.resize(std::unique(sorted.begin(), sorted.end()) - sorted.begin());
-
-      // for each unique register_id...
-      for (int k = 0; k < (int)sorted.size(); k++) {
-        auto rid = sorted[k];
-        auto tmp_arg = vec_to_list_tmp(register_offset);
-        int mask = 0;
-        for (int j = 0; j < simd_width; j++) {
-          if (register_id[j] == rid) {
-            mask += 1 << j;
-          }
-        }
-        auto src = fmt::format("{}.d[{}]", ad.store_exprs[rid]->var_name, 0);
-        auto v = fmt::format("{}.d[{}]", expr->var_name, i);
-        auto shuffled = fmt::format("shuffle8x32{}({})", tmp_arg, src);
-        if (k == 0) {
-          emit_code("{} = {};", v, shuffled);
-        } else {
-          emit_code("{} = blend({}, {}, {});", v, v, shuffled, mask);
-        }
+      auto src = fmt::format("{}", ad.store_exprs[rid]->var_name);
+      auto v = fmt::format("{}", expr->var_name);
+      auto shuffled = fmt::format("shuffle8x32{}({})", tmp_arg, src);
+      if (k == 0) {
+        emit_code("{} = {};", v, shuffled);
+      } else {
+        emit_code("{} = blend({}, {}, {});", v, v, shuffled, mask);
       }
     }
   } else if (expr->type == NodeType::touch) {
     for (int i = 0; i < simd_width; i++) {
       // val comes first, then indices
       emit_code("touch_{}(context.buffers[0], {}.element({}), {}.element({}));",
-                expr->snode_ptr(i)->node_type_name, expr->ch[1]->var_name,
-                i, expr->ch[0]->var_name, i);
+                expr->snode_ptr(i)->node_type_name, expr->ch[1]->var_name, i,
+                expr->ch[0]->var_name, i);
     }
   } else {
     TC_ERROR("Node {} cannot be visited.", expr->node_type_name());

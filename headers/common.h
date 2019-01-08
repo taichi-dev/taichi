@@ -363,7 +363,8 @@ struct vec {
   }
 
   template <typename T_ = type>
-  const typename std::enable_if_t<std::is_arithmetic<T_>::value, T> &element(int i) const {
+  const typename std::enable_if_t<std::is_arithmetic<T_>::value, T> &element(
+      int i) const {
     return v;
   }
 
@@ -376,12 +377,7 @@ struct vec {
   }
 
   static vec load(void *addr) {
-    vec ret;
-    for (int i = 0; i < dim; i++) {
-      ret.d[i] = taichi::Tlang::load<T, dim>(
-          (void *)((uint8 *)addr + i * sizeof(vec<T, dim>)));
-    }
-    return ret;
+    return taichi::Tlang::load<T, dim>(addr);
   }
 
   static vec load(void *addr, vec<int, dim> offsets) {
@@ -712,4 +708,3 @@ struct indirect {
 }  // namespace Tlang
 
 }  // namespace taichi
-

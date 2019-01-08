@@ -230,8 +230,10 @@ class StructCompiler : public CodeGenBase {
     visit(node);
     root_type = node.node_type_name;
     generate_leaf_accessors(node);
-    emit_code("extern \"C\" void *create_data_structure() {{return new {};}}",
-              root_type);
+    emit_code(
+        "extern \"C\" void *create_data_structure() {{auto p= new {}; "
+        "std::memset(p, 0, sizeof({})); return p;}}",
+        root_type, root_type);
     emit_code(
         "extern \"C\" void release_data_structure(void *ds) {{delete ({} "
         "*)ds;}}",

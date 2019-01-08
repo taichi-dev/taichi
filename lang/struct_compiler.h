@@ -175,7 +175,9 @@ class StructCompiler : public CodeGenBase {
           snode.node_type_name);
       emit_code("auto node = access_{}(root, i0, i1, i2, i3);",
                 snode.node_type_name);
-      emit_code("std::cout<<val<<' '<< i0 << ' ' << i1 << ' ' << i2 << ' ' << i3 << std::endl;");
+      emit_code(
+          "std::cout<<val<<' '<< i0 << ' ' << i1 << ' ' << i2 << ' ' << i3 << "
+          "std::endl;");
       emit_code("node->touch(val);");
       emit_code("}");
     }
@@ -231,10 +233,12 @@ class StructCompiler : public CodeGenBase {
     write_code_to_file();
 
     auto cmd = fmt::format(
-        "g++ {} -std=c++14 -shared -fPIC -O3 -march=native -I {}/headers "
+        "g++-{} {} -std=c++14 -shared -fPIC -O{} -march=native -I {}/headers "
         "-Wall "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} 2> {}.log",
-        get_source_fn(), get_project_fn(), get_library_fn(), get_source_fn());
+        get_current_program().config.gcc_version, get_source_fn(),
+        get_current_program().config.external_optimization_level,
+        get_project_fn(), get_library_fn(), get_source_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
     disassemble();

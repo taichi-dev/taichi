@@ -13,7 +13,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
   */
   auto vv_width = expr->lanes;
   TC_ASSERT(vv_width == 1 || vv_width == simd_width);
-  auto vv_type = [&](DataType dt) {
+  auto vec_type = [&](DataType dt) {
     if (expr->lanes == 1) {
       return fmt::format("vec<{}, {}>", data_type_name(dt), 1);
     } else {
@@ -101,7 +101,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     }
   } else if (expr->type == NodeType::vload) {
     emit_code("auto {} = {}::load(access_{}(context.buffers[0] {}));",
-              expr->var_name, vv_type(expr->data_type),
+              expr->var_name, vec_type(expr->data_type),
               expr[0]->snode_ptr(0)->node_type_name,
               address_elements(expr[0]->snode_ptr(0), "0"));
   } else if (expr->type == NodeType::vstore) {
@@ -110,7 +110,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
               address_elements(expr[0]->snode_ptr(0), "0", 2));
   } else if (expr->type == NodeType::load) {
     emit_code("auto {} = {}::load({});", expr->var_name,
-              vv_type(expr->data_type), expr[0]->var_name);
+              vec_type(expr->data_type), expr[0]->var_name);
 #if (0)
     bool regular = false;
     if (expr[0]->type == NodeType::pointer &&
@@ -225,7 +225,8 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     } else {
       // irregular
       emit_code("auto {} = {}::load({}_base, {}_offsets);", expr->var_name,
-                vv_type(expr->data_type), expr[0]->var_name, expr[0]->var_name);
+                vec_type(expr->data_type), expr[0]->var_name,
+                expr[0]->var_name);
     }
 #endif
   } else if (expr->type == NodeType::store) {
@@ -239,7 +240,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
         values.push_back(expr->value<int32>(i));
       }
       auto constant = get_constant(fmt::format(
-          "{}({})", vv_type(expr->data_type), vec_to_list(values, "{")));
+          "{}({})", vec_type(expr->data_type), vec_to_list(values, "{")));
       emit_code("auto {} = {}; /*i32*/ ", expr->var_name, constant);
     } else {
       std::vector<float32> values;
@@ -247,7 +248,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
         values.push_back(expr->value<float32>(i));
       }
       auto constant = get_constant(fmt::format(
-          "{}({})", vv_type(expr->data_type), vec_to_list(values, "{")));
+          "{}({})", vec_type(expr->data_type), vec_to_list(values, "{")));
       emit_code("auto {} = {}; /*f32*/ ", expr->var_name, constant);
     }
   } else if (expr->type == NodeType::index) {
@@ -268,20 +269,21 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       // indirect node, needs an load from "pointer" array
       auto base = loop_variable(prog->current_snode);
       emit_code("auto {}_index = {}({});", expr->var_name,
-                vv_type(DataType::i32), base);
+                vec_type(DataType::i32), base);
       auto constant = get_constant(
-          fmt::format("{}({})", vv_type(expr->data_type), members));
+          fmt::format("{}({})", vec_type(expr->data_type), members));
 
       emit_code("auto {}_indirect = add({}_index, {});", expr->var_name,
                 expr->var_name, constant);
-      emit_code("auto {} = gather({}_index, {});", expr->var_name,
+      emit_code("auto {} = gather((void *)&{}_cache->data[0], {}_indirect);",
+                expr->var_name, prog->current_snode->node_type_name,
                 expr->var_name);
     } else {
       auto base = index_name_global(prog->current_snode, index_id);
       emit_code("auto {}_index = {}({});", expr->var_name,
-                vv_type(DataType::i32), base);
+                vec_type(DataType::i32), base);
       auto constant = get_constant(
-          fmt::format("{}({})", vv_type(expr->data_type), members));
+          fmt::format("{}({})", vec_type(expr->data_type), members));
 
       emit_code("auto {} = add({}_index, {});", expr->var_name, expr->var_name,
                 constant);
@@ -319,7 +321,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     }
 
     auto offsets = offsets_val;
-    emit_code("{} {};", vv_type(ad.dt), expr->var_name);
+    emit_code("{} {};", vec_type(ad.dt), expr->var_name);
 
     // For each split (vec) of vvec
     std::vector<int> offset_subset(offsets.begin(),

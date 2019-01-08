@@ -37,11 +37,15 @@ struct CompileConfig {
   Arch arch;
   int simd_width;
   int gcc_version;
+  bool internal_optimization;
+  int external_optimization_level;
 
   CompileConfig() {
     arch = Arch::x86_64;
     simd_width = -1;
-    gcc_version = 5;
+    internal_optimization = true;
+    external_optimization_level = 3; // not 3 for faster compilation
+    gcc_version = 5; // not 7 for faster compilation
   }
 };
 

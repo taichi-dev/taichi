@@ -477,7 +477,7 @@ struct dynamic {
 template <int max_n_>
 struct indirect {
   static constexpr int max_n = max_n_;
-  int children[max_n];
+  int data[max_n];
   std::atomic<int> n;
 
   indirect() : n(0) {
@@ -488,11 +488,11 @@ struct indirect {
   }
 
   TC_FORCE_INLINE int *look_up(int i) {  // i is flattened index
-    return &children[i];
+    return &data[i];
   }
 
   TC_FORCE_INLINE void touch(int i) {
-    children[n++] = i;
+    data[n++] = i;
     printf("p=%p\n", &n);
     printf("n=%d, i=%d\n", (int)n, i);
   }

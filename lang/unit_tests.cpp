@@ -485,7 +485,7 @@ TC_TEST("index") {
 auto test_indirect = []() {
   Program prog;
   prog.config.internal_optimization = false;
-  prog.config.external_optimization_level = 0;
+  prog.config.external_optimization_level = 3;
 
   int n = 4;
   int k = 8;

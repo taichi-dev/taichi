@@ -170,6 +170,7 @@ struct vec {
     vec ret;
     for (int i = 0; i < dim; i++) {
       ret.element(i) = *addr[i];
+      printf("%p %d\n", addr[i], ret.element(i));
     }
     return ret;
   }
@@ -197,7 +198,7 @@ struct vec {
   void store(T *addr[dim]) {
     for (int i = 0; i < dim; i++) {
       *addr[i] = element(i);
-      printf("%p %d\n", addr[i], element(i));
+      // printf("%p %d\n", addr[i], element(i));
     }
   }
 };
@@ -336,18 +337,18 @@ inline float32x8 max<float32, 8>(float32x8 a, float32x8 b) {
 //*****************************************************************************
 inline int32x8 cmp_ne(float32x8 a, float32x8 b) {
   auto ret = _mm256_cmp_ps(a, b, _CMP_NEQ_UQ);
-  return *reinterpret_cast<int32x8 *>(&ret);
+  return *(int32x8 *)(&ret);
 }
 
 inline int32x8 cmp_ne(int32x8 a, int32x8 b) {
-  auto ret = _mm256_cmp_ps(*reinterpret_cast<float32x8 *>(&a),
-                           *reinterpret_cast<float32x8 *>(&b), _CMP_NEQ_UQ);
-  return *reinterpret_cast<int32x8 *>(&ret);
+  auto ret = _mm256_cmp_ps(*(float32x8 *)(&a),
+                           *(float32x8 *)(&b), _CMP_NEQ_UQ);
+  return *(int32x8 *)(&ret);
 }
 
 inline int32x8 cmp_lt(float32x8 a, float32x8 b) {
   auto ret = _mm256_cmp_ps(a, b, _CMP_LT_OQ);
-  return *reinterpret_cast<int32x8 *>(&ret);
+  return *(int32x8 *)(&ret);
 }
 
 inline int32x8 cmp_lt(int32x8 a, int32x8 b) {
@@ -359,14 +360,14 @@ inline int32x8 cmp_lt(int32x8 a, int32x8 b) {
 
 inline float32x8 select(int32x8 mask, float32x8 true_val, float32x8 false_val) {
   return _mm256_blendv_ps(false_val, true_val,
-                          *reinterpret_cast<float32x8 *>(&mask));
+                          *(float32x8 *)(&mask));
 }
 
 inline int32x8 select(int32x8 mask, int32x8 true_val, int32x8 false_val) {
-  auto ret = _mm256_blendv_ps(*reinterpret_cast<float32x8 *>(&false_val),
-                              *reinterpret_cast<float32x8 *>(&true_val),
-                              *reinterpret_cast<float32x8 *>(&mask));
-  return *reinterpret_cast<int32x8 *>(&ret);
+  auto ret = _mm256_blendv_ps(*(float32x8 *)(&false_val),
+                              *(float32x8 *)(&true_val),
+                              *(float32x8 *)(&mask));
+  return *(int32x8 *)(&ret);
 }
 
 //*****************************************************************************
@@ -500,8 +501,8 @@ struct indirect {
 
   TC_FORCE_INLINE void touch(int i) {
     data[n++] = i;
-    printf("p=%p\n", &n);
-    printf("n=%d, i=%d\n", (int)n, i);
+    // printf("p=%p\n", &n);
+    // printf("n=%d, i=%d\n", (int)n, i);
   }
 
   TC_FORCE_INLINE void clear() {

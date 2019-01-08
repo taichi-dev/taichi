@@ -16,6 +16,8 @@ TLANG_NAMESPACE_BEGIN
 template <typename T>
 using Handle = std::shared_ptr<T>;
 
+constexpr int indirect_loop_variable_index = -1;
+
 class Expr;
 
 enum class Arch { x86_64, gpu };

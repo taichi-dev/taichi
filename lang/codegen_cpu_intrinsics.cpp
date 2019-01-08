@@ -265,14 +265,28 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     TC_ASSERT(bit::is_power_of_two(num_groups));
     members += "}";
     auto index_id = expr->index_id(0);
-    auto base = index_name_global(prog->current_snode, index_id);
-    emit_code("auto {}_index = {}({});", expr->var_name, vv_type(DataType::i32),
-              base);
-    auto constant =
-        get_constant(fmt::format("{}({})", vv_type(expr->data_type), members));
 
-    emit_code("auto {} = add({}_index, {});", expr->var_name, expr->var_name,
-              constant);
+    if (prog->current_snode->type == SNodeType::indirect) {
+      // indirect node, needs an load from "pointer" array
+      auto base = loop_variable(prog->current_snode);
+      emit_code("auto {}_index = {}({});", expr->var_name, vv_type(DataType::i32),
+                base);
+      auto constant =
+          get_constant(fmt::format("{}({})", vv_type(expr->data_type), members));
+
+      emit_code("auto {}_indirect = add({}_index, {});", expr->var_name, expr->var_name,
+                constant);
+      emit_code("auto {} = gather({}_index, {});", expr->var_name, expr->var_name);
+    } else {
+      auto base = index_name_global(prog->current_snode, index_id);
+      emit_code("auto {}_index = {}({});", expr->var_name, vv_type(DataType::i32),
+                base);
+      auto constant =
+          get_constant(fmt::format("{}({})", vv_type(expr->data_type), members));
+
+      emit_code("auto {} = add({}_index, {});", expr->var_name, expr->var_name,
+                constant);
+    }
   } else if (expr->type == NodeType::pointer) {
     emit_code("{} *{}[{}];", expr->data_type_name(), expr->var_name, vv_width);
     for (int i = 0; i < vv_width; i++) {

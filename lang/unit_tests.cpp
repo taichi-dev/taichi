@@ -507,7 +507,7 @@ auto test_indirect = []() {
     touch(snode, load(a[j]) / imm(k), j);  // put main index into snode sparsity
   });
 
-  auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });
+  // auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });
 
   auto reduce = kernel(snode, [&]() { sum[i] = sum[i] + a[j]; });
 
@@ -516,7 +516,7 @@ auto test_indirect = []() {
   }
 
   populate();
-  inc();
+  // inc();
   reduce();
 
   for (int i = 0; i < n; i++) {

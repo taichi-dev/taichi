@@ -1,3 +1,4 @@
+#if(0)
 #include <taichi/util.h>
 #include "util.h"
 
@@ -149,3 +150,4 @@ auto benchmark_microschedule = []() {
 TC_REGISTER_TASK(benchmark_microschedule);
 }
 TC_NAMESPACE_END
+#endif

@@ -14,6 +14,7 @@ class AddressAnalyzer : Visitor {
 
   result_type run(Expr &expr) {
     expr.accept(*this);
+    return memo[expr];
   }
 
   void visit(Expr &expr) override {
@@ -23,7 +24,7 @@ class AddressAnalyzer : Visitor {
 
     std::vector<result_type> ch_results;
 
-    for (int i = 0; i < expr->ch.size(); i++) {
+    for (int i = 0; i < (int)expr->ch.size(); i++) {
       ch_results.push_back(memo[expr->ch[i]]);
     }
 

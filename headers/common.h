@@ -39,6 +39,17 @@ using uint16 = unsigned short;
 namespace taichi {
 namespace Tlang {
 
+template <typename T, typename G>
+T union_cast(G g) {
+  static_assert(sizeof(T) == sizeof(G), "");
+  union {
+    T t;
+    G g;
+  } u;
+  u.g = g;
+  return u.t;
+}
+
 struct Context {
   static constexpr int max_num_buffers = 16;
   static constexpr int max_num_parameters = 16;
@@ -115,8 +126,7 @@ struct vec {
     type v;
     T e[dim];
   };
-  vec() {
-  }
+  vec() = default;
   vec(type v) : v(v) {
   }
   template <typename _T = T>
@@ -173,7 +183,6 @@ struct vec {
     vec ret;
     for (int i = 0; i < dim; i++) {
       ret.element(i) = *addr[i];
-      printf("%p %d\n", addr[i], ret.element(i));
     }
     return ret;
   }
@@ -340,18 +349,18 @@ inline float32x8 max<float32, 8>(float32x8 a, float32x8 b) {
 //*****************************************************************************
 inline int32x8 cmp_ne(float32x8 a, float32x8 b) {
   auto ret = _mm256_cmp_ps(a, b, _CMP_NEQ_UQ);
-  return *(int32x8 *)(&ret);
+  return union_cast<int32x8>(ret);
 }
 
 inline int32x8 cmp_ne(int32x8 a, int32x8 b) {
-  auto ret = _mm256_cmp_ps(*(float32x8 *)(&a),
-                           *(float32x8 *)(&b), _CMP_NEQ_UQ);
-  return *(int32x8 *)(&ret);
+  auto ret = _mm256_cmp_ps(union_cast<float32x8>(a), union_cast<float32x8>(b),
+                           _CMP_NEQ_UQ);
+  return union_cast<int32x8>(ret);
 }
 
 inline int32x8 cmp_lt(float32x8 a, float32x8 b) {
   auto ret = _mm256_cmp_ps(a, b, _CMP_LT_OQ);
-  return *(int32x8 *)(&ret);
+  return union_cast<int32x8>(ret);
 }
 
 inline int32x8 cmp_lt(int32x8 a, int32x8 b) {
@@ -362,15 +371,13 @@ inline int32x8 cmp_lt(int32x8 a, int32x8 b) {
 //*****************************************************************************
 
 inline float32x8 select(int32x8 mask, float32x8 true_val, float32x8 false_val) {
-  return _mm256_blendv_ps(false_val, true_val,
-                          *(float32x8 *)(&mask));
+  return _mm256_blendv_ps(false_val, true_val, union_cast<float32x8>(mask));
 }
 
 inline int32x8 select(int32x8 mask, int32x8 true_val, int32x8 false_val) {
-  auto ret = _mm256_blendv_ps(*(float32x8 *)(&false_val),
-                              *(float32x8 *)(&true_val),
-                              *(float32x8 *)(&mask));
-  return *(int32x8 *)(&ret);
+  auto ret = _mm256_blendv_ps(union_cast<float32x8>(false_val),
+                              union_cast<float32x8>(true_val), union_cast<float32x8>(mask));
+  return union_cast<int32x8>(ret);
 }
 
 //*****************************************************************************

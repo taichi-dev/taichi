@@ -34,7 +34,7 @@ void SLPVectorizer::sort(Expr &expr) {
         break;
       }
     }
-    if(group.size() % group_size != 0) {
+    if (group.size() % group_size != 0) {
       TC_WARN("sorting failed. Using default order.");
       return;
     }

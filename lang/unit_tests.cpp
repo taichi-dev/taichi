@@ -511,8 +511,7 @@ auto test_indirect = []() {
 
   // auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });
 
-  auto reduce =
-      kernel(snode, [&]() { sum[i] = (sum[i] + a[j]); });
+  auto reduce = kernel(snode, [&]() { sum[i] = (sum[i] + a[j]); });
 
   for (int i = 0; i < m; i++) {
     a.val<int32>(i) = i;

@@ -40,6 +40,6 @@ AlignedAllocator::~AlignedAllocator() {
 #endif
   }
 }
-}
+}  // namespace Tlang
 
 TC_NAMESPACE_END

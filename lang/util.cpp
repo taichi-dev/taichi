@@ -52,4 +52,4 @@ real measure_cpe(std::function<void()> target,
       (Time::get_time() - start_t) * 1e9_f64 * get_cpu_frequency();
   return elasped_cycles / float64(total_batches * elements_per_call);
 }
-}
+}  // namespace taichi::Tlang

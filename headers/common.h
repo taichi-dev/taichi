@@ -376,7 +376,8 @@ inline float32x8 select(int32x8 mask, float32x8 true_val, float32x8 false_val) {
 
 inline int32x8 select(int32x8 mask, int32x8 true_val, int32x8 false_val) {
   auto ret = _mm256_blendv_ps(union_cast<float32x8>(false_val),
-                              union_cast<float32x8>(true_val), union_cast<float32x8>(mask));
+                              union_cast<float32x8>(true_val),
+                              union_cast<float32x8>(mask));
   return union_cast<int32x8>(ret);
 }
 

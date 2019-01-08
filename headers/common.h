@@ -111,7 +111,10 @@ inline void store(const vec<T, dim> &v, void *, vec<int32, dim>);
 template <typename T, int dim>
 struct vec {
   using type = typename vec_helper<T, dim>::type;
-  type v;
+  union {
+    type v;
+    T e[dim];
+  };
   vec() {
   }
   vec(type v) : v(v) {
@@ -129,10 +132,10 @@ struct vec {
     return v;
   }
   T &operator[](int i) {
-    return ((T *)(&v))[i];
+    return e[i];
   }
   const T &operator[](int i) const {
-    return ((T *)(&v))[i];
+    return e[i];
   }
   void print() {
     std::cout << "[";

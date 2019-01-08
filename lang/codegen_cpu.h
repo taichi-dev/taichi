@@ -65,8 +65,7 @@ class CPUCodeGen : public CodeGenBase {
       emit_code("auto {} = 0;", loop_variable(snode->parent));
     auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
     emit_code("auto {}_cache = access_{}({}, {});", snode->node_type_name,
-              snode->node_type_name, parent,
-              loop_variable(snode->parent));
+              snode->node_type_name, parent, loop_variable(snode->parent));
     if (snode->_multi_threaded) {
       auto p = snode->parent;
       while (p) {
@@ -160,41 +159,7 @@ class CPUCodeGen : public CodeGenBase {
     code_suffix = "\n";
   }
 
-  std::string adapter_name(int i) {
-    TC_ASSERT(i < 1000);
-    return fmt::format("adapter_{:03d}", i);
-  }
-
-  /*
-  T
-  int num_groups,
-  int num_inputs,
-  int input_group_size,
-  */
-  std::string adapter_type(DataType dt, int num_inputs, int input_gs) {
-    return fmt::format("SlowAdapter<{}, {}, {}, {}>", data_type_name(dt),
-                       num_groups, num_inputs, input_gs);
-  }
-
-  void create_adapter(DataType dt, int i, int num_inputs, int input_gs) {
-    auto name = adapter_name(i);
-    emit_code("{} {};", adapter_type(dt, num_inputs, input_gs),
-              adapter_name(i));
-  }
-
   void codegen(Kernel &ker);
-
-  std::string vv_type_str(int width, DataType data_type) {
-    return fmt::format("VV<{}, {}>", width, data_type_name(data_type));
-  }
-
-  std::string vv_constant_str(int width, DataType data_type, int64 val) {
-    return fmt::format("VV<{}, {}>({})", width, data_type_name(data_type), val);
-  }
-
-  std::string vv_constant_str(int width, DataType data_type, float32 val) {
-    return fmt::format("VV<{}, {}>({})", width, data_type_name(data_type), val);
-  }
 
   template <typename T>
   static std::string vec_to_list_tmp(const std::vector<T> &val) {
@@ -226,14 +191,6 @@ class CPUCodeGen : public CodeGenBase {
     return members;
   }
 
-  template <typename T>
-  static std::string vv_constant_str(int width,
-                                     DataType data_type,
-                                     const std::vector<T> &val) {
-    return fmt::format("VV<{}, {}>({})", width, data_type_name(data_type),
-                       vec_to_list_str(val));
-  }
-
   void visit(Expr &expr) {
     if (mode == Mode::vv) {
       visit_vv(expr);
@@ -244,9 +201,7 @@ class CPUCodeGen : public CodeGenBase {
 
   void visit_intrinsics(Expr &expr);
 
-  void visit_vv(Expr &expr) {
-    TC_NOT_IMPLEMENTED
-  }
+  void visit_vv(Expr &expr){TC_NOT_IMPLEMENTED}
 
   // group_size should be batch_size here...
   FunctionType compile() {

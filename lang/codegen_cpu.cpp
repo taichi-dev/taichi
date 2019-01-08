@@ -259,18 +259,6 @@ void CPUCodeGen::codegen(Kernel &kernel) {
 
   start_macro_loop();
 
-  // kernel.parallel_instances *= num_groups;
-  // kernel.simd_lanes *= num_groups;
-
-  // Adapters
-  for (int i = 0; i < (int)kernel.adapters.size(); i++) {
-    auto &ad = kernel.adapters[i];
-    create_adapter(ad.dt, i, ad.counter / ad.input_group_size,
-                   ad.input_group_size);
-  }
-
-  // Body
-
   // adapters
   for (auto &adapter : kernel.adapters) {
     adapter.stores =

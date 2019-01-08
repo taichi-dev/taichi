@@ -227,6 +227,12 @@ inline float32x8 gather<float32, 8>(const void *addr, int32x8 offsets) {
   return _mm256_i32gather_ps((float32 *)addr, offsets, 4);
 }
 
+template <>
+inline int32x8 gather<int32, 8>(const void *addr, int32x8 offsets) {
+  // return _mm256_i32gather_ps((float32 *)addr, offsets, sizeof(float32));
+  return _mm256_i32gather_epi32((int32 *)addr, offsets, 4);
+}
+
 //*****************************************************************************
 
 template <>

@@ -500,7 +500,7 @@ auto test_indirect = []() {
     // indirect puts an int32
     snode = &root.fixed(i, n).indirect(j, n);
     root.fixed(j, m).place(a);
-    root.fixed(i, n).place(sum);
+    root.fixed(i, n).place_verbose(sum);
   });
 
   auto populate = kernel(a, [&]() {

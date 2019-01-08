@@ -151,6 +151,12 @@ struct SNode {
     return *this;
   }
 
+  SNode &place_verbose(Expr &expr) {
+    place(expr);
+    ch.back()->verbose();
+    return *this;
+  }
+
   SNode &indirect(Expr &expr, int n) {
     auto &child = insert_children(SNodeType::indirect);
     TC_ASSERT(expr->type == NodeType::index);

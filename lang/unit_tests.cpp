@@ -485,6 +485,7 @@ TC_TEST("index") {
 auto test_indirect = []() {
   Program prog;
   prog.config.internal_optimization = false;
+  prog.config.external_optimization_level = 0;
 
   int n = 4;
   int k = 8;
@@ -511,7 +512,7 @@ auto test_indirect = []() {
   // auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });
 
   auto reduce =
-      kernel(snode, [&]() { sum[i] = (load(sum[i]) + load(a[j])).print(); });
+      kernel(snode, [&]() { sum[i] = (sum[i] + a[j]); });
 
   for (int i = 0; i < m; i++) {
     a.val<int32>(i) = i;

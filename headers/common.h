@@ -197,6 +197,7 @@ struct vec {
   void store(T *addr[dim]) {
     for (int i = 0; i < dim; i++) {
       *addr[i] = element(i);
+      printf("%p %d\n", addr[i], element(i));
     }
   }
 };

@@ -145,6 +145,12 @@ class StructCompiler : public CodeGenBase {
           "i2=0, "
           "int i3=0) {{",
           snode.node_type_name, snode.node_type_name);
+      if (snode._verbose) {
+        emit_code(
+            "std::cout << \"accessing node {} at \" << i0 << ' ' << i1 << ' ' "
+            "<< i2 << ' ' << i3 << std::endl;",
+            snode.node_type_name);
+      }
       emit_code("int tmp;");
       emit_code("auto n0 = ({} *)root;", root_type);
       for (int i = 0; i + 1 < (int)stack.size(); i++) {

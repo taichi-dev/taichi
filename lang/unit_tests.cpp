@@ -486,7 +486,7 @@ auto test_indirect = []() {
   Program prog;
   prog.config.internal_optimization = false;
 
-  int n = 32;
+  int n = 4;
   int k = 8;
   int m = n * k;
 
@@ -510,7 +510,7 @@ auto test_indirect = []() {
 
   // auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });
 
-  auto reduce = kernel(snode, [&]() { sum[i] = sum[i] + a[j]; });
+  auto reduce = kernel(snode, [&]() { sum[i] = load(sum[i]).print() + load(a[j]); });
 
   for (int i = 0; i < m; i++) {
     a.val<int32>(i) = i;

@@ -264,8 +264,9 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     TC_ASSERT(bit::is_power_of_two(num_groups));
     members += "}";
     auto index_id = expr->index_id(0);
-
-    if (prog->current_snode->type == SNodeType::indirect) {
+    auto snode = prog->current_snode;
+    if (snode->type == SNodeType::indirect && index_id == snode->index_id) {
+      TC_INFO("SNODE");
       // indirect node, needs an load from "pointer" array
       auto base = loop_variable(prog->current_snode);
       emit_code("auto {}_index = {}({});", expr->var_name,

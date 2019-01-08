@@ -34,6 +34,7 @@ struct SNode {
   static int counter;
   int id;
   int depth;
+  bool _verbose;
   bool _multi_threaded;
 
   int64 n;
@@ -62,6 +63,7 @@ struct SNode {
     std::memset(index_order, -1, sizeof(index_order));
     func = nullptr;
     parent = nullptr;
+    _verbose = false;
     _multi_threaded = false;
     index_id = -1;
   }
@@ -112,6 +114,11 @@ struct SNode {
     return *this;
   }
 
+  SNode &verbose() {
+    this->_verbose = true;
+    return *this;
+  }
+
   template <typename... Args>
   SNode &place(Expr &expr, Args &&... args) {
     return place(expr).place(std::forward<Args>(args)...);
@@ -148,6 +155,7 @@ struct SNode {
     auto &child = insert_children(SNodeType::indirect);
     TC_ASSERT(expr->type == NodeType::index);
     child.index_id = expr->value<int>(0);
+    // child.extractors[child.index_id].num_bits = 0;
     child.n = n;
     return child;
   }

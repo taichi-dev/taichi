@@ -2,11 +2,12 @@
 
 TLANG_NAMESPACE_BEGIN
 
-Expr LoopVectorizer::run(Expr &expr, SNode *s, int factor) {
+Expr LoopVectorizer::run(Expr &expr, SNode *snode, int factor) {
   this->factor = factor;
   // simply pick the last index to vectorize
   bool active[max_num_indices];
   std::memset(active, 0, sizeof(active));
+  auto s = snode;
   while (s != nullptr) {
     for (int i = 0; i < max_num_indices; i++) {
       if (s->extractors[i].num_bits) {
@@ -17,6 +18,9 @@ Expr LoopVectorizer::run(Expr &expr, SNode *s, int factor) {
       }
     }
     s = s->parent;
+  }
+  if (snode->type == SNodeType::indirect) {
+    vectorized_id = snode->index_id;
   }
   return vectorize(expr);  // vectorize
 }
@@ -46,8 +50,7 @@ Expr LoopVectorizer::vectorize(Expr node) {
       for (int j = 0; j < node->lanes; j++) {
         int new_j = i * node->lanes + j;
         new_node->index_offset(new_j) =
-            node->index_offset(j) +
-            i * (node->index_id(0) == vectorized_id);
+            node->index_offset(j) + i * (node->index_id(0) == vectorized_id);
       }
     }
   }

@@ -4,6 +4,7 @@
 
 #include <immintrin.h>
 #include <atomic>
+#include <numeric>
 
 #if !defined(TC_INCLUDED)
 
@@ -278,33 +279,117 @@ struct SlowAdapter {
 // End Virtual Vectors
 
 template <typename T, int dim>
-struct vec;
+struct vec_helper;
 
-#define REGISTER_VEC(T, dim, name)     \
+#define DEFINE_VEC_TYPE(T, dim, _type) \
   template <>                          \
-  struct vec<T, dim> {                 \
-    using type = name;                 \
-    type v;                            \
-    vec() {                            \
-    }                                  \
-    vec(type v) : v(v) {               \
-    }                                  \
-    operator type() const {            \
-      return v;                        \
-    }                                  \
-    T &operator[](int i) {             \
-      return ((T *)(&v))[i];           \
-    }                                  \
-    const T &operator[](int i) const { \
-      return ((T *)(&v))[i];           \
-    }                                  \
+  struct vec_helper<T, dim> {          \
+    using type = _type;                \
   };
 
-REGISTER_VEC(float32, 1, float32);
-REGISTER_VEC(int32, 1, int32);
-REGISTER_VEC(float32, 8, __m256);
-REGISTER_VEC(int32, 8, __m256i);
-// REGISTER_VEC(uint32, 8, __m256u);
+DEFINE_VEC_TYPE(float32, 1, float32);
+DEFINE_VEC_TYPE(int32, 1, int32);
+DEFINE_VEC_TYPE(float32, 8, __m256);
+DEFINE_VEC_TYPE(int32, 8, __m256i);
+
+template <typename T, int dim>
+struct vec;
+
+template <typename T, int dim>
+inline vec<T, dim> set1(T);
+
+template <typename T, int dim>
+inline vec<T, dim> load(const void *);
+
+template <typename T, int dim>
+inline vec<T, dim> gather(const void *, vec<int32, dim>);
+
+template <typename T, int dim>
+inline void store(const vec<T, dim> &v, const void *);
+
+template <typename T, int dim>
+inline void store(const vec<T, dim> &v, void *, vec<int32, dim>);
+
+
+template <typename T, int dim>
+struct vec {
+  using type = typename vec_helper<T, dim>::type;
+  type v;
+  vec() {
+  }
+  vec(type v) : v(v) {
+  }
+  template <typename _T = T>
+  vec(std::enable_if_t<!std::is_same<_T, type>::value(), T> scalar)
+      : v(set1<T, dim>(scalar)) {
+  }
+  TC_FORCE_INLINE vec(std::array<T, dim> v) {
+    for (int i = 0; i < dim; i++) {
+      element(i) = v[i];
+    }
+  }
+  operator type() const {
+    return v;
+  }
+  T &operator[](int i) {
+    return ((T *)(&v))[i];
+  }
+  const T &operator[](int i) const {
+    return ((T *)(&v))[i];
+  }
+  void print() {
+    std::cout << "[";
+    for (int j = 0; j < dim; j++) {
+      std::cout << element(j) << ", ";
+    }
+    std::cout << "]" << std::endl;
+  }
+  T &element(int i) {
+    return (*this)[i];
+  }
+  const T &element(int i) const {
+    return (*this)[i];
+  }
+
+  static vec load(T *addr[dim]) {
+    vec ret;
+    for (int i = 0; i < dim; i++) {
+      ret.element(i) = *addr[i];
+    }
+    return ret;
+  }
+
+  static vec load(void *addr) {
+    vec ret;
+    for (int i = 0; i < dim; i++) {
+      ret.d[i] = taichi::Tlang::load<T, dim>(
+          (void *)((uint8 *)addr + i * sizeof(vec<T, dim>)));
+    }
+    return ret;
+  }
+
+  static vec load(void *addr, vec<int, dim> offsets) {
+    vec ret;
+    for (int i = 0; i < dim; i++) {
+      ret.d[i] = gather<T, dim>(addr, offsets.d[i]);
+    }
+    return ret;
+  }
+
+  void store(void *addr) {
+    taichi::Tlang::store<T, dim>(v, addr);
+  }
+
+  void store(void *addr, vec<int32, dim> offsets) {
+    taichi::Tlang::store<T, dim>(v, addr, offsets);
+  }
+
+  void store(T *addr[dim]) {
+    for (int i = 0; i < dim; i++) {
+      *addr[i] = element(i);
+    }
+  }
+};
 
 //*****************************************************************************
 
@@ -314,9 +399,6 @@ using float32x8 = vec<float32, 8>;
 using int32x8 = vec<int32, 8>;
 
 //*****************************************************************************
-
-template <typename T, int dim>
-inline vec<T, dim> load(const void *);
 
 template <>
 inline float32x8 load<float32, 8>(const void *addr) {
@@ -329,10 +411,6 @@ inline vec<int32, 8> load<int32, 8>(const void *addr) {
 }
 
 //*****************************************************************************
-
-template <typename T, int dim>
-inline vec<T, dim> gather(const void *, vec<int32, dim>);
-
 template <>
 inline float32x8 gather<float32, 8>(const void *addr, int32x8 offsets) {
   // return _mm256_i32gather_ps((float32 *)addr, offsets, sizeof(float32));
@@ -340,9 +418,6 @@ inline float32x8 gather<float32, 8>(const void *addr, int32x8 offsets) {
 }
 
 //*****************************************************************************
-
-template <typename T, int dim>
-inline void store(const vec<T, dim> &v, const void *);
 
 template <>
 inline void store<float32, 8>(const float32x8 &v, const void *addr) {
@@ -355,9 +430,6 @@ inline void store<int32, 8>(const int32x8 &v, const void *addr) {
 }
 
 //*****************************************************************************
-
-template <typename T, int dim>
-inline void store(const vec<T, dim> &v, void *, vec<int32, dim>);
 
 template <>
 inline void store<float32, 8>(const float32x8 &v, void *addr, int32x8 offsets) {
@@ -395,9 +467,6 @@ inline float32x8 cast<int32, float32, 8>(const int32x8 &v) {
 }
 
 //*****************************************************************************
-
-template <typename T, int dim>
-inline vec<T, dim> set1(T);
 
 template <>
 inline float32x1 set1<float32, 1>(float32 v) {
@@ -508,96 +577,6 @@ inline int32x8 blend(int32x8 a, int32x8 b, int imm) {
 template <typename T, int dim, int n>
 struct vvec {
   vec<T, dim> d[n];
-
-  TC_FORCE_INLINE vvec(std::array<T, dim * n> v) {
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < dim; j++) {
-        d[i][j] = v[i * dim + j];
-        // std::cout << d[i][j] << ",";
-      }
-    }
-    // std::cout << std::endl;
-  }
-
-  vvec() {
-  }
-
-  TC_FORCE_INLINE vvec(T v) {
-    for (int i = 0; i < n; i++) {
-      d[i] = set1<T, dim>(v);
-    }
-  }
-
-  static vvec load(T *addr[dim * n]) {
-    vvec ret;
-    for (int i = 0; i < dim * n; i++) {
-      ret.element(i) = *addr[i];
-    }
-    return ret;
-  }
-
-  static vvec load(void *addr) {
-    vvec ret;
-    for (int i = 0; i < n; i++) {
-      ret.d[i] = taichi::Tlang::load<T, dim>(
-          (void *)((uint8 *)addr + i * sizeof(vec<T, dim>)));
-    }
-    return ret;
-  }
-
-  static vvec load(void *addr, vvec<int, dim, n> offsets) {
-    vvec ret;
-    for (int i = 0; i < n; i++) {
-      ret.d[i] = gather<T, dim>(addr, offsets.d[i]);
-    }
-    return ret;
-  }
-
-  void store(void *addr) {
-    for (int i = 0; i < n; i++) {
-      taichi::Tlang::store<T, dim>(
-          d[i], (void *)((uint8 *)addr + i * sizeof(vec<T, dim>)));
-    }
-  }
-
-  void store(void *addr, vvec<int32, dim, n> offsets) {
-    for (int i = 0; i < n; i++) {
-      taichi::Tlang::store<T, dim>(d[i], addr, offsets.d[i]);
-    }
-  }
-
-  void store(T *addr[dim * n]) {
-    for (int i = 0; i < dim * n; i++) {
-      *addr[i] = element(i);
-    }
-  }
-
-  template <typename G>
-  vvec<G, dim, n> cast() {
-    vvec<G, dim, n> ret;
-    for (int i = 0; i < n; i++) {
-      ret.d[i] = taichi::Tlang::cast<T, G, dim>(d[i]);
-    }
-    return ret;
-  }
-
-  void print() {
-    std::cout << "[";
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < dim; j++) {
-        std::cout << d[i][j] << ", ";
-      }
-    }
-    std::cout << "]" << std::endl;
-  }
-
-  T &element(int i) {
-    return d[i / dim][i % dim];
-  }
-
-  const T &element(int i) const {
-    return d[i / dim][i % dim];
-  }
 };
 
 #define DEFINE_BINARY_OP(T, OP, INST) \
@@ -642,136 +621,12 @@ inline int32x8 land(int32x8 a, int b) {
   return v;
 }
 
-template <int dim, int n>
-inline vvec<int32, dim, n> shr(vvec<int32, dim, n> a, int b) {
-  vvec<int32, dim, n> ret;
-  for (int i = 0; i < n; i++)
-    ret.d[i] = shr(a.d[i], b);
-  return ret;
-}
-
-template <int dim, int n>
-inline vvec<int32, dim, n> shl(vvec<int32, dim, n> a, int b) {
-  vvec<int32, dim, n> ret;
-  for (int i = 0; i < n; i++)
-    ret.d[i] = shl(a.d[i], b);
-  return ret;
-}
-
-template <int dim, int n>
-inline vvec<int32, dim, n> land(vvec<int32, dim, n> a, int b) {
-  vvec<int32, dim, n> ret;
-  for (int i = 0; i < n; i++)
-    ret.d[i] = land(a.d[i], b);
-  return ret;
-}
-
-template <int dim>
-inline vec<int32, dim> div(vec<int32, dim> a, vec<int32, dim> b) {
-  // return _mm256_srli_epi32(a, 9);
-  vec<int32, dim> ret;
-  for (int i = 0; i < dim; i++)
-    ret[i] = a[i] / b[i];
-  return ret;
-}
-
 template <typename T, int dim>
 inline vec<T, dim> mod(vec<T, dim> a, vec<T, dim> b) {
   static_assert(std::is_integral<T>::value, "");
   // return _mm256_and_si256(a, _mm256_set1_epi32(511));
   return sub(a, mul(div(a, b), b));
 };
-
-#define VVEC_BINARY_OP(NAME, OP)                                               \
-  template <typename T, int dim>                                               \
-  inline vec<T, dim> operator OP(const vec<T, dim> &a, const vec<T, dim> &b) { \
-    return NAME(a, b);                                                         \
-  }                                                                            \
-  template <typename T, int dim, int n>                                        \
-  inline vvec<T, dim, n> operator OP(const vvec<T, dim, n> &a,                 \
-                                     const vvec<T, dim, n> &b) {               \
-    vvec<T, dim, n> ret;                                                       \
-    for (int i = 0; i < n; i++) {                                              \
-      ret.d[i] = NAME(a.d[i], b.d[i]);                                         \
-    }                                                                          \
-    return ret;                                                                \
-  }                                                                            \
-  template <typename T, int dim, int n>                                        \
-  inline vvec<T, dim, n> NAME(const vvec<T, dim, n> &a,                        \
-                              const vvec<T, dim, n> &b) {                      \
-    vvec<T, dim, n> ret;                                                       \
-    for (int i = 0; i < n; i++) {                                              \
-      ret.d[i] = NAME(a.d[i], b.d[i]);                                         \
-    }                                                                          \
-    return ret;                                                                \
-  }
-
-VVEC_BINARY_OP(add, +);
-VVEC_BINARY_OP(sub, -);
-VVEC_BINARY_OP(mul, *);
-VVEC_BINARY_OP(div, /);
-VVEC_BINARY_OP(mod, %);
-
-#undef VVEC_BINARY_OP
-
-#define VVEC_BINARY_FUNC(NAME)                            \
-  template <typename T, int dim, int n>                   \
-  inline vvec<T, dim, n> NAME(const vvec<T, dim, n> &a,   \
-                              const vvec<T, dim, n> &b) { \
-    vvec<T, dim, n> ret;                                  \
-    for (int i = 0; i < n; i++) {                         \
-      ret.d[i] = NAME<T, dim>(a.d[i], b.d[i]);            \
-    }                                                     \
-    return ret;                                           \
-  }
-
-VVEC_BINARY_FUNC(max);
-VVEC_BINARY_FUNC(min);
-
-template <typename T, typename G, int dim, int n>
-inline vvec<T, dim, n> select(const vvec<G, dim, n> &mask,
-                              const vvec<T, dim, n> &a,
-                              const vvec<T, dim, n> &b) {
-  vvec<T, dim, n> ret;
-  for (int i = 0; i < n; i++) {
-    ret.d[i] = select(mask.d[i], a.d[i], b.d[i]);
-  }
-  return ret;
-}
-
-template <typename T, int dim, int n>
-inline vvec<int32, dim, n> cmp_ne(const vvec<T, dim, n> &a,
-                                  const vvec<T, dim, n> &b) {
-  vvec<int32, dim, n> ret;
-  for (int i = 0; i < n; i++) {
-    ret.d[i] = cmp_ne(a.d[i], b.d[i]);
-  }
-  return ret;
-}
-
-template <typename T, int dim, int n>
-inline vvec<int32, dim, n> cmp_lt(const vvec<T, dim, n> &a,
-                                  const vvec<T, dim, n> &b) {
-  vvec<int32, dim, n> ret;
-  for (int i = 0; i < n; i++) {
-    ret.d[i] = cmp_lt(a.d[i], b.d[i]);
-  }
-  return ret;
-}
-
-#define VVEC_UNARY_OP(NAME)                               \
-  template <typename T, int dim, int n>                   \
-  inline vvec<T, dim, n> NAME(const vvec<T, dim, n> &a) { \
-    vvec<T, dim, n> ret;                                  \
-    for (int i = 0; i < n; i++) {                         \
-      ret.d[i] = NAME<T, dim>(a.d[i]);                    \
-    }                                                     \
-    return ret;                                           \
-  }
-
-VVEC_UNARY_OP(floor);
-
-#undef VVEC_UNARY_OP
 
 // *****************************************************************************
 // these structures are used for maintaining metadata and sparsity.

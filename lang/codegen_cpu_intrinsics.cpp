@@ -14,12 +14,12 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
   auto vv_width = expr->lanes;
   TC_ASSERT(vv_width == 1 || vv_width == simd_width);
   int split = vv_width / simd_width;
+  TC_ASSERT(split == 0 || split == 1);
   auto vv_type = [&](DataType dt) {
     if (expr->lanes == 1) {
-      return fmt::format("vvec<{}, {}, {}>", data_type_name(dt), 1, 1);
+      return fmt::format("vec<{}, {}>", data_type_name(dt), 1);
     } else {
-      return fmt::format("vvec<{}, {}, {}>", data_type_name(dt), simd_width,
-                         split);
+      return fmt::format("vec<{}, {}>", data_type_name(dt), simd_width);
     }
   };
   if (expr->type == NodeType::addr) {
@@ -93,10 +93,10 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     emit_code("auto {} = floor({});", expr->var_name, expr[0]->var_name);
   } else if (expr->type == NodeType::cast) {
     if (expr->data_type == DataType::i32) {
-      emit_code("auto {} = {}.cast<int32>();", expr->var_name,
+      emit_code("auto {} = cast<int32>({});", expr->var_name,
                 expr[0]->var_name);
     } else if (expr->data_type == DataType::f32) {
-      emit_code("auto {} = {}.cast<float32>();", expr->var_name,
+      emit_code("auto {} = cast<float32>({});", expr->var_name,
                 expr[0]->var_name);
     } else {
       TC_NOT_IMPLEMENTED

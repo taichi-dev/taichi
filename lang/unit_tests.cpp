@@ -22,7 +22,7 @@ TC_TEST("select") {
   func();
 
   for (int i = 0; i < n; i++) {
-    TC_ASSERT(a.val<float32>(i) == (i % 2) * i);
+    TC_CHECK(a.val<float32>(i) == (i % 2) * i);
   }
 }
 

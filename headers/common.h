@@ -310,7 +310,6 @@ inline void store(const vec<T, dim> &v, const void *);
 template <typename T, int dim>
 inline void store(const vec<T, dim> &v, void *, vec<int32, dim>);
 
-
 template <typename T, int dim>
 struct vec {
   using type = typename vec_helper<T, dim>::type;
@@ -320,7 +319,7 @@ struct vec {
   vec(type v) : v(v) {
   }
   template <typename _T = T>
-  vec(std::enable_if_t<!std::is_same<_T, type>::value(), T> scalar)
+  vec(std::enable_if_t<!std::is_same<_T, type>::value, T> scalar)
       : v(set1<T, dim>(scalar)) {
   }
   TC_FORCE_INLINE vec(std::array<T, dim> v) {
@@ -344,11 +343,28 @@ struct vec {
     }
     std::cout << "]" << std::endl;
   }
-  T &element(int i) {
+
+  // SIMD types
+  template <typename T_ = type>
+  std::enable_if_t<!std::is_arithmetic<T_>::value, T> &element(int i) {
     return (*this)[i];
   }
-  const T &element(int i) const {
+
+  template <typename T_ = type>
+  const std::enable_if_t<!std::is_arithmetic<T_>::value, T> &element(
+      int i) const {
     return (*this)[i];
+  }
+
+  // scalar types
+  template <typename T_ = type>
+  typename std::enable_if_t<std::is_arithmetic<T_>::value, T> &element(int i) {
+    return v;
+  }
+
+  template <typename T_ = type>
+  const typename std::enable_if_t<std::is_arithmetic<T_>::value, T> &element(int i) const {
+    return v;
   }
 
   static vec load(T *addr[dim]) {
@@ -453,16 +469,16 @@ inline float32x8 floor<float32, 8>(const float32x8 &v) {
 
 //*****************************************************************************
 
-template <typename T, typename G, int dim>
+template <typename G, typename T, int dim>
 inline vec<G, dim> cast(const vec<T, dim> &);
 
 template <>
-inline int32x8 cast<float32, int32, 8>(const float32x8 &v) {
+inline int32x8 cast<int32, float32, 8>(const float32x8 &v) {
   return _mm256_cvtps_epi32(v);
 }
 
 template <>
-inline float32x8 cast<int32, float32, 8>(const int32x8 &v) {
+inline float32x8 cast<float32, int32, 8>(const int32x8 &v) {
   return _mm256_cvtepi32_ps(v);
 }
 
@@ -574,11 +590,6 @@ inline int32x8 blend(int32x8 a, int32x8 b, int imm) {
   return _mm256_blend_epi32(a, b, imm);
 }
 
-template <typename T, int dim, int n>
-struct vvec {
-  vec<T, dim> d[n];
-};
-
 #define DEFINE_BINARY_OP(T, OP, INST) \
   inline T OP(T a, T b) {             \
     return INST(a, b);                \
@@ -604,8 +615,8 @@ DEFINE_BINARY_OP(int32x8, lor, _mm256_or_si256);
     return a INST b;                      \
   }
 
-DEFINE_BINARY_OP_MID(float32, add, +);
-DEFINE_BINARY_OP_MID(int32, add, +);
+DEFINE_BINARY_OP_MID(float32x1, add, +);
+DEFINE_BINARY_OP_MID(int32x1, add, +);
 
 inline int32x8 shr(int32x8 a, int b) {
   return _mm256_srli_epi32(a, b);
@@ -620,6 +631,15 @@ inline int32x8 land(int32x8 a, int b) {
   int32x8 v = _mm256_and_si256(a, B);
   return v;
 }
+
+template <int dim>
+inline vec<int32, dim> div(vec<int32, dim> a, vec<int32, dim> b) {
+  vec<int32, dim> ret;
+  for (int i = 0; i < dim; i++) {
+    ret[i] = a[i] / b[i];
+  }
+  return ret;
+};
 
 template <typename T, int dim>
 inline vec<T, dim> mod(vec<T, dim> a, vec<T, dim> b) {
@@ -692,3 +712,4 @@ struct indirect {
 }  // namespace Tlang
 
 }  // namespace taichi
+

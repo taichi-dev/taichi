@@ -498,7 +498,7 @@ auto test_indirect = []() {
 
   layout([&] {
     // indirect puts an int32
-    snode = &root.fixed(i, n).indirect(j, n);
+    snode = &root.fixed(i, n).indirect(j, k * 2);
     root.fixed(j, m).place(a);
     root.fixed(i, n).place_verbose(sum);
   });
@@ -510,7 +510,8 @@ auto test_indirect = []() {
 
   // auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });
 
-  auto reduce = kernel(snode, [&]() { sum[i] = load(sum[i.print()]).print() + load(a[j]); });
+  auto reduce =
+      kernel(snode, [&]() { sum[i] = (load(sum[i]) + load(a[j])).print(); });
 
   for (int i = 0; i < m; i++) {
     a.val<int32>(i) = i;

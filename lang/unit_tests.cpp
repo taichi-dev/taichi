@@ -528,9 +528,10 @@ TC_TEST("indirect") {
 }
 
 TC_TEST("spmv") {
-  int n = 16;
-  int band = 20;
-  int k = 8;
+  int n = 16384;
+  int band = 96;
+  int k = 64;
+  TC_ASSERT(k <= band);
   int m = n * k;
 
   Eigen::SparseMatrix<float32> M(n, n);
@@ -549,20 +550,21 @@ TC_TEST("spmv") {
 
   SNode *snode;
 
+  std::vector<Eigen::Triplet<float32>> entries;
+
   layout([&] {
     // indirect puts an int32
     root.fixed(p, m).place(mat_row, mat_col, mat_val);
-    snode = &root.fixed(i, n).indirect(j, k);
+    snode = &root.fixed(i, n).multi_threaded().indirect(j, k);
     root.fixed(i, n).place(vec_val);
     // root.fixed(j, m).place(a);
     root.fixed(i, n).place(result);
   });
 
-  auto populate = kernel(mat_row, [&]() { touch(snode, mat_row[p.print()], p); });
+  auto populate = kernel(mat_row, [&]() { touch(snode, mat_row[p], p); });
 
   auto matvecmul = kernel(snode, [&]() {
-    auto entry = mat_val[j.print()] * vec_val[load(mat_col[j])];
-    entry = entry.print();
+    auto entry = mat_val[j] * vec_val[load(mat_col[j])];
     reduce(result[i], entry);
   });
 
@@ -580,7 +582,7 @@ TC_TEST("spmv") {
       }
       cols.insert(col);
       auto val = rand();
-      M.insert(i, col) = val;
+      entries.push_back({i, col, val});
       mat_row.val<int32>(i * k + j) = i;
       mat_col.val<int32>(i * k + j) = col;
       mat_val.val<float32>(i * k + j) = val;
@@ -590,15 +592,27 @@ TC_TEST("spmv") {
     vec_val.val<float32>(i) = val;
   }
 
-  populate();
-  TC_TAG;
-  matvecmul();
-  TC_TAG;
+  TC_TIME(M.setFromTriplets(entries.begin(), entries.end()));
 
-  Vret = M * V;
+  TC_TIME(populate());
+
+  int T = 30;
+  for (int i = 0; i < T; i++) {
+    TC_TIME(matvecmul());
+  }
+
+  TC_INFO("Serial Eigen");
+  for (int i = 0; i < T; i++) {
+    TC_TIME(Vret = M * V);
+  }
+  TC_INFO("Parallel Eigen");
+  Eigen::initParallel();
+  for (int i = 0; i < T; i++) {
+    TC_TIME(Vret = M * V);
+  }
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK_EQUAL(Vret(i), result.val<float32>(i), 1e-5_f);
+    TC_CHECK_EQUAL(Vret(i), result.val<float32>(i) / T, 1e-3_f);
   }
 }
 

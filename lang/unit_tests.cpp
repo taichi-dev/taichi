@@ -482,7 +482,7 @@ TC_TEST("index") {
 }
 
 // array of linked list
-auto test_indirect = []() {
+TC_TEST("indirect") {
   Program prog;
   prog.config.internal_optimization = false;
   prog.config.external_optimization_level = 3;
@@ -511,7 +511,7 @@ auto test_indirect = []() {
 
   // auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });
 
-  auto reduce = kernel(snode, [&]() { sum[i] = (sum[i] + a[j]); });
+  auto red = kernel(snode, [&]() { reduce(sum[i], a[j]); });
 
   for (int i = 0; i < m; i++) {
     a.val<int32>(i) = i;
@@ -519,12 +519,12 @@ auto test_indirect = []() {
 
   populate();
   // inc();
-  reduce();
+  red();
 
   for (int i = 0; i < n; i++) {
-    TC_INFO("{}, reduced={}", i, sum.val<int32>(i));
+    auto reduced = sum.val<int32>(i);
+    TC_CHECK(reduced == (i * k + (i + 1) * k - 1) * k / 2);
   }
-};
-TC_REGISTER_TASK(test_indirect);
+}
 
 TLANG_NAMESPACE_END

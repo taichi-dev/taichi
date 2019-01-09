@@ -48,6 +48,13 @@ inline void touch(SNode *snode, Expr target_index, Expr value) {
   return ker.ret->ch.push_back(e);
 }
 
+inline void reduce(Expr target, Expr value) {
+  TC_ASSERT(target->type == NodeType::pointer);
+  auto e = Expr::create(NodeType::reduce, target, Expr::load_if_pointer(value));
+  auto &ker = get_current_program().get_current_kernel();
+  return ker.ret->ch.push_back(e);
+}
+
 TLANG_NAMESPACE_END
 
 /*

@@ -367,6 +367,12 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
                 expr->snode_ptr(i)->node_type_name, expr->ch[1]->var_name, i,
                 expr->ch[0]->var_name, i);
     }
+  } else if (expr->type == NodeType::reduce) {
+    for (int i = 0; i < simd_width; i++) {
+      // val comes first, then indices
+      emit_code("*{}[{}] += {}.element({});", expr[0]->var_name, i,
+                expr->ch[1]->var_name, i);
+    }
   } else {
     TC_ERROR("Node {} cannot be visited.", expr->node_type_name());
   }

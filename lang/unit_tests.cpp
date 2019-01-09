@@ -528,6 +528,8 @@ TC_TEST("indirect") {
 }
 
 // baseline: 16384, 256, 128: 7.74ms
+// extract result[i], accumulate in tmp: 3.41
+//
 TC_TEST("spmv") {
   int n = 16384;
   int band = 256;

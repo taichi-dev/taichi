@@ -221,6 +221,16 @@ using float32x1 = vec<float32, 1>;
 using int32x1 = vec<int32, 1>;
 using float32x8 = vec<float32, 8>;
 using int32x8 = vec<int32, 8>;
+//*****************************************************************************
+
+template <typename T, int dim>
+T reduce_sum(const vec<T, dim> &v) {
+  T ret(0);
+  for (int i = 0; i < dim; i++) {
+    ret += v.element(i);
+  }
+  return ret;
+}
 
 //*****************************************************************************
 

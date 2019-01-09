@@ -409,8 +409,6 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       for (int j = 0; j < max_num_indices; j++) {
         total_elem += elems[j];
       }
-      TC_P(prog->current_snode->node_type_name);
-      TC_P(prog->current_snode->parent->node_type_name);
       emit_code("auto *reduce_target = access_{}(context.buffers[0] {});",
                 snode->node_type_name, total_elem);
       emit_code("*{} += reduce_sum({});", "reduce_target", "sum");

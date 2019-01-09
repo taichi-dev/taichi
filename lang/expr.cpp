@@ -21,17 +21,18 @@ Expr &Expr::operator=(const Expr &o) {
 }
 
 Expr Expr::operator[](const Expr &i) {
-  TC_ASSERT(i);
-  TC_ASSERT(node->type == NodeType::addr);
-  TC_ASSERT(i->type == NodeType::index || i->data_type == DataType::i32);
-  auto n = create(NodeType::pointer, *this, i);
-  n->data_type = node->data_type;
-  return n;
+  return (*this)[ExprGroup(i)];
 }
 
-Expr Expr::operator[](const ExprGroup &is) {
+Expr Expr::operator[](const ExprGroup &_is) {
+  auto is = _is;
   TC_ASSERT(is.size() > 0);
   TC_ASSERT(node->type == NodeType::addr);
+  for (auto &i: is.exprs) {
+    if (i->type == NodeType::pointer) {
+      i.set(load(i));
+    }
+  }
   for (auto &i : is.exprs) {
     TC_ASSERT(i);
     TC_ASSERT(i->type == NodeType::index || i->data_type == DataType::i32);
@@ -57,6 +58,8 @@ Expr Expr::operator[](const ExprGroup &is) {
   } else {
     TC_NOT_IMPLEMENTED
   }
+  TC_NOT_IMPLEMENTED
+  return Expr();
 }
 
 void *Expr::evaluate_addr(int i, int j, int k, int l) {

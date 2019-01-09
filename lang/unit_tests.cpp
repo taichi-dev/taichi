@@ -541,7 +541,6 @@ TC_TEST("spmv") {
   Eigen::VectorXf V(n), Vret(n);
 
   Program prog;
-  prog.config.internal_optimization = false;
   prog.config.external_optimization_level = 4;
 
   auto result = var<float32>();
@@ -570,7 +569,7 @@ TC_TEST("spmv") {
   auto populate = kernel(mat_row, [&]() { touch(snode, mat_row[p], p); });
 
   auto matvecmul = kernel(snode, [&]() {
-    auto entry = mat_val[j] * vec_val[load(mat_col[j])];
+    auto entry = mat_val[j] * vec_val[mat_col[j]];
     reduce(result[i], entry);
   });
 

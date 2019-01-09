@@ -84,6 +84,9 @@ bool Optimizer::search_and_replace(Expr &expr) {
     // only consider the last one.
     auto &index_node = expr._pointer()->ch.back();
 
+    if (index_node->type != NodeType::index) {
+      return false;
+    }
     bool indirect = false;
     if (kernel->program.current_snode->type == SNodeType::indirect &&
         index_node->index_id(0) == kernel->program.current_snode->index_id) {

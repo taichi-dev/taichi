@@ -243,11 +243,11 @@ class StructCompiler : public CodeGenBase {
     write_code_to_file();
 
     auto cmd = fmt::format(
-        "g++-{} {} -std=c++14 -shared -fPIC -O{} -march=native -I {}/headers "
+        "g++-{} {} -std=c++14 -shared -fPIC {} -march=native -I {}/headers "
         "-Wall "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} 2> {}.log",
         get_current_program().config.gcc_version, get_source_fn(),
-        get_current_program().config.external_optimization_level,
+        get_current_program().config.gcc_opt_flag(),
         get_project_fn(), get_library_fn(), get_source_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);

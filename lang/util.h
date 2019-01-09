@@ -47,6 +47,15 @@ struct CompileConfig {
     external_optimization_level = 3;  // not 3 for faster compilation
     gcc_version = 5;                  // not 7 for faster compilation
   }
+
+  std::string gcc_opt_flag() {
+    TC_ASSERT(0 <= external_optimization_level &&
+              external_optimization_level < 5);
+    if (external_optimization_level < 4) {
+      return fmt::format("-O{}", external_optimization_level);
+    } else
+      return "-Ofast";
+  }
 };
 
 enum class Device { cpu, gpu };

@@ -527,10 +527,11 @@ TC_TEST("indirect") {
   }
 }
 
+// baseline: 16384, 256, 128: 7.74ms
 TC_TEST("spmv") {
   int n = 16384;
-  int band = 96;
-  int k = 64;
+  int band = 256;
+  int k = 128;
   TC_ASSERT(k <= band);
   int m = n * k;
 
@@ -539,6 +540,7 @@ TC_TEST("spmv") {
 
   Program prog;
   prog.config.internal_optimization = false;
+  prog.config.external_optimization_level = 4;
 
   auto result = var<float32>();
   auto mat_col = var<int32>();
@@ -555,7 +557,9 @@ TC_TEST("spmv") {
   layout([&] {
     // indirect puts an int32
     root.fixed(p, m).place(mat_row, mat_col, mat_val);
-    snode = &root.fixed(i, n).multi_threaded().indirect(j, k);
+    snode = &root.fixed(i, n)
+        // .multi_threaded()
+        .indirect(j, k);
     root.fixed(i, n).place(vec_val);
     // root.fixed(j, m).place(a);
     root.fixed(i, n).place(result);
@@ -597,7 +601,7 @@ TC_TEST("spmv") {
   TC_TIME(populate());
 
   int T = 30;
-  for (int i = 0; i < T; i++) {
+  for (int i = 0; i < T; i) {
     TC_TIME(matvecmul());
   }
 

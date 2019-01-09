@@ -106,6 +106,13 @@ class CodeGenBase : public Visitor {
   }
 
   void write_code_to_file() {
+    std::ifstream ifs(get_source_fn());
+    std::string firstline;
+    std::getline(ifs, firstline);
+    if (firstline.find("debug") != firstline.npos) {
+      TC_WARN("Debugging file {}. Code overridden.", get_source_fn());
+      return;
+    }
     {
       std::ofstream of(get_source_fn());
       of << code;

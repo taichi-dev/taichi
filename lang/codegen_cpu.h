@@ -110,12 +110,16 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void generate_loop_tail(SNode *snode, bool last_level = false) {
+    CodeRegion r;
+    r = CodeRegion::exterior_loop_end;
     auto l = loop_variable(snode);
     if (last_level && snode->type != SNodeType::forked) {
       // emit_code("{} += {}; b += {};", l, num_groups * unroll, unroll);
+      r = CodeRegion::interior_loop_end;
     }
+    CODE_REGION_VAR(r);
     if (snode->parent != nullptr) {
-      emit_code("}");
+      emit_code("}\n");
       generate_loop_tail(snode->parent,
                          last_level && snode->type == SNodeType::forked);
     } else {

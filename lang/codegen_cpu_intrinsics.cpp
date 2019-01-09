@@ -367,11 +367,36 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
                 expr->ch[0]->var_name, i);
     }
   } else if (expr->type == NodeType::reduce) {
-    for (int i = 0; i < simd_width; i++) {
-      // val comes first, then indices
-      emit_code("*{}[{}] += {}.element({});", expr[0]->var_name, i,
-                expr->ch[1]->var_name, i);
+    TC_INFO("Reduce optimization");
+    // TC_ASSERT(expr[1]->type == NodeType::pointer && expr[1])
+    // for (int i = 0; i < simd_width; i++) {
+    // val comes first, then indices
+    // emit_code("*{}[{}] += {}.element({});", expr[0]->var_name, i,
+    // expr->ch[1]->var_name, i);
+    emit_code("sum = add(sum, {});", expr->ch[1]->var_name);
+    {
+      CODE_REGION(interior_shared_variable_begin);
+      emit_code("vec<{}, {}> sum(0);", expr[1]->data_type_name(), simd_width);
     }
+    {
+      CODE_REGION(interior_shared_variable_end);
+      auto snode = expr[0][0]->snode_ptr(0);
+      std::vector<std::string> elems(max_num_indices, ", 0");
+      for (int j = 0; j < (int)max_num_indices; j++) {
+        elems[j] = fmt::format(", index_{}_{}_global",
+                               prog->current_snode->parent->node_type_name, j);
+      }
+      std::string total_elem = "";
+      for (int j = 0; j < max_num_indices; j++) {
+        total_elem += elems[j];
+      }
+      TC_P(prog->current_snode->node_type_name);
+      TC_P(prog->current_snode->parent->node_type_name);
+      emit_code("auto *reduce_target = access_{}(context.buffers[0] {});",
+                snode->node_type_name, total_elem);
+      emit_code("*{} += reduce_sum({});", "reduce_target", "sum");
+    }
+    //}
   } else {
     TC_ERROR("Node {} cannot be visited.", expr->node_type_name());
   }

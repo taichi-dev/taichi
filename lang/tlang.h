@@ -41,7 +41,8 @@ inline Adapter &adapter(int i) {
 }
 
 inline void touch(SNode *snode, Expr target_index, Expr value) {
-  auto e = Expr::create(NodeType::touch, target_index, value);
+  auto e = Expr::create(NodeType::touch, Expr::load_if_pointer(target_index),
+                        Expr::load_if_pointer(value));
   e->snode_ptr(0) = snode;
   auto &ker = get_current_program().get_current_kernel();
   ker.has_touch = true;

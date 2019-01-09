@@ -3,6 +3,8 @@
 #include <taichi/util.h>
 #include <taichi/visual/gui.h>
 #include <taichi/common/bit.h>
+#include <Eigen/Sparse>
+#include <Eigen/Dense>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -522,6 +524,81 @@ TC_TEST("indirect") {
   for (int i = 0; i < n; i++) {
     auto reduced = sum.val<int32>(i);
     TC_CHECK(reduced == (i * k + (i + 1) * k + 1) * k / 2);
+  }
+}
+
+TC_TEST("spmv") {
+  int n = 16;
+  int band = 20;
+  int k = 8;
+  int m = n * k;
+
+  Eigen::SparseMatrix<float32> M(n, n);
+  Eigen::VectorXf V(n), Vret(n);
+
+  Program prog;
+  prog.config.internal_optimization = false;
+
+  auto result = var<float32>();
+  auto mat_col = var<int32>();
+  auto mat_row = var<int32>();
+  auto mat_val = var<float32>();
+  auto vec_val = var<float32>();
+
+  auto i = ind(), j = ind(), p = ind();
+
+  SNode *snode;
+
+  layout([&] {
+    // indirect puts an int32
+    root.fixed(p, m).place(mat_row, mat_col, mat_val);
+    snode = &root.fixed(i, n).indirect(j, k);
+    root.fixed(i, n).place(vec_val);
+    // root.fixed(j, m).place(a);
+    root.fixed(i, n).place(result);
+  });
+
+  auto populate = kernel(mat_row, [&]() { touch(snode, mat_row[p.print()], p); });
+
+  auto matvecmul = kernel(snode, [&]() {
+    auto entry = mat_val[j.print()] * vec_val[load(mat_col[j])];
+    entry = entry.print();
+    reduce(result[i], entry);
+  });
+
+  for (int i = 0; i < n; i++) {
+    std::set<int> cols;
+    for (int j = 0; j < k; j++) {
+      int col;
+      while (true) {
+        col = std::rand() % (2 * band) - band + i;
+        if (col < 0 || col >= n)
+          continue;
+        if (cols.find(col) == cols.end()) {
+          break;
+        }
+      }
+      cols.insert(col);
+      auto val = rand();
+      M.insert(i, col) = val;
+      mat_row.val<int32>(i * k + j) = i;
+      mat_col.val<int32>(i * k + j) = col;
+      mat_val.val<float32>(i * k + j) = val;
+    }
+    auto val = rand();
+    V(i) = val;
+    vec_val.val<float32>(i) = val;
+  }
+
+  populate();
+  TC_TAG;
+  matvecmul();
+  TC_TAG;
+
+  Vret = M * V;
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK_EQUAL(Vret(i), result.val<float32>(i), 1e-5_f);
   }
 }
 

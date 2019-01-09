@@ -558,7 +558,9 @@ TC_TEST("spmv") {
 
   layout([&] {
     // indirect puts an int32
-    root.fixed(p, m).place(mat_row, mat_col, mat_val);
+    root.fixed(p, m).place(mat_row);
+    root.fixed(p, m).place(mat_col);
+    root.fixed(p, m).place(mat_val);
     snode = &root.fixed(i, n)
                  // .multi_threaded()
                  .indirect(p, k);

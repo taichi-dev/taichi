@@ -275,10 +275,19 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
 
       emit_code("auto {}_indirect = add({}_index, {});", expr->var_name,
                 expr->var_name, constant);
-      emit_code(
-          "auto {} = gather<{}, {}>((void *)&{}_cache->data[0], {}_indirect);",
-          expr->var_name, data_type_name(expr->data_type), simd_width,
-          prog->current_snode->node_type_name, expr->var_name);
+      bool gather = false; // use loadu
+      if (gather) {
+        emit_code(
+            "auto {} = gather<{}, {}>((void *)&{}_cache->data[0], {}_indirect);",
+            expr->var_name, data_type_name(expr->data_type), simd_width,
+            prog->current_snode->node_type_name, expr->var_name);
+      } else {
+        emit_code(
+            "auto {} = load<{}, {}>((void *)&{}_cache->data[0] + "
+            "{}_indirect.element(0) * 4);",
+            expr->var_name, data_type_name(expr->data_type), simd_width,
+            prog->current_snode->node_type_name, expr->var_name);
+      }
     } else {
       auto base = index_name_global(prog->current_snode, index_id);
       emit_code("auto {}_index = {}({});", expr->var_name,

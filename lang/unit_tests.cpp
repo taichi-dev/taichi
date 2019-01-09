@@ -609,8 +609,9 @@ TC_TEST("spmv") {
 
   TC_INFO("Parallel Eigen");
   Eigen::initParallel();
+  Eigen::setNbThreads(1);
+  TC_P(n = Eigen::nbThreads());
   for (int i = 0; i < T; i++) {
-    TC_P(n = Eigen::nbThreads());
     TC_TIME(Vret = M * V);
   }
 

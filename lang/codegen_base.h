@@ -18,6 +18,40 @@ class CodeGenBase : public Visitor {
   std::string suffix;
   void *dll;
 
+  enum class CodeRegion : int {
+    header,
+    exterior_loop_begin,
+    shared_variable_begin,
+    interior_loop_begin,
+    body,
+    interior_loop_end,
+    shared_variable_end,
+    tail
+  };
+
+  std::map<CodeRegion, std::string> codes;
+
+  CodeRegion current_code_region;
+
+  class CodeRegionGuard {
+    CodeGenBase *codegen;
+    CodeRegion previous;
+
+   public:
+    CodeRegionGuard(CodeGenBase *codegen, CodeRegion current)
+        : codegen(codegen), previous(codegen->current_code_region) {
+      codegen->current_code_region = current;
+    }
+
+    ~CodeRegionGuard() {
+      codegen->current_code_region = previous;
+    }
+  };
+
+  CodeRegionGuard get_region_guard(CodeRegion cr) {
+    return CodeRegionGuard(this, cr);
+  }
+
   static int get_code_gen_id() {
     static int id = 0;
     TC_ASSERT(id < 10000);
@@ -102,6 +136,19 @@ class CodeGenBase : public Visitor {
       code += fmt::format(f, std::forward<Args>(args)...) + code_suffix;
     } else {
       code += f + code_suffix;
+    }
+  }
+
+  template <typename... Args>
+  void emit(std::string f, Args &&... args) {
+    if (codes.find(current_code_region) == codes.end()) {
+      codes[current_code_region] = "";
+    }
+    if (sizeof...(args)) {
+      codes[current_code_region] +=
+          fmt::format(f, std::forward<Args>(args)...) + code_suffix;
+    } else {
+      codes[current_code_region] += f + code_suffix;
     }
   }
 

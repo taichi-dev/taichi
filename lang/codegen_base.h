@@ -20,14 +20,37 @@ class CodeGenBase : public Visitor {
 
   enum class CodeRegion : int {
     header,
+    exterior_shared_variable_begin,
     exterior_loop_begin,
-    shared_variable_begin,
+    interior_shared_variable_begin,
     interior_loop_begin,
     body,
     interior_loop_end,
-    shared_variable_end,
+    interior_shared_variable_end,
+    exterior_loop_end,
+    exterior_shared_variable_end,
     tail
   };
+
+  static std::string get_region_name(CodeRegion r) {
+    static std::map<CodeRegion, std::string> type_names;
+    if (type_names.empty()) {
+#define REGISTER_TYPE(i) type_names[CodeRegion::i] = #i;
+      REGISTER_TYPE(header);
+      REGISTER_TYPE(exterior_shared_variable_begin);
+      REGISTER_TYPE(exterior_loop_begin);
+      REGISTER_TYPE(interior_shared_variable_begin);
+      REGISTER_TYPE(interior_loop_begin);
+      REGISTER_TYPE(body);
+      REGISTER_TYPE(interior_loop_end);
+      REGISTER_TYPE(interior_shared_variable_end);
+      REGISTER_TYPE(exterior_loop_end);
+      REGISTER_TYPE(exterior_shared_variable_end);
+      REGISTER_TYPE(tail);
+#undef REGISTER_TYPE
+    }
+    return type_names[r];
+  }
 
   std::map<CodeRegion, std::string> codes;
 
@@ -167,7 +190,8 @@ class CodeGenBase : public Visitor {
     }
     {
       std::ofstream of(get_source_fn());
-      for (auto const &k: codes) {
+      for (auto const &k : codes) {
+        of << "// region " << get_region_name(k.first) << std::endl;
         of << k.second;
       }
     }

@@ -27,7 +27,7 @@ class CPUCodeGen : public CodeGenBase {
  public:
   std::string get_constant(std::string statement) {
     if (constant_vectors.find(statement) == constant_vectors.end()) {
-      CODE_REGION(shared_variable_begin);
+      CODE_REGION(exterior_shared_variable_begin);
       auto key = fmt::format("const{:04d}", constant_counter++);
       emit_code("const auto {} = {};\n", key, statement);
       constant_vectors[statement] = key;

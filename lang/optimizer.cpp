@@ -188,6 +188,7 @@ bool Optimizer::search_and_replace(Expr &expr) {
       }
       gather->set_similar(expr);
       expr.set(gather);
+      return true;
     }
   }
 

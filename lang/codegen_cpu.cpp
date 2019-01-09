@@ -260,16 +260,22 @@ void CPUCodeGen::codegen(Kernel &kernel) {
     generate_header();
   }
 
+  auto transforms = [&](Expr &ret, int group_size) {
+    ret = SLPVectorizer().run(ret, group_size);
+    // visualize_IR(get_source_fn() + ".slp.pdf", kernel.ret);
+    ret =
+        LoopVectorizer().run(ret, prog->current_snode, num_groups);
+    AdapterPreprocessor().run(kernel, ret, group_size);
+    VectorSplitter(prog->config.simd_width).run(ret);
+    if (prog->config.internal_optimization)
+      Optimizer().run(kernel, ret);
+  };
+
   // adapters
   for (auto &adapter : kernel.adapters) {
-    adapter.stores =
-        SLPVectorizer().run(adapter.stores, adapter.input_group_size);
-    adapter.stores =
-        LoopVectorizer().run(adapter.stores, prog->current_snode, num_groups);
-    AdapterPreprocessor().run(kernel, adapter.stores, adapter.input_group_size);
-    VectorSplitter(prog->config.simd_width).run(adapter.stores);
-    if (prog->config.internal_optimization)
-      Optimizer().run(kernel, adapter.stores);
+    TC_ASSERT(adapter.stores);
+
+    transforms(adapter.stores, adapter.input_group_size);
 
     this->group_size = adapter.input_group_size;
     adapter.store_exprs.resize(adapter.counter * simd_width / group_size *
@@ -285,18 +291,7 @@ void CPUCodeGen::codegen(Kernel &kernel) {
     // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
     // TC_P(group_size);
 
-    // auto vectorized_stores =
-    //    SLPVectorizer().run(kernel.ret, prog.config.group_size);
-
-    // visualize_IR(get_source_fn() + ".scalar.pdf", kernel.ret);
-    kernel.ret = SLPVectorizer().run(kernel.ret, kernel.output_group_size);
-    // visualize_IR(get_source_fn() + ".slp.pdf", kernel.ret);
-    kernel.ret =
-        LoopVectorizer().run(kernel.ret, prog->current_snode, num_groups);
-    AdapterPreprocessor().run(kernel, kernel.ret, kernel.output_group_size);
-    VectorSplitter(prog->config.simd_width).run(kernel.ret);
-    if (prog->config.internal_optimization)
-      Optimizer().run(kernel, kernel.ret);
+    transforms(kernel.ret, kernel.output_group_size);
 
     this->group_size = kernel.output_group_size;
     CODE_REGION(body);

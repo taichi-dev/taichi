@@ -531,13 +531,14 @@ TC_TEST("indirect") {
 // extract result[i], accumulate in tmp: 3.41
 // fast reduce_sum 3.37
 TC_TEST("spmv") {
+  initialize_benchmark();
   int n = 16384;
   int band = 256;
   int k = 128;
   TC_ASSERT(k <= band);
   int m = n * k;
 
-  Eigen::SparseMatrix<float32> M(n, n);
+  Eigen::SparseMatrix<float32, Eigen::RowMajor> M(n, n);
   Eigen::VectorXf V(n), Vret(n);
 
   Program prog;
@@ -559,8 +560,8 @@ TC_TEST("spmv") {
     // indirect puts an int32
     root.fixed(p, m).place(mat_row, mat_col, mat_val);
     snode = &root.fixed(i, n)
-        // .multi_threaded()
-        .indirect(j, k);
+                 // .multi_threaded()
+                 .indirect(p, k);
     root.fixed(i, n).place(vec_val);
     // root.fixed(j, m).place(a);
     root.fixed(i, n).place(result);
@@ -569,7 +570,7 @@ TC_TEST("spmv") {
   auto populate = kernel(mat_row, [&]() { touch(snode, mat_row[p], p); });
 
   auto matvecmul = kernel(snode, [&]() {
-    auto entry = mat_val[j] * vec_val[mat_col[j]];
+    auto entry = mat_val[p] * vec_val[mat_col[p]];
     reduce(result[i], entry);
   });
 
@@ -613,6 +614,7 @@ TC_TEST("spmv") {
   TC_INFO("Parallel Eigen");
   Eigen::initParallel();
   for (int i = 0; i < T; i++) {
+    TC_P(n = Eigen::nbThreads());
     TC_TIME(Vret = M * V);
   }
 

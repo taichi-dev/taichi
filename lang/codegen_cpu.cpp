@@ -255,9 +255,10 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   this->simd_width = prog->config.simd_width;
   this->num_groups = kernel.parallel_instances;
 
-  generate_header();
-
-  start_macro_loop();
+  {
+    CODE_REGION(header);
+    generate_header();
+  }
 
   // adapters
   for (auto &adapter : kernel.adapters) {
@@ -274,6 +275,7 @@ void CPUCodeGen::codegen(Kernel &kernel) {
     adapter.store_exprs.resize(adapter.counter * simd_width / group_size *
                                kernel.parallel_instances);
     // size after SLP vectorizer + Vector Splitting
+    CODE_REGION(body);
     adapter.stores.accept(*this);
   }
 
@@ -297,12 +299,15 @@ void CPUCodeGen::codegen(Kernel &kernel) {
       Optimizer().run(kernel, kernel.ret);
 
     this->group_size = kernel.output_group_size;
+    CODE_REGION(body);
     kernel.ret.accept(*this);
   }
-  end_macro_loop();
 
-  code_suffix = "";
-  generate_tail();
+  {
+    CODE_REGION(tail);
+    code_suffix = "";
+    generate_tail();
+  }
 }
 
 FunctionType CPUCodeGen::get(Program &prog, Kernel &kernel) {

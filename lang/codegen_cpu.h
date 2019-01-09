@@ -27,8 +27,9 @@ class CPUCodeGen : public CodeGenBase {
  public:
   std::string get_constant(std::string statement) {
     if (constant_vectors.find(statement) == constant_vectors.end()) {
+      CODE_REGION(shared_variable_begin);
       auto key = fmt::format("const{:04d}", constant_counter++);
-      emit_code_before_loop("const auto {} = {};\n", key, statement);
+      emit_code("const auto {} = {};\n", key, statement);
       constant_vectors[statement] = key;
     }
     return constant_vectors[statement];
@@ -125,8 +126,6 @@ class CPUCodeGen : public CodeGenBase {
     emit_code("auto {}_cache = ({} *)context.buffers[0];",
               prog->snode_root->node_type_name,
               prog->snode_root->node_type_name);
-    before_loop_body = code;
-    code = "";
 
     TC_ASSERT(prog->current_snode);
     while (prog->current_snode->type == SNodeType::place) {
@@ -139,24 +138,12 @@ class CPUCodeGen : public CodeGenBase {
 
   template <typename... Args>
   void emit_code_before_loop(std::string f, Args &&... args) {
-    if (sizeof...(args)) {
-      before_loop_body += fmt::format(f, std::forward<Args>(args)...);
-    } else {
-      before_loop_body += f;
-    }
+    TC_NOT_IMPLEMENTED;
   }
 
   void generate_tail() {
     generate_loop_tail(prog->current_snode, true);
     emit_code("}\n");
-    code = before_loop_body + code;
-  }
-
-  void start_macro_loop() {
-  }
-
-  void end_macro_loop() {
-    code_suffix = "\n";
   }
 
   void codegen(Kernel &ker);

@@ -10,7 +10,7 @@ class CodeGenBase : public Visitor {
   int var_count;
   int snode_count;
   int accessor_count;
-  std::string code, code_suffix;
+  std::string code_suffix;
   std::string folder;
   std::string func_name;
   int num_groups;
@@ -52,6 +52,8 @@ class CodeGenBase : public Visitor {
     return CodeRegionGuard(this, cr);
   }
 
+#define CODE_REGION(region) auto _____ = get_region_guard(CodeRegion::region);
+
   static int get_code_gen_id() {
     static int id = 0;
     TC_ASSERT(id < 10000);
@@ -59,11 +61,11 @@ class CodeGenBase : public Visitor {
   }
 
   CodeGenBase() : Visitor(Visitor::Order::child_first) {
-    code = "";
     id = get_code_gen_id();
     func_name = fmt::format("func{:06d}", id);
 
     dll = nullptr;
+    current_code_region = CodeRegion::header;
 
     folder = "_tlang_cache/";
     create_directories(folder);
@@ -132,11 +134,14 @@ class CodeGenBase : public Visitor {
 
   template <typename... Args>
   void emit_code(std::string f, Args &&... args) {
+    emit(f, std::forward<Args>(args)...);
+    /*
     if (sizeof...(args)) {
       code += fmt::format(f, std::forward<Args>(args)...) + code_suffix;
     } else {
       code += f + code_suffix;
     }
+    */
   }
 
   template <typename... Args>
@@ -162,7 +167,9 @@ class CodeGenBase : public Visitor {
     }
     {
       std::ofstream of(get_source_fn());
-      of << code;
+      for (auto const &k: codes) {
+        of << k.second;
+      }
     }
     trash(std::system(
         fmt::format("cp {} {}_unformated", get_source_fn(), get_source_fn())

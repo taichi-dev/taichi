@@ -4,9 +4,11 @@
 TLANG_NAMESPACE_BEGIN
 
 class Optimizer {
+ protected:
   Kernel *kernel;
+
  public:
-  virtual void run(Kernel &ker, Expr &expr) {
+  void run(Kernel &ker, Expr &expr) {
     kernel = &ker;
     while (true) {
       visited.clear();
@@ -20,7 +22,9 @@ class Optimizer {
 
   bool search_and_replace(Expr &expr);
 
-  bool optimize(Expr &expr);
+  virtual bool optimize(Expr &expr) = 0;
 };
+
+void apply_optimizers(Kernel &ker, Expr &expr);
 
 TLANG_NAMESPACE_END

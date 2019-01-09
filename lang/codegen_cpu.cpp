@@ -268,7 +268,7 @@ void CPUCodeGen::codegen(Kernel &kernel) {
     AdapterPreprocessor().run(kernel, ret, group_size);
     VectorSplitter(prog->config.simd_width).run(ret);
     if (prog->config.internal_optimization)
-      Optimizer().run(kernel, ret);
+      apply_optimizers(kernel, ret);
   };
 
   // adapters

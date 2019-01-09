@@ -50,6 +50,16 @@ T union_cast(G g) {
   return u.t;
 }
 
+template <typename T, typename G>
+T union_cast_different_size(G g) {
+  union {
+    T t;
+    G g;
+  } u;
+  u.g = g;
+  return u.t;
+}
+
 struct Context {
   static constexpr int max_num_buffers = 16;
   static constexpr int max_num_parameters = 16;
@@ -224,12 +234,22 @@ using int32x8 = vec<int32, 8>;
 //*****************************************************************************
 
 template <typename T, int dim>
-T reduce_sum(const vec<T, dim> &v) {
+TC_FORCE_INLINE T reduce_sum(const vec<T, dim> &v) {
   T ret(0);
   for (int i = 0; i < dim; i++) {
     ret += v.element(i);
   }
   return ret;
+}
+
+template <>
+TC_FORCE_INLINE float32 reduce_sum(const vec<float32, 8> &v) {
+  auto s = _mm256_hadd_ps(v, v);
+  auto h = s;
+  auto l = union_cast_different_size<__m256>(_mm256_extractf128_ps(s, 1));
+  h = h + l;
+  h = _mm256_hadd_ps(h, h);
+  return h[0];
 }
 
 //*****************************************************************************

@@ -149,7 +149,7 @@ bool Optimizer::search_and_replace(Expr &expr) {
     if (vpointer) {
       // replace load with vload
       if (expr->type == NodeType::load) {
-        TC_INFO("Optimized load");
+        TC_INFO("Optimized load to vloadu");
         auto vload = Expr::create(NodeType::vload, addr_node);
         vload->ch.resize(ptr->ch.size());
         for (int i = 1; i < (int)ptr->ch.size(); i++) {
@@ -160,10 +160,10 @@ bool Optimizer::search_and_replace(Expr &expr) {
           vload->ch[i] = c;
         }
         vload->set_similar(expr);
-        expr = vload;
+        expr.set(vload);
         return true;
       } else {
-        TC_INFO("Optimized store");
+        TC_INFO("Optimized store to vstoreu");
         auto vstore = Expr::create(NodeType::vstore, addr_node, expr->ch[1]);
         vstore->ch.resize(ptr->ch.size() + 1);
         for (int i = 1; i < (int)ptr->ch.size(); i++) {
@@ -174,9 +174,20 @@ bool Optimizer::search_and_replace(Expr &expr) {
           vstore->ch[i + 1] = c;
         }
         vstore->set_similar(expr);
-        expr = vstore;
+        expr.set(vstore);
         return true;
       }
+    } else if (expr->type == NodeType::load &&
+               snode->parent->type == SNodeType::fixed && all_same) {
+      TC_INFO("Optimized store to gather");  // gather
+      Expr gather = Expr::create(NodeType::gather, addr_node);
+      gather->ch.resize(ptr->ch.size());
+      for (int i = 1; i < (int)ptr->ch.size(); i++) {
+        auto c = Expr::copy_from(ptr->ch[i]);
+        gather->ch[i] = c;
+      }
+      gather->set_similar(expr);
+      expr.set(gather);
     }
   }
 

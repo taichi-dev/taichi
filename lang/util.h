@@ -235,6 +235,7 @@ enum class NodeType : int {
   touch,
   print,
   reduce,
+  gather,
   undefined
 };
 
@@ -264,6 +265,7 @@ inline std::string node_type_name(NodeType type) {
     REGISTER_NODE_TYPE(select);
     REGISTER_NODE_TYPE(print);
     REGISTER_NODE_TYPE(reduce);
+    REGISTER_NODE_TYPE(gather);
   }
   return node_type_names[type];
 }

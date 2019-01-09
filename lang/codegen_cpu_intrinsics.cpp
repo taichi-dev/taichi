@@ -39,9 +39,10 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     }
   }
 
-  auto address_elements = [&](SNode *snode, std::string index, int start = 1) {
+  auto address_elements = [&](SNode *snode, std::string index, int start = 1,
+                              bool last_zero = false) {
     std::vector<std::string> elems(max_num_indices, ", 0");
-    for (int j = start; j < (int)expr->ch.size(); j++) {
+    for (int j = start; j < (int)expr->ch.size() - (int)last_zero; j++) {
       elems[snode->index_order[j - start]] =
           fmt::format(", {}.element({})", expr->ch[j]->var_name, index);
     }
@@ -49,7 +50,6 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     for (int j = 0; j < max_num_indices; j++) {
       total_elem += elems[j];
     }
-
     return total_elem;
   };
 
@@ -108,6 +108,14 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     emit_code("{}.store(access_{}(context.buffers[0] {}));", expr[1]->var_name,
               expr[0]->snode_ptr(0)->node_type_name,
               address_elements(expr[0]->snode_ptr(0), "0", 2));
+  } else if (expr->type == NodeType::gather) {
+    // gather offsets
+    emit_code("auto {}_offsets = {};", expr->var_name, expr->ch.back()->var_name);
+    emit_code(
+        "auto {} = gather<{}, {}>(access_{}(context.buffers[0] {}), {}_offsets);",
+        expr->var_name, expr->data_type_name(), simd_width,
+        expr[0]->snode_ptr(0)->node_type_name,
+        address_elements(expr[0]->snode_ptr(0), "0", 1, true), expr->var_name);
   } else if (expr->type == NodeType::load) {
     emit_code("auto {} = {}::load({});", expr->var_name,
               vec_type(expr->data_type), expr[0]->var_name);
@@ -275,18 +283,20 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
 
       emit_code("auto {}_indirect = add({}_index, {});", expr->var_name,
                 expr->var_name, constant);
-      bool gather = false; // use loadu
+      bool gather = false;  // use loadu
       if (gather) {
         emit_code(
-            "auto {} = gather<{}, {}>((void *)&{}_cache->data[0], {}_indirect);",
+            "auto {} = gather<{}, {}>((void *)&{}_cache->data[0], "
+            "{}_indirect);",
             expr->var_name, data_type_name(expr->data_type), simd_width,
             prog->current_snode->node_type_name, expr->var_name);
       } else {
         emit_code(
-            "auto {} = load<{}, {}>((void *)&{}_cache->data[0] + "
-            "{}_indirect.element(0) * 4);",
+            "auto {} = load<{}, {}>((uint8 *)&{}_cache->data[0] + "
+            "{}_indirect.element(0) * sizeof({}));",
             expr->var_name, data_type_name(expr->data_type), simd_width,
-            prog->current_snode->node_type_name, expr->var_name);
+            prog->current_snode->node_type_name, expr->var_name,
+            expr->data_type_name());
       }
     } else {
       auto base = index_name_global(prog->current_snode, index_id);

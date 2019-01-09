@@ -19,6 +19,8 @@ class Optimizer {
   std::set<Expr> visited;
 
   bool search_and_replace(Expr &expr);
+
+  bool optimize(Expr &expr);
 };
 
 TLANG_NAMESPACE_END

@@ -65,7 +65,10 @@ bool Optimizer::search_and_replace(Expr &expr) {
     if (ret)
       return true;
   }
+  return optimize(expr);
+}
 
+bool Optimizer::optimize(Expr &expr) {
   if (expr->type == NodeType::load || expr->type == NodeType::store) {
     auto &ptr = expr._pointer();
     auto &addr_node = expr._pointer()._address();
@@ -191,7 +194,6 @@ bool Optimizer::search_and_replace(Expr &expr) {
       return true;
     }
   }
-
   return false;
 }
 

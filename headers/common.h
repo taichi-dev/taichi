@@ -244,12 +244,12 @@ TC_FORCE_INLINE T reduce_sum(const vec<T, dim> &v) {
 
 template <>
 TC_FORCE_INLINE float32 reduce_sum(const vec<float32, 8> &v) {
-  auto s = _mm256_hadd_ps(v, v);
-  auto h = s;
-  auto l = union_cast_different_size<__m256>(_mm256_extractf128_ps(s, 1));
+  auto h = __m256(v);
+  auto l = union_cast_different_size<__m256>(_mm256_extractf128_ps(v, 1));
   h = h + l;
-  h = _mm256_hadd_ps(h, h);
-  return h[0];
+  auto H = union_cast_different_size<__m128>(h);
+  auto s = _mm_hadd_ps(H, H);
+  return s[0] + s[1];
 }
 
 //*****************************************************************************

@@ -529,7 +529,7 @@ TC_TEST("indirect") {
 
 // baseline: 16384, 256, 128: 7.74ms
 // extract result[i], accumulate in tmp: 3.41
-//
+// fast reduce_sum 3.37
 TC_TEST("spmv") {
   int n = 16384;
   int band = 256;
@@ -603,7 +603,7 @@ TC_TEST("spmv") {
   TC_TIME(populate());
 
   int T = 30;
-  for (int i = 0; i < T; i) {
+  for (int i = 0; i < T; i++) {
     TC_TIME(matvecmul());
   }
 

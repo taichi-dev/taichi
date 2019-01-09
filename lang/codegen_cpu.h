@@ -62,6 +62,13 @@ class CPUCodeGen : public CodeGenBase {
       return;  // no loop for root, which is a fork
     }
     auto l = loop_variable(snode);
+    bool interior = last_level && snode->type != SNodeType::forked;
+    CodeRegion r;
+    if (last_level)
+      r = CodeRegion::interior_loop_begin;
+    else
+      r = CodeRegion::exterior_loop_begin;
+    CODE_REGION_VAR(r);
     if (snode->parent->parent == nullptr)
       emit_code("auto {} = 0;", loop_variable(snode->parent));
     auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
@@ -75,7 +82,7 @@ class CPUCodeGen : public CodeGenBase {
       }
       emit_code("#pragma omp parallel for");
     }
-    if (last_level && snode->type != SNodeType::forked) {
+    if (interior) {
       emit_code("for (int {} = 0; {} < {}_cache->get_n(); {} += {}) {{", l, l,
                 snode->node_type_name, l, current_kernel->parallel_instances);
     } else {
@@ -198,9 +205,8 @@ class CPUCodeGen : public CodeGenBase {
         "{}/headers -Wall "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} 2>"
         "{}.log",
-        prog->config.gcc_version, get_source_fn(),
-        prog->config.gcc_opt_flag(), get_project_fn(),
-        get_library_fn(), get_source_fn());
+        prog->config.gcc_version, get_source_fn(), prog->config.gcc_opt_flag(),
+        get_project_fn(), get_library_fn(), get_source_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ERROR_IF(compile_ret != 0, "Source {} compilation failed.",
                 get_source_fn());

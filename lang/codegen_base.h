@@ -76,6 +76,7 @@ class CodeGenBase : public Visitor {
   }
 
 #define CODE_REGION(region) auto _____ = get_region_guard(CodeRegion::region);
+#define CODE_REGION_VAR(region) auto _____ = get_region_guard(region);
 
   static int get_code_gen_id() {
     static int id = 0;

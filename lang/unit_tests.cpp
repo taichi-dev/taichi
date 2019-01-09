@@ -484,7 +484,6 @@ TC_TEST("index") {
 // array of linked list
 TC_TEST("indirect") {
   Program prog;
-  prog.config.internal_optimization = false;
 
   int n = 4;
   int k = 8;

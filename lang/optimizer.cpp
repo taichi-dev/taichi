@@ -84,6 +84,13 @@ bool Optimizer::search_and_replace(Expr &expr) {
     // only consider the last one.
     auto &index_node = expr._pointer()->ch.back();
 
+    bool indirect = false;
+    if (kernel->program.current_snode->type == SNodeType::indirect &&
+        index_node->index_id(0) == kernel->program.current_snode->index_id) {
+      TC_INFO("Skipped optimization since it is indirect.");
+      indirect = true;
+    }
+
     // TODO: check non-last indices are uniform
     if (index_node->type == NodeType::index) {
       offset_start = index_node->index_offset(0);
@@ -134,7 +141,7 @@ bool Optimizer::search_and_replace(Expr &expr) {
                            snode->parent->type == SNodeType::fixed && all_same;
     // continuous element, same index
     bool vpointer_case_2 = regular_elements && incremental && offset_inc == 0;
-    bool vpointer = vpointer_case_1 || vpointer_case_2;
+    bool vpointer = !indirect && (vpointer_case_1 || vpointer_case_2);
 
     if (vpointer) {
       // replace load with vload

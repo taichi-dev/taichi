@@ -607,10 +607,6 @@ TC_TEST("spmv") {
     TC_TIME(matvecmul());
   }
 
-  TC_INFO("Serial Eigen");
-  for (int i = 0; i < T; i++) {
-    TC_TIME(Vret = M * V);
-  }
   TC_INFO("Parallel Eigen");
   Eigen::initParallel();
   for (int i = 0; i < T; i++) {

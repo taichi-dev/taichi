@@ -266,7 +266,6 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     auto index_id = expr->index_id(0);
     auto snode = prog->current_snode;
     if (snode->type == SNodeType::indirect && index_id == snode->index_id) {
-      TC_INFO("SNODE");
       // indirect node, needs an load from "pointer" array
       auto base = loop_variable(prog->current_snode);
       emit_code("auto {}_index = {}({});", expr->var_name,

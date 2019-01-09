@@ -485,7 +485,6 @@ TC_TEST("index") {
 TC_TEST("indirect") {
   Program prog;
   prog.config.internal_optimization = false;
-  prog.config.external_optimization_level = 3;
 
   int n = 4;
   int k = 8;
@@ -501,7 +500,7 @@ TC_TEST("indirect") {
     // indirect puts an int32
     snode = &root.fixed(i, n).indirect(j, k * 2);
     root.fixed(j, m).place(a);
-    root.fixed(i, n).place_verbose(sum);
+    root.fixed(i, n).place(sum);
   });
 
   auto populate = kernel(a, [&]() {

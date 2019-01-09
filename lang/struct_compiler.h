@@ -181,9 +181,11 @@ class StructCompiler : public CodeGenBase {
           snode.node_type_name);
       emit_code("auto node = access_{}(root, i0, i1, i2, i3);",
                 snode.node_type_name);
+      /*
       emit_code(
           "std::cout<<val<<' '<< i0 << ' ' << i1 << ' ' << i2 << ' ' << i3 << "
           "std::endl;");
+      */
       emit_code("node->touch(val);");
       emit_code("}");
     }

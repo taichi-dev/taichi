@@ -144,9 +144,11 @@ class ContinuousMemOptimizer : public Optimizer {
 
       auto snode = addr_node->snode_ptr(0);
       // continuous index, same element
-      bool vpointer_case_1 =
-          incremental && offset_start == 0 && offset_inc == 1 &&
-          snode->parent->type == SNodeType::fixed && all_same;
+      bool vpointer_case_1 = incremental && offset_start == 0 &&
+                             offset_inc == 1 &&
+                             (snode->parent->type == SNodeType::fixed ||
+                              snode->parent->type == SNodeType::dynamic) &&
+                             all_same;
       // continuous element, same index
       bool vpointer_case_2 = regular_elements && incremental && offset_inc == 0;
       bool vpointer = !indirect && (vpointer_case_1 || vpointer_case_2);
@@ -159,7 +161,7 @@ class ContinuousMemOptimizer : public Optimizer {
           vload->ch.resize(ptr->ch.size());
           for (int i = 1; i < (int)ptr->ch.size(); i++) {
             auto c = Expr::copy_from(ptr->ch[i]);
-            TC_ASSERT(c->lanes == 8);
+            TC_ASSERT(c->lanes == kernel->program.config.simd_width);
             if (c->type == NodeType::index)
               c->set_lanes(1);
             vload->ch[i] = c;
@@ -173,7 +175,7 @@ class ContinuousMemOptimizer : public Optimizer {
           vstore->ch.resize(ptr->ch.size() + 1);
           for (int i = 1; i < (int)ptr->ch.size(); i++) {
             auto c = Expr::copy_from(ptr->ch[i]);
-            TC_ASSERT(c->lanes == 8);
+            TC_ASSERT(c->lanes == kernel->program.config.simd_width);
             if (c->type == NodeType::index)
               c->set_lanes(1);
             vstore->ch[i + 1] = c;

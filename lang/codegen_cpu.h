@@ -106,6 +106,7 @@ class CPUCodeGen : public CodeGenBase {
     auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
     emit_code("auto {}_cache = access_{}({}, {});", snode->node_type_name,
               snode->node_type_name, parent, loop_variable(snode->parent));
+    emit_code("int {};", l);
     if (snode->_multi_threaded) {
       auto p = snode->parent;
       while (p) {
@@ -114,7 +115,6 @@ class CPUCodeGen : public CodeGenBase {
       }
       emit_code("#pragma omp parallel for");
     }
-    emit_code("int {};", l);
     if (interior) {
       if (!has_residual) {
         emit_code("for ({} = 0; {} < {}_cache->get_n(); {} += {}) {{", l, l,

@@ -603,7 +603,7 @@ TC_TEST("spmv") {
     root.fixed(p, m).place(mat_row);
     root.fixed(p, m).place(mat_col);
     root.fixed(p, m).place(mat_val);
-    auto &mat = root.fixed(i, n);//.multi_threaded();
+    auto &mat = root.fixed(i, n).multi_threaded();
     mat.dynamic(j, k).place(compressed_col);
     mat.dynamic(j, k).place(compressed_val);
     root.fixed(i, n).place(vec_val);
@@ -655,7 +655,7 @@ TC_TEST("spmv") {
 
   TC_INFO("Parallel Eigen");
   Eigen::initParallel();
-  Eigen::setNbThreads(1);
+  // Eigen::setNbThreads(1);
   TC_P(n = Eigen::nbThreads());
   for (int i = 0; i < T; i++) {
     TC_TIME(Vret = M * V);

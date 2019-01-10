@@ -292,6 +292,9 @@ void CPUCodeGen::codegen(Kernel &kernel) {
 
   // body (including residual)
   for (int b = 0; b < 1 + int(has_residual); b++) {
+    if (b == 1) {
+      generating_residual = true;
+    }
     visited.clear();
     // adapters
     CodeRegion body;
@@ -312,6 +315,7 @@ void CPUCodeGen::codegen(Kernel &kernel) {
       kernel.ret.accept(*this);
     }
   }
+  generating_residual = false;
 
   {
     CODE_REGION(tail);

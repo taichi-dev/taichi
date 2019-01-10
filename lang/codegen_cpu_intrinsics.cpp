@@ -113,9 +113,11 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
               address_elements(expr[0]->snode_ptr(0), "0", 2));
   } else if (expr->type == NodeType::gather) {
     // gather offsets
-    emit_code("auto {}_offsets = {};", expr->var_name, expr->ch.back()->var_name);
+    emit_code("auto {}_offsets = {};", expr->var_name,
+              expr->ch.back()->var_name);
     emit_code(
-        "auto {} = gather<{}, {}>(access_{}(context.buffers[0] {}), {}_offsets);",
+        "auto {} = gather<{}, {}>(access_{}(context.buffers[0] {}), "
+        "{}_offsets);",
         expr->var_name, expr->data_type_name(), simd_width,
         expr[0]->snode_ptr(0)->node_type_name,
         address_elements(expr[0]->snode_ptr(0), "0", 1, true), expr->var_name);
@@ -396,11 +398,11 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     // emit_code("*{}[{}] += {}.element({});", expr[0]->var_name, i,
     // expr->ch[1]->var_name, i);
     emit_code("sum = add(sum, {});", expr->ch[1]->var_name);
-    {
+    if (!generating_residual) {
       CODE_REGION(interior_shared_variable_begin);
       emit_code("vec<{}, {}> sum(0);", expr[1]->data_type_name(), simd_width);
     }
-    {
+    if (!generating_residual) {
       CODE_REGION(interior_shared_variable_end);
       auto snode = expr[0][0]->snode_ptr(0);
       std::vector<std::string> elems(max_num_indices, ", 0");

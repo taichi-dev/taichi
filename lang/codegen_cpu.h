@@ -88,11 +88,18 @@ class CPUCodeGen : public CodeGenBase {
       }
       emit_code("#pragma omp parallel for");
     }
+    emit_code("int {};", l);
     if (interior) {
-      emit_code("for (int {} = 0; {} < {}_cache->get_n(); {} += {}) {{", l, l,
-                snode->node_type_name, l, current_kernel->parallel_instances);
+      if (!has_residual) {
+        emit_code("for ({} = 0; {} < {}_cache->get_n(); {} += {}) {{", l, l,
+                  snode->node_type_name, l, current_kernel->parallel_instances);
+      } else {
+        emit_code("for ({} = 0; {} + {} < {}_cache->get_n(); {} += {}) {{",
+                  l, l, current_kernel->parallel_instances,
+                  snode->node_type_name, l, current_kernel->parallel_instances);
+      }
     } else {
-      emit_code("for (int {} = 0; {} < {}_cache->get_n(); {} += {}) {{", l, l,
+      emit_code("for ({} = 0; {} < {}_cache->get_n(); {} += {}) {{", l, l,
                 snode->node_type_name, l, 1);
     }
 

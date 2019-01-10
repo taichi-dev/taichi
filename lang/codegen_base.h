@@ -25,10 +25,10 @@ class CodeGenBase : public Visitor {
     interior_shared_variable_begin,
     interior_loop_begin,
     body,
+    interior_loop_end,
     residual_begin,
     residual_body,
     residual_end,
-    interior_loop_end,
     interior_shared_variable_end,
     exterior_loop_end,
     exterior_shared_variable_end,
@@ -45,10 +45,10 @@ class CodeGenBase : public Visitor {
       REGISTER_TYPE(interior_shared_variable_begin);
       REGISTER_TYPE(interior_loop_begin);
       REGISTER_TYPE(body);
+      REGISTER_TYPE(interior_loop_end);
       REGISTER_TYPE(residual_begin);
       REGISTER_TYPE(residual_body);
       REGISTER_TYPE(residual_end);
-      REGISTER_TYPE(interior_loop_end);
       REGISTER_TYPE(interior_shared_variable_end);
       REGISTER_TYPE(exterior_loop_end);
       REGISTER_TYPE(exterior_shared_variable_end);

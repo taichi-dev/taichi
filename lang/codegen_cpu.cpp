@@ -255,19 +255,15 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   this->simd_width = prog->config.simd_width;
   this->num_groups = kernel.parallel_instances;
 
+  auto snode = prog->current_snode;
+  has_residual = snode->type == SNodeType::indirect ||
+                 snode->parent->type == SNodeType::dynamic;
+
   {
     CODE_REGION(header);
     generate_header();
   }
 
-  auto snode = prog->current_snode;
-
-  /*
-  has_residual = snode->type == SNodeType::indirect ||
-                 snode->parent->type == SNodeType::dynamic;
-                 */
-
-  has_residual = false;
   auto transforms = [&](Expr &ret, int group_size) {
     ret = SLPVectorizer().run(ret, group_size);
     // visualize_IR(get_source_fn() + ".slp.pdf", kernel.ret);
@@ -298,15 +294,21 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   for (int b = 0; b < 1 + int(has_residual); b++) {
     visited.clear();
     // adapters
+    CodeRegion body;
+    if (b == 0) {
+      body = CodeRegion::body;
+    } else {
+      body = CodeRegion::residual_body;
+    }
     for (auto &adapter : kernel.adapters) {
       this->group_size = adapter.input_group_size;
-      CODE_REGION(body);
+      CODE_REGION_VAR(body);
       adapter.stores.accept(*this);
     }
     // main
     {
       this->group_size = kernel.output_group_size;
-      CODE_REGION(body);
+      CODE_REGION_VAR(body);
       kernel.ret.accept(*this);
     }
   }

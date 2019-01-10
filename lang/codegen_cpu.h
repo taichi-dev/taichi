@@ -96,6 +96,10 @@ class CPUCodeGen : public CodeGenBase {
                 snode->node_type_name, l, 1);
     }
 
+    if (has_residual && last_level) {
+      CODE_REGION(residual_begin);  // TODO: DRY..
+      emit_code("{");
+    }
     // update indices....
     for (int i = 0; i < max_num_indices; i++) {
       std::string ancester = "0 |";
@@ -112,6 +116,16 @@ class CPUCodeGen : public CodeGenBase {
       emit_code("int {} = {};", index_name_local(snode, i), addition);
       emit_code("int {} = {} {};", index_name_global(snode, i), ancester,
                 index_name_local(snode, i));
+      if (has_residual && last_level) {
+        CODE_REGION(residual_begin);  // TODO: DRY..
+        emit_code("int {} = {};", index_name_local(snode, i), addition);
+        emit_code("int {} = {} {};", index_name_global(snode, i), ancester,
+                  index_name_local(snode, i));
+      }
+    }
+    if (has_residual && last_level) {
+      CODE_REGION(residual_end);
+      emit_code("}");
     }
   }
 
@@ -125,6 +139,8 @@ class CPUCodeGen : public CodeGenBase {
     }
     CODE_REGION_VAR(r);
     if (snode->parent != nullptr) {
+      CODE_REGION_VAR(last_level ? CodeRegion::interior_loop_end
+                                 : CodeRegion::exterior_loop_end);
       emit_code("}\n");
       generate_loop_tail(snode->parent,
                          last_level && snode->type == SNodeType::forked);

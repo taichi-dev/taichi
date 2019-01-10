@@ -412,7 +412,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       emit_code("auto *reduce_target = access_{}(context.buffers[0] {});",
                 snode->node_type_name, total_elem);
       emit_code("*{} += reduce_sum({});", "reduce_target", "sum");
-      emit_code("std::cout << reduce_sum(sum) << std::endl;");
+      // emit_code("std::cout << reduce_sum(sum) << std::endl;");
     }
     //}
   } else {

@@ -510,7 +510,7 @@ TC_TEST("dynamic") {
     touch(snode, a_src[p] / imm(k), a_src[p]);
   });
 
-  auto red = kernel(a, [&]() { reduce(sum[i], a[j]); });
+  auto red = kernel(a, [&]() { reduce(sum[i], a[i, j]); });
 
   for (int i = 0; i < m; i++) {
     a_src.val<int32>(i) = i;
@@ -519,17 +519,9 @@ TC_TEST("dynamic") {
   populate();
   red();
 
-  for (int i =0 ; i < n; i++) {
-    for (int j = 0; j < k; j++) {
-      TC_P(i);
-      TC_P(j);
-      TC_P(a.val<int32>(i, j));
-    }
-  }
-
   for (int i = 0; i < n; i++) {
     auto reduced = sum.val<int32>(i);
-    TC_CHECK(reduced == (i * k + (i + 1) * k + 1) * k / 2);
+    TC_CHECK(reduced == (i * k + (i + 1) * k - 1) * k / 2);
   }
 }
 

@@ -83,7 +83,8 @@ class StructCompiler : public CodeGenBase {
     snode.node_type_name = create_snode();
     auto type = snode.type;
 
-    if (snode.type != SNodeType::place && snode.ch.empty()) {
+    if (snode.type != SNodeType::indirect && snode.type != SNodeType::place &&
+        snode.ch.empty()) {
       TC_ERROR("Non-place node should have at least one child.");
     }
 

@@ -260,42 +260,52 @@ void CPUCodeGen::codegen(Kernel &kernel) {
     generate_header();
   }
 
+  auto snode = prog->current_snode;
+  /*
+  has_residual = snode->type == SNodeType::indirect ||
+                 snode->parent->type == SNodeType::dynamic;
+                 */
+  has_residual = false;
   auto transforms = [&](Expr &ret, int group_size) {
     ret = SLPVectorizer().run(ret, group_size);
     // visualize_IR(get_source_fn() + ".slp.pdf", kernel.ret);
-    ret =
-        LoopVectorizer().run(ret, prog->current_snode, num_groups);
+    ret = LoopVectorizer().run(ret, prog->current_snode, num_groups);
     AdapterPreprocessor().run(kernel, ret, group_size);
     VectorSplitter(prog->config.simd_width).run(ret);
     if (prog->config.internal_optimization)
       apply_optimizers(kernel, ret);
   };
 
-  // adapters
-  for (auto &adapter : kernel.adapters) {
-    TC_ASSERT(adapter.stores);
+  // body (including residual)
+  for (int b = 0; b < 1 + int(has_residual); b++) {
+    visited.clear();
+    // adapters
+    for (auto &adapter : kernel.adapters) {
+      TC_ASSERT(adapter.stores);
 
-    transforms(adapter.stores, adapter.input_group_size);
+      transforms(adapter.stores, adapter.input_group_size);
 
-    this->group_size = adapter.input_group_size;
-    adapter.store_exprs.resize(adapter.counter * simd_width / group_size *
-                               kernel.parallel_instances);
-    // size after SLP vectorizer + Vector Splitting
-    CODE_REGION(body);
-    adapter.stores.accept(*this);
-  }
+      this->group_size = adapter.input_group_size;
+      adapter.store_exprs.resize(adapter.counter * simd_width /
+                                 adapter.input_group_size *
+                                 kernel.parallel_instances);
+      // size after SLP vectorizer + Vector Splitting
+      CODE_REGION(body);
+      adapter.stores.accept(*this);
+    }
 
-  // main
-  {
-    TC_ASSERT(kernel.ret);
-    // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
-    // TC_P(group_size);
+    // main
+    {
+      TC_ASSERT(kernel.ret);
+      // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
+      // TC_P(group_size);
 
-    transforms(kernel.ret, kernel.output_group_size);
+      transforms(kernel.ret, kernel.output_group_size);
 
-    this->group_size = kernel.output_group_size;
-    CODE_REGION(body);
-    kernel.ret.accept(*this);
+      this->group_size = kernel.output_group_size;
+      CODE_REGION(body);
+      kernel.ret.accept(*this);
+    }
   }
 
   {

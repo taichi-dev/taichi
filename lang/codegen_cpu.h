@@ -1,5 +1,6 @@
 #pragma once
 
+#include <set>
 #include "util.h"
 #include "visitor.h"
 #include "expr.h"
@@ -23,6 +24,9 @@ class CPUCodeGen : public CodeGenBase {
   Kernel *current_kernel;
   std::map<std::string, std::string> constant_vectors;  // statement to var name
   int constant_counter;
+  std::set<Expr> visited;
+  bool has_residual;
+  bool generating_residual;
 
  public:
   std::string get_constant(std::string statement) {
@@ -40,6 +44,8 @@ class CPUCodeGen : public CodeGenBase {
     constant_counter = 0;
     var_count = 0;
     group_size = 0;
+    has_residual = false;
+    generating_residual = false;
   }
 
   std::string loop_variable(SNode *snode) {

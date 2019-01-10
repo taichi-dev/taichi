@@ -30,8 +30,11 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     TC_INFO("{} {} {} -> {}", expr->id, expr->node_type_name(),
             expr->data_type_name(), expr->var_name);
             */
-  } else
-    return;  // visited
+  }
+  if (visited.find(expr) != visited.end()) {
+    return;
+  }
+  visited.insert(expr);
 
   for (auto &m : expr->members) {
     if (!m->name().empty()) {

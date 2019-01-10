@@ -397,6 +397,13 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     // val comes first, then indices
     // emit_code("*{}[{}] += {}.element({});", expr[0]->var_name, i,
     // expr->ch[1]->var_name, i);
+    if (generating_residual) {
+      TC_ASSERT(group_size == 1);
+      auto mask = get_mask(1, 0);
+      emit_code("{} = select({}, {}, vec<{}, {}>(0));", expr->ch[1]->var_name,
+                mask, expr->ch[1]->var_name, expr->ch[1]->data_type_name(),
+                simd_width);
+    }
     emit_code("sum = add(sum, {});", expr->ch[1]->var_name);
     if (!generating_residual) {
       CODE_REGION(interior_shared_variable_begin);

@@ -485,7 +485,6 @@ TC_TEST("index") {
 
 // array of linked list
 TC_TEST("dynamic_mask") {
-  CoreState::set_trigger_gdb_when_crash(true);
   Program prog;
 
   int n = 8;
@@ -533,7 +532,6 @@ TC_TEST("dynamic_mask") {
 
 // array of linked list
 TC_TEST("dynamic") {
-  CoreState::set_trigger_gdb_when_crash(true);
   Program prog;
 
   int n = 8;

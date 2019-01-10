@@ -509,16 +509,24 @@ struct fixed {
   }
 };
 
-template <typename child_type, int max_n_>
+template <typename _child_type, int max_n_>
 struct dynamic {
   static constexpr int max_n = max_n_;
-  std::vector<child_type> children;
+  using child_type = _child_type;
+  child_type data[max_n];
+  std::atomic<int> n;
   TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
-    return &children[i];
+    return &data[i];
+  }
+
+  TC_FORCE_INLINE void touch(child_type t) {
+    data[n++] = t;
+    // printf("p=%p\n", &n);
+    // printf("n=%d, i=%d\n", (int)n, i);
   }
 
   TC_FORCE_INLINE int get_n() const {
-    return children.size();
+    return n.load();
   }
 };
 // *****************************************************************************

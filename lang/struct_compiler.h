@@ -83,8 +83,15 @@ class StructCompiler : public CodeGenBase {
     snode.node_type_name = create_snode();
     auto type = snode.type;
 
+    if (snode.type != SNodeType::place && snode.ch.empty()) {
+      TC_ERROR("Non-place node should have at least one child.");
+    }
+
     if (type == SNodeType::fixed) {
       emit_code("using {} = fixed<{}, {}>;", snode.node_type_name,
+                snode.ch[0]->node_type_name, snode.n);
+    } else if (type == SNodeType::dynamic) {
+      emit_code("using {} = dynamic<{}, {}>;", snode.node_type_name,
                 snode.ch[0]->node_type_name, snode.n);
     } else if (type == SNodeType::indirect) {
       emit_code("using {} = indirect<{}>;", snode.node_type_name, snode.n);
@@ -138,7 +145,8 @@ class StructCompiler : public CodeGenBase {
         }
       }
       emit_code("");
-    } else {  // SNode::place & indirect
+    }
+    {  // SNode::place & indirect
       // emit end2end accessors for leaf (place) nodes, using chain accessors
       emit_code(
           "TLANG_ACCESSOR {} * access_{}(void *root, int i0, int i1=0, int "
@@ -160,8 +168,7 @@ class StructCompiler : public CodeGenBase {
           int b = e.num_bits;
           if (b) {
             emit_code("tmp = (tmp << {}) + ((i{} >> {}) & ((1 << {}) - 1));",
-                      e.num_bits, j, e.start,
-                      e.num_bits);  // TODO: 0 should be j
+                      e.num_bits, j, e.start, e.num_bits);
           }
         }
         emit_code("auto n{} = access_{}(n{}, tmp);", i + 1,
@@ -186,6 +193,20 @@ class StructCompiler : public CodeGenBase {
           "std::cout<<val<<' '<< i0 << ' ' << i1 << ' ' << i2 << ' ' << i3 << "
           "std::endl;");
       */
+      emit_code("node->touch(val);");
+      emit_code("}");
+    }
+
+    if (type == SNodeType::dynamic) {  // toucher
+      emit_code(
+          "TLANG_ACCESSOR void touch_{}(void *root, const {}::child_type &val, "
+          "int i0, int "
+          "i1=0, int "
+          "i2=0, "
+          "int i3=0) {{",
+          snode.node_type_name, snode.node_type_name);
+      emit_code("auto node = access_{}(root, i0, i1, i2, i3);",
+                snode.node_type_name);
       emit_code("node->touch(val);");
       emit_code("}");
     }
@@ -247,8 +268,8 @@ class StructCompiler : public CodeGenBase {
         "-Wall "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} 2> {}.log",
         get_current_program().config.gcc_version, get_source_fn(),
-        get_current_program().config.gcc_opt_flag(),
-        get_project_fn(), get_library_fn(), get_source_fn());
+        get_current_program().config.gcc_opt_flag(), get_project_fn(),
+        get_library_fn(), get_source_fn());
     auto compile_ret = std::system(cmd.c_str());
     TC_ASSERT(compile_ret == 0);
     disassemble();

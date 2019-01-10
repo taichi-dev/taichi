@@ -574,7 +574,7 @@ TC_TEST("indirect") {
 // fast reduce_sum 3.37
 TC_TEST("spmv") {
   initialize_benchmark();
-  int n = 16384;
+  int n = 8192;
   int band = 256;
   int k = 128;
   TC_ASSERT(k <= band);

@@ -516,6 +516,12 @@ TC_TEST("dynamic_mask") {
     a_src.val<int32>(i) = i;
   }
 
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < k * 2; j++) {
+      a.val<int32>(i, j) = 1;
+    }
+  }
+
   populate();
   red();
 

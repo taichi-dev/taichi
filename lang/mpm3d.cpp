@@ -28,7 +28,7 @@ void write_partio(std::vector<Vector3> positions,
 auto mpm3d = []() {
   Program prog;
   prog.config.gcc_version = 7;
-  bool use_adapter = true;
+  // bool use_adapter = true;
 
   constexpr int n = 128;  // grid_resolution
   const real dt = 1e-4_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;

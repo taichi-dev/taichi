@@ -11,6 +11,7 @@ class StructCompiler : public CodeGenBase {
 
   StructCompiler() : CodeGenBase() {
     suffix = "cpp";
+    emit_code("#define TLANG_HOST");
     emit_code("#include <common.h>");
     emit_code("using namespace taichi;");
     emit_code("using namespace Tlang;");

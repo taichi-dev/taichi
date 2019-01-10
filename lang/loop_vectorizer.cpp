@@ -55,7 +55,7 @@ Expr LoopVectorizer::vectorize(Expr node) {
     }
   }
 
-  for (int i = 0; i < node->ch.size(); i++) {
+  for (int i = 0; i < (int)node->ch.size(); i++) {
     new_node->ch.push_back(vectorize(node->ch[i]));
   }
 

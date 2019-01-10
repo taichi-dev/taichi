@@ -516,6 +516,9 @@ struct dynamic {
   child_type data[max_n];
   std::atomic<int> n;
   TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
+#if defined(TLANG_HOST)
+    n.store(std::max(n.load(), i + 1));
+#endif
     return &data[i];
   }
 
@@ -545,6 +548,9 @@ struct indirect {
   }
 
   TC_FORCE_INLINE int *look_up(int i) {  // i is flattened index
+#if defined(TLANG_HOST)
+    n.store(std::max(n.load(), i + 1));
+#endif
     return &data[i];
   }
 

@@ -591,10 +591,10 @@ TC_TEST("spmv") {
   auto mat_row = var<int32>();
   auto mat_val = var<float32>();
   auto vec_val = var<float32>();
+  auto compressed_col = var<int32>();
+  auto compressed_val = var<float32>();
 
   auto i = ind(), j = ind(), p = ind();
-
-  SNode *snode;
 
   std::vector<Eigen::Triplet<float32>> entries;
 
@@ -603,18 +603,20 @@ TC_TEST("spmv") {
     root.fixed(p, m).place(mat_row);
     root.fixed(p, m).place(mat_col);
     root.fixed(p, m).place(mat_val);
-    snode = &root.fixed(i, n)
-                 .multi_threaded()
-                 .indirect(p, k);
+    auto &mat = root.fixed(i, n);//.multi_threaded();
+    mat.dynamic(j, k).place(compressed_col);
+    mat.dynamic(j, k).place(compressed_val);
     root.fixed(i, n).place(vec_val);
-    // root.fixed(j, m).place(a);
     root.fixed(i, n).place(result);
   });
 
-  auto populate = kernel(mat_row, [&]() { touch(snode, mat_row[p], p); });
+  auto populate = kernel(mat_row, [&]() {
+    touch(compressed_col, mat_row[p], mat_col[p]);
+    touch(compressed_val, mat_row[p], mat_val[p]);
+  });
 
-  auto matvecmul = kernel(snode, [&]() {
-    auto entry = mat_val[p] * vec_val[mat_col[p]];
+  auto matvecmul = kernel(compressed_col, [&]() {
+    auto entry = compressed_val[i, j] * vec_val[compressed_col[i, j]];
     reduce(result[i], entry);
   });
 

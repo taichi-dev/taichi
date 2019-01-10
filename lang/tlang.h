@@ -49,6 +49,10 @@ inline void touch(SNode *snode, Expr target_index, Expr value) {
   return ker.ret->ch.push_back(e);
 }
 
+inline void touch(Expr &expr, Expr target_index, Expr value) {
+  return taichi::Tlang::touch(expr->snode_ptr(0)->parent, target_index, value);
+}
+
 inline void reduce(Expr target, Expr value) {
   TC_ASSERT(target->type == NodeType::pointer);
   auto e = Expr::create(NodeType::reduce, target, Expr::load_if_pointer(value));

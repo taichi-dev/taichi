@@ -97,6 +97,12 @@ class StructCompiler : public CodeGenBase {
                 snode.ch[0]->node_type_name, snode.n);
     } else if (type == SNodeType::indirect) {
       emit_code("using {} = indirect<{}>;", snode.node_type_name, snode.n);
+    } else if (type == SNodeType::pointer) {
+      emit_code("using {} = pointer<{}>;", snode.node_type_name,
+                snode.ch[0]->node_type_name);
+    } else if (type == SNodeType::hashed) {
+      emit_code("using {} = hashed<{}>;", snode.node_type_name,
+                snode.ch[0]->node_type_name);
     } else if (type == SNodeType::forked) {
       // we can not use std::tuple since it has no memory layout guarantee...
       emit_code("struct {} {{", snode.node_type_name);
@@ -273,7 +279,18 @@ class StructCompiler : public CodeGenBase {
         get_current_program().config.gcc_opt_flag(), get_project_fn(),
         get_library_fn(), get_source_fn());
     auto compile_ret = std::system(cmd.c_str());
-    TC_ASSERT(compile_ret == 0);
+
+    if (compile_ret != 0) {
+      auto cmd = fmt::format(
+          "g++-{} {} -std=c++14 -shared -fPIC {} -march=native -I {}/headers "
+          "-Wall "
+          "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {}",
+          get_current_program().config.gcc_version, get_source_fn(),
+          get_current_program().config.gcc_opt_flag(), get_project_fn(),
+          get_library_fn());
+      trash(std::system(cmd.c_str()));
+      TC_ERROR("Compilation failed");
+    }
     disassemble();
     load_dll();
     creator = load_function<void *(*)()>("create_data_structure");

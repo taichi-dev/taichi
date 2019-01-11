@@ -6,6 +6,7 @@
 #include <atomic>
 #include <numeric>
 #include <mutex>
+#include <unordered_map>
 
 #if !defined(TC_INCLUDED)
 
@@ -520,7 +521,7 @@ struct hashed {
   TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
 #if defined(TLANG_HOST)
     if (data.find(i) == data.end()) {
-      std::memset(data[i], 0, sizeof(data[i]));
+      std::memset(&data[i], 0, sizeof(data[i]));
     }
 #endif
     return &data[i];
@@ -553,6 +554,7 @@ struct pointer {
     std::lock_guard<std::mutex> _(mut);
     if (data == nullptr) {
       data = new child_type;
+      std::memset(data, 0, sizeof(child_type));
     }
   }
 

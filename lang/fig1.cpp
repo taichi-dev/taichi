@@ -115,7 +115,7 @@ void benchmark_layers() {
 
   TC_P(measure_cpe(test_block, n));
 
-  TC_P(cnt + cnt2);
+  TC_P(cnt);
 }
 
 TLANG_NAMESPACE_BEGIN
@@ -124,6 +124,8 @@ TC_TEST("stencil1d") {
   auto total_nodes = initialize();
   // benchmark_layers();
   // TC_P(measure_cpe(stencil, total_nodes));
+
+  Program prog;
 
   auto x = var<float32>(), y = var<float32>(), i = ind();
   layout([&] {

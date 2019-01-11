@@ -176,6 +176,20 @@ struct SNode {
     return child;
   }
 
+  SNode &hashed(Expr &expr, int n) {
+    TC_ASSERT(bit::is_power_of_two(n));
+    auto &child = insert_children(SNodeType::hashed);
+    TC_ASSERT(expr->type == NodeType::index);
+    // child.index_id = expr->value<int>(0);
+    child.extractors[expr->value<int>(0)].num_bits = bit::log2int(n);
+    child.n = n;
+    return child;
+  }
+
+  SNode &pointer() {
+    return insert_children(SNodeType::pointer);
+  }
+
   TC_FORCE_INLINE void *evaluate(void *ds, int i, int j, int k, int l) {
     TC_ASSERT(func);
     return func(ds, i, j, k, l);

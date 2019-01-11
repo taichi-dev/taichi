@@ -1,13 +1,15 @@
 #include <iostream>
 #include "util.h"
+#include "tlang.h"
 #include <taichi/common/util.h>
 #include <taichi/math.h>
 #include <taichi/common/testing.h>
 #include <taichi/system/timer.h>
+#include <unordered_map>
 
-TLANG_NAMESPACE_BEGIN
 
 using namespace taichi;
+using Tlang::measure_cpe;
 
 struct Node {
   float x, y;
@@ -43,15 +45,14 @@ void stencil() {
         int i = it.first * dim0 + b * dim1 + n;
         block->nodes[n].y =
             (1.0f / 3) *
-            (safe_access_x(i - 1) +
-            safe_access_x(i) /* Note: can be weakened*/
+            (safe_access_x(i - 1) + safe_access_x(i) /* Note: can be weakened*/
              + safe_access_x(i + 1));
       }
     }
   }
 }
 
-void initialize() {
+int initialize() {
   int total_tiles = 0;
   int total_blocks = 0;
   int total_nodes = 0;
@@ -80,6 +81,7 @@ void initialize() {
   TC_P(total_tiles);
   TC_P(total_blocks);
   TC_P(total_nodes);
+  return total_nodes;
 }
 
 void benchmark_layers() {
@@ -89,7 +91,7 @@ void benchmark_layers() {
 
   int t = 0;
 
-  auto test_hash_table = [&] () {
+  auto test_hash_table = [&]() {
     for (int i = 0; i < n; i++) {
       t = (t + 7) & 1023;
       if (data.find(t) != data.end()) {
@@ -102,7 +104,7 @@ void benchmark_layers() {
 
   auto &tile = data.begin()->second;
 
-  auto test_block = [&] () {
+  auto test_block = [&]() {
     for (int i = 0; i < n; i++) {
       t = (t + 7) & Tile::size;
       if (tile.blocks[t] != nullptr) {
@@ -116,12 +118,23 @@ void benchmark_layers() {
   TC_P(cnt + cnt2);
 }
 
+TLANG_NAMESPACE_BEGIN
+
 TC_TEST("stencil1d") {
-  initialize();
-  benchmark_layers();
-  for (int i = 0; i < 10; i++) {
-    TC_TIME(stencil());
-  }
+  auto total_nodes = initialize();
+  // benchmark_layers();
+  // TC_P(measure_cpe(stencil, total_nodes));
+
+  auto x = var<float32>(), y = var<float32>(), i = ind();
+  layout([&] {
+    root.hashed(i, 1024).fixed(i, 1024).pointer()
+        .fixed(i, 256).place(x, y);
+  });
+  auto stencil = kernel(x, [&] {
+    x[i] = imm(1.0f / 3) * (y[i - imm(1)] + y[i] + y[i + imm(1)]);
+  });
+
+  TC_TIME(stencil());
 }
 
 TLANG_NAMESPACE_END

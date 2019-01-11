@@ -16,6 +16,10 @@
 
 TLANG_NAMESPACE_BEGIN
 
+inline auto index(int i = -1) {
+  return ind(i);
+}
+
 inline void layout(const std::function<void()> &body) {
   get_current_program().layout(body);
 }

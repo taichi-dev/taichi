@@ -5,6 +5,7 @@
 #include <immintrin.h>
 #include <atomic>
 #include <numeric>
+#include <mutex>
 
 #if !defined(TC_INCLUDED)
 
@@ -33,6 +34,8 @@ using uint16 = unsigned short;
 #undef FUNC_DECL
 #define FUNC_DECL __host__ __device__
 #endif
+
+#define TC_ASSERT(x) if (!x) std::cout << "Ln" << __LINE__ << ":" << #x << std::endl;
 
 #endif
 
@@ -506,6 +509,55 @@ struct fixed {
 
   TC_FORCE_INLINE int get_n() const {
     return n;
+  }
+};
+
+template <typename _child_type>
+struct hashed {
+  using child_type = _child_type;
+  std::unordered_map<int, child_type> data;
+  std::mutex mut;
+  TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
+#if defined(TLANG_HOST)
+    if (data.find(i) == data.end()) {
+      std::memset(data[i], 0, sizeof(data[i]));
+    }
+#endif
+    return &data[i];
+  }
+
+  TC_FORCE_INLINE void touch(int i) {
+    TC_ASSERT(false);
+    // printf("p=%p\n", &n);
+    // printf("n=%d, i=%d\n", (int)n, i);
+  }
+
+  TC_FORCE_INLINE int get_n() const {
+    return data.size();
+  }
+};
+
+template <typename _child_type>
+struct pointer {
+  using child_type = _child_type;
+  child_type *data;
+  std::mutex mut;
+  TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
+#if defined(TLANG_HOST)
+    touch(i);
+#endif
+    return data;
+  }
+
+  TC_FORCE_INLINE void touch(int i) {
+    std::lock_guard<std::mutex> _(mut);
+    if (data == nullptr) {
+      data = new child_type;
+    }
+  }
+
+  TC_FORCE_INLINE int get_n() const {
+    return 1;
   }
 };
 

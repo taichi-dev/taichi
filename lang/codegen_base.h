@@ -94,7 +94,7 @@ class CodeGenBase : public Visitor {
   CodeGenBase() : Visitor(Visitor::Order::child_first) {
     id = get_code_gen_id();
     func_name = fmt::format("func{:06d}", id);
-    suffix = ".cpp";  // TODO: remove this hack
+    suffix = "cpp";  // TODO: remove this hack
     source_name = fmt::format("tmp{:04d}.{}", id, suffix);
 
     dll = nullptr;
@@ -158,7 +158,7 @@ class CodeGenBase : public Visitor {
     // Note: use .so here will lead to wired behavior...
     return fmt::format("{}/tmp{:04d}.dylib", folder, id);
 #else
-    return fmt::format("{}/tmp{:04d}.so", folder, id);
+    return fmt::format("{}/{}.so", folder, source_name);
 #endif
   }
 

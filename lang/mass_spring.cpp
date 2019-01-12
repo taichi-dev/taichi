@@ -87,7 +87,6 @@ TC_TEST("mass_spring") {
       particle.place(r(i));
       particle.place(p(i));
       particle.place(Ap(i));
-      particle.place(vec(i));
     }
     particle.place(fixed);
     for (int i = 0; i < dim; i++) {
@@ -98,6 +97,9 @@ TC_TEST("mass_spring") {
     }
     particle.place(mass);
 
+    for (int d = 0; d < dim; d++) {
+      root.fixed(i, max_n).place(vec(d));
+    }
     root.place(alpha);
     root.place(beta);
     root.place(denorm);

@@ -21,14 +21,17 @@ TC_TEST("mass_spring") {
   Program prog;
 
   const int dim = 3;
-  Vector x(dim), v(dim);
+  Vector x(dim), v(dim), fe(dim), fmg(dim), p(dim), r(dim), Ap(dim);
+  auto mass = var<float32>(), fixed = var<float32>();
   auto i = ind(), j = ind();
   auto l0 = var<float32>(), stiffness = var<float32>();
   auto neighbour = var<int32>();
+  auto alpha = var<int32>(), beta = var<int32>();
+  auto denorm = var<float32>(), normr2 = var<float32>();
 
-  const auto h = 1.0e-2f;
-  const auto viscous = 2.0e0f;
-  const auto grav = -9.81;
+  const auto h = 1.0e-2_f;
+  const auto viscous = 2_f;
+  const auto grav = -9.81_f;
 
   int n, m;
   Matrix K(dim, dim), K_self(dim, dim);
@@ -75,15 +78,30 @@ TC_TEST("mass_spring") {
     for (int i = 0; i < dim; i++) {
       x(i) = var<float32>();
       v(i) = var<float32>();
+      fmg(i) = var<float32>();
+      r(i) = var<float32>();
+      p(i) = var<float32>();
+      Ap(i) = var<float32>();
       particle.place(x(i));
       particle.place(v(i));
+      particle.place(fmg(i));
+      particle.place(r(i));
+      particle.place(p(i));
+      particle.place(Ap(i));
     }
+    particle.place(fixed);
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
         K_self(i, j) = var<float32>();
         particle.place(K_self(i, j));
       }
     }
+    particle.place(mass);
+
+    root.place(alpha);
+    root.place(beta);
+    root.place(denorm);
+    root.place(normr2);
   });
 
   auto build_matrix = kernel(neighbour, [&] {
@@ -103,53 +121,65 @@ TC_TEST("mass_spring") {
 
     K_self[i] = K_self[i] + k_e;
     K[i, j] = K[i, j] - k_e;
+
+    fe[i] = fe[i] + fe0;
   });
 
-  return;
-#if (0)
-  auto build_stiffness = kernel(springs, [&] {
-    auto u = i;
-    auto v = springs[j];
-
-    Matrix K(3, 3);
-
-    atomic_add(fe(p(0)), fe0 * p(0).fixed);
-    atomic_addd(fe(p(1)), -fe0 * p(1).fixed);
-
-    Matrix UUt = outer_product(U, U);
-
-    auto k = h * h * ((stiffness - f / l) * UUt + f / l * I);
-
-    if
-      !p(0).fixed land !p(1).fixed atomic_add(K(p(0), p(0)), k);
-    atomic_add(K(p(0), p(1)), -k);
-    atomic_add(K(p(1), p(0)), -k);
-    atomic_add(K(p(1), p(1)), k);
-    else if (p(0).fixed) K(p(0), p(0)) = k;
-    if (p(1).fixed)
-      K(p(1), p(1)) = k;
+  auto preprocess_particles = kernel(x(0), [&] {
+    fmg[i] = mass[i] * v[i];
+    fmg[i](1) = fmg[i](1) + imm(h * grav) * mass[i];  // gravity
+    for (int t = 0; t < dim; t++) {
+      K_self(t, t) = K_self(t, t) + select(cast<int>(fixed[i]), imm(1.0_f),
+                                           mass[i] + imm(h * viscous));
+    }
   });
+
+  auto advect = kernel(mass, [&] { x[i] = x[i] + imm(h) * v[i]; });
+
+  auto copy_r_to_p = kernel(mass, [&] { p[i] = r[i]; });
+
+  auto compute_Ap = kernel(mass, [&] {
+    // reduce();
+  });
+
+  auto compute_denorm = kernel(mass, [&] {
+    // reduce(denorm, );
+  });
+
+  auto compute_r = kernel(mass, [&] { r[i] = fe[i] - Ap[i]; });
+
+  auto compute_v = kernel(mass, [&] { v[i] = v[i] + alpha * p[i]; });
+
+  auto compute_r2 = kernel(mass, [&] {
+    // reduce(normr2, );
+  });
+
+  auto compute_normr2 = kernel(mass, [&] { r[i] = r[i] - alpha * Ap[i]; });
+
+  auto compute_p = kernel(mass, [&] { p[i] = r[i] + beta * p[i]; });
 
   auto time_step = [&] {
-    var r = f - (MDK * points.v);
-    var p = r;
-    var iter = 0;
-    var normr2 = r'*r; for (int iter = 0; iter < 50; iter++) {
-    /*
-    Ap = MDK * p;
-    denom = p'*Ap;
-    alpha = normr2 / denom;
-    points.v = points.v + alpha * p;
-    normr2old = normr2;
-    r = r - alpha * Ap;
-    normr2 = r'*r;
-    beta = normr2 / normr2old;
-    p = r + beta * p;
-    iter = iter + 1;
-    */
-  } points.x = points.x + h * points.v;
-};
-#endif
+    compute_normr2();
+    copy_r_to_p();
+    auto h_normr2 = normr2.val<float32>();
+    for (int i = 0; i < 50; i++) {
+      compute_Ap();
+      compute_denorm();
+      alpha.val<float32>() = normr2.val<float32>() / denorm.val<float32>();
+      compute_v();
+      compute_r2();
+      compute_normr2();
+      auto normr2_old = normr2.val<float32>();
+      TC_P(normr2.val<float32>());
+      beta.val<float32>(normr2.val<float32>() / normr2_old);
+      compute_p();
+    }
+    advect();
+  };
+
+  for (int i = 0; i < 100; i++) {
+    time_step();
+  }
 }
 
 TLANG_NAMESPACE_END

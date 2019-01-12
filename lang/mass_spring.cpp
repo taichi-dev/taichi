@@ -44,7 +44,7 @@ TC_TEST("mass_spring") {
   // const auto grav = 0;
 
   int n, m;
-  std::FILE *f = std::fopen("data/bunny_small.txt", "r");
+  std::FILE *f = std::fopen("data/bunny.txt", "r");
   TC_ASSERT(f);
   fscanf(f, "%d%d", &n, &m);
   TC_P(n);
@@ -57,10 +57,20 @@ TC_TEST("mass_spring") {
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
         K(i, j) = var<float32>();
-        fork.place(K(i, j));
       }
     }
-    fork.place(l0, stiffness, neighbour);
+    fork.place(neighbour);
+    auto &fork2 = root.fixed(i, max_n);
+
+    auto place_fixed = [&](Expr expr) {
+      fork2.fixed(j, 64).place(expr);
+    };
+
+    place_fixed(l0);
+    place_fixed(stiffness);
+    for (auto &e: K.entries) {
+      place_fixed(e);
+    }
 
     auto &particle = root.fixed(i, max_n);
     for (int i = 0; i < dim; i++) {
@@ -151,7 +161,7 @@ TC_TEST("mass_spring") {
 
   auto copy_r_to_p = kernel(mass, [&] { p[i] = r[i]; });
 
-  auto compute_Ap1 = kernel(K(0, 0), [&] {
+  auto compute_Ap1 = kernel(neighbour, [&] {
     auto tmp = K[i, j] * vec[neighbour[i, j]];
     for (int d = 0; d < dim; d++) {
       reduce(Ap[i](d), tmp(d));
@@ -199,7 +209,7 @@ TC_TEST("mass_spring") {
   auto time_step = [&] {
     clear_matrix();
     preprocess_particles();
-    build_matrix();
+    TC_TIME(build_matrix());
 
     // print_vector("x", x);
     // print_vector("v", v);
@@ -239,13 +249,15 @@ TC_TEST("mass_spring") {
     compute_normr2();  // normr2 = r' * r
     // TC_P(normr2.val<float32>());
     auto h_normr2 = normr2.val<float32>();
+    int cnt = 0;
     for (int i = 0; i < 50; i++) {
       // TC_P(i);
+      cnt = i;
       if (h_normr2 < 1e-8f) {
         break;
       }
       copy_p_to_vec();  // vec = p
-      compute_Ap();     // Ap = K vec
+      TC_TIME(compute_Ap());     // Ap = K vec
       // print_vector("Ap", Ap);
       denorm.val<float32>() = 0;
       compute_denorm();  // denorm = p' Ap
@@ -267,6 +279,7 @@ TC_TEST("mass_spring") {
       beta.val<float32>() = normr2.val<float32>() / normr2_old;
       compute_p();  // p = r + beta * p
     }
+    TC_INFO("# cg iterations {}", cnt);
     print_vector("x", x);
     print_vector("v", v);
     print_vector("r", r);

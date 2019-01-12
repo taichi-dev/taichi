@@ -177,6 +177,9 @@ struct SNode {
   }
 
   SNode &hashed(Expr &expr, int n) {
+    TC_ASSERT_INFO(depth == 0,
+                   "hashed node must be child of root due to initialization "
+                   "memset limitation.");
     TC_ASSERT(bit::is_power_of_two(n));
     auto &child = insert_children(SNodeType::hashed);
     TC_ASSERT(expr->type == NodeType::index);

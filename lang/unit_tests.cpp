@@ -864,4 +864,38 @@ TC_TEST("pointer") {
   TC_CHECK(reduced == sum_gt);
 }
 
+TC_TEST("hashed") {
+  Program prog;
+
+  int n = 64;
+  int k = 128;
+  int m = n * k;
+
+  auto a = var<int32>();
+  auto sum = var<int32>();
+
+  auto i = ind(), j = ind();
+
+  layout([&] {
+    root.hashed(i, n).fixed(i, k).place(a);
+    root.place(sum);
+  });
+
+  auto red = kernel(a, [&]() { reduce(global(sum), a[i]); });
+  sum.val<int32>() = 0;
+
+  int sum_gt = 0;
+  for (int i = 0; i < m; i++) {
+    if (i / k % 3 == 1) {
+      a.val<int32>(i) = 1;
+      sum_gt += 1;
+    }
+  }
+
+  red();
+
+  auto reduced = sum.val<int32>();
+  TC_CHECK(reduced == sum_gt);
+}
+
 TLANG_NAMESPACE_END

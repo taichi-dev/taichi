@@ -517,7 +517,8 @@ TC_TEST("dynamic_mask") {
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < k * 2; j++) {
-      a.val<int32>(i, j) = 1;
+      // TODO: restore this
+      // a.val<int32>(i, j) = 1;
     }
   }
 

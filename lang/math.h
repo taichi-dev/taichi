@@ -105,6 +105,14 @@ struct Matrix {
     }
     return ret;
   }
+
+  Expr sum() const {
+    Expr ret = entries[0];
+    for (int i = 1; i < n * m; i++) {
+      ret = ret + entries[i];
+    }
+    return ret;
+  }
 };
 
 inline Matrix operator*(const Expr &A, const Matrix &B) {

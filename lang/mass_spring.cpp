@@ -13,17 +13,24 @@ using Tlang::measure_cpe;
 TLANG_NAMESPACE_BEGIN
 
 Expr length(Vector vec) {
-  TC_WARN("not implemented");
-  return vec(0);
+  Expr t = vec(0) * vec(0);
+  for (int i = 1; i < vec.entries.size(); i++) {
+    t = t + vec.entries[i] * vec.entries[i];
+  }
+  return sqrt(t);
 }
 
 TC_TEST("mass_spring") {
   Program prog;
 
   const int dim = 3;
-  Vector x(dim), v(dim), fe(dim), fmg(dim), p(dim), r(dim), Ap(dim);
-  auto mass = var<float32>(), fixed = var<float32>();
   auto i = ind(), j = ind();
+
+  Matrix K(dim, dim), K_self(dim, dim);
+
+  Vector x(dim), v(dim), fe(dim), fmg(dim), p(dim), r(dim), Ap(dim);
+
+  auto mass = var<float32>(), fixed = var<float32>();
   auto l0 = var<float32>(), stiffness = var<float32>();
   auto neighbour = var<int32>();
   auto alpha = var<int32>(), beta = var<int32>();
@@ -34,8 +41,7 @@ TC_TEST("mass_spring") {
   const auto grav = -9.81_f;
 
   int n, m;
-  Matrix K(dim, dim), K_self(dim, dim);
-  std::FILE *f = std::fopen("data/bunny.txt", "r");
+  std::FILE *f = std::fopen("data/bunny_small.txt", "r");
   TC_ASSERT(f);
   fscanf(f, "%d%d", &n, &m);
   TC_P(n);
@@ -82,12 +88,14 @@ TC_TEST("mass_spring") {
       r(i) = var<float32>();
       p(i) = var<float32>();
       Ap(i) = var<float32>();
+      fe(i) = var<float32>();
       particle.place(x(i));
       particle.place(v(i));
       particle.place(fmg(i));
       particle.place(r(i));
       particle.place(p(i));
       particle.place(Ap(i));
+      particle.place(fe(i));
     }
     particle.place(fixed);
     for (int i = 0; i < dim; i++) {
@@ -151,14 +159,16 @@ TC_TEST("mass_spring") {
     compute_Ap2();
   };
 
-  auto compute_denorm = kernel(mass, [&] {});
+  auto compute_denorm = kernel(mass, [&] {
+    reduce(global(denorm), p[i].element_wise_prod(Ap[i]).sum());
+  });
 
   auto compute_r = kernel(mass, [&] { r[i] = fe[i] - Ap[i]; });
 
   auto compute_v = kernel(mass, [&] { v[i] = v[i] + alpha * p[i]; });
 
   auto compute_r2 = kernel(mass, [&] {
-    // reduce(normr2, );
+    reduce(global(normr2), r[i].element_wise_prod(r[i]).sum());
   });
 
   auto compute_normr2 = kernel(mass, [&] { r[i] = r[i] - alpha * Ap[i]; });
@@ -183,9 +193,11 @@ TC_TEST("mass_spring") {
     }
     advect();
   };
+  TC_TAG;
+
 
   for (int i = 0; i < 100; i++) {
-    time_step();
+    // time_step();
   }
 }
 

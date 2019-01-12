@@ -26,6 +26,7 @@ Expr Expr::operator[](const Expr &i) {
 
 Expr Expr::operator[](const ExprGroup &_is) {
   auto is = _is;
+  TC_ASSERT(node != nullptr);
   TC_ASSERT(node->type == NodeType::addr);
   for (auto &i: is.exprs) {
     if (i->type == NodeType::pointer) {

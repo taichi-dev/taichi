@@ -21,7 +21,6 @@ Expr length(Vector vec) {
 }
 
 TC_TEST("mass_spring") {
-  return;
   Program prog;
 
   const int dim = 3;
@@ -34,7 +33,7 @@ TC_TEST("mass_spring") {
   auto mass = var<float32>(), fixed = var<float32>();
   auto l0 = var<float32>(), stiffness = var<float32>();
   auto neighbour = var<int32>();
-  auto alpha = var<int32>(), beta = var<int32>();
+  auto alpha = var<float32>(), beta = var<float32>();
   auto denorm = var<float32>(), normr2 = var<float32>();
 
   const auto h = 1.0e-2_f;
@@ -156,30 +155,39 @@ TC_TEST("mass_spring") {
       reduce(Ap[i](d), tmp(d));
     }
   });
+  TC_TAG;
 
   auto compute_Ap2 = kernel(mass, [&] { Ap[i] = Ap[i] + K_self[i] * p[i]; });
 
+  TC_TAG;
   auto compute_Ap = [&] {
     compute_Ap1();
     compute_Ap2();
   };
 
+  TC_TAG;
   auto compute_denorm = kernel(mass, [&] {
     reduce(global(denorm), p[i].element_wise_prod(Ap[i]).sum());
   });
 
+  TC_TAG;
   auto compute_r = kernel(mass, [&] { r[i] = fe[i] - Ap[i]; });
 
-  auto compute_v = kernel(mass, [&] { v[i] = v[i] + alpha * p[i]; });
+  TC_TAG;
+  auto compute_v = kernel(mass, [&] { v[i] = v[i] + global(alpha) * p[i]; });
 
+  TC_TAG;
   auto compute_r2 = kernel(mass, [&] {
     reduce(global(normr2), r[i].element_wise_prod(r[i]).sum());
   });
+  TC_TAG;
 
-  auto compute_normr2 = kernel(mass, [&] { r[i] = r[i] - alpha * Ap[i]; });
+  auto compute_normr2 = kernel(mass, [&] { r[i] = r[i] - global(alpha) * Ap[i]; });
+  TC_TAG;
 
-  auto compute_p = kernel(mass, [&] { p[i] = r[i] + beta * p[i]; });
+  auto compute_p = kernel(mass, [&] { p[i] = r[i] + global(beta) * p[i]; });
 
+  TC_TAG;
   auto time_step = [&] {
     compute_normr2();
     copy_r_to_p();

@@ -423,16 +423,23 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       auto snode = expr[0][0]->snode_ptr(0);
       std::vector<std::string> elems(max_num_indices, ", 0");
       for (int j = 0; j < (int)max_num_indices; j++) {
-        elems[j] = fmt::format(", index_{}_{}_global",
-                               prog->current_snode->parent->node_type_name, j);
+        auto r = prog->current_snode;
+        if (r->type == SNodeType::forked)
+          r = r->parent;
+        r = r->parent;
+        elems[j] = fmt::format(", index_{}_{}_global", r->node_type_name, j);
       }
       std::string total_elem = "";
       for (int j = 0; j < max_num_indices; j++) {
         total_elem += elems[j];
       }
-      emit_code("auto *reduce_target = access_{}(context.buffers[0] {});",
-                snode->node_type_name, total_elem);
-      emit_code("*{} += reduce_sum({}{});", "reduce_target", "sum", rid);
+      if (snode->parent->depth == 0) {
+        TC_INFO("reducing to global var");
+        total_elem = ", 0, 0, 0, 0";
+      }
+      emit_code("auto *reduce_target{} = access_{}(context.buffers[0] {});",
+                rid, snode->node_type_name, total_elem);
+      emit_code("*{}{} += reduce_sum({}{});", "reduce_target", rid, "sum", rid);
       // emit_code("std::cout << reduce_sum(sum) << std::endl;");
     }
     //}

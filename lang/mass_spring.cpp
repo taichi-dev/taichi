@@ -50,10 +50,11 @@ TC_TEST("mass_spring") {
   TC_P(n);
   int max_n = bit::least_pot_bound(n);
   TC_P(m);
+  int max_edges = 32;
   TC_P(max_n);
 
   layout([&] {
-    auto &fork = root.fixed(i, max_n).dynamic(j, 64);
+    auto &fork = root.fixed(i, max_n).dynamic(j, max_edges);
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
         K(i, j) = var<float32>();
@@ -63,10 +64,10 @@ TC_TEST("mass_spring") {
     auto &fork2 = root.fixed(i, max_n);
 
     auto place_fixed = [&](Expr expr) {
-      fork2.fixed(j, 64).place(expr);
+      fork2.fixed(j, max_edges).place(expr);
     };
 
-    auto &fork3 = root.fixed(i, max_n).fixed(j, 8);
+    auto &fork3 = root.fixed(i, max_n).fixed(j, max_edges);
     auto place_blocked = [&](Expr expr) {
       fork3.fixed(j, 8).place(expr);
     };
@@ -307,6 +308,11 @@ TC_TEST("mass_spring") {
     int u, v;
     float32 l0_, stiffness_;
     fscanf(f, "%d%d%f%f", &u, &v, &l0_, &stiffness_);
+
+    if (std::max(degrees[v], degrees[u]) >= max_edges) {
+      TC_WARN("Skipping edge");
+      continue;
+    }
 
     l0.val<float>(u, degrees[u]) = l0_;
     l0.val<float>(v, degrees[v]) = l0_;

@@ -106,7 +106,7 @@ TC_TEST("mass_spring") {
   auto build_matrix = kernel(neighbour, [&] {
     auto k = neighbour[i, j];
     auto dx = x[i] - x[k];
-    auto l = length(dx);
+    auto l = length(dx) + imm(0.00000000001_f);  // NOTE: this may lead to a difference
     auto U = dx * (imm(1.0_f) / l);
     auto s = stiffness[i, j];
     auto f = s * (l - l0[i, j]);
@@ -118,12 +118,12 @@ TC_TEST("mass_spring") {
     for (int t = 0; t < dim; t++)
       k_e(t, t) = k_e(t, t) + f / l;
 
-    K[i, j] = K[i, j] - k_e;
+    K[i, j] = -k_e;
 
     for (int d = 0; d < dim; d++) {
       reduce(fe[i](d), fe0(d));
       for (int t = 0; t < dim; t++) {
-        // reduce(K_self(d, t)[i], k_e(d, t));
+        reduce(K_self(d, t)[i], k_e(d, t));
       }
     }
   });
@@ -131,6 +131,7 @@ TC_TEST("mass_spring") {
   auto preprocess_particles = kernel(x(0), [&] {
     fmg[i] = mass[i] * v[i];
     fmg[i](1) = fmg[i](1) + imm(h * grav) * mass[i];  // gravity
+    fmg[i] = fmg[i] * (imm(1.0_f) - fixed[i]) + fe[i];
     for (int t = 0; t < dim; t++) {
       K_self[i](t, t) =
           K_self[i](t, t) + select(cast<int>(load(fixed[i])), imm(1.0_f),
@@ -143,24 +144,26 @@ TC_TEST("mass_spring") {
   auto copy_r_to_p = kernel(mass, [&] { p[i] = r[i]; });
 
   auto compute_Ap1 = kernel(K(0, 0), [&] {
-    auto tmp = K[i, j] * p[neighbour[i, j]];
+    auto tmp = K[i, j] * vec[neighbour[i, j]];
     for (int d = 0; d < dim; d++) {
       reduce(Ap[i](d), tmp(d));
     }
   });
 
-  auto compute_Ap2 = kernel(mass, [&] { Ap[i] = Ap[i] + K_self[i] * p[i]; });
+  auto compute_Ap2 = kernel(mass, [&] {
+    Ap[i] = K_self[i] * vec[i];
+  });
 
   auto compute_Ap = [&] {
-    compute_Ap1();
     compute_Ap2();
+    compute_Ap1();
   };
 
   auto compute_denorm = kernel(mass, [&] {
     reduce(global(denorm), p[i].element_wise_prod(Ap[i]).sum());
   });
 
-  auto compute_r = kernel(mass, [&] { r[i] = fe[i] - Ap[i]; });
+  auto compute_r = kernel(mass, [&] { r[i] = fmg[i] - Ap[i]; });
 
   auto compute_v = kernel(mass, [&] { v[i] = v[i] + global(alpha) * p[i]; });
 
@@ -185,37 +188,54 @@ TC_TEST("mass_spring") {
     fmt::print("\n");
   };
 
+  std::vector<int> degrees(n, 0);
   auto time_step = [&] {
     clear_matrix();
-    // preprocess_particles();
     build_matrix();
+    preprocess_particles();
 
-    print_vector("x", x);
-    print_vector("v", v);
+    // print_vector("x", x);
+    // print_vector("v", v);
 
-    for (int i = 0; i < dim; i++) {
-      for (int j = 0; j < dim; j++) {
-        TC_P(K(i, j).val<float32>(0, 0));
-        TC_P(K_self(i, j).val<float32>(0));
+    for (int u = 0; u < n; u++) {
+      printf("u: %d\n", u);
+      for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+          printf("K_self %f\n", K_self(i, j).val<float32>(u));
+        }
+      }
+      for (int k = 0; k < degrees[u]; k++) {
+        int v = neighbour.val<int32>(u, k);
+        printf("v: %d\n", v);
+        for (int i = 0; i < dim; i++) {
+          for (int j = 0; j < dim; j++) {
+            printf("K %f\n", K(i, j).val<float32>(u, k));
+          }
+        }
       }
     }
 
+    v(0).val<float32>(0) = 1;
+
+    print_vector("fmg", fmg);
     copy_v_to_vec();  // vec = v;
     print_vector("vec", vec);
-    compute_Ap();     // Ap = K vec
+    compute_Ap();  // Ap = K vec
     print_vector("Ap", Ap);
-    compute_r();      // r = fe - Ap
+    compute_r();  // r = fmg - Ap
 
     print_vector("r", r);
     copy_r_to_p();     // p = r
     compute_normr2();  // normr2 = r' * r
+    TC_P(normr2.val<float32>());
     auto h_normr2 = normr2.val<float32>();
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 50; i++) {
       copy_p_to_vec();   // vec = p
       compute_Ap();      // Ap = K vec
       compute_denorm();  // denorm = p' Ap
       alpha.val<float32>() = normr2.val<float32>() / denorm.val<float32>();
-      compute_v();       // v = v + alpha * p
+      compute_v();  // v = v + alpha * p
+      print_vector("v", v);
       compute_r2();      // r = r - alpha * Ap
       compute_normr2();  // normr2 = r'r
       auto normr2_old = normr2.val<float32>();
@@ -226,7 +246,6 @@ TC_TEST("mass_spring") {
     advect();
   };
 
-  std::vector<int> degrees(n, 0);
   for (int i = 0; i < n; i++) {
     float32 x_, y_, z_, fixed_;
     fscanf(f, "%f%f%f%f", &x_, &y_, &z_, &fixed_);

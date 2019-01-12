@@ -256,6 +256,9 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   this->num_groups = kernel.parallel_instances;
 
   auto snode = prog->current_snode;
+  while (snode->type == SNodeType::forked) {
+    snode = snode->parent;
+  }
   has_residual = snode->type == SNodeType::indirect ||
                  snode->parent->type == SNodeType::dynamic;
 

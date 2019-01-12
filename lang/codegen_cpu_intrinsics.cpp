@@ -92,6 +92,8 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
               expr[0]->var_name, expr[1]->var_name, expr[2]->var_name);
   } else if (expr->type == NodeType::floor) {
     emit_code("auto {} = floor({});", expr->var_name, expr[0]->var_name);
+  } else if (expr->type == NodeType::neg) {
+    emit_code("auto {} = neg({});", expr->var_name, expr[0]->var_name);
   } else if (expr->type == NodeType::sqrt) {
     emit_code("auto {} = sqrt({});", expr->var_name, expr[0]->var_name);
   } else if (expr->type == NodeType::inv) {

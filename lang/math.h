@@ -205,6 +205,22 @@ inline Matrix operator-(const Matrix &A, const Matrix &B) {
 
 using Vector = Matrix;
 
+inline Expr operator-(const Expr &a) {
+  auto n = Expr::create(NodeType::neg, Expr::load_if_pointer(a));
+  n->data_type = a->data_type;
+  return n;
+}
+
+inline Matrix operator-(const Matrix &A) {
+  Matrix C(A.n, A.m);
+  for (int i = 0; i < A.n; i++) {
+    for (int j = 0; j < A.m; j++) {
+      C(i, j) = -A(i, j);
+    }
+  }
+  return C;
+}
+
 inline Expr floor(const Expr &a) {
   auto n = Expr::create(NodeType::floor, Expr::load_if_pointer(a));
   n->data_type = a->data_type;

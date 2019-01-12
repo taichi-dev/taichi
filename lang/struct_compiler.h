@@ -263,7 +263,7 @@ class StructCompiler : public CodeGenBase {
     generate_leaf_accessors(node);
     emit_code("extern \"C\" void *create_data_structure() {{auto p= new {}; ",
               root_type);
-    for (int i = 0; i < node.ch.size(); i++) {
+    for (int i = 0; i < (int)node.ch.size(); i++) {
       if (node.ch[i]->type != SNodeType::hashed) {
         emit_code("std::memset(p->get{}(), 0, sizeof({}));", i,
                   node.ch[i]->node_type_name);

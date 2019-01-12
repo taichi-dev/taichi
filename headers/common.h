@@ -489,6 +489,11 @@ inline float32x8 inv(float32x8 v) {
   return _mm256_rcp_ps(v);
 }
 
+inline float32x8 neg(float32x8 v) {
+  // TODO: optimize
+  return sub(float32x8(0), v);
+}
+
 template <int dim>
 inline vec<int32, dim> div(vec<int32, dim> a, vec<int32, dim> b) {
   vec<int32, dim> ret;

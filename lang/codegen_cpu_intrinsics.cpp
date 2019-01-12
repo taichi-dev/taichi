@@ -396,6 +396,10 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     }
   } else if (expr->type == NodeType::reduce) {
     TC_INFO("Reduce optimization");
+    if (reducer_id.find(expr) == reducer_id.end()) {
+      reducer_id[expr] = reducer_id.size() + 1;
+    }
+    int rid = reducer_id[expr];
     // TC_ASSERT(expr[1]->type == NodeType::pointer && expr[1])
     // for (int i = 0; i < simd_width; i++) {
     // val comes first, then indices
@@ -408,10 +412,11 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
                 mask, expr->ch[1]->var_name, expr->ch[1]->data_type_name(),
                 simd_width);
     }
-    emit_code("sum = add(sum, {});", expr->ch[1]->var_name);
+    emit_code("sum{} = add(sum{}, {});", rid, rid, expr->ch[1]->var_name);
     if (!generating_residual) {
       CODE_REGION(interior_shared_variable_begin);
-      emit_code("vec<{}, {}> sum(0);", expr[1]->data_type_name(), simd_width);
+      emit_code("vec<{}, {}> sum{}(0);", expr[1]->data_type_name(), simd_width,
+                rid);
     }
     if (!generating_residual) {
       CODE_REGION(interior_shared_variable_end);
@@ -427,7 +432,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       }
       emit_code("auto *reduce_target = access_{}(context.buffers[0] {});",
                 snode->node_type_name, total_elem);
-      emit_code("*{} += reduce_sum({});", "reduce_target", "sum");
+      emit_code("*{} += reduce_sum({}{});", "reduce_target", "sum", rid);
       // emit_code("std::cout << reduce_sum(sum) << std::endl;");
     }
     //}

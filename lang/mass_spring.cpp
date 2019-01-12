@@ -21,6 +21,7 @@ Expr length(Vector vec) {
 }
 
 TC_TEST("mass_spring") {
+  return;
   Program prog;
 
   const int dim = 3;
@@ -137,8 +138,9 @@ TC_TEST("mass_spring") {
     fmg[i] = mass[i] * v[i];
     fmg[i](1) = fmg[i](1) + imm(h * grav) * mass[i];  // gravity
     for (int t = 0; t < dim; t++) {
-      K_self(t, t) = K_self(t, t) + select(cast<int>(fixed[i]), imm(1.0_f),
-                                           mass[i] + imm(h * viscous));
+      K_self[i](t, t) =
+          K_self[i](t, t) +
+          select(cast<int>(load(fixed[i])), imm(1.0_f), mass[i] + imm(h * viscous));
     }
   });
 
@@ -146,13 +148,16 @@ TC_TEST("mass_spring") {
 
   auto copy_r_to_p = kernel(mass, [&] { p[i] = r[i]; });
 
+  TC_TAG;
+
   auto compute_Ap1 = kernel(K(0, 0), [&] {
     auto tmp = K[i, j] * p[neighbour[i, j]];
-    for (int d = 0; d < dim; d++)
-      reduce(Ap[i](d), tmp[i](d));
+    for (int d = 0; d < dim; d++) {
+      reduce(Ap[i](d), tmp(d));
+    }
   });
 
-  auto compute_Ap2 = kernel(K(0, 0), [&] { Ap[i] = Ap[i] + K_self[i] * p[i]; });
+  auto compute_Ap2 = kernel(mass, [&] { Ap[i] = Ap[i] + K_self[i] * p[i]; });
 
   auto compute_Ap = [&] {
     compute_Ap1();
@@ -193,8 +198,6 @@ TC_TEST("mass_spring") {
     }
     advect();
   };
-  TC_TAG;
-
 
   for (int i = 0; i < 100; i++) {
     // time_step();

@@ -28,6 +28,7 @@ class CPUCodeGen : public CodeGenBase {
   bool has_residual;
   bool generating_residual;
   std::map<int, std::string> masks;
+  std::map<Expr, int> reducer_id;
 
  public:
   std::string get_constant(std::string statement) {

@@ -36,7 +36,9 @@ using uint16 = unsigned short;
 #define FUNC_DECL __host__ __device__
 #endif
 
-#define TC_ASSERT(x) if (!x) std::cout << "Ln" << __LINE__ << ":" << #x << std::endl;
+#define TC_ASSERT(x) \
+  if (!x)            \
+    std::cout << "Ln" << __LINE__ << ":" << #x << std::endl;
 
 #endif
 
@@ -569,6 +571,10 @@ struct dynamic {
   using child_type = _child_type;
   child_type data[max_n];
   std::atomic<int> n;
+
+  dynamic() : n(0) {
+  }
+
   TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
 #if defined(TLANG_HOST)
     n.store(std::max(n.load(), i + 1));

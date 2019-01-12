@@ -41,34 +41,11 @@ TC_TEST("mass_spring") {
   const auto grav = -9.81_f;
 
   int n, m;
-  std::FILE *f = std::fopen("data/bunny_small.txt", "r");
+  std::FILE *f = std::fopen("data/spring_small.txt", "r");
   TC_ASSERT(f);
   fscanf(f, "%d%d", &n, &m);
   TC_P(n);
   TC_P(m);
-  std::vector<int> degrees(n, 0);
-  for (int i = 0; i < n; i++) {
-    float32 x, y, z, fixed;
-    fscanf(f, "%f%f%f%f", &x, &y, &z, &fixed);
-  }
-
-  for (int i = 0; i < m; i++) {
-    int u, v, l0, stiffness;
-    fscanf(f, "%d%d%f%f", &u, &v, &l0, &stiffness);
-    degrees[u]++;
-    degrees[v]++;
-  }
-
-  int max_degrees = 0;
-  int total_degrees = 0;
-  for (int i = 0; i < n; i++) {
-    float32 mass;
-    fscanf(f, "%f", &mass);
-    max_degrees = std::max(max_degrees, degrees[i]);
-    total_degrees += degrees[i];
-  }
-  TC_P(max_degrees);
-  TC_P(1.0_f * total_degrees / n);
 
   layout([&] {
     auto &fork = root.fixed(i, 65536).dynamic(j, 64);
@@ -206,6 +183,43 @@ TC_TEST("mass_spring") {
     }
     advect();
   };
+
+  std::vector<int> degrees(n, 0);
+  for (int i = 0; i < n; i++) {
+    float32 x_, y_, z_, fixed_;
+    fscanf(f, "%f%f%f%f", &x_, &y_, &z_, &fixed_);
+    x(0).val<float32>(i) = x_;
+    x(1).val<float32>(i) = y_;
+    x(2).val<float32>(i) = z_;
+    fixed.val<float32>(i) = fixed_;
+  }
+
+  for (int i = 0; i < m; i++) {
+    int u, v, l0_, stiffness_;
+    fscanf(f, "%d%d%f%f", &u, &v, &l0_, &stiffness_);
+
+    l0.val<float>(u, degrees[u]) = l0_;
+    l0.val<float>(v, degrees[v]) = l0_;
+    stiffness.val<float>(u, degrees[u]) = stiffness_;
+    stiffness.val<float>(v, degrees[v]) = stiffness_;
+
+    neighbour.val<int>(u, degrees[u]) = v;
+    neighbour.val<int>(v, degrees[v]) = u;
+
+    degrees[u]++;
+    degrees[v]++;
+  }
+
+  int max_degrees = 0;
+  int total_degrees = 0;
+  for (int i = 0; i < n; i++) {
+    float32 mass;
+    fscanf(f, "%f", &mass);
+    max_degrees = std::max(max_degrees, degrees[i]);
+    total_degrees += degrees[i];
+  }
+  TC_P(max_degrees);
+  TC_P(1.0_f * total_degrees / n);
 
   for (int i = 0; i < 100; i++) {
     // time_step();

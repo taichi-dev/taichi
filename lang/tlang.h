@@ -2,6 +2,7 @@
 
 #include <taichi/common/util.h>
 #include <taichi/io/io.h>
+#include <taichi/math.h>
 #include <set>
 #include <dlfcn.h>
 
@@ -69,6 +70,10 @@ inline Expr global(Expr e) {
 }
 
 TLANG_NAMESPACE_END
+
+TC_NAMESPACE_BEGIN
+void write_partio(std::vector<Vector3> positions, const std::string &file_name);
+TC_NAMESPACE_END
 
 /*
  Expr should be what the users play with.

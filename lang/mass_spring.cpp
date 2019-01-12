@@ -30,7 +30,7 @@ TC_TEST("mass_spring") {
 
   Matrix K(dim, dim), K_self(dim, dim);
 
-  Vector x(dim), v(dim), fe(dim), fmg(dim), p(dim), r(dim), Ap(dim), vec(dim);
+  Vector x(dim), v(dim), fmg(dim), p(dim), r(dim), Ap(dim), vec(dim);
 
   auto mass = var<float32>(), fixed = var<float32>();
   auto l0 = var<float32>(), stiffness = var<float32>();
@@ -69,7 +69,6 @@ TC_TEST("mass_spring") {
       r(i) = var<float32>();
       p(i) = var<float32>();
       Ap(i) = var<float32>();
-      fe(i) = var<float32>();
       vec(i) = var<float32>();
       particle.place(x(i));
       particle.place(v(i));
@@ -77,7 +76,6 @@ TC_TEST("mass_spring") {
       particle.place(r(i));
       particle.place(p(i));
       particle.place(Ap(i));
-      particle.place(fe(i));
       particle.place(vec(i));
     }
     particle.place(fixed);
@@ -121,7 +119,7 @@ TC_TEST("mass_spring") {
     K[i, j] = -k_e;
 
     for (int d = 0; d < dim; d++) {
-      reduce(fe[i](d), fe0(d));
+      reduce(fmg[i](d), fe0(d));
       for (int t = 0; t < dim; t++) {
         reduce(K_self(d, t)[i], k_e(d, t));
       }
@@ -131,10 +129,9 @@ TC_TEST("mass_spring") {
   auto preprocess_particles = kernel(x(0), [&] {
     fmg[i] = mass[i] * v[i];
     fmg[i](1) = fmg[i](1) + imm(h * grav) * mass[i];  // gravity
-    fmg[i] = fmg[i] * (imm(1.0_f) - fixed[i]) + fe[i];
+    fmg[i] = fmg[i] * (imm(1.0_f) - fixed[i]);
     for (int t = 0; t < dim; t++) {
-      K_self[i](t, t) =
-          K_self[i](t, t) + select(cast<int>(load(fixed[i])), imm(1.0_f),
+      K_self[i](t, t) = select(cast<int>(load(fixed[i])), imm(1.0_f),
                                    mass[i] + imm(h * viscous));
     }
   });
@@ -152,6 +149,7 @@ TC_TEST("mass_spring") {
 
   auto compute_Ap2 = kernel(mass, [&] {
     Ap[i] = K_self[i] * vec[i];
+    // Ap[i] =  vec[i];
   });
 
   auto compute_Ap = [&] {
@@ -180,6 +178,7 @@ TC_TEST("mass_spring") {
   auto copy_p_to_vec = kernel(mass, [&] { vec[i] = p[i]; });
 
   auto print_vector = [&](std::string name, Vector e) {
+    return;
     fmt::print(name);
     for (int i = 0; i < n; i++) {
       fmt::print(" {} {} {}, ", e(0).val<float>(i), e(1).val<float>(i),
@@ -191,8 +190,8 @@ TC_TEST("mass_spring") {
   std::vector<int> degrees(n, 0);
   auto time_step = [&] {
     clear_matrix();
-    build_matrix();
     preprocess_particles();
+    build_matrix();
 
     // print_vector("x", x);
     // print_vector("v", v);
@@ -213,6 +212,9 @@ TC_TEST("mass_spring") {
           }
         }
       }
+
+      for (int d = 0; d < dim; d++)
+        fmg(d).val<float32>(u) = 0;
     }
 
     v(0).val<float32>(0) = 1;
@@ -226,20 +228,31 @@ TC_TEST("mass_spring") {
 
     print_vector("r", r);
     copy_r_to_p();     // p = r
+    print_vector("p", p);
+    normr2.val<float32>() = 0;
     compute_normr2();  // normr2 = r' * r
     TC_P(normr2.val<float32>());
     auto h_normr2 = normr2.val<float32>();
     for (int i = 0; i < 50; i++) {
       copy_p_to_vec();   // vec = p
       compute_Ap();      // Ap = K vec
+      print_vector("Ap", Ap);
+      denorm.val<float32>() = 0;
       compute_denorm();  // denorm = p' Ap
       alpha.val<float32>() = normr2.val<float32>() / denorm.val<float32>();
+      TC_P(alpha.val<float32>());
+      print_vector("p", p);
       compute_v();  // v = v + alpha * p
       print_vector("v", v);
       compute_r2();      // r = r - alpha * Ap
-      compute_normr2();  // normr2 = r'r
+      print_vector("r", r);
+      // normr2.val()
       auto normr2_old = normr2.val<float32>();
-      TC_P(normr2_old);
+      if (normr2_old < 1e-6_f) break;
+      // TC_P(normr2_old);
+      normr2.val<float32>() = 0;
+      compute_normr2();  // normr2 = r'r
+      TC_P(normr2.val<float32>());
       beta.val<float32>() = normr2.val<float32>() / normr2_old;
       compute_p();  // p = r + beta * p
     }

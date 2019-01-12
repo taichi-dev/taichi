@@ -107,6 +107,11 @@ class CPUCodeGen : public CodeGenBase {
     emit_code("auto {}_cache = access_{}({}, {});", snode->node_type_name,
               snode->node_type_name, parent, loop_variable(snode->parent));
     emit_code("int {};", l);
+
+    if (snode->type == SNodeType::pointer) {
+      emit_code("if (!{}_cache->data) continue;", snode->node_type_name, l);
+    }
+
     if (snode->_multi_threaded) {
       auto p = snode->parent;
       while (p) {
@@ -126,7 +131,8 @@ class CPUCodeGen : public CodeGenBase {
       }
     } else {
       if (snode->type == SNodeType::hashed) {
-        emit_code("for (auto &{}_it : {}_cache->data) {{", l, snode->node_type_name);
+        emit_code("for (auto &{}_it : {}_cache->data) {{", l,
+                  snode->node_type_name);
         emit_code("int {} = {}_it.first;", l, l);
       } else {
         emit_code("for ({} = 0; {} < {}_cache->get_n(); {} += {}) {{", l, l,

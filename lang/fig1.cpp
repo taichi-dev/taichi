@@ -89,8 +89,6 @@ void benchmark_layers() {
 TLANG_NAMESPACE_BEGIN
 
 TC_TEST("stencil1d") {
-
-  return;
   Program prog;
 
   auto x = var<float32>(), y = var<float32>(), i = ind();
@@ -99,7 +97,7 @@ TC_TEST("stencil1d") {
         .fixed(i, 256).place(x, y);
   });
   auto stencil = kernel(x, [&] {
-    //x[i] = imm(1.0f / 3) * (y[i - imm(1)] + y[i] + y[i + imm(1)]);
+    // x[i] = imm(1.0f / 3) * (y[i - imm(1)] + y[i] + y[i + imm(1)]);
     x[i] = load(y[i]);
     // y[i] = imm(0);//y[i];
     // x[i] = y[i];

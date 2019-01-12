@@ -36,6 +36,8 @@ Expr Expr::operator[](const ExprGroup &_is) {
     TC_ASSERT(i);
     TC_ASSERT(i->type == NodeType::index || i->data_type == DataType::i32);
   }
+  SNode *snode = node->snode_ptr(0);
+  TC_ASSERT(is.size() == snode->num_active_indices);
   if (is.size() == 0) {
     auto n = create(NodeType::pointer, *this);
     n->data_type = (*this)->data_type;

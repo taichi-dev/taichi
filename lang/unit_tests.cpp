@@ -816,7 +816,7 @@ TC_TEST("global_variable") {
   layout([&] {
     // root.fixed(i, n).pointer().fixed(i, k).place(a);
     root.fixed(i, n).fixed(i, k).place(a);
-    root.fixed(j, 1).place(sum);
+    root.place(sum);
   });
 
   auto red = kernel(a, [&]() { reduce(global(sum), a[i]); });
@@ -829,6 +829,39 @@ TC_TEST("global_variable") {
 
   auto reduced = sum.val<int32>();
   TC_CHECK(reduced == m * (m - 1) / 2);
+}
+
+TC_TEST("pointer") {
+  Program prog;
+
+  int n = 32;
+  int k = 64;
+  int m = n * k;
+
+  auto a = var<int32>();
+  auto sum = var<int32>();
+
+  auto i = ind(), j = ind();
+
+  layout([&] {
+    root.fixed(i, n).pointer().fixed(i, k).place(a);
+    root.place(sum);
+  });
+
+  auto red = kernel(a, [&]() { reduce(global(sum), a[i]); });
+
+  int sum_gt = 0;
+  for (int i = 0; i < m; i++) {
+    if (i / k % 3 == 1) {
+      a.val<int32>(i) = i;
+      sum_gt += i;
+    }
+  }
+
+  red();
+
+  auto reduced = sum.val<int32>();
+  TC_CHECK(reduced == sum_gt);
 }
 
 TLANG_NAMESPACE_END

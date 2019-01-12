@@ -74,6 +74,7 @@ struct Program {
     int simd_lanes;
     int output_group_size;
     bool has_touch;
+    std::string name;
 
     Kernel(Program &program, std::function<void()> func) : program(program) {
       has_touch = false;

@@ -33,6 +33,10 @@ inline Kernel kernel(SNode *snode, const std::function<void()> &body) {
   return get_current_program().kernel(snode, body);
 }
 
+inline void kernel_name(std::string name) {
+  get_current_program().get_current_kernel().name = name;
+}
+
 inline void group(int n) {
   get_current_program().get_current_kernel().output_group_size = n;
 }
@@ -68,6 +72,7 @@ inline void reduce(Expr target, Expr value) {
 inline Expr global(Expr e) {
   return e[ExprGroup()];
 }
+
 
 TLANG_NAMESPACE_END
 

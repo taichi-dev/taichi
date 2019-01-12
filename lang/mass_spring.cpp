@@ -162,6 +162,7 @@ TC_TEST("mass_spring") {
   auto copy_r_to_p = kernel(mass, [&] { p[i] = r[i]; });
 
   auto compute_Ap1 = kernel(neighbour, [&] {
+    kernel_name("compute_Ap1");
     auto tmp = K[i, j] * vec[neighbour[i, j]];
     for (int d = 0; d < dim; d++) {
       reduce(Ap[i](d), tmp(d));
@@ -171,8 +172,8 @@ TC_TEST("mass_spring") {
   auto compute_Ap2 = kernel(mass, [&] { Ap[i] = K_self[i] * vec[i]; });
 
   auto compute_Ap = [&] {
-    compute_Ap2();
-    compute_Ap1();
+    TC_TIME(compute_Ap2());
+    TC_TIME(compute_Ap1());
   };
 
   auto compute_denorm = kernel(mass, [&] {

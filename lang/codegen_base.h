@@ -13,6 +13,7 @@ class CodeGenBase : public Visitor {
   std::string code_suffix;
   std::string folder;
   std::string func_name;
+  std::string source_name;
   int num_groups;
   int id;
   std::string suffix;
@@ -93,6 +94,8 @@ class CodeGenBase : public Visitor {
   CodeGenBase() : Visitor(Visitor::Order::child_first) {
     id = get_code_gen_id();
     func_name = fmt::format("func{:06d}", id);
+    suffix = ".cpp";  // TODO: remove this hack
+    source_name = fmt::format("tmp{:04d}.{}", id, suffix);
 
     dll = nullptr;
     current_code_region = CodeRegion::header;
@@ -144,10 +147,7 @@ class CodeGenBase : public Visitor {
     return fmt::format("access_{:04d}", accessor_count++);
   }
 
-  std::string get_source_fn() {
-    return fmt::format("{}/{}/tmp{:04d}.{}", get_project_fn(), folder, id,
-                       suffix);
-  }
+  std::string get_source_fn();
 
   std::string get_project_fn() {
     return fmt::format("{}/projects/taichi_lang/", get_repo_dir());

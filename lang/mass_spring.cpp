@@ -186,6 +186,7 @@ TC_TEST("mass_spring") {
   auto copy_p_to_vec = kernel(mass, [&] { vec[i] = p[i]; });
 
   auto print_vector = [&](std::string name, Vector e) {
+    return;
     fmt::print(name);
     for (int i = 0; i < n; i++) {
       fmt::print(" {} {} {}, ", e(0).val<float>(i), e(1).val<float>(i),
@@ -239,7 +240,7 @@ TC_TEST("mass_spring") {
     // TC_P(normr2.val<float32>());
     auto h_normr2 = normr2.val<float32>();
     for (int i = 0; i < 50; i++) {
-      TC_P(i);
+      // TC_P(i);
       if (h_normr2 < 1e-8f) {
         break;
       }
@@ -312,7 +313,7 @@ TC_TEST("mass_spring") {
 
   for (int i = 0; i < 500; i++) {
     for (int i = 0; i < 10; i++)
-      time_step();
+      TC_TIME(time_step());
     std::vector<Vector3> parts;
     for (int i = 0; i < n; i++) {
       parts.push_back(Vector3(x(0).val<float32>(i), x(1).val<float32>(i),

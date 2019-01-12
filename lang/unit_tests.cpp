@@ -801,4 +801,34 @@ TC_TEST("spmv_dynamic") {
   }
 }
 
+TC_TEST("global_variable") {
+  Program prog;
+
+  int n = 32;
+  int k = 64;
+  int m = n * k;
+
+  auto a = var<int32>();
+  auto sum = var<int32>();
+
+  auto i = ind(), j = ind();
+
+  layout([&] {
+    // root.fixed(i, n).pointer().fixed(i, k).place(a);
+    root.fixed(i, n).fixed(i, k).place(a);
+    root.fixed(j, 1).place(sum);
+  });
+
+  auto red = kernel(a, [&]() { reduce(global(sum), a[i]); });
+
+  for (int i = 0; i < m; i++) {
+    a.val<int32>(i) = i;
+  }
+
+  red();
+
+  auto reduced = sum.val<int32>();
+  TC_CHECK(reduced == m * (m - 1) / 2);
+}
+
 TLANG_NAMESPACE_END

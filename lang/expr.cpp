@@ -26,7 +26,6 @@ Expr Expr::operator[](const Expr &i) {
 
 Expr Expr::operator[](const ExprGroup &_is) {
   auto is = _is;
-  TC_ASSERT(is.size() > 0);
   TC_ASSERT(node->type == NodeType::addr);
   for (auto &i: is.exprs) {
     if (i->type == NodeType::pointer) {
@@ -37,7 +36,11 @@ Expr Expr::operator[](const ExprGroup &_is) {
     TC_ASSERT(i);
     TC_ASSERT(i->type == NodeType::index || i->data_type == DataType::i32);
   }
-  if (is.size() == 1) {
+  if (is.size() == 0) {
+    auto n = create(NodeType::pointer, *this);
+    n->data_type = (*this)->data_type;
+    return n;
+  }else if (is.size() == 1) {
     auto n = create(NodeType::pointer, *this, is.exprs[0]);
     n->data_type = (*this)->data_type;
     return n;
@@ -116,6 +119,7 @@ void *Expr::val_tmp(Indices... indices) {
   return evaluate_addr(ind[0], ind[1], ind[2], ind[3]);
 }
 
+template void *Expr::val_tmp<>();
 template void *Expr::val_tmp<int>(int);
 template void *Expr::val_tmp<int, int>(int, int);
 template void *Expr::val_tmp<int, int, int>(int, int, int);

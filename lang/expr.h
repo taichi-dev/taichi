@@ -346,6 +346,8 @@ inline Expr select(Expr mask, Expr true_val, Expr false_val) {
 class ExprGroup {
  public:
   std::vector<Expr> exprs;
+  ExprGroup() {
+  }
   ExprGroup(Expr a) {
     exprs.push_back(a);
   }

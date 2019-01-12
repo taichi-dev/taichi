@@ -64,6 +64,10 @@ inline void reduce(Expr target, Expr value) {
   return ker.ret->ch.push_back(e);
 }
 
+inline Expr global(Expr e) {
+  return e[ExprGroup()];
+}
+
 TLANG_NAMESPACE_END
 
 /*

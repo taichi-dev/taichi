@@ -125,8 +125,13 @@ class CPUCodeGen : public CodeGenBase {
                   l, current_kernel->parallel_instances);
       }
     } else {
-      emit_code("for ({} = 0; {} < {}_cache->get_n(); {} += {}) {{", l, l,
-                snode->node_type_name, l, 1);
+      if (snode->type == SNodeType::hashed) {
+        emit_code("for (auto &{}_it : {}_cache->data) {{", l, snode->node_type_name);
+        emit_code("int {} = {}_it.first;", l, l);
+      } else {
+        emit_code("for ({} = 0; {} < {}_cache->get_n(); {} += {}) {{", l, l,
+                  snode->node_type_name, l, 1);
+      }
     }
 
     if (has_residual && last_level) {

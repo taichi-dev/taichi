@@ -542,7 +542,7 @@ template <typename _child_type>
 struct pointer {
   using child_type = _child_type;
   child_type *data;
-  std::mutex mut;
+  // std::mutex mut;
   TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
 #if defined(TLANG_HOST)
     touch(i);
@@ -551,7 +551,7 @@ struct pointer {
   }
 
   TC_FORCE_INLINE void touch(int i) {
-    std::lock_guard<std::mutex> _(mut);
+    // std::lock_guard<std::mutex> _(mut);
     if (data == nullptr) {
       data = new child_type;
       std::memset(data, 0, sizeof(child_type));

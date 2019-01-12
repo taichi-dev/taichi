@@ -52,38 +52,6 @@ void stencil() {
   }
 }
 
-int initialize() {
-  int total_tiles = 0;
-  int total_blocks = 0;
-  int total_nodes = 0;
-  for (int i = 0; i < 1024; i++) {
-    if (i % 31 != 5) {
-      continue;
-    }
-    total_tiles++;
-    auto &tile = data[i];
-    std::memset(&tile, 0, sizeof(tile));
-    for (int j = 0; j < Tile::size; j++) {
-      auto key = j % 37;
-      if (!(12 <= key && key < 14)) {
-        continue;
-      }
-      auto b = new Block;
-      total_blocks++;
-      tile.blocks[j] = b;
-      for (int k = 0; k < Block::size; k++) {
-        b->nodes[k].x = taichi::rand();
-        b->nodes[k].y = 0;
-        total_nodes += 1;
-      }
-    }
-  }
-  TC_P(total_tiles);
-  TC_P(total_blocks);
-  TC_P(total_nodes);
-  return total_nodes;
-}
-
 void benchmark_layers() {
   int n = 1000000;
   int cnt = 0;
@@ -121,10 +89,8 @@ void benchmark_layers() {
 TLANG_NAMESPACE_BEGIN
 
 TC_TEST("stencil1d") {
-  auto total_nodes = initialize();
-  // benchmark_layers();
-  // TC_P(measure_cpe(stencil, total_nodes));
 
+  return;
   Program prog;
 
   auto x = var<float32>(), y = var<float32>(), i = ind();
@@ -133,8 +99,48 @@ TC_TEST("stencil1d") {
         .fixed(i, 256).place(x, y);
   });
   auto stencil = kernel(x, [&] {
-    x[i] = imm(1.0f / 3) * (y[i - imm(1)] + y[i] + y[i + imm(1)]);
+    //x[i] = imm(1.0f / 3) * (y[i - imm(1)] + y[i] + y[i + imm(1)]);
+    x[i] = load(y[i]);
+    // y[i] = imm(0);//y[i];
+    // x[i] = y[i];
   });
+
+  int total_nodes = 0;
+  {
+    // initialize
+    int total_tiles = 0;
+    int total_blocks = 0;
+    for (int i = 0; i < 1024; i++) {
+      if (i % 31 != 5) {
+        continue;
+      }
+      total_tiles++;
+      auto &tile = data[i];
+      std::memset(&tile, 0, sizeof(tile));
+      for (int j = 0; j < Tile::size; j++) {
+        auto key = j % 37;
+        if (!(12 <= key && key < 14)) {
+          continue;
+        }
+        auto b = new Block;
+        total_blocks++;
+        tile.blocks[j] = b;
+        for (int k = 0; k < Block::size; k++) {
+          auto val = taichi::rand();
+          b->nodes[k].x = val;
+          b->nodes[k].y = 0;
+          total_nodes += 1;
+          auto index = i * dim0 + j * dim1 + k;
+          x.val<float32>(index) = val;
+        }
+      }
+    }
+    TC_P(total_tiles);
+    TC_P(total_blocks);
+    TC_P(total_nodes);
+  }
+  // benchmark_layers();
+  // TC_P(measure_cpe(stencil, total_nodes));
 
   TC_TIME(stencil());
 }

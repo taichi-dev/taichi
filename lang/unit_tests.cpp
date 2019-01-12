@@ -898,4 +898,27 @@ TC_TEST("hashed") {
   TC_CHECK(reduced == sum_gt);
 }
 
+TC_TEST("unary") {
+  Program prog;
+
+  auto a = var<float32>();
+  auto i = ind();
+
+  layout([&] {
+    root.fixed(i, 8).place(a);
+  });
+
+  auto sqrt_ = kernel(a, [&]() { a[i] = sqrt(a[i]); });
+  a.val<float32>(0) = 64;
+  sqrt_();
+
+  TC_CHECK_EQUAL(a.val<float32>(0), 8.0_f, 1e-6);
+
+  auto inv_ = kernel(a, [&]() { a[i] = inv(a[i]); });
+
+  inv_();
+
+  TC_CHECK_EQUAL(a.val<float32>(0), 0.125_f, 1e-4);
+}
+
 TLANG_NAMESPACE_END

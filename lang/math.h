@@ -203,6 +203,18 @@ inline Expr floor(const Expr &a) {
   return n;
 }
 
+inline Expr sqrt(const Expr &a) {
+  auto n = Expr::create(NodeType::sqrt, Expr::load_if_pointer(a));
+  n->data_type = a->data_type;
+  return n;
+}
+
+inline Expr inv(const Expr &a) {
+  auto n = Expr::create(NodeType::inv, Expr::load_if_pointer(a));
+  n->data_type = a->data_type;
+  return n;
+}
+
 inline Matrix floor(const Matrix &a) {
   Matrix ret(a.n, a.m);
   for (int i = 0; i < (int)a.entries.size(); i++) {

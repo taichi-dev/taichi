@@ -228,6 +228,8 @@ enum class NodeType : int {
   adapter_load,
   imm,
   floor,
+  sqrt,
+  inv,
   cast,
   shr,
   shl,
@@ -259,6 +261,8 @@ inline std::string node_type_name(NodeType type) {
     REGISTER_NODE_TYPE(imm);
     REGISTER_NODE_TYPE(index);
     REGISTER_NODE_TYPE(floor);
+    REGISTER_NODE_TYPE(sqrt);
+    REGISTER_NODE_TYPE(inv);
     REGISTER_NODE_TYPE(cast);
     REGISTER_NODE_TYPE(shr);
     REGISTER_NODE_TYPE(shl);

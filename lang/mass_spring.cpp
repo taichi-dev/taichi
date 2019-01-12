@@ -138,13 +138,20 @@ TC_TEST("mass_spring") {
 
   auto copy_r_to_p = kernel(mass, [&] { p[i] = r[i]; });
 
-  auto compute_Ap = kernel(mass, [&] {
-    // reduce();
+  auto compute_Ap1 = kernel(K(0, 0), [&] {
+    auto tmp = K[i, j] * p[neighbour[i, j]];
+    for (int d = 0; d < dim; d++)
+      reduce(Ap[i](d), tmp[i](d));
   });
 
-  auto compute_denorm = kernel(mass, [&] {
-    // reduce(denorm, );
-  });
+  auto compute_Ap2 = kernel(K(0, 0), [&] { Ap[i] = Ap[i] + K_self[i] * p[i]; });
+
+  auto compute_Ap = [&] {
+    compute_Ap1();
+    compute_Ap2();
+  };
+
+  auto compute_denorm = kernel(mass, [&] {});
 
   auto compute_r = kernel(mass, [&] { r[i] = fe[i] - Ap[i]; });
 
@@ -171,7 +178,7 @@ TC_TEST("mass_spring") {
       compute_normr2();
       auto normr2_old = normr2.val<float32>();
       TC_P(normr2.val<float32>());
-      beta.val<float32>(normr2.val<float32>() / normr2_old);
+      beta.val<float32>() = normr2.val<float32>() / normr2_old;
       compute_p();
     }
     advect();

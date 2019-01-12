@@ -110,13 +110,15 @@ TC_TEST("mass_spring") {
     auto U = dx * (imm(1.0_f) / l);
     auto s = stiffness[i, j];
     auto f = s * (l - l0[i, j]);
-    auto fe0 = imm(h) * f * U;
+    auto fe0 = (imm(1.0_f) - fixed[i]) * imm(h) * f * U;
 
     Matrix UUt = outer_product(U, U);
 
     auto k_e = imm(h * h) * (s - f * (imm(1.0_f) / l) * UUt);
     for (int t = 0; t < dim; t++)
       k_e(t, t) = k_e(t, t) + f / l * imm(h * h);
+
+    k_e = k_e * (imm(1.0_f) - fixed[i]);
 
     K[i, j] = -k_e;
 
@@ -130,7 +132,8 @@ TC_TEST("mass_spring") {
 
   auto preprocess_particles = kernel(x(0), [&] {
     auto fmg_t = mass[i] * v[i];
-    fmg_t(1) = fmg_t(1) + imm(h * grav) * mass[i];  // gravity
+    fmg_t(1) = fmg_t(1) +
+               imm(h * grav) * mass[i] * (imm(1.0_f) - fixed[i]);  // gravity
     fmg_t = fmg_t * (imm(1.0_f) - fixed[i]);
     fmg[i] = fmg_t;
     for (int t = 0; t < dim; t++) {
@@ -155,10 +158,7 @@ TC_TEST("mass_spring") {
     }
   });
 
-  auto compute_Ap2 = kernel(mass, [&] {
-    Ap[i] = K_self[i] * vec[i];
-    // Ap[i] =  vec[i];
-  });
+  auto compute_Ap2 = kernel(mass, [&] { Ap[i] = K_self[i] * vec[i]; });
 
   auto compute_Ap = [&] {
     compute_Ap2();
@@ -310,8 +310,8 @@ TC_TEST("mass_spring") {
   TC_P(max_degrees);
   TC_P(1.0_f * total_degrees / n);
 
-  for (int i = 0; i < 500; i++) {
-    for (int i = 0; i < 10; i++)
+  for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 100; i++)
       time_step();
     std::vector<Vector3> parts;
     for (int i = 0; i < n; i++) {

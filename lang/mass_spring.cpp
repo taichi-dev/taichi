@@ -40,17 +40,17 @@ TC_TEST("mass_spring") {
 
   const auto h = 1.0e-2_f;
   const auto viscous = 2_f;
-  // const auto grav = -9.81_f;
-  const auto grav = 0;
+  const auto grav = -9.81_f;
+  // const auto grav = 0;
 
   int n, m;
-  int max_n = 32;
-  std::FILE *f = std::fopen("data/spring_small.txt", "r");
+  std::FILE *f = std::fopen("data/bunny_small.txt", "r");
   TC_ASSERT(f);
   fscanf(f, "%d%d", &n, &m);
   TC_P(n);
-  TC_ASSERT(n <= max_n);
+  int max_n = bit::least_pot_bound(n);
   TC_P(m);
+  TC_P(max_n);
 
   layout([&] {
     auto &fork = root.fixed(i, max_n).dynamic(j, 64);
@@ -108,13 +108,13 @@ TC_TEST("mass_spring") {
     auto l = length(dx) +
              imm(0.00000000001_f);  // NOTE: this may lead to a difference
     auto U = dx * (imm(1.0_f) / l);
-    auto s = stiffness[i, j];
+    auto s = load(stiffness[i, j]);
     auto f = s * (l - l0[i, j]);
     auto fe0 = (imm(1.0_f) - fixed[i]) * imm(h) * f * U;
 
     Matrix UUt = outer_product(U, U);
 
-    auto k_e = imm(h * h) * (s - f * (imm(1.0_f) / l) * UUt);
+    auto k_e = imm(h * h) * ((s - f * (imm(1.0_f) / l)) * UUt);
     for (int t = 0; t < dim; t++)
       k_e(t, t) = k_e(t, t) + f / l * imm(h * h);
 
@@ -310,8 +310,8 @@ TC_TEST("mass_spring") {
   TC_P(max_degrees);
   TC_P(1.0_f * total_degrees / n);
 
-  for (int i = 0; i < 50; i++) {
-    for (int i = 0; i < 100; i++)
+  for (int i = 0; i < 500; i++) {
+    for (int i = 0; i < 10; i++)
       time_step();
     std::vector<Vector3> parts;
     for (int i = 0; i < n; i++) {

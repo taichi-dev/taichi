@@ -66,10 +66,15 @@ TC_TEST("mass_spring") {
       fork2.fixed(j, 64).place(expr);
     };
 
+    auto &fork3 = root.fixed(i, max_n).fixed(j, 8);
+    auto place_blocked = [&](Expr expr) {
+      fork3.fixed(j, 8).place(expr);
+    };
+
     place_fixed(l0);
     place_fixed(stiffness);
     for (auto &e: K.entries) {
-      place_fixed(e);
+      place_blocked(e);
     }
 
     auto &particle = root.fixed(i, max_n);

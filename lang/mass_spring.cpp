@@ -108,7 +108,7 @@ TC_TEST("mass_spring") {
     auto dx = x[i] - x[k];
     auto l = length(dx);
     auto U = dx * (imm(1.0_f) / l);
-    auto s = load(stiffness[i, j]).print();
+    auto s = stiffness[i, j];
     auto f = s * (l - l0[i, j]);
     auto fe0 = imm(h) * f * U;
 
@@ -118,11 +118,13 @@ TC_TEST("mass_spring") {
     for (int t = 0; t < dim; t++)
       k_e(t, t) = k_e(t, t) + f / l;
 
-    K_self[i] = K_self[i] + k_e;
     K[i, j] = K[i, j] - k_e;
 
     for (int d = 0; d < dim; d++) {
       reduce(fe[i](d), fe0(d));
+      for (int t = 0; t < dim; t++) {
+        // reduce(K_self(d, t)[i], k_e(d, t));
+      }
     }
   });
 
@@ -166,8 +168,7 @@ TC_TEST("mass_spring") {
     reduce(global(normr2), r[i].element_wise_prod(r[i]).sum());
   });
 
-  auto compute_r2 =
-      kernel(mass, [&] { r[i] = r[i] - global(alpha) * Ap[i]; });
+  auto compute_r2 = kernel(mass, [&] { r[i] = r[i] - global(alpha) * Ap[i]; });
 
   auto compute_p = kernel(mass, [&] { p[i] = r[i] + global(beta) * p[i]; });
 
@@ -175,30 +176,52 @@ TC_TEST("mass_spring") {
 
   auto copy_p_to_vec = kernel(mass, [&] { vec[i] = p[i]; });
 
+  auto print_vector = [&](std::string name, Vector e) {
+    fmt::print(name);
+    for (int i = 0; i < n; i++) {
+      fmt::print(" {} {} {}, ", e(0).val<float>(i), e(1).val<float>(i),
+                 e(2).val<float>(i));
+    }
+    fmt::print("\n");
+  };
+
   auto time_step = [&] {
-    preprocess_particles();
     clear_matrix();
+    // preprocess_particles();
     build_matrix();
 
-    copy_v_to_vec(); // vec = v;
-    compute_Ap(); // Ap = K vec
-    compute_r();  // r = fe - Ap
+    print_vector("x", x);
+    print_vector("v", v);
 
-    copy_r_to_p(); // p = r
-    compute_normr2(); // normr2 = r' * r
+    for (int i = 0; i < dim; i++) {
+      for (int j = 0; j < dim; j++) {
+        TC_P(K(i, j).val<float32>(0, 0));
+        TC_P(K_self(i, j).val<float32>(0));
+      }
+    }
+
+    copy_v_to_vec();  // vec = v;
+    print_vector("vec", vec);
+    compute_Ap();     // Ap = K vec
+    print_vector("Ap", Ap);
+    compute_r();      // r = fe - Ap
+
+    print_vector("r", r);
+    copy_r_to_p();     // p = r
+    compute_normr2();  // normr2 = r' * r
     auto h_normr2 = normr2.val<float32>();
     for (int i = 0; i < 10; i++) {
-      copy_p_to_vec(); // vec = p
-      compute_Ap(); // Ap = K vec
-      compute_denorm(); // denorm = p' Ap
+      copy_p_to_vec();   // vec = p
+      compute_Ap();      // Ap = K vec
+      compute_denorm();  // denorm = p' Ap
       alpha.val<float32>() = normr2.val<float32>() / denorm.val<float32>();
-      compute_v(); // v = v + alpha * p
-      compute_r2(); // r = r - alpha * Ap
-      compute_normr2(); // normr2 = r'r
+      compute_v();       // v = v + alpha * p
+      compute_r2();      // r = r - alpha * Ap
+      compute_normr2();  // normr2 = r'r
       auto normr2_old = normr2.val<float32>();
       TC_P(normr2_old);
       beta.val<float32>() = normr2.val<float32>() / normr2_old;
-      compute_p(); // p = r + beta * p
+      compute_p();  // p = r + beta * p
     }
     advect();
   };
@@ -233,8 +256,9 @@ TC_TEST("mass_spring") {
   int max_degrees = 0;
   int total_degrees = 0;
   for (int i = 0; i < n; i++) {
-    float32 mass;
-    fscanf(f, "%f", &mass);
+    float32 mass_;
+    fscanf(f, "%f", &mass_);
+    mass.val<float32>(i) = mass_;
     max_degrees = std::max(max_degrees, degrees[i]);
     total_degrees += degrees[i];
   }

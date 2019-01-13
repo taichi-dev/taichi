@@ -965,37 +965,38 @@ TC_TEST("mat3") {
   Program prog;
   prog.config.simd_width = 4;
 
+  constexpr int dim = 4;
   int n = 16;
-  Matrix M(3, 3);
-  Vector V(3), U(3);
+  Matrix M(dim, dim);
+  Vector V(dim), U(dim);
   auto i = ind();
 
   layout([&] {
     auto &f = root.fixed(i, n);
-    for (int j = 0; j < 3; j++) {
-      for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < dim; j++) {
+      for (int i = 0; i < dim; i++) {
         M(i, j) = var<float32>();
         f.place(M(i, j));
       }
       U(j) = var<float32>();
       V(j) = var<float32>();
     }
-    root.fixed(i, n).place(U(0), U(1), U(2));
-    root.fixed(i, n).place(V(0), V(1), V(2));
+    root.fixed(i, n).place(U);
+    root.fixed(i, n).place(V);
   });
 
   auto mul = kernel(U(0), [&] {
     U[i] = M[i] * V[i];
-    //group(3);
+    group(dim);
   });
 
-  std::vector<Vector3> gt;
+  std::vector<TVector<float, dim>> gt;
 
   for (int i = 0; i < n; i++) {
-    Matrix3 M_;
-    Vector3 V_;
-    for (int j = 0; j < 3; j++) {
-      for (int k = 0; k < 3; k++) {
+    TMatrix<float, dim> M_;
+    TVector<float, dim> V_;
+    for (int j = 0; j < dim; j++) {
+      for (int k = 0; k < dim; k++) {
         M_(j, k) = rand();
         M(j, k).val<float32>(i) = M_(j, k);
       }
@@ -1009,7 +1010,7 @@ TC_TEST("mat3") {
   mul();
 
   for (int i = 0; i < n; i++) {
-    for (int j = 0; j < 3; j++) {
+    for (int j = 0; j < dim; j++) {
       TC_CHECK_EQUAL(U(j).val<float32>(i), gt[i][j], 1e-5_f);
     }
   }

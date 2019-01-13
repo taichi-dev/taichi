@@ -22,6 +22,8 @@ struct IndexExtractor {
   }
 };
 
+struct Matrix;
+
 // "Structural" nodes
 struct SNode {
   std::vector<Handle<SNode>> ch;
@@ -123,6 +125,8 @@ struct SNode {
   SNode &place(Expr &expr, Args &&... args) {
     return place(expr).place(std::forward<Args>(args)...);
   }
+
+  SNode &place(Matrix &mat);
 
   template <typename... Args>
   static Handle<SNode> create(Args &&... args) {

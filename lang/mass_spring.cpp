@@ -42,9 +42,10 @@ TC_TEST("mass_spring") {
   const auto viscous = 2_f;
   const auto grav = -9.81_f;
   // const auto grav = 0;
+  bool mt = false;
 
   int n, m;
-  std::FILE *f = std::fopen("data/bunny.txt", "r");
+  std::FILE *f = std::fopen("data/bunny_small.txt", "r");
   TC_ASSERT(f);
   fscanf(f, "%d%d", &n, &m);
   TC_P(n);
@@ -54,7 +55,7 @@ TC_TEST("mass_spring") {
   TC_P(max_n);
 
   layout([&] {
-    root.fixed(i, max_n)  //.multi_threaded()
+    root.fixed(i, max_n).multi_threaded(mt)
         .dynamic(j, max_edges)
         .place(neighbour);
     auto &fork2 = root.fixed(i, max_n);
@@ -77,7 +78,7 @@ TC_TEST("mass_spring") {
       place_blocked(e);
     }
 
-    auto &particle = root.fixed(i, max_n);
+    auto &particle = root.fixed(i, max_n).multi_threaded(mt);
 
     auto place_vector_soa = [&](Vector &vec) {
       auto &f = root.fixed(i, max_n);

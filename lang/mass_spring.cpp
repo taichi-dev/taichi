@@ -54,7 +54,7 @@ TC_TEST("mass_spring") {
   TC_P(max_n);
 
   layout([&] {
-    root.fixed(i, max_n)//  .multi_threaded()
+    root.fixed(i, max_n)//.multi_threaded()
         .dynamic(j, max_edges)
         .place(neighbour);
     auto &fork2 = root.fixed(i, max_n);
@@ -68,8 +68,8 @@ TC_TEST("mass_spring") {
       fork2.fixed(j, max_edges).place(expr);
     };
 
-    auto &fork3 = root.fixed(i, max_n);//.fixed(j, max_edges / 8);
-    auto place_blocked = [&](Expr expr) { fork3.fixed(j, max_edges).place(expr); };
+    auto &fork3 = root.fixed(i, max_n).fixed(j, max_edges);
+    auto place_blocked = [&](Expr expr) { fork3.place(expr); };
 
     place_fixed(l0);
     place_fixed(stiffness);
@@ -270,7 +270,7 @@ TC_TEST("mass_spring") {
         break;
       }
       copy_p_to_vec();        // vec = p
-      while (1)compute_Ap();  // Ap = K vec
+      compute_Ap();  // Ap = K vec
       // print_vector("Ap", Ap);
       denorm.val<float32>() = 0;
       compute_denorm();  // denorm = p' Ap

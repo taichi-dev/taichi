@@ -21,7 +21,6 @@ Expr length(Vector vec) {
 }
 
 TC_TEST("mass_spring") {
-  return;
   Program prog;
   prog.config.simd_width = 1;
   // TC_WARN("optimization off");
@@ -55,7 +54,7 @@ TC_TEST("mass_spring") {
   TC_P(max_n);
 
   layout([&] {
-    root.fixed(i, max_n)//.multi_threaded()
+    root.fixed(i, max_n)  //.multi_threaded()
         .dynamic(j, max_edges)
         .place(neighbour);
     auto &fork2 = root.fixed(i, max_n);
@@ -79,6 +78,24 @@ TC_TEST("mass_spring") {
     }
 
     auto &particle = root.fixed(i, max_n);
+
+    auto place_vector_soa = [&](Vector &vec) {
+      auto &f = root.fixed(i, max_n);
+      for (int i = 0; i < dim; i++) {
+        vec(i) = var<float32>();
+        f.place(vec(i));
+      }
+    };
+
+    place_vector_soa(x);
+    place_vector_soa(v);
+    place_vector_soa(fmg);
+    place_vector_soa(r);
+    place_vector_soa(p);
+    place_vector_soa(Ap);
+    place_vector_soa(vec);
+
+    /*
     for (int i = 0; i < dim; i++) {
       x(i) = var<float32>();
       v(i) = var<float32>();
@@ -94,6 +111,7 @@ TC_TEST("mass_spring") {
       particle.place(p(i));
       particle.place(Ap(i));
     }
+    */
     particle.place(fixed);
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
@@ -103,8 +121,9 @@ TC_TEST("mass_spring") {
     }
     particle.place(mass);
 
+    auto &f = root.fixed(i, max_n);
     for (int d = 0; d < dim; d++) {
-      root.fixed(i, max_n).place(vec(d));
+      f.place(vec(d));
     }
     root.place(alpha);
     root.place(beta);
@@ -270,8 +289,8 @@ TC_TEST("mass_spring") {
       if (h_normr2 < 1e-8f) {
         break;
       }
-      copy_p_to_vec();        // vec = p
-      compute_Ap();  // Ap = K vec
+      copy_p_to_vec();  // vec = p
+      compute_Ap();     // Ap = K vec
       // print_vector("Ap", Ap);
       denorm.val<float32>() = 0;
       compute_denorm();  // denorm = p' Ap

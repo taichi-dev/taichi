@@ -313,8 +313,18 @@ inline void store<float32, 8>(const float32x8 &v, const void *addr) {
 }
 
 template <>
+inline void store<float32, 1>(const float32x1 &v, const void *addr) {
+  *(float32x1 *)(addr) = v;
+}
+
+template <>
 inline void store<int32, 8>(const int32x8 &v, const void *addr) {
   _mm256_storeu_si256((__m256i *)addr, v);
+}
+
+template <>
+inline void store<int32, 1>(const int32x1 &v, const void *addr) {
+  *(int32x1 *)(addr) = v;
 }
 
 //*****************************************************************************
@@ -548,13 +558,26 @@ inline float32x8 sqrt(float32x8 v) {
   return _mm256_sqrt_ps(v);
 }
 
+inline float32x1 sqrt(float32x1 v) {
+  return std::sqrt(v);
+}
+
 inline float32x8 inv(float32x8 v) {
   return _mm256_rcp_ps(v);
+}
+
+inline float32x1 inv(float32x1 v) {
+  return 1.0f / v;
 }
 
 inline float32x8 neg(float32x8 v) {
   // TODO: optimize
   return sub(float32x8(0), v);
+}
+
+inline float32x1 neg(float32x1 v) {
+  // TODO: optimize
+  return -v;
 }
 
 template <int dim>

@@ -17,7 +17,7 @@ template <typename T>
 using Handle = std::shared_ptr<T>;
 
 constexpr int indirect_loop_variable_index = -1;
-constexpr int default_simd_width_x86_64 = 1;
+constexpr int default_simd_width_x86_64 = 8;
 
 class Expr;
 

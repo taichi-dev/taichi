@@ -145,7 +145,8 @@ class ContinuousMemOptimizer : public Optimizer {
         auto p = addr_node->snode_ptr(i)->parent;
         if (p != addr_node->snode_ptr(0)->parent)
           regular_elements = false;
-        if (p->child_id(addr_node->snode_ptr(i)) != i)
+        if (p->child_id(addr_node->snode_ptr(i)) !=
+            i + p->child_id(addr_node->snode_ptr(0)))
           regular_elements = false;
       }
 

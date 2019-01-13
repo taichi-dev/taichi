@@ -17,6 +17,7 @@ template <typename T>
 using Handle = std::shared_ptr<T>;
 
 constexpr int indirect_loop_variable_index = -1;
+constexpr int default_simd_width_x86_64 = 1;
 
 class Expr;
 
@@ -24,7 +25,7 @@ enum class Arch { x86_64, gpu };
 
 inline int default_simd_width(Arch arch) {
   if (arch == Arch::x86_64) {
-    return 8;  // AVX2
+    return default_simd_width_x86_64;
   } else if (arch == Arch::gpu) {
     return 32;
   } else {

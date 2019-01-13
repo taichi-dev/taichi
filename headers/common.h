@@ -288,6 +288,12 @@ inline float32x1 gather<float32, 1>(const void *addr, int32x1 offsets) {
 }
 
 template <>
+inline int32x1 gather<int32, 1>(const void *addr, int32x1 offsets) {
+  // return _mm256_i32gather_ps((float32 *)addr, offsets, sizeof(float32));
+  return *(int32 *)((uint8 *)addr + offsets.v * 4);
+}
+
+template <>
 inline float32x8 gather<float32, 8>(const void *addr, int32x8 offsets) {
   // return _mm256_i32gather_ps((float32 *)addr, offsets, sizeof(float32));
   return _mm256_i32gather_ps((float32 *)addr, offsets, 4);
@@ -344,9 +350,20 @@ inline int32x8 cast<int32, float32, 8>(const float32x8 &v) {
 }
 
 template <>
+inline int32x1 cast<int32, float32, 1>(const float32x1 &v) {
+  return int32(v);
+}
+
+template <>
 inline float32x8 cast<float32, int32, 8>(const int32x8 &v) {
   return _mm256_cvtepi32_ps(v);
 }
+
+template <>
+inline float32x1 cast<float32, int32, 1>(const int32x1 &v) {
+  return float32(v);
+}
+
 
 //*****************************************************************************
 
@@ -399,6 +416,14 @@ inline float32x8 max<float32, 8>(float32x8 a, float32x8 b) {
 }
 
 //*****************************************************************************
+inline int32x1 cmp_ne(float32x1 a, float32x1 b) {
+  return int32(a.v != b.v);
+}
+
+inline int32x1 cmp_ne(int32x1 a, int32x1 b) {
+  return int32(a.v != b.v);
+}
+
 inline int32x8 cmp_ne(float32x8 a, float32x8 b) {
   auto ret = _mm256_cmp_ps(a, b, _CMP_NEQ_UQ);
   return union_cast<int32x8>(ret);

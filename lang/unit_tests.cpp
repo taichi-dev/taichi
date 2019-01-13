@@ -719,7 +719,6 @@ TC_TEST("spmv_dynamic") {
   Eigen::VectorXf V(n), Vret(n);
 
   Program prog;
-  prog.config.simd_width = 1;
   prog.config.external_optimization_level = 4;
 
   auto result = var<float32>();

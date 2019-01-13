@@ -167,7 +167,7 @@ class ContinuousMemOptimizer : public Optimizer {
             vload->ch[i] = c;
           }
           vload->set_similar(expr);
-          expr.set(vload);
+          replace(expr, vload);
           return true;
         } else {
           TC_INFO("Optimized store to vstoreu");
@@ -181,7 +181,7 @@ class ContinuousMemOptimizer : public Optimizer {
             vstore->ch[i + 1] = c;
           }
           vstore->set_similar(expr);
-          expr.set(vstore);
+          replace(expr, vstore);
           return true;
         }
       }
@@ -229,7 +229,7 @@ class GatherMemOptimizer : public Optimizer {
         gather->ch[i] = c;
       }
       gather->set_similar(expr);
-      expr.set(gather);
+      replace(expr, gather);
       return true;
     }
     return false;

@@ -6,9 +6,11 @@ TLANG_NAMESPACE_BEGIN
 class Optimizer {
  protected:
   Kernel *kernel;
+  Expr root;
 
  public:
   void run(Kernel &ker, Expr &expr) {
+    root = expr;
     kernel = &ker;
     while (true) {
       visited.clear();
@@ -23,6 +25,33 @@ class Optimizer {
   bool search_and_replace(Expr &expr);
 
   virtual bool optimize(Expr &expr) = 0;
+
+  void replace(Expr a, Expr b) {
+    std::set<Expr> visited;
+    std::function<bool(Expr &)> visit = [&](Expr &v) -> bool {
+      if (visited.find(v) != visited.end())
+        return false;
+      visited.insert(v);
+      for (int i = 0; i < (int)v->ch.size(); i++) {
+        if (v->ch[i] == a) {
+          v->ch[i] = b;
+          return true;
+        } else if (visit(v->ch[i])) {
+          return true;
+        }
+      }
+      return false;
+    };
+    int c = 0;
+    while (1) {
+      visited.clear();
+      if (!visit(root)) {
+        break;
+      }
+      c++;
+    }
+    TC_P(c);
+  }
 };
 
 void apply_optimizers(Kernel &ker, Expr &expr);

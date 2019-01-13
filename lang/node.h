@@ -130,9 +130,16 @@ class Node {
     return attribute<int>(1, i);
   }
 
-  int &active(int i) {
+  bool &active(int i) {
     // TODO: remove this hack
-    return attribute<int>(7, i);
+    return attribute<bool>(7, i);
+  }
+
+  bool all_active() {
+    for (int i = 0; i < lanes; i++) {
+      if (!active(i)) return false;
+    }
+    return true;
   }
 
   SNode *&snode_ptr(int i) {
@@ -140,7 +147,7 @@ class Node {
     return attribute<SNode *>(0, i);
   }
 
-  void set_similar(const Expr &expr);
+  void set_similar(Expr expr);
 };
 
 TLANG_NAMESPACE_END

@@ -9,10 +9,13 @@ int Node::group_size() const {
   return (int)members.size();
 }
 
-void Node::set_similar(const taichi::Tlang::Expr &expr) {
+void Node::set_similar(taichi::Tlang::Expr expr) {
   set_lanes(expr->lanes);
   data_type = expr->data_type;
   binary_type = expr->binary_type;
+  for (int i = 0; i < expr->lanes; i++) {
+    active(i) = expr->active(i);
+  }
 }
 
 TLANG_NAMESPACE_END

@@ -109,14 +109,28 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       TC_NOT_IMPLEMENTED
     }
   } else if (expr->type == NodeType::vload) {
-    emit_code("auto {} = {}::load(access_{}(context.buffers[0] {}));",
-              expr->var_name, vec_type(expr->data_type),
+    emit_code("auto {}_addr = access_{}(context.buffers[0] {});", expr->var_name,
               expr[0]->snode_ptr(0)->node_type_name,
               address_elements(expr[0]->snode_ptr(0), "0"));
+    emit_code("auto {} = {}::load({}_addr);", expr->var_name,
+              vec_type(expr[0]->data_type), expr->var_name);
   } else if (expr->type == NodeType::vstore) {
-    emit_code("{}.store(access_{}(context.buffers[0] {}));", expr[1]->var_name,
+    emit_code("auto {}_addr = access_{}(context.buffers[0] {});", expr->var_name,
               expr[0]->snode_ptr(0)->node_type_name,
               address_elements(expr[0]->snode_ptr(0), "0", 2));
+    if (!expr->all_active()) {
+      emit_code("auto {}_output = {}::load({}_addr);", expr->var_name,
+                vec_type(expr[1]->data_type), expr->var_name);
+      int mask = 0;
+      for (int i = 0; i < expr->lanes; i++) {
+        mask += int(!expr->active(i)) << i;
+      }
+      emit_code("{}_output = blend({}, {}_output, {});", expr->var_name,
+                expr[1]->var_name, expr->var_name, mask);
+      emit_code("{}_output.store({}_addr);", expr->var_name, expr->var_name);
+    } else {
+      emit_code("{}.store({}_addr);", expr[1]->var_name, expr->var_name);
+    }
   } else if (expr->type == NodeType::gather) {
     // gather offsets
     emit_code("auto {}_offsets = {};", expr->var_name,

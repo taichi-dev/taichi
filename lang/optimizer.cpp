@@ -135,6 +135,8 @@ class ContinuousMemOptimizer : public Optimizer {
       }
 
       for (int i = 0; i < addr_node->lanes; i++) {
+        if (!addr_node->active(i))
+          continue;
         auto p = addr_node->snode_ptr(i)->parent;
         if (p != addr_node->snode_ptr(0)->parent)
           regular_elements = false;

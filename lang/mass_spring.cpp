@@ -50,31 +50,30 @@ TC_TEST("mass_spring") {
   TC_P(n);
   int max_n = bit::least_pot_bound(n);
   TC_P(m);
-  int max_edges = 32;
+  int max_edges = 64;
   TC_P(max_n);
 
   layout([&] {
-    auto &fork = root.fixed(i, max_n).dynamic(j, max_edges);
+    root.fixed(i, max_n)//  .multi_threaded()
+        .dynamic(j, max_edges)
+        .place(neighbour);
+    auto &fork2 = root.fixed(i, max_n);
+
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
         K(i, j) = var<float32>();
       }
     }
-    fork.place(neighbour);
-    auto &fork2 = root.fixed(i, max_n);
-
     auto place_fixed = [&](Expr expr) {
       fork2.fixed(j, max_edges).place(expr);
     };
 
-    auto &fork3 = root.fixed(i, max_n).fixed(j, max_edges);
-    auto place_blocked = [&](Expr expr) {
-      fork3.fixed(j, 8).place(expr);
-    };
+    auto &fork3 = root.fixed(i, max_n);//.fixed(j, max_edges / 8);
+    auto place_blocked = [&](Expr expr) { fork3.fixed(j, max_edges).place(expr); };
 
     place_fixed(l0);
     place_fixed(stiffness);
-    for (auto &e: K.entries) {
+    for (auto &e : K.entries) {
       place_blocked(e);
     }
 
@@ -171,7 +170,12 @@ TC_TEST("mass_spring") {
 
   auto compute_Ap1 = kernel(neighbour, [&] {
     kernel_name("compute_Ap1");
-    auto tmp = K[i, j] * vec[neighbour[i, j]];
+    Vector ve(3);
+    auto offset = neighbour[i, j];
+    for (int d = 0; d < dim; d++) {
+      ve(d) = load(vec(d)[offset]);
+    }
+    auto tmp = K[i, j] * vec[offset];
     for (int d = 0; d < dim; d++) {
       reduce(Ap[i](d), tmp(d));
     }
@@ -180,7 +184,7 @@ TC_TEST("mass_spring") {
   auto compute_Ap2 = kernel(mass, [&] { Ap[i] = K_self[i] * vec[i]; });
 
   auto compute_Ap = [&] {
-    TC_TIME(compute_Ap2());
+    compute_Ap2();
     TC_TIME(compute_Ap1());
   };
 
@@ -265,8 +269,8 @@ TC_TEST("mass_spring") {
       if (h_normr2 < 1e-8f) {
         break;
       }
-      copy_p_to_vec();  // vec = p
-      TC_TIME(compute_Ap());     // Ap = K vec
+      copy_p_to_vec();        // vec = p
+      while (1)compute_Ap();  // Ap = K vec
       // print_vector("Ap", Ap);
       denorm.val<float32>() = 0;
       compute_denorm();  // denorm = p' Ap

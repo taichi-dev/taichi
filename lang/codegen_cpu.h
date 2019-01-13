@@ -113,6 +113,10 @@ class CPUCodeGen : public CodeGenBase {
       emit_code("if (!{}_cache->data) continue;", snode->node_type_name, l);
     }
 
+    if (snode->type != SNodeType::hashed) {
+      emit_code("auto {}_cache_n = {}_cache->get_n();", snode->node_type_name,
+                snode->node_type_name);
+    }
     if (snode->_multi_threaded) {
       auto p = snode->parent;
       while (p) {
@@ -123,12 +127,12 @@ class CPUCodeGen : public CodeGenBase {
     }
     if (interior) {
       if (!has_residual) {
-        emit_code("for ({} = 0; {} < {}_cache->get_n(); {} += {}) {{", l, l,
+        emit_code("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
                   snode->node_type_name, l, current_kernel->parallel_instances);
       } else {
-        emit_code("for ({} = 0; {} + {} < {}_cache->get_n(); {} += {}) {{", l,
-                  l, current_kernel->parallel_instances, snode->node_type_name,
-                  l, current_kernel->parallel_instances);
+        emit_code("for ({} = 0; {} + {} < {}_cache_n; {} += {}) {{", l, l,
+                  current_kernel->parallel_instances, snode->node_type_name, l,
+                  current_kernel->parallel_instances);
       }
     } else {
       if (snode->type == SNodeType::hashed) {
@@ -136,14 +140,14 @@ class CPUCodeGen : public CodeGenBase {
                   snode->node_type_name);
         emit_code("int {} = {}_it.first;", l, l);
       } else {
-        emit_code("for ({} = 0; {} < {}_cache->get_n(); {} += {}) {{", l, l,
+        emit_code("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
                   snode->node_type_name, l, 1);
       }
     }
 
     if (has_residual && last_level) {
       CODE_REGION(residual_begin);  // TODO: DRY..
-      emit_code("{");
+      emit_code("if ({} < {}_cache_n) {{", l, snode->node_type_name);
     }
     // update indices....
     for (int i = 0; i < max_num_indices; i++) {

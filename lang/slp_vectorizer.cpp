@@ -1,3 +1,4 @@
+#include <set>
 #include "slp_vectorizer.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -99,7 +100,23 @@ Expr SLPVectorizer::run(Expr &expr, int group_size) {
   }
   // TC_P(combined->ch.size());
   combined->lanes = group_size;
+  expand_to_simd_width(combined, bit::least_pot_bound(combined->lanes));
   return combined;
+}
+
+void SLPVectorizer::expand_to_simd_width(Expr &expr, int target_simd_width) {
+  std::set<Expr> visited;
+  std::function<bool(Expr &)> visit = [&](Expr &v) -> bool {
+    if (visited.find(v) != visited.end())
+      return false;
+    visited.insert(v);
+    v->set_lanes(target_simd_width);
+    for (int i = 0; i < (int)v->ch.size(); i++) {
+      visit(v->ch[i]);
+    }
+    return false;
+  };
+  visit(expr);
 }
 
 void SLPVectorizer::visit(Expr &expr) {

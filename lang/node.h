@@ -52,6 +52,13 @@ class Node {
     id = counter++;
     this->lanes = 0;
     set_lanes(1);
+    set_all_active();
+  }
+
+  void set_all_active() {
+    for (int i = 0; i < lanes; i++) {
+      active(i) = true;
+    }
   }
 
   void set_lanes(int lanes) {
@@ -121,6 +128,11 @@ class Node {
   int &index_offset(int i) {
     TC_ASSERT(type == NodeType::index);
     return attribute<int>(1, i);
+  }
+
+  int &active(int i) {
+    // TODO: remove this hack
+    return attribute<int>(7, i);
   }
 
   SNode *&snode_ptr(int i) {

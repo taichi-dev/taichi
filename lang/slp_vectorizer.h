@@ -18,6 +18,8 @@ class SLPVectorizer : public Visitor {
 
   Expr run(Expr &expr, int group_size);
 
+  void expand_to_simd_width(Expr &expr, int target_simd_width);
+
   void visit(Expr &expr) override;
 };
 

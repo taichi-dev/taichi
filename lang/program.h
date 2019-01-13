@@ -89,7 +89,7 @@ struct Program {
         output_group_size = 1;
       }
       if (parallel_instances == -1) {
-        int minimal_group_size = output_group_size;
+        int minimal_group_size = bit::least_pot_bound(output_group_size);
         for (auto &ad : adapters) {
           minimal_group_size =
               std::min(minimal_group_size, ad.input_group_size);

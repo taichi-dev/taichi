@@ -16,6 +16,10 @@ class VectorSplitter : public Visitor {
 
   VectorSplitter(int target_lanes)
       : Visitor(Visitor::Order::child_first), target_lanes(target_lanes) {
+    if (!bit::is_power_of_two(target_lanes)) {
+      TC_WARN("Non power-of-two target lanes: {}", target_lanes);
+      this->target_lanes = bit::least_pot_bound(target_lanes);
+    }
   }
 
   void run(Expr &expr);

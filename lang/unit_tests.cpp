@@ -922,6 +922,7 @@ TC_TEST("unary") {
 
 TC_TEST("group3") {
   Program prog;
+  prog.config.simd_width = 4;
 
   int n = 16;
   auto x = var<float32>(), y = var<float32>(), z = var<float32>();
@@ -937,6 +938,8 @@ TC_TEST("group3") {
     x[i] = x[i] * a[i];
     y[i] = y[i] * b[i];
     z[i] = z[i] * c[i];
+
+    group(3);
   });
 
   for (int i = 0; i < n; i++) {

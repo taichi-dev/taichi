@@ -6,6 +6,7 @@ void VectorSplitter::run(Expr &expr) {
   if (expr->lanes == target_lanes) {
     return;
   }
+  TC_P(expr->lanes);
   TC_ASSERT(expr->lanes % target_lanes == 0);
   this->num_splits = expr->lanes / target_lanes;
   TC_INFO("Splitting {} into {}x{}", expr->lanes, num_splits, target_lanes);

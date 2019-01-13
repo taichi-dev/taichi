@@ -52,24 +52,26 @@ class AddressAnalyzer : Visitor {
     } else if (t == NodeType::index) {
       TC_ASSERT(expr->active(0));
       bool all_same = true;
-      for (int i = 0; i < expr->lanes; i++) {
-        if (expr->index_id(0) == expr->index_id(i) &&
-            expr->index_offset(0) == expr->index_offset(i)) {
-        } else {
-          all_same = false;
-        }
+      if (expr->index_id(lane_a) == expr->index_id(lane_b) &&
+          expr->index_offset(lane_a) == expr->index_offset(lane_b)) {
+      } else {
+        all_same = false;
       }
       if (all_same)
         ret = {true, 0};
     } else if (t == NodeType::pointer) {
       bool all_same = true;
       for (int i = 1; i < (int)expr->ch.size() - 1; i++) {
-        if (ch_results[i].first == false || ch_results[i].second != 0) {
+        if (!ch_results[i].first || ch_results[i].second != 0) {
           all_same = false;
         }
       }
       if (all_same && ch_results.back().first) {
         ret = {true, ch_results.back().second};
+      }
+    } else if (t == NodeType::load) {
+      if (ch_results[0].first && ch_results[0].second == 0) {
+        ret = ch_results[1];
       }
     }
     memo[expr] = ret;
@@ -104,7 +106,6 @@ class ContinuousMemOptimizer : public Optimizer {
         if (addr_node->snode_ptr(i) != addr_node->snode_ptr(0))
           all_same = false;
       }
-      TC_P(all_same);
 
       bool incremental = true;
       bool regular_elements = true;
@@ -313,9 +314,9 @@ class Vload1Optimizer : public Optimizer {
 };
 
 void apply_optimizers(Kernel &ker, Expr &expr) {
+  Vload1Optimizer().run(ker, expr);
   ContinuousMemOptimizer().run(ker, expr);
   GatherMemOptimizer().run(ker, expr);
-  Vload1Optimizer().run(ker, expr);
 }
 
 TLANG_NAMESPACE_END

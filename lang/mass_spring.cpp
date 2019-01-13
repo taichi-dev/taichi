@@ -21,7 +21,6 @@ Expr length(Vector vec) {
 }
 
 TC_TEST("mass_spring") {
-  return;
   // CoreState::set_trigger_gdb_when_crash(true);
   Program prog;
   prog.config.simd_width = 4;
@@ -139,6 +138,23 @@ TC_TEST("mass_spring") {
     root.place(normr2);
   });
 
+  TC_TAG;
+  auto compute_Ap1 = kernel(neighbour, [&] {
+    kernel_name("compute_Ap1");
+    Vector ve(3);
+    auto offset = neighbour[i, j];
+    for (int d = 0; d < dim; d++) {
+      ve(d) = load(vec(d)[offset]);
+    }
+
+    auto tmp = K[i, j] * ve;
+    for (int d = 0; d < dim; d++) {
+      reduce(Ap[i](d), tmp(d));
+    }
+    //Ap[i] = Ap[i] + tmp;
+    group(3);
+  });
+
   auto clear_matrix = kernel(neighbour, [&] {
     for (int t = 0; t < dim; t++) {
       for (int d = 0; d < dim; d++) {
@@ -196,23 +212,6 @@ TC_TEST("mass_spring") {
 
   auto copy_r_to_p = kernel(mass, [&] { p[i] = r[i]; });
 
-  TC_TAG;
-  auto compute_Ap1 = kernel(neighbour, [&] {
-    kernel_name("compute_Ap1");
-    Vector ve(3);
-    auto offset = neighbour[i, j];
-    for (int d = 0; d < dim; d++) {
-      ve(d) = load(vec(d)[offset]);
-    }
-
-    auto tmp = K[i, j] * ve;
-    for (int d = 0; d < dim; d++) {
-      reduce(Ap[i](d), tmp(d));
-    }
-    //Ap[i] = Ap[i] + tmp;
-    group(3);
-  });
-  TC_TAG;
 
   auto compute_Ap2 = kernel(mass, [&] { Ap[i] = K_self[i] * vec[i]; });
 
@@ -303,7 +302,7 @@ TC_TEST("mass_spring") {
         break;
       }
       copy_p_to_vec();  // vec = p
-      compute_Ap();     // Ap = K vec
+      TC_TIME(compute_Ap());     // Ap = K vec
       // print_vector("Ap", Ap);
       denorm.val<float32>() = 0;
       compute_denorm();  // denorm = p' Ap

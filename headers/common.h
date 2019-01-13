@@ -321,6 +321,21 @@ inline float32x8 load1<float32, 8>(const void *addr) {
   return _mm256_broadcast_ss((float32 *)addr);
 }
 
+template <>
+inline int32x1 load1<int32, 1>(const void *addr) {
+  return *(int32 *)addr;
+}
+
+template <>
+inline int32x4 load1<int32, 4>(const void *addr) {
+  return union_cast<int32x4>(load1<float32, 4>(addr));
+}
+
+template <>
+inline int32x8 load1<int32, 8>(const void *addr) {
+  return union_cast<int32x8>(load1<float32, 8>(addr));
+}
+
 //*****************************************************************************
 template <>
 inline float32x1 gather<float32, 1>(const void *addr, int32x1 offsets) {

@@ -51,10 +51,25 @@ class AddressAnalyzer : Visitor {
       }
     } else if (t == NodeType::index) {
       TC_ASSERT(expr->active(0));
-      for (int i = 0; i < expr->lanes; i++){
-        if (expr->index_id(0) == expr->index_id(i) && expr->index_offset(0) == expr->index_offset(i)) {
-          ret = {true, 0};
+      bool all_same = true;
+      for (int i = 0; i < expr->lanes; i++) {
+        if (expr->index_id(0) == expr->index_id(i) &&
+            expr->index_offset(0) == expr->index_offset(i)) {
+        } else {
+          all_same = false;
         }
+      }
+      if (all_same)
+        ret = {true, 0};
+    } else if (t == NodeType::pointer) {
+      bool all_same = true;
+      for (int i = 1; i < (int)expr->ch.size() - 1; i++) {
+        if (ch_results[i].first == false || ch_results[i].second != 0) {
+          all_same = false;
+        }
+      }
+      if (all_same && ch_results.back().first) {
+        ret = {true, ch_results.back().second};
       }
     }
     memo[expr] = ret;

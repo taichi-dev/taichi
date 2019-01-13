@@ -30,7 +30,6 @@ TC_TEST("mass_spring") {
   auto i = ind(), j = ind();
 
   Matrix K(dim, dim), K_self(dim, dim);
-
   Vector x(dim), v(dim), fmg(dim), p(dim), r(dim), Ap(dim), vec(dim);
 
   auto mass = var<float32>(), fixed = var<float32>();

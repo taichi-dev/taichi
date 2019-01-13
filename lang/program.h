@@ -94,10 +94,8 @@ struct Program {
           minimal_group_size =
               std::min(minimal_group_size, ad.input_group_size);
         }
-        TC_ASSERT(
-            default_simd_width(program.config.arch) % minimal_group_size == 0);
-        parallel_instances =
-            default_simd_width(program.config.arch) / minimal_group_size;
+        TC_ASSERT(program.config.simd_width % minimal_group_size == 0);
+        parallel_instances = program.config.simd_width / minimal_group_size;
       }
       if (simd_lanes == -1) {
         simd_lanes = output_group_size * parallel_instances;
@@ -155,7 +153,6 @@ struct Program {
     } else {
       TC_NOT_IMPLEMENTED;
     }
-    config.simd_width = default_simd_width(arch);
     current_kernel = nullptr;
     snode_root = nullptr;
     index_counter = 0;

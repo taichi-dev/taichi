@@ -113,18 +113,20 @@ TC_TEST("mass_spring") {
     }
     */
     particle.place(fixed);
-    for (int i = 0; i < dim; i++) {
-      for (int j = 0; j < dim; j++) {
-        K_self(i, j) = var<float32>();
-        particle.place(K_self(i, j));
+
+    auto place_matrix_soa = [&](Matrix &vec) {
+      auto &f = root.fixed(i, max_n);
+      for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+          vec(i, j) = var<float32>();
+          f.place(vec(i, j));
+        }
       }
-    }
+    };
+
+    place_matrix_soa(K_self);
     particle.place(mass);
 
-    auto &f = root.fixed(i, max_n);
-    for (int d = 0; d < dim; d++) {
-      f.place(vec(d));
-    }
     root.place(alpha);
     root.place(beta);
     root.place(denorm);

@@ -114,6 +114,12 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
               address_elements(expr[0]->snode_ptr(0), "0"));
     emit_code("auto {} = {}::load({}_addr);", expr->var_name,
               vec_type(expr[0]->data_type), expr->var_name);
+  } else if (expr->type == NodeType::vload1) {
+    emit_code("auto {}_addr = access_{}(context.buffers[0] {});", expr->var_name,
+              expr[0]->snode_ptr(0)->node_type_name,
+              address_elements(expr[0]->snode_ptr(0), "0"));
+    emit_code("auto {} = {}::load1({}_addr);", expr->var_name,
+              vec_type(expr[0]->data_type), expr->var_name);
   } else if (expr->type == NodeType::vstore) {
     emit_code("auto {}_addr = access_{}(context.buffers[0] {});", expr->var_name,
               expr[0]->snode_ptr(0)->node_type_name,

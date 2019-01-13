@@ -49,6 +49,13 @@ class AddressAnalyzer : Visitor {
           ret = {true, 0};
         }
       }
+    } else if (t == NodeType::index) {
+      TC_ASSERT(expr->active(0));
+      for (int i = 0; i < expr->lanes; i++){
+        if (expr->index_id(0) == expr->index_id(i) && expr->index_offset(0) == expr->index_offset(i)) {
+          ret = {true, 0};
+        }
+      }
     }
     memo[expr] = ret;
   }
@@ -243,9 +250,57 @@ class GatherMemOptimizer : public Optimizer {
     return false;
   }
 };
+
+class Vload1Optimizer : public Optimizer {
+ public:
+  bool optimize(Expr &expr) override {
+    if (expr->type != NodeType::load)
+      return false;
+    auto &ptr = expr._pointer();
+    auto &addr_node = expr._pointer()._address();
+
+    for (int i = 0; i < addr_node->lanes; i++) {
+      if (addr_node->snode_ptr(i) != addr_node->snode_ptr(0))
+        return false;
+    }
+    // same snode
+
+    // TC_INFO("all same snode");
+    // only consider the last one.
+    auto &index_node = expr._pointer()->ch.back();
+
+    // TODO: check non-last indices are uniform
+    for (int i = 0; i + 1 < index_node->lanes; i++) {
+      auto ret = AddressAnalyzer(i, i + 1).run(index_node);
+      if (!ret.first) {
+        TC_TAG;
+        return false;
+      } else {
+        if (ret.second != 0) {
+          TC_TAG;
+          return false;
+        }
+      }
+    }
+    // continuous index, same element
+
+    TC_INFO("Optimized load to vload1");  // gather
+    Expr vload1 = Expr::create(NodeType::vload1, addr_node);
+    vload1->ch.resize(ptr->ch.size());
+    for (int i = 1; i < (int)ptr->ch.size(); i++) {
+      auto c = Expr::copy_from(ptr->ch[i]);
+      vload1->ch[i] = c;
+    }
+    vload1->set_similar(expr);
+    replace(expr, vload1);
+    return true;
+  }
+};
+
 void apply_optimizers(Kernel &ker, Expr &expr) {
   ContinuousMemOptimizer().run(ker, expr);
   GatherMemOptimizer().run(ker, expr);
+  Vload1Optimizer().run(ker, expr);
 }
 
 TLANG_NAMESPACE_END

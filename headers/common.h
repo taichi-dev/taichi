@@ -138,6 +138,9 @@ template <typename T, int dim>
 inline void store(const vec<T, dim> &v, void *, vec<int32, dim>);
 
 template <typename T, int dim>
+inline vec<T, dim> load1(const void *addr);
+
+template <typename T, int dim>
 struct vec {
   using type = typename vec_helper<T, dim>::type;
   union {
@@ -215,6 +218,10 @@ struct vec {
       ret.d[i] = gather<T, dim>(addr, offsets.d[i]);
     }
     return ret;
+  }
+
+  static vec load1(const void *addr) {
+    return taichi::Tlang::load1<T, dim>(addr);
   }
 
   void store(void *addr) {
@@ -298,6 +305,16 @@ inline vec<int32, 8> load<int32, 8>(const void *addr) {
 
 template <typename T, int dim>
 inline vec<T, dim> load1(const void *addr);
+
+template <>
+inline float32x1 load1<float32, 1>(const void *addr) {
+  return *(float32 *)addr;
+}
+
+template <>
+inline float32x4 load1<float32, 4>(const void *addr) {
+  return _mm_broadcast_ss((float32 *)addr);
+}
 
 template <>
 inline float32x8 load1<float32, 8>(const void *addr) {

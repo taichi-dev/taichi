@@ -628,6 +628,7 @@ TC_TEST("spmv") {
   Eigen::VectorXf V(n), Vret(n);
 
   Program prog;
+  prog.config.simd_width = 4;
   prog.config.external_optimization_level = 4;
 
   auto result = var<float32>();

@@ -114,6 +114,8 @@ struct vec_helper;
 
 DEFINE_VEC_TYPE(float32, 1, float32);
 DEFINE_VEC_TYPE(int32, 1, int32);
+DEFINE_VEC_TYPE(float32, 4, __m128);
+DEFINE_VEC_TYPE(int32, 4, __m128i);
 DEFINE_VEC_TYPE(float32, 8, __m256);
 DEFINE_VEC_TYPE(int32, 8, __m256i);
 
@@ -235,6 +237,8 @@ struct vec {
 
 using float32x1 = vec<float32, 1>;
 using int32x1 = vec<int32, 1>;
+using float32x4 = vec<float32, 4>;
+using int32x4 = vec<int32, 4>;
 using float32x8 = vec<float32, 8>;
 using int32x8 = vec<int32, 8>;
 //*****************************************************************************
@@ -271,6 +275,16 @@ inline float32x1 load<float32, 1>(const void *addr) {
 }
 
 template <>
+inline float32x4 load<float32, 4>(const void *addr) {
+  return _mm_loadu_ps((float32 *)addr);
+}
+
+template <>
+inline vec<int32, 4> load<int32, 4>(const void *addr) {
+  return _mm_loadu_si128((__m128i *)addr);
+}
+
+template <>
 inline float32x8 load<float32, 8>(const void *addr) {
   return _mm256_loadu_ps((float32 *)addr);
 }
@@ -294,6 +308,18 @@ inline int32x1 gather<int32, 1>(const void *addr, int32x1 offsets) {
 }
 
 template <>
+inline float32x4 gather<float32, 4>(const void *addr, int32x4 offsets) {
+  // return _mm256_i32gather_ps((float32 *)addr, offsets, sizeof(float32));
+  return _mm_i32gather_ps((float32 *)addr, offsets, 4);
+}
+
+template <>
+inline int32x4 gather<int32, 4>(const void *addr, int32x4 offsets) {
+  // return _mm256_i32gather_ps((float32 *)addr, offsets, sizeof(float32));
+  return _mm_i32gather_epi32((int32 *)addr, offsets, 4);
+}
+
+template <>
 inline float32x8 gather<float32, 8>(const void *addr, int32x8 offsets) {
   // return _mm256_i32gather_ps((float32 *)addr, offsets, sizeof(float32));
   return _mm256_i32gather_ps((float32 *)addr, offsets, 4);
@@ -308,23 +334,33 @@ inline int32x8 gather<int32, 8>(const void *addr, int32x8 offsets) {
 //*****************************************************************************
 
 template <>
-inline void store<float32, 8>(const float32x8 &v, const void *addr) {
-  _mm256_storeu_ps((float32 *)addr, v);
-}
-
-template <>
 inline void store<float32, 1>(const float32x1 &v, const void *addr) {
   *(float32x1 *)(addr) = v;
 }
 
 template <>
-inline void store<int32, 8>(const int32x8 &v, const void *addr) {
-  _mm256_storeu_si256((__m256i *)addr, v);
+inline void store<int32, 1>(const int32x1 &v, const void *addr) {
+  *(int32x1 *)(addr) = v;
 }
 
 template <>
-inline void store<int32, 1>(const int32x1 &v, const void *addr) {
-  *(int32x1 *)(addr) = v;
+inline void store<float32, 4>(const float32x4 &v, const void *addr) {
+  _mm_storeu_ps((float32 *)addr, v);
+}
+
+template <>
+inline void store<int32, 4>(const int32x4 &v, const void *addr) {
+  _mm_storeu_si128((__m128i *)addr, v);
+}
+
+template <>
+inline void store<float32, 8>(const float32x8 &v, const void *addr) {
+  _mm256_storeu_ps((float32 *)addr, v);
+}
+
+template <>
+inline void store<int32, 8>(const int32x8 &v, const void *addr) {
+  _mm256_storeu_si256((__m256i *)addr, v);
 }
 
 //*****************************************************************************
@@ -345,6 +381,11 @@ template <typename T, int dim>
 inline vec<T, dim> floor(const vec<T, dim> &);
 
 template <>
+inline float32x4 floor<float32, 4>(const float32x4 &v) {
+  return _mm_floor_ps(v);
+}
+
+template <>
 inline float32x8 floor<float32, 8>(const float32x8 &v) {
   return _mm256_floor_ps(v);
 }
@@ -355,23 +396,33 @@ template <typename G, typename T, int dim>
 inline vec<G, dim> cast(const vec<T, dim> &);
 
 template <>
-inline int32x8 cast<int32, float32, 8>(const float32x8 &v) {
-  return _mm256_cvtps_epi32(v);
-}
-
-template <>
 inline int32x1 cast<int32, float32, 1>(const float32x1 &v) {
   return int32(v);
 }
 
 template <>
-inline float32x8 cast<float32, int32, 8>(const int32x8 &v) {
-  return _mm256_cvtepi32_ps(v);
+inline float32x1 cast<float32, int32, 1>(const int32x1 &v) {
+  return float32(v);
 }
 
 template <>
-inline float32x1 cast<float32, int32, 1>(const int32x1 &v) {
-  return float32(v);
+inline int32x4 cast<int32, float32, 4>(const float32x4 &v) {
+  return _mm_cvtps_epi32(v);
+}
+
+template <>
+inline float32x4 cast<float32, int32, 4>(const int32x4 &v) {
+  return _mm_cvtepi32_ps(v);
+}
+
+template <>
+inline int32x8 cast<int32, float32, 8>(const float32x8 &v) {
+  return _mm256_cvtps_epi32(v);
+}
+
+template <>
+inline float32x8 cast<float32, int32, 8>(const int32x8 &v) {
+  return _mm256_cvtepi32_ps(v);
 }
 
 
@@ -383,13 +434,23 @@ inline float32x1 set1<float32, 1>(float32 v) {
 }
 
 template <>
-inline float32x8 set1<float32, 8>(float32 v) {
-  return _mm256_set1_ps(v);
+inline int32x1 set1<int32, 1>(int32 v) {
+  return v;
 }
 
 template <>
-inline int32x1 set1<int32, 1>(int32 v) {
-  return v;
+inline float32x4 set1<float32, 4>(float32 v) {
+  return _mm_set1_ps(v);
+}
+
+template <>
+inline int32x4 set1<int32, 4>(int32 v) {
+  return _mm_set1_epi32(v);
+}
+
+template <>
+inline float32x8 set1<float32, 8>(float32 v) {
+  return _mm256_set1_ps(v);
 }
 
 template <>
@@ -434,6 +495,17 @@ inline int32x1 cmp_ne(int32x1 a, int32x1 b) {
   return int32(a.v != b.v);
 }
 
+inline int32x4 cmp_ne(float32x4 a, float32x4 b) {
+  auto ret = _mm_cmp_ps(a, b, _CMP_NEQ_UQ);
+  return union_cast<int32x4>(ret);
+}
+
+inline int32x4 cmp_ne(int32x4 a, int32x4 b) {
+  auto ret = _mm_cmp_ps(union_cast<float32x4>(a), union_cast<float32x4>(b),
+                           _CMP_NEQ_UQ);
+  return union_cast<int32x4>(ret);
+}
+
 inline int32x8 cmp_ne(float32x8 a, float32x8 b) {
   auto ret = _mm256_cmp_ps(a, b, _CMP_NEQ_UQ);
   return union_cast<int32x8>(ret);
@@ -445,13 +517,27 @@ inline int32x8 cmp_ne(int32x8 a, int32x8 b) {
   return union_cast<int32x8>(ret);
 }
 
+inline int32x1 cmp_lt(float32x1 a, float32x1 b) {
+  return a < b;
+}
+
+inline int32x1 cmp_lt(int32x1 a, int32x1 b) {
+  return a < b;
+}
+
+inline int32x4 cmp_lt(float32x4 a, float32x4 b) {
+  auto ret = _mm_cmp_ps(a, b, _CMP_LT_OQ);
+  return union_cast<int32x4>(ret);
+}
+
+inline int32x4 cmp_lt(int32x4 a, int32x4 b) {
+  auto ret = _mm_cmpgt_epi32(b, a);
+  return ret;
+}
+
 inline int32x8 cmp_lt(float32x8 a, float32x8 b) {
   auto ret = _mm256_cmp_ps(a, b, _CMP_LT_OQ);
   return union_cast<int32x8>(ret);
-}
-
-inline int32x1 cmp_lt(float32x1 a, float32x1 b) {
-  return a < b;
 }
 
 inline int32x8 cmp_lt(int32x8 a, int32x8 b) {
@@ -459,18 +545,29 @@ inline int32x8 cmp_lt(int32x8 a, int32x8 b) {
   return ret;
 }
 
-inline int32x1 cmp_lt(int32x1 a, int32x1 b) {
-  return a < b;
-}
-
 //*****************************************************************************
-
-inline float32x8 select(int32x8 mask, float32x8 true_val, float32x8 false_val) {
-  return _mm256_blendv_ps(false_val, true_val, union_cast<float32x8>(mask));
-}
 
 inline float32x1 select(int32x1 mask, float32x1 true_val, float32x1 false_val) {
   return mask ? true_val : false_val;
+}
+
+inline int32x1 select(int32x1 mask, int32x1 true_val, int32x1 false_val) {
+  return mask ? true_val : false_val;
+}
+
+inline float32x4 select(int32x4 mask, float32x4 true_val, float32x4 false_val) {
+  return _mm_blendv_ps(false_val, true_val, union_cast<float32x4>(mask));
+}
+
+inline int32x4 select(int32x4 mask, int32x4 true_val, int32x4 false_val) {
+  auto ret = _mm_blendv_ps(union_cast<float32x4>(false_val),
+                              union_cast<float32x4>(true_val),
+                              union_cast<float32x4>(mask));
+  return union_cast<int32x4>(ret);
+}
+
+inline float32x8 select(int32x8 mask, float32x8 true_val, float32x8 false_val) {
+  return _mm256_blendv_ps(false_val, true_val, union_cast<float32x8>(mask));
 }
 
 inline int32x8 select(int32x8 mask, int32x8 true_val, int32x8 false_val) {
@@ -480,9 +577,6 @@ inline int32x8 select(int32x8 mask, int32x8 true_val, int32x8 false_val) {
   return union_cast<int32x8>(ret);
 }
 
-inline int32x1 select(int32x1 mask, int32x1 true_val, int32x1 false_val) {
-  return mask ? true_val : false_val;
-}
 
 //*****************************************************************************
 
@@ -510,6 +604,21 @@ inline int32x8 blend(int32x8 a, int32x8 b, int imm) {
   inline T OP(T a, T b) {             \
     return INST(a, b);                \
   }
+
+DEFINE_BINARY_OP(float32x4, add, _mm_add_ps);
+DEFINE_BINARY_OP(float32x4, sub, _mm_sub_ps);
+DEFINE_BINARY_OP(float32x4, mul, _mm_mul_ps);
+DEFINE_BINARY_OP(float32x4, div, _mm_div_ps);
+DEFINE_BINARY_OP(float32x4, min, _mm_min_ps);
+DEFINE_BINARY_OP(float32x4, max, _mm_max_ps);
+
+DEFINE_BINARY_OP(int32x4, add, _mm_add_epi32);
+DEFINE_BINARY_OP(int32x4, sub, _mm_sub_epi32);
+DEFINE_BINARY_OP(int32x4, mul, _mm_mullo_epi32);
+DEFINE_BINARY_OP(int32x4, min, _mm_min_epi32);
+DEFINE_BINARY_OP(int32x4, max, _mm_max_epi32);
+DEFINE_BINARY_OP(int32x4, land, _mm_and_si128);
+DEFINE_BINARY_OP(int32x4, lor, _mm_or_si128);
 
 DEFINE_BINARY_OP(float32x8, add, _mm256_add_ps);
 DEFINE_BINARY_OP(float32x8, sub, _mm256_sub_ps);

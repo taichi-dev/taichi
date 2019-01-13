@@ -961,4 +961,58 @@ TC_TEST("group3") {
   }
 }
 
+TC_TEST("mat3") {
+  Program prog;
+  prog.config.simd_width = 4;
+
+  int n = 16;
+  Matrix M(3, 3);
+  Vector V(3), U(3);
+  auto i = ind();
+
+  layout([&] {
+    auto &f = root.fixed(i, n);
+    for (int j = 0; j < 3; j++) {
+      for (int i = 0; i < 3; i++) {
+        M(i, j) = var<float32>();
+        f.place(M(i, j));
+      }
+      U(j) = var<float32>();
+      V(j) = var<float32>();
+    }
+    root.fixed(i, n).place(U(0), U(1), U(2));
+    root.fixed(i, n).place(V(0), V(1), V(2));
+  });
+
+  auto mul = kernel(U(0), [&] {
+    U[i] = M[i] * V[i];
+    //group(3);
+  });
+
+  std::vector<Vector3> gt;
+
+  for (int i = 0; i < n; i++) {
+    Matrix3 M_;
+    Vector3 V_;
+    for (int j = 0; j < 3; j++) {
+      for (int k = 0; k < 3; k++) {
+        M_(j, k) = rand();
+        M(j, k).val<float32>(i) = M_(j, k);
+      }
+      V_(j) = rand();
+      V(j).val<float32>(i) = V_(j);
+    }
+    auto U_ = M_ * V_;
+    gt.push_back(U_);
+  }
+
+  mul();
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < 3; j++) {
+      TC_CHECK_EQUAL(U(j).val<float32>(i), gt[i][j], 1e-5_f);
+    }
+  }
+}
+
 TLANG_NAMESPACE_END

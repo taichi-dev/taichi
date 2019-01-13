@@ -21,9 +21,9 @@ Expr length(Vector vec) {
 }
 
 TC_TEST("mass_spring") {
-  return;
+  // CoreState::set_trigger_gdb_when_crash(true);
   Program prog;
-  prog.config.simd_width = 1;
+  prog.config.simd_width = 4;
   // TC_WARN("optimization off");
   // prog.config.external_optimization_level = 1;
 
@@ -46,7 +46,7 @@ TC_TEST("mass_spring") {
   bool mt = false;
 
   int n, m;
-  std::FILE *f = std::fopen("data/bunny_small.txt", "r");
+  std::FILE *f = std::fopen("data/bunny.txt", "r");
   TC_ASSERT(f);
   fscanf(f, "%d%d", &n, &m);
   TC_P(n);
@@ -56,7 +56,8 @@ TC_TEST("mass_spring") {
   TC_P(max_n);
 
   layout([&] {
-    root.fixed(i, max_n).multi_threaded(mt)
+    root.fixed(i, max_n)
+        .multi_threaded(mt)
         .dynamic(j, max_edges)
         .place(neighbour);
     auto &fork2 = root.fixed(i, max_n);
@@ -69,14 +70,15 @@ TC_TEST("mass_spring") {
     auto place_fixed = [&](Expr expr) {
       fork2.fixed(j, max_edges).place(expr);
     };
-
-    auto &fork3 = root.fixed(i, max_n).fixed(j, max_edges);
-    auto place_blocked = [&](Expr expr) { fork3.place(expr); };
-
     place_fixed(l0);
     place_fixed(stiffness);
-    for (auto &e : K.entries) {
-      place_blocked(e);
+
+    auto &fork3 = root.fixed(i, max_n).fixed(j, max_edges);
+
+    for (int i = 0; i < dim; i++) {
+      for (int j = 0; j < dim; j++) {
+        fork3.place(K(j, i));
+      }
     }
 
     auto &particle = root.fixed(i, max_n).multi_threaded(mt);
@@ -95,6 +97,7 @@ TC_TEST("mass_spring") {
     place_vector_soa(r);
     place_vector_soa(p);
     place_vector_soa(Ap);
+
     place_vector_soa(vec);
 
     /*
@@ -192,6 +195,7 @@ TC_TEST("mass_spring") {
 
   auto copy_r_to_p = kernel(mass, [&] { p[i] = r[i]; });
 
+  TC_TAG;
   auto compute_Ap1 = kernel(neighbour, [&] {
     kernel_name("compute_Ap1");
     Vector ve(3);
@@ -204,8 +208,10 @@ TC_TEST("mass_spring") {
     for (int d = 0; d < dim; d++) {
       reduce(Ap[i](d), tmp(d));
     }
-
+    //Ap[i] = Ap[i] + tmp;
+    group(3);
   });
+  TC_TAG;
 
   auto compute_Ap2 = kernel(mass, [&] { Ap[i] = K_self[i] * vec[i]; });
 

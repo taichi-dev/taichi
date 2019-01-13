@@ -77,9 +77,12 @@ class ContinuousMemOptimizer : public Optimizer {
       bool all_same = true;
 
       for (int i = 0; i < addr_node->lanes; i++) {
+        if (!addr_node->active(i))
+          continue;
         if (addr_node->snode_ptr(i) != addr_node->snode_ptr(0))
           all_same = false;
       }
+      TC_P(all_same);
 
       bool incremental = true;
       bool regular_elements = true;
@@ -104,6 +107,8 @@ class ContinuousMemOptimizer : public Optimizer {
         offset_start = index_node->index_offset(0);
         offset_inc = index_node->index_offset(1) - offset_start;
         for (int i = 0; i + 1 < addr_node->lanes; i++) {
+          if (!index_node->active(i + 1))
+            continue;
           if (index_node->index_offset(i) + offset_inc !=
               index_node->index_offset(i + 1)) {
             incremental = false;

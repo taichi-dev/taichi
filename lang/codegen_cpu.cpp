@@ -259,8 +259,9 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   while (snode->type == SNodeType::forked) {
     snode = snode->parent;
   }
-  has_residual = snode->type == SNodeType::indirect ||
-                 snode->parent->type == SNodeType::dynamic;
+  has_residual = kernel.parallel_instances > 1 &&
+                 (snode->type == SNodeType::indirect ||
+                  snode->parent->type == SNodeType::dynamic);
 
   {
     CODE_REGION(header);

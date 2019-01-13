@@ -295,6 +295,16 @@ inline vec<int32, 8> load<int32, 8>(const void *addr) {
 }
 
 //*****************************************************************************
+
+template <typename T, int dim>
+inline vec<T, dim> load1(const void *addr);
+
+template <>
+inline float32x8 load1<float32, 8>(const void *addr) {
+  return _mm256_broadcast_ss((float32 *)addr);
+}
+
+//*****************************************************************************
 template <>
 inline float32x1 gather<float32, 1>(const void *addr, int32x1 offsets) {
   // return _mm256_i32gather_ps((float32 *)addr, offsets, sizeof(float32));
@@ -671,6 +681,10 @@ inline float32x8 sqrt(float32x8 v) {
   return _mm256_sqrt_ps(v);
 }
 
+inline float32x4 sqrt(float32x4 v) {
+  return _mm_sqrt_ps(v);
+}
+
 inline float32x1 sqrt(float32x1 v) {
   return std::sqrt(v);
 }
@@ -683,14 +697,19 @@ inline float32x1 inv(float32x1 v) {
   return 1.0f / v;
 }
 
-inline float32x8 neg(float32x8 v) {
-  // TODO: optimize
-  return sub(float32x8(0), v);
-}
-
 inline float32x1 neg(float32x1 v) {
   // TODO: optimize
   return -v;
+}
+
+inline float32x4 neg(float32x4 v) {
+  // TODO: optimize
+  return sub(float32x4(0), v);
+}
+
+inline float32x8 neg(float32x8 v) {
+  // TODO: optimize
+  return sub(float32x8(0), v);
 }
 
 template <int dim>

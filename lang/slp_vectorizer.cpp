@@ -95,6 +95,20 @@ Expr SLPVectorizer::run(Expr &expr, int group_size) {
       root.accept(*this);
       combined->ch.push_back(root);
     }
+  } else if (expr[0]->type == NodeType::reduce){
+    // for each batch (group)
+    for (int k = 0; k < (int)expr->ch.size() / group_size; k++) {
+      TC_ASSERT(expr[k]->type == NodeType::reduce);
+      auto root = Expr::create(NodeType::reduce);
+      for (int i = 0; i < group_size; i++) {
+        auto ch = expr->ch[k * group_size + i];
+        TC_ASSERT(ch->type == NodeType::reduce);
+        root->members.push_back(ch);  // put scalar inst into vector members
+        TC_ASSERT(i < (int)root->members.size());
+      }
+      root.accept(*this);
+      combined->ch.push_back(root);
+    }
   } else {
     TC_NOT_IMPLEMENTED
   }
@@ -186,7 +200,7 @@ void SLPVectorizer::visit(Expr &expr) {
     for (int i = 0; i < (int)member->ch.size(); i++) {
       vectorized_children[i].push_back(member->ch[i]);
     }
-    scalar_to_vector[member] = expr;
+    scalar_to_vector[member].set(expr);
   }
 
   TC_ASSERT(expr->members.size() % group_size == 0);

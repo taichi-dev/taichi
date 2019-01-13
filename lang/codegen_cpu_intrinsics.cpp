@@ -337,6 +337,9 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     emit_code("{} *{}[{}];", expr->data_type_name(), expr->var_name, vv_width);
     for (int i = 0; i < vv_width; i++) {
       auto snode = expr._address()->snode_ptr(i);
+      if (!expr->active(i)) {
+        snode = expr._address()->snode_ptr(0);
+      }
       std::vector<std::string> elems(max_num_indices, ", 0");
       for (int j = 1; j < (int)expr->ch.size(); j++) {
         elems[snode->index_order[j - 1]] =
@@ -347,7 +350,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
         total_elem += elems[j];
       }
       emit_code("{}[{}] = access_{}(context.buffers[0] {});", expr->var_name, i,
-                expr._address()->snode_ptr(i)->node_type_name, total_elem);
+                snode->node_type_name, total_elem);
     }
   } else if (expr->type == NodeType::print) {
     emit_code("auto {} = {};", expr->var_name, expr->ch[0]->var_name);

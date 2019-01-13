@@ -130,9 +130,15 @@ class CPUCodeGen : public CodeGenBase {
         emit_code("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
                   snode->node_type_name, l, current_kernel->parallel_instances);
       } else {
+        int residual = current_kernel->parallel_instances >
+                               1  // when only one instance, no residual loop.
+                           ? 0
+                           : current_kernel->parallel_instances;
         emit_code("for ({} = 0; {} + {} < {}_cache_n; {} += {}) {{", l, l,
-                  current_kernel->parallel_instances, snode->node_type_name, l,
-                  current_kernel->parallel_instances);
+                  residual, snode->node_type_name, l,
+                  current_kernel->parallel_instances
+
+        );
       }
     } else {
       if (snode->type == SNodeType::hashed) {

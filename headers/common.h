@@ -261,6 +261,16 @@ TC_FORCE_INLINE float32 reduce_sum(const vec<float32, 8> &v) {
 //*****************************************************************************
 
 template <>
+inline int32x1 load<int32, 1>(const void *addr) {
+  return *(int32x1 *)(addr);
+}
+
+template <>
+inline float32x1 load<float32, 1>(const void *addr) {
+  return *(float32x1 *)(addr);
+}
+
+template <>
 inline float32x8 load<float32, 8>(const void *addr) {
   return _mm256_loadu_ps((float32 *)addr);
 }
@@ -271,6 +281,12 @@ inline vec<int32, 8> load<int32, 8>(const void *addr) {
 }
 
 //*****************************************************************************
+template <>
+inline float32x1 gather<float32, 1>(const void *addr, int32x1 offsets) {
+  // return _mm256_i32gather_ps((float32 *)addr, offsets, sizeof(float32));
+  return *(float32 *)((uint8 *)addr + offsets.v * 4);
+}
+
 template <>
 inline float32x8 gather<float32, 8>(const void *addr, int32x8 offsets) {
   // return _mm256_i32gather_ps((float32 *)addr, offsets, sizeof(float32));
@@ -399,9 +415,17 @@ inline int32x8 cmp_lt(float32x8 a, float32x8 b) {
   return union_cast<int32x8>(ret);
 }
 
+inline int32x1 cmp_lt(float32x1 a, float32x1 b) {
+  return a < b;
+}
+
 inline int32x8 cmp_lt(int32x8 a, int32x8 b) {
   auto ret = _mm256_cmpgt_epi32(b, a);
   return ret;
+}
+
+inline int32x1 cmp_lt(int32x1 a, int32x1 b) {
+  return a < b;
 }
 
 //*****************************************************************************
@@ -410,11 +434,19 @@ inline float32x8 select(int32x8 mask, float32x8 true_val, float32x8 false_val) {
   return _mm256_blendv_ps(false_val, true_val, union_cast<float32x8>(mask));
 }
 
+inline float32x1 select(int32x1 mask, float32x1 true_val, float32x1 false_val) {
+  return mask ? true_val : false_val;
+}
+
 inline int32x8 select(int32x8 mask, int32x8 true_val, int32x8 false_val) {
   auto ret = _mm256_blendv_ps(union_cast<float32x8>(false_val),
                               union_cast<float32x8>(true_val),
                               union_cast<float32x8>(mask));
   return union_cast<int32x8>(ret);
+}
+
+inline int32x1 select(int32x1 mask, int32x1 true_val, int32x1 false_val) {
+  return mask ? true_val : false_val;
 }
 
 //*****************************************************************************
@@ -465,7 +497,13 @@ DEFINE_BINARY_OP(int32x8, lor, _mm256_or_si256);
   }
 
 DEFINE_BINARY_OP_MID(float32x1, add, +);
+DEFINE_BINARY_OP_MID(float32x1, sub, -);
+DEFINE_BINARY_OP_MID(float32x1, mul, *);
+DEFINE_BINARY_OP_MID(float32x1, div, /);
 DEFINE_BINARY_OP_MID(int32x1, add, +);
+DEFINE_BINARY_OP_MID(int32x1, sub, -);
+DEFINE_BINARY_OP_MID(int32x1, mul, *);
+DEFINE_BINARY_OP_MID(int32x1, div, /);
 
 inline int32x8 shr(int32x8 a, int b) {
   return _mm256_srli_epi32(a, b);

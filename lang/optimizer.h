@@ -50,7 +50,9 @@ class Optimizer {
       }
       c++;
     }
-    TC_P(c);
+    if (c > 1) {
+      TC_INFO("Replacing {} Exprs altogether", c);
+    }
   }
 };
 

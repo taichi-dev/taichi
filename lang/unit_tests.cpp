@@ -905,9 +905,7 @@ TC_TEST("unary") {
   auto a = var<float32>();
   auto i = ind();
 
-  layout([&] {
-    root.fixed(i, 8).place(a);
-  });
+  layout([&] { root.fixed(i, 8).place(a); });
 
   auto sqrt_ = kernel(a, [&]() { a[i] = sqrt(a[i]); });
   a.val<float32>(0) = 64;
@@ -920,6 +918,44 @@ TC_TEST("unary") {
   inv_();
 
   TC_CHECK_EQUAL(a.val<float32>(0), 0.125_f, 1e-4);
+}
+
+TC_TEST("group3") {
+  Program prog;
+
+  int n = 16;
+  auto x = var<float32>(), y = var<float32>(), z = var<float32>();
+  auto a = var<float32>(), b = var<float32>(), c = var<float32>();
+  auto i = ind();
+
+  layout([&] {
+    root.fixed(i, n).place(x, y, z);
+    root.fixed(i, n).place(a, b, c);
+  });
+
+  auto mul = kernel(a, [&] {
+    x[i] = x[i] * a[i];
+    y[i] = y[i] * b[i];
+    z[i] = z[i] * c[i];
+  });
+
+  for (int i = 0; i < n; i++) {
+    x.val<float32>(i) = i;
+    y.val<float32>(i) = i + 1;
+    z.val<float32>(i) = i + 2;
+
+    a.val<float32>(i) = i - 1;
+    b.val<float32>(i) = i - 2;
+    c.val<float32>(i) = i - 3;
+  }
+
+  mul();
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK_EQUAL(x.val<float32>(i), 1.0_f * i * (i - 1), 1e-4);
+    TC_CHECK_EQUAL(y.val<float32>(i), 1.0_f * (i + 1) * (i - 2), 1e-4);
+    TC_CHECK_EQUAL(z.val<float32>(i), 1.0_f * (i + 2) * (i - 3), 1e-4);
+  }
 }
 
 TLANG_NAMESPACE_END

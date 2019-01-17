@@ -1,7 +1,7 @@
 // This file is part of Eigen, a lightweight C++ template library
 // for linear algebra.
 //
-// Copyright (C) 2008-2009 Gael Guennebaud <gael.guennebaud@inria.fr>
+// Copyright (C) 2008-2015 Gael Guennebaud <gael.guennebaud@inria.fr>
 // Copyright (C) 2007-2009 Benoit Jacob <jacob.benoit.1@gmail.com>
 //
 // This Source Code Form is subject to the terms of the Mozilla
@@ -30,6 +30,14 @@ const int DynamicIndex = 0xffffff;
   */
 const int Infinity = -1;
 
+/** This value means that the cost to evaluate an expression coefficient is either very expensive or
+  * cannot be known at compile time.
+  *
+  * This value has to be positive to (1) simplify cost computation, and (2) allow to distinguish between a very expensive and very very expensive expressions.
+  * It thus must also be large enough to make sure unrolling won't happen and that sub expressions will be evaluated, but not too large to avoid overflow.
+  */
+const int HugeCost = 10000;
+
 /** \defgroup flags Flags
   * \ingroup Core_Module
   *
@@ -48,19 +56,19 @@ const int Infinity = -1;
   * for a matrix, this means that the storage order is row-major.
   * If this bit is not set, the storage order is column-major.
   * For an expression, this determines the storage order of
-  * the matrix created by evaluation of that expression. 
-  * \sa \ref TopicStorageOrders */
+  * the matrix created by evaluation of that expression.
+  * \sa \blank  \ref TopicStorageOrders */
 const unsigned int RowMajorBit = 0x1;
 
 /** \ingroup flags
-  *
   * means the expression should be evaluated by the calling expression */
 const unsigned int EvalBeforeNestingBit = 0x2;
 
 /** \ingroup flags
-  *
+  * \deprecated
   * means the expression should be evaluated before any assignment */
-const unsigned int EvalBeforeAssigningBit = 0x4;
+EIGEN_DEPRECATED
+const unsigned int EvalBeforeAssigningBit = 0x4; // FIXME deprecated
 
 /** \ingroup flags
   *
@@ -141,17 +149,46 @@ const unsigned int LvalueBit = 0x20;
   */
 const unsigned int DirectAccessBit = 0x40;
 
-/** \ingroup flags
+/** \deprecated \ingroup flags
   *
-  * means the first coefficient packet is guaranteed to be aligned */
-const unsigned int AlignedBit = 0x80;
+  * means the first coefficient packet is guaranteed to be aligned.
+  * An expression cannot has the AlignedBit without the PacketAccessBit flag.
+  * In other words, this means we are allow to perform an aligned packet access to the first element regardless
+  * of the expression kind:
+  * \code
+  * expression.packet<Aligned>(0);
+  * \endcode
+  */
+EIGEN_DEPRECATED const unsigned int AlignedBit = 0x80;
 
 const unsigned int NestByRefBit = 0x100;
 
+/** \ingroup flags
+  *
+  * for an expression, this means that the storage order
+  * can be either row-major or column-major.
+  * The precise choice will be decided at evaluation time or when
+  * combined with other expressions.
+  * \sa \blank  \ref RowMajorBit, \ref TopicStorageOrders */
+const unsigned int NoPreferredStorageOrderBit = 0x200;
+
+/** \ingroup flags
+  *
+  * Means that the underlying coefficients can be accessed through pointers to the sparse (un)compressed storage format,
+  * that is, the expression provides:
+  * \code
+    inline const Scalar* valuePtr() const;
+    inline const Index* innerIndexPtr() const;
+    inline const Index* outerIndexPtr() const;
+    inline const Index* innerNonZeroPtr() const;
+    \endcode
+  */
+const unsigned int CompressedAccessBit = 0x400;
+
+
 // list of flags that are inherited by default
 const unsigned int HereditaryBits = RowMajorBit
-                                  | EvalBeforeNestingBit
-                                  | EvalBeforeAssigningBit;
+                                  | EvalBeforeNestingBit;
 
 /** \defgroup enums Enumerations
   * \ingroup Core_Module
@@ -160,8 +197,8 @@ const unsigned int HereditaryBits = RowMajorBit
   */
 
 /** \ingroup enums
-  * Enum containing possible values for the \p Mode parameter of 
-  * MatrixBase::selfadjointView() and MatrixBase::triangularView(). */
+  * Enum containing possible values for the \c Mode or \c UpLo parameter of
+  * MatrixBase::selfadjointView() and MatrixBase::triangularView(), and selfadjoint solvers. */
 enum UpLoType {
   /** View matrix as a lower triangular matrix. */
   Lower=0x1,                      
@@ -186,12 +223,31 @@ enum UpLoType {
 };
 
 /** \ingroup enums
-  * Enum for indicating whether an object is aligned or not. */
+  * Enum for indicating whether a buffer is aligned or not. */
 enum AlignmentType {
-  /** Object is not correctly aligned for vectorization. */
-  Unaligned=0, 
-  /** Object is aligned for vectorization. */
-  Aligned=1 
+  Unaligned=0,        /**< Data pointer has no specific alignment. */
+  Aligned8=8,         /**< Data pointer is aligned on a 8 bytes boundary. */
+  Aligned16=16,       /**< Data pointer is aligned on a 16 bytes boundary. */
+  Aligned32=32,       /**< Data pointer is aligned on a 32 bytes boundary. */
+  Aligned64=64,       /**< Data pointer is aligned on a 64 bytes boundary. */
+  Aligned128=128,     /**< Data pointer is aligned on a 128 bytes boundary. */
+  AlignedMask=255,
+  Aligned=16,         /**< \deprecated Synonym for Aligned16. */
+#if EIGEN_MAX_ALIGN_BYTES==128
+  AlignedMax = Aligned128
+#elif EIGEN_MAX_ALIGN_BYTES==64
+  AlignedMax = Aligned64
+#elif EIGEN_MAX_ALIGN_BYTES==32
+  AlignedMax = Aligned32
+#elif EIGEN_MAX_ALIGN_BYTES==16
+  AlignedMax = Aligned16
+#elif EIGEN_MAX_ALIGN_BYTES==8
+  AlignedMax = Aligned8
+#elif EIGEN_MAX_ALIGN_BYTES==0
+  AlignedMax = Unaligned
+#else
+#error Invalid value for EIGEN_MAX_ALIGN_BYTES
+#endif
 };
 
 /** \ingroup enums
@@ -297,7 +353,7 @@ enum Default_t    { Default };
 
 /** \internal \ingroup enums
   * Used in AmbiVector. */
-enum {
+enum AmbiVectorMode {
   IsDense         = 0,
   IsSparse
 };
@@ -406,10 +462,16 @@ namespace Architecture
     Generic = 0x0,
     SSE = 0x1,
     AltiVec = 0x2,
+    VSX = 0x3,
+    NEON = 0x4,
 #if defined EIGEN_VECTORIZE_SSE
     Target = SSE
 #elif defined EIGEN_VECTORIZE_ALTIVEC
     Target = AltiVec
+#elif defined EIGEN_VECTORIZE_VSX
+    Target = VSX
+#elif defined EIGEN_VECTORIZE_NEON
+    Target = NEON
 #else
     Target = Generic
 #endif
@@ -417,8 +479,9 @@ namespace Architecture
 }
 
 /** \internal \ingroup enums
-  * Enum used as template parameter in GeneralProduct. */
-enum ProductImplType { CoeffBasedProductMode, LazyCoeffBasedProductMode, OuterProduct, InnerProduct, GemvProduct, GemmProduct };
+  * Enum used as template parameter in Product and product evaluators. */
+enum ProductImplType
+{ DefaultProduct=0, LazyProduct, AliasFreeProduct, CoeffBasedProductMode, LazyCoeffBasedProductMode, OuterProduct, InnerProduct, GemvProduct, GemmProduct };
 
 /** \internal \ingroup enums
   * Enum used in experimental parallel implementation. */
@@ -427,24 +490,57 @@ enum Action {GetAction, SetAction};
 /** The type used to identify a dense storage. */
 struct Dense {};
 
+/** The type used to identify a general sparse storage. */
+struct Sparse {};
+
+/** The type used to identify a general solver (factored) storage. */
+struct SolverStorage {};
+
+/** The type used to identify a permutation storage. */
+struct PermutationStorage {};
+
+/** The type used to identify a permutation storage. */
+struct TranspositionsStorage {};
+
 /** The type used to identify a matrix expression */
 struct MatrixXpr {};
 
 /** The type used to identify an array expression */
 struct ArrayXpr {};
 
+// An evaluator must define its shape. By default, it can be one of the following:
+struct DenseShape             { static std::string debugName() { return "DenseShape"; } };
+struct SolverShape            { static std::string debugName() { return "SolverShape"; } };
+struct HomogeneousShape       { static std::string debugName() { return "HomogeneousShape"; } };
+struct DiagonalShape          { static std::string debugName() { return "DiagonalShape"; } };
+struct BandShape              { static std::string debugName() { return "BandShape"; } };
+struct TriangularShape        { static std::string debugName() { return "TriangularShape"; } };
+struct SelfAdjointShape       { static std::string debugName() { return "SelfAdjointShape"; } };
+struct PermutationShape       { static std::string debugName() { return "PermutationShape"; } };
+struct TranspositionsShape    { static std::string debugName() { return "TranspositionsShape"; } };
+struct SparseShape            { static std::string debugName() { return "SparseShape"; } };
+
 namespace internal {
-  /** \internal
-  * Constants for comparison functors
-  */
-  enum ComparisonName {
-    cmp_EQ = 0,
-    cmp_LT = 1,
-    cmp_LE = 2,
-    cmp_UNORD = 3,
-    cmp_NEQ = 4
-  };
-}
+
+  // random access iterators based on coeff*() accessors.
+struct IndexBased {};
+
+// evaluator based on iterators to access coefficients. 
+struct IteratorBased {};
+
+/** \internal
+ * Constants for comparison functors
+ */
+enum ComparisonName {
+  cmp_EQ = 0,
+  cmp_LT = 1,
+  cmp_LE = 2,
+  cmp_UNORD = 3,
+  cmp_NEQ = 4,
+  cmp_GT = 5,
+  cmp_GE = 6
+};
+} // end namespace internal
 
 } // end namespace Eigen
 

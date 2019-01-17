@@ -10,7 +10,7 @@
 #ifndef EIGEN_TRIANGULAR_SOLVER_VECTOR_H
 #define EIGEN_TRIANGULAR_SOLVER_VECTOR_H
 
-namespace Eigen { 
+namespace Eigen {
 
 namespace internal {
 
@@ -25,7 +25,7 @@ struct triangular_solve_vector<LhsScalar, RhsScalar, Index, OnTheRight, Mode, Co
       >::run(size, _lhs, lhsStride, rhs);
   }
 };
-    
+
 // forward and backward substitution, row-major, rhs is a vector
 template<typename LhsScalar, typename RhsScalar, typename Index, int Mode, bool Conjugate>
 struct triangular_solve_vector<LhsScalar, RhsScalar, Index, OnTheLeft, Mode, Conjugate, RowMajor>
@@ -37,6 +37,10 @@ struct triangular_solve_vector<LhsScalar, RhsScalar, Index, OnTheLeft, Mode, Con
   {
     typedef Map<const Matrix<LhsScalar,Dynamic,Dynamic,RowMajor>, 0, OuterStride<> > LhsMap;
     const LhsMap lhs(_lhs,size,size,OuterStride<>(lhsStride));
+
+    typedef const_blas_data_mapper<LhsScalar,Index,RowMajor> LhsMapper;
+    typedef const_blas_data_mapper<RhsScalar,Index,ColMajor> RhsMapper;
+
     typename internal::conditional<
                           Conjugate,
                           const CwiseUnaryOp<typename internal::scalar_conjugate_op<LhsScalar>,LhsMap>,
@@ -58,10 +62,10 @@ struct triangular_solve_vector<LhsScalar, RhsScalar, Index, OnTheLeft, Mode, Con
         Index startRow = IsLower ? pi : pi-actualPanelWidth;
         Index startCol = IsLower ? 0 : pi;
 
-        general_matrix_vector_product<Index,LhsScalar,RowMajor,Conjugate,RhsScalar,false>::run(
+        general_matrix_vector_product<Index,LhsScalar,LhsMapper,RowMajor,Conjugate,RhsScalar,RhsMapper,false>::run(
           actualPanelWidth, r,
-          &lhs.coeffRef(startRow,startCol), lhsStride,
-          rhs + startCol, 1,
+          LhsMapper(&lhs.coeffRef(startRow,startCol), lhsStride),
+          RhsMapper(rhs + startCol, 1),
           rhs + startRow, 1,
           RhsScalar(-1));
       }
@@ -72,7 +76,7 @@ struct triangular_solve_vector<LhsScalar, RhsScalar, Index, OnTheLeft, Mode, Con
         Index s = IsLower ? pi   : i+1;
         if (k>0)
           rhs[i] -= (cjLhs.row(i).segment(s,k).transpose().cwiseProduct(Map<const Matrix<RhsScalar,Dynamic,1> >(rhs+s,k))).sum();
-        
+
         if(!(Mode & UnitDiag))
           rhs[i] /= cjLhs(i,i);
       }
@@ -91,6 +95,8 @@ struct triangular_solve_vector<LhsScalar, RhsScalar, Index, OnTheLeft, Mode, Con
   {
     typedef Map<const Matrix<LhsScalar,Dynamic,Dynamic,ColMajor>, 0, OuterStride<> > LhsMap;
     const LhsMap lhs(_lhs,size,size,OuterStride<>(lhsStride));
+    typedef const_blas_data_mapper<LhsScalar,Index,ColMajor> LhsMapper;
+    typedef const_blas_data_mapper<RhsScalar,Index,ColMajor> RhsMapper;
     typename internal::conditional<Conjugate,
                                    const CwiseUnaryOp<typename internal::scalar_conjugate_op<LhsScalar>,LhsMap>,
                                    const LhsMap&
@@ -122,10 +128,10 @@ struct triangular_solve_vector<LhsScalar, RhsScalar, Index, OnTheLeft, Mode, Con
         // let's directly call the low level product function because:
         // 1 - it is faster to compile
         // 2 - it is slighlty faster at runtime
-        general_matrix_vector_product<Index,LhsScalar,ColMajor,Conjugate,RhsScalar,false>::run(
+        general_matrix_vector_product<Index,LhsScalar,LhsMapper,ColMajor,Conjugate,RhsScalar,RhsMapper,false>::run(
             r, actualPanelWidth,
-            &lhs.coeffRef(endBlock,startBlock), lhsStride,
-            rhs+startBlock, 1,
+            LhsMapper(&lhs.coeffRef(endBlock,startBlock), lhsStride),
+            RhsMapper(rhs+startBlock, 1),
             rhs+endBlock, 1, RhsScalar(-1));
       }
     }

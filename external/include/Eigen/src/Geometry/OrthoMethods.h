@@ -13,16 +13,24 @@
 
 namespace Eigen { 
 
-/** \geometry_module
+/** \geometry_module \ingroup Geometry_Module
   *
   * \returns the cross product of \c *this and \a other
   *
   * Here is a very good explanation of cross-product: http://xkcd.com/199/
+  * 
+  * With complex numbers, the cross product is implemented as
+  * \f$ (\mathbf{a}+i\mathbf{b}) \times (\mathbf{c}+i\mathbf{d}) = (\mathbf{a} \times \mathbf{c} - \mathbf{b} \times \mathbf{d}) - i(\mathbf{a} \times \mathbf{d} - \mathbf{b} \times \mathbf{c})\f$
+  * 
   * \sa MatrixBase::cross3()
   */
 template<typename Derived>
 template<typename OtherDerived>
-inline typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type
+#ifndef EIGEN_PARSED_BY_DOXYGEN
+EIGEN_DEVICE_FUNC inline typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type
+#else
+inline typename MatrixBase<Derived>::PlainObject
+#endif
 MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,3)
@@ -30,8 +38,8 @@ MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 
   // Note that there is no need for an expression here since the compiler
   // optimize such a small temporary very well (even within a complex expression)
-  typename internal::nested<Derived,2>::type lhs(derived());
-  typename internal::nested<OtherDerived,2>::type rhs(other.derived());
+  typename internal::nested_eval<Derived,2>::type lhs(derived());
+  typename internal::nested_eval<OtherDerived,2>::type rhs(other.derived());
   return typename cross_product_return_type<OtherDerived>::type(
     numext::conj(lhs.coeff(1) * rhs.coeff(2) - lhs.coeff(2) * rhs.coeff(1)),
     numext::conj(lhs.coeff(2) * rhs.coeff(0) - lhs.coeff(0) * rhs.coeff(2)),
@@ -45,7 +53,7 @@ template< int Arch,typename VectorLhs,typename VectorRhs,
           typename Scalar = typename VectorLhs::Scalar,
           bool Vectorizable = bool((VectorLhs::Flags&VectorRhs::Flags)&PacketAccessBit)>
 struct cross3_impl {
-  static inline typename internal::plain_matrix_type<VectorLhs>::type
+  EIGEN_DEVICE_FUNC static inline typename internal::plain_matrix_type<VectorLhs>::type
   run(const VectorLhs& lhs, const VectorRhs& rhs)
   {
     return typename internal::plain_matrix_type<VectorLhs>::type(
@@ -59,7 +67,7 @@ struct cross3_impl {
 
 }
 
-/** \geometry_module
+/** \geometry_module \ingroup Geometry_Module
   *
   * \returns the cross product of \c *this and \a other using only the x, y, and z coefficients
   *
@@ -70,14 +78,14 @@ struct cross3_impl {
   */
 template<typename Derived>
 template<typename OtherDerived>
-inline typename MatrixBase<Derived>::PlainObject
+EIGEN_DEVICE_FUNC inline typename MatrixBase<Derived>::PlainObject
 MatrixBase<Derived>::cross3(const MatrixBase<OtherDerived>& other) const
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,4)
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,4)
 
-  typedef typename internal::nested<Derived,2>::type DerivedNested;
-  typedef typename internal::nested<OtherDerived,2>::type OtherDerivedNested;
+  typedef typename internal::nested_eval<Derived,2>::type DerivedNested;
+  typedef typename internal::nested_eval<OtherDerived,2>::type OtherDerivedNested;
   DerivedNested lhs(derived());
   OtherDerivedNested rhs(other.derived());
 
@@ -86,38 +94,42 @@ MatrixBase<Derived>::cross3(const MatrixBase<OtherDerived>& other) const
                         typename internal::remove_all<OtherDerivedNested>::type>::run(lhs,rhs);
 }
 
-/** \returns a matrix expression of the cross product of each column or row
+/** \geometry_module \ingroup Geometry_Module
+  *
+  * \returns a matrix expression of the cross product of each column or row
   * of the referenced expression with the \a other vector.
   *
   * The referenced matrix must have one dimension equal to 3.
   * The result matrix has the same dimensions than the referenced one.
   *
-  * \geometry_module
-  *
   * \sa MatrixBase::cross() */
 template<typename ExpressionType, int Direction>
 template<typename OtherDerived>
+EIGEN_DEVICE_FUNC 
 const typename VectorwiseOp<ExpressionType,Direction>::CrossReturnType
 VectorwiseOp<ExpressionType,Direction>::cross(const MatrixBase<OtherDerived>& other) const
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,3)
   EIGEN_STATIC_ASSERT((internal::is_same<Scalar, typename OtherDerived::Scalar>::value),
     YOU_MIXED_DIFFERENT_NUMERIC_TYPES__YOU_NEED_TO_USE_THE_CAST_METHOD_OF_MATRIXBASE_TO_CAST_NUMERIC_TYPES_EXPLICITLY)
+  
+  typename internal::nested_eval<ExpressionType,2>::type mat(_expression());
+  typename internal::nested_eval<OtherDerived,2>::type vec(other.derived());
 
   CrossReturnType res(_expression().rows(),_expression().cols());
   if(Direction==Vertical)
   {
     eigen_assert(CrossReturnType::RowsAtCompileTime==3 && "the matrix must have exactly 3 rows");
-    res.row(0) = (_expression().row(1) * other.coeff(2) - _expression().row(2) * other.coeff(1)).conjugate();
-    res.row(1) = (_expression().row(2) * other.coeff(0) - _expression().row(0) * other.coeff(2)).conjugate();
-    res.row(2) = (_expression().row(0) * other.coeff(1) - _expression().row(1) * other.coeff(0)).conjugate();
+    res.row(0) = (mat.row(1) * vec.coeff(2) - mat.row(2) * vec.coeff(1)).conjugate();
+    res.row(1) = (mat.row(2) * vec.coeff(0) - mat.row(0) * vec.coeff(2)).conjugate();
+    res.row(2) = (mat.row(0) * vec.coeff(1) - mat.row(1) * vec.coeff(0)).conjugate();
   }
   else
   {
     eigen_assert(CrossReturnType::ColsAtCompileTime==3 && "the matrix must have exactly 3 columns");
-    res.col(0) = (_expression().col(1) * other.coeff(2) - _expression().col(2) * other.coeff(1)).conjugate();
-    res.col(1) = (_expression().col(2) * other.coeff(0) - _expression().col(0) * other.coeff(2)).conjugate();
-    res.col(2) = (_expression().col(0) * other.coeff(1) - _expression().col(1) * other.coeff(0)).conjugate();
+    res.col(0) = (mat.col(1) * vec.coeff(2) - mat.col(2) * vec.coeff(1)).conjugate();
+    res.col(1) = (mat.col(2) * vec.coeff(0) - mat.col(0) * vec.coeff(2)).conjugate();
+    res.col(2) = (mat.col(0) * vec.coeff(1) - mat.col(1) * vec.coeff(0)).conjugate();
   }
   return res;
 }
@@ -130,8 +142,8 @@ struct unitOrthogonal_selector
   typedef typename plain_matrix_type<Derived>::type VectorType;
   typedef typename traits<Derived>::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
-  typedef typename Derived::Index Index;
   typedef Matrix<Scalar,2,1> Vector2;
+  EIGEN_DEVICE_FUNC
   static inline VectorType run(const Derived& src)
   {
     VectorType perp = VectorType::Zero(src.size());
@@ -154,6 +166,7 @@ struct unitOrthogonal_selector<Derived,3>
   typedef typename plain_matrix_type<Derived>::type VectorType;
   typedef typename traits<Derived>::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
+  EIGEN_DEVICE_FUNC
   static inline VectorType run(const Derived& src)
   {
     VectorType perp;
@@ -192,13 +205,16 @@ template<typename Derived>
 struct unitOrthogonal_selector<Derived,2>
 {
   typedef typename plain_matrix_type<Derived>::type VectorType;
+  EIGEN_DEVICE_FUNC
   static inline VectorType run(const Derived& src)
   { return VectorType(-numext::conj(src.y()), numext::conj(src.x())).normalized(); }
 };
 
 } // end namespace internal
 
-/** \returns a unit vector which is orthogonal to \c *this
+/** \geometry_module \ingroup Geometry_Module
+  *
+  * \returns a unit vector which is orthogonal to \c *this
   *
   * The size of \c *this must be at least 2. If the size is exactly 2,
   * then the returned vector is a counter clock wise rotation of \c *this, i.e., (-y,x).normalized().
@@ -206,7 +222,7 @@ struct unitOrthogonal_selector<Derived,2>
   * \sa cross()
   */
 template<typename Derived>
-typename MatrixBase<Derived>::PlainObject
+EIGEN_DEVICE_FUNC typename MatrixBase<Derived>::PlainObject
 MatrixBase<Derived>::unitOrthogonal() const
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)

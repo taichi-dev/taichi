@@ -1,7 +1,7 @@
 // This file is part of Eigen, a lightweight C++ template library
 // for linear algebra.
 //
-// Copyright (C) 2008-2010 Gael Guennebaud <gael.guennebaud@inria.fr>
+// Copyright (C) 2008-2015 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
@@ -11,158 +11,6 @@
 #define EIGEN_SPARSEPRODUCT_H
 
 namespace Eigen { 
-
-template<typename Lhs, typename Rhs>
-struct SparseSparseProductReturnType
-{
-  typedef typename internal::traits<Lhs>::Scalar Scalar;
-  typedef typename internal::traits<Lhs>::Index Index;
-  enum {
-    LhsRowMajor = internal::traits<Lhs>::Flags & RowMajorBit,
-    RhsRowMajor = internal::traits<Rhs>::Flags & RowMajorBit,
-    TransposeRhs = (!LhsRowMajor) && RhsRowMajor,
-    TransposeLhs = LhsRowMajor && (!RhsRowMajor)
-  };
-
-  typedef typename internal::conditional<TransposeLhs,
-    SparseMatrix<Scalar,0,Index>,
-    typename internal::nested<Lhs,Rhs::RowsAtCompileTime>::type>::type LhsNested;
-
-  typedef typename internal::conditional<TransposeRhs,
-    SparseMatrix<Scalar,0,Index>,
-    typename internal::nested<Rhs,Lhs::RowsAtCompileTime>::type>::type RhsNested;
-
-  typedef SparseSparseProduct<LhsNested, RhsNested> Type;
-};
-
-namespace internal {
-template<typename LhsNested, typename RhsNested>
-struct traits<SparseSparseProduct<LhsNested, RhsNested> >
-{
-  typedef MatrixXpr XprKind;
-  // clean the nested types:
-  typedef typename remove_all<LhsNested>::type _LhsNested;
-  typedef typename remove_all<RhsNested>::type _RhsNested;
-  typedef typename _LhsNested::Scalar Scalar;
-  typedef typename promote_index_type<typename traits<_LhsNested>::Index,
-                                         typename traits<_RhsNested>::Index>::type Index;
-
-  enum {
-    LhsCoeffReadCost = _LhsNested::CoeffReadCost,
-    RhsCoeffReadCost = _RhsNested::CoeffReadCost,
-    LhsFlags = _LhsNested::Flags,
-    RhsFlags = _RhsNested::Flags,
-
-    RowsAtCompileTime    = _LhsNested::RowsAtCompileTime,
-    ColsAtCompileTime    = _RhsNested::ColsAtCompileTime,
-    MaxRowsAtCompileTime = _LhsNested::MaxRowsAtCompileTime,
-    MaxColsAtCompileTime = _RhsNested::MaxColsAtCompileTime,
-
-    InnerSize = EIGEN_SIZE_MIN_PREFER_FIXED(_LhsNested::ColsAtCompileTime, _RhsNested::RowsAtCompileTime),
-
-    EvalToRowMajor = (RhsFlags & LhsFlags & RowMajorBit),
-
-    RemovedBits = ~(EvalToRowMajor ? 0 : RowMajorBit),
-
-    Flags = (int(LhsFlags | RhsFlags) & HereditaryBits & RemovedBits)
-          | EvalBeforeAssigningBit
-          | EvalBeforeNestingBit,
-
-    CoeffReadCost = Dynamic
-  };
-
-  typedef Sparse StorageKind;
-};
-
-} // end namespace internal
-
-template<typename LhsNested, typename RhsNested>
-class SparseSparseProduct : internal::no_assignment_operator,
-  public SparseMatrixBase<SparseSparseProduct<LhsNested, RhsNested> >
-{
-  public:
-
-    typedef SparseMatrixBase<SparseSparseProduct> Base;
-    EIGEN_DENSE_PUBLIC_INTERFACE(SparseSparseProduct)
-
-  private:
-
-    typedef typename internal::traits<SparseSparseProduct>::_LhsNested _LhsNested;
-    typedef typename internal::traits<SparseSparseProduct>::_RhsNested _RhsNested;
-
-  public:
-
-    template<typename Lhs, typename Rhs>
-    EIGEN_STRONG_INLINE SparseSparseProduct(const Lhs& lhs, const Rhs& rhs)
-      : m_lhs(lhs), m_rhs(rhs), m_tolerance(0), m_conservative(true)
-    {
-      init();
-    }
-
-    template<typename Lhs, typename Rhs>
-    EIGEN_STRONG_INLINE SparseSparseProduct(const Lhs& lhs, const Rhs& rhs, const RealScalar& tolerance)
-      : m_lhs(lhs), m_rhs(rhs), m_tolerance(tolerance), m_conservative(false)
-    {
-      init();
-    }
-
-    SparseSparseProduct pruned(const Scalar& reference = 0, const RealScalar& epsilon = NumTraits<RealScalar>::dummy_precision()) const
-    {
-      using std::abs;
-      return SparseSparseProduct(m_lhs,m_rhs,abs(reference)*epsilon);
-    }
-
-    template<typename Dest>
-    void evalTo(Dest& result) const
-    {
-      if(m_conservative)
-        internal::conservative_sparse_sparse_product_selector<_LhsNested, _RhsNested, Dest>::run(lhs(),rhs(),result);
-      else
-        internal::sparse_sparse_product_with_pruning_selector<_LhsNested, _RhsNested, Dest>::run(lhs(),rhs(),result,m_tolerance);
-    }
-
-    EIGEN_STRONG_INLINE Index rows() const { return m_lhs.rows(); }
-    EIGEN_STRONG_INLINE Index cols() const { return m_rhs.cols(); }
-
-    EIGEN_STRONG_INLINE const _LhsNested& lhs() const { return m_lhs; }
-    EIGEN_STRONG_INLINE const _RhsNested& rhs() const { return m_rhs; }
-
-  protected:
-    void init()
-    {
-      eigen_assert(m_lhs.cols() == m_rhs.rows());
-
-      enum {
-        ProductIsValid = _LhsNested::ColsAtCompileTime==Dynamic
-                      || _RhsNested::RowsAtCompileTime==Dynamic
-                      || int(_LhsNested::ColsAtCompileTime)==int(_RhsNested::RowsAtCompileTime),
-        AreVectors = _LhsNested::IsVectorAtCompileTime && _RhsNested::IsVectorAtCompileTime,
-        SameSizes = EIGEN_PREDICATE_SAME_MATRIX_SIZE(_LhsNested,_RhsNested)
-      };
-      // note to the lost user:
-      //    * for a dot product use: v1.dot(v2)
-      //    * for a coeff-wise product use: v1.cwise()*v2
-      EIGEN_STATIC_ASSERT(ProductIsValid || !(AreVectors && SameSizes),
-        INVALID_VECTOR_VECTOR_PRODUCT__IF_YOU_WANTED_A_DOT_OR_COEFF_WISE_PRODUCT_YOU_MUST_USE_THE_EXPLICIT_FUNCTIONS)
-      EIGEN_STATIC_ASSERT(ProductIsValid || !(SameSizes && !AreVectors),
-        INVALID_MATRIX_PRODUCT__IF_YOU_WANTED_A_COEFF_WISE_PRODUCT_YOU_MUST_USE_THE_EXPLICIT_FUNCTION)
-      EIGEN_STATIC_ASSERT(ProductIsValid || SameSizes, INVALID_MATRIX_PRODUCT)
-    }
-
-    LhsNested m_lhs;
-    RhsNested m_rhs;
-    RealScalar m_tolerance;
-    bool m_conservative;
-};
-
-// sparse = sparse * sparse
-template<typename Derived>
-template<typename Lhs, typename Rhs>
-inline Derived& SparseMatrixBase<Derived>::operator=(const SparseSparseProduct<Lhs,Rhs>& product)
-{
-  product.evalTo(derived());
-  return derived();
-}
 
 /** \returns an expression of the product of two sparse matrices.
   * By default a conservative product preserving the symbolic non zeros is performed.
@@ -177,11 +25,144 @@ inline Derived& SparseMatrixBase<Derived>::operator=(const SparseSparseProduct<L
   * */
 template<typename Derived>
 template<typename OtherDerived>
-inline const typename SparseSparseProductReturnType<Derived,OtherDerived>::Type
+inline const Product<Derived,OtherDerived,AliasFreeProduct>
 SparseMatrixBase<Derived>::operator*(const SparseMatrixBase<OtherDerived> &other) const
 {
-  return typename SparseSparseProductReturnType<Derived,OtherDerived>::Type(derived(), other.derived());
+  return Product<Derived,OtherDerived,AliasFreeProduct>(derived(), other.derived());
 }
+
+namespace internal {
+
+// sparse * sparse
+template<typename Lhs, typename Rhs, int ProductType>
+struct generic_product_impl<Lhs, Rhs, SparseShape, SparseShape, ProductType>
+{
+  template<typename Dest>
+  static void evalTo(Dest& dst, const Lhs& lhs, const Rhs& rhs)
+  {
+    evalTo(dst, lhs, rhs, typename evaluator_traits<Dest>::Shape());
+  }
+
+  // dense += sparse * sparse
+  template<typename Dest,typename ActualLhs>
+  static void addTo(Dest& dst, const ActualLhs& lhs, const Rhs& rhs, typename enable_if<is_same<typename evaluator_traits<Dest>::Shape,DenseShape>::value,int*>::type* = 0)
+  {
+    typedef typename nested_eval<ActualLhs,Dynamic>::type LhsNested;
+    typedef typename nested_eval<Rhs,Dynamic>::type RhsNested;
+    LhsNested lhsNested(lhs);
+    RhsNested rhsNested(rhs);
+    internal::sparse_sparse_to_dense_product_selector<typename remove_all<LhsNested>::type,
+                                                      typename remove_all<RhsNested>::type, Dest>::run(lhsNested,rhsNested,dst);
+  }
+
+  // dense -= sparse * sparse
+  template<typename Dest>
+  static void subTo(Dest& dst, const Lhs& lhs, const Rhs& rhs, typename enable_if<is_same<typename evaluator_traits<Dest>::Shape,DenseShape>::value,int*>::type* = 0)
+  {
+    addTo(dst, -lhs, rhs);
+  }
+
+protected:
+
+  // sparse = sparse * sparse
+  template<typename Dest>
+  static void evalTo(Dest& dst, const Lhs& lhs, const Rhs& rhs, SparseShape)
+  {
+    typedef typename nested_eval<Lhs,Dynamic>::type LhsNested;
+    typedef typename nested_eval<Rhs,Dynamic>::type RhsNested;
+    LhsNested lhsNested(lhs);
+    RhsNested rhsNested(rhs);
+    internal::conservative_sparse_sparse_product_selector<typename remove_all<LhsNested>::type,
+                                                          typename remove_all<RhsNested>::type, Dest>::run(lhsNested,rhsNested,dst);
+  }
+
+  // dense = sparse * sparse
+  template<typename Dest>
+  static void evalTo(Dest& dst, const Lhs& lhs, const Rhs& rhs, DenseShape)
+  {
+    dst.setZero();
+    addTo(dst, lhs, rhs);
+  }
+};
+
+// sparse * sparse-triangular
+template<typename Lhs, typename Rhs, int ProductType>
+struct generic_product_impl<Lhs, Rhs, SparseShape, SparseTriangularShape, ProductType>
+ : public generic_product_impl<Lhs, Rhs, SparseShape, SparseShape, ProductType>
+{};
+
+// sparse-triangular * sparse
+template<typename Lhs, typename Rhs, int ProductType>
+struct generic_product_impl<Lhs, Rhs, SparseTriangularShape, SparseShape, ProductType>
+ : public generic_product_impl<Lhs, Rhs, SparseShape, SparseShape, ProductType>
+{};
+
+// dense = sparse-product (can be sparse*sparse, sparse*perm, etc.)
+template< typename DstXprType, typename Lhs, typename Rhs>
+struct Assignment<DstXprType, Product<Lhs,Rhs,AliasFreeProduct>, internal::assign_op<typename DstXprType::Scalar,typename Product<Lhs,Rhs,AliasFreeProduct>::Scalar>, Sparse2Dense>
+{
+  typedef Product<Lhs,Rhs,AliasFreeProduct> SrcXprType;
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &)
+  {
+    Index dstRows = src.rows();
+    Index dstCols = src.cols();
+    if((dst.rows()!=dstRows) || (dst.cols()!=dstCols))
+      dst.resize(dstRows, dstCols);
+    
+    generic_product_impl<Lhs, Rhs>::evalTo(dst,src.lhs(),src.rhs());
+  }
+};
+
+// dense += sparse-product (can be sparse*sparse, sparse*perm, etc.)
+template< typename DstXprType, typename Lhs, typename Rhs>
+struct Assignment<DstXprType, Product<Lhs,Rhs,AliasFreeProduct>, internal::add_assign_op<typename DstXprType::Scalar,typename Product<Lhs,Rhs,AliasFreeProduct>::Scalar>, Sparse2Dense>
+{
+  typedef Product<Lhs,Rhs,AliasFreeProduct> SrcXprType;
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::add_assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &)
+  {
+    generic_product_impl<Lhs, Rhs>::addTo(dst,src.lhs(),src.rhs());
+  }
+};
+
+// dense -= sparse-product (can be sparse*sparse, sparse*perm, etc.)
+template< typename DstXprType, typename Lhs, typename Rhs>
+struct Assignment<DstXprType, Product<Lhs,Rhs,AliasFreeProduct>, internal::sub_assign_op<typename DstXprType::Scalar,typename Product<Lhs,Rhs,AliasFreeProduct>::Scalar>, Sparse2Dense>
+{
+  typedef Product<Lhs,Rhs,AliasFreeProduct> SrcXprType;
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::sub_assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &)
+  {
+    generic_product_impl<Lhs, Rhs>::subTo(dst,src.lhs(),src.rhs());
+  }
+};
+
+template<typename Lhs, typename Rhs, int Options>
+struct unary_evaluator<SparseView<Product<Lhs, Rhs, Options> >, IteratorBased>
+ : public evaluator<typename Product<Lhs, Rhs, DefaultProduct>::PlainObject>
+{
+  typedef SparseView<Product<Lhs, Rhs, Options> > XprType;
+  typedef typename XprType::PlainObject PlainObject;
+  typedef evaluator<PlainObject> Base;
+
+  explicit unary_evaluator(const XprType& xpr)
+    : m_result(xpr.rows(), xpr.cols())
+  {
+    using std::abs;
+    ::new (static_cast<Base*>(this)) Base(m_result);
+    typedef typename nested_eval<Lhs,Dynamic>::type LhsNested;
+    typedef typename nested_eval<Rhs,Dynamic>::type RhsNested;
+    LhsNested lhsNested(xpr.nestedExpression().lhs());
+    RhsNested rhsNested(xpr.nestedExpression().rhs());
+
+    internal::sparse_sparse_product_with_pruning_selector<typename remove_all<LhsNested>::type,
+                                                          typename remove_all<RhsNested>::type, PlainObject>::run(lhsNested,rhsNested,m_result,
+                                                                                                                  abs(xpr.reference())*xpr.epsilon());
+  }
+
+protected:
+  PlainObject m_result;
+};
+
+} // end namespace internal
 
 } // end namespace Eigen
 

@@ -1,7 +1,7 @@
 // This file is part of Eigen, a lightweight C++ template library
 // for linear algebra.
 //
-// Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
+// Copyright (C) 2008-2014 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
@@ -18,8 +18,9 @@ SparseMatrixBase<Derived>::sum() const
 {
   eigen_assert(rows()>0 && cols()>0 && "you are using a non initialized matrix");
   Scalar res(0);
+  internal::evaluator<Derived> thisEval(derived());
   for (Index j=0; j<outerSize(); ++j)
-    for (typename Derived::InnerIterator iter(derived(),j); iter; ++iter)
+    for (typename internal::evaluator<Derived>::InnerIterator iter(thisEval,j); iter; ++iter)
       res += iter.value();
   return res;
 }

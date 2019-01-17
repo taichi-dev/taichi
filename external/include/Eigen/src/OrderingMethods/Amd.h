@@ -41,10 +41,10 @@ template<typename T0, typename T1> inline bool amd_marked(const T0* w, const T1&
 template<typename T0, typename T1> inline void amd_mark(const T0* w, const T1& j) { return w[j] = amd_flip(w[j]); }
 
 /* clear w */
-template<typename Index>
-static int cs_wclear (Index mark, Index lemax, Index *w, Index n)
+template<typename StorageIndex>
+static StorageIndex cs_wclear (StorageIndex mark, StorageIndex lemax, StorageIndex *w, StorageIndex n)
 {
-  Index k;
+  StorageIndex k;
   if(mark < 2 || (mark + lemax < 0))
   {
     for(k = 0; k < n; k++)
@@ -56,10 +56,10 @@ static int cs_wclear (Index mark, Index lemax, Index *w, Index n)
 }
 
 /* depth-first search and postorder of a tree rooted at node j */
-template<typename Index>
-Index cs_tdfs(Index j, Index k, Index *head, const Index *next, Index *post, Index *stack)
+template<typename StorageIndex>
+StorageIndex cs_tdfs(StorageIndex j, StorageIndex k, StorageIndex *head, const StorageIndex *next, StorageIndex *post, StorageIndex *stack)
 {
-  int i, p, top = 0;
+  StorageIndex i, p, top = 0;
   if(!head || !next || !post || !stack) return (-1);    /* check inputs */
   stack[0] = j;                 /* place j on the stack */
   while (top >= 0)                /* while (stack is not empty) */
@@ -84,42 +84,45 @@ Index cs_tdfs(Index j, Index k, Index *head, const Index *next, Index *post, Ind
 /** \internal
   * \ingroup OrderingMethods_Module 
   * Approximate minimum degree ordering algorithm.
-  * \returns the permutation P reducing the fill-in of the input matrix \a C
-  * The input matrix \a C must be a selfadjoint compressed column major SparseMatrix object. Both the upper and lower parts have to be stored, but the diagonal entries are optional.
+  *
+  * \param[in] C the input selfadjoint matrix stored in compressed column major format.
+  * \param[out] perm the permutation P reducing the fill-in of the input matrix \a C
+  *
+  * Note that the input matrix \a C must be complete, that is both the upper and lower parts have to be stored, as well as the diagonal entries.
   * On exit the values of C are destroyed */
-template<typename Scalar, typename Index>
-void minimum_degree_ordering(SparseMatrix<Scalar,ColMajor,Index>& C, PermutationMatrix<Dynamic,Dynamic,Index>& perm)
+template<typename Scalar, typename StorageIndex>
+void minimum_degree_ordering(SparseMatrix<Scalar,ColMajor,StorageIndex>& C, PermutationMatrix<Dynamic,Dynamic,StorageIndex>& perm)
 {
   using std::sqrt;
   
-  int d, dk, dext, lemax = 0, e, elenk, eln, i, j, k, k1,
-      k2, k3, jlast, ln, dense, nzmax, mindeg = 0, nvi, nvj, nvk, mark, wnvi,
-      ok, nel = 0, p, p1, p2, p3, p4, pj, pk, pk1, pk2, pn, q, t;
-  unsigned int h;
+  StorageIndex d, dk, dext, lemax = 0, e, elenk, eln, i, j, k, k1,
+                k2, k3, jlast, ln, dense, nzmax, mindeg = 0, nvi, nvj, nvk, mark, wnvi,
+                ok, nel = 0, p, p1, p2, p3, p4, pj, pk, pk1, pk2, pn, q, t, h;
   
-  Index n = C.cols();
-  dense = std::max<Index> (16, Index(10 * sqrt(double(n))));   /* find dense threshold */
-  dense = std::min<Index> (n-2, dense);
+  StorageIndex n = StorageIndex(C.cols());
+  dense = std::max<StorageIndex> (16, StorageIndex(10 * sqrt(double(n))));   /* find dense threshold */
+  dense = (std::min)(n-2, dense);
   
-  Index cnz = C.nonZeros();
+  StorageIndex cnz = StorageIndex(C.nonZeros());
   perm.resize(n+1);
   t = cnz + cnz/5 + 2*n;                 /* add elbow room to C */
   C.resizeNonZeros(t);
   
-  Index* W       = new Index[8*(n+1)]; /* get workspace */
-  Index* len     = W;
-  Index* nv      = W +   (n+1);
-  Index* next    = W + 2*(n+1);
-  Index* head    = W + 3*(n+1);
-  Index* elen    = W + 4*(n+1);
-  Index* degree  = W + 5*(n+1);
-  Index* w       = W + 6*(n+1);
-  Index* hhead   = W + 7*(n+1);
-  Index* last    = perm.indices().data();                              /* use P as workspace for last */
+  // get workspace
+  ei_declare_aligned_stack_constructed_variable(StorageIndex,W,8*(n+1),0);
+  StorageIndex* len     = W;
+  StorageIndex* nv      = W +   (n+1);
+  StorageIndex* next    = W + 2*(n+1);
+  StorageIndex* head    = W + 3*(n+1);
+  StorageIndex* elen    = W + 4*(n+1);
+  StorageIndex* degree  = W + 5*(n+1);
+  StorageIndex* w       = W + 6*(n+1);
+  StorageIndex* hhead   = W + 7*(n+1);
+  StorageIndex* last    = perm.indices().data();                              /* use P as workspace for last */
   
   /* --- Initialize quotient graph ---------------------------------------- */
-  Index* Cp = C.outerIndexPtr();
-  Index* Ci = C.innerIndexPtr();
+  StorageIndex* Cp = C.outerIndexPtr();
+  StorageIndex* Ci = C.innerIndexPtr();
   for(k = 0; k < n; k++)
     len[k] = Cp[k+1] - Cp[k];
   len[n] = 0;
@@ -136,7 +139,7 @@ void minimum_degree_ordering(SparseMatrix<Scalar,ColMajor,Index>& C, Permutation
     elen[i]   = 0;                      // Ek of node i is empty
     degree[i] = len[i];                 // degree of node i
   }
-  mark = internal::cs_wclear<Index>(0, 0, w, n);         /* clear w */
+  mark = internal::cs_wclear<StorageIndex>(0, 0, w, n);         /* clear w */
   
   /* --- Initialize degree lists ------------------------------------------ */
   for(i = 0; i < n; i++)
@@ -260,7 +263,7 @@ void minimum_degree_ordering(SparseMatrix<Scalar,ColMajor,Index>& C, Permutation
     elen[k] = -2;                     /* k is now an element */
     
     /* --- Find set differences ----------------------------------------- */
-    mark = internal::cs_wclear<Index>(mark, lemax, w, n);  /* clear w if necessary */
+    mark = internal::cs_wclear<StorageIndex>(mark, lemax, w, n);  /* clear w if necessary */
     for(pk = pk1; pk < pk2; pk++)    /* scan 1: find |Le\Lk| */
     {
       i = Ci[pk];
@@ -330,7 +333,7 @@ void minimum_degree_ordering(SparseMatrix<Scalar,ColMajor,Index>& C, Permutation
       }
       else
       {
-        degree[i] = std::min<Index> (degree[i], d);   /* update degree(i) */
+        degree[i] = std::min<StorageIndex> (degree[i], d);   /* update degree(i) */
         Ci[pn] = Ci[p3];         /* move first node to end */
         Ci[p3] = Ci[p1];         /* move 1st el. to end of Ei */
         Ci[p1] = k;               /* add k as 1st element in of Ei */
@@ -338,12 +341,12 @@ void minimum_degree_ordering(SparseMatrix<Scalar,ColMajor,Index>& C, Permutation
         h %= n;                    /* finalize hash of i */
         next[i] = hhead[h];      /* place i in hash bucket */
         hhead[h] = i;
-        last[i] = h;              /* save hash of i in last[i] */
+        last[i] = h;      /* save hash of i in last[i] */
       }
     }                                   /* scan2 is done */
     degree[k] = dk;                   /* finalize |Lk| */
-    lemax = std::max<Index>(lemax, dk);
-    mark = internal::cs_wclear<Index>(mark+lemax, lemax, w, n);    /* clear w */
+    lemax = std::max<StorageIndex>(lemax, dk);
+    mark = internal::cs_wclear<StorageIndex>(mark+lemax, lemax, w, n);    /* clear w */
     
     /* --- Supernode detection ------------------------------------------ */
     for(pk = pk1; pk < pk2; pk++)
@@ -391,12 +394,12 @@ void minimum_degree_ordering(SparseMatrix<Scalar,ColMajor,Index>& C, Permutation
       if((nvi = -nv[i]) <= 0) continue;/* skip if i is dead */
       nv[i] = nvi;                      /* restore nv[i] */
       d = degree[i] + dk - nvi;         /* compute external degree(i) */
-      d = std::min<Index> (d, n - nel - nvi);
+      d = std::min<StorageIndex> (d, n - nel - nvi);
       if(head[d] != -1) last[head[d]] = i;
       next[i] = head[d];               /* put i back in degree list */
       last[i] = -1;
       head[d] = i;
-      mindeg = std::min<Index> (mindeg, d);       /* find new minimum degree */
+      mindeg = std::min<StorageIndex> (mindeg, d);       /* find new minimum degree */
       degree[i] = d;
       Ci[p++] = i;                      /* place i in Lk */
     }
@@ -429,12 +432,10 @@ void minimum_degree_ordering(SparseMatrix<Scalar,ColMajor,Index>& C, Permutation
   }
   for(k = 0, i = 0; i <= n; i++)       /* postorder the assembly tree */
   {
-    if(Cp[i] == -1) k = internal::cs_tdfs<Index>(i, k, head, next, perm.indices().data(), w);
+    if(Cp[i] == -1) k = internal::cs_tdfs<StorageIndex>(i, k, head, next, perm.indices().data(), w);
   }
   
   perm.indices().conservativeResize(n);
-
-  delete[] W;
 }
 
 } // namespace internal

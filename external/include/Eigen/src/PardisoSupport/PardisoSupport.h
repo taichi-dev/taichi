@@ -40,13 +40,13 @@ template<typename _MatrixType, int Options=Upper> class PardisoLDLT;
 
 namespace internal
 {
-  template<typename Index>
+  template<typename IndexType>
   struct pardiso_run_selector
   {
-    static Index run( _MKL_DSS_HANDLE_t pt, Index maxfct, Index mnum, Index type, Index phase, Index n, void *a,
-                      Index *ia, Index *ja, Index *perm, Index nrhs, Index *iparm, Index msglvl, void *b, void *x)
+    static IndexType run( _MKL_DSS_HANDLE_t pt, IndexType maxfct, IndexType mnum, IndexType type, IndexType phase, IndexType n, void *a,
+                      IndexType *ia, IndexType *ja, IndexType *perm, IndexType nrhs, IndexType *iparm, IndexType msglvl, void *b, void *x)
     {
-      Index error = 0;
+      IndexType error = 0;
       ::pardiso(pt, &maxfct, &mnum, &type, &phase, &n, a, ia, ja, perm, &nrhs, iparm, &msglvl, b, x, &error);
       return error;
     }
@@ -54,11 +54,11 @@ namespace internal
   template<>
   struct pardiso_run_selector<long long int>
   {
-    typedef long long int Index;
-    static Index run( _MKL_DSS_HANDLE_t pt, Index maxfct, Index mnum, Index type, Index phase, Index n, void *a,
-                      Index *ia, Index *ja, Index *perm, Index nrhs, Index *iparm, Index msglvl, void *b, void *x)
+    typedef long long int IndexType;
+    static IndexType run( _MKL_DSS_HANDLE_t pt, IndexType maxfct, IndexType mnum, IndexType type, IndexType phase, IndexType n, void *a,
+                      IndexType *ia, IndexType *ja, IndexType *perm, IndexType nrhs, IndexType *iparm, IndexType msglvl, void *b, void *x)
     {
-      Index error = 0;
+      IndexType error = 0;
       ::pardiso_64(pt, &maxfct, &mnum, &type, &phase, &n, a, ia, ja, perm, &nrhs, iparm, &msglvl, b, x, &error);
       return error;
     }
@@ -72,7 +72,7 @@ namespace internal
     typedef _MatrixType MatrixType;
     typedef typename _MatrixType::Scalar Scalar;
     typedef typename _MatrixType::RealScalar RealScalar;
-    typedef typename _MatrixType::Index Index;
+    typedef typename _MatrixType::StorageIndex StorageIndex;
   };
 
   template<typename _MatrixType, int Options>
@@ -81,7 +81,7 @@ namespace internal
     typedef _MatrixType MatrixType;
     typedef typename _MatrixType::Scalar Scalar;
     typedef typename _MatrixType::RealScalar RealScalar;
-    typedef typename _MatrixType::Index Index;
+    typedef typename _MatrixType::StorageIndex StorageIndex;
   };
 
   template<typename _MatrixType, int Options>
@@ -90,35 +90,44 @@ namespace internal
     typedef _MatrixType MatrixType;
     typedef typename _MatrixType::Scalar Scalar;
     typedef typename _MatrixType::RealScalar RealScalar;
-    typedef typename _MatrixType::Index Index;    
+    typedef typename _MatrixType::StorageIndex StorageIndex;    
   };
 
-}
+} // end namespace internal
 
 template<class Derived>
-class PardisoImpl
+class PardisoImpl : public SparseSolverBase<Derived>
 {
+  protected:
+    typedef SparseSolverBase<Derived> Base;
+    using Base::derived;
+    using Base::m_isInitialized;
+    
     typedef internal::pardiso_traits<Derived> Traits;
   public:
+    using Base::_solve_impl;
+    
     typedef typename Traits::MatrixType MatrixType;
     typedef typename Traits::Scalar Scalar;
     typedef typename Traits::RealScalar RealScalar;
-    typedef typename Traits::Index Index;
-    typedef SparseMatrix<Scalar,RowMajor,Index> SparseMatrixType;
+    typedef typename Traits::StorageIndex StorageIndex;
+    typedef SparseMatrix<Scalar,RowMajor,StorageIndex> SparseMatrixType;
     typedef Matrix<Scalar,Dynamic,1> VectorType;
-    typedef Matrix<Index, 1, MatrixType::ColsAtCompileTime> IntRowVectorType;
-    typedef Matrix<Index, MatrixType::RowsAtCompileTime, 1> IntColVectorType;
-    typedef Array<Index,64,1,DontAlign> ParameterType;
+    typedef Matrix<StorageIndex, 1, MatrixType::ColsAtCompileTime> IntRowVectorType;
+    typedef Matrix<StorageIndex, MatrixType::RowsAtCompileTime, 1> IntColVectorType;
+    typedef Array<StorageIndex,64,1,DontAlign> ParameterType;
     enum {
-      ScalarIsComplex = NumTraits<Scalar>::IsComplex
+      ScalarIsComplex = NumTraits<Scalar>::IsComplex,
+      ColsAtCompileTime = Dynamic,
+      MaxColsAtCompileTime = Dynamic
     };
 
     PardisoImpl()
     {
-      eigen_assert((sizeof(Index) >= sizeof(_INTEGER_t) && sizeof(Index) <= 8) && "Non-supported index type");
+      eigen_assert((sizeof(StorageIndex) >= sizeof(_INTEGER_t) && sizeof(StorageIndex) <= 8) && "Non-supported index type");
       m_iparm.setZero();
       m_msglvl = 0; // No output
-      m_initialized = false;
+      m_isInitialized = false;
     }
 
     ~PardisoImpl()
@@ -136,7 +145,7 @@ class PardisoImpl
       */
     ComputationInfo info() const
     {
-      eigen_assert(m_initialized && "Decomposition is not initialized.");
+      eigen_assert(m_isInitialized && "Decomposition is not initialized.");
       return m_info;
     }
 
@@ -165,54 +174,18 @@ class PardisoImpl
     Derived& factorize(const MatrixType& matrix);
 
     Derived& compute(const MatrixType& matrix);
-    
-    /** \returns the solution x of \f$ A x = b \f$ using the current decomposition of A.
-      *
-      * \sa compute()
-      */
-    template<typename Rhs>
-    inline const internal::solve_retval<PardisoImpl, Rhs>
-    solve(const MatrixBase<Rhs>& b) const
-    {
-      eigen_assert(m_initialized && "Pardiso solver is not initialized.");
-      eigen_assert(rows()==b.rows()
-                && "PardisoImpl::solve(): invalid number of rows of the right hand side matrix b");
-      return internal::solve_retval<PardisoImpl, Rhs>(*this, b.derived());
-    }
 
-    /** \returns the solution x of \f$ A x = b \f$ using the current decomposition of A.
-      *
-      * \sa compute()
-      */
-    template<typename Rhs>
-    inline const internal::sparse_solve_retval<PardisoImpl, Rhs>
-    solve(const SparseMatrixBase<Rhs>& b) const
-    {
-      eigen_assert(m_initialized && "Pardiso solver is not initialized.");
-      eigen_assert(rows()==b.rows()
-                && "PardisoImpl::solve(): invalid number of rows of the right hand side matrix b");
-      return internal::sparse_solve_retval<PardisoImpl, Rhs>(*this, b.derived());
-    }
-
-    Derived& derived()
-    {
-      return *static_cast<Derived*>(this);
-    }
-    const Derived& derived() const
-    {
-      return *static_cast<const Derived*>(this);
-    }
-
-    template<typename BDerived, typename XDerived>
-    bool _solve(const MatrixBase<BDerived> &b, MatrixBase<XDerived>& x) const;
+    template<typename Rhs,typename Dest>
+    void _solve_impl(const MatrixBase<Rhs> &b, MatrixBase<Dest> &dest) const;
 
   protected:
     void pardisoRelease()
     {
-      if(m_initialized) // Factorization ran at least once
+      if(m_isInitialized) // Factorization ran at least once
       {
-        internal::pardiso_run_selector<Index>::run(m_pt, 1, 1, m_type, -1, m_size, 0, 0, 0, m_perm.data(), 0,
-                                                   m_iparm.data(), m_msglvl, 0, 0);
+        internal::pardiso_run_selector<StorageIndex>::run(m_pt, 1, 1, m_type, -1, internal::convert_index<StorageIndex>(m_size),0, 0, 0, m_perm.data(), 0,
+                                                          m_iparm.data(), m_msglvl, NULL, NULL);
+        m_isInitialized = false;
       }
     }
 
@@ -255,7 +228,7 @@ class PardisoImpl
   protected:
     // cached data to reduce reallocation, etc.
     
-    void manageErrorCode(Index error)
+    void manageErrorCode(Index error) const
     {
       switch(error)
       {
@@ -272,16 +245,14 @@ class PardisoImpl
     }
 
     mutable SparseMatrixType m_matrix;
-    ComputationInfo m_info;
-    bool m_initialized, m_analysisIsOk, m_factorizationIsOk;
-    Index m_type, m_msglvl;
+    mutable ComputationInfo m_info;
+    bool m_analysisIsOk, m_factorizationIsOk;
+    StorageIndex m_type, m_msglvl;
     mutable void *m_pt[64];
     mutable ParameterType m_iparm;
     mutable IntColVectorType m_perm;
     Index m_size;
     
-  private:
-    PardisoImpl(PardisoImpl &) {}
 };
 
 template<class Derived>
@@ -291,19 +262,17 @@ Derived& PardisoImpl<Derived>::compute(const MatrixType& a)
   eigen_assert(a.rows() == a.cols());
 
   pardisoRelease();
-  memset(m_pt, 0, sizeof(m_pt));
   m_perm.setZero(m_size);
   derived().getMatrix(a);
   
   Index error;
-  error = internal::pardiso_run_selector<Index>::run(m_pt, 1, 1, m_type, 12, m_size,
-                                                     m_matrix.valuePtr(), m_matrix.outerIndexPtr(), m_matrix.innerIndexPtr(),
-                                                     m_perm.data(), 0, m_iparm.data(), m_msglvl, NULL, NULL);
-
+  error = internal::pardiso_run_selector<StorageIndex>::run(m_pt, 1, 1, m_type, 12, internal::convert_index<StorageIndex>(m_size),
+                                                            m_matrix.valuePtr(), m_matrix.outerIndexPtr(), m_matrix.innerIndexPtr(),
+                                                            m_perm.data(), 0, m_iparm.data(), m_msglvl, NULL, NULL);
   manageErrorCode(error);
   m_analysisIsOk = true;
   m_factorizationIsOk = true;
-  m_initialized = true;
+  m_isInitialized = true;
   return derived();
 }
 
@@ -314,19 +283,18 @@ Derived& PardisoImpl<Derived>::analyzePattern(const MatrixType& a)
   eigen_assert(m_size == a.cols());
 
   pardisoRelease();
-  memset(m_pt, 0, sizeof(m_pt));
   m_perm.setZero(m_size);
   derived().getMatrix(a);
   
   Index error;
-  error = internal::pardiso_run_selector<Index>::run(m_pt, 1, 1, m_type, 11, m_size,
-                                                     m_matrix.valuePtr(), m_matrix.outerIndexPtr(), m_matrix.innerIndexPtr(),
-                                                     m_perm.data(), 0, m_iparm.data(), m_msglvl, NULL, NULL);
+  error = internal::pardiso_run_selector<StorageIndex>::run(m_pt, 1, 1, m_type, 11, internal::convert_index<StorageIndex>(m_size),
+                                                            m_matrix.valuePtr(), m_matrix.outerIndexPtr(), m_matrix.innerIndexPtr(),
+                                                            m_perm.data(), 0, m_iparm.data(), m_msglvl, NULL, NULL);
   
   manageErrorCode(error);
   m_analysisIsOk = true;
   m_factorizationIsOk = false;
-  m_initialized = true;
+  m_isInitialized = true;
   return derived();
 }
 
@@ -338,22 +306,25 @@ Derived& PardisoImpl<Derived>::factorize(const MatrixType& a)
   
   derived().getMatrix(a);
 
-  Index error;  
-  error = internal::pardiso_run_selector<Index>::run(m_pt, 1, 1, m_type, 22, m_size,
-                                                     m_matrix.valuePtr(), m_matrix.outerIndexPtr(), m_matrix.innerIndexPtr(),
-                                                     m_perm.data(), 0, m_iparm.data(), m_msglvl, NULL, NULL);
+  Index error;
+  error = internal::pardiso_run_selector<StorageIndex>::run(m_pt, 1, 1, m_type, 22, internal::convert_index<StorageIndex>(m_size),
+                                                            m_matrix.valuePtr(), m_matrix.outerIndexPtr(), m_matrix.innerIndexPtr(),
+                                                            m_perm.data(), 0, m_iparm.data(), m_msglvl, NULL, NULL);
   
   manageErrorCode(error);
   m_factorizationIsOk = true;
   return derived();
 }
 
-template<class Base>
+template<class Derived>
 template<typename BDerived,typename XDerived>
-bool PardisoImpl<Base>::_solve(const MatrixBase<BDerived> &b, MatrixBase<XDerived>& x) const
+void PardisoImpl<Derived>::_solve_impl(const MatrixBase<BDerived> &b, MatrixBase<XDerived>& x) const
 {
   if(m_iparm[0] == 0) // Factorization was not computed
-    return false;
+  {
+    m_info = InvalidInput;
+    return;
+  }
 
   //Index n = m_matrix.rows();
   Index nrhs = Index(b.cols());
@@ -383,11 +354,12 @@ bool PardisoImpl<Base>::_solve(const MatrixBase<BDerived> &b, MatrixBase<XDerive
   }
   
   Index error;
-  error = internal::pardiso_run_selector<Index>::run(m_pt, 1, 1, m_type, 33, m_size,
-                                                     m_matrix.valuePtr(), m_matrix.outerIndexPtr(), m_matrix.innerIndexPtr(),
-                                                     m_perm.data(), nrhs, m_iparm.data(), m_msglvl,
-                                                     rhs_ptr, x.derived().data());
-  return error==0;
+  error = internal::pardiso_run_selector<StorageIndex>::run(m_pt, 1, 1, m_type, 33, internal::convert_index<StorageIndex>(m_size),
+                                                            m_matrix.valuePtr(), m_matrix.outerIndexPtr(), m_matrix.innerIndexPtr(),
+                                                            m_perm.data(), internal::convert_index<StorageIndex>(nrhs), m_iparm.data(), m_msglvl,
+                                                            rhs_ptr, x.derived().data());
+
+  manageErrorCode(error);
 }
 
 
@@ -404,13 +376,15 @@ bool PardisoImpl<Base>::_solve(const MatrixBase<BDerived> &b, MatrixBase<XDerive
   *
   * \tparam _MatrixType the type of the sparse matrix A, it must be a SparseMatrix<>
   *
-  * \sa \ref TutorialSparseDirectSolvers
+  * \implsparsesolverconcept
+  *
+  * \sa \ref TutorialSparseSolverConcept, class SparseLU
   */
 template<typename MatrixType>
 class PardisoLU : public PardisoImpl< PardisoLU<MatrixType> >
 {
   protected:
-    typedef PardisoImpl< PardisoLU<MatrixType> > Base;
+    typedef PardisoImpl<PardisoLU> Base;
     typedef typename Base::Scalar Scalar;
     typedef typename Base::RealScalar RealScalar;
     using Base::pardisoInit;
@@ -428,7 +402,7 @@ class PardisoLU : public PardisoImpl< PardisoLU<MatrixType> >
       pardisoInit(Base::ScalarIsComplex ? 13 : 11);
     }
 
-    PardisoLU(const MatrixType& matrix)
+    explicit PardisoLU(const MatrixType& matrix)
       : Base()
     {
       pardisoInit(Base::ScalarIsComplex ? 13 : 11);
@@ -438,10 +412,8 @@ class PardisoLU : public PardisoImpl< PardisoLU<MatrixType> >
     void getMatrix(const MatrixType& matrix)
     {
       m_matrix = matrix;
+      m_matrix.makeCompressed();
     }
-    
-  private:
-    PardisoLU(PardisoLU& ) {}
 };
 
 /** \ingroup PardisoSupport_Module
@@ -459,7 +431,9 @@ class PardisoLU : public PardisoImpl< PardisoLU<MatrixType> >
   * \tparam UpLo can be any bitwise combination of Upper, Lower. The default is Upper, meaning only the upper triangular part has to be used.
   *         Upper|Lower can be used to tell both triangular parts can be used as input.
   *
-  * \sa \ref TutorialSparseDirectSolvers
+  * \implsparsesolverconcept
+  *
+  * \sa \ref TutorialSparseSolverConcept, class SimplicialLLT
   */
 template<typename MatrixType, int _UpLo>
 class PardisoLLT : public PardisoImpl< PardisoLLT<MatrixType,_UpLo> >
@@ -467,7 +441,6 @@ class PardisoLLT : public PardisoImpl< PardisoLLT<MatrixType,_UpLo> >
   protected:
     typedef PardisoImpl< PardisoLLT<MatrixType,_UpLo> > Base;
     typedef typename Base::Scalar Scalar;
-    typedef typename Base::Index Index;
     typedef typename Base::RealScalar RealScalar;
     using Base::pardisoInit;
     using Base::m_matrix;
@@ -475,9 +448,9 @@ class PardisoLLT : public PardisoImpl< PardisoLLT<MatrixType,_UpLo> >
 
   public:
 
+    typedef typename Base::StorageIndex StorageIndex;
     enum { UpLo = _UpLo };
     using Base::compute;
-    using Base::solve;
 
     PardisoLLT()
       : Base()
@@ -485,7 +458,7 @@ class PardisoLLT : public PardisoImpl< PardisoLLT<MatrixType,_UpLo> >
       pardisoInit(Base::ScalarIsComplex ? 4 : 2);
     }
 
-    PardisoLLT(const MatrixType& matrix)
+    explicit PardisoLLT(const MatrixType& matrix)
       : Base()
     {
       pardisoInit(Base::ScalarIsComplex ? 4 : 2);
@@ -497,13 +470,11 @@ class PardisoLLT : public PardisoImpl< PardisoLLT<MatrixType,_UpLo> >
     void getMatrix(const MatrixType& matrix)
     {
       // PARDISO supports only upper, row-major matrices
-      PermutationMatrix<Dynamic,Dynamic,Index> p_null;
+      PermutationMatrix<Dynamic,Dynamic,StorageIndex> p_null;
       m_matrix.resize(matrix.rows(), matrix.cols());
       m_matrix.template selfadjointView<Upper>() = matrix.template selfadjointView<UpLo>().twistedBy(p_null);
+      m_matrix.makeCompressed();
     }
-    
-  private:
-    PardisoLLT(PardisoLLT& ) {}
 };
 
 /** \ingroup PardisoSupport_Module
@@ -523,7 +494,9 @@ class PardisoLLT : public PardisoImpl< PardisoLLT<MatrixType,_UpLo> >
   *         Symmetric can be used for symmetric, non-selfadjoint complex matrices, the default being to assume a selfadjoint matrix.
   *         Upper|Lower can be used to tell both triangular parts can be used as input.
   *
-  * \sa \ref TutorialSparseDirectSolvers
+  * \implsparsesolverconcept
+  *
+  * \sa \ref TutorialSparseSolverConcept, class SimplicialLDLT
   */
 template<typename MatrixType, int Options>
 class PardisoLDLT : public PardisoImpl< PardisoLDLT<MatrixType,Options> >
@@ -531,7 +504,6 @@ class PardisoLDLT : public PardisoImpl< PardisoLDLT<MatrixType,Options> >
   protected:
     typedef PardisoImpl< PardisoLDLT<MatrixType,Options> > Base;
     typedef typename Base::Scalar Scalar;
-    typedef typename Base::Index Index;
     typedef typename Base::RealScalar RealScalar;
     using Base::pardisoInit;
     using Base::m_matrix;
@@ -539,8 +511,8 @@ class PardisoLDLT : public PardisoImpl< PardisoLDLT<MatrixType,Options> >
 
   public:
 
+    typedef typename Base::StorageIndex StorageIndex;
     using Base::compute;
-    using Base::solve;
     enum { UpLo = Options&(Upper|Lower) };
 
     PardisoLDLT()
@@ -549,7 +521,7 @@ class PardisoLDLT : public PardisoImpl< PardisoLDLT<MatrixType,Options> >
       pardisoInit(Base::ScalarIsComplex ? ( bool(Options&Symmetric) ? 6 : -4 ) : -2);
     }
 
-    PardisoLDLT(const MatrixType& matrix)
+    explicit PardisoLDLT(const MatrixType& matrix)
       : Base()
     {
       pardisoInit(Base::ScalarIsComplex ? ( bool(Options&Symmetric) ? 6 : -4 ) : -2);
@@ -559,44 +531,12 @@ class PardisoLDLT : public PardisoImpl< PardisoLDLT<MatrixType,Options> >
     void getMatrix(const MatrixType& matrix)
     {
       // PARDISO supports only upper, row-major matrices
-      PermutationMatrix<Dynamic,Dynamic,Index> p_null;
+      PermutationMatrix<Dynamic,Dynamic,StorageIndex> p_null;
       m_matrix.resize(matrix.rows(), matrix.cols());
       m_matrix.template selfadjointView<Upper>() = matrix.template selfadjointView<UpLo>().twistedBy(p_null);
+      m_matrix.makeCompressed();
     }
-    
-  private:
-    PardisoLDLT(PardisoLDLT& ) {}
 };
-
-namespace internal {
-  
-template<typename _Derived, typename Rhs>
-struct solve_retval<PardisoImpl<_Derived>, Rhs>
-  : solve_retval_base<PardisoImpl<_Derived>, Rhs>
-{
-  typedef PardisoImpl<_Derived> Dec;
-  EIGEN_MAKE_SOLVE_HELPERS(Dec,Rhs)
-
-  template<typename Dest> void evalTo(Dest& dst) const
-  {
-    dec()._solve(rhs(),dst);
-  }
-};
-
-template<typename Derived, typename Rhs>
-struct sparse_solve_retval<PardisoImpl<Derived>, Rhs>
-  : sparse_solve_retval_base<PardisoImpl<Derived>, Rhs>
-{
-  typedef PardisoImpl<Derived> Dec;
-  EIGEN_MAKE_SPARSE_SOLVE_HELPERS(Dec,Rhs)
-
-  template<typename Dest> void evalTo(Dest& dst) const
-  {
-    this->defaultEvalTo(dst);
-  }
-};
-
-} // end namespace internal
 
 } // end namespace Eigen
 

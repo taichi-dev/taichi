@@ -2,6 +2,7 @@
 // for linear algebra.
 //
 // Copyright (C) 2009-2010 Benoit Jacob <jacob.benoit.1@gmail.com>
+// Copyright (C) 2013-2014 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
@@ -51,7 +52,6 @@ template<typename MatrixType, int QRPreconditioner, int Case>
 class qr_preconditioner_impl<MatrixType, QRPreconditioner, Case, false>
 {
 public:
-  typedef typename MatrixType::Index Index;
   void allocate(const JacobiSVD<MatrixType, QRPreconditioner>&) {}
   bool run(JacobiSVD<MatrixType, QRPreconditioner>&, const MatrixType&)
   {
@@ -65,7 +65,6 @@ template<typename MatrixType>
 class qr_preconditioner_impl<MatrixType, FullPivHouseholderQRPreconditioner, PreconditionIfMoreRowsThanCols, true>
 {
 public:
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   enum
   {
@@ -106,7 +105,6 @@ template<typename MatrixType>
 class qr_preconditioner_impl<MatrixType, FullPivHouseholderQRPreconditioner, PreconditionIfMoreColsThanRows, true>
 {
 public:
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   enum
   {
@@ -114,9 +112,11 @@ public:
     ColsAtCompileTime = MatrixType::ColsAtCompileTime,
     MaxRowsAtCompileTime = MatrixType::MaxRowsAtCompileTime,
     MaxColsAtCompileTime = MatrixType::MaxColsAtCompileTime,
-    Options = MatrixType::Options
+    TrOptions = RowsAtCompileTime==1 ? (MatrixType::Options & ~(RowMajor))
+              : ColsAtCompileTime==1 ? (MatrixType::Options |   RowMajor)
+              : MatrixType::Options
   };
-  typedef Matrix<Scalar, ColsAtCompileTime, RowsAtCompileTime, Options, MaxColsAtCompileTime, MaxRowsAtCompileTime>
+  typedef Matrix<Scalar, ColsAtCompileTime, RowsAtCompileTime, TrOptions, MaxColsAtCompileTime, MaxRowsAtCompileTime>
           TransposeTypeWithSameStorageOrder;
 
   void allocate(const JacobiSVD<MatrixType, FullPivHouseholderQRPreconditioner>& svd)
@@ -156,8 +156,6 @@ template<typename MatrixType>
 class qr_preconditioner_impl<MatrixType, ColPivHouseholderQRPreconditioner, PreconditionIfMoreRowsThanCols, true>
 {
 public:
-  typedef typename MatrixType::Index Index;
-
   void allocate(const JacobiSVD<MatrixType, ColPivHouseholderQRPreconditioner>& svd)
   {
     if (svd.rows() != m_qr.rows() || svd.cols() != m_qr.cols())
@@ -197,7 +195,6 @@ template<typename MatrixType>
 class qr_preconditioner_impl<MatrixType, ColPivHouseholderQRPreconditioner, PreconditionIfMoreColsThanRows, true>
 {
 public:
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   enum
   {
@@ -205,10 +202,12 @@ public:
     ColsAtCompileTime = MatrixType::ColsAtCompileTime,
     MaxRowsAtCompileTime = MatrixType::MaxRowsAtCompileTime,
     MaxColsAtCompileTime = MatrixType::MaxColsAtCompileTime,
-    Options = MatrixType::Options
+    TrOptions = RowsAtCompileTime==1 ? (MatrixType::Options & ~(RowMajor))
+              : ColsAtCompileTime==1 ? (MatrixType::Options |   RowMajor)
+              : MatrixType::Options
   };
 
-  typedef Matrix<Scalar, ColsAtCompileTime, RowsAtCompileTime, Options, MaxColsAtCompileTime, MaxRowsAtCompileTime>
+  typedef Matrix<Scalar, ColsAtCompileTime, RowsAtCompileTime, TrOptions, MaxColsAtCompileTime, MaxRowsAtCompileTime>
           TransposeTypeWithSameStorageOrder;
 
   void allocate(const JacobiSVD<MatrixType, ColPivHouseholderQRPreconditioner>& svd)
@@ -256,8 +255,6 @@ template<typename MatrixType>
 class qr_preconditioner_impl<MatrixType, HouseholderQRPreconditioner, PreconditionIfMoreRowsThanCols, true>
 {
 public:
-  typedef typename MatrixType::Index Index;
-
   void allocate(const JacobiSVD<MatrixType, HouseholderQRPreconditioner>& svd)
   {
     if (svd.rows() != m_qr.rows() || svd.cols() != m_qr.cols())
@@ -296,7 +293,6 @@ template<typename MatrixType>
 class qr_preconditioner_impl<MatrixType, HouseholderQRPreconditioner, PreconditionIfMoreColsThanRows, true>
 {
 public:
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   enum
   {
@@ -358,7 +354,6 @@ template<typename MatrixType, int QRPreconditioner>
 struct svd_precondition_2x2_block_to_be_real<MatrixType, QRPreconditioner, false>
 {
   typedef JacobiSVD<MatrixType, QRPreconditioner> SVD;
-  typedef typename SVD::Index Index;
   typedef typename MatrixType::RealScalar RealScalar;
   static bool run(typename SVD::WorkMatrixType&, SVD&, Index, Index, RealScalar&) { return true; }
 };
@@ -367,14 +362,12 @@ template<typename MatrixType, int QRPreconditioner>
 struct svd_precondition_2x2_block_to_be_real<MatrixType, QRPreconditioner, true>
 {
   typedef JacobiSVD<MatrixType, QRPreconditioner> SVD;
-  typedef typename SVD::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename MatrixType::RealScalar RealScalar;
   static bool run(typename SVD::WorkMatrixType& work_matrix, SVD& svd, Index p, Index q, RealScalar& maxDiagEntry)
   {
     using std::sqrt;
     using std::abs;
-    using std::max;
     Scalar z;
     JacobiRotation<Scalar> rot;
     RealScalar n = sqrt(numext::abs2(work_matrix.coeff(p,p)) + numext::abs2(work_matrix.coeff(q,p)));
@@ -423,44 +416,18 @@ struct svd_precondition_2x2_block_to_be_real<MatrixType, QRPreconditioner, true>
     }
 
     // update largest diagonal entry
-    maxDiagEntry = max EIGEN_EMPTY (maxDiagEntry,max EIGEN_EMPTY (abs(work_matrix.coeff(p,p)), abs(work_matrix.coeff(q,q))));
+    maxDiagEntry = numext::maxi<RealScalar>(maxDiagEntry,numext::maxi<RealScalar>(abs(work_matrix.coeff(p,p)), abs(work_matrix.coeff(q,q))));
     // and check whether the 2x2 block is already diagonal
-    RealScalar threshold = max EIGEN_EMPTY (considerAsZero, precision * maxDiagEntry);
+    RealScalar threshold = numext::maxi<RealScalar>(considerAsZero, precision * maxDiagEntry);
     return abs(work_matrix.coeff(p,q))>threshold || abs(work_matrix.coeff(q,p)) > threshold;
   }
 };
 
-template<typename MatrixType, typename RealScalar, typename Index>
-void real_2x2_jacobi_svd(const MatrixType& matrix, Index p, Index q,
-                            JacobiRotation<RealScalar> *j_left,
-                            JacobiRotation<RealScalar> *j_right)
+template<typename _MatrixType, int QRPreconditioner> 
+struct traits<JacobiSVD<_MatrixType,QRPreconditioner> >
 {
-  using std::sqrt;
-  using std::abs;
-  Matrix<RealScalar,2,2> m;
-  m << numext::real(matrix.coeff(p,p)), numext::real(matrix.coeff(p,q)),
-       numext::real(matrix.coeff(q,p)), numext::real(matrix.coeff(q,q));
-  JacobiRotation<RealScalar> rot1;
-  RealScalar t = m.coeff(0,0) + m.coeff(1,1);
-  RealScalar d = m.coeff(1,0) - m.coeff(0,1);
-  if(d == RealScalar(0))
-  {
-    rot1.s() = RealScalar(0);
-    rot1.c() = RealScalar(1);
-  }
-  else
-  {
-    // If d!=0, then t/d cannot overflow because the magnitude of the
-    // entries forming d are not too small compared to the ones forming t.
-    RealScalar u = t / d;
-    RealScalar tmp = sqrt(RealScalar(1) + numext::abs2(u));
-    rot1.s() = RealScalar(1) / tmp;
-    rot1.c() = u / tmp;
-  }
-  m.applyOnTheLeft(0,1,rot1);
-  j_right->makeJacobi(m,0,1);
-  *j_left = rot1 * j_right->transpose();
-}
+  typedef _MatrixType MatrixType;
+};
 
 } // end namespace internal
 
@@ -471,8 +438,8 @@ void real_2x2_jacobi_svd(const MatrixType& matrix, Index p, Index q,
   *
   * \brief Two-sided Jacobi SVD decomposition of a rectangular matrix
   *
-  * \param MatrixType the type of the matrix of which we are computing the SVD decomposition
-  * \param QRPreconditioner this optional parameter allows to specify the type of QR decomposition that will be used internally
+  * \tparam _MatrixType the type of the matrix of which we are computing the SVD decomposition
+  * \tparam QRPreconditioner this optional parameter allows to specify the type of QR decomposition that will be used internally
   *                        for the R-SVD step for non-square matrices. See discussion of possible values below.
   *
   * SVD decomposition consists in decomposing any n-by-p matrix \a A as a product
@@ -518,13 +485,14 @@ void real_2x2_jacobi_svd(const MatrixType& matrix, Index p, Index q,
   * \sa MatrixBase::jacobiSvd()
   */
 template<typename _MatrixType, int QRPreconditioner> class JacobiSVD
+ : public SVDBase<JacobiSVD<_MatrixType,QRPreconditioner> >
 {
+    typedef SVDBase<JacobiSVD> Base;
   public:
 
     typedef _MatrixType MatrixType;
     typedef typename MatrixType::Scalar Scalar;
     typedef typename NumTraits<typename MatrixType::Scalar>::Real RealScalar;
-    typedef typename MatrixType::Index Index;
     enum {
       RowsAtCompileTime = MatrixType::RowsAtCompileTime,
       ColsAtCompileTime = MatrixType::ColsAtCompileTime,
@@ -535,13 +503,10 @@ template<typename _MatrixType, int QRPreconditioner> class JacobiSVD
       MatrixOptions = MatrixType::Options
     };
 
-    typedef Matrix<Scalar, RowsAtCompileTime, RowsAtCompileTime,
-                   MatrixOptions, MaxRowsAtCompileTime, MaxRowsAtCompileTime>
-            MatrixUType;
-    typedef Matrix<Scalar, ColsAtCompileTime, ColsAtCompileTime,
-                   MatrixOptions, MaxColsAtCompileTime, MaxColsAtCompileTime>
-            MatrixVType;
-    typedef typename internal::plain_diag_type<MatrixType, RealScalar>::type SingularValuesType;
+    typedef typename Base::MatrixUType MatrixUType;
+    typedef typename Base::MatrixVType MatrixVType;
+    typedef typename Base::SingularValuesType SingularValuesType;
+    
     typedef typename internal::plain_row_type<MatrixType>::type RowType;
     typedef typename internal::plain_col_type<MatrixType>::type ColType;
     typedef Matrix<Scalar, DiagSizeAtCompileTime, DiagSizeAtCompileTime,
@@ -554,11 +519,6 @@ template<typename _MatrixType, int QRPreconditioner> class JacobiSVD
       * perform decompositions via JacobiSVD::compute(const MatrixType&).
       */
     JacobiSVD()
-      : m_isInitialized(false),
-        m_isAllocated(false),
-        m_usePrescribedThreshold(false),
-        m_computationOptions(0),
-        m_rows(-1), m_cols(-1), m_diagSize(0)
     {}
 
 
@@ -569,11 +529,6 @@ template<typename _MatrixType, int QRPreconditioner> class JacobiSVD
       * \sa JacobiSVD()
       */
     JacobiSVD(Index rows, Index cols, unsigned int computationOptions = 0)
-      : m_isInitialized(false),
-        m_isAllocated(false),
-        m_usePrescribedThreshold(false),
-        m_computationOptions(0),
-        m_rows(-1), m_cols(-1)
     {
       allocate(rows, cols, computationOptions);
     }
@@ -588,12 +543,7 @@ template<typename _MatrixType, int QRPreconditioner> class JacobiSVD
      * Thin unitaries are only available if your matrix type has a Dynamic number of columns (for example MatrixXf). They also are not
      * available with the (non-default) FullPivHouseholderQR preconditioner.
      */
-    JacobiSVD(const MatrixType& matrix, unsigned int computationOptions = 0)
-      : m_isInitialized(false),
-        m_isAllocated(false),
-        m_usePrescribedThreshold(false),
-        m_computationOptions(0),
-        m_rows(-1), m_cols(-1)
+    explicit JacobiSVD(const MatrixType& matrix, unsigned int computationOptions = 0)
     {
       compute(matrix, computationOptions);
     }
@@ -621,164 +571,33 @@ template<typename _MatrixType, int QRPreconditioner> class JacobiSVD
       return compute(matrix, m_computationOptions);
     }
 
-    /** \returns the \a U matrix.
-     *
-     * For the SVD decomposition of a n-by-p matrix, letting \a m be the minimum of \a n and \a p,
-     * the U matrix is n-by-n if you asked for #ComputeFullU, and is n-by-m if you asked for #ComputeThinU.
-     *
-     * The \a m first columns of \a U are the left singular vectors of the matrix being decomposed.
-     *
-     * This method asserts that you asked for \a U to be computed.
-     */
-    const MatrixUType& matrixU() const
-    {
-      eigen_assert(m_isInitialized && "JacobiSVD is not initialized.");
-      eigen_assert(computeU() && "This JacobiSVD decomposition didn't compute U. Did you ask for it?");
-      return m_matrixU;
-    }
-
-    /** \returns the \a V matrix.
-     *
-     * For the SVD decomposition of a n-by-p matrix, letting \a m be the minimum of \a n and \a p,
-     * the V matrix is p-by-p if you asked for #ComputeFullV, and is p-by-m if you asked for ComputeThinV.
-     *
-     * The \a m first columns of \a V are the right singular vectors of the matrix being decomposed.
-     *
-     * This method asserts that you asked for \a V to be computed.
-     */
-    const MatrixVType& matrixV() const
-    {
-      eigen_assert(m_isInitialized && "JacobiSVD is not initialized.");
-      eigen_assert(computeV() && "This JacobiSVD decomposition didn't compute V. Did you ask for it?");
-      return m_matrixV;
-    }
-
-    /** \returns the vector of singular values.
-     *
-     * For the SVD decomposition of a n-by-p matrix, letting \a m be the minimum of \a n and \a p, the
-     * returned vector has size \a m.  Singular values are always sorted in decreasing order.
-     */
-    const SingularValuesType& singularValues() const
-    {
-      eigen_assert(m_isInitialized && "JacobiSVD is not initialized.");
-      return m_singularValues;
-    }
-
-    /** \returns true if \a U (full or thin) is asked for in this SVD decomposition */
-    inline bool computeU() const { return m_computeFullU || m_computeThinU; }
-    /** \returns true if \a V (full or thin) is asked for in this SVD decomposition */
-    inline bool computeV() const { return m_computeFullV || m_computeThinV; }
-
-    /** \returns a (least squares) solution of \f$ A x = b \f$ using the current SVD decomposition of A.
-      *
-      * \param b the right-hand-side of the equation to solve.
-      *
-      * \note Solving requires both U and V to be computed. Thin U and V are enough, there is no need for full U or V.
-      *
-      * \note SVD solving is implicitly least-squares. Thus, this method serves both purposes of exact solving and least-squares solving.
-      * In other words, the returned solution is guaranteed to minimize the Euclidean norm \f$ \Vert A x - b \Vert \f$.
-      */
-    template<typename Rhs>
-    inline const internal::solve_retval<JacobiSVD, Rhs>
-    solve(const MatrixBase<Rhs>& b) const
-    {
-      eigen_assert(m_isInitialized && "JacobiSVD is not initialized.");
-      eigen_assert(computeU() && computeV() && "JacobiSVD::solve() requires both unitaries U and V to be computed (thin unitaries suffice).");
-      return internal::solve_retval<JacobiSVD, Rhs>(*this, b.derived());
-    }
-
-    /** \returns the number of singular values that are not exactly 0 */
-    Index nonzeroSingularValues() const
-    {
-      eigen_assert(m_isInitialized && "JacobiSVD is not initialized.");
-      return m_nonzeroSingularValues;
-    }
-    
-    /** \returns the rank of the matrix of which \c *this is the SVD.
-      *
-      * \note This method has to determine which singular values should be considered nonzero.
-      *       For that, it uses the threshold value that you can control by calling
-      *       setThreshold(const RealScalar&).
-      */
-    inline Index rank() const
-    {
-      using std::abs;
-      eigen_assert(m_isInitialized && "JacobiSVD is not initialized.");
-      if(m_singularValues.size()==0) return 0;
-      RealScalar premultiplied_threshold = m_singularValues.coeff(0) * threshold();
-      Index i = m_nonzeroSingularValues-1;
-      while(i>=0 && m_singularValues.coeff(i) < premultiplied_threshold) --i;
-      return i+1;
-    }
-    
-    /** Allows to prescribe a threshold to be used by certain methods, such as rank() and solve(),
-      * which need to determine when singular values are to be considered nonzero.
-      * This is not used for the SVD decomposition itself.
-      *
-      * When it needs to get the threshold value, Eigen calls threshold().
-      * The default is \c NumTraits<Scalar>::epsilon()
-      *
-      * \param threshold The new value to use as the threshold.
-      *
-      * A singular value will be considered nonzero if its value is strictly greater than
-      *  \f$ \vert singular value \vert \leqslant threshold \times \vert max singular value \vert \f$.
-      *
-      * If you want to come back to the default behavior, call setThreshold(Default_t)
-      */
-    JacobiSVD& setThreshold(const RealScalar& threshold)
-    {
-      m_usePrescribedThreshold = true;
-      m_prescribedThreshold = threshold;
-      return *this;
-    }
-
-    /** Allows to come back to the default behavior, letting Eigen use its default formula for
-      * determining the threshold.
-      *
-      * You should pass the special object Eigen::Default as parameter here.
-      * \code svd.setThreshold(Eigen::Default); \endcode
-      *
-      * See the documentation of setThreshold(const RealScalar&).
-      */
-    JacobiSVD& setThreshold(Default_t)
-    {
-      m_usePrescribedThreshold = false;
-      return *this;
-    }
-
-    /** Returns the threshold that will be used by certain methods such as rank().
-      *
-      * See the documentation of setThreshold(const RealScalar&).
-      */
-    RealScalar threshold() const
-    {
-      eigen_assert(m_isInitialized || m_usePrescribedThreshold);
-      return m_usePrescribedThreshold ? m_prescribedThreshold
-                                      : (std::max<Index>)(1,m_diagSize)*NumTraits<Scalar>::epsilon();
-    }
-
-    inline Index rows() const { return m_rows; }
-    inline Index cols() const { return m_cols; }
+    using Base::computeU;
+    using Base::computeV;
+    using Base::rows;
+    using Base::cols;
+    using Base::rank;
 
   private:
     void allocate(Index rows, Index cols, unsigned int computationOptions);
-    
-    static void check_template_parameters()
-    {
-      EIGEN_STATIC_ASSERT_NON_INTEGER(Scalar);
-    }
 
   protected:
-    MatrixUType m_matrixU;
-    MatrixVType m_matrixV;
-    SingularValuesType m_singularValues;
+    using Base::m_matrixU;
+    using Base::m_matrixV;
+    using Base::m_singularValues;
+    using Base::m_isInitialized;
+    using Base::m_isAllocated;
+    using Base::m_usePrescribedThreshold;
+    using Base::m_computeFullU;
+    using Base::m_computeThinU;
+    using Base::m_computeFullV;
+    using Base::m_computeThinV;
+    using Base::m_computationOptions;
+    using Base::m_nonzeroSingularValues;
+    using Base::m_rows;
+    using Base::m_cols;
+    using Base::m_diagSize;
+    using Base::m_prescribedThreshold;
     WorkMatrixType m_workMatrix;
-    bool m_isInitialized, m_isAllocated, m_usePrescribedThreshold;
-    bool m_computeFullU, m_computeThinU;
-    bool m_computeFullV, m_computeThinV;
-    unsigned int m_computationOptions;
-    Index m_nonzeroSingularValues, m_rows, m_cols, m_diagSize;
-    RealScalar m_prescribedThreshold;
 
     template<typename __MatrixType, int _QRPreconditioner, bool _IsComplex>
     friend struct internal::svd_precondition_2x2_block_to_be_real;
@@ -843,18 +662,15 @@ template<typename MatrixType, int QRPreconditioner>
 JacobiSVD<MatrixType, QRPreconditioner>&
 JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsigned int computationOptions)
 {
-  check_template_parameters();
-  
   using std::abs;
-  using std::max;
   allocate(matrix.rows(), matrix.cols(), computationOptions);
 
   // currently we stop when we reach precision 2*epsilon as the last bit of precision can require an unreasonable number of iterations,
   // only worsening the precision of U and V as we accumulate more rotations
   const RealScalar precision = RealScalar(2) * NumTraits<Scalar>::epsilon();
 
-  // limit for very small denormal numbers to be considered zero in order to avoid infinite loops (see bug 286)
-  const RealScalar considerAsZero = RealScalar(2) * std::numeric_limits<RealScalar>::denorm_min();
+  // limit for denormal numbers to be considered zero in order to avoid infinite loops (see bug 286)
+  const RealScalar considerAsZero = (std::numeric_limits<RealScalar>::min)();
 
   // Scaling factor to reduce over/under-flows
   RealScalar scale = matrix.cwiseAbs().maxCoeff();
@@ -894,12 +710,12 @@ JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsig
         // if this 2x2 sub-matrix is not diagonal already...
         // notice that this comparison will evaluate to false if any NaN is involved, ensuring that NaN's don't
         // keep us iterating forever. Similarly, small denormal numbers are considered zero.
-        RealScalar threshold = max EIGEN_EMPTY (considerAsZero, precision * maxDiagEntry);
+        RealScalar threshold = numext::maxi<RealScalar>(considerAsZero, precision * maxDiagEntry);
         if(abs(m_workMatrix.coeff(p,q))>threshold || abs(m_workMatrix.coeff(q,p)) > threshold)
         {
           finished = false;
           // perform SVD decomposition of 2x2 sub-matrix corresponding to indices p,q to make it diagonal
-          // the complex to real operation returns true is the updated 2x2 block is not already diagonal
+          // the complex to real operation returns true if the updated 2x2 block is not already diagonal
           if(internal::svd_precondition_2x2_block_to_be_real<MatrixType, QRPreconditioner>::run(m_workMatrix, *this, p, q, maxDiagEntry))
           {
             JacobiRotation<RealScalar> j_left, j_right;
@@ -913,7 +729,7 @@ JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsig
             if(computeV()) m_matrixV.applyOnTheRight(p,q,j_right);
 
             // keep track of the largest diagonal coefficient
-            maxDiagEntry = max EIGEN_EMPTY (maxDiagEntry,max EIGEN_EMPTY (abs(m_workMatrix.coeff(p,p)), abs(m_workMatrix.coeff(q,q))));
+            maxDiagEntry = numext::maxi<RealScalar>(maxDiagEntry,numext::maxi<RealScalar>(abs(m_workMatrix.coeff(p,p)), abs(m_workMatrix.coeff(q,q))));
           }
         }
       }
@@ -924,10 +740,25 @@ JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsig
 
   for(Index i = 0; i < m_diagSize; ++i)
   {
-    RealScalar a = abs(m_workMatrix.coeff(i,i));
-    m_singularValues.coeffRef(i) = a;
-    if(computeU() && (a!=RealScalar(0))) m_matrixU.col(i) *= m_workMatrix.coeff(i,i)/a;
+    // For a complex matrix, some diagonal coefficients might note have been
+    // treated by svd_precondition_2x2_block_to_be_real, and the imaginary part
+    // of some diagonal entry might not be null.
+    if(NumTraits<Scalar>::IsComplex && abs(numext::imag(m_workMatrix.coeff(i,i)))>considerAsZero)
+    {
+      RealScalar a = abs(m_workMatrix.coeff(i,i));
+      m_singularValues.coeffRef(i) = abs(a);
+      if(computeU()) m_matrixU.col(i) *= m_workMatrix.coeff(i,i)/a;
+    }
+    else
+    {
+      // m_workMatrix.coeff(i,i) is already real, no difficulty:
+      RealScalar a = numext::real(m_workMatrix.coeff(i,i));
+      m_singularValues.coeffRef(i) = abs(a);
+      if(computeU() && (a<RealScalar(0))) m_matrixU.col(i) = -m_matrixU.col(i);
+    }
   }
+  
+  m_singularValues *= scale;
 
   /*** step 4. Sort singular values in descending order and compute the number of nonzero singular values ***/
 
@@ -949,37 +780,10 @@ JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsig
       if(computeV()) m_matrixV.col(pos).swap(m_matrixV.col(i));
     }
   }
-  
-  m_singularValues *= scale;
 
   m_isInitialized = true;
   return *this;
 }
-
-namespace internal {
-template<typename _MatrixType, int QRPreconditioner, typename Rhs>
-struct solve_retval<JacobiSVD<_MatrixType, QRPreconditioner>, Rhs>
-  : solve_retval_base<JacobiSVD<_MatrixType, QRPreconditioner>, Rhs>
-{
-  typedef JacobiSVD<_MatrixType, QRPreconditioner> JacobiSVDType;
-  EIGEN_MAKE_SOLVE_HELPERS(JacobiSVDType,Rhs)
-
-  template<typename Dest> void evalTo(Dest& dst) const
-  {
-    eigen_assert(rhs().rows() == dec().rows());
-
-    // A = U S V^*
-    // So A^{-1} = V S^{-1} U^*
-
-    Matrix<Scalar, Dynamic, Rhs::ColsAtCompileTime, 0, _MatrixType::MaxRowsAtCompileTime, Rhs::MaxColsAtCompileTime> tmp;
-    Index rank = dec().rank();
-    
-    tmp.noalias() = dec().matrixU().leftCols(rank).adjoint() * rhs();
-    tmp = dec().singularValues().head(rank).asDiagonal().inverse() * tmp;
-    dst = dec().matrixV().leftCols(rank) * tmp;
-  }
-};
-} // end namespace internal
 
 /** \svd_module
   *

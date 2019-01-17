@@ -22,13 +22,13 @@ namespace Eigen {
   class aligned_allocator_indirection : public EIGEN_ALIGNED_ALLOCATOR<T>
   {
   public:
-    typedef size_t    size_type;
-    typedef ptrdiff_t difference_type;
-    typedef T*        pointer;
-    typedef const T*  const_pointer;
-    typedef T&        reference;
-    typedef const T&  const_reference;
-    typedef T         value_type;
+    typedef std::size_t     size_type;
+    typedef std::ptrdiff_t  difference_type;
+    typedef T*              pointer;
+    typedef const T*        const_pointer;
+    typedef T&              reference;
+    typedef const T&        const_reference;
+    typedef T               value_type;
 
     template<class U>
     struct rebind
@@ -46,7 +46,7 @@ namespace Eigen {
     ~aligned_allocator_indirection() {}
   };
 
-#ifdef _MSC_VER
+#if EIGEN_COMP_MSVC
 
   // sometimes, MSVC detects, at compile time, that the argument x
   // in std::vector::resize(size_t s,T x) won't be aligned and generate an error

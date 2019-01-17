@@ -14,7 +14,7 @@
 #include "Core"
 #include <deque>
 
-#if (defined(_MSC_VER) && defined(_WIN64)) /* MSVC auto aligns in 64 bit builds */
+#if EIGEN_COMP_MSVC && EIGEN_OS_WIN64 && (EIGEN_MAX_STATIC_ALIGN_BYTES<=16) /* MSVC auto aligns up to 16 bytes in 64 bit builds */
 
 #define EIGEN_DEFINE_STL_DEQUE_SPECIALIZATION(...)
 

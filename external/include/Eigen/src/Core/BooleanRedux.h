@@ -17,9 +17,10 @@ namespace internal {
 template<typename Derived, int UnrollCount>
 struct all_unroller
 {
+  typedef typename Derived::ExpressionTraits Traits;
   enum {
-    col = (UnrollCount-1) / Derived::RowsAtCompileTime,
-    row = (UnrollCount-1) % Derived::RowsAtCompileTime
+    col = (UnrollCount-1) / Traits::RowsAtCompileTime,
+    row = (UnrollCount-1) % Traits::RowsAtCompileTime
   };
 
   static inline bool run(const Derived &mat)
@@ -43,11 +44,12 @@ struct all_unroller<Derived, Dynamic>
 template<typename Derived, int UnrollCount>
 struct any_unroller
 {
+  typedef typename Derived::ExpressionTraits Traits;
   enum {
-    col = (UnrollCount-1) / Derived::RowsAtCompileTime,
-    row = (UnrollCount-1) % Derived::RowsAtCompileTime
+    col = (UnrollCount-1) / Traits::RowsAtCompileTime,
+    row = (UnrollCount-1) % Traits::RowsAtCompileTime
   };
-
+  
   static inline bool run(const Derived &mat)
   {
     return any_unroller<Derived, UnrollCount-1>::run(mat) || mat.coeff(row, col);
@@ -78,19 +80,19 @@ struct any_unroller<Derived, Dynamic>
 template<typename Derived>
 inline bool DenseBase<Derived>::all() const
 {
+  typedef internal::evaluator<Derived> Evaluator;
   enum {
     unroll = SizeAtCompileTime != Dynamic
-          && CoeffReadCost != Dynamic
-          && NumTraits<Scalar>::AddCost != Dynamic
-          && SizeAtCompileTime * (CoeffReadCost + NumTraits<Scalar>::AddCost) <= EIGEN_UNROLLING_LIMIT
+          && SizeAtCompileTime * (Evaluator::CoeffReadCost + NumTraits<Scalar>::AddCost) <= EIGEN_UNROLLING_LIMIT
   };
+  Evaluator evaluator(derived());
   if(unroll)
-    return internal::all_unroller<Derived, unroll ? int(SizeAtCompileTime) : Dynamic>::run(derived());
+    return internal::all_unroller<Evaluator, unroll ? int(SizeAtCompileTime) : Dynamic>::run(evaluator);
   else
   {
     for(Index j = 0; j < cols(); ++j)
       for(Index i = 0; i < rows(); ++i)
-        if (!coeff(i, j)) return false;
+        if (!evaluator.coeff(i, j)) return false;
     return true;
   }
 }
@@ -102,19 +104,19 @@ inline bool DenseBase<Derived>::all() const
 template<typename Derived>
 inline bool DenseBase<Derived>::any() const
 {
+  typedef internal::evaluator<Derived> Evaluator;
   enum {
     unroll = SizeAtCompileTime != Dynamic
-          && CoeffReadCost != Dynamic
-          && NumTraits<Scalar>::AddCost != Dynamic
-          && SizeAtCompileTime * (CoeffReadCost + NumTraits<Scalar>::AddCost) <= EIGEN_UNROLLING_LIMIT
+          && SizeAtCompileTime * (Evaluator::CoeffReadCost + NumTraits<Scalar>::AddCost) <= EIGEN_UNROLLING_LIMIT
   };
+  Evaluator evaluator(derived());
   if(unroll)
-    return internal::any_unroller<Derived, unroll ? int(SizeAtCompileTime) : Dynamic>::run(derived());
+    return internal::any_unroller<Evaluator, unroll ? int(SizeAtCompileTime) : Dynamic>::run(evaluator);
   else
   {
     for(Index j = 0; j < cols(); ++j)
       for(Index i = 0; i < rows(); ++i)
-        if (coeff(i, j)) return true;
+        if (evaluator.coeff(i, j)) return true;
     return false;
   }
 }
@@ -124,7 +126,7 @@ inline bool DenseBase<Derived>::any() const
   * \sa all(), any()
   */
 template<typename Derived>
-inline typename DenseBase<Derived>::Index DenseBase<Derived>::count() const
+inline Eigen::Index DenseBase<Derived>::count() const
 {
   return derived().template cast<bool>().template cast<Index>().sum();
 }
@@ -136,7 +138,11 @@ inline typename DenseBase<Derived>::Index DenseBase<Derived>::count() const
 template<typename Derived>
 inline bool DenseBase<Derived>::hasNaN() const
 {
+#if EIGEN_COMP_MSVC || (defined __FAST_MATH__)
+  return derived().array().isNaN().any();
+#else
   return !((derived().array()==derived().array()).all());
+#endif
 }
 
 /** \returns true if \c *this contains only finite numbers, i.e., no NaN and no +/-INF values.
@@ -146,7 +152,11 @@ inline bool DenseBase<Derived>::hasNaN() const
 template<typename Derived>
 inline bool DenseBase<Derived>::allFinite() const
 {
+#if EIGEN_COMP_MSVC || (defined __FAST_MATH__)
+  return derived().array().isFinite().all();
+#else
   return !((derived()-derived()).hasNaN());
+#endif
 }
     
 } // end namespace Eigen

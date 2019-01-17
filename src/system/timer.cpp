@@ -76,7 +76,11 @@ double Time::Timer::get_time() {
 void Time::Timer::print_record(const char *left,
                                double elapsed,
                                double average) {
-  printf("%s ==> %6.2f ms ~ %6.2f ms\n", left, elapsed * 1e3, average * 1e3);
+  if (elapsed < 1e-3) {
+    printf("%s ==> %6.3f us ~ %6.3f us\n", left, elapsed * 1e6, average * 1e6);
+  } else {
+    printf("%s ==> %6.3f ms ~ %6.3f ms\n", left, elapsed * 1e3, average * 1e3);
+  }
 }
 
 void Time::Timer::output() {

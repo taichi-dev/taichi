@@ -56,8 +56,8 @@ namespace internal {
  * \return 0 if success, i > 0 if U(i,i) is exactly zero 
  * 
  */
-template <typename Scalar, typename Index>
-Index SparseLUImpl<Scalar,Index>::pivotL(const Index jcol, const RealScalar& diagpivotthresh, IndexVector& perm_r, IndexVector& iperm_c, Index& pivrow, GlobalLU_t& glu)
+template <typename Scalar, typename StorageIndex>
+Index SparseLUImpl<Scalar,StorageIndex>::pivotL(const Index jcol, const RealScalar& diagpivotthresh, IndexVector& perm_r, IndexVector& iperm_c, Index& pivrow, GlobalLU_t& glu)
 {
   
   Index fsupc = (glu.xsup)((glu.supno)(jcol)); // First column in the supernode containing the column jcol
@@ -67,7 +67,7 @@ Index SparseLUImpl<Scalar,Index>::pivotL(const Index jcol, const RealScalar& dia
   Index lda = glu.xlusup(fsupc+1) - glu.xlusup(fsupc); // leading dimension
   Scalar* lu_sup_ptr = &(glu.lusup.data()[glu.xlusup(fsupc)]); // Start of the current supernode
   Scalar* lu_col_ptr = &(glu.lusup.data()[glu.xlusup(jcol)]); // Start of jcol in the supernode
-  Index* lsub_ptr = &(glu.lsub.data()[lptr]); // Start of row indices of the supernode
+  StorageIndex* lsub_ptr = &(glu.lsub.data()[lptr]); // Start of row indices of the supernode
   
   // Determine the largest abs numerical value for partial pivoting 
   Index diagind = iperm_c(jcol); // diagonal index 
@@ -90,7 +90,7 @@ Index SparseLUImpl<Scalar,Index>::pivotL(const Index jcol, const RealScalar& dia
   if ( pivmax <= RealScalar(0.0) ) {
     // if pivmax == -1, the column is structurally empty, otherwise it is only numerically zero
     pivrow = pivmax < RealScalar(0.0) ? diagind : lsub_ptr[pivptr];
-    perm_r(pivrow) = jcol;
+    perm_r(pivrow) = StorageIndex(jcol);
     return (jcol+1);
   }
   
@@ -105,13 +105,13 @@ Index SparseLUImpl<Scalar,Index>::pivotL(const Index jcol, const RealScalar& dia
       // Diagonal element exists
       using std::abs;
       rtemp = abs(lu_col_ptr[diag]);
-      if (rtemp != 0.0 && rtemp >= thresh) pivptr = diag;
+      if (rtemp != RealScalar(0.0) && rtemp >= thresh) pivptr = diag;
     }
     pivrow = lsub_ptr[pivptr];
   }
   
   // Record pivot row
-  perm_r(pivrow) = jcol; 
+  perm_r(pivrow) = StorageIndex(jcol);
   // Interchange row subscripts
   if (pivptr != nsupc )
   {

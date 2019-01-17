@@ -18,12 +18,12 @@ namespace Eigen {
  * Row (column) i of A is the matperm(i) row (column) of Ap. 
  * WARNING: As computed by METIS, this corresponds to the vector iperm (instead of perm)
  */
-template <typename Index>
+template <typename StorageIndex>
 class MetisOrdering
 {
 public:
-  typedef PermutationMatrix<Dynamic,Dynamic,Index> PermutationType;
-  typedef Matrix<Index,Dynamic,1> IndexVector; 
+  typedef PermutationMatrix<Dynamic,Dynamic,StorageIndex> PermutationType;
+  typedef Matrix<StorageIndex,Dynamic,1> IndexVector; 
   
   template <typename MatrixType>
   void get_symmetrized_graph(const MatrixType& A)
@@ -36,7 +36,7 @@ public:
     Index TotNz = 0; 
     IndexVector visited(m); 
     visited.setConstant(-1); 
-    for (int j = 0; j < m; j++)
+    for (StorageIndex j = 0; j < m; j++)
     {
       // Compute the union structure of of A(j,:) and At(j,:)
       visited(j) = j; // Do not include the diagonal element
@@ -67,8 +67,8 @@ public:
 
     // Now compute the real adjacency list of each column/row 
     visited.setConstant(-1); 
-    Index CurNz = 0; 
-    for (int j = 0; j < m; j++)
+    StorageIndex CurNz = 0; 
+    for (StorageIndex j = 0; j < m; j++)
     {
       m_indexPtr(j) = CurNz; 
       
@@ -76,7 +76,7 @@ public:
       // Add the pattern of row/column j of A to A+At
       for (typename MatrixType::InnerIterator it(A,j); it; ++it)
       {
-        Index idx = it.index(); // Get the row index (for column major) or column index (for row major)
+        StorageIndex idx = it.index(); // Get the row index (for column major) or column index (for row major)
         if (visited(idx) != j ) 
         {
           visited(idx) = j; 
@@ -87,7 +87,7 @@ public:
       //Add the pattern of row/column j of At to A+At
       for (typename MatrixType::InnerIterator it(At, j); it; ++it)
       {
-        Index idx = it.index(); 
+        StorageIndex idx = it.index(); 
         if(visited(idx) != j)
         {
           visited(idx) = j; 
@@ -102,7 +102,7 @@ public:
   template <typename MatrixType>
   void operator() (const MatrixType& A, PermutationType& matperm)
   {
-     Index m = A.cols();
+     StorageIndex m = internal::convert_index<StorageIndex>(A.cols()); // must be StorageIndex, because it is passed by address to METIS
      IndexVector perm(m),iperm(m); 
     // First, symmetrize the matrix graph. 
      get_symmetrized_graph(A); 

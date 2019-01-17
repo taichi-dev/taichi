@@ -1,7 +1,7 @@
 // This file is part of Eigen, a lightweight C++ template library
 // for linear algebra.
 //
-// Copyright (C) 2008-2010 Gael Guennebaud <gael.guennebaud@inria.fr>
+// Copyright (C) 2008-2015 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
@@ -12,138 +12,121 @@
 
 namespace Eigen { 
 
-template<typename UnaryOp, typename MatrixType>
-class CwiseUnaryOpImpl<UnaryOp,MatrixType,Sparse>
-  : public SparseMatrixBase<CwiseUnaryOp<UnaryOp, MatrixType> >
+namespace internal {
+  
+template<typename UnaryOp, typename ArgType>
+struct unary_evaluator<CwiseUnaryOp<UnaryOp,ArgType>, IteratorBased>
+  : public evaluator_base<CwiseUnaryOp<UnaryOp,ArgType> >
 {
   public:
+    typedef CwiseUnaryOp<UnaryOp, ArgType> XprType;
 
     class InnerIterator;
-    class ReverseInnerIterator;
-
-    typedef CwiseUnaryOp<UnaryOp, MatrixType> Derived;
-    EIGEN_SPARSE_PUBLIC_INTERFACE(Derived)
+    
+    enum {
+      CoeffReadCost = evaluator<ArgType>::CoeffReadCost + functor_traits<UnaryOp>::Cost,
+      Flags = XprType::Flags
+    };
+    
+    explicit unary_evaluator(const XprType& op) : m_functor(op.functor()), m_argImpl(op.nestedExpression())
+    {
+      EIGEN_INTERNAL_CHECK_COST_VALUE(functor_traits<UnaryOp>::Cost);
+      EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
+    }
+    
+    inline Index nonZerosEstimate() const {
+      return m_argImpl.nonZerosEstimate();
+    }
 
   protected:
-    typedef typename internal::traits<Derived>::_XprTypeNested _MatrixTypeNested;
-    typedef typename _MatrixTypeNested::InnerIterator MatrixTypeIterator;
-    typedef typename _MatrixTypeNested::ReverseInnerIterator MatrixTypeReverseIterator;
+    typedef typename evaluator<ArgType>::InnerIterator        EvalIterator;
+    
+    const UnaryOp m_functor;
+    evaluator<ArgType> m_argImpl;
 };
 
-template<typename UnaryOp, typename MatrixType>
-class CwiseUnaryOpImpl<UnaryOp,MatrixType,Sparse>::InnerIterator
-    : public CwiseUnaryOpImpl<UnaryOp,MatrixType,Sparse>::MatrixTypeIterator
+template<typename UnaryOp, typename ArgType>
+class unary_evaluator<CwiseUnaryOp<UnaryOp,ArgType>, IteratorBased>::InnerIterator
+    : public unary_evaluator<CwiseUnaryOp<UnaryOp,ArgType>, IteratorBased>::EvalIterator
 {
-    typedef typename CwiseUnaryOpImpl::Scalar Scalar;
-    typedef typename CwiseUnaryOpImpl<UnaryOp,MatrixType,Sparse>::MatrixTypeIterator Base;
+    typedef typename XprType::Scalar Scalar;
+    typedef typename unary_evaluator<CwiseUnaryOp<UnaryOp,ArgType>, IteratorBased>::EvalIterator Base;
   public:
 
-    EIGEN_STRONG_INLINE InnerIterator(const CwiseUnaryOpImpl& unaryOp, typename CwiseUnaryOpImpl::Index outer)
-      : Base(unaryOp.derived().nestedExpression(),outer), m_functor(unaryOp.derived().functor())
+    EIGEN_STRONG_INLINE InnerIterator(const unary_evaluator& unaryOp, Index outer)
+      : Base(unaryOp.m_argImpl,outer), m_functor(unaryOp.m_functor)
     {}
 
     EIGEN_STRONG_INLINE InnerIterator& operator++()
     { Base::operator++(); return *this; }
 
-    EIGEN_STRONG_INLINE typename CwiseUnaryOpImpl::Scalar value() const { return m_functor(Base::value()); }
+    EIGEN_STRONG_INLINE Scalar value() const { return m_functor(Base::value()); }
 
   protected:
     const UnaryOp m_functor;
   private:
-    typename CwiseUnaryOpImpl::Scalar& valueRef();
+    Scalar& valueRef();
 };
 
-template<typename UnaryOp, typename MatrixType>
-class CwiseUnaryOpImpl<UnaryOp,MatrixType,Sparse>::ReverseInnerIterator
-    : public CwiseUnaryOpImpl<UnaryOp,MatrixType,Sparse>::MatrixTypeReverseIterator
-{
-    typedef typename CwiseUnaryOpImpl::Scalar Scalar;
-    typedef typename CwiseUnaryOpImpl<UnaryOp,MatrixType,Sparse>::MatrixTypeReverseIterator Base;
-  public:
-
-    EIGEN_STRONG_INLINE ReverseInnerIterator(const CwiseUnaryOpImpl& unaryOp, typename CwiseUnaryOpImpl::Index outer)
-      : Base(unaryOp.derived().nestedExpression(),outer), m_functor(unaryOp.derived().functor())
-    {}
-
-    EIGEN_STRONG_INLINE ReverseInnerIterator& operator--()
-    { Base::operator--(); return *this; }
-
-    EIGEN_STRONG_INLINE typename CwiseUnaryOpImpl::Scalar value() const { return m_functor(Base::value()); }
-
-  protected:
-    const UnaryOp m_functor;
-  private:
-    typename CwiseUnaryOpImpl::Scalar& valueRef();
-};
-
-template<typename ViewOp, typename MatrixType>
-class CwiseUnaryViewImpl<ViewOp,MatrixType,Sparse>
-  : public SparseMatrixBase<CwiseUnaryView<ViewOp, MatrixType> >
+template<typename ViewOp, typename ArgType>
+struct unary_evaluator<CwiseUnaryView<ViewOp,ArgType>, IteratorBased>
+  : public evaluator_base<CwiseUnaryView<ViewOp,ArgType> >
 {
   public:
+    typedef CwiseUnaryView<ViewOp, ArgType> XprType;
 
     class InnerIterator;
-    class ReverseInnerIterator;
-
-    typedef CwiseUnaryView<ViewOp, MatrixType> Derived;
-    EIGEN_SPARSE_PUBLIC_INTERFACE(Derived)
+    
+    enum {
+      CoeffReadCost = evaluator<ArgType>::CoeffReadCost + functor_traits<ViewOp>::Cost,
+      Flags = XprType::Flags
+    };
+    
+    explicit unary_evaluator(const XprType& op) : m_functor(op.functor()), m_argImpl(op.nestedExpression())
+    {
+      EIGEN_INTERNAL_CHECK_COST_VALUE(functor_traits<ViewOp>::Cost);
+      EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
+    }
 
   protected:
-    typedef typename internal::traits<Derived>::_MatrixTypeNested _MatrixTypeNested;
-    typedef typename _MatrixTypeNested::InnerIterator MatrixTypeIterator;
-    typedef typename _MatrixTypeNested::ReverseInnerIterator MatrixTypeReverseIterator;
+    typedef typename evaluator<ArgType>::InnerIterator        EvalIterator;
+    
+    const ViewOp m_functor;
+    evaluator<ArgType> m_argImpl;
 };
 
-template<typename ViewOp, typename MatrixType>
-class CwiseUnaryViewImpl<ViewOp,MatrixType,Sparse>::InnerIterator
-    : public CwiseUnaryViewImpl<ViewOp,MatrixType,Sparse>::MatrixTypeIterator
+template<typename ViewOp, typename ArgType>
+class unary_evaluator<CwiseUnaryView<ViewOp,ArgType>, IteratorBased>::InnerIterator
+    : public unary_evaluator<CwiseUnaryView<ViewOp,ArgType>, IteratorBased>::EvalIterator
 {
-    typedef typename CwiseUnaryViewImpl::Scalar Scalar;
-    typedef typename CwiseUnaryViewImpl<ViewOp,MatrixType,Sparse>::MatrixTypeIterator Base;
+    typedef typename XprType::Scalar Scalar;
+    typedef typename unary_evaluator<CwiseUnaryView<ViewOp,ArgType>, IteratorBased>::EvalIterator Base;
   public:
 
-    EIGEN_STRONG_INLINE InnerIterator(const CwiseUnaryViewImpl& unaryOp, typename CwiseUnaryViewImpl::Index outer)
-      : Base(unaryOp.derived().nestedExpression(),outer), m_functor(unaryOp.derived().functor())
+    EIGEN_STRONG_INLINE InnerIterator(const unary_evaluator& unaryOp, Index outer)
+      : Base(unaryOp.m_argImpl,outer), m_functor(unaryOp.m_functor)
     {}
 
     EIGEN_STRONG_INLINE InnerIterator& operator++()
     { Base::operator++(); return *this; }
 
-    EIGEN_STRONG_INLINE typename CwiseUnaryViewImpl::Scalar value() const { return m_functor(Base::value()); }
-    EIGEN_STRONG_INLINE typename CwiseUnaryViewImpl::Scalar& valueRef() { return m_functor(Base::valueRef()); }
+    EIGEN_STRONG_INLINE Scalar value() const { return m_functor(Base::value()); }
+    EIGEN_STRONG_INLINE Scalar& valueRef() { return m_functor(Base::valueRef()); }
 
   protected:
     const ViewOp m_functor;
 };
 
-template<typename ViewOp, typename MatrixType>
-class CwiseUnaryViewImpl<ViewOp,MatrixType,Sparse>::ReverseInnerIterator
-    : public CwiseUnaryViewImpl<ViewOp,MatrixType,Sparse>::MatrixTypeReverseIterator
-{
-    typedef typename CwiseUnaryViewImpl::Scalar Scalar;
-    typedef typename CwiseUnaryViewImpl<ViewOp,MatrixType,Sparse>::MatrixTypeReverseIterator Base;
-  public:
-
-    EIGEN_STRONG_INLINE ReverseInnerIterator(const CwiseUnaryViewImpl& unaryOp, typename CwiseUnaryViewImpl::Index outer)
-      : Base(unaryOp.derived().nestedExpression(),outer), m_functor(unaryOp.derived().functor())
-    {}
-
-    EIGEN_STRONG_INLINE ReverseInnerIterator& operator--()
-    { Base::operator--(); return *this; }
-
-    EIGEN_STRONG_INLINE typename CwiseUnaryViewImpl::Scalar value() const { return m_functor(Base::value()); }
-    EIGEN_STRONG_INLINE typename CwiseUnaryViewImpl::Scalar& valueRef() { return m_functor(Base::valueRef()); }
-
-  protected:
-    const ViewOp m_functor;
-};
+} // end namespace internal
 
 template<typename Derived>
 EIGEN_STRONG_INLINE Derived&
 SparseMatrixBase<Derived>::operator*=(const Scalar& other)
 {
+  typedef typename internal::evaluator<Derived>::InnerIterator EvalIterator;
+  internal::evaluator<Derived> thisEval(derived());
   for (Index j=0; j<outerSize(); ++j)
-    for (typename Derived::InnerIterator i(derived(),j); i; ++i)
+    for (EvalIterator i(thisEval,j); i; ++i)
       i.valueRef() *= other;
   return derived();
 }
@@ -152,8 +135,10 @@ template<typename Derived>
 EIGEN_STRONG_INLINE Derived&
 SparseMatrixBase<Derived>::operator/=(const Scalar& other)
 {
+  typedef typename internal::evaluator<Derived>::InnerIterator EvalIterator;
+  internal::evaluator<Derived> thisEval(derived());
   for (Index j=0; j<outerSize(); ++j)
-    for (typename Derived::InnerIterator i(derived(),j); i; ++i)
+    for (EvalIterator i(thisEval,j); i; ++i)
       i.valueRef() /= other;
   return derived();
 }

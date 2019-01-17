@@ -52,10 +52,14 @@ EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conju
     level3_blocking<Scalar,Scalar>& blocking)
   {
     Index cols = otherSize;
-    const_blas_data_mapper<Scalar, Index, TriStorageOrder> tri(_tri,triStride);
-    blas_data_mapper<Scalar, Index, ColMajor> other(_other,otherStride);
+
+    typedef const_blas_data_mapper<Scalar, Index, TriStorageOrder> TriMapper;
+    typedef blas_data_mapper<Scalar, Index, ColMajor> OtherMapper;
+    TriMapper tri(_tri, triStride);
+    OtherMapper other(_other, otherStride);
 
     typedef gebp_traits<Scalar,Scalar> Traits;
+
     enum {
       SmallPanelWidth   = EIGEN_PLAIN_ENUM_MAX(Traits::mr,Traits::nr),
       IsLower = (Mode&Lower) == Lower
@@ -66,22 +70,20 @@ EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conju
 
     std::size_t sizeA = kc*mc;
     std::size_t sizeB = kc*cols;
-    std::size_t sizeW = kc*Traits::WorkSpaceFactor;
 
     ei_declare_aligned_stack_constructed_variable(Scalar, blockA, sizeA, blocking.blockA());
     ei_declare_aligned_stack_constructed_variable(Scalar, blockB, sizeB, blocking.blockB());
-    ei_declare_aligned_stack_constructed_variable(Scalar, blockW, sizeW, blocking.blockW());
 
     conj_if<Conjugate> conj;
-    gebp_kernel<Scalar, Scalar, Index, Traits::mr, Traits::nr, Conjugate, false> gebp_kernel;
-    gemm_pack_lhs<Scalar, Index, Traits::mr, Traits::LhsProgress, TriStorageOrder> pack_lhs;
-    gemm_pack_rhs<Scalar, Index, Traits::nr, ColMajor, false, true> pack_rhs;
+    gebp_kernel<Scalar, Scalar, Index, OtherMapper, Traits::mr, Traits::nr, Conjugate, false> gebp_kernel;
+    gemm_pack_lhs<Scalar, Index, TriMapper, Traits::mr, Traits::LhsProgress, TriStorageOrder> pack_lhs;
+    gemm_pack_rhs<Scalar, Index, OtherMapper, Traits::nr, ColMajor, false, true> pack_rhs;
 
     // the goal here is to subdivise the Rhs panels such that we keep some cache
     // coherence when accessing the rhs elements
-    std::ptrdiff_t l1, l2;
-    manage_caching_sizes(GetAction, &l1, &l2);
-    Index subcols = cols>0 ? l2/(4 * sizeof(Scalar) *  std::max<Index>(otherStride,size)) : 0;
+    std::ptrdiff_t l1, l2, l3;
+    manage_caching_sizes(GetAction, &l1, &l2, &l3);
+    Index subcols = cols>0 ? l2/(4 * sizeof(Scalar) * std::max<Index>(otherStride,size)) : 0;
     subcols = std::max<Index>((subcols/Traits::nr)*Traits::nr, Traits::nr);
 
     for(Index k2=IsLower ? 0 : size;
@@ -148,17 +150,17 @@ EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conju
           Index blockBOffset = IsLower ? k1 : lengthTarget;
 
           // update the respective rows of B from other
-          pack_rhs(blockB+actual_kc*j2, &other(startBlock,j2), otherStride, actualPanelWidth, actual_cols, actual_kc, blockBOffset);
+          pack_rhs(blockB+actual_kc*j2, other.getSubMapper(startBlock,j2), actualPanelWidth, actual_cols, actual_kc, blockBOffset);
 
           // GEBP
           if (lengthTarget>0)
           {
             Index startTarget  = IsLower ? k2+k1+actualPanelWidth : k2-actual_kc;
 
-            pack_lhs(blockA, &tri(startTarget,startBlock), triStride, actualPanelWidth, lengthTarget);
+            pack_lhs(blockA, tri.getSubMapper(startTarget,startBlock), actualPanelWidth, lengthTarget);
 
-            gebp_kernel(&other(startTarget,j2), otherStride, blockA, blockB+actual_kc*j2, lengthTarget, actualPanelWidth, actual_cols, Scalar(-1),
-                        actualPanelWidth, actual_kc, 0, blockBOffset, blockW);
+            gebp_kernel(other.getSubMapper(startTarget,j2), blockA, blockB+actual_kc*j2, lengthTarget, actualPanelWidth, actual_cols, Scalar(-1),
+                        actualPanelWidth, actual_kc, 0, blockBOffset);
           }
         }
       }
@@ -172,16 +174,16 @@ EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conju
           const Index actual_mc = (std::min)(mc,end-i2);
           if (actual_mc>0)
           {
-            pack_lhs(blockA, &tri(i2, IsLower ? k2 : k2-kc), triStride, actual_kc, actual_mc);
+            pack_lhs(blockA, tri.getSubMapper(i2, IsLower ? k2 : k2-kc), actual_kc, actual_mc);
 
-            gebp_kernel(_other+i2, otherStride, blockA, blockB, actual_mc, actual_kc, cols, Scalar(-1), -1, -1, 0, 0, blockW);
+            gebp_kernel(other.getSubMapper(i2, 0), blockA, blockB, actual_mc, actual_kc, cols, Scalar(-1), -1, -1, 0, 0);
           }
         }
       }
     }
   }
 
-/* Optimized triangular solver with multiple left hand sides and the trinagular matrix on the right
+/* Optimized triangular solver with multiple left hand sides and the triangular matrix on the right
  */
 template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder>
 struct triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conjugate,TriStorageOrder,ColMajor>
@@ -200,8 +202,12 @@ EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conj
     level3_blocking<Scalar,Scalar>& blocking)
   {
     Index rows = otherSize;
-    const_blas_data_mapper<Scalar, Index, TriStorageOrder> rhs(_tri,triStride);
-    blas_data_mapper<Scalar, Index, ColMajor> lhs(_other,otherStride);
+    typedef typename NumTraits<Scalar>::Real RealScalar;
+
+    typedef blas_data_mapper<Scalar, Index, ColMajor> LhsMapper;
+    typedef const_blas_data_mapper<Scalar, Index, TriStorageOrder> RhsMapper;
+    LhsMapper lhs(_other, otherStride);
+    RhsMapper rhs(_tri, triStride);
 
     typedef gebp_traits<Scalar,Scalar> Traits;
     enum {
@@ -215,17 +221,15 @@ EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conj
 
     std::size_t sizeA = kc*mc;
     std::size_t sizeB = kc*size;
-    std::size_t sizeW = kc*Traits::WorkSpaceFactor;
 
     ei_declare_aligned_stack_constructed_variable(Scalar, blockA, sizeA, blocking.blockA());
     ei_declare_aligned_stack_constructed_variable(Scalar, blockB, sizeB, blocking.blockB());
-    ei_declare_aligned_stack_constructed_variable(Scalar, blockW, sizeW, blocking.blockW());
 
     conj_if<Conjugate> conj;
-    gebp_kernel<Scalar,Scalar, Index, Traits::mr, Traits::nr, false, Conjugate> gebp_kernel;
-    gemm_pack_rhs<Scalar, Index, Traits::nr,RhsStorageOrder> pack_rhs;
-    gemm_pack_rhs<Scalar, Index, Traits::nr,RhsStorageOrder,false,true> pack_rhs_panel;
-    gemm_pack_lhs<Scalar, Index, Traits::mr, Traits::LhsProgress, ColMajor, false, true> pack_lhs_panel;
+    gebp_kernel<Scalar, Scalar, Index, LhsMapper, Traits::mr, Traits::nr, false, Conjugate> gebp_kernel;
+    gemm_pack_rhs<Scalar, Index, RhsMapper, Traits::nr, RhsStorageOrder> pack_rhs;
+    gemm_pack_rhs<Scalar, Index, RhsMapper, Traits::nr, RhsStorageOrder,false,true> pack_rhs_panel;
+    gemm_pack_lhs<Scalar, Index, LhsMapper, Traits::mr, Traits::LhsProgress, ColMajor, false, true> pack_lhs_panel;
 
     for(Index k2=IsLower ? size : 0;
         IsLower ? k2>0 : k2<size;
@@ -238,7 +242,7 @@ EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conj
       Index rs = IsLower ? actual_k2 : size - actual_k2 - actual_kc;
       Scalar* geb = blockB+actual_kc*actual_kc;
 
-      if (rs>0) pack_rhs(geb, &rhs(actual_k2,startPanel), triStride, actual_kc, rs);
+      if (rs>0) pack_rhs(geb, rhs.getSubMapper(actual_k2,startPanel), actual_kc, rs);
 
       // triangular packing (we only pack the panels off the diagonal,
       // neglecting the blocks overlapping the diagonal
@@ -252,7 +256,7 @@ EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conj
 
           if (panelLength>0)
           pack_rhs_panel(blockB+j2*actual_kc,
-                         &rhs(actual_k2+panelOffset, actual_j2), triStride,
+                         rhs.getSubMapper(actual_k2+panelOffset, actual_j2),
                          panelLength, actualPanelWidth,
                          actual_kc, panelOffset);
         }
@@ -280,13 +284,12 @@ EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conj
             // GEBP
             if(panelLength>0)
             {
-              gebp_kernel(&lhs(i2,absolute_j2), otherStride,
+              gebp_kernel(lhs.getSubMapper(i2,absolute_j2),
                           blockA, blockB+j2*actual_kc,
                           actual_mc, panelLength, actualPanelWidth,
                           Scalar(-1),
                           actual_kc, actual_kc, // strides
-                          panelOffset, panelOffset, // offsets
-                          blockW);  // workspace
+                          panelOffset, panelOffset); // offsets
             }
 
             // unblocked triangular solve
@@ -304,23 +307,23 @@ EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conj
               }
               if((Mode & UnitDiag)==0)
               {
-                Scalar b = conj(rhs(j,j));
+                Scalar inv_rjj = RealScalar(1)/conj(rhs(j,j));
                 for (Index i=0; i<actual_mc; ++i)
-                  r[i] /= b;
+                  r[i] *= inv_rjj;
               }
             }
 
             // pack the just computed part of lhs to A
-            pack_lhs_panel(blockA, _other+absolute_j2*otherStride+i2, otherStride,
+            pack_lhs_panel(blockA, LhsMapper(_other+absolute_j2*otherStride+i2, otherStride),
                            actualPanelWidth, actual_mc,
                            actual_kc, j2);
           }
         }
 
         if (rs>0)
-          gebp_kernel(_other+i2+startPanel*otherStride, otherStride, blockA, geb,
+          gebp_kernel(lhs.getSubMapper(i2, startPanel), blockA, geb,
                       actual_mc, actual_kc, rs, Scalar(-1),
-                      -1, -1, 0, 0, blockW);
+                      -1, -1, 0, 0);
       }
     }
   }

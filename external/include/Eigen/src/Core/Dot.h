@@ -28,26 +28,33 @@ template<typename T, typename U,
 >
 struct dot_nocheck
 {
-  typedef typename scalar_product_traits<typename traits<T>::Scalar,typename traits<U>::Scalar>::ReturnType ResScalar;
-  static inline ResScalar run(const MatrixBase<T>& a, const MatrixBase<U>& b)
+  typedef scalar_conj_product_op<typename traits<T>::Scalar,typename traits<U>::Scalar> conj_prod;
+  typedef typename conj_prod::result_type ResScalar;
+  EIGEN_DEVICE_FUNC
+  EIGEN_STRONG_INLINE
+  static ResScalar run(const MatrixBase<T>& a, const MatrixBase<U>& b)
   {
-    return a.template binaryExpr<scalar_conj_product_op<typename traits<T>::Scalar,typename traits<U>::Scalar> >(b).sum();
+    return a.template binaryExpr<conj_prod>(b).sum();
   }
 };
 
 template<typename T, typename U>
 struct dot_nocheck<T, U, true>
 {
-  typedef typename scalar_product_traits<typename traits<T>::Scalar,typename traits<U>::Scalar>::ReturnType ResScalar;
-  static inline ResScalar run(const MatrixBase<T>& a, const MatrixBase<U>& b)
+  typedef scalar_conj_product_op<typename traits<T>::Scalar,typename traits<U>::Scalar> conj_prod;
+  typedef typename conj_prod::result_type ResScalar;
+  EIGEN_DEVICE_FUNC
+  EIGEN_STRONG_INLINE
+  static ResScalar run(const MatrixBase<T>& a, const MatrixBase<U>& b)
   {
-    return a.transpose().template binaryExpr<scalar_conj_product_op<typename traits<T>::Scalar,typename traits<U>::Scalar> >(b).sum();
+    return a.transpose().template binaryExpr<conj_prod>(b).sum();
   }
 };
 
 } // end namespace internal
 
-/** \returns the dot product of *this with other.
+/** \fn MatrixBase::dot
+  * \returns the dot product of *this with other.
   *
   * \only_for_vectors
   *
@@ -59,47 +66,23 @@ struct dot_nocheck<T, U, true>
   */
 template<typename Derived>
 template<typename OtherDerived>
-inline typename internal::scalar_product_traits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType
+EIGEN_DEVICE_FUNC
+EIGEN_STRONG_INLINE
+typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType
 MatrixBase<Derived>::dot(const MatrixBase<OtherDerived>& other) const
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived)
   EIGEN_STATIC_ASSERT_SAME_VECTOR_SIZE(Derived,OtherDerived)
+#if !(defined(EIGEN_NO_STATIC_ASSERT) && defined(EIGEN_NO_DEBUG))
   typedef internal::scalar_conj_product_op<Scalar,typename OtherDerived::Scalar> func;
   EIGEN_CHECK_BINARY_COMPATIBILIY(func,Scalar,typename OtherDerived::Scalar);
-
+#endif
+  
   eigen_assert(size() == other.size());
 
   return internal::dot_nocheck<Derived,OtherDerived>::run(*this, other);
 }
-
-#ifdef EIGEN2_SUPPORT
-/** \returns the dot product of *this with other, with the Eigen2 convention that the dot product is linear in the first variable
-  * (conjugating the second variable). Of course this only makes a difference in the complex case.
-  *
-  * This method is only available in EIGEN2_SUPPORT mode.
-  *
-  * \only_for_vectors
-  *
-  * \sa dot()
-  */
-template<typename Derived>
-template<typename OtherDerived>
-typename internal::traits<Derived>::Scalar
-MatrixBase<Derived>::eigen2_dot(const MatrixBase<OtherDerived>& other) const
-{
-  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
-  EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived)
-  EIGEN_STATIC_ASSERT_SAME_VECTOR_SIZE(Derived,OtherDerived)
-  EIGEN_STATIC_ASSERT((internal::is_same<Scalar, typename OtherDerived::Scalar>::value),
-    YOU_MIXED_DIFFERENT_NUMERIC_TYPES__YOU_NEED_TO_USE_THE_CAST_METHOD_OF_MATRIXBASE_TO_CAST_NUMERIC_TYPES_EXPLICITLY)
-
-  eigen_assert(size() == other.size());
-
-  return internal::dot_nocheck<OtherDerived,Derived>::run(other,*this);
-}
-#endif
-
 
 //---------- implementation of L2 norm and related functions ----------
 
@@ -107,7 +90,7 @@ MatrixBase<Derived>::eigen2_dot(const MatrixBase<OtherDerived>& other) const
   * In both cases, it consists in the sum of the square of all the matrix entries.
   * For vectors, this is also equals to the dot product of \c *this with itself.
   *
-  * \sa dot(), norm()
+  * \sa dot(), norm(), lpNorm()
   */
 template<typename Derived>
 EIGEN_STRONG_INLINE typename NumTraits<typename internal::traits<Derived>::Scalar>::Real MatrixBase<Derived>::squaredNorm() const
@@ -119,41 +102,98 @@ EIGEN_STRONG_INLINE typename NumTraits<typename internal::traits<Derived>::Scala
   * In both cases, it consists in the square root of the sum of the square of all the matrix entries.
   * For vectors, this is also equals to the square root of the dot product of \c *this with itself.
   *
-  * \sa dot(), squaredNorm()
+  * \sa lpNorm(), dot(), squaredNorm()
   */
 template<typename Derived>
-inline typename NumTraits<typename internal::traits<Derived>::Scalar>::Real MatrixBase<Derived>::norm() const
+EIGEN_STRONG_INLINE typename NumTraits<typename internal::traits<Derived>::Scalar>::Real MatrixBase<Derived>::norm() const
 {
-  using std::sqrt;
-  return sqrt(squaredNorm());
+  return numext::sqrt(squaredNorm());
 }
 
-/** \returns an expression of the quotient of *this by its own norm.
+/** \returns an expression of the quotient of \c *this by its own norm.
+  *
+  * \warning If the input vector is too small (i.e., this->norm()==0),
+  *          then this function returns a copy of the input.
   *
   * \only_for_vectors
   *
   * \sa norm(), normalize()
   */
 template<typename Derived>
-inline const typename MatrixBase<Derived>::PlainObject
+EIGEN_STRONG_INLINE const typename MatrixBase<Derived>::PlainObject
 MatrixBase<Derived>::normalized() const
 {
-  typedef typename internal::nested<Derived>::type Nested;
-  typedef typename internal::remove_reference<Nested>::type _Nested;
+  typedef typename internal::nested_eval<Derived,2>::type _Nested;
   _Nested n(derived());
-  return n / n.norm();
+  RealScalar z = n.squaredNorm();
+  // NOTE: after extensive benchmarking, this conditional does not impact performance, at least on recent x86 CPU
+  if(z>RealScalar(0))
+    return n / numext::sqrt(z);
+  else
+    return n;
 }
 
 /** Normalizes the vector, i.e. divides it by its own norm.
   *
   * \only_for_vectors
   *
+  * \warning If the input vector is too small (i.e., this->norm()==0), then \c *this is left unchanged.
+  *
   * \sa norm(), normalized()
   */
 template<typename Derived>
-inline void MatrixBase<Derived>::normalize()
+EIGEN_STRONG_INLINE void MatrixBase<Derived>::normalize()
 {
-  *this /= norm();
+  RealScalar z = squaredNorm();
+  // NOTE: after extensive benchmarking, this conditional does not impact performance, at least on recent x86 CPU
+  if(z>RealScalar(0))
+    derived() /= numext::sqrt(z);
+}
+
+/** \returns an expression of the quotient of \c *this by its own norm while avoiding underflow and overflow.
+  *
+  * \only_for_vectors
+  *
+  * This method is analogue to the normalized() method, but it reduces the risk of
+  * underflow and overflow when computing the norm.
+  *
+  * \warning If the input vector is too small (i.e., this->norm()==0),
+  *          then this function returns a copy of the input.
+  *
+  * \sa stableNorm(), stableNormalize(), normalized()
+  */
+template<typename Derived>
+EIGEN_STRONG_INLINE const typename MatrixBase<Derived>::PlainObject
+MatrixBase<Derived>::stableNormalized() const
+{
+  typedef typename internal::nested_eval<Derived,3>::type _Nested;
+  _Nested n(derived());
+  RealScalar w = n.cwiseAbs().maxCoeff();
+  RealScalar z = (n/w).squaredNorm();
+  if(z>RealScalar(0))
+    return n / (numext::sqrt(z)*w);
+  else
+    return n;
+}
+
+/** Normalizes the vector while avoid underflow and overflow
+  *
+  * \only_for_vectors
+  *
+  * This method is analogue to the normalize() method, but it reduces the risk of
+  * underflow and overflow when computing the norm.
+  *
+  * \warning If the input vector is too small (i.e., this->norm()==0), then \c *this is left unchanged.
+  *
+  * \sa stableNorm(), stableNormalized(), normalize()
+  */
+template<typename Derived>
+EIGEN_STRONG_INLINE void MatrixBase<Derived>::stableNormalize()
+{
+  RealScalar w = cwiseAbs().maxCoeff();
+  RealScalar z = (derived()/w).squaredNorm();
+  if(z>RealScalar(0))
+    derived() /= numext::sqrt(z)*w;
 }
 
 //---------- implementation of other norms ----------
@@ -164,9 +204,10 @@ template<typename Derived, int p>
 struct lpNorm_selector
 {
   typedef typename NumTraits<typename traits<Derived>::Scalar>::Real RealScalar;
+  EIGEN_DEVICE_FUNC
   static inline RealScalar run(const MatrixBase<Derived>& m)
   {
-    using std::pow;
+    EIGEN_USING_STD_MATH(pow)
     return pow(m.cwiseAbs().array().pow(p).sum(), RealScalar(1)/p);
   }
 };
@@ -174,6 +215,7 @@ struct lpNorm_selector
 template<typename Derived>
 struct lpNorm_selector<Derived, 1>
 {
+  EIGEN_DEVICE_FUNC
   static inline typename NumTraits<typename traits<Derived>::Scalar>::Real run(const MatrixBase<Derived>& m)
   {
     return m.cwiseAbs().sum();
@@ -183,6 +225,7 @@ struct lpNorm_selector<Derived, 1>
 template<typename Derived>
 struct lpNorm_selector<Derived, 2>
 {
+  EIGEN_DEVICE_FUNC
   static inline typename NumTraits<typename traits<Derived>::Scalar>::Real run(const MatrixBase<Derived>& m)
   {
     return m.norm();
@@ -192,23 +235,35 @@ struct lpNorm_selector<Derived, 2>
 template<typename Derived>
 struct lpNorm_selector<Derived, Infinity>
 {
-  static inline typename NumTraits<typename traits<Derived>::Scalar>::Real run(const MatrixBase<Derived>& m)
+  typedef typename NumTraits<typename traits<Derived>::Scalar>::Real RealScalar;
+  EIGEN_DEVICE_FUNC
+  static inline RealScalar run(const MatrixBase<Derived>& m)
   {
+    if(Derived::SizeAtCompileTime==0 || (Derived::SizeAtCompileTime==Dynamic && m.size()==0))
+      return RealScalar(0);
     return m.cwiseAbs().maxCoeff();
   }
 };
 
 } // end namespace internal
 
-/** \returns the \f$ \ell^p \f$ norm of *this, that is, returns the p-th root of the sum of the p-th powers of the absolute values
-  *          of the coefficients of *this. If \a p is the special value \a Eigen::Infinity, this function returns the \f$ \ell^\infty \f$
-  *          norm, that is the maximum of the absolute values of the coefficients of *this.
+/** \returns the \b coefficient-wise \f$ \ell^p \f$ norm of \c *this, that is, returns the p-th root of the sum of the p-th powers of the absolute values
+  *          of the coefficients of \c *this. If \a p is the special value \a Eigen::Infinity, this function returns the \f$ \ell^\infty \f$
+  *          norm, that is the maximum of the absolute values of the coefficients of \c *this.
+  *
+  * In all cases, if \c *this is empty, then the value 0 is returned.
+  *
+  * \note For matrices, this function does not compute the <a href="https://en.wikipedia.org/wiki/Operator_norm">operator-norm</a>. That is, if \c *this is a matrix, then its coefficients are interpreted as a 1D vector. Nonetheless, you can easily compute the 1-norm and \f$\infty\f$-norm matrix operator norms using \link TutorialReductionsVisitorsBroadcastingReductionsNorm partial reductions \endlink.
   *
   * \sa norm()
   */
 template<typename Derived>
 template<int p>
+#ifndef EIGEN_PARSED_BY_DOXYGEN
 inline typename NumTraits<typename internal::traits<Derived>::Scalar>::Real
+#else
+MatrixBase<Derived>::RealScalar
+#endif
 MatrixBase<Derived>::lpNorm() const
 {
   return internal::lpNorm_selector<Derived, p>::run(*this);
@@ -227,8 +282,8 @@ template<typename OtherDerived>
 bool MatrixBase<Derived>::isOrthogonal
 (const MatrixBase<OtherDerived>& other, const RealScalar& prec) const
 {
-  typename internal::nested<Derived,2>::type nested(derived());
-  typename internal::nested<OtherDerived,2>::type otherNested(other.derived());
+  typename internal::nested_eval<Derived,2>::type nested(derived());
+  typename internal::nested_eval<OtherDerived,2>::type otherNested(other.derived());
   return numext::abs2(nested.dot(otherNested)) <= prec * prec * nested.squaredNorm() * otherNested.squaredNorm();
 }
 
@@ -246,13 +301,13 @@ bool MatrixBase<Derived>::isOrthogonal
 template<typename Derived>
 bool MatrixBase<Derived>::isUnitary(const RealScalar& prec) const
 {
-  typename Derived::Nested nested(derived());
+  typename internal::nested_eval<Derived,1>::type self(derived());
   for(Index i = 0; i < cols(); ++i)
   {
-    if(!internal::isApprox(nested.col(i).squaredNorm(), static_cast<RealScalar>(1), prec))
+    if(!internal::isApprox(self.col(i).squaredNorm(), static_cast<RealScalar>(1), prec))
       return false;
     for(Index j = 0; j < i; ++j)
-      if(!internal::isMuchSmallerThan(nested.col(i).dot(nested.col(j)), static_cast<Scalar>(1), prec))
+      if(!internal::isMuchSmallerThan(self.col(i).dot(self.col(j)), static_cast<Scalar>(1), prec))
         return false;
   }
   return true;

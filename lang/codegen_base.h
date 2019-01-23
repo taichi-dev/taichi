@@ -149,9 +149,6 @@ class CodeGenBase : public Visitor {
 
   std::string get_source_fn();
 
-  std::string get_project_fn() {
-    return fmt::format("{}/projects/taichi_lang/", get_repo_dir());
-  }
 
   std::string get_library_fn() {
 #if defined(TC_PLATFORM_OSX)

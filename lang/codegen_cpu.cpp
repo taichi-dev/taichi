@@ -2,9 +2,9 @@
 #include <taichi/io/io.h>
 #include <set>
 
+#include "util.h"
 #include "codegen_cpu.h"
 #include "slp_vectorizer.h"
-#include "util.h"
 #include "program.h"
 #include "loop_vectorizer.h"
 #include "optimizer.h"
@@ -359,6 +359,21 @@ FunctionType Program::compile(Kernel &kernel) {
 
 std::string CodeGenBase::get_source_fn() {
   return fmt::format("{}/{}/{}", get_project_fn(), folder, source_name);
+}
+
+FunctionType CPUCodeGen::compile() {
+  write_code_to_file();
+  auto cmd = get_current_program().config.compile_cmd(get_source_fn(),
+                                                      get_library_fn());
+  auto compile_ret = std::system(cmd.c_str());
+  if (compile_ret != 0) {
+    auto cmd = get_current_program().config.compile_cmd(get_source_fn(),
+                                                        get_library_fn(), true);
+    trash(std::system(cmd.c_str()));
+    TC_ERROR("Source {} compilation failed.", get_source_fn());
+  }
+  disassemble();
+  return load_function();
 }
 
 TLANG_NAMESPACE_END

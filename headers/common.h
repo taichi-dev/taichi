@@ -634,15 +634,18 @@ inline float32x8 shuffle8x32(float32x8 a) {
       a, _mm256_set_epi32(i7, i6, i5, i4, i3, i2, i1, i0));
 };
 
-inline float32x4 blend(float32x4 a, float32x4 b, int imm) {
+template <int imm>
+inline float32x4 blend(float32x4 a, float32x4 b) {
   return _mm_blend_ps(a, b, imm);
 }
 
-inline float32x8 blend(float32x8 a, float32x8 b, int imm) {
+template <int imm>
+inline float32x8 blend(float32x8 a, float32x8 b) {
   return _mm256_blend_ps(a, b, imm);
 }
 
-inline int32x8 blend(int32x8 a, int32x8 b, int imm) {
+template <int imm>
+inline int32x8 blend(int32x8 a, int32x8 b) {
   return _mm256_blend_epi32(a, b, imm);
 }
 

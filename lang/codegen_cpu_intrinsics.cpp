@@ -131,8 +131,8 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       for (int i = 0; i < expr->lanes; i++) {
         mask += int(!expr->active(i)) << i;
       }
-      emit_code("{}_output = blend({}, {}_output, {});", expr->var_name,
-                expr[1]->var_name, expr->var_name, mask);
+      emit_code("{}_output = blend<{}>({}, {}_output);", expr->var_name,
+                mask, expr[1]->var_name, expr->var_name);
       emit_code("{}_output.store({}_addr);", expr->var_name, expr->var_name);
     } else {
       emit_code("{}.store({}_addr);", expr[1]->var_name, expr->var_name);
@@ -409,7 +409,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
       if (k == 0) {
         emit_code("{} = {};", v, shuffled);
       } else {
-        emit_code("{} = blend({}, {}, {});", v, v, shuffled, mask);
+        emit_code("{} = blend<{}>({}, {});", v, mask, v, shuffled);
       }
     }
   } else if (expr->type == NodeType::touch) {

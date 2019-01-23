@@ -25,7 +25,8 @@ struct IndexExtractor {
 struct Matrix;
 
 // "Structural" nodes
-struct SNode {
+class SNode {
+public:
   std::vector<Handle<SNode>> ch;
 
   IndexExtractor extractors[max_num_indices];

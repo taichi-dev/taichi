@@ -2,6 +2,13 @@
 
 #include <taichi/common/util.h>
 #include <taichi/io/io.h>
+namespace taichi {
+namespace math {
+inline int maximum(int a) {
+  return a;
+}
+}  // namespace math
+}  // namespace taichi
 #include <taichi/math.h>
 #include <set>
 #include <dlfcn.h>
@@ -72,7 +79,6 @@ inline void reduce(Expr target, Expr value) {
 inline Expr global(Expr e) {
   return e[ExprGroup()];
 }
-
 
 TLANG_NAMESPACE_END
 

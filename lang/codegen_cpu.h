@@ -278,24 +278,7 @@ class CPUCodeGen : public CodeGenBase {
 
   void visit_vv(Expr &expr){TC_NOT_IMPLEMENTED}
 
-  // group_size should be batch_size here...
-  FunctionType compile() {
-    write_code_to_file();
-    auto verbose_cmd = fmt::format(
-        "g++-{} {} -fopenmp -std=c++14 -shared -fPIC {} -march=native -I "
-        "{}/headers -Wall "
-        "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {}",
-        prog->config.gcc_version, get_source_fn(), prog->config.gcc_opt_flag(),
-        get_project_fn(), get_library_fn());
-    auto clean_cmd = fmt::format("{} 2> {}.log", verbose_cmd, get_source_fn());
-    auto compile_ret = std::system(clean_cmd.c_str());
-    if (compile_ret != 0) {
-      trash(std::system(verbose_cmd.c_str()));
-      TC_ERROR("Source {} compilation failed.", get_source_fn());
-    }
-    disassemble();
-    return load_function();
-  }
+  FunctionType compile();
 
   FunctionType get(Program &prog, Kernel &kernel);
 };

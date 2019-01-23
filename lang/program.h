@@ -5,7 +5,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-struct Program;
+class Program;
 extern Program *current_program;
 extern SNode root;
 
@@ -63,9 +63,11 @@ struct Adapter {
   }
 };
 
-struct Program {
+class Program {
+public:
   // Should be copiable
-  struct Kernel {
+  class Kernel {
+  public:
     Program &program;
     FunctionType compiled;
     std::vector<Adapter> adapters;

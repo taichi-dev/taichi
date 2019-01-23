@@ -276,23 +276,13 @@ class StructCompiler : public CodeGenBase {
         root_type);
     write_code_to_file();
 
-    auto cmd = fmt::format(
-        "g++-{} {} -std=c++14 -shared -fPIC {} -march=native -I {}/headers "
-        "-Wall "
-        "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} 2> {}.log",
-        get_current_program().config.gcc_version, get_source_fn(),
-        get_current_program().config.gcc_opt_flag(), get_project_fn(),
-        get_library_fn(), get_source_fn());
+    auto cmd = get_current_program().config.compile_cmd(get_source_fn(),
+                                                        get_library_fn());
     auto compile_ret = std::system(cmd.c_str());
 
     if (compile_ret != 0) {
-      auto cmd = fmt::format(
-          "g++-{} {} -std=c++14 -shared -fPIC {} -march=native -I {}/headers "
-          "-Wall "
-          "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {}",
-          get_current_program().config.gcc_version, get_source_fn(),
-          get_current_program().config.gcc_opt_flag(), get_project_fn(),
-          get_library_fn());
+      auto cmd = get_current_program().config.compile_cmd(
+          get_source_fn(), get_library_fn(), true);
       trash(std::system(cmd.c_str()));
       TC_ERROR("Compilation failed");
     }

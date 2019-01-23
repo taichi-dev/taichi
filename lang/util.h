@@ -13,6 +13,10 @@
 
 TLANG_NAMESPACE_BEGIN
 
+inline std::string get_project_fn() {
+  return fmt::format("{}/projects/taichi_lang/", get_repo_dir());
+}
+
 template <typename T>
 using Handle = std::shared_ptr<T>;
 
@@ -45,8 +49,20 @@ struct CompileConfig {
     arch = Arch::x86_64;
     simd_width = default_simd_width(arch);
     internal_optimization = true;
-    external_optimization_level = 3;  // not 3 for faster compilation
-    gcc_version = 5;                  // not 7 for faster compilation
+    external_optimization_level = 3;
+#if defined(TC_PLATFORM_OSX)
+    gcc_version = -1;
+#else
+    gcc_version = 5;  // not 7 for faster compilation
+#endif
+  }
+
+  std::string compiler_name() {
+    if (gcc_version == -1) {
+      return "gcc";
+    } else {
+      return fmt::format("gcc-{}", gcc_version);
+    }
   }
 
   std::string gcc_opt_flag() {
@@ -56,6 +72,21 @@ struct CompileConfig {
       return fmt::format("-O{}", external_optimization_level);
     } else
       return "-Ofast";
+  }
+
+  std::string compile_cmd(const std::string &input,
+                          const std::string &output,
+                          bool verbose = false) {
+    auto cmd = fmt::format(
+        "{} {} -std=c++14 -shared -fPIC {} -march=native -I {}/headers "
+        "-Wall "
+        "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} -lstdc++",
+        compiler_name(), input, gcc_opt_flag(), get_project_fn(), output);
+
+    if (!verbose) {
+      cmd += fmt::format(" 2> {}.log", input);
+    }
+    return cmd;
   }
 };
 

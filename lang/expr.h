@@ -68,6 +68,13 @@ class Expr {
 
   static Expr index(int i = -1);
 
+  static Expr load(const Expr &in) {
+    TC_ASSERT(in->type == NodeType::pointer);
+    auto n = create(NodeType::load, in);
+    n->data_type = in->data_type;
+    return n;
+  }
+
   static Expr load_if_pointer(const Expr &in) {
     if (in->type == NodeType::pointer) {
       auto n = create(NodeType::load, in);
@@ -78,16 +85,15 @@ class Expr {
     }
   }
 
-#define REGULAR_BINARY_OP(op, name)                                \
-  Expr operator op(const Expr &o) const {                          \
-    TC_ERROR_IF(node->data_type != o->data_type,                   \
-                "data type mismatch: lhs = {}, rhs = {}",          \
-                node->data_type_name(), o->data_type_name());      \
-    auto t = Expr::create(NodeType::binary, load_if_pointer(node), \
-                          load_if_pointer(o.node));                \
-    t->data_type = o->data_type;                                   \
-    t->binary_type = BinaryType::name;                             \
-    return t;                                                      \
+#define REGULAR_BINARY_OP(op, name)                           \
+  Expr operator op(const Expr &o) const {                     \
+    TC_ERROR_IF(node->data_type != o->data_type,              \
+                "data type mismatch: lhs = {}, rhs = {}",     \
+                node->data_type_name(), o->data_type_name()); \
+    auto t = Expr::create(NodeType::binary, node, o.node);    \
+    t->data_type = o->data_type;                              \
+    t->binary_type = BinaryType::name;                        \
+    return t;                                                 \
   }
 
 #define BINARY_OP(op, name)                                      \

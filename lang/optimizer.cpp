@@ -289,7 +289,6 @@ class Vload1Optimizer : public Optimizer {
     for (int i = 0; i + 1 < index_node->lanes; i++) {
       auto ret = AddressAnalyzer(i, i + 1).run(index_node);
       if (!ret.first) {
-        TC_TAG;
         return false;
       } else {
         if (ret.second != 0) {

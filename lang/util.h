@@ -178,9 +178,9 @@ DataType get_data_type() {
 }
 
 inline std::string data_type_name(DataType t) {
-  static std::map<DataType, std::string> data_type_names;
-  if (data_type_names.empty()) {
-#define REGISTER_DATA_TYPE(i, j) data_type_names[DataType::i] = #j;
+  static std::map<DataType, std::string> type_names;
+  if (type_names.empty()) {
+#define REGISTER_DATA_TYPE(i, j) type_names[DataType::i] = #j;
     REGISTER_DATA_TYPE(f16, float16);
     REGISTER_DATA_TYPE(f32, float32);
     REGISTER_DATA_TYPE(f64, float64);
@@ -195,7 +195,7 @@ inline std::string data_type_name(DataType t) {
     REGISTER_DATA_TYPE(unknown, unknown);
 #undef REGISTER_DATA_TYPE
   }
-  return data_type_names[t];
+  return type_names[t];
 }
 
 enum class SNodeType {

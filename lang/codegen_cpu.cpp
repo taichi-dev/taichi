@@ -10,6 +10,7 @@
 #include "optimizer.h"
 #include "adapter_preprocessor.h"
 #include "vector_splitter.h"
+#include "desugaring.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -269,6 +270,7 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   }
 
   auto transforms = [&](Expr &ret, int group_size) {
+    ret = Desugaring().run(ret);
     ret = SLPVectorizer().run(ret, group_size);
     // visualize_IR(get_source_fn() + ".slp.pdf", kernel.ret);
     ret = LoopVectorizer().run(ret, prog->current_snode, num_groups);

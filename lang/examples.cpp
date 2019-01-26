@@ -9,7 +9,7 @@ using namespace Tlang;
 
 auto mpm = []() {
   Program prog(Arch::x86_64);
-  prog.config.gcc_version = 7;
+  // prog.config.gcc_version = 7;
 
   constexpr int n = 128;  // grid_resolution
   const real dt = 3e-5_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
@@ -104,9 +104,9 @@ auto mpm = []() {
   });
 
   auto grid_op = kernel(grid_m, [&]() {
-    auto v0 = load(grid_v[i, j](0));
-    auto v1 = load(grid_v[i, j](1));
-    auto m = load(grid_m[i, j]);
+    auto v0 = grid_v[i, j](0);
+    auto v1 = grid_v[i, j](1);
+    auto m = grid_m[i, j];
 
     // auto inv_m = imm(1.0_f) / max(m, imm(1e-37_f));
     auto inv_m = imm(1.0_f) / m;
@@ -219,7 +219,7 @@ TC_REGISTER_TASK(mpm);
 
 auto advection = []() {
   Program prog;
-  prog.config.gcc_version = 5;
+  // prog.config.gcc_version = 5;
 
   bool use_adapter = true;
 

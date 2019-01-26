@@ -76,10 +76,9 @@ class Expr {
   }
 
   static Expr load_if_pointer(const Expr &in) {
+    TC_WARN("Expr::load_if_pointer is deprecated");
     if (in->type == NodeType::pointer) {
-      auto n = create(NodeType::load, in);
-      n->data_type = in->data_type;
-      return n;
+      return load(in);
     } else {
       return in;
     }
@@ -101,8 +100,8 @@ class Expr {
     TC_ERROR_IF(node->data_type != o->data_type,                 \
                 "data type mismatch: lhs = {}, rhs = {}",        \
                 node->data_type_name(), o->data_type_name());    \
-    auto t = Expr::create(NodeType::name, load_if_pointer(node), \
-                          load_if_pointer(o.node));              \
+    auto t = Expr::create(NodeType::name, node, \
+                          o.node);              \
     t->data_type = o->data_type;                                 \
     return t;                                                    \
   }

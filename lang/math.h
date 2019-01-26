@@ -206,7 +206,7 @@ inline Matrix operator-(const Matrix &A, const Matrix &B) {
 using Vector = Matrix;
 
 inline Expr operator-(const Expr &a) {
-  auto n = Expr::create(NodeType::neg, Expr::load_if_pointer(a));
+  auto n = Expr::create(NodeType::neg, a);
   n->data_type = a->data_type;
   return n;
 }
@@ -222,19 +222,19 @@ inline Matrix operator-(const Matrix &A) {
 }
 
 inline Expr floor(const Expr &a) {
-  auto n = Expr::create(NodeType::floor, Expr::load_if_pointer(a));
+  auto n = Expr::create(NodeType::floor, a);
   n->data_type = a->data_type;
   return n;
 }
 
 inline Expr sqrt(const Expr &a) {
-  auto n = Expr::create(NodeType::sqrt, Expr::load_if_pointer(a));
+  auto n = Expr::create(NodeType::sqrt, a);
   n->data_type = a->data_type;
   return n;
 }
 
 inline Expr inv(const Expr &a) {
-  auto n = Expr::create(NodeType::inv, Expr::load_if_pointer(a));
+  auto n = Expr::create(NodeType::inv, a);
   n->data_type = a->data_type;
   return n;
 }

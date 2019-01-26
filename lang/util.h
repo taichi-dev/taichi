@@ -233,18 +233,19 @@ inline std::string snode_type_name(SNodeType t) {
 enum class BinaryType : int { mul, add, sub, div, mod, max, min, undefined };
 
 inline std::string binary_type_name(BinaryType type) {
-  static std::map<BinaryType, std::string> binary_type_names;
-  if (binary_type_names.empty()) {
-#define REGISTER_BINARY_TYPE(i) binary_type_names[BinaryType::i] = #i;
-    REGISTER_BINARY_TYPE(mul);
-    REGISTER_BINARY_TYPE(add);
-    REGISTER_BINARY_TYPE(sub);
-    REGISTER_BINARY_TYPE(div);
-    REGISTER_BINARY_TYPE(mod);
-    REGISTER_BINARY_TYPE(max);
-    REGISTER_BINARY_TYPE(min);
+  static std::map<BinaryType, std::string> type_names;
+  if (type_names.empty()) {
+#define REGISTER_TYPE(i) type_names[BinaryType::i] = #i;
+    REGISTER_TYPE(mul);
+    REGISTER_TYPE(add);
+    REGISTER_TYPE(sub);
+    REGISTER_TYPE(div);
+    REGISTER_TYPE(mod);
+    REGISTER_TYPE(max);
+    REGISTER_TYPE(min);
+#undef REGISTER_TYPE
   }
-  return binary_type_names[type];
+  return type_names[type];
 }
 
 enum class NodeType : int {
@@ -280,38 +281,39 @@ enum class NodeType : int {
 };
 
 inline std::string node_type_name(NodeType type) {
-  static std::map<NodeType, std::string> node_type_names;
-  if (node_type_names.empty()) {
-#define REGISTER_NODE_TYPE(i) node_type_names[NodeType::i] = #i;
-    REGISTER_NODE_TYPE(binary);
-    REGISTER_NODE_TYPE(land);
-    REGISTER_NODE_TYPE(load);
-    REGISTER_NODE_TYPE(store);
-    REGISTER_NODE_TYPE(combine);
-    REGISTER_NODE_TYPE(addr);
-    REGISTER_NODE_TYPE(pointer);
-    REGISTER_NODE_TYPE(adapter_store);
-    REGISTER_NODE_TYPE(adapter_load);
-    REGISTER_NODE_TYPE(imm);
-    REGISTER_NODE_TYPE(index);
-    REGISTER_NODE_TYPE(floor);
-    REGISTER_NODE_TYPE(sqrt);
-    REGISTER_NODE_TYPE(inv);
-    REGISTER_NODE_TYPE(neg);
-    REGISTER_NODE_TYPE(cast);
-    REGISTER_NODE_TYPE(shr);
-    REGISTER_NODE_TYPE(shl);
-    REGISTER_NODE_TYPE(cmp);
-    REGISTER_NODE_TYPE(vload);
-    REGISTER_NODE_TYPE(vload1);
-    REGISTER_NODE_TYPE(vstore);
-    REGISTER_NODE_TYPE(touch);
-    REGISTER_NODE_TYPE(select);
-    REGISTER_NODE_TYPE(print);
-    REGISTER_NODE_TYPE(reduce);
-    REGISTER_NODE_TYPE(gather);
+  static std::map<NodeType, std::string> type_names;
+  if (type_names.empty()) {
+#define REGISTER_TYPE(i) type_names[NodeType::i] = #i;
+    REGISTER_TYPE(binary);
+    REGISTER_TYPE(land);
+    REGISTER_TYPE(load);
+    REGISTER_TYPE(store);
+    REGISTER_TYPE(combine);
+    REGISTER_TYPE(addr);
+    REGISTER_TYPE(pointer);
+    REGISTER_TYPE(adapter_store);
+    REGISTER_TYPE(adapter_load);
+    REGISTER_TYPE(imm);
+    REGISTER_TYPE(index);
+    REGISTER_TYPE(floor);
+    REGISTER_TYPE(sqrt);
+    REGISTER_TYPE(inv);
+    REGISTER_TYPE(neg);
+    REGISTER_TYPE(cast);
+    REGISTER_TYPE(shr);
+    REGISTER_TYPE(shl);
+    REGISTER_TYPE(cmp);
+    REGISTER_TYPE(vload);
+    REGISTER_TYPE(vload1);
+    REGISTER_TYPE(vstore);
+    REGISTER_TYPE(touch);
+    REGISTER_TYPE(select);
+    REGISTER_TYPE(print);
+    REGISTER_TYPE(reduce);
+    REGISTER_TYPE(gather);
+#undef REGISTER_TYPE
   }
-  return node_type_names[type];
+  return type_names[type];
 }
 
 enum class CmpType { eq, ne, le, lt };

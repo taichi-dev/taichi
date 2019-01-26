@@ -10,7 +10,6 @@ using namespace Tlang;
 auto mpm = []() {
   Program prog(Arch::x86_64);
   prog.config.gcc_version = 7;
-  bool use_adapter = true;
 
   constexpr int n = 128;  // grid_resolution
   const real dt = 3e-5_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;

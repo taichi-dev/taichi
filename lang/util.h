@@ -249,7 +249,7 @@ inline std::string binary_type_name(BinaryType type) {
 }
 
 enum class NodeType : int {
-  binary,  // regular binary
+  binary,  // regular binary operators that work for both int and float, and return the same type
   land,
   load,
   store,
@@ -277,6 +277,10 @@ enum class NodeType : int {
   print,
   reduce,
   gather,
+  // locals
+  alloca, // allocate on stack (local variable)
+  local_load,
+  local_store,
   undefined
 };
 

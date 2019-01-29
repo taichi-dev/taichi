@@ -80,6 +80,13 @@ inline Expr global(Expr e) {
   return e[ExprGroup()];
 }
 
+template <typename T>
+inline Expr local() {
+  auto e = Expr::create(NodeType::alloca);
+  e->data_type = get_data_type<T>();
+  return e;
+}
+
 TLANG_NAMESPACE_END
 
 TC_NAMESPACE_BEGIN

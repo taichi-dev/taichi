@@ -230,7 +230,22 @@ inline std::string snode_type_name(SNodeType t) {
 // Operations that take two oprands, and returns a single operand with the same
 // type
 
-enum class BinaryType : int { mul, add, sub, div, mod, max, min, undefined };
+enum class BinaryType : int {
+  mul,
+  add,
+  sub,
+  div,
+  mod,
+  max,
+  min,
+  cmp_lt,
+  cmp_le,
+  cmp_gt,
+  cmp_ge,
+  cmp_eq,
+  cmp_ne,
+  undefined
+};
 
 inline std::string binary_type_name(BinaryType type) {
   static std::map<BinaryType, std::string> type_names;
@@ -249,7 +264,8 @@ inline std::string binary_type_name(BinaryType type) {
 }
 
 enum class NodeType : int {
-  binary,  // regular binary operators that work for both int and float, and return the same type
+  binary,  // regular binary operators that work for both int and float, and
+           // return the same type
   land,
   load,
   store,
@@ -278,7 +294,7 @@ enum class NodeType : int {
   reduce,
   gather,
   // locals
-  alloca, // allocate on stack (local variable)
+  alloca,  // allocate on stack (local variable)
   local_load,
   local_store,
   undefined

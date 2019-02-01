@@ -9,7 +9,7 @@ add_subdirectory(external/partio)
 include_directories(external/partio/include)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 
-add_library(taichi_pangu SHARED ${PROJECT_SOURCES})
+add_library(taichi_pangu SHARED ${PROJECT_SOURCES} lang/ast.cpp)
 target_link_libraries(taichi_pangu ${CORE_LIBRARY_NAME} partio)
 
 find_package(CUDA 8.0)

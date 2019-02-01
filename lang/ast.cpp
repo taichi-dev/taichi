@@ -143,11 +143,19 @@ Identifier Identifier::operator=(const Identifier &o) {
   TC_NOT_IMPLEMENTED;
 }
 
+class For {
+ public:
+  For(Id i, Id s, Id e, std::function<void()> func) {
+  }
+};
+
 auto test_ast = []() {
-  Id a, b;
+  Id a, b, i, j;
 
   Var(a);
   Var(b);
+  Var(i);
+  Var(j);
 
   a = a + 1;
 
@@ -160,6 +168,13 @@ auto test_ast = []() {
         b = b + 2;
         b = b - 4;
       });
+
+  For(i, 0, 100, [&] {
+    For(j, 0, 200, [&] {
+
+    });
+  });
+
   Print(b);
 };
 

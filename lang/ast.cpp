@@ -4,49 +4,64 @@ TLANG_NAMESPACE_BEGIN
 
 class ASTPrinter : public ASTVisitor {
  public:
+  int current_indent;
+
+  ASTPrinter() {
+    current_indent = -1;
+  }
+
+  template <typename... Args>
+  void print(std::string f, Args &&... args) {
+    for (int i = 0; i < current_indent; i++)
+      fmt::print("  ");
+    fmt::print(f, std::forward<Args>(args)...);
+    fmt::print("\n");
+  }
+
   static void run(ASTNode &node) {
     auto p = ASTPrinter();
     node.accept(p);
   }
 
   void visit(StatementList &stmt_list) {
+    current_indent++;
     for (auto &stmt : stmt_list.statements) {
       stmt->accept(*this);
     }
+    current_indent--;
   }
 
   void visit(AssignmentStatement &assign) {
-    fmt::print("{} <- {}\n", assign.lhs.name(), assign.rhs.name());
+    print("{} <- {}", assign.lhs.name(), assign.rhs.name());
   }
 
   void visit(AllocaStatement &alloca) {
-    fmt::print("{} <- alloca {}\n", alloca.lhs.name(),
-               data_type_name(alloca.type));
+    print("{} <- alloca {}", alloca.lhs.name(), data_type_name(alloca.type));
   }
 
   void visit(BinaryOpStatement &bin) {
-    fmt::print("{} <- {} {} {}\n", bin.lhs.name(), binary_type_name(bin.type),
-               bin.rhs1.name(), bin.rhs2.name());
+    print("{} <- {} {} {}", bin.lhs.name(), binary_type_name(bin.type),
+          bin.rhs1.name(), bin.rhs2.name());
   }
 
   void visit(IfStatement &if_stmt) {
-    fmt::print("if ({}) {{\n", if_stmt.condition.name());
+    print("if ({}) {{", if_stmt.condition.name());
     if (if_stmt.true_statements)
       if_stmt.true_statements->accept(*this);
     if (if_stmt.false_statements) {
-      fmt::print("}} else {{\n");
+      print("}} else {{");
       if_stmt.false_statements->accept(*this);
     }
-    fmt::print("}}\n");
+    print("}}");
   }
 
-  void visit(PrintStatement &print) {
-    fmt::print("print {}\n", print.id.name());
+  void visit(PrintStatement &print_stmt) {
+    print("print {}", print_stmt.id.name());
   }
 
   void visit(ConstStatement &const_stmt) {
-    fmt::print("{} = const<{}>({})\n", const_stmt.id.name(),
-               data_type_name(const_stmt.data_type), const_stmt.value);
+    print("{} = const<{}>({})", const_stmt.id.name(),
+          data_type_name(const_stmt.data_type), const_stmt.value);
   }
 };
 
@@ -61,7 +76,6 @@ auto test_ast = []() {
   a = a + b;
   Print(a);
   If(a < 500).Then([&] { Print(b); }).Else([&] { Print(a); });
-  /*
 
   If(a > 5)
       .Then([&] {
@@ -72,14 +86,13 @@ auto test_ast = []() {
         b = b + 2;
         b = b - 4;
       });
-
+  /*
   For(i, 0, 100, [&] {
     For(j, 0, 200, [&] {
       Id k = i + j;
       While(k < 500, [&] { Print(k); });
     });
   });
-
   Print(b);
   */
 

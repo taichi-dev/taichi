@@ -2,6 +2,34 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class ASTPrinter : public ASTVisitor {
+ public:
+  static void run(ASTNode &node) {
+    auto p = ASTPrinter();
+    node.accept(p);
+  }
+
+  void visit(StatementList &stmt_list) {
+    for (auto &stmt : stmt_list.statements) {
+      stmt->accept(*this);
+    }
+  }
+
+  void visit(AssignmentStatement &assign) {
+    fmt::print("{} <- {}\n", assign.lhs.name(), assign.rhs.name());
+  }
+
+  void visit(AllocaStatement &alloca) {
+    fmt::print("{} <- alloca {}\n", alloca.lhs.name(),
+               data_type_name(alloca.type));
+  }
+
+  void visit(BinaryOpStatement &bin) {
+    fmt::print("{} <- {} {} {}\n", bin.lhs.name(), binary_type_name(bin.type),
+               bin.rhs1.name(), bin.rhs2.name());
+  }
+};
+
 auto test_ast = []() {
   Id a, b, i, j;
 
@@ -10,8 +38,8 @@ auto test_ast = []() {
   Var(i);
   Var(j);
 
+  a = a + b;
   /*
-  a = a + 1;
 
   If(a > 5)
       .Then([&] {

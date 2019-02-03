@@ -90,7 +90,7 @@ class Identifier {
   operator=(const Identifier &o);
 
   std::string name() {
-    return fmt::format("%{}", id);
+    return fmt::format("id_{}", id);
   }
 };
 
@@ -99,12 +99,23 @@ int Identifier::id_counter = 0;
 using Id = Identifier;
 class AssignmentStatement;
 class AllocaStatement;
+class BinaryOpStatement;
+class UnaryOpStatement;
+class IfStatement;
 
 class ASTVisitor {
  public:
-  virtual void visit(StatementList &stmt) = 0;
-  virtual void visit(AssignmentStatement &stmt) = 0;
-  virtual void visit(AllocaStatement &stmt) = 0;
+#define DEFINE_VISIT(T)         \
+  virtual void visit(T &stmt) { \
+    TC_NOT_IMPLEMENTED;         \
+  }
+
+  DEFINE_VISIT(StatementList);
+  DEFINE_VISIT(AssignmentStatement);
+  DEFINE_VISIT(AllocaStatement);
+  DEFINE_VISIT(BinaryOpStatement);
+  DEFINE_VISIT(UnaryOpStatement);
+  DEFINE_VISIT(IfStatement);
 };
 
 class ASTNode {
@@ -113,6 +124,11 @@ class ASTNode {
     TC_NOT_IMPLEMENTED
   }
 };
+
+#define DEFINE_ACCEPT                \
+  void accept(ASTVisitor &visitor) { \
+    visitor.visit(*this);            \
+  }
 
 class Statement : public ASTNode {};
 
@@ -123,21 +139,17 @@ class StatementList : public Statement {
     statements.push_back(stmt);
   }
 
-  void accept(ASTVisitor &visitor) {
-    visitor.visit(*this);
-  }
+  DEFINE_ACCEPT
 };
 
 class AssignmentStatement : public Statement {
  public:
   Id lhs, rhs;
 
-  AssignmentStatement() {
+  AssignmentStatement(Id lhs, Id rhs) : lhs(lhs), rhs(rhs) {
   }
 
-  void accept(ASTVisitor &visitor) override {
-    visitor.visit(*this);
-  }
+  DEFINE_ACCEPT
 };
 
 class AllocaStatement : public Statement {
@@ -147,46 +159,24 @@ class AllocaStatement : public Statement {
 
   AllocaStatement(Id lhs, DataType type) : lhs(lhs), type(type) {
   }
-  void accept(ASTVisitor &visitor) {
-    visitor.visit(*this);
-  }
+  DEFINE_ACCEPT
 };
 
-class ASTPrinter : public ASTVisitor {
- public:
-  static void run(ASTNode &node) {
-    auto p = ASTPrinter();
-    node.accept(p);
-  }
-
-  void visit(StatementList &stmt_list) {
-    for (auto &stmt : stmt_list.statements) {
-      stmt->accept(*this);
-    }
-  }
-
-  void visit(AssignmentStatement &assign) {
-    fmt::print("{} <- {}", assign.lhs.name(), assign.rhs.name());
-  }
-
-  void visit(AllocaStatement &alloca) {
-    fmt::print("{} <- alloca {}", alloca.lhs.name(),
-               data_type_name(alloca.type));
-  }
-};
-
-class BinaryOpStmt : public Statement {
+class BinaryOpStatement : public Statement {
  public:
   BinaryType type;
   Id lhs, rhs1, rhs2;
 
-  BinaryOpStmt(BinaryType type, Id lhs, Id rhs1, Id rhs2)
+  BinaryOpStatement(BinaryType type, Id lhs, Id rhs1, Id rhs2)
       : type(type), lhs(lhs), rhs1(rhs1), rhs2(rhs2) {
   }
 
+  DEFINE_ACCEPT
 };
 
-class UnaryOp : public ASTNode {};
+class UnaryOpStatement : public Statement {
+  DEFINE_ACCEPT
+};
 
 class IfStatement : public Statement {
   Id condition;
@@ -199,6 +189,8 @@ class IfStatement : public Statement {
         true_statements(true_statements),
         false_statements(false_statements) {
   }
+
+  DEFINE_ACCEPT
 };
 
 class If {
@@ -231,12 +223,12 @@ void Var(Id &a) {
 void Print(Id &a) {
 }
 
-#define DEF_BINARY_OP(Op, name)                                      \
-  Identifier operator Op(const Identifier &a, const Identifier &b) { \
-    Identifier c;                                                    \
-    current_ast_builder().insert(                                    \
-        std::make_shared<BinaryOpStmt>(BinaryType::name, c, a, b));  \
-    return c;                                                        \
+#define DEF_BINARY_OP(Op, name)                                          \
+  Identifier operator Op(const Identifier &a, const Identifier &b) {     \
+    Identifier c;                                                        \
+    current_ast_builder().insert(                                        \
+        std::make_shared<BinaryOpStatement>(BinaryType::name, c, a, b)); \
+    return c;                                                            \
   }
 
 DEF_BINARY_OP(+, add);
@@ -253,7 +245,7 @@ DEF_BINARY_OP(!=, cmp_ne);
 #undef DEF_BINARY_OP
 
 Identifier Identifier::operator=(const Identifier &o) {
-  TC_NOT_IMPLEMENTED;
+  context.builder().insert(std::make_shared<AssignmentStatement>(*this, o));
 }
 
 class For {

@@ -120,65 +120,6 @@ class GPUCodeGen : public CodeGenBase {
     emit_code("}\n");
   }
 
-  void visit(Expr &expr) override {
-    /*
-    TC_ASSERT(expr->is_vectorized);
-    TC_ASSERT(expr->members.size() == 0 ||
-              (int)expr->members.size() == group_size);
-    if (expr->type == NodeType::addr) {
-      return;
-    }
-    // TC_P(expr->ch.size());
-    if (expr->var_name == "")
-      expr->var_name = create_variable();
-    else
-      return;  // visited
-    if (binary_ops.find(expr->type) != binary_ops.end()) {
-      auto op = binary_ops[expr->type];
-      emit_code("auto {} = {} {} {}; \\\n", expr->var_name,
-                expr->ch[0]->var_name, op, expr->ch[1]->var_name);
-    } else if (expr->type == NodeType::load) {
-      auto buffer_name = fmt::format("buffer{:02d}", expr->addr().buffer_id);
-      std::vector<int> offsets;
-      for (int i = 0; i + 1 < (int)expr->members.size(); i++) {
-        TC_ASSERT(
-            expr->members[i]->addr().same_type(expr->members[i + 1]->addr()));
-      }
-      for (int i = 0; i < (int)expr->members.size(); i++) {
-        offsets.push_back(expr->members[i]->addr().offset());
-      }
-      auto addr = expr->addr();
-      auto i_stride = num_groups;
-      TC_ASSERT(i_stride == addr.coeff_aosoa_group_size);
-      if (addr.coeff_const % simd_width != 0) {
-        addr.coeff_const -= addr.coeff_const % simd_width;
-      }
-
-      if (group_size > 1) {
-        // detect patterns
-        int offset_const = offsets[0] % simd_width;
-        int offset_inc = offsets[1] - offsets[0];
-        for (int i = 0; i + 1 < (int)offsets.size(); i++) {
-          TC_ASSERT(offset_inc == offsets[i + 1] - offsets[i]);
-        }
-        emit_code("auto {} = {}; \\\n", expr->var_name,
-                  get_vectorized_address(addr, offset_const, offset_inc));
-      } else {
-        emit_code("auto {} = {}; \\\n", expr->var_name,
-                  get_vectorized_address(addr));
-      }
-    } else if (expr->type == NodeType::store) {
-      emit_code("{} = {}; \\\n", get_vectorized_address(expr->addr()),
-                expr->ch[1]->var_name);
-    } else if (expr->type == NodeType::combine) {
-      // do nothing
-    } else {
-      TC_P((int)expr->type);
-      TC_NOT_IMPLEMENTED;
-    }
-    */
-  }
-
   // group_size should be batch_size here...
   FunctionType compile() {
     write_code_to_file();
@@ -208,44 +149,6 @@ class GPUCodeGen : public CodeGenBase {
     codegen(vectorized_expr, group_size);
     return compile();
   }
-
-  // Create vectorized IR for the root node
-  // the vector width should be the final SIMD instruction width
-  std::string get_vectorized_address(Address addr,
-                                     int extra_offset = 0,
-                                     int g_idx_inc = 1) {
-    TC_ASSERT(addr.buffer_id != -1);
-    auto buffer_name =
-        fmt::format("context.get_buffer<float32>({:02d})", addr.buffer_id);
-    auto warp_stride =
-        addr.coeff_i * num_groups +
-        num_groups / addr.coeff_aosoa_group_size * addr.coeff_aosoa_stride;
-    auto offset = addr.coeff_const;
-    return fmt::format(
-        "{}[{} * n + {} * (g + loop_index) + sub_g_id * {} + {} + {} + g_idx * "
-        "{}]",
-        buffer_name, addr.coeff_imax, warp_stride, addr.coeff_i, offset,
-        extra_offset, (g_idx_inc));
-  }
-
-  /*
-  std::string get_vectorized_index(Address addr,
-                                   int extra_offset = 0,
-                                   int g_idx_inc = 1) {
-    TC_ASSERT(addr.buffer_id != -1);
-    auto buffer_name =
-        fmt::format("context.get_buffer<float32>({:02d})", addr.buffer_id);
-    auto warp_stride =
-        addr.coeff_i * num_groups +
-        num_groups / addr.coeff_aosoa_group_size * addr.coeff_aosoa_stride;
-    auto offset = addr.coeff_const;
-    return fmt::format(
-        "{} * n + {} * (g + loop_index) + sub_g_id * {} + {} + {} + g_idx * "
-        "{}",
-        addr.coeff_imax, warp_stride, addr.coeff_i, offset, extra_offset,
-        g_idx_inc);
-  }
-  */
 };
 #endif
 
@@ -273,7 +176,9 @@ void CPUCodeGen::codegen(Kernel &kernel) {
     ret = Desugaring().run(ret);
     ret = SLPVectorizer().run(ret, group_size);
     // visualize_IR(get_source_fn() + ".slp.pdf", kernel.ret);
-    ret = LoopVectorizer().run(ret, prog->current_snode, num_groups);
+    if (prog->current_snode != prog->snode_root) {
+      ret = LoopVectorizer().run(ret, prog->current_snode, num_groups);
+    }
     AdapterPreprocessor().run(kernel, ret, group_size);
     VectorSplitter(prog->config.simd_width).run(ret);
     if (prog->config.internal_optimization)

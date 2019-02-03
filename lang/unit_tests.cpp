@@ -1016,4 +1016,26 @@ TC_TEST("mat3") {
   }
 }
 
+TC_TEST("noloop") {
+  Program prog;
+  prog.config.simd_width = 1;
+
+  auto a = var<float32>();
+  auto i = ind();
+
+  layout([&] { root.place(a); });
+
+  auto sqrt_ = kernel(a, [&]() { a = sqrt(a); });
+  a.val<float32>() = 64;
+  sqrt_();
+
+  TC_CHECK_EQUAL(a.val<float32>(), 8.0_f, 1e-6);
+
+  auto inv_ = kernel(a, [&]() { a = inv(a); });
+
+  inv_();
+
+  TC_CHECK_EQUAL(a.val<float32>(), 0.125_f, 1e-4);
+}
+
 TLANG_NAMESPACE_END

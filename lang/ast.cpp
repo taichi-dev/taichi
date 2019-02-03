@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// No Expr Node allowed - make everything as close to SSA as possible
+// No Expr nodes - make everything as close to SSA as possible
 
 class Statement;
 
@@ -145,7 +145,13 @@ Identifier Identifier::operator=(const Identifier &o) {
 
 class For {
  public:
-  For(Id i, Id s, Id e, std::function<void()> func) {
+  For(Id i, Id s, Id e, const std::function<void()> &func) {
+  }
+};
+
+class While {
+ public:
+  While(Id cond, const std::function<void()> &func) {
   }
 };
 
@@ -161,7 +167,7 @@ auto test_ast = []() {
 
   If(a > 5)
       .Then([&] {
-        b = b + 1;
+        b = (b + 1) / 3;
         b = b * 3;
       })
       .Else([&] {
@@ -171,7 +177,8 @@ auto test_ast = []() {
 
   For(i, 0, 100, [&] {
     For(j, 0, 200, [&] {
-
+      Id k = i + j;
+      While(k < 500, [&] { Print(k); });
     });
   });
 

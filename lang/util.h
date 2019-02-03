@@ -342,6 +342,6 @@ constexpr int max_num_indices = 4;
 
 TLANG_NAMESPACE_END
 
-namespace taichi {
+TC_NAMESPACE_BEGIN
 void initialize_benchmark();
-}
+TC_NAMESPACE_END

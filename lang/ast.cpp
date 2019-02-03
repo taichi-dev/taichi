@@ -63,6 +63,13 @@ class ASTPrinter : public ASTVisitor {
     print("{} = const<{}>({})", const_stmt.id.name(),
           data_type_name(const_stmt.data_type), const_stmt.value);
   }
+
+  void visit(ForStatement &for_stmt) {
+    print("for {} in range({}, {}) {{", for_stmt.loop_var.name(),
+          for_stmt.begin.name(), for_stmt.end.name());
+    for_stmt.body->accept(*this);
+    print("}}");
+  }
 };
 
 auto test_ast = []() {
@@ -86,15 +93,15 @@ auto test_ast = []() {
         b = b + 2;
         b = b - 4;
       });
-  /*
+
   For(i, 0, 100, [&] {
     For(j, 0, 200, [&] {
       Id k = i + j;
-      While(k < 500, [&] { Print(k); });
+      Print(k);
+      // While(k < 500, [&] { Print(k); });
     });
   });
   Print(b);
-  */
 
   ASTPrinter::run(context.root());
 };

@@ -11,6 +11,8 @@ class ASTNode;
 class Statement;
 class StatementList;
 class ConstStatement;
+class ForStatement;
+class WhileStatement;
 
 class FrontendContext {
  private:
@@ -115,6 +117,8 @@ class ASTVisitor {
   DEFINE_VISIT(IfStatement);
   DEFINE_VISIT(PrintStatement);
   DEFINE_VISIT(ConstStatement);
+  DEFINE_VISIT(ForStatement);
+  DEFINE_VISIT(WhileStatement);
 };
 
 class ASTNode {
@@ -239,6 +243,28 @@ class ConstStatement : public Statement {
   DEFINE_ACCEPT
 };
 
+class ForStatement : public Statement {
+ public:
+  Id loop_var, begin, end;
+  Handle<StatementList> body;
+
+  ForStatement(Id loop_var, Id begin, Id end)
+      : loop_var(loop_var), begin(begin), end(end) {
+  }
+
+  DEFINE_ACCEPT
+};
+
+class WhileStatement : public Statement {
+ public:
+  Handle<StatementList> body;
+
+  WhileStatement(const std::function<void()> &cond) {
+  }
+
+  DEFINE_ACCEPT
+};
+
 void ASTBuilder::insert(const Handle<Statement> &stmt) {
   TC_ASSERT(!stack.empty());
   stack.back()->insert(stmt);
@@ -281,6 +307,10 @@ void Identifier::operator=(const Identifier &o) {
 class For {
  public:
   For(Id i, Id s, Id e, const std::function<void()> &func) {
+    auto stmt = std::make_shared<ForStatement>(i, s, e);
+    context.builder().insert(stmt);
+    auto _ = context.builder().create_scope(stmt->body);
+    func();
   }
 };
 

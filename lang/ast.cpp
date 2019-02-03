@@ -6,17 +6,52 @@ TLANG_NAMESPACE_BEGIN
 
 // No Expr nodes - make everything as close to SSA as possible
 
-class Statement;
+class ASTBuilder;
+class ASTNode;
 
-class ASTBuilder {
-  std::vector<Handle<Statement>> stmt_list;
+class FrontendContext {
+ private:
+  ASTBuilder *current_builder;
+  ASTNode *root_node;
 
  public:
-  void new_statement(const Handle<Statement> &stmt) {
-    stmt_list.push_back(stmt);
+  ASTBuilder &builder() {
+    return *current_builder;
   }
 
-  void create_scope() {
+  ASTNode &root() {
+    return *root_node;
+  }
+};
+
+FrontendContext context;
+
+class Statement;
+class StatementList;
+
+class ASTBuilder {
+ private:
+  std::vector<Handle<StatementList>> stack;
+  Handle<StatementList> stmt_list;
+
+ public:
+  void insert(const Handle<Statement> &stmt);
+
+  struct ScopeGuard {
+    ASTBuilder *builder;
+    Handle<StatementList> list;
+    ScopeGuard(ASTBuilder *builder, const Handle<StatementList> &list)
+        : builder(builder), list(list) {
+      builder->stack.push_back(list);
+    }
+
+    ~ScopeGuard() {
+      builder->stack.pop_back();
+    }
+  };
+
+  ScopeGuard create_scope(const Handle<StatementList> &list) {
+    return ScopeGuard(this, list);
   }
 
   void create_function() {
@@ -58,15 +93,50 @@ int Identifier::id_counter = 0;
 
 using Id = Identifier;
 
-class ASTNode {};
+class ASTVisitor;
+
+class ASTNode {
+ public:
+  virtual void accept(ASTVisitor &visitor) {
+    TC_NOT_IMPLEMENTED
+  }
+  virtual void print() {
+    TC_NOT_IMPLEMENTED
+  }
+};
 
 class Statement : public ASTNode {};
 
-class StatementList : public Statement {};
+class StatementList : public Statement {
+  std::vector<Handle<Statement>> statements;
+
+ public:
+  void insert(const Handle<Statement> &stmt) {
+    statements.push_back(stmt);
+  }
+};
 
 class AssignmentStatement : public Statement {
  public:
   AssignmentStatement() {
+  }
+};
+
+class ASTVisitor {
+ public:
+  virtual void visit(ASTNode &node) = 0;
+};
+
+class ASTPrinter : public ASTVisitor {
+ public:
+  void visit(ASTNode &node) override {
+    node.print();
+    node.accept(*this);
+  }
+
+  static void run(ASTNode &node) {
+    auto p = ASTPrinter();
+    node.accept(p);
   }
 };
 
@@ -112,7 +182,12 @@ class If {
   }
 };
 
+void ASTBuilder::insert(const Handle<Statement> &stmt) {
+  stmt_list->insert(stmt);
+}
+
 void Var(Id &a) {
+  current_ast_builder();
 }
 
 void Print(Id &a) {
@@ -121,7 +196,7 @@ void Print(Id &a) {
 #define DEF_BINARY_OP(Op, name)                                      \
   Identifier operator Op(const Identifier &a, const Identifier &b) { \
     Identifier c;                                                    \
-    current_ast_builder().new_statement(                             \
+    current_ast_builder().insert(                                    \
         std::make_shared<BinaryOpStmt>(BinaryType::name, c, a, b));  \
     return c;                                                        \
   }
@@ -155,6 +230,15 @@ class While {
   }
 };
 
+void print_ast() {
+  auto visit = [](ASTNode *node) {
+
+  };
+}
+
+ASTNode &get_ast_node() {
+}
+
 auto test_ast = []() {
   Id a, b, i, j;
 
@@ -183,6 +267,8 @@ auto test_ast = []() {
   });
 
   Print(b);
+
+  ASTPrinter::run(context.root());
 };
 
 TC_REGISTER_TASK(test_ast);

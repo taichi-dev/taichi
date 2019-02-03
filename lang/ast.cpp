@@ -28,6 +28,26 @@ class ASTPrinter : public ASTVisitor {
     fmt::print("{} <- {} {} {}\n", bin.lhs.name(), binary_type_name(bin.type),
                bin.rhs1.name(), bin.rhs2.name());
   }
+
+  void visit(IfStatement &if_stmt) {
+    fmt::print("if ({}) {{\n", if_stmt.condition.name());
+    if (if_stmt.true_statements)
+      if_stmt.true_statements->accept(*this);
+    if (if_stmt.false_statements) {
+      fmt::print("}} else {{\n");
+      if_stmt.false_statements->accept(*this);
+    }
+    fmt::print("}}\n");
+  }
+
+  void visit(PrintStatement &print) {
+    fmt::print("print {}\n", print.id.name());
+  }
+
+  void visit(ConstStatement &const_stmt) {
+    fmt::print("{} = const<{}>({})\n", const_stmt.id.name(),
+               data_type_name(const_stmt.data_type), const_stmt.value);
+  }
 };
 
 auto test_ast = []() {
@@ -39,6 +59,8 @@ auto test_ast = []() {
   Var(j);
 
   a = a + b;
+  Print(a);
+  If(a < 500).Then([&] { Print(b); }).Else([&] { Print(a); });
   /*
 
   If(a > 5)

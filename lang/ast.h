@@ -10,6 +10,7 @@ class ASTBuilder;
 class ASTNode;
 class Statement;
 class StatementList;
+class ConstStatement;
 
 class FrontendContext {
  private:
@@ -54,7 +55,9 @@ class ASTBuilder {
     }
   };
 
-  ScopeGuard create_scope(const Handle<StatementList> &list) {
+  ScopeGuard create_scope(Handle<StatementList> &list) {
+    TC_ASSERT(list == nullptr);
+    list = std::make_shared<StatementList>();
     return ScopeGuard(this, list);
   }
 
@@ -76,18 +79,11 @@ class Identifier {
     id = id_counter++;
   }
 
-  Identifier(int x){
-      TC_NOT_IMPLEMENTED
-      // create const var
-  }
+  Identifier(int x);
 
-  Identifier(double x){
-      TC_NOT_IMPLEMENTED
-      // create const var
-  }
+  Identifier(double x);
 
-  Identifier
-  operator=(const Identifier &o);
+  void operator=(const Identifier &o);
 
   std::string name() {
     return fmt::format("id_{}", id);
@@ -102,6 +98,7 @@ class AllocaStatement;
 class BinaryOpStatement;
 class UnaryOpStatement;
 class IfStatement;
+class PrintStatement;
 
 class ASTVisitor {
  public:
@@ -116,6 +113,8 @@ class ASTVisitor {
   DEFINE_VISIT(BinaryOpStatement);
   DEFINE_VISIT(UnaryOpStatement);
   DEFINE_VISIT(IfStatement);
+  DEFINE_VISIT(PrintStatement);
+  DEFINE_VISIT(ConstStatement);
 };
 
 class ASTNode {
@@ -179,15 +178,21 @@ class UnaryOpStatement : public Statement {
 };
 
 class IfStatement : public Statement {
+ public:
   Id condition;
-  StatementList true_statements, false_statements;
+  Handle<StatementList> true_statements, false_statements;
 
-  IfStatement(Id condition,
-              StatementList true_statements,
-              StatementList false_statements)
-      : condition(condition),
-        true_statements(true_statements),
-        false_statements(false_statements) {
+  IfStatement(Id condition) : condition(condition) {
+  }
+
+  DEFINE_ACCEPT
+};
+
+class PrintStatement : public Statement {
+ public:
+  Id id;
+
+  PrintStatement(Id id) : id(id) {
   }
 
   DEFINE_ACCEPT
@@ -195,19 +200,43 @@ class IfStatement : public Statement {
 
 class If {
  public:
-  If(Id a) {
+  Handle<IfStatement> stmt;
+
+  If(Id cond) {
+    stmt = std::make_shared<IfStatement>(cond);
+    context.builder().insert(stmt);
   }
 
   If &Then(const std::function<void()> &func) {
-    // create scope...
+    auto _ = context.builder().create_scope(stmt->true_statements);
     func();
     return *this;
   }
 
   If &Else(const std::function<void()> &func) {
+    auto _ = context.builder().create_scope(stmt->false_statements);
     func();
     return *this;
   }
+};
+
+class ConstStatement : public Statement {
+ public:
+  Id id;
+  DataType data_type;
+  double value;
+
+  ConstStatement(Id id, int32 x) : id(id) {
+    data_type = DataType::i32;
+    value = x;
+  }
+
+  ConstStatement(Id id, float32 x) : id(id) {
+    data_type = DataType::f32;
+    value = x;
+  }
+
+  DEFINE_ACCEPT
 };
 
 void ASTBuilder::insert(const Handle<Statement> &stmt) {
@@ -221,6 +250,7 @@ void Var(Id &a) {
 }
 
 void Print(Id &a) {
+  context.builder().insert(std::make_shared<PrintStatement>(a));
 }
 
 #define DEF_BINARY_OP(Op, name)                                          \
@@ -244,7 +274,7 @@ DEF_BINARY_OP(!=, cmp_ne);
 
 #undef DEF_BINARY_OP
 
-Identifier Identifier::operator=(const Identifier &o) {
+void Identifier::operator=(const Identifier &o) {
   context.builder().insert(std::make_shared<AssignmentStatement>(*this, o));
 }
 
@@ -257,12 +287,21 @@ class For {
 class While {
  public:
   While(Id cond, const std::function<void()> &func) {
+    // context.builder().insert()
   }
 };
 
 FrontendContext::FrontendContext() {
   root_node = std::make_shared<StatementList>();
   current_builder = std::make_unique<ASTBuilder>(root_node);
+}
+
+Identifier::Identifier(int x) : Identifier() {
+  context.builder().insert(std::make_shared<ConstStatement>(*this, x));
+}
+
+Identifier::Identifier(double x) : Identifier() {
+  context.builder().insert(std::make_shared<ConstStatement>(*this, (float32)x));
 }
 
 TLANG_NAMESPACE_END

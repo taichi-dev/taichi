@@ -258,6 +258,12 @@ inline std::string binary_type_name(BinaryType type) {
     REGISTER_TYPE(mod);
     REGISTER_TYPE(max);
     REGISTER_TYPE(min);
+    REGISTER_TYPE(cmp_lt);
+    REGISTER_TYPE(cmp_le);
+    REGISTER_TYPE(cmp_gt);
+    REGISTER_TYPE(cmp_ge);
+    REGISTER_TYPE(cmp_ne);
+    REGISTER_TYPE(cmp_eq);
 #undef REGISTER_TYPE
   }
   return type_names[type];

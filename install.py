@@ -208,15 +208,14 @@ class Installer:
     set_env('TAICHI_NUM_THREADS', 8)
     set_env('TAICHI_REPO_DIR', self.repo_dir)
 
-    set_env('PYTHONPATH', '$TAICHI_REPO_DIR/python/' + get_path_separator() + '$PYTHONPATH',
+    set_env('PYTHONPATH', '\$TAICHI_REPO_DIR/python/' + get_path_separator() + '\$PYTHONPATH',
             '{}/python/'.format(self.repo_dir) + get_path_separator() + os.environ.get('PYTHONPATH', ''))
-    set_env('PATH', '$TAICHI_REPO_DIR/bin/' + get_path_separator() + '$PATH', os.path.join(self.repo_dir, 'bin') + get_path_separator() + os.environ.get('PATH', ''))
+    set_env('PATH', '\$TAICHI_REPO_DIR/bin/' + get_path_separator() + '\$PATH', os.path.join(self.repo_dir, 'bin') + get_path_separator() + os.environ.get('PATH', ''))
 
     os.environ['PYTHONIOENCODING'] = 'utf-8'
     print('PYTHONPATH={}'.format(os.environ['PYTHONPATH']))
 
     execute_command('echo $PYTHONPATH')
-
     if test_installation():
       print('  Successfully Installed Taichi at {}.'.format(self.repo_dir))
       if get_os_name() != 'win':
@@ -225,7 +224,7 @@ class Installer:
         if execute_command('taichi') != 0:
           print('  Warning: shortcut "taichi" does not work.')
         print('  Please execute')
-        print('    source ~/.bashrc')
+        print('    source ', get_shell_rc_name())
         print('  or restart your terminal.')
     else:
       print('  Error: installation failed.')

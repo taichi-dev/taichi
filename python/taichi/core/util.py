@@ -218,10 +218,10 @@ if get_os_name() == 'osx':
   os.chdir(tmp_cwd)
 elif get_os_name() == 'linux':
   bin_dir = get_bin_directory()
-  if 'LD_LIBRARY_PATH' in os.environ:
-    os.environ['LD_LIBRARY_PATH'] += ':/usr/lib64/'
-  else:
-    os.environ['LD_LIBRARY_PATH'] = '/usr/lib64/'
+
+  if 'LD_LIBRARY_PATH' not in os.environ:
+    os.environ['LD_LIBRARY_PATH'] = ''
+  os.environ['LD_LIBRARY_PATH'] += ':/usr/lib64/'
   if not os.path.exists(os.path.join(bin_dir, 'libtaichi_core.so')):
     build()
   tmp_cwd = os.getcwd()
@@ -240,12 +240,12 @@ elif get_os_name() == 'linux':
     import taichi_core as tc_core
   except Exception as e:
     from colorama import Fore, Back, Style
-    print(e)
     print()
+    print(Fore.RED + "Error when importing taichi_core." + Style.RESET_ALL)
     print(Fore.RED + "Please make sure you are using python3 "
           "instead of python2." + Style.RESET_ALL)
     print()
-    exit(-1)
+    raise e
 
   os.chdir(tmp_cwd)
 elif get_os_name() == 'win':
@@ -255,7 +255,7 @@ elif get_os_name() == 'win':
   if not os.path.exists(dll_path1) and not os.path.exists(dll_path2):
     build()
 
-  # On windows when an dll/pyd is loaded, we can not write to it any more
+  # On windows when an dll/pyd is loaded, we cannot write to it any more
   old_wd = os.getcwd()
   os.chdir(bin_dir)
 

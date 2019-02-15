@@ -71,6 +71,9 @@ ASTBuilder &current_ast_builder() {
   return context.builder();
 }
 
+class ExpressionHandle;
+using ExprH = ExpressionHandle;
+
 class Identifier {
  public:
   static int id_counter;
@@ -81,11 +84,7 @@ class Identifier {
     id = id_counter++;
   }
 
-  Identifier(int x);
-
-  Identifier(double x);
-
-  void operator=(const Identifier &o);
+  void operator=(const ExpressionHandle &o);
 
   std::string name() {
     return fmt::format("id_{}", id);
@@ -135,26 +134,94 @@ class ASTNode {
 
 class Statement : public ASTNode {};
 
-  class Expression {
-  public:
+// always a tree - used as rvalues
+class Expression {
+ public:
+  virtual std::string serialize() = 0;
+};
 
-  };
+class IdExpression : public Expression {
+ public:
+  Identifier id;
+  IdExpression() : id() {
+  }
+  IdExpression(Identifier id) : id(id) {
+  }
 
-  class BinaryOpExpression;
-
-class BinaryOpExpression : public Expression {
-public:
-  Handle<Expression> lhs, rhs;
-
-  BinaryOpExpression(Handle<Expression> lhs, Handle<Expression> rhs) :lhs(lhs), rhs(rhs){
-
+  std::string serialize() override {
+    return id.name();
   }
 };
 
-Handle<BinaryOpExpression> operator +(Handle<Expression> lhs, Handle<Expression> rhs) {
-return std::make_shared<BinaryOpExpression>(lhs, rhs);
-}
+class ConstExpression : public Expression {
+ public:
+  long double val;
+  ConstExpression(long double val) : val(val) {
+  }
+  std::string serialize() override {
+    return fmt::format("{}", val);
+  }
+};
 
+class ExpressionHandle {
+ public:
+  std::shared_ptr<Expression> expr;
+
+  ExpressionHandle(int x);
+
+  ExpressionHandle(double x);
+
+  ExpressionHandle(std::shared_ptr<Expression> expr) : expr(expr) {
+  }
+
+  ExpressionHandle(Identifier id) {
+    expr = std::make_shared<IdExpression>(id);
+  }
+
+  Expression *operator->() {
+    return expr.get();
+  }
+
+  template <typename T>
+  Handle<T> cast() const {
+    return std::static_pointer_cast<T>(expr);
+  }
+};
+
+class BinaryOpExpression;
+
+class BinaryOpExpression : public Expression {
+ public:
+  BinaryType type;
+  ExpressionHandle lhs, rhs;
+
+  BinaryOpExpression(BinaryType type,
+                     ExpressionHandle lhs,
+                     ExpressionHandle rhs)
+      : type(type), lhs(lhs), rhs(rhs) {
+  }
+
+  std::string serialize() override {
+    return fmt::format("({} {} {})", lhs->serialize(), binary_type_symbol(type),
+                       rhs->serialize());
+  }
+};
+
+#define DEFINE_EXPRESSION_OP(op, op_name)                                      \
+  Handle<Expression> operator op(ExpressionHandle lhs, ExpressionHandle rhs) { \
+    return std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs,      \
+                                                rhs);                          \
+  }
+
+DEFINE_EXPRESSION_OP(+, add)
+DEFINE_EXPRESSION_OP(-, sub)
+DEFINE_EXPRESSION_OP(*, mul)
+DEFINE_EXPRESSION_OP(/, div)
+DEFINE_EXPRESSION_OP(%, mod)
+DEFINE_EXPRESSION_OP(<, cmp_lt)
+DEFINE_EXPRESSION_OP(<=, cmp_le)
+DEFINE_EXPRESSION_OP(>, cmp_gt)
+DEFINE_EXPRESSION_OP(>=, cmp_ge)
 
 class StatementList : public Statement {
  public:
@@ -168,9 +235,10 @@ class StatementList : public Statement {
 
 class AssignmentStatement : public Statement {
  public:
-  Id lhs, rhs;
+  Id lhs;
+  ExprH rhs;
 
-  AssignmentStatement(Id lhs, Id rhs) : lhs(lhs), rhs(rhs) {
+  AssignmentStatement(Id lhs, ExprH rhs) : lhs(lhs), rhs(rhs) {
   }
 
   DEFINE_ACCEPT
@@ -204,10 +272,10 @@ class UnaryOpStatement : public Statement {
 
 class IfStatement : public Statement {
  public:
-  Id condition;
+  ExpressionHandle condition;
   Handle<StatementList> true_statements, false_statements;
 
-  IfStatement(Id condition) : condition(condition) {
+  IfStatement(ExpressionHandle condition) : condition(condition) {
   }
 
   DEFINE_ACCEPT
@@ -227,7 +295,7 @@ class If {
  public:
   Handle<IfStatement> stmt;
 
-  If(Id cond) {
+  If(ExpressionHandle cond) {
     stmt = std::make_shared<IfStatement>(cond);
     context.builder().insert(stmt);
   }
@@ -266,11 +334,13 @@ class ConstStatement : public Statement {
 
 class ForStatement : public Statement {
  public:
-  Id loop_var, begin, end;
+  ExprH begin, end;
   Handle<StatementList> body;
+  Id loop_var_id;
 
-  ForStatement(Id loop_var, Id begin, Id end)
-      : loop_var(loop_var), begin(begin), end(end) {
+  ForStatement(ExprH loop_var, ExprH begin, ExprH end)
+      : begin(begin), end(end) {
+    loop_var_id = loop_var.cast<IdExpression>()->id;
   }
 
   DEFINE_ACCEPT
@@ -291,13 +361,14 @@ void ASTBuilder::insert(const Handle<Statement> &stmt) {
   stack.back()->insert(stmt);
 }
 
-void Var(Id &a) {
-  current_ast_builder().insert(
-      std::make_shared<AllocaStatement>(a, DataType::f32));
+void Var(ExpressionHandle &a) {
+  current_ast_builder().insert(std::make_shared<AllocaStatement>(
+      std::static_pointer_cast<IdExpression>(a.expr)->id, DataType::f32));
 }
 
-void Print(Id &a) {
-  context.builder().insert(std::make_shared<PrintStatement>(a));
+void Print(const ExpressionHandle &a) {
+  context.builder().insert(
+      std::make_shared<PrintStatement>(a.cast<IdExpression>()->id));
 }
 
 #define DEF_BINARY_OP(Op, name)                                          \
@@ -308,26 +379,15 @@ void Print(Id &a) {
     return c;                                                            \
   }
 
-DEF_BINARY_OP(+, add);
-DEF_BINARY_OP(-, sub);
-DEF_BINARY_OP(*, mul);
-DEF_BINARY_OP(/, div);
-DEF_BINARY_OP(<, cmp_lt);
-DEF_BINARY_OP(<=, cmp_le);
-DEF_BINARY_OP(>, cmp_gt);
-DEF_BINARY_OP(>=, cmp_ge);
-DEF_BINARY_OP(==, cmp_eq);
-DEF_BINARY_OP(!=, cmp_ne);
-
 #undef DEF_BINARY_OP
 
-void Identifier::operator=(const Identifier &o) {
+void Identifier::operator=(const ExpressionHandle &o) {
   context.builder().insert(std::make_shared<AssignmentStatement>(*this, o));
 }
 
 class For {
  public:
-  For(Id i, Id s, Id e, const std::function<void()> &func) {
+  For(ExprH i, ExprH s, ExprH e, const std::function<void()> &func) {
     auto stmt = std::make_shared<ForStatement>(i, s, e);
     context.builder().insert(stmt);
     auto _ = context.builder().create_scope(stmt->body);
@@ -337,7 +397,7 @@ class For {
 
 class While {
  public:
-  While(Id cond, const std::function<void()> &func) {
+  While(ExprH cond, const std::function<void()> &func) {
     // context.builder().insert()
   }
 };
@@ -347,12 +407,12 @@ FrontendContext::FrontendContext() {
   current_builder = std::make_unique<ASTBuilder>(root_node);
 }
 
-Identifier::Identifier(int x) : Identifier() {
-  context.builder().insert(std::make_shared<ConstStatement>(*this, x));
+ExpressionHandle::ExpressionHandle(int x) {
+  expr = std::make_shared<ConstExpression>(x);
 }
 
-Identifier::Identifier(double x) : Identifier() {
-  context.builder().insert(std::make_shared<ConstStatement>(*this, (float32)x));
+ExpressionHandle::ExpressionHandle(double x) {
+  expr = std::make_shared<ConstExpression>(x);
 }
 
 TLANG_NAMESPACE_END

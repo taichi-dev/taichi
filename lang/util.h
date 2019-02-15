@@ -269,6 +269,28 @@ inline std::string binary_type_name(BinaryType type) {
   return type_names[type];
 }
 
+inline std::string binary_type_symbol(BinaryType type) {
+  static std::map<BinaryType, std::string> type_names;
+  if (type_names.empty()) {
+#define REGISTER_TYPE(i, s) type_names[BinaryType::i] = #s;
+    REGISTER_TYPE(mul, *);
+    REGISTER_TYPE(add, +);
+    REGISTER_TYPE(sub, -);
+    REGISTER_TYPE(div, /);
+    REGISTER_TYPE(mod, %);
+    REGISTER_TYPE(max, max);
+    REGISTER_TYPE(min, min);
+    REGISTER_TYPE(cmp_lt, <);
+    REGISTER_TYPE(cmp_le, <=);
+    REGISTER_TYPE(cmp_gt, >);
+    REGISTER_TYPE(cmp_ge, >=);
+    REGISTER_TYPE(cmp_ne, !=);
+    REGISTER_TYPE(cmp_eq, ==);
+#undef REGISTER_TYPE
+  }
+  return type_names[type];
+}
+
 enum class NodeType : int {
   binary,  // regular binary operators that work for both int and float, and
            // return the same type

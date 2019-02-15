@@ -32,7 +32,7 @@ class ASTPrinter : public ASTVisitor {
   }
 
   void visit(AssignmentStatement &assign) {
-    print("{} <- {}", assign.lhs.name(), assign.rhs.name());
+    print("{} <- {}", assign.lhs.name(), assign.rhs->serialize());
   }
 
   void visit(AllocaStatement &alloca) {
@@ -45,7 +45,7 @@ class ASTPrinter : public ASTVisitor {
   }
 
   void visit(IfStatement &if_stmt) {
-    print("if ({}) {{", if_stmt.condition.name());
+    print("if ({}) {{", if_stmt.condition->serialize());
     if (if_stmt.true_statements)
       if_stmt.true_statements->accept(*this);
     if (if_stmt.false_statements) {
@@ -65,15 +65,20 @@ class ASTPrinter : public ASTVisitor {
   }
 
   void visit(ForStatement &for_stmt) {
-    print("for {} in range({}, {}) {{", for_stmt.loop_var.name(),
-          for_stmt.begin.name(), for_stmt.end.name());
+    print("for {} in range({}, {}) {{", for_stmt.loop_var_id.name(),
+          for_stmt.begin->serialize(), for_stmt.end->serialize());
     for_stmt.body->accept(*this);
     print("}}");
   }
 };
 
+#define declare(x) auto x = ExpressionHandle(std::make_shared<IdExpression>());
+
 auto test_ast = []() {
-  Id a, b, i, j;
+  declare(a);
+  declare(b);
+  declare(i);
+  declare(j);
 
   Var(a);
   Var(b);
@@ -96,7 +101,7 @@ auto test_ast = []() {
 
   For(i, 0, 100, [&] {
     For(j, 0, 200, [&] {
-      Id k = i + j;
+      auto k = i + j;
       Print(k);
       // While(k < 500, [&] { Print(k); });
     });

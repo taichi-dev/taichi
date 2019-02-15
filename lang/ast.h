@@ -84,8 +84,6 @@ class Identifier {
     id = id_counter++;
   }
 
-  void operator=(const ExpressionHandle &o);
-
   std::string name() {
     return fmt::format("id_{}", id);
   }
@@ -184,7 +182,13 @@ class ExpressionHandle {
 
   template <typename T>
   Handle<T> cast() const {
-    return std::static_pointer_cast<T>(expr);
+    return std::dynamic_pointer_cast<T>(expr);
+  }
+
+  void operator=(const ExpressionHandle &o);
+
+  std::string serialize() const {
+    return expr->serialize();
   }
 };
 
@@ -235,10 +239,11 @@ class StatementList : public Statement {
 
 class AssignmentStatement : public Statement {
  public:
-  Id lhs;
-  ExprH rhs;
+  ExprH lhs, rhs;
+  Id id;
 
-  AssignmentStatement(Id lhs, ExprH rhs) : lhs(lhs), rhs(rhs) {
+  AssignmentStatement(ExprH lhs, ExprH rhs) : lhs(lhs), rhs(rhs) {
+    id = lhs.cast<IdExpression>()->id;
   }
 
   DEFINE_ACCEPT
@@ -283,9 +288,9 @@ class IfStatement : public Statement {
 
 class PrintStatement : public Statement {
  public:
-  Id id;
+  ExprH expr;
 
-  PrintStatement(Id id) : id(id) {
+  PrintStatement(ExprH expr) : expr(expr) {
   }
 
   DEFINE_ACCEPT
@@ -367,8 +372,7 @@ void Var(ExpressionHandle &a) {
 }
 
 void Print(const ExpressionHandle &a) {
-  context.builder().insert(
-      std::make_shared<PrintStatement>(a.cast<IdExpression>()->id));
+  context.builder().insert(std::make_shared<PrintStatement>(a));
 }
 
 #define DEF_BINARY_OP(Op, name)                                          \
@@ -381,7 +385,7 @@ void Print(const ExpressionHandle &a) {
 
 #undef DEF_BINARY_OP
 
-void Identifier::operator=(const ExpressionHandle &o) {
+void ExprH::operator=(const ExpressionHandle &o) {
   context.builder().insert(std::make_shared<AssignmentStatement>(*this, o));
 }
 

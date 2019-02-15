@@ -32,7 +32,7 @@ class ASTPrinter : public ASTVisitor {
   }
 
   void visit(AssignmentStatement &assign) {
-    print("{} <- {}", assign.lhs.name(), assign.rhs->serialize());
+    print("{} <- {}", assign.id.name(), assign.rhs->serialize());
   }
 
   void visit(AllocaStatement &alloca) {
@@ -45,7 +45,7 @@ class ASTPrinter : public ASTVisitor {
   }
 
   void visit(IfStatement &if_stmt) {
-    print("if ({}) {{", if_stmt.condition->serialize());
+    print("if {} {{", if_stmt.condition->serialize());
     if (if_stmt.true_statements)
       if_stmt.true_statements->accept(*this);
     if (if_stmt.false_statements) {
@@ -56,7 +56,7 @@ class ASTPrinter : public ASTVisitor {
   }
 
   void visit(PrintStatement &print_stmt) {
-    print("print {}", print_stmt.id.name());
+    print("print {}", print_stmt.expr.serialize());
   }
 
   void visit(ConstStatement &const_stmt) {
@@ -101,7 +101,7 @@ auto test_ast = []() {
 
   For(i, 0, 100, [&] {
     For(j, 0, 200, [&] {
-      auto k = i + j;
+      ExprH k = i + j;
       Print(k);
       // While(k < 500, [&] { Print(k); });
     });

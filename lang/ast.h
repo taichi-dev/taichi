@@ -135,6 +135,27 @@ class ASTNode {
 
 class Statement : public ASTNode {};
 
+  class Expression {
+  public:
+
+  };
+
+  class BinaryOpExpression;
+
+class BinaryOpExpression : public Expression {
+public:
+  Handle<Expression> lhs, rhs;
+
+  BinaryOpExpression(Handle<Expression> lhs, Handle<Expression> rhs) :lhs(lhs), rhs(rhs){
+
+  }
+};
+
+Handle<BinaryOpExpression> operator +(Handle<Expression> lhs, Handle<Expression> rhs) {
+return std::make_shared<BinaryOpExpression>(lhs, rhs);
+}
+
+
 class StatementList : public Statement {
  public:
   std::vector<Handle<Statement>> statements;

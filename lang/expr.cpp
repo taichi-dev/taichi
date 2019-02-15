@@ -92,7 +92,7 @@ std::enable_if_t<!(i < sizeof...(Indices)), int> get_if_exists(
 
 template <typename... Indices>
 void *Expr::val_tmp(Indices... indices) {
-  TC_P(node->node_type_name());
+  // TC_P(node->node_type_name());
   TC_ASSERT(node->type == NodeType::addr);
   SNode *snode = node->snode_ptr(0);
   TC_ASSERT(sizeof...(indices) == snode->num_active_indices);

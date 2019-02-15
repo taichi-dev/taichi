@@ -1016,6 +1016,7 @@ TC_TEST("mat3") {
   }
 }
 
+  /*
 TC_TEST("noloop") {
   Program prog;
   prog.config.simd_width = 1;
@@ -1037,5 +1038,6 @@ TC_TEST("noloop") {
 
   TC_CHECK_EQUAL(a.val<float32>(), 0.125_f, 1e-4);
 }
+   */
 
 TLANG_NAMESPACE_END

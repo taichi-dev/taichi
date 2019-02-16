@@ -1,4 +1,6 @@
 #include "ast.h"
+#include <numeric>
+#include <Eigen/Dense>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -110,7 +112,42 @@ auto test_ast = []() {
 
   ASTPrinter::run(context.root());
 };
-
 TC_REGISTER_TASK(test_ast);
+
+// https://stackoverflow.com/questions/36781881/why-denormalized-floats-are-so-much-slower-than-other-floats-from-hardware-arch
+// https://software.intel.com/en-us/forums/intel-performance-bottleneck-analyzer/topic/487262
+auto test_mmul_cpe = []() {
+  constexpr int n = 1024;
+  Eigen::Matrix4f a[n], b[n];
+  auto measure = [&] {
+    return measure_cpe([&] {
+      for (int i = 0; i < n; i++) {
+        // TC_P(a[i](0, 0));
+        b[i] = a[i] * a[i];
+      }
+    }, n);
+  };
+
+  // muls resulting in denormed floats can make things 700x slower
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < 4; j++) {
+      for (int k = 0; k < 4; k++) {
+        a[i](j, k) = rand() * 1e-21_f;
+      }
+    }
+  }
+
+  TC_INFO("denormed cpe {}", measure());
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < 4; j++) {
+      for (int k = 0; k < 4; k++) {
+        a[i](j, k) = rand();
+      }
+    }
+  }
+  TC_INFO("regular cpe {}", measure());
+};
+TC_REGISTER_TASK(test_mmul_cpe);
 
 TLANG_NAMESPACE_END

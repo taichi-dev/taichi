@@ -44,7 +44,7 @@ class ASTBuilder {
 
   struct ScopeGuard {
     ASTBuilder *builder;
-    StatementList* list;
+    StatementList *list;
     ScopeGuard(ASTBuilder *builder, StatementList *list)
         : builder(builder), list(list) {
       builder->stack.push_back(list);
@@ -236,6 +236,19 @@ class StatementList : public Statement {
     statements.push_back(std::move(stmt));
   }
 
+  void replace_with(
+      Statement *old_statement,
+      const std::vector<std::unique_ptr<Statement>> &new_statements) {
+    int location = -1;
+    for (int i = 0; i < (int)statements.size(); i++) {
+      if (old_statement == statements[i].get()) {
+        location = i;
+        break;
+      }
+    }
+    TC_ASSERT(location != -1);
+  }
+
   DEFINE_ACCEPT
 };
 
@@ -300,7 +313,7 @@ class PrintStatement : public Statement {
 
 class If {
  public:
-  IfStatement* stmt;
+  IfStatement *stmt;
 
   If(ExpressionHandle cond) {
     auto stmt_tmp = std::make_unique<IfStatement>(cond);

@@ -76,17 +76,34 @@ class ASTPrinter : public ASTVisitor {
   }
 };
 
+class ASTModifiedException {};
+
 // Lower Expr tree to a bunch of binary/unary(binary/unary) statements
-// Goal:
-class ASTLowerer : public ASTVisitor {
+// Goal: eliminate Expression, and mutable local variables. Make AST SSA.
+class LowerAST : public ASTVisitor {
  public:
-  ASTLowerer() {
+  LowerAST() {
   }
 
   void visit(AssignmentStatement &assign) {
     // expand rhs
   }
+
+  void run() {
+    while (true) {
+      bool modified = false;
+      try {
+        context.root().accept(*this);
+      } catch (ASTModifiedException) {
+        modified = true;
+      }
+      if (!modified)
+        break;
+    }
+  }
 };
+
+class TypeCheck : public ASTVisitor {};
 
 #define declare(x) auto x = ExpressionHandle(std::make_shared<IdExpression>());
 

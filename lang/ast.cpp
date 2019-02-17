@@ -85,8 +85,10 @@ class LowerAST : public ASTVisitor {
   LowerAST() {
   }
 
-  void visit(AssignmentStatement &assign) {
+  void visit(AssignmentStatement *assign) {
     // expand rhs
+    
+    throw ASTModifiedException();
   }
 
   void run() {

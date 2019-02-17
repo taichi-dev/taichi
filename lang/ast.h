@@ -40,7 +40,7 @@ class ASTBuilder {
     stack.push_back(initial);
   }
 
-  void insert(std::unique_ptr<Statement> &&stmt);
+  void insert(std::unique_ptr<Statement> &&stmt, int location = -1);
 
   struct ScopeGuard {
     ASTBuilder *builder;
@@ -96,6 +96,7 @@ class BinaryOpStatement;
 class UnaryOpStatement;
 class IfStatement;
 class PrintStatement;
+class StatementList;
 
 class ASTVisitor {
  public:
@@ -129,6 +130,8 @@ class ASTNode {
   }
 
 class Statement : public ASTNode {
+ public:
+  StatementList *parent;
   DataType type;
   Id ret;
 };
@@ -232,13 +235,17 @@ class StatementList : public Statement {
  public:
   std::vector<std::unique_ptr<Statement>> statements;
 
-  void insert(std::unique_ptr<Statement> &&stmt) {
-    statements.push_back(std::move(stmt));
+  void insert(std::unique_ptr<Statement> &&stmt, int location = -1) {
+    stmt->parent = this;
+    if (location == -1) {
+      statements.push_back(std::move(stmt));
+    } else {
+      statements.insert(statements.begin() + location, std::move(stmt));
+    }
   }
 
-  void replace_with(
-      Statement *old_statement,
-      const std::vector<std::unique_ptr<Statement>> &new_statements) {
+  void replace_with(Statement *old_statement,
+                    std::vector<std::unique_ptr<Statement>> &new_statements) {
     int location = -1;
     for (int i = 0; i < (int)statements.size(); i++) {
       if (old_statement == statements[i].get()) {
@@ -247,6 +254,10 @@ class StatementList : public Statement {
       }
     }
     TC_ASSERT(location != -1);
+    statements.erase(statements.begin() + location);
+    for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
+      insert(std::move(new_statements[i]), location);
+    }
   }
 
   DEFINE_ACCEPT
@@ -377,9 +388,9 @@ class WhileStatement : public Statement {
   DEFINE_ACCEPT
 };
 
-void ASTBuilder::insert(std::unique_ptr<Statement> &&stmt) {
+void ASTBuilder::insert(std::unique_ptr<Statement> &&stmt, int location) {
   TC_ASSERT(!stack.empty());
-  stack.back()->insert(std::move(stmt));
+  stack.back()->insert(std::move(stmt), location);
 }
 
 void Var(ExpressionHandle &a) {

@@ -26,7 +26,7 @@ class FrontendContext {
     return *current_builder;
   }
 
-  ASTNode &root();
+  ASTNode *root();
 };
 
 FrontendContext context;
@@ -100,7 +100,7 @@ class PrintStatement;
 class ASTVisitor {
  public:
 #define DEFINE_VISIT(T)         \
-  virtual void visit(T &stmt) { \
+  virtual void visit(T *stmt) { \
     TC_NOT_IMPLEMENTED;         \
   }
 
@@ -118,14 +118,14 @@ class ASTVisitor {
 
 class ASTNode {
  public:
-  virtual void accept(ASTVisitor &visitor) {
+  virtual void accept(ASTVisitor *visitor) {
     TC_NOT_IMPLEMENTED
   }
 };
 
 #define DEFINE_ACCEPT                \
-  void accept(ASTVisitor &visitor) { \
-    visitor.visit(*this);            \
+  void accept(ASTVisitor *visitor) { \
+    visitor->visit(this);            \
   }
 
 class Statement : public ASTNode {
@@ -436,8 +436,8 @@ ExpressionHandle::ExpressionHandle(double x) {
   expr = std::make_shared<ConstExpression>(x);
 }
 
-ASTNode &FrontendContext::root() {
-  return *static_cast<ASTNode *>(root_node.get());
+ASTNode *FrontendContext::root() {
+  return static_cast<ASTNode *>(root_node.get());
 }
 
 TLANG_NAMESPACE_END

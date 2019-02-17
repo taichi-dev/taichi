@@ -20,58 +20,58 @@ class ASTPrinter : public ASTVisitor {
     fmt::print("\n");
   }
 
-  static void run(ASTNode &node) {
+  static void run(ASTNode *node) {
     auto p = ASTPrinter();
-    node.accept(p);
+    node->accept(&p);
   }
 
-  void visit(StatementList &stmt_list) {
+  void visit(StatementList *stmt_list) {
     current_indent++;
-    for (auto &stmt : stmt_list.statements) {
-      stmt->accept(*this);
+    for (auto &stmt : stmt_list->statements) {
+      stmt->accept(this);
     }
     current_indent--;
   }
 
-  void visit(AssignmentStatement &assign) {
-    print("{} <- {}", assign.id.name(), assign.rhs->serialize());
+  void visit(AssignmentStatement *assign) {
+    print("{} <- {}", assign->id.name(), assign->rhs->serialize());
   }
 
-  void visit(AllocaStatement &alloca) {
-    print("{} <- alloca {}", alloca.lhs.name(), data_type_name(alloca.type));
+  void visit(AllocaStatement *alloca) {
+    print("{} <- alloca {}", alloca->lhs.name(), data_type_name(alloca->type));
   }
 
-  void visit(BinaryOpStatement &bin) {
+  void visit(BinaryOpStatement *bin) {
     /*
     print("{} <- {} {} {}", bin.lhs.name(), binary_type_name(bin.type),
           bin.rhs1.name(), bin.rhs2.name());
     */
   }
 
-  void visit(IfStatement &if_stmt) {
-    print("if {} {{", if_stmt.condition->serialize());
-    if (if_stmt.true_statements)
-      if_stmt.true_statements->accept(*this);
-    if (if_stmt.false_statements) {
+  void visit(IfStatement *if_stmt) {
+    print("if {} {{", if_stmt->condition->serialize());
+    if (if_stmt->true_statements)
+      if_stmt->true_statements->accept(this);
+    if (if_stmt->false_statements) {
       print("}} else {{");
-      if_stmt.false_statements->accept(*this);
+      if_stmt->false_statements->accept(this);
     }
     print("}}");
   }
 
-  void visit(PrintStatement &print_stmt) {
-    print("print {}", print_stmt.expr.serialize());
+  void visit(PrintStatement *print_stmt) {
+    print("print {}", print_stmt->expr.serialize());
   }
 
-  void visit(ConstStatement &const_stmt) {
-    print("{} = const<{}>({})", const_stmt.id.name(),
-          data_type_name(const_stmt.data_type), const_stmt.value);
+  void visit(ConstStatement *const_stmt) {
+    print("{} = const<{}>({})", const_stmt->id.name(),
+          data_type_name(const_stmt->data_type), const_stmt->value);
   }
 
-  void visit(ForStatement &for_stmt) {
-    print("for {} in range({}, {}) {{", for_stmt.loop_var_id.name(),
-          for_stmt.begin->serialize(), for_stmt.end->serialize());
-    for_stmt.body->accept(*this);
+  void visit(ForStatement *for_stmt) {
+    print("for {} in range({}, {}) {{", for_stmt->loop_var_id.name(),
+          for_stmt->begin->serialize(), for_stmt->end->serialize());
+    for_stmt->body->accept(this);
     print("}}");
   }
 };
@@ -93,7 +93,7 @@ class LowerAST : public ASTVisitor {
     while (true) {
       bool modified = false;
       try {
-        context.root().accept(*this);
+        context.root()->accept(this);
       } catch (ASTModifiedException) {
         modified = true;
       }

@@ -45,8 +45,7 @@ class IRBuilder {
   struct ScopeGuard {
     IRBuilder *builder;
     Block *list;
-    ScopeGuard(IRBuilder *builder, Block *list)
-        : builder(builder), list(list) {
+    ScopeGuard(IRBuilder *builder, Block *list) : builder(builder), list(list) {
       builder->stack.push_back(list);
     }
 
@@ -55,11 +54,7 @@ class IRBuilder {
     }
   };
 
-  ScopeGuard create_scope(std::unique_ptr<Block> &list) {
-    TC_ASSERT(list == nullptr);
-    list = std::make_unique<Block>();
-    return ScopeGuard(this, list.get());
-  }
+  ScopeGuard create_scope(std::unique_ptr<Block> &list);
 
   void create_function() {
   }
@@ -276,7 +271,13 @@ DEFINE_EXPRESSION_OP(>=, cmp_ge)
 
 class Block : public IRNode {
  public:
+  Block *parent;
   std::vector<std::unique_ptr<Statement>> statements;
+  std::map<Id, DataType> local_variables;
+
+  Block() {
+    parent = nullptr;
+  }
 
   void insert(std::unique_ptr<Statement> &&stmt, int location = -1) {
     stmt->parent = this;
@@ -305,6 +306,14 @@ class Block : public IRNode {
 
   DEFINE_ACCEPT
 };
+
+IRBuilder::ScopeGuard IRBuilder::create_scope(std::unique_ptr<Block> &list) {
+  TC_ASSERT(list == nullptr);
+  list = std::make_unique<Block>();
+  if (!stack.empty())
+    list->parent = stack.back();
+  return ScopeGuard(this, list.get());
+}
 
 class AssignStmt : public Statement {
  public:

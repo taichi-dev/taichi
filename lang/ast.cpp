@@ -25,7 +25,7 @@ class ASTPrinter : public ASTVisitor {
     node->accept(&p);
   }
 
-  void visit(StatementList *stmt_list) {
+  void visit(StmtList *stmt_list) {
     current_indent++;
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
@@ -33,20 +33,20 @@ class ASTPrinter : public ASTVisitor {
     current_indent--;
   }
 
-  void visit(AssignmentStatement *assign) {
+  void visit(AssignStmt *assign) {
     print("{} = {}", assign->id.name(), assign->rhs->serialize());
   }
 
-  void visit(AllocaStatement *alloca) {
+  void visit(AllocaStmt *alloca) {
     print("alloca {} {}", alloca->lhs.name(), data_type_name(alloca->type));
   }
 
-  void visit(BinaryOpStatement *bin) {
+  void visit(BinaryOpStmt *bin) {
     print("{} = {} {} {}", bin->ret.name(), binary_type_name(bin->type),
           bin->lhs->name(), bin->rhs->name());
   }
 
-  void visit(IfStatement *if_stmt) {
+  void visit(IfStmt *if_stmt) {
     print("if {} {{", if_stmt->condition->serialize());
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
@@ -57,7 +57,7 @@ class ASTPrinter : public ASTVisitor {
     print("}}");
   }
 
-  void visit(PrintStatement *print_stmt) {
+  void visit(PrintStmt *print_stmt) {
     print("print {}", print_stmt->expr.serialize());
   }
 
@@ -97,21 +97,21 @@ class LowerAST : public ASTVisitor {
     return ret;
   }
 
-  void visit(StatementList *stmt_list) {
+  void visit(StmtList *stmt_list) {
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
     }
   }
 
-  void visit(AllocaStatement *alloca) {
+  void visit(AllocaStmt *alloca) {
     // print("{} <- alloca {}", alloca->lhs.name(),
     // data_type_name(alloca->type));
   }
 
-  void visit(BinaryOpStatement *bin) {  // this will not appear here
+  void visit(BinaryOpStmt *bin) {  // this will not appear here
   }
 
-  void visit(IfStatement *if_stmt) {
+  void visit(IfStmt *if_stmt) {
     // TODO
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
@@ -126,7 +126,7 @@ class LowerAST : public ASTVisitor {
   void visit(LocalStoreStmt *) {
   }
 
-  void visit(PrintStatement *print_stmt) {
+  void visit(PrintStmt *print_stmt) {
   }
 
   void visit(ConstStatement *const_stmt) {  // this will not appear here
@@ -136,7 +136,7 @@ class LowerAST : public ASTVisitor {
     for_stmt->body->accept(this);
   }
 
-  void visit(AssignmentStatement *assign) {
+  void visit(AssignStmt *assign) {
     // expand rhs
     auto expr = assign->rhs;
     VecStatement flattened;

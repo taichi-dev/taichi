@@ -9,7 +9,7 @@ TLANG_NAMESPACE_BEGIN
 class ASTBuilder;
 class ASTNode;
 class Statement;
-class StatementList;
+class StmtList;
 class ConstStatement;
 class ForStatement;
 class WhileStatement;
@@ -17,7 +17,7 @@ class WhileStatement;
 class FrontendContext {
  private:
   std::unique_ptr<ASTBuilder> current_builder;
-  std::unique_ptr<StatementList> root_node;
+  std::unique_ptr<StmtList> root_node;
 
  public:
   FrontendContext();
@@ -33,10 +33,10 @@ FrontendContext context;
 
 class ASTBuilder {
  private:
-  std::vector<StatementList *> stack;
+  std::vector<StmtList *> stack;
 
  public:
-  ASTBuilder(StatementList *initial) {
+  ASTBuilder(StmtList *initial) {
     stack.push_back(initial);
   }
 
@@ -44,8 +44,8 @@ class ASTBuilder {
 
   struct ScopeGuard {
     ASTBuilder *builder;
-    StatementList *list;
-    ScopeGuard(ASTBuilder *builder, StatementList *list)
+    StmtList *list;
+    ScopeGuard(ASTBuilder *builder, StmtList *list)
         : builder(builder), list(list) {
       builder->stack.push_back(list);
     }
@@ -55,9 +55,9 @@ class ASTBuilder {
     }
   };
 
-  ScopeGuard create_scope(std::unique_ptr<StatementList> &list) {
+  ScopeGuard create_scope(std::unique_ptr<StmtList> &list) {
     TC_ASSERT(list == nullptr);
-    list = std::make_unique<StatementList>();
+    list = std::make_unique<StmtList>();
     return ScopeGuard(this, list.get());
   }
 
@@ -94,15 +94,15 @@ class Identifier {
 int Identifier::id_counter = 0;
 
 using Id = Identifier;
-class AssignmentStatement;
-class AllocaStatement;
-class BinaryOpStatement;
-class UnaryOpStatement;
+class AssignStmt;
+class AllocaStmt;
+class BinaryOpStmt;
+class UnaryOpStmt;
 class LocalLoadStmt;
 class LocalStoreStmt;
-class IfStatement;
-class PrintStatement;
-class StatementList;
+class IfStmt;
+class PrintStmt;
+class StmtList;
 
 using VecStatement = std::vector<std::unique_ptr<Statement>>;
 
@@ -113,15 +113,15 @@ class ASTVisitor {
     TC_NOT_IMPLEMENTED;         \
   }
 
-  DEFINE_VISIT(StatementList);
-  DEFINE_VISIT(AssignmentStatement);
-  DEFINE_VISIT(AllocaStatement);
-  DEFINE_VISIT(BinaryOpStatement);
-  DEFINE_VISIT(UnaryOpStatement);
+  DEFINE_VISIT(StmtList);
+  DEFINE_VISIT(AssignStmt);
+  DEFINE_VISIT(AllocaStmt);
+  DEFINE_VISIT(BinaryOpStmt);
+  DEFINE_VISIT(UnaryOpStmt);
   DEFINE_VISIT(LocalLoadStmt);
   DEFINE_VISIT(LocalStoreStmt);
-  DEFINE_VISIT(IfStatement);
-  DEFINE_VISIT(PrintStatement);
+  DEFINE_VISIT(IfStmt);
+  DEFINE_VISIT(PrintStmt);
   DEFINE_VISIT(ConstStatement);
   DEFINE_VISIT(ForStatement);
   DEFINE_VISIT(WhileStatement);
@@ -141,7 +141,7 @@ class ASTNode {
 
 class Statement : public ASTNode {
  public:
-  StatementList *parent;
+  StmtList *parent;
   DataType type;
   Id ret;
 
@@ -190,12 +190,12 @@ class ExpressionHandle {
   }
 };
 
-class BinaryOpStatement : public Statement {
+class BinaryOpStmt : public Statement {
  public:
   BinaryType type;
   Statement *lhs, *rhs;
 
-  BinaryOpStatement(BinaryType type, Statement *lhs, Statement *rhs)
+  BinaryOpStmt(BinaryType type, Statement *lhs, Statement *rhs)
       : type(type), lhs(lhs), rhs(rhs) {
   }
 
@@ -223,8 +223,8 @@ class BinaryOpExpression : public Expression {
     auto lhs_statement = ret.back().get();
     rhs->flatten(ret);
     auto rhs_statement = ret.back().get();
-    ret.push_back(std::make_unique<BinaryOpStatement>(type, lhs_statement,
-                                                      rhs_statement));
+    ret.push_back(
+        std::make_unique<BinaryOpStmt>(type, lhs_statement, rhs_statement));
   }
 };
 
@@ -244,7 +244,7 @@ DEFINE_EXPRESSION_OP(<=, cmp_le)
 DEFINE_EXPRESSION_OP(>, cmp_gt)
 DEFINE_EXPRESSION_OP(>=, cmp_ge)
 
-class StatementList : public ASTNode {
+class StmtList : public ASTNode {
  public:
   std::vector<std::unique_ptr<Statement>> statements;
 
@@ -276,27 +276,27 @@ class StatementList : public ASTNode {
   DEFINE_ACCEPT
 };
 
-class AssignmentStatement : public Statement {
+class AssignStmt : public Statement {
  public:
   ExprH lhs, rhs;
   Id id;
 
-  AssignmentStatement(ExprH lhs, ExprH rhs);
+  AssignStmt(ExprH lhs, ExprH rhs);
 
   DEFINE_ACCEPT
 };
 
-class AllocaStatement : public Statement {
+class AllocaStmt : public Statement {
  public:
   Id lhs;
   DataType type;
 
-  AllocaStatement(Id lhs, DataType type) : lhs(lhs), type(type) {
+  AllocaStmt(Id lhs, DataType type) : lhs(lhs), type(type) {
   }
   DEFINE_ACCEPT
 };
 
-class UnaryOpStatement : public Statement {
+class UnaryOpStmt : public Statement {
   DEFINE_ACCEPT
 };
 
@@ -321,22 +321,22 @@ class LocalStoreStmt : public Statement {
   DEFINE_ACCEPT;
 };
 
-class IfStatement : public Statement {
+class IfStmt : public Statement {
  public:
   ExpressionHandle condition;
-  std::unique_ptr<StatementList> true_statements, false_statements;
+  std::unique_ptr<StmtList> true_statements, false_statements;
 
-  IfStatement(ExpressionHandle condition) : condition(condition) {
+  IfStmt(ExpressionHandle condition) : condition(condition) {
   }
 
   DEFINE_ACCEPT
 };
 
-class PrintStatement : public Statement {
+class PrintStmt : public Statement {
  public:
   ExprH expr;
 
-  PrintStatement(ExprH expr) : expr(expr) {
+  PrintStmt(ExprH expr) : expr(expr) {
   }
 
   DEFINE_ACCEPT
@@ -344,10 +344,10 @@ class PrintStatement : public Statement {
 
 class If {
  public:
-  IfStatement *stmt;
+  IfStmt *stmt;
 
   If(ExpressionHandle cond) {
-    auto stmt_tmp = std::make_unique<IfStatement>(cond);
+    auto stmt_tmp = std::make_unique<IfStmt>(cond);
     stmt = stmt_tmp.get();
     context.builder().insert(std::move(stmt_tmp));
   }
@@ -386,7 +386,7 @@ class ConstStatement : public Statement {
 class ForStatement : public Statement {
  public:
   ExprH begin, end;
-  std::unique_ptr<StatementList> body;
+  std::unique_ptr<StmtList> body;
   Id loop_var_id;
 
   ForStatement(ExprH loop_var, ExprH begin, ExprH end);
@@ -396,7 +396,7 @@ class ForStatement : public Statement {
 
 class WhileStatement : public Statement {
  public:
-  std::unique_ptr<StatementList> body;
+  std::unique_ptr<StmtList> body;
 
   WhileStatement(const std::function<void()> &cond) {
   }
@@ -410,21 +410,21 @@ void ASTBuilder::insert(std::unique_ptr<Statement> &&stmt, int location) {
 }
 
 void Print(const ExpressionHandle &a) {
-  context.builder().insert(std::make_unique<PrintStatement>(a));
+  context.builder().insert(std::make_unique<PrintStmt>(a));
 }
 
-#define DEF_BINARY_OP(Op, name)                                          \
-  Identifier operator Op(const Identifier &a, const Identifier &b) {     \
-    Identifier c;                                                        \
-    current_ast_builder().insert(                                        \
-        std::make_unique<BinaryOpStatement>(BinaryType::name, c, a, b)); \
-    return c;                                                            \
+#define DEF_BINARY_OP(Op, name)                                      \
+  Identifier operator Op(const Identifier &a, const Identifier &b) { \
+    Identifier c;                                                    \
+    current_ast_builder().insert(                                    \
+        std::make_unique<BinaryOpStmt>(BinaryType::name, c, a, b));  \
+    return c;                                                        \
   }
 
 #undef DEF_BINARY_OP
 
 void ExprH::operator=(const ExpressionHandle &o) {
-  context.builder().insert(std::make_unique<AssignmentStatement>(*this, o));
+  context.builder().insert(std::make_unique<AssignStmt>(*this, o));
 }
 
 class For {
@@ -446,7 +446,7 @@ class While {
 };
 
 FrontendContext::FrontendContext() {
-  root_node = std::make_unique<StatementList>();
+  root_node = std::make_unique<StmtList>();
   current_builder = std::make_unique<ASTBuilder>(root_node.get());
 }
 
@@ -500,8 +500,7 @@ ForStatement::ForStatement(ExprH loop_var, ExprH begin, ExprH end)
   loop_var_id = loop_var.cast<IdExpression>()->id;
 }
 
-AssignmentStatement::AssignmentStatement(ExprH lhs, ExprH rhs)
-    : lhs(lhs), rhs(rhs) {
+AssignStmt::AssignStmt(ExprH lhs, ExprH rhs) : lhs(lhs), rhs(rhs) {
   id = lhs.cast<IdExpression>()->id;
 }
 
@@ -510,7 +509,7 @@ ASTNode *FrontendContext::root() {
 }
 
 void Var(ExpressionHandle &a) {
-  current_ast_builder().insert(std::make_unique<AllocaStatement>(
+  current_ast_builder().insert(std::make_unique<AllocaStmt>(
       std::static_pointer_cast<IdExpression>(a.expr)->id, DataType::f32));
 }
 

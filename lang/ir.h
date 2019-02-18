@@ -8,11 +8,11 @@ TLANG_NAMESPACE_BEGIN
 
 class IRBuilder;
 class IRNode;
-class Statement;
 class StmtList;
+class Statement;
 class ConstStatement;
-class ForStatement;
-class WhileStatement;
+class ForStmt;
+class WhileStmt;
 
 class FrontendContext {
  private:
@@ -125,8 +125,8 @@ class IRVisitor {
   DEFINE_VISIT(PrintStmt);
   DEFINE_VISIT(FrontendPrintStmt);
   DEFINE_VISIT(ConstStatement);
-  DEFINE_VISIT(ForStatement);
-  DEFINE_VISIT(WhileStatement);
+  DEFINE_VISIT(ForStmt);
+  DEFINE_VISIT(WhileStmt);
 };
 
 class IRNode {
@@ -406,22 +406,22 @@ class ConstStatement : public Statement {
   DEFINE_ACCEPT
 };
 
-class ForStatement : public Statement {
+class ForStmt : public Statement {
  public:
   ExprH begin, end;
   std::unique_ptr<StmtList> body;
   Id loop_var_id;
 
-  ForStatement(ExprH loop_var, ExprH begin, ExprH end);
+  ForStmt(ExprH loop_var, ExprH begin, ExprH end);
 
   DEFINE_ACCEPT
 };
 
-class WhileStatement : public Statement {
+class WhileStmt : public Statement {
  public:
   std::unique_ptr<StmtList> body;
 
-  WhileStatement(const std::function<void()> &cond) {
+  WhileStmt(const std::function<void()> &cond) {
   }
 
   DEFINE_ACCEPT
@@ -453,7 +453,7 @@ void ExprH::operator=(const ExpressionHandle &o) {
 class For {
  public:
   For(ExprH i, ExprH s, ExprH e, const std::function<void()> &func) {
-    auto stmt_unique = std::make_unique<ForStatement>(i, s, e);
+    auto stmt_unique = std::make_unique<ForStmt>(i, s, e);
     auto stmt = stmt_unique.get();
     context.builder().insert(std::move(stmt_unique));
     auto _ = context.builder().create_scope(stmt->body);
@@ -518,7 +518,7 @@ ExpressionHandle::ExpressionHandle(Identifier id) {
   expr = std::make_shared<IdExpression>(id);
 }
 
-ForStatement::ForStatement(ExprH loop_var, ExprH begin, ExprH end)
+ForStmt::ForStmt(ExprH loop_var, ExprH begin, ExprH end)
     : begin(begin), end(end) {
   loop_var_id = loop_var.cast<IdExpression>()->id;
 }

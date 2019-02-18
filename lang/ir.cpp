@@ -70,7 +70,7 @@ class IRPrinter : public IRVisitor {
           data_type_name(const_stmt->data_type), const_stmt->value);
   }
 
-  void visit(ForStatement *for_stmt) {
+  void visit(ForStmt *for_stmt) {
     print("for {} in range({}, {}) {{", for_stmt->loop_var_id.name(),
           for_stmt->begin->serialize(), for_stmt->end->serialize());
     for_stmt->body->accept(this);
@@ -147,7 +147,7 @@ class LowerAST : public IRVisitor {
   void visit(ConstStatement *const_stmt) {  // this will not appear here
   }
 
-  void visit(ForStatement *for_stmt) {
+  void visit(ForStmt *for_stmt) {
     for_stmt->body->accept(this);
   }
 

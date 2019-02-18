@@ -38,12 +38,12 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(AllocaStmt *alloca) {
-    print("alloca {} {}", alloca->lhs.name(), data_type_name(alloca->type));
+    print("{} alloca {}", alloca->type_hint(), alloca->lhs.name());
   }
 
   void visit(BinaryOpStmt *bin) {
-    print("{} = {} {} {}", bin->name(), binary_type_name(bin->type),
-          bin->lhs->name(), bin->rhs->name());
+    print("{} {} = {} {} {}", bin->type_hint(), bin->name(),
+          binary_type_name(bin->type), bin->lhs->name(), bin->rhs->name());
   }
 
   void visit(IfStmt *if_stmt) {
@@ -62,12 +62,12 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(PrintStmt *print_stmt) {
-    print("print {}", print_stmt->stmt->name());
+    print("{} print {}", print_stmt->type_hint(), print_stmt->stmt->name());
   }
 
   void visit(ConstStatement *const_stmt) {
-    print("{} = const {} {}", const_stmt->name(),
-          data_type_name(const_stmt->data_type), const_stmt->value);
+    print("{} {} = const {}", const_stmt->type_hint(), const_stmt->name(),
+          const_stmt->value);
   }
 
   void visit(ForStmt *for_stmt) {
@@ -182,24 +182,39 @@ class LowerAST : public IRVisitor {
   }
 };
 
-class TypeCheck : public IRVisitor {};
+// Vector width, vectorization plan etc
+class PropagateSchedule : public IRVisitor {};
+
+// "Type" here does not include vector width
+class TypeCheck : public IRVisitor {
+  TypeCheck() {
+    allow_undefined_visitor = true;
+  }
+};
 
 #define declare(x) \
   auto x = ExpressionHandle(std::make_shared<IdExpression>(#x));
+
+#define var(type, x) Var<type>(x);
 
 auto test_ast = []() {
   CoreState::set_trigger_gdb_when_crash(true);
   declare(a);
   declare(b);
+  declare(p);
+  declare(q);
   declare(i);
   declare(j);
 
-  Var(a);
-  Var(b);
-  Var(i);
-  Var(j);
+  var(float32, a);
+  var(float32, b);
+
+  var(int32, p);
+  var(int32, q);
 
   a = a + b;
+  p = p + q;
+
   Print(a);
   If(a < 500).Then([&] { Print(b); }).Else([&] { Print(a); });
 

@@ -109,9 +109,18 @@ using VecStatement = std::vector<std::unique_ptr<Statement>>;
 
 class IRVisitor {
  public:
-#define DEFINE_VISIT(T)         \
-  virtual void visit(T *stmt) { \
-    TC_NOT_IMPLEMENTED;         \
+  bool allow_undefined_visitor;
+
+  IRVisitor() {
+    allow_undefined_visitor = false;
+  }
+
+#define DEFINE_VISIT(T)          \
+  virtual void visit(T *stmt) {  \
+    if (allow_undefined_visitor) \
+      return;                    \
+    else                         \
+      TC_NOT_IMPLEMENTED;        \
   }
 
   DEFINE_VISIT(StmtList);
@@ -136,9 +145,9 @@ class IRNode {
   }
 };
 
-#define DEFINE_ACCEPT                \
+#define DEFINE_ACCEPT               \
   void accept(IRVisitor *visitor) { \
-    visitor->visit(this);            \
+    visitor->visit(this);           \
   }
 
 struct StmtAttribute {
@@ -154,6 +163,14 @@ class Statement : public IRNode {
 
   Statement() {
     id = id_counter++;
+    type = DataType::unknown;
+  }
+
+  std::string type_hint() const {
+    if (type == DataType::unknown)
+      return "";
+    else
+      return fmt::format("<{}>", data_type_name(type));
   }
 
   std::string name() {
@@ -302,9 +319,9 @@ class AssignStmt : public Statement {
 class AllocaStmt : public Statement {
  public:
   Id lhs;
-  DataType type;
 
-  AllocaStmt(Id lhs, DataType type) : lhs(lhs), type(type) {
+  AllocaStmt(Id lhs, DataType type) : lhs(lhs) {
+    this->type = type;
   }
   DEFINE_ACCEPT
 };
@@ -531,9 +548,10 @@ IRNode *FrontendContext::root() {
   return static_cast<IRNode *>(root_node.get());
 }
 
+template <typename T>
 void Var(ExpressionHandle &a) {
   current_ast_builder().insert(std::make_unique<AllocaStmt>(
-      std::static_pointer_cast<IdExpression>(a.expr)->id, DataType::f32));
+      std::static_pointer_cast<IdExpression>(a.expr)->id, get_data_type<T>()));
 }
 
 TLANG_NAMESPACE_END

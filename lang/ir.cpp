@@ -1,4 +1,4 @@
-#include "ast.h"
+#include "ir.h"
 #include <numeric>
 #include <Eigen/Dense>
 
@@ -82,7 +82,7 @@ class ASTPrinter : public ASTVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) {
-    print("store {} = {}", stmt->id.name(), stmt->stmt->name());
+    print("[store] {} = {}", stmt->id.name(), stmt->stmt->name());
   }
 };
 

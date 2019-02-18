@@ -244,7 +244,7 @@ DEFINE_EXPRESSION_OP(<=, cmp_le)
 DEFINE_EXPRESSION_OP(>, cmp_gt)
 DEFINE_EXPRESSION_OP(>=, cmp_ge)
 
-class StatementList : public Statement {
+class StatementList : public ASTNode {
  public:
   std::vector<std::unique_ptr<Statement>> statements;
 

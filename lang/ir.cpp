@@ -46,6 +46,17 @@ class IRPrinter : public IRVisitor {
           binary_type_name(bin->op_type), bin->lhs->name(), bin->rhs->name());
   }
 
+  void visit(IfStmt *if_stmt) {
+    print("if {} {{", if_stmt->cond->name());
+    if (if_stmt->true_statements)
+      if_stmt->true_statements->accept(this);
+    if (if_stmt->false_statements) {
+      print("}} else {{");
+      if_stmt->false_statements->accept(this);
+    }
+    print("}}");
+  }
+
   void visit(FrontendIfStmt *if_stmt) {
     print("if {} {{", if_stmt->condition->serialize());
     if (if_stmt->true_statements)
@@ -119,7 +130,18 @@ class LowerAST : public IRVisitor {
   void visit(BinaryOpStmt *bin) {  // this will not appear here
   }
 
-  void visit(FrontendIfStmt *if_stmt) {
+  void visit(FrontendIfStmt *stmt) override {
+    VecStatement flattened;
+    stmt->condition->flatten(flattened);
+    auto new_if = std::make_unique<IfStmt>(flattened.back().get());
+    new_if->true_statements = std::move(stmt->true_statements);
+    new_if->false_statements = std::move(stmt->false_statements);
+    flattened.push_back(std::move(new_if));
+    stmt->parent->replace_with(stmt, flattened);
+    throw IRModifiedException();
+  }
+
+  void visit(IfStmt *if_stmt) override {
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
@@ -237,18 +259,20 @@ class TypeCheck : public IRVisitor {
   void visit(BinaryOpStmt *stmt) {
     TC_ASSERT(stmt->lhs->type != DataType::unknown ||
               stmt->rhs->type != DataType::unknown);
-    if (stmt->lhs->type == DataType::unknown &&
-        stmt->lhs->is<ConstStmt>()) {
+    if (stmt->lhs->type == DataType::unknown && stmt->lhs->is<ConstStmt>()) {
       stmt->lhs->type = stmt->rhs->type;
     }
-    if (stmt->rhs->type == DataType::unknown &&
-        stmt->rhs->is<ConstStmt>()) {
+    if (stmt->rhs->type == DataType::unknown && stmt->rhs->is<ConstStmt>()) {
       stmt->rhs->type = stmt->lhs->type;
     }
     TC_ASSERT(stmt->lhs->type != DataType::unknown);
     TC_ASSERT(stmt->rhs->type != DataType::unknown);
     TC_ASSERT(stmt->lhs->type == stmt->rhs->type);
-    stmt->type = stmt->lhs->type;
+    if (is_comparison(stmt->op_type)) {
+      stmt->type = DataType::i32;
+    } else {
+      stmt->type = stmt->lhs->type;
+    }
   }
 
   static void run(IRNode *node) {

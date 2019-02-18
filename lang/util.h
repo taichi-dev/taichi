@@ -271,6 +271,10 @@ inline std::string binary_type_name(BinaryType type) {
   return type_names[type];
 }
 
+inline bool is_comparison(BinaryType type) {
+  return starts_with(binary_type_name(type), "cmp");
+}
+
 inline std::string binary_type_symbol(BinaryType type) {
   static std::map<BinaryType, std::string> type_names;
   if (type_names.empty()) {

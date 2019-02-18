@@ -10,9 +10,22 @@ class IRBuilder;
 class IRNode;
 class Block;
 class Statement;
+
+// statements
 class ConstStmt;
+class IfStmt;
+class ForStmt;
+class FrontendIfStmt;
 class FrontendForStmt;
 class WhileStmt;
+class AssignStmt;
+class AllocaStmt;
+class BinaryOpStmt;
+class UnaryOpStmt;
+class LocalLoadStmt;
+class LocalStoreStmt;
+class PrintStmt;
+class FrontendPrintStmt;
 
 class FrontendContext {
  private:
@@ -97,16 +110,6 @@ class Identifier {
 int Identifier::id_counter = 0;
 
 using Ident = Identifier;
-class AssignStmt;
-class AllocaStmt;
-class BinaryOpStmt;
-class UnaryOpStmt;
-class LocalLoadStmt;
-class LocalStoreStmt;
-class FrontendIfStmt;
-class PrintStmt;
-class FrontendPrintStmt;
-class Block;
 
 using VecStatement = std::vector<std::unique_ptr<Statement>>;
 
@@ -133,10 +136,12 @@ class IRVisitor {
   DEFINE_VISIT(UnaryOpStmt);
   DEFINE_VISIT(LocalLoadStmt);
   DEFINE_VISIT(LocalStoreStmt);
+  DEFINE_VISIT(IfStmt);
   DEFINE_VISIT(FrontendIfStmt);
   DEFINE_VISIT(PrintStmt);
   DEFINE_VISIT(FrontendPrintStmt);
   DEFINE_VISIT(ConstStmt);
+  DEFINE_VISIT(ForStmt);
   DEFINE_VISIT(FrontendForStmt);
   DEFINE_VISIT(WhileStmt);
 };
@@ -385,6 +390,17 @@ class LocalStoreStmt : public Statement {
   }
 
   DEFINE_ACCEPT;
+};
+
+class IfStmt : public Statement {
+ public:
+  Statement *cond;
+  std::unique_ptr<Block> true_statements, false_statements;
+
+  IfStmt(Statement *cond) : cond(cond) {
+  }
+
+  DEFINE_ACCEPT
 };
 
 class FrontendIfStmt : public Statement {

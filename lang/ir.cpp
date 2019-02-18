@@ -1,5 +1,6 @@
 #include "ir.h"
 #include <numeric>
+#include "tlang.h"
 #include <Eigen/Dense>
 
 TLANG_NAMESPACE_BEGIN
@@ -284,7 +285,28 @@ class TypeCheck : public IRVisitor {
 #define declare(x) \
   auto x = ExpressionHandle(std::make_shared<IdExpression>(#x));
 
-#define var(type, x) Var<type>(x);
+#define var(type, x) declare_var<type>(x);
+
+auto test_compiler = []() {
+  int n = 128;
+  Program prog(Arch::x86_64);
+
+  auto a = var<float32>();
+  auto i = ind();
+
+  layout([&]() { root.fixed(i, n).place(a); });
+
+  auto func = kernel(a, [&]() {
+    a[i] = select(cmp_ne(imm(0), i % imm(2)), cast<float32>(i), imm(0.0_f));
+  });
+
+  func();
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK(a.val<float32>(i) == (i % 2) * i);
+  }
+};
+TC_REGISTER_TASK(test_compiler);
 
 auto test_ast = []() {
   CoreState::set_trigger_gdb_when_crash(true);
@@ -297,7 +319,6 @@ auto test_ast = []() {
 
   var(float32, a);
   var(float32, b);
-
   var(int32, p);
   var(int32, q);
 

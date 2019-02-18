@@ -601,7 +601,7 @@ IRNode *FrontendContext::root() {
 }
 
 template <typename T>
-void Var(ExpressionHandle &a) {
+void declare_var(ExpressionHandle &a) {
   current_ast_builder().insert(std::make_unique<AllocaStmt>(
       std::static_pointer_cast<IdExpression>(a.expr)->id, get_data_type<T>()));
 }

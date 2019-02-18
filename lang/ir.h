@@ -6,8 +6,8 @@ TLANG_NAMESPACE_BEGIN
 
 // No Expr nodes - make everything as close to SSA as possible
 
-class ASTBuilder;
-class ASTNode;
+class IRBuilder;
+class IRNode;
 class Statement;
 class StmtList;
 class ConstStatement;
@@ -16,36 +16,36 @@ class WhileStatement;
 
 class FrontendContext {
  private:
-  std::unique_ptr<ASTBuilder> current_builder;
+  std::unique_ptr<IRBuilder> current_builder;
   std::unique_ptr<StmtList> root_node;
 
  public:
   FrontendContext();
 
-  ASTBuilder &builder() {
+  IRBuilder &builder() {
     return *current_builder;
   }
 
-  ASTNode *root();
+  IRNode *root();
 };
 
 FrontendContext context;
 
-class ASTBuilder {
+class IRBuilder {
  private:
   std::vector<StmtList *> stack;
 
  public:
-  ASTBuilder(StmtList *initial) {
+  IRBuilder(StmtList *initial) {
     stack.push_back(initial);
   }
 
   void insert(std::unique_ptr<Statement> &&stmt, int location = -1);
 
   struct ScopeGuard {
-    ASTBuilder *builder;
+    IRBuilder *builder;
     StmtList *list;
-    ScopeGuard(ASTBuilder *builder, StmtList *list)
+    ScopeGuard(IRBuilder *builder, StmtList *list)
         : builder(builder), list(list) {
       builder->stack.push_back(list);
     }
@@ -65,7 +65,7 @@ class ASTBuilder {
   }
 };
 
-ASTBuilder &current_ast_builder() {
+IRBuilder &current_ast_builder() {
   return context.builder();
 }
 
@@ -107,7 +107,7 @@ class StmtList;
 
 using VecStatement = std::vector<std::unique_ptr<Statement>>;
 
-class ASTVisitor {
+class IRVisitor {
  public:
 #define DEFINE_VISIT(T)         \
   virtual void visit(T *stmt) { \
@@ -129,15 +129,15 @@ class ASTVisitor {
   DEFINE_VISIT(WhileStatement);
 };
 
-class ASTNode {
+class IRNode {
  public:
-  virtual void accept(ASTVisitor *visitor) {
+  virtual void accept(IRVisitor *visitor) {
     TC_NOT_IMPLEMENTED
   }
 };
 
 #define DEFINE_ACCEPT                \
-  void accept(ASTVisitor *visitor) { \
+  void accept(IRVisitor *visitor) { \
     visitor->visit(this);            \
   }
 
@@ -145,7 +145,7 @@ struct StmtAttribute {
   int vector_width;
 };
 
-class Statement : public ASTNode {
+class Statement : public IRNode {
  public:
   StmtList *parent;
   DataType type;
@@ -257,7 +257,7 @@ DEFINE_EXPRESSION_OP(<=, cmp_le)
 DEFINE_EXPRESSION_OP(>, cmp_gt)
 DEFINE_EXPRESSION_OP(>=, cmp_ge)
 
-class StmtList : public ASTNode {
+class StmtList : public IRNode {
  public:
   std::vector<std::unique_ptr<Statement>> statements;
 
@@ -427,7 +427,7 @@ class WhileStatement : public Statement {
   DEFINE_ACCEPT
 };
 
-void ASTBuilder::insert(std::unique_ptr<Statement> &&stmt, int location) {
+void IRBuilder::insert(std::unique_ptr<Statement> &&stmt, int location) {
   TC_ASSERT(!stack.empty());
   stack.back()->insert(std::move(stmt), location);
 }
@@ -470,7 +470,7 @@ class While {
 
 FrontendContext::FrontendContext() {
   root_node = std::make_unique<StmtList>();
-  current_builder = std::make_unique<ASTBuilder>(root_node.get());
+  current_builder = std::make_unique<IRBuilder>(root_node.get());
 }
 
 class IdExpression : public Expression {
@@ -527,8 +527,8 @@ AssignStmt::AssignStmt(ExprH lhs, ExprH rhs) : lhs(lhs), rhs(rhs) {
   id = lhs.cast<IdExpression>()->id;
 }
 
-ASTNode *FrontendContext::root() {
-  return static_cast<ASTNode *>(root_node.get());
+IRNode *FrontendContext::root() {
+  return static_cast<IRNode *>(root_node.get());
 }
 
 void Var(ExpressionHandle &a) {

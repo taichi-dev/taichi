@@ -4,11 +4,11 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class ASTPrinter : public ASTVisitor {
+class IRPrinter : public IRVisitor {
  public:
   int current_indent;
 
-  ASTPrinter() {
+  IRPrinter() {
     current_indent = -1;
   }
 
@@ -20,8 +20,8 @@ class ASTPrinter : public ASTVisitor {
     fmt::print("\n");
   }
 
-  static void run(ASTNode *node) {
-    auto p = ASTPrinter();
+  static void run(IRNode *node) {
+    auto p = IRPrinter();
     node->accept(&p);
   }
 
@@ -86,11 +86,11 @@ class ASTPrinter : public ASTVisitor {
   }
 };
 
-class ASTModifiedException {};
+class IRModifiedException {};
 
 // Lower Expr tree to a bunch of binary/unary(binary/unary) statements
 // Goal: eliminate Expression, and mutable local variables. Make AST SSA.
-class LowerAST : public ASTVisitor {
+class LowerAST : public IRVisitor {
  public:
   LowerAST() {
   }
@@ -141,7 +141,7 @@ class LowerAST : public ASTVisitor {
     auto print = std::make_unique<PrintStmt>(flattened.back().get());
     flattened.push_back(std::move(print));
     stmt->parent->replace_with(stmt, flattened);
-    throw ASTModifiedException();
+    throw IRModifiedException();
   }
 
   void visit(ConstStatement *const_stmt) {  // this will not appear here
@@ -164,16 +164,16 @@ class LowerAST : public ASTVisitor {
     } else {  // global variable
     }
     assign->parent->replace_with(assign, flattened);
-    throw ASTModifiedException();
+    throw IRModifiedException();
   }
 
-  static void run(ASTNode *node) {
+  static void run(IRNode *node) {
     LowerAST inst;
     while (true) {
       bool modified = false;
       try {
         node->accept(&inst);
-      } catch (ASTModifiedException) {
+      } catch (IRModifiedException) {
         modified = true;
       }
       if (!modified)
@@ -182,7 +182,7 @@ class LowerAST : public ASTVisitor {
   }
 };
 
-class TypeCheck : public ASTVisitor {};
+class TypeCheck : public IRVisitor {};
 
 #define declare(x) \
   auto x = ExpressionHandle(std::make_shared<IdExpression>(#x));
@@ -223,7 +223,7 @@ auto test_ast = []() {
   Print(b);
 
   LowerAST::run(context.root());
-  ASTPrinter::run(context.root());
+  IRPrinter::run(context.root());
 
 };
 TC_REGISTER_TASK(test_ast);

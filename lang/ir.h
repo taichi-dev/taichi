@@ -8,7 +8,7 @@ TLANG_NAMESPACE_BEGIN
 
 class IRBuilder;
 class IRNode;
-class StmtList;
+class Block;
 class Statement;
 class ConstStatement;
 class ForStmt;
@@ -17,7 +17,7 @@ class WhileStmt;
 class FrontendContext {
  private:
   std::unique_ptr<IRBuilder> current_builder;
-  std::unique_ptr<StmtList> root_node;
+  std::unique_ptr<Block> root_node;
 
  public:
   FrontendContext();
@@ -33,10 +33,10 @@ FrontendContext context;
 
 class IRBuilder {
  private:
-  std::vector<StmtList *> stack;
+  std::vector<Block *> stack;
 
  public:
-  IRBuilder(StmtList *initial) {
+  IRBuilder(Block *initial) {
     stack.push_back(initial);
   }
 
@@ -44,8 +44,8 @@ class IRBuilder {
 
   struct ScopeGuard {
     IRBuilder *builder;
-    StmtList *list;
-    ScopeGuard(IRBuilder *builder, StmtList *list)
+    Block *list;
+    ScopeGuard(IRBuilder *builder, Block *list)
         : builder(builder), list(list) {
       builder->stack.push_back(list);
     }
@@ -55,9 +55,9 @@ class IRBuilder {
     }
   };
 
-  ScopeGuard create_scope(std::unique_ptr<StmtList> &list) {
+  ScopeGuard create_scope(std::unique_ptr<Block> &list) {
     TC_ASSERT(list == nullptr);
-    list = std::make_unique<StmtList>();
+    list = std::make_unique<Block>();
     return ScopeGuard(this, list.get());
   }
 
@@ -103,7 +103,7 @@ class LocalStoreStmt;
 class IfStmt;
 class PrintStmt;
 class FrontendPrintStmt;
-class StmtList;
+class Block;
 
 using VecStatement = std::vector<std::unique_ptr<Statement>>;
 
@@ -123,7 +123,7 @@ class IRVisitor {
       TC_NOT_IMPLEMENTED;        \
   }
 
-  DEFINE_VISIT(StmtList);
+  DEFINE_VISIT(Block);
   DEFINE_VISIT(AssignStmt);
   DEFINE_VISIT(AllocaStmt);
   DEFINE_VISIT(BinaryOpStmt);
@@ -156,7 +156,7 @@ struct StmtAttribute {
 
 class Statement : public IRNode {
  public:
-  StmtList *parent;
+  Block *parent;
   DataType type;
   static int id_counter;
   int id;
@@ -170,7 +170,7 @@ class Statement : public IRNode {
     if (type == DataType::unknown)
       return "";
     else
-      return fmt::format("<{}>", data_type_name(type));
+      return fmt::format("<{}> ", data_type_name(type));
   }
 
   std::string name() {
@@ -222,11 +222,11 @@ class ExpressionHandle {
 
 class BinaryOpStmt : public Statement {
  public:
-  BinaryType type;
+  BinaryType op_type;
   Statement *lhs, *rhs;
 
-  BinaryOpStmt(BinaryType type, Statement *lhs, Statement *rhs)
-      : type(type), lhs(lhs), rhs(rhs) {
+  BinaryOpStmt(BinaryType op_type, Statement *lhs, Statement *rhs)
+      : op_type(op_type), lhs(lhs), rhs(rhs) {
   }
 
   DEFINE_ACCEPT
@@ -274,7 +274,7 @@ DEFINE_EXPRESSION_OP(<=, cmp_le)
 DEFINE_EXPRESSION_OP(>, cmp_gt)
 DEFINE_EXPRESSION_OP(>=, cmp_ge)
 
-class StmtList : public IRNode {
+class Block : public IRNode {
  public:
   std::vector<std::unique_ptr<Statement>> statements;
 
@@ -354,7 +354,7 @@ class LocalStoreStmt : public Statement {
 class IfStmt : public Statement {
  public:
   ExpressionHandle condition;
-  std::unique_ptr<StmtList> true_statements, false_statements;
+  std::unique_ptr<Block> true_statements, false_statements;
 
   IfStmt(ExpressionHandle condition) : condition(condition) {
   }
@@ -426,7 +426,7 @@ class ConstStatement : public Statement {
 class ForStmt : public Statement {
  public:
   ExprH begin, end;
-  std::unique_ptr<StmtList> body;
+  std::unique_ptr<Block> body;
   Id loop_var_id;
 
   ForStmt(ExprH loop_var, ExprH begin, ExprH end);
@@ -436,7 +436,7 @@ class ForStmt : public Statement {
 
 class WhileStmt : public Statement {
  public:
-  std::unique_ptr<StmtList> body;
+  std::unique_ptr<Block> body;
 
   WhileStmt(const std::function<void()> &cond) {
   }
@@ -486,7 +486,7 @@ class While {
 };
 
 FrontendContext::FrontendContext() {
-  root_node = std::make_unique<StmtList>();
+  root_node = std::make_unique<Block>();
   current_builder = std::make_unique<IRBuilder>(root_node.get());
 }
 

@@ -25,7 +25,7 @@ class IRPrinter : public IRVisitor {
     node->accept(&p);
   }
 
-  void visit(StmtList *stmt_list) {
+  void visit(Block *stmt_list) {
     current_indent++;
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
@@ -38,12 +38,12 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(AllocaStmt *alloca) {
-    print("{} alloca {}", alloca->type_hint(), alloca->lhs.name());
+    print("{}alloca {}", alloca->type_hint(), alloca->lhs.name());
   }
 
   void visit(BinaryOpStmt *bin) {
-    print("{} {} = {} {} {}", bin->type_hint(), bin->name(),
-          binary_type_name(bin->type), bin->lhs->name(), bin->rhs->name());
+    print("{}{} = {} {} {}", bin->type_hint(), bin->name(),
+          binary_type_name(bin->op_type), bin->lhs->name(), bin->rhs->name());
   }
 
   void visit(IfStmt *if_stmt) {
@@ -62,11 +62,11 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(PrintStmt *print_stmt) {
-    print("{} print {}", print_stmt->type_hint(), print_stmt->stmt->name());
+    print("{}print {}", print_stmt->type_hint(), print_stmt->stmt->name());
   }
 
   void visit(ConstStatement *const_stmt) {
-    print("{} {} = const {}", const_stmt->type_hint(), const_stmt->name(),
+    print("{}{} = const {}", const_stmt->type_hint(), const_stmt->name(),
           const_stmt->value);
   }
 
@@ -95,13 +95,16 @@ class LowerAST : public IRVisitor {
   LowerAST() {
   }
 
+  // TODO: remove this
+  /*
   VecStatement expand(ExprH expr) {
     auto ret = VecStatement();
     expr->flatten(ret);
     return ret;
   }
+  */
 
-  void visit(StmtList *stmt_list) {
+  void visit(Block *stmt_list) {
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
     }
@@ -116,7 +119,6 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) {
-    // TODO
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
@@ -187,8 +189,39 @@ class PropagateSchedule : public IRVisitor {};
 
 // "Type" here does not include vector width
 class TypeCheck : public IRVisitor {
+ public:
   TypeCheck() {
     allow_undefined_visitor = true;
+  }
+
+  void visit(IfStmt *if_stmt) {
+    if (if_stmt->true_statements)
+      if_stmt->true_statements->accept(this);
+    if (if_stmt->false_statements) {
+      if_stmt->false_statements->accept(this);
+    }
+  }
+
+  void visit(Block *stmt_list) {
+    for (auto &stmt : stmt_list->statements) {
+      stmt->accept(this);
+    }
+  }
+
+  void visit(LocalLoadStmt *stmt) {
+
+  }
+
+  void visit(BinaryOpStmt *stmt) {
+    TC_ASSERT(stmt->lhs->type != DataType::unknown);
+    TC_ASSERT(stmt->rhs->type != DataType::unknown);
+    TC_ASSERT(stmt->lhs->type == stmt->rhs->type);
+    stmt->type = stmt->lhs->type;
+  }
+
+  static void run(IRNode *node) {
+    TypeCheck inst;
+    node->accept(&inst);
   }
 };
 
@@ -237,9 +270,18 @@ auto test_ast = []() {
   });
   Print(b);
 
-  LowerAST::run(context.root());
-  IRPrinter::run(context.root());
+  auto root = context.root();
+  TC_INFO("AST");
+  IRPrinter::run(root);
 
+  TC_INFO("Lowered");
+  LowerAST::run(root);
+  IRPrinter::run(root);
+
+  return;
+  TC_INFO("TypeChecked");
+  TypeCheck::run(root);
+  IRPrinter::run(root);
 };
 TC_REGISTER_TASK(test_ast);
 

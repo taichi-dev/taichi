@@ -102,6 +102,7 @@ class LocalLoadStmt;
 class LocalStoreStmt;
 class IfStmt;
 class PrintStmt;
+class FrontendPrintStmt;
 class StmtList;
 
 using VecStatement = std::vector<std::unique_ptr<Statement>>;
@@ -122,6 +123,7 @@ class ASTVisitor {
   DEFINE_VISIT(LocalStoreStmt);
   DEFINE_VISIT(IfStmt);
   DEFINE_VISIT(PrintStmt);
+  DEFINE_VISIT(FrontendPrintStmt);
   DEFINE_VISIT(ConstStatement);
   DEFINE_VISIT(ForStatement);
   DEFINE_VISIT(WhileStatement);
@@ -343,11 +345,21 @@ class IfStmt : public Statement {
   DEFINE_ACCEPT
 };
 
-class PrintStmt : public Statement {
+class FrontendPrintStmt : public Statement {
  public:
   ExprH expr;
 
-  PrintStmt(ExprH expr) : expr(expr) {
+  FrontendPrintStmt(ExprH expr) : expr(expr) {
+  }
+
+  DEFINE_ACCEPT
+};
+
+class PrintStmt : public Statement {
+ public:
+  Statement *stmt;
+
+  PrintStmt(Statement *stmt) : stmt(stmt) {
   }
 
   DEFINE_ACCEPT
@@ -421,7 +433,7 @@ void ASTBuilder::insert(std::unique_ptr<Statement> &&stmt, int location) {
 }
 
 void Print(const ExpressionHandle &a) {
-  context.builder().insert(std::make_unique<PrintStmt>(a));
+  context.builder().insert(std::make_unique<FrontendPrintStmt>(a));
 }
 
 #define DEF_BINARY_OP(Op, name)                                      \

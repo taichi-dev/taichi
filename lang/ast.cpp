@@ -57,8 +57,12 @@ class ASTPrinter : public ASTVisitor {
     print("}}");
   }
 
-  void visit(PrintStmt *print_stmt) {
+  void visit(FrontendPrintStmt *print_stmt) {
     print("print {}", print_stmt->expr.serialize());
+  }
+
+  void visit(PrintStmt *print_stmt) {
+    print("print {}", print_stmt->stmt->name());
   }
 
   void visit(ConstStatement *const_stmt) {
@@ -126,7 +130,18 @@ class LowerAST : public ASTVisitor {
   void visit(LocalStoreStmt *) {
   }
 
-  void visit(PrintStmt *print_stmt) {
+  void visit(PrintStmt *stmt) {
+  }
+
+  void visit(FrontendPrintStmt *stmt) {
+    // expand rhs
+    auto expr = stmt->expr;
+    VecStatement flattened;
+    expr->flatten(flattened);
+    auto print = std::make_unique<PrintStmt>(flattened.back().get());
+    flattened.push_back(std::move(print));
+    stmt->parent->replace_with(stmt, flattened);
+    throw ASTModifiedException();
   }
 
   void visit(ConstStatement *const_stmt) {  // this will not appear here
@@ -169,7 +184,8 @@ class LowerAST : public ASTVisitor {
 
 class TypeCheck : public ASTVisitor {};
 
-#define declare(x) auto x = ExpressionHandle(std::make_shared<IdExpression>(#x));
+#define declare(x) \
+  auto x = ExpressionHandle(std::make_shared<IdExpression>(#x));
 
 auto test_ast = []() {
   CoreState::set_trigger_gdb_when_crash(true);

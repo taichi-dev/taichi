@@ -224,6 +224,16 @@ class TypeCheck : public IRVisitor {
     stmt->type = lookup;
   }
 
+  void visit(ForStmt *stmt) {
+    auto block = stmt->parent;
+    auto lookup = block->lookup_var(stmt->loop_var_id);
+    TC_ASSERT(block->local_variables.find(stmt->loop_var_id) ==
+              block->local_variables.end());
+    block->local_variables.insert(
+        std::make_pair(stmt->loop_var_id, DataType::i32));
+    stmt->body->accept(this);
+  }
+
   void visit(BinaryOpStmt *stmt) {
     TC_ASSERT(stmt->lhs->type != DataType::unknown ||
               stmt->rhs->type != DataType::unknown);

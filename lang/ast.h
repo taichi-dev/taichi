@@ -83,7 +83,7 @@ class Identifier {
   }
 
   std::string name() {
-    return fmt::format("id_{}", id);
+    return fmt::format("%{}", id);
   }
 };
 

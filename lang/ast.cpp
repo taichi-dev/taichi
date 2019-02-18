@@ -34,15 +34,15 @@ class ASTPrinter : public ASTVisitor {
   }
 
   void visit(AssignmentStatement *assign) {
-    print("{} <- {}", assign->id.name(), assign->rhs->serialize());
+    print("{} = {}", assign->id.name(), assign->rhs->serialize());
   }
 
   void visit(AllocaStatement *alloca) {
-    print("{} <- alloca {}", alloca->lhs.name(), data_type_name(alloca->type));
+    print("alloca {} {}", alloca->lhs.name(), data_type_name(alloca->type));
   }
 
   void visit(BinaryOpStatement *bin) {
-    print("{} <- {} {} {}", bin->ret.name(), binary_type_name(bin->type),
+    print("{} = {} {} {}", bin->ret.name(), binary_type_name(bin->type),
           bin->lhs->name(), bin->rhs->name());
   }
 
@@ -62,7 +62,7 @@ class ASTPrinter : public ASTVisitor {
   }
 
   void visit(ConstStatement *const_stmt) {
-    print("{} = const<{}>({})", const_stmt->ret.name(),
+    print("const {} = {}({})", const_stmt->ret.name(),
           data_type_name(const_stmt->data_type), const_stmt->value);
   }
 
@@ -74,11 +74,11 @@ class ASTPrinter : public ASTVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) {
-    print("{} <- load {}", stmt->name(), stmt->id.name());
+    print("{} = load {}", stmt->name(), stmt->id.name());
   }
 
   void visit(LocalStoreStmt *stmt) {
-    print("store {} -> {}", stmt->stmt->name(), stmt->id.name());
+    print("store {} = {}", stmt->id.name(), stmt->stmt->name());
   }
 };
 

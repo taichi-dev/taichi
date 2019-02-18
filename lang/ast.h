@@ -140,6 +140,10 @@ class Statement : public ASTNode {
   StatementList *parent;
   DataType type;
   Id ret;
+
+  std::string name() {
+    return ret.name();
+  }
 };
 
 // always a tree - used as rvalues

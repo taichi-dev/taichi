@@ -42,10 +42,8 @@ class ASTPrinter : public ASTVisitor {
   }
 
   void visit(BinaryOpStatement *bin) {
-    /*
-    print("{} <- {} {} {}", bin.lhs.name(), binary_type_name(bin.type),
-          bin.rhs1.name(), bin.rhs2.name());
-    */
+    print("{} <- {} {} {}", bin->ret.name(), binary_type_name(bin->type),
+          bin->lhs->name(), bin->rhs->name());
   }
 
   void visit(IfStatement *if_stmt) {
@@ -74,6 +72,14 @@ class ASTPrinter : public ASTVisitor {
     for_stmt->body->accept(this);
     print("}}");
   }
+
+  void visit(LocalLoadStmt *stmt) {
+    print("{} <- load {}", stmt->name(), stmt->id.name());
+  }
+
+  void visit(LocalStoreStmt *stmt) {
+    //print("store {} -> {}", , stmt->id.name());
+  }
 };
 
 class ASTModifiedException {};
@@ -91,17 +97,60 @@ class LowerAST : public ASTVisitor {
     return ret;
   }
 
+  void visit(StatementList *stmt_list) {
+    for (auto &stmt : stmt_list->statements) {
+      stmt->accept(this);
+    }
+  }
+
+  void visit(AllocaStatement *alloca) {
+    // print("{} <- alloca {}", alloca->lhs.name(),
+    // data_type_name(alloca->type));
+  }
+
+  void visit(BinaryOpStatement *bin) {  // this will not appear here
+  }
+
+  void visit(IfStatement *if_stmt) {
+    // TODO
+    if (if_stmt->true_statements)
+      if_stmt->true_statements->accept(this);
+    if (if_stmt->false_statements) {
+      if_stmt->false_statements->accept(this);
+    }
+  }
+
+  void visit(LocalLoadStmt *) {
+  }
+
+  void visit(LocalStoreStmt *) {
+  }
+
+  void visit(PrintStatement *print_stmt) {
+  }
+
+  void visit(ConstStatement *const_stmt) {  // this will not appear here
+  }
+
+  void visit(ForStatement *for_stmt) {
+    for_stmt->body->accept(this);
+  }
+
   void visit(AssignmentStatement *assign) {
     // expand rhs
     auto expr = assign->rhs;
+    VecStatement flattened;
+    expr->flatten(flattened);
+    assign->parent->replace_with(assign, flattened);
     throw ASTModifiedException();
   }
 
-  void run() {
+  static void run(ASTNode *node) {
+    LowerAST inst;
     while (true) {
       bool modified = false;
       try {
-        context.root()->accept(this);
+        node->accept(&inst);
       } catch (ASTModifiedException) {
         modified = true;
       }
@@ -150,6 +199,7 @@ auto test_ast = []() {
   });
   Print(b);
 
+  LowerAST::run(context.root());
   ASTPrinter::run(context.root());
 
 };

@@ -75,15 +75,19 @@ using ExprH = ExpressionHandle;
 class Identifier {
  public:
   static int id_counter;
+  std::string name_;
 
   int id;
 
-  Identifier() {
+  Identifier(std::string name_ = "") : name_(name_) {
     id = id_counter++;
   }
 
   std::string name() {
-    return fmt::format("%{}", id);
+    if (name_.empty())
+      return fmt::format("%{}", id);
+    else
+      return "%" + name_;
   }
 };
 
@@ -449,7 +453,7 @@ FrontendContext::FrontendContext() {
 class IdExpression : public Expression {
  public:
   Identifier id;
-  IdExpression() : id() {
+  IdExpression(std::string name = "") : id(name) {
   }
   IdExpression(Identifier id) : id(id) {
   }

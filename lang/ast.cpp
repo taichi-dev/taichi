@@ -169,7 +169,7 @@ class LowerAST : public ASTVisitor {
 
 class TypeCheck : public ASTVisitor {};
 
-#define declare(x) auto x = ExpressionHandle(std::make_shared<IdExpression>());
+#define declare(x) auto x = ExpressionHandle(std::make_shared<IdExpression>(#x));
 
 auto test_ast = []() {
   CoreState::set_trigger_gdb_when_crash(true);

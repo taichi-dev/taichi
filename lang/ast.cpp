@@ -78,7 +78,7 @@ class ASTPrinter : public ASTVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) {
-    //print("store {} -> {}", , stmt->id.name());
+    print("store {} -> {}", stmt->stmt->name(), stmt->id.name());
   }
 };
 
@@ -141,6 +141,13 @@ class LowerAST : public ASTVisitor {
     auto expr = assign->rhs;
     VecStatement flattened;
     expr->flatten(flattened);
+    if (true) {  // local variable
+      // emit local store stmt
+      auto local_store =
+          std::make_unique<LocalStoreStmt>(assign->id, flattened.back().get());
+      flattened.push_back(std::move(local_store));
+    } else {  // global variable
+    }
     assign->parent->replace_with(assign, flattened);
     throw ASTModifiedException();
   }

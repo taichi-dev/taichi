@@ -309,9 +309,11 @@ class LocalLoadStmt : public Statement {
 class LocalStoreStmt : public Statement {
  public:
   Id id;
+  Statement *stmt;
 
-  LocalStoreStmt(Id id) : id(id) {
+  LocalStoreStmt(Id id, Statement *stmt) : id(id), stmt(stmt) {
   }
+
   DEFINE_ACCEPT;
 };
 

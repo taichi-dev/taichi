@@ -386,6 +386,13 @@ inline bool ends_with(std::string const &str, std::string const &ending) {
     return std::equal(ending.begin(), ending.end(), str.end() - ending.size());
 }
 
+inline bool starts_with(std::string const &str, std::string const &ending) {
+  if (ending.size() > str.size())
+    return false;
+  else
+    return std::equal(ending.begin(), ending.end(), str.begin());
+}
+
 TC_NAMESPACE_END
 
 //******************************************************************************

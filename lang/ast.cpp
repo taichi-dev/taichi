@@ -94,7 +94,6 @@ class LowerAST : public ASTVisitor {
   void visit(AssignmentStatement *assign) {
     // expand rhs
     auto expr = assign->rhs;
-
     throw ASTModifiedException();
   }
 

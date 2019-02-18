@@ -146,9 +146,8 @@ class Statement : public ASTNode {
 class Expression {
  public:
   virtual std::string serialize() = 0;
-  virtual Statement *flatten(VecStatement &ret) {
+  virtual void flatten(VecStatement &ret) {
     TC_NOT_IMPLEMENTED;
-    return nullptr;
   };
 };
 
@@ -183,7 +182,17 @@ class ExpressionHandle {
   }
 };
 
-class BinaryOpExpression;
+class BinaryOpStatement : public Statement {
+ public:
+  BinaryType type;
+  Statement *lhs, *rhs;
+
+  BinaryOpStatement(BinaryType type, Statement *lhs, Statement *rhs)
+      : type(type), lhs(lhs), rhs(rhs) {
+  }
+
+  DEFINE_ACCEPT
+};
 
 class BinaryOpExpression : public Expression {
  public:
@@ -199,6 +208,15 @@ class BinaryOpExpression : public Expression {
   std::string serialize() override {
     return fmt::format("({} {} {})", lhs->serialize(), binary_type_symbol(type),
                        rhs->serialize());
+  }
+
+  void flatten(VecStatement &ret) override {
+    lhs->flatten(ret);
+    auto lhs_statement = ret.back().get();
+    rhs->flatten(ret);
+    auto rhs_statement = ret.back().get();
+    ret.push_back(std::make_unique<BinaryOpStatement>(type, lhs_statement,
+                                                      rhs_statement));
   }
 };
 
@@ -267,18 +285,6 @@ class AllocaStatement : public Statement {
 
   AllocaStatement(Id lhs, DataType type) : lhs(lhs), type(type) {
   }
-  DEFINE_ACCEPT
-};
-
-class BinaryOpStatement : public Statement {
- public:
-  BinaryType type;
-  Statement *lhs, *rhs;
-
-  BinaryOpStatement(BinaryType type, Statement *lhs, Statement *rhs)
-      : type(type), lhs(lhs), rhs(rhs) {
-  }
-
   DEFINE_ACCEPT
 };
 
@@ -446,24 +452,24 @@ class IdExpression : public Expression {
     return id.name();
   }
 
-  Statement *flatten(VecStatement &ret) override {
+  void flatten(VecStatement &ret) override {
     ret.push_back(std::make_unique<LocalLoadStmt>(id));
-    return ret.back().get();
   }
 };
 
 class ConstExpression : public Expression {
  public:
   long double val;
+
   ConstExpression(long double val) : val(val) {
   }
+
   std::string serialize() override {
     return fmt::format("{}", val);
   }
 
-  Statement *flatten(VecStatement &ret) override {
+  void flatten(VecStatement &ret) override {
     ret.push_back(std::make_unique<ConstStatement>((float32)val));
-    return ret.back().get();
   }
 };
 
@@ -474,6 +480,7 @@ ExpressionHandle::ExpressionHandle(int x) {
 ExpressionHandle::ExpressionHandle(double x) {
   expr = std::make_shared<ConstExpression>(x);
 }
+
 ExpressionHandle::ExpressionHandle(Identifier id) {
   expr = std::make_shared<IdExpression>(id);
 }

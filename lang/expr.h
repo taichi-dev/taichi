@@ -317,7 +317,7 @@ inline Expr variable(DataType dt) {
 }
 
 template <typename T>
-inline Expr var() {
+inline Expr global() {
   return placeholder(get_data_type<T>());
 }
 

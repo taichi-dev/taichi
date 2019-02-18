@@ -42,7 +42,7 @@ class FrontendContext {
   IRNode *root();
 };
 
-FrontendContext context;
+extern FrontendContext context;
 
 class IRBuilder {
  private:
@@ -73,7 +73,7 @@ class IRBuilder {
   }
 };
 
-IRBuilder &current_ast_builder() {
+inline IRBuilder &current_ast_builder() {
   return context.builder();
 }
 
@@ -106,8 +106,6 @@ class Identifier {
     return id == o.id;
   }
 };
-
-int Identifier::id_counter = 0;
 
 using Ident = Identifier;
 
@@ -191,8 +189,6 @@ class Statement : public IRNode {
   }
 };
 
-int Statement::id_counter = 0;
-
 // always a tree - used as rvalues
 class Expression {
  public:
@@ -271,10 +267,11 @@ class BinaryOpExpression : public Expression {
   }
 };
 
-#define DEFINE_EXPRESSION_OP(op, op_name)                                      \
-  Handle<Expression> operator op(ExpressionHandle lhs, ExpressionHandle rhs) { \
-    return std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs,      \
-                                                rhs);                          \
+#define DEFINE_EXPRESSION_OP(op, op_name)                                 \
+  inline Handle<Expression> operator op(ExpressionHandle lhs,             \
+                                        ExpressionHandle rhs) {           \
+    return std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs, \
+                                                rhs);                     \
   }
 
 DEFINE_EXPRESSION_OP(+, add)
@@ -337,15 +334,6 @@ class Block : public IRNode {
 
   DEFINE_ACCEPT
 };
-
-IRBuilder::ScopeGuard IRBuilder::create_scope(std::unique_ptr<Block> &list) {
-  TC_ASSERT(list == nullptr);
-  list = std::make_unique<Block>();
-  if (!stack.empty()) {
-    list->parent = stack.back();
-  }
-  return ScopeGuard(this, list.get());
-}
 
 class AssignStmt : public Statement {
  public:
@@ -496,28 +484,24 @@ class WhileStmt : public Statement {
   DEFINE_ACCEPT
 };
 
-void IRBuilder::insert(std::unique_ptr<Statement> &&stmt, int location) {
+inline void IRBuilder::insert(std::unique_ptr<Statement> &&stmt, int location) {
   TC_ASSERT(!stack.empty());
   stack.back()->insert(std::move(stmt), location);
 }
 
-void Print(const ExpressionHandle &a) {
+inline void Print(const ExpressionHandle &a) {
   context.builder().insert(std::make_unique<FrontendPrintStmt>(a));
 }
 
-#define DEF_BINARY_OP(Op, name)                                      \
-  Identifier operator Op(const Identifier &a, const Identifier &b) { \
-    Identifier c;                                                    \
-    current_ast_builder().insert(                                    \
-        std::make_unique<BinaryOpStmt>(BinaryType::name, c, a, b));  \
-    return c;                                                        \
+#define DEF_BINARY_OP(Op, name)                                             \
+  inline Identifier operator Op(const Identifier &a, const Identifier &b) { \
+    Identifier c;                                                           \
+    current_ast_builder().insert(                                           \
+        std::make_unique<BinaryOpStmt>(BinaryType::name, c, a, b));         \
+    return c;                                                               \
   }
 
 #undef DEF_BINARY_OP
-
-void ExprH::operator=(const ExpressionHandle &o) {
-  context.builder().insert(std::make_unique<AssignStmt>(*this, o));
-}
 
 class For {
  public:
@@ -536,11 +520,6 @@ class While {
     // context.builder().insert()
   }
 };
-
-FrontendContext::FrontendContext() {
-  root_node = std::make_unique<Block>();
-  current_builder = std::make_unique<IRBuilder>(root_node.get());
-}
 
 class IdExpression : public Expression {
  public:
@@ -575,35 +554,21 @@ class ConstExpression : public Expression {
   }
 };
 
-ExpressionHandle::ExpressionHandle(int x) {
-  expr = std::make_shared<ConstExpression>(x);
-}
-
-ExpressionHandle::ExpressionHandle(double x) {
-  expr = std::make_shared<ConstExpression>(x);
-}
-
-ExpressionHandle::ExpressionHandle(Identifier id) {
-  expr = std::make_shared<IdExpression>(id);
-}
-
-FrontendForStmt::FrontendForStmt(ExprH loop_var, ExprH begin, ExprH end)
-    : begin(begin), end(end) {
-  loop_var_id = loop_var.cast<IdExpression>()->id;
-}
-
-AssignStmt::AssignStmt(ExprH lhs, ExprH rhs) : lhs(lhs), rhs(rhs) {
-  id = lhs.cast<IdExpression>()->id;
-}
-
-IRNode *FrontendContext::root() {
-  return static_cast<IRNode *>(root_node.get());
-}
-
 template <typename T>
-void declare_var(ExpressionHandle &a) {
+inline void declare_var(ExpressionHandle &a) {
   current_ast_builder().insert(std::make_unique<AllocaStmt>(
       std::static_pointer_cast<IdExpression>(a.expr)->id, get_data_type<T>()));
 }
+
+namespace irpass {
+void print(IRNode *root);
+void lower(IRNode *root);
+void typecheck(IRNode *root);
+}  // namespace irpass
+
+#define declare(x) \
+  auto x = ExpressionHandle(std::make_shared<IdExpression>(#x));
+
+#define var(type, x) declare_var<type>(x);
 
 TLANG_NAMESPACE_END

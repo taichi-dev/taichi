@@ -374,6 +374,8 @@ enum class CmpType { eq, ne, le, lt };
 
 constexpr int max_num_indices = 4;
 
+class IRModifiedException {};
+
 TLANG_NAMESPACE_END
 
 TC_NAMESPACE_BEGIN

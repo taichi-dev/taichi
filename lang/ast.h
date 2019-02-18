@@ -94,9 +94,13 @@ class AssignmentStatement;
 class AllocaStatement;
 class BinaryOpStatement;
 class UnaryOpStatement;
+class LocalLoadStmt;
+class LocalStoreStmt;
 class IfStatement;
 class PrintStatement;
 class StatementList;
+
+using VecStatement = std::vector<std::unique_ptr<Statement>>;
 
 class ASTVisitor {
  public:
@@ -110,6 +114,8 @@ class ASTVisitor {
   DEFINE_VISIT(AllocaStatement);
   DEFINE_VISIT(BinaryOpStatement);
   DEFINE_VISIT(UnaryOpStatement);
+  DEFINE_VISIT(LocalLoadStmt);
+  DEFINE_VISIT(LocalStoreStmt);
   DEFINE_VISIT(IfStatement);
   DEFINE_VISIT(PrintStatement);
   DEFINE_VISIT(ConstStatement);
@@ -140,30 +146,13 @@ class Statement : public ASTNode {
 class Expression {
  public:
   virtual std::string serialize() = 0;
+  virtual Statement *flatten(VecStatement &ret) {
+    TC_NOT_IMPLEMENTED;
+    return nullptr;
+  };
 };
 
-class IdExpression : public Expression {
- public:
-  Identifier id;
-  IdExpression() : id() {
-  }
-  IdExpression(Identifier id) : id(id) {
-  }
-
-  std::string serialize() override {
-    return id.name();
-  }
-};
-
-class ConstExpression : public Expression {
- public:
-  long double val;
-  ConstExpression(long double val) : val(val) {
-  }
-  std::string serialize() override {
-    return fmt::format("{}", val);
-  }
-};
+class LocalLoadStmt;
 
 class ExpressionHandle {
  public:
@@ -176,9 +165,7 @@ class ExpressionHandle {
   ExpressionHandle(std::shared_ptr<Expression> expr) : expr(expr) {
   }
 
-  ExpressionHandle(Identifier id) {
-    expr = std::make_shared<IdExpression>(id);
-  }
+  ExpressionHandle(Identifier id);
 
   Expression *operator->() {
     return expr.get();
@@ -268,9 +255,7 @@ class AssignmentStatement : public Statement {
   ExprH lhs, rhs;
   Id id;
 
-  AssignmentStatement(ExprH lhs, ExprH rhs) : lhs(lhs), rhs(rhs) {
-    id = lhs.cast<IdExpression>()->id;
-  }
+  AssignmentStatement(ExprH lhs, ExprH rhs);
 
   DEFINE_ACCEPT
 };
@@ -299,6 +284,25 @@ class BinaryOpStatement : public Statement {
 
 class UnaryOpStatement : public Statement {
   DEFINE_ACCEPT
+};
+
+class LocalLoadStmt : public Statement {
+ public:
+  Id id;
+
+  LocalLoadStmt(Id id) : id(id) {
+  }
+
+  DEFINE_ACCEPT;
+};
+
+class LocalStoreStmt : public Statement {
+ public:
+  Id id;
+
+  LocalStoreStmt(Id id) : id(id) {
+  }
+  DEFINE_ACCEPT;
 };
 
 class IfStatement : public Statement {
@@ -347,16 +351,15 @@ class If {
 
 class ConstStatement : public Statement {
  public:
-  Id id;
   DataType data_type;
   double value;
 
-  ConstStatement(Id id, int32 x) : id(id) {
+  ConstStatement(int32 x) {
     data_type = DataType::i32;
     value = x;
   }
 
-  ConstStatement(Id id, float32 x) : id(id) {
+  ConstStatement(float32 x) {
     data_type = DataType::f32;
     value = x;
   }
@@ -370,10 +373,7 @@ class ForStatement : public Statement {
   std::unique_ptr<StatementList> body;
   Id loop_var_id;
 
-  ForStatement(ExprH loop_var, ExprH begin, ExprH end)
-      : begin(begin), end(end) {
-    loop_var_id = loop_var.cast<IdExpression>()->id;
-  }
+  ForStatement(ExprH loop_var, ExprH begin, ExprH end);
 
   DEFINE_ACCEPT
 };
@@ -391,11 +391,6 @@ class WhileStatement : public Statement {
 void ASTBuilder::insert(std::unique_ptr<Statement> &&stmt, int location) {
   TC_ASSERT(!stack.empty());
   stack.back()->insert(std::move(stmt), location);
-}
-
-void Var(ExpressionHandle &a) {
-  current_ast_builder().insert(std::make_unique<AllocaStatement>(
-      std::static_pointer_cast<IdExpression>(a.expr)->id, DataType::f32));
 }
 
 void Print(const ExpressionHandle &a) {
@@ -439,6 +434,39 @@ FrontendContext::FrontendContext() {
   current_builder = std::make_unique<ASTBuilder>(root_node.get());
 }
 
+class IdExpression : public Expression {
+ public:
+  Identifier id;
+  IdExpression() : id() {
+  }
+  IdExpression(Identifier id) : id(id) {
+  }
+
+  std::string serialize() override {
+    return id.name();
+  }
+
+  Statement *flatten(VecStatement &ret) override {
+    ret.push_back(std::make_unique<LocalLoadStmt>(id));
+    return ret.back().get();
+  }
+};
+
+class ConstExpression : public Expression {
+ public:
+  long double val;
+  ConstExpression(long double val) : val(val) {
+  }
+  std::string serialize() override {
+    return fmt::format("{}", val);
+  }
+
+  Statement *flatten(VecStatement &ret) override {
+    ret.push_back(std::make_unique<ConstStatement>((float32)val));
+    return ret.back().get();
+  }
+};
+
 ExpressionHandle::ExpressionHandle(int x) {
   expr = std::make_shared<ConstExpression>(x);
 }
@@ -446,9 +474,27 @@ ExpressionHandle::ExpressionHandle(int x) {
 ExpressionHandle::ExpressionHandle(double x) {
   expr = std::make_shared<ConstExpression>(x);
 }
+ExpressionHandle::ExpressionHandle(Identifier id) {
+  expr = std::make_shared<IdExpression>(id);
+}
+
+ForStatement::ForStatement(ExprH loop_var, ExprH begin, ExprH end)
+    : begin(begin), end(end) {
+  loop_var_id = loop_var.cast<IdExpression>()->id;
+}
+
+AssignmentStatement::AssignmentStatement(ExprH lhs, ExprH rhs)
+    : lhs(lhs), rhs(rhs) {
+  id = lhs.cast<IdExpression>()->id;
+}
 
 ASTNode *FrontendContext::root() {
   return static_cast<ASTNode *>(root_node.get());
+}
+
+void Var(ExpressionHandle &a) {
+  current_ast_builder().insert(std::make_unique<AllocaStatement>(
+      std::static_pointer_cast<IdExpression>(a.expr)->id, DataType::f32));
 }
 
 TLANG_NAMESPACE_END

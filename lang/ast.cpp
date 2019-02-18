@@ -64,7 +64,7 @@ class ASTPrinter : public ASTVisitor {
   }
 
   void visit(ConstStatement *const_stmt) {
-    print("{} = const<{}>({})", const_stmt->id.name(),
+    print("{} = const<{}>({})", const_stmt->ret.name(),
           data_type_name(const_stmt->data_type), const_stmt->value);
   }
 
@@ -85,9 +85,16 @@ class LowerAST : public ASTVisitor {
   LowerAST() {
   }
 
+  VecStatement expand(ExprH expr) {
+    auto ret = VecStatement();
+    expr->flatten(ret);
+    return ret;
+  }
+
   void visit(AssignmentStatement *assign) {
     // expand rhs
-    
+    auto expr = assign->rhs;
+
     throw ASTModifiedException();
   }
 

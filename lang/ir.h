@@ -10,8 +10,8 @@ class IRBuilder;
 class IRNode;
 class Block;
 class Statement;
-class ConstStatement;
-class ForStmt;
+class ConstStmt;
+class FrontendForStmt;
 class WhileStmt;
 
 class FrontendContext {
@@ -103,7 +103,7 @@ class BinaryOpStmt;
 class UnaryOpStmt;
 class LocalLoadStmt;
 class LocalStoreStmt;
-class IfStmt;
+class FrontendIfStmt;
 class PrintStmt;
 class FrontendPrintStmt;
 class Block;
@@ -133,11 +133,11 @@ class IRVisitor {
   DEFINE_VISIT(UnaryOpStmt);
   DEFINE_VISIT(LocalLoadStmt);
   DEFINE_VISIT(LocalStoreStmt);
-  DEFINE_VISIT(IfStmt);
+  DEFINE_VISIT(FrontendIfStmt);
   DEFINE_VISIT(PrintStmt);
   DEFINE_VISIT(FrontendPrintStmt);
-  DEFINE_VISIT(ConstStatement);
-  DEFINE_VISIT(ForStmt);
+  DEFINE_VISIT(ConstStmt);
+  DEFINE_VISIT(FrontendForStmt);
   DEFINE_VISIT(WhileStmt);
 };
 
@@ -387,12 +387,12 @@ class LocalStoreStmt : public Statement {
   DEFINE_ACCEPT;
 };
 
-class IfStmt : public Statement {
+class FrontendIfStmt : public Statement {
  public:
   ExpressionHandle condition;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  IfStmt(ExpressionHandle condition) : condition(condition) {
+  FrontendIfStmt(ExpressionHandle condition) : condition(condition) {
   }
 
   DEFINE_ACCEPT
@@ -420,10 +420,10 @@ class PrintStmt : public Statement {
 
 class If {
  public:
-  IfStmt *stmt;
+  FrontendIfStmt *stmt;
 
   If(ExpressionHandle cond) {
-    auto stmt_tmp = std::make_unique<IfStmt>(cond);
+    auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond);
     stmt = stmt_tmp.get();
     context.builder().insert(std::move(stmt_tmp));
   }
@@ -441,17 +441,17 @@ class If {
   }
 };
 
-class ConstStatement : public Statement {
+class ConstStmt : public Statement {
  public:
   DataType data_type;
   double value;
 
-  ConstStatement(int32 x) {
+  ConstStmt(int32 x) {
     data_type = DataType::i32;
     value = x;
   }
 
-  ConstStatement(float32 x) {
+  ConstStmt(float32 x) {
     data_type = DataType::f32;
     value = x;
   }
@@ -459,13 +459,13 @@ class ConstStatement : public Statement {
   DEFINE_ACCEPT
 };
 
-class ForStmt : public Statement {
+class FrontendForStmt : public Statement {
  public:
   ExprH begin, end;
   std::unique_ptr<Block> body;
   Ident loop_var_id;
 
-  ForStmt(ExprH loop_var, ExprH begin, ExprH end);
+  FrontendForStmt(ExprH loop_var, ExprH begin, ExprH end);
 
   DEFINE_ACCEPT
 };
@@ -506,7 +506,7 @@ void ExprH::operator=(const ExpressionHandle &o) {
 class For {
  public:
   For(ExprH i, ExprH s, ExprH e, const std::function<void()> &func) {
-    auto stmt_unique = std::make_unique<ForStmt>(i, s, e);
+    auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
     auto stmt = stmt_unique.get();
     context.builder().insert(std::move(stmt_unique));
     auto _ = context.builder().create_scope(stmt->body);
@@ -555,7 +555,7 @@ class ConstExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    ret.push_back(std::make_unique<ConstStatement>((float32)val));
+    ret.push_back(std::make_unique<ConstStmt>((float32)val));
   }
 };
 
@@ -571,7 +571,7 @@ ExpressionHandle::ExpressionHandle(Identifier id) {
   expr = std::make_shared<IdExpression>(id);
 }
 
-ForStmt::ForStmt(ExprH loop_var, ExprH begin, ExprH end)
+FrontendForStmt::FrontendForStmt(ExprH loop_var, ExprH begin, ExprH end)
     : begin(begin), end(end) {
   loop_var_id = loop_var.cast<IdExpression>()->id;
 }

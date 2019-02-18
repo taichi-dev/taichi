@@ -46,7 +46,7 @@ class IRPrinter : public IRVisitor {
           binary_type_name(bin->op_type), bin->lhs->name(), bin->rhs->name());
   }
 
-  void visit(IfStmt *if_stmt) {
+  void visit(FrontendIfStmt *if_stmt) {
     print("if {} {{", if_stmt->condition->serialize());
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
@@ -65,12 +65,12 @@ class IRPrinter : public IRVisitor {
     print("{}print {}", print_stmt->type_hint(), print_stmt->stmt->name());
   }
 
-  void visit(ConstStatement *const_stmt) {
+  void visit(ConstStmt *const_stmt) {
     print("{}{} = const {}", const_stmt->type_hint(), const_stmt->name(),
           const_stmt->value);
   }
 
-  void visit(ForStmt *for_stmt) {
+  void visit(FrontendForStmt *for_stmt) {
     print("for {} in range({}, {}) {{", for_stmt->loop_var_id.name(),
           for_stmt->begin->serialize(), for_stmt->end->serialize());
     for_stmt->body->accept(this);
@@ -119,7 +119,7 @@ class LowerAST : public IRVisitor {
   void visit(BinaryOpStmt *bin) {  // this will not appear here
   }
 
-  void visit(IfStmt *if_stmt) {
+  void visit(FrontendIfStmt *if_stmt) {
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
@@ -147,10 +147,10 @@ class LowerAST : public IRVisitor {
     throw IRModifiedException();
   }
 
-  void visit(ConstStatement *const_stmt) {  // this will not appear here
+  void visit(ConstStmt *const_stmt) {  // this will not appear here
   }
 
-  void visit(ForStmt *for_stmt) {
+  void visit(FrontendForStmt *for_stmt) {
     for_stmt->body->accept(this);
   }
 
@@ -204,7 +204,7 @@ class TypeCheck : public IRVisitor {
     block->local_variables.insert(std::make_pair(ident, stmt->type));
   }
 
-  void visit(IfStmt *if_stmt) {
+  void visit(FrontendIfStmt *if_stmt) {
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
@@ -224,7 +224,7 @@ class TypeCheck : public IRVisitor {
     stmt->type = lookup;
   }
 
-  void visit(ForStmt *stmt) {
+  void visit(FrontendForStmt *stmt) {
     auto block = stmt->parent;
     auto lookup = block->lookup_var(stmt->loop_var_id);
     TC_ASSERT(block->local_variables.find(stmt->loop_var_id) ==
@@ -238,11 +238,11 @@ class TypeCheck : public IRVisitor {
     TC_ASSERT(stmt->lhs->type != DataType::unknown ||
               stmt->rhs->type != DataType::unknown);
     if (stmt->lhs->type == DataType::unknown &&
-        stmt->lhs->is<ConstStatement>()) {
+        stmt->lhs->is<ConstStmt>()) {
       stmt->lhs->type = stmt->rhs->type;
     }
     if (stmt->rhs->type == DataType::unknown &&
-        stmt->rhs->is<ConstStatement>()) {
+        stmt->rhs->is<ConstStmt>()) {
       stmt->rhs->type = stmt->lhs->type;
     }
     TC_ASSERT(stmt->lhs->type != DataType::unknown);
@@ -293,9 +293,9 @@ auto test_ast = []() {
         b = b - 4;
       });
 
-  For(i, 0, 100, [&] {
-    For(j, 0, 200, [&] {
-      ExprH k = i + j;
+  For(i, 0, 8, [&] {
+    For(j, 0, 8, [&] {
+      auto k = i + j;
       Print(k);
       // While(k < 500, [&] { Print(k); });
     });

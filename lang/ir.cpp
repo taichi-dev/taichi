@@ -287,7 +287,7 @@ class TypeCheck : public IRVisitor {
 
 #define var(type, x) declare_var<type>(x);
 
-auto test_compiler = []() {
+TC_TEST("test_compiler")  {
   int n = 128;
   Program prog(Arch::x86_64);
 
@@ -306,7 +306,6 @@ auto test_compiler = []() {
     TC_CHECK(a.val<float32>(i) == (i % 2) * i);
   }
 };
-TC_REGISTER_TASK(test_compiler);
 
 auto test_ast = []() {
   CoreState::set_trigger_gdb_when_crash(true);

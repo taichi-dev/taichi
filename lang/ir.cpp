@@ -38,7 +38,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(AllocaStmt *alloca) {
-    print("{}alloca {}", alloca->type_hint(), alloca->lhs.name());
+    print("{}alloca {}", alloca->type_hint(), alloca->ident.name());
   }
 
   void visit(BinaryOpStmt *bin) {
@@ -78,11 +78,12 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) {
-    print("{} = load {}", stmt->name(), stmt->id.name());
+    print("{}{} = load {}", stmt->type_hint(), stmt->name(),
+          stmt->ident.name());
   }
 
   void visit(LocalStoreStmt *stmt) {
-    print("[store] {} = {}", stmt->id.name(), stmt->stmt->name());
+    print("[store] {} = {}", stmt->ident.name(), stmt->stmt->name());
   }
 };
 
@@ -188,10 +189,19 @@ class LowerAST : public IRVisitor {
 class PropagateSchedule : public IRVisitor {};
 
 // "Type" here does not include vector width
+// Variable lookup and Type inference
 class TypeCheck : public IRVisitor {
  public:
   TypeCheck() {
     allow_undefined_visitor = true;
+  }
+
+  void visit(AllocaStmt *stmt) {
+    auto block = stmt->parent;
+    auto ident = stmt->ident;
+    TC_ASSERT(block->local_variables.find(ident) ==
+              block->local_variables.end());
+    block->local_variables.insert(std::make_pair(ident, stmt->type));
   }
 
   void visit(IfStmt *if_stmt) {
@@ -209,10 +219,22 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) {
-
+    auto block = stmt->parent;
+    auto lookup = block->lookup_var(stmt->ident);
+    stmt->type = lookup;
   }
 
   void visit(BinaryOpStmt *stmt) {
+    TC_ASSERT(stmt->lhs->type != DataType::unknown ||
+              stmt->rhs->type != DataType::unknown);
+    if (stmt->lhs->type == DataType::unknown &&
+        stmt->lhs->is<ConstStatement>()) {
+      stmt->lhs->type = stmt->rhs->type;
+    }
+    if (stmt->rhs->type == DataType::unknown &&
+        stmt->rhs->is<ConstStatement>()) {
+      stmt->rhs->type = stmt->lhs->type;
+    }
     TC_ASSERT(stmt->lhs->type != DataType::unknown);
     TC_ASSERT(stmt->rhs->type != DataType::unknown);
     TC_ASSERT(stmt->lhs->type == stmt->rhs->type);
@@ -271,16 +293,16 @@ auto test_ast = []() {
   Print(b);
 
   auto root = context.root();
+
   TC_INFO("AST");
   IRPrinter::run(root);
 
-  TC_INFO("Lowered");
   LowerAST::run(root);
+  TC_INFO("Lowered");
   IRPrinter::run(root);
 
-  return;
-  TC_INFO("TypeChecked");
   TypeCheck::run(root);
+  TC_INFO("TypeChecked");
   IRPrinter::run(root);
 };
 TC_REGISTER_TASK(test_ast);

@@ -84,11 +84,19 @@ class Identifier {
     else
       return "{" + name_ + "}";
   }
+
+  bool operator<(const Identifier &o) const {
+    return id < o.id;
+  }
+
+  bool operator==(const Identifier &o) const {
+    return id == o.id;
+  }
 };
 
 int Identifier::id_counter = 0;
 
-using Id = Identifier;
+using Ident = Identifier;
 class AssignStmt;
 class AllocaStmt;
 class BinaryOpStmt;
@@ -170,6 +178,11 @@ class Statement : public IRNode {
 
   std::string name() {
     return fmt::format("@{}", id);
+  }
+
+  template <typename T>
+  bool is() const {
+    return dynamic_cast<const T *>(this) != nullptr;
   }
 };
 
@@ -273,7 +286,7 @@ class Block : public IRNode {
  public:
   Block *parent;
   std::vector<std::unique_ptr<Statement>> statements;
-  std::map<Id, DataType> local_variables;
+  std::map<Ident, DataType> local_variables;
 
   Block() {
     parent = nullptr;
@@ -304,21 +317,35 @@ class Block : public IRNode {
     }
   }
 
+  DataType lookup_var(Ident ident) const {
+    auto ptr = local_variables.find(ident);
+    if (ptr != local_variables.end()) {
+      return ptr->second;
+    } else {
+      if (parent) {
+        return parent->lookup_var(ident);
+      } else {
+        return DataType::unknown;
+      }
+    }
+  }
+
   DEFINE_ACCEPT
 };
 
 IRBuilder::ScopeGuard IRBuilder::create_scope(std::unique_ptr<Block> &list) {
   TC_ASSERT(list == nullptr);
   list = std::make_unique<Block>();
-  if (!stack.empty())
+  if (!stack.empty()) {
     list->parent = stack.back();
+  }
   return ScopeGuard(this, list.get());
 }
 
 class AssignStmt : public Statement {
  public:
   ExprH lhs, rhs;
-  Id id;
+  Ident id;
 
   AssignStmt(ExprH lhs, ExprH rhs);
 
@@ -327,9 +354,9 @@ class AssignStmt : public Statement {
 
 class AllocaStmt : public Statement {
  public:
-  Id lhs;
+  Ident ident;
 
-  AllocaStmt(Id lhs, DataType type) : lhs(lhs) {
+  AllocaStmt(Ident lhs, DataType type) : ident(lhs) {
     this->type = type;
   }
   DEFINE_ACCEPT
@@ -341,9 +368,9 @@ class UnaryOpStmt : public Statement {
 
 class LocalLoadStmt : public Statement {
  public:
-  Id id;
+  Ident ident;
 
-  LocalLoadStmt(Id id) : id(id) {
+  LocalLoadStmt(Ident ident) : ident(ident) {
   }
 
   DEFINE_ACCEPT;
@@ -351,10 +378,10 @@ class LocalLoadStmt : public Statement {
 
 class LocalStoreStmt : public Statement {
  public:
-  Id id;
+  Ident ident;
   Statement *stmt;
 
-  LocalStoreStmt(Id id, Statement *stmt) : id(id), stmt(stmt) {
+  LocalStoreStmt(Ident ident, Statement *stmt) : ident(ident), stmt(stmt) {
   }
 
   DEFINE_ACCEPT;
@@ -436,7 +463,7 @@ class ForStmt : public Statement {
  public:
   ExprH begin, end;
   std::unique_ptr<Block> body;
-  Id loop_var_id;
+  Ident loop_var_id;
 
   ForStmt(ExprH loop_var, ExprH begin, ExprH end);
 

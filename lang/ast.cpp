@@ -42,7 +42,7 @@ class ASTPrinter : public ASTVisitor {
   }
 
   void visit(BinaryOpStmt *bin) {
-    print("{} = {} {} {}", bin->ret.name(), binary_type_name(bin->type),
+    print("{} = {} {} {}", bin->name(), binary_type_name(bin->type),
           bin->lhs->name(), bin->rhs->name());
   }
 
@@ -62,7 +62,7 @@ class ASTPrinter : public ASTVisitor {
   }
 
   void visit(ConstStatement *const_stmt) {
-    print("const {} = {}({})", const_stmt->ret.name(),
+    print("{} = const {} {}", const_stmt->name(),
           data_type_name(const_stmt->data_type), const_stmt->value);
   }
 

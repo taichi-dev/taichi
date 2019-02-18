@@ -85,9 +85,9 @@ class Identifier {
 
   std::string name() {
     if (name_.empty())
-      return fmt::format("%{}", id);
+      return "{" + fmt::format("{}", id) + "}";
     else
-      return "%" + name_;
+      return "{" + name_ + "}";
   }
 };
 
@@ -139,16 +139,27 @@ class ASTNode {
     visitor->visit(this);            \
   }
 
+struct StmtAttribute {
+  int vector_width;
+};
+
 class Statement : public ASTNode {
  public:
   StmtList *parent;
   DataType type;
-  Id ret;
+  static int id_counter;
+  int id;
+
+  Statement() {
+    id = id_counter++;
+  }
 
   std::string name() {
-    return ret.name();
+    return fmt::format("@{}", id);
   }
 };
+
+int Statement::id_counter = 0;
 
 // always a tree - used as rvalues
 class Expression {

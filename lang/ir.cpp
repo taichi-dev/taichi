@@ -50,6 +50,7 @@ AssignStmt::AssignStmt(ExprH lhs, ExprH rhs) : lhs(lhs), rhs(rhs) {
 IRNode *FrontendContext::root() {
   return static_cast<IRNode *>(root_node.get());
 }
+
 int Identifier::id_counter = 0;
 int Statement::id_counter = 0;
 

@@ -101,7 +101,6 @@ class IRCodeGen : public IRVisitor {
       emit("}} else {{");
       if_stmt->false_statements->accept(this);
     }
-    TC_TAG;
     emit("}}");
   }
 
@@ -121,7 +120,6 @@ class IRCodeGen : public IRVisitor {
          loop_var.raw_name(), for_stmt->begin->raw_name(), loop_var.raw_name(),
          for_stmt->end->raw_name(), loop_var.raw_name());
     for_stmt->body->accept(this);
-    TC_TAG;
     emit("}}");
   }
 

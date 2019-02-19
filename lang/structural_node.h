@@ -1,5 +1,6 @@
 #pragma once
 #include "expr.h"
+#include "ir.h"
 #include <taichi/common/bit.h>
 
 TLANG_NAMESPACE_BEGIN
@@ -149,7 +150,7 @@ public:
   }
 
   SNode &place(Expr &expr) {
-    TC_ASSERT(expr);
+    //TC_ASSERT(expr.is<>());
     auto &child = insert_children(SNodeType::place);
     expr->snode_ptr(0) = &child;
     child.addr.set(expr);

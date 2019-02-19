@@ -28,6 +28,9 @@ class BinaryOpStmt;
 class UnaryOpStmt;
 class LocalLoadStmt;
 class LocalStoreStmt;
+class GlobalPtrStmt;
+class GlobalLoadStmt;
+class GlobalStoreStmt;
 class PrintStmt;
 
 struct VectorType {
@@ -136,6 +139,7 @@ class Identifier {
 
 using Ident = Identifier;
 
+using Stmt = Statement;
 using VecStatement = std::vector<std::unique_ptr<Statement>>;
 
 class IRVisitor {
@@ -161,6 +165,9 @@ class IRVisitor {
   DEFINE_VISIT(UnaryOpStmt);
   DEFINE_VISIT(LocalLoadStmt);
   DEFINE_VISIT(LocalStoreStmt);
+  DEFINE_VISIT(GlobalLoadStmt);
+  DEFINE_VISIT(GlobalStoreStmt);
+  DEFINE_VISIT(GlobalPtrStmt);
   DEFINE_VISIT(IfStmt);
   DEFINE_VISIT(FrontendIfStmt);
   DEFINE_VISIT(PrintStmt);
@@ -233,7 +240,7 @@ class Expression {
   };
 };
 
-class LocalLoadStmt;
+class ExpressionGroup;
 
 class ExpressionHandle {
  public:
@@ -257,12 +264,50 @@ class ExpressionHandle {
     return std::dynamic_pointer_cast<T>(expr);
   }
 
+  template <typename T>
+  bool is() const {
+    return cast<T>() != nullptr;
+  }
+
   void operator=(const ExpressionHandle &o);
+
+  ExpressionHandle operator[](ExpressionGroup);
 
   std::string serialize() const {
     return expr->serialize();
   }
 };
+
+class ExpressionGroup {
+ public:
+  std::vector<ExprH> exprs;
+  ExpressionGroup() {
+  }
+  ExpressionGroup(ExprH a) {
+    exprs.push_back(a);
+  }
+  ExpressionGroup(ExprH a, ExprH b) {
+    exprs.push_back(a);
+    exprs.push_back(b);
+  }
+
+  ExpressionGroup(ExpressionGroup a, const ExprH &b) {
+    exprs = a.exprs;
+    exprs.push_back(b);
+  }
+
+  std::size_t size() const {
+    return exprs.size();
+  }
+};
+
+inline ExpressionGroup operator,(const ExprH &a, const ExprH &b) {
+  return ExpressionGroup(a, b);
+}
+
+inline ExpressionGroup operator,(const ExpressionGroup &a, const ExprH &b) {
+  return ExpressionGroup(a, b);
+}
 
 class BinaryOpStmt : public Statement {
  public:
@@ -299,6 +344,46 @@ class BinaryOpExpression : public Expression {
     auto rhs_statement = ret.back().get();
     ret.push_back(
         std::make_unique<BinaryOpStmt>(type, lhs_statement, rhs_statement));
+  }
+};
+
+class GlobalPtrStmt : public Statement {
+ public:
+  std::vector<Stmt *> indices;
+
+  GlobalPtrStmt(Ident id, const std::vector<Stmt *> &indices) {
+  }
+
+  DEFINE_ACCEPT
+};
+
+class GlobalPtrExpression : public Expression {
+ public:
+  Ident id;
+  ExpressionGroup indices;
+
+  GlobalPtrExpression(Ident id, ExpressionGroup indices)
+      : id(id), indices(indices) {
+  }
+
+  std::string serialize() override {
+    std::string s = fmt::format("{}[", id.name());
+    for (int i = 0; i < (int)indices.size(); i++) {
+      s += indices.exprs[i]->serialize();
+      if (i + 1 < (int)indices.size())
+        s += ", ";
+    }
+    s += "]";
+    return s;
+  }
+
+  void flatten(VecStatement &ret) override {
+    std::vector<Stmt *> index_stmts;
+    for (int i = 0; i < (int)indices.size(); i++) {
+      indices.exprs[i]->flatten(ret);
+      index_stmts.push_back(ret.back().get());
+    }
+    ret.push_back(std::make_unique<GlobalPtrStmt>(id, index_stmts));
   }
 };
 
@@ -392,6 +477,26 @@ class AllocaStmt : public Statement {
 
 class UnaryOpStmt : public Statement {
   DEFINE_ACCEPT
+};
+
+class GlobalLoadStmt : public Statement {
+ public:
+  Stmt *ptr;
+
+  GlobalLoadStmt(Stmt *ptr) : ptr(ptr) {
+  }
+
+  DEFINE_ACCEPT;
+};
+
+class GlobalStoreStmt : public Statement {
+ public:
+  Stmt *ptr, *data;
+
+  GlobalStoreStmt(Stmt *ptr, Stmt *data) : ptr(ptr), data(data) {
+  }
+
+  DEFINE_ACCEPT;
 };
 
 class LocalLoadStmt : public Statement {
@@ -610,6 +715,11 @@ template <typename T>
 inline void declare_var(ExpressionHandle &a) {
   current_ast_builder().insert(std::make_unique<AllocaStmt>(
       std::static_pointer_cast<IdExpression>(a.expr)->id, get_data_type<T>()));
+}
+
+inline ExprH ExpressionHandle::operator[](ExpressionGroup indices) {
+  auto t = this->cast<IdExpression>();
+  return ExprH(std::make_shared<GlobalPtrExpression>(t->id, indices));
 }
 
 namespace irpass {

@@ -10,6 +10,12 @@ class TypeCheck : public IRVisitor {
     allow_undefined_visitor = true;
   }
 
+  static void mark_as_if_const(Statement *stmt, VectorType t) {
+    if (stmt->is<ConstStmt>()) {
+      stmt->ret_type = t;
+    }
+  }
+
   void visit(AllocaStmt *stmt) {
     auto block = stmt->parent;
     auto ident = stmt->ident;
@@ -38,12 +44,14 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = lookup;
   }
 
-  void visit(FrontendForStmt *stmt) {
+  void visit(RangeForStmt *stmt) {
     auto block = stmt->parent;
-    TC_ASSERT(block->local_variables.find(stmt->loop_var_id) ==
+    TC_ASSERT(block->local_variables.find(stmt->loop_var) ==
               block->local_variables.end());
+    mark_as_if_const(stmt->begin, VectorType(1, DataType::i32));
+    mark_as_if_const(stmt->end, VectorType(1, DataType::i32));
     block->local_variables.insert(
-        std::make_pair(stmt->loop_var_id, VectorType(1, DataType::i32)));
+        std::make_pair(stmt->loop_var, VectorType(1, DataType::i32)));
     stmt->body->accept(this);
   }
 

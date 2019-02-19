@@ -28,6 +28,26 @@ class LocalStoreStmt;
 class PrintStmt;
 class FrontendPrintStmt;
 
+struct VectorType {
+  int width;
+  DataType data_type;
+
+  VectorType(int width, DataType data_type)
+      : width(width), data_type(data_type) {
+  }
+
+  VectorType() : width(1), data_type(DataType::unknown) {
+  }
+
+  bool operator==(const VectorType &o) const {
+    return width == o.width && data_type == o.data_type;
+  }
+
+  std::string str() const {
+    return fmt::format("{}x{}", data_type_name(data_type), width);
+  }
+};
+
 class FrontendContext {
  private:
   std::unique_ptr<IRBuilder> current_builder;
@@ -168,21 +188,21 @@ struct StmtAttribute {
 class Statement : public IRNode {
  public:
   Block *parent;
-  DataType type;
   static int id_counter;
   int id;
 
+  VectorType ret_type;
+
   Statement() {
     id = id_counter++;
-    type = DataType::unknown;
   }
 
   std::string ret_data_type_name() const {
-    return data_type_name(type);
+    return ret_type.str();
   }
 
   std::string type_hint() const {
-    if (type == DataType::unknown)
+    if (ret_type.data_type == DataType::unknown)
       return "";
     else
       return fmt::format("<{}> ", ret_data_type_name());
@@ -301,7 +321,7 @@ class Block : public IRNode {
  public:
   Block *parent;
   std::vector<std::unique_ptr<Statement>> statements;
-  std::map<Ident, DataType> local_variables;
+  std::map<Ident, VectorType> local_variables;
 
   Block() {
     parent = nullptr;
@@ -332,7 +352,7 @@ class Block : public IRNode {
     }
   }
 
-  DataType lookup_var(Ident ident) const {
+  VectorType lookup_var(Ident ident) const {
     auto ptr = local_variables.find(ident);
     if (ptr != local_variables.end()) {
       return ptr->second;
@@ -340,7 +360,7 @@ class Block : public IRNode {
       if (parent) {
         return parent->lookup_var(ident);
       } else {
-        return DataType::unknown;
+        return VectorType(1, DataType::unknown);
       }
     }
   }
@@ -363,7 +383,7 @@ class AllocaStmt : public Statement {
   Ident ident;
 
   AllocaStmt(Ident lhs, DataType type) : ident(lhs) {
-    this->type = type;
+    ret_type = VectorType(1, type);
   }
   DEFINE_ACCEPT
 };

@@ -109,7 +109,7 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(ConstStmt *const_stmt) {
-    emit("const auto {} = {};", //const_stmt->ret_data_type_name(),
+    emit("const auto {} = {};",  // const_stmt->ret_data_type_name(),
          const_stmt->raw_name(), const_stmt->value);
   }
 

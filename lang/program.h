@@ -65,10 +65,10 @@ struct Adapter {
 };
 
 class Program {
-public:
+ public:
   // Should be copiable
   class Kernel {
-  public:
+   public:
     IRNode *ir;
     Program &program;
     FunctionType compiled;

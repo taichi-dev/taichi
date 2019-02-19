@@ -9,15 +9,6 @@ class LowerAST : public IRVisitor {
   LowerAST() {
   }
 
-  // TODO: remove this
-  /*
-  VecStatement expand(ExprH expr) {
-    auto ret = VecStatement();
-    expr->flatten(ret);
-    return ret;
-  }
-  */
-
   void visit(Block *stmt_list) {
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);

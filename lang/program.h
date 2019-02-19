@@ -2,6 +2,7 @@
 
 #include "util.h"
 #include "structural_node.h"
+#include "ir.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -68,6 +69,7 @@ public:
   // Should be copiable
   class Kernel {
   public:
+    IRNode *ir;
     Program &program;
     FunctionType compiled;
     std::vector<Adapter> adapters;
@@ -79,6 +81,7 @@ public:
     std::string name;
 
     Kernel(Program &program, std::function<void()> func) : program(program) {
+      ir = nullptr;
       has_touch = false;
       parallel_instances = -1;
       simd_lanes = -1;

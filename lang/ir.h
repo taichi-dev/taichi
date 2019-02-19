@@ -1,3 +1,4 @@
+#pragma once
 #include "util.h"
 #include <taichi/util.h>
 #include <taichi/testing.h>

@@ -162,13 +162,6 @@ class CodeGenBase : public Visitor {
   template <typename... Args>
   void emit_code(std::string f, Args &&... args) {
     emit(f, std::forward<Args>(args)...);
-    /*
-    if (sizeof...(args)) {
-      code += fmt::format(f, std::forward<Args>(args)...) + code_suffix;
-    } else {
-      code += f + code_suffix;
-    }
-    */
   }
 
   template <typename... Args>

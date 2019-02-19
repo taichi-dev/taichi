@@ -221,7 +221,7 @@ class CPUCodeGen : public CodeGenBase {
       TC_ASSERT(prog->current_snode);
     }
 
-    generate_loop_header(prog->current_snode, true);
+    //generate_loop_header(prog->current_snode, true);
   }
 
   template <typename... Args>
@@ -230,7 +230,7 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void generate_tail() {
-    generate_loop_tail(prog->current_snode, true);
+    //generate_loop_tail(prog->current_snode, true);
     emit_code("}\n");
   }
 

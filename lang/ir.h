@@ -43,7 +43,7 @@ class FrontendContext {
   IRNode *root();
 };
 
-extern FrontendContext context;
+extern std::unique_ptr<FrontendContext> context;
 
 class IRBuilder {
  private:
@@ -75,7 +75,7 @@ class IRBuilder {
 };
 
 inline IRBuilder &current_ast_builder() {
-  return context.builder();
+  return context->builder();
 }
 
 class ExpressionHandle;
@@ -430,17 +430,17 @@ class If {
   If(ExpressionHandle cond) {
     auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond);
     stmt = stmt_tmp.get();
-    context.builder().insert(std::move(stmt_tmp));
+    current_ast_builder().insert(std::move(stmt_tmp));
   }
 
   If &Then(const std::function<void()> &func) {
-    auto _ = context.builder().create_scope(stmt->true_statements);
+    auto _ = current_ast_builder().create_scope(stmt->true_statements);
     func();
     return *this;
   }
 
   If &Else(const std::function<void()> &func) {
-    auto _ = context.builder().create_scope(stmt->false_statements);
+    auto _ = current_ast_builder().create_scope(stmt->false_statements);
     func();
     return *this;
   }
@@ -491,7 +491,7 @@ inline void IRBuilder::insert(std::unique_ptr<Statement> &&stmt, int location) {
 }
 
 inline void Print(const ExpressionHandle &a) {
-  context.builder().insert(std::make_unique<FrontendPrintStmt>(a));
+  current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a));
 }
 
 #define DEF_BINARY_OP(Op, name)                                             \
@@ -509,8 +509,8 @@ class For {
   For(ExprH i, ExprH s, ExprH e, const std::function<void()> &func) {
     auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
     auto stmt = stmt_unique.get();
-    context.builder().insert(std::move(stmt_unique));
-    auto _ = context.builder().create_scope(stmt->body);
+    current_ast_builder().insert(std::move(stmt_unique));
+    auto _ = current_ast_builder().create_scope(stmt->body);
     func();
   }
 };
@@ -518,7 +518,7 @@ class For {
 class While {
  public:
   While(ExprH cond, const std::function<void()> &func) {
-    // context.builder().insert()
+    // current_ast_builder().insert()
   }
 };
 

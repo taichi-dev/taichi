@@ -18,7 +18,7 @@ IRBuilder::ScopeGuard IRBuilder::create_scope(std::unique_ptr<Block> &list) {
 }
 
 void ExprH::operator=(const ExpressionHandle &o) {
-  context.builder().insert(std::make_unique<AssignStmt>(*this, o));
+  current_ast_builder().insert(std::make_unique<AssignStmt>(*this, o));
 }
 
 FrontendContext::FrontendContext() {
@@ -52,5 +52,7 @@ IRNode *FrontendContext::root() {
 }
 int Identifier::id_counter = 0;
 int Statement::id_counter = 0;
-FrontendContext context;
+
+std::unique_ptr<FrontendContext> context;
+
 TLANG_NAMESPACE_END

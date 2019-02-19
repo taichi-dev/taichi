@@ -27,6 +27,7 @@ TC_TEST("test_compiler") {
 
 auto test_ast = []() {
   CoreState::set_trigger_gdb_when_crash(true);
+  context = std::make_unique<FrontendContext>();
   declare(a);
   declare(b);
   declare(p);
@@ -64,7 +65,7 @@ auto test_ast = []() {
   });
   Print(b);
 
-  auto root = context.root();
+  auto root = context->root();
 
   TC_INFO("AST");
   irpass::print(root);

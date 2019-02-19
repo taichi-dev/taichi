@@ -81,7 +81,9 @@ public:
     std::string name;
 
     Kernel(Program &program, std::function<void()> func) : program(program) {
-      ir = nullptr;
+      context = std::make_unique<FrontendContext>();
+      ir = context->root();
+
       has_touch = false;
       parallel_instances = -1;
       simd_lanes = -1;

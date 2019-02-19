@@ -109,6 +109,10 @@ public:
       }
 
       program.end_function_definition();
+
+      irpass::lower(ir);
+      irpass::typecheck(ir);
+
       compile();
     }
 

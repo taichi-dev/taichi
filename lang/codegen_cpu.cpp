@@ -84,12 +84,13 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(AllocaStmt *alloca) {
-    emit("{}alloca {}", alloca->type_hint(), alloca->ident.name());
+    emit("{} {};", alloca->ret_data_type_name(), alloca->ident.raw_name());
   }
 
   void visit(BinaryOpStmt *bin) {
-    emit("{}{} = {} {} {}", bin->type_hint(), bin->name(),
-         binary_type_name(bin->op_type), bin->lhs->name(), bin->rhs->name());
+    emit("const {} {} = {}({}, {});", bin->ret_data_type_name(),
+         bin->raw_name(), binary_type_name(bin->op_type), bin->lhs->raw_name(),
+         bin->rhs->raw_name());
   }
 
   void visit(IfStmt *if_stmt) {
@@ -104,12 +105,12 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(PrintStmt *print_stmt) {
-    emit("{}print {}", print_stmt->type_hint(), print_stmt->stmt->name());
+    emit("std::cout<<  {} << std::endl;", print_stmt->stmt->raw_name());
   }
 
   void visit(ConstStmt *const_stmt) {
-    emit("{}{} = const {}", const_stmt->type_hint(), const_stmt->name(),
-         const_stmt->value);
+    emit("const auto {} = {};", //const_stmt->ret_data_type_name(),
+         const_stmt->raw_name(), const_stmt->value);
   }
 
   void visit(FrontendForStmt *for_stmt) {
@@ -120,11 +121,12 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) {
-    emit("{}{} = load {}", stmt->type_hint(), stmt->name(), stmt->ident.name());
+    emit("const {} {} = {};", stmt->ret_data_type_name(), stmt->raw_name(),
+         stmt->ident.raw_name());
   }
 
   void visit(LocalStoreStmt *stmt) {
-    emit("[store] {} = {}", stmt->ident.name(), stmt->stmt->name());
+    emit("{} = {};", stmt->ident.raw_name(), stmt->stmt->raw_name());
   }
 };
 

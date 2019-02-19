@@ -15,7 +15,10 @@ TC_TEST("test_compiler") {
   layout([&]() { root.fixed(i, n).place(a); });
 
   auto func = kernel(a, [&]() {
-    a[i] = select(cmp_ne(imm(0), i % imm(2)), cast<float32>(i), imm(0.0_f));
+    declare(a);
+    var(float32, a);
+    a = 10;
+    Print(a);
   });
 
   func();

@@ -92,11 +92,15 @@ class Identifier {
     id = id_counter++;
   }
 
-  std::string name() {
+  std::string raw_name() const {
     if (name_.empty())
-      return "{" + fmt::format("{}", id) + "}";
+      return fmt::format("{}", id);
     else
-      return "{" + name_ + "}";
+      return name_;
+  }
+
+  std::string name() const {
+    return "{" + raw_name() + "}";
   }
 
   bool operator<(const Identifier &o) const {
@@ -173,15 +177,23 @@ class Statement : public IRNode {
     type = DataType::unknown;
   }
 
+  std::string ret_data_type_name() const {
+    return data_type_name(type);
+  }
+
   std::string type_hint() const {
     if (type == DataType::unknown)
       return "";
     else
-      return fmt::format("<{}> ", data_type_name(type));
+      return fmt::format("<{}> ", ret_data_type_name());
   }
 
   std::string name() {
     return fmt::format("@{}", id);
+  }
+
+  std::string raw_name() {
+    return fmt::format("tmp{}", id);
   }
 
   template <typename T>

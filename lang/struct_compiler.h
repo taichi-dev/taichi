@@ -113,8 +113,8 @@ class StructCompiler : public CodeGenBase {
       for (int i = 0; i < (int)snode.ch.size(); i++) {
         emit_code("auto *get{}() {{return &member{};}} ", i, i);
       }
-      emit_code("TC_FORCE_INLINE int get_n() {return 1;} ");
-      emit_code("};");
+      emit_code("TC_FORCE_INLINE int get_n() {{return 1;}} ");
+      emit_code("}};");
     } else if (type == SNodeType::place) {
       emit_code("using {} = {};", snode.node_type_name,
                 snode.addr->data_type_name());
@@ -140,7 +140,7 @@ class StructCompiler : public CodeGenBase {
         emit_code("TC_FORCE_INLINE {} *access_{}({} *parent, int i) {{",
                   ch->node_type_name, ch->node_type_name, snode.node_type_name);
         emit_code("return parent->look_up(i);");
-        emit_code("}");
+        emit_code("}}");
       } else {
         // fork
         for (int i = 0; i < (int)snode.ch.size(); i++) {
@@ -149,7 +149,7 @@ class StructCompiler : public CodeGenBase {
                     ch->node_type_name, ch->node_type_name,
                     snode.node_type_name);
           emit_code("return parent->get{}();", i);
-          emit_code("}");
+          emit_code("}}");
         }
       }
       emit_code("");
@@ -183,7 +183,7 @@ class StructCompiler : public CodeGenBase {
                   stack[i + 1]->node_type_name, i);
       }
       emit_code("return n{};", (int)stack.size() - 1);
-      emit_code("}");
+      emit_code("}}");
       emit_code("");
     }
 
@@ -216,7 +216,7 @@ class StructCompiler : public CodeGenBase {
       emit_code("auto node = access_{}(root, i0, i1, i2, i3);",
                 snode.node_type_name);
       emit_code("node->touch(val);");
-      emit_code("}");
+      emit_code("}}");
     }
 
     for (auto ch : snode.ch) {
@@ -269,7 +269,7 @@ class StructCompiler : public CodeGenBase {
                   node.ch[i]->node_type_name);
       }
     }
-    emit_code("return p;}");
+    emit_code("return p;}}");
     emit_code(
         "extern \"C\" void release_data_structure(void *ds) {{delete ({} "
         "*)ds;}}",

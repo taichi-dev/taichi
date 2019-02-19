@@ -101,11 +101,12 @@ class IRCodeGen : public IRVisitor {
       emit("}} else {{");
       if_stmt->false_statements->accept(this);
     }
+    TC_TAG;
     emit("}}");
   }
 
   void visit(PrintStmt *print_stmt) {
-    emit("std::cout<<  {} << std::endl;", print_stmt->stmt->raw_name());
+    emit("std::cout << {} << std::endl;", print_stmt->stmt->raw_name());
   }
 
   void visit(ConstStmt *const_stmt) {
@@ -113,10 +114,14 @@ class IRCodeGen : public IRVisitor {
          const_stmt->raw_name(), const_stmt->value);
   }
 
-  void visit(FrontendForStmt *for_stmt) {
-    emit("for {} in range({}, {}) {{", for_stmt->loop_var_id.name(),
-         for_stmt->begin->serialize(), for_stmt->end->serialize());
+  void visit(RangeForStmt *for_stmt) {
+    auto loop_var = for_stmt->loop_var;
+    emit("for ({} {} = {}; {} < {}; {}++) {{",
+         data_type_name(for_stmt->parent->lookup_var(loop_var).data_type),
+         loop_var.raw_name(), for_stmt->begin->raw_name(), loop_var.raw_name(),
+         for_stmt->end->raw_name(), loop_var.raw_name());
     for_stmt->body->accept(this);
+    TC_TAG;
     emit("}}");
   }
 

@@ -16,9 +16,15 @@ TC_TEST("test_compiler") {
 
   auto func = kernel(a, [&]() {
     declare(a);
+    declare(i);
+    declare(sum);
     var(float32, a);
+    var(int32, sum);
     a = 10;
     Print(a);
+
+    For(i, 0, 100, [&] { sum = sum + i; });
+    Print(sum);
   });
 
   func();

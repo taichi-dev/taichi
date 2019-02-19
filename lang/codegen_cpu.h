@@ -180,7 +180,7 @@ class CPUCodeGen : public CodeGenBase {
     }
     if (has_residual && last_level) {
       CODE_REGION(residual_end);
-      emit_code("}");
+      emit_code("}}");
     }
   }
 
@@ -196,7 +196,7 @@ class CPUCodeGen : public CodeGenBase {
     if (snode->parent != nullptr) {
       CODE_REGION_VAR(last_level ? CodeRegion::interior_loop_end
                                  : CodeRegion::exterior_loop_end);
-      emit_code("}\n");
+      emit_code("}}\n");
       generate_loop_tail(snode->parent,
                          last_level && snode->type == SNodeType::forked);
     } else {
@@ -210,7 +210,7 @@ class CPUCodeGen : public CodeGenBase {
     emit_code("#include \"{}\"", prog->layout_fn);
     emit_code("using namespace taichi; using namespace Tlang;");
 
-    emit_code("extern \"C\" void " + func_name + "(Context context) {\n");
+    emit_code("extern \"C\" void " + func_name + "(Context context) {{\n");
     emit_code("auto {}_cache = ({} *)context.buffers[0];",
               prog->snode_root->node_type_name,
               prog->snode_root->node_type_name);
@@ -231,7 +231,7 @@ class CPUCodeGen : public CodeGenBase {
 
   void generate_tail() {
     //generate_loop_tail(prog->current_snode, true);
-    emit_code("}\n");
+    emit_code("}}\n");
   }
 
   void codegen(Kernel &ker);

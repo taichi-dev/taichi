@@ -149,7 +149,6 @@ class CodeGenBase : public Visitor {
 
   std::string get_source_fn();
 
-
   std::string get_library_fn() {
 #if defined(TC_PLATFORM_OSX)
     // Note: use .so here will lead to wired behavior...
@@ -169,12 +168,8 @@ class CodeGenBase : public Visitor {
     if (codes.find(current_code_region) == codes.end()) {
       codes[current_code_region] = "";
     }
-    if (sizeof...(args)) {
-      codes[current_code_region] +=
-          fmt::format(f, std::forward<Args>(args)...) + code_suffix;
-    } else {
-      codes[current_code_region] += f + code_suffix;
-    }
+    codes[current_code_region] +=
+        fmt::format(f, std::forward<Args>(args)...) + code_suffix;
   }
 
   void write_code_to_file() {

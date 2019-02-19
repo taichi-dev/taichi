@@ -7,6 +7,7 @@
 #include <numeric>
 #include <mutex>
 #include <unordered_map>
+#include <iostream>
 
 #if !defined(TC_INCLUDED)
 

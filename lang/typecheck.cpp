@@ -40,7 +40,6 @@ class TypeCheck : public IRVisitor {
 
   void visit(FrontendForStmt *stmt) {
     auto block = stmt->parent;
-    auto lookup = block->lookup_var(stmt->loop_var_id);
     TC_ASSERT(block->local_variables.find(stmt->loop_var_id) ==
               block->local_variables.end());
     block->local_variables.insert(

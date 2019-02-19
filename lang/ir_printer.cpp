@@ -86,6 +86,13 @@ class IRPrinter : public IRVisitor {
     print("}}");
   }
 
+  void visit(RangeForStmt *for_stmt) {
+    print("for {} in range({}, {}) {{", for_stmt->loop_var.name(),
+          for_stmt->begin->name(), for_stmt->end->name());
+    for_stmt->body->accept(this);
+    print("}}");
+  }
+
   void visit(LocalLoadStmt *stmt) {
     print("{}{} = load {}", stmt->type_hint(), stmt->name(),
           stmt->ident.name());

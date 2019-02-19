@@ -65,7 +65,24 @@ class LowerAST : public IRVisitor {
   void visit(ConstStmt *const_stmt) {  // this will not appear here
   }
 
-  void visit(FrontendForStmt *for_stmt) {
+  void visit(FrontendForStmt *stmt) {
+    auto begin = stmt->begin;
+    auto end = stmt->end;
+
+    VecStatement flattened;
+
+    begin->flatten(flattened);
+    auto begin_stmt = flattened.back().get();
+
+    end->flatten(flattened);
+    auto end_stmt = flattened.back().get();
+
+    flattened.push_back(std::make_unique<RangeForStmt>(stmt->loop_var_id, begin_stmt, end_stmt, std::move(stmt->body)));
+    stmt->parent->replace_with(stmt, flattened);
+    throw IRModifiedException();
+  }
+
+  void visit(RangeForStmt *for_stmt) {
     for_stmt->body->accept(this);
   }
 

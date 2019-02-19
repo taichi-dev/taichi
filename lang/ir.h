@@ -15,9 +15,12 @@ class Statement;
 // statements
 class ConstStmt;
 class IfStmt;
-class ForStmt;
+
+// frontend stmts
 class FrontendIfStmt;
 class FrontendForStmt;
+class FrontendPrintStmt;
+class RangeForStmt;
 class WhileStmt;
 class AssignStmt;
 class AllocaStmt;
@@ -26,7 +29,6 @@ class UnaryOpStmt;
 class LocalLoadStmt;
 class LocalStoreStmt;
 class PrintStmt;
-class FrontendPrintStmt;
 
 struct VectorType {
   int width;
@@ -164,8 +166,8 @@ class IRVisitor {
   DEFINE_VISIT(PrintStmt);
   DEFINE_VISIT(FrontendPrintStmt);
   DEFINE_VISIT(ConstStmt);
-  DEFINE_VISIT(ForStmt);
   DEFINE_VISIT(FrontendForStmt);
+  DEFINE_VISIT(RangeForStmt);
   DEFINE_VISIT(WhileStmt);
 };
 
@@ -503,6 +505,23 @@ class FrontendForStmt : public Statement {
   Ident loop_var_id;
 
   FrontendForStmt(ExprH loop_var, ExprH begin, ExprH end);
+
+  DEFINE_ACCEPT
+};
+
+// General range for
+class RangeForStmt : public Statement {
+ public:
+  Ident loop_var;
+  Statement *begin, *end;
+  std::unique_ptr<Block> body;
+
+  RangeForStmt(Ident loop_var,
+               Statement *begin,
+               Statement *end,
+               std::unique_ptr<Block> &&body)
+      : loop_var(loop_var), begin(begin), end(end), body(std::move(body)) {
+  }
 
   DEFINE_ACCEPT
 };

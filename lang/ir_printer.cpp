@@ -12,9 +12,13 @@ class IRPrinter : public IRVisitor {
 
   template <typename... Args>
   void print(std::string f, Args &&... args) {
+    print_raw(fmt::format(f, std::forward<Args>(args)...));
+  }
+
+  void print_raw(std::string f) {
     for (int i = 0; i < current_indent; i++)
       fmt::print("  ");
-    fmt::print(f, std::forward<Args>(args)...);
+    std::cout << f;
     fmt::print("\n");
   }
 
@@ -32,7 +36,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(AssignStmt *assign) {
-    print("{} = {}", assign->id.name(), assign->rhs->serialize());
+    print("{} = {}", assign->lhs->serialize(), assign->rhs->serialize());
   }
 
   void visit(AllocaStmt *alloca) {
@@ -93,13 +97,35 @@ class IRPrinter : public IRVisitor {
     print("}}");
   }
 
+  void visit(GlobalPtrStmt *stmt) {
+    std::string s = fmt::format("{}{} = ptr {}[", stmt->type_hint(),
+                                stmt->name(), stmt->ident.raw_name());
+
+    for (int i = 0; i < (int)stmt->indices.size(); i++) {
+      s += fmt::format("{}", stmt->indices[i]->name());
+      if (i + 1 < (int)stmt->indices.size()) {
+        s += ", ";
+      }
+    }
+    s += "]";
+    print_raw(s);
+  }
+
   void visit(LocalLoadStmt *stmt) {
     print("{}{} = load {}", stmt->type_hint(), stmt->name(),
           stmt->ident.name());
   }
 
   void visit(LocalStoreStmt *stmt) {
-    print("[store] {} = {}", stmt->ident.name(), stmt->stmt->name());
+    print("[local store] {} = {}", stmt->ident.name(), stmt->stmt->name());
+  }
+
+  void visit(GlobalLoadStmt *stmt) {
+    print("{}{} = load {}", stmt->type_hint(), stmt->ptr->name());
+  }
+
+  void visit(GlobalStoreStmt *stmt) {
+    print("[global store] {} = {}", stmt->ptr->name(), stmt->data->name());
   }
 };
 

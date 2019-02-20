@@ -125,7 +125,7 @@ class Identifier {
   }
 
   std::string name() const {
-    return "{" + raw_name() + "}";
+    return "@" + raw_name();
   }
 
   bool operator<(const Identifier &o) const {
@@ -218,7 +218,7 @@ class Statement : public IRNode {
   }
 
   std::string name() {
-    return fmt::format("@{}", id);
+    return fmt::format("${}", id);
   }
 
   std::string raw_name() {
@@ -349,9 +349,11 @@ class BinaryOpExpression : public Expression {
 
 class GlobalPtrStmt : public Statement {
  public:
+  Ident ident;
   std::vector<Stmt *> indices;
 
-  GlobalPtrStmt(Ident id, const std::vector<Stmt *> &indices) {
+  GlobalPtrStmt(Ident ident, const std::vector<Stmt *> &indices)
+      : ident(ident), indices(indices) {
   }
 
   DEFINE_ACCEPT
@@ -359,15 +361,15 @@ class GlobalPtrStmt : public Statement {
 
 class GlobalPtrExpression : public Expression {
  public:
-  Ident id;
+  Ident ident;
   ExpressionGroup indices;
 
-  GlobalPtrExpression(Ident id, ExpressionGroup indices)
-      : id(id), indices(indices) {
+  GlobalPtrExpression(Ident ident, ExpressionGroup indices)
+      : ident(ident), indices(indices) {
   }
 
   std::string serialize() override {
-    std::string s = fmt::format("{}[", id.name());
+    std::string s = fmt::format("{}[", ident.name());
     for (int i = 0; i < (int)indices.size(); i++) {
       s += indices.exprs[i]->serialize();
       if (i + 1 < (int)indices.size())
@@ -383,7 +385,7 @@ class GlobalPtrExpression : public Expression {
       indices.exprs[i]->flatten(ret);
       index_stmts.push_back(ret.back().get());
     }
-    ret.push_back(std::make_unique<GlobalPtrStmt>(id, index_stmts));
+    ret.push_back(std::make_unique<GlobalPtrStmt>(ident, index_stmts));
   }
 };
 
@@ -458,7 +460,6 @@ class Block : public IRNode {
 class AssignStmt : public Statement {
  public:
   ExprH lhs, rhs;
-  Ident id;
 
   AssignStmt(ExprH lhs, ExprH rhs);
 

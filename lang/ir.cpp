@@ -44,7 +44,7 @@ FrontendForStmt::FrontendForStmt(ExprH loop_var, ExprH begin, ExprH end)
 }
 
 AssignStmt::AssignStmt(ExprH lhs, ExprH rhs) : lhs(lhs), rhs(rhs) {
-  id = lhs.cast<IdExpression>()->id;
+  TC_ASSERT(lhs.is<IdExpression>() || lhs.is<GlobalPtrExpression>());
 }
 
 IRNode *FrontendContext::root() {

@@ -7,6 +7,7 @@ TLANG_NAMESPACE_BEGIN
 class LowerAST : public IRVisitor {
  public:
   LowerAST() {
+    allow_undefined_visitor = true;
   }
 
   void visit(Block *stmt_list) {
@@ -18,9 +19,6 @@ class LowerAST : public IRVisitor {
   void visit(AllocaStmt *alloca) {
     // print("{} <- alloca {}", alloca->lhs.name(),
     // data_type_name(alloca->type));
-  }
-
-  void visit(BinaryOpStmt *bin) {  // this will not appear here
   }
 
   void visit(FrontendIfStmt *stmt) override {
@@ -42,15 +40,6 @@ class LowerAST : public IRVisitor {
     }
   }
 
-  void visit(LocalLoadStmt *) {
-  }
-
-  void visit(LocalStoreStmt *) {
-  }
-
-  void visit(PrintStmt *stmt) {
-  }
-
   void visit(FrontendPrintStmt *stmt) {
     // expand rhs
     auto expr = stmt->expr;
@@ -60,9 +49,6 @@ class LowerAST : public IRVisitor {
     flattened.push_back(std::move(print));
     stmt->parent->replace_with(stmt, flattened);
     throw IRModifiedException();
-  }
-
-  void visit(ConstStmt *const_stmt) {  // this will not appear here
   }
 
   void visit(FrontendForStmt *stmt) {
@@ -77,7 +63,8 @@ class LowerAST : public IRVisitor {
     end->flatten(flattened);
     auto end_stmt = flattened.back().get();
 
-    flattened.push_back(std::make_unique<RangeForStmt>(stmt->loop_var_id, begin_stmt, end_stmt, std::move(stmt->body)));
+    flattened.push_back(std::make_unique<RangeForStmt>(
+        stmt->loop_var_id, begin_stmt, end_stmt, std::move(stmt->body)));
     stmt->parent->replace_with(stmt, flattened);
     throw IRModifiedException();
   }
@@ -91,12 +78,19 @@ class LowerAST : public IRVisitor {
     auto expr = assign->rhs;
     VecStatement flattened;
     expr->flatten(flattened);
-    if (true) {  // local variable
+    auto rhs_stmt = flattened.back().get();
+    if (assign->lhs.is<IdExpression>()) {  // local variable
       // emit local store stmt
-      auto local_store =
-          std::make_unique<LocalStoreStmt>(assign->id, flattened.back().get());
+      auto local_store = std::make_unique<LocalStoreStmt>(
+          assign->lhs.cast<IdExpression>()->id, rhs_stmt);
       flattened.push_back(std::move(local_store));
     } else {  // global variable
+      TC_ASSERT(assign->lhs.is<GlobalPtrExpression>());
+      auto global_ptr = assign->lhs.cast<GlobalPtrExpression>();
+      global_ptr->flatten(flattened);
+      auto global_store =
+          std::make_unique<GlobalStoreStmt>(flattened.back().get(), rhs_stmt);
+      flattened.push_back(std::move(global_store));
     }
     assign->parent->replace_with(assign, flattened);
     throw IRModifiedException();

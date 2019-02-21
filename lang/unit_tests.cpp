@@ -9,55 +9,60 @@ TC_TEST("test_compiler") {
   int n = 128;
   Program prog(Arch::x86_64);
 
-  auto a = global<float32>();
+  declare(a_global);
+  auto a = global_new(a_global, DataType::f32);
   auto i = ind();
 
-  layout([&]() { root.fixed(i, n).place(a); });
+  layout([&]() { root.fixed(i, n).place_new(a); });
 
-  auto func = kernel(a, [&]() {
-    declare(a);
+  auto func = kernel([&]() {
     declare(i);
     declare(sum);
-    var(float32, a);
     var(int32, sum);
-    a = 10;
-    Print(a);
 
-    For(i, 0, 100, [&] { sum = sum + i; });
+    For(i, 0, n, [&] {
+      sum = sum + i;
+      If(i % 2 == 0).Then([&] { a[i] = 0; }).Else([&] { a[i] = i; });
+    });
     Print(sum);
   });
 
   func();
 
+  /*
   for (int i = 0; i < n; i++) {
     TC_CHECK(a.val<float32>(i) == (i % 2) * i);
   }
+  */
 };
 
 auto test_ast = []() {
   CoreState::set_trigger_gdb_when_crash(true);
 
   Program prog(Arch::x86_64);
-  auto x = global<float32>();
   auto index = ind();
   int n = 128;
 
-  layout([&]() { root.fixed(index, n).place(x); });
+  //layout([&]() { root.fixed(index, n).place(x); });
 
   context = std::make_unique<FrontendContext>();
   declare(a);
+  declare(x);
   declare(b);
   declare(p);
   declare(q);
   declare(i);
   declare(j);
 
+  //var(float32, a);
+  x.set(global_new(x, DataType::f32));
+  TC_ASSERT(x.is<GlobalVariableExpression>());
+
   var(float32, a);
   var(float32, b);
   var(int32, p);
   var(int32, q);
 
-  a = a + b;
   p = p + q;
 
   Print(a);
@@ -74,7 +79,7 @@ auto test_ast = []() {
       });
 
   For(i, 0, 8, [&] {
-    a[i] = i;
+    x[i] = i;
     For(j, 0, 8, [&] {
       auto k = i + j;
       Print(k);

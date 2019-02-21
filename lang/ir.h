@@ -2,6 +2,7 @@
 #include "util.h"
 #include <taichi/util.h>
 #include <taichi/testing.h>
+#include "structural_node.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -273,7 +274,12 @@ class ExpressionHandle {
 
   ExpressionHandle operator[](ExpressionGroup);
 
+  void set(const ExpressionHandle &o) {
+    expr = o.expr;
+  }
+
   std::string serialize() const {
+    TC_ASSERT(expr);
     return expr->serialize();
   }
 };
@@ -349,27 +355,47 @@ class BinaryOpExpression : public Expression {
 
 class GlobalPtrStmt : public Statement {
  public:
-  Ident ident;
+  SNode *snode;
   std::vector<Stmt *> indices;
 
-  GlobalPtrStmt(Ident ident, const std::vector<Stmt *> &indices)
-      : ident(ident), indices(indices) {
+  GlobalPtrStmt(SNode *snode, const std::vector<Stmt *> &indices)
+      : snode(snode), indices(indices) {
   }
 
   DEFINE_ACCEPT
 };
 
-class GlobalPtrExpression : public Expression {
+class GlobalVariableExpression : public Expression {
  public:
-  Ident ident;
-  ExpressionGroup indices;
+  Identifier ident;
+  DataType dt;
+  SNode *snode;
 
-  GlobalPtrExpression(Ident ident, ExpressionGroup indices)
-      : ident(ident), indices(indices) {
+  GlobalVariableExpression(DataType dt, Ident ident) : ident(ident), dt(dt) {
+    snode = nullptr;
   }
 
   std::string serialize() override {
-    std::string s = fmt::format("{}[", ident.name());
+    return "#" + ident.name();
+  }
+
+  void flatten(VecStatement &ret) override {
+    TC_ERROR("This should not be invoked");
+    // ret.push_back(std::make_unique<LocalLoadStmt>(id));
+  }
+};
+
+class GlobalPtrExpression : public Expression {
+ public:
+  ExprH var;
+  ExpressionGroup indices;
+
+  GlobalPtrExpression(Handle<Expression> var, ExpressionGroup indices)
+      : var(var), indices(indices) {
+  }
+
+  std::string serialize() override {
+    std::string s = fmt::format("{}[", var.serialize());
     for (int i = 0; i < (int)indices.size(); i++) {
       s += indices.exprs[i]->serialize();
       if (i + 1 < (int)indices.size())
@@ -385,7 +411,8 @@ class GlobalPtrExpression : public Expression {
       indices.exprs[i]->flatten(ret);
       index_stmts.push_back(ret.back().get());
     }
-    ret.push_back(std::make_unique<GlobalPtrStmt>(ident, index_stmts));
+    ret.push_back(std::make_unique<GlobalPtrStmt>(
+        var.cast<GlobalVariableExpression>()->snode, index_stmts));
   }
 };
 
@@ -719,8 +746,9 @@ inline void declare_var(ExpressionHandle &a) {
 }
 
 inline ExprH ExpressionHandle::operator[](ExpressionGroup indices) {
-  auto t = this->cast<IdExpression>();
-  return ExprH(std::make_shared<GlobalPtrExpression>(t->id, indices));
+  TC_ASSERT(is<GlobalVariableExpression>());
+  return ExprH(std::make_shared<GlobalPtrExpression>(
+      cast<GlobalVariableExpression>(), indices));
 }
 
 namespace irpass {
@@ -733,5 +761,12 @@ void typecheck(IRNode *root);
   auto x = ExpressionHandle(std::make_shared<IdExpression>(#x));
 
 #define var(type, x) declare_var<type>(x);
+
+inline ExprH global_new(ExprH id_expr, DataType dt) {
+  TC_ASSERT(id_expr.is<IdExpression>());
+  auto ret = ExprH(std::make_shared<GlobalVariableExpression>(
+      dt, id_expr.cast<IdExpression>()->id));
+  return ret;
+}
 
 TLANG_NAMESPACE_END

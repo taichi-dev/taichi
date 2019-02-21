@@ -98,8 +98,16 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) {
+    std::string snode_name;
+    if (stmt->snode) {
+      TC_P(stmt->snode);
+      TC_P(stmt->snode->name);
+      snode_name = stmt->snode->name;
+    } else {
+      snode_name = "unknown";
+    }
     std::string s = fmt::format("{}{} = ptr {}[", stmt->type_hint(),
-                                stmt->name(), stmt->ident.raw_name());
+                                stmt->name(), snode_name);
 
     for (int i = 0; i < (int)stmt->indices.size(); i++) {
       s += fmt::format("{}", stmt->indices[i]->name());

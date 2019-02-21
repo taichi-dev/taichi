@@ -32,12 +32,8 @@ inline void layout(const std::function<void()> &body) {
   get_current_program().layout(body);
 }
 
-inline Kernel kernel(Expr expr, const std::function<void()> &body) {
-  return get_current_program().kernel(expr, body);
-}
-
-inline Kernel kernel(SNode *snode, const std::function<void()> &body) {
-  return get_current_program().kernel(snode, body);
+inline Kernel kernel(const std::function<void()> &body) {
+  return get_current_program().kernel(body);
 }
 
 inline void kernel_name(std::string name) {

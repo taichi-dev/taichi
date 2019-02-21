@@ -25,7 +25,7 @@ class Desugaring {
       return;
     }
 
-    for (int i = 0; i < expr->ch.size(); i++) {
+    for (int i = 0; i < (int)expr->ch.size(); i++) {
       auto &ch = expr->ch[i];
       if (ch->type == NodeType::pointer) {
         // consider add a load..

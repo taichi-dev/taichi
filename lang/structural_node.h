@@ -24,10 +24,11 @@ struct IndexExtractor {
 };
 
 struct Matrix;
+class ExpressionHandle;
 
 // "Structural" nodes
 class SNode {
-public:
+ public:
   std::vector<Handle<SNode>> ch;
 
   IndexExtractor extractors[max_num_indices];
@@ -41,6 +42,7 @@ public:
   bool _verbose;
   bool _multi_threaded;
 
+  std::string name;
   int64 n;
   int total_num_bits, total_bit_start;
   Expr addr;
@@ -150,12 +152,13 @@ public:
   }
 
   SNode &place(Expr &expr) {
-    //TC_ASSERT(expr.is<>());
     auto &child = insert_children(SNodeType::place);
     expr->snode_ptr(0) = &child;
     child.addr.set(expr);
     return *this;
   }
+
+  SNode &place_new(ExpressionHandle &expr);
 
   SNode &place_verbose(Expr &expr) {
     place(expr);

@@ -188,13 +188,8 @@ class Program {
     return func;
   }
 
-  Kernel kernel(Expr exp, const std::function<void()> &body) {
-    return kernel(exp->snode_ptr(0), body);
-  }
-
-  Kernel kernel(SNode *snode, const std::function<void()> &body) {
+  Kernel kernel(const std::function<void()> &body) {
     Expr::set_allow_store(true);
-    current_snode = snode;
     auto func = Kernel(*this, body);
     Expr::set_allow_store(false);
     functions.push_back(func);

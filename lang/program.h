@@ -110,8 +110,10 @@ class Program {
 
       program.end_function_definition();
 
+      irpass::print(ir);
       irpass::lower(ir);
       irpass::typecheck(ir);
+      irpass::print(ir);
 
       compile();
     }

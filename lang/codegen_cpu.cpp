@@ -84,8 +84,7 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(AllocaStmt *alloca) {
-    emit("{} {}(0);", alloca->ret_data_type_name(),
-         alloca->ident.raw_name());
+    emit("{} {}(0);", alloca->ret_data_type_name(), alloca->ident.raw_name());
   }
 
   void visit(BinaryOpStmt *bin) {
@@ -152,6 +151,11 @@ class IRCodeGen : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) {
     emit("*({} *){} = {};", stmt->data->ret_data_type_name(),
          stmt->ptr->raw_name(), stmt->data->raw_name());
+  }
+
+  void visit(GlobalLoadStmt *stmt) {
+    emit("auto {} = *({} *){};", stmt->raw_name(), stmt->ret_data_type_name(),
+         stmt->ptr->raw_name());
   }
 };
 

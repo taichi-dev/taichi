@@ -44,6 +44,14 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = lookup;
   }
 
+  void visit(GlobalLoadStmt *stmt) {
+    stmt->ret_type = stmt->ptr->ret_type;
+  }
+
+  void visit(GlobalPtrStmt *stmt) {
+    stmt->ret_type.data_type = stmt->snode->dt;
+  }
+
   void visit(RangeForStmt *stmt) {
     auto block = stmt->parent;
     TC_ASSERT(block->local_variables.find(stmt->loop_var) ==

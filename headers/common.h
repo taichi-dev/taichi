@@ -559,6 +559,36 @@ inline int32x8 cmp_ne(int32x8 a, int32x8 b) {
   return union_cast<int32x8>(ret);
 }
 
+inline int32x1 cmp_eq(float32x1 a, float32x1 b) {
+  return int32(a.v == b.v);
+}
+
+inline int32x1 cmp_eq(int32x1 a, int32x1 b) {
+  return int32(a.v == b.v);
+}
+
+inline int32x4 cmp_eq(float32x4 a, float32x4 b) {
+  auto ret = _mm_cmp_ps(a, b, _CMP_EQ_UQ);
+  return union_cast<int32x4>(ret);
+}
+
+inline int32x4 cmp_eq(int32x4 a, int32x4 b) {
+  auto ret = _mm_cmp_ps(union_cast<float32x4>(a), union_cast<float32x4>(b),
+                        _CMP_EQ_UQ);
+  return union_cast<int32x4>(ret);
+}
+
+inline int32x8 cmp_eq(float32x8 a, float32x8 b) {
+  auto ret = _mm256_cmp_ps(a, b, _CMP_EQ_UQ);
+  return union_cast<int32x8>(ret);
+}
+
+inline int32x8 cmp_eq(int32x8 a, int32x8 b) {
+  auto ret = _mm256_cmp_ps(union_cast<float32x8>(a), union_cast<float32x8>(b),
+                           _CMP_EQ_UQ);
+  return union_cast<int32x8>(ret);
+}
+
 inline int32x1 cmp_lt(float32x1 a, float32x1 b) {
   return a < b;
 }
@@ -696,6 +726,7 @@ DEFINE_BINARY_OP_MID(int32x1, add, +);
 DEFINE_BINARY_OP_MID(int32x1, sub, -);
 DEFINE_BINARY_OP_MID(int32x1, mul, *);
 DEFINE_BINARY_OP_MID(int32x1, div, /);
+DEFINE_BINARY_OP_MID(int32x1, mod, %);
 
 inline int32x8 shr(int32x8 a, int b) {
   return _mm256_srli_epi32(a, b);

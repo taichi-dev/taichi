@@ -5,13 +5,14 @@
 
 TLANG_NAMESPACE_BEGIN
 
-TC_TEST("test_compiler") {
+//TC_TEST("test_compiler") {
+auto test_compiler = [] {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);
 
   declare(a_global);
-  auto a = global_new(a_global, DataType::f32);
+  auto a = global_new(a_global, DataType::i32);
   auto i = ind();
 
   layout([&]() { root.fixed(i, n).place_new(a); });
@@ -23,7 +24,7 @@ TC_TEST("test_compiler") {
 
     For(i, 0, n, [&] {
       sum = sum + i;
-      If(i % 2 == 0).Then([&] { a[i] = i + i; }).Else([&] { a[i] = i; });
+      If(i % 2 == ExprH(0)).Then([&] { a[i] = i + i; }).Else([&] { a[i] = i; });
       Print(a[i]);
     });
     Print(sum);
@@ -37,6 +38,8 @@ TC_TEST("test_compiler") {
   }
   */
 };
+
+TC_REGISTER_TASK(test_compiler);
 
 auto test_ast = []() {
   CoreState::set_trigger_gdb_when_crash(true);

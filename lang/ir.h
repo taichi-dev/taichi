@@ -230,6 +230,12 @@ class Statement : public IRNode {
   bool is() const {
     return dynamic_cast<const T *>(this) != nullptr;
   }
+
+  template <typename T>
+  T* as() {
+    TC_ASSERT(is<T>());
+    return dynamic_cast<T *>(this);
+  }
 };
 
 // always a tree - used as rvalues
@@ -432,6 +438,7 @@ DEFINE_EXPRESSION_OP(<, cmp_lt)
 DEFINE_EXPRESSION_OP(<=, cmp_le)
 DEFINE_EXPRESSION_OP(>, cmp_gt)
 DEFINE_EXPRESSION_OP(>=, cmp_ge)
+DEFINE_EXPRESSION_OP(==, cmp_eq)
 
 class Block : public IRNode {
  public:

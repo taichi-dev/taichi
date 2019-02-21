@@ -10,6 +10,14 @@ class LowerAST : public IRVisitor {
     allow_undefined_visitor = true;
   }
 
+  void load_if_ptr(VecStatement &flattened) {
+    auto &ret = flattened.back();
+    if (ret->is<GlobalPtrStmt>()) {
+      flattened.push_back(
+          std::make_unique<GlobalLoadStmt>(ret->as<GlobalPtrStmt>()));
+    }
+  }
+
   void visit(Block *stmt_list) {
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
@@ -45,6 +53,7 @@ class LowerAST : public IRVisitor {
     auto expr = stmt->expr;
     VecStatement flattened;
     expr->flatten(flattened);
+    load_if_ptr(flattened);
     auto print = std::make_unique<PrintStmt>(flattened.back().get());
     flattened.push_back(std::move(print));
     stmt->parent->replace_with(stmt, flattened);

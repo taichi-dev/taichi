@@ -100,8 +100,6 @@ class IRPrinter : public IRVisitor {
   void visit(GlobalPtrStmt *stmt) {
     std::string snode_name;
     if (stmt->snode) {
-      TC_P(stmt->snode);
-      TC_P(stmt->snode->name);
       snode_name = stmt->snode->name;
     } else {
       snode_name = "unknown";
@@ -129,7 +127,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) {
-    print("{}{} = load {}", stmt->type_hint(), stmt->ptr->name());
+    print("{}{} = load {}", stmt->type_hint(), stmt->raw_name(),
+          stmt->ptr->name());
   }
 
   void visit(GlobalStoreStmt *stmt) {

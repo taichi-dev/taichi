@@ -468,7 +468,6 @@ inline float32x8 cast<float32, int32, 8>(const int32x8 &v) {
   return _mm256_cvtepi32_ps(v);
 }
 
-
 //*****************************************************************************
 
 template <>
@@ -545,7 +544,7 @@ inline int32x4 cmp_ne(float32x4 a, float32x4 b) {
 
 inline int32x4 cmp_ne(int32x4 a, int32x4 b) {
   auto ret = _mm_cmp_ps(union_cast<float32x4>(a), union_cast<float32x4>(b),
-                           _CMP_NEQ_UQ);
+                        _CMP_NEQ_UQ);
   return union_cast<int32x4>(ret);
 }
 
@@ -604,8 +603,8 @@ inline float32x4 select(int32x4 mask, float32x4 true_val, float32x4 false_val) {
 
 inline int32x4 select(int32x4 mask, int32x4 true_val, int32x4 false_val) {
   auto ret = _mm_blendv_ps(union_cast<float32x4>(false_val),
-                              union_cast<float32x4>(true_val),
-                              union_cast<float32x4>(mask));
+                           union_cast<float32x4>(true_val),
+                           union_cast<float32x4>(mask));
   return union_cast<int32x4>(ret);
 }
 
@@ -619,7 +618,6 @@ inline int32x8 select(int32x8 mask, int32x8 true_val, int32x8 false_val) {
                               union_cast<float32x8>(mask));
   return union_cast<int32x8>(ret);
 }
-
 
 //*****************************************************************************
 

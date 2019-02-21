@@ -84,7 +84,8 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(AllocaStmt *alloca) {
-    emit("{} {};", alloca->ret_data_type_name(), alloca->ident.raw_name());
+    emit("{} {}(0);", alloca->ret_data_type_name(),
+         alloca->ident.raw_name());
   }
 
   void visit(BinaryOpStmt *bin) {

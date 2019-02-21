@@ -232,7 +232,7 @@ class Statement : public IRNode {
   }
 
   template <typename T>
-  T* as() {
+  T *as() {
     TC_ASSERT(is<T>());
     return dynamic_cast<T *>(this);
   }
@@ -288,6 +288,14 @@ class ExpressionHandle {
     TC_ASSERT(expr);
     return expr->serialize();
   }
+
+  void *evaluate_addr(int i, int j, int k, int l);
+
+  template <typename... Indices>
+  void *val_tmp(Indices... indices);
+
+  template <typename T, typename... Indices>
+  T &val(Indices... indices);
 };
 
 class ExpressionGroup {
@@ -774,6 +782,18 @@ inline ExprH global_new(ExprH id_expr, DataType dt) {
   auto ret = ExprH(std::make_shared<GlobalVariableExpression>(
       dt, id_expr.cast<IdExpression>()->id));
   return ret;
+}
+
+template <typename T, typename... Indices>
+T &ExprH::val(Indices... indices) {
+  auto e = this->cast<GlobalVariableExpression>();
+  TC_ASSERT(is<GlobalVariableExpression>());
+
+  if (get_data_type<T>() != e->snode->dt) {
+    TC_ERROR("Cannot access type {} as type {}", data_type_name(e->snode->dt),
+             data_type_name(get_data_type<T>()));
+  }
+  return *(T *)val_tmp(indices...);
 }
 
 TLANG_NAMESPACE_END

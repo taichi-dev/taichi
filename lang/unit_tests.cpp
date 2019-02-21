@@ -5,8 +5,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-//TC_TEST("test_compiler") {
-auto test_compiler = [] {
+TC_TEST("test_compiler") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);
@@ -17,6 +16,8 @@ auto test_compiler = [] {
 
   layout([&]() { root.fixed(i, n).place_new(a); });
 
+  auto dou = [](ExprH a) { return a * 2; };
+
   auto func = kernel([&]() {
     declare(i);
     declare(sum);
@@ -24,7 +25,9 @@ auto test_compiler = [] {
 
     For(i, 0, n, [&] {
       sum = sum + i;
-      If(i % 2 == ExprH(0)).Then([&] { a[i] = i + i; }).Else([&] { a[i] = i; });
+      If(i % 2 == ExprH(0)).Then([&] { a[i] = dou(i); }).Else([&] {
+        a[i] = i;
+      });
       Print(a[i]);
     });
     Print(sum);
@@ -32,14 +35,10 @@ auto test_compiler = [] {
 
   func();
 
-  /*
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<float32>(i) == (i % 2) * i);
+    TC_CHECK(a.val<int32>(i) == (2 - i % 2) * i);
   }
-  */
 };
-
-TC_REGISTER_TASK(test_compiler);
 
 auto test_ast = []() {
   CoreState::set_trigger_gdb_when_crash(true);

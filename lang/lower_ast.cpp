@@ -10,12 +10,10 @@ class LowerAST : public IRVisitor {
     allow_undefined_visitor = true;
   }
 
-  void load_if_ptr(VecStatement &flattened) {
-    auto &ret = flattened.back();
-    if (ret->is<GlobalPtrStmt>()) {
-      flattened.push_back(
-          std::make_unique<GlobalLoadStmt>(ret->as<GlobalPtrStmt>()));
-    }
+  ExprH load_if_ptr(ExprH expr) {
+    if (expr.is<GlobalPtrStmt>()) {
+      return load(expr);
+    } else return expr;
   }
 
   void visit(Block *stmt_list) {
@@ -32,7 +30,7 @@ class LowerAST : public IRVisitor {
   void visit(FrontendIfStmt *stmt) override {
     VecStatement flattened;
     stmt->condition->flatten(flattened);
-    auto new_if = std::make_unique<IfStmt>(flattened.back().get());
+    auto new_if = std::make_unique<IfStmt>(stmt->condition->stmt);
     new_if->true_statements = std::move(stmt->true_statements);
     new_if->false_statements = std::move(stmt->false_statements);
     flattened.push_back(std::move(new_if));
@@ -50,11 +48,10 @@ class LowerAST : public IRVisitor {
 
   void visit(FrontendPrintStmt *stmt) {
     // expand rhs
-    auto expr = stmt->expr;
+    auto expr = load_if_ptr(stmt->expr);
     VecStatement flattened;
     expr->flatten(flattened);
-    load_if_ptr(flattened);
-    auto print = std::make_unique<PrintStmt>(flattened.back().get());
+    auto print = std::make_unique<PrintStmt>(expr->stmt);
     flattened.push_back(std::move(print));
     stmt->parent->replace_with(stmt, flattened);
     throw IRModifiedException();
@@ -67,13 +64,10 @@ class LowerAST : public IRVisitor {
     VecStatement flattened;
 
     begin->flatten(flattened);
-    auto begin_stmt = flattened.back().get();
-
     end->flatten(flattened);
-    auto end_stmt = flattened.back().get();
 
     flattened.push_back(std::make_unique<RangeForStmt>(
-        stmt->loop_var_id, begin_stmt, end_stmt, std::move(stmt->body)));
+        stmt->loop_var_id, begin->stmt, end->stmt, std::move(stmt->body)));
     stmt->parent->replace_with(stmt, flattened);
     throw IRModifiedException();
   }
@@ -87,18 +81,17 @@ class LowerAST : public IRVisitor {
     auto expr = assign->rhs;
     VecStatement flattened;
     expr->flatten(flattened);
-    auto rhs_stmt = flattened.back().get();
     if (assign->lhs.is<IdExpression>()) {  // local variable
       // emit local store stmt
       auto local_store = std::make_unique<LocalStoreStmt>(
-          assign->lhs.cast<IdExpression>()->id, rhs_stmt);
+          assign->lhs.cast<IdExpression>()->id, expr->stmt);
       flattened.push_back(std::move(local_store));
     } else {  // global variable
       TC_ASSERT(assign->lhs.is<GlobalPtrExpression>());
       auto global_ptr = assign->lhs.cast<GlobalPtrExpression>();
       global_ptr->flatten(flattened);
       auto global_store =
-          std::make_unique<GlobalStoreStmt>(flattened.back().get(), rhs_stmt);
+          std::make_unique<GlobalStoreStmt>(flattened.back().get(), expr->stmt);
       flattened.push_back(std::move(global_store));
     }
     assign->parent->replace_with(assign, flattened);

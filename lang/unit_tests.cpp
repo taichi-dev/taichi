@@ -26,9 +26,7 @@ TC_TEST("compiler_basics") {
     For(i, 0, n, [&] {
       sum = sum + i;
       If(i % 2 == 0).Then([&] { a[i] = dou(i); }).Else([&] { a[i] = i; });
-      Print(a[i]);
     });
-    Print(sum);
   });
 
   func();

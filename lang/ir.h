@@ -243,6 +243,10 @@ class Statement : public IRNode {
 // always a tree - used as rvalues
 class Expression {
  public:
+  Stmt *stmt;
+  Expression() {
+    stmt = nullptr;
+  }
   virtual std::string serialize() = 0;
   virtual void flatten(VecStatement &ret) {
     TC_NOT_IMPLEMENTED;
@@ -360,12 +364,12 @@ class BinaryOpExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
+    if (stmt)
+      return;
     lhs->flatten(ret);
-    auto lhs_statement = ret.back().get();
     rhs->flatten(ret);
-    auto rhs_statement = ret.back().get();
-    ret.push_back(
-        std::make_unique<BinaryOpStmt>(type, lhs_statement, rhs_statement));
+    ret.push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
+    stmt = ret.back().get();
   }
 };
 
@@ -422,13 +426,16 @@ class GlobalPtrExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
+    if (stmt)
+      return;
     std::vector<Stmt *> index_stmts;
     for (int i = 0; i < (int)indices.size(); i++) {
       indices.exprs[i]->flatten(ret);
-      index_stmts.push_back(ret.back().get());
+      index_stmts.push_back(indices.exprs[i]->stmt);
     }
     ret.push_back(std::make_unique<GlobalPtrStmt>(
         var.cast<GlobalVariableExpression>()->snode, index_stmts));
+    stmt = ret.back().get();
   }
 };
 
@@ -735,7 +742,29 @@ class IdExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
+    if (stmt)
+      return;
     ret.push_back(std::make_unique<LocalLoadStmt>(id));
+    stmt = ret.back().get();
+  }
+};
+
+class GlobalLoadExpression : public Expression {
+public:
+  ExprH ptr;
+  GlobalLoadExpression(ExprH ptr) : ptr(ptr) {
+  }
+
+  std::string serialize() override {
+    return "load ";
+  }
+
+  void flatten(VecStatement &ret) override {
+    if (stmt)
+      return;
+    ptr->flatten(ret);
+    ret.push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));
+    stmt = ret.back().get();
   }
 };
 
@@ -757,11 +786,14 @@ class ConstExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
+    if (stmt)
+      return;
     if (dt == DataType::f32) {
       ret.push_back(std::make_unique<ConstStmt>((float32)val));
     } else {
       ret.push_back(std::make_unique<ConstStmt>((int32)val));
     }
+    stmt = ret.back().get();
   }
 };
 
@@ -805,6 +837,11 @@ T &ExprH::val(Indices... indices) {
              data_type_name(get_data_type<T>()));
   }
   return *(T *)val_tmp(indices...);
+}
+
+inline ExprH load(ExprH ptr) {
+  TC_ASSERT(ptr.is<GlobalPtrStmt>());
+  return ExpressionHandle(std::make_shared<GlobalLoadExpression>(ptr));
 }
 
 TLANG_NAMESPACE_END

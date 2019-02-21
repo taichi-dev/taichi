@@ -5,6 +5,7 @@
 TLANG_NAMESPACE_BEGIN
 
 void CPUCodeGen::visit_intrinsics(Expr &expr) {
+#if 0
   auto vv_width = expr->lanes;
   TC_ASSERT(vv_width == 1 || vv_width == simd_width);
   auto vec_type = [&](DataType dt) {
@@ -465,6 +466,7 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
   } else {
     TC_ERROR("Node {} cannot be visited.", expr->node_type_name());
   }
+#endif
 }
 
 TLANG_NAMESPACE_END

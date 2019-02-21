@@ -4,17 +4,13 @@
 
 #include "util.h"
 #include "codegen_cpu.h"
-#include "slp_vectorizer.h"
 #include "program.h"
-#include "loop_vectorizer.h"
 #include "optimizer.h"
-#include "adapter_preprocessor.h"
-#include "vector_splitter.h"
-#include "desugaring.h"
 #include "ir.h"
 
 TLANG_NAMESPACE_BEGIN
 
+/*
 class TikzGen : public Visitor {
  public:
   std::string graph;
@@ -60,6 +56,7 @@ void visualize_IR(std::string fn, Expr &expr) {
                   get_repo_dir(), fn, gen.graph);
   trash(system(cmd.c_str()));
 }
+*/
 
 class IRCodeGen : public IRVisitor {
  public:

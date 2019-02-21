@@ -12,9 +12,9 @@ TC_TEST("test_compiler") {
 
   declare(a_global);
   auto a = global_new(a_global, DataType::i32);
-  auto i = ind();
+  auto i = Expr(0);
 
-  layout([&]() { root.fixed(i, n).place_new(a); });
+  layout([&]() { root.fixed(i, n).place(a); });
 
   auto dou = [](ExprH a) { return a * 2; };
 
@@ -44,10 +44,7 @@ auto test_ast = []() {
   CoreState::set_trigger_gdb_when_crash(true);
 
   Program prog(Arch::x86_64);
-  auto index = ind();
   int n = 128;
-
-  // layout([&]() { root.fixed(index, n).place(x); });
 
   context = std::make_unique<FrontendContext>();
   declare(a);

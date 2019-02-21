@@ -2,6 +2,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
+#if 0
 class AddressAnalyzer : Visitor {
  public:
   int lane_a, lane_b;
@@ -317,5 +318,6 @@ void apply_optimizers(Kernel &ker, Expr &expr) {
   ContinuousMemOptimizer().run(ker, expr);
   GatherMemOptimizer().run(ker, expr);
 }
+#endif
 
 TLANG_NAMESPACE_END

@@ -34,6 +34,8 @@ class GlobalLoadStmt;
 class GlobalStoreStmt;
 class PrintStmt;
 
+class SNode;
+
 struct VectorType {
   int width;
   DataType data_type;

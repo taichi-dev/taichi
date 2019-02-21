@@ -15,18 +15,12 @@ inline int maximum(int a) {
 
 #include "util.h"
 #include "visitor.h"
-#include "expr.h"
-#include "slp_vectorizer.h"
 #include "math.h"
 #include "codegen_cpu.h"
 #include "program.h"
 #include "../headers/common.h"
 
 TLANG_NAMESPACE_BEGIN
-
-inline auto index(int i = -1) {
-  return ind(i);
-}
 
 inline void layout(const std::function<void()> &body) {
   get_current_program().layout(body);
@@ -52,6 +46,7 @@ inline Adapter &adapter(int i) {
   return get_current_program().get_current_kernel().adapter(i);
 }
 
+/*
 inline void touch(SNode *snode, Expr target_index, Expr value) {
   auto e = Expr::create(NodeType::touch, Expr::load_if_pointer(target_index),
                         Expr::load_if_pointer(value));
@@ -71,17 +66,7 @@ inline void reduce(Expr target, Expr value) {
   auto &ker = get_current_program().get_current_kernel();
   return ker.ret->ch.push_back(e);
 }
-
-inline Expr global(Expr e) {
-  return e[ExprGroup()];
-}
-
-template <typename T>
-inline Expr local() {
-  auto e = Expr::create(NodeType::alloca);
-  e->data_type = get_data_type<T>();
-  return e;
-}
+*/
 
 TLANG_NAMESPACE_END
 

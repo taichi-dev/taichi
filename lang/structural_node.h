@@ -1,5 +1,4 @@
 #pragma once
-#include "expr.h"
 #include "ir.h"
 #include <taichi/common/bit.h>
 
@@ -26,6 +25,16 @@ struct IndexExtractor {
 struct Matrix;
 class ExpressionHandle;
 
+class Expr {
+ public:
+  int value;
+  Expr() {
+    value = 0;
+  }
+  Expr(int value) : value(value) {
+  }
+};
+
 // "Structural" nodes
 class SNode {
  public:
@@ -46,7 +55,6 @@ class SNode {
   int64 n;
   int total_num_bits, total_bit_start;
   DataType dt;
-  // Expr addr;
   // Note: parent will not be set until structural nodes are compiled!
   SNode *parent;
 
@@ -105,8 +113,7 @@ class SNode {
     }
     for (int i = 0; i < (int)indices.size(); i++) {
       auto &ind = indices[i];
-      TC_ASSERT(ind->lanes == 1);
-      new_node.extractors[ind->index_id(0)].num_bits = bit::log2int(sizes[i]);
+      new_node.extractors[ind.value].num_bits = bit::log2int(sizes[i]);
     }
     return new_node;
   }
@@ -156,25 +163,19 @@ class SNode {
     }
   }
 
-  SNode &place(Expr &expr) {
-    auto &child = insert_children(SNodeType::place);
-    expr->snode_ptr(0) = &child;
-    // child.addr.set(expr);
-    return *this;
-  }
+  SNode &place(ExpressionHandle &expr);
 
-  SNode &place_new(ExpressionHandle &expr);
-
+  /*
   SNode &place_verbose(Expr &expr) {
     place(expr);
     ch.back()->verbose();
     return *this;
   }
+  */
 
   SNode &indirect(Expr &expr, int n) {
     auto &child = insert_children(SNodeType::indirect);
-    TC_ASSERT(expr->type == NodeType::index);
-    child.index_id = expr->value<int>(0);
+    child.index_id = expr.value;
     // child.extractors[child.index_id].num_bits = 0;
     child.n = n;
     return child;
@@ -183,9 +184,8 @@ class SNode {
   SNode &dynamic(Expr &expr, int n) {
     TC_ASSERT(bit::is_power_of_two(n));
     auto &child = insert_children(SNodeType::dynamic);
-    TC_ASSERT(expr->type == NodeType::index);
     // child.index_id = expr->value<int>(0);
-    child.extractors[expr->value<int>(0)].num_bits = bit::log2int(n);
+    child.extractors[expr.value].num_bits = bit::log2int(n);
     child.n = n;
     return child;
   }
@@ -196,9 +196,8 @@ class SNode {
                    "memset limitation.");
     TC_ASSERT(bit::is_power_of_two(n));
     auto &child = insert_children(SNodeType::hashed);
-    TC_ASSERT(expr->type == NodeType::index);
     // child.index_id = expr->value<int>(0);
-    child.extractors[expr->value<int>(0)].num_bits = bit::log2int(n);
+    child.extractors[expr.value].num_bits = bit::log2int(n);
     child.n = n;
     return child;
   }

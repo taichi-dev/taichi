@@ -27,6 +27,7 @@ class Optimizer {
   virtual bool optimize(Expr &expr) = 0;
 
   void replace(Expr a, Expr b) {
+#if 0
     std::set<Expr> visited;
     std::function<bool(Expr &)> visit = [&](Expr &v) -> bool {
       if (visited.find(v) != visited.end())
@@ -53,6 +54,7 @@ class Optimizer {
     if (c > 1) {
       TC_INFO("Replacing {} Exprs altogether", c);
     }
+#endif
   }
 };
 

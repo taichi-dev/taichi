@@ -1,7 +1,7 @@
+#if 0
 #pragma once
 
 #include "tlang.h"
-#include "expr.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -307,3 +307,4 @@ inline Matrix outer_product(Vector a, Vector b) {
 }
 
 TLANG_NAMESPACE_END
+#endif

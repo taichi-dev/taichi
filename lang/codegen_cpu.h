@@ -3,7 +3,6 @@
 #include <set>
 #include "util.h"
 #include "visitor.h"
-#include "expr.h"
 #include "codegen_base.h"
 #include "program.h"
 

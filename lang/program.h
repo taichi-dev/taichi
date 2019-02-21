@@ -15,6 +15,7 @@ TC_FORCE_INLINE Program &get_current_program() {
 }
 
 struct Adapter {
+  /*
   Expr stores;
   int counter = 0;
   int input_group_size;
@@ -62,6 +63,7 @@ struct Adapter {
     this->input_group_size = input_group_size;
     return *this;
   }
+  */
 };
 
 class Program {
@@ -89,9 +91,9 @@ class Program {
       simd_lanes = -1;
       output_group_size = -1;
       program.start_function_definition(this);
-      ret = Expr::create(NodeType::combine);
       func();
 
+      /*
       if (output_group_size == -1) {
         output_group_size = 1;
       }
@@ -107,6 +109,7 @@ class Program {
       if (simd_lanes == -1) {
         simd_lanes = output_group_size * parallel_instances;
       }
+      */
 
       program.end_function_definition();
 
@@ -128,10 +131,12 @@ class Program {
     }
 
     Adapter &adapter(int i) {
+      /*
       while ((int)adapters.size() <= i) {
         adapters.push_back(Adapter((int)adapters.size()));
       }
       return adapters[i];
+      */
     }
   };
 
@@ -155,7 +160,7 @@ class Program {
   }
 
   Program(Arch arch = Arch::x86_64) {
-    Node::reset_counter();
+    // Node::reset_counter();
     TC_ASSERT(current_program == nullptr);
     current_program = this;
     config.arch = arch;
@@ -183,17 +188,17 @@ class Program {
   }
 
   Kernel def(const std::function<void()> &body) {
-    Expr::set_allow_store(true);
+    //Expr::set_allow_store(true);
     auto func = Kernel(*this, body);
     functions.push_back(func);
-    Expr::set_allow_store(false);
+    //Expr::set_allow_store(false);
     return func;
   }
 
   Kernel kernel(const std::function<void()> &body) {
-    Expr::set_allow_store(true);
+    //Expr::set_allow_store(true);
     auto func = Kernel(*this, body);
-    Expr::set_allow_store(false);
+    //Expr::set_allow_store(false);
     functions.push_back(func);
     current_snode = nullptr;
     return func;
@@ -207,9 +212,11 @@ class Program {
     current_kernel = nullptr;
   }
 
+  /*
   Expr store(const Expr &ad, const Expr &e) {
     return get_current_kernel().ret.store(ad, e);
   }
+  */
 
   FunctionType compile(Kernel &kernel);
 

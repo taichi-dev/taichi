@@ -211,8 +211,7 @@ class CPUCodeGen : public CodeGenBase {
     emit_code("using namespace taichi; using namespace Tlang;");
 
     emit_code("extern \"C\" void " + func_name + "(Context context) {{\n");
-    emit_code("auto {}_cache = ({} *)context.buffers[0];",
-              prog->snode_root->node_type_name,
+    emit_code("auto root = ({} *)context.buffers[0];",
               prog->snode_root->node_type_name);
 
     TC_ASSERT(prog->current_snode);
@@ -221,7 +220,7 @@ class CPUCodeGen : public CodeGenBase {
       TC_ASSERT(prog->current_snode);
     }
 
-    //generate_loop_header(prog->current_snode, true);
+    // generate_loop_header(prog->current_snode, true);
   }
 
   template <typename... Args>
@@ -230,7 +229,7 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void generate_tail() {
-    //generate_loop_tail(prog->current_snode, true);
+    // generate_loop_tail(prog->current_snode, true);
     emit_code("}}\n");
   }
 

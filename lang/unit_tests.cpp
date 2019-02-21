@@ -23,7 +23,8 @@ TC_TEST("test_compiler") {
 
     For(i, 0, n, [&] {
       sum = sum + i;
-      If(i % 2 == 0).Then([&] { a[i] = 0; }).Else([&] { a[i] = i; });
+      If(i % 2 == 0).Then([&] { a[i] = i + i; }).Else([&] { a[i] = i; });
+      Print(a[i]);
     });
     Print(sum);
   });
@@ -44,7 +45,7 @@ auto test_ast = []() {
   auto index = ind();
   int n = 128;
 
-  //layout([&]() { root.fixed(index, n).place(x); });
+  // layout([&]() { root.fixed(index, n).place(x); });
 
   context = std::make_unique<FrontendContext>();
   declare(a);
@@ -55,7 +56,7 @@ auto test_ast = []() {
   declare(i);
   declare(j);
 
-  //var(float32, a);
+  // var(float32, a);
   x.set(global_new(x, DataType::f32));
   TC_ASSERT(x.is<GlobalVariableExpression>());
 

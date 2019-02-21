@@ -94,7 +94,7 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) {
-    emit("if {} {{", if_stmt->cond->name());
+    emit("if ({}) {{", if_stmt->cond->raw_name());
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
@@ -130,6 +130,27 @@ class IRCodeGen : public IRVisitor {
 
   void visit(LocalStoreStmt *stmt) {
     emit("{} = {};", stmt->ident.raw_name(), stmt->stmt->raw_name());
+  }
+
+  void visit(GlobalPtrStmt *stmt) {
+    std::string indices = "(root, ";
+    for (int i = 0; i < max_num_indices; i++) {
+      if (i < (int)stmt->indices.size()) {
+        indices += stmt->indices[i]->raw_name();
+      } else {
+        indices += "0";
+      }
+      if (i + 1 < max_num_indices)
+        indices += ",";
+    }
+    indices += ")";
+    emit("void *{} = access_{}{};", stmt->raw_name(),
+         stmt->snode->node_type_name, indices);
+  }
+
+  void visit(GlobalStoreStmt *stmt) {
+    emit("*({} *){} = {};", stmt->data->ret_data_type_name(),
+         stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 };
 

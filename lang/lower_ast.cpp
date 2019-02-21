@@ -13,7 +13,8 @@ class LowerAST : public IRVisitor {
   ExprH load_if_ptr(ExprH expr) {
     if (expr.is<GlobalPtrStmt>()) {
       return load(expr);
-    } else return expr;
+    } else
+      return expr;
   }
 
   void visit(Block *stmt_list) {

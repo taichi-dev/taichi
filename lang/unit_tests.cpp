@@ -49,6 +49,8 @@ auto test_circle = [] {
 
   auto func = kernel([&]() {
     declare(i);
+
+    Vectorize(8);
     For(i, 0, n * n, [&] {
       auto x = i / n - n / 2;
       auto y = i % n - n / 2;

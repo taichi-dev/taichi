@@ -56,6 +56,19 @@ struct VectorType {
   }
 };
 
+class DecoratorRecorder {
+ public:
+  int vectorize;
+
+  DecoratorRecorder() {
+    reset();
+  }
+
+  void reset() {
+    vectorize = -1;
+  }
+};
+
 class FrontendContext {
  private:
   std::unique_ptr<IRBuilder> current_builder;
@@ -659,6 +672,7 @@ class FrontendForStmt : public Statement {
   ExprH begin, end;
   std::unique_ptr<Block> body;
   Ident loop_var_id;
+  int vectorize;
 
   FrontendForStmt(ExprH loop_var, ExprH begin, ExprH end);
 
@@ -750,7 +764,7 @@ class IdExpression : public Expression {
 };
 
 class GlobalLoadExpression : public Expression {
-public:
+ public:
   ExprH ptr;
   GlobalLoadExpression(ExprH ptr) : ptr(ptr) {
   }
@@ -842,6 +856,12 @@ T &ExprH::val(Indices... indices) {
 inline ExprH load(ExprH ptr) {
   TC_ASSERT(ptr.is<GlobalPtrStmt>());
   return ExpressionHandle(std::make_shared<GlobalLoadExpression>(ptr));
+}
+
+extern DecoratorRecorder dec;
+
+inline void Vectorize(int v) {
+  dec.vectorize = v;
 }
 
 TLANG_NAMESPACE_END

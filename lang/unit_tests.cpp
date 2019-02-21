@@ -1,11 +1,11 @@
 #include "ir.h"
 #include <numeric>
 #include "tlang.h"
-#include <Eigen/Dense>
+#include <taichi/visual/gui.h>
 
 TLANG_NAMESPACE_BEGIN
 
-TC_TEST("test_compiler") {
+TC_TEST("compiler_basics") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);
@@ -25,9 +25,7 @@ TC_TEST("test_compiler") {
 
     For(i, 0, n, [&] {
       sum = sum + i;
-      If(i % 2 == 0).Then([&] { a[i] = dou(i); }).Else([&] {
-        a[i] = i;
-      });
+      If(i % 2 == 0).Then([&] { a[i] = dou(i); }).Else([&] { a[i] = i; });
       Print(a[i]);
     });
     Print(sum);
@@ -39,6 +37,45 @@ TC_TEST("test_compiler") {
     TC_CHECK(a.val<int32>(i) == (2 - i % 2) * i);
   }
 };
+
+auto test_circle = [] {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 128;
+  Program prog(Arch::x86_64);
+
+  declare(a_global);
+  auto a = global_new(a_global, DataType::i32);
+  auto i = Expr(0);
+
+  layout([&]() { root.fixed(i, n).place(a); });
+
+  auto func = kernel([&]() {
+    declare(i);
+    For(i, 0, n * n, [&] {
+      auto x = i / n - n / 2;
+      auto y = i % n - n / 2;
+      Print(x);
+      Print(y);
+      If(x * x + y * y < n * n / 4).Then([&] { a[i] = 1; }).Else([&] {
+        a[i] = 0;
+      });
+    });
+  });
+
+  func();
+
+  GUI gui("circle", Vector2i(n, n));
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      gui.buffer[i][j] = Vector4(a.val<int32>(i * n + j));
+    }
+  }
+
+  while (1) {
+    gui.update();
+  }
+};
+TC_REGISTER_TASK(test_circle);
 
 auto test_ast = []() {
   CoreState::set_trigger_gdb_when_crash(true);

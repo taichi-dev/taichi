@@ -129,15 +129,6 @@ class Program {
       auto c = program.get_context();
       compiled(c);
     }
-
-    Adapter &adapter(int i) {
-      /*
-      while ((int)adapters.size() <= i) {
-        adapters.push_back(Adapter((int)adapters.size()));
-      }
-      return adapters[i];
-      */
-    }
   };
 
   Kernel *current_kernel;

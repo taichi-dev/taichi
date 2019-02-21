@@ -26,11 +26,11 @@ FrontendContext::FrontendContext() {
   current_builder = std::make_unique<IRBuilder>(root_node.get());
 }
 
-ExpressionHandle::ExpressionHandle(int x) {
+ExpressionHandle::ExpressionHandle(int32 x) {
   expr = std::make_shared<ConstExpression>(x);
 }
 
-ExpressionHandle::ExpressionHandle(double x) {
+ExpressionHandle::ExpressionHandle(float32 x) {
   expr = std::make_shared<ConstExpression>(x);
 }
 

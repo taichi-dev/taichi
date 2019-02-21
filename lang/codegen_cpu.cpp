@@ -106,8 +106,8 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(ConstStmt *const_stmt) {
-    emit("const auto {} = {};",  // const_stmt->ret_data_type_name(),
-         const_stmt->raw_name(), const_stmt->value);
+    emit("const {} {}({});",  // const_stmt->ret_data_type_name(),
+         const_stmt->ret_type.str(), const_stmt->raw_name(), const_stmt->value);
   }
 
   void visit(RangeForStmt *for_stmt) {
@@ -163,10 +163,6 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   this->simd_width = prog->config.simd_width;
   this->num_groups = kernel.parallel_instances;
 
-  auto snode = prog->current_snode;
-  while (snode->type == SNodeType::forked) {
-    snode = snode->parent;
-  }
   has_residual = false;
 
   {

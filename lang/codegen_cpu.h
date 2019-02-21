@@ -212,14 +212,6 @@ class CPUCodeGen : public CodeGenBase {
     emit_code("extern \"C\" void " + func_name + "(Context context) {{\n");
     emit_code("auto root = ({} *)context.buffers[0];",
               prog->snode_root->node_type_name);
-
-    TC_ASSERT(prog->current_snode);
-    while (prog->current_snode->type == SNodeType::place) {
-      prog->current_snode = prog->current_snode->parent;
-      TC_ASSERT(prog->current_snode);
-    }
-
-    // generate_loop_header(prog->current_snode, true);
   }
 
   template <typename... Args>

@@ -255,9 +255,9 @@ class ExpressionHandle {
  public:
   std::shared_ptr<Expression> expr;
 
-  ExpressionHandle(int x);
+  ExpressionHandle(int32 x);
 
-  ExpressionHandle(double x);
+  ExpressionHandle(float32 x);
 
   ExpressionHandle(std::shared_ptr<Expression> expr) : expr(expr) {
   }
@@ -632,16 +632,15 @@ class If {
 
 class ConstStmt : public Statement {
  public:
-  DataType data_type;
   double value;
 
   ConstStmt(int32 x) {
-    data_type = DataType::i32;
+    ret_type = VectorType(1, DataType::i32);
     value = x;
   }
 
   ConstStmt(float32 x) {
-    data_type = DataType::f32;
+    ret_type = VectorType(1, DataType::f32);
     value = x;
   }
 
@@ -743,8 +742,14 @@ class IdExpression : public Expression {
 class ConstExpression : public Expression {
  public:
   long double val;
+  DataType dt;
 
-  ConstExpression(long double val) : val(val) {
+  ConstExpression(int val) : val(val) {
+    dt = DataType::i32;
+  }
+
+  ConstExpression(float32 val) : val(val) {
+    dt = DataType::f32;
   }
 
   std::string serialize() override {
@@ -752,7 +757,11 @@ class ConstExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    ret.push_back(std::make_unique<ConstStmt>((float32)val));
+    if (dt == DataType::f32) {
+      ret.push_back(std::make_unique<ConstStmt>((float32)val));
+    } else {
+      ret.push_back(std::make_unique<ConstStmt>((int32)val));
+    }
   }
 };
 

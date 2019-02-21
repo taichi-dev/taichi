@@ -430,11 +430,11 @@ class GlobalPtrExpression : public Expression {
   }
 };
 
-#define DEFINE_EXPRESSION_OP(op, op_name)                                 \
-  inline Handle<Expression> operator op(ExpressionHandle lhs,             \
-                                        ExpressionHandle rhs) {           \
-    return std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs, \
-                                                rhs);                     \
+#define DEFINE_EXPRESSION_OP(op, op_name)                                     \
+  inline ExpressionHandle operator op(ExpressionHandle lhs,                   \
+                                      ExpressionHandle rhs) {                 \
+    return ExpressionHandle(                                                  \
+        std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs, rhs)); \
   }
 
 DEFINE_EXPRESSION_OP(+, add)

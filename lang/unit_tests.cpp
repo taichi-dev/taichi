@@ -25,7 +25,7 @@ TC_TEST("test_compiler") {
 
     For(i, 0, n, [&] {
       sum = sum + i;
-      If(i % 2 == ExprH(0)).Then([&] { a[i] = dou(i); }).Else([&] {
+      If(i % 2 == 0).Then([&] { a[i] = dou(i); }).Else([&] {
         a[i] = i;
       });
       Print(a[i]);

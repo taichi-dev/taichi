@@ -45,15 +45,13 @@ auto test_circle = [] {
   auto a = global_new(a_global, DataType::i32);
   auto i = Expr(0);
 
-  layout([&]() { root.fixed(i, n).place(a); });
+  layout([&]() { root.fixed(i, n * n).place(a); });
 
   auto func = kernel([&]() {
     declare(i);
     For(i, 0, n * n, [&] {
       auto x = i / n - n / 2;
       auto y = i % n - n / 2;
-      Print(x);
-      Print(y);
       If(x * x + y * y < n * n / 4).Then([&] { a[i] = 1; }).Else([&] {
         a[i] = 0;
       });

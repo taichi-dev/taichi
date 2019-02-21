@@ -117,7 +117,7 @@ class StructCompiler : public CodeGenBase {
       emit_code("}};");
     } else if (type == SNodeType::place) {
       emit_code("using {} = {};", snode.node_type_name,
-                snode.addr->data_type_name());
+                snode.data_type_name());
     } else {
       TC_P(snode.type_name());
       TC_NOT_IMPLEMENTED;

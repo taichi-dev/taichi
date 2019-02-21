@@ -45,9 +45,14 @@ class SNode {
   std::string name;
   int64 n;
   int total_num_bits, total_bit_start;
-  Expr addr;
+  DataType dt;
+  // Expr addr;
   // Note: parent will not be set until structural nodes are compiled!
   SNode *parent;
+
+  std::string data_type_name() {
+    return Tlang::data_type_name(dt);
+  }
 
   using AccessorFunction = void *(*)(void *, int, int, int, int);
   AccessorFunction func;
@@ -154,7 +159,7 @@ class SNode {
   SNode &place(Expr &expr) {
     auto &child = insert_children(SNodeType::place);
     expr->snode_ptr(0) = &child;
-    child.addr.set(expr);
+    // child.addr.set(expr);
     return *this;
   }
 

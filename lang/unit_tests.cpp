@@ -6,6 +6,7 @@
 TLANG_NAMESPACE_BEGIN
 
 TC_TEST("test_compiler") {
+  CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);
 

@@ -19,8 +19,8 @@ SNode &SNode::place_new(ExpressionHandle &expr_) {
   expr->snode = &child;
   name = expr->ident.name();
 
+  child.dt = expr->dt;
   TC_WARN("Uncommenting this may lead to an RTE");
-  // child.addr.set(expr);
   return *this;
 }
 

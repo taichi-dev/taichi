@@ -36,6 +36,15 @@ class PrintStmt;
 
 class SNode;
 
+namespace irpass {
+void print(IRNode *root);
+void lower(IRNode *root);
+void typecheck(IRNode *root);
+void loop_vectorize(IRNode *root);
+void replace_all_usages_with(IRNode *root, IRNode *old_stmt, IRNode *new_stmt);
+}  // namespace irpass
+
+
 struct VectorType {
   int width;
   DataType data_type;
@@ -291,6 +300,7 @@ class Statement : public IRNode {
   Block *parent;
   static int id_counter;
   int id;
+  std::vector<Stmt **> operands;
 
   VectorType ret_type;
 
@@ -326,6 +336,23 @@ class Statement : public IRNode {
   T *as() {
     TC_ASSERT(is<T>());
     return dynamic_cast<T *>(this);
+  }
+
+  int num_operands() const {
+    return operands.size();
+  }
+
+  Statement *&operand(int i) {
+    TC_ASSERT(0 <= i && i < operands.size());
+    return *operands[i];
+  }
+
+  IRNode *get_ir_root();
+
+  void replace_with(Stmt *new_stmt) {
+    auto root = get_ir_root();
+    irpass::replace_all_usages_with(root, this, new_stmt);
+    // Note: the current structure should have been destroyed now..
   }
 };
 
@@ -934,13 +961,6 @@ inline ExprH ExpressionHandle::operator[](ExpressionGroup indices) {
   return ExprH(std::make_shared<GlobalPtrExpression>(
       cast<GlobalVariableExpression>(), indices));
 }
-
-namespace irpass {
-void print(IRNode *root);
-void lower(IRNode *root);
-void typecheck(IRNode *root);
-void loop_vectorize(IRNode *root);
-}  // namespace irpass
 
 #define declare(x) \
   auto x = ExpressionHandle(std::make_shared<IdExpression>(#x));

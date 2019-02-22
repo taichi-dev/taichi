@@ -53,6 +53,13 @@ FrontendForStmt::FrontendForStmt(ExprH loop_var, ExprH begin, ExprH end)
   loop_var_id = loop_var.cast<IdExpression>()->id;
 }
 
+IRNode *Stmt::get_ir_root() {
+  auto block = parent;
+  while (block->parent)
+    block = block->parent;
+  return dynamic_cast<IRNode *>(block);
+}
+
 AssignStmt::AssignStmt(ExprH lhs, ExprH rhs) : lhs(lhs), rhs(rhs) {
   TC_ASSERT(lhs.is<IdExpression>() || lhs.is<GlobalPtrExpression>());
 }

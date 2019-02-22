@@ -7,10 +7,12 @@ TLANG_NAMESPACE_BEGIN
 class LoopVectorize : public IRVisitor {
  public:
   int vectorize;
+  Ident *loop_var;
 
   LoopVectorize() {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
+    loop_var = nullptr;
     vectorize = 1;
   }
 
@@ -19,12 +21,28 @@ class LoopVectorize : public IRVisitor {
   }
 
   void visit(Block *stmt_list) {
+    std::vector<Stmt *> statements;
     for (auto &stmt : stmt_list->statements) {
+      statements.push_back(stmt.get());
+    }
+    for (auto stmt : statements) {
       stmt->accept(this);
     }
   }
 
   void visit(AllocaStmt *alloca) {
+  }
+
+  void visit(LocalLoadStmt *stmt) {
+    if (vectorize == 1)
+      return;
+    TC_ASSERT(stmt->ident.size() == 1);
+    stmt->ret_type.width *= vectorize;
+    stmt->ident.repeat(vectorize);
+    if (loop_var && stmt->ident[0] == *loop_var) {
+      // insert_before
+
+    }
   }
 
   void visit(IfStmt *if_stmt) override {
@@ -38,8 +56,10 @@ class LoopVectorize : public IRVisitor {
   void visit(RangeForStmt *for_stmt) {
     auto old_vectorize = for_stmt->vectorize;
     vectorize = for_stmt->vectorize;
+    loop_var = &for_stmt->loop_var;
     for_stmt->body->accept(this);
-    for_stmt->vectorize = old_vectorize;
+    loop_var = nullptr;
+    vectorize = old_vectorize;
   }
 
   static void run(IRNode *node) {

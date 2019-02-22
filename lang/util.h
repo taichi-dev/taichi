@@ -20,7 +20,6 @@ inline std::string get_project_fn() {
 template <typename T>
 using Handle = std::shared_ptr<T>;
 
-constexpr int indirect_loop_variable_index = -1;
 constexpr int default_simd_width_x86_64 = 8;
 
 class Expr;
@@ -163,7 +162,7 @@ enum class DataType : int {
   u32,
   u64,
   ptr,
-  none, // "void"
+  none,  // "void"
   unknown
 };
 
@@ -230,12 +229,7 @@ inline std::string snode_type_name(SNodeType t) {
   return type_names[t];
 }
 
-enum class UnaryType : int {
-  neg,
-  sqrt,
-  floor,
-  undefined
-};
+enum class UnaryType : int { neg, sqrt, floor, undefined };
 
 inline std::string unary_type_name(UnaryType type) {
   static std::map<UnaryType, std::string> type_names;
@@ -317,10 +311,6 @@ inline std::string binary_type_symbol(BinaryType type) {
   }
   return type_names[type];
 }
-
-enum class NodeType : int {
-
-};
 
 enum class CmpType { eq, ne, le, lt };
 

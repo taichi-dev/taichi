@@ -106,8 +106,9 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(ConstStmt *const_stmt) {
-    emit("const {} {}({});",  // const_stmt->ret_data_type_name(),
-         const_stmt->ret_type.str(), const_stmt->raw_name(), const_stmt->value);
+    emit("const {} {}{};",  // const_stmt->ret_data_type_name(),
+         const_stmt->ret_type.str(), const_stmt->raw_name(),
+         const_stmt->value.serialize());
   }
 
   void visit(RangeForStmt *for_stmt) {
@@ -121,8 +122,9 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) {
-    emit("const {} {} = {};", stmt->ret_data_type_name(), stmt->raw_name(),
-         stmt->ident.raw_name());
+    emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
+         stmt->ident.serialize(
+             [](const Identifier id) { return id.raw_name(); }));
   }
 
   void visit(LocalStoreStmt *stmt) {

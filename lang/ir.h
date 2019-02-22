@@ -217,6 +217,75 @@ struct StmtAttribute {
   int vector_width;
 };
 
+template <typename T>
+struct LaneAttribute {
+  std::vector<T> data;
+
+  LaneAttribute() {
+    data.resize(1, T());
+  }
+
+  LaneAttribute(const T &t) {
+    data.resize(1);
+    data[0] = t;
+  }
+
+  void resize(int s) {
+    data.resize();
+  }
+
+  std::size_t size() {
+    return data.size();
+  }
+
+  T &operator[](int i) {
+    return data[i];
+  }
+
+  // for initializing single lane
+  void operator=(const T &t) {
+    TC_ASSERT(data.size() == 1);
+    data[0] = t;
+  }
+
+  void repeat(int factor) {
+    std::vector<T> new_data;
+    for (int i = 0; i < factor; i++) {
+      for (int j = 0; j < (int)data.size(); j++) {
+        new_data.push_back(data[j]);
+      }
+    }
+    data = new_data;
+  }
+
+  std::string serialize(std::function<std::string(const T &t)> func) {
+    std::string ret = "(";
+    for (int i = 0; i < (int)data.size(); i++) {
+      ret += func(data[i]);
+      if (i + 1 < (int)data.size()) {
+        ret += ", ";
+      }
+    }
+    return ret + ")";
+  }
+
+  std::string serialize() {
+    std::string ret = "(";
+    for (int i = 0; i < (int)data.size(); i++) {
+      ret += fmt::format("{}", data[i]);
+      if (i + 1 < (int)data.size()) {
+        ret += ", ";
+      }
+    }
+    return ret + ")";
+  }
+
+  operator T() const {
+    TC_ASSERT(data.size() == 1);
+    return data[0];
+  }
+};
+
 class Statement : public IRNode {
  public:
   Block *parent;
@@ -330,11 +399,14 @@ class ExpressionHandle {
 class ExpressionGroup {
  public:
   std::vector<ExprH> exprs;
+
   ExpressionGroup() {
   }
+
   ExpressionGroup(ExprH a) {
     exprs.push_back(a);
   }
+
   ExpressionGroup(ExprH a, ExprH b) {
     exprs.push_back(a);
     exprs.push_back(b);
@@ -522,8 +594,10 @@ class Block : public IRNode {
   Block *parent;
   std::vector<std::unique_ptr<Statement>> statements;
   std::map<Ident, VectorType> local_variables;
+  Ident *inner_loop_variable;
 
   Block() {
+    inner_loop_variable = nullptr;
     parent = nullptr;
   }
 
@@ -609,7 +683,7 @@ class GlobalStoreStmt : public Statement {
 
 class LocalLoadStmt : public Statement {
  public:
-  Ident ident;
+  LaneAttribute<Ident> ident;
 
   LocalLoadStmt(Ident ident) : ident(ident) {
   }
@@ -695,7 +769,7 @@ class If {
 
 class ConstStmt : public Statement {
  public:
-  double value;
+  LaneAttribute<long double> value;
 
   ConstStmt(int32 x) {
     ret_type = VectorType(1, DataType::i32);

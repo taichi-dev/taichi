@@ -12,6 +12,7 @@ class IRBuilder;
 class IRNode;
 class Block;
 class Statement;
+using Stmt = Statement;
 
 // statements
 class ConstStmt;
@@ -37,13 +38,14 @@ class PrintStmt;
 class SNode;
 
 namespace irpass {
+
 void print(IRNode *root);
 void lower(IRNode *root);
 void typecheck(IRNode *root);
 void loop_vectorize(IRNode *root);
-void replace_all_usages_with(IRNode *root, IRNode *old_stmt, IRNode *new_stmt);
-}  // namespace irpass
+void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 
+}  // namespace irpass
 
 struct VectorType {
   int width;
@@ -164,7 +166,6 @@ class Identifier {
 
 using Ident = Identifier;
 
-using Stmt = Statement;
 using VecStatement = std::vector<std::unique_ptr<Statement>>;
 
 class IRVisitor {
@@ -304,6 +305,8 @@ class Statement : public IRNode {
 
   VectorType ret_type;
 
+  Statement(const Statement &stmt) = delete;
+
   Statement() {
     id = id_counter++;
   }
@@ -343,17 +346,27 @@ class Statement : public IRNode {
   }
 
   Statement *&operand(int i) {
-    TC_ASSERT(0 <= i && i < operands.size());
+    TC_ASSERT(0 <= i && i < (int)operands.size());
     return *operands[i];
   }
 
+  void add_operand(Statement *&stmt) {
+    operands.push_back(&stmt);
+  }
+
   IRNode *get_ir_root();
+
+  virtual void repeat(int factor) {
+    ret_type.width *= factor;
+  }
 
   void replace_with(Stmt *new_stmt) {
     auto root = get_ir_root();
     irpass::replace_all_usages_with(root, this, new_stmt);
     // Note: the current structure should have been destroyed now..
   }
+
+  void insert_after(std::unique_ptr<Stmt> &&new_stmt);
 };
 
 // always a tree - used as rvalues
@@ -463,6 +476,7 @@ class UnaryOpStmt : public Statement {
   Statement *rhs;
 
   UnaryOpStmt(UnaryType op_type, Statement *rhs) : op_type(op_type), rhs(rhs) {
+    add_operand(rhs);
   }
 
   DEFINE_ACCEPT
@@ -497,6 +511,8 @@ class BinaryOpStmt : public Statement {
 
   BinaryOpStmt(BinaryType op_type, Statement *lhs, Statement *rhs)
       : op_type(op_type), lhs(lhs), rhs(rhs) {
+    add_operand(lhs);
+    add_operand(rhs);
   }
 
   DEFINE_ACCEPT
@@ -535,6 +551,9 @@ class GlobalPtrStmt : public Statement {
 
   GlobalPtrStmt(SNode *snode, const std::vector<Stmt *> &indices)
       : snode(snode), indices(indices) {
+    for (int i = 0; i < (int)indices.size(); i++) {
+      add_operand(this->indices[i]);
+    }
   }
 
   DEFINE_ACCEPT
@@ -693,6 +712,7 @@ class GlobalLoadStmt : public Statement {
   Stmt *ptr;
 
   GlobalLoadStmt(Stmt *ptr) : ptr(ptr) {
+    add_operand(ptr);
   }
 
   DEFINE_ACCEPT;
@@ -703,6 +723,8 @@ class GlobalStoreStmt : public Statement {
   Stmt *ptr, *data;
 
   GlobalStoreStmt(Stmt *ptr, Stmt *data) : ptr(ptr), data(data) {
+    add_operand(ptr);
+    add_operand(data);
   }
 
   DEFINE_ACCEPT;
@@ -724,6 +746,7 @@ class LocalStoreStmt : public Statement {
   Statement *stmt;
 
   LocalStoreStmt(Ident ident, Statement *stmt) : ident(ident), stmt(stmt) {
+    add_operand(stmt);
   }
 
   DEFINE_ACCEPT;
@@ -735,6 +758,7 @@ class IfStmt : public Statement {
   std::unique_ptr<Block> true_statements, false_statements;
 
   IfStmt(Statement *cond) : cond(cond) {
+    add_operand(cond);
   }
 
   DEFINE_ACCEPT
@@ -766,6 +790,7 @@ class PrintStmt : public Statement {
   Statement *stmt;
 
   PrintStmt(Statement *stmt) : stmt(stmt) {
+    add_operand(stmt);
   }
 
   DEFINE_ACCEPT
@@ -808,6 +833,11 @@ class ConstStmt : public Statement {
     value = x;
   }
 
+  void repeat(int factor) override {
+    Statement::repeat(factor);
+    value.repeat(factor);
+  }
+
   DEFINE_ACCEPT
 };
 
@@ -841,6 +871,8 @@ class RangeForStmt : public Statement {
         end(end),
         body(std::move(body)),
         vectorize(vectorize) {
+    add_operand(begin);
+    add_operand(end);
   }
 
   DEFINE_ACCEPT

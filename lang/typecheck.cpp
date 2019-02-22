@@ -77,11 +77,12 @@ class TypeCheck : public IRVisitor {
         stmt->rhs->is<ConstStmt>()) {
       stmt->rhs->ret_type = stmt->lhs->ret_type;
     }
+    TC_ASSERT(stmt->lhs->ret_type.width == stmt->rhs->ret_type.width);
     TC_ASSERT(stmt->lhs->ret_type.data_type != DataType::unknown);
     TC_ASSERT(stmt->rhs->ret_type.data_type != DataType::unknown);
     TC_ASSERT(stmt->lhs->ret_type == stmt->rhs->ret_type);
     if (is_comparison(stmt->op_type)) {
-      stmt->ret_type = VectorType(1, DataType::i32);
+      stmt->ret_type = VectorType(stmt->lhs->ret_type.width, DataType::i32);
     } else {
       stmt->ret_type = stmt->lhs->ret_type;
     }

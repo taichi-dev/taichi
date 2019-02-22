@@ -6,8 +6,18 @@ class StatementReplace : public IRVisitor {
  public:
   Stmt *old_stmt, *new_stmt;
 
-  StatementReplace() {
+  StatementReplace(Stmt *old_stmt, Stmt *new_stmt)
+      : old_stmt(old_stmt), new_stmt(new_stmt) {
     allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  void visit(Statement *stmt) {
+    for (int i = 0; i < stmt->num_operands(); i++) {
+      if (stmt->operand(i) == old_stmt) {
+        stmt->operand(i) = new_stmt;
+      }
+    }
   }
 
   void visit(IfStmt *if_stmt) {
@@ -25,17 +35,10 @@ class StatementReplace : public IRVisitor {
   }
 
   void visit(RangeForStmt *stmt) {
-    auto block = stmt->parent;
-    TC_ASSERT(block->local_variables.find(stmt->loop_var) ==
-              block->local_variables.end());
-    mark_as_if_const(stmt->begin, VectorType(1, DataType::i32));
-    mark_as_if_const(stmt->end, VectorType(1, DataType::i32));
-    block->local_variables.insert(
-        std::make_pair(stmt->loop_var, VectorType(1, DataType::i32)));
     stmt->body->accept(this);
   }
 
-  static void run(IRNode *node, IRNode *old_stmt, IRNode *new_stmt) {
+  static void run(IRNode *node, Stmt *old_stmt, Stmt *new_stmt) {
     StatementReplace inst(old_stmt, new_stmt);
     node->accept(&inst);
   }
@@ -43,11 +46,8 @@ class StatementReplace : public IRVisitor {
 
 namespace irpass {
 
-void typecheck(IRNode *root) {
-  void replace_all_usages_with(IRNode * root, IRNode * old_stmt,
-                               IRNode * new_stmt) {
-    StatementReplace::run(root, old_stmt, new_stmt);
-  }
+void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt) {
+  StatementReplace::run(root, old_stmt, new_stmt);
 }
 
 }  // namespace irpass

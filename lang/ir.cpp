@@ -112,4 +112,19 @@ template void *ExprH::val_tmp<int>(int);
 template void *ExprH::val_tmp<int, int>(int, int);
 template void *ExprH::val_tmp<int, int, int>(int, int, int);
 template void *ExprH::val_tmp<int, int, int, int>(int, int, int, int);
+
+void Stmt::insert_after(std::unique_ptr<Stmt> &&new_stmt) {
+  TC_ASSERT(parent);
+  auto &stmts = parent->statements;
+  int loc = -1;
+  for (int i = 0; i < (int)stmts.size(); i++) {
+    if (stmts[i].get() == this) {
+      loc = i;
+      break;
+    }
+  }
+  TC_ASSERT(loc != -1);
+  new_stmt->parent = parent;
+  stmts.insert(stmts.begin() + loc + 1, std::move(new_stmt));
+}
 TLANG_NAMESPACE_END

@@ -80,7 +80,7 @@ class IRPrinter : public IRVisitor {
 
   void visit(ConstStmt *const_stmt) {
     print("{}{} = const {}", const_stmt->type_hint(), const_stmt->name(),
-          const_stmt->value);
+          const_stmt->value.serialize());
   }
 
   void visit(FrontendForStmt *for_stmt) {

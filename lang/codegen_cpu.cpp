@@ -136,7 +136,7 @@ class IRCodeGen : public IRVisitor {
       std::string indices = "(root, ";
       for (int i = 0; i < max_num_indices; i++) {
         if (i < (int)stmt->indices.size()) {
-          indices += stmt->indices[i]->raw_name() + fmt::format("[{}]", i);
+          indices += stmt->indices[i]->raw_name() + fmt::format("[{}]", l);
         } else {
           indices += "0";
         }
@@ -151,7 +151,8 @@ class IRCodeGen : public IRVisitor {
 
   void visit(GlobalStoreStmt *stmt) {
     for (int i = 0; i < stmt->data->ret_type.width; i++) {
-      emit("*({} *){}[{}] = {}[{}];", stmt->data->ret_data_type_name(),
+      emit("*({} *){}[{}] = {}[{}];",
+           data_type_name(stmt->data->ret_type.data_type),
            stmt->ptr->raw_name(), i, stmt->data->raw_name(), i);
     }
   }

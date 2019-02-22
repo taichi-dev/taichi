@@ -322,10 +322,6 @@ enum class NodeType : int {
 
 };
 
-inline std::string node_type_name(NodeType type) {
-  TC_NOT_IMPLEMENTED
-}
-
 enum class CmpType { eq, ne, le, lt };
 
 constexpr int max_num_indices = 4;

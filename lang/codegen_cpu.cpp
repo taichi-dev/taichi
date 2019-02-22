@@ -166,9 +166,12 @@ void CPUCodeGen::codegen(Kernel &kernel) {
     generate_header();
   }
 
-  irpass::lower(kernel.ir);
-  irpass::typecheck(kernel.ir);
-  IRCodeGen::run(this, kernel.ir);
+  auto ir = kernel.ir;
+  irpass::lower(ir);
+  irpass::typecheck(ir);
+  irpass::loop_vectorize(ir);
+  irpass::print(ir);
+  IRCodeGen::run(this, ir);
 
   {
     CODE_REGION(tail);

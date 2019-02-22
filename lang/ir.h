@@ -161,17 +161,24 @@ using VecStatement = std::vector<std::unique_ptr<Statement>>;
 class IRVisitor {
  public:
   bool allow_undefined_visitor;
+  bool invoke_default_visitor;
 
   IRVisitor() {
     allow_undefined_visitor = false;
+    invoke_default_visitor = false;
   }
 
-#define DEFINE_VISIT(T)          \
-  virtual void visit(T *stmt) {  \
-    if (allow_undefined_visitor) \
-      return;                    \
-    else                         \
-      TC_NOT_IMPLEMENTED;        \
+  // default visitor
+  virtual void visit(Statement *stmt) {
+  }
+
+#define DEFINE_VISIT(T)            \
+  virtual void visit(T *stmt) {    \
+    if (allow_undefined_visitor) { \
+      if (invoke_default_visitor)  \
+        visit((Stmt *)stmt);       \
+    } else                         \
+      TC_NOT_IMPLEMENTED;          \
   }
 
   DEFINE_VISIT(Block);

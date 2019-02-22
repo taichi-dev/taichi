@@ -6,8 +6,16 @@ TLANG_NAMESPACE_BEGIN
 // Goal: eliminate Expression, and mutable local variables. Make AST SSA.
 class LoopVectorize : public IRVisitor {
  public:
+  int vectorize;
+
   LoopVectorize() {
     allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+    vectorize = 1;
+  }
+
+  void visit(Statement *stmt) {
+    stmt->ret_type.width *= vectorize;
   }
 
   void visit(Block *stmt_list) {
@@ -28,7 +36,10 @@ class LoopVectorize : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) {
+    auto old_vectorize = for_stmt->vectorize;
+    vectorize = for_stmt->vectorize;
     for_stmt->body->accept(this);
+    for_stmt->vectorize = old_vectorize;
   }
 
   static void run(IRNode *node) {

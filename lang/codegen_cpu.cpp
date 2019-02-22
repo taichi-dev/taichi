@@ -160,16 +160,14 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   // TC_ASSERT(mode == Mode::vector);
   this->prog = &kernel.program;
   this->current_kernel = &kernel;
-  this->simd_width = prog->config.simd_width;
-  this->num_groups = kernel.parallel_instances;
-
-  has_residual = false;
 
   {
     CODE_REGION(header);
     generate_header();
   }
 
+  irpass::lower(kernel.ir);
+  irpass::typecheck(kernel.ir);
   IRCodeGen::run(this, kernel.ir);
 
   {

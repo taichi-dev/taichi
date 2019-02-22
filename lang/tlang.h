@@ -34,14 +34,6 @@ inline void kernel_name(std::string name) {
   get_current_program().get_current_kernel().name = name;
 }
 
-inline void group(int n) {
-  get_current_program().get_current_kernel().output_group_size = n;
-}
-
-inline void parallel_instances(int n) {
-  get_current_program().get_current_kernel().parallel_instances = n;
-}
-
 /*
 inline void touch(SNode *snode, Expr target_index, Expr value) {
   auto e = Expr::create(NodeType::touch, Expr::load_if_pointer(target_index),

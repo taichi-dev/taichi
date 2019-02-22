@@ -74,49 +74,16 @@ class Program {
     IRNode *ir;
     Program &program;
     FunctionType compiled;
-    std::vector<Adapter> adapters;
-    Expr ret;
-    int parallel_instances;
-    int simd_lanes;
-    int output_group_size;
-    bool has_touch;
     std::string name;
 
     Kernel(Program &program, std::function<void()> func) : program(program) {
       context = std::make_unique<FrontendContext>();
       ir = context->root();
 
-      has_touch = false;
-      parallel_instances = -1;
-      simd_lanes = -1;
-      output_group_size = -1;
       program.start_function_definition(this);
       func();
 
-      /*
-      if (output_group_size == -1) {
-        output_group_size = 1;
-      }
-      if (parallel_instances == -1) {
-        int minimal_group_size = bit::least_pot_bound(output_group_size);
-        for (auto &ad : adapters) {
-          minimal_group_size =
-              std::min(minimal_group_size, ad.input_group_size);
-        }
-        TC_ASSERT(program.config.simd_width % minimal_group_size == 0);
-        parallel_instances = program.config.simd_width / minimal_group_size;
-      }
-      if (simd_lanes == -1) {
-        simd_lanes = output_group_size * parallel_instances;
-      }
-      */
-
       program.end_function_definition();
-
-      irpass::print(ir);
-      irpass::lower(ir);
-      irpass::typecheck(ir);
-      irpass::print(ir);
 
       compile();
     }

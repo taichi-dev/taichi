@@ -68,7 +68,8 @@ class LowerAST : public IRVisitor {
     end->flatten(flattened);
 
     flattened.push_back(std::make_unique<RangeForStmt>(
-        stmt->loop_var_id, begin->stmt, end->stmt, std::move(stmt->body)));
+        stmt->loop_var_id, begin->stmt, end->stmt, std::move(stmt->body),
+        stmt->vectorize));
     stmt->parent->replace_with(stmt, flattened);
     throw IRModifiedException();
   }

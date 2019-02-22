@@ -87,6 +87,7 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void generate_loop_header(SNode *snode, bool last_level = false) {
+#if (0)
     if (snode->parent != nullptr) {
       generate_loop_header(snode->parent,
                            last_level && snode->type == SNodeType::forked);
@@ -181,6 +182,7 @@ class CPUCodeGen : public CodeGenBase {
       CODE_REGION(residual_end);
       emit_code("}}");
     }
+#endif
   }
 
   void generate_loop_tail(SNode *snode, bool last_level = false) {
@@ -255,18 +257,6 @@ class CPUCodeGen : public CodeGenBase {
     members += "}";
     return members;
   }
-
-  void visit(Expr &expr) {
-    if (mode == Mode::vv) {
-      visit_vv(expr);
-    } else {
-      visit_intrinsics(expr);
-    }
-  }
-
-  void visit_intrinsics(Expr &expr);
-
-  void visit_vv(Expr &expr){TC_NOT_IMPLEMENTED}
 
   FunctionType compile();
 

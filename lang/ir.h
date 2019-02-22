@@ -721,12 +721,18 @@ class RangeForStmt : public Statement {
   Ident loop_var;
   Statement *begin, *end;
   std::unique_ptr<Block> body;
+  int vectorize;
 
   RangeForStmt(Ident loop_var,
                Statement *begin,
                Statement *end,
-               std::unique_ptr<Block> &&body)
-      : loop_var(loop_var), begin(begin), end(end), body(std::move(body)) {
+               std::unique_ptr<Block> &&body,
+               int vectorize)
+      : loop_var(loop_var),
+        begin(begin),
+        end(end),
+        body(std::move(body)),
+        vectorize(vectorize) {
   }
 
   DEFINE_ACCEPT
@@ -852,6 +858,7 @@ namespace irpass {
 void print(IRNode *root);
 void lower(IRNode *root);
 void typecheck(IRNode *root);
+void loop_vectorize(IRNode *root);
 }  // namespace irpass
 
 #define declare(x) \

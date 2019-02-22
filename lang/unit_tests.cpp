@@ -49,7 +49,6 @@ TC_TEST("compiler_basics") {
   declare(a_global);
   auto a = global_new(a_global, DataType::i32);
   auto i = Expr(0);
-
   layout([&]() { root.fixed(i, n).place(a); });
 
   auto dou = [](ExprH a) { return a * 2; };
@@ -174,5 +173,27 @@ auto test_ast = []() {
   irpass::print(root);
 };
 TC_REGISTER_TASK(test_ast);
+
+auto test_vectorize = [] {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 128;
+  Program prog(Arch::x86_64);
+
+  declare(a_global);
+  auto a = global_new(a_global, DataType::i32);
+  auto i = Expr(0);
+
+  layout([&]() { root.fixed(i, n).place(a); });
+
+  auto func = kernel([&]() {
+    declare(i);
+
+    Vectorize(8);
+    For(i, 0, n, [&] { a[i] = i; });
+  });
+
+  func();
+};
+TC_REGISTER_TASK(test_vectorize);
 
 TLANG_NAMESPACE_END

@@ -5,6 +5,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+DecoratorRecorder dec;
+
 // Vector width, vectorization plan etc
 class PropagateSchedule : public IRVisitor {};
 
@@ -18,7 +20,12 @@ IRBuilder::ScopeGuard IRBuilder::create_scope(std::unique_ptr<Block> &list) {
 }
 
 void ExprH::operator=(const ExpressionHandle &o) {
-  current_ast_builder().insert(std::make_unique<AssignStmt>(*this, o));
+  if (this->expr == nullptr &&
+      !(this->is<GlobalPtrStmt>() || this->is<IdExpression>())) {
+    expr = o.expr;
+  } else {
+    current_ast_builder().insert(std::make_unique<AssignStmt>(*this, o));
+  }
 }
 
 FrontendContext::FrontendContext() {
@@ -90,20 +97,6 @@ void *ExprH::val_tmp(Indices... indices) {
   LOAD_IND(3);
 #undef LOAD_IND
   TC_ASSERT(max_num_indices == 4);
-  /*
-  TC_P(snode->index_order[0]);
-  TC_P(snode->index_order[1]);
-  TC_P(snode->index_order[2]);
-  TC_P(snode->index_order[3]);
-  TC_P(ind[0]);
-  TC_P(ind[1]);
-  TC_P(ind[2]);
-  TC_P(ind[3]);
-  TC_P(((int *)&tup)[0]);
-  TC_P(((int *)&tup)[1]);
-  TC_P(((int *)&tup)[2]);
-  TC_P(((int *)&tup)[3]);
-  */
   return evaluate_addr(ind[0], ind[1], ind[2], ind[3]);
 }
 

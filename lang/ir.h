@@ -25,8 +25,8 @@ class RangeForStmt;
 class WhileStmt;
 class AssignStmt;
 class AllocaStmt;
-class BinaryOpStmt;
 class UnaryOpStmt;
+class BinaryOpStmt;
 class LocalLoadStmt;
 class LocalStoreStmt;
 class GlobalPtrStmt;
@@ -272,6 +272,9 @@ class ExpressionHandle {
  public:
   std::shared_ptr<Expression> expr;
 
+  ExpressionHandle() {
+  }
+
   ExpressionHandle(int32 x);
 
   ExpressionHandle(float32 x);
@@ -347,6 +350,39 @@ inline ExpressionGroup operator,(const ExprH &a, const ExprH &b) {
 inline ExpressionGroup operator,(const ExpressionGroup &a, const ExprH &b) {
   return ExpressionGroup(a, b);
 }
+
+class UnaryOpStmt : public Statement {
+ public:
+  UnaryType op_type;
+  Statement *rhs;
+
+  UnaryOpStmt(UnaryType op_type, Statement *rhs) : op_type(op_type), rhs(rhs) {
+  }
+
+  DEFINE_ACCEPT
+};
+
+class UnaryOpExpression : public Expression {
+ public:
+  UnaryType type;
+  ExpressionHandle rhs;
+
+  UnaryOpExpression(UnaryType type, ExpressionHandle rhs)
+      : type(type), rhs(rhs) {
+  }
+
+  std::string serialize() override {
+    return fmt::format("({} {})", unary_type_name(type), rhs->serialize());
+  }
+
+  void flatten(VecStatement &ret) override {
+    if (stmt)
+      return;
+    rhs->flatten(ret);
+    ret.push_back(std::make_unique<UnaryOpStmt>(type, rhs->stmt));
+    stmt = ret.back().get();
+  }
+};
 
 class BinaryOpStmt : public Statement {
  public:
@@ -459,6 +495,10 @@ class GlobalPtrExpression : public Expression {
         std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs, rhs)); \
   }
 
+inline ExprH operator-(ExprH expr) {
+  return ExprH(std::make_shared<UnaryOpExpression>(UnaryType::neg, expr));
+}
+
 DEFINE_EXPRESSION_OP(+, add)
 DEFINE_EXPRESSION_OP(-, sub)
 DEFINE_EXPRESSION_OP(*, mul)
@@ -537,10 +577,6 @@ class AllocaStmt : public Statement {
   AllocaStmt(Ident lhs, DataType type) : ident(lhs) {
     ret_type = VectorType(1, type);
   }
-  DEFINE_ACCEPT
-};
-
-class UnaryOpStmt : public Statement {
   DEFINE_ACCEPT
 };
 
@@ -715,16 +751,6 @@ inline void Print(const ExpressionHandle &a) {
   current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a));
 }
 
-#define DEF_BINARY_OP(Op, name)                                             \
-  inline Identifier operator Op(const Identifier &a, const Identifier &b) { \
-    Identifier c;                                                           \
-    current_ast_builder().insert(                                           \
-        std::make_unique<BinaryOpStmt>(BinaryType::name, c, a, b));         \
-    return c;                                                               \
-  }
-
-#undef DEF_BINARY_OP
-
 class For {
  public:
   For(ExprH i, ExprH s, ExprH e, const std::function<void()> &func) {
@@ -739,7 +765,6 @@ class For {
 class While {
  public:
   While(ExprH cond, const std::function<void()> &func) {
-    // current_ast_builder().insert()
   }
 };
 

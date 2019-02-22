@@ -1,24 +1,13 @@
-#if 0
 #pragma once
 
 #include "tlang.h"
+#include "ir.h"
 
 TLANG_NAMESPACE_BEGIN
 
-using Real = Expr;
-
-template <typename T>
-using Var = Expr;
-
-using Float32 = Var<float32>;
-using Float = Float32;
-using Int32 = Var<int32>;
-using Int = Int32;
-
 struct Matrix {
-  using T = Float;
   int n, m;
-  std::vector<T> entries;
+  std::vector<ExprH> entries;
 
   Matrix() {
     n = m = 0;
@@ -28,12 +17,12 @@ struct Matrix {
     return n * m >= 1;
   }
 
-  Matrix(int n, int m = 1) : n(n), m(m) {
+  explicit Matrix(int n, int m = 1) : n(n), m(m) {
     TC_ASSERT(n * m >= 1);
-    entries.resize(n * m, T());
+    entries.resize(n * m);
   }
 
-  Matrix map(const std::function<Expr(const Expr &)> &f) const {
+  Matrix map(const std::function<ExprH(const ExprH &)> &f) const {
     Matrix ret(n, m);
     for (int i = 0; i < (int)entries.size(); i++) {
       ret.entries[i] = f(entries[i]);
@@ -41,25 +30,25 @@ struct Matrix {
     return ret;
   }
 
-  T &operator()(int i, int j) {
+  ExprH &operator()(int i, int j) {
     TC_ASSERT(0 <= i && i < n);
     TC_ASSERT(0 <= j && j < n);
     return entries[i * m + j];
   }
 
-  const T &operator()(int i, int j) const {
+  const ExprH &operator()(int i, int j) const {
     TC_ASSERT(0 <= i && i < n);
     TC_ASSERT(0 <= j && j < n);
     return entries[i * m + j];
   }
 
-  T &operator()(int i) {
+  ExprH &operator()(int i) {
     TC_ASSERT(0 <= i && i < n * m);
     TC_ASSERT(n == 1 || m == 1);
     return entries[i];
   }
 
-  const T &operator()(int i) const {
+  const ExprH &operator()(int i) const {
     TC_ASSERT(0 <= i && i < n * m);
     TC_ASSERT(n == 1 || m == 1);
     return entries[i];
@@ -90,7 +79,7 @@ struct Matrix {
     return ret;
   }
 
-  Matrix operator[](Expr index) {
+  Matrix operator[](ExprH index) {
     Matrix ret(n, m);
     for (int i = 0; i < n * m; i++) {
       ret.entries[i] = entries[i][index];
@@ -98,7 +87,7 @@ struct Matrix {
     return ret;
   }
 
-  Matrix operator[](ExprGroup index) {
+  Matrix operator[](ExpressionGroup index) {
     Matrix ret(n, m);
     for (int i = 0; i < n * m; i++) {
       ret.entries[i] = entries[i][index];
@@ -106,16 +95,16 @@ struct Matrix {
     return ret;
   }
 
-  Expr sum() const {
-    Expr ret = entries[0];
+  ExprH sum() const {
+    ExprH ret = entries[0];
     for (int i = 1; i < n * m; i++) {
-      ret = ret + entries[i];
+      ret.set(ret + entries[i]);
     }
     return ret;
   }
 };
 
-inline Matrix operator*(const Expr &A, const Matrix &B) {
+inline Matrix operator*(const ExprH &A, const Matrix &B) {
   Matrix C(B.n, B.m);
   for (int i = 0; i < B.n; i++) {
     for (int j = 0; j < B.m; j++) {
@@ -125,7 +114,7 @@ inline Matrix operator*(const Expr &A, const Matrix &B) {
   return C;
 }
 
-inline Matrix operator*(const Matrix &B, const Expr &A) {
+inline Matrix operator*(const Matrix &B, const ExprH &A) {
   Matrix C(B.n, B.m);
   for (int i = 0; i < B.n; i++) {
     for (int j = 0; j < B.m; j++) {
@@ -135,7 +124,7 @@ inline Matrix operator*(const Matrix &B, const Expr &A) {
   return C;
 }
 
-inline Matrix operator+(const Expr &A, const Matrix &B) {
+inline Matrix operator+(const ExprH &A, const Matrix &B) {
   Matrix C(B.n, B.m);
   for (int i = 0; i < B.n; i++) {
     for (int j = 0; j < B.m; j++) {
@@ -145,7 +134,7 @@ inline Matrix operator+(const Expr &A, const Matrix &B) {
   return C;
 }
 
-inline Matrix operator-(const Expr &A, const Matrix &B) {
+inline Matrix operator-(const ExprH &A, const Matrix &B) {
   Matrix C(B.n, B.m);
   for (int i = 0; i < B.n; i++) {
     for (int j = 0; j < B.m; j++) {
@@ -155,7 +144,7 @@ inline Matrix operator-(const Expr &A, const Matrix &B) {
   return C;
 }
 
-inline Matrix operator-(const Matrix &B, const Expr &A) {
+inline Matrix operator-(const Matrix &B, const ExprH &A) {
   Matrix C(B.n, B.m);
   for (int i = 0; i < B.n; i++) {
     for (int j = 0; j < B.m; j++) {
@@ -205,12 +194,6 @@ inline Matrix operator-(const Matrix &A, const Matrix &B) {
 
 using Vector = Matrix;
 
-inline Expr operator-(const Expr &a) {
-  auto n = Expr::create(NodeType::neg, a);
-  n->data_type = a->data_type;
-  return n;
-}
-
 inline Matrix operator-(const Matrix &A) {
   Matrix C(A.n, A.m);
   for (int i = 0; i < A.n; i++) {
@@ -219,6 +202,13 @@ inline Matrix operator-(const Matrix &A) {
     }
   }
   return C;
+}
+
+/*
+inline ExprH operator-(const Expr &a) {
+  auto n = Expr::create(NodeType::neg, a);
+  n->data_type = a->data_type;
+  return n;
 }
 
 inline Expr floor(const Expr &a) {
@@ -261,20 +251,6 @@ inline Expr min(const Expr &a, const Expr &b) {
   return n;
 }
 
-inline Expr imm(int i) {
-  auto n = Expr::create(NodeType::imm);
-  n->value<int32>() = i;
-  n->data_type = DataType::i32;
-  return n;
-}
-
-inline Expr imm(float32 i) {
-  auto n = Expr::create(NodeType::imm);
-  n->data_type = DataType::f32;
-  n->value<float32>() = i;
-  return n;
-}
-
 template <typename T>
 inline Expr cast(const Expr &i) {
   auto n = Expr::create(NodeType::cast, i);
@@ -305,6 +281,6 @@ inline Matrix outer_product(Vector a, Vector b) {
   }
   return m;
 }
+*/
 
 TLANG_NAMESPACE_END
-#endif

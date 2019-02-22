@@ -230,6 +230,25 @@ inline std::string snode_type_name(SNodeType t) {
   return type_names[t];
 }
 
+enum class UnaryType : int {
+  neg,
+  sqrt,
+  floor,
+  undefined
+};
+
+inline std::string unary_type_name(UnaryType type) {
+  static std::map<UnaryType, std::string> type_names;
+  if (type_names.empty()) {
+#define REGISTER_TYPE(i) type_names[UnaryType::i] = #i;
+    REGISTER_TYPE(neg);
+    REGISTER_TYPE(sqrt);
+    REGISTER_TYPE(floor);
+#undef REGISTER_TYPE
+  }
+  return type_names[type];
+}
+
 // Regular binary ops:
 // Operations that take two oprands, and returns a single operand with the same
 // type
@@ -300,76 +319,11 @@ inline std::string binary_type_symbol(BinaryType type) {
 }
 
 enum class NodeType : int {
-  binary,  // regular binary operators that work for both int and float, and
-           // return the same type
-  land,
-  load,
-  store,
-  pointer,
-  combine,
-  index,
-  addr,
-  adapter_store,
-  adapter_load,
-  imm,
-  floor,
-  sqrt,
-  inv,
-  neg,
-  cast,
-  shr,
-  shl,
-  cmp,
-  select,
-  // vectorized
-  vload,
-  vload1,
-  vstore,
-  touch,
-  print,
-  reduce,
-  gather,
-  // locals
-  alloca,  // allocate on stack (local variable)
-  local_load,
-  local_store,
-  undefined
+
 };
 
 inline std::string node_type_name(NodeType type) {
-  static std::map<NodeType, std::string> type_names;
-  if (type_names.empty()) {
-#define REGISTER_TYPE(i) type_names[NodeType::i] = #i;
-    REGISTER_TYPE(binary);
-    REGISTER_TYPE(land);
-    REGISTER_TYPE(load);
-    REGISTER_TYPE(store);
-    REGISTER_TYPE(combine);
-    REGISTER_TYPE(addr);
-    REGISTER_TYPE(pointer);
-    REGISTER_TYPE(adapter_store);
-    REGISTER_TYPE(adapter_load);
-    REGISTER_TYPE(imm);
-    REGISTER_TYPE(index);
-    REGISTER_TYPE(floor);
-    REGISTER_TYPE(sqrt);
-    REGISTER_TYPE(inv);
-    REGISTER_TYPE(neg);
-    REGISTER_TYPE(cast);
-    REGISTER_TYPE(shr);
-    REGISTER_TYPE(shl);
-    REGISTER_TYPE(cmp);
-    REGISTER_TYPE(vload);
-    REGISTER_TYPE(vload1);
-    REGISTER_TYPE(vstore);
-    REGISTER_TYPE(touch);
-    REGISTER_TYPE(select);
-    REGISTER_TYPE(print);
-    REGISTER_TYPE(reduce);
-    REGISTER_TYPE(gather);
-#undef REGISTER_TYPE
-  }
-  return type_names[type];
+  TC_NOT_IMPLEMENTED
 }
 
 enum class CmpType { eq, ne, le, lt };

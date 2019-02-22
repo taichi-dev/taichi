@@ -5,6 +5,42 @@
 
 TLANG_NAMESPACE_BEGIN
 
+TC_TEST("compiler_linalg") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  Program prog(Arch::x86_64);
+
+  declare(a_global);
+  auto a = global_new(a_global, DataType::i32);
+  auto i = Expr(0);
+
+  layout([&]() { root.fixed(i, 128).place(a); });
+
+  auto func = kernel([&]() {
+    declare(i);
+    declare(sum);
+    var(int32, sum);
+
+    Matrix A(2, 2), B(2, 2);
+    A(0, 0) = 1;
+    A(0, 1) = 1;
+    A(1, 0) = 1;
+    A(1, 1) = 1;
+
+    B(0, 0) = 1;
+    B(0, 1) = 2;
+    B(1, 0) = 3;
+    B(1, 1) = 4;
+    auto C = A + B;
+    for (int p = 0; p < 2; p++) {
+      for (int q = 0; q < 2; q++) {
+        Print(C(p, q));
+      }
+    }
+  });
+
+  func();
+};
+
 TC_TEST("compiler_basics") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;

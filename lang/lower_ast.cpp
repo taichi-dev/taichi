@@ -58,6 +58,24 @@ class LowerAST : public IRVisitor {
     throw IRModifiedException();
   }
 
+  void visit(FrontendWhileStmt *stmt) {
+    auto cond = stmt->cond;
+
+    VecStatement flattened;
+
+    cond->flatten(flattened);
+
+    TC_NOT_IMPLEMENTED
+
+    /*
+    auto &&new_for = std::make_unique<WhileStmt>(std::move(stmt->body));
+    new_for->body->inner_loop_variable = &stmt->loop_var_id;
+    flattened.push_back(std::move(new_for));
+    stmt->parent->replace_with(stmt, flattened);
+    */
+    throw IRModifiedException();
+  }
+
   void visit(FrontendForStmt *stmt) {
     auto begin = stmt->begin;
     auto end = stmt->end;

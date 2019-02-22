@@ -34,6 +34,7 @@ class GlobalPtrStmt;
 class GlobalLoadStmt;
 class GlobalStoreStmt;
 class PrintStmt;
+class BreakStmt;
 
 class SNode;
 
@@ -491,6 +492,10 @@ inline ExpressionGroup operator,(const ExpressionGroup &a, const ExprH &b) {
   return ExpressionGroup(a, b);
 }
 
+class BreakStmt : public Statement {
+  DEFINE_ACCEPT;
+};
+
 class UnaryOpStmt : public Statement {
  public:
   UnaryType op_type;
@@ -909,6 +914,17 @@ class WhileStmt : public Statement {
   DEFINE_ACCEPT
 };
 
+class FrontendWhileStmt : public Statement {
+ public:
+  ExprH cond;
+  std::unique_ptr<Block> body;
+
+  FrontendWhileStmt(ExprH cond) : cond(cond) {
+  }
+
+  DEFINE_ACCEPT
+};
+
 inline void IRBuilder::insert(std::unique_ptr<Statement> &&stmt, int location) {
   TC_ASSERT(!stack.empty());
   stack.back()->insert(std::move(stmt), location);
@@ -932,6 +948,11 @@ class For {
 class While {
  public:
   While(ExprH cond, const std::function<void()> &func) {
+    auto while_stmt = std::make_unique<FrontendWhileStmt>(cond);
+    FrontendWhileStmt *ptr = while_stmt.get();
+    current_ast_builder().insert(std::move(while_stmt));
+    auto _ = current_ast_builder().create_scope(ptr->body);
+    func();
   }
 };
 

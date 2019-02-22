@@ -14,58 +14,6 @@ TC_FORCE_INLINE Program &get_current_program() {
   return *current_program;
 }
 
-struct Adapter {
-  /*
-  Expr stores;
-  int counter = 0;
-  int input_group_size;
-  int id;
-  DataType dt;
-
-  std::vector<Expr> store_exprs;
-
-  Adapter(int id) : id(id) {
-    input_group_size = -1;
-    stores = Expr::create(NodeType::combine);
-  }
-
-  bool initialized() {
-    return input_group_size != -1;
-  }
-
-  Adapter &convert(Expr &e) {
-    TC_ASSERT(initialized());
-    TC_ASSERT(e->type != NodeType::pointer);
-    if (counter == 0) {
-      dt = e->data_type;
-    } else {
-      TC_ASSERT_INFO(dt == e->data_type,
-                     "An adapter can have only one data type");
-    }
-    int i = counter++;
-    auto n = Expr::create(NodeType::adapter_store, e, Expr::create_imm(id),
-                          Expr::create_imm(i / input_group_size));
-    stores->ch.push_back(n);
-    e.set(Expr::create(NodeType::adapter_load, Expr::create_imm(id),
-                       Expr::create_imm(i)));
-    e->data_type = dt;
-    return *this;
-  }
-
-  template <typename... Args>
-  Adapter &convert(Expr &e, Args &&... args) {
-    convert(e);
-    convert(std::forward<Args>(args)...);
-    return *this;
-  }
-
-  Adapter &set(int input_group_size) {
-    this->input_group_size = input_group_size;
-    return *this;
-  }
-  */
-};
-
 class Program {
  public:
   // Should be copiable
@@ -169,12 +117,6 @@ class Program {
   void end_function_definition() {
     current_kernel = nullptr;
   }
-
-  /*
-  Expr store(const Expr &ad, const Expr &e) {
-    return get_current_kernel().ret.store(ad, e);
-  }
-  */
 
   FunctionType compile(Kernel &kernel);
 

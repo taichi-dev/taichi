@@ -174,16 +174,15 @@ auto test_ast = []() {
 };
 TC_REGISTER_TASK(test_ast);
 
-auto test_vectorize = [] {
+TC_TEST("vectorize") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);
 
   declare(a_global);
   auto a = global_new(a_global, DataType::i32);
-  auto i = Expr(0);
 
-  layout([&]() { root.fixed(i, n).place(a); });
+  layout([&]() { root.fixed(0, n).place(a); });
 
   auto func = kernel([&]() {
     declare(i);
@@ -195,9 +194,55 @@ auto test_vectorize = [] {
   func();
 
   for (int i = 0; i < n; i++) {
-    TC_ASSERT(a.val<int>(i) == i);
+    TC_CHECK(a.val<int>(i) == i);
   }
 };
-TC_REGISTER_TASK(test_vectorize);
+
+TC_TEST("simd_fpe") {
+  __m128 a = _mm_set_ps(1, 0, -1, -2);
+  __m128 b = _mm_set_ps(0, 0, 0, 0);
+  a = _mm_sqrt_ps(a);
+  for (int i = 0; i < 4; i++) {
+    std::cout << a[i] << std::endl;
+  }
+  a = a / b;
+  for (int i = 0; i < 4; i++) {
+    std::cout << a[i] << std::endl;
+  }
+};
+
+TC_TEST("while") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 128;
+  Program prog(Arch::x86_64);
+
+  declare(a_global);
+  auto a = global_new(a_global, DataType::i32);
+
+  layout([&]() { root.fixed(0, n).place(a); });
+
+  auto func = kernel([&]() {
+    declare(i);
+
+    // Vectorize(8);
+    For(i, 0, n, [&] {
+      declare(j);
+      declare(sum);
+      var(int, j);
+      j = 0;
+      While(j < i, [&] {
+        sum = sum + j;
+        j = j + 1;
+      });
+      a[i] = sum;
+    });
+  });
+
+  func();
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK(a.val<int>(i) == i);
+  }
+};
 
 TLANG_NAMESPACE_END

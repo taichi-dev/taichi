@@ -268,26 +268,47 @@ struct LaneAttribute {
     data = new_data;
   }
 
-  std::string serialize(std::function<std::string(const T &t)> func) {
-    std::string ret = "(";
+  std::string serialize(std::function<std::string(const T &t)> func,
+                        std::string bracket = "") {
+    std::string ret = bracket;
     for (int i = 0; i < (int)data.size(); i++) {
       ret += func(data[i]);
       if (i + 1 < (int)data.size()) {
         ret += ", ";
       }
     }
-    return ret + ")";
+    if (bracket == "<") {
+      ret += ">";
+    } else if (bracket == "{") {
+      ret += "}";
+    } else if (bracket == "(") {
+      ret += ")";
+    } else if (bracket != "") {
+      TC_P(bracket);
+      TC_NOT_IMPLEMENTED
+    }
+    return ret;
   }
 
-  std::string serialize() {
-    std::string ret = "(";
+  std::string serialize(std::string bracket = "") {
+    std::string ret = bracket;
     for (int i = 0; i < (int)data.size(); i++) {
       ret += fmt::format("{}", data[i]);
       if (i + 1 < (int)data.size()) {
         ret += ", ";
       }
     }
-    return ret + ")";
+    if (bracket == "<") {
+      ret += ">";
+    } else if (bracket == "{") {
+      ret += "}";
+    } else if (bracket == "(") {
+      ret += ")";
+    } else if (bracket != "") {
+      TC_P(bracket);
+      TC_NOT_IMPLEMENTED
+    }
+    return ret;
   }
 
   operator T() const {
@@ -476,7 +497,7 @@ class UnaryOpStmt : public Statement {
   Statement *rhs;
 
   UnaryOpStmt(UnaryType op_type, Statement *rhs) : op_type(op_type), rhs(rhs) {
-    add_operand(rhs);
+    add_operand(this->rhs);
   }
 
   DEFINE_ACCEPT
@@ -511,8 +532,8 @@ class BinaryOpStmt : public Statement {
 
   BinaryOpStmt(BinaryType op_type, Statement *lhs, Statement *rhs)
       : op_type(op_type), lhs(lhs), rhs(rhs) {
-    add_operand(lhs);
-    add_operand(rhs);
+    add_operand(this->lhs);
+    add_operand(this->rhs);
   }
 
   DEFINE_ACCEPT
@@ -712,7 +733,7 @@ class GlobalLoadStmt : public Statement {
   Stmt *ptr;
 
   GlobalLoadStmt(Stmt *ptr) : ptr(ptr) {
-    add_operand(ptr);
+    add_operand(this->ptr);
   }
 
   DEFINE_ACCEPT;
@@ -723,8 +744,8 @@ class GlobalStoreStmt : public Statement {
   Stmt *ptr, *data;
 
   GlobalStoreStmt(Stmt *ptr, Stmt *data) : ptr(ptr), data(data) {
-    add_operand(ptr);
-    add_operand(data);
+    add_operand(this->ptr);
+    add_operand(this->data);
   }
 
   DEFINE_ACCEPT;
@@ -746,7 +767,7 @@ class LocalStoreStmt : public Statement {
   Statement *stmt;
 
   LocalStoreStmt(Ident ident, Statement *stmt) : ident(ident), stmt(stmt) {
-    add_operand(stmt);
+    add_operand(this->stmt);
   }
 
   DEFINE_ACCEPT;
@@ -758,7 +779,7 @@ class IfStmt : public Statement {
   std::unique_ptr<Block> true_statements, false_statements;
 
   IfStmt(Statement *cond) : cond(cond) {
-    add_operand(cond);
+    add_operand(this->cond);
   }
 
   DEFINE_ACCEPT
@@ -790,7 +811,7 @@ class PrintStmt : public Statement {
   Statement *stmt;
 
   PrintStmt(Statement *stmt) : stmt(stmt) {
-    add_operand(stmt);
+    add_operand(this->stmt);
   }
 
   DEFINE_ACCEPT
@@ -871,8 +892,8 @@ class RangeForStmt : public Statement {
         end(end),
         body(std::move(body)),
         vectorize(vectorize) {
-    add_operand(begin);
-    add_operand(end);
+    add_operand(this->begin);
+    add_operand(this->end);
   }
 
   DEFINE_ACCEPT

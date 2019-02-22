@@ -51,11 +51,8 @@ class LoopVectorize : public IRVisitor {
       irpass::typecheck(add_op.get());
       auto offsets_p = offsets.get();
       stmt->replace_with(add_op.get());
-      TC_TAG;
       stmt->insert_after(std::move(offsets));
-      TC_TAG;
       offsets_p->insert_after(std::move(add_op));
-      TC_TAG;
     }
   }
 

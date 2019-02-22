@@ -108,8 +108,8 @@ class CodeGenBase : public Visitor {
   }
 
   template <typename T>
-  static std::string vec_to_list(std::vector<T> val, std::string brace) {
-    std::string members = brace;
+  static std::string vec_to_list(std::vector<T> val, std::string bracket) {
+    std::string members = bracket;
     bool first = true;
     for (int i = 0; i < (int)val.size(); i++) {
       if (!first) {
@@ -118,14 +118,14 @@ class CodeGenBase : public Visitor {
       first = false;
       members += fmt::format("{}", val[i]);
     }
-    if (brace == "<") {
+    if (bracket == "<") {
       members += ">";
-    } else if (brace == "{") {
+    } else if (bracket == "{") {
       members += "}";
-    } else if (brace == "(") {
+    } else if (bracket == "(") {
       members += ")";
-    } else if (brace != "") {
-      TC_P(brace);
+    } else if (bracket != "") {
+      TC_P(bracket);
       TC_NOT_IMPLEMENTED
     }
     return members;

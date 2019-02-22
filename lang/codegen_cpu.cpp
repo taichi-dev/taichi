@@ -106,17 +106,16 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(ConstStmt *const_stmt) {
-    emit("const {} {}{};",  // const_stmt->ret_data_type_name(),
-         const_stmt->ret_type.str(), const_stmt->raw_name(),
-         const_stmt->value.serialize());
+    emit("const {} {}({});", const_stmt->ret_type.str(), const_stmt->raw_name(),
+         const_stmt->value.serialize("{"));
   }
 
   void visit(RangeForStmt *for_stmt) {
     auto loop_var = for_stmt->loop_var;
-    emit("for ({} {} = {}; {} < {}; {}++) {{",
+    emit("for ({} {} = {}; {} < {}; {} += {}) {{",
          data_type_name(for_stmt->parent->lookup_var(loop_var).data_type),
          loop_var.raw_name(), for_stmt->begin->raw_name(), loop_var.raw_name(),
-         for_stmt->end->raw_name(), loop_var.raw_name());
+         for_stmt->end->raw_name(), loop_var.raw_name(), for_stmt->vectorize);
     for_stmt->body->accept(this);
     emit("}}");
   }
@@ -124,7 +123,7 @@ class IRCodeGen : public IRVisitor {
   void visit(LocalLoadStmt *stmt) {
     emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
          stmt->ident.serialize(
-             [](const Identifier id) { return id.raw_name(); }));
+             [](const Identifier id) { return id.raw_name(); }, "{"));
   }
 
   void visit(LocalStoreStmt *stmt) {
@@ -132,24 +131,29 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) {
-    std::string indices = "(root, ";
-    for (int i = 0; i < max_num_indices; i++) {
-      if (i < (int)stmt->indices.size()) {
-        indices += stmt->indices[i]->raw_name();
-      } else {
-        indices += "0";
+    emit("void *{}[{}];", stmt->raw_name(), stmt->ret_type.width);
+    for (int l = 0; l < stmt->ret_type.width; l++) {
+      std::string indices = "(root, ";
+      for (int i = 0; i < max_num_indices; i++) {
+        if (i < (int)stmt->indices.size()) {
+          indices += stmt->indices[i]->raw_name() + fmt::format("[{}]", i);
+        } else {
+          indices += "0";
+        }
+        if (i + 1 < max_num_indices)
+          indices += ",";
       }
-      if (i + 1 < max_num_indices)
-        indices += ",";
+      indices += ")";
+      emit("{}[{}] = access_{}{};", stmt->raw_name(), l,
+           stmt->snode->node_type_name, indices);
     }
-    indices += ")";
-    emit("void *{} = access_{}{};", stmt->raw_name(),
-         stmt->snode->node_type_name, indices);
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    emit("*({} *){} = {};", stmt->data->ret_data_type_name(),
-         stmt->ptr->raw_name(), stmt->data->raw_name());
+    for (int i = 0; i < stmt->data->ret_type.width; i++) {
+      emit("*({} *){}[{}] = {}[{}];", stmt->data->ret_data_type_name(),
+           stmt->ptr->raw_name(), i, stmt->data->raw_name(), i);
+    }
   }
 
   void visit(GlobalLoadStmt *stmt) {

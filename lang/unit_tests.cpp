@@ -193,6 +193,10 @@ auto test_vectorize = [] {
   });
 
   func();
+
+  for (int i = 0; i < n; i++) {
+    TC_ASSERT(a.val<int>(i) == i);
+  }
 };
 TC_REGISTER_TASK(test_vectorize);
 

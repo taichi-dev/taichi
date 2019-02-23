@@ -109,6 +109,18 @@ class IRCodeGen : public IRVisitor {
          const_stmt->value.serialize("{"));
   }
 
+  void visit(WhileControlStmt *stmt) {
+    emit("{} = {} & {};", stmt->mask.raw_name(), stmt->mask.raw_name(),
+         stmt->cond->raw_name());
+    emit("if (!{}) break;", stmt->mask.raw_name());
+  }
+
+  void visit(WhileStmt *stmt) {
+    emit("while (1) {{");
+    stmt->body->accept(this);
+    emit("}}");
+  }
+
   void visit(RangeForStmt *for_stmt) {
     auto loop_var = for_stmt->loop_var;
     emit("for ({} {} = {}; {} < {}; {} += {}) {{",

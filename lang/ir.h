@@ -149,7 +149,7 @@ class Identifier {
 
   std::string raw_name() const {
     if (name_.empty())
-      return fmt::format("{}", id);
+      return fmt::format("tmp{}", id);
     else
       return name_;
   }
@@ -324,9 +324,9 @@ struct LaneAttribute {
 
 class Statement : public IRNode {
  public:
-  Block *parent;
   static int id_counter;
   int id;
+  Block *parent;
   std::vector<Stmt **> operands;
 
   VectorType ret_type;
@@ -334,6 +334,7 @@ class Statement : public IRNode {
   Statement(const Statement &stmt) = delete;
 
   Statement() {
+    parent = nullptr;
     id = id_counter++;
   }
 
@@ -718,12 +719,7 @@ class Block : public IRNode {
   }
 
   VectorType lookup_var(Ident ident) const {
-    TC_P(ident.id);
-    for (auto t: local_variables) {
-      TC_P(t.first.id);
-    }
     auto ptr = local_variables.find(ident);
-    TC_TAG;
     if (ptr != local_variables.end()) {
       return ptr->second;
     } else {

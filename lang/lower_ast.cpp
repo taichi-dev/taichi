@@ -69,17 +69,22 @@ class LowerAST : public IRVisitor {
 
     auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
     new_while->mask = Identifier();
-    auto &stmts = new_while->body->statements;
+    auto &stmts = new_while->body;
     for (int i = 0; i < (int)flattened.size(); i++) {
-      stmts.insert(stmts.begin() + i, std::move(flattened[i]));
+      stmts->insert(std::move(flattened[i]), i);
     }
     // insert break
-    stmts.insert(
-        stmts.begin() + flattened.size(),
-        std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt));
+    stmts->insert(
+        std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),
+        flattened.size());
     stmt->insert_before(
         std::make_unique<AllocaStmt>(new_while->mask, DataType::i32));
-    TC_WARN("set to zero");
+    auto &&const_stmt =
+        std::make_unique<ConstStmt>((int)0xFFFFFFFF);
+    auto const_stmt_ptr = const_stmt.get();
+    stmt->insert_before(std::move(const_stmt));
+    stmt->insert_before(
+        std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
     stmt->parent->replace_with(stmt, std::move(new_while));
     // insert an alloca for the mask
     throw IRModifiedException();

@@ -77,8 +77,16 @@ class LowerAST : public IRVisitor {
     stmts.insert(
         stmts.begin() + flattened.size(),
         std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt));
+    stmt->insert_before(
+        std::make_unique<AllocaStmt>(new_while->mask, DataType::i32));
+    TC_WARN("set to zero");
     stmt->parent->replace_with(stmt, std::move(new_while));
+    // insert an alloca for the mask
     throw IRModifiedException();
+  }
+
+  void visit(WhileStmt *stmt) {
+    stmt->body->accept(this);
   }
 
   void visit(FrontendForStmt *stmt) {

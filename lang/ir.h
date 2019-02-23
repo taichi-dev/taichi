@@ -392,6 +392,8 @@ class Statement : public IRNode {
     // Note: the current structure should have been destroyed now..
   }
 
+  void insert_before(std::unique_ptr<Stmt> &&new_stmt);
+
   void insert_after(std::unique_ptr<Stmt> &&new_stmt);
 };
 
@@ -716,7 +718,12 @@ class Block : public IRNode {
   }
 
   VectorType lookup_var(Ident ident) const {
+    TC_P(ident.id);
+    for (auto t: local_variables) {
+      TC_P(t.first.id);
+    }
     auto ptr = local_variables.find(ident);
+    TC_TAG;
     if (ptr != local_variables.end()) {
       return ptr->second;
     } else {

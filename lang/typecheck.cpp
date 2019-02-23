@@ -66,6 +66,16 @@ class TypeCheck : public IRVisitor {
     stmt->body->accept(this);
   }
 
+  void visit(WhileStmt *stmt) {
+    stmt->body->accept(this);
+  }
+
+  /*
+  void visit(WhileControlStmt *stmt) {
+    // stmt->body->accept(this);
+  }
+  */
+
   void visit(BinaryOpStmt *stmt) {
     TC_ASSERT(stmt->lhs->ret_type.data_type != DataType::unknown ||
               stmt->rhs->ret_type.data_type != DataType::unknown);

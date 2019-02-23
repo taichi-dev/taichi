@@ -213,7 +213,7 @@ TC_TEST("simd_fpe") {
 
 TC_TEST("while") {
   CoreState::set_trigger_gdb_when_crash(true);
-  int n = 128;
+  int n = 4096;
   Program prog(Arch::x86_64);
 
   declare(a_global);
@@ -226,10 +226,8 @@ TC_TEST("while") {
 
     Vectorize(8);
     For(i, 0, n, [&] {
-      declare(j);
-      declare(sum);
-      var(int, j);
-      var(int, sum);
+      declare_as(j, int);
+      declare_as(sum, int);
       j = 0;
       sum = 0;
       While(j < i, [&] {
@@ -240,7 +238,7 @@ TC_TEST("while") {
     });
   });
 
-  func();
+  TC_P(measure_cpe(func, 1));
 
   for (int i = 0; i < n; i++) {
     TC_CHECK(a.val<int>(i) == (i - 1) * i / 2);

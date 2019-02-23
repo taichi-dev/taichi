@@ -1051,6 +1051,10 @@ inline ExprH ExpressionHandle::operator[](ExpressionGroup indices) {
   auto x = ExpressionHandle(std::make_shared<IdExpression>(#x));
 
 #define var(type, x) declare_var<type>(x);
+#define declare_as(x, t) \
+                         \
+  declare(x);            \
+  var(t, x);
 
 inline ExprH global_new(ExprH id_expr, DataType dt) {
   TC_ASSERT(id_expr.is<IdExpression>());

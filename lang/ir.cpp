@@ -48,6 +48,7 @@ ExpressionHandle::ExpressionHandle(Identifier id) {
 FrontendForStmt::FrontendForStmt(ExprH loop_var, ExprH begin, ExprH end)
     : begin(begin), end(end) {
   vectorize = dec.vectorize;
+  dec.reset();
   if (vectorize == -1)
     vectorize = 1;
   loop_var_id = loop_var.cast<IdExpression>()->id;

@@ -535,8 +535,8 @@ class UnaryOpExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    if (stmt)
-      return;
+    // if (stmt)
+    //  return;
     rhs->flatten(ret);
     ret.push_back(std::make_unique<UnaryOpStmt>(type, rhs->stmt));
     stmt = ret.back().get();
@@ -574,8 +574,8 @@ class BinaryOpExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    if (stmt)
-      return;
+    // if (stmt)
+    //  return;
     lhs->flatten(ret);
     rhs->flatten(ret);
     ret.push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
@@ -639,8 +639,8 @@ class GlobalPtrExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    if (stmt)
-      return;
+    //if (stmt)
+      //return;
     std::vector<Stmt *> index_stmts;
     for (int i = 0; i < (int)indices.size(); i++) {
       indices.exprs[i]->flatten(ret);
@@ -968,8 +968,8 @@ class IdExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    if (stmt)
-      return;
+    //if (stmt)
+      //return;
     ret.push_back(std::make_unique<LocalLoadStmt>(id));
     stmt = ret.back().get();
   }
@@ -986,8 +986,8 @@ class GlobalLoadExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    if (stmt)
-      return;
+    //if (stmt)
+      //return;
     ptr->flatten(ret);
     ret.push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));
     stmt = ret.back().get();
@@ -1012,8 +1012,8 @@ class ConstExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    if (stmt)
-      return;
+    //if (stmt)
+      //return;
     if (dt == DataType::f32) {
       ret.push_back(std::make_unique<ConstStmt>((float32)val));
     } else {

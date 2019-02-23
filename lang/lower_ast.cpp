@@ -59,20 +59,25 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendWhileStmt *stmt) {
+    // transform into a structure as
+    // while (1) { cond; if (no active) break; original body...}
+
     auto cond = stmt->cond;
-
     VecStatement flattened;
-
     cond->flatten(flattened);
+    auto cond_stmt = flattened.back().get();
 
-    TC_NOT_IMPLEMENTED
-
-    /*
-    auto &&new_for = std::make_unique<WhileStmt>(std::move(stmt->body));
-    new_for->body->inner_loop_variable = &stmt->loop_var_id;
-    flattened.push_back(std::move(new_for));
-    stmt->parent->replace_with(stmt, flattened);
-    */
+    auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
+    new_while->mask = Identifier();
+    auto &stmts = new_while->body->statements;
+    for (int i = 0; i < (int)flattened.size(); i++) {
+      stmts.insert(stmts.begin() + i, std::move(flattened[i]));
+    }
+    // insert break
+    stmts.insert(
+        stmts.begin() + flattened.size(),
+        std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt));
+    stmt->parent->replace_with(stmt, std::move(new_while));
     throw IRModifiedException();
   }
 

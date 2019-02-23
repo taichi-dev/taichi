@@ -24,7 +24,9 @@ class IRPrinter : public IRVisitor {
 
   static void run(IRNode *node) {
     auto p = IRPrinter();
+    fmt::print("==========\n");
     node->accept(&p);
+    fmt::print("==========\n");
   }
 
   void visit(Block *stmt_list) {
@@ -81,6 +83,22 @@ class IRPrinter : public IRVisitor {
   void visit(ConstStmt *const_stmt) {
     print("{}{} = const {}", const_stmt->type_hint(), const_stmt->name(),
           const_stmt->value.serialize());
+  }
+
+  void visit(WhileControlStmt *stmt) {
+    print("while control {}, {}", stmt->mask.name(), stmt->cond->name());
+  }
+
+  void visit(WhileStmt *stmt) {
+    print("while 1 {{");
+    stmt->body->accept(this);
+    print("}}");
+  }
+
+  void visit(FrontendWhileStmt *stmt) {
+    print("while {} {{", stmt->cond->serialize());
+    stmt->body->accept(this);
+    print("}}");
   }
 
   void visit(FrontendForStmt *for_stmt) {

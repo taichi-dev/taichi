@@ -1,3 +1,4 @@
+#if 0
 #include "optimizer.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -321,3 +322,4 @@ void apply_optimizers(Kernel &ker, Expr &expr) {
 #endif
 
 TLANG_NAMESPACE_END
+#endif

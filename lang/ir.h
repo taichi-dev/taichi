@@ -23,7 +23,9 @@ class FrontendIfStmt;
 class FrontendForStmt;
 class FrontendPrintStmt;
 class RangeForStmt;
+class FrontendWhileStmt;
 class WhileStmt;
+class WhileControlStmt;
 class AssignStmt;
 class AllocaStmt;
 class UnaryOpStmt;
@@ -34,7 +36,7 @@ class GlobalPtrStmt;
 class GlobalLoadStmt;
 class GlobalStoreStmt;
 class PrintStmt;
-class BreakStmt;
+class WhileControlStmt;
 
 class SNode;
 
@@ -209,7 +211,9 @@ class IRVisitor {
   DEFINE_VISIT(ConstStmt);
   DEFINE_VISIT(FrontendForStmt);
   DEFINE_VISIT(RangeForStmt);
+  DEFINE_VISIT(FrontendWhileStmt);
   DEFINE_VISIT(WhileStmt);
+  DEFINE_VISIT(WhileControlStmt);
 };
 
 class IRNode {
@@ -492,7 +496,13 @@ inline ExpressionGroup operator,(const ExpressionGroup &a, const ExprH &b) {
   return ExpressionGroup(a, b);
 }
 
-class BreakStmt : public Statement {
+// updates mask, break if no active
+class WhileControlStmt : public Statement {
+ public:
+  Ident mask;
+  Stmt *cond;
+  WhileControlStmt(Ident mask, Stmt *cond) : mask(mask), cond(cond) {
+  }
   DEFINE_ACCEPT;
 };
 
@@ -680,6 +690,13 @@ class Block : public IRNode {
     } else {
       statements.insert(statements.begin() + location, std::move(stmt));
     }
+  }
+
+  void replace_with(Statement *old_statement,
+                    std::unique_ptr<Statement> &&new_statement) {
+    std::vector<std::unique_ptr<Statement>> vec;
+    vec.push_back(std::move(new_statement));
+    replace_with(old_statement, vec);
   }
 
   void replace_with(Statement *old_statement,
@@ -906,9 +923,10 @@ class RangeForStmt : public Statement {
 
 class WhileStmt : public Statement {
  public:
+  Ident mask;
   std::unique_ptr<Block> body;
 
-  WhileStmt(const std::function<void()> &cond) {
+  WhileStmt(std::unique_ptr<Block> &&body) : body(std::move(body)) {
   }
 
   DEFINE_ACCEPT
@@ -933,28 +951,6 @@ inline void IRBuilder::insert(std::unique_ptr<Statement> &&stmt, int location) {
 inline void Print(const ExpressionHandle &a) {
   current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a));
 }
-
-class For {
- public:
-  For(ExprH i, ExprH s, ExprH e, const std::function<void()> &func) {
-    auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
-    auto stmt = stmt_unique.get();
-    current_ast_builder().insert(std::move(stmt_unique));
-    auto _ = current_ast_builder().create_scope(stmt->body);
-    func();
-  }
-};
-
-class While {
- public:
-  While(ExprH cond, const std::function<void()> &func) {
-    auto while_stmt = std::make_unique<FrontendWhileStmt>(cond);
-    FrontendWhileStmt *ptr = while_stmt.get();
-    current_ast_builder().insert(std::move(while_stmt));
-    auto _ = current_ast_builder().create_scope(ptr->body);
-    func();
-  }
-};
 
 class IdExpression : public Expression {
  public:
@@ -1070,5 +1066,27 @@ extern DecoratorRecorder dec;
 inline void Vectorize(int v) {
   dec.vectorize = v;
 }
+
+class For {
+ public:
+  For(ExprH i, ExprH s, ExprH e, const std::function<void()> &func) {
+    auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
+    auto stmt = stmt_unique.get();
+    current_ast_builder().insert(std::move(stmt_unique));
+    auto _ = current_ast_builder().create_scope(stmt->body);
+    func();
+  }
+};
+
+class While {
+ public:
+  While(ExprH cond, const std::function<void()> &func) {
+    auto while_stmt = std::make_unique<FrontendWhileStmt>(cond);
+    FrontendWhileStmt *ptr = while_stmt.get();
+    current_ast_builder().insert(std::move(while_stmt));
+    auto _ = current_ast_builder().create_scope(ptr->body);
+    func();
+  }
+};
 
 TLANG_NAMESPACE_END

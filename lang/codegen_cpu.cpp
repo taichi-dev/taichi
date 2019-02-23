@@ -5,7 +5,6 @@
 #include "util.h"
 #include "codegen_cpu.h"
 #include "program.h"
-#include "optimizer.h"
 #include "ir.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -174,8 +173,11 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   }
 
   auto ir = kernel.ir;
+  irpass::print(ir);
   irpass::lower(ir);
+  irpass::print(ir);
   irpass::typecheck(ir);
+  irpass::print(ir);
   irpass::loop_vectorize(ir);
   irpass::print(ir);
   IRCodeGen::run(this, ir);

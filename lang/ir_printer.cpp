@@ -136,9 +136,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) {
-    print(
-        "{}{} = load {}", stmt->type_hint(), stmt->name(),
-        stmt->ident.serialize([](const Identifier &id) { return id.name(); }));
+    print("{}{} = load {}", stmt->type_hint(), stmt->name(),
+          stmt->ident.name());
   }
 
   void visit(LocalStoreStmt *stmt) {

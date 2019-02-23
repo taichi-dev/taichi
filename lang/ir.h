@@ -778,7 +778,7 @@ class GlobalStoreStmt : public Statement {
 
 class LocalLoadStmt : public Statement {
  public:
-  LaneAttribute<Ident> ident;
+  Ident ident;
 
   LocalLoadStmt(Ident ident) : ident(ident) {
   }

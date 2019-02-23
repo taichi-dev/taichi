@@ -157,7 +157,7 @@ struct vec {
   }
   TC_FORCE_INLINE vec(std::array<T, dim> v) {
     for (int i = 0; i < dim; i++) {
-      element(i) = v[i];
+      element(i) = (T)v[i];
     }
   }
   operator type() const {
@@ -650,6 +650,19 @@ inline int32x8 select(int32x8 mask, int32x8 true_val, int32x8 false_val) {
 }
 
 //*****************************************************************************
+inline bool any(int32x1 v) {
+  return v;
+}
+
+inline bool any(int32x4 v) {
+  return _mm_movemask_ps(union_cast<__m128>(v));
+}
+
+inline bool any(int32x8 v) {
+  return _mm256_movemask_ps(union_cast<__m256>(v));
+}
+
+//*****************************************************************************
 
 template <int i0, int i1, int i2, int i3, int i4, int i5, int i6, int i7>
 inline int32x8 shuffle8x32(int32x8 a) {
@@ -727,6 +740,8 @@ DEFINE_BINARY_OP_MID(int32x1, sub, -);
 DEFINE_BINARY_OP_MID(int32x1, mul, *);
 DEFINE_BINARY_OP_MID(int32x1, div, /);
 DEFINE_BINARY_OP_MID(int32x1, mod, %);
+DEFINE_BINARY_OP_MID(int32x1, land, &);
+DEFINE_BINARY_OP_MID(int32x1, lor, |);
 
 inline int32x8 shr(int32x8 a, int b) {
   return _mm256_srli_epi32(a, b);

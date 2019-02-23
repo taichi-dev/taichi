@@ -224,7 +224,7 @@ TC_TEST("while") {
   auto func = kernel([&]() {
     declare(i);
 
-    // Vectorize(8);
+    Vectorize(8);
     For(i, 0, n, [&] {
       declare(j);
       declare(sum);

@@ -31,15 +31,14 @@ class LoopVectorize : public IRVisitor {
   }
 
   void visit(AllocaStmt *alloca) {
+    alloca->ret_type.width *= vectorize;
   }
 
   void visit(LocalLoadStmt *stmt) {
     if (vectorize == 1)
       return;
-    TC_ASSERT(stmt->ident.size() == 1);
     stmt->ret_type.width *= vectorize;
-    stmt->ident.repeat(vectorize);
-    if (loop_var && stmt->ident[0] == *loop_var) {
+    if (loop_var && stmt->ident == *loop_var) {
       // insert_before
       auto offsets = std::make_unique<ConstStmt>(0);
       offsets->repeat(vectorize);
@@ -71,6 +70,10 @@ class LoopVectorize : public IRVisitor {
     for_stmt->body->accept(this);
     loop_var = nullptr;
     vectorize = old_vectorize;
+  }
+
+  void visit(WhileStmt *stmt) {
+    stmt->body->accept(this);
   }
 
   static void run(IRNode *node) {

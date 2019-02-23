@@ -110,9 +110,9 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) {
-    emit("{} = {} & {};", stmt->mask.raw_name(), stmt->mask.raw_name(),
+    emit("{} = land({}, {});", stmt->mask.raw_name(), stmt->mask.raw_name(),
          stmt->cond->raw_name());
-    emit("if (!{}) break;", stmt->mask.raw_name());
+    emit("if (!any({})) break;", stmt->mask.raw_name());
   }
 
   void visit(WhileStmt *stmt) {
@@ -132,9 +132,14 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) {
-    emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
-         stmt->ident.serialize(
-             [](const Identifier id) { return id.raw_name(); }, "{"));
+    auto var_width = stmt->parent->lookup_var(stmt->ident).width;
+    if (var_width == 1) {
+      emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
+           stmt->ident.raw_name());
+    } else {
+      emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
+           stmt->ident.raw_name());
+    }
   }
 
   void visit(LocalStoreStmt *stmt) {

@@ -20,6 +20,10 @@ class StatementReplace : public IRVisitor {
     }
   }
 
+  void visit(WhileStmt *stmt) {
+    stmt->body->accept(this);
+  }
+
   void visit(IfStmt *if_stmt) {
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);

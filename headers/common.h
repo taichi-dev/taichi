@@ -169,7 +169,7 @@ struct vec {
   const T &operator[](int i) const {
     return e[i];
   }
-  void print() {
+  void print() const {
     std::cout << "[";
     for (int j = 0; j < dim; j++) {
       std::cout << element(j) << ", ";

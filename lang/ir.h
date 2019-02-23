@@ -639,8 +639,8 @@ class GlobalPtrExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    //if (stmt)
-      //return;
+    // if (stmt)
+    // return;
     std::vector<Stmt *> index_stmts;
     for (int i = 0; i < (int)indices.size(); i++) {
       indices.exprs[i]->flatten(ret);
@@ -679,10 +679,12 @@ class Block : public IRNode {
   Block *parent;
   std::vector<std::unique_ptr<Statement>> statements;
   std::map<Ident, VectorType> local_variables;
+  Ident *mask_var;
   Ident *inner_loop_variable;
 
   Block() {
     inner_loop_variable = nullptr;
+    mask_var = nullptr;
     parent = nullptr;
   }
 
@@ -728,6 +730,16 @@ class Block : public IRNode {
       } else {
         return VectorType(1, DataType::unknown);
       }
+    }
+  }
+
+  Ident *mask() {
+    if (mask_var)
+      return mask_var;
+    else if (parent == nullptr) {
+      return nullptr;
+    } else {
+      return parent->mask();
     }
   }
 
@@ -968,8 +980,8 @@ class IdExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    //if (stmt)
-      //return;
+    // if (stmt)
+    // return;
     ret.push_back(std::make_unique<LocalLoadStmt>(id));
     stmt = ret.back().get();
   }
@@ -986,8 +998,8 @@ class GlobalLoadExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    //if (stmt)
-      //return;
+    // if (stmt)
+    // return;
     ptr->flatten(ret);
     ret.push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));
     stmt = ret.back().get();
@@ -1012,8 +1024,8 @@ class ConstExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    //if (stmt)
-      //return;
+    // if (stmt)
+    // return;
     if (dt == DataType::f32) {
       ret.push_back(std::make_unique<ConstStmt>((float32)val));
     } else {

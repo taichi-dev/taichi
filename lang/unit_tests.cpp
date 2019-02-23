@@ -233,7 +233,6 @@ TC_TEST("while") {
       j = 0;
       sum = 0;
       While(j < i, [&] {
-        TC_TAG;
         sum = sum + j;
         j = j + 1;
       });

@@ -334,16 +334,13 @@ auto ray_march = [&] {
     declare(i);
     Vectorize(8);
     For(i, 0, n * n, [&] {
-      Vector orig({0.0f, 0.0f, 7.0f});
-
-      Vector c(3);
+      Vector orig({0.0f, 0.0f, 7.0f}), c(3);
 
       c(0) = fov * (cast<float>(i / n) / float(n / 2) - 1.0f);
       c(1) = fov * (cast<float>(i % n) / float(n / 2) - 1.0f);
       c(2) = -1.0f;
 
-      local(inv_norm) = 1.0_f / c.norm();
-      c = inv_norm * c;
+      c = normalized(c);
 
       a[i] = ray_march(orig, c);
     });

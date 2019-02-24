@@ -317,4 +317,18 @@ inline Matrix outer_product(Vector a, Vector b) {
 }
 */
 
+inline ExprH norm2(const Matrix &mat) {
+  return mat.norm2();
+}
+
+inline ExprH norm(const Matrix &mat) {
+  return sqrt(norm2(mat));
+}
+
+inline Matrix normalized(const Matrix &mat) {
+  auto inv_l = 1.0_f / sqrt(norm2(mat));
+  return inv_l * mat;
+}
+
+
 TLANG_NAMESPACE_END

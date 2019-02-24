@@ -205,6 +205,27 @@ TC_TEST("simd_fpe") {
   }
 };
 
+TC_TEST("rand") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 4096;
+  Program prog(Arch::x86_64);
+
+  declare(a_global);
+  auto a = global_new(a_global, DataType::i32);
+
+  layout([&]() { root.fixed(0, n).place(a); });
+
+  auto func = kernel([&]() {
+    declare(i);
+
+    For(i, 0, n, [&] {
+      Print(Rand<float>());
+    });
+  });
+
+  func();
+};
+
 TC_TEST("while") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 4096;
@@ -347,7 +368,11 @@ auto ray_march = [&] {
     return normalized(n);
   };
 
-  auto background = [](Vector dir) { return dir(1) + 1.0f; };
+  auto out_dir = [&](Vector in_dir) {
+
+  };
+
+  auto background = [](Vector dir) { return dir(1) + 0.0f; };
 
   float fov = 0.3;
 

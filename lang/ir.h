@@ -38,6 +38,7 @@ class GlobalStoreStmt;
 class TmpValStmt;
 class FrontendTmpValStmt;
 class PrintStmt;
+class RandStmt;
 class WhileControlStmt;
 
 class SNode;
@@ -189,6 +190,11 @@ class IRVisitor {
 
   // default visitor
   virtual void visit(Statement *stmt) {
+    if (!allow_undefined_visitor) {
+      TC_ERROR(
+          "missing visitor function. Is the statement class registered via "
+          "DEFINE_VISIT?");
+    }
   }
 
 #define DEFINE_VISIT(T)            \
@@ -222,6 +228,7 @@ class IRVisitor {
   DEFINE_VISIT(WhileControlStmt);
   DEFINE_VISIT(TmpValStmt);
   DEFINE_VISIT(FrontendTmpValStmt);
+  DEFINE_VISIT(RandStmt);
 };
 
 class IRNode {
@@ -534,6 +541,33 @@ class UnaryOpStmt : public Statement {
   }
 
   DEFINE_ACCEPT
+};
+
+class RandStmt : public Statement {
+ public:
+  RandStmt(DataType dt) {
+    ret_type.data_type = dt;
+  }
+
+  DEFINE_ACCEPT
+};
+
+class RandExpression : public Expression {
+ public:
+  DataType dt;
+
+  RandExpression(DataType dt) : dt(dt) {
+  }
+
+  std::string serialize() override {
+    return fmt::format("rand<{}>()", data_type_name(dt));
+  }
+
+  void flatten(VecStatement &ret) override {
+    auto ran = std::make_unique<RandStmt>(dt);
+    ret.push_back(std::move(ran));
+    stmt = ret.back().get();
+  }
 };
 
 class UnaryOpExpression : public Expression {
@@ -1203,5 +1237,10 @@ class While {
     func();
   }
 };
+
+template <typename T>
+ExprH Rand() {
+  return ExprH(std::make_shared<RandExpression>(get_data_type<T>()));
+}
 
 TLANG_NAMESPACE_END

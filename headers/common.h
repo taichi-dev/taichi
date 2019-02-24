@@ -27,6 +27,7 @@
 using float32 = float;
 using float64 = double;
 using int32 = int;
+using uint32 = unsigned int;
 using uint64 = unsigned long long;
 using uint8 = unsigned char;
 using uint16 = unsigned short;
@@ -40,6 +41,37 @@ using uint16 = unsigned short;
 #define TC_ASSERT(x) \
   if (!x)            \
     std::cout << "Ln" << __LINE__ << ":" << #x << std::endl;
+
+TC_FORCE_INLINE uint32 rand_int() noexcept {
+  static unsigned int x = 123456789, y = 362436069, z = 521288629, w = 88675123;
+  unsigned int t = x ^ (x << 11);
+  x = y;
+  y = z;
+  z = w;
+  return (w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)));
+}
+
+TC_FORCE_INLINE uint64 rand_int64() noexcept {
+  return ((uint64)rand_int() << 32) + rand_int();
+}
+
+template <typename T>
+TC_FORCE_INLINE T rand() noexcept;
+
+template <>
+TC_FORCE_INLINE float rand<float>() noexcept {
+  return rand_int() * (1.0f / 4294967296.0f);
+}
+
+template <>
+TC_FORCE_INLINE double rand<double>() noexcept {
+  return rand_int() * (1.0 / 4294967296.0);
+}
+
+template <>
+TC_FORCE_INLINE int rand<int>() noexcept {
+  return rand_int();
+}
 
 #endif
 

@@ -83,6 +83,13 @@ class IRCodeGen : public IRVisitor {
     emit("{} {}(0);", alloca->ret_data_type_name(), alloca->ident.raw_name());
   }
 
+  void visit(RandStmt *stmt) {
+    TC_ASSERT(stmt->ret_type.width == 1);
+    TC_ASSERT(stmt->ret_type.data_type == DataType::f32);
+    emit("const {} {}(rand<float>());", stmt->ret_data_type_name(),
+         stmt->raw_name());
+  }
+
   void visit(TmpValStmt *stmt) {
     emit("const {} {} = {};", stmt->ret_data_type_name(), stmt->raw_name(),
          stmt->val->raw_name());
@@ -118,8 +125,8 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(PrintStmt *print_stmt) {
-    emit("std::cout << \"[debug] \" \"{}\" \" = \" << {} << std::endl;", print_stmt->str,
-         print_stmt->stmt->raw_name());
+    emit("std::cout << \"[debug] \" \"{}\" \" = \" << {} << std::endl;",
+         print_stmt->str, print_stmt->stmt->raw_name());
   }
 
   void visit(ConstStmt *const_stmt) {

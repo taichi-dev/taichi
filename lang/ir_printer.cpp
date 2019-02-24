@@ -53,6 +53,10 @@ class IRPrinter : public IRVisitor {
     print("{}alloca {}", alloca->type_hint(), alloca->ident.name());
   }
 
+  void visit(RandStmt *stmt) {
+    print("{}{} = rand()", stmt->type_hint(), stmt->name());
+  }
+
   void visit(UnaryOpStmt *stmt) {
     if (stmt->op_type == UnaryType::cast) {
       print("{}{} = {}<{}> {}", stmt->type_hint(), stmt->name(),

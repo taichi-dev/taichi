@@ -1126,10 +1126,7 @@ inline ExprH ExpressionHandle::operator[](ExpressionGroup indices) {
   auto x = ExpressionHandle(std::make_shared<IdExpression>(#x));
 
 #define var(type, x) declare_var<type>(x);
-#define declare_as(x, t) \
-                         \
-  declare(x);            \
-  var(t, x);
+
 #define local(x)  \
   declare(x);     \
   declare_var(x); \

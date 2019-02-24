@@ -27,8 +27,8 @@ TC_TEST("compiler_linalg") {
     B(1, 0) = 3;
     B(1, 1) = 4;
     auto C = A + B;
-    for (int p = 0; p < 2; p++) {
-      for (int q = 0; q < 2; q++) {
+    for (int p = 0; p < 1; p++) {
+      for (int q = 0; q < 1; q++) {
         Print(C(p, q));
       }
     }

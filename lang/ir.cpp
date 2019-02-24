@@ -21,12 +21,17 @@ IRBuilder::ScopeGuard IRBuilder::create_scope(std::unique_ptr<Block> &list) {
 
 void ExprH::operator=(const ExpressionHandle &o) {
   if (this->expr == nullptr) {
+    // create an anonymous local variable
+    auto id = Identifier();
+    expr = std::make_shared<IdExpression>(id);
+    declare_var(*this);
+    /*
     auto stmt = std::make_unique<FrontendTmpValStmt>(o);
     expr = std::make_shared<TmpValExpression>(stmt.get());
     current_ast_builder().insert(std::move(stmt));
-  } else {
-    current_ast_builder().insert(std::make_unique<AssignStmt>(*this, o));
+    */
   }
+  current_ast_builder().insert(std::make_unique<AssignStmt>(*this, o));
 }
 
 FrontendContext::FrontendContext() {

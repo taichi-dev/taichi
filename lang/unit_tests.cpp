@@ -16,10 +16,6 @@ TC_TEST("compiler_linalg") {
   layout([&]() { root.fixed(i, 128).place(a); });
 
   auto func = kernel([&]() {
-    declare(i);
-    declare(sum);
-    var(int32, sum);
-
     Matrix A(2, 2), B(2, 2);
     A(0, 0) = 1;
     A(0, 1) = 1;
@@ -55,9 +51,7 @@ TC_TEST("compiler_basics") {
 
   auto func = kernel([&]() {
     declare(i);
-    declare(sum);
-    var(int32, sum);
-
+    local(sum) = 0;
     For(i, 0, n, [&] {
       sum = sum + i;
       If(i % 2 == 0).Then([&] { a[i] = dou(i); }).Else([&] { a[i] = i; });
@@ -226,10 +220,8 @@ TC_TEST("while") {
 
     Vectorize(8);
     For(i, 0, n, [&] {
-      declare_as(j, int);
-      declare_as(sum, int);
-      j = 0;
-      sum = 0;
+      local(j) = 0;
+      local(sum) = 0;
       While(j < i, [&] {
         sum = sum + j;
         j = j + 1;

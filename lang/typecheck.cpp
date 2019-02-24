@@ -88,7 +88,6 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) {
-    TC_P(stmt->id);
     TC_ASSERT(stmt->lhs->ret_type.data_type != DataType::unknown ||
               stmt->rhs->ret_type.data_type != DataType::unknown);
     if (stmt->lhs->ret_type.data_type == DataType::unknown &&

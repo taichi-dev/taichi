@@ -245,4 +245,59 @@ TC_TEST("while") {
   }
 };
 
+Vector complex_mul(const Vector &a, const Vector &b) {
+  Vector ret(2);
+  ret(0) = a(0) * b(0) - a(1) * b(1);
+  ret(1) = a(0) * b(1) + a(1) * b(0);
+  return ret;
+}
+
+auto mset = [&] {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 512;
+  Program prog(Arch::x86_64);
+
+  declare(a_global);
+  auto a = global_new(a_global, DataType::i32);
+
+  layout([&]() { root.fixed(0, n * n).place(a); });
+
+  auto func = kernel([&]() {
+    declare(i);
+    declare_as(z_re, float);
+    declare_as(z_im, float);
+
+    // Vectorize(8);
+    For(i, 0, n * n, [&] {
+      declare_as(j, int);
+      declare_as(sum, int);
+      declare_as(c_re, float);
+      declare_as(c_im, float);
+      c_re = cast<float>(i / n) / float(n);
+      c_im = cast<float>(i % n) / float(n);
+      z_re = c_re;
+      z_im = c_im;
+
+      While(j < 40 && (z_re * z_re + z_im * z_im) < 4.0f, [&] {
+        auto new_re = z_re * z_re - z_im * z_im;
+        auto new_im = 2.0f * z_re * z_im;
+        z_re = c_re + new_re;
+        z_im = c_im + new_im;
+        j = j + 1;
+      });
+      a[i] = (j < 40);
+    });
+  });
+
+  measure_cpe(func, 1);
+
+  GUI gui("Mandelbrot Set", Vector2i(n));
+  for (int i = 0; i < n * n; i++) {
+    gui.buffer[i / n][i % n] = Vector4(a.val<int>(i) > 0);
+  }
+  while (1)
+    gui.update();
+};
+TC_REGISTER_TASK(mset);
+
 TLANG_NAMESPACE_END

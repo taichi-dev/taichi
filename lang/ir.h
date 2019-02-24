@@ -513,9 +513,11 @@ class UnaryOpStmt : public Statement {
  public:
   UnaryType op_type;
   Statement *rhs;
+  DataType cast_type;
 
   UnaryOpStmt(UnaryType op_type, Statement *rhs) : op_type(op_type), rhs(rhs) {
     add_operand(this->rhs);
+    cast_type = DataType::unknown;
   }
 
   DEFINE_ACCEPT
@@ -525,9 +527,11 @@ class UnaryOpExpression : public Expression {
  public:
   UnaryType type;
   ExpressionHandle rhs;
+  DataType cast_type;
 
   UnaryOpExpression(UnaryType type, ExpressionHandle rhs)
       : type(type), rhs(rhs) {
+    cast_type = DataType::unknown;
   }
 
   std::string serialize() override {
@@ -535,11 +539,12 @@ class UnaryOpExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    // if (stmt)
-    //  return;
     rhs->flatten(ret);
-    ret.push_back(std::make_unique<UnaryOpStmt>(type, rhs->stmt));
-    stmt = ret.back().get();
+    auto unary = std::make_unique<UnaryOpStmt>(type, rhs->stmt);
+    if (type == UnaryType::cast)
+      unary->cast_type = cast_type;
+    stmt = unary.get();
+    ret.push_back(std::move(unary));
   }
 };
 
@@ -668,11 +673,20 @@ DEFINE_EXPRESSION_OP(-, sub)
 DEFINE_EXPRESSION_OP(*, mul)
 DEFINE_EXPRESSION_OP(/, div)
 DEFINE_EXPRESSION_OP(%, mod)
+DEFINE_EXPRESSION_OP(&&, land)
+DEFINE_EXPRESSION_OP(||, lor)
 DEFINE_EXPRESSION_OP(<, cmp_lt)
 DEFINE_EXPRESSION_OP(<=, cmp_le)
 DEFINE_EXPRESSION_OP(>, cmp_gt)
 DEFINE_EXPRESSION_OP(>=, cmp_ge)
 DEFINE_EXPRESSION_OP(==, cmp_eq)
+
+template <typename T>
+inline ExprH cast(ExprH input) {
+  auto ret = std::make_shared<UnaryOpExpression>(UnaryType::cast, input);
+  ret->cast_type = get_data_type<T>();
+  return ExprH(ret);
+}
 
 class Block : public IRNode {
  public:

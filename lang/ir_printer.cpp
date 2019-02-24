@@ -45,6 +45,11 @@ class IRPrinter : public IRVisitor {
     print("{}alloca {}", alloca->type_hint(), alloca->ident.name());
   }
 
+  void visit(UnaryOpStmt *stmt) {
+    print("{}{} = {} {}", stmt->type_hint(), stmt->name(),
+          unary_type_name(stmt->op_type), stmt->rhs->name());
+  }
+
   void visit(BinaryOpStmt *bin) {
     print("{}{} = {} {} {}", bin->type_hint(), bin->name(),
           binary_type_name(bin->op_type), bin->lhs->name(), bin->rhs->name());

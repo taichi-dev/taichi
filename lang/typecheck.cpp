@@ -70,11 +70,12 @@ class TypeCheck : public IRVisitor {
     stmt->body->accept(this);
   }
 
-  /*
-  void visit(WhileControlStmt *stmt) {
-    // stmt->body->accept(this);
+  void visit(UnaryOpStmt *stmt) {
+    stmt->ret_type = stmt->rhs->ret_type;
+    if (stmt->op_type == UnaryType::cast) {
+      stmt->ret_type.data_type = stmt->cast_type;
+    }
   }
-  */
 
   void visit(BinaryOpStmt *stmt) {
     TC_ASSERT(stmt->lhs->ret_type.data_type != DataType::unknown ||

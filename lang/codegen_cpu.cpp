@@ -89,6 +89,18 @@ class IRCodeGen : public IRVisitor {
          bin->rhs->raw_name());
   }
 
+  void visit(UnaryOpStmt *stmt) {
+    if (stmt->op_type != UnaryType::cast) {
+      emit("const {} {} = {}({});", stmt->ret_data_type_name(),
+           stmt->raw_name(), unary_type_name(stmt->op_type),
+           stmt->rhs->raw_name());
+    } else {
+      emit("const {} {} = cast<{}>({});", stmt->ret_data_type_name(),
+           stmt->raw_name(), data_type_name(stmt->cast_type),
+           stmt->rhs->raw_name());
+    }
+  }
+
   void visit(IfStmt *if_stmt) {
     emit("if ({}) {{", if_stmt->cond->raw_name());
     if (if_stmt->true_statements)
@@ -106,7 +118,15 @@ class IRCodeGen : public IRVisitor {
 
   void visit(ConstStmt *const_stmt) {
     emit("const {} {}({});", const_stmt->ret_type.str(), const_stmt->raw_name(),
-         const_stmt->value.serialize("{"));
+         const_stmt->value.serialize(
+             [&](long double t) {
+               auto data_type = const_stmt->ret_type.data_type;
+               if (data_type == DataType::f32)
+                 return fmt::format("{}", (float32)t);
+               else if (data_type == DataType::i32)
+                 return fmt::format("{}", (int32)t);
+             },
+             "{"));
   }
 
   void visit(WhileControlStmt *stmt) {

@@ -405,6 +405,7 @@ class Expression {
   Expression() {
     stmt = nullptr;
   }
+
   virtual std::string serialize() = 0;
   virtual void flatten(VecStatement &ret) {
     TC_NOT_IMPLEMENTED;
@@ -427,6 +428,18 @@ class ExpressionHandle {
   ExpressionHandle(std::shared_ptr<Expression> expr) : expr(expr) {
   }
 
+  void set(const ExpressionHandle &o) {
+    expr = o.expr;
+  }
+
+  ExpressionHandle(const ExpressionHandle &o) {
+    set(o);
+  }
+
+  ExpressionHandle(ExpressionHandle &&o) {
+    set(o);
+  }
+
   ExpressionHandle(Identifier id);
 
   Expression *operator->() {
@@ -446,10 +459,6 @@ class ExpressionHandle {
   void operator=(const ExpressionHandle &o);
 
   ExpressionHandle operator[](ExpressionGroup);
-
-  void set(const ExpressionHandle &o) {
-    expr = o.expr;
-  }
 
   std::string serialize() const {
     TC_ASSERT(expr);
@@ -472,11 +481,11 @@ class ExpressionGroup {
   ExpressionGroup() {
   }
 
-  ExpressionGroup(ExprH a) {
+  ExpressionGroup(const ExprH &a) {
     exprs.push_back(a);
   }
 
-  ExpressionGroup(ExprH a, ExprH b) {
+  ExpressionGroup(const ExprH &a, const ExprH &b) {
     exprs.push_back(a);
     exprs.push_back(b);
   }
@@ -573,9 +582,11 @@ class BinaryOpExpression : public Expression {
   ExpressionHandle lhs, rhs;
 
   BinaryOpExpression(BinaryType type,
-                     ExpressionHandle lhs,
-                     ExpressionHandle rhs)
-      : type(type), lhs(lhs), rhs(rhs) {
+                     const ExpressionHandle &lhs,
+                     const ExpressionHandle &rhs)
+      : type(type) {
+    this->lhs.set(lhs);
+    this->rhs.set(rhs);
   }
 
   std::string serialize() override {
@@ -663,8 +674,8 @@ class GlobalPtrExpression : public Expression {
 };
 
 #define DEFINE_EXPRESSION_OP(op, op_name)                                     \
-  inline ExpressionHandle operator op(ExpressionHandle lhs,                   \
-                                      ExpressionHandle rhs) {                 \
+  inline ExpressionHandle operator op(const ExpressionHandle &lhs,                   \
+                                      const ExpressionHandle &rhs) {                 \
     return ExpressionHandle(                                                  \
         std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs, rhs)); \
   }

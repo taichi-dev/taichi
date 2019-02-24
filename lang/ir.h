@@ -737,8 +737,6 @@ class GlobalPtrExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    // if (stmt)
-    // return;
     std::vector<Stmt *> index_stmts;
     for (int i = 0; i < (int)indices.size(); i++) {
       indices.exprs[i]->flatten(ret);
@@ -761,13 +759,17 @@ inline ExprH operator-(ExprH expr) {
   return ExprH(std::make_shared<UnaryOpExpression>(UnaryType::neg, expr));
 }
 
-inline ExprH sqrt(ExprH expr) {
-  return ExprH(std::make_shared<UnaryOpExpression>(UnaryType::sqrt, expr));
-}
+#define DEFINE_EXPRESSION_OP_UNARY(opname)                             \
+  inline ExprH opname(ExprH expr) {                                    \
+    return ExprH(                                                      \
+        std::make_shared<UnaryOpExpression>(UnaryType::opname, expr)); \
+  }
 
-inline ExprH floor(ExprH expr) {
-  return ExprH(std::make_shared<UnaryOpExpression>(UnaryType::floor, expr));
-}
+DEFINE_EXPRESSION_OP_UNARY(sqrt)
+DEFINE_EXPRESSION_OP_UNARY(floor)
+DEFINE_EXPRESSION_OP_UNARY(abs)
+DEFINE_EXPRESSION_OP_UNARY(sin)
+DEFINE_EXPRESSION_OP_UNARY(cos)
 
 DEFINE_EXPRESSION_OP(+, add)
 DEFINE_EXPRESSION_OP(-, sub)

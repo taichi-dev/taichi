@@ -229,7 +229,7 @@ inline std::string snode_type_name(SNodeType t) {
   return type_names[t];
 }
 
-enum class UnaryType : int { neg, sqrt, floor, cast, undefined };
+enum class UnaryType : int { neg, sqrt, floor, cast, abs, sin, cos, undefined };
 
 inline std::string unary_type_name(UnaryType type) {
   static std::map<UnaryType, std::string> type_names;
@@ -239,6 +239,9 @@ inline std::string unary_type_name(UnaryType type) {
     REGISTER_TYPE(sqrt);
     REGISTER_TYPE(floor);
     REGISTER_TYPE(cast);
+    REGISTER_TYPE(abs);
+    REGISTER_TYPE(sin);
+    REGISTER_TYPE(cos);
     REGISTER_TYPE(undefined);
 #undef REGISTER_TYPE
   }

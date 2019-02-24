@@ -341,7 +341,7 @@ auto ray_march = [&] {
 
   float32 eps = 1e-4f;
   float32 dist_limit = 1e3;
-  int limit = 40;
+  int limit = 100;
 
   auto ray_march = [&](Vector p, Vector dir, ExprH &hit) {
     local(j) = 0;
@@ -366,11 +366,18 @@ auto ray_march = [&] {
     return normalized(n);
   };
 
-  auto out_dir = [&](Vector in_dir) {
-
+  auto out_dir = [&](Vector n) {
+    Vector u({0.0f, 1.0f, 0.0f}), v(3);
+    If(abs(n(1)) < 1 - 1e-4f, [&] {
+      u = normalized(cross(n, Vector({0.0f, 1.0f, 0.0f})));
+    });
+    v = cross(n, u);
+    local(phi) = 2 * pi * Rand<float>();
+    local(alpha) = 0.5_f * pi * Rand<float>();
+    return sin(alpha) * (cos(phi) * u + sin(phi) * v) + cos(alpha) * n;
   };
 
-  auto background = [](Vector dir) { return dir(1) + 0.0f; };
+  auto background = [](Vector dir) { return max(dir(1) + 0.0f, 0.0f); };
 
   float fov = 0.3;
 
@@ -397,8 +404,10 @@ auto ray_march = [&] {
         If(_dist < dist_limit,
            [&] {
              orig = orig + _dist * c;
-             auto nor = normal(orig);
-             color = nor;
+             Vector nor;
+             nor = normal(orig);
+             c = out_dir(nor);
+             orig = orig + 0.01f * c;
            })
             .Else([&] {
               color = color * background(c);

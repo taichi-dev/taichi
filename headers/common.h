@@ -533,6 +533,29 @@ inline int32x8 set1<int32, 8>(int32 v) {
 }
 
 //*****************************************************************************
+inline float32x1 abs(float32x1 v) {
+  return std::abs(v);
+}
+
+template <int dim>
+inline vec<float32, dim> sin(const vec<float32, dim> &v) {
+  vec<float32, dim> ret;
+  for (int i = 0; i < dim; i++) {
+    ret[i] = std::sin(v[i]);
+  }
+  return ret;
+}
+
+template <int dim>
+inline vec<float32, dim> cos(const vec<float32, dim> &v) {
+  vec<float32, dim> ret;
+  for (int i = 0; i < dim; i++) {
+    ret[i] = std::cos(v[i]);
+  }
+  return ret;
+}
+
+//*****************************************************************************
 
 template <typename T, int dim>
 inline vec<T, dim> min(vec<T, dim>, vec<T, dim>);
@@ -568,6 +591,11 @@ inline int32x8 max<int32, 8>(int32x8 a, int32x8 b) {
 template <>
 inline float32x8 max<float32, 8>(float32x8 a, float32x8 b) {
   return _mm256_max_ps(a, b);
+}
+
+template <>
+inline float32x1 max<float32, 1>(float32x1 a, float32x1 b) {
+  return std::max(a, b);
 }
 
 //*****************************************************************************

@@ -723,6 +723,14 @@ inline ExprH operator-(ExprH expr) {
   return ExprH(std::make_shared<UnaryOpExpression>(UnaryType::neg, expr));
 }
 
+inline ExprH sqrt(ExprH expr) {
+  return ExprH(std::make_shared<UnaryOpExpression>(UnaryType::sqrt, expr));
+}
+
+inline ExprH floor(ExprH expr) {
+  return ExprH(std::make_shared<UnaryOpExpression>(UnaryType::floor, expr));
+}
+
 DEFINE_EXPRESSION_OP(+, add)
 DEFINE_EXPRESSION_OP(-, sub)
 DEFINE_EXPRESSION_OP(*, mul)

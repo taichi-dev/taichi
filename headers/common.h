@@ -617,6 +617,34 @@ inline int32x8 cmp_lt(int32x8 a, int32x8 b) {
   return ret;
 }
 
+inline int32x1 cmp_gt(float32x1 b, float32x1 a) {
+  return a < b;
+}
+
+inline int32x1 cmp_gt(int32x1 b, int32x1 a) {
+  return a < b;
+}
+
+inline int32x4 cmp_gt(float32x4 b, float32x4 a) {
+  auto ret = _mm_cmp_ps(a, b, _CMP_LT_OQ);
+  return union_cast<int32x4>(ret);
+}
+
+inline int32x4 cmp_gt(int32x4 b, int32x4 a) {
+  auto ret = _mm_cmpgt_epi32(b, a);
+  return ret;
+}
+
+inline int32x8 cmp_gt(float32x8 b, float32x8 a) {
+  auto ret = _mm256_cmp_ps(a, b, _CMP_LT_OQ);
+  return union_cast<int32x8>(ret);
+}
+
+inline int32x8 cmp_gt(int32x8 b, int32x8 a) {
+  auto ret = _mm256_cmpgt_epi32(b, a);
+  return ret;
+}
+
 //*****************************************************************************
 
 inline float32x1 select(int32x1 mask, float32x1 true_val, float32x1 false_val) {

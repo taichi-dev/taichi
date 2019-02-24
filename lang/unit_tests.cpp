@@ -302,4 +302,72 @@ auto mset = [&] {
 };
 TC_REGISTER_TASK(mset);
 
+auto ray_march = [&] {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 1024;
+  Program prog(Arch::x86_64);
+
+  declare(a_global);
+  auto a = global_new(a_global, DataType::i32);
+
+  layout([&]() { root.fixed(0, n * n).place(a); });
+
+  auto sdf = [&](Vector p) { return p.norm() - 1.0_f; };
+
+  float32 eps = 1e-2f;
+
+  auto ray_march = [&](Vector p, Vector dir) {
+    int limit = 30;
+    local(j) = 0;
+
+    While(j < limit && sdf(p) > eps, [&] {
+      ExprH dist;
+      dist = sdf(p);
+      Print(dist);
+      Print(j < limit && sdf(p) > eps);
+      p = p + dist * dir;
+      j = j + 1;
+    });
+    Print(j);
+    return j < limit;
+  };
+
+  float fov = 0.03;
+
+  auto func = kernel([&]() {
+    declare(i);
+
+    Vector orig(3);
+    orig(0) = 0.0_f;
+    orig(1) = 0.0_f;
+    orig(2) = 7_f;
+
+    // Vectorize(8);
+    For(i, 0, n * n, [&] {
+
+      Vector c(3);
+
+      c(0) = fov * (cast<float>(i / n) / float(n / 2) - 1.0f);
+      c(1) = fov * (cast<float>(i % n) / float(n / 2) - 1.0f);
+      c(2) = -1.0f;
+
+      local(inv_norm) = 1.0_f / c.norm();
+      c = inv_norm * c;
+
+      a[i] = ray_march(orig, c);
+    });
+  });
+
+  /// TC_P(measure_cpe(func, 1));
+  func();
+
+  GUI gui("ray march", Vector2i(n));
+  for (int i = 0; i < n * n; i++) {
+    gui.buffer[i / n][i % n] = Vector4(a.val<int>(i));
+  }
+  while (1)
+    gui.update();
+};
+TC_REGISTER_TASK(ray_march);
+
 TLANG_NAMESPACE_END

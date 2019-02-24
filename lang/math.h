@@ -116,6 +116,10 @@ struct Matrix {
     }
     return ret;
   }
+
+  ExprH norm() const {
+    return sqrt(norm2());
+  }
 };
 
 inline Matrix operator*(const ExprH &A, const Matrix &B) {

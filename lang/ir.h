@@ -535,7 +535,12 @@ class UnaryOpExpression : public Expression {
   }
 
   std::string serialize() override {
-    return fmt::format("({} {})", unary_type_name(type), rhs->serialize());
+    if (type == UnaryType::cast) {
+      return fmt::format("({}<{}> {})", unary_type_name(type),
+                         data_type_name(cast_type), rhs->serialize());
+    } else {
+      return fmt::format("({} {})", unary_type_name(type), rhs->serialize());
+    }
   }
 
   void flatten(VecStatement &ret) override {
@@ -693,6 +698,7 @@ class Block : public IRNode {
   Block *parent;
   std::vector<std::unique_ptr<Statement>> statements;
   std::map<Ident, VectorType> local_variables;
+  std::map<Ident, Stmt*> local_var_alloca;
   Ident *mask_var;
   Ident *inner_loop_variable;
 
@@ -1055,6 +1061,11 @@ inline void declare_var(ExpressionHandle &a) {
       std::static_pointer_cast<IdExpression>(a.expr)->id, get_data_type<T>()));
 }
 
+inline void declare_var(ExpressionHandle &a) {
+  current_ast_builder().insert(std::make_unique<AllocaStmt>(
+      std::static_pointer_cast<IdExpression>(a.expr)->id, DataType::unknown));
+}
+
 inline ExprH ExpressionHandle::operator[](ExpressionGroup indices) {
   TC_ASSERT(is<GlobalVariableExpression>());
   return ExprH(std::make_shared<GlobalPtrExpression>(
@@ -1069,7 +1080,9 @@ inline ExprH ExpressionHandle::operator[](ExpressionGroup indices) {
                          \
   declare(x);            \
   var(t, x);
-#define local(x) declare(x); x
+#define local(x) \
+  declare(x); declare_var(x);    \
+  x
 
 inline ExprH global_new(ExprH id_expr, DataType dt) {
   TC_ASSERT(id_expr.is<IdExpression>());

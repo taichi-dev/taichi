@@ -46,8 +46,14 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) {
-    print("{}{} = {} {}", stmt->type_hint(), stmt->name(),
-          unary_type_name(stmt->op_type), stmt->rhs->name());
+    if (stmt->op_type == UnaryType::cast) {
+      print("{}{} = {}<{}> {}", stmt->type_hint(), stmt->name(),
+            unary_type_name(stmt->op_type), data_type_name(stmt->cast_type),
+            stmt->rhs->name());
+    } else {
+      print("{}{} = {} {}", stmt->type_hint(), stmt->name(),
+            unary_type_name(stmt->op_type), stmt->rhs->name());
+    }
   }
 
   void visit(BinaryOpStmt *bin) {

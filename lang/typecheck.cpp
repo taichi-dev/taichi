@@ -22,6 +22,7 @@ class TypeCheck : public IRVisitor {
     TC_ASSERT(block->local_variables.find(ident) ==
               block->local_variables.end());
     block->local_variables.insert(std::make_pair(ident, stmt->ret_type));
+    block->local_var_alloca.insert(std::make_pair(ident, stmt));
   }
 
   void visit(IfStmt *if_stmt) {
@@ -42,6 +43,15 @@ class TypeCheck : public IRVisitor {
     auto block = stmt->parent;
     auto lookup = block->lookup_var(stmt->ident);
     stmt->ret_type = lookup;
+  }
+
+  void visit(LocalStoreStmt *stmt) {
+    auto block = stmt->parent;
+    auto lookup = block->local_var_alloca.find(stmt->ident);
+    if (lookup != block->local_var_alloca.end()) {
+      lookup->second->ret_type = stmt->stmt->ret_type;
+      block->local_variables[stmt->ident] = stmt->stmt->ret_type;
+    }
   }
 
   void visit(GlobalLoadStmt *stmt) {
@@ -78,6 +88,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) {
+    TC_P(stmt->id);
     TC_ASSERT(stmt->lhs->ret_type.data_type != DataType::unknown ||
               stmt->rhs->ret_type.data_type != DataType::unknown);
     if (stmt->lhs->ret_type.data_type == DataType::unknown &&

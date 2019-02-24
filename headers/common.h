@@ -547,6 +547,16 @@ inline float32x8 min<float32, 8>(float32x8 a, float32x8 b) {
   return _mm256_min_ps(a, b);
 }
 
+template <>
+inline float32x4 min<float32, 4>(float32x4 a, float32x4 b) {
+  return _mm_min_ps(a, b);
+}
+
+template <>
+inline float32x1 min<float32, 1>(float32x1 a, float32x1 b) {
+  return std::min(a, b);
+}
+
 template <typename T, int dim>
 inline vec<T, dim> max(vec<T, dim>, vec<T, dim>);
 

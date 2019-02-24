@@ -218,9 +218,7 @@ TC_TEST("rand") {
   auto func = kernel([&]() {
     declare(i);
 
-    For(i, 0, n, [&] {
-      Print(Rand<float>());
-    });
+    For(i, 0, n, [&] { Print(Rand<float>()); });
   });
 
   func();
@@ -339,7 +337,7 @@ auto ray_march = [&] {
     root.fixed(0, n * n).place(color_r).place(color_g).place(color_b);
   });
 
-  auto sdf = [&](Vector p) { return p.norm() - 1.0_f; };
+  auto sdf = [&](Vector p) { return min(p.norm() - 1.0_f, p(1) + 2.0f); };
 
   float32 eps = 1e-4f;
   float32 dist_limit = 1e3;

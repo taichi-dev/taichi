@@ -782,6 +782,16 @@ DEFINE_EXPRESSION_OP(>, cmp_gt)
 DEFINE_EXPRESSION_OP(>=, cmp_ge)
 DEFINE_EXPRESSION_OP(==, cmp_eq)
 
+#define DEFINE_EXPRESSION_FUNC(op_name)                                       \
+  inline ExpressionHandle op_name(const ExpressionHandle &lhs,                \
+                                  const ExpressionHandle &rhs) {              \
+    return ExpressionHandle(                                                  \
+        std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs, rhs)); \
+  }
+
+DEFINE_EXPRESSION_FUNC(min);
+DEFINE_EXPRESSION_FUNC(max);
+
 template <typename T>
 inline ExprH cast(ExprH input) {
   auto ret = std::make_shared<UnaryOpExpression>(UnaryType::cast, input);

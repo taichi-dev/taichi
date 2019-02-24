@@ -1218,7 +1218,7 @@ T &ExprH::val(Indices... indices) {
 }
 
 inline ExprH load(ExprH ptr) {
-  TC_ASSERT(ptr.is<GlobalPtrStmt>());
+  TC_ASSERT(ptr.is<GlobalPtrExpression>());
   return ExpressionHandle(std::make_shared<GlobalLoadExpression>(ptr));
 }
 

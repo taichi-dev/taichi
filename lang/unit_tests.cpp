@@ -415,22 +415,33 @@ auto ray_march = [&] {
             });
       });
 
-      color_r[i] = color(0);
+      /*
+      color_r[i] = load(color_r[i]) + color(0);
+      color_g[i] = load(color_g[i]) + color(1);
+      color_b[i] = load(color_b[i]) + color(2);
+       */
+      // Print(load(color_r[i]));
+      color_r[i] = load(color_r[i]) + color(0);
       color_g[i] = color(1);
       color_b[i] = color(2);
     });
   });
 
   /// TC_P(measure_cpe(func, 1));
-  func();
 
   GUI gui("ray march", Vector2i(n));
-  for (int i = 0; i < n * n; i++) {
-    gui.buffer[i / n][i % n] = Vector4(
-        color_r.val<float>(i), color_g.val<float>(i), color_b.val<float>(i), 1);
-  }
-  while (1)
+  constexpr int N = 1;
+  for (int frame = 0;; frame++) {
+    for (int i = 0; i < N; i++)
+      func();
+    for (int i = 0; i < n * n; i++) {
+      gui.buffer[i / n][i % n] =
+          1.0_f / ((frame + 1) * N) *
+          Vector4(color_r.val<float>(i), color_g.val<float>(i),
+                  color_b.val<float>(i), 1);
+    }
     gui.update();
+  }
 };
 TC_REGISTER_TASK(ray_march);
 

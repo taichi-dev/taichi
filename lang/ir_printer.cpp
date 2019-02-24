@@ -169,7 +169,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) {
-    print("{}{} = load {}", stmt->type_hint(), stmt->raw_name(),
+    print("{}{} = global load {}", stmt->type_hint(), stmt->raw_name(),
           stmt->ptr->name());
   }
 

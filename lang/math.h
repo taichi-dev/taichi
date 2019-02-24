@@ -22,6 +22,22 @@ struct Matrix {
     entries.resize(n * m);
   }
 
+  // Initialize vector
+  template <int d>
+  explicit Matrix(const std::array<ExprH, d> &input) {
+    entries.resize(d);
+    for (int i = 0; i < d; i++) {
+      entries[i] = input[i];
+    }
+  }
+
+  // Initialize vector
+  explicit Matrix(const std::vector<float32> &input) : Matrix(input.size(), 1) {
+    for (int i = 0; i < (int)input.size(); i++) {
+      entries[i] = input[i];
+    }
+  }
+
   Matrix(const Matrix &o) : Matrix(o.n, o.m) {
     for (int i = 0; i < n * m; i++) {
       entries[i] = o.entries[i];

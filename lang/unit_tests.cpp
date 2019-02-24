@@ -314,8 +314,8 @@ auto ray_march = [&] {
 
   auto sdf = [&](Vector p) { return p.norm() - 1.0_f; };
 
-  float32 eps = 1e-2f;
-  int limit = 30;
+  float32 eps = 1e-4f;
+  int limit = 40;
 
   auto ray_march = [&](Vector p, Vector dir) {
     local(j) = 0;
@@ -334,10 +334,7 @@ auto ray_march = [&] {
     declare(i);
     Vectorize(8);
     For(i, 0, n * n, [&] {
-      Vector orig(3);
-      orig(0) = 0.0_f;
-      orig(1) = 0.0_f;
-      orig(2) = 7_f;
+      Vector orig({0.0f, 0.0f, 7.0f});
 
       Vector c(3);
 

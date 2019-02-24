@@ -313,6 +313,8 @@ inline std::string binary_type_symbol(BinaryType type) {
     REGISTER_TYPE(cmp_ge, >=);
     REGISTER_TYPE(cmp_ne, !=);
     REGISTER_TYPE(cmp_eq, ==);
+    REGISTER_TYPE(land, &&);
+    REGISTER_TYPE(lor, ||);
 #undef REGISTER_TYPE
   }
   return type_names[type];

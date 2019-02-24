@@ -307,10 +307,16 @@ auto ray_march = [&] {
   int n = 512;
   Program prog(Arch::x86_64);
 
-  declare(a_global);
-  auto a = global_new(a_global, DataType::f32);
+  declare(color_r_global);
+  declare(color_g_global);
+  declare(color_b_global);
+  auto color_r = global_new(color_r_global, DataType::f32);
+  auto color_g = global_new(color_g_global, DataType::f32);
+  auto color_b = global_new(color_b_global, DataType::f32);
 
-  layout([&]() { root.fixed(0, n * n).place(a); });
+  layout([&]() {
+    root.fixed(0, n * n).place(color_r).place(color_g).place(color_b);
+  });
 
   auto sdf = [&](Vector p) { return p.norm() - 1.0_f; };
 
@@ -341,9 +347,7 @@ auto ray_march = [&] {
     return normalized(n);
   };
 
-  auto background = [](Vector dir) {
-    return dir(1) + 1.0f;
-  };
+  auto background = [](Vector dir) { return dir(1) + 1.0f; };
 
   float fov = 0.3;
 
@@ -358,26 +362,30 @@ auto ray_march = [&] {
       c(2) = -1.0f;
       c = normalized(c);
 
-      local(color) = 1.0f;
+      Vector color(3);
+      color = Vector({1.0f, 1.0f, 1.0f});
       int depth_limit = 3;
       local(depth) = 0;
 
-      While(depth < depth_limit, [&]{
+      While(depth < depth_limit, [&] {
         depth = depth + 1;
         local(hit) = 0;
         local(_dist) = ray_march(orig, c, hit);
-        // Print(color);
-        If(_dist < dist_limit, [&] {
-          orig = orig + _dist * c;
-          auto nor = normal(orig);
-          color = nor(0);
-        }).Else([&]{
-          color = color * background(c);
-          depth = depth_limit;
-        });
+        If(_dist < dist_limit,
+           [&] {
+             orig = orig + _dist * c;
+             auto nor = normal(orig);
+             color = nor;
+           })
+            .Else([&] {
+              color = color * background(c);
+              depth = depth_limit;
+            });
       });
 
-      a[i] = color;
+      color_r[i] = color(0);
+      color_g[i] = color(1);
+      color_b[i] = color(2);
     });
   });
 
@@ -386,7 +394,8 @@ auto ray_march = [&] {
 
   GUI gui("ray march", Vector2i(n));
   for (int i = 0; i < n * n; i++) {
-    gui.buffer[i / n][i % n] = Vector4(a.val<float>(i) * 1.0);
+    gui.buffer[i / n][i % n] = Vector4(
+        color_r.val<float>(i), color_g.val<float>(i), color_b.val<float>(i), 1);
   }
   while (1)
     gui.update();

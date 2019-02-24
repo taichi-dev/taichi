@@ -304,7 +304,7 @@ TC_REGISTER_TASK(mset);
 
 auto ray_march = [&] {
   CoreState::set_trigger_gdb_when_crash(true);
-  int n = 1024;
+  int n = 512;
   Program prog(Arch::x86_64);
 
   declare(a_global);
@@ -315,35 +315,29 @@ auto ray_march = [&] {
   auto sdf = [&](Vector p) { return p.norm() - 1.0_f; };
 
   float32 eps = 1e-2f;
+  int limit = 30;
 
   auto ray_march = [&](Vector p, Vector dir) {
-    int limit = 30;
     local(j) = 0;
+    local(dist) = 0.0f;
 
-    While(j < limit && sdf(p) > eps, [&] {
-      ExprH dist;
-      dist = sdf(p);
-      Print(dist);
-      Print(j < limit && sdf(p) > eps);
-      p = p + dist * dir;
+    While(j < limit && sdf(p + dist * dir) > eps && dist < 1000.0f, [&] {
+      dist = dist + sdf(p + dist * dir);
       j = j + 1;
     });
-    Print(j);
-    return j < limit;
+    return j;
   };
 
-  float fov = 0.03;
+  float fov = 0.3;
 
   auto func = kernel([&]() {
     declare(i);
-
-    Vector orig(3);
-    orig(0) = 0.0_f;
-    orig(1) = 0.0_f;
-    orig(2) = 7_f;
-
-    // Vectorize(8);
+    Vectorize(8);
     For(i, 0, n * n, [&] {
+      Vector orig(3);
+      orig(0) = 0.0_f;
+      orig(1) = 0.0_f;
+      orig(2) = 7_f;
 
       Vector c(3);
 
@@ -363,7 +357,7 @@ auto ray_march = [&] {
 
   GUI gui("ray march", Vector2i(n));
   for (int i = 0; i < n * n; i++) {
-    gui.buffer[i / n][i % n] = Vector4(a.val<int>(i));
+    gui.buffer[i / n][i % n] = Vector4(a.val<int>(i) * 1.0 / limit);
   }
   while (1)
     gui.update();

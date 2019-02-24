@@ -308,7 +308,7 @@ auto ray_march = [&] {
   Program prog(Arch::x86_64);
 
   declare(a_global);
-  auto a = global_new(a_global, DataType::i32);
+  auto a = global_new(a_global, DataType::f32);
 
   layout([&]() { root.fixed(0, n * n).place(a); });
 
@@ -327,6 +327,18 @@ auto ray_march = [&] {
       j = j + 1;
     });
     return dist;
+  };
+
+  auto normal = [&](Vector p) {
+    float d = 1e-4f;
+    Vector n(3);
+    for (int i = 0; i < 3; i++) {
+      Vector inc = p, dec = p;
+      inc(i) = inc(i) + d;
+      dec(i) = dec(i) - d;
+      n(i) = (2.0f / d) * (sdf(inc) - sdf(dec));
+    }
+    return normalized(n);
   };
 
   float fov = 0.3;
@@ -348,9 +360,9 @@ auto ray_march = [&] {
       local(color) = 0.0f;
       // Print(color);
       If(_dist < dist_limit, [&] {
-        color = 1.0f;
-        a[i] = color;
+        color = normal(orig + _dist * c)(1);
       });
+      a[i] = color;
     });
   });
 
@@ -359,7 +371,7 @@ auto ray_march = [&] {
 
   GUI gui("ray march", Vector2i(n));
   for (int i = 0; i < n * n; i++) {
-    gui.buffer[i / n][i % n] = Vector4(a.val<int>(i) * 1.0);
+    gui.buffer[i / n][i % n] = Vector4(a.val<float>(i) * 1.0);
   }
   while (1)
     gui.update();

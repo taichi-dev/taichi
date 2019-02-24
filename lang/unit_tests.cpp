@@ -315,8 +315,8 @@ auto ray_march = [&] {
   auto sdf = [&](Vector p) { return p.norm() - 1.0_f; };
 
   float32 eps = 1e-4f;
-  int limit = 40;
   float32 dist_limit = 1e3;
+  int limit = 40;
 
   auto ray_march = [&](Vector p, Vector dir, ExprH &hit) {
     local(j) = 0;
@@ -336,9 +336,13 @@ auto ray_march = [&] {
       Vector inc = p, dec = p;
       inc(i) = inc(i) + d;
       dec(i) = dec(i) - d;
-      n(i) = (2.0f / d) * (sdf(inc) - sdf(dec));
+      n(i) = (0.5f / d) * (sdf(inc) - sdf(dec));
     }
     return normalized(n);
+  };
+
+  auto background = [](Vector dir) {
+    return dir(1) + 1.0f;
   };
 
   float fov = 0.3;
@@ -352,16 +356,27 @@ auto ray_march = [&] {
       c(0) = fov * (cast<float>(i / n) / float(n / 2) - 1.0f);
       c(1) = fov * (cast<float>(i % n) / float(n / 2) - 1.0f);
       c(2) = -1.0f;
-
       c = normalized(c);
 
-      local(hit) = 0;
-      local(_dist) = ray_march(orig, c, hit);
-      local(color) = 0.0f;
-      // Print(color);
-      If(_dist < dist_limit, [&] {
-        color = normal(orig + _dist * c)(1);
+      local(color) = 1.0f;
+      int depth_limit = 3;
+      local(depth) = 0;
+
+      While(depth < depth_limit, [&]{
+        depth = depth + 1;
+        local(hit) = 0;
+        local(_dist) = ray_march(orig, c, hit);
+        // Print(color);
+        If(_dist < dist_limit, [&] {
+          orig = orig + _dist * c;
+          auto nor = normal(orig);
+          color = nor(0);
+        }).Else([&]{
+          color = color * background(c);
+          depth = depth_limit;
+        });
       });
+
       a[i] = color;
     });
   });

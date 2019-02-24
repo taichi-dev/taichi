@@ -254,7 +254,7 @@ Vector complex_mul(const Vector &a, const Vector &b) {
 
 auto mset = [&] {
   CoreState::set_trigger_gdb_when_crash(true);
-  int n = 512;
+  int n = 1024;
   Program prog(Arch::x86_64);
 
   declare(a_global);
@@ -267,23 +267,16 @@ auto mset = [&] {
 
     Vectorize(8);
     For(i, 0, n * n, [&] {
-      declare_as(j, int);
-      declare_as(sum, int);
-      declare_as(z_re, float);
-      declare_as(z_im, float);
-      declare_as(c_re, float);
-      declare_as(c_im, float);
-      c_re = cast<float>(i / n) / float(n / 2) - 1.5f;
-      c_im = cast<float>(i % n) / float(n / 2) - 1.0f;
-      z_re = c_re;
-      z_im = c_im;
+      local(j) = 0;
+      local(c_re) = cast<float>(i / n) / float(n / 2) - 1.5f;
+      local(c_im) = cast<float>(i % n) / float(n / 2) - 1.0f;
+      local(z_re) = c_re;
+      local(z_im) = c_im;
 
-      int limit = 50;
+      int limit = 20;
       While(j < limit && (z_re * z_re + z_im * z_im) < 4.0f, [&] {
-        declare_as(new_re, float);
-        declare_as(new_im, float);
-        new_re = z_re * z_re - z_im * z_im;
-        new_im = 2.0f * z_re * z_im;
+        local(new_re) = z_re * z_re - z_im * z_im;
+        local(new_im) = 2.0f * z_re * z_im;
         z_re = c_re + new_re;
         z_im = c_im + new_im;
         j = j + 1;

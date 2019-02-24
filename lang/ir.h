@@ -1069,6 +1069,7 @@ inline ExprH ExpressionHandle::operator[](ExpressionGroup indices) {
                          \
   declare(x);            \
   var(t, x);
+#define local(x) declare(x); x
 
 inline ExprH global_new(ExprH id_expr, DataType dt) {
   TC_ASSERT(id_expr.is<IdExpression>());

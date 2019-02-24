@@ -337,11 +337,11 @@ auto ray_march = [&] {
     root.fixed(0, n * n).place(color_r).place(color_g).place(color_b);
   });
 
-  auto sdf = [&](Vector p) { return min(p.norm() - 1.0_f, p(1) + 2.0f); };
+  auto sdf = [&](Vector p) { return min(p.norm() - 0.9_f, p(1) + 1.0f); };
 
   float32 eps = 1e-4f;
-  float32 dist_limit = 1e3;
-  int limit = 100;
+  float32 dist_limit = 1e4;
+  int limit = 200;
 
   auto ray_march = [&](Vector p, Vector dir, ExprH &hit) {
     local(j) = 0;
@@ -367,8 +367,8 @@ auto ray_march = [&] {
   };
 
   auto out_dir = [&](Vector n) {
-    Vector u({0.0f, 1.0f, 0.0f}), v(3);
-    If(abs(n(1)) < 1 - 1e-4f, [&] {
+    Vector u({1.0f, 0.0f, 0.0f}), v(3);
+    If(abs(n(1)) < 1 - 1e-3f, [&] {
       u = normalized(cross(n, Vector({0.0f, 1.0f, 0.0f})));
     });
     v = cross(n, u);
@@ -377,7 +377,7 @@ auto ray_march = [&] {
     return sin(alpha) * (cos(phi) * u + sin(phi) * v) + cos(alpha) * n;
   };
 
-  auto background = [](Vector dir) { return max(dir(1) + 0.0f, 0.0f); };
+  auto background = [](Vector dir) { return max(dir(1) + dir(0), 0.0f); };
 
   float fov = 0.3;
 
@@ -406,8 +406,9 @@ auto ray_march = [&] {
              orig = orig + _dist * c;
              Vector nor;
              nor = normal(orig);
-             c = out_dir(nor);
+             c = normalized(out_dir(nor));
              orig = orig + 0.01f * c;
+             color = 0.5_f * color;
            })
             .Else([&] {
               color = color * background(c);

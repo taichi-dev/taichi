@@ -118,7 +118,8 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(PrintStmt *print_stmt) {
-    emit("std::cout << {} << std::endl;", print_stmt->stmt->raw_name());
+    emit("std::cout << \"[debug] \" \"{}\" \" = \" << {} << std::endl;", print_stmt->str,
+         print_stmt->stmt->raw_name());
   }
 
   void visit(ConstStmt *const_stmt) {

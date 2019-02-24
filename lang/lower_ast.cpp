@@ -63,7 +63,7 @@ class LowerAST : public IRVisitor {
     auto expr = load_if_ptr(stmt->expr);
     VecStatement flattened;
     expr->flatten(flattened);
-    auto print = std::make_unique<PrintStmt>(expr->stmt);
+    auto print = std::make_unique<PrintStmt>(expr->stmt, stmt->str);
     flattened.push_back(std::move(print));
     stmt->parent->replace_with(stmt, flattened);
     throw IRModifiedException();

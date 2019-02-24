@@ -92,11 +92,12 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendPrintStmt *print_stmt) {
-    print("print {}", print_stmt->expr.serialize());
+    print("print {}, {}", print_stmt->str, print_stmt->expr.serialize());
   }
 
   void visit(PrintStmt *print_stmt) {
-    print("{}print {}", print_stmt->type_hint(), print_stmt->stmt->name());
+    print("{}print {}, {}", print_stmt->type_hint(), print_stmt->str,
+          print_stmt->stmt->name());
   }
 
   void visit(ConstStmt *const_stmt) {

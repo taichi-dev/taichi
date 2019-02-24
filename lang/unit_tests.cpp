@@ -317,7 +317,7 @@ auto ray_march = [&] {
   float32 eps = 1e-4f;
   int limit = 40;
 
-  auto ray_march = [&](Vector p, Vector dir) {
+  auto ray_march = [&](Vector p, Vector dir, ExprH &hit) {
     local(j) = 0;
     local(dist) = 0.0f;
 
@@ -325,14 +325,15 @@ auto ray_march = [&] {
       dist = dist + sdf(p + dist * dir);
       j = j + 1;
     });
-    return j;
+    Print(sdf(p + dist * dir));
+    hit = (sdf(p + dist * dir) < eps);
   };
 
   float fov = 0.3;
 
   auto func = kernel([&]() {
     declare(i);
-    Vectorize(8);
+    // Vectorize(8);
     For(i, 0, n * n, [&] {
       Vector orig({0.0f, 0.0f, 7.0f}), c(3);
 
@@ -342,7 +343,9 @@ auto ray_march = [&] {
 
       c = normalized(c);
 
-      a[i] = ray_march(orig, c);
+      local(hit) = 0;
+      ray_march(orig, c, hit);
+      a[i] = hit;
     });
   });
 
@@ -351,7 +354,7 @@ auto ray_march = [&] {
 
   GUI gui("ray march", Vector2i(n));
   for (int i = 0; i < n * n; i++) {
-    gui.buffer[i / n][i % n] = Vector4(a.val<int>(i) * 1.0 / limit);
+    gui.buffer[i / n][i % n] = Vector4(a.val<int>(i) * 1.0);
   }
   while (1)
     gui.update();

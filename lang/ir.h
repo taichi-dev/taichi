@@ -914,8 +914,9 @@ class FrontendIfStmt : public Statement {
 class FrontendPrintStmt : public Statement {
  public:
   ExprH expr;
+  std::string str;
 
-  FrontendPrintStmt(ExprH expr) : expr(expr) {
+  FrontendPrintStmt(ExprH expr, std::string str) : expr(expr), str(str) {
   }
 
   DEFINE_ACCEPT
@@ -924,8 +925,9 @@ class FrontendPrintStmt : public Statement {
 class PrintStmt : public Statement {
  public:
   Statement *stmt;
+  std::string str;
 
-  PrintStmt(Statement *stmt) : stmt(stmt) {
+  PrintStmt(Statement *stmt, std::string str) : stmt(stmt), str(str) {
     add_operand(this->stmt);
   }
 
@@ -1041,8 +1043,10 @@ inline void IRBuilder::insert(std::unique_ptr<Statement> &&stmt, int location) {
   stack.back()->insert(std::move(stmt), location);
 }
 
-inline void Print(const ExpressionHandle &a) {
-  current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a));
+#define Print(x)  Print_(x, #x);
+
+inline void Print_(const ExpressionHandle &a, std::string str) {
+  current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a, str));
 }
 
 class IdExpression : public Expression {

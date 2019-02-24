@@ -264,13 +264,13 @@ auto mset = [&] {
 
   auto func = kernel([&]() {
     declare(i);
-    declare_as(z_re, float);
-    declare_as(z_im, float);
 
-    // Vectorize(8);
+    Vectorize(8);
     For(i, 0, n * n, [&] {
       declare_as(j, int);
       declare_as(sum, int);
+      declare_as(z_re, float);
+      declare_as(z_im, float);
       declare_as(c_re, float);
       declare_as(c_im, float);
       c_re = cast<float>(i / n) / float(n / 2) - 1.5f;
@@ -292,7 +292,7 @@ auto mset = [&] {
     });
   });
 
-  measure_cpe(func, 1);
+  TC_P(measure_cpe(func, 1));
 
   GUI gui("Mandelbrot Set", Vector2i(n));
   for (int i = 0; i < n * n; i++) {

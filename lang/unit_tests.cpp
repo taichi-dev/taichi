@@ -273,19 +273,22 @@ auto mset = [&] {
       declare_as(sum, int);
       declare_as(c_re, float);
       declare_as(c_im, float);
-      c_re = cast<float>(i / n) / float(n);
-      c_im = cast<float>(i % n) / float(n);
+      c_re = cast<float>(i / n) / float(n / 2) - 1.5f;
+      c_im = cast<float>(i % n) / float(n / 2) - 1.0f;
       z_re = c_re;
       z_im = c_im;
 
-      While(j < 40 && (z_re * z_re + z_im * z_im) < 4.0f, [&] {
-        auto new_re = z_re * z_re - z_im * z_im;
-        auto new_im = 2.0f * z_re * z_im;
+      int limit = 50;
+      While(j < limit && (z_re * z_re + z_im * z_im) < 4.0f, [&] {
+        declare_as(new_re, float);
+        declare_as(new_im, float);
+        new_re = z_re * z_re - z_im * z_im;
+        new_im = 2.0f * z_re * z_im;
         z_re = c_re + new_re;
         z_im = c_im + new_im;
         j = j + 1;
       });
-      a[i] = (j < 40);
+      a[i] = j;
     });
   });
 
@@ -293,7 +296,7 @@ auto mset = [&] {
 
   GUI gui("Mandelbrot Set", Vector2i(n));
   for (int i = 0; i < n * n; i++) {
-    gui.buffer[i / n][i % n] = Vector4(a.val<int>(i) > 0);
+    gui.buffer[i / n][i % n] = Vector4(a.val<int>(i) % 11 * 0.1f);
   }
   while (1)
     gui.update();

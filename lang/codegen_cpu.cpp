@@ -186,7 +186,8 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) {
-    emit("void *{}[{}];", stmt->raw_name(), stmt->ret_type.width);
+    emit("{} *{}[{}];", data_type_name(stmt->ret_type.data_type),
+         stmt->raw_name(), stmt->ret_type.width);
     for (int l = 0; l < stmt->ret_type.width; l++) {
       std::string indices = "(root, ";
       for (int i = 0; i < max_num_indices; i++) {
@@ -213,8 +214,10 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) {
-    emit("auto {} = *({} *){};", stmt->raw_name(), stmt->ret_data_type_name(),
-         stmt->ptr->raw_name());
+    emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
+    for (int i = 0; i < stmt->ret_type.width; i++) {
+      emit("{}[{}] = *{}[{}];", stmt->raw_name(), i, stmt->ptr->raw_name(), i);
+    }
   }
 };
 

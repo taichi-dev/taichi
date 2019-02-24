@@ -415,15 +415,9 @@ auto ray_march = [&] {
             });
       });
 
-      /*
       color_r[i] = load(color_r[i]) + color(0);
       color_g[i] = load(color_g[i]) + color(1);
       color_b[i] = load(color_b[i]) + color(2);
-       */
-      // Print(load(color_r[i]));
-      color_r[i] = load(color_r[i]) + color(0);
-      color_g[i] = color(1);
-      color_b[i] = color(2);
     });
   });
 

@@ -83,6 +83,11 @@ class IRCodeGen : public IRVisitor {
     emit("{} {}(0);", alloca->ret_data_type_name(), alloca->ident.raw_name());
   }
 
+  void visit(TmpValStmt *stmt) {
+    emit("const {} {} = {};", stmt->ret_data_type_name(), stmt->raw_name(),
+         stmt->val->raw_name());
+  }
+
   void visit(BinaryOpStmt *bin) {
     emit("const {} {} = {}({}, {});", bin->ret_data_type_name(),
          bin->raw_name(), binary_type_name(bin->op_type), bin->lhs->raw_name(),

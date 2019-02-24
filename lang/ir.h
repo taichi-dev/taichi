@@ -35,6 +35,8 @@ class LocalStoreStmt;
 class GlobalPtrStmt;
 class GlobalLoadStmt;
 class GlobalStoreStmt;
+class TmpValStmt;
+class FrontendTmpValStmt;
 class PrintStmt;
 class WhileControlStmt;
 
@@ -214,6 +216,8 @@ class IRVisitor {
   DEFINE_VISIT(FrontendWhileStmt);
   DEFINE_VISIT(WhileStmt);
   DEFINE_VISIT(WhileControlStmt);
+  DEFINE_VISIT(TmpValStmt);
+  DEFINE_VISIT(FrontendTmpValStmt);
 };
 
 class IRNode {
@@ -227,10 +231,6 @@ class IRNode {
   void accept(IRVisitor *visitor) { \
     visitor->visit(this);           \
   }
-
-struct StmtAttribute {
-  int vector_width;
-};
 
 template <typename T>
 struct LaneAttribute {
@@ -562,6 +562,45 @@ class UnaryOpExpression : public Expression {
   }
 };
 
+class TmpValExpression : public Expression {
+ public:
+  Stmt *val;
+
+  TmpValExpression(Stmt *val) : val(val) {
+  }
+
+  std::string serialize() override {
+    TC_ASSERT(val);
+    return fmt::format("(cached {})", val->name());
+  }
+
+  void flatten(VecStatement &ret) override {
+    ret.emplace_back(std::make_unique<TmpValStmt>(val));
+    stmt = ret.back().get();
+  }
+};
+
+class FrontendTmpValStmt : public Statement {
+ public:
+  ExprH val;
+
+  FrontendTmpValStmt(const ExprH val) : val(val) {
+  }
+
+  DEFINE_ACCEPT
+};
+
+class TmpValStmt : public Statement {
+ public:
+  Statement *val;
+
+  TmpValStmt(Statement *val) : val(val) {
+    add_operand(this->val);
+  }
+
+  DEFINE_ACCEPT
+};
+
 class BinaryOpStmt : public Statement {
  public:
   BinaryType op_type;
@@ -674,8 +713,8 @@ class GlobalPtrExpression : public Expression {
 };
 
 #define DEFINE_EXPRESSION_OP(op, op_name)                                     \
-  inline ExpressionHandle operator op(const ExpressionHandle &lhs,                   \
-                                      const ExpressionHandle &rhs) {                 \
+  inline ExpressionHandle operator op(const ExpressionHandle &lhs,            \
+                                      const ExpressionHandle &rhs) {          \
     return ExpressionHandle(                                                  \
         std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs, rhs)); \
   }
@@ -709,7 +748,7 @@ class Block : public IRNode {
   Block *parent;
   std::vector<std::unique_ptr<Statement>> statements;
   std::map<Ident, VectorType> local_variables;
-  std::map<Ident, Stmt*> local_var_alloca;
+  std::map<Ident, Stmt *> local_var_alloca;
   Ident *mask_var;
   Ident *inner_loop_variable;
 
@@ -1091,8 +1130,9 @@ inline ExprH ExpressionHandle::operator[](ExpressionGroup indices) {
                          \
   declare(x);            \
   var(t, x);
-#define local(x) \
-  declare(x); declare_var(x);    \
+#define local(x)  \
+  declare(x);     \
+  declare_var(x); \
   x
 
 inline ExprH global_new(ExprH id_expr, DataType dt) {

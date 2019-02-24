@@ -41,6 +41,14 @@ class IRPrinter : public IRVisitor {
     print("{} = {}", assign->lhs->serialize(), assign->rhs->serialize());
   }
 
+  void visit(FrontendTmpValStmt *stmt) {
+    print("[tmp] {} = {}", stmt->name(), stmt->val->serialize());
+  }
+
+  void visit(TmpValStmt *stmt) {
+    print("[tmp] {} = {}", stmt->name(), stmt->val->name());
+  }
+
   void visit(AllocaStmt *alloca) {
     print("{}alloca {}", alloca->type_hint(), alloca->ident.name());
   }

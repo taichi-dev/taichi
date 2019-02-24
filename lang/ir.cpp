@@ -20,9 +20,10 @@ IRBuilder::ScopeGuard IRBuilder::create_scope(std::unique_ptr<Block> &list) {
 }
 
 void ExprH::operator=(const ExpressionHandle &o) {
-  if (this->expr == nullptr &&
-      !(this->is<GlobalPtrStmt>() || this->is<IdExpression>())) {
-    expr = o.expr;
+  if (this->expr == nullptr) {
+    auto stmt = std::make_unique<FrontendTmpValStmt>(o);
+    expr = std::make_shared<TmpValExpression>(stmt.get());
+    current_ast_builder().insert(std::move(stmt));
   } else {
     current_ast_builder().insert(std::make_unique<AssignStmt>(*this, o));
   }

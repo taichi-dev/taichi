@@ -47,6 +47,17 @@ class LowerAST : public IRVisitor {
     }
   }
 
+  void visit(FrontendTmpValStmt *stmt) {
+    // expand rhs
+    auto expr = load_if_ptr(stmt->val);
+    VecStatement flattened;
+    expr->flatten(flattened);
+    auto s = std::make_unique<TmpValStmt>(expr->stmt);
+    flattened.push_back(std::move(s));
+    stmt->parent->replace_with(stmt, flattened);
+    throw IRModifiedException();
+  }
+
   void visit(FrontendPrintStmt *stmt) {
     // expand rhs
     auto expr = load_if_ptr(stmt->expr);

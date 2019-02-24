@@ -25,6 +25,10 @@ class TypeCheck : public IRVisitor {
     block->local_var_alloca.insert(std::make_pair(ident, stmt));
   }
 
+  void visit(TmpValStmt *stmt) {
+    stmt->ret_type = stmt->val->ret_type;
+  }
+
   void visit(IfStmt *if_stmt) {
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);

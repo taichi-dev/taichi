@@ -69,6 +69,14 @@ class TypeCheck : public IRVisitor {
       TC_WARN("Type inference failed: snode is nullptr.");
   }
 
+  void visit(GlobalStoreStmt *stmt) {
+    if (stmt->ptr->ret_type != stmt->data->ret_type) {
+      TC_ERROR("Global store type mismatch: {} <- {}",
+               stmt->ptr->ret_data_type_name(),
+               stmt->data->ret_data_type_name());
+    }
+  }
+
   void visit(RangeForStmt *stmt) {
     auto block = stmt->parent;
     TC_ASSERT(block->local_variables.find(stmt->loop_var) ==

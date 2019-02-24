@@ -316,17 +316,17 @@ auto ray_march = [&] {
 
   float32 eps = 1e-4f;
   int limit = 40;
+  float32 dist_limit = 1e3;
 
   auto ray_march = [&](Vector p, Vector dir, ExprH &hit) {
     local(j) = 0;
     local(dist) = 0.0f;
 
-    While(j < limit && sdf(p + dist * dir) > eps && dist < 1000.0f, [&] {
+    While(j < limit && sdf(p + dist * dir) > eps && dist < dist_limit, [&] {
       dist = dist + sdf(p + dist * dir);
       j = j + 1;
     });
-    Print(sdf(p + dist * dir));
-    hit = (sdf(p + dist * dir) < eps);
+    return dist;
   };
 
   float fov = 0.3;
@@ -344,8 +344,13 @@ auto ray_march = [&] {
       c = normalized(c);
 
       local(hit) = 0;
-      ray_march(orig, c, hit);
-      a[i] = hit;
+      local(_dist) = ray_march(orig, c, hit);
+      local(color) = 0.0f;
+      // Print(color);
+      If(_dist < dist_limit, [&] {
+        color = 1.0f;
+        a[i] = color;
+      });
     });
   });
 

@@ -67,6 +67,10 @@ struct VectorType {
     return width == o.width && data_type == o.data_type;
   }
 
+  bool operator!=(const VectorType &o) const {
+    return !(*this == o);
+  }
+
   std::string str() const {
     return fmt::format("{}x{}", data_type_name(data_type), width);
   }
@@ -944,6 +948,10 @@ class If {
     current_ast_builder().insert(std::move(stmt_tmp));
   }
 
+  If(ExpressionHandle cond, const std::function<void()> &func) : If(cond) {
+    Then(func);
+  }
+
   If &Then(const std::function<void()> &func) {
     auto _ = current_ast_builder().create_scope(stmt->true_statements);
     func();
@@ -1043,7 +1051,7 @@ inline void IRBuilder::insert(std::unique_ptr<Statement> &&stmt, int location) {
   stack.back()->insert(std::move(stmt), location);
 }
 
-#define Print(x)  Print_(x, #x);
+#define Print(x) Print_(x, #x);
 
 inline void Print_(const ExpressionHandle &a, std::string str) {
   current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a, str));

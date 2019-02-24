@@ -26,9 +26,9 @@ TC_TEST("compiler_linalg") {
     B(0, 1) = 2;
     B(1, 0) = 3;
     B(1, 1) = 4;
-    auto C = A + B;
-    for (int p = 0; p < 1; p++) {
-      for (int q = 0; q < 1; q++) {
+    auto C = A * B + A;
+    for (int p = 0; p < 2; p++) {
+      for (int q = 0; q < 2; q++) {
         Print(C(p, q));
       }
     }
@@ -260,19 +260,33 @@ auto mset = [&] {
     Vectorize(8);
     For(i, 0, n * n, [&] {
       local(j) = 0;
-      local(c_re) = cast<float>(i / n) / float(n / 2) - 1.5f;
-      local(c_im) = cast<float>(i % n) / float(n / 2) - 1.0f;
-      local(z_re) = c_re;
-      local(z_im) = c_im;
-
       int limit = 20;
-      While(j < limit && (z_re * z_re + z_im * z_im) < 4.0f, [&] {
-        local(new_re) = z_re * z_re - z_im * z_im;
-        local(new_im) = 2.0f * z_re * z_im;
-        z_re = c_re + new_re;
-        z_im = c_im + new_im;
-        j = j + 1;
-      });
+      if (false) {
+        local(c_re) = cast<float>(i / n) / float(n / 2) - 1.5f;
+        local(c_im) = cast<float>(i % n) / float(n / 2) - 1.0f;
+        local(z_re) = c_re;
+        local(z_im) = c_im;
+
+        While(j < limit && (z_re * z_re + z_im * z_im) < 4.0f, [&] {
+          local(new_re) = z_re * z_re - z_im * z_im;
+          local(new_im) = 2.0f * z_re * z_im;
+          z_re = c_re + new_re;
+          z_im = c_im + new_im;
+          j = j + 1;
+        });
+      } else {
+        Vector c(2);
+
+        c(0) = cast<float>(i / n) / float(n / 2) - 1.5f;
+        c(1) = cast<float>(i % n) / float(n / 2) - 1.0f;
+
+        Vector z = c;
+
+        While(j < limit && z.norm2() < 4.0f, [&] {
+          z = complex_mul(z, z) + c;
+          j = j + 1;
+        });
+      }
       a[i] = j;
     });
   });

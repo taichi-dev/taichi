@@ -22,6 +22,12 @@ struct Matrix {
     entries.resize(n * m);
   }
 
+  Matrix(const Matrix &o) : Matrix(o.n, o.m) {
+    for (int i = 0; i < n * m; i++) {
+      entries[i] = o.entries[i];
+    }
+  }
+
   Matrix map(const std::function<ExprH(const ExprH &)> &f) const {
     Matrix ret(n, m);
     for (int i = 0; i < (int)entries.size(); i++) {
@@ -99,6 +105,14 @@ struct Matrix {
     ExprH ret = entries[0];
     for (int i = 1; i < n * m; i++) {
       ret.set(ret + entries[i]);
+    }
+    return ret;
+  }
+
+  ExprH norm2() const {
+    ExprH ret = entries[0] * entries[0];
+    for (int i = 1; i < n * m; i++) {
+      ret.set(ret + entries[i] * entries[i]);
     }
     return ret;
   }

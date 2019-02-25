@@ -51,10 +51,14 @@ class LowerAST : public IRVisitor {
     insert(std::move(lnot_stmt));
     insert(std::make_unique<LocalStoreStmt>(new_if->false_mask, lnot_stmt_ptr));
 
-    new_if->true_statements = std::move(stmt->true_statements);
-    new_if->false_statements = std::move(stmt->false_statements);
-    new_if->true_statements->mask_var = &new_if->true_mask;
-    new_if->false_statements->mask_var = &new_if->false_mask;
+    if (stmt->true_statements) {
+      new_if->true_statements = std::move(stmt->true_statements);
+      new_if->true_statements->mask_var = &new_if->true_mask;
+    }
+    if (stmt->false_statements) {
+      new_if->false_statements = std::move(stmt->false_statements);
+      new_if->false_statements->mask_var = &new_if->false_mask;
+    }
 
     flattened.push_back(std::move(new_if));
     stmt->parent->replace_with(stmt, flattened);

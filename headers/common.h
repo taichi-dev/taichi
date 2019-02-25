@@ -471,6 +471,11 @@ template <typename T, int dim>
 inline vec<T, dim> floor(const vec<T, dim> &);
 
 template <>
+inline float32x1 floor<float32, 1>(const float32x1 &v) {
+  return std::floor(v);
+}
+
+template <>
 inline float32x4 floor<float32, 4>(const float32x4 &v) {
   return _mm_floor_ps(v);
 }

@@ -396,7 +396,7 @@ auto ray_march = [&] {
   auto color_b = global_new(color_b_global, DataType::f32);
 
   layout([&]() {
-    root.fixed(0, n * n).place(color_r).place(color_g).place(color_b);
+    root.fixed(0, n * n * 2).place(color_r).place(color_g).place(color_b);
   });
 
   auto sdf = [&](Vector p_) {
@@ -411,8 +411,8 @@ auto ray_march = [&] {
     auto dist_walls = min(p(2) + 6.0f, p(1) + 1.0f);
     Vector d(3);
     d(0) = abs(p(0) - 1.0_f) - 0.3_f;
-    d(1) = abs(p(1) + 0.5_f) - 0.6_f;
-    d(2) = abs(p(2)) - 0.2_f;
+    d(1) = abs(p(1) + 0.5_f) - 1.2_f;
+    d(2) = abs(p(2) - 1.0_f) - 0.2_f;
     auto dist_cube = norm(d.map([](const ExprH &v) { return max(v, 0.0f); })) +
                      min(max(max(d(0), d(1)), d(2)), 0.0_f);
     return min(dist_sphere, min(dist_walls, dist_cube));
@@ -461,14 +461,14 @@ auto ray_march = [&] {
 
   float fov = 0.3;
 
-  auto func = kernel([&]() {
+  auto main = kernel([&]() {
     declare(i);
     Parallelize(8);
     Vectorize(8);
-    For(i, 0, n * n, [&] {
+    For(i, 0, n * n * 2, [&] {
       Vector orig({0.0f, 0.0f, 12.0f}), c(3);
 
-      c(0) = fov * (cast<float>(i / n) / float(n / 2) - 1.0f);
+      c(0) = fov * (cast<float>(i / n) / float(n / 2) - 2.0f);
       c(1) = fov * (cast<float>(i % n) / float(n / 2) - 1.0f);
       c(2) = -1.0f;
       c = normalized(c);
@@ -481,31 +481,17 @@ auto ray_march = [&] {
       While(depth < depth_limit, [&] {
         depth = depth + 1;
         local(_dist) = ray_march(orig, c);
-        If(_dist < dist_limit,
-           [&] {
-             orig = orig + _dist * c;
-             Vector nor;
-             nor = normal(orig);
-             c = normalized(out_dir(nor));
-             orig = orig + 0.01f * c;
-             /*
-             Vector alb(3);
-             float inv_tex = 3;
-             for (int i = 0; i < 3; i++)
-               alb(i) =
-                   0.7_f +
-                   0.3_f *
-                       cast<float>(
-                           (cast<int>(floor(inv_tex * orig(i))) % 3 + 3) % 3 ==
-                           i);
-             color = color.element_wise_prod(alb);
-             */
-             color = 0.7_f * color;
-           })
-            .Else([&] {
-              color = color * background(c);
-              depth = depth_limit;
-            });
+        If(_dist < dist_limit, [&] {
+           orig = orig + _dist * c;
+           Vector nor;
+           nor = normal(orig);
+           c = normalized(out_dir(nor));
+           orig = orig + 0.01f * c;
+           color = 0.7_f * color;
+        }).Else([&] {
+           color = color * background(c);
+           depth = depth_limit;
+        });
       });
 
       color_r[i] = load(color_r[i]) + color(0);
@@ -516,15 +502,15 @@ auto ray_march = [&] {
 
   /// TC_P(measure_cpe(func, 1));
 
-  GUI gui("ray march", Vector2i(n));
+  GUI gui("ray march", Vector2i(n * 2, n));
 
   auto tone_map = [](real x) { return x; };
   constexpr int N = 1;
   for (int frame = 0;; frame++) {
     for (int i = 0; i < N; i++)
-      func();
+      main();
     real scale = 1.0_f / ((frame + 1) * N);
-    for (int i = 0; i < n * n; i++) {
+    for (int i = 0; i < n * n * 2; i++) {
       gui.buffer[i / n][i % n] =
           Vector4(tone_map(scale * color_r.val<float>(i)),
                   tone_map(scale * color_g.val<float>(i)),

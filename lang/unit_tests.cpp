@@ -54,7 +54,39 @@ TC_TEST("compiler_basics") {
     local(sum) = 0;
     For(i, 0, n, [&] {
       sum = sum + i;
-      If(i % 2 == 0).Then([&] { a[i] = dou(i); }).Else([&] { a[i] = i; });
+      local(ret) = 0;
+      If(i % 2 == 0).Then([&] { ret = dou(i); }).Else([&] { ret = i; });
+      a[i] = ret;
+    });
+  });
+
+  func();
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK(a.val<int32>(i) == (2 - i % 2) * i);
+  }
+};
+
+TC_TEST("simd_if") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 128;
+  Program prog(Arch::x86_64);
+
+  declare(a_global);
+  auto a = global_new(a_global, DataType::i32);
+  auto i = Expr(0);
+  layout([&]() { root.fixed(i, n).place(a); });
+
+  auto dou = [](ExprH a) { return a * 2; };
+
+  auto func = kernel([&]() {
+    declare(i);
+    local(sum) = 0;
+    Vectorize(8);
+    For(i, 0, n, [&] {
+      local(ret) = 0;
+      If(i % 2 == 0).Then([&] { ret = dou(i); }).Else([&] { ret = i; });
+      a[i] = ret;
     });
   });
 

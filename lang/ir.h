@@ -941,6 +941,7 @@ class LocalStoreStmt : public Statement {
 class IfStmt : public Statement {
  public:
   Statement *cond;
+  Identifier true_mask, false_mask;
   std::unique_ptr<Block> true_statements, false_statements;
 
   IfStmt(Statement *cond) : cond(cond) {

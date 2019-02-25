@@ -113,11 +113,13 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) {
-    emit("if ({}) {{", if_stmt->cond->raw_name());
+    // emit("if ({}) {{", if_stmt->cond->raw_name());
+    emit("{{");
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
-      emit("}} else {{");
+      // emit("}} else {{");
+      emit("}}  {{");
       if_stmt->false_statements->accept(this);
     }
     emit("}}");

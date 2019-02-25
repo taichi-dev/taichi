@@ -620,11 +620,11 @@ inline float32x1 max<float32, 1>(float32x1 a, float32x1 b) {
 
 //*****************************************************************************
 inline int32x1 cmp_ne(float32x1 a, float32x1 b) {
-  return int32(a.v != b.v);
+  return int32(a.v != b.v) * -1;
 }
 
 inline int32x1 cmp_ne(int32x1 a, int32x1 b) {
-  return int32(a.v != b.v);
+  return int32(a.v != b.v) * -1;
 }
 
 inline int32x4 cmp_ne(float32x4 a, float32x4 b) {
@@ -650,11 +650,11 @@ inline int32x8 cmp_ne(int32x8 a, int32x8 b) {
 }
 
 inline int32x1 cmp_eq(float32x1 a, float32x1 b) {
-  return int32(a.v == b.v);
+  return int32(a.v == b.v) * -1;
 }
 
 inline int32x1 cmp_eq(int32x1 a, int32x1 b) {
-  return int32(a.v == b.v);
+  return int32(a.v == b.v) * -1;
 }
 
 inline int32x4 cmp_eq(float32x4 a, float32x4 b) {
@@ -680,11 +680,11 @@ inline int32x8 cmp_eq(int32x8 a, int32x8 b) {
 }
 
 inline int32x1 cmp_lt(float32x1 a, float32x1 b) {
-  return a < b;
+  return int(a < b) * -1;
 }
 
 inline int32x1 cmp_lt(int32x1 a, int32x1 b) {
-  return a < b;
+  return int(a < b) * -1;
 }
 
 inline int32x4 cmp_lt(float32x4 a, float32x4 b) {
@@ -708,11 +708,11 @@ inline int32x8 cmp_lt(int32x8 a, int32x8 b) {
 }
 
 inline int32x1 cmp_gt(float32x1 b, float32x1 a) {
-  return a < b;
+  return int(a < b) * -1;
 }
 
 inline int32x1 cmp_gt(int32x1 b, int32x1 a) {
-  return a < b;
+  return int(a < b) * -1;
 }
 
 inline int32x4 cmp_gt(float32x4 b, float32x4 a) {
@@ -807,6 +807,14 @@ inline float32x8 blend(float32x8 a, float32x8 b) {
 template <int imm>
 inline int32x8 blend(int32x8 a, int32x8 b) {
   return _mm256_blend_epi32(a, b, imm);
+}
+
+inline int32x1 lnot(int32x1 a) {
+  return int(-1) ^ a;
+}
+
+inline int32x8 lnot(int32x8 a) {
+  return _mm256_xor_si256(a, _mm256_set1_epi64x(-1LL));
 }
 
 #define DEFINE_BINARY_OP(T, OP, INST) \

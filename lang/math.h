@@ -240,20 +240,6 @@ inline Matrix operator-(const Matrix &A) {
 
 /*
 inline ExprH operator-(const Expr &a) {
-  auto n = Expr::create(NodeType::neg, a);
-  n->data_type = a->data_type;
-  return n;
-}
-
-inline Expr floor(const Expr &a) {
-  auto n = Expr::create(NodeType::floor, a);
-  n->data_type = a->data_type;
-  return n;
-}
-
-inline Expr sqrt(const Expr &a) {
-  auto n = Expr::create(NodeType::sqrt, a);
-  n->data_type = a->data_type;
   return n;
 }
 
@@ -263,45 +249,13 @@ inline Expr inv(const Expr &a) {
   return n;
 }
 
-inline Matrix floor(const Matrix &a) {
-  Matrix ret(a.n, a.m);
-  for (int i = 0; i < (int)a.entries.size(); i++) {
-    ret(i) = floor(a(i));
-  }
-  return ret;
-}
-
-inline Expr max(const Expr &a, const Expr &b) {
-  auto n = Expr::create(NodeType::binary, a, b);
-  n->data_type = a->data_type;
-  n->binary_type = BinaryType::max;
-  return n;
-}
-
-inline Expr min(const Expr &a, const Expr &b) {
-  auto n = Expr::create(NodeType::binary, a, b);
-  n->data_type = a->data_type;
-  n->binary_type = BinaryType::min;
-  return n;
-}
-
-template <typename T>
-inline Expr cast(const Expr &i) {
-  auto n = Expr::create(NodeType::cast, i);
-  if (std::is_same<T, int32>()) {
-    n->data_type = DataType::i32;
-  } else {
-    n->data_type = DataType::f32;
-  }
-  return n;
-}
-
 inline Float32 lerp(Float a, Float x0, Float x1) {
   return (imm(1.0_f) - a) * x0 + a * x1;
 }
+*/
 
 inline Matrix sqr(const Matrix &M) {
-  return M.map([](Expr e) { return e * e; });
+  return M.map([](ExprH e) { return e * e; });
 }
 
 inline Matrix outer_product(Vector a, Vector b) {
@@ -315,7 +269,6 @@ inline Matrix outer_product(Vector a, Vector b) {
   }
   return m;
 }
-*/
 
 inline ExprH norm2(const Matrix &mat) {
   return mat.norm2();
@@ -328,6 +281,10 @@ inline ExprH norm(const Matrix &mat) {
 inline Matrix normalized(const Matrix &mat) {
   auto inv_l = 1.0_f / sqrt(norm2(mat));
   return inv_l * mat;
+}
+
+inline ExprH clamp(ExprH input, ExprH l, ExprH h) {
+  return min(max(input, l), h);
 }
 
 inline Matrix cross(const Matrix &a, const Matrix &b) {

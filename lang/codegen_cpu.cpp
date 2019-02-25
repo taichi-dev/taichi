@@ -238,13 +238,13 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   }
 
   auto ir = kernel.ir;
-  irpass::print(ir);
+  // irpass::print(ir);
   irpass::lower(ir);
-  irpass::print(ir);
+  // irpass::print(ir);
   irpass::typecheck(ir);
-  irpass::print(ir);
+  // irpass::print(ir);
   irpass::loop_vectorize(ir);
-  irpass::print(ir);
+  // irpass::print(ir);
   IRCodeGen::run(this, ir);
 
   {

@@ -399,8 +399,23 @@ auto ray_march = [&] {
     root.fixed(0, n * n).place(color_r).place(color_g).place(color_b);
   });
 
-  auto sdf = [&](Vector p) {
-    return min(p(2) + 4.0f, min(p.norm() - 0.9_f, p(1) + 1.0f));
+  auto sdf = [&](Vector p_) {
+    float alpha = -0.5;
+    Vector p(3);
+    p(0) = cos(alpha) * p_(0) + sin(alpha) * p_(2) + 1.0_f;
+    p(1) = p_(1);
+    p(2) = -sin(alpha) * p_(0) + cos(alpha) * p_(2);
+
+
+    auto dist_sphere = p.norm() - 0.5_f;
+    auto dist_walls = min(p(2) + 6.0f, p(1) + 1.0f);
+    Vector d(3);
+    d(0) = abs(p(0) - 1.0_f) - 0.5_f;
+    d(1) = abs(p(1) - 1.0_f) - 0.3_f;
+    d(2) = abs(p(2)) - 0.3_f;
+    auto dist_cube = norm(d.map([](const ExprH &v) { return max(v, 0.0f); })) +
+                     min(max(max(d(0), d(1)), d(2)), 0.0_f);
+    return min(dist_sphere, min(dist_walls, dist_cube));
   };
 
   float32 eps = 1e-5f;
@@ -441,7 +456,7 @@ auto ray_march = [&] {
     return sin(alpha) * (cos(phi) * u + sin(phi) * v) + cos(alpha) * n;
   };
 
-  auto background = [](Vector dir) { return max(dir(1) + dir(0), 0.0f); };
+  auto background = [](Vector dir) { return 1.0f * max(dir(1) + dir(0), 0.0f); };
 
   float fov = 0.3;
 
@@ -472,7 +487,19 @@ auto ray_march = [&] {
              nor = normal(orig);
              c = normalized(out_dir(nor));
              orig = orig + 0.01f * c;
-             color = 0.6_f * color;
+             /*
+             Vector alb(3);
+             float inv_tex = 3;
+             for (int i = 0; i < 3; i++)
+               alb(i) =
+                   0.7_f +
+                   0.3_f *
+                       cast<float>(
+                           (cast<int>(floor(inv_tex * orig(i))) % 3 + 3) % 3 ==
+                           i);
+             color = color.element_wise_prod(alb);
+             */
+             color = 0.7_f * color;
            })
             .Else([&] {
               color = color * background(c);
@@ -490,7 +517,7 @@ auto ray_march = [&] {
 
   GUI gui("ray march", Vector2i(n));
 
-  auto tone_map = [](real x) { return std::sqrt(x); };
+  auto tone_map = [](real x) { return x; };
   constexpr int N = 1;
   for (int frame = 0;; frame++) {
     for (int i = 0; i < N; i++)
@@ -499,8 +526,8 @@ auto ray_march = [&] {
     for (int i = 0; i < n * n; i++) {
       gui.buffer[i / n][i % n] =
           Vector4(tone_map(scale * color_r.val<float>(i)),
-                   tone_map(scale * color_g.val<float>(i)),
-                   tone_map(scale * color_b.val<float>(i)), 1);
+                  tone_map(scale * color_g.val<float>(i)),
+                  tone_map(scale * color_b.val<float>(i)), 1);
     }
     gui.update();
   }

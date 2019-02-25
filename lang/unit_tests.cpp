@@ -400,9 +400,9 @@ auto ray_march = [&] {
   });
 
   auto sdf = [&](Vector p_) {
-    float alpha = -0.5;
+    float alpha = -0.7;
     Vector p(3);
-    p(0) = cos(alpha) * p_(0) + sin(alpha) * p_(2) + 1.0_f;
+    p(0) = (cos(alpha) * p_(0) + sin(alpha) * p_(2) + 1.0_f) % 2.0_f - 1.0_f;
     p(1) = p_(1);
     p(2) = -sin(alpha) * p_(0) + cos(alpha) * p_(2);
 
@@ -410,9 +410,9 @@ auto ray_march = [&] {
     auto dist_sphere = p.norm() - 0.5_f;
     auto dist_walls = min(p(2) + 6.0f, p(1) + 1.0f);
     Vector d(3);
-    d(0) = abs(p(0) - 1.0_f) - 0.5_f;
-    d(1) = abs(p(1) - 1.0_f) - 0.3_f;
-    d(2) = abs(p(2)) - 0.3_f;
+    d(0) = abs(p(0) - 1.0_f) - 0.3_f;
+    d(1) = abs(p(1) + 0.5_f) - 0.6_f;
+    d(2) = abs(p(2)) - 0.2_f;
     auto dist_cube = norm(d.map([](const ExprH &v) { return max(v, 0.0f); })) +
                      min(max(max(d(0), d(1)), d(2)), 0.0_f);
     return min(dist_sphere, min(dist_walls, dist_cube));
@@ -452,7 +452,8 @@ auto ray_march = [&] {
     });
     v = cross(n, u);
     local(phi) = 2 * pi * Rand<float>();
-    local(alpha) = 0.5_f * pi * Rand<float>();
+    local(r) = Rand<float>();
+    local(alpha) = 0.5_f * pi * (r * r);
     return sin(alpha) * (cos(phi) * u + sin(phi) * v) + cos(alpha) * n;
   };
 
@@ -465,7 +466,7 @@ auto ray_march = [&] {
     Parallelize(8);
     Vectorize(8);
     For(i, 0, n * n, [&] {
-      Vector orig({0.0f, 0.0f, 7.0f}), c(3);
+      Vector orig({0.0f, 0.0f, 12.0f}), c(3);
 
       c(0) = fov * (cast<float>(i / n) / float(n / 2) - 1.0f);
       c(1) = fov * (cast<float>(i % n) / float(n / 2) - 1.0f);

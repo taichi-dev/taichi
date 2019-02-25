@@ -928,11 +928,16 @@ inline vec<int32, dim> div(vec<int32, dim> a, vec<int32, dim> b) {
   return ret;
 };
 
-template <typename T, int dim>
-inline vec<T, dim> mod(vec<T, dim> a, vec<T, dim> b) {
-  static_assert(std::is_integral<T>::value, "");
+template <int dim>
+inline vec<int32, dim> mod(vec<int32, dim> a, vec<int32, dim> b) {
+  //static_assert(std::is_integral<T>::value, "");
   // return _mm256_and_si256(a, _mm256_set1_epi32(511));
   return sub(a, mul(div(a, b), b));
+}
+
+template <int dim>
+inline vec<float32, dim> mod(vec<float32, dim> a, vec<float32, dim> b) {
+  return sub(a, mul(floor(div(a, b)), b));
 };
 
 // *****************************************************************************

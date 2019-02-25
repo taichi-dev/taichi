@@ -84,10 +84,9 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(RandStmt *stmt) {
-    TC_ASSERT(stmt->ret_type.width == 1);
     TC_ASSERT(stmt->ret_type.data_type == DataType::f32);
-    emit("const {} {}(rand<float>());", stmt->ret_data_type_name(),
-         stmt->raw_name());
+    emit("const auto {} = {}::rand();", stmt->raw_name(),
+         stmt->ret_data_type_name());
   }
 
   void visit(TmpValStmt *stmt) {

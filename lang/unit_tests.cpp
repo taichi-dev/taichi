@@ -337,13 +337,15 @@ auto ray_march = [&] {
     root.fixed(0, n * n).place(color_r).place(color_g).place(color_b);
   });
 
-  auto sdf = [&](Vector p) { return min(p.norm() - 0.9_f, p(1) + 1.0f); };
+  auto sdf = [&](Vector p) {
+    return min(p(2) + 4.0f, min(p.norm() - 0.9_f, p(1) + 1.0f));
+  };
 
-  float32 eps = 1e-4f;
+  float32 eps = 1e-5f;
   float32 dist_limit = 1e4;
-  int limit = 200;
+  int limit = 500;
 
-  auto ray_march = [&](Vector p, Vector dir, ExprH &hit) {
+  auto ray_march = [&](Vector p, Vector dir) {
     local(j) = 0;
     local(dist) = 0.0f;
 
@@ -355,7 +357,7 @@ auto ray_march = [&] {
   };
 
   auto normal = [&](Vector p) {
-    float d = 1e-4f;
+    float d = 1e-3f;
     Vector n(3);
     for (int i = 0; i < 3; i++) {
       Vector inc = p, dec = p;
@@ -383,7 +385,7 @@ auto ray_march = [&] {
 
   auto func = kernel([&]() {
     declare(i);
-    // Vectorize(8);
+    Vectorize(8);
     For(i, 0, n * n, [&] {
       Vector orig({0.0f, 0.0f, 7.0f}), c(3);
 
@@ -394,13 +396,12 @@ auto ray_march = [&] {
 
       Vector color(3);
       color = Vector({1.0f, 1.0f, 1.0f});
-      int depth_limit = 3;
+      int depth_limit = 4;
       local(depth) = 0;
 
       While(depth < depth_limit, [&] {
         depth = depth + 1;
-        local(hit) = 0;
-        local(_dist) = ray_march(orig, c, hit);
+        local(_dist) = ray_march(orig, c);
         If(_dist < dist_limit,
            [&] {
              orig = orig + _dist * c;

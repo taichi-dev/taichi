@@ -41,7 +41,7 @@ using uint16 = unsigned short;
 #define TC_ASSERT(x) \
   if (!x)            \
     std::cout << "Ln" << __LINE__ << ":" << #x << std::endl;
-
+namespace taichi {
 TC_FORCE_INLINE uint32 rand_int() noexcept {
   static unsigned int x = 123456789, y = 362436069, z = 521288629, w = 88675123;
   unsigned int t = x ^ (x << 11);
@@ -72,6 +72,10 @@ template <>
 TC_FORCE_INLINE int rand<int>() noexcept {
   return rand_int();
 }
+
+template <typename T>
+TC_FORCE_INLINE T rand() noexcept;
+}  // namespace taichi
 
 #endif
 
@@ -232,6 +236,16 @@ struct vec {
       int i) const {
     return v;
   }
+
+#if !defined(TC_INCLUDED)
+  static vec rand() {
+    vec ret;
+    for (int i = 0; i < dim; i++) {
+      ret[i] = taichi::rand<T>();
+    }
+    return ret;
+  }
+#endif
 
   static vec load(T *addr[dim]) {
     vec ret;
@@ -535,6 +549,12 @@ inline int32x8 set1<int32, 8>(int32 v) {
 //*****************************************************************************
 inline float32x1 abs(float32x1 v) {
   return std::abs(v);
+}
+
+// https://github.com/MonoS/RGVS/blob/master/Repair.cpp
+inline float32x8 abs(float32x8 v) {
+  static __m256 Mask = _mm256_castsi256_ps(_mm256_set1_epi32(~0x80000000));
+  return _mm256_and_ps(Mask, v);
 }
 
 template <int dim>

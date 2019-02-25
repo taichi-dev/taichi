@@ -404,8 +404,8 @@ auto ray_march = [&] {
   };
 
   float32 eps = 1e-5f;
-  float32 dist_limit = 1e4;
-  int limit = 500;
+  float32 dist_limit = 1e2;
+  int limit = 200;
 
   auto ray_march = [&](Vector p, Vector dir) {
     local(j) = 0;
@@ -447,6 +447,7 @@ auto ray_march = [&] {
 
   auto func = kernel([&]() {
     declare(i);
+    Parallelize(8);
     Vectorize(8);
     For(i, 0, n * n, [&] {
       Vector orig({0.0f, 0.0f, 7.0f}), c(3);
@@ -471,7 +472,7 @@ auto ray_march = [&] {
              nor = normal(orig);
              c = normalized(out_dir(nor));
              orig = orig + 0.01f * c;
-             color = 0.5_f * color;
+             color = 0.6_f * color;
            })
             .Else([&] {
               color = color * background(c);
@@ -488,15 +489,18 @@ auto ray_march = [&] {
   /// TC_P(measure_cpe(func, 1));
 
   GUI gui("ray march", Vector2i(n));
+
+  auto tone_map = [](real x) { return std::sqrt(x); };
   constexpr int N = 1;
   for (int frame = 0;; frame++) {
     for (int i = 0; i < N; i++)
       func();
+    real scale = 1.0_f / ((frame + 1) * N);
     for (int i = 0; i < n * n; i++) {
       gui.buffer[i / n][i % n] =
-          1.0_f / ((frame + 1) * N) *
-          Vector4(color_r.val<float>(i), color_g.val<float>(i),
-                  color_b.val<float>(i), 1);
+          Vector4(tone_map(scale * color_r.val<float>(i)),
+                   tone_map(scale * color_g.val<float>(i)),
+                   tone_map(scale * color_b.val<float>(i)), 1);
     }
     gui.update();
   }

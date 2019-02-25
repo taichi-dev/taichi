@@ -78,6 +78,7 @@ struct CompileConfig {
                           bool verbose = false) {
     auto cmd = fmt::format(
         "{} {} -std=c++14 -shared -fPIC {} -march=native -I {}/headers "
+        "-fopenmp "
         "-Wall "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} -lstdc++",
         compiler_name(), input, gcc_opt_flag(), get_project_fn(), output);
@@ -229,7 +230,17 @@ inline std::string snode_type_name(SNodeType t) {
   return type_names[t];
 }
 
-enum class UnaryType : int { neg, sqrt, floor, cast, abs, sin, cos, lnot, undefined };
+enum class UnaryType : int {
+  neg,
+  sqrt,
+  floor,
+  cast,
+  abs,
+  sin,
+  cos,
+  lnot,
+  undefined
+};
 
 inline std::string unary_type_name(UnaryType type) {
   static std::map<UnaryType, std::string> type_names;

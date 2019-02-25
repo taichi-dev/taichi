@@ -157,6 +157,11 @@ class IRCodeGen : public IRVisitor {
 
   void visit(RangeForStmt *for_stmt) {
     auto loop_var = for_stmt->loop_var;
+    if (for_stmt->parallelize) {
+      //emit("#pragma omp parallel for num_threads({})", for_stmt->parallelize);
+      emit("omp_set_num_threads({});", for_stmt->parallelize);
+      emit("#pragma omp parallel for");
+    }
     emit("for ({} {} = {}; {} < {}; {} += {}) {{",
          data_type_name(for_stmt->parent->lookup_var(loop_var).data_type),
          loop_var.raw_name(), for_stmt->begin->raw_name(), loop_var.raw_name(),

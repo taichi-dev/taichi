@@ -23,6 +23,7 @@
 #include <iostream>
 #include <array>
 #include <vector>
+#include <omp.h>
 
 using float32 = float;
 using float64 = double;

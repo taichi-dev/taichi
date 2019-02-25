@@ -54,6 +54,7 @@ ExpressionHandle::ExpressionHandle(Identifier id) {
 FrontendForStmt::FrontendForStmt(ExprH loop_var, ExprH begin, ExprH end)
     : begin(begin), end(end) {
   vectorize = dec.vectorize;
+  parallelize = dec.parallelize;
   dec.reset();
   if (vectorize == -1)
     vectorize = 1;

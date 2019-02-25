@@ -80,6 +80,7 @@ struct VectorType {
 class DecoratorRecorder {
  public:
   int vectorize;
+  int parallelize;
 
   DecoratorRecorder() {
     reset();
@@ -87,6 +88,7 @@ class DecoratorRecorder {
 
   void reset() {
     vectorize = -1;
+    parallelize = 0;
   }
 };
 
@@ -1040,6 +1042,7 @@ class FrontendForStmt : public Statement {
   std::unique_ptr<Block> body;
   Ident loop_var_id;
   int vectorize;
+  int parallelize;
 
   FrontendForStmt(ExprH loop_var, ExprH begin, ExprH end);
 
@@ -1053,17 +1056,20 @@ class RangeForStmt : public Statement {
   Statement *begin, *end;
   std::unique_ptr<Block> body;
   int vectorize;
+  int parallelize;
 
   RangeForStmt(Ident loop_var,
                Statement *begin,
                Statement *end,
                std::unique_ptr<Block> &&body,
-               int vectorize)
+               int vectorize,
+               int parallelize)
       : loop_var(loop_var),
         begin(begin),
         end(end),
         body(std::move(body)),
-        vectorize(vectorize) {
+        vectorize(vectorize),
+        parallelize(parallelize) {
     add_operand(this->begin);
     add_operand(this->end);
   }
@@ -1227,6 +1233,10 @@ extern DecoratorRecorder dec;
 
 inline void Vectorize(int v) {
   dec.vectorize = v;
+}
+
+inline void Parallelize(int v) {
+  dec.parallelize = v;
 }
 
 class For {

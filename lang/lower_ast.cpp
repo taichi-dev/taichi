@@ -142,7 +142,7 @@ class LowerAST : public IRVisitor {
 
     auto &&new_for = std::make_unique<RangeForStmt>(
         stmt->loop_var_id, begin->stmt, end->stmt, std::move(stmt->body),
-        stmt->vectorize);
+        stmt->vectorize, stmt->parallelize);
     new_for->body->inner_loop_variable = &stmt->loop_var_id;
     flattened.push_back(std::move(new_for));
     stmt->parent->replace_with(stmt, flattened);

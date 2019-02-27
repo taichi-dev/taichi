@@ -406,7 +406,6 @@ auto ray_march = [&] {
     p(1) = p_(1);
     p(2) = -sin(alpha) * p_(0) + cos(alpha) * p_(2);
 
-
     auto dist_sphere = p.norm() - 0.5_f;
     auto dist_walls = min(p(2) + 6.0f, p(1) + 1.0f);
     Vector d(3);
@@ -457,7 +456,9 @@ auto ray_march = [&] {
     return sin(alpha) * (cos(phi) * u + sin(phi) * v) + cos(alpha) * n;
   };
 
-  auto background = [](Vector dir) { return 1.0f * max(dir(1) + dir(0), 0.0f); };
+  auto background = [](Vector dir) {
+    return 1.0f * max(dir(1) + dir(0), 0.0f);
+  };
 
   float fov = 0.3;
 
@@ -481,17 +482,19 @@ auto ray_march = [&] {
       While(depth < depth_limit, [&] {
         depth = depth + 1;
         local(_dist) = ray_march(orig, c);
-        If(_dist < dist_limit, [&] {
-           orig = orig + _dist * c;
-           Vector nor;
-           nor = normal(orig);
-           c = normalized(out_dir(nor));
-           orig = orig + 0.01f * c;
-           color = 0.7_f * color;
-        }).Else([&] {
-           color = color * background(c);
-           depth = depth_limit;
-        });
+        If(_dist < dist_limit,
+           [&] {
+             orig = orig + _dist * c;
+             Vector nor;
+             nor = normal(orig);
+             c = normalized(out_dir(nor));
+             orig = orig + 0.01f * c;
+             color = 0.7_f * color;
+           })
+            .Else([&] {
+              color = color * background(c);
+              depth = depth_limit;
+            });
       });
 
       color_r[i] = load(color_r[i]) + color(0);
@@ -520,5 +523,34 @@ auto ray_march = [&] {
   }
 };
 TC_REGISTER_TASK(ray_march);
+
+TC_TEST("slp") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 128;
+  Program prog(Arch::x86_64);
+
+  declare(a_global);
+  auto a = global_new(a_global, DataType::i32);
+  auto b = global_new(a_global, DataType::i32);
+
+  layout([&]() { root.fixed(0, n).place(a, b); });
+
+  auto func = kernel([&]() {
+    declare(i);
+
+    // Vectorize(4);
+    For(i, 0, n, [&] {
+      // SLP(2);
+      a[i] = a[i] + 1;
+      b[i] = b[i] + 2;
+    });
+  });
+
+  func();
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK(a.val<int>(i) == i);
+  }
+};
 
 TLANG_NAMESPACE_END

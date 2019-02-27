@@ -139,6 +139,7 @@ class IRCodeGen : public IRVisitor {
                  return fmt::format("{}", (float32)t);
                else if (data_type == DataType::i32)
                  return fmt::format("{}", (int32)t);
+               return std::string("undefined");
              },
              "{"));
   }

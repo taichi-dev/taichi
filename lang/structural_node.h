@@ -4,6 +4,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class ExpressionHandle;
+
 TC_FORCE_INLINE int32 constexpr operator"" _bits(unsigned long long a) {
   return 1 << a;
 }
@@ -138,7 +140,7 @@ class SNode {
   }
 
   template <typename... Args>
-  SNode &place(Expr &expr, Args &&... args) {
+  SNode &place(ExpressionHandle &expr, Args &&... args) {
     return place(expr).place(std::forward<Args>(args)...);
   }
 

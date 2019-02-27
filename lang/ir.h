@@ -145,6 +145,8 @@ inline IRBuilder &current_ast_builder() {
 class ExpressionHandle;
 using ExprH = ExpressionHandle;
 
+inline ExprH load_if_ptr(const ExprH &ptr);
+
 class Identifier {
  public:
   static int id_counter;
@@ -579,7 +581,7 @@ class UnaryOpExpression : public Expression {
   DataType cast_type;
 
   UnaryOpExpression(UnaryType type, ExpressionHandle rhs)
-      : type(type), rhs(rhs) {
+      : type(type), rhs(load_if_ptr(rhs)) {
     cast_type = DataType::unknown;
   }
 
@@ -664,8 +666,8 @@ class BinaryOpExpression : public Expression {
                      const ExpressionHandle &lhs,
                      const ExpressionHandle &rhs)
       : type(type) {
-    this->lhs.set(lhs);
-    this->rhs.set(rhs);
+    this->lhs.set(load_if_ptr(lhs));
+    this->rhs.set(load_if_ptr(rhs));
   }
 
   std::string serialize() override {
@@ -1093,7 +1095,7 @@ class FrontendWhileStmt : public Statement {
   ExprH cond;
   std::unique_ptr<Block> body;
 
-  FrontendWhileStmt(ExprH cond) : cond(cond) {
+  FrontendWhileStmt(ExprH cond) : cond(load_if_ptr(cond)) {
   }
 
   DEFINE_ACCEPT
@@ -1227,6 +1229,14 @@ T &ExprH::val(Indices... indices) {
 inline ExprH load(ExprH ptr) {
   TC_ASSERT(ptr.is<GlobalPtrExpression>());
   return ExpressionHandle(std::make_shared<GlobalLoadExpression>(ptr));
+}
+
+inline ExprH load_if_ptr(const ExprH &ptr) {
+  if (ptr.is<GlobalPtrExpression>()) {
+    return load(ptr);
+  } else {
+    return ptr;
+  }
 }
 
 extern DecoratorRecorder dec;

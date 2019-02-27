@@ -159,7 +159,8 @@ class IRCodeGen : public IRVisitor {
   void visit(RangeForStmt *for_stmt) {
     auto loop_var = for_stmt->loop_var;
     if (for_stmt->parallelize) {
-      //emit("#pragma omp parallel for num_threads({})", for_stmt->parallelize);
+      // emit("#pragma omp parallel for num_threads({})",
+      // for_stmt->parallelize);
       emit("omp_set_num_threads({});", for_stmt->parallelize);
       emit("#pragma omp parallel for");
     }
@@ -239,13 +240,21 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   }
 
   auto ir = kernel.ir;
-  // irpass::print(ir);
+  if (prog->config.print_ir) {
+    irpass::print(ir);
+  }
   irpass::lower(ir);
-  // irpass::print(ir);
+  if (prog->config.print_ir) {
+    irpass::print(ir);
+  }
   irpass::typecheck(ir);
-  // irpass::print(ir);
+  if (prog->config.print_ir) {
+    irpass::print(ir);
+  }
   irpass::loop_vectorize(ir);
-  // irpass::print(ir);
+  if (prog->config.print_ir) {
+    irpass::print(ir);
+  }
   IRCodeGen::run(this, ir);
 
   {

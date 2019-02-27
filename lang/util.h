@@ -43,12 +43,14 @@ struct CompileConfig {
   int gcc_version;
   bool internal_optimization;
   int external_optimization_level;
+  int print_ir;
 
   CompileConfig() {
     arch = Arch::x86_64;
     simd_width = default_simd_width(arch);
     internal_optimization = true;
     external_optimization_level = 3;
+    print_ir = false;
 #if defined(TC_PLATFORM_OSX)
     gcc_version = -1;
 #else

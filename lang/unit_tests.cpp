@@ -528,10 +528,12 @@ TC_TEST("slp") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
 
   declare(a_global);
+  declare(b_global);
   auto a = global_new(a_global, DataType::i32);
-  auto b = global_new(a_global, DataType::i32);
+  auto b = global_new(b_global, DataType::i32);
 
   layout([&]() { root.fixed(0, n).place(a, b); });
 
@@ -541,15 +543,18 @@ TC_TEST("slp") {
     // Vectorize(4);
     For(i, 0, n, [&] {
       // SLP(2);
-      a[i] = a[i] + 1;
-      b[i] = b[i] + 2;
+      // a[i] = a[i] + 1;
+      // b[i] = b[i] + 2;
+      a[i] = 1 + i;
+      b[i] = 2 + i;
     });
   });
 
   func();
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<int>(i) == i);
+    TC_CHECK(a.val<int>(i) == 1 + i);
+    TC_CHECK(b.val<int>(i) == 2 + i);
   }
 };
 

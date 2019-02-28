@@ -49,8 +49,13 @@ class IRPrinter : public IRVisitor {
     print("[tmp] {} = {}", stmt->name(), stmt->val->name());
   }
 
-  void visit(AllocaStmt *alloca) {
+  void visit(FrontendAllocaStmt *alloca) {
     print("{}alloca {}", alloca->type_hint(), alloca->ident.name());
+  }
+
+
+  void visit(AllocaStmt *alloca) {
+    print("{}alloca", alloca->type_hint());
   }
 
   void visit(RandStmt *stmt) {
@@ -110,7 +115,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) {
-    print("while control {}, {}", stmt->mask.name(), stmt->cond->name());
+    print("while control {}, {}", stmt->mask->name(), stmt->cond->name());
   }
 
   void visit(WhileStmt *stmt) {
@@ -133,7 +138,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) {
-    print("for {} in range({}, {}, step {}) {{", for_stmt->loop_var.name(),
+    print("for {} in range({}, {}, step {}) {{", for_stmt->loop_var->name(),
           for_stmt->begin->name(), for_stmt->end->name(), for_stmt->vectorize);
     for_stmt->body->accept(this);
     print("}}");
@@ -161,11 +166,11 @@ class IRPrinter : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) {
     print("{}{} = load {}", stmt->type_hint(), stmt->name(),
-          stmt->ident.name());
+          stmt->ident->name());
   }
 
   void visit(LocalStoreStmt *stmt) {
-    print("[local store] {} = {}", stmt->ident.name(), stmt->stmt->name());
+    print("[local store] {} = {}", stmt->ident->name(), stmt->stmt->name());
   }
 
   void visit(GlobalLoadStmt *stmt) {

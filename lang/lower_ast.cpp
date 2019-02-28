@@ -3,7 +3,8 @@
 TLANG_NAMESPACE_BEGIN
 
 // Lower Expr tree to a bunch of binary/unary(binary/unary) statements
-// Goal: eliminate Expression, and mutable local variables. Make AST SSA.
+// Goal: eliminate Expression, Identifiers, and mutable local variables. Make
+// AST SSA.
 class LowerAST : public IRVisitor {
  public:
   LowerAST() {
@@ -18,14 +19,23 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(Block *stmt_list) {
+    auto backup_block = current_block;
+    current_block = stmt_list;
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
     }
+    current_block = backup_block;
   }
 
-  void visit(AllocaStmt *alloca) {
-    // print("{} <- alloca {}", alloca->lhs.name(),
-    // data_type_name(alloca->type));
+  void visit(FrontendAllocaStmt *stmt) {
+    auto block = stmt->parent;
+    auto ident = stmt->ident;
+    TC_ASSERT(block->local_var_alloca.find(ident) ==
+              block->local_var_alloca.end());
+    auto lowered = std::make_unique<AllocaStmt>(stmt->ret_type.data_type);
+    block->local_var_alloca.insert(std::make_pair(ident, lowered.get()));
+    stmt->parent->replace_with(stmt, std::move(lowered));
+    throw IRModifiedException();
   }
 
   void visit(FrontendIfStmt *stmt) override {
@@ -34,15 +44,18 @@ class LowerAST : public IRVisitor {
 
     auto new_if = std::make_unique<IfStmt>(stmt->condition->stmt);
 
-    new_if->true_mask = Identifier();
-    new_if->false_mask = Identifier();
+    auto true_mask = std::make_unique<AllocaStmt>(DataType::i32);
+    auto false_mask = std::make_unique<AllocaStmt>(DataType::i32);
+    new_if->true_mask = true_mask.get();
+    new_if->false_mask = false_mask.get();
+
+    flattened.push_back(std::move(true_mask));
+    flattened.push_back(std::move(false_mask));
 
     auto insert = [&](std::unique_ptr<Stmt> &&stmt) {
       flattened.push_back(std::move(stmt));
     };
 
-    insert(std::make_unique<AllocaStmt>(new_if->true_mask, DataType::i32));
-    insert(std::make_unique<AllocaStmt>(new_if->false_mask, DataType::i32));
     insert(std::make_unique<LocalStoreStmt>(new_if->true_mask,
                                             stmt->condition->stmt));
     auto &&lnot_stmt =
@@ -53,11 +66,11 @@ class LowerAST : public IRVisitor {
 
     if (stmt->true_statements) {
       new_if->true_statements = std::move(stmt->true_statements);
-      new_if->true_statements->mask_var = &new_if->true_mask;
+      new_if->true_statements->mask_var = new_if->true_mask;
     }
     if (stmt->false_statements) {
       new_if->false_statements = std::move(stmt->false_statements);
-      new_if->false_statements->mask_var = &new_if->false_mask;
+      new_if->false_statements->mask_var = new_if->false_mask;
     }
 
     flattened.push_back(std::move(new_if));
@@ -105,7 +118,8 @@ class LowerAST : public IRVisitor {
     auto cond_stmt = flattened.back().get();
 
     auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
-    new_while->mask = Identifier();
+    auto mask = std::make_unique<AllocaStmt>(DataType::i32);
+    new_while->mask = mask.get();
     auto &stmts = new_while->body;
     for (int i = 0; i < (int)flattened.size(); i++) {
       stmts->insert(std::move(flattened[i]), i);
@@ -114,14 +128,14 @@ class LowerAST : public IRVisitor {
     stmts->insert(
         std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),
         flattened.size());
-    stmt->insert_before(
-        std::make_unique<AllocaStmt>(new_while->mask, DataType::i32));
+    stmt->insert_before(std::make_unique<AllocaStmt>(DataType::i32));
     auto &&const_stmt = std::make_unique<ConstStmt>((int)0xFFFFFFFF);
     auto const_stmt_ptr = const_stmt.get();
     stmt->insert_before(std::move(const_stmt));
     stmt->insert_before(
         std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
-    new_while->body->mask_var = &new_while->mask;
+    new_while->body->mask_var = new_while->mask;
+    stmt->insert_before(std::move(mask));
     stmt->parent->replace_with(stmt, std::move(new_while));
     // insert an alloca for the mask
     throw IRModifiedException();
@@ -137,13 +151,18 @@ class LowerAST : public IRVisitor {
 
     VecStatement flattened;
 
+    // insert an alloca here
+    flattened.push_back(std::make_unique<AllocaStmt>(DataType::i32));
+    stmt->parent->local_var_alloca[stmt->loop_var_id] = flattened.back().get();
+
     begin->flatten(flattened);
     end->flatten(flattened);
 
     auto &&new_for = std::make_unique<RangeForStmt>(
-        stmt->loop_var_id, begin->stmt, end->stmt, std::move(stmt->body),
-        stmt->vectorize, stmt->parallelize);
-    new_for->body->inner_loop_variable = &stmt->loop_var_id;
+        stmt->parent->lookup_var(stmt->loop_var_id), begin->stmt, end->stmt,
+        std::move(stmt->body), stmt->vectorize, stmt->parallelize);
+    new_for->body->inner_loop_variable =
+        stmt->parent->lookup_var(stmt->loop_var_id);
     flattened.push_back(std::move(new_for));
     stmt->parent->replace_with(stmt, flattened);
     throw IRModifiedException();
@@ -161,7 +180,8 @@ class LowerAST : public IRVisitor {
     if (assign->lhs.is<IdExpression>()) {  // local variable
       // emit local store stmt
       auto local_store = std::make_unique<LocalStoreStmt>(
-          assign->lhs.cast<IdExpression>()->id, expr->stmt);
+          assign->parent->lookup_var(assign->lhs.cast<IdExpression>()->id),
+          expr->stmt);
       flattened.push_back(std::move(local_store));
     } else {  // global variable
       TC_ASSERT(assign->lhs.is<GlobalPtrExpression>());

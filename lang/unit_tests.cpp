@@ -8,6 +8,7 @@ TLANG_NAMESPACE_BEGIN
 TC_TEST("compiler_linalg") {
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
 
   declare(a_global);
   auto a = global_new(a_global, DataType::i32);

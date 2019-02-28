@@ -17,12 +17,6 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(AllocaStmt *stmt) {
-    auto block = stmt->parent;
-    auto ident = stmt->ident;
-    TC_ASSERT(block->local_variables.find(ident) ==
-              block->local_variables.end());
-    block->local_variables.insert(std::make_pair(ident, stmt->ret_type));
-    block->local_var_alloca.insert(std::make_pair(ident, stmt));
   }
 
   void visit(TmpValStmt *stmt) {
@@ -45,18 +39,19 @@ class TypeCheck : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) {
     auto block = stmt->parent;
-    auto lookup = block->lookup_var(stmt->ident);
+    auto lookup = stmt->ident->ret_type;
     stmt->ret_type = lookup;
   }
 
   void visit(LocalStoreStmt *stmt) {
-    auto block = stmt->parent;
-    auto lookup = block->local_var_alloca.find(stmt->ident);
-    if (lookup != block->local_var_alloca.end()) {
-      lookup->second->ret_type = stmt->stmt->ret_type;
-      block->local_variables[stmt->ident] = stmt->stmt->ret_type;
+    // auto block = stmt->parent;
+    // auto lookup = block->local_var_alloca.find(stmt->ident);
+    if (stmt->ident->ret_type.data_type == DataType::unknown) {
+      stmt->ident->ret_type = stmt->stmt->ret_type;
     }
+    TC_ASSERT(stmt->ident->ret_type == stmt->stmt->ret_type);
   }
+
 
   void visit(GlobalLoadStmt *stmt) {
     stmt->ret_type = stmt->ptr->ret_type;
@@ -79,12 +74,16 @@ class TypeCheck : public IRVisitor {
 
   void visit(RangeForStmt *stmt) {
     auto block = stmt->parent;
+    /*
     TC_ASSERT(block->local_variables.find(stmt->loop_var) ==
               block->local_variables.end());
+              */
     mark_as_if_const(stmt->begin, VectorType(1, DataType::i32));
     mark_as_if_const(stmt->end, VectorType(1, DataType::i32));
+    /*
     block->local_variables.insert(
         std::make_pair(stmt->loop_var, VectorType(1, DataType::i32)));
+    */
     stmt->body->accept(this);
   }
 
@@ -100,6 +99,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) {
+    TC_P(stmt->id);
     TC_ASSERT(stmt->lhs->ret_type.data_type != DataType::unknown ||
               stmt->rhs->ret_type.data_type != DataType::unknown);
     if (stmt->lhs->ret_type.data_type == DataType::unknown &&

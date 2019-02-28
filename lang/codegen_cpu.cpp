@@ -80,7 +80,7 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(AllocaStmt *alloca) {
-    emit("{} {}(0);", alloca->ret_data_type_name(), alloca->ident.raw_name());
+    emit("{} {}(0);", alloca->ret_data_type_name(), alloca->raw_name());
   }
 
   void visit(RandStmt *stmt) {
@@ -145,9 +145,9 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) {
-    emit("{} = land({}, {});", stmt->mask.raw_name(), stmt->mask.raw_name(),
+    emit("{} = land({}, {});", stmt->mask->raw_name(), stmt->mask->raw_name(),
          stmt->cond->raw_name());
-    emit("if (!any({})) break;", stmt->mask.raw_name());
+    emit("if (!any({})) break;", stmt->mask->raw_name());
   }
 
   void visit(WhileStmt *stmt) {
@@ -164,32 +164,33 @@ class IRCodeGen : public IRVisitor {
       emit("omp_set_num_threads({});", for_stmt->parallelize);
       emit("#pragma omp parallel for");
     }
-    emit("for ({} {} = {}; {} < {}; {} += {}) {{",
-         data_type_name(for_stmt->parent->lookup_var(loop_var).data_type),
-         loop_var.raw_name(), for_stmt->begin->raw_name(), loop_var.raw_name(),
-         for_stmt->end->raw_name(), loop_var.raw_name(), for_stmt->vectorize);
+    emit("for ({} {} = {}; {} < {}; {} = {} +  {}({})) {{",
+         loop_var->ret_data_type_name(), loop_var->raw_name(),
+         for_stmt->begin->raw_name(), loop_var->raw_name(),
+         for_stmt->end->raw_name(), loop_var->raw_name(), loop_var->raw_name(),
+         loop_var->ret_data_type_name(), for_stmt->vectorize);
     for_stmt->body->accept(this);
     emit("}}");
   }
 
   void visit(LocalLoadStmt *stmt) {
-    auto var_width = stmt->parent->lookup_var(stmt->ident).width;
+    auto var_width = stmt->ident->ret_type.width;
     if (var_width == 1) {
       emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
-           stmt->ident.raw_name());
+           stmt->ident->raw_name());
     } else {
       emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
-           stmt->ident.raw_name());
+           stmt->ident->raw_name());
     }
   }
 
   void visit(LocalStoreStmt *stmt) {
     auto mask = stmt->parent->mask();
     if (mask) {
-      emit("{} = select({}, {}, {});", stmt->ident.raw_name(), mask->raw_name(),
-           stmt->stmt->raw_name(), stmt->ident.raw_name());
+      emit("{} = select({}, {}, {});", stmt->ident->raw_name(),
+           mask->raw_name(), stmt->stmt->raw_name(), stmt->ident->raw_name());
     } else {
-      emit("{} = {};", stmt->ident.raw_name(), stmt->stmt->raw_name());
+      emit("{} = {};", stmt->ident->raw_name(), stmt->stmt->raw_name());
     }
   }
 

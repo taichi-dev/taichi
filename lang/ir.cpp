@@ -150,4 +150,7 @@ void Stmt::insert_after(std::unique_ptr<Stmt> &&new_stmt) {
   new_stmt->parent = parent;
   stmts.insert(stmts.begin() + loc + 1, std::move(new_stmt));
 }
+
+Block *current_block = nullptr;
+
 TLANG_NAMESPACE_END

@@ -15,12 +15,17 @@ class Statement;
 using Stmt = Statement;
 
 // statements
-class ConstStmt; class IfStmt; // frontend stmts
+class ConstStmt;
+class IfStmt;  // frontend stmts
+
 class FrontendIfStmt;
 class FrontendForStmt;
 class FrontendPrintStmt;
-class RangeForStmt;
 class FrontendWhileStmt;
+class FrontendAllocaStmt;
+class FrontendTmpValStmt;
+
+class RangeForStmt;
 class WhileStmt;
 class WhileControlStmt;
 class AssignStmt;
@@ -33,7 +38,6 @@ class GlobalPtrStmt;
 class GlobalLoadStmt;
 class GlobalStoreStmt;
 class TmpValStmt;
-class FrontendTmpValStmt;
 class PrintStmt;
 class RandStmt;
 class WhileControlStmt;
@@ -209,6 +213,7 @@ class IRVisitor {
 
   DEFINE_VISIT(Block);
   DEFINE_VISIT(AssignStmt);
+  DEFINE_VISIT(FrontendAllocaStmt);
   DEFINE_VISIT(AllocaStmt);
   DEFINE_VISIT(BinaryOpStmt);
   DEFINE_VISIT(UnaryOpStmt);
@@ -523,9 +528,9 @@ inline ExpressionGroup operator,(const ExpressionGroup &a, const ExprH &b) {
 // updates mask, break if no active
 class WhileControlStmt : public Statement {
  public:
-  Ident mask;
+  Stmt *mask;
   Stmt *cond;
-  WhileControlStmt(Ident mask, Stmt *cond) : mask(mask), cond(cond) {
+  WhileControlStmt(Stmt* mask, Stmt *cond) : mask(mask), cond(cond) {
   }
   DEFINE_ACCEPT;
 };
@@ -682,7 +687,8 @@ class BinaryOpExpression : public Expression {
   }
 };
 
-class GlobalPtrStmt : public Statement { public:
+class GlobalPtrStmt : public Statement {
+ public:
   SNode *snode;
   std::vector<Stmt *> indices;
 
@@ -805,10 +811,9 @@ class Block : public IRNode {
  public:
   Block *parent;
   std::vector<std::unique_ptr<Statement>> statements;
-  std::map<Ident, VectorType> local_variables;
   std::map<Ident, Stmt *> local_var_alloca;
-  Ident *mask_var;
-  Ident *inner_loop_variable;
+  Stmt *mask_var;
+  Stmt *inner_loop_variable;
 
   Block() {
     inner_loop_variable = nullptr;
@@ -848,20 +853,20 @@ class Block : public IRNode {
     }
   }
 
-  VectorType lookup_var(Ident ident) const {
-    auto ptr = local_variables.find(ident);
-    if (ptr != local_variables.end()) {
+  Stmt* lookup_var(Ident ident) const {
+    auto ptr = local_var_alloca.find(ident);
+    if (ptr != local_var_alloca.end()) {
       return ptr->second;
     } else {
       if (parent) {
         return parent->lookup_var(ident);
       } else {
-        return VectorType(1, DataType::unknown);
+        return nullptr;
       }
     }
   }
 
-  Ident *mask() {
+  Stmt *mask() {
     if (mask_var)
       return mask_var;
     else if (parent == nullptr) {
@@ -883,11 +888,20 @@ class AssignStmt : public Statement {
   DEFINE_ACCEPT
 };
 
-class AllocaStmt : public Statement {
+class FrontendAllocaStmt : public Statement {
  public:
   Ident ident;
 
-  AllocaStmt(Ident lhs, DataType type) : ident(lhs) {
+  FrontendAllocaStmt(Ident lhs, DataType type) : ident(lhs) {
+    ret_type = VectorType(1, type);
+  }
+
+  DEFINE_ACCEPT
+};
+
+class AllocaStmt : public Statement {
+ public:
+  AllocaStmt(DataType type) {
     ret_type = VectorType(1, type);
   }
 
@@ -919,9 +933,9 @@ class GlobalStoreStmt : public Statement {
 
 class LocalLoadStmt : public Statement {
  public:
-  Ident ident;
+  Stmt *ident;
 
-  LocalLoadStmt(Ident ident) : ident(ident) {
+  LocalLoadStmt(Stmt *ident) : ident(ident) {
   }
 
   DEFINE_ACCEPT;
@@ -929,10 +943,10 @@ class LocalLoadStmt : public Statement {
 
 class LocalStoreStmt : public Statement {
  public:
-  Ident ident;
-  Statement *stmt;
+  Stmt *ident;
+  Stmt *stmt;
 
-  LocalStoreStmt(Ident ident, Statement *stmt) : ident(ident), stmt(stmt) {
+  LocalStoreStmt(Stmt *ident, Statement *stmt) : ident(ident), stmt(stmt) {
     add_operand(this->stmt);
   }
 
@@ -941,8 +955,8 @@ class LocalStoreStmt : public Statement {
 
 class IfStmt : public Statement {
  public:
-  Statement *cond;
-  Identifier true_mask, false_mask;
+  Stmt *cond;
+  Stmt *true_mask, *false_mask;
   std::unique_ptr<Block> true_statements, false_statements;
 
   IfStmt(Statement *cond) : cond(cond) {
@@ -1051,13 +1065,13 @@ class FrontendForStmt : public Statement {
 // General range for
 class RangeForStmt : public Statement {
  public:
-  Ident loop_var;
-  Statement *begin, *end;
+  Stmt *loop_var;
+  Stmt *begin, *end;
   std::unique_ptr<Block> body;
   int vectorize;
   int parallelize;
 
-  RangeForStmt(Ident loop_var,
+  RangeForStmt(Stmt *loop_var,
                Statement *begin,
                Statement *end,
                std::unique_ptr<Block> &&body,
@@ -1078,7 +1092,7 @@ class RangeForStmt : public Statement {
 
 class WhileStmt : public Statement {
  public:
-  Ident mask;
+  Stmt *mask;
   std::unique_ptr<Block> body;
 
   WhileStmt(std::unique_ptr<Block> &&body) : body(std::move(body)) {
@@ -1109,6 +1123,10 @@ inline void Print_(const ExpressionHandle &a, std::string str) {
   current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a, str));
 }
 
+// TODO: fix this hack...
+// for current ast
+extern Block *current_block;
+
 class IdExpression : public Expression {
  public:
   Identifier id;
@@ -1122,9 +1140,7 @@ class IdExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    // if (stmt)
-    // return;
-    ret.push_back(std::make_unique<LocalLoadStmt>(id));
+    ret.push_back(std::make_unique<LocalLoadStmt>(current_block->lookup_var(id)));
     stmt = ret.back().get();
   }
 };
@@ -1179,12 +1195,12 @@ class ConstExpression : public Expression {
 
 template <typename T>
 inline void declare_var(ExpressionHandle &a) {
-  current_ast_builder().insert(std::make_unique<AllocaStmt>(
+  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(a.expr)->id, get_data_type<T>()));
 }
 
 inline void declare_var(ExpressionHandle &a) {
-  current_ast_builder().insert(std::make_unique<AllocaStmt>(
+  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(a.expr)->id, DataType::unknown));
 }
 

@@ -7,7 +7,7 @@ TLANG_NAMESPACE_BEGIN
 class LoopVectorize : public IRVisitor {
  public:
   int vectorize;
-  Ident *loop_var;
+  Stmt *loop_var; // an alloca...
 
   LoopVectorize() {
     allow_undefined_visitor = true;
@@ -38,7 +38,7 @@ class LoopVectorize : public IRVisitor {
     if (vectorize == 1)
       return;
     stmt->ret_type.width *= vectorize;
-    if (loop_var && stmt->ident == *loop_var) {
+    if (loop_var && stmt->ident == loop_var) {
       // insert_before
       auto offsets = std::make_unique<ConstStmt>(0);
       offsets->repeat(vectorize);
@@ -66,7 +66,7 @@ class LoopVectorize : public IRVisitor {
   void visit(RangeForStmt *for_stmt) {
     auto old_vectorize = for_stmt->vectorize;
     vectorize = for_stmt->vectorize;
-    loop_var = &for_stmt->loop_var;
+    loop_var = for_stmt->loop_var;
     for_stmt->body->accept(this);
     loop_var = nullptr;
     vectorize = old_vectorize;

@@ -15,10 +15,7 @@ class Statement;
 using Stmt = Statement;
 
 // statements
-class ConstStmt;
-class IfStmt;
-
-// frontend stmts
+class ConstStmt; class IfStmt; // frontend stmts
 class FrontendIfStmt;
 class FrontendForStmt;
 class FrontendPrintStmt;
@@ -685,8 +682,7 @@ class BinaryOpExpression : public Expression {
   }
 };
 
-class GlobalPtrStmt : public Statement {
- public:
+class GlobalPtrStmt : public Statement { public:
   SNode *snode;
   std::vector<Stmt *> indices;
 
@@ -894,6 +890,7 @@ class AllocaStmt : public Statement {
   AllocaStmt(Ident lhs, DataType type) : ident(lhs) {
     ret_type = VectorType(1, type);
   }
+
   DEFINE_ACCEPT
 };
 

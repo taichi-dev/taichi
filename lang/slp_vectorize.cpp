@@ -1,6 +1,49 @@
+#if 0
+#include <typeinfo>
 #include "ir.h"
 
 TLANG_NAMESPACE_BEGIN
+
+class BasicBlockSLP {
+  Block *block;
+  std::set<*Stmt> visited;
+
+  BasicBlockSLP() {
+  }
+
+  // replace with BBlock with SLP'ed block
+  void run(Block *block, int width) {
+    visited.clear();
+    std::vector<std::unique_ptr<Stmt>> stmts = std::move(block->statements);
+    // Find the last statement
+    last_stmt = stmts.back().get();
+
+    std::vector<Stmt *> seed_statements;
+
+    seed_statements.push_back(last_stmt);
+
+    // from the back, find the other (width - 1) statements of the same type
+    for (int i = 0; i < (int)stmts.size() - 2; i++) {
+      if (typeid(*last_stmt) == typeid(*stmts[i])) {
+        // found a stmt of the same type.
+        seed_statements.push_back(stmts[i].get());
+        if (seed_statements.size() == width) {
+          break;
+        }
+      }
+    }
+
+    if (seed_statements.size() != width) {
+      TC_ERROR("Cannot find enough {} seed statements to start SLP search.",
+               width);
+    }
+
+
+
+    // TODO: check order. SLP should not change order of local/global load/store...
+    block->statements = std::move(packed);
+  }
+};
 
 class SLPVectorize : public IRVisitor {
  public:
@@ -81,3 +124,4 @@ void slp_vectorize(IRNode *root) {
 }  // namespace irpass
 
 TLANG_NAMESPACE_END
+#endif

@@ -131,11 +131,11 @@ class LowerAST : public IRVisitor {
     stmt->insert_before(std::make_unique<AllocaStmt>(DataType::i32));
     auto &&const_stmt = std::make_unique<ConstStmt>((int)0xFFFFFFFF);
     auto const_stmt_ptr = const_stmt.get();
+    stmt->insert_before(std::move(mask));
     stmt->insert_before(std::move(const_stmt));
     stmt->insert_before(
         std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
     new_while->body->mask_var = new_while->mask;
-    stmt->insert_before(std::move(mask));
     stmt->parent->replace_with(stmt, std::move(new_while));
     // insert an alloca for the mask
     throw IRModifiedException();

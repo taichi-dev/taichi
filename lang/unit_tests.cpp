@@ -543,19 +543,19 @@ TC_TEST("slp") {
 
     // Vectorize(4);
     For(i, 0, n, [&] {
-      // SLP(2);
+      SLP(2);
       // a[i] = a[i] + 1;
       // b[i] = b[i] + 2;
-      a[i] = 1 + i;
-      b[i] = 2 + i;
+      a[i] = i;
+      b[i] = i;
     });
   });
 
   func();
 
   for (int i = 0; i < n; i++) {
-    TC_CHECK(a.val<int>(i) == 1 + i);
-    TC_CHECK(b.val<int>(i) == 2 + i);
+    TC_CHECK(a.val<int>(i) == 0 + i);
+    TC_CHECK(b.val<int>(i) == 0 + i);
   }
 };
 

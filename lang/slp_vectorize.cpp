@@ -1,29 +1,84 @@
-#if 0
 #include <typeinfo>
+#include <set>
 #include "ir.h"
 
 TLANG_NAMESPACE_BEGIN
 
-class BasicBlockSLP {
+class BasicBlockSLP : IRVisitor {
   Block *block;
-  std::set<*Stmt> visited;
+  std::set<Stmt *> visited;
+  int width;
+  using Pack = std::vector<Stmt *>;
+  std::vector<std::pair<Pack, Stmt *>> existing_stmts;
+  VecStatement new_stmts;
+
+  Pack tmp_operands;
+  std::unique_ptr<Stmt> tmp_stmt;
+  Pack building_pack;
+
+  void visit(BinaryOpStmt *stmt) {  // merge tmp_operands into one statement
+    tmp_stmt = std::make_unique<BinaryOpStmt>(
+        dynamic_cast<BinaryOpStmt *>(building_pack[0])->op_type, tmp_operands[0],
+        tmp_operands[1]);
+  }
+
+  Stmt *find_stmt(const Pack &pack) {
+    TC_ASSERT((int)pack.size() == width);
+    for (int i = 0; i < (int)existing_stmts.size(); i++) {
+      bool match = true;
+      for (int j = 0; j < width; j++) {
+        if (existing_stmts[i].first[j] != pack[j]) {
+          match = false;
+        }
+      }
+      if (match) {
+        return existing_stmts[i].second;
+      }
+    }
+    return nullptr;
+  }
+
+  // create a new stmt out of the pack
+  Stmt *build(const Pack &pack) {
+    auto existing = find_stmt(pack);
+    if (existing) {
+      return existing;
+    }
+    Pack operands;
+    for (int i = 0; i < (int)pack[0]->operands.size(); i++) {
+      Pack operand_pack;
+      for (int j = 0; j < (int)pack.size(); j++) {
+        operand_pack.push_back(*pack[j]->operands[i]);
+      }
+      operands.push_back(build(operand_pack));
+    }
+    tmp_operands = operands;
+    building_pack = pack;
+    pack[0]->accept(this);
+    Stmt *ret = tmp_stmt.get();
+    new_stmts.push_back(std::move(tmp_stmt));
+    return ret;
+  }
 
   BasicBlockSLP() {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
   }
 
   // replace with BBlock with SLP'ed block
   void run(Block *block, int width) {
+    this->width = width;
     visited.clear();
     std::vector<std::unique_ptr<Stmt>> stmts = std::move(block->statements);
     // Find the last statement
-    last_stmt = stmts.back().get();
+    auto last_stmt = stmts.back().get();
 
     std::vector<Stmt *> seed_statements;
 
     seed_statements.push_back(last_stmt);
 
     // from the back, find the other (width - 1) statements of the same type
-    for (int i = 0; i < (int)stmts.size() - 2; i++) {
+    for (int i = 0; i < (int)stmts.size() - 1; i++) {
       if (typeid(*last_stmt) == typeid(*stmts[i])) {
         // found a stmt of the same type.
         seed_statements.push_back(stmts[i].get());
@@ -38,24 +93,20 @@ class BasicBlockSLP {
                width);
     }
 
-
-
-    // TODO: check order. SLP should not change order of local/global load/store...
-    block->statements = std::move(packed);
+    build(seed_statements);
+    // TODO: check order. SLP should not change order of local/global
+    // sort the statements...
+    // load/store...
+    block->statements = std::move(new_stmts);
   }
 };
 
 class SLPVectorize : public IRVisitor {
  public:
-  int vectorize;
 
   SLPVectorize() {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
-    vectorize = 1;
-  }
-
-  void visit(Statement *stmt) {
   }
 
   void visit(Block *stmt_list) {
@@ -65,31 +116,6 @@ class SLPVectorize : public IRVisitor {
     }
     for (auto stmt : statements) {
       stmt->accept(this);
-    }
-  }
-
-  void visit(AllocaStmt *alloca) {
-    alloca->ret_type.width *= vectorize;
-  }
-
-  void visit(LocalLoadStmt *stmt) {
-    if (vectorize == 1)
-      return;
-    stmt->ret_type.width *= vectorize;
-    if (loop_var && stmt->ident == *loop_var) {
-      // insert_before
-      auto offsets = std::make_unique<ConstStmt>(0);
-      offsets->repeat(vectorize);
-      for (int i = 0; i < vectorize; i++) {
-        offsets->value[i] = i;
-      }
-      auto add_op =
-          std::make_unique<BinaryOpStmt>(BinaryType::add, stmt, offsets.get());
-      irpass::typecheck(add_op.get());
-      auto offsets_p = offsets.get();
-      stmt->replace_with(add_op.get());
-      stmt->insert_after(std::move(offsets));
-      offsets_p->insert_after(std::move(add_op));
     }
   }
 
@@ -124,4 +150,3 @@ void slp_vectorize(IRNode *root) {
 }  // namespace irpass
 
 TLANG_NAMESPACE_END
-#endif

@@ -135,6 +135,11 @@ class IRBuilder {
 
   ScopeGuard create_scope(std::unique_ptr<Block> &list);
 
+  Block *current_block() {
+    if (stack.empty()) return nullptr;
+    else return stack.back();
+  }
+
   void create_function() {
   }
 };
@@ -813,12 +818,14 @@ class Block : public IRNode {
   std::vector<std::unique_ptr<Statement>> statements;
   std::map<Ident, Stmt *> local_var_alloca;
   Stmt *mask_var;
+  int slp;
   Stmt *inner_loop_variable;
 
   Block() {
     inner_loop_variable = nullptr;
     mask_var = nullptr;
     parent = nullptr;
+    slp = 1;
   }
 
   void insert(std::unique_ptr<Statement> &&stmt, int location = -1) {
@@ -1260,6 +1267,10 @@ inline void Vectorize(int v) {
 
 inline void Parallelize(int v) {
   dec.parallelize = v;
+}
+
+inline void SLP(int v) {
+  current_ast_builder().current_block()->slp = v;
 }
 
 class For {

@@ -216,11 +216,6 @@ class CPUCodeGen : public CodeGenBase {
               prog->snode_root->node_type_name);
   }
 
-  template <typename... Args>
-  void emit_code_before_loop(std::string f, Args &&... args) {
-    TC_NOT_IMPLEMENTED;
-  }
-
   void generate_tail() {
     // generate_loop_tail(prog->current_snode, true);
     emit_code("}}\n");

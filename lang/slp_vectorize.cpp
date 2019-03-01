@@ -5,7 +5,9 @@
 TLANG_NAMESPACE_BEGIN
 
 class BasicBlockSLP : IRVisitor {
+ public:
   Block *block;
+  std::set<Stmt *> inside;
   std::set<Stmt *> visited;
   int width;
   using Pack = std::vector<Stmt *>;
@@ -18,8 +20,8 @@ class BasicBlockSLP : IRVisitor {
 
   void visit(BinaryOpStmt *stmt) {  // merge tmp_operands into one statement
     tmp_stmt = std::make_unique<BinaryOpStmt>(
-        dynamic_cast<BinaryOpStmt *>(building_pack[0])->op_type, tmp_operands[0],
-        tmp_operands[1]);
+        dynamic_cast<BinaryOpStmt *>(building_pack[0])->op_type,
+        tmp_operands[0], tmp_operands[1]);
   }
 
   Stmt *find_stmt(const Pack &pack) {
@@ -40,6 +42,10 @@ class BasicBlockSLP : IRVisitor {
 
   // create a new stmt out of the pack
   Stmt *build(const Pack &pack) {
+    for (int i = 0; i < width; i++) {
+      fmt::print("{} ", pack[i]->id);
+    }
+    fmt::print("\n");
     auto existing = find_stmt(pack);
     if (existing) {
       return existing;
@@ -73,6 +79,10 @@ class BasicBlockSLP : IRVisitor {
     // Find the last statement
     auto last_stmt = stmts.back().get();
 
+    for (auto &stmt: block->statements) {
+      inside.insert(stmt.get());
+    }
+
     std::vector<Stmt *> seed_statements;
 
     seed_statements.push_back(last_stmt);
@@ -82,13 +92,13 @@ class BasicBlockSLP : IRVisitor {
       if (typeid(*last_stmt) == typeid(*stmts[i])) {
         // found a stmt of the same type.
         seed_statements.push_back(stmts[i].get());
-        if (seed_statements.size() == width) {
+        if ((int)seed_statements.size() == width) {
           break;
         }
       }
     }
 
-    if (seed_statements.size() != width) {
+    if ((int)seed_statements.size() != width) {
       TC_ERROR("Cannot find enough {} seed statements to start SLP search.",
                width);
     }
@@ -97,25 +107,26 @@ class BasicBlockSLP : IRVisitor {
     // TODO: check order. SLP should not change order of local/global
     // sort the statements...
     // load/store...
+    TC_TAG;
     block->statements = std::move(new_stmts);
   }
 };
 
 class SLPVectorize : public IRVisitor {
  public:
-
   SLPVectorize() {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
 
-  void visit(Block *stmt_list) {
-    std::vector<Stmt *> statements;
-    for (auto &stmt : stmt_list->statements) {
-      statements.push_back(stmt.get());
-    }
-    for (auto stmt : statements) {
-      stmt->accept(this);
+  void visit(Block *block) {
+    if (block->slp != 1) {
+      auto slp = BasicBlockSLP();
+      slp.run(block, block->slp);
+    } else {
+      for (auto &stmt : block->statements) {
+        stmt->accept(this);
+      }
     }
   }
 

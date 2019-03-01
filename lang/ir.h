@@ -50,6 +50,7 @@ void print(IRNode *root);
 void lower(IRNode *root);
 void typecheck(IRNode *root);
 void loop_vectorize(IRNode *root);
+void slp_vectorize(IRNode *root);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 
 }  // namespace irpass
@@ -943,6 +944,7 @@ class LocalLoadStmt : public Statement {
   Stmt *ident;
 
   LocalLoadStmt(Stmt *ident) : ident(ident) {
+    add_operand(this->ident);
   }
 
   DEFINE_ACCEPT;
@@ -954,6 +956,7 @@ class LocalStoreStmt : public Statement {
   Stmt *stmt;
 
   LocalStoreStmt(Stmt *ident, Statement *stmt) : ident(ident), stmt(stmt) {
+    add_operand(this->ident);
     add_operand(this->stmt);
   }
 

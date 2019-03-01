@@ -252,6 +252,10 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   if (prog->config.print_ir) {
     irpass::print(ir);
   }
+  irpass::slp_vectorize(ir);
+  if (prog->config.print_ir) {
+    irpass::print(ir);
+  }
   irpass::loop_vectorize(ir);
   if (prog->config.print_ir) {
     irpass::print(ir);

@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class BasicBlockSLP : IRVisitor {
+class BasicBlockSLP : public IRVisitor {
  public:
   Block *block;
   std::set<Stmt *> inside;
@@ -18,10 +18,29 @@ class BasicBlockSLP : IRVisitor {
   std::unique_ptr<Stmt> tmp_stmt;
   Pack building_pack;
 
-  void visit(BinaryOpStmt *stmt) {  // merge tmp_operands into one statement
+  void update_type(Statement *stmt) {
+    tmp_stmt->ret_type = stmt->ret_type;
+    tmp_stmt->ret_type.width *= width;
+  }
+
+  void visit(AllocaStmt *stmt) override {
+    tmp_stmt = std::make_unique<AllocaStmt>(stmt->ret_type.data_type);
+    update_type(stmt);
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    tmp_stmt =
+        std::make_unique<LocalStoreStmt>(tmp_operands[0], tmp_operands[1]);
+    tmp_stmt->ret_type.width = stmt->ret_type.width * width;
+    update_type(stmt);
+  }
+
+  // merge tmp_operands into one statement
+  void visit(BinaryOpStmt *stmt) override {
     tmp_stmt = std::make_unique<BinaryOpStmt>(
         dynamic_cast<BinaryOpStmt *>(building_pack[0])->op_type,
         tmp_operands[0], tmp_operands[1]);
+    update_type(stmt);
   }
 
   Stmt *find_stmt(const Pack &pack) {
@@ -60,7 +79,9 @@ class BasicBlockSLP : IRVisitor {
     }
     tmp_operands = operands;
     building_pack = pack;
+    TC_ASSERT(tmp_stmt == nullptr);
     pack[0]->accept(this);
+    TC_ASSERT(tmp_stmt != nullptr);
     Stmt *ret = tmp_stmt.get();
     new_stmts.push_back(std::move(tmp_stmt));
     return ret;
@@ -79,7 +100,7 @@ class BasicBlockSLP : IRVisitor {
     // Find the last statement
     auto last_stmt = stmts.back().get();
 
-    for (auto &stmt: block->statements) {
+    for (auto &stmt : block->statements) {
       inside.insert(stmt.get());
     }
 
@@ -115,8 +136,8 @@ class BasicBlockSLP : IRVisitor {
 class SLPVectorize : public IRVisitor {
  public:
   SLPVectorize() {
-    allow_undefined_visitor = true;
-    invoke_default_visitor = true;
+    // allow_undefined_visitor = true;
+    // invoke_default_visitor = true;
   }
 
   void visit(Block *block) {

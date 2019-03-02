@@ -815,11 +815,11 @@ inline int32x8 blend(int32x8 a, int32x8 b) {
   return _mm256_blend_epi32(a, b, imm);
 }
 
-inline int32x1 lnot(int32x1 a) {
+inline int32x1 bit_not(int32x1 a) {
   return int(-1) ^ a;
 }
 
-inline int32x8 lnot(int32x8 a) {
+inline int32x8 bit_not(int32x8 a) {
   return _mm256_xor_si256(a, _mm256_set1_epi64x(-1LL));
 }
 

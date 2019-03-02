@@ -59,7 +59,7 @@ class LowerAST : public IRVisitor {
     insert(std::make_unique<LocalStoreStmt>(new_if->true_mask,
                                             stmt->condition->stmt));
     auto &&lnot_stmt =
-        std::make_unique<UnaryOpStmt>(UnaryType::lnot, stmt->condition->stmt);
+        std::make_unique<UnaryOpStmt>(UnaryType::bit_not, stmt->condition->stmt);
     auto lnot_stmt_ptr = lnot_stmt.get();
     insert(std::move(lnot_stmt));
     insert(std::make_unique<LocalStoreStmt>(new_if->false_mask, lnot_stmt_ptr));

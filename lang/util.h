@@ -238,7 +238,7 @@ enum class UnaryType : int {
   abs,
   sin,
   cos,
-  lnot,
+  bit_not,
   undefined
 };
 
@@ -253,7 +253,7 @@ inline std::string unary_type_name(UnaryType type) {
     REGISTER_TYPE(abs);
     REGISTER_TYPE(sin);
     REGISTER_TYPE(cos);
-    REGISTER_TYPE(lnot);
+    REGISTER_TYPE(bit_not);
     REGISTER_TYPE(undefined);
 #undef REGISTER_TYPE
   }

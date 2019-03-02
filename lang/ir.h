@@ -23,23 +23,24 @@ class FrontendAssignStmt;
 
 // Midend Statement
 class ConstStmt;
-class IfStmt;
-class RangeForStmt;
-class WhileStmt;
-class WhileControlStmt;
-class AllocaStmt;
 
 // Without per-lane attributes:
+class RangeForStmt;
+class IfStmt;
+class WhileStmt;
+class WhileControlStmt;
 class UnaryOpStmt;
 class BinaryOpStmt;
+class AllocaStmt;
+class PrintStmt;
+class RandStmt;
+
+// With per-lane attributes:
 class GlobalLoadStmt;
 class GlobalStoreStmt;
-
 class LocalLoadStmt;
 class LocalStoreStmt;
 class GlobalPtrStmt;
-class PrintStmt;
-class RandStmt;
 
 // IR passes
 namespace irpass {

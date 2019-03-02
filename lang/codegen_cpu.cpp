@@ -140,7 +140,7 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) {
-    emit("{} = land({}, {});", stmt->mask->raw_name(), stmt->mask->raw_name(),
+    emit("{} = bit_and({}, {});", stmt->mask->raw_name(), stmt->mask->raw_name(),
          stmt->cond->raw_name());
     emit("if (!any({})) break;", stmt->mask->raw_name());
   }

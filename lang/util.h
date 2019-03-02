@@ -272,8 +272,8 @@ enum class BinaryType : int {
   mod,
   max,
   min,
-  land,
-  lor,
+  bit_and,
+  bit_or,
   cmp_lt,
   cmp_le,
   cmp_gt,
@@ -294,8 +294,8 @@ inline std::string binary_type_name(BinaryType type) {
     REGISTER_TYPE(mod);
     REGISTER_TYPE(max);
     REGISTER_TYPE(min);
-    REGISTER_TYPE(land);
-    REGISTER_TYPE(lor);
+    REGISTER_TYPE(bit_and);
+    REGISTER_TYPE(bit_or);
     REGISTER_TYPE(cmp_lt);
     REGISTER_TYPE(cmp_le);
     REGISTER_TYPE(cmp_gt);
@@ -328,8 +328,8 @@ inline std::string binary_type_symbol(BinaryType type) {
     REGISTER_TYPE(cmp_ge, >=);
     REGISTER_TYPE(cmp_ne, !=);
     REGISTER_TYPE(cmp_eq, ==);
-    REGISTER_TYPE(land, &&);
-    REGISTER_TYPE(lor, ||);
+    REGISTER_TYPE(bit_and, &&);
+    REGISTER_TYPE(bit_or, ||);
 #undef REGISTER_TYPE
   }
   return type_names[type];

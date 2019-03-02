@@ -56,10 +56,10 @@ void CPUCodeGen::visit_intrinsics(Expr &expr) {
     emit_code("auto {} = {}({}, {});", expr->var_name, op,
               expr->ch[0]->var_name, expr->ch[1]->var_name);
     // emit_code("{}.print();", expr->var_name);
-  } else if (expr->type == NodeType::land) {
+  } else if (expr->type == NodeType::bit_and) {
     TC_ASSERT(expr[1]->type == NodeType::imm)
     TC_WARN("member imm");
-    emit_code("auto {} = land({}, {});", expr->var_name, expr[0]->var_name,
+    emit_code("auto {} = bit_and({}, {});", expr->var_name, expr[0]->var_name,
               expr[1]->value<int>());
   } else if (expr->type == NodeType::shr) {
     TC_WARN("member imm");

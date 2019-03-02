@@ -111,7 +111,7 @@ class Expr {
   REGULAR_BINARY_OP(-, sub);
   REGULAR_BINARY_OP(/, div);
   REGULAR_BINARY_OP(%, mod);
-  BINARY_OP(&, land);
+  BINARY_OP(&, bit_and);
   BINARY_OP(>>, shr);
   BINARY_OP(<<, shl);
 #undef BINARY_OP

@@ -840,8 +840,8 @@ DEFINE_BINARY_OP(int32x4, sub, _mm_sub_epi32);
 DEFINE_BINARY_OP(int32x4, mul, _mm_mullo_epi32);
 DEFINE_BINARY_OP(int32x4, min, _mm_min_epi32);
 DEFINE_BINARY_OP(int32x4, max, _mm_max_epi32);
-DEFINE_BINARY_OP(int32x4, land, _mm_and_si128);
-DEFINE_BINARY_OP(int32x4, lor, _mm_or_si128);
+DEFINE_BINARY_OP(int32x4, bit_and, _mm_and_si128);
+DEFINE_BINARY_OP(int32x4, bit_or, _mm_or_si128);
 
 DEFINE_BINARY_OP(float32x8, add, _mm256_add_ps);
 DEFINE_BINARY_OP(float32x8, sub, _mm256_sub_ps);
@@ -855,8 +855,8 @@ DEFINE_BINARY_OP(int32x8, sub, _mm256_sub_epi32);
 DEFINE_BINARY_OP(int32x8, mul, _mm256_mullo_epi32);
 DEFINE_BINARY_OP(int32x8, min, _mm256_min_epi32);
 DEFINE_BINARY_OP(int32x8, max, _mm256_max_epi32);
-DEFINE_BINARY_OP(int32x8, land, _mm256_and_si256);
-DEFINE_BINARY_OP(int32x8, lor, _mm256_or_si256);
+DEFINE_BINARY_OP(int32x8, bit_and, _mm256_and_si256);
+DEFINE_BINARY_OP(int32x8, bit_or, _mm256_or_si256);
 
 #define DEFINE_BINARY_OP_MID(T, OP, INST) \
   inline T OP(T a, T b) {                 \
@@ -872,8 +872,8 @@ DEFINE_BINARY_OP_MID(int32x1, sub, -);
 DEFINE_BINARY_OP_MID(int32x1, mul, *);
 DEFINE_BINARY_OP_MID(int32x1, div, /);
 DEFINE_BINARY_OP_MID(int32x1, mod, %);
-DEFINE_BINARY_OP_MID(int32x1, land, &);
-DEFINE_BINARY_OP_MID(int32x1, lor, |);
+DEFINE_BINARY_OP_MID(int32x1, bit_and, &);
+DEFINE_BINARY_OP_MID(int32x1, bit_or, |);
 
 inline int32x8 shr(int32x8 a, int b) {
   return _mm256_srli_epi32(a, b);
@@ -883,7 +883,7 @@ inline int32x8 shl(int32x8 a, int b) {
   return _mm256_slli_epi32(a, b);
 }
 
-inline int32x8 land(int32x8 a, int b) {
+inline int32x8 bit_and(int32x8 a, int b) {
   int32x8 B = _mm256_set1_epi32(b);
   int32x8 v = _mm256_and_si256(a, B);
   return v;

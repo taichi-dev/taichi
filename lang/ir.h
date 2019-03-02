@@ -40,6 +40,7 @@ class PrintStmt;
 class RandStmt;
 
 // With per-lane attributes:
+class PtrStmt;
 class GlobalLoadStmt;
 class GlobalStoreStmt;
 class LocalLoadStmt;
@@ -220,8 +221,14 @@ class IRVisitor {
   }
 
   DEFINE_VISIT(Block);
+
+  DEFINE_VISIT(FrontendIfStmt);
   DEFINE_VISIT(FrontendAssignStmt);
   DEFINE_VISIT(FrontendAllocaStmt);
+  DEFINE_VISIT(FrontendPrintStmt);
+  DEFINE_VISIT(FrontendForStmt);
+  DEFINE_VISIT(FrontendWhileStmt);
+
   DEFINE_VISIT(AllocaStmt);
   DEFINE_VISIT(BinaryOpStmt);
   DEFINE_VISIT(UnaryOpStmt);
@@ -229,15 +236,12 @@ class IRVisitor {
   DEFINE_VISIT(LocalStoreStmt);
   DEFINE_VISIT(GlobalLoadStmt);
   DEFINE_VISIT(GlobalStoreStmt);
+  DEFINE_VISIT(PtrStmt);
   DEFINE_VISIT(GlobalPtrStmt);
   DEFINE_VISIT(IfStmt);
-  DEFINE_VISIT(FrontendIfStmt);
   DEFINE_VISIT(PrintStmt);
-  DEFINE_VISIT(FrontendPrintStmt);
   DEFINE_VISIT(ConstStmt);
-  DEFINE_VISIT(FrontendForStmt);
   DEFINE_VISIT(RangeForStmt);
-  DEFINE_VISIT(FrontendWhileStmt);
   DEFINE_VISIT(WhileStmt);
   DEFINE_VISIT(WhileControlStmt);
   DEFINE_VISIT(RandStmt);
@@ -434,7 +438,6 @@ class Expression {
     TC_NOT_IMPLEMENTED;
   };
 };
-
 
 class Expr {
  public:
@@ -635,9 +638,7 @@ class BinaryOpExpression : public Expression {
   BinaryType type;
   Expr lhs, rhs;
 
-  BinaryOpExpression(BinaryType type,
-                     const Expr &lhs,
-                     const Expr &rhs)
+  BinaryOpExpression(BinaryType type, const Expr &lhs, const Expr &rhs)
       : type(type) {
     this->lhs.set(load_if_ptr(lhs));
     this->rhs.set(load_if_ptr(rhs));
@@ -658,7 +659,14 @@ class BinaryOpExpression : public Expression {
   }
 };
 
-class GlobalPtrStmt : public Statement {
+class PtrStmt : public Statement {
+ public:
+  PtrStmt(){};
+
+  DEFINE_ACCEPT
+};
+
+class GlobalPtrStmt : public PtrStmt {
  public:
   SNode *snode;
   std::vector<Stmt *> indices;
@@ -726,9 +734,8 @@ class GlobalPtrExpression : public Expression {
 };
 
 #define DEFINE_EXPRESSION_OP(op, op_name)                                     \
-  inline Expr operator op(const Expr &lhs,            \
-                                      const Expr &rhs) {          \
-    return Expr(                                                  \
+  inline Expr operator op(const Expr &lhs, const Expr &rhs) {                 \
+    return Expr(                                                              \
         std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs, rhs)); \
   }
 
@@ -736,10 +743,9 @@ inline Expr operator-(Expr expr) {
   return Expr(std::make_shared<UnaryOpExpression>(UnaryType::neg, expr));
 }
 
-#define DEFINE_EXPRESSION_OP_UNARY(opname)                             \
-  inline Expr opname(Expr expr) {                                    \
-    return Expr(                                                      \
-        std::make_shared<UnaryOpExpression>(UnaryType::opname, expr)); \
+#define DEFINE_EXPRESSION_OP_UNARY(opname)                                     \
+  inline Expr opname(Expr expr) {                                              \
+    return Expr(std::make_shared<UnaryOpExpression>(UnaryType::opname, expr)); \
   }
 
 DEFINE_EXPRESSION_OP_UNARY(sqrt)
@@ -762,9 +768,8 @@ DEFINE_EXPRESSION_OP(>=, cmp_ge)
 DEFINE_EXPRESSION_OP(==, cmp_eq)
 
 #define DEFINE_EXPRESSION_FUNC(op_name)                                       \
-  inline Expr op_name(const Expr &lhs,                \
-                                  const Expr &rhs) {              \
-    return Expr(                                                  \
+  inline Expr op_name(const Expr &lhs, const Expr &rhs) {                     \
+    return Expr(                                                              \
         std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs, rhs)); \
   }
 
@@ -1193,8 +1198,7 @@ inline Expr Expr::operator[](ExpressionGroup indices) {
       cast<GlobalVariableExpression>(), indices));
 }
 
-#define declare(x) \
-  auto x = Expr(std::make_shared<IdExpression>(#x));
+#define declare(x) auto x = Expr(std::make_shared<IdExpression>(#x));
 
 #define var(type, x) declare_var<type>(x);
 

@@ -11,7 +11,7 @@ class LowerAST : public IRVisitor {
     allow_undefined_visitor = true;
   }
 
-  ExprH load_if_ptr(ExprH expr) {
+  Expr load_if_ptr(Expr expr) {
     if (expr.is<GlobalPtrStmt>()) {
       return load(expr);
     } else

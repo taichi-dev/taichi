@@ -151,9 +151,9 @@ inline IRBuilder &current_ast_builder() {
 }
 
 class ExpressionHandle;
-using ExprH = ExpressionHandle;
+using Expr = ExpressionHandle;
 
-inline ExprH load_if_ptr(const ExprH &ptr);
+inline Expr load_if_ptr(const Expr &ptr);
 
 class Identifier {
  public:
@@ -498,21 +498,21 @@ class ExpressionHandle {
 
 class ExpressionGroup {
  public:
-  std::vector<ExprH> exprs;
+  std::vector<Expr> exprs;
 
   ExpressionGroup() {
   }
 
-  ExpressionGroup(const ExprH &a) {
+  ExpressionGroup(const Expr &a) {
     exprs.push_back(a);
   }
 
-  ExpressionGroup(const ExprH &a, const ExprH &b) {
+  ExpressionGroup(const Expr &a, const Expr &b) {
     exprs.push_back(a);
     exprs.push_back(b);
   }
 
-  ExpressionGroup(ExpressionGroup a, const ExprH &b) {
+  ExpressionGroup(ExpressionGroup a, const Expr &b) {
     exprs = a.exprs;
     exprs.push_back(b);
   }
@@ -522,11 +522,11 @@ class ExpressionGroup {
   }
 };
 
-inline ExpressionGroup operator,(const ExprH &a, const ExprH &b) {
+inline ExpressionGroup operator,(const Expr &a, const Expr &b) {
   return ExpressionGroup(a, b);
 }
 
-inline ExpressionGroup operator,(const ExpressionGroup &a, const ExprH &b) {
+inline ExpressionGroup operator,(const ExpressionGroup &a, const Expr &b) {
   return ExpressionGroup(a, b);
 }
 
@@ -690,7 +690,7 @@ class GlobalVariableExpression : public Expression {
 
 class GlobalPtrExpression : public Expression {
  public:
-  ExprH var;
+  Expr var;
   ExpressionGroup indices;
 
   GlobalPtrExpression(Handle<Expression> var, ExpressionGroup indices)
@@ -727,13 +727,13 @@ class GlobalPtrExpression : public Expression {
         std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs, rhs)); \
   }
 
-inline ExprH operator-(ExprH expr) {
-  return ExprH(std::make_shared<UnaryOpExpression>(UnaryType::neg, expr));
+inline Expr operator-(Expr expr) {
+  return Expr(std::make_shared<UnaryOpExpression>(UnaryType::neg, expr));
 }
 
 #define DEFINE_EXPRESSION_OP_UNARY(opname)                             \
-  inline ExprH opname(ExprH expr) {                                    \
-    return ExprH(                                                      \
+  inline Expr opname(Expr expr) {                                    \
+    return Expr(                                                      \
         std::make_shared<UnaryOpExpression>(UnaryType::opname, expr)); \
   }
 
@@ -767,10 +767,10 @@ DEFINE_EXPRESSION_FUNC(min);
 DEFINE_EXPRESSION_FUNC(max);
 
 template <typename T>
-inline ExprH cast(ExprH input) {
+inline Expr cast(Expr input) {
   auto ret = std::make_shared<UnaryOpExpression>(UnaryType::cast, input);
   ret->cast_type = get_data_type<T>();
-  return ExprH(ret);
+  return Expr(ret);
 }
 
 class Block : public IRNode {
@@ -856,9 +856,9 @@ class Block : public IRNode {
 
 class FrontendAssignStmt : public Statement {
  public:
-  ExprH lhs, rhs;
+  Expr lhs, rhs;
 
-  FrontendAssignStmt(ExprH lhs, ExprH rhs);
+  FrontendAssignStmt(Expr lhs, Expr rhs);
 
   DEFINE_ACCEPT
 };
@@ -956,10 +956,10 @@ class FrontendIfStmt : public Statement {
 
 class FrontendPrintStmt : public Statement {
  public:
-  ExprH expr;
+  Expr expr;
   std::string str;
 
-  FrontendPrintStmt(ExprH expr, std::string str) : expr(expr), str(str) {
+  FrontendPrintStmt(Expr expr, std::string str) : expr(expr), str(str) {
   }
 
   DEFINE_ACCEPT
@@ -1028,13 +1028,13 @@ class ConstStmt : public Statement {
 
 class FrontendForStmt : public Statement {
  public:
-  ExprH begin, end;
+  Expr begin, end;
   std::unique_ptr<Block> body;
   Ident loop_var_id;
   int vectorize;
   int parallelize;
 
-  FrontendForStmt(ExprH loop_var, ExprH begin, ExprH end);
+  FrontendForStmt(Expr loop_var, Expr begin, Expr end);
 
   DEFINE_ACCEPT
 };
@@ -1080,10 +1080,10 @@ class WhileStmt : public Statement {
 
 class FrontendWhileStmt : public Statement {
  public:
-  ExprH cond;
+  Expr cond;
   std::unique_ptr<Block> body;
 
-  FrontendWhileStmt(ExprH cond) : cond(load_if_ptr(cond)) {
+  FrontendWhileStmt(Expr cond) : cond(load_if_ptr(cond)) {
   }
 
   DEFINE_ACCEPT
@@ -1125,8 +1125,8 @@ class IdExpression : public Expression {
 
 class GlobalLoadExpression : public Expression {
  public:
-  ExprH ptr;
-  GlobalLoadExpression(ExprH ptr) : ptr(ptr) {
+  Expr ptr;
+  GlobalLoadExpression(Expr ptr) : ptr(ptr) {
   }
 
   std::string serialize() override {
@@ -1182,9 +1182,9 @@ inline void declare_var(ExpressionHandle &a) {
       std::static_pointer_cast<IdExpression>(a.expr)->id, DataType::unknown));
 }
 
-inline ExprH ExpressionHandle::operator[](ExpressionGroup indices) {
+inline Expr ExpressionHandle::operator[](ExpressionGroup indices) {
   TC_ASSERT(is<GlobalVariableExpression>());
-  return ExprH(std::make_shared<GlobalPtrExpression>(
+  return Expr(std::make_shared<GlobalPtrExpression>(
       cast<GlobalVariableExpression>(), indices));
 }
 
@@ -1198,15 +1198,15 @@ inline ExprH ExpressionHandle::operator[](ExpressionGroup indices) {
   declare_var(x); \
   x
 
-inline ExprH global_new(ExprH id_expr, DataType dt) {
+inline Expr global_new(Expr id_expr, DataType dt) {
   TC_ASSERT(id_expr.is<IdExpression>());
-  auto ret = ExprH(std::make_shared<GlobalVariableExpression>(
+  auto ret = Expr(std::make_shared<GlobalVariableExpression>(
       dt, id_expr.cast<IdExpression>()->id));
   return ret;
 }
 
 template <typename T, typename... Indices>
-T &ExprH::val(Indices... indices) {
+T &Expr::val(Indices... indices) {
   auto e = this->cast<GlobalVariableExpression>();
   TC_ASSERT(is<GlobalVariableExpression>());
 
@@ -1217,12 +1217,12 @@ T &ExprH::val(Indices... indices) {
   return *(T *)val_tmp(indices...);
 }
 
-inline ExprH load(ExprH ptr) {
+inline Expr load(Expr ptr) {
   TC_ASSERT(ptr.is<GlobalPtrExpression>());
   return ExpressionHandle(std::make_shared<GlobalLoadExpression>(ptr));
 }
 
-inline ExprH load_if_ptr(const ExprH &ptr) {
+inline Expr load_if_ptr(const Expr &ptr) {
   if (ptr.is<GlobalPtrExpression>()) {
     return load(ptr);
   } else {
@@ -1246,7 +1246,7 @@ inline void SLP(int v) {
 
 class For {
  public:
-  For(ExprH i, ExprH s, ExprH e, const std::function<void()> &func) {
+  For(Expr i, Expr s, Expr e, const std::function<void()> &func) {
     auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
     auto stmt = stmt_unique.get();
     current_ast_builder().insert(std::move(stmt_unique));
@@ -1257,7 +1257,7 @@ class For {
 
 class While {
  public:
-  While(ExprH cond, const std::function<void()> &func) {
+  While(Expr cond, const std::function<void()> &func) {
     auto while_stmt = std::make_unique<FrontendWhileStmt>(cond);
     FrontendWhileStmt *ptr = while_stmt.get();
     current_ast_builder().insert(std::move(while_stmt));
@@ -1267,8 +1267,8 @@ class While {
 };
 
 template <typename T>
-ExprH Rand() {
-  return ExprH(std::make_shared<RandExpression>(get_data_type<T>()));
+Expr Rand() {
+  return Expr(std::make_shared<RandExpression>(get_data_type<T>()));
 }
 
 TLANG_NAMESPACE_END

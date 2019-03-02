@@ -19,7 +19,7 @@ IRBuilder::ScopeGuard IRBuilder::create_scope(std::unique_ptr<Block> &list) {
   return ScopeGuard(this, list.get());
 }
 
-void ExprH::operator=(const ExpressionHandle &o) {
+void Expr::operator=(const ExpressionHandle &o) {
   if (this->expr == nullptr) {
     // create an anonymous local variable
     auto id = Identifier();
@@ -51,7 +51,7 @@ ExpressionHandle::ExpressionHandle(Identifier id) {
   expr = std::make_shared<IdExpression>(id);
 }
 
-FrontendForStmt::FrontendForStmt(ExprH loop_var, ExprH begin, ExprH end)
+FrontendForStmt::FrontendForStmt(Expr loop_var, Expr begin, Expr end)
     : begin(begin), end(end) {
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;
@@ -68,7 +68,7 @@ IRNode *Stmt::get_ir_root() {
   return dynamic_cast<IRNode *>(block);
 }
 
-FrontendAssignStmt::FrontendAssignStmt(ExprH lhs, ExprH rhs) : lhs(lhs), rhs(rhs) {
+FrontendAssignStmt::FrontendAssignStmt(Expr lhs, Expr rhs) : lhs(lhs), rhs(rhs) {
   TC_ASSERT(lhs.is<IdExpression>() || lhs.is<GlobalPtrExpression>());
 }
 
@@ -81,7 +81,7 @@ int Statement::id_counter = 0;
 
 std::unique_ptr<FrontendContext> context;
 
-void *ExprH::evaluate_addr(int i, int j, int k, int l) {
+void *Expr::evaluate_addr(int i, int j, int k, int l) {
   auto snode = this->cast<GlobalVariableExpression>()->snode;
   return snode->evaluate(get_current_program().data_structure, i, j, k, l);
 }
@@ -99,7 +99,7 @@ std::enable_if_t<!(i < sizeof...(Indices)), int> get_if_exists(
 }
 
 template <typename... Indices>
-void *ExprH::val_tmp(Indices... indices) {
+void *Expr::val_tmp(Indices... indices) {
   auto snode = this->cast<GlobalVariableExpression>()->snode;
   TC_ASSERT(sizeof...(indices) == snode->num_active_indices);
   int ind[max_num_indices];
@@ -115,11 +115,11 @@ void *ExprH::val_tmp(Indices... indices) {
   return evaluate_addr(ind[0], ind[1], ind[2], ind[3]);
 }
 
-template void *ExprH::val_tmp<>();
-template void *ExprH::val_tmp<int>(int);
-template void *ExprH::val_tmp<int, int>(int, int);
-template void *ExprH::val_tmp<int, int, int>(int, int, int);
-template void *ExprH::val_tmp<int, int, int, int>(int, int, int, int);
+template void *Expr::val_tmp<>();
+template void *Expr::val_tmp<int>(int);
+template void *Expr::val_tmp<int, int>(int, int);
+template void *Expr::val_tmp<int, int, int>(int, int, int);
+template void *Expr::val_tmp<int, int, int, int>(int, int, int, int);
 
 void Stmt::insert_before(std::unique_ptr<Stmt> &&new_stmt) {
   TC_ASSERT(parent);

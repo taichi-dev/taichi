@@ -48,7 +48,7 @@ TC_TEST("compiler_basics") {
   auto i = Index(0);
   layout([&]() { root.fixed(i, n).place(a); });
 
-  auto dou = [](ExprH a) { return a * 2; };
+  auto dou = [](Expr a) { return a * 2; };
 
   auto func = kernel([&]() {
     declare(i);
@@ -78,7 +78,7 @@ TC_TEST("simd_if") {
   auto i = Index(0);
   layout([&]() { root.fixed(i, n).place(a); });
 
-  auto dou = [](ExprH a) { return a * 2; };
+  auto dou = [](Expr a) { return a * 2; };
 
   auto func = kernel([&]() {
     declare(i);
@@ -413,7 +413,7 @@ auto ray_march = [&] {
     d(0) = abs(p(0) - 1.0_f) - 0.3_f;
     d(1) = abs(p(1) + 0.5_f) - 1.2_f;
     d(2) = abs(p(2) - 1.0_f) - 0.2_f;
-    auto dist_cube = norm(d.map([](const ExprH &v) { return max(v, 0.0f); })) +
+    auto dist_cube = norm(d.map([](const Expr &v) { return max(v, 0.0f); })) +
                      min(max(max(d(0), d(1)), d(2)), 0.0_f);
     return min(dist_sphere, min(dist_walls, dist_cube));
   };

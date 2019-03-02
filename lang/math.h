@@ -7,7 +7,7 @@ TLANG_NAMESPACE_BEGIN
 
 struct Matrix {
   int n, m;
-  std::vector<ExprH> entries;
+  std::vector<Expr> entries;
 
   Matrix() {
     n = m = 0;
@@ -24,7 +24,7 @@ struct Matrix {
 
   // Initialize vector
   template <int d>
-  explicit Matrix(const std::array<ExprH, d> &input) {
+  explicit Matrix(const std::array<Expr, d> &input) {
     entries.resize(d);
     for (int i = 0; i < d; i++) {
       entries[i] = input[i];
@@ -44,7 +44,7 @@ struct Matrix {
     }
   }
 
-  Matrix map(const std::function<ExprH(const ExprH &)> &f) const {
+  Matrix map(const std::function<Expr(const Expr &)> &f) const {
     Matrix ret(n, m);
     for (int i = 0; i < (int)entries.size(); i++) {
       ret.entries[i] = f(entries[i]);
@@ -52,25 +52,25 @@ struct Matrix {
     return ret;
   }
 
-  ExprH &operator()(int i, int j) {
+  Expr &operator()(int i, int j) {
     TC_ASSERT(0 <= i && i < n);
     TC_ASSERT(0 <= j && j < n);
     return entries[i * m + j];
   }
 
-  const ExprH &operator()(int i, int j) const {
+  const Expr &operator()(int i, int j) const {
     TC_ASSERT(0 <= i && i < n);
     TC_ASSERT(0 <= j && j < n);
     return entries[i * m + j];
   }
 
-  ExprH &operator()(int i) {
+  Expr &operator()(int i) {
     TC_ASSERT(0 <= i && i < n * m);
     TC_ASSERT(n == 1 || m == 1);
     return entries[i];
   }
 
-  const ExprH &operator()(int i) const {
+  const Expr &operator()(int i) const {
     TC_ASSERT(0 <= i && i < n * m);
     TC_ASSERT(n == 1 || m == 1);
     return entries[i];
@@ -101,7 +101,7 @@ struct Matrix {
     return ret;
   }
 
-  Matrix operator[](ExprH index) {
+  Matrix operator[](Expr index) {
     Matrix ret(n, m);
     for (int i = 0; i < n * m; i++) {
       ret.entries[i] = entries[i][index];
@@ -117,28 +117,28 @@ struct Matrix {
     return ret;
   }
 
-  ExprH sum() const {
-    ExprH ret = entries[0];
+  Expr sum() const {
+    Expr ret = entries[0];
     for (int i = 1; i < n * m; i++) {
       ret.set(ret + entries[i]);
     }
     return ret;
   }
 
-  ExprH norm2() const {
-    ExprH ret = entries[0] * entries[0];
+  Expr norm2() const {
+    Expr ret = entries[0] * entries[0];
     for (int i = 1; i < n * m; i++) {
       ret.set(ret + entries[i] * entries[i]);
     }
     return ret;
   }
 
-  ExprH norm() const {
+  Expr norm() const {
     return sqrt(norm2());
   }
 };
 
-inline Matrix operator*(const ExprH &A, const Matrix &B) {
+inline Matrix operator*(const Expr &A, const Matrix &B) {
   Matrix C(B.n, B.m);
   for (int i = 0; i < B.n; i++) {
     for (int j = 0; j < B.m; j++) {
@@ -148,7 +148,7 @@ inline Matrix operator*(const ExprH &A, const Matrix &B) {
   return C;
 }
 
-inline Matrix operator*(const Matrix &B, const ExprH &A) {
+inline Matrix operator*(const Matrix &B, const Expr &A) {
   Matrix C(B.n, B.m);
   for (int i = 0; i < B.n; i++) {
     for (int j = 0; j < B.m; j++) {
@@ -158,7 +158,7 @@ inline Matrix operator*(const Matrix &B, const ExprH &A) {
   return C;
 }
 
-inline Matrix operator+(const ExprH &A, const Matrix &B) {
+inline Matrix operator+(const Expr &A, const Matrix &B) {
   Matrix C(B.n, B.m);
   for (int i = 0; i < B.n; i++) {
     for (int j = 0; j < B.m; j++) {
@@ -168,7 +168,7 @@ inline Matrix operator+(const ExprH &A, const Matrix &B) {
   return C;
 }
 
-inline Matrix operator-(const ExprH &A, const Matrix &B) {
+inline Matrix operator-(const Expr &A, const Matrix &B) {
   Matrix C(B.n, B.m);
   for (int i = 0; i < B.n; i++) {
     for (int j = 0; j < B.m; j++) {
@@ -178,7 +178,7 @@ inline Matrix operator-(const ExprH &A, const Matrix &B) {
   return C;
 }
 
-inline Matrix operator-(const Matrix &B, const ExprH &A) {
+inline Matrix operator-(const Matrix &B, const Expr &A) {
   Matrix C(B.n, B.m);
   for (int i = 0; i < B.n; i++) {
     for (int j = 0; j < B.m; j++) {
@@ -239,7 +239,7 @@ inline Matrix operator-(const Matrix &A) {
 }
 
 /*
-inline ExprH operator-(const Expr &a) {
+inline Expr operator-(const Expr &a) {
   return n;
 }
 
@@ -255,7 +255,7 @@ inline Float32 lerp(Float a, Float x0, Float x1) {
 */
 
 inline Matrix sqr(const Matrix &M) {
-  return M.map([](ExprH e) { return e * e; });
+  return M.map([](Expr e) { return e * e; });
 }
 
 inline Matrix outer_product(Vector a, Vector b) {
@@ -270,11 +270,11 @@ inline Matrix outer_product(Vector a, Vector b) {
   return m;
 }
 
-inline ExprH norm2(const Matrix &mat) {
+inline Expr norm2(const Matrix &mat) {
   return mat.norm2();
 }
 
-inline ExprH norm(const Matrix &mat) {
+inline Expr norm(const Matrix &mat) {
   return sqrt(norm2(mat));
 }
 
@@ -283,7 +283,7 @@ inline Matrix normalized(const Matrix &mat) {
   return inv_l * mat;
 }
 
-inline ExprH clamp(ExprH input, ExprH l, ExprH h) {
+inline Expr clamp(Expr input, Expr l, Expr h) {
   return min(max(input, l), h);
 }
 

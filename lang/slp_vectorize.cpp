@@ -18,9 +18,20 @@ class BasicBlockSLP : public IRVisitor {
   std::unique_ptr<Stmt> tmp_stmt;
   Pack building_pack;
 
+  BasicBlockSLP() {
+    // allow_undefined_visitor = true;
+    // invoke_default_visitor = true;
+  }
+
+
   void update_type(Statement *stmt) {
     tmp_stmt->ret_type = stmt->ret_type;
     tmp_stmt->ret_type.width *= width;
+  }
+
+  void visit(ConstStmt *stmt) override {
+    tmp_stmt = std::make_unique<ConstStmt>(0);
+    update_type(stmt);
   }
 
   void visit(AllocaStmt *stmt) override {
@@ -87,11 +98,6 @@ class BasicBlockSLP : public IRVisitor {
     return ret;
   }
 
-  BasicBlockSLP() {
-    allow_undefined_visitor = true;
-    invoke_default_visitor = true;
-  }
-
   // replace with BBlock with SLP'ed block
   void run(Block *block, int width) {
     this->width = width;
@@ -129,14 +135,14 @@ class BasicBlockSLP : public IRVisitor {
     // sort the statements...
     // load/store...
     TC_TAG;
-    block->statements = std::move(new_stmts);
+    block->set_statements(std::move(new_stmts));
   }
 };
 
 class SLPVectorize : public IRVisitor {
  public:
   SLPVectorize() {
-    // allow_undefined_visitor = true;
+    allow_undefined_visitor = true;
     // invoke_default_visitor = true;
   }
 

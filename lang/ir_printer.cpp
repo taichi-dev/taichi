@@ -50,12 +50,12 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendAllocaStmt *alloca) {
-    print("{} ${} = alloca {}", alloca->type_hint(), alloca->id,
+    print("{}${} = alloca {}", alloca->type_hint(), alloca->id,
           alloca->ident.name());
   }
 
   void visit(AllocaStmt *alloca) {
-    print("{} ${} = alloca", alloca->type_hint(), alloca->id);
+    print("{}${} = alloca", alloca->type_hint(), alloca->id);
   }
 
   void visit(RandStmt *stmt) {

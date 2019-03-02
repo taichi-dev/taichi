@@ -137,8 +137,10 @@ class IRBuilder {
   ScopeGuard create_scope(std::unique_ptr<Block> &list);
 
   Block *current_block() {
-    if (stack.empty()) return nullptr;
-    else return stack.back();
+    if (stack.empty())
+      return nullptr;
+    else
+      return stack.back();
   }
 
   void create_function() {
@@ -536,7 +538,7 @@ class WhileControlStmt : public Statement {
  public:
   Stmt *mask;
   Stmt *cond;
-  WhileControlStmt(Stmt* mask, Stmt *cond) : mask(mask), cond(cond) {
+  WhileControlStmt(Stmt *mask, Stmt *cond) : mask(mask), cond(cond) {
   }
   DEFINE_ACCEPT;
 };
@@ -838,6 +840,13 @@ class Block : public IRNode {
     }
   }
 
+  void set_statements(VecStatement &&stmts) {
+    statements.clear();
+    for (int i = 0; i < (int)stmts.size(); i++) {
+      insert(std::move(stmts[i]), i);
+    }
+  }
+
   void replace_with(Statement *old_statement,
                     std::unique_ptr<Statement> &&new_statement) {
     std::vector<std::unique_ptr<Statement>> vec;
@@ -861,7 +870,7 @@ class Block : public IRNode {
     }
   }
 
-  Stmt* lookup_var(Ident ident) const {
+  Stmt *lookup_var(Ident ident) const {
     auto ptr = local_var_alloca.find(ident);
     if (ptr != local_var_alloca.end()) {
       return ptr->second;
@@ -1150,7 +1159,8 @@ class IdExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    ret.push_back(std::make_unique<LocalLoadStmt>(current_block->lookup_var(id)));
+    ret.push_back(
+        std::make_unique<LocalLoadStmt>(current_block->lookup_var(id)));
     stmt = ret.back().get();
   }
 };

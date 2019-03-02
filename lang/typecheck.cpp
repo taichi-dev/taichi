@@ -19,10 +19,6 @@ class TypeCheck : public IRVisitor {
   void visit(AllocaStmt *stmt) {
   }
 
-  void visit(TmpValStmt *stmt) {
-    stmt->ret_type = stmt->val->ret_type;
-  }
-
   void visit(IfStmt *if_stmt) {
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);

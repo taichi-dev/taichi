@@ -89,11 +89,6 @@ class IRCodeGen : public IRVisitor {
          stmt->ret_data_type_name());
   }
 
-  void visit(TmpValStmt *stmt) {
-    emit("const {} {} = {};", stmt->ret_data_type_name(), stmt->raw_name(),
-         stmt->val->raw_name());
-  }
-
   void visit(BinaryOpStmt *bin) {
     emit("const {} {} = {}({}, {});", bin->ret_data_type_name(),
          bin->raw_name(), binary_type_name(bin->op_type), bin->lhs->raw_name(),

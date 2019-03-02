@@ -19,7 +19,6 @@ class FrontendForStmt;
 class FrontendPrintStmt;
 class FrontendWhileStmt;
 class FrontendAllocaStmt;
-class FrontendTmpValStmt;
 class FrontendAssignStmt;
 
 // Midend Statement
@@ -39,7 +38,6 @@ class GlobalStoreStmt;
 class LocalLoadStmt;
 class LocalStoreStmt;
 class GlobalPtrStmt;
-class TmpValStmt;
 class PrintStmt;
 class RandStmt;
 
@@ -240,8 +238,6 @@ class IRVisitor {
   DEFINE_VISIT(FrontendWhileStmt);
   DEFINE_VISIT(WhileStmt);
   DEFINE_VISIT(WhileControlStmt);
-  DEFINE_VISIT(TmpValStmt);
-  DEFINE_VISIT(FrontendTmpValStmt);
   DEFINE_VISIT(RandStmt);
 };
 
@@ -612,46 +608,6 @@ class UnaryOpExpression : public Expression {
     stmt = unary.get();
     ret.push_back(std::move(unary));
   }
-};
-
-class TmpValExpression : public Expression {
- public:
-  Stmt *val;
-
-  TmpValExpression(Stmt *val) : val(val) {
-  }
-
-  std::string serialize() override {
-    TC_ASSERT(val);
-    return fmt::format("(cached {})", val->name());
-  }
-
-  void flatten(VecStatement &ret) override {
-    ret.emplace_back(std::make_unique<TmpValStmt>(val));
-    stmt = ret.back().get();
-  }
-};
-
-class FrontendTmpValStmt : public Statement {
- public:
-  ExprH val;
-
-  FrontendTmpValStmt(const ExprH val) : val(val) {
-    TC_NOT_IMPLEMENTED
-  }
-
-  DEFINE_ACCEPT
-};
-
-class TmpValStmt : public Statement {
- public:
-  Statement *val;
-
-  TmpValStmt(Statement *val) : val(val) {
-    add_operand(this->val);
-  }
-
-  DEFINE_ACCEPT
 };
 
 class BinaryOpStmt : public Statement {

@@ -6,44 +6,44 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// No Expr nodes - make everything as close to SSA as possible
-
 class IRBuilder;
 class IRNode;
 class Block;
 class Statement;
 using Stmt = Statement;
+class SNode;
 
-// statements
-class ConstStmt;
-class IfStmt;  // frontend stmts
-
+// Frontend Statements
 class FrontendIfStmt;
 class FrontendForStmt;
 class FrontendPrintStmt;
 class FrontendWhileStmt;
 class FrontendAllocaStmt;
 class FrontendTmpValStmt;
+class FrontendAssignStmt;
 
+// Midend Statement
+class ConstStmt;
+class IfStmt;
 class RangeForStmt;
 class WhileStmt;
 class WhileControlStmt;
-class AssignStmt;
 class AllocaStmt;
+
+// Without per-lane attributes:
 class UnaryOpStmt;
 class BinaryOpStmt;
+class GlobalLoadStmt;
+class GlobalStoreStmt;
+
 class LocalLoadStmt;
 class LocalStoreStmt;
 class GlobalPtrStmt;
-class GlobalLoadStmt;
-class GlobalStoreStmt;
 class TmpValStmt;
 class PrintStmt;
 class RandStmt;
-class WhileControlStmt;
 
-class SNode;
-
+// IR passes
 namespace irpass {
 
 void print(IRNode *root);
@@ -220,7 +220,7 @@ class IRVisitor {
   }
 
   DEFINE_VISIT(Block);
-  DEFINE_VISIT(AssignStmt);
+  DEFINE_VISIT(FrontendAssignStmt);
   DEFINE_VISIT(FrontendAllocaStmt);
   DEFINE_VISIT(AllocaStmt);
   DEFINE_VISIT(BinaryOpStmt);
@@ -896,11 +896,11 @@ class Block : public IRNode {
   DEFINE_ACCEPT
 };
 
-class AssignStmt : public Statement {
+class FrontendAssignStmt : public Statement {
  public:
   ExprH lhs, rhs;
 
-  AssignStmt(ExprH lhs, ExprH rhs);
+  FrontendAssignStmt(ExprH lhs, ExprH rhs);
 
   DEFINE_ACCEPT
 };

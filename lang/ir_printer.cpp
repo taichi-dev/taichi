@@ -37,7 +37,7 @@ class IRPrinter : public IRVisitor {
     current_indent--;
   }
 
-  void visit(AssignStmt *assign) {
+  void visit(FrontendAssignStmt *assign) {
     print("{} = {}", assign->lhs->serialize(), assign->rhs->serialize());
   }
 

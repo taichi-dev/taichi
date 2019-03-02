@@ -172,7 +172,7 @@ class LowerAST : public IRVisitor {
     for_stmt->body->accept(this);
   }
 
-  void visit(AssignStmt *assign) {
+  void visit(FrontendAssignStmt *assign) {
     // expand rhs
     auto expr = assign->rhs;
     VecStatement flattened;

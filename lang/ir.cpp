@@ -31,7 +31,7 @@ void ExprH::operator=(const ExpressionHandle &o) {
     current_ast_builder().insert(std::move(stmt));
     */
   }
-  current_ast_builder().insert(std::make_unique<AssignStmt>(*this, o));
+  current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(*this, o));
 }
 
 FrontendContext::FrontendContext() {
@@ -68,7 +68,7 @@ IRNode *Stmt::get_ir_root() {
   return dynamic_cast<IRNode *>(block);
 }
 
-AssignStmt::AssignStmt(ExprH lhs, ExprH rhs) : lhs(lhs), rhs(rhs) {
+FrontendAssignStmt::FrontendAssignStmt(ExprH lhs, ExprH rhs) : lhs(lhs), rhs(rhs) {
   TC_ASSERT(lhs.is<IdExpression>() || lhs.is<GlobalPtrExpression>());
 }
 

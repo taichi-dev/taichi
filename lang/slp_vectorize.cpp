@@ -23,7 +23,6 @@ class BasicBlockSLP : public IRVisitor {
     // invoke_default_visitor = true;
   }
 
-
   void update_type(Statement *stmt) {
     tmp_stmt->ret_type = stmt->ret_type;
     tmp_stmt->ret_type.width *= width;
@@ -150,6 +149,7 @@ class SLPVectorize : public IRVisitor {
     if (block->slp != 1) {
       auto slp = BasicBlockSLP();
       slp.run(block, block->slp);
+      block->slp = 1;
     } else {
       for (auto &stmt : block->statements) {
         stmt->accept(this);

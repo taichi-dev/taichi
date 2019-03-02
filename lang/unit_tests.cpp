@@ -546,10 +546,10 @@ TC_TEST("slp") {
       SLP(2);
       // a[i] = a[i] + 1;
       // b[i] = b[i] + 2;
-      // a[i] = 1;
-      // b[i] = 2;
-      local(x) = 1;
-      local(y) = 1;
+      a[i] = 1;
+      b[i] = 2;
+      // local(x) = 1;
+      // local(y) = 1;
     });
   });
 

@@ -164,11 +164,20 @@ class IRCodeGen : public IRVisitor {
       emit("omp_set_num_threads({});", for_stmt->parallelize);
       emit("#pragma omp parallel for");
     }
-    emit("for ({} {} = {}; {} < {}; {} = {} +  {}({})) {{",
-         loop_var->ret_data_type_name(), loop_var->raw_name(),
-         for_stmt->begin->raw_name(), loop_var->raw_name(),
-         for_stmt->end->raw_name(), loop_var->raw_name(), loop_var->raw_name(),
-         loop_var->ret_data_type_name(), for_stmt->vectorize);
+    if (loop_var->ret_type.width == 1 &&
+        loop_var->ret_type.data_type == DataType::i32) {
+      emit("for (int {} = {}; {} < {}; {} = {} + {}) {{", loop_var->raw_name(),
+           for_stmt->begin->raw_name(), loop_var->raw_name(),
+           for_stmt->end->raw_name(), loop_var->raw_name(),
+           loop_var->raw_name(), for_stmt->vectorize);
+    } else {
+      emit("for ({} {} = {}; {} < {}; {} = {} +  {}({})) {{",
+           loop_var->ret_data_type_name(), loop_var->raw_name(),
+           for_stmt->begin->raw_name(), loop_var->raw_name(),
+           for_stmt->end->raw_name(), loop_var->raw_name(),
+           loop_var->raw_name(), loop_var->ret_data_type_name(),
+           for_stmt->vectorize);
+    }
     for_stmt->body->accept(this);
     emit("}}");
   }

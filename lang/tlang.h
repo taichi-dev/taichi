@@ -14,7 +14,6 @@ inline int maximum(int a) {
 #include <dlfcn.h>
 
 #include "util.h"
-#include "visitor.h"
 #include "math.h"
 #include "codegen_cpu.h"
 #include "program.h"

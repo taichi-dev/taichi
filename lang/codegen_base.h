@@ -1,10 +1,9 @@
 #include "util.h"
-#include "visitor.h"
 #include <dlfcn.h>
 
 TLANG_NAMESPACE_BEGIN
 
-class CodeGenBase : public Visitor {
+class CodeGenBase {
  public:
   int var_count;
   int snode_count;
@@ -90,7 +89,7 @@ class CodeGenBase : public Visitor {
     return id++;
   }
 
-  CodeGenBase() : Visitor(Visitor::Order::child_first) {
+  CodeGenBase() {
     id = get_code_gen_id();
     func_name = fmt::format("func{:06d}", id);
     suffix = "cpp";  // TODO: remove this hack

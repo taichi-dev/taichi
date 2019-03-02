@@ -27,13 +27,13 @@ struct IndexExtractor {
 struct Matrix;
 class ExpressionHandle;
 
-class Expr {
+class Index {
  public:
   int value;
-  Expr() {
+  Index() {
     value = 0;
   }
-  Expr(int value) : value(value) {
+  Index(int value) : value(value) {
   }
 };
 
@@ -97,7 +97,7 @@ class SNode {
 
   // Let us deal with 1D case first
   // SNodes maintains how flattened index bits are taken from indices
-  SNode &fixed(std::vector<Expr> indices, std::vector<int> sizes) {
+  SNode &fixed(std::vector<Index> indices, std::vector<int> sizes) {
     TC_ASSERT(indices.size() == sizes.size())
     bool all_one = true;
     for (auto s : sizes) {
@@ -120,8 +120,8 @@ class SNode {
     return new_node;
   }
 
-  SNode &fixed(const Expr &index, int size) {
-    return SNode::fixed(std::vector<Expr>{index}, {size});
+  SNode &fixed(const Index &index, int size) {
+    return SNode::fixed(std::vector<Index>{index}, {size});
   }
 
   SNode &forked() {
@@ -175,7 +175,7 @@ class SNode {
   }
   */
 
-  SNode &indirect(Expr &expr, int n) {
+  SNode &indirect(Index &expr, int n) {
     auto &child = insert_children(SNodeType::indirect);
     child.index_id = expr.value;
     // child.extractors[child.index_id].num_bits = 0;
@@ -183,7 +183,7 @@ class SNode {
     return child;
   }
 
-  SNode &dynamic(Expr &expr, int n) {
+  SNode &dynamic(Index &expr, int n) {
     TC_ASSERT(bit::is_power_of_two(n));
     auto &child = insert_children(SNodeType::dynamic);
     // child.index_id = expr->value<int>(0);
@@ -192,7 +192,7 @@ class SNode {
     return child;
   }
 
-  SNode &hashed(Expr &expr, int n) {
+  SNode &hashed(Index &expr, int n) {
     TC_ASSERT_INFO(depth == 0,
                    "hashed node must be child of root due to initialization "
                    "memset limitation.");

@@ -2,13 +2,10 @@
 
 #include <set>
 #include "util.h"
-#include "visitor.h"
 #include "codegen_base.h"
 #include "program.h"
 
 TLANG_NAMESPACE_BEGIN
-
-void visualize_IR(std::string fn, Expr &expr);
 
 class Program;
 
@@ -23,11 +20,9 @@ class CPUCodeGen : public CodeGenBase {
   Kernel *current_kernel;
   std::map<std::string, std::string> constant_vectors;  // statement to var name
   int constant_counter;
-  std::set<Expr> visited;
   bool has_residual;
   bool generating_residual;
   std::map<int, std::string> masks;
-  std::map<Expr, int> reducer_id;
 
  public:
   std::string get_constant(std::string statement) {

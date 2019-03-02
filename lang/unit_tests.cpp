@@ -12,7 +12,7 @@ TC_TEST("compiler_linalg") {
 
   declare(a_global);
   auto a = global_new(a_global, DataType::i32);
-  auto i = Expr(0);
+  auto i = Index(0);
 
   layout([&]() { root.fixed(i, 128).place(a); });
 
@@ -45,7 +45,7 @@ TC_TEST("compiler_basics") {
 
   declare(a_global);
   auto a = global_new(a_global, DataType::i32);
-  auto i = Expr(0);
+  auto i = Index(0);
   layout([&]() { root.fixed(i, n).place(a); });
 
   auto dou = [](ExprH a) { return a * 2; };
@@ -75,7 +75,7 @@ TC_TEST("simd_if") {
 
   declare(a_global);
   auto a = global_new(a_global, DataType::i32);
-  auto i = Expr(0);
+  auto i = Index(0);
   layout([&]() { root.fixed(i, n).place(a); });
 
   auto dou = [](ExprH a) { return a * 2; };
@@ -105,7 +105,7 @@ TC_TEST("simd_if2") {
 
   declare(a_global);
   auto a = global_new(a_global, DataType::i32);
-  auto i = Expr(0);
+  auto i = Index(0);
   layout([&]() { root.fixed(i, n).place(a); });
 
   auto func = kernel([&]() {
@@ -135,7 +135,7 @@ auto test_circle = [] {
 
   declare(a_global);
   auto a = global_new(a_global, DataType::i32);
-  auto i = Expr(0);
+  auto i = Index(0);
 
   layout([&]() { root.fixed(i, n * n).place(a); });
 

@@ -637,6 +637,7 @@ class FrontendTmpValStmt : public Statement {
   ExprH val;
 
   FrontendTmpValStmt(const ExprH val) : val(val) {
+    TC_NOT_IMPLEMENTED
   }
 
   DEFINE_ACCEPT

@@ -55,13 +55,13 @@ void Expr::operator+=(const Expr &o) {
   (*this) = (*this) + o;
 }
 void Expr::operator-=(const Expr &o) {
-  (*this) = (*this) + o;
+  (*this) = (*this) - o;
 }
 void Expr::operator*=(const Expr &o) {
-  (*this) = (*this) + o;
+  (*this) = (*this) * o;
 }
 void Expr::operator/=(const Expr &o) {
-  (*this) = (*this) + o;
+  (*this) = (*this) / o;
 }
 
 FrontendForStmt::FrontendForStmt(Expr loop_var, Expr begin, Expr end)

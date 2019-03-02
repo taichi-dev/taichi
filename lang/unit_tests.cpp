@@ -199,11 +199,11 @@ auto test_ast = []() {
   If(a > 5)
       .Then([&] {
         b = (b + 1) / 3;
-        b = b * 3;
+        b *= 3;
       })
       .Else([&] {
         b = b + 2;
-        b = b - 4;
+        b -= 4;
       });
 
   For(i, 0, 8, [&] {
@@ -305,8 +305,8 @@ TC_TEST("while") {
       local(j) = 0;
       local(sum) = 0;
       While(j < i, [&] {
-        sum = sum + j;
-        j = j + 1;
+        sum += j;
+        j += 1;
       });
       a[i] = sum;
     });
@@ -354,7 +354,7 @@ auto mset = [&] {
           local(new_im) = 2.0f * z_re * z_im;
           z_re = c_re + new_re;
           z_im = c_im + new_im;
-          j = j + 1;
+          j += 1;
         });
       } else {
         Vector c(2);
@@ -366,7 +366,7 @@ auto mset = [&] {
 
         While(j < limit && z.norm2() < 4.0f, [&] {
           z = complex_mul(z, z) + c;
-          j = j + 1;
+          j += 1;
         });
       }
       a[i] = j;
@@ -427,8 +427,8 @@ auto ray_march = [&] {
     local(dist) = 0.0f;
 
     While(j < limit && sdf(p + dist * dir) > eps && dist < dist_limit, [&] {
-      dist = dist + sdf(p + dist * dir);
-      j = j + 1;
+      dist += sdf(p + dist * dir);
+      j += 1;
     });
     return dist;
   };
@@ -438,8 +438,8 @@ auto ray_march = [&] {
     Vector n(3);
     for (int i = 0; i < 3; i++) {
       Vector inc = p, dec = p;
-      inc(i) = inc(i) + d;
-      dec(i) = dec(i) - d;
+      inc(i) += d;
+      dec(i) -= d;
       n(i) = (0.5f / d) * (sdf(inc) - sdf(dec));
     }
     return normalized(n);
@@ -481,7 +481,7 @@ auto ray_march = [&] {
       local(depth) = 0;
 
       While(depth < depth_limit, [&] {
-        depth = depth + 1;
+        depth += 1;
         local(_dist) = ray_march(orig, c);
         If(_dist < dist_limit,
            [&] {

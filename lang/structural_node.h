@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class ExpressionHandle;
+class Expr;
 
 TC_FORCE_INLINE int32 constexpr operator"" _bits(unsigned long long a) {
   return 1 << a;
@@ -25,7 +25,7 @@ struct IndexExtractor {
 };
 
 struct Matrix;
-class ExpressionHandle;
+class Expr;
 
 class Index {
  public:
@@ -140,7 +140,7 @@ class SNode {
   }
 
   template <typename... Args>
-  SNode &place(ExpressionHandle &expr, Args &&... args) {
+  SNode &place(Expr &expr, Args &&... args) {
     return place(expr).place(std::forward<Args>(args)...);
   }
 
@@ -165,7 +165,7 @@ class SNode {
     }
   }
 
-  SNode &place(ExpressionHandle &expr);
+  SNode &place(Expr &expr);
 
   /*
   SNode &place_verbose(Expr &expr) {

@@ -11,7 +11,11 @@ class IRNode;
 class Block;
 class Statement;
 using Stmt = Statement;
+
 class SNode;
+class Expression;
+class Expr;
+class ExpressionGroup;
 
 // Frontend Statements
 class FrontendIfStmt;
@@ -149,9 +153,6 @@ class IRBuilder {
 inline IRBuilder &current_ast_builder() {
   return context->builder();
 }
-
-class ExpressionHandle;
-using Expr = ExpressionHandle;
 
 inline Expr load_if_ptr(const Expr &ptr);
 
@@ -434,35 +435,34 @@ class Expression {
   };
 };
 
-class ExpressionGroup;
 
-class ExpressionHandle {
+class Expr {
  public:
   std::shared_ptr<Expression> expr;
 
-  ExpressionHandle() {
+  Expr() {
   }
 
-  ExpressionHandle(int32 x);
+  Expr(int32 x);
 
-  ExpressionHandle(float32 x);
+  Expr(float32 x);
 
-  ExpressionHandle(std::shared_ptr<Expression> expr) : expr(expr) {
+  Expr(std::shared_ptr<Expression> expr) : expr(expr) {
   }
 
-  void set(const ExpressionHandle &o) {
+  void set(const Expr &o) {
     expr = o.expr;
   }
 
-  ExpressionHandle(const ExpressionHandle &o) {
+  Expr(const Expr &o) {
     set(o);
   }
 
-  ExpressionHandle(ExpressionHandle &&o) {
+  Expr(Expr &&o) {
     set(o);
   }
 
-  ExpressionHandle(Identifier id);
+  Expr(Identifier id);
 
   Expression *operator->() {
     return expr.get();
@@ -478,9 +478,9 @@ class ExpressionHandle {
     return cast<T>() != nullptr;
   }
 
-  void operator=(const ExpressionHandle &o);
+  void operator=(const Expr &o);
 
-  ExpressionHandle operator[](ExpressionGroup);
+  Expr operator[](ExpressionGroup);
 
   std::string serialize() const {
     TC_ASSERT(expr);
@@ -584,10 +584,10 @@ class RandExpression : public Expression {
 class UnaryOpExpression : public Expression {
  public:
   UnaryType type;
-  ExpressionHandle rhs;
+  Expr rhs;
   DataType cast_type;
 
-  UnaryOpExpression(UnaryType type, ExpressionHandle rhs)
+  UnaryOpExpression(UnaryType type, Expr rhs)
       : type(type), rhs(load_if_ptr(rhs)) {
     cast_type = DataType::unknown;
   }
@@ -628,11 +628,11 @@ class BinaryOpStmt : public Statement {
 class BinaryOpExpression : public Expression {
  public:
   BinaryType type;
-  ExpressionHandle lhs, rhs;
+  Expr lhs, rhs;
 
   BinaryOpExpression(BinaryType type,
-                     const ExpressionHandle &lhs,
-                     const ExpressionHandle &rhs)
+                     const Expr &lhs,
+                     const Expr &rhs)
       : type(type) {
     this->lhs.set(load_if_ptr(lhs));
     this->rhs.set(load_if_ptr(rhs));
@@ -721,9 +721,9 @@ class GlobalPtrExpression : public Expression {
 };
 
 #define DEFINE_EXPRESSION_OP(op, op_name)                                     \
-  inline ExpressionHandle operator op(const ExpressionHandle &lhs,            \
-                                      const ExpressionHandle &rhs) {          \
-    return ExpressionHandle(                                                  \
+  inline Expr operator op(const Expr &lhs,            \
+                                      const Expr &rhs) {          \
+    return Expr(                                                  \
         std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs, rhs)); \
   }
 
@@ -757,9 +757,9 @@ DEFINE_EXPRESSION_OP(>=, cmp_ge)
 DEFINE_EXPRESSION_OP(==, cmp_eq)
 
 #define DEFINE_EXPRESSION_FUNC(op_name)                                       \
-  inline ExpressionHandle op_name(const ExpressionHandle &lhs,                \
-                                  const ExpressionHandle &rhs) {              \
-    return ExpressionHandle(                                                  \
+  inline Expr op_name(const Expr &lhs,                \
+                                  const Expr &rhs) {              \
+    return Expr(                                                  \
         std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs, rhs)); \
   }
 
@@ -945,10 +945,10 @@ class IfStmt : public Statement {
 
 class FrontendIfStmt : public Statement {
  public:
-  ExpressionHandle condition;
+  Expr condition;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  FrontendIfStmt(ExpressionHandle condition) : condition(condition) {
+  FrontendIfStmt(Expr condition) : condition(condition) {
   }
 
   DEFINE_ACCEPT
@@ -981,13 +981,13 @@ class If {
  public:
   FrontendIfStmt *stmt;
 
-  If(ExpressionHandle cond) {
+  If(Expr cond) {
     auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond);
     stmt = stmt_tmp.get();
     current_ast_builder().insert(std::move(stmt_tmp));
   }
 
-  If(ExpressionHandle cond, const std::function<void()> &func) : If(cond) {
+  If(Expr cond, const std::function<void()> &func) : If(cond) {
     Then(func);
   }
 
@@ -1096,7 +1096,7 @@ inline void IRBuilder::insert(std::unique_ptr<Statement> &&stmt, int location) {
 
 #define Print(x) Print_(x, #x);
 
-inline void Print_(const ExpressionHandle &a, std::string str) {
+inline void Print_(const Expr &a, std::string str) {
   current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a, str));
 }
 
@@ -1172,24 +1172,24 @@ class ConstExpression : public Expression {
 };
 
 template <typename T>
-inline void declare_var(ExpressionHandle &a) {
+inline void declare_var(Expr &a) {
   current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(a.expr)->id, get_data_type<T>()));
 }
 
-inline void declare_var(ExpressionHandle &a) {
+inline void declare_var(Expr &a) {
   current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(a.expr)->id, DataType::unknown));
 }
 
-inline Expr ExpressionHandle::operator[](ExpressionGroup indices) {
+inline Expr Expr::operator[](ExpressionGroup indices) {
   TC_ASSERT(is<GlobalVariableExpression>());
   return Expr(std::make_shared<GlobalPtrExpression>(
       cast<GlobalVariableExpression>(), indices));
 }
 
 #define declare(x) \
-  auto x = ExpressionHandle(std::make_shared<IdExpression>(#x));
+  auto x = Expr(std::make_shared<IdExpression>(#x));
 
 #define var(type, x) declare_var<type>(x);
 
@@ -1219,7 +1219,7 @@ T &Expr::val(Indices... indices) {
 
 inline Expr load(Expr ptr) {
   TC_ASSERT(ptr.is<GlobalPtrExpression>());
-  return ExpressionHandle(std::make_shared<GlobalLoadExpression>(ptr));
+  return Expr(std::make_shared<GlobalLoadExpression>(ptr));
 }
 
 inline Expr load_if_ptr(const Expr &ptr) {

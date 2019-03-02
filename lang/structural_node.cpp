@@ -14,7 +14,7 @@ SNode &SNode::place(Matrix &mat) {
 }
 */
 
-SNode &SNode::place(ExpressionHandle &expr_) {
+SNode &SNode::place(Expr &expr_) {
   TC_ASSERT(expr_.is<GlobalVariableExpression>());
   auto expr = expr_.cast<GlobalVariableExpression>();
   auto &child = insert_children(SNodeType::place);

@@ -19,7 +19,7 @@ IRBuilder::ScopeGuard IRBuilder::create_scope(std::unique_ptr<Block> &list) {
   return ScopeGuard(this, list.get());
 }
 
-void Expr::operator=(const ExpressionHandle &o) {
+void Expr::operator=(const Expr &o) {
   if (this->expr == nullptr) {
     // create an anonymous local variable
     auto id = Identifier();
@@ -39,15 +39,15 @@ FrontendContext::FrontendContext() {
   current_builder = std::make_unique<IRBuilder>(root_node.get());
 }
 
-ExpressionHandle::ExpressionHandle(int32 x) {
+Expr::Expr(int32 x) {
   expr = std::make_shared<ConstExpression>(x);
 }
 
-ExpressionHandle::ExpressionHandle(float32 x) {
+Expr::Expr(float32 x) {
   expr = std::make_shared<ConstExpression>(x);
 }
 
-ExpressionHandle::ExpressionHandle(Identifier id) {
+Expr::Expr(Identifier id) {
   expr = std::make_shared<IdExpression>(id);
 }
 

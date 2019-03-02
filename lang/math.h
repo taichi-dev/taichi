@@ -136,6 +136,13 @@ struct Matrix {
   Expr norm() const {
     return sqrt(norm2());
   }
+
+  template <typename T>
+  void operator+=(const T &o);
+  template <typename T>
+  void operator-=(const T &o);
+  template <typename T>
+  void operator*=(const T &o);
 };
 
 inline Matrix operator*(const Expr &A, const Matrix &B) {
@@ -236,6 +243,21 @@ inline Matrix operator-(const Matrix &A) {
     }
   }
   return C;
+}
+
+template <typename T>
+void Matrix::operator+=(const T &o) {
+  (*this) = (*this) + o;
+}
+
+template <typename T>
+void Matrix::operator-=(const T &o) {
+  (*this) = (*this) - o;
+}
+
+template <typename T>
+void Matrix::operator*=(const T &o) {
+  (*this) = (*this) * o;
 }
 
 /*

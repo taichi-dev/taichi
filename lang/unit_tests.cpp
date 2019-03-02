@@ -485,12 +485,12 @@ auto ray_march = [&] {
         local(_dist) = ray_march(orig, c);
         If(_dist < dist_limit,
            [&] {
-             orig = orig + _dist * c;
+             orig += _dist * c;
              Vector nor;
              nor = normal(orig);
              c = normalized(out_dir(nor));
-             orig = orig + 0.01f * c;
-             color = 0.7_f * color;
+             orig += 0.01f * c;
+             color *= 0.7_f;
            })
             .Else([&] {
               color = color * background(c);
@@ -498,9 +498,9 @@ auto ray_march = [&] {
             });
       });
 
-      color_r[i] = color_r[i] + color(0);
-      color_g[i] = color_g[i] + color(1);
-      color_b[i] = color_b[i] + color(2);
+      color_r[i] += color(0);
+      color_g[i] += color(1);
+      color_b[i] += color(2);
     });
   });
 

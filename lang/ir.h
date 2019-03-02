@@ -494,6 +494,11 @@ class Expr {
 
   template <typename T, typename... Indices>
   T &val(Indices... indices);
+
+  void operator+=(const Expr &o);
+  void operator-=(const Expr &o);
+  void operator*=(const Expr &o);
+  void operator/=(const Expr &o);
 };
 
 class ExpressionGroup {

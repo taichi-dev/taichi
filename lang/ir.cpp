@@ -51,6 +51,19 @@ Expr::Expr(Identifier id) {
   expr = std::make_shared<IdExpression>(id);
 }
 
+void Expr::operator+=(const Expr &o) {
+  (*this) = (*this) + o;
+}
+void Expr::operator-=(const Expr &o) {
+  (*this) = (*this) + o;
+}
+void Expr::operator*=(const Expr &o) {
+  (*this) = (*this) + o;
+}
+void Expr::operator/=(const Expr &o) {
+  (*this) = (*this) + o;
+}
+
 FrontendForStmt::FrontendForStmt(Expr loop_var, Expr begin, Expr end)
     : begin(begin), end(end) {
   vectorize = dec.vectorize;
@@ -68,7 +81,8 @@ IRNode *Stmt::get_ir_root() {
   return dynamic_cast<IRNode *>(block);
 }
 
-FrontendAssignStmt::FrontendAssignStmt(Expr lhs, Expr rhs) : lhs(lhs), rhs(rhs) {
+FrontendAssignStmt::FrontendAssignStmt(Expr lhs, Expr rhs)
+    : lhs(lhs), rhs(rhs) {
   TC_ASSERT(lhs.is<IdExpression>() || lhs.is<GlobalPtrExpression>());
 }
 

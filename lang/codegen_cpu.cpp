@@ -9,54 +9,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-/*
-class TikzGen : public Visitor {
- public:
-  std::string graph;
-  TikzGen() : Visitor(Visitor::Order::parent_first) {
-  }
-
-  std::string expr_name(Expr expr) {
-    std::string members = "";
-    if (!expr) {
-      TC_ERROR("expr = 0");
-    }
-    if (expr->members.size()) {
-      members = "[";
-      bool first = true;
-      for (auto m : expr->members) {
-        if (!first)
-          members += ", ";
-        members += fmt::format("{}", m->id);
-        first = false;
-      }
-      members += "]";
-    }
-    return fmt::format("\"({}){}{}\"", expr->id, members,
-                       expr->node_type_name());
-  }
-
-  void link(Expr a, Expr b) {
-    graph += fmt::format("{} -> {}; ", expr_name(a), expr_name(b));
-  }
-
-  void visit(Expr &expr) override {
-    for (auto &ch : expr->ch) {
-      link(expr, ch);
-    }
-  }
-};
-
-void visualize_IR(std::string fn, Expr &expr) {
-  TikzGen gen;
-  expr.accept(gen);
-  auto cmd =
-      fmt::format("python3 {}/projects/taichi_lang/make_graph.py {} '{}'",
-                  get_repo_dir(), fn, gen.graph);
-  trash(system(cmd.c_str()));
-}
-*/
-
 class IRCodeGen : public IRVisitor {
  public:
   CodeGenBase *codegen;
@@ -161,12 +113,13 @@ class IRCodeGen : public IRVisitor {
     }
     if (loop_var->ret_type.width == 1 &&
         loop_var->ret_type.data_type == DataType::i32) {
-      emit("for (int {} = {}; {} < {}; {} = {} + {}) {{", loop_var->raw_name(),
-           for_stmt->begin->raw_name(), loop_var->raw_name(),
-           for_stmt->end->raw_name(), loop_var->raw_name(),
-           loop_var->raw_name(), for_stmt->vectorize);
+      emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{",
+           loop_var->raw_name(), for_stmt->begin->raw_name(),
+           loop_var->raw_name(), for_stmt->end->raw_name(),
+           loop_var->raw_name(), loop_var->raw_name(), for_stmt->vectorize);
+      emit("{} = {}_;", loop_var->raw_name(), loop_var->raw_name());
     } else {
-      emit("for ({} {} = {}; {} < {}; {} = {} +  {}({})) {{",
+      emit("for ({} {} = {}; {} < {}; {} = {} + {}({})) {{",
            loop_var->ret_data_type_name(), loop_var->raw_name(),
            for_stmt->begin->raw_name(), loop_var->raw_name(),
            for_stmt->end->raw_name(), loop_var->raw_name(),
@@ -178,14 +131,30 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) {
-    auto ptr = stmt->ptr[0].var;
-    auto var_width = ptr->ret_type.width;
-    if (var_width == 1) {
+    // TODO: optimize for partially vectorized load...
+
+    bool linear_index = true;
+    for (int i = 0; i < (int)stmt->ptr.size(); i++) {
+      if (stmt->ptr[i].offset != i) {
+        linear_index = false;
+      }
+    }
+    if (stmt->same_source() && linear_index &&
+        stmt->width() == stmt->ptr[0].var->width()) {
+      auto ptr = stmt->ptr[0].var;
       emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
            ptr->raw_name());
     } else {
-      emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
-           ptr->raw_name());
+      std::string init_v;
+      for (int i = 0; i < stmt->width(); i++) {
+        init_v += fmt::format("{}[{}]", stmt->ptr[i].var->raw_name(),
+                              stmt->ptr[i].offset);
+        if (i + 1 < stmt->width()) {
+          init_v += ", ";
+        }
+      }
+      emit("const {} {}({{{}}});", stmt->ret_data_type_name(), stmt->raw_name(),
+           init_v);
     }
   }
 

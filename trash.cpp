@@ -429,3 +429,52 @@ auto memcpy_test = []() {
 };
 
 TC_REGISTER_TASK(memcpy_test);
+
+/*
+class TikzGen : public Visitor {
+ public:
+  std::string graph;
+  TikzGen() : Visitor(Visitor::Order::parent_first) {
+  }
+
+  std::string expr_name(Expr expr) {
+    std::string members = "";
+    if (!expr) {
+      TC_ERROR("expr = 0");
+    }
+    if (expr->members.size()) {
+      members = "[";
+      bool first = true;
+      for (auto m : expr->members) {
+        if (!first)
+          members += ", ";
+        members += fmt::format("{}", m->id);
+        first = false;
+      }
+      members += "]";
+    }
+    return fmt::format("\"({}){}{}\"", expr->id, members,
+                       expr->node_type_name());
+  }
+
+  void link(Expr a, Expr b) {
+    graph += fmt::format("{} -> {}; ", expr_name(a), expr_name(b));
+  }
+
+  void visit(Expr &expr) override {
+    for (auto &ch : expr->ch) {
+      link(expr, ch);
+    }
+  }
+};
+
+void visualize_IR(std::string fn, Expr &expr) {
+  TikzGen gen;
+  expr.accept(gen);
+  auto cmd =
+      fmt::format("python3 {}/projects/taichi_lang/make_graph.py {} '{}'",
+                  get_repo_dir(), fn, gen.graph);
+  trash(system(cmd.c_str()));
+}
+*/
+

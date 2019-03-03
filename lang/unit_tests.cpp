@@ -270,7 +270,7 @@ TC_TEST("simd_fpe") {
 
 TC_TEST("rand") {
   CoreState::set_trigger_gdb_when_crash(true);
-  int n = 4096;
+  int n = 8;
   Program prog(Arch::x86_64);
 
   declare(a_global);
@@ -388,6 +388,7 @@ auto ray_march = [&] {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 512;
   Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
 
   declare(color_r_global);
   declare(color_g_global);
@@ -401,7 +402,7 @@ auto ray_march = [&] {
   });
 
   auto sdf = [&](Vector p_) {
-    float alpha = -0.7;
+    float alpha = -0.7f;
     Vector p(3);
     p(0) = (cos(alpha) * p_(0) + sin(alpha) * p_(2) + 1.0_f) % 2.0_f - 1.0_f;
     p(1) = p_(1);
@@ -465,7 +466,7 @@ auto ray_march = [&] {
 
   auto main = kernel([&]() {
     declare(i);
-    Parallelize(8);
+    // Parallelize(8);
     Vectorize(8);
     For(i, 0, n * n * 2, [&] {
       Vector orig({0.0f, 0.0f, 12.0f}), c(3);

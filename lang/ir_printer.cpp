@@ -158,7 +158,7 @@ class IRPrinter : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) {
     print("{}{} = load {}", stmt->type_hint(), stmt->name(),
-          stmt->ident->name());
+          to_string(stmt->ptr));
   }
 
   void visit(LocalStoreStmt *stmt) {

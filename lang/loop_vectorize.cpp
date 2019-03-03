@@ -38,7 +38,8 @@ class LoopVectorize : public IRVisitor {
     if (vectorize == 1)
       return;
     stmt->ret_type.width *= vectorize;
-    if (loop_var && stmt->ident == loop_var) {
+    stmt->ptr.repeat(vectorize);
+    if (loop_var && stmt->same_source() && stmt->ptr[0].var == loop_var) {
       // insert_before_me
       auto offsets = std::make_unique<ConstStmt>(0);
       offsets->repeat(vectorize);

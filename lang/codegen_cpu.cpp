@@ -140,8 +140,8 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) {
-    emit("{} = bit_and({}, {});", stmt->mask->raw_name(), stmt->mask->raw_name(),
-         stmt->cond->raw_name());
+    emit("{} = bit_and({}, {});", stmt->mask->raw_name(),
+         stmt->mask->raw_name(), stmt->cond->raw_name());
     emit("if (!any({})) break;", stmt->mask->raw_name());
   }
 
@@ -178,13 +178,14 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) {
-    auto var_width = stmt->ident->ret_type.width;
+    auto ptr = stmt->ptr[0].var;
+    auto var_width = ptr->ret_type.width;
     if (var_width == 1) {
       emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
-           stmt->ident->raw_name());
+           ptr->raw_name());
     } else {
       emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
-           stmt->ident->raw_name());
+           ptr->raw_name());
     }
   }
 

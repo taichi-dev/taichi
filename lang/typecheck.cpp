@@ -35,7 +35,8 @@ class TypeCheck : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) {
     auto block = stmt->parent;
-    auto lookup = stmt->ident->ret_type;
+    TC_ASSERT(stmt->width() == 1);
+    auto lookup = stmt->ptr[0].var->ret_type;
     stmt->ret_type = lookup;
   }
 

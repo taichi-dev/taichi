@@ -305,7 +305,7 @@ struct LaneAttribute {
     data.resize(s);
   }
 
-  std::size_t size() {
+  std::size_t size() const {
     return data.size();
   }
 
@@ -388,6 +388,10 @@ class Statement : public IRNode {
   int id;
   Block *parent;
   std::vector<Stmt **> operands;
+
+  int &width() {
+    return ret_type.width;
+  }
 
   VectorType ret_type;
 
@@ -941,12 +945,34 @@ class GlobalStoreStmt : public Statement {
   DEFINE_ACCEPT;
 };
 
+struct LocalAddress {
+  Stmt *var;
+  int offset;
+
+  LocalAddress() : LocalAddress(nullptr, 0) {
+  }
+
+  LocalAddress(Stmt *var, int offset) : var(var), offset(offset) {
+  }
+};
+
+template <typename T>
+std::string to_string(const T &);
+
 class LocalLoadStmt : public Statement {
  public:
-  Stmt *ident;
+  LaneAttribute<LocalAddress> ptr;
 
-  LocalLoadStmt(Stmt *ident) : ident(ident) {
-    add_operand(this->ident);
+  LocalLoadStmt(LocalAddress ptr) : ptr(ptr) {
+    add_operand(this->ptr[0].var);
+  }
+
+  bool same_source() const {
+    for (int i = 1; i < (int)ptr.size(); i++) {
+      if (ptr[i].var != ptr[0].var)
+        return false;
+    }
+    return true;
   }
 
   DEFINE_ACCEPT;
@@ -956,6 +982,8 @@ class LocalStoreStmt : public Statement {
  public:
   Stmt *ident;
   Stmt *stmt;
+
+  LaneAttribute<Stmt *> data;
 
   LocalStoreStmt(Stmt *ident, Statement *stmt) : ident(ident), stmt(stmt) {
     add_operand(this->ident);
@@ -1152,8 +1180,8 @@ class IdExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    ret.push_back(
-        std::make_unique<LocalLoadStmt>(current_block->lookup_var(id)));
+    ret.push_back(std::make_unique<LocalLoadStmt>(
+        LocalAddress(current_block->lookup_var(id), 0)));
     stmt = ret.back().get();
   }
 };

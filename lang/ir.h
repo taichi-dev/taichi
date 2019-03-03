@@ -202,6 +202,14 @@ class VecStatement {
     stmts.push_back(std::move(stmt));
   }
 
+  template <typename T, typename... Args>
+  T *push_back(Args &&... args) {
+    auto up = std::make_unique<T>(std::forward<Args>(args)...);
+    auto ptr = up.get();
+    stmts.push_back(std::move(up));
+    return ptr;
+  }
+
   pStmt &back() {
     return stmts.back();
   }
@@ -210,7 +218,7 @@ class VecStatement {
     return stmts.size();
   }
 
-  pStmt &operator[] (int i) {
+  pStmt &operator[](int i) {
     return stmts[i];
   }
 };
@@ -885,8 +893,7 @@ class Block : public IRNode {
     replace_with(old_statement, vec);
   }
 
-  void replace_with(Statement *old_statement,
-                    VecStatement &new_statements) {
+  void replace_with(Statement *old_statement, VecStatement &new_statements) {
     int location = -1;
     for (int i = 0; i < (int)statements.size(); i++) {
       if (old_statement == statements[i].get()) {

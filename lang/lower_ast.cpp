@@ -44,25 +44,14 @@ class LowerAST : public IRVisitor {
 
     auto new_if = std::make_unique<IfStmt>(stmt->condition->stmt);
 
-    auto true_mask = std::make_unique<AllocaStmt>(DataType::i32);
-    auto false_mask = std::make_unique<AllocaStmt>(DataType::i32);
-    new_if->true_mask = true_mask.get();
-    new_if->false_mask = false_mask.get();
+    new_if->true_mask = flattened.push_back<AllocaStmt>(DataType::i32);
+    new_if->false_mask = flattened.push_back<AllocaStmt>(DataType::i32);
 
-    flattened.push_back(std::move(true_mask));
-    flattened.push_back(std::move(false_mask));
-
-    auto insert = [&](std::unique_ptr<Stmt> &&stmt) {
-      flattened.push_back(std::move(stmt));
-    };
-
-    insert(std::make_unique<LocalStoreStmt>(new_if->true_mask,
-                                            stmt->condition->stmt));
-    auto &&lnot_stmt =
-        std::make_unique<UnaryOpStmt>(UnaryType::bit_not, stmt->condition->stmt);
-    auto lnot_stmt_ptr = lnot_stmt.get();
-    insert(std::move(lnot_stmt));
-    insert(std::make_unique<LocalStoreStmt>(new_if->false_mask, lnot_stmt_ptr));
+    flattened.push_back<LocalStoreStmt>(new_if->true_mask,
+                                        stmt->condition->stmt);
+    auto lnot_stmt_ptr = flattened.push_back<UnaryOpStmt>(
+        UnaryType::bit_not, stmt->condition->stmt);
+    flattened.push_back<LocalStoreStmt>(new_if->false_mask, lnot_stmt_ptr);
 
     if (stmt->true_statements) {
       new_if->true_statements = std::move(stmt->true_statements);
@@ -91,8 +80,7 @@ class LowerAST : public IRVisitor {
     auto expr = load_if_ptr(stmt->expr);
     VecStatement flattened;
     expr->flatten(flattened);
-    auto print = std::make_unique<PrintStmt>(expr->stmt, stmt->str);
-    flattened.push_back(std::move(print));
+    flattened.push_back<PrintStmt>(expr->stmt, stmt->str);
     stmt->parent->replace_with(stmt, flattened);
     throw IRModifiedException();
   }

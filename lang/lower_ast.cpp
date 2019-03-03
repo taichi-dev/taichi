@@ -105,12 +105,12 @@ class LowerAST : public IRVisitor {
     stmts->insert(
         std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),
         flattened.size());
-    stmt->insert_before(std::make_unique<AllocaStmt>(DataType::i32));
+    stmt->insert_before_me(std::make_unique<AllocaStmt>(DataType::i32));
     auto &&const_stmt = std::make_unique<ConstStmt>((int)0xFFFFFFFF);
     auto const_stmt_ptr = const_stmt.get();
-    stmt->insert_before(std::move(mask));
-    stmt->insert_before(std::move(const_stmt));
-    stmt->insert_before(
+    stmt->insert_before_me(std::move(mask));
+    stmt->insert_before_me(std::move(const_stmt));
+    stmt->insert_before_me(
         std::make_unique<LocalStoreStmt>(new_while->mask, const_stmt_ptr));
     new_while->body->mask_var = new_while->mask;
     stmt->parent->replace_with(stmt, std::move(new_while));
@@ -129,7 +129,7 @@ class LowerAST : public IRVisitor {
     VecStatement flattened;
 
     // insert an alloca here
-    flattened.push_back(std::make_unique<AllocaStmt>(DataType::i32));
+    flattened.push_back<AllocaStmt>(DataType::i32);
     stmt->parent->local_var_alloca[stmt->loop_var_id] = flattened.back().get();
 
     begin->flatten(flattened);
@@ -156,17 +156,14 @@ class LowerAST : public IRVisitor {
     expr->flatten(flattened);
     if (assign->lhs.is<IdExpression>()) {  // local variable
       // emit local store stmt
-      auto local_store = std::make_unique<LocalStoreStmt>(
+      flattened.push_back<LocalStoreStmt>(
           assign->parent->lookup_var(assign->lhs.cast<IdExpression>()->id),
           expr->stmt);
-      flattened.push_back(std::move(local_store));
     } else {  // global variable
       TC_ASSERT(assign->lhs.is<GlobalPtrExpression>());
       auto global_ptr = assign->lhs.cast<GlobalPtrExpression>();
       global_ptr->flatten(flattened);
-      auto global_store =
-          std::make_unique<GlobalStoreStmt>(flattened.back().get(), expr->stmt);
-      flattened.push_back(std::move(global_store));
+      flattened.push_back<GlobalStoreStmt>(flattened.back().get(), expr->stmt);
     }
     assign->parent->replace_with(assign, flattened);
     throw IRModifiedException();

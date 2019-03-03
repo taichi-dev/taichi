@@ -455,9 +455,9 @@ class Statement : public IRNode {
     // Note: the current structure should have been destroyed now..
   }
 
-  void insert_before(std::unique_ptr<Stmt> &&new_stmt);
+  void insert_before_me(std::unique_ptr<Stmt> &&new_stmt);
 
-  void insert_after(std::unique_ptr<Stmt> &&new_stmt);
+  void insert_after_me(std::unique_ptr<Stmt> &&new_stmt);
 };
 
 // always a tree - used as rvalues

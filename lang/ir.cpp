@@ -135,7 +135,7 @@ template void *Expr::val_tmp<int, int>(int, int);
 template void *Expr::val_tmp<int, int, int>(int, int, int);
 template void *Expr::val_tmp<int, int, int, int>(int, int, int, int);
 
-void Stmt::insert_before(std::unique_ptr<Stmt> &&new_stmt) {
+void Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
   TC_ASSERT(parent);
   auto &stmts = parent->statements;
   int loc = -1;
@@ -150,7 +150,7 @@ void Stmt::insert_before(std::unique_ptr<Stmt> &&new_stmt) {
   stmts.insert(stmts.begin() + loc, std::move(new_stmt));
 }
 
-void Stmt::insert_after(std::unique_ptr<Stmt> &&new_stmt) {
+void Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
   TC_ASSERT(parent);
   auto &stmts = parent->statements;
   int loc = -1;

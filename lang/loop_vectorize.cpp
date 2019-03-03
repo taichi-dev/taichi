@@ -39,7 +39,7 @@ class LoopVectorize : public IRVisitor {
       return;
     stmt->ret_type.width *= vectorize;
     if (loop_var && stmt->ident == loop_var) {
-      // insert_before
+      // insert_before_me
       auto offsets = std::make_unique<ConstStmt>(0);
       offsets->repeat(vectorize);
       for (int i = 0; i < vectorize; i++) {
@@ -50,8 +50,8 @@ class LoopVectorize : public IRVisitor {
       irpass::typecheck(add_op.get());
       auto offsets_p = offsets.get();
       stmt->replace_with(add_op.get());
-      stmt->insert_after(std::move(offsets));
-      offsets_p->insert_after(std::move(add_op));
+      stmt->insert_after_me(std::move(offsets));
+      offsets_p->insert_after_me(std::move(add_op));
     }
   }
 

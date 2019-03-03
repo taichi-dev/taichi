@@ -109,7 +109,7 @@ class IRCodeGen : public IRVisitor {
       // emit("#pragma omp parallel for num_threads({})",
       // for_stmt->parallelize);
       emit("omp_set_num_threads({});", for_stmt->parallelize);
-      emit("#pragma omp parallel for");
+      emit("#pragma omp parallel for private({})", loop_var->raw_name());
     }
     if (loop_var->ret_type.width == 1 &&
         loop_var->ret_type.data_type == DataType::i32) {

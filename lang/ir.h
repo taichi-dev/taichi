@@ -11,6 +11,7 @@ class IRNode;
 class Block;
 class Statement;
 using Stmt = Statement;
+using pStmt = std::unique_ptr<Statement>;
 
 class SNode;
 class Expression;
@@ -190,7 +191,29 @@ class Identifier {
 
 using Ident = Identifier;
 
-using VecStatement = std::vector<std::unique_ptr<Statement>>;
+class VecStatement {
+ public:
+  std::vector<pStmt> stmts;
+
+  VecStatement() {
+  }
+
+  void push_back(pStmt &&stmt) {
+    stmts.push_back(std::move(stmt));
+  }
+
+  pStmt &back() {
+    return stmts.back();
+  }
+
+  std::size_t size() const {
+    return stmts.size();
+  }
+
+  pStmt &operator[] (int i) {
+    return stmts[i];
+  }
+};
 
 class IRVisitor {
  public:
@@ -273,7 +296,7 @@ struct LaneAttribute {
   }
 
   void resize(int s) {
-    data.resize();
+    data.resize(s);
   }
 
   std::size_t size() {
@@ -281,6 +304,10 @@ struct LaneAttribute {
   }
 
   T &operator[](int i) {
+    return data[i];
+  }
+
+  const T &operator[](int i) const {
     return data[i];
   }
 
@@ -538,6 +565,26 @@ inline ExpressionGroup operator,(const ExpressionGroup &a, const Expr &b) {
   return ExpressionGroup(a, b);
 }
 
+class FrontendAllocaStmt : public Statement {
+ public:
+  Ident ident;
+
+  FrontendAllocaStmt(Ident lhs, DataType type) : ident(lhs) {
+    ret_type = VectorType(1, type);
+  }
+
+  DEFINE_ACCEPT
+};
+
+class AllocaStmt : public Statement {
+ public:
+  AllocaStmt(DataType type) {
+    ret_type = VectorType(1, type);
+  }
+
+  DEFINE_ACCEPT
+};
+
 // updates mask, break if no active
 class WhileControlStmt : public Statement {
  public:
@@ -662,6 +709,22 @@ class BinaryOpExpression : public Expression {
 class PtrStmt : public Statement {
  public:
   PtrStmt(){};
+
+  DEFINE_ACCEPT
+};
+
+class LocalPtrStmt : public PtrStmt {
+ public:
+  LaneAttribute<Stmt *> allocas;
+  LaneAttribute<int> offsets;
+
+  LocalPtrStmt(Stmt *alloca) {
+    allocas.resize(1);
+    allocas[0] = alloca;
+    offsets.resize(1);
+    offsets[0] = 0;
+    add_operand(allocas[0]);
+  }
 
   DEFINE_ACCEPT
 };
@@ -817,13 +880,13 @@ class Block : public IRNode {
 
   void replace_with(Statement *old_statement,
                     std::unique_ptr<Statement> &&new_statement) {
-    std::vector<std::unique_ptr<Statement>> vec;
+    VecStatement vec;
     vec.push_back(std::move(new_statement));
     replace_with(old_statement, vec);
   }
 
   void replace_with(Statement *old_statement,
-                    std::vector<std::unique_ptr<Statement>> &new_statements) {
+                    VecStatement &new_statements) {
     int location = -1;
     for (int i = 0; i < (int)statements.size(); i++) {
       if (old_statement == statements[i].get()) {
@@ -869,26 +932,6 @@ class FrontendAssignStmt : public Statement {
   Expr lhs, rhs;
 
   FrontendAssignStmt(Expr lhs, Expr rhs);
-
-  DEFINE_ACCEPT
-};
-
-class FrontendAllocaStmt : public Statement {
- public:
-  Ident ident;
-
-  FrontendAllocaStmt(Ident lhs, DataType type) : ident(lhs) {
-    ret_type = VectorType(1, type);
-  }
-
-  DEFINE_ACCEPT
-};
-
-class AllocaStmt : public Statement {
- public:
-  AllocaStmt(DataType type) {
-    ret_type = VectorType(1, type);
-  }
 
   DEFINE_ACCEPT
 };

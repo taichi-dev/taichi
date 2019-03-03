@@ -113,8 +113,12 @@ std::enable_if_t<!(i < sizeof...(Indices)), int> get_if_exists(
 }
 
 template <typename... Indices>
-void *Expr::val_tmp(Indices... indices) {
+void *Expr::val_tmp(DataType dt, Indices... indices) {
   auto snode = this->cast<GlobalVariableExpression>()->snode;
+  if (dt != snode->dt) {
+    TC_ERROR("Cannot access type {} as type {}", data_type_name(snode->dt),
+             data_type_name(dt));
+  }
   TC_ASSERT(sizeof...(indices) == snode->num_active_indices);
   int ind[max_num_indices];
   std::memset(ind, 0, sizeof(ind));
@@ -129,11 +133,11 @@ void *Expr::val_tmp(Indices... indices) {
   return evaluate_addr(ind[0], ind[1], ind[2], ind[3]);
 }
 
-template void *Expr::val_tmp<>();
-template void *Expr::val_tmp<int>(int);
-template void *Expr::val_tmp<int, int>(int, int);
-template void *Expr::val_tmp<int, int, int>(int, int, int);
-template void *Expr::val_tmp<int, int, int, int>(int, int, int, int);
+template void *Expr::val_tmp<>(DataType);
+template void *Expr::val_tmp<int>(DataType, int);
+template void *Expr::val_tmp<int, int>(DataType, int, int);
+template void *Expr::val_tmp<int, int, int>(DataType, int, int, int);
+template void *Expr::val_tmp<int, int, int, int>(DataType, int, int, int, int);
 
 void Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
   TC_ASSERT(parent);

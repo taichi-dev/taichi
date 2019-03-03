@@ -41,7 +41,6 @@ class PrintStmt;
 class RandStmt;
 
 // With per-lane attributes:
-class PtrStmt;
 class GlobalLoadStmt;
 class GlobalStoreStmt;
 class LocalLoadStmt;
@@ -267,7 +266,6 @@ class IRVisitor {
   DEFINE_VISIT(LocalStoreStmt);
   DEFINE_VISIT(GlobalLoadStmt);
   DEFINE_VISIT(GlobalStoreStmt);
-  DEFINE_VISIT(PtrStmt);
   DEFINE_VISIT(GlobalPtrStmt);
   DEFINE_VISIT(IfStmt);
   DEFINE_VISIT(PrintStmt);
@@ -528,7 +526,7 @@ class Expr {
   void *evaluate_addr(int i, int j, int k, int l);
 
   template <typename... Indices>
-  void *val_tmp(Indices... indices);
+  void *val_tmp(DataType dt, Indices... indices);
 
   template <typename T, typename... Indices>
   T &val(Indices... indices);
@@ -714,30 +712,7 @@ class BinaryOpExpression : public Expression {
   }
 };
 
-class PtrStmt : public Statement {
- public:
-  PtrStmt(){};
-
-  DEFINE_ACCEPT
-};
-
-class LocalPtrStmt : public PtrStmt {
- public:
-  LaneAttribute<Stmt *> allocas;
-  LaneAttribute<int> offsets;
-
-  LocalPtrStmt(Stmt *alloca) {
-    allocas.resize(1);
-    allocas[0] = alloca;
-    offsets.resize(1);
-    offsets[0] = 0;
-    add_operand(allocas[0]);
-  }
-
-  DEFINE_ACCEPT
-};
-
-class GlobalPtrStmt : public PtrStmt {
+class GlobalPtrStmt : public Stmt {
  public:
   SNode *snode;
   std::vector<Stmt *> indices;
@@ -1268,12 +1243,7 @@ template <typename T, typename... Indices>
 T &Expr::val(Indices... indices) {
   auto e = this->cast<GlobalVariableExpression>();
   TC_ASSERT(is<GlobalVariableExpression>());
-
-  if (get_data_type<T>() != e->snode->dt) {
-    TC_ERROR("Cannot access type {} as type {}", data_type_name(e->snode->dt),
-             data_type_name(get_data_type<T>()));
-  }
-  return *(T *)val_tmp(indices...);
+  return *(T *)val_tmp(get_data_type<T>(), indices...);
 }
 
 inline Expr load(Expr ptr) {

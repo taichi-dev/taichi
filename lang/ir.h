@@ -197,8 +197,10 @@ class VecStatement {
   VecStatement() {
   }
 
-  void push_back(pStmt &&stmt) {
+  Stmt *push_back(pStmt &&stmt) {
+    auto ret = stmt.get();
     stmts.push_back(std::move(stmt));
+    return ret;
   }
 
   template <typename T, typename... Args>

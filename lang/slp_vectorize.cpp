@@ -103,14 +103,16 @@ class BasicBlockSLP : public IRVisitor {
 
   // create a new stmt out of the pack
   Stmt *build(const Pack &pack) {
-    for (int i = 0; i < width; i++) {
-      fmt::print("{} ", pack[i]->id);
-    }
-    fmt::print("\n");
     auto existing = find_stmt(pack);
     if (existing) {
       return existing;
     }
+    for (int i = 0; i < width; i++) {
+      fmt::print(" {} ", pack[i]->id);
+      TC_ASSERT(visited.find(pack[i]) == visited.end());
+      visited.insert(pack[i]);
+    }
+    fmt::print("\n");
     Pack operands;
     if (!pack[0]->is<LocalLoadStmt>()) {
       for (int i = 0; i < (int)pack[0]->operands.size(); i++) {
@@ -127,8 +129,7 @@ class BasicBlockSLP : public IRVisitor {
     pack[0]->accept(this);
     TC_ASSERT(tmp_stmt != nullptr);
     tmp_operands.clear();
-    Stmt *ret = tmp_stmt.get();
-    new_stmts.push_back(std::move(tmp_stmt));
+    auto ret = new_stmts.push_back(std::move(tmp_stmt));
 
     int pos = -1;
     for (int i = 0; i < (int)input_statements.size(); i++) {
@@ -138,7 +139,7 @@ class BasicBlockSLP : public IRVisitor {
       }
     }
     TC_ASSERT(pos != -1);
-    position[tmp_stmt.get()] = pos;
+    position[ret] = pos;
 
     return ret;
   }
@@ -150,35 +151,39 @@ class BasicBlockSLP : public IRVisitor {
     visited.clear();
     input_statements = std::move(block->statements);
     auto &stmts = input_statements;
-    // Find the last statement
-    auto last_stmt = stmts.back().get();
-
-    for (auto &stmt : block->statements) {
-      inside.insert(stmt.get());
-    }
-
-    std::vector<Stmt *> seed_statements;
-
-    // from the back, find the other (width - 1) statements of the same type
-    for (int i = 0; i < (int)stmts.size(); i++) {
-      if (typeid(*last_stmt) == typeid(*stmts[i])) {
-        // found a stmt of the same type.
-        seed_statements.push_back(stmts[i].get());
+    while (1) {
+      // Find the last statement
+      Stmt *last_stmt = nullptr;
+      for (int i = stmts.size() - 1; i >= 0; i--) {
+        if (visited.find(stmts[i].get()) == visited.end()) {
+          last_stmt = stmts[i].get();
+          break;
+        }
       }
-      if ((int)seed_statements.size() == width) {
+      if (last_stmt == nullptr) {
         break;
       }
-    }
 
-    if ((int)seed_statements.size() != width) {
-      TC_ERROR("Cannot find enough {} seed statements to start SLP search.",
-               width);
-    }
+      std::vector<Stmt *> seed_statements;
 
-    build(seed_statements);
-    // TODO: check order. SLP should not change order of local/global
-    // sort the statements...
-    // load/store...
+      // from the back, find the other (width - 1) statements of the same type
+      for (int i = 0; i < (int)stmts.size(); i++) {
+        if (typeid(*last_stmt) == typeid(*stmts[i])) {
+          // found a stmt of the same type.
+          seed_statements.push_back(stmts[i].get());
+        }
+        if ((int)seed_statements.size() == width) {
+          break;
+        }
+      }
+
+      if ((int)seed_statements.size() != width) {
+        TC_ERROR("Cannot find enough {} seed statements to start SLP search.",
+                 width);
+      }
+
+      build(seed_statements);
+    }
     sort(new_stmts);
     block->set_statements(std::move(new_stmts));
   }

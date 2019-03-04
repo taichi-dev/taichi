@@ -675,7 +675,7 @@ TC_TEST("mixed_simd1") {
 
     auto func = kernel([&]() {
       declare(i);
-      For (i, 0, n, [&]() {
+      For(i, 0, n, [&]() {
         // auto &ad = adapter(0);
         auto ab = a[i] * b[i];
 
@@ -708,50 +708,49 @@ TC_TEST("mixed_simd1") {
   }
 }
 
-#if 0
 // Vec<vec_size> reduction
-TC_TEST("adapter2") {
+TC_TEST("mixed_simd2") {
   int n = 64;
 
   for (auto vec_size : {1, 2, 4, 8, 16}) {
     Program prog;
 
     Vector v(vec_size);
+    v.fill_global(DataType::f32);
 
-    Float sum;
+    global(sum, f32);
 
-    auto ind = Expr::index(0);
+    auto ind = Index(0);
 
     layout([&] {
       for (int i = 0; i < vec_size; i++) {
-        v(i) = var<float32>();
         root.fixed(ind, n).place(v(i));
       }
-      sum = var<float32>();
       root.fixed(ind, n).place(sum);
     });
 
-    auto func = kernel(sum, [&] {
-      auto v_ind = v[ind];
+    auto func = kernel([&] {
+      declare(i);
+      For(i, 0, n, [&]() {
+        auto v_ind = v[i];
 
-      for (int i = 0; i < vec_size; i++) {
-        v_ind(i).set(load(v_ind(i)));
-      }
+        /*
+        auto &ad = adapter(0);
+        ad.set(vec_size);
+        for (int i = 0; i < vec_size; i++) {
+          ad.convert(v_ind(i));
+        }
+        */
 
-      auto &ad = adapter(0);
-      ad.set(vec_size);
-      for (int i = 0; i < vec_size; i++) {
-        ad.convert(v_ind(i));
-      }
+        local(acc) = 0.0_f;
+        for (int d = 0; d < vec_size; d++) {
+          acc = acc + v_ind(d);
+        }
 
-      Expr acc = Expr::create_imm(0.0_f);
-      for (int d = 0; d < vec_size; d++) {
-        acc = acc + v_ind(d);
-      }
+        sum[i] = acc;
 
-      sum[ind] = acc;
-
-      group(1);
+        // group(1);
+      });
     });
 
     for (int i = 0; i < n; i++) {
@@ -770,6 +769,7 @@ TC_TEST("adapter2") {
   }
 }
 
+#if 0
 // reduce(vec_a<n> - vec_b<n>) * vec_c<2n>
 TC_TEST("adapter3") {
   for (auto vec_size : {1, 2, 4, 8}) {

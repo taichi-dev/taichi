@@ -9,7 +9,7 @@ class BasicBlockSLP : public IRVisitor {
   Block *block;
   std::set<Stmt *> inside;
   std::set<Stmt *> visited;
-  std::vector<pStmt> input_statements;
+  std::vector<pStmt> *input_statements;
   int width;
   using Pack = std::vector<Stmt *>;
   std::vector<std::pair<Pack, Stmt *>> existing_stmts;
@@ -77,6 +77,11 @@ class BasicBlockSLP : public IRVisitor {
     update_type(stmt);
   }
 
+  void visit(GlobalLoadStmt *stmt) override {
+    tmp_stmt = Stmt::make<GlobalLoadStmt>(tmp_operands[0]);
+    update_type(stmt);
+  }
+
   // merge tmp_operands into one statement
   void visit(BinaryOpStmt *stmt) override {
     tmp_stmt = std::make_unique<BinaryOpStmt>(
@@ -122,6 +127,21 @@ class BasicBlockSLP : public IRVisitor {
         }
         operands.push_back(build(operand_pack));
       }
+    } else {
+      TC_ASSERT(pack[0]->width() == 1);
+      // Pack previous store or alloca.
+      for (int i = 0; i < (int)pack[0]->as<LocalLoadStmt>()->ptr.size(); i++) {
+        Pack operand_pack;
+        for (int j = 0; j < (int)pack.size(); j++) {
+          auto previous = pack[j]->as<LocalLoadStmt>()->previous_store_or_alloca_in_block();
+          if (previous)
+            operand_pack.push_back(previous);
+        }
+        if (operand_pack.size() != 0) {
+          TC_ASSERT((int)operand_pack.size() == width);
+          operands.push_back(build(operand_pack));
+        }
+      }
     }
     tmp_operands = operands;
     building_pack = pack;
@@ -132,8 +152,8 @@ class BasicBlockSLP : public IRVisitor {
     auto ret = new_stmts.push_back(std::move(tmp_stmt));
 
     int pos = -1;
-    for (int i = 0; i < (int)input_statements.size(); i++) {
-      if (pack[0] == input_statements[i].get()) {
+    for (int i = 0; i < (int)input_statements->size(); i++) {
+      if (pack[0] == (*input_statements)[i].get()) {
         pos = i;
         break;
       }
@@ -141,7 +161,6 @@ class BasicBlockSLP : public IRVisitor {
     TC_ASSERT(pos != -1);
     position[ret] = pos;
     existing_stmts.push_back(std::make_pair(pack, ret));
-
     return ret;
   }
 
@@ -150,9 +169,10 @@ class BasicBlockSLP : public IRVisitor {
     this->block = block;
     this->width = width;
     visited.clear();
-    input_statements = std::move(block->statements);
-    auto &stmts = input_statements;
+    input_statements = &block->statements;
+    auto &stmts = *input_statements;
     while (1) {
+      TC_INFO("Seeding...");
       // Find the last statement
       Stmt *last_stmt = nullptr;
       for (int i = stmts.size() - 1; i >= 0; i--) {

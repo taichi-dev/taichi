@@ -164,6 +164,7 @@ class Identifier {
 
   int id;
 
+  // Multiple identifiers can share the same name but must have different id's
   Identifier(std::string name_ = "") : name_(name_) {
     id = id_counter++;
   }
@@ -539,6 +540,7 @@ class Expr {
 
   template <typename T>
   Handle<T> cast() const {
+    TC_ASSERT(expr != nullptr);
     return std::dynamic_pointer_cast<T>(expr);
   }
 
@@ -883,6 +885,16 @@ class Block : public IRNode {
     slp = 1;
   }
 
+  int locate(Stmt *stmt) {
+    for (int i = 0; i < (int)statements.size(); i++) {
+      if (statements[i].get() == stmt) {
+        return i;
+      }
+    }
+    TC_ERROR("Stmt not found");
+    return -1;
+  }
+
   void insert(std::unique_ptr<Statement> &&stmt, int location = -1) {
     stmt->parent = this;
     if (location == -1) {
@@ -1014,6 +1026,8 @@ class LocalLoadStmt : public Statement {
   bool integral_operands() const override {
     return false;
   }
+
+  Stmt *previous_store_or_alloca_in_block();
 
   DEFINE_ACCEPT;
 };
@@ -1231,12 +1245,10 @@ class GlobalLoadExpression : public Expression {
   }
 
   std::string serialize() override {
-    return "load ";
+    return "load " + ptr.serialize();
   }
 
   void flatten(VecStatement &ret) override {
-    // if (stmt)
-    // return;
     ptr->flatten(ret);
     ret.push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));
     stmt = ret.back().get();
@@ -1296,6 +1308,11 @@ inline Expr global_new(Expr id_expr, DataType dt) {
   auto ret = Expr(std::make_shared<GlobalVariableExpression>(
       dt, id_expr.cast<IdExpression>()->id));
   return ret;
+}
+
+inline Expr global_new(DataType dt) {
+  auto id_expr = std::make_shared<IdExpression>();
+  return Expr(std::make_shared<GlobalVariableExpression>(dt, id_expr->id));
 }
 
 template <typename T, typename... Indices>

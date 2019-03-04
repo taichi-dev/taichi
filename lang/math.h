@@ -104,7 +104,7 @@ struct Matrix {
   Matrix operator[](Expr index) {
     Matrix ret(n, m);
     for (int i = 0; i < n * m; i++) {
-      ret.entries[i] = entries[i][index];
+      ret.entries[i].set(entries[i][index]);
     }
     return ret;
   }
@@ -112,7 +112,7 @@ struct Matrix {
   Matrix operator[](ExpressionGroup index) {
     Matrix ret(n, m);
     for (int i = 0; i < n * m; i++) {
-      ret.entries[i] = entries[i][index];
+      ret.entries[i].set(entries[i][index]);
     }
     return ret;
   }
@@ -143,6 +143,8 @@ struct Matrix {
   void operator-=(const T &o);
   template <typename T>
   void operator*=(const T &o);
+
+  void fill_global(DataType dt);
 };
 
 inline Matrix operator*(const Expr &A, const Matrix &B) {

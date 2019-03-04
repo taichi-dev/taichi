@@ -183,4 +183,27 @@ std::string to_string(const LaneAttribute<LocalAddress> &ptr) {
   return ret;
 }
 
+Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
+  int position = parent->locate(this);
+  TC_ASSERT(width() == 1);
+  TC_ASSERT(this->ptr[0].offset == 0);
+  for (int i = position - 1; i >= 0; i--) {
+    if (parent->statements[i]->is<LocalStoreStmt>()) {
+      auto store = parent->statements[i]->as<LocalStoreStmt>();
+      TC_ASSERT(store->width() == 1);
+      if (store->ident == this->ptr[0].var) {
+        // found
+        return store;
+      }
+    } else if (parent->statements[i]->is<AllocaStmt>()) {
+      auto alloca = parent->statements[i]->as<AllocaStmt>();
+      TC_ASSERT(alloca->width() == 1);
+      if (alloca == this->ptr[0].var) {
+        return alloca;
+      }
+    }
+  }
+  return nullptr;
+}
+
 TLANG_NAMESPACE_END

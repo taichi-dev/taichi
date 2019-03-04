@@ -610,4 +610,47 @@ TC_TEST("slp3") {
   }
 };
 
+TC_TEST("slpmatvecmul") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 16;
+  Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
+
+  int dim = 2;
+
+  Matrix A(dim, dim), x(dim), y(dim);
+  A.fill_global(DataType::f32);
+  x.fill_global(DataType::f32);
+  y.fill_global(DataType::f32);
+
+  layout([&]() {
+    auto &s = root.fixed(0, n);
+    for (int i = 0; i < dim; i++) {
+      for (int j = 0; j < dim; j++) {
+        s.place(A(i, j));
+      }
+      s.place(x(i), y(i));
+    }
+  });
+
+  auto func = kernel([&]() {
+    declare(i);
+
+    Vectorize(4);
+    For(i, 0, n, [&] {
+      SLP(dim);
+      y[i] = A[i] * x[i];
+    });
+  });
+
+  func();
+
+  /*
+  for (int i = 0; i < n; i++) {
+    TC_CHECK(a.val<int>(i) == 1 + i * 7);
+    TC_CHECK(b.val<int>(i) == 2 + i * 9);
+  }
+  */
+};
+
 TLANG_NAMESPACE_END

@@ -1110,21 +1110,19 @@ class If {
 
 class ConstStmt : public Statement {
  public:
-  LaneAttribute<long double> value;
+  LaneAttribute<TypedConstant> val;
 
-  ConstStmt(int32 x) {
-    ret_type = VectorType(1, DataType::i32);
-    value.push_back(x);
-  }
-
-  ConstStmt(float32 x) {
-    ret_type = VectorType(1, DataType::f32);
-    value.push_back(x);
+  ConstStmt(const LaneAttribute<TypedConstant> &val) : val(val) {
+    ret_type.width = val.size();
+    for (int i = 0; i < ret_type.width; i++) {
+      TC_ASSERT(val[0].dt == val[i].dt);
+    }
+    ret_type.data_type = val[0].dt;
   }
 
   void repeat(int factor) override {
     Statement::repeat(factor);
-    value.repeat(factor);
+    val.repeat(factor);
   }
 
   DEFINE_ACCEPT
@@ -1248,29 +1246,18 @@ class GlobalLoadExpression : public Expression {
 
 class ConstExpression : public Expression {
  public:
-  long double val;
-  DataType dt;
+  TypedConstant val;
 
-  ConstExpression(int val) : val(val) {
-    dt = DataType::i32;
-  }
-
-  ConstExpression(float32 val) : val(val) {
-    dt = DataType::f32;
+  template <typename T>
+  ConstExpression(const T &x) : val(x) {
   }
 
   std::string serialize() override {
-    return fmt::format("{}", val);
+    return val.stringify();
   }
 
   void flatten(VecStatement &ret) override {
-    // if (stmt)
-    // return;
-    if (dt == DataType::f32) {
-      ret.push_back(Stmt::make<ConstStmt>((float32)val));
-    } else {
-      ret.push_back(Stmt::make<ConstStmt>((int32)val));
-    }
+    ret.push_back(Stmt::make<ConstStmt>(val));
     stmt = ret.back().get();
   }
 };

@@ -106,7 +106,8 @@ class LowerAST : public IRVisitor {
         std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),
         flattened.size());
     stmt->insert_before_me(std::make_unique<AllocaStmt>(DataType::i32));
-    auto &&const_stmt = std::make_unique<ConstStmt>((int)0xFFFFFFFF);
+    auto &&const_stmt =
+        std::make_unique<ConstStmt>(TypedConstant((int32)0xFFFFFFFF));
     auto const_stmt_ptr = const_stmt.get();
     stmt->insert_before_me(std::move(mask));
     stmt->insert_before_me(std::move(const_stmt));

@@ -57,10 +57,10 @@ class LoopVectorize : public IRVisitor {
     }
     if (loop_var && stmt->same_source() && stmt->ptr[0].var == loop_var) {
       // insert_before_me
-      auto offsets = std::make_unique<ConstStmt>(0);
+      auto offsets = std::make_unique<ConstStmt>(TypedConstant(0));
       offsets->repeat(vectorize);
       for (int i = 0; i < vectorize; i++) {
-        offsets->value[i] = i;
+        offsets->val[i] = i;
       }
       auto add_op =
           std::make_unique<BinaryOpStmt>(BinaryType::add, stmt, offsets.get());

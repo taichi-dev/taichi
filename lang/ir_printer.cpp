@@ -103,7 +103,8 @@ class IRPrinter : public IRVisitor {
 
   void visit(ConstStmt *const_stmt) {
     print("{}{} = const {}", const_stmt->type_hint(), const_stmt->name(),
-          const_stmt->value.serialize());
+          const_stmt->val.serialize(
+              [](const TypedConstant &t) { return t.stringify(); }));
   }
 
   void visit(WhileControlStmt *stmt) {
@@ -137,8 +138,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) {
-    std::string s = fmt::format("{}{} = ptr global [", stmt->type_hint(),
-                                stmt->name());
+    std::string s =
+        fmt::format("{}{} = ptr global [", stmt->type_hint(), stmt->name());
 
     for (int l = 0; l < stmt->width(); l++) {
       std::string snode_name;

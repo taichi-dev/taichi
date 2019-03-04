@@ -341,6 +341,38 @@ constexpr int max_num_indices = 4;
 
 class IRModifiedException {};
 
+class TypedConstant {
+ public:
+  DataType dt;
+
+ private:
+  union {
+    int32 val_i32;
+    float32 val_f32;
+  };
+
+ public:
+  TypedConstant() : dt(DataType::unknown) {
+  }
+
+  TypedConstant(int32 x) : dt(DataType::i32), val_i32(x) {
+  }
+
+  TypedConstant(float32 x) : dt(DataType::f32), val_f32(x) {
+  }
+
+  std::string stringify() const {
+    if (dt == DataType::f32) {
+      return fmt::format("{}", val_f32);
+    } else if (dt == DataType::i32) {
+      return fmt::format("{}", val_i32);
+    } else {
+      TC_NOT_IMPLEMENTED
+      return "";
+    }
+  }
+};
+
 TLANG_NAMESPACE_END
 
 TC_NAMESPACE_BEGIN

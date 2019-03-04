@@ -29,7 +29,11 @@ class BasicBlockSLP : public IRVisitor {
   }
 
   void visit(ConstStmt *stmt) override {
-    tmp_stmt = std::make_unique<ConstStmt>(0);
+    LaneAttribute<TypedConstant> val;
+    for (int i = 0; i < width; i++) {
+      val += dynamic_cast<ConstStmt *>(building_pack[i])->val;
+    }
+    tmp_stmt = std::make_unique<ConstStmt>(val);
     update_type(stmt);
   }
 

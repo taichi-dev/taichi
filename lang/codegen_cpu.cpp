@@ -79,16 +79,8 @@ class IRCodeGen : public IRVisitor {
 
   void visit(ConstStmt *const_stmt) {
     emit("const {} {}({});", const_stmt->ret_type.str(), const_stmt->raw_name(),
-         const_stmt->value.serialize(
-             [&](long double t) {
-               auto data_type = const_stmt->ret_type.data_type;
-               if (data_type == DataType::f32)
-                 return fmt::format("{}", (float32)t);
-               else if (data_type == DataType::i32)
-                 return fmt::format("{}", (int32)t);
-               return std::string("undefined");
-             },
-             "{"));
+         const_stmt->val.serialize(
+             [&](const TypedConstant &t) { return t.stringify(); }, "{"));
   }
 
   void visit(WhileControlStmt *stmt) {

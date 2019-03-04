@@ -534,21 +534,27 @@ TC_TEST("slp") {
 
   declare(a_global);
   declare(b_global);
+  declare(c_global);
+  declare(d_global);
   auto a = global_new(a_global, DataType::i32);
   auto b = global_new(b_global, DataType::i32);
+  auto c = global_new(c_global, DataType::i32);
+  auto d = global_new(d_global, DataType::i32);
 
-  layout([&]() { root.fixed(0, n).place(a, b); });
+  layout([&]() { root.fixed(0, n).place(a, b, c, d); });
 
   auto func = kernel([&]() {
     declare(i);
 
     // Vectorize(4);
     For(i, 0, n, [&] {
-      SLP(2);
+      SLP(4);
       // a[i] = a[i] + 1;
       // b[i] = b[i] + 2;
       a[i] = 1;
       b[i] = 2;
+      c[i] = 3;
+      d[i] = 4;
       // local(x) = 1;
       // local(y) = 1;
     });
@@ -557,8 +563,10 @@ TC_TEST("slp") {
   func();
 
   for (int i = 0; i < n; i++) {
-    // TC_CHECK(a.val<int>(i) == 0 + i);
-    // TC_CHECK(b.val<int>(i) == 0 + i);
+    TC_CHECK(a.val<int>(i) == 1);
+    TC_CHECK(b.val<int>(i) == 2);
+    TC_CHECK(c.val<int>(i) == 3);
+    TC_CHECK(d.val<int>(i) == 4);
   }
 };
 

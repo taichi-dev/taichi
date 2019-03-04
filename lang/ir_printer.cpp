@@ -137,20 +137,24 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) {
-    std::string snode_name;
-    if (stmt->snode) {
-      snode_name = stmt->snode[0]->name;
-    } else {
-      snode_name = "unknown";
-    }
-    std::string s = fmt::format("{}{} = ptr {}[", stmt->type_hint(),
-                                stmt->name(), snode_name);
+    std::string s = fmt::format("{}{} = ptr global [", stmt->type_hint(),
+                                stmt->name());
 
-    for (int i = 0; i < (int)stmt->indices.size(); i++) {
-      s += fmt::format("{}", stmt->indices[i]->name());
-      if (i + 1 < (int)stmt->indices.size()) {
-        s += ", ";
+    for (int l = 0; l < stmt->width(); l++) {
+      std::string snode_name;
+      if (stmt->snode[l]) {
+        snode_name = stmt->snode[l]->node_type_name;
+      } else {
+        snode_name = "unknown";
       }
+      s += "[";
+      for (int i = 0; i < (int)stmt->indices.size(); i++) {
+        s += fmt::format("{}[{}]", stmt->indices[i]->name(), l);
+        if (i + 1 < (int)stmt->indices.size()) {
+          s += ", ";
+        }
+      }
+      s += "], ";
     }
     s += "]";
     print_raw(s);
@@ -162,17 +166,18 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) {
-    print("${} = local store[{} <- {}]", stmt->id, stmt->ident->name(),
+    print("{} = local store[{} <- {}]", stmt->name(), stmt->ident->name(),
           stmt->stmt->name());
   }
 
   void visit(GlobalLoadStmt *stmt) {
-    print("{}{} = global load {}", stmt->type_hint(), stmt->raw_name(),
-          stmt->ptr->name());
+    print("{}{} : {} = global load {}", stmt->name(), stmt->type_hint(),
+          stmt->raw_name(), stmt->ptr->name());
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    print("[global store] {} = {}", stmt->ptr->name(), stmt->data->name());
+    print("{}{} global store [{} <- {}]", stmt->type_hint(), stmt->name(),
+          stmt->ptr->name(), stmt->data->name());
   }
 };
 

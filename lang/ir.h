@@ -293,7 +293,6 @@ struct LaneAttribute {
   std::vector<T> data;
 
   LaneAttribute() {
-    data.resize(1, T());
   }
 
   LaneAttribute(const T &t) {
@@ -752,12 +751,16 @@ class GlobalPtrStmt : public Stmt {
   GlobalPtrStmt(const LaneAttribute<SNode *> &snode,
                 const std::vector<Stmt *> &indices)
       : snode(snode), indices(indices) {
-    for (int i = 1; i < (int)snode.size(); i++) {
+    TC_TAG;
+    for (int i = 0; i < (int)snode.size(); i++) {
+      TC_ASSERT(snode[i] != nullptr);
       TC_ASSERT(snode[0]->dt == snode[i]->dt);
     }
+    TC_TAG;
     for (int i = 0; i < (int)indices.size(); i++) {
       add_operand(this->indices[i]);
     }
+    TC_TAG;
   }
 
   DEFINE_ACCEPT
@@ -1111,12 +1114,12 @@ class ConstStmt : public Statement {
 
   ConstStmt(int32 x) {
     ret_type = VectorType(1, DataType::i32);
-    value = x;
+    value.push_back(x);
   }
 
   ConstStmt(float32 x) {
     ret_type = VectorType(1, DataType::f32);
-    value = x;
+    value.push_back(x);
   }
 
   void repeat(int factor) override {
@@ -1264,9 +1267,9 @@ class ConstExpression : public Expression {
     // if (stmt)
     // return;
     if (dt == DataType::f32) {
-      ret.push_back(std::make_unique<ConstStmt>((float32)val));
+      ret.push_back(Stmt::make<ConstStmt>((float32)val));
     } else {
-      ret.push_back(std::make_unique<ConstStmt>((int32)val));
+      ret.push_back(Stmt::make<ConstStmt>((int32)val));
     }
     stmt = ret.back().get();
   }

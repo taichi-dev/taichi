@@ -56,13 +56,31 @@ class BasicBlockSLP : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) override {
-    std::vector<Stmt *> indices;
+    std::vector<Stmt *> indices = tmp_operands;
+    TC_TAG;
+    LaneAttribute<SNode *> snodes;
+
+    TC_TAG;
     for (int i = 0; i < width; i++) {
-      indices.push_back(tmp_operands[i]);
+      TC_P(building_pack[i]->as<GlobalPtrStmt>()->snode[0]->node_type_name);
+      snodes += building_pack[i]->as<GlobalPtrStmt>()->snode;
     }
-    TC_NOT_IMPLEMENTED
-    tmp_stmt = Stmt::make<GlobalPtrStmt>(nullptr, indices);
+    TC_TAG;
+
+    TC_P(snodes.size());
+    for (int i = 0; i < snodes.size(); i++) {
+      TC_P(snodes[i]);
+    }
+    tmp_stmt = Stmt::make<GlobalPtrStmt>(snodes, indices);
+    TC_TAG;
     tmp_stmt->ret_type.width = stmt->ret_type.width * width;
+    TC_TAG;
+    update_type(stmt);
+    TC_TAG;
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    tmp_stmt = Stmt::make<GlobalStoreStmt>(tmp_operands[0], tmp_operands[1]);
     update_type(stmt);
   }
 

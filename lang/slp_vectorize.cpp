@@ -9,6 +9,7 @@ class BasicBlockSLP : public IRVisitor {
   Block *block;
   std::set<Stmt *> inside;
   std::set<Stmt *> visited;
+  std::vector<pStmt> input_statements;
   int width;
   using Pack = std::vector<Stmt *>;
   std::vector<std::pair<Pack, Stmt *>> existing_stmts;
@@ -16,6 +17,7 @@ class BasicBlockSLP : public IRVisitor {
 
   Pack tmp_operands;
   std::unique_ptr<Stmt> tmp_stmt;
+  std::unordered_map<Stmt *, int> position;
   Pack building_pack;
 
   BasicBlockSLP() {
@@ -127,14 +129,27 @@ class BasicBlockSLP : public IRVisitor {
     tmp_operands.clear();
     Stmt *ret = tmp_stmt.get();
     new_stmts.push_back(std::move(tmp_stmt));
+
+    int pos = -1;
+    for (int i = 0; i < (int)input_statements.size(); i++) {
+      if (pack[0] == input_statements[i].get()) {
+        pos = i;
+        break;
+      }
+    }
+    TC_ASSERT(pos != -1);
+    position[tmp_stmt.get()] = pos;
+
     return ret;
   }
 
   // replace with BBlock with SLP'ed block
   void run(Block *block, int width) {
+    this->block = block;
     this->width = width;
     visited.clear();
-    std::vector<std::unique_ptr<Stmt>> stmts = std::move(block->statements);
+    input_statements = std::move(block->statements);
+    auto &stmts = input_statements;
     // Find the last statement
     auto last_stmt = stmts.back().get();
 
@@ -164,7 +179,15 @@ class BasicBlockSLP : public IRVisitor {
     // TODO: check order. SLP should not change order of local/global
     // sort the statements...
     // load/store...
+    sort(new_stmts);
     block->set_statements(std::move(new_stmts));
+  }
+
+  void sort(VecStatement &vec) {
+    std::sort(vec.stmts.begin(), vec.stmts.end(),
+              [&](const pStmt &a, const pStmt &b) {
+                return position[a.get()] < position[b.get()];
+              });
   }
 };
 

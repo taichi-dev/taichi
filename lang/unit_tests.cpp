@@ -568,4 +568,36 @@ TC_TEST("slp") {
   }
 };
 
+TC_TEST("slp2") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 16;
+  Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
+
+  declare(a_global);
+  declare(b_global);
+  auto a = global_new(a_global, DataType::i32);
+  auto b = global_new(b_global, DataType::i32);
+
+  layout([&]() { root.fixed(0, n).place(a, b); });
+
+  auto func = kernel([&]() {
+    declare(i);
+
+    Vectorize(4);
+    For(i, 0, n, [&] {
+      SLP(2);
+      a[i] = 1 + i * 7;
+      b[i] = 2 + i * 9;
+    });
+  });
+
+  func();
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK(a.val<int>(i) == 1 + i * 7);
+    TC_CHECK(b.val<int>(i) == 2 + i * 9);
+  }
+};
+
 TLANG_NAMESPACE_END

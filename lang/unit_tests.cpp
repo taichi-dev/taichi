@@ -528,7 +528,7 @@ TC_REGISTER_TASK(ray_march);
 
 TC_TEST("slp") {
   CoreState::set_trigger_gdb_when_crash(true);
-  int n = 128;
+  int n = 16;
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
 
@@ -546,11 +546,9 @@ TC_TEST("slp") {
   auto func = kernel([&]() {
     declare(i);
 
-    // Vectorize(4);
+    Vectorize(2);
     For(i, 0, n, [&] {
       SLP(4);
-      // a[i] = a[i] + 1;
-      // b[i] = b[i] + 2;
       a[i] = 1;
       b[i] = 2;
       c[i] = 3;

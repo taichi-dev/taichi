@@ -7,7 +7,7 @@ TLANG_NAMESPACE_BEGIN
 class LoopVectorize : public IRVisitor {
  public:
   int vectorize;
-  Stmt *loop_var; // an alloca...
+  Stmt *loop_var;  // an alloca...
 
   LoopVectorize() {
     allow_undefined_visitor = true;
@@ -17,6 +17,11 @@ class LoopVectorize : public IRVisitor {
   }
 
   void visit(Statement *stmt) {
+    stmt->ret_type.width *= vectorize;
+  }
+
+  void visit(ConstStmt *stmt) {
+    stmt->val.repeat(vectorize);
     stmt->ret_type.width *= vectorize;
   }
 
@@ -57,11 +62,12 @@ class LoopVectorize : public IRVisitor {
     }
     if (loop_var && stmt->same_source() && stmt->ptr[0].var == loop_var) {
       // insert_before_me
-      auto offsets = std::make_unique<ConstStmt>(TypedConstant(0));
-      offsets->repeat(vectorize);
-      for (int i = 0; i < vectorize; i++) {
-        offsets->val[i] = i;
+      LaneAttribute<TypedConstant> const_offsets;
+      const_offsets.resize(vectorize * original_width);
+      for (int i = 0; i < vectorize * original_width; i++) {
+        const_offsets[i] = TypedConstant(i / original_width);
       }
+      auto offsets = std::make_unique<ConstStmt>(const_offsets);
       auto add_op =
           std::make_unique<BinaryOpStmt>(BinaryType::add, stmt, offsets.get());
       irpass::typecheck(add_op.get());

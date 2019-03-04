@@ -49,6 +49,7 @@ class GlobalPtrStmt;
 
 // Pragma statements
 class PragmaSLPStmt;
+class ElementShuffleStmt;
 
 // IR passes
 namespace irpass {
@@ -282,6 +283,7 @@ class IRVisitor {
   DEFINE_VISIT(RandStmt);
 
   DEFINE_VISIT(PragmaSLPStmt);
+  DEFINE_VISIT(ElementShuffleStmt);
 };
 
 class IRNode {
@@ -1349,10 +1351,30 @@ inline void Parallelize(int v) {
 }
 
 class PragmaSLPStmt : public Statement {
-public:
+ public:
   int slp_width;
 
   PragmaSLPStmt(int slp_width) : slp_width(slp_width) {
+  }
+
+  DEFINE_ACCEPT
+};
+
+class VectorElement {
+ public:
+  Stmt *stmt;
+  int index;
+
+  VectorElement(Stmt *stmt, int index) : stmt(stmt), index(index) {
+  }
+};
+
+class ElementShuffleStmt : public Statement {
+public:
+  LaneAttribute<VectorElement> elements;
+
+  ElementShuffleStmt(const LaneAttribute<VectorElement> &elements)
+      : elements(elements) {
   }
 
   DEFINE_ACCEPT

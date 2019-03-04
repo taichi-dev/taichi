@@ -653,15 +653,14 @@ TC_TEST("slpmatvecmul") {
   */
 };
 
-// a * b * vec
+// scalar a * scalar b * vec c
 TC_TEST("mixed_simd1") {
-  for (auto vec_size : {1, 2, 4, 8, 16}) {
+  for (auto vec_size : {4}) {
     Program prog;
 
     global(a, f32);
     global(b, f32);
-    Vector v(vec_size), u(vec_size);
-    v.fill_global(DataType::f32);
+    Vector v(DataType::f32, vec_size);
 
     int n = 128;
     auto ind = Index(0);
@@ -676,15 +675,11 @@ TC_TEST("mixed_simd1") {
     auto func = kernel([&]() {
       declare(i);
       For(i, 0, n, [&]() {
-        // auto &ad = adapter(0);
+        // SLP(1);
         auto ab = a[i] * b[i];
 
-        // ad.set(1);
-        // ad.convert(ab);
-
+        // SLP(vec_size);
         v[i] = ab * v[i];
-
-        // group(vec_size);
       });
     });
 
@@ -712,7 +707,7 @@ TC_TEST("mixed_simd1") {
 TC_TEST("mixed_simd2") {
   int n = 64;
 
-  for (auto vec_size : {1, 2, 4, 8, 16}) {
+  for (auto vec_size : {4}) {
     Program prog;
 
     Vector v(vec_size);
@@ -771,7 +766,7 @@ TC_TEST("mixed_simd2") {
 
 // reduce(vec_a<n> ** 2 - vec_b<n> ** 2) * vec_c<2n>
 TC_TEST("mixed_simd3") {
-  for (auto vec_size : {1, 2, 4, 8}) {
+  for (auto vec_size : {4}) {
     // why vec_size = 16 fails??
     Program prog;
 

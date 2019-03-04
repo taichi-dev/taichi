@@ -18,7 +18,7 @@ class Expression;
 class Expr;
 class ExpressionGroup;
 
-// Frontend Statements
+// Frontend statements
 class FrontendIfStmt;
 class FrontendForStmt;
 class FrontendPrintStmt;
@@ -26,10 +26,10 @@ class FrontendWhileStmt;
 class FrontendAllocaStmt;
 class FrontendAssignStmt;
 
-// Midend Statement
+// Midend statement
 class ConstStmt;
 
-// Without per-lane attributes:
+// Without per-lane attributes
 class RangeForStmt;
 class IfStmt;
 class WhileStmt;
@@ -40,12 +40,15 @@ class AllocaStmt;
 class PrintStmt;
 class RandStmt;
 
-// With per-lane attributes:
+// With per-lane attributes
 class GlobalLoadStmt;
 class GlobalStoreStmt;
 class LocalLoadStmt;
 class LocalStoreStmt;
 class GlobalPtrStmt;
+
+// Pragma statements
+class PragmaSLPStmt;
 
 // IR passes
 namespace irpass {
@@ -277,6 +280,8 @@ class IRVisitor {
   DEFINE_VISIT(WhileStmt);
   DEFINE_VISIT(WhileControlStmt);
   DEFINE_VISIT(RandStmt);
+
+  DEFINE_VISIT(PragmaSLPStmt);
 };
 
 class IRNode {
@@ -875,14 +880,12 @@ class Block : public IRNode {
   std::vector<std::unique_ptr<Statement>> statements;
   std::map<Ident, Stmt *> local_var_alloca;
   Stmt *mask_var;
-  int slp;
   Stmt *inner_loop_variable;
 
   Block() {
     inner_loop_variable = nullptr;
     mask_var = nullptr;
     parent = nullptr;
-    slp = 1;
   }
 
   int locate(Stmt *stmt) {
@@ -1345,8 +1348,18 @@ inline void Parallelize(int v) {
   dec.parallelize = v;
 }
 
+class PragmaSLPStmt : public Statement {
+public:
+  int slp_width;
+
+  PragmaSLPStmt(int slp_width) : slp_width(slp_width) {
+  }
+
+  DEFINE_ACCEPT
+};
+
 inline void SLP(int v) {
-  current_ast_builder().current_block()->slp = v;
+  current_ast_builder().insert(Stmt::make<PragmaSLPStmt>(v));
 }
 
 class For {

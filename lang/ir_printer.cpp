@@ -180,6 +180,10 @@ class IRPrinter : public IRVisitor {
     print("{}{} global store [{} <- {}]", stmt->type_hint(), stmt->name(),
           stmt->ptr->name(), stmt->data->name());
   }
+
+  void visit(PragmaSLPStmt *stmt) {
+    print("#pragma SLP({})", stmt->slp_width);
+  }
 };
 
 namespace irpass {

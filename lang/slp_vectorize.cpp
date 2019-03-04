@@ -10,7 +10,7 @@ class BasicBlockSLP : public IRVisitor {
   std::set<Stmt *> inside;
   std::set<Stmt *> visited;
   std::vector<pStmt> *input_statements;
-  int width;
+  int slp_width;
   using Pack = std::vector<Stmt *>;
   std::vector<std::pair<Pack, Stmt *>> existing_stmts;
   VecStatement new_stmts;
@@ -24,15 +24,14 @@ class BasicBlockSLP : public IRVisitor {
     // allow_undefined_visitor = true;
     // invoke_default_visitor = true;
   }
-
   void update_type(Statement *stmt) {
     tmp_stmt->ret_type = stmt->ret_type;
-    tmp_stmt->ret_type.width *= width;
+    tmp_stmt->ret_type.width *= slp_width;
   }
 
   void visit(ConstStmt *stmt) override {
     LaneAttribute<TypedConstant> val;
-    for (int i = 0; i < width; i++) {
+    for (int i = 0; i < slp_width; i++) {
       val += dynamic_cast<ConstStmt *>(building_pack[i])->val;
     }
     tmp_stmt = std::make_unique<ConstStmt>(val);
@@ -46,29 +45,29 @@ class BasicBlockSLP : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) override {
     LaneAttribute<LocalAddress> ptr;
-    for (int i = 0; i < width; i++) {
+    for (int i = 0; i < slp_width; i++) {
       ptr += dynamic_cast<LocalLoadStmt *>(building_pack[i])->ptr;
     }
     tmp_stmt = std::make_unique<LocalLoadStmt>(ptr);
-    tmp_stmt->ret_type.width = stmt->ret_type.width * width;
+    tmp_stmt->ret_type.width = stmt->ret_type.width * slp_width;
     update_type(stmt);
   }
 
   void visit(LocalStoreStmt *stmt) override {
     tmp_stmt =
         std::make_unique<LocalStoreStmt>(tmp_operands[0], tmp_operands[1]);
-    tmp_stmt->ret_type.width = stmt->ret_type.width * width;
+    tmp_stmt->ret_type.width = stmt->ret_type.width * slp_width;
     update_type(stmt);
   }
 
   void visit(GlobalPtrStmt *stmt) override {
     std::vector<Stmt *> indices = tmp_operands;
     LaneAttribute<SNode *> snodes;
-    for (int i = 0; i < width; i++) {
+    for (int i = 0; i < slp_width; i++) {
       snodes += building_pack[i]->as<GlobalPtrStmt>()->snode;
     }
     tmp_stmt = Stmt::make<GlobalPtrStmt>(snodes, indices);
-    tmp_stmt->ret_type.width = stmt->ret_type.width * width;
+    tmp_stmt->ret_type.width = stmt->ret_type.width * slp_width;
     update_type(stmt);
   }
 
@@ -91,10 +90,10 @@ class BasicBlockSLP : public IRVisitor {
   }
 
   Stmt *find_stmt(const Pack &pack) {
-    TC_ASSERT((int)pack.size() == width);
+    TC_ASSERT((int)pack.size() == slp_width);
     for (int i = 0; i < (int)existing_stmts.size(); i++) {
       bool match = true;
-      for (int j = 0; j < width; j++) {
+      for (int j = 0; j < slp_width; j++) {
         if (existing_stmts[i].first[j] != pack[j]) {
           match = false;
         }
@@ -112,7 +111,7 @@ class BasicBlockSLP : public IRVisitor {
     if (existing) {
       return existing;
     }
-    for (int i = 0; i < width; i++) {
+    for (int i = 0; i < slp_width; i++) {
       fmt::print(" {} ", pack[i]->id);
       TC_ASSERT(visited.find(pack[i]) == visited.end());
       visited.insert(pack[i]);
@@ -139,7 +138,7 @@ class BasicBlockSLP : public IRVisitor {
             operand_pack.push_back(previous);
         }
         if (operand_pack.size() != 0) {
-          TC_ASSERT((int)operand_pack.size() == width);
+          TC_ASSERT((int)operand_pack.size() == slp_width);
           operands.push_back(build(operand_pack));
         }
       }
@@ -168,7 +167,7 @@ class BasicBlockSLP : public IRVisitor {
   // replace with BBlock with SLP'ed block
   void run(Block *block, int width) {
     this->block = block;
-    this->width = width;
+    this->slp_width = width;
     visited.clear();
     input_statements = &block->statements;
     auto &stmts = *input_statements;
@@ -177,7 +176,8 @@ class BasicBlockSLP : public IRVisitor {
       // Find the last statement
       Stmt *last_stmt = nullptr;
       for (int i = stmts.size() - 1; i >= 0; i--) {
-        if (visited.find(stmts[i].get()) == visited.end()) {
+        if (!stmts[i]->is<PragmaSLPStmt>() &&
+            visited.find(stmts[i].get()) == visited.end()) {
           last_stmt = stmts[i].get();
           break;
         }
@@ -221,7 +221,7 @@ class BasicBlockSLP : public IRVisitor {
             bool replaced = false;
             // replace with packed alloca...
             for (auto &rec : existing_stmts) {
-              for (int j = 0; j < width; j++) {
+              for (int j = 0; j < slp_width; j++) {
                 if (rec.first[j] == old_stmt) {
                   // replace alloca
                   stmt->ptr[i].var = rec.second;
@@ -257,10 +257,32 @@ class SLPVectorize : public IRVisitor {
   }
 
   void visit(Block *block) {
-    if (block->slp != 1) {
+    TC_ASSERT(block->statements.size() != 0);
+    std::vector<std::pair<int, std::vector<Stmt *>>> slp_segments;
+    int current_slp_width = 1;
+    std::vector<Stmt *> current_segment;
+    for (auto &stmt : block->statements) {
+      if (stmt->is<PragmaSLPStmt>() &&
+          current_slp_width != stmt->as<PragmaSLPStmt>()->slp_width) {
+        if (!current_segment.empty()) {
+          slp_segments.push_back(
+              std::make_pair(current_slp_width, current_segment));
+        }
+        current_slp_width = stmt->as<PragmaSLPStmt>()->slp_width;
+        current_segment.clear();
+      } else {
+        current_segment.push_back(stmt.get());
+      }
+    }
+    if (!current_segment.empty()) {
+      slp_segments.push_back(
+          std::make_pair(current_slp_width, current_segment));
+    }
+
+    if (slp_segments.size() != 1 || slp_segments[0].first != 1) {
+      TC_ASSERT(slp_segments.size() == 1);
       auto slp = BasicBlockSLP();
-      slp.run(block, block->slp);
-      block->slp = 1;
+      slp.run(block, slp_segments[0].first);
     } else {
       for (auto &stmt : block->statements) {
         stmt->accept(this);

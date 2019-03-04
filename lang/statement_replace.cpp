@@ -13,11 +13,7 @@ class StatementReplace : public IRVisitor {
   }
 
   void visit(Statement *stmt) {
-    for (int i = 0; i < stmt->num_operands(); i++) {
-      if (stmt->operand(i) == old_stmt) {
-        stmt->operand(i) = new_stmt;
-      }
-    }
+    stmt->replace_operand_with(old_stmt, new_stmt);
   }
 
   void visit(WhileStmt *stmt) {

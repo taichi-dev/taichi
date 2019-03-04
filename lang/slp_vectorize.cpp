@@ -38,9 +38,30 @@ class BasicBlockSLP : public IRVisitor {
     update_type(stmt);
   }
 
+  void visit(LocalLoadStmt *stmt) override {
+    LaneAttribute<LocalAddress> ptr;
+    for (int i = 0; i < width; i++) {
+      ptr += dynamic_cast<LocalLoadStmt *>(building_pack[i])->ptr;
+    }
+    tmp_stmt = std::make_unique<LocalLoadStmt>(ptr);
+    tmp_stmt->ret_type.width = stmt->ret_type.width * width;
+    update_type(stmt);
+  }
+
   void visit(LocalStoreStmt *stmt) override {
     tmp_stmt =
         std::make_unique<LocalStoreStmt>(tmp_operands[0], tmp_operands[1]);
+    tmp_stmt->ret_type.width = stmt->ret_type.width * width;
+    update_type(stmt);
+  }
+
+  void visit(GlobalPtrStmt *stmt) override {
+    std::vector<Stmt *> indices;
+    for (int i = 0; i < width; i++) {
+      indices.push_back(tmp_operands[i]);
+    }
+    TC_NOT_IMPLEMENTED
+    tmp_stmt = Stmt::make<GlobalPtrStmt>(nullptr, indices);
     tmp_stmt->ret_type.width = stmt->ret_type.width * width;
     update_type(stmt);
   }
@@ -80,18 +101,21 @@ class BasicBlockSLP : public IRVisitor {
       return existing;
     }
     Pack operands;
-    for (int i = 0; i < (int)pack[0]->operands.size(); i++) {
-      Pack operand_pack;
-      for (int j = 0; j < (int)pack.size(); j++) {
-        operand_pack.push_back(*pack[j]->operands[i]);
+    if (!pack[0]->is<LocalLoadStmt>()) {
+      for (int i = 0; i < (int)pack[0]->operands.size(); i++) {
+        Pack operand_pack;
+        for (int j = 0; j < (int)pack.size(); j++) {
+          operand_pack.push_back(*pack[j]->operands[i]);
+        }
+        operands.push_back(build(operand_pack));
       }
-      operands.push_back(build(operand_pack));
     }
     tmp_operands = operands;
     building_pack = pack;
     TC_ASSERT(tmp_stmt == nullptr);
     pack[0]->accept(this);
     TC_ASSERT(tmp_stmt != nullptr);
+    tmp_operands.clear();
     Stmt *ret = tmp_stmt.get();
     new_stmts.push_back(std::move(tmp_stmt));
     return ret;

@@ -305,6 +305,10 @@ struct LaneAttribute {
     data.resize(s);
   }
 
+  void push_back(const T &t) {
+    data.push_back(t);
+  }
+
   std::size_t size() const {
     return data.size();
   }
@@ -379,6 +383,13 @@ struct LaneAttribute {
   operator T() const {
     TC_ASSERT(data.size() == 1);
     return data[0];
+  }
+
+  LaneAttribute &operator+=(const LaneAttribute &o) {
+    for (int i = 0; i < (int)o.size(); i++) {
+      push_back(o[i]);
+    }
+    return *this;
   }
 };
 
@@ -457,9 +468,26 @@ class Statement : public IRNode {
     // Note: the current structure should have been destroyed now..
   }
 
+  virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt) {
+    for (int i = 0; i < num_operands(); i++) {
+      if (operand(i) == old_stmt) {
+        operand(i) = new_stmt;
+      }
+    }
+  }
+
   void insert_before_me(std::unique_ptr<Stmt> &&new_stmt);
 
   void insert_after_me(std::unique_ptr<Stmt> &&new_stmt);
+
+  virtual bool integral_operands() const {
+    return true;
+  }
+
+  template <typename T, typename... Args>
+  static pStmt make(Args &&... args) {
+    return std::make_unique<T>(std::forward<Args>(args)...);
+  }
 };
 
 // always a tree - used as rvalues
@@ -749,6 +777,7 @@ class GlobalVariableExpression : public Expression {
     TC_ERROR("This should not be invoked");
     // ret.push_back(std::make_unique<LocalLoadStmt>(id));
   }
+
 };
 
 class GlobalPtrExpression : public Expression {
@@ -963,8 +992,10 @@ class LocalLoadStmt : public Statement {
  public:
   LaneAttribute<LocalAddress> ptr;
 
-  LocalLoadStmt(LocalAddress ptr) : ptr(ptr) {
-    add_operand(this->ptr[0].var);
+  LocalLoadStmt(LaneAttribute<LocalAddress> ptr) : ptr(ptr) {
+    for (int i = 0; i < (int)ptr.size(); i++) {
+      add_operand(this->ptr[i].var);
+    }
   }
 
   bool same_source() const {
@@ -973,6 +1004,10 @@ class LocalLoadStmt : public Statement {
         return false;
     }
     return true;
+  }
+
+  bool integral_operands() const override {
+    return false;
   }
 
   DEFINE_ACCEPT;

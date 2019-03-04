@@ -10,8 +10,7 @@ TC_TEST("compiler_linalg") {
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
 
-  declare(a_global);
-  auto a = global_new(a_global, DataType::i32);
+  global(a, i32);
   auto i = Index(0);
 
   layout([&]() { root.fixed(i, 128).place(a); });
@@ -43,8 +42,7 @@ TC_TEST("compiler_basics") {
   int n = 128;
   Program prog(Arch::x86_64);
 
-  declare(a_global);
-  auto a = global_new(a_global, DataType::i32);
+  global(a, i32);
   auto i = Index(0);
   layout([&]() { root.fixed(i, n).place(a); });
 
@@ -73,8 +71,7 @@ TC_TEST("simd_if") {
   int n = 128;
   Program prog(Arch::x86_64);
 
-  declare(a_global);
-  auto a = global_new(a_global, DataType::i32);
+  global(a, i32);
   auto i = Index(0);
   layout([&]() { root.fixed(i, n).place(a); });
 
@@ -103,8 +100,7 @@ TC_TEST("simd_if2") {
   int n = 32;
   Program prog(Arch::x86_64);
 
-  declare(a_global);
-  auto a = global_new(a_global, DataType::i32);
+  global(a, i32);
   auto i = Index(0);
   layout([&]() { root.fixed(i, n).place(a); });
 
@@ -133,8 +129,7 @@ auto test_circle = [] {
   int n = 128;
   Program prog(Arch::x86_64);
 
-  declare(a_global);
-  auto a = global_new(a_global, DataType::i32);
+  global(a, i32);
   auto i = Index(0);
 
   layout([&]() { root.fixed(i, n * n).place(a); });
@@ -236,8 +231,7 @@ TC_TEST("vectorize") {
   int n = 128;
   Program prog(Arch::x86_64);
 
-  declare(a_global);
-  auto a = global_new(a_global, DataType::i32);
+  global(a, i32);
 
   layout([&]() { root.fixed(0, n).place(a); });
 
@@ -273,8 +267,7 @@ TC_TEST("rand") {
   int n = 8;
   Program prog(Arch::x86_64);
 
-  declare(a_global);
-  auto a = global_new(a_global, DataType::i32);
+  global(a, i32);
 
   layout([&]() { root.fixed(0, n).place(a); });
 
@@ -292,8 +285,7 @@ TC_TEST("while") {
   int n = 4096;
   Program prog(Arch::x86_64);
 
-  declare(a_global);
-  auto a = global_new(a_global, DataType::i32);
+  global(a, i32);
 
   layout([&]() { root.fixed(0, n).place(a); });
 
@@ -331,8 +323,7 @@ auto mset = [&] {
   int n = 1024;
   Program prog(Arch::x86_64);
 
-  declare(a_global);
-  auto a = global_new(a_global, DataType::i32);
+  global(a, i32);
 
   layout([&]() { root.fixed(0, n * n).place(a); });
 
@@ -390,16 +381,11 @@ auto ray_march = [&] {
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
 
-  declare(color_r_global);
-  declare(color_g_global);
-  declare(color_b_global);
-  auto color_r = global_new(color_r_global, DataType::f32);
-  auto color_g = global_new(color_g_global, DataType::f32);
-  auto color_b = global_new(color_b_global, DataType::f32);
+  global(color_r, f32);
+  global(color_g, f32);
+  global(color_b, f32);
 
-  layout([&]() {
-    root.fixed(0, n * n * 2).place(color_r).place(color_g).place(color_b);
-  });
+  layout([&]() { root.fixed(0, n * n * 2).place(color_r, color_g, color_b); });
 
   auto sdf = [&](Vector p_) {
     float alpha = -0.7f;

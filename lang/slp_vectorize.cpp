@@ -9,7 +9,7 @@ class BasicBlockSLP : public IRVisitor {
   Block *block;
   std::set<Stmt *> inside;
   std::set<Stmt *> visited;
-  std::vector<pStmt> *input_statements;
+  std::vector<Stmt *> *input_statements;
   int slp_width;
   using Pack = std::vector<Stmt *>;
   std::vector<std::pair<Pack, Stmt *>> existing_stmts;
@@ -153,7 +153,7 @@ class BasicBlockSLP : public IRVisitor {
 
     int pos = -1;
     for (int i = 0; i < (int)input_statements->size(); i++) {
-      if (pack[0] == (*input_statements)[i].get()) {
+      if (pack[0] == (*input_statements)[i]) {
         pos = i;
         break;
       }
@@ -165,20 +165,22 @@ class BasicBlockSLP : public IRVisitor {
   }
 
   // replace with BBlock with SLP'ed block
-  void run(Block *block, int width) {
+  VecStatement run(Block *block,
+                   int width,
+                   std::vector<Stmt *> &input_statements) {
     this->block = block;
     this->slp_width = width;
+    this->input_statements = &input_statements;
     visited.clear();
-    input_statements = &block->statements;
-    auto &stmts = *input_statements;
+    auto &stmts = input_statements;
     while (1) {
       TC_INFO("Seeding...");
       // Find the last statement
       Stmt *last_stmt = nullptr;
       for (int i = stmts.size() - 1; i >= 0; i--) {
         if (!stmts[i]->is<PragmaSLPStmt>() &&
-            visited.find(stmts[i].get()) == visited.end()) {
-          last_stmt = stmts[i].get();
+            visited.find(stmts[i]) == visited.end()) {
+          last_stmt = stmts[i];
           break;
         }
       }
@@ -192,7 +194,7 @@ class BasicBlockSLP : public IRVisitor {
       for (int i = 0; i < (int)stmts.size(); i++) {
         if (typeid(*last_stmt) == typeid(*stmts[i])) {
           // found a stmt of the same type.
-          seed_statements.push_back(stmts[i].get());
+          seed_statements.push_back(stmts[i]);
         }
         if ((int)seed_statements.size() == width) {
           break;
@@ -208,7 +210,7 @@ class BasicBlockSLP : public IRVisitor {
     }
     sort(new_stmts);
     fix_alloca_ref(new_stmts.stmts);
-    block->set_statements(std::move(new_stmts));
+    return std::move(new_stmts);
   }
 
   void fix_alloca_ref(std::vector<pStmt> &stmts) {
@@ -256,37 +258,68 @@ class SLPVectorize : public IRVisitor {
     // invoke_default_visitor = true;
   }
 
-  void visit(Block *block) {
-    TC_ASSERT(block->statements.size() != 0);
-    std::vector<std::pair<int, std::vector<Stmt *>>> slp_segments;
+  // A SLP segment is a subarray of block->statements with the same SLP width
+  // This method transforms the first SLP segment.
+  // After the invocation the block should be valid. This is made possible by
+  // inserting ElementShuffleStmt's
+  void slp_attempt(Block *block) {
     int current_slp_width = 1;
     std::vector<Stmt *> current_segment;
-    for (auto &stmt : block->statements) {
-      if (stmt->is<PragmaSLPStmt>() &&
-          current_slp_width != stmt->as<PragmaSLPStmt>()->slp_width) {
-        if (!current_segment.empty()) {
-          slp_segments.push_back(
-              std::make_pair(current_slp_width, current_segment));
-        }
-        current_slp_width = stmt->as<PragmaSLPStmt>()->slp_width;
-        current_segment.clear();
-      } else {
-        current_segment.push_back(stmt.get());
+
+    int first_pragma_slp_location = -1;
+
+    for (int i = 0; i < (int)block->statements.size(); i++) {
+      if (block->statements[i]->is<PragmaSLPStmt>()) {
+        first_pragma_slp_location = i;
+        break;
       }
-    }
-    if (!current_segment.empty()) {
-      slp_segments.push_back(
-          std::make_pair(current_slp_width, current_segment));
     }
 
-    if (slp_segments.size() != 1 || slp_segments[0].first != 1) {
-      TC_ASSERT(slp_segments.size() == 1);
-      auto slp = BasicBlockSLP();
-      slp.run(block, slp_segments[0].first);
-    } else {
-      for (auto &stmt : block->statements) {
-        stmt->accept(this);
+    if (first_pragma_slp_location == -1)
+      return;
+
+    int second_pragma_slp_location = -1;
+
+    for (int i = first_pragma_slp_location + 1;
+         i < (int)block->statements.size(); i++) {
+      if (block->statements[i]->is<PragmaSLPStmt>()) {
+        second_pragma_slp_location = i;
+        break;
       }
+    }
+
+    if (second_pragma_slp_location == -1) {
+      // until the end...
+      second_pragma_slp_location = (int)block->statements.size();
+    }
+
+    current_slp_width = block->statements[first_pragma_slp_location]
+                            ->as<PragmaSLPStmt>()
+                            ->slp_width;
+
+    std::vector<Stmt *> vec;
+    for (int i = first_pragma_slp_location + 1; i < second_pragma_slp_location;
+         i++) {
+      vec.push_back(block->statements[i].get());
+    }
+    auto slp = BasicBlockSLP();
+    block->replace_statements_in_range(first_pragma_slp_location,
+                                       second_pragma_slp_location,
+                                       slp.run(block, current_slp_width, vec));
+  }
+
+  void visit(Block *block) {
+    TC_ASSERT(block->statements.size() != 0);
+    while (true) {
+      try {
+        slp_attempt(block);
+      } catch (IRModifiedException) {
+        continue;
+      }
+      break;  // if no IRModifiedException
+    }
+    for (auto &stmt : block->statements) {
+      stmt->accept(this);
     }
   }
 

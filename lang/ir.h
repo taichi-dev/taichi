@@ -202,6 +202,10 @@ class VecStatement {
   VecStatement() {
   }
 
+  VecStatement(VecStatement &&o) {
+    stmts = std::move(o.stmts);
+  }
+
   Stmt *push_back(pStmt &&stmt) {
     auto ret = stmt.get();
     stmts.push_back(std::move(stmt));
@@ -900,12 +904,27 @@ class Block : public IRNode {
     return -1;
   }
 
+  void erase(int location) {
+    statements.erase(statements.begin() + location);
+  }
+
   void insert(std::unique_ptr<Statement> &&stmt, int location = -1) {
     stmt->parent = this;
     if (location == -1) {
       statements.push_back(std::move(stmt));
     } else {
       statements.insert(statements.begin() + location, std::move(stmt));
+    }
+  }
+
+  void replace_statements_in_range(int start, int end, VecStatement &&stmts) {
+    TC_ASSERT(start <= end);
+    for (int i = 0; i < end - start; i++) {
+      erase(start);
+    }
+
+    for (int i = 0; i < (int)stmts.size(); i++) {
+      insert(std::move(stmts[i]), i);
     }
   }
 
@@ -1370,7 +1389,7 @@ class VectorElement {
 };
 
 class ElementShuffleStmt : public Statement {
-public:
+ public:
   LaneAttribute<VectorElement> elements;
 
   ElementShuffleStmt(const LaneAttribute<VectorElement> &elements)

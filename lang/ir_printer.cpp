@@ -148,7 +148,7 @@ class IRPrinter : public IRVisitor {
       } else {
         snode_name = "unknown";
       }
-      s += "[";
+      s += snode_name + "[";
       for (int i = 0; i < (int)stmt->indices.size(); i++) {
         s += fmt::format("{}[{}]", stmt->indices[i]->name(), l);
         if (i + 1 < (int)stmt->indices.size()) {

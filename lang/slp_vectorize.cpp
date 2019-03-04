@@ -63,7 +63,6 @@ class BasicBlockSLP : public IRVisitor {
     std::vector<Stmt *> indices = tmp_operands;
     LaneAttribute<SNode *> snodes;
     for (int i = 0; i < width; i++) {
-      TC_P(building_pack[i]->as<GlobalPtrStmt>()->snode[0]->node_type_name);
       snodes += building_pack[i]->as<GlobalPtrStmt>()->snode;
     }
     tmp_stmt = Stmt::make<GlobalPtrStmt>(snodes, indices);
@@ -145,16 +144,14 @@ class BasicBlockSLP : public IRVisitor {
 
     std::vector<Stmt *> seed_statements;
 
-    seed_statements.push_back(last_stmt);
-
     // from the back, find the other (width - 1) statements of the same type
-    for (int i = 0; i < (int)stmts.size() - 1; i++) {
+    for (int i = 0; i < (int)stmts.size(); i++) {
       if (typeid(*last_stmt) == typeid(*stmts[i])) {
         // found a stmt of the same type.
         seed_statements.push_back(stmts[i].get());
-        if ((int)seed_statements.size() == width) {
-          break;
-        }
+      }
+      if ((int)seed_statements.size() == width) {
+        break;
       }
     }
 
@@ -167,7 +164,6 @@ class BasicBlockSLP : public IRVisitor {
     // TODO: check order. SLP should not change order of local/global
     // sort the statements...
     // load/store...
-    TC_TAG;
     block->set_statements(std::move(new_stmts));
   }
 };

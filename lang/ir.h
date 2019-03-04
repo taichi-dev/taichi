@@ -751,16 +751,13 @@ class GlobalPtrStmt : public Stmt {
   GlobalPtrStmt(const LaneAttribute<SNode *> &snode,
                 const std::vector<Stmt *> &indices)
       : snode(snode), indices(indices) {
-    TC_TAG;
     for (int i = 0; i < (int)snode.size(); i++) {
       TC_ASSERT(snode[i] != nullptr);
       TC_ASSERT(snode[0]->dt == snode[i]->dt);
     }
-    TC_TAG;
     for (int i = 0; i < (int)indices.size(); i++) {
       add_operand(this->indices[i]);
     }
-    TC_TAG;
   }
 
   DEFINE_ACCEPT

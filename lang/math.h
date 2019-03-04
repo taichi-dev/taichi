@@ -22,6 +22,10 @@ struct Matrix {
     entries.resize(n * m);
   }
 
+  explicit Matrix(DataType dt, int n, int m = 1) : Matrix(n, m) {
+    fill_global(dt);
+  }
+
   // Initialize vector
   template <int d>
   explicit Matrix(const std::array<Expr, d> &input) {

@@ -769,72 +769,70 @@ TC_TEST("mixed_simd2") {
   }
 }
 
-#if 0
-// reduce(vec_a<n> - vec_b<n>) * vec_c<2n>
-TC_TEST("adapter3") {
+// reduce(vec_a<n> ** 2 - vec_b<n> ** 2) * vec_c<2n>
+TC_TEST("mixed_simd3") {
   for (auto vec_size : {1, 2, 4, 8}) {
     // why vec_size = 16 fails??
     Program prog;
 
-    Vector a(vec_size), b(vec_size), c(vec_size * 2);
-    Float sum;
+    Vector a(DataType::f32, vec_size), b(DataType::f32, vec_size),
+        c(DataType::f32, vec_size * 2);
+    global(sum, f32);
 
     int n = 64;
 
-    auto ind = Expr::index(0);
+    auto ind = Index(0);
 
     layout([&] {
       for (int i = 0; i < vec_size; i++) {
-        a(i) = var<float32>();
         root.fixed(ind, n).place(a(i));
-        b(i) = var<float32>();
         root.fixed(ind, n).place(b(i));
       }
 
       for (int i = 0; i < vec_size * 2; i++) {
-        c(i) = var<float32>();
         root.fixed(ind, n).place(c(i));
       }
     });
 
-    auto func = kernel(a(0), [&]() {
-      auto aind = a[ind];
-      auto bind = b[ind];
-      auto cind = c[ind];
+    auto func = kernel([&]() {
+      declare(i);
+      For(i, 0, n, [&]() {
+        auto diff = a[i].element_wise_prod(a[i]) - b[i].element_wise_prod(b[i]);
 
-      auto diff = aind.element_wise_prod(aind) - bind.element_wise_prod(bind);
-
-      {
-        auto &ad = adapter(0);
-        ad.set(vec_size);
-        for (int i = 0; i < vec_size; i++)
-          ad.convert(diff(i));
-      }
-
-      auto acc = Expr::create_imm(0.0_f);
-      for (int d = 0; d < vec_size; d++) {
-        acc = acc + diff(d);
-      }
-
-      {
-        auto &ad = adapter(1);
-        ad.set(1);
-        ad.convert(acc);
-        for (int i = 0; i < vec_size * 2; i++)
-          c(i)[ind] = c(i)[ind] * acc;
-      }
-
-      for (int i = 0; i < n; i++) {
-        for (int j = 0; j < vec_size; j++) {
-          a(j).val<float32>(i) = i + j + 1;
-          b(j).val<float32>(i) = i + j;
+        /*
+        {
+          auto &ad = adapter(0);
+          ad.set(vec_size);
+          for (int i = 0; i < vec_size; i++)
+            ad.convert(diff(i));
         }
-        for (int j = 0; j < vec_size * 2; j++) {
-          c(j).val<float32>(i) = i - 2 + j;
+        */
+
+        local(acc) = 0.0_f;
+        for (int d = 0; d < vec_size; d++) {
+          acc = acc + diff(d);
         }
-      }
-      group(vec_size * 2);
+
+        {
+          // auto &ad = adapter(1);
+          // ad.set(1);
+          // ad.convert(acc);
+          c[i] *= acc;
+        }
+
+        // group(vec_size * 2);
+      });
     });
+
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < vec_size; j++) {
+        a(j).val<float32>(i) = i + j + 1;
+        b(j).val<float32>(i) = i + j;
+      }
+      for (int j = 0; j < vec_size * 2; j++) {
+        c(j).val<float32>(i) = i - 2 + j;
+      }
+    }
 
     func();
 
@@ -851,6 +849,5 @@ TC_TEST("adapter3") {
     }
   }
 }
-#endif
 
 TLANG_NAMESPACE_END

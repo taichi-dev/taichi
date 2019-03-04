@@ -1,5 +1,5 @@
 #pragma once
-#include "ir.h"
+#include "util.h"
 #include <taichi/common/bit.h>
 
 TLANG_NAMESPACE_BEGIN

@@ -56,7 +56,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(GlobalPtrStmt *stmt) {
     if (stmt->snode)
-      stmt->ret_type.data_type = stmt->snode->dt;
+      stmt->ret_type.data_type = stmt->snode[0]->dt;
     else
       TC_WARN("Type inference failed: snode is nullptr.");
   }

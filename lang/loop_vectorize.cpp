@@ -30,6 +30,11 @@ class LoopVectorize : public IRVisitor {
     }
   }
 
+  void visit(GlobalPtrStmt *ptr) {
+    ptr->snode.repeat(vectorize);
+    ptr->width() *= vectorize;
+  }
+
   void visit(AllocaStmt *alloca) {
     alloca->ret_type.width *= vectorize;
   }

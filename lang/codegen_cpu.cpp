@@ -184,7 +184,7 @@ class IRCodeGen : public IRVisitor {
       }
       indices += ")";
       emit("{}[{}] = access_{}{};", stmt->raw_name(), l,
-           stmt->snode->node_type_name, indices);
+           stmt->snode[l]->node_type_name, indices);
     }
   }
 

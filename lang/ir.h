@@ -746,11 +746,15 @@ class BinaryOpExpression : public Expression {
 
 class GlobalPtrStmt : public Stmt {
  public:
-  SNode *snode;
+  LaneAttribute<SNode *> snode;
   std::vector<Stmt *> indices;
 
-  GlobalPtrStmt(SNode *snode, const std::vector<Stmt *> &indices)
+  GlobalPtrStmt(const LaneAttribute<SNode *> &snode,
+                const std::vector<Stmt *> &indices)
       : snode(snode), indices(indices) {
+    for (int i = 1; i < (int)snode.size(); i++) {
+      TC_ASSERT(snode[0]->dt == snode[i]->dt);
+    }
     for (int i = 0; i < (int)indices.size(); i++) {
       add_operand(this->indices[i]);
     }
@@ -777,7 +781,6 @@ class GlobalVariableExpression : public Expression {
     TC_ERROR("This should not be invoked");
     // ret.push_back(std::make_unique<LocalLoadStmt>(id));
   }
-
 };
 
 class GlobalPtrExpression : public Expression {

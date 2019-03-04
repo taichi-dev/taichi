@@ -139,7 +139,7 @@ class IRPrinter : public IRVisitor {
   void visit(GlobalPtrStmt *stmt) {
     std::string snode_name;
     if (stmt->snode) {
-      snode_name = stmt->snode->name;
+      snode_name = stmt->snode[0]->name;
     } else {
       snode_name = "unknown";
     }

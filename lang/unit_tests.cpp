@@ -532,14 +532,10 @@ TC_TEST("slp") {
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
 
-  declare(a_global);
-  declare(b_global);
-  declare(c_global);
-  declare(d_global);
-  auto a = global_new(a_global, DataType::i32);
-  auto b = global_new(b_global, DataType::i32);
-  auto c = global_new(c_global, DataType::i32);
-  auto d = global_new(d_global, DataType::i32);
+  global(a, i32);
+  global(b, i32);
+  global(c, i32);
+  global(d, i32);
 
   layout([&]() { root.fixed(0, n).place(a, b, c, d); });
 
@@ -553,8 +549,6 @@ TC_TEST("slp") {
       b[i] = 2;
       c[i] = 3;
       d[i] = 4;
-      // local(x) = 1;
-      // local(y) = 1;
     });
   });
 
@@ -574,10 +568,8 @@ TC_TEST("slp2") {
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
 
-  declare(a_global);
-  declare(b_global);
-  auto a = global_new(a_global, DataType::i32);
-  auto b = global_new(b_global, DataType::i32);
+  global(a, i32);
+  global(b, i32);
 
   layout([&]() { root.fixed(0, n).place(a, b); });
 

@@ -1285,6 +1285,10 @@ inline Expr Expr::operator[](ExpressionGroup indices) {
   declare_var(x); \
   x
 
+#define global(x, dt)  \
+  declare(x##_global); \
+  auto x = global_new(x##_global, DataType::dt);
+
 inline Expr global_new(Expr id_expr, DataType dt) {
   TC_ASSERT(id_expr.is<IdExpression>());
   auto ret = Expr(std::make_shared<GlobalVariableExpression>(

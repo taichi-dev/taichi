@@ -51,12 +51,9 @@ class LoopVectorize : public IRVisitor {
     stmt->ret_type.width *= vectorize;
     stmt->ptr.repeat(vectorize);
     if (stmt->ptr[0].var->width() != 1) {
-      for (int j = 0; j < original_width; j++) {
-        TC_ASSERT(stmt->ptr[j].offset == 0);
-      }
-      for (int i = 1; i < vectorize; i++) {
+      for (int i = 0; i < vectorize; i++) {
         for (int j = 0; j < original_width; j++) {
-          stmt->ptr[i * original_width + j].offset = i;
+          stmt->ptr[i * original_width + j].offset += i * original_width;
         }
       }
     }

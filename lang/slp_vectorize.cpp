@@ -140,6 +140,7 @@ class BasicBlockSLP : public IRVisitor {
     }
     TC_ASSERT(pos != -1);
     position[ret] = pos;
+    existing_stmts.push_back(std::make_pair(pack, ret));
 
     return ret;
   }
@@ -185,7 +186,38 @@ class BasicBlockSLP : public IRVisitor {
       build(seed_statements);
     }
     sort(new_stmts);
+    fix_alloca_ref(new_stmts.stmts);
     block->set_statements(std::move(new_stmts));
+  }
+
+  void fix_alloca_ref(std::vector<pStmt> &stmts) {
+    for (auto &stmt_ : stmts) {
+      if (stmt_->is<LocalLoadStmt>()) {
+        auto stmt = stmt_->as<LocalLoadStmt>();
+        for (int i = 0; i < (int)stmt->ptr.size(); i++) {
+          auto old_stmt = stmt->ptr[i].var;
+          if (visited.find(old_stmt) != visited.end()) {
+            bool replaced = false;
+            // replace with packed alloca...
+            for (auto &rec : existing_stmts) {
+              for (int j = 0; j < width; j++) {
+                if (rec.first[j] == old_stmt) {
+                  // replace alloca
+                  stmt->ptr[i].var = rec.second;
+                  // compute new offset
+                  stmt->ptr[i].offset += j * old_stmt->width();
+                  replaced = true;
+                  break;
+                }
+              }
+              if (replaced)
+                break;
+            }
+            TC_ASSERT(replaced);
+          }
+        }
+      }
+    }
   }
 
   void sort(VecStatement &vec) {

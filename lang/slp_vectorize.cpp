@@ -133,7 +133,8 @@ class BasicBlockSLP : public IRVisitor {
       for (int i = 0; i < (int)pack[0]->as<LocalLoadStmt>()->ptr.size(); i++) {
         Pack operand_pack;
         for (int j = 0; j < (int)pack.size(); j++) {
-          auto previous = pack[j]->as<LocalLoadStmt>()->previous_store_or_alloca_in_block();
+          auto previous =
+              pack[j]->as<LocalLoadStmt>()->previous_store_or_alloca_in_block();
           if (previous)
             operand_pack.push_back(previous);
         }

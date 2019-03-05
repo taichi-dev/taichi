@@ -216,7 +216,6 @@ class BasicBlockSLP : public IRVisitor {
     inside = std::set<Stmt *>(input_statements.begin(), input_statements.end());
     visited.clear();
     auto &stmts = input_statements;
-    int counter = 0;
     while (1) {
       TC_INFO("Seeding...");
       // Find the last statement
@@ -252,8 +251,6 @@ class BasicBlockSLP : public IRVisitor {
       std::reverse(seed_statements.begin(), seed_statements.end());
       TC_P(last_stmt->id);
       build(seed_statements);
-      counter++;
-      if (counter > 5) break;
     }
     sort(new_stmts);
     fix_alloca_ref(new_stmts.stmts);

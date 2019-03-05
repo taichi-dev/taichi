@@ -358,9 +358,6 @@ class SLPVectorize : public IRVisitor {
       } else {
         for (auto ope : stmt->operands) {
           if (rec.find(*ope) != rec.end()) {
-            TC_P(stmt->id);
-            // TC_P((*ope)->id);
-            // TC_ASSERT((*ope)->width() == 1);
             auto shuffle = Stmt::make<ElementShuffleStmt>(
                 VectorElement(rec[*ope].first, rec[*ope].second));
             *ope = shuffle.get();

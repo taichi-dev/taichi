@@ -1384,6 +1384,9 @@ class VectorElement {
   Stmt *stmt;
   int index;
 
+  VectorElement() : stmt(nullptr), index(0) {
+  }
+
   VectorElement(Stmt *stmt, int index) : stmt(stmt), index(index) {
   }
 };

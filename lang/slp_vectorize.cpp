@@ -19,6 +19,7 @@ class BasicBlockSLP : public IRVisitor {
   std::unique_ptr<Stmt> tmp_stmt;
   std::unordered_map<Stmt *, int> position;
   Pack building_pack;
+  std::vector<pStmt> shuffles;
 
   BasicBlockSLP() {
     // allow_undefined_visitor = true;
@@ -149,6 +150,9 @@ class BasicBlockSLP : public IRVisitor {
     pack[0]->accept(this);
     TC_ASSERT(tmp_stmt != nullptr);
     tmp_operands.clear();
+    for (int i = 0; i < (int)building_pack.size(); i++) {
+      replace(building_pack[i], tmp_stmt.get(), i);
+    }
     auto ret = new_stmts.push_back(std::move(tmp_stmt));
 
     int pos = -1;
@@ -164,6 +168,23 @@ class BasicBlockSLP : public IRVisitor {
     return ret;
   }
 
+  void replace(Stmt *old_stmt, Stmt *new_stmt, int offset) {
+    for (int i = 0; i < (int)block->statements.size(); i++) {
+      auto stmt = block->statements[i].get();
+      if (inside.find(stmt) != inside.end())
+        continue;  // this is a statement being SLP vectorized..
+      for (auto ope : stmt->operands) {
+        if (*ope == old_stmt) {
+          TC_ASSERT(old_stmt->width() == 1);
+          auto shuffle =
+              Stmt::make<ElementShuffleStmt>(VectorElement(new_stmt, 0));
+          *ope = shuffle.get();
+          shuffles.push_back(std::move(shuffle));
+        }
+      }
+    }
+  }
+
   // replace with BBlock with SLP'ed block
   VecStatement run(Block *block,
                    int width,
@@ -171,6 +192,7 @@ class BasicBlockSLP : public IRVisitor {
     this->block = block;
     this->slp_width = width;
     this->input_statements = &input_statements;
+    inside = std::set<Stmt *>(input_statements.begin(), input_statements.end());
     visited.clear();
     auto &stmts = input_statements;
     while (1) {

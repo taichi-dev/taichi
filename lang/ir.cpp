@@ -31,7 +31,8 @@ void Expr::operator=(const Expr &o) {
     current_ast_builder().insert(std::move(stmt));
     */
   }
-  current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(*this, o));
+  current_ast_builder().insert(
+      std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
 }
 
 FrontendContext::FrontendContext() {
@@ -185,19 +186,19 @@ std::string to_string(const LaneAttribute<LocalAddress> &ptr) {
 
 Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
   int position = parent->locate(this);
-  TC_ASSERT(width() == 1);
-  TC_ASSERT(this->ptr[0].offset == 0);
+  // TC_ASSERT(width() == 1);
+  // TC_ASSERT(this->ptr[0].offset == 0);
   for (int i = position - 1; i >= 0; i--) {
     if (parent->statements[i]->is<LocalStoreStmt>()) {
       auto store = parent->statements[i]->as<LocalStoreStmt>();
-      TC_ASSERT(store->width() == 1);
+      // TC_ASSERT(store->width() == 1);
       if (store->ident == this->ptr[0].var) {
         // found
         return store;
       }
     } else if (parent->statements[i]->is<AllocaStmt>()) {
       auto alloca = parent->statements[i]->as<AllocaStmt>();
-      TC_ASSERT(alloca->width() == 1);
+      // TC_ASSERT(alloca->width() == 1);
       if (alloca == this->ptr[0].var) {
         return alloca;
       }

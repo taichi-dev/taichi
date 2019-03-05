@@ -728,24 +728,17 @@ TC_TEST("mixed_simd2") {
     auto func = kernel([&] {
       declare(i);
       For(i, 0, n, [&]() {
-        auto v_ind = v[i];
+        SLP(vec_size);
+        auto vi = v[i];
+        auto v_ind = vi;
 
-        /*
-        auto &ad = adapter(0);
-        ad.set(vec_size);
-        for (int i = 0; i < vec_size; i++) {
-          ad.convert(v_ind(i));
-        }
-        */
-
+        SLP(1);
         local(acc) = 0.0_f;
         for (int d = 0; d < vec_size; d++) {
           acc = acc + v_ind(d);
         }
 
         sum[i] = acc;
-
-        // group(1);
       });
     });
 

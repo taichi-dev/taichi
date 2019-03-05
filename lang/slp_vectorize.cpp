@@ -216,6 +216,7 @@ class BasicBlockSLP : public IRVisitor {
     inside = std::set<Stmt *>(input_statements.begin(), input_statements.end());
     visited.clear();
     auto &stmts = input_statements;
+    int counter = 0;
     while (1) {
       TC_INFO("Seeding...");
       // Find the last statement
@@ -234,7 +235,7 @@ class BasicBlockSLP : public IRVisitor {
       std::vector<Stmt *> seed_statements;
 
       // from the back, find the other (width - 1) statements of the same type
-      for (int i = 0; i < (int)stmts.size(); i++) {
+      for (int i = (int)stmts.size() - 1; i >= 0; i--) {
         if (typeid(*last_stmt) == typeid(*stmts[i])) {
           // found a stmt of the same type.
           seed_statements.push_back(stmts[i]);
@@ -248,8 +249,11 @@ class BasicBlockSLP : public IRVisitor {
         TC_ERROR("Cannot find enough {} seed statements to start SLP search.",
                  width);
       }
-
+      std::reverse(seed_statements.begin(), seed_statements.end());
+      TC_P(last_stmt->id);
       build(seed_statements);
+      counter++;
+      if (counter > 5) break;
     }
     sort(new_stmts);
     fix_alloca_ref(new_stmts.stmts);

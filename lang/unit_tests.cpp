@@ -768,7 +768,7 @@ TC_TEST("mixed_simd3") {
         c(DataType::f32, vec_size * 2);
     global(sum, f32);
 
-    int n = 64;
+    int n = 8;
 
     auto ind = Index(0);
 
@@ -786,30 +786,18 @@ TC_TEST("mixed_simd3") {
     auto func = kernel([&]() {
       declare(i);
       For(i, 0, n, [&]() {
-        auto diff = a[i].element_wise_prod(a[i]) - b[i].element_wise_prod(b[i]);
+        SLP(vec_size);
+        auto diff_ = a[i].element_wise_prod(a[i]) - b[i].element_wise_prod(b[i]);
+        auto diff = diff_;
 
-        /*
-        {
-          auto &ad = adapter(0);
-          ad.set(vec_size);
-          for (int i = 0; i < vec_size; i++)
-            ad.convert(diff(i));
-        }
-        */
-
+        SLP(1);
         local(acc) = 0.0_f;
         for (int d = 0; d < vec_size; d++) {
           acc = acc + diff(d);
         }
 
-        {
-          // auto &ad = adapter(1);
-          // ad.set(1);
-          // ad.convert(acc);
-          c[i] *= acc;
-        }
-
-        // group(vec_size * 2);
+        SLP(vec_size * 2);
+        c[i] *= acc;
       });
     });
 

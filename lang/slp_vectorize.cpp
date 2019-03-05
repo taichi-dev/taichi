@@ -186,7 +186,6 @@ class BasicBlockSLP : public IRVisitor {
   }
 
   void replace(Stmt *old_stmt, Stmt *new_stmt, int offset) {
-    TC_NOT_IMPLEMENTED
     for (int i = 0; i < (int)block->statements.size(); i++) {
       auto stmt = block->statements[i].get();
       if (inside.find(stmt) != inside.end())
@@ -344,15 +343,27 @@ class SLPVectorize : public IRVisitor {
     for (int i = first_pragma_slp_location + 1; i < second_pragma_slp_location;
          i++) {
       auto stmt = block->statements[i].get();
-      for (auto ope : stmt->operands) {
-        if (rec.find(*ope) != rec.end()) {
-          TC_P(stmt->id);
-          TC_P((*ope)->id);
-          TC_ASSERT((*ope)->width() == 1);
-          auto shuffle = Stmt::make<ElementShuffleStmt>(
-              VectorElement(rec[*ope].first, rec[*ope].second));
-          *ope = shuffle.get();
-          shuffles.push_back(std::move(shuffle));
+      if (stmt->is<LocalLoadStmt>()) {
+        TC_NOT_IMPLEMENTED
+        auto s = stmt->as<LocalLoadStmt>();
+        for (int l = 0; l < s->width(); l++) {
+          auto old_alloca = s->ptr[l].var;
+          if (rec.find(old_alloca) != rec.end()) {
+            s->ptr[l].var = rec[old_alloca].first;
+            s->ptr[l].offset = rec[old_alloca].second;
+          }
+        }
+      } else {
+        for (auto ope : stmt->operands) {
+          if (rec.find(*ope) != rec.end()) {
+            TC_P(stmt->id);
+            // TC_P((*ope)->id);
+            // TC_ASSERT((*ope)->width() == 1);
+            auto shuffle = Stmt::make<ElementShuffleStmt>(
+                VectorElement(rec[*ope].first, rec[*ope].second));
+            *ope = shuffle.get();
+            shuffles.push_back(std::move(shuffle));
+          }
         }
       }
     }
@@ -371,13 +382,15 @@ class SLPVectorize : public IRVisitor {
          i++) {
       vec.push_back(block->statements[i].get());
     }
+    TC_INFO("Before SLP");
+    irpass::print(context->root());
     auto slp = BasicBlockSLP();
     block->replace_statements_in_range(
         first_pragma_slp_location, second_pragma_slp_location,
         slp.run(block, current_slp_width, vec, &rec));
     TC_P(first_pragma_slp_location);
     TC_P(second_pragma_slp_location);
-    TC_INFO("SLPing...");
+    TC_INFO("SLPed...");
     irpass::print(context->root());
     throw IRModifiedException();
   }

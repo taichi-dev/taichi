@@ -655,7 +655,7 @@ TC_TEST("slpmatvecmul") {
 
 // scalar a * scalar b * vec c
 TC_TEST("mixed_simd1") {
-  for (auto vec_size : {2}) {
+  for (auto vec_size : {4}) {
     Program prog;
     prog.config.print_ir = true;
 

@@ -125,6 +125,8 @@ class BasicBlockSLP : public IRVisitor {
       return existing;
     }
     for (int i = 0; i < slp_width; i++) {
+      if (inside.find(pack[i]) == inside.end())
+        return nullptr;
       fmt::print(" {} ", pack[i]->id);
       TC_ASSERT(visited.find(pack[i]) == visited.end());
       visited.insert(pack[i]);
@@ -344,7 +346,6 @@ class SLPVectorize : public IRVisitor {
          i++) {
       auto stmt = block->statements[i].get();
       if (stmt->is<LocalLoadStmt>()) {
-        TC_NOT_IMPLEMENTED
         auto s = stmt->as<LocalLoadStmt>();
         for (int l = 0; l < s->width(); l++) {
           auto old_alloca = s->ptr[l].var;

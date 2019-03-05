@@ -4,9 +4,12 @@
 
 TLANG_NAMESPACE_BEGIN
 
+using PackRecord = std::unordered_map<Stmt *, std::pair<Stmt *, int>>;
+
 class BasicBlockSLP : public IRVisitor {
  public:
   Block *block;
+  PackRecord *rec;
   std::set<Stmt *> inside;
   std::set<Stmt *> visited;
   std::vector<Stmt *> *input_statements;
@@ -90,6 +93,15 @@ class BasicBlockSLP : public IRVisitor {
     update_type(stmt);
   }
 
+  void visit(ElementShuffleStmt *stmt) override {
+    LaneAttribute<VectorElement> elements;
+    for (int i = 0; i < slp_width; i++) {
+      elements += building_pack[i]->as<ElementShuffleStmt>()->elements;
+    }
+    tmp_stmt = Stmt::make<ElementShuffleStmt>(elements);
+    update_type(stmt);
+  }
+
   Stmt *find_stmt(const Pack &pack) {
     TC_ASSERT((int)pack.size() == slp_width);
     for (int i = 0; i < (int)existing_stmts.size(); i++) {
@@ -135,6 +147,11 @@ class BasicBlockSLP : public IRVisitor {
         for (int j = 0; j < (int)pack.size(); j++) {
           auto previous =
               pack[j]->as<LocalLoadStmt>()->previous_store_or_alloca_in_block();
+          /*
+          if (previous->is<LocalStoreStmt>()) {
+            previous = previous->as<LocalStoreStmt>()->data;
+          }
+          */
           if (previous)
             operand_pack.push_back(previous);
         }
@@ -151,7 +168,7 @@ class BasicBlockSLP : public IRVisitor {
     TC_ASSERT(tmp_stmt != nullptr);
     tmp_operands.clear();
     for (int i = 0; i < (int)building_pack.size(); i++) {
-      replace(building_pack[i], tmp_stmt.get(), i);
+      (*rec)[building_pack[i]] = std::make_pair(tmp_stmt.get(), i);
     }
     auto ret = new_stmts.push_back(std::move(tmp_stmt));
 
@@ -169,6 +186,7 @@ class BasicBlockSLP : public IRVisitor {
   }
 
   void replace(Stmt *old_stmt, Stmt *new_stmt, int offset) {
+    TC_NOT_IMPLEMENTED
     for (int i = 0; i < (int)block->statements.size(); i++) {
       auto stmt = block->statements[i].get();
       if (inside.find(stmt) != inside.end())
@@ -188,7 +206,9 @@ class BasicBlockSLP : public IRVisitor {
   // replace with BBlock with SLP'ed block
   VecStatement run(Block *block,
                    int width,
-                   std::vector<Stmt *> &input_statements) {
+                   std::vector<Stmt *> &input_statements,
+                   PackRecord *rec) {
+    this->rec = rec;
     this->block = block;
     this->slp_width = width;
     this->input_statements = &input_statements;
@@ -232,6 +252,8 @@ class BasicBlockSLP : public IRVisitor {
     }
     sort(new_stmts);
     fix_alloca_ref(new_stmts.stmts);
+    for (auto &s : shuffles)
+      new_stmts.stmts.push_back(std::move(s));
     return std::move(new_stmts);
   }
 
@@ -275,6 +297,8 @@ class BasicBlockSLP : public IRVisitor {
 
 class SLPVectorize : public IRVisitor {
  public:
+  PackRecord rec;
+
   SLPVectorize() {
     allow_undefined_visitor = true;
     // invoke_default_visitor = true;
@@ -282,10 +306,9 @@ class SLPVectorize : public IRVisitor {
 
   // A SLP segment is a subarray of block->statements with the same SLP width
   // This method transforms the first SLP segment.
-  // After the invocation the block should be valid. This is made possible by
+  // After the invocation the block may be invalid. This is can be fixed by
   // inserting ElementShuffleStmt's
   void slp_attempt(Block *block) {
-    int current_slp_width = 1;
     std::vector<Stmt *> current_segment;
 
     int first_pragma_slp_location = -1;
@@ -300,8 +323,10 @@ class SLPVectorize : public IRVisitor {
     if (first_pragma_slp_location == -1)
       return;
 
-    int second_pragma_slp_location = -1;
+    // now, insert shuffles to make sure SLPing the previous segment does not
+    // break the block
 
+    int second_pragma_slp_location = -1;
     for (int i = first_pragma_slp_location + 1;
          i < (int)block->statements.size(); i++) {
       if (block->statements[i]->is<PragmaSLPStmt>()) {
@@ -315,9 +340,31 @@ class SLPVectorize : public IRVisitor {
       second_pragma_slp_location = (int)block->statements.size();
     }
 
-    current_slp_width = block->statements[first_pragma_slp_location]
-                            ->as<PragmaSLPStmt>()
-                            ->slp_width;
+    std::vector<pStmt> shuffles;
+    for (int i = first_pragma_slp_location + 1; i < second_pragma_slp_location;
+         i++) {
+      auto stmt = block->statements[i].get();
+      for (auto ope : stmt->operands) {
+        if (rec.find(*ope) != rec.end()) {
+          TC_P(stmt->id);
+          TC_P((*ope)->id);
+          TC_ASSERT((*ope)->width() == 1);
+          auto shuffle = Stmt::make<ElementShuffleStmt>(
+              VectorElement(rec[*ope].first, rec[*ope].second));
+          *ope = shuffle.get();
+          shuffles.push_back(std::move(shuffle));
+        }
+      }
+    }
+
+    for (int i = 0; i < (int)shuffles.size(); i++) {
+      block->insert(std::move(shuffles[i]), first_pragma_slp_location + i);
+    }
+    second_pragma_slp_location += (int)shuffles.size();
+
+    int current_slp_width = block->statements[first_pragma_slp_location]
+                                ->as<PragmaSLPStmt>()
+                                ->slp_width;
 
     std::vector<Stmt *> vec;
     for (int i = first_pragma_slp_location + 1; i < second_pragma_slp_location;
@@ -325,9 +372,31 @@ class SLPVectorize : public IRVisitor {
       vec.push_back(block->statements[i].get());
     }
     auto slp = BasicBlockSLP();
-    block->replace_statements_in_range(first_pragma_slp_location,
-                                       second_pragma_slp_location,
-                                       slp.run(block, current_slp_width, vec));
+    block->replace_statements_in_range(
+        first_pragma_slp_location, second_pragma_slp_location,
+        slp.run(block, current_slp_width, vec, &rec));
+    TC_P(first_pragma_slp_location);
+    TC_P(second_pragma_slp_location);
+    TC_INFO("SLPing...");
+    irpass::print(context->root());
+    throw IRModifiedException();
+  }
+
+  void fix_indirect_alloca_ref(Block *block) {
+    for (auto &stmt_ : block->statements) {
+      if (stmt_->is<LocalLoadStmt>()) {
+        auto stmt = stmt_->as<LocalLoadStmt>();
+        for (int l = 0; l < stmt->width(); l++) {
+          if (stmt->ptr[l].var->is<ElementShuffleStmt>()) {
+            int offset = stmt->ptr[l].offset;
+            auto shuffle = stmt->ptr[l].var->as<ElementShuffleStmt>();
+            stmt->ptr[l].var = shuffle->elements[offset].stmt;
+            offset = shuffle->elements[offset].index;
+            stmt->ptr[l].offset = offset;
+          }
+        }
+      }
+    }
   }
 
   void visit(Block *block) {
@@ -343,6 +412,7 @@ class SLPVectorize : public IRVisitor {
     for (auto &stmt : block->statements) {
       stmt->accept(this);
     }
+    fix_indirect_alloca_ref(block);
   }
 
   void visit(IfStmt *if_stmt) override {

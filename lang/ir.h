@@ -924,7 +924,7 @@ class Block : public IRNode {
     }
 
     for (int i = 0; i < (int)stmts.size(); i++) {
-      insert(std::move(stmts[i]), i);
+      insert(std::move(stmts[i]), start + i);
     }
   }
 

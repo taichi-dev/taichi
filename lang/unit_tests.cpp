@@ -655,8 +655,9 @@ TC_TEST("slpmatvecmul") {
 
 // scalar a * scalar b * vec c
 TC_TEST("mixed_simd1") {
-  for (auto vec_size : {4}) {
+  for (auto vec_size : {2}) {
     Program prog;
+    prog.config.print_ir = true;
 
     global(a, f32);
     global(b, f32);
@@ -675,10 +676,10 @@ TC_TEST("mixed_simd1") {
     auto func = kernel([&]() {
       declare(i);
       For(i, 0, n, [&]() {
-        // SLP(1);
-        auto ab = a[i] * b[i];
+        SLP(1);
+        local(ab) = a[i] * b[i];
 
-        // SLP(vec_size);
+        SLP(vec_size);
         v[i] = ab * v[i];
       });
     });

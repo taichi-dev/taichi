@@ -116,8 +116,7 @@ class StructCompiler : public CodeGenBase {
       emit_code("TC_FORCE_INLINE int get_n() {{return 1;}} ");
       emit_code("}};");
     } else if (type == SNodeType::place) {
-      emit_code("using {} = {};", snode.node_type_name,
-                snode.data_type_name());
+      emit_code("using {} = {};", snode.node_type_name, snode.data_type_name());
     } else {
       TC_P(snode.type_name());
       TC_NOT_IMPLEMENTED;
@@ -175,8 +174,13 @@ class StructCompiler : public CodeGenBase {
           auto e = stack[i]->extractors[j];
           int b = e.num_bits;
           if (b) {
-            emit_code("tmp = (tmp << {}) + ((i{} >> {}) & ((1 << {}) - 1));",
-                      e.num_bits, j, e.start, e.num_bits);
+            if (e.num_bits == e.start) {
+              emit_code("tmp = (tmp << {}) + ((i{} >> {}) & ((1 << {}) - 1));",
+                        e.num_bits, j, e.start, e.num_bits);
+            } else {
+              TC_WARN("Emitting shortcut indexing");
+              emit_code("tmp = i{};", j);
+            }
           }
         }
         emit_code("auto n{} = access_{}(n{}, tmp);", i + 1,

@@ -370,8 +370,8 @@ TC_TEST("simd_mpm") {
       Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
                            base_coord(1) * (n_grid) + base_coord(2);
 
+      // SLP(4);
       for (int i = 0; i < T * T * T; i++) {
-        SLP(4);
         Vector gpos(4);
         gpos(0) = real(i / 9);
         gpos(1) = real(i / 3 % 3);
@@ -401,7 +401,8 @@ TC_TEST("simd_mpm") {
   };
   TC_TIME(initialize_data());
 
-  TC_TIME(p2g());
+  while (1)
+    TC_TIME(p2g());
 
   for (int i = 0; i < context.n; i++) {
     for (int j = 0; j < context.n; j++) {
@@ -414,8 +415,6 @@ TC_TEST("simd_mpm") {
       }
     }
   }
-
-  TC_TIME(p2g());
 };
 
 TLANG_NAMESPACE_END

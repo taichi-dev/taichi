@@ -63,6 +63,8 @@ struct CompileConfig {
   std::string compiler_name() {
     if (gcc_version == -1) {
       return "gcc";
+    } else if (gcc_version == -2) {
+      return "clang-7";
     } else {
       return fmt::format("gcc-{}", gcc_version);
     }

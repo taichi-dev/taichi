@@ -273,6 +273,7 @@ TC_TEST("simd_mpm") {
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
+  prog.config.gcc_version = -2;
   prog.config.force_vectorized_global_load = true;
   prog.config.force_vectorized_global_store = true;
 

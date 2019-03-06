@@ -58,13 +58,13 @@ struct Matrix {
 
   Expr &operator()(int i, int j) {
     TC_ASSERT(0 <= i && i < n);
-    TC_ASSERT(0 <= j && j < n);
+    TC_ASSERT(0 <= j && j < m);
     return entries[i * m + j];
   }
 
   const Expr &operator()(int i, int j) const {
     TC_ASSERT(0 <= i && i < n);
-    TC_ASSERT(0 <= j && j < n);
+    TC_ASSERT(0 <= j && j < m);
     return entries[i * m + j];
   }
 

@@ -309,6 +309,12 @@ TC_TEST("simd_mpm") {
       auto pos = g_pos[p_i];
       auto J = g_J[p_i];
 
+      Vector v4(4);
+      for (int i = 0; i < dim; i++) {
+        v4(i) = v(i);
+      }
+      v4(3) = real(1);
+
       Vector base_coord = (inv_dx * pos - 0.5_f).cast_elements<int>();
       Vector fx = inv_dx * pos - base_coord.cast_elements<real>();
 
@@ -316,6 +322,12 @@ TC_TEST("simd_mpm") {
       w[0] = 0.5_f * sqr(1.5_f - fx);
       w[1] = 0.75_f - sqr(fx - 1.0_f);
       w[2] = 0.5_f * sqr(fx - 0.5_f);
+
+      Vector fx4(4);
+      for (int i = 0; i < dim; i++) {
+        fx4(i) = fx(i);
+      }
+      fx4(3) = real(0);
 
       Matrix stress(dim, dim);
       for (int i = 0; i < dim; i++) {
@@ -331,7 +343,15 @@ TC_TEST("simd_mpm") {
       stress = (-4 * inv_dx * inv_dx * dt * vol) * stress;
 
       Matrix affine_ = stress + mass * g_C[p_i];
-      Matrix affine = affine_;
+      Matrix affine(4, 4);
+      for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+          affine(i, j) = affine_(i, j);
+        }
+        affine(i, dim) = real(0);
+        affine(dim, i) = real(0);
+      }
+      affine(dim, dim) = real(0);
 
       Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
                            base_coord(1) * (n_grid) + base_coord(2);
@@ -341,21 +361,20 @@ TC_TEST("simd_mpm") {
       for (int i = 0; i < T; i++) {
         for (int j = 0; j < T; j++) {
           for (int k = 0; k < T; k++) {
-            Vector gpos(3);
+            // SLP(1);
+            Local(weight) = w[i](0) * w[j](1) * w[k](2);
+            // SLP(4);
+            Vector gpos(4);
             gpos(0) = real(i);
             gpos(1) = real(j);
             gpos(2) = real(k);
-            auto dpos = dx * (gpos - fx);
-            Vector mv = mass * v;
-            Local(weight) = w[i](0) * w[j](1) * w[k](2);
-            auto contrib_partial = mv + affine * dpos;
-            Vector contrib(dim + 1);
-            for (int d = 0; d < dim; d++) {
-              contrib(d) = contrib_partial(d);
-            }
-            contrib(dim) = mass;
+            gpos(3) = real(0);
+            auto dpos = dx * (gpos - fx4);
+            Vector mv = mass * v4;
+            auto contrib_ = mv + affine * dpos;
+
             grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
-                weight * contrib;
+                weight * contrib_;
           }
         }
       }
@@ -389,6 +408,8 @@ TC_TEST("simd_mpm") {
       }
     }
   }
+
+  TC_TIME(p2g());
 };
 
 TLANG_NAMESPACE_END

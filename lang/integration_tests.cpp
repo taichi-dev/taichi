@@ -51,9 +51,9 @@ TC_ALIGNED(64) const static __m128 grid_pos_offset_[27] = {
 struct MPMContext {
  public:
   struct Particle {
+    real J;
     Vector3 pos, v;
     Matrix3 C;
-    real J;
 
     Particle() {
       pos = Vector3::rand() * 0.5_f + Vector3(0.25_f);
@@ -264,9 +264,9 @@ TC_TEST("simd_mpm_intrinsics") {
 // TODO: shuffled inputs?
 
 TC_TEST("simd_mpm") {
-  int n_particles = 128;
-  int n_grid = 8;
+  int n_particles = 2;
   MPMContext context(n_particles);
+  int n_grid = context.n;
   context.p2g();
 
   CoreState::set_trigger_gdb_when_crash(true);
@@ -294,16 +294,6 @@ TC_TEST("simd_mpm") {
     root.fixed(ind, n_grid * n_grid * n_grid)
         .place(grid(0), grid(1), grid(2), grid(3));
   });
-
-  for (int p = 0; p > n_particles; p++) {
-    for (int i = 0; i < dim; i++) {
-      g_pos(i).val<float32>(p) = context.particles[p].pos[i];
-      g_v(i).val<float32>(p) = context.particles[p].v[i];
-      for (int j = 0; j < dim; j++) {
-        g_C(i, j).val<float32>(p) = context.particles[p].C[j][i];
-      }
-    }
-  }
 
   auto p2g = kernel([&]() {
     declare(p_i);
@@ -356,7 +346,7 @@ TC_TEST("simd_mpm") {
             gpos(2) = real(k);
             auto dpos = dx * (gpos - fx);
             Vector mv = mass * v;
-            auto weight = w[i](0) * w[j](1) * w[k](2);
+            local(weight) = w[i](0) * w[j](1) * w[k](2);
             auto contrib_partial = mv + affine * dpos;
             Vector contrib(dim + 1);
             for (int d = 0; d < dim; d++) {
@@ -370,6 +360,17 @@ TC_TEST("simd_mpm") {
       }
     });
   });
+
+  for (int p = 0; p < n_particles; p++) {
+    g_J.val<float32>(p) = context.particles[p].J;
+    for (int i = 0; i < dim; i++) {
+      g_pos(i).val<float32>(p) = context.particles[p].pos[i];
+      g_v(i).val<float32>(p) = context.particles[p].v[i];
+      for (int j = 0; j < dim; j++) {
+        g_C(i, j).val<float32>(p) = context.particles[p].C[j][i];
+      }
+    }
+  }
 
   p2g();
 

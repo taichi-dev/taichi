@@ -1100,7 +1100,8 @@ class FrontendPrintStmt : public Statement {
   Expr expr;
   std::string str;
 
-  FrontendPrintStmt(Expr expr, std::string str) : expr(expr), str(str) {
+  FrontendPrintStmt(Expr expr, std::string str)
+      : expr(load_if_ptr(expr)), str(str) {
   }
 
   DEFINE_ACCEPT

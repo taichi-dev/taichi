@@ -149,6 +149,15 @@ struct Matrix {
   void operator*=(const T &o);
 
   void fill_global(DataType dt);
+
+  template <typename T>
+  Matrix cast_elements() const {
+    Matrix ret(this->n, this->m);
+    for (int i = 0; i < n * m; i++) {
+      ret.entries[i] = cast<T>(entries[i]);
+    }
+    return ret;
+  }
 };
 
 inline Matrix operator*(const Expr &A, const Matrix &B) {

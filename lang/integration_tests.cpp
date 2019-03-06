@@ -68,6 +68,7 @@ struct MPMContext {
   static constexpr real vol = 3.0_f;
   static constexpr int n = 8;
   static constexpr real dx = 1.0_f / n;
+  static constexpr real inv_dx = 1.0_f / dx;
   static constexpr real dt = 1e-1_f;
 
   using Grid = Vector4[n][n][n];
@@ -87,7 +88,6 @@ struct MPMContext {
   }
 
   void p2g() {
-    const auto inv_dx = 1.0_f / dx;
     for (int p_i = 0; p_i < n_particles; p_i++) {
       using Vec = Vector3;
       auto &p = particles[p_i];
@@ -159,6 +159,20 @@ struct MPMContext {
 
       // Note, pos is magnified grid pos
       __m128 pos_ = _mm_mul_ps(p.pos.v, _mm_set1_ps(inv_delta_x));
+
+      /*
+      union {
+        int u[4];
+        __m128i v;
+      } grid_base_pos;
+
+      grid_base_pos.v = _mm_cvtps_epi32(_mm_sub_ps(pos_, _mm_set1_ps(0.5_f)));
+      auto base_offset = grid_base_pos.u[0] * n * n + grid_base_pos.u[1] * n +
+                         grid_base_pos.u[2];
+      Vector grid_base_pos_f(_mm_cvtepi32_ps(grid_base_pos.v));
+      grid_base_pos_f[3] = 0;
+      */
+
       Vectori grid_base_pos(get_stencil_start(pos_[0]),
                             get_stencil_start(pos_[1]),
                             get_stencil_start(pos_[2]));
@@ -174,7 +188,7 @@ struct MPMContext {
       const __m128 v = p.v.v;
       __m128 mass_ = _mm_set1_ps(mass);
       // Note, apic_b has delta_x issue
-      const Matrix3f apic_b_inv_d_mass = -mass * dx * p.C;
+      const Matrix3f apic_b_inv_d_mass = (-mass * dx) * p.C;
       const __m128 mass_v = _mm_mul_ps(_mm_set1_ps(mass), v);
 
       auto stress = -vol * Matrix3(p.J - 1);
@@ -247,56 +261,129 @@ TC_TEST("simd_mpm_intrinsics") {
   }
 };
 
+// TODO: shuffled inputs?
+
 TC_TEST("simd_mpm") {
-  MPMContext context(128);
+  int n_particles = 128;
+  int n_grid = 8;
+  MPMContext context(n_particles);
   context.p2g();
 
-  MPMContext::Grid grid_gt = context.grid;
-  context.clear_grid();
-  context.p2g_intrinsics();
+  CoreState::set_trigger_gdb_when_crash(true);
+  Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
+
+  global(g_J, f32);
+  auto ind = Index(0);
+  constexpr int dim = 3;
+
+  Vector grid(DataType::f32, dim + 1);
+  Vector g_pos(DataType::f32, dim);
+  Vector g_v(DataType::f32, dim);
+  Vector g_C(DataType::f32, dim, dim);
+
+  layout([&]() {
+    root.fixed(ind, n_particles).place(g_J);
+    for (int i = 0; i < dim; i++) {
+      root.fixed(ind, n_particles).place(g_pos(i));
+      root.fixed(ind, n_particles).place(g_v(i));
+      for (int j = 0; j < dim; j++) {
+        root.fixed(ind, n_particles).place(g_C(i, j));
+      }
+    }
+    root.fixed(ind, n_grid * n_grid * n_grid)
+        .place(grid(0), grid(1), grid(2), grid(3));
+  });
+
+  for (int p = 0; p > n_particles; p++) {
+    for (int i = 0; i < dim; i++) {
+      g_pos(i).val<float32>(p) = context.particles[p].pos[i];
+      g_v(i).val<float32>(p) = context.particles[p].v[i];
+      for (int j = 0; j < dim; j++) {
+        g_C(i, j).val<float32>(p) = context.particles[p].C[j][i];
+      }
+    }
+  }
+
+  auto p2g = kernel([&]() {
+    declare(p_i);
+    For(p_i, 0, n_particles, [&]() {
+      auto mass = context.mass;
+      auto vol = context.vol;
+      auto dx = context.dx;
+      auto inv_dx = context.inv_dx;
+      auto dt = context.dt;
+
+      auto v = g_v[p_i];
+      auto pos = g_pos[p_i];
+      auto J = g_J[p_i];
+
+      Vector base_coord = (inv_dx * pos - 0.5_f).cast_elements<int>();
+      Vector fx = inv_dx * pos - base_coord.cast_elements<real>();
+
+      Vector w[3];
+      w[0] = 0.5_f * sqr(1.5_f - fx);
+      w[1] = 0.75_f - sqr(fx - 1.0_f);
+      w[2] = 0.5_f * sqr(fx - 0.5_f);
+
+      Matrix stress(dim, dim);
+      for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+          if (i == j) {
+            stress(i, j) = J - real(1);
+          } else {
+            stress(i, j) = real(0);
+          }
+        }
+      }
+
+      stress = (-4 * inv_dx * inv_dx * dt * vol) * stress;
+
+      Matrix affine_ = stress + mass * g_C[p_i];
+      Matrix affine = affine_;
+
+      local(base_offset) = base_coord(0) * (n_grid * n_grid) +
+                           base_coord(1) * (n_grid) + base_coord(2);
+
+      int T = 3;
+      TC_WARN_IF(T != 3, "T is not 3");
+      for (int i = 0; i < T; i++) {
+        for (int j = 0; j < T; j++) {
+          for (int k = 0; k < T; k++) {
+            Vector gpos(3);
+            gpos(0) = real(i);
+            gpos(1) = real(j);
+            gpos(2) = real(k);
+            auto dpos = dx * (gpos - fx);
+            Vector mv = mass * v;
+            auto weight = w[i](0) * w[j](1) * w[k](2);
+            auto contrib_partial = mv + affine * dpos;
+            Vector contrib(dim + 1);
+            for (int d = 0; d < dim; d++) {
+              contrib(d) = contrib_partial(d);
+            }
+            contrib(dim) = mass;
+            grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
+                weight * contrib;
+          }
+        }
+      }
+    });
+  });
+
+  p2g();
 
   for (int i = 0; i < context.n; i++) {
     for (int j = 0; j < context.n; j++) {
       for (int k = 0; k < context.n; k++) {
         for (int d = 0; d < 4; d++) {
-          // TC_INFO("{} {} {} {} , {}", i, j, k, d, grid_gt[i][j][k][d]);
-          TC_CHECK_EQUAL(grid_gt[i][j][k][d], context.grid[i][j][k][d], 1e-3_f);
+          TC_CHECK_EQUAL(
+              grid(d).val<float32>(i * n_grid * n_grid + j * n_grid + k),
+              context.grid[i][j][k][d], 1e-3_f);
         }
       }
     }
   }
-
-  /*
-  CoreState::set_trigger_gdb_when_crash(true);
-  Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
-
-  global(a, i32);
-  auto i = Index(0);
-
-  layout([&]() { root.fixed(i, 128).place(a); });
-
-  auto func = kernel([&]() {
-    Matrix A(2, 2), B(2, 2);
-    A(0, 0) = 1;
-    A(0, 1) = 1;
-    A(1, 0) = 1;
-    A(1, 1) = 1;
-
-    B(0, 0) = 1;
-    B(0, 1) = 2;
-    B(1, 0) = 3;
-    B(1, 1) = 4;
-    auto C = A * B + A;
-    for (int p = 0; p < 2; p++) {
-      for (int q = 0; q < 2; q++) {
-        Print(C(p, q));
-      }
-    }
-  });
-
-  func();
-  */
 };
 
 TLANG_NAMESPACE_END

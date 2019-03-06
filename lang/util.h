@@ -83,7 +83,7 @@ struct CompileConfig {
                           const std::string &output,
                           bool verbose = false) {
     auto cmd = fmt::format(
-        "{} {} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/headers "
+        "{} {} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/headers -ffp-contract=fast "
         "-fopenmp "
         "-Wall "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} -lstdc++",

@@ -372,7 +372,7 @@ TC_TEST("simd_mpm") {
       Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
                            base_coord(1) * (n_grid) + base_coord(2);
 
-      // SLP(4);
+      SLP(4);
       // constexpr int TTT = T * T * T;
       constexpr int TTT = 27;
       for (int i = 0; i < TTT; i++) {

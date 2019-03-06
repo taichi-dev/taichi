@@ -213,6 +213,40 @@ struct MPMContext {
 #undef broadcast
 };
 
+TC_TEST("simd_mpm_intrinsics") {
+  {
+    MPMContext context(128);
+    context.p2g();
+
+    MPMContext::Grid grid_gt = context.grid;
+    context.clear_grid();
+    context.p2g_intrinsics();
+
+    for (int i = 0; i < context.n; i++) {
+      for (int j = 0; j < context.n; j++) {
+        for (int k = 0; k < context.n; k++) {
+          for (int d = 0; d < 4; d++) {
+            // TC_INFO("{} {} {} {} , {}", i, j, k, d, grid_gt[i][j][k][d]);
+            TC_CHECK_EQUAL(grid_gt[i][j][k][d], context.grid[i][j][k][d],
+                           1e-3_f);
+          }
+        }
+      }
+    }
+  }
+
+  MPMContext context(16 * 1024 * 1024);
+  int N = 2;
+  for (int i = 0; i < N; i++) {
+    TC_TIME(context.p2g());
+  }
+
+  context.clear_grid();
+  for (int i = 0; i < N; i++) {
+    TC_TIME(context.p2g_intrinsics());
+  }
+};
+
 TC_TEST("simd_mpm") {
   MPMContext context(128);
   context.p2g();

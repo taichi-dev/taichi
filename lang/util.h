@@ -40,6 +40,8 @@ struct CompileConfig {
   int simd_width;
   int gcc_version;
   bool internal_optimization;
+  bool force_vectorized_global_load;
+  bool force_vectorized_global_store;
   int external_optimization_level;
   int print_ir;
 
@@ -49,6 +51,8 @@ struct CompileConfig {
     internal_optimization = true;
     external_optimization_level = 3;
     print_ir = false;
+    force_vectorized_global_load = false;
+    force_vectorized_global_store = false;
 #if defined(TC_PLATFORM_OSX)
     gcc_version = -1;
 #else

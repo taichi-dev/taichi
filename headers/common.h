@@ -272,15 +272,15 @@ struct vec {
     return taichi::Tlang::load1<T, dim>(addr);
   }
 
-  void store(void *addr) {
+  void store(void *addr) const {
     taichi::Tlang::store<T, dim>(v, addr);
   }
 
-  void store(void *addr, vec<int32, dim> offsets) {
+  void store(void *addr, vec<int32, dim> offsets) const {
     taichi::Tlang::store<T, dim>(v, addr, offsets);
   }
 
-  void store(T *addr[dim]) {
+  void store(T *addr[dim]) const {
     for (int i = 0; i < dim; i++) {
       *addr[i] = element(i);
       // printf("%p %d\n", addr[i], element(i));

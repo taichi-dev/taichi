@@ -181,17 +181,27 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    for (int i = 0; i < stmt->data->ret_type.width; i++) {
-      emit("*({} *){}[{}] = {}[{}];",
-           data_type_name(stmt->data->ret_type.data_type),
-           stmt->ptr->raw_name(), i, stmt->data->raw_name(), i);
+    if (!current_program->config.force_vectorized_global_store) {
+      for (int i = 0; i < stmt->data->ret_type.width; i++) {
+        emit("*({} *){}[{}] = {}[{}];",
+             data_type_name(stmt->data->ret_type.data_type),
+             stmt->ptr->raw_name(), i, stmt->data->raw_name(), i);
+      }
+    } else {
+      emit("{}.store({}[0]);", stmt->data->raw_name(), stmt->ptr->raw_name());
     }
   }
 
   void visit(GlobalLoadStmt *stmt) {
-    emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
-    for (int i = 0; i < stmt->ret_type.width; i++) {
-      emit("{}[{}] = *{}[{}];", stmt->raw_name(), i, stmt->ptr->raw_name(), i);
+    if (!current_program->config.force_vectorized_global_load) {
+      emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
+      for (int i = 0; i < stmt->ret_type.width; i++) {
+        emit("{}[{}] = *{}[{}];", stmt->raw_name(), i, stmt->ptr->raw_name(),
+             i);
+      }
+    } else {
+      emit("const auto {} = {}::load({}[0]);", stmt->raw_name(),
+           stmt->ret_data_type_name(), stmt->ptr->raw_name());
     }
   }
 };

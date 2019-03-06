@@ -273,6 +273,8 @@ TC_TEST("simd_mpm") {
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
+  prog.config.force_vectorized_global_load = true;
+  prog.config.force_vectorized_global_store = true;
 
   Global(g_J, f32);
   auto ind = Index(0);
@@ -353,16 +355,23 @@ TC_TEST("simd_mpm") {
       }
       affine(dim, dim) = real(0);
 
-      Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
-                           base_coord(1) * (n_grid) + base_coord(2);
-
       int T = 3;
       TC_WARN_IF(T != 3, "T is not 3");
+      Vector weight(27);
       for (int i = 0; i < T; i++) {
         for (int j = 0; j < T; j++) {
           for (int k = 0; k < T; k++) {
-            SLP(1);
-            Local(weight) = w[i](0) * w[j](1) * w[k](2);
+            weight(i * 9 + j * 3 + k) = w[i](0) * w[j](1) * w[k](2);
+          }
+        }
+      }
+
+      Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
+                           base_coord(1) * (n_grid) + base_coord(2);
+
+      for (int i = 0; i < T; i++) {
+        for (int j = 0; j < T; j++) {
+          for (int k = 0; k < T; k++) {
             SLP(4);
             Vector gpos(4);
             gpos(0) = real(i);
@@ -374,7 +383,7 @@ TC_TEST("simd_mpm") {
             auto contrib_ = mv + affine * dpos;
 
             grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
-                weight * contrib_;
+                weight(i * 9 + j * 3 + k) * contrib_;
           }
         }
       }

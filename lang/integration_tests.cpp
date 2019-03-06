@@ -265,7 +265,8 @@ TC_TEST("simd_mpm_intrinsics") {
 // TODO: shuffled inputs?
 
 TC_TEST("simd_mpm") {
-  int n_particles = 1 * 1024 * 1024 / 4;
+  initialize_benchmark();
+  int n_particles = 4 * 1024 * 1024;
   MPMContext context(n_particles);
   int n_grid = context.n;
   context.p2g();
@@ -371,7 +372,7 @@ TC_TEST("simd_mpm") {
       Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
                            base_coord(1) * (n_grid) + base_coord(2);
 
-      SLP(4);
+      // SLP(4);
       // constexpr int TTT = T * T * T;
       constexpr int TTT = 27;
       for (int i = 0; i < TTT; i++) {

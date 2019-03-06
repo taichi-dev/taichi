@@ -1,7 +1,10 @@
 #include "util.h"
 #include <taichi/system/timer.h>
+#include <Eigen/Eigen>
 
-namespace taichi::Tlang {
+TC_NAMESPACE_BEGIN
+
+namespace Tlang {
 real get_cpu_frequency() {
   static real cpu_frequency = 0;
   if (cpu_frequency == 0) {
@@ -9,7 +12,7 @@ real get_cpu_frequency() {
     Time::sleep(1);
     uint64 elapsed_cycles = Time::get_cycles() - cycles;
     auto frequency = real(std::round(elapsed_cycles / 1e8_f64) / 10.0_f64);
-    TC_INFO("CPU frequency = {:.1f} GHz ({} cycles per second)", frequency,
+    TC_INFO("CPU frequency = {:.2f} GHz ({} cycles per second)", frequency,
             elapsed_cycles);
     cpu_frequency = frequency;
   }
@@ -52,4 +55,30 @@ real measure_cpe(std::function<void()> target,
       (Time::get_time() - start_t) * 1e9_f64 * get_cpu_frequency();
   return elasped_cycles / float64(total_batches * elements_per_call);
 }
-}  // namespace taichi::Tlang
+}  // namespace Tlang
+
+void initialize_benchmark() {
+  // CoreState::set_trigger_gdb_when_crash(true);
+  Tlang::get_cpu_frequency();
+  static bool initialized = false;
+  if (initialized) {
+    return;
+  }
+  initialized = true;
+#if defined(TC_PLATFORM_LINUX)
+  std::ifstream noturbo("/sys/devices/system/cpu/intel_pstate/no_turbo");
+  char c;
+  noturbo >> c;
+  TC_WARN_IF(c != '1',
+             "You seem to be running the benchmark with Intel Turboboost.");
+#endif
+  TC_INFO("Eigen Version {}.{}.{}", EIGEN_WORLD_VERSION, EIGEN_MAJOR_VERSION,
+          EIGEN_MINOR_VERSION);
+  TC_INFO("GCC   Version {}.{}.{}", __GNUC__, __GNUC_MINOR__,
+          __GNUC_PATCHLEVEL__);
+  // TC_INFO("NVCC  Version {}.{}.{}", __CUDACC_VER_MAJOR__,
+  // __CUDACC_VER_MINOR__,
+  //        __CUDACC_VER_BUILD__);
+}
+
+TC_NAMESPACE_END

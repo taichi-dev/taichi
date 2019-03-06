@@ -361,9 +361,9 @@ TC_TEST("simd_mpm") {
       for (int i = 0; i < T; i++) {
         for (int j = 0; j < T; j++) {
           for (int k = 0; k < T; k++) {
-            // SLP(1);
+            SLP(1);
             Local(weight) = w[i](0) * w[j](1) * w[k](2);
-            // SLP(4);
+            SLP(4);
             Vector gpos(4);
             gpos(0) = real(i);
             gpos(1) = real(j);

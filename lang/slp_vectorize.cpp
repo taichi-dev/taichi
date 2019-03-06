@@ -124,6 +124,19 @@ class BasicBlockSLP : public IRVisitor {
     if (existing) {
       return existing;
     }
+    bool identical = true;
+    for (int i = 0; i < slp_width; i++) {
+      if (pack[i] != pack[0]) {
+        identical = false;
+      }
+    }
+    if (slp_width > 1 && identical) {
+      /*
+      if (visited.find(pack[0]) == visited.end())
+        visited.insert(pack[0]);
+      */
+      return pack[0];
+    }
     for (int i = 0; i < slp_width; i++) {
       if (inside.find(pack[i]) == inside.end())
         return nullptr;
@@ -216,6 +229,7 @@ class BasicBlockSLP : public IRVisitor {
     inside = std::set<Stmt *>(input_statements.begin(), input_statements.end());
     visited.clear();
     auto &stmts = input_statements;
+    Stmt *last_last_stmt = nullptr;
     while (1) {
       TC_INFO("Seeding...");
       // Find the last statement
@@ -230,12 +244,17 @@ class BasicBlockSLP : public IRVisitor {
       if (last_stmt == nullptr) {
         break;
       }
+      if (last_stmt == last_last_stmt) {
+        TC_ERROR("Last stmt duplicated. Loop detected.");
+      }
+      last_last_stmt = last_stmt;
 
       std::vector<Stmt *> seed_statements;
 
       // from the back, find the other (width - 1) statements of the same type
       for (int i = (int)stmts.size() - 1; i >= 0; i--) {
-        if (typeid(*last_stmt) == typeid(*stmts[i])) {
+        if (visited.find(stmts[i]) == visited.end() &&
+            typeid(*last_stmt) == typeid(*stmts[i])) {
           // found a stmt of the same type.
           seed_statements.push_back(stmts[i]);
         }

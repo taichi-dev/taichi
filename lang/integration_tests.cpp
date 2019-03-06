@@ -370,23 +370,19 @@ TC_TEST("simd_mpm") {
       Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
                            base_coord(1) * (n_grid) + base_coord(2);
 
-      for (int i = 0; i < T; i++) {
-        for (int j = 0; j < T; j++) {
-          for (int k = 0; k < T; k++) {
-            SLP(4);
-            Vector gpos(4);
-            gpos(0) = real(i);
-            gpos(1) = real(j);
-            gpos(2) = real(k);
-            gpos(3) = real(0);
-            auto dpos = dx * (gpos - fx4);
-            Vector mv = mass * v4;
-            auto contrib_ = mv + affine * dpos;
+      for (int i = 0; i < T * T * T; i++) {
+        SLP(4);
+        Vector gpos(4);
+        gpos(0) = real(i / 9);
+        gpos(1) = real(i / 3 % 3);
+        gpos(2) = real(i % 3);
+        gpos(3) = real(0);
+        auto dpos = dx * (gpos - fx4);
+        Vector mv = mass * v4;
+        auto contrib_ = mv + affine * dpos;
 
-            grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
-                weight(i * 9 + j * 3 + k) * contrib_;
-          }
-        }
+        grid[base_offset + (i / 9 * n_grid * n_grid + i / 3 % 3 * n_grid +
+                            i % 3)] += weight(i) * contrib_;
       }
     });
   });

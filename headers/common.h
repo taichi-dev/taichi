@@ -156,6 +156,8 @@ DEFINE_VEC_TYPE(float32, 4, __m128);
 DEFINE_VEC_TYPE(int32, 4, __m128i);
 DEFINE_VEC_TYPE(float32, 8, __m256);
 DEFINE_VEC_TYPE(int32, 8, __m256i);
+DEFINE_VEC_TYPE(float32, 16, __m512);
+DEFINE_VEC_TYPE(int32, 16, __m512i);
 
 template <typename T, int dim>
 struct vec;
@@ -296,6 +298,8 @@ using float32x4 = vec<float32, 4>;
 using int32x4 = vec<int32, 4>;
 using float32x8 = vec<float32, 8>;
 using int32x8 = vec<int32, 8>;
+using float32x16 = vec<float32, 16>;
+using int32x16 = vec<int32, 16>;
 //*****************************************************************************
 
 template <typename T, int dim>
@@ -347,6 +351,16 @@ inline float32x8 load<float32, 8>(const void *addr) {
 template <>
 inline vec<int32, 8> load<int32, 8>(const void *addr) {
   return _mm256_loadu_si256((__m256i *)addr);
+}
+
+template <>
+inline float32x16 load<float32, 16>(const void *addr) {
+  return _mm512_loadu_ps((float32 *)addr);
+}
+
+template <>
+inline vec<int32, 16> load<int32, 16>(const void *addr) {
+  return _mm512_loadu_si512(addr);
 }
 
 //*****************************************************************************
@@ -453,6 +467,16 @@ inline void store<int32, 8>(const int32x8 &v, const void *addr) {
   _mm256_storeu_si256((__m256i *)addr, v);
 }
 
+template <>
+inline void store<float32, 16>(const float32x16 &v, const void *addr) {
+  _mm512_storeu_ps((float32 *)addr, v);
+}
+
+template <>
+inline void store<int32, 16>(const int32x16 &v, const void *addr) {
+  _mm512_storeu_si512((__m512i *)addr, v);
+}
+
 //*****************************************************************************
 
 template <>
@@ -550,6 +574,16 @@ inline float32x8 set1<float32, 8>(float32 v) {
 template <>
 inline int32x8 set1<int32, 8>(int32 v) {
   return _mm256_set1_epi32(v);
+}
+
+template <>
+inline float32x16 set1<float32, 16>(float32 v) {
+  return _mm512_set1_ps(v);
+}
+
+template <>
+inline int32x16 set1<int32, 16>(int32 v) {
+  return _mm512_set1_epi32(v);
 }
 
 //*****************************************************************************
@@ -850,6 +884,13 @@ DEFINE_BINARY_OP(float32x8, div, _mm256_div_ps);
 DEFINE_BINARY_OP(float32x8, min, _mm256_min_ps);
 DEFINE_BINARY_OP(float32x8, max, _mm256_max_ps);
 
+DEFINE_BINARY_OP(float32x16, add, _mm512_add_ps);
+DEFINE_BINARY_OP(float32x16, sub, _mm512_sub_ps);
+DEFINE_BINARY_OP(float32x16, mul, _mm512_mul_ps);
+DEFINE_BINARY_OP(float32x16, div, _mm512_div_ps);
+DEFINE_BINARY_OP(float32x16, min, _mm512_min_ps);
+DEFINE_BINARY_OP(float32x16, max, _mm512_max_ps);
+
 DEFINE_BINARY_OP(int32x8, add, _mm256_add_epi32);
 DEFINE_BINARY_OP(int32x8, sub, _mm256_sub_epi32);
 DEFINE_BINARY_OP(int32x8, mul, _mm256_mullo_epi32);
@@ -857,6 +898,14 @@ DEFINE_BINARY_OP(int32x8, min, _mm256_min_epi32);
 DEFINE_BINARY_OP(int32x8, max, _mm256_max_epi32);
 DEFINE_BINARY_OP(int32x8, bit_and, _mm256_and_si256);
 DEFINE_BINARY_OP(int32x8, bit_or, _mm256_or_si256);
+
+DEFINE_BINARY_OP(int32x16, add, _mm512_add_epi32);
+DEFINE_BINARY_OP(int32x16, sub, _mm512_sub_epi32);
+DEFINE_BINARY_OP(int32x16, mul, _mm512_mullo_epi32);
+DEFINE_BINARY_OP(int32x16, min, _mm512_min_epi32);
+DEFINE_BINARY_OP(int32x16, max, _mm512_max_epi32);
+DEFINE_BINARY_OP(int32x16, bit_and, _mm512_and_si512);
+DEFINE_BINARY_OP(int32x16, bit_or, _mm512_or_si512);
 
 #define DEFINE_BINARY_OP_MID(T, OP, INST) \
   inline T OP(T a, T b) {                 \

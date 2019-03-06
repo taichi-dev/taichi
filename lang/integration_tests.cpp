@@ -301,6 +301,7 @@ TC_TEST("simd_mpm") {
 
   auto p2g = kernel([&]() {
     Declare(p_i);
+    Vectorize(4);
     For(p_i, 0, n_particles, [&]() {
       auto mass = context.mass;
       auto vol = context.vol;
@@ -370,7 +371,7 @@ TC_TEST("simd_mpm") {
       Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
                            base_coord(1) * (n_grid) + base_coord(2);
 
-      // SLP(4);
+      SLP(4);
       for (int i = 0; i < T * T * T; i++) {
         Vector gpos(4);
         gpos(0) = real(i / 9);

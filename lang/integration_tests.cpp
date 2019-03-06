@@ -58,17 +58,17 @@ struct MPMContext {
     Particle() {
       pos = Vector3::rand() * 0.5_f + Vector3(0.25_f);
       v = Vector3::rand();
-      // C = Matrix3::rand();
-      J = 1.0_f * rand() + 1;
+      C = Matrix3::rand();
+      J = rand<float32>();
     }
   };
 
   int n_particles;  // num particles
-  static constexpr real mass = 1.0_f;
-  static constexpr real vol = 1.0_f;
+  static constexpr real mass = 2.0_f;
+  static constexpr real vol = 3.0_f;
   static constexpr int n = 8;
   static constexpr real dx = 1.0_f / n;
-  static constexpr real dt = 1e-3_f;
+  static constexpr real dt = 1e-1_f;
 
   using Grid = Vector4[n][n][n];
   Grid grid;
@@ -177,7 +177,7 @@ struct MPMContext {
       const Matrix3f apic_b_inv_d_mass = -mass * dx * p.C;
       const __m128 mass_v = _mm_mul_ps(_mm_set1_ps(mass), v);
 
-      auto stress = dt * vol * Matrix3(p.J - 1);
+      auto stress = -vol * Matrix3(p.J - 1);
 
       __m128 delta_t_tmp_force_[3];
       Matrix3 &delta_t_tmp_force =
@@ -214,21 +214,19 @@ struct MPMContext {
 };
 
 TC_TEST("simd_mpm") {
-  while (1) {
-    MPMContext context(1);
-    context.p2g();
+  MPMContext context(128);
+  context.p2g();
 
-    MPMContext::Grid grid_gt = context.grid;
-    context.clear_grid();
-    context.p2g_intrinsics();
+  MPMContext::Grid grid_gt = context.grid;
+  context.clear_grid();
+  context.p2g_intrinsics();
 
-    for (int i = 0; i < context.n; i++) {
-      for (int j = 0; j < context.n; j++) {
-        for (int k = 0; k < context.n; k++) {
-          for (int d = 0; d < 4; d++) {
-            // TC_INFO("{} {} {} {} , {}", i, j, k, d, grid_gt[i][j][k][d]);
-            TC_CHECK_EQUAL(grid_gt[i][j][k][d], context.grid[i][j][k][d], 1e-3_f);
-          }
+  for (int i = 0; i < context.n; i++) {
+    for (int j = 0; j < context.n; j++) {
+      for (int k = 0; k < context.n; k++) {
+        for (int d = 0; d < 4; d++) {
+          // TC_INFO("{} {} {} {} , {}", i, j, k, d, grid_gt[i][j][k][d]);
+          TC_CHECK_EQUAL(grid_gt[i][j][k][d], context.grid[i][j][k][d], 1e-3_f);
         }
       }
     }

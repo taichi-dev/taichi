@@ -298,7 +298,7 @@ class IRNode {
 };
 
 #define DEFINE_ACCEPT               \
-  void accept(IRVisitor *visitor) { \
+  void accept(IRVisitor *visitor) override { \
     visitor->visit(this);           \
   }
 

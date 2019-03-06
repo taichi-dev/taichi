@@ -318,7 +318,7 @@ Vector complex_mul(const Vector &a, const Vector &b) {
   return ret;
 }
 
-auto mset = [&] {
+auto mset = [] {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 1024;
   Program prog(Arch::x86_64);
@@ -375,7 +375,7 @@ auto mset = [&] {
 };
 TC_REGISTER_TASK(mset);
 
-auto ray_march = [&] {
+auto ray_march = [] {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 512;
   Program prog(Arch::x86_64);

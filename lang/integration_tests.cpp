@@ -3,6 +3,7 @@
 #include "tlang.h"
 #include <taichi/visual/gui.h>
 #include <tbb/tbb.h>
+#include <taichi/system/threading.h>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -67,7 +68,7 @@ struct MPMContext {
   int n_particles;  // num particles
   static constexpr real mass = 2.0_f;
   static constexpr real vol = 3.0_f;
-  static constexpr int n = 8;
+  static constexpr int n = 7;
   static constexpr real dx = 1.0_f / n;
   static constexpr real inv_dx = 1.0_f / dx;
   static constexpr real dt = 1e-1_f;
@@ -183,9 +184,6 @@ struct MPMContext {
 
       MLSMPMFastKernel32 kernel(_mm_sub_ps(pos_, grid_base_pos_f), inv_delta_x);
       const __m128(&kernels)[3][3] = kernel.kernels;
-      using KernelLinearized = real[3 * 3 * 4];
-      const KernelLinearized &kernels_linearized =
-          *reinterpret_cast<const KernelLinearized *>(&kernels[0][0][0]);
       const __m128 v = p.v.v;
       __m128 mass_ = _mm_set1_ps(mass);
       // Note, apic_b has delta_x issue
@@ -233,7 +231,9 @@ TC_TEST("simd_mpm_intrinsics") {
     MPMContext context(128);
     context.p2g();
 
-    MPMContext::Grid grid_gt = context.grid;
+    MPMContext::Grid grid_gt;
+    std::memcpy(&grid_gt[0][0][0], &context.grid[0][0][0],
+                sizeof(MPMContext::Grid));
     context.clear_grid();
     context.p2g_intrinsics();
 
@@ -265,14 +265,14 @@ TC_TEST("simd_mpm_intrinsics") {
 // TODO: shuffled inputs?
 
 TC_TEST("simd_mpm") {
-  int n_particles = 4 * 1024 * 1024;
+  int n_particles = 1 * 1024 * 1024 / 4;
   MPMContext context(n_particles);
   int n_grid = context.n;
   context.p2g();
 
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
+  // prog.config.print_ir = true;
   prog.config.gcc_version = -2;
   prog.config.force_vectorized_global_load = true;
   prog.config.force_vectorized_global_store = true;
@@ -295,13 +295,13 @@ TC_TEST("simd_mpm") {
         root.fixed(ind, n_particles).place(g_C(i, j));
       }
     }
-    root.fixed(ind, n_grid * n_grid * n_grid)
+    root.fixed(ind, bit::least_pot_bound(n_grid * n_grid * n_grid))
         .place(grid(0), grid(1), grid(2), grid(3));
   });
 
   auto p2g = kernel([&]() {
     Declare(p_i);
-    Vectorize(4);
+    // Vectorize(4);
     For(p_i, 0, n_particles, [&]() {
       auto mass = context.mass;
       auto vol = context.vol;
@@ -357,7 +357,7 @@ TC_TEST("simd_mpm") {
       }
       affine(dim, dim) = real(0);
 
-      int T = 3;
+      constexpr int T = 3;
       TC_WARN_IF(T != 3, "T is not 3");
       Vector weight(27);
       for (int i = 0; i < T; i++) {
@@ -372,7 +372,9 @@ TC_TEST("simd_mpm") {
                            base_coord(1) * (n_grid) + base_coord(2);
 
       SLP(4);
-      for (int i = 0; i < T * T * T; i++) {
+      // constexpr int TTT = T * T * T;
+      constexpr int TTT = 27;
+      for (int i = 0; i < TTT; i++) {
         Vector gpos(4);
         gpos(0) = real(i / 9);
         gpos(1) = real(i / 3 % 3);
@@ -402,8 +404,8 @@ TC_TEST("simd_mpm") {
   };
   TC_TIME(initialize_data());
 
-  while (1)
-    TC_TIME(p2g());
+  TC_P(taichi::PID::get_pid());
+  TC_TIME(p2g());
 
   for (int i = 0; i < context.n; i++) {
     for (int j = 0; j < context.n; j++) {

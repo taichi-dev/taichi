@@ -401,7 +401,7 @@ class SLPVectorize : public IRVisitor {
       vec.push_back(block->statements[i].get());
     }
     TC_INFO("Before SLP");
-    irpass::print(context->root());
+    // irpass::print(context->root());
     auto slp = BasicBlockSLP();
     block->replace_statements_in_range(
         first_pragma_slp_location, second_pragma_slp_location,
@@ -409,7 +409,7 @@ class SLPVectorize : public IRVisitor {
     TC_P(first_pragma_slp_location);
     TC_P(second_pragma_slp_location);
     TC_INFO("SLPed...");
-    irpass::print(context->root());
+    // irpass::print(context->root());
     throw IRModifiedException();
   }
 

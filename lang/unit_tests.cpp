@@ -10,7 +10,7 @@ TC_TEST("compiler_linalg") {
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
 
-  global(a, i32);
+  Global(a, i32);
   auto i = Index(0);
 
   layout([&]() { root.fixed(i, 128).place(a); });
@@ -42,18 +42,18 @@ TC_TEST("compiler_basics") {
   int n = 128;
   Program prog(Arch::x86_64);
 
-  global(a, i32);
+  Global(a, i32);
   auto i = Index(0);
   layout([&]() { root.fixed(i, n).place(a); });
 
   auto dou = [](Expr a) { return a * 2; };
 
   auto func = kernel([&]() {
-    declare(i);
-    local(sum) = 0;
+    Declare(i);
+    Local(sum) = 0;
     For(i, 0, n, [&] {
       sum = sum + i;
-      local(ret) = 0;
+      Local(ret) = 0;
       If(i % 2 == 0).Then([&] { ret = dou(i); }).Else([&] { ret = i; });
       a[i] = ret;
     });
@@ -71,18 +71,18 @@ TC_TEST("simd_if") {
   int n = 128;
   Program prog(Arch::x86_64);
 
-  global(a, i32);
+  Global(a, i32);
   auto i = Index(0);
   layout([&]() { root.fixed(i, n).place(a); });
 
   auto dou = [](Expr a) { return a * 2; };
 
   auto func = kernel([&]() {
-    declare(i);
-    local(sum) = 0;
+    Declare(i);
+    Local(sum) = 0;
     Vectorize(8);
     For(i, 0, n, [&] {
-      local(ret) = 0;
+      Local(ret) = 0;
       If(i % 2 == 0).Then([&] { ret = dou(i); }).Else([&] { ret = i; });
       a[i] = ret;
     });
@@ -100,16 +100,16 @@ TC_TEST("simd_if2") {
   int n = 32;
   Program prog(Arch::x86_64);
 
-  global(a, i32);
+  Global(a, i32);
   auto i = Index(0);
   layout([&]() { root.fixed(i, n).place(a); });
 
   auto func = kernel([&]() {
-    declare(i);
-    local(sum) = 0;
+    Declare(i);
+    Local(sum) = 0;
     Vectorize(8);
     For(i, 0, n, [&] {
-      local(ret) = 0;
+      Local(ret) = 0;
       If(i % 3 == 0).Then([&] { ret = i; }).Else([&] {
         If(i % 3 == 1).Then([&] { ret = i * 2; }).Else([&] { ret = i * 3; });
       });
@@ -129,13 +129,13 @@ auto test_circle = [] {
   int n = 128;
   Program prog(Arch::x86_64);
 
-  global(a, i32);
+  Global(a, i32);
   auto i = Index(0);
 
   layout([&]() { root.fixed(i, n * n).place(a); });
 
   auto func = kernel([&]() {
-    declare(i);
+    Declare(i);
 
     Vectorize(8);
     For(i, 0, n * n, [&] {
@@ -169,13 +169,13 @@ auto test_ast = []() {
   int n = 128;
 
   context = std::make_unique<FrontendContext>();
-  declare(a);
-  declare(x);
-  declare(b);
-  declare(p);
-  declare(q);
-  declare(i);
-  declare(j);
+  Declare(a);
+  Declare(x);
+  Declare(b);
+  Declare(p);
+  Declare(q);
+  Declare(i);
+  Declare(j);
 
   // var(float32, a);
   x.set(global_new(x, DataType::f32));
@@ -231,12 +231,12 @@ TC_TEST("vectorize") {
   int n = 128;
   Program prog(Arch::x86_64);
 
-  global(a, i32);
+  Global(a, i32);
 
   layout([&]() { root.fixed(0, n).place(a); });
 
   auto func = kernel([&]() {
-    declare(i);
+    Declare(i);
 
     Vectorize(8);
     For(i, 0, n, [&] { a[i] = i; });
@@ -267,12 +267,12 @@ TC_TEST("rand") {
   int n = 8;
   Program prog(Arch::x86_64);
 
-  global(a, i32);
+  Global(a, i32);
 
   layout([&]() { root.fixed(0, n).place(a); });
 
   auto func = kernel([&]() {
-    declare(i);
+    Declare(i);
 
     For(i, 0, n, [&] { Print(Rand<float>()); });
   });
@@ -285,17 +285,17 @@ TC_TEST("while") {
   int n = 4096;
   Program prog(Arch::x86_64);
 
-  global(a, i32);
+  Global(a, i32);
 
   layout([&]() { root.fixed(0, n).place(a); });
 
   auto func = kernel([&]() {
-    declare(i);
+    Declare(i);
 
     Vectorize(8);
     For(i, 0, n, [&] {
-      local(j) = 0;
-      local(sum) = 0;
+      Local(j) = 0;
+      Local(sum) = 0;
       While(j < i, [&] {
         sum += j;
         j += 1;
@@ -323,26 +323,26 @@ auto mset = [&] {
   int n = 1024;
   Program prog(Arch::x86_64);
 
-  global(a, i32);
+  Global(a, i32);
 
   layout([&]() { root.fixed(0, n * n).place(a); });
 
   auto func = kernel([&]() {
-    declare(i);
+    Declare(i);
 
     Vectorize(8);
     For(i, 0, n * n, [&] {
-      local(j) = 0;
+      Local(j) = 0;
       int limit = 20;
       if (false) {
-        local(c_re) = cast<float>(i / n) / float(n / 2) - 1.5f;
-        local(c_im) = cast<float>(i % n) / float(n / 2) - 1.0f;
-        local(z_re) = c_re;
-        local(z_im) = c_im;
+        Local(c_re) = cast<float>(i / n) / float(n / 2) - 1.5f;
+        Local(c_im) = cast<float>(i % n) / float(n / 2) - 1.0f;
+        Local(z_re) = c_re;
+        Local(z_im) = c_im;
 
         While(j < limit && (z_re * z_re + z_im * z_im) < 4.0f, [&] {
-          local(new_re) = z_re * z_re - z_im * z_im;
-          local(new_im) = 2.0f * z_re * z_im;
+          Local(new_re) = z_re * z_re - z_im * z_im;
+          Local(new_im) = 2.0f * z_re * z_im;
           z_re = c_re + new_re;
           z_im = c_im + new_im;
           j += 1;
@@ -381,9 +381,9 @@ auto ray_march = [&] {
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
 
-  global(color_r, f32);
-  global(color_g, f32);
-  global(color_b, f32);
+  Global(color_r, f32);
+  Global(color_g, f32);
+  Global(color_b, f32);
 
   layout([&]() { root.fixed(0, n * n * 2).place(color_r, color_g, color_b); });
 
@@ -410,8 +410,8 @@ auto ray_march = [&] {
   int limit = 200;
 
   auto ray_march = [&](Vector p, Vector dir) {
-    local(j) = 0;
-    local(dist) = 0.0f;
+    Local(j) = 0;
+    Local(dist) = 0.0f;
 
     While(j < limit && sdf(p + dist * dir) > eps && dist < dist_limit, [&] {
       dist += sdf(p + dist * dir);
@@ -438,9 +438,9 @@ auto ray_march = [&] {
       u = normalized(cross(n, Vector({0.0f, 1.0f, 0.0f})));
     });
     v = cross(n, u);
-    local(phi) = 2 * pi * Rand<float>();
-    local(r) = Rand<float>();
-    local(alpha) = 0.5_f * pi * (r * r);
+    Local(phi) = 2 * pi * Rand<float>();
+    Local(r) = Rand<float>();
+    Local(alpha) = 0.5_f * pi * (r * r);
     return sin(alpha) * (cos(phi) * u + sin(phi) * v) + cos(alpha) * n;
   };
 
@@ -451,7 +451,7 @@ auto ray_march = [&] {
   float fov = 0.3;
 
   auto main = kernel([&]() {
-    declare(i);
+    Declare(i);
     Parallelize(8);
     Vectorize(8);
     For(i, 0, n * n * 2, [&] {
@@ -465,11 +465,11 @@ auto ray_march = [&] {
       Vector color(3);
       color = Vector({1.0f, 1.0f, 1.0f});
       int depth_limit = 4;
-      local(depth) = 0;
+      Local(depth) = 0;
 
       While(depth < depth_limit, [&] {
         depth += 1;
-        local(_dist) = ray_march(orig, c);
+        Local(_dist) = ray_march(orig, c);
         If(_dist < dist_limit,
            [&] {
              orig += _dist * c;
@@ -518,15 +518,15 @@ TC_TEST("slp") {
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
 
-  global(a, i32);
-  global(b, i32);
-  global(c, i32);
-  global(d, i32);
+  Global(a, i32);
+  Global(b, i32);
+  Global(c, i32);
+  Global(d, i32);
 
   layout([&]() { root.fixed(0, n).place(a, b, c, d); });
 
   auto func = kernel([&]() {
-    declare(i);
+    Declare(i);
 
     Vectorize(2);
     For(i, 0, n, [&] {
@@ -554,13 +554,13 @@ TC_TEST("slp2") {
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
 
-  global(a, i32);
-  global(b, i32);
+  Global(a, i32);
+  Global(b, i32);
 
   layout([&]() { root.fixed(0, n).place(a, b); });
 
   auto func = kernel([&]() {
-    declare(i);
+    Declare(i);
 
     Vectorize(4);
     For(i, 0, n, [&] {
@@ -584,19 +584,19 @@ TC_TEST("slp3") {
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
 
-  global(a, i32);
-  global(b, i32);
+  Global(a, i32);
+  Global(b, i32);
 
   layout([&]() { root.fixed(0, n).place(a, b); });
 
   auto func = kernel([&]() {
-    declare(i);
+    Declare(i);
 
     Vectorize(4);
     For(i, 0, n, [&] {
       SLP(2);
-      local(x) = i * 7;
-      local(y) = i * 9;
+      Local(x) = i * 7;
+      Local(y) = i * 9;
       a[i] = 1 + x;
       b[i] = 2 + y;
     });
@@ -634,7 +634,7 @@ TC_TEST("slpmatvecmul") {
   });
 
   auto func = kernel([&]() {
-    declare(i);
+    Declare(i);
 
     Vectorize(8 / dim);
     For(i, 0, n, [&] {
@@ -659,8 +659,8 @@ TC_TEST("mixed_simd1") {
     Program prog;
     prog.config.print_ir = true;
 
-    global(a, f32);
-    global(b, f32);
+    Global(a, f32);
+    Global(b, f32);
     Vector v(DataType::f32, vec_size);
 
     int n = 128;
@@ -674,10 +674,10 @@ TC_TEST("mixed_simd1") {
     });
 
     auto func = kernel([&]() {
-      declare(i);
+      Declare(i);
       For(i, 0, n, [&]() {
         SLP(1);
-        local(ab) = a[i] * b[i];
+        Local(ab) = a[i] * b[i];
 
         SLP(vec_size);
         v[i] = ab * v[i];
@@ -714,7 +714,7 @@ TC_TEST("mixed_simd2") {
     Vector v(vec_size);
     v.fill_global(DataType::f32);
 
-    global(sum, f32);
+    Global(sum, f32);
 
     auto ind = Index(0);
 
@@ -726,14 +726,14 @@ TC_TEST("mixed_simd2") {
     });
 
     auto func = kernel([&] {
-      declare(i);
+      Declare(i);
       For(i, 0, n, [&]() {
         SLP(vec_size);
         auto vi = v[i];
         auto v_ind = vi;
 
         SLP(1);
-        local(acc) = 0.0_f;
+        Local(acc) = 0.0_f;
         for (int d = 0; d < vec_size; d++) {
           acc = acc + v_ind(d);
         }
@@ -766,7 +766,7 @@ TC_TEST("mixed_simd3") {
 
     Vector a(DataType::f32, vec_size), b(DataType::f32, vec_size),
         c(DataType::f32, vec_size * 2);
-    global(sum, f32);
+    Global(sum, f32);
 
     int n = 8;
 
@@ -784,14 +784,14 @@ TC_TEST("mixed_simd3") {
     });
 
     auto func = kernel([&]() {
-      declare(i);
+      Declare(i);
       For(i, 0, n, [&]() {
         SLP(vec_size);
         auto diff_ = a[i].element_wise_prod(a[i]) - b[i].element_wise_prod(b[i]);
         auto diff = diff_;
 
         SLP(1);
-        local(acc) = 0.0_f;
+        Local(acc) = 0.0_f;
         for (int d = 0; d < vec_size; d++) {
           acc = acc + diff(d);
         }

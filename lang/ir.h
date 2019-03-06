@@ -1315,17 +1315,17 @@ inline Expr Expr::operator[](ExpressionGroup indices) {
       cast<GlobalVariableExpression>(), indices));
 }
 
-#define declare(x) auto x = Expr(std::make_shared<IdExpression>(#x));
+#define Declare(x) auto x = Expr(std::make_shared<IdExpression>(#x));
 
 #define var(type, x) declare_var<type>(x);
 
-#define local(x)  \
-  declare(x);     \
+#define Local(x)  \
+  Declare(x);     \
   declare_var(x); \
   x
 
-#define global(x, dt)  \
-  declare(x##_global); \
+#define Global(x, dt)  \
+  Declare(x##_global); \
   auto x = global_new(x##_global, DataType::dt);
 
 inline Expr global_new(Expr id_expr, DataType dt) {

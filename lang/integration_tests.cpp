@@ -2,6 +2,7 @@
 #include <numeric>
 #include "tlang.h"
 #include <taichi/visual/gui.h>
+#include <tbb/tbb.h>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -249,7 +250,7 @@ TC_TEST("simd_mpm_intrinsics") {
     }
   }
 
-  MPMContext context(16 * 1024 * 1024);
+  MPMContext context(4 * 1024 * 1024);
   int N = 2;
   for (int i = 0; i < N; i++) {
     TC_TIME(context.p2g());
@@ -264,7 +265,7 @@ TC_TEST("simd_mpm_intrinsics") {
 // TODO: shuffled inputs?
 
 TC_TEST("simd_mpm") {
-  int n_particles = 2;
+  int n_particles = 4 * 1024 * 1024;
   MPMContext context(n_particles);
   int n_grid = context.n;
   context.p2g();
@@ -273,7 +274,7 @@ TC_TEST("simd_mpm") {
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
 
-  global(g_J, f32);
+  Global(g_J, f32);
   auto ind = Index(0);
   constexpr int dim = 3;
 
@@ -296,7 +297,7 @@ TC_TEST("simd_mpm") {
   });
 
   auto p2g = kernel([&]() {
-    declare(p_i);
+    Declare(p_i);
     For(p_i, 0, n_particles, [&]() {
       auto mass = context.mass;
       auto vol = context.vol;
@@ -332,7 +333,7 @@ TC_TEST("simd_mpm") {
       Matrix affine_ = stress + mass * g_C[p_i];
       Matrix affine = affine_;
 
-      local(base_offset) = base_coord(0) * (n_grid * n_grid) +
+      Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
                            base_coord(1) * (n_grid) + base_coord(2);
 
       int T = 3;
@@ -346,7 +347,7 @@ TC_TEST("simd_mpm") {
             gpos(2) = real(k);
             auto dpos = dx * (gpos - fx);
             Vector mv = mass * v;
-            local(weight) = w[i](0) * w[j](1) * w[k](2);
+            Local(weight) = w[i](0) * w[j](1) * w[k](2);
             auto contrib_partial = mv + affine * dpos;
             Vector contrib(dim + 1);
             for (int d = 0; d < dim; d++) {
@@ -361,18 +362,21 @@ TC_TEST("simd_mpm") {
     });
   });
 
-  for (int p = 0; p < n_particles; p++) {
-    g_J.val<float32>(p) = context.particles[p].J;
-    for (int i = 0; i < dim; i++) {
-      g_pos(i).val<float32>(p) = context.particles[p].pos[i];
-      g_v(i).val<float32>(p) = context.particles[p].v[i];
-      for (int j = 0; j < dim; j++) {
-        g_C(i, j).val<float32>(p) = context.particles[p].C[j][i];
+  auto initialize_data = [&] {
+    tbb::parallel_for(0, n_particles, [&](int p) {
+      g_J.val<float32>(p) = context.particles[p].J;
+      for (int i = 0; i < dim; i++) {
+        g_pos(i).val<float32>(p) = context.particles[p].pos[i];
+        g_v(i).val<float32>(p) = context.particles[p].v[i];
+        for (int j = 0; j < dim; j++) {
+          g_C(i, j).val<float32>(p) = context.particles[p].C[j][i];
+        }
       }
-    }
-  }
+    });
+  };
+  TC_TIME(initialize_data());
 
-  p2g();
+  TC_TIME(p2g());
 
   for (int i = 0; i < context.n; i++) {
     for (int j = 0; j < context.n; j++) {
@@ -380,7 +384,7 @@ TC_TEST("simd_mpm") {
         for (int d = 0; d < 4; d++) {
           TC_CHECK_EQUAL(
               grid(d).val<float32>(i * n_grid * n_grid + j * n_grid + k),
-              context.grid[i][j][k][d], 1e-3_f);
+              context.grid[i][j][k][d], 1e-1_f);
         }
       }
     }

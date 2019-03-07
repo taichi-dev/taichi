@@ -402,31 +402,30 @@ TC_TEST("simd_mpm") {
       Local(weight0) = 0.0_f;
       Local(weight1) = 0.0_f;
       Local(weight2) = 0.0_f;
-      SLP(4);
       auto contrib0_ = mv - affine * fx4;
       auto contrib0 = contrib0_;
       for (int i = 0; i < 1; i++) {
-        SLP(1);
+        // SLP(1);
         weight0 = w[i](0);
-        SLP(4);
+        // SLP(4);
         Matrix contrib1 = contrib0;
         for (int j = 0; j < 1; j++) {
-          SLP(1);
+          //SLP(1);
           weight1 = weight0 * w[j](1);
-          SLP(4);
+          // SLP(4);
           Matrix contrib2 = contrib1;
           for (int k = 0; k < 1; k++) {
-            SLP(1);
+            //SLP(1);
             weight2 = weight1 * w[k](2);
-            SLP(4);
+            // SLP(4);
             grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
                 weight2 * contrib2;
             contrib2 += affine.col(2);
           }
-          SLP(4);
+          // SLP(4);
           contrib1 += affine.col(1);
         }
-        SLP(4);
+        // SLP(4);
         contrib0 += affine.col(0);
       }
     });

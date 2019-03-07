@@ -527,9 +527,13 @@ TC_TEST("slp") {
   auto func = kernel([&]() {
     Declare(i);
 
-    Vectorize(2);
+    Vectorize(1);
     For(i, 0, n, [&] {
-      SLP(4);
+      SLP(1);
+      Local(t) = 1;
+      SLP(1);
+      t = 2;
+      // Local(p) = t;
       a[i] = 1;
       b[i] = 2;
       c[i] = 3;

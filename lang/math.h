@@ -158,6 +158,15 @@ struct Matrix {
     }
     return ret;
   }
+
+  Matrix col(int j) const {
+    TC_ASSERT(0 <= j && j < m);
+    Matrix ret(m, 1);
+    for (int i = 0; i < n; i++) {
+      ret(i, 0) = (*this)(i, j);
+    }
+    return ret;
+  }
 };
 
 inline Matrix operator*(const Expr &A, const Matrix &B) {

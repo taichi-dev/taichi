@@ -346,7 +346,7 @@ TC_TEST("simd_mpm") {
 
       stress = (-4 * inv_dx * inv_dx * dt * vol) * stress;
 
-      Matrix affine_ = stress + mass * g_C[p_i];
+      Matrix affine_ = dx * (stress + mass * g_C[p_i]);
       Matrix affine(4, 4);
       for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
@@ -359,6 +359,7 @@ TC_TEST("simd_mpm") {
 
       constexpr int T = 3;
       TC_WARN_IF(T != 3, "T is not 3");
+      /*
       Vector weight(27);
       for (int i = 0; i < T; i++) {
         for (int j = 0; j < T; j++) {
@@ -367,6 +368,7 @@ TC_TEST("simd_mpm") {
           }
         }
       }
+      */
 
       Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
                            base_coord(1) * (n_grid) + base_coord(2);
@@ -390,21 +392,25 @@ TC_TEST("simd_mpm") {
                             i % 3)] += weight(i) * contrib_;
       }
       */
+      Local(weight0) = 0.0_f;
+      Local(weight1) = 0.0_f;
+      Local(weight2) = 0.0_f;
+      auto contrib0 = mv - affine * fx4;
       for (int i = 0; i < 3; i++) {
+        weight0 = w[i](0);
+        Matrix contrib1 = contrib0;
         for (int j = 0; j < 3; j++) {
+          weight1 = weight0 * w[j](1);
+          Matrix contrib2 = contrib1;
           for (int k = 0; k < 3; k++) {
-            Vector gpos(4);
-            gpos(0) = real(i);
-            gpos(1) = real(j);
-            gpos(2) = real(k);
-            gpos(3) = real(0);
-            auto dpos = dx * (gpos - fx4);
-            auto contrib_ = mv + affine * dpos;
-
+            weight2 = weight1 * w[k](2);
             grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
-                w[i](0) * w[j](1) * w[k](2) * contrib_;
+                weight2 * contrib2;
+            contrib2 += affine.col(2);
           }
+          contrib1 += affine.col(1);
         }
+        contrib0 += affine.col(0);
       }
     });
   });

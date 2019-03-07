@@ -188,7 +188,7 @@ class IRPrinter : public IRVisitor {
   void visit(ElementShuffleStmt *stmt) {
     print("{}{} = shuffle {}", stmt->type_hint(), stmt->name(),
           stmt->elements.serialize([](const VectorElement &ve) {
-            return fmt::format("{}[{}], ", ve.stmt->name(), ve.index);
+            return fmt::format("{}[{}]", ve.stmt->name(), ve.index);
           }));
   }
 };

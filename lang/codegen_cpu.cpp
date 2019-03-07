@@ -206,6 +206,15 @@ class IRCodeGen : public IRVisitor {
            stmt->ret_data_type_name(), stmt->ptr->raw_name());
     }
   }
+
+  void visit(ElementShuffleStmt *stmt) {
+    emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
+         stmt->elements.serialize(
+             [](const VectorElement &elem) {
+               return fmt::format("{}[{}]", elem.stmt->raw_name(), elem.index);
+             },
+             "{"));
+  }
 };
 
 void CPUCodeGen::codegen(Kernel &kernel) {

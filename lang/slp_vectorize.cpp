@@ -138,8 +138,9 @@ class BasicBlockSLP : public IRVisitor {
       return pack[0];
     }
     for (int i = 0; i < slp_width; i++) {
-      if (inside.find(pack[i]) == inside.end())
-        return nullptr;
+      if (inside.find(pack[i]) == inside.end()) {
+        return pack[i];
+      }
       fmt::print(" {} ", pack[i]->id);
       TC_ASSERT(visited.find(pack[i]) == visited.end());
       visited.insert(pack[i]);
@@ -303,6 +304,28 @@ class BasicBlockSLP : public IRVisitor {
             }
             TC_ASSERT(replaced);
           }
+        }
+      } else if (stmt_->is<LocalStoreStmt>()) {
+        auto stmt = stmt_->as<LocalStoreStmt>();
+        auto old_stmt = stmt->ident;
+        if (visited.find(old_stmt) != visited.end()) {
+          bool replaced = false;
+          // replace with packed alloca...
+          for (auto &rec : existing_stmts) {
+            for (int j = 0; j < slp_width; j++) {
+              if (rec.first[j] == old_stmt) {
+                TC_ASSERT(j == 0);
+                // replace alloca
+                stmt->ident = rec.second;
+                replaced = true;
+                TC_WARN("Replacing alloca in store");
+                break;
+              }
+            }
+            if (replaced)
+              break;
+          }
+          TC_ASSERT(replaced);
         }
       }
     }

@@ -84,9 +84,7 @@ struct CompileConfig {
                           bool verbose = false) {
     auto cmd = fmt::format(
         "{} {} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/headers -ffp-contract=fast "
-        "-fopenmp "
-        "-Wall "
-        "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} -lstdc++",
+        "-fopenmp -Wall -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} -lstdc++",
         compiler_name(), input, gcc_opt_flag(), get_project_fn(), output);
 
     if (!verbose) {

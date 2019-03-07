@@ -370,8 +370,10 @@ TC_TEST("simd_mpm") {
 
       Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
                            base_coord(1) * (n_grid) + base_coord(2);
+      Vector mv_ = mass * v4;
+      auto mv = mv_;
 
-      SLP(4);
+      // SLP(4);
       // constexpr int TTT = T * T * T;
       constexpr int TTT = 27;
       for (int i = 0; i < TTT; i++) {
@@ -381,7 +383,6 @@ TC_TEST("simd_mpm") {
         gpos(2) = real(i % 3);
         gpos(3) = real(0);
         auto dpos = dx * (gpos - fx4);
-        Vector mv = mass * v4;
         auto contrib_ = mv + affine * dpos;
 
         grid[base_offset + (i / 9 * n_grid * n_grid + i / 3 % 3 * n_grid +

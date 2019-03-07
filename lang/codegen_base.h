@@ -218,7 +218,7 @@ class CodeGenBase {
   void disassemble() {
 #if defined(TC_PLATFORM_LINUX)
     auto objdump_ret = system(
-        fmt::format("objdump {} -d > {}.s", get_library_fn(), get_library_fn())
+        fmt::format("objdump {} -M intel -d > {}.s", get_library_fn(), get_library_fn())
             .c_str());
     trash(objdump_ret);
 #endif

@@ -263,6 +263,12 @@ TC_TEST("simd_mpm_intrinsics") {
 
 // TODO: shuffled inputs?
 
+template <typename T>
+T copy(const T &t) {
+  auto t_ = t;
+  return t_;
+}
+
 TC_TEST("simd_mpm") {
   initialize_benchmark();
   int n_particles = 4 * 1024 * 1024;
@@ -356,6 +362,7 @@ TC_TEST("simd_mpm") {
         affine(dim, i) = real(0);
       }
       affine(dim, dim) = real(0);
+      affine = copy(affine);
 
       constexpr int T = 3;
       TC_WARN_IF(T != 3, "T is not 3");
@@ -372,7 +379,7 @@ TC_TEST("simd_mpm") {
 
       Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
                            base_coord(1) * (n_grid) + base_coord(2);
-      Vector mv_ = mass * v4;
+      Vector mv_ = mass * copy(v4);
       auto mv = mv_;
 
       // SLP(4);
@@ -395,21 +402,31 @@ TC_TEST("simd_mpm") {
       Local(weight0) = 0.0_f;
       Local(weight1) = 0.0_f;
       Local(weight2) = 0.0_f;
-      auto contrib0 = mv - affine * fx4;
-      for (int i = 0; i < 3; i++) {
+      SLP(4);
+      auto contrib0_ = mv - affine * fx4;
+      auto contrib0 = contrib0_;
+      for (int i = 0; i < 1; i++) {
+        SLP(1);
         weight0 = w[i](0);
+        SLP(4);
         Matrix contrib1 = contrib0;
-        for (int j = 0; j < 3; j++) {
+        for (int j = 0; j < 1; j++) {
+          SLP(1);
           weight1 = weight0 * w[j](1);
+          SLP(4);
           Matrix contrib2 = contrib1;
-          for (int k = 0; k < 3; k++) {
+          for (int k = 0; k < 1; k++) {
+            SLP(1);
             weight2 = weight1 * w[k](2);
+            SLP(4);
             grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
                 weight2 * contrib2;
             contrib2 += affine.col(2);
           }
+          SLP(4);
           contrib1 += affine.col(1);
         }
+        SLP(4);
         contrib0 += affine.col(0);
       }
     });

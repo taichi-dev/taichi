@@ -360,6 +360,9 @@ class SLPVectorize : public IRVisitor {
       // until the end...
       second_pragma_slp_location = (int)block->statements.size();
     }
+    TC_P(block->statements[first_pragma_slp_location]->id);
+    TC_ASSERT(
+        block->statements[first_pragma_slp_location]->is<PragmaSLPStmt>());
 
     std::vector<pStmt> shuffles;
     for (int i = first_pragma_slp_location + 1; i < second_pragma_slp_location;
@@ -387,10 +390,15 @@ class SLPVectorize : public IRVisitor {
     }
 
     for (int i = 0; i < (int)shuffles.size(); i++) {
-      block->insert(std::move(shuffles[i]), first_pragma_slp_location + i);
+      block->insert(std::move(shuffles[i]), first_pragma_slp_location + i + 1);
     }
     second_pragma_slp_location += (int)shuffles.size();
 
+    TC_P(block->statements[first_pragma_slp_location]->id);
+    TC_ASSERT(
+        block->statements[first_pragma_slp_location]->is<PragmaSLPStmt>());
+    // irpass::print(context->root());
+    TC_P(block->statements[first_pragma_slp_location]->id);
     int current_slp_width = block->statements[first_pragma_slp_location]
                                 ->as<PragmaSLPStmt>()
                                 ->slp_width;

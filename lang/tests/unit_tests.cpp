@@ -639,6 +639,8 @@ TC_TEST("slpmatvecmul") {
     For(i, 0, n, [&] {
       SLP(dim);
       y[i] = A[i] * x[i];
+      SLP(dim);
+      y[i] = A[i] * x[i];
     });
   });
 

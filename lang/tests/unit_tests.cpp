@@ -1,6 +1,5 @@
-#include "ir.h"
+#include "../tlang.h"
 #include <numeric>
-#include "tlang.h"
 #include <taichi/visual/gui.h>
 
 TLANG_NAMESPACE_BEGIN

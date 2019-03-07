@@ -1,6 +1,5 @@
-#include "ir.h"
+#include "../tlang.h"
 #include <numeric>
-#include "tlang.h"
 #include <taichi/visual/gui.h>
 #include <tbb/tbb.h>
 #include <taichi/system/threading.h>
@@ -408,13 +407,14 @@ TC_TEST("simd_mpm") {
   TC_P(taichi::PID::get_pid());
   TC_TIME(p2g());
 
+  auto tolerance = 1e-4_f * std::sqrt((real)n_particles);
   for (int i = 0; i < context.n; i++) {
     for (int j = 0; j < context.n; j++) {
       for (int k = 0; k < context.n; k++) {
         for (int d = 0; d < 4; d++) {
           TC_CHECK_EQUAL(
               grid(d).val<float32>(i * n_grid * n_grid + j * n_grid + k),
-              context.grid[i][j][k][d], 1e-1_f);
+              context.grid[i][j][k][d], tolerance);
         }
       }
     }

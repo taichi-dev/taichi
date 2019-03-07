@@ -375,6 +375,7 @@ TC_TEST("simd_mpm") {
 
       // SLP(4);
       // constexpr int TTT = T * T * T;
+      /*
       constexpr int TTT = 27;
       for (int i = 0; i < TTT; i++) {
         Vector gpos(4);
@@ -387,6 +388,23 @@ TC_TEST("simd_mpm") {
 
         grid[base_offset + (i / 9 * n_grid * n_grid + i / 3 % 3 * n_grid +
                             i % 3)] += weight(i) * contrib_;
+      }
+      */
+      for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+          for (int k = 0; k < 3; k++) {
+            Vector gpos(4);
+            gpos(0) = real(i);
+            gpos(1) = real(j);
+            gpos(2) = real(k);
+            gpos(3) = real(0);
+            auto dpos = dx * (gpos - fx4);
+            auto contrib_ = mv + affine * dpos;
+
+            grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
+                w[i](0) * w[j](1) * w[k](2) * contrib_;
+          }
+        }
       }
     });
   });

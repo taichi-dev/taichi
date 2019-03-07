@@ -444,7 +444,7 @@ class SLPVectorize : public IRVisitor {
     throw IRModifiedException();
   }
 
-  void fix_indirect_alloca_ref(Block *block) {
+  void eliminate_redundant_shuffles(Block *block) {
     for (auto &stmt_ : block->statements) {
       if (stmt_->is<LocalLoadStmt>()) {
         auto stmt = stmt_->as<LocalLoadStmt>();
@@ -455,6 +455,28 @@ class SLPVectorize : public IRVisitor {
             stmt->ptr[l].var = shuffle->elements[offset].stmt;
             offset = shuffle->elements[offset].index;
             stmt->ptr[l].offset = offset;
+          }
+        }
+      } else if (stmt_->is<LocalStoreStmt>()) {
+        auto stmt = stmt_->as<LocalStoreStmt>();
+        if (stmt->ident->is<ElementShuffleStmt>()) {
+          auto ptr = stmt->ident->as<ElementShuffleStmt>();
+          // Assume the shuffle is a trivial copy of vectors
+          // TODO: more general case.
+          bool trivial = true;
+          for (int l = 0; l < ptr->width(); l++) {
+            if (ptr->elements[l].index != l) {
+              trivial = false;
+            }
+            if (ptr->elements[l].stmt != ptr->elements[0].stmt) {
+              trivial = false;
+            }
+          }
+          if (trivial) {
+            stmt->ident = ptr->elements[0].stmt;
+          } else {
+            TC_P(stmt->id);
+            TC_ERROR("Local store with non trivial shuffling is not yet handled.");
           }
         }
       }
@@ -474,7 +496,7 @@ class SLPVectorize : public IRVisitor {
     for (auto &stmt : block->statements) {
       stmt->accept(this);
     }
-    fix_indirect_alloca_ref(block);
+    eliminate_redundant_shuffles(block);
   }
 
   void visit(IfStmt *if_stmt) override {

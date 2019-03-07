@@ -405,17 +405,17 @@ TC_TEST("simd_mpm") {
       SLP(4);
       auto contrib0_ = mv - affine * fx4;
       auto contrib0 = contrib0_;
-      for (int i = 0; i < 1; i++) {
+      for (int i = 0; i < 3; i++) {
         SLP(1);
         weight0 = w[i](0);
         SLP(4);
         Matrix contrib1 = contrib0;
-        for (int j = 0; j < 0; j++) {
+        for (int j = 0; j < 3; j++) {
           SLP(1);
           weight1 = weight0 * w[j](1);
           SLP(4);
           Matrix contrib2 = contrib1;
-          for (int k = 0; k < 1; k++) {
+          for (int k = 0; k < 3; k++) {
             SLP(1);
             weight2 = weight1 * w[k](2);
             SLP(4);

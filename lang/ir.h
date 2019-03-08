@@ -311,6 +311,9 @@ struct LaneAttribute {
   LaneAttribute() {
   }
 
+  LaneAttribute(const std::vector<T> &data) : data(data) {
+  }
+
   LaneAttribute(const T &t) {
     data.resize(1);
     data[0] = t;
@@ -334,6 +337,10 @@ struct LaneAttribute {
 
   const T &operator[](int i) const {
     return data[i];
+  }
+
+  LaneAttribute slice(int begin, int end) {
+    return LaneAttribute();
   }
 
   // for initializing single lane
@@ -417,6 +424,10 @@ class Statement : public IRNode {
 
   int &width() {
     return ret_type.width;
+  }
+
+  DataType &element_type() {
+    return ret_type.data_type;
   }
 
   VectorType ret_type;
@@ -636,6 +647,10 @@ class AllocaStmt : public Statement {
     ret_type = VectorType(1, type);
   }
 
+  AllocaStmt(int width, DataType type) {
+    ret_type = VectorType(width, type);
+  }
+
   DEFINE_ACCEPT
 };
 
@@ -775,6 +790,8 @@ class GlobalPtrStmt : public Stmt {
     for (int i = 0; i < (int)indices.size(); i++) {
       add_operand(this->indices[i]);
     }
+    width() = snode.size();
+    element_type() = snode[0]->dt;
   }
 
   DEFINE_ACCEPT
@@ -1153,11 +1170,11 @@ class ConstStmt : public Statement {
   LaneAttribute<TypedConstant> val;
 
   ConstStmt(const LaneAttribute<TypedConstant> &val) : val(val) {
-    ret_type.width = val.size();
+    width() = val.size();
+    element_type() = val[0].dt;
     for (int i = 0; i < ret_type.width; i++) {
       TC_ASSERT(val[0].dt == val[i].dt);
     }
-    ret_type.data_type = val[0].dt;
   }
 
   void repeat(int factor) override {

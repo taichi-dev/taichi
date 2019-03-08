@@ -58,12 +58,27 @@ class BasicBlockVectorSplit : public IRVisitor {
       }
     }
     block->statements.clear();
-    for (int i = 0; i < (int)splits.size(); i++) {
+    if (true) {
+      for (int i = 0; i < (int)splits.size(); i++) {
+        for (int j = 0;; j++) {
+          bool modified = false;
+          if (j < (int)splits[i].size()) {
+            block->insert(std::move(splits[i][j]));
+            modified = true;
+          }
+          if (!modified) {
+            break;
+          }
+        }
+      }
+    } else {
       for (int j = 0;; j++) {
         bool modified = false;
-        if (j < (int)splits[i].size()) {
-          block->insert(std::move(splits[i][j]));
-          modified = true;
+        for (int i = 0; i < (int)splits.size(); i++) {
+          if (j < (int)splits[i].size()) {
+            block->insert(std::move(splits[i][j]));
+            modified = true;
+          }
         }
         if (!modified) {
           break;
@@ -120,14 +135,12 @@ class BasicBlockVectorSplit : public IRVisitor {
       ptr.resize(max_width);
       for (int j = 0; j < max_width; j++) {
         VectorElement addr(stmt->elements[lane_start(i) + j]);
-        TC_P(addr.stmt);
         if (origin2split.find(addr.stmt) == origin2split.end()) {
           ptr[j] = addr;
         } else {
           ptr[j].stmt = lookup(addr.stmt, addr.index / max_width);
           ptr[j].index = addr.index % max_width;
         }
-        TC_P(ptr[j].stmt);
       }
       current_split[i] = Stmt::make<ElementShuffleStmt>(ptr);
     }

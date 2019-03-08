@@ -244,9 +244,7 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   irpass::loop_vectorize(ir);
   if (prog->config.print_ir)
     irpass::print(ir);
-  if (prog->config.max_vector_width < 16) {
-    irpass::vector_split(ir, prog->config.max_vector_width);
-  }
+  irpass::vector_split(ir, prog->config.max_vector_width);
   if (prog->config.print_ir)
     irpass::print(ir);
   IRCodeGen::run(this, ir);

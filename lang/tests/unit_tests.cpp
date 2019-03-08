@@ -834,6 +834,7 @@ TC_TEST("mixed_simd3") {
 }
 
 TC_TEST("vector_split1") {
+  CoreState::set_trigger_gdb_when_crash(true);
   int n = 32;
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;

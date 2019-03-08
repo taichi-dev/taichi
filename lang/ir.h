@@ -340,7 +340,8 @@ struct LaneAttribute {
   }
 
   LaneAttribute slice(int begin, int end) {
-    return LaneAttribute();
+    return LaneAttribute(
+        std::vector<T>(data.begin() + begin, data.begin() + end));
   }
 
   // for initializing single lane

@@ -94,17 +94,17 @@ class Program {
   }
 
   Kernel def(const std::function<void()> &body) {
-    //Expr::set_allow_store(true);
+    // Expr::set_allow_store(true);
     auto func = Kernel(*this, body);
     functions.push_back(func);
-    //Expr::set_allow_store(false);
+    // Expr::set_allow_store(false);
     return func;
   }
 
   Kernel kernel(const std::function<void()> &body) {
-    //Expr::set_allow_store(true);
+    // Expr::set_allow_store(true);
     auto func = Kernel(*this, body);
-    //Expr::set_allow_store(false);
+    // Expr::set_allow_store(false);
     functions.push_back(func);
     current_snode = nullptr;
     return func;

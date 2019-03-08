@@ -43,6 +43,7 @@ struct CompileConfig {
   bool force_vectorized_global_load;
   bool force_vectorized_global_store;
   int external_optimization_level;
+  int max_vector_width;
   int print_ir;
 
   CompileConfig() {
@@ -51,6 +52,7 @@ struct CompileConfig {
     internal_optimization = true;
     external_optimization_level = 3;
     print_ir = false;
+    max_vector_width = 16;
     force_vectorized_global_load = false;
     force_vectorized_global_store = false;
 #if defined(TC_PLATFORM_OSX)

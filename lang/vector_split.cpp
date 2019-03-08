@@ -15,7 +15,8 @@ class BasicBlockVectorSplit : public IRVisitor {
   std::vector<pStmt> current_split;
   std::unordered_map<Stmt *, std::vector<Stmt *>> origin2split;
 
-  BasicBlockVectorSplit(Block *block) : block(block) {
+  BasicBlockVectorSplit(Block *block, int max_width)
+      : block(block), max_width(max_width) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     max_width = 4;
@@ -45,6 +46,19 @@ class BasicBlockVectorSplit : public IRVisitor {
         std::vector<pStmt> split;
         split.push_back(std::move(stmt));
         splits.push_back(std::move(split));
+      }
+    }
+    block->statements.clear();
+    for (int j = 0;; j++) {
+      bool modified = false;
+      for (int i = 0; i < (int)splits.size(); i++) {
+        if (j < (int)splits[i].size()) {
+          block->insert(std::move(splits[i][j]));
+          modified = true;
+        }
+      }
+      if (modified) {
+        break;
       }
     }
   }
@@ -94,18 +108,21 @@ class BasicBlockVectorSplit : public IRVisitor {
 // AVX2)
 class VectorSplit : public IRVisitor {
  public:
-  VectorSplit() {
+  int max_width;
+
+  VectorSplit(IRNode *node, int max_width) : max_width(max_width) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
+    node->accept(this);
   }
 
-  void visit(Block *stmt_list) {
-    std::vector<Stmt *> statements;
-    for (auto &stmt : stmt_list->statements) {
-      statements.push_back(stmt.get());
-    }
-    for (auto stmt : statements) {
-      stmt->accept(this);
+  void visit(Block *block) {
+    if (!block->has_container_statements()) {
+      BasicBlockVectorSplit(block, max_width);
+    } else {
+      for (auto &stmt : block->statements) {
+        stmt->accept(this);
+      }
     }
   }
 
@@ -125,17 +142,12 @@ class VectorSplit : public IRVisitor {
   void visit(WhileStmt *stmt) {
     stmt->body->accept(this);
   }
-
-  static void run(IRNode *node) {
-    VectorSplit inst;
-    node->accept(&inst);
-  }
 };
 
 namespace irpass {
 
-void vector_split(IRNode *root) {
-  return VectorSplit::run(root);
+void vector_split(IRNode *root, int max_width) {
+  VectorSplit(root, max_width);
 }
 
 }  // namespace irpass

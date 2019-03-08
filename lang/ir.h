@@ -60,7 +60,7 @@ void lower(IRNode *root);
 void typecheck(IRNode *root);
 void loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
-void vector_split(IRNode *root);
+void vector_split(IRNode *root, int max_width);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 
 }  // namespace irpass
@@ -424,6 +424,10 @@ class Statement : public IRNode {
 
   int &width() {
     return ret_type.width;
+  }
+
+  virtual bool is_container_statement() const {
+    return false;
   }
 
   DataType &element_type() {
@@ -913,6 +917,14 @@ class Block : public IRNode {
     parent = nullptr;
   }
 
+  bool has_container_statements() {
+    for (auto &s : statements) {
+      if (s->is_container_statement())
+        return true;
+    }
+    return false;
+  }
+
   int locate(Stmt *stmt) {
     for (int i = 0; i < (int)statements.size(); i++) {
       if (statements[i].get() == stmt) {
@@ -1100,6 +1112,10 @@ class IfStmt : public Statement {
     add_operand(this->cond);
   }
 
+  bool is_container_statement() const override {
+    return true;
+  }
+
   DEFINE_ACCEPT
 };
 
@@ -1109,6 +1125,10 @@ class FrontendIfStmt : public Statement {
   std::unique_ptr<Block> true_statements, false_statements;
 
   FrontendIfStmt(Expr condition) : condition(condition) {
+  }
+
+  bool is_container_statement() const override {
+    return true;
   }
 
   DEFINE_ACCEPT
@@ -1195,6 +1215,10 @@ class FrontendForStmt : public Statement {
 
   FrontendForStmt(Expr loop_var, Expr begin, Expr end);
 
+  bool is_container_statement() const override {
+    return true;
+  }
+
   DEFINE_ACCEPT
 };
 
@@ -1223,6 +1247,10 @@ class RangeForStmt : public Statement {
     add_operand(this->end);
   }
 
+  bool is_container_statement() const override {
+    return true;
+  }
+
   DEFINE_ACCEPT
 };
 
@@ -1234,6 +1262,10 @@ class WhileStmt : public Statement {
   WhileStmt(std::unique_ptr<Block> &&body) : body(std::move(body)) {
   }
 
+  bool is_container_statement() const override {
+    return true;
+  }
+
   DEFINE_ACCEPT
 };
 
@@ -1243,6 +1275,10 @@ class FrontendWhileStmt : public Statement {
   std::unique_ptr<Block> body;
 
   FrontendWhileStmt(Expr cond) : cond(load_if_ptr(cond)) {
+  }
+
+  bool is_container_statement() const override {
+    return true;
   }
 
   DEFINE_ACCEPT

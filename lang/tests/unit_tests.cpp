@@ -792,7 +792,8 @@ TC_TEST("mixed_simd3") {
       Declare(i);
       For(i, 0, n, [&]() {
         SLP(vec_size);
-        auto diff_ = a[i].element_wise_prod(a[i]) - b[i].element_wise_prod(b[i]);
+        auto diff_ =
+            a[i].element_wise_prod(a[i]) - b[i].element_wise_prod(b[i]);
         auto diff = diff_;
 
         SLP(1);
@@ -831,5 +832,28 @@ TC_TEST("mixed_simd3") {
     }
   }
 }
+
+TC_TEST("vector_split1") {
+  int n = 32;
+  Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
+  prog.config.max_vector_width = 8;
+
+  Global(a, i32);
+
+  layout([&]() { root.fixed(0, n).place(a); });
+
+  auto func = kernel([&]() {
+    Declare(i);
+    Vectorize(16);
+    For(i, 0, n, [&] { a[i] = i; });
+  });
+
+  func();
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK(a.val<int>(i) == i);
+  }
+};
 
 TLANG_NAMESPACE_END

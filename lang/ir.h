@@ -27,29 +27,30 @@ class FrontendAllocaStmt;
 class FrontendAssignStmt;
 
 // Midend statement
-class ConstStmt;
 
 // Without per-lane attributes
 class RangeForStmt;
 class IfStmt;
 class WhileStmt;
 class WhileControlStmt;
+
+class ConstStmt;
+class AllocaStmt;
 class UnaryOpStmt;
 class BinaryOpStmt;
-class AllocaStmt;
 class PrintStmt;
 class RandStmt;
-
-// With per-lane attributes
 class GlobalLoadStmt;
 class GlobalStoreStmt;
-class LocalLoadStmt;
 class LocalStoreStmt;
+
+// With per-lane attributes
+class LocalLoadStmt;
 class GlobalPtrStmt;
+class ElementShuffleStmt;
 
 // Pragma statements
 class PragmaSLPStmt;
-class ElementShuffleStmt;
 
 // IR passes
 namespace irpass {
@@ -59,6 +60,7 @@ void lower(IRNode *root);
 void typecheck(IRNode *root);
 void loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
+void vector_split(IRNode *root);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 
 }  // namespace irpass
@@ -297,9 +299,9 @@ class IRNode {
   }
 };
 
-#define DEFINE_ACCEPT               \
+#define DEFINE_ACCEPT                        \
   void accept(IRVisitor *visitor) override { \
-    visitor->visit(this);           \
+    visitor->visit(this);                    \
   }
 
 template <typename T>

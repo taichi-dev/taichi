@@ -309,6 +309,7 @@ TC_TEST("simd_mpm") {
     Declare(p_i);
     // Vectorize(4);
     For(p_i, 0, n_particles, [&]() {
+      // Vector
       auto mass = context.mass;
       auto vol = context.vol;
       auto dx = context.dx;
@@ -364,66 +365,42 @@ TC_TEST("simd_mpm") {
 
       constexpr int T = 3;
       TC_WARN_IF(T != 3, "T is not 3");
-      /*
-      Vector weight(27);
-      for (int i = 0; i < T; i++) {
-        for (int j = 0; j < T; j++) {
-          for (int k = 0; k < T; k++) {
-            weight(i * 9 + j * 3 + k) = w[i](0) * w[j](1) * w[k](2);
-          }
-        }
-      }
-      */
 
       Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
                            base_coord(1) * (n_grid) + base_coord(2);
       Vector mv_ = mass * copy(v4);
       auto mv = mv_;
 
-      // SLP(4);
-      // constexpr int TTT = T * T * T;
-      /*
-      constexpr int TTT = 27;
-      for (int i = 0; i < TTT; i++) {
-        Vector gpos(4);
-        gpos(0) = real(i / 9);
-        gpos(1) = real(i / 3 % 3);
-        gpos(2) = real(i % 3);
-        gpos(3) = real(0);
-        auto dpos = dx * (gpos - fx4);
-        auto contrib_ = mv + affine * dpos;
-
-        grid[base_offset + (i / 9 * n_grid * n_grid + i / 3 % 3 * n_grid +
-                            i % 3)] += weight(i) * contrib_;
-      }
-      */
       Local(weight0) = 0.0_f;
       Local(weight1) = 0.0_f;
       Local(weight2) = 0.0_f;
-      SLP(4);
+
+      int slp = 4;
+
+      SLP(slp);
       auto contrib0 = copy(mv - affine * fx);
       for (int i = 0; i < 3; i++) {
         SLP(1);
         weight0 = w[i](0);
-        SLP(4);
+        SLP(slp);
         Matrix contrib1 = contrib0;
         for (int j = 0; j < 3; j++) {
           SLP(1);
           weight1 = weight0 * w[j](1);
-          SLP(4);
+          SLP(slp);
           Matrix contrib2 = contrib1;
           for (int k = 0; k < 3; k++) {
             SLP(1);
             weight2 = weight1 * w[k](2);
-            SLP(4);
+            SLP(slp);
             grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
                 weight2 * contrib2;
             contrib2 += affine.col(2);
           }
-          SLP(4);
+          SLP(slp);
           contrib1 += affine.col(1);
         }
-        SLP(4);
+        SLP(slp);
         contrib0 += affine.col(0);
       }
     });
@@ -444,7 +421,6 @@ TC_TEST("simd_mpm") {
   TC_TIME(initialize_data());
 
   TC_P(taichi::PID::get_pid());
-  while (1)
   TC_TIME(p2g());
 
   auto tolerance = 1e-4_f * std::sqrt((real)n_particles);

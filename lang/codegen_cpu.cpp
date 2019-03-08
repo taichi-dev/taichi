@@ -156,8 +156,6 @@ class IRCodeGen : public IRVisitor {
       emit("{} = select({}, {}, {});", stmt->ptr->raw_name(), mask->raw_name(),
            stmt->data->raw_name(), stmt->ptr->raw_name());
     } else {
-      TC_P(stmt->ptr);
-      TC_P(stmt->data);
       emit("{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
     }
   }

@@ -529,11 +529,7 @@ TC_TEST("slp") {
 
     Vectorize(1);
     For(i, 0, n, [&] {
-      SLP(1);
-      Local(t) = 1;
-      SLP(1);
-      t = 2;
-      // Local(p) = t;
+      SLP(4);
       a[i] = 1;
       b[i] = 2;
       c[i] = 3;
@@ -854,6 +850,43 @@ TC_TEST("vector_split1") {
 
   for (int i = 0; i < n; i++) {
     TC_CHECK(a.val<int>(i) == i);
+  }
+};
+
+TC_TEST("vector_split_slp") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 128;
+  Program prog(Arch::x86_64);
+  prog.config.max_vector_width = 8;
+  prog.config.print_ir = true;
+
+  Global(a, i32);
+  Global(b, i32);
+  Global(c, i32);
+  Global(d, i32);
+
+  layout([&]() { root.fixed(0, n).place(a, b, c, d); });
+
+  auto func = kernel([&]() {
+    Declare(i);
+
+    Vectorize(8);
+    For(i, 0, n, [&] {
+      SLP(4);
+      a[i] = 1 + i;
+      b[i] = 2 + i;
+      c[i] = 3 + i;
+      d[i] = 4 + i;
+    });
+  });
+
+  func();
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK(a.val<int>(i) == 1 + i);
+    TC_CHECK(b.val<int>(i) == 2 + i);
+    TC_CHECK(c.val<int>(i) == 3 + i);
+    TC_CHECK(d.val<int>(i) == 4 + i);
   }
 };
 

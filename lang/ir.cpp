@@ -192,7 +192,7 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
     if (parent->statements[i]->is<LocalStoreStmt>()) {
       auto store = parent->statements[i]->as<LocalStoreStmt>();
       // TC_ASSERT(store->width() == 1);
-      if (store->ident == this->ptr[0].var) {
+      if (store->ptr == this->ptr[0].var) {
         // found
         return store;
       }

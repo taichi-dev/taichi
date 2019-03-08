@@ -167,8 +167,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) {
-    print("{} = local store[{} <- {}]", stmt->name(), stmt->ident->name(),
-          stmt->stmt->name());
+    print("{} = local store[{} <- {}]", stmt->name(), stmt->ptr->name(),
+          stmt->data->name());
   }
 
   void visit(GlobalLoadStmt *stmt) {

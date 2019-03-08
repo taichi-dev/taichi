@@ -84,8 +84,8 @@ class BasicBlockVectorSplit : public IRVisitor {
 
   void visit(LocalStoreStmt *stmt) {
     for (int i = 0; i < current_split_factor; i++) {
-      current_split[i] = Stmt::make<LocalStoreStmt>(lookup(stmt->ident, i),
-                                                    lookup(stmt->stmt, i));
+      current_split[i] = Stmt::make<LocalStoreStmt>(lookup(stmt->ptr, i),
+                                                    lookup(stmt->data, i));
     }
   }
 };

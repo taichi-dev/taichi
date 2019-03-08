@@ -153,12 +153,12 @@ class IRCodeGen : public IRVisitor {
   void visit(LocalStoreStmt *stmt) {
     auto mask = stmt->parent->mask();
     if (mask) {
-      emit("{} = select({}, {}, {});", stmt->ident->raw_name(),
-           mask->raw_name(), stmt->stmt->raw_name(), stmt->ident->raw_name());
+      emit("{} = select({}, {}, {});", stmt->ptr->raw_name(),
+           mask->raw_name(), stmt->data->raw_name(), stmt->ptr->raw_name());
     } else {
-      TC_P(stmt->ident);
-      TC_P(stmt->stmt);
-      emit("{} = {};", stmt->ident->raw_name(), stmt->stmt->raw_name());
+      TC_P(stmt->ptr);
+      TC_P(stmt->data);
+      emit("{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
     }
   }
 

@@ -1077,14 +1077,14 @@ class LocalLoadStmt : public Statement {
 
 class LocalStoreStmt : public Statement {
  public:
-  Stmt *ident;
-  Stmt *stmt;
+  Stmt *ptr;
+  Stmt *data;
 
-  LaneAttribute<Stmt *> data;
+  // LaneAttribute<Stmt *> data;
 
-  LocalStoreStmt(Stmt *ident, Statement *stmt) : ident(ident), stmt(stmt) {
-    add_operand(this->ident);
-    add_operand(this->stmt);
+  LocalStoreStmt(Stmt *ptr, Statement *data) : ptr(ptr), data(data) {
+    add_operand(this->ptr);
+    add_operand(this->data);
   }
 
   DEFINE_ACCEPT;

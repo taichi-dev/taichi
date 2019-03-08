@@ -43,10 +43,10 @@ class TypeCheck : public IRVisitor {
   void visit(LocalStoreStmt *stmt) {
     // auto block = stmt->parent;
     // auto lookup = block->local_var_alloca.find(stmt->ident);
-    if (stmt->ident->ret_type.data_type == DataType::unknown) {
-      stmt->ident->ret_type = stmt->stmt->ret_type;
+    if (stmt->ptr->ret_type.data_type == DataType::unknown) {
+      stmt->ptr->ret_type = stmt->data->ret_type;
     }
-    TC_ASSERT(stmt->ident->ret_type == stmt->stmt->ret_type);
+    TC_ASSERT(stmt->ptr->ret_type == stmt->data->ret_type);
   }
 
 

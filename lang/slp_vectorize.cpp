@@ -307,7 +307,7 @@ class BasicBlockSLP : public IRVisitor {
         }
       } else if (stmt_->is<LocalStoreStmt>()) {
         auto stmt = stmt_->as<LocalStoreStmt>();
-        auto old_stmt = stmt->ident;
+        auto old_stmt = stmt->ptr;
         if (visited.find(old_stmt) != visited.end()) {
           bool replaced = false;
           // replace with packed alloca...
@@ -316,7 +316,7 @@ class BasicBlockSLP : public IRVisitor {
               if (rec.first[j] == old_stmt) {
                 TC_ASSERT(j == 0);
                 // replace alloca
-                stmt->ident = rec.second;
+                stmt->ptr = rec.second;
                 replaced = true;
                 TC_WARN("Replacing alloca in store");
                 break;
@@ -459,8 +459,8 @@ class SLPVectorize : public IRVisitor {
         }
       } else if (stmt_->is<LocalStoreStmt>()) {
         auto stmt = stmt_->as<LocalStoreStmt>();
-        if (stmt->ident->is<ElementShuffleStmt>()) {
-          auto ptr = stmt->ident->as<ElementShuffleStmt>();
+        if (stmt->ptr->is<ElementShuffleStmt>()) {
+          auto ptr = stmt->ptr->as<ElementShuffleStmt>();
           // Assume the shuffle is a trivial copy of vectors
           // TODO: more general case.
           bool trivial = true;
@@ -473,7 +473,7 @@ class SLPVectorize : public IRVisitor {
             }
           }
           if (trivial) {
-            stmt->ident = ptr->elements[0].stmt;
+            stmt->ptr = ptr->elements[0].stmt;
           } else {
             TC_P(stmt->id);
             TC_ERROR("Local store with non trivial shuffling is not yet handled.");

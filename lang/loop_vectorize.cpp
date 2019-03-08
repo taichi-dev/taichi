@@ -44,6 +44,21 @@ class LoopVectorize : public IRVisitor {
     alloca->ret_type.width *= vectorize;
   }
 
+  void visit(ElementShuffleStmt *stmt) {
+    if (vectorize == 1)
+      return;
+    int original_width = stmt->width();
+    stmt->ret_type.width *= vectorize;
+    stmt->elements.repeat(vectorize);
+    if (stmt->elements[0].stmt->width() != 1) {
+      for (int i = 0; i < vectorize; i++) {
+        for (int j = 0; j < original_width; j++) {
+          stmt->elements[i * original_width + j].index += i * original_width;
+        }
+      }
+    }
+  }
+
   void visit(LocalLoadStmt *stmt) {
     if (vectorize == 1)
       return;

@@ -278,6 +278,7 @@ TC_TEST("simd_mpm") {
 
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::x86_64);
+  prog.config.max_vector_width = 4;
   prog.config.print_ir = true;
   prog.config.gcc_version = -2;
   prog.config.force_vectorized_global_load = true;
@@ -307,7 +308,7 @@ TC_TEST("simd_mpm") {
 
   auto p2g = kernel([&]() {
     Declare(p_i);
-    // Vectorize(4);
+    Vectorize(4);
     For(p_i, 0, n_particles, [&]() {
       // Vector
       auto mass = context.mass;

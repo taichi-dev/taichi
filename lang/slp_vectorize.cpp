@@ -476,7 +476,8 @@ class SLPVectorize : public IRVisitor {
             stmt->ptr = ptr->elements[0].stmt;
           } else {
             TC_P(stmt->id);
-            TC_ERROR("Local store with non trivial shuffling is not yet handled.");
+            TC_ERROR(
+                "Local store with non trivial shuffling is not yet handled.");
           }
         }
       }

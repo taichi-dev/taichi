@@ -509,8 +509,11 @@ TC_TEST("mixed_simd1") {
 TC_TEST("mixed_simd2") {
   int n = 64;
 
-  for (auto vec_size : {4}) {
+  for (auto vec_size : {8}) {
+    TC_WARN("{}", vec_size);
     Program prog;
+    prog.config.max_vector_width = 4;
+    prog.config.print_ir = true;
 
     Vector v(vec_size);
     v.fill_global(DataType::f32);
@@ -561,7 +564,7 @@ TC_TEST("mixed_simd2") {
 
 // reduce(vec_a<n> ** 2 - vec_b<n> ** 2) * vec_c<2n>
 TC_TEST("mixed_simd3_slp") {
-  for (auto vec_size : {4, 8, 16}) {
+  for (auto vec_size : {16}) {
     // why vec_size = 16 fails??
     Program prog;
     prog.config.max_vector_width = 8;
@@ -657,7 +660,7 @@ TC_TEST("vector_split1") {
 
 TC_TEST("vector_split_slp") {
   CoreState::set_trigger_gdb_when_crash(true);
-  int n = 128;
+  int n = 256;
   Program prog(Arch::x86_64);
   prog.config.max_vector_width = 8;
   prog.config.print_ir = true;
@@ -672,7 +675,7 @@ TC_TEST("vector_split_slp") {
   auto func = kernel([&]() {
     Declare(i);
 
-    Vectorize(8);
+    Vectorize(32);
     For(i, 0, n, [&] {
       SLP(4);
       a[i] = 1 + i;

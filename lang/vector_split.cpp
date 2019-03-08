@@ -17,7 +17,6 @@ class BasicBlockVectorSplit : public IRVisitor {
       : block(block), max_width(max_width) {
     // allow_undefined_visitor = true;
     // invoke_default_visitor = false;
-    TC_WARN("max_width set to 4");
     run();
   }
 
@@ -37,24 +36,24 @@ class BasicBlockVectorSplit : public IRVisitor {
   }
 
   void run() {
-    for (int i = 0; i < (int)block->statements.size(); i++) {
-      auto stmt = std::move(block->statements[i]);
+    std::vector<pStmt> statements = std::move(block->statements);
+    for (int i = 0; i < (int)statements.size(); i++) {
+      auto stmt = statements[i].get();
       if (stmt->width() > max_width) {
         TC_ASSERT(stmt->width() % max_width == 0);
         current_split_factor = stmt->width() / max_width;
         current_split.resize(current_split_factor);
         stmt->accept(this);
-        origin2split[stmt.get()] =
-            std::vector<Stmt *>(current_split_factor, nullptr);
+        origin2split[stmt] = std::vector<Stmt *>(current_split_factor, nullptr);
         for (int j = 0; j < current_split_factor; j++) {
           current_split[j]->element_type() = stmt->element_type();
           current_split[j]->width() = max_width;
-          origin2split[stmt.get()][j] = current_split[j].get();
+          origin2split[stmt][j] = current_split[j].get();
         }
         splits.push_back(std::move(current_split));
       } else {
         std::vector<pStmt> split;
-        split.push_back(std::move(stmt));
+        split.push_back(std::move(statements[i]));
         splits.push_back(std::move(split));
       }
     }
@@ -69,6 +68,21 @@ class BasicBlockVectorSplit : public IRVisitor {
       }
       if (!modified) {
         break;
+      }
+    }
+    for (int i = 0; i < (int)block->statements.size(); i++) {
+      auto stmt_ = block->statements[i].get();
+      if (stmt_->is<LocalLoadStmt>()) {
+        auto stmt = stmt_->as<LocalLoadStmt>();
+        for (int l = 0; l < stmt->width(); l++) {
+          auto *old_var = stmt->ptr[l].var;
+          if (origin2split.find(old_var) != origin2split.end()) {
+            auto new_var = origin2split[old_var][stmt->ptr[l].offset / max_width];
+            stmt->ptr[l].var = new_var;
+            stmt->ptr[l].offset %= max_width;
+            TC_WARN("replaced...");
+          }
+        }
       }
     }
   }
@@ -97,6 +111,23 @@ class BasicBlockVectorSplit : public IRVisitor {
     for (int i = 0; i < current_split_factor; i++)
       current_split[i] =
           Stmt::make<AllocaStmt>(max_width, stmt->element_type());
+  }
+
+  void visit(ElementShuffleStmt *stmt) {
+    for (int i = 0; i < current_split_factor; i++) {
+      LaneAttribute<VectorElement> ptr;
+      ptr.resize(max_width);
+      for (int j = 0; j < max_width; j++) {
+        VectorElement addr(stmt->elements[lane_start(i) + j]);
+        if (origin2split.find(addr.stmt) == origin2split.end()) {
+          ptr[j] = addr;
+        } else {
+          ptr[j].stmt = lookup(addr.stmt, addr.index / max_width);
+          ptr[j].index = addr.index % max_width;
+        }
+      }
+      current_split[i] = Stmt::make<ElementShuffleStmt>(ptr);
+    }
   }
 
   void visit(LocalLoadStmt *stmt) {

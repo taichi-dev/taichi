@@ -1455,7 +1455,7 @@ class ElementShuffleStmt : public Statement {
   ElementShuffleStmt(const LaneAttribute<VectorElement> &elements)
       : elements(elements) {
     width() = elements.size();
-    ret_type.data_type = elements[0].stmt->ret_type.data_type;
+    element_type() = elements[0].stmt->element_type();
   }
 
   DEFINE_ACCEPT

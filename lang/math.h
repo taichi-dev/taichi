@@ -161,7 +161,7 @@ struct Matrix {
 
   Matrix col(int j) const {
     TC_ASSERT(0 <= j && j < m);
-    Matrix ret(m, 1);
+    Matrix ret(n, 1);
     for (int i = 0; i < n; i++) {
       ret(i, 0) = (*this)(i, j);
     }

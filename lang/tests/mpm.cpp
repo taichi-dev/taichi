@@ -353,15 +353,13 @@ TC_TEST("simd_mpm") {
       stress = (-4 * inv_dx * inv_dx * dt * vol) * stress;
 
       Matrix affine_ = dx * (stress + mass * g_C[p_i]);
-      Matrix affine(4, 4);
+      Matrix affine(4, 3);
       for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
           affine(i, j) = affine_(i, j);
         }
-        affine(i, dim) = real(0);
         affine(dim, i) = real(0);
       }
-      affine(dim, dim) = real(0);
       affine = copy(affine);
 
       constexpr int T = 3;
@@ -403,8 +401,7 @@ TC_TEST("simd_mpm") {
       Local(weight1) = 0.0_f;
       Local(weight2) = 0.0_f;
       SLP(4);
-      auto contrib0_ = mv - affine * fx4;
-      auto contrib0 = contrib0_;
+      auto contrib0 = copy(mv - affine * fx);
       for (int i = 0; i < 3; i++) {
         SLP(1);
         weight0 = w[i](0);
@@ -447,6 +444,7 @@ TC_TEST("simd_mpm") {
   TC_TIME(initialize_data());
 
   TC_P(taichi::PID::get_pid());
+  while (1)
   TC_TIME(p2g());
 
   auto tolerance = 1e-4_f * std::sqrt((real)n_particles);

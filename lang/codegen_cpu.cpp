@@ -153,8 +153,8 @@ class IRCodeGen : public IRVisitor {
   void visit(LocalStoreStmt *stmt) {
     auto mask = stmt->parent->mask();
     if (mask) {
-      emit("{} = select({}, {}, {});", stmt->ptr->raw_name(),
-           mask->raw_name(), stmt->data->raw_name(), stmt->ptr->raw_name());
+      emit("{} = select({}, {}, {});", stmt->ptr->raw_name(), mask->raw_name(),
+           stmt->data->raw_name(), stmt->ptr->raw_name());
     } else {
       TC_P(stmt->ptr);
       TC_P(stmt->data);
@@ -244,12 +244,13 @@ void CPUCodeGen::codegen(Kernel &kernel) {
     irpass::print(ir);
   }
   irpass::loop_vectorize(ir);
-  if (prog->config.print_ir) {
+  if (prog->config.print_ir)
     irpass::print(ir);
-  }
   if (prog->config.max_vector_width < 16) {
     irpass::vector_split(ir, prog->config.max_vector_width);
   }
+  if (prog->config.print_ir)
+    irpass::print(ir);
   IRCodeGen::run(this, ir);
 
   {

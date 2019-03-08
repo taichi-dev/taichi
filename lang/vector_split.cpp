@@ -67,7 +67,7 @@ class BasicBlockVectorSplit : public IRVisitor {
           modified = true;
         }
       }
-      if (modified) {
+      if (!modified) {
         break;
       }
     }

@@ -560,16 +560,18 @@ TC_TEST("mixed_simd2") {
 }
 
 // reduce(vec_a<n> ** 2 - vec_b<n> ** 2) * vec_c<2n>
-TC_TEST("mixed_simd3") {
-  for (auto vec_size : {4}) {
+TC_TEST("mixed_simd3_slp") {
+  for (auto vec_size : {4, 8, 16}) {
     // why vec_size = 16 fails??
     Program prog;
+    prog.config.max_vector_width = 8;
+    prog.config.print_ir = true;
 
     Vector a(DataType::f32, vec_size), b(DataType::f32, vec_size),
         c(DataType::f32, vec_size * 2);
     Global(sum, f32);
 
-    int n = 8;
+    int n = 64;
 
     auto ind = Index(0);
 

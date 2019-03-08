@@ -100,9 +100,20 @@ class BasicBlockVectorSplit : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) {
-    for (int i = 0; i < current_split_factor; i++)
-      current_split[i] = Stmt::make<LocalLoadStmt>(
-          stmt->ptr.slice(lane_start(i), lane_end(i)));
+    for (int i = 0; i < current_split_factor; i++) {
+      LaneAttribute<LocalAddress> ptr;
+      ptr.resize(max_width);
+      for (int j = 0; j < max_width; j++) {
+        LocalAddress addr(stmt->ptr[lane_start(i) + j]);
+        if (origin2split.find(addr.var) == origin2split.end()) {
+          ptr[j] = addr;
+        } else {
+          ptr[j].var = lookup(addr.var, addr.offset / max_width);
+          ptr[j].offset = addr.offset % max_width;
+        }
+      }
+      current_split[i] = Stmt::make<LocalLoadStmt>(ptr);
+    }
   }
 
   void visit(LocalStoreStmt *stmt) {

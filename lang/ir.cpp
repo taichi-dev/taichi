@@ -20,16 +20,11 @@ IRBuilder::ScopeGuard IRBuilder::create_scope(std::unique_ptr<Block> &list) {
 }
 
 void Expr::operator=(const Expr &o) {
-  if (this->expr == nullptr) {
+  if (expr == nullptr || const_value) {
     // create an anonymous local variable
     auto id = Identifier();
     expr = std::make_shared<IdExpression>(id);
     declare_var(*this);
-    /*
-    auto stmt = std::make_unique<FrontendTmpValStmt>(o);
-    expr = std::make_shared<TmpValExpression>(stmt.get());
-    current_ast_builder().insert(std::move(stmt));
-    */
   }
   current_ast_builder().insert(
       std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
@@ -40,15 +35,15 @@ FrontendContext::FrontendContext() {
   current_builder = std::make_unique<IRBuilder>(root_node.get());
 }
 
-Expr::Expr(int32 x) {
+Expr::Expr(int32 x) : Expr() {
   expr = std::make_shared<ConstExpression>(x);
 }
 
-Expr::Expr(float32 x) {
+Expr::Expr(float32 x) : Expr() {
   expr = std::make_shared<ConstExpression>(x);
 }
 
-Expr::Expr(Identifier id) {
+Expr::Expr(Identifier id) : Expr() {
   expr = std::make_shared<IdExpression>(id);
 }
 

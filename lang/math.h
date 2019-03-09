@@ -341,4 +341,13 @@ inline Matrix cross(const Matrix &a, const Matrix &b) {
   return c;
 }
 
+inline Matrix &Const(Matrix &o) {
+  for (int i = 0; i < o.n; i++) {
+    for (int j = 0; j < o.m; j++) {
+      o(i, j).const_value = true;
+    }
+  }
+  return o;
+}
+
 TLANG_NAMESPACE_END

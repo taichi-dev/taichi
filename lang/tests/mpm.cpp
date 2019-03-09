@@ -270,6 +270,7 @@ T copy(const T &t) {
 }
 
 TC_TEST("simd_mpm") {
+  return;
   initialize_benchmark();
   int n_particles = 4 * 1024 * 1024;
   MPMContext context(n_particles);
@@ -278,7 +279,7 @@ TC_TEST("simd_mpm") {
 
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::x86_64);
-  prog.config.max_vector_width = 4;
+  // prog.config.max_vector_width = 4;
   prog.config.print_ir = true;
   prog.config.gcc_version = -2;
   prog.config.force_vectorized_global_load = true;
@@ -308,7 +309,8 @@ TC_TEST("simd_mpm") {
 
   auto p2g = kernel([&]() {
     Declare(p_i);
-    Vectorize(4);
+#define Const(x) x
+    // Vectorize(4);
     For(p_i, 0, n_particles, [&]() {
       // Vector
       auto mass = context.mass;
@@ -372,9 +374,9 @@ TC_TEST("simd_mpm") {
       Vector mv_ = mass * copy(v4);
       auto mv = mv_;
 
-      Local(weight0) = 0.0_f;
-      Local(weight1) = 0.0_f;
-      Local(weight2) = 0.0_f;
+      Declare(weight0);
+      Declare(weight1);
+      Declare(weight2);
 
       int slp = 4;
 
@@ -382,30 +384,31 @@ TC_TEST("simd_mpm") {
       auto contrib0 = copy(mv - affine * fx);
       for (int i = 0; i < 3; i++) {
         SLP(1);
-        weight0 = w[i](0);
+        Const(weight0) = w[i](0);
         SLP(slp);
         Matrix contrib1 = contrib0;
         for (int j = 0; j < 3; j++) {
           SLP(1);
-          weight1 = weight0 * w[j](1);
+          Const(weight1) = weight0 * w[j](1);
           SLP(slp);
           Matrix contrib2 = contrib1;
           for (int k = 0; k < 3; k++) {
             SLP(1);
-            weight2 = weight1 * w[k](2);
+            Const(weight2) = weight1 * w[k](2);
             SLP(slp);
             grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
                 weight2 * contrib2;
-            contrib2 += affine.col(2);
+            Const(contrib2) = contrib2 + affine.col(2);
           }
           SLP(slp);
-          contrib1 += affine.col(1);
+          Const(contrib1) = contrib1 + affine.col(1);
         }
         SLP(slp);
-        contrib0 += affine.col(0);
+        Const(contrib0) = contrib0 + affine.col(0);
       }
     });
   });
+#undef Const
 
   auto initialize_data = [&] {
     tbb::parallel_for(0, n_particles, [&](int p) {

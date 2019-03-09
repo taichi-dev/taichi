@@ -538,30 +538,35 @@ class Expression {
 class Expr {
  public:
   std::shared_ptr<Expression> expr;
+  bool const_value;
 
   Expr() {
+    const_value = false;
   }
 
   Expr(int32 x);
 
   Expr(float32 x);
 
-  Expr(std::shared_ptr<Expression> expr) : expr(expr) {
+  Expr(std::shared_ptr<Expression> expr) : Expr() {
+    this->expr = expr;
   }
+
+  Expr(const Expr &o) : Expr() {
+    set(o);
+    const_value = o.const_value;
+  }
+
+  Expr(Expr &&o) : Expr() {
+    set(o);
+    const_value = o.const_value;
+  }
+
+  Expr(Identifier id);
 
   void set(const Expr &o) {
     expr = o.expr;
   }
-
-  Expr(const Expr &o) {
-    set(o);
-  }
-
-  Expr(Expr &&o) {
-    set(o);
-  }
-
-  Expr(Identifier id);
 
   Expression *operator->() {
     return expr.get();
@@ -600,6 +605,11 @@ class Expr {
   void operator*=(const Expr &o);
   void operator/=(const Expr &o);
 };
+
+inline Expr &Const(Expr &o) {
+  o.const_value = true;
+  return o;
+}
 
 class ExpressionGroup {
  public:

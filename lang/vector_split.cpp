@@ -74,6 +74,9 @@ class BasicBlockVectorSplit : public IRVisitor {
         }
       }
     } else {
+      for (int i = 0; i < (int)splits.size(); i++) {
+        TC_P(splits[i].size());
+      }
       for (int j = 0;; j++) {
         bool modified = false;
         for (int i = 0; i < (int)splits.size(); i++) {
@@ -98,7 +101,7 @@ class BasicBlockVectorSplit : public IRVisitor {
                 origin2split[old_var][stmt->ptr[l].offset / max_width];
             stmt->ptr[l].var = new_var;
             stmt->ptr[l].offset %= max_width;
-            TC_WARN("replaced...");
+            // TC_WARN("replaced...");
           }
         }
       }
@@ -149,7 +152,6 @@ class BasicBlockVectorSplit : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) {
-    TC_P(stmt->id);
     for (int i = 0; i < current_split_factor; i++) {
       LaneAttribute<LocalAddress> ptr;
       ptr.resize(max_width);

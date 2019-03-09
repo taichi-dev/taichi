@@ -25,6 +25,7 @@ class FrontendPrintStmt;
 class FrontendWhileStmt;
 class FrontendAllocaStmt;
 class FrontendAssignStmt;
+class FrontendEvalStmt;
 
 // Midend statement
 
@@ -266,11 +267,12 @@ class IRVisitor {
   DEFINE_VISIT(Block);
 
   DEFINE_VISIT(FrontendIfStmt);
-  DEFINE_VISIT(FrontendAssignStmt);
   DEFINE_VISIT(FrontendAllocaStmt);
   DEFINE_VISIT(FrontendPrintStmt);
   DEFINE_VISIT(FrontendForStmt);
   DEFINE_VISIT(FrontendWhileStmt);
+  DEFINE_VISIT(FrontendAssignStmt);
+  DEFINE_VISIT(FrontendEvalStmt);
 
   DEFINE_VISIT(AllocaStmt);
   DEFINE_VISIT(BinaryOpStmt);
@@ -519,20 +521,27 @@ class Statement : public IRNode {
   static pStmt make(Args &&... args) {
     return std::make_unique<T>(std::forward<Args>(args)...);
   }
+
 };
 
 // always a tree - used as rvalues
 class Expression {
  public:
   Stmt *stmt;
+
   Expression() {
     stmt = nullptr;
   }
 
   virtual std::string serialize() = 0;
+
   virtual void flatten(VecStatement &ret) {
     TC_NOT_IMPLEMENTED;
   };
+
+  virtual bool is_lvalue() const {
+    return false;
+  }
 };
 
 class Expr {
@@ -604,6 +613,9 @@ class Expr {
   void operator-=(const Expr &o);
   void operator*=(const Expr &o);
   void operator/=(const Expr &o);
+
+  Expr eval() const;
+
 };
 
 inline Expr &Const(Expr &o) {
@@ -861,6 +873,10 @@ class GlobalPtrExpression : public Expression {
     ret.push_back(std::make_unique<GlobalPtrStmt>(
         var.cast<GlobalVariableExpression>()->snode, index_stmts));
     stmt = ret.back().get();
+  }
+
+  bool is_lvalue() const override {
+    return true;
   }
 };
 
@@ -1157,6 +1173,17 @@ class FrontendPrintStmt : public Statement {
   DEFINE_ACCEPT
 };
 
+class FrontendEvalStmt : public Statement {
+ public:
+  Expr expr;
+  Expr eval_expr;
+
+  FrontendEvalStmt(Expr expr) : expr(load_if_ptr(expr)) {
+  }
+
+  DEFINE_ACCEPT
+};
+
 class PrintStmt : public Statement {
  public:
   Statement *stmt;
@@ -1310,6 +1337,23 @@ inline void Print_(const Expr &a, std::string str) {
 // for current ast
 extern Block *current_block;
 
+class EvalExpression : public Expression {
+ public:
+  Stmt *stmt_ptr;
+  int stmt_id;
+  EvalExpression(Stmt *stmt) : stmt_ptr(stmt), stmt_id(stmt_ptr->id) {
+    // cache stmt->id since it may be released later
+  }
+
+  std::string serialize() override {
+    return fmt::format("%{}", stmt_id);
+  }
+
+  void flatten(VecStatement &ret) override {
+    stmt = stmt_ptr;
+  }
+};
+
 class IdExpression : public Expression {
  public:
   Identifier id;
@@ -1326,6 +1370,10 @@ class IdExpression : public Expression {
     ret.push_back(std::make_unique<LocalLoadStmt>(
         LocalAddress(current_block->lookup_var(id), 0)));
     stmt = ret.back().get();
+  }
+
+  bool is_lvalue() const override {
+    return true;
   }
 };
 
@@ -1500,6 +1548,11 @@ class While {
 template <typename T>
 Expr Rand() {
   return Expr(std::make_shared<RandExpression>(get_data_type<T>()));
+}
+
+template <typename T>
+T Eval(const T &t) {
+  return t.eval();
 }
 
 TLANG_NAMESPACE_END

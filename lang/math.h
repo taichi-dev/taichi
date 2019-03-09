@@ -17,6 +17,13 @@ struct Matrix {
     return n * m >= 1;
   }
 
+  void initialize(int n, int m) {
+    this->n = n;
+    this->m = m;
+    TC_ASSERT(n * m >= 1);
+    entries.resize(n * m);
+  }
+
   explicit Matrix(int n, int m = 1) : n(n), m(m) {
     TC_ASSERT(n * m >= 1);
     entries.resize(n * m);
@@ -164,6 +171,14 @@ struct Matrix {
     Matrix ret(n, 1);
     for (int i = 0; i < n; i++) {
       ret(i, 0) = (*this)(i, j);
+    }
+    return ret;
+  }
+
+  Matrix eval() const {
+    Matrix ret(n, m);
+    for (int i = 0; i < (int)entries.size(); i++) {
+      ret.entries[i] = entries[i].eval();
     }
     return ret;
   }

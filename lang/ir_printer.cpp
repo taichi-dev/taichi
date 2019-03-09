@@ -96,6 +96,10 @@ class IRPrinter : public IRVisitor {
     print("print {}, {}", print_stmt->str, print_stmt->expr.serialize());
   }
 
+  void visit(FrontendEvalStmt *stmt) {
+    print("{} = eval {}", stmt->name(), stmt->expr.serialize());
+  }
+
   void visit(PrintStmt *print_stmt) {
     print("{}print {}, {}", print_stmt->type_hint(), print_stmt->str,
           print_stmt->stmt->name());

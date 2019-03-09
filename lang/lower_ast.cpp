@@ -150,6 +150,16 @@ class LowerAST : public IRVisitor {
     for_stmt->body->accept(this);
   }
 
+  void visit(FrontendEvalStmt *stmt) {
+    // expand rhs
+    auto expr = stmt->expr;
+    VecStatement flattened;
+    expr->flatten(flattened);
+    stmt->parent->replace_with(stmt, flattened);
+    stmt->eval_expr.cast<EvalExpression>()->stmt_ptr = stmt->expr->stmt;
+    throw IRModifiedException();
+  }
+
   void visit(FrontendAssignStmt *assign) {
     // expand rhs
     auto expr = assign->rhs;

@@ -263,13 +263,8 @@ TC_TEST("simd_mpm_intrinsics") {
 
 // TODO: shuffled inputs?
 
-template <typename T>
-T copy(const T &t) {
-  auto t_ = t;
-  return t_;
-}
-
 TC_TEST("simd_mpm") {
+  return;
   initialize_benchmark();
   int n_particles = 4 * 1024 * 1024;
   MPMContext context(n_particles);
@@ -308,7 +303,7 @@ TC_TEST("simd_mpm") {
 
   auto p2g = kernel([&]() {
     Declare(p_i);
-    Vectorize(4);
+    // Vectorize(4);
     For(p_i, 0, n_particles, [&]() {
       SLP(1);
       auto mass = context.mass;
@@ -352,7 +347,7 @@ TC_TEST("simd_mpm") {
         }
       }
 
-      stress = (-4 * inv_dx * inv_dx * dt * vol) * stress;
+      stress = Eval((-4 * inv_dx * inv_dx * dt * vol) * stress);
 
       Matrix affine_ = dx * (stress + mass * g_C[p_i]);
       Matrix affine(4, 3);
@@ -362,34 +357,34 @@ TC_TEST("simd_mpm") {
         }
         affine(dim, i) = real(0);
       }
-      affine = copy(affine);
+      affine = Eval(affine);
 
       constexpr int T = 3;
       TC_WARN_IF(T != 3, "T is not 3");
 
       Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
                            base_coord(1) * (n_grid) + base_coord(2);
-      Vector mv_ = mass * copy(v4);
+      Vector mv_ = mass * Eval(v4);
       auto mv = mv_;
 
       int slp = 4;
 
       SLP(slp);
-      auto contrib = copy(mv - affine * fx);
+      auto contrib = Eval(mv - affine * fx);
       for (int i = 0; i < 3; i++) {
         SLP(1);
-        auto weight0 = w[i](0);
-        auto contrib0 = contrib + real(i) * affine.col(0);
+        auto weight0 = Eval(w[i](0));
+        auto contrib0 = Eval(contrib + real(i) * affine.col(0));
         for (int j = 0; j < 3; j++) {
           SLP(slp);
-          auto contrib1 = contrib0 + real(j) * affine.col(1);
+          auto contrib1 = Eval(contrib0 + real(j) * affine.col(1));
           SLP(1);
-          auto weight1 = weight0 * w[j](1);
+          auto weight1 = Eval(weight0 * w[j](1));
           for (int k = 0; k < 3; k++) {
             SLP(slp);
-            auto contrib2 = contrib1 + real(k) * affine.col(2);
+            auto contrib2 = Eval(contrib1 + real(k) * affine.col(2));
             SLP(1);
-            auto weight2 = weight1 * w[k](2);
+            auto weight2 = Eval(weight1 * w[k](2));
             SLP(slp);
             grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
                 weight2 * contrib2;

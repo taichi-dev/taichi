@@ -20,14 +20,12 @@ IRBuilder::ScopeGuard IRBuilder::create_scope(std::unique_ptr<Block> &list) {
 }
 
 void Expr::operator=(const Expr &o) {
-  if (expr == nullptr || const_value) {
-    // create an anonymous local variable
-    auto id = Identifier();
-    expr = std::make_shared<IdExpression>(id);
-    declare_var(*this);
+  if (expr == nullptr || !expr->is_lvalue()) {
+    expr = o.expr;
+  } else {
+    current_ast_builder().insert(
+        std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
   }
-  current_ast_builder().insert(
-      std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
 }
 
 FrontendContext::FrontendContext() {
@@ -45,6 +43,17 @@ Expr::Expr(float32 x) : Expr() {
 
 Expr::Expr(Identifier id) : Expr() {
   expr = std::make_shared<IdExpression>(id);
+}
+
+Expr Expr::eval() const {
+  TC_ASSERT(expr != nullptr);
+  auto eval_stmt = Stmt::make<FrontendEvalStmt>(*this);
+  auto eval_expr = Expr(std::make_shared<EvalExpression>(eval_stmt.get()));
+  eval_stmt->as<FrontendEvalStmt>()->eval_expr.set(eval_expr);
+  // needed in lower_ast to replace the statement itself with the
+  // lowered statement
+  current_ast_builder().insert(std::move(eval_stmt));
+  return eval_expr;
 }
 
 void Expr::operator+=(const Expr &o) {
@@ -79,7 +88,7 @@ IRNode *Stmt::get_ir_root() {
 
 FrontendAssignStmt::FrontendAssignStmt(Expr lhs, Expr rhs)
     : lhs(lhs), rhs(rhs) {
-  TC_ASSERT(lhs.is<IdExpression>() || lhs.is<GlobalPtrExpression>());
+  TC_ASSERT(lhs->is_lvalue());
 }
 
 IRNode *FrontendContext::root() {

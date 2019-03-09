@@ -308,7 +308,7 @@ TC_TEST("simd_mpm") {
 
   auto p2g = kernel([&]() {
     Declare(p_i);
-    //Vectorize(4);
+    // Vectorize(4);
     For(p_i, 0, n_particles, [&]() {
       // Vector
       auto mass = context.mass;
@@ -388,15 +388,14 @@ TC_TEST("simd_mpm") {
         for (int j = 0; j < 3; j++) {
           SLP(1);
           Const(weight1) = weight0 * w[j](1);
-          SLP(slp);
-          Matrix contrib2 = contrib1;
           for (int k = 0; k < 3; k++) {
+            SLP(slp);
+            Matrix contrib2 = contrib1 + real(k) * affine.col(2);
             SLP(1);
             Const(weight2) = weight1 * w[k](2);
             SLP(slp);
             grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
                 weight2 * contrib2;
-            Const(contrib2) = contrib2 + affine.col(2);
           }
           SLP(slp);
           Const(contrib1) = contrib1 + affine.col(1);
@@ -436,6 +435,8 @@ TC_TEST("simd_mpm") {
       }
     }
   }
+  for (int i = 0; i < 10; i++)
+    TC_TIME(p2g());
 };
 
 TLANG_NAMESPACE_END

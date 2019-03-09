@@ -36,27 +36,6 @@ TC_TEST("compiler_linalg") {
   func();
 };
 
-TC_TEST("const") {
-  CoreState::set_trigger_gdb_when_crash(true);
-  int n = 128;
-  Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
-
-  Global(a, i32);
-  auto i = Index(0);
-  layout([&]() { root.fixed(i, n).place(a); });
-
-  auto func = kernel([&]() {
-    Declare(t);
-    Const(t) = 14;
-    Print(t);
-    Const(t) = 42;
-    Print(t);
-  });
-
-  func();
-};
-
 TC_TEST("compiler_basics") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;

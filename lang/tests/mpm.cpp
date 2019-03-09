@@ -278,7 +278,7 @@ TC_TEST("simd_mpm") {
 
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::x86_64);
-  // prog.config.max_vector_width = 4;
+  prog.config.max_vector_width = 4;
   prog.config.print_ir = true;
   prog.config.gcc_version = -2;
   prog.config.force_vectorized_global_load = true;
@@ -308,9 +308,9 @@ TC_TEST("simd_mpm") {
 
   auto p2g = kernel([&]() {
     Declare(p_i);
-    // Vectorize(4);
+    Vectorize(4);
     For(p_i, 0, n_particles, [&]() {
-      // Vector
+      SLP(1);
       auto mass = context.mass;
       auto vol = context.vol;
       auto dx = context.dx;
@@ -372,36 +372,29 @@ TC_TEST("simd_mpm") {
       Vector mv_ = mass * copy(v4);
       auto mv = mv_;
 
-      Local(weight0) = 0.0_f;
-      Local(weight1) = 0.0_f;
-      Local(weight2) = 0.0_f;
-
       int slp = 4;
 
       SLP(slp);
-      auto contrib0 = copy(mv - affine * fx);
+      auto contrib = copy(mv - affine * fx);
       for (int i = 0; i < 3; i++) {
         SLP(1);
-        Const(weight0) = w[i](0);
-        SLP(slp);
-        Matrix contrib1 = contrib0;
+        auto weight0 = w[i](0);
+        auto contrib0 = contrib + real(i) * affine.col(0);
         for (int j = 0; j < 3; j++) {
+          SLP(slp);
+          auto contrib1 = contrib0 + real(j) * affine.col(1);
           SLP(1);
-          Const(weight1) = weight0 * w[j](1);
+          auto weight1 = weight0 * w[j](1);
           for (int k = 0; k < 3; k++) {
             SLP(slp);
-            Matrix contrib2 = contrib1 + real(k) * affine.col(2);
+            auto contrib2 = contrib1 + real(k) * affine.col(2);
             SLP(1);
-            Const(weight2) = weight1 * w[k](2);
+            auto weight2 = weight1 * w[k](2);
             SLP(slp);
             grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
                 weight2 * contrib2;
           }
-          SLP(slp);
-          Const(contrib1) = contrib1 + affine.col(1);
         }
-        SLP(slp);
-        Const(contrib0) = contrib0 + affine.col(0);
       }
     });
   });
@@ -435,7 +428,7 @@ TC_TEST("simd_mpm") {
       }
     }
   }
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < 100; i++)
     TC_TIME(p2g());
 };
 

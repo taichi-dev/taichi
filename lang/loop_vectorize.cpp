@@ -50,10 +50,12 @@ class LoopVectorize : public IRVisitor {
     int original_width = stmt->width();
     stmt->ret_type.width *= vectorize;
     stmt->elements.repeat(vectorize);
+    // TODO: this can be buggy
+    int stride = stmt->elements[original_width - 1].index + 1;
     if (stmt->elements[0].stmt->width() != 1) {
       for (int i = 0; i < vectorize; i++) {
         for (int j = 0; j < original_width; j++) {
-          stmt->elements[i * original_width + j].index += i * original_width;
+          stmt->elements[i * original_width + j].index += i * stride;
         }
       }
     }
@@ -65,10 +67,12 @@ class LoopVectorize : public IRVisitor {
     int original_width = stmt->width();
     stmt->ret_type.width *= vectorize;
     stmt->ptr.repeat(vectorize);
+    // TODO: this can be buggy
+    int stride = stmt->ptr[original_width - 1].offset + 1;
     if (stmt->ptr[0].var->width() != 1) {
       for (int i = 0; i < vectorize; i++) {
         for (int j = 0; j < original_width; j++) {
-          stmt->ptr[i * original_width + j].offset += i * original_width;
+          stmt->ptr[i * original_width + j].offset += i * stride;
         }
       }
     }

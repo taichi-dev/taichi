@@ -85,6 +85,14 @@ class BasicBlockSLP : public IRVisitor {
     update_type(stmt);
   }
 
+  void visit(UnaryOpStmt *stmt) override {
+    tmp_stmt = std::make_unique<UnaryOpStmt>(
+        dynamic_cast<UnaryOpStmt *>(building_pack[0])->op_type,
+        tmp_operands[0]);
+    tmp_stmt->as<UnaryOpStmt>()->cast_type = stmt->cast_type;
+    update_type(stmt);
+  }
+
   // merge tmp_operands into one statement
   void visit(BinaryOpStmt *stmt) override {
     tmp_stmt = std::make_unique<BinaryOpStmt>(

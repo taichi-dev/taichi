@@ -52,13 +52,15 @@ class BasicBlockVectorSplit : public IRVisitor {
         }
         splits.push_back(std::move(current_split));
       } else {
+        origin2split[stmt] = std::vector<Stmt *>(1, nullptr);
+        origin2split[stmt][0] = stmt;
         std::vector<pStmt> split;
         split.push_back(std::move(statements[i]));
         splits.push_back(std::move(split));
       }
     }
     block->statements.clear();
-    if (true) {
+    if (false) {
       for (int i = 0; i < (int)splits.size(); i++) {
         for (int j = 0;; j++) {
           bool modified = false;
@@ -147,6 +149,7 @@ class BasicBlockVectorSplit : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) {
+    TC_P(stmt->id);
     for (int i = 0; i < current_split_factor; i++) {
       LaneAttribute<LocalAddress> ptr;
       ptr.resize(max_width);
@@ -187,6 +190,13 @@ class BasicBlockVectorSplit : public IRVisitor {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] = Stmt::make<BinaryOpStmt>(
           stmt->op_type, lookup(stmt->lhs, i), lookup(stmt->rhs, i));
+    }
+  }
+
+  void visit(UnaryOpStmt *stmt) {
+    for (int i = 0; i < current_split_factor; i++) {
+      current_split[i] =
+          Stmt::make<UnaryOpStmt>(stmt->op_type, lookup(stmt->rhs, i));
     }
   }
 };

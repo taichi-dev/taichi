@@ -270,7 +270,6 @@ T copy(const T &t) {
 }
 
 TC_TEST("simd_mpm") {
-  return;
   initialize_benchmark();
   int n_particles = 4 * 1024 * 1024;
   MPMContext context(n_particles);
@@ -309,8 +308,7 @@ TC_TEST("simd_mpm") {
 
   auto p2g = kernel([&]() {
     Declare(p_i);
-#define Const(x) x
-    // Vectorize(4);
+    //Vectorize(4);
     For(p_i, 0, n_particles, [&]() {
       // Vector
       auto mass = context.mass;
@@ -374,9 +372,9 @@ TC_TEST("simd_mpm") {
       Vector mv_ = mass * copy(v4);
       auto mv = mv_;
 
-      Declare(weight0);
-      Declare(weight1);
-      Declare(weight2);
+      Local(weight0) = 0.0_f;
+      Local(weight1) = 0.0_f;
+      Local(weight2) = 0.0_f;
 
       int slp = 4;
 
@@ -408,7 +406,6 @@ TC_TEST("simd_mpm") {
       }
     });
   });
-#undef Const
 
   auto initialize_data = [&] {
     tbb::parallel_for(0, n_particles, [&](int p) {

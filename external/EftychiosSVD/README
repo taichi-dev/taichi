@@ -1,0 +1,50 @@
+------------
+Revision Log
+------------
+
+Version 1.1:
+  * Adapted AVX comparison intrinsics to what icc expects in latest versions
+  * Changed Makefile to enable compilation with either g++ or icc
+
+-----------
+Description
+-----------
+
+A Makefile is provided. Due to the use of the AVX instruction set on some of
+the included benchmarks, the Intel C++ Composer (icc) version 12.X is used as
+the default and tested compiler. It is possible to use the g++ compiler instead
+for those versions of the benchmarks that are limited to Scalar or SSE-only
+implementationns.
+
+The executables built by this Makefile include:
+
+Singular_Value_Decomposition_Streaming_Test_XXX
+  where XXX=Scalar,SSE,AVX
+
+  Description: This benchmark initializes a large number of random matrices
+  (16M by default, statically set in code) normalized to unit Frobenius norm.
+  The Singular Value Decomposition is currently computed on this entire stream
+  of 3x3 matrices, using a Scalar implementation, or SSE/AVX versions using
+  explicit intrinsics.
+
+  The number of threads to be run concurrently is supplied as the sole
+  argument to these benchmarks.
+
+Singular_Value_Decomposition_Correctness_Test_XXX
+  where XXX=Scalar,SSE,AVX
+
+  Description: These benchmarks generate a random dataset, as the streaming
+  tests above, but also report a number of accuracy metrics, such as the
+  reconstruction error and the maximum off-diagonal magnitude of the resulting
+  near-diagonal factor.
+
+Singular_Value_Decomposition_Unit_Test_XXX
+  where XXX=SSE,AVX
+
+  Description: This is a debugging trace of the algorithm, run on a single 3x3
+  matrix. The scalar implementation is compared against the result of the
+  SSE/AVX vectorized implementation. Intermediate results of the decomposition
+  algorithm are reported, for both scalar and vector variants.
+
+  The command line argument is an integer seed, used to initialize the random
+  number generator used in creating the test matrix.

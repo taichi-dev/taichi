@@ -361,15 +361,12 @@ TC_TEST("simd_mpm") {
       constexpr int T = 1;
       TC_WARN_IF(T != 3, "T is not 3");
 
-      auto base_offset = Eval(n_grid * n_grid * base_coord(0) +
-                              n_grid * base_coord(1) + base_coord(2));
-
-      Vector mv = Eval(mass * v4);
+      auto base_offset = Eval(base_coord(1) + base_coord(2));
 
       SLP(slp);
-      auto contrib = Eval(mv - affine * fx);
+      auto contrib = affine * fx;
       SLP(1);
-      grid[base_offset + (0)] += contrib;
+      grid[base_offset+ 0] += contrib;
     });
   });
 

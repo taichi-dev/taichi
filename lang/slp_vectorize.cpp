@@ -214,21 +214,24 @@ class BasicBlockSLP : public IRVisitor {
     return ret;
   }
 
-  void replace(Stmt *old_stmt, Stmt *new_stmt, int offset) {
-    for (int i = 0; i < (int)block->statements.size(); i++) {
-      auto stmt = block->statements[i].get();
-      if (inside.find(stmt) != inside.end())
-        continue;  // this is a statement being SLP vectorized..
-      for (auto ope : stmt->operands) {
-        if (*ope == old_stmt) {
-          TC_ASSERT(old_stmt->width() == 1);
-          auto shuffle =
-              Stmt::make<ElementShuffleStmt>(VectorElement(new_stmt, 0));
-          *ope = shuffle.get();
-          shuffles.push_back(std::move(shuffle));
+  void replace(Stmt *old_stmt, Stmt *new_stmt, int offset){
+      TC_NOT_IMPLEMENTED
+      /*
+      for (int i = 0; i < (int)block->statements.size(); i++) {
+        auto stmt = block->statements[i].get();
+        if (inside.find(stmt) != inside.end())
+          continue;  // this is a statement being SLP vectorized..
+        for (auto ope : stmt->operands) {
+          if (*ope == old_stmt) {
+            TC_ASSERT(old_stmt->width() == 1);
+            auto shuffle =
+                Stmt::make<ElementShuffleStmt>(VectorElement(new_stmt, 0));
+            *ope = shuffle.get();
+            shuffles.push_back(std::move(shuffle));
+          }
         }
       }
-    }
+      */
   }
 
   // replace with BBlock with SLP'ed block
@@ -418,6 +421,8 @@ class SLPVectorize : public IRVisitor {
           if (rec.find(*ope) != rec.end()) {
             auto shuffle = Stmt::make<ElementShuffleStmt>(
                 VectorElement(rec[*ope].first, rec[*ope].second));
+            TC_INFO("Shuffle {}: replaced {} with {}", shuffle->id, (*ope)->id,
+                    rec[*ope].first->id);
             *ope = shuffle.get();
             shuffles.push_back(std::move(shuffle));
           }
@@ -426,6 +431,7 @@ class SLPVectorize : public IRVisitor {
     }
 
     for (int i = 0; i < (int)shuffles.size(); i++) {
+      TC_P(shuffles[i]->id);
       block->insert(std::move(shuffles[i]), first_pragma_slp_location + i + 1);
     }
     second_pragma_slp_location += (int)shuffles.size();

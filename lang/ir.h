@@ -521,7 +521,6 @@ class Statement : public IRNode {
   static pStmt make(Args &&... args) {
     return std::make_unique<T>(std::forward<Args>(args)...);
   }
-
 };
 
 // always a tree - used as rvalues
@@ -615,7 +614,6 @@ class Expr {
   void operator/=(const Expr &o);
 
   Expr eval() const;
-
 };
 
 inline Expr &Const(Expr &o) {
@@ -933,7 +931,7 @@ inline Expr cast(Expr input) {
 class Block : public IRNode {
  public:
   Block *parent;
-  std::vector<std::unique_ptr<Statement>> statements;
+  std::vector<std::unique_ptr<Statement>> statements, trash_bin;
   std::map<Ident, Stmt *> local_var_alloca;
   Stmt *mask_var;
   Stmt *inner_loop_variable;
@@ -963,6 +961,10 @@ class Block : public IRNode {
   }
 
   void erase(int location) {
+//    trash_bin.push_back(std::move(statements[location]));  // do not delete the
+                                                           // stmt, otherwise
+                                                           // print_ir will not
+                                                           // function properly
     statements.erase(statements.begin() + location);
   }
 

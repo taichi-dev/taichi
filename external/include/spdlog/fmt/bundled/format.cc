@@ -70,6 +70,10 @@
 # pragma warning(disable: 4996)
 #endif
 
+#if defined(__linux__)
+#include <signal.h>
+#endif
+
 // Dummy implementations of strerror_r and strerror_s called if corresponding
 // system functions are not available.
 static inline fmt::internal::Null<> strerror_r(int, char *, ...) {
@@ -451,6 +455,9 @@ FMT_FUNC internal::Arg internal::FormatterBase::do_get_arg(
   internal::Arg arg = args_[arg_index];
   switch (arg.type) {
   case internal::Arg::NONE:
+    printf("fmtlib error: argument index out of range! Triggering SIGFPE..\n");
+    raise(SIGFPE);
+    printf("This line should be unreachable");
     error = "argument index out of range";
     break;
   case internal::Arg::NAMED_ARG:

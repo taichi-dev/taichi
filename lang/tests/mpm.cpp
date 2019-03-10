@@ -322,21 +322,16 @@ TC_TEST("simd_mpm") {
       Matrix stress(dim, dim);
       for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
-          if (i == j) {
-            stress(i, j) = J - real(1);
-          } else {
-            stress(i, j) = real(0);
-          }
+          stress(i, j) = real(0);
         }
       }
 
       Matrix affine_ = (stress + mass * g_C[p_i]);
       Matrix affine(4, 3);
-      for (int i = 0; i < dim; i++) {
+      for (int i = 0; i < dim + 1; i++) {
         for (int j = 0; j < dim; j++) {
-          affine(i, j) = affine_(i, j);
+          affine(i, j) = real(0);
         }
-        affine(dim, i) = real(0);
       }
 
       constexpr int T = 1;
@@ -347,7 +342,7 @@ TC_TEST("simd_mpm") {
       SLP(slp);
       auto contrib = affine * fx;
       SLP(1);
-      grid[base_offset+ 0] += contrib;
+      grid[base_offset + 0] += contrib;
     });
   });
 

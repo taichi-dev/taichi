@@ -11,6 +11,7 @@ class BasicBlockVectorSplit : public IRVisitor {
 
   int current_split_factor;
   std::vector<pStmt> current_split;
+  bool need_split;
   std::unordered_map<Stmt *, std::vector<Stmt *>> origin2split;
 
   BasicBlockVectorSplit(Block *block, int max_width)
@@ -29,10 +30,14 @@ class BasicBlockVectorSplit : public IRVisitor {
   }
 
   Stmt *lookup(Stmt *old, int index) {
-    TC_ASSERT(origin2split.find(old) != origin2split.end());
-    TC_ASSERT(0 <= index);
-    TC_ASSERT(index < origin2split[old].size());
-    return origin2split[old][index];
+    if (origin2split.find(old) == origin2split.end()) {
+      TC_WARN("VectorSplitter looking for statement outside current block?");
+      return old;
+    } else {
+      TC_ASSERT(0 <= index);
+      TC_ASSERT(index < origin2split[old].size());
+      return origin2split[old][index];
+    }
   }
 
   void run() {
@@ -43,6 +48,7 @@ class BasicBlockVectorSplit : public IRVisitor {
         TC_ASSERT(stmt->width() % max_width == 0);
         current_split_factor = stmt->width() / max_width;
         current_split.resize(current_split_factor);
+        need_split = true;
         stmt->accept(this);
         origin2split[stmt] = std::vector<Stmt *>(current_split_factor, nullptr);
         for (int j = 0; j < current_split_factor; j++) {
@@ -51,11 +57,18 @@ class BasicBlockVectorSplit : public IRVisitor {
           origin2split[stmt][j] = current_split[j].get();
         }
         splits.push_back(std::move(current_split));
-      } else {
+      } else {  // recreate a statement anyway since the original one may be
+                // pointing to unknown statements
+        current_split_factor = 1;
+        current_split.resize(current_split_factor);
+        need_split = false;
+        stmt->accept(this);
         origin2split[stmt] = std::vector<Stmt *>(1, nullptr);
-        origin2split[stmt][0] = stmt;
+        current_split[0]->width() = stmt->width();
+        current_split[0]->element_type() = stmt->element_type();
+        origin2split[stmt][0] = current_split[0].get();
         std::vector<pStmt> split;
-        split.push_back(std::move(statements[i]));
+        split.push_back(std::move(current_split[0]));
         splits.push_back(std::move(split));
       }
     }
@@ -110,33 +123,35 @@ class BasicBlockVectorSplit : public IRVisitor {
   void visit(GlobalPtrStmt *stmt) {
     for (int i = 0; i < current_split_factor; i++) {
       std::vector<Stmt *> indices;
-      for (int j = 0; j < stmt->indices.size(); j++) {
+      for (int j = 0; j < (int)stmt->indices.size(); j++) {
         indices.push_back(lookup(stmt->indices[j], i));
       }
       current_split[i] = Stmt::make<GlobalPtrStmt>(
-          stmt->snode.slice(lane_start(i), lane_end(i)), indices);
+          stmt->snode.slice(lane_start(i),
+                            need_split ? lane_end(i) : stmt->width()),
+          indices);
     }
   }
 
   void visit(ConstStmt *stmt) {
     for (int i = 0; i < current_split_factor; i++) {
-      current_split[i] =
-          Stmt::make<ConstStmt>(stmt->val.slice(lane_start(i), lane_end(i)));
+      current_split[i] = Stmt::make<ConstStmt>(stmt->val.slice(
+          lane_start(i), need_split ? lane_end(i) : stmt->width()));
     }
   }
 
   void visit(AllocaStmt *stmt) {
     for (int i = 0; i < current_split_factor; i++)
-      current_split[i] =
-          Stmt::make<AllocaStmt>(max_width, stmt->element_type());
+      current_split[i] = Stmt::make<AllocaStmt>(
+          need_split ? max_width : stmt->width(), stmt->element_type());
   }
 
   void visit(ElementShuffleStmt *stmt) {
-    TC_P("here");
     for (int i = 0; i < current_split_factor; i++) {
       LaneAttribute<VectorElement> ptr;
-      ptr.resize(max_width);
-      for (int j = 0; j < max_width; j++) {
+      int new_width = need_split ? max_width : stmt->width();
+      ptr.resize(new_width);
+      for (int j = 0; j < new_width; j++) {
         VectorElement addr(stmt->elements[lane_start(i) + j]);
         if (origin2split.find(addr.stmt) == origin2split.end()) {
           ptr[j] = addr;
@@ -152,8 +167,9 @@ class BasicBlockVectorSplit : public IRVisitor {
   void visit(LocalLoadStmt *stmt) {
     for (int i = 0; i < current_split_factor; i++) {
       LaneAttribute<LocalAddress> ptr;
-      ptr.resize(max_width);
-      for (int j = 0; j < max_width; j++) {
+      int new_width = need_split ? max_width : stmt->width();
+      ptr.resize(new_width);
+      for (int j = 0; j < new_width; j++) {
         LocalAddress addr(stmt->ptr[lane_start(i) + j]);
         if (origin2split.find(addr.var) == origin2split.end()) {
           ptr[j] = addr;
@@ -197,6 +213,27 @@ class BasicBlockVectorSplit : public IRVisitor {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] =
           Stmt::make<UnaryOpStmt>(stmt->op_type, lookup(stmt->rhs, i));
+    }
+  }
+
+  void visit(PrintStmt *stmt) {
+    for (int i = 0; i < current_split_factor; i++) {
+      current_split[i] =
+          Stmt::make<PrintStmt>(lookup(stmt->stmt, i), stmt->str);
+    }
+  }
+
+  void visit(RandStmt *stmt) {
+    for (int i = 0; i < current_split_factor; i++) {
+      current_split[i] = Stmt::make<RandStmt>(stmt->element_type());
+    }
+  }
+
+  void visit(WhileControlStmt *stmt) {
+    TC_ASSERT(need_split == false);
+    for (int i = 0; i < current_split_factor; i++) {
+      current_split[i] = Stmt::make<WhileControlStmt>(lookup(stmt->mask, i),
+                                                      lookup(stmt->cond, i));
     }
   }
 };

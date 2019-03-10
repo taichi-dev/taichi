@@ -161,7 +161,7 @@ struct Matrix {
   Matrix cast_elements() const {
     Matrix ret(this->n, this->m);
     for (int i = 0; i < n * m; i++) {
-      ret.entries[i] = cast<T>(entries[i]);
+      ret.entries[i].set(cast<T>(entries[i]));
     }
     return ret;
   }

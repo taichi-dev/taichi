@@ -264,7 +264,6 @@ TC_TEST("simd_mpm_intrinsics") {
 // TODO: shuffled inputs?
 
 TC_TEST("simd_mpm") {
-  return;
   initialize_benchmark();
   int n_particles = 4 * 1024 * 1024;
   MPMContext context(n_particles);
@@ -348,7 +347,7 @@ TC_TEST("simd_mpm") {
         }
       }
 
-      stress = Eval((-4 * inv_dx * inv_dx * dt * vol) * stress);
+      stress = Eval((-4.0_f * inv_dx * inv_dx * dt * vol) * stress);
 
       Matrix affine_ = dx * (stress + mass * g_C[p_i]);
       Matrix affine(4, 3);

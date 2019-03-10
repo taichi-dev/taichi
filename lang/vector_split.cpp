@@ -73,7 +73,7 @@ class BasicBlockVectorSplit : public IRVisitor {
       }
     }
     block->statements.clear();
-    if (true) {
+    if (false) {
       for (int i = 0; i < (int)splits.size(); i++) {
         for (int j = 0;; j++) {
           bool modified = false;
@@ -213,6 +213,8 @@ class BasicBlockVectorSplit : public IRVisitor {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] =
           Stmt::make<UnaryOpStmt>(stmt->op_type, lookup(stmt->rhs, i));
+      current_split[i]->as<UnaryOpStmt>()->cast_type =
+          stmt->as<UnaryOpStmt>()->cast_type;
     }
   }
 

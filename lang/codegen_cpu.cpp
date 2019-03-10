@@ -42,18 +42,18 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(BinaryOpStmt *bin) {
-    emit("const {} {} = {}({}, {});", bin->ret_data_type_name(),
+    emit("const {} {}({}({}, {}));", bin->ret_data_type_name(),
          bin->raw_name(), binary_type_name(bin->op_type), bin->lhs->raw_name(),
          bin->rhs->raw_name());
   }
 
   void visit(UnaryOpStmt *stmt) {
     if (stmt->op_type != UnaryType::cast) {
-      emit("const {} {} = {}({});", stmt->ret_data_type_name(),
+      emit("const {} {}({}({}));", stmt->ret_data_type_name(),
            stmt->raw_name(), unary_type_name(stmt->op_type),
            stmt->rhs->raw_name());
     } else {
-      emit("const {} {} = cast<{}>({});", stmt->ret_data_type_name(),
+      emit("const {} {}(cast<{}>({}));", stmt->ret_data_type_name(),
            stmt->raw_name(), data_type_name(stmt->cast_type),
            stmt->rhs->raw_name());
     }

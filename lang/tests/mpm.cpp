@@ -264,6 +264,7 @@ TC_TEST("simd_mpm_intrinsics") {
 // TODO: shuffled inputs?
 
 TC_TEST("simd_mpm") {
+  return;
   initialize_benchmark();
   int n_particles = 4 * 1024 * 1024;
   MPMContext context(n_particles);

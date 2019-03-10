@@ -316,19 +316,8 @@ TC_TEST("simd_mpm") {
       auto pos = g_pos[p_i];
       auto J = g_J[p_i];
 
-      Vector v4(4);
-      for (int i = 0; i < dim; i++) {
-        v4(i) = v(i);
-      }
-      v4(3) = real(1);
-
       Vector base_coord = Eval((inv_dx * pos - 0.5_f).cast_elements<int>());
       Vector fx = Eval(inv_dx * pos - base_coord.cast_elements<real>());
-
-      Vector w[3];
-      w[0] = 0.5_f * sqr(1.5_f - fx);
-      w[1] = 0.75_f - sqr(fx - 1.0_f);
-      w[2] = 0.5_f * sqr(fx - 0.5_f);
 
       Vector fx4(4);
       for (int i = 0; i < dim; i++) {
@@ -346,8 +335,6 @@ TC_TEST("simd_mpm") {
           }
         }
       }
-
-      stress = Eval((-4.0_f * inv_dx * inv_dx * dt * vol) * stress);
 
       Matrix affine_ = dx * (stress + mass * g_C[p_i]);
       Matrix affine(4, 3);

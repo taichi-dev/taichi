@@ -58,7 +58,7 @@ struct Matrix {
   Matrix map(const std::function<Expr(const Expr &)> &f) const {
     Matrix ret(n, m);
     for (int i = 0; i < (int)entries.size(); i++) {
-      ret.entries[i] = f(entries[i]);
+      ret.entries[i].set(f(entries[i]));
     }
     return ret;
   }

@@ -21,7 +21,7 @@ IRBuilder::ScopeGuard IRBuilder::create_scope(std::unique_ptr<Block> &list) {
 
 void Expr::operator=(const Expr &o) {
   if (expr == nullptr || !expr->is_lvalue()) {
-    expr = o.expr;
+    set(o.eval());
   } else {
     current_ast_builder().insert(
         std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
@@ -47,6 +47,9 @@ Expr::Expr(Identifier id) : Expr() {
 
 Expr Expr::eval() const {
   TC_ASSERT(expr != nullptr);
+  if (is<EvalExpression>()) {
+    return *this;
+  }
   auto eval_stmt = Stmt::make<FrontendEvalStmt>(*this);
   auto eval_expr = Expr(std::make_shared<EvalExpression>(eval_stmt.get()));
   eval_stmt->as<FrontendEvalStmt>()->eval_expr.set(eval_expr);

@@ -60,7 +60,7 @@ class BasicBlockVectorSplit : public IRVisitor {
       }
     }
     block->statements.clear();
-    if (false) {
+    if (true) {
       for (int i = 0; i < (int)splits.size(); i++) {
         for (int j = 0;; j++) {
           bool modified = false;
@@ -74,9 +74,6 @@ class BasicBlockVectorSplit : public IRVisitor {
         }
       }
     } else {
-      for (int i = 0; i < (int)splits.size(); i++) {
-        TC_P(splits[i].size());
-      }
       for (int j = 0;; j++) {
         bool modified = false;
         for (int i = 0; i < (int)splits.size(); i++) {
@@ -135,6 +132,7 @@ class BasicBlockVectorSplit : public IRVisitor {
   }
 
   void visit(ElementShuffleStmt *stmt) {
+    TC_P("here");
     for (int i = 0; i < current_split_factor; i++) {
       LaneAttribute<VectorElement> ptr;
       ptr.resize(max_width);

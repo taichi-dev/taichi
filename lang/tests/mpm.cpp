@@ -304,6 +304,7 @@ TC_TEST("simd_mpm") {
   auto p2g = kernel([&]() {
     Declare(p_i);
     // Vectorize(4);
+    int slp = 1;
     For(p_i, 0, n_particles, [&]() {
       SLP(1);
       auto mass = context.mass;
@@ -322,8 +323,8 @@ TC_TEST("simd_mpm") {
       }
       v4(3) = real(1);
 
-      Vector base_coord = (inv_dx * pos - 0.5_f).cast_elements<int>();
-      Vector fx = inv_dx * pos - base_coord.cast_elements<real>();
+      Vector base_coord = Eval((inv_dx * pos - 0.5_f).cast_elements<int>());
+      Vector fx = Eval(inv_dx * pos - base_coord.cast_elements<real>());
 
       Vector w[3];
       w[0] = 0.5_f * sqr(1.5_f - fx);
@@ -357,37 +358,34 @@ TC_TEST("simd_mpm") {
         }
         affine(dim, i) = real(0);
       }
-      affine = Eval(affine);
 
-      constexpr int T = 3;
+      constexpr int T = 1;
       TC_WARN_IF(T != 3, "T is not 3");
 
-      Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
-                           base_coord(1) * (n_grid) + base_coord(2);
-      Vector mv_ = mass * Eval(v4);
-      auto mv = mv_;
+      auto base_offset = Eval(n_grid * n_grid * base_coord(0) +
+                              n_grid * base_coord(1) + base_coord(2));
 
-      int slp = 4;
+      Vector mv = Eval(mass * v4);
 
       SLP(slp);
       auto contrib = Eval(mv - affine * fx);
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < T; i++) {
         SLP(1);
         auto weight0 = Eval(w[i](0));
         auto contrib0 = Eval(contrib + real(i) * affine.col(0));
-        for (int j = 0; j < 3; j++) {
+        for (int j = 0; j < T; j++) {
           SLP(slp);
           auto contrib1 = Eval(contrib0 + real(j) * affine.col(1));
           SLP(1);
           auto weight1 = Eval(weight0 * w[j](1));
-          for (int k = 0; k < 3; k++) {
+          for (int k = 0; k < T; k++) {
             SLP(slp);
             auto contrib2 = Eval(contrib1 + real(k) * affine.col(2));
             SLP(1);
             auto weight2 = Eval(weight1 * w[k](2));
             SLP(slp);
             grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
-                weight2 * contrib2;
+                Eval(weight2 * contrib2);
           }
         }
       }

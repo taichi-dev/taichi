@@ -319,12 +319,6 @@ TC_TEST("simd_mpm") {
       Vector base_coord = Eval((inv_dx * pos - 0.5_f).cast_elements<int>());
       Vector fx = Eval(inv_dx * pos - base_coord.cast_elements<real>());
 
-      Vector fx4(4);
-      for (int i = 0; i < dim; i++) {
-        fx4(i) = fx(i);
-      }
-      fx4(3) = real(0);
-
       Matrix stress(dim, dim);
       for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
@@ -336,7 +330,7 @@ TC_TEST("simd_mpm") {
         }
       }
 
-      Matrix affine_ = dx * (stress + mass * g_C[p_i]);
+      Matrix affine_ = (stress + mass * g_C[p_i]);
       Matrix affine(4, 3);
       for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {

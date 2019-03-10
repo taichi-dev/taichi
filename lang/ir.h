@@ -961,7 +961,7 @@ class Block : public IRNode {
   }
 
   void erase(int location) {
-//    trash_bin.push_back(std::move(statements[location]));  // do not delete the
+    trash_bin.push_back(std::move(statements[location]));  // do not delete the
                                                            // stmt, otherwise
                                                            // print_ir will not
                                                            // function properly

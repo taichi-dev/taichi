@@ -282,7 +282,7 @@ TC_TEST("simd_mpm") {
   auto ind = Index(0);
   constexpr int dim = 3;
 
-  Vector grid(DataType::f32, dim - 1);
+  Vector grid(DataType::f32, dim + 1);
   Vector g_pos(DataType::f32, dim);
   Vector g_v(DataType::f32, dim);
   Vector g_C(DataType::f32, dim, dim);
@@ -297,28 +297,106 @@ TC_TEST("simd_mpm") {
       }
     }
     root.fixed(ind, bit::least_pot_bound(n_grid * n_grid * n_grid))
-        .place(grid(0), grid(1));
+        .place(grid(0), grid(1), grid(2), grid(3));
   });
 
   auto p2g = kernel([&]() {
     Declare(p_i);
     // Vectorize(4);
-    int slp = 1;
     For(p_i, 0, n_particles, [&]() {
-      SLP(1);
-      auto pos = Eval(g_pos[p_i]);
-      Vector base_coord = Eval(pos.cast_elements<int>());
-      Matrix affine(2, 3);
-      for (int i = 0; i < 2; i++) {
+      auto mass = context.mass;
+      auto vol = context.vol;
+      auto dx = context.dx;
+      auto inv_dx = context.inv_dx;
+      auto dt = context.dt;
+
+      auto v = g_v[p_i];
+      auto pos = g_pos[p_i];
+      auto J = g_J[p_i];
+
+      Vector v4(4);
+      for (int i = 0; i < dim; i++) {
+        v4(i) = v(i);
+      }
+      v4(3) = real(1);
+
+      Vector base_coord = (inv_dx * pos - 0.5_f).cast_elements<int>();
+      Vector fx = inv_dx * pos - base_coord.cast_elements<real>();
+
+      Vector w[3];
+      w[0] = 0.5_f * sqr(1.5_f - fx);
+      w[1] = 0.75_f - sqr(fx - 1.0_f);
+      w[2] = 0.5_f * sqr(fx - 0.5_f);
+
+      Vector fx4(4);
+      for (int i = 0; i < dim; i++) {
+        fx4(i) = fx(i);
+      }
+      fx4(3) = real(0);
+
+      Matrix stress(dim, dim);
+      for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
-          affine(i, j) = real(i + j);
+          if (i == j) {
+            stress(i, j) = J - real(1);
+          } else {
+            stress(i, j) = real(0);
+          }
         }
       }
-      auto base_offset = Eval(base_coord(1) + base_coord(2));
-      SLP(1);
-      auto contrib = affine * pos;
-      SLP(1);
-      grid[base_offset + 0] = contrib;
+
+      stress = (-4 * inv_dx * inv_dx * dt * vol) * stress;
+
+      Matrix affine_ = dx * (stress + mass * g_C[p_i]);
+      Matrix affine(4, 3);
+      for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+          affine(i, j) = affine_(i, j);
+        }
+        affine(dim, i) = real(0);
+      }
+      affine = Eval(affine);
+
+      constexpr int T = 3;
+      TC_WARN_IF(T != 3, "T is not 3");
+
+      Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
+                           base_coord(1) * (n_grid) + base_coord(2);
+      Vector mv_ = mass * Eval(v4);
+      auto mv = mv_;
+
+      Local(weight0) = 0.0_f;
+      Local(weight1) = 0.0_f;
+      Local(weight2) = 0.0_f;
+
+      int slp = 1;
+
+      SLP(slp);
+      auto contrib0 = Eval(mv - affine * fx);
+      for (int i = 0; i < 3; i++) {
+        SLP(1);
+        weight0 = w[i](0);
+        SLP(slp);
+        Matrix contrib1 = Eval(contrib0);
+        for (int j = 0; j < 3; j++) {
+          SLP(1);
+          weight1 = weight0 * w[j](1);
+          SLP(slp);
+          Matrix contrib2 = contrib1;
+          for (int k = 0; k < 3; k++) {
+            SLP(1);
+            weight2 = weight1 * w[k](2);
+            SLP(slp);
+            grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
+                weight2 * contrib2;
+            contrib2 = contrib2 + affine.col(2);
+          }
+          SLP(slp);
+          contrib1 = contrib1 + affine.col(1);
+        }
+        SLP(slp);
+        contrib0 = contrib0 + affine.col(0);
+      }
     });
   });
 

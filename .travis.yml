@@ -1,79 +1,80 @@
 sudo: required
-
 git:
   depth: 50
-
-common_sources: &all_sources
-  - ubuntu-toolchain-r-test
-
+common_sources: &1
+- ubuntu-toolchain-r-test
 language: cpp
 matrix:
   include:
-
   - os: osx
     osx_image: xcode9
     env:
-      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3"
-
+    - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3"
   - os: linux
     dist: trusty
     addons:
       apt:
-        sources: *all_sources
-        packages: ['g++-5']
+        sources: *1
+        packages:
+        - g++-5
     env:
-      - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5 && PYTHON=python3.5"
-
+    - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5 && PYTHON=python3.5"
   - os: linux
     dist: trusty
-    addons: &gcc6
+    addons:
       apt:
-        sources: *all_sources
-        packages: ['g++-6']
+        sources: *1
+        packages:
+        - g++-6
     env:
-      - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.5"
-
+    - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.5"
   - os: linux
     dist: trusty
-    addons: &gcc6
+    addons:
       apt:
-        sources: *all_sources
-        packages: ['g++-6']
+        sources: *1
+        packages:
+        - g++-6
     env:
-      - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.6"
-
+    - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.6"
   - os: linux
     dist: trusty
-    addons: &gcc7
+    addons:
       apt:
-        sources: *all_sources
-        packages: ['g++-7']
+        sources: *1
+        packages:
+        - g++-7
     env:
-      - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.5"
-
+    - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.5"
   - os: linux
     dist: trusty
-    addons: &gcc7
+    addons:
       apt:
-        sources: *all_sources
-        packages: ['g++-7']
+        sources: *1
+        packages:
+        - g++-7
     env:
-      - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.6"
-
+    - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.6"
 before_install:
-  - eval "${MATRIX_EVAL}"
-  - echo $CXX
-  - echo $PYTHON
-  - |
-    if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
-        CMAKE_URL="http://www.cmake.org/files/v3.6/cmake-3.6.3-Linux-x86_64.tar.gz"
-        mkdir cmake3 && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake3
-        export PATH=$PWD/cmake3/bin:${PATH}
-        echo "Installed CMake in $PWD/cmake3/bin:${PATH}"
-    fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:deadsnakes/ppa; sudo apt-get update; sudo apt-get install $PYTHON-dev --allow-unauthenticated -y; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo rm /opt/local/lib/libembree.2.dylib; brew update; brew install $PYTHON || brew upgrade python; fi
+- eval "${MATRIX_EVAL}"
+- echo $CXX
+- echo $PYTHON
+- |
+  if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
+      CMAKE_URL="http://www.cmake.org/files/v3.6/cmake-3.6.3-Linux-x86_64.tar.gz"
+      mkdir cmake3 && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake3
+      export PATH=$PWD/cmake3/bin:${PATH}
+      echo "Installed CMake in $PWD/cmake3/bin:${PATH}"
+  fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:deadsnakes/ppa;
+  sudo apt-get update; sudo apt-get install $PYTHON-dev --allow-unauthenticated -y;
+  fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo rm /opt/local/lib/libembree.2.dylib;
+  brew update; brew install $PYTHON || brew upgrade python; fi
 
 script:
-  - $PYTHON install.py ci
+- "$PYTHON install.py ci"
 
+env:
+  global:
+    secure: ZfG0FCWsSFSkeHtwfdHy2wR+nAq/IIFyHyTsFIVjUQdui5k6P3szXCkVonabtmZVccZF+8BXjedzwUfGw6cDY8DzzbBPC+rx4XxxuCh3ueCNfhyz+BmsnOMk20U5yBpiwHDmGSiO9jt0Tw4gPNhk/GegNT21f8nJyYzOjH4IONAby0AXDf35R7pFE3LlPEC/TsCoWEEY5/U7r8N1UJChoK3m2rGsK3TVKLY1UQYT94Ytg2a3IgjneEybQB73823K9uIS2CXM77rWJWcjhM9lDBqOc+2MoWdhVgpFst90s+8sjpjGMbMBQYz089sP6FrvGm3kYlWQ9LQ/eVqSVIstNTf176mxA1vyqkLDcuYZ/VcR+P0hTLgEo4kURy+ghXOHcDGhZW5mSXsTI5rq2xQYs6zqnc+MCIJQTOqytMPVc04to/Y5q2dLqrByZvkqeGUafa3bS8bgBr7SjAjwW3xjnWFQc2QMWHLKFP/q7eUnr6jeY4R/YpKdjIf2v+Qs54toAOqQl5Enf7+lYE+iPjU9UmHu/LliyEfIKkVWjajpRFBaF7jQMhsGby+6MDxomZdzKlJpwsfisBLh1HOq65N0erLVXMtqsy0eMxX9zBoUqcANnb0kj8MY/GdkUdZnx09yyXiQU8N+7BSETOIRxriVVGRjhcefyyaeyn5yS7oZ/kY=

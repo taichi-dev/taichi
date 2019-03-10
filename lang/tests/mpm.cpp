@@ -306,27 +306,11 @@ TC_TEST("simd_mpm") {
     int slp = 1;
     For(p_i, 0, n_particles, [&]() {
       SLP(1);
-      auto mass = context.mass;
-      auto vol = context.vol;
-      auto dx = context.dx;
-      auto inv_dx = context.inv_dx;
-      auto dt = context.dt;
-
-      auto v = g_v[p_i];
       auto pos = g_pos[p_i];
-      auto J = g_J[p_i];
 
-      Vector base_coord = Eval((inv_dx * pos - 0.5_f).cast_elements<int>());
-      Vector fx = Eval(inv_dx * pos - base_coord.cast_elements<real>());
+      Vector base_coord = Eval(pos.cast_elements<int>());
+      Vector fx = Eval( pos);
 
-      Matrix stress(dim, dim);
-      for (int i = 0; i < dim; i++) {
-        for (int j = 0; j < dim; j++) {
-          stress(i, j) = real(0);
-        }
-      }
-
-      Matrix affine_ = (stress + mass * g_C[p_i]);
       Matrix affine(4, 3);
       for (int i = 0; i < dim + 1; i++) {
         for (int j = 0; j < dim; j++) {
@@ -334,12 +318,8 @@ TC_TEST("simd_mpm") {
         }
       }
 
-      constexpr int T = 1;
-      TC_WARN_IF(T != 3, "T is not 3");
-
       auto base_offset = Eval(base_coord(1) + base_coord(2));
-
-      SLP(slp);
+      SLP(1);
       auto contrib = affine * fx;
       SLP(1);
       grid[base_offset + 0] += contrib;

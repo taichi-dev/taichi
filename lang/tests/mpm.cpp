@@ -369,16 +369,7 @@ TC_TEST("simd_mpm") {
       SLP(slp);
       auto contrib = Eval(mv - affine * fx);
       SLP(1);
-      for (int i = 0; i < T; i++) {
-        auto contrib0 = Eval(contrib + real(i) * affine.col(0));
-        for (int j = 0; j < T; j++) {
-          auto contrib1 = Eval(contrib0 + real(j) * affine.col(1));
-          for (int k = 0; k < T; k++) {
-            auto contrib2 = Eval(contrib1 + real(k) * affine.col(2));
-            grid[base_offset + (0)] += contrib2;
-          }
-        }
-      }
+      grid[base_offset + (0)] += contrib;
     });
   });
 

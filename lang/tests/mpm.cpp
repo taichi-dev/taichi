@@ -311,14 +311,14 @@ TC_TEST("simd_mpm") {
       Matrix affine(2, 3);
       for (int i = 0; i < 2; i++) {
         for (int j = 0; j < dim; j++) {
-          affine(i, j) = real(0);
+          affine(i, j) = real(i + j);
         }
       }
       auto base_offset = Eval(base_coord(1) + base_coord(2));
       SLP(1);
       auto contrib = affine * pos;
       SLP(1);
-      grid[base_offset + 0] += contrib;
+      grid[base_offset + 0] = contrib;
     });
   });
 

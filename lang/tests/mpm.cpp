@@ -282,7 +282,7 @@ TC_TEST("simd_mpm") {
   auto ind = Index(0);
   constexpr int dim = 3;
 
-  Vector grid(DataType::f32, dim + 1);
+  Vector grid(DataType::f32, dim - 1);
   Vector g_pos(DataType::f32, dim);
   Vector g_v(DataType::f32, dim);
   Vector g_C(DataType::f32, dim, dim);
@@ -297,7 +297,7 @@ TC_TEST("simd_mpm") {
       }
     }
     root.fixed(ind, bit::least_pot_bound(n_grid * n_grid * n_grid))
-        .place(grid(0), grid(1), grid(2), grid(3));
+        .place(grid(0), grid(1));
   });
 
   auto p2g = kernel([&]() {
@@ -308,8 +308,8 @@ TC_TEST("simd_mpm") {
       SLP(1);
       auto pos = Eval(g_pos[p_i]);
       Vector base_coord = Eval(pos.cast_elements<int>());
-      Matrix affine(4, 3);
-      for (int i = 0; i < dim + 1; i++) {
+      Matrix affine(2, 3);
+      for (int i = 0; i < 2; i++) {
         for (int j = 0; j < dim; j++) {
           affine(i, j) = real(0);
         }

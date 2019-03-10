@@ -91,6 +91,11 @@ class BasicBlockSLP : public IRVisitor {
         tmp_operands[0]);
     tmp_stmt->as<UnaryOpStmt>()->cast_type = stmt->cast_type;
     update_type(stmt);
+    /*
+    if (tmp_stmt->as<UnaryOpStmt>()->op_type == UnaryType::cast) {
+      tmp_stmt->element_type() = tmp_stmt->as<UnaryOpStmt>()->cast_type;
+    }
+    */
   }
 
   // merge tmp_operands into one statement
@@ -498,6 +503,7 @@ class SLPVectorize : public IRVisitor {
       try {
         slp_attempt(block);
       } catch (IRModifiedException) {
+        irpass::print(context->root());
         continue;
       }
       break;  // if no IRModifiedException

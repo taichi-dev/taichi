@@ -306,21 +306,17 @@ TC_TEST("simd_mpm") {
     int slp = 1;
     For(p_i, 0, n_particles, [&]() {
       SLP(1);
-      auto pos = g_pos[p_i];
-
+      auto pos = Eval(g_pos[p_i]);
       Vector base_coord = Eval(pos.cast_elements<int>());
-      Vector fx = Eval( pos);
-
       Matrix affine(4, 3);
       for (int i = 0; i < dim + 1; i++) {
         for (int j = 0; j < dim; j++) {
           affine(i, j) = real(0);
         }
       }
-
       auto base_offset = Eval(base_coord(1) + base_coord(2));
       SLP(1);
-      auto contrib = affine * fx;
+      auto contrib = affine * pos;
       SLP(1);
       grid[base_offset + 0] += contrib;
     });

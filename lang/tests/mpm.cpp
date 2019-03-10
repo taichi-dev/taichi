@@ -369,7 +369,7 @@ TC_TEST("simd_mpm") {
       Local(weight1) = 0.0_f;
       Local(weight2) = 0.0_f;
 
-      int slp = 1;
+      int slp = 4;
 
       SLP(slp);
       auto contrib0 = Eval(mv - affine * fx);

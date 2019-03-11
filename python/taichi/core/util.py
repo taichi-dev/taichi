@@ -210,10 +210,10 @@ def build():
     exit(-1)
 
   os.chdir(tmp_cwd)
-  
+
 if is_release():
   print("[Release mode]")
-  sys.path.append(os.path.join(package_root(), '/../'))
+  sys.path.append(os.path.join(package_root(), '../../'))
   import taichi_core as tc_core
 else:
   if get_os_name() == 'osx':
@@ -257,7 +257,7 @@ else:
                        "instead of python2." + Style.RESET_ALL)
       print()
       exit(-1)
-    
+
     os.chdir(tmp_cwd)
   elif get_os_name() == 'win':
     bin_dir = get_bin_directory()
@@ -265,18 +265,18 @@ else:
     dll_path2 = os.path.join(bin_dir, 'libtaichi_core.dll')
     if not os.path.exists(dll_path1) and not os.path.exists(dll_path2):
       build()
-    
+
     # On windows when an dll/pyd is loaded, we can not write to it any more
     old_wd = os.getcwd()
     os.chdir(bin_dir)
-    
+
     if CREATE_SAND_BOX_ON_WINDOWS:
       # Create a sandbox for separated core lib development and loading
       dir = os.path.join(get_output_directory(), 'tmp', get_unique_task_id())
-      
+
       lib_dir = os.path.join(get_repo_directory(), 'external', 'lib')
       os.environ['PATH'] += ';' + lib_dir
-      
+
       os.makedirs(dir)
       if os.path.exists(dll_path1):
         shutil.copy(dll_path1, os.path.join(dir, 'taichi_core.pyd'))
@@ -295,9 +295,9 @@ else:
       print('Is taichi\external\lib correctly set to branch msvc or mingw?')
       print()
       raise e
-    
+
     os.chdir(old_wd)
-  
+
 def get_dll_name(name):
   if get_os_name() == 'linux':
     return 'libtaichi_%s.so' % name

@@ -1,3 +1,6 @@
+#include <cmath>
+#include <immintrin.h>
+#include <algorithm>
 
 float rsqrt(const float f) {
   float buf[4];
@@ -8,9 +11,18 @@ float rsqrt(const float f) {
   return buf[0];
 }
 
-template <class T, int size>
-void Singular_Value_Decomposition_Size_Specific_Helper<
-    T, size>::Run_Index_Range(const int imin, const int imax_plus_one) {
+inline void svd(
+    float *a11, float *a12, float *a13,
+    float *a21, float *a22, float *a23,
+    float *a31, float *a32, float *a33,
+    float *u11, float *u12, float *u13,
+    float *u21, float *u22, float *u23,
+    float *u31, float *u32, float *u33,
+    float *v11, float *v12, float *v13,
+    float *v21, float *v22, float *v23,
+    float *v31, float *v32, float *v33,
+    float *sigma1, float *sigma2, float *sigma3
+    ) {
   const float Four_Gamma_Squared = sqrt(8.) + 3.;
   const float Sine_Pi_Over_Eight = .5 * sqrt(2. - sqrt(2.));
   const float Cosine_Pi_Over_Eight = .5 * sqrt(2. + sqrt(2.));
@@ -126,7 +138,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
     float f;
     unsigned int ui;
   } Sv33;
-# 132 "Singular_Value_Decomposition_Kernel_Declarations.hpp"
   union {
     float f;
     unsigned int ui;
@@ -163,7 +174,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
     float f;
     unsigned int ui;
   } Su33;
-# 150 "Singular_Value_Decomposition_Kernel_Declarations.hpp"
   union {
     float f;
     unsigned int ui;
@@ -201,10 +211,7 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
     unsigned int ui;
   } Stmp5;
 
-# 148 "Singular_Value_Decomposition_Helper.cpp" 2
-# 162 "Singular_Value_Decomposition_Helper.cpp"
-  for (int index = imin; index < imax_plus_one; index += 1) {
-
+  for (int index = 0; index < 1; index += 1) {
     Sa11.f = a11[index];
     Sa21.f = a21[index];
     Sa31.f = a31[index];
@@ -215,8 +222,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
     Sa23.f = a23[index];
     Sa33.f = a33[index];
 
-# 1 "Singular_Value_Decomposition_Main_Kernel_Body.hpp" 1
-# 24 "Singular_Value_Decomposition_Main_Kernel_Body.hpp"
     {
 
       union {
@@ -305,9 +310,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
         Ss33.f = Stmp1.f + Ss33.f;
 
         for (int sweep = 1; sweep <= 4; sweep++) {
-# 121 "Singular_Value_Decomposition_Main_Kernel_Body.hpp"
-# 1 "Singular_Value_Decomposition_Jacobi_Conjugation_Kernel.hpp" 1
-# 21 "Singular_Value_Decomposition_Jacobi_Conjugation_Kernel.hpp"
           Ssh.f = Ss21.f * Sone_half.f;
           Stmp5.f = Ss11.f - Ss22.f;
 
@@ -322,7 +324,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
           Stmp2.f = Sch.f * Sch.f;
           Stmp3.f = Stmp1.f + Stmp2.f;
           Stmp4.f = rsqrt(Stmp3.f);
-# 45 "Singular_Value_Decomposition_Jacobi_Conjugation_Kernel.hpp"
           Ssh.f = Stmp4.f * Ssh.f;
           Sch.f = Stmp4.f * Sch.f;
 
@@ -387,10 +388,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
           Sqvs.f = Sqvs.f - Stmp3.f;
           Sqvvx.f = Sqvvx.f + Stmp2.f;
           Sqvvy.f = Sqvvy.f - Stmp1.f;
-# 122 "Singular_Value_Decomposition_Main_Kernel_Body.hpp" 2
-# 177 "Singular_Value_Decomposition_Main_Kernel_Body.hpp"
-# 1 "Singular_Value_Decomposition_Jacobi_Conjugation_Kernel.hpp" 1
-# 21 "Singular_Value_Decomposition_Jacobi_Conjugation_Kernel.hpp"
           Ssh.f = Ss32.f * Sone_half.f;
           Stmp5.f = Ss22.f - Ss33.f;
 
@@ -405,7 +402,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
           Stmp2.f = Sch.f * Sch.f;
           Stmp3.f = Stmp1.f + Stmp2.f;
           Stmp4.f = rsqrt(Stmp3.f);
-# 45 "Singular_Value_Decomposition_Jacobi_Conjugation_Kernel.hpp"
           Ssh.f = Stmp4.f * Ssh.f;
           Sch.f = Stmp4.f * Sch.f;
 
@@ -470,10 +466,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
           Sqvs.f = Sqvs.f - Stmp1.f;
           Sqvvy.f = Sqvvy.f + Stmp3.f;
           Sqvvz.f = Sqvvz.f - Stmp2.f;
-# 178 "Singular_Value_Decomposition_Main_Kernel_Body.hpp" 2
-# 233 "Singular_Value_Decomposition_Main_Kernel_Body.hpp"
-# 1 "Singular_Value_Decomposition_Jacobi_Conjugation_Kernel.hpp" 1
-# 21 "Singular_Value_Decomposition_Jacobi_Conjugation_Kernel.hpp"
           Ssh.f = Ss31.f * Sone_half.f;
           Stmp5.f = Ss33.f - Ss11.f;
 
@@ -488,7 +480,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
           Stmp2.f = Sch.f * Sch.f;
           Stmp3.f = Stmp1.f + Stmp2.f;
           Stmp4.f = rsqrt(Stmp3.f);
-# 45 "Singular_Value_Decomposition_Jacobi_Conjugation_Kernel.hpp"
           Ssh.f = Stmp4.f * Ssh.f;
           Sch.f = Stmp4.f * Sch.f;
 
@@ -553,10 +544,7 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
           Sqvs.f = Sqvs.f - Stmp2.f;
           Sqvvz.f = Sqvvz.f + Stmp1.f;
           Sqvvx.f = Sqvvx.f - Stmp3.f;
-# 234 "Singular_Value_Decomposition_Main_Kernel_Body.hpp" 2
-# 260 "Singular_Value_Decomposition_Main_Kernel_Body.hpp"
         }
-# 307 "Singular_Value_Decomposition_Main_Kernel_Body.hpp"
       }
 
       Stmp2.f = Sqvs.f * Sqvs.f;
@@ -579,9 +567,7 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
       Sqvvx.f = Sqvvx.f * Stmp1.f;
       Sqvvy.f = Sqvvy.f * Stmp1.f;
       Sqvvz.f = Sqvvz.f * Stmp1.f;
-# 369 "Singular_Value_Decomposition_Main_Kernel_Body.hpp"
       {
-# 387 "Singular_Value_Decomposition_Main_Kernel_Body.hpp"
         Stmp1.f = Sqvvx.f * Sqvvx.f;
         Stmp2.f = Sqvvy.f * Sqvvy.f;
         Stmp3.f = Sqvvz.f * Sqvvz.f;
@@ -609,7 +595,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
         Sv21.f = Stmp1.f + Sv21.f;
         Sv32.f = Stmp2.f + Sv32.f;
         Sv13.f = Stmp3.f + Sv13.f;
-# 475 "Singular_Value_Decomposition_Main_Kernel_Body.hpp"
         Stmp2.f = Sa12.f;
         Stmp3.f = Sa13.f;
         Sa12.f = Sv12.f * Sa11.f;
@@ -663,7 +648,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
         Sa33.f = Sa33.f + Stmp1.f;
         Stmp1.f = Sv33.f * Stmp3.f;
         Sa33.f = Sa33.f + Stmp1.f;
-# 583 "Singular_Value_Decomposition_Main_Kernel_Body.hpp"
       }
     }
 
@@ -734,7 +718,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
     Sv12.f = Sv12.f * Stmp4.f;
     Sv22.f = Sv22.f * Stmp4.f;
     Sv32.f = Sv32.f * Stmp4.f;
-# 688 "Singular_Value_Decomposition_Main_Kernel_Body.hpp"
     Stmp4.ui = (Stmp1.f < Stmp3.f) ? 0xffffffff : 0;
 
     Stmp5.ui = Sa11.ui ^ Sa13.ui;
@@ -784,7 +767,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
     Sv11.f = Sv11.f * Stmp4.f;
     Sv21.f = Sv21.f * Stmp4.f;
     Sv31.f = Sv31.f * Stmp4.f;
-# 765 "Singular_Value_Decomposition_Main_Kernel_Body.hpp"
     Stmp4.ui = (Stmp2.f < Stmp3.f) ? 0xffffffff : 0;
 
     Stmp5.ui = Sa12.ui ^ Sa13.ui;
@@ -834,7 +816,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
     Sv13.f = Sv13.f * Stmp4.f;
     Sv23.f = Sv23.f * Stmp4.f;
     Sv33.f = Sv33.f * Stmp4.f;
-# 1015 "Singular_Value_Decomposition_Main_Kernel_Body.hpp"
     Su11.f = 1.;
     Su21.f = 0.;
     Su31.f = 0.;
@@ -844,9 +825,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
     Su13.f = 0.;
     Su23.f = 0.;
     Su33.f = 1.;
-# 1065 "Singular_Value_Decomposition_Main_Kernel_Body.hpp"
-# 1 "Singular_Value_Decomposition_Givens_QR_Factorization_Kernel.hpp" 1
-# 21 "Singular_Value_Decomposition_Givens_QR_Factorization_Kernel.hpp"
     Ssh.f = Sa21.f * Sa21.f;
     Ssh.ui = (Ssh.f >= Ssmall_number.f) ? 0xffffffff : 0;
 
@@ -942,10 +920,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
     Su32.f = Sc.f * Su32.f;
     Su31.f = Su31.f + Stmp2.f;
     Su32.f = Su32.f - Stmp1.f;
-# 1066 "Singular_Value_Decomposition_Main_Kernel_Body.hpp" 2
-# 1138 "Singular_Value_Decomposition_Main_Kernel_Body.hpp"
-# 1 "Singular_Value_Decomposition_Givens_QR_Factorization_Kernel.hpp" 1
-# 21 "Singular_Value_Decomposition_Givens_QR_Factorization_Kernel.hpp"
     Ssh.f = Sa31.f * Sa31.f;
     Ssh.ui = (Ssh.f >= Ssmall_number.f) ? 0xffffffff : 0;
 
@@ -1041,10 +1015,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
     Su33.f = Sc.f * Su33.f;
     Su31.f = Su31.f + Stmp2.f;
     Su33.f = Su33.f - Stmp1.f;
-# 1139 "Singular_Value_Decomposition_Main_Kernel_Body.hpp" 2
-# 1212 "Singular_Value_Decomposition_Main_Kernel_Body.hpp"
-# 1 "Singular_Value_Decomposition_Givens_QR_Factorization_Kernel.hpp" 1
-# 21 "Singular_Value_Decomposition_Givens_QR_Factorization_Kernel.hpp"
     Ssh.f = Sa32.f * Sa32.f;
     Ssh.ui = (Ssh.f >= Ssmall_number.f) ? 0xffffffff : 0;
 
@@ -1140,8 +1110,6 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
     Su33.f = Sc.f * Su33.f;
     Su32.f = Su32.f + Stmp2.f;
     Su33.f = Su33.f - Stmp1.f;
-# 1213 "Singular_Value_Decomposition_Main_Kernel_Body.hpp" 2
-# 175 "Singular_Value_Decomposition_Helper.cpp" 2
 
     u11[index] = Su11.f;
     u21[index] = Su21.f;
@@ -1167,4 +1135,7 @@ void Singular_Value_Decomposition_Size_Specific_Helper<
     sigma2[index] = Sa22.f;
     sigma3[index] = Sa33.f;
   }
+}
+
+int main() {
 }

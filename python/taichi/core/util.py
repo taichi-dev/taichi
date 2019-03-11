@@ -29,6 +29,13 @@ required_packages = [
 def is_ci():
   return os.environ.get('TC_CI', '') == '1'
 
+def package_root():
+  return os.path.join(os.path.dirname(os.path.realpath(__file__)), '../', '../')
+
+def is_release():
+  # TODO: improve this
+  return not os.path.exists(os.path.join(package_root() + '../CMakeLists.txt'))
+
 def install_package(pkg):
   pip.main(['install', '--user', pkg])
 
@@ -203,91 +210,94 @@ def build():
     exit(-1)
 
   os.chdir(tmp_cwd)
-
-
-if get_os_name() == 'osx':
-  bin_dir = get_bin_directory()
-  os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = get_runtime_directory()
-  if not os.path.exists(os.path.join(bin_dir, 'libtaichi_core.dylib')):
-    build()
-  tmp_cwd = os.getcwd()
-  os.chdir(bin_dir)
-  shutil.copy('libtaichi_core.dylib', 'taichi_core.so')
-  sys.path.append(bin_dir)
+  
+if is_release():
+  print("[Release mode]")
+  sys.path.append(os.path.join(package_root(), '/../'))
   import taichi_core as tc_core
-  os.chdir(tmp_cwd)
-elif get_os_name() == 'linux':
-  bin_dir = get_bin_directory()
-  if 'LD_LIBRARY_PATH' in os.environ:
-    os.environ['LD_LIBRARY_PATH'] += ':/usr/lib64/'
-  else:
-    os.environ['LD_LIBRARY_PATH'] = '/usr/lib64/'
-  if not os.path.exists(os.path.join(bin_dir, 'libtaichi_core.so')):
-    build()
-  tmp_cwd = os.getcwd()
-  os.chdir(bin_dir)
-  sys.path.append(bin_dir)
-  # https://stackoverflow.com/questions/3855004/overwriting-library-file-causes-segmentation-fault
-  if os.path.exists('taichi_core.so'):
-    try:
-      os.unlink('taichi_core.so')
-    except:
-      print('Warning: taichi_core.so already removed. This may be caused by'
-            'simultaneously starting two taichi instances.')
-      pass
-  shutil.copy('libtaichi_core.so', 'taichi_core.so')
-  try:
-    import taichi_core as tc_core
-  except Exception as e:
-    from colorama import Fore, Back, Style
-    print(e)
-    print()
-    print(Fore.RED + "Please make sure you are using python3 "
-          "instead of python2." + Style.RESET_ALL)
-    print()
-    exit(-1)
-
-  os.chdir(tmp_cwd)
-elif get_os_name() == 'win':
-  bin_dir = get_bin_directory()
-  dll_path1 = os.path.join(bin_dir, 'Release', 'taichi_core.dll')
-  dll_path2 = os.path.join(bin_dir, 'libtaichi_core.dll')
-  if not os.path.exists(dll_path1) and not os.path.exists(dll_path2):
-    build()
-
-  # On windows when an dll/pyd is loaded, we can not write to it any more
-  old_wd = os.getcwd()
-  os.chdir(bin_dir)
-
-  if CREATE_SAND_BOX_ON_WINDOWS:
-    # Create a sandbox for separated core lib development and loading
-    dir = os.path.join(get_output_directory(), 'tmp', get_unique_task_id())
-
-    lib_dir = os.path.join(get_repo_directory(), 'external', 'lib')
-    os.environ['PATH'] += ';' + lib_dir
-
-    os.makedirs(dir)
-    if os.path.exists(dll_path1):
-      shutil.copy(dll_path1, os.path.join(dir, 'taichi_core.pyd'))
-    else:
-      shutil.copy(dll_path2, os.path.join(dir, 'taichi_core.pyd'))
-    os.environ['PATH'] += ';' + dir
-    sys.path.append(dir)
-  else:
-    shutil.copy(dll_path, os.path.join(bin_dir, 'taichi_core.pyd'))
+else:
+  if get_os_name() == 'osx':
+    bin_dir = get_bin_directory()
+    os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = get_runtime_directory()
+    if not os.path.exists(os.path.join(bin_dir, 'libtaichi_core.dylib')):
+      build()
+    tmp_cwd = os.getcwd()
+    os.chdir(bin_dir)
+    shutil.copy('libtaichi_core.dylib', 'taichi_core.so')
     sys.path.append(bin_dir)
-  try:
     import taichi_core as tc_core
-  except Exception as e:
-    print(e)
-    print()
-    print('Is taichi\external\lib correctly set to branch msvc or mingw?')
-    print()
-    raise e
-
-  os.chdir(old_wd)
-
-
+    os.chdir(tmp_cwd)
+  elif get_os_name() == 'linux':
+    bin_dir = get_bin_directory()
+    if 'LD_LIBRARY_PATH' in os.environ:
+      os.environ['LD_LIBRARY_PATH'] += ':/usr/lib64/'
+    else:
+      os.environ['LD_LIBRARY_PATH'] = '/usr/lib64/'
+    if not os.path.exists(os.path.join(bin_dir, 'libtaichi_core.so')):
+      build()
+    tmp_cwd = os.getcwd()
+    os.chdir(bin_dir)
+    sys.path.append(bin_dir)
+    # https://stackoverflow.com/questions/3855004/overwriting-library-file-causes-segmentation-fault
+    if os.path.exists('taichi_core.so'):
+      try:
+        os.unlink('taichi_core.so')
+      except:
+        print('Warning: taichi_core.so already removed. This may be caused by'
+              'simultaneously starting two taichi instances.')
+        pass
+    shutil.copy('libtaichi_core.so', 'taichi_core.so')
+    try:
+      import taichi_core as tc_core
+    except Exception as e:
+      from colorama import Fore, Back, Style
+      print(e)
+      print()
+      print(Fore.RED + "Please make sure you are using python3 "
+                       "instead of python2." + Style.RESET_ALL)
+      print()
+      exit(-1)
+    
+    os.chdir(tmp_cwd)
+  elif get_os_name() == 'win':
+    bin_dir = get_bin_directory()
+    dll_path1 = os.path.join(bin_dir, 'Release', 'taichi_core.dll')
+    dll_path2 = os.path.join(bin_dir, 'libtaichi_core.dll')
+    if not os.path.exists(dll_path1) and not os.path.exists(dll_path2):
+      build()
+    
+    # On windows when an dll/pyd is loaded, we can not write to it any more
+    old_wd = os.getcwd()
+    os.chdir(bin_dir)
+    
+    if CREATE_SAND_BOX_ON_WINDOWS:
+      # Create a sandbox for separated core lib development and loading
+      dir = os.path.join(get_output_directory(), 'tmp', get_unique_task_id())
+      
+      lib_dir = os.path.join(get_repo_directory(), 'external', 'lib')
+      os.environ['PATH'] += ';' + lib_dir
+      
+      os.makedirs(dir)
+      if os.path.exists(dll_path1):
+        shutil.copy(dll_path1, os.path.join(dir, 'taichi_core.pyd'))
+      else:
+        shutil.copy(dll_path2, os.path.join(dir, 'taichi_core.pyd'))
+      os.environ['PATH'] += ';' + dir
+      sys.path.append(dir)
+    else:
+      shutil.copy(dll_path, os.path.join(bin_dir, 'taichi_core.pyd'))
+      sys.path.append(bin_dir)
+    try:
+      import taichi_core as tc_core
+    except Exception as e:
+      print(e)
+      print()
+      print('Is taichi\external\lib correctly set to branch msvc or mingw?')
+      print()
+      raise e
+    
+    os.chdir(old_wd)
+  
 def get_dll_name(name):
   if get_os_name() == 'linux':
     return 'libtaichi_%s.so' % name

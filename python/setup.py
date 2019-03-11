@@ -13,8 +13,8 @@ classifiers = [
     'Programming Language :: C++',
 ]
 
-package_data = glob.glob('lib/*')
-print(package_data)
+data_files = glob.glob('lib/*')
+print(data_files)
 packages = setuptools.find_packages()
 print(packages)
 
@@ -30,10 +30,11 @@ setuptools.setup(
         'numpy', 'Pillow', 'scipy', 'pybind11', 'flask', 'flask_cors',
         'GitPython', 'yapf', 'colorama', 'psutil', 'requests', 'PyQt5'
     ],
-    data_files=[('lib', package_data)],
+    data_files=[('lib', data_files)],
     keywords=['graphics', 'simulation'],
     license='MIT',
     platforms=['Linux'],
     include_package_data=True,
     classifiers=classifiers,
+    has_ext_modules=lambda: True
 )

@@ -5,6 +5,11 @@ import sys
 def get_python_executable():
     return sys.executable.replace('\\','/')
 
+if platform.system() == 'Linux':
+    if sys.environ['CXX'] != 'g++-6':
+        print('Only the wheel with g++-6 will be released to PyPI.')
+        sys.exit(0)
+
 os.makedirs('python/lib', exist_ok=True)
 os.system('cp ../build/libtaichi_core.so python/lib/taichi_core.so')
 os.system('cp ../build/libtaichi_core.dylib python/lib/taichi_core.so')
@@ -17,4 +22,4 @@ if platform.system() == 'Linux':
     os.system('{} setup.py bdist_wheel -p manylinux1_x86_64'.format(get_python_executable()))
 else:
     os.system('{} setup.py bdist_wheel'.format(get_python_executable()))
-os.system('{} -m twine upload --repository-url https://test.pypi.org/legacy/ dist/* --verbose -u yuanming -p $PYPI_PWD'.format(get_python_executable()))
+os.system('{} -m twine upload dist/* --verbose -u yuanming -p $PYPI_PWD'.format(get_python_executable()))

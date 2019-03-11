@@ -18,10 +18,19 @@ print(data_files)
 packages = setuptools.find_packages()
 print(packages)
 
+def is_nightly():
+    return True
+
+def project_name():
+    if is_nightly():
+        return 'taichi-nightly'
+    else:
+        return 'taichi'
+
 setuptools.setup(
-    name='taichi',
+    name=project_name(),
     packages=packages,
-    version='0.0.30',
+    version='0.0.31',
     description='Computer Graphics R&D Infrastructure',
     author='Yuanming Hu',
     author_email='yuanmhu@gmail.com',

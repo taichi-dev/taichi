@@ -6,15 +6,15 @@ def get_python_executable():
     return sys.executable.replace('\\','/')
 
 if platform.system() == 'Linux':
-    if sys.environ['CXX'] != 'g++-6':
+    if os.environ['CXX'] != 'g++-6':
         print('Only the wheel with g++-6 will be released to PyPI.')
         sys.exit(0)
 
-os.makedirs('python/lib', exist_ok=True)
-os.system('cp ../build/libtaichi_core.so python/lib/taichi_core.so')
-os.system('cp ../build/libtaichi_core.dylib python/lib/taichi_core.so')
-os.system('cp ../external/lib/* python/lib')
-os.system('rm python/lib/ffmpeg')
+os.makedirs('taichi/lib', exist_ok=True)
+os.system('cp ../build/libtaichi_core.so taichi/lib/taichi_core.so')
+os.system('cp ../build/libtaichi_core.dylib taichi/lib/taichi_core.so')
+os.system('cp ../external/lib/* taichi/lib')
+os.system('rm taichi/lib/ffmpeg')
 os.system('rm dist/*.whl')
 os.system('{} -m pip install --user --upgrade twine setuptools wheel'.format(get_python_executable()))
 

@@ -30,7 +30,7 @@ def project_name():
 setuptools.setup(
     name=project_name(),
     packages=packages,
-    version='0.0.31',
+    version='0.0.32',
     description='Computer Graphics R&D Infrastructure',
     author='Yuanming Hu',
     author_email='yuanmhu@gmail.com',

@@ -43,6 +43,15 @@ matrix:
       apt:
         sources: *1
         packages:
+          - g++-6
+    env:
+    - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.7"
+  - os: linux
+    dist: trusty
+    addons:
+      apt:
+        sources: *1
+        packages:
         - g++-7
     env:
     - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.5"
@@ -55,6 +64,16 @@ matrix:
         - g++-7
     env:
     - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.6"
+  - os: linux
+    dist: trusty
+    addons:
+      apt:
+        sources: *1
+        packages:
+          - g++-7
+    env:
+    - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.7"
+    -
 before_install:
 - eval "${MATRIX_EVAL}"
 - echo $CXX
@@ -73,7 +92,7 @@ before_install:
   brew update; brew install $PYTHON || brew upgrade python; fi
 
 script:
-- "$PYTHON install.py ci"
+- "$PYTHON install.py ci; cd python && $PYTHON upload.py"
 
 env:
   global:

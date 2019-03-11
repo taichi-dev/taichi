@@ -13,7 +13,7 @@ classifiers = [
     'Programming Language :: C++',
 ]
 
-data_files = glob.glob('lib/*')
+data_files = glob.glob('python/lib/*')
 print(data_files)
 packages = setuptools.find_packages()
 print(packages)
@@ -21,7 +21,7 @@ print(packages)
 setuptools.setup(
     name='taichi',
     packages=packages,
-    version='0.0.27',
+    version='0.0.30',
     description='Computer Graphics R&D Infrastructure',
     author='Yuanming Hu',
     author_email='yuanmhu@gmail.com',

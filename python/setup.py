@@ -1,4 +1,5 @@
 import setuptools
+import glob
 
 classifiers = [
     'Development Status :: 1 - Planning',
@@ -12,15 +13,27 @@ classifiers = [
     'Programming Language :: C++',
 ]
 
+package_data = glob.glob('lib/*')
+print(package_data)
+packages = setuptools.find_packages()
+print(packages)
+
 setuptools.setup(
     name='taichi',
-    packages=['taichi'],
-    version='0.0.19',
+    packages=packages,
+    version='0.0.27',
     description='Computer Graphics R&D Infrastructure',
     author='Yuanming Hu',
     author_email='yuanmhu@gmail.com',
     url='https://github.com/yuanming-hu/taichi',
+    install_requires=[
+        'numpy', 'Pillow', 'scipy', 'pybind11', 'flask', 'flask_cors',
+        'GitPython', 'yapf', 'colorama', 'psutil', 'requests', 'PyQt5'
+    ],
+    data_files=[('lib', package_data)],
     keywords=['graphics', 'simulation'],
     license='MIT',
-    classifiers=classifiers,)
-
+    platforms=['Linux'],
+    include_package_data=True,
+    classifiers=classifiers,
+)

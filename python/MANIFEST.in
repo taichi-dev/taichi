@@ -1,10 +1,9 @@
 include README
 include MANIFEST.in
+utsi
 include *.txt
 include *.py
 include *.cfg
-include lib/*
-
-recursive-include taichi *.py
 
 global-exclude *.pyc *.pyo *.pyd
+global-exclude ffmpeg

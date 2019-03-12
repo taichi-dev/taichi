@@ -330,9 +330,9 @@ TC_TEST("simd_mpm") {
       auto inv_dx = context.inv_dx;
       auto dt = context.dt;
 
-      auto v = Eval(g_v[p_i]);
-      auto pos = Eval(g_pos[p_i]);
-      auto J = Eval(g_J[p_i]);
+      auto v = (g_v[p_i]);
+      auto pos = (g_pos[p_i]);
+      auto J = (g_J[p_i]);
 
       Vector v4(4);
       for (int i = 0; i < dim; i++) {
@@ -340,7 +340,7 @@ TC_TEST("simd_mpm") {
       }
       v4(3) = real(1);
 
-      Vector base_coord = floor(inv_dx * pos - 0.5_f).cast_elements<int>();
+      Vector base_coord = (inv_dx * pos - 0.5_f).cast_elements<int>();
       Vector fx = inv_dx * pos - base_coord.cast_elements<real>();
 
       Vector w[3];
@@ -384,7 +384,7 @@ TC_TEST("simd_mpm") {
                               base_coord(1) * (n_grid) + base_coord(2));
       auto mv = Eval(mass * v4);
 
-      int slp = 4;
+      int slp = 1;
 
       SLP(slp);
       auto contrib0 = Eval(mv - affine * fx);

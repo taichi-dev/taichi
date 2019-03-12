@@ -190,9 +190,9 @@ struct vec {
   vec() = default;
   vec(type v) : v(v) {
   }
-  template <int _dim = dim>
-  vec(const std::enable_if_t<_dim != 1, vec<T, 1>> &scalar) : vec(scalar.v) {
-  }
+  // template <int _dim = dim>
+  //vec(const std::enable_if_t<_dim != 1, vec<T, 1>> &scalar) : vec(scalar.v) {
+  //}
   template <typename _T = T>
   vec(std::enable_if_t<!std::is_same<_T, type>::value, T> scalar)
       : v(set1<T, dim>(scalar)) {

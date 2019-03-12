@@ -264,6 +264,7 @@ TC_TEST("simd_mpm_intrinsics") {
 // TODO: shuffled inputs?
 
 TC_TEST("simd_mpm") {
+  return;
   initialize_benchmark();
   int n_particles = 4 * 1024 * 1024;
   MPMContext context(n_particles);
@@ -358,7 +359,7 @@ TC_TEST("simd_mpm") {
       }
       affine = Eval(affine);
 
-      constexpr int T = 3;
+      constexpr int T = 1;
       TC_WARN_IF(T != 3, "T is not 3");
 
       auto base_offset = Eval(base_coord(0) * (n_grid * n_grid) +
@@ -369,17 +370,17 @@ TC_TEST("simd_mpm") {
 
       SLP(slp);
       auto contrib0 = Eval(mv - affine * fx);
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < T; i++) {
         SLP(1);
         auto weight0 = Eval(w[i](0));
         SLP(slp);
         auto contrib1 = Eval(contrib0);
-        for (int j = 0; j < 3; j++) {
+        for (int j = 0; j < T; j++) {
           SLP(1);
           auto weight1 = Eval(weight0 * w[j](1));
           SLP(slp);
           auto contrib2 = Eval(contrib1);
-          for (int k = 0; k < 3; k++) {
+          for (int k = 0; k < T; k++) {
             SLP(1);
             auto weight2 = Eval(weight1 * w[k](2));
             SLP(slp);

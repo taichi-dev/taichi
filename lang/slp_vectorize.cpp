@@ -116,6 +116,11 @@ class BasicBlockSLP : public IRVisitor {
   }
 
   Stmt *find_stmt(const Pack &pack) {
+    for (int i = 0; i < (int)pack.size(); i++) {
+      if (rec->find(pack[i]) != rec->end()) {
+        return rec->find(pack[i])->second.first;
+      }
+    }
     TC_ASSERT((int)pack.size() == slp_width);
     for (int i = 0; i < (int)existing_stmts.size(); i++) {
       bool match = true;
@@ -197,6 +202,7 @@ class BasicBlockSLP : public IRVisitor {
     TC_ASSERT(tmp_stmt != nullptr);
     tmp_operands.clear();
     for (int i = 0; i < (int)building_pack.size(); i++) {
+      TC_ASSERT(rec->find(building_pack[i]) == rec->end());
       (*rec)[building_pack[i]] = std::make_pair(tmp_stmt.get(), i);
     }
     auto ret = new_stmts.push_back(std::move(tmp_stmt));
@@ -211,6 +217,11 @@ class BasicBlockSLP : public IRVisitor {
     TC_ASSERT(pos != -1);
     position[ret] = pos;
     existing_stmts.push_back(std::make_pair(pack, ret));
+    for (int i = 0; i < slp_width; i++) {
+      fmt::print(" {} ", pack[i]->id);
+    }
+    fmt::print(" -> {} ", ret->id);
+    fmt::print("\n");
     return ret;
   }
 

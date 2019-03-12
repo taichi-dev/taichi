@@ -12,10 +12,11 @@ class BasicBlockVectorSplit : public IRVisitor {
   int current_split_factor;
   std::vector<pStmt> current_split;
   bool need_split;
+  bool serial_schedule;
   std::unordered_map<Stmt *, std::vector<Stmt *>> origin2split;
 
-  BasicBlockVectorSplit(Block *block, int max_width)
-      : block(block), max_width(max_width) {
+  BasicBlockVectorSplit(Block *block, int max_width, bool serial_schedule)
+      : block(block), max_width(max_width), serial_schedule(serial_schedule) {
     // allow_undefined_visitor = true;
     // invoke_default_visitor = false;
     run();
@@ -58,7 +59,7 @@ class BasicBlockVectorSplit : public IRVisitor {
         }
         splits.push_back(std::move(current_split));
       } else {  // recreate a statement anyway since the original one may be
-                // pointing to unknown statements
+        // pointing to unknown statements
         current_split_factor = 1;
         current_split.resize(current_split_factor);
         need_split = false;
@@ -73,7 +74,8 @@ class BasicBlockVectorSplit : public IRVisitor {
       }
     }
     block->statements.clear();
-    if (false) {
+    if (!serial_schedule) {
+      // finish vectors one by one
       for (int i = 0; i < (int)splits.size(); i++) {
         for (int j = 0;; j++) {
           bool modified = false;
@@ -240,13 +242,15 @@ class BasicBlockVectorSplit : public IRVisitor {
   }
 };
 
-// Goal: eliminate vectors that are longer than physical vector width (e.g. 8 on
-// AVX2)
+// Goal: eliminate vectors that are longer than physical vector width (e.g. 8
+// on AVX2)
 class VectorSplit : public IRVisitor {
  public:
   int max_width;
+  bool serial_schedule;
 
-  VectorSplit(IRNode *node, int max_width) : max_width(max_width) {
+  VectorSplit(IRNode *node, int max_width, bool serial_schedule)
+      : max_width(max_width), serial_schedule(serial_schedule) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     node->accept(this);
@@ -254,7 +258,7 @@ class VectorSplit : public IRVisitor {
 
   void visit(Block *block) {
     if (!block->has_container_statements()) {
-      BasicBlockVectorSplit(block, max_width);
+      BasicBlockVectorSplit(block, max_width, serial_schedule);
     } else {
       for (auto &stmt : block->statements) {
         stmt->accept(this);
@@ -282,8 +286,8 @@ class VectorSplit : public IRVisitor {
 
 namespace irpass {
 
-void vector_split(IRNode *root, int max_width) {
-  VectorSplit(root, max_width);
+void vector_split(IRNode *root, int max_width, bool serial_schedule) {
+  VectorSplit(root, max_width, serial_schedule);
 }
 
 }  // namespace irpass

@@ -45,6 +45,7 @@ struct CompileConfig {
   int external_optimization_level;
   int max_vector_width;
   int print_ir;
+  bool serial_schedule;
 
   CompileConfig() {
     arch = Arch::x86_64;
@@ -60,6 +61,7 @@ struct CompileConfig {
 #else
     gcc_version = 5;  // not 7 for faster compilation
 #endif
+    serial_schedule = false;
   }
 
   std::string compiler_name() {

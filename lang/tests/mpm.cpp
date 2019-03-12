@@ -400,9 +400,9 @@ TC_TEST("simd_mpm") {
           auto contrib2 = Eval(contrib1);
           for (int k = 0; k < T; k++) {
             SLP(1);
-            auto contrib2 = contrib1 + real(k) * affine.col(2);
             auto weight2 = weight1 * w[k](2);
             SLP(slp);
+            auto contrib2 = contrib1 + real(k) * affine.col(2);
             grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
                 weight2 * contrib2;
           }

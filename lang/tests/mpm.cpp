@@ -268,7 +268,7 @@ TC_TEST("simd_mpm_intrinsics") {
 
 TC_TEST("simd_mpm") {
   initialize_benchmark();
-  int n_particles = 512;// * 1024 * 1024;
+  int n_particles = 4;  // * 1024 * 1024;
   MPMContext context(n_particles);
   int n_grid = context.n;
   context.p2g();
@@ -279,8 +279,8 @@ TC_TEST("simd_mpm") {
   prog.config.print_ir = true;
   prog.config.gcc_version = -2;
   prog.config.serial_schedule = true;
-  prog.config.force_vectorized_global_load = true;
-  prog.config.force_vectorized_global_store = true;
+  prog.config.force_vectorized_global_load = false;
+  prog.config.force_vectorized_global_store = false;
 
   Global(g_J, f32);
   auto ind = Index(0);
@@ -314,9 +314,9 @@ TC_TEST("simd_mpm") {
       auto inv_dx = context.inv_dx;
       auto dt = context.dt;
 
-      auto v = g_v[p_i];
-      auto pos = g_pos[p_i];
-      auto J = g_J[p_i];
+      auto v = Eval(g_v[p_i]);
+      auto pos = Eval(g_pos[p_i]);
+      auto J = Eval(g_J[p_i]);
 
       Vector v4(4);
       for (int i = 0; i < dim; i++) {
@@ -421,6 +421,10 @@ TC_TEST("simd_mpm") {
     for (int j = 0; j < context.n; j++) {
       for (int k = 0; k < context.n; k++) {
         for (int d = 0; d < 4; d++) {
+          if (std::abs(grid(d).val<float32>(i * n_grid * n_grid + j * n_grid + k)-
+              context.grid[i][j][k][d]) > 1e-3f) {
+            TC_WARN("{},{},{} {}", i, j, k, d);
+          }
           TC_CHECK_EQUAL(
               grid(d).val<float32>(i * n_grid * n_grid + j * n_grid + k),
               context.grid[i][j][k][d], tolerance);
@@ -428,6 +432,7 @@ TC_TEST("simd_mpm") {
       }
     }
   }
+  return;
   for (int i = 0; i < 100; i++)
     TC_TIME(p2g());
 };

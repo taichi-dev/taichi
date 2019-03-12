@@ -354,33 +354,34 @@ TC_TEST("slp") {
 TC_TEST("slp1") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
-  Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
+  for (auto slp1 : {true, false}) {
+    Program prog(Arch::x86_64);
+    prog.config.print_ir = true;
+    Vector grid(DataType::f32, 4);
+    layout(
+        [&]() { root.fixed(0, n).place(grid(0), grid(1), grid(2), grid(3)); });
+    auto func = kernel([&]() {
+      Declare(i);
+      Vectorize(1);
+      For(i, 0, n, [&] {
+        if (slp1)
+          SLP(1);
+        Vector v(4);
+        for (int i = 0; i < 4; i++) {
+          v(i) = real(i);
+        }
 
-  Vector grid(DataType::f32, 4);
-
-  layout([&]() { root.fixed(0, n).place(grid(0), grid(1), grid(2), grid(3)); });
-
-  auto func = kernel([&]() {
-    Declare(i);
-
-    Vectorize(1);
-    For(i, 0, n, [&] {
-      Vector v(4);
-      for (int i = 0; i < 4; i++) {
-        v(i) = real(i);
-      }
-
-      SLP(4);
-      grid[0] += v;
+        SLP(4);
+        grid[i] = v;
+      });
     });
-  });
 
-  func();
+    func();
 
-  for (int i = 0; i < n; i++) {
-    for (int d = 0; d < 4; d++) {
-      TC_CHECK(grid(d).val<int>(i) == d);
+    for (int i = 0; i < n; i++) {
+      for (int d = 0; d < 4; d++) {
+        TC_CHECK(grid(d).val<float32>(i) == d);
+      }
     }
   }
 };

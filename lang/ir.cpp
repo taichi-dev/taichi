@@ -99,7 +99,7 @@ IRNode *FrontendContext::root() {
 }
 
 int Identifier::id_counter = 0;
-int Statement::id_counter = 0;
+std::atomic<int> Statement::instance_id_counter(0);
 
 std::unique_ptr<FrontendContext> context;
 

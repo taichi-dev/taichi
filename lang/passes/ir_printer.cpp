@@ -204,6 +204,7 @@ class IRPrinter : public IRVisitor {
 namespace irpass {
 
 void print(IRNode *root) {
+  re_id(root);
   return IRPrinter::run(root);
 }
 

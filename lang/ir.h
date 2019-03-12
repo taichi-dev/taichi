@@ -56,6 +56,7 @@ class PragmaSLPStmt;
 // IR passes
 namespace irpass {
 
+void re_id(IRNode *root);
 void print(IRNode *root);
 void lower(IRNode *root);
 void typecheck(IRNode *root);
@@ -426,7 +427,8 @@ struct LaneAttribute {
 
 class Statement : public IRNode {
  public:
-  static int id_counter;
+  static std::atomic<int> instance_id_counter;
+  int instance_id;
   int id;
   Block *parent;
   std::vector<Stmt **> operands;
@@ -449,7 +451,8 @@ class Statement : public IRNode {
 
   Statement() {
     parent = nullptr;
-    id = id_counter++;
+    instance_id = instance_id_counter++;
+    id = instance_id;
   }
 
   std::string ret_data_type_name() const {

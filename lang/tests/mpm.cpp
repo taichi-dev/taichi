@@ -89,6 +89,9 @@ struct MPMContext {
   }
 
   void p2g() {
+    constexpr int T = 1;
+    TC_WARN_IF(T != 3, "T is not 3");
+
     for (int p_i = 0; p_i < n_particles; p_i++) {
       using Vec = Vector3;
       auto &p = particles[p_i];
@@ -104,9 +107,9 @@ struct MPMContext {
       auto affine = stress + mass * p.C;
 
       // Scatter to grid
-      for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-          for (int k = 0; k < 3; k++) {
+      for (int i = 0; i < T; i++) {
+        for (int j = 0; j < T; j++) {
+          for (int k = 0; k < T; k++) {
             auto dpos = (Vec(i, j, k) - fx) * dx;
             Vector4 mv(p.v * mass, mass);  // translational momentum
             grid[base_coord.x + i][base_coord.y + j][base_coord.z + k] +=
@@ -265,7 +268,7 @@ TC_TEST("simd_mpm_intrinsics") {
 
 TC_TEST("simd_mpm") {
   initialize_benchmark();
-  int n_particles = 4 * 1024 * 1024;
+  int n_particles = 512;// * 1024 * 1024;
   MPMContext context(n_particles);
   int n_grid = context.n;
   context.p2g();
@@ -303,18 +306,96 @@ TC_TEST("simd_mpm") {
 
   auto p2g = kernel([&]() {
     Declare(p_i);
-    // Vectorize(4);
+    Vectorize(4);
     For(p_i, 0, n_particles, [&]() {
+      auto mass = context.mass;
+      auto vol = context.vol;
+      auto dx = context.dx;
+      auto inv_dx = context.inv_dx;
+      auto dt = context.dt;
+
+      auto v = g_v[p_i];
+      auto pos = g_pos[p_i];
+      auto J = g_J[p_i];
 
       Vector v4(4);
-      for (int i = 0; i < dim + 1; i++) {
-        v4(i) = real(i);
+      for (int i = 0; i < dim; i++) {
+        v4(i) = v(i);
       }
+      v4(3) = real(1);
+
+      Vector base_coord = (inv_dx * pos - 0.5_f).cast_elements<int>();
+      Vector fx = inv_dx * pos - base_coord.cast_elements<real>();
+
+      Vector w[3];
+      w[0] = 0.5_f * sqr(1.5_f - fx);
+      w[1] = 0.75_f - sqr(fx - 1.0_f);
+      w[2] = 0.5_f * sqr(fx - 0.5_f);
+
+      Vector fx4(4);
+      for (int i = 0; i < dim; i++) {
+        fx4(i) = fx(i);
+      }
+      fx4(3) = real(0);
+
+      Matrix stress(dim, dim);
+      for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+          if (i == j) {
+            stress(i, j) = J - real(1);
+          } else {
+            stress(i, j) = real(0);
+          }
+        }
+      }
+
+      stress = (-4 * inv_dx * inv_dx * dt * vol) * stress;
+
+      Matrix affine_ = dx * (stress + mass * g_C[p_i]);
+      Matrix affine(4, 3);
+      for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+          affine(i, j) = affine_(i, j);
+        }
+        affine(dim, i) = real(0);
+      }
+      affine = Eval(affine);
+
+      constexpr int T = 1;
+      TC_WARN_IF(T != 3, "T is not 3");
+
+      auto base_offset = Eval(base_coord(0) * (n_grid * n_grid) +
+                              base_coord(1) * (n_grid) + base_coord(2));
+      auto mv = Eval(mass * v4);
 
       int slp = 4;
 
       SLP(slp);
-      grid[0] += v4;
+      auto contrib0 = Eval(mv - affine * fx);
+      for (int i = 0; i < T; i++) {
+        SLP(1);
+        auto weight0 = Eval(w[i](0));
+        SLP(slp);
+        auto contrib1 = Eval(contrib0);
+        for (int j = 0; j < T; j++) {
+          SLP(1);
+          auto weight1 = Eval(weight0 * w[j](1));
+          SLP(slp);
+          auto contrib2 = Eval(contrib1);
+          for (int k = 0; k < T; k++) {
+            SLP(1);
+            auto weight2 = Eval(weight1 * w[k](2));
+            SLP(slp);
+            grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
+                weight2 * contrib2;
+            contrib2 = contrib2 + affine.col(2);
+          }
+          SLP(slp);
+          contrib1 = Eval(contrib1 + affine.col(1));
+        }
+        SLP(slp);
+        contrib0 = Eval(contrib0 + affine.col(0));
+      }
     });
   });
 

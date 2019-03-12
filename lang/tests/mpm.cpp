@@ -305,70 +305,16 @@ TC_TEST("simd_mpm") {
     Declare(p_i);
     // Vectorize(4);
     For(p_i, 0, n_particles, [&]() {
-      auto mass = context.mass;
-      auto vol = context.vol;
-      auto dx = context.dx;
-      auto inv_dx = context.inv_dx;
-      auto dt = context.dt;
-
-      auto v = g_v[p_i];
-      auto pos = g_pos[p_i];
-      auto J = g_J[p_i];
 
       Vector v4(4);
-      for (int i = 0; i < dim; i++) {
-        v4(i) = v(i);
+      for (int i = 0; i < dim + 1; i++) {
+        v4(i) = real(i);
       }
-      v4(3) = real(1);
-
-      Vector base_coord = (inv_dx * pos - 0.5_f).cast_elements<int>();
-      Vector fx = inv_dx * pos - base_coord.cast_elements<real>();
-
-
-      Vector fx4(4);
-      for (int i = 0; i < dim; i++) {
-        fx4(i) = fx(i);
-      }
-      fx4(3) = real(0);
-
-      Matrix stress(dim, dim);
-      for (int i = 0; i < dim; i++) {
-        for (int j = 0; j < dim; j++) {
-          if (i == j) {
-            stress(i, j) = J - real(1);
-          } else {
-            stress(i, j) = real(0);
-          }
-        }
-      }
-
-      Matrix affine_ = dx * (stress + mass * g_C[p_i]);
-      Matrix affine(4, 3);
-      for (int i = 0; i < dim; i++) {
-        for (int j = 0; j < dim; j++) {
-          affine(i, j) = affine_(i, j);
-        }
-        affine(dim, i) = real(0);
-      }
-      affine = Eval(affine);
-
-      constexpr int T = 1;
-      TC_WARN_IF(T != 3, "T is not 3");
-
-      auto mv = Eval(mass * v4);
 
       int slp = 4;
 
       SLP(slp);
-      auto contrib0 = Eval(mv - affine * fx);
-      for (int i = 0; i < T; i++) {
-        for (int j = 0; j < T; j++) {
-          for (int k = 0; k < T; k++) {
-            grid[0] +=
-                contrib0;
-          }
-        }
-      }
+      grid[0] += v4;
     });
   });
 

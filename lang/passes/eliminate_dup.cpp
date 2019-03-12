@@ -82,9 +82,9 @@ class BasicBlockEliminate : public IRVisitor {
           for (int l = 0; l < stmt->width(); l++) {
             if (stmt->elements[l].stmt != bstmt_->elements[l].stmt ||
                 stmt->elements[l].index != bstmt_->elements[l].index) {
-                same = false;
-                break;
-              }
+              same = false;
+              break;
+            }
           }
           if (same) {
             stmt->replace_with(bstmt.get());
@@ -103,7 +103,7 @@ class BasicBlockEliminate : public IRVisitor {
         if (typeid(*bstmt) == typeid(*stmt)) {
           auto bstmt_ = bstmt->as<LocalLoadStmt>();
           bool same = true;
-          std::vector<Stmt*> vars;
+          std::vector<Stmt *> vars;
           for (int l = 0; l < stmt->width(); l++) {
             vars.push_back(stmt->ptr[l].var);
             if (stmt->ptr[l].var != bstmt_->ptr[l].var ||
@@ -118,8 +118,8 @@ class BasicBlockEliminate : public IRVisitor {
             for (int j = i + 1; j + 1 < current_stmt_id; j++) {
               if (block->statements[j]->is<LocalStoreStmt>()) {
                 auto st = block->statements[j]->as<LocalStoreStmt>();
-                for (auto var: vars) {
-                  if (st->ptr == var)  {
+                for (auto var : vars) {
+                  if (st->ptr == var) {
                     has_related_store = true;
                     break;
                   }
@@ -151,13 +151,35 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) {
-    return;
-    TC_NOT_IMPLEMENTED
+    for (int i = 0; i < current_stmt_id; i++) {
+      auto &bstmt = block->statements[i];
+      if (stmt->ret_type == bstmt->ret_type) {
+        if (typeid(*bstmt) == typeid(*stmt)) {
+          auto bstmt_ = bstmt->as<BinaryOpStmt>();
+          if (bstmt_->lhs == stmt->lhs && bstmt_->rhs == stmt->rhs) {
+            stmt->replace_with(bstmt.get());
+            stmt->parent->erase(current_stmt_id);
+            throw IRModifiedException();
+          }
+        }
+      }
+    }
   }
 
   void visit(UnaryOpStmt *stmt) {
-    return;
-    TC_NOT_IMPLEMENTED
+    for (int i = 0; i < current_stmt_id; i++) {
+      auto &bstmt = block->statements[i];
+      if (stmt->ret_type == bstmt->ret_type) {
+        if (typeid(*bstmt) == typeid(*stmt)) {
+          auto bstmt_ = bstmt->as<UnaryOpStmt>();
+          if (bstmt_->rhs == stmt->rhs) {
+            stmt->replace_with(bstmt.get());
+            stmt->parent->erase(current_stmt_id);
+            throw IRModifiedException();
+          }
+        }
+      }
+    }
   }
 
   void visit(PrintStmt *stmt) {

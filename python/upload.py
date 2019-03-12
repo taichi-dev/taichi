@@ -22,4 +22,4 @@ if platform.system() == 'Linux':
     os.system('{} setup.py bdist_wheel -p manylinux1_x86_64'.format(get_python_executable()))
 else:
     os.system('{} setup.py bdist_wheel'.format(get_python_executable()))
-os.system('{} -m twine upload dist/* --verbose -u yuanming -p $PYPI_PWD'.format(get_python_executable()))
+os.system('{} -m twine upload dist/* --verbose -u yuanming-hu -p $PYPI_PWD'.format(get_python_executable()))

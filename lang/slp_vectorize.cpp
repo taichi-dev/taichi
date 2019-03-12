@@ -379,7 +379,7 @@ class SLPVectorize : public IRVisitor {
   // This method transforms the first SLP segment.
   // After the invocation the block may be invalid. This is can be fixed by
   // inserting ElementShuffleStmt's
-  void slp_attempt(Block *block) {
+  void slp_attempt(Block *block, int iter) {
     std::vector<Stmt *> current_segment;
 
     int first_pragma_slp_location = -1;
@@ -391,8 +391,14 @@ class SLPVectorize : public IRVisitor {
       }
     }
 
-    if (first_pragma_slp_location == -1)
+    if (first_pragma_slp_location == -1) // no SLP pragma
       return;
+
+    if (iter == 0 && first_pragma_slp_location != -1) {
+      // insert an pragma SLP(1) here to make sure every statement is SLPed.
+      block->insert(Stmt::make<PragmaSLPStmt>(1), 0);
+      first_pragma_slp_location = 0;
+    }
 
     // now, insert shuffles to make sure SLPing the previous segment does not
     // break the block
@@ -516,9 +522,9 @@ class SLPVectorize : public IRVisitor {
 
   void visit(Block *block) {
     TC_ASSERT(block->statements.size() != 0);
-    while (true) {
+    for (int iter = 0;; iter++) {
       try {
-        slp_attempt(block);
+        slp_attempt(block, iter);
       } catch (IRModifiedException) {
         irpass::print(context->root());
         continue;

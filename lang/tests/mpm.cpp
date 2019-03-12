@@ -322,7 +322,7 @@ TC_TEST("simd_mpm") {
 
   auto p2g = kernel([&]() {
     Declare(p_i);
-    Vectorize(4);
+    // Vectorize(4);
     For(p_i, 0, n_particles, [&]() {
       auto mass = context.mass;
       auto vol = context.vol;
@@ -330,9 +330,9 @@ TC_TEST("simd_mpm") {
       auto inv_dx = context.inv_dx;
       auto dt = context.dt;
 
-      auto v = (g_v[p_i]);
-      auto pos = (g_pos[p_i]);
-      auto J = (g_J[p_i]);
+      auto v = g_v[p_i];
+      auto pos = g_pos[p_i];
+      auto J = g_J[p_i];
 
       Vector v4(4);
       for (int i = 0; i < dim; i++) {
@@ -387,22 +387,22 @@ TC_TEST("simd_mpm") {
       int slp = 4;
 
       SLP(slp);
-      auto contrib0 = Eval(mv - affine * fx);
+      auto contrib0 = Eval(mv - Eval(affine * fx));
       for (int i = 0; i < T; i++) {
         SLP(1);
-        auto weight0 = w[i](0);
+        auto weight0 = Eval(w[i](0));
         SLP(slp);
         auto contrib1 = Eval(contrib0);
         for (int j = 0; j < T; j++) {
           SLP(1);
-          auto weight1 = weight0 * w[j](1);
+          auto weight1 = Eval(weight0 * w[j](1));
           SLP(slp);
           auto contrib2 = Eval(contrib1);
           for (int k = 0; k < T; k++) {
             SLP(1);
-            auto weight2 = weight1 * w[k](2);
+            auto weight2 = Eval(weight1 * w[k](2));
             SLP(slp);
-            auto contrib2 = contrib1 + real(k) * affine.col(2);
+            auto contrib2 = Eval(contrib1 + real(k) * affine.col(2));
             grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
                 weight2 * contrib2;
           }
@@ -458,7 +458,7 @@ TC_TEST("simd_mpm") {
       }
     }
   }
-  for (int i = 0; i < 100; i++)
+  for (int i = 0; i < 10000; i++)
     TC_TIME(p2g());
 };
 

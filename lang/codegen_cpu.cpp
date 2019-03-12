@@ -247,6 +247,9 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   irpass::vector_split(ir, prog->config.max_vector_width, prog->config.serial_schedule);
   if (prog->config.print_ir)
     irpass::print(ir);
+  irpass::eliminate_dup(ir);
+  if (prog->config.print_ir)
+    irpass::print(ir);
   IRCodeGen::run(this, ir);
 
   {

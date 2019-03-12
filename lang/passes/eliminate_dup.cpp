@@ -6,6 +6,8 @@ class BasicBlockEliminate : public IRVisitor {
  public:
   Block *block;
 
+  int current_stmt_id;
+
   BasicBlockEliminate(Block *block) : block(block) {
     // allow_undefined_visitor = true;
     // invoke_default_visitor = false;
@@ -14,16 +16,37 @@ class BasicBlockEliminate : public IRVisitor {
 
   void run() {
     for (int i = 0; i < (int)block->statements.size(); i++) {
+      current_stmt_id = i;
       block->statements[i]->accept(this);
     }
   }
 
   void visit(GlobalPtrStmt *stmt) {
+    return;
     TC_NOT_IMPLEMENTED
   }
 
   void visit(ConstStmt *stmt) {
-    TC_NOT_IMPLEMENTED
+    for (int i = 0; i < current_stmt_id; i++) {
+      auto &bstmt = block->statements[i];
+      if (typeid(*bstmt) == typeid(*stmt)) {
+        if (stmt->width() == bstmt->width()) {
+          auto bstmt_ = bstmt->as<ConstStmt>();
+          bool same = true;
+          for (int l = 0; l < stmt->width(); l++) {
+            if (!stmt->val[l].equal_type_and_value(bstmt_->val[l])) {
+              same = false;
+              break;
+            }
+          }
+          if (same) {
+            stmt->replace_with(bstmt.get());
+            stmt->parent->erase(current_stmt_id);
+            throw IRModifiedException();
+          }
+        }
+      }
+    }
   }
 
   void visit(AllocaStmt *stmt) {
@@ -31,10 +54,12 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(ElementShuffleStmt *stmt) {
+    return;
     TC_NOT_IMPLEMENTED
   }
 
   void visit(LocalLoadStmt *stmt) {
+    return;
     TC_NOT_IMPLEMENTED
   }
 
@@ -52,10 +77,12 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) {
+    return;
     TC_NOT_IMPLEMENTED
   }
 
   void visit(UnaryOpStmt *stmt) {
+    return;
     TC_NOT_IMPLEMENTED
   }
 

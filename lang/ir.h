@@ -85,6 +85,10 @@ struct VectorType {
     return !(*this == o);
   }
 
+  std::string short_str() const {
+    return fmt::format("{}x{}", data_type_short_name(data_type), width);
+  }
+
   std::string str() const {
     return fmt::format("{}x{}", data_type_name(data_type), width);
   }
@@ -456,7 +460,7 @@ class Statement : public IRNode {
     if (ret_type.data_type == DataType::unknown)
       return "";
     else
-      return fmt::format("<{}> ", ret_data_type_name());
+      return fmt::format("<{}> ", ret_type.short_str());
   }
 
   std::string name() {

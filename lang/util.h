@@ -87,7 +87,8 @@ struct CompileConfig {
                           const std::string &output,
                           bool verbose = false) {
     auto cmd = fmt::format(
-        "{} {} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/headers -ffp-contract=fast "
+        "{} {} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/headers "
+        "-ffp-contract=fast "
         "-fopenmp -Wall -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} -lstdc++",
         compiler_name(), input, gcc_opt_flag(), get_project_fn(), output);
 
@@ -205,6 +206,29 @@ inline std::string data_type_name(DataType t) {
     REGISTER_DATA_TYPE(ptr, pointer);
     REGISTER_DATA_TYPE(none, none);
     REGISTER_DATA_TYPE(unknown, unknown);
+#undef REGISTER_DATA_TYPE
+  }
+  return type_names[t];
+}
+
+inline std::string data_type_short_name(DataType t) {
+  static std::map<DataType, std::string> type_names;
+  if (type_names.empty()) {
+#define REGISTER_DATA_TYPE(i) type_names[DataType::i] = #i;
+    REGISTER_DATA_TYPE(f16);
+    REGISTER_DATA_TYPE(f32);
+    REGISTER_DATA_TYPE(f64);
+    REGISTER_DATA_TYPE(i8);
+    REGISTER_DATA_TYPE(i16);
+    REGISTER_DATA_TYPE(i32);
+    REGISTER_DATA_TYPE(i64);
+    REGISTER_DATA_TYPE(u8);
+    REGISTER_DATA_TYPE(u16);
+    REGISTER_DATA_TYPE(u32);
+    REGISTER_DATA_TYPE(u64);
+    REGISTER_DATA_TYPE(ptr);
+    REGISTER_DATA_TYPE(none);
+    REGISTER_DATA_TYPE(unknown);
 #undef REGISTER_DATA_TYPE
   }
   return type_names[t];

@@ -130,19 +130,9 @@ class CodeGenBase {
     return members;
   }
 
-  std::string create_variable() {
-    TC_ASSERT(var_count < 10000);
-    return fmt::format("var_{:04d}", var_count++);
-  }
-
   std::string create_snode() {
     TC_ASSERT(snode_count < 10000);
-    return fmt::format("SNode{:04d}", snode_count++);
-  }
-
-  std::string create_accessor() {
-    TC_ASSERT(accessor_count < 10000);
-    return fmt::format("access_{:04d}", accessor_count++);
+    return fmt::format("S{}", snode_count++);
   }
 
   std::string get_source_fn();

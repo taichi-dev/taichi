@@ -67,6 +67,7 @@ class TypeCheck : public IRVisitor {
                stmt->ptr->ret_data_type_name(),
                stmt->data->ret_data_type_name());
     }
+    stmt->ret_type = stmt->ptr->ret_type;
   }
 
   void visit(RangeForStmt *stmt) {

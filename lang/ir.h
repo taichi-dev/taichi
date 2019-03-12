@@ -375,6 +375,8 @@ struct LaneAttribute {
       ret += ">";
     } else if (bracket == "{") {
       ret += "}";
+    } else if (bracket == "[") {
+      ret += "]";
     } else if (bracket == "(") {
       ret += ")";
     } else if (bracket != "") {

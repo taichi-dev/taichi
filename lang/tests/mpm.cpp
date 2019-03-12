@@ -264,7 +264,6 @@ TC_TEST("simd_mpm_intrinsics") {
 // TODO: shuffled inputs?
 
 TC_TEST("simd_mpm") {
-  return;
   initialize_benchmark();
   int n_particles = 4 * 1024 * 1024;
   MPMContext context(n_particles);
@@ -276,6 +275,7 @@ TC_TEST("simd_mpm") {
   prog.config.max_vector_width = 4;
   prog.config.print_ir = true;
   prog.config.gcc_version = -2;
+  prog.config.serial_schedule = true;
   prog.config.force_vectorized_global_load = true;
   prog.config.force_vectorized_global_store = true;
 
@@ -361,14 +361,9 @@ TC_TEST("simd_mpm") {
       constexpr int T = 3;
       TC_WARN_IF(T != 3, "T is not 3");
 
-      Local(base_offset) = base_coord(0) * (n_grid * n_grid) +
-                           base_coord(1) * (n_grid) + base_coord(2);
-      Vector mv_ = mass * Eval(v4);
-      auto mv = mv_;
-
-      Local(weight0) = 0.0_f;
-      Local(weight1) = 0.0_f;
-      Local(weight2) = 0.0_f;
+      auto base_offset = Eval(base_coord(0) * (n_grid * n_grid) +
+                              base_coord(1) * (n_grid) + base_coord(2));
+      auto mv = Eval(mass * v4);
 
       int slp = 4;
 
@@ -376,27 +371,27 @@ TC_TEST("simd_mpm") {
       auto contrib0 = Eval(mv - affine * fx);
       for (int i = 0; i < 3; i++) {
         SLP(1);
-        weight0 = w[i](0);
+        auto weight0 = Eval(w[i](0));
         SLP(slp);
-        Matrix contrib1 = Eval(contrib0);
+        auto contrib1 = Eval(contrib0);
         for (int j = 0; j < 3; j++) {
           SLP(1);
-          weight1 = weight0 * w[j](1);
+          auto weight1 = Eval(weight0 * w[j](1));
           SLP(slp);
-          Matrix contrib2 = contrib1;
+          auto contrib2 = Eval(contrib1);
           for (int k = 0; k < 3; k++) {
             SLP(1);
-            weight2 = weight1 * w[k](2);
+            auto weight2 = Eval(weight1 * w[k](2));
             SLP(slp);
             grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
                 weight2 * contrib2;
             contrib2 = contrib2 + affine.col(2);
           }
           SLP(slp);
-          contrib1 = contrib1 + affine.col(1);
+          contrib1 = Eval(contrib1 + affine.col(1));
         }
         SLP(slp);
-        contrib0 = contrib0 + affine.col(0);
+        contrib0 = Eval(contrib0 + affine.col(0));
       }
     });
   });

@@ -190,6 +190,9 @@ struct vec {
   vec() = default;
   vec(type v) : v(v) {
   }
+  template <int _dim = dim>
+  vec(const std::enable_if_t<_dim != 1, vec<T, 1>> &scalar) : vec(scalar.v) {
+  }
   template <typename _T = T>
   vec(std::enable_if_t<!std::is_same<_T, type>::value, T> scalar)
       : v(set1<T, dim>(scalar)) {
@@ -984,7 +987,7 @@ inline vec<int32, dim> div(vec<int32, dim> a, vec<int32, dim> b) {
 
 template <int dim>
 inline vec<int32, dim> mod(vec<int32, dim> a, vec<int32, dim> b) {
-  //static_assert(std::is_integral<T>::value, "");
+  // static_assert(std::is_integral<T>::value, "");
   // return _mm256_and_si256(a, _mm256_set1_epi32(511));
   return sub(a, mul(div(a, b), b));
 }

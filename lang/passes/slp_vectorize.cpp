@@ -1,6 +1,6 @@
 #include <typeinfo>
 #include <set>
-#include "ir.h"
+#include "../ir.h"
 
 TLANG_NAMESPACE_BEGIN
 

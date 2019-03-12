@@ -1,4 +1,4 @@
-#include "ir.h"
+#include "../ir.h"
 
 TLANG_NAMESPACE_BEGIN
 

@@ -54,8 +54,27 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(ElementShuffleStmt *stmt) {
-    return;
-    TC_NOT_IMPLEMENTED
+    for (int i = 0; i < current_stmt_id; i++) {
+      auto &bstmt = block->statements[i];
+      if (stmt->ret_type == bstmt->ret_type) {
+        if (typeid(*bstmt) == typeid(*stmt)) {
+          auto bstmt_ = bstmt->as<ElementShuffleStmt>();
+          bool same = true;
+          for (int l = 0; l < stmt->width(); l++) {
+            if (stmt->elements[l].stmt != bstmt_->elements[l].stmt ||
+                stmt->elements[l].index != bstmt_->elements[l].index) {
+                same = false;
+                break;
+              }
+          }
+          if (same) {
+            stmt->replace_with(bstmt.get());
+            stmt->parent->erase(current_stmt_id);
+            throw IRModifiedException();
+          }
+        }
+      }
+    }
   }
 
   void visit(LocalLoadStmt *stmt) {

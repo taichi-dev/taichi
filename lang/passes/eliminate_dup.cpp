@@ -97,8 +97,44 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) {
-    return;
-    TC_NOT_IMPLEMENTED
+    for (int i = 0; i < current_stmt_id; i++) {
+      auto &bstmt = block->statements[i];
+      if (stmt->ret_type == bstmt->ret_type) {
+        if (typeid(*bstmt) == typeid(*stmt)) {
+          auto bstmt_ = bstmt->as<LocalLoadStmt>();
+          bool same = true;
+          std::vector<Stmt*> vars;
+          for (int l = 0; l < stmt->width(); l++) {
+            vars.push_back(stmt->ptr[l].var);
+            if (stmt->ptr[l].var != bstmt_->ptr[l].var ||
+                stmt->ptr[l].offset != bstmt_->ptr[l].offset) {
+              same = false;
+              break;
+            }
+          }
+          if (same) {
+            // no store to the var?
+            bool has_related_store = false;
+            for (int j = i + 1; j + 1 < current_stmt_id; j++) {
+              if (block->statements[j]->is<LocalStoreStmt>()) {
+                auto st = block->statements[j]->as<LocalStoreStmt>();
+                for (auto var: vars) {
+                  if (st->ptr == var)  {
+                    has_related_store = true;
+                    break;
+                  }
+                }
+              }
+            }
+            if (!has_related_store) {
+              stmt->replace_with(bstmt.get());
+              stmt->parent->erase(current_stmt_id);
+              throw IRModifiedException();
+            }
+          }
+        }
+      }
+    }
   }
 
   void visit(LocalStoreStmt *stmt) {

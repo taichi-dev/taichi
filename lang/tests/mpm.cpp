@@ -384,27 +384,27 @@ TC_TEST("simd_mpm") {
                               base_coord(1) * (n_grid) + base_coord(2));
       auto mv = Eval(mass * v4);
 
-      int slp = 1;
+      int slp = 4;
 
       SLP(slp);
       auto contrib0 = Eval(mv - affine * fx);
       for (int i = 0; i < T; i++) {
         SLP(1);
-        auto weight0 = Eval(w[i](0));
+        auto weight0 = w[i](0);
         SLP(slp);
         auto contrib1 = Eval(contrib0);
         for (int j = 0; j < T; j++) {
           SLP(1);
-          auto weight1 = Eval(weight0 * w[j](1));
+          auto weight1 = weight0 * w[j](1);
           SLP(slp);
           auto contrib2 = Eval(contrib1);
           for (int k = 0; k < T; k++) {
             SLP(1);
-            auto weight2 = Eval(weight1 * w[k](2));
+            auto contrib2 = contrib1 + real(k) * affine.col(2);
+            auto weight2 = weight1 * w[k](2);
             SLP(slp);
             grid[base_offset + (i * n_grid * n_grid + j * n_grid + k)] +=
                 weight2 * contrib2;
-            contrib2 = contrib2 + affine.col(2);
           }
           SLP(slp);
           contrib1 = Eval(contrib1 + affine.col(1));

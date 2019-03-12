@@ -356,13 +356,14 @@ inline Matrix cross(const Matrix &a, const Matrix &b) {
   return c;
 }
 
-inline Matrix &Const(Matrix &o) {
+inline Matrix floor(const Matrix &o) {
+  Matrix ret(o.n, o.m);
   for (int i = 0; i < o.n; i++) {
     for (int j = 0; j < o.m; j++) {
-      o(i, j).const_value = true;
+      ret(i, j).set(floor(o(i, j)));
     }
   }
-  return o;
+  return ret;
 }
 
 TLANG_NAMESPACE_END

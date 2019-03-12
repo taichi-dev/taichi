@@ -49,6 +49,18 @@ TC_ALIGNED(64) const static __m128 grid_pos_offset_[27] = {
 };
 // clang-format on
 
+TC_TEST("cast_int") {
+  __m128 f = _mm_set_ps(0.1f, 0.4f, 0.6f, 0.7f);
+  union {
+    __m128i i;
+    int v[4];
+  };
+  i = _mm_cvtps_epi32(f); // round to nearest, not floor....
+  for (int j = 0; j < 4; j++) {
+    TC_P(v[j]);
+  }
+}
+
 struct MPMContext {
  public:
   struct Particle {
@@ -89,7 +101,7 @@ struct MPMContext {
   }
 
   void p2g() {
-    constexpr int T = 1;
+    constexpr int T = 3;
     TC_WARN_IF(T != 3, "T is not 3");
 
     for (int p_i = 0; p_i < n_particles; p_i++) {
@@ -283,6 +295,8 @@ TC_TEST("simd_mpm") {
   prog.config.force_vectorized_global_store = false;
 
   Global(g_J, f32);
+  Global(tmp, i32);
+  Global(tmp1, f32);
   auto ind = Index(0);
   constexpr int dim = 3;
 
@@ -292,6 +306,8 @@ TC_TEST("simd_mpm") {
   Vector g_C(DataType::f32, dim, dim);
 
   layout([&]() {
+    root.fixed(ind, n_particles).place(tmp);
+    root.fixed(ind, n_particles).place(tmp1);
     root.fixed(ind, n_particles).place(g_J);
     for (int i = 0; i < dim; i++) {
       root.fixed(ind, n_particles).place(g_pos(i));
@@ -324,7 +340,7 @@ TC_TEST("simd_mpm") {
       }
       v4(3) = real(1);
 
-      Vector base_coord = (inv_dx * pos - 0.5_f).cast_elements<int>();
+      Vector base_coord = floor(inv_dx * pos - 0.5_f).cast_elements<int>();
       Vector fx = inv_dx * pos - base_coord.cast_elements<real>();
 
       Vector w[3];
@@ -361,7 +377,7 @@ TC_TEST("simd_mpm") {
       }
       affine = Eval(affine);
 
-      constexpr int T = 1;
+      constexpr int T = 3;
       TC_WARN_IF(T != 3, "T is not 3");
 
       auto base_offset = Eval(base_coord(0) * (n_grid * n_grid) +
@@ -416,13 +432,23 @@ TC_TEST("simd_mpm") {
   TC_P(taichi::PID::get_pid());
   TC_TIME(p2g());
 
+  /*
+  for (int i = 0; i < n_particles; i++) {
+    TC_P(tmp.val<int32>(i));
+  }
+  for (int i = 0; i < n_particles; i++) {
+    TC_P(tmp1.val<float32>(i));
+  }
+  return;
+  */
+
   auto tolerance = 1e-4_f * std::sqrt((real)n_particles);
   for (int i = 0; i < context.n; i++) {
     for (int j = 0; j < context.n; j++) {
       for (int k = 0; k < context.n; k++) {
         for (int d = 0; d < 4; d++) {
           if (std::abs(grid(d).val<float32>(i * n_grid * n_grid + j * n_grid + k)-
-              context.grid[i][j][k][d]) > 1e-3f) {
+              context.grid[i][j][k][d]) > tolerance) {
             TC_WARN("{},{},{} {}", i, j, k, d);
           }
           TC_CHECK_EQUAL(
@@ -432,7 +458,6 @@ TC_TEST("simd_mpm") {
       }
     }
   }
-  return;
   for (int i = 0; i < 100; i++)
     TC_TIME(p2g());
 };

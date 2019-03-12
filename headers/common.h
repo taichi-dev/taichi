@@ -519,7 +519,7 @@ inline vec<G, dim> cast(const vec<T, dim> &);
 
 template <>
 inline int32x1 cast<int32, float32, 1>(const float32x1 &v) {
-  return int32(v);
+  return int32(floor(v));
 }
 
 template <>
@@ -529,7 +529,7 @@ inline float32x1 cast<float32, int32, 1>(const int32x1 &v) {
 
 template <>
 inline int32x4 cast<int32, float32, 4>(const float32x4 &v) {
-  return _mm_cvtps_epi32(v);
+  return _mm_cvtps_epi32(floor(v));
 }
 
 template <>
@@ -539,7 +539,7 @@ inline float32x4 cast<float32, int32, 4>(const int32x4 &v) {
 
 template <>
 inline int32x8 cast<int32, float32, 8>(const float32x8 &v) {
-  return _mm256_cvtps_epi32(v);
+  return _mm256_cvtps_epi32(floor(v));
 }
 
 template <>

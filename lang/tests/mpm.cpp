@@ -322,7 +322,7 @@ TC_TEST("simd_mpm") {
 
   auto p2g = kernel([&]() {
     Declare(p_i);
-    // Vectorize(4);
+    Vectorize(4);
     For(p_i, 0, n_particles, [&]() {
       auto mass = context.mass;
       auto vol = context.vol;

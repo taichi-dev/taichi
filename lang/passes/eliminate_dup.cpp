@@ -54,6 +54,25 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(ElementShuffleStmt *stmt) {
+    // is this stmt necessary?
+    {
+      bool same_source = true;
+      bool inc_index = true;
+      for (int l = 0; l < stmt->width(); l++) {
+        if (stmt->elements[l].stmt != stmt->elements[0].stmt)
+          same_source = false;
+        if (stmt->elements[l].index != l)
+          inc_index = false;
+      }
+      if (same_source && inc_index) {
+        // useless shuffle.
+        stmt->replace_with(stmt->elements[0].stmt);
+        stmt->parent->erase(current_stmt_id);
+        throw IRModifiedException();
+      }
+    }
+
+    // find dup
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {

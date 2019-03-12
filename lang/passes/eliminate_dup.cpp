@@ -22,8 +22,34 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) {
-    return;
-    TC_NOT_IMPLEMENTED
+    for (int i = 0; i < current_stmt_id; i++) {
+      auto &bstmt = block->statements[i];
+      if (stmt->ret_type == bstmt->ret_type) {
+        if (typeid(*bstmt) == typeid(*stmt)) {
+          auto bstmt_ = bstmt->as<GlobalPtrStmt>();
+          bool same = true;
+          for (int l = 0; l < stmt->width(); l++) {
+            if (stmt->snode[l] != bstmt_->snode[l]) {
+              same = false;
+              break;
+            }
+          }
+          if (stmt->indices.size() != bstmt_->indices.size()) {
+            same = false;
+          } else {
+            for (int j = 0; j < (int)stmt->indices.size(); j++) {
+              if (stmt->indices[j] != bstmt_->indices[j])
+                same = false;
+            }
+          }
+          if (same) {
+            stmt->replace_with(bstmt.get());
+            stmt->parent->erase(current_stmt_id);
+            throw IRModifiedException();
+          }
+        }
+      }
+    }
   }
 
   void visit(ConstStmt *stmt) {

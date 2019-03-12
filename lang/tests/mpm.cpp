@@ -280,7 +280,7 @@ TC_TEST("simd_mpm_intrinsics") {
 
 TC_TEST("simd_mpm") {
   initialize_benchmark();
-  int n_particles = 4;  // * 1024 * 1024;
+  int n_particles = 4 * 1024 * 1024;
   MPMContext context(n_particles);
   int n_grid = context.n;
   context.p2g();
@@ -291,8 +291,8 @@ TC_TEST("simd_mpm") {
   prog.config.print_ir = true;
   prog.config.gcc_version = -2;
   prog.config.serial_schedule = true;
-  prog.config.force_vectorized_global_load = false;
-  prog.config.force_vectorized_global_store = false;
+  prog.config.force_vectorized_global_load = true;
+  prog.config.force_vectorized_global_store = true;
 
   Global(g_J, f32);
   Global(tmp, i32);
@@ -322,7 +322,7 @@ TC_TEST("simd_mpm") {
 
   auto p2g = kernel([&]() {
     Declare(p_i);
-    Vectorize(4);
+    // Vectorize(4);
     For(p_i, 0, n_particles, [&]() {
       auto mass = context.mass;
       auto vol = context.vol;

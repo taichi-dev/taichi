@@ -381,6 +381,7 @@ class TypedConstant {
 
  private:
   union {
+    uint64 value_bits;
     int32 val_i32;
     float32 val_f32;
   };
@@ -403,6 +404,19 @@ class TypedConstant {
     } else {
       TC_NOT_IMPLEMENTED
       return "";
+    }
+  }
+
+  bool equal_type_and_value(const TypedConstant &o) {
+    if (dt != o.dt)
+      return false;
+    if (dt == DataType::f32) {
+      return val_f32 == o.val_f32;
+    } else if (dt == DataType::i32) {
+      return val_i32 == o.val_i32;
+    } else {
+      TC_NOT_IMPLEMENTED
+      return false;
     }
   }
 };

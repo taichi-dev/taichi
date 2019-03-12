@@ -57,6 +57,7 @@ class PragmaSLPStmt;
 namespace irpass {
 
 void re_id(IRNode *root);
+void eliminate_dup(IRNode *root);
 void print(IRNode *root);
 void lower(IRNode *root);
 void typecheck(IRNode *root);

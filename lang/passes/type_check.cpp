@@ -47,6 +47,7 @@ class TypeCheck : public IRVisitor {
       stmt->ptr->ret_type = stmt->data->ret_type;
     }
     TC_ASSERT(stmt->ptr->ret_type == stmt->data->ret_type);
+    stmt->ret_type = stmt->ptr->ret_type;
   }
 
 

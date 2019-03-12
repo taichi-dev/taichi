@@ -64,7 +64,8 @@ class BasicBlockEliminate : public IRVisitor {
         if (stmt->elements[l].index != l)
           inc_index = false;
       }
-      if (same_source && inc_index) {
+      if (same_source && inc_index &&
+          stmt->elements[0].stmt->ret_type == stmt->ret_type) {
         // useless shuffle.
         stmt->replace_with(stmt->elements[0].stmt);
         stmt->parent->erase(current_stmt_id);
@@ -115,7 +116,7 @@ class BasicBlockEliminate : public IRVisitor {
           if (same) {
             // no store to the var?
             bool has_related_store = false;
-            for (int j = i + 1; j + 1 < current_stmt_id; j++) {
+            for (int j = i + 1; j < current_stmt_id; j++) {
               if (block->statements[j]->is<LocalStoreStmt>()) {
                 auto st = block->statements[j]->as<LocalStoreStmt>();
                 for (auto var : vars) {

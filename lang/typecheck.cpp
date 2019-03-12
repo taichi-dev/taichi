@@ -117,6 +117,11 @@ class TypeCheck : public IRVisitor {
     }
   }
 
+  void visit(ElementShuffleStmt *stmt) {
+    TC_ASSERT(stmt->elements.size() != 0);
+    stmt->element_type() = stmt->elements[0].stmt->element_type();
+  }
+
   static void run(IRNode *node) {
     TypeCheck inst;
     node->accept(&inst);

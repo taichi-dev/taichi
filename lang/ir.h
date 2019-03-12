@@ -1011,6 +1011,7 @@ class Block : public IRNode {
       }
     }
     TC_ASSERT(location != -1);
+    old_statement->replace_with(new_statements.back().get());
     statements.erase(statements.begin() + location);
     for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
       insert(std::move(new_statements[i]), location);
@@ -1516,6 +1517,9 @@ class ElementShuffleStmt : public Statement {
       : elements(elements) {
     width() = elements.size();
     element_type() = elements[0].stmt->element_type();
+    for (int i = 0; i < width(); i++) {
+      add_operand(this->elements[i].stmt);
+    }
   }
 
   DEFINE_ACCEPT
@@ -1548,13 +1552,22 @@ class While {
 };
 
 template <typename T>
-Expr Rand() {
+inline Expr Rand() {
   return Expr(std::make_shared<RandExpression>(get_data_type<T>()));
 }
 
 template <typename T>
-T Eval(const T &t) {
+inline T Eval(const T &t) {
   return t.eval();
+}
+
+inline Expr copy(const Expr &expr) {
+  auto e = expr.eval();
+  auto stmt = Stmt::make<ElementShuffleStmt>(
+      VectorElement(e.cast<EvalExpression>()->stmt_ptr, 0));
+  auto eval_expr = std::make_shared<EvalExpression>(stmt.get());
+  current_ast_builder().insert(std::move(stmt));
+  return Expr(eval_expr);
 }
 
 TLANG_NAMESPACE_END

@@ -55,7 +55,7 @@ TC_TEST("cast_int") {
     __m128i i;
     int v[4];
   };
-  i = _mm_cvtps_epi32(f); // round to nearest, not floor....
+  i = _mm_cvtps_epi32(f);  // round to nearest, not floor....
   for (int j = 0; j < 4; j++) {
     TC_P(v[j]);
   }
@@ -341,6 +341,8 @@ TC_TEST("simd_mpm") {
       v4(3) = real(1);
 
       Vector base_coord = (inv_dx * pos - 0.5_f).cast_elements<int>();
+      auto base_offset = Eval(base_coord(0) * (n_grid * n_grid) +
+                              base_coord(1) * (n_grid) + base_coord(2));
       Vector fx = inv_dx * pos - base_coord.cast_elements<real>();
 
       Vector w[3];
@@ -375,18 +377,19 @@ TC_TEST("simd_mpm") {
         }
         affine(dim, i) = real(0);
       }
-      affine = Eval(affine);
+      int slp = 4;
+      SLP(slp);
+      for (int j = 0; j < dim; j++) {
+        for (int i = 0; i < dim + 1; i++) {
+          affine(i, j) = copy(affine(i, j));
+        }
+      }
 
       constexpr int T = 3;
       TC_WARN_IF(T != 3, "T is not 3");
 
-      auto base_offset = Eval(base_coord(0) * (n_grid * n_grid) +
-                              base_coord(1) * (n_grid) + base_coord(2));
       auto mv = Eval(mass * v4);
 
-      int slp = 4;
-
-      SLP(slp);
       auto contrib0 = Eval(mv - Eval(affine * fx));
       for (int i = 0; i < T; i++) {
         SLP(1);
@@ -447,8 +450,9 @@ TC_TEST("simd_mpm") {
     for (int j = 0; j < context.n; j++) {
       for (int k = 0; k < context.n; k++) {
         for (int d = 0; d < 4; d++) {
-          if (std::abs(grid(d).val<float32>(i * n_grid * n_grid + j * n_grid + k)-
-              context.grid[i][j][k][d]) > tolerance) {
+          if (std::abs(
+                  grid(d).val<float32>(i * n_grid * n_grid + j * n_grid + k) -
+                  context.grid[i][j][k][d]) > tolerance) {
             TC_WARN("{},{},{} {}", i, j, k, d);
           }
           TC_CHECK_EQUAL(
@@ -458,7 +462,7 @@ TC_TEST("simd_mpm") {
       }
     }
   }
-  for (int i = 0; i < 10000; i++)
+  for (int i = 0; i < 10; i++)
     TC_TIME(p2g());
 };
 

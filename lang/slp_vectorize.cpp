@@ -391,7 +391,7 @@ class SLPVectorize : public IRVisitor {
       }
     }
 
-    if (first_pragma_slp_location == -1) // no SLP pragma
+    if (first_pragma_slp_location == -1)  // no SLP pragma
       return;
 
     if (iter == 0 && first_pragma_slp_location != -1) {
@@ -431,6 +431,16 @@ class SLPVectorize : public IRVisitor {
           if (rec.find(old_alloca) != rec.end()) {
             s->ptr[l].var = rec[old_alloca].first;
             s->ptr[l].offset = rec[old_alloca].second;
+          }
+        }
+      } else if (stmt->is<ElementShuffleStmt>()) {
+        auto s = stmt->as<ElementShuffleStmt>();
+        for (int l = 0; l < stmt->width(); l++) {
+          auto old_stmt = s->elements[l].stmt;
+          TC_ASSERT(s->elements[l].index == 0);
+          if (rec.find(old_stmt) != rec.end()) {
+            s->elements[l].stmt = rec[old_stmt].first;
+            s->elements[l].index = rec[old_stmt].second;
           }
         }
       } else {

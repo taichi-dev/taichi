@@ -21,7 +21,7 @@ class ReId : public IRVisitor {
     re_id(stmt);
   }
 
-  void visit(Block *stmt_list) { // block itself has no id
+  void visit(Block *stmt_list) {  // block itself has no id
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
     }

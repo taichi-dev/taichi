@@ -181,13 +181,13 @@ Block *current_block = nullptr;
 
 template <>
 std::string to_string(const LaneAttribute<LocalAddress> &ptr) {
-  std::string ret = "local addr {";
+  std::string ret = " [";
   for (int i = 0; i < (int)ptr.size(); i++) {
     ret += fmt::format("{}[{}]", ptr[i].var->name(), ptr[i].offset);
     if (i + 1 < (int)ptr.size())
       ret += ", ";
   }
-  ret += "}";
+  ret += "]";
   return ret;
 }
 

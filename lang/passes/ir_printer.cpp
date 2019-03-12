@@ -170,22 +170,22 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) {
-    print("{}{} = load [{}]", stmt->type_hint(), stmt->name(),
+    print("{}{} = local load [{}]", stmt->type_hint(), stmt->name(),
           to_string(stmt->ptr));
   }
 
   void visit(LocalStoreStmt *stmt) {
-    print("{}{} local store [{} <- {}]", stmt->type_hint(), stmt->name(),
+    print("{}{} : local store [{} <- {}]", stmt->type_hint(), stmt->name(),
           stmt->ptr->name(), stmt->data->name());
   }
 
   void visit(GlobalLoadStmt *stmt) {
-    print("{}{} {} = global load {}", stmt->type_hint(), stmt->name(),
-          stmt->raw_name(), stmt->ptr->name());
+    print("{}{} = global load {}", stmt->type_hint(), stmt->name(),
+          stmt->ptr->name());
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    print("{}{} global store [{} <- {}]", stmt->type_hint(), stmt->name(),
+    print("{}{} : global store [{} <- {}]", stmt->type_hint(), stmt->name(),
           stmt->ptr->name(), stmt->data->name());
   }
 

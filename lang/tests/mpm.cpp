@@ -160,7 +160,6 @@ struct MPMContext {
   }
 
   void p2g_eigen() {
-      /*
     constexpr int T = 3;
     TC_WARN_IF(T != 3, "T is not 3");
 
@@ -177,9 +176,10 @@ struct MPMContext {
       Eigen::Matrix<int, 3, 1> base_coord =
           (p.pos * inv_dx - Vec::Ones() * 0.5_f).cast<int>();
       Vec fx = p.pos * inv_dx - base_coord.cast<real>();
-      Vec w[3]{Vec(0.5f) * sqr(Vec(1.5f) - fx),
-               Vec(0.75f) - sqr(fx - Vec(1.0f)),
-               Vec(0.5f) * sqr(fx - Vec(0.5f))};
+
+      Vec w[3]{0.5f * sqr(Vec::Ones() * 1.5f - fx),
+               0.75f * sqr(fx - Vec::Ones()),
+               0.5f * sqr(fx - Vec::Ones() * 0.5f)};
       real J = p.J;
       auto stress =  // Cauchy stress times dt and inv_dx
           -4 * inv_dx * inv_dx * dt * vol * (J - 1) *
@@ -191,17 +191,18 @@ struct MPMContext {
         for (int j = 0; j < T; j++) {
           for (int k = 0; k < T; k++) {
             Vec dpos = (Vec(i, j, k) - fx) * dx;
-            Eigen::Matrix<real, 4, 1> mv(p.v * mass,
-                                         mass);  // translational momentum
+            Eigen::Matrix<real, 4, 1> contrib;
+            for (int d = 0; d < 3; d++) {
+              contrib(d) = mass * p.v(d) + (affine * dpos)(d);
+            }
+            contrib(3) = mass;
             eigen_grid[base_coord(0) + i][base_coord(1) + j]
                       [base_coord(2) + k] +=
-                w[i](0) * w[j](1) * w[k](2) *
-                (mv + Eigen::Matrix<real, 4, 1>(affine * dpos, 0.0f));
+                w[i](0) * w[j](1) * w[k](2) * contrib;
           }
         }
       }
     }
-    */
   }
 
   using Vector = Vector3f;
@@ -312,7 +313,7 @@ struct MPMContext {
 #undef broadcast
 };
 
-TC_TEST("simd_mpm_intrinsics") {
+TC_TEST("simd_mpm_baselines") {
   {
     MPMContext context(128);
     context.p2g();
@@ -322,6 +323,7 @@ TC_TEST("simd_mpm_intrinsics") {
                 sizeof(MPMContext::Grid));
     context.clear_grid();
     context.p2g_intrinsics();
+    context.p2g_eigen();
 
     for (int i = 0; i < context.n; i++) {
       for (int j = 0; j < context.n; j++) {
@@ -329,6 +331,8 @@ TC_TEST("simd_mpm_intrinsics") {
           for (int d = 0; d < 4; d++) {
             // TC_INFO("{} {} {} {} , {}", i, j, k, d, grid_gt[i][j][k][d]);
             TC_CHECK_EQUAL(grid_gt[i][j][k][d], context.grid[i][j][k][d],
+                           1e-3_f);
+            TC_CHECK_EQUAL(grid_gt[i][j][k][d], context.eigen_grid[i][j][k](d),
                            1e-3_f);
           }
         }
@@ -345,6 +349,10 @@ TC_TEST("simd_mpm_intrinsics") {
   context.clear_grid();
   for (int i = 0; i < N; i++) {
     TC_TIME(context.p2g_intrinsics());
+  }
+
+  for (int i = 0; i < N; i++) {
+    TC_TIME(context.p2g_eigen());
   }
 };
 

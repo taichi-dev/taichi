@@ -11,18 +11,36 @@ float rsqrt(const float f) {
   return buf[0];
 }
 
-inline void svd(
-    float *a11, float *a12, float *a13,
-    float *a21, float *a22, float *a23,
-    float *a31, float *a32, float *a33,
-    float *u11, float *u12, float *u13,
-    float *u21, float *u22, float *u23,
-    float *u31, float *u32, float *u33,
-    float *v11, float *v12, float *v13,
-    float *v21, float *v22, float *v23,
-    float *v31, float *v32, float *v33,
-    float *sigma1, float *sigma2, float *sigma3
-    ) {
+inline void svd(float *a11,
+                float *a12,
+                float *a13,
+                float *a21,
+                float *a22,
+                float *a23,
+                float *a31,
+                float *a32,
+                float *a33,
+                float *u11,
+                float *u12,
+                float *u13,
+                float *u21,
+                float *u22,
+                float *u23,
+                float *u31,
+                float *u32,
+                float *u33,
+                float *v11,
+                float *v12,
+                float *v13,
+                float *v21,
+                float *v22,
+                float *v23,
+                float *v31,
+                float *v32,
+                float *v33,
+                float *sigma1,
+                float *sigma2,
+                float *sigma3) {
   const float Four_Gamma_Squared = sqrt(8.) + 3.;
   const float Sine_Pi_Over_Eight = .5 * sqrt(2. - sqrt(2.));
   const float Cosine_Pi_Over_Eight = .5 * sqrt(2. + sqrt(2.));
@@ -223,7 +241,6 @@ inline void svd(
     Sa33.f = a33[index];
 
     {
-
       union {
         float f;
         unsigned int ui;
@@ -242,7 +259,6 @@ inline void svd(
       } Sqvvz;
 
       {
-
         union {
           float f;
           unsigned int ui;

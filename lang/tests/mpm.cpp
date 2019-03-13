@@ -178,7 +178,7 @@ struct MPMContext {
       Vec fx = p.pos * inv_dx - base_coord.cast<real>();
 
       Vec w[3]{0.5f * sqr(Vec::Ones() * 1.5f - fx),
-               0.75f * sqr(fx - Vec::Ones()),
+               Vec::Ones() * 0.75f - sqr(fx - Vec::Ones()),
                0.5f * sqr(fx - Vec::Ones() * 0.5f)};
       real J = p.J;
       auto stress =  // Cauchy stress times dt and inv_dx

@@ -341,7 +341,7 @@ TC_TEST("simd_mpm_baselines") {
   }
 
   MPMContext context(4 * 1024 * 1024);
-  int N = 2;
+  int N = 4;
   for (int i = 0; i < N; i++) {
     TC_TIME(context.p2g());
   }
@@ -373,6 +373,7 @@ TC_TEST("simd_mpm") {
   prog.config.serial_schedule = true;
   prog.config.force_vectorized_global_load = true;
   prog.config.force_vectorized_global_store = true;
+  // prog.config.extra_flags = "-fno-slp-vectorize";
 
   Global(g_J, f32);
   Global(tmp, i32);

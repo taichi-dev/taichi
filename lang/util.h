@@ -46,6 +46,7 @@ struct CompileConfig {
   int max_vector_width;
   int print_ir;
   bool serial_schedule;
+  std::string extra_flags;
 
   CompileConfig() {
     arch = Arch::x86_64;
@@ -89,8 +90,10 @@ struct CompileConfig {
     auto cmd = fmt::format(
         "{} {} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/headers "
         "-ffp-contract=fast "
-        "-fopenmp -Wall -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} -lstdc++",
-        compiler_name(), input, gcc_opt_flag(), get_project_fn(), output);
+        "-fopenmp -Wall -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} -lstdc++ "
+        "{}",
+        compiler_name(), input, gcc_opt_flag(), get_project_fn(), output,
+        extra_flags);
 
     if (!verbose) {
       cmd += fmt::format(" 2> {}.log", input);

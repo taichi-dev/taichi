@@ -3,6 +3,9 @@
 #include <taichi/visual/gui.h>
 #include <tbb/tbb.h>
 #include <taichi/system/threading.h>
+#include <Eigen/Dense>
+#include <taichi/math/eigen.h>
+#include <Eigen/StdVector>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -76,6 +79,23 @@ struct MPMContext {
     }
   };
 
+  struct ParticleEigen {
+    // EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    Eigen::Matrix<real, 3, 3> C;
+    Eigen::Matrix<real, 3, 1> pos, v;
+    real J;
+    ParticleEigen() {
+    }
+
+    ParticleEigen(Particle &p) {
+      pos = to_eigen(p.pos);
+      v = to_eigen(p.v);
+      C = to_eigen(p.C);
+      J = p.J;
+    }
+  };
+
   int n_particles;  // num particles
   static constexpr real mass = 2.0_f;
   static constexpr real vol = 3.0_f;
@@ -86,17 +106,24 @@ struct MPMContext {
 
   using Grid = Vector4[n][n][n];
   Grid grid;
+  using EigenGrid = Eigen::Matrix<real, 4, 1>[n][n][n];
+  EigenGrid eigen_grid;
 
   void clear_grid() {
     std::memset(grid, 0, sizeof(grid));
+    std::memset(eigen_grid, 0, sizeof(eigen_grid));
   }
 
   std::vector<Particle> particles;
+  std::vector<ParticleEigen> eigen_particles;
 
   MPMContext(int n_particles) : n_particles(n_particles) {
     particles.resize(n_particles);
-    for (int i = 0; i < n_particles; i++)
+    eigen_particles.resize(n_particles);
+    for (int i = 0; i < n_particles; i++) {
       particles[i] = Particle();
+      eigen_particles[i] = ParticleEigen(particles[i]);
+    }
     clear_grid();
   }
 
@@ -130,6 +157,51 @@ struct MPMContext {
         }
       }
     }
+  }
+
+  void p2g_eigen() {
+      /*
+    constexpr int T = 3;
+    TC_WARN_IF(T != 3, "T is not 3");
+
+    for (int p_i = 0; p_i < n_particles; p_i++) {
+      using Vec = Eigen::Matrix<real, 3, 1>;
+      auto sqr = [](const Vec &vec) -> Vec {
+        Vec ret;
+        for (int i = 0; i < 3; i++) {
+          ret(i) = vec(i) * vec(i);
+        }
+        return ret;
+      };
+      auto &p = eigen_particles[p_i];
+      Eigen::Matrix<int, 3, 1> base_coord =
+          (p.pos * inv_dx - Vec::Ones() * 0.5_f).cast<int>();
+      Vec fx = p.pos * inv_dx - base_coord.cast<real>();
+      Vec w[3]{Vec(0.5f) * sqr(Vec(1.5f) - fx),
+               Vec(0.75f) - sqr(fx - Vec(1.0f)),
+               Vec(0.5f) * sqr(fx - Vec(0.5f))};
+      real J = p.J;
+      auto stress =  // Cauchy stress times dt and inv_dx
+          -4 * inv_dx * inv_dx * dt * vol * (J - 1) *
+          Eigen::Matrix<real, 3, 3>::Identity();
+      Eigen::Matrix<real, 3, 3> affine = stress + mass * p.C;
+
+      // Scatter to grid
+      for (int i = 0; i < T; i++) {
+        for (int j = 0; j < T; j++) {
+          for (int k = 0; k < T; k++) {
+            Vec dpos = (Vec(i, j, k) - fx) * dx;
+            Eigen::Matrix<real, 4, 1> mv(p.v * mass,
+                                         mass);  // translational momentum
+            eigen_grid[base_coord(0) + i][base_coord(1) + j]
+                      [base_coord(2) + k] +=
+                w[i](0) * w[j](1) * w[k](2) *
+                (mv + Eigen::Matrix<real, 4, 1>(affine * dpos, 0.0f));
+          }
+        }
+      }
+    }
+    */
   }
 
   using Vector = Vector3f;
@@ -462,7 +534,7 @@ TC_TEST("simd_mpm") {
       }
     }
   }
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < 100; i++)
     TC_TIME(p2g());
 };
 

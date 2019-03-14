@@ -11,6 +11,10 @@ float rsqrt(const float f) {
   return buf[0];
 }
 
+constexpr float Four_Gamma_Squared = 5.82842712474619f; // sqrt(8.) + 3.;
+constexpr float Sine_Pi_Over_Eight = 0.3826834323650897f; // .5 * sqrt(2. - sqrt(2.));
+constexpr float Cosine_Pi_Over_Eight = 0.9238795325112867f; //.5 * sqrt(2. + sqrt(2.));
+
 void svd(float *a11,
          float *a12,
          float *a13,
@@ -41,9 +45,6 @@ void svd(float *a11,
          float *sigma1,
          float *sigma2,
          float *sigma3) {
-  const float Four_Gamma_Squared = sqrt(8.) + 3.;
-  const float Sine_Pi_Over_Eight = .5 * sqrt(2. - sqrt(2.));
-  const float Cosine_Pi_Over_Eight = .5 * sqrt(2. + sqrt(2.));
 
   union {
     float f;

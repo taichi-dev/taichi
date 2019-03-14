@@ -53,6 +53,7 @@ constexpr float Sine_Pi_Over_Eight =
 constexpr float Cosine_Pi_Over_Eight =
     0.9238795325112867f;  //.5 * sqrt(2. + sqrt(2.));
 
+template <int sweeps = 4>
 TC_FORCE_INLINE void svd(const float a11,
                          const float a12,
                          const float a13,
@@ -358,7 +359,7 @@ TC_FORCE_INLINE void svd(const float a11,
   Stmp1.f = Sa33.f * Sa33.f;
   Ss33.f = Stmp1.f + Ss33.f;
 
-  for (int sweep = 0; sweep < 6; sweep++) {
+  for (int sweep = 0; sweep < sweeps; sweep++) {
     Ssh.f = Ss21.f * Sone_half.f;
     Stmp5.f = Ss11.f - Ss22.f;
 
@@ -1182,4 +1183,4 @@ TC_FORCE_INLINE void svd(const float a11,
   sigma3 = Sa33.f;
 }
 
-}
+}  // namespace SifakisSVD

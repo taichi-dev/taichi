@@ -307,7 +307,6 @@ TC_FORCE_INLINE void svd(const float a11,
   Stiny_number.f = 1.e-20;
   Ssmall_number.f = 1.e-12;
 
-  constexpr int index = 0;
   Sa11.f = a11;
   Sa21.f = a21;
   Sa31.f = a31;

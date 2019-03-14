@@ -11,41 +11,42 @@ float rsqrt(const float f) {
   return buf[0];
 }
 
-constexpr float Four_Gamma_Squared = 5.82842712474619f; // sqrt(8.) + 3.;
-constexpr float Sine_Pi_Over_Eight = 0.3826834323650897f; // .5 * sqrt(2. - sqrt(2.));
-constexpr float Cosine_Pi_Over_Eight = 0.9238795325112867f; //.5 * sqrt(2. + sqrt(2.));
+constexpr float Four_Gamma_Squared = 5.82842712474619f;  // sqrt(8.) + 3.;
+constexpr float Sine_Pi_Over_Eight =
+    0.3826834323650897f;  // .5 * sqrt(2. - sqrt(2.));
+constexpr float Cosine_Pi_Over_Eight =
+    0.9238795325112867f;  //.5 * sqrt(2. + sqrt(2.));
 
-void svd(float *a11,
-         float *a12,
-         float *a13,
-         float *a21,
-         float *a22,
-         float *a23,
-         float *a31,
-         float *a32,
-         float *a33,
-         float *u11,
-         float *u12,
-         float *u13,
-         float *u21,
-         float *u22,
-         float *u23,
-         float *u31,
-         float *u32,
-         float *u33,
-         float *v11,
-         float *v12,
-         float *v13,
-         float *v21,
-         float *v22,
-         float *v23,
-         float *v31,
-         float *v32,
-         float *v33,
-         float *sigma1,
-         float *sigma2,
-         float *sigma3) {
-
+void svd(const float a11,
+         const float a12,
+         const float a13,
+         const float a21,
+         const float a22,
+         const float a23,
+         const float a31,
+         const float a32,
+         const float a33,
+         float &u11,
+         float &u12,
+         float &u13,
+         float &u21,
+         float &u22,
+         float &u23,
+         float &u31,
+         float &u32,
+         float &u33,
+         float &v11,
+         float &v12,
+         float &v13,
+         float &v21,
+         float &v22,
+         float &v23,
+         float &v31,
+         float &v32,
+         float &v33,
+         float &sigma1,
+         float &sigma2,
+         float &sigma3) {
   union {
     float f;
     unsigned int ui;
@@ -270,15 +271,15 @@ void svd(float *a11,
   Ssmall_number.f = 1.e-12;
 
   constexpr int index = 0;
-  Sa11.f = a11[index];
-  Sa21.f = a21[index];
-  Sa31.f = a31[index];
-  Sa12.f = a12[index];
-  Sa22.f = a22[index];
-  Sa32.f = a32[index];
-  Sa13.f = a13[index];
-  Sa23.f = a23[index];
-  Sa33.f = a33[index];
+  Sa11.f = a11;
+  Sa21.f = a21;
+  Sa31.f = a31;
+  Sa12.f = a12;
+  Sa22.f = a22;
+  Sa32.f = a32;
+  Sa13.f = a13;
+  Sa23.f = a23;
+  Sa33.f = a33;
 
   Sqvs.f = 1.;
   Sqvvx.f = 0.;
@@ -1120,27 +1121,27 @@ void svd(float *a11,
   Su32.f = Su32.f + Stmp2.f;
   Su33.f = Su33.f - Stmp1.f;
 
-  u11[index] = Su11.f;
-  u21[index] = Su21.f;
-  u31[index] = Su31.f;
-  u12[index] = Su12.f;
-  u22[index] = Su22.f;
-  u32[index] = Su32.f;
-  u13[index] = Su13.f;
-  u23[index] = Su23.f;
-  u33[index] = Su33.f;
+  u11 = Su11.f;
+  u21 = Su21.f;
+  u31 = Su31.f;
+  u12 = Su12.f;
+  u22 = Su22.f;
+  u32 = Su32.f;
+  u13 = Su13.f;
+  u23 = Su23.f;
+  u33 = Su33.f;
 
-  v11[index] = Sv11.f;
-  v21[index] = Sv21.f;
-  v31[index] = Sv31.f;
-  v12[index] = Sv12.f;
-  v22[index] = Sv22.f;
-  v32[index] = Sv32.f;
-  v13[index] = Sv13.f;
-  v23[index] = Sv23.f;
-  v33[index] = Sv33.f;
+  v11 = Sv11.f;
+  v21 = Sv21.f;
+  v31 = Sv31.f;
+  v12 = Sv12.f;
+  v22 = Sv22.f;
+  v32 = Sv32.f;
+  v13 = Sv13.f;
+  v23 = Sv23.f;
+  v33 = Sv33.f;
 
-  sigma1[index] = Sa11.f;
-  sigma2[index] = Sa22.f;
-  sigma3[index] = Sa33.f;
+  sigma1 = Sa11.f;
+  sigma2 = Sa22.f;
+  sigma3 = Sa33.f;
 }

@@ -3,53 +3,23 @@
 #include <taichi/visual/gui.h>
 #include <tbb/tbb.h>
 #include <taichi/system/threading.h>
-
-void svd(float *a11,
-         float *a12,
-         float *a13,
-         float *a21,
-         float *a22,
-         float *a23,
-         float *a31,
-         float *a32,
-         float *a33,
-         float *u11,
-         float *u12,
-         float *u13,
-         float *u21,
-         float *u22,
-         float *u23,
-         float *u31,
-         float *u32,
-         float *u33,
-         float *v11,
-         float *v12,
-         float *v13,
-         float *v21,
-         float *v22,
-         float *v23,
-         float *v31,
-         float *v32,
-         float *v33,
-         float *sigma1,
-         float *sigma2,
-         float *sigma3);
+#include "scalar_svd.h"
 
 TLANG_NAMESPACE_BEGIN
 
 void eftychios_svd(Matrix3 &a, Matrix3 &u, Matrix3 &v, Vector3 &sig) {
   // clang-format off
   ::svd(
-      &a(0, 0), &a(0, 1), &a(0, 2),
-      &a(1, 0), &a(1, 1), &a(1, 2),
-      &a(2, 0), &a(2, 1), &a(2, 2),
-      &u(0, 0), &u(0, 1), &u(0, 2),
-      &u(1, 0), &u(1, 1), &u(1, 2),
-      &u(2, 0), &u(2, 1), &u(2, 2),
-      &v(0, 0), &v(0, 1), &v(0, 2),
-      &v(1, 0), &v(1, 1), &v(1, 2),
-      &v(2, 0), &v(2, 1), &v(2, 2),
-      &sig(0), &sig(1), &sig(2)
+      a(0, 0), a(0, 1), a(0, 2),
+      a(1, 0), a(1, 1), a(1, 2),
+      a(2, 0), a(2, 1), a(2, 2),
+      u(0, 0), u(0, 1), u(0, 2),
+      u(1, 0), u(1, 1), u(1, 2),
+      u(2, 0), u(2, 1), u(2, 2),
+      v(0, 0), v(0, 1), v(0, 2),
+      v(1, 0), v(1, 1), v(1, 2),
+      v(2, 0), v(2, 1), v(2, 2),
+      sig(0), sig(1), sig(2)
   );
   // clang-format on
 }

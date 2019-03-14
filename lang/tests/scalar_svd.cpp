@@ -12,35 +12,35 @@ float rsqrt(const float f) {
 }
 
 void svd(float *a11,
-                float *a12,
-                float *a13,
-                float *a21,
-                float *a22,
-                float *a23,
-                float *a31,
-                float *a32,
-                float *a33,
-                float *u11,
-                float *u12,
-                float *u13,
-                float *u21,
-                float *u22,
-                float *u23,
-                float *u31,
-                float *u32,
-                float *u33,
-                float *v11,
-                float *v12,
-                float *v13,
-                float *v21,
-                float *v22,
-                float *v23,
-                float *v31,
-                float *v32,
-                float *v33,
-                float *sigma1,
-                float *sigma2,
-                float *sigma3) {
+         float *a12,
+         float *a13,
+         float *a21,
+         float *a22,
+         float *a23,
+         float *a31,
+         float *a32,
+         float *a33,
+         float *u11,
+         float *u12,
+         float *u13,
+         float *u21,
+         float *u22,
+         float *u23,
+         float *u31,
+         float *u32,
+         float *u33,
+         float *v11,
+         float *v12,
+         float *v13,
+         float *v21,
+         float *v22,
+         float *v23,
+         float *v31,
+         float *v32,
+         float *v33,
+         float *sigma1,
+         float *sigma2,
+         float *sigma3) {
   const float Four_Gamma_Squared = sqrt(8.) + 3.;
   const float Sine_Pi_Over_Eight = .5 * sqrt(2. - sqrt(2.));
   const float Cosine_Pi_Over_Eight = .5 * sqrt(2. + sqrt(2.));
@@ -240,431 +240,427 @@ void svd(float *a11,
     Sa23.f = a23[index];
     Sa33.f = a33[index];
 
+    union {
+      float f;
+      unsigned int ui;
+    } Sqvs;
+    union {
+      float f;
+      unsigned int ui;
+    } Sqvvx;
+    union {
+      float f;
+      unsigned int ui;
+    } Sqvvy;
+    union {
+      float f;
+      unsigned int ui;
+    } Sqvvz;
+
+    union {
+      float f;
+      unsigned int ui;
+    } Ss11;
+    union {
+      float f;
+      unsigned int ui;
+    } Ss21;
+    union {
+      float f;
+      unsigned int ui;
+    } Ss31;
+    union {
+      float f;
+      unsigned int ui;
+    } Ss22;
+    union {
+      float f;
+      unsigned int ui;
+    } Ss32;
+    union {
+      float f;
+      unsigned int ui;
+    } Ss33;
+
+    Sqvs.f = 1.;
+    Sqvvx.f = 0.;
+    Sqvvy.f = 0.;
+    Sqvvz.f = 0.;
+
+    Ss11.f = Sa11.f * Sa11.f;
+    Stmp1.f = Sa21.f * Sa21.f;
+    Ss11.f = Stmp1.f + Ss11.f;
+    Stmp1.f = Sa31.f * Sa31.f;
+    Ss11.f = Stmp1.f + Ss11.f;
+
+    Ss21.f = Sa12.f * Sa11.f;
+    Stmp1.f = Sa22.f * Sa21.f;
+    Ss21.f = Stmp1.f + Ss21.f;
+    Stmp1.f = Sa32.f * Sa31.f;
+    Ss21.f = Stmp1.f + Ss21.f;
+
+    Ss31.f = Sa13.f * Sa11.f;
+    Stmp1.f = Sa23.f * Sa21.f;
+    Ss31.f = Stmp1.f + Ss31.f;
+    Stmp1.f = Sa33.f * Sa31.f;
+    Ss31.f = Stmp1.f + Ss31.f;
+
+    Ss22.f = Sa12.f * Sa12.f;
+    Stmp1.f = Sa22.f * Sa22.f;
+    Ss22.f = Stmp1.f + Ss22.f;
+    Stmp1.f = Sa32.f * Sa32.f;
+    Ss22.f = Stmp1.f + Ss22.f;
+
+    Ss32.f = Sa13.f * Sa12.f;
+    Stmp1.f = Sa23.f * Sa22.f;
+    Ss32.f = Stmp1.f + Ss32.f;
+    Stmp1.f = Sa33.f * Sa32.f;
+    Ss32.f = Stmp1.f + Ss32.f;
+
+    Ss33.f = Sa13.f * Sa13.f;
+    Stmp1.f = Sa23.f * Sa23.f;
+    Ss33.f = Stmp1.f + Ss33.f;
+    Stmp1.f = Sa33.f * Sa33.f;
+    Ss33.f = Stmp1.f + Ss33.f;
+
+    for (int sweep = 0; sweep < 6; sweep++) {
+      Ssh.f = Ss21.f * Sone_half.f;
+      Stmp5.f = Ss11.f - Ss22.f;
+
+      Stmp2.f = Ssh.f * Ssh.f;
+      Stmp1.ui = (Stmp2.f >= Stiny_number.f) ? 0xffffffff : 0;
+      Ssh.ui = Stmp1.ui & Ssh.ui;
+      Sch.ui = Stmp1.ui & Stmp5.ui;
+      Stmp2.ui = ~Stmp1.ui & Sone.ui;
+      Sch.ui = Sch.ui | Stmp2.ui;
+
+      Stmp1.f = Ssh.f * Ssh.f;
+      Stmp2.f = Sch.f * Sch.f;
+      Stmp3.f = Stmp1.f + Stmp2.f;
+      Stmp4.f = rsqrt(Stmp3.f);
+      Ssh.f = Stmp4.f * Ssh.f;
+      Sch.f = Stmp4.f * Sch.f;
+
+      Stmp1.f = Sfour_gamma_squared.f * Stmp1.f;
+      Stmp1.ui = (Stmp2.f <= Stmp1.f) ? 0xffffffff : 0;
+
+      Stmp2.ui = Ssine_pi_over_eight.ui & Stmp1.ui;
+      Ssh.ui = ~Stmp1.ui & Ssh.ui;
+      Ssh.ui = Ssh.ui | Stmp2.ui;
+      Stmp2.ui = Scosine_pi_over_eight.ui & Stmp1.ui;
+      Sch.ui = ~Stmp1.ui & Sch.ui;
+      Sch.ui = Sch.ui | Stmp2.ui;
+
+      Stmp1.f = Ssh.f * Ssh.f;
+      Stmp2.f = Sch.f * Sch.f;
+      Sc.f = Stmp2.f - Stmp1.f;
+      Ss.f = Sch.f * Ssh.f;
+      Ss.f = Ss.f + Ss.f;
+
+      Stmp3.f = Stmp1.f + Stmp2.f;
+      Ss33.f = Ss33.f * Stmp3.f;
+      Ss31.f = Ss31.f * Stmp3.f;
+      Ss32.f = Ss32.f * Stmp3.f;
+      Ss33.f = Ss33.f * Stmp3.f;
+
+      Stmp1.f = Ss.f * Ss31.f;
+      Stmp2.f = Ss.f * Ss32.f;
+      Ss31.f = Sc.f * Ss31.f;
+      Ss32.f = Sc.f * Ss32.f;
+      Ss31.f = Stmp2.f + Ss31.f;
+      Ss32.f = Ss32.f - Stmp1.f;
+
+      Stmp2.f = Ss.f * Ss.f;
+      Stmp1.f = Ss22.f * Stmp2.f;
+      Stmp3.f = Ss11.f * Stmp2.f;
+      Stmp4.f = Sc.f * Sc.f;
+      Ss11.f = Ss11.f * Stmp4.f;
+      Ss22.f = Ss22.f * Stmp4.f;
+      Ss11.f = Ss11.f + Stmp1.f;
+      Ss22.f = Ss22.f + Stmp3.f;
+      Stmp4.f = Stmp4.f - Stmp2.f;
+      Stmp2.f = Ss21.f + Ss21.f;
+      Ss21.f = Ss21.f * Stmp4.f;
+      Stmp4.f = Sc.f * Ss.f;
+      Stmp2.f = Stmp2.f * Stmp4.f;
+      Stmp5.f = Stmp5.f * Stmp4.f;
+      Ss11.f = Ss11.f + Stmp2.f;
+      Ss21.f = Ss21.f - Stmp5.f;
+      Ss22.f = Ss22.f - Stmp2.f;
+
+      Stmp1.f = Ssh.f * Sqvvx.f;
+      Stmp2.f = Ssh.f * Sqvvy.f;
+      Stmp3.f = Ssh.f * Sqvvz.f;
+      Ssh.f = Ssh.f * Sqvs.f;
+
+      Sqvs.f = Sch.f * Sqvs.f;
+      Sqvvx.f = Sch.f * Sqvvx.f;
+      Sqvvy.f = Sch.f * Sqvvy.f;
+      Sqvvz.f = Sch.f * Sqvvz.f;
+
+      Sqvvz.f = Sqvvz.f + Ssh.f;
+      Sqvs.f = Sqvs.f - Stmp3.f;
+      Sqvvx.f = Sqvvx.f + Stmp2.f;
+      Sqvvy.f = Sqvvy.f - Stmp1.f;
+      Ssh.f = Ss32.f * Sone_half.f;
+      Stmp5.f = Ss22.f - Ss33.f;
+
+      Stmp2.f = Ssh.f * Ssh.f;
+      Stmp1.ui = (Stmp2.f >= Stiny_number.f) ? 0xffffffff : 0;
+      Ssh.ui = Stmp1.ui & Ssh.ui;
+      Sch.ui = Stmp1.ui & Stmp5.ui;
+      Stmp2.ui = ~Stmp1.ui & Sone.ui;
+      Sch.ui = Sch.ui | Stmp2.ui;
+
+      Stmp1.f = Ssh.f * Ssh.f;
+      Stmp2.f = Sch.f * Sch.f;
+      Stmp3.f = Stmp1.f + Stmp2.f;
+      Stmp4.f = rsqrt(Stmp3.f);
+      Ssh.f = Stmp4.f * Ssh.f;
+      Sch.f = Stmp4.f * Sch.f;
+
+      Stmp1.f = Sfour_gamma_squared.f * Stmp1.f;
+      Stmp1.ui = (Stmp2.f <= Stmp1.f) ? 0xffffffff : 0;
+
+      Stmp2.ui = Ssine_pi_over_eight.ui & Stmp1.ui;
+      Ssh.ui = ~Stmp1.ui & Ssh.ui;
+      Ssh.ui = Ssh.ui | Stmp2.ui;
+      Stmp2.ui = Scosine_pi_over_eight.ui & Stmp1.ui;
+      Sch.ui = ~Stmp1.ui & Sch.ui;
+      Sch.ui = Sch.ui | Stmp2.ui;
+
+      Stmp1.f = Ssh.f * Ssh.f;
+      Stmp2.f = Sch.f * Sch.f;
+      Sc.f = Stmp2.f - Stmp1.f;
+      Ss.f = Sch.f * Ssh.f;
+      Ss.f = Ss.f + Ss.f;
+
+      Stmp3.f = Stmp1.f + Stmp2.f;
+      Ss11.f = Ss11.f * Stmp3.f;
+      Ss21.f = Ss21.f * Stmp3.f;
+      Ss31.f = Ss31.f * Stmp3.f;
+      Ss11.f = Ss11.f * Stmp3.f;
+
+      Stmp1.f = Ss.f * Ss21.f;
+      Stmp2.f = Ss.f * Ss31.f;
+      Ss21.f = Sc.f * Ss21.f;
+      Ss31.f = Sc.f * Ss31.f;
+      Ss21.f = Stmp2.f + Ss21.f;
+      Ss31.f = Ss31.f - Stmp1.f;
+
+      Stmp2.f = Ss.f * Ss.f;
+      Stmp1.f = Ss33.f * Stmp2.f;
+      Stmp3.f = Ss22.f * Stmp2.f;
+      Stmp4.f = Sc.f * Sc.f;
+      Ss22.f = Ss22.f * Stmp4.f;
+      Ss33.f = Ss33.f * Stmp4.f;
+      Ss22.f = Ss22.f + Stmp1.f;
+      Ss33.f = Ss33.f + Stmp3.f;
+      Stmp4.f = Stmp4.f - Stmp2.f;
+      Stmp2.f = Ss32.f + Ss32.f;
+      Ss32.f = Ss32.f * Stmp4.f;
+      Stmp4.f = Sc.f * Ss.f;
+      Stmp2.f = Stmp2.f * Stmp4.f;
+      Stmp5.f = Stmp5.f * Stmp4.f;
+      Ss22.f = Ss22.f + Stmp2.f;
+      Ss32.f = Ss32.f - Stmp5.f;
+      Ss33.f = Ss33.f - Stmp2.f;
+
+      Stmp1.f = Ssh.f * Sqvvx.f;
+      Stmp2.f = Ssh.f * Sqvvy.f;
+      Stmp3.f = Ssh.f * Sqvvz.f;
+      Ssh.f = Ssh.f * Sqvs.f;
+
+      Sqvs.f = Sch.f * Sqvs.f;
+      Sqvvx.f = Sch.f * Sqvvx.f;
+      Sqvvy.f = Sch.f * Sqvvy.f;
+      Sqvvz.f = Sch.f * Sqvvz.f;
+
+      Sqvvx.f = Sqvvx.f + Ssh.f;
+      Sqvs.f = Sqvs.f - Stmp1.f;
+      Sqvvy.f = Sqvvy.f + Stmp3.f;
+      Sqvvz.f = Sqvvz.f - Stmp2.f;
+      Ssh.f = Ss31.f * Sone_half.f;
+      Stmp5.f = Ss33.f - Ss11.f;
+
+      Stmp2.f = Ssh.f * Ssh.f;
+      Stmp1.ui = (Stmp2.f >= Stiny_number.f) ? 0xffffffff : 0;
+      Ssh.ui = Stmp1.ui & Ssh.ui;
+      Sch.ui = Stmp1.ui & Stmp5.ui;
+      Stmp2.ui = ~Stmp1.ui & Sone.ui;
+      Sch.ui = Sch.ui | Stmp2.ui;
+
+      Stmp1.f = Ssh.f * Ssh.f;
+      Stmp2.f = Sch.f * Sch.f;
+      Stmp3.f = Stmp1.f + Stmp2.f;
+      Stmp4.f = rsqrt(Stmp3.f);
+      Ssh.f = Stmp4.f * Ssh.f;
+      Sch.f = Stmp4.f * Sch.f;
+
+      Stmp1.f = Sfour_gamma_squared.f * Stmp1.f;
+      Stmp1.ui = (Stmp2.f <= Stmp1.f) ? 0xffffffff : 0;
+
+      Stmp2.ui = Ssine_pi_over_eight.ui & Stmp1.ui;
+      Ssh.ui = ~Stmp1.ui & Ssh.ui;
+      Ssh.ui = Ssh.ui | Stmp2.ui;
+      Stmp2.ui = Scosine_pi_over_eight.ui & Stmp1.ui;
+      Sch.ui = ~Stmp1.ui & Sch.ui;
+      Sch.ui = Sch.ui | Stmp2.ui;
+
+      Stmp1.f = Ssh.f * Ssh.f;
+      Stmp2.f = Sch.f * Sch.f;
+      Sc.f = Stmp2.f - Stmp1.f;
+      Ss.f = Sch.f * Ssh.f;
+      Ss.f = Ss.f + Ss.f;
+
+      Stmp3.f = Stmp1.f + Stmp2.f;
+      Ss22.f = Ss22.f * Stmp3.f;
+      Ss32.f = Ss32.f * Stmp3.f;
+      Ss21.f = Ss21.f * Stmp3.f;
+      Ss22.f = Ss22.f * Stmp3.f;
+
+      Stmp1.f = Ss.f * Ss32.f;
+      Stmp2.f = Ss.f * Ss21.f;
+      Ss32.f = Sc.f * Ss32.f;
+      Ss21.f = Sc.f * Ss21.f;
+      Ss32.f = Stmp2.f + Ss32.f;
+      Ss21.f = Ss21.f - Stmp1.f;
+
+      Stmp2.f = Ss.f * Ss.f;
+      Stmp1.f = Ss11.f * Stmp2.f;
+      Stmp3.f = Ss33.f * Stmp2.f;
+      Stmp4.f = Sc.f * Sc.f;
+      Ss33.f = Ss33.f * Stmp4.f;
+      Ss11.f = Ss11.f * Stmp4.f;
+      Ss33.f = Ss33.f + Stmp1.f;
+      Ss11.f = Ss11.f + Stmp3.f;
+      Stmp4.f = Stmp4.f - Stmp2.f;
+      Stmp2.f = Ss31.f + Ss31.f;
+      Ss31.f = Ss31.f * Stmp4.f;
+      Stmp4.f = Sc.f * Ss.f;
+      Stmp2.f = Stmp2.f * Stmp4.f;
+      Stmp5.f = Stmp5.f * Stmp4.f;
+      Ss33.f = Ss33.f + Stmp2.f;
+      Ss31.f = Ss31.f - Stmp5.f;
+      Ss11.f = Ss11.f - Stmp2.f;
+
+      Stmp1.f = Ssh.f * Sqvvx.f;
+      Stmp2.f = Ssh.f * Sqvvy.f;
+      Stmp3.f = Ssh.f * Sqvvz.f;
+      Ssh.f = Ssh.f * Sqvs.f;
+
+      Sqvs.f = Sch.f * Sqvs.f;
+      Sqvvx.f = Sch.f * Sqvvx.f;
+      Sqvvy.f = Sch.f * Sqvvy.f;
+      Sqvvz.f = Sch.f * Sqvvz.f;
+
+      Sqvvy.f = Sqvvy.f + Ssh.f;
+      Sqvs.f = Sqvs.f - Stmp2.f;
+      Sqvvz.f = Sqvvz.f + Stmp1.f;
+      Sqvvx.f = Sqvvx.f - Stmp3.f;
+    }
+
+    Stmp2.f = Sqvs.f * Sqvs.f;
+    Stmp1.f = Sqvvx.f * Sqvvx.f;
+    Stmp2.f = Stmp1.f + Stmp2.f;
+    Stmp1.f = Sqvvy.f * Sqvvy.f;
+    Stmp2.f = Stmp1.f + Stmp2.f;
+    Stmp1.f = Sqvvz.f * Sqvvz.f;
+    Stmp2.f = Stmp1.f + Stmp2.f;
+
+    Stmp1.f = rsqrt(Stmp2.f);
+    Stmp4.f = Stmp1.f * Sone_half.f;
+    Stmp3.f = Stmp1.f * Stmp4.f;
+    Stmp3.f = Stmp1.f * Stmp3.f;
+    Stmp3.f = Stmp2.f * Stmp3.f;
+    Stmp1.f = Stmp1.f + Stmp4.f;
+    Stmp1.f = Stmp1.f - Stmp3.f;
+
+    Sqvs.f = Sqvs.f * Stmp1.f;
+    Sqvvx.f = Sqvvx.f * Stmp1.f;
+    Sqvvy.f = Sqvvy.f * Stmp1.f;
+    Sqvvz.f = Sqvvz.f * Stmp1.f;
     {
-      union {
-        float f;
-        unsigned int ui;
-      } Sqvs;
-      union {
-        float f;
-        unsigned int ui;
-      } Sqvvx;
-      union {
-        float f;
-        unsigned int ui;
-      } Sqvvy;
-      union {
-        float f;
-        unsigned int ui;
-      } Sqvvz;
-
-      {
-        union {
-          float f;
-          unsigned int ui;
-        } Ss11;
-        union {
-          float f;
-          unsigned int ui;
-        } Ss21;
-        union {
-          float f;
-          unsigned int ui;
-        } Ss31;
-        union {
-          float f;
-          unsigned int ui;
-        } Ss22;
-        union {
-          float f;
-          unsigned int ui;
-        } Ss32;
-        union {
-          float f;
-          unsigned int ui;
-        } Ss33;
-
-        Sqvs.f = 1.;
-        Sqvvx.f = 0.;
-        Sqvvy.f = 0.;
-        Sqvvz.f = 0.;
-
-        Ss11.f = Sa11.f * Sa11.f;
-        Stmp1.f = Sa21.f * Sa21.f;
-        Ss11.f = Stmp1.f + Ss11.f;
-        Stmp1.f = Sa31.f * Sa31.f;
-        Ss11.f = Stmp1.f + Ss11.f;
-
-        Ss21.f = Sa12.f * Sa11.f;
-        Stmp1.f = Sa22.f * Sa21.f;
-        Ss21.f = Stmp1.f + Ss21.f;
-        Stmp1.f = Sa32.f * Sa31.f;
-        Ss21.f = Stmp1.f + Ss21.f;
-
-        Ss31.f = Sa13.f * Sa11.f;
-        Stmp1.f = Sa23.f * Sa21.f;
-        Ss31.f = Stmp1.f + Ss31.f;
-        Stmp1.f = Sa33.f * Sa31.f;
-        Ss31.f = Stmp1.f + Ss31.f;
-
-        Ss22.f = Sa12.f * Sa12.f;
-        Stmp1.f = Sa22.f * Sa22.f;
-        Ss22.f = Stmp1.f + Ss22.f;
-        Stmp1.f = Sa32.f * Sa32.f;
-        Ss22.f = Stmp1.f + Ss22.f;
-
-        Ss32.f = Sa13.f * Sa12.f;
-        Stmp1.f = Sa23.f * Sa22.f;
-        Ss32.f = Stmp1.f + Ss32.f;
-        Stmp1.f = Sa33.f * Sa32.f;
-        Ss32.f = Stmp1.f + Ss32.f;
-
-        Ss33.f = Sa13.f * Sa13.f;
-        Stmp1.f = Sa23.f * Sa23.f;
-        Ss33.f = Stmp1.f + Ss33.f;
-        Stmp1.f = Sa33.f * Sa33.f;
-        Ss33.f = Stmp1.f + Ss33.f;
-
-        for (int sweep = 0; sweep < 6; sweep++) {
-          Ssh.f = Ss21.f * Sone_half.f;
-          Stmp5.f = Ss11.f - Ss22.f;
-
-          Stmp2.f = Ssh.f * Ssh.f;
-          Stmp1.ui = (Stmp2.f >= Stiny_number.f) ? 0xffffffff : 0;
-          Ssh.ui = Stmp1.ui & Ssh.ui;
-          Sch.ui = Stmp1.ui & Stmp5.ui;
-          Stmp2.ui = ~Stmp1.ui & Sone.ui;
-          Sch.ui = Sch.ui | Stmp2.ui;
-
-          Stmp1.f = Ssh.f * Ssh.f;
-          Stmp2.f = Sch.f * Sch.f;
-          Stmp3.f = Stmp1.f + Stmp2.f;
-          Stmp4.f = rsqrt(Stmp3.f);
-          Ssh.f = Stmp4.f * Ssh.f;
-          Sch.f = Stmp4.f * Sch.f;
-
-          Stmp1.f = Sfour_gamma_squared.f * Stmp1.f;
-          Stmp1.ui = (Stmp2.f <= Stmp1.f) ? 0xffffffff : 0;
-
-          Stmp2.ui = Ssine_pi_over_eight.ui & Stmp1.ui;
-          Ssh.ui = ~Stmp1.ui & Ssh.ui;
-          Ssh.ui = Ssh.ui | Stmp2.ui;
-          Stmp2.ui = Scosine_pi_over_eight.ui & Stmp1.ui;
-          Sch.ui = ~Stmp1.ui & Sch.ui;
-          Sch.ui = Sch.ui | Stmp2.ui;
-
-          Stmp1.f = Ssh.f * Ssh.f;
-          Stmp2.f = Sch.f * Sch.f;
-          Sc.f = Stmp2.f - Stmp1.f;
-          Ss.f = Sch.f * Ssh.f;
-          Ss.f = Ss.f + Ss.f;
-
-          Stmp3.f = Stmp1.f + Stmp2.f;
-          Ss33.f = Ss33.f * Stmp3.f;
-          Ss31.f = Ss31.f * Stmp3.f;
-          Ss32.f = Ss32.f * Stmp3.f;
-          Ss33.f = Ss33.f * Stmp3.f;
-
-          Stmp1.f = Ss.f * Ss31.f;
-          Stmp2.f = Ss.f * Ss32.f;
-          Ss31.f = Sc.f * Ss31.f;
-          Ss32.f = Sc.f * Ss32.f;
-          Ss31.f = Stmp2.f + Ss31.f;
-          Ss32.f = Ss32.f - Stmp1.f;
-
-          Stmp2.f = Ss.f * Ss.f;
-          Stmp1.f = Ss22.f * Stmp2.f;
-          Stmp3.f = Ss11.f * Stmp2.f;
-          Stmp4.f = Sc.f * Sc.f;
-          Ss11.f = Ss11.f * Stmp4.f;
-          Ss22.f = Ss22.f * Stmp4.f;
-          Ss11.f = Ss11.f + Stmp1.f;
-          Ss22.f = Ss22.f + Stmp3.f;
-          Stmp4.f = Stmp4.f - Stmp2.f;
-          Stmp2.f = Ss21.f + Ss21.f;
-          Ss21.f = Ss21.f * Stmp4.f;
-          Stmp4.f = Sc.f * Ss.f;
-          Stmp2.f = Stmp2.f * Stmp4.f;
-          Stmp5.f = Stmp5.f * Stmp4.f;
-          Ss11.f = Ss11.f + Stmp2.f;
-          Ss21.f = Ss21.f - Stmp5.f;
-          Ss22.f = Ss22.f - Stmp2.f;
-
-          Stmp1.f = Ssh.f * Sqvvx.f;
-          Stmp2.f = Ssh.f * Sqvvy.f;
-          Stmp3.f = Ssh.f * Sqvvz.f;
-          Ssh.f = Ssh.f * Sqvs.f;
-
-          Sqvs.f = Sch.f * Sqvs.f;
-          Sqvvx.f = Sch.f * Sqvvx.f;
-          Sqvvy.f = Sch.f * Sqvvy.f;
-          Sqvvz.f = Sch.f * Sqvvz.f;
-
-          Sqvvz.f = Sqvvz.f + Ssh.f;
-          Sqvs.f = Sqvs.f - Stmp3.f;
-          Sqvvx.f = Sqvvx.f + Stmp2.f;
-          Sqvvy.f = Sqvvy.f - Stmp1.f;
-          Ssh.f = Ss32.f * Sone_half.f;
-          Stmp5.f = Ss22.f - Ss33.f;
-
-          Stmp2.f = Ssh.f * Ssh.f;
-          Stmp1.ui = (Stmp2.f >= Stiny_number.f) ? 0xffffffff : 0;
-          Ssh.ui = Stmp1.ui & Ssh.ui;
-          Sch.ui = Stmp1.ui & Stmp5.ui;
-          Stmp2.ui = ~Stmp1.ui & Sone.ui;
-          Sch.ui = Sch.ui | Stmp2.ui;
-
-          Stmp1.f = Ssh.f * Ssh.f;
-          Stmp2.f = Sch.f * Sch.f;
-          Stmp3.f = Stmp1.f + Stmp2.f;
-          Stmp4.f = rsqrt(Stmp3.f);
-          Ssh.f = Stmp4.f * Ssh.f;
-          Sch.f = Stmp4.f * Sch.f;
-
-          Stmp1.f = Sfour_gamma_squared.f * Stmp1.f;
-          Stmp1.ui = (Stmp2.f <= Stmp1.f) ? 0xffffffff : 0;
-
-          Stmp2.ui = Ssine_pi_over_eight.ui & Stmp1.ui;
-          Ssh.ui = ~Stmp1.ui & Ssh.ui;
-          Ssh.ui = Ssh.ui | Stmp2.ui;
-          Stmp2.ui = Scosine_pi_over_eight.ui & Stmp1.ui;
-          Sch.ui = ~Stmp1.ui & Sch.ui;
-          Sch.ui = Sch.ui | Stmp2.ui;
-
-          Stmp1.f = Ssh.f * Ssh.f;
-          Stmp2.f = Sch.f * Sch.f;
-          Sc.f = Stmp2.f - Stmp1.f;
-          Ss.f = Sch.f * Ssh.f;
-          Ss.f = Ss.f + Ss.f;
-
-          Stmp3.f = Stmp1.f + Stmp2.f;
-          Ss11.f = Ss11.f * Stmp3.f;
-          Ss21.f = Ss21.f * Stmp3.f;
-          Ss31.f = Ss31.f * Stmp3.f;
-          Ss11.f = Ss11.f * Stmp3.f;
-
-          Stmp1.f = Ss.f * Ss21.f;
-          Stmp2.f = Ss.f * Ss31.f;
-          Ss21.f = Sc.f * Ss21.f;
-          Ss31.f = Sc.f * Ss31.f;
-          Ss21.f = Stmp2.f + Ss21.f;
-          Ss31.f = Ss31.f - Stmp1.f;
-
-          Stmp2.f = Ss.f * Ss.f;
-          Stmp1.f = Ss33.f * Stmp2.f;
-          Stmp3.f = Ss22.f * Stmp2.f;
-          Stmp4.f = Sc.f * Sc.f;
-          Ss22.f = Ss22.f * Stmp4.f;
-          Ss33.f = Ss33.f * Stmp4.f;
-          Ss22.f = Ss22.f + Stmp1.f;
-          Ss33.f = Ss33.f + Stmp3.f;
-          Stmp4.f = Stmp4.f - Stmp2.f;
-          Stmp2.f = Ss32.f + Ss32.f;
-          Ss32.f = Ss32.f * Stmp4.f;
-          Stmp4.f = Sc.f * Ss.f;
-          Stmp2.f = Stmp2.f * Stmp4.f;
-          Stmp5.f = Stmp5.f * Stmp4.f;
-          Ss22.f = Ss22.f + Stmp2.f;
-          Ss32.f = Ss32.f - Stmp5.f;
-          Ss33.f = Ss33.f - Stmp2.f;
-
-          Stmp1.f = Ssh.f * Sqvvx.f;
-          Stmp2.f = Ssh.f * Sqvvy.f;
-          Stmp3.f = Ssh.f * Sqvvz.f;
-          Ssh.f = Ssh.f * Sqvs.f;
-
-          Sqvs.f = Sch.f * Sqvs.f;
-          Sqvvx.f = Sch.f * Sqvvx.f;
-          Sqvvy.f = Sch.f * Sqvvy.f;
-          Sqvvz.f = Sch.f * Sqvvz.f;
-
-          Sqvvx.f = Sqvvx.f + Ssh.f;
-          Sqvs.f = Sqvs.f - Stmp1.f;
-          Sqvvy.f = Sqvvy.f + Stmp3.f;
-          Sqvvz.f = Sqvvz.f - Stmp2.f;
-          Ssh.f = Ss31.f * Sone_half.f;
-          Stmp5.f = Ss33.f - Ss11.f;
-
-          Stmp2.f = Ssh.f * Ssh.f;
-          Stmp1.ui = (Stmp2.f >= Stiny_number.f) ? 0xffffffff : 0;
-          Ssh.ui = Stmp1.ui & Ssh.ui;
-          Sch.ui = Stmp1.ui & Stmp5.ui;
-          Stmp2.ui = ~Stmp1.ui & Sone.ui;
-          Sch.ui = Sch.ui | Stmp2.ui;
-
-          Stmp1.f = Ssh.f * Ssh.f;
-          Stmp2.f = Sch.f * Sch.f;
-          Stmp3.f = Stmp1.f + Stmp2.f;
-          Stmp4.f = rsqrt(Stmp3.f);
-          Ssh.f = Stmp4.f * Ssh.f;
-          Sch.f = Stmp4.f * Sch.f;
-
-          Stmp1.f = Sfour_gamma_squared.f * Stmp1.f;
-          Stmp1.ui = (Stmp2.f <= Stmp1.f) ? 0xffffffff : 0;
-
-          Stmp2.ui = Ssine_pi_over_eight.ui & Stmp1.ui;
-          Ssh.ui = ~Stmp1.ui & Ssh.ui;
-          Ssh.ui = Ssh.ui | Stmp2.ui;
-          Stmp2.ui = Scosine_pi_over_eight.ui & Stmp1.ui;
-          Sch.ui = ~Stmp1.ui & Sch.ui;
-          Sch.ui = Sch.ui | Stmp2.ui;
-
-          Stmp1.f = Ssh.f * Ssh.f;
-          Stmp2.f = Sch.f * Sch.f;
-          Sc.f = Stmp2.f - Stmp1.f;
-          Ss.f = Sch.f * Ssh.f;
-          Ss.f = Ss.f + Ss.f;
-
-          Stmp3.f = Stmp1.f + Stmp2.f;
-          Ss22.f = Ss22.f * Stmp3.f;
-          Ss32.f = Ss32.f * Stmp3.f;
-          Ss21.f = Ss21.f * Stmp3.f;
-          Ss22.f = Ss22.f * Stmp3.f;
-
-          Stmp1.f = Ss.f * Ss32.f;
-          Stmp2.f = Ss.f * Ss21.f;
-          Ss32.f = Sc.f * Ss32.f;
-          Ss21.f = Sc.f * Ss21.f;
-          Ss32.f = Stmp2.f + Ss32.f;
-          Ss21.f = Ss21.f - Stmp1.f;
-
-          Stmp2.f = Ss.f * Ss.f;
-          Stmp1.f = Ss11.f * Stmp2.f;
-          Stmp3.f = Ss33.f * Stmp2.f;
-          Stmp4.f = Sc.f * Sc.f;
-          Ss33.f = Ss33.f * Stmp4.f;
-          Ss11.f = Ss11.f * Stmp4.f;
-          Ss33.f = Ss33.f + Stmp1.f;
-          Ss11.f = Ss11.f + Stmp3.f;
-          Stmp4.f = Stmp4.f - Stmp2.f;
-          Stmp2.f = Ss31.f + Ss31.f;
-          Ss31.f = Ss31.f * Stmp4.f;
-          Stmp4.f = Sc.f * Ss.f;
-          Stmp2.f = Stmp2.f * Stmp4.f;
-          Stmp5.f = Stmp5.f * Stmp4.f;
-          Ss33.f = Ss33.f + Stmp2.f;
-          Ss31.f = Ss31.f - Stmp5.f;
-          Ss11.f = Ss11.f - Stmp2.f;
-
-          Stmp1.f = Ssh.f * Sqvvx.f;
-          Stmp2.f = Ssh.f * Sqvvy.f;
-          Stmp3.f = Ssh.f * Sqvvz.f;
-          Ssh.f = Ssh.f * Sqvs.f;
-
-          Sqvs.f = Sch.f * Sqvs.f;
-          Sqvvx.f = Sch.f * Sqvvx.f;
-          Sqvvy.f = Sch.f * Sqvvy.f;
-          Sqvvz.f = Sch.f * Sqvvz.f;
-
-          Sqvvy.f = Sqvvy.f + Ssh.f;
-          Sqvs.f = Sqvs.f - Stmp2.f;
-          Sqvvz.f = Sqvvz.f + Stmp1.f;
-          Sqvvx.f = Sqvvx.f - Stmp3.f;
-        }
-      }
-
-      Stmp2.f = Sqvs.f * Sqvs.f;
       Stmp1.f = Sqvvx.f * Sqvvx.f;
-      Stmp2.f = Stmp1.f + Stmp2.f;
-      Stmp1.f = Sqvvy.f * Sqvvy.f;
-      Stmp2.f = Stmp1.f + Stmp2.f;
-      Stmp1.f = Sqvvz.f * Sqvvz.f;
-      Stmp2.f = Stmp1.f + Stmp2.f;
+      Stmp2.f = Sqvvy.f * Sqvvy.f;
+      Stmp3.f = Sqvvz.f * Sqvvz.f;
+      Sv11.f = Sqvs.f * Sqvs.f;
+      Sv22.f = Sv11.f - Stmp1.f;
+      Sv33.f = Sv22.f - Stmp2.f;
+      Sv33.f = Sv33.f + Stmp3.f;
+      Sv22.f = Sv22.f + Stmp2.f;
+      Sv22.f = Sv22.f - Stmp3.f;
+      Sv11.f = Sv11.f + Stmp1.f;
+      Sv11.f = Sv11.f - Stmp2.f;
+      Sv11.f = Sv11.f - Stmp3.f;
+      Stmp1.f = Sqvvx.f + Sqvvx.f;
+      Stmp2.f = Sqvvy.f + Sqvvy.f;
+      Stmp3.f = Sqvvz.f + Sqvvz.f;
+      Sv32.f = Sqvs.f * Stmp1.f;
+      Sv13.f = Sqvs.f * Stmp2.f;
+      Sv21.f = Sqvs.f * Stmp3.f;
+      Stmp1.f = Sqvvy.f * Stmp1.f;
+      Stmp2.f = Sqvvz.f * Stmp2.f;
+      Stmp3.f = Sqvvx.f * Stmp3.f;
+      Sv12.f = Stmp1.f - Sv21.f;
+      Sv23.f = Stmp2.f - Sv32.f;
+      Sv31.f = Stmp3.f - Sv13.f;
+      Sv21.f = Stmp1.f + Sv21.f;
+      Sv32.f = Stmp2.f + Sv32.f;
+      Sv13.f = Stmp3.f + Sv13.f;
+      Stmp2.f = Sa12.f;
+      Stmp3.f = Sa13.f;
+      Sa12.f = Sv12.f * Sa11.f;
+      Sa13.f = Sv13.f * Sa11.f;
+      Sa11.f = Sv11.f * Sa11.f;
+      Stmp1.f = Sv21.f * Stmp2.f;
+      Sa11.f = Sa11.f + Stmp1.f;
+      Stmp1.f = Sv31.f * Stmp3.f;
+      Sa11.f = Sa11.f + Stmp1.f;
+      Stmp1.f = Sv22.f * Stmp2.f;
+      Sa12.f = Sa12.f + Stmp1.f;
+      Stmp1.f = Sv32.f * Stmp3.f;
+      Sa12.f = Sa12.f + Stmp1.f;
+      Stmp1.f = Sv23.f * Stmp2.f;
+      Sa13.f = Sa13.f + Stmp1.f;
+      Stmp1.f = Sv33.f * Stmp3.f;
+      Sa13.f = Sa13.f + Stmp1.f;
 
-      Stmp1.f = rsqrt(Stmp2.f);
-      Stmp4.f = Stmp1.f * Sone_half.f;
-      Stmp3.f = Stmp1.f * Stmp4.f;
-      Stmp3.f = Stmp1.f * Stmp3.f;
-      Stmp3.f = Stmp2.f * Stmp3.f;
-      Stmp1.f = Stmp1.f + Stmp4.f;
-      Stmp1.f = Stmp1.f - Stmp3.f;
+      Stmp2.f = Sa22.f;
+      Stmp3.f = Sa23.f;
+      Sa22.f = Sv12.f * Sa21.f;
+      Sa23.f = Sv13.f * Sa21.f;
+      Sa21.f = Sv11.f * Sa21.f;
+      Stmp1.f = Sv21.f * Stmp2.f;
+      Sa21.f = Sa21.f + Stmp1.f;
+      Stmp1.f = Sv31.f * Stmp3.f;
+      Sa21.f = Sa21.f + Stmp1.f;
+      Stmp1.f = Sv22.f * Stmp2.f;
+      Sa22.f = Sa22.f + Stmp1.f;
+      Stmp1.f = Sv32.f * Stmp3.f;
+      Sa22.f = Sa22.f + Stmp1.f;
+      Stmp1.f = Sv23.f * Stmp2.f;
+      Sa23.f = Sa23.f + Stmp1.f;
+      Stmp1.f = Sv33.f * Stmp3.f;
+      Sa23.f = Sa23.f + Stmp1.f;
 
-      Sqvs.f = Sqvs.f * Stmp1.f;
-      Sqvvx.f = Sqvvx.f * Stmp1.f;
-      Sqvvy.f = Sqvvy.f * Stmp1.f;
-      Sqvvz.f = Sqvvz.f * Stmp1.f;
-      {
-        Stmp1.f = Sqvvx.f * Sqvvx.f;
-        Stmp2.f = Sqvvy.f * Sqvvy.f;
-        Stmp3.f = Sqvvz.f * Sqvvz.f;
-        Sv11.f = Sqvs.f * Sqvs.f;
-        Sv22.f = Sv11.f - Stmp1.f;
-        Sv33.f = Sv22.f - Stmp2.f;
-        Sv33.f = Sv33.f + Stmp3.f;
-        Sv22.f = Sv22.f + Stmp2.f;
-        Sv22.f = Sv22.f - Stmp3.f;
-        Sv11.f = Sv11.f + Stmp1.f;
-        Sv11.f = Sv11.f - Stmp2.f;
-        Sv11.f = Sv11.f - Stmp3.f;
-        Stmp1.f = Sqvvx.f + Sqvvx.f;
-        Stmp2.f = Sqvvy.f + Sqvvy.f;
-        Stmp3.f = Sqvvz.f + Sqvvz.f;
-        Sv32.f = Sqvs.f * Stmp1.f;
-        Sv13.f = Sqvs.f * Stmp2.f;
-        Sv21.f = Sqvs.f * Stmp3.f;
-        Stmp1.f = Sqvvy.f * Stmp1.f;
-        Stmp2.f = Sqvvz.f * Stmp2.f;
-        Stmp3.f = Sqvvx.f * Stmp3.f;
-        Sv12.f = Stmp1.f - Sv21.f;
-        Sv23.f = Stmp2.f - Sv32.f;
-        Sv31.f = Stmp3.f - Sv13.f;
-        Sv21.f = Stmp1.f + Sv21.f;
-        Sv32.f = Stmp2.f + Sv32.f;
-        Sv13.f = Stmp3.f + Sv13.f;
-        Stmp2.f = Sa12.f;
-        Stmp3.f = Sa13.f;
-        Sa12.f = Sv12.f * Sa11.f;
-        Sa13.f = Sv13.f * Sa11.f;
-        Sa11.f = Sv11.f * Sa11.f;
-        Stmp1.f = Sv21.f * Stmp2.f;
-        Sa11.f = Sa11.f + Stmp1.f;
-        Stmp1.f = Sv31.f * Stmp3.f;
-        Sa11.f = Sa11.f + Stmp1.f;
-        Stmp1.f = Sv22.f * Stmp2.f;
-        Sa12.f = Sa12.f + Stmp1.f;
-        Stmp1.f = Sv32.f * Stmp3.f;
-        Sa12.f = Sa12.f + Stmp1.f;
-        Stmp1.f = Sv23.f * Stmp2.f;
-        Sa13.f = Sa13.f + Stmp1.f;
-        Stmp1.f = Sv33.f * Stmp3.f;
-        Sa13.f = Sa13.f + Stmp1.f;
-
-        Stmp2.f = Sa22.f;
-        Stmp3.f = Sa23.f;
-        Sa22.f = Sv12.f * Sa21.f;
-        Sa23.f = Sv13.f * Sa21.f;
-        Sa21.f = Sv11.f * Sa21.f;
-        Stmp1.f = Sv21.f * Stmp2.f;
-        Sa21.f = Sa21.f + Stmp1.f;
-        Stmp1.f = Sv31.f * Stmp3.f;
-        Sa21.f = Sa21.f + Stmp1.f;
-        Stmp1.f = Sv22.f * Stmp2.f;
-        Sa22.f = Sa22.f + Stmp1.f;
-        Stmp1.f = Sv32.f * Stmp3.f;
-        Sa22.f = Sa22.f + Stmp1.f;
-        Stmp1.f = Sv23.f * Stmp2.f;
-        Sa23.f = Sa23.f + Stmp1.f;
-        Stmp1.f = Sv33.f * Stmp3.f;
-        Sa23.f = Sa23.f + Stmp1.f;
-
-        Stmp2.f = Sa32.f;
-        Stmp3.f = Sa33.f;
-        Sa32.f = Sv12.f * Sa31.f;
-        Sa33.f = Sv13.f * Sa31.f;
-        Sa31.f = Sv11.f * Sa31.f;
-        Stmp1.f = Sv21.f * Stmp2.f;
-        Sa31.f = Sa31.f + Stmp1.f;
-        Stmp1.f = Sv31.f * Stmp3.f;
-        Sa31.f = Sa31.f + Stmp1.f;
-        Stmp1.f = Sv22.f * Stmp2.f;
-        Sa32.f = Sa32.f + Stmp1.f;
-        Stmp1.f = Sv32.f * Stmp3.f;
-        Sa32.f = Sa32.f + Stmp1.f;
-        Stmp1.f = Sv23.f * Stmp2.f;
-        Sa33.f = Sa33.f + Stmp1.f;
-        Stmp1.f = Sv33.f * Stmp3.f;
-        Sa33.f = Sa33.f + Stmp1.f;
-      }
+      Stmp2.f = Sa32.f;
+      Stmp3.f = Sa33.f;
+      Sa32.f = Sv12.f * Sa31.f;
+      Sa33.f = Sv13.f * Sa31.f;
+      Sa31.f = Sv11.f * Sa31.f;
+      Stmp1.f = Sv21.f * Stmp2.f;
+      Sa31.f = Sa31.f + Stmp1.f;
+      Stmp1.f = Sv31.f * Stmp3.f;
+      Sa31.f = Sa31.f + Stmp1.f;
+      Stmp1.f = Sv22.f * Stmp2.f;
+      Sa32.f = Sa32.f + Stmp1.f;
+      Stmp1.f = Sv32.f * Stmp3.f;
+      Sa32.f = Sa32.f + Stmp1.f;
+      Stmp1.f = Sv23.f * Stmp2.f;
+      Sa33.f = Sa33.f + Stmp1.f;
+      Stmp1.f = Sv33.f * Stmp3.f;
+      Sa33.f = Sa33.f + Stmp1.f;
     }
 
     Stmp1.f = Sa11.f * Sa11.f;

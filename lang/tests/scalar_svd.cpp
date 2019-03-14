@@ -11,7 +11,7 @@ float rsqrt(const float f) {
   return buf[0];
 }
 
-inline void svd(float *a11,
+void svd(float *a11,
                 float *a12,
                 float *a13,
                 float *a21,
@@ -325,7 +325,7 @@ inline void svd(float *a11,
         Stmp1.f = Sa33.f * Sa33.f;
         Ss33.f = Stmp1.f + Ss33.f;
 
-        for (int sweep = 1; sweep <= 4; sweep++) {
+        for (int sweep = 0; sweep < 6; sweep++) {
           Ssh.f = Ss21.f * Sone_half.f;
           Stmp5.f = Ss11.f - Ss22.f;
 

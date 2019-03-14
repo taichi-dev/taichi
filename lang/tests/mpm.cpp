@@ -249,19 +249,6 @@ struct MPMContext {
       // Note, pos is magnified grid pos
       __m128 pos_ = _mm_mul_ps(p.pos.v, _mm_set1_ps(inv_delta_x));
 
-      /*
-      union {
-        int u[4];
-        __m128i v;
-      } grid_base_pos;
-
-      grid_base_pos.v = _mm_cvtps_epi32(_mm_sub_ps(pos_, _mm_set1_ps(0.5_f)));
-      auto base_offset = grid_base_pos.u[0] * n * n + grid_base_pos.u[1] * n +
-                         grid_base_pos.u[2];
-      Vector grid_base_pos_f(_mm_cvtepi32_ps(grid_base_pos.v));
-      grid_base_pos_f[3] = 0;
-      */
-
       Vectori grid_base_pos(get_stencil_start(pos_[0]),
                             get_stencil_start(pos_[1]),
                             get_stencil_start(pos_[2]));
@@ -280,8 +267,7 @@ struct MPMContext {
       auto stress = -vol * Matrix3(p.J - 1);
 
       __m128 delta_t_tmp_force_[3];
-      Matrix3 &delta_t_tmp_force =
-          reinterpret_cast<Matrix &>(delta_t_tmp_force_);
+      auto &delta_t_tmp_force = reinterpret_cast<Matrix &>(delta_t_tmp_force_);
       for (int i = 0; i < 3; i++) {
         delta_t_tmp_force_[i] = _mm_mul_ps(_mm_set1_ps(delta_t), stress[i]);
       }

@@ -2,7 +2,43 @@
 #include <immintrin.h>
 #include <algorithm>
 
-float rsqrt(const float f) {
+namespace SifakisSVD {
+
+/*
+http://pages.cs.wisc.edu/~sifakis/project_pages/svd.html
+
+Computing the Singular Value Decomposition of 3x3 matrices with minimal
+branching and elementary floating point operations
+
+A. McAdams, A. Selle, R. Tamstorf, J. Teran and E. Sifakis
+*/
+
+//#####################################################################
+// Copyright (c) 2010-2011, Eftychios Sifakis.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//   * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+//   * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or
+//     other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+//#####################################################################
+
+TC_FORCE_INLINE float rsqrt(const float f) {
   float buf[4];
   buf[0] = f;
   __m128 v = _mm_loadu_ps(buf);
@@ -17,36 +53,36 @@ constexpr float Sine_Pi_Over_Eight =
 constexpr float Cosine_Pi_Over_Eight =
     0.9238795325112867f;  //.5 * sqrt(2. + sqrt(2.));
 
-void svd(const float a11,
-         const float a12,
-         const float a13,
-         const float a21,
-         const float a22,
-         const float a23,
-         const float a31,
-         const float a32,
-         const float a33,
-         float &u11,
-         float &u12,
-         float &u13,
-         float &u21,
-         float &u22,
-         float &u23,
-         float &u31,
-         float &u32,
-         float &u33,
-         float &v11,
-         float &v12,
-         float &v13,
-         float &v21,
-         float &v22,
-         float &v23,
-         float &v31,
-         float &v32,
-         float &v33,
-         float &sigma1,
-         float &sigma2,
-         float &sigma3) {
+TC_FORCE_INLINE void svd(const float a11,
+                         const float a12,
+                         const float a13,
+                         const float a21,
+                         const float a22,
+                         const float a23,
+                         const float a31,
+                         const float a32,
+                         const float a33,
+                         float &u11,
+                         float &u12,
+                         float &u13,
+                         float &u21,
+                         float &u22,
+                         float &u23,
+                         float &u31,
+                         float &u32,
+                         float &u33,
+                         float &v11,
+                         float &v12,
+                         float &v13,
+                         float &v21,
+                         float &v22,
+                         float &v23,
+                         float &v31,
+                         float &v32,
+                         float &v33,
+                         float &sigma1,
+                         float &sigma2,
+                         float &sigma3) {
   union {
     float f;
     unsigned int ui;
@@ -1144,4 +1180,6 @@ void svd(const float a11,
   sigma1 = Sa11.f;
   sigma2 = Sa22.f;
   sigma3 = Sa33.f;
+}
+
 }

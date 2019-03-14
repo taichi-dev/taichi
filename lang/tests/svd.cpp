@@ -7,9 +7,9 @@
 
 TLANG_NAMESPACE_BEGIN
 
-void eftychios_svd(Matrix3 &a, Matrix3 &u, Matrix3 &v, Vector3 &sig) {
+void sifakis_svd(Matrix3 &a, Matrix3 &u, Matrix3 &v, Vector3 &sig) {
   // clang-format off
-  ::svd(
+  SifakisSVD::svd(
       a(0, 0), a(0, 1), a(0, 2),
       a(1, 0), a(1, 1), a(1, 2),
       a(2, 0), a(2, 1), a(2, 2),
@@ -35,7 +35,7 @@ inline void test_decompositions() {
     Matrix U, sig, V, Q, R, S;
     Vector sig_vec;
 
-    eftychios_svd(m, U, V, sig_vec);
+    sifakis_svd(m, U, V, sig_vec);
     sig = Matrix(sig_vec);
     TC_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
     TC_CHECK_EQUAL(Matrix(1), U * transposed(U), tolerance);

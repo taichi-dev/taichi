@@ -15,10 +15,12 @@ using Mat = Matrix2;
 // Window
 const int window_size = 800;
 
+const int q = 2;
 // Grid resolution (cells)
-const int n = 80;
+const int n = 80 * q;
 
-const real dt = 5e-5_f;
+
+const real dt = 5e-5_f / q;
 const real frame_dt = 1e-3_f;
 const real dx = 1.0_f / n;
 const real inv_dx = 1.0_f / dx;
@@ -26,12 +28,12 @@ const real inv_dx = 1.0_f / dx;
 // Snow material properties
 const auto particle_mass = 1.0_f;
 const auto vol = 1.0_f;  // Particle Volume
-const auto E = 1e5_f;    // Young's Modulus
+const auto E = 2e5_f;    // Young's Modulus
 const auto nu = 0.2_f;   // Poisson ratio
 const bool plastic = false;
 
 // Initial Lamé parameters
-const real mu_0 = 0.01 * E;
+const real mu_0 = 0.3 * E;
 const real lambda_0 = 0.5 * E;  // * nu / ((1+nu) * (1 - 2 * nu));
 real max_norm;
 
@@ -46,8 +48,10 @@ struct Particle {
   real Jp;
   // Color
   int c;
+  real fluid;
 
-  Particle(Vec x, int c, Vec v = Vec(0)) : x(x), v(v), F(1), C(0), Jp(1), c(c) {
+  Particle(Vec x, int c, real fluid = 0)
+      : x(x), v(Vec(0)), F(1), C(0), Jp(1), c(c), fluid(fluid) {
   }
 };
 
@@ -78,11 +82,12 @@ void advance(real dt) {
     auto lambda = lambda_0 * e;
 
     // Current volume
-    real J = determinant(p.F);
+    real J = p.Jp;
 
     // Polar decomposition for fixed corotated model
     Mat r, s;
     polar_decomp(p.F, r, s);
+    p.F = lerp(p.fluid, p.F, r);
 
     max_entry_in_F = std::max(max_entry_in_F, p.F.frobenius_norm());
 
@@ -139,7 +144,8 @@ void advance(real dt) {
         }
         // Separate boundary
         if (y < boundary) {
-          g[1] = std::max(0.0f, g[1]);
+          // g[1] = std::max(0.0f, g[1]);
+          g[1] = 0.0f;
         }
       }
     }
@@ -190,6 +196,8 @@ void advance(real dt) {
     real Jp_new = p.Jp * determinant(F) / determinant(p.F);
 
     p.Jp = Jp_new;
+
+    F = (1.0f / std::sqrt(determinant(F))) * F;
     p.F = F;
   }
 }
@@ -197,9 +205,12 @@ void advance(real dt) {
 // Seed particles with position and color
 void add_object(Vec center, int c) {
   // Randomly sample 1000 particles in the square
-  for (int i = 0; i < 1000; i++) {
+  for (int i = 0; i < q * q * 1000; i++) {
+    auto r = Vec::rand();
+    auto f = clamp(r.x * 1.0_f - 0.0_f, 0_f, 1_f);
+    f = f * f;
     particles.push_back(
-        Particle((Vec::rand() * 2.0f - Vec(1)) * 0.08f + center, c));
+        Particle((r * Vec(4, 1) - Vec(1)) * 0.1f + center, c, f));
   }
 }
 
@@ -207,9 +218,10 @@ int main() {
   GUI gui("Real-time 2D MLS-MPM", window_size, window_size);
   auto &canvas = gui.get_canvas();
 
-  add_object(Vec(0.55, 0.45), 0xED553B);
-  add_object(Vec(0.45, 0.65), 0xF2B134);
-  add_object(Vec(0.55, 0.85), 0x068587);
+  real dy = 0.45;
+  add_object(Vec(0.4, dy), 0xED553B);
+  add_object(Vec(0.4, dy + 0.1), 0xF2B134);
+  add_object(Vec(0.4, dy + 0.2), 0x068587);
 
   int frame = 0;
 
@@ -223,12 +235,12 @@ int main() {
       // Clear background
       canvas.clear(0x112F41);
       // Box
-      canvas.rect(Vec(0.04), Vec(0.96)).radius(2).color(0x4FB99F).close();
-      canvas.text(fmt::format("max_p ||F_p||_2 = {}", max_norm), Vector2(0.05, 0.9),
-                  20, Vector4(1));
+      canvas.rect(Vec(0.04), Vec(0.96)).radius(1).color(0x4FB99F).close();
+      canvas.text(fmt::format("max_p ||F_p||_2 = {}", max_norm),
+                  Vector2(0.05, 0.9), 20, Vector4(1));
       // Particles
       for (auto p : particles) {
-        canvas.circle(p.x).radius(2).color(p.c);
+        canvas.circle(p.x).radius(1.5).color(p.c);//1.0f - p.fluid, 0.2f, 0.7 * p.fluid);
       }
       // Update image
       gui.update();

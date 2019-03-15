@@ -28,7 +28,7 @@ const real inv_dx = 1.0_f / dx;
 // Snow material properties
 const auto particle_mass = 1.0_f;
 const auto vol = 1.0_f;  // Particle Volume
-const auto E = 2e5_f;    // Young's Modulus
+const auto E = 5e4_f;    // Young's Modulus
 const auto nu = 0.2_f;   // Poisson ratio
 const bool plastic = false;
 
@@ -97,7 +97,7 @@ void advance(real dt) {
     auto PF = (2 * mu * (p.F - r) * transposed(p.F) + lambda * (J - 1) * J);
 
     // Cauchy stress times dt and inv_dx
-    auto stress = -(dt * vol) * (Dinv * PF) * 0.1;
+    auto stress = -(dt * vol) * (Dinv * PF);
     // auto stress = -(100 * E * dt * vol) * Mat(p.Jp - 1);
     // auto stress = -(50 * E * dt * vol) * Mat(determinant(p.F) - 1);
 
@@ -193,11 +193,7 @@ void advance(real dt) {
     F = svd_u * sig * transposed(svd_v);
 
      */
-    real Jp_new = p.Jp * determinant(F) / determinant(p.F);
-
-    p.Jp = Jp_new;
-
-    F = (1.0f / std::sqrt(determinant(F))) * F;
+    p.Jp *= determinant(F) / determinant(p.F);
     p.F = F;
   }
 }
@@ -246,7 +242,7 @@ int main() {
       gui.update();
 
       // Write to disk (optional)
-      canvas.img.write_as_image(fmt::format("tmp/{:05d}.png", frame++));
+      // canvas.img.write_as_image(fmt::format("tmp/{:05d}.png", frame++));
     }
   }
 }

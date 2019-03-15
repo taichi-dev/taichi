@@ -1,0 +1,422 @@
+/**
+
+@page transformsAndMaps Transforms and Maps
+
+@section sMathContents Contents
+- @ref sTransforms
+  - @ref sLinearTransforms
+  - @ref sFrustumTransforms
+  - @ref sCellVsVertex
+  - @ref sVoxels
+  - @ref sStaggered
+- @ref sMaps
+  - @ref sGettingMat4
+  - @ref sCostOfMaps
+  - @ref sGradientAndMaps
+
+@section sTransforms Transforms in OpenVDB
+The OpenVDB @vdblink::tree::Tree Tree@endlink is a sparse representation
+of a three-dimensional array of voxels, each element of which is addressed via
+discrete, three-dimensional index space coordinates, typically in the form of
+a @vdblink::math::Coord Coord@endlink.
+For example, the following code retrieves the floating-point value of
+a voxel with index coordinates&nbsp;(1,&nbsp;2,&nbsp;3):
+@code
+openvdb::FloatGrid grid = ...;
+openvdb::FloatGrid::Accessor accessor = grid.getAccessor();
+openvdb::Coord ijk(1,2,3);
+float value = accessor.getValue(ijk);
+@endcode
+
+A @vdblink::math::Transform Transform@endlink relates index space coordinates
+to world space coordinates that give a spatial context for the
+discretized data.
+Translation from index coordinates @ijk to world space coordinates @xyz is
+done with a call to the
+@vdblink::math::Transform::indexToWorld() indexToWorld@endlink
+method, and from world space coordinates to index space coordinates with
+a call to @vdblink::math::Transform::worldToIndex() worldToIndex@endlink:
+@code
+// Create a linear transform that scales i, j and k by 0.1
+openvdb::math::Transform::Ptr linearTransform =
+    openvdb::math::Transform::createLinearTransform(0.1);
+
+// Compute the location in world space that is the image of (1,2,3).
+// The result will be (0.1, 0.2, 0.3).
+openvdb::Coord ijk(1,2,3);
+openvdb::Vec3d worldSpacePoint = linearTransform->indexToWorld(ijk);
+
+// Compute the location in index space that is the pre-image of (0.1, 0.2, 0.3).
+// The result will be (1.0, 2.0, 3.0).
+openvdb::Vec3d indexSpacePoint = linearTransform->worldToIndex(worldSpacePoint);
+@endcode
+In the above example, there are two things to notice.
+First, world space locations are specified as three-dimensional,
+double-precision, floating-point vectors, and second, @b worldToIndex
+does not return discrete coordinates, but rather a floating-point vector.
+This is a reflection of the fact that not every location in a continuous
+world space, i.e., not every @xyz, is the image of discrete integral
+coordinates @ijk.
+
+@subsection sLinearTransforms Linear Transforms
+Currently two different types of transforms are supported: linear and
+frustum transforms.
+A linear transform can be composed of scale, translation, rotation, and shear;
+essentially those things that can be mathematically represented by an
+invertible, constant-coefficient, 3&times;3 matrix and a translation
+(mathematically, an affine map).
+An essential feature of a linear transformation is that it treats all regions
+of index space equally: a small box in index space about origin @ijk=(0,0,0)
+is mapped (sheared, scaled, rotated, etc.) in just the same way that
+a small box about any other index point is mapped.
+@code
+// Create a linear transform from a 4x4 matrix (identity in this example).
+openvdb::math::Mat4d mat = openvdb::math::Mat4d::identity();
+openvdb::math::Transform::Ptr linearTransform =
+    openvdb::math::Transform::createLinearTransform(mat);
+
+// Rotate the transform by 90 degrees about the X axis.
+// As a result the j-index will now map into the -z physical direction,
+// and the k-index will map to the +y physical direction.
+linearTransform->preRotate(M_PI/2, openvdb::math::X_AXIS);
+@endcode
+
+@subsection sFrustumTransforms Frustum Transforms
+The frustum transform is a nonlinear transform that treats different
+index points differently.
+And while the linear transform can be applied to any point in index
+or world space, the frustum transform is designed to operate on a subset
+of space.  Specifically, it transforms a given box in index space to
+a tapered box in world space that is a frustum of a rectangular pyramid.
+@code
+// Create the bounding box that will be mapped by the transform into
+// the shape of a frustum.
+// The points (0,0,0), (100,0,0), (0,50,0) and (100,50,0) will map to
+// the corners of the near plane of the frustum, while the corners
+// of the far plane will be the images of (0,0,120), (100,0,120),
+// (0,50,120) and (100,50,120).
+const openvdb::math::BBoxd bbox(/*min=*/openvdb::math::Vec3d(0,0,0),
+                                /*max=*/openvdb::math::Vec3d(100,50,120));
+
+// The far plane of the frustum will be twice as big as the near plane.
+const double taper = 2;
+
+// The depth of the frustum will be 10 times the x-width of the near plane.
+cosnt double depth = 10;
+
+// The x-width of the frustum in world space units
+const double xWidth = 100;
+
+// Construct a frustum transform that results in a frustum whose
+// near plane is centered on the origin in world space.
+openvdb::math::Transform::Ptr frustumTransform =
+    openvdb::math:::Transform::createFrustumTransform(
+        bbox, taper, depth, xWidth);
+
+// The frustum shape can be rotated, scaled, translated and even
+// sheared if desired.  For example, the following call translates
+// the frustum by 10,15,0 in world space:
+frustumTransform->postTranslate(openvdb::math::Vec3d(10,15,0));
+
+// Compute the world space image of a given point within
+// the index space bounding box that defines the frustum.
+openvdb::Coord ijk(20,10,18);
+openvdb::Vec3d worldLocation = frustumTransform->indexToWorld(ijk);
+@endcode
+
+@subsection sCellVsVertex Cell-Centered vs. Vertex-Centered Transforms
+When partitioning world space with a regular grid, two popular
+configurations are cell-centered and vertex-centered grids.  This is really
+a question of interpretation and transforms.
+
+The cell-centered interpretation imagines world space as divided
+into discrete cells (e.g., cubes) centered on the image of the
+index-space lattice points.
+So the physical location @xyz that is the image (result of @b indexToWorld)
+of a lattice point @ijk is the center of a cube.
+In the vertex-centered approach, the images of the lattice points form the
+vertices of cells, so the location @xyz would be a corner, not the
+center, of a cube.
+
+The link between transforms and cell-centered or vertex-centered
+partitioning of world space is tenuous.
+It boils down to this: the &ldquo;first&rdquo; cell vertex often is aligned
+with the origin.
+In the cell-centered case, when the cells are cubes of length &Delta;
+on a side, the transform @xyz = (&Delta;<I>i</I> + &Delta;/2,
+&Delta;<I>j</I> + &Delta;/2, &Delta;<I>k</I> + &Delta; /2)
+will place the center of the first cube (i.e., the image of (0,0,0))
+at the world space location of (&Delta;/2,&nbsp;&Delta;/2,&nbsp;&Delta;/2),
+and the cube will have walls coincident with the <I>x</I>=0, <I>y</I>=0
+and <I>z</I>=0 planes.
+Using the OpenVDB transforms to create a so-called cell-centered transform
+could be done like this:
+@code
+// -- Constructing a uniform, cell-centered transform --
+
+// The grid spacing
+const double delta = 0.1;
+
+// The offset to cell-center points
+const openvdb::math::Vec3d offset(delta/2., delta/2., delta/2.);
+
+// A linear transform with the correct spacing
+openvdb::math::Transform::Ptr transform =
+    openvdb::math:::Transform::createLinearTransform(delta);
+
+// Add the offset.
+transform->postTranslate(offset);
+@endcode
+In contrast, for the vertex-centered partitions of space the first
+vertex is just the image of the first lattice point @ijk = (0,0,0),
+and the transform would lack the offset used in the cell-centered case;
+so it would simply be
+@xyz = (&Delta;<I>i</I>,&nbsp;&Delta;<I>j</I>,&nbsp;&Delta;<I>k</I>).
+@code
+// -- Constructing a uniform, vertex-centered transform --
+
+// The grid spacing
+const double delta = 0.1;
+
+// A linear transform with the correct spacing
+openvdb::math::Transform::Ptr transform =
+    openvdb::math:::Transform::createLinearTransform(delta);
+@endcode
+
+@subsection sVoxels Voxel Interpretations
+A similar and often related concept to cell- and vertex-centered
+partitioning of world space is the idea of a voxel.
+A voxel historically refers to the volumetric equivalent of a pixel
+and as such implies a small region of world space.
+A voxel could, for instance, be the image under transform of a vertex-centered
+(or cell-centered) box in index space.
+In this way the voxel can be seen as a generalization of regular grid cells.
+The interpretation of data stored in a grid can be related to the concept
+of a voxel but need not be.
+An application might interpret the grid value indexed by @ijk as the
+spatial average of a quantity in a defined world-space voxel centered
+on the image of that lattice point.
+But in other situations the value stored at @ijk might be a discrete sample
+taken from a single point in world space.
+
+The @vdblink::math::Transform Transform@endlink class does include
+methods such as @vdblink::math::Transform::voxelSize() voxelSize@endlink
+and @vdblink::math::Transform::voxelVolume() voxelVolume@endlink that suppose
+a particular interpretation of a voxel.
+They assume a voxel that is the image of a vertex-centered cube in index space,
+so the @b voxelSize methods return the lengths of line segments in world space
+that connect vertices:
+@code
+openvdb::Coord ijk(0,0,0);
+openvdb::Coord tmp0(1,0,0), tmp1(0,1,0), tmp2(0,0,1);
+
+openvdb::math::Vec3d size;
+size.x() = (xform.indexToWorld(ijk + tmp0) - xform.indexToWorld(ijk)).length();
+size.y() = (xform.indexToWorld(ijk + tmp1) - xform.indexToWorld(ijk)).length();
+size.z() = (xform.indexToWorld(ijk + tmp2) - xform.indexToWorld(ijk)).length();
+
+// The voxelSize() for the voxel at (0,0,0) is consistent with
+// the computation above.
+assert(xform.voxelSize(ijk) == size);
+@endcode
+In the case where the transform is linear, the result of @b voxelSize
+will be independent of the actual location @ijk, but the voxel size for a
+nonlinear transform such as a frustum will be spatially varying.
+The related @b voxelVolume can not in general be computed from the
+@b voxelSize, because there is no guarantee that a general transform
+will convert a cube-shaped voxel into another cube.
+As a result, @b voxelVolume actually returns the determinant of the
+transform, which will be a correct measure of volume even if the voxel
+is sheared into a general parallelepiped.
+
+@subsection sStaggered Staggered Velocity Grids
+Staggered velocity data is often used in fluid simulations, and the
+relationship between data interpretation and transforms is
+somewhat peculiar when using a vector grid to hold
+staggered velocity data.
+In this case the lattice point @ijk identifies a cell in world space
+by mapping to the cell&rsquo;s center, but each element of the velocity
+vector is identified with a different face of the cell.
+The first element of the vector is identified with the image of the
+(<I>i</I>&minus;1/2,&nbsp;<I>j</I>,&nbsp;<I>k</I>) face, the second element
+with (<I>i</I>,&nbsp;<I>j</I>&minus;1/2,&nbsp;<I>k</I>), and
+the third element with (<I>i</I>,&nbsp;<I>j</I>,&nbsp;<I>k</I>&minus;1/2).
+
+
+@section sMaps Maps in OpenVDB Transforms
+The actual work of a @vdblink::math::Transform Transform@endlink is performed
+by an implementation object called a @vdblink::math::MapBase Map@endlink.
+The @b Map in turn is a polymorphic object whose derived types are designed to
+optimally represent the most common transformations.
+Specifically, the @vdblink::math::Transform Transform@endlink holds a
+@vdblink::math::MapBase MapBase@endlink pointer to a derived type that
+has been simplified to minimize calculations.
+When the transform is updated by prepending or appending a linear operation
+(e.g., with @vdblink::math::Transform::preRotate() preRotate@endlink),
+the implementation map is recomputed and simplified if possible.
+For example, in many level-set-oriented applications the transform between
+index space and world space is simply a uniform scaling of the index points,
+i.e., @xyz = (&Delta;<I>i</I>,&nbsp;&Delta;<I>j</I>,&nbsp;&Delta;<I>k</I>),
+where &Delta; has some world space units.
+For transforms such as this, the implementation is a
+@vdblink::math::UniformScaleMap UniformScaleMap@endlink.
+@code
+// Create a linear transform that scales i, j and k by 0.1
+openvdb::math::Transform::Ptr linearTransform =
+    openvdb::math::Transform::createLinearTransform(0.1);
+
+// Create an equivalent map.
+openvdb::math::UniformScaleMap uniformScale(0.1);
+
+// At this time the map holds a openvdb::math::UniformScaleMap.
+assert(linearTransform->mapType() == openvdb::math::UniformScaleMap::type());
+
+openvdb::Coord ijk(1,2,3);
+
+// Applying the transform...
+openvdb::math::Vec3d transformResult = linearTransform->indexToWorld(ijk);
+
+// ...is equivalent to applying the map.
+openvdb::math::Vec3d mapResult = uniformScale.applyMap(ijk);
+
+assert(mapResult == transformResult);
+@endcode
+
+There are specialized maps for a variety of common linear transforms:
+pure translation (@vdblink::math::TranslationMap TranslationMap@endlink),
+uniform scale (@vdblink::math::UniformScaleMap UniformScaleMap@endlink),
+uniform scale and translation
+(@vdblink::math::UniformScaleTranslateMap UniformScaleTranslateMap@endlink),
+non-uniform scale (@vdblink::math::ScaleMap ScaleMap@endlink), and
+non-uniform scale and translation
+(@vdblink::math::ScaleTranslateMap ScaleTranslateMap@endlink).
+A general affine map (@vdblink::math::AffineMap AffineMap@endlink) is used
+for all other cases (those that include non-degenerate rotation or shear).
+
+@subsection sGettingMat4 An Equivalent Matrix Representation
+The matrix representation used within OpenVDB adheres to the minority
+convention of right-multiplication of the matrix against a vector:
+@code
+// Example matrix transform that scales, next translates,
+// and finally rotates an incoming vector
+openvdb::math::Mat4d transform = openvdb::math::Mat4d::identity();
+transform.preScale(openvdb::math::Vec3d(2,3,2));
+transform.postTranslate(openvdb::math::Vec3d(1,0,0));
+transform.postRotate(openvdb::math::X_AXIS, M_PI/3.0);
+
+// Location of a point in index space
+openvdb::math::Vec3d indexSpace(1,2,3);
+
+// Apply the transform by right-multiplying the matrix.
+openvdb::math::Vec3d worldSpace = indexSpace * transform;
+@endcode
+Any linear map can produce an equivalent
+@vdblink::math::AffineMap AffineMap@endlink, which in turn can produce
+an equivalent 4&times;4 matrix.
+Starting with a linear transform one can produce a consistent matrix as follows:
+@code
+openvdb::math::Mat4d matrix;
+if (transform->isLinear()) {
+   // Get the equivalent 4x4 matrix.
+   matrix = transform->getBaseMap()->getAffineMap()->getMat4();
+}
+@endcode
+
+This could be used as an intermediate form when constructing new linear
+transforms by combining old ones.
+@code
+// Get the matrix equivalent to linearTransformA.
+openvdb::math::Mat4d matrixA =
+    linearTransformA->getBaseMap()->getAffineMap()->getMat4();
+
+// Invert the matrix equivalent to linearTransformB.
+openvdb::math::Mat4d matrixBinv =
+    (linearTransformB->getBaseMap()->getAffineMap()->getMat4()).inverse();
+
+// Create a new transform that maps the index space of linearTransformA
+// to the index space of linearTransformB.
+openvdb::math::Transform::Ptr linearTransformAtoB =
+    openvdb::math::Trasform::createLinearTransform(matrixA * matrixBinv);
+@endcode
+Notice that in the above example, the internal representation used by
+the transform will be simplified if possible to use one of the various
+map types.
+
+@subsection sCostOfMaps Working Directly with Maps
+Accessing a transform&rsquo;s map through virtual function calls
+introduces some overhead and precludes compile-time optimizations
+such as inlining.
+For this reason, the more computationally intensive OpenVDB tools are
+templated to work directly with any underlying map.
+This allows the tools direct access to the map&rsquo;s simplified
+representation and gives the compiler a free hand to inline.
+
+Maps themselves know nothing of index space and world space, but are
+simply functions <I>x</I><SUB><I>range</I></SUB> =
+<I>f</I>(<I>x</I><SUB><I>domain</I></SUB>) that map 3-vectors from
+one space (the domain) to another (the range), or from the range back to
+the domain (<I>x</I><SUB><I>domain</I></SUB> =
+<I>f</I><SUP>&minus;1</SUP>(<I>x</I><SUB><I>range</I></SUB>)), by means of
+the methods @vdblink::math::MapBase::applyMap() applyMap@endlink and
+@vdblink::math::MapBase::applyInverseMap() applyInverseMap@endlink.
+
+@code
+// Create a simple uniform scale map that scales by 10.
+openvdb::math::UniformScaleMap usm(10.0);
+
+// A point in the domain
+openvdb::math::Vec3d domainPoint(0,1,3);
+
+// The resulting range point
+openvdb::math::Vec3d rangePoint = usm.applyMap(domainPoint);
+
+// The map is inverted thus:
+assert(domainPoint == usm.applyInverseMap(rangePoint));
+@endcode
+
+In many tools, the actual map type is not known a priori and
+must be deduced at runtime prior to calling the appropriate
+map-specific or map-templated code.  The type of map currently being
+used by a transform can be determined using the
+@vdblink::math::Transform::mapType() mapType@endlink method:
+@code
+// Test for a uniform scale map.
+if (transform->mapType() == openvdb::math::UniformScaleMap::type()) {
+
+   // This call would return a null pointer in the case of a map type mismatch.
+   openvdb::math::UniformScaleMap::ConstPtr usm =
+       transform->map<openvdb::math::UniformScaleMap>();
+
+   // Call a function that accepts UniformScaleMaps.
+   dofoo(*usm)
+}
+@endcode
+
+To simplify this process, the function
+@vdblink::math::processTypedMap processTypedMap@endlink has been provided.
+It accepts a transform and a functor templated on the map type.
+
+@subsection sGradientAndMaps Maps and Mathematical Operations
+In addition to supporting the mapping of a point from one space to another,
+maps also support mapping of local gradients.
+This results from use of the chain rule of calculus in computing the
+Jacobian of the map.
+Essentially, the gradient calculated in the domain of a map can be converted
+to the gradient in the range of the map, allowing one to compute a gradient
+in index space and then transform it to a gradient in world space.
+@code
+// Compute the gradient at a point in index space in a
+// floating-point grid using the second-order central difference.
+openvdb::FloatGrid grid = ...;
+openvdb::Coord ijk(2,3,5)
+openvdb::math::Vec3d isGrad =
+    openvdb::math::ISGradient<CD_2D>::result(grid, ijk);
+
+// Apply the inverse Jacobian transform to convert the result to the
+// gradient in the world space defined by a map that scales index space
+// to create voxels of size 0.1 x 0.2 x 0.1
+openvdb::math::ScaleMap scalemap(0.1, 0.2, 0.1);
+openvdb::math::Vec3d wsGrad = scalemap.applyIJT(isGrad);
+@endcode
+
+*/

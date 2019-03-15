@@ -1,0 +1,2102 @@
+/**
+
+@page codeExamples OpenVDB Cookbook
+
+This section provides code snippets and some complete programs that
+illustrate how to use OpenVDB and how to perform common tasks.
+
+
+@section sCookbookContents Contents
+- @ref sHelloWorld
+  - @ref sCompilingHelloWorld
+- @ref sAllocatingGrids
+- @ref sPopulatingGrids
+- @ref sModifyingGrids
+- @ref sStreamIO
+- @ref sHandlingMetadata
+  - @ref sAddingMetadata
+  - @ref sGettingMetadata
+  - @ref sRemovingMetadata
+- @ref sIteration
+  - @ref sNodeIterator
+  - @ref sLeafIterator
+  - @ref sValueIterator
+  - @ref sIteratorRange
+- @ref sInterpolation
+  - @ref sSamplers
+  - @ref sGridSampler
+  - @ref sDualGridSampler
+- @ref sXformTools
+  - @ref sResamplingTools
+  - @ref sValueXformTools
+- @ref sCombiningGrids
+  - @ref sCsgTools
+  - @ref sCompTools
+  - @ref sCombineTools
+- @ref sGenericProg
+  - @ref sTypedGridMethods
+- @ref sPointsHelloWorld
+- @ref sPointsConversion
+- @ref sPointsGeneration
+- @ref sPointIterationFiltering
+  - @ref sPointIteration
+  - @ref sPointGroups
+  - @ref sPointFiltering
+  - @ref sPointCustomFiltering
+- @ref sPointStride
+  - @ref sConstantStride
+- @ref sPointMove
+  - @ref sPointAdvect
+  - @ref sPointCustomDeformer
+
+@section sHelloWorld &ldquo;Hello, World&rdquo; for OpenVDB
+This is a very simple example showing how to create a grid and access
+its voxels.  OpenVDB supports both random access to voxels by coordinates
+and sequential access by means of iterators.  This example illustrates both
+types of access:
+@code
+#include <openvdb/openvdb.h>
+#include <iostream>
+
+int main()
+{
+    // Initialize the OpenVDB library.  This must be called at least
+    // once per program and may safely be called multiple times.
+    openvdb::initialize();
+
+    // Create an empty floating-point grid with background value 0.
+    openvdb::FloatGrid::Ptr grid = openvdb::FloatGrid::create();
+
+    std::cout << "Testing random access:" << std::endl;
+
+    // Get an accessor for coordinate-based access to voxels.
+    openvdb::FloatGrid::Accessor accessor = grid->getAccessor();
+
+    // Define a coordinate with large signed indices.
+    openvdb::Coord xyz(1000, -200000000, 30000000);
+
+    // Set the voxel value at (1000, -200000000, 30000000) to 1.
+    accessor.setValue(xyz, 1.0);
+
+    // Verify that the voxel value at (1000, -200000000, 30000000) is 1.
+    std::cout << "Grid" << xyz << " = " << accessor.getValue(xyz) << std::endl;
+
+    // Reset the coordinates to those of a different voxel.
+    xyz.reset(1000, 200000000, -30000000);
+
+    // Verify that the voxel value at (1000, 200000000, -30000000) is
+    // the background value, 0.
+    std::cout << "Grid" << xyz << " = " << accessor.getValue(xyz) << std::endl;
+
+    // Set the voxel value at (1000, 200000000, -30000000) to 2.
+    accessor.setValue(xyz, 2.0);
+
+    // Set the voxels at the two extremes of the available coordinate space.
+    // For 32-bit signed coordinates these are (-2147483648, -2147483648, -2147483648)
+    // and (2147483647, 2147483647, 2147483647).
+    accessor.setValue(openvdb::Coord::min(), 3.0f);
+    accessor.setValue(openvdb::Coord::max(), 4.0f);
+
+    std::cout << "Testing sequential access:" << std::endl;
+
+    // Print all active ("on") voxels by means of an iterator.
+    for (openvdb::FloatGrid::ValueOnCIter iter = grid->cbeginValueOn(); iter; ++iter) {
+        std::cout << "Grid" << iter.getCoord() << " = " << *iter << std::endl;
+    }
+}
+@endcode
+Output:
+@code
+Testing random access:
+Grid[1000, -200000000, 30000000] = 1
+Grid[1000, 200000000, -30000000] = 0
+Testing sequential access:
+Grid[-2147483648, -2147483648, -2147483648] = 3
+Grid[1000, -200000000, 30000000] = 1
+Grid[1000, 200000000, -30000000] = 2
+Grid[2147483647, 2147483647, 2147483647] = 4
+@endcode
+
+@subsection sCompilingHelloWorld Compiling
+See the @c Makefile and @c INSTALL file included in this distribution for
+details on how to build and install the OpenVDB library.
+By default, installation is into the directory tree rooted at
+<tt>/tmp/OpenVDB/</tt>, but this can be changed either by editing the value
+of the @c INSTALL_DIR variable in the makefile or by setting the desired
+value from the command line, as in the following example:
+@code
+make install INSTALL_DIR=/usr/local
+@endcode
+Once OpenVDB has been installed, the simplest way to compile a program
+like the &ldquo;Hello, World&rdquo; example above is to examine the
+commands that are used to build the @c vdb_print tool:
+@code
+rm vdb_print
+make verbose=yes vdb_print
+@endcode
+and then replace &ldquo;<tt>-o vdb_print</tt>&rdquo; with, for example,
+&ldquo;<tt>-o helloworld</tt>&rdquo;
+and &ldquo;<tt>cmd/openvdb_print/main.cc</tt>&rdquo;
+with &ldquo;<tt>helloworld.cc</tt>&rdquo;.
+
+
+
+@section sAllocatingGrids Creating and writing a grid
+This example is a complete program that illustrates some of the basic steps
+to create grids and write them to disk.  (See @ref sPopulatingGrids,
+below, for the implementation of the @c makeSphere() function.)
+@code
+#include <openvdb/openvdb.h>
+
+int main()
+{
+    openvdb::initialize();
+
+    // Create a shared pointer to a newly-allocated grid of a built-in type:
+    // in this case, a FloatGrid, which stores one single-precision floating point
+    // value per voxel.  Other built-in grid types include BoolGrid, DoubleGrid,
+    // Int32Grid and Vec3SGrid (see openvdb.h for the complete list).
+    // The grid comprises a sparse tree representation of voxel data,
+    // user-supplied metadata and a voxel space to world space transform,
+    // which defaults to the identity transform.
+    openvdb::FloatGrid::Ptr grid =
+        openvdb::FloatGrid::create(/*background value=*/2.0);
+
+    // Populate the grid with a sparse, narrow-band level set representation
+    // of a sphere with radius 50 voxels, located at (1.5, 2, 3) in index space.
+    makeSphere(*grid, /*radius=*/50.0, /*center=*/openvdb::Vec3f(1.5, 2, 3));
+
+    // Associate some metadata with the grid.
+    grid->insertMeta("radius", openvdb::FloatMetadata(50.0));
+
+    // Associate a scaling transform with the grid that sets the voxel size
+    // to 0.5 units in world space.
+    grid->setTransform(
+        openvdb::math::Transform::createLinearTransform(/*voxel size=*/0.5));
+
+    // Identify the grid as a level set.
+    grid->setGridClass(openvdb::GRID_LEVEL_SET);
+
+    // Name the grid "LevelSetSphere".
+    grid->setName("LevelSetSphere");
+
+    // Create a VDB file object.
+    openvdb::io::File file("mygrids.vdb");
+
+    // Add the grid pointer to a container.
+    openvdb::GridPtrVec grids;
+    grids.push_back(grid);
+
+    // Write out the contents of the container.
+    file.write(grids);
+    file.close();
+}
+@endcode
+
+The OpenVDB library includes optimized routines for many common tasks.
+For example, most of the steps given above are encapsulated in the function
+@vdblink::tools::createLevelSetSphere() tools::createLevelSetSphere()@endlink, so that
+the above can be written simply as follows:
+
+@code
+#include <openvdb/openvdb.h>
+#include <openvdb/tools/LevelSetSphere.h>
+
+int main()
+{
+    openvdb::initialize();
+
+    // Create a FloatGrid and populate it with a narrow-band
+    // signed distance field of a sphere.
+    openvdb::FloatGrid::Ptr grid =
+        openvdb::tools::createLevelSetSphere<openvdb::FloatGrid>(
+            /*radius=*/50.0, /*center=*/openvdb::Vec3f(1.5, 2, 3),
+            /*voxel size=*/0.5, /*width=*/4.0);
+
+    // Associate some metadata with the grid.
+    grid->insertMeta("radius", openvdb::FloatMetadata(50.0));
+
+    // Name the grid "LevelSetSphere".
+    grid->setName("LevelSetSphere");
+
+    // Create a VDB file object and write out the grid.
+    openvdb::io::File("mygrids.vdb").write({grid});
+}
+@endcode
+
+
+
+@section sPopulatingGrids Populating a grid with values
+The following code is templated so as to operate on grids containing values
+of any scalar type, provided that the value type supports negation and
+comparison.  Note that this algorithm is only meant as an example and should
+never be used in production; use the much more efficient routines in
+tools/LevelSetSphere.h instead.
+
+See @ref sGenericProg for more on processing grids of arbitrary type.
+@anchor makeSphereCode
+@code
+// Populate the given grid with a narrow-band level set representation of a sphere.
+// The width of the narrow band is determined by the grid's background value.
+// (Example code only; use tools::createSphereSDF() in production.)
+template<class GridType>
+void
+makeSphere(GridType& grid, float radius, const openvdb::Vec3f& c)
+{
+    using ValueT = typename GridType::ValueType;
+
+    // Distance value for the constant region exterior to the narrow band
+    const ValueT outside = grid.background();
+
+    // Distance value for the constant region interior to the narrow band
+    // (by convention, the signed distance is negative in the interior of
+    // a level set)
+    const ValueT inside = -outside;
+
+    // Use the background value as the width in voxels of the narrow band.
+    // (The narrow band is centered on the surface of the sphere, which
+    // has distance 0.)
+    int padding = int(openvdb::math::RoundUp(openvdb::math::Abs(outside)));
+    // The bounding box of the narrow band is 2*dim voxels on a side.
+    int dim = int(radius + padding);
+
+    // Get a voxel accessor.
+    typename GridType::Accessor accessor = grid.getAccessor();
+
+    // Compute the signed distance from the surface of the sphere of each
+    // voxel within the bounding box and insert the value into the grid
+    // if it is smaller in magnitude than the background value.
+    openvdb::Coord ijk;
+    int &i = ijk[0], &j = ijk[1], &k = ijk[2];
+    for (i = c[0] - dim; i < c[0] + dim; ++i) {
+        const float x2 = openvdb::math::Pow2(i - c[0]);
+        for (j = c[1] - dim; j < c[1] + dim; ++j) {
+            const float x2y2 = openvdb::math::Pow2(j - c[1]) + x2;
+            for (k = c[2] - dim; k < c[2] + dim; ++k) {
+
+                // The distance from the sphere surface in voxels
+                const float dist = openvdb::math::Sqrt(x2y2
+                    + openvdb::math::Pow2(k - c[2])) - radius;
+
+                // Convert the floating-point distance to the grid's value type.
+                ValueT val = ValueT(dist);
+
+                // Only insert distances that are smaller in magnitude than
+                // the background value.
+                if (val < inside || outside < val) continue;
+
+                // Set the distance for voxel (i,j,k).
+                accessor.setValue(ijk, val);
+            }
+        }
+    }
+
+    // Propagate the outside/inside sign information from the narrow band
+    // throughout the grid.
+    openvdb::tools::signedFloodFill(grid.tree());
+}
+@endcode
+
+
+
+@section sModifyingGrids Reading and modifying a grid
+@code
+#include <openvdb/openvdb.h>
+#include <openvdb/tools/ChangeBackground.h>
+
+openvdb::initialize();
+
+// Create a VDB file object.
+openvdb::io::File file("mygrids.vdb");
+
+// Open the file.  This reads the file header, but not any grids.
+file.open();
+
+// Loop over all grids in the file and retrieve a shared pointer
+// to the one named "LevelSetSphere".  (This can also be done
+// more simply by calling file.readGrid("LevelSetSphere").)
+openvdb::GridBase::Ptr baseGrid;
+for (openvdb::io::File::NameIterator nameIter = file.beginName();
+    nameIter != file.endName(); ++nameIter)
+{
+    // Read in only the grid we are interested in.
+    if (nameIter.gridName() == "LevelSetSphere") {
+        baseGrid = file.readGrid(nameIter.gridName());
+    } else {
+        std::cout << "skipping grid " << nameIter.gridName() << std::endl;
+    }
+}
+
+file.close();
+
+// From the example above, "LevelSetSphere" is known to be a FloatGrid,
+// so cast the generic grid pointer to a FloatGrid pointer.
+openvdb::FloatGrid::Ptr grid = openvdb::gridPtrCast<openvdb::FloatGrid>(baseGrid);
+
+// Convert the level set sphere to a narrow-band fog volume, in which
+// interior voxels have value 1, exterior voxels have value 0, and
+// narrow-band voxels have values varying linearly from 0 to 1.
+
+const float outside = grid->background();
+const float width = 2.0 * outside;
+
+// Visit and update all of the grid's active values, which correspond to
+// voxels on the narrow band.
+for (openvdb::FloatGrid::ValueOnIter iter = grid->beginValueOn(); iter; ++iter) {
+    float dist = iter.getValue();
+    iter.setValue((outside - dist) / width);
+}
+
+// Visit all of the grid's inactive tile and voxel values and update the values
+// that correspond to the interior region.
+for (openvdb::FloatGrid::ValueOffIter iter = grid->beginValueOff(); iter; ++iter) {
+    if (iter.getValue() < 0.0) {
+        iter.setValue(1.0);
+        iter.setValueOff();
+    }
+}
+
+// Set exterior voxels to 0.
+openvdb::tools::changeBackground(grid->tree(), 0.0);
+@endcode
+
+
+
+@section sStreamIO Stream I/O
+The @vdblink::io::Stream io::Stream@endlink class allows grids
+to be written to and read from streams that do not support random access,
+with the restriction that all grids must be written or read at once.
+(With @vdblink::io::File io::File@endlink,
+grids can be read individually by name, provided that they were originally
+written with @c io::File, rather than streamed to a file.)
+
+@code
+#include <openvdb/openvdb.h>
+#include <openvdb/io/Stream.h>
+
+openvdb::initialize();
+
+openvdb::GridPtrVecPtr grids(new GridPtrVec);
+grids->push_back(...);
+
+// Stream the grids to a string.
+std::ostringstream ostr(std::ios_base::binary);
+openvdb::io::Stream(ostr).write(*grids);
+
+// Stream the grids to a file.
+std::ofstream ofile("mygrids.vdb", std::ios_base::binary);
+openvdb::io::Stream(ofile).write(*grids);
+
+// Stream in grids from a string.
+// Note that io::Stream::getGrids() returns a shared pointer
+// to an openvdb::GridPtrVec.
+std::istringstream istr(ostr.str(), std::ios_base::binary);
+openvdb::io::Stream strm(istr);
+grids = strm.getGrids();
+
+// Stream in grids from a file.
+std::ifstream ifile("mygrids.vdb", std::ios_base::binary);
+grids = openvdb::io::Stream(ifile).getGrids();
+@endcode
+
+
+
+@section sHandlingMetadata Handling metadata
+Metadata of various types (string, floating point, integer, etc.&mdash;see
+metadata/Metadata.h for more) can be attached both to individual <tt>Grid</tt>s
+and to files on disk.
+The examples that follow refer to <tt>Grid</tt>s, but the usage is the same
+for the @vdblink::MetaMap MetaMap@endlink that can optionally be supplied
+to a @vdblink::io::File::write() file@endlink or
+@vdblink::io::Stream::write() stream@endlink for writing.
+
+@subsection sAddingMetadata Adding metadata
+The @vdblink::Grid::insertMeta() Grid::insertMeta()@endlink method either
+adds a new (@em name, @em value) pair if the name is unique, or overwrites
+the existing value if the name matches an existing one.  An existing value
+cannot be overwritten with a new value of a different type; the old metadata
+must be removed first.
+@code
+#include <openvdb/openvdb.h>
+
+openvdb::Vec3SGrid::Ptr grid = openvdb::Vec3SGrid::create();
+
+grid->insertMeta("vector type", openvdb::StringMetadata("covariant (gradient)"));
+grid->insertMeta("radius", openvdb::FloatMetadata(50.0));
+grid->insertMeta("center", openvdb::Vec3SMetadata(openvdb::Vec3S(10, 15, 10)));
+
+// OK, overwrites existing value:
+grid->insertMeta("center", openvdb::Vec3SMetadata(openvdb::Vec3S(10.5, 15, 30)));
+
+// Error (throws openvdb::TypeError), can't overwrite a value of type Vec3S
+// with a value of type float:
+grid->insertMeta("center", openvdb::FloatMetadata(0.0));
+@endcode
+
+@subsection sGettingMetadata Retrieving metadata
+Call @vdblink::Grid::metaValue() Grid::metaValue()@endlink to retrieve
+the value of metadata of a known type.  For example,
+@code
+std::string s = grid->metaValue<std::string>("vector type");
+
+float r = grid->metaValue<float>("radius");
+
+// Error (throws openvdb::TypeError), can't read a value of type Vec3S as a float:
+float center = grid->metaValue<float>("center");
+@endcode
+
+@vdblink::Grid::beginMeta() Grid::beginMeta()@endlink and
+@vdblink::Grid::beginMeta() Grid::beginMeta()@endlink return STL @c std::map
+iterators over all of the metadata associated with a grid:
+@code
+for (openvdb::MetaMap::MetaIterator iter = grid->beginMeta();
+    iter != grid->endMeta(); ++iter)
+{
+    const std::string& name = iter->first;
+    openvdb::Metadata::Ptr value = iter->second;
+    std::string valueAsString = value->str();
+    std::cout << name << " = " << valueAsString << std::endl;
+}
+@endcode
+
+If the type of the metadata is not known, use the
+@vdblink::Grid::operator[]() index operator@endlink to retrieve
+a shared pointer to a generic @vdblink::Metadata Metadata@endlink object,
+then query its type:
+@code
+openvdb::Metadata::Ptr metadata = grid["center"];
+
+// See typenameAsString<T>() in Types.h for a list of strings that can be
+// returned by the typeName() method.
+std::cout << metadata->typeName() << std::endl; // prints "vec3s"
+
+// One way to process metadata of arbitrary types:
+if (metadata->typeName() == openvdb::StringMetadata::staticTypeName()) {
+    std::string s = static_cast<openvdb::StringMetadata&>(*metadata).value();
+} else if (metadata->typeName() == openvdb::FloatMetadata::staticTypeName()) {
+    float f = static_cast<openvdb::FloatMetadata&>(*metadata).value();
+} else if (metadata->typeName() == openvdb::Vec3SMetadata::staticTypeName()) {
+    openvdb::Vec3S v = static_cast<openvdb::Vec3SMetadata&>(*metadata).value();
+}
+@endcode
+
+@subsection sRemovingMetadata Removing metadata
+@vdblink::Grid::removeMeta() Grid::removeMeta()@endlink removes metadata
+by name.  If the given name is not found, the call has no effect.
+@code
+grid->removeMeta("vector type");
+grid->removeMeta("center");
+grid->removeMeta("vector type"); // OK (no effect)
+@endcode
+
+
+
+@section sIteration Iteration
+
+@subsection sNodeIterator Node Iterator
+A @vdblink::tree::Tree::NodeIter Tree::NodeIter@endlink visits each node in
+a tree exactly once.  In the following example, the tree is known to have a
+depth of 4; see the @ref treeNodeIterRef "Overview" for a discussion of
+why node iteration can be complicated when the tree depth is not known.
+There are techniques (beyond the scope of this Cookbook) for operating
+on trees of arbitrary depth.
+@code
+#include <openvdb/openvdb.h>
+
+using GridType = openvdb::FloatGrid;
+using TreeType = GridType::TreeType;
+using RootType = TreeType::RootNodeType;   // level 3 RootNode
+assert(RootType::LEVEL == 3);
+using Int1Type = RootType::ChildNodeType;  // level 2 InternalNode
+using Int2Type = Int1Type::ChildNodeType;  // level 1 InternalNode
+using LeafType = TreeType::LeafNodeType;   // level 0 LeafNode
+
+GridType::Ptr grid = ...;
+
+for (TreeType::NodeIter iter = grid->tree().beginNode(); iter; ++iter) {
+    switch (iter.getDepth()) {
+    case 0: { RootType* node = nullptr; iter.getNode(node); if (node) ...; break; }
+    case 1: { Int1Type* node = nullptr; iter.getNode(node); if (node) ...; break; }
+    case 2: { Int2Type* node = nullptr; iter.getNode(node); if (node) ...; break; }
+    case 3: { LeafType* node = nullptr; iter.getNode(node); if (node) ...; break; }
+    }
+}
+@endcode
+
+
+@subsection sLeafIterator Leaf Node Iterator
+A @vdblink::tree::Tree::LeafIter Tree::LeafIter@endlink visits each leaf
+node in a tree exactly once.
+@code
+#include <openvdb/openvdb.h>
+
+using GridType = openvdb::FloatGrid;
+using TreeType = GridType::TreeType;
+
+GridType::Ptr grid = ...;
+
+// Iterate over references to const LeafNodes.
+for (TreeType::LeafCIter iter = grid->tree().cbeginLeaf(); iter; ++iter) {
+    const TreeType::LeafNodeType& leaf = *iter;
+    ...
+}
+// Iterate over references to non-const LeafNodes.
+for (TreeType::LeafIter iter = grid->tree().beginLeaf(); iter; ++iter) {
+    TreeType::LeafNodeType& leaf = *iter;
+    ...
+}
+// Iterate over pointers to const LeafNodes.
+for (TreeType::LeafCIter iter = grid->tree().cbeginLeaf(); iter; ++iter) {
+    const TreeType::LeafNodeType* leaf = iter.getLeaf();
+    ...
+}
+// Iterate over pointers to non-const LeafNodes.
+for (TreeType::LeafIter iter = grid->tree().beginLeaf(); iter; ++iter) {
+    TreeType::LeafNodeType* leaf = iter.getLeaf();
+    ...
+}
+@endcode
+See the @ref treeLeafIterRef "Overview" for more on leaf node iterators.
+
+
+@subsection sValueIterator Value Iterator
+A @vdblink::tree::Tree::ValueAllIter Tree::ValueIter@endlink visits each
+@ref subsecValues "value" (both tile and voxel) in a tree exactly once.
+Iteration can be unrestricted or can be restricted to only active values
+or only inactive values.  Note that tree-level value iterators (unlike
+the node iterators described above) can be accessed either through a
+grid's tree or directly through the grid itself, as in the following example:
+@code
+#include <openvdb/openvdb.h>
+#include <openvdb/tools/ChangeBackground.h>
+
+using GridType = openvdb::Vec3SGrid;
+using TreeType = GridType::TreeType;
+
+GridType::Ptr grid = ...;
+
+// Iterate over all active values but don't allow them to be changed.
+for (GridType::ValueOnCIter iter = grid->cbeginValueOn(); iter.test(); ++iter) {
+    const openvdb::Vec3f& value = *iter;
+
+    // Print the coordinates of all voxels whose vector value has
+    // a length greater than 10, and print the bounding box coordinates
+    // of all tiles whose vector value length is greater than 10.
+    if (value.length() > 10.0) {
+        if (iter.isVoxelValue()) {
+            std::cout << iter.getCoord() << std::endl;
+        } else {
+            openvdb::CoordBBox bbox;
+            iter.getBoundingBox(bbox);
+            std::cout << bbox << std::endl;
+        }
+    }
+}
+
+// Iterate over and normalize all inactive values.
+for (GridType::ValueOffIter iter = grid->beginValueOff(); iter.test(); ++iter) {
+    openvdb::Vec3f value = *iter;
+    value.normalize();
+    iter.setValue(value);
+}
+
+// Normalize the (inactive) background value as well.
+openvdb::tools::changeBackground(grid->tree(), grid->background().unit());
+@endcode
+See the @ref treeValueIterRef "Overview" for more on value iterators.
+
+
+@subsection sIteratorRange Iterator Range
+A @vdblink::tree::IteratorRange tree::IteratorRange@endlink wraps any grid or
+tree iterator and gives the iterator
+<A HREF="http://www.threadingbuildingblocks.org">TBB</A> splittable range
+semantics, so that it can be used as the Range argument to functions like
+@c tbb::parallel_for() and @c tbb::parallel_reduce().
+(This is in fact how @vdblink::tools::foreach() tools::foreach()@endlink and
+@vdblink::tools::transformValues() tools::transformValues()@endlink are
+implemented; see @ref sValueXformTools, below, for more on those functions.)
+There is some overhead to splitting, since grid and tree iterators are not
+random-access, but the overhead should typically be negligible compared with
+the amount of work done per subrange.
+
+The following is a complete program that uses
+@vdblink::tree::IteratorRange tree::IteratorRange@endlink.
+The program iterates in parallel over the leaf nodes of a tree (by splitting
+the iteration range of a
+@vdblink::tree::Tree::LeafCIter Tree::LeafCIter@endlink) and computes
+the total number of active leaf-level voxels by incrementing a global,
+thread-safe counter.
+@code
+#include <openvdb/openvdb.h>
+#include <openvdb/tools/LevelSetSphere.h>
+#include <tbb/parallel_for.h>
+#include <tbb/atomic.h>
+#include <cassert>
+#include <iostream>
+
+// Global active voxel counter, atomically updated from multiple threads
+tbb::atomic<openvdb::Index64> activeLeafVoxelCount;
+
+// Functor for use with tbb::parallel_for() that operates on a grid's leaf nodes
+template<typename GridType>
+struct LeafProcessor
+{
+    using TreeType = typename GridType::TreeType;
+    using LeafNode = typename TreeType::LeafNodeType;
+    // Define an IteratorRange that splits the iteration space of a leaf iterator.
+    using IterRange = openvdb::tree::IteratorRange<typename TreeType::LeafCIter>;
+
+    void operator()(IterRange& range) const
+    {
+        // Note: this code must be thread-safe.
+
+        // Iterate over a subrange of the leaf iterator's iteration space.
+        for ( ; range; ++range) {
+            // Retrieve the leaf node to which the iterator is pointing.
+            const LeafNode& leaf = *range.iterator();
+            // Update the global counter.
+            activeLeafVoxelCount.fetch_and_add(leaf.onVoxelCount());
+        }
+    }
+};
+
+
+int
+main()
+{
+    openvdb::initialize();
+
+    // Generate a level set grid.
+    openvdb::FloatGrid::Ptr grid =
+        openvdb::tools::createLevelSetSphere<openvdb::FloatGrid>(/*radius=*/20.0,
+            /*center=*/openvdb::Vec3f(1.5, 2, 3), /*voxel size=*/0.5);
+
+    // Construct a functor for use with tbb::parallel_for()
+    // that processes the leaf nodes of a FloatGrid.
+    using FloatLeafProc = LeafProcessor<openvdb::FloatGrid>;
+    FloatLeafProc proc;
+
+    // Wrap a leaf iterator in an IteratorRange.
+    FloatLeafProc::IterRange range(grid->tree().cbeginLeaf());
+    // Iterate over leaf nodes in parallel.
+    tbb::parallel_for(range, proc);
+
+    std::cout << activeLeafVoxelCount << " active leaf voxels" << std::endl;
+
+    // The computed voxel count should equal the grid's active voxel count,
+    // since all of the active voxels in a level set grid are stored at the
+    // leaf level (that is, there are no active tiles in a level set grid).
+    assert(activeLeafVoxelCount == grid->activeVoxelCount());
+}
+@endcode
+
+
+
+@section sInterpolation Interpolation of grid values
+
+Applications such as rendering require evaluation of grids at arbitrary,
+fractional coordinates in either index or world space.
+This is achieved, of course, by interpolating between known grid values
+at neighboring whole-voxel locations, that is, at integer coordinates
+in index space.
+The following sections introduce OpenVDB&rsquo;s various interpolation schemes
+as well as the @ref sGridSampler and @ref sDualGridSampler classes for
+efficient, continuous sampling of grids.
+In most cases, GridSampler is the preferred interface for interpolation,
+but note that when a fixed transform is to be applied to all values in a grid
+(that is, the grid is to be resampled), it is both easier and more efficient to
+use the multithreaded @vdblink::tools::GridTransformer GridTransformer@endlink
+class, introduced in @ref sXformTools.
+
+
+@subsection sSamplers Index-space samplers
+OpenVDB offers low-level zero-, first- and second-order interpolators
+@vdblink::tools::PointSampler PointSampler@endlink,
+@vdblink::tools::BoxSampler BoxSampler@endlink and
+@vdblink::tools::QuadraticSampler QuadraticSampler@endlink, in addition to the
+variants @vdblink::tools::StaggeredPointSampler StaggeredPointSampler@endlink,
+@vdblink::tools::StaggeredBoxSampler StaggeredBoxSampler@endlink and
+@vdblink::tools::StaggeredQuadraticSampler StaggeredQuadraticSampler@endlink
+for @ref sStaggered "staggered" velocity grids.
+
+@code
+#include <openvdb/openvdb.h>
+#include <openvdb/tools/Interpolation.h>
+
+const GridType grid = ...;
+
+// Choose fractional coordinates in index space.
+const openvdb::Vec3R ijk(10.5, -100.2, 50.3);
+
+// Compute the value of the grid at ijk via nearest-neighbor (zero-order)
+// interpolation.
+GridType::ValueType v0 = openvdb::tools::PointSampler::sample(grid.tree(), ijk);
+
+// Compute the value via trilinear (first-order) interpolation.
+GridType::ValueType v1 = openvdb::tools::BoxSampler::sample(grid.tree(), ijk);
+
+// Compute the value via triquadratic (second-order) interpolation.
+GridType::ValueType v2 = openvdb::tools::QuadraticSampler::sample(grid.tree(), ijk);
+@endcode
+
+These examples invoke the @vdblink::tree::Tree::getValue() getValue@endlink
+method on the grid&rsquo;s tree to fetch sample values in the neighborhood
+of @ijk.
+Accessing values via the tree is thread-safe due to the lack of caching,
+but for that reason it is also suboptimal.
+For better performance, use @ref subsecValueAccessor "value accessors"
+(but be careful to use one accessor per computational thread):
+@code
+GridType::ConstAccessor accessor = grid.getConstAccessor();
+
+GridType::ValueType v0 = openvdb::tools::PointSampler::sample(accessor, ijk);
+GridType::ValueType v1 = openvdb::tools::BoxSampler::sample(accessor, ijk);
+GridType::ValueType v2 = openvdb::tools::QuadraticSampler::sample(accessor, ijk);
+@endcode
+
+Another issue with these low-level interpolators is that they operate only
+in index space.
+To interpolate in world space, use the higher-level classes discussed below.
+
+
+@subsection sGridSampler Grid Sampler
+
+The @vdblink::tools::GridSampler GridSampler@endlink class allows for
+continuous sampling in both world space and index space and can be used
+with grids, trees or value accessors.
+
+@code
+#include <openvdb/openvdb.h>
+#include <openvdb/tools/Interpolation.h>
+
+const GridType grid = ...;
+
+// Instantiate the GridSampler template on the grid type and on a box sampler
+// for thread-safe but uncached trilinear interpolation.
+openvdb::tools::GridSampler<GridType, openvdb::tools::BoxSampler> sampler(grid);
+
+// Compute the value of the grid at fractional coordinates in index space.
+GridType::ValueType indexValue = sampler.isSample(openvdb::Vec3R(10.5, -100.2, 50.3));
+
+// Compute the value of the grid at a location in world space.
+GridType::ValueType worldValue = sampler.wsSample(openvdb::Vec3R(0.25, 1.4, -1.1));
+
+// Request a value accessor for accelerated access.
+// (Because value accessors employ a cache, it is important to declare
+// one accessor per thread.)
+GridType::ConstAccessor accessor = grid.getConstAccessor();
+
+// Instantiate the GridSampler template on the accessor type and on
+// a box sampler for accelerated trilinear interpolation.
+openvdb::tools::GridSampler<GridType::ConstAccessor, openvdb::tools::BoxSampler>
+    fastSampler(accessor, grid.transform());
+
+// Compute the value of the grid at fractional coordinates in index space.
+indexValue = fastSampler.isSample(openvdb::Vec3R(10.5, -100.2, 50.3));
+
+// Compute the value of the grid at a location in world space.
+worldValue = fastSampler.wsSample(openvdb::Vec3R(0.25, 1.4, -1.1));
+@endcode
+Note that when constructing a GridSampler with either a tree or a
+value accessor, you must also supply an index-to-world transform.
+When constructing a GridSampler with a grid, the grid's transform is used
+automatically.
+
+
+@subsection sDualGridSampler Dual Grid Sampler
+
+It might sometimes be necessary to interpolate values from a source grid
+into the index space of a target grid.
+If this transformation is to be applied to all of the values in the source grid,
+then it is best to use the tools in GridTransformer.h.
+For other cases, consider using the
+@vdblink::tools::DualGridSampler DualGridSampler@endlink class.
+Like the GridSampler class, this class can be used with grids, trees or value
+accessors.
+In addition, DualGridSampler checks if the source and target grids are aligned
+(that is, they have the same transform), in which case it avoids unnecessary
+interpolation.
+
+@code
+#include <openvdb/openvdb.h>
+#include <openvdb/tools/Interpolation.h>
+
+const GridType sourceGrid = ...;
+
+// Instantiate the DualGridSampler template on the grid type and on
+// a box sampler for thread-safe but uncached trilinear interpolation.
+openvdb::tools::DualGridSampler<GridType, openvdb::tools::BoxSampler>
+    sampler(sourceGrid, targetGrid.constTransform());
+
+// Compute the value of the source grid at a location in the
+// target grid's index space.
+GridType::ValueType value = sampler(openvdb::Coord(-23, -50, 202));
+
+// Request a value accessor for accelerated access to the source grid.
+// (Because value accessors employ a cache, it is important to declare
+// one accessor per thread.)
+GridType::ConstAccessor accessor = sourceGrid.getConstAccessor();
+
+// Instantiate the DualGridSampler template on the accessor type and on
+// a box sampler for accelerated trilinear interpolation.
+openvdb::tools::DualGridSampler<GridType::ConstAccessor, openvdb::tools::BoxSampler>
+    fastSampler(accessor, sourceGrid.constTransform(), targetGrid.constTransform());
+
+// Compute the value of the source grid at a location in the
+// target grid's index space.
+value = fastSampler(openvdb::Coord(-23, -50, 202));
+@endcode
+Note that interpolation is done by invoking a DualGridSampler as a functor,
+in contrast to the more general-purpose GridSampler.
+
+
+
+@section sXformTools Transforming grids
+
+@subsection sResamplingTools Geometric transformation
+A @vdblink::tools::GridTransformer GridTransformer@endlink applies a
+geometric transformation to an input grid using one of several sampling
+schemes, and stores the result in an output grid.  The operation is
+multithreaded by default, though threading can be disabled by calling
+@vdblink::tools::GridTransformer::setThreaded() setThreaded(false)@endlink.
+A @c GridTransformer object can be reused to apply the same transformation
+to multiple input grids, optionally using different sampling schemes.
+@code
+#include <openvdb/openvdb.h>
+#include <openvdb/tools/GridTransformer.h>
+
+openvdb::FloatGrid::Ptr
+    sourceGrid = ...
+    targetGrid = ...;
+
+// Get the source and target grids' index space to world space transforms.
+const openvdb::math::Transform
+    &sourceXform = sourceGrid->transform(),
+    &targetXform = targetGrid->transform();
+// Compute a source grid to target grid transform.
+// (For this example, we assume that both grids' transforms are linear,
+// so that they can be represented as 4 x 4 matrices.)
+openvdb::Mat4R xform =
+    sourceXform.baseMap()->getAffineMap()->getMat4() *
+    targetXform.baseMap()->getAffineMap()->getMat4().inverse();
+
+// Create the transformer.
+openvdb::tools::GridTransformer transformer(xform);
+
+// Resample using nearest-neighbor interpolation.
+transformer.transformGrid<openvdb::tools::PointSampler, openvdb::FloatGrid>(
+    *sourceGrid, *targetGrid);
+
+// Resample using trilinear interpolation.
+transformer.transformGrid<openvdb::tools::BoxSampler, openvdb::FloatGrid>(
+    *sourceGrid, *targetGrid);
+
+// Resample using triquadratic interpolation.
+transformer.transformGrid<openvdb::tools::QuadraticSampler, openvdb::FloatGrid>(
+    *sourceGrid, *targetGrid);
+
+// Prune the target tree for optimal sparsity.
+targetGrid->tree().prune();
+@endcode
+
+
+@subsection sValueXformTools Value transformation
+
+This example uses @vdblink::tools::foreach() tools::foreach()@endlink to
+multiply all values (both tile and voxel and both active and inactive)
+of a scalar, floating-point grid by two:
+@code
+#include <openvdb/openvdb.h>
+#include <openvdb/tools/ValueTransformer.h>
+
+// Define a local function that doubles the value to which the given
+// value iterator points.
+struct Local {
+    static inline void op(const openvdb::FloatGrid::ValueAllIter& iter) {
+        iter.setValue(*iter * 2);
+    }
+};
+
+openvdb::FloatGrid::Ptr grid = ...;
+
+// Apply the function to all values.
+openvdb::tools::foreach(grid->beginValueAll(), Local::op);
+@endcode
+
+This example uses @vdblink::tools::foreach() tools::foreach()@endlink to
+rotate all active vectors of a vector-valued grid by 45 degrees about the
+@em y axis:
+@code
+#include <openvdb/openvdb.h>
+#include <openvdb/tools/ValueTransformer.h>
+
+// Define a functor that multiplies the vector to which the given
+// value iterator points by a fixed matrix.
+struct MatMul {
+    openvdb::math::Mat3s M;
+    MatMul(const openvdb::math::Mat3s& mat): M(mat) {}
+    inline void operator()(const openvdb::Vec3SGrid::ValueOnIter& iter) const {
+        iter.setValue(M.transform(*iter));
+    }
+};
+
+openvdb::Vec3SGrid::Ptr grid = ...;
+
+// Construct the rotation matrix.
+openvdb::math::Mat3s rot45 =
+    openvdb::math::rotation<openvdb::math::Mat3s>(openvdb::math::Y_AXIS, M_PI_4);
+
+// Apply the functor to all active values.
+openvdb::tools::foreach(grid->beginValueOn(), MatMul(rot45));
+@endcode
+
+@vdblink::tools::transformValues() tools::transformValues()@endlink is
+similar to @vdblink::tools::foreach() tools::foreach()@endlink, but it populates
+an output grid with transformed values from an input grid that may have a
+different value type.  The following example populates a scalar,
+floating-point grid with the lengths of all active vectors from a
+vector-valued grid
+(like @vdblink::tools::magnitude() tools::magnitude()@endlink):
+@code
+#include <openvdb/openvdb.h>
+#include <openvdb/tools/ValueTransformer.h>
+
+// Define a local function that, given an iterator pointing to a vector value
+// in an input grid, sets the corresponding tile or voxel in a scalar,
+// floating-point output grid to the length of the vector.
+struct Local {
+    static inline void op(
+        const openvdb::Vec3SGrid::ValueOnCIter& iter,
+        openvdb::FloatGrid::ValueAccessor& accessor)
+    {
+        if (iter.isVoxelValue()) { // set a single voxel
+            accessor.setValue(iter.getCoord(), iter->length());
+        } else { // fill an entire tile
+            openvdb::CoordBBox bbox;
+            iter.getBoundingBox(bbox);
+            accessor.getTree().fill(bbox, iter->length());
+        }
+    }
+};
+
+openvdb::Vec3SGrid::ConstPtr inGrid = ...;
+
+// Create a scalar grid to hold the transformed values.
+openvdb::FloatGrid::Ptr outGrid = openvdb::FloatGrid::create();
+
+// Populate the output grid with transformed values.
+openvdb::tools::transformValues(inGrid->cbeginValueOn(), *outGrid, Local::op);
+@endcode
+
+
+
+@section sCombiningGrids Combining grids
+
+The following examples show various ways in which a pair of grids can be
+combined in @ref subsecVoxSpace "index space".  The assumption is that index
+coordinates @ijk in both grids correspond to the same physical, @ref
+subsecWorSpace "world space" location.  When the grids have different
+transforms, it is usually necessary to first @ref sResamplingTools "resample"
+one grid into the other grid's @ref subsecVoxSpace "index space".
+
+@subsection sCsgTools Level set CSG operations
+The level set CSG functions in tools/Composite.h operate on pairs of grids
+of the same type, using sparse traversal for efficiency.  These operations
+always leave the second grid empty.
+@code
+#include <openvdb/openvdb.h>
+#include <openvdb/tools/Composite.h>
+
+// Two grids of the same type containing level set volumes
+openvdb::FloatGrid::Ptr gridA(...), gridB(...);
+
+// Save copies of the two grids; CSG operations always modify
+// the A grid and leave the B grid empty.
+openvdb::FloatGrid::ConstPtr
+    copyOfGridA = gridA->deepCopy(),
+    copyOfGridB = gridB->deepCopy();
+
+// Compute the union (A u B) of the two level sets.
+openvdb::tools::csgUnion(*gridA, *gridB);
+
+// Restore the original level sets.
+gridA = copyOfGridA->deepCopy();
+gridB = copyOfGridB->deepCopy();
+
+// Compute the intersection (A n B) of the two level sets.
+openvdb::tools::csgIntersection(*gridA, *gridB);
+
+// Restore the original level sets.
+gridA = copyOfGridA->deepCopy();
+gridB = copyOfGridB->deepCopy();
+
+// Compute the difference (A / B) of the two level sets.
+openvdb::tools::csgDifference(*gridA, *gridB);
+@endcode
+
+
+@subsection sCompTools Compositing operations
+Like the @ref sCsgTools "CSG operations", the compositing functions in
+tools/Composite.h operate on pairs of grids of the same type, and they
+always leave the second grid empty.
+@code
+#include <openvdb/openvdb.h>
+#include <openvdb/tools/Composite.h>
+
+// Two grids of the same type
+openvdb::FloatGrid::Ptr gridA = ..., gridB = ...;
+
+// Save copies of the two grids; compositing operations always
+// modify the A grid and leave the B grid empty.
+openvdb::FloatGrid::ConstPtr
+    copyOfGridA = gridA->deepCopy(),
+    copyOfGridB = gridB->deepCopy();
+
+// At each voxel, compute a = max(a, b).
+openvdb::tools::compMax(*gridA, *gridB);
+
+// Restore the original grids.
+gridA = copyOfGridA->deepCopy();
+gridB = copyOfGridB->deepCopy();
+
+// At each voxel, compute a = min(a, b).
+openvdb::tools::compMin(*gridA, *gridB);
+
+// Restore the original grids.
+gridA = copyOfGridA->deepCopy();
+gridB = copyOfGridB->deepCopy();
+
+// At each voxel, compute a = a + b.
+openvdb::tools::compSum(*gridA, *gridB);
+
+// Restore the original grids.
+gridA = copyOfGridA->deepCopy();
+gridB = copyOfGridB->deepCopy();
+
+// At each voxel, compute a = a * b.
+openvdb::tools::compMul(*gridA, *gridB);
+@endcode
+
+
+@subsection sCombineTools Generic combination
+The @vdblink::tree::Tree::combine() Tree::combine()@endlink family of
+methods apply a user-supplied operator to pairs of corresponding values
+of two trees.  These methods are efficient because they take into account
+the sparsity of the trees; they are not multithreaded, however.
+
+This example uses the @vdblink::tree::Tree::combine() Tree::combine()@endlink
+method to compute the difference between corresponding voxels of two
+floating-point grids:
+@code
+#include <openvdb/openvdb.h>
+
+// Define a local function that subtracts two floating-point values.
+struct Local {
+    static inline void diff(const float& a, const float& b, float& result) {
+        result = a - b;
+    }
+};
+
+openvdb::FloatGrid::Ptr aGrid = ..., bGrid = ...;
+
+// Compute the difference between corresponding voxels of aGrid and bGrid
+// and store the result in aGrid, leaving bGrid empty.
+aGrid->tree().combine(bGrid->tree(), Local::diff);
+@endcode
+
+Another @vdblink::tree::Tree::combine() Tree::combine()@endlink example,
+this time using a functor to preserve state:
+@code
+#include <openvdb/openvdb.h>
+
+// Define a functor that computes f * a + (1 - f) * b  for pairs of
+// floating-point values a and b.
+struct Blend {
+    Blend(float f): frac(f) {}
+    inline void operator()(const float& a, const float& b, float& result) const {
+        result = frac * a + (1.0 - frac) * b;
+    }
+    float frac;
+};
+
+openvdb::FloatGrid::Ptr aGrid = ..., bGrid = ...;
+
+// Compute a = 0.25 * a + 0.75 * b for all corresponding voxels of
+// aGrid and bGrid.  Store the result in aGrid and empty bGrid.
+aGrid->tree().combine(bGrid->tree(), Blend(0.25));
+@endcode
+
+The @vdblink::tree::Tree::combineExtended() Tree::combineExtended()@endlink
+method invokes a function of the form <tt>void f(CombineArgs\<T>& args)</tt>,
+where the @vdblink::CombineArgs CombineArgs@endlink object encapsulates an
+@em a and a @em b value and their active states as well as a result value
+and its active state.  In the following example, voxel values in
+floating-point @c aGrid are replaced with corresponding values from
+floating-point @c bGrid (leaving @c bGrid empty) wherever the @em b values
+are larger.  The active states of any transferred values are preserved.
+@code
+#include <openvdb/openvdb.h>
+
+// Define a local function that retrieves a and b values from a CombineArgs
+// struct and then sets the result member to the maximum of a and b.
+struct Local {
+    static inline void max(CombineArgs<float>& args) {
+        if (args.b() > args.a()) {
+            // Transfer the B value and its active state.
+            args.setResult(args.b());
+            args.setResultIsActive(args.bIsActive());
+        } else {
+            // Preserve the A value and its active state.
+            args.setResult(args.a());
+            args.setResultIsActive(args.aIsActive());
+        }
+    }
+};
+
+openvdb::FloatGrid::Ptr aGrid = ..., bGrid = ...;
+
+aGrid->tree().combineExtended(bGrid->tree(), Local::max);
+@endcode
+
+Like @c combine(), @vdblink::tree::Tree::combine2() Tree::combine2()@endlink
+applies an operation to pairs of corresponding values of two trees.
+However, @c combine2() writes the result to a third, output tree and does
+not modify either of the two input trees.  (As a result, it is less
+space-efficient than the @c combine() method.)  Here, the voxel differencing
+example above is repeated using @c combine2():
+@code #include
+<openvdb/openvdb.h>
+
+struct Local {
+    static inline void diff(const float& a, const float& b, float& result) {
+        result = a - b;
+    }
+};
+
+openvdb::FloatGrid::ConstPtr aGrid = ..., bGrid = ...;
+openvdb::FloatGrid::Ptr resultGrid = openvdb::FloatGrid::create();
+
+// Combine aGrid and bGrid and write the result into resultGrid.
+// The input grids are not modified.
+resultGrid->tree().combine2(aGrid->tree(), bGrid->tree(), Local::diff);
+@endcode
+An @vdblink::tree::Tree::combine2Extended() extended combine2()@endlink
+is also available.
+
+
+
+@section sGenericProg Generic programming
+
+@subsection sTypedGridMethods Calling Grid methods
+A common task is to perform some operation on all of the grids in a file,
+where the operation involves @vdblink::Grid Grid@endlink method calls
+and the grids are of different types.
+Only a handful of @c Grid methods, such as
+@vdblink::Grid::activeVoxelCount() activeVoxelCount()@endlink,
+are virtual and can be called through a @vdblink::GridBase GridBase@endlink
+pointer; most are not, because they require knowledge of the <tt>Grid</tt>'s
+value type.
+For example, one might want to @vdblink::tree::Tree::prune() prune()@endlink
+the trees of all of the grids in a file regardless of their type, but
+@c Tree::prune() is non-virtual because it accepts an optional pruning
+tolerance argument whose type is the grid's value type.
+
+The @c processTypedGrid() function below makes this kind of task easier.
+It is called with a @c GridBase pointer and a functor whose call operator
+accepts a pointer to a @c Grid of arbitrary type.  The call operator should
+be templated on the grid type and, if necessary, overloaded for specific
+grid types.
+
+@code
+template<typename OpType>
+void processTypedGrid(openvdb::GridBase::Ptr grid, OpType& op)
+{
+#define CALL_OP(GridType) \
+    op.template operator()<GridType>(openvdb::gridPtrCast<GridType>(grid))
+
+    if (grid->isType<openvdb::BoolGrid>())        CALL_OP(openvdb::BoolGrid);
+    else if (grid->isType<openvdb::FloatGrid>())  CALL_OP(openvdb::FloatGrid);
+    else if (grid->isType<openvdb::DoubleGrid>()) CALL_OP(openvdb::DoubleGrid);
+    else if (grid->isType<openvdb::Int32Grid>())  CALL_OP(openvdb::Int32Grid);
+    else if (grid->isType<openvdb::Int64Grid>())  CALL_OP(openvdb::Int64Grid);
+    else if (grid->isType<openvdb::Vec3IGrid>())  CALL_OP(openvdb::Vec3IGrid);
+    else if (grid->isType<openvdb::Vec3SGrid>())  CALL_OP(openvdb::Vec3SGrid);
+    else if (grid->isType<openvdb::Vec3DGrid>())  CALL_OP(openvdb::Vec3DGrid);
+    else if (grid->isType<openvdb::StringGrid>()) CALL_OP(openvdb::StringGrid);
+
+#undef CALL_OP
+}
+@endcode
+
+The following example shows how to use @c processTypedGrid() to implement
+a generic pruning operation for grids of all built-in types:
+@code
+#include <openvdb.h>
+
+// Define a functor that prunes the trees of grids of arbitrary type
+// with a fixed pruning tolerance.
+struct PruneOp {
+    double tolerance;
+    PruneOp(double t): tolerance(t) {}
+
+    template<typename GridType>
+    void operator()(typename GridType::Ptr grid) const
+    {
+        grid->tree().prune(typename GridType::ValueType(tolerance));
+    }
+    // Overload to handle string-valued grids
+    void operator()(openvdb::StringGrid::Ptr grid) const
+    {
+        grid->tree().prune();
+    }
+};
+
+// Read all grids from a file.
+openvdb::io::File file("mygrids.vdb");
+file.open();
+openvdb::GridPtrVecPtr myGrids = file.getGrids();
+file.close();
+
+// Prune each grid with a tolerance of 1%.
+const PruneOp pruner(/*tolerance=*/0.01);
+for (openvdb::GridPtrVecIter iter = myGrids->begin();
+    iter != myGrids->end(); ++iter)
+{
+    openvdb::GridBase::Ptr grid = *iter;
+    processTypedGrid(grid, pruner);
+}
+@endcode
+
+
+
+@anchor openvdbPointsHelloWorld
+
+@section sPointsHelloWorld &ldquo;Hello, World&rdquo; for OpenVDB Points
+This is a simple example showing how to convert a few points,
+perform I/O and iterate over them to extract their world-space positions.
+
+For more information about using OpenVDB to store point data, see the
+@ref openvdbPointsOverview "OpenVDB Points Documentation".
+@code
+#include <iostream>
+#include <vector>
+#include <openvdb/openvdb.h>
+#include <openvdb/points/PointConversion.h>
+#include <openvdb/points/PointCount.h>
+
+int main()
+{
+    // Initialize grid types and point attributes types.
+    openvdb::initialize();
+
+    // Create a vector with four point positions.
+    std::vector<openvdb::Vec3R> positions;
+    positions.push_back(openvdb::Vec3R(0, 1, 0));
+    positions.push_back(openvdb::Vec3R(1.5, 3.5, 1));
+    positions.push_back(openvdb::Vec3R(-1, 6, -2));
+    positions.push_back(openvdb::Vec3R(1.1, 1.25, 0.06));
+
+    // The VDB Point-Partioner is used when bucketing points and requires a
+    // specific interface. For convenience, we use the PointAttributeVector
+    // wrapper around an stl vector wrapper here, however it is also possible to
+    // write one for a custom data structure in order to match the interface
+    // required.
+    openvdb::points::PointAttributeVector<openvdb::Vec3R> positionsWrapper(positions);
+
+    // This method computes a voxel-size to match the number of
+    // points / voxel requested. Although it won't be exact, it typically offers
+    // a good balance of memory against performance.
+    int pointsPerVoxel = 8;
+    float voxelSize =
+        openvdb::points::computeVoxelSize(positionsWrapper, pointsPerVoxel);
+
+    // Print the voxel-size to cout
+    std::cout << "VoxelSize=" << voxelSize << std::endl;
+
+    // Create a transform using this voxel-size.
+    openvdb::math::Transform::Ptr transform =
+        openvdb::math::Transform::createLinearTransform(voxelSize);
+
+    // Create a PointDataGrid containing these four points and using the
+    // transform given. This function has two template parameters, (1) the codec
+    // to use for storing the position, (2) the grid we want to create
+    // (ie a PointDataGrid).
+    // We use no compression here for the positions.
+    openvdb::points::PointDataGrid::Ptr grid =
+        openvdb::points::createPointDataGrid<openvdb::points::NullCodec,
+                        openvdb::points::PointDataGrid>(positions, *transform);
+
+    // Set the name of the grid
+    grid->setName("Points");
+
+    // Create a VDB file object and write out the grid.
+    openvdb::io::File("mypoints.vdb").write({grid});
+
+    // Create a new VDB file object for reading.
+    openvdb::io::File newFile("mypoints.vdb");
+
+    // Open the file. This reads the file header, but not any grids.
+    newFile.open();
+
+    // Read the grid by name.
+    openvdb::GridBase::Ptr baseGrid = newFile.readGrid("Points");
+    newFile.close();
+
+    // From the example above, "Points" is known to be a PointDataGrid,
+    // so cast the generic grid pointer to a PointDataGrid pointer.
+    grid = openvdb::gridPtrCast<openvdb::points::PointDataGrid>(baseGrid);
+
+    openvdb::Index64 count = openvdb::points::pointCount(grid->tree());
+    std::cout << "PointCount=" << count << std::endl;
+
+    // Iterate over all the leaf nodes in the grid.
+    for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
+
+        // Verify the leaf origin.
+        std::cout << "Leaf" << leafIter->origin() << std::endl;
+
+        // Extract the position attribute from the leaf by name (P is position).
+        const openvdb::points::AttributeArray& array =
+            leafIter->constAttributeArray("P");
+
+        // Create a read-only AttributeHandle. Position always uses Vec3f.
+        openvdb::points::AttributeHandle<openvdb::Vec3f> positionHandle(array);
+
+        // Iterate over the point indices in the leaf.
+        for (auto indexIter = leafIter->beginIndexOn(); indexIter; ++indexIter) {
+
+            // Extract the voxel-space position of the point.
+            openvdb::Vec3f voxelPosition = positionHandle.get(*indexIter);
+
+            // Extract the world-space position of the voxel.
+            const openvdb::Vec3d xyz = indexIter.getCoord().asVec3d();
+
+            // Compute the world-space position of the point.
+            openvdb::Vec3f worldPosition =
+                grid->transform().indexToWorld(voxelPosition + xyz);
+
+            // Verify the index and world-space position of the point
+            std::cout << "* PointIndex=[" << *indexIter << "] ";
+            std::cout << "WorldPosition=" << worldPosition << std::endl;
+        }
+    }
+}
+@endcode
+Output:
+@code
+VoxelSize=3.34716
+PointCount=4
+Leaf[0, 0, -8]
+* PointIndex=[0] WorldPosition=[-1, 6, -2]
+Leaf[0, 0, 0]
+* PointIndex=[0] WorldPosition=[0, 1, 0]
+* PointIndex=[1] WorldPosition=[1.1, 1.25, 0.06]
+* PointIndex=[2] WorldPosition=[1.5, 3.5, 1]
+@endcode
+
+@section sPointsConversion Converting Point Attributes
+This example is the same as the @ref sPointsHelloWorld example, however it
+demonstrates converting radius in addition to position. It uses a tailored
+attribute compression for the radius to demonstrate how to reduce memory.
+
+These methods heavily rely on the point conversion methods contained in
+points/PointConversion.h.
+@code
+#include <iostream>
+#include <vector>
+#include <openvdb/openvdb.h>
+#include <openvdb/points/PointConversion.h>
+#include <openvdb/points/PointCount.h>
+
+int main()
+{
+    // Initialize grid types and point attributes types.
+    openvdb::initialize();
+
+    // Create a vector with four point positions.
+    std::vector<openvdb::Vec3R> positions;
+    positions.push_back(openvdb::Vec3R(0, 1, 0));
+    positions.push_back(openvdb::Vec3R(1.5, 3.5, 1));
+    positions.push_back(openvdb::Vec3R(-1, 6, -2));
+    positions.push_back(openvdb::Vec3R(1.1, 1.25, 0.06));
+
+    // Create a vector with four radii.
+    std::vector<float> radius;
+    radius.push_back(0.1);
+    radius.push_back(0.15);
+    radius.push_back(0.2);
+    radius.push_back(0.5);
+
+    // The VDB Point-Partioner is used when bucketing points and requires a
+    // specific interface. For convenience, we use the PointAttributeVector
+    // wrapper around an stl vector wrapper here, however it is also possible to
+    // write one for a custom data structure in order to match the interface
+    // required.
+    openvdb::points::PointAttributeVector<openvdb::Vec3R> positionsWrapper(positions);
+
+    // This method computes a voxel-size to match the number of
+    // points / voxel requested. Although it won't be exact, it typically offers
+    // a good balance of memory against performance.
+    int pointsPerVoxel = 8;
+    float voxelSize =
+        openvdb::points::computeVoxelSize(positionsWrapper, pointsPerVoxel);
+
+    // Create a transform using this voxel-size.
+    openvdb::math::Transform::Ptr transform =
+        openvdb::math::Transform::createLinearTransform(voxelSize);
+
+    // Create a PointIndexGrid. This can be done automatically on creation of
+    // the grid, however as this index grid is required for the position and
+    // radius attributes, we create one we can use for both attribute creation.
+    openvdb::tools::PointIndexGrid::Ptr pointIndexGrid =
+        openvdb::tools::createPointIndexGrid<openvdb::tools::PointIndexGrid>(
+            positionsWrapper, *transform);
+
+    // Create a PointDataGrid containing these four points and using the point
+    // index grid. This requires the positions wrapper.
+    openvdb::points::PointDataGrid::Ptr grid =
+        openvdb::points::createPointDataGrid<openvdb::points::NullCodec,
+            openvdb::points::PointDataGrid>(*pointIndexGrid, positionsWrapper, *transform);
+
+    // Append a "pscale" attribute to the grid to hold the radius.
+    // This attribute storage uses a unit range codec to reduce the memory
+    // storage requirements down from 4-bytes to just 1-byte per value. This is
+    // only possible because accuracy of the radius is not that important to us
+    // and the values are always within unit range (0.0 => 1.0).
+    // Note that this attribute type is not registered by default so needs to be
+    // explicitly registered.
+    using Codec = openvdb::points::FixedPointCodec</*1-byte=*/false,
+            openvdb::points::UnitRange>;
+    openvdb::points::TypedAttributeArray<float, Codec>::registerType();
+    openvdb::NamePair radiusAttribute =
+        openvdb::points::TypedAttributeArray<float, Codec>::attributeType();
+    openvdb::points::appendAttribute(grid->tree(), "pscale", radiusAttribute);
+
+    // Create a wrapper around the radius vector.
+    openvdb::points::PointAttributeVector<float> radiusWrapper(radius);
+
+    // Populate the "pscale" attribute on the points
+    openvdb::points::populateAttribute<openvdb::points::PointDataTree,
+        openvdb::tools::PointIndexTree, openvdb::points::PointAttributeVector<float>>(
+            grid->tree(), pointIndexGrid->tree(), "pscale", radiusWrapper);
+
+    // Set the name of the grid
+    grid->setName("Points");
+
+    // Iterate over all the leaf nodes in the grid.
+    for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
+
+        // Verify the leaf origin.
+        std::cout << "Leaf" << leafIter->origin() << std::endl;
+
+        // Extract the position attribute from the leaf by name (P is position).
+        const openvdb::points::AttributeArray& positionArray =
+            leafIter->constAttributeArray("P");
+
+        // Extract the radius attribute from the leaf by name (pscale is radius).
+        const openvdb::points::AttributeArray& radiusArray =
+            leafIter->constAttributeArray("pscale");
+
+        // Create read-only handles for position and radius.
+        openvdb::points::AttributeHandle<openvdb::Vec3f> positionHandle(positionArray);
+        openvdb::points::AttributeHandle<float> radiusHandle(radiusArray);
+
+        // Iterate over the point indices in the leaf.
+        for (auto indexIter = leafIter->beginIndexOn(); indexIter; ++indexIter) {
+
+            // Extract the voxel-space position of the point.
+            openvdb::Vec3f voxelPosition = positionHandle.get(*indexIter);
+
+            // Extract the world-space position of the voxel.
+            openvdb::Vec3d xyz = indexIter.getCoord().asVec3d();
+
+            // Compute the world-space position of the point.
+            openvdb::Vec3f worldPosition =
+                grid->transform().indexToWorld(voxelPosition + xyz);
+
+            // Extract the radius of the point.
+            float radius = radiusHandle.get(*indexIter);
+
+            // Verify the index, world-space position and radius of the point.
+            std::cout << "* PointIndex=[" << *indexIter << "] ";
+            std::cout << "WorldPosition=" << worldPosition << " ";
+            std::cout << "Radius=" << radius << std::endl;
+        }
+    }
+}
+@endcode
+Output:
+@code
+Leaf[0, 0, -8]
+* PointIndex=[0] WorldPosition=[-1, 6, -2] Radius=0.2
+Leaf[0, 0, 0]
+* PointIndex=[0] WorldPosition=[0, 1, 0] Radius=0.0999924
+* PointIndex=[1] WorldPosition=[1.1, 1.25, 0.06] Radius=0.499992
+* PointIndex=[2] WorldPosition=[1.5, 3.5, 1] Radius=0.149996
+@endcode
+
+@section sPointsGeneration Random Point Generation
+This example demonstrates how to create a new point grid and to populate it with
+random point positions initialized inside a level set sphere.
+
+@code
+#include <iostream>
+#include <openvdb/openvdb.h>
+#include <openvdb/tools/LevelSetSphere.h>
+#include <openvdb/points/PointCount.h>
+
+int main()
+{
+    // Initialize grid types and point attributes types.
+    openvdb::initialize();
+
+    // Generate a level set grid.
+    openvdb::FloatGrid::Ptr sphereGrid =
+        openvdb::tools::createLevelSetSphere<openvdb::FloatGrid>(/*radius=*/20.0,
+            /*center=*/openvdb::Vec3f(1.5, 2, 3), /*voxel size=*/0.5);
+
+    // Retrieve the number of leaf nodes in the grid.
+    openvdb::Index leafCount = sphereGrid->tree().leafCount();
+
+    // Use the topology to create a PointDataTree
+    openvdb::points::PointDataTree::Ptr pointTree(
+        new openvdb::points::PointDataTree(sphereGrid->tree(), 0, openvdb::TopologyCopy()));
+
+    // Ensure all tiles have been voxelized
+    pointTree->voxelizeActiveTiles();
+
+    // Define the position type and codec using fixed-point 16-bit compression.
+    using PositionAttribute = openvdb::points::TypedAttributeArray<openvdb::Vec3f,
+        openvdb::points::FixedPointCodec<false>>;
+    openvdb::NamePair positionType = PositionAttribute::attributeType();
+
+    // Create a new Attribute Descriptor with position only
+    openvdb::points::AttributeSet::Descriptor::Ptr descriptor(
+        openvdb::points::AttributeSet::Descriptor::create(positionType));
+
+    // Determine the number of points / voxel and points / leaf.
+    openvdb::Index pointsPerVoxel = 8;
+    openvdb::Index voxelsPerLeaf = openvdb::points::PointDataGrid::TreeType::LeafNodeType::SIZE;
+    openvdb::Index pointsPerLeaf = pointsPerVoxel * voxelsPerLeaf;
+
+    // Iterate over the leaf nodes in the point tree.
+    for (auto leafIter = pointTree->beginLeaf(); leafIter; ++leafIter) {
+
+        // Initialize the attributes using the descriptor and point count.
+        leafIter->initializeAttributes(descriptor, pointsPerLeaf);
+
+        // Initialize the voxel offsets
+        openvdb::Index offset(0);
+        for (openvdb::Index index = 0; index < voxelsPerLeaf; ++index) {
+            offset += pointsPerVoxel;
+            leafIter->setOffsetOn(index, offset);
+        }
+    }
+
+    // Create the points grid.
+    openvdb::points::PointDataGrid::Ptr points =
+        openvdb::points::PointDataGrid::create(pointTree);
+
+    // Set the name of the grid.
+    points->setName("Points");
+
+    // Copy the transform from the sphere grid.
+    points->setTransform(sphereGrid->transform().copy());
+
+    // Randomize the point positions.
+    std::mt19937 generator(/*seed=*/0);
+    std::uniform_real_distribution<> distribution(-0.5, 0.5);
+
+    // Iterate over the leaf nodes in the point tree.
+    for (auto leafIter = points->tree().beginLeaf(); leafIter; ++leafIter) {
+
+        // Create an AttributeWriteHandle for position.
+        // Note that the handle only requires the value type, not the codec.
+        openvdb::points::AttributeArray& array = leafIter->attributeArray("P");
+        openvdb::points::AttributeWriteHandle<openvdb::Vec3f> handle(array);
+
+        // Iterate over the point indices in the leaf.
+        for (auto indexIter = leafIter->beginIndexOn(); indexIter; ++indexIter) {
+
+            // Compute a new random position (in the range -0.5 => 0.5).
+            openvdb::Vec3f positionVoxelSpace(distribution(generator));
+
+            // Set the position of this point.
+            // As point positions are stored relative to the voxel center, it is
+            // not necessary to convert these voxel space values into
+            // world-space during this process.
+            handle.set(*indexIter, positionVoxelSpace);
+        }
+    }
+
+    // Verify the point count.
+    openvdb::Index count = openvdb::points::pointCount(points->tree());
+    std::cout << "LeafCount=" << leafCount << std::endl;
+    std::cout << "PointCount=" << count << std::endl;
+}
+@endcode
+Output:
+@code
+LeafCount=660
+PointCount=2703360
+@endcode
+
+@section sPointIterationFiltering Point Iteration, Groups and Filtering
+
+This section demonstrates how to iterate over points and to use point groups and
+custom filters during iteration.
+
+See the documentation describing iteration and filtering under
+@ref openvdbPointsIterators "OpenVDB Points Iteration" for more information.
+
+@subsection sPointIteration Point Iteration
+
+Iterating over point attribute data is most easily done by iterating over the
+leaf nodes of a PointDataGrid and then the index indices of the attribute within
+the leaf and extracting the values from a handle bound to the attribute stored
+within the leaf.
+
+This example demonstrates single-threaded, read-only iteration over all float
+values of an attribute called "name".
+
+@code
+for (auto leafIter = pointTree.beginLeaf(); leafIter; ++leafIter) {
+    openvdb::points::AttributeArray& array =
+        leafIter->constAttributeArray("name");
+    openvdb::points::AttributeHandle<float> handle(array);
+
+    // Iterate over active indices in the leaf.
+    for (auto indexIter = leafIter->beginIndexOn(); indexIter; ++indexIter) {
+
+        // Retrieve value
+        float value = handle.get(*indexIter);
+    }
+}
+@endcode
+
+This example demonstrates single-threaded, read-write iteration for a similar
+float attribute by setting all values to be 5.0f.
+
+@code
+for (auto leafIter = pointTree.beginLeaf(); leafIter; ++leafIter) {
+    openvdb::points::AttributeArray& array =
+        leafIter->attributeArray("name");
+    openvdb::points::AttributeWriteHandle<float> handle(array);
+
+    // Iterate over active indices in the leaf.
+    for (auto indexIter = leafIter->beginIndexOn(); indexIter; ++indexIter) {
+
+        // Set value
+        handle.set(*indexIter, 5.0f);
+    }
+}
+@endcode
+
+Here is the same read-only example using TBB and a custom operator for
+reading values using multi-threaded access.
+
+In this example, we also find the index of the attribute in the descriptor to
+avoid having to look this up each time (assuming that all leaf nodes share the
+same descriptor).
+
+A similar approach can be used for multi-threaded writing.
+
+@code
+struct ReadValueOp
+{
+    explicit ReadValueOp(openvdb::Index64 index) : mIndex(index) { }
+
+    void operator()(const openvdb::tree::LeafManager<
+        openvdb::points::PointDataTree>::LeafRange& range) const {
+
+        for (auto leafIter = range.begin(); leafIter; ++leafIter) {
+
+            for (auto indexIter = leafIter->beginIndexOn();
+                indexIter; ++indexIter) {
+
+                const openvdb::points::AttributeArray& array =
+                    leafIter->constAttributeArray(mIndex);
+                openvdb::points::AttributeHandle<float> handle(array);
+
+                float value = handle.get(*indexIter);
+            }
+        }
+    }
+
+    openvdb::Index64 mIndex;
+};
+
+// Create a leaf iterator for the PointDataTree.
+auto leafIter = pointTree.cbeginLeaf();
+
+// Check that the tree has leaf nodes.
+if (!leafIter) {
+    std::cerr << "No Leaf Nodes" << std::endl;
+}
+
+// Retrieve the index from the descriptor.
+auto descriptor = leafIter->attributeSet().descriptor();
+openvdb::Index64 index = descriptor.find("name");
+
+// Check that the attribute has been found.
+if (index == openvdb::points::AttributeSet::INVALID_POS) {
+    std::cerr << "Invalid Attribute" << std::endl;
+}
+
+// Create a leaf manager for the points tree.
+openvdb::tree::LeafManager<openvdb::points::PointDataTree> leafManager(
+    pointsTree);
+// Create a new operator
+ReadValueOp op(index);
+// Evaluate in parallel
+tbb::parallel_for(leafManager.leafRange(), op);
+@endcode
+
+Tip: To run a multi-threaded operator as single-threaded for debugging, set the
+grainsize argument to a number larger than the number of leaf nodes
+(it defaults to 1).
+
+@code
+// Evaluate parallel operator in serial
+tbb::parallel_for(leafManager.leafRange(/*grainsize=*/1000000), op);
+@endcode
+
+@subsection sPointGroups Creating and Assigning Point Groups
+
+Point groups in OpenVDB are analagous to Houdini point groups as an
+efficient way of tagging specific points to belong to a named group.
+
+This example uses the data set generated in the @ref sPointsGeneration example.
+
+@code
+// Append a new (empty) group to the point tree.
+openvdb::points::appendGroup(points->tree(), "positiveY");
+
+// Count all points that belong to this group.
+openvdb::Index groupCount =
+    openvdb::points::groupPointCount(points->tree(), "positiveY");
+
+// Verify group is empty.
+std::cout << "PointCount=" << count << std::endl;
+std::cout << "EmptyGroupPointCount=" << groupCount << std::endl;
+
+// Create leaf node iterator for points tree.
+auto leafIter = points->tree().beginLeaf();
+if (!leafIter) {
+    std::cerr << "No Leaf Nodes" << std::endl;
+}
+
+// Extract the group index.
+openvdb::points::AttributeSet::Descriptor::GroupIndex groupIndex =
+    leafIter->attributeSet().groupIndex("positiveY");
+
+// Iterate over leaf nodes.
+for (auto leafIter = points->tree().beginLeaf(); leafIter; ++leafIter) {
+
+    // Create a read-only position handle.
+    const openvdb::points::AttributeArray& positionArray =
+        leafIter->constAttributeArray("P");
+    openvdb::points::AttributeHandle<openvdb::Vec3f> positionHandle(
+        positionArray);
+
+    // Create a read-write group handle.
+    openvdb::points::GroupWriteHandle groupHandle =
+        leafIter->groupWriteHandle("positiveY");
+
+    // Iterate over the point indices in the leaf.
+    for (auto indexIter = leafIter->beginIndexOn(); indexIter; ++indexIter) {
+
+        // Extract the voxel-space position of the point.
+        openvdb::Vec3f voxelPosition = positionHandle.get(*indexIter);
+
+        // Extract the world-space position of the voxel.
+        openvdb::Vec3d xyz = indexIter.getCoord().asVec3d();
+
+        // Compute the world-space position of the point.
+        openvdb::Vec3f worldPosition =
+            points->transform().indexToWorld(voxelPosition + xyz);
+
+        // If the world-space position is greater than zero in Y, add this
+        // point to the group.
+        if (worldPosition.y() > 0.0f) {
+            groupHandle.set(*indexIter, /*on=*/true);
+        }
+    }
+
+    // Attempt to compact the array for efficiency if all points in a leaf
+    // have the same membership for example.
+    groupHandle.compact();
+}
+
+// Count all points in this group once again.
+groupCount = openvdb::points::groupPointCount(points->tree(), "positiveY");
+
+// Verify group membership.
+std::cout << "GroupPointCount=" << groupCount << std::endl;
+@endcode
+Output:
+@code
+PointCount=2703360
+EmptyGroupPointCount=0
+GroupPointCount=1463740
+@endcode
+
+@subsection sPointFiltering Point Filtering using Groups
+
+One highly useful feature of groups is to be able to use them for performing
+filtered iteration.
+
+Here is an example iterating over all the points in the same data set to compute
+the average position in Y.
+
+@code
+openvdb::Index64 iterationCount(0);
+
+double averageY(0.0);
+
+// Iterate over leaf nodes.
+for (auto leafIter = points->tree().beginLeaf(); leafIter; ++leafIter) {
+
+    // Create a read-only position handle.
+    const openvdb::points::AttributeArray& positionArray =
+        leafIter->constAttributeArray("P");
+    openvdb::points::AttributeHandle<openvdb::Vec3f> positionHandle(
+        positionArray);
+
+    // Iterate over the point indices in the leaf.
+    for (auto indexIter = leafIter->beginIndexOn(); indexIter; ++indexIter) {
+
+        // Extract the world-space position of the point.
+        openvdb::Vec3f voxelPosition = positionHandle.get(*indexIter);
+        openvdb::Vec3d xyz = indexIter.getCoord().asVec3d();
+        openvdb::Vec3f worldPosition =
+            points->transform().indexToWorld(voxelPosition + xyz);
+
+        // Increment the sum.
+        averageY += worldPosition.y();
+
+        // Track iteration
+        iterationCount++;
+    }
+}
+
+averageY /= double(count);
+
+std::cout << "IterationCount=" << iterationCount << std::endl;
+std::cout << "AveragePositionInY=" << averageY << std::endl;
+@endcode
+Output:
+@code
+IterationCount=2703360
+AveragePositionInY=1.89564
+@endcode
+
+And the same example filtering using the "positiveY" group during iteration.
+
+@code
+iterationCount = 0;
+
+double averageYPositive(0.0);
+
+// Create a "positiveY" group filter.
+openvdb::points::GroupFilter filter("positiveY");
+
+// Iterate over leaf nodes.
+for (auto leafIter = points->tree().beginLeaf(); leafIter; ++leafIter) {
+
+    // Create a read-only position handle.
+    const openvdb::points::AttributeArray& positionArray =
+        leafIter->constAttributeArray("P");
+    openvdb::points::AttributeHandle<openvdb::Vec3f> positionHandle(
+        positionArray);
+
+    // Iterate over the point indices in the leaf that match the filter.
+    for (auto indexIter = leafIter->beginIndexOn(filter); indexIter; ++indexIter) {
+
+        // Extract the world-space position of the point.
+        openvdb::Vec3f voxelPosition = positionHandle.get(*indexIter);
+        openvdb::Vec3d xyz = indexIter.getCoord().asVec3d();
+        openvdb::Vec3f worldPosition =
+            points->transform().indexToWorld(voxelPosition + xyz);
+
+        // Increment the sum.
+        averageYPositive += worldPosition.y();
+
+        // Track iteration
+        iterationCount++;
+    }
+}
+
+averageYPositive /= double(groupCount);
+
+std::cout << "IterationCount=" << iterationCount << std::endl;
+std::cout << "AveragePositivePositionInY=" << averageYPositive << std::endl;
+@endcode
+Output:
+@code
+IterationCount=1463740
+AveragePositivePositionInY=11.373
+@endcode
+
+This approach still performs this operation in two passes, (1) creating and
+assigning the groups and (2) iterating using the group.
+
+@subsection sPointCustomFiltering Point Filtering using Custom Filters
+
+For common operations, it is typically faster to sacrifice the flexibility of
+point groups for a custom filter. This is using the same data set
+from the previous example.
+
+@code
+// Evalutate true for points that are positive in Y only
+struct PositiveYFilter
+{
+    using Handle = openvdb::points::AttributeHandle<openvdb::Vec3f>;
+
+    explicit PositiveYFilter(const openvdb::math::Transform& transform)
+            : mTransform(transform) { }
+
+    PositiveYFilter(const PositiveYFilter& filter)
+        : mTransform(filter.mTransform)
+    {
+        if (filter.mPositionHandle) {
+            mPositionHandle.reset(new Handle(*filter.mPositionHandle));
+        }
+    }
+
+    inline bool initialized() const { return bool(mPositionHandle); }
+
+    template <typename LeafT>
+    void reset(const LeafT& leaf) {
+        mPositionHandle.reset(new Handle(leaf.constAttributeArray("P")));
+    }
+
+    template <typename IterT>
+    bool valid(const IterT& indexIter) const {
+        openvdb::Vec3f voxelPosition = mPositionHandle->get(*indexIter);
+        openvdb::Vec3d xyz = indexIter.getCoord().asVec3d();
+        openvdb::Vec3f worldPosition =
+            mTransform.indexToWorld(voxelPosition + xyz);
+        return worldPosition.y() > 0.0f;
+    }
+
+    const openvdb::math::Transform& mTransform;
+    Handle::UniquePtr mPositionHandle;
+};
+
+// Drop the "positiveY" group.
+openvdb::points::dropGroup(points->tree(), "positiveY");
+
+// Create a new positive-Y filter.
+PositiveYFilter positiveYFilter(points->transform());
+
+iterationCount = 0.0;
+
+// Iterate over the points using the custom filter
+for (auto leafIter = points->tree().beginLeaf(); leafIter; ++leafIter) {
+
+    for (auto indexIter = leafIter->beginIndexOn(positiveYFilter);
+        indexIter; ++indexIter) {
+
+        // Track iteration
+        iterationCount++;
+    }
+}
+
+std::cout << "IterationCount=" << iterationCount << std::endl;
+@endcode
+Output:
+@code
+IterationCount=1463740
+@endcode
+
+@section sPointStride Strided Point Attributes
+
+Point attributes can have a stride greater than one in order to store multiple
+values with each attribute with each point.
+
+@subsection sConstantStride Constant Stride Attributes
+
+A stride can be constant so that each attribute has the same number of values.
+This example demonstrates using a hard-coded 10 samples per point in an
+attribute called "samples".
+
+@code
+// Store 10 values per point in an attribute called samples.
+openvdb::Index stride(10);
+openvdb::points::appendAttribute(points->tree(), "samples",
+    openvdb::points::TypedAttributeArray<float>::attributeType(), stride);
+
+// Iterate over leaf nodes.
+for (auto leafIter = points->tree().beginLeaf(); leafIter; ++leafIter) {
+
+    // Create a read-write samples handle.
+    openvdb::points::AttributeArray& array(
+        leafIter->attributeArray("samples"));
+    openvdb::points::AttributeWriteHandle<float> handle(array);
+
+    // Iterate over the point indices in the leaf.
+    for (auto indexIter = leafIter->beginIndexOn(); indexIter; ++indexIter) {
+
+        // Use ascending sample values for each element in the strided array
+        for (int i = 0; i < 10; i++) {
+            handle.set(*indexIter, /*strideIndex=*/i, float(i));
+        }
+    }
+}
+@endcode
+
+@section sPointMove Moving Points in Space
+
+As points are stored within voxels in an implicit spatially organised data structure, moving points in space requires re-bucketing the data.
+
+@subsection sPointAdvect Advecting Points
+
+Advection uses a specified integration order (4 = runge-kutta 4th) as well as delta time and time-step parameters
+to advect the points in-place using the supplied velocity grid.
+
+@code
+// Create an empty velocity grid with gravity as background value
+auto gravity = openvdb::Vec3SGrid::create(openvdb::Vec3s(0, -9.81, 0));
+
+// Advect points in-place using gravity velocity grid
+openvdb::points::advectPoints(*points, *gravity,
+    /*integrationOrder=*/4, /*dt=*/1.0/24.0, /*timeSteps=*/1);
+@endcode
+
+@subsection sPointCustomDeformer Moving Points with a Custom Deformer
+
+A custom deformer generates the new position of each existing point in a point set. This can use any number of
+mechanisms to achieve this such as a static value, a hard-coded list of positions, a function that uses the
+existing position to compute the new one or a function that uses the index of the point within the leaf array in
+some other way. This example simply takes the input position and adds a Y offset. Note that it is also possible
+to configure a custom deformer to operate in index-space.
+
+@code
+// This custom deformer is also used in the TestPointMove unit tests.
+struct OffsetDeformer
+{
+    OffsetDeformer(const openvdb::Vec3d& _offset)
+        : offset(_offset){ }
+
+    template <typename LeafIterT>
+    void reset(const LeafIterT&) { }
+
+    template <typename IndexIterT>
+    void apply(openvdb::Vec3d& position, const IndexIterT&) const
+    {
+        position += offset;
+    }
+
+    openvdb::Vec3d offset;
+};
+
+// Create an OffsetDeformer that moves the points downwards in Y by 10 world-space units.
+openvdb::Vec3d offset(0, -10, 0);
+OffsetDeformer deformer(offset);
+
+// Move the points using this deformer
+openvdb::points::movePoints(*points, deformer);
+@endcode
+
+*/

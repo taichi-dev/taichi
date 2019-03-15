@@ -1,0 +1,528 @@
+/**
+@mainpage OpenVDB
+
+The @b OpenVDB library comprises a hierarchical data structure and a suite
+of tools for the efficient manipulation of sparse, possibly time-varying,
+volumetric data discretized on a three-dimensional grid.  It is based on
+VDB, which was developed by Ken Museth at DreamWorks Animation, and it
+offers an effectively infinite 3D index space, compact storage (both in
+memory and on disk), fast data access (both random and sequential), and
+a collection of algorithms specifically optimized for the data structure
+for common tasks such as filtering, CSG, compositing, sampling and
+voxelization from other geometric representations. The technical details
+of VDB are described in the paper <A href="http://www.museth.org/Ken/Publications.html">&ldquo;VDB:&nbsp;High-Resolution Sparse Volumes with Dynamic Topology&rdquo;</A>.
+
+@b OpenVDB is maintained by
+<A HREF="http://www.dreamworksanimation.com">DreamWorks Animation</A>
+and was developed primarily by
+- Ken Museth
+- Peter Cucka
+- Mihai Ald&eacute;n
+- David Hill
+
+See the @subpage changes "Release Notes" for what&rsquo;s new in this version
+of @b OpenVDB.
+
+See the @subpage overview "Overview" for an introduction to the library.
+
+See @subpage transformsAndMaps "Transforms and Maps" for more
+discussion of the transforms used in @b OpenVDB.
+
+See the @subpage faq "FAQ" for frequently asked questions about @b OpenVDB.
+
+See the @subpage codeExamples "Cookbook" to get started using @b OpenVDB.
+
+See @subpage points "OpenVDB Points" to store point data using @b OpenVDB.
+
+See @subpage python "Using OpenVDB in Python" to get started with the
+@b OpenVDB Python module.
+
+Contributors, please familiarize yourselves with our
+@subpage codingStyle "coding standards".
+
+
+
+@page overview OpenVDB Overview
+
+@section Contents
+- @ref secOverview
+- @ref secTree
+  - @ref subsecTreeConfig
+- @ref secSparsity
+  - @ref subsecValues
+  - @ref subsecInactive
+- @ref secSpaceAndTrans
+  - @ref subsecVoxSpace
+  - @ref subsecWorSpace
+  - @ref subsecTrans
+- @ref secGrid
+- @ref secToolUtils
+- @ref secIterator
+  - @ref subsecTreeIter
+  - @ref subsecNodeIter
+  - @ref subsecValueAccessor
+  - @ref subsecTraversal
+<!-- - @ref secRegistry -->
+
+
+@section secOverview Introduction
+
+This document is a high-level summary of the terminology and basic
+components of the OpenVDB library and is organized around two key
+motivating concepts.  First, OpenVDB is designed specifically to
+work efficiently with sparse volumetric data locally sampled at a high
+spatial frequency, although it will function well for dense volumetric
+data.  From this follows the need for a memory efficient representation of
+this sparsity and the need for fast iterators (and other tools) that
+respect sparsity.  Second, data storage is separated from data
+interpretation.  OpenVDB uses unit-less three-dimensional integer
+coordinates to address the sparse data, but introduces a unit-less
+continuous index space for interpolation, along with a transform to
+place the data in physical space.
+
+When manipulating data in OpenVDB, the three essential objects are
+(1)&nbsp;the @vdblink::tree::Tree Tree@endlink, a B-tree-like
+three-dimensional data structure;
+(2)&nbsp;the @vdblink::math::Transform Transform@endlink, which relates
+voxel indices @ijk to physical locations @xyz in
+@ref subsecWorSpace &ldquo;world&rdquo; space; and
+(3)&nbsp;the @vdblink::Grid Grid@endlink, a container
+that associates a @b Tree with a @b Transform and additional metadata.
+For instancing purposes (i.e., placing copies
+of the same volume in multiple locations), the same tree may be referenced
+(via smart pointers) by several different <B>Grid</B>s, each having a
+unique transform.
+
+We now proceed to discuss the @b Tree and ideas of sparsity in some
+detail, followed by a briefer description of the different spaces and
+transforms as well as some of the tools that act on the sparse data.
+
+
+@section secTree The Tree
+
+In OpenVDB the @b Tree data structure exists to answer the question
+<I>What value is stored at location @ijk in three-dimensional index
+space?</I>  Here <I>i</I>, <I>j</I> and <I>k</I> are arbitrary signed 32-bit
+integers, and the data type of the associated value (<TT>float</TT>,
+<TT>bool</TT>, vector, etc.) is the same for all @ijk.  While the @b Tree
+serves the same purpose as a large three-dimensional array, it is a
+specially designed data structure that, given sparse unique values,
+minimizes the overall memory footprint while retaining fast access times.
+This is accomplished, as the name suggests, via a tree-based acceleration
+structure comprising a @vdblink::tree::RootNode RootNode@endlink,
+@vdblink::tree::LeafNode LeafNode@endlink<B></B>s and usually one or more
+levels of @vdblink::tree::InternalNode InternalNode@endlink<B></B>s
+with prescribed branching factors.
+
+@subsection subsecTreeConfig Tree Configuration
+
+The tree-based acceleration structure can be configured in various ways,
+but with the restriction that for a given tree all the <B>LeafNode</B>s
+are at the same depth.  Conceptually, the @b RootNode and
+<B>InternalNode</B>s increasingly subdivide the three-dimensional index
+space, and the <B>LeafNode</B>s hold the actual unique voxels.
+
+The type of a @b Tree encodes both the type of the data to be
+stored in the tree (<TT>float</TT>, <TT>bool</TT>, etc.) and the
+tree&rsquo;s node configuration.  In practice a four-level (root,
+internal, internal, leaf) configuration is standard, and several
+common tree types are defined in openvdb.h.  For example,
+@code
+using FloatTree = tree::Tree4<float, 5, 4, 3>::Type;
+using BoolTree = tree::Tree4<bool, 5, 4, 3>::Type;
+@endcode
+These predefined tree types share the same branching factors, which dictate
+the number of children of a given node.
+The branching factors (5,&nbsp;4,&nbsp;3) are specified as base two
+logarithms and should be read backwards from the leaf nodes up the tree.
+
+In the default tree configuration, each @b LeafNode holds a
+three-dimensional grid of 2<SUP>3</SUP> voxels on a side (i.e., an
+8&times;8&times;8 voxel grid).  Internally, the @b LeafNode is said
+to be at &ldquo;level&nbsp;0&rdquo; of the tree.
+At &ldquo;level&nbsp;1&rdquo; of this tree is the first @b InternalNode,
+and it indexes a 2<SUP>4</SUP>&times;2<SUP>4</SUP>&times;2<SUP>4</SUP>
+= 16&times;16&times;16 grid, each entry of which is either a @b LeafNode
+or a constant value that represents an 8&times;8&times;8 block of
+voxels.  At &ldquo;level&nbsp;2&rdquo; is the second @b InternalNode in this
+configuration; it in turn indexes a
+2<SUP>5</SUP>&times;2<SUP>5</SUP>&times;2<SUP>5</SUP> = 32&times;32&times;32
+grid of level-1 <B>InternalNode</B>s and/or values,
+and so the @b InternalNode at level&nbsp;2 subsumes a three-dimensional
+block of voxels of size 32&times;16&times;8 = 4096 on a side.  Unlike
+the <B>InternalNode</B>s and <B>LeafNode</B>s, the @b RootNode
+(&ldquo;level&nbsp;3&rdquo; for the default configuration) is not explicitly
+restricted in the number of children it may have, so the overall index space is
+limited only by the range of the integer indices, which are 32-bit by default.
+
+
+@section secSparsity Sparse Values and Voxels
+
+Like a tree&rsquo;s node configuration, the type of data held by a tree is
+determined at compile time. Conceptually the tree itself
+employs two different notions of data sparsity to reduce the memory footprint
+and at the same time accelerate access to its contents.  The first is largely
+hidden from the user and concerns ways in which large regions of uniform values
+are compactly represented, and the second allows for fast sequential iteration,
+skipping user-specified &ldquo;uninteresting&rdquo; regions (that may
+or may not have uniform values).
+
+@subsection subsecValues Tile, Voxel, and Background Values
+
+Although the data in a tree is accessed and set on a per-voxel level
+(i.e., the value at @ijk) it need not be internally stored in that way.
+To reduce the memory footprint and accelerate data access, data values are
+stored in three distinct forms internal to the tree: <B>voxel values</B>,
+<B>tile values</B>, and a <B>background value</B>.  A voxel value is a unique
+value indexed by the location of a voxel and is stored in the @b LeafNode
+responsible for that voxel.  A tile value is a uniform value assigned to all
+voxels subsumed by a given node.  (For example, a tile Value belonging to an
+@b InternalNode at level&nbsp;1 is equivalent to a constant-value cube of
+voxels of the same size, 8&times;8&times;8, as a @b LeafNode.)
+The tile value is returned when a request is made for the data associated
+with any @ijk location within the uniform tile.  The background value is
+a unique value (stored at the root level) that is returned when accessing
+any @ijk location that does not resolve to either a tile or a @b LeafNode.
+
+
+@subsection subsecInactive Active and Inactive Voxels
+
+Any voxel or tile can be classified as either @b active or @b inactive.
+The interpretation of this state is application-specific, but generally
+active voxels are &ldquo;interesting&rdquo; and inactive somehow less so.
+The locations of active values may be sparse in the overall voxel topology, and
+OpenVDB provides @ref secIterator "iterators" that access active values only
+(as well as iterators over inactive values, all values, and general topology).
+An example of active vs. inactive: the voxels used to store the distance
+values of a narrow-band level set (i.e., close to a given surface) will be
+marked as active while the other (&ldquo;far&rdquo;) voxel locations will be
+marked as inactive and will generally represent regions of space with
+constant distance values (e.g., two constant distance values of opposite sign
+to distinguish the enclosed inside region from the infinite outside or
+background embedding).
+
+The @vdblink::tree::Tree::prune() prune@endlink method replaces
+with tile values any nodes that subsume voxels with the same values
+and active states.
+The resulting tree represents the same volume, but more sparsely.
+
+@section secSpaceAndTrans Coordinate Systems and Transforms
+
+The sampled data in the tree is accessed using signed <B>index coordinates</B>
+@ijk, but associating each indicial coordinate with a specific physical
+location is the job of a @b Transform.
+A simple linear transform assumes a lattice-like structure with a fixed
+physical distance&nbsp;&Delta; between indices, so that
+@xyz = (&Delta;<I>i</I>,&nbsp;&Delta;<I>j</I>,&nbsp;&Delta;<I>k</I>).
+
+@subsection subsecVoxSpace Index Space
+
+To simplify transformations between physical space and lattice index
+coordinates, a continuous generalization of the index lattice points called
+<B>index space</B> is used.
+For example, index space coordinate (1.0, 1.0, 1.0) corresponds to the same
+point as (1,1,1) in the index lattice, but (1.5,1.0,1.0) also has meaning as
+halfway between the index coordinates (1,1,1) and (2,1,1).  Index space can
+be used in constructing interpolated data values: given an arbitrary
+location in physical space, one can use a transform to compute the point in
+index space (which need not fall on an exact integer index) that maps to that
+location and locally interpolate from values with neighboring index
+coordinates.
+
+@subsection subsecWorSpace World Space
+
+The interpretation of the data in a tree takes place in <B>world
+space</B>.  For example, the tree might hold data sampled at discrete
+physical locations in world space.  @b Transform methods such as
+@vdblink::math::Transform::indexToWorld() indexToWorld@endlink
+and its inverse @vdblink::math::Transform::worldToIndex() worldToIndex@endlink
+may be used to relate coordinates in the two continuous spaces. In
+addition, methods such as @vdblink::math::Transform::worldToIndexCellCentered()
+worldToIndexCellCentered@endlink actually return lattice points.
+
+@subsection subsecTrans Transforms and Maps
+A @vdblink::math::Transform Transform @endlink provides a context for
+interpreting the information held in a tree by associating a location
+in world space with each entry in the tree.
+The actual implementation of the @b Transform is managed by a
+@vdblink::math::MapBase Map@endlink object, which is an
+encapsulation of a continuous, mostly invertible function of three
+variables.  A @b Map is required to provide
+@vdblink::math::MapBase::applyMap() applyMap@endlink and
+@vdblink::math::MapBase::applyInverseMap() applyInverseMap@endlink
+methods to relate locations in its domain to its range and vice versa.
+A @b Map is also required to provide information about its local derivatives.
+For more on these classes, see the
+@subpage transformsAndMaps "Transforms and Maps" page.
+
+
+@section secGrid The Grid
+
+For many applications, it might not be necessary ever to operate directly on
+trees, though there are often significant performance improvements to be
+gained by exploiting the tree structure.
+The @vdblink::Grid Grid@endlink, however, is the preferred interface through
+which to manage voxel data, in part because a grid associates with a tree
+additional and often necessary information that is not accessible through
+the tree itself.
+
+A @vdblink::Grid Grid@endlink contains smart pointers to a
+@vdblink::tree::Tree Tree@endlink object and a
+@vdblink::math::Transform Transform@endlink object, either or both of which
+might be shared with other grids.
+As mentioned above, the transform provides for the interpretation of voxel
+locations.  Other grid metadata, notably the <B>grid class</B>, the
+<B>vector type</B> and the world&nbsp;space/local space toggle, affect
+the interpretation of voxel values.
+
+OpenVDB is particularly well-suited (though by no means exclusively so)
+to the representation of <B>narrow-band level sets</B> and
+<B>fog volumes</B>.
+A narrow-band level set is represented by three distinct regions of voxels:
+an @b outside (or background) region of inactive voxels having a constant,
+positive distance from the level set surface; an @b inside region of inactive
+voxels having a constant, negative distance; and a thin band of active voxels
+(normally three voxels wide on either side of the surface) whose values are
+signed distances.
+Similarly, a fog volume is represented by an outside region of inactive
+voxels with value zero, an inside region of active voxels with value one,
+and a thin band of active voxels, with values typically varying linearly
+between zero and one, that separates the inside from the outside.
+Identifying a grid as a level set or a fog volume, by setting its
+@vdblink::GridClass grid class@endlink with
+@vdblink::Grid::setGridClass() setGridClass@endlink, allows tools to invoke
+alternative implementations that are better-suited or better-optimized
+for those classes.
+For example, resampling (in particular, scaling) a level set should normally
+not be done without updating its signed distance values.
+The @vdblink::tools::resampleToMatch() resampleToMatch@endlink tool
+automatically recomputes signed distances for grids that are identified
+as level sets.
+(The lower-level @vdblink::tools::GridResampler GridResampler@endlink does not,
+but it is optimized for level set grids in that it transforms only voxels
+in the narrow band and relies on
+@vdblink::Grid::signedFloodFill() signed flood fill@endlink to reconstruct
+the inside and outside regions.)
+Other tools whose behavior is affected by the grid class include the
+@vdblink::tools::divergence() divergence@endlink operator (which has an
+alternative implementation for @ref sStaggered "staggered velocity" grids),
+the @vdblink::tools::volumeToMesh() volume to mesh@endlink converter, and
+the @vdblink::tools::fillWithSpheres() sphere packing@endlink tool.
+In addition, a number of level-set-specific tools, such as the
+@vdblink::tools::LevelSetTracker level set tracker@endlink, throw
+exceptions when invoked on grids that are not identified as level sets.
+It is important, therefore, to set a grid&rsquo;s class appropriately.
+
+When a vector-valued grid is transformed or resampled, it is often necessary
+for the transform to be applied not just to voxel locations but also to
+voxel values.
+By default, grids are identified as &ldquo;world-space&rdquo;, meaning that
+if the grid is vector-valued, its voxel values should be transformed.
+Alternatively, voxel values of grids identified as
+&ldquo;local-space&rdquo;, via
+@vdblink::Grid::setIsInWorldSpace() setIsInWorldSpace@endlink, do not
+undergo transformation.
+A world-space grid&rsquo;s @vdblink::VecType vector type@endlink, specified
+with @vdblink::Grid::setVectorType() setVectorType@endlink, may be invariant,
+covariant or contravariant, which determines how transforms are applied
+to the grid&rsquo;s voxel values (for details see, for example,
+<A HREF="http://en.wikipedia.org/wiki/Covariance_and_contravariance_of_vectors">
+<I>Covariance and contravariance of vectors</I></A>&nbsp;[Wikipedia]).
+The @vdblink::tools::transformVectors() transformVectors@endlink tool can be
+used to apply a transform to a grid&rsquo;s voxel values, and it handles all
+of the supported vector types.
+
+A grid can optionally be assigned @vdblink::Grid::setName() name@endlink and
+@vdblink::Grid::setCreator() creator@endlink strings.
+These are purely informational, though it might be desirable to name grids
+so as to easily select which ones to read from files that contain multiple
+grids.
+In the absence of grid names, or at least of unique names, OpenVDB&rsquo;s
+file I/O routines recognize an ordinal suffix:
+&ldquo;<TT>[0]</TT>&rdquo; refers to the first unnamed grid,
+&ldquo;<TT>[1]</TT>&rdquo; refers to the second, and so on, and
+&ldquo;<TT>density[0]</TT>&rdquo; and &ldquo;<TT>density[1]</TT>&rdquo;
+refer to the first and second grids named &ldquo;density&rdquo;.
+Also of interest for file I/O is a grid&rsquo;s
+&ldquo;@vdblink::Grid::setSaveFloatAsHalf() save float as half@endlink&rdquo;
+setting, which allows it to be written more compactly using 16-bit
+floating point values rather than full-precision values.
+Finally, during file output certain statistics are computed and stored
+as per-grid metadata.
+These include the grid&rsquo;s index-space active voxel bounding box,
+its active voxel count and its memory usage in bytes.
+This information can also be
+@vdblink::io::File::readAllGridMetadata() retrieved@endlink
+efficiently from a file.
+
+
+@section secToolUtils Utilities and Tools
+
+OpenVDB provides utility functions and classes for the manipulation of grids
+and the data they hold.
+Tools such as those found in GridOperators.h compute vector quantities from
+scalar data or vice-versa.
+Other tools perform filtering (Filter.h and LevelSetFilter.h) and
+interpolation (Interpolation.h) as well as sampling (GridTransformer.h),
+compositing and constructive solid geometry (Composite.h), and other
+transformations (ValueTransformer.h).
+OpenVDB also supports advanced finite difference computations through
+a variety of local support stencils (Stencils.h).
+
+
+@section secIterator Iterators
+
+OpenVDB provides efficient, often multithreaded, implementations of a large
+variety of morphological, filtering and other algorithms that address common
+data manipulation tasks on three-dimensional grids.   For more specialized
+tasks, OpenVDB provides lower-level data accessors that enable fast
+iteration over all or selected voxels and over the elements of a @b Tree.
+These take several forms: iterator classes of various types, functor-based
+@b visitor methods, and the
+@vdblink::tree::ValueAccessor ValueAccessor@endlink,
+an accelerator for indexed @ijk voxel lookups.
+
+Iterator classes follow a fairly consistent naming scheme.  First, the
+@b CIter and @b Iter suffixes denote @const and non-@const iterators, i.e.,
+iterators that offer, respectively, read-only and read/write access to the
+underlying tree or node.  Second, iterators over tile and voxel values are
+denoted either @b On, @b Off or @b All, indicating that they visit only
+active values, only inactive values, or both active and inactive values.
+So, for example, @b Tree::ValueOnCIter is a read-only iterator over all
+active values (both tile and voxel) of a tree, whereas
+@b LeafNode::ValueAllIter is a read/write iterator over all values, both
+active and inactive, of a single leaf node.
+
+OpenVDB iterators are not STL-compatible in that one can always request
+an iterator that points to the beginning of a collection of elements (nodes,
+voxels, etc.), but one usually cannot request an iterator that points to the
+end of the collection.  (This is because finding the end might require a
+full tree traversal.)  Instead, all OpenVDB iterators implement a @b test
+method that returns @c true as long as the iterator is not exhausted and
+@c false as soon as it is.  Typical usage is as follows:
+@code
+using GridType = openvdb::FloatGrid;
+GridType grid = ...;
+for (GridType::ValueOnCIter iter = grid.cbeginValueOn(); iter.test(); ++iter) ...
+@endcode
+or more compactly
+@code
+for (auto iter = grid.cbeginValueOn(); iter; ++iter) ...
+@endcode
+Note that the naming scheme for methods that return &ldquo;begin&rdquo;
+iterators closely mirrors that of the iterators themselves.
+That is, @b Grid::cbeginValueOn returns a @c const iterator to the first
+of a grid&rsquo;s active values, whereas @b LeafNode::beginValueAll returns
+a non-<TT>const</TT> iterator to the first of a leaf node&rsquo;s values,
+both active and inactive.
+(@c const overloads of <B>begin</B>* methods are usually provided, so that if
+the @b Grid is itself @c const, <B>Grid::begin</B>* will actually return a
+@c const iterator.  This makes it more convenient to use these methods in
+templated code.)
+
+Finally, note that modifying the tree or node over which one is iterating
+typically does not invalidate the iterator, though it might first need
+to be incremented to point to the next existing element (for example,
+if one deletes a child node to which the iterator is currently pointing).
+
+@subsection subsecTreeIter Tree Iterators
+@anchor treeValueIterRef
+@par Tree::ValueIter
+Tree-level value iterators traverse an entire tree, visiting each value
+(tile or voxel) exactly once.  (It is also possible to restrict the
+traversal to minimum and maximum levels of the tree.)  In addition to the
+methods common to all OpenVDB iterators, such as @b test and @b next,
+a @b Tree::ValueIter provides methods that return the depth in the tree of
+the node within which the iterator is pointing (the root node has depth&nbsp;0)
+and the @ijk axis-aligned bounding box of the tile or voxel to which it is
+pointing, and methods to get and set both the value and the active state of
+the tile or voxel.  See the
+@vdblink::tree::TreeValueIteratorBase TreeValueIteratorBase @endlink
+class for the complete list.
+
+@anchor treeLeafIterRef
+@par Tree::LeafIter
+By convention in OpenVDB, voxels in the narrow band of a narrow-band
+level set are stored only at the leaf level of a tree, so to facilitate the
+implementation of level set algorithms that operate on narrow-band voxels,
+OpenVDB provides an iterator that visits each @b LeafNode in a tree exactly
+once.
+See the @vdblink::tree::LeafIteratorBase LeafIteratorBase@endlink class
+for details, and also the related
+@vdblink::tree::LeafManager LeafManager@endlink acceleration structure.
+
+@anchor treeNodeIterRef
+@par Tree::NodeIter
+A node iterator traverses a tree in depth-first order, starting from its
+root, and visits each node exactly once.  (It is also possible to restrict
+the traversal to minimum and maximum node depths&mdash;see the
+@vdblink::tree::NodeIteratorBase NodeIteratorBase @endlink class for details.)
+Like the tree-level value iterator, the node iterator provides methods
+that return the depth in the tree of the node to which the iterator
+is pointing (the root node has depth&nbsp;0) and the @ijk axis-aligned
+bounding box of the voxels subsumed by the node and all of its children.
+@par
+Naturally, a node iterator also provides access to the node to which it is
+pointing, but this is complicated somewhat by the fact that nodes of the
+various types (@b RootNode, @b InternalNode and @b LeafNode) do not inherit
+from a common base class.  For efficiency, OpenVDB generally avoids class
+inheritance and virtual functions in favor of templates, allowing the
+compiler to optimize away function calls.  In particular, each node type is
+templated on the type of its children, so even two <B>InternalNode</B>s at
+different levels of a tree have distinct types.  As a result, it is
+necessary to know the type of the node to which a node iterator is pointing
+in order to request access to that node.  See the
+@ref sNodeIterator "Cookbook" for an example of how to do this.
+
+@subsection subsecNodeIter Node Iterators
+
+Less commonly used than tree-level iterators (but found in the
+implementations of some of the narrow-band level set algorithms referred to
+@ref treeLeafIterRef "above") are node-level iterators.  A node
+<B>value iterator</B> visits the values (active, inactive or both) stored in
+a single @b RootNode, @b InternalNode or @b LeafNode, whereas a node
+<B>child iterator</B> visits the children of a single root or internal node.
+(Recall that non-leaf nodes store either a tile value or a child node at
+each grid position.)
+
+
+@subsection subsecValueAccessor Value Accessor
+
+When traversing a grid by @ijk index in a spatially coherent pattern,
+such as when iterating over neighboring voxels, request a
+@vdblink::tree::ValueAccessor ValueAccessor@endlink from the grid
+(with @vdblink::Grid::getAccessor() Grid::getAccessor@endlink)
+and use the accessor&rsquo;s
+@vdblink::tree::ValueAccessor::getValue() getValue@endlink and
+@vdblink::tree::ValueAccessor::setValue() setValue@endlink methods, since
+these will usually be significantly faster (a factor of three is typical)
+than accessing voxels directly in the grid&rsquo;s tree.
+The accessor records the sequence of nodes
+visited during the most recent access; on the next access, rather than
+traversing the tree from the root node down, it performs an inverted
+traversal from the deepest recorded node up.  For neighboring voxels, the
+traversal need only proceed as far as the voxels&rsquo; common ancestor node,
+which more often than not is the first node in the sequence.
+
+Multiple accessors may be associated with a single grid.  In fact, for
+multithreaded, read-only access to a grid, it is recommended that each
+thread be assigned its own accessor.  A thread-safe, mutex-locked accessor
+is provided (see @vdblink::tree::ValueAccessorRW ValueAccessorRW@endlink),
+but the locking negates much of the performance benefit of inverted traversal;
+and because it is the accessor object that is thread-safe, not the grid,
+concurrent reads and writes are not safe unless all threads share a single
+accessor.
+
+All accessors associated with a grid must be cleared after any operation that
+removes nodes from the grid&rsquo;s tree, such as pruning, CSG or compositing.
+For those and other built-in operations, this is done automatically via
+a callback mechanism, but developers must be careful to call
+@vdblink::tree::Tree::clearAllAccessors() Tree::clearAllAccessors@endlink
+whenever deleting nodes directly.
+
+
+@subsection subsecTraversal Tree Traversal
+
+<I>To be written</I>
+
+*/

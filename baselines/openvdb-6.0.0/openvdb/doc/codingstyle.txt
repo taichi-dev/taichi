@@ -1,0 +1,309 @@
+/**
+
+@page codingStyle Coding Style
+
+@section Introduction
+
+This document details the coding practices that are used in the OpenVDB
+codebase.  Contributed code should conform to these guidelines to maintain
+consistency and maintainability.  If there is a rule that you would like
+clarified, changed, or added, please send a note to openvdb@gmail.com.
+
+
+@section sStyleContents Contents
+- @ref sNamingConventions
+  - @ref sNamespaceConventions
+  - @ref sClassConventions
+  - @ref sClassMethods
+  - @ref sClassInstanceVariables
+  - @ref sClassStaticVariables
+  - @ref sLocalVariablesAndArguments
+  - @ref sConstants
+  - @ref sEnumerationNames
+  - @ref sEnumerationValues
+  - @ref sTypedefs
+  - @ref sGlobalVariables
+  - @ref sGlobalFunctions
+  - @ref sBooleans
+- @ref sPractices
+    - @ref sGeneral
+    - @ref sFormatting
+    - @ref sIncludeStatements
+    - @ref sComments
+    - @ref sPrimitiveTypes
+    - @ref sMacros
+    - @ref sClasses
+    - @ref sConditionalStatements
+    - @ref sNamespaces
+    - @ref sExceptions
+    - @ref sTemplates
+    - @ref sMiscellaneous
+
+@section sNamingConventions Naming Conventions
+
+
+@subsection sNamespaceConventions Namespaces
+-# Lowercase words, keep simple and short (e.g., @c tools, @c tree).
+-# Use @c internal (or @c detail) or <TT><I>module</I>_internal</TT>
+   for symbols such as templates that must be defined in header files
+   but that are implementation details not intended for public use.
+
+
+@subsection sClassConventions Classes and Structs
+-# Mixed case; first letter uppercase (e.g., @c AffineMap, @c TreeIterator)
+-# Do not use a prefix.
+
+
+@subsection sClassMethods Class Methods
+-# Mixed case; first letter lowercase (e.g., <TT>getAccessor()</TT>, <TT>gridType()</TT>)
+-# Accessor methods that return a member variable by reference or a primitive type
+by value are just the variable name (e.g., <TT>Grid::tree()</TT>).
+-# Accessor methods that involve construction of objects or other computations are
+@c get + the variable name (e.g., <TT>Grid::getAccessor()</TT>).
+-# Simple mutators are @c set + the variable name (e.g., <TT>Grid::setTree(tree);</TT>).
+
+
+@subsection sClassInstanceVariables Class Instance Variables
+-# Mixed case; always prefixed by @c m (e.g., @c mTree, @c mTransform)
+-# The @c m prefix may be omitted for members of <TT>struct</TT>s
+   used in the public API (e.g., <TT>struct Color { float r, g, b; }</TT>).
+
+
+@subsection sClassStaticVariables Class Static Variables
+-# Mixed case; always prefixed by @c s (e.g., @c sInitialized)
+
+
+@subsection sLocalVariablesAndArguments Local Variables and Arguments
+-# Use mixed case with an initial lower case letter (e.g., @c ijk, @c offset,
+@c range, @c rhsValue).
+
+
+@subsection sConstants Constants
+-# All uppercase; words separated by underscores. If not in a namespace or
+local to a source file, then prefixed with the library name in all caps
+(e.g., @c HALF_FLOAT_TYPENAME_SUFFIX, @c ZIP_COMPRESSION_LEVEL)
+
+
+@subsection sEnumerationNames Enumeration Names
+-# Mixed case; first letter uppercase (e.g., @c GridClass, @c VecType)
+
+
+@subsection sEnumerationValues Enumeration Values
+-# With @c enum, all uppercase with words separated by underscores
+(e.g., @c GRID_LEVEL_SET, @c VEC_INVARIANT) and with a common prefix
+-# With <TT>enum class</TT>, mixed case with the first letter uppercase
+   (e.g., @c GridClass::Unknown, @c GridClass::LevelSet)
+
+
+@subsection sTypedefs Typedefs
+-# Mixed case; first letter uppercase (e.g., @c ConstPtr, @c ValueType)
+-# Do not use a prefix.
+
+
+@subsection sGlobalVariables Global Variables
+-# Mixed case; always prefixed by @c g (e.g., @c gRegistry)
+-# In general, try to use class static data instead of globals.
+
+
+@subsection sGlobalFunctions Global Functions
+-# Mixed case; always prefixed by @c g (e.g., <TT>gFunc()</TT>).
+-# In general, try to use class static members instead of global functions.
+
+
+@subsection sBooleans Booleans
+-# When naming boolean functions and variables, use names that read as a
+condition (e.g., <TT>if (grid.empty())</TT>,
+<TT>if (matrix.isInvertible())</TT>).
+
+
+@section sPractices Practices
+
+
+@subsection sGeneral General
+-# Code must compile without any warning messages at the default warning level.
+-# Prefer the C++ Standard Library to the C Standard Library.
+-# Restrict variables to the smallest scopes possible, and avoid defining
+local variables before giving them values.  Prefer declarations inside
+conditionals: <TT>if (Grid::Ptr grid = createGrid()) { ... }</TT> instead of
+<TT>Grid::Ptr grid = createGrid(); if (grid) { ... }</TT>
+-# For new files, be sure to use the right license boilerplate per our license
+policy.
+
+
+@subsection sFormatting Formatting
+-# Indentation is 4 spaces. Do not use tabs.
+-# Lines are no more than 100 characters long.
+-# Use Unix-style carriage returns ("\n") rather than Windows/DOS ones ("\r\n").
+-# Do not leave debug <TT>printf</TT>s or other debugging code lying around.
+-# Leave a blank line between a group of variable declarations and other code.
+-# Leave a space after the keywords @c if, @c switch, @c while, @c do, @c for,
+and @c return.
+-# Leave a space on each side of binary operators such as @c +, @c -, @c *, @c /, @c &&,
+and @c ||. For clarity in mathematical situations, you may omit the spaces on
+either side of @c * and @c / operators to emphasize their precedence over @c + and @c -.
+-# Do not leave a space between any dereferencing operator
+(such as @c *, @c &, @c [], @c ->, or @c .) and its operands.
+-# In parameter lists, leave a space after each comma.
+-# Do not leave a space after an opening parenthesis or before a closing
+parenthesis.
+-# Parentheses should be used to clarify operator precedence in expressions.
+-# Do not leave a space before an end-of-statement semicolon.
+-# Do not use literal tabs in strings or character constants. Rather, use
+spaces or "\t".
+-# If a parameter list is too long, break it between parameters. Group related
+parameters on lines if appropriate.
+-# Modified spacing is allowed to vertically align repetitive expressions.
+-# Always begin numeric constants with a digit (e.g., 0.001 not .001).
+-# Use K&R-style brace placement in public code.
+-# You may leave off braces for simple, single line flow control statements.
+-# The return type in a function definition should go on a line by itself.
+
+
+@subsection sIncludeStatements Include Statements
+-# Always use double quotes ("") to include header files that live in the same
+directory as your source code.
+-# Use angle brackets (<>) to include header files from outside a file&rsquo;s
+directory.
+-# Do not use absolute paths in include directives.
+-# If there is a header corresponding to a given source file, list it first,
+followed by other local headers, library headers and then system headers.
+
+
+@subsection sHeaderFiles Header Files
+-# Header files have a <TT>.h</TT> extension.
+-# All header files should be bracketed by @c \#ifdef "guard" statements.
+-# In class definitions, list public, then protected, then private members.
+-# List methods before variables.
+-# Fully prototype all public functions and use descriptive naming for each
+argument.
+-# Declare every function defined in a header but outside a class definition
+explicitly as @c inline.
+-# Prefer forward declarations to @c \#include directives in headers.
+-# Do not take advantage of indirect inclusion of header files.
+-# Do not use anonymous namespaces in header files.
+
+
+@subsection sSourceFiles Source Files
+-# Source files have a <TT>.cc</TT> extension.
+-# Properly prototype all file static functions with usefully named arguments.
+-# Whenever possible, put variables and functions in an anonymous namespace.
+-# Avoid global variables.
+
+
+@subsection sComments Comments
+-# Use  @c // style comments instead of / * * / style, even for multi-line
+comments.
+-# Use multi-line comments to describe following paragraphs of code.
+-# Use end-of-line comments to describe variable declarations or to clarify a
+single statement.
+-# Large blocks of code should be commented out with <TT>\#if 0</TT> and @c \#endif.
+-# Do not leave obsolete code fragments within comments as an historical trail.
+-# Document public code with Doxygen comments, formatted as follows:
+@verbatim
+/// @brief Create a new grid of type @c GridType classified as a "Level Set",
+/// i.e., a narrow-band level set.
+///
+/// @param voxelSize  the size of a voxel in world units
+/// @param halfWidth  the half width of the narrow band in voxel units
+///
+/// @details The voxel size and the narrow band half width define the grid's
+/// background value as halfWidth*voxelWidth.  The transform is linear
+/// with a uniform scaling only corresponding to the specified voxel size.
+///
+/// @note It is generally advisable to specify a half-width of the narrow band
+/// that is larger than one voxel unit, otherwise zero crossings are not guaranteed.
+template<typename GridType>
+typename GridType::Ptr createLevelSet(
+    Real voxelSize = 1.0, Real halfWidth = LEVEL_SET_HALF_WIDTH);
+@endverbatim
+
+
+@subsection sPrimitiveTypes Primitive Types
+-# Avoid writing code that is dependent on the bit size of primitive values,
+but when specific bit sizes are required, use explicitly-sized types such as
+@c int32_t or @c uint64_t.
+
+
+@subsection sMacros Macros
+-# Avoid macros for constants. Use global static constants instead. (Local
+static constants are not guaranteed to be initialized in a thread-safe manner.)
+-# Avoid macro functions. Use @c inline and templates instead.
+
+
+@subsection sClasses Classes
+-# Constructors that can be called with only one argument should be prefixed
+with the @c explicit keyword to avoid unintended type conversions.
+-# Never call virtual methods from destructors.
+-# If you have a copy constructor, make sure you have an assignment operator.
+-# If you have an assignment operator, you probably need a copy constructor.
+-# If you have data members that are pointers to dynamically allocated memory,
+make sure you have a copy constructor and an assignment operator, both of
+which do the right thing with that memory.
+-# Classes which are to be subclassed always have a virtual destructor, even if
+it is empty.
+-# Check against self assignment and return <TT>*this</TT> in assignment
+operators.
+-# Declare methods as @c const wherever possible.
+-# Declare object-valued input arguments as const references wherever
+possible.  Primitives may be passed by value, however.
+-# Arithmetic, logical, bitwise, dereference, and address of operators should
+only be used when their semantics are clear, obvious, and unambiguous.
+-# The application operator [ () ] is allowed for functors.
+-# Conversion operators should be avoided.
+-# Never return const references to stack allocated or implicitly computed
+objects.
+-# If a class does not have a copy constructor and/or assignment operator,
+consider creating a private unimplemented copy constructor and/or assignment
+operator to prevent automatically generated versions from being used.
+
+
+@subsection sConditionalStatements Conditional Statements
+-# For test expressions, use a form that indicates as clearly as possible the
+types of operands by avoiding implicit casts.
+-# Assignments that occur within conditional statements must have no effect in
+the enclosing scope.
+-# Allow for arithmetic imprecision when comparing floating point values.
+-# In switch statements, always comment fallthroughs and empty cases.
+
+
+@section sNamespaces Namespaces
+-# Namespaces should be used whenever possible.
+-# Avoid pulling in entire namespaces with @c using directives
+(e.g., <TT>using namespace std;</TT>).
+-# @c using declarations are allowed for individual symbols (e.g.,
+<TT>using std::vector;</TT>), but they should never appear in a header file.
+-# Define global operators in the namespace of their arguments.
+-# Namespaces are not indented.
+
+
+@subsection sExceptions Exceptions
+-# Appropriate use of exceptions is encouraged.
+-# Methods should declare all exceptions they might throw using comments,
+but not exception specifications.
+-# Throw scope local exception instances, not pointers or references or globals.
+-# Catch exceptions by reference.
+-# Never allow an exception to escape from a destructor.
+
+
+@subsection sTemplates Templates
+-# Use @c typename rather than @c class when declaring template type parameters.
+
+
+@subsection sMiscellaneous Miscellaneous
+-# Don&rsquo;t use pointers to run through arrays of non-primitive types. Use explicit array indexing, iterators or generic algorithms instead.
+-# Use C++ casts (<TT>static_cast&lt;int&gt;(x)</TT> or <TT>int(x)</TT>),
+not C casts (<TT>(int)x</TT>).
+-# Multiple variables of the same data type may be declared on the same line
+if closely related.
+-# Library code must never deliberately terminate the application in response
+to an error condition.
+-# Avoid using malloc/free when new/delete can be used instead.
+-# Avoid @c goto.
+-# Avoid \"magic numbers\".  Use named constants when necessary.
+-# If you use typeid/typeinfo, be aware that although all runtimes support
+<TT>typeinfo::name()</TT>, the format of the string it returns varies
+between compilers and even for a given compiler the value is not guaranteed
+to be unique.
+
+*/
+

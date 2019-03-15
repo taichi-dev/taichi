@@ -1,0 +1,652 @@
+/**
+
+@page python Using OpenVDB in Python
+
+This section describes the OpenVDB Python module and includes Python code
+snippets and some complete programs that illustrate how to perform common tasks.
+(An <a href="./python/index.html">API reference</a> is also available,
+if <a href="http://epydoc.sourceforge.net/">Epydoc</a> is installed.)
+As of OpenVDB 2.0, the Python module exposes most of the functionality
+of the C++ @vdblink::Grid Grid@endlink class, including I/O, metadata
+management, voxel access and iteration, but almost none of the many
+@ref secToolUtils "tools".
+We expect to add support for tools in forthcoming releases.
+
+The Python module supports a fixed set of grid types.
+If the symbol @c PY_OPENVDB_WRAP_ALL_GRID_TYPES is defined at compile time,
+most of the grid types declared in openvdb.h are accessible in Python,
+otherwise only @b FloatGrid, @b BoolGrid and @b Vec3SGrid are accessible.
+To add support for grids with other value types or configurations,
+search for @c PY_OPENVDB_WRAP_ALL_GRID_TYPES in the module source code,
+update the code as appropriate and recompile the module.
+(It is possible that this process will be streamlined in the future
+with a plugin mechanism.)
+Note however that adding grid types can significantly increase the time
+and memory needed to compile the module and can significantly increase
+the size of the resulting executable.
+In addition, grids of custom types that are saved to <tt>.vdb</tt> files
+or pickled will not be readable by clients using the standard version
+of the module.
+
+Also note that the @vdblink::tree::Tree Tree@endlink class is not exposed
+in Python.
+Much of its functionality is either available through the
+@vdblink::Grid Grid@endlink or is too low-level to be generally useful
+in Python.
+Although trees are not accessible in Python, they can of course be operated on
+indirectly.
+Of note are the grid methods @b copy, which returns a new grid that shares
+its tree with the original grid, @b deepCopy, which returns a new grid
+that owns its own tree, and @b sharesWith, which reports whether two grids
+share a tree.
+
+
+
+@section sPyContents Contents
+- @ref sPyBasics
+- @ref sPyHandlingMetadata
+- @ref sPyAccessors
+- @ref sPyIteration
+- @ref sPyNumPy
+- @ref sPyMeshConversion
+- @ref sPyCppAPI
+
+
+
+@section sPyBasics Getting started
+
+The following example is a complete program that illustrates some of the
+basic steps to create grids and write them to disk:
+@code{.py}
+import pyopenvdb as vdb
+
+# A grid comprises a sparse tree representation of voxel data,
+# user-supplied metadata and a voxel space to world space transform,
+# which defaults to the identity transform.
+# A FloatGrid stores one single-precision floating point value per voxel.
+# Other grid types include BoolGrid and Vec3SGrid.  The module-level
+# attribute pyopenvdb.GridTypes gives the complete list.
+cube = vdb.FloatGrid()
+cube.fill(min=(100, 100, 100), max=(199, 199, 199), value=1.0)
+
+# Name the grid "cube".
+cube.name = 'cube'
+
+# Populate another FloatGrid with a sparse, narrow-band level set
+# representation of a sphere with radius 50 voxels, located at
+# (1.5, 2, 3) in index space.
+sphere = vdb.createLevelSetSphere(radius=50, center=(1.5, 2, 3))
+
+# Associate some metadata with the grid.
+sphere['radius'] = 50.0
+
+# Associate a scaling transform with the grid that sets the voxel size
+# to 0.5 units in world space.
+sphere.transform = vdb.createLinearTransform(voxelSize=0.5)
+
+# Name the grid "sphere".
+sphere.name = 'sphere'
+
+# Write both grids to a VDB file.
+vdb.write('mygrids.vdb', grids=[cube, sphere])
+@endcode
+
+This example shows how to read grids from files, and some ways to modify
+grids:
+@code{.py}
+import pyopenvdb as vdb
+
+# Read a .vdb file and return a list of grids populated with
+# their metadata and transforms, but not their trees.
+filename = 'mygrids.vdb'
+grids = vdb.readAllGridMetadata(filename)
+
+# Look for and read in a level-set grid that has certain metadata.
+sphere = None
+for grid in grids:
+    if (grid.gridClass == vdb.GridClass.LEVEL_SET and 'radius' in grid
+        and grid['radius'] > 10.0):
+        sphere = vdb.read(filename, grid.name)
+    else:
+        print 'skipping grid', grid.name
+
+if sphere:
+    # Convert the level set sphere to a narrow-band fog volume, in which
+    # interior voxels have value 1, exterior voxels have value 0, and
+    # narrow-band voxels have values varying linearly from 0 to 1.
+
+    outside = sphere.background
+    width = 2.0 * outside
+
+    # Visit and update all of the grid's active values, which correspond to
+    # voxels in the narrow band.
+    for iter in sphere.iterOnValues():
+        dist = iter.value
+        iter.value = (outside - dist) / width
+
+    # Visit all of the grid's inactive tile and voxel values and update
+    # the values that correspond to the interior region.
+    for iter in sphere.iterOffValues():
+        if iter.value < 0.0:
+            iter.value = 1.0
+            iter.active = False
+
+    # Set exterior voxels to 0.
+    sphere.background = 0.0
+
+    sphere.gridClass = vdb.GridClass.FOG_VOLUME
+@endcode
+
+
+
+@section sPyHandlingMetadata Handling metadata
+
+Metadata of various types (string, bool, int, float, and 2- and 3-element
+sequences of ints or floats) can be attached both to individual grids
+and to files on disk, either by supplying a Python dictionary of
+(name,&nbsp;value) pairs or, in the case of grids, through
+a dictionary-like interface.
+
+Add (name,&nbsp;value) metadata pairs to a grid as you would to a dictionary.
+A new value overwrites an existing value if the name matches an existing name.
+@code{.py}
+>>> import pyopenvdb as vdb
+
+>>> grid = vdb.Vec3SGrid()
+
+>>> grid['vector'] = 'gradient'
+>>> grid['radius'] = 50.0
+>>> grid['center'] = (10, 15, 10)
+
+>>> grid.metadata
+{'vector': 'gradient', 'radius': 50.0, 'center': (10, 15, 10)}
+
+>>> grid['radius']
+50.0
+
+>>> 'radius' in grid, 'misc' in grid
+(True, False)
+
+# OK to overwrite an existing value with a value of another type:
+>>> grid['center'] = 0.0
+
+# A 4-element sequence is not a supported metadata value type:
+>>> grid['center'] = (0, 0, 0, 0)
+  File "<stdin>", line 1, in <module>
+TypeError: metadata value "(0, 0, 0, 0)" of type tuple is not allowed
+
+# Metadata names must be strings:
+>>> grid[0] = (10.5, 15, 30)
+  File "<stdin>", line 1, in <module>
+TypeError: expected str, found int as argument 1 to __setitem__()
+@endcode
+Alternatively, replace all or some of a grid&rsquo;s metadata by supplying
+a (name,&nbsp;value) dictionary:
+@code{.py}
+>>> metadata = {
+...    'vector': 'gradient',
+...    'radius': 50.0,
+...    'center': (10, 15, 10)
+... }
+
+# Replace all of the grid's metadata.
+>>> grid.metadata = metadata
+
+>>> metadata = {
+...     'center': [10.5, 15, 30],
+...     'scale': 3.14159
+... }
+
+# Overwrite "center" and add "scale":
+>>> grid.updateMetadata(metadata)
+@endcode
+
+Iterate over a grid&rsquo;s metadata as you would over a dictionary:
+@code{.py}
+>>> for key in grid:
+...     print '%s = %s' % (key, grid[key])
+...
+vector = gradient
+radius = 50.0
+scale = 3.14159
+center = (10.5, 15.0, 30.0)
+@endcode
+
+Removing metadata is also straightforward:
+@code{.py}
+>>> del grid['vector']
+>>> del grid['center']
+>>> del grid['vector']  # error: already removed
+  File "<stdin>", line 1, in <module>
+KeyError: 'vector'
+
+>>> grid.metadata = {}  # remove all metadata
+@endcode
+
+Some grid metadata is exposed in the form of properties, either because
+it might be frequently accessed (a grid&rsquo;s name, for example)
+or because its allowed values are somehow restricted:
+@code{.py}
+>>> grid = vdb.createLevelSetSphere(radius=10.0)
+>>> grid.metadata
+{'class': 'level set'}
+
+>>> grid.gridClass = vdb.GridClass.FOG_VOLUME
+>>> grid.metadata
+{'class': 'fog volume'}
+
+# The gridClass property requires a string value:
+>>> grid.gridClass = 123
+  File "<stdin>", line 1, in <module>
+TypeError: expected str, found int as argument 1 to setGridClass()
+
+# Only certain strings are recognized; see pyopenvdb.GridClass
+# for the complete list.
+>>> grid.gridClass = 'Hello, world.'
+>>> grid.metadata
+{'class': 'unknown'}
+
+>>> grid.metadata = {}
+>>> grid.vectorType = vdb.VectorType.COVARIANT
+>>> grid.metadata
+{'vector_type': 'covariant'}
+
+>>> grid.name = 'sphere'
+>>> grid.creator = 'Python'
+>>> grid.metadata
+{'vector_type': 'covariant', 'name': 'sphere', 'creator': 'Python'}
+@endcode
+Setting these properties to @c None removes the corresponding metadata,
+but the properties retain default values:
+@code{.py}
+>>> grid.creator = grid.vectorType = None
+>>> grid.metadata
+{'name': 'sphere'}
+
+>>> grid.creator, grid.vectorType
+('', 'invariant')
+@endcode
+
+Metadata can be associated with a <tt>.vdb</tt> file at the time the file
+is written, by supplying a (name,&nbsp;value) dictionary
+as the optional @c metadata argument to the @b write function:
+@code{.py}
+>>> metadata = {
+...     'creator': 'Python',
+...     'time': '11:05:00'
+... }
+>>> vdb.write('mygrids.vdb', grids=grid, metadata=metadata)
+@endcode
+File-level metadata can be retrieved with either the @b readMetadata
+function or the @b readAll function:
+@code{.py}
+>>> metadata = vdb.readMetadata('mygrids.vdb')
+>>> metadata
+{'creator': 'Python', 'time': '11:05:00'}
+
+>>> grids, metadata = vdb.readAll('mygrids.vdb')
+>>> metadata
+{'creator': 'Python', 'time': '11:05:00'}
+>>> [grid.name for grid in grids]
+['sphere']
+@endcode
+
+
+
+@section sPyAccessors Voxel access
+
+Grids provide read-only and read/write accessors for voxel lookup via @ijk
+index coordinates.
+Accessors store references to their parent grids, so a grid will not
+be deleted while it has accessors in use.
+
+@code{.py}
+>>> import pyopenvdb as vdb
+
+# Read two grids from a file.
+>>> grids, metadata = vdb.readAll('smoke2.vdb')
+>>> [grid.name for grid in grids]
+['density', 'v']
+
+# Get read/write accessors to the two grids.
+>>> dAccessor = grids[0].getAccessor()
+>>> vAccessor = grids[1].getAccessor()
+
+>>> ijk = (100, 103, 101)
+
+>>> dAccessor.probeValue(ijk)
+(0.17614534497261047, True)
+# Change the value of a voxel.
+>>> dAccessor.setValueOn(ijk, 0.125)
+>>> dAccessor.probeValue(ijk)
+(0.125, True)
+
+>>> vAccessor.probeValue(ijk)
+((-2.90625, 9.84375, 0.84228515625), True)
+# Change the active state of a voxel.
+>>> vAccessor.setActiveState(ijk, False)
+>>> vAccessor.probeValue(ijk)
+((-2.90625, 9.84375, 0.84228515625), False)
+
+# Get a read-only accessor to one of the grids.
+>>> dAccessor = grids[0].getConstAccessor()
+>>> dAccessor.setActiveState(ijk, False)
+  File "<stdin>", line 1, in <module>
+TypeError: accessor is read-only
+
+# Delete the accessors once they are no longer needed,
+# so that the grids can be garbage-collected.
+>>> del dAccessor, vAccessor
+@endcode
+
+
+
+@section sPyIteration Iteration
+
+Grids provide read-only and read/write iterators over their values.
+Iteration is over sequences of value objects (<b>BoolGrid.Value</b>s,
+<b>FloatGrid.Value</b>s, etc.) that expose properties such as the number
+of voxels spanned by a value (one, for a voxel value, more than one
+for a tile value), its coordinates and its active state.
+Value objects returned by read-only iterators are immutable; those
+returned by read/write iterators permit assignment to their active state
+and value properties, which modifies the underlying grid.
+Value objects store references to their parent grids, so a grid will not
+be deleted while one of its value objects is in use.
+
+@code{.py}
+>>> import pyopenvdb as vdb
+
+>>> grid = vdb.read('smoke2.vdb', gridname='v')
+>>> grid.__class__.__name__
+'Vec3SGrid'
+
+# Iterate over inactive values and print the coordinates of the first
+# five voxel values and the bounding boxes of the first five tile values.
+>>> voxels = tiles = 0
+... N = 5
+... for item in grid.citerOffValues():  # read-only iterator
+...     if voxels == N and tiles == N:
+...         break
+...     if item.count == 1:
+...         if voxels < N:
+...             voxels += 1
+...             print 'voxel', item.min
+...     else:
+...         if tiles < N:
+...             tiles += 1
+...             print 'tile', item.min, item.max
+... 
+tile (0, 0, 0) (7, 7, 7)
+tile (0, 0, 8) (7, 7, 15)
+tile (0, 0, 16) (7, 7, 23)
+tile (0, 0, 24) (7, 7, 31)
+tile (0, 0, 32) (7, 7, 39)
+voxel (40, 96, 88)
+voxel (40, 96, 89)
+voxel (40, 96, 90)
+voxel (40, 96, 91)
+voxel (40, 96, 92)
+
+# Iterate over and normalize all active values.
+>>> from math import sqrt
+>>> for item in grid.iterOnValues():  # read/write iterator
+...     vector = item.value
+...     magnitude = sqrt(sum(x * x for x in vector))
+...     item.value = [x / magnitude for x in vector]
+...
+@endcode
+
+For some operations, it might be more convenient to use one of
+the grid methods @b mapOn, @b mapOff or @b mapAll.
+These methods iterate over a grid&rsquo;s tiles and voxels
+(active, inactive or both, respectively) and replace each value <i>x</i>
+with <i>f</i>(<i>x</i>), where <i>f</i> is a callable object.
+These methods are not multithreaded.
+@code{.py}
+>>> import pyopenvdb as vdb
+>>> from math import sqrt
+
+>>> grid = vdb.read('smoke2.vdb', gridname='v')
+
+>>> def normalize(vector):
+...     magnitude = sqrt(sum(x * x for x in vector))
+...     return [x / magnitude for x in vector]
+...
+>>> grid.mapOn(normalize)
+@endcode
+
+Similarly, the @b combine method iterates over corresponding pairs of values
+(tile and voxel) of two grids @e A and @e B of the same type
+(<b>FloatGrid</b>, <b>Vec3SGrid</b>, etc.), replacing values in @e A
+with <i>f</i>(<i>a</i>, <i>b</i>), where <i>f</i> is a callable object.
+This operation assumes that index coordinates @ijk in both grids correspond
+to the same physical, world space location.
+Also, the operation always leaves grid @e B empty.
+@code{.py}
+>>> import pyopenvdb as vdb
+
+>>> density = vdb.read('smoke2.vdb', gridname='density')
+>>> density.__class__.__name__
+'FloatGrid'
+
+>>> sphere = vdb.createLevelSetSphere(radius=50.0, center=(100, 300, 100))
+
+>>> density.combine(sphere, lambda a, b: min(a, b))
+@endcode
+For now, @b combine operates only on tile and voxel values,
+not on their active states or other attributes.
+
+
+
+@section sPyNumPy Working with NumPy arrays
+
+Large data sets are often handled in Python using
+<a href="http://www.numpy.org/">NumPy</a>.
+The OpenVDB Python module can optionally be compiled with NumPy support.
+With NumPy enabled, the @b copyFromArray and @b copyToArray grid methods
+can be used to exchange data efficiently between scalar-valued grids
+and three-dimensional NumPy arrays and between vector-valued grids and
+four-dimensional NumPy arrays.
+@code{.py}
+>>> import pyopenvdb as vdb
+>>> import numpy
+
+>>> array = numpy.random.rand(200, 200, 200)
+>>> array.dtype
+dtype('float64')
+
+# Copy values from a three-dimensional array of doubles
+# into a grid of floats.
+>>> grid = vdb.FloatGrid()
+>>> grid.copyFromArray(array)
+>>> grid.activeVoxelCount() == array.size
+True
+>>> grid.evalActiveVoxelBoundingBox()
+((0, 0, 0), (199, 199, 199))
+
+# Copy values from a four-dimensional array of ints
+# into a grid of float vectors.
+>>> vecarray = numpy.ndarray((60, 70, 80, 3), int)
+>>> vecarray.fill(42)
+>>> vecgrid = vdb.Vec3SGrid()
+>>> vecgrid.copyFromArray(vecarray)
+>>> vecgrid.activeVoxelCount() == 60 * 70 * 80
+True
+>>> vecgrid.evalActiveVoxelBoundingBox()
+((0, 0, 0), (59, 69, 79))
+@endcode
+
+When copying from a NumPy array, values in the array that are equal to
+the destination grid&rsquo;s background value (or close to it, if the
+@c tolerance argument to @b copyFromArray is nonzero) are set to the
+background value and are marked inactive.
+All other values are marked active.
+@code{.py}
+>>> grid.clear()
+>>> grid.copyFromArray(array, tolerance=0.2)
+>>> print '%d%% of copied voxels are active' % (
+...     round(100.0 * grid.activeVoxelCount() / array.size))
+80% of copied voxels are active
+@endcode
+
+The optional @c ijk argument specifies the index coordinates of the voxel
+in the destination grid into which to start copying values.
+That is, array index (0,&nbsp;0,&nbsp;0) maps to voxel @ijk.
+@code{.py}
+>>> grid.clear()
+>>> grid.copyFromArray(array, ijk=(-1, 2, 3))
+>>> grid.evalActiveVoxelBoundingBox()
+((-1, 2, 3), (198, 201, 202))
+@endcode
+
+The @b copyToArray method also accepts an @c ijk argument.
+It specifies the index coordinates of the voxel to be copied to array
+index (0,&nbsp;0,&nbsp;0).
+@code{.py}
+>>> grid = vdb.createLevelSetSphere(radius=10.0)
+>>> array = numpy.ndarray((40, 40, 40), int)
+>>> array.fill(0)
+# Copy values from a grid of floats into
+# a three-dimensional array of ints.
+>>> grid.copyToArray(array, ijk=(-15, -20, -35))
+>>> array[15, 20]
+array([ 3,  3,  3,  3,  3,  3,  3,  3,  3,  3,
+        3,  3,  3,  3,  3,  3,  3,  3,  3,  3,
+        3,  3,  3,  2,  1,  0, -1, -2, -3, -3,
+       -3, -3, -3, -3, -3, -3, -3, -3, -3, -3])
+@endcode
+@b copyToArray has no @c tolerance argument, because there is no distinction
+between active and inactive values in the destination array.
+
+
+
+@section sPyMeshConversion Mesh conversion
+
+Also available if the OpenVDB Python module is compiled with NumPy support
+(see @ref sPyNumPy "above") are grid methods to convert polygonal meshes to
+level sets (see @vdblink::tools::meshToLevelSet() tools::meshToLevelSet@endlink
+for some restrictions) and to convert isosurfaces of scalar-valued grids
+to meshes.
+@code{.py}
+>>> import pyopenvdb as vdb
+>>> import numpy
+
+>>> grid = vdb.read('bunny.vdb', 'ls_bunny')
+
+# Convert a volume to a quadrilateral mesh.
+>>> points, quads = grid.convertToQuads()
+
+# World-space vertices of the mesh:
+>>> points
+array([[-14.05082607,  -0.10118673,  -0.40250054],
+       [-14.05230808,  -0.05570767,  -0.45693323],
+       [-14.05613995,  -0.0734246 ,  -0.42150033],
+       ..., 
+       [  7.25201273,  13.25417805,   6.45283508],
+       [  7.25596714,  13.31225586,   6.40827513],
+       [  7.30518484,  13.21096039,   6.40724468]], dtype=float32)
+
+# Quadrilateral faces of the mesh, given by
+# 4-tuples of indices into the vertex list:
+>>> quads
+array([[      5,       2,       1,       4],
+       [     11,       7,       6,      10],
+       [     14,       9,       8,      13],
+       ..., 
+       [1327942, 1327766, 1339685, 1339733],
+       [1339728, 1327921, 1327942, 1339733],
+       [1339733, 1339685, 1339661, 1339728]], dtype=uint32)
+
+# Convert the mesh back to a (single-precision) volume.
+# Give the resulting grid the original grid's transform.
+>>> gridFromQuads = vdb.FloatGrid.createLevelSetFromPolygons(
+...     points, quads=quads, transform=grid.transform)
+
+
+# Alternatively, mesh a volume adaptively for a lower polygon count.
+# Adaptive meshing generates both triangular and quadrilateral faces.
+>>> points, triangles, quads = grid.convertToPolygons(adaptivity=0.5)
+
+# World-space vertices of the mesh:
+>>> points
+array([[-14.02906322,  -0.07213751,  -0.49265194],
+       [-14.11877823,  -0.11127799,  -0.17118289],
+       [-13.85006142,  -0.08145611,  -0.86669081],
+       ..., 
+       [  7.31098318,  12.97358608,   6.55133963],
+       [  7.20240211,  12.80632019,   6.80356836],
+       [  7.23679161,  13.28100395,   6.45595646]], dtype=float32)
+
+# Triangular faces of the mesh, given by
+# triples of indices into the vertex list:
+>>> triangles
+array([[    8,     7,     0],
+       [   14,     9,     8],
+       [   14,    11,     9],
+       ..., 
+       [22794, 22796, 22797],
+       [22784, 22783, 22810],
+       [22796, 22795, 22816]], dtype=uint32)
+
+# Quadrilateral faces of the mesh, given by
+# 4-tuples of indices into the vertex list:
+>>> quads
+array([[    4,     3,     6,     5],
+       [    8,     9,    10,     7],
+       [   11,    12,    10,     9],
+       ..., 
+       [23351, 23349, 23341, 23344],
+       [23344, 23117, 23169, 23351],
+       [23169, 23167, 23349, 23351]], dtype=uint32)
+
+# Convert the mesh to a double-precision volume.
+>>> doubleGridFromPolys = vdb.DoubleGrid.createLevelSetFromPolygons(
+...     points, triangles, quads, transform=grid.transform)
+@endcode
+
+The mesh representation is similar to that of the commonly-used
+<a href="http://en.wikipedia.org/wiki/Wavefront_.obj_file">
+Wavefront&nbsp;<tt>.obj</tt></a> file format,
+except that the vertex array is indexed starting from 0 rather than 1.
+To output mesh data to a file in <tt>.obj</tt> format, one might do
+the following:
+@code{.py}
+>>> def writeObjFile(filename, points, triangles=[], quads=[]):
+...     f = open(filename, 'w')
+...     # Output vertices.
+...     for xyz in points:
+...         f.write('v %g %g %g\n' % tuple(xyz))
+...     f.write('\n')
+...     # Output faces.
+...     for ijk in triangles:
+...         f.write('f %d %d %d\n' %
+...             (ijk[0]+1, ijk[1]+1, ijk[2]+1)) # offset vertex indices by one
+...     for ijkl in quads:
+...         f.write('f %d %d %d %d\n' %
+...             (ijkl[0]+1, ijkl[1]+1, ijkl[2]+1, ijkl[3]+1))
+...     f.close()
+...
+>>> mesh = grid.convertToPolygons(adaptivity=0.8)
+>>> writeObjFile('bunny.obj', *mesh)
+@endcode
+
+
+@section sPyCppAPI C++ glue routines
+
+Python objects of type @b FloatGrid, @b Vec3SGrid, etc. are backed by
+C structs that &ldquo;inherit&rdquo; from @c PyObject.
+The OpenVDB Python extension module includes public functions that you can
+call in your own extension modules to convert between
+@vdblink::Grid openvdb::Grids@endlink and <tt>PyObject</tt>s.
+See the pyopenvdb.h reference for a description of these functions
+and a usage example.
+
+Your extension module might need to link against the OpenVDB extension module
+in order to access these functions.
+On UNIX systems, it might also be necessary to specify the @c RTLD_GLOBAL
+flag when importing the OpenVDB module, to allow its symbols to be shared
+across modules.
+See @b setdlopenflags in the Python @b sys module for one way to do this.
+
+*/

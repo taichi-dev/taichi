@@ -444,8 +444,7 @@ template<typename GridT, typename MaskT, typename InterruptT>
 inline bool
 Filter<GridT, MaskT, InterruptT>::wasInterrupted()
 {
-    if (util::wasInterrupted(mInterrupter)) {
-        tbb::task::self().cancel_group_execution();
+    if (util::wasInterrupted(mInterrupter)) { tbb::task::self().cancel_group_execution();
         return true;
     }
     return false;

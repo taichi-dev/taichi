@@ -1,4 +1,9 @@
+.idea
+build
 *.o
 *.so
 *.so*
 test
+cmake-build-debug
+dataset
+vdb_baseline

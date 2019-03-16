@@ -1,11 +1,65 @@
 #include <openvdb/openvdb.h>
+#include <openvdb/io/Stream.h>
 #include <iostream>
+#include "taichi.h"
 
 int main() {
+  using GridType = openvdb::FloatGrid;
+  using TreeType = GridType::TreeType;
+  using RootType = TreeType::RootNodeType;   // level 3 RootNode
+  assert(RootType::LEVEL == 3);
+  using Int1Type = RootType::ChildNodeType;  // level 2 InternalNode
+  using Int2Type = Int1Type::ChildNodeType;  // level 1 InternalNode
+  using LeafType = TreeType::LeafNodeType;   // level 0 LeafNode
   // Initialize the OpenVDB library.  This must be called at least
   // once per program and may safely be called multiple times.
   openvdb::initialize();
   // Create an empty floating-point grid with background value 0.
+
+  std::ifstream ifile("dataset/bunny.vdb", std::ios_base::binary);
+  auto grids = openvdb::io::Stream(ifile).getGrids();
+  TC_P(grids->size());
+
+  auto grid = static_cast<GridType *>((*grids)[0].get());
+
+  int counter[4] = {0};
+  for (TreeType::NodeIter iter = grid->tree().beginNode(); iter; ++iter) {
+    switch (iter.getDepth()) {
+      case 0: {
+        RootType *node = nullptr;
+        iter.getNode(node);
+        if (node)
+          counter[0]++;
+        break;
+      }
+      case 1: {
+        Int1Type *node = nullptr;
+        iter.getNode(node);
+        if (node)
+          counter[1]++;
+        break;
+      }
+      case 2: {
+        Int2Type *node = nullptr;
+        iter.getNode(node);
+        if (node)
+          counter[2]++;
+        break;
+      }
+      case 3: {
+        LeafType *node = nullptr;
+        iter.getNode(node);
+        if (node)
+          counter[3]++;
+        break;
+      }
+    }
+  }
+  for (int i = 0; i < 4; i++) {
+    TC_INFO("Depth {}: nodes {}", i, counter[i]);
+  }
+
+  /*
   openvdb::FloatGrid::Ptr grid = openvdb::FloatGrid::create();
   std::cout << "Testing random access:" << std::endl;
   // Get an accessor for coordinate-based access to voxels.
@@ -34,4 +88,5 @@ int main() {
        ++iter) {
     std::cout << "Grid" << iter.getCoord() << " = " << *iter << std::endl;
   }
+  */
 }

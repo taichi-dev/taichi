@@ -1,1 +1,1 @@
- sudo apt-get install zlib1g-dev liblog4cplus-dev libilmbase-dev libopenexr-dev libboost-all-dev libtbb-dev
+ sudo apt-get install zlib1g-dev liblog4cplus-dev libilmbase-dev libopenexr-dev libboost-all-dev libtbb-dev libjemalloc-dev

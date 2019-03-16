@@ -97,7 +97,7 @@ BOOST_INCL_DIR := $(HT)/include
 # The directory containing libboost_iostreams, libboost_system, etc.
 BOOST_LIB_DIR := $(HDSO)
 BOOST_LIB := -lboost_iostreams -lboost_system
-BOOST_THREAD_LIB := -lboost_thread
+BOOST_THREAD_LIB := -lboost_thread -lboost_system -lboost_iostreams -lHalf -ltbb
 
 # The parent directory of the OpenEXR/ header directory
 EXR_INCL_DIR := $(HT)/include

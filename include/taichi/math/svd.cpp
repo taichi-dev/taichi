@@ -10,6 +10,7 @@
 #include "eigen.h"
 #pragma GCC diagnostic pop
 #include <taichi/testing.h>
+#include "sifakis_svd.h"
 #include "svd.h"
 
 //#define TC_USE_EIGEN_SVD
@@ -45,8 +46,6 @@ TC_FORCE_INLINE void ensure_non_negative_singular_values(MatrixND<dim, T> &u,
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
-// m cannot be const here, otherwise JIXIE::singularValueDecomposition will
-// cause a error due to const_cast
 template <int dim, typename T>
 void imp_svd(const MatrixND<dim, T> &m_,
              MatrixND<dim, T> &u,
@@ -74,19 +73,47 @@ void imp_svd(const MatrixND<dim, T> &m_,
       s[1][1] = s_tmp[0];
     }
   }
-  TC_STATIC_ELSE {
-    Eigen::Matrix<T, dim, dim> M = to_eigen(m), U, V;
-    Eigen::Matrix<T, dim, 1> S;
-
-    JIXIE::singularValueDecomposition(M, U, S, V);
-    s = u = v = Matrix(0);
-    for (int i = 0; i < dim; i++) {
-      s[i][i] = S(i, 0);
-    }
-    u = from_eigen<dim, T>(U);
-    v = from_eigen<dim, T>(V);
-  }
-  TC_STATIC_END_IF
+  TC_STATIC_ELSE{
+      // clang-format off
+    TC_STATIC_IF((std::is_same<T, float32>() == true)) {
+      SifakisSVD::svd<5>(
+           m_(0, 0),
+           m_(0, 1),
+           m_(0, 2),
+           m_(1, 0),
+           m_(1, 1),
+           m_(1, 2),
+           m_(2, 0),
+           m_(2, 1),
+           m_(2, 2),
+           u(0, 0),
+           u(0, 1),
+           u(0, 2),
+           u(1, 0),
+           u(1, 1),
+           u(1, 2),
+           u(2, 0),
+           u(2, 1),
+           u(2, 2),
+           v(0, 0),
+           v(0, 1),
+           v(0, 2),
+           v(1, 0),
+           v(1, 1),
+           v(1, 2),
+           v(2, 0),
+           v(2, 1),
+           v(2, 2),
+           s(0, 0),
+           s(1, 1),
+           s(2, 2)
+      );
+      s(0, 1) = s(1, 0) = s(0, 2) = s(2, 0) = s(1, 2) = s(2, 1) = 0;
+    } TC_STATIC_ELSE {
+      eigen_svd(m_, u, s, v);
+    } TC_STATIC_END_IF
+    // clang-format on
+  } TC_STATIC_END_IF
 }
 #pragma GCC diagnostic pop
 

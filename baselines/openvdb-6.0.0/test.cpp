@@ -1,22 +1,25 @@
 #include <openvdb/openvdb.h>
 #include <openvdb/io/Stream.h>
+#include <openvdb/tools/Filter.h>
 #include <iostream>
+#include <tbb/tbb.h>
 #include "taichi.h"
 
-int main() {
+int main(int argc, char **argv) {
   using GridType = openvdb::FloatGrid;
   using TreeType = GridType::TreeType;
-  using RootType = TreeType::RootNodeType;   // level 3 RootNode
+  using RootType = TreeType::RootNodeType;  // level 3 RootNode
   assert(RootType::LEVEL == 3);
   using Int1Type = RootType::ChildNodeType;  // level 2 InternalNode
   using Int2Type = Int1Type::ChildNodeType;  // level 1 InternalNode
   using LeafType = TreeType::LeafNodeType;   // level 0 LeafNode
+
   // Initialize the OpenVDB library.  This must be called at least
   // once per program and may safely be called multiple times.
   openvdb::initialize();
   // Create an empty floating-point grid with background value 0.
 
-  std::ifstream ifile("dataset/bunny.vdb", std::ios_base::binary);
+  std::ifstream ifile("dataset/" + std::string(argv[1]), std::ios_base::binary);
   auto grids = openvdb::io::Stream(ifile).getGrids();
   TC_P(grids->size());
 
@@ -58,14 +61,14 @@ int main() {
   for (int i = 0; i < 4; i++) {
     TC_INFO("Depth {}: nodes {}", i, counter[i]);
   }
+  TC_P(grid->activeVoxelCount());
+
+  openvdb::tools::Filter<GridType> filter(*grid);
+
+  for (int i = 0; i < 10000000; i++)
+    TC_TIME(filter.mean(1));
 
   /*
-  openvdb::FloatGrid::Ptr grid = openvdb::FloatGrid::create();
-  std::cout << "Testing random access:" << std::endl;
-  // Get an accessor for coordinate-based access to voxels.
-  openvdb::FloatGrid::Accessor accessor = grid->getAccessor();
-  // Define a coordinate with large signed indices.
-  openvdb::Coord xyz(1000, -200000000, 30000000);
   // Set the voxel value at (1000, -200000000, 30000000) to 1.
   accessor.setValue(xyz, 1.0);
   // Verify that the voxel value at (1000, -200000000, 30000000) is 1.

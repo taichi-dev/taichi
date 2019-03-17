@@ -139,7 +139,7 @@ static_assert(false, "32-bit Windows systems are not supported")
 #define TC_NAMESPACE_BEGIN namespace taichi {
 #define TC_NAMESPACE_END }
 
-TC_EXPORT void taichi_raise_assertion_failure_in_python(const char *msg);
+    TC_EXPORT void taichi_raise_assertion_failure_in_python(const char *msg);
 
 TC_NAMESPACE_BEGIN
 
@@ -410,7 +410,7 @@ void trash(T &&t) {
 class DeferedExecution {
   std::function<void(void)> statement;
 
-public:
+ public:
   DeferedExecution(const std::function<void(void)> &statement)
       : statement(statement) {
   }
@@ -420,7 +420,7 @@ public:
   }
 };
 
-#define TC_DEFER(x) taichi::DeferedExecution _defered([&]() {x;});
+#define TC_DEFER(x) taichi::DeferedExecution _defered([&]() { x; });
 
 inline bool running_on_windows() {
 #if defined(TC_PLATFORM_WINDOWS)
@@ -437,15 +437,30 @@ inline std::string get_repo_dir() {
   return std::string(dir);
 }
 
+inline std::string assets_dir() {
+  // release mode and dev mode are different...
+  // TODO: release mode
+  if (std::getenv("TAICHI_REPO_DIR")) {
+    return std::string(std::getenv("TAICHI_REPO_DIR")) + "/assets/";
+  } else {
+    TC_NOT_IMPLEMENTED
+  }
+  return "";
+}
+
 inline std::string absolute_path(std::string path) {
-  // If 'path' is actually relative to TAICHI_REPO_DIR, convert it to an absolute one.
-  // There are three types of paths:
+  // If 'path' is actually relative to TAICHI_REPO_DIR, convert it to an
+  // absolute one. There are three types of paths:
   //    A. Those who start with / or "C:/" are absolute paths
   //    B. Those who start with "." are relative to cwd
-  //    C. Others are relative to $ENV{TAICHI_REPO_DIR}
+  //    C. Those who start with "$" are relative to assets_dir()
+  //    D. Others are relative to $ENV{TAICHI_REPO_DIR}
 
-  // Here we convert type C paths to absolute paths.
-  if (path[0] != '.' && path[0] !='/' && (path.size() >= 2 && path[1] != ':')) {
+  TC_ASSERT(!path.empty());
+  if (path[0] == '$') {
+    path = assets_dir() + path.substr(1, (int)path.size() - 1);
+  } else if (path[0] != '.' && path[0] != '/' &&
+             (path.size() >= 2 && path[1] != ':')) {
     path = std::string(std::getenv("TAICHI_REPO_DIR")) + "/" + path;
   }
   return path;

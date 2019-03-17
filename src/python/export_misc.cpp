@@ -154,6 +154,7 @@ void export_misc(py::module &m) {
   // m.def("dict_from_config", py_dict_from_py_config);
   m.def("print_profile_info", [&]() { print_profile_info(); });
   m.def("start_memory_monitoring", start_memory_monitoring);
+  m.def("absolute_path", absolute_path);
 }
 
 TC_NAMESPACE_END

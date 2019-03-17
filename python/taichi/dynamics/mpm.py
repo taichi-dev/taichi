@@ -216,7 +216,7 @@ class MPM:
       files.sort()
       if not '{:04d}.tcb'.format(self.continue_frame) in files:
         print('Snapshot is not found.')
-        print('The lastest one is ', files[-1], '.')
+        print('The last one is ', files[-1], '.')
         sys.exit()
       f = self.get_snapshot_file_name(self.continue_frame)
       self.load(os.path.join(path, f))

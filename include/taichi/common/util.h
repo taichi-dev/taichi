@@ -57,12 +57,6 @@ static_assert(false, "32-bit Windows systems are not supported")
 
 // Compilers
 
-#if __cplusplus >= 201703L
-#define TC_CPP17
-#else
-static_assert(__cplusplus >= 201402L, "C++14 required.");
-#define TC_CPP14
-#endif
 
 // MSVC
 #if defined(_MSC_VER)
@@ -88,6 +82,16 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #define TC_ALIGNED(x) __declspec(align(x))
 #else
 #define TC_ALIGNED(x) __attribute__((aligned(x)))
+#endif
+
+#if __cplusplus >= 201703L
+#define TC_CPP17
+#else
+#if defined(TC_COMPILER_CLANG)
+static_assert(false, "For clang compilers, use -std=c++17")
+#endif
+static_assert(__cplusplus >= 201402L, "C++14 required.");
+#define TC_CPP14
 #endif
 
 // Do not disable assert...

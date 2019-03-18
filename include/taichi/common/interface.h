@@ -113,7 +113,8 @@ class InterfaceHolder {
 
 #define TC_INTERFACE(T)                                                       \
   extern void *get_implementation_holder_instance_##T();                      \
-  class TC_IMPLEMENTATION_HOLDER_NAME(T) : public ImplementationHolderBase {  \
+  class TC_IMPLEMENTATION_HOLDER_NAME(T) final                                \
+      : public ImplementationHolderBase {                                     \
    public:                                                                    \
     TC_IMPLEMENTATION_HOLDER_NAME(T)(const std::string &name) {               \
       this->name = name;                                                      \

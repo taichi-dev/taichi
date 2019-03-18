@@ -15,13 +15,29 @@
 TC_NAMESPACE_BEGIN
 
 class AssetManager {
+ private:
+  int counter = 0;
+  std::map<void *, int> asset_to_id;
+  std::map<int, std::weak_ptr<void>> id_to_asset;
+
  public:
+  AssetManager() {
+    TC_WARN("Creating new asset manager at {:x}", (long long)this);
+  }
+
   // Note: this is not thread safe!
   template <typename T>
   std::shared_ptr<T> get_asset_(int id) {
-    assert_info(id_to_asset.find(id) != id_to_asset.end(), "Asset not found");
+    TC_P(this);
+    TC_P(&id_to_asset);
+    TC_P(id_to_asset.size());
+    TC_P(id);
+    for (auto &it: id_to_asset) {
+      TC_P(it.first);
+    }
+    TC_ASSERT_INFO(id_to_asset.find(id) != id_to_asset.end(), "Asset not found");
     auto ptr = id_to_asset[id];
-    assert_info(!ptr.expired(), "Asset has been expired");
+    TC_ASSERT_INFO(!ptr.expired(), "Asset has been expired");
     return std::static_pointer_cast<T>(ptr.lock());
   }
 
@@ -29,13 +45,21 @@ class AssetManager {
   int insert_asset_(const std::shared_ptr<T> &ptr) {
     if (asset_to_id.find(ptr.get()) != asset_to_id.end()) {
       int existing_id = asset_to_id.find(ptr.get())->second;
-      assert_info(id_to_asset[existing_id].expired(), "Asset already exists");
+      TC_ASSERT_INFO(id_to_asset[existing_id].expired(), "Asset already exists");
       asset_to_id.erase(ptr.get());
       id_to_asset.erase(existing_id);
+      TC_INFO("erasing {}", existing_id);
     }
     int id = counter++;
     id_to_asset[id] = static_cast<std::weak_ptr<void>>(std::weak_ptr<T>(ptr));
     asset_to_id[ptr.get()] = id;
+    TC_P(id);
+    for (auto &it: id_to_asset) {
+      TC_P(it.first);
+    }
+    TC_P(id_to_asset.size());
+    TC_P(&id_to_asset);
+    TC_P(this);
     return id;
   }
 
@@ -49,14 +73,7 @@ class AssetManager {
     return get_instance().insert_asset_<T>(ptr);
   }
 
-  int counter = 0;
-  std::map<void *, int> asset_to_id;
-  std::map<int, std::weak_ptr<void>> id_to_asset;
-
-  static AssetManager &get_instance() {
-    static AssetManager manager;
-    return manager;
-  }
+  static AssetManager &get_instance();
 };
 
 TC_NAMESPACE_END

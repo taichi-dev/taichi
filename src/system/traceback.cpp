@@ -88,6 +88,7 @@ TC_EXPORT void print_traceback() {
   printf(
       "|-----------------------------------------------------------------------"
       "-----------------|\n");
+  std::reverse(stack_frames.begin(), stack_frames.end());
   for (auto trace : stack_frames) {
     const int function_start = 39;
     const int line_width = 86;

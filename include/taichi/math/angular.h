@@ -77,10 +77,9 @@ class Rotation {
       value = 0;
     }
     TC_STATIC_ELSE {
-      value = id(Eigen::Quaternion<real>(1, 0, 0, 0));
+      value = Eigen::Quaternion<real>(1, 0, 0, 0);
     }
     TC_STATIC_END_IF
-    return;
   }
 
   explicit Rotation(real value) {

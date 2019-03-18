@@ -39,9 +39,6 @@ matrix:
     - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.6"
   - os: linux
     dist: xenial
-    language: python
-    python:
-      - 3.7
     addons:
       apt:
         sources: *1
@@ -69,9 +66,6 @@ matrix:
     - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.6"
   - os: linux
     dist: xenial
-    language: python
-    python:
-      - 3.7
     addons:
       apt:
         sources: *1

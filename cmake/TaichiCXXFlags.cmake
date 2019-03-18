@@ -40,7 +40,7 @@ endif ()
 if (MSVC)
     link_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
     set(CMAKE_CXX_FLAGS
-            "${CMAKE_CXX_FLAGS} /MP /Z7 /D \"_CRT_SECURE_NO_WARNINGS\" /D \"_ENABLE_EXTENDED_ALIGNED_STORAGE\" /arch:AVX2 -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED /std:c++14")
+            "${CMAKE_CXX_FLAGS} /Zc:__cplusplus /std:c++14 /MP /Z7 /D \"_CRT_SECURE_NO_WARNINGS\" /D \"_ENABLE_EXTENDED_ALIGNED_STORAGE\" /arch:AVX2 -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED")
 else()
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         message("Clang compiler detected. Using std=c++17.")

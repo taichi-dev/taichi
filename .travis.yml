@@ -9,13 +9,9 @@ matrix:
   - os: osx
     osx_image: xcode10
     env:
-    - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3.6"
-  - os: osx
-    osx_image: xcode10
-    env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3.7"
   - os: linux
-    dist: trusty
+    dist: xenial
     addons:
       apt:
         sources: *1
@@ -24,7 +20,7 @@ matrix:
     env:
     - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5 && PYTHON=python3.5"
   - os: linux
-    dist: trusty
+    dist: xenial
     addons:
       apt:
         sources: *1
@@ -33,7 +29,7 @@ matrix:
     env:
     - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.5"
   - os: linux
-    dist: trusty
+    dist: xenial
     addons:
       apt:
         sources: *1
@@ -42,7 +38,10 @@ matrix:
     env:
     - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.6"
   - os: linux
-    dist: trusty
+    dist: xenial
+    language: python
+    python:
+      - 3.7
     addons:
       apt:
         sources: *1
@@ -51,7 +50,7 @@ matrix:
     env:
     - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && PYTHON=python3.7"
   - os: linux
-    dist: trusty
+    dist: xenial
     addons:
       apt:
         sources: *1
@@ -60,7 +59,7 @@ matrix:
     env:
     - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.5"
   - os: linux
-    dist: trusty
+    dist: xenial
     addons:
       apt:
         sources: *1
@@ -69,7 +68,10 @@ matrix:
     env:
     - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.6"
   - os: linux
-    dist: trusty
+    dist: xenial
+    language: python
+    python:
+      - 3.7
     addons:
       apt:
         sources: *1
@@ -77,7 +79,6 @@ matrix:
           - g++-7
     env:
     - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PYTHON=python3.7"
-    -
 before_install:
 - eval "${MATRIX_EVAL}"
 - echo $CXX
@@ -100,4 +101,4 @@ script:
 
 env:
   global:
-    secure: ZfG0FCWsSFSkeHtwfdHy2wR+nAq/IIFyHyTsFIVjUQdui5k6P3szXCkVonabtmZVccZF+8BXjedzwUfGw6cDY8DzzbBPC+rx4XxxuCh3ueCNfhyz+BmsnOMk20U5yBpiwHDmGSiO9jt0Tw4gPNhk/GegNT21f8nJyYzOjH4IONAby0AXDf35R7pFE3LlPEC/TsCoWEEY5/U7r8N1UJChoK3m2rGsK3TVKLY1UQYT94Ytg2a3IgjneEybQB73823K9uIS2CXM77rWJWcjhM9lDBqOc+2MoWdhVgpFst90s+8sjpjGMbMBQYz089sP6FrvGm3kYlWQ9LQ/eVqSVIstNTf176mxA1vyqkLDcuYZ/VcR+P0hTLgEo4kURy+ghXOHcDGhZW5mSXsTI5rq2xQYs6zqnc+MCIJQTOqytMPVc04to/Y5q2dLqrByZvkqeGUafa3bS8bgBr7SjAjwW3xjnWFQc2QMWHLKFP/q7eUnr6jeY4R/YpKdjIf2v+Qs54toAOqQl5Enf7+lYE+iPjU9UmHu/LliyEfIKkVWjajpRFBaF7jQMhsGby+6MDxomZdzKlJpwsfisBLh1HOq65N0erLVXMtqsy0eMxX9zBoUqcANnb0kj8MY/GdkUdZnx09yyXiQU8N+7BSETOIRxriVVGRjhcefyyaeyn5yS7oZ/kY=
+    secure: ZfG1FCWsSFSkeHtwfdHy2wR+nAq/IIFyHyTsFIVjUQdui5k6P3szXCkVonabtmZVccZF+8BXjedzwUfGw6cDY8DzzbBPC+rx4XxxuCh3ueCNfhyz+BmsnOMk20U5yBpiwHDmGSiO9jt0Tw4gPNhk/GegNT21f8nJyYzOjH4IONAby0AXDf35R7pFE3LlPEC/TsCoWEEY5/U7r8N1UJChoK3m2rGsK3TVKLY1UQYT94Ytg2a3IgjneEybQB73823K9uIS2CXM77rWJWcjhM9lDBqOc+2MoWdhVgpFst90s+8sjpjGMbMBQYz089sP6FrvGm3kYlWQ9LQ/eVqSVIstNTf176mxA1vyqkLDcuYZ/VcR+P0hTLgEo4kURy+ghXOHcDGhZW5mSXsTI5rq2xQYs6zqnc+MCIJQTOqytMPVc04to/Y5q2dLqrByZvkqeGUafa3bS8bgBr7SjAjwW3xjnWFQc2QMWHLKFP/q7eUnr6jeY4R/YpKdjIf2v+Qs54toAOqQl5Enf7+lYE+iPjU9UmHu/LliyEfIKkVWjajpRFBaF7jQMhsGby+6MDxomZdzKlJpwsfisBLh1HOq65N0erLVXMtqsy0eMxX9zBoUqcANnb0kj8MY/GdkUdZnx09yyXiQU8N+7BSETOIRxriVVGRjhcefyyaeyn5yS7oZ/kY=

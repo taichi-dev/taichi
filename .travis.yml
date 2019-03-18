@@ -7,9 +7,13 @@ language: cpp
 matrix:
   include:
   - os: osx
-    osx_image: xcode9
+    osx_image: xcode10
     env:
-    - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3"
+    - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3.6"
+  - os: osx
+    osx_image: xcode10
+    env:
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON=python3.7"
   - os: linux
     dist: trusty
     addons:
@@ -92,7 +96,7 @@ before_install:
   brew update; brew install $PYTHON || brew upgrade python; fi
 
 script:
-- "$PYTHON install.py ci; cd python && $PYTHON upload.py"
+- "$PYTHON install.py ci #; cd python && $PYTHON upload.py"
 
 env:
   global:

@@ -22,19 +22,11 @@ class AssetManager {
 
  public:
   AssetManager() {
-    TC_WARN("Creating new asset manager at {:x}", (long long)this);
   }
 
   // Note: this is not thread safe!
   template <typename T>
   std::shared_ptr<T> get_asset_(int id) {
-    TC_P(this);
-    TC_P(&id_to_asset);
-    TC_P(id_to_asset.size());
-    TC_P(id);
-    for (auto &it: id_to_asset) {
-      TC_P(it.first);
-    }
     TC_ASSERT_INFO(id_to_asset.find(id) != id_to_asset.end(), "Asset not found");
     auto ptr = id_to_asset[id];
     TC_ASSERT_INFO(!ptr.expired(), "Asset has been expired");
@@ -48,18 +40,10 @@ class AssetManager {
       TC_ASSERT_INFO(id_to_asset[existing_id].expired(), "Asset already exists");
       asset_to_id.erase(ptr.get());
       id_to_asset.erase(existing_id);
-      TC_INFO("erasing {}", existing_id);
     }
     int id = counter++;
     id_to_asset[id] = static_cast<std::weak_ptr<void>>(std::weak_ptr<T>(ptr));
     asset_to_id[ptr.get()] = id;
-    TC_P(id);
-    for (auto &it: id_to_asset) {
-      TC_P(it.first);
-    }
-    TC_P(id_to_asset.size());
-    TC_P(&id_to_asset);
-    TC_P(this);
     return id;
   }
 

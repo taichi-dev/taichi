@@ -35,7 +35,7 @@ template <template <int> class F, int bgn, int end, typename... Args>
 TC_FORCE_INLINE void repeat_function(Args &&... args) {
   RepeatFunctionHelper<F, bgn, end, Args...>::run(std::forward<Args>(args)...);
 }
-}
+}  // namespace meta
 
 using meta::repeat_function;
 
@@ -98,9 +98,21 @@ inline statement<Cond> static_if(F const &f) {
   if_.then(f);
   return if_;
 }
-}
+}  // namespace STATIC_IF
 
 using STATIC_IF::static_if;
+
+// Note the the behaviour of 'return' is still different in the following two
+// implementations.
+#if defined(TC_CPP17)
+
+#define TC_STATIC_IF(x) if constexpr (x) {
+#define TC_STATIC_ELSE \
+  }                    \
+  else {
+#define TC_STATIC_END_IF }
+
+#else
 
 #define TC_STATIC_IF(x) taichi::static_if<(x)>([&](const auto& id) -> void {
 #define TC_STATIC_ELSE \
@@ -108,16 +120,7 @@ using STATIC_IF::static_if;
 #define TC_STATIC_END_IF \
   });
 
-// After we switch to C++17, we should use
-// (Note the the behaviour of 'return' is still different.)
-
-/*
-#define TC_STATIC_IF(x) if constexpr(x) {
-#define TC_STATIC_ELSE \
-    } else {
-#define TC_STATIC_END_IF \
-    }
-*/
+#endif
 
 template <typename T, typename G>
 struct copy_refcv {
@@ -217,4 +220,4 @@ TC_STATIC_ASSERT((std::is_same<copy_refcv_t<const volatile int &, real>,
   F(25),            \
   F(26)
 // clang-format on
-}
+}  // namespace taichi

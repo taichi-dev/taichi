@@ -112,8 +112,9 @@ void imp_svd(const MatrixND<dim, T> &m_,
     } TC_STATIC_ELSE {
       eigen_svd(m_, u, s, v);
     } TC_STATIC_END_IF
-    // clang-format on
-  } TC_STATIC_END_IF
+// clang-format on
+}
+TC_STATIC_END_IF
 }
 #pragma GCC diagnostic pop
 

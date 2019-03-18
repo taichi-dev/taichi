@@ -166,7 +166,7 @@ def main():
     else:
       tc.info('Installing package {}...'.format(pkg))
       url = packages[pkg]
-    os.system('git clone {} {}'.format(url, pkg))
+    os.system('git clone {} {} --depth=1'.format(url, pkg))
     tc.core.build()
   elif mode == "asm":
     fn = sys.argv[2]

@@ -24,14 +24,14 @@
 
 template <typename C = id, typename... Args>
 C call(id i, const char *select, Args... args) {
-  using func = C(id, SEL, Args...);
-  return ((func *)(objc_msgSend))(i, sel_getUid(select), args...);
+  using func = C (*)(id, SEL, Args...);
+  return ((func)(objc_msgSend))(i, sel_getUid(select), args...);
 }
 
 template <typename C = id, typename... Args>
 C call(const char *class_name, const char *select, Args... args) {
-  using func = C(id, SEL, Args...);
-  return ((func *)(objc_msgSend))((id)objc_getClass(class_name),
+  using func = C (*)(id, SEL, Args...);
+  return ((func)(objc_msgSend))((id)objc_getClass(class_name),
                                   sel_getUid(select), args...);
 }
 

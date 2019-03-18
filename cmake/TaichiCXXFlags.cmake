@@ -42,7 +42,7 @@ if (MSVC)
     set(CMAKE_CXX_FLAGS
             "${CMAKE_CXX_FLAGS} /Zc:__cplusplus /std:c++14 /MP /Z7 /D \"_CRT_SECURE_NO_WARNINGS\" /D \"_ENABLE_EXTENDED_ALIGNED_STORAGE\" /arch:AVX2 -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED")
 else()
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
         message("Clang compiler detected. Using std=c++17.")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     else()

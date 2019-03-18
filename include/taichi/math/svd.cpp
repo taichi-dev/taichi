@@ -54,24 +54,9 @@ void imp_svd(const MatrixND<dim, T> &m_,
   using Matrix = MatrixND<dim, T>;
   Matrix m = m_;
   TC_STATIC_IF(dim == 2) {
-    if ((m - Matrix(m.diag())).frobenius_norm2() < 1e-7f) {
-      s = m;
-      u = v = Matrix(1);
-      if (abs(s[0][0]) < abs(s[1][1])) {
-        std::swap(s[0][0], s[1][1]);
-      }
-      if (s[0][0] < 0) {
-        s = -s;
-        u = -u;
-      }
-    } else {
-      JIXIE::singularValueDecomposition(
-          *(Eigen::Matrix<T, dim, dim> *)&m, *(Eigen::Matrix<T, dim, dim> *)&u,
-          *(Eigen::Matrix<T, dim, 1> *)&s, *(Eigen::Matrix<T, dim, dim> *)&v);
-      T s_tmp[]{s[0][1]};
-      memset(&s[0][0] + 1, 0, sizeof(T) * 3);
-      s[1][1] = s_tmp[0];
-    }
+      eigen_svd(m, u, s, v);
+      s(0, 1) = s(1, 0) = 0;
+      ensure_non_negative_singular_values(u, s);
   }
   TC_STATIC_ELSE{
       // clang-format off

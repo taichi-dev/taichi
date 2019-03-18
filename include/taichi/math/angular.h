@@ -52,7 +52,7 @@ class AngularVelocity {
       ret = Vector(-input.y, input.x) * value;
     }
     TC_STATIC_ELSE {
-      ret = taichi::cross(id(value), id(input));
+      ret = taichi::cross(value, input);
     }
     TC_STATIC_END_IF;
     return ret;
@@ -124,10 +124,10 @@ class Rotation {
 
   void apply_angular_velocity(const AngVel &vel, real dt) {
     TC_STATIC_IF(dim == 2) {
-      value += id(dt * vel.value);
+      value += dt * vel.value;
     }
     TC_STATIC_ELSE {
-      Vector3 axis(id(vel).value[0], id(vel).value[1], id(vel).value[2]);
+      Vector3 axis(vel.value[0], vel.value[1], vel.value[2]);
       real angle = length(axis);
       if (angle < 1e-10_f) {
         return;

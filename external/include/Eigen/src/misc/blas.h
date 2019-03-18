@@ -30,15 +30,15 @@ int  BLASFUNC(cdotcw)  (int *, float  *, int *, float  *, int *, float*);
 int  BLASFUNC(zdotuw)  (int *, double  *, int *, double  *, int *, double*);
 int  BLASFUNC(zdotcw)  (int *, double  *, int *, double  *, int *, double*);
 
-int    BLASFUNC(saxpy) (int *, float  *, float  *, int *, float  *, int *);
-int    BLASFUNC(daxpy) (int *, double *, double *, int *, double *, int *);
-int    BLASFUNC(qaxpy) (int *, double *, double *, int *, double *, int *);
-int    BLASFUNC(caxpy) (int *, float  *, float  *, int *, float  *, int *);
-int    BLASFUNC(zaxpy) (int *, double *, double *, int *, double *, int *);
-int    BLASFUNC(xaxpy) (int *, double *, double *, int *, double *, int *);
-int    BLASFUNC(caxpyc)(int *, float  *, float  *, int *, float  *, int *);
-int    BLASFUNC(zaxpyc)(int *, double *, double *, int *, double *, int *);
-int    BLASFUNC(xaxpyc)(int *, double *, double *, int *, double *, int *);
+int    BLASFUNC(saxpy) (const int *, const float  *, const float  *, const int *, float  *, const int *);
+int    BLASFUNC(daxpy) (const int *, const double *, const double *, const int *, double *, const int *);
+int    BLASFUNC(qaxpy) (const int *, const double *, const double *, const int *, double *, const int *);
+int    BLASFUNC(caxpy) (const int *, const float  *, const float  *, const int *, float  *, const int *);
+int    BLASFUNC(zaxpy) (const int *, const double *, const double *, const int *, double *, const int *);
+int    BLASFUNC(xaxpy) (const int *, const double *, const double *, const int *, double *, const int *);
+int    BLASFUNC(caxpyc)(const int *, const float  *, const float  *, const int *, float  *, const int *);
+int    BLASFUNC(zaxpyc)(const int *, const double *, const double *, const int *, double *, const int *);
+int    BLASFUNC(xaxpyc)(const int *, const double *, const double *, const int *, double *, const int *);
 
 int    BLASFUNC(scopy) (int *, float  *, int *, float  *, int *);
 int    BLASFUNC(dcopy) (int *, double *, int *, double *, int *);
@@ -177,31 +177,19 @@ int BLASFUNC(xgeru)(int *,    int *, double *, double *, int *,
 int BLASFUNC(xgerc)(int *,    int *, double *, double *, int *,
 		    double *, int *, double *, int *);
 
-int BLASFUNC(sgemv)(char *, int *, int *, float  *, float  *, int *,
-		    float  *, int *, float  *, float  *, int *);
-int BLASFUNC(dgemv)(char *, int *, int *, double *, double *, int *,
-		    double *, int *, double *, double *, int *);
-int BLASFUNC(qgemv)(char *, int *, int *, double *, double *, int *,
-		    double *, int *, double *, double *, int *);
-int BLASFUNC(cgemv)(char *, int *, int *, float  *, float  *, int *,
-		    float  *, int *, float  *, float  *, int *);
-int BLASFUNC(zgemv)(char *, int *, int *, double *, double *, int *,
-		    double *, int *, double *, double *, int *);
-int BLASFUNC(xgemv)(char *, int *, int *, double *, double *, int *,
-		    double *, int *, double *, double *, int *);
+int BLASFUNC(sgemv)(const char *, const int *, const int *, const float  *, const float  *, const int *, const float  *, const int *, const float  *, float  *, const int *);
+int BLASFUNC(dgemv)(const char *, const int *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(qgemv)(const char *, const int *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(cgemv)(const char *, const int *, const int *, const float  *, const float  *, const int *, const float  *, const int *, const float  *, float  *, const int *);
+int BLASFUNC(zgemv)(const char *, const int *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(xgemv)(const char *, const int *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
 
-int BLASFUNC(strsv) (char *, char *, char *, int *, float  *, int *,
-		     float  *, int *);
-int BLASFUNC(dtrsv) (char *, char *, char *, int *, double *, int *,
-		     double *, int *);
-int BLASFUNC(qtrsv) (char *, char *, char *, int *, double *, int *,
-		     double *, int *);
-int BLASFUNC(ctrsv) (char *, char *, char *, int *, float  *, int *,
-		     float  *, int *);
-int BLASFUNC(ztrsv) (char *, char *, char *, int *, double *, int *,
-		     double *, int *);
-int BLASFUNC(xtrsv) (char *, char *, char *, int *, double *, int *,
-		     double *, int *);
+int BLASFUNC(strsv) (const char *, const char *, const char *, const int *, const float  *, const int *, float  *, const int *);
+int BLASFUNC(dtrsv) (const char *, const char *, const char *, const int *, const double *, const int *, double *, const int *);
+int BLASFUNC(qtrsv) (const char *, const char *, const char *, const int *, const double *, const int *, double *, const int *);
+int BLASFUNC(ctrsv) (const char *, const char *, const char *, const int *, const float  *, const int *, float  *, const int *);
+int BLASFUNC(ztrsv) (const char *, const char *, const char *, const int *, const double *, const int *, double *, const int *);
+int BLASFUNC(xtrsv) (const char *, const char *, const char *, const int *, const double *, const int *, double *, const int *);
 
 int BLASFUNC(stpsv) (char *, char *, char *, int *, float  *, float  *, int *);
 int BLASFUNC(dtpsv) (char *, char *, char *, int *, double *, double *, int *);
@@ -210,18 +198,12 @@ int BLASFUNC(ctpsv) (char *, char *, char *, int *, float  *, float  *, int *);
 int BLASFUNC(ztpsv) (char *, char *, char *, int *, double *, double *, int *);
 int BLASFUNC(xtpsv) (char *, char *, char *, int *, double *, double *, int *);
 
-int BLASFUNC(strmv) (char *, char *, char *, int *, float  *, int *,
-		     float  *, int *);
-int BLASFUNC(dtrmv) (char *, char *, char *, int *, double *, int *,
-		     double *, int *);
-int BLASFUNC(qtrmv) (char *, char *, char *, int *, double *, int *,
-		     double *, int *);
-int BLASFUNC(ctrmv) (char *, char *, char *, int *, float  *, int *,
-		     float  *, int *);
-int BLASFUNC(ztrmv) (char *, char *, char *, int *, double *, int *,
-		     double *, int *);
-int BLASFUNC(xtrmv) (char *, char *, char *, int *, double *, int *,
-		     double *, int *);
+int BLASFUNC(strmv) (const char *, const char *, const char *, const int *, const float  *, const int *, float  *, const int *);
+int BLASFUNC(dtrmv) (const char *, const char *, const char *, const int *, const double *, const int *, double *, const int *);
+int BLASFUNC(qtrmv) (const char *, const char *, const char *, const int *, const double *, const int *, double *, const int *);
+int BLASFUNC(ctrmv) (const char *, const char *, const char *, const int *, const float  *, const int *, float  *, const int *);
+int BLASFUNC(ztrmv) (const char *, const char *, const char *, const int *, const double *, const int *, double *, const int *);
+int BLASFUNC(xtrmv) (const char *, const char *, const char *, const int *, const double *, const int *, double *, const int *);
 
 int BLASFUNC(stpmv) (char *, char *, char *, int *, float  *, float  *, int *);
 int BLASFUNC(dtpmv) (char *, char *, char *, int *, double *, double *, int *);
@@ -244,18 +226,9 @@ int BLASFUNC(ctbsv) (char *, char *, char *, int *, int *, float  *, int *, floa
 int BLASFUNC(ztbsv) (char *, char *, char *, int *, int *, double *, int *, double *, int *);
 int BLASFUNC(xtbsv) (char *, char *, char *, int *, int *, double *, int *, double *, int *);
 
-int BLASFUNC(ssymv) (char *, int *, float  *, float *, int *,
-		     float  *, int *, float *, float *, int *);
-int BLASFUNC(dsymv) (char *, int *, double  *, double *, int *,
-		     double  *, int *, double *, double *, int *);
-int BLASFUNC(qsymv) (char *, int *, double  *, double *, int *,
-		     double  *, int *, double *, double *, int *);
-int BLASFUNC(csymv) (char *, int *, float  *, float *, int *,
-		     float  *, int *, float *, float *, int *);
-int BLASFUNC(zsymv) (char *, int *, double  *, double *, int *,
-		     double  *, int *, double *, double *, int *);
-int BLASFUNC(xsymv) (char *, int *, double  *, double *, int *,
-		     double  *, int *, double *, double *, int *);
+int BLASFUNC(ssymv) (const char *, const int *, const float  *, const float  *, const int *, const float  *, const int *, const float  *, float  *, const int *);
+int BLASFUNC(dsymv) (const char *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(qsymv) (const char *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
 
 int BLASFUNC(sspmv) (char *, int *, float  *, float *,
 		     float  *, int *, float *, float *, int *);
@@ -263,50 +236,23 @@ int BLASFUNC(dspmv) (char *, int *, double  *, double *,
 		     double  *, int *, double *, double *, int *);
 int BLASFUNC(qspmv) (char *, int *, double  *, double *,
 		     double  *, int *, double *, double *, int *);
-int BLASFUNC(cspmv) (char *, int *, float  *, float *,
-		     float  *, int *, float *, float *, int *);
-int BLASFUNC(zspmv) (char *, int *, double  *, double *,
-		     double  *, int *, double *, double *, int *);
-int BLASFUNC(xspmv) (char *, int *, double  *, double *,
-		     double  *, int *, double *, double *, int *);
 
-int BLASFUNC(ssyr) (char *, int *, float   *, float  *, int *,
-		    float  *, int *);
-int BLASFUNC(dsyr) (char *, int *, double  *, double *, int *,
-		    double *, int *);
-int BLASFUNC(qsyr) (char *, int *, double  *, double *, int *,
-		    double *, int *);
-int BLASFUNC(csyr) (char *, int *, float   *, float  *, int *,
-		    float  *, int *);
-int BLASFUNC(zsyr) (char *, int *, double  *, double *, int *,
-		    double *, int *);
-int BLASFUNC(xsyr) (char *, int *, double  *, double *, int *,
-		    double *, int *);
+int BLASFUNC(ssyr) (const char *, const int *, const float   *, const float  *, const int *, float  *, const int *);
+int BLASFUNC(dsyr) (const char *, const int *, const double  *, const double *, const int *, double *, const int *);
+int BLASFUNC(qsyr) (const char *, const int *, const double  *, const double *, const int *, double *, const int *);
 
-int BLASFUNC(ssyr2) (char *, int *, float   *,
-		     float  *, int *, float  *, int *, float  *, int *);
-int BLASFUNC(dsyr2) (char *, int *, double  *,
-		     double *, int *, double *, int *, double *, int *);
-int BLASFUNC(qsyr2) (char *, int *, double  *,
-		     double *, int *, double *, int *, double *, int *);
-int BLASFUNC(csyr2) (char *, int *, float   *,
-		     float  *, int *, float  *, int *, float  *, int *);
-int BLASFUNC(zsyr2) (char *, int *, double  *,
-		     double *, int *, double *, int *, double *, int *);
-int BLASFUNC(xsyr2) (char *, int *, double  *,
-		     double *, int *, double *, int *, double *, int *);
+int BLASFUNC(ssyr2) (const char *, const int *, const float   *, const float  *, const int *, const float  *, const int *, float  *, const int *);
+int BLASFUNC(dsyr2) (const char *, const int *, const double  *, const double *, const int *, const double *, const int *, double *, const int *);
+int BLASFUNC(qsyr2) (const char *, const int *, const double  *, const double *, const int *, const double *, const int *, double *, const int *);
+int BLASFUNC(csyr2) (const char *, const int *, const float   *, const float  *, const int *, const float  *, const int *, float  *, const int *);
+int BLASFUNC(zsyr2) (const char *, const int *, const double  *, const double *, const int *, const double *, const int *, double *, const int *);
+int BLASFUNC(xsyr2) (const char *, const int *, const double  *, const double *, const int *, const double *, const int *, double *, const int *);
 
 int BLASFUNC(sspr) (char *, int *, float   *, float  *, int *,
 		    float  *);
 int BLASFUNC(dspr) (char *, int *, double  *, double *, int *,
 		    double *);
 int BLASFUNC(qspr) (char *, int *, double  *, double *, int *,
-		    double *);
-int BLASFUNC(cspr) (char *, int *, float   *, float  *, int *,
-		    float  *);
-int BLASFUNC(zspr) (char *, int *, double  *, double *, int *,
-		    double *);
-int BLASFUNC(xspr) (char *, int *, double  *, double *, int *,
 		    double *);
 
 int BLASFUNC(sspr2) (char *, int *, float   *,
@@ -347,12 +293,9 @@ int BLASFUNC(zhpr2) (char *, int *, double  *,
 int BLASFUNC(xhpr2) (char *, int *, double  *,
 		     double *, int *, double *, int *, double *);
 
-int BLASFUNC(chemv) (char *, int *, float  *, float *, int *,
-		     float  *, int *, float *, float *, int *);
-int BLASFUNC(zhemv) (char *, int *, double  *, double *, int *,
-		     double  *, int *, double *, double *, int *);
-int BLASFUNC(xhemv) (char *, int *, double  *, double *, int *,
-		     double  *, int *, double *, double *, int *);
+int BLASFUNC(chemv) (const char *, const int *, const float  *, const float  *, const int *, const float  *, const int *, const float  *, float  *, const int *);
+int BLASFUNC(zhemv) (const char *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(xhemv) (const char *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
 
 int BLASFUNC(chpmv) (char *, int *, float  *, float *,
 		     float  *, int *, float *, float *, int *);
@@ -401,18 +344,12 @@ int BLASFUNC(xhbmv)(char *, int *, int *, double *, double *, int *,
 
 /* Level 3 routines */
 
-int BLASFUNC(sgemm)(char *, char *, int *, int *, int *, float *,
-	   float  *, int *, float  *, int *, float  *, float  *, int *);
-int BLASFUNC(dgemm)(char *, char *, int *, int *, int *, double *,
-	   double *, int *, double *, int *, double *, double *, int *);
-int BLASFUNC(qgemm)(char *, char *, int *, int *, int *, double *,
-	   double *, int *, double *, int *, double *, double *, int *);
-int BLASFUNC(cgemm)(char *, char *, int *, int *, int *, float *,
-	   float  *, int *, float  *, int *, float  *, float  *, int *);
-int BLASFUNC(zgemm)(char *, char *, int *, int *, int *, double *,
-	   double *, int *, double *, int *, double *, double *, int *);
-int BLASFUNC(xgemm)(char *, char *, int *, int *, int *, double *,
-	   double *, int *, double *, int *, double *, double *, int *);
+int BLASFUNC(sgemm)(const char *, const char *, const int *, const int *, const int *, const float  *, const float  *, const int *, const float  *, const int *, const float  *, float  *, const int *);
+int BLASFUNC(dgemm)(const char *, const char *, const int *, const int *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(qgemm)(const char *, const char *, const int *, const int *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(cgemm)(const char *, const char *, const int *, const int *, const int *, const float  *, const float  *, const int *, const float  *, const int *, const float  *, float  *, const int *);
+int BLASFUNC(zgemm)(const char *, const char *, const int *, const int *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(xgemm)(const char *, const char *, const int *, const int *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
 
 int BLASFUNC(cgemm3m)(char *, char *, int *, int *, int *, float *,
 	   float  *, int *, float  *, int *, float  *, float  *, int *);
@@ -434,84 +371,48 @@ int BLASFUNC(zge2mm)(char *, char *, char *, int *, int *,
 		     double *, double  *, int *, double  *, int *,
 		     double *, double  *, int *);
 
-int BLASFUNC(strsm)(char *, char *, char *, char *, int *, int *,
-	   float *,  float *, int *, float *, int *);
-int BLASFUNC(dtrsm)(char *, char *, char *, char *, int *, int *,
-	   double *,  double *, int *, double *, int *);
-int BLASFUNC(qtrsm)(char *, char *, char *, char *, int *, int *,
-	   double *,  double *, int *, double *, int *);
-int BLASFUNC(ctrsm)(char *, char *, char *, char *, int *, int *,
-	   float *,  float *, int *, float *, int *);
-int BLASFUNC(ztrsm)(char *, char *, char *, char *, int *, int *,
-	   double *,  double *, int *, double *, int *);
-int BLASFUNC(xtrsm)(char *, char *, char *, char *, int *, int *,
-	   double *,  double *, int *, double *, int *);
+int BLASFUNC(strsm)(const char *, const char *, const char *, const char *, const int *, const int *, const float *,  const float *,  const int *, float *,  const int *);
+int BLASFUNC(dtrsm)(const char *, const char *, const char *, const char *, const int *, const int *, const double *, const double *, const int *, double *, const int *);
+int BLASFUNC(qtrsm)(const char *, const char *, const char *, const char *, const int *, const int *, const double *, const double *, const int *, double *, const int *);
+int BLASFUNC(ctrsm)(const char *, const char *, const char *, const char *, const int *, const int *, const float *,  const float *,  const int *, float *,  const int *);
+int BLASFUNC(ztrsm)(const char *, const char *, const char *, const char *, const int *, const int *, const double *, const double *, const int *, double *, const int *);
+int BLASFUNC(xtrsm)(const char *, const char *, const char *, const char *, const int *, const int *, const double *, const double *, const int *, double *, const int *);
 
-int BLASFUNC(strmm)(char *, char *, char *, char *, int *, int *,
-	   float *,  float *, int *, float *, int *);
-int BLASFUNC(dtrmm)(char *, char *, char *, char *, int *, int *,
-	   double *,  double *, int *, double *, int *);
-int BLASFUNC(qtrmm)(char *, char *, char *, char *, int *, int *,
-	   double *,  double *, int *, double *, int *);
-int BLASFUNC(ctrmm)(char *, char *, char *, char *, int *, int *,
-	   float *,  float *, int *, float *, int *);
-int BLASFUNC(ztrmm)(char *, char *, char *, char *, int *, int *,
-	   double *,  double *, int *, double *, int *);
-int BLASFUNC(xtrmm)(char *, char *, char *, char *, int *, int *,
-	   double *,  double *, int *, double *, int *);
+int BLASFUNC(strmm)(const char *, const char *, const char *, const char *, const int *, const int *, const float *,  const float *,  const int *, float *,  const int *);
+int BLASFUNC(dtrmm)(const char *, const char *, const char *, const char *, const int *, const int *, const double *, const double *, const int *, double *, const int *);
+int BLASFUNC(qtrmm)(const char *, const char *, const char *, const char *, const int *, const int *, const double *, const double *, const int *, double *, const int *);
+int BLASFUNC(ctrmm)(const char *, const char *, const char *, const char *, const int *, const int *, const float *,  const float *,  const int *, float *,  const int *);
+int BLASFUNC(ztrmm)(const char *, const char *, const char *, const char *, const int *, const int *, const double *, const double *, const int *, double *, const int *);
+int BLASFUNC(xtrmm)(const char *, const char *, const char *, const char *, const int *, const int *, const double *, const double *, const int *, double *, const int *);
 
-int BLASFUNC(ssymm)(char *, char *, int *, int *, float  *, float  *, int *,
-	   float  *, int *, float  *, float  *, int *);
-int BLASFUNC(dsymm)(char *, char *, int *, int *, double *, double *, int *,
-	   double *, int *, double *, double *, int *);
-int BLASFUNC(qsymm)(char *, char *, int *, int *, double *, double *, int *,
-	   double *, int *, double *, double *, int *);
-int BLASFUNC(csymm)(char *, char *, int *, int *, float  *, float  *, int *,
-	   float  *, int *, float  *, float  *, int *);
-int BLASFUNC(zsymm)(char *, char *, int *, int *, double *, double *, int *,
-	   double *, int *, double *, double *, int *);
-int BLASFUNC(xsymm)(char *, char *, int *, int *, double *, double *, int *,
-	   double *, int *, double *, double *, int *);
+int BLASFUNC(ssymm)(const char *, const char *, const int *, const int *, const float  *, const float  *, const int *, const float  *, const int *, const float  *, float  *, const int *);
+int BLASFUNC(dsymm)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(qsymm)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(csymm)(const char *, const char *, const int *, const int *, const float  *, const float  *, const int *, const float  *, const int *, const float  *, float  *, const int *);
+int BLASFUNC(zsymm)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(xsymm)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
 
-int BLASFUNC(csymm3m)(char *, char *, int *, int *, float  *, float  *, int *,
-	   float  *, int *, float  *, float  *, int *);
-int BLASFUNC(zsymm3m)(char *, char *, int *, int *, double *, double *, int *,
-	   double *, int *, double *, double *, int *);
-int BLASFUNC(xsymm3m)(char *, char *, int *, int *, double *, double *, int *,
-	   double *, int *, double *, double *, int *);
+int BLASFUNC(csymm3m)(char *, char *, int *, int *, float  *, float  *, int *, float  *, int *, float  *, float  *, int *);
+int BLASFUNC(zsymm3m)(char *, char *, int *, int *, double *, double *, int *, double *, int *, double *, double *, int *);
+int BLASFUNC(xsymm3m)(char *, char *, int *, int *, double *, double *, int *, double *, int *, double *, double *, int *);
 
-int BLASFUNC(ssyrk)(char *, char *, int *, int *, float  *, float  *, int *,
-	   float  *, float  *, int *);
-int BLASFUNC(dsyrk)(char *, char *, int *, int *, double *, double *, int *,
-	   double *, double *, int *);
-int BLASFUNC(qsyrk)(char *, char *, int *, int *, double *, double *, int *,
-	   double *, double *, int *);
-int BLASFUNC(csyrk)(char *, char *, int *, int *, float  *, float  *, int *,
-	   float  *, float  *, int *);
-int BLASFUNC(zsyrk)(char *, char *, int *, int *, double *, double *, int *,
-	   double *, double *, int *);
-int BLASFUNC(xsyrk)(char *, char *, int *, int *, double *, double *, int *,
-	   double *, double *, int *);
+int BLASFUNC(ssyrk)(const char *, const char *, const int *, const int *, const float  *, const float  *, const int *, const float  *, float  *, const int *);
+int BLASFUNC(dsyrk)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(qsyrk)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(csyrk)(const char *, const char *, const int *, const int *, const float  *, const float  *, const int *, const float  *, float  *, const int *);
+int BLASFUNC(zsyrk)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(xsyrk)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double *, double *, const int *);
 
-int BLASFUNC(ssyr2k)(char *, char *, int *, int *, float  *, float  *, int *,
-	   float *, int *, float  *, float  *, int *);
-int BLASFUNC(dsyr2k)(char *, char *, int *, int *, double *, double *, int *,
-	   double*, int *, double *, double *, int *);
-int BLASFUNC(qsyr2k)(char *, char *, int *, int *, double *, double *, int *,
-	   double*, int *, double *, double *, int *);
-int BLASFUNC(csyr2k)(char *, char *, int *, int *, float  *, float  *, int *,
-	   float *, int *, float  *, float  *, int *);
-int BLASFUNC(zsyr2k)(char *, char *, int *, int *, double *, double *, int *,
-	   double*, int *, double *, double *, int *);
-int BLASFUNC(xsyr2k)(char *, char *, int *, int *, double *, double *, int *,
-	   double*, int *, double *, double *, int *);
+int BLASFUNC(ssyr2k)(const char *, const char *, const int *, const int *, const float  *, const float  *, const int *, const float *, const int *, const float  *, float  *, const int *);
+int BLASFUNC(dsyr2k)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double*, const int *, const double *, double *, const int *);
+int BLASFUNC(qsyr2k)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double*, const int *, const double *, double *, const int *);
+int BLASFUNC(csyr2k)(const char *, const char *, const int *, const int *, const float  *, const float  *, const int *, const float *, const int *, const float  *, float  *, const int *);
+int BLASFUNC(zsyr2k)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double*, const int *, const double *, double *, const int *);
+int BLASFUNC(xsyr2k)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double*, const int *, const double *, double *, const int *);
 
-int BLASFUNC(chemm)(char *, char *, int *, int *, float  *, float  *, int *,
-	   float  *, int *, float  *, float  *, int *);
-int BLASFUNC(zhemm)(char *, char *, int *, int *, double *, double *, int *,
-	   double *, int *, double *, double *, int *);
-int BLASFUNC(xhemm)(char *, char *, int *, int *, double *, double *, int *,
-	   double *, int *, double *, double *, int *);
+int BLASFUNC(chemm)(const char *, const char *, const int *, const int *, const float  *, const float  *, const int *, const float  *, const int *, const float  *, float  *, const int *);
+int BLASFUNC(zhemm)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(xhemm)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
 
 int BLASFUNC(chemm3m)(char *, char *, int *, int *, float  *, float  *, int *,
 	   float  *, int *, float  *, float  *, int *);
@@ -520,136 +421,17 @@ int BLASFUNC(zhemm3m)(char *, char *, int *, int *, double *, double *, int *,
 int BLASFUNC(xhemm3m)(char *, char *, int *, int *, double *, double *, int *,
 	   double *, int *, double *, double *, int *);
 
-int BLASFUNC(cherk)(char *, char *, int *, int *, float  *, float  *, int *,
-	   float  *, float  *, int *);
-int BLASFUNC(zherk)(char *, char *, int *, int *, double *, double *, int *,
-	   double *, double *, int *);
-int BLASFUNC(xherk)(char *, char *, int *, int *, double *, double *, int *,
-	   double *, double *, int *);
+int BLASFUNC(cherk)(const char *, const char *, const int *, const int *, const float  *, const float  *, const int *, const float  *, float  *, const int *);
+int BLASFUNC(zherk)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(xherk)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double *, double *, const int *);
 
-int BLASFUNC(cher2k)(char *, char *, int *, int *, float  *, float  *, int *,
-	   float *, int *, float  *, float  *, int *);
-int BLASFUNC(zher2k)(char *, char *, int *, int *, double *, double *, int *,
-	   double*, int *, double *, double *, int *);
-int BLASFUNC(xher2k)(char *, char *, int *, int *, double *, double *, int *,
-	   double*, int *, double *, double *, int *);
-int BLASFUNC(cher2m)(char *, char *, char *, int *, int *, float  *, float  *, int *,
-	   float *, int *, float  *, float  *, int *);
-int BLASFUNC(zher2m)(char *, char *, char *, int *, int *, double *, double *, int *,
-	   double*, int *, double *, double *, int *);
-int BLASFUNC(xher2m)(char *, char *, char *, int *, int *, double *, double *, int *,
-	   double*, int *, double *, double *, int *);
+int BLASFUNC(cher2k)(const char *, const char *, const int *, const int *, const float  *, const float  *, const int *, const float  *, const int *, const float  *, float  *, const int *);
+int BLASFUNC(zher2k)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(xher2k)(const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double *, const int *, const double *, double *, const int *);
+int BLASFUNC(cher2m)(const char *, const char *, const char *, const int *, const int *, const float  *, const float  *, const int *, const float *, const int *, const float  *, float  *, const int *);
+int BLASFUNC(zher2m)(const char *, const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double*, const int *, const double *, double *, const int *);
+int BLASFUNC(xher2m)(const char *, const char *, const char *, const int *, const int *, const double *, const double *, const int *, const double*, const int *, const double *, double *, const int *);
 
-int BLASFUNC(sgemt)(char *, int *, int *, float  *, float  *, int *,
-		    float  *, int *);
-int BLASFUNC(dgemt)(char *, int *, int *, double *, double *, int *,
-		    double *, int *);
-int BLASFUNC(cgemt)(char *, int *, int *, float  *, float  *, int *,
-		    float  *, int *);
-int BLASFUNC(zgemt)(char *, int *, int *, double *, double *, int *,
-		    double *, int *);
-
-int BLASFUNC(sgema)(char *, char *, int *, int *, float  *,
-		    float  *, int *, float *, float  *, int *, float *, int *);
-int BLASFUNC(dgema)(char *, char *, int *, int *, double *,
-		    double *, int *, double*, double *, int *, double*, int *);
-int BLASFUNC(cgema)(char *, char *, int *, int *, float  *,
-		    float  *, int *, float *, float  *, int *, float *, int *);
-int BLASFUNC(zgema)(char *, char *, int *, int *, double *,
-		    double *, int *, double*, double *, int *, double*, int *);
-
-int BLASFUNC(sgems)(char *, char *, int *, int *, float  *,
-		    float  *, int *, float *, float  *, int *, float *, int *);
-int BLASFUNC(dgems)(char *, char *, int *, int *, double *,
-		    double *, int *, double*, double *, int *, double*, int *);
-int BLASFUNC(cgems)(char *, char *, int *, int *, float  *,
-		    float  *, int *, float *, float  *, int *, float *, int *);
-int BLASFUNC(zgems)(char *, char *, int *, int *, double *,
-		    double *, int *, double*, double *, int *, double*, int *);
-
-int BLASFUNC(sgetf2)(int *, int *, float  *, int *, int *, int *);
-int BLASFUNC(dgetf2)(int *, int *, double *, int *, int *, int *);
-int BLASFUNC(qgetf2)(int *, int *, double *, int *, int *, int *);
-int BLASFUNC(cgetf2)(int *, int *, float  *, int *, int *, int *);
-int BLASFUNC(zgetf2)(int *, int *, double *, int *, int *, int *);
-int BLASFUNC(xgetf2)(int *, int *, double *, int *, int *, int *);
-
-int BLASFUNC(sgetrf)(int *, int *, float  *, int *, int *, int *);
-int BLASFUNC(dgetrf)(int *, int *, double *, int *, int *, int *);
-int BLASFUNC(qgetrf)(int *, int *, double *, int *, int *, int *);
-int BLASFUNC(cgetrf)(int *, int *, float  *, int *, int *, int *);
-int BLASFUNC(zgetrf)(int *, int *, double *, int *, int *, int *);
-int BLASFUNC(xgetrf)(int *, int *, double *, int *, int *, int *);
-
-int BLASFUNC(slaswp)(int *, float  *, int *, int *, int *, int *, int *);
-int BLASFUNC(dlaswp)(int *, double *, int *, int *, int *, int *, int *);
-int BLASFUNC(qlaswp)(int *, double *, int *, int *, int *, int *, int *);
-int BLASFUNC(claswp)(int *, float  *, int *, int *, int *, int *, int *);
-int BLASFUNC(zlaswp)(int *, double *, int *, int *, int *, int *, int *);
-int BLASFUNC(xlaswp)(int *, double *, int *, int *, int *, int *, int *);
-
-int BLASFUNC(sgetrs)(char *, int *, int *, float  *, int *, int *, float  *, int *, int *);
-int BLASFUNC(dgetrs)(char *, int *, int *, double *, int *, int *, double *, int *, int *);
-int BLASFUNC(qgetrs)(char *, int *, int *, double *, int *, int *, double *, int *, int *);
-int BLASFUNC(cgetrs)(char *, int *, int *, float  *, int *, int *, float  *, int *, int *);
-int BLASFUNC(zgetrs)(char *, int *, int *, double *, int *, int *, double *, int *, int *);
-int BLASFUNC(xgetrs)(char *, int *, int *, double *, int *, int *, double *, int *, int *);
-
-int BLASFUNC(sgesv)(int *, int *, float  *, int *, int *, float *, int *, int *);
-int BLASFUNC(dgesv)(int *, int *, double *, int *, int *, double*, int *, int *);
-int BLASFUNC(qgesv)(int *, int *, double *, int *, int *, double*, int *, int *);
-int BLASFUNC(cgesv)(int *, int *, float  *, int *, int *, float *, int *, int *);
-int BLASFUNC(zgesv)(int *, int *, double *, int *, int *, double*, int *, int *);
-int BLASFUNC(xgesv)(int *, int *, double *, int *, int *, double*, int *, int *);
-
-int BLASFUNC(spotf2)(char *, int *, float  *, int *, int *);
-int BLASFUNC(dpotf2)(char *, int *, double *, int *, int *);
-int BLASFUNC(qpotf2)(char *, int *, double *, int *, int *);
-int BLASFUNC(cpotf2)(char *, int *, float  *, int *, int *);
-int BLASFUNC(zpotf2)(char *, int *, double *, int *, int *);
-int BLASFUNC(xpotf2)(char *, int *, double *, int *, int *);
-
-int BLASFUNC(spotrf)(char *, int *, float  *, int *, int *);
-int BLASFUNC(dpotrf)(char *, int *, double *, int *, int *);
-int BLASFUNC(qpotrf)(char *, int *, double *, int *, int *);
-int BLASFUNC(cpotrf)(char *, int *, float  *, int *, int *);
-int BLASFUNC(zpotrf)(char *, int *, double *, int *, int *);
-int BLASFUNC(xpotrf)(char *, int *, double *, int *, int *);
-
-int BLASFUNC(slauu2)(char *, int *, float  *, int *, int *);
-int BLASFUNC(dlauu2)(char *, int *, double *, int *, int *);
-int BLASFUNC(qlauu2)(char *, int *, double *, int *, int *);
-int BLASFUNC(clauu2)(char *, int *, float  *, int *, int *);
-int BLASFUNC(zlauu2)(char *, int *, double *, int *, int *);
-int BLASFUNC(xlauu2)(char *, int *, double *, int *, int *);
-
-int BLASFUNC(slauum)(char *, int *, float  *, int *, int *);
-int BLASFUNC(dlauum)(char *, int *, double *, int *, int *);
-int BLASFUNC(qlauum)(char *, int *, double *, int *, int *);
-int BLASFUNC(clauum)(char *, int *, float  *, int *, int *);
-int BLASFUNC(zlauum)(char *, int *, double *, int *, int *);
-int BLASFUNC(xlauum)(char *, int *, double *, int *, int *);
-
-int BLASFUNC(strti2)(char *, char *, int *, float  *, int *, int *);
-int BLASFUNC(dtrti2)(char *, char *, int *, double *, int *, int *);
-int BLASFUNC(qtrti2)(char *, char *, int *, double *, int *, int *);
-int BLASFUNC(ctrti2)(char *, char *, int *, float  *, int *, int *);
-int BLASFUNC(ztrti2)(char *, char *, int *, double *, int *, int *);
-int BLASFUNC(xtrti2)(char *, char *, int *, double *, int *, int *);
-
-int BLASFUNC(strtri)(char *, char *, int *, float  *, int *, int *);
-int BLASFUNC(dtrtri)(char *, char *, int *, double *, int *, int *);
-int BLASFUNC(qtrtri)(char *, char *, int *, double *, int *, int *);
-int BLASFUNC(ctrtri)(char *, char *, int *, float  *, int *, int *);
-int BLASFUNC(ztrtri)(char *, char *, int *, double *, int *, int *);
-int BLASFUNC(xtrtri)(char *, char *, int *, double *, int *, int *);
-
-int BLASFUNC(spotri)(char *, int *, float  *, int *, int *);
-int BLASFUNC(dpotri)(char *, int *, double *, int *, int *);
-int BLASFUNC(qpotri)(char *, int *, double *, int *, int *);
-int BLASFUNC(cpotri)(char *, int *, float  *, int *, int *);
-int BLASFUNC(zpotri)(char *, int *, double *, int *, int *);
-int BLASFUNC(xpotri)(char *, int *, double *, int *, int *);
 
 #ifdef __cplusplus
 }

@@ -46,8 +46,9 @@ namespace internal {
  *         > 0 - number of bytes allocated when run out of space
  * 
  */
-template <typename Scalar, typename Index>
-Index SparseLUImpl<Scalar,Index>::copy_to_ucol(const Index jcol, const Index nseg, IndexVector& segrep, BlockIndexVector repfnz ,IndexVector& perm_r, BlockScalarVector dense, GlobalLU_t& glu)
+template <typename Scalar, typename StorageIndex>
+Index SparseLUImpl<Scalar,StorageIndex>::copy_to_ucol(const Index jcol, const Index nseg, IndexVector& segrep,
+                                                      BlockIndexVector repfnz ,IndexVector& perm_r, BlockScalarVector dense, GlobalLU_t& glu)
 {  
   Index ksub, krep, ksupno; 
     
@@ -55,7 +56,7 @@ Index SparseLUImpl<Scalar,Index>::copy_to_ucol(const Index jcol, const Index nse
   
   // For each nonzero supernode segment of U[*,j] in topological order 
   Index k = nseg - 1, i; 
-  Index nextu = glu.xusub(jcol); 
+  StorageIndex nextu = glu.xusub(jcol); 
   Index kfnz, isub, segsize; 
   Index new_next,irow; 
   Index fsupc, mem; 

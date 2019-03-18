@@ -1,7 +1,7 @@
 // This file is part of Eigen, a lightweight C++ template library
 // for linear algebra.
 //
-// Copyright (C) 2008-2009 Gael Guennebaud <gael.guennebaud@inria.fr>
+// Copyright (C) 2008-2015 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
@@ -12,51 +12,80 @@
 
 namespace Eigen { 
 
-template<typename MatrixType> class TransposeImpl<MatrixType,Sparse>
-  : public SparseMatrixBase<Transpose<MatrixType> >
-{
-    typedef typename internal::remove_all<typename MatrixType::Nested>::type _MatrixTypeNested;
+namespace internal {
+  template<typename MatrixType,int CompressedAccess=int(MatrixType::Flags&CompressedAccessBit)>
+  class SparseTransposeImpl
+    : public SparseMatrixBase<Transpose<MatrixType> >
+  {};
+  
+  template<typename MatrixType>
+  class SparseTransposeImpl<MatrixType,CompressedAccessBit>
+    : public SparseCompressedBase<Transpose<MatrixType> >
+  {
+    typedef SparseCompressedBase<Transpose<MatrixType> > Base;
   public:
-
-    EIGEN_SPARSE_PUBLIC_INTERFACE(Transpose<MatrixType> )
-
-    class InnerIterator;
-    class ReverseInnerIterator;
+    using Base::derived;
+    typedef typename Base::Scalar Scalar;
+    typedef typename Base::StorageIndex StorageIndex;
 
     inline Index nonZeros() const { return derived().nestedExpression().nonZeros(); }
-};
+    
+    inline const Scalar* valuePtr() const { return derived().nestedExpression().valuePtr(); }
+    inline const StorageIndex* innerIndexPtr() const { return derived().nestedExpression().innerIndexPtr(); }
+    inline const StorageIndex* outerIndexPtr() const { return derived().nestedExpression().outerIndexPtr(); }
+    inline const StorageIndex* innerNonZeroPtr() const { return derived().nestedExpression().innerNonZeroPtr(); }
 
-// NOTE: VC10 and VC11 trigger an ICE if don't put typename TransposeImpl<MatrixType,Sparse>:: in front of Index,
-// a typedef typename TransposeImpl<MatrixType,Sparse>::Index Index;
-// does not fix the issue.
-// An alternative is to define the nested class in the parent class itself.
-template<typename MatrixType> class TransposeImpl<MatrixType,Sparse>::InnerIterator
-  : public _MatrixTypeNested::InnerIterator
+    inline Scalar* valuePtr() { return derived().nestedExpression().valuePtr(); }
+    inline StorageIndex* innerIndexPtr() { return derived().nestedExpression().innerIndexPtr(); }
+    inline StorageIndex* outerIndexPtr() { return derived().nestedExpression().outerIndexPtr(); }
+    inline StorageIndex* innerNonZeroPtr() { return derived().nestedExpression().innerNonZeroPtr(); }
+  };
+}
+  
+template<typename MatrixType> class TransposeImpl<MatrixType,Sparse>
+  : public internal::SparseTransposeImpl<MatrixType>
 {
-    typedef typename _MatrixTypeNested::InnerIterator Base;
-    typedef typename TransposeImpl::Index Index;
-  public:
-
-    EIGEN_STRONG_INLINE InnerIterator(const TransposeImpl& trans, typename TransposeImpl<MatrixType,Sparse>::Index outer)
-      : Base(trans.derived().nestedExpression(), outer)
-    {}
-    typename TransposeImpl<MatrixType,Sparse>::Index row() const { return Base::col(); }
-    typename TransposeImpl<MatrixType,Sparse>::Index col() const { return Base::row(); }
+  protected:
+    typedef internal::SparseTransposeImpl<MatrixType> Base;
 };
 
-template<typename MatrixType> class TransposeImpl<MatrixType,Sparse>::ReverseInnerIterator
-  : public _MatrixTypeNested::ReverseInnerIterator
+namespace internal {
+  
+template<typename ArgType>
+struct unary_evaluator<Transpose<ArgType>, IteratorBased>
+  : public evaluator_base<Transpose<ArgType> >
 {
-    typedef typename _MatrixTypeNested::ReverseInnerIterator Base;
-    typedef typename TransposeImpl::Index Index;
+    typedef typename evaluator<ArgType>::InnerIterator        EvalIterator;
   public:
+    typedef Transpose<ArgType> XprType;
+    
+    inline Index nonZerosEstimate() const {
+      return m_argImpl.nonZerosEstimate();
+    }
 
-    EIGEN_STRONG_INLINE ReverseInnerIterator(const TransposeImpl& xpr, typename TransposeImpl<MatrixType,Sparse>::Index outer)
-      : Base(xpr.derived().nestedExpression(), outer)
-    {}
-    typename TransposeImpl<MatrixType,Sparse>::Index row() const { return Base::col(); }
-    typename TransposeImpl<MatrixType,Sparse>::Index col() const { return Base::row(); }
+    class InnerIterator : public EvalIterator
+    {
+    public:
+      EIGEN_STRONG_INLINE InnerIterator(const unary_evaluator& unaryOp, Index outer)
+        : EvalIterator(unaryOp.m_argImpl,outer)
+      {}
+      
+      Index row() const { return EvalIterator::col(); }
+      Index col() const { return EvalIterator::row(); }
+    };
+    
+    enum {
+      CoeffReadCost = evaluator<ArgType>::CoeffReadCost,
+      Flags = XprType::Flags
+    };
+    
+    explicit unary_evaluator(const XprType& op) :m_argImpl(op.nestedExpression()) {}
+
+  protected:
+    evaluator<ArgType> m_argImpl;
 };
+
+} // end namespace internal
 
 } // end namespace Eigen
 

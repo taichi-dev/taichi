@@ -36,13 +36,12 @@ namespace internal {
   
 enum { LUNoMarker = 3 };
 enum {emptyIdxLU = -1};
-template<typename Index>
 inline Index LUnumTempV(Index& m, Index& w, Index& t, Index& b)
 {
   return (std::max)(m, (t+b)*w);
 }
 
-template< typename Scalar, typename Index>
+template< typename Scalar>
 inline Index LUTempSpace(Index&m, Index& w)
 {
   return (2*w + 4 + LUNoMarker) * m * sizeof(Index) + (w + 1) * m * sizeof(Scalar);
@@ -59,9 +58,9 @@ inline Index LUTempSpace(Index&m, Index& w)
   * \param keep_prev  1: use length  and do not expand the vector; 0: compute new_len and expand
   * \param[in,out] num_expansions Number of times the memory has been expanded
   */
-template <typename Scalar, typename Index>
+template <typename Scalar, typename StorageIndex>
 template <typename VectorType>
-Index  SparseLUImpl<Scalar,Index>::expand(VectorType& vec, Index& length, Index nbElts, Index keep_prev, Index& num_expansions) 
+Index  SparseLUImpl<Scalar,StorageIndex>::expand(VectorType& vec, Index& length, Index nbElts, Index keep_prev, Index& num_expansions) 
 {
   
   float alpha = 1.5; // Ratio of the memory increase 
@@ -148,8 +147,8 @@ Index  SparseLUImpl<Scalar,Index>::expand(VectorType& vec, Index& length, Index 
  * \return an estimated size of the required memory if lwork = -1; otherwise, return the size of actually allocated memory when allocation failed, and 0 on success
  * \note Unlike SuperLU, this routine does not support successive factorization with the same pattern and the same row permutation
  */
-template <typename Scalar, typename Index>
-Index SparseLUImpl<Scalar,Index>::memInit(Index m, Index n, Index annz, Index lwork, Index fillratio, Index panel_size,  GlobalLU_t& glu)
+template <typename Scalar, typename StorageIndex>
+Index SparseLUImpl<Scalar,StorageIndex>::memInit(Index m, Index n, Index annz, Index lwork, Index fillratio, Index panel_size,  GlobalLU_t& glu)
 {
   Index& num_expansions = glu.num_expansions; //No memory expansions so far
   num_expansions = 0;
@@ -205,9 +204,9 @@ Index SparseLUImpl<Scalar,Index>::memInit(Index m, Index n, Index annz, Index lw
  * \param num_expansions Number of expansions 
  * \return 0 on success, > 0 size of the memory allocated so far
  */
-template <typename Scalar, typename Index>
+template <typename Scalar, typename StorageIndex>
 template <typename VectorType>
-Index SparseLUImpl<Scalar,Index>::memXpand(VectorType& vec, Index& maxlen, Index nbElts, MemType memtype, Index& num_expansions)
+Index SparseLUImpl<Scalar,StorageIndex>::memXpand(VectorType& vec, Index& maxlen, Index nbElts, MemType memtype, Index& num_expansions)
 {
   Index failed_size; 
   if (memtype == USUB)

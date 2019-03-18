@@ -69,57 +69,61 @@ protected:
 public:
 
   /** Default constructor without initialization. */
-  AngleAxis() {}
+  EIGEN_DEVICE_FUNC AngleAxis() {}
   /** Constructs and initialize the angle-axis rotation from an \a angle in radian
     * and an \a axis which \b must \b be \b normalized.
     *
     * \warning If the \a axis vector is not normalized, then the angle-axis object
     *          represents an invalid rotation. */
   template<typename Derived>
+  EIGEN_DEVICE_FUNC 
   inline AngleAxis(const Scalar& angle, const MatrixBase<Derived>& axis) : m_axis(axis), m_angle(angle) {}
-  /** Constructs and initialize the angle-axis rotation from a quaternion \a q. */
-  template<typename QuatDerived> inline explicit AngleAxis(const QuaternionBase<QuatDerived>& q) { *this = q; }
+  /** Constructs and initialize the angle-axis rotation from a quaternion \a q.
+    * This function implicitly normalizes the quaternion \a q.
+    */
+  template<typename QuatDerived> 
+  EIGEN_DEVICE_FUNC inline explicit AngleAxis(const QuaternionBase<QuatDerived>& q) { *this = q; }
   /** Constructs and initialize the angle-axis rotation from a 3x3 rotation matrix. */
   template<typename Derived>
-  inline explicit AngleAxis(const MatrixBase<Derived>& m) { *this = m; }
+  EIGEN_DEVICE_FUNC inline explicit AngleAxis(const MatrixBase<Derived>& m) { *this = m; }
 
   /** \returns the value of the rotation angle in radian */
-  Scalar angle() const { return m_angle; }
+  EIGEN_DEVICE_FUNC Scalar angle() const { return m_angle; }
   /** \returns a read-write reference to the stored angle in radian */
-  Scalar& angle() { return m_angle; }
+  EIGEN_DEVICE_FUNC Scalar& angle() { return m_angle; }
 
   /** \returns the rotation axis */
-  const Vector3& axis() const { return m_axis; }
+  EIGEN_DEVICE_FUNC const Vector3& axis() const { return m_axis; }
   /** \returns a read-write reference to the stored rotation axis.
     *
     * \warning The rotation axis must remain a \b unit vector.
     */
-  Vector3& axis() { return m_axis; }
+  EIGEN_DEVICE_FUNC Vector3& axis() { return m_axis; }
 
   /** Concatenates two rotations */
-  inline QuaternionType operator* (const AngleAxis& other) const
+  EIGEN_DEVICE_FUNC inline QuaternionType operator* (const AngleAxis& other) const
   { return QuaternionType(*this) * QuaternionType(other); }
 
   /** Concatenates two rotations */
-  inline QuaternionType operator* (const QuaternionType& other) const
+  EIGEN_DEVICE_FUNC inline QuaternionType operator* (const QuaternionType& other) const
   { return QuaternionType(*this) * other; }
 
   /** Concatenates two rotations */
-  friend inline QuaternionType operator* (const QuaternionType& a, const AngleAxis& b)
+  friend EIGEN_DEVICE_FUNC inline QuaternionType operator* (const QuaternionType& a, const AngleAxis& b)
   { return a * QuaternionType(b); }
 
   /** \returns the inverse rotation, i.e., an angle-axis with opposite rotation angle */
-  AngleAxis inverse() const
+  EIGEN_DEVICE_FUNC AngleAxis inverse() const
   { return AngleAxis(-m_angle, m_axis); }
 
   template<class QuatDerived>
-  AngleAxis& operator=(const QuaternionBase<QuatDerived>& q);
+  EIGEN_DEVICE_FUNC AngleAxis& operator=(const QuaternionBase<QuatDerived>& q);
   template<typename Derived>
-  AngleAxis& operator=(const MatrixBase<Derived>& m);
+  EIGEN_DEVICE_FUNC AngleAxis& operator=(const MatrixBase<Derived>& m);
 
   template<typename Derived>
-  AngleAxis& fromRotationMatrix(const MatrixBase<Derived>& m);
-  Matrix3 toRotationMatrix(void) const;
+  EIGEN_DEVICE_FUNC AngleAxis& fromRotationMatrix(const MatrixBase<Derived>& m);
+  EIGEN_DEVICE_FUNC Matrix3 toRotationMatrix(void) const;
 
   /** \returns \c *this with scalar type casted to \a NewScalarType
     *
@@ -127,24 +131,24 @@ public:
     * then this function smartly returns a const reference to \c *this.
     */
   template<typename NewScalarType>
-  inline typename internal::cast_return_type<AngleAxis,AngleAxis<NewScalarType> >::type cast() const
+  EIGEN_DEVICE_FUNC inline typename internal::cast_return_type<AngleAxis,AngleAxis<NewScalarType> >::type cast() const
   { return typename internal::cast_return_type<AngleAxis,AngleAxis<NewScalarType> >::type(*this); }
 
   /** Copy constructor with scalar type conversion */
   template<typename OtherScalarType>
-  inline explicit AngleAxis(const AngleAxis<OtherScalarType>& other)
+  EIGEN_DEVICE_FUNC inline explicit AngleAxis(const AngleAxis<OtherScalarType>& other)
   {
     m_axis = other.axis().template cast<Scalar>();
     m_angle = Scalar(other.angle());
   }
 
-  static inline const AngleAxis Identity() { return AngleAxis(Scalar(0), Vector3::UnitX()); }
+  EIGEN_DEVICE_FUNC static inline const AngleAxis Identity() { return AngleAxis(Scalar(0), Vector3::UnitX()); }
 
   /** \returns \c true if \c *this is approximately equal to \a other, within the precision
     * determined by \a prec.
     *
     * \sa MatrixBase::isApprox() */
-  bool isApprox(const AngleAxis& other, const typename NumTraits<Scalar>::Real& prec = NumTraits<Scalar>::dummy_precision()) const
+  EIGEN_DEVICE_FUNC bool isApprox(const AngleAxis& other, const typename NumTraits<Scalar>::Real& prec = NumTraits<Scalar>::dummy_precision()) const
   { return m_axis.isApprox(other.m_axis, prec) && internal::isApprox(m_angle,other.m_angle, prec); }
 };
 
@@ -156,29 +160,32 @@ typedef AngleAxis<float> AngleAxisf;
 typedef AngleAxis<double> AngleAxisd;
 
 /** Set \c *this from a \b unit quaternion.
-  * The axis is normalized.
+  *
+  * The resulting axis is normalized, and the computed angle is in the [0,pi] range.
   * 
-  * \warning As any other method dealing with quaternion, if the input quaternion
-  *          is not normalized then the result is undefined.
+  * This function implicitly normalizes the quaternion \a q.
   */
 template<typename Scalar>
 template<typename QuatDerived>
-AngleAxis<Scalar>& AngleAxis<Scalar>::operator=(const QuaternionBase<QuatDerived>& q)
+EIGEN_DEVICE_FUNC AngleAxis<Scalar>& AngleAxis<Scalar>::operator=(const QuaternionBase<QuatDerived>& q)
 {
-  using std::acos;
-  using std::min;
-  using std::max;
-  using std::sqrt;
-  Scalar n2 = q.vec().squaredNorm();
-  if (n2 < NumTraits<Scalar>::dummy_precision()*NumTraits<Scalar>::dummy_precision())
+  EIGEN_USING_STD_MATH(atan2)
+  EIGEN_USING_STD_MATH(abs)
+  Scalar n = q.vec().norm();
+  if(n<NumTraits<Scalar>::epsilon())
+    n = q.vec().stableNorm();
+
+  if (n != Scalar(0))
   {
-    m_angle = Scalar(0);
-    m_axis << Scalar(1), Scalar(0), Scalar(0);
+    m_angle = Scalar(2)*atan2(n, abs(q.w()));
+    if(q.w() < Scalar(0))
+      n = -n;
+    m_axis  = q.vec() / n;
   }
   else
   {
-    m_angle = Scalar(2)*acos((min)((max)(Scalar(-1),q.w()),Scalar(1)));
-    m_axis = q.vec() / sqrt(n2);
+    m_angle = Scalar(0);
+    m_axis << Scalar(1), Scalar(0), Scalar(0);
   }
   return *this;
 }
@@ -187,7 +194,7 @@ AngleAxis<Scalar>& AngleAxis<Scalar>::operator=(const QuaternionBase<QuatDerived
   */
 template<typename Scalar>
 template<typename Derived>
-AngleAxis<Scalar>& AngleAxis<Scalar>::operator=(const MatrixBase<Derived>& mat)
+EIGEN_DEVICE_FUNC AngleAxis<Scalar>& AngleAxis<Scalar>::operator=(const MatrixBase<Derived>& mat)
 {
   // Since a direct conversion would not be really faster,
   // let's use the robust Quaternion implementation:
@@ -199,7 +206,7 @@ AngleAxis<Scalar>& AngleAxis<Scalar>::operator=(const MatrixBase<Derived>& mat)
 **/
 template<typename Scalar>
 template<typename Derived>
-AngleAxis<Scalar>& AngleAxis<Scalar>::fromRotationMatrix(const MatrixBase<Derived>& mat)
+EIGEN_DEVICE_FUNC AngleAxis<Scalar>& AngleAxis<Scalar>::fromRotationMatrix(const MatrixBase<Derived>& mat)
 {
   return *this = QuaternionType(mat);
 }
@@ -208,10 +215,10 @@ AngleAxis<Scalar>& AngleAxis<Scalar>::fromRotationMatrix(const MatrixBase<Derive
   */
 template<typename Scalar>
 typename AngleAxis<Scalar>::Matrix3
-AngleAxis<Scalar>::toRotationMatrix(void) const
+EIGEN_DEVICE_FUNC AngleAxis<Scalar>::toRotationMatrix(void) const
 {
-  using std::sin;
-  using std::cos;
+  EIGEN_USING_STD_MATH(sin)
+  EIGEN_USING_STD_MATH(cos)
   Matrix3 res;
   Vector3 sin_axis  = sin(m_angle) * m_axis;
   Scalar c = cos(m_angle);

@@ -38,7 +38,6 @@ template<typename _DecompositionType> struct image_retval_base
   typedef _DecompositionType DecompositionType;
   typedef typename DecompositionType::MatrixType MatrixType;
   typedef ReturnByValue<image_retval_base> Base;
-  typedef typename Base::Index Index;
 
   image_retval_base(const DecompositionType& dec, const MatrixType& originalMatrix)
     : m_dec(dec), m_rank(dec.rank()),
@@ -69,7 +68,6 @@ template<typename _DecompositionType> struct image_retval_base
   typedef typename DecompositionType::MatrixType MatrixType; \
   typedef typename MatrixType::Scalar Scalar; \
   typedef typename MatrixType::RealScalar RealScalar; \
-  typedef typename MatrixType::Index Index; \
   typedef Eigen::internal::image_retval_base<DecompositionType> Base; \
   using Base::dec; \
   using Base::originalMatrix; \

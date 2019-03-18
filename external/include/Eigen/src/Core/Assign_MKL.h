@@ -1,6 +1,7 @@
 /*
  Copyright (c) 2011, Intel Corporation. All rights reserved.
-
+ Copyright (C) 2015 Gael Guennebaud <gael.guennebaud@inria.fr>
+ 
  Redistribution and use in source and binary forms, with or without modification,
  are permitted provided that the following conditions are met:
 
@@ -37,17 +38,13 @@ namespace Eigen {
 
 namespace internal {
 
-template<typename Op> struct vml_call
-{ enum { IsSupported = 0 }; };
-
-template<typename Dst, typename Src, typename UnaryOp>
+template<typename Dst, typename Src>
 class vml_assign_traits
 {
   private:
     enum {
       DstHasDirectAccess = Dst::Flags & DirectAccessBit,
       SrcHasDirectAccess = Src::Flags & DirectAccessBit,
-
       StorageOrdersAgree = (int(Dst::IsRowMajor) == int(Src::IsRowMajor)),
       InnerSize = int(Dst::IsVectorAtCompileTime) ? int(Dst::SizeAtCompileTime)
                 : int(Dst::Flags)&RowMajorBit ? int(Dst::ColsAtCompileTime)
@@ -57,165 +54,122 @@ class vml_assign_traits
                     : int(Dst::MaxRowsAtCompileTime),
       MaxSizeAtCompileTime = Dst::SizeAtCompileTime,
 
-      MightEnableVml =  vml_call<UnaryOp>::IsSupported && StorageOrdersAgree && DstHasDirectAccess && SrcHasDirectAccess
-                     && Src::InnerStrideAtCompileTime==1 && Dst::InnerStrideAtCompileTime==1,
+      MightEnableVml = StorageOrdersAgree && DstHasDirectAccess && SrcHasDirectAccess && Src::InnerStrideAtCompileTime==1 && Dst::InnerStrideAtCompileTime==1,
       MightLinearize = MightEnableVml && (int(Dst::Flags) & int(Src::Flags) & LinearAccessBit),
       VmlSize = MightLinearize ? MaxSizeAtCompileTime : InnerMaxSize,
-      LargeEnough = VmlSize==Dynamic || VmlSize>=EIGEN_MKL_VML_THRESHOLD,
-      MayEnableVml = MightEnableVml && LargeEnough,
-      MayLinearize = MayEnableVml && MightLinearize
+      LargeEnough = VmlSize==Dynamic || VmlSize>=EIGEN_MKL_VML_THRESHOLD
     };
   public:
     enum {
-      Traversal = MayLinearize ? LinearVectorizedTraversal
-                : MayEnableVml ? InnerVectorizedTraversal
-                : DefaultTraversal
+      EnableVml = MightEnableVml && LargeEnough,
+      Traversal = MightLinearize ? LinearTraversal : DefaultTraversal
     };
 };
 
-template<typename Derived1, typename Derived2, typename UnaryOp, int Traversal, int Unrolling,
-         int VmlTraversal = vml_assign_traits<Derived1, Derived2, UnaryOp>::Traversal >
-struct vml_assign_impl
-  : assign_impl<Derived1, Eigen::CwiseUnaryOp<UnaryOp, Derived2>,Traversal,Unrolling,BuiltIn>
-{
-};
-
-template<typename Derived1, typename Derived2, typename UnaryOp, int Traversal, int Unrolling>
-struct vml_assign_impl<Derived1, Derived2, UnaryOp, Traversal, Unrolling, InnerVectorizedTraversal>
-{
-  typedef typename Derived1::Scalar Scalar;
-  typedef typename Derived1::Index Index;
-  static inline void run(Derived1& dst, const CwiseUnaryOp<UnaryOp, Derived2>& src)
-  {
-    // in case we want to (or have to) skip VML at runtime we can call:
-    // assign_impl<Derived1,Eigen::CwiseUnaryOp<UnaryOp, Derived2>,Traversal,Unrolling,BuiltIn>::run(dst,src);
-    const Index innerSize = dst.innerSize();
-    const Index outerSize = dst.outerSize();
-    for(Index outer = 0; outer < outerSize; ++outer) {
-      const Scalar *src_ptr = src.IsRowMajor ?  &(src.nestedExpression().coeffRef(outer,0)) :
-                                                &(src.nestedExpression().coeffRef(0, outer));
-      Scalar *dst_ptr = dst.IsRowMajor ? &(dst.coeffRef(outer,0)) : &(dst.coeffRef(0, outer));
-      vml_call<UnaryOp>::run(src.functor(), innerSize, src_ptr, dst_ptr );
-    }
-  }
-};
-
-template<typename Derived1, typename Derived2, typename UnaryOp, int Traversal, int Unrolling>
-struct vml_assign_impl<Derived1, Derived2, UnaryOp, Traversal, Unrolling, LinearVectorizedTraversal>
-{
-  static inline void run(Derived1& dst, const CwiseUnaryOp<UnaryOp, Derived2>& src)
-  {
-    // in case we want to (or have to) skip VML at runtime we can call:
-    // assign_impl<Derived1,Eigen::CwiseUnaryOp<UnaryOp, Derived2>,Traversal,Unrolling,BuiltIn>::run(dst,src);
-    vml_call<UnaryOp>::run(src.functor(), dst.size(), src.nestedExpression().data(), dst.data() );
-  }
-};
-
-// Macroses
-
-#define EIGEN_MKL_VML_SPECIALIZE_ASSIGN(TRAVERSAL,UNROLLING) \
-  template<typename Derived1, typename Derived2, typename UnaryOp> \
-  struct assign_impl<Derived1, Eigen::CwiseUnaryOp<UnaryOp, Derived2>, TRAVERSAL, UNROLLING, Specialized>  {  \
-    static inline void run(Derived1 &dst, const Eigen::CwiseUnaryOp<UnaryOp, Derived2> &src) { \
-      vml_assign_impl<Derived1,Derived2,UnaryOp,TRAVERSAL,UNROLLING>::run(dst, src); \
-    } \
-  };
-
-EIGEN_MKL_VML_SPECIALIZE_ASSIGN(DefaultTraversal,NoUnrolling)
-EIGEN_MKL_VML_SPECIALIZE_ASSIGN(DefaultTraversal,CompleteUnrolling)
-EIGEN_MKL_VML_SPECIALIZE_ASSIGN(DefaultTraversal,InnerUnrolling)
-EIGEN_MKL_VML_SPECIALIZE_ASSIGN(LinearTraversal,NoUnrolling)
-EIGEN_MKL_VML_SPECIALIZE_ASSIGN(LinearTraversal,CompleteUnrolling)
-EIGEN_MKL_VML_SPECIALIZE_ASSIGN(InnerVectorizedTraversal,NoUnrolling)
-EIGEN_MKL_VML_SPECIALIZE_ASSIGN(InnerVectorizedTraversal,CompleteUnrolling)
-EIGEN_MKL_VML_SPECIALIZE_ASSIGN(InnerVectorizedTraversal,InnerUnrolling)
-EIGEN_MKL_VML_SPECIALIZE_ASSIGN(LinearVectorizedTraversal,CompleteUnrolling)
-EIGEN_MKL_VML_SPECIALIZE_ASSIGN(LinearVectorizedTraversal,NoUnrolling)
-EIGEN_MKL_VML_SPECIALIZE_ASSIGN(SliceVectorizedTraversal,NoUnrolling)
-
-
+#define EIGEN_PP_EXPAND(ARG) ARG
 #if !defined (EIGEN_FAST_MATH) || (EIGEN_FAST_MATH != 1)
-#define  EIGEN_MKL_VML_MODE VML_HA
+#define EIGEN_VMLMODE_EXPAND_LA , VML_HA
 #else
-#define  EIGEN_MKL_VML_MODE VML_LA
+#define EIGEN_VMLMODE_EXPAND_LA , VML_LA
 #endif
 
-#define EIGEN_MKL_VML_DECLARE_UNARY_CALL(EIGENOP, VMLOP, EIGENTYPE, VMLTYPE)     \
-  template<> struct vml_call< scalar_##EIGENOP##_op<EIGENTYPE> > {               \
-    enum { IsSupported = 1 };                                                    \
-    static inline void run( const scalar_##EIGENOP##_op<EIGENTYPE>& /*func*/,        \
-                            int size, const EIGENTYPE* src, EIGENTYPE* dst) {    \
-      VMLOP(size, (const VMLTYPE*)src, (VMLTYPE*)dst);                           \
-    }                                                                            \
+#define EIGEN_VMLMODE_EXPAND__ 
+
+#define EIGEN_VMLMODE_PREFIX_LA vm
+#define EIGEN_VMLMODE_PREFIX__  v
+#define EIGEN_VMLMODE_PREFIX(VMLMODE) EIGEN_CAT(EIGEN_VMLMODE_PREFIX_,VMLMODE)
+
+#define EIGEN_MKL_VML_DECLARE_UNARY_CALL(EIGENOP, VMLOP, EIGENTYPE, VMLTYPE, VMLMODE)                                           \
+  template< typename DstXprType, typename SrcXprNested>                                                                         \
+  struct Assignment<DstXprType, CwiseUnaryOp<scalar_##EIGENOP##_op<EIGENTYPE>, SrcXprNested>, assign_op<EIGENTYPE,EIGENTYPE>,   \
+                   Dense2Dense, typename enable_if<vml_assign_traits<DstXprType,SrcXprNested>::EnableVml>::type> {              \
+    typedef CwiseUnaryOp<scalar_##EIGENOP##_op<EIGENTYPE>, SrcXprNested> SrcXprType;                                            \
+    static void run(DstXprType &dst, const SrcXprType &src, const assign_op<EIGENTYPE,EIGENTYPE> &func) {                       \
+      resize_if_allowed(dst, src, func);                                                                                        \
+      eigen_assert(dst.rows() == src.rows() && dst.cols() == src.cols());                                                       \
+      if(vml_assign_traits<DstXprType,SrcXprNested>::Traversal==LinearTraversal) {                                              \
+        VMLOP(dst.size(), (const VMLTYPE*)src.nestedExpression().data(),                                                        \
+              (VMLTYPE*)dst.data() EIGEN_PP_EXPAND(EIGEN_VMLMODE_EXPAND_##VMLMODE) );                                           \
+      } else {                                                                                                                  \
+        const Index outerSize = dst.outerSize();                                                                                \
+        for(Index outer = 0; outer < outerSize; ++outer) {                                                                      \
+          const EIGENTYPE *src_ptr = src.IsRowMajor ? &(src.nestedExpression().coeffRef(outer,0)) :                             \
+                                                      &(src.nestedExpression().coeffRef(0, outer));                             \
+          EIGENTYPE *dst_ptr = dst.IsRowMajor ? &(dst.coeffRef(outer,0)) : &(dst.coeffRef(0, outer));                           \
+          VMLOP( dst.innerSize(), (const VMLTYPE*)src_ptr,                                                                      \
+                (VMLTYPE*)dst_ptr EIGEN_PP_EXPAND(EIGEN_VMLMODE_EXPAND_##VMLMODE));                                             \
+        }                                                                                                                       \
+      }                                                                                                                         \
+    }                                                                                                                           \
+  };                                                                                                                            \
+
+
+#define EIGEN_MKL_VML_DECLARE_UNARY_CALLS_REAL(EIGENOP, VMLOP, VMLMODE)                                                         \
+  EIGEN_MKL_VML_DECLARE_UNARY_CALL(EIGENOP, EIGEN_CAT(EIGEN_VMLMODE_PREFIX(VMLMODE),s##VMLOP), float, float, VMLMODE)           \
+  EIGEN_MKL_VML_DECLARE_UNARY_CALL(EIGENOP, EIGEN_CAT(EIGEN_VMLMODE_PREFIX(VMLMODE),d##VMLOP), double, double, VMLMODE)
+
+#define EIGEN_MKL_VML_DECLARE_UNARY_CALLS_CPLX(EIGENOP, VMLOP, VMLMODE)                                                         \
+  EIGEN_MKL_VML_DECLARE_UNARY_CALL(EIGENOP, EIGEN_CAT(EIGEN_VMLMODE_PREFIX(VMLMODE),c##VMLOP), scomplex, MKL_Complex8, VMLMODE) \
+  EIGEN_MKL_VML_DECLARE_UNARY_CALL(EIGENOP, EIGEN_CAT(EIGEN_VMLMODE_PREFIX(VMLMODE),z##VMLOP), dcomplex, MKL_Complex16, VMLMODE)
+  
+#define EIGEN_MKL_VML_DECLARE_UNARY_CALLS(EIGENOP, VMLOP, VMLMODE)                                                              \
+  EIGEN_MKL_VML_DECLARE_UNARY_CALLS_REAL(EIGENOP, VMLOP, VMLMODE)                                                               \
+  EIGEN_MKL_VML_DECLARE_UNARY_CALLS_CPLX(EIGENOP, VMLOP, VMLMODE)
+
+  
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS(sin,   Sin,   LA)
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS(asin,  Asin,  LA)
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS(sinh,  Sinh,  LA)
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS(cos,   Cos,   LA)
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS(acos,  Acos,  LA)
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS(cosh,  Cosh,  LA)
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS(tan,   Tan,   LA)
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS(atan,  Atan,  LA)
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS(tanh,  Tanh,  LA)
+// EIGEN_MKL_VML_DECLARE_UNARY_CALLS(abs,   Abs,    _)
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS(exp,   Exp,   LA)
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS(log,   Ln,    LA)
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS(log10, Log10, LA)
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS(sqrt,  Sqrt,  _)
+
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS_REAL(square, Sqr,   _)
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS_CPLX(arg, Arg,      _)
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS_REAL(round, Round,  _)
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS_REAL(floor, Floor,  _)
+EIGEN_MKL_VML_DECLARE_UNARY_CALLS_REAL(ceil,  Ceil,   _)
+
+#define EIGEN_MKL_VML_DECLARE_POW_CALL(EIGENOP, VMLOP, EIGENTYPE, VMLTYPE, VMLMODE)                                           \
+  template< typename DstXprType, typename SrcXprNested, typename Plain>                                                       \
+  struct Assignment<DstXprType, CwiseBinaryOp<scalar_##EIGENOP##_op<EIGENTYPE,EIGENTYPE>, SrcXprNested,                       \
+                    const CwiseNullaryOp<internal::scalar_constant_op<EIGENTYPE>,Plain> >, assign_op<EIGENTYPE,EIGENTYPE>,    \
+                   Dense2Dense, typename enable_if<vml_assign_traits<DstXprType,SrcXprNested>::EnableVml>::type> {            \
+    typedef CwiseBinaryOp<scalar_##EIGENOP##_op<EIGENTYPE,EIGENTYPE>, SrcXprNested,                                           \
+                    const CwiseNullaryOp<internal::scalar_constant_op<EIGENTYPE>,Plain> > SrcXprType;                         \
+    static void run(DstXprType &dst, const SrcXprType &src, const assign_op<EIGENTYPE,EIGENTYPE> &func) {                     \
+      resize_if_allowed(dst, src, func);                                                                                      \
+      eigen_assert(dst.rows() == src.rows() && dst.cols() == src.cols());                                                     \
+      VMLTYPE exponent = reinterpret_cast<const VMLTYPE&>(src.rhs().functor().m_other);                                       \
+      if(vml_assign_traits<DstXprType,SrcXprNested>::Traversal==LinearTraversal)                                              \
+      {                                                                                                                       \
+        VMLOP( dst.size(), (const VMLTYPE*)src.lhs().data(), exponent,                                                        \
+              (VMLTYPE*)dst.data() EIGEN_PP_EXPAND(EIGEN_VMLMODE_EXPAND_##VMLMODE) );                                         \
+      } else {                                                                                                                \
+        const Index outerSize = dst.outerSize();                                                                              \
+        for(Index outer = 0; outer < outerSize; ++outer) {                                                                    \
+          const EIGENTYPE *src_ptr = src.IsRowMajor ? &(src.lhs().coeffRef(outer,0)) :                                        \
+                                                      &(src.lhs().coeffRef(0, outer));                                        \
+          EIGENTYPE *dst_ptr = dst.IsRowMajor ? &(dst.coeffRef(outer,0)) : &(dst.coeffRef(0, outer));                         \
+          VMLOP( dst.innerSize(), (const VMLTYPE*)src_ptr, exponent,                                                          \
+                 (VMLTYPE*)dst_ptr EIGEN_PP_EXPAND(EIGEN_VMLMODE_EXPAND_##VMLMODE));                                          \
+        }                                                                                                                     \
+      }                                                                                                                       \
+    }                                                                                                                         \
   };
-
-#define EIGEN_MKL_VML_DECLARE_UNARY_CALL_LA(EIGENOP, VMLOP, EIGENTYPE, VMLTYPE)  \
-  template<> struct vml_call< scalar_##EIGENOP##_op<EIGENTYPE> > {               \
-    enum { IsSupported = 1 };                                                    \
-    static inline void run( const scalar_##EIGENOP##_op<EIGENTYPE>& /*func*/,        \
-                            int size, const EIGENTYPE* src, EIGENTYPE* dst) {    \
-      MKL_INT64 vmlMode = EIGEN_MKL_VML_MODE;                                    \
-      VMLOP(size, (const VMLTYPE*)src, (VMLTYPE*)dst, vmlMode);                  \
-    }                                                                            \
-  };
-
-#define EIGEN_MKL_VML_DECLARE_POW_CALL(EIGENOP, VMLOP, EIGENTYPE, VMLTYPE)       \
-  template<> struct vml_call< scalar_##EIGENOP##_op<EIGENTYPE> > {               \
-    enum { IsSupported = 1 };                                                    \
-    static inline void run( const scalar_##EIGENOP##_op<EIGENTYPE>& func,        \
-                          int size, const EIGENTYPE* src, EIGENTYPE* dst) {      \
-      EIGENTYPE exponent = func.m_exponent;                                      \
-      MKL_INT64 vmlMode = EIGEN_MKL_VML_MODE;                                    \
-      VMLOP(&size, (const VMLTYPE*)src, (const VMLTYPE*)&exponent,               \
-                        (VMLTYPE*)dst, &vmlMode);                                \
-    }                                                                            \
-  };
-
-#define EIGEN_MKL_VML_DECLARE_UNARY_CALLS_REAL(EIGENOP, VMLOP)                   \
-  EIGEN_MKL_VML_DECLARE_UNARY_CALL(EIGENOP, vs##VMLOP, float, float)             \
-  EIGEN_MKL_VML_DECLARE_UNARY_CALL(EIGENOP, vd##VMLOP, double, double)
-
-#define EIGEN_MKL_VML_DECLARE_UNARY_CALLS_COMPLEX(EIGENOP, VMLOP)                \
-  EIGEN_MKL_VML_DECLARE_UNARY_CALL(EIGENOP, vc##VMLOP, scomplex, MKL_Complex8)   \
-  EIGEN_MKL_VML_DECLARE_UNARY_CALL(EIGENOP, vz##VMLOP, dcomplex, MKL_Complex16)
-
-#define EIGEN_MKL_VML_DECLARE_UNARY_CALLS(EIGENOP, VMLOP)                        \
-  EIGEN_MKL_VML_DECLARE_UNARY_CALLS_REAL(EIGENOP, VMLOP)                         \
-  EIGEN_MKL_VML_DECLARE_UNARY_CALLS_COMPLEX(EIGENOP, VMLOP)
-
-
-#define EIGEN_MKL_VML_DECLARE_UNARY_CALLS_REAL_LA(EIGENOP, VMLOP)                \
-  EIGEN_MKL_VML_DECLARE_UNARY_CALL_LA(EIGENOP, vms##VMLOP, float, float)         \
-  EIGEN_MKL_VML_DECLARE_UNARY_CALL_LA(EIGENOP, vmd##VMLOP, double, double)
-
-#define EIGEN_MKL_VML_DECLARE_UNARY_CALLS_COMPLEX_LA(EIGENOP, VMLOP)             \
-  EIGEN_MKL_VML_DECLARE_UNARY_CALL_LA(EIGENOP, vmc##VMLOP, scomplex, MKL_Complex8)  \
-  EIGEN_MKL_VML_DECLARE_UNARY_CALL_LA(EIGENOP, vmz##VMLOP, dcomplex, MKL_Complex16)
-
-#define EIGEN_MKL_VML_DECLARE_UNARY_CALLS_LA(EIGENOP, VMLOP)                     \
-  EIGEN_MKL_VML_DECLARE_UNARY_CALLS_REAL_LA(EIGENOP, VMLOP)                      \
-  EIGEN_MKL_VML_DECLARE_UNARY_CALLS_COMPLEX_LA(EIGENOP, VMLOP)
-
-
-EIGEN_MKL_VML_DECLARE_UNARY_CALLS_LA(sin,  Sin)
-EIGEN_MKL_VML_DECLARE_UNARY_CALLS_LA(asin, Asin)
-EIGEN_MKL_VML_DECLARE_UNARY_CALLS_LA(cos,  Cos)
-EIGEN_MKL_VML_DECLARE_UNARY_CALLS_LA(acos, Acos)
-EIGEN_MKL_VML_DECLARE_UNARY_CALLS_LA(tan,  Tan)
-//EIGEN_MKL_VML_DECLARE_UNARY_CALLS(abs,  Abs)
-EIGEN_MKL_VML_DECLARE_UNARY_CALLS_LA(exp,  Exp)
-EIGEN_MKL_VML_DECLARE_UNARY_CALLS_LA(log,  Ln)
-EIGEN_MKL_VML_DECLARE_UNARY_CALLS_LA(sqrt, Sqrt)
-
-EIGEN_MKL_VML_DECLARE_UNARY_CALLS_REAL(square, Sqr)
-
-// The vm*powx functions are not avaibale in the windows version of MKL.
-#ifndef _WIN32
-EIGEN_MKL_VML_DECLARE_POW_CALL(pow, vmspowx_, float, float)
-EIGEN_MKL_VML_DECLARE_POW_CALL(pow, vmdpowx_, double, double)
-EIGEN_MKL_VML_DECLARE_POW_CALL(pow, vmcpowx_, scomplex, MKL_Complex8)
-EIGEN_MKL_VML_DECLARE_POW_CALL(pow, vmzpowx_, dcomplex, MKL_Complex16)
-#endif
+  
+EIGEN_MKL_VML_DECLARE_POW_CALL(pow, vmsPowx, float,    float,         LA)
+EIGEN_MKL_VML_DECLARE_POW_CALL(pow, vmdPowx, double,   double,        LA)
+EIGEN_MKL_VML_DECLARE_POW_CALL(pow, vmcPowx, scomplex, MKL_Complex8,  LA)
+EIGEN_MKL_VML_DECLARE_POW_CALL(pow, vmzPowx, dcomplex, MKL_Complex16, LA)
 
 } // end namespace internal
 

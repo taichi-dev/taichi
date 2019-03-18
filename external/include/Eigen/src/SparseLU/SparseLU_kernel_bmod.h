@@ -14,30 +14,29 @@
 namespace Eigen {
 namespace internal {
   
-/**
- * \brief Performs numeric block updates from a given supernode to a single column
- * 
- * \param segsize Size of the segment (and blocks ) to use for updates
- * \param[in,out] dense Packed values of the original matrix
- * \param tempv temporary vector to use for updates
- * \param lusup array containing the supernodes
- * \param lda Leading dimension in the supernode
- * \param nrow Number of rows in the rectangular part of the supernode
- * \param lsub compressed row subscripts of supernodes
- * \param lptr pointer to the first column of the current supernode in lsub
- * \param no_zeros Number of nonzeros elements before the diagonal part of the supernode
- * \return 0 on success
- */
 template <int SegSizeAtCompileTime> struct LU_kernel_bmod
 {
-  template <typename BlockScalarVector, typename ScalarVector, typename IndexVector, typename Index>
-  static EIGEN_DONT_INLINE void run(const int segsize, BlockScalarVector& dense, ScalarVector& tempv, ScalarVector& lusup, Index& luptr, const Index lda,
+  /** \internal
+    * \brief Performs numeric block updates from a given supernode to a single column
+    *
+    * \param segsize Size of the segment (and blocks ) to use for updates
+    * \param[in,out] dense Packed values of the original matrix
+    * \param tempv temporary vector to use for updates
+    * \param lusup array containing the supernodes
+    * \param lda Leading dimension in the supernode
+    * \param nrow Number of rows in the rectangular part of the supernode
+    * \param lsub compressed row subscripts of supernodes
+    * \param lptr pointer to the first column of the current supernode in lsub
+    * \param no_zeros Number of nonzeros elements before the diagonal part of the supernode
+    */
+  template <typename BlockScalarVector, typename ScalarVector, typename IndexVector>
+  static EIGEN_DONT_INLINE void run(const Index segsize, BlockScalarVector& dense, ScalarVector& tempv, ScalarVector& lusup, Index& luptr, const Index lda,
                                     const Index nrow, IndexVector& lsub, const Index lptr, const Index no_zeros);
 };
 
 template <int SegSizeAtCompileTime>
-template <typename BlockScalarVector, typename ScalarVector, typename IndexVector, typename Index>
-EIGEN_DONT_INLINE void LU_kernel_bmod<SegSizeAtCompileTime>::run(const int segsize, BlockScalarVector& dense, ScalarVector& tempv, ScalarVector& lusup, Index& luptr, const Index lda,
+template <typename BlockScalarVector, typename ScalarVector, typename IndexVector>
+EIGEN_DONT_INLINE void LU_kernel_bmod<SegSizeAtCompileTime>::run(const Index segsize, BlockScalarVector& dense, ScalarVector& tempv, ScalarVector& lusup, Index& luptr, const Index lda,
                                                                   const Index nrow, IndexVector& lsub, const Index lptr, const Index no_zeros)
 {
   typedef typename ScalarVector::Scalar Scalar;
@@ -45,7 +44,7 @@ EIGEN_DONT_INLINE void LU_kernel_bmod<SegSizeAtCompileTime>::run(const int segsi
   // The result of triangular solve is in tempv[*]; 
     // The result of matric-vector update is in dense[*]
   Index isub = lptr + no_zeros; 
-  int i;
+  Index i;
   Index irow;
   for (i = 0; i < ((SegSizeAtCompileTime==Dynamic)?segsize:SegSizeAtCompileTime); i++)
   {
@@ -66,8 +65,8 @@ EIGEN_DONT_INLINE void LU_kernel_bmod<SegSizeAtCompileTime>::run(const int segsi
   const Index PacketSize = internal::packet_traits<Scalar>::size;
   Index ldl = internal::first_multiple(nrow, PacketSize);
   Map<Matrix<Scalar,Dynamic,SegSizeAtCompileTime, ColMajor>, 0, OuterStride<> > B( &(lusup.data()[luptr]), nrow, segsize, OuterStride<>(lda) );
-  Index aligned_offset = internal::first_aligned(tempv.data()+segsize, PacketSize);
-  Index aligned_with_B_offset = (PacketSize-internal::first_aligned(B.data(), PacketSize))%PacketSize;
+  Index aligned_offset = internal::first_default_aligned(tempv.data()+segsize, PacketSize);
+  Index aligned_with_B_offset = (PacketSize-internal::first_default_aligned(B.data(), PacketSize))%PacketSize;
   Map<Matrix<Scalar,Dynamic,1>, 0, OuterStride<> > l(tempv.data()+segsize+aligned_offset+aligned_with_B_offset, nrow, OuterStride<>(ldl) );
   
   l.setZero();
@@ -91,21 +90,22 @@ EIGEN_DONT_INLINE void LU_kernel_bmod<SegSizeAtCompileTime>::run(const int segsi
 
 template <> struct LU_kernel_bmod<1>
 {
-  template <typename BlockScalarVector, typename ScalarVector, typename IndexVector, typename Index>
-  static EIGEN_DONT_INLINE void run(const int /*segsize*/, BlockScalarVector& dense, ScalarVector& /*tempv*/, ScalarVector& lusup, Index& luptr,
+  template <typename BlockScalarVector, typename ScalarVector, typename IndexVector>
+  static EIGEN_DONT_INLINE void run(const Index /*segsize*/, BlockScalarVector& dense, ScalarVector& /*tempv*/, ScalarVector& lusup, Index& luptr,
                                     const Index lda, const Index nrow, IndexVector& lsub, const Index lptr, const Index no_zeros);
 };
 
 
-template <typename BlockScalarVector, typename ScalarVector, typename IndexVector, typename Index>
-EIGEN_DONT_INLINE void LU_kernel_bmod<1>::run(const int /*segsize*/, BlockScalarVector& dense, ScalarVector& /*tempv*/, ScalarVector& lusup, Index& luptr,
+template <typename BlockScalarVector, typename ScalarVector, typename IndexVector>
+EIGEN_DONT_INLINE void LU_kernel_bmod<1>::run(const Index /*segsize*/, BlockScalarVector& dense, ScalarVector& /*tempv*/, ScalarVector& lusup, Index& luptr,
                                               const Index lda, const Index nrow, IndexVector& lsub, const Index lptr, const Index no_zeros)
 {
   typedef typename ScalarVector::Scalar Scalar;
+  typedef typename IndexVector::Scalar StorageIndex;
   Scalar f = dense(lsub(lptr + no_zeros));
   luptr += lda * no_zeros + no_zeros + 1;
   const Scalar* a(lusup.data() + luptr);
-  const /*typename IndexVector::Scalar*/Index*  irow(lsub.data()+lptr + no_zeros + 1);
+  const StorageIndex*  irow(lsub.data()+lptr + no_zeros + 1);
   Index i = 0;
   for (; i+1 < nrow; i+=2)
   {

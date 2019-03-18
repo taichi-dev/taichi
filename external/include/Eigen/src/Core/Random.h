@@ -16,8 +16,7 @@ namespace internal {
 
 template<typename Scalar> struct scalar_random_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_random_op)
-  template<typename Index>
-  inline const Scalar operator() (Index, Index = 0) const { return random<Scalar>(); }
+  inline const Scalar operator() () const { return random<Scalar>(); }
 };
 
 template<typename Scalar>
@@ -28,12 +27,18 @@ struct functor_traits<scalar_random_op<Scalar> >
 
 /** \returns a random matrix expression
   *
+  * Numbers are uniformly spread through their whole definition range for integer types,
+  * and in the [-1:1] range for floating point scalar types.
+  * 
   * The parameters \a rows and \a cols are the number of rows and of columns of
   * the returned matrix. Must be compatible with this MatrixBase type.
   *
+  * \not_reentrant
+  * 
   * This variant is meant to be used for dynamic-size matrix types. For fixed-size types,
   * it is redundant to pass \a rows and \a cols as arguments, so Random() should be used
   * instead.
+  * 
   *
   * Example: \include MatrixBase_random_int_int.cpp
   * Output: \verbinclude MatrixBase_random_int_int.out
@@ -41,11 +46,13 @@ struct functor_traits<scalar_random_op<Scalar> >
   * This expression has the "evaluate before nesting" flag so that it will be evaluated into
   * a temporary matrix whenever it is nested in a larger expression. This prevents unexpected
   * behavior with expressions involving random matrices.
+  * 
+  * See DenseBase::NullaryExpr(Index, const CustomNullaryOp&) for an example using C++11 random generators.
   *
-  * \sa MatrixBase::setRandom(), MatrixBase::Random(Index), MatrixBase::Random()
+  * \sa DenseBase::setRandom(), DenseBase::Random(Index), DenseBase::Random()
   */
 template<typename Derived>
-inline const CwiseNullaryOp<internal::scalar_random_op<typename internal::traits<Derived>::Scalar>, Derived>
+inline const typename DenseBase<Derived>::RandomReturnType
 DenseBase<Derived>::Random(Index rows, Index cols)
 {
   return NullaryExpr(rows, cols, internal::scalar_random_op<Scalar>());
@@ -53,10 +60,14 @@ DenseBase<Derived>::Random(Index rows, Index cols)
 
 /** \returns a random vector expression
   *
+  * Numbers are uniformly spread through their whole definition range for integer types,
+  * and in the [-1:1] range for floating point scalar types.
+  *
   * The parameter \a size is the size of the returned vector.
   * Must be compatible with this MatrixBase type.
   *
   * \only_for_vectors
+  * \not_reentrant
   *
   * This variant is meant to be used for dynamic-size vector types. For fixed-size types,
   * it is redundant to pass \a size as argument, so Random() should be used
@@ -69,10 +80,10 @@ DenseBase<Derived>::Random(Index rows, Index cols)
   * a temporary vector whenever it is nested in a larger expression. This prevents unexpected
   * behavior with expressions involving random matrices.
   *
-  * \sa MatrixBase::setRandom(), MatrixBase::Random(Index,Index), MatrixBase::Random()
+  * \sa DenseBase::setRandom(), DenseBase::Random(Index,Index), DenseBase::Random()
   */
 template<typename Derived>
-inline const CwiseNullaryOp<internal::scalar_random_op<typename internal::traits<Derived>::Scalar>, Derived>
+inline const typename DenseBase<Derived>::RandomReturnType
 DenseBase<Derived>::Random(Index size)
 {
   return NullaryExpr(size, internal::scalar_random_op<Scalar>());
@@ -80,6 +91,9 @@ DenseBase<Derived>::Random(Index size)
 
 /** \returns a fixed-size random matrix or vector expression
   *
+  * Numbers are uniformly spread through their whole definition range for integer types,
+  * and in the [-1:1] range for floating point scalar types.
+  * 
   * This variant is only for fixed-size MatrixBase types. For dynamic-size types, you
   * need to use the variants taking size arguments.
   *
@@ -89,11 +103,13 @@ DenseBase<Derived>::Random(Index size)
   * This expression has the "evaluate before nesting" flag so that it will be evaluated into
   * a temporary matrix whenever it is nested in a larger expression. This prevents unexpected
   * behavior with expressions involving random matrices.
+  * 
+  * \not_reentrant
   *
-  * \sa MatrixBase::setRandom(), MatrixBase::Random(Index,Index), MatrixBase::Random(Index)
+  * \sa DenseBase::setRandom(), DenseBase::Random(Index,Index), DenseBase::Random(Index)
   */
 template<typename Derived>
-inline const CwiseNullaryOp<internal::scalar_random_op<typename internal::traits<Derived>::Scalar>, Derived>
+inline const typename DenseBase<Derived>::RandomReturnType
 DenseBase<Derived>::Random()
 {
   return NullaryExpr(RowsAtCompileTime, ColsAtCompileTime, internal::scalar_random_op<Scalar>());
@@ -101,6 +117,11 @@ DenseBase<Derived>::Random()
 
 /** Sets all coefficients in this expression to random values.
   *
+  * Numbers are uniformly spread through their whole definition range for integer types,
+  * and in the [-1:1] range for floating point scalar types.
+  * 
+  * \not_reentrant
+  * 
   * Example: \include MatrixBase_setRandom.cpp
   * Output: \verbinclude MatrixBase_setRandom.out
   *
@@ -114,12 +135,16 @@ inline Derived& DenseBase<Derived>::setRandom()
 
 /** Resizes to the given \a newSize, and sets all coefficients in this expression to random values.
   *
+  * Numbers are uniformly spread through their whole definition range for integer types,
+  * and in the [-1:1] range for floating point scalar types.
+  * 
   * \only_for_vectors
+  * \not_reentrant
   *
   * Example: \include Matrix_setRandom_int.cpp
   * Output: \verbinclude Matrix_setRandom_int.out
   *
-  * \sa MatrixBase::setRandom(), setRandom(Index,Index), class CwiseNullaryOp, MatrixBase::Random()
+  * \sa DenseBase::setRandom(), setRandom(Index,Index), class CwiseNullaryOp, DenseBase::Random()
   */
 template<typename Derived>
 EIGEN_STRONG_INLINE Derived&
@@ -131,19 +156,24 @@ PlainObjectBase<Derived>::setRandom(Index newSize)
 
 /** Resizes to the given size, and sets all coefficients in this expression to random values.
   *
-  * \param nbRows the new number of rows
-  * \param nbCols the new number of columns
+  * Numbers are uniformly spread through their whole definition range for integer types,
+  * and in the [-1:1] range for floating point scalar types.
+  *
+  * \not_reentrant
+  * 
+  * \param rows the new number of rows
+  * \param cols the new number of columns
   *
   * Example: \include Matrix_setRandom_int_int.cpp
   * Output: \verbinclude Matrix_setRandom_int_int.out
   *
-  * \sa MatrixBase::setRandom(), setRandom(Index), class CwiseNullaryOp, MatrixBase::Random()
+  * \sa DenseBase::setRandom(), setRandom(Index), class CwiseNullaryOp, DenseBase::Random()
   */
 template<typename Derived>
 EIGEN_STRONG_INLINE Derived&
-PlainObjectBase<Derived>::setRandom(Index nbRows, Index nbCols)
+PlainObjectBase<Derived>::setRandom(Index rows, Index cols)
 {
-  resize(nbRows, nbCols);
+  resize(rows, cols);
   return setRandom();
 }
 

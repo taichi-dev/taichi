@@ -33,12 +33,12 @@ namespace Eigen {
   * \sa class AngleAxis
   */
 template<typename Derived>
-inline Matrix<typename MatrixBase<Derived>::Scalar,3,1>
+EIGEN_DEVICE_FUNC inline Matrix<typename MatrixBase<Derived>::Scalar,3,1>
 MatrixBase<Derived>::eulerAngles(Index a0, Index a1, Index a2) const
 {
-  using std::atan2;
-  using std::sin;
-  using std::cos;
+  EIGEN_USING_STD_MATH(atan2)
+  EIGEN_USING_STD_MATH(sin)
+  EIGEN_USING_STD_MATH(cos)
   /* Implemented from Graphics Gems IV */
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Derived,3,3)
 
@@ -55,7 +55,12 @@ MatrixBase<Derived>::eulerAngles(Index a0, Index a1, Index a2) const
     res[0] = atan2(coeff(j,i), coeff(k,i));
     if((odd && res[0]<Scalar(0)) || ((!odd) && res[0]>Scalar(0)))
     {
-      res[0] = (res[0] > Scalar(0)) ? res[0] - Scalar(M_PI) : res[0] + Scalar(M_PI);
+      if(res[0] > Scalar(0)) {
+        res[0] -= Scalar(EIGEN_PI);
+      }
+      else {
+        res[0] += Scalar(EIGEN_PI);
+      }
       Scalar s2 = Vector2(coeff(j,i), coeff(k,i)).norm();
       res[1] = -atan2(s2, coeff(i,i));
     }
@@ -84,7 +89,12 @@ MatrixBase<Derived>::eulerAngles(Index a0, Index a1, Index a2) const
     res[0] = atan2(coeff(j,k), coeff(k,k));
     Scalar c2 = Vector2(coeff(i,i), coeff(i,j)).norm();
     if((odd && res[0]<Scalar(0)) || ((!odd) && res[0]>Scalar(0))) {
-      res[0] = (res[0] > Scalar(0)) ? res[0] - Scalar(M_PI) : res[0] + Scalar(M_PI);
+      if(res[0] > Scalar(0)) {
+        res[0] -= Scalar(EIGEN_PI);
+      }
+      else {
+        res[0] += Scalar(EIGEN_PI);
+      }
       res[1] = atan2(-coeff(i,k), -c2);
     }
     else

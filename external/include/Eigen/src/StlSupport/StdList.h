@@ -43,8 +43,8 @@ namespace std \
   }; \
 }
 
-// check whether we really need the std::vector specialization
-#if !(defined(_GLIBCXX_VECTOR) && (!EIGEN_GNUC_AT_LEAST(4,1))) /* Note that before gcc-4.1 we already have: std::list::resize(size_type,const T&). */
+// check whether we really need the std::list specialization
+#if !EIGEN_HAS_CXX11_CONTAINERS && !(defined(_GLIBCXX_LIST) && (!EIGEN_GNUC_AT_LEAST(4,1))) /* Note that before gcc-4.1 we already have: std::list::resize(size_type,const T&). */
 
 namespace std
 {

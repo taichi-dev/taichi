@@ -22,8 +22,8 @@ namespace Eigen {
   * A hyperplane is an affine subspace of dimension n-1 in a space of dimension n.
   * For example, a hyperplane in a plane is a line; a hyperplane in 3-space is a plane.
   *
-  * \param _Scalar the scalar type, i.e., the type of the coefficients
-  * \param _AmbientDim the dimension of the ambient space, can be a compile time value or Dynamic.
+  * \tparam _Scalar the scalar type, i.e., the type of the coefficients
+  * \tparam _AmbientDim the dimension of the ambient space, can be a compile time value or Dynamic.
   *             Notice that the dimension of the hyperplane is _AmbientDim-1.
   *
   * This class represents an hyperplane as the zero set of the implicit equation
@@ -41,7 +41,7 @@ public:
   };
   typedef _Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
-  typedef DenseIndex Index;
+  typedef Eigen::Index Index; ///< \deprecated since Eigen 3.3
   typedef Matrix<Scalar,AmbientDimAtCompileTime,1> VectorType;
   typedef Matrix<Scalar,Index(AmbientDimAtCompileTime)==Dynamic
                         ? Dynamic
@@ -50,21 +50,21 @@ public:
   typedef const Block<const Coefficients,AmbientDimAtCompileTime,1> ConstNormalReturnType;
 
   /** Default constructor without initialization */
-  inline Hyperplane() {}
+  EIGEN_DEVICE_FUNC inline Hyperplane() {}
   
   template<int OtherOptions>
-  Hyperplane(const Hyperplane<Scalar,AmbientDimAtCompileTime,OtherOptions>& other)
+  EIGEN_DEVICE_FUNC Hyperplane(const Hyperplane<Scalar,AmbientDimAtCompileTime,OtherOptions>& other)
    : m_coeffs(other.coeffs())
   {}
 
   /** Constructs a dynamic-size hyperplane with \a _dim the dimension
     * of the ambient space */
-  inline explicit Hyperplane(Index _dim) : m_coeffs(_dim+1) {}
+  EIGEN_DEVICE_FUNC inline explicit Hyperplane(Index _dim) : m_coeffs(_dim+1) {}
 
   /** Construct a plane from its normal \a n and a point \a e onto the plane.
     * \warning the vector normal is assumed to be normalized.
     */
-  inline Hyperplane(const VectorType& n, const VectorType& e)
+  EIGEN_DEVICE_FUNC inline Hyperplane(const VectorType& n, const VectorType& e)
     : m_coeffs(n.size()+1)
   {
     normal() = n;
@@ -75,7 +75,7 @@ public:
     * such that the algebraic equation of the plane is \f$ n \cdot x + d = 0 \f$.
     * \warning the vector normal is assumed to be normalized.
     */
-  inline Hyperplane(const VectorType& n, const Scalar& d)
+  EIGEN_DEVICE_FUNC inline Hyperplane(const VectorType& n, const Scalar& d)
     : m_coeffs(n.size()+1)
   {
     normal() = n;
@@ -85,7 +85,7 @@ public:
   /** Constructs a hyperplane passing through the two points. If the dimension of the ambient space
     * is greater than 2, then there isn't uniqueness, so an arbitrary choice is made.
     */
-  static inline Hyperplane Through(const VectorType& p0, const VectorType& p1)
+  EIGEN_DEVICE_FUNC static inline Hyperplane Through(const VectorType& p0, const VectorType& p1)
   {
     Hyperplane result(p0.size());
     result.normal() = (p1 - p0).unitOrthogonal();
@@ -96,7 +96,7 @@ public:
   /** Constructs a hyperplane passing through the three points. The dimension of the ambient space
     * is required to be exactly 3.
     */
-  static inline Hyperplane Through(const VectorType& p0, const VectorType& p1, const VectorType& p2)
+  EIGEN_DEVICE_FUNC static inline Hyperplane Through(const VectorType& p0, const VectorType& p1, const VectorType& p2)
   {
     EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(VectorType, 3)
     Hyperplane result(p0.size());
@@ -120,19 +120,19 @@ public:
     * so an arbitrary choice is made.
     */
   // FIXME to be consitent with the rest this could be implemented as a static Through function ??
-  explicit Hyperplane(const ParametrizedLine<Scalar, AmbientDimAtCompileTime>& parametrized)
+  EIGEN_DEVICE_FUNC explicit Hyperplane(const ParametrizedLine<Scalar, AmbientDimAtCompileTime>& parametrized)
   {
     normal() = parametrized.direction().unitOrthogonal();
     offset() = -parametrized.origin().dot(normal());
   }
 
-  ~Hyperplane() {}
+  EIGEN_DEVICE_FUNC ~Hyperplane() {}
 
   /** \returns the dimension in which the plane holds */
-  inline Index dim() const { return AmbientDimAtCompileTime==Dynamic ? m_coeffs.size()-1 : Index(AmbientDimAtCompileTime); }
+  EIGEN_DEVICE_FUNC inline Index dim() const { return AmbientDimAtCompileTime==Dynamic ? m_coeffs.size()-1 : Index(AmbientDimAtCompileTime); }
 
   /** normalizes \c *this */
-  void normalize(void)
+  EIGEN_DEVICE_FUNC void normalize(void)
   {
     m_coeffs /= normal().norm();
   }
@@ -140,45 +140,45 @@ public:
   /** \returns the signed distance between the plane \c *this and a point \a p.
     * \sa absDistance()
     */
-  inline Scalar signedDistance(const VectorType& p) const { return normal().dot(p) + offset(); }
+  EIGEN_DEVICE_FUNC inline Scalar signedDistance(const VectorType& p) const { return normal().dot(p) + offset(); }
 
   /** \returns the absolute distance between the plane \c *this and a point \a p.
     * \sa signedDistance()
     */
-  inline Scalar absDistance(const VectorType& p) const { using std::abs; return abs(signedDistance(p)); }
+  EIGEN_DEVICE_FUNC inline Scalar absDistance(const VectorType& p) const { return numext::abs(signedDistance(p)); }
 
   /** \returns the projection of a point \a p onto the plane \c *this.
     */
-  inline VectorType projection(const VectorType& p) const { return p - signedDistance(p) * normal(); }
+  EIGEN_DEVICE_FUNC inline VectorType projection(const VectorType& p) const { return p - signedDistance(p) * normal(); }
 
   /** \returns a constant reference to the unit normal vector of the plane, which corresponds
     * to the linear part of the implicit equation.
     */
-  inline ConstNormalReturnType normal() const { return ConstNormalReturnType(m_coeffs,0,0,dim(),1); }
+  EIGEN_DEVICE_FUNC inline ConstNormalReturnType normal() const { return ConstNormalReturnType(m_coeffs,0,0,dim(),1); }
 
   /** \returns a non-constant reference to the unit normal vector of the plane, which corresponds
     * to the linear part of the implicit equation.
     */
-  inline NormalReturnType normal() { return NormalReturnType(m_coeffs,0,0,dim(),1); }
+  EIGEN_DEVICE_FUNC inline NormalReturnType normal() { return NormalReturnType(m_coeffs,0,0,dim(),1); }
 
   /** \returns the distance to the origin, which is also the "constant term" of the implicit equation
     * \warning the vector normal is assumed to be normalized.
     */
-  inline const Scalar& offset() const { return m_coeffs.coeff(dim()); }
+  EIGEN_DEVICE_FUNC inline const Scalar& offset() const { return m_coeffs.coeff(dim()); }
 
   /** \returns a non-constant reference to the distance to the origin, which is also the constant part
     * of the implicit equation */
-  inline Scalar& offset() { return m_coeffs(dim()); }
+  EIGEN_DEVICE_FUNC inline Scalar& offset() { return m_coeffs(dim()); }
 
   /** \returns a constant reference to the coefficients c_i of the plane equation:
     * \f$ c_0*x_0 + ... + c_{d-1}*x_{d-1} + c_d = 0 \f$
     */
-  inline const Coefficients& coeffs() const { return m_coeffs; }
+  EIGEN_DEVICE_FUNC inline const Coefficients& coeffs() const { return m_coeffs; }
 
   /** \returns a non-constant reference to the coefficients c_i of the plane equation:
     * \f$ c_0*x_0 + ... + c_{d-1}*x_{d-1} + c_d = 0 \f$
     */
-  inline Coefficients& coeffs() { return m_coeffs; }
+  EIGEN_DEVICE_FUNC inline Coefficients& coeffs() { return m_coeffs; }
 
   /** \returns the intersection of *this with \a other.
     *
@@ -186,16 +186,15 @@ public:
     *
     * \note If \a other is approximately parallel to *this, this method will return any point on *this.
     */
-  VectorType intersection(const Hyperplane& other) const
+  EIGEN_DEVICE_FUNC VectorType intersection(const Hyperplane& other) const
   {
-    using std::abs;
     EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(VectorType, 2)
     Scalar det = coeffs().coeff(0) * other.coeffs().coeff(1) - coeffs().coeff(1) * other.coeffs().coeff(0);
     // since the line equations ax+by=c are normalized with a^2+b^2=1, the following tests
     // whether the two lines are approximately parallel.
     if(internal::isMuchSmallerThan(det, Scalar(1)))
     {   // special case where the two lines are approximately parallel. Pick any point on the first line.
-        if(abs(coeffs().coeff(1))>abs(coeffs().coeff(0)))
+        if(numext::abs(coeffs().coeff(1))>numext::abs(coeffs().coeff(0)))
             return VectorType(coeffs().coeff(1), -coeffs().coeff(2)/coeffs().coeff(1)-coeffs().coeff(0));
         else
             return VectorType(-coeffs().coeff(2)/coeffs().coeff(0)-coeffs().coeff(1), coeffs().coeff(0));
@@ -215,10 +214,13 @@ public:
     *               or a more generic #Affine transformation. The default is #Affine.
     */
   template<typename XprType>
-  inline Hyperplane& transform(const MatrixBase<XprType>& mat, TransformTraits traits = Affine)
+  EIGEN_DEVICE_FUNC inline Hyperplane& transform(const MatrixBase<XprType>& mat, TransformTraits traits = Affine)
   {
     if (traits==Affine)
+    {
       normal() = mat.inverse().transpose() * normal();
+      m_coeffs /= normal().norm();
+    }
     else if (traits==Isometry)
       normal() = mat * normal();
     else
@@ -236,7 +238,7 @@ public:
     *               Other kind of transformations are not supported.
     */
   template<int TrOptions>
-  inline Hyperplane& transform(const Transform<Scalar,AmbientDimAtCompileTime,Affine,TrOptions>& t,
+  EIGEN_DEVICE_FUNC inline Hyperplane& transform(const Transform<Scalar,AmbientDimAtCompileTime,Affine,TrOptions>& t,
                                 TransformTraits traits = Affine)
   {
     transform(t.linear(), traits);
@@ -250,7 +252,7 @@ public:
     * then this function smartly returns a const reference to \c *this.
     */
   template<typename NewScalarType>
-  inline typename internal::cast_return_type<Hyperplane,
+  EIGEN_DEVICE_FUNC inline typename internal::cast_return_type<Hyperplane,
            Hyperplane<NewScalarType,AmbientDimAtCompileTime,Options> >::type cast() const
   {
     return typename internal::cast_return_type<Hyperplane,
@@ -259,7 +261,7 @@ public:
 
   /** Copy constructor with scalar type conversion */
   template<typename OtherScalarType,int OtherOptions>
-  inline explicit Hyperplane(const Hyperplane<OtherScalarType,AmbientDimAtCompileTime,OtherOptions>& other)
+  EIGEN_DEVICE_FUNC inline explicit Hyperplane(const Hyperplane<OtherScalarType,AmbientDimAtCompileTime,OtherOptions>& other)
   { m_coeffs = other.coeffs().template cast<Scalar>(); }
 
   /** \returns \c true if \c *this is approximately equal to \a other, within the precision
@@ -267,7 +269,7 @@ public:
     *
     * \sa MatrixBase::isApprox() */
   template<int OtherOptions>
-  bool isApprox(const Hyperplane<Scalar,AmbientDimAtCompileTime,OtherOptions>& other, const typename NumTraits<Scalar>::Real& prec = NumTraits<Scalar>::dummy_precision()) const
+  EIGEN_DEVICE_FUNC bool isApprox(const Hyperplane<Scalar,AmbientDimAtCompileTime,OtherOptions>& other, const typename NumTraits<Scalar>::Real& prec = NumTraits<Scalar>::dummy_precision()) const
   { return m_coeffs.isApprox(other.m_coeffs, prec); }
 
 protected:

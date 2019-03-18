@@ -75,7 +75,7 @@ typedef enum {LUSUP, UCOL, LSUB, USUB, LLVL, ULVL} MemType;
 
 template <typename IndexVector, typename ScalarVector>
 struct LU_GlobalLU_t {
-  typedef typename IndexVector::Scalar Index; 
+  typedef typename IndexVector::Scalar StorageIndex; 
   IndexVector xsup; //First supernode column ... xsup(s) points to the beginning of the s-th supernode
   IndexVector supno; // Supernode number corresponding to this column (column to supernode mapping)
   ScalarVector  lusup; // nonzero values of L ordered by columns 
@@ -93,7 +93,6 @@ struct LU_GlobalLU_t {
 };
 
 // Values to set for performance
-template <typename Index>
 struct perfvalues {
   Index panel_size; // a panel consists of at most <panel_size> consecutive columns
   Index relax; // To control degree of relaxing supernodes. If the number of nodes (columns) 

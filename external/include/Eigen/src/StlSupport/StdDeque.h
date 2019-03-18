@@ -45,7 +45,7 @@ namespace std \
 }
 
 // check whether we really need the std::deque specialization
-#if !(defined(_GLIBCXX_DEQUE) && (!EIGEN_GNUC_AT_LEAST(4,1))) /* Note that before gcc-4.1 we already have: std::deque::resize(size_type,const T&). */
+#if !EIGEN_HAS_CXX11_CONTAINERS && !(defined(_GLIBCXX_DEQUE) && (!EIGEN_GNUC_AT_LEAST(4,1))) /* Note that before gcc-4.1 we already have: std::deque::resize(size_type,const T&). */
 
 namespace std {
 

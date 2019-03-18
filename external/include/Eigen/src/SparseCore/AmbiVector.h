@@ -19,15 +19,15 @@ namespace internal {
   *
   * See BasicSparseLLT and SparseProduct for usage examples.
   */
-template<typename _Scalar, typename _Index>
+template<typename _Scalar, typename _StorageIndex>
 class AmbiVector
 {
   public:
     typedef _Scalar Scalar;
-    typedef _Index Index;
+    typedef _StorageIndex StorageIndex;
     typedef typename NumTraits<Scalar>::Real RealScalar;
 
-    AmbiVector(Index size)
+    explicit AmbiVector(Index size)
       : m_buffer(0), m_zero(0), m_size(0), m_allocatedSize(0), m_allocatedElements(0), m_mode(-1)
     {
       resize(size);
@@ -39,7 +39,7 @@ class AmbiVector
     Index nonZeros() const;
 
     /** Specifies a sub-vector to work on */
-    void setBounds(Index start, Index end) { m_start = start; m_end = end; }
+    void setBounds(Index start, Index end) { m_start = convert_index(start); m_end = convert_index(end); }
 
     void setZero();
 
@@ -55,12 +55,16 @@ class AmbiVector
     {
       if (m_allocatedSize < size)
         reallocate(size);
-      m_size = size;
+      m_size = convert_index(size);
     }
 
-    Index size() const { return m_size; }
+    StorageIndex size() const { return m_size; }
 
   protected:
+    StorageIndex convert_index(Index idx)
+    {
+      return internal::convert_index<StorageIndex>(idx);
+    }
 
     void reallocate(Index size)
     {
@@ -70,15 +74,15 @@ class AmbiVector
       if (size<1000)
       {
         Index allocSize = (size * sizeof(ListEl) + sizeof(Scalar) - 1)/sizeof(Scalar);
-        m_allocatedElements = (allocSize*sizeof(Scalar))/sizeof(ListEl);
+        m_allocatedElements = convert_index((allocSize*sizeof(Scalar))/sizeof(ListEl));
         m_buffer = new Scalar[allocSize];
       }
       else
       {
-        m_allocatedElements = (size*sizeof(Scalar))/sizeof(ListEl);
+        m_allocatedElements = convert_index((size*sizeof(Scalar))/sizeof(ListEl));
         m_buffer = new Scalar[size];
       }
-      m_size = size;
+      m_size = convert_index(size);
       m_start = 0;
       m_end = m_size;
     }
@@ -86,11 +90,11 @@ class AmbiVector
     void reallocateSparse()
     {
       Index copyElements = m_allocatedElements;
-      m_allocatedElements = (std::min)(Index(m_allocatedElements*1.5),m_size);
+      m_allocatedElements = (std::min)(StorageIndex(m_allocatedElements*1.5),m_size);
       Index allocSize = m_allocatedElements * sizeof(ListEl);
       allocSize = (allocSize + sizeof(Scalar) - 1)/sizeof(Scalar);
       Scalar* newBuffer = new Scalar[allocSize];
-      memcpy(newBuffer,  m_buffer,  copyElements * sizeof(ListEl));
+      std::memcpy(newBuffer,  m_buffer,  copyElements * sizeof(ListEl));
       delete[] m_buffer;
       m_buffer = newBuffer;
     }
@@ -99,30 +103,30 @@ class AmbiVector
     // element type of the linked list
     struct ListEl
     {
-      Index next;
-      Index index;
+      StorageIndex next;
+      StorageIndex index;
       Scalar value;
     };
 
     // used to store data in both mode
     Scalar* m_buffer;
     Scalar m_zero;
-    Index m_size;
-    Index m_start;
-    Index m_end;
-    Index m_allocatedSize;
-    Index m_allocatedElements;
-    Index m_mode;
+    StorageIndex m_size;
+    StorageIndex m_start;
+    StorageIndex m_end;
+    StorageIndex m_allocatedSize;
+    StorageIndex m_allocatedElements;
+    StorageIndex m_mode;
 
     // linked list mode
-    Index m_llStart;
-    Index m_llCurrent;
-    Index m_llSize;
+    StorageIndex m_llStart;
+    StorageIndex m_llCurrent;
+    StorageIndex m_llSize;
 };
 
 /** \returns the number of non zeros in the current sub vector */
-template<typename _Scalar,typename _Index>
-_Index AmbiVector<_Scalar,_Index>::nonZeros() const
+template<typename _Scalar,typename _StorageIndex>
+Index AmbiVector<_Scalar,_StorageIndex>::nonZeros() const
 {
   if (m_mode==IsSparse)
     return m_llSize;
@@ -130,8 +134,8 @@ _Index AmbiVector<_Scalar,_Index>::nonZeros() const
     return m_end - m_start;
 }
 
-template<typename _Scalar,typename _Index>
-void AmbiVector<_Scalar,_Index>::init(double estimatedDensity)
+template<typename _Scalar,typename _StorageIndex>
+void AmbiVector<_Scalar,_StorageIndex>::init(double estimatedDensity)
 {
   if (estimatedDensity>0.1)
     init(IsDense);
@@ -139,8 +143,8 @@ void AmbiVector<_Scalar,_Index>::init(double estimatedDensity)
     init(IsSparse);
 }
 
-template<typename _Scalar,typename _Index>
-void AmbiVector<_Scalar,_Index>::init(int mode)
+template<typename _Scalar,typename _StorageIndex>
+void AmbiVector<_Scalar,_StorageIndex>::init(int mode)
 {
   m_mode = mode;
   if (m_mode==IsSparse)
@@ -155,15 +159,15 @@ void AmbiVector<_Scalar,_Index>::init(int mode)
   *
   * Don't worry, this function is extremely cheap.
   */
-template<typename _Scalar,typename _Index>
-void AmbiVector<_Scalar,_Index>::restart()
+template<typename _Scalar,typename _StorageIndex>
+void AmbiVector<_Scalar,_StorageIndex>::restart()
 {
   m_llCurrent = m_llStart;
 }
 
 /** Set all coefficients of current subvector to zero */
-template<typename _Scalar,typename _Index>
-void AmbiVector<_Scalar,_Index>::setZero()
+template<typename _Scalar,typename _StorageIndex>
+void AmbiVector<_Scalar,_StorageIndex>::setZero()
 {
   if (m_mode==IsDense)
   {
@@ -178,8 +182,8 @@ void AmbiVector<_Scalar,_Index>::setZero()
   }
 }
 
-template<typename _Scalar,typename _Index>
-_Scalar& AmbiVector<_Scalar,_Index>::coeffRef(_Index i)
+template<typename _Scalar,typename _StorageIndex>
+_Scalar& AmbiVector<_Scalar,_StorageIndex>::coeffRef(Index i)
 {
   if (m_mode==IsDense)
     return m_buffer[i];
@@ -195,7 +199,7 @@ _Scalar& AmbiVector<_Scalar,_Index>::coeffRef(_Index i)
       m_llCurrent = 0;
       ++m_llSize;
       llElements[0].value = Scalar(0);
-      llElements[0].index = i;
+      llElements[0].index = convert_index(i);
       llElements[0].next = -1;
       return llElements[0].value;
     }
@@ -204,7 +208,7 @@ _Scalar& AmbiVector<_Scalar,_Index>::coeffRef(_Index i)
       // this is going to be the new first element of the list
       ListEl& el = llElements[m_llSize];
       el.value = Scalar(0);
-      el.index = i;
+      el.index = convert_index(i);
       el.next = m_llStart;
       m_llStart = m_llSize;
       ++m_llSize;
@@ -213,7 +217,7 @@ _Scalar& AmbiVector<_Scalar,_Index>::coeffRef(_Index i)
     }
     else
     {
-      Index nextel = llElements[m_llCurrent].next;
+      StorageIndex nextel = llElements[m_llCurrent].next;
       eigen_assert(i>=llElements[m_llCurrent].index && "you must call restart() before inserting an element with lower or equal index");
       while (nextel >= 0 && llElements[nextel].index<=i)
       {
@@ -237,7 +241,7 @@ _Scalar& AmbiVector<_Scalar,_Index>::coeffRef(_Index i)
         // let's insert a new coefficient
         ListEl& el = llElements[m_llSize];
         el.value = Scalar(0);
-        el.index = i;
+        el.index = convert_index(i);
         el.next = llElements[m_llCurrent].next;
         llElements[m_llCurrent].next = m_llSize;
         ++m_llSize;
@@ -247,8 +251,8 @@ _Scalar& AmbiVector<_Scalar,_Index>::coeffRef(_Index i)
   }
 }
 
-template<typename _Scalar,typename _Index>
-_Scalar& AmbiVector<_Scalar,_Index>::coeff(_Index i)
+template<typename _Scalar,typename _StorageIndex>
+_Scalar& AmbiVector<_Scalar,_StorageIndex>::coeff(Index i)
 {
   if (m_mode==IsDense)
     return m_buffer[i];
@@ -275,8 +279,8 @@ _Scalar& AmbiVector<_Scalar,_Index>::coeff(_Index i)
 }
 
 /** Iterator over the nonzero coefficients */
-template<typename _Scalar,typename _Index>
-class AmbiVector<_Scalar,_Index>::Iterator
+template<typename _Scalar,typename _StorageIndex>
+class AmbiVector<_Scalar,_StorageIndex>::Iterator
 {
   public:
     typedef _Scalar Scalar;
@@ -288,7 +292,7 @@ class AmbiVector<_Scalar,_Index>::Iterator
       * In practice, all coefficients having a magnitude smaller than \a epsilon
       * are skipped.
       */
-    Iterator(const AmbiVector& vec, const RealScalar& epsilon = 0)
+    explicit Iterator(const AmbiVector& vec, const RealScalar& epsilon = 0)
       : m_vector(vec)
     {
       using std::abs;
@@ -320,7 +324,7 @@ class AmbiVector<_Scalar,_Index>::Iterator
       }
     }
 
-    Index index() const { return m_cachedIndex; }
+    StorageIndex index() const { return m_cachedIndex; }
     Scalar value() const { return m_cachedValue; }
 
     operator bool() const { return m_cachedIndex>=0; }
@@ -332,7 +336,7 @@ class AmbiVector<_Scalar,_Index>::Iterator
       {
         do {
           ++m_cachedIndex;
-        } while (m_cachedIndex<m_vector.m_end && abs(m_vector.m_buffer[m_cachedIndex])<m_epsilon);
+        } while (m_cachedIndex<m_vector.m_end && abs(m_vector.m_buffer[m_cachedIndex])<=m_epsilon);
         if (m_cachedIndex<m_vector.m_end)
           m_cachedValue = m_vector.m_buffer[m_cachedIndex];
         else
@@ -343,7 +347,7 @@ class AmbiVector<_Scalar,_Index>::Iterator
         ListEl* EIGEN_RESTRICT llElements = reinterpret_cast<ListEl*>(m_vector.m_buffer);
         do {
           m_currentEl = llElements[m_currentEl].next;
-        } while (m_currentEl>=0 && abs(llElements[m_currentEl].value)<m_epsilon);
+        } while (m_currentEl>=0 && abs(llElements[m_currentEl].value)<=m_epsilon);
         if (m_currentEl<0)
         {
           m_cachedIndex = -1;
@@ -359,9 +363,9 @@ class AmbiVector<_Scalar,_Index>::Iterator
 
   protected:
     const AmbiVector& m_vector; // the target vector
-    Index m_currentEl;            // the current element in sparse/linked-list mode
+    StorageIndex m_currentEl;   // the current element in sparse/linked-list mode
     RealScalar m_epsilon;       // epsilon used to prune zero coefficients
-    Index m_cachedIndex;          // current coordinate
+    StorageIndex m_cachedIndex; // current coordinate
     Scalar m_cachedValue;       // current value
     bool m_isDense;             // mode of the vector
 };

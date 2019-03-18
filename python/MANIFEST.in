@@ -1,10 +1,9 @@
 include README
 include MANIFEST.in
+utsi
 include *.txt
 include *.py
 include *.cfg
 
-
-recursive-include examples *.py
-
-global-exclude *.pyc *.pyo *.pyd *.so *.dll *.lib
+global-exclude *.pyc *.pyo *.pyd
+global-exclude ffmpeg

@@ -12,114 +12,55 @@
 
 namespace Eigen { 
 
-/** \class SwapWrapper
-  * \ingroup Core_Module
-  *
-  * \internal
-  *
-  * \brief Internal helper class for swapping two expressions
-  */
 namespace internal {
-template<typename ExpressionType>
-struct traits<SwapWrapper<ExpressionType> > : traits<ExpressionType> {};
-}
 
-template<typename ExpressionType> class SwapWrapper
-  : public internal::dense_xpr_base<SwapWrapper<ExpressionType> >::type
+// Overload default assignPacket behavior for swapping them
+template<typename DstEvaluatorTypeT, typename SrcEvaluatorTypeT>
+class generic_dense_assignment_kernel<DstEvaluatorTypeT, SrcEvaluatorTypeT, swap_assign_op<typename DstEvaluatorTypeT::Scalar>, Specialized>
+ : public generic_dense_assignment_kernel<DstEvaluatorTypeT, SrcEvaluatorTypeT, swap_assign_op<typename DstEvaluatorTypeT::Scalar>, BuiltIn>
 {
-  public:
-
-    typedef typename internal::dense_xpr_base<SwapWrapper>::type Base;
-    EIGEN_DENSE_PUBLIC_INTERFACE(SwapWrapper)
-    typedef typename internal::packet_traits<Scalar>::type Packet;
-
-    inline SwapWrapper(ExpressionType& xpr) : m_expression(xpr) {}
-
-    inline Index rows() const { return m_expression.rows(); }
-    inline Index cols() const { return m_expression.cols(); }
-    inline Index outerStride() const { return m_expression.outerStride(); }
-    inline Index innerStride() const { return m_expression.innerStride(); }
-    
-    typedef typename internal::conditional<
-                       internal::is_lvalue<ExpressionType>::value,
-                       Scalar,
-                       const Scalar
-                     >::type ScalarWithConstIfNotLvalue;
-                     
-    inline ScalarWithConstIfNotLvalue* data() { return m_expression.data(); }
-    inline const Scalar* data() const { return m_expression.data(); }
-
-    inline Scalar& coeffRef(Index rowId, Index colId)
-    {
-      return m_expression.const_cast_derived().coeffRef(rowId, colId);
-    }
-
-    inline Scalar& coeffRef(Index index)
-    {
-      return m_expression.const_cast_derived().coeffRef(index);
-    }
-
-    inline Scalar& coeffRef(Index rowId, Index colId) const
-    {
-      return m_expression.coeffRef(rowId, colId);
-    }
-
-    inline Scalar& coeffRef(Index index) const
-    {
-      return m_expression.coeffRef(index);
-    }
-
-    template<typename OtherDerived>
-    void copyCoeff(Index rowId, Index colId, const DenseBase<OtherDerived>& other)
-    {
-      OtherDerived& _other = other.const_cast_derived();
-      eigen_internal_assert(rowId >= 0 && rowId < rows()
-                         && colId >= 0 && colId < cols());
-      Scalar tmp = m_expression.coeff(rowId, colId);
-      m_expression.coeffRef(rowId, colId) = _other.coeff(rowId, colId);
-      _other.coeffRef(rowId, colId) = tmp;
-    }
-
-    template<typename OtherDerived>
-    void copyCoeff(Index index, const DenseBase<OtherDerived>& other)
-    {
-      OtherDerived& _other = other.const_cast_derived();
-      eigen_internal_assert(index >= 0 && index < m_expression.size());
-      Scalar tmp = m_expression.coeff(index);
-      m_expression.coeffRef(index) = _other.coeff(index);
-      _other.coeffRef(index) = tmp;
-    }
-
-    template<typename OtherDerived, int StoreMode, int LoadMode>
-    void copyPacket(Index rowId, Index colId, const DenseBase<OtherDerived>& other)
-    {
-      OtherDerived& _other = other.const_cast_derived();
-      eigen_internal_assert(rowId >= 0 && rowId < rows()
-                        && colId >= 0 && colId < cols());
-      Packet tmp = m_expression.template packet<StoreMode>(rowId, colId);
-      m_expression.template writePacket<StoreMode>(rowId, colId,
-        _other.template packet<LoadMode>(rowId, colId)
-      );
-      _other.template writePacket<LoadMode>(rowId, colId, tmp);
-    }
-
-    template<typename OtherDerived, int StoreMode, int LoadMode>
-    void copyPacket(Index index, const DenseBase<OtherDerived>& other)
-    {
-      OtherDerived& _other = other.const_cast_derived();
-      eigen_internal_assert(index >= 0 && index < m_expression.size());
-      Packet tmp = m_expression.template packet<StoreMode>(index);
-      m_expression.template writePacket<StoreMode>(index,
-        _other.template packet<LoadMode>(index)
-      );
-      _other.template writePacket<LoadMode>(index, tmp);
-    }
-
-    ExpressionType& expression() const { return m_expression; }
-
-  protected:
-    ExpressionType& m_expression;
+protected:
+  typedef generic_dense_assignment_kernel<DstEvaluatorTypeT, SrcEvaluatorTypeT, swap_assign_op<typename DstEvaluatorTypeT::Scalar>, BuiltIn> Base;
+  using Base::m_dst;
+  using Base::m_src;
+  using Base::m_functor;
+  
+public:
+  typedef typename Base::Scalar Scalar;
+  typedef typename Base::DstXprType DstXprType;
+  typedef swap_assign_op<Scalar> Functor;
+  
+  EIGEN_DEVICE_FUNC generic_dense_assignment_kernel(DstEvaluatorTypeT &dst, const SrcEvaluatorTypeT &src, const Functor &func, DstXprType& dstExpr)
+    : Base(dst, src, func, dstExpr)
+  {}
+  
+  template<int StoreMode, int LoadMode, typename PacketType>
+  void assignPacket(Index row, Index col)
+  {
+    PacketType tmp = m_src.template packet<LoadMode,PacketType>(row,col);
+    const_cast<SrcEvaluatorTypeT&>(m_src).template writePacket<LoadMode>(row,col, m_dst.template packet<StoreMode,PacketType>(row,col));
+    m_dst.template writePacket<StoreMode>(row,col,tmp);
+  }
+  
+  template<int StoreMode, int LoadMode, typename PacketType>
+  void assignPacket(Index index)
+  {
+    PacketType tmp = m_src.template packet<LoadMode,PacketType>(index);
+    const_cast<SrcEvaluatorTypeT&>(m_src).template writePacket<LoadMode>(index, m_dst.template packet<StoreMode,PacketType>(index));
+    m_dst.template writePacket<StoreMode>(index,tmp);
+  }
+  
+  // TODO find a simple way not to have to copy/paste this function from generic_dense_assignment_kernel, by simple I mean no CRTP (Gael)
+  template<int StoreMode, int LoadMode, typename PacketType>
+  void assignPacketByOuterInner(Index outer, Index inner)
+  {
+    Index row = Base::rowIndexByOuterInner(outer, inner); 
+    Index col = Base::colIndexByOuterInner(outer, inner);
+    assignPacket<StoreMode,LoadMode,PacketType>(row, col);
+  }
 };
+
+} // namespace internal
 
 } // end namespace Eigen
 

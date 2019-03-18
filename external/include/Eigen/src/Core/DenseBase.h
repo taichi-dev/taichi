@@ -34,37 +34,45 @@ static inline void check_DenseIndex_is_signed() {
   * \tparam Derived is the derived type, e.g., a matrix type or an expression.
   *
   * This class can be extended with the help of the plugin mechanism described on the page
-  * \ref TopicCustomizingEigen by defining the preprocessor symbol \c EIGEN_DENSEBASE_PLUGIN.
+  * \ref TopicCustomizing_Plugins by defining the preprocessor symbol \c EIGEN_DENSEBASE_PLUGIN.
   *
-  * \sa \ref TopicClassHierarchy
+  * \sa \blank \ref TopicClassHierarchy
   */
 template<typename Derived> class DenseBase
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-  : public internal::special_scalar_op_base<Derived, typename internal::traits<Derived>::Scalar,
-                                            typename NumTraits<typename internal::traits<Derived>::Scalar>::Real,
-                                            DenseCoeffsBase<Derived> >
-#else
   : public DenseCoeffsBase<Derived>
+#else
+  : public DenseCoeffsBase<Derived,DirectWriteAccessors>
 #endif // not EIGEN_PARSED_BY_DOXYGEN
 {
   public:
 
-    class InnerIterator;
+    /** Inner iterator type to iterate over the coefficients of a row or column.
+      * \sa class InnerIterator
+      */
+    typedef Eigen::InnerIterator<Derived> InnerIterator;
 
     typedef typename internal::traits<Derived>::StorageKind StorageKind;
 
-    /** \brief The type of indices 
-      * \details To change this, \c \#define the preprocessor symbol \c EIGEN_DEFAULT_DENSE_INDEX_TYPE.
-      * \sa \ref TopicPreprocessorDirectives.
-      */
-    typedef typename internal::traits<Derived>::Index Index; 
+    /**
+      * \brief The type used to store indices
+      * \details This typedef is relevant for types that store multiple indices such as
+      *          PermutationMatrix or Transpositions, otherwise it defaults to Eigen::Index
+      * \sa \blank \ref TopicPreprocessorDirectives, Eigen::Index, SparseMatrixBase.
+     */
+    typedef typename internal::traits<Derived>::StorageIndex StorageIndex;
 
+    /** The numeric type of the expression' coefficients, e.g. float, double, int or std::complex<float>, etc. */
     typedef typename internal::traits<Derived>::Scalar Scalar;
-    typedef typename internal::packet_traits<Scalar>::type PacketScalar;
+    
+    /** The numeric type of the expression' coefficients, e.g. float, double, int or std::complex<float>, etc.
+      *
+      * It is an alias for the Scalar type */
+    typedef Scalar value_type;
+    
     typedef typename NumTraits<Scalar>::Real RealScalar;
-    typedef internal::special_scalar_op_base<Derived,Scalar,RealScalar, DenseCoeffsBase<Derived> > Base;
+    typedef DenseCoeffsBase<Derived> Base;
 
-    using Base::operator*;
     using Base::derived;
     using Base::const_cast_derived;
     using Base::rows;
@@ -74,16 +82,6 @@ template<typename Derived> class DenseBase
     using Base::colIndexByOuterInner;
     using Base::coeff;
     using Base::coeffByOuterInner;
-    using Base::packet;
-    using Base::packetByOuterInner;
-    using Base::writePacket;
-    using Base::writePacketByOuterInner;
-    using Base::coeffRef;
-    using Base::coeffRefByOuterInner;
-    using Base::copyCoeff;
-    using Base::copyCoeffByOuterInner;
-    using Base::copyPacket;
-    using Base::copyPacketByOuterInner;
     using Base::operator();
     using Base::operator[];
     using Base::x;
@@ -169,19 +167,46 @@ template<typename Derived> class DenseBase
       InnerSizeAtCompileTime = int(IsVectorAtCompileTime) ? int(SizeAtCompileTime)
                              : int(IsRowMajor) ? int(ColsAtCompileTime) : int(RowsAtCompileTime),
 
-      CoeffReadCost = internal::traits<Derived>::CoeffReadCost,
-        /**< This is a rough measure of how expensive it is to read one coefficient from
-          * this expression.
-          */
-
       InnerStrideAtCompileTime = internal::inner_stride_at_compile_time<Derived>::ret,
       OuterStrideAtCompileTime = internal::outer_stride_at_compile_time<Derived>::ret
     };
+    
+    typedef typename internal::find_best_packet<Scalar,SizeAtCompileTime>::type PacketScalar;
 
-    enum { ThisConstantIsPrivateInPlainObjectBase };
+    enum { IsPlainObjectBase = 0 };
+    
+    /** The plain matrix type corresponding to this expression.
+      * \sa PlainObject */
+    typedef Matrix<typename internal::traits<Derived>::Scalar,
+                internal::traits<Derived>::RowsAtCompileTime,
+                internal::traits<Derived>::ColsAtCompileTime,
+                AutoAlign | (internal::traits<Derived>::Flags&RowMajorBit ? RowMajor : ColMajor),
+                internal::traits<Derived>::MaxRowsAtCompileTime,
+                internal::traits<Derived>::MaxColsAtCompileTime
+          > PlainMatrix;
+    
+    /** The plain array type corresponding to this expression.
+      * \sa PlainObject */
+    typedef Array<typename internal::traits<Derived>::Scalar,
+                internal::traits<Derived>::RowsAtCompileTime,
+                internal::traits<Derived>::ColsAtCompileTime,
+                AutoAlign | (internal::traits<Derived>::Flags&RowMajorBit ? RowMajor : ColMajor),
+                internal::traits<Derived>::MaxRowsAtCompileTime,
+                internal::traits<Derived>::MaxColsAtCompileTime
+          > PlainArray;
+
+    /** \brief The plain matrix or array type corresponding to this expression.
+      *
+      * This is not necessarily exactly the return type of eval(). In the case of plain matrices,
+      * the return type of eval() is a const reference to a matrix, not a matrix! It is however guaranteed
+      * that the return type of eval() is either PlainObject or const PlainObject&.
+      */
+    typedef typename internal::conditional<internal::is_same<typename internal::traits<Derived>::XprKind,MatrixXpr >::value,
+                                 PlainMatrix, PlainArray>::type PlainObject;
 
     /** \returns the number of nonzero coefficients which is in practice the number
       * of stored coefficients. */
+    EIGEN_DEVICE_FUNC
     inline Index nonZeros() const { return size(); }
 
     /** \returns the outer size.
@@ -189,6 +214,7 @@ template<typename Derived> class DenseBase
       * \note For a vector, this returns just 1. For a matrix (non-vector), this is the major dimension
       * with respect to the \ref TopicStorageOrders "storage order", i.e., the number of columns for a
       * column-major matrix, and the number of rows for a row-major matrix. */
+    EIGEN_DEVICE_FUNC
     Index outerSize() const
     {
       return IsVectorAtCompileTime ? 1
@@ -200,6 +226,7 @@ template<typename Derived> class DenseBase
       * \note For a vector, this is just the size. For a matrix (non-vector), this is the minor dimension
       * with respect to the \ref TopicStorageOrders "storage order", i.e., the number of rows for a 
       * column-major matrix, and the number of columns for a row-major matrix. */
+    EIGEN_DEVICE_FUNC
     Index innerSize() const
     {
       return IsVectorAtCompileTime ? this->size()
@@ -210,6 +237,7 @@ template<typename Derived> class DenseBase
       * Matrix::resize() and Array::resize(). The present method only asserts that the new size equals the old size, and does
       * nothing else.
       */
+    EIGEN_DEVICE_FUNC
     void resize(Index newSize)
     {
       EIGEN_ONLY_USED_FOR_DEBUG(newSize);
@@ -220,22 +248,22 @@ template<typename Derived> class DenseBase
       * Matrix::resize() and Array::resize(). The present method only asserts that the new size equals the old size, and does
       * nothing else.
       */
-    void resize(Index nbRows, Index nbCols)
+    EIGEN_DEVICE_FUNC
+    void resize(Index rows, Index cols)
     {
-      EIGEN_ONLY_USED_FOR_DEBUG(nbRows);
-      EIGEN_ONLY_USED_FOR_DEBUG(nbCols);
-      eigen_assert(nbRows == this->rows() && nbCols == this->cols()
+      EIGEN_ONLY_USED_FOR_DEBUG(rows);
+      EIGEN_ONLY_USED_FOR_DEBUG(cols);
+      eigen_assert(rows == this->rows() && cols == this->cols()
                 && "DenseBase::resize() does not actually allow to resize.");
     }
 
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-
     /** \internal Represents a matrix with all coefficients equal to one another*/
-    typedef CwiseNullaryOp<internal::scalar_constant_op<Scalar>,Derived> ConstantReturnType;
-    /** \internal Represents a vector with linearly spaced coefficients that allows sequential access only. */
-    typedef CwiseNullaryOp<internal::linspaced_op<Scalar,false>,Derived> SequentialLinSpacedReturnType;
+    typedef CwiseNullaryOp<internal::scalar_constant_op<Scalar>,PlainObject> ConstantReturnType;
+    /** \internal \deprecated Represents a vector with linearly spaced coefficients that allows sequential access only. */
+    typedef CwiseNullaryOp<internal::linspaced_op<Scalar,PacketScalar>,PlainObject> SequentialLinSpacedReturnType;
     /** \internal Represents a vector with linearly spaced coefficients that allows random access. */
-    typedef CwiseNullaryOp<internal::linspaced_op<Scalar,true>,Derived> RandomAccessLinSpacedReturnType;
+    typedef CwiseNullaryOp<internal::linspaced_op<Scalar,PacketScalar>,PlainObject> RandomAccessLinSpacedReturnType;
     /** \internal the return type of MatrixBase::eigenvalues() */
     typedef Matrix<typename NumTraits<typename internal::traits<Derived>::Scalar>::Real, internal::traits<Derived>::ColsAtCompileTime, 1> EigenvaluesReturnType;
 
@@ -243,120 +271,133 @@ template<typename Derived> class DenseBase
 
     /** Copies \a other into *this. \returns a reference to *this. */
     template<typename OtherDerived>
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
     Derived& operator=(const DenseBase<OtherDerived>& other);
 
     /** Special case of the template operator=, in order to prevent the compiler
       * from generating a default operator= (issue hit with g++ 4.1)
       */
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
     Derived& operator=(const DenseBase& other);
 
     template<typename OtherDerived>
+    EIGEN_DEVICE_FUNC
     Derived& operator=(const EigenBase<OtherDerived> &other);
 
     template<typename OtherDerived>
+    EIGEN_DEVICE_FUNC
     Derived& operator+=(const EigenBase<OtherDerived> &other);
 
     template<typename OtherDerived>
+    EIGEN_DEVICE_FUNC
     Derived& operator-=(const EigenBase<OtherDerived> &other);
 
     template<typename OtherDerived>
+    EIGEN_DEVICE_FUNC
     Derived& operator=(const ReturnByValue<OtherDerived>& func);
 
-    /** \internal Copies \a other into *this without evaluating other. \returns a reference to *this. */
+    /** \internal
+      * Copies \a other into *this without evaluating other. \returns a reference to *this.
+      * \deprecated */
     template<typename OtherDerived>
+    EIGEN_DEVICE_FUNC
     Derived& lazyAssign(const DenseBase<OtherDerived>& other);
 
-    /** \internal Evaluates \a other into *this. \returns a reference to *this. */
-    template<typename OtherDerived>
-    Derived& lazyAssign(const ReturnByValue<OtherDerived>& other);
-
+    EIGEN_DEVICE_FUNC
     CommaInitializer<Derived> operator<< (const Scalar& s);
 
+    /** \deprecated it now returns \c *this */
     template<unsigned int Added,unsigned int Removed>
-    const Flagged<Derived, Added, Removed> flagged() const;
+    EIGEN_DEPRECATED
+    const Derived& flagged() const
+    { return derived(); }
 
     template<typename OtherDerived>
+    EIGEN_DEVICE_FUNC
     CommaInitializer<Derived> operator<< (const DenseBase<OtherDerived>& other);
 
-    Eigen::Transpose<Derived> transpose();
-	typedef typename internal::add_const<Transpose<const Derived> >::type ConstTransposeReturnType;
+    typedef Transpose<Derived> TransposeReturnType;
+    EIGEN_DEVICE_FUNC
+    TransposeReturnType transpose();
+    typedef typename internal::add_const<Transpose<const Derived> >::type ConstTransposeReturnType;
+    EIGEN_DEVICE_FUNC
     ConstTransposeReturnType transpose() const;
+    EIGEN_DEVICE_FUNC
     void transposeInPlace();
-#ifndef EIGEN_NO_DEBUG
-  protected:
-    template<typename OtherDerived>
-    void checkTransposeAliasing(const OtherDerived& other) const;
-  public:
-#endif
 
-
-    static const ConstantReturnType
+    EIGEN_DEVICE_FUNC static const ConstantReturnType
     Constant(Index rows, Index cols, const Scalar& value);
-    static const ConstantReturnType
+    EIGEN_DEVICE_FUNC static const ConstantReturnType
     Constant(Index size, const Scalar& value);
-    static const ConstantReturnType
+    EIGEN_DEVICE_FUNC static const ConstantReturnType
     Constant(const Scalar& value);
 
-    static const SequentialLinSpacedReturnType
+    EIGEN_DEVICE_FUNC static const SequentialLinSpacedReturnType
     LinSpaced(Sequential_t, Index size, const Scalar& low, const Scalar& high);
-    static const RandomAccessLinSpacedReturnType
+    EIGEN_DEVICE_FUNC static const RandomAccessLinSpacedReturnType
     LinSpaced(Index size, const Scalar& low, const Scalar& high);
-    static const SequentialLinSpacedReturnType
+    EIGEN_DEVICE_FUNC static const SequentialLinSpacedReturnType
     LinSpaced(Sequential_t, const Scalar& low, const Scalar& high);
-    static const RandomAccessLinSpacedReturnType
+    EIGEN_DEVICE_FUNC static const RandomAccessLinSpacedReturnType
     LinSpaced(const Scalar& low, const Scalar& high);
 
-    template<typename CustomNullaryOp>
-    static const CwiseNullaryOp<CustomNullaryOp, Derived>
+    template<typename CustomNullaryOp> EIGEN_DEVICE_FUNC
+    static const CwiseNullaryOp<CustomNullaryOp, PlainObject>
     NullaryExpr(Index rows, Index cols, const CustomNullaryOp& func);
-    template<typename CustomNullaryOp>
-    static const CwiseNullaryOp<CustomNullaryOp, Derived>
+    template<typename CustomNullaryOp> EIGEN_DEVICE_FUNC
+    static const CwiseNullaryOp<CustomNullaryOp, PlainObject>
     NullaryExpr(Index size, const CustomNullaryOp& func);
-    template<typename CustomNullaryOp>
-    static const CwiseNullaryOp<CustomNullaryOp, Derived>
+    template<typename CustomNullaryOp> EIGEN_DEVICE_FUNC
+    static const CwiseNullaryOp<CustomNullaryOp, PlainObject>
     NullaryExpr(const CustomNullaryOp& func);
 
-    static const ConstantReturnType Zero(Index rows, Index cols);
-    static const ConstantReturnType Zero(Index size);
-    static const ConstantReturnType Zero();
-    static const ConstantReturnType Ones(Index rows, Index cols);
-    static const ConstantReturnType Ones(Index size);
-    static const ConstantReturnType Ones();
+    EIGEN_DEVICE_FUNC static const ConstantReturnType Zero(Index rows, Index cols);
+    EIGEN_DEVICE_FUNC static const ConstantReturnType Zero(Index size);
+    EIGEN_DEVICE_FUNC static const ConstantReturnType Zero();
+    EIGEN_DEVICE_FUNC static const ConstantReturnType Ones(Index rows, Index cols);
+    EIGEN_DEVICE_FUNC static const ConstantReturnType Ones(Index size);
+    EIGEN_DEVICE_FUNC static const ConstantReturnType Ones();
 
-    void fill(const Scalar& value);
-    Derived& setConstant(const Scalar& value);
-    Derived& setLinSpaced(Index size, const Scalar& low, const Scalar& high);
-    Derived& setLinSpaced(const Scalar& low, const Scalar& high);
-    Derived& setZero();
-    Derived& setOnes();
-    Derived& setRandom();
+    EIGEN_DEVICE_FUNC void fill(const Scalar& value);
+    EIGEN_DEVICE_FUNC Derived& setConstant(const Scalar& value);
+    EIGEN_DEVICE_FUNC Derived& setLinSpaced(Index size, const Scalar& low, const Scalar& high);
+    EIGEN_DEVICE_FUNC Derived& setLinSpaced(const Scalar& low, const Scalar& high);
+    EIGEN_DEVICE_FUNC Derived& setZero();
+    EIGEN_DEVICE_FUNC Derived& setOnes();
+    EIGEN_DEVICE_FUNC Derived& setRandom();
 
-    template<typename OtherDerived>
+    template<typename OtherDerived> EIGEN_DEVICE_FUNC
     bool isApprox(const DenseBase<OtherDerived>& other,
                   const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const;
+    EIGEN_DEVICE_FUNC 
     bool isMuchSmallerThan(const RealScalar& other,
                            const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const;
-    template<typename OtherDerived>
+    template<typename OtherDerived> EIGEN_DEVICE_FUNC
     bool isMuchSmallerThan(const DenseBase<OtherDerived>& other,
                            const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const;
 
-    bool isApproxToConstant(const Scalar& value, const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const;
-    bool isConstant(const Scalar& value, const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const;
-    bool isZero(const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const;
-    bool isOnes(const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const;
+    EIGEN_DEVICE_FUNC bool isApproxToConstant(const Scalar& value, const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const;
+    EIGEN_DEVICE_FUNC bool isConstant(const Scalar& value, const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const;
+    EIGEN_DEVICE_FUNC bool isZero(const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const;
+    EIGEN_DEVICE_FUNC bool isOnes(const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const;
     
     inline bool hasNaN() const;
     inline bool allFinite() const;
 
-    inline Derived& operator*=(const Scalar& other);
-    inline Derived& operator/=(const Scalar& other);
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+    Derived& operator*=(const Scalar& other);
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+    Derived& operator/=(const Scalar& other);
 
     typedef typename internal::add_const_on_value_type<typename internal::eval<Derived>::type>::type EvalReturnType;
     /** \returns the matrix or vector obtained by evaluating this expression.
       *
       * Notice that in the case of a plain matrix or vector (not an expression) this function just returns
       * a const reference, in order to avoid a useless copy.
+      * 
+      * \warning Be carefull with eval() and the auto C++ keyword, as detailed in this \link TopicPitfalls_auto_keyword page \endlink.
       */
+    EIGEN_DEVICE_FUNC
     EIGEN_STRONG_INLINE EvalReturnType eval() const
     {
       // Even though MSVC does not honor strong inlining when the return type
@@ -364,61 +405,78 @@ template<typename Derived> class DenseBase
       // size types on MSVC.
       return typename internal::eval<Derived>::type(derived());
     }
-
+    
     /** swaps *this with the expression \a other.
       *
       */
     template<typename OtherDerived>
-    void swap(const DenseBase<OtherDerived>& other,
-              int = OtherDerived::ThisConstantIsPrivateInPlainObjectBase)
+    EIGEN_DEVICE_FUNC
+    void swap(const DenseBase<OtherDerived>& other)
     {
-      SwapWrapper<Derived>(derived()).lazyAssign(other.derived());
+      EIGEN_STATIC_ASSERT(!OtherDerived::IsPlainObjectBase,THIS_EXPRESSION_IS_NOT_A_LVALUE__IT_IS_READ_ONLY);
+      eigen_assert(rows()==other.rows() && cols()==other.cols());
+      call_assignment(derived(), other.const_cast_derived(), internal::swap_assign_op<Scalar>());
     }
 
     /** swaps *this with the matrix or array \a other.
       *
       */
     template<typename OtherDerived>
+    EIGEN_DEVICE_FUNC
     void swap(PlainObjectBase<OtherDerived>& other)
     {
-      SwapWrapper<Derived>(derived()).lazyAssign(other.derived());
+      eigen_assert(rows()==other.rows() && cols()==other.cols());
+      call_assignment(derived(), other.derived(), internal::swap_assign_op<Scalar>());
     }
 
+    EIGEN_DEVICE_FUNC inline const NestByValue<Derived> nestByValue() const;
+    EIGEN_DEVICE_FUNC inline const ForceAlignedAccess<Derived> forceAlignedAccess() const;
+    EIGEN_DEVICE_FUNC inline ForceAlignedAccess<Derived> forceAlignedAccess();
+    template<bool Enable> EIGEN_DEVICE_FUNC
+    inline const typename internal::conditional<Enable,ForceAlignedAccess<Derived>,Derived&>::type forceAlignedAccessIf() const;
+    template<bool Enable> EIGEN_DEVICE_FUNC
+    inline typename internal::conditional<Enable,ForceAlignedAccess<Derived>,Derived&>::type forceAlignedAccessIf();
 
-    inline const NestByValue<Derived> nestByValue() const;
-    inline const ForceAlignedAccess<Derived> forceAlignedAccess() const;
-    inline ForceAlignedAccess<Derived> forceAlignedAccess();
-    template<bool Enable> inline const typename internal::conditional<Enable,ForceAlignedAccess<Derived>,Derived&>::type forceAlignedAccessIf() const;
-    template<bool Enable> inline typename internal::conditional<Enable,ForceAlignedAccess<Derived>,Derived&>::type forceAlignedAccessIf();
+    EIGEN_DEVICE_FUNC Scalar sum() const;
+    EIGEN_DEVICE_FUNC Scalar mean() const;
+    EIGEN_DEVICE_FUNC Scalar trace() const;
 
-    Scalar sum() const;
-    Scalar mean() const;
-    Scalar trace() const;
+    EIGEN_DEVICE_FUNC Scalar prod() const;
 
-    Scalar prod() const;
+    EIGEN_DEVICE_FUNC typename internal::traits<Derived>::Scalar minCoeff() const;
+    EIGEN_DEVICE_FUNC typename internal::traits<Derived>::Scalar maxCoeff() const;
 
-    typename internal::traits<Derived>::Scalar minCoeff() const;
-    typename internal::traits<Derived>::Scalar maxCoeff() const;
-
-    template<typename IndexType>
+    template<typename IndexType> EIGEN_DEVICE_FUNC
     typename internal::traits<Derived>::Scalar minCoeff(IndexType* row, IndexType* col) const;
-    template<typename IndexType>
+    template<typename IndexType> EIGEN_DEVICE_FUNC
     typename internal::traits<Derived>::Scalar maxCoeff(IndexType* row, IndexType* col) const;
-    template<typename IndexType>
+    template<typename IndexType> EIGEN_DEVICE_FUNC
     typename internal::traits<Derived>::Scalar minCoeff(IndexType* index) const;
-    template<typename IndexType>
+    template<typename IndexType> EIGEN_DEVICE_FUNC
     typename internal::traits<Derived>::Scalar maxCoeff(IndexType* index) const;
 
     template<typename BinaryOp>
-    typename internal::result_of<BinaryOp(typename internal::traits<Derived>::Scalar)>::type
-    redux(const BinaryOp& func) const;
+    EIGEN_DEVICE_FUNC
+    Scalar redux(const BinaryOp& func) const;
 
     template<typename Visitor>
+    EIGEN_DEVICE_FUNC
     void visit(Visitor& func) const;
 
-    inline const WithFormat<Derived> format(const IOFormat& fmt) const;
+    /** \returns a WithFormat proxy object allowing to print a matrix the with given
+      * format \a fmt.
+      *
+      * See class IOFormat for some examples.
+      *
+      * \sa class IOFormat, class WithFormat
+      */
+    inline const WithFormat<Derived> format(const IOFormat& fmt) const
+    {
+      return WithFormat<Derived>(derived(), fmt);
+    }
 
     /** \returns the unique coefficient of a 1x1 expression */
+    EIGEN_DEVICE_FUNC
     CoeffReturnType value() const
     {
       EIGEN_STATIC_ASSERT_SIZE_1x1(Derived)
@@ -426,23 +484,44 @@ template<typename Derived> class DenseBase
       return derived().coeff(0,0);
     }
 
-    bool all(void) const;
-    bool any(void) const;
-    Index count() const;
+    EIGEN_DEVICE_FUNC bool all() const;
+    EIGEN_DEVICE_FUNC bool any() const;
+    EIGEN_DEVICE_FUNC Index count() const;
 
     typedef VectorwiseOp<Derived, Horizontal> RowwiseReturnType;
     typedef const VectorwiseOp<const Derived, Horizontal> ConstRowwiseReturnType;
     typedef VectorwiseOp<Derived, Vertical> ColwiseReturnType;
     typedef const VectorwiseOp<const Derived, Vertical> ConstColwiseReturnType;
 
-    ConstRowwiseReturnType rowwise() const;
-    RowwiseReturnType rowwise();
-    ConstColwiseReturnType colwise() const;
-    ColwiseReturnType colwise();
+    /** \returns a VectorwiseOp wrapper of *this providing additional partial reduction operations
+    *
+    * Example: \include MatrixBase_rowwise.cpp
+    * Output: \verbinclude MatrixBase_rowwise.out
+    *
+    * \sa colwise(), class VectorwiseOp, \ref TutorialReductionsVisitorsBroadcasting
+    */
+    //Code moved here due to a CUDA compiler bug
+    EIGEN_DEVICE_FUNC inline ConstRowwiseReturnType rowwise() const {
+      return ConstRowwiseReturnType(derived());
+    }
+    EIGEN_DEVICE_FUNC RowwiseReturnType rowwise();
 
-    static const CwiseNullaryOp<internal::scalar_random_op<Scalar>,Derived> Random(Index rows, Index cols);
-    static const CwiseNullaryOp<internal::scalar_random_op<Scalar>,Derived> Random(Index size);
-    static const CwiseNullaryOp<internal::scalar_random_op<Scalar>,Derived> Random();
+    /** \returns a VectorwiseOp wrapper of *this providing additional partial reduction operations
+    *
+    * Example: \include MatrixBase_colwise.cpp
+    * Output: \verbinclude MatrixBase_colwise.out
+    *
+    * \sa rowwise(), class VectorwiseOp, \ref TutorialReductionsVisitorsBroadcasting
+    */
+    EIGEN_DEVICE_FUNC inline ConstColwiseReturnType colwise() const {
+      return ConstColwiseReturnType(derived());
+    }
+    EIGEN_DEVICE_FUNC ColwiseReturnType colwise();
+
+    typedef CwiseNullaryOp<internal::scalar_random_op<Scalar>,PlainObject> RandomReturnType;
+    static const RandomReturnType Random(Index rows, Index cols);
+    static const RandomReturnType Random(Index size);
+    static const RandomReturnType Random();
 
     template<typename ThenDerived,typename ElseDerived>
     const Select<Derived,ThenDerived,ElseDerived>
@@ -460,45 +539,56 @@ template<typename Derived> class DenseBase
     template<int p> RealScalar lpNorm() const;
 
     template<int RowFactor, int ColFactor>
-    inline const Replicate<Derived,RowFactor,ColFactor> replicate() const;
-    
-    typedef Replicate<Derived,Dynamic,Dynamic> ReplicateReturnType;
-    inline const ReplicateReturnType replicate(Index rowFacor,Index colFactor) const;
+    EIGEN_DEVICE_FUNC
+    const Replicate<Derived,RowFactor,ColFactor> replicate() const;
+    /**
+    * \return an expression of the replication of \c *this
+    *
+    * Example: \include MatrixBase_replicate_int_int.cpp
+    * Output: \verbinclude MatrixBase_replicate_int_int.out
+    *
+    * \sa VectorwiseOp::replicate(), DenseBase::replicate<int,int>(), class Replicate
+    */
+    //Code moved here due to a CUDA compiler bug
+    EIGEN_DEVICE_FUNC
+    const Replicate<Derived, Dynamic, Dynamic> replicate(Index rowFactor, Index colFactor) const
+    {
+      return Replicate<Derived, Dynamic, Dynamic>(derived(), rowFactor, colFactor);
+    }
 
     typedef Reverse<Derived, BothDirections> ReverseReturnType;
     typedef const Reverse<const Derived, BothDirections> ConstReverseReturnType;
-    ReverseReturnType reverse();
-    ConstReverseReturnType reverse() const;
-    void reverseInPlace();
+    EIGEN_DEVICE_FUNC ReverseReturnType reverse();
+    /** This is the const version of reverse(). */
+    //Code moved here due to a CUDA compiler bug
+    EIGEN_DEVICE_FUNC ConstReverseReturnType reverse() const
+    {
+      return ConstReverseReturnType(derived());
+    }
+    EIGEN_DEVICE_FUNC void reverseInPlace();
 
 #define EIGEN_CURRENT_STORAGE_BASE_CLASS Eigen::DenseBase
+#define EIGEN_DOC_BLOCK_ADDONS_NOT_INNER_PANEL
+#define EIGEN_DOC_BLOCK_ADDONS_INNER_PANEL_IF(COND)
 #   include "../plugins/BlockMethods.h"
 #   ifdef EIGEN_DENSEBASE_PLUGIN
 #     include EIGEN_DENSEBASE_PLUGIN
 #   endif
 #undef EIGEN_CURRENT_STORAGE_BASE_CLASS
-
-#ifdef EIGEN2_SUPPORT
-
-    Block<Derived> corner(CornerType type, Index cRows, Index cCols);
-    const Block<Derived> corner(CornerType type, Index cRows, Index cCols) const;
-    template<int CRows, int CCols>
-    Block<Derived, CRows, CCols> corner(CornerType type);
-    template<int CRows, int CCols>
-    const Block<Derived, CRows, CCols> corner(CornerType type) const;
-
-#endif // EIGEN2_SUPPORT
-
+#undef EIGEN_DOC_BLOCK_ADDONS_NOT_INNER_PANEL
+#undef EIGEN_DOC_BLOCK_ADDONS_INNER_PANEL_IF
 
     // disable the use of evalTo for dense objects with a nice compilation error
-    template<typename Dest> inline void evalTo(Dest& ) const
+    template<typename Dest>
+    EIGEN_DEVICE_FUNC
+    inline void evalTo(Dest& ) const
     {
       EIGEN_STATIC_ASSERT((internal::is_same<Dest,void>::value),THE_EVAL_EVALTO_FUNCTION_SHOULD_NEVER_BE_CALLED_FOR_DENSE_OBJECTS);
     }
 
   protected:
     /** Default constructor. Do nothing. */
-    DenseBase()
+    EIGEN_DEVICE_FUNC DenseBase()
     {
       /* Just checks for self-consistency of the flags.
        * Only do it when debugging Eigen, as this borders on paranoiac and could slow compilation down
@@ -511,9 +601,9 @@ template<typename Derived> class DenseBase
     }
 
   private:
-    explicit DenseBase(int);
-    DenseBase(int,int);
-    template<typename OtherDerived> explicit DenseBase(const DenseBase<OtherDerived>&);
+    EIGEN_DEVICE_FUNC explicit DenseBase(int);
+    EIGEN_DEVICE_FUNC DenseBase(int,int);
+    template<typename OtherDerived> EIGEN_DEVICE_FUNC explicit DenseBase(const DenseBase<OtherDerived>&);
 };
 
 } // end namespace Eigen

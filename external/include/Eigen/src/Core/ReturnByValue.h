@@ -13,11 +13,6 @@
 
 namespace Eigen {
 
-/** \class ReturnByValue
-  * \ingroup Core_Module
-  *
-  */
-
 namespace internal {
 
 template<typename Derived>
@@ -38,17 +33,22 @@ struct traits<ReturnByValue<Derived> >
  * So internal::nested always gives the plain return matrix type.
  *
  * FIXME: I don't understand why we need this specialization: isn't this taken care of by the EvalBeforeNestingBit ??
+ * Answer: EvalBeforeNestingBit should be deprecated since we have the evaluators
  */
 template<typename Derived,int n,typename PlainObject>
-struct nested<ReturnByValue<Derived>, n, PlainObject>
+struct nested_eval<ReturnByValue<Derived>, n, PlainObject>
 {
   typedef typename traits<Derived>::ReturnType type;
 };
 
 } // end namespace internal
 
+/** \class ReturnByValue
+  * \ingroup Core_Module
+  *
+  */
 template<typename Derived> class ReturnByValue
-  : internal::no_assignment_operator, public internal::dense_xpr_base< ReturnByValue<Derived> >::type
+  : public internal::dense_xpr_base< ReturnByValue<Derived> >::type, internal::no_assignment_operator
 {
   public:
     typedef typename internal::traits<Derived>::ReturnType ReturnType;
@@ -57,10 +57,11 @@ template<typename Derived> class ReturnByValue
     EIGEN_DENSE_PUBLIC_INTERFACE(ReturnByValue)
 
     template<typename Dest>
+    EIGEN_DEVICE_FUNC
     inline void evalTo(Dest& dst) const
     { static_cast<const Derived*>(this)->evalTo(dst); }
-    inline Index rows() const { return static_cast<const Derived*>(this)->rows(); }
-    inline Index cols() const { return static_cast<const Derived*>(this)->cols(); }
+    EIGEN_DEVICE_FUNC inline Index rows() const { return static_cast<const Derived*>(this)->rows(); }
+    EIGEN_DEVICE_FUNC inline Index cols() const { return static_cast<const Derived*>(this)->cols(); }
 
 #ifndef EIGEN_PARSED_BY_DOXYGEN
 #define Unusable YOU_ARE_TRYING_TO_ACCESS_A_SINGLE_COEFFICIENT_IN_A_SPECIAL_EXPRESSION_WHERE_THAT_IS_NOT_ALLOWED_BECAUSE_THAT_WOULD_BE_INEFFICIENT
@@ -72,8 +73,7 @@ template<typename Derived> class ReturnByValue
     const Unusable& coeff(Index,Index) const { return *reinterpret_cast<const Unusable*>(this); }
     Unusable& coeffRef(Index) { return *reinterpret_cast<Unusable*>(this); }
     Unusable& coeffRef(Index,Index) { return *reinterpret_cast<Unusable*>(this); }
-    template<int LoadMode>  Unusable& packet(Index) const;
-    template<int LoadMode>  Unusable& packet(Index, Index) const;
+#undef Unusable
 #endif
 };
 
@@ -85,14 +85,32 @@ Derived& DenseBase<Derived>::operator=(const ReturnByValue<OtherDerived>& other)
   return derived();
 }
 
-template<typename Derived>
-template<typename OtherDerived>
-Derived& DenseBase<Derived>::lazyAssign(const ReturnByValue<OtherDerived>& other)
-{
-  other.evalTo(derived());
-  return derived();
-}
+namespace internal {
 
+// Expression is evaluated in a temporary; default implementation of Assignment is bypassed so that
+// when a ReturnByValue expression is assigned, the evaluator is not constructed.
+// TODO: Finalize port to new regime; ReturnByValue should not exist in the expression world
+  
+template<typename Derived>
+struct evaluator<ReturnByValue<Derived> >
+  : public evaluator<typename internal::traits<Derived>::ReturnType>
+{
+  typedef ReturnByValue<Derived> XprType;
+  typedef typename internal::traits<Derived>::ReturnType PlainObject;
+  typedef evaluator<PlainObject> Base;
+  
+  EIGEN_DEVICE_FUNC explicit evaluator(const XprType& xpr)
+    : m_result(xpr.rows(), xpr.cols())
+  {
+    ::new (static_cast<Base*>(this)) Base(m_result);
+    xpr.evalTo(m_result);
+  }
+
+protected:
+  PlainObject m_result;
+};
+
+} // end namespace internal
 
 } // end namespace Eigen
 

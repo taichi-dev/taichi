@@ -1,2 +1,2 @@
 #include "Dense"
-//#include "Sparse"
+#include "Sparse"

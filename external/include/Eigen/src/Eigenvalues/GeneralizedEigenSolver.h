@@ -1,8 +1,9 @@
 // This file is part of Eigen, a lightweight C++ template library
 // for linear algebra.
 //
-// Copyright (C) 2012 Gael Guennebaud <gael.guennebaud@inria.fr>
+// Copyright (C) 2012-2016 Gael Guennebaud <gael.guennebaud@inria.fr>
 // Copyright (C) 2010,2012 Jitse Niesen <jitse@maths.leeds.ac.uk>
+// Copyright (C) 2016 Tobias Wood <tobias@spinicist.org.uk>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
@@ -72,7 +73,7 @@ template<typename _MatrixType> class GeneralizedEigenSolver
     /** \brief Scalar type for matrices of type #MatrixType. */
     typedef typename MatrixType::Scalar Scalar;
     typedef typename NumTraits<Scalar>::Real RealScalar;
-    typedef typename MatrixType::Index Index;
+    typedef Eigen::Index Index; ///< \deprecated since Eigen 3.3
 
     /** \brief Complex scalar type for #MatrixType. 
       *
@@ -89,7 +90,7 @@ template<typename _MatrixType> class GeneralizedEigenSolver
       */
     typedef Matrix<Scalar, ColsAtCompileTime, 1, Options & ~RowMajor, MaxColsAtCompileTime, 1> VectorType;
 
-    /** \brief Type for vector of complex scalar values eigenvalues as returned by betas().
+    /** \brief Type for vector of complex scalar values eigenvalues as returned by alphas().
       *
       * This is a column vector with entries of type #ComplexScalar.
       * The length of the vector is the size of #MatrixType.
@@ -114,7 +115,14 @@ template<typename _MatrixType> class GeneralizedEigenSolver
       *
       * \sa compute() for an example.
       */
-    GeneralizedEigenSolver() : m_eivec(), m_alphas(), m_betas(), m_isInitialized(false), m_realQZ(), m_matS(), m_tmp() {}
+    GeneralizedEigenSolver()
+      : m_eivec(),
+        m_alphas(),
+        m_betas(),
+        m_valuesOkay(false),
+        m_vectorsOkay(false),
+        m_realQZ()
+    {}
 
     /** \brief Default constructor with memory preallocation
       *
@@ -122,14 +130,13 @@ template<typename _MatrixType> class GeneralizedEigenSolver
       * according to the specified problem \a size.
       * \sa GeneralizedEigenSolver()
       */
-    GeneralizedEigenSolver(Index size)
+    explicit GeneralizedEigenSolver(Index size)
       : m_eivec(size, size),
         m_alphas(size),
         m_betas(size),
-        m_isInitialized(false),
-        m_eigenvectorsOk(false),
+        m_valuesOkay(false),
+        m_vectorsOkay(false),
         m_realQZ(size),
-        m_matS(size, size),
         m_tmp(size)
     {}
 
@@ -149,10 +156,9 @@ template<typename _MatrixType> class GeneralizedEigenSolver
       : m_eivec(A.rows(), A.cols()),
         m_alphas(A.cols()),
         m_betas(A.cols()),
-        m_isInitialized(false),
-        m_eigenvectorsOk(false),
+        m_valuesOkay(false),
+        m_vectorsOkay(false),
         m_realQZ(A.cols()),
-        m_matS(A.rows(), A.cols()),
         m_tmp(A.cols())
     {
       compute(A, B, computeEigenvectors);
@@ -160,22 +166,20 @@ template<typename _MatrixType> class GeneralizedEigenSolver
 
     /* \brief Returns the computed generalized eigenvectors.
       *
-      * \returns  %Matrix whose columns are the (possibly complex) eigenvectors.
+      * \returns  %Matrix whose columns are the (possibly complex) right eigenvectors.
+      * i.e. the eigenvectors that solve (A - l*B)x = 0. The ordering matches the eigenvalues.
       *
       * \pre Either the constructor 
       * GeneralizedEigenSolver(const MatrixType&,const MatrixType&, bool) or the member function
       * compute(const MatrixType&, const MatrixType& bool) has been called before, and
       * \p computeEigenvectors was set to true (the default).
       *
-      * Column \f$ k \f$ of the returned matrix is an eigenvector corresponding
-      * to eigenvalue number \f$ k \f$ as returned by eigenvalues().  The
-      * eigenvectors are normalized to have (Euclidean) norm equal to one. The
-      * matrix returned by this function is the matrix \f$ V \f$ in the
-      * generalized eigendecomposition \f$ A = B V D V^{-1} \f$, if it exists.
-      *
       * \sa eigenvalues()
       */
-//    EigenvectorsType eigenvectors() const;
+    EigenvectorsType eigenvectors() const {
+      eigen_assert(m_vectorsOkay && "Eigenvectors for GeneralizedEigenSolver were not calculated.");
+      return m_eivec;
+    }
 
     /** \brief Returns an expression of the computed generalized eigenvalues.
       *
@@ -197,7 +201,7 @@ template<typename _MatrixType> class GeneralizedEigenSolver
       */
     EigenvalueType eigenvalues() const
     {
-      eigen_assert(m_isInitialized && "GeneralizedEigenSolver is not initialized.");
+      eigen_assert(m_valuesOkay && "GeneralizedEigenSolver is not initialized.");
       return EigenvalueType(m_alphas,m_betas);
     }
 
@@ -208,7 +212,7 @@ template<typename _MatrixType> class GeneralizedEigenSolver
       * \sa betas(), eigenvalues() */
     ComplexVectorType alphas() const
     {
-      eigen_assert(m_isInitialized && "GeneralizedEigenSolver is not initialized.");
+      eigen_assert(m_valuesOkay && "GeneralizedEigenSolver is not initialized.");
       return m_alphas;
     }
 
@@ -219,7 +223,7 @@ template<typename _MatrixType> class GeneralizedEigenSolver
       * \sa alphas(), eigenvalues() */
     VectorType betas() const
     {
-      eigen_assert(m_isInitialized && "GeneralizedEigenSolver is not initialized.");
+      eigen_assert(m_valuesOkay && "GeneralizedEigenSolver is not initialized.");
       return m_betas;
     }
 
@@ -250,7 +254,7 @@ template<typename _MatrixType> class GeneralizedEigenSolver
 
     ComputationInfo info() const
     {
-      eigen_assert(m_isInitialized && "EigenSolver is not initialized.");
+      eigen_assert(m_valuesOkay && "EigenSolver is not initialized.");
       return m_realQZ.info();
     }
 
@@ -270,28 +274,13 @@ template<typename _MatrixType> class GeneralizedEigenSolver
       EIGEN_STATIC_ASSERT(!NumTraits<Scalar>::IsComplex, NUMERIC_TYPE_MUST_BE_REAL);
     }
     
-    MatrixType m_eivec;
+    EigenvectorsType m_eivec;
     ComplexVectorType m_alphas;
     VectorType m_betas;
-    bool m_isInitialized;
-    bool m_eigenvectorsOk;
+    bool m_valuesOkay, m_vectorsOkay;
     RealQZ<MatrixType> m_realQZ;
-    MatrixType m_matS;
-
-    typedef Matrix<Scalar, ColsAtCompileTime, 1, Options & ~RowMajor, MaxColsAtCompileTime, 1> ColumnVectorType;
-    ColumnVectorType m_tmp;
+    ComplexVectorType m_tmp;
 };
-
-//template<typename MatrixType>
-//typename GeneralizedEigenSolver<MatrixType>::EigenvectorsType GeneralizedEigenSolver<MatrixType>::eigenvectors() const
-//{
-//  eigen_assert(m_isInitialized && "EigenSolver is not initialized.");
-//  eigen_assert(m_eigenvectorsOk && "The eigenvectors have not been computed together with the eigenvalues.");
-//  Index n = m_eivec.cols();
-//  EigenvectorsType matV(n,n);
-//  // TODO
-//  return matV;
-//}
 
 template<typename MatrixType>
 GeneralizedEigenSolver<MatrixType>&
@@ -302,66 +291,125 @@ GeneralizedEigenSolver<MatrixType>::compute(const MatrixType& A, const MatrixTyp
   using std::sqrt;
   using std::abs;
   eigen_assert(A.cols() == A.rows() && B.cols() == A.rows() && B.cols() == B.rows());
-
+  Index size = A.cols();
+  m_valuesOkay = false;
+  m_vectorsOkay = false;
   // Reduce to generalized real Schur form:
   // A = Q S Z and B = Q T Z
   m_realQZ.compute(A, B, computeEigenvectors);
-
   if (m_realQZ.info() == Success)
   {
-    m_matS = m_realQZ.matrixS();
+    // Resize storage
+    m_alphas.resize(size);
+    m_betas.resize(size);
     if (computeEigenvectors)
-      m_eivec = m_realQZ.matrixZ().transpose();
-  
-    // Compute eigenvalues from matS
-    m_alphas.resize(A.cols());
-    m_betas.resize(A.cols());
-    Index i = 0;
-    while (i < A.cols())
     {
-      if (i == A.cols() - 1 || m_matS.coeff(i+1, i) == Scalar(0))
+      m_eivec.resize(size,size);
+      m_tmp.resize(size);
+    }
+
+    // Aliases:
+    Map<VectorType> v(reinterpret_cast<Scalar*>(m_tmp.data()), size);
+    ComplexVectorType &cv = m_tmp;
+    const MatrixType &mS = m_realQZ.matrixS();
+    const MatrixType &mT = m_realQZ.matrixT();
+
+    Index i = 0;
+    while (i < size)
+    {
+      if (i == size - 1 || mS.coeff(i+1, i) == Scalar(0))
       {
-        m_alphas.coeffRef(i) = m_matS.coeff(i, i);
-        m_betas.coeffRef(i)  = m_realQZ.matrixT().coeff(i,i);
+        // Real eigenvalue
+        m_alphas.coeffRef(i) = mS.diagonal().coeff(i);
+        m_betas.coeffRef(i)  = mT.diagonal().coeff(i);
+        if (computeEigenvectors)
+        {
+          v.setConstant(Scalar(0.0));
+          v.coeffRef(i) = Scalar(1.0);
+          // For singular eigenvalues do nothing more
+          if(abs(m_betas.coeffRef(i)) >= (std::numeric_limits<RealScalar>::min)())
+          {
+            // Non-singular eigenvalue
+            const Scalar alpha = real(m_alphas.coeffRef(i));
+            const Scalar beta = m_betas.coeffRef(i);
+            for (Index j = i-1; j >= 0; j--)
+            {
+              const Index st = j+1;
+              const Index sz = i-j;
+              if (j > 0 && mS.coeff(j, j-1) != Scalar(0))
+              {
+                // 2x2 block
+                Matrix<Scalar, 2, 1> rhs = (alpha*mT.template block<2,Dynamic>(j-1,st,2,sz) - beta*mS.template block<2,Dynamic>(j-1,st,2,sz)) .lazyProduct( v.segment(st,sz) );
+                Matrix<Scalar, 2, 2> lhs = beta * mS.template block<2,2>(j-1,j-1) - alpha * mT.template block<2,2>(j-1,j-1);
+                v.template segment<2>(j-1) = lhs.partialPivLu().solve(rhs);
+                j--;
+              }
+              else
+              {
+                v.coeffRef(j) = -v.segment(st,sz).transpose().cwiseProduct(beta*mS.block(j,st,1,sz) - alpha*mT.block(j,st,1,sz)).sum() / (beta*mS.coeffRef(j,j) - alpha*mT.coeffRef(j,j));
+              }
+            }
+          }
+          m_eivec.col(i).real().noalias() = m_realQZ.matrixZ().transpose() * v;
+          m_eivec.col(i).real().normalize();
+          m_eivec.col(i).imag().setConstant(0);
+        }
         ++i;
       }
       else
       {
-        // We need to extract the generalized eigenvalues of the pair of a general 2x2 block S and a triangular 2x2 block T
-        // From the eigen decomposition of T = U * E * U^-1,
-        // we can extract the eigenvalues of (U^-1 * S * U) / E
-        // Here, we can take advantage that E = diag(T), and U = [ 1 T_01 ; 0 T_11-T_00], and U^-1 = [1 -T_11/(T_11-T_00) ; 0 1/(T_11-T_00)].
-        // Then taking beta=T_00*T_11*(T_11-T_00), we can avoid any division, and alpha is the eigenvalues of A = (U^-1 * S * U) * diag(T_11,T_00) * (T_11-T_00):
+        // We need to extract the generalized eigenvalues of the pair of a general 2x2 block S and a positive diagonal 2x2 block T
+        // Then taking beta=T_00*T_11, we can avoid any division, and alpha is the eigenvalues of A = (U^-1 * S * U) * diag(T_11,T_00):
 
-        // T =  [a b ; 0 c]
-        // S =  [e f ; g h]
-        RealScalar a = m_realQZ.matrixT().coeff(i, i), b = m_realQZ.matrixT().coeff(i, i+1), c = m_realQZ.matrixT().coeff(i+1, i+1);
-        RealScalar e = m_matS.coeff(i, i), f = m_matS.coeff(i, i+1), g = m_matS.coeff(i+1, i), h = m_matS.coeff(i+1, i+1);
-        RealScalar d = c-a;
-        RealScalar gb = g*b;
-        Matrix<RealScalar,2,2> A;
-        A <<  (e*d-gb)*c,  ((e*b+f*d-h*b)*d-gb*b)*a,
-              g*c       ,  (gb+h*d)*a;
+        // T =  [a 0]
+        //      [0 b]
+        RealScalar a = mT.diagonal().coeff(i),
+                   b = mT.diagonal().coeff(i+1);
+        const RealScalar beta = m_betas.coeffRef(i) = m_betas.coeffRef(i+1) = a*b;
 
-        // NOTE, we could also compute the SVD of T's block during the QZ factorization so that the respective T block is guaranteed to be diagonal,
-        // and then we could directly apply the formula below (while taking care of scaling S columns by T11,T00):
+        // ^^ NOTE: using diagonal()(i) instead of coeff(i,i) workarounds a MSVC bug.
+        Matrix<RealScalar,2,2> S2 = mS.template block<2,2>(i,i) * Matrix<Scalar,2,1>(b,a).asDiagonal();
 
-        Scalar p = Scalar(0.5) * (A.coeff(i, i) - A.coeff(i+1, i+1));
-        Scalar z = sqrt(abs(p * p + A.coeff(i+1, i) * A.coeff(i, i+1)));
-        m_alphas.coeffRef(i)   = ComplexScalar(A.coeff(i+1, i+1) + p, z);
-        m_alphas.coeffRef(i+1) = ComplexScalar(A.coeff(i+1, i+1) + p, -z);
+        Scalar p = Scalar(0.5) * (S2.coeff(0,0) - S2.coeff(1,1));
+        Scalar z = sqrt(abs(p * p + S2.coeff(1,0) * S2.coeff(0,1)));
+        const ComplexScalar alpha = ComplexScalar(S2.coeff(1,1) + p, (beta > 0) ? z : -z);
+        m_alphas.coeffRef(i)   = conj(alpha);
+        m_alphas.coeffRef(i+1) = alpha;
 
-        m_betas.coeffRef(i)   =
-        m_betas.coeffRef(i+1) = a*c*d;
-
+        if (computeEigenvectors) {
+          // Compute eigenvector in position (i+1) and then position (i) is just the conjugate
+          cv.setZero();
+          cv.coeffRef(i+1) = Scalar(1.0);
+          // here, the "static_cast" workaound expression template issues.
+          cv.coeffRef(i) = -(static_cast<Scalar>(beta*mS.coeffRef(i,i+1)) - alpha*mT.coeffRef(i,i+1))
+                          / (static_cast<Scalar>(beta*mS.coeffRef(i,i))   - alpha*mT.coeffRef(i,i));
+          for (Index j = i-1; j >= 0; j--)
+          {
+            const Index st = j+1;
+            const Index sz = i+1-j;
+            if (j > 0 && mS.coeff(j, j-1) != Scalar(0))
+            {
+              // 2x2 block
+              Matrix<ComplexScalar, 2, 1> rhs = (alpha*mT.template block<2,Dynamic>(j-1,st,2,sz) - beta*mS.template block<2,Dynamic>(j-1,st,2,sz)) .lazyProduct( cv.segment(st,sz) );
+              Matrix<ComplexScalar, 2, 2> lhs = beta * mS.template block<2,2>(j-1,j-1) - alpha * mT.template block<2,2>(j-1,j-1);
+              cv.template segment<2>(j-1) = lhs.partialPivLu().solve(rhs);
+              j--;
+            } else {
+              cv.coeffRef(j) =  cv.segment(st,sz).transpose().cwiseProduct(beta*mS.block(j,st,1,sz) - alpha*mT.block(j,st,1,sz)).sum()
+                              / (alpha*mT.coeffRef(j,j) - static_cast<Scalar>(beta*mS.coeffRef(j,j)));
+            }
+          }
+          m_eivec.col(i+1).noalias() = (m_realQZ.matrixZ().transpose() * cv);
+          m_eivec.col(i+1).normalize();
+          m_eivec.col(i) = m_eivec.col(i+1).conjugate();
+        }
         i += 2;
       }
     }
+
+    m_valuesOkay = true;
+    m_vectorsOkay = computeEigenvectors;
   }
-
-  m_isInitialized = true;
-  m_eigenvectorsOk = false;//computeEigenvectors;
-
   return *this;
 }
 

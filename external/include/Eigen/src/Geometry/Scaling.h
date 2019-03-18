@@ -18,7 +18,7 @@ namespace Eigen {
   *
   * \brief Represents a generic uniform scaling transformation
   *
-  * \param _Scalar the scalar type, i.e., the type of the coefficients.
+  * \tparam _Scalar the scalar type, i.e., the type of the coefficients.
   *
   * This class represent a uniform scaling transformation. It is the return
   * type of Scaling(Scalar), and most of the time this is the only way it
@@ -62,10 +62,10 @@ public:
   template<int Dim, int Mode, int Options>
   inline Transform<Scalar,Dim,(int(Mode)==int(Isometry)?Affine:Mode)> operator* (const Transform<Scalar,Dim, Mode, Options>& t) const
   {
-   Transform<Scalar,Dim,(int(Mode)==int(Isometry)?Affine:Mode)> res = t;
-   res.prescale(factor());
-   return res;
-}
+    Transform<Scalar,Dim,(int(Mode)==int(Isometry)?Affine:Mode)> res = t;
+    res.prescale(factor());
+    return res;
+  }
 
   /** Concatenates a uniform scaling and a linear transformation matrix */
   // TODO returns an expression
@@ -104,40 +104,44 @@ public:
 
 };
 
-/** Concatenates a linear transformation matrix and a uniform scaling */
+/** \addtogroup Geometry_Module */
+//@{
+
+/** Concatenates a linear transformation matrix and a uniform scaling
+  * \relates UniformScaling
+  */
 // NOTE this operator is defiend in MatrixBase and not as a friend function
 // of UniformScaling to fix an internal crash of Intel's ICC
-template<typename Derived> typename MatrixBase<Derived>::ScalarMultipleReturnType
-MatrixBase<Derived>::operator*(const UniformScaling<Scalar>& s) const
-{ return derived() * s.factor(); }
+template<typename Derived,typename Scalar>
+EIGEN_EXPR_BINARYOP_SCALAR_RETURN_TYPE(Derived,Scalar,product)
+operator*(const MatrixBase<Derived>& matrix, const UniformScaling<Scalar>& s)
+{ return matrix.derived() * s.factor(); }
 
 /** Constructs a uniform scaling from scale factor \a s */
-static inline UniformScaling<float> Scaling(float s) { return UniformScaling<float>(s); }
+inline UniformScaling<float> Scaling(float s) { return UniformScaling<float>(s); }
 /** Constructs a uniform scaling from scale factor \a s */
-static inline UniformScaling<double> Scaling(double s) { return UniformScaling<double>(s); }
+inline UniformScaling<double> Scaling(double s) { return UniformScaling<double>(s); }
 /** Constructs a uniform scaling from scale factor \a s */
 template<typename RealScalar>
-static inline UniformScaling<std::complex<RealScalar> > Scaling(const std::complex<RealScalar>& s)
+inline UniformScaling<std::complex<RealScalar> > Scaling(const std::complex<RealScalar>& s)
 { return UniformScaling<std::complex<RealScalar> >(s); }
 
 /** Constructs a 2D axis aligned scaling */
 template<typename Scalar>
-static inline DiagonalMatrix<Scalar,2> Scaling(const Scalar& sx, const Scalar& sy)
+inline DiagonalMatrix<Scalar,2> Scaling(const Scalar& sx, const Scalar& sy)
 { return DiagonalMatrix<Scalar,2>(sx, sy); }
 /** Constructs a 3D axis aligned scaling */
 template<typename Scalar>
-static inline DiagonalMatrix<Scalar,3> Scaling(const Scalar& sx, const Scalar& sy, const Scalar& sz)
+inline DiagonalMatrix<Scalar,3> Scaling(const Scalar& sx, const Scalar& sy, const Scalar& sz)
 { return DiagonalMatrix<Scalar,3>(sx, sy, sz); }
 
 /** Constructs an axis aligned scaling expression from vector expression \a coeffs
   * This is an alias for coeffs.asDiagonal()
   */
 template<typename Derived>
-static inline const DiagonalWrapper<const Derived> Scaling(const MatrixBase<Derived>& coeffs)
+inline const DiagonalWrapper<const Derived> Scaling(const MatrixBase<Derived>& coeffs)
 { return coeffs.asDiagonal(); }
 
-/** \addtogroup Geometry_Module */
-//@{
 /** \deprecated */
 typedef DiagonalMatrix<float, 2> AlignedScaling2f;
 /** \deprecated */

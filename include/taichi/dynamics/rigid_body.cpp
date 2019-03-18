@@ -58,7 +58,7 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
       }
       inertia = inertia * (1.0_f / 12);
     }
-    TC_ASSERT_INFO(id(inertia) >= 0,
+    TC_ASSERT_INFO(inertia >= 0,
                    "Rigid body inertia cannot be negative. (Make sure vertices "
                    "are counter-clockwise)");
   }
@@ -86,7 +86,7 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
       }
       center_of_mass /= volume;
 
-      id(inertia) = Matrix(0.0_f);
+      inertia = Matrix(0.0_f);
       for (int i = 0; i < n; i++) {
         // TODO: make it more accurate
         Vector verts[dim];
@@ -101,7 +101,7 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
                          triangles[i].v[2] - triangles[i].v[0])) *
             0.5_f;
 
-        id(inertia) +=
+        inertia +=
             (Matrix(dot(r, r)) - Matrix::outer_product(r, r)) * local_volume;
       }
     } else {
@@ -123,14 +123,14 @@ typename RigidBody<dim>::Vector RigidBody<dim>::initialize_mass_and_inertia(
       }
       center_of_mass /= volume;
 
-      inertia = id(Matrix(0.0_f));
+      inertia = Matrix(0.0_f);
       for (int i = 0; i < n; i++) {
         Vector verts[dim];
         for (int d = 0; d < dim; ++d) {
           verts[d] = triangles[i].v[d] - center_of_mass;
         }
-        inertia += -id(tetrahedron_inertia_tensor(id(Vector(0.0_f)), verts[0],
-                                                  verts[1], verts[2]));
+        inertia += -tetrahedron_inertia_tensor(Vector(0.0_f), verts[0],
+                                               verts[1], verts[2]);
       }
     }
   }

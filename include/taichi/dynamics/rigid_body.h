@@ -344,7 +344,7 @@ struct RigidBody {
   void set_inertia(const InertiaType &inertia) {
     this->inertia = inertia;
     TC_STATIC_IF(dim == 2) {
-      this->inv_inertia = inversed(id(inertia));
+      this->inv_inertia = inversed(inertia);
     }
     TC_STATIC_ELSE {
 #ifdef _WIN64
@@ -357,7 +357,7 @@ struct RigidBody {
 #endif
 #else
       this->inv_inertia =
-          inversed(id(inertia).template cast<float64>()).template cast<real>();
+          inversed(inertia.template cast<float64>()).template cast<real>();
 #endif
     }
     TC_STATIC_END_IF

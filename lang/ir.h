@@ -307,6 +307,8 @@ class IRNode {
   virtual void accept(IRVisitor *visitor) {
     TC_NOT_IMPLEMENTED
   }
+  virtual ~IRNode() {
+  }
 };
 
 #define DEFINE_ACCEPT                        \
@@ -533,6 +535,9 @@ class Statement : public IRNode {
   static pStmt make(Args &&... args) {
     return std::make_unique<T>(std::forward<Args>(args)...);
   }
+
+  virtual ~Statement() {
+  }
 };
 
 // always a tree - used as rvalues
@@ -552,6 +557,9 @@ class Expression {
 
   virtual bool is_lvalue() const {
     return false;
+  }
+
+  virtual ~Expression() {
   }
 };
 

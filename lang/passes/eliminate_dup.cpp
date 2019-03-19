@@ -21,11 +21,12 @@ class BasicBlockEliminate : public IRVisitor {
     }
   }
 
-  void visit(GlobalPtrStmt *stmt) {
+  void visit(GlobalPtrStmt *stmt) override {
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
-        if (typeid(*bstmt) == typeid(*stmt)) {
+        auto &bstmt_data = *bstmt;
+        if (typeid(bstmt_data) == typeid(*stmt)) {
           auto bstmt_ = bstmt->as<GlobalPtrStmt>();
           bool same = true;
           for (int l = 0; l < stmt->width(); l++) {
@@ -52,10 +53,11 @@ class BasicBlockEliminate : public IRVisitor {
     }
   }
 
-  void visit(ConstStmt *stmt) {
+  void visit(ConstStmt *stmt) override {
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
-      if (typeid(*bstmt) == typeid(*stmt)) {
+      auto &bstmt_data = *bstmt;
+      if (typeid(bstmt_data) == typeid(*stmt)) {
         if (stmt->width() == bstmt->width()) {
           auto bstmt_ = bstmt->as<ConstStmt>();
           bool same = true;
@@ -75,11 +77,11 @@ class BasicBlockEliminate : public IRVisitor {
     }
   }
 
-  void visit(AllocaStmt *stmt) {
+  void visit(AllocaStmt *stmt) override {
     return;
   }
 
-  void visit(ElementShuffleStmt *stmt) {
+  void visit(ElementShuffleStmt *stmt) override {
     // is this stmt necessary?
     {
       bool same_source = true;
@@ -103,7 +105,8 @@ class BasicBlockEliminate : public IRVisitor {
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
-        if (typeid(*bstmt) == typeid(*stmt)) {
+        auto &bstmt_data = *bstmt;
+        if (typeid(bstmt_data) == typeid(*stmt)) {
           auto bstmt_ = bstmt->as<ElementShuffleStmt>();
           bool same = true;
           for (int l = 0; l < stmt->width(); l++) {
@@ -123,11 +126,12 @@ class BasicBlockEliminate : public IRVisitor {
     }
   }
 
-  void visit(LocalLoadStmt *stmt) {
+  void visit(LocalLoadStmt *stmt) override {
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
-        if (typeid(*bstmt) == typeid(*stmt)) {
+        auto &bstmt_data = *bstmt;
+        if (typeid(bstmt_data) == typeid(*stmt)) {
           auto bstmt_ = bstmt->as<LocalLoadStmt>();
           bool same = true;
           std::vector<Stmt *> vars;
@@ -164,24 +168,25 @@ class BasicBlockEliminate : public IRVisitor {
     }
   }
 
-  void visit(LocalStoreStmt *stmt) {
+  void visit(LocalStoreStmt *stmt) override {
     return;
   }
 
   // Do not eliminate global data access
-  void visit(GlobalLoadStmt *stmt) {
+  void visit(GlobalLoadStmt *stmt) override {
     return;
   }
 
-  void visit(GlobalStoreStmt *stmt) {
+  void visit(GlobalStoreStmt *stmt) override {
     return;
   }
 
-  void visit(BinaryOpStmt *stmt) {
+  void visit(BinaryOpStmt *stmt) override {
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
-        if (typeid(*bstmt) == typeid(*stmt)) {
+        auto &bstmt_data = *bstmt;
+        if (typeid(bstmt_data) == typeid(*stmt)) {
           auto bstmt_ = bstmt->as<BinaryOpStmt>();
           if (bstmt_->lhs == stmt->lhs && bstmt_->rhs == stmt->rhs) {
             stmt->replace_with(bstmt.get());
@@ -193,11 +198,12 @@ class BasicBlockEliminate : public IRVisitor {
     }
   }
 
-  void visit(UnaryOpStmt *stmt) {
+  void visit(UnaryOpStmt *stmt) override {
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
-        if (typeid(*bstmt) == typeid(*stmt)) {
+        auto &bstmt_data = *bstmt;
+        if (typeid(bstmt_data) == typeid(*stmt)) {
           auto bstmt_ = bstmt->as<UnaryOpStmt>();
           if (bstmt_->rhs == stmt->rhs) {
             stmt->replace_with(bstmt.get());
@@ -209,15 +215,15 @@ class BasicBlockEliminate : public IRVisitor {
     }
   }
 
-  void visit(PrintStmt *stmt) {
+  void visit(PrintStmt *stmt) override {
     return;
   }
 
-  void visit(RandStmt *stmt) {
+  void visit(RandStmt *stmt) override {
     return;
   }
 
-  void visit(WhileControlStmt *stmt) {
+  void visit(WhileControlStmt *stmt) override {
     return;
   }
 };
@@ -230,7 +236,7 @@ class EliminateDup : public IRVisitor {
     node->accept(this);
   }
 
-  void visit(Block *block) {
+  void visit(Block *block) override {
     if (!block->has_container_statements()) {
       while (true) {
         try {
@@ -255,12 +261,12 @@ class EliminateDup : public IRVisitor {
     }
   }
 
-  void visit(RangeForStmt *for_stmt) {
+  void visit(RangeForStmt *for_stmt) override {
     auto old_vectorize = for_stmt->vectorize;
     for_stmt->body->accept(this);
   }
 
-  void visit(WhileStmt *stmt) {
+  void visit(WhileStmt *stmt) override {
     stmt->body->accept(this);
   }
 };

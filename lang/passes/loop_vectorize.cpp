@@ -16,16 +16,16 @@ class LoopVectorize : public IRVisitor {
     vectorize = 1;
   }
 
-  void visit(Statement *stmt) {
+  void visit(Statement *stmt) override {
     stmt->ret_type.width *= vectorize;
   }
 
-  void visit(ConstStmt *stmt) {
+  void visit(ConstStmt *stmt) override {
     stmt->val.repeat(vectorize);
     stmt->ret_type.width *= vectorize;
   }
 
-  void visit(Block *stmt_list) {
+  void visit(Block *stmt_list) override {
     std::vector<Stmt *> statements;
     for (auto &stmt : stmt_list->statements) {
       statements.push_back(stmt.get());
@@ -35,16 +35,16 @@ class LoopVectorize : public IRVisitor {
     }
   }
 
-  void visit(GlobalPtrStmt *ptr) {
+  void visit(GlobalPtrStmt *ptr) override {
     ptr->snode.repeat(vectorize);
     ptr->width() *= vectorize;
   }
 
-  void visit(AllocaStmt *alloca) {
+  void visit(AllocaStmt *alloca) override {
     alloca->ret_type.width *= vectorize;
   }
 
-  void visit(ElementShuffleStmt *stmt) {
+  void visit(ElementShuffleStmt *stmt) override {
     if (vectorize == 1)
       return;
     int original_width = stmt->width();
@@ -61,7 +61,7 @@ class LoopVectorize : public IRVisitor {
     }
   }
 
-  void visit(LocalLoadStmt *stmt) {
+  void visit(LocalLoadStmt *stmt) override {
     if (vectorize == 1)
       return;
     int original_width = stmt->width();
@@ -102,7 +102,7 @@ class LoopVectorize : public IRVisitor {
     }
   }
 
-  void visit(RangeForStmt *for_stmt) {
+  void visit(RangeForStmt *for_stmt) override {
     auto old_vectorize = for_stmt->vectorize;
     vectorize = for_stmt->vectorize;
     loop_var = for_stmt->loop_var;
@@ -111,7 +111,7 @@ class LoopVectorize : public IRVisitor {
     vectorize = old_vectorize;
   }
 
-  void visit(WhileStmt *stmt) {
+  void visit(WhileStmt *stmt) override {
     stmt->body->accept(this);
   }
 

@@ -93,7 +93,6 @@ TC_TEST("2d_blocked_array") {
   }
 }
 
-
 #if (0)
 
 TC_TEST("spmv") {
@@ -327,7 +326,7 @@ TC_TEST("indirect") {
     TC_CHECK(reduced == (i * k + (i + 1) * k + 1) * k / 2);
   }
 }
-
+#endif
 
 TC_TEST("pointer") {
   Program prog;
@@ -336,17 +335,19 @@ TC_TEST("pointer") {
   int k = 64;
   int m = n * k;
 
-  auto a = var<int32>();
-  auto sum = var<int32>();
-
-  auto i = ind(), j = ind();
+  Global(a, i32);
+  Global(sum, i32);
 
   layout([&] {
+    auto i = Index(0);
     root.fixed(i, n).pointer().fixed(i, k).place(a);
     root.place(sum);
   });
 
-  auto red = kernel(a, [&]() { reduce(global(sum), a[i]); });
+  auto red = kernel([&]() {
+    Declare(i);
+    For(i, a, [&] { sum[Expr(0)] += a[i]; });
+  });
 
   int sum_gt = 0;
   for (int i = 0; i < m; i++) {
@@ -361,8 +362,6 @@ TC_TEST("pointer") {
   auto reduced = sum.val<int32>();
   TC_CHECK(reduced == sum_gt);
 }
-
-#endif
 
 TC_TEST("hashed") {
   Program prog;
@@ -382,9 +381,7 @@ TC_TEST("hashed") {
 
   auto red = kernel([&]() {
     Declare(i);
-    For (i, a, [&]{
-      sum[Expr(0)] += a[i];
-    });
+    For(i, a, [&] { sum[Expr(0)] += a[i]; });
   });
   sum.val<int32>() = 0;
 

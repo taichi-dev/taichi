@@ -24,6 +24,7 @@ TC_TEST("snode") {
 
 TC_TEST("snode_loop") {
   Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
 
   auto i = Index(0);
   Global(u, i32);

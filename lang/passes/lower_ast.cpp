@@ -18,7 +18,7 @@ class LowerAST : public IRVisitor {
       return expr;
   }
 
-  void visit(Block *stmt_list) {
+  void visit(Block *stmt_list) override {
     auto backup_block = current_block;
     current_block = stmt_list;
     for (auto &stmt : stmt_list->statements) {
@@ -27,7 +27,7 @@ class LowerAST : public IRVisitor {
     current_block = backup_block;
   }
 
-  void visit(FrontendAllocaStmt *stmt) {
+  void visit(FrontendAllocaStmt *stmt) override {
     auto block = stmt->parent;
     auto ident = stmt->ident;
     TC_ASSERT(block->local_var_alloca.find(ident) ==
@@ -75,7 +75,7 @@ class LowerAST : public IRVisitor {
     }
   }
 
-  void visit(FrontendPrintStmt *stmt) {
+  void visit(FrontendPrintStmt *stmt) override {
     // expand rhs
     auto expr = load_if_ptr(stmt->expr);
     VecStatement flattened;
@@ -85,7 +85,7 @@ class LowerAST : public IRVisitor {
     throw IRModifiedException();
   }
 
-  void visit(FrontendWhileStmt *stmt) {
+  void visit(FrontendWhileStmt *stmt) override {
     // transform into a structure as
     // while (1) { cond; if (no active) break; original body...}
 
@@ -119,38 +119,46 @@ class LowerAST : public IRVisitor {
     throw IRModifiedException();
   }
 
-  void visit(WhileStmt *stmt) {
+  void visit(WhileStmt *stmt) override {
     stmt->body->accept(this);
   }
 
-  void visit(FrontendForStmt *stmt) {
-    auto begin = stmt->begin;
-    auto end = stmt->end;
-
+  void visit(FrontendForStmt *stmt) override {
     VecStatement flattened;
-
     // insert an alloca here
     flattened.push_back<AllocaStmt>(DataType::i32);
     stmt->parent->local_var_alloca[stmt->loop_var_id] = flattened.back().get();
 
-    begin->flatten(flattened);
-    end->flatten(flattened);
-
-    auto &&new_for = std::make_unique<RangeForStmt>(
-        stmt->parent->lookup_var(stmt->loop_var_id), begin->stmt, end->stmt,
-        std::move(stmt->body), stmt->vectorize, stmt->parallelize);
-    new_for->body->inner_loop_variable =
-        stmt->parent->lookup_var(stmt->loop_var_id);
-    flattened.push_back(std::move(new_for));
+    if (stmt->is_ranged()) {
+      auto begin = stmt->begin;
+      auto end = stmt->end;
+      begin->flatten(flattened);
+      end->flatten(flattened);
+      auto &&new_for = std::make_unique<RangeForStmt>(
+          stmt->parent->lookup_var(stmt->loop_var_id), begin->stmt, end->stmt,
+          std::move(stmt->body), stmt->vectorize, stmt->parallelize);
+      new_for->body->inner_loop_variable =
+          stmt->parent->lookup_var(stmt->loop_var_id);
+      flattened.push_back(std::move(new_for));
+    } else {
+      auto &&new_for = std::make_unique<StructuralForStmt>(
+          stmt->parent->lookup_var(stmt->loop_var_id),
+          stmt->global_var.cast<GlobalVariableExpression>()->snode,
+          std::move(stmt->body), stmt->vectorize, stmt->parallelize);
+      new_for->body->inner_loop_variable =
+          stmt->parent->lookup_var(stmt->loop_var_id);
+      flattened.push_back(std::move(new_for));
+    }
     stmt->parent->replace_with(stmt, flattened);
+
     throw IRModifiedException();
   }
 
-  void visit(RangeForStmt *for_stmt) {
+  void visit(RangeForStmt *for_stmt) override {
     for_stmt->body->accept(this);
   }
 
-  void visit(FrontendEvalStmt *stmt) {
+  void visit(FrontendEvalStmt *stmt) override {
     // expand rhs
     auto expr = stmt->expr;
     VecStatement flattened;
@@ -160,7 +168,7 @@ class LowerAST : public IRVisitor {
     throw IRModifiedException();
   }
 
-  void visit(FrontendAssignStmt *assign) {
+  void visit(FrontendAssignStmt *assign) override {
     // expand rhs
     auto expr = assign->rhs;
     VecStatement flattened;

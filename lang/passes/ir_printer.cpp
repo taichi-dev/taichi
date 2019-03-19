@@ -129,8 +129,14 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendForStmt *for_stmt) {
-    print("for {} in range({}, {}) {{", for_stmt->loop_var_id.name(),
-          for_stmt->begin->serialize(), for_stmt->end->serialize());
+    if (for_stmt->is_ranged()) {
+      print("for {} in range({}, {}) {{", for_stmt->loop_var_id.name(),
+            for_stmt->begin->serialize(), for_stmt->end->serialize());
+    } else {
+      print("for {} where {} active {{", for_stmt->loop_var_id.name(),
+            for_stmt->global_var.cast<GlobalVariableExpression>()
+                ->snode->node_type_name);
+    }
     for_stmt->body->accept(this);
     print("}}");
   }
@@ -138,6 +144,13 @@ class IRPrinter : public IRVisitor {
   void visit(RangeForStmt *for_stmt) {
     print("for {} in range({}, {}, step {}) {{", for_stmt->loop_var->name(),
           for_stmt->begin->name(), for_stmt->end->name(), for_stmt->vectorize);
+    for_stmt->body->accept(this);
+    print("}}");
+  }
+
+  void visit(StructuralForStmt *for_stmt) {
+    print("for {} where {} active, step {} {{", for_stmt->loop_var->name(),
+          for_stmt->snode->node_type_name, for_stmt->vectorize);
     for_stmt->body->accept(this);
     print("}}");
   }

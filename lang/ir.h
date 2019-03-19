@@ -1337,7 +1337,6 @@ class StructuralForStmt : public Statement {
 
   StructuralForStmt(Stmt *loop_var,
                     SNode *snode,
-                    Statement *end,
                     std::unique_ptr<Block> &&body,
                     int vectorize,
                     int parallelize)

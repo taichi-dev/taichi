@@ -529,7 +529,7 @@ TC_TEST("simd_mpm") {
       }
     }
   }
-  for (int i = 0; i < 100; i++)
+  for (int i = 0; i < 10; i++)
     TC_TIME(p2g());
 };
 

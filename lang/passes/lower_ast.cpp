@@ -168,8 +168,8 @@ class LowerAST : public IRVisitor {
     auto expr = stmt->expr;
     VecStatement flattened;
     expr->flatten(flattened);
-    stmt->parent->replace_with(stmt, flattened);
     stmt->eval_expr.cast<EvalExpression>()->stmt_ptr = stmt->expr->stmt;
+    stmt->parent->replace_with(stmt, flattened);
     throw IRModifiedException();
   }
 

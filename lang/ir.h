@@ -31,6 +31,7 @@ class FrontendEvalStmt;
 
 // Without per-lane attributes
 class RangeForStmt;
+class StructuralForStmt;
 class IfStmt;
 class WhileStmt;
 class WhileControlStmt;
@@ -292,6 +293,7 @@ class IRVisitor {
   DEFINE_VISIT(PrintStmt);
   DEFINE_VISIT(ConstStmt);
   DEFINE_VISIT(RangeForStmt);
+  DEFINE_VISIT(StructuralForStmt);
   DEFINE_VISIT(WhileStmt);
   DEFINE_VISIT(WhileControlStmt);
   DEFINE_VISIT(RandStmt);
@@ -1259,10 +1261,21 @@ class ConstStmt : public Statement {
 class FrontendForStmt : public Statement {
  public:
   Expr begin, end;
+  Expr global_var;
   std::unique_ptr<Block> body;
   Ident loop_var_id;
   int vectorize;
   int parallelize;
+
+  bool is_ranged() const {
+    if (global_var.expr == nullptr) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  FrontendForStmt(Expr loop_var, Expr global_var);
 
   FrontendForStmt(Expr loop_var, Expr begin, Expr end);
 
@@ -1296,6 +1309,35 @@ class RangeForStmt : public Statement {
         parallelize(parallelize) {
     add_operand(this->begin);
     add_operand(this->end);
+  }
+
+  bool is_container_statement() const override {
+    return true;
+  }
+
+  DEFINE_ACCEPT
+};
+
+// for stmt over a structural node
+class StructuralForStmt : public Statement {
+ public:
+  Stmt *loop_var;
+  SNode *snode;
+  std::unique_ptr<Block> body;
+  int vectorize;
+  int parallelize;
+
+  StructuralForStmt(Stmt *loop_var,
+                    SNode *snode,
+                    Statement *end,
+                    std::unique_ptr<Block> &&body,
+                    int vectorize,
+                    int parallelize)
+      : loop_var(loop_var),
+        snode(snode),
+        body(std::move(body)),
+        vectorize(vectorize),
+        parallelize(parallelize) {
   }
 
   bool is_container_statement() const override {
@@ -1543,6 +1585,14 @@ class For {
  public:
   For(Expr i, Expr s, Expr e, const std::function<void()> &func) {
     auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
+    auto stmt = stmt_unique.get();
+    current_ast_builder().insert(std::move(stmt_unique));
+    auto _ = current_ast_builder().create_scope(stmt->body);
+    func();
+  }
+
+  For(Expr i, Expr global, const std::function<void()> &func) {
+    auto stmt_unique = std::make_unique<FrontendForStmt>(i, global);
     auto stmt = stmt_unique.get();
     current_ast_builder().insert(std::move(stmt_unique));
     auto _ = current_ast_builder().create_scope(stmt->body);

@@ -22,6 +22,31 @@ TC_TEST("snode") {
   }
 }
 
+TC_TEST("snode_loop") {
+  Program prog(Arch::x86_64);
+
+  auto i = Index(0);
+  Global(u, i32);
+
+  int n = 128;
+
+  // All data structure originates from a "root", which is a forked node.
+  prog.layout([&] { root.fixed(i, n).place(u); });
+
+  auto set = kernel([&] {
+    Declare(i);
+    For(i, u, [&] { u[i] = i; });
+  });
+
+  for (int i = 0; i < n; i++) {
+    u.val<int32>(i) = i + 1;
+  }
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK_EQUAL(u.val<int32>(i), i + 1, 0);
+  }
+}
+
 #if (0)
 
 TC_TEST("test_2d_blocked_array") {

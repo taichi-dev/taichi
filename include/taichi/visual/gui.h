@@ -356,7 +356,7 @@ class Canvas {
             Vector4 color) {
     position = transform(position);
 #if defined(TC_AMALGAMATED)
-    auto ttf_path = std::string(""); // use amalgamated font
+    auto ttf_path = std::string("");  // use amalgamated font
 #else
     char *root_dir = std::getenv("TAICHI_REPO_DIR");
     TC_ASSERT(root_dir != nullptr);
@@ -496,6 +496,9 @@ class GUI : public GUIBase {
 
     void set_hover(bool val) {
       hover = val;
+    }
+
+    virtual ~Widget() {
     }
   };
 

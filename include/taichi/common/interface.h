@@ -73,6 +73,9 @@ class Unit {
     TC_NOT_IMPLEMENTED;
     return "";
   }
+
+  virtual ~Unit() {
+  }
 };
 
 #define TC_IMPLEMENTATION_HOLDER_NAME(T) ImplementationHolder_##T

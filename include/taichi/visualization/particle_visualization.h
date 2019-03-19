@@ -42,6 +42,8 @@ class ParticleRenderer {
   virtual void render(Array2D<Vector3> &buffer,
                       const std::vector<RenderParticle> &particles) const {
   }
+
+  virtual ~ParticleRenderer() {};
 };
 
 std::shared_ptr<Texture> rasterize_render_particles(

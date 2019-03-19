@@ -94,6 +94,9 @@ class Fluid {
     return Array<real>(Vector2i(0, 0));
   }
 
+  virtual ~Fluid() {
+  }
+
  protected:
   std::vector<Particle> particles;
 };

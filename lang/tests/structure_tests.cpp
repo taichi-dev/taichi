@@ -399,4 +399,31 @@ TC_TEST("hashed") {
   TC_CHECK(reduced == sum_gt);
 }
 
+TC_TEST("box_filter") {
+  return;
+  Program prog;
+
+  int n = 64;
+  int k = 128;
+  int m = n * k;
+
+  Global(x, i32);
+  Global(y, i32);
+
+  layout([&] {
+    auto i = Index(0);
+    root.hashed(i, n).fixed(i, k).place(x, y);
+  });
+
+  auto red = kernel([&]() {
+    Declare(i);
+    For(i, x, [&] { y[i] = x[i - 1] + x[i] + x[i + 1]; });
+  });
+
+  red();
+
+  //auto reduced = sum.val<int32>();
+  //TC_CHECK(reduced == sum_gt);
+}
+
 TLANG_NAMESPACE_END

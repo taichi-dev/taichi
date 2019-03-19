@@ -36,15 +36,11 @@ TC_TEST("snode_loop") {
 
   auto set = kernel([&] {
     Declare(i);
-    For(i, u, [&] { u[i] = i; });
+    For(i, u, [&] { u[i] = i * 2; });
   });
 
   for (int i = 0; i < n; i++) {
-    u.val<int32>(i) = i + 1;
-  }
-
-  for (int i = 0; i < n; i++) {
-    TC_CHECK_EQUAL(u.val<int32>(i), i + 1, 0);
+    TC_CHECK_EQUAL(u.val<int32>(i), i * 2, 0);
   }
 }
 

@@ -109,25 +109,20 @@ TC_TEST("stencil1d") {
 
   layout([&] {
     auto i = Index(0);
-    root.hashed(i, 1024).fixed(i, 1024).pointer().fixed(i, 256).place(x, y);
+    root.hashed(i, 8192).fixed(i, 1024).pointer().fixed(i, 256).place(x, y);
   });
 
   auto stencil = kernel([&] {
     Declare(i);
     For(i, x, [&] {
       x[i] = (1.0f / 3) * (y[i - 1] + y[i] + y[i + 1]);
-      // y[i] = imm(0);//y[i];
-      // x[i] = y[i];
     });
   });
 
   auto copy = kernel([&] {
     Declare(i);
     For(i, x, [&] {
-      // x[i] = (1.0f / 3) * (y[i - 1] + y[i] + y[i + 1]);
-      x[i] = load(y[i]);
-      // y[i] = imm(0);//y[i];
-      // x[i] = y[i];
+      x[i] = y[i];
     });
   });
 
@@ -136,7 +131,7 @@ TC_TEST("stencil1d") {
     // initialize
     int total_tiles = 0;
     int total_blocks = 0;
-    for (int i = 0; i < 1024; i++) {
+    for (int i = 0; i < 8192; i++) {
       if (i % 31 != 5) {
         continue;
       }

@@ -397,9 +397,9 @@ TC_TEST("simd_mpm") {
       auto inv_dx = context.inv_dx;
       auto dt = context.dt;
 
-      auto v = g_v[p_i];
-      auto pos = g_pos[p_i];
-      auto J = g_J[p_i];
+      auto v = Eval(g_v[p_i]);
+      auto pos = Eval(g_pos[p_i]);
+      auto J = Eval(g_J[p_i]);
 
       Vector v4(4);
       for (int i = 0; i < dim; i++) {

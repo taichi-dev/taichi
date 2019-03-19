@@ -50,7 +50,6 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = stmt->ptr->ret_type;
   }
 
-
   void visit(GlobalLoadStmt *stmt) {
     stmt->ret_type = stmt->ptr->ret_type;
   }
@@ -83,6 +82,10 @@ class TypeCheck : public IRVisitor {
     block->local_variables.insert(
         std::make_pair(stmt->loop_var, VectorType(1, DataType::i32)));
     */
+    stmt->body->accept(this);
+  }
+
+  void visit(StructuralForStmt *stmt) {
     stmt->body->accept(this);
   }
 

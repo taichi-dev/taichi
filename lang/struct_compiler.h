@@ -174,7 +174,7 @@ class StructCompiler : public CodeGenBase {
           auto e = stack[i]->extractors[j];
           int b = e.num_bits;
           if (b) {
-            if (e.num_bits == e.start) {
+            if (e.num_bits == e.start || max_num_indices != 1) {
               emit_code("tmp = (tmp << {}) + ((i{} >> {}) & ((1 << {}) - 1));",
                         e.num_bits, j, e.start, e.num_bits);
             } else {

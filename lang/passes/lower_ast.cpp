@@ -127,27 +127,30 @@ class LowerAST : public IRVisitor {
   void visit(FrontendForStmt *stmt) override {
     VecStatement flattened;
     // insert an alloca here
-    flattened.push_back<AllocaStmt>(DataType::i32);
-    stmt->parent->local_var_alloca[stmt->loop_var_id] = flattened.back().get();
+    for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
+      flattened.push_back<AllocaStmt>(DataType::i32);
+      stmt->parent->local_var_alloca[stmt->loop_var_id[i]] =
+          flattened.back().get();
+    }
 
     if (stmt->is_ranged()) {
+      TC_ASSERT(stmt->loop_var_id.size() == 1);
       auto begin = stmt->begin;
       auto end = stmt->end;
       begin->flatten(flattened);
       end->flatten(flattened);
       auto &&new_for = std::make_unique<RangeForStmt>(
-          stmt->parent->lookup_var(stmt->loop_var_id), begin->stmt, end->stmt,
-          std::move(stmt->body), stmt->vectorize, stmt->parallelize);
-      new_for->body->inner_loop_variable =
-          stmt->parent->lookup_var(stmt->loop_var_id);
+          stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
+          end->stmt, std::move(stmt->body), stmt->vectorize, stmt->parallelize);
       flattened.push_back(std::move(new_for));
     } else {
+      std::vector<Stmt *> vars(stmt->loop_var_id.size());
+      for (int i = 0; i < stmt->loop_var_id.size(); i++) {
+        vars[i] = stmt->parent->lookup_var(stmt->loop_var_id[i]);
+      }
       auto &&new_for = std::make_unique<StructuralForStmt>(
-          stmt->parent->lookup_var(stmt->loop_var_id),
-          stmt->global_var.cast<GlobalVariableExpression>()->snode,
+          vars, stmt->global_var.cast<GlobalVariableExpression>()->snode,
           std::move(stmt->body), stmt->vectorize, stmt->parallelize);
-      new_for->body->inner_loop_variable =
-          stmt->parent->lookup_var(stmt->loop_var_id);
       flattened.push_back(std::move(new_for));
     }
     stmt->parent->replace_with(stmt, flattened);

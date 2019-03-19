@@ -530,7 +530,7 @@ class SLPVectorize : public IRVisitor {
     }
   }
 
-  void visit(Block *block) {
+  void visit(Block *block) override {
     TC_ASSERT(block->statements.size() != 0);
     for (int iter = 0;; iter++) {
       try {
@@ -555,11 +555,11 @@ class SLPVectorize : public IRVisitor {
     }
   }
 
-  void visit(RangeForStmt *for_stmt) {
+  void visit(RangeForStmt *for_stmt) override {
     for_stmt->body->accept(this);
   }
 
-  void visit(WhileStmt *stmt) {
+  void visit(WhileStmt *stmt) override {
     stmt->body->accept(this);
   }
 

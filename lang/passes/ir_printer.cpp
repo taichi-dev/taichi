@@ -129,11 +129,14 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendForStmt *for_stmt) {
+    auto vars = make_list<Ident>(
+        for_stmt->loop_var_id,
+        [](const Ident &id) -> std::string { return id.name(); });
     if (for_stmt->is_ranged()) {
-      print("for {} in range({}, {}) {{", for_stmt->loop_var_id.name(),
-            for_stmt->begin->serialize(), for_stmt->end->serialize());
+      print("for {} in range({}, {}) {{", vars, for_stmt->begin->serialize(),
+            for_stmt->end->serialize());
     } else {
-      print("for {} where {} active {{", for_stmt->loop_var_id.name(),
+      print("for {} where {} active {{", vars,
             for_stmt->global_var.cast<GlobalVariableExpression>()
                 ->snode->node_type_name);
     }
@@ -149,7 +152,10 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(StructuralForStmt *for_stmt) {
-    print("for {} where {} active, step {} {{", for_stmt->loop_var->name(),
+    auto loop_vars = make_list<Stmt *>(
+        for_stmt->loop_vars,
+        [](Stmt *const &stmt) -> std::string { return stmt->name(); });
+    print("for {} where {} active, step {} {{", loop_vars,
           for_stmt->snode->node_type_name, for_stmt->vectorize);
     for_stmt->body->accept(this);
     print("}}");

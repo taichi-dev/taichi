@@ -142,9 +142,10 @@ class IRCodeGen : public IRVisitor {
       }
     }
     if (last_level) {
-      TC_WARN("Assuming only one variable");
-      emit_code("{} = {};", stmt->loop_var->raw_name(),
-                index_name_global(snode, 0));  // set loop vector
+      for (int i = 0; i < (int)stmt->loop_vars.size(); i++) {
+        emit_code("{} = {};", stmt->loop_vars[i]->raw_name(),
+                  index_name_global(snode, i));  // set loop vector
+      }
     }
     if (has_residual && last_level) {
       CODE_REGION(residual_end);
@@ -254,7 +255,6 @@ class IRCodeGen : public IRVisitor {
   }
 
   void visit(StructuralForStmt *for_stmt) {
-    auto loop_var = for_stmt->loop_var;
     generate_loop_header(for_stmt->snode, for_stmt, true);
     for_stmt->body->accept(this);
     generate_loop_tail(for_stmt->snode, for_stmt, true);

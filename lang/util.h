@@ -424,6 +424,32 @@ class TypedConstant {
   }
 };
 
+template <typename T>
+std::string make_list(const std::vector<T> &data,
+                      std::function<std::string(const T &t)> func,
+                      std::string bracket = "") {
+  std::string ret = bracket;
+  for (int i = 0; i < (int)data.size(); i++) {
+    ret += func(data[i]);
+    if (i + 1 < (int)data.size()) {
+      ret += ", ";
+    }
+  }
+  if (bracket == "<") {
+    ret += ">";
+  } else if (bracket == "{") {
+    ret += "}";
+  } else if (bracket == "[") {
+    ret += "]";
+  } else if (bracket == "(") {
+    ret += ")";
+  } else if (bracket != "") {
+    TC_P(bracket);
+    TC_NOT_IMPLEMENTED
+  }
+  return ret;
+}
+
 TLANG_NAMESPACE_END
 
 TC_NAMESPACE_BEGIN

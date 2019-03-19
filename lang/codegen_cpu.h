@@ -90,36 +90,6 @@ class CPUCodeGen : public CodeGenBase {
 
   void codegen(Kernel &ker);
 
-  template <typename T>
-  static std::string vec_to_list_tmp(const std::vector<T> &val) {
-    std::string members = "<";
-    bool first = true;
-    for (int i = 0; i < (int)val.size(); i++) {
-      if (!first) {
-        members += ",";
-      }
-      first = false;
-      members += fmt::format("{}", val[i]);
-    }
-    members += ">";
-    return members;
-  }
-
-  template <typename T>
-  static std::string vec_to_list_str(const std::vector<T> &val) {
-    std::string members = "{";
-    bool first = true;
-    for (int i = 0; i < (int)val.size(); i++) {
-      if (!first) {
-        members += ",";
-      }
-      first = false;
-      members += fmt::format("{}", val[i]);
-    }
-    members += "}";
-    return members;
-  }
-
   FunctionType compile();
 
   FunctionType get(Program &prog, Kernel &kernel);

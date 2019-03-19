@@ -72,24 +72,31 @@ void Expr::operator/=(const Expr &o) {
   (*this) = (*this) / o;
 }
 
-FrontendForStmt::FrontendForStmt(Expr loop_var, Expr global_var)
+FrontendForStmt::FrontendForStmt(ExpressionGroup loop_var, Expr global_var)
     : global_var(global_var) {
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;
   dec.reset();
   if (vectorize == -1)
     vectorize = 1;
-  loop_var_id = loop_var.cast<IdExpression>()->id;
+
+  loop_var_id.resize(loop_var.size());
+  for (int i = 0; i < (int)loop_var.size(); i++) {
+    loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
+  }
 }
 
-FrontendForStmt::FrontendForStmt(Expr loop_var, Expr begin, Expr end)
+FrontendForStmt::FrontendForStmt(ExpressionGroup loop_var, Expr begin, Expr end)
     : begin(begin), end(end) {
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;
   dec.reset();
   if (vectorize == -1)
     vectorize = 1;
-  loop_var_id = loop_var.cast<IdExpression>()->id;
+  loop_var_id.resize(loop_var.size());
+  for (int i = 0; i < (int)loop_var.size(); i++) {
+    loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
+  }
 }
 
 IRNode *Stmt::get_ir_root() {

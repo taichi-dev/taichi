@@ -46,29 +46,38 @@ TC_TEST("snode_loop") {
   }
 }
 
-#if (0)
-TC_TEST("test_2d_blocked_array") {
-  int n = 32, block_size = 16;
-  TC_ASSERT(n % block_size == 0);
+TC_TEST("2d_blocked_array") {
+  int n = 4, block_size = 16;
 
   Program prog(Arch::x86_64);
-  bool forked = false;
+  bool forked = true;
 
-  auto a = var<int32>(), b = var<int32>(), i = ind(), j = ind();
+  Global(a, i32);
+  Global(b, i32);
 
   layout([&] {
-    if (!forked)
+    auto i = Index(0);
+    auto j = Index(1);
+    if (!forked) {
+      TC_ASSERT(n % block_size == 0);
       root.fixed({i, j}, {n / block_size, n * 2 / block_size})
           .fixed({i, j}, {block_size, block_size})
           .forked()
           .place(a, b);
+    }
     else {
       root.fixed({i, j}, {n, n * 2}).forked().place(a);
       root.fixed({i, j}, {n, n * 2}).forked().place(b);
     }
   });
 
-  auto inc = kernel(a, [&]() { b[i, j] = a[i, j] + i; });
+  auto inc = kernel([&]() {
+    Declare(i);
+    Declare(j);
+    For ({i, j}, a, [&] {
+      b[i, j] = a[i, j] + i;
+    });
+  });
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n * 2; j++) {
@@ -80,11 +89,13 @@ TC_TEST("test_2d_blocked_array") {
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n * 2; j++) {
-      TC_ASSERT_EQUAL(b.val<int32>(i, j), i * 2 + j * 3, 0);
-      TC_ASSERT_EQUAL(a.val<int32>(i, j), i + j * 3, 0);
+      TC_CHECK(a.val<int32>(i, j) == i + j * 3);
+      TC_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
     }
   }
 }
+
+#if (0)
 
 // array of linked list
 TC_TEST("indirect") {

@@ -471,11 +471,11 @@ class Statement : public IRNode {
       return fmt::format("<{}> ", ret_type.short_str());
   }
 
-  std::string name() {
+  std::string name() const {
     return fmt::format("${}", id);
   }
 
-  std::string raw_name() {
+  std::string raw_name() const {
     return fmt::format("tmp{}", id);
   }
 
@@ -664,6 +664,14 @@ class ExpressionGroup {
 
   std::size_t size() const {
     return exprs.size();
+  }
+
+  const Expr &operator[](int i) const {
+    return exprs[i];
+  }
+
+  Expr &operator[](int i) {
+    return exprs[i];
   }
 };
 
@@ -954,10 +962,8 @@ class Block : public IRNode {
   std::vector<std::unique_ptr<Statement>> statements, trash_bin;
   std::map<Ident, Stmt *> local_var_alloca;
   Stmt *mask_var;
-  Stmt *inner_loop_variable;
 
   Block() {
-    inner_loop_variable = nullptr;
     mask_var = nullptr;
     parent = nullptr;
   }
@@ -1271,7 +1277,7 @@ class FrontendForStmt : public Statement {
   Expr begin, end;
   Expr global_var;
   std::unique_ptr<Block> body;
-  Ident loop_var_id;
+  std::vector<Ident> loop_var_id;
   int vectorize;
   int parallelize;
 
@@ -1283,9 +1289,9 @@ class FrontendForStmt : public Statement {
     }
   }
 
-  FrontendForStmt(Expr loop_var, Expr global_var);
+  FrontendForStmt(ExpressionGroup loop_var, Expr global_var);
 
-  FrontendForStmt(Expr loop_var, Expr begin, Expr end);
+  FrontendForStmt(ExpressionGroup loop_var, Expr begin, Expr end);
 
   bool is_container_statement() const override {
     return true;
@@ -1329,18 +1335,18 @@ class RangeForStmt : public Statement {
 // for stmt over a structural node
 class StructuralForStmt : public Statement {
  public:
-  Stmt *loop_var;
+  std::vector<Stmt *> loop_vars;
   SNode *snode;
   std::unique_ptr<Block> body;
   int vectorize;
   int parallelize;
 
-  StructuralForStmt(Stmt *loop_var,
+  StructuralForStmt(std::vector<Stmt *> loop_vars,
                     SNode *snode,
                     std::unique_ptr<Block> &&body,
                     int vectorize,
                     int parallelize)
-      : loop_var(loop_var),
+      : loop_vars(loop_vars),
         snode(snode),
         body(std::move(body)),
         vectorize(vectorize),
@@ -1598,7 +1604,7 @@ class For {
     func();
   }
 
-  For(Expr i, Expr global, const std::function<void()> &func) {
+  For(ExpressionGroup i, Expr global, const std::function<void()> &func) {
     auto stmt_unique = std::make_unique<FrontendForStmt>(i, global);
     auto stmt = stmt_unique.get();
     current_ast_builder().insert(std::move(stmt_unique));

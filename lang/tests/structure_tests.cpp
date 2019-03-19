@@ -47,99 +47,54 @@ TC_TEST("snode_loop") {
 }
 
 TC_TEST("2d_blocked_array") {
-  int n = 4, block_size = 16;
+  int n = 32, block_size = 16;
 
-  Program prog(Arch::x86_64);
-  bool forked = true;
+  for (auto forked : {true, false}) {
+    Program prog(Arch::x86_64);
 
-  Global(a, i32);
-  Global(b, i32);
+    Global(a, i32);
+    Global(b, i32);
 
-  layout([&] {
-    auto i = Index(0);
-    auto j = Index(1);
-    if (!forked) {
-      TC_ASSERT(n % block_size == 0);
-      root.fixed({i, j}, {n / block_size, n * 2 / block_size})
-          .fixed({i, j}, {block_size, block_size})
-          .forked()
-          .place(a, b);
-    }
-    else {
-      root.fixed({i, j}, {n, n * 2}).forked().place(a);
-      root.fixed({i, j}, {n, n * 2}).forked().place(b);
-    }
-  });
-
-  auto inc = kernel([&]() {
-    Declare(i);
-    Declare(j);
-    For ({i, j}, a, [&] {
-      b[i, j] = a[i, j] + i;
+    layout([&] {
+      auto i = Index(0);
+      auto j = Index(1);
+      if (!forked) {
+        TC_ASSERT(n % block_size == 0);
+        root.fixed({i, j}, {n / block_size, n * 2 / block_size})
+            .fixed({i, j}, {block_size, block_size})
+            .forked()
+            .place(a, b);
+      } else {
+        root.fixed({i, j}, {n, n * 2}).forked().place(a);
+        root.fixed({i, j}, {n, n * 2}).forked().place(b);
+      }
     });
-  });
 
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n * 2; j++) {
-      a.val<int32>(i, j) = i + j * 3;
+    auto inc = kernel([&]() {
+      Declare(i);
+      Declare(j);
+      For({i, j}, a, [&] { b[i, j] = a[i, j] + i; });
+    });
+
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n * 2; j++) {
+        a.val<int32>(i, j) = i + j * 3;
+      }
     }
-  }
 
-  inc();
+    inc();
 
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n * 2; j++) {
-      TC_CHECK(a.val<int32>(i, j) == i + j * 3);
-      TC_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n * 2; j++) {
+        TC_CHECK(a.val<int32>(i, j) == i + j * 3);
+        TC_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
+      }
     }
   }
 }
+
 
 #if (0)
-
-// array of linked list
-TC_TEST("indirect") {
-  Program prog;
-
-  int n = 4;
-  int k = 8;
-  int m = n * k;
-
-  auto a = var<int32>();
-  auto sum = var<int32>();
-
-  auto i = ind(), j = ind();
-  SNode *snode;
-
-  layout([&] {
-    // indirect puts an int32
-    snode = &root.fixed(i, n).indirect(j, k * 2);
-    root.fixed(j, m).place(a);
-    root.fixed(i, n).place(sum);
-  });
-
-  auto populate = kernel(a, [&]() {
-    // the second
-    touch(snode, load(a[j]) / imm(k), j);  // put main index into snode sparsity
-  });
-
-  auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });
-
-  auto red = kernel(snode, [&]() { reduce(sum[i], a[j]); });
-
-  for (int i = 0; i < m; i++) {
-    a.val<int32>(i) = i;
-  }
-
-  populate();
-  inc();
-  red();
-
-  for (int i = 0; i < n; i++) {
-    auto reduced = sum.val<int32>(i);
-    TC_CHECK(reduced == (i * k + (i + 1) * k + 1) * k / 2);
-  }
-}
 
 TC_TEST("spmv") {
   initialize_benchmark();
@@ -327,6 +282,53 @@ TC_TEST("spmv_dynamic") {
   }
 }
 
+// array of linked list
+TC_TEST("indirect") {
+  Program prog;
+
+  int n = 4;
+  int k = 8;
+  int m = n * k;
+
+  Global(a, i32);
+  Global(sum, i32);
+
+  SNode *snode;
+
+  layout([&] {
+    auto i = Index(0), j = Index(1);
+    // indirect puts an int32
+    snode = &root.fixed(i, n).indirect(j, k * 2);
+    root.fixed(j, m).place(a);
+    root.fixed(i, n).place(sum);
+  });
+
+  auto populate = kernel([&]() {
+    Declare(j);
+
+    // the second
+    touch(snode, load(a[j]) / imm(k), j);  // put main index into snode sparsity
+  });
+
+  auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });
+
+  auto red = kernel(snode, [&]() { reduce(sum[i], a[j]); });
+
+  for (int i = 0; i < m; i++) {
+    a.val<int32>(i) = i;
+  }
+
+  populate();
+  inc();
+  red();
+
+  for (int i = 0; i < n; i++) {
+    auto reduced = sum.val<int32>(i);
+    TC_CHECK(reduced == (i * k + (i + 1) * k + 1) * k / 2);
+  }
+}
+
+
 TC_TEST("pointer") {
   Program prog;
 
@@ -360,6 +362,8 @@ TC_TEST("pointer") {
   TC_CHECK(reduced == sum_gt);
 }
 
+#endif
+
 TC_TEST("hashed") {
   Program prog;
 
@@ -367,17 +371,21 @@ TC_TEST("hashed") {
   int k = 128;
   int m = n * k;
 
-  auto a = var<int32>();
-  auto sum = var<int32>();
-
-  auto i = ind(), j = ind();
+  Global(a, i32);
+  Global(sum, i32);
 
   layout([&] {
+    auto i = Index(0);
     root.hashed(i, n).fixed(i, k).place(a);
     root.place(sum);
   });
 
-  auto red = kernel(a, [&]() { reduce(global(sum), a[i]); });
+  auto red = kernel([&]() {
+    Declare(i);
+    For (i, a, [&]{
+      sum[Expr(0)] += a[i];
+    });
+  });
   sum.val<int32>() = 0;
 
   int sum_gt = 0;
@@ -393,6 +401,5 @@ TC_TEST("hashed") {
   auto reduced = sum.val<int32>();
   TC_CHECK(reduced == sum_gt);
 }
-#endif
 
 TLANG_NAMESPACE_END

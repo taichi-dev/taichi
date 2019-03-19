@@ -8,6 +8,7 @@ TLANG_NAMESPACE_BEGIN
 class LowerAST : public IRVisitor {
  public:
   LowerAST() {
+    // TODO: change this to false
     allow_undefined_visitor = true;
   }
 
@@ -155,6 +156,10 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
+    for_stmt->body->accept(this);
+  }
+
+  void visit(StructuralForStmt *for_stmt) override {
     for_stmt->body->accept(this);
   }
 

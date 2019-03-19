@@ -44,18 +44,7 @@ class CPUCodeGen : public CodeGenBase {
     generating_residual = false;
   }
 
-  std::string loop_variable(SNode *snode) {
-    return snode->node_type_name + "_loop";
-  }
-
-  std::string index_name_local(SNode *snode, int i) {
-    return fmt::format("index_{}_{}_local", snode->node_type_name, i);
-  }
-
-  std::string index_name_global(SNode *snode, int i) {
-    return fmt::format("index_{}_{}_global", snode->node_type_name, i);
-  }
-
+  /*
   std::string get_mask(int group_size, int id) {
     TC_ASSERT(0 <= id && id < group_size);
     TC_ASSERT(group_size < 1000);
@@ -80,123 +69,8 @@ class CPUCodeGen : public CodeGenBase {
     }
     return masks[key];
   }
+  */
 
-  void generate_loop_header(SNode *snode, bool last_level = false) {
-    if (snode->parent != nullptr) {
-      generate_loop_header(snode->parent,
-                           last_level && snode->type == SNodeType::forked);
-    } else {
-      return;  // no loop for root, which is a fork
-    }
-    auto l = loop_variable(snode);
-    bool interior = last_level && snode->type != SNodeType::forked;
-    CodeRegion r;
-    if (last_level)
-      r = CodeRegion::interior_loop_begin;
-    else
-      r = CodeRegion::exterior_loop_begin;
-    CODE_REGION_VAR(r);
-    if (snode->parent->parent == nullptr)
-      emit_code("auto {} = 0;", loop_variable(snode->parent));
-    auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
-    emit_code("auto {}_cache = access_{}({}, {});", snode->node_type_name,
-              snode->node_type_name, parent, loop_variable(snode->parent));
-    emit_code("int {};", l);
-
-    if (snode->type == SNodeType::pointer) {
-      emit_code("if (!{}_cache->data) continue;", snode->node_type_name, l);
-    }
-
-    if (snode->type != SNodeType::hashed) {
-      emit_code("auto {}_cache_n = {}_cache->get_n();", snode->node_type_name,
-                snode->node_type_name);
-    }
-    if (snode->_multi_threaded) {
-      auto p = snode->parent;
-      while (p) {
-        TC_ASSERT(!p->_multi_threaded);
-        p = p->parent;
-      }
-      emit_code("#pragma omp parallel for");
-    }
-    if (interior) {
-      if (!has_residual) {
-        emit_code("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
-                  snode->node_type_name, l, current_kernel->parallel_instances);
-      } else {
-        int residual = current_kernel->parallel_instances >
-                               1  // when only one instance, no residual loop.
-                           ? 0
-                           : current_kernel->parallel_instances;
-        emit_code("for ({} = 0; {} + {} < {}_cache_n; {} += {}) {{", l, l,
-                  residual, snode->node_type_name, l,
-                  current_kernel->parallel_instances
-
-        );
-      }
-    } else {
-      if (snode->type == SNodeType::hashed) {
-        emit_code("for (auto &{}_it : {}_cache->data) {{", l,
-                  snode->node_type_name);
-        emit_code("int {} = {}_it.first;", l, l);
-      } else {
-        emit_code("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
-                  snode->node_type_name, l, 1);
-      }
-    }
-
-    if (has_residual && last_level) {
-      CODE_REGION(residual_begin);  // TODO: DRY..
-      emit_code("if ({} < {}_cache_n) {{", l, snode->node_type_name);
-    }
-    // update indices....
-    for (int i = 0; i < max_num_indices; i++) {
-      std::string ancester = "0 |";
-      if (snode->parent->parent != nullptr) {
-        ancester = index_name_global(snode->parent, i) + " |";
-      }
-      std::string addition = "0";
-      if (snode->extractors[i].num_bits) {
-        addition = fmt::format(
-            "((({} >> {}) & ((1 << {}) - 1)) << {})", l,
-            snode->extractors[i].dest_offset - snode->total_bit_start,
-            snode->extractors[i].num_bits, snode->extractors[i].start);
-      }
-      emit_code("int {} = {};", index_name_local(snode, i), addition);
-      emit_code("int {} = {} {};", index_name_global(snode, i), ancester,
-                index_name_local(snode, i));
-      if (has_residual && last_level) {
-        CODE_REGION(residual_begin);  // TODO: DRY..
-        emit_code("int {} = {};", index_name_local(snode, i), addition);
-        emit_code("int {} = {} {};", index_name_global(snode, i), ancester,
-                  index_name_local(snode, i));
-      }
-    }
-    if (has_residual && last_level) {
-      CODE_REGION(residual_end);
-      emit_code("}}");
-    }
-  }
-
-  void generate_loop_tail(SNode *snode, bool last_level = false) {
-    CodeRegion r;
-    r = CodeRegion::exterior_loop_end;
-    auto l = loop_variable(snode);
-    if (last_level && snode->type != SNodeType::forked) {
-      // emit_code("{} += {}; b += {};", l, num_groups * unroll, unroll);
-      r = CodeRegion::interior_loop_end;
-    }
-    CODE_REGION_VAR(r);
-    if (snode->parent != nullptr) {
-      CODE_REGION_VAR(last_level ? CodeRegion::interior_loop_end
-                                 : CodeRegion::exterior_loop_end);
-      emit_code("}}\n");
-      generate_loop_tail(snode->parent,
-                         last_level && snode->type == SNodeType::forked);
-    } else {
-      return;  // no loop for root, which is a fork
-    }
-  }
 
   void generate_header() {
     emit_code("#include <common.h>\n");

@@ -39,13 +39,14 @@ TC_TEST("snode_loop") {
     For(i, u, [&] { u[i] = i * 2; });
   });
 
+  set();
+
   for (int i = 0; i < n; i++) {
     TC_CHECK_EQUAL(u.val<int32>(i), i * 2, 0);
   }
 }
 
 #if (0)
-
 TC_TEST("test_2d_blocked_array") {
   int n = 32, block_size = 16;
   TC_ASSERT(n % block_size == 0);

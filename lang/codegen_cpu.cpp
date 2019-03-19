@@ -39,6 +39,10 @@ class IRCodeGen : public IRVisitor {
   void generate_loop_header(SNode *snode,
                             StructuralForStmt *stmt,
                             bool last_level = false) {
+    if (snode->type == SNodeType::place) {
+      generate_loop_header(snode->parent, stmt, last_level);
+      return;
+    }
     if (snode->parent != nullptr) {
       generate_loop_header(snode->parent, stmt,
                            last_level && snode->type == SNodeType::forked);
@@ -129,12 +133,18 @@ class IRCodeGen : public IRVisitor {
       emit_code("int {} = {};", index_name_local(snode, i), addition);
       emit_code("int {} = {} {};", index_name_global(snode, i), ancester,
                 index_name_local(snode, i));
+
       if (has_residual && last_level) {
         CODE_REGION(residual_begin);  // TODO: DRY..
         emit_code("int {} = {};", index_name_local(snode, i), addition);
         emit_code("int {} = {} {};", index_name_global(snode, i), ancester,
                   index_name_local(snode, i));
       }
+    }
+    if (last_level) {
+      TC_WARN("Assuming only one variable");
+      emit_code("{} = {};", stmt->loop_var->raw_name(),
+                index_name_global(snode, 0));  // set loop vector
     }
     if (has_residual && last_level) {
       CODE_REGION(residual_end);
@@ -245,9 +255,9 @@ class IRCodeGen : public IRVisitor {
 
   void visit(StructuralForStmt *for_stmt) {
     auto loop_var = for_stmt->loop_var;
-    generate_loop_header(for_stmt->snode, for_stmt);
+    generate_loop_header(for_stmt->snode, for_stmt, true);
     for_stmt->body->accept(this);
-    generate_loop_tail(for_stmt->snode, for_stmt);
+    generate_loop_tail(for_stmt->snode, for_stmt, true);
   }
 
   void visit(RangeForStmt *for_stmt) {

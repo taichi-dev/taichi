@@ -184,6 +184,7 @@ TC_TEST("stencil1d") {
 
   for (int i = 0; i < 10; i++)
     TC_TIME(stencil_ref());
+  return;
   for (int i = 0; i < 10; i++)
     TC_TIME(stencil());
 }

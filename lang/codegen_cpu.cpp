@@ -337,11 +337,28 @@ class IRCodeGen : public IRVisitor {
     for (int l = 0; l < stmt->ret_type.width; l++) {
       // Try to weaken here...
       std::vector<int> offsets(stmt->indices.size());
-      bool can_fully_weaken = false;
+
+      std::string indices = "(root, ";
+      for (int i = 0; i < max_num_indices; i++) {
+        if (i < (int)stmt->indices.size()) {
+          indices += stmt->indices[i]->raw_name() + fmt::format("[{}]", l);
+        } else {
+          indices += "0";
+        }
+        if (i + 1 < max_num_indices)
+          indices += ",";
+      }
+      indices += ")";
+      std::string strong_access =
+          fmt::format("{}[{}] = access_{}{};", stmt->raw_name(), l,
+                      stmt->snode[l]->node_type_name, indices);
+
+      bool weakened = false;
       auto snode = stmt->snode[l];
       if (current_struct_for &&
           snode->parent == current_struct_for->snode->parent) {
         bool identical_indices = true;
+        bool all_offsets_zero = true;
         for (int i = 0; i < stmt->indices.size(); i++) {
           auto ret = analysis::value_diff(stmt->indices[i], l,
                                           current_struct_for->loop_vars[i]);
@@ -349,29 +366,46 @@ class IRCodeGen : public IRVisitor {
             identical_indices = false;
           }
           offsets[i] = ret.second;
+          if (ret.second != 0)
+            all_offsets_zero = false;
         }
         if (identical_indices) {
-          can_fully_weaken = true;
           TC_WARN("Weakened addressing");
+          weakened = true;
+
+          std::string cond;
+          cond = "true";
+          // add safe guards...
+          for (int i = 0; i < (int)stmt->indices.size(); i++) {
+            if (offsets[i] == 0)
+              continue;
+            // TODO: fix hacky hardcoded name, make sure index same order as
+            // snode indices
+            std::string local_var = fmt::format(
+                "index_{}_{}_local", snode->parent->node_type_name, i);
+            int upper_bound = 1 << snode->taken_bits[i];
+            if (offsets[i] == -1) {
+              cond += fmt::format("&& {} > 0", local_var);
+            }
+            else if (offsets[i] == 1) {
+              cond += fmt::format("&& {} < {}", local_var, upper_bound);
+            }
+            else {
+              TC_NOT_IMPLEMENTED;
+            }
+          }
+
+          emit("if ({}) {{", cond);
           emit("{}[{}] = access_{}({}_cache, {}_loop);", stmt->raw_name(), l,
                snode->node_type_name, snode->parent->node_type_name,
                snode->parent->node_type_name);
+          emit("}} else {{");
+          emit("{}", strong_access);
+          emit("}}");
         }
       }
-      if (!can_fully_weaken) {
-        std::string indices = "(root, ";
-        for (int i = 0; i < max_num_indices; i++) {
-          if (i < (int)stmt->indices.size()) {
-            indices += stmt->indices[i]->raw_name() + fmt::format("[{}]", l);
-          } else {
-            indices += "0";
-          }
-          if (i + 1 < max_num_indices)
-            indices += ",";
-        }
-        indices += ")";
-        emit("{}[{}] = access_{}{};", stmt->raw_name(), l,
-             stmt->snode[l]->node_type_name, indices);
+      if (!weakened) {
+        emit("{}", strong_access);
       }
     }
   }

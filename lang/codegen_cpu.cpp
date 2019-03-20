@@ -11,8 +11,10 @@ TLANG_NAMESPACE_BEGIN
 
 class IRCodeGen : public IRVisitor {
  public:
+  SNode *current_struct_for_snode;
   CodeGenBase *codegen;
   IRCodeGen(CodeGenBase *codegen) : codegen(codegen) {
+    current_struct_for_snode = nullptr;
   }
 
   template <typename... Args>
@@ -256,7 +258,11 @@ class IRCodeGen : public IRVisitor {
 
   void visit(StructuralForStmt *for_stmt) {
     generate_loop_header(for_stmt->snode, for_stmt, true);
+    TC_ASSERT_INFO(current_struct_for_snode == nullptr,
+                   "Structu for cannot be nested.");
+    current_struct_for_snode = for_stmt->snode->parent;
     for_stmt->body->accept(this);
+    current_struct_for_snode = nullptr;
     generate_loop_tail(for_stmt->snode, for_stmt, true);
   }
 
@@ -329,19 +335,28 @@ class IRCodeGen : public IRVisitor {
     emit("{} *{}[{}];", data_type_name(stmt->ret_type.data_type),
          stmt->raw_name(), stmt->ret_type.width);
     for (int l = 0; l < stmt->ret_type.width; l++) {
-      std::string indices = "(root, ";
-      for (int i = 0; i < max_num_indices; i++) {
-        if (i < (int)stmt->indices.size()) {
-          indices += stmt->indices[i]->raw_name() + fmt::format("[{}]", l);
-        } else {
-          indices += "0";
+      // Try to weaken here...
+      auto snode = stmt->snode[l];
+      if (snode->parent == current_struct_for_snode) {
+        TC_WARN("Weakened addressing");
+        emit("{}[{}] = access_{}({}_cache, {}_loop);", stmt->raw_name(), l,
+             snode->node_type_name, snode->parent->node_type_name,
+             snode->parent->node_type_name);
+      } else {
+        std::string indices = "(root, ";
+        for (int i = 0; i < max_num_indices; i++) {
+          if (i < (int)stmt->indices.size()) {
+            indices += stmt->indices[i]->raw_name() + fmt::format("[{}]", l);
+          } else {
+            indices += "0";
+          }
+          if (i + 1 < max_num_indices)
+            indices += ",";
         }
-        if (i + 1 < max_num_indices)
-          indices += ",";
+        indices += ")";
+        emit("{}[{}] = access_{}{};", stmt->raw_name(), l,
+             stmt->snode[l]->node_type_name, indices);
       }
-      indices += ")";
-      emit("{}[{}] = access_{}{};", stmt->raw_name(), l,
-           stmt->snode[l]->node_type_name, indices);
     }
   }
 

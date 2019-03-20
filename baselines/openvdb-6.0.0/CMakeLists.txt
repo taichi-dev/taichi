@@ -2,7 +2,7 @@ project(vdb_baseline)
 
 cmake_minimum_required(VERSION 3.8)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_ISE_AVX2 -march=native -DGL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED -Wall -DTC_PASS_EXCEPTION_TO_PYTHON -g")
 
 add_executable(vdb_baseline test.cpp)

@@ -25,6 +25,14 @@ int main(int argc, char **argv) {
 
   auto grid = static_cast<GridType *>((*grids)[0].get());
 
+  // densely fill voxel
+  for (auto iter = grid->tree().beginLeaf(); iter; ++iter) {
+    auto &leaf = *iter;
+    for (int i = 0; i < 512; i++) {
+      leaf.setValueOn(i, 0.0f);
+    }
+  }
+
   int counter[4] = {0};
   for (TreeType::NodeIter iter = grid->tree().beginNode(); iter; ++iter) {
     switch (iter.getDepth()) {

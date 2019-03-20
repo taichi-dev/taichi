@@ -105,7 +105,8 @@ class StructCompiler : public CodeGenBase {
       emit_code("using {} = fixed<{}_ch, {}>;", snode.node_type_name,
                 snode.node_type_name, snode.n);
     } else if (type == SNodeType::root) {
-      emit_code("using {} = layout_root<{}_ch>;", snode.node_type_name, snode.node_type_name);
+      emit_code("using {} = layout_root<{}_ch>;", snode.node_type_name,
+                snode.node_type_name);
     } else if (type == SNodeType::dynamic) {
       emit_code("using {} = dynamic<{}_ch, {}>;", snode.node_type_name,
                 snode.node_type_name, snode.n);
@@ -230,8 +231,15 @@ class StructCompiler : public CodeGenBase {
           fmt::format("access_{}", snode.node_type_name));
     }
   }
+  void set_parents(SNode &snode) {
+    for (auto &c : snode.ch) {
+      set_parents(*c);
+      c->parent = &snode;
+    }
+  }
 
   void run(SNode &node) {
+    set_parents(node);
     emit_code("#if defined(TLANG_KERNEL) ");
     emit_code("#define TLANG_ACCESSOR TC_FORCE_INLINE");
     emit_code("#else");

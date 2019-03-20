@@ -119,8 +119,8 @@ TC_TEST("stencil1d") {
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog;
 
-  Global(x, f32);
-  AmbientGlobal(y, f32, 0.0f);
+  AmbientGlobal(x, f32, 0.0f);
+  Global(y, f32);
 
   layout([&] {
     auto i = Index(0);
@@ -129,12 +129,12 @@ TC_TEST("stencil1d") {
 
   auto copy = kernel([&] {
     Declare(i);
-    For(i, x, [&] { x[i] = y[i]; });
+    For(i, x, [&] { y[i] = x[i]; });
   });
 
   auto stencil = kernel([&] {
     Declare(i);
-    For(i, x, [&] { x[i] = (1.0f / 3) * (y[i - 1] + y[i] + y[i + 1]); });
+    For(i, x, [&] { y[i] = (1.0f / 3) * (x[i - 1] + x[i] + x[i + 1]); });
   });
 
   int total_nodes = 0;
@@ -163,7 +163,7 @@ TC_TEST("stencil1d") {
           b->nodes[k].y = 0;
           total_nodes += 1;
           auto index = i * dim0 + j * dim1 + k;
-          y.val<float32>(index) = val;
+          x.val<float32>(index) = val;
         }
       }
     }
@@ -174,6 +174,7 @@ TC_TEST("stencil1d") {
   // benchmark_layers();
   // TC_P(measure_cpe(stencil, total_nodes));
 
+  /*
   for (int i = 0; i < 10; i++)
     TC_TIME(copy_ref());
 
@@ -183,11 +184,43 @@ TC_TEST("stencil1d") {
   for (int i = 0; i < 10; i++)
     TC_TIME(copy());
 
+  // test copy to x
+  for (auto &it : data) {
+    auto &tile = it.second;
+    for (int b = 0; b < Tile::size; b++) {
+      auto block = tile.blocks[b];
+      if (!block)
+        continue;
+      for (int n = 0; n < ::Block::size; n++) {
+        int i = it.first * dim0 + b * dim1 + n;
+        TC_CHECK(block->nodes[n].y == y.val<float32>(i));
+      }
+    }
+  }
+   */
+
   for (int i = 0; i < 10; i++)
     TC_TIME(stencil_ref());
 
   for (int i = 0; i < 10; i++)
     TC_TIME(stencil());
+
+  // test stencil to x
+  for (auto &it : data) {
+    auto &tile = it.second;
+    for (int b = 0; b < Tile::size; b++) {
+      auto block = tile.blocks[b];
+      if (!block)
+        continue;
+      for (int n = 0; n < ::Block::size; n++) {
+        int i = it.first * dim0 + b * dim1 + n;
+        TC_P(it.first);
+        TC_P(b);
+        TC_P(i);
+        TC_CHECK_EQUAL(block->nodes[n].y, y.val<float32>(i), 1e-5f);
+      }
+    }
+  }
 }
 
 TLANG_NAMESPACE_END

@@ -47,6 +47,20 @@ void copy_ref() {
   }
 }
 
+void copy_optimized() {
+  for (auto &it : data) {
+    auto &tile = it.second;
+    for (int b = 0; b < Tile::size; b++) {
+      auto block = tile.blocks[b];
+      if (!block)
+        continue;
+      for (int n = 0; n < Block::size; n++) {
+        block->nodes[n].y = block->nodes[n].x;
+      }
+    }
+  }
+}
+
 void stencil_ref() {
   for (auto &it : data) {
     auto &tile = it.second;
@@ -114,16 +128,12 @@ TC_TEST("stencil1d") {
 
   auto stencil = kernel([&] {
     Declare(i);
-    For(i, x, [&] {
-      x[i] = (1.0f / 3) * (y[i - 1] + y[i] + y[i + 1]);
-    });
+    For(i, x, [&] { x[i] = (1.0f / 3) * (y[i - 1] + y[i] + y[i + 1]); });
   });
 
   auto copy = kernel([&] {
     Declare(i);
-    For(i, x, [&] {
-      x[i] = y[i];
-    });
+    For(i, x, [&] { x[i] = y[i]; });
   });
 
   int total_nodes = 0;
@@ -165,6 +175,9 @@ TC_TEST("stencil1d") {
 
   for (int i = 0; i < 10; i++)
     TC_TIME(copy_ref());
+
+  for (int i = 0; i < 10; i++)
+    TC_TIME(copy_optimized());
 
   for (int i = 0; i < 10; i++)
     TC_TIME(copy());

@@ -114,7 +114,7 @@ class StructCompiler : public CodeGenBase {
       emit_code("using {} = indirect<{}_ch>;", snode.node_type_name, snode.n);
     } else if (type == SNodeType::pointer) {
       emit_code("using {} = pointer<{}_ch>;", snode.node_type_name,
-                snode.ch[0]->node_type_name);
+                snode.node_type_name);
     } else if (type == SNodeType::hashed) {
       emit_code("using {} = hashed<{}_ch>;", snode.node_type_name,
                 snode.node_type_name);

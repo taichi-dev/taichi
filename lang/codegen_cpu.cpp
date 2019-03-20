@@ -46,7 +46,7 @@ class IRCodeGen : public IRVisitor {
       return;
     }
     if (snode->parent != nullptr) {
-      generate_loop_header(snode->parent, stmt, last_level);
+      generate_loop_header(snode->parent, stmt, false);
     } else {
       emit("auto {}_cache = root;", snode->node_type_name);
       return;  // no loop for root
@@ -54,7 +54,6 @@ class IRCodeGen : public IRVisitor {
     if (snode->type == SNodeType::place)
       return;
     auto l = loop_variable(snode);
-    bool interior = last_level;
     /*
     CodeRegion r;
     if (last_level)
@@ -89,7 +88,7 @@ class IRCodeGen : public IRVisitor {
     // TODO: replace with vectorize width
     int parallel_instances = 1;
     auto has_residual = false;
-    if (interior) {
+    if (last_level) {
       if (!has_residual) {
         emit_code("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
                   snode->node_type_name, l, parallel_instances);

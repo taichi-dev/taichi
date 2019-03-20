@@ -33,6 +33,8 @@ int main(int argc, char **argv) {
     }
   }
 
+  std::FILE *file = std::fopen("blocks.txt", "w");
+
   int counter[4] = {0};
   for (TreeType::NodeIter iter = grid->tree().beginNode(); iter; ++iter) {
     switch (iter.getDepth()) {
@@ -62,10 +64,13 @@ int main(int argc, char **argv) {
         iter.getNode(node);
         if (node)
           counter[3]++;
+        auto coord = node->offsetToGlobalCoord(0);
+        fprintf(file, "%d %d %d\n", coord.x(), coord.y(), coord.z());
         break;
       }
     }
   }
+  fclose(file);
   for (int i = 0; i < 4; i++) {
     TC_INFO("Depth {}: nodes {}", i, counter[i]);
   }

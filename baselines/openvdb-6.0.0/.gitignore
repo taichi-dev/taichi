@@ -7,3 +7,4 @@ test
 cmake-build-debug
 dataset
 vdb_baseline
+blocks.txt

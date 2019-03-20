@@ -79,6 +79,56 @@ void stencil_ref() {
   }
 }
 
+void stencil_optimized() {
+  for (auto &it : data) {
+    auto &tile = it.second;
+    for (int b = 0; b < Tile::size; b++) {
+      auto block = tile.blocks[b];
+      if (!block)
+        continue;
+      for (int n = 0; n < Block::size; n++) {
+        int i = it.first * dim0 + b * dim1 + n;
+        auto tmp = block->nodes[n].x;
+        if (n > 0) {
+          tmp += block->nodes[n - 1].x;
+        } else {
+          tmp += safe_access_x(i - 1);
+        }
+        if (n < Block::size - 1) {
+          tmp += block->nodes[n + 1].x;
+        } else {
+          tmp += safe_access_x(i + 1);
+        }
+        block->nodes[n].y = (1.0f / 3) * tmp;
+      }
+    }
+  }
+}
+
+void stencil_optimized2() {
+  for (auto &it : data) {
+    auto &tile = it.second;
+    for (int b = 0; b < Tile::size; b++) {
+      auto block = tile.blocks[b];
+      if (!block)
+        continue;
+      block->nodes[0].y =
+          (1.0f / 3) * (safe_access_x(it.first * dim0 + b * dim1 - 1) +
+                        block->nodes[0].x + block->nodes[1].x);
+      for (int n = 1; n < Block::size - 1; n++) {
+        auto tmp = block->nodes[n].x;
+        tmp += block->nodes[n - 1].x;
+        tmp += block->nodes[n + 1].x;
+        block->nodes[n].y = (1.0f / 3) * tmp;
+      }
+      block->nodes[Block::size - 1].y =
+          (1.0f / 3) *
+          (block->nodes[Block::size - 2].x + block->nodes[Block::size - 1].x +
+           safe_access_x(it.first * dim0 + b * dim1 + Block::size));
+    }
+  }
+}
+
 void benchmark_layers() {
   int n = 1000000;
   int cnt = 0;
@@ -199,6 +249,12 @@ TC_TEST("stencil1d") {
 
   for (int i = 0; i < 10; i++)
     TC_TIME(stencil_ref());
+
+  for (int i = 0; i < 10; i++)
+    TC_TIME(stencil_optimized());
+
+  for (int i = 0; i < 10; i++)
+    TC_TIME(stencil_optimized2());
 
   for (int i = 0; i < 10; i++)
     TC_TIME(stencil());

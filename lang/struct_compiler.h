@@ -89,6 +89,11 @@ class StructCompiler : public CodeGenBase {
       TC_ERROR("Non-place node should have at least one child.");
     }
 
+    if (snode.has_ambient) {
+      emit_code("{} {}_ambient = {};", snode.data_type_name(),
+                snode.node_type_name, snode.ambient_val.stringify());
+    }
+
     // create children type that supports forking...
     emit_code("struct {}_ch {{", snode.node_type_name);
     emit_code("static constexpr int n=1;");
@@ -140,7 +145,10 @@ class StructCompiler : public CodeGenBase {
         auto ch = snode.ch[i];
         emit_code("TC_FORCE_INLINE {} *access_{}({} *parent, int i) {{",
                   ch->node_type_name, ch->node_type_name, snode.node_type_name);
-        emit_code("return parent->look_up(i)->get{}();", i);
+        emit_code("auto lookup = parent->look_up(i); "
+                  "if ({}::has_null && lookup == nullptr) return nullptr;",
+                      snode.node_type_name);
+        emit_code("return lookup->get{}();", i);
         emit_code("}}");
       }
       emit_code("");
@@ -177,6 +185,9 @@ class StructCompiler : public CodeGenBase {
         }
         emit_code("auto n{} = access_{}(n{}, tmp);", i + 1,
                   stack[i + 1]->node_type_name, i);
+        if (snode.has_ambient && stack[i + 1] != &snode)
+          emit_code("if ({}::has_null && n{} == nullptr) return &{}_ambient;",
+                    stack[i]->node_type_name, i + 1, snode.node_type_name);
       }
       emit_code("return n{};", (int)stack.size() - 1);
       emit_code("}}");

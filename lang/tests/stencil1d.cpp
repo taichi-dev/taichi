@@ -116,10 +116,11 @@ void benchmark_layers() {
 TLANG_NAMESPACE_BEGIN
 
 TC_TEST("stencil1d") {
+  CoreState::set_trigger_gdb_when_crash(true);
   Program prog;
 
   Global(x, f32);
-  Global(y, f32);
+  AmbientGlobal(y, f32, 0.0f);
 
   layout([&] {
     auto i = Index(0);
@@ -162,7 +163,7 @@ TC_TEST("stencil1d") {
           b->nodes[k].y = 0;
           total_nodes += 1;
           auto index = i * dim0 + j * dim1 + k;
-          x.val<float32>(index) = val;
+          y.val<float32>(index) = val;
         }
       }
     }

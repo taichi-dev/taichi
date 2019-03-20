@@ -1012,6 +1012,8 @@ struct layout_root {
   TC_FORCE_INLINE int get_n() const {
     return 1;
   }
+
+  static constexpr bool has_null = false;
 };
 
 template <typename child_type, int n_>
@@ -1025,6 +1027,8 @@ struct fixed {
   TC_FORCE_INLINE int get_n() const {
     return n;
   }
+
+  static constexpr bool has_null = false;
 };
 
 template <typename _child_type>
@@ -1036,6 +1040,10 @@ struct hashed {
 #if defined(TLANG_HOST)
     if (data.find(i) == data.end()) {
       std::memset(&data[i], 0, sizeof(data[i]));
+    }
+#else
+    if (data.find(i) == data.end()) {
+      return nullptr;
     }
 #endif
     return &data[i];
@@ -1050,6 +1058,8 @@ struct hashed {
   TC_FORCE_INLINE int get_n() const {
     return data.size();
   }
+
+  static constexpr bool has_null = true;
 };
 
 template <typename _child_type>
@@ -1075,6 +1085,8 @@ struct pointer {
   TC_FORCE_INLINE int get_n() const {
     return 1;
   }
+
+  static constexpr bool has_null = true;
 };
 
 template <typename _child_type, int max_n_>
@@ -1103,6 +1115,8 @@ struct dynamic {
   TC_FORCE_INLINE int get_n() const {
     return n.load();
   }
+
+  static constexpr bool has_null = false;
 };
 // *****************************************************************************
 
@@ -1135,6 +1149,8 @@ struct indirect {
   TC_FORCE_INLINE void clear() {
     n.store(0);
   }
+
+  static constexpr bool has_null = false;
 };
 // *****************************************************************************
 

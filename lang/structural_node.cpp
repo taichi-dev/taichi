@@ -20,7 +20,10 @@ SNode &SNode::place(Expr &expr_) {
   auto &child = insert_children(SNodeType::place);
   expr->snode = &child;
   name = expr->ident.name();
-
+  if (expr->has_ambient) {
+    expr->snode->has_ambient = true;
+    expr->snode->ambient_val = expr->ambient_value;
+  }
   child.dt = expr->dt;
   return *this;
 }

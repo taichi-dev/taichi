@@ -57,6 +57,8 @@ class SNode {
   int64 n;
   int total_num_bits, total_bit_start;
   DataType dt;
+  bool has_ambient;
+  TypedConstant ambient_val;
   // Note: parent will not be set until structural nodes are compiled!
   SNode *parent;
 
@@ -87,6 +89,7 @@ class SNode {
     _verbose = false;
     _multi_threaded = false;
     index_id = -1;
+    has_ambient = false;
   }
 
   SNode &insert_children(SNodeType t) {

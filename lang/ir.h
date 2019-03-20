@@ -860,9 +860,12 @@ class GlobalVariableExpression : public Expression {
   Identifier ident;
   DataType dt;
   SNode *snode;
+  bool has_ambient;
+  TypedConstant ambient_value;
 
   GlobalVariableExpression(DataType dt, Ident ident) : ident(ident), dt(dt) {
     snode = nullptr;
+    has_ambient = false;
   }
 
   std::string serialize() override {
@@ -1514,6 +1517,23 @@ inline Expr Expr::operator[](ExpressionGroup indices) {
 #define Global(x, dt)  \
   Declare(x##_global); \
   auto x = global_new(x##_global, DataType::dt);
+
+#define AmbientGlobal(x, dt, ambient)            \
+  Declare(x##_global);                           \
+  auto x = global_new(x##_global, DataType::dt); \
+  set_ambient(x, ambient);
+
+inline void set_ambient(Expr expr_, float32 val) {
+  auto expr = expr_.cast<GlobalVariableExpression>();
+  expr->ambient_value = TypedConstant(val);
+  expr->has_ambient = true;
+}
+
+inline void set_ambient(Expr expr_, int32 val) {
+  auto expr = expr_.cast<GlobalVariableExpression>();
+  expr->ambient_value = TypedConstant(val);
+  expr->has_ambient = true;
+}
 
 inline Expr global_new(Expr id_expr, DataType dt) {
   TC_ASSERT(id_expr.is<IdExpression>());

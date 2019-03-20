@@ -380,11 +380,11 @@ class IRCodeGen : public IRVisitor {
             // snode indices
             std::string local_var = fmt::format(
                 "index_{}_{}_local", snode->parent->node_type_name, i);
-            int upper_bound = 1 << snode->taken_bits[i];
+            int upper_bound = 1 << snode->parent->extractors[i].num_bits;
             if (offsets[i] == -1) {
               cond += fmt::format("&& {} > 0", local_var);
             } else if (offsets[i] == 1) {
-              cond += fmt::format("&& {} < {}", local_var, upper_bound);
+              cond += fmt::format("&& {} < {} - 1", local_var, upper_bound);
             } else {
               TC_NOT_IMPLEMENTED;
             }

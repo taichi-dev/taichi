@@ -11,10 +11,10 @@ TLANG_NAMESPACE_BEGIN
 
 class IRCodeGen : public IRVisitor {
  public:
-  SNode *current_struct_for_snode;
+  StructuralForStmt *current_struct_for;
   CodeGenBase *codegen;
   IRCodeGen(CodeGenBase *codegen) : codegen(codegen) {
-    current_struct_for_snode = nullptr;
+    current_struct_for = nullptr;
   }
 
   template <typename... Args>
@@ -258,11 +258,11 @@ class IRCodeGen : public IRVisitor {
 
   void visit(StructuralForStmt *for_stmt) {
     generate_loop_header(for_stmt->snode, for_stmt, true);
-    TC_ASSERT_INFO(current_struct_for_snode == nullptr,
+    TC_ASSERT_INFO(current_struct_for == nullptr,
                    "Structu for cannot be nested.");
-    current_struct_for_snode = for_stmt->snode->parent;
+    current_struct_for = for_stmt;
     for_stmt->body->accept(this);
-    current_struct_for_snode = nullptr;
+    current_struct_for = nullptr;
     generate_loop_tail(for_stmt->snode, for_stmt, true);
   }
 
@@ -336,13 +336,29 @@ class IRCodeGen : public IRVisitor {
          stmt->raw_name(), stmt->ret_type.width);
     for (int l = 0; l < stmt->ret_type.width; l++) {
       // Try to weaken here...
+      std::vector<int> offsets(stmt->indices.size());
+      bool can_fully_weaken = false;
       auto snode = stmt->snode[l];
-      if (snode->parent == current_struct_for_snode) {
-        TC_WARN("Weakened addressing");
-        emit("{}[{}] = access_{}({}_cache, {}_loop);", stmt->raw_name(), l,
-             snode->node_type_name, snode->parent->node_type_name,
-             snode->parent->node_type_name);
-      } else {
+      if (current_struct_for &&
+          snode->parent == current_struct_for->snode->parent) {
+        bool identical_indices = true;
+        for (int i = 0; i < stmt->indices.size(); i++) {
+          auto ret = analysis::value_diff(stmt->indices[i], l,
+                                          current_struct_for->loop_vars[i]);
+          if (!ret.first) {
+            identical_indices = false;
+          }
+          offsets[i] = ret.second;
+        }
+        if (identical_indices) {
+          can_fully_weaken = true;
+          TC_WARN("Weakened addressing");
+          emit("{}[{}] = access_{}({}_cache, {}_loop);", stmt->raw_name(), l,
+               snode->node_type_name, snode->parent->node_type_name,
+               snode->parent->node_type_name);
+        }
+      }
+      if (!can_fully_weaken) {
         std::string indices = "(root, ";
         for (int i = 0; i < max_num_indices; i++) {
           if (i < (int)stmt->indices.size()) {

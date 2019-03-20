@@ -61,11 +61,3 @@ TC_NAMESPACE_BEGIN
 void write_partio(std::vector<Vector3> positions, const std::string &file_name);
 TC_NAMESPACE_END
 
-/*
- Expr should be what the users play with.
-   Simply a ref-counted pointer to nodes, with some operator overloading for
- users to program Node is the IR node, with computational graph connectivity,
- imm, op type etc.
-
- No double support this time.
- */

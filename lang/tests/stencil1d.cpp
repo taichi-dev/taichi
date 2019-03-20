@@ -126,14 +126,14 @@ TC_TEST("stencil1d") {
     root.hashed(i, 8192).fixed(i, 1024).pointer().fixed(i, 256).place(x, y);
   });
 
-  auto stencil = kernel([&] {
-    Declare(i);
-    For(i, x, [&] { x[i] = (1.0f / 3) * (y[i - 1] + y[i] + y[i + 1]); });
-  });
-
   auto copy = kernel([&] {
     Declare(i);
     For(i, x, [&] { x[i] = y[i]; });
+  });
+
+  auto stencil = kernel([&] {
+    Declare(i);
+    For(i, x, [&] { x[i] = (1.0f / 3) * (y[i - 1] + y[i] + y[i + 1]); });
   });
 
   int total_nodes = 0;
@@ -181,6 +181,11 @@ TC_TEST("stencil1d") {
 
   for (int i = 0; i < 10; i++)
     TC_TIME(copy());
+
+  for (int i = 0; i < 10; i++)
+    TC_TIME(stencil_ref());
+  for (int i = 0; i < 10; i++)
+    TC_TIME(stencil());
 }
 
 TLANG_NAMESPACE_END

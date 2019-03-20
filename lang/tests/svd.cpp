@@ -81,13 +81,13 @@ TC_TEST("svd_benchmark") {
 TC_TEST("svd_scalar") {
   using Matrix = TMatrix<float32, 3>;
   using Vector = TVector<float32, 3>;
-  float32 tolerance = 2e-4_f32;
+  float32 tolerance = 2e-3_f32;
   for (int i = 0; i < 100000; i++) {
     Matrix m = Matrix::rand();
     Matrix U, sig, V, Q, R, S;
     Vector sig_vec;
 
-    sifakis_svd(m, U, V, sig_vec);
+    sifakis_svd<6>(m, U, V, sig_vec);
     sig = Matrix(sig_vec);
     TC_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
     TC_CHECK_EQUAL(Matrix(1), U * transposed(U), tolerance);

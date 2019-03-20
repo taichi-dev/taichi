@@ -69,6 +69,11 @@ void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 
 }  // namespace irpass
 
+// Analysis
+namespace analysis {
+std::pair<bool, int> value_diff(Stmt *stmt, int lane, Stmt *alloca);
+}
+
 struct VectorType {
   int width;
   DataType data_type;

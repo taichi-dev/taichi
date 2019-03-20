@@ -382,14 +382,12 @@ class TypedConstant {
  public:
   DataType dt;
 
- private:
+ public:
   union {
     uint64 value_bits;
     int32 val_i32;
     float32 val_f32;
   };
-
- public:
   TypedConstant() : dt(DataType::unknown) {
   }
 

@@ -174,7 +174,6 @@ TC_TEST("stencil1d") {
   // benchmark_layers();
   // TC_P(measure_cpe(stencil, total_nodes));
 
-  /*
   for (int i = 0; i < 10; i++)
     TC_TIME(copy_ref());
 
@@ -197,7 +196,6 @@ TC_TEST("stencil1d") {
       }
     }
   }
-   */
 
   for (int i = 0; i < 10; i++)
     TC_TIME(stencil_ref());
@@ -214,9 +212,6 @@ TC_TEST("stencil1d") {
         continue;
       for (int n = 0; n < ::Block::size; n++) {
         int i = it.first * dim0 + b * dim1 + n;
-        TC_P(it.first);
-        TC_P(b);
-        TC_P(i);
         TC_CHECK_EQUAL(block->nodes[n].y, y.val<float32>(i), 1e-5f);
       }
     }

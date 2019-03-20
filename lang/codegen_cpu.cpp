@@ -390,10 +390,12 @@ class IRCodeGen : public IRVisitor {
             }
           }
 
+          TC_WARN("offset can be wrong in multidimensional cases");
+          int offset = offsets[0];
           emit("if ({}) {{", cond);
-          emit("{}[{}] = access_{}({}_cache, {}_loop);", stmt->raw_name(), l,
+          emit("{}[{}] = access_{}({}_cache, {}_loop + {});", stmt->raw_name(), l,
                snode->node_type_name, snode->parent->node_type_name,
-               snode->parent->node_type_name);
+               snode->parent->node_type_name, offset);
           emit("}} else {{");
           emit("{}", strong_access);
           emit("}}");

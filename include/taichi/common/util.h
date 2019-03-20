@@ -88,7 +88,7 @@ static_assert(false, "32-bit Windows systems are not supported")
 #define TC_CPP17
 #else
 #if defined(TC_COMPILER_CLANG)
-static_assert(false, "For clang compilers, use -std=c++17")
+static_assert(false, "For clang compilers, use -std=c++17");
 #endif
 static_assert(__cplusplus >= 201402L, "C++14 required.");
 #define TC_CPP14

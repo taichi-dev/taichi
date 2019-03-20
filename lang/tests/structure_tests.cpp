@@ -24,6 +24,7 @@ TC_TEST("snode") {
 
 TC_TEST("snode_loop") {
   Program prog(Arch::x86_64);
+  CoreState::set_trigger_gdb_when_crash(true);
   prog.config.print_ir = true;
 
   auto i = Index(0);
@@ -62,11 +63,10 @@ TC_TEST("2d_blocked_array") {
         TC_ASSERT(n % block_size == 0);
         root.fixed({i, j}, {n / block_size, n * 2 / block_size})
             .fixed({i, j}, {block_size, block_size})
-            .forked()
             .place(a, b);
       } else {
-        root.fixed({i, j}, {n, n * 2}).forked().place(a);
-        root.fixed({i, j}, {n, n * 2}).forked().place(b);
+        root.fixed({i, j}, {n, n * 2}).place(a);
+        root.fixed({i, j}, {n, n * 2}).place(b);
       }
     });
 

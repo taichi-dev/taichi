@@ -122,7 +122,7 @@ class BasicBlockVectorSplit : public IRVisitor {
 
   // Visitors: set current_split[0...current_split_factor]
 
-  void visit(GlobalPtrStmt *stmt) {
+  void visit(GlobalPtrStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       std::vector<Stmt *> indices;
       for (int j = 0; j < (int)stmt->indices.size(); j++) {
@@ -135,20 +135,20 @@ class BasicBlockVectorSplit : public IRVisitor {
     }
   }
 
-  void visit(ConstStmt *stmt) {
+  void visit(ConstStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] = Stmt::make<ConstStmt>(stmt->val.slice(
           lane_start(i), need_split ? lane_end(i) : stmt->width()));
     }
   }
 
-  void visit(AllocaStmt *stmt) {
+  void visit(AllocaStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++)
       current_split[i] = Stmt::make<AllocaStmt>(
           need_split ? max_width : stmt->width(), stmt->element_type());
   }
 
-  void visit(ElementShuffleStmt *stmt) {
+  void visit(ElementShuffleStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       LaneAttribute<VectorElement> ptr;
       int new_width = need_split ? max_width : stmt->width();
@@ -166,7 +166,7 @@ class BasicBlockVectorSplit : public IRVisitor {
     }
   }
 
-  void visit(LocalLoadStmt *stmt) {
+  void visit(LocalLoadStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       LaneAttribute<LocalAddress> ptr;
       int new_width = need_split ? max_width : stmt->width();
@@ -184,34 +184,34 @@ class BasicBlockVectorSplit : public IRVisitor {
     }
   }
 
-  void visit(LocalStoreStmt *stmt) {
+  void visit(LocalStoreStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] = Stmt::make<LocalStoreStmt>(lookup(stmt->ptr, i),
                                                     lookup(stmt->data, i));
     }
   }
 
-  void visit(GlobalLoadStmt *stmt) {
+  void visit(GlobalLoadStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] = Stmt::make<GlobalLoadStmt>(lookup(stmt->ptr, i));
     }
   }
 
-  void visit(GlobalStoreStmt *stmt) {
+  void visit(GlobalStoreStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] = Stmt::make<GlobalStoreStmt>(lookup(stmt->ptr, i),
                                                      lookup(stmt->data, i));
     }
   }
 
-  void visit(BinaryOpStmt *stmt) {
+  void visit(BinaryOpStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] = Stmt::make<BinaryOpStmt>(
           stmt->op_type, lookup(stmt->lhs, i), lookup(stmt->rhs, i));
     }
   }
 
-  void visit(UnaryOpStmt *stmt) {
+  void visit(UnaryOpStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] =
           Stmt::make<UnaryOpStmt>(stmt->op_type, lookup(stmt->rhs, i));
@@ -220,20 +220,20 @@ class BasicBlockVectorSplit : public IRVisitor {
     }
   }
 
-  void visit(PrintStmt *stmt) {
+  void visit(PrintStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] =
           Stmt::make<PrintStmt>(lookup(stmt->stmt, i), stmt->str);
     }
   }
 
-  void visit(RandStmt *stmt) {
+  void visit(RandStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] = Stmt::make<RandStmt>(stmt->element_type());
     }
   }
 
-  void visit(WhileControlStmt *stmt) {
+  void visit(WhileControlStmt *stmt) override {
     TC_ASSERT(need_split == false);
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] = Stmt::make<WhileControlStmt>(lookup(stmt->mask, i),
@@ -256,7 +256,7 @@ class VectorSplit : public IRVisitor {
     node->accept(this);
   }
 
-  void visit(Block *block) {
+  void visit(Block *block) override {
     if (!block->has_container_statements()) {
       BasicBlockVectorSplit(block, max_width, serial_schedule);
     } else {
@@ -274,12 +274,12 @@ class VectorSplit : public IRVisitor {
     }
   }
 
-  void visit(RangeForStmt *for_stmt) {
+  void visit(RangeForStmt *for_stmt) override {
     auto old_vectorize = for_stmt->vectorize;
     for_stmt->body->accept(this);
   }
 
-  void visit(WhileStmt *stmt) {
+  void visit(WhileStmt *stmt) override {
     stmt->body->accept(this);
   }
 };

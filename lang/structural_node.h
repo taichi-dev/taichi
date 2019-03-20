@@ -124,11 +124,6 @@ class SNode {
     return SNode::fixed(std::vector<Index>{index}, {size});
   }
 
-  SNode &forked() {
-    auto &new_node = insert_children(SNodeType::forked);
-    return new_node;
-  }
-
   SNode &multi_threaded(bool val = true) {
     this->_multi_threaded = val;
     return *this;

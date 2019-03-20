@@ -239,9 +239,9 @@ inline std::string data_type_short_name(DataType t) {
 
 enum class SNodeType {
   undefined,
+  root,
   fixed,
   dynamic,
-  forked,
   place,
   hashed,
   pointer,
@@ -253,9 +253,9 @@ inline std::string snode_type_name(SNodeType t) {
   if (type_names.empty()) {
 #define REGISTER_TYPE(i) type_names[SNodeType::i] = #i;
     REGISTER_TYPE(undefined);
+    REGISTER_TYPE(root);
     REGISTER_TYPE(fixed);
     REGISTER_TYPE(dynamic);
-    REGISTER_TYPE(forked);
     REGISTER_TYPE(place);
     REGISTER_TYPE(hashed);
     REGISTER_TYPE(pointer);

@@ -191,7 +191,7 @@ struct vec {
   vec(type v) : v(v) {
   }
   // template <int _dim = dim>
-  //vec(const std::enable_if_t<_dim != 1, vec<T, 1>> &scalar) : vec(scalar.v) {
+  // vec(const std::enable_if_t<_dim != 1, vec<T, 1>> &scalar) : vec(scalar.v) {
   //}
   template <typename _T = T>
   vec(std::enable_if_t<!std::is_same<_T, type>::value, T> scalar)
@@ -1001,6 +1001,18 @@ inline vec<float32, dim> mod(vec<float32, dim> a, vec<float32, dim> b) {
 // these structures are used for maintaining metadata and sparsity.
 // Their look_up function takes a merged index, but they don't know where do the
 // bits come from.
+
+template <typename child_type>
+struct layout_root {
+  child_type children;
+  TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
+    return &children;
+  }
+
+  TC_FORCE_INLINE int get_n() const {
+    return 1;
+  }
+};
 
 template <typename child_type, int n_>
 struct fixed {

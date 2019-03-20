@@ -87,7 +87,7 @@ class Program {
   }
 
   void layout(std::function<void()> func) {
-    root = SNode(0, SNodeType::forked);
+    root = SNode(0, SNodeType::root);
     snode_root = &root;
     func();
     materialize_layout();

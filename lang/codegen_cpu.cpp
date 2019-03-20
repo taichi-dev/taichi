@@ -46,16 +46,15 @@ class IRCodeGen : public IRVisitor {
       return;
     }
     if (snode->parent != nullptr) {
-      generate_loop_header(snode->parent, stmt,
-                           last_level && snode->type == SNodeType::forked);
+      generate_loop_header(snode->parent, stmt, last_level);
     } else {
       emit("auto {}_cache = root;", snode->node_type_name);
-      return;  // no loop for root, which is a fork
+      return;  // no loop for root
     }
     if (snode->type == SNodeType::place)
       return;
     auto l = loop_variable(snode);
-    bool interior = last_level && snode->type != SNodeType::forked;
+    bool interior = last_level;
     /*
     CodeRegion r;
     if (last_level)
@@ -173,8 +172,7 @@ class IRCodeGen : public IRVisitor {
                                  : CodeRegion::exterior_loop_end);
       if (snode->type != SNodeType::place)
         emit_code("}}\n");
-      generate_loop_tail(snode->parent, stmt,
-                         last_level && snode->type == SNodeType::forked);
+      generate_loop_tail(snode->parent, stmt, last_level);
     } else {
       return;  // no loop for root, which is a fork
     }
@@ -386,11 +384,9 @@ class IRCodeGen : public IRVisitor {
             int upper_bound = 1 << snode->taken_bits[i];
             if (offsets[i] == -1) {
               cond += fmt::format("&& {} > 0", local_var);
-            }
-            else if (offsets[i] == 1) {
+            } else if (offsets[i] == 1) {
               cond += fmt::format("&& {} < {}", local_var, upper_bound);
-            }
-            else {
+            } else {
               TC_NOT_IMPLEMENTED;
             }
           }

@@ -89,32 +89,34 @@ class StructCompiler : public CodeGenBase {
       TC_ERROR("Non-place node should have at least one child.");
     }
 
+    // create children type that supports forking...
+    emit_code("struct {}_ch {{", snode.node_type_name);
+    emit_code("static constexpr int n=1;");
+    for (int i = 0; i < (int)snode.ch.size(); i++) {
+      emit_code("{} member{};", snode.ch[i]->node_type_name, i);
+    }
+    for (int i = 0; i < (int)snode.ch.size(); i++) {
+      emit_code("auto *get{}() {{return &member{};}} ", i, i);
+    }
+    // emit_code("TC_FORCE_INLINE int get_n() {{return 1;}} ");
+    emit_code("}};");
+
     if (type == SNodeType::fixed) {
-      emit_code("using {} = fixed<{}, {}>;", snode.node_type_name,
-                snode.ch[0]->node_type_name, snode.n);
+      emit_code("using {} = fixed<{}_ch, {}>;", snode.node_type_name,
+                snode.node_type_name, snode.n);
+    } else if (type == SNodeType::root) {
+      emit_code("using {} = layout_root<{}_ch>;", snode.node_type_name, snode.node_type_name);
     } else if (type == SNodeType::dynamic) {
-      emit_code("using {} = dynamic<{}, {}>;", snode.node_type_name,
-                snode.ch[0]->node_type_name, snode.n);
+      emit_code("using {} = dynamic<{}_ch, {}>;", snode.node_type_name,
+                snode.node_type_name, snode.n);
     } else if (type == SNodeType::indirect) {
-      emit_code("using {} = indirect<{}>;", snode.node_type_name, snode.n);
+      emit_code("using {} = indirect<{}_ch>;", snode.node_type_name, snode.n);
     } else if (type == SNodeType::pointer) {
-      emit_code("using {} = pointer<{}>;", snode.node_type_name,
+      emit_code("using {} = pointer<{}_ch>;", snode.node_type_name,
                 snode.ch[0]->node_type_name);
     } else if (type == SNodeType::hashed) {
-      emit_code("using {} = hashed<{}>;", snode.node_type_name,
-                snode.ch[0]->node_type_name);
-    } else if (type == SNodeType::forked) {
-      // we can not use std::tuple since it has no memory layout guarantee...
-      emit_code("struct {} {{", snode.node_type_name);
-      emit_code("static constexpr int n=1;");
-      for (int i = 0; i < (int)snode.ch.size(); i++) {
-        emit_code("{} member{};", snode.ch[i]->node_type_name, i);
-      }
-      for (int i = 0; i < (int)snode.ch.size(); i++) {
-        emit_code("auto *get{}() {{return &member{};}} ", i, i);
-      }
-      emit_code("TC_FORCE_INLINE int get_n() {{return 1;}} ");
-      emit_code("}};");
+      emit_code("using {} = hashed<{}_ch>;", snode.node_type_name,
+                snode.node_type_name);
     } else if (type == SNodeType::place) {
       emit_code("using {} = {};", snode.node_type_name, snode.data_type_name());
     } else {
@@ -132,24 +134,13 @@ class StructCompiler : public CodeGenBase {
 
     if (!is_leaf) {
       // Chain accessors for non-leaf nodes
-      if (type != SNodeType::forked) {
-        // Single child
-        TC_ASSERT(snode.ch.size() > 0);
-        auto ch = snode.ch[0];
+      TC_ASSERT(snode.ch.size() > 0);
+      for (int i = 0; i < (int)snode.ch.size(); i++) {
+        auto ch = snode.ch[i];
         emit_code("TC_FORCE_INLINE {} *access_{}({} *parent, int i) {{",
                   ch->node_type_name, ch->node_type_name, snode.node_type_name);
-        emit_code("return parent->look_up(i);");
+        emit_code("return parent->look_up(i)->get{}();", i);
         emit_code("}}");
-      } else {
-        // fork
-        for (int i = 0; i < (int)snode.ch.size(); i++) {
-          auto ch = snode.ch[i];
-          emit_code("TC_FORCE_INLINE {} *access_{}({} *parent, int i) {{",
-                    ch->node_type_name, ch->node_type_name,
-                    snode.node_type_name);
-          emit_code("return parent->get{}();", i);
-          emit_code("}}");
-        }
       }
       emit_code("");
     }
@@ -240,22 +231,7 @@ class StructCompiler : public CodeGenBase {
     }
   }
 
-  void insert_forks(SNode &snode) {
-    if (snode.type != SNodeType::forked && snode.ch.size() > 1) {
-      std::vector<Handle<SNode>> ch;
-      ch.swap(snode.ch);
-      auto &fork = snode.insert_children(SNodeType::forked);
-      fork.ch.swap(ch);
-    }
-    for (auto &c : snode.ch) {
-      insert_forks(*c);
-      c->parent = &snode;
-    }
-  }
-
   void run(SNode &node) {
-    insert_forks(node);
-
     emit_code("#if defined(TLANG_KERNEL) ");
     emit_code("#define TLANG_ACCESSOR TC_FORCE_INLINE");
     emit_code("#else");
@@ -269,7 +245,7 @@ class StructCompiler : public CodeGenBase {
               root_type);
     for (int i = 0; i < (int)node.ch.size(); i++) {
       if (node.ch[i]->type != SNodeType::hashed) {
-        emit_code("std::memset(p->get{}(), 0, sizeof({}));", i,
+        emit_code("std::memset(p->children.get{}(), 0, sizeof({}));", i,
                   node.ch[i]->node_type_name);
       }
     }

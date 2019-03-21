@@ -3,6 +3,7 @@
 #include <openvdb/openvdb.h>
 #include <openvdb/io/Stream.h>
 #include <openvdb/tools/Filter.h>
+#include <openvdb/tools/ChangeBackground.h>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -90,6 +91,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
   auto grids = openvdb::io::Stream(ifile).getGrids();
 
   auto grid = static_cast<GridType *>((*grids)[0].get());
+  openvdb::tools::changeBackground(grid->tree(), 0.0f);
 
   auto dsl_value = [&](Expr var, openvdb::Coord coord) -> float32 & {
     int offset = 512;
@@ -110,12 +112,27 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
       if (!leaf.probeValue(t, value)) {
         leaf.setValueOn(t, 1.0f);
       }
-      leaf.setValueOn(t, 1.0f);
       auto coord = leaf.offsetToGlobalCoord(t);
       dsl_value(x, coord) = leaf.getValue(t);
     }
     num_leaves += 1;
   }
+
+  for (auto iter = grid->tree().beginLeaf(); iter; ++iter) {
+    auto &leaf = *iter;
+    for (int i = -1; i < 2; i++) {
+      for (int j = -1; j < 2; j++) {
+        for (int k = -1; k < 2; k++) {
+          auto coord = leaf.offsetToGlobalCoord(0);
+          coord.x() += i;
+          coord.y() += j;
+          coord.z() += k;
+        }
+      }
+    }
+    break;
+  }
+
 
   int counter[4] = {0};
   for (TreeType::NodeIter iter = grid->tree().beginNode(); iter; ++iter) {
@@ -146,7 +163,6 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
         iter.getNode(node);
         if (node)
           counter[3]++;
-        auto coord = node->offsetToGlobalCoord(0);
         break;
       }
     }
@@ -227,11 +243,10 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
   for (auto iter = grid->tree().beginLeaf(); iter; ++iter) {
     auto &leaf = *iter;
     for (int t = 0; t < 512; t++) {
-      auto coord = leaf.offsetToGlobalCoord(t);
       TC_P(t);
-      TC_P(dsl_value(x, coord));
-      TC_P(leaf.getValue(t));
-      TC_ASSERT(dsl_value(x, coord) == leaf.getValue(t));
+      auto coord = leaf.offsetToGlobalCoord(t);
+      auto dsl = dsl_value(x, coord), vdb = leaf.getValue(t);
+      TC_ASSERT_EQUAL(dsl, vdb, 1e-5_f);
     }
     num_leaves += 1;
   }

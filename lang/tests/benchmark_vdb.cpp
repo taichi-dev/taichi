@@ -1,4 +1,5 @@
 #include "../tlang.h"
+#include <taichi/system/timer.h>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -36,6 +37,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
   TC_ASSERT(param.size() == 1);
   auto fn = param[0];
   std::FILE *f = fopen(fn.c_str(), "r");
+  TC_ASSERT(f);
 
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog;
@@ -88,17 +90,29 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     x.val<float32>(i, j, k) = 1;
   }
 
-  auto reduce = kernel([&] {
-    Declare(i); Declare(j); Declare(k);
-    For(i, x, [&]() { sum[Expr(0)] += 1; });
+  auto count = kernel([&] {
+    Declare(i);
+    Declare(j);
+    Declare(k);
+    For((i, j, k), x, [&]() { sum[Expr(0)] += 1; });
   });
 
-  reduce();
+  count();
 
   TC_P(num_leaves);
-  TC_P(num_leaves * 512);
-  TC_P(sum.val<int>());
+  TC_ASSERT(num_leaves * pow<3>(8) == sum.val<int>());
 
+  auto mean_x = kernel([&] {
+    Declare(i);
+    Declare(j);
+    Declare(k);
+    For((i, j, k), x, [&]() {
+      y[i, j, k] = (1.0_f / 3) * (x[i - 1, j, k] + x[i, j, k] + x[i + 1, j, k]);
+    });
+  });
+
+  for (int i = 0; i < 10; i++)
+    TC_TIME(mean_x());
 };
 
 TC_REGISTER_TASK(benchmark_vdb);

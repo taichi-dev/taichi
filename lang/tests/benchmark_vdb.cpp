@@ -18,7 +18,7 @@ TC_TEST("hashed_3d") {
 
   layout([&] {
     auto i = Index(0), j = Index(1), k = Index(2);
-    root.hashed({i, j, k}, {256, 256, 256}).place(x);
+    root.hashed({i, j, k}, n).place(x);
     root.place(sum);
   });
 
@@ -60,7 +60,9 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     int int2_size = tree_config[1];
     int leaf_size = tree_config[2];
 
-    root.hashed({i, j, k}, int1_size)
+    root.hashed({i, j, k}, 1024)
+        .fixed({i, j, k}, int1_size)
+        .pointer()
         .fixed({i, j, k}, int2_size)
         .pointer()
         .fixed({i, j, k}, leaf_size)
@@ -68,8 +70,6 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
 
     root.place(sum);
   });
-
-  int offset = 512;
 
   int num_leaves = 0;
 
@@ -91,12 +91,30 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
 
   auto grid = static_cast<GridType *>((*grids)[0].get());
 
+  auto dsl_value = [&](Expr var, openvdb::Coord coord) -> float32 & {
+    int offset = 512;
+    int i = coord.x() + offset, j = coord.y() + offset, k = coord.z() + offset;
+
+    TC_ASSERT(i >= 0);
+    TC_ASSERT(j >= 0);
+    TC_ASSERT(k >= 0);
+
+    return var.val<float32>(i, j, k);
+  };
+
   // densely fill voxel
   for (auto iter = grid->tree().beginLeaf(); iter; ++iter) {
     auto &leaf = *iter;
-    for (int i = 0; i < 512; i++) {
-      leaf.setValueOn(i, 0.0f);
+    for (int t = 0; t < 512; t++) {
+      real value;
+      if (!leaf.probeValue(t, value)) {
+        leaf.setValueOn(t, 1.0f);
+      }
+      leaf.setValueOn(t, 1.0f);
+      auto coord = leaf.offsetToGlobalCoord(t);
+      dsl_value(x, coord) = leaf.getValue(t);
     }
+    num_leaves += 1;
   }
 
   int counter[4] = {0};
@@ -143,33 +161,9 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
   tbb::task_arena limited(1);
 
   limited.execute([&] {
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 1; i++)
       TC_TIME(filter.mean(1));
   });
-
-  for (TreeType::NodeIter iter = grid->tree().beginNode(); iter; ++iter) {
-    if (iter.getDepth() == 3) {
-      LeafType *node = nullptr;
-      iter.getNode(node);
-      if (node)
-        counter[3]++;
-      auto coord = node->offsetToGlobalCoord(0);
-
-      int i = coord.x(), j = coord.y(), k = coord.z();
-
-      i += offset;
-      j += offset;
-      k += offset;
-
-      TC_ASSERT(i >= 0);
-      TC_ASSERT(j >= 0);
-      TC_ASSERT(k >= 0);
-
-      num_leaves += 1;
-
-      x.val<float32>(i, j, k) = 1;
-    }
-  }
 
   auto count = kernel([&] {
     Declare(i);
@@ -192,8 +186,55 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     });
   });
 
-  for (int i = 0; i < 10; i++)
-    TC_TIME(mean_x());
+  auto mean_y = kernel([&] {
+    Declare(i);
+    Declare(j);
+    Declare(k);
+    For((i, j, k), x, [&]() {
+      y[i, j, k] = (1.0_f / 3) * (x[i, j - 1, k] + x[i, j, k] + x[i, j + 1, k]);
+    });
+  });
+
+  auto mean_z = kernel([&] {
+    Declare(i);
+    Declare(j);
+    Declare(k);
+    For((i, j, k), x, [&]() {
+      y[i, j, k] = (1.0_f / 3) * (x[i, j, k - 1] + x[i, j, k] + x[i, j, k + 1]);
+    });
+  });
+
+  auto copy_y_to_x = kernel([&] {
+    Declare(i);
+    Declare(j);
+    Declare(k);
+    For((i, j, k), x, [&]() { x[i, j, k] = y[i, j, k]; });
+  });
+
+  auto mean = [&]() {
+    mean_x();
+    copy_y_to_x();
+    mean_y();
+    copy_y_to_x();
+    mean_z();
+    copy_y_to_x();
+  };
+
+  for (int i = 0; i < 1; i++)
+    TC_TIME(mean());
+
+  // densely fill voxel
+  for (auto iter = grid->tree().beginLeaf(); iter; ++iter) {
+    auto &leaf = *iter;
+    for (int t = 0; t < 512; t++) {
+      auto coord = leaf.offsetToGlobalCoord(t);
+      TC_P(t);
+      TC_P(dsl_value(x, coord));
+      TC_P(leaf.getValue(t));
+      TC_ASSERT(dsl_value(x, coord) == leaf.getValue(t));
+    }
+    num_leaves += 1;
+  }
 };
 
 TC_REGISTER_TASK(benchmark_vdb);

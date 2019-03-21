@@ -366,7 +366,7 @@ class IRCodeGen : public IRVisitor {
           if (ret.second != 0)
             all_offsets_zero = false;
         }
-        if (identical_indices) {
+        if (false && identical_indices) {
           TC_WARN("Weakened addressing");
           weakened = true;
 

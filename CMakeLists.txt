@@ -11,7 +11,7 @@ include_directories(external/partio/include)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 
 add_library(taichi_lang SHARED ${PROJECT_SOURCES})
-target_link_libraries(taichi_lang ${CORE_LIBRARY_NAME} partio ${CMAKE_CURRENT_LIST_DIR}/external/openvdb/libopenvdb.so Half log4cplus boost_iostreams)
+target_link_libraries(taichi_lang ${CORE_LIBRARY_NAME} partio ${CMAKE_CURRENT_LIST_DIR}/external/openvdb/openvdb/libopenvdb.so Half log4cplus boost_iostreams)
 
 find_package(CUDA 8.0)
 if (CUDA_FOUND)

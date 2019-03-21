@@ -144,6 +144,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     break;
   }
 
+  TC_P(grid->tree().getValue(openvdb::Coord(-288, -9, -23)));
 
   int counter[4] = {0};
   for (TreeType::NodeIter iter = grid->tree().beginNode(); iter; ++iter) {
@@ -185,6 +186,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
 
   openvdb::tools::Filter<GridType> filter(*grid);
 
+  TC_P(grid->tree().getValue(openvdb::Coord(-288, -9, -23)));
   tbb::task_arena limited(1);
 
   limited.execute([&] {
@@ -239,12 +241,12 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
   });
 
   auto mean = [&]() {
-    //mean_x();
-    //copy_y_to_x();
+    mean_x();
+    copy_y_to_x();
     mean_y();
     copy_y_to_x();
-    //mean_z();
-    //copy_y_to_x();
+    mean_z();
+    copy_y_to_x();
   };
 
   for (int i = 0; i < 1; i++)
@@ -254,9 +256,9 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
   for (auto iter = grid->tree().beginLeaf(); iter; ++iter) {
     auto &leaf = *iter;
     for (int t = 0; t < 512; t++) {
-      TC_P(t);
+      // TC_P(t);
       auto coord = leaf.offsetToGlobalCoord(t);
-      fmt::print("{} {} {}\n", coord.x(), coord.y(), coord.z());
+      // fmt::print("{} {} {}\n", coord.x(), coord.y(), coord.z());
       auto dsl = dsl_value(x, coord), vdb = leaf.getValue(t);
       TC_ASSERT_EQUAL(dsl, vdb, 1e-5_f);
     }

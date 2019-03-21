@@ -202,8 +202,8 @@ private:
     template <typename AvgT>
     void doBox( const RangeType& r, Int32 w);
     void doBoxX(const RangeType& r, Int32 w) { this->doBox<Avg<0> >(r,w); }
-    void doBoxZ(const RangeType& r, Int32 w) { this->doBox<Avg<1> >(r,w); }
-    void doBoxY(const RangeType& r, Int32 w) { this->doBox<Avg<2> >(r,w); }
+    void doBoxY(const RangeType& r, Int32 w) { this->doBox<Avg<1> >(r,w); }
+    void doBoxZ(const RangeType& r, Int32 w) { this->doBox<Avg<2> >(r,w); }
     void doMedian(const RangeType&, int);
     void doOffset(const RangeType&, ValueType);
     /// @return true if the process was interrupted
@@ -235,9 +235,34 @@ template<size_t Axis>
 inline typename GridT::ValueType
 Filter<GridT, MaskT, InterruptT>::Avg<Axis>::operator()(Coord xyz)
 {
+  /*
+  auto _xyz = xyz;
+    if (_xyz.x() == -288 && _xyz.y() == -8 && _xyz.z() == -23) {
+      std::cout << "acc " << acc.tree().getValue(openvdb::Coord(-288, -9, -23)) << std::endl;
+        Int32 &i = xyz[Axis], j = i + width;
+        for (i -= width; i <= j; ++i) {
+            std::cout << xyz << std::endl;
+          std::cout << "value " << acc.tree().getValue(xyz) << std::endl;
+          std::cout << "value " << acc.getValue(xyz) << std::endl;
+        }
+    }
+    */
     ValueType sum = zeroVal<ValueType>();
     Int32 &i = xyz[Axis], j = i + width;
-    for (i -= width; i <= j; ++i) filter_internal::accum(sum, acc.getValue(xyz));
+    for (i -= width; i <= j; ++i) {
+        auto tmp = acc.getValue(xyz);
+        /*
+        if (_xyz.x() == -288 && _xyz.y() == -8 && _xyz.z() == -23) {
+            std::cout << "_xyz" << _xyz << std::endl;
+            std::cout << xyz << std::endl;
+            std::cout << "tmp " << tmp << std::endl;
+        }
+        */
+        filter_internal::accum(sum, acc.getValue(xyz));
+    }
+    //if (_xyz.x() == -288 && _xyz.y() == -8 && _xyz.z() == -23) {
+    //  std::cout << "sum " << sum << std::endl;
+    //}
     return static_cast<ValueType>(sum * frac);
 }
 
@@ -258,14 +283,14 @@ Filter<GridT, MaskT, InterruptT>::mean(int width, int iterations, const MaskType
     LeafManagerType leafs(mGrid->tree(), 1, mGrainSize==0);
 
     for (int i=0; i<iterations && !this->wasInterrupted(); ++i) {
-        //mTask = std::bind(&Filter::doBoxX, std::placeholders::_1, std::placeholders::_2, w);
-        //this->cook(leafs);
+        mTask = std::bind(&Filter::doBoxX, std::placeholders::_1, std::placeholders::_2, w);
+        this->cook(leafs);
 
         mTask = std::bind(&Filter::doBoxY, std::placeholders::_1, std::placeholders::_2, w);
         this->cook(leafs);
 
-        //mTask = std::bind(&Filter::doBoxZ, std::placeholders::_1, std::placeholders::_2, w);
-        //this->cook(leafs);
+        mTask = std::bind(&Filter::doBoxZ, std::placeholders::_1, std::placeholders::_2, w);
+        this->cook(leafs);
     }
 
     if (mInterrupter) mInterrupter->end();

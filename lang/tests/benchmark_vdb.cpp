@@ -42,6 +42,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
 
   AmbientGlobal(x, f32, 0.0f);
   Global(y, f32);
+  Global(sum, i32);
 
   int tree_config[] = {5, 4, 3};
 
@@ -61,6 +62,8 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
         .pointer()
         .fixed({i, j, k}, leaf_size)
         .place(x, y);
+
+    root.place(sum);
   });
 
   int offset = 512;
@@ -85,7 +88,17 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     x.val<float32>(i, j, k) = 1;
   }
 
+  auto reduce = kernel([&] {
+    Declare(i); Declare(j); Declare(k);
+    For(i, x, [&]() { sum[Expr(0)] += 1; });
+  });
+
+  reduce();
+
   TC_P(num_leaves);
+  TC_P(num_leaves * 512);
+  TC_P(sum.val<int>());
+
 };
 
 TC_REGISTER_TASK(benchmark_vdb);

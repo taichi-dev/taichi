@@ -235,34 +235,9 @@ template<size_t Axis>
 inline typename GridT::ValueType
 Filter<GridT, MaskT, InterruptT>::Avg<Axis>::operator()(Coord xyz)
 {
-  /*
-  auto _xyz = xyz;
-    if (_xyz.x() == -288 && _xyz.y() == -8 && _xyz.z() == -23) {
-      std::cout << "acc " << acc.tree().getValue(openvdb::Coord(-288, -9, -23)) << std::endl;
-        Int32 &i = xyz[Axis], j = i + width;
-        for (i -= width; i <= j; ++i) {
-            std::cout << xyz << std::endl;
-          std::cout << "value " << acc.tree().getValue(xyz) << std::endl;
-          std::cout << "value " << acc.getValue(xyz) << std::endl;
-        }
-    }
-    */
     ValueType sum = zeroVal<ValueType>();
     Int32 &i = xyz[Axis], j = i + width;
-    for (i -= width; i <= j; ++i) {
-        auto tmp = acc.getValue(xyz);
-        /*
-        if (_xyz.x() == -288 && _xyz.y() == -8 && _xyz.z() == -23) {
-            std::cout << "_xyz" << _xyz << std::endl;
-            std::cout << xyz << std::endl;
-            std::cout << "tmp " << tmp << std::endl;
-        }
-        */
-        filter_internal::accum(sum, acc.getValue(xyz));
-    }
-    //if (_xyz.x() == -288 && _xyz.y() == -8 && _xyz.z() == -23) {
-    //  std::cout << "sum " << sum << std::endl;
-    //}
+    for (i -= width; i <= j; ++i) filter_internal::accum(sum, acc.getValue(xyz));
     return static_cast<ValueType>(sum * frac);
 }
 

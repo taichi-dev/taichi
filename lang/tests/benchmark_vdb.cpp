@@ -133,15 +133,19 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
       }
     }
   }
+  TC_P(grid->activeVoxelCount());
   for (int i = 0; i < 4; i++) {
     TC_INFO("Depth {}: nodes {}", i, counter[i]);
   }
-  TC_P(grid->activeVoxelCount());
 
   openvdb::tools::Filter<GridType> filter(*grid);
 
-  for (int i = 0; i < 10; i++)
-    TC_TIME(filter.mean(1));
+  tbb::task_arena limited(1);
+
+  limited.execute([&] {
+    for (int i = 0; i < 10; i++)
+      TC_TIME(filter.mean(1));
+  });
 
   for (TreeType::NodeIter iter = grid->tree().beginNode(); iter; ++iter) {
     if (iter.getDepth() == 3) {

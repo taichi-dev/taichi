@@ -88,7 +88,7 @@ class IRCodeGen : public IRVisitor {
     // TODO: replace with vectorize width
     int parallel_instances = 1;
     auto has_residual = false;
-    if (last_level) {
+    if (last_level && snode->type != SNodeType::hashed) {
       if (!has_residual) {
         emit_code("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
                   snode->node_type_name, l, parallel_instances);

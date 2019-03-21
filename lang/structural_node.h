@@ -101,7 +101,10 @@ class SNode {
   SNode &create_node(std::vector<Index> indices,
                      std::vector<int> sizes,
                      SNodeType type) {
-    TC_ASSERT(indices.size() == sizes.size())
+    TC_ASSERT(indices.size() == sizes.size() || sizes.size() == 1);
+    if (sizes.size() == 1) {
+      sizes = std::vector<int>(indices.size(), sizes[0]);
+    }
     bool all_one = true;
     for (auto s : sizes) {
       if (s != 1) {
@@ -110,6 +113,11 @@ class SNode {
     }
     if (all_one)
       return *this;  // do nothing
+
+    if (type == SNodeType::hashed)
+      TC_ASSERT_INFO(depth == 0,
+                     "hashed node must be child of root due to initialization "
+                     "memset limitation.");
     auto &new_node = insert_children(type);
     new_node.n = 1;
     for (auto s : sizes) {
@@ -128,8 +136,12 @@ class SNode {
     return create_node(indices, sizes, SNodeType::fixed);
   }
 
+  SNode &fixed(std::vector<Index> indices, int sizes) {
+    return create_node(indices, std::vector<int>{sizes}, SNodeType::fixed);
+  }
+
   SNode &fixed(const Index &index, int size) {
-    return SNode::fixed(std::vector<Index>{index}, {size});
+    return SNode::fixed(std::vector<Index>{index}, size);
   }
 
   SNode &multi_threaded(bool val = true) {
@@ -195,16 +207,16 @@ class SNode {
     return child;
   }
 
-  // SNodes maintains how flattened index bits are taken from indices
   SNode &hashed(std::vector<Index> indices, std::vector<int> sizes) {
-    TC_ASSERT_INFO(depth == 0,
-                   "hashed node must be child of root due to initialization "
-                   "memset limitation.");
     return create_node(indices, sizes, SNodeType::hashed);
   }
 
+  SNode &hashed(std::vector<Index> indices, int sizes) {
+    return create_node(indices, std::vector<int>{sizes}, SNodeType::hashed);
+  }
+
   SNode &hashed(Index &expr, int n) {
-    return hashed(std::vector<Index>{expr}, {n});
+    return hashed(std::vector<Index>{expr}, n);
   }
 
   SNode &pointer() {

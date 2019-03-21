@@ -56,18 +56,22 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     int int2_size = tree_config[1];
     int leaf_size = tree_config[2];
 
-    root.hashed({i, j, k}, {}).fixed(i, 1024).pointer().fixed(i, 256).place(x, y);
+    root.hashed({i, j, k}, int1_size)
+        .fixed({i, j, k}, int2_size)
+        .pointer()
+        .fixed({i, j, k}, leaf_size)
+        .place(x, y);
   });
 
-  int offset = 256;
+  int offset = 512;
 
   int num_leaves = 0;
-  while (1) {
+
+  while (!std::feof(f)) {
     int i, j, k;
-    int ret = fscanf(f, "%d %d %d", &i, &j, &k);
-    if (!ret) {
-      break;
-    }
+
+    fscanf(f, "%d%d%d", &i, &j, &k);
+
     i += offset;
     j += offset;
     k += offset;
@@ -77,7 +81,11 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     TC_ASSERT(k >= 0);
 
     num_leaves += 1;
+
+    x.val<float32>(i, j, k) = 1;
   }
+
+  TC_P(num_leaves);
 };
 
 TC_REGISTER_TASK(benchmark_vdb);

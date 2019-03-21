@@ -258,14 +258,14 @@ Filter<GridT, MaskT, InterruptT>::mean(int width, int iterations, const MaskType
     LeafManagerType leafs(mGrid->tree(), 1, mGrainSize==0);
 
     for (int i=0; i<iterations && !this->wasInterrupted(); ++i) {
-        mTask = std::bind(&Filter::doBoxX, std::placeholders::_1, std::placeholders::_2, w);
-        this->cook(leafs);
+        //mTask = std::bind(&Filter::doBoxX, std::placeholders::_1, std::placeholders::_2, w);
+        //this->cook(leafs);
 
         mTask = std::bind(&Filter::doBoxY, std::placeholders::_1, std::placeholders::_2, w);
         this->cook(leafs);
 
-        mTask = std::bind(&Filter::doBoxZ, std::placeholders::_1, std::placeholders::_2, w);
-        this->cook(leafs);
+        //mTask = std::bind(&Filter::doBoxZ, std::placeholders::_1, std::placeholders::_2, w);
+        //this->cook(leafs);
     }
 
     if (mInterrupter) mInterrupter->end();

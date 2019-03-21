@@ -94,7 +94,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
   openvdb::tools::changeBackground(grid->tree(), 0.0f);
 
   auto dsl_value = [&](Expr var, openvdb::Coord coord) -> float32 & {
-    int offset = 512;
+    int offset = 1024;
     int i = coord.x() + offset, j = coord.y() + offset, k = coord.z() + offset;
 
     TC_ASSERT(i >= 0);
@@ -118,18 +118,29 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     num_leaves += 1;
   }
 
+
   for (auto iter = grid->tree().beginLeaf(); iter; ++iter) {
     auto &leaf = *iter;
-    for (int i = -1; i < 2; i++) {
+    float sum = 0;
+    for (int i = 0; i < 1; i++) {
       for (int j = -1; j < 2; j++) {
-        for (int k = -1; k < 2; k++) {
+        for (int k = 0; k < 1; k++) {
           auto coord = leaf.offsetToGlobalCoord(0);
+          coord.x() = -288;
+          coord.y() = -8;
+          coord.z() = -23;
+
           coord.x() += i;
           coord.y() += j;
           coord.z() += k;
+
+          auto tmp = grid->tree().getValue(coord);
+          TC_P(tmp);
+          sum += tmp;
         }
       }
     }
+    TC_P(sum / 3);
     break;
   }
 
@@ -228,12 +239,12 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
   });
 
   auto mean = [&]() {
-    mean_x();
-    copy_y_to_x();
+    //mean_x();
+    //copy_y_to_x();
     mean_y();
     copy_y_to_x();
-    mean_z();
-    copy_y_to_x();
+    //mean_z();
+    //copy_y_to_x();
   };
 
   for (int i = 0; i < 1; i++)
@@ -245,6 +256,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     for (int t = 0; t < 512; t++) {
       TC_P(t);
       auto coord = leaf.offsetToGlobalCoord(t);
+      fmt::print("{} {} {}\n", coord.x(), coord.y(), coord.z());
       auto dsl = dsl_value(x, coord), vdb = leaf.getValue(t);
       TC_ASSERT_EQUAL(dsl, vdb, 1e-5_f);
     }

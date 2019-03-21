@@ -41,7 +41,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
   Program prog;
 
   AmbientGlobal(x, f32, 0.0f);
-  // Global(y, f32);
+  Global(y, f32);
 
   int tree_config[] = {5, 4, 3};
 
@@ -56,8 +56,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     int int2_size = tree_config[1];
     int leaf_size = tree_config[2];
 
-    // root.hashed({i, j, k}, {}).fixed(i, 1024).pointer().fixed(i,
-    // 256).place(x, y);
+    root.hashed({i, j, k}, {}).fixed(i, 1024).pointer().fixed(i, 256).place(x, y);
   });
 
   int offset = 256;

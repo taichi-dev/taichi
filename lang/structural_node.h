@@ -98,8 +98,9 @@ class SNode {
     return *ch.back();
   }
 
-  // SNodes maintains how flattened index bits are taken from indices
-  SNode &fixed(std::vector<Index> indices, std::vector<int> sizes) {
+  SNode &create_node(std::vector<Index> indices,
+                     std::vector<int> sizes,
+                     SNodeType type) {
     TC_ASSERT(indices.size() == sizes.size())
     bool all_one = true;
     for (auto s : sizes) {
@@ -109,7 +110,7 @@ class SNode {
     }
     if (all_one)
       return *this;  // do nothing
-    auto &new_node = insert_children(SNodeType::fixed);
+    auto &new_node = insert_children(type);
     new_node.n = 1;
     for (auto s : sizes) {
       TC_ASSERT(bit::is_power_of_two(s));
@@ -120,6 +121,11 @@ class SNode {
       new_node.extractors[ind.value].num_bits = bit::log2int(sizes[i]);
     }
     return new_node;
+  }
+
+  // SNodes maintains how flattened index bits are taken from indices
+  SNode &fixed(std::vector<Index> indices, std::vector<int> sizes) {
+    return create_node(indices, sizes, SNodeType::fixed);
   }
 
   SNode &fixed(const Index &index, int size) {
@@ -194,26 +200,7 @@ class SNode {
     TC_ASSERT_INFO(depth == 0,
                    "hashed node must be child of root due to initialization "
                    "memset limitation.");
-    TC_ASSERT(indices.size() == sizes.size())
-    bool all_one = true;
-    for (auto s : sizes) {
-      if (s != 1) {
-        all_one = false;
-      }
-    }
-    if (all_one)
-      return *this;  // do nothing
-    auto &new_node = insert_children(SNodeType::hashed);
-    new_node.n = 1;
-    for (auto s : sizes) {
-      TC_ASSERT(bit::is_power_of_two(s));
-      new_node.n *= s;
-    }
-    for (int i = 0; i < (int)indices.size(); i++) {
-      auto &ind = indices[i];
-      new_node.extractors[ind.value].num_bits = bit::log2int(sizes[i]);
-    }
-    return new_node;
+    return create_node(indices, sizes, SNodeType::hashed);
   }
 
   SNode &hashed(Index &expr, int n) {

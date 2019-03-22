@@ -29,7 +29,9 @@ TC_TEST("hashed_3d") {
 
   auto reduce = kernel([&] {
     Declare(i);
-    For(i, x, [&]() { sum[Expr(0)] += x[i]; });
+    Declare(j);
+    Declare(k);
+    For((i, j, k), x, [&]() { sum[Expr(0)] += x[i, j, k]; });
   });
 
   reduce();

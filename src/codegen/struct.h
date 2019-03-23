@@ -98,8 +98,8 @@ class StructCompiler : public CodeGenBase {
     }
 
     if (snode.has_ambient) {
-      emit("{} {}_ambient = {};", snode.data_type_name(),
-                snode.node_type_name, snode.ambient_val.stringify());
+      emit("{} {}_ambient = {};", snode.data_type_name(), snode.node_type_name,
+           snode.ambient_val.stringify());
     }
 
     // create children type that supports forking...
@@ -116,21 +116,21 @@ class StructCompiler : public CodeGenBase {
 
     if (type == SNodeType::fixed) {
       emit("using {} = fixed<{}_ch, {}>;", snode.node_type_name,
-                snode.node_type_name, snode.n);
+           snode.node_type_name, snode.n);
     } else if (type == SNodeType::root) {
       emit("using {} = layout_root<{}_ch>;", snode.node_type_name,
-                snode.node_type_name);
+           snode.node_type_name);
     } else if (type == SNodeType::dynamic) {
       emit("using {} = dynamic<{}_ch, {}>;", snode.node_type_name,
-                snode.node_type_name, snode.n);
+           snode.node_type_name, snode.n);
     } else if (type == SNodeType::indirect) {
       emit("using {} = indirect<{}_ch>;", snode.node_type_name, snode.n);
     } else if (type == SNodeType::pointer) {
       emit("using {} = pointer<{}_ch>;", snode.node_type_name,
-                snode.node_type_name);
+           snode.node_type_name);
     } else if (type == SNodeType::hashed) {
       emit("using {} = hashed<{}_ch>;", snode.node_type_name,
-                snode.node_type_name);
+           snode.node_type_name);
     } else if (type == SNodeType::place) {
       emit("using {} = {};", snode.node_type_name, snode.data_type_name());
     } else {
@@ -152,55 +152,55 @@ class StructCompiler : public CodeGenBase {
       for (int i = 0; i < (int)snode.ch.size(); i++) {
         auto ch = snode.ch[i];
         emit("TC_FORCE_INLINE {} *access_{}({} *parent, int i) {{",
-                  ch->node_type_name, ch->node_type_name, snode.node_type_name);
-        emit("auto lookup = parent->look_up(i); "
-                  "if ({}::has_null && lookup == nullptr) return nullptr;",
-                      snode.node_type_name);
+             ch->node_type_name, ch->node_type_name, snode.node_type_name);
+        emit(
+            "auto lookup = parent->look_up(i); "
+            "if ({}::has_null && lookup == nullptr) return nullptr;",
+            snode.node_type_name);
         emit("return lookup->get{}();", i);
         emit("}}");
       }
       emit("");
     }
-    {  // SNode::place & indirect
-      // emit end2end accessors for leaf (place) nodes, using chain accessors
+    // SNode::place & indirect
+    // emit end2end accessors for leaf (place) nodes, using chain accessors
+    emit(
+        "TLANG_ACCESSOR {} * access_{}(void *root, int i0, int i1=0, int "
+        "i2=0, "
+        "int i3=0) {{",
+        snode.node_type_name, snode.node_type_name);
+    if (snode._verbose) {
       emit(
-          "TLANG_ACCESSOR {} * access_{}(void *root, int i0, int i1=0, int "
-          "i2=0, "
-          "int i3=0) {{",
-          snode.node_type_name, snode.node_type_name);
-      if (snode._verbose) {
-        emit(
-            "std::cout << \"accessing node {} at \" << i0 << ' ' << i1 << ' ' "
-            "<< i2 << ' ' << i3 << std::endl;",
-            snode.node_type_name);
-      }
-      emit("int tmp;");
-      emit("auto n0 = ({} *)root;", root_type);
-      for (int i = 0; i + 1 < (int)stack.size(); i++) {
-        emit("tmp = 0;", i);
-        for (int j = 0; j < max_num_indices; j++) {
-          auto e = stack[i]->extractors[j];
-          int b = e.num_bits;
-          if (b) {
-            if (e.num_bits == e.start || max_num_indices != 1) {
-              emit("tmp = (tmp << {}) + ((i{} >> {}) & ((1 << {}) - 1));",
-                        e.num_bits, j, e.start, e.num_bits);
-            } else {
-              TC_WARN("Emitting shortcut indexing");
-              emit("tmp = i{};", j);
-            }
+          "std::cout << \"accessing node {} at \" << i0 << ' ' << i1 << ' ' "
+          "<< i2 << ' ' << i3 << std::endl;",
+          snode.node_type_name);
+    }
+    emit("int tmp;");
+    emit("auto n0 = ({} *)root;", root_type);
+    for (int i = 0; i + 1 < (int)stack.size(); i++) {
+      emit("tmp = 0;", i);
+      for (int j = 0; j < max_num_indices; j++) {
+        auto e = stack[i]->extractors[j];
+        int b = e.num_bits;
+        if (b) {
+          if (e.num_bits == e.start || max_num_indices != 1) {
+            emit("tmp = (tmp << {}) + ((i{} >> {}) & ((1 << {}) - 1));",
+                 e.num_bits, j, e.start, e.num_bits);
+          } else {
+            TC_WARN("Emitting shortcut indexing");
+            emit("tmp = i{};", j);
           }
         }
-        emit("auto n{} = access_{}(n{}, tmp);", i + 1,
-                  stack[i + 1]->node_type_name, i);
-        if (snode.has_ambient && stack[i + 1] != &snode)
-          emit("if ({}::has_null && n{} == nullptr) return &{}_ambient;",
-                    stack[i]->node_type_name, i + 1, snode.node_type_name);
       }
-      emit("return n{};", (int)stack.size() - 1);
-      emit("}}");
-      emit("");
+      emit("auto n{} = access_{}(n{}, tmp);", i + 1,
+           stack[i + 1]->node_type_name, i);
+      if (snode.has_ambient && stack[i + 1] != &snode)
+        emit("if ({}::has_null && n{} == nullptr) return &{}_ambient;",
+             stack[i]->node_type_name, i + 1, snode.node_type_name);
     }
+    emit("return n{};", (int)stack.size() - 1);
+    emit("}}");
+    emit("");
 
     if (type == SNodeType::indirect) {  // toucher
       emit(
@@ -210,12 +210,7 @@ class StructCompiler : public CodeGenBase {
           "int i3=0) {{",
           snode.node_type_name);
       emit("auto node = access_{}(root, i0, i1, i2, i3);",
-                snode.node_type_name);
-      /*
-      emit(
-          "std::cout<<val<<' '<< i0 << ' ' << i1 << ' ' << i2 << ' ' << i3 << "
-          "std::endl;");
-      */
+           snode.node_type_name);
       emit("node->touch(val);");
       emit("}");
     }
@@ -229,7 +224,7 @@ class StructCompiler : public CodeGenBase {
           "int i3=0) {{",
           snode.node_type_name, snode.node_type_name);
       emit("auto node = access_{}(root, i0, i1, i2, i3);",
-                snode.node_type_name);
+           snode.node_type_name);
       emit("node->touch(val);");
       emit("}}");
     }
@@ -269,11 +264,11 @@ class StructCompiler : public CodeGenBase {
     root_type = node.node_type_name;
     generate_leaf_accessors(node);
     emit("extern \"C\" void *create_data_structure() {{auto p= new {}; ",
-              root_type);
+         root_type);
     for (int i = 0; i < (int)node.ch.size(); i++) {
       if (node.ch[i]->type != SNodeType::hashed) {
         emit("std::memset(p->children.get{}(), 0, sizeof({}));", i,
-                  node.ch[i]->node_type_name);
+             node.ch[i]->node_type_name);
       }
     }
     emit("return p;}}");

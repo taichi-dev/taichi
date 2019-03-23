@@ -49,20 +49,9 @@ class CPUCodeGen : public CodeGenBase {
   */
 
 
-  void generate_header() {
-    emit("#include <common.h>\n");
-    emit("#define TLANG_KERNEL\n");
-    emit("#include \"{}\"", prog->layout_fn);
-    emit("using namespace taichi; using namespace Tlang;");
+  void generate_header();
 
-    emit("extern \"C\" void " + func_name + "(Context context) {{\n");
-    emit("auto root = ({} *)context.buffers[0];",
-              prog->snode_root->node_type_name);
-  }
-
-  void generate_tail() {
-    emit("}}\n");
-  }
+  void generate_tail();
 
   void codegen(Kernel &ker);
 

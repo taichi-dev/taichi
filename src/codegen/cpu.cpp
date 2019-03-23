@@ -502,6 +502,21 @@ FunctionType CPUCodeGen::compile(Program &prog, Kernel &kernel) {
   return load_function();
 }
 
+void CPUCodeGen::generate_header() {
+  emit("#include <common.h>\n");
+  emit("#define TLANG_KERNEL\n");
+  emit("#include \"{}\"", prog->layout_fn);
+  emit("using namespace taichi; using namespace Tlang;");
+
+  emit("extern \"C\" void " + func_name + "(Context context) {{\n");
+  emit("auto root = ({} *)context.buffers[0];",
+       prog->snode_root->node_type_name);
+}
+
+void CPUCodeGen::generate_tail() {
+  emit("}}\n");
+}
+
 FunctionType Program::compile(Kernel &kernel) {
   FunctionType ret = nullptr;
   if (config.arch == Arch::x86_64) {

@@ -393,8 +393,8 @@ class CPUIRCodeGen : public IRVisitor {
           TC_WARN("offset can be wrong in multidimensional cases");
           int offset = offsets[0];
           emit("if ({}) {{", cond);
-          emit("{}[{}] = access_{}({}_cache, {}_loop + {});", stmt->raw_name(), l,
-               snode->node_type_name, snode->parent->node_type_name,
+          emit("{}[{}] = access_{}({}_cache, {}_loop + {});", stmt->raw_name(),
+               l, snode->node_type_name, snode->parent->node_type_name,
                snode->parent->node_type_name, offset);
           emit("}} else {{");
           emit("{}", strong_access);
@@ -443,18 +443,18 @@ class CPUIRCodeGen : public IRVisitor {
 };
 
 void CPUCodeGen::codegen() {
-  {
-    CODE_REGION(header);
-    generate_header();
-  }
+  generate_header();
+
+  emit("extern \"C\" void " + func_name + "(Context context) {{\n");
+  emit("auto root = ({} *)context.buffers[0];",
+       prog->snode_root->node_type_name);
 
   CPUIRCodeGen::run(this, current_kernel->ir);
 
-  {
-    CODE_REGION(tail);
-    line_suffix = "";
-    generate_tail();
-  }
+  emit("}}\n");
+
+  line_suffix = "";
+  generate_tail();
 }
 
 FunctionType CPUCodeGen::compile(Program &prog, Kernel &kernel) {
@@ -467,8 +467,8 @@ FunctionType CPUCodeGen::compile(Program &prog, Kernel &kernel) {
                                                       get_library_path());
   auto compile_ret = std::system(cmd.c_str());
   if (compile_ret != 0) {
-    auto cmd = get_current_program().config.compile_cmd(get_source_path(),
-                                                        get_library_path(), true);
+    auto cmd = get_current_program().config.compile_cmd(
+        get_source_path(), get_library_path(), true);
     trash(std::system(cmd.c_str()));
     TC_ERROR("Source {} compilation failed.", get_source_path());
   }
@@ -481,14 +481,9 @@ void CPUCodeGen::generate_header() {
   emit("#define TLANG_KERNEL\n");
   emit("#include \"{}\"", prog->layout_fn);
   emit("using namespace taichi; using namespace Tlang;");
-
-  emit("extern \"C\" void " + func_name + "(Context context) {{\n");
-  emit("auto root = ({} *)context.buffers[0];",
-       prog->snode_root->node_type_name);
 }
 
 void CPUCodeGen::generate_tail() {
-  emit("}}\n");
 }
 
 void CPUCodeGen::lower() {
@@ -519,6 +514,5 @@ void CPUCodeGen::lower() {
   if (prog->config.print_ir)
     irpass::print(ir);
 }
-
 
 TLANG_NAMESPACE_END

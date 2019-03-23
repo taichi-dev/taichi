@@ -6,8 +6,7 @@ TLANG_NAMESPACE_BEGIN
 // Base class for Struct, CPU, GPU codegen
 class CodeGenBase {
  public:
-  int snode_count;
-  std::string code_suffix;
+  std::string line_suffix;
   std::string folder;
   std::string func_name;
   int num_groups;
@@ -96,8 +95,7 @@ class CodeGenBase {
 
     folder = "_tlang_cache/";
     create_directories(folder);
-    snode_count = 0;
-    code_suffix = "\n";
+    line_suffix = "\n";
   }
 
   std::string get_source_name() {
@@ -128,11 +126,6 @@ class CodeGenBase {
     return members;
   }
 
-  std::string create_snode() {
-    TC_ASSERT(snode_count < 10000);
-    return fmt::format("S{}", snode_count++);
-  }
-
   std::string get_source_fn();
 
   std::string get_library_fn() {
@@ -155,7 +148,7 @@ class CodeGenBase {
       codes[current_code_region] = "";
     }
     codes[current_code_region] +=
-        fmt::format(f, std::forward<Args>(args)...) + code_suffix;
+        fmt::format(f, std::forward<Args>(args)...) + line_suffix;
   }
 
   void write_source() {

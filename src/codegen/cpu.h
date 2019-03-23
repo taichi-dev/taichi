@@ -11,13 +11,10 @@ class Program;
 
 class CPUCodeGen : public CodeGenBase {
  public:
-  std::string before_loop_body;
   Program *prog;
   Kernel *current_kernel;
   std::map<std::string, std::string> constant_vectors;  // statement to var name
   int constant_counter;
-  bool has_residual;
-  bool generating_residual;
   std::map<int, std::string> masks;
 
  public:
@@ -34,8 +31,6 @@ class CPUCodeGen : public CodeGenBase {
   CPUCodeGen() : CodeGenBase() {
     suffix = "cpp";
     constant_counter = 0;
-    has_residual = false;
-    generating_residual = false;
   }
 
   /*
@@ -78,15 +73,12 @@ class CPUCodeGen : public CodeGenBase {
   }
 
   void generate_tail() {
-    // generate_loop_tail(prog->current_snode, true);
     emit_code("}}\n");
   }
 
   void codegen(Kernel &ker);
 
-  FunctionType compile();
-
-  FunctionType get(Program &prog, Kernel &kernel);
+  FunctionType compile(Program &prog, Kernel &kernel);
 };
 
 using CodeGen = CPUCodeGen;

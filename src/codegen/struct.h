@@ -7,15 +7,23 @@ class StructCompiler : public CodeGenBase {
  public:
   std::vector<SNode *> stack;
   std::string root_type;
+  int snode_count;
   void *(*creator)();
 
   StructCompiler() : CodeGenBase() {
+    snode_count = 0;
+
     suffix = "cpp";
     emit_code("#define TLANG_HOST");
     emit_code("#include <common.h>");
     emit_code("using namespace taichi;");
     emit_code("using namespace Tlang;");
     emit_code("\n");
+  }
+
+  std::string create_snode() {
+    TC_ASSERT(snode_count < 10000);
+    return fmt::format("S{}", snode_count++);
   }
 
   void visit(SNode &snode) {

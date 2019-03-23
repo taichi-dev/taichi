@@ -9,11 +9,11 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class IRCodeGen : public IRVisitor {
+class CPUIRCodeGen : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
   CodeGenBase *codegen;
-  IRCodeGen(CodeGenBase *codegen) : codegen(codegen) {
+  CPUIRCodeGen(CodeGenBase *codegen) : codegen(codegen) {
     current_struct_for = nullptr;
   }
 
@@ -180,7 +180,7 @@ class IRCodeGen : public IRVisitor {
 #undef emit_code
 
   static void run(CodeGenBase *codegen, IRNode *node) {
-    auto p = IRCodeGen(codegen);
+    auto p = CPUIRCodeGen(codegen);
     node->accept(&p);
   }
 
@@ -443,7 +443,6 @@ class IRCodeGen : public IRVisitor {
 };
 
 void CPUCodeGen::codegen(Kernel &kernel) {
-  // TC_ASSERT(mode == Mode::vector);
   this->prog = &kernel.program;
   this->current_kernel = &kernel;
 
@@ -478,37 +477,17 @@ void CPUCodeGen::codegen(Kernel &kernel) {
   irpass::eliminate_dup(ir);
   if (prog->config.print_ir)
     irpass::print(ir);
-  IRCodeGen::run(this, ir);
+  CPUIRCodeGen::run(this, ir);
 
   {
     CODE_REGION(tail);
-    code_suffix = "";
+    line_suffix = "";
     generate_tail();
   }
 }
 
-FunctionType CPUCodeGen::get(Program &prog, Kernel &kernel) {
+FunctionType CPUCodeGen::compile(Program &prog, Kernel &kernel) {
   codegen(kernel);
-  return compile();
-}
-
-FunctionType Program::compile(Kernel &kernel) {
-  FunctionType ret = nullptr;
-  if (config.arch == Arch::x86_64) {
-    CPUCodeGen codegen;
-    ret = codegen.get(*this, kernel);
-  } else if (config.arch == Arch::gpu) {
-    TC_NOT_IMPLEMENTED
-    // GPUCodeGen codegen;
-    // function = codegen.get(*this);
-  } else {
-    TC_NOT_IMPLEMENTED;
-  }
-  TC_ASSERT(ret);
-  return ret;
-}
-
-FunctionType CPUCodeGen::compile() {
   write_source();
   auto cmd = get_current_program().config.compile_cmd(get_source_fn(),
                                                       get_library_fn());
@@ -521,6 +500,22 @@ FunctionType CPUCodeGen::compile() {
   }
   disassemble();
   return load_function();
+}
+
+FunctionType Program::compile(Kernel &kernel) {
+  FunctionType ret = nullptr;
+  if (config.arch == Arch::x86_64) {
+    CPUCodeGen codegen;
+    ret = codegen.compile(*this, kernel);
+  } else if (config.arch == Arch::gpu) {
+    TC_NOT_IMPLEMENTED
+    // GPUCodeGen codegen;
+    // function = codegen.get(*this);
+  } else {
+    TC_NOT_IMPLEMENTED;
+  }
+  TC_ASSERT(ret);
+  return ret;
 }
 
 TLANG_NAMESPACE_END

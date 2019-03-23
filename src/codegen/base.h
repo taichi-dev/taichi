@@ -10,7 +10,6 @@ class CodeGenBase {
   std::string code_suffix;
   std::string folder;
   std::string func_name;
-  std::string source_name;
   int num_groups;
   int id;
   std::string suffix;
@@ -82,17 +81,15 @@ class CodeGenBase {
 #define CODE_REGION(region) auto _____ = get_region_guard(CodeRegion::region);
 #define CODE_REGION_VAR(region) auto _____ = get_region_guard(region);
 
-  static int get_code_gen_id() {
+  static int get_kernel_id() {
     static int id = 0;
     TC_ASSERT(id < 10000);
     return id++;
   }
 
   CodeGenBase() {
-    id = get_code_gen_id();
+    id = get_kernel_id();
     func_name = fmt::format("func{:06d}", id);
-    suffix = "cpp";  // TODO: remove this hack
-    source_name = fmt::format("tmp{:04d}.{}", id, suffix);
 
     dll = nullptr;
     current_code_region = CodeRegion::header;
@@ -101,6 +98,10 @@ class CodeGenBase {
     create_directories(folder);
     snode_count = 0;
     code_suffix = "\n";
+  }
+
+  std::string get_source_name() {
+    return fmt::format("tmp{:04d}.{}", id, suffix);
   }
 
   template <typename T>
@@ -139,7 +140,7 @@ class CodeGenBase {
     // Note: use .so here will lead to wired behavior...
     return fmt::format("{}/tmp{:04d}.dylib", folder, id);
 #else
-    return fmt::format("{}/{}.so", folder, source_name);
+    return fmt::format("{}/{}.so", folder, get_source_name());
 #endif
   }
 
@@ -157,7 +158,7 @@ class CodeGenBase {
         fmt::format(f, std::forward<Args>(args)...) + code_suffix;
   }
 
-  void write_code_to_file() {
+  void write_source() {
     std::ifstream ifs(get_source_fn());
     std::string firstline;
     std::getline(ifs, firstline);

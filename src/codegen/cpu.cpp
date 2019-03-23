@@ -496,9 +496,6 @@ FunctionType Program::compile(Kernel &kernel) {
   FunctionType ret = nullptr;
   if (config.arch == Arch::x86_64) {
     CPUCodeGen codegen;
-    if (!kernel.name.empty()) {
-      codegen.source_name = kernel.name + ".cpp";
-    }
     ret = codegen.get(*this, kernel);
   } else if (config.arch == Arch::gpu) {
     TC_NOT_IMPLEMENTED
@@ -511,12 +508,8 @@ FunctionType Program::compile(Kernel &kernel) {
   return ret;
 }
 
-std::string CodeGenBase::get_source_fn() {
-  return fmt::format("{}/{}/{}", get_project_fn(), folder, source_name);
-}
-
 FunctionType CPUCodeGen::compile() {
-  write_code_to_file();
+  write_source();
   auto cmd = get_current_program().config.compile_cmd(get_source_fn(),
                                                       get_library_fn());
   auto compile_ret = std::system(cmd.c_str());

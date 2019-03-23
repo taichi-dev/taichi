@@ -273,7 +273,7 @@ class StructCompiler : public CodeGenBase {
         "extern \"C\" void release_data_structure(void *ds) {{delete ({} "
         "*)ds;}}",
         root_type);
-    write_code_to_file();
+    write_source();
 
     auto cmd = get_current_program().config.compile_cmd(get_source_fn(),
                                                         get_library_fn());

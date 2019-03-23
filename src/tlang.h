@@ -15,7 +15,7 @@ inline int maximum(int a) {
 
 #include "util.h"
 #include "math.h"
-#include "codegen_cpu.h"
+#include "codegen/cpu.h"
 #include "program.h"
 #include "../headers/common.h"
 

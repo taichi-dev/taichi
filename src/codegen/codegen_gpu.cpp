@@ -1,8 +1,6 @@
-//
-// Created by yuanming on 2/18/19.
-//
+#if (0)
+#include "
 
-// https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#warp-shuffle-functions
 class GPUCodeGen : public CodeGenBase {
 public:
   int simd_width;
@@ -91,64 +89,4 @@ public:
     return compile();
   }
 };
-
-
-
-
-#if (0)
-auto transforms = [&](Expr &ret, int group_size) {
-    ret = Desugaring().run(ret);
-    ret = SLPVectorizer().run(ret, group_size);
-    // visualize_IR(get_source_fn() + ".slp.pdf", kernel.ret);
-    if (prog->current_snode != prog->snode_root) {
-      ret = LoopVectorizer().run(ret, prog->current_snode, num_groups);
-    }
-    AdapterPreprocessor().run(kernel, ret, group_size);
-    VectorSplitter(prog->config.simd_width).run(ret);
-    if (prog->config.internal_optimization)
-      apply_optimizers(kernel, ret);
-  };
-
-  // transforms
-
-  for (auto &adapter : kernel.adapters) {
-    TC_ASSERT(adapter.stores);
-    transforms(adapter.stores, adapter.input_group_size);
-    adapter.store_exprs.resize(adapter.counter * simd_width /
-                               adapter.input_group_size *
-                               kernel.parallel_instances);
-    // size after SLP vectorizer + Vector Splitting
-  }
-  TC_ASSERT(kernel.ret);
-  // visualize_IR(get_source_fn() + ".scalar.pdf", prog.ret);
-  // TC_P(group_size);
-
-  transforms(kernel.ret, kernel.output_group_size);
-
-  // body (including residual)
-  for (int b = 0; b < 1 + int(has_residual); b++) {
-    if (b == 1) {
-      generating_residual = true;
-    }
-    visited.clear();
-    // adapters
-    CodeRegion body;
-    if (b == 0) {
-      body = CodeRegion::body;
-    } else {
-      body = CodeRegion::residual_body;
-    }
-    for (auto &adapter : kernel.adapters) {
-      this->group_size = adapter.input_group_size;
-      CODE_REGION_VAR(body);
-      adapter.stores.accept(*this);
-    }
-    // main
-    {
-      this->group_size = kernel.output_group_size;
-      CODE_REGION_VAR(body);
-      kernel.ret.accept(*this);
-    }
-  }
-  generating_residual = false;
 #endif

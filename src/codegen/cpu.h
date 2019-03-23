@@ -1,9 +1,9 @@
 #pragma once
 
 #include <set>
-#include "util.h"
-#include "codegen_base.h"
-#include "program.h"
+#include "../util.h"
+#include "../program.h"
+#include "base.h"
 
 TLANG_NAMESPACE_BEGIN
 

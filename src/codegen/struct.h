@@ -1,5 +1,5 @@
-#include "structural_node.h"
-#include "codegen_base.h"
+#include "../structural_node.h"
+#include "base.h"
 
 TLANG_NAMESPACE_BEGIN
 

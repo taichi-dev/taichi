@@ -2,10 +2,10 @@
 #include <taichi/io/io.h>
 #include <set>
 
-#include "util.h"
-#include "codegen_cpu.h"
-#include "program.h"
-#include "ir.h"
+#include "../util.h"
+#include "cpu.h"
+#include "../program.h"
+#include "../ir.h"
 
 TLANG_NAMESPACE_BEGIN
 

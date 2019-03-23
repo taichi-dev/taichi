@@ -1,3 +1,9 @@
+#include "gpu.h"
+
+TLANG_NAMESPACE_BEGIN
+
+TLANG_NAMESPACE_END
+
 #if (0)
 #include "
 
@@ -77,16 +83,6 @@ public:
     trash(objdump_ret);
 #endif
     return load_function();
-  }
-
-  FunctionType get(Program &prog) {
-    auto e = prog.ret;
-    group_size = prog.config.group_size;
-    simd_width = 32;
-    TC_ASSERT(simd_width == 32);
-    auto vectorized_expr = SLPVectorizer(simd_width).run(e, group_size);
-    codegen(vectorized_expr, group_size);
-    return compile();
   }
 };
 #endif

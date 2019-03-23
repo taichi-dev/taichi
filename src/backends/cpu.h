@@ -1,23 +1,15 @@
 #pragma once
 
-#include <set>
-#include "../util.h"
-#include "../program.h"
-#include "base.h"
+#include "kernel.h"
 
 TLANG_NAMESPACE_BEGIN
 
-class Program;
-
-class CPUCodeGen : public CodeGenBase {
+class CPUCodeGen : public KernelCodeGen {
  public:
-  Program *prog;
-  Kernel *current_kernel;
   std::map<int, std::string> masks;
 
  public:
-
-  CPUCodeGen() : CodeGenBase() {
+  CPUCodeGen() : KernelCodeGen() {
     suffix = "cpp";
   }
 
@@ -48,18 +40,9 @@ class CPUCodeGen : public CodeGenBase {
   }
   */
 
+  void lower() override;
 
-  void generate_header();
-
-  void generate_tail();
-
-  void lower();
-
-  void codegen();
-
-  FunctionType compile(Program &prog, Kernel &kernel);
+  void codegen() override;
 };
-
-using CodeGen = CPUCodeGen;
 
 TLANG_NAMESPACE_END

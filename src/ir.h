@@ -9,9 +9,8 @@ TLANG_NAMESPACE_BEGIN
 class IRBuilder;
 class IRNode;
 class Block;
-class Statement;
-using Stmt = Statement;
-using pStmt = std::unique_ptr<Statement>;
+class Stmt;
+using pStmt = std::unique_ptr<Stmt>;
 
 class SNode;
 class Expression;
@@ -143,7 +142,7 @@ class IRBuilder {
     stack.push_back(initial);
   }
 
-  void insert(std::unique_ptr<Statement> &&stmt, int location = -1);
+  void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
 
   struct ScopeGuard {
     IRBuilder *builder;
@@ -259,7 +258,7 @@ class IRVisitor {
   }
 
   // default visitor
-  virtual void visit(Statement *stmt) {
+  virtual void visit(Stmt *stmt) {
     if (!allow_undefined_visitor) {
       TC_ERROR(
           "missing visitor function. Is the statement class registered via "
@@ -435,7 +434,7 @@ struct LaneAttribute {
   }
 };
 
-class Statement : public IRNode {
+class Stmt : public IRNode {
  public:
   static std::atomic<int> instance_id_counter;
   int instance_id;
@@ -457,9 +456,9 @@ class Statement : public IRNode {
 
   VectorType ret_type;
 
-  Statement(const Statement &stmt) = delete;
+  Stmt(const Stmt &stmt) = delete;
 
-  Statement() {
+  Stmt() {
     parent = nullptr;
     instance_id = instance_id_counter++;
     id = instance_id;
@@ -499,12 +498,12 @@ class Statement : public IRNode {
     return operands.size();
   }
 
-  Statement *&operand(int i) {
+  Stmt *&operand(int i) {
     TC_ASSERT(0 <= i && i < (int)operands.size());
     return *operands[i];
   }
 
-  void add_operand(Statement *&stmt) {
+  void add_operand(Stmt *&stmt) {
     operands.push_back(&stmt);
   }
 
@@ -541,7 +540,7 @@ class Statement : public IRNode {
     return std::make_unique<T>(std::forward<Args>(args)...);
   }
 
-  virtual ~Statement() {
+  virtual ~Stmt() {
   }
 };
 
@@ -688,7 +687,7 @@ inline ExpressionGroup operator,(const ExpressionGroup &a, const Expr &b) {
   return ExpressionGroup(a, b);
 }
 
-class FrontendAllocaStmt : public Statement {
+class FrontendAllocaStmt : public Stmt {
  public:
   Ident ident;
 
@@ -699,7 +698,7 @@ class FrontendAllocaStmt : public Statement {
   DEFINE_ACCEPT
 };
 
-class AllocaStmt : public Statement {
+class AllocaStmt : public Stmt {
  public:
   AllocaStmt(DataType type) {
     ret_type = VectorType(1, type);
@@ -713,7 +712,7 @@ class AllocaStmt : public Statement {
 };
 
 // updates mask, break if no active
-class WhileControlStmt : public Statement {
+class WhileControlStmt : public Stmt {
  public:
   Stmt *mask;
   Stmt *cond;
@@ -722,13 +721,13 @@ class WhileControlStmt : public Statement {
   DEFINE_ACCEPT;
 };
 
-class UnaryOpStmt : public Statement {
+class UnaryOpStmt : public Stmt {
  public:
   UnaryType op_type;
-  Statement *rhs;
+  Stmt *rhs;
   DataType cast_type;
 
-  UnaryOpStmt(UnaryType op_type, Statement *rhs) : op_type(op_type), rhs(rhs) {
+  UnaryOpStmt(UnaryType op_type, Stmt *rhs) : op_type(op_type), rhs(rhs) {
     add_operand(this->rhs);
     cast_type = DataType::unknown;
   }
@@ -736,7 +735,7 @@ class UnaryOpStmt : public Statement {
   DEFINE_ACCEPT
 };
 
-class RandStmt : public Statement {
+class RandStmt : public Stmt {
  public:
   RandStmt(DataType dt) {
     ret_type.data_type = dt;
@@ -793,12 +792,12 @@ class UnaryOpExpression : public Expression {
   }
 };
 
-class BinaryOpStmt : public Statement {
+class BinaryOpStmt : public Stmt {
  public:
   BinaryType op_type;
-  Statement *lhs, *rhs;
+  Stmt *lhs, *rhs;
 
-  BinaryOpStmt(BinaryType op_type, Statement *lhs, Statement *rhs)
+  BinaryOpStmt(BinaryType op_type, Stmt *lhs, Stmt *rhs)
       : op_type(op_type), lhs(lhs), rhs(rhs) {
     add_operand(this->lhs);
     add_operand(this->rhs);
@@ -967,7 +966,7 @@ inline Expr cast(Expr input) {
 class Block : public IRNode {
  public:
   Block *parent;
-  std::vector<std::unique_ptr<Statement>> statements, trash_bin;
+  std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
   std::map<Ident, Stmt *> local_var_alloca;
   Stmt *mask_var;
 
@@ -1002,7 +1001,7 @@ class Block : public IRNode {
     statements.erase(statements.begin() + location);
   }
 
-  void insert(std::unique_ptr<Statement> &&stmt, int location = -1) {
+  void insert(std::unique_ptr<Stmt> &&stmt, int location = -1) {
     stmt->parent = this;
     if (location == -1) {
       statements.push_back(std::move(stmt));
@@ -1029,14 +1028,14 @@ class Block : public IRNode {
     }
   }
 
-  void replace_with(Statement *old_statement,
-                    std::unique_ptr<Statement> &&new_statement) {
+  void replace_with(Stmt *old_statement,
+                    std::unique_ptr<Stmt> &&new_statement) {
     VecStatement vec;
     vec.push_back(std::move(new_statement));
     replace_with(old_statement, vec);
   }
 
-  void replace_with(Statement *old_statement, VecStatement &new_statements) {
+  void replace_with(Stmt *old_statement, VecStatement &new_statements) {
     int location = -1;
     for (int i = 0; i < (int)statements.size(); i++) {
       if (old_statement == statements[i].get()) {
@@ -1078,7 +1077,7 @@ class Block : public IRNode {
   DEFINE_ACCEPT
 };
 
-class FrontendAssignStmt : public Statement {
+class FrontendAssignStmt : public Stmt {
  public:
   Expr lhs, rhs;
 
@@ -1087,7 +1086,7 @@ class FrontendAssignStmt : public Statement {
   DEFINE_ACCEPT
 };
 
-class GlobalLoadStmt : public Statement {
+class GlobalLoadStmt : public Stmt {
  public:
   Stmt *ptr;
 
@@ -1098,7 +1097,7 @@ class GlobalLoadStmt : public Statement {
   DEFINE_ACCEPT;
 };
 
-class GlobalStoreStmt : public Statement {
+class GlobalStoreStmt : public Stmt {
  public:
   Stmt *ptr, *data;
 
@@ -1124,7 +1123,7 @@ struct LocalAddress {
 template <typename T>
 std::string to_string(const T &);
 
-class LocalLoadStmt : public Statement {
+class LocalLoadStmt : public Stmt {
  public:
   LaneAttribute<LocalAddress> ptr;
 
@@ -1151,14 +1150,14 @@ class LocalLoadStmt : public Statement {
   DEFINE_ACCEPT;
 };
 
-class LocalStoreStmt : public Statement {
+class LocalStoreStmt : public Stmt {
  public:
   Stmt *ptr;
   Stmt *data;
 
   // LaneAttribute<Stmt *> data;
 
-  LocalStoreStmt(Stmt *ptr, Statement *data) : ptr(ptr), data(data) {
+  LocalStoreStmt(Stmt *ptr, Stmt *data) : ptr(ptr), data(data) {
     add_operand(this->ptr);
     add_operand(this->data);
   }
@@ -1166,13 +1165,13 @@ class LocalStoreStmt : public Statement {
   DEFINE_ACCEPT;
 };
 
-class IfStmt : public Statement {
+class IfStmt : public Stmt {
  public:
   Stmt *cond;
   Stmt *true_mask, *false_mask;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  IfStmt(Statement *cond) : cond(cond) {
+  IfStmt(Stmt *cond) : cond(cond) {
     add_operand(this->cond);
   }
 
@@ -1183,7 +1182,7 @@ class IfStmt : public Statement {
   DEFINE_ACCEPT
 };
 
-class FrontendIfStmt : public Statement {
+class FrontendIfStmt : public Stmt {
  public:
   Expr condition;
   std::unique_ptr<Block> true_statements, false_statements;
@@ -1198,7 +1197,7 @@ class FrontendIfStmt : public Statement {
   DEFINE_ACCEPT
 };
 
-class FrontendPrintStmt : public Statement {
+class FrontendPrintStmt : public Stmt {
  public:
   Expr expr;
   std::string str;
@@ -1210,7 +1209,7 @@ class FrontendPrintStmt : public Statement {
   DEFINE_ACCEPT
 };
 
-class FrontendEvalStmt : public Statement {
+class FrontendEvalStmt : public Stmt {
  public:
   Expr expr;
   Expr eval_expr;
@@ -1221,12 +1220,12 @@ class FrontendEvalStmt : public Statement {
   DEFINE_ACCEPT
 };
 
-class PrintStmt : public Statement {
+class PrintStmt : public Stmt {
  public:
-  Statement *stmt;
+  Stmt *stmt;
   std::string str;
 
-  PrintStmt(Statement *stmt, std::string str) : stmt(stmt), str(str) {
+  PrintStmt(Stmt *stmt, std::string str) : stmt(stmt), str(str) {
     add_operand(this->stmt);
   }
 
@@ -1260,7 +1259,7 @@ class If {
   }
 };
 
-class ConstStmt : public Statement {
+class ConstStmt : public Stmt {
  public:
   LaneAttribute<TypedConstant> val;
 
@@ -1273,14 +1272,14 @@ class ConstStmt : public Statement {
   }
 
   void repeat(int factor) override {
-    Statement::repeat(factor);
+    Stmt::repeat(factor);
     val.repeat(factor);
   }
 
   DEFINE_ACCEPT
 };
 
-class FrontendForStmt : public Statement {
+class FrontendForStmt : public Stmt {
  public:
   Expr begin, end;
   Expr global_var;
@@ -1309,7 +1308,7 @@ class FrontendForStmt : public Statement {
 };
 
 // General range for
-class RangeForStmt : public Statement {
+class RangeForStmt : public Stmt {
  public:
   Stmt *loop_var;
   Stmt *begin, *end;
@@ -1318,8 +1317,8 @@ class RangeForStmt : public Statement {
   int parallelize;
 
   RangeForStmt(Stmt *loop_var,
-               Statement *begin,
-               Statement *end,
+               Stmt *begin,
+               Stmt *end,
                std::unique_ptr<Block> &&body,
                int vectorize,
                int parallelize)
@@ -1341,7 +1340,7 @@ class RangeForStmt : public Statement {
 };
 
 // for stmt over a structural node
-class StructuralForStmt : public Statement {
+class StructuralForStmt : public Stmt {
  public:
   std::vector<Stmt *> loop_vars;
   SNode *snode;
@@ -1368,7 +1367,7 @@ class StructuralForStmt : public Statement {
   DEFINE_ACCEPT
 };
 
-class WhileStmt : public Statement {
+class WhileStmt : public Stmt {
  public:
   Stmt *mask;
   std::unique_ptr<Block> body;
@@ -1383,7 +1382,7 @@ class WhileStmt : public Statement {
   DEFINE_ACCEPT
 };
 
-class FrontendWhileStmt : public Statement {
+class FrontendWhileStmt : public Stmt {
  public:
   Expr cond;
   std::unique_ptr<Block> body;
@@ -1398,7 +1397,7 @@ class FrontendWhileStmt : public Statement {
   DEFINE_ACCEPT
 };
 
-inline void IRBuilder::insert(std::unique_ptr<Statement> &&stmt, int location) {
+inline void IRBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
   TC_ASSERT(!stack.empty());
   stack.back()->insert(std::move(stmt), location);
 }
@@ -1577,7 +1576,7 @@ inline void Parallelize(int v) {
   dec.parallelize = v;
 }
 
-class PragmaSLPStmt : public Statement {
+class PragmaSLPStmt : public Stmt {
  public:
   int slp_width;
 
@@ -1599,7 +1598,7 @@ class VectorElement {
   }
 };
 
-class ElementShuffleStmt : public Statement {
+class ElementShuffleStmt : public Stmt {
  public:
   LaneAttribute<VectorElement> elements;
 

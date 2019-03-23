@@ -16,7 +16,7 @@ class LoopVectorize : public IRVisitor {
     vectorize = 1;
   }
 
-  void visit(Statement *stmt) override {
+  void visit(Stmt *stmt) override {
     stmt->ret_type.width *= vectorize;
   }
 

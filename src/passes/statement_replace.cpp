@@ -12,7 +12,7 @@ class StatementReplace : public IRVisitor {
     invoke_default_visitor = true;
   }
 
-  void visit(Statement *stmt) {
+  void visit(Stmt *stmt) {
     stmt->replace_operand_with(old_stmt, new_stmt);
   }
 

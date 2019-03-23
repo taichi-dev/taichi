@@ -10,7 +10,7 @@ class TypeCheck : public IRVisitor {
     allow_undefined_visitor = true;
   }
 
-  static void mark_as_if_const(Statement *stmt, VectorType t) {
+  static void mark_as_if_const(Stmt *stmt, VectorType t) {
     if (stmt->is<ConstStmt>()) {
       stmt->ret_type = t;
     }

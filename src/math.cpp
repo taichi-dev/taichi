@@ -1,6 +1,3 @@
-//
-// Created by yuanming on 3/3/19.
-//
 #include "math.h"
 #include "ir.h"
 

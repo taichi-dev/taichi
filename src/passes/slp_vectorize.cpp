@@ -28,7 +28,7 @@ class BasicBlockSLP : public IRVisitor {
     // allow_undefined_visitor = true;
     // invoke_default_visitor = true;
   }
-  void update_type(Statement *stmt) {
+  void update_type(Stmt *stmt) {
     tmp_stmt->ret_type = stmt->ret_type;
     tmp_stmt->ret_type.width *= slp_width;
   }

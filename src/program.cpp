@@ -1,7 +1,7 @@
 #include <taichi/common/task.h>
 #include "program.h"
 #include "structural_node.h"
-#include "codegen/structt.h"
+#include "codegen/struct.h"
 
 TLANG_NAMESPACE_BEGIN
 

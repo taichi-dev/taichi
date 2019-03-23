@@ -2,7 +2,7 @@
 #include "util.h"
 #include <taichi/util.h>
 #include <taichi/testing.h>
-#include "structural_node.h"
+#include "snode.h"
 
 TLANG_NAMESPACE_BEGIN
 

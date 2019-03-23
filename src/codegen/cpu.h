@@ -11,11 +11,7 @@ class Program;
 
 class CPUCodeGen : public CodeGenBase {
  public:
-  enum class Mode : int { vv, intrinsics };
-  Mode mode;
   std::string before_loop_body;
-  int group_size;  // TODO: rename to current_group_size
-  int simd_width;  // TODO: rename to physical simd width
   Program *prog;
   Kernel *current_kernel;
   std::map<std::string, std::string> constant_vectors;  // statement to var name
@@ -38,8 +34,6 @@ class CPUCodeGen : public CodeGenBase {
   CPUCodeGen() : CodeGenBase() {
     suffix = "cpp";
     constant_counter = 0;
-    var_count = 0;
-    group_size = 0;
     has_residual = false;
     generating_residual = false;
   }

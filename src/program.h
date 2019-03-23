@@ -1,7 +1,7 @@
 #pragma once
 
 #include "util.h"
-#include "structural_node.h"
+#include "snode.h"
 #include "ir.h"
 
 TLANG_NAMESPACE_BEGIN

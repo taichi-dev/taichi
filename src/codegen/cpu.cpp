@@ -488,11 +488,6 @@ void CPUCodeGen::codegen(Kernel &kernel) {
 }
 
 FunctionType CPUCodeGen::get(Program &prog, Kernel &kernel) {
-  // auto mode = CPUCodeGen::Mode::vv;
-  auto mode = CPUCodeGen::Mode::intrinsics;
-  auto simd_width = prog.config.simd_width;
-  this->mode = mode;
-  this->simd_width = simd_width;
   codegen(kernel);
   return compile();
 }

@@ -3,11 +3,10 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// Base class for Struct, CPU, GPU codegen
 class CodeGenBase {
  public:
-  int var_count;
   int snode_count;
-  int accessor_count;
   std::string code_suffix;
   std::string folder;
   std::string func_name;
@@ -100,9 +99,7 @@ class CodeGenBase {
 
     folder = "_tlang_cache/";
     create_directories(folder);
-    var_count = 0;
     snode_count = 0;
-    accessor_count = 0;
     code_suffix = "\n";
   }
 

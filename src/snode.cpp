@@ -1,4 +1,4 @@
-#include "structural_node.h"
+#include "snode.h"
 #include "math.h"
 
 TLANG_NAMESPACE_BEGIN

@@ -1481,7 +1481,7 @@ struct ConnectNodeMaskSegments
 
 #ifdef _MSC_FULL_VER
   #if _MSC_FULL_VER >= 190000000 && _MSC_FULL_VER < 190024210
-                // Visual Studio 2015 had a codegen bug that wasn't fixed until Update 3
+                // Visual Studio 2015 had a backends bug that wasn't fixed until Update 3
                 volatile Index npos = 0;
   #else
                 Index npos = 0;

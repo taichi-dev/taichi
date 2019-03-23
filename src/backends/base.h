@@ -1,9 +1,10 @@
+#pragma once
 #include "../util.h"
 #include <dlfcn.h>
 
 TLANG_NAMESPACE_BEGIN
 
-// Base class for Struct, CPU, GPU codegen
+// Base class for Struct, CPU, GPU backends
 class CodeGenBase {
  public:
   int id;

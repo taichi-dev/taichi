@@ -520,20 +520,5 @@ void CPUCodeGen::lower() {
     irpass::print(ir);
 }
 
-FunctionType Program::compile(Kernel &kernel) {
-  FunctionType ret = nullptr;
-  if (config.arch == Arch::x86_64) {
-    CPUCodeGen codegen;
-    ret = codegen.compile(*this, kernel);
-  } else if (config.arch == Arch::gpu) {
-    TC_NOT_IMPLEMENTED
-    // GPUCodeGen codegen;
-    // function = codegen.get(*this);
-  } else {
-    TC_NOT_IMPLEMENTED;
-  }
-  TC_ASSERT(ret);
-  return ret;
-}
 
 TLANG_NAMESPACE_END

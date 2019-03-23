@@ -148,7 +148,7 @@ class LowerAST : public IRVisitor {
       for (int i = 0; i < stmt->loop_var_id.size(); i++) {
         vars[i] = stmt->parent->lookup_var(stmt->loop_var_id[i]);
       }
-      auto &&new_for = std::make_unique<StructuralForStmt>(
+      auto &&new_for = std::make_unique<StructForStmt>(
           vars, stmt->global_var.cast<GlobalVariableExpression>()->snode,
           std::move(stmt->body), stmt->vectorize, stmt->parallelize);
       flattened.push_back(std::move(new_for));
@@ -162,7 +162,7 @@ class LowerAST : public IRVisitor {
     for_stmt->body->accept(this);
   }
 
-  void visit(StructuralForStmt *for_stmt) override {
+  void visit(StructForStmt *for_stmt) override {
     for_stmt->body->accept(this);
   }
 

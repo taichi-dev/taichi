@@ -151,7 +151,7 @@ class IRPrinter : public IRVisitor {
     print("}}");
   }
 
-  void visit(StructuralForStmt *for_stmt) {
+  void visit(StructForStmt *for_stmt) {
     auto loop_vars = make_list<Stmt *>(
         for_stmt->loop_vars,
         [](Stmt *const &stmt) -> std::string { return stmt->name(); });

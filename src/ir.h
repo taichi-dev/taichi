@@ -30,7 +30,7 @@ class FrontendEvalStmt;
 
 // Without per-lane attributes
 class RangeForStmt;
-class StructuralForStmt;
+class StructForStmt;
 class IfStmt;
 class WhileStmt;
 class WhileControlStmt;
@@ -297,7 +297,7 @@ class IRVisitor {
   DEFINE_VISIT(PrintStmt);
   DEFINE_VISIT(ConstStmt);
   DEFINE_VISIT(RangeForStmt);
-  DEFINE_VISIT(StructuralForStmt);
+  DEFINE_VISIT(StructForStmt);
   DEFINE_VISIT(WhileStmt);
   DEFINE_VISIT(WhileControlStmt);
   DEFINE_VISIT(RandStmt);
@@ -1340,7 +1340,7 @@ class RangeForStmt : public Stmt {
 };
 
 // for stmt over a structural node
-class StructuralForStmt : public Stmt {
+class StructForStmt : public Stmt {
  public:
   std::vector<Stmt *> loop_vars;
   SNode *snode;
@@ -1348,7 +1348,7 @@ class StructuralForStmt : public Stmt {
   int vectorize;
   int parallelize;
 
-  StructuralForStmt(std::vector<Stmt *> loop_vars,
+  StructForStmt(std::vector<Stmt *> loop_vars,
                     SNode *snode,
                     std::unique_ptr<Block> &&body,
                     int vectorize,

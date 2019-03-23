@@ -85,7 +85,7 @@ class TypeCheck : public IRVisitor {
     stmt->body->accept(this);
   }
 
-  void visit(StructuralForStmt *stmt) {
+  void visit(StructForStmt *stmt) {
     stmt->body->accept(this);
   }
 

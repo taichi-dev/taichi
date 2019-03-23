@@ -11,7 +11,7 @@ TLANG_NAMESPACE_BEGIN
 
 class IRCodeGen : public IRVisitor {
  public:
-  StructuralForStmt *current_struct_for;
+  StructForStmt *current_struct_for;
   CodeGenBase *codegen;
   IRCodeGen(CodeGenBase *codegen) : codegen(codegen) {
     current_struct_for = nullptr;
@@ -39,7 +39,7 @@ class IRCodeGen : public IRVisitor {
 #define emit_code emit
 
   void generate_loop_header(SNode *snode,
-                            StructuralForStmt *stmt,
+                            StructForStmt *stmt,
                             bool last_level = false) {
     if (snode->type == SNodeType::place) {
       generate_loop_header(snode->parent, stmt, last_level);
@@ -154,7 +154,7 @@ class IRCodeGen : public IRVisitor {
   }
 
   void generate_loop_tail(SNode *snode,
-                          StructuralForStmt *stmt,
+                          StructForStmt *stmt,
                           bool last_level = false) {
     /*
     CodeRegion r;
@@ -253,7 +253,7 @@ class IRCodeGen : public IRVisitor {
     emit("}}");
   }
 
-  void visit(StructuralForStmt *for_stmt) {
+  void visit(StructForStmt *for_stmt) {
     generate_loop_header(for_stmt->snode, for_stmt, true);
     TC_ASSERT_INFO(current_struct_for == nullptr,
                    "Structu for cannot be nested.");

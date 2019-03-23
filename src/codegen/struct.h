@@ -14,11 +14,11 @@ class StructCompiler : public CodeGenBase {
     snode_count = 0;
 
     suffix = "cpp";
-    emit_code("#define TLANG_HOST");
-    emit_code("#include <common.h>");
-    emit_code("using namespace taichi;");
-    emit_code("using namespace Tlang;");
-    emit_code("\n");
+    emit("#define TLANG_HOST");
+    emit("#include <common.h>");
+    emit("using namespace taichi;");
+    emit("using namespace Tlang;");
+    emit("\n");
   }
 
   std::string create_snode() {
@@ -88,7 +88,7 @@ class StructCompiler : public CodeGenBase {
       snode.total_num_bits += snode.extractors[i].num_bits;
     }
 
-    emit_code("");
+    emit("");
     snode.node_type_name = create_snode();
     auto type = snode.type;
 
@@ -98,46 +98,46 @@ class StructCompiler : public CodeGenBase {
     }
 
     if (snode.has_ambient) {
-      emit_code("{} {}_ambient = {};", snode.data_type_name(),
+      emit("{} {}_ambient = {};", snode.data_type_name(),
                 snode.node_type_name, snode.ambient_val.stringify());
     }
 
     // create children type that supports forking...
-    emit_code("struct {}_ch {{", snode.node_type_name);
-    emit_code("static constexpr int n=1;");
+    emit("struct {}_ch {{", snode.node_type_name);
+    emit("static constexpr int n=1;");
     for (int i = 0; i < (int)snode.ch.size(); i++) {
-      emit_code("{} member{};", snode.ch[i]->node_type_name, i);
+      emit("{} member{};", snode.ch[i]->node_type_name, i);
     }
     for (int i = 0; i < (int)snode.ch.size(); i++) {
-      emit_code("auto *get{}() {{return &member{};}} ", i, i);
+      emit("auto *get{}() {{return &member{};}} ", i, i);
     }
-    // emit_code("TC_FORCE_INLINE int get_n() {{return 1;}} ");
-    emit_code("}};");
+    // emit("TC_FORCE_INLINE int get_n() {{return 1;}} ");
+    emit("}};");
 
     if (type == SNodeType::fixed) {
-      emit_code("using {} = fixed<{}_ch, {}>;", snode.node_type_name,
+      emit("using {} = fixed<{}_ch, {}>;", snode.node_type_name,
                 snode.node_type_name, snode.n);
     } else if (type == SNodeType::root) {
-      emit_code("using {} = layout_root<{}_ch>;", snode.node_type_name,
+      emit("using {} = layout_root<{}_ch>;", snode.node_type_name,
                 snode.node_type_name);
     } else if (type == SNodeType::dynamic) {
-      emit_code("using {} = dynamic<{}_ch, {}>;", snode.node_type_name,
+      emit("using {} = dynamic<{}_ch, {}>;", snode.node_type_name,
                 snode.node_type_name, snode.n);
     } else if (type == SNodeType::indirect) {
-      emit_code("using {} = indirect<{}_ch>;", snode.node_type_name, snode.n);
+      emit("using {} = indirect<{}_ch>;", snode.node_type_name, snode.n);
     } else if (type == SNodeType::pointer) {
-      emit_code("using {} = pointer<{}_ch>;", snode.node_type_name,
+      emit("using {} = pointer<{}_ch>;", snode.node_type_name,
                 snode.node_type_name);
     } else if (type == SNodeType::hashed) {
-      emit_code("using {} = hashed<{}_ch>;", snode.node_type_name,
+      emit("using {} = hashed<{}_ch>;", snode.node_type_name,
                 snode.node_type_name);
     } else if (type == SNodeType::place) {
-      emit_code("using {} = {};", snode.node_type_name, snode.data_type_name());
+      emit("using {} = {};", snode.node_type_name, snode.data_type_name());
     } else {
       TC_P(snode.type_name());
       TC_NOT_IMPLEMENTED;
     }
-    emit_code("");
+    emit("");
   }
 
   void generate_leaf_accessors(SNode &snode) {
@@ -151,87 +151,87 @@ class StructCompiler : public CodeGenBase {
       TC_ASSERT(snode.ch.size() > 0);
       for (int i = 0; i < (int)snode.ch.size(); i++) {
         auto ch = snode.ch[i];
-        emit_code("TC_FORCE_INLINE {} *access_{}({} *parent, int i) {{",
+        emit("TC_FORCE_INLINE {} *access_{}({} *parent, int i) {{",
                   ch->node_type_name, ch->node_type_name, snode.node_type_name);
-        emit_code("auto lookup = parent->look_up(i); "
+        emit("auto lookup = parent->look_up(i); "
                   "if ({}::has_null && lookup == nullptr) return nullptr;",
                       snode.node_type_name);
-        emit_code("return lookup->get{}();", i);
-        emit_code("}}");
+        emit("return lookup->get{}();", i);
+        emit("}}");
       }
-      emit_code("");
+      emit("");
     }
     {  // SNode::place & indirect
       // emit end2end accessors for leaf (place) nodes, using chain accessors
-      emit_code(
+      emit(
           "TLANG_ACCESSOR {} * access_{}(void *root, int i0, int i1=0, int "
           "i2=0, "
           "int i3=0) {{",
           snode.node_type_name, snode.node_type_name);
       if (snode._verbose) {
-        emit_code(
+        emit(
             "std::cout << \"accessing node {} at \" << i0 << ' ' << i1 << ' ' "
             "<< i2 << ' ' << i3 << std::endl;",
             snode.node_type_name);
       }
-      emit_code("int tmp;");
-      emit_code("auto n0 = ({} *)root;", root_type);
+      emit("int tmp;");
+      emit("auto n0 = ({} *)root;", root_type);
       for (int i = 0; i + 1 < (int)stack.size(); i++) {
-        emit_code("tmp = 0;", i);
+        emit("tmp = 0;", i);
         for (int j = 0; j < max_num_indices; j++) {
           auto e = stack[i]->extractors[j];
           int b = e.num_bits;
           if (b) {
             if (e.num_bits == e.start || max_num_indices != 1) {
-              emit_code("tmp = (tmp << {}) + ((i{} >> {}) & ((1 << {}) - 1));",
+              emit("tmp = (tmp << {}) + ((i{} >> {}) & ((1 << {}) - 1));",
                         e.num_bits, j, e.start, e.num_bits);
             } else {
               TC_WARN("Emitting shortcut indexing");
-              emit_code("tmp = i{};", j);
+              emit("tmp = i{};", j);
             }
           }
         }
-        emit_code("auto n{} = access_{}(n{}, tmp);", i + 1,
+        emit("auto n{} = access_{}(n{}, tmp);", i + 1,
                   stack[i + 1]->node_type_name, i);
         if (snode.has_ambient && stack[i + 1] != &snode)
-          emit_code("if ({}::has_null && n{} == nullptr) return &{}_ambient;",
+          emit("if ({}::has_null && n{} == nullptr) return &{}_ambient;",
                     stack[i]->node_type_name, i + 1, snode.node_type_name);
       }
-      emit_code("return n{};", (int)stack.size() - 1);
-      emit_code("}}");
-      emit_code("");
+      emit("return n{};", (int)stack.size() - 1);
+      emit("}}");
+      emit("");
     }
 
     if (type == SNodeType::indirect) {  // toucher
-      emit_code(
+      emit(
           "TLANG_ACCESSOR void touch_{}(void *root, int val, int i0, int "
           "i1=0, int "
           "i2=0, "
           "int i3=0) {{",
           snode.node_type_name);
-      emit_code("auto node = access_{}(root, i0, i1, i2, i3);",
+      emit("auto node = access_{}(root, i0, i1, i2, i3);",
                 snode.node_type_name);
       /*
-      emit_code(
+      emit(
           "std::cout<<val<<' '<< i0 << ' ' << i1 << ' ' << i2 << ' ' << i3 << "
           "std::endl;");
       */
-      emit_code("node->touch(val);");
-      emit_code("}");
+      emit("node->touch(val);");
+      emit("}");
     }
 
     if (type == SNodeType::dynamic) {  // toucher
-      emit_code(
+      emit(
           "TLANG_ACCESSOR void touch_{}(void *root, const {}::child_type &val, "
           "int i0, int "
           "i1=0, int "
           "i2=0, "
           "int i3=0) {{",
           snode.node_type_name, snode.node_type_name);
-      emit_code("auto node = access_{}(root, i0, i1, i2, i3);",
+      emit("auto node = access_{}(root, i0, i1, i2, i3);",
                 snode.node_type_name);
-      emit_code("node->touch(val);");
-      emit_code("}}");
+      emit("node->touch(val);");
+      emit("}}");
     }
 
     for (auto ch : snode.ch) {
@@ -259,37 +259,37 @@ class StructCompiler : public CodeGenBase {
 
   void run(SNode &node) {
     set_parents(node);
-    emit_code("#if defined(TLANG_KERNEL) ");
-    emit_code("#define TLANG_ACCESSOR TC_FORCE_INLINE");
-    emit_code("#else");
-    emit_code("#define TLANG_ACCESSOR extern \"C\"");
-    emit_code("#endif");
+    emit("#if defined(TLANG_KERNEL) ");
+    emit("#define TLANG_ACCESSOR TC_FORCE_INLINE");
+    emit("#else");
+    emit("#define TLANG_ACCESSOR extern \"C\"");
+    emit("#endif");
     // bottom to top
     visit(node);
     root_type = node.node_type_name;
     generate_leaf_accessors(node);
-    emit_code("extern \"C\" void *create_data_structure() {{auto p= new {}; ",
+    emit("extern \"C\" void *create_data_structure() {{auto p= new {}; ",
               root_type);
     for (int i = 0; i < (int)node.ch.size(); i++) {
       if (node.ch[i]->type != SNodeType::hashed) {
-        emit_code("std::memset(p->children.get{}(), 0, sizeof({}));", i,
+        emit("std::memset(p->children.get{}(), 0, sizeof({}));", i,
                   node.ch[i]->node_type_name);
       }
     }
-    emit_code("return p;}}");
-    emit_code(
+    emit("return p;}}");
+    emit(
         "extern \"C\" void release_data_structure(void *ds) {{delete ({} "
         "*)ds;}}",
         root_type);
     write_source();
 
-    auto cmd = get_current_program().config.compile_cmd(get_source_fn(),
-                                                        get_library_fn());
+    auto cmd = get_current_program().config.compile_cmd(get_source_path(),
+                                                        get_library_path());
     auto compile_ret = std::system(cmd.c_str());
 
     if (compile_ret != 0) {
       auto cmd = get_current_program().config.compile_cmd(
-          get_source_fn(), get_library_fn(), true);
+          get_source_path(), get_library_path(), true);
       trash(std::system(cmd.c_str()));
       TC_ERROR("Compilation failed");
     }

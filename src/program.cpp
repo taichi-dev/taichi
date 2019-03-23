@@ -11,7 +11,7 @@ SNode root;
 void Program::materialize_layout() {
   StructCompiler scomp;
   scomp.run(root);
-  layout_fn = scomp.get_source_fn();
+  layout_fn = scomp.get_source_path();
   data_structure = scomp.creator();
 }
 

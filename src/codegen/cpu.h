@@ -13,24 +13,12 @@ class CPUCodeGen : public CodeGenBase {
  public:
   Program *prog;
   Kernel *current_kernel;
-  std::map<std::string, std::string> constant_vectors;  // statement to var name
-  int constant_counter;
   std::map<int, std::string> masks;
 
  public:
-  std::string get_constant(std::string statement) {
-    if (constant_vectors.find(statement) == constant_vectors.end()) {
-      CODE_REGION(exterior_shared_variable_begin);
-      auto key = fmt::format("const{:04d}", constant_counter++);
-      emit_code("const auto {} = {};\n", key, statement);
-      constant_vectors[statement] = key;
-    }
-    return constant_vectors[statement];
-  }
 
   CPUCodeGen() : CodeGenBase() {
     suffix = "cpp";
-    constant_counter = 0;
   }
 
   /*
@@ -62,18 +50,18 @@ class CPUCodeGen : public CodeGenBase {
 
 
   void generate_header() {
-    emit_code("#include <common.h>\n");
-    emit_code("#define TLANG_KERNEL\n");
-    emit_code("#include \"{}\"", prog->layout_fn);
-    emit_code("using namespace taichi; using namespace Tlang;");
+    emit("#include <common.h>\n");
+    emit("#define TLANG_KERNEL\n");
+    emit("#include \"{}\"", prog->layout_fn);
+    emit("using namespace taichi; using namespace Tlang;");
 
-    emit_code("extern \"C\" void " + func_name + "(Context context) {{\n");
-    emit_code("auto root = ({} *)context.buffers[0];",
+    emit("extern \"C\" void " + func_name + "(Context context) {{\n");
+    emit("auto root = ({} *)context.buffers[0];",
               prog->snode_root->node_type_name);
   }
 
   void generate_tail() {
-    emit_code("}}\n");
+    emit("}}\n");
   }
 
   void codegen(Kernel &ker);

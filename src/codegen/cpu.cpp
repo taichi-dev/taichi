@@ -442,42 +442,13 @@ class CPUIRCodeGen : public IRVisitor {
   }
 };
 
-void CPUCodeGen::codegen(Kernel &kernel) {
-  this->prog = &kernel.program;
-  this->current_kernel = &kernel;
-
+void CPUCodeGen::codegen() {
   {
     CODE_REGION(header);
     generate_header();
   }
 
-  auto ir = kernel.ir;
-  if (prog->config.print_ir) {
-    irpass::print(ir);
-  }
-  irpass::lower(ir);
-  if (prog->config.print_ir) {
-    irpass::print(ir);
-  }
-  irpass::typecheck(ir);
-  if (prog->config.print_ir) {
-    irpass::print(ir);
-  }
-  irpass::slp_vectorize(ir);
-  if (prog->config.print_ir) {
-    irpass::print(ir);
-  }
-  irpass::loop_vectorize(ir);
-  if (prog->config.print_ir)
-    irpass::print(ir);
-  irpass::vector_split(ir, prog->config.max_vector_width,
-                       prog->config.serial_schedule);
-  if (prog->config.print_ir)
-    irpass::print(ir);
-  irpass::eliminate_dup(ir);
-  if (prog->config.print_ir)
-    irpass::print(ir);
-  CPUIRCodeGen::run(this, ir);
+  CPUIRCodeGen::run(this, current_kernel->ir);
 
   {
     CODE_REGION(tail);
@@ -487,7 +458,10 @@ void CPUCodeGen::codegen(Kernel &kernel) {
 }
 
 FunctionType CPUCodeGen::compile(Program &prog, Kernel &kernel) {
-  codegen(kernel);
+  this->prog = &kernel.program;
+  this->current_kernel = &kernel;
+  lower();
+  codegen();
   write_source();
   auto cmd = get_current_program().config.compile_cmd(get_source_path(),
                                                       get_library_path());
@@ -515,6 +489,35 @@ void CPUCodeGen::generate_header() {
 
 void CPUCodeGen::generate_tail() {
   emit("}}\n");
+}
+
+void CPUCodeGen::lower() {
+  auto ir = current_kernel->ir;
+  if (prog->config.print_ir) {
+    irpass::print(ir);
+  }
+  irpass::lower(ir);
+  if (prog->config.print_ir) {
+    irpass::print(ir);
+  }
+  irpass::typecheck(ir);
+  if (prog->config.print_ir) {
+    irpass::print(ir);
+  }
+  irpass::slp_vectorize(ir);
+  if (prog->config.print_ir) {
+    irpass::print(ir);
+  }
+  irpass::loop_vectorize(ir);
+  if (prog->config.print_ir)
+    irpass::print(ir);
+  irpass::vector_split(ir, prog->config.max_vector_width,
+                       prog->config.serial_schedule);
+  if (prog->config.print_ir)
+    irpass::print(ir);
+  irpass::eliminate_dup(ir);
+  if (prog->config.print_ir)
+    irpass::print(ir);
 }
 
 FunctionType Program::compile(Kernel &kernel) {

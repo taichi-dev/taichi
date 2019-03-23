@@ -53,7 +53,9 @@ class CPUCodeGen : public CodeGenBase {
 
   void generate_tail();
 
-  void codegen(Kernel &ker);
+  void lower();
+
+  void codegen();
 
   FunctionType compile(Program &prog, Kernel &kernel);
 };

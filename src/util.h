@@ -53,58 +53,15 @@ struct CompileConfig {
   bool serial_schedule;
   std::string extra_flags;
 
-  CompileConfig() {
-    arch = Arch::x86_64;
-    simd_width = default_simd_width(arch);
-    internal_optimization = true;
-    external_optimization_level = 3;
-    print_ir = false;
-    max_vector_width = 8;
-    force_vectorized_global_load = false;
-    force_vectorized_global_store = false;
-#if defined(TC_PLATFORM_OSX)
-    gcc_version = -1;
-#else
-    gcc_version = 5;  // not 7 for faster compilation
-#endif
-    serial_schedule = false;
-  }
+  CompileConfig();
 
-  std::string compiler_name() {
-    if (gcc_version == -1) {
-      return "gcc";
-    } else if (gcc_version == -2) {
-      return "clang-7";
-    } else {
-      return fmt::format("gcc-{}", gcc_version);
-    }
-  }
+  std::string compiler_name();
 
-  std::string gcc_opt_flag() {
-    TC_ASSERT(0 <= external_optimization_level &&
-              external_optimization_level < 5);
-    if (external_optimization_level < 4) {
-      return fmt::format("-O{}", external_optimization_level);
-    } else
-      return "-Ofast";
-  }
+  std::string gcc_opt_flag();
 
   std::string compile_cmd(const std::string &input,
                           const std::string &output,
-                          bool verbose = false) {
-    auto cmd = fmt::format(
-        "{} {} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/headers "
-        "-ffp-contract=fast "
-        "-fopenmp -Wall -g -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} -lstdc++ "
-        "{}",
-        compiler_name(), input, gcc_opt_flag(), get_project_fn(), output,
-        extra_flags);
-
-    if (!verbose) {
-      cmd += fmt::format(" 2> {}.log", input);
-    }
-    return cmd;
-  }
+                          bool verbose = false);
 };
 
 class AlignedAllocator {

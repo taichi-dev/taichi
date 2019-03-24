@@ -57,7 +57,7 @@ class GPUIRCodeGen : public IRVisitor {
       emit("{}_kernel<<<{}, {}>>>(context);", codegen->func_name, num_blocks,
            block_size);
       emit("cudaDeviceSynchronize();\n");
-      emit("}}\n");
+      emit("}}G\n");
 
     } else {
       for (auto &stmt : stmt_list->statements) {
@@ -349,13 +349,4 @@ void GPUCodeGen::codegen() {
 TLANG_NAMESPACE_END
 
 #if (0)
-auto cmd = fmt::format(
-    "nvcc {} -std=c++14 -shared -O3 -Xcompiler \"-fPIC\" --use_fast_math "
-    "--ptxas-options=-allow-expensive-optimizations=true,-O3 -I {}/headers "
-    "-ccbin g++-6 "
-    "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_GPU -o {} 2> {}.log",
-    get_source_fn(),
-    get_project_fn(),
-    get_library_fn(),
-    get_source_fn());
 #endif

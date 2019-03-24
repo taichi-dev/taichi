@@ -13,9 +13,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-inline std::string get_project_fn() {
-  return fmt::format("{}/projects/taichi_lang/", get_repo_dir());
-}
+std::string get_project_fn();
 
 template <typename T>
 using Handle = std::shared_ptr<T>;
@@ -24,16 +22,7 @@ constexpr int default_simd_width_x86_64 = 8;
 
 enum class Arch { x86_64, gpu };
 
-inline int default_simd_width(Arch arch) {
-  if (arch == Arch::x86_64) {
-    return default_simd_width_x86_64;
-  } else if (arch == Arch::gpu) {
-    return 32;
-  } else {
-    TC_NOT_IMPLEMENTED;
-    return -1;
-  }
-}
+int default_simd_width(Arch arch);
 
 enum class Device {
   cpu,
@@ -140,62 +129,11 @@ enum class DataType : int {
 };
 
 template <typename T>
-DataType get_data_type() {
-  if (std::is_same<T, float32>()) {
-    return DataType::f32;
-  } else if (std::is_same<T, int32>()) {
-    return DataType::i32;
-  } else {
-    TC_NOT_IMPLEMENTED;
-  }
-  return DataType::unknown;
-}
+DataType get_data_type();
 
-inline std::string data_type_name(DataType t) {
-  static std::map<DataType, std::string> type_names;
-  if (type_names.empty()) {
-#define REGISTER_DATA_TYPE(i, j) type_names[DataType::i] = #j;
-    REGISTER_DATA_TYPE(f16, float16);
-    REGISTER_DATA_TYPE(f32, float32);
-    REGISTER_DATA_TYPE(f64, float64);
-    REGISTER_DATA_TYPE(i8, int8);
-    REGISTER_DATA_TYPE(i16, int16);
-    REGISTER_DATA_TYPE(i32, int32);
-    REGISTER_DATA_TYPE(i64, int64);
-    REGISTER_DATA_TYPE(u8, uint8);
-    REGISTER_DATA_TYPE(u16, uint16);
-    REGISTER_DATA_TYPE(u32, uint32);
-    REGISTER_DATA_TYPE(u64, uint64);
-    REGISTER_DATA_TYPE(ptr, pointer);
-    REGISTER_DATA_TYPE(none, none);
-    REGISTER_DATA_TYPE(unknown, unknown);
-#undef REGISTER_DATA_TYPE
-  }
-  return type_names[t];
-}
+std::string data_type_name(DataType t);
 
-inline std::string data_type_short_name(DataType t) {
-  static std::map<DataType, std::string> type_names;
-  if (type_names.empty()) {
-#define REGISTER_DATA_TYPE(i) type_names[DataType::i] = #i;
-    REGISTER_DATA_TYPE(f16);
-    REGISTER_DATA_TYPE(f32);
-    REGISTER_DATA_TYPE(f64);
-    REGISTER_DATA_TYPE(i8);
-    REGISTER_DATA_TYPE(i16);
-    REGISTER_DATA_TYPE(i32);
-    REGISTER_DATA_TYPE(i64);
-    REGISTER_DATA_TYPE(u8);
-    REGISTER_DATA_TYPE(u16);
-    REGISTER_DATA_TYPE(u32);
-    REGISTER_DATA_TYPE(u64);
-    REGISTER_DATA_TYPE(ptr);
-    REGISTER_DATA_TYPE(none);
-    REGISTER_DATA_TYPE(unknown);
-#undef REGISTER_DATA_TYPE
-  }
-  return type_names[t];
-}
+std::string data_type_short_name(DataType t);
 
 enum class SNodeType {
   undefined,
@@ -208,22 +146,7 @@ enum class SNodeType {
   indirect,
 };
 
-inline std::string snode_type_name(SNodeType t) {
-  static std::map<SNodeType, std::string> type_names;
-  if (type_names.empty()) {
-#define REGISTER_TYPE(i) type_names[SNodeType::i] = #i;
-    REGISTER_TYPE(undefined);
-    REGISTER_TYPE(root);
-    REGISTER_TYPE(fixed);
-    REGISTER_TYPE(dynamic);
-    REGISTER_TYPE(place);
-    REGISTER_TYPE(hashed);
-    REGISTER_TYPE(pointer);
-    REGISTER_TYPE(indirect);
-#undef REGISTER_TYPE
-  }
-  return type_names[t];
-}
+inline std::string snode_type_name(SNodeType t);
 
 enum class UnaryType : int {
   neg,
@@ -238,24 +161,7 @@ enum class UnaryType : int {
   undefined
 };
 
-inline std::string unary_type_name(UnaryType type) {
-  static std::map<UnaryType, std::string> type_names;
-  if (type_names.empty()) {
-#define REGISTER_TYPE(i) type_names[UnaryType::i] = #i;
-    REGISTER_TYPE(neg);
-    REGISTER_TYPE(sqrt);
-    REGISTER_TYPE(floor);
-    REGISTER_TYPE(cast);
-    REGISTER_TYPE(abs);
-    REGISTER_TYPE(sin);
-    REGISTER_TYPE(cos);
-    REGISTER_TYPE(inv);
-    REGISTER_TYPE(bit_not);
-    REGISTER_TYPE(undefined);
-#undef REGISTER_TYPE
-  }
-  return type_names[type];
-}
+std::string unary_type_name(UnaryType type);
 
 // Regular binary ops:
 // Operations that take two oprands, and returns a single operand with the same
@@ -280,57 +186,13 @@ enum class BinaryType : int {
   undefined
 };
 
-inline std::string binary_type_name(BinaryType type) {
-  static std::map<BinaryType, std::string> type_names;
-  if (type_names.empty()) {
-#define REGISTER_TYPE(i) type_names[BinaryType::i] = #i;
-    REGISTER_TYPE(mul);
-    REGISTER_TYPE(add);
-    REGISTER_TYPE(sub);
-    REGISTER_TYPE(div);
-    REGISTER_TYPE(mod);
-    REGISTER_TYPE(max);
-    REGISTER_TYPE(min);
-    REGISTER_TYPE(bit_and);
-    REGISTER_TYPE(bit_or);
-    REGISTER_TYPE(cmp_lt);
-    REGISTER_TYPE(cmp_le);
-    REGISTER_TYPE(cmp_gt);
-    REGISTER_TYPE(cmp_ge);
-    REGISTER_TYPE(cmp_ne);
-    REGISTER_TYPE(cmp_eq);
-#undef REGISTER_TYPE
-  }
-  return type_names[type];
-}
+std::string binary_type_name(BinaryType type);
 
 inline bool is_comparison(BinaryType type) {
   return starts_with(binary_type_name(type), "cmp");
 }
 
-inline std::string binary_type_symbol(BinaryType type) {
-  static std::map<BinaryType, std::string> type_names;
-  if (type_names.empty()) {
-#define REGISTER_TYPE(i, s) type_names[BinaryType::i] = #s;
-    REGISTER_TYPE(mul, *);
-    REGISTER_TYPE(add, +);
-    REGISTER_TYPE(sub, -);
-    REGISTER_TYPE(div, /);
-    REGISTER_TYPE(mod, %);
-    REGISTER_TYPE(max, max);
-    REGISTER_TYPE(min, min);
-    REGISTER_TYPE(cmp_lt, <);
-    REGISTER_TYPE(cmp_le, <=);
-    REGISTER_TYPE(cmp_gt, >);
-    REGISTER_TYPE(cmp_ge, >=);
-    REGISTER_TYPE(cmp_ne, !=);
-    REGISTER_TYPE(cmp_eq, ==);
-    REGISTER_TYPE(bit_and, &&);
-    REGISTER_TYPE(bit_or, ||);
-#undef REGISTER_TYPE
-  }
-  return type_names[type];
-}
+std::string binary_type_symbol(BinaryType type);
 
 enum class CmpType { eq, ne, le, lt };
 

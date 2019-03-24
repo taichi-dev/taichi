@@ -35,6 +35,11 @@ inline int default_simd_width(Arch arch) {
   }
 }
 
+enum class Device {
+  cpu,
+  gpu
+};
+
 struct CompileConfig {
   Arch arch;
   int simd_width;
@@ -101,8 +106,6 @@ struct CompileConfig {
     return cmd;
   }
 };
-
-enum class Device { cpu, gpu };
 
 class AlignedAllocator {
   std::vector<uint8> _data;

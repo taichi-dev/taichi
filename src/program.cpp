@@ -3,7 +3,7 @@
 #include "snode.h"
 #include "backends/struct.h"
 #include "backends/cpu.h"
-// #include "backends/struct.h"
+#include "backends/gpu.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -16,9 +16,8 @@ FunctionType Program::compile(Kernel &kernel) {
     CPUCodeGen codegen;
     ret = codegen.compile(*this, kernel);
   } else if (config.arch == Arch::gpu) {
-    TC_NOT_IMPLEMENTED
-    // GPUCodeGen backends;
-    // function = backends.get(*this);
+    GPUCodeGen codegen;
+    ret = codegen.compile(*this, kernel);
   } else {
     TC_NOT_IMPLEMENTED;
   }

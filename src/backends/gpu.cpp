@@ -5,9 +5,10 @@ TLANG_NAMESPACE_BEGIN
 class GPUIRCodeGen : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
-  CodeGenBase *codegen;
+  GPUCodeGen *codegen;
+  bool first_level = false;
 
-  GPUIRCodeGen(CodeGenBase *codegen) : codegen(codegen) {
+  GPUIRCodeGen(GPUCodeGen *codegen) : codegen(codegen) {
     current_struct_for = nullptr;
   }
 
@@ -20,14 +21,48 @@ class GPUIRCodeGen : public IRVisitor {
     return snode->node_type_name + "_loop";
   }
 
-  static void run(CodeGenBase *codegen, IRNode *node) {
+  static void run(GPUCodeGen *codegen, IRNode *node) {
     auto p = GPUIRCodeGen(codegen);
+    p.first_level = true;
     node->accept(&p);
   }
 
   void visit(Block *stmt_list) {
-    for (auto &stmt : stmt_list->statements) {
-      stmt->accept(this);
+    if (first_level) {
+      first_level = false;
+      // Check structure
+      // Only the last statement can be a RangeFor/StructFor
+      TC_ASSERT(stmt_list->statements.back()->is<RangeForStmt>());
+      // The rest must be Alloca for loop variables and consts for bounds
+      for (int i = 0; i + 1 < stmt_list->statements.size(); i++) {
+        auto s = stmt_list->statements[i].get();
+        TC_ASSERT(s->is<AllocaStmt>() || s->is<ConstStmt>());
+      }
+
+      // GPU Kernel code
+      emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
+      emit("auto root = ({} *)context.buffers[0];",
+           codegen->prog->snode_root->node_type_name);
+      emit("auto linear_idx = blockIdx.x * blockDim.x + threadIdx.x;\n");
+      emit("int l = threadIdx.x & 0x1f;\n");
+      emit("int loop_index = 0;");
+      stmt_list->statements.back()->accept(this);
+
+      // CPU Kernel code
+      emit("}}\n\n");
+      emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
+
+      int num_blocks = 1;  // TODO
+      int block_size = 1;
+      emit("{}_kernel<<<{}, {}>>>(context);", codegen->func_name, num_blocks,
+           block_size);
+      emit("cudaDeviceSynchronize();\n");
+      emit("}}\n");
+
+    } else {
+      for (auto &stmt : stmt_list->statements) {
+        stmt->accept(this);
+      }
     }
   }
 
@@ -296,19 +331,6 @@ void GPUCodeGen::lower() {
   if (prog->config.print_ir) {
     irpass::print(ir);
   }
-  /*
-  irpass::slp_vectorize(ir);
-  if (prog->config.print_ir) {
-    irpass::print(ir);
-  }
-  irpass::loop_vectorize(ir);
-  if (prog->config.print_ir)
-    irpass::print(ir);
-  irpass::vector_split(ir, prog->config.max_vector_width,
-                       prog->config.serial_schedule);
-  if (prog->config.print_ir)
-    irpass::print(ir);
-    */
   irpass::eliminate_dup(ir);
   if (prog->config.print_ir)
     irpass::print(ir);
@@ -317,32 +339,8 @@ void GPUCodeGen::lower() {
 void GPUCodeGen::codegen() {
   generate_header();
 
-  /*
-  emit("extern \"C\" void " + func_name + "(Context context) {{\n");
-  emit("auto root = ({} *)context.buffers[0];",
-       prog->snode_root->node_type_name);
-
-  GPUIRCodeGen::run(this, kernel->ir);
-
-  emit("}}\n");
-   */
-
-  emit("__global__ void {}_kernel(Context context) {{", func_name);
-  emit("auto n = context.get_range(0);\n");
-  emit("auto linear_idx = blockIdx.x * blockDim.x + threadIdx.x;\n");
-  emit("int l = threadIdx.x & 0x1f;\n");
-  emit("int loop_index = 0;");
-
   // Body
-  emit("}\n\n");
-
-  emit("extern \"C\" void " + func_name + "(Context context) {\n");
-
-  int num_blocks = 1;  // TODO
-  int block_size = 1;
-  emit("{}_kernel<<<{}, {}>>>(context);", func_name, num_blocks, block_size);
-  emit("cudaDeviceSynchronize();\n");
-  emit("}\n");
+  GPUIRCodeGen::run(this, kernel->ir);
 
   line_suffix = "";
   generate_tail();

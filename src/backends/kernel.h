@@ -1,3 +1,5 @@
+#pragma once
+
 #include "base.h"
 #include "../util.h"
 #include "../program.h"

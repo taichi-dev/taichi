@@ -8,7 +8,7 @@ class Program;
 class KernelCodeGen : public CodeGenBase {
  public:
   Program *prog;
-  Kernel *current_kernel;
+  Kernel *kernel;
   KernelCodeGen() : CodeGenBase() {
   }
 

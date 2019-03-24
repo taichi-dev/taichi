@@ -13,6 +13,7 @@ class CPUIRCodeGen : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
   CodeGenBase *codegen;
+
   CPUIRCodeGen(CodeGenBase *codegen) : codegen(codegen) {
     current_struct_for = nullptr;
   }
@@ -36,7 +37,6 @@ class CPUIRCodeGen : public IRVisitor {
 
 #define CODE_REGION_VAR(x)
 #define CODE_REGION(x)
-#define emit_code emit
 
   void generate_loop_header(SNode *snode,
                             StructForStmt *stmt,
@@ -63,19 +63,19 @@ class CPUIRCodeGen : public IRVisitor {
     */
     CODE_REGION_VAR(r);
     if (snode->parent->parent == nullptr)
-      emit_code("auto {} = 0;", loop_variable(snode->parent));
+      emit("auto {} = 0;", loop_variable(snode->parent));
     auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
-    emit_code("auto {}_cache = access_{}({}, {});", snode->node_type_name,
-              snode->node_type_name, parent, loop_variable(snode->parent));
-    emit_code("int {};", l);
+    emit("auto {}_cache = access_{}({}, {});", snode->node_type_name,
+         snode->node_type_name, parent, loop_variable(snode->parent));
+    emit("int {};", l);
 
     if (snode->type == SNodeType::pointer) {
-      emit_code("if (!{}_cache->data) continue;", snode->node_type_name, l);
+      emit("if (!{}_cache->data) continue;", snode->node_type_name, l);
     }
 
     if (snode->type != SNodeType::hashed) {
-      emit_code("auto {}_cache_n = {}_cache->get_n();", snode->node_type_name,
-                snode->node_type_name);
+      emit("auto {}_cache_n = {}_cache->get_n();", snode->node_type_name,
+           snode->node_type_name);
     }
     if (snode->_multi_threaded) {
       auto p = snode->parent;
@@ -83,39 +83,38 @@ class CPUIRCodeGen : public IRVisitor {
         TC_ASSERT(!p->_multi_threaded);
         p = p->parent;
       }
-      emit_code("#pragma omp parallel for");
+      emit("#pragma omp parallel for");
     }
     // TODO: replace with vectorize width
     int parallel_instances = 1;
     auto has_residual = false;
     if (last_level && snode->type != SNodeType::hashed) {
       if (!has_residual) {
-        emit_code("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
-                  snode->node_type_name, l, parallel_instances);
+        emit("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
+             snode->node_type_name, l, parallel_instances);
       } else {
         int residual =
             parallel_instances > 1  // when only one instance, no residual loop.
                 ? 0
                 : parallel_instances;
-        emit_code("for ({} = 0; {} + {} < {}_cache_n; {} += {}) {{", l, l,
-                  residual, snode->node_type_name, l, parallel_instances
+        emit("for ({} = 0; {} + {} < {}_cache_n; {} += {}) {{", l, l, residual,
+             snode->node_type_name, l, parallel_instances
 
         );
       }
     } else {
       if (snode->type == SNodeType::hashed) {
-        emit_code("for (auto &{}_it : {}_cache->data) {{", l,
-                  snode->node_type_name);
-        emit_code("int {} = {}_it.first;", l, l);
+        emit("for (auto &{}_it : {}_cache->data) {{", l, snode->node_type_name);
+        emit("int {} = {}_it.first;", l, l);
       } else {
-        emit_code("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
-                  snode->node_type_name, l, 1);
+        emit("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
+             snode->node_type_name, l, 1);
       }
     }
 
     if (has_residual && last_level) {
       CODE_REGION(residual_begin);  // TODO: DRY..
-      emit_code("if ({} < {}_cache_n) {{", l, snode->node_type_name);
+      emit("if ({} < {}_cache_n) {{", l, snode->node_type_name);
     }
     // update indices....
     for (int i = 0; i < max_num_indices; i++) {
@@ -130,26 +129,26 @@ class CPUIRCodeGen : public IRVisitor {
             snode->extractors[i].dest_offset - snode->total_bit_start,
             snode->extractors[i].num_bits, snode->extractors[i].start);
       }
-      emit_code("int {} = {};", index_name_local(snode, i), addition);
-      emit_code("int {} = {} {};", index_name_global(snode, i), ancester,
-                index_name_local(snode, i));
+      emit("int {} = {};", index_name_local(snode, i), addition);
+      emit("int {} = {} {};", index_name_global(snode, i), ancester,
+           index_name_local(snode, i));
 
       if (has_residual && last_level) {
         CODE_REGION(residual_begin);  // TODO: DRY..
-        emit_code("int {} = {};", index_name_local(snode, i), addition);
-        emit_code("int {} = {} {};", index_name_global(snode, i), ancester,
-                  index_name_local(snode, i));
+        emit("int {} = {};", index_name_local(snode, i), addition);
+        emit("int {} = {} {};", index_name_global(snode, i), ancester,
+             index_name_local(snode, i));
       }
     }
     if (last_level) {
       for (int i = 0; i < (int)stmt->loop_vars.size(); i++) {
-        emit_code("{} = {};", stmt->loop_vars[i]->raw_name(),
-                  index_name_global(snode, i));  // set loop vector
+        emit("{} = {};", stmt->loop_vars[i]->raw_name(),
+             index_name_global(snode, i));  // set loop vector
       }
     }
     if (has_residual && last_level) {
       CODE_REGION(residual_end);
-      emit_code("}}");
+      emit("}}");
     }
   }
 
@@ -170,14 +169,12 @@ class CPUIRCodeGen : public IRVisitor {
       CODE_REGION_VAR(last_level ? CodeRegion::interior_loop_end
                                  : CodeRegion::exterior_loop_end);
       if (snode->type != SNodeType::place)
-        emit_code("}}\n");
+        emit("}}\n");
       generate_loop_tail(snode->parent, stmt, last_level);
     } else {
       return;  // no loop for root, which is a fork
     }
   }
-
-#undef emit_code
 
   static void run(CodeGenBase *codegen, IRNode *node) {
     auto p = CPUIRCodeGen(codegen);
@@ -443,7 +440,7 @@ class CPUIRCodeGen : public IRVisitor {
 };
 
 void CPUCodeGen::lower() {
-  auto ir = current_kernel->ir;
+  auto ir = kernel->ir;
   if (prog->config.print_ir) {
     irpass::print(ir);
   }
@@ -478,7 +475,7 @@ void CPUCodeGen::codegen() {
   emit("auto root = ({} *)context.buffers[0];",
        prog->snode_root->node_type_name);
 
-  CPUIRCodeGen::run(this, current_kernel->ir);
+  CPUIRCodeGen::run(this, kernel->ir);
 
   emit("}}\n");
 

@@ -2,87 +2,362 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class GPUIRCodeGen : public IRVisitor {
+ public:
+  StructForStmt *current_struct_for;
+  CodeGenBase *codegen;
+
+  GPUIRCodeGen(CodeGenBase *codegen) : codegen(codegen) {
+    current_struct_for = nullptr;
+  }
+
+  template <typename... Args>
+  void emit(std::string f, Args &&... args) {
+    codegen->emit(f, std::forward<Args>(args)...);
+  }
+
+  std::string loop_variable(SNode *snode) {
+    return snode->node_type_name + "_loop";
+  }
+
+  static void run(CodeGenBase *codegen, IRNode *node) {
+    auto p = GPUIRCodeGen(codegen);
+    node->accept(&p);
+  }
+
+  void visit(Block *stmt_list) {
+    for (auto &stmt : stmt_list->statements) {
+      stmt->accept(this);
+    }
+  }
+
+  void visit(AllocaStmt *alloca) {
+    emit("{} {}(0);", alloca->ret_data_type_name(), alloca->raw_name());
+  }
+
+  void visit(RandStmt *stmt) {
+    TC_ASSERT(stmt->ret_type.data_type == DataType::f32);
+    emit("const auto {} = {}::rand();", stmt->raw_name(),
+         stmt->ret_data_type_name());
+  }
+
+  void visit(BinaryOpStmt *bin) {
+    emit("const {} {}({}({}, {}));", bin->ret_data_type_name(), bin->raw_name(),
+         binary_type_name(bin->op_type), bin->lhs->raw_name(),
+         bin->rhs->raw_name());
+  }
+
+  void visit(UnaryOpStmt *stmt) {
+    if (stmt->op_type != UnaryType::cast) {
+      emit("const {} {}({}({}));", stmt->ret_data_type_name(), stmt->raw_name(),
+           unary_type_name(stmt->op_type), stmt->rhs->raw_name());
+    } else {
+      emit("const {} {}(cast<{}>({}));", stmt->ret_data_type_name(),
+           stmt->raw_name(), data_type_name(stmt->cast_type),
+           stmt->rhs->raw_name());
+    }
+  }
+
+  void visit(IfStmt *if_stmt) {
+    // emit("if ({}) {{", if_stmt->cond->raw_name());
+    emit("{{");
+    if (if_stmt->true_statements)
+      if_stmt->true_statements->accept(this);
+    if (if_stmt->false_statements) {
+      // emit("}} else {{");
+      emit("}}  {{");
+      if_stmt->false_statements->accept(this);
+    }
+    emit("}}");
+  }
+
+  void visit(PrintStmt *print_stmt) {
+    emit("std::cout << \"[debug] \" \"{}\" \" = \" << {} << std::endl;",
+         print_stmt->str, print_stmt->stmt->raw_name());
+  }
+
+  void visit(ConstStmt *const_stmt) {
+    emit("const {} {}({});", const_stmt->ret_type.str(), const_stmt->raw_name(),
+         const_stmt->val.serialize(
+             [&](const TypedConstant &t) { return t.stringify(); }, "{"));
+  }
+
+  void visit(WhileControlStmt *stmt) {
+    emit("{} = bit_and({}, {});", stmt->mask->raw_name(),
+         stmt->mask->raw_name(), stmt->cond->raw_name());
+    emit("if (!any({})) break;", stmt->mask->raw_name());
+  }
+
+  void visit(WhileStmt *stmt) {
+    emit("while (1) {{");
+    stmt->body->accept(this);
+    emit("}}");
+  }
+
+  void visit(StructForStmt *for_stmt) {
+    // generate_loop_header(for_stmt->snode, for_stmt, true);
+    TC_ASSERT_INFO(current_struct_for == nullptr,
+                   "Structu for cannot be nested.");
+    current_struct_for = for_stmt;
+    for_stmt->body->accept(this);
+    current_struct_for = nullptr;
+    // generate_loop_tail(for_stmt->snode, for_stmt, true);
+  }
+
+  void visit(RangeForStmt *for_stmt) {
+    auto loop_var = for_stmt->loop_var;
+    if (for_stmt->parallelize) {
+      // emit("#pragma omp parallel for num_threads({})",
+      // for_stmt->parallelize);
+      emit("omp_set_num_threads({});", for_stmt->parallelize);
+      emit("#pragma omp parallel for private({})", loop_var->raw_name());
+    }
+    if (loop_var->ret_type.width == 1 &&
+        loop_var->ret_type.data_type == DataType::i32) {
+      emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{",
+           loop_var->raw_name(), for_stmt->begin->raw_name(),
+           loop_var->raw_name(), for_stmt->end->raw_name(),
+           loop_var->raw_name(), loop_var->raw_name(), for_stmt->vectorize);
+      emit("{} = {}_;", loop_var->raw_name(), loop_var->raw_name());
+    } else {
+      emit("for ({} {} = {}; {} < {}; {} = {} + {}({})) {{",
+           loop_var->ret_data_type_name(), loop_var->raw_name(),
+           for_stmt->begin->raw_name(), loop_var->raw_name(),
+           for_stmt->end->raw_name(), loop_var->raw_name(),
+           loop_var->raw_name(), loop_var->ret_data_type_name(),
+           for_stmt->vectorize);
+    }
+    for_stmt->body->accept(this);
+    emit("}}");
+  }
+
+  void visit(LocalLoadStmt *stmt) {
+    // TODO: optimize for partially vectorized load...
+
+    bool linear_index = true;
+    for (int i = 0; i < (int)stmt->ptr.size(); i++) {
+      if (stmt->ptr[i].offset != i) {
+        linear_index = false;
+      }
+    }
+    if (stmt->same_source() && linear_index &&
+        stmt->width() == stmt->ptr[0].var->width()) {
+      auto ptr = stmt->ptr[0].var;
+      emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
+           ptr->raw_name());
+    } else {
+      std::string init_v;
+      for (int i = 0; i < stmt->width(); i++) {
+        init_v += fmt::format("{}[{}]", stmt->ptr[i].var->raw_name(),
+                              stmt->ptr[i].offset);
+        if (i + 1 < stmt->width()) {
+          init_v += ", ";
+        }
+      }
+      emit("const {} {}({{{}}});", stmt->ret_data_type_name(), stmt->raw_name(),
+           init_v);
+    }
+  }
+
+  void visit(LocalStoreStmt *stmt) {
+    auto mask = stmt->parent->mask();
+    if (mask) {
+      emit("{} = select({}, {}, {});", stmt->ptr->raw_name(), mask->raw_name(),
+           stmt->data->raw_name(), stmt->ptr->raw_name());
+    } else {
+      emit("{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
+    }
+  }
+
+  void visit(GlobalPtrStmt *stmt) {
+    emit("{} *{}[{}];", data_type_name(stmt->ret_type.data_type),
+         stmt->raw_name(), stmt->ret_type.width);
+    for (int l = 0; l < stmt->ret_type.width; l++) {
+      // Try to weaken here...
+      std::vector<int> offsets(stmt->indices.size());
+
+      std::string indices = "(root, ";
+      for (int i = 0; i < max_num_indices; i++) {
+        if (i < (int)stmt->indices.size()) {
+          indices += stmt->indices[i]->raw_name() + fmt::format("[{}]", l);
+        } else {
+          indices += "0";
+        }
+        if (i + 1 < max_num_indices)
+          indices += ",";
+      }
+      indices += ")";
+      std::string strong_access =
+          fmt::format("{}[{}] = access_{}{};", stmt->raw_name(), l,
+                      stmt->snode[l]->node_type_name, indices);
+
+      bool weakened = false;
+      auto snode = stmt->snode[l];
+      if (current_struct_for &&
+          snode->parent == current_struct_for->snode->parent) {
+        bool identical_indices = true;
+        bool all_offsets_zero = true;
+        for (int i = 0; i < stmt->indices.size(); i++) {
+          auto ret = analysis::value_diff(stmt->indices[i], l,
+                                          current_struct_for->loop_vars[i]);
+          if (!ret.first) {
+            identical_indices = false;
+          }
+          offsets[i] = ret.second;
+          if (ret.second != 0)
+            all_offsets_zero = false;
+        }
+        if (false && identical_indices) {
+          TC_WARN("Weakened addressing");
+          weakened = true;
+
+          std::string cond;
+          cond = "true";
+          // add safe guards...
+          for (int i = 0; i < (int)stmt->indices.size(); i++) {
+            if (offsets[i] == 0)
+              continue;
+            // TODO: fix hacky hardcoded name, make sure index same order as
+            // snode indices
+            std::string local_var = fmt::format(
+                "index_{}_{}_local", snode->parent->node_type_name, i);
+            int upper_bound = 1 << snode->parent->extractors[i].num_bits;
+            if (offsets[i] == -1) {
+              cond += fmt::format("&& {} > 0", local_var);
+            } else if (offsets[i] == 1) {
+              cond += fmt::format("&& {} < {} - 1", local_var, upper_bound);
+            } else {
+              TC_NOT_IMPLEMENTED;
+            }
+          }
+
+          TC_WARN("offset can be wrong in multidimensional cases");
+          int offset = offsets[0];
+          emit("if ({}) {{", cond);
+          emit("{}[{}] = access_{}({}_cache, {}_loop + {});", stmt->raw_name(),
+               l, snode->node_type_name, snode->parent->node_type_name,
+               snode->parent->node_type_name, offset);
+          emit("}} else {{");
+          emit("{}", strong_access);
+          emit("}}");
+        }
+      }
+      if (!weakened) {
+        emit("{}", strong_access);
+      }
+    }
+  }
+
+  void visit(GlobalStoreStmt *stmt) {
+    if (!current_program->config.force_vectorized_global_store) {
+      for (int i = 0; i < stmt->data->ret_type.width; i++) {
+        emit("*({} *){}[{}] = {}[{}];",
+             data_type_name(stmt->data->ret_type.data_type),
+             stmt->ptr->raw_name(), i, stmt->data->raw_name(), i);
+      }
+    } else {
+      emit("{}.store({}[0]);", stmt->data->raw_name(), stmt->ptr->raw_name());
+    }
+  }
+
+  void visit(GlobalLoadStmt *stmt) {
+    if (!current_program->config.force_vectorized_global_load) {
+      emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
+      for (int i = 0; i < stmt->ret_type.width; i++) {
+        emit("{}[{}] = *{}[{}];", stmt->raw_name(), i, stmt->ptr->raw_name(),
+             i);
+      }
+    } else {
+      emit("const auto {} = {}::load({}[0]);", stmt->raw_name(),
+           stmt->ret_data_type_name(), stmt->ptr->raw_name());
+    }
+  }
+
+  void visit(ElementShuffleStmt *stmt) {
+    emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
+         stmt->elements.serialize(
+             [](const VectorElement &elem) {
+               return fmt::format("{}[{}]", elem.stmt->raw_name(), elem.index);
+             },
+             "{"));
+  }
+};
+
+void GPUCodeGen::lower() {
+  auto ir = kernel->ir;
+  if (prog->config.print_ir) {
+    irpass::print(ir);
+  }
+  irpass::lower(ir);
+  if (prog->config.print_ir) {
+    irpass::print(ir);
+  }
+  irpass::typecheck(ir);
+  if (prog->config.print_ir) {
+    irpass::print(ir);
+  }
+  /*
+  irpass::slp_vectorize(ir);
+  if (prog->config.print_ir) {
+    irpass::print(ir);
+  }
+  irpass::loop_vectorize(ir);
+  if (prog->config.print_ir)
+    irpass::print(ir);
+  irpass::vector_split(ir, prog->config.max_vector_width,
+                       prog->config.serial_schedule);
+  if (prog->config.print_ir)
+    irpass::print(ir);
+    */
+  irpass::eliminate_dup(ir);
+  if (prog->config.print_ir)
+    irpass::print(ir);
+}
+
+void GPUCodeGen::codegen() {
+  generate_header();
+
+  /*
+  emit("extern \"C\" void " + func_name + "(Context context) {{\n");
+  emit("auto root = ({} *)context.buffers[0];",
+       prog->snode_root->node_type_name);
+
+  GPUIRCodeGen::run(this, kernel->ir);
+
+  emit("}}\n");
+   */
+
+  emit("__global__ void {}_kernel(Context context) {{", func_name);
+  emit("auto n = context.get_range(0);\n");
+  emit("auto linear_idx = blockIdx.x * blockDim.x + threadIdx.x;\n");
+  emit("int l = threadIdx.x & 0x1f;\n");
+  emit("int loop_index = 0;");
+
+  // Body
+  emit("}\n\n");
+
+  emit("extern \"C\" void " + func_name + "(Context context) {\n");
+
+  int num_blocks = 1;  // TODO
+  int block_size = 1;
+  emit("{}_kernel<<<{}, {}>>>(context);", func_name, num_blocks, block_size);
+  emit("cudaDeviceSynchronize();\n");
+  emit("}\n");
+
+  line_suffix = "";
+  generate_tail();
+}
+
 TLANG_NAMESPACE_END
 
 #if (0)
-#include "
-
-class GPUCodeGen : public CodeGenBase {
-public:
-  int simd_width;
-  int group_size;
-
-public:
-  GPUCodeGen() : CodeGenBase() {
-#if !defined(CUDA_FOUND)
-    TC_ERROR("No GPU/CUDA support.");
-#endif
-    suffix = "cu";
-    simd_width = 32;
-  }
-
-  std::string kernel_name() {
-    return fmt::format("{}_kernel", func_name);
-  }
-
-  void codegen(Expr &vectorized_expr, int group_size = 1) {
-    this->group_size = group_size;
-    TC_ASSERT(group_size != 0);
-    // group_size = expr->ch.size();
-    num_groups = simd_width / group_size;
-    TC_WARN_IF(simd_width % group_size != 0, "insufficient lane usage");
-
-    emit_code(
-        "#include <common.h>\n using namespace taichi; using namespace "
-        "Tlang;\n\n");
-
-    emit_code("__global__ void {}(Context context) {{", kernel_name());
-    emit_code("auto n = context.get_range(0);\n");
-    emit_code("auto linear_idx = blockIdx.x * blockDim.x + threadIdx.x;\n");
-    emit_code("if (linear_idx >= n * {}) return;\n", group_size);
-    emit_code("auto g = linear_idx / {} / ({} / {}); \n", group_size,
-              simd_width, group_size);
-    emit_code("auto sub_g_id = linear_idx / {} % ({} / {}); \n", group_size,
-              simd_width, group_size);
-    emit_code("auto g_idx = linear_idx % {}; \n", group_size);
-    emit_code("int l = threadIdx.x & 0x1f;\n");
-    emit_code("int loop_index = 0;");
-
-    // Body
-    TC_DEBUG("Vectorizing");
-    vectorized_expr.accept(*this);
-    TC_DEBUG("Vectorizing");
-
-    emit_code("}\n\n");
-
-    emit_code("extern \"C\" void " + func_name + "(Context context) {\n");
-    emit_code("auto n = context.get_range(0);\n");
-    int block_size = 256;
-    emit_code("{}<<<n * {} / {}, {}>>>(context);", kernel_name(), group_size,
-              block_size, block_size);
-    emit_code("cudaDeviceSynchronize();\n");
-
-    emit_code("}\n");
-  }
-
-  // group_size should be batch_size here...
-  FunctionType compile() {
-    write_code_to_file();
-    auto cmd = fmt::format(
-        "nvcc {} -std=c++14 -shared -O3 -Xcompiler \"-fPIC\" --use_fast_math "
-        "--ptxas-options=-allow-expensive-optimizations=true,-O3 -I {}/headers "
-        "-ccbin g++-6 "
-        "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_GPU -o {} 2> {}.log",
-        get_source_fn(), get_project_fn(), get_library_fn(), get_source_fn());
-    auto compile_ret = std::system(cmd.c_str());
-    TC_ASSERT(compile_ret == 0);
-#if defined(TC_PLATFORM_LINUX)
-    auto objdump_ret = system(
-        fmt::format("objdump {} -d > {}.s", get_library_fn(), get_library_fn())
-            .c_str());
-    trash(objdump_ret);
-#endif
-    return load_function();
-  }
-};
+auto cmd = fmt::format(
+    "nvcc {} -std=c++14 -shared -O3 -Xcompiler \"-fPIC\" --use_fast_math "
+    "--ptxas-options=-allow-expensive-optimizations=true,-O3 -I {}/headers "
+    "-ccbin g++-6 "
+    "-D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_GPU -o {} 2> {}.log",
+    get_source_fn(),
+    get_project_fn(),
+    get_library_fn(),
+    get_source_fn());
 #endif

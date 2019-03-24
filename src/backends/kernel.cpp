@@ -5,7 +5,7 @@ TLANG_NAMESPACE_BEGIN
 FunctionType KernelCodeGen::compile(taichi::Tlang::Program &prog,
                        taichi::Tlang::Kernel &kernel) {
   this->prog = &kernel.program;
-  this->current_kernel = &kernel;
+  this->kernel = &kernel;
   lower();
   codegen();
   write_source();

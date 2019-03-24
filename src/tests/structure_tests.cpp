@@ -1,3 +1,4 @@
+#include <taichi/testing.h>
 #include "../tlang.h"
 
 TLANG_NAMESPACE_BEGIN

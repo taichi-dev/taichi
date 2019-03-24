@@ -1,4 +1,5 @@
 #include "../tlang.h"
+#include <taichi/testing.h>
 #include <numeric>
 #include <taichi/visual/gui.h>
 #include <tbb/tbb.h>

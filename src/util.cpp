@@ -60,18 +60,6 @@ std::string get_project_fn() {
   return fmt::format("{}/projects/taichi_lang/", get_repo_dir());
 }
 
-template<typename T>
-DataType get_data_type() {
-  if (std::is_same<T, float32>()) {
-    return DataType::f32;
-  } else if (std::is_same<T, int32>()) {
-    return DataType::i32;
-  } else {
-    TC_NOT_IMPLEMENTED;
-  }
-  return DataType::unknown;
-}
-
 int default_simd_width(Arch arch) {
   if (arch == Arch::x86_64) {
     return default_simd_width_x86_64;

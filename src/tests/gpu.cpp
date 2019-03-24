@@ -1,4 +1,5 @@
 #include "../tlang.h"
+#include <taichi/testing.h>
 #include <numeric>
 
 TLANG_NAMESPACE_BEGIN

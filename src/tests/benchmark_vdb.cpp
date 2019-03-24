@@ -1,4 +1,5 @@
 #include "../tlang.h"
+#include <taichi/testing.h>
 #include <taichi/system/timer.h>
 #include <openvdb/openvdb.h>
 #include <openvdb/io/Stream.h>

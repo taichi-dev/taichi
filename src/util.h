@@ -128,8 +128,18 @@ enum class DataType : int {
   unknown
 };
 
-template <typename T>
-DataType get_data_type();
+template<typename T>
+inline DataType get_data_type() {
+  if (std::is_same<T, float32>()) {
+    return DataType::f32;
+  } else if (std::is_same<T, int32>()) {
+    return DataType::i32;
+  } else {
+    TC_NOT_IMPLEMENTED;
+  }
+  return DataType::unknown;
+}
+
 
 std::string data_type_name(DataType t);
 
@@ -146,7 +156,7 @@ enum class SNodeType {
   indirect,
 };
 
-inline std::string snode_type_name(SNodeType t);
+std::string snode_type_name(SNodeType t);
 
 enum class UnaryType : int {
   neg,

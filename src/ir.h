@@ -1,6 +1,7 @@
 #pragma once
-#include "util.h"
+
 #include <taichi/util.h>
+#include "util.h"
 #include "snode.h"
 
 TLANG_NAMESPACE_BEGIN

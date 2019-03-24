@@ -220,7 +220,7 @@ std::string CompileConfig::compile_cmd(const std::string &input,
         "--ptxas-options=-allow-expensive-optimizations=true,-O3 -I {}/headers "
         "-ccbin {} "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -lstdc++ -DTLANG_GPU -o {} {}",
-        input, gcc_opt_flag(), get_project_fn(), compiler_name(), output,
+        input, gcc_opt_flag(), get_project_fn(), "g++-6", output,
         extra_flags);
   }
 

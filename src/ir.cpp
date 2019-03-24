@@ -7,7 +7,7 @@ TLANG_NAMESPACE_BEGIN
 
 DecoratorRecorder dec;
 
-IRBuilder &current_ast_uilder() {
+IRBuilder &current_ast_builder() {
   return context->builder();
 }
 

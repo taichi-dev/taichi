@@ -39,8 +39,7 @@ void StructCompiler::visit(SNode &snode) {
     }
     fmt::print("\n");
     */
-    std::memcpy(ch->index_order, snode.index_order,
-                sizeof(snode.index_order));
+    std::memcpy(ch->index_order, snode.index_order, sizeof(snode.index_order));
     ch->num_active_indices = snode.num_active_indices;
     visit(*ch);
 
@@ -64,7 +63,7 @@ void StructCompiler::visit(SNode &snode) {
         TC_ASSERT_INFO(snode.extractors[i].start == inferred,
                        "Inconsistent bit configuration");
         TC_ASSERT_INFO(snode.extractors[i].dest_offset ==
-                       snode.total_bit_start + acc_offsets,
+                           snode.total_bit_start + acc_offsets,
                        "Inconsistent bit configuration");
       }
       acc_offsets += snode.extractors[i].num_bits;
@@ -97,7 +96,8 @@ void StructCompiler::visit(SNode &snode) {
     emit("{} member{};", snode.ch[i]->node_type_name, i);
   }
   for (int i = 0; i < (int)snode.ch.size(); i++) {
-    emit("auto *get{}() {{return &member{};}} ", i, i);
+    emit("TC_DEVICE {} *get{}() {{return &member{};}} ",
+         snode.ch[i]->node_type_name, i, i);
   }
   // emit("TC_FORCE_INLINE int get_n() {{return 1;}} ");
   emit("}};");
@@ -139,7 +139,7 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
     TC_ASSERT(snode.ch.size() > 0);
     for (int i = 0; i < (int)snode.ch.size(); i++) {
       auto ch = snode.ch[i];
-      emit("TC_FORCE_INLINE {} *access_{}({} *parent, int i) {{",
+      emit("TLANG_ACCESSOR {} *access_{}({} *parent, int i) {{",
            ch->node_type_name, ch->node_type_name, snode.node_type_name);
       emit(
           "auto lookup = parent->look_up(i); "
@@ -153,7 +153,8 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
   // SNode::place & indirect
   // emit end2end accessors for leaf (place) nodes, using chain accessors
   emit(
-      "TLANG_ACCESSOR {} * access_{}(void *root, int i0, int i1=0, int "
+      "TLANG_ACCESSOR TC_EXPORT {} * access_{}(void *root, int i0, int i1=0, "
+      "int "
       "i2=0, "
       "int i3=0) {{",
       snode.node_type_name, snode.node_type_name);
@@ -180,8 +181,8 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
         }
       }
     }
-    emit("auto n{} = access_{}(n{}, tmp);", i + 1,
-         stack[i + 1]->node_type_name, i);
+    emit("auto n{} = access_{}(n{}, tmp);", i + 1, stack[i + 1]->node_type_name,
+         i);
     if (snode.has_ambient && stack[i + 1] != &snode)
       emit("if ({}::has_null && n{} == nullptr) return &{}_ambient;",
            stack[i]->node_type_name, i + 1, snode.node_type_name);
@@ -197,8 +198,7 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
         "i2=0, "
         "int i3=0) {{",
         snode.node_type_name);
-    emit("auto node = access_{}(root, i0, i1, i2, i3);",
-         snode.node_type_name);
+    emit("auto node = access_{}(root, i0, i1, i2, i3);", snode.node_type_name);
     emit("node->touch(val);");
     emit("}");
   }
@@ -211,8 +211,7 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
         "i2=0, "
         "int i3=0) {{",
         snode.node_type_name, snode.node_type_name);
-    emit("auto node = access_{}(root, i0, i1, i2, i3);",
-         snode.node_type_name);
+    emit("auto node = access_{}(root, i0, i1, i2, i3);", snode.node_type_name);
     emit("node->touch(val);");
     emit("}}");
   }
@@ -243,17 +242,11 @@ void StructCompiler::set_parents(SNode &snode) {
 
 void StructCompiler::run(SNode &node) {
   set_parents(node);
-  emit("#if defined(TLANG_KERNEL) ");
-  emit("#define TLANG_ACCESSOR TC_FORCE_INLINE");
-  emit("#else");
-  emit("#define TLANG_ACCESSOR extern \"C\"");
-  emit("#endif");
   // bottom to top
   visit(node);
   root_type = node.node_type_name;
   generate_leaf_accessors(node);
-  emit("extern \"C\" void *create_data_structure() {{auto p= new {}; ",
-       root_type);
+  emit("TC_EXPORT void *create_data_structure() {{auto p= new {}; ", root_type);
   for (int i = 0; i < (int)node.ch.size(); i++) {
     if (node.ch[i]->type != SNodeType::hashed) {
       emit("std::memset(p->children.get{}(), 0, sizeof({}));", i,
@@ -262,7 +255,7 @@ void StructCompiler::run(SNode &node) {
   }
   emit("return p;}}");
   emit(
-      "extern \"C\" void release_data_structure(void *ds) {{delete ({} "
+      "TC_EXPORT void release_data_structure(void *ds) {{delete ({} "
       "*)ds;}}",
       root_type);
   write_source();

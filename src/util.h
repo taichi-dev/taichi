@@ -2,7 +2,6 @@
 #include <taichi/common/util.h>
 #include <taichi/io/io.h>
 #include <immintrin.h>
-#include "../headers/common.h"
 
 #define TLANG_NAMESPACE_BEGIN \
   namespace taichi {          \
@@ -109,6 +108,8 @@ real measure_cpe(std::function<void()> target,
                  int64 elements_per_call,
                  real time_second = default_measurement_time);
 
+struct Context;
+
 using FunctionType = void (*)(Context);
 
 enum class DataType : int {
@@ -213,13 +214,13 @@ class IRModifiedException {};
 class TypedConstant {
  public:
   DataType dt;
-
- public:
   union {
     uint64 value_bits;
     int32 val_i32;
     float32 val_f32;
   };
+
+ public:
   TypedConstant() : dt(DataType::unknown) {
   }
 
@@ -252,6 +253,16 @@ class TypedConstant {
       TC_NOT_IMPLEMENTED
       return false;
     }
+  }
+
+  int32 &val_int32() {
+    TC_ASSERT(get_data_type<int32>() == dt);
+    return val_i32;
+  }
+
+  float32 &val_float32() {
+    TC_ASSERT(get_data_type<float32>() == dt);
+    return val_f32;
   }
 };
 

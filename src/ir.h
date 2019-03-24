@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <taichi/util.h>
 #include "util.h"
 #include "snode.h"

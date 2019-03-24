@@ -2,7 +2,11 @@
 
 #define FUNC_DECL
 
+#include "context.h"
+#if !defined(TC_GPU)
 #include <immintrin.h>
+#endif
+
 #include <atomic>
 #include <numeric>
 #include <mutex>
@@ -17,6 +21,7 @@
 #define TC_FORCE_INLINE inline __attribute__((always_inline))
 #endif
 #include <cstdio>
+#include <string>
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
@@ -104,42 +109,9 @@ T union_cast_different_size(G g) {
   return u.t;
 }
 
-struct Context {
-  static constexpr int max_num_buffers = 16;
-  static constexpr int max_num_parameters = 16;
-  static constexpr int max_num_ranges = 16;
-  using Buffer = void *;
-  Buffer buffers[max_num_buffers];
-  double parameters[max_num_parameters];
-  uint64 ranges[max_num_ranges];
+#if !defined(TC_HOST) && !defined(TC_GPU)
 
-  Context() {
-    std::memset(buffers, 0, sizeof(buffers));
-    std::memset(parameters, 0, sizeof(parameters));
-    std::memset(ranges, 0, sizeof(ranges));
-  }
-
-  Context(void *x, void *y, void *z, uint64 n) : Context() {
-    buffers[0] = x;
-    buffers[1] = y;
-    buffers[2] = z;
-    ranges[0] = n;
-  }
-
-  template <typename T>
-  FUNC_DECL T *get_buffer(int i) {
-    return reinterpret_cast<T *>(buffers[i]);
-  }
-
-  template <typename T>
-  FUNC_DECL T &get_parameter(int i) {
-    return *reinterpret_cast<T *>(&parameters[i]);
-  }
-
-  FUNC_DECL uint64 &get_range(int i) {
-    return ranges[i];
-  }
-};
+// Intrinsics wrapper
 
 template <typename T, int dim>
 struct vec_helper;
@@ -997,19 +969,75 @@ inline vec<float32, dim> mod(vec<float32, dim> a, vec<float32, dim> b) {
   return sub(a, mul(floor(div(a, b)), b));
 };
 
+#endif  // Intrinsics wrapper
+
+#if defined(TC_GPU)
+
+using float32x1 = float32;
+using int32x1 = int32;
+using float64x1 = float64;
+
+#define DEFINE_CUDA_OP(name, op)                 \
+  template <typename T>                          \
+  __device__ auto name(const T &a, const T &b) { \
+    return a op b;                               \
+  }
+
+DEFINE_CUDA_OP(add, +)
+DEFINE_CUDA_OP(sub, -)
+DEFINE_CUDA_OP(mul, *)
+DEFINE_CUDA_OP(div, /)
+DEFINE_CUDA_OP(mod, %)
+DEFINE_CUDA_OP(bit_and, &)
+DEFINE_CUDA_OP(bit_or, |)
+
+DEFINE_CUDA_OP(cmp_le, <=)
+DEFINE_CUDA_OP(cmp_eq, ==)
+
+#define DEFINE_CUDA_UNARY_OP(name, op) \
+  template <typename T>                \
+  __device__ auto name(const T &a) {   \
+    return op a;                       \
+  }
+
+DEFINE_CUDA_UNARY_OP(bit_not, ~)
+
+template <typename T, typename G>
+__device__ auto select(const G &flag, const T &a, const T &b) {
+  return flag ? a : b;
+}
+
+#endif
+
 // *****************************************************************************
 // these structures are used for maintaining metadata and sparsity.
 // Their look_up function takes a merged index, but they don't know where do the
 // bits come from.
 
+#if defined(TLANG_KERNEL)
+#define TC_EXPORT
+#if defined(TC_GPU)
+#define TC_DEVICE __device__ __host__
+#define TLANG_ACCESSOR __device__ TC_FORCE_INLINE
+#else
+#define TC_DEVICE
+#define TLANG_ACCESSOR TC_FORCE_INLINE
+#endif
+#else
+#define TLANG_ACCESSOR
+#define TC_EXPORT extern "C"
+#define TC_DEVICE
+#endif
+
 template <typename child_type>
 struct layout_root {
   child_type children;
-  TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
+  TC_DEVICE TC_FORCE_INLINE child_type *look_up(
+      int i) {  // i is flattened index
     return &children;
   }
 
-  TC_FORCE_INLINE int get_n() const {
+  TC_DEVICE TC_FORCE_INLINE int get_n() const {
     return 1;
   }
 
@@ -1020,11 +1048,12 @@ template <typename child_type, int n_>
 struct fixed {
   static constexpr int n = n_;
   child_type children[n];
-  TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
+  TC_DEVICE TC_FORCE_INLINE child_type *look_up(
+      int i) {  // i is flattened index
     return &children[i];
   }
 
-  TC_FORCE_INLINE int get_n() const {
+  TC_DEVICE TC_FORCE_INLINE int get_n() const {
     return n;
   }
 
@@ -1036,7 +1065,8 @@ struct hashed {
   using child_type = _child_type;
   std::unordered_map<int, child_type> data;
   std::mutex mut;
-  TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
+  TC_DEVICE TC_FORCE_INLINE child_type *look_up(
+      int i) {  // i is flattened index
 #if defined(TLANG_HOST)
     if (data.find(i) == data.end()) {
       std::memset(&data[i], 0, sizeof(data[i]));
@@ -1049,13 +1079,13 @@ struct hashed {
     return &data[i];
   }
 
-  TC_FORCE_INLINE void touch(int i) {
+  TC_DEVICE TC_FORCE_INLINE void touch(int i) {
     TC_ASSERT(false);
     // printf("p=%p\n", &n);
     // printf("n=%d, i=%d\n", (int)n, i);
   }
 
-  TC_FORCE_INLINE int get_n() const {
+  TC_DEVICE TC_FORCE_INLINE int get_n() const {
     return data.size();
   }
 
@@ -1067,14 +1097,15 @@ struct pointer {
   using child_type = _child_type;
   child_type *data;
   // std::mutex mut;
-  TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
+  TC_DEVICE TC_FORCE_INLINE child_type *look_up(
+      int i) {  // i is flattened index
 #if defined(TLANG_HOST)
     touch(i);
 #endif
     return data;
   }
 
-  TC_FORCE_INLINE void touch(int i) {
+  TC_DEVICE TC_FORCE_INLINE void touch(int i) {
     // std::lock_guard<std::mutex> _(mut);
     if (data == nullptr) {
       data = new child_type;
@@ -1082,7 +1113,7 @@ struct pointer {
     }
   }
 
-  TC_FORCE_INLINE int get_n() const {
+  TC_DEVICE TC_FORCE_INLINE int get_n() const {
     return 1;
   }
 
@@ -1096,23 +1127,24 @@ struct dynamic {
   child_type data[max_n];
   std::atomic<int> n;
 
-  dynamic() : n(0) {
+  TC_DEVICE dynamic() : n(0) {
   }
 
-  TC_FORCE_INLINE child_type *look_up(int i) {  // i is flattened index
+  TC_DEVICE TC_FORCE_INLINE child_type *look_up(
+      int i) {  // i is flattened index
 #if defined(TLANG_HOST)
     n.store(std::max(n.load(), i + 1));
 #endif
     return &data[i];
   }
 
-  TC_FORCE_INLINE void touch(child_type t) {
+  TC_DEVICE TC_FORCE_INLINE void touch(child_type t) {
     data[n++] = t;
     // printf("p=%p\n", &n);
     // printf("n=%d, i=%d\n", (int)n, i);
   }
 
-  TC_FORCE_INLINE int get_n() const {
+  TC_DEVICE TC_FORCE_INLINE int get_n() const {
     return n.load();
   }
 
@@ -1126,27 +1158,27 @@ struct indirect {
   int data[max_n];
   std::atomic<int> n;
 
-  indirect() : n(0) {
+  TC_DEVICE indirect() : n(0) {
   }
 
-  TC_FORCE_INLINE int get_n() {
+  TC_DEVICE TC_FORCE_INLINE int get_n() {
     return n;
   }
 
-  TC_FORCE_INLINE int *look_up(int i) {  // i is flattened index
+  TC_DEVICE TC_FORCE_INLINE int *look_up(int i) {  // i is flattened index
 #if defined(TLANG_HOST)
     n.store(std::max(n.load(), i + 1));
 #endif
     return &data[i];
   }
 
-  TC_FORCE_INLINE void touch(int i) {
+  TC_DEVICE TC_FORCE_INLINE void touch(int i) {
     data[n++] = i;
     // printf("p=%p\n", &n);
     // printf("n=%d, i=%d\n", (int)n, i);
   }
 
-  TC_FORCE_INLINE void clear() {
+  TC_DEVICE TC_FORCE_INLINE void clear() {
     n.store(0);
   }
 

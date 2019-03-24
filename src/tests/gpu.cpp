@@ -5,7 +5,6 @@
 TLANG_NAMESPACE_BEGIN
 
 TC_TEST("compiler_basics_gpu") {
-  return;
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);

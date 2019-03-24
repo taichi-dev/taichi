@@ -16,7 +16,6 @@ inline int maximum(int a) {
 #include "util.h"
 #include "math.h"
 #include "program.h"
-#include "../headers/common.h"
 
 TLANG_NAMESPACE_BEGIN
 

@@ -43,21 +43,37 @@ class GPUIRCodeGen : public IRVisitor {
       emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
       emit("auto root = ({} *)context.buffers[0];",
            codegen->prog->snode_root->node_type_name);
-      emit("auto linear_idx = blockIdx.x * blockDim.x + threadIdx.x;\n");
-      emit("int l = threadIdx.x & 0x1f;\n");
-      emit("int loop_index = 0;");
-      stmt_list->statements.back()->accept(this);
 
-      // CPU Kernel code
-      emit("}}\n\n");
-      emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
+      auto &for_stmt = stmt_list->statements.back();
+      if (for_stmt->is<RangeForStmt>()) {
+        auto range_for = for_stmt->as<RangeForStmt>();
 
-      int num_blocks = 1;  // TODO
-      int block_size = 1;
-      emit("{}_kernel<<<{}, {}>>>(context);", codegen->func_name, num_blocks,
-           block_size);
+        emit("auto {} = blockIdx.x * blockDim.x + threadIdx.x;\n",
+             range_for->loop_var->raw_name());
+        // emit("int l = threadIdx.x & 0x1f;\n");
+        // emit("int loop_index = 0;");
+
+        range_for->body->accept(this);
+
+        // CPU Kernel code
+        emit("}}\n\n");
+        emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
+
+        int begin = range_for->begin->as<ConstStmt>()->val[0].val_int32();
+        int end = range_for->end->as<ConstStmt>()->val[0].val_int32();
+
+        TC_ASSERT(begin == 0);
+
+        int block_size = 256;
+        int num_blocks = (end - begin + block_size - 1) / block_size;
+        emit("{}_kernel<<<{}, {}>>>(context);", codegen->func_name, num_blocks,
+             block_size);
+      } else {
+        TC_NOT_IMPLEMENTED
+      }
+
       emit("cudaDeviceSynchronize();\n");
-      emit("}}G\n");
+      emit("}}\n");
 
     } else {
       for (auto &stmt : stmt_list->statements) {
@@ -94,13 +110,11 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) {
-    // emit("if ({}) {{", if_stmt->cond->raw_name());
-    emit("{{");
+    emit("if ({}) {{", if_stmt->cond->raw_name());
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
-      // emit("}} else {{");
-      emit("}}  {{");
+      emit("}} else {{");
       if_stmt->false_statements->accept(this);
     }
     emit("}}");
@@ -118,9 +132,7 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) {
-    emit("{} = bit_and({}, {});", stmt->mask->raw_name(),
-         stmt->mask->raw_name(), stmt->cond->raw_name());
-    emit("if (!any({})) break;", stmt->mask->raw_name());
+    emit("if (!{}) break;", stmt->mask->raw_name());
   }
 
   void visit(WhileStmt *stmt) {
@@ -214,7 +226,7 @@ class GPUIRCodeGen : public IRVisitor {
       std::string indices = "(root, ";
       for (int i = 0; i < max_num_indices; i++) {
         if (i < (int)stmt->indices.size()) {
-          indices += stmt->indices[i]->raw_name() + fmt::format("[{}]", l);
+          indices += stmt->indices[i]->raw_name();
         } else {
           indices += "0";
         }
@@ -285,13 +297,11 @@ class GPUIRCodeGen : public IRVisitor {
 
   void visit(GlobalStoreStmt *stmt) {
     if (!current_program->config.force_vectorized_global_store) {
-      for (int i = 0; i < stmt->data->ret_type.width; i++) {
-        emit("*({} *){}[{}] = {}[{}];",
-             data_type_name(stmt->data->ret_type.data_type),
-             stmt->ptr->raw_name(), i, stmt->data->raw_name(), i);
-      }
+      emit("*({} *){}[{}] = {};",
+           data_type_name(stmt->data->ret_type.data_type),
+           stmt->ptr->raw_name(), 0, stmt->data->raw_name());
     } else {
-      emit("{}.store({}[0]);", stmt->data->raw_name(), stmt->ptr->raw_name());
+      emit("{}.store({});", stmt->data->raw_name(), stmt->ptr->raw_name());
     }
   }
 
@@ -337,6 +347,7 @@ void GPUCodeGen::lower() {
 }
 
 void GPUCodeGen::codegen() {
+  emit("#define TC_GPU");
   generate_header();
 
   // Body

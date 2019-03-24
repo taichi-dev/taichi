@@ -7,6 +7,10 @@ TLANG_NAMESPACE_BEGIN
 
 DecoratorRecorder dec;
 
+IRBuilder &current_ast_uilder() {
+  return context->builder();
+}
+
 // Vector width, vectorization plan etc
 class PropagateSchedule : public IRVisitor {};
 
@@ -194,6 +198,20 @@ void Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
   stmts.insert(stmts.begin() + loc + 1, std::move(new_stmt));
 }
 
+void Stmt::replace_with(Stmt *new_stmt) {
+  auto root = get_ir_root();
+  irpass::replace_all_usages_with(root, this, new_stmt);
+  // Note: the current structure should have been destroyed now..
+}
+
+void Stmt::replace_operand_with(Stmt *old_stmt, Stmt *new_stmt) {
+  for (int i = 0; i < num_operands(); i++) {
+    if (operand(i) == old_stmt) {
+      operand(i) = new_stmt;
+    }
+  }
+}
+
 Block *current_block = nullptr;
 
 template <>
@@ -232,3 +250,64 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
 }
 
 TLANG_NAMESPACE_END
+
+void taichi::Tlang::Block::erase(int location) {
+  trash_bin.push_back(std::move(statements[location]));  // do not delete the
+  // stmt, otherwise
+  // print_ir will not
+  // function properly
+  statements.erase(statements.begin() + location);
+}
+
+void taichi::Tlang::Block::insert(std::unique_ptr<taichi::Tlang::Stmt> &&stmt,
+                                  int location) {
+  stmt->parent = this;
+  if (location == -1) {
+    statements.push_back(std::move(stmt));
+  } else {
+    statements.insert(statements.begin() + location, std::move(stmt));
+  }
+}
+
+void taichi::Tlang::Block::replace_statements_in_range(int start, int end,
+                                                       taichi::Tlang::VecStatement &&stmts) {
+  TC_ASSERT(start <= end);
+  for (int i = 0; i < end - start; i++) {
+    erase(start);
+  }
+
+  for (int i = 0; i < (int)stmts.size(); i++) {
+    insert(std::move(stmts[i]), start + i);
+  }
+}
+
+void taichi::Tlang::Block::replace_with(taichi::Tlang::Stmt *old_statement,
+                                        std::unique_ptr<taichi::Tlang::Stmt> &&new_statement) {
+  VecStatement vec;
+  vec.push_back(std::move(new_statement));
+  replace_with(old_statement, vec);
+}
+
+taichi::Tlang::Stmt *
+taichi::Tlang::Block::lookup_var(taichi::Tlang::Ident ident) const {
+  auto ptr = local_var_alloca.find(ident);
+  if (ptr != local_var_alloca.end()) {
+    return ptr->second;
+  } else {
+    if (parent) {
+      return parent->lookup_var(ident);
+    } else {
+      return nullptr;
+    }
+  }
+}
+
+taichi::Tlang::Stmt *taichi::Tlang::Block::mask() {
+  if (mask_var)
+    return mask_var;
+  else if (parent == nullptr) {
+    return nullptr;
+  } else {
+    return parent->mask();
+  }
+}

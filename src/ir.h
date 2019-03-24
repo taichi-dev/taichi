@@ -72,6 +72,8 @@ namespace analysis {
 std::pair<bool, int> value_diff(Stmt *stmt, int lane, Stmt *alloca);
 }
 
+IRBuilder &current_ast_builder();
+
 struct VectorType {
   int width;
   DataType data_type;
@@ -163,14 +165,9 @@ class IRBuilder {
     else
       return stack.back();
   }
-
-  void create_function() {
-  }
 };
 
-inline IRBuilder &current_ast_builder() {
-  return context->builder();
-}
+IRBuilder &current_ast_uilder();
 
 inline Expr load_if_ptr(const Expr &ptr);
 
@@ -512,19 +509,9 @@ class Stmt : public IRNode {
     ret_type.width *= factor;
   }
 
-  void replace_with(Stmt *new_stmt) {
-    auto root = get_ir_root();
-    irpass::replace_all_usages_with(root, this, new_stmt);
-    // Note: the current structure should have been destroyed now..
-  }
+  void replace_with(Stmt *new_stmt);
 
-  virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt) {
-    for (int i = 0; i < num_operands(); i++) {
-      if (operand(i) == old_stmt) {
-        operand(i) = new_stmt;
-      }
-    }
-  }
+  virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
   void insert_before_me(std::unique_ptr<Stmt> &&new_stmt);
 
@@ -638,11 +625,6 @@ class Expr {
 
   Expr eval() const;
 };
-
-inline Expr &Const(Expr &o) {
-  o.const_value = true;
-  return o;
-}
 
 class ExpressionGroup {
  public:
@@ -992,33 +974,11 @@ class Block : public IRNode {
     return -1;
   }
 
-  void erase(int location) {
-    trash_bin.push_back(std::move(statements[location]));  // do not delete the
-                                                           // stmt, otherwise
-                                                           // print_ir will not
-                                                           // function properly
-    statements.erase(statements.begin() + location);
-  }
+  void erase(int location);
 
-  void insert(std::unique_ptr<Stmt> &&stmt, int location = -1) {
-    stmt->parent = this;
-    if (location == -1) {
-      statements.push_back(std::move(stmt));
-    } else {
-      statements.insert(statements.begin() + location, std::move(stmt));
-    }
-  }
+  void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
 
-  void replace_statements_in_range(int start, int end, VecStatement &&stmts) {
-    TC_ASSERT(start <= end);
-    for (int i = 0; i < end - start; i++) {
-      erase(start);
-    }
-
-    for (int i = 0; i < (int)stmts.size(); i++) {
-      insert(std::move(stmts[i]), start + i);
-    }
-  }
+  void replace_statements_in_range(int start, int end, VecStatement &&stmts);
 
   void set_statements(VecStatement &&stmts) {
     statements.clear();
@@ -1028,11 +988,7 @@ class Block : public IRNode {
   }
 
   void replace_with(Stmt *old_statement,
-                    std::unique_ptr<Stmt> &&new_statement) {
-    VecStatement vec;
-    vec.push_back(std::move(new_statement));
-    replace_with(old_statement, vec);
-  }
+                    std::unique_ptr<Stmt> &&new_statement);
 
   void replace_with(Stmt *old_statement, VecStatement &new_statements) {
     int location = -1;
@@ -1050,28 +1006,9 @@ class Block : public IRNode {
     }
   }
 
-  Stmt *lookup_var(Ident ident) const {
-    auto ptr = local_var_alloca.find(ident);
-    if (ptr != local_var_alloca.end()) {
-      return ptr->second;
-    } else {
-      if (parent) {
-        return parent->lookup_var(ident);
-      } else {
-        return nullptr;
-      }
-    }
-  }
+  Stmt *lookup_var(Ident ident) const;
 
-  Stmt *mask() {
-    if (mask_var)
-      return mask_var;
-    else if (parent == nullptr) {
-      return nullptr;
-    } else {
-      return parent->mask();
-    }
-  }
+  Stmt *mask();
 
   DEFINE_ACCEPT
 };
@@ -1486,64 +1423,6 @@ class ConstExpression : public Expression {
   }
 };
 
-template <typename T>
-inline void declare_var(Expr &a) {
-  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-      std::static_pointer_cast<IdExpression>(a.expr)->id, get_data_type<T>()));
-}
-
-inline void declare_var(Expr &a) {
-  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-      std::static_pointer_cast<IdExpression>(a.expr)->id, DataType::unknown));
-}
-
-inline Expr Expr::operator[](ExpressionGroup indices) {
-  TC_ASSERT(is<GlobalVariableExpression>());
-  return Expr(std::make_shared<GlobalPtrExpression>(
-      cast<GlobalVariableExpression>(), indices));
-}
-
-#define Declare(x) auto x = Expr(std::make_shared<IdExpression>(#x));
-
-#define var(type, x) declare_var<type>(x);
-
-#define Local(x)  \
-  Declare(x);     \
-  declare_var(x); \
-  x
-
-#define Global(x, dt)  \
-  Declare(x##_global); \
-  auto x = global_new(x##_global, DataType::dt);
-
-#define AmbientGlobal(x, dt, ambient)            \
-  Declare(x##_global);                           \
-  auto x = global_new(x##_global, DataType::dt); \
-  set_ambient(x, ambient);
-
-inline void set_ambient(Expr expr_, float32 val) {
-  auto expr = expr_.cast<GlobalVariableExpression>();
-  expr->ambient_value = TypedConstant(val);
-  expr->has_ambient = true;
-}
-
-inline void set_ambient(Expr expr_, int32 val) {
-  auto expr = expr_.cast<GlobalVariableExpression>();
-  expr->ambient_value = TypedConstant(val);
-  expr->has_ambient = true;
-}
-
-inline Expr global_new(Expr id_expr, DataType dt) {
-  TC_ASSERT(id_expr.is<IdExpression>());
-  auto ret = Expr(std::make_shared<GlobalVariableExpression>(
-      dt, id_expr.cast<IdExpression>()->id));
-  return ret;
-}
-
-inline Expr global_new(DataType dt) {
-  auto id_expr = std::make_shared<IdExpression>();
-  return Expr(std::make_shared<GlobalVariableExpression>(dt, id_expr->id));
-}
 
 template <typename T, typename... Indices>
 T &Expr::val(Indices... indices) {
@@ -1646,24 +1525,5 @@ class While {
     func();
   }
 };
-
-template <typename T>
-inline Expr Rand() {
-  return Expr(std::make_shared<RandExpression>(get_data_type<T>()));
-}
-
-template <typename T>
-inline T Eval(const T &t) {
-  return t.eval();
-}
-
-inline Expr copy(const Expr &expr) {
-  auto e = expr.eval();
-  auto stmt = Stmt::make<ElementShuffleStmt>(
-      VectorElement(e.cast<EvalExpression>()->stmt_ptr, 0));
-  auto eval_expr = std::make_shared<EvalExpression>(stmt.get());
-  current_ast_builder().insert(std::move(stmt));
-  return Expr(eval_expr);
-}
 
 TLANG_NAMESPACE_END

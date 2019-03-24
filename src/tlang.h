@@ -54,6 +54,85 @@ inline void reduce(Expr target, Expr value) {
 }
 */
 
+template <typename T>
+inline void declare_var(Expr &a) {
+  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
+      std::static_pointer_cast<IdExpression>(a.expr)->id, get_data_type<T>()));
+}
+
+inline void declare_var(Expr &a) {
+  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
+      std::static_pointer_cast<IdExpression>(a.expr)->id, DataType::unknown));
+}
+
+inline Expr Expr::operator[](ExpressionGroup indices) {
+  TC_ASSERT(is<GlobalVariableExpression>());
+  return Expr(std::make_shared<GlobalPtrExpression>(
+      cast<GlobalVariableExpression>(), indices));
+}
+
+#define Declare(x) auto x = Expr(std::make_shared<IdExpression>(#x));
+
+#define var(type, x) declare_var<type>(x);
+
+#define Local(x)  \
+  Declare(x);     \
+  declare_var(x); \
+  x
+
+#define Global(x, dt)  \
+  Declare(x##_global); \
+  auto x = global_new(x##_global, DataType::dt);
+
+#define AmbientGlobal(x, dt, ambient)            \
+  Declare(x##_global);                           \
+  auto x = global_new(x##_global, DataType::dt); \
+  set_ambient(x, ambient);
+
+inline void set_ambient(Expr expr_, float32 val) {
+  auto expr = expr_.cast<GlobalVariableExpression>();
+  expr->ambient_value = TypedConstant(val);
+  expr->has_ambient = true;
+}
+
+inline void set_ambient(Expr expr_, int32 val) {
+  auto expr = expr_.cast<GlobalVariableExpression>();
+  expr->ambient_value = TypedConstant(val);
+  expr->has_ambient = true;
+}
+
+inline Expr global_new(Expr id_expr, DataType dt) {
+  TC_ASSERT(id_expr.is<IdExpression>());
+  auto ret = Expr(std::make_shared<GlobalVariableExpression>(
+      dt, id_expr.cast<IdExpression>()->id));
+  return ret;
+}
+
+inline Expr global_new(DataType dt) {
+  auto id_expr = std::make_shared<IdExpression>();
+  return Expr(std::make_shared<GlobalVariableExpression>(dt, id_expr->id));
+}
+
+template <typename T>
+inline Expr Rand() {
+  return Expr(std::make_shared<RandExpression>(get_data_type<T>()));
+}
+
+template <typename T>
+inline T Eval(const T &t) {
+  return t.eval();
+}
+
+inline Expr copy(const Expr &expr) {
+  auto e = expr.eval();
+  auto stmt = Stmt::make<ElementShuffleStmt>(
+      VectorElement(e.cast<EvalExpression>()->stmt_ptr, 0));
+  auto eval_expr = std::make_shared<EvalExpression>(stmt.get());
+  current_ast_builder().insert(std::move(stmt));
+  return Expr(eval_expr);
+}
+
+
 TLANG_NAMESPACE_END
 
 TC_NAMESPACE_BEGIN

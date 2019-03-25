@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../headers/context.h"
+#include "unified_allocator.h"
 #include "util.h"
 #include "snode.h"
 #include "ir.h"
@@ -54,7 +55,6 @@ class Program {
   CompileConfig config;
   Device device;
 
-  std::vector<AlignedAllocator> buffers;
   std::vector<Kernel> functions;
   int index_counter;
 
@@ -67,6 +67,7 @@ class Program {
   }
 
   Program(Arch arch = Arch::x86_64) {
+    UnifiedAllocator::create();
     // Node::reset_counter();
     TC_ASSERT(current_program == nullptr);
     current_program = this;
@@ -85,6 +86,7 @@ class Program {
 
   ~Program() {
     current_program = nullptr;
+    UnifiedAllocator::free();
   }
 
   void layout(std::function<void()> func) {

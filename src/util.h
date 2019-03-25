@@ -52,54 +52,6 @@ struct CompileConfig {
                           bool verbose = false);
 };
 
-class AlignedAllocator {
-  std::vector<uint8> _data;
-  void *data;
-  void *_cuda_data;
-  std::size_t size;
-
- public:
-  Device device;
-
-  AlignedAllocator() {
-    data = nullptr;
-  }
-
-  AlignedAllocator(std::size_t size, Device device = Device::cpu);
-
-  ~AlignedAllocator();
-
-  void memset(unsigned char val) {
-    std::memset(data, val, size);
-  }
-
-  bool initialized() const {
-    return data != nullptr;
-  }
-
-  template <typename T = void>
-  T *get() {
-    TC_ASSERT(initialized());
-    return reinterpret_cast<T *>(data);
-  }
-
-  AlignedAllocator operator=(const AlignedAllocator &) = delete;
-
-  AlignedAllocator(AlignedAllocator &&o) noexcept {
-    (*this) = std::move(o);
-  }
-
-  AlignedAllocator &operator=(AlignedAllocator &&o) noexcept {
-    std::swap(_data, o._data);
-    data = o.data;
-    o.data = nullptr;
-    device = o.device;
-    size = o.size;
-    _cuda_data = o._cuda_data;
-    return *this;
-  }
-};
-
 real get_cpu_frequency();
 
 extern real default_measurement_time;

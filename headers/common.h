@@ -3,6 +3,7 @@
 #define FUNC_DECL
 
 #include "context.h"
+
 #if !defined(TC_GPU)
 #include <immintrin.h>
 #endif
@@ -108,6 +109,10 @@ T union_cast_different_size(G g) {
   u.g = g;
   return u.t;
 }
+
+class UnifiedMemoryPool {
+};
+
 
 #if !defined(TC_HOST) && !defined(TC_GPU)
 
@@ -1025,6 +1030,7 @@ __device__ auto select(const G &flag, const T &a, const T &b) {
 #endif
 #else
 #define TLANG_ACCESSOR
+#undef TC_EXPORT
 #define TC_EXPORT extern "C"
 #define TC_DEVICE
 #endif

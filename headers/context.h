@@ -17,6 +17,12 @@ struct Context {
   }
 };
 
+#if defined(TC_GPU)
+__device__ __host__
+#endif
+    void *
+    allocate(std::size_t size);
+
 }  // namespace Tlang
 
 };  // namespace taichi

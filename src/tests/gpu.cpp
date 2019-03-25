@@ -1,6 +1,7 @@
 #include "../tlang.h"
 #include <taichi/testing.h>
 #include <numeric>
+#include <cuda_runtime.h>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -33,5 +34,15 @@ TC_TEST("compiler_basics_gpu") {
     TC_CHECK(a.val<int32>(i) == (2 - i % 2) * i);
   }
 };
+
+TC_TEST("cuda_malloc_managed") {
+  void *ptr;
+  cudaMallocManaged(&ptr, 1LL << 40);
+
+  int *data = (int *)ptr;
+  for (int i = 0; i < 100000; i++) {
+    TC_CHECK(data[i * 749] == 0);
+  }
+}
 
 TLANG_NAMESPACE_END

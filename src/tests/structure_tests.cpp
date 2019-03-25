@@ -329,6 +329,38 @@ TC_TEST("indirect") {
 }
 #endif
 
+TC_TEST("leaf_context") {
+  Program prog;
+
+  int n = 64;
+  int k = 32;
+  int m = n * k;
+
+  Global(a, i32);
+  Global(sum, i32);
+
+  layout([&] {
+    auto i = Index(0);
+    root.fixed(i, n).fixed(i, k).place(a);
+    root.place(sum);
+  });
+
+  int sum_gt = 0;
+  for (int i = 0; i < m; i++) {
+    if (i / k % 3 == 1) {
+      a.val<int32>(i) = i;
+      sum_gt += i;
+    }
+  }
+
+  kernel([&]() {
+    Declare(i);
+    For(i, a, [&] {sum[Expr(0)] += a[i]; });
+  })();
+
+  TC_CHECK(sum.val<int32>() == sum_gt);
+}
+
 TC_TEST("pointer") {
   Program prog;
 

@@ -181,7 +181,7 @@ struct indirect {
 };
 
 template <typename T>
-struct LeafNodeContext {
+struct LeafContext {
   int indices[max_num_indices];
   T *ptr;
 };

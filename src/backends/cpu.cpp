@@ -35,38 +35,40 @@ class CPUIRCodeGen : public IRVisitor {
     return fmt::format("index_{}_{}_global", snode->node_type_name, i);
   }
 
-  void generate_loop_header(SNode *snode,
-                            StructForStmt *stmt,
-                            bool last_level = false) {
-    if (snode->type == SNodeType::place) {
-      generate_loop_header(snode->parent, stmt, last_level);
-      return;
-    }
+  void generate_loop_header(SNode *snode, StructForStmt *stmt) {
+    TC_ASSERT(snode->type != SNodeType::place)
     if (snode->parent != nullptr) {
-      generate_loop_header(snode->parent, stmt, false);
+      generate_loop_header(snode->parent, stmt);
     } else {
       emit("auto {}_cache = root;", snode->node_type_name);
       return;  // no loop for root
     }
-    if (snode->type == SNodeType::place)
-      return;
-    auto l = loop_variable(snode);
+    generate_single_loop_header(snode);
+  }
+
+  void single_loop_body_head(SNode *snode) {
     if (snode->parent->parent == nullptr)
       emit("auto {} = 0;", loop_variable(snode->parent));
     auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
     emit("auto {}_cache = access_{}({}, {});", snode->node_type_name,
          snode->node_type_name, parent, loop_variable(snode->parent));
-    emit("int {};", l);
+  }
 
+  void generate_single_loop_header(SNode *snode, bool leaf = false) {
+    if (!leaf)
+      single_loop_body_head(snode);
+
+    auto l = loop_variable(snode);
+    emit("int {};", l);
     if (snode->type == SNodeType::pointer) {
       emit("if (!{}_cache->data) continue;", snode->node_type_name, l);
     }
-
     if (snode->type != SNodeType::hashed) {
       emit("auto {}_cache_n = {}_cache->get_n();", snode->node_type_name,
            snode->node_type_name);
     }
     if (snode->_multi_threaded) {
+      TC_NOT_IMPLEMENTED
       auto p = snode->parent;
       while (p) {
         TC_ASSERT(!p->_multi_threaded);
@@ -74,20 +76,13 @@ class CPUIRCodeGen : public IRVisitor {
       }
       emit("#pragma omp parallel for");
     }
-    // TODO: replace with vectorize width
-    int parallel_instances = 1;
-    auto has_residual = false;
-    if (last_level && snode->type != SNodeType::hashed) {
-      emit("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
-           snode->node_type_name, l, parallel_instances);
+
+    if (snode->type == SNodeType::hashed) {
+      emit("for (auto &{}_it : {}_cache->data) {{", l, snode->node_type_name);
+      emit("int {} = {}_it.first;", l, l);
     } else {
-      if (snode->type == SNodeType::hashed) {
-        emit("for (auto &{}_it : {}_cache->data) {{", l, snode->node_type_name);
-        emit("int {} = {}_it.first;", l, l);
-      } else {
-        emit("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
-             snode->node_type_name, l, 1);
-      }
+      emit("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
+           snode->node_type_name, l, 1);
     }
 
     // update indices....
@@ -107,21 +102,12 @@ class CPUIRCodeGen : public IRVisitor {
       emit("int {} = {} {};", index_name_global(snode, i), ancester,
            index_name_local(snode, i));
     }
-    if (last_level) {
-      for (int i = 0; i < (int)stmt->loop_vars.size(); i++) {
-        emit("{} = {};", stmt->loop_vars[i]->raw_name(),
-             index_name_global(snode, i));  // set loop vector
-      }
-    }
   }
 
-  void generate_loop_tail(SNode *snode,
-                          StructForStmt *stmt,
-                          bool last_level = false) {
+  void generate_loop_tail(SNode *snode, StructForStmt *stmt) {
     if (snode->parent != nullptr) {
-      if (snode->type != SNodeType::place)
-        emit("}}\n");
-      generate_loop_tail(snode->parent, stmt, last_level);
+      emit("}}\n");
+      generate_loop_tail(snode->parent, stmt);
     } else {
       return;  // no loop for root, which is a fork
     }
@@ -166,12 +152,10 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) {
-    // emit("if ({}) {{", if_stmt->cond->raw_name());
     emit("{{");
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
-      // emit("}} else {{");
       emit("}}  {{");
       if_stmt->false_statements->accept(this);
     }
@@ -202,13 +186,36 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(StructForStmt *for_stmt) {
-    generate_loop_header(for_stmt->snode, for_stmt, true);
     TC_ASSERT_INFO(current_struct_for == nullptr,
                    "Structu for cannot be nested.");
     current_struct_for = for_stmt;
+    auto leaf = for_stmt->snode->parent;
+    emit("std::vector<LeafContext<{}>> leaves;", leaf->node_type_name);
+    generate_loop_header(leaf->parent, for_stmt);
+    emit("LeafContext<{}> leaf_context;", leaf->node_type_name);
+    single_loop_body_head(leaf);
+    emit("leaf_context.ptr = {}_cache;", leaf->node_type_name);
+    for (int i = 0; i < max_num_indices; i++)
+      emit("leaf_context.indices[{}] = {};", i,
+           index_name_global(leaf->parent, i));
+    emit("leaves.push_back(leaf_context);");
+    generate_loop_tail(leaf->parent, for_stmt);
+    emit("int num_leaves = leaves.size();");
+    emit("for (int leaf_loop = 0; leaf_loop < num_leaves; leaf_loop++) {{");
+    emit("auto {}_cache = leaves[leaf_loop].ptr;", leaf->node_type_name);
+    for (int i = 0; i < max_num_indices; i++) {
+      emit("auto {} = leaves[leaf_loop].indices[{}];",
+           index_name_global(leaf->parent, i), i);
+    }
+    generate_single_loop_header(leaf, true);
+    for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
+      emit("{} = {};", for_stmt->loop_vars[i]->raw_name(),
+           index_name_global(leaf, i));
+    }
     for_stmt->body->accept(this);
+    emit("}}");
+    emit("}}");
     current_struct_for = nullptr;
-    generate_loop_tail(for_stmt->snode, for_stmt, true);
   }
 
   void visit(RangeForStmt *for_stmt) {
@@ -235,6 +242,7 @@ class CPUIRCodeGen : public IRVisitor {
            for_stmt->vectorize);
     }
     for_stmt->body->accept(this);
+    emit("}}");
     emit("}}");
   }
 

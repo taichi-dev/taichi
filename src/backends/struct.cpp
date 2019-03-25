@@ -92,7 +92,6 @@ void StructCompiler::visit(SNode &snode) {
 
   // create children type that supports forking...
   emit("struct {}_ch {{", snode.node_type_name);
-  emit("static constexpr int n=1;");
   for (int i = 0; i < (int)snode.ch.size(); i++) {
     emit("{} member{};", snode.ch[i]->node_type_name, i);
   }

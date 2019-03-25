@@ -5,6 +5,13 @@
 #include <cuda_runtime.h>
 #endif
 
+TLANG_NAMESPACE_BEGIN
+
+UnifiedAllocator *&allocator() {
+  static UnifiedAllocator *instance = nullptr;
+  return instance;
+}
+
 taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu) : size(size), gpu(gpu) {
   if (!gpu) {
     _data.resize(size + 4096);
@@ -39,17 +46,19 @@ taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {
 }
 
 void taichi::Tlang::UnifiedAllocator::create() {
-  TC_ASSERT(allocator == nullptr);
+  TC_ASSERT(allocator() == nullptr);
   void *dst;
   cudaMallocManaged(&dst, sizeof(UnifiedAllocator));
-  allocator = new (dst) UnifiedAllocator(1LL << 40, true);
+  allocator() = new (dst) UnifiedAllocator(1LL << 40, true);
 }
 
 void taichi::Tlang::UnifiedAllocator::free() {
-  cudaFree(allocator);
-  allocator = nullptr;
+  cudaFree(allocator());
+  allocator() = nullptr;
 }
 
 void taichi::Tlang::UnifiedAllocator::memset(unsigned char val) {
   std::memset(data, val, size);
 }
+
+TLANG_NAMESPACE_END

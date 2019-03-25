@@ -208,7 +208,7 @@ std::string CompileConfig::compile_cmd(const std::string &input,
   if (arch == Arch::x86_64) {
     cmd = fmt::format(
         "{} {} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/headers "
-        "-ffp-contract=fast "
+        "-ffp-contract=fast -L/home/yuanming/repos/taichi/build/ -ltaichi_lang "
         "-fopenmp -Wall -g -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} "
         "-lstdc++ "
         "{}",

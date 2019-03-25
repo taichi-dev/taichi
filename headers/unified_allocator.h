@@ -1,3 +1,4 @@
+#pragma once
 #include <mutex>
 #include <vector>
 
@@ -6,7 +7,7 @@ namespace Tlang {
 
 class UnifiedAllocator;
 
-extern UnifiedAllocator *allocator;
+UnifiedAllocator *&allocator();
 
 class UnifiedAllocator {
   std::vector<char> _data;
@@ -41,6 +42,7 @@ class UnifiedAllocator {
 #else
   std::mutex lock;
   void *alloc(int size) {
+    printf("this %p\n", this);
     std::lock_guard<std::mutex> _(lock);
     auto ret = head;
     head = (char *)head + size;

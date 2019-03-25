@@ -246,13 +246,18 @@ void StructCompiler::run(SNode &node) {
   visit(node);
   root_type = node.node_type_name;
   generate_leaf_accessors(node);
-  emit("TC_EXPORT void *create_data_structure() {{auto p= new {}; ", root_type);
+  emit(
+      "TC_EXPORT void *create_data_structure() {{auto addr = "
+      "taichi::Tlang::allocator()->alloc(sizeof({})); auto p= new(addr) {}; ",
+      root_type, root_type);
+  /*
   for (int i = 0; i < (int)node.ch.size(); i++) {
     if (node.ch[i]->type != SNodeType::hashed) {
       emit("std::memset(p->children.get{}(), 0, sizeof({}));", i,
            node.ch[i]->node_type_name);
     }
   }
+  */
   emit("return p;}}");
   emit(
       "TC_EXPORT void release_data_structure(void *ds) {{delete ({} "

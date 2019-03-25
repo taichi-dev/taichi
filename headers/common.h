@@ -3,6 +3,7 @@
 #define FUNC_DECL
 
 #include "context.h"
+#include "unified_allocator.h"
 
 #if !defined(TC_GPU)
 #include <immintrin.h>

@@ -35,9 +35,6 @@ class CPUIRCodeGen : public IRVisitor {
     return fmt::format("index_{}_{}_global", snode->node_type_name, i);
   }
 
-#define CODE_REGION_VAR(x)
-#define CODE_REGION(x)
-
   void generate_loop_header(SNode *snode,
                             StructForStmt *stmt,
                             bool last_level = false) {
@@ -54,14 +51,6 @@ class CPUIRCodeGen : public IRVisitor {
     if (snode->type == SNodeType::place)
       return;
     auto l = loop_variable(snode);
-    /*
-    CodeRegion r;
-    if (last_level)
-      r = CodeRegion::interior_loop_begin;
-    else
-      r = CodeRegion::exterior_loop_begin;
-    */
-    CODE_REGION_VAR(r);
     if (snode->parent->parent == nullptr)
       emit("auto {} = 0;", loop_variable(snode->parent));
     auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
@@ -89,19 +78,8 @@ class CPUIRCodeGen : public IRVisitor {
     int parallel_instances = 1;
     auto has_residual = false;
     if (last_level && snode->type != SNodeType::hashed) {
-      if (!has_residual) {
-        emit("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
-             snode->node_type_name, l, parallel_instances);
-      } else {
-        int residual =
-            parallel_instances > 1  // when only one instance, no residual loop.
-                ? 0
-                : parallel_instances;
-        emit("for ({} = 0; {} + {} < {}_cache_n; {} += {}) {{", l, l, residual,
-             snode->node_type_name, l, parallel_instances
-
-        );
-      }
+      emit("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
+           snode->node_type_name, l, parallel_instances);
     } else {
       if (snode->type == SNodeType::hashed) {
         emit("for (auto &{}_it : {}_cache->data) {{", l, snode->node_type_name);
@@ -112,10 +90,6 @@ class CPUIRCodeGen : public IRVisitor {
       }
     }
 
-    if (has_residual && last_level) {
-      CODE_REGION(residual_begin);  // TODO: DRY..
-      emit("if ({} < {}_cache_n) {{", l, snode->node_type_name);
-    }
     // update indices....
     for (int i = 0; i < max_num_indices; i++) {
       std::string ancester = "0 |";
@@ -132,13 +106,6 @@ class CPUIRCodeGen : public IRVisitor {
       emit("int {} = {};", index_name_local(snode, i), addition);
       emit("int {} = {} {};", index_name_global(snode, i), ancester,
            index_name_local(snode, i));
-
-      if (has_residual && last_level) {
-        CODE_REGION(residual_begin);  // TODO: DRY..
-        emit("int {} = {};", index_name_local(snode, i), addition);
-        emit("int {} = {} {};", index_name_global(snode, i), ancester,
-             index_name_local(snode, i));
-      }
     }
     if (last_level) {
       for (int i = 0; i < (int)stmt->loop_vars.size(); i++) {
@@ -146,28 +113,12 @@ class CPUIRCodeGen : public IRVisitor {
              index_name_global(snode, i));  // set loop vector
       }
     }
-    if (has_residual && last_level) {
-      CODE_REGION(residual_end);
-      emit("}}");
-    }
   }
 
   void generate_loop_tail(SNode *snode,
                           StructForStmt *stmt,
                           bool last_level = false) {
-    /*
-    CodeRegion r;
-    r = CodeRegion::exterior_loop_end;
-    auto l = loop_variable(snode);
-    if (last_level && snode->type != SNodeType::forked) {
-      // emit_code("{} += {}; b += {};", l, num_groups * unroll, unroll);
-      r = CodeRegion::interior_loop_end;
-    }
-    */
-    CODE_REGION_VAR(r);
     if (snode->parent != nullptr) {
-      CODE_REGION_VAR(last_level ? CodeRegion::interior_loop_end
-                                 : CodeRegion::exterior_loop_end);
       if (snode->type != SNodeType::place)
         emit("}}\n");
       generate_loop_tail(snode->parent, stmt, last_level);

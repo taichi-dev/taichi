@@ -58,18 +58,14 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
   }
 
   layout([&] {
-    auto i = Index(0), j = Index(1), k = Index(2);
+    auto ijk = Indices(0, 1, 2);
 
-    int int1_size = tree_config[0];
-    int int2_size = tree_config[1];
-    int leaf_size = tree_config[2];
-
-    root.hashed({i, j, k}, 1024)
-        .fixed({i, j, k}, int1_size)
+    root.hashed(ijk, 1024)
+        .fixed(ijk, tree_config[0])
         .pointer()
-        .fixed({i, j, k}, int2_size)
+        .fixed(ijk, tree_config[1])
         .pointer()
-        .fixed({i, j, k}, leaf_size)
+        .fixed(ijk, tree_config[2])
         .place(x, y);
 
     root.place(sum);
@@ -120,7 +116,6 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     }
     num_leaves += 1;
   }
-
 
   for (auto iter = grid->tree().beginLeaf(); iter; ++iter) {
     auto &leaf = *iter;
@@ -267,6 +262,15 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     }
     num_leaves += 1;
   }
+
+  for (int i = 0; i < 5; i++) {
+    TC_TIME(mean());
+  }
+
+  limited.execute([&] {
+    for (int i = 0; i < 5; i++)
+      TC_TIME(filter.mean(1));
+  });
 };
 
 TC_REGISTER_TASK(benchmark_vdb);

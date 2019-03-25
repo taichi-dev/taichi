@@ -131,10 +131,18 @@ inline Expr copy(const Expr &expr) {
   return Expr(eval_expr);
 }
 
+template <typename... indices>
+std::vector<Index> Indices(indices... ind) {
+  auto ind_vec = std::vector<int>({ind...});
+  std::vector<Index> ret;
+  for (auto in : ind_vec) {
+    ret.push_back(Index(in));
+  }
+  return ret;
+}
 
 TLANG_NAMESPACE_END
 
 TC_NAMESPACE_BEGIN
 void write_partio(std::vector<Vector3> positions, const std::string &file_name);
 TC_NAMESPACE_END
-

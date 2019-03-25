@@ -649,6 +649,11 @@ class ExpressionGroup {
     exprs.push_back(b);
   }
 
+  ExpressionGroup(const Expr &a, ExpressionGroup b) {
+    exprs = b.exprs;
+    exprs.insert(exprs.begin(), a);
+  }
+
   std::size_t size() const {
     return exprs.size();
   }

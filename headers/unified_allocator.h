@@ -27,22 +27,23 @@ class UnifiedAllocator {
   UnifiedAllocator(std::size_t size, bool gpu);
 
 #if defined(TC_GPU)
-  __device__ __host__ void *alloc(int size) {
+  __device__ void *alloc(int size) {
     void *ret;
     while (true) {
       auto old_head = head;
-      auto new_head =
-          (char *)atomicCAS(&(unsigned long)head, old_head, old_head + size);
+      auto new_head = (char *)atomicCAS(
+          reinterpret_cast<unsigned long long *>(&head), (unsigned long long)old_head,
+          (unsigned long long)(old_head) + size);
       if (new_head == (char *)old_head + size) {
         ret = old_head;
         break;
       }
     }
+    return ret;
   }
 #else
   std::mutex lock;
   void *alloc(int size) {
-    printf("this %p\n", this);
     std::lock_guard<std::mutex> _(lock);
     auto ret = head;
     head = (char *)head + size;

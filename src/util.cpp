@@ -208,20 +208,21 @@ std::string CompileConfig::compile_cmd(const std::string &input,
   if (arch == Arch::x86_64) {
     cmd = fmt::format(
         "{} {} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/headers "
-        "-ffp-contract=fast -L/home/yuanming/repos/taichi/build/ -ltaichi_lang "
+        "-ffp-contract=fast "
         "-fopenmp -Wall -g -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} "
-        "-lstdc++ "
+        "-lstdc++  -L{}/build/ -ltaichi_lang"
         "{}",
         compiler_name(), input, gcc_opt_flag(), get_project_fn(), output,
-        extra_flags);
+        get_repo_dir(), extra_flags);
   } else {
     cmd = fmt::format(
         "nvcc {} -std=c++14 -shared {} -Xcompiler \"-fPIC\" --use_fast_math "
         "--ptxas-options=-allow-expensive-optimizations=true,-O3 -I {}/headers "
         "-ccbin {} "
-        "-D_GLIBCXX_USE_CXX11_ABI=0 -lstdc++ -DTLANG_GPU -o {} {}",
-        input, gcc_opt_flag(), get_project_fn(), "g++-6", output,
-        extra_flags);
+        "-D_GLIBCXX_USE_CXX11_ABI=0 -lstdc++ -L{}/build/ -ltaichi_lang "
+        "-DTLANG_GPU -o {} {}",
+        input, gcc_opt_flag(), get_project_fn(), "g++-6", get_repo_dir(),
+        output, extra_flags);
   }
 
   if (!verbose) {
@@ -243,7 +244,7 @@ CompileConfig::CompileConfig() {
   gcc_version = -1;
 #else
   gcc_version = -2;  // not 7 for faster compilation
-  // Use clang for faster speed
+                     // Use clang for faster speed
 #endif
   serial_schedule = false;
 }

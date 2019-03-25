@@ -246,6 +246,7 @@ void StructCompiler::run(SNode &node) {
   visit(node);
   root_type = node.node_type_name;
   generate_leaf_accessors(node);
+  emit("#if !defined(TC_GPU)");
   emit(
       "TC_EXPORT void *create_data_structure() {{auto addr = "
       "taichi::Tlang::allocator()->alloc(sizeof({})); auto p= new(addr) {}; ",
@@ -263,6 +264,7 @@ void StructCompiler::run(SNode &node) {
       "TC_EXPORT void release_data_structure(void *ds) {{delete ({} "
       "*)ds;}}",
       root_type);
+  emit("#endif");
   write_source();
 
   auto cmd = get_current_program().config.compile_cmd(get_source_path(),

@@ -48,19 +48,18 @@ class GPUIRCodeGen : public IRVisitor {
       if (for_stmt->is<RangeForStmt>()) {
         auto range_for = for_stmt->as<RangeForStmt>();
 
-        emit("auto {} = blockIdx.x * blockDim.x + threadIdx.x;\n",
-             range_for->loop_var->raw_name());
-        // emit("int l = threadIdx.x & 0x1f;\n");
-        // emit("int loop_index = 0;");
+        int begin = range_for->begin->as<ConstStmt>()->val[0].val_int32();
+        int end = range_for->end->as<ConstStmt>()->val[0].val_int32();
+
+        emit("auto {} = blockIdx.x * blockDim.x + threadIdx.x + {};\n",
+             range_for->loop_var->raw_name(), begin);
+        emit("if ({} >= {}) return;", range_for->loop_var->raw_name(), end);
 
         range_for->body->accept(this);
 
         // CPU Kernel code
         emit("}}\n\n");
         emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
-
-        int begin = range_for->begin->as<ConstStmt>()->val[0].val_int32();
-        int end = range_for->end->as<ConstStmt>()->val[0].val_int32();
 
         TC_ASSERT(begin == 0);
 
@@ -121,8 +120,15 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(PrintStmt *print_stmt) {
-    emit("std::cout << \"[debug] \" \"{}\" \" = \" << {} << std::endl;",
-         print_stmt->str, print_stmt->stmt->raw_name());
+    if (print_stmt->stmt->ret_type.data_type == DataType::i32) {
+      emit("printf(\"{}\" \" = %d\\n\", {});", print_stmt->str,
+           print_stmt->stmt->raw_name());
+    } else if (print_stmt->stmt->ret_type.data_type == DataType::f32) {
+      emit("printf(\"{}\" \" = %f\\n\", {});", print_stmt->str,
+           print_stmt->stmt->raw_name());
+    } else {
+      TC_NOT_IMPLEMENTED
+    }
   }
 
   void visit(ConstStmt *const_stmt) {

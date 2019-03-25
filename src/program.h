@@ -68,7 +68,6 @@ class Program {
 
   Program(Arch arch = Arch::x86_64) {
     UnifiedAllocator::create();
-    // Node::reset_counter();
     TC_ASSERT(current_program == nullptr);
     current_program = this;
     config.arch = arch;

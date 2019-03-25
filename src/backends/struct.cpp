@@ -1,4 +1,5 @@
-#include "../tlang.h"
+#include "../ir.h"
+#include "../program.h"
 #include "struct.h"
 
 TLANG_NAMESPACE_BEGIN

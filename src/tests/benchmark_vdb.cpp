@@ -40,6 +40,41 @@ TC_TEST("hashed_3d") {
   TC_ASSERT(sum.val<int>() == 51);
 };
 
+TC_TEST("hashed_3d_negative") {
+  CoreState::set_trigger_gdb_when_crash(true);
+
+  Program prog;
+
+  Global(x, i32);
+  Global(sum, i32);
+
+  int n = 256;
+
+  layout([&] {
+    auto i = Index(0), j = Index(1), k = Index(2);
+    root.hashed({i, j, k}, n).place(x);
+    root.place(sum);
+  });
+
+  x.val<int>(-2, 5, 9) = 10;
+  x.val<int>(12, 5, -9) = 30;
+  x.val<int>(2, -115, 9) = 11;
+
+  auto reduce = kernel([&] {
+    Declare(i);
+    Declare(j);
+    Declare(k);
+    For((i, j, k), x, [&]() { sum[Expr(0)] += x[i, j, k]; });
+  });
+
+  reduce();
+
+  TC_ASSERT(sum.val<int>() == 51);
+  TC_CHECK(x.val<int>(-2, 5, 9) == 10);
+  TC_CHECK(x.val<int>(12, 5, -9) == 30);
+  TC_CHECK(x.val<int>(2, -115, 9) == 11);
+};
+
 auto benchmark_vdb = [](std::vector<std::string> param) {
   TC_ASSERT(param.size() == 1);
   auto fn = param[0];
@@ -93,12 +128,14 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
   openvdb::tools::changeBackground(grid->tree(), 0.0f);
 
   auto dsl_value = [&](Expr var, openvdb::Coord coord) -> float32 & {
-    int offset = 1024;
+    int offset = 0;
     int i = coord.x() + offset, j = coord.y() + offset, k = coord.z() + offset;
 
+    /*
     TC_ASSERT(i >= 0);
     TC_ASSERT(j >= 0);
     TC_ASSERT(k >= 0);
+    */
 
     return var.val<float32>(i, j, k);
   };

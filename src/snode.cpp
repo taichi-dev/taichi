@@ -1,5 +1,6 @@
+#include "ir.h"
 #include "snode.h"
-#include "math.h"
+// #include "math.h"
 
 TLANG_NAMESPACE_BEGIN
 

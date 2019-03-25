@@ -6,7 +6,6 @@ TLANG_NAMESPACE_BEGIN
 
 class GPUCodeGen : public KernelCodeGen {
  public:
-
  public:
   GPUCodeGen() : KernelCodeGen() {
     suffix = "cu";

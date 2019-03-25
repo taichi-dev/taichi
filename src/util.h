@@ -1,14 +1,8 @@
 #pragma once
 #include <taichi/common/util.h>
 #include <taichi/io/io.h>
-#include <immintrin.h>
+#include "../include/common.h"
 
-#define TLANG_NAMESPACE_BEGIN \
-  namespace taichi {          \
-  namespace Tlang {
-#define TLANG_NAMESPACE_END \
-  }                         \
-  }
 
 TLANG_NAMESPACE_BEGIN
 
@@ -23,10 +17,7 @@ enum class Arch { x86_64, gpu };
 
 int default_simd_width(Arch arch);
 
-enum class Device {
-  cpu,
-  gpu
-};
+enum class Device { cpu, gpu };
 
 struct CompileConfig {
   Arch arch;
@@ -81,7 +72,7 @@ enum class DataType : int {
   unknown
 };
 
-template<typename T>
+template <typename T>
 inline DataType get_data_type() {
   if (std::is_same<T, float32>()) {
     return DataType::f32;
@@ -92,7 +83,6 @@ inline DataType get_data_type() {
   }
   return DataType::unknown;
 }
-
 
 std::string data_type_name(DataType t);
 
@@ -158,8 +148,6 @@ inline bool is_comparison(BinaryType type) {
 std::string binary_type_symbol(BinaryType type);
 
 enum class CmpType { eq, ne, le, lt };
-
-constexpr int max_num_indices = 4;
 
 class IRModifiedException {};
 

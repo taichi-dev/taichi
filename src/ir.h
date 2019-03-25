@@ -994,8 +994,7 @@ class Block : public IRNode {
     }
   }
 
-  void replace_with(Stmt *old_statement,
-                    std::unique_ptr<Stmt> &&new_statement);
+  void replace_with(Stmt *old_statement, std::unique_ptr<Stmt> &&new_statement);
 
   void replace_with(Stmt *old_statement, VecStatement &new_statements) {
     int location = -1;
@@ -1292,10 +1291,10 @@ class StructForStmt : public Stmt {
   int parallelize;
 
   StructForStmt(std::vector<Stmt *> loop_vars,
-                    SNode *snode,
-                    std::unique_ptr<Block> &&body,
-                    int vectorize,
-                    int parallelize)
+                SNode *snode,
+                std::unique_ptr<Block> &&body,
+                int vectorize,
+                int parallelize)
       : loop_vars(loop_vars),
         snode(snode),
         body(std::move(body)),
@@ -1429,7 +1428,6 @@ class ConstExpression : public Expression {
     stmt = ret.back().get();
   }
 };
-
 
 template <typename T, typename... Indices>
 T &Expr::val(Indices... indices) {

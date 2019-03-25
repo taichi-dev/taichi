@@ -131,12 +131,6 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     int offset = 0;
     int i = coord.x() + offset, j = coord.y() + offset, k = coord.z() + offset;
 
-    /*
-    TC_ASSERT(i >= 0);
-    TC_ASSERT(j >= 0);
-    TC_ASSERT(k >= 0);
-    */
-
     return var.val<float32>(i, j, k);
   };
 
@@ -152,31 +146,6 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
       dsl_value(x, coord) = leaf.getValue(t);
     }
     num_leaves += 1;
-  }
-
-  for (auto iter = grid->tree().beginLeaf(); iter; ++iter) {
-    auto &leaf = *iter;
-    float sum = 0;
-    for (int i = 0; i < 1; i++) {
-      for (int j = -1; j < 2; j++) {
-        for (int k = 0; k < 1; k++) {
-          auto coord = leaf.offsetToGlobalCoord(0);
-          coord.x() = -288;
-          coord.y() = -8;
-          coord.z() = -23;
-
-          coord.x() += i;
-          coord.y() += j;
-          coord.z() += k;
-
-          auto tmp = grid->tree().getValue(coord);
-          TC_P(tmp);
-          sum += tmp;
-        }
-      }
-    }
-    TC_P(sum / 3);
-    break;
   }
 
   TC_P(grid->tree().getValue(openvdb::Coord(-288, -9, -23)));

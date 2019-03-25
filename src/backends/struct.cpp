@@ -9,7 +9,7 @@ StructCompiler::StructCompiler() : CodeGenBase() {
   creator = nullptr;
   suffix = "cpp";
   emit("#define TLANG_HOST");
-  emit("#include <common.h>");
+  emit("#include <kernel.h>");
   emit("using namespace taichi;");
   emit("using namespace Tlang;");
   emit("\n");

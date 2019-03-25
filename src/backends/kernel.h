@@ -16,7 +16,7 @@ class KernelCodeGen : public CodeGenBase {
 
   virtual void generate_header() {
     emit("#define TLANG_KERNEL\n");
-    emit("#include <common.h>\n");
+    emit("#include <kernel.h>\n");
     emit("#include \"{}\"", prog->layout_fn);
     emit("using namespace taichi; using namespace Tlang;");
   }

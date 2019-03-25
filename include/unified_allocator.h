@@ -1,9 +1,9 @@
 #pragma once
+#include "common.h"
 #include <mutex>
 #include <vector>
 
-namespace taichi {
-namespace Tlang {
+TLANG_NAMESPACE_BEGIN
 
 class UnifiedAllocator;
 
@@ -32,8 +32,8 @@ class UnifiedAllocator {
     while (true) {
       auto old_head = head;
       auto new_head = (char *)atomicCAS(
-          reinterpret_cast<unsigned long long *>(&head), (unsigned long long)old_head,
-          (unsigned long long)(old_head) + size);
+          reinterpret_cast<unsigned long long *>(&head),
+          (unsigned long long)old_head, (unsigned long long)(old_head) + size);
       if (new_head == (char *)old_head + size) {
         ret = old_head;
         break;
@@ -82,5 +82,4 @@ class UnifiedAllocator {
   static void free();
 };
 
-}  // namespace Tlang
-}  // namespace taichi
+TLANG_NAMESPACE_END

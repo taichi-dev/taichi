@@ -207,7 +207,7 @@ std::string CompileConfig::compile_cmd(const std::string &input,
   std::string cmd;
   if (arch == Arch::x86_64) {
     cmd = fmt::format(
-        "{} {} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/headers "
+        "{} {} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/include "
         "-ffp-contract=fast "
         "-fopenmp -Wall -g -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} "
         "-lstdc++  -L{}/build/ -ltaichi_lang"
@@ -217,7 +217,7 @@ std::string CompileConfig::compile_cmd(const std::string &input,
   } else {
     cmd = fmt::format(
         "nvcc {} -std=c++14 -shared {} -Xcompiler \"-fPIC\" --use_fast_math "
-        "--ptxas-options=-allow-expensive-optimizations=true,-O3 -I {}/headers "
+        "--ptxas-options=-allow-expensive-optimizations=true,-O3 -I {}/include "
         "-ccbin {} "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -lstdc++ -L{}/build/ -ltaichi_lang "
         "-DTLANG_GPU -o {} {}",

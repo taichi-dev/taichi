@@ -19,7 +19,6 @@ const int q = 2;
 // Grid resolution (cells)
 const int n = 80 * q;
 
-
 const real dt = 5e-5_f / q;
 const real frame_dt = 1e-3_f;
 const real dx = 1.0_f / n;
@@ -236,7 +235,8 @@ int main() {
                   Vector2(0.05, 0.9), 20, Vector4(1));
       // Particles
       for (auto p : particles) {
-        canvas.circle(p.x).radius(1.5).color(p.c);//1.0f - p.fluid, 0.2f, 0.7 * p.fluid);
+        canvas.circle(p.x).radius(1.5).color(
+            p.c);  // 1.0f - p.fluid, 0.2f, 0.7 * p.fluid);
       }
       // Update image
       gui.update();

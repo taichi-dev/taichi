@@ -29,7 +29,8 @@ SNode &SNode::place(Expr &expr_) {
   return *this;
 }
 
-SNode &SNode::create_node(std::vector<Index> indices, std::vector<int> sizes,
+SNode &SNode::create_node(std::vector<Index> indices,
+                          std::vector<int> sizes,
                           SNodeType type) {
   TC_ASSERT(indices.size() == sizes.size() || sizes.size() == 1);
   if (sizes.size() == 1) {
@@ -45,9 +46,9 @@ SNode &SNode::create_node(std::vector<Index> indices, std::vector<int> sizes,
     return *this;  // do nothing
 
   if (type == SNodeType::hashed)
-      TC_ASSERT_INFO(depth == 0,
-                     "hashed node must be child of root due to initialization "
-                     "memset limitation.");
+    TC_ASSERT_INFO(depth == 0,
+                   "hashed node must be child of root due to initialization "
+                   "memset limitation.");
   auto &new_node = insert_children(type);
   new_node.n = 1;
   for (auto s : sizes) {

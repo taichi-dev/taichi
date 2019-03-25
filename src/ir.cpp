@@ -269,8 +269,10 @@ void taichi::Tlang::Block::insert(std::unique_ptr<taichi::Tlang::Stmt> &&stmt,
   }
 }
 
-void taichi::Tlang::Block::replace_statements_in_range(int start, int end,
-                                                       taichi::Tlang::VecStatement &&stmts) {
+void taichi::Tlang::Block::replace_statements_in_range(
+    int start,
+    int end,
+    taichi::Tlang::VecStatement &&stmts) {
   TC_ASSERT(start <= end);
   for (int i = 0; i < end - start; i++) {
     erase(start);
@@ -281,15 +283,16 @@ void taichi::Tlang::Block::replace_statements_in_range(int start, int end,
   }
 }
 
-void taichi::Tlang::Block::replace_with(taichi::Tlang::Stmt *old_statement,
-                                        std::unique_ptr<taichi::Tlang::Stmt> &&new_statement) {
+void taichi::Tlang::Block::replace_with(
+    taichi::Tlang::Stmt *old_statement,
+    std::unique_ptr<taichi::Tlang::Stmt> &&new_statement) {
   VecStatement vec;
   vec.push_back(std::move(new_statement));
   replace_with(old_statement, vec);
 }
 
-taichi::Tlang::Stmt *
-taichi::Tlang::Block::lookup_var(taichi::Tlang::Ident ident) const {
+taichi::Tlang::Stmt *taichi::Tlang::Block::lookup_var(
+    taichi::Tlang::Ident ident) const {
   auto ptr = local_var_alloca.find(ident);
   if (ptr != local_var_alloca.end()) {
     return ptr->second;

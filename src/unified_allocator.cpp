@@ -1,4 +1,4 @@
-#include "../headers/unified_allocator.h"
+#include "../include/unified_allocator.h"
 #include "util.h"
 #include <string>
 #if defined(CUDA_FOUND)
@@ -12,7 +12,8 @@ UnifiedAllocator *&allocator() {
   return instance;
 }
 
-taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu) : size(size), gpu(gpu) {
+taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
+    : size(size), gpu(gpu) {
   if (!gpu) {
     _data.resize(size + 4096);
     data = _data.data();
@@ -22,7 +23,7 @@ taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu) : 
     data = _cuda_data;
 #else
     static_assert(false, "implement mmap on CPU for memset..");
-      TC_ERROR("No CUDA support");
+    TC_ERROR("No CUDA support");
 #endif
   }
   auto p = reinterpret_cast<uint64>(data);

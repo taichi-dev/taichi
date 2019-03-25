@@ -1,8 +1,8 @@
 auto advection = []() {
   const int n = 1024, nattr = 4;
 
-  // attr[0] are input attributes to advect, which after advection are stored in attr[1]
-  // v is velocity
+  // attr[0] are input attributes to advect, which after advection are stored in
+  // attr[1] v is velocity
   Float attr[2][nattr], v[2];
 
   Program prog(Arch::x86_64, n * n);

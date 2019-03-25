@@ -423,8 +423,8 @@ TC_TEST("box_filter") {
 
   red();
 
-  //auto reduced = sum.val<int32>();
-  //TC_CHECK(reduced == sum_gt);
+  // auto reduced = sum.val<int32>();
+  // TC_CHECK(reduced == sum_gt);
 }
 
 TLANG_NAMESPACE_END

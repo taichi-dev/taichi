@@ -39,19 +39,18 @@ class CPUIRCodeGen : public IRVisitor {
     TC_ASSERT(snode->type != SNodeType::place)
     if (snode->parent != nullptr) {
       generate_loop_header(snode->parent, stmt);
-    } else {
-      emit("auto {}_cache = root;", snode->node_type_name);
-      return;  // no loop for root
     }
     generate_single_loop_header(snode);
   }
 
   void single_loop_body_head(SNode *snode) {
-    if (snode->parent->parent == nullptr)
-      emit("auto {} = 0;", loop_variable(snode->parent));
-    auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
-    emit("auto {}_cache = access_{}({}, {});", snode->node_type_name,
-         snode->node_type_name, parent, loop_variable(snode->parent));
+    if (snode->parent == nullptr) {
+      emit("auto {}_cache = root;", snode->node_type_name);
+    } else {
+      auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
+      emit("auto {}_cache = access_{}({}, {});", snode->node_type_name,
+           snode->node_type_name, parent, loop_variable(snode->parent));
+    }
   }
 
   void generate_single_loop_header(SNode *snode, bool leaf = false) {
@@ -59,11 +58,11 @@ class CPUIRCodeGen : public IRVisitor {
       single_loop_body_head(snode);
 
     auto l = loop_variable(snode);
-    emit("int {};", l);
     if (snode->type == SNodeType::pointer) {
       emit("if (!{}_cache->data) continue;", snode->node_type_name, l);
     }
     if (snode->type != SNodeType::hashed) {
+      emit("int {};", l);
       emit("auto {}_cache_n = {}_cache->get_n();", snode->node_type_name,
            snode->node_type_name);
     }
@@ -88,7 +87,7 @@ class CPUIRCodeGen : public IRVisitor {
     // update indices....
     for (int i = 0; i < max_num_indices; i++) {
       std::string ancester = "0 |";
-      if (snode->parent->parent != nullptr) {
+      if (snode->parent != nullptr) {
         ancester = index_name_global(snode->parent, i) + " |";
       }
       std::string addition = "0";
@@ -105,8 +104,8 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void generate_loop_tail(SNode *snode, StructForStmt *stmt) {
+    emit("}}\n");
     if (snode->parent != nullptr) {
-      emit("}}\n");
       generate_loop_tail(snode->parent, stmt);
     } else {
       return;  // no loop for root, which is a fork
@@ -242,7 +241,6 @@ class CPUIRCodeGen : public IRVisitor {
            for_stmt->vectorize);
     }
     for_stmt->body->accept(this);
-    emit("}}");
     emit("}}");
   }
 

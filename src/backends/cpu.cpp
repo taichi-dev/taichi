@@ -320,7 +320,7 @@ class CPUIRCodeGen : public IRVisitor {
           if (ret.second != 0)
             all_offsets_zero = false;
         }
-        if (false && identical_indices) {
+        if (identical_indices) {
           TC_WARN("Weakened addressing");
           weakened = true;
 
@@ -344,8 +344,13 @@ class CPUIRCodeGen : public IRVisitor {
             }
           }
 
-          TC_WARN("offset can be wrong in multidimensional cases");
-          int offset = offsets[0];
+          int offset = 0;
+          int current_num_bits = 0;
+          for (int i = (int)stmt->indices.size() - 1; i >= 0; i--) {
+            offset += offsets[i] * (1 << current_num_bits);
+            current_num_bits += snode->parent->extractors[i].num_bits;
+          }
+
           emit("if ({}) {{", cond);
           emit("{}[{}] = access_{}({}_cache, {}_loop + {});", stmt->raw_name(),
                l, snode->node_type_name, snode->parent->node_type_name,

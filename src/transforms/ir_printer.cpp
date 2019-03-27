@@ -77,6 +77,12 @@ class IRPrinter : public IRVisitor {
           stmt->op2->name(), stmt->op3->name());
   }
 
+  void visit(AtomicOpStmt *stmt) {
+    print("{}{} = atomic {}({}, {})", stmt->type_hint(), stmt->name(),
+          atomic_type_name(stmt->op_type), stmt->dest->name(),
+          stmt->val->name());
+  }
+
   void visit(IfStmt *if_stmt) {
     print("if {} {{", if_stmt->cond->name());
     if (if_stmt->true_statements)

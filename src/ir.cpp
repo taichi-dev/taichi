@@ -64,15 +64,26 @@ Expr Expr::eval() const {
 }
 
 void Expr::operator+=(const Expr &o) {
-  (*this) = (*this) + o;
+  if (this->atomic) {
+    current_ast_builder().insert(
+        Stmt::make<FrontendAtomicStmt>(AtomicType::add, *this, o));
+  } else {
+    (*this) = (*this) + o;
+  }
 }
 void Expr::operator-=(const Expr &o) {
-  (*this) = (*this) - o;
+  if (this->atomic) {
+    (*this) = (*this) - o;
+  } else {
+    TC_NOT_IMPLEMENTED
+  }
 }
 void Expr::operator*=(const Expr &o) {
+  TC_ASSERT(!this->atomic);
   (*this) = (*this) * o;
 }
 void Expr::operator/=(const Expr &o) {
+  TC_ASSERT(!this->atomic);
   (*this) = (*this) / o;
 }
 
@@ -113,6 +124,10 @@ IRNode *Stmt::get_ir_root() {
 FrontendAssignStmt::FrontendAssignStmt(Expr lhs, Expr rhs)
     : lhs(lhs), rhs(rhs) {
   TC_ASSERT(lhs->is_lvalue());
+}
+
+FrontendAtomicStmt::FrontendAtomicStmt(AtomicType op_type, Expr dest, Expr val)
+    : op_type(op_type), dest(dest), val(val) {
 }
 
 IRNode *FrontendContext::root() {

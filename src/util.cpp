@@ -177,17 +177,6 @@ std::string binary_type_name(BinaryType type) {
   return type_names[type];
 }
 
-
-std::string trinary_type_name(TrinaryType type) {
-  static std::map<TrinaryType, std::string> type_names;
-  if (type_names.empty()) {
-#define REGISTER_TYPE(i) type_names[TrinaryType::i] = #i;
-    REGISTER_TYPE(select);
-#undef REGISTER_TYPE
-  }
-  return type_names[type];
-}
-
 std::string binary_type_symbol(BinaryType type) {
   static std::map<BinaryType, std::string> type_names;
   if (type_names.empty()) {
@@ -207,6 +196,28 @@ std::string binary_type_symbol(BinaryType type) {
     REGISTER_TYPE(cmp_eq, ==);
     REGISTER_TYPE(bit_and, &&);
     REGISTER_TYPE(bit_or, ||);
+#undef REGISTER_TYPE
+  }
+  return type_names[type];
+}
+
+std::string trinary_type_name(TrinaryType type) {
+  static std::map<TrinaryType, std::string> type_names;
+  if (type_names.empty()) {
+#define REGISTER_TYPE(i) type_names[TrinaryType::i] = #i;
+    REGISTER_TYPE(select);
+#undef REGISTER_TYPE
+  }
+  return type_names[type];
+}
+
+std::string atomic_type_name(AtomicType type) {
+  static std::map<AtomicType, std::string> type_names;
+  if (type_names.empty()) {
+#define REGISTER_TYPE(i) type_names[AtomicType::i] = #i;
+    REGISTER_TYPE(add);
+    REGISTER_TYPE(max);
+    REGISTER_TYPE(min);
 #undef REGISTER_TYPE
   }
   return type_names[type];

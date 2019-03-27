@@ -150,6 +150,10 @@ enum class TrinaryType : int { select, undefined };
 
 std::string trinary_type_name(TrinaryType type);
 
+enum class AtomicType : int { add, max, min };
+
+std::string atomic_type_name(AtomicType type);
+
 class IRModifiedException {};
 
 class TypedConstant {

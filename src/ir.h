@@ -25,6 +25,7 @@ class FrontendPrintStmt;
 class FrontendWhileStmt;
 class FrontendAllocaStmt;
 class FrontendAssignStmt;
+class FrontendAtomicStmt;
 class FrontendEvalStmt;
 
 // Midend statement
@@ -41,6 +42,7 @@ class AllocaStmt;
 class UnaryOpStmt;
 class BinaryOpStmt;
 class TrinaryOpStmt;
+class AtomicOpStmt;
 class PrintStmt;
 class RandStmt;
 class GlobalLoadStmt;
@@ -282,6 +284,7 @@ class IRVisitor {
   DEFINE_VISIT(FrontendForStmt);
   DEFINE_VISIT(FrontendWhileStmt);
   DEFINE_VISIT(FrontendAssignStmt);
+  DEFINE_VISIT(FrontendAtomicStmt);
   DEFINE_VISIT(FrontendEvalStmt);
 
   DEFINE_VISIT(AllocaStmt);
@@ -289,6 +292,7 @@ class IRVisitor {
   DEFINE_VISIT(LocalLoadStmt);
   DEFINE_VISIT(BinaryOpStmt);
   DEFINE_VISIT(TrinaryOpStmt);
+  DEFINE_VISIT(AtomicOpStmt);
   DEFINE_VISIT(LocalStoreStmt);
   DEFINE_VISIT(GlobalLoadStmt);
   DEFINE_VISIT(GlobalStoreStmt);
@@ -561,9 +565,11 @@ class Expr {
  public:
   std::shared_ptr<Expression> expr;
   bool const_value;
+  bool atomic;
 
   Expr() {
     const_value = false;
+    atomic = false;
   }
 
   Expr(int32 x);
@@ -811,6 +817,20 @@ class TrinaryOpStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
+class AtomicOpStmt : public Stmt {
+ public:
+  AtomicType op_type;
+  Stmt *dest, *val;
+
+  AtomicOpStmt(AtomicType op_type, Stmt *dest, Stmt *val)
+      : op_type(op_type), dest(dest), val(val) {
+    add_operand(this->dest);
+    add_operand(this->val);
+  }
+
+  DEFINE_ACCEPT
+};
+
 class BinaryOpExpression : public Expression {
  public:
   BinaryType type;
@@ -957,8 +977,8 @@ class GlobalPtrExpression : public Expression {
   }
 
 inline Expr select(const Expr &cond,
-                            const Expr &false_val,
-                            const Expr &true_val) {
+                   const Expr &false_val,
+                   const Expr &true_val) {
   return Expr(std::make_shared<TrinaryOpExpression>(TrinaryType::select, cond,
                                                     false_val, true_val));
 }
@@ -990,6 +1010,7 @@ DEFINE_EXPRESSION_OP(<=, cmp_le)
 DEFINE_EXPRESSION_OP(>, cmp_gt)
 DEFINE_EXPRESSION_OP(>=, cmp_ge)
 DEFINE_EXPRESSION_OP(==, cmp_eq)
+DEFINE_EXPRESSION_OP(!=, cmp_ne)
 
 #define DEFINE_EXPRESSION_FUNC(op_name)                                       \
   inline Expr op_name(const Expr &lhs, const Expr &rhs) {                     \
@@ -1074,6 +1095,17 @@ class Block : public IRNode {
 
   DEFINE_ACCEPT
 };
+
+class FrontendAtomicStmt : public Stmt {
+public:
+  AtomicType op_type;
+  Expr dest, val;
+
+  FrontendAtomicStmt(AtomicType op_type, Expr dest, Expr val);
+
+  DEFINE_ACCEPT
+};
+
 
 class FrontendAssignStmt : public Stmt {
  public:

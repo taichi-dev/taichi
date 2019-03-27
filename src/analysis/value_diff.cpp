@@ -11,7 +11,7 @@ class ValueDiff : public IRVisitor {
   std::map<int, ret_type> results;
 
   ValueDiff(Stmt *stmt, int lane, Stmt *alloc)
-      : input_stmt(stmt), lane(lane), alloc(alloc) {
+      : lane(lane), input_stmt(stmt), alloc(alloc) {
   }
 
   void visit(LocalLoadStmt *stmt) override {

@@ -48,6 +48,40 @@ TC_TEST("snode_loop") {
   }
 }
 
+
+TC_TEST("snode_loop2") {
+  Program prog(Arch::x86_64);
+  CoreState::set_trigger_gdb_when_crash(true);
+  prog.config.print_ir = true;
+
+  auto i = Index(0), j = Index(1);
+  Global(u, i32);
+  Global(v, i32);
+
+  int n = 128;
+
+  // All data structure originates from a "root", which is a forked node.
+  prog.layout([&] { root.fixed(i, n).place(u); root.fixed(j, n).place(v); });
+
+  auto set1 = kernel([&] {
+    Declare(i);
+    For(i, u, [&] { u[i] = i * 2; });
+  });
+
+  auto set2 = kernel([&] {
+    Declare(j);
+    For(j, v, [&] { v[j] = j * 3; });
+  });
+
+  set1();
+  set2();
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK_EQUAL(u.val<int32>(i), i * 2, 0);
+    TC_CHECK_EQUAL(v.val<int32>(i), i * 3, 0);
+  }
+}
+
 TC_TEST("2d_blocked_array") {
   int n = 32, block_size = 16;
 

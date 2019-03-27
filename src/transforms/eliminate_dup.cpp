@@ -281,7 +281,6 @@ class EliminateDup : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    auto old_vectorize = for_stmt->vectorize;
     for_stmt->body->accept(this);
   }
 

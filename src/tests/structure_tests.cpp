@@ -48,7 +48,6 @@ TC_TEST("snode_loop") {
   }
 }
 
-
 TC_TEST("snode_loop2") {
   Program prog(Arch::x86_64);
   CoreState::set_trigger_gdb_when_crash(true);
@@ -61,7 +60,17 @@ TC_TEST("snode_loop2") {
   int n = 128;
 
   // All data structure originates from a "root", which is a forked node.
-  prog.layout([&] { root.fixed(i, n).place(u); root.fixed(j, n).place(v); });
+  prog.layout([&] {
+    root.fixed(i, n).place(u);
+    root.fixed(j, n).place(v);
+  });
+
+  TC_ASSERT(
+      u.cast<GlobalVariableExpression>()->snode->physical_index_position[0] ==
+      0);
+  TC_ASSERT(
+      v.cast<GlobalVariableExpression>()->snode->physical_index_position[0] ==
+      1);
 
   auto set1 = kernel([&] {
     Declare(i);
@@ -389,7 +398,7 @@ TC_TEST("leaf_context") {
 
   kernel([&]() {
     Declare(i);
-    For(i, a, [&] {sum[Expr(0)] += a[i]; });
+    For(i, a, [&] { sum[Expr(0)] += a[i]; });
   })();
 
   TC_CHECK(sum.val<int32>() == sum_gt);

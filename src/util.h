@@ -3,7 +3,6 @@
 #include <taichi/io/io.h>
 #include "../include/common.h"
 
-
 TLANG_NAMESPACE_BEGIN
 
 std::string get_project_fn();
@@ -147,10 +146,7 @@ inline bool is_comparison(BinaryType type) {
 
 std::string binary_type_symbol(BinaryType type);
 
-enum class TrinaryType : int {
-  select,
-  undefined
-};
+enum class TrinaryType : int { select, undefined };
 
 std::string trinary_type_name(TrinaryType type);
 
@@ -211,13 +207,11 @@ class TypedConstant {
   }
 };
 
-template <typename T>
-std::string make_list(const std::vector<T> &data,
-                      std::function<std::string(const T &t)> func,
-                      std::string bracket = "") {
+inline std::string make_list(const std::vector<std::string> &data,
+                             std::string bracket = "") {
   std::string ret = bracket;
   for (int i = 0; i < (int)data.size(); i++) {
-    ret += func(data[i]);
+    ret += data[i];
     if (i + 1 < (int)data.size()) {
       ret += ", ";
     }
@@ -235,6 +229,17 @@ std::string make_list(const std::vector<T> &data,
     TC_NOT_IMPLEMENTED
   }
   return ret;
+}
+
+template <typename T>
+std::string make_list(const std::vector<T> &data,
+                      std::function<std::string(const T &t)> func,
+                      std::string bracket = "") {
+  std::vector<std::string> ret(data.size());
+  for (int i = 0; i < (int)data.size(); i++) {
+    ret[i] = func(data[i]);
+  }
+  return make_list(ret, bracket);
 }
 
 TLANG_NAMESPACE_END

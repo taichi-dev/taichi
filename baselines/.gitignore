@@ -1,5 +1,5 @@
 halide_sl
-results
+results*
 taichi.h
 *.png
 mls-mpm

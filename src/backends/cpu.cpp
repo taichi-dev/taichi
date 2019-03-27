@@ -335,7 +335,7 @@ class CPUIRCodeGen : public IRVisitor {
           if (ret.second != 0)
             all_offsets_zero = false;
         }
-        if (false && identical_indices) {
+        if (identical_indices) {
           TC_WARN("Weakened addressing");
           weakened = true;
 

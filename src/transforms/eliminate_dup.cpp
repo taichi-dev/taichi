@@ -181,14 +181,14 @@ class BasicBlockEliminate : public IRVisitor {
     return;
   }
 
-  void visit(BinaryOpStmt *stmt) override {
+  void visit(UnaryOpStmt *stmt) override {
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
         auto &bstmt_data = *bstmt;
         if (typeid(bstmt_data) == typeid(*stmt)) {
-          auto bstmt_ = bstmt->as<BinaryOpStmt>();
-          if (bstmt_->lhs == stmt->lhs && bstmt_->rhs == stmt->rhs) {
+          auto bstmt_ = bstmt->as<UnaryOpStmt>();
+          if (bstmt_->rhs == stmt->rhs) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
             throw IRModifiedException();
@@ -198,14 +198,33 @@ class BasicBlockEliminate : public IRVisitor {
     }
   }
 
-  void visit(UnaryOpStmt *stmt) override {
+  void visit(BinaryOpStmt *stmt) override {
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
         auto &bstmt_data = *bstmt;
         if (typeid(bstmt_data) == typeid(*stmt)) {
-          auto bstmt_ = bstmt->as<UnaryOpStmt>();
-          if (bstmt_->rhs == stmt->rhs) {
+          auto bstmt_ = bstmt->as<BinaryOpStmt>();
+          if (bstmt_->op_type == stmt->op_type && bstmt_->lhs == stmt->lhs &&
+              bstmt_->rhs == stmt->rhs) {
+            stmt->replace_with(bstmt.get());
+            stmt->parent->erase(current_stmt_id);
+            throw IRModifiedException();
+          }
+        }
+      }
+    }
+  }
+
+  void visit(TrinaryOpStmt *stmt) override {
+    for (int i = 0; i < current_stmt_id; i++) {
+      auto &bstmt = block->statements[i];
+      if (stmt->ret_type == bstmt->ret_type) {
+        auto &bstmt_data = *bstmt;
+        if (typeid(bstmt_data) == typeid(*stmt)) {
+          auto bstmt_ = bstmt->as<TrinaryOpStmt>();
+          if (bstmt_->op_type == stmt->op_type && bstmt_->op1 == stmt->op1 &&
+              bstmt_->op2 == stmt->op2 && bstmt_->op3 == stmt->op3) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
             throw IRModifiedException();

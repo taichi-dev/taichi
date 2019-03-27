@@ -204,6 +204,15 @@ class BasicBlockVectorSplit : public IRVisitor {
     }
   }
 
+  void visit(UnaryOpStmt *stmt) override {
+    for (int i = 0; i < current_split_factor; i++) {
+      current_split[i] =
+          Stmt::make<UnaryOpStmt>(stmt->op_type, lookup(stmt->rhs, i));
+      current_split[i]->as<UnaryOpStmt>()->cast_type =
+          stmt->as<UnaryOpStmt>()->cast_type;
+    }
+  }
+
   void visit(BinaryOpStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] = Stmt::make<BinaryOpStmt>(
@@ -211,12 +220,11 @@ class BasicBlockVectorSplit : public IRVisitor {
     }
   }
 
-  void visit(UnaryOpStmt *stmt) override {
+  void visit(TrinaryOpStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] =
-          Stmt::make<UnaryOpStmt>(stmt->op_type, lookup(stmt->rhs, i));
-      current_split[i]->as<UnaryOpStmt>()->cast_type =
-          stmt->as<UnaryOpStmt>()->cast_type;
+          Stmt::make<TrinaryOpStmt>(stmt->op_type, lookup(stmt->op1, i),
+                                    lookup(stmt->op2, i), lookup(stmt->op3, i));
     }
   }
 

@@ -133,12 +133,6 @@ class CPUIRCodeGen : public IRVisitor {
          stmt->ret_data_type_name());
   }
 
-  void visit(BinaryOpStmt *bin) {
-    emit("const {} {}({}({}, {}));", bin->ret_data_type_name(), bin->raw_name(),
-         binary_type_name(bin->op_type), bin->lhs->raw_name(),
-         bin->rhs->raw_name());
-  }
-
   void visit(UnaryOpStmt *stmt) {
     if (stmt->op_type != UnaryType::cast) {
       emit("const {} {}({}({}));", stmt->ret_data_type_name(), stmt->raw_name(),
@@ -148,6 +142,18 @@ class CPUIRCodeGen : public IRVisitor {
            stmt->raw_name(), data_type_name(stmt->cast_type),
            stmt->rhs->raw_name());
     }
+  }
+
+  void visit(BinaryOpStmt *bin) {
+    emit("const {} {}({}({}, {}));", bin->ret_data_type_name(), bin->raw_name(),
+         binary_type_name(bin->op_type), bin->lhs->raw_name(),
+         bin->rhs->raw_name());
+  }
+
+  void visit(TrinaryOpStmt *tri) {
+    emit("const {} {}({}({}, {}, {}));", tri->ret_data_type_name(), tri->raw_name(),
+         trinary_type_name(tri->op_type), tri->op1->raw_name(),
+         tri->op2->raw_name(), tri->op3->raw_name());
   }
 
   void visit(IfStmt *if_stmt) {
@@ -203,11 +209,11 @@ class CPUIRCodeGen : public IRVisitor {
     std::string vars;
     for (int i = 0; i < for_stmt->loop_vars.size(); i++) {
       vars += for_stmt->loop_vars[i]->raw_name();
-      if (i+1 < for_stmt->loop_vars.size()) {
+      if (i + 1 < for_stmt->loop_vars.size()) {
         vars += ",";
       }
     }
-    emit("#pragma omp parallel for private({})", vars);
+    // emit("#pragma omp parallel for private({})", vars);
     emit("for (int leaf_loop = 0; leaf_loop < num_leaves; leaf_loop++) {{");
     emit("auto {}_cache = leaves[leaf_loop].ptr;", leaf->node_type_name);
     for (int i = 0; i < max_num_indices; i++) {

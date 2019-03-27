@@ -25,13 +25,8 @@ void write_partio(std::vector<Vector3> positions,
   parts->release();
 }
 
-Expr select(Expr cond, Expr a, Expr b) {
-  TC_NOT_IMPLEMENTED
-}
-
 auto mpm3d = []() {
   Program prog;
-  // prog.config.gcc_version = 7;
 
   constexpr int n = 128;  // grid_resolution
   const real dt = 1e-4_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;

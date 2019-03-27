@@ -71,6 +71,12 @@ class IRPrinter : public IRVisitor {
           binary_type_name(bin->op_type), bin->lhs->name(), bin->rhs->name());
   }
 
+  void visit(TrinaryOpStmt *stmt) {
+    print("{}{} = {}({}, {}, {})", stmt->type_hint(), stmt->name(),
+          trinary_type_name(stmt->op_type), stmt->op1->name(),
+          stmt->op2->name(), stmt->op3->name());
+  }
+
   void visit(IfStmt *if_stmt) {
     print("if {} {{", if_stmt->cond->name());
     if (if_stmt->true_statements)

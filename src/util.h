@@ -147,7 +147,12 @@ inline bool is_comparison(BinaryType type) {
 
 std::string binary_type_symbol(BinaryType type);
 
-enum class CmpType { eq, ne, le, lt };
+enum class TrinaryType : int {
+  select,
+  undefined
+};
+
+std::string trinary_type_name(TrinaryType type);
 
 class IRModifiedException {};
 

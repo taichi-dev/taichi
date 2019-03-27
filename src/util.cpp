@@ -177,6 +177,17 @@ std::string binary_type_name(BinaryType type) {
   return type_names[type];
 }
 
+
+std::string trinary_type_name(TrinaryType type) {
+  static std::map<TrinaryType, std::string> type_names;
+  if (type_names.empty()) {
+#define REGISTER_TYPE(i) type_names[TrinaryType::i] = #i;
+    REGISTER_TYPE(select);
+#undef REGISTER_TYPE
+  }
+  return type_names[type];
+}
+
 std::string binary_type_symbol(BinaryType type) {
   static std::map<BinaryType, std::string> type_names;
   if (type_names.empty()) {

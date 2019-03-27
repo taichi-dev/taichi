@@ -122,6 +122,17 @@ class TypeCheck : public IRVisitor {
     }
   }
 
+  void visit(TrinaryOpStmt *stmt) {
+    if (stmt->op_type == TrinaryType::select) {
+      TC_ASSERT(stmt->op2->ret_type == stmt->op3->ret_type);
+      TC_ASSERT(stmt->op1->ret_type.data_type == DataType::i32)
+      TC_ASSERT(stmt->op1->ret_type.width == stmt->op2->ret_type.width);
+      stmt->ret_type = stmt->op2->ret_type;
+    } else {
+      TC_NOT_IMPLEMENTED
+    }
+  }
+
   void visit(ElementShuffleStmt *stmt) {
     TC_ASSERT(stmt->elements.size() != 0);
     stmt->element_type() = stmt->elements[0].stmt->element_type();

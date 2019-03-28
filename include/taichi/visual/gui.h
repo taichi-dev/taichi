@@ -711,10 +711,13 @@ class GUI : public GUIBase {
   void set_title(std::string title);
 
   void redraw_widgets() {
+    auto old_transform_matrix = canvas->transform_matrix;
+    canvas->set_idendity_transform_matrix();
     for (auto &w : widgets) {
       w->set_hover(w->inside(cursor_pos));
       w->redraw(*canvas);
     }
+    canvas->transform_matrix = old_transform_matrix;
   }
 
   void update() {

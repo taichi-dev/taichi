@@ -49,45 +49,47 @@ TC_TEST("snode_loop") {
 }
 
 TC_TEST("snode_loop2") {
-  Program prog(Arch::x86_64);
-  CoreState::set_trigger_gdb_when_crash(true);
-  prog.config.print_ir = true;
+  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+    Program prog(arch);
+    CoreState::set_trigger_gdb_when_crash(true);
+    prog.config.print_ir = true;
 
-  auto i = Index(0), j = Index(1);
-  Global(u, i32);
-  Global(v, i32);
+    auto i = Index(0), j = Index(1);
+    Global(u, i32);
+    Global(v, i32);
 
-  int n = 128;
+    int n = 128;
 
-  // All data structure originates from a "root", which is a forked node.
-  prog.layout([&] {
-    root.fixed(i, n).place(u);
-    root.fixed(j, n).place(v);
-  });
+    // All data structure originates from a "root", which is a forked node.
+    prog.layout([&] {
+      root.fixed(i, n).place(u);
+      root.fixed(j, n).place(v);
+    });
 
-  TC_ASSERT(
-      u.cast<GlobalVariableExpression>()->snode->physical_index_position[0] ==
-      0);
-  TC_ASSERT(
-      v.cast<GlobalVariableExpression>()->snode->physical_index_position[0] ==
-      1);
+    TC_ASSERT(
+        u.cast<GlobalVariableExpression>()->snode->physical_index_position[0] ==
+        0);
+    TC_ASSERT(
+        v.cast<GlobalVariableExpression>()->snode->physical_index_position[0] ==
+        1);
 
-  auto set1 = kernel([&] {
-    Declare(i);
-    For(i, u, [&] { u[i] = i * 2; });
-  });
+    auto set1 = kernel([&] {
+      Declare(i);
+      For(i, u, [&] { u[i] = i * 2; });
+    });
 
-  auto set2 = kernel([&] {
-    Declare(j);
-    For(j, v, [&] { v[j] = j * 3; });
-  });
+    auto set2 = kernel([&] {
+      Declare(j);
+      For(j, v, [&] { v[j] = j * 3; });
+    });
 
-  set1();
-  set2();
+    set1();
+    set2();
 
-  for (int i = 0; i < n; i++) {
-    TC_CHECK_EQUAL(u.val<int32>(i), i * 2, 0);
-    TC_CHECK_EQUAL(v.val<int32>(i), i * 3, 0);
+    for (int i = 0; i < n; i++) {
+      TC_CHECK_EQUAL(u.val<int32>(i), i * 2, 0);
+      TC_CHECK_EQUAL(v.val<int32>(i), i * 3, 0);
+    }
   }
 }
 

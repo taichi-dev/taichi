@@ -300,81 +300,28 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) {
+    TC_ASSERT(stmt->width() == 1);
     emit("{} *{}[{}];", data_type_name(stmt->ret_type.data_type),
          stmt->raw_name(), stmt->ret_type.width);
     for (int l = 0; l < stmt->ret_type.width; l++) {
       // Try to weaken here...
       std::vector<int> offsets(stmt->indices.size());
 
-      std::string indices = "(root, ";
-      for (int i = 0; i < max_num_indices; i++) {
-        if (i < (int)stmt->indices.size()) {
-          indices += stmt->indices[i]->raw_name();
-        } else {
-          indices += "0";
+      auto snode = stmt->snode[l];
+      std::vector<std::string> indices(max_num_indices, "0");  // = "(root, ";
+      for (int i = 0; i < stmt->indices.size(); i++) {
+        if (snode->physical_index_position[i] != -1) {
+          // TC_ASSERT(snode->physical_index_position[i] != -1);
+          indices[snode->physical_index_position[i]] =
+              stmt->indices[i]->raw_name();
         }
-        if (i + 1 < max_num_indices)
-          indices += ",";
       }
-      indices += ")";
       std::string strong_access =
           fmt::format("{}[{}] = access_{}{};", stmt->raw_name(), l,
-                      stmt->snode[l]->node_type_name, indices);
+                      stmt->snode[l]->node_type_name,
+                      "(root, " + make_list(indices, "") + ")");
 
-      bool weakened = false;
-      auto snode = stmt->snode[l];
-      if (current_struct_for &&
-          snode->parent == current_struct_for->snode->parent) {
-        bool identical_indices = true;
-        bool all_offsets_zero = true;
-        for (int i = 0; i < stmt->indices.size(); i++) {
-          auto ret = analysis::value_diff(stmt->indices[i], l,
-                                          current_struct_for->loop_vars[i]);
-          if (!ret.first) {
-            identical_indices = false;
-          }
-          offsets[i] = ret.second;
-          if (ret.second != 0)
-            all_offsets_zero = false;
-        }
-        if (false && identical_indices) {
-          TC_WARN("Weakened addressing");
-          weakened = true;
-
-          std::string cond;
-          cond = "true";
-          // add safe guards...
-          for (int i = 0; i < (int)stmt->indices.size(); i++) {
-            if (offsets[i] == 0)
-              continue;
-            // TODO: fix hacky hardcoded name, make sure index same order as
-            // snode indices
-            std::string local_var = fmt::format(
-                "index_{}_{}_local", snode->parent->node_type_name, i);
-            int upper_bound = 1 << snode->parent->extractors[i].num_bits;
-            if (offsets[i] == -1) {
-              cond += fmt::format("&& {} > 0", local_var);
-            } else if (offsets[i] == 1) {
-              cond += fmt::format("&& {} < {} - 1", local_var, upper_bound);
-            } else {
-              TC_NOT_IMPLEMENTED;
-            }
-          }
-
-          TC_WARN("offset can be wrong in multidimensional cases");
-          int offset = offsets[0];
-          emit("if ({}) {{", cond);
-          emit("{}[{}] = access_{}({}_cache, {}_loop + {});", stmt->raw_name(),
-               l, snode->node_type_name, snode->parent->node_type_name,
-               snode->parent->node_type_name, offset);
-          emit("}} else {{");
-          emit("{}", strong_access);
-          emit("}}");
-        }
-      }
-      if (!weakened) {
-        emit("{}", strong_access);
-      }
+      emit("{}", strong_access);
     }
   }
 

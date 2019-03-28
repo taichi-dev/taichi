@@ -366,4 +366,12 @@ inline Matrix floor(const Matrix &o) {
   return ret;
 }
 
+inline Matrix Atomic(Matrix dest) {
+  // NOTE: dest must be passed by value so that the original
+  // expr will not be modified into an atomic one.
+  for (int i = 0; i < (int)dest.entries.size(); i++)
+    dest.entries[i].atomic = true;
+  return dest;
+}
+
 TLANG_NAMESPACE_END

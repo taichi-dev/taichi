@@ -119,9 +119,9 @@ auto mpm3d = []() {
             auto node = (cast<int32>(base_coord(0)) + Expr(i),
                          cast<int32>(base_coord(1)) + Expr(j),
                          cast<int32>(base_coord(2)) + Expr(k));
-            grid_v[node] = grid_v[node] +
-                           weight * (Expr(particle_mass) * v + affine * dpos);
-            grid_m[node] = grid_m[node] + weight * Expr(particle_mass);
+            Atomic(grid_v[node]) +=
+                weight * (Expr(particle_mass) * v + affine * dpos);
+            Atomic(grid_m[node]) += weight * Expr(particle_mass);
           }
         }
       }

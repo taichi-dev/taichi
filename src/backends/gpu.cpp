@@ -174,6 +174,13 @@ class GPUIRCodeGen : public IRVisitor {
          tri->op3->raw_name());
   }
 
+  void visit(AtomicOpStmt *stmt) {
+    TC_ASSERT(stmt->val->ret_type.data_type == DataType::f32 ||
+              stmt->val->ret_type.data_type == DataType::i32);
+    TC_ASSERT(stmt->op_type == AtomicType::add);
+    emit("atomicAdd({}[0], {});", stmt->dest->raw_name(), stmt->val->raw_name());
+  }
+
   void visit(IfStmt *if_stmt) {
     emit("if ({}) {{", if_stmt->cond->raw_name());
     if (if_stmt->true_statements)

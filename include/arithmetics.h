@@ -877,13 +877,19 @@ void atomic_add(volatile float32 *dest, float32 inc) {
     old_val = *dest;
     new_val = old_val + inc;
   } while (!__atomic_compare_exchange(dest, &old_val, &new_val, true,
-                                     std::memory_order::memory_order_seq_cst,
-                                     std::memory_order::memory_order_seq_cst));
+                                      std::memory_order::memory_order_seq_cst,
+                                      std::memory_order::memory_order_seq_cst));
 }
 
 #endif  // Intrinsics wrapper
+TLANG_NAMESPACE_END
 
 #if defined(TC_GPU)
+
+#include <curand.h>
+#include <curand_kernel.h>
+
+TLANG_NAMESPACE_BEGIN
 
 using float32x1 = float32;
 using int32x1 = int32;
@@ -895,11 +901,18 @@ using float64x1 = float64;
     return a op b;                               \
   }
 
+__device__ float mod(float a, float b) {
+  return a - floor(a / b) * b;
+}
+
+__device__ int mod(int a, int b) {
+  return a % b;
+}
+
 DEFINE_CUDA_OP(add, +)
 DEFINE_CUDA_OP(sub, -)
 DEFINE_CUDA_OP(mul, *)
 DEFINE_CUDA_OP(div, /)
-DEFINE_CUDA_OP(mod, %)
 DEFINE_CUDA_OP(bit_and, &)
 DEFINE_CUDA_OP(bit_or, |)
 DEFINE_CUDA_OP(cmp_lt, <)
@@ -922,6 +935,42 @@ __device__ auto select(const G &flag, const T &a, const T &b) {
   return flag ? a : b;
 }
 
-#endif
+// random number...
+constexpr int num_states = 1024 * 1024;
+__device__ curandState_t states[num_states];
+
+// https://cs.calvin.edu/courses/cs/374/CUDA/CUDA-Thread-Indexing-Cheatsheet.pdf
+__global__ void init_random_numbers(unsigned int seed) {
+  int blockId =
+      blockIdx.x + blockIdx.y * gridDim.x + gridDim.x * gridDim.y * blockIdx.z;
+  int threadId = blockId * (blockDim.x * blockDim.y * blockDim.z) +
+                 (threadIdx.z * (blockDim.x * blockDim.y)) +
+                 (threadIdx.y * blockDim.x) + threadIdx.x;
+  int idx = threadId;
+  curand_init(idx + (seed * 1000000007), 0, 0, &states[idx]);
+}
+
+__host__ void host_init_random_numbers() {
+  static int initialized = false;
+  if (initialized)
+    return;
+
+  printf("Initializing...\n");
+
+  initialized = true;
+  init_random_numbers<<<1024, 1024>>>(1);
+}
+
+__device__ float randf() {
+  int blockId =
+      blockIdx.x + blockIdx.y * gridDim.x + gridDim.x * gridDim.y * blockIdx.z;
+  int threadId = blockId * (blockDim.x * blockDim.y * blockDim.z) +
+                 (threadIdx.z * (blockDim.x * blockDim.y)) +
+                 (threadIdx.y * blockDim.x) + threadIdx.x;
+  int idx = threadId % num_states;
+  return curand_uniform(&states[idx]);
+}
 
 TLANG_NAMESPACE_END
+
+#endif

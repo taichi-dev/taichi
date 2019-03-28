@@ -65,6 +65,7 @@ class GPUIRCodeGen : public IRVisitor {
         TC_ASSERT(begin == 0);
 
         int block_size = 256;
+        emit("host_init_random_numbers();");
         int num_blocks = (end - begin + block_size - 1) / block_size;
         emit("{}_kernel<<<{}, {}>>>(context);", codegen->func_name, num_blocks,
              block_size);
@@ -111,6 +112,7 @@ class GPUIRCodeGen : public IRVisitor {
             vars += ",";
           }
         }
+        emit("host_init_random_numbers();");
         emit("context.num_leaves = leaves.size();");
         emit("auto list_size = sizeof(LeafContext<{}>) * context.num_leaves;",
              leaf->node_type_name);
@@ -151,7 +153,7 @@ class GPUIRCodeGen : public IRVisitor {
 
   void visit(RandStmt *stmt) {
     TC_ASSERT(stmt->ret_type.data_type == DataType::f32);
-    emit("const auto {} = {}::rand();", stmt->raw_name(),
+    emit("const auto {} = randf();", stmt->raw_name(),
          stmt->ret_data_type_name());
   }
 
@@ -167,9 +169,13 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(BinaryOpStmt *bin) {
-    emit("const {} {}({}({}, {}));", bin->ret_data_type_name(), bin->raw_name(),
-         binary_type_name(bin->op_type), bin->lhs->raw_name(),
-         bin->rhs->raw_name());
+    std::string ns = "";
+    if (bin->op_type == BinaryType::div) {
+      ns = "taichi::Tlang::";
+    }
+    emit("const {} {}({}{}({}, {}));", bin->ret_data_type_name(),
+         bin->raw_name(), ns, binary_type_name(bin->op_type),
+         bin->lhs->raw_name(), bin->rhs->raw_name());
   }
 
   void visit(TrinaryOpStmt *tri) {
@@ -217,7 +223,7 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) {
-    emit("if (!{}) break;", stmt->mask->raw_name());
+    emit("if (!{}) break;", stmt->cond->raw_name());
   }
 
   void visit(WhileStmt *stmt) {
@@ -238,16 +244,12 @@ class GPUIRCodeGen : public IRVisitor {
 
   void visit(RangeForStmt *for_stmt) {
     auto loop_var = for_stmt->loop_var;
-    if (for_stmt->parallelize) {
-      emit("omp_set_num_threads({});", for_stmt->parallelize);
-      emit("#pragma omp parallel for private({})", loop_var->raw_name());
-    }
     if (loop_var->ret_type.width == 1 &&
         loop_var->ret_type.data_type == DataType::i32) {
       emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{",
            loop_var->raw_name(), for_stmt->begin->raw_name(),
            loop_var->raw_name(), for_stmt->end->raw_name(),
-           loop_var->raw_name(), loop_var->raw_name(), for_stmt->vectorize);
+           loop_var->raw_name(), loop_var->raw_name(), 1);
       emit("{} = {}_;", loop_var->raw_name(), loop_var->raw_name());
     } else {
       emit("for ({} {} = {}; {} < {}; {} = {} + {}({})) {{",
@@ -255,7 +257,7 @@ class GPUIRCodeGen : public IRVisitor {
            for_stmt->begin->raw_name(), loop_var->raw_name(),
            for_stmt->end->raw_name(), loop_var->raw_name(),
            loop_var->raw_name(), loop_var->ret_data_type_name(),
-           for_stmt->vectorize);
+           1);
     }
     for_stmt->body->accept(this);
     emit("}}");
@@ -290,13 +292,7 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) {
-    auto mask = stmt->parent->mask();
-    if (mask) {
-      emit("{} = select({}, {}, {});", stmt->ptr->raw_name(), mask->raw_name(),
-           stmt->data->raw_name(), stmt->ptr->raw_name());
-    } else {
       emit("{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
-    }
   }
 
   void visit(GlobalPtrStmt *stmt) {

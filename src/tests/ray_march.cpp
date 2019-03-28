@@ -70,7 +70,7 @@ TC_REGISTER_TASK(mset);
 auto ray_march = [] {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 512;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::gpu);
   prog.config.print_ir = true;
 
   Global(color_r, f32);

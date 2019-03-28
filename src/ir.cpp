@@ -24,11 +24,13 @@ IRBuilder::ScopeGuard IRBuilder::create_scope(std::unique_ptr<Block> &list) {
 }
 
 void Expr::operator=(const Expr &o) {
-  if (expr == nullptr || !expr->is_lvalue()) {
+  if (expr == nullptr) {
     set(o.eval());
-  } else {
+  } else if (expr->is_lvalue()){
     current_ast_builder().insert(
         std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
+  } else {
+    TC_ERROR("Cannot assign to non-lvalue: {}", serialize());
   }
 }
 

@@ -77,7 +77,6 @@ auto mpm3d = []() {
         .fixed({i, j, k}, grid_block_size)
         .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
   });
-  // TODO:... replace this
 
   TC_ASSERT(bit::is_power_of_two(n));
 

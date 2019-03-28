@@ -435,21 +435,22 @@ TC_TEST("simd_mpm") {
         }
       }
 
-      stress = (-4 * inv_dx * inv_dx * dt * vol) * stress;
+      auto scaled_stress = Eval((-4 * inv_dx * inv_dx * dt * vol) * stress);
 
-      Matrix affine_ = dx * (stress + mass * g_C[p_i]);
-      Matrix affine(4, 3);
+      Matrix affine_ = dx * (scaled_stress + mass * g_C[p_i]);
+      Matrix affine__(4, 3);
       for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
-          affine(i, j) = affine_(i, j);
+          affine__(i, j) = affine_(i, j);
         }
-        affine(dim, i) = real(0);
+        affine__(dim, i) = real(0);
       }
+      Matrix affine(4, 3);
       int slp = 4;
       SLP(slp);
       for (int j = 0; j < dim; j++) {
         for (int i = 0; i < dim + 1; i++) {
-          affine(i, j) = copy(affine(i, j));
+          affine(i, j) = Eval(affine__(i, j));
         }
       }
 
@@ -478,10 +479,10 @@ TC_TEST("simd_mpm") {
                 weight2 * contrib2;
           }
           SLP(slp);
-          contrib1 = Eval(contrib1 + affine.col(1));
+          contrib1.set(Eval(contrib1 + affine.col(1)));
         }
         SLP(slp);
-        contrib0 = Eval(contrib0 + affine.col(0));
+        contrib0.set(Eval(contrib0 + affine.col(0)));
       }
     });
   });

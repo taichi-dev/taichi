@@ -55,6 +55,13 @@ struct Matrix {
     }
   }
 
+  void set(const Matrix &o) {
+    initialize(o.n, o.m);
+    for (int i = 0; i < n * m; i++) {
+      entries[i].set(o.entries[i]);
+    }
+  }
+
   Matrix map(const std::function<Expr(const Expr &)> &f) const {
     Matrix ret(n, m);
     for (int i = 0; i < (int)entries.size(); i++) {
@@ -241,7 +248,7 @@ inline Matrix operator*(const Matrix &A, const Matrix &B) {
     for (int j = 0; j < B.m; j++) {
       C(i, j) = A(i, 0) * B(0, j);
       for (int k = 1; k < A.m; k++) {
-        C(i, j) = C(i, j) + A(i, k) * B(k, j);
+        C(i, j).set(C(i, j) + A(i, k) * B(k, j));
       }
     }
   }

@@ -48,7 +48,7 @@ auto mpm3d = []() {
 
   Global(Jp, f32);
 
-  int n_particles = 8192 * 16;
+  int n_particles = 8192 * 4;
 
   auto i = Index(0), j = Index(1), k = Index(2);
   auto p = Index(3);
@@ -68,7 +68,6 @@ auto mpm3d = []() {
         .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
   });
   // TODO:... replace this
-#define imm Expr
 
   TC_ASSERT(bit::is_power_of_two(n));
 
@@ -93,19 +92,19 @@ auto mpm3d = []() {
       auto C = particle_C[p];
       auto J = particle_J[p];
 
-      auto base_coord = floor(imm(inv_dx) * x - imm(0.5_f));
-      auto fx = x * imm(inv_dx) - base_coord;
+      auto base_coord = floor(Expr(inv_dx) * x - Expr(0.5_f));
+      auto fx = x * Expr(inv_dx) - base_coord;
 
       Vector w[3];
-      w[0] = imm(0.5_f) * sqr(imm(1.5_f) - fx);
-      w[1] = imm(0.75_f) - sqr(fx - imm(1.0_f));
-      w[2] = imm(0.5_f) * sqr(fx - imm(0.5_f));
+      w[0] = Expr(0.5_f) * sqr(Expr(1.5_f) - fx);
+      w[1] = Expr(0.75_f) - sqr(fx - Expr(1.0_f));
+      w[2] = Expr(0.5_f) * sqr(fx - Expr(0.5_f));
 
-      auto cauchy = imm(E) * (J - imm(1.0_f));
-      auto affine = imm(particle_mass) * C;
+      auto cauchy = Expr(E) * (J - Expr(1.0_f));
+      auto affine = Expr(particle_mass) * C;
       for (int i = 0; i < dim; i++) {
         affine(i, i) =
-            affine(i, i) + imm(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
+            affine(i, i) + Expr(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
       }
 
       // scatter
@@ -113,16 +112,16 @@ auto mpm3d = []() {
         for (int j = 0; j < 3; j++) {
           for (int k = 0; k < 3; k++) {
             auto dpos = Vector(dim);
-            dpos(0) = imm(dx) * (imm(i * 1.0_f) - fx(0));
-            dpos(1) = imm(dx) * (imm(j * 1.0_f) - fx(1));
-            dpos(2) = imm(dx) * (imm(k * 1.0_f) - fx(2));
+            dpos(0) = dx * ((i * 1.0_f) - fx(0));
+            dpos(1) = dx * ((j * 1.0_f) - fx(1));
+            dpos(2) = dx * ((k * 1.0_f) - fx(2));
             auto weight = w[i](0) * w[j](1) * w[k](2);
-            auto node = (cast<int32>(base_coord(0)) + imm(i),
-                         cast<int32>(base_coord(1)) + imm(j),
-                         cast<int32>(base_coord(2)) + imm(k));
+            auto node = (cast<int32>(base_coord(0)) + Expr(i),
+                         cast<int32>(base_coord(1)) + Expr(j),
+                         cast<int32>(base_coord(2)) + Expr(k));
             grid_v[node] = grid_v[node] +
-                           weight * (imm(particle_mass) * v + affine * dpos);
-            grid_m[node] = grid_m[node] + weight * imm(particle_mass);
+                           weight * (Expr(particle_mass) * v + affine * dpos);
+            grid_m[node] = grid_m[node] + weight * Expr(particle_mass);
           }
         }
       }
@@ -141,20 +140,20 @@ auto mpm3d = []() {
       auto v2 = load(grid_v[i, j, k](2));
       auto m = load(grid_m[i, j, k]);
 
-      // auto inv_m = imm(1.0_f) / max(m, imm(1e-20_f));
-      auto inv_m = imm(1.0_f) / m;
-      auto mask = cmp_lt(imm(0.0_f), m);
-      v0 = select(mask, v0 * inv_m, imm(0.0_f));
-      v1 = select(mask, v1 * inv_m + imm(dt * -200_f), imm(0.0_f));
-      v2 = select(mask, v2 * inv_m, imm(0.0_f));
+      // auto inv_m = Expr(1.0_f) / max(m, Expr(1e-20_f));
+      auto inv_m = Expr(1.0_f) / m;
+      auto mask = cmp_lt(Expr(0.0_f), m);
+      v0 = select(mask, v0 * inv_m, Expr(0.0_f));
+      v1 = select(mask, v1 * inv_m + Expr(dt * -200_f), Expr(0.0_f));
+      v2 = select(mask, v2 * inv_m, Expr(0.0_f));
 
-      v0 = select((imm(n - 5) < i), min(v0, imm(0.0_f)), v0);
-      v1 = select((imm(n - 5) < j), min(v1, imm(0.0_f)), v1);
-      v2 = select((imm(n - 5) < k), min(v2, imm(0.0_f)), v2);
+      v0 = select((Expr(n - 5) < i), min(v0, Expr(0.0_f)), v0);
+      v1 = select((Expr(n - 5) < j), min(v1, Expr(0.0_f)), v1);
+      v2 = select((Expr(n - 5) < k), min(v2, Expr(0.0_f)), v2);
 
-      v0 = select(cmp_lt(i, imm(5)), max(v0, imm(0.0_f)), v0);
-      v1 = select(cmp_lt(j, imm(5)), max(v1, imm(0.0_f)), v1);
-      v2 = select(cmp_lt(k, imm(5)), max(v2, imm(0.0_f)), v2);
+      v0 = select(cmp_lt(i, Expr(5)), max(v0, Expr(0.0_f)), v0);
+      v1 = select(cmp_lt(j, Expr(5)), max(v1, Expr(0.0_f)), v1);
+      v2 = select(cmp_lt(k, Expr(5)), max(v2, Expr(0.0_f)), v2);
 
       grid_v[i, j, k](0) = v0;
       grid_v[i, j, k](1) = v1;
@@ -172,40 +171,40 @@ auto mpm3d = []() {
       auto J = particle_J[p];
 
       for (int i = 0; i < dim; i++) {
-        v(i) = imm(0.0_f);
+        v(i) = Expr(0.0_f);
         for (int j = 0; j < dim; j++) {
-          C(i, j) = imm(0.0_f);
+          C(i, j) = Expr(0.0_f);
         }
       }
 
-      auto base_coord = floor(imm(inv_dx) * x - imm(0.5_f));
-      auto fx = x * imm(inv_dx) - base_coord;
+      auto base_coord = floor(Expr(inv_dx) * x - Expr(0.5_f));
+      auto fx = x * Expr(inv_dx) - base_coord;
 
       Vector w[3];
-      w[0] = imm(0.5_f) * sqr(imm(1.5_f) - fx);
-      w[1] = imm(0.75_f) - sqr(fx - imm(1.0_f));
-      w[2] = imm(0.5_f) * sqr(fx - imm(0.5_f));
+      w[0] = Expr(0.5_f) * sqr(Expr(1.5_f) - fx);
+      w[1] = Expr(0.75_f) - sqr(fx - Expr(1.0_f));
+      w[2] = Expr(0.5_f) * sqr(fx - Expr(0.5_f));
 
       // scatter
       for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
           for (int k = 0; k < 3; k++) {
             auto dpos = Vector(dim);
-            dpos(0) = imm(i * 1.0_f) - fx(0);
-            dpos(1) = imm(j * 1.0_f) - fx(1);
-            dpos(2) = imm(k * 1.0_f) - fx(2);
+            dpos(0) = Expr(i * 1.0_f) - fx(0);
+            dpos(1) = Expr(j * 1.0_f) - fx(1);
+            dpos(2) = Expr(k * 1.0_f) - fx(2);
             auto weight = w[i](0) * w[j](1) * w[k](2);
-            auto wv = weight * grid_v[cast<int32>(base_coord(0)) + imm(i),
-                                      cast<int32>(base_coord(1)) + imm(j),
-                                      cast<int32>(base_coord(2)) + imm(k)];
+            auto wv = weight * grid_v[cast<int32>(base_coord(0)) + Expr(i),
+                                      cast<int32>(base_coord(1)) + Expr(j),
+                                      cast<int32>(base_coord(2)) + Expr(k)];
             v = v + wv;
-            C = C + imm(4 * inv_dx) * outer_product(wv, dpos);
+            C = C + Expr(4 * inv_dx) * outer_product(wv, dpos);
           }
         }
       }
 
-      J = J * (imm(1.0_f) + imm(dt) * (C(0, 0) + C(1, 1) + C(2, 2)));
-      x = x + imm(dt) * v;
+      J = J * (Expr(1.0_f) + Expr(dt) * (C(0, 0) + C(1, 1) + C(2, 2)));
+      x = x + Expr(dt) * v;
 
       particle_C[p] = C;
       particle_v[p] = v;
@@ -218,9 +217,9 @@ auto mpm3d = []() {
   GUI gui("MPM", n * scale, n * scale);
 
   for (int i = 0; i < n_particles; i++) {
-    particle_x(0).val<float32>(i) = 0.3_f + rand() * 0.4_f;
+    particle_x(0).val<float32>(i) = 0.4_f + rand() * 0.2_f;
     particle_x(1).val<float32>(i) = 0.15_f + rand() * 0.75_f;
-    particle_x(2).val<float32>(i) = 0.3_f + rand() * 0.4_f;
+    particle_x(2).val<float32>(i) = 0.4_f + rand() * 0.1_f;
     particle_v(1).val<float32>(i) = -0.3_f;
     particle_J.val<float32>(i) = 1_f;
   }

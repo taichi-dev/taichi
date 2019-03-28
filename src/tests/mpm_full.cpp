@@ -29,7 +29,7 @@ auto mpm3d = []() {
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
 
-  constexpr int n = 128;  // grid_resolution
+  constexpr int n = 256;  // grid_resolution
   const real dt = 1e-4_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
   auto E = 1e3_f;
@@ -40,7 +40,7 @@ auto mpm3d = []() {
 
   auto f32 = DataType::f32;
   int grid_block_size = 8;
-  int particle_block_size = 256;
+  int particle_block_size = 128;
 
   Vector particle_x(f32, dim), particle_v(f32, dim);
   Matrix particle_F(f32, dim, dim), particle_C(f32, dim, dim);
@@ -145,17 +145,20 @@ auto mpm3d = []() {
     Declare(j);
     Declare(k);
     For((i, j, k), grid_m, [&] {
-      auto v0 = load(grid_v[i, j, k](0));
-      auto v1 = load(grid_v[i, j, k](1));
-      auto v2 = load(grid_v[i, j, k](2));
+      Local(v0) = grid_v[i, j, k](0);
+      Local(v1) = grid_v[i, j, k](1);
+      Local(v2) = grid_v[i, j, k](2);
       auto m = load(grid_m[i, j, k]);
 
       // auto inv_m = Expr(1.0_f) / max(m, Expr(1e-20_f));
-      auto inv_m = Expr(1.0_f) / m;
-      auto mask = cmp_lt(Expr(0.0_f), m);
-      v0 = select(mask, v0 * inv_m, Expr(0.0_f));
-      v1 = select(mask, v1 * inv_m + Expr(dt * -200_f), Expr(0.0_f));
-      v2 = select(mask, v2 * inv_m, Expr(0.0_f));
+      If(m > 0.0f, [&]() {
+        auto inv_m = Eval(1.0f / m);
+        v0 *= inv_m;
+        v1 *= inv_m;
+        v2 *= inv_m;
+
+        v1 += dt * -200_f;
+      });
 
       v0 = select((Expr(n - 5) < i), min(v0, Expr(0.0_f)), v0);
       v1 = select((Expr(n - 5) < j), min(v1, Expr(0.0_f)), v1);

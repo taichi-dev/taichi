@@ -146,7 +146,7 @@ auto ray_march = [] {
   auto main = kernel([&]() {
     Declare(i);
     Parallelize(8);
-    // Vectorize(8);
+    Vectorize(8);
     For(i, 0, n * n * 2, [&] {
       Vector orig({0.0f, 0.0f, 12.0f}), c(3);
       Mutable(orig, DataType::f32);

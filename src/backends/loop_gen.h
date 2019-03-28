@@ -116,6 +116,22 @@ class LoopGenerator {
     emit("leaves.push_back(leaf_context);");
     generate_loop_tail(leaf->parent, for_stmt);
   }
+
+  void emit_body_header(StructForStmt *for_stmt, SNode *leaf) {
+    emit("auto {}_cache = leaves[leaf_loop].ptr;", leaf->node_type_name);
+    for (int i = 0; i < max_num_indices; i++) {
+      emit("auto {} = leaves[leaf_loop].indices[{}];",
+           index_name_global(leaf->parent, i), i);
+    }
+    generate_single_loop_header(leaf, true);
+    for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
+      for (int j = 0; j < max_num_indices; j++) {
+        if (for_stmt->snode->physical_index_position[i] == j)
+          emit("{} = {};", for_stmt->loop_vars[i]->raw_name(),
+               index_name_global(leaf, j));
+      }
+    }
+  }
 };
 
 TLANG_NAMESPACE_END

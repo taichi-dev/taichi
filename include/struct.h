@@ -10,7 +10,7 @@
 #define TC_EXPORT
 #if defined(TC_GPU)
 #define TC_DEVICE __device__ __host__
-#define TLANG_ACCESSOR __device__ TC_FORCE_INLINE
+#define TLANG_ACCESSOR __device__ __host__ TC_FORCE_INLINE
 #else
 #define TC_DEVICE
 #define TLANG_ACCESSOR TC_FORCE_INLINE

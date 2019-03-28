@@ -112,7 +112,6 @@ class CPUIRCodeGen : public IRVisitor {
 
     loopgen.loop_gen_leaves(for_stmt, leaf);
 
-    emit("int num_leaves = leaves.size();");
     std::string vars;
     for (int i = 0; i < for_stmt->loop_vars.size(); i++) {
       vars += for_stmt->loop_vars[i]->raw_name();
@@ -120,24 +119,13 @@ class CPUIRCodeGen : public IRVisitor {
         vars += ",";
       }
     }
+    emit("int num_leaves = leaves.size();");
     if (for_stmt->parallelize) {
       emit("omp_set_num_threads({});", for_stmt->parallelize);
       emit("#pragma omp parallel for private({})", vars);
     }
     emit("for (int leaf_loop = 0; leaf_loop < num_leaves; leaf_loop++) {{");
-    emit("auto {}_cache = leaves[leaf_loop].ptr;", leaf->node_type_name);
-    for (int i = 0; i < max_num_indices; i++) {
-      emit("auto {} = leaves[leaf_loop].indices[{}];",
-           loopgen.index_name_global(leaf->parent, i), i);
-    }
-    loopgen.generate_single_loop_header(leaf, true);
-    for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
-      for (int j = 0; j < max_num_indices; j++) {
-        if (for_stmt->snode->physical_index_position[i] == j)
-          emit("{} = {};", for_stmt->loop_vars[i]->raw_name(),
-               loopgen.index_name_global(leaf, j));
-      }
-    }
+    loopgen.emit_body_header(for_stmt, leaf);
     for_stmt->body->accept(this);
     emit("}}");
     emit("}}");

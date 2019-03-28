@@ -95,7 +95,7 @@ TC_TEST("2d_blocked_array") {
   int n = 32, block_size = 16;
 
   for (auto forked : {true, false}) {
-    Program prog(Arch::x86_64);
+    Program prog(Arch::gpu);
 
     Global(a, i32);
     Global(b, i32);

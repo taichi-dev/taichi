@@ -51,7 +51,7 @@ auto mpm3d = []() {
 
   Global(Jp, f32);
 
-  int n_particles = 8192 * 4;
+  int n_particles = 8192 * 16;
 
   auto i = Index(0), j = Index(1), k = Index(2);
   auto p = Index(3);
@@ -224,22 +224,14 @@ auto mpm3d = []() {
     });
   });
 
-  auto move_particle = kernel([&]() {
-    Declare(p);
-    For(p, particle_x(0), [&] {
-      //auto x = particle_x[p];
-      particle_x(1)[p] = 0.1f;
-    });
-  });
-
 
   int scale = 8;
   GUI gui("MPM", n * scale, n * scale);
 
   for (int i = 0; i < n_particles; i++) {
-    particle_x(0).val<float32>(i) = 0.4_f + rand() * 0.2_f;
+    particle_x(0).val<float32>(i) = 0.3_f + rand() * 0.4_f;
     particle_x(1).val<float32>(i) = 0.15_f + rand() * 0.75_f;
-    particle_x(2).val<float32>(i) = 0.4_f + rand() * 0.1_f;
+    particle_x(2).val<float32>(i) = 0.3_f + rand() * 0.4_f;
     particle_v(1).val<float32>(i) = -0.3_f;
     particle_J.val<float32>(i) = 1_f;
   }
@@ -248,7 +240,7 @@ auto mpm3d = []() {
 
   int frame = 0;
   for (int f = 0; f < 1000; f++) {
-    for (int t = 0; t < 50; t++) {
+    for (int t = 0; t < 20; t++) {
       TC_TIME(clear_buffer());
       TC_TIME(p2g());
       TC_TIME(grid_op());

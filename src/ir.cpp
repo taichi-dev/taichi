@@ -73,9 +73,10 @@ void Expr::operator+=(const Expr &o) {
 }
 void Expr::operator-=(const Expr &o) {
   if (this->atomic) {
-    (*this) = (*this) - o;
+    current_ast_builder().insert(
+        Stmt::make<FrontendAtomicStmt>(AtomicType::add, *this, -o));
   } else {
-    TC_NOT_IMPLEMENTED
+    (*this) = (*this) - o;
   }
 }
 void Expr::operator*=(const Expr &o) {

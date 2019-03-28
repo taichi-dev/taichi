@@ -126,6 +126,7 @@ auto ray_march = [] {
 
   auto out_dir = [&](Vector n) {
     Vector u({1.0f, 0.0f, 0.0f}), v(3);
+    Mutable(u, DataType::f32);
     If(abs(n(1)) < 1 - 1e-3f, [&] {
       u = normalized(cross(n, Vector({0.0f, 1.0f, 0.0f})));
     });
@@ -145,17 +146,21 @@ auto ray_march = [] {
   auto main = kernel([&]() {
     Declare(i);
     Parallelize(8);
-    Vectorize(8);
+    // Vectorize(8);
     For(i, 0, n * n * 2, [&] {
       Vector orig({0.0f, 0.0f, 12.0f}), c(3);
+      Mutable(orig, DataType::f32);
 
       c(0) = fov * (cast<float>(i / n) / float(n / 2) - 2.0f);
       c(1) = fov * (cast<float>(i % n) / float(n / 2) - 1.0f);
       c(2) = -1.0f;
       c = normalized(c);
 
+      Mutable(c, DataType::f32);
+
       Vector color(3);
       color = Vector({1.0f, 1.0f, 1.0f});
+      Mutable(color, DataType::f32);
       int depth_limit = 4;
       Local(depth) = 0;
 

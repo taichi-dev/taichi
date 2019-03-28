@@ -59,6 +59,19 @@ inline void declare_var(Expr &a) {
       std::static_pointer_cast<IdExpression>(a.expr)->id, get_data_type<T>()));
 }
 
+inline void declare_unnamed_var(Expr &a, DataType dt) {
+  auto id = Identifier();
+  auto a_ = Expr(std::make_shared<IdExpression>(id));
+
+  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(id, dt));
+
+  if (a.expr) {
+    a_ = a;  // assign
+  }
+
+  a.set(a_);
+}
+
 inline void declare_var(Expr &a) {
   current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(a.expr)->id, DataType::unknown));

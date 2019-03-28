@@ -9,4 +9,10 @@ void Matrix::fill_global(DataType dt) {
   }
 }
 
+void Mutable(Matrix &mat, DataType dt) {
+  for (int i = 0; i < mat.entries.size(); i++) {
+    declare_unnamed_var(mat.entries[i], dt);
+  }
+}
+
 TLANG_NAMESPACE_END

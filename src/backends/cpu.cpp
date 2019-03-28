@@ -345,18 +345,18 @@ void CPUCodeGen::lower() {
   if (prog->config.print_ir) {
     irpass::print(ir);
   }
-  irpass::slp_vectorize(ir);
+  //irpass::slp_vectorize(ir);
   if (prog->config.print_ir) {
     irpass::print(ir);
   }
-  irpass::loop_vectorize(ir);
+  //irpass::loop_vectorize(ir);
   if (prog->config.print_ir)
     irpass::print(ir);
-  irpass::vector_split(ir, prog->config.max_vector_width,
-                       prog->config.serial_schedule);
+  //irpass::vector_split(ir, prog->config.max_vector_width,
+  //                     prog->config.serial_schedule);
   if (prog->config.print_ir)
     irpass::print(ir);
-  irpass::eliminate_dup(ir);
+  // irpass::eliminate_dup(ir);
   if (prog->config.print_ir)
     irpass::print(ir);
 }

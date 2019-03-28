@@ -379,4 +379,6 @@ inline Matrix Atomic(const Matrix &dest) {
   return ret;
 }
 
+void Mutable(Matrix &mat, DataType dt);
+
 TLANG_NAMESPACE_END

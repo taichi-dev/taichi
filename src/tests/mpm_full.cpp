@@ -229,8 +229,6 @@ auto mpm3d = []() {
     For(p, particle_x(0), [&] {
       //auto x = particle_x[p];
       particle_x(1)[p] = 0.1f;
-      Print(p);
-      Print(particle_x(1)[p]);
     });
   });
 
@@ -250,18 +248,16 @@ auto mpm3d = []() {
 
   int frame = 0;
   for (int f = 0; f < 1000; f++) {
-    for (int t = 0; t < 1; t++) {
-      //TC_TIME(clear_buffer());
-      // TC_TIME(p2g());
-      // TC_TIME(grid_op());
-      //TC_TIME(g2p());
-      move_particle();
+    for (int t = 0; t < 50; t++) {
+      TC_TIME(clear_buffer());
+      TC_TIME(p2g());
+      TC_TIME(grid_op());
+      TC_TIME(g2p());
     }
     canvas.clear(0x112F41);
     std::vector<Vector3> particles;
     for (int i = 0; i < n_particles; i++) {
       auto x = particle_x(0).val<float32>(i), y = particle_x(1).val<float32>(i);
-      TC_P(y);
       auto z = particle_x(2).val<float32>(i);
       particles.push_back(Vector3(x, y, z));
       if (0 < x && x < 1 && 0 < y && y < 1)

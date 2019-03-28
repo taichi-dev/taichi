@@ -16,8 +16,6 @@ enum class Arch { x86_64, gpu };
 
 int default_simd_width(Arch arch);
 
-enum class Device { cpu, gpu };
-
 struct CompileConfig {
   Arch arch;
   int simd_width;

@@ -8,9 +8,8 @@ TLANG_NAMESPACE_BEGIN
 TC_TEST("compiler_basics_gpu") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
-  Program prog(Arch::x86_64);
+  Program prog(Arch::gpu);
   prog.config.print_ir = true;
-  prog.config.arch = Arch::gpu;
 
   Global(a, i32);
   auto i = Index(0);

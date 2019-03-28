@@ -53,7 +53,6 @@ class Program {
   SNode *snode_root;
   void *data_structure;
   CompileConfig config;
-  Device device;
 
   std::vector<Kernel> functions;
   int index_counter;
@@ -71,13 +70,6 @@ class Program {
     TC_ASSERT(current_program == nullptr);
     current_program = this;
     config.arch = arch;
-    if (config.arch == Arch::x86_64) {
-      device = Device::cpu;
-    } else if (config.arch == Arch::gpu) {
-      device = Device::gpu;
-    } else {
-      TC_NOT_IMPLEMENTED;
-    }
     current_kernel = nullptr;
     snode_root = nullptr;
     index_counter = 0;

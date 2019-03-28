@@ -32,7 +32,6 @@ class GPUIRCodeGen : public IRVisitor {
       first_level = false;
       // Check structure
       // Only the last statement can be a RangeFor/StructFor
-      TC_ASSERT(stmt_list->statements.back()->is<RangeForStmt>());
       // The rest must be Alloca for loop variables and consts for bounds
       for (int i = 0; i + 1 < stmt_list->statements.size(); i++) {
         auto s = stmt_list->statements[i].get();
@@ -68,7 +67,8 @@ class GPUIRCodeGen : public IRVisitor {
         emit("{}_kernel<<<{}, {}>>>(context);", codegen->func_name, num_blocks,
              block_size);
       } else {
-        TC_NOT_IMPLEMENTED
+        // struct for
+
       }
 
       emit("cudaDeviceSynchronize();\n");

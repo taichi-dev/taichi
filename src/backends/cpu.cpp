@@ -195,6 +195,7 @@ class CPUIRCodeGen : public IRVisitor {
                    "Structu for cannot be nested.");
     current_struct_for = for_stmt;
     auto leaf = for_stmt->snode->parent;
+    emit("{{");
     emit("std::vector<LeafContext<{}>> leaves;", leaf->node_type_name);
     generate_loop_header(leaf->parent, for_stmt);
     emit("LeafContext<{}> leaf_context;", leaf->node_type_name);
@@ -232,6 +233,7 @@ class CPUIRCodeGen : public IRVisitor {
       }
     }
     for_stmt->body->accept(this);
+    emit("}}");
     emit("}}");
     emit("}}");
     current_struct_for = nullptr;

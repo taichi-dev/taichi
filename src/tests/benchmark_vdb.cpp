@@ -92,16 +92,30 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     tree_config[i] = 1 << tree_config[i];
   }
 
+  bool AOS = true;
+
   layout([&] {
     auto ijk = Indices(0, 1, 2);
 
-    root.hashed(ijk, 1024)
-        .fixed(ijk, tree_config[0])
-        .pointer()
-        .fixed(ijk, tree_config[1])
-        .pointer()
-        .fixed(ijk, tree_config[2])
-        .place(x, y);
+    if (AOS) {
+      root.hashed(ijk, 1024)
+          .fixed(ijk, tree_config[0])
+          .pointer()
+          .fixed(ijk, tree_config[1])
+          .pointer()
+          .fixed(ijk, tree_config[2])
+          .place(x, y);
+    } else {
+      auto &fork = root.hashed(ijk, 1024)
+                       .fixed(ijk, tree_config[0])
+                       .pointer()
+                       .fixed(ijk, tree_config[1])
+                       .pointer();
+
+      fork.fixed(ijk, tree_config[2]).place(x);
+
+      fork.fixed(ijk, tree_config[2]).place(y);
+    }
 
     root.place(sum);
   });

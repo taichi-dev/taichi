@@ -29,4 +29,25 @@ TC_TEST("atomics") {
   TC_CHECK(fsum.val<float32>() == 0);
 };
 
+TC_TEST("atomics2") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 1000;
+  Program prog(Arch::x86_64);
+
+  Global(fsum, f32);
+  layout([&]() { root.place(fsum); });
+
+  auto func = kernel([&]() {
+    Declare(i);
+    Parallelize(4);
+    For(i, 0, n, [&] {
+      Atomic(fsum[Expr(0)]) += 1.0f;
+    });
+  });
+
+  func();
+
+  TC_CHECK(fsum.val<float32>() == 1000);
+};
+
 TLANG_NAMESPACE_END

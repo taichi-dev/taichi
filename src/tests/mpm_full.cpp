@@ -26,7 +26,7 @@ void write_partio(std::vector<Vector3> positions,
 }
 
 auto mpm3d = []() {
-  Program prog(Arch::gpu);
+  Program prog(Arch::x86_64);
 
   constexpr int n = 128;  // grid_resolution
   const real dt = 1e-4_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
@@ -204,7 +204,7 @@ auto mpm3d = []() {
       }
 
       J = J * (Expr(1.0_f) + Expr(dt) * (C(0, 0) + C(1, 1) + C(2, 2)));
-      x = x + Expr(dt) * v;
+      x = x + dt * v;
 
       particle_C[p] = C;
       particle_v[p] = v;

@@ -286,12 +286,14 @@ inline Matrix operator-(const Matrix &A) {
 
 template <typename T>
 void Matrix::operator+=(const T &o) {
-  (*this) = (*this) + o;
+  for (int i = 0; i < entries.size(); i++)
+    entries[i] += o.entries[i];
 }
 
 template <typename T>
 void Matrix::operator-=(const T &o) {
-  (*this) = (*this) - o;
+  for (int i = 0; i < entries.size(); i++)
+    entries[i] -= o.entries[i];
 }
 
 template <typename T>
@@ -366,12 +368,15 @@ inline Matrix floor(const Matrix &o) {
   return ret;
 }
 
-inline Matrix Atomic(Matrix dest) {
+inline Matrix Atomic(const Matrix &dest) {
   // NOTE: dest must be passed by value so that the original
   // expr will not be modified into an atomic one.
-  for (int i = 0; i < (int)dest.entries.size(); i++)
-    dest.entries[i].atomic = true;
-  return dest;
+  Matrix ret(dest.n, dest.m);
+  for (int i = 0; i < (int)dest.entries.size(); i++) {
+    ret.entries[i].set(dest.entries[i]);
+    ret.entries[i].atomic = true;
+  }
+  return ret;
 }
 
 TLANG_NAMESPACE_END

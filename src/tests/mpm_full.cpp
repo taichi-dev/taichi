@@ -26,7 +26,7 @@ void write_partio(std::vector<Vector3> positions,
 }
 
 auto mpm3d = []() {
-  Program prog;
+  Program prog(Arch::gpu);
 
   constexpr int n = 128;  // grid_resolution
   const real dt = 1e-4_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;

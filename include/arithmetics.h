@@ -919,6 +919,14 @@ __device__ auto select(const G &flag, const T &a, const T &b) {
   return flag ? a : b;
 }
 
+__device__ inline int32x1 cmp_lt(float32x1 a, float32x1 b) {
+  return a < b;
+}
+
+__device__ inline int32x1 cmp_lt(int32x1 a, int32x1 b) {
+  return a < b;
+}
+
 #endif
 
 TLANG_NAMESPACE_END

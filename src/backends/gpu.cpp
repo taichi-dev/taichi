@@ -115,7 +115,9 @@ class GPUIRCodeGen : public IRVisitor {
         emit("auto list_size = sizeof(LeafContext<{}>) * context.num_leaves;",
              leaf->node_type_name);
         emit("cudaMalloc(&context.leaves, list_size);");
-        emit("cudaMemcpy(context.leaves, leaves.data(), list_size, cudaMemcpyHostToDevice);");
+        emit(
+            "cudaMemcpy(context.leaves, leaves.data(), list_size, "
+            "cudaMemcpyHostToDevice);");
         emit("printf(\"num leaves %d\\n\", context.num_leaves);");
         // allocate the vector...
 
@@ -148,21 +150,28 @@ class GPUIRCodeGen : public IRVisitor {
          stmt->ret_data_type_name());
   }
 
+  void visit(UnaryOpStmt *stmt) {
+    if (stmt->op_type != UnaryType::cast) {
+      emit("const {} {}({}({}));", stmt->ret_data_type_name(), stmt->raw_name(),
+           unary_type_name(stmt->op_type), stmt->rhs->raw_name());
+    } else {
+      emit("const {} {}(static_cast<{}>({}));", stmt->ret_data_type_name(),
+           stmt->raw_name(), data_type_name(stmt->cast_type),
+           stmt->rhs->raw_name());
+    }
+  }
+
   void visit(BinaryOpStmt *bin) {
     emit("const {} {}({}({}, {}));", bin->ret_data_type_name(), bin->raw_name(),
          binary_type_name(bin->op_type), bin->lhs->raw_name(),
          bin->rhs->raw_name());
   }
 
-  void visit(UnaryOpStmt *stmt) {
-    if (stmt->op_type != UnaryType::cast) {
-      emit("const {} {}({}({}));", stmt->ret_data_type_name(), stmt->raw_name(),
-           unary_type_name(stmt->op_type), stmt->rhs->raw_name());
-    } else {
-      emit("const {} {}(cast<{}>({}));", stmt->ret_data_type_name(),
-           stmt->raw_name(), data_type_name(stmt->cast_type),
-           stmt->rhs->raw_name());
-    }
+  void visit(TrinaryOpStmt *tri) {
+    TC_ASSERT(tri->op_type == TrinaryType::select);
+    emit("const {} {} = {} ? {} : {};", tri->ret_data_type_name(),
+         tri->raw_name(), tri->op1->raw_name(), tri->op2->raw_name(),
+         tri->op3->raw_name());
   }
 
   void visit(IfStmt *if_stmt) {

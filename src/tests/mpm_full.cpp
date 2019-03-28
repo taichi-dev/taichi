@@ -223,18 +223,26 @@ auto mpm3d = []() {
       particle_x[p] = x;
     });
   });
+  CoreState::set_trigger_gdb_when_crash(true);
 
+  auto reset = [&] {
+    for (int i = 0; i < n_particles; i++) {
+      particle_x(0).val<float32>(i) = 0.3_f + rand() * 0.4_f;
+      particle_x(1).val<float32>(i) = 0.15_f + rand() * 0.75_f;
+      particle_x(2).val<float32>(i) = 0.3_f + rand() * 0.4_f;
+      particle_v(0).val<float32>(i) = 0._f;
+      particle_v(1).val<float32>(i) = -0.3_f;
+      particle_v(2).val<float32>(i) = 0._f;
+      particle_J.val<float32>(i) = 1_f;
+    }
+  };
 
-  int scale = 8;
-  GUI gui("MPM", n * scale, n * scale);
+  reset();
 
-  for (int i = 0; i < n_particles; i++) {
-    particle_x(0).val<float32>(i) = 0.3_f + rand() * 0.4_f;
-    particle_x(1).val<float32>(i) = 0.15_f + rand() * 0.75_f;
-    particle_x(2).val<float32>(i) = 0.3_f + rand() * 0.4_f;
-    particle_v(1).val<float32>(i) = -0.3_f;
-    particle_J.val<float32>(i) = 1_f;
-  }
+  int scale = 6;
+  GUI gui("MPM", n * scale + 200, n * scale);
+  int angle = 0;
+  gui.button("Restart", reset).slider("View", angle, 0, 360, 1);
 
   auto &canvas = gui.get_canvas();
 
@@ -251,9 +259,18 @@ auto mpm3d = []() {
     for (int i = 0; i < n_particles; i++) {
       auto x = particle_x(0).val<float32>(i), y = particle_x(1).val<float32>(i);
       auto z = particle_x(2).val<float32>(i);
-      particles.push_back(Vector3(x, y, z));
+
+      float center = 0.5f;
+
+      float32 c = std::cos(angle * 0.01f), s = std::sin(angle * 0.01f);
+
+      // particles.push_back(Vector3(x, y, z));
       if (0 < x && x < 1 && 0 < y && y < 1)
-        canvas.circle(x, y).radius(2).color(0x068587);
+        canvas
+            .circle(0.7f * (c * (x - center) + s * (z - center)) + center,
+                    0.7f * y)
+            .radius(1.6)
+            .color(0x068587);
     }
 
     gui.update();

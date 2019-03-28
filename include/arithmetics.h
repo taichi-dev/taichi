@@ -902,6 +902,8 @@ DEFINE_CUDA_OP(div, /)
 DEFINE_CUDA_OP(mod, %)
 DEFINE_CUDA_OP(bit_and, &)
 DEFINE_CUDA_OP(bit_or, |)
+DEFINE_CUDA_OP(cmp_lt, <)
+DEFINE_CUDA_OP(cmp_gt, >)
 
 DEFINE_CUDA_OP(cmp_le, <=)
 DEFINE_CUDA_OP(cmp_eq, ==)
@@ -913,18 +915,11 @@ DEFINE_CUDA_OP(cmp_eq, ==)
   }
 
 DEFINE_CUDA_UNARY_OP(bit_not, ~)
+DEFINE_CUDA_UNARY_OP(neg, -)
 
 template <typename T, typename G>
 __device__ auto select(const G &flag, const T &a, const T &b) {
   return flag ? a : b;
-}
-
-__device__ inline int32x1 cmp_lt(float32x1 a, float32x1 b) {
-  return a < b;
-}
-
-__device__ inline int32x1 cmp_lt(int32x1 a, int32x1 b) {
-  return a < b;
 }
 
 #endif

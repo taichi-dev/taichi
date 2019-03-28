@@ -64,15 +64,26 @@ Expr Expr::eval() const {
 }
 
 void Expr::operator+=(const Expr &o) {
-  (*this) = (*this) + o;
+  if (this->atomic) {
+    current_ast_builder().insert(
+        Stmt::make<FrontendAtomicStmt>(AtomicType::add, *this, o));
+  } else {
+    (*this) = (*this) + o;
+  }
 }
 void Expr::operator-=(const Expr &o) {
-  (*this) = (*this) - o;
+  if (this->atomic) {
+    (*this) = (*this) - o;
+  } else {
+    TC_NOT_IMPLEMENTED
+  }
 }
 void Expr::operator*=(const Expr &o) {
+  TC_ASSERT(!this->atomic);
   (*this) = (*this) * o;
 }
 void Expr::operator/=(const Expr &o) {
+  TC_ASSERT(!this->atomic);
   (*this) = (*this) / o;
 }
 
@@ -115,6 +126,10 @@ FrontendAssignStmt::FrontendAssignStmt(Expr lhs, Expr rhs)
   TC_ASSERT(lhs->is_lvalue());
 }
 
+FrontendAtomicStmt::FrontendAtomicStmt(AtomicType op_type, Expr dest, Expr val)
+    : op_type(op_type), dest(dest), val(val) {
+}
+
 IRNode *FrontendContext::root() {
   return static_cast<IRNode *>(root_node.get());
 }
@@ -132,12 +147,14 @@ void *Expr::evaluate_addr(int i, int j, int k, int l) {
 template <int i, typename... Indices>
 std::enable_if_t<(i < sizeof...(Indices)), int> get_if_exists(
     std::tuple<Indices...> tup) {
+  static_assert(i >= 0, "i must be nonnegative");
   return std::get<i>(tup);
 }
 
 template <int i, typename... Indices>
 std::enable_if_t<!(i < sizeof...(Indices)), int> get_if_exists(
     std::tuple<Indices...> tup) {
+  static_assert(i >= 0, "i must be nonnegative");
   return 0;
 }
 
@@ -152,7 +169,9 @@ void *Expr::val_tmp(DataType dt, Indices... indices) {
   int ind[max_num_indices];
   std::memset(ind, 0, sizeof(ind));
   auto tup = std::make_tuple(indices...);
-#define LOAD_IND(i) ind[snode->index_order[i]] = get_if_exists<i>(tup);
+#define LOAD_IND(i)                           \
+  if (snode->physical_index_position[i] >= 0) \
+    ind[snode->physical_index_position[i]] = get_if_exists<i>(tup);
   LOAD_IND(0);
   LOAD_IND(1);
   LOAD_IND(2);

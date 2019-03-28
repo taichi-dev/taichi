@@ -133,12 +133,6 @@ class CPUIRCodeGen : public IRVisitor {
          stmt->ret_data_type_name());
   }
 
-  void visit(BinaryOpStmt *bin) {
-    emit("const {} {}({}({}, {}));", bin->ret_data_type_name(), bin->raw_name(),
-         binary_type_name(bin->op_type), bin->lhs->raw_name(),
-         bin->rhs->raw_name());
-  }
-
   void visit(UnaryOpStmt *stmt) {
     if (stmt->op_type != UnaryType::cast) {
       emit("const {} {}({}({}));", stmt->ret_data_type_name(), stmt->raw_name(),
@@ -148,6 +142,18 @@ class CPUIRCodeGen : public IRVisitor {
            stmt->raw_name(), data_type_name(stmt->cast_type),
            stmt->rhs->raw_name());
     }
+  }
+
+  void visit(BinaryOpStmt *bin) {
+    emit("const {} {}({}({}, {}));", bin->ret_data_type_name(), bin->raw_name(),
+         binary_type_name(bin->op_type), bin->lhs->raw_name(),
+         bin->rhs->raw_name());
+  }
+
+  void visit(TrinaryOpStmt *tri) {
+    emit("const {} {}({}({}, {}, {}));", tri->ret_data_type_name(),
+         tri->raw_name(), trinary_type_name(tri->op_type), tri->op1->raw_name(),
+         tri->op2->raw_name(), tri->op3->raw_name());
   }
 
   void visit(IfStmt *if_stmt) {
@@ -200,6 +206,14 @@ class CPUIRCodeGen : public IRVisitor {
     emit("leaves.push_back(leaf_context);");
     generate_loop_tail(leaf->parent, for_stmt);
     emit("int num_leaves = leaves.size();");
+    std::string vars;
+    for (int i = 0; i < for_stmt->loop_vars.size(); i++) {
+      vars += for_stmt->loop_vars[i]->raw_name();
+      if (i + 1 < for_stmt->loop_vars.size()) {
+        vars += ",";
+      }
+    }
+    // emit("#pragma omp parallel for private({})", vars);
     emit("for (int leaf_loop = 0; leaf_loop < num_leaves; leaf_loop++) {{");
     emit("auto {}_cache = leaves[leaf_loop].ptr;", leaf->node_type_name);
     for (int i = 0; i < max_num_indices; i++) {
@@ -208,8 +222,11 @@ class CPUIRCodeGen : public IRVisitor {
     }
     generate_single_loop_header(leaf, true);
     for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
-      emit("{} = {};", for_stmt->loop_vars[i]->raw_name(),
-           index_name_global(leaf, i));
+      for (int j = 0; j < max_num_indices; j++) {
+        if (for_stmt->snode->physical_index_position[i] == j)
+          emit("{} = {};", for_stmt->loop_vars[i]->raw_name(),
+               index_name_global(leaf, j));
+      }
     }
     for_stmt->body->accept(this);
     emit("}}");
@@ -289,23 +306,21 @@ class CPUIRCodeGen : public IRVisitor {
       // Try to weaken here...
       std::vector<int> offsets(stmt->indices.size());
 
-      std::string indices = "(root, ";
-      for (int i = 0; i < max_num_indices; i++) {
-        if (i < (int)stmt->indices.size()) {
-          indices += stmt->indices[i]->raw_name() + fmt::format("[{}]", l);
-        } else {
-          indices += "0";
+      auto snode = stmt->snode[l];
+      std::vector<std::string> indices(max_num_indices, "0");  // = "(root, ";
+      for (int i = 0; i < stmt->indices.size(); i++) {
+        if (snode->physical_index_position[i] != -1) {
+          // TC_ASSERT(snode->physical_index_position[i] != -1);
+          indices[snode->physical_index_position[i]] =
+              stmt->indices[i]->raw_name() + fmt::format("[{}]", l);
         }
-        if (i + 1 < max_num_indices)
-          indices += ",";
       }
-      indices += ")";
       std::string strong_access =
           fmt::format("{}[{}] = access_{}{};", stmt->raw_name(), l,
-                      stmt->snode[l]->node_type_name, indices);
+                      stmt->snode[l]->node_type_name,
+                      "(root, " + make_list(indices, "") + ")");
 
       bool weakened = false;
-      auto snode = stmt->snode[l];
       if (current_struct_for &&
           snode->parent == current_struct_for->snode->parent) {
         bool identical_indices = true;

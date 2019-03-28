@@ -22,7 +22,7 @@ void StructCompiler::visit(SNode &snode) {
     for (int i = 0; i < max_num_indices; i++) {
       bool found = false;
       for (int k = 0; k < max_num_indices; k++) {
-        if (snode.index_order[k] == i) {
+        if (snode.physical_index_position[k] == i) {
           found = true;
           break;
         }
@@ -30,17 +30,18 @@ void StructCompiler::visit(SNode &snode) {
       if (found)
         continue;
       if (snode.extractors[i].num_bits) {
-        snode.index_order[snode.num_active_indices++] = i;
+        snode.physical_index_position[snode.num_active_indices++] = i;
       }
     }
     /*
     TC_TAG;
     for (int i = 0; i < max_num_indices; i++) {
-      fmt::print("{}, ", snode.index_order[i]);
+      fmt::print("{}, ", snode.physical_index_position[i]);
     }
     fmt::print("\n");
     */
-    std::memcpy(ch->index_order, snode.index_order, sizeof(snode.index_order));
+    std::memcpy(ch->physical_index_position, snode.physical_index_position,
+                sizeof(snode.physical_index_position));
     ch->num_active_indices = snode.num_active_indices;
     visit(*ch);
 
@@ -152,8 +153,9 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
   }
   // SNode::place & indirect
   // emit end2end accessors for leaf (place) nodes, using chain accessors
+  TC_ASSERT(max_num_indices == 4);
   emit(
-      "TLANG_ACCESSOR TC_EXPORT {} * access_{}(void *root, int i0, int i1=0, "
+      "TLANG_ACCESSOR TC_EXPORT {} * access_{}(void *root, int i0=0, int i1=0, "
       "int "
       "i2=0, "
       "int i3=0) {{",

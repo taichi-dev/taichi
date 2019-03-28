@@ -45,7 +45,7 @@ class SNode {
   IndexExtractor extractors[max_num_indices];
   int taken_bits[max_num_indices];  // counting from the tail
   int num_active_indices;
-  int index_order[max_num_indices];  // look_up(index[index_order[index_id]]);
+  int physical_index_position[max_num_indices];
 
   static int counter;
   int id;
@@ -83,7 +83,7 @@ class SNode {
     total_bit_start = 0;
     num_active_indices = 0;
     std::memset(taken_bits, 0, sizeof(taken_bits));
-    std::memset(index_order, -1, sizeof(index_order));
+    std::memset(physical_index_position, -1, sizeof(physical_index_position));
     func = nullptr;
     parent = nullptr;
     _verbose = false;

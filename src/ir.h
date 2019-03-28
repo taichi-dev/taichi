@@ -25,6 +25,7 @@ class FrontendPrintStmt;
 class FrontendWhileStmt;
 class FrontendAllocaStmt;
 class FrontendAssignStmt;
+class FrontendAtomicStmt;
 class FrontendEvalStmt;
 
 // Midend statement
@@ -40,6 +41,8 @@ class ConstStmt;
 class AllocaStmt;
 class UnaryOpStmt;
 class BinaryOpStmt;
+class TrinaryOpStmt;
+class AtomicOpStmt;
 class PrintStmt;
 class RandStmt;
 class GlobalLoadStmt;
@@ -281,12 +284,15 @@ class IRVisitor {
   DEFINE_VISIT(FrontendForStmt);
   DEFINE_VISIT(FrontendWhileStmt);
   DEFINE_VISIT(FrontendAssignStmt);
+  DEFINE_VISIT(FrontendAtomicStmt);
   DEFINE_VISIT(FrontendEvalStmt);
 
   DEFINE_VISIT(AllocaStmt);
-  DEFINE_VISIT(BinaryOpStmt);
   DEFINE_VISIT(UnaryOpStmt);
   DEFINE_VISIT(LocalLoadStmt);
+  DEFINE_VISIT(BinaryOpStmt);
+  DEFINE_VISIT(TrinaryOpStmt);
+  DEFINE_VISIT(AtomicOpStmt);
   DEFINE_VISIT(LocalStoreStmt);
   DEFINE_VISIT(GlobalLoadStmt);
   DEFINE_VISIT(GlobalStoreStmt);
@@ -559,9 +565,11 @@ class Expr {
  public:
   std::shared_ptr<Expression> expr;
   bool const_value;
+  bool atomic;
 
   Expr() {
     const_value = false;
+    atomic = false;
   }
 
   Expr(int32 x);
@@ -794,6 +802,35 @@ class BinaryOpStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
+class TrinaryOpStmt : public Stmt {
+ public:
+  TrinaryType op_type;
+  Stmt *op1, *op2, *op3;
+
+  TrinaryOpStmt(TrinaryType op_type, Stmt *op1, Stmt *op2, Stmt *op3)
+      : op_type(op_type), op1(op1), op2(op2), op3(op3) {
+    add_operand(this->op1);
+    add_operand(this->op2);
+    add_operand(this->op3);
+  }
+
+  DEFINE_ACCEPT
+};
+
+class AtomicOpStmt : public Stmt {
+ public:
+  AtomicType op_type;
+  Stmt *dest, *val;
+
+  AtomicOpStmt(AtomicType op_type, Stmt *dest, Stmt *val)
+      : op_type(op_type), dest(dest), val(val) {
+    add_operand(this->dest);
+    add_operand(this->val);
+  }
+
+  DEFINE_ACCEPT
+};
+
 class BinaryOpExpression : public Expression {
  public:
   BinaryType type;
@@ -816,6 +853,38 @@ class BinaryOpExpression : public Expression {
     lhs->flatten(ret);
     rhs->flatten(ret);
     ret.push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
+    stmt = ret.back().get();
+  }
+};
+
+class TrinaryOpExpression : public Expression {
+ public:
+  TrinaryType type;
+  Expr op1, op2, op3;
+
+  TrinaryOpExpression(TrinaryType type,
+                      const Expr &op1,
+                      const Expr &op2,
+                      const Expr &op3)
+      : type(type) {
+    this->op1.set(load_if_ptr(op1));
+    this->op2.set(load_if_ptr(op2));
+    this->op3.set(load_if_ptr(op3));
+  }
+
+  std::string serialize() override {
+    return fmt::format("{}({} {} {})", trinary_type_name(type),
+                       op1->serialize(), op2->serialize(), op3->serialize());
+  }
+
+  void flatten(VecStatement &ret) override {
+    // if (stmt)
+    //  return;
+    op1->flatten(ret);
+    op2->flatten(ret);
+    op3->flatten(ret);
+    ret.push_back(
+        std::make_unique<TrinaryOpStmt>(type, op1->stmt, op2->stmt, op3->stmt));
     stmt = ret.back().get();
   }
 };
@@ -907,6 +976,13 @@ class GlobalPtrExpression : public Expression {
         std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs, rhs)); \
   }
 
+inline Expr select(const Expr &cond,
+                   const Expr &false_val,
+                   const Expr &true_val) {
+  return Expr(std::make_shared<TrinaryOpExpression>(TrinaryType::select, cond,
+                                                    false_val, true_val));
+}
+
 inline Expr operator-(Expr expr) {
   return Expr(std::make_shared<UnaryOpExpression>(UnaryType::neg, expr));
 }
@@ -934,6 +1010,7 @@ DEFINE_EXPRESSION_OP(<=, cmp_le)
 DEFINE_EXPRESSION_OP(>, cmp_gt)
 DEFINE_EXPRESSION_OP(>=, cmp_ge)
 DEFINE_EXPRESSION_OP(==, cmp_eq)
+DEFINE_EXPRESSION_OP(!=, cmp_ne)
 
 #define DEFINE_EXPRESSION_FUNC(op_name)                                       \
   inline Expr op_name(const Expr &lhs, const Expr &rhs) {                     \
@@ -1018,6 +1095,17 @@ class Block : public IRNode {
 
   DEFINE_ACCEPT
 };
+
+class FrontendAtomicStmt : public Stmt {
+public:
+  AtomicType op_type;
+  Expr dest, val;
+
+  FrontendAtomicStmt(AtomicType op_type, Expr dest, Expr val);
+
+  DEFINE_ACCEPT
+};
+
 
 class FrontendAssignStmt : public Stmt {
  public:

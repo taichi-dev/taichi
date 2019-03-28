@@ -41,6 +41,34 @@ TC_TEST("compiler_linalg") {
   func();
 };
 
+TC_TEST("select") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 128;
+  Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
+
+  Global(a, i32);
+  auto i = Index(0);
+  layout([&]() { root.fixed(i, n).place(a); });
+
+  auto dou = [](Expr a) { return a * 2; };
+
+  auto func = kernel([&]() {
+    Declare(i);
+    Local(sum) = 0;
+    For(i, 0, n, [&] {
+      sum = sum + i;
+      a[i] = select(i % 2 == 0, dou(i), i);
+    });
+  });
+
+  func();
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK(a.val<int32>(i) == (2 - i % 2) * i);
+  }
+};
+
 TC_TEST("compiler_basics") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;

@@ -141,6 +141,13 @@ std::vector<Index> Indices(indices... ind) {
   return ret;
 }
 
+inline Expr Atomic(Expr dest) {
+  // NOTE: dest must be passed by value so that the original
+  // expr will not be modified into an atomic one.
+  dest.atomic = true;
+  return dest;
+}
+
 TLANG_NAMESPACE_END
 
 TC_NAMESPACE_BEGIN

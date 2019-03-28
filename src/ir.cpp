@@ -30,6 +30,7 @@ void Expr::operator=(const Expr &o) {
     current_ast_builder().insert(
         std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
   } else {
+    // set(o.eval());
     TC_ERROR("Cannot assign to non-lvalue: {}", serialize());
   }
 }

@@ -29,7 +29,7 @@ auto mpm3d = []() {
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
 
-  constexpr int n = 256;  // grid_resolution
+  constexpr int n = 128;  // grid_resolution
   const real dt = 1e-4_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
   auto E = 1e3_f;
@@ -40,7 +40,7 @@ auto mpm3d = []() {
 
   auto f32 = DataType::f32;
   int grid_block_size = 8;
-  int particle_block_size = 128;
+  int particle_block_size = 256;
 
   Vector particle_x(f32, dim), particle_v(f32, dim);
   Matrix particle_F(f32, dim, dim), particle_C(f32, dim, dim);
@@ -111,6 +111,7 @@ auto mpm3d = []() {
 
       auto cauchy = Expr(E) * (J - Expr(1.0_f));
       auto affine = Expr(particle_mass) * C;
+      Mutable(affine, DataType::f32);
       for (int i = 0; i < dim; i++) {
         affine(i, i) =
             affine(i, i) + Expr(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
@@ -178,8 +179,10 @@ auto mpm3d = []() {
     For(p, particle_x(0), [&] {
       auto x = particle_x[p];
       auto v = Vector(dim);
+      Mutable(v, DataType::f32);
       // auto F = particle_F[p];
       auto C = Matrix(dim, dim);
+      Mutable(C, DataType::f32);
       auto J = particle_J[p];
 
       for (int i = 0; i < dim; i++) {
@@ -217,7 +220,6 @@ auto mpm3d = []() {
 
       J = J * (Expr(1.0_f) + Expr(dt) * (C(0, 0) + C(1, 1) + C(2, 2)));
       x = x + dt * v;
-      // x(1) += 0.01f;
 
       particle_C[p] = C;
       particle_v[p] = v;

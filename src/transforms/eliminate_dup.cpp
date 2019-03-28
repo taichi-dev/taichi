@@ -147,6 +147,12 @@ class BasicBlockEliminate : public IRVisitor {
             // no store to the var?
             bool has_related_store = false;
             for (int j = i + 1; j < current_stmt_id; j++) {
+              if (block->statements[j]
+                      ->is_container_statement()) {  // no if, while, etc..
+                has_related_store = true;
+                TC_WARN("Jumping");
+                break;
+              }
               if (block->statements[j]->is<LocalStoreStmt>()) {
                 auto st = block->statements[j]->as<LocalStoreStmt>();
                 for (auto var : vars) {
@@ -188,7 +194,7 @@ class BasicBlockEliminate : public IRVisitor {
         auto &bstmt_data = *bstmt;
         if (typeid(bstmt_data) == typeid(*stmt)) {
           auto bstmt_ = bstmt->as<UnaryOpStmt>();
-          if (bstmt_->rhs == stmt->rhs) {
+          if (bstmt_->same_operation(stmt) && bstmt_->rhs == stmt->rhs) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
             throw IRModifiedException();

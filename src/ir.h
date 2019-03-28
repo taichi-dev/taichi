@@ -729,6 +729,17 @@ class UnaryOpStmt : public Stmt {
     cast_type = DataType::unknown;
   }
 
+  bool same_operation(UnaryOpStmt *o) const {
+    if (op_type == o->op_type) {
+      if (op_type == UnaryType::cast) {
+        return cast_type == o->cast_type;
+      } else {
+        return true;
+      }
+    }
+    return false;
+  }
+
   DEFINE_ACCEPT
 };
 
@@ -1098,7 +1109,7 @@ class Block : public IRNode {
 };
 
 class FrontendAtomicStmt : public Stmt {
-public:
+ public:
   AtomicType op_type;
   Expr dest, val;
 
@@ -1106,7 +1117,6 @@ public:
 
   DEFINE_ACCEPT
 };
-
 
 class FrontendAssignStmt : public Stmt {
  public:

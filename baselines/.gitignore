@@ -4,3 +4,4 @@ taichi.h
 *.png
 mls-mpm
 vdb_dataset
+atomics

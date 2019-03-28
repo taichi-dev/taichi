@@ -41,9 +41,22 @@ TC_TEST("compiler_linalg") {
   func();
 };
 
+int glo;
+
 TC_TEST("atomics") {
+  glo = 0;
+#pragma omp parallel for
+  for (int i = 0; i < 100000000; i++) {
+    //__atomic_add_fetch(&glo, 1, std::memory_order::memory_order_seq_cst);
+    glo += 1;
+  }
+  TC_P(glo);
+  return;
+
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 100000000;
+  std::atomic<int> a;
+  a += 100;
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
 

@@ -19,7 +19,6 @@ TC_TEST("atomics") {
     Parallelize(4);
     For(i, 0, n, [&] {
       Atomic(sum[Expr(0)]) += 1;
-      // Atomic(fsum[Expr(0)]) += 1 - 2 * (i % 2);
       Atomic(fsum[Expr(0)]) += cast<float32>(1 - 2 * (i % 2));
     });
   });

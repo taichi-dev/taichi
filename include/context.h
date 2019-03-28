@@ -9,7 +9,12 @@ struct Context {
   using Buffer = void *;
   Buffer buffers[1];
 
+  void *leaves;
+  int num_leaves;
+
   Context() {
+    leaves = 0;
+    num_leaves = 0;
     for (int i = 0; i < 1; i++)
       buffers[i] = nullptr;
   }

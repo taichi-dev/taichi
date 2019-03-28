@@ -76,8 +76,24 @@ class GPUIRCodeGen : public IRVisitor {
         current_struct_for = for_stmt;
         auto leaf = for_stmt->snode->parent;
 
-        // loopgen.emit_body_header(for_stmt, leaf);
-        // for_stmt->body->accept(this);
+        emit("__global__ void {}_kernel(Context context) {{",
+             codegen->func_name);
+        emit("auto root = ({} *)context.buffers[0];",
+             codegen->prog->snode_root->node_type_name);
+
+        emit("auto leaves = (LeafContext<{}> *)(context.leaves);",
+             codegen->prog->snode_root->node_type_name);
+        emit("auto num_leaves = context.num_leaves;",
+             codegen->prog->snode_root->node_type_name);
+        emit("auto leaf_loop = blockIdx.x;",
+             codegen->prog->snode_root->node_type_name);
+        emit("if (leaf_loop >= num_leaves) return;");
+
+        loopgen.emit_body_header(for_stmt, leaf);
+        for_stmt->body->accept(this);
+
+        emit("}}");
+        emit("}}");
 
         emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
         emit("auto root = ({} *)context.buffers[0];",
@@ -93,9 +109,19 @@ class GPUIRCodeGen : public IRVisitor {
             vars += ",";
           }
         }
-        emit("int num_leaves = leaves.size();");
-        emit("printf(\"num leaves %d\\n\", num_leaves);");
+        emit("context.num_leaves = leaves.size();");
+        emit(
+            "cudaMalloc(&context.leaves, sizeof(LeafContext<{}>) * "
+            "context.num_leaves);",
+            leaf->node_type_name);
+        emit("printf(\"num leaves %d\\n\", context.num_leaves);");
         // allocate the vector...
+
+        emit("{}_kernel<<<context.num_leaves, {}().get_n()>>>(context);",
+             codegen->func_name, leaf->node_type_name);
+
+        emit("cudaFree(context.leaves); context.leaves = nullptr;");
+
         emit("}}");
         current_struct_for = nullptr;
       }
@@ -341,16 +367,8 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) {
-    if (!current_program->config.force_vectorized_global_load) {
-      emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
-      for (int i = 0; i < stmt->ret_type.width; i++) {
-        emit("{}[{}] = *{}[{}];", stmt->raw_name(), i, stmt->ptr->raw_name(),
-             i);
-      }
-    } else {
-      emit("const auto {} = {}::load({}[0]);", stmt->raw_name(),
-           stmt->ret_data_type_name(), stmt->ptr->raw_name());
-    }
+    TC_ASSERT(stmt->width() == 1);
+    emit("const auto {} = *({}[0]);", stmt->raw_name(), stmt->ptr->raw_name());
   }
 
   void visit(ElementShuffleStmt *stmt) {

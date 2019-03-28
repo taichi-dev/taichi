@@ -27,6 +27,7 @@ void write_partio(std::vector<Vector3> positions,
 
 auto mpm3d = []() {
   Program prog(Arch::gpu);
+  // Program prog(Arch::x86_64);
 
   constexpr int n = 128;  // grid_resolution
   const real dt = 1e-4_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
@@ -38,6 +39,8 @@ auto mpm3d = []() {
   int dim = 3;
 
   auto f32 = DataType::f32;
+  int grid_block_size = 8;
+  int particle_block_size = 256;
 
   Vector particle_x(f32, dim), particle_v(f32, dim);
   Matrix particle_F(f32, dim, dim), particle_C(f32, dim, dim);
@@ -54,7 +57,12 @@ auto mpm3d = []() {
   auto p = Index(3);
 
   layout([&]() {
-    auto place = [&](Expr &expr) { root.fixed(p, n_particles).place(expr); };
+    TC_ASSERT(n_particles % particle_block_size == 0);
+    auto place = [&](Expr &expr) {
+      root.fixed(p, n_particles / particle_block_size)
+          .fixed(p, particle_block_size)
+          .place(expr);
+    };
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
         place(particle_C(i, j));
@@ -64,7 +72,9 @@ auto mpm3d = []() {
     }
     place(particle_J);
 
-    root.fixed({i, j, k}, {n, n, n})
+    TC_ASSERT(n % grid_block_size == 0);
+    root.fixed({i, j, k}, n / grid_block_size)
+        .fixed({i, j, k}, grid_block_size)
         .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
   });
   // TODO:... replace this
@@ -205,6 +215,7 @@ auto mpm3d = []() {
 
       J = J * (Expr(1.0_f) + Expr(dt) * (C(0, 0) + C(1, 1) + C(2, 2)));
       x = x + dt * v;
+      // x(1) += 0.01f;
 
       particle_C[p] = C;
       particle_v[p] = v;

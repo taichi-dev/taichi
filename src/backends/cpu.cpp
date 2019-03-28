@@ -4,6 +4,7 @@
 
 #include "../util.h"
 #include "cpu.h"
+#include "loop_gen.h"
 #include "../program.h"
 #include "../ir.h"
 
@@ -13,103 +14,15 @@ class CPUIRCodeGen : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
   CodeGenBase *codegen;
+  LoopGenerator loopgen;
 
-  CPUIRCodeGen(CodeGenBase *codegen) : codegen(codegen) {
+  CPUIRCodeGen(CodeGenBase *codegen) : codegen(codegen), loopgen(codegen) {
     current_struct_for = nullptr;
   }
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
     codegen->emit(f, std::forward<Args>(args)...);
-  }
-
-  std::string loop_variable(SNode *snode) {
-    return snode->node_type_name + "_loop";
-  }
-
-  std::string index_name_local(SNode *snode, int i) {
-    return fmt::format("index_{}_{}_local", snode->node_type_name, i);
-  }
-
-  std::string index_name_global(SNode *snode, int i) {
-    return fmt::format("index_{}_{}_global", snode->node_type_name, i);
-  }
-
-  void generate_loop_header(SNode *snode, StructForStmt *stmt) {
-    TC_ASSERT(snode->type != SNodeType::place)
-    if (snode->parent != nullptr) {
-      generate_loop_header(snode->parent, stmt);
-    }
-    generate_single_loop_header(snode);
-  }
-
-  void single_loop_body_head(SNode *snode) {
-    if (snode->parent == nullptr) {
-      emit("auto {}_cache = root;", snode->node_type_name);
-    } else {
-      auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
-      emit("auto {}_cache = access_{}({}, {});", snode->node_type_name,
-           snode->node_type_name, parent, loop_variable(snode->parent));
-    }
-  }
-
-  void generate_single_loop_header(SNode *snode, bool leaf = false) {
-    if (!leaf)
-      single_loop_body_head(snode);
-
-    auto l = loop_variable(snode);
-    if (snode->type == SNodeType::pointer) {
-      emit("if (!{}_cache->data) continue;", snode->node_type_name, l);
-    }
-    if (snode->type != SNodeType::hashed) {
-      emit("int {};", l);
-      emit("auto {}_cache_n = {}_cache->get_n();", snode->node_type_name,
-           snode->node_type_name);
-    }
-    if (snode->_multi_threaded) {
-      TC_NOT_IMPLEMENTED
-      auto p = snode->parent;
-      while (p) {
-        TC_ASSERT(!p->_multi_threaded);
-        p = p->parent;
-      }
-      emit("#pragma omp parallel for");
-    }
-
-    if (snode->type == SNodeType::hashed) {
-      emit("for (auto &{}_it : {}_cache->data) {{", l, snode->node_type_name);
-      emit("int {} = {}_it.first;", l, l);
-    } else {
-      emit("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
-           snode->node_type_name, l, 1);
-    }
-
-    // update indices....
-    for (int i = 0; i < max_num_indices; i++) {
-      std::string ancester = "0 |";
-      if (snode->parent != nullptr) {
-        ancester = index_name_global(snode->parent, i) + " |";
-      }
-      std::string addition = "0";
-      if (snode->extractors[i].num_bits) {
-        addition = fmt::format(
-            "((({} >> {}) & ((1 << {}) - 1)) << {})", l,
-            snode->extractors[i].dest_offset - snode->total_bit_start,
-            snode->extractors[i].num_bits, snode->extractors[i].start);
-      }
-      emit("int {} = {};", index_name_local(snode, i), addition);
-      emit("int {} = {} {};", index_name_global(snode, i), ancester,
-           index_name_local(snode, i));
-    }
-  }
-
-  void generate_loop_tail(SNode *snode, StructForStmt *stmt) {
-    emit("}}\n");
-    if (snode->parent != nullptr) {
-      generate_loop_tail(snode->parent, stmt);
-    } else {
-      return;  // no loop for root, which is a fork
-    }
   }
 
   static void run(CodeGenBase *codegen, IRNode *node) {
@@ -192,20 +105,13 @@ class CPUIRCodeGen : public IRVisitor {
 
   void visit(StructForStmt *for_stmt) {
     TC_ASSERT_INFO(current_struct_for == nullptr,
-                   "Structu for cannot be nested.");
+                   "Struct for cannot be nested.");
     current_struct_for = for_stmt;
-    auto leaf = for_stmt->snode->parent;
     emit("{{");
-    emit("std::vector<LeafContext<{}>> leaves;", leaf->node_type_name);
-    generate_loop_header(leaf->parent, for_stmt);
-    emit("LeafContext<{}> leaf_context;", leaf->node_type_name);
-    single_loop_body_head(leaf);
-    emit("leaf_context.ptr = {}_cache;", leaf->node_type_name);
-    for (int i = 0; i < max_num_indices; i++)
-      emit("leaf_context.indices[{}] = {};", i,
-           index_name_global(leaf->parent, i));
-    emit("leaves.push_back(leaf_context);");
-    generate_loop_tail(leaf->parent, for_stmt);
+    auto leaf = for_stmt->snode->parent;
+
+    loopgen.loop_gen_leaves(for_stmt, leaf);
+
     emit("int num_leaves = leaves.size();");
     std::string vars;
     for (int i = 0; i < for_stmt->loop_vars.size(); i++) {
@@ -222,14 +128,14 @@ class CPUIRCodeGen : public IRVisitor {
     emit("auto {}_cache = leaves[leaf_loop].ptr;", leaf->node_type_name);
     for (int i = 0; i < max_num_indices; i++) {
       emit("auto {} = leaves[leaf_loop].indices[{}];",
-           index_name_global(leaf->parent, i), i);
+           loopgen.index_name_global(leaf->parent, i), i);
     }
-    generate_single_loop_header(leaf, true);
+    loopgen.generate_single_loop_header(leaf, true);
     for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
       for (int j = 0; j < max_num_indices; j++) {
         if (for_stmt->snode->physical_index_position[i] == j)
           emit("{} = {};", for_stmt->loop_vars[i]->raw_name(),
-               index_name_global(leaf, j));
+               loopgen.index_name_global(leaf, j));
       }
     }
     for_stmt->body->accept(this);

@@ -41,6 +41,26 @@ TC_TEST("compiler_linalg") {
   func();
 };
 
+TC_TEST("atomics") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 100000000;
+  Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
+
+  Global(sum, i32);
+  layout([&]() { root.place(sum); });
+
+  auto func = kernel([&]() {
+    Declare(i);
+    Parallelize(4);
+    For(i, 0, n, [&] { Atomic(sum[Expr(0)]) += 1; });
+  });
+
+  func();
+
+  TC_CHECK(sum.val<int>() == n);
+};
+
 TC_TEST("select") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;

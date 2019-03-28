@@ -96,7 +96,7 @@ TC_TEST("2d_blocked_array") {
 
   for (auto arch : {Arch::x86_64, Arch::gpu})
     for (auto blocked : {false, true}) {
-      Program prog(Arch::gpu);
+      Program prog(arch);
 
       Global(a, i32);
       Global(b, i32);

@@ -94,47 +94,48 @@ TC_TEST("snode_loop2") {
 TC_TEST("2d_blocked_array") {
   int n = 8, block_size = 4;
 
-  for (auto blocked : {false, true}) {
-    Program prog(Arch::gpu);
+  for (auto arch : {Arch::x86_64, Arch::gpu})
+    for (auto blocked : {false, true}) {
+      Program prog(Arch::gpu);
 
-    Global(a, i32);
-    Global(b, i32);
+      Global(a, i32);
+      Global(b, i32);
 
-    layout([&] {
-      auto i = Index(0);
-      auto j = Index(1);
-      if (blocked) {
-        TC_ASSERT(n % block_size == 0);
-        root.fixed({i, j}, {n / block_size, n * 2 / block_size})
-            .fixed({i, j}, {block_size, block_size})
-            .place(a, b);
-      } else {
-        root.fixed({i, j}, {n, n * 2}).place(a);
-        root.fixed({i, j}, {n, n * 2}).place(b);
+      layout([&] {
+        auto i = Index(0);
+        auto j = Index(1);
+        if (blocked) {
+          TC_ASSERT(n % block_size == 0);
+          root.fixed({i, j}, {n / block_size, n * 2 / block_size})
+              .fixed({i, j}, {block_size, block_size})
+              .place(a, b);
+        } else {
+          root.fixed({i, j}, {n, n * 2}).place(a);
+          root.fixed({i, j}, {n, n * 2}).place(b);
+        }
+      });
+
+      auto inc = kernel([&]() {
+        Declare(i);
+        Declare(j);
+        For({i, j}, a, [&] { b[i, j] = a[i, j] + i; });
+      });
+
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n * 2; j++) {
+          a.val<int32>(i, j) = i + j * 3;
+        }
       }
-    });
 
-    auto inc = kernel([&]() {
-      Declare(i);
-      Declare(j);
-      For({i, j}, a, [&] { b[i, j] = a[i, j] + i; });
-    });
+      inc();
 
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < n * 2; j++) {
-        a.val<int32>(i, j) = i + j * 3;
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n * 2; j++) {
+          TC_CHECK(a.val<int32>(i, j) == i + j * 3);
+          TC_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
+        }
       }
     }
-
-    inc();
-
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < n * 2; j++) {
-        TC_CHECK(a.val<int32>(i, j) == i + j * 3);
-        TC_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
-      }
-    }
-  }
 }
 
 #if (0)

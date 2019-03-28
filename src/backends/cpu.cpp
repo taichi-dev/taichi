@@ -302,6 +302,22 @@ class CPUIRCodeGen : public IRVisitor {
     }
   }
 
+  void visit(AtomicOpStmt *stmt) {
+    auto mask = stmt->parent->mask();
+    for (int l = 0; l < stmt->width(); l++) {
+      if (mask) {
+        emit("if ({}[{}]) ", mask->raw_name(), l);
+      } else {
+        TC_ASSERT(stmt->val->ret_type.data_type == DataType::f32 ||
+                  stmt->val->ret_type.data_type == DataType::i32)
+        emit(
+            "__atomic_add_fetch({}[{}], {}[{}], "
+            "std::memory_order::memory_order_seq_cst);",
+            stmt->dest->raw_name(), l, stmt->val->raw_name(), l);
+      }
+    }
+  }
+
   void visit(GlobalPtrStmt *stmt) {
     emit("{} *{}[{}];", data_type_name(stmt->ret_type.data_type),
          stmt->raw_name(), stmt->ret_type.width);

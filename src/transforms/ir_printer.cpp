@@ -30,7 +30,7 @@ class IRPrinter : public IRVisitor {
     fmt::print("==========\n");
   }
 
-  void visit(Block *stmt_list) {
+  void visit(Block *stmt_list) override {
     current_indent++;
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
@@ -38,24 +38,24 @@ class IRPrinter : public IRVisitor {
     current_indent--;
   }
 
-  void visit(FrontendAssignStmt *assign) {
+  void visit(FrontendAssignStmt *assign) override {
     print("{} = {}", assign->lhs->serialize(), assign->rhs->serialize());
   }
 
-  void visit(FrontendAllocaStmt *alloca) {
+  void visit(FrontendAllocaStmt *alloca) override {
     print("{}${} = alloca {}", alloca->type_hint(), alloca->id,
           alloca->ident.name());
   }
 
-  void visit(AllocaStmt *alloca) {
+  void visit(AllocaStmt *alloca) override {
     print("{}${} = alloca", alloca->type_hint(), alloca->id);
   }
 
-  void visit(RandStmt *stmt) {
+  void visit(RandStmt *stmt) override {
     print("{}{} = rand()", stmt->type_hint(), stmt->name());
   }
 
-  void visit(UnaryOpStmt *stmt) {
+  void visit(UnaryOpStmt *stmt) override {
     if (stmt->op_type == UnaryType::cast) {
       print("{}{} = {}<{}> {}", stmt->type_hint(), stmt->name(),
             unary_type_name(stmt->op_type), data_type_name(stmt->cast_type),
@@ -66,24 +66,30 @@ class IRPrinter : public IRVisitor {
     }
   }
 
-  void visit(BinaryOpStmt *bin) {
+  void visit(BinaryOpStmt *bin) override {
     print("{}{} = {} {} {}", bin->type_hint(), bin->name(),
           binary_type_name(bin->op_type), bin->lhs->name(), bin->rhs->name());
   }
 
-  void visit(TrinaryOpStmt *stmt) {
+  void visit(TrinaryOpStmt *stmt) override {
     print("{}{} = {}({}, {}, {})", stmt->type_hint(), stmt->name(),
           trinary_type_name(stmt->op_type), stmt->op1->name(),
           stmt->op2->name(), stmt->op3->name());
   }
 
-  void visit(AtomicOpStmt *stmt) {
+  void visit(FrontendAtomicStmt *stmt) override {
+    print("{}{} = atomic {}({}, {})", stmt->type_hint(), stmt->name(),
+          atomic_type_name(stmt->op_type), stmt->dest->serialize(),
+          stmt->val->serialize());
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
     print("{}{} = atomic {}({}, {})", stmt->type_hint(), stmt->name(),
           atomic_type_name(stmt->op_type), stmt->dest->name(),
           stmt->val->name());
   }
 
-  void visit(IfStmt *if_stmt) {
+  void visit(IfStmt *if_stmt) override {
     print("if {} {{", if_stmt->cond->name());
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
@@ -94,7 +100,7 @@ class IRPrinter : public IRVisitor {
     print("}}");
   }
 
-  void visit(FrontendIfStmt *if_stmt) {
+  void visit(FrontendIfStmt *if_stmt) override {
     print("if {} {{", if_stmt->condition->serialize());
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
@@ -105,42 +111,42 @@ class IRPrinter : public IRVisitor {
     print("}}");
   }
 
-  void visit(FrontendPrintStmt *print_stmt) {
+  void visit(FrontendPrintStmt *print_stmt) override {
     print("print {}, {}", print_stmt->str, print_stmt->expr.serialize());
   }
 
-  void visit(FrontendEvalStmt *stmt) {
+  void visit(FrontendEvalStmt *stmt) override {
     print("{} = eval {}", stmt->name(), stmt->expr.serialize());
   }
 
-  void visit(PrintStmt *print_stmt) {
+  void visit(PrintStmt *print_stmt) override {
     print("{}print {}, {}", print_stmt->type_hint(), print_stmt->str,
           print_stmt->stmt->name());
   }
 
-  void visit(ConstStmt *const_stmt) {
+  void visit(ConstStmt *const_stmt) override {
     print("{}{} = const {}", const_stmt->type_hint(), const_stmt->name(),
           const_stmt->val.serialize(
               [](const TypedConstant &t) { return t.stringify(); }, "["));
   }
 
-  void visit(WhileControlStmt *stmt) {
+  void visit(WhileControlStmt *stmt) override {
     print("while control {}, {}", stmt->mask->name(), stmt->cond->name());
   }
 
-  void visit(WhileStmt *stmt) {
+  void visit(WhileStmt *stmt) override {
     print("while true {{");
     stmt->body->accept(this);
     print("}}");
   }
 
-  void visit(FrontendWhileStmt *stmt) {
+  void visit(FrontendWhileStmt *stmt) override {
     print("while {} {{", stmt->cond->serialize());
     stmt->body->accept(this);
     print("}}");
   }
 
-  void visit(FrontendForStmt *for_stmt) {
+  void visit(FrontendForStmt *for_stmt) override {
     auto vars = make_list<Ident>(
         for_stmt->loop_var_id,
         [](const Ident &id) -> std::string { return id.name(); });
@@ -156,14 +162,14 @@ class IRPrinter : public IRVisitor {
     print("}}");
   }
 
-  void visit(RangeForStmt *for_stmt) {
+  void visit(RangeForStmt *for_stmt) override {
     print("for {} in range({}, {}, step {}) {{", for_stmt->loop_var->name(),
           for_stmt->begin->name(), for_stmt->end->name(), for_stmt->vectorize);
     for_stmt->body->accept(this);
     print("}}");
   }
 
-  void visit(StructForStmt *for_stmt) {
+  void visit(StructForStmt *for_stmt) override {
     auto loop_vars = make_list<Stmt *>(
         for_stmt->loop_vars,
         [](Stmt *const &stmt) -> std::string { return stmt->name(); });
@@ -173,7 +179,7 @@ class IRPrinter : public IRVisitor {
     print("}}");
   }
 
-  void visit(GlobalPtrStmt *stmt) {
+  void visit(GlobalPtrStmt *stmt) override {
     std::string s =
         fmt::format("{}{} = ptr [", stmt->type_hint(), stmt->name());
 
@@ -201,31 +207,31 @@ class IRPrinter : public IRVisitor {
     print_raw(s);
   }
 
-  void visit(LocalLoadStmt *stmt) {
+  void visit(LocalLoadStmt *stmt) override {
     print("{}{} = local load [{}]", stmt->type_hint(), stmt->name(),
           to_string(stmt->ptr));
   }
 
-  void visit(LocalStoreStmt *stmt) {
+  void visit(LocalStoreStmt *stmt) override {
     print("{}{} : local store [{} <- {}]", stmt->type_hint(), stmt->name(),
           stmt->ptr->name(), stmt->data->name());
   }
 
-  void visit(GlobalLoadStmt *stmt) {
+  void visit(GlobalLoadStmt *stmt) override {
     print("{}{} = global load {}", stmt->type_hint(), stmt->name(),
           stmt->ptr->name());
   }
 
-  void visit(GlobalStoreStmt *stmt) {
+  void visit(GlobalStoreStmt *stmt) override {
     print("{}{} : global store [{} <- {}]", stmt->type_hint(), stmt->name(),
           stmt->ptr->name(), stmt->data->name());
   }
 
-  void visit(PragmaSLPStmt *stmt) {
+  void visit(PragmaSLPStmt *stmt) override {
     print("#pragma SLP({})", stmt->slp_width);
   }
 
-  void visit(ElementShuffleStmt *stmt) {
+  void visit(ElementShuffleStmt *stmt) override {
     print("{}{} = shuffle {}", stmt->type_hint(), stmt->name(),
           stmt->elements.serialize([](const VectorElement &ve) {
             return fmt::format("{}[{}]", ve.stmt->name(), ve.index);

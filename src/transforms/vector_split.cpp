@@ -228,6 +228,13 @@ class BasicBlockVectorSplit : public IRVisitor {
     }
   }
 
+  void visit(AtomicOpStmt *stmt) override {
+    for (int i = 0; i < current_split_factor; i++) {
+      current_split[i] = Stmt::make<AtomicOpStmt>(
+          stmt->op_type, lookup(stmt->dest, i), lookup(stmt->val, i));
+    }
+  }
+
   void visit(PrintStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] =
@@ -283,7 +290,6 @@ class VectorSplit : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    auto old_vectorize = for_stmt->vectorize;
     for_stmt->body->accept(this);
   }
 

@@ -588,6 +588,7 @@ class Expr {
   Expr(Expr &&o) : Expr() {
     set(o);
     const_value = o.const_value;
+    atomic = o.atomic;
   }
 
   Expr(Identifier id);

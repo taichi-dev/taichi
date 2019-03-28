@@ -196,6 +196,28 @@ class LowerAST : public IRVisitor {
     throw IRModifiedException();
   }
 
+  void visit(FrontendAtomicStmt *stmt) override {
+    // expand rhs
+    auto expr = stmt->val;
+    VecStatement flattened;
+    expr->flatten(flattened);
+    if (stmt->dest.is<IdExpression>()) {  // local variable
+      TC_NOT_IMPLEMENTED
+      // emit local store stmt
+      flattened.push_back<LocalStoreStmt>(
+          stmt->parent->lookup_var(stmt->dest.cast<IdExpression>()->id),
+          expr->stmt);
+    } else {  // global variable
+      TC_ASSERT(stmt->dest.is<GlobalPtrExpression>());
+      auto global_ptr = stmt->dest.cast<GlobalPtrExpression>();
+      global_ptr->flatten(flattened);
+      flattened.push_back<AtomicOpStmt>(stmt->op_type, flattened.back().get(),
+                                        expr->stmt);
+    }
+    stmt->parent->replace_with(stmt, flattened);
+    throw IRModifiedException();
+  }
+
   static void run(IRNode *node) {
     LowerAST inst;
     while (true) {

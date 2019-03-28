@@ -234,6 +234,10 @@ class BasicBlockEliminate : public IRVisitor {
     }
   }
 
+  void visit(AtomicOpStmt *stmt) override {
+    return;
+  }
+
   void visit(PrintStmt *stmt) override {
     return;
   }

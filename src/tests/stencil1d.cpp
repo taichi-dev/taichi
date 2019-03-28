@@ -183,6 +183,12 @@ TC_TEST("stencil1d") {
     For(i, x, [&] { y[i] = x[i]; });
   });
 
+  auto copy_parallelized = kernel([&] {
+    Declare(i);
+    Parallelize(4);
+    For(i, x, [&] { y[i] = x[i]; });
+  });
+
   auto stencil = kernel([&] {
     Declare(i);
     For(i, x, [&] { y[i] = (1.0f / 3) * (x[i - 1] + x[i] + x[i + 1]); });
@@ -233,6 +239,9 @@ TC_TEST("stencil1d") {
 
   for (int i = 0; i < 10; i++)
     TC_TIME(copy());
+
+  for (int i = 0; i < 10; i++)
+    TC_TIME(copy_parallelized());
 
   // test copy to x
   for (auto &it : data) {

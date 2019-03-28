@@ -213,7 +213,10 @@ class CPUIRCodeGen : public IRVisitor {
         vars += ",";
       }
     }
-    // emit("#pragma omp parallel for private({})", vars);
+    if (for_stmt->parallelize) {
+      emit("omp_set_num_threads({});", for_stmt->parallelize);
+      emit("#pragma omp parallel for private({})", vars);
+    }
     emit("for (int leaf_loop = 0; leaf_loop < num_leaves; leaf_loop++) {{");
     emit("auto {}_cache = leaves[leaf_loop].ptr;", leaf->node_type_name);
     for (int i = 0; i < max_num_indices; i++) {

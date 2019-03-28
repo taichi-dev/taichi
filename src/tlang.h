@@ -61,7 +61,7 @@ inline void declare_var(Expr &a) {
 
 inline void declare_unnamed_var(Expr &a, DataType dt) {
   auto id = Identifier();
-  auto a_ = Expr(std::make_shared<IdExpression>(id));
+  auto a_ = Expr::make<IdExpression>(id);
 
   current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(id, dt));
 
@@ -79,8 +79,8 @@ inline void declare_var(Expr &a) {
 
 inline Expr Expr::operator[](ExpressionGroup indices) {
   TC_ASSERT(is<GlobalVariableExpression>());
-  return Expr(std::make_shared<GlobalPtrExpression>(
-      cast<GlobalVariableExpression>(), indices));
+  return Expr::make<GlobalPtrExpression>(cast<GlobalVariableExpression>(),
+                                         indices);
 }
 
 #define Declare(x) auto x = Expr(std::make_shared<IdExpression>(#x));
@@ -122,12 +122,12 @@ inline Expr global_new(Expr id_expr, DataType dt) {
 
 inline Expr global_new(DataType dt) {
   auto id_expr = std::make_shared<IdExpression>();
-  return Expr(std::make_shared<GlobalVariableExpression>(dt, id_expr->id));
+  return Expr::make<GlobalVariableExpression>(dt, id_expr->id);
 }
 
 template <typename T>
 inline Expr Rand() {
-  return Expr(std::make_shared<RandExpression>(get_data_type<T>()));
+  return Expr::make<RandExpression>(get_data_type<T>());
 }
 
 template <typename T>

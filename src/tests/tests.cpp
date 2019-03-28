@@ -578,7 +578,6 @@ TC_TEST("mixed_simd2") {
   int n = 64;
 
   for (auto vec_size : {4, 8, 16}) {
-    TC_WARN("{}", vec_size);
     Program prog;
     prog.config.max_vector_width = 4;
     prog.config.print_ir = true;

@@ -264,7 +264,7 @@ auto mpm3d = []() {
 
       float32 c = std::cos(angle * 0.01f), s = std::sin(angle * 0.01f);
 
-      // particles.push_back(Vector3(x, y, z));
+      particles.push_back(Vector3(x, y, z));
       if (0 < x && x < 1 && 0 < y && y < 1)
         canvas
             .circle(0.7f * (c * (x - center) + s * (z - center)) + center,

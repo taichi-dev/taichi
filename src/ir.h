@@ -635,6 +635,11 @@ class Expr {
   void operator/=(const Expr &o);
 
   Expr eval() const;
+
+  template <typename T, typename... Args>
+  static Expr make(Args &&... args) {
+    return Expr(std::make_shared<T>(std::forward<Args>(args)...));
+  }
 };
 
 class ExpressionGroup {
@@ -982,26 +987,25 @@ class GlobalPtrExpression : public Expression {
   }
 };
 
-#define DEFINE_EXPRESSION_OP(op, op_name)                                     \
-  inline Expr operator op(const Expr &lhs, const Expr &rhs) {                 \
-    return Expr(                                                              \
-        std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs, rhs)); \
+#define DEFINE_EXPRESSION_OP(op, op_name)                                 \
+  inline Expr operator op(const Expr &lhs, const Expr &rhs) {             \
+    return Expr::make<BinaryOpExpression>(BinaryType::op_name, lhs, rhs); \
   }
 
 inline Expr select(const Expr &cond,
-                   const Expr &false_val,
-                   const Expr &true_val) {
-  return Expr(std::make_shared<TrinaryOpExpression>(TrinaryType::select, cond,
-                                                    false_val, true_val));
+                   const Expr &true_val,
+                   const Expr &false_val) {
+  return Expr::make<TrinaryOpExpression>(TrinaryType::select, cond, true_val,
+                                         false_val);
 }
 
 inline Expr operator-(Expr expr) {
-  return Expr(std::make_shared<UnaryOpExpression>(UnaryType::neg, expr));
+  return Expr::make<UnaryOpExpression>(UnaryType::neg, expr);
 }
 
-#define DEFINE_EXPRESSION_OP_UNARY(opname)                                     \
-  inline Expr opname(Expr expr) {                                              \
-    return Expr(std::make_shared<UnaryOpExpression>(UnaryType::opname, expr)); \
+#define DEFINE_EXPRESSION_OP_UNARY(opname)                         \
+  inline Expr opname(Expr expr) {                                  \
+    return Expr::make<UnaryOpExpression>(UnaryType::opname, expr); \
   }
 
 DEFINE_EXPRESSION_OP_UNARY(sqrt)
@@ -1024,10 +1028,9 @@ DEFINE_EXPRESSION_OP(>=, cmp_ge)
 DEFINE_EXPRESSION_OP(==, cmp_eq)
 DEFINE_EXPRESSION_OP(!=, cmp_ne)
 
-#define DEFINE_EXPRESSION_FUNC(op_name)                                       \
-  inline Expr op_name(const Expr &lhs, const Expr &rhs) {                     \
-    return Expr(                                                              \
-        std::make_shared<BinaryOpExpression>(BinaryType::op_name, lhs, rhs)); \
+#define DEFINE_EXPRESSION_FUNC(op_name)                                   \
+  inline Expr op_name(const Expr &lhs, const Expr &rhs) {                 \
+    return Expr::make<BinaryOpExpression>(BinaryType::op_name, lhs, rhs); \
   }
 
 DEFINE_EXPRESSION_FUNC(min);
@@ -1537,7 +1540,7 @@ T &Expr::val(Indices... indices) {
 
 inline Expr load(Expr ptr) {
   TC_ASSERT(ptr.is<GlobalPtrExpression>());
-  return Expr(std::make_shared<GlobalLoadExpression>(ptr));
+  return Expr::make<GlobalLoadExpression>(ptr);
 }
 
 inline Expr load_if_ptr(const Expr &ptr) {

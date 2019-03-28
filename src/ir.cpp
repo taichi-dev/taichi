@@ -55,7 +55,7 @@ Expr Expr::eval() const {
     return *this;
   }
   auto eval_stmt = Stmt::make<FrontendEvalStmt>(*this);
-  auto eval_expr = Expr(std::make_shared<EvalExpression>(eval_stmt.get()));
+  auto eval_expr = Expr::make<EvalExpression>(eval_stmt.get());
   eval_stmt->as<FrontendEvalStmt>()->eval_expr.set(eval_expr);
   // needed in lower_ast to replace the statement itself with the
   // lowered statement

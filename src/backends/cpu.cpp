@@ -309,11 +309,10 @@ class CPUIRCodeGen : public IRVisitor {
         emit("if ({}[{}]) ", mask->raw_name(), l);
       } else {
         TC_ASSERT(stmt->val->ret_type.data_type == DataType::f32 ||
-                  stmt->val->ret_type.data_type == DataType::i32)
-        emit(
-            "__atomic_add_fetch({}[{}], {}[{}], "
-            "std::memory_order::memory_order_seq_cst);",
-            stmt->dest->raw_name(), l, stmt->val->raw_name(), l);
+                  stmt->val->ret_type.data_type == DataType::i32);
+        TC_ASSERT(stmt->op_type == AtomicType::add);
+        emit("atomic_add({}[{}], {}[{}]);", stmt->dest->raw_name(), l,
+             stmt->val->raw_name(), l);
       }
     }
   }

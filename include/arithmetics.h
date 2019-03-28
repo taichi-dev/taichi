@@ -866,6 +866,21 @@ inline vec<float32, dim> mod(vec<float32, dim> a, vec<float32, dim> b) {
   return sub(a, mul(floor(div(a, b)), b));
 };
 
+void atomic_add(int32 *dest, int32 val) {
+  __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
+}
+
+void atomic_add(volatile float32 *dest, float32 inc) {
+  float32 old_val;
+  volatile float32 new_val;
+  do {
+    old_val = *dest;
+    new_val = old_val + inc;
+  } while (!__atomic_compare_exchange(dest, &old_val, &new_val, true,
+                                     std::memory_order::memory_order_seq_cst,
+                                     std::memory_order::memory_order_seq_cst));
+}
+
 #endif  // Intrinsics wrapper
 
 #if defined(TC_GPU)

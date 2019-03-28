@@ -92,9 +92,9 @@ TC_TEST("snode_loop2") {
 }
 
 TC_TEST("2d_blocked_array") {
-  int n = 32, block_size = 16;
+  int n = 8, block_size = 4;
 
-  for (auto forked : {true, false}) {
+  for (auto blocked : {false, true}) {
     Program prog(Arch::gpu);
 
     Global(a, i32);
@@ -103,7 +103,7 @@ TC_TEST("2d_blocked_array") {
     layout([&] {
       auto i = Index(0);
       auto j = Index(1);
-      if (!forked) {
+      if (blocked) {
         TC_ASSERT(n % block_size == 0);
         root.fixed({i, j}, {n / block_size, n * 2 / block_size})
             .fixed({i, j}, {block_size, block_size})

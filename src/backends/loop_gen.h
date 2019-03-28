@@ -60,12 +60,6 @@ class LoopGenerator {
     }
     if (snode->_multi_threaded) {
       TC_NOT_IMPLEMENTED
-      auto p = snode->parent;
-      while (p) {
-        TC_ASSERT(!p->_multi_threaded);
-        p = p->parent;
-      }
-      emit("#pragma omp parallel for");
     }
 
     if (snode->type == SNodeType::hashed) {
@@ -76,7 +70,12 @@ class LoopGenerator {
            snode->node_type_name, l, 1);
     }
 
+    update_indices(snode);
+  }
+
+  void update_indices(SNode *snode) {
     // update indices....
+    auto l = loop_variable(snode);
     for (int i = 0; i < max_num_indices; i++) {
       std::string ancester = "0 |";
       if (snode->parent != nullptr) {
@@ -117,13 +116,15 @@ class LoopGenerator {
     generate_loop_tail(leaf->parent, for_stmt);
   }
 
-  void emit_body_header(StructForStmt *for_stmt, SNode *leaf) {
+  void emit_load_from_context(SNode *leaf) {
     emit("auto {}_cache = leaves[leaf_loop].ptr;", leaf->node_type_name);
     for (int i = 0; i < max_num_indices; i++) {
       emit("auto {} = leaves[leaf_loop].indices[{}];",
            index_name_global(leaf->parent, i), i);
     }
-    generate_single_loop_header(leaf, true);
+  }
+
+  void emit_setup_loop_variables(StructForStmt *for_stmt, SNode *leaf) {
     for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
       for (int j = 0; j < max_num_indices; j++) {
         if (for_stmt->snode->physical_index_position[i] == j)
@@ -132,6 +133,7 @@ class LoopGenerator {
       }
     }
   }
+
 };
 
 TLANG_NAMESPACE_END

@@ -89,10 +89,12 @@ class GPUIRCodeGen : public IRVisitor {
              codegen->prog->snode_root->node_type_name);
         emit("if (leaf_loop >= num_leaves) return;");
 
-        loopgen.emit_body_header(for_stmt, leaf);
+        loopgen.emit_load_from_context(leaf);
+        emit("auto {} = threadIdx.x;", loopgen.loop_variable(leaf));
+        loopgen.update_indices(leaf);
+        loopgen.emit_setup_loop_variables(for_stmt, leaf);
         for_stmt->body->accept(this);
 
-        emit("}}");
         emit("}}");
 
         emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
@@ -110,10 +112,10 @@ class GPUIRCodeGen : public IRVisitor {
           }
         }
         emit("context.num_leaves = leaves.size();");
-        emit(
-            "cudaMalloc(&context.leaves, sizeof(LeafContext<{}>) * "
-            "context.num_leaves);",
-            leaf->node_type_name);
+        emit("auto list_size = sizeof(LeafContext<{}>) * context.num_leaves;",
+             leaf->node_type_name);
+        emit("cudaMalloc(&context.leaves, list_size);");
+        emit("cudaMemcpy(context.leaves, leaves.data(), list_size, cudaMemcpyHostToDevice);");
         emit("printf(\"num leaves %d\\n\", context.num_leaves);");
         // allocate the vector...
 
@@ -215,8 +217,6 @@ class GPUIRCodeGen : public IRVisitor {
   void visit(RangeForStmt *for_stmt) {
     auto loop_var = for_stmt->loop_var;
     if (for_stmt->parallelize) {
-      // emit("#pragma omp parallel for num_threads({})",
-      // for_stmt->parallelize);
       emit("omp_set_num_threads({});", for_stmt->parallelize);
       emit("#pragma omp parallel for private({})", loop_var->raw_name());
     }

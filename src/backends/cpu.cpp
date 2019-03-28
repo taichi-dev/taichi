@@ -125,7 +125,9 @@ class CPUIRCodeGen : public IRVisitor {
       emit("#pragma omp parallel for private({})", vars);
     }
     emit("for (int leaf_loop = 0; leaf_loop < num_leaves; leaf_loop++) {{");
-    loopgen.emit_body_header(for_stmt, leaf);
+    loopgen.emit_load_from_context(leaf);
+    loopgen.generate_single_loop_header(leaf, true);
+    loopgen.emit_setup_loop_variables(for_stmt, leaf);
     for_stmt->body->accept(this);
     emit("}}");
     emit("}}");

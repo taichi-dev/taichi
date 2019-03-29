@@ -85,6 +85,7 @@ TC_FORCE_INLINE void svd(const float a11,
                          float &sigma1,
                          float &sigma2,
                          float &sigma3) {
+  // var
   union {
     float f;
     unsigned int ui;
@@ -300,13 +301,14 @@ TC_FORCE_INLINE void svd(const float a11,
     unsigned int ui;
   } Ss33;
 
+  // compute
   Sfour_gamma_squared.f = Four_Gamma_Squared;
   Ssine_pi_over_eight.f = Sine_Pi_Over_Eight;
   Scosine_pi_over_eight.f = Cosine_Pi_Over_Eight;
-  Sone_half.f = .5;
-  Sone.f = 1.;
-  Stiny_number.f = 1.e-20;
-  Ssmall_number.f = 1.e-12;
+  Sone_half.f = 0.5f;
+  Sone.f = 1.0f;
+  Stiny_number.f = 1.e-20f;
+  Ssmall_number.f = 1.e-12f;
 
   Sa11.f = a11;
   Sa21.f = a21;
@@ -318,10 +320,10 @@ TC_FORCE_INLINE void svd(const float a11,
   Sa23.f = a23;
   Sa33.f = a33;
 
-  Sqvs.f = 1.;
-  Sqvvx.f = 0.;
-  Sqvvy.f = 0.;
-  Sqvvz.f = 0.;
+  Sqvs.f = 1.0f;
+  Sqvvx.f = 0.0f;
+  Sqvvy.f = 0.0f;
+  Sqvvz.f = 0.0f;
 
   Ss11.f = Sa11.f * Sa11.f;
   Stmp1.f = Sa21.f * Sa21.f;
@@ -753,9 +755,9 @@ TC_FORCE_INLINE void svd(const float a11,
   Stmp1.ui = Stmp1.ui ^ Stmp5.ui;
   Stmp2.ui = Stmp2.ui ^ Stmp5.ui;
 
-  Stmp5.f = -2.;
+  Stmp5.f = -2.0f;
   Stmp5.ui = Stmp5.ui & Stmp4.ui;
-  Stmp4.f = 1.;
+  Stmp4.f = 1.0f;
   Stmp4.f = Stmp4.f + Stmp5.f;
 
   Sa12.f = Sa12.f * Stmp4.f;
@@ -802,9 +804,9 @@ TC_FORCE_INLINE void svd(const float a11,
   Stmp1.ui = Stmp1.ui ^ Stmp5.ui;
   Stmp3.ui = Stmp3.ui ^ Stmp5.ui;
 
-  Stmp5.f = -2.;
+  Stmp5.f = -2.0f;
   Stmp5.ui = Stmp5.ui & Stmp4.ui;
-  Stmp4.f = 1.;
+  Stmp4.f = 1.0f;
   Stmp4.f = Stmp4.f + Stmp5.f;
 
   Sa11.f = Sa11.f * Stmp4.f;
@@ -851,9 +853,9 @@ TC_FORCE_INLINE void svd(const float a11,
   Stmp2.ui = Stmp2.ui ^ Stmp5.ui;
   Stmp3.ui = Stmp3.ui ^ Stmp5.ui;
 
-  Stmp5.f = -2.;
+  Stmp5.f = -2.0f;
   Stmp5.ui = Stmp5.ui & Stmp4.ui;
-  Stmp4.f = 1.;
+  Stmp4.f = 1.0f;
   Stmp4.f = Stmp4.f + Stmp5.f;
 
   Sa13.f = Sa13.f * Stmp4.f;
@@ -863,21 +865,21 @@ TC_FORCE_INLINE void svd(const float a11,
   Sv13.f = Sv13.f * Stmp4.f;
   Sv23.f = Sv23.f * Stmp4.f;
   Sv33.f = Sv33.f * Stmp4.f;
-  Su11.f = 1.;
-  Su21.f = 0.;
-  Su31.f = 0.;
-  Su12.f = 0.;
-  Su22.f = 1.;
-  Su32.f = 0.;
-  Su13.f = 0.;
-  Su23.f = 0.;
-  Su33.f = 1.;
+  Su11.f = 1.0f;
+  Su21.f = 0.0f;
+  Su31.f = 0.0f;
+  Su12.f = 0.0f;
+  Su22.f = 1.0f;
+  Su32.f = 0.0f;
+  Su13.f = 0.0f;
+  Su23.f = 0.0f;
+  Su33.f = 1.0f;
   Ssh.f = Sa21.f * Sa21.f;
   Ssh.ui = (Ssh.f >= Ssmall_number.f) ? 0xffffffff : 0;
 
   Ssh.ui = Ssh.ui & Sa21.ui;
 
-  Stmp5.f = 0.;
+  Stmp5.f = 0.0f;
   Sch.f = Stmp5.f - Sa11.f;
   Sch.f = std::max(Sch.f, Sa11.f);
   Sch.f = std::max(Sch.f, Ssmall_number.f);
@@ -972,7 +974,7 @@ TC_FORCE_INLINE void svd(const float a11,
 
   Ssh.ui = Ssh.ui & Sa31.ui;
 
-  Stmp5.f = 0.;
+  Stmp5.f = 0.0f;
   Sch.f = Stmp5.f - Sa11.f;
   Sch.f = std::max(Sch.f, Sa11.f);
   Sch.f = std::max(Sch.f, Ssmall_number.f);
@@ -1067,7 +1069,7 @@ TC_FORCE_INLINE void svd(const float a11,
 
   Ssh.ui = Ssh.ui & Sa32.ui;
 
-  Stmp5.f = 0.;
+  Stmp5.f = 0.0f;
   Sch.f = Stmp5.f - Sa22.f;
   Sch.f = std::max(Sch.f, Sa22.f);
   Sch.f = std::max(Sch.f, Ssmall_number.f);
@@ -1157,6 +1159,7 @@ TC_FORCE_INLINE void svd(const float a11,
   Su33.f = Sc.f * Su33.f;
   Su32.f = Su32.f + Stmp2.f;
   Su33.f = Su33.f - Stmp1.f;
+  // end
 
   u11 = Su11.f;
   u21 = Su21.f;
@@ -1181,6 +1184,7 @@ TC_FORCE_INLINE void svd(const float a11,
   sigma1 = Sa11.f;
   sigma2 = Sa22.f;
   sigma3 = Sa33.f;
+  // output
 }
 
 }  // namespace SifakisSVD

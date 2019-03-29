@@ -3,6 +3,7 @@
 #include <taichi/visual/gui.h>
 #include <taichi/common/bit.h>
 #include <Partio.h>
+#include <taichi/system/profiler.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -259,12 +260,12 @@ auto mpm3d = []() {
   auto &canvas = gui.get_canvas();
 
   int frame = 0;
-  for (int f = 0; ; f++) {
+  for (int f = 0;; f++) {
     for (int t = 0; t < 20; t++) {
-      TC_TIME(clear_buffer());
-      TC_TIME(p2g());
-      TC_TIME(grid_op());
-      TC_TIME(g2p());
+      TC_PROFILE("reset grid", clear_buffer());
+      TC_PROFILE("p2g", p2g());
+      TC_PROFILE("grid_op", grid_op());
+      TC_PROFILE("g2p", g2p());
     }
     canvas.clear(0x112F41);
 
@@ -275,26 +276,33 @@ auto mpm3d = []() {
     trans = matrix4_rotate_angle_axis(&trans, 15.0f, Vector3::axis(0));
     trans = matrix4_translate(&trans, Vector3(0.5f));
 
-    std::vector<Vector3> particles;
-    for (int i = 0; i < n_particles; i++) {
-      auto x = particle_x(0).val<float32>(i), y = particle_x(1).val<float32>(i);
-      auto z = particle_x(2).val<float32>(i);
+    {
+      TC_PROFILER("cpu render");
 
-      particles.push_back(Vector3(x, y, z));
+      std::vector<Vector3> particles;
+      for (int i = 0; i < n_particles; i++) {
+        auto x = particle_x(0).val<float32>(i),
+             y = particle_x(1).val<float32>(i);
+        auto z = particle_x(2).val<float32>(i);
 
-      Vector3 pos(x, y, z);
-      pos = transform(trans, pos);
+        particles.push_back(Vector3(x, y, z));
 
-      if (0.01f < pos.x && pos.x < 0.99f && 0.01f < pos.y && pos.y < 0.99f)
-        canvas.circle(pos.x, pos.y)
-            .radius(1.6)
-            .color(0.4f + 0.6f * x, 0.4f + 0.6f * y, 0.4f + 0.6f * z, 1.0f);
+        Vector3 pos(x, y, z);
+        pos = transform(trans, pos);
+
+        if (0.01f < pos.x && pos.x < 0.99f && 0.01f < pos.y && pos.y < 0.99f)
+          canvas.circle(pos.x, pos.y)
+              .radius(1.6)
+              .color(0.4f + 0.6f * x, 0.4f + 0.6f * y, 0.4f + 0.6f * z, 1.0f);
+      }
+
+      gravity_x.val<float32>() = gravity_x_slider;
+      gui.update();
+      // write_partio(particles, fmt::format("particles/{:04d}.bgeo", frame));
+      frame++;
     }
 
-    gravity_x.val<float32>() = gravity_x_slider;
-    gui.update();
-    // write_partio(particles, fmt::format("particles/{:04d}.bgeo", frame));
-    frame++;
+    print_profile_info();
   }
 };
 TC_REGISTER_TASK(mpm3d);

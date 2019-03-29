@@ -117,3 +117,5 @@ print('return std::make_tuple(u, sigma, v);', file=f)
 print("}", file=f)
 
 f.close()
+
+os.system('clang-format-6.0 -i {}'.format(tc.get_repo_directory() + '/projects/taichi_lang/src/tests/svd.h'))

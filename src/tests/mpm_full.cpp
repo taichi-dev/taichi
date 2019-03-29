@@ -45,6 +45,7 @@ auto mpm3d = []() {
   Vector particle_x(f32, dim), particle_v(f32, dim);
   Matrix particle_F(f32, dim, dim), particle_C(f32, dim, dim);
   Global(particle_J, f32);
+  Global(gravity_x, f32);
 
   Vector grid_v(f32, dim);
   Global(grid_m, f32);
@@ -76,6 +77,8 @@ auto mpm3d = []() {
     root.dense({i, j, k}, n / grid_block_size)
         .dense({i, j, k}, grid_block_size)
         .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
+
+    root.place(gravity_x);
   });
 
   TC_ASSERT(bit::is_power_of_two(n));
@@ -157,7 +160,9 @@ auto mpm3d = []() {
         v1 *= inv_m;
         v2 *= inv_m;
 
-        v1 += dt * -200_f;
+        auto f = gravity_x[Expr(0)];
+        v1 += dt * (-100_f + abs(f));
+        v0 += dt * f;
       });
 
       v0 = select((Expr(n - 5) < i), min(v0, Expr(0.0_f)), v0);
@@ -246,12 +251,15 @@ auto mpm3d = []() {
   int scale = 6;
   GUI gui("MPM", n * scale + 200, n * scale);
   int angle = 0;
-  gui.button("Restart", reset).slider("View", angle, 0, 360, 1);
+  int gravity_x_slider = 0;
+  gui.button("Restart", reset)
+      .slider("Camera", angle, 0, 360, 1)
+      .slider("Gravity Dir", gravity_x_slider, -100, 100);
 
   auto &canvas = gui.get_canvas();
 
   int frame = 0;
-  for (int f = 0; f < 1000; f++) {
+  for (int f = 0; ; f++) {
     for (int t = 0; t < 20; t++) {
       TC_TIME(clear_buffer());
       TC_TIME(p2g());
@@ -263,7 +271,7 @@ auto mpm3d = []() {
     Matrix4 trans(1);
     trans = matrix4_translate(&trans, Vector3(-0.5f));
     trans = matrix4_scale_s(&trans, 0.7f);
-    trans = matrix4_rotate_angle_axis(&trans, angle * 0.4f, Vector3::axis(1));
+    trans = matrix4_rotate_angle_axis(&trans, angle * 1.0f, Vector3::axis(1));
     trans = matrix4_rotate_angle_axis(&trans, 15.0f, Vector3::axis(0));
     trans = matrix4_translate(&trans, Vector3(0.5f));
 
@@ -283,6 +291,7 @@ auto mpm3d = []() {
             .color(0.4f + 0.6f * x, 0.4f + 0.6f * y, 0.4f + 0.6f * z, 1.0f);
     }
 
+    gravity_x.val<float32>() = gravity_x_slider;
     gui.update();
     // write_partio(particles, fmt::format("particles/{:04d}.bgeo", frame));
     frame++;

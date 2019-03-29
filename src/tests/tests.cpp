@@ -786,6 +786,4 @@ TC_TEST("union_cast") {
   }
 };
 
-#include "svd.h"
-
 TLANG_NAMESPACE_END

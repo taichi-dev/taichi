@@ -9,6 +9,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+#include "svd.h"
+
 template <int sweeps = 5>
 __attribute_noinline__ void sifakis_svd(Matrix3 &a,
                                         Matrix3 &u,

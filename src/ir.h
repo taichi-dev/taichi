@@ -1022,6 +1022,11 @@ inline Expr operator~(Expr expr) {
     return Expr::make<UnaryOpExpression>(UnaryType::opname, expr); \
   }
 
+#define DEFINE_EXPRESSION_FUNC(op_name)                                   \
+  inline Expr op_name(const Expr &lhs, const Expr &rhs) {                 \
+    return Expr::make<BinaryOpExpression>(BinaryType::op_name, lhs, rhs); \
+  }
+
 DEFINE_EXPRESSION_OP_UNARY(sqrt)
 DEFINE_EXPRESSION_OP_UNARY(floor)
 DEFINE_EXPRESSION_OP_UNARY(abs)
@@ -1048,13 +1053,9 @@ DEFINE_EXPRESSION_OP(>=, cmp_ge)
 DEFINE_EXPRESSION_OP(==, cmp_eq)
 DEFINE_EXPRESSION_OP(!=, cmp_ne)
 
-#define DEFINE_EXPRESSION_FUNC(op_name)                                   \
-  inline Expr op_name(const Expr &lhs, const Expr &rhs) {                 \
-    return Expr::make<BinaryOpExpression>(BinaryType::op_name, lhs, rhs); \
-  }
-
 DEFINE_EXPRESSION_FUNC(min);
 DEFINE_EXPRESSION_FUNC(max);
+
 
 // Value cast
 template <typename T>

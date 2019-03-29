@@ -34,7 +34,6 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) {
-    auto block = stmt->parent;
     TC_ASSERT(stmt->width() == 1);
     TC_ASSERT(stmt->dest->ret_type == stmt->val->ret_type);
   }
@@ -76,7 +75,6 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(RangeForStmt *stmt) {
-    auto block = stmt->parent;
     /*
     TC_ASSERT(block->local_variables.find(stmt->loop_var) ==
               block->local_variables.end());

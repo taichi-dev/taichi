@@ -259,26 +259,32 @@ auto mpm3d = []() {
       TC_TIME(g2p());
     }
     canvas.clear(0x112F41);
+
+    Matrix4 trans(1);
+    trans = matrix4_translate(&trans, Vector3(-0.5f));
+    trans = matrix4_scale_s(&trans, 0.7f);
+    trans = matrix4_rotate_angle_axis(&trans, angle * 0.4f, Vector3::axis(1));
+    trans = matrix4_rotate_angle_axis(&trans, 15.0f, Vector3::axis(0));
+    trans = matrix4_translate(&trans, Vector3(0.5f));
+
     std::vector<Vector3> particles;
     for (int i = 0; i < n_particles; i++) {
       auto x = particle_x(0).val<float32>(i), y = particle_x(1).val<float32>(i);
       auto z = particle_x(2).val<float32>(i);
 
-      float center = 0.5f;
-
-      float32 c = std::cos(angle * 0.01f), s = std::sin(angle * 0.01f);
-
       particles.push_back(Vector3(x, y, z));
-      if (0 < x && x < 1 && 0 < y && y < 1)
-        canvas
-            .circle(0.7f * (c * (x - center) + s * (z - center)) + center,
-                    0.7f * y)
+
+      Vector3 pos(x, y, z);
+      pos = transform(trans, pos);
+
+      if (0.01f < pos.x && pos.x < 0.99f && 0.01f < pos.y && pos.y < 0.99f)
+        canvas.circle(pos.x, pos.y)
             .radius(1.6)
-            .color(0x068587);
+            .color(0.4f + 0.6f * x, 0.4f + 0.6f * y, 0.4f + 0.6f * z, 1.0f);
     }
 
     gui.update();
-    write_partio(particles, fmt::format("particles/{:04d}.bgeo", frame));
+    // write_partio(particles, fmt::format("particles/{:04d}.bgeo", frame));
     frame++;
   }
 };

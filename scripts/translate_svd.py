@@ -26,7 +26,7 @@ for l in range(l_var, l_compute - 1, 4):
 
 print('variables:', variables)
 
-f = open('svd.cpp', 'w')
+f = open(tc.get_repo_directory() + '/projects/taichi_lang/src/tests/svd.h', 'w')
 
 print('std::tuple<Matrix, Matrix, Matrix> svd(const Matrix &a) {', file=f)
 
@@ -40,18 +40,25 @@ print()
 for var in variables:
     print("Local({}) = 0.0f;".format(var), file=f)
 
+print(
+'''
+constexpr float Four_Gamma_Squared = 5.82842712474619f;
+constexpr float Sine_Pi_Over_Eight = 0.3826834323650897f;
+constexpr float Cosine_Pi_Over_Eight = 0.9238795325112867f;
+''', file=f)
+
 def to_var(s):
     if len(s) == 3 and s[0] == 'a':
         return 'a({}, {})'.format(int(s[1]) - 1, int(s[2]) - 1)
     if s[:5] == 'rsqrt':
-        return s[:-4] + ')'
+        return s[:-3] + ')'
     if s.find('-') != -1:
         return s
     if len(s) > 3 and s[-3] == '.':
         return s
     assert s[-3:] != '.ui', s
-    s = s[:-2]
-    if s in variables:
+    if s[:-2] in variables:
+        s = s[:-2]
         return s
     else:
         return 'Expr(' + s + ')'
@@ -81,7 +88,7 @@ for l in lines[l_compute + 1:l_end]:
         continue
     if len(tokens) == 9 and tokens[1] == '=' and tokens[5] == '?' and tokens[7] == ':':
         # a = b ? a : d
-        print("{} = select({} {} {}, Expr({}), Expr({}));".format(to_var_ui(tokens[0]), tokens[2][1:-2], tokens[3], tokens[4][-2], tokens[6], tokens[8]), file=f)
+        print("{} = select({} {} {}, Expr(int({})), Expr({}));".format(to_var_ui(tokens[0]), tokens[2][1:-2], tokens[3], tokens[4][:-3], tokens[6], tokens[8]), file=f)
         continue
     if len(tokens) == 4 and tokens[1] == '=' and tokens[2][:8] == 'std::max':
         # a = std::max(...)
@@ -89,7 +96,7 @@ for l in lines[l_compute + 1:l_end]:
         print("{} = max({}, {});".format(to_var(tokens[0]), tokens[2][9:-3], tokens[3][:-3]), file=f)
         continue
     if tokens[0] == 'for':
-        print('Declate(i); For (i, 0, 5, [&]{', file =f)
+        print('Declare(i); For (i, 0, 5, [&]{', file =f)
         continue
     if tokens[0] == '}':
         print('});', file =f)

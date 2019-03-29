@@ -1013,6 +1013,10 @@ inline Expr operator-(Expr expr) {
   return Expr::make<UnaryOpExpression>(UnaryType::neg, expr);
 }
 
+inline Expr operator~(Expr expr) {
+  return Expr::make<UnaryOpExpression>(UnaryType::bit_not, expr);
+}
+
 #define DEFINE_EXPRESSION_OP_UNARY(opname)                         \
   inline Expr opname(Expr expr) {                                  \
     return Expr::make<UnaryOpExpression>(UnaryType::opname, expr); \
@@ -1023,6 +1027,9 @@ DEFINE_EXPRESSION_OP_UNARY(floor)
 DEFINE_EXPRESSION_OP_UNARY(abs)
 DEFINE_EXPRESSION_OP_UNARY(sin)
 DEFINE_EXPRESSION_OP_UNARY(cos)
+DEFINE_EXPRESSION_OP_UNARY(inv)
+DEFINE_EXPRESSION_OP_UNARY(rcp)
+DEFINE_EXPRESSION_OP_UNARY(rsqrt)
 
 DEFINE_EXPRESSION_OP(+, add)
 DEFINE_EXPRESSION_OP(-, sub)
@@ -1031,6 +1038,9 @@ DEFINE_EXPRESSION_OP(/, div)
 DEFINE_EXPRESSION_OP(%, mod)
 DEFINE_EXPRESSION_OP(&&, bit_and)
 DEFINE_EXPRESSION_OP(||, bit_or)
+DEFINE_EXPRESSION_OP(&, bit_and)
+DEFINE_EXPRESSION_OP(|, bit_or)
+DEFINE_EXPRESSION_OP(^, bit_xor)
 DEFINE_EXPRESSION_OP(<, cmp_lt)
 DEFINE_EXPRESSION_OP(<=, cmp_le)
 DEFINE_EXPRESSION_OP(>, cmp_gt)

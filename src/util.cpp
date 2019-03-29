@@ -146,6 +146,8 @@ std::string unary_type_name(UnaryType type) {
     REGISTER_TYPE(sin);
     REGISTER_TYPE(cos);
     REGISTER_TYPE(inv);
+    REGISTER_TYPE(rcp);
+    REGISTER_TYPE(rsqrt);
     REGISTER_TYPE(bit_not);
     REGISTER_TYPE(undefined);
 #undef REGISTER_TYPE
@@ -166,6 +168,7 @@ std::string binary_type_name(BinaryType type) {
     REGISTER_TYPE(min);
     REGISTER_TYPE(bit_and);
     REGISTER_TYPE(bit_or);
+    REGISTER_TYPE(bit_xor);
     REGISTER_TYPE(cmp_lt);
     REGISTER_TYPE(cmp_le);
     REGISTER_TYPE(cmp_gt);

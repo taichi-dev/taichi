@@ -107,6 +107,8 @@ enum class UnaryType : int {
   sin,
   cos,
   inv,
+  rcp,
+  rsqrt,
   bit_not,
   undefined
 };
@@ -127,6 +129,7 @@ enum class BinaryType : int {
   min,
   bit_and,
   bit_or,
+  bit_xor,
   cmp_lt,
   cmp_le,
   cmp_gt,

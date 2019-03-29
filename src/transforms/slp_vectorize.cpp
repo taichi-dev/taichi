@@ -377,7 +377,7 @@ class SLPVectorize : public IRVisitor {
 
   // A SLP segment is a subarray of block->statements with the same SLP width
   // This method transforms the first SLP segment.
-  // After the invocation the block may be invalid. This is can be fixed by
+  // After the invocation the block may be invalid. This is can be dense by
   // inserting ElementShuffleStmt's
   void slp_attempt(Block *block, int iter) {
     std::vector<Stmt *> current_segment;

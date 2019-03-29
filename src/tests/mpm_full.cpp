@@ -59,8 +59,8 @@ auto mpm3d = []() {
   layout([&]() {
     TC_ASSERT(n_particles % particle_block_size == 0);
     auto place = [&](Expr &expr) {
-      root.fixed(p, n_particles / particle_block_size)
-          .fixed(p, particle_block_size)
+      root.dense(p, n_particles / particle_block_size)
+          .dense(p, particle_block_size)
           .place(expr);
     };
     for (int i = 0; i < dim; i++) {
@@ -73,8 +73,8 @@ auto mpm3d = []() {
     place(particle_J);
 
     TC_ASSERT(n % grid_block_size == 0);
-    root.fixed({i, j, k}, n / grid_block_size)
-        .fixed({i, j, k}, grid_block_size)
+    root.dense({i, j, k}, n / grid_block_size)
+        .dense({i, j, k}, grid_block_size)
         .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
   });
 

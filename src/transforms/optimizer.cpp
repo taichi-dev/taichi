@@ -179,7 +179,7 @@ class ContinuousMemOptimizer : public Optimizer {
       // continuous index, same element
       bool vpointer_case_1 = incremental && offset_start == 0 &&
                              offset_inc == 1 &&
-                             (snode->parent->type == SNodeType::fixed ||
+                             (snode->parent->type == SNodeType::dense ||
                               snode->parent->type == SNodeType::dynamic) &&
                              all_same;
       // continuous element, same index
@@ -253,7 +253,7 @@ class GatherMemOptimizer : public Optimizer {
     auto snode = addr_node->snode_ptr(0);
     // continuous index, same element
 
-    if (snode->parent->type == SNodeType::fixed) {
+    if (snode->parent->type == SNodeType::dense) {
       TC_INFO("Optimized store to gather");  // gather
       Expr gather = Expr::create(NodeType::gather, addr_node);
       gather->ch.resize(ptr->ch.size());

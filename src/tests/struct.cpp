@@ -12,7 +12,7 @@ TC_TEST("snode") {
   int n = 128;
 
   // All data structure originates from a "root", which is a forked node.
-  prog.layout([&] { root.fixed(i, n).place(u); });
+  prog.layout([&] { root.dense(i, n).place(u); });
 
   for (int i = 0; i < n; i++) {
     u.val<int32>(i) = i + 1;
@@ -34,7 +34,7 @@ TC_TEST("snode_loop") {
   int n = 128;
 
   // All data structure originates from a "root", which is a forked node.
-  prog.layout([&] { root.fixed(i, n).place(u); });
+  prog.layout([&] { root.dense(i, n).place(u); });
 
   auto set = kernel([&] {
     Declare(i);
@@ -62,8 +62,8 @@ TC_TEST("snode_loop2") {
 
     // All data structure originates from a "root", which is a forked node.
     prog.layout([&] {
-      root.fixed(i, n).place(u);
-      root.fixed(j, n).place(v);
+      root.dense(i, n).place(u);
+      root.dense(j, n).place(v);
     });
 
     TC_ASSERT(
@@ -108,12 +108,12 @@ TC_TEST("2d_blocked_array") {
         auto j = Index(1);
         if (blocked) {
           TC_ASSERT(n % block_size == 0);
-          root.fixed({i, j}, {n / block_size, n * 2 / block_size})
-              .fixed({i, j}, {block_size, block_size})
+          root.dense({i, j}, {n / block_size, n * 2 / block_size})
+              .dense({i, j}, {block_size, block_size})
               .place(a, b);
         } else {
-          root.fixed({i, j}, {n, n * 2}).place(a);
-          root.fixed({i, j}, {n, n * 2}).place(b);
+          root.dense({i, j}, {n, n * 2}).place(a);
+          root.dense({i, j}, {n, n * 2}).place(b);
         }
       });
 
@@ -171,14 +171,14 @@ TC_TEST("spmv") {
 
   layout([&] {
     // indirect puts an int32
-    root.fixed(p, m).place(mat_row);
-    root.fixed(p, m).place(mat_col);
-    root.fixed(p, m).place(mat_val);
-    auto &mat = root.fixed(i, n).multi_threaded();
+    root.dense(p, m).place(mat_row);
+    root.dense(p, m).place(mat_col);
+    root.dense(p, m).place(mat_val);
+    auto &mat = root.dense(i, n).multi_threaded();
     mat.dynamic(j, k).place(compressed_col);
     mat.dynamic(j, k).place(compressed_val);
-    root.fixed(i, n).place(vec_val);
-    root.fixed(i, n).place(result);
+    root.dense(i, n).place(vec_val);
+    root.dense(i, n).place(result);
   });
 
   auto populate = kernel(mat_row, [&]() {
@@ -265,11 +265,11 @@ TC_TEST("spmv_dynamic") {
     root.dynamic(p, m).place(mat_row);
     root.dynamic(p, m).place(mat_col);
     root.dynamic(p, m).place(mat_val);
-    auto &mat = root.fixed(i, n).multi_threaded();
+    auto &mat = root.dense(i, n).multi_threaded();
     mat.dynamic(j, k).place(compressed_col);
     mat.dynamic(j, k).place(compressed_val);
-    root.fixed(i, n).place(vec_val);
-    root.fixed(i, n).place(result);
+    root.dense(i, n).place(vec_val);
+    root.dense(i, n).place(result);
   });
 
   auto populate = kernel(mat_row, [&]() {
@@ -344,9 +344,9 @@ TC_TEST("indirect") {
   layout([&] {
     auto i = Index(0), j = Index(1);
     // indirect puts an int32
-    snode = &root.fixed(i, n).indirect(j, k * 2);
-    root.fixed(j, m).place(a);
-    root.fixed(i, n).place(sum);
+    snode = &root.dense(i, n).indirect(j, k * 2);
+    root.dense(j, m).place(a);
+    root.dense(i, n).place(sum);
   });
 
   auto populate = kernel([&]() {
@@ -387,7 +387,7 @@ TC_TEST("leaf_context") {
 
   layout([&] {
     auto i = Index(0);
-    root.fixed(i, n).fixed(i, k).place(a);
+    root.dense(i, n).dense(i, k).place(a);
     root.place(sum);
   });
 
@@ -419,7 +419,7 @@ TC_TEST("pointer") {
 
   layout([&] {
     auto i = Index(0);
-    root.fixed(i, n).pointer().fixed(i, k).place(a);
+    root.dense(i, n).pointer().dense(i, k).place(a);
     root.place(sum);
   });
 
@@ -454,7 +454,7 @@ TC_TEST("hashed") {
 
   layout([&] {
     auto i = Index(0);
-    root.hashed(i, n).fixed(i, k).place(a);
+    root.hashed(i, n).dense(i, k).place(a);
     root.place(sum);
   });
 
@@ -491,7 +491,7 @@ TC_TEST("box_filter") {
 
   layout([&] {
     auto i = Index(0);
-    root.hashed(i, n).fixed(i, k).place(x, y);
+    root.hashed(i, n).dense(i, k).place(x, y);
   });
 
   auto red = kernel([&]() {

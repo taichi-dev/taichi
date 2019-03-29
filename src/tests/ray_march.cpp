@@ -17,7 +17,7 @@ auto mset = [] {
 
   Global(a, i32);
 
-  layout([&]() { root.fixed(0, n * n).place(a); });
+  layout([&]() { root.dense(0, n * n).place(a); });
 
   auto func = kernel([&]() {
     Declare(i);
@@ -77,7 +77,7 @@ auto ray_march = [] {
   Global(color_g, f32);
   Global(color_b, f32);
 
-  layout([&]() { root.fixed(0, n * n * 2).place(color_r, color_g, color_b); });
+  layout([&]() { root.dense(0, n * n * 2).place(color_r, color_g, color_b); });
 
   auto sdf = [&](Vector p_) {
     float alpha = -0.7f;

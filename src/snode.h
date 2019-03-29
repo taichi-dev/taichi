@@ -103,16 +103,16 @@ class SNode {
                      SNodeType type);
 
   // SNodes maintains how flattened index bits are taken from indices
-  SNode &fixed(std::vector<Index> indices, std::vector<int> sizes) {
-    return create_node(indices, sizes, SNodeType::fixed);
+  SNode &dense(std::vector<Index> indices, std::vector<int> sizes) {
+    return create_node(indices, sizes, SNodeType::dense);
   }
 
-  SNode &fixed(std::vector<Index> indices, int sizes) {
-    return create_node(indices, std::vector<int>{sizes}, SNodeType::fixed);
+  SNode &dense(std::vector<Index> indices, int sizes) {
+    return create_node(indices, std::vector<int>{sizes}, SNodeType::dense);
   }
 
-  SNode &fixed(const Index &index, int size) {
-    return SNode::fixed(std::vector<Index>{index}, size);
+  SNode &dense(const Index &index, int size) {
+    return SNode::dense(std::vector<Index>{index}, size);
   }
 
   SNode &multi_threaded(bool val = true) {

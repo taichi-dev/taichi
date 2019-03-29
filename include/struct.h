@@ -40,7 +40,7 @@ struct layout_root {
 };
 
 template <typename child_type, int n_>
-struct fixed {
+struct dense {
   static constexpr int n = n_;
   child_type children[n];
   TC_DEVICE TC_FORCE_INLINE child_type *look_up(

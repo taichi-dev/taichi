@@ -13,7 +13,7 @@ TC_TEST("compiler_basics_gpu") {
 
   Global(a, i32);
   auto i = Index(0);
-  layout([&]() { root.fixed(i, n).place(a); });
+  layout([&]() { root.dense(i, n).place(a); });
 
   auto dou = [](Expr a) { return a * 2; };
 

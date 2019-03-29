@@ -13,7 +13,7 @@ TC_TEST("compiler_linalg") {
   Global(a, i32);
   auto i = Index(0);
 
-  layout([&]() { root.fixed(i, 128).place(a); });
+  layout([&]() { root.dense(i, 128).place(a); });
 
   auto func = kernel([&]() {
     Matrix A(2, 2), B(2, 2);
@@ -45,7 +45,7 @@ TC_TEST("select") {
 
   Global(a, i32);
   auto i = Index(0);
-  layout([&]() { root.fixed(i, n).place(a); });
+  layout([&]() { root.dense(i, n).place(a); });
 
   auto dou = [](Expr a) { return a * 2; };
 
@@ -73,7 +73,7 @@ TC_TEST("compiler_basics") {
 
   Global(a, i32);
   auto i = Index(0);
-  layout([&]() { root.fixed(i, n).place(a); });
+  layout([&]() { root.dense(i, n).place(a); });
 
   auto dou = [](Expr a) { return a * 2; };
 
@@ -102,7 +102,7 @@ TC_TEST("simd_if") {
 
   Global(a, i32);
   auto i = Index(0);
-  layout([&]() { root.fixed(i, n).place(a); });
+  layout([&]() { root.dense(i, n).place(a); });
 
   auto dou = [](Expr a) { return a * 2; };
 
@@ -131,7 +131,7 @@ TC_TEST("simd_if2") {
 
   Global(a, i32);
   auto i = Index(0);
-  layout([&]() { root.fixed(i, n).place(a); });
+  layout([&]() { root.dense(i, n).place(a); });
 
   auto func = kernel([&]() {
     Declare(i);
@@ -161,7 +161,7 @@ auto test_circle = [] {
   Global(a, i32);
   auto i = Index(0);
 
-  layout([&]() { root.fixed(i, n * n).place(a); });
+  layout([&]() { root.dense(i, n * n).place(a); });
 
   auto func = kernel([&]() {
     Declare(i);
@@ -262,7 +262,7 @@ TC_TEST("vectorize") {
 
   Global(a, i32);
 
-  layout([&]() { root.fixed(0, n).place(a); });
+  layout([&]() { root.dense(0, n).place(a); });
 
   auto func = kernel([&]() {
     Declare(i);
@@ -298,7 +298,7 @@ TC_TEST("rand") {
 
   Global(a, i32);
 
-  layout([&]() { root.fixed(0, n).place(a); });
+  layout([&]() { root.dense(0, n).place(a); });
 
   auto func = kernel([&]() {
     Declare(i);
@@ -316,7 +316,7 @@ TC_TEST("while") {
 
   Global(a, i32);
 
-  layout([&]() { root.fixed(0, n).place(a); });
+  layout([&]() { root.dense(0, n).place(a); });
 
   auto func = kernel([&]() {
     Declare(i);
@@ -351,7 +351,7 @@ TC_TEST("slp") {
   Global(c, i32);
   Global(d, i32);
 
-  layout([&]() { root.fixed(0, n).place(a, b, c, d); });
+  layout([&]() { root.dense(0, n).place(a, b, c, d); });
 
   auto func = kernel([&]() {
     Declare(i);
@@ -384,7 +384,7 @@ TC_TEST("slp1") {
     prog.config.print_ir = true;
     Vector grid(DataType::f32, 4);
     layout(
-        [&]() { root.fixed(0, n).place(grid(0), grid(1), grid(2), grid(3)); });
+        [&]() { root.dense(0, n).place(grid(0), grid(1), grid(2), grid(3)); });
     auto func = kernel([&]() {
       Declare(i);
       Vectorize(1);
@@ -420,7 +420,7 @@ TC_TEST("slp2") {
   Global(a, i32);
   Global(b, i32);
 
-  layout([&]() { root.fixed(0, n).place(a, b); });
+  layout([&]() { root.dense(0, n).place(a, b); });
 
   auto func = kernel([&]() {
     Declare(i);
@@ -450,7 +450,7 @@ TC_TEST("slp3") {
   Global(a, i32);
   Global(b, i32);
 
-  layout([&]() { root.fixed(0, n).place(a, b); });
+  layout([&]() { root.dense(0, n).place(a, b); });
 
   auto func = kernel([&]() {
     Declare(i);
@@ -487,7 +487,7 @@ TC_TEST("slpmatvecmul") {
   y.fill_global(DataType::f32);
 
   layout([&]() {
-    auto &s = root.fixed(0, n);
+    auto &s = root.dense(0, n);
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
         s.place(A(i, j));
@@ -532,9 +532,9 @@ TC_TEST("mixed_simd1") {
     auto ind = Index(0);
 
     layout([&] {
-      root.fixed(ind, n).place(a, b);
+      root.dense(ind, n).place(a, b);
       for (int i = 0; i < vec_size; i++) {
-        root.fixed(ind, n).place(v(i));
+        root.dense(ind, n).place(v(i));
       }
     });
 
@@ -587,9 +587,9 @@ TC_TEST("mixed_simd2") {
 
     layout([&] {
       for (int i = 0; i < vec_size; i++) {
-        root.fixed(ind, n).place(v(i));
+        root.dense(ind, n).place(v(i));
       }
-      root.fixed(ind, n).place(sum);
+      root.dense(ind, n).place(sum);
     });
 
     auto func = kernel([&] {
@@ -643,12 +643,12 @@ TC_TEST("mixed_simd3_slp") {
 
     layout([&] {
       for (int i = 0; i < vec_size; i++) {
-        root.fixed(ind, n).place(a(i));
-        root.fixed(ind, n).place(b(i));
+        root.dense(ind, n).place(a(i));
+        root.dense(ind, n).place(b(i));
       }
 
       for (int i = 0; i < vec_size * 2; i++) {
-        root.fixed(ind, n).place(c(i));
+        root.dense(ind, n).place(c(i));
       }
     });
 
@@ -706,7 +706,7 @@ TC_TEST("vector_split1") {
 
   Global(a, i32);
 
-  layout([&]() { root.fixed(0, n).place(a); });
+  layout([&]() { root.dense(0, n).place(a); });
 
   auto func = kernel([&]() {
     Declare(i);
@@ -733,7 +733,7 @@ TC_TEST("vector_split_slp") {
   Global(c, i32);
   Global(d, i32);
 
-  layout([&]() { root.fixed(0, n).place(a, b, c, d); });
+  layout([&]() { root.dense(0, n).place(a, b, c, d); });
 
   auto func = kernel([&]() {
     Declare(i);

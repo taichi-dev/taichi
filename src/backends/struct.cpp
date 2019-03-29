@@ -103,8 +103,8 @@ void StructCompiler::visit(SNode &snode) {
   // emit("TC_FORCE_INLINE int get_n() {{return 1;}} ");
   emit("}};");
 
-  if (type == SNodeType::fixed) {
-    emit("using {} = fixed<{}_ch, {}>;", snode.node_type_name,
+  if (type == SNodeType::dense) {
+    emit("using {} = dense<{}_ch, {}>;", snode.node_type_name,
          snode.node_type_name, snode.n);
   } else if (type == SNodeType::root) {
     emit("using {} = layout_root<{}_ch>;", snode.node_type_name,

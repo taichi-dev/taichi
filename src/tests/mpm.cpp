@@ -374,17 +374,17 @@ TC_TEST("simd_mpm") {
   Vector g_C(DataType::f32, dim, dim);
 
   layout([&]() {
-    root.fixed(ind, n_particles).place(tmp);
-    root.fixed(ind, n_particles).place(tmp1);
-    root.fixed(ind, n_particles).place(g_J);
+    root.dense(ind, n_particles).place(tmp);
+    root.dense(ind, n_particles).place(tmp1);
+    root.dense(ind, n_particles).place(g_J);
     for (int i = 0; i < dim; i++) {
-      root.fixed(ind, n_particles).place(g_pos(i));
-      root.fixed(ind, n_particles).place(g_v(i));
+      root.dense(ind, n_particles).place(g_pos(i));
+      root.dense(ind, n_particles).place(g_v(i));
       for (int j = 0; j < dim; j++) {
-        root.fixed(ind, n_particles).place(g_C(i, j));
+        root.dense(ind, n_particles).place(g_C(i, j));
       }
     }
-    root.fixed(ind, bit::least_pot_bound(n_grid * n_grid * n_grid))
+    root.dense(ind, bit::least_pot_bound(n_grid * n_grid * n_grid))
         .place(grid(0), grid(1), grid(2), grid(3));
   });
 

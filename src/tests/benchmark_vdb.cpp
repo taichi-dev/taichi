@@ -99,22 +99,22 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
 
     if (AOS) {
       root.hashed(ijk, 1024)
-          .fixed(ijk, tree_config[0])
+          .dense(ijk, tree_config[0])
           .pointer()
-          .fixed(ijk, tree_config[1])
+          .dense(ijk, tree_config[1])
           .pointer()
-          .fixed(ijk, tree_config[2])
+          .dense(ijk, tree_config[2])
           .place(x, y);
     } else {
       auto &fork = root.hashed(ijk, 1024)
-                       .fixed(ijk, tree_config[0])
+                       .dense(ijk, tree_config[0])
                        .pointer()
-                       .fixed(ijk, tree_config[1])
+                       .dense(ijk, tree_config[1])
                        .pointer();
 
-      fork.fixed(ijk, tree_config[2]).place(x);
+      fork.dense(ijk, tree_config[2]).place(x);
 
-      fork.fixed(ijk, tree_config[2]).place(y);
+      fork.dense(ijk, tree_config[2]).place(y);
     }
 
     root.place(sum);

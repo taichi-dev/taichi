@@ -175,7 +175,7 @@ TC_TEST("stencil1d") {
 
   layout([&] {
     auto i = Index(0);
-    root.hashed(i, 8192).fixed(i, 1024).pointer().fixed(i, 256).place(x, y);
+    root.hashed(i, 8192).dense(i, 1024).pointer().dense(i, 256).place(x, y);
   });
 
   auto copy = kernel([&] {

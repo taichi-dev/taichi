@@ -123,7 +123,7 @@ std::string snode_type_name(SNodeType t) {
 #define REGISTER_TYPE(i) type_names[SNodeType::i] = #i;
     REGISTER_TYPE(undefined);
     REGISTER_TYPE(root);
-    REGISTER_TYPE(fixed);
+    REGISTER_TYPE(dense);
     REGISTER_TYPE(dynamic);
     REGISTER_TYPE(place);
     REGISTER_TYPE(hashed);

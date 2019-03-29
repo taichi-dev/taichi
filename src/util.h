@@ -88,7 +88,7 @@ std::string data_type_short_name(DataType t);
 enum class SNodeType {
   undefined,
   root,
-  fixed,
+  dense,
   dynamic,
   place,
   hashed,

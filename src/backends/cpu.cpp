@@ -51,9 +51,15 @@ class CPUIRCodeGen : public IRVisitor {
       emit("const {} {}({}({}));", stmt->ret_data_type_name(), stmt->raw_name(),
            unary_type_name(stmt->op_type), stmt->rhs->raw_name());
     } else {
-      emit("const {} {}(cast<{}>({}));", stmt->ret_data_type_name(),
-           stmt->raw_name(), data_type_name(stmt->cast_type),
-           stmt->rhs->raw_name());
+      if (stmt->cast_by_value) {
+        emit("const {} {}(cast<{}>({}));", stmt->ret_data_type_name(),
+             stmt->raw_name(), data_type_name(stmt->cast_type),
+             stmt->rhs->raw_name());
+      } else {
+        emit("const {} {}(union_cast<{}>({}));", stmt->ret_data_type_name(),
+             stmt->raw_name(), data_type_name(stmt->cast_type),
+             stmt->rhs->raw_name());
+      }
     }
   }
 

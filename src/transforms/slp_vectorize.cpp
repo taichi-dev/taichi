@@ -90,6 +90,7 @@ class BasicBlockSLP : public IRVisitor {
         dynamic_cast<UnaryOpStmt *>(building_pack[0])->op_type,
         tmp_operands[0]);
     tmp_stmt->as<UnaryOpStmt>()->cast_type = stmt->cast_type;
+    tmp_stmt->as<UnaryOpStmt>()->cast_by_value = stmt->cast_by_value;
     update_type(stmt);
     /*
     if (tmp_stmt->as<UnaryOpStmt>()->op_type == UnaryType::cast) {

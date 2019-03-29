@@ -90,12 +90,18 @@ TC_FORCE_INLINE T rand() noexcept;
 
 #endif
 
+#if !defined(TC_GPU)
+#if !defined(__device__)
+#define __device__
+#endif
+#endif
+
 TLANG_NAMESPACE_BEGIN
 
 constexpr int max_num_indices = 4;
 
 template <typename T, typename G>
-T union_cast(G g) {
+__device__ T union_cast(G g) {
   static_assert(sizeof(T) == sizeof(G), "");
   union {
     T t;

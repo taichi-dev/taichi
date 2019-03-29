@@ -731,10 +731,12 @@ class UnaryOpStmt : public Stmt {
   UnaryType op_type;
   Stmt *rhs;
   DataType cast_type;
+  bool cast_by_value = true;
 
   UnaryOpStmt(UnaryType op_type, Stmt *rhs) : op_type(op_type), rhs(rhs) {
     add_operand(this->rhs);
     cast_type = DataType::unknown;
+    cast_by_value = true;
   }
 
   bool same_operation(UnaryOpStmt *o) const {
@@ -783,15 +785,18 @@ class UnaryOpExpression : public Expression {
   UnaryType type;
   Expr rhs;
   DataType cast_type;
+  bool cast_by_value;
 
   UnaryOpExpression(UnaryType type, Expr rhs)
       : type(type), rhs(load_if_ptr(rhs)) {
     cast_type = DataType::unknown;
+    cast_by_value = true;
   }
 
   std::string serialize() override {
     if (type == UnaryType::cast) {
-      return fmt::format("({}<{}> {})", unary_type_name(type),
+      std::string reint = cast_by_value ? "" : "reinterpret_";
+      return fmt::format("({}{}<{}> {})", reint, unary_type_name(type),
                          data_type_name(cast_type), rhs->serialize());
     } else {
       return fmt::format("({} {})", unary_type_name(type), rhs->serialize());
@@ -801,8 +806,10 @@ class UnaryOpExpression : public Expression {
   void flatten(VecStatement &ret) override {
     rhs->flatten(ret);
     auto unary = std::make_unique<UnaryOpStmt>(type, rhs->stmt);
-    if (type == UnaryType::cast)
+    if (type == UnaryType::cast){
       unary->cast_type = cast_type;
+      unary->cast_by_value = cast_by_value;
+    }
     stmt = unary.get();
     ret.push_back(std::move(unary));
   }
@@ -1039,10 +1046,20 @@ DEFINE_EXPRESSION_OP(!=, cmp_ne)
 DEFINE_EXPRESSION_FUNC(min);
 DEFINE_EXPRESSION_FUNC(max);
 
+// Value cast
 template <typename T>
 inline Expr cast(Expr input) {
   auto ret = std::make_shared<UnaryOpExpression>(UnaryType::cast, input);
   ret->cast_type = get_data_type<T>();
+  ret->cast_by_value = true;
+  return Expr(ret);
+}
+
+template <typename T>
+inline Expr bit_cast(Expr input) {
+  auto ret = std::make_shared<UnaryOpExpression>(UnaryType::cast, input);
+  ret->cast_type = get_data_type<T>();
+  ret->cast_by_value = false;
   return Expr(ret);
 }
 
@@ -1127,8 +1144,9 @@ class FrontendAtomicStmt : public Stmt {
 class FrontendSNodeOpStmt : public Stmt {
  public:
   SNodeOpType op_type;
-  Expr dest, val;
+  Expr dest;
   ExpressionGroup indices;
+  Expr val;
 
   FrontendSNodeOpStmt(SNodeOpType op_type,
                       Expr dest,

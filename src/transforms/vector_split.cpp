@@ -130,7 +130,7 @@ class BasicBlockVectorSplit : public IRVisitor {
       }
       current_split[i] = Stmt::make<GlobalPtrStmt>(
           stmt->snodes.slice(lane_start(i),
-                            need_split ? lane_end(i) : stmt->width()),
+                             need_split ? lane_end(i) : stmt->width()),
           indices);
     }
   }
@@ -210,6 +210,8 @@ class BasicBlockVectorSplit : public IRVisitor {
           Stmt::make<UnaryOpStmt>(stmt->op_type, lookup(stmt->rhs, i));
       current_split[i]->as<UnaryOpStmt>()->cast_type =
           stmt->as<UnaryOpStmt>()->cast_type;
+      current_split[i]->as<UnaryOpStmt>()->cast_by_value =
+          stmt->as<UnaryOpStmt>()->cast_by_value;
     }
   }
 

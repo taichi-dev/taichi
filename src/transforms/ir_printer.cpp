@@ -57,7 +57,8 @@ class IRPrinter : public IRVisitor {
 
   void visit(UnaryOpStmt *stmt) override {
     if (stmt->op_type == UnaryType::cast) {
-      print("{}{} = {}<{}> {}", stmt->type_hint(), stmt->name(),
+      std::string reint = stmt->cast_by_value ? "" : "reinterpret_";
+      print("{}{} = {}{}<{}> {}", stmt->type_hint(), stmt->name(), reint,
             unary_type_name(stmt->op_type), data_type_name(stmt->cast_type),
             stmt->rhs->name());
     } else {

@@ -162,9 +162,14 @@ class GPUIRCodeGen : public IRVisitor {
       emit("const {} {}({}({}));", stmt->ret_data_type_name(), stmt->raw_name(),
            unary_type_name(stmt->op_type), stmt->rhs->raw_name());
     } else {
-      emit("const {} {}(static_cast<{}>({}));", stmt->ret_data_type_name(),
-           stmt->raw_name(), data_type_name(stmt->cast_type),
-           stmt->rhs->raw_name());
+      if (stmt->cast_by_value)
+        emit("const {} {}(static_cast<{}>({}));", stmt->ret_data_type_name(),
+             stmt->raw_name(), data_type_name(stmt->cast_type),
+             stmt->rhs->raw_name());
+      else
+        emit("const {} {}(union_cast<{}>({}));", stmt->ret_data_type_name(),
+             stmt->raw_name(), data_type_name(stmt->cast_type),
+             stmt->rhs->raw_name());
     }
   }
 
@@ -256,8 +261,7 @@ class GPUIRCodeGen : public IRVisitor {
            loop_var->ret_data_type_name(), loop_var->raw_name(),
            for_stmt->begin->raw_name(), loop_var->raw_name(),
            for_stmt->end->raw_name(), loop_var->raw_name(),
-           loop_var->raw_name(), loop_var->ret_data_type_name(),
-           1);
+           loop_var->raw_name(), loop_var->ret_data_type_name(), 1);
     }
     for_stmt->body->accept(this);
     emit("}}");
@@ -292,7 +296,7 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) {
-      emit("{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
+    emit("{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
   void visit(GlobalPtrStmt *stmt) {

@@ -758,4 +758,32 @@ TC_TEST("vector_split_slp") {
   }
 };
 
+TC_TEST("union_cast") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+    int n = 16;
+    Program prog(arch);
+    prog.config.print_ir = true;
+
+    Global(a, i32);
+
+    layout([&]() { root.dense(0, n).place(a); });
+
+    for (int i = 0; i < n; i++) {
+      a.val<int>(i) = i * 1000;
+    }
+
+    kernel([&]() {
+      Declare(i);
+      For(i, 0, n,
+          [&] { a[i] = bit_cast<int32>(bit_cast<float32>(a[i]) + 1234.0f); });
+    })();
+
+    for (int i = 0; i < n; i++) {
+      TC_CHECK(a.val<int>(i) ==
+               union_cast<int32>(union_cast<float32>(i * 1000) + 1234.0f));
+    }
+  }
+};
+
 TLANG_NAMESPACE_END

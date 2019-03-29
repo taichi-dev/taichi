@@ -192,13 +192,13 @@ auto mpm3d = []() {
         }
       }
 
-      auto base_coord = floor(Expr(inv_dx) * x - Expr(0.5_f));
+      auto base_coord = floor(inv_dx * x - 0.5_f);
       auto fx = x * Expr(inv_dx) - base_coord;
 
       Vector w[3];
-      w[0] = Expr(0.5_f) * sqr(Expr(1.5_f) - fx);
-      w[1] = Expr(0.75_f) - sqr(fx - Expr(1.0_f));
-      w[2] = Expr(0.5_f) * sqr(fx - Expr(0.5_f));
+      w[0] = 0.5_f * sqr(1.5_f - fx);
+      w[1] = 0.75_f - sqr(fx - 1.0_f);
+      w[2] = 0.5_f * sqr(fx - 0.5_f);
 
       // scatter
       for (int i = 0; i < 3; i++) {
@@ -218,7 +218,7 @@ auto mpm3d = []() {
         }
       }
 
-      J = J * (Expr(1.0_f) + Expr(dt) * (C(0, 0) + C(1, 1) + C(2, 2)));
+      J = J * (1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2)));
       x = x + dt * v;
 
       particle_C[p] = C;

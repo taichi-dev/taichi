@@ -152,6 +152,10 @@ enum class AtomicType : int { add, max, min };
 
 std::string atomic_type_name(AtomicType type);
 
+enum class SNodeOpType : int { probe, activate, deactivate, append, clear };
+
+std::string snode_op_type_name(SNodeOpType type);
+
 class IRModifiedException {};
 
 class TypedConstant {

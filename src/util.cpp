@@ -223,6 +223,20 @@ std::string atomic_type_name(AtomicType type) {
   return type_names[type];
 }
 
+std::string snode_op_type_name(SNodeOpType type) {
+  static std::map<SNodeOpType, std::string> type_names;
+  if (type_names.empty()) {
+#define REGISTER_TYPE(i) type_names[SNodeOpType::i] = #i;
+    REGISTER_TYPE(probe);
+    REGISTER_TYPE(activate);
+    REGISTER_TYPE(deactivate);
+    REGISTER_TYPE(append);
+    REGISTER_TYPE(clear);
+#undef REGISTER_TYPE
+  }
+  return type_names[type];
+}
+
 std::string CompileConfig::compile_cmd(const std::string &input,
                                        const std::string &output,
                                        bool verbose) {

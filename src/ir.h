@@ -27,6 +27,7 @@ class FrontendAllocaStmt;
 class FrontendAssignStmt;
 class FrontendAtomicStmt;
 class FrontendEvalStmt;
+class FrontendSNodeOpStmt;  // activate, deactivate, append, clear
 
 // Midend statement
 
@@ -285,6 +286,7 @@ class IRVisitor {
   DEFINE_VISIT(FrontendWhileStmt);
   DEFINE_VISIT(FrontendAssignStmt);
   DEFINE_VISIT(FrontendAtomicStmt);
+  DEFINE_VISIT(FrontendSNodeOpStmt);
   DEFINE_VISIT(FrontendEvalStmt);
 
   DEFINE_VISIT(AllocaStmt);
@@ -1117,6 +1119,22 @@ class FrontendAtomicStmt : public Stmt {
   Expr dest, val;
 
   FrontendAtomicStmt(AtomicType op_type, Expr dest, Expr val);
+
+  DEFINE_ACCEPT
+};
+
+class FrontendSNodeOpStmt : public Stmt {
+ public:
+  SNodeOpType op_type;
+  Expr dest, val;
+
+  FrontendSNodeOpStmt(SNodeOpType op_type, Expr dest) {
+    TC_ASSERT(op_type != SNodeOpType::append);
+  }
+
+  FrontendSNodeOpStmt(SNodeOpType op_type, Expr dest, Expr val) {
+    TC_ASSERT(op_type == SNodeOpType::append);
+  }
 
   DEFINE_ACCEPT
 };

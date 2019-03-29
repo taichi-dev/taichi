@@ -11,9 +11,6 @@ IRBuilder &current_ast_builder() {
   return context->builder();
 }
 
-// Vector width, vectorization plan etc
-class PropagateSchedule : public IRVisitor {};
-
 IRBuilder::ScopeGuard IRBuilder::create_scope(std::unique_ptr<Block> &list) {
   TC_ASSERT(list == nullptr);
   list = std::make_unique<Block>();
@@ -26,7 +23,7 @@ IRBuilder::ScopeGuard IRBuilder::create_scope(std::unique_ptr<Block> &list) {
 void Expr::operator=(const Expr &o) {
   if (expr == nullptr) {
     set(o.eval());
-  } else if (expr->is_lvalue()){
+  } else if (expr->is_lvalue()) {
     current_ast_builder().insert(
         std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
   } else {

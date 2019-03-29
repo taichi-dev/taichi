@@ -49,6 +49,7 @@ class RandStmt;
 class GlobalLoadStmt;
 class GlobalStoreStmt;
 class LocalStoreStmt;
+class SNodeOpStmt;
 
 // With per-lane attributes
 class LocalLoadStmt;
@@ -910,21 +911,21 @@ class TrinaryOpExpression : public Expression {
 
 class GlobalPtrStmt : public Stmt {
  public:
-  LaneAttribute<SNode *> snode;
+  LaneAttribute<SNode *> snodes;
   std::vector<Stmt *> indices;
 
-  GlobalPtrStmt(const LaneAttribute<SNode *> &snode,
+  GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
                 const std::vector<Stmt *> &indices)
-      : snode(snode), indices(indices) {
-    for (int i = 0; i < (int)snode.size(); i++) {
-      TC_ASSERT(snode[i] != nullptr);
-      TC_ASSERT(snode[0]->dt == snode[i]->dt);
+      : snodes(snodes), indices(indices) {
+    for (int i = 0; i < (int)snodes.size(); i++) {
+      TC_ASSERT(snodes[i] != nullptr);
+      TC_ASSERT(snodes[0]->dt == snodes[i]->dt);
     }
     for (int i = 0; i < (int)indices.size(); i++) {
       add_operand(this->indices[i]);
     }
-    width() = snode.size();
-    element_type() = snode[0]->dt;
+    width() = snodes.size();
+    element_type() = snodes[0]->dt;
   }
 
   DEFINE_ACCEPT
@@ -1127,13 +1128,45 @@ class FrontendSNodeOpStmt : public Stmt {
  public:
   SNodeOpType op_type;
   Expr dest, val;
+  ExpressionGroup indices;
 
-  FrontendSNodeOpStmt(SNodeOpType op_type, Expr dest) {
-    TC_ASSERT(op_type != SNodeOpType::append);
+  FrontendSNodeOpStmt(SNodeOpType op_type,
+                      Expr dest,
+                      ExpressionGroup indices,
+                      Expr val = Expr(nullptr))
+      : op_type(op_type), dest(dest), indices(indices), val(val) {
+    if (val.expr != nullptr) {
+      TC_ASSERT(op_type != SNodeOpType::append);
+    } else {
+      TC_ASSERT(op_type == SNodeOpType::append);
+    }
   }
 
-  FrontendSNodeOpStmt(SNodeOpType op_type, Expr dest, Expr val) {
-    TC_ASSERT(op_type == SNodeOpType::append);
+  DEFINE_ACCEPT
+};
+
+class SNodeOpStmt : public Stmt {
+ public:
+  SNodeOpType op_type;
+  LaneAttribute<SNode *> snodes;
+  std::vector<Stmt *> indices;
+  Stmt *val;
+
+  SNodeOpStmt(const LaneAttribute<SNode *> &snodes,
+              const std::vector<Stmt *> &indices,
+              Stmt *val = nullptr)
+      : snodes(snodes), indices(indices), val(val) {
+    TC_ASSERT_INFO(snodes.size() == 1, "SNodeOpStmt cannot be vectorized");
+    TC_ASSERT((val == nullptr) == (op_type == SNodeOpType::append));
+    for (int i = 0; i < (int)snodes.size(); i++) {
+      TC_ASSERT(snodes[i] != nullptr);
+      TC_ASSERT(snodes[0]->dt == snodes[i]->dt);
+    }
+    for (int i = 0; i < (int)indices.size(); i++) {
+      add_operand(this->indices[i]);
+    }
+    width() = snodes.size();
+    element_type() = snodes[0]->dt;
   }
 
   DEFINE_ACCEPT

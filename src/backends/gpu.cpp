@@ -303,7 +303,7 @@ class GPUIRCodeGen : public IRVisitor {
       // Try to weaken here...
       std::vector<int> offsets(stmt->indices.size());
 
-      auto snode = stmt->snode[l];
+      auto snode = stmt->snodes[l];
       std::vector<std::string> indices(max_num_indices, "0");  // = "(root, ";
       for (int i = 0; i < stmt->indices.size(); i++) {
         if (snode->physical_index_position[i] != -1) {
@@ -314,7 +314,7 @@ class GPUIRCodeGen : public IRVisitor {
       }
       std::string strong_access =
           fmt::format("{}[{}] = access_{}{};", stmt->raw_name(), l,
-                      stmt->snode[l]->node_type_name,
+                      stmt->snodes[l]->node_type_name,
                       "(root, " + make_list(indices, "") + ")");
 
       emit("{}", strong_access);

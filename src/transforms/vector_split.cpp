@@ -129,7 +129,7 @@ class BasicBlockVectorSplit : public IRVisitor {
         indices.push_back(lookup(stmt->indices[j], i));
       }
       current_split[i] = Stmt::make<GlobalPtrStmt>(
-          stmt->snode.slice(lane_start(i),
+          stmt->snodes.slice(lane_start(i),
                             need_split ? lane_end(i) : stmt->width()),
           indices);
     }

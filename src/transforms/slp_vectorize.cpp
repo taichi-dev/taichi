@@ -68,7 +68,7 @@ class BasicBlockSLP : public IRVisitor {
     std::vector<Stmt *> indices = tmp_operands;
     LaneAttribute<SNode *> snodes;
     for (int i = 0; i < slp_width; i++) {
-      snodes += building_pack[i]->as<GlobalPtrStmt>()->snode;
+      snodes += building_pack[i]->as<GlobalPtrStmt>()->snodes;
     }
     tmp_stmt = Stmt::make<GlobalPtrStmt>(snodes, indices);
     tmp_stmt->ret_type.width = stmt->ret_type.width * slp_width;

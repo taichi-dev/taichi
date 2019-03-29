@@ -161,6 +161,22 @@ inline Expr Atomic(Expr dest) {
   return dest;
 }
 
+inline void Activate(const Expr &dest, const ExpressionGroup &expr_group) {
+  current_ast_builder().insert(
+      Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::activate, dest, expr_group));
+}
+
+inline void Deactivate(const Expr &dest, const ExpressionGroup &expr_group) {
+  current_ast_builder().insert(Stmt::make<FrontendSNodeOpStmt>(
+      SNodeOpType::deactivate, dest, expr_group));
+}
+
+inline Expr Probe(const Expr &dest, const ExpressionGroup &expr_group) {
+  TC_NOT_IMPLEMENTED;
+  current_ast_builder().insert(
+      Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::probe, dest, expr_group));
+}
+
 TLANG_NAMESPACE_END
 
 TC_NAMESPACE_BEGIN

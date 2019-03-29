@@ -185,8 +185,8 @@ class IRPrinter : public IRVisitor {
 
     for (int l = 0; l < stmt->width(); l++) {
       std::string snode_name;
-      if (stmt->snode[l]) {
-        snode_name = stmt->snode[l]->node_type_name;
+      if (stmt->snodes[l]) {
+        snode_name = stmt->snodes[l]->node_type_name;
       } else {
         snode_name = "unknown";
       }

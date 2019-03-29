@@ -30,7 +30,7 @@ class BasicBlockEliminate : public IRVisitor {
           auto bstmt_ = bstmt->as<GlobalPtrStmt>();
           bool same = true;
           for (int l = 0; l < stmt->width(); l++) {
-            if (stmt->snode[l] != bstmt_->snode[l]) {
+            if (stmt->snodes[l] != bstmt_->snodes[l]) {
               same = false;
               break;
             }

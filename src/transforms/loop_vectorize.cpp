@@ -36,7 +36,7 @@ class LoopVectorize : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *ptr) override {
-    ptr->snode.repeat(vectorize);
+    ptr->snodes.repeat(vectorize);
     ptr->width() *= vectorize;
   }
 

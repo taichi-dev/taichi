@@ -5,6 +5,9 @@
 
 TLANG_NAMESPACE_BEGIN
 
+#define TC_EXPRESSION_IMPLEMENTATION
+#include "expression.h"
+
 DecoratorRecorder dec;
 
 IRBuilder &current_ast_builder() {

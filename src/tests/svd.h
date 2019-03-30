@@ -112,7 +112,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
     Ssh = Ss21 * Sone_half;
     Stmp5 = Ss11 - Ss22;
     Stmp2 = Ssh * Ssh;
-    Stmp1 = select(Stmp2 >= Stiny_number, Expr(int(0xffffffff)), Expr(0));
+    Stmp1 = bit_cast<float32>(
+        select(Stmp2 >= Stiny_number, Expr(int(0xffffffff)), Expr(0)));
     Ssh = float32_bitwise_and(Stmp1, Ssh);
     Sch = float32_bitwise_and(Stmp1, Stmp5);
     Stmp2 = float32_bitwise_and(Expr(~Stmp1), Sone);
@@ -124,7 +125,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
     Ssh = Stmp4 * Ssh;
     Sch = Stmp4 * Sch;
     Stmp1 = Sfour_gamma_squared * Stmp1;
-    Stmp1 = select(Stmp2 <= Stmp1, Expr(int(0xffffffff)), Expr(0));
+    Stmp1 = bit_cast<float32>(
+        select(Stmp2 <= Stmp1, Expr(int(0xffffffff)), Expr(0)));
     Stmp2 = float32_bitwise_and(Ssine_pi_over_eight, Stmp1);
     Ssh = float32_bitwise_and(Expr(~Stmp1), Ssh);
     Ssh = float32_bitwise_or(Ssh, Stmp2);
@@ -179,7 +181,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
     Ssh = Ss32 * Sone_half;
     Stmp5 = Ss22 - Ss33;
     Stmp2 = Ssh * Ssh;
-    Stmp1 = select(Stmp2 >= Stiny_number, Expr(int(0xffffffff)), Expr(0));
+    Stmp1 = bit_cast<float32>(
+        select(Stmp2 >= Stiny_number, Expr(int(0xffffffff)), Expr(0)));
     Ssh = float32_bitwise_and(Stmp1, Ssh);
     Sch = float32_bitwise_and(Stmp1, Stmp5);
     Stmp2 = float32_bitwise_and(Expr(~Stmp1), Sone);
@@ -191,7 +194,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
     Ssh = Stmp4 * Ssh;
     Sch = Stmp4 * Sch;
     Stmp1 = Sfour_gamma_squared * Stmp1;
-    Stmp1 = select(Stmp2 <= Stmp1, Expr(int(0xffffffff)), Expr(0));
+    Stmp1 = bit_cast<float32>(
+        select(Stmp2 <= Stmp1, Expr(int(0xffffffff)), Expr(0)));
     Stmp2 = float32_bitwise_and(Ssine_pi_over_eight, Stmp1);
     Ssh = float32_bitwise_and(Expr(~Stmp1), Ssh);
     Ssh = float32_bitwise_or(Ssh, Stmp2);
@@ -246,7 +250,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
     Ssh = Ss31 * Sone_half;
     Stmp5 = Ss33 - Ss11;
     Stmp2 = Ssh * Ssh;
-    Stmp1 = select(Stmp2 >= Stiny_number, Expr(int(0xffffffff)), Expr(0));
+    Stmp1 = bit_cast<float32>(
+        select(Stmp2 >= Stiny_number, Expr(int(0xffffffff)), Expr(0)));
     Ssh = float32_bitwise_and(Stmp1, Ssh);
     Sch = float32_bitwise_and(Stmp1, Stmp5);
     Stmp2 = float32_bitwise_and(Expr(~Stmp1), Sone);
@@ -258,7 +263,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
     Ssh = Stmp4 * Ssh;
     Sch = Stmp4 * Sch;
     Stmp1 = Sfour_gamma_squared * Stmp1;
-    Stmp1 = select(Stmp2 <= Stmp1, Expr(int(0xffffffff)), Expr(0));
+    Stmp1 = bit_cast<float32>(
+        select(Stmp2 <= Stmp1, Expr(int(0xffffffff)), Expr(0)));
     Stmp2 = float32_bitwise_and(Ssine_pi_over_eight, Stmp1);
     Ssh = float32_bitwise_and(Expr(~Stmp1), Ssh);
     Ssh = float32_bitwise_or(Ssh, Stmp2);
@@ -422,7 +428,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Stmp3 = Stmp3 + Stmp4;
   Stmp4 = Sa33 * Sa33;
   Stmp3 = Stmp3 + Stmp4;
-  Stmp4 = select(Stmp1 < Stmp2, Expr(int(0xffffffff)), Expr(0));
+  Stmp4 =
+      bit_cast<float32>(select(Stmp1 < Stmp2, Expr(int(0xffffffff)), Expr(0)));
   Stmp5 = float32_bitwise_xor(Sa11, Sa12);
   Stmp5 = float32_bitwise_and(Stmp5, Stmp4);
   Sa11 = float32_bitwise_xor(Sa11, Stmp5);
@@ -461,7 +468,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Sv12 = Sv12 * Stmp4;
   Sv22 = Sv22 * Stmp4;
   Sv32 = Sv32 * Stmp4;
-  Stmp4 = select(Stmp1 < Stmp3, Expr(int(0xffffffff)), Expr(0));
+  Stmp4 =
+      bit_cast<float32>(select(Stmp1 < Stmp3, Expr(int(0xffffffff)), Expr(0)));
   Stmp5 = float32_bitwise_xor(Sa11, Sa13);
   Stmp5 = float32_bitwise_and(Stmp5, Stmp4);
   Sa11 = float32_bitwise_xor(Sa11, Stmp5);
@@ -500,7 +508,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Sv11 = Sv11 * Stmp4;
   Sv21 = Sv21 * Stmp4;
   Sv31 = Sv31 * Stmp4;
-  Stmp4 = select(Stmp2 < Stmp3, Expr(int(0xffffffff)), Expr(0));
+  Stmp4 =
+      bit_cast<float32>(select(Stmp2 < Stmp3, Expr(int(0xffffffff)), Expr(0)));
   Stmp5 = float32_bitwise_xor(Sa12, Sa13);
   Stmp5 = float32_bitwise_and(Stmp5, Stmp4);
   Sa12 = float32_bitwise_xor(Sa12, Stmp5);
@@ -549,13 +558,15 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Su23 = 0.0f;
   Su33 = 1.0f;
   Ssh = Sa21 * Sa21;
-  Ssh = select(Ssh >= Ssmall_number, Expr(int(0xffffffff)), Expr(0));
+  Ssh = bit_cast<float32>(
+      select(Ssh >= Ssmall_number, Expr(int(0xffffffff)), Expr(0)));
   Ssh = float32_bitwise_and(Ssh, Sa21);
   Stmp5 = 0.0f;
   Sch = Stmp5 - Sa11;
   Sch = max(Sch, Sa11);
   Sch = max(Sch, Ssmall_number);
-  Stmp5 = select(Sa11 >= Stmp5, Expr(int(0xffffffff)), Expr(0));
+  Stmp5 =
+      bit_cast<float32>(select(Sa11 >= Stmp5, Expr(int(0xffffffff)), Expr(0)));
   Stmp1 = Sch * Sch;
   Stmp2 = Ssh * Ssh;
   Stmp2 = Stmp1 + Stmp2;
@@ -628,13 +639,15 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Su31 = Su31 + Stmp2;
   Su32 = Su32 - Stmp1;
   Ssh = Sa31 * Sa31;
-  Ssh = select(Ssh >= Ssmall_number, Expr(int(0xffffffff)), Expr(0));
+  Ssh = bit_cast<float32>(
+      select(Ssh >= Ssmall_number, Expr(int(0xffffffff)), Expr(0)));
   Ssh = float32_bitwise_and(Ssh, Sa31);
   Stmp5 = 0.0f;
   Sch = Stmp5 - Sa11;
   Sch = max(Sch, Sa11);
   Sch = max(Sch, Ssmall_number);
-  Stmp5 = select(Sa11 >= Stmp5, Expr(int(0xffffffff)), Expr(0));
+  Stmp5 =
+      bit_cast<float32>(select(Sa11 >= Stmp5, Expr(int(0xffffffff)), Expr(0)));
   Stmp1 = Sch * Sch;
   Stmp2 = Ssh * Ssh;
   Stmp2 = Stmp1 + Stmp2;
@@ -707,13 +720,15 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Su31 = Su31 + Stmp2;
   Su33 = Su33 - Stmp1;
   Ssh = Sa32 * Sa32;
-  Ssh = select(Ssh >= Ssmall_number, Expr(int(0xffffffff)), Expr(0));
+  Ssh = bit_cast<float32>(
+      select(Ssh >= Ssmall_number, Expr(int(0xffffffff)), Expr(0)));
   Ssh = float32_bitwise_and(Ssh, Sa32);
   Stmp5 = 0.0f;
   Sch = Stmp5 - Sa22;
   Sch = max(Sch, Sa22);
   Sch = max(Sch, Ssmall_number);
-  Stmp5 = select(Sa22 >= Stmp5, Expr(int(0xffffffff)), Expr(0));
+  Stmp5 =
+      bit_cast<float32>(select(Sa22 >= Stmp5, Expr(int(0xffffffff)), Expr(0)));
   Stmp1 = Sch * Sch;
   Stmp2 = Ssh * Ssh;
   Stmp2 = Stmp1 + Stmp2;

@@ -97,7 +97,7 @@ for l in lines[l_compute + 1:l_end]:
         continue
     if len(tokens) == 9 and tokens[1] == '=' and tokens[5] == '?' and tokens[7] == ':':
         # a = b ? a : d
-        print("{} = select({} {} {}, Expr(int({})), Expr({}));".format(to_var_ui(tokens[0]), tokens[2][1:-2], tokens[3], tokens[4][:-3], tokens[6], tokens[8]), file=f)
+        print("{} = bit_cast<float32>(select({} {} {}, Expr(int({})), Expr({})));".format(to_var_ui(tokens[0]), tokens[2][1:-2], tokens[3], tokens[4][:-3], tokens[6], tokens[8]), file=f)
         continue
     if len(tokens) == 4 and tokens[1] == '=' and tokens[2][:8] == 'std::max':
         # a = std::max(...)

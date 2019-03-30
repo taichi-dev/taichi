@@ -197,8 +197,9 @@ std::string binary_type_symbol(BinaryType type) {
     REGISTER_TYPE(cmp_ge, >=);
     REGISTER_TYPE(cmp_ne, !=);
     REGISTER_TYPE(cmp_eq, ==);
-    REGISTER_TYPE(bit_and, &&);
-    REGISTER_TYPE(bit_or, ||);
+    REGISTER_TYPE(bit_and, &);
+    REGISTER_TYPE(bit_or, |);
+    REGISTER_TYPE(bit_xor, ^);
 #undef REGISTER_TYPE
   }
   return type_names[type];

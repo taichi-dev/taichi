@@ -829,7 +829,7 @@ inline int32x1 bit_not(int32x1 a) {
 }
 
 inline int32x4 bit_not(int32x4 a) {
-  return _mm_xor_si128(a, _mm_set1_epi32(-1LL));
+  return _mm_xor_si128(a, _mm_set1_epi32(-1));
 }
 
 inline int32x8 bit_not(int32x8 a) {

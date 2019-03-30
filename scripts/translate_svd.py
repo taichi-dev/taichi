@@ -70,7 +70,7 @@ def to_var_ui(s):
         return s
     else:
         if s[0] == '~':
-            s = 'bit_cast<int32>({})'.format(s[1:])
+            s = '~bit_cast<int32>({})'.format(s[1:])
         return 'Expr(' + s + ')'
 
 for l in lines[l_compute + 1:l_end]:
@@ -107,7 +107,7 @@ for l in lines[l_compute + 1:l_end]:
         print("{} = max({}, {});".format(to_var(tokens[0]), tokens[2][9:-3], tokens[3][:-3]), file=f)
         continue
     if tokens[0] == 'for':
-        print('Declare(i); For (i, 0, 5, [&]{', file =f)
+        print('Declare(sweep); For (sweep, 0, 5, [&]{', file =f)
         continue
     if tokens[0] == '}':
         print('});', file =f)

@@ -140,9 +140,9 @@ TC_TEST("svd_dsl") {
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
 
-  constexpr int N = 1024;
+  constexpr int N = 2048;
 
-  prog.layout([&]{
+  prog.layout([&] {
     auto i = Index(0);
     // TODO: SOA
     root.dense(i, N).place(gA);
@@ -152,9 +152,21 @@ TC_TEST("svd_dsl") {
     root.dense(i, N).place(gV);
   });
 
-  kernel([&]{
+  std::vector<TMat> As;
+  for (int i = 0; i < N; i++) {
+    TMat A = TMat::rand();
+    As.push_back(A);
+
+    for (int p = 0; p < 3; p++) {
+      for (int q = 0; q < 3; q++) {
+        gA(p, q).val<float32>(i) = A(p, q);
+      }
+    }
+  }
+
+  kernel([&] {
     Declare(i);
-    For (i, 0, N, [&]{
+    For(i, 0, N, [&] {
       auto svd = sifakis_svd(gA[i]);
       gU[i] = std::get<0>(svd);
       gSigma[i] = std::get<1>(svd);
@@ -163,9 +175,8 @@ TC_TEST("svd_dsl") {
   })();
 
   for (int i = 0; i < N; i++) {
-    TMat m = TMat::rand();
-    TMat U, sig, V;//, Q, R, S;
-    TVec sig_vec;
+    TMat m = As[i];
+    TMat U, sig, V;  //, Q, R, S;
 
     for (int p = 0; p < 3; p++) {
       for (int q = 0; q < 3; q++) {

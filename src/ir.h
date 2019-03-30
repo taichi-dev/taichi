@@ -113,6 +113,7 @@ class DecoratorRecorder {
  public:
   int vectorize;
   int parallelize;
+  bool uniform;
 
   DecoratorRecorder() {
     reset();
@@ -121,6 +122,7 @@ class DecoratorRecorder {
   void reset() {
     vectorize = -1;
     parallelize = 0;
+    uniform = false;
   }
 };
 
@@ -1579,6 +1581,10 @@ inline void Vectorize(int v) {
 
 inline void Parallelize(int v) {
   dec.parallelize = v;
+}
+
+inline void Uniform() {
+  dec.uniform = true;
 }
 
 class PragmaSLPStmt : public Stmt {

@@ -128,86 +128,70 @@ TC_TEST("svd_scalar") {
 }
 
 TC_TEST("svd_dsl") {
-  using TMat = TMatrix<float32, 3>;
-  using TVec = TVector<float32, 3>;
-  float32 tolerance = 2e-3_f32;
+  for (auto vec : {1}) {
+    using TMat = TMatrix<float32, 3>;
+    using TVec = TVector<float32, 3>;
+    float32 tolerance = 2e-3_f32;
 
-  Matrix gA(DataType::f32, 3, 3);
-  Matrix gU(DataType::f32, 3, 3);
-  Matrix gSigma(DataType::f32, 3, 1);
-  Matrix gV(DataType::f32, 3, 3);
+    Matrix gA(DataType::f32, 3, 3);
+    Matrix gU(DataType::f32, 3, 3);
+    Matrix gSigma(DataType::f32, 3, 1);
+    Matrix gV(DataType::f32, 3, 3);
 
-  Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
+    // Program prog(Arch::x86_64);
+    Program prog(Arch::gpu);
 
-  constexpr int N = 2048;
+    constexpr int N = 2048;
 
-  prog.layout([&] {
-    auto i = Index(0);
-    // TODO: SOA
-    root.dense(i, N).place(gA);
-
-    root.dense(i, N).place(gU);
-    root.dense(i, N).place(gSigma);
-    root.dense(i, N).place(gV);
-  });
-
-  std::vector<TMat> As;
-  for (int i = 0; i < N; i++) {
-    TMat A = TMat::rand();
-    As.push_back(A);
-
-    for (int p = 0; p < 3; p++) {
-      for (int q = 0; q < 3; q++) {
-        gA(p, q).val<float32>(i) = A(p, q);
-      }
-    }
-  }
-
-  kernel([&] {
-    Declare(i);
-    For(i, 0, N, [&] {
-      auto svd = sifakis_svd(gA[i]);
-      gU[i] = std::get<0>(svd);
-      gSigma[i] = std::get<1>(svd);
-      gV[i] = std::get<2>(svd);
+    prog.layout([&] {
+      auto i = Index(0);
+      // TODO: SOA
+      root.dense(i, N).place(gA);
+      root.dense(i, N).place(gU);
+      root.dense(i, N).place(gSigma);
+      root.dense(i, N).place(gV);
     });
-  })();
 
-  for (int i = 0; i < N; i++) {
-    TMat m = As[i];
-    TMat U, sig, V;  //, Q, R, S;
+    std::vector<TMat> As;
+    for (int i = 0; i < N; i++) {
+      TMat A = TMat::rand();
+      As.push_back(A);
 
-    for (int p = 0; p < 3; p++) {
-      for (int q = 0; q < 3; q++) {
-        U(p, q) = gU(p, q).val<float32>(i);
-        V(p, q) = gV(p, q).val<float32>(i);
+      for (int p = 0; p < 3; p++) {
+        for (int q = 0; q < 3; q++) {
+          gA(p, q).val<float32>(i) = A(p, q);
+        }
       }
-      sig(p, p) = gSigma(p).val<float32>(i);
     }
 
-    // sifakis_svd<6>(m, U, V, sig_vec);
-    // sig = TMat(sig_vec);
-    TC_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
-    TC_CHECK_EQUAL(TMat(1), U * transposed(U), tolerance);
-    TC_CHECK_EQUAL(TMat(1), V * transposed(V), tolerance);
-    TC_CHECK_EQUAL(sig, TMat(sig.diag()), tolerance);
+    kernel([&] {
+      Declare(i);
+      Vectorize(vec);
+      For(i, 0, N, [&] {
+        auto svd = sifakis_svd(gA[i]);
+        gU[i] = std::get<0>(svd);
+        gSigma[i] = std::get<1>(svd);
+        gV[i] = std::get<2>(svd);
+      });
+    })();
 
-    /*
-    if (dim == 2) {
-      qr_decomp(m, Q, R);
-      TC_CHECK_EQUAL(m, Q * R, tolerance);
-      TC_CHECK_EQUAL(Q * transposed(Q), Matrix(1), tolerance);
-      CHECK(abs(R[0][1]) < 1e-6_f);
-      CHECK(R[0][0] > -1e-6_f);
-      CHECK(R[1][1] > -1e-6_f);
+    for (int i = 0; i < N; i++) {
+      TMat m = As[i];
+      TMat U, sig, V;
+
+      for (int p = 0; p < 3; p++) {
+        for (int q = 0; q < 3; q++) {
+          U(p, q) = gU(p, q).val<float32>(i);
+          V(p, q) = gV(p, q).val<float32>(i);
+        }
+        sig(p, p) = gSigma(p).val<float32>(i);
+      }
+
+      TC_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
+      TC_CHECK_EQUAL(TMat(1), U * transposed(U), tolerance);
+      TC_CHECK_EQUAL(TMat(1), V * transposed(V), tolerance);
+      TC_CHECK_EQUAL(sig, TMat(sig.diag()), tolerance);
     }
-
-    polar_decomp(m, R, S);
-    TC_CHECK_EQUAL(m, R * S, tolerance);
-    TC_CHECK_EQUAL(Matrix(1), R * transposed(R), tolerance);
-    TC_CHECK_EQUAL(S, transposed(S), tolerance);
-    */
   }
 }
 

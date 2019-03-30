@@ -65,9 +65,7 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Stiny_number = 1.e-20f;
   Ssmall_number = 1.e-12f;
   Sa11 = a(0, 0);
-  Print(Sa11);
   Sa21 = a(1, 0);
-  Print(Sa21);
   Sa31 = a(2, 0);
   Sa12 = a(0, 1);
   Sa22 = a(1, 1);

@@ -104,7 +104,8 @@ class LoopVectorize : public IRVisitor {
 
   void visit(RangeForStmt *for_stmt) override {
     auto old_vectorize = for_stmt->vectorize;
-    vectorize = for_stmt->vectorize;
+    if (for_stmt->vectorize != 1)
+      vectorize = for_stmt->vectorize;
     loop_var = for_stmt->loop_var;
     for_stmt->body->accept(this);
     loop_var = nullptr;

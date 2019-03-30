@@ -117,6 +117,8 @@ auto ray_march = [] {
     Vector n(3);
     for (int i = 0; i < 3; i++) {
       Vector inc = p, dec = p;
+      Mutable(inc, DataType::f32);
+      Mutable(dec, DataType::f32);
       inc(i) += d;
       dec(i) -= d;
       n(i) = (0.5f / d) * (sdf(inc) - sdf(dec));
@@ -154,9 +156,9 @@ auto ray_march = [] {
       c(0) = fov * (cast<float>(i / n) / float(n / 2) - 2.0f);
       c(1) = fov * (cast<float>(i % n) / float(n / 2) - 1.0f);
       c(2) = -1.0f;
-      c = normalized(c);
 
       Mutable(c, DataType::f32);
+      c = normalized(c);
 
       Vector color(3);
       color = Vector({1.0f, 1.0f, 1.0f});

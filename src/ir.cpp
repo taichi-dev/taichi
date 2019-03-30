@@ -8,6 +8,41 @@ TLANG_NAMESPACE_BEGIN
 #define TC_EXPRESSION_IMPLEMENTATION
 #include "expression.h"
 
+Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
+  return Expr::make<TrinaryOpExpression>(TrinaryType::select, cond, true_val,
+                                         false_val);
+}
+
+Expr operator-(Expr expr) {
+  return Expr::make<UnaryOpExpression>(UnaryType::neg, expr);
+}
+
+Expr operator~(Expr expr) {
+  return Expr::make<UnaryOpExpression>(UnaryType::bit_not, expr);
+}
+
+template <typename T>
+Expr cast(Expr input) {
+  auto ret = std::make_shared<UnaryOpExpression>(UnaryType::cast, input);
+  ret->cast_type = get_data_type<T>();
+  ret->cast_by_value = true;
+  return Expr(ret);
+}
+
+template <typename T>
+Expr bit_cast(Expr input) {
+  auto ret = std::make_shared<UnaryOpExpression>(UnaryType::cast, input);
+  ret->cast_type = get_data_type<T>();
+  ret->cast_by_value = false;
+  return Expr(ret);
+}
+
+template Expr cast<float32>(Expr);
+template Expr cast<int32>(Expr);
+
+template Expr bit_cast<float32>(Expr);
+template Expr bit_cast<int32>(Expr);
+
 DecoratorRecorder dec;
 
 IRBuilder &current_ast_builder() {

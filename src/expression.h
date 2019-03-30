@@ -1,5 +1,9 @@
 #if defined(TC_EXPRESSION_IMPLEMENTATION)
 
+#undef DEFINE_EXPRESSION_OP
+#undef DEFINE_EXPRESSION_OP_UNARY
+#undef DEFINE_EXPRESSION_FUNC
+
 #define DEFINE_EXPRESSION_OP(op, op_name)                                 \
   Expr operator op(const Expr &lhs, const Expr &rhs) {                    \
     return Expr::make<BinaryOpExpression>(BinaryType::op_name, lhs, rhs); \

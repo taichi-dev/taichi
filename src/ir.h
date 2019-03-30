@@ -999,39 +999,20 @@ class GlobalPtrExpression : public Expression {
 
 #include "expression.h"
 
-inline Expr select(const Expr &cond,
+Expr select(const Expr &cond,
                    const Expr &true_val,
-                   const Expr &false_val) {
-  return Expr::make<TrinaryOpExpression>(TrinaryType::select, cond, true_val,
-                                         false_val);
-}
+                   const Expr &false_val);
 
-inline Expr operator-(Expr expr) {
-  return Expr::make<UnaryOpExpression>(UnaryType::neg, expr);
-}
+Expr operator-(Expr expr);
 
-inline Expr operator~(Expr expr) {
-  return Expr::make<UnaryOpExpression>(UnaryType::bit_not, expr);
-}
-
-
+Expr operator~(Expr expr);
 
 // Value cast
 template <typename T>
-inline Expr cast(Expr input) {
-  auto ret = std::make_shared<UnaryOpExpression>(UnaryType::cast, input);
-  ret->cast_type = get_data_type<T>();
-  ret->cast_by_value = true;
-  return Expr(ret);
-}
+Expr cast(Expr input);
 
 template <typename T>
-inline Expr bit_cast(Expr input) {
-  auto ret = std::make_shared<UnaryOpExpression>(UnaryType::cast, input);
-  ret->cast_type = get_data_type<T>();
-  ret->cast_by_value = false;
-  return Expr(ret);
-}
+Expr bit_cast(Expr input);
 
 class Block : public IRNode {
  public:

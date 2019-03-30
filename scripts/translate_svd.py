@@ -28,7 +28,7 @@ print('variables:', variables)
 
 f = open(tc.get_repo_directory() + '/projects/taichi_lang/src/tests/svd.h', 'w')
 
-print('std::tuple<Matrix, Matrix, Matrix> svd(const Matrix &a) {', file=f)
+print('std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {', file=f)
 
 
 print()

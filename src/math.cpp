@@ -27,4 +27,11 @@ void Mutable(Matrix &mat, DataType dt) {
   }
 }
 
+SNode &SNode::place(Matrix &mat) {
+  for (auto &e : mat.entries) {
+    this->place(e);
+  }
+  return *this;
+}
+
 TLANG_NAMESPACE_END

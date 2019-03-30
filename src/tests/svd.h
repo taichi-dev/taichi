@@ -1,4 +1,4 @@
-std::tuple<Matrix, Matrix, Matrix> svd(const Matrix &a) {
+std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Local(Sfour_gamma_squared) = 0.0f;
   Local(Ssine_pi_over_eight) = 0.0f;
   Local(Scosine_pi_over_eight) = 0.0f;

@@ -9,6 +9,18 @@
 
 TLANG_NAMESPACE_BEGIN
 
+Expr float32_bitwise_or(const Expr &a, const Expr &b) {
+  return bit_cast<float32>(bit_cast<int32>(a) | bit_cast<int32>(b));
+}
+
+Expr float32_bitwise_xor(const Expr &a, const Expr &b) {
+  return bit_cast<float32>(bit_cast<int32>(a) ^ bit_cast<int32>(b));
+}
+
+Expr float32_bitwise_and(const Expr &a, const Expr &b) {
+  return bit_cast<float32>(bit_cast<int32>(a) & bit_cast<int32>(b));
+}
+
 #include "svd.h"
 
 template <int sweeps = 5>

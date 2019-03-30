@@ -84,7 +84,16 @@ for l in lines[l_compute + 1:l_end]:
         if tokens[0][-2:] == '.f':
             print("{} = {} {} {};".format(to_var(tokens[0]), to_var(tokens[2]), tokens[3], to_var(tokens[4])), file=f)
         else:
-            print("{} = bit_cast<float32>(bit_cast<int32>({}) {} bit_cast<int32>({}));".format(to_var_ui(tokens[0]), to_var_ui(tokens[2]), tokens[3], to_var_ui(tokens[4])), file=f)
+            op = tokens[3]
+            if op == '^':
+                op_name = 'xor'
+            elif op == '|':
+                op_name = 'or'
+            elif op == '&':
+                op_name = 'and'
+            else:
+                assert False
+            print("{} = float32_bitwise_{}({}, {});".format(to_var_ui(tokens[0]), op_name, to_var_ui(tokens[2]), to_var_ui(tokens[4])), file=f)
         continue
     if len(tokens) == 9 and tokens[1] == '=' and tokens[5] == '?' and tokens[7] == ':':
         # a = b ? a : d

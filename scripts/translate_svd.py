@@ -69,6 +69,8 @@ def to_var_ui(s):
     if s in variables:
         return s
     else:
+        if s[0] == '~':
+            s = 'bit_cast<int32>({})'.format(s[1:])
         return 'Expr(' + s + ')'
 
 for l in lines[l_compute + 1:l_end]:

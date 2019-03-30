@@ -174,6 +174,77 @@ using float32x16 = vec<float32, 16>;
 using int32x16 = vec<int32, 16>;
 //*****************************************************************************
 
+#define DEFINE_BINARY_OP(T, OP, INST) \
+  inline T OP(T a, T b) {             \
+    return INST(a, b);                \
+  }
+
+DEFINE_BINARY_OP(float32x4, add, _mm_add_ps);
+DEFINE_BINARY_OP(float32x4, sub, _mm_sub_ps);
+DEFINE_BINARY_OP(float32x4, mul, _mm_mul_ps);
+DEFINE_BINARY_OP(float32x4, div, _mm_div_ps);
+DEFINE_BINARY_OP(float32x4, min, _mm_min_ps);
+DEFINE_BINARY_OP(float32x4, max, _mm_max_ps);
+
+DEFINE_BINARY_OP(int32x4, add, _mm_add_epi32);
+DEFINE_BINARY_OP(int32x4, sub, _mm_sub_epi32);
+DEFINE_BINARY_OP(int32x4, mul, _mm_mullo_epi32);
+DEFINE_BINARY_OP(int32x4, min, _mm_min_epi32);
+DEFINE_BINARY_OP(int32x4, max, _mm_max_epi32);
+DEFINE_BINARY_OP(int32x4, bit_and, _mm_and_si128);
+DEFINE_BINARY_OP(int32x4, bit_or, _mm_or_si128);
+DEFINE_BINARY_OP(int32x4, bit_xor, _mm_xor_si128);
+
+DEFINE_BINARY_OP(float32x8, add, _mm256_add_ps);
+DEFINE_BINARY_OP(float32x8, sub, _mm256_sub_ps);
+DEFINE_BINARY_OP(float32x8, mul, _mm256_mul_ps);
+DEFINE_BINARY_OP(float32x8, div, _mm256_div_ps);
+DEFINE_BINARY_OP(float32x8, min, _mm256_min_ps);
+DEFINE_BINARY_OP(float32x8, max, _mm256_max_ps);
+
+DEFINE_BINARY_OP(int32x8, add, _mm256_add_epi32);
+DEFINE_BINARY_OP(int32x8, sub, _mm256_sub_epi32);
+DEFINE_BINARY_OP(int32x8, mul, _mm256_mullo_epi32);
+DEFINE_BINARY_OP(int32x8, min, _mm256_min_epi32);
+DEFINE_BINARY_OP(int32x8, max, _mm256_max_epi32);
+DEFINE_BINARY_OP(int32x8, bit_and, _mm256_and_si256);
+DEFINE_BINARY_OP(int32x8, bit_or, _mm256_or_si256);
+DEFINE_BINARY_OP(int32x8, bit_xor, _mm256_xor_si256);
+
+DEFINE_BINARY_OP(float32x16, add, _mm512_add_ps);
+DEFINE_BINARY_OP(float32x16, sub, _mm512_sub_ps);
+DEFINE_BINARY_OP(float32x16, mul, _mm512_mul_ps);
+DEFINE_BINARY_OP(float32x16, div, _mm512_div_ps);
+DEFINE_BINARY_OP(float32x16, min, _mm512_min_ps);
+DEFINE_BINARY_OP(float32x16, max, _mm512_max_ps);
+
+DEFINE_BINARY_OP(int32x16, add, _mm512_add_epi32);
+DEFINE_BINARY_OP(int32x16, sub, _mm512_sub_epi32);
+DEFINE_BINARY_OP(int32x16, mul, _mm512_mullo_epi32);
+DEFINE_BINARY_OP(int32x16, min, _mm512_min_epi32);
+DEFINE_BINARY_OP(int32x16, max, _mm512_max_epi32);
+DEFINE_BINARY_OP(int32x16, bit_and, _mm512_and_si512);
+DEFINE_BINARY_OP(int32x16, bit_or, _mm512_or_si512);
+DEFINE_BINARY_OP(int32x16, bit_xor, _mm512_xor_si512);
+
+#define DEFINE_BINARY_OP_MID(T, OP, INST) \
+  inline T OP(T a, T b) {                 \
+    return a INST b;                      \
+  }
+
+DEFINE_BINARY_OP_MID(float32x1, add, +);
+DEFINE_BINARY_OP_MID(float32x1, sub, -);
+DEFINE_BINARY_OP_MID(float32x1, mul, *);
+DEFINE_BINARY_OP_MID(float32x1, div, /);
+DEFINE_BINARY_OP_MID(int32x1, add, +);
+DEFINE_BINARY_OP_MID(int32x1, sub, -);
+DEFINE_BINARY_OP_MID(int32x1, mul, *);
+DEFINE_BINARY_OP_MID(int32x1, div, /);
+DEFINE_BINARY_OP_MID(int32x1, mod, %);
+DEFINE_BINARY_OP_MID(int32x1, bit_and, &);
+DEFINE_BINARY_OP_MID(int32x1, bit_or, |);
+DEFINE_BINARY_OP_MID(int32x1, bit_xor, ^);
+
 template <typename T, int dim>
 TC_FORCE_INLINE T reduce_sum(const vec<T, dim> &v) {
   T ret(0);
@@ -627,6 +698,18 @@ inline int32x1 cmp_gt(int32x1 b, int32x1 a) {
   return int(a < b) * -1;
 }
 
+inline int32x1 cmp_ge(float32x1 a, float32x1 b) {
+  return a >= b;
+}
+
+inline int32x1 cmp_ge(int32x1 a, int32x1 b) {
+  return a >= b;
+}
+
+inline int32x1 cmp_le(float32x1 a, float32x1 b) {
+  return a <= b;
+}
+
 inline int32x4 cmp_gt(float32x4 b, float32x4 a) {
   auto ret = _mm_cmp_ps(a, b, _CMP_LT_OQ);
   return union_cast<int32x4>(ret);
@@ -637,13 +720,33 @@ inline int32x4 cmp_gt(int32x4 b, int32x4 a) {
   return ret;
 }
 
-inline int32x8 cmp_gt(float32x8 b, float32x8 a) {
-  auto ret = _mm256_cmp_ps(a, b, _CMP_LT_OQ);
+inline int32x4 cmp_ge(float32x4 a, float32x4 b) {
+  auto ret = _mm_cmp_ps(a, b, _CMP_GE_OQ);
+  return union_cast<int32x4>(ret);
+}
+
+inline int32x4 cmp_ge(int32x4 a, int32x4 b) {
+  auto ret = bit_or(cmp_ge(a, b), cmp_eq(a, b));
+  return ret;
+}
+
+inline int32x8 cmp_gt(float32x8 a, float32x8 b) {
+  auto ret = _mm256_cmp_ps(a, b, _CMP_GT_OQ);
   return union_cast<int32x8>(ret);
 }
 
-inline int32x8 cmp_gt(int32x8 b, int32x8 a) {
-  auto ret = _mm256_cmpgt_epi32(b, a);
+inline int32x8 cmp_gt(int32x8 a, int32x8 b) {
+  auto ret = _mm256_cmpgt_epi32(a, b);
+  return ret;
+}
+
+inline int32x8 cmp_ge(float32x8 a, float32x8 b) {
+  auto ret = _mm256_cmp_ps(a, b, _CMP_GE_OQ);
+  return union_cast<int32x8>(ret);
+}
+
+inline int32x8 cmp_ge(int32x8 a, int32x8 b) {
+  auto ret = bit_or(cmp_ge(a, b), cmp_eq(a, b));
   return ret;
 }
 
@@ -725,76 +828,14 @@ inline int32x1 bit_not(int32x1 a) {
   return int(-1) ^ a;
 }
 
+inline int32x4 bit_not(int32x4 a) {
+  return _mm_xor_si128(a, _mm_set1_epi32(-1LL));
+}
+
 inline int32x8 bit_not(int32x8 a) {
   return _mm256_xor_si256(a, _mm256_set1_epi64x(-1LL));
 }
 
-#define DEFINE_BINARY_OP(T, OP, INST) \
-  inline T OP(T a, T b) {             \
-    return INST(a, b);                \
-  }
-
-DEFINE_BINARY_OP(float32x4, add, _mm_add_ps);
-DEFINE_BINARY_OP(float32x4, sub, _mm_sub_ps);
-DEFINE_BINARY_OP(float32x4, mul, _mm_mul_ps);
-DEFINE_BINARY_OP(float32x4, div, _mm_div_ps);
-DEFINE_BINARY_OP(float32x4, min, _mm_min_ps);
-DEFINE_BINARY_OP(float32x4, max, _mm_max_ps);
-
-DEFINE_BINARY_OP(int32x4, add, _mm_add_epi32);
-DEFINE_BINARY_OP(int32x4, sub, _mm_sub_epi32);
-DEFINE_BINARY_OP(int32x4, mul, _mm_mullo_epi32);
-DEFINE_BINARY_OP(int32x4, min, _mm_min_epi32);
-DEFINE_BINARY_OP(int32x4, max, _mm_max_epi32);
-DEFINE_BINARY_OP(int32x4, bit_and, _mm_and_si128);
-DEFINE_BINARY_OP(int32x4, bit_or, _mm_or_si128);
-
-DEFINE_BINARY_OP(float32x8, add, _mm256_add_ps);
-DEFINE_BINARY_OP(float32x8, sub, _mm256_sub_ps);
-DEFINE_BINARY_OP(float32x8, mul, _mm256_mul_ps);
-DEFINE_BINARY_OP(float32x8, div, _mm256_div_ps);
-DEFINE_BINARY_OP(float32x8, min, _mm256_min_ps);
-DEFINE_BINARY_OP(float32x8, max, _mm256_max_ps);
-
-DEFINE_BINARY_OP(float32x16, add, _mm512_add_ps);
-DEFINE_BINARY_OP(float32x16, sub, _mm512_sub_ps);
-DEFINE_BINARY_OP(float32x16, mul, _mm512_mul_ps);
-DEFINE_BINARY_OP(float32x16, div, _mm512_div_ps);
-DEFINE_BINARY_OP(float32x16, min, _mm512_min_ps);
-DEFINE_BINARY_OP(float32x16, max, _mm512_max_ps);
-
-DEFINE_BINARY_OP(int32x8, add, _mm256_add_epi32);
-DEFINE_BINARY_OP(int32x8, sub, _mm256_sub_epi32);
-DEFINE_BINARY_OP(int32x8, mul, _mm256_mullo_epi32);
-DEFINE_BINARY_OP(int32x8, min, _mm256_min_epi32);
-DEFINE_BINARY_OP(int32x8, max, _mm256_max_epi32);
-DEFINE_BINARY_OP(int32x8, bit_and, _mm256_and_si256);
-DEFINE_BINARY_OP(int32x8, bit_or, _mm256_or_si256);
-
-DEFINE_BINARY_OP(int32x16, add, _mm512_add_epi32);
-DEFINE_BINARY_OP(int32x16, sub, _mm512_sub_epi32);
-DEFINE_BINARY_OP(int32x16, mul, _mm512_mullo_epi32);
-DEFINE_BINARY_OP(int32x16, min, _mm512_min_epi32);
-DEFINE_BINARY_OP(int32x16, max, _mm512_max_epi32);
-DEFINE_BINARY_OP(int32x16, bit_and, _mm512_and_si512);
-DEFINE_BINARY_OP(int32x16, bit_or, _mm512_or_si512);
-
-#define DEFINE_BINARY_OP_MID(T, OP, INST) \
-  inline T OP(T a, T b) {                 \
-    return a INST b;                      \
-  }
-
-DEFINE_BINARY_OP_MID(float32x1, add, +);
-DEFINE_BINARY_OP_MID(float32x1, sub, -);
-DEFINE_BINARY_OP_MID(float32x1, mul, *);
-DEFINE_BINARY_OP_MID(float32x1, div, /);
-DEFINE_BINARY_OP_MID(int32x1, add, +);
-DEFINE_BINARY_OP_MID(int32x1, sub, -);
-DEFINE_BINARY_OP_MID(int32x1, mul, *);
-DEFINE_BINARY_OP_MID(int32x1, div, /);
-DEFINE_BINARY_OP_MID(int32x1, mod, %);
-DEFINE_BINARY_OP_MID(int32x1, bit_and, &);
-DEFINE_BINARY_OP_MID(int32x1, bit_or, |);
 
 inline int32x8 shr(int32x8 a, int b) {
   return _mm256_srli_epi32(a, b);
@@ -844,6 +885,28 @@ inline float32x8 neg(float32x8 v) {
   // TODO: optimize
   return sub(float32x8(0), v);
 }
+
+inline float32x1 rsqrt(float32x1 x) {
+  float32 buf[4];
+  buf[0] = x;
+  __m128 v = _mm_loadu_ps(buf);
+  v = _mm_rsqrt_ss(v);
+  _mm_storeu_ps(buf, v);
+  return buf[0];
+}
+
+inline float32x4 rsqrt(float32x4 x) {
+  return _mm_rsqrt_ps(x);
+}
+
+inline float32x8 rsqrt(float32x8 x) {
+  return _mm256_rsqrt_ps(x);
+}
+
+inline float32x16 rsqrt(float32x16 x) {
+  return _mm512_rsqrt14_ps(x);
+}
+
 
 template <int dim>
 inline vec<int32, dim> div(vec<int32, dim> a, vec<int32, dim> b) {
@@ -916,10 +979,11 @@ DEFINE_CUDA_OP(div, /)
 DEFINE_CUDA_OP(bit_and, &)
 DEFINE_CUDA_OP(bit_or, |)
 DEFINE_CUDA_OP(cmp_lt, <)
-DEFINE_CUDA_OP(cmp_gt, >)
-
 DEFINE_CUDA_OP(cmp_le, <=)
+DEFINE_CUDA_OP(cmp_gt, >)
+DEFINE_CUDA_OP(cmp_ge, >=)
 DEFINE_CUDA_OP(cmp_eq, ==)
+DEFINE_CUDA_OP(cmp_ne, !=)
 
 #define DEFINE_CUDA_UNARY_OP(name, op) \
   template <typename T>                \

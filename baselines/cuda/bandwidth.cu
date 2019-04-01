@@ -43,7 +43,7 @@ __global__ void fd(float *a, float *b, int *c, int n) {
   */
   // b[i] = (i * 1e-18);
   // b[i] = i;
-  b[i] = const_c[const_c[const_c[i & 64]]];
+  b[i] = c[c[c[i & 64]]];
   /*
   atomicAdd(&b_s[0], sqrt(sum));
   if (threadIdx.x < m) {

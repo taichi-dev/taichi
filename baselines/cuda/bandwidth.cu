@@ -12,38 +12,62 @@ double get_time() {
 
 constexpr int m = 128;
 
-__device__ int indirect(int *c, int i) {
-  return c[i % m] + i / m * m;
+inline __device__ int indirect(int *c, int i) {
+  // return c[c[i & 127] & 127] + i;
+  return int(exp(((((float(i))))) * 1e-18)) + i;
+  // printf("%d\n", c[i % m]  - i % m + i - i);
+  // return i;
 }
 
-__global__ void fd(int *a, int *b, int *c, int n) {
+__global__ void fd(float *a, float *b, int *c, int n) {
+  // __shared__ int b_s[m];
   int i = blockIdx.x * blockDim.x + threadIdx.x;
+  /*
+  if (threadIdx.x < m) {
+    b_s[threadIdx.x] = c[threadIdx.x];
+  }
+  __syncthreads();
+   */
   float sum = 0;
+  /*
   if (i > 0)
     sum += a[indirect(c, i) - 1];
-  sum += a[indirect(c, i)];
+  */
+  // sum += a[indirect(c, i)];
+  // sum += a[i + b_s[i & 127]];
+  /*
   if (i < n - 1)
     sum += a[indirect(c, i) + 1];
-  // b[i] = sqrt(sum) * 0.3f;
-  atomicAdd(b + i % 128, sqrt(sum));
+  */
+  // b[i] = (i * 1e-18);
+  // b[i] = i;
+  b[i] = c[c[c[i & 64]]];
+  /*
+  atomicAdd(&b_s[0], sqrt(sum));
+  if (threadIdx.x < m) {
+    atomicAdd(b + threadIdx.x, b_s[threadIdx.x]);
+    // b[threadIdx.x] += b_s[threadIdx.x];
+  }
+  */
 }
 
 int main() {
-  int n = 512 * 1024 * 1024;
-  int *a, *b, *c;
+  int n = 1024 * 1024 * 1024;
+  float *a, *b;
+  int *c;
   cudaMallocManaged(&a, n * sizeof(float));
   cudaMallocManaged(&b, n * sizeof(float));
   cudaMallocManaged(&c, m * sizeof(float));
   for (int i = 0; i < n; i++) {
-    a[i] = rand() * 1e-5f;
+    a[i] = i * 1e-5f;
   }
   for (int i = 0; i < n; i++) {
-    b[i] = rand() * 1e-5f;
+    b[i] = i * 1e-5f;
   }
   for (int i = 0; i < m; i++) {
-    c[i] = i;
+    c[i] = 0;
   }
-  for (auto bs : {32, 64, 128, 256, 512, 1024}) {
+  for (auto bs : {128, 256, 512, 1024}) {
     std::cout << "bs = " << bs << std::endl;
     for (int i = 0; i < 16; i++) {
       auto t = get_time();

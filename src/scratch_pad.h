@@ -35,7 +35,7 @@ class ScratchPad {
     TC_ASSERT(indices.size() == dim);
     for (int i = 0; i < dim; i++) {
       bounds[0][i] = std::min(bounds[0][i], indices[i]);
-      bounds[1][i] = std::max(bounds[1][i], indices[i]);
+      bounds[1][i] = std::max(bounds[1][i], indices[i] + 1);
       pad_size[i] = bounds[1][i] - bounds[0][i];
     }
   }
@@ -67,9 +67,12 @@ class ScratchPads {
 
   using AccessFlag = ScratchPad::AccessFlag;
 
-  void access(const SNode *snode,
-              const std::vector<int> &indices,
-              AccessFlag flags) {
+  void access(SNode *snode, const std::vector<int> &indices, AccessFlag flags) {
+    if (pads.find(snode) == pads.end()) {
+      pads.emplace(std::piecewise_construct, std::forward_as_tuple(snode),
+                   std::forward_as_tuple(snode));
+    }
+    pads.find(snode)->second.access(indices, flags);
   }
 
   void compile() {
@@ -82,10 +85,12 @@ class ScratchPads {
   }
 
   void print() {
-
+    for (auto &it : pads) {
+      TC_P(it.first);
+      TC_P(it.second.bounds[0]);
+      TC_P(it.second.bounds[1]);
+    }
   }
-
-
 };
 
 TLANG_NAMESPACE_END

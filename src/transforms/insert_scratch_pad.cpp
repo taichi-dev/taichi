@@ -84,7 +84,7 @@ class AccessAnalysis : public IRVisitor {
           for (int d = 0; d < num_indices; d++) {
             access_ind[d] += offsets[d];
           }
-          TC_P(access_ind);
+          //TC_P(access_ind);
           pads.access(snode, access_ind, ScratchPad::AccessFlag::read);
         }
       }

@@ -130,7 +130,6 @@ TC_TEST("svd_scalar") {
 TC_TEST("svd_dsl") {
   for (auto vec : {1}) {
     using TMat = TMatrix<float32, 3>;
-    using TVec = TVector<float32, 3>;
     float32 tolerance = 2e-3_f32;
 
     Matrix gA(DataType::f32, 3, 3);

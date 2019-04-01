@@ -7,15 +7,47 @@ TLANG_NAMESPACE_BEGIN
 class AccessAnalysis : public IRVisitor {
  public:
   StructForStmt *for_stmt;
+  ScratchPads pads;
+
+  std::vector<std::vector<int>> block_indices;
 
   AccessAnalysis(StructForStmt *for_stmt) : for_stmt(for_stmt) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
 
+    generate_block_indices(for_stmt->snode->parent, {}, 0);
+
+    /*
+    TC_P(block_indices.size());
+    for (int i = 0; i < block_indices.size(); i++) {
+      TC_P(block_indices[i]);
+    }
+    */
+
     const auto &block = for_stmt->body;
 
     for (int i = 0; i < (int)block->statements.size(); i++) {
       block->statements[i]->accept(this);
+    }
+
+    pads.print();
+  }
+
+  void generate_block_indices(SNode *snode, std::vector<int> index, int s) {
+    // NOTE: Assuming not vectorized
+    if (s == max_num_indices) {
+      block_indices.push_back(index);
+      return;
+    }
+
+    if (snode->extractors[s].active) {
+      for (int i = 0; i < (1 << snode->extractors[s].num_bits); i++) {
+        auto new_index = index;
+        new_index.push_back(i);
+        generate_block_indices(snode, new_index, s + 1);
+      }
+    } else {
+      generate_block_indices(snode, index, s + 1);
     }
   }
 
@@ -24,7 +56,7 @@ class AccessAnalysis : public IRVisitor {
 
   // Do not eliminate global data access
   void visit(GlobalLoadStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);  // TODO: support
+    TC_ASSERT(stmt->width() == 1);  // TODO: support vectorization
     for (int l = 0; l < stmt->width(); l++) {
       auto ptr_ = stmt->ptr;
       auto ptr = ptr_->as<GlobalPtrStmt>();
@@ -46,6 +78,14 @@ class AccessAnalysis : public IRVisitor {
         TC_INFO("Detected regular access");
         for (int i = 0; i < num_indices; i++) {
           TC_P(offsets[i]);
+        }
+        for (const auto &bind : block_indices) {
+          auto access_ind = bind;
+          for (int d = 0; d < num_indices; d++) {
+            access_ind[d] += offsets[d];
+          }
+          TC_P(access_ind);
+          pads.access(snode, access_ind, ScratchPad::AccessFlag::read);
         }
       }
     }

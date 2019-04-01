@@ -17,10 +17,18 @@ struct IndexExtractor {
 
   // TODO: rename start to src_offset
 
+  bool active;
+
   IndexExtractor() {
     start = 0;
     num_bits = 0;
     dest_offset = 0;
+    active = false;
+  }
+
+  void activate(int num_bits) {
+    active = true;
+    this->num_bits = num_bits;
   }
 };
 
@@ -166,7 +174,6 @@ class SNode {
   SNode &indirect(Index &expr, int n) {
     auto &child = insert_children(SNodeType::indirect);
     child.index_id = expr.value;
-    // child.extractors[child.index_id].num_bits = 0;
     child.n = n;
     return child;
   }
@@ -174,8 +181,7 @@ class SNode {
   SNode &dynamic(Index &expr, int n) {
     TC_ASSERT(bit::is_power_of_two(n));
     auto &child = insert_children(SNodeType::dynamic);
-    // child.index_id = expr->value<int>(0);
-    child.extractors[expr.value].num_bits = bit::log2int(n);
+    child.extractors[expr.value].activate(bit::log2int(n));
     child.n = n;
     return child;
   }

@@ -80,6 +80,12 @@ class ScratchPads {
 
   void CSE() {
   }
+
+  void print() {
+
+  }
+
+
 };
 
 TLANG_NAMESPACE_END

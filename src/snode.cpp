@@ -48,7 +48,7 @@ SNode &SNode::create_node(std::vector<Index> indices,
   }
   for (int i = 0; i < (int)indices.size(); i++) {
     auto &ind = indices[i];
-    new_node.extractors[ind.value].num_bits = bit::log2int(sizes[i]);
+    new_node.extractors[ind.value].activate(bit::log2int(sizes[i]));
   }
   return new_node;
 }

@@ -71,6 +71,7 @@ void loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
 void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
+void insert_scratch_pad(IRNode *root);
 
 }  // namespace irpass
 
@@ -113,6 +114,7 @@ class DecoratorRecorder {
  public:
   int vectorize;
   int parallelize;
+  int cache_level;
   bool uniform;
 
   DecoratorRecorder() {
@@ -123,6 +125,7 @@ class DecoratorRecorder {
     vectorize = -1;
     parallelize = 0;
     uniform = false;
+    cache_level = -1;
   }
 };
 
@@ -1353,6 +1356,7 @@ class FrontendForStmt : public Stmt {
   std::vector<Ident> loop_var_id;
   int vectorize;
   int parallelize;
+  int cache_level;
 
   bool is_ranged() const {
     if (global_var.expr == nullptr) {
@@ -1413,6 +1417,7 @@ class StructForStmt : public Stmt {
   std::unique_ptr<Block> body;
   int vectorize;
   int parallelize;
+  int cached_level;
 
   StructForStmt(std::vector<Stmt *> loop_vars,
                 SNode *snode,
@@ -1424,6 +1429,7 @@ class StructForStmt : public Stmt {
         body(std::move(body)),
         vectorize(vectorize),
         parallelize(parallelize) {
+    cached_level = -1;
   }
 
   bool is_container_statement() const override {
@@ -1581,6 +1587,10 @@ inline void Vectorize(int v) {
 
 inline void Parallelize(int v) {
   dec.parallelize = v;
+}
+
+inline void Cache(int v) {
+  dec.cache_level = v;
 }
 
 inline void Uniform() {

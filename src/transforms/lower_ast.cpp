@@ -151,6 +151,7 @@ class LowerAST : public IRVisitor {
       auto &&new_for = std::make_unique<StructForStmt>(
           vars, stmt->global_var.cast<GlobalVariableExpression>()->snode,
           std::move(stmt->body), stmt->vectorize, stmt->parallelize);
+      new_for->cached_level = stmt->cache_level;
       flattened.push_back(std::move(new_for));
     }
     stmt->parent->replace_with(stmt, flattened);

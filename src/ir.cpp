@@ -126,20 +126,6 @@ void Expr::operator/=(const Expr &o) {
   (*this) = (*this) / o;
 }
 
-FrontendForStmt::FrontendForStmt(ExpressionGroup loop_var, Expr global_var)
-    : global_var(global_var) {
-  vectorize = dec.vectorize;
-  parallelize = dec.parallelize;
-  dec.reset();
-  if (vectorize == -1)
-    vectorize = 1;
-
-  loop_var_id.resize(loop_var.size());
-  for (int i = 0; i < (int)loop_var.size(); i++) {
-    loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
-  }
-}
-
 FrontendForStmt::FrontendForStmt(ExpressionGroup loop_var, Expr begin, Expr end)
     : begin(begin), end(end) {
   vectorize = dec.vectorize;
@@ -152,6 +138,22 @@ FrontendForStmt::FrontendForStmt(ExpressionGroup loop_var, Expr begin, Expr end)
     loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
   }
 }
+
+FrontendForStmt::FrontendForStmt(ExpressionGroup loop_var, Expr global_var)
+    : global_var(global_var) {
+  vectorize = dec.vectorize;
+  parallelize = dec.parallelize;
+  cache_level = dec.cache_level;
+  dec.reset();
+  if (vectorize == -1)
+    vectorize = 1;
+
+  loop_var_id.resize(loop_var.size());
+  for (int i = 0; i < (int)loop_var.size(); i++) {
+    loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
+  }
+}
+
 
 IRNode *Stmt::get_ir_root() {
   auto block = parent;

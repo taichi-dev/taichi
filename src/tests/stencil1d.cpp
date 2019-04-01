@@ -180,17 +180,20 @@ TC_TEST("stencil1d") {
 
   auto copy = kernel([&] {
     Declare(i);
+    Cache(0);
     For(i, x, [&] { y[i] = x[i]; });
   });
 
   auto copy_parallelized = kernel([&] {
     Declare(i);
     Parallelize(4);
+    Cache(0);
     For(i, x, [&] { y[i] = x[i]; });
   });
 
   auto stencil = kernel([&] {
     Declare(i);
+    Cache(0);
     For(i, x, [&] { y[i] = (1.0f / 3) * (x[i - 1] + x[i] + x[i + 1]); });
   });
 

@@ -19,6 +19,8 @@ inline __device__ int indirect(int *c, int i) {
   // return i;
 }
 
+__constant__ int const_c[m];
+
 __global__ void fd(float *a, float *b, int *c, int n) {
   // __shared__ int b_s[m];
   int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -28,8 +30,8 @@ __global__ void fd(float *a, float *b, int *c, int n) {
   }
   __syncthreads();
    */
-  float sum = 0;
   /*
+  float sum = 0;
   if (i > 0)
     sum += a[indirect(c, i) - 1];
   */
@@ -41,7 +43,7 @@ __global__ void fd(float *a, float *b, int *c, int n) {
   */
   // b[i] = (i * 1e-18);
   // b[i] = i;
-  b[i] = c[c[c[i & 64]]];
+  b[i] = const_c[const_c[const_c[i & 64]]];
   /*
   atomicAdd(&b_s[0], sqrt(sum));
   if (threadIdx.x < m) {
@@ -65,8 +67,9 @@ int main() {
     b[i] = i * 1e-5f;
   }
   for (int i = 0; i < m; i++) {
-    c[i] = 0;
+    c[i] = i;
   }
+  cudaMemcpyToSymbol(const_c, c, m * sizeof(float), 0, cudaMemcpyHostToDevice);
   for (auto bs : {128, 256, 512, 1024}) {
     std::cout << "bs = " << bs << std::endl;
     for (int i = 0; i < 16; i++) {

@@ -29,7 +29,7 @@ void StructCompiler::visit(SNode &snode) {
       }
       if (found)
         continue;
-      if (snode.extractors[i].num_bits) {
+      if (snode.extractors[i].active) {
         snode.physical_index_position[snode.num_active_indices++] = i;
       }
     }

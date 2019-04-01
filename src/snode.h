@@ -12,6 +12,7 @@ TC_FORCE_INLINE int32 constexpr operator"" _bits(unsigned long long a) {
 
 struct IndexExtractor {
   int start, num_bits, dest_offset;
+  int dimension;
 
   TC_IO_DEF(start, num_bits, dest_offset);
 
@@ -24,11 +25,13 @@ struct IndexExtractor {
     num_bits = 0;
     dest_offset = 0;
     active = false;
+    dimension = 1;
   }
 
   void activate(int num_bits) {
     active = true;
     this->num_bits = num_bits;
+    dimension = 1 << num_bits;
   }
 };
 
@@ -53,9 +56,9 @@ class SNode {
   IndexExtractor extractors[max_num_indices];
   int taken_bits[max_num_indices];  // counting from the tail
   int num_active_indices;
-  int physical_index_position[max_num_indices];  // physical_index_position[i] =
-                                                 // the virtual index position
-                                                 // of the i^th physical index
+  int physical_index_position[max_num_indices];
+  // physical_index_position[i] =
+  // the virtual index position of the i^th physical index
 
   static int counter;
   int id;

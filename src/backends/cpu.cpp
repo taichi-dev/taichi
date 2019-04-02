@@ -10,7 +10,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-
 class CPUIRCodeGen : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
@@ -217,9 +216,12 @@ class CPUIRCodeGen : public IRVisitor {
          snode->node_type_name, snode->node_type_name, make_list(indices, ""));
     if (stmt->op_type == SNodeOpType::append) {
       TC_ASSERT(stmt->val->width() == 1);
-      emit("{}_tmp->append({}[0]);", snode->node_type_name, stmt->val->raw_name());
+      emit("{}_tmp->append({}[0]);", snode->node_type_name,
+           stmt->val->raw_name());
+    } else if (stmt->op_type == SNodeOpType::clear) {
+      emit("{}_tmp->clear();", snode->node_type_name);
     } else {
-      TC_NOT_IMPLEMENTED;
+      TC_NOT_IMPLEMENTED
     }
     emit("}}");
   }

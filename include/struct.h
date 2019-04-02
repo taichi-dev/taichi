@@ -135,6 +135,10 @@ struct dynamic {
     return &data[i];
   }
 
+  __device__ TC_FORCE_INLINE void clear() {
+    n = 0;
+  }
+
 #if defined(TC_GPU)
   __device__ TC_FORCE_INLINE void append(child_type t) {
     data[atomicAdd(&n, 1)] = t;

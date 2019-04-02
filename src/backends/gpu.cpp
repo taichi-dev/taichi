@@ -336,6 +336,8 @@ class GPUIRCodeGen : public IRVisitor {
     if (stmt->op_type == SNodeOpType::append) {
       TC_ASSERT(stmt->val->width() == 1);
       emit("{}_tmp->append({});", snode->node_type_name, stmt->val->raw_name());
+    } else if (stmt->op_type == SNodeOpType::clear) {
+      emit("{}_tmp->clear();", snode->node_type_name);
     } else {
       TC_NOT_IMPLEMENTED;
     }

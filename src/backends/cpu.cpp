@@ -10,6 +10,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
+
 class CPUIRCodeGen : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
@@ -196,19 +197,6 @@ class CPUIRCodeGen : public IRVisitor {
     }
   }
 
-  static std::vector<std::string>
-  indices_str(SNode *snode, int lane_id, const std::vector<Stmt *> indices) {
-    std::vector<std::string> ret(max_num_indices, "0");
-    for (int i = 0; i < indices.size(); i++) {
-      if (snode->physical_index_position[i] != -1) {
-        // TC_ASSERT(snode->physical_index_position[i] != -1);
-        ret[snode->physical_index_position[i]] =
-            indices[i]->raw_name() + fmt::format("[{}]", lane_id);
-      }
-    }
-    return ret;
-  }
-
   void visit(LocalStoreStmt *stmt) {
     auto mask = stmt->parent->mask();
     if (mask) {
@@ -220,7 +208,6 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) {
-    auto mask = stmt->parent->mask();
     TC_ASSERT(stmt->width() == 1);
     auto snode = stmt->snodes[0];
     auto indices = indices_str(snode, 0, stmt->indices);

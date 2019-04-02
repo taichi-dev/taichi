@@ -325,6 +325,23 @@ class GPUIRCodeGen : public IRVisitor {
     }
   }
 
+  void visit(SNodeOpStmt *stmt) {
+    TC_ASSERT(stmt->width() == 1);
+    auto snode = stmt->snodes[0];
+    auto indices = indices_str(snode, -1, stmt->indices);
+
+    emit("{{");
+    emit("{} *{}_tmp = access_{}(root, {});", snode->node_type_name,
+         snode->node_type_name, snode->node_type_name, make_list(indices, ""));
+    if (stmt->op_type == SNodeOpType::append) {
+      TC_ASSERT(stmt->val->width() == 1);
+      emit("{}_tmp->append({});", snode->node_type_name, stmt->val->raw_name());
+    } else {
+      TC_NOT_IMPLEMENTED;
+    }
+    emit("}}");
+  }
+
   void visit(GlobalStoreStmt *stmt) {
     if (!current_program->config.force_vectorized_global_store) {
       emit("*({} *){}[{}] = {};",

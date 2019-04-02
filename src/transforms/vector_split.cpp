@@ -275,7 +275,14 @@ class VectorSplit : public IRVisitor {
 
   void visit(Block *block) override {
     if (!block->has_container_statements()) {
-      BasicBlockVectorSplit(block, max_width, serial_schedule);
+      bool all_within_width = true;
+      for (auto &stmt : block->statements) {
+        if (stmt->width() > max_width) {
+          all_within_width = false;
+        }
+      }
+      if (!all_within_width)
+        BasicBlockVectorSplit(block, max_width, serial_schedule);
     } else {
       for (auto &stmt : block->statements) {
         stmt->accept(this);

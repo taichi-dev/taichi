@@ -1,7 +1,10 @@
+#pragma once
 #include "common.h"
 
 #if !defined(TC_GPU)
 #include <immintrin.h>
+#define __host__
+#define __device__
 #endif
 
 TLANG_NAMESPACE_BEGIN
@@ -726,7 +729,7 @@ inline int32x4 cmp_ge(float32x4 a, float32x4 b) {
 }
 
 inline int32x4 cmp_ge(int32x4 a, int32x4 b) {
-  auto ret = bit_or(cmp_ge(a, b), cmp_eq(a, b));
+  auto ret = bit_or(cmp_gt(a, b), cmp_eq(a, b));
   return ret;
 }
 
@@ -746,7 +749,7 @@ inline int32x8 cmp_ge(float32x8 a, float32x8 b) {
 }
 
 inline int32x8 cmp_ge(int32x8 a, int32x8 b) {
-  auto ret = bit_or(cmp_ge(a, b), cmp_eq(a, b));
+  auto ret = bit_or(cmp_gt(a, b), cmp_eq(a, b));
   return ret;
 }
 
@@ -929,11 +932,12 @@ inline vec<float32, dim> mod(vec<float32, dim> a, vec<float32, dim> b) {
   return sub(a, mul(floor(div(a, b)), b));
 };
 
-void atomic_add(int32 *dest, int32 val) {
-  __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
+// Follow the CUDA naming style
+TC_FORCE_INLINE __host__ int atomicAdd(int32 *dest, int32 val) {
+  return __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
 }
 
-void atomic_add(volatile float32 *dest, float32 inc) {
+TC_FORCE_INLINE __host__ void atomicAdd(volatile float32 *dest, float32 inc) {
   float32 old_val;
   volatile float32 new_val;
   do {

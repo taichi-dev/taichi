@@ -1,5 +1,6 @@
 #pragma once
 #include "common.h"
+#include "arithmetics.h"
 
 // *****************************************************************************
 // these structures are used for maintaining metadata and sparsity.
@@ -120,7 +121,7 @@ struct dynamic {
   static constexpr int max_n = max_n_;
   using child_type = _child_type;
   child_type data[max_n];
-  std::atomic<int> n;
+  int n;
 
   TC_DEVICE dynamic() : n(0) {
   }
@@ -128,19 +129,28 @@ struct dynamic {
   TC_DEVICE TC_FORCE_INLINE child_type *look_up(
       int i) {  // i is flattened index
 #if defined(TLANG_HOST)
-    n.store(std::max(n.load(), i + 1));
+    // assuming serial
+    n = std::max(n, i + 1);
 #endif
     return &data[i];
   }
 
+#if defined(TC_GPU)
+  __device__ TC_FORCE_INLINE void append(child_type t) {
+    data[atomicAdd(&n, 1)] = t;
+  }
+#else
+  TC_FORCE_INLINE void append(child_type t) {
+    data[atomicAdd(&n, 1)] = t;
+  }
+#endif
+
   TC_DEVICE TC_FORCE_INLINE void touch(child_type t) {
-    data[n++] = t;
-    // printf("p=%p\n", &n);
-    // printf("n=%d, i=%d\n", (int)n, i);
+    return append(t);
   }
 
   TC_DEVICE TC_FORCE_INLINE int get_n() const {
-    return n.load();
+    return n;
   }
 
   static constexpr bool has_null = false;

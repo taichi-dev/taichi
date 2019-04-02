@@ -219,6 +219,29 @@ class LowerAST : public IRVisitor {
     throw IRModifiedException();
   }
 
+  void visit(FrontendSNodeOpStmt *stmt) override {
+    // expand rhs
+    Stmt *val_stmt = nullptr;
+    VecStatement flattened;
+    if (stmt->val.expr) {
+      auto expr = stmt->val;
+      expr->flatten(flattened);
+      val_stmt = expr->stmt;
+    }
+    std::vector<Stmt *> indices_stmt(stmt->indices.size(), nullptr);
+
+    for (int i = 0; i < stmt->indices.size(); i++) {
+      stmt->indices[i]->flatten(flattened);
+      indices_stmt[i] = stmt->indices[i]->stmt;
+    }
+
+    flattened.push_back(Stmt::make<SNodeOpStmt>(stmt->op_type, stmt->snode,
+                                                indices_stmt, val_stmt));
+
+    stmt->parent->replace_with(stmt, flattened);
+    throw IRModifiedException();
+  }
+
   static void run(IRNode *node) {
     LowerAST inst;
     while (true) {

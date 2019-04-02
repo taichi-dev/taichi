@@ -187,6 +187,10 @@ class BasicBlockEliminate : public IRVisitor {
     return;
   }
 
+  void visit(SNodeOpStmt *stmt) override {
+    return;
+  }
+
   void visit(UnaryOpStmt *stmt) override {
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];

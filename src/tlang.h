@@ -161,20 +161,33 @@ inline Expr Atomic(Expr dest) {
   return dest;
 }
 
-inline void Activate(const Expr &dest, const ExpressionGroup &expr_group) {
+// expr_group are indices
+inline void Activate(SNode *snode, const ExpressionGroup &expr_group) {
   current_ast_builder().insert(
-      Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::activate, dest, expr_group));
+      Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::activate, snode, expr_group));
 }
 
-inline void Deactivate(const Expr &dest, const ExpressionGroup &expr_group) {
+inline void Deactivate(SNode *snode, const ExpressionGroup &expr_group) {
   current_ast_builder().insert(Stmt::make<FrontendSNodeOpStmt>(
-      SNodeOpType::deactivate, dest, expr_group));
+      SNodeOpType::deactivate, snode, expr_group));
 }
 
-inline Expr Probe(const Expr &dest, const ExpressionGroup &expr_group) {
+inline void Append(SNode *snode,
+                   const ExpressionGroup &expr_group,
+                   const Expr &val) {
+  current_ast_builder().insert(Stmt::make<FrontendSNodeOpStmt>(
+      SNodeOpType::append, snode, expr_group, val));
+}
+
+inline void Clear(SNode *snode, const ExpressionGroup &expr_group) {
+  current_ast_builder().insert(
+      Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::clear, snode, expr_group));
+}
+
+inline Expr Probe(SNode *snode, const ExpressionGroup &expr_group) {
   TC_NOT_IMPLEMENTED;
   current_ast_builder().insert(
-      Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::probe, dest, expr_group));
+      Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::probe, snode, expr_group));
 }
 
 TLANG_NAMESPACE_END

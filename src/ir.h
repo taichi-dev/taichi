@@ -295,6 +295,7 @@ class IRVisitor {
   DEFINE_VISIT(FrontendSNodeOpStmt);
   DEFINE_VISIT(FrontendEvalStmt);
 
+  DEFINE_VISIT(SNodeOpStmt);
   DEFINE_VISIT(AllocaStmt);
   DEFINE_VISIT(UnaryOpStmt);
   DEFINE_VISIT(LocalLoadStmt);
@@ -811,7 +812,7 @@ class UnaryOpExpression : public Expression {
   void flatten(VecStatement &ret) override {
     rhs->flatten(ret);
     auto unary = std::make_unique<UnaryOpStmt>(type, rhs->stmt);
-    if (type == UnaryType::cast){
+    if (type == UnaryType::cast) {
       unary->cast_type = cast_type;
       unary->cast_by_value = cast_by_value;
     }
@@ -1004,9 +1005,7 @@ class GlobalPtrExpression : public Expression {
 
 #include "expression.h"
 
-Expr select(const Expr &cond,
-                   const Expr &true_val,
-                   const Expr &false_val);
+Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val);
 
 Expr operator-(Expr expr);
 
@@ -1100,19 +1099,19 @@ class FrontendAtomicStmt : public Stmt {
 class FrontendSNodeOpStmt : public Stmt {
  public:
   SNodeOpType op_type;
-  Expr dest;
+  SNode *snode;
   ExpressionGroup indices;
   Expr val;
 
   FrontendSNodeOpStmt(SNodeOpType op_type,
-                      Expr dest,
+                      SNode *snode,
                       ExpressionGroup indices,
                       Expr val = Expr(nullptr))
-      : op_type(op_type), dest(dest), indices(indices), val(val) {
+      : op_type(op_type), snode(snode), indices(indices), val(val) {
     if (val.expr != nullptr) {
-      TC_ASSERT(op_type != SNodeOpType::append);
-    } else {
       TC_ASSERT(op_type == SNodeOpType::append);
+    } else {
+      TC_ASSERT(op_type != SNodeOpType::append);
     }
   }
 
@@ -1126,12 +1125,13 @@ class SNodeOpStmt : public Stmt {
   std::vector<Stmt *> indices;
   Stmt *val;
 
-  SNodeOpStmt(const LaneAttribute<SNode *> &snodes,
+  SNodeOpStmt(SNodeOpType op_type,
+              const LaneAttribute<SNode *> &snodes,
               const std::vector<Stmt *> &indices,
               Stmt *val = nullptr)
-      : snodes(snodes), indices(indices), val(val) {
+      : op_type(op_type), snodes(snodes), indices(indices), val(val) {
     TC_ASSERT_INFO(snodes.size() == 1, "SNodeOpStmt cannot be vectorized");
-    TC_ASSERT((val == nullptr) == (op_type == SNodeOpType::append));
+    TC_ASSERT((val == nullptr) != (op_type == SNodeOpType::append));
     for (int i = 0; i < (int)snodes.size(); i++) {
       TC_ASSERT(snodes[i] != nullptr);
       TC_ASSERT(snodes[0]->dt == snodes[i]->dt);

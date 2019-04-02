@@ -162,7 +162,7 @@ void stencil_optimized3() {
       if (blocks[0] == nullptr) {
         blocks[0] = &dummy;
       }
-t 
+
       if (blocks[2] == nullptr) {
         blocks[2] = &dummy;
       }

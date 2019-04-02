@@ -45,6 +45,7 @@ class Index {
     value = 0;
   }
   Index(int value) : value(value) {
+    TC_ASSERT(0 <= value  && value < max_num_indices);
   }
 };
 

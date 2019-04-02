@@ -47,6 +47,37 @@ class IRPrinter : public IRVisitor {
           alloca->ident.name());
   }
 
+  void visit(FrontendSNodeOpStmt *stmt) override {
+    std::string extras = "[";
+    for (int i = 0; i < (int)stmt->indices.size(); i++) {
+      extras += stmt->indices[i]->serialize();
+      if (i + 1 < (int)stmt->indices.size())
+        extras += ", ";
+    }
+    extras += "]";
+    if (stmt->val.expr) {
+      extras += ", " + stmt->val.serialize();
+    }
+    print("{} : {} {} {}", stmt->name(), snode_op_type_name(stmt->op_type),
+          stmt->snode->node_type_name, extras);
+  }
+
+  void visit(SNodeOpStmt *stmt) override {
+    TC_ASSERT(stmt->width() == 1);
+    std::string extras = "[";
+    for (int i = 0; i < (int)stmt->indices.size(); i++) {
+      extras += stmt->indices[i]->name();
+      if (i + 1 < (int)stmt->indices.size())
+        extras += ", ";
+    }
+    extras += "]";
+    if (stmt->val) {
+      extras += ", " + stmt->val->name();
+    }
+    print("{} : {} {} {}", stmt->name(), snode_op_type_name(stmt->op_type),
+          stmt->snodes[0]->node_type_name, extras);
+  }
+
   void visit(AllocaStmt *alloca) override {
     print("{}${} = alloca", alloca->type_hint(), alloca->id);
   }

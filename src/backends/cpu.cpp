@@ -196,6 +196,19 @@ class CPUIRCodeGen : public IRVisitor {
     }
   }
 
+  static std::vector<std::string>
+  indices_str(SNode *snode, int lane_id, const std::vector<Stmt *> indices) {
+    std::vector<std::string> ret(max_num_indices, "0");
+    for (int i = 0; i < indices.size(); i++) {
+      if (snode->physical_index_position[i] != -1) {
+        // TC_ASSERT(snode->physical_index_position[i] != -1);
+        ret[snode->physical_index_position[i]] =
+            indices[i]->raw_name() + fmt::format("[{}]", lane_id);
+      }
+    }
+    return ret;
+  }
+
   void visit(LocalStoreStmt *stmt) {
     auto mask = stmt->parent->mask();
     if (mask) {
@@ -204,6 +217,24 @@ class CPUIRCodeGen : public IRVisitor {
     } else {
       emit("{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
     }
+  }
+
+  void visit(SNodeOpStmt *stmt) {
+    auto mask = stmt->parent->mask();
+    TC_ASSERT(stmt->width() == 1);
+    auto snode = stmt->snodes[0];
+    auto indices = indices_str(snode, 0, stmt->indices);
+
+    emit("{{");
+    emit("{} *{}_tmp = access_{}(root, {});", snode->node_type_name,
+         snode->node_type_name, snode->node_type_name, make_list(indices, ""));
+    if (stmt->op_type == SNodeOpType::append) {
+      TC_ASSERT(stmt->val->width() == 1);
+      emit("{}_tmp->append({}[0]);", snode->node_type_name, stmt->val->raw_name());
+    } else {
+      TC_NOT_IMPLEMENTED;
+    }
+    emit("}}");
   }
 
   void visit(AtomicOpStmt *stmt) {
@@ -215,7 +246,7 @@ class CPUIRCodeGen : public IRVisitor {
         TC_ASSERT(stmt->val->ret_type.data_type == DataType::f32 ||
                   stmt->val->ret_type.data_type == DataType::i32);
         TC_ASSERT(stmt->op_type == AtomicType::add);
-        emit("atomic_add({}[{}], {}[{}]);", stmt->dest->raw_name(), l,
+        emit("atomicAdd({}[{}], {}[{}]);", stmt->dest->raw_name(), l,
              stmt->val->raw_name(), l);
       }
     }

@@ -96,11 +96,15 @@ void StructCompiler::visit(SNode &snode) {
   for (int i = 0; i < (int)snode.ch.size(); i++) {
     emit("{} member{};", snode.ch[i]->node_type_name, i);
   }
+  if (snode.ch.size() == 1 && snode.ch[0]->type == SNodeType::place) {
+    emit("TC_DEVICE {}_ch({} v) {{*get0()=v;}}", snode.node_type_name,
+         snode.ch[0]->node_type_name);
+    emit("TC_DEVICE {}_ch() = default;", snode.node_type_name);
+  }
   for (int i = 0; i < (int)snode.ch.size(); i++) {
     emit("TC_DEVICE {} *get{}() {{return &member{};}} ",
          snode.ch[i]->node_type_name, i, i);
   }
-  // emit("TC_FORCE_INLINE int get_n() {{return 1;}} ");
   emit("}};");
 
   if (type == SNodeType::dense) {

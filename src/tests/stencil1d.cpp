@@ -26,11 +26,13 @@ constexpr int dim0 = Tile::size * dim1;
 std::unordered_map<int, Tile> data;
 
 inline float safe_access_x(int i) {
-  if (data.find(i / dim0) == data.end())
+  auto it = data.find(i / dim0);
+  if (it == data.end())
     return 0;
-  if (data[i / dim0].blocks[i % dim0 / dim1] == nullptr)
+  auto b = it->second.blocks[i % dim0 / dim1];
+  if (b == nullptr)
     return 0;
-  return data[i / dim0].blocks[i % dim0 / dim1]->nodes[i % dim1].x;
+  return b->nodes[i % dim1].x;
 }
 
 void copy_ref() {
@@ -126,6 +128,55 @@ void stencil_optimized2() {
           (1.0f / 3) *
           (block->nodes[Block::size - 2].x + block->nodes[Block::size - 1].x +
            safe_access_x(it.first * dim0 + b * dim1 + Block::size));
+    }
+  }
+}
+
+void stencil_optimized3() {
+  Block dummy;
+  std::memset(&dummy, 0, sizeof(dummy));
+  for (auto &it : data) {
+    auto &tile = it.second;
+    for (int b = 0; b < Tile::size; b++) {
+      auto block = tile.blocks[b];
+      if (!block)
+        continue;
+      Block *blocks[3];
+      blocks[1] = block;
+      blocks[0] = nullptr;
+      blocks[2] = nullptr;
+      if (b > 0)
+        blocks[0] = tile.blocks[b - 1];
+      else {
+        auto prev = data.find(it.first - 1);
+        if (prev != data.end())
+          blocks[0] = prev->second.blocks[Tile::size - 1];
+      }
+      if (b + 1 < Tile::size)
+        blocks[2] = tile.blocks[b + 1];
+      else {
+        auto next = data.find(it.first + 1);
+        if (next != data.end())
+          blocks[2] = next->second.blocks[0];
+      }
+      if (blocks[0] == nullptr) {
+        blocks[0] = &dummy;
+      }
+t 
+      if (blocks[2] == nullptr) {
+        blocks[2] = &dummy;
+      }
+
+      for (int n = 0; n < Block::size; n++) {
+        auto tmp = block->nodes[n].x;
+        tmp += blocks[(n - 1 + Block::size) / Block::size]
+                   ->nodes[(n - 1 + Block::size) % Block::size]
+                   .x;
+        tmp += blocks[(n + 1 + Block::size) / Block::size]
+                   ->nodes[(n + 1) % Block::size]
+                   .x;
+        block->nodes[n].y = (1.0f / 3) * tmp;
+      }
     }
   }
 }
@@ -268,6 +319,9 @@ TC_TEST("stencil1d") {
 
   for (int i = 0; i < 10; i++)
     TC_TIME(stencil_optimized2());
+
+  for (int i = 0; i < 10; i++)
+    TC_TIME(stencil_optimized3());
 
   for (int i = 0; i < 10; i++)
     TC_TIME(stencil());

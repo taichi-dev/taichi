@@ -211,6 +211,10 @@ class CPUIRCodeGen : public IRVisitor {
     auto snode = stmt->snodes[0];
     auto indices = indices_str(snode, 0, stmt->indices);
 
+    if (stmt->op_type == SNodeOpType::probe) {
+      emit("int {}[1];", stmt->raw_name());
+    }
+
     emit("{{");
     emit("{} *{}_tmp = access_{}(root, {});", snode->node_type_name,
          snode->node_type_name, snode->node_type_name, make_list(indices, ""));
@@ -220,6 +224,8 @@ class CPUIRCodeGen : public IRVisitor {
            stmt->val->raw_name());
     } else if (stmt->op_type == SNodeOpType::clear) {
       emit("{}_tmp->clear();", snode->node_type_name);
+    } else if (stmt->op_type == SNodeOpType::probe) {
+      emit("{}[0] = {}_tmp->get_n();", stmt->raw_name(), snode->node_type_name);
     } else {
       TC_NOT_IMPLEMENTED
     }

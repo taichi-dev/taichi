@@ -185,9 +185,7 @@ inline void Clear(SNode *snode, const ExpressionGroup &expr_group) {
 }
 
 inline Expr Probe(SNode *snode, const ExpressionGroup &expr_group) {
-  TC_NOT_IMPLEMENTED;
-  current_ast_builder().insert(
-      Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::probe, snode, expr_group));
+  return Expr::make<ProbeExpression>(snode, expr_group);
 }
 
 TLANG_NAMESPACE_END

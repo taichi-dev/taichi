@@ -58,6 +58,10 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = stmt->ptr->ret_type;
   }
 
+  void visit(SNodeOpStmt *stmt) {
+    stmt->ret_type = VectorType(1, DataType::i32);
+  }
+
   void visit(GlobalPtrStmt *stmt) {
     if (stmt->snodes)
       stmt->ret_type.data_type = stmt->snodes[0]->dt;

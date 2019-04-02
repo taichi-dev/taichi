@@ -29,117 +29,142 @@ class GPUIRCodeGen : public IRVisitor {
     node->accept(&p);
   }
 
+  void generate_pure_loop(Block *stmt_list) {
+    auto &for_stmt_ = stmt_list->statements.back();
+    if (for_stmt_->is<RangeForStmt>()) {
+      auto range_for = for_stmt_->as<RangeForStmt>();
+
+      // GPU Kernel
+      emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
+      emit("auto root = ({} *)context.buffers[0];",
+           codegen->prog->snode_root->node_type_name);
+      int begin = range_for->begin->as<ConstStmt>()->val[0].val_int32();
+      int end = range_for->end->as<ConstStmt>()->val[0].val_int32();
+
+      emit("auto {} = blockIdx.x * blockDim.x + threadIdx.x + {};\n",
+           range_for->loop_var->raw_name(), begin);
+      emit("if ({} >= {}) return;", range_for->loop_var->raw_name(), end);
+
+      range_for->body->accept(this);
+
+      // CPU Kernel code
+      emit("}}\n\n");
+      emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
+
+      TC_ASSERT(begin == 0);
+
+      int block_size = 256;
+      emit("host_init_random_numbers();");
+      int num_blocks = (end - begin + block_size - 1) / block_size;
+      emit("{}_kernel<<<{}, {}>>>(context);", codegen->func_name, num_blocks,
+           block_size);
+    } else {
+      // struct for
+      TC_ASSERT_INFO(current_struct_for == nullptr,
+                     "Struct for cannot be nested.");
+      auto for_stmt = for_stmt_->as<StructForStmt>();
+      current_struct_for = for_stmt;
+      auto leaf = for_stmt->snode->parent;
+
+      emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
+      emit("auto root = ({} *)context.buffers[0];",
+           codegen->prog->snode_root->node_type_name);
+
+      emit("auto leaves = (LeafContext<{}> *)(context.leaves);",
+           codegen->prog->snode_root->node_type_name);
+      emit("auto num_leaves = context.num_leaves;",
+           codegen->prog->snode_root->node_type_name);
+      emit("auto leaf_loop = blockIdx.x;",
+           codegen->prog->snode_root->node_type_name);
+      emit("if (leaf_loop >= num_leaves) return;");
+
+      loopgen.emit_load_from_context(leaf);
+      emit("auto {} = threadIdx.x;", loopgen.loop_variable(leaf));
+      loopgen.update_indices(leaf);
+      loopgen.emit_setup_loop_variables(for_stmt, leaf);
+      for_stmt->body->accept(this);
+
+      emit("}}");
+
+      emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
+      emit("auto root = ({} *)context.buffers[0];",
+           current_program->snode_root->node_type_name);
+      emit("{{");
+
+      loopgen.loop_gen_leaves(for_stmt, leaf);
+
+      std::string vars;
+      for (int i = 0; i < for_stmt->loop_vars.size(); i++) {
+        vars += for_stmt->loop_vars[i]->raw_name();
+        if (i + 1 < for_stmt->loop_vars.size()) {
+          vars += ",";
+        }
+      }
+      emit("host_init_random_numbers();");
+      emit("context.num_leaves = leaves.size();");
+      emit("auto list_size = sizeof(LeafContext<{}>) * context.num_leaves;",
+           leaf->node_type_name);
+      emit("cudaMalloc(&context.leaves, list_size);");
+      emit(
+          "cudaMemcpy(context.leaves, leaves.data(), list_size, "
+          "cudaMemcpyHostToDevice);");
+      emit("printf(\"num leaves %d\\n\", context.num_leaves);");
+      // allocate the vector...
+
+      emit("{}_kernel<<<context.num_leaves, {}().get_n()>>>(context);",
+           codegen->func_name, leaf->node_type_name);
+
+      emit("cudaFree(context.leaves); context.leaves = nullptr;");
+
+      emit("}}");
+      current_struct_for = nullptr;
+    }
+
+    emit("cudaDeviceSynchronize();\n");
+    emit("auto err = cudaGetLastError();");
+    emit("if (err) {{");
+    emit(
+        "printf(\"CUDA Error (File %s Ln %d): %s\\n\", "
+        "__FILE__, __LINE__, cudaGetErrorString(err));");
+    emit("exit(-1);}}");
+    emit("}}\n");
+  }
+
   void visit(Block *stmt_list) {
     if (first_level) {
       first_level = false;
       // Check structure
       // Only the last statement can be a RangeFor/StructFor
       // The rest must be Alloca for loop variables and consts for bounds
+
+      bool pure_loop = true;
+
       for (int i = 0; i + 1 < stmt_list->statements.size(); i++) {
         auto s = stmt_list->statements[i].get();
-        TC_ASSERT(s->is<AllocaStmt>() || s->is<ConstStmt>());
+        if (!(s->is<AllocaStmt>() || s->is<ConstStmt>())) {
+          pure_loop = false;
+        }
       }
 
-      auto &for_stmt_ = stmt_list->statements.back();
-      if (for_stmt_->is<RangeForStmt>()) {
-        auto range_for = for_stmt_->as<RangeForStmt>();
-
+      if (pure_loop) {
+        generate_pure_loop(stmt_list);
+      } else {
         // GPU Kernel
         emit("__global__ void {}_kernel(Context context) {{",
              codegen->func_name);
         emit("auto root = ({} *)context.buffers[0];",
              codegen->prog->snode_root->node_type_name);
-        int begin = range_for->begin->as<ConstStmt>()->val[0].val_int32();
-        int end = range_for->end->as<ConstStmt>()->val[0].val_int32();
 
-        emit("auto {} = blockIdx.x * blockDim.x + threadIdx.x + {};\n",
-             range_for->loop_var->raw_name(), begin);
-        emit("if ({} >= {}) return;", range_for->loop_var->raw_name(), end);
+        stmt_list->accept(this);
 
-        range_for->body->accept(this);
+        emit("}}\n\n");
 
         // CPU Kernel code
+        emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
+        emit("host_init_random_numbers();");
+        emit("{}_kernel<<<1, 1>>>(context);", codegen->func_name);
         emit("}}\n\n");
-        emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
-
-        TC_ASSERT(begin == 0);
-
-        int block_size = 256;
-        emit("host_init_random_numbers();");
-        int num_blocks = (end - begin + block_size - 1) / block_size;
-        emit("{}_kernel<<<{}, {}>>>(context);", codegen->func_name, num_blocks,
-             block_size);
-      } else {
-        // struct for
-        TC_ASSERT_INFO(current_struct_for == nullptr,
-                       "Struct for cannot be nested.");
-        auto for_stmt = for_stmt_->as<StructForStmt>();
-        current_struct_for = for_stmt;
-        auto leaf = for_stmt->snode->parent;
-
-        emit("__global__ void {}_kernel(Context context) {{",
-             codegen->func_name);
-        emit("auto root = ({} *)context.buffers[0];",
-             codegen->prog->snode_root->node_type_name);
-
-        emit("auto leaves = (LeafContext<{}> *)(context.leaves);",
-             codegen->prog->snode_root->node_type_name);
-        emit("auto num_leaves = context.num_leaves;",
-             codegen->prog->snode_root->node_type_name);
-        emit("auto leaf_loop = blockIdx.x;",
-             codegen->prog->snode_root->node_type_name);
-        emit("if (leaf_loop >= num_leaves) return;");
-
-        loopgen.emit_load_from_context(leaf);
-        emit("auto {} = threadIdx.x;", loopgen.loop_variable(leaf));
-        loopgen.update_indices(leaf);
-        loopgen.emit_setup_loop_variables(for_stmt, leaf);
-        for_stmt->body->accept(this);
-
-        emit("}}");
-
-        emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
-        emit("auto root = ({} *)context.buffers[0];",
-             current_program->snode_root->node_type_name);
-        emit("{{");
-
-        loopgen.loop_gen_leaves(for_stmt, leaf);
-
-        std::string vars;
-        for (int i = 0; i < for_stmt->loop_vars.size(); i++) {
-          vars += for_stmt->loop_vars[i]->raw_name();
-          if (i + 1 < for_stmt->loop_vars.size()) {
-            vars += ",";
-          }
-        }
-        emit("host_init_random_numbers();");
-        emit("context.num_leaves = leaves.size();");
-        emit("auto list_size = sizeof(LeafContext<{}>) * context.num_leaves;",
-             leaf->node_type_name);
-        emit("cudaMalloc(&context.leaves, list_size);");
-        emit(
-            "cudaMemcpy(context.leaves, leaves.data(), list_size, "
-            "cudaMemcpyHostToDevice);");
-        emit("printf(\"num leaves %d\\n\", context.num_leaves);");
-        // allocate the vector...
-
-        emit("{}_kernel<<<context.num_leaves, {}().get_n()>>>(context);",
-             codegen->func_name, leaf->node_type_name);
-
-        emit("cudaFree(context.leaves); context.leaves = nullptr;");
-
-        emit("}}");
-        current_struct_for = nullptr;
       }
-
-      emit("cudaDeviceSynchronize();\n");
-      emit("auto err = cudaGetLastError();");
-      emit("if (err) {{");
-      emit(
-          "printf(\"CUDA Error (File %s Ln %d): %s\\n\", "
-          "__FILE__, __LINE__, cudaGetErrorString(err));");
-      emit("exit(-1);}}");
-      emit("}}\n");
     } else {
       for (auto &stmt : stmt_list->statements) {
         stmt->accept(this);
@@ -330,14 +355,21 @@ class GPUIRCodeGen : public IRVisitor {
     auto snode = stmt->snodes[0];
     auto indices = indices_str(snode, -1, stmt->indices);
 
+    if (stmt->op_type == SNodeOpType::probe) {
+      emit("int32x1 {};", stmt->raw_name());
+    }
+
     emit("{{");
     emit("{} *{}_tmp = access_{}(root, {});", snode->node_type_name,
          snode->node_type_name, snode->node_type_name, make_list(indices, ""));
+
     if (stmt->op_type == SNodeOpType::append) {
       TC_ASSERT(stmt->val->width() == 1);
       emit("{}_tmp->append({});", snode->node_type_name, stmt->val->raw_name());
     } else if (stmt->op_type == SNodeOpType::clear) {
       emit("{}_tmp->clear();", snode->node_type_name);
+    } else if (stmt->op_type == SNodeOpType::probe) {
+      emit("{} = {}_tmp->get_n();", stmt->raw_name(), snode->node_type_name);
     } else {
       TC_NOT_IMPLEMENTED;
     }

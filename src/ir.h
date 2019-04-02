@@ -688,6 +688,17 @@ class ExpressionGroup {
   Expr &operator[](int i) {
     return exprs[i];
   }
+
+  std::string serialize() {
+    std::string ret;
+    for (int i = 0; i < (int)exprs.size(); i++) {
+      ret += exprs[i].serialize();
+      if (i + 1 < (int)exprs.size()) {
+        ret += ", ";
+      }
+    }
+    return ret;
+  }
 };
 
 inline ExpressionGroup operator,(const Expr &a, const Expr &b) {
@@ -1521,6 +1532,31 @@ class IdExpression : public Expression {
 
   bool is_lvalue() const override {
     return true;
+  }
+};
+
+class ProbeExpression : public Expression {
+ public:
+  SNode *snode;
+  ExpressionGroup indices;
+  ProbeExpression(SNode *snode, const ExpressionGroup &indices)
+      : snode(snode), indices(indices) {
+  }
+
+  std::string serialize() override {
+    return fmt::format("probe({}, [{}])", snode->node_type_name,
+                       indices.serialize());
+  }
+
+  void flatten(VecStatement &ret) override {
+    std::vector<Stmt *> indices_stmt;
+    for (int i = 0; i < (int)indices.size(); i++) {
+      indices[i]->flatten(ret);
+      indices_stmt.push_back(indices[i]->stmt);
+    }
+    ret.push_back(std::make_unique<SNodeOpStmt>(SNodeOpType::probe, snode,
+                                                indices_stmt, nullptr));
+    stmt = ret.back().get();
   }
 };
 

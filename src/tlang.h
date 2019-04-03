@@ -77,12 +77,6 @@ inline void declare_var(Expr &a) {
       std::static_pointer_cast<IdExpression>(a.expr)->id, DataType::unknown));
 }
 
-inline Expr Expr::operator[](ExpressionGroup indices) {
-  TC_ASSERT(is<GlobalVariableExpression>());
-  return Expr::make<GlobalPtrExpression>(cast<GlobalVariableExpression>(),
-                                         indices);
-}
-
 #define Declare(x) auto x = Expr(std::make_shared<IdExpression>(#x));
 
 #define var(type, x) declare_var<type>(x);
@@ -163,8 +157,8 @@ inline Expr Atomic(Expr dest) {
 
 // expr_group are indices
 inline void Activate(SNode *snode, const ExpressionGroup &expr_group) {
-  current_ast_builder().insert(
-      Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::activate, snode, expr_group));
+  current_ast_builder().insert(Stmt::make<FrontendSNodeOpStmt>(
+      SNodeOpType::activate, snode, expr_group));
 }
 
 inline void Deactivate(SNode *snode, const ExpressionGroup &expr_group) {

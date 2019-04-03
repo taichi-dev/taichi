@@ -106,6 +106,7 @@ class SNode {
     _multi_threaded = false;
     index_id = -1;
     has_ambient = false;
+    dt = DataType::unknown;
   }
 
   SNode &insert_children(SNodeType t) {

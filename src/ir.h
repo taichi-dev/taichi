@@ -651,6 +651,8 @@ class Expr {
   }
 
   Expr parent();
+
+  SNode *snode();
 };
 
 class ExpressionGroup {
@@ -701,6 +703,8 @@ class ExpressionGroup {
     }
     return ret;
   }
+
+  ExpressionGroup loaded() const;
 };
 
 inline ExpressionGroup operator,(const Expr &a, const Expr &b) {
@@ -970,6 +974,12 @@ class GlobalVariableExpression : public Expression {
     has_ambient = false;
   }
 
+  GlobalVariableExpression(SNode *snode) : snode(snode) {
+    dt = DataType::unknown;
+    snode = nullptr;
+    has_ambient = false;
+  }
+
   std::string serialize() override {
     return "#" + ident.name();
   }
@@ -1120,7 +1130,10 @@ class FrontendSNodeOpStmt : public Stmt {
                       SNode *snode,
                       ExpressionGroup indices,
                       Expr val = Expr(nullptr))
-      : op_type(op_type), snode(snode), indices(indices), val(val) {
+      : op_type(op_type),
+        snode(snode),
+        indices(indices.loaded()),
+        val(load_if_ptr(val)) {
     if (val.expr != nullptr) {
       TC_ASSERT(op_type == SNodeOpType::append);
     } else {
@@ -1151,6 +1164,9 @@ class SNodeOpStmt : public Stmt {
     }
     for (int i = 0; i < (int)indices.size(); i++) {
       add_operand(this->indices[i]);
+    }
+    if (val) {
+      add_operand(this->val);
     }
     width() = snodes.size();
     element_type() = snodes[0]->dt;

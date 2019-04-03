@@ -108,31 +108,29 @@ TC_TEST("clear") {
 };
 
 TC_TEST("sort") {
-  return;
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
-    int n = 32;
+    int n = 4;
     Program prog(arch);
 
     std::vector<int> particles(n * n);
     std::vector<int> count(n * n, 0);
 
     for (int i = 0; i < n * n; i++) {
-      particles[i] = rand<int>() % (n * n);
+      particles[i] = rand_int() % (n * n);
       count[particles[i]]++;
     }
 
     Global(c, i32);
     Global(coord, i32);
     Global(p, i32);
-    SNode *list;
+    TC_P(particles);
     layout([&]() {
       auto i = Index(0);
       auto j = Index(1);
       root.dense(i, n * n).place(coord);
       auto &fork = root.dense(i, n);
       fork.dense(i, n).place(c);
-      list = &fork.dynamic(j, n * n);
-      list->place(p);
+      fork.dynamic(j, n * n).place(p);
     });
 
     for (int i = 0; i < n * n; i++) {
@@ -142,7 +140,7 @@ TC_TEST("sort") {
     auto sort = kernel([&]() {
       Declare(i);
       Declare(j);
-      For(i, 0, n, [&] { Append(list, coord[i] / n, i); });
+      For(i, 0, n * n, [&] { Append(p.parent().snode(), coord[i], i); });
     });
 
     sort();
@@ -150,14 +148,12 @@ TC_TEST("sort") {
     kernel([&]() {
       Declare(i);
       Declare(j);
-      // TODO: should be parent node of p block
-      For(i, p, [&] {
-        auto len = Eval(Probe(list, i));
+      For(i, p.parent(), [&] {
+        auto len = Eval(Probe(p.parent().snode(), i));
         Print(len);
         For(j, 0, len, [&] {
-          auto pos = load(coord[load(p[i, j])]);
+          auto pos = coord[p[i, j]];
           c[pos] += 1;
-          Print(pos);
         });
       });
     })();

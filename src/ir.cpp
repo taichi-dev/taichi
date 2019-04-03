@@ -1,4 +1,5 @@
 #include "ir.h"
+
 #include <numeric>
 #include "tlang.h"
 #include <Eigen/Dense>
@@ -36,6 +37,20 @@ Expr bit_cast(Expr input) {
   ret->cast_by_value = false;
   return Expr(ret);
 }
+
+Expr Expr::operator[](ExpressionGroup indices) {
+  TC_ASSERT(is<GlobalVariableExpression>());
+  return Expr::make<GlobalPtrExpression>(cast<GlobalVariableExpression>(),
+                                         indices.loaded());
+}
+
+ExpressionGroup ExpressionGroup::loaded() const {
+  auto indices_loaded = *this;
+  for (int i = 0; i < (int)this->size(); i++)
+    indices_loaded[i].set(load_if_ptr(indices_loaded[i]));
+  return indices_loaded;
+}
+
 
 template Expr cast<float32>(Expr);
 template Expr cast<int32>(Expr);
@@ -223,10 +238,13 @@ void *Expr::val_tmp(DataType dt, Indices... indices) {
 
 Expr Expr::parent() {
   TC_ASSERT(is<GlobalVariableExpression>());
-  auto expr_ = cast<GlobalVariableExpression>();
-  expr_->snode = expr_->snode->parent;
-  expr_->dt = DataType::unknown;
-  return *this;
+  return Expr::make<GlobalVariableExpression>(
+      cast<GlobalVariableExpression>()->snode->parent);
+}
+
+SNode *Expr::snode() {
+  TC_ASSERT(is<GlobalVariableExpression>());
+  return cast<GlobalVariableExpression>()->snode;
 }
 
 template void *Expr::val_tmp<>(DataType);

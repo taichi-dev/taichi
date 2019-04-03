@@ -85,7 +85,7 @@ class LoopGenerator {
       if (snode->extractors[i].num_bits) {
         addition = fmt::format(
             "((({} >> {}) & ((1 << {}) - 1)) << {})", l,
-            snode->extractors[i].dest_offset - snode->total_bit_start,
+            snode->extractors[i].acc_offset,
             snode->extractors[i].num_bits, snode->extractors[i].start);
       }
       emit("int {} = {};", index_name_local(snode, i), addition);

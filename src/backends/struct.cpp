@@ -52,7 +52,7 @@ void StructCompiler::visit(SNode &snode) {
     if (ch_id == 0) {
       snode.total_bit_start = total_bits_start_inferred;
     } else if (snode.parent != nullptr) {  // root is ok
-      TC_ASSERT(snode.total_bit_start == total_bits_start_inferred);
+      // TC_ASSERT(snode.total_bit_start == total_bits_start_inferred);
     }
     // infer extractors
     int acc_offsets = 0;
@@ -60,13 +60,15 @@ void StructCompiler::visit(SNode &snode) {
       int inferred = ch->extractors[i].start + ch->extractors[i].num_bits;
       if (ch_id == 0) {
         snode.extractors[i].start = inferred;
-        snode.extractors[i].dest_offset = snode.total_bit_start + acc_offsets;
+        snode.extractors[i].acc_offset = acc_offsets;
       } else if (snode.parent != nullptr) {  // root is OK
+        /*
         TC_ASSERT_INFO(snode.extractors[i].start == inferred,
                        "Inconsistent bit configuration");
         TC_ASSERT_INFO(snode.extractors[i].dest_offset ==
                            snode.total_bit_start + acc_offsets,
                        "Inconsistent bit configuration");
+                       */
       }
       acc_offsets += snode.extractors[i].num_bits;
     }

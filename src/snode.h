@@ -11,10 +11,11 @@ TC_FORCE_INLINE int32 constexpr operator"" _bits(unsigned long long a) {
 }
 
 struct IndexExtractor {
-  int start, num_bits, dest_offset;
+  int start, num_bits;//, dest_offset;
+  int acc_offset;
   int dimension;
 
-  TC_IO_DEF(start, num_bits, dest_offset);
+  TC_IO_DEF(start, num_bits, acc_offset);
 
   // TODO: rename start to src_offset
 
@@ -23,9 +24,10 @@ struct IndexExtractor {
   IndexExtractor() {
     start = 0;
     num_bits = 0;
-    dest_offset = 0;
+    // dest_offset = 0;
     active = false;
     dimension = 1;
+    acc_offset = 0;
   }
 
   void activate(int num_bits) {

@@ -212,7 +212,7 @@ class CPUIRCodeGen : public IRVisitor {
     auto indices = indices_str(snode, 0, stmt->indices);
 
     if (stmt->op_type == SNodeOpType::probe) {
-      emit("int {}[1];", stmt->raw_name());
+      emit("int32x1 {};", stmt->raw_name());
     }
 
     emit("{{");

@@ -131,7 +131,7 @@ TC_TEST("sort") {
       root.dense(i, n * n).place(coord);
       auto &fork = root.dense(i, n);
       fork.dense(i, n).place(c);
-      auto list = &fork.dynamic(j, n * n);
+      list = &fork.dynamic(j, n * n);
       list->place(p);
     });
 
@@ -150,11 +150,14 @@ TC_TEST("sort") {
     kernel([&]() {
       Declare(i);
       Declare(j);
-      For(i, 0, n, [&] {
+      // TODO: should be parent node of p block
+      For(i, p, [&] {
         auto len = Eval(Probe(list, i));
+        Print(len);
         For(j, 0, len, [&] {
-          auto pos = coord[p[i, j]];
+          auto pos = load(coord[load(p[i, j])]);
           c[pos] += 1;
+          Print(pos);
         });
       });
     })();

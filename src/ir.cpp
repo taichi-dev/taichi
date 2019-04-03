@@ -154,7 +154,6 @@ FrontendForStmt::FrontendForStmt(ExpressionGroup loop_var, Expr global_var)
   }
 }
 
-
 IRNode *Stmt::get_ir_root() {
   auto block = parent;
   while (block->parent)
@@ -220,6 +219,14 @@ void *Expr::val_tmp(DataType dt, Indices... indices) {
 #undef LOAD_IND
   TC_ASSERT(max_num_indices == 4);
   return evaluate_addr(ind[0], ind[1], ind[2], ind[3]);
+}
+
+Expr Expr::parent() {
+  TC_ASSERT(is<GlobalVariableExpression>());
+  auto expr_ = cast<GlobalVariableExpression>();
+  expr_->snode = expr_->snode->parent;
+  expr_->dt = DataType::unknown;
+  return *this;
 }
 
 template void *Expr::val_tmp<>(DataType);

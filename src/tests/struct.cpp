@@ -140,6 +140,47 @@ TC_TEST("2d_blocked_array") {
     }
 }
 
+TC_TEST("loop_over_blocks") {
+  int n = 64, block_size = 4;
+
+  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+    Program prog(arch);
+
+    Global(a, i32);
+    Global(sum_i, i32);
+    Global(sum_j, i32);
+
+    layout([&] {
+      auto ij = Indices(0, 1);
+      TC_ASSERT(n % block_size == 0);
+      root.dense(ij, n / block_size)
+          .dense(ij, {block_size, block_size * 2})
+          .place(a);
+      root.place(sum_i, sum_j);
+    });
+
+    kernel([&]() {
+      Declare(i);
+      Declare(j);
+      For({i, j}, a.parent(), [&] {
+        Atomic(sum_i[Expr(0)]) += i;
+        Atomic(sum_j[Expr(0)]) += j;
+      });
+    })();
+
+    int sum_i_gt = 0;
+    int sum_j_gt = 0;
+    for (int i = 0; i < n; i += block_size) {
+      for (int j = 0; j < n * 2; j += block_size * 2) {
+        sum_i_gt += i;
+        sum_j_gt += j;
+      }
+    }
+    TC_CHECK(sum_i.val<int32>() == sum_i_gt);
+    TC_CHECK(sum_j.val<int32>() == sum_j_gt);
+  }
+}
+
 #if (0)
 
 TC_TEST("spmv") {

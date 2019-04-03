@@ -442,6 +442,44 @@ TC_TEST("pointer") {
   TC_CHECK(reduced == sum_gt);
 }
 
+TC_TEST("misaligned") {
+  // On the same tree, x has indices i while y has indices i & j
+  Program prog;
+
+  int n = 32;
+  int k = 64;
+
+  Global(x, i32);
+  Global(y, i32);
+
+  layout([&] {
+    auto i = Index(0);
+    auto j = Index(1);
+    auto &fork = root.dense(i, n);
+    fork.place(x);
+    fork.dense(j, k).place(y);
+  });
+
+  std::vector<int> x_gt(n, 0);
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < k; j++) {
+      int val = rand<int>() % 10;
+      y.val<int32>(i, j) = val;
+      x_gt[i] += val;
+    }
+  }
+
+  kernel([&]() {
+    Declare(i);
+    Declare(j);
+    For(i, 0, n, [&] { For(j, 0, k, [&] { x[i] += y[i, j]; }); });
+  })();
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK(x_gt[i] == x.val<int32>(i));
+  }
+}
+
 TC_TEST("hashed") {
   Program prog;
 

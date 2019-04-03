@@ -37,6 +37,39 @@ TC_TEST("append_and_probe") {
   }
 };
 
+TC_TEST("activate") {
+  for (auto arch : {Arch::x86_64}) {
+    int n = 32;
+    Program prog(arch);
+    prog.config.print_ir = true;
+
+    Global(x, i32);
+    SNode *list;
+    layout([&]() {
+      auto i = Index(0);
+      auto j = Index(1);
+      root.dense(i, n).pointer().dense(j, n).place(x);
+    });
+
+    kernel([&]() {
+      Declare(i);
+      Declare(j);
+      For(i, 0, n, [&] {
+        For(j, 0, i, [&] {
+          Activate(x.snode(), {i, j});
+          x[i, j] = i + j;
+        });
+      });
+    })();
+
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < i; j++) {
+        TC_CHECK(x.val<int>(i, j) == i + j);
+      }
+    }
+  }
+};
+
 TC_TEST("append_2d") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 32;

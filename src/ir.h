@@ -1133,9 +1133,10 @@ class FrontendSNodeOpStmt : public Stmt {
       : op_type(op_type),
         snode(snode),
         indices(indices.loaded()),
-        val(load_if_ptr(val)) {
+        val(val) {
     if (val.expr != nullptr) {
       TC_ASSERT(op_type == SNodeOpType::append);
+      this->val.set(load_if_ptr(val));
     } else {
       TC_ASSERT(op_type != SNodeOpType::append);
     }

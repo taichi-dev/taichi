@@ -226,6 +226,9 @@ class CPUIRCodeGen : public IRVisitor {
       emit("{}_tmp->clear();", snode->node_type_name);
     } else if (stmt->op_type == SNodeOpType::probe) {
       emit("{}[0] = {}_tmp->get_n();", stmt->raw_name(), snode->node_type_name);
+    } else if (stmt->op_type == SNodeOpType::activate) {
+      TC_NOT_IMPLEMENTED
+      // emit("{}[0] = {}_tmp->get_n();", stmt->raw_name(), snode->node_type_name);
     } else {
       TC_NOT_IMPLEMENTED
     }

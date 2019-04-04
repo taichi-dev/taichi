@@ -54,7 +54,7 @@ class GPUIRCodeGen : public IRVisitor {
       TC_ASSERT(begin == 0);
 
       int block_size = 256;
-      emit("host_init_random_numbers();");
+      emit("gpu_runtime_init();");
       int num_blocks = (end - begin + block_size - 1) / block_size;
       emit("{}_kernel<<<{}, {}>>>(context);", codegen->func_name, num_blocks,
            block_size);
@@ -100,7 +100,7 @@ class GPUIRCodeGen : public IRVisitor {
           vars += ",";
         }
       }
-      emit("host_init_random_numbers();");
+      emit("gpu_runtime_init();");
       emit("context.num_leaves = leaves.size();");
       emit("auto list_size = sizeof(LeafContext<{}>) * context.num_leaves;",
            leaf->node_type_name);
@@ -161,7 +161,7 @@ class GPUIRCodeGen : public IRVisitor {
 
         // CPU Kernel code
         emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
-        emit("host_init_random_numbers();");
+        emit("gpu_runtime_init();");
         emit("{}_kernel<<<1, 1>>>(context);", codegen->func_name);
         emit("}}\n\n");
       }
@@ -360,8 +360,10 @@ class GPUIRCodeGen : public IRVisitor {
     }
 
     emit("{{");
-    emit("{} *{}_tmp = access_{}(root, {});", snode->node_type_name,
-         snode->node_type_name, snode->node_type_name, make_list(indices, ""));
+    if (stmt->op_type != SNodeOpType::activate)
+      emit("{} *{}_tmp = access_{}(root, {});", snode->node_type_name,
+           snode->node_type_name, snode->node_type_name,
+           make_list(indices, ""));
 
     if (stmt->op_type == SNodeOpType::append) {
       TC_ASSERT(stmt->val->width() == 1);
@@ -370,6 +372,9 @@ class GPUIRCodeGen : public IRVisitor {
       emit("{}_tmp->clear();", snode->node_type_name);
     } else if (stmt->op_type == SNodeOpType::probe) {
       emit("{} = {}_tmp->get_n();", stmt->raw_name(), snode->node_type_name);
+    } else if (stmt->op_type == SNodeOpType::activate) {
+      emit("activate_{}(root, {});", snode->node_type_name,
+           make_list(indices, ""));
     } else {
       TC_NOT_IMPLEMENTED;
     }

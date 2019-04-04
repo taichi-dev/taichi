@@ -839,7 +839,6 @@ inline int32x8 bit_not(int32x8 a) {
   return _mm256_xor_si256(a, _mm256_set1_epi64x(-1LL));
 }
 
-
 inline int32x8 shr(int32x8 a, int b) {
   return _mm256_srli_epi32(a, b);
 }
@@ -909,7 +908,6 @@ inline float32x8 rsqrt(float32x8 x) {
 inline float32x16 rsqrt(float32x16 x) {
   return _mm512_rsqrt14_ps(x);
 }
-
 
 template <int dim>
 inline vec<int32, dim> div(vec<int32, dim> a, vec<int32, dim> b) {
@@ -1019,7 +1017,9 @@ __global__ void init_random_numbers(unsigned int seed) {
   curand_init(idx + (seed * 1000000007), 0, 0, &states[idx]);
 }
 
-__host__ void host_init_random_numbers() {
+__device__ __constant__ void **device_head;
+
+__host__ void gpu_runtime_init() {
   static int initialized = false;
   if (initialized)
     return;
@@ -1028,6 +1028,8 @@ __host__ void host_init_random_numbers() {
 
   initialized = true;
   init_random_numbers<<<1024, 1024>>>(1);
+
+  cudaMemcpyToSymbol(device_head, &allocator()->head, sizeof(device_head));
 }
 
 __device__ float randf() {

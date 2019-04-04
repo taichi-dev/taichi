@@ -37,6 +37,9 @@ struct layout_root {
     return 1;
   }
 
+  TC_DEVICE TC_FORCE_INLINE void activate(int i) {
+  }
+
   static constexpr bool has_null = false;
 };
 
@@ -53,32 +56,49 @@ struct dense {
     return n;
   }
 
+  TC_DEVICE TC_FORCE_INLINE void activate(int i) {
+  }
+
   static constexpr bool has_null = false;
 };
+
+#if defined(TC_GPU)
+
+template <typename T>
+TC_FORCE_INLINE __device__ T *allocate() {
+  auto addr = taichi::Tlang::UnifiedAllocator::alloc(*device_head, sizeof(T));
+  return new (addr) T();
+}
+#else
+template <typename T>
+TC_FORCE_INLINE __host__ T *allocate() {
+  auto addr = taichi::Tlang::allocator()->alloc(sizeof(T));
+  return new (addr) T();
+}
+#endif
 
 template <typename _child_type>
 struct hashed {
   using child_type = _child_type;
-  std::unordered_map<int, child_type> data;
+  std::unordered_map<int, child_type *> data;
   std::mutex mut;
   TC_DEVICE TC_FORCE_INLINE child_type *look_up(
       int i) {  // i is flattened index
 #if defined(TLANG_HOST)
-    if (data.find(i) == data.end()) {
-      std::memset(&data[i], 0, sizeof(data[i]));
-    }
+    activate(i);
 #else
     if (data.find(i) == data.end()) {
       return nullptr;
     }
 #endif
-    return &data[i];
+    return data[i];
   }
 
-  TC_DEVICE TC_FORCE_INLINE void touch(int i) {
-    TC_ASSERT(false);
-    // printf("p=%p\n", &n);
-    // printf("n=%d, i=%d\n", (int)n, i);
+  TC_DEVICE TC_FORCE_INLINE void activate(int i) {
+    if (data.find(i) == data.end()) {
+      child_type *ptr = allocate<child_type>();
+      data.insert(std::make_pair(i, ptr));
+    }
   }
 
   TC_DEVICE TC_FORCE_INLINE int get_n() const {
@@ -96,21 +116,19 @@ struct pointer {
   TC_DEVICE TC_FORCE_INLINE child_type *look_up(
       int i) {  // i is flattened index
 #if defined(TLANG_HOST)
-    touch(i);
+    activate(i);
 #endif
     return data;
   }
 
-  TC_DEVICE TC_FORCE_INLINE void touch(int i) {
-    // std::lock_guard<std::mutex> _(mut);
-    if (data == nullptr) {
-      data = new child_type;
-      std::memset(data, 0, sizeof(child_type));
-    }
-  }
-
   TC_DEVICE TC_FORCE_INLINE int get_n() const {
     return 1;
+  }
+
+  TC_DEVICE TC_FORCE_INLINE void activate(int i) {
+    if (data == nullptr) {
+      data = allocate<child_type>();
+    }
   }
 
   static constexpr bool has_null = true;
@@ -149,8 +167,15 @@ struct dynamic {
   }
 #endif
 
-  TC_DEVICE TC_FORCE_INLINE void touch(child_type t) {
-    return append(t);
+  /*
+    TC_DEVICE TC_FORCE_INLINE void touch(child_type t) {
+      return append(t);
+    }
+    */
+
+  TC_DEVICE TC_FORCE_INLINE void activate(int i) {
+    // TC_ASSERT();
+    // Do nothing
   }
 
   TC_DEVICE TC_FORCE_INLINE int get_n() const {
@@ -181,11 +206,13 @@ struct indirect {
     return &data[i];
   }
 
+  /*
   TC_DEVICE TC_FORCE_INLINE void touch(int i) {
     data[n++] = i;
     // printf("p=%p\n", &n);
     // printf("n=%d, i=%d\n", (int)n, i);
   }
+   */
 
   TC_DEVICE TC_FORCE_INLINE void clear() {
     n.store(0);

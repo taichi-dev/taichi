@@ -14,6 +14,7 @@ UnifiedAllocator *&allocator() {
 
 taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
     : size(size), gpu(gpu) {
+  size += 4096;
   if (!gpu) {
     _data.resize(size + 4096);
     data = _data.data();
@@ -28,8 +29,14 @@ taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
   }
   auto p = reinterpret_cast<uint64>(data);
   data = (void *)(p + (4096 - p % 4096));
-  head = data;
-  tail = (void *)(((char *)head) + size);
+
+  // allocate head/tail ptrs on unified memory
+  head = (void **)data;
+  tail = (void **)((char *)data + sizeof(void *));
+
+  data = (char *)data + 4096;
+  *head = data;
+  *tail = (void *)(((char *)head) + size);
   // memset(0);
 }
 

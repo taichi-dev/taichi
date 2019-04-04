@@ -16,8 +16,10 @@ class UnifiedAllocator {
   std::size_t size;
   bool gpu;
 
-  void *head;
-  void *tail;
+  // put these two on the unified memroy so that GPU can have access
+ public:
+  void **head;
+  void **tail;
 
  public:
   UnifiedAllocator() {
@@ -27,26 +29,16 @@ class UnifiedAllocator {
   UnifiedAllocator(std::size_t size, bool gpu);
 
 #if defined(TC_GPU)
-  __device__ void *alloc(int size) {
-    void *ret;
-    while (true) {
-      auto old_head = head;
-      auto new_head = (char *)atomicCAS(
-          reinterpret_cast<unsigned long long *>(&head),
-          (unsigned long long)old_head, (unsigned long long)(old_head) + size);
-      if (new_head == (char *)old_head + size) {
-        ret = old_head;
-        break;
-      }
-    }
-    return ret;
+  __device__ static void *alloc(void *&head, int size) {
+    return (void *)atomicAdd(reinterpret_cast<unsigned long long *>(&head),
+                             size);
   }
 #else
   std::mutex lock;
   void *alloc(int size) {
     std::lock_guard<std::mutex> _(lock);
-    auto ret = head;
-    head = (char *)head + size;
+    auto ret = *head;
+    *head = (char *)(*head) + size;
     return ret;
   }
 #endif
@@ -60,22 +52,6 @@ class UnifiedAllocator {
   }
 
   UnifiedAllocator operator=(const UnifiedAllocator &) = delete;
-
-  /*
-  UnifiedAllocator(UnifiedAllocator &&o) noexcept {
-    (*this) = std::move(o);
-  }
-
-  UnifiedAllocator &operator=(UnifiedAllocator &&o) noexcept {
-    std::swap(_data, o._data);
-    data = o.data;
-    o.data = nullptr;
-    device = o.device;
-    size = o.size;
-    _cuda_data = o._cuda_data;
-    return *this;
-  }
-  */
 
   static void create();
 

@@ -160,68 +160,53 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
   // SNode::place & indirect
   // emit end2end accessors for leaf (place) nodes, using chain accessors
   TC_ASSERT(max_num_indices == 4);
-  emit(
-      "TLANG_ACCESSOR TC_EXPORT {} * access_{}(void *root, int i0=0, int i1=0, "
-      "int "
-      "i2=0, "
-      "int i3=0) {{",
-      snode.node_type_name, snode.node_type_name);
-  if (snode._verbose) {
+  constexpr int mode_access = 0;
+  constexpr int mode_activate = 1;
+
+  for (auto mode : {mode_access, mode_activate}) {
+    auto verb = mode == mode_activate ? "activate" : "access";
     emit(
-        "std::cout << \"accessing node {} at \" << i0 << ' ' << i1 << ' ' "
-        "<< i2 << ' ' << i3 << std::endl;",
-        snode.node_type_name);
-  }
-  emit("int tmp;");
-  emit("auto n0 = ({} *)root;", root_type);
-  for (int i = 0; i + 1 < (int)stack.size(); i++) {
-    emit("tmp = 0;", i);
-    for (int j = 0; j < max_num_indices; j++) {
-      auto e = stack[i]->extractors[j];
-      int b = e.num_bits;
-      if (b) {
-        if (e.num_bits == e.start || max_num_indices != 1) {
-          emit("tmp = (tmp << {}) + ((i{} >> {}) & ((1 << {}) - 1));",
-               e.num_bits, j, e.start, e.num_bits);
-        } else {
-          TC_WARN("Emitting shortcut indexing");
-          emit("tmp = i{};", j);
+        "TLANG_ACCESSOR TC_EXPORT {} * {}_{}(void *root, int i0=0, int i1=0, "
+        "int "
+        "i2=0, "
+        "int i3=0) {{",
+        snode.node_type_name, verb, snode.node_type_name);
+    if (snode._verbose) {
+      emit(
+          "std::cout << \"accessing node {} at \" << i0 << ' ' << i1 << ' ' "
+          "<< i2 << ' ' << i3 << std::endl;",
+          snode.node_type_name);
+    }
+    emit("int tmp;");
+    emit("auto n0 = ({} *)root;", root_type);
+    for (int i = 0; i + 1 < (int)stack.size(); i++) {
+      emit("tmp = 0;", i);
+      for (int j = 0; j < max_num_indices; j++) {
+        auto e = stack[i]->extractors[j];
+        int b = e.num_bits;
+        if (b) {
+          if (e.num_bits == e.start || max_num_indices != 1) {
+            emit("tmp = (tmp << {}) + ((i{} >> {}) & ((1 << {}) - 1));",
+                 e.num_bits, j, e.start, e.num_bits);
+          } else {
+            TC_WARN("Emitting shortcut indexing");
+            emit("tmp = i{};", j);
+          }
         }
       }
+      if (mode == mode_activate) {
+        emit("n{}->activate(tmp);", i);
+      }
+      emit("auto n{} = access_{}(n{}, tmp);", i + 1,
+           stack[i + 1]->node_type_name, i);
+      if (mode == mode_access)
+        if (snode.has_ambient && stack[i + 1] != &snode)
+          emit("if ({}::has_null && n{} == nullptr) return &{}_ambient;",
+               stack[i]->node_type_name, i + 1, snode.node_type_name);
     }
-    emit("auto n{} = access_{}(n{}, tmp);", i + 1, stack[i + 1]->node_type_name,
-         i);
-    if (snode.has_ambient && stack[i + 1] != &snode)
-      emit("if ({}::has_null && n{} == nullptr) return &{}_ambient;",
-           stack[i]->node_type_name, i + 1, snode.node_type_name);
-  }
-  emit("return n{};", (int)stack.size() - 1);
-  emit("}}");
-  emit("");
-
-  if (type == SNodeType::indirect) {  // toucher
-    emit(
-        "TLANG_ACCESSOR void touch_{}(void *root, int val, int i0, int "
-        "i1=0, int "
-        "i2=0, "
-        "int i3=0) {{",
-        snode.node_type_name);
-    emit("auto node = access_{}(root, i0, i1, i2, i3);", snode.node_type_name);
-    emit("node->touch(val);");
-    emit("}");
-  }
-
-  if (type == SNodeType::dynamic) {  // toucher
-    emit(
-        "TLANG_ACCESSOR void touch_{}(void *root, const {}::child_type &val, "
-        "int i0, int "
-        "i1=0, int "
-        "i2=0, "
-        "int i3=0) {{",
-        snode.node_type_name, snode.node_type_name);
-    emit("auto node = access_{}(root, i0, i1, i2, i3);", snode.node_type_name);
-    emit("node->touch(val);");
+    emit("return n{};", (int)stack.size() - 1);
     emit("}}");
+    emit("");
   }
 
   for (auto ch : snode.ch) {
@@ -259,14 +244,6 @@ void StructCompiler::run(SNode &node) {
       "TC_EXPORT void *create_data_structure() {{auto addr = "
       "taichi::Tlang::allocator()->alloc(sizeof({})); auto p= new(addr) {}; ",
       root_type, root_type);
-  /*
-  for (int i = 0; i < (int)node.ch.size(); i++) {
-    if (node.ch[i]->type != SNodeType::hashed) {
-      emit("std::memset(p->children.get{}(), 0, sizeof({}));", i,
-           node.ch[i]->node_type_name);
-    }
-  }
-  */
   emit("return p;}}");
   emit(
       "TC_EXPORT void release_data_structure(void *ds) {{delete ({} "

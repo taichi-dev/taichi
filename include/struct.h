@@ -167,12 +167,6 @@ struct dynamic {
   }
 #endif
 
-  /*
-    TC_DEVICE TC_FORCE_INLINE void touch(child_type t) {
-      return append(t);
-    }
-    */
-
   TC_DEVICE TC_FORCE_INLINE void activate(int i) {
     // TC_ASSERT();
     // Do nothing
@@ -205,14 +199,6 @@ struct indirect {
 #endif
     return &data[i];
   }
-
-  /*
-  TC_DEVICE TC_FORCE_INLINE void touch(int i) {
-    data[n++] = i;
-    // printf("p=%p\n", &n);
-    // printf("n=%d, i=%d\n", (int)n, i);
-  }
-   */
 
   TC_DEVICE TC_FORCE_INLINE void clear() {
     n.store(0);

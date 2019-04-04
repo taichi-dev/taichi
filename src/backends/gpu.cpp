@@ -108,7 +108,7 @@ class GPUIRCodeGen : public IRVisitor {
       emit(
           "cudaMemcpy(context.leaves, leaves.data(), list_size, "
           "cudaMemcpyHostToDevice);");
-      emit("printf(\"num leaves %d\\n\", context.num_leaves);");
+      // emit("printf(\"num leaves %d\\n\", context.num_leaves);");
       // allocate the vector...
 
       emit("{}_kernel<<<context.num_leaves, {}().get_n()>>>(context);",

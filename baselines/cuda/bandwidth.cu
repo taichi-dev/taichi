@@ -22,8 +22,12 @@ inline __device__ int indirect(int *c, int i) {
 __constant__ int const_c[m];
 
 __global__ void fd(float *a, float *b, int *c, int n) {
-  // __shared__ int b_s[m];
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  __shared__ float b_s[m];
+  unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i < m) {
+    b_s[i] = 0;
+  }
+  __syncthreads();
   /*
   if (threadIdx.x < m) {
     b_s[threadIdx.x] = c[threadIdx.x];
@@ -43,7 +47,29 @@ __global__ void fd(float *a, float *b, int *c, int n) {
   */
   // b[i] = (i * 1e-18);
   // b[i] = i;
-  b[i] = c[c[c[i & 64]]];
+  // b[i] = c[c[c[i & 64]]];
+
+  //atomicAdd(b_s + ((unsigned)i * 34252345627) % m, 1.0f);
+  //i = int(((((i * 1e-20f)))));
+    //i = (i * 1e-10f);
+    //i = i * i * i * i * i % m;
+  //b_s[i % m] = 1;
+//#define C(x) i += (i >> x);
+//#define C(x) i += (i >> x);
+//  for (int t = 0; t < 240; t++)
+//    C(30);
+  i += int(sin(i * 1e-20f));
+  i += int(sin(i * 1e-20f));
+  i += int(sin(i * 1e-20f));
+  i += int(sin(i * 1e-20f));
+  //atomicAdd(b_s + (int(i)) % m, 1.0f);
+  b_s[i % m] = 1.0f;
+  __syncthreads();
+
+  if (i < m) {
+    atomicAdd(&b[i], b_s[i]);
+  }
+  // atomicAdd(b + i % (m * m), 1);
   /*
   atomicAdd(&b_s[0], sqrt(sum));
   if (threadIdx.x < m) {
@@ -54,7 +80,7 @@ __global__ void fd(float *a, float *b, int *c, int n) {
 }
 
 int main() {
-  int n = 1024 * 1024 * 1024;
+  int n = 128 * 1024 * 1024;
   float *a, *b;
   int *c;
   cudaMallocManaged(&a, n * sizeof(float));
@@ -67,12 +93,12 @@ int main() {
     b[i] = i * 1e-5f;
   }
   for (int i = 0; i < m; i++) {
-    c[i] = i;
+    c[i] = 0;
   }
   cudaMemcpyToSymbol(const_c, c, m * sizeof(float), 0, cudaMemcpyHostToDevice);
-  for (auto bs : {128, 256, 512, 1024}) {
+  for (auto bs : {256, 512, 1024}) {
     std::cout << "bs = " << bs << std::endl;
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 4; i++) {
       auto t = get_time();
       fd<<<n / bs, bs>>>(a, b, c, n);
       cudaDeviceSynchronize();

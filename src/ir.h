@@ -1036,6 +1036,8 @@ Expr operator-(Expr expr);
 
 Expr operator~(Expr expr);
 
+Expr exp(const Expr &expr);
+
 // Value cast
 template <typename T>
 Expr cast(Expr input);

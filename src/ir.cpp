@@ -22,6 +22,10 @@ Expr operator~(Expr expr) {
   return Expr::make<UnaryOpExpression>(UnaryType::bit_not, expr);
 }
 
+Expr exp(const Expr &expr) {
+  return Expr::make<UnaryOpExpression>(UnaryType::exp, expr);
+}
+
 template <typename T>
 Expr cast(Expr input) {
   auto ret = std::make_shared<UnaryOpExpression>(UnaryType::cast, input);

@@ -42,7 +42,7 @@ auto mpm3d = []() {
   constexpr int n = 128;  // grid_resolution
   const real dt = 1e-4_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
-  auto E = 1e3_f, nu = 0.3f;
+  auto E = 2e3_f, nu = 0.3f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
 
   int dim = 3;
@@ -156,6 +156,8 @@ auto mpm3d = []() {
                     Eval(0.5_f * sqr(fx - 0.5_f))};
 
       Matrix cauchy(3, 3);
+      Local(mu) = mu_0;
+      Local(lambda) = lambda_0;
       if (fluid) {
         cauchy = (J - 1.0_f) * Matrix::identity(3) * E;
       } else {
@@ -170,17 +172,22 @@ auto mpm3d = []() {
           }
           auto newJ = sig(0) * sig(1) * sig(2);
           // plastic J
-          auto Jp = particle_J[p] * newJ / oldJ;
+          auto Jp = particle_J[p] * oldJ / newJ;
           particle_J[p] = Jp;
           J = newJ;
           F = std::get<0>(svd) * diag_matrix(sig) * transposed(std::get<2>(svd));
           particle_F[p] = F;
+          /*
+          auto harderning = exp((1.0f - Jp) * 10.0f);
+          mu *= harderning;
+          lambda *= harderning;
+          */
         } else {
           J = oldJ;
           particle_F[p] = F;
         }
-        cauchy = Eval(2.0_f * mu_0 * (F - R) * transposed(F) +
-                      (Matrix::identity(3) * lambda_0) * (J - 1.0f) * J);
+        cauchy = Eval(2.0_f * mu * (F - R) * transposed(F) +
+                      (Matrix::identity(3) * lambda) * (J - 1.0f) * J);
       }
 
       auto affine = Expr(particle_mass) * C +

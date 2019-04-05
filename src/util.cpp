@@ -146,6 +146,7 @@ std::string unary_type_name(UnaryType type) {
     REGISTER_TYPE(sin);
     REGISTER_TYPE(cos);
     REGISTER_TYPE(inv);
+    REGISTER_TYPE(exp);
     REGISTER_TYPE(rcp);
     REGISTER_TYPE(rsqrt);
     REGISTER_TYPE(bit_not);

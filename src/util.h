@@ -108,6 +108,7 @@ enum class UnaryType : int {
   cos,
   inv,
   rcp,
+  exp,
   rsqrt,
   bit_not,
   undefined

@@ -64,8 +64,7 @@ auto mpm3d = []() {
     auto f = fopen("dragon_particles.bin", "rb");
     std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f);
     std::fclose(f);
-  } else
-  {
+  } else {
     n_particles = max_n_particles / 8;
   }
 
@@ -95,6 +94,7 @@ auto mpm3d = []() {
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
         place(particle_C(i, j));
+        place(particle_F(i, j));
       }
       place(particle_x(i));
       place(particle_v(i));
@@ -272,19 +272,23 @@ auto mpm3d = []() {
 
   auto reset = [&] {
     for (int i = 0; i < n_particles; i++) {
-      /*
-      particle_x(0).val<float32>(i) = 0.3_f + rand() * 0.4_f;
-      particle_x(1).val<float32>(i) = 0.15_f + rand() * 0.75_f;
-      particle_x(2).val<float32>(i) = 0.3_f + rand() * 0.4_f;
-      */
-      for (int d = 0; d < dim; d++) {
-        particle_x(d).val<float32>(i) = benchmark_particles[dim * index[i] + d];
+      if (benchmark_dragon) {
+        for (int d = 0; d < dim; d++) {
+          particle_x(d).val<float32>(i) =
+              benchmark_particles[dim * index[i] + d];
+        }
+      } else {
+        particle_x(0).val<float32>(i) = 0.3_f + rand() * 0.4_f;
+        particle_x(1).val<float32>(i) = 0.15_f + rand() * 0.75_f;
+        particle_x(2).val<float32>(i) = 0.3_f + rand() * 0.4_f;
       }
       particle_v(0).val<float32>(i) = 0._f;
       particle_v(1).val<float32>(i) = -0.3_f;
       particle_v(2).val<float32>(i) = 0._f;
       particle_J.val<float32>(i) = 1_f;
-      // TODO: touch F, C, ...
+      for (int d = 0; d < dim; d++) {
+        particle_F(d, d).val<float32>(i) = 0._f;
+      }
     }
   };
 

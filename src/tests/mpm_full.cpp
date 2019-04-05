@@ -27,6 +27,7 @@ void write_partio(std::vector<Vector3> positions,
 }
 
 auto mpm3d = []() {
+  bool benchmark_dragon = false;
   Program prog(Arch::gpu);
   prog.config.print_ir = true;
   // Program prog(Arch::x86_64);
@@ -56,27 +57,39 @@ auto mpm3d = []() {
 
   int max_n_particles = 1024 * 1024;
 
-
-  int n_particles = 775196;
+  int n_particles;
   std::vector<float> benchmark_particles(n_particles * 3);
-  {
+  if (benchmark_dragon) {
+    n_particles = 775196;
     auto f = fopen("dragon_particles.bin", "rb");
     std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f);
     std::fclose(f);
+  } else
+  {
+    n_particles = max_n_particles / 8;
   }
 
   auto i = Index(0), j = Index(1), k = Index(2);
   auto p = Index(3);
 
+  bool SOA = true;
+
   layout([&]() {
+    SNode *fork;
+    if (!SOA)
+      fork = &root.dynamic(p, max_n_particles);
     auto place = [&](Expr &expr) {
-      if (particle_block_size == 1) {
-        root.dynamic(p, max_n_particles).place(expr);
+      if (SOA) {
+        if (particle_block_size == 1) {
+          root.dynamic(p, max_n_particles).place(expr);
+        } else {
+          TC_ASSERT(max_n_particles % particle_block_size == 0);
+          root.dense(p, max_n_particles / particle_block_size)
+              .dense(p, particle_block_size)
+              .place(expr);
+        }
       } else {
-        TC_ASSERT(max_n_particles % particle_block_size == 0);
-        root.dense(p, max_n_particles / particle_block_size)
-            .dense(p, particle_block_size)
-            .place(expr);
+        fork->place(expr);
       }
     };
     for (int i = 0; i < dim; i++) {
@@ -251,6 +264,12 @@ auto mpm3d = []() {
   });
   CoreState::set_trigger_gdb_when_crash(true);
 
+  std::vector<int> index(n_particles);
+  for (int i = 0; i < n_particles; i++) {
+    index[i] = i;
+  }
+  // std::random_shuffle(index.begin(), index.end());
+
   auto reset = [&] {
     for (int i = 0; i < n_particles; i++) {
       /*
@@ -259,7 +278,7 @@ auto mpm3d = []() {
       particle_x(2).val<float32>(i) = 0.3_f + rand() * 0.4_f;
       */
       for (int d = 0; d < dim; d++) {
-        particle_x(d).val<float32>(i) = benchmark_particles[dim * i + d];
+        particle_x(d).val<float32>(i) = benchmark_particles[dim * index[i] + d];
       }
       particle_v(0).val<float32>(i) = 0._f;
       particle_v(1).val<float32>(i) = -0.3_f;
@@ -271,7 +290,7 @@ auto mpm3d = []() {
 
   reset();
 
-  int scale = 6;
+  int scale = 128 * 6 / n;
   GUI gui("MPM", n * scale + 200, n * scale);
   int angle = 0;
   int gravity_x_slider = 0;

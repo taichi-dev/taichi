@@ -28,6 +28,7 @@ void write_partio(std::vector<Vector3> positions,
 
 auto mpm3d = []() {
   Program prog(Arch::gpu);
+  prog.config.print_ir = true;
   // Program prog(Arch::x86_64);
 
   constexpr int n = 128;  // grid_resolution
@@ -53,7 +54,7 @@ auto mpm3d = []() {
 
   Global(Jp, f32);
 
-  int n_particles = 8192 * 16;
+  int n_particles = 1024 * 1024 / 8;
 
   auto i = Index(0), j = Index(1), k = Index(2);
   auto p = Index(3);
@@ -108,10 +109,9 @@ auto mpm3d = []() {
       auto base_coord = floor(Expr(inv_dx) * x - Expr(0.5_f));
       auto fx = x * Expr(inv_dx) - base_coord;
 
-      Vector w[3];
-      w[0] = Expr(0.5_f) * sqr(Expr(1.5_f) - fx);
-      w[1] = Expr(0.75_f) - sqr(fx - Expr(1.0_f));
-      w[2] = Expr(0.5_f) * sqr(fx - Expr(0.5_f));
+      Vector w[] = {Eval(0.5_f * sqr(1.5_f - fx)),
+                    Eval(0.75_f - sqr(fx - 1.0_f)),
+                    Eval(0.5_f * sqr(fx - 0.5_f))};
 
       auto cauchy = Expr(E) * (J - Expr(1.0_f));
       auto affine = Expr(particle_mass) * C;
@@ -201,10 +201,9 @@ auto mpm3d = []() {
       auto base_coord = floor(inv_dx * x - 0.5_f);
       auto fx = x * Expr(inv_dx) - base_coord;
 
-      Vector w[3];
-      w[0] = 0.5_f * sqr(1.5_f - fx);
-      w[1] = 0.75_f - sqr(fx - 1.0_f);
-      w[2] = 0.5_f * sqr(fx - 0.5_f);
+      Vector w[] = {Eval(0.5_f * sqr(1.5_f - fx)),
+                    Eval(0.75_f - sqr(fx - 1.0_f)),
+                    Eval(0.5_f * sqr(fx - 0.5_f))};
 
       // scatter
       for (int i = 0; i < 3; i++) {
@@ -261,6 +260,7 @@ auto mpm3d = []() {
 
   int frame = 0;
   for (int f = 0;; f++) {
+    TC_PROFILER("mpm 3d");
     for (int t = 0; t < 20; t++) {
       TC_PROFILE("reset grid", clear_buffer());
       TC_PROFILE("p2g", p2g());

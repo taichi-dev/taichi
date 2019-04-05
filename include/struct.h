@@ -37,6 +37,10 @@ struct layout_root {
     return 1;
   }
 
+  TC_DEVICE TC_FORCE_INLINE static int get_max_n() {
+    return 1;
+  }
+
   TC_DEVICE TC_FORCE_INLINE void activate(int i) {
   }
 
@@ -53,6 +57,10 @@ struct dense {
   }
 
   TC_DEVICE TC_FORCE_INLINE int get_n() const {
+    return n;
+  }
+
+  TC_DEVICE TC_FORCE_INLINE static int get_max_n() {
     return n;
   }
 
@@ -125,6 +133,10 @@ struct pointer {
     return 1;
   }
 
+  TC_DEVICE TC_FORCE_INLINE static int get_max_n() {
+    return 1;
+  }
+
   TC_DEVICE TC_FORCE_INLINE void activate(int i) {
     if (data == nullptr) {
       data = allocate<child_type>();
@@ -176,6 +188,10 @@ struct dynamic {
     return n;
   }
 
+  TC_DEVICE TC_FORCE_INLINE static int get_max_n() {
+    return max_n;
+  }
+
   static constexpr bool has_null = false;
 };
 // *****************************************************************************
@@ -191,6 +207,10 @@ struct indirect {
 
   TC_DEVICE TC_FORCE_INLINE int get_n() {
     return n;
+  }
+
+  TC_DEVICE TC_FORCE_INLINE static int get_max_n() {
+    return max_n;
   }
 
   TC_DEVICE TC_FORCE_INLINE int *look_up(int i) {  // i is flattened index

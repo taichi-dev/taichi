@@ -221,7 +221,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
   count();
 
   TC_P(num_leaves);
-  //TC_ASSERT(num_leaves * pow<3>(8) == sum.val<int>());
+  // TC_ASSERT(num_leaves * pow<3>(8) == sum.val<int>());
 
   auto mean_x = kernel([&] {
     Declare(i);
@@ -282,7 +282,8 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     num_leaves += 1;
   }
 
-  std::ofstream ofs(fmt::format("results/{}.txt", param[0]), std::ofstream::out);
+  std::ofstream ofs(fmt::format("results/{}.txt", param[0]),
+                    std::ofstream::out);
 
   TC_ASSERT(ofs.is_open());
 

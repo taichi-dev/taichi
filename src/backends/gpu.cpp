@@ -81,17 +81,17 @@ class GPUIRCodeGen : public IRVisitor {
            codegen->prog->snode_root->node_type_name);
 
       emit("auto leaves = (LeafContext<{}> *)(context.leaves);",
-           codegen->prog->snode_root->node_type_name);
-      emit("auto num_leaves = context.num_leaves;",
-           codegen->prog->snode_root->node_type_name);
+           leaf->node_type_name);
+      emit("auto num_leaves = context.num_leaves;");
       emit("auto leaf_loop = blockIdx.x / {};", block_division);
       emit("if (leaf_loop >= num_leaves) return;");
 
       loopgen.emit_load_from_context(leaf);
-      emit("auto {} = blockDim.x * (blockIdx.x % {}) + threadIdx.x;",
-           loopgen.loop_variable(leaf), block_division);
+      emit("auto {} = {} * (blockIdx.x % {}) + threadIdx.x;",
+           loopgen.loop_variable(leaf),
+           (1 << leaf->total_num_bits) / block_division, block_division);
       if (leaf->type == SNodeType::dynamic) {
-        emit("if ({} > {}_cache.get_n()) return;", loopgen.loop_variable(leaf),
+        emit("if ({} > {}_cache->get_n()) return;", loopgen.loop_variable(leaf),
              leaf->node_type_name);
       }
       loopgen.update_indices(leaf);
@@ -122,11 +122,11 @@ class GPUIRCodeGen : public IRVisitor {
       emit(
           "cudaMemcpy(context.leaves, leaves.data(), list_size, "
           "cudaMemcpyHostToDevice);");
-      // emit("printf(\"num leaves %d\\n\", context.num_leaves);");
+      emit("printf(\"num leaves %d\\n\", context.num_leaves);");
       // allocate the vector...
 
       emit(
-          "{}_kernel<<<context.num_leaves * {}, ({}().get_n() + {} - 1) / "
+          "{}_kernel<<<context.num_leaves * {}, ({}::get_max_n() + {} - 1) / "
           "{}>>>(context);",
           codegen->func_name, block_division, leaf->node_type_name,
           block_division, block_division);

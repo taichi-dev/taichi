@@ -31,7 +31,7 @@ auto mpm3d = []() {
   prog.config.print_ir = true;
   // Program prog(Arch::x86_64);
 
-  constexpr int n = 256;  // grid_resolution
+  constexpr int n = 128;  // grid_resolution
   const real dt = 1e-4_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
   auto E = 1e2_f;
@@ -54,7 +54,7 @@ auto mpm3d = []() {
 
   Global(Jp, f32);
 
-  int n_particles = 1024 * 1024;
+  int n_particles = 1024 * 1024 / 8;
 
   auto i = Index(0), j = Index(1), k = Index(2);
   auto p = Index(3);
@@ -103,6 +103,8 @@ auto mpm3d = []() {
 
   auto p2g = kernel([&]() {
     Declare(p);
+    if (particle_block_size == 1)
+      BlockDim(256);
     For(p, particle_x(0), [&] {
       auto x = particle_x[p];
       auto v = particle_v[p];
@@ -186,6 +188,8 @@ auto mpm3d = []() {
 
   auto g2p = kernel([&]() {
     Declare(p);
+    if (particle_block_size == 1)
+      BlockDim(256);
     For(p, particle_x(0), [&] {
       auto x = particle_x[p];
       auto v = Vector(dim);
@@ -247,6 +251,7 @@ auto mpm3d = []() {
       particle_v(1).val<float32>(i) = -0.3_f;
       particle_v(2).val<float32>(i) = 0._f;
       particle_J.val<float32>(i) = 1_f;
+      // TODO: touch F, C, ...
     }
   };
 

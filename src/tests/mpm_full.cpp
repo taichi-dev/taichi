@@ -35,6 +35,7 @@ auto mpm3d = []() {
   Program prog(Arch::gpu);
   //  prog.config.print_ir = true;
   bool fluid = false;
+  bool plastic = true;
   CoreState::set_trigger_gdb_when_crash(true);
   // Program prog(Arch::x86_64);
 
@@ -135,8 +136,17 @@ auto mpm3d = []() {
     For(p, particle_x(0), [&] {
       auto x = particle_x[p];
       auto v = particle_v[p];
-      // auto F = particle_F[p];
       auto C = particle_C[p];
+
+      Expr J;
+      Matrix F;
+      if (fluid) {
+        J = particle_J[p] * (1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2)));
+        particle_J[p] = J;
+      } else {
+        F = Eval((Matrix::identity(3) + dt * C) * particle_F[p]);
+        particle_F[p] = F;
+      }
 
       auto base_coord = floor(Expr(inv_dx) * x - Expr(0.5_f));
       auto fx = x * Expr(inv_dx) - base_coord;
@@ -147,26 +157,18 @@ auto mpm3d = []() {
 
       Matrix cauchy(3, 3);
       if (fluid) {
-        auto J = particle_J[p];
         cauchy = (J - 1.0_f) * Matrix::identity(3) * E;
       } else {
-        auto F = Eval(particle_F[p]);
         auto svd = sifakis_svd(F);
         auto R = std::get<0>(svd) * transposed(std::get<2>(svd));
         auto sig = std::get<1>(svd);
-        auto J = sig(0) * sig(1) * sig(2);
-        cauchy = 2.0_f * mu_0 * (F - R) * transposed(F) +
-                 (Matrix::identity(3) * lambda_0) * (J - 1.0f) * J;
+        J = sig(0) * sig(1) * sig(2);
+        cauchy = Eval(2.0_f * mu_0 * (F - R) * transposed(F) +
+                 (Matrix::identity(3) * lambda_0) * (J - 1.0f) * J);
       }
 
-      auto affine = Expr(particle_mass) * C;
-      Mutable(affine, DataType::f32);
-      for (int i = 0; i < dim; i++) {
-        for (int j = 0; j < dim; j++) {
-          affine(i, j) = affine(i, j) +
-                         Expr(-4 * inv_dx * inv_dx * dt * vol) * cauchy(i, j);
-        }
-      }
+      auto affine = Expr(particle_mass) * C +
+                    Expr(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
 
       // scatter
       for (int i = 0; i < 3; i++) {
@@ -271,14 +273,6 @@ auto mpm3d = []() {
         }
       }
 
-      if (fluid) {
-        auto J = particle_J[p];
-        J = J * (1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2)));
-        particle_J[p] = J;
-      } else {
-        auto F = Eval(particle_F[p]);
-        particle_F[p] = (Matrix::identity(3) + dt * C) * F;
-      }
       x = x + dt * v;
 
       particle_C[p] = C;
@@ -308,9 +302,8 @@ auto mpm3d = []() {
       particle_v(0).val<float32>(i) = 0._f;
       particle_v(1).val<float32>(i) = -0.3_f;
       particle_v(2).val<float32>(i) = 0._f;
-      if (fluid) {
-        particle_J.val<float32>(i) = 1_f;
-      } else {
+      particle_J.val<float32>(i) = 1_f;
+      if (!fluid) {
         for (int p = 0; p < dim; p++) {
           for (int q = 0; q < dim; q++) {
             particle_F(p, q).val<float32>(i) = (p == q);

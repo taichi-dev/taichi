@@ -5,6 +5,10 @@
 #include <Partio.h>
 #include <taichi/system/profiler.h>
 
+TLANG_NAMESPACE_BEGIN
+std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a);
+TLANG_NAMESPACE_END
+
 TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
@@ -29,15 +33,16 @@ void write_partio(std::vector<Vector3> positions,
 auto mpm3d = []() {
   bool benchmark_dragon = false;
   Program prog(Arch::gpu);
-  prog.config.print_ir = true;
+  //  prog.config.print_ir = true;
+  bool fluid = false;
+  CoreState::set_trigger_gdb_when_crash(true);
   // Program prog(Arch::x86_64);
 
   constexpr int n = 128;  // grid_resolution
   const real dt = 1e-4_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
-  auto E = 1e2_f;
-  // real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 *
-  // nu));
+  auto E = 1e3_f, nu = 0.3f;
+  real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
 
   int dim = 3;
 
@@ -55,9 +60,9 @@ auto mpm3d = []() {
 
   Global(Jp, f32);
 
-  int max_n_particles = 1024 * 1024;
+  int max_n_particles = 1024 * 1024 / 8;
 
-  int n_particles;
+  int n_particles = 0;
   std::vector<float> benchmark_particles(n_particles * 3);
   if (benchmark_dragon) {
     n_particles = 775196;
@@ -65,7 +70,7 @@ auto mpm3d = []() {
     std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f);
     std::fclose(f);
   } else {
-    n_particles = max_n_particles / 8;
+    n_particles = max_n_particles;
   }
 
   auto i = Index(0), j = Index(1), k = Index(2);
@@ -132,7 +137,6 @@ auto mpm3d = []() {
       auto v = particle_v[p];
       // auto F = particle_F[p];
       auto C = particle_C[p];
-      auto J = particle_J[p];
 
       auto base_coord = floor(Expr(inv_dx) * x - Expr(0.5_f));
       auto fx = x * Expr(inv_dx) - base_coord;
@@ -141,12 +145,27 @@ auto mpm3d = []() {
                     Eval(0.75_f - sqr(fx - 1.0_f)),
                     Eval(0.5_f * sqr(fx - 0.5_f))};
 
-      auto cauchy = Expr(E) * (J - Expr(1.0_f));
+      Matrix cauchy(3, 3);
+      if (fluid) {
+        auto J = particle_J[p];
+        cauchy = (J - 1.0_f) * Matrix::identity(3) * E;
+      } else {
+        auto F = Eval(particle_F[p]);
+        auto svd = sifakis_svd(F);
+        auto R = std::get<0>(svd) * transposed(std::get<2>(svd));
+        auto sig = std::get<1>(svd);
+        auto J = sig(0) * sig(1) * sig(2);
+        cauchy = 2.0_f * mu_0 * (F - R) * transposed(F) +
+                 (Matrix::identity(3) * lambda_0) * (J - 1.0f) * J;
+      }
+
       auto affine = Expr(particle_mass) * C;
       Mutable(affine, DataType::f32);
       for (int i = 0; i < dim; i++) {
-        affine(i, i) =
-            affine(i, i) + Expr(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
+        for (int j = 0; j < dim; j++) {
+          affine(i, j) = affine(i, j) +
+                         Expr(-4 * inv_dx * inv_dx * dt * vol) * cauchy(i, j);
+        }
       }
 
       // scatter
@@ -219,7 +238,6 @@ auto mpm3d = []() {
       // auto F = particle_F[p];
       auto C = Matrix(dim, dim);
       Mutable(C, DataType::f32);
-      auto J = particle_J[p];
 
       for (int i = 0; i < dim; i++) {
         v(i) = Expr(0.0_f);
@@ -253,16 +271,21 @@ auto mpm3d = []() {
         }
       }
 
-      J = J * (1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2)));
+      if (fluid) {
+        auto J = particle_J[p];
+        J = J * (1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2)));
+        particle_J[p] = J;
+      } else {
+        auto F = Eval(particle_F[p]);
+        particle_F[p] = (Matrix::identity(3) + dt * C) * F;
+      }
       x = x + dt * v;
 
       particle_C[p] = C;
       particle_v[p] = v;
-      particle_J[p] = J;
       particle_x[p] = x;
     });
   });
-  CoreState::set_trigger_gdb_when_crash(true);
 
   std::vector<int> index(n_particles);
   for (int i = 0; i < n_particles; i++) {
@@ -278,16 +301,21 @@ auto mpm3d = []() {
               benchmark_particles[dim * index[i] + d];
         }
       } else {
-        particle_x(0).val<float32>(i) = 0.3_f + rand() * 0.4_f;
+        particle_x(0).val<float32>(i) = 0.4_f + rand() * 0.2_f;
         particle_x(1).val<float32>(i) = 0.15_f + rand() * 0.75_f;
-        particle_x(2).val<float32>(i) = 0.3_f + rand() * 0.4_f;
+        particle_x(2).val<float32>(i) = 0.4_f + rand() * 0.2_f;
       }
       particle_v(0).val<float32>(i) = 0._f;
       particle_v(1).val<float32>(i) = -0.3_f;
       particle_v(2).val<float32>(i) = 0._f;
-      particle_J.val<float32>(i) = 1_f;
-      for (int d = 0; d < dim; d++) {
-        particle_F(d, d).val<float32>(i) = 0._f;
+      if (fluid) {
+        particle_J.val<float32>(i) = 1_f;
+      } else {
+        for (int p = 0; p < dim; p++) {
+          for (int q = 0; q < dim; q++) {
+            particle_F(p, q).val<float32>(i) = (p == q);
+          }
+        }
       }
     }
   };

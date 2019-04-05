@@ -181,6 +181,8 @@ struct Matrix {
     }
     return ret;
   }
+
+  static Matrix identity(int dim);
 };
 
 inline Matrix operator*(const Expr &A, const Matrix &B) {
@@ -379,5 +381,7 @@ inline Matrix Atomic(const Matrix &dest) {
 }
 
 void Mutable(Matrix &mat, DataType dt);
+
+Matrix transposed(const Matrix &m);
 
 TLANG_NAMESPACE_END

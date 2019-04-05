@@ -54,7 +54,16 @@ auto mpm3d = []() {
 
   Global(Jp, f32);
 
-  int n_particles = 1024 * 1024 / 8;
+  int max_n_particles = 1024 * 1024;
+
+
+  int n_particles = 775196;
+  std::vector<float> benchmark_particles(n_particles * 3);
+  {
+    auto f = fopen("dragon_particles.bin", "rb");
+    std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f);
+    std::fclose(f);
+  }
 
   auto i = Index(0), j = Index(1), k = Index(2);
   auto p = Index(3);
@@ -62,10 +71,10 @@ auto mpm3d = []() {
   layout([&]() {
     auto place = [&](Expr &expr) {
       if (particle_block_size == 1) {
-        root.dynamic(p, n_particles).place(expr);
+        root.dynamic(p, max_n_particles).place(expr);
       } else {
-        TC_ASSERT(n_particles % particle_block_size == 0);
-        root.dense(p, n_particles / particle_block_size)
+        TC_ASSERT(max_n_particles % particle_block_size == 0);
+        root.dense(p, max_n_particles / particle_block_size)
             .dense(p, particle_block_size)
             .place(expr);
       }
@@ -244,9 +253,14 @@ auto mpm3d = []() {
 
   auto reset = [&] {
     for (int i = 0; i < n_particles; i++) {
+      /*
       particle_x(0).val<float32>(i) = 0.3_f + rand() * 0.4_f;
       particle_x(1).val<float32>(i) = 0.15_f + rand() * 0.75_f;
       particle_x(2).val<float32>(i) = 0.3_f + rand() * 0.4_f;
+      */
+      for (int d = 0; d < dim; d++) {
+        particle_x(d).val<float32>(i) = benchmark_particles[dim * i + d];
+      }
       particle_v(0).val<float32>(i) = 0._f;
       particle_v(1).val<float32>(i) = -0.3_f;
       particle_v(2).val<float32>(i) = 0._f;
@@ -270,7 +284,7 @@ auto mpm3d = []() {
   int frame = 0;
   for (int f = 0;; f++) {
     TC_PROFILER("mpm 3d");
-    for (int t = 0; t < 200; t++) {
+    for (int t = 0; t < 20; t++) {
       TC_PROFILE("reset grid", clear_buffer());
       TC_PROFILE("p2g", p2g());
       TC_PROFILE("grid_op", grid_op());

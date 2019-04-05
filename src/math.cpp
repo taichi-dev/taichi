@@ -48,12 +48,28 @@ SNode &SNode::place(Matrix &mat) {
 Matrix transposed(const Matrix &A) {
   TC_ASSERT(A.m == A.n);
   Matrix ret(A.m, A.n);
-  for (int i = 0; i < A.m; i++) {
-    for (int j = 0; j < A.n; j++) {
+  for (int i = 0; i < A.n; i++) {
+    for (int j = 0; j < A.m; j++) {
       ret(i, j).set(A(j, i));
     }
   }
   return ret;
 }
+
+Matrix diag_matrix(const Matrix &A) {
+  TC_ASSERT(A.m == 1);
+  Matrix ret(A.n, A.n);
+  for (int i = 0; i < A.n; i++) {
+    for (int j = 0; j < A.n; j++) {
+      if (i == j) {
+        ret(i, j).set(A(i, 0));
+      } else {
+        ret(i, j) = Expr(0.0_f);
+      }
+    }
+  }
+  return ret;
+}
+
 
 TLANG_NAMESPACE_END

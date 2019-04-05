@@ -145,8 +145,8 @@ auto mpm3d = []() {
         particle_J[p] = J;
       } else {
         F = Eval((Matrix::identity(3) + dt * C) * particle_F[p]);
-        particle_F[p] = F;
       }
+      Mutable(F, DataType::f32);
 
       auto base_coord = floor(Expr(inv_dx) * x - Expr(0.5_f));
       auto fx = x * Expr(inv_dx) - base_coord;
@@ -162,9 +162,25 @@ auto mpm3d = []() {
         auto svd = sifakis_svd(F);
         auto R = std::get<0>(svd) * transposed(std::get<2>(svd));
         auto sig = std::get<1>(svd);
-        J = sig(0) * sig(1) * sig(2);
+        Mutable(sig, DataType::f32);
+        auto oldJ = sig(0) * sig(1) * sig(2);
+        if (plastic) {
+          for (int i = 0; i < dim; i++) {
+            sig(i) = clamp(sig(i), 1 - 2.5e-2f, 1 + 7.5e-3f);
+          }
+          auto newJ = sig(0) * sig(1) * sig(2);
+          // plastic J
+          auto Jp = particle_J[p] * newJ / oldJ;
+          particle_J[p] = Jp;
+          J = newJ;
+          F = std::get<0>(svd) * diag_matrix(sig) * transposed(std::get<2>(svd));
+          particle_F[p] = F;
+        } else {
+          J = oldJ;
+          particle_F[p] = F;
+        }
         cauchy = Eval(2.0_f * mu_0 * (F - R) * transposed(F) +
-                 (Matrix::identity(3) * lambda_0) * (J - 1.0f) * J);
+                      (Matrix::identity(3) * lambda_0) * (J - 1.0f) * J);
       }
 
       auto affine = Expr(particle_mass) * C +

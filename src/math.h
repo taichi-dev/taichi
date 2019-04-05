@@ -384,4 +384,6 @@ void Mutable(Matrix &mat, DataType dt);
 
 Matrix transposed(const Matrix &m);
 
+Matrix diag_matrix(const Matrix &m);
+
 TLANG_NAMESPACE_END

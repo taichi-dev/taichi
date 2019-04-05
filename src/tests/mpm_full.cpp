@@ -214,8 +214,6 @@ auto mpm3d = []() {
     });
   });
 
-  auto cmp_lt = [&](Expr a, Expr b) -> Expr { return a < b; };
-
   auto grid_op = kernel([&]() {
     Declare(i);
     Declare(j);
@@ -238,13 +236,13 @@ auto mpm3d = []() {
         v0 += dt * f;
       });
 
-      v0 = select((Expr(n - 5) < i), min(v0, Expr(0.0_f)), v0);
-      v1 = select((Expr(n - 5) < j), min(v1, Expr(0.0_f)), v1);
-      v2 = select((Expr(n - 5) < k), min(v2, Expr(0.0_f)), v2);
+      v0 = select(n - 5 < i, min(v0, Expr(0.0_f)), v0);
+      v1 = select(n - 5 < j, min(v1, Expr(0.0_f)), v1);
+      v2 = select(n - 5 < k, min(v2, Expr(0.0_f)), v2);
 
-      v0 = select(cmp_lt(i, Expr(5)), max(v0, Expr(0.0_f)), v0);
-      v1 = select(cmp_lt(j, Expr(5)), max(v1, Expr(0.0_f)), v1);
-      v2 = select(cmp_lt(k, Expr(5)), max(v2, Expr(0.0_f)), v2);
+      v0 = select(i < 5, max(v0, Expr(0.0_f)), v0);
+      v1 = select(j < 5, max(v1, Expr(0.0_f)), v1);
+      v2 = select(k < 5, max(v2, Expr(0.0_f)), v2);
 
       grid_v[i, j, k](0) = v0;
       grid_v[i, j, k](1) = v1;

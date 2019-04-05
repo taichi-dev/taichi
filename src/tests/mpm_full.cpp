@@ -31,10 +31,10 @@ auto mpm3d = []() {
   prog.config.print_ir = true;
   // Program prog(Arch::x86_64);
 
-  constexpr int n = 128;  // grid_resolution
+  constexpr int n = 256;  // grid_resolution
   const real dt = 1e-4_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
-  auto E = 1e3_f;
+  auto E = 1e2_f;
   // real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 *
   // nu));
 
@@ -42,7 +42,7 @@ auto mpm3d = []() {
 
   auto f32 = DataType::f32;
   int grid_block_size = 8;
-  int particle_block_size = 256;
+  int particle_block_size = 1;
 
   Vector particle_x(f32, dim), particle_v(f32, dim);
   Matrix particle_F(f32, dim, dim), particle_C(f32, dim, dim);
@@ -54,17 +54,21 @@ auto mpm3d = []() {
 
   Global(Jp, f32);
 
-  int n_particles = 1024 * 1024 / 8;
+  int n_particles = 1024 * 1024;
 
   auto i = Index(0), j = Index(1), k = Index(2);
   auto p = Index(3);
 
   layout([&]() {
-    TC_ASSERT(n_particles % particle_block_size == 0);
     auto place = [&](Expr &expr) {
-      root.dense(p, n_particles / particle_block_size)
-          .dense(p, particle_block_size)
-          .place(expr);
+      if (particle_block_size == 1) {
+        root.dynamic(p, n_particles).place(expr);
+      } else {
+        TC_ASSERT(n_particles % particle_block_size == 0);
+        root.dense(p, n_particles / particle_block_size)
+            .dense(p, particle_block_size)
+            .place(expr);
+      }
     };
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
@@ -261,7 +265,7 @@ auto mpm3d = []() {
   int frame = 0;
   for (int f = 0;; f++) {
     TC_PROFILER("mpm 3d");
-    for (int t = 0; t < 20; t++) {
+    for (int t = 0; t < 200; t++) {
       TC_PROFILE("reset grid", clear_buffer());
       TC_PROFILE("p2g", p2g());
       TC_PROFILE("grid_op", grid_op());

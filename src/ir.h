@@ -115,6 +115,7 @@ class DecoratorRecorder {
   int vectorize;
   int parallelize;
   int cache_level;
+  int block_size;
   bool uniform;
 
   DecoratorRecorder() {
@@ -126,6 +127,7 @@ class DecoratorRecorder {
     parallelize = 0;
     uniform = false;
     cache_level = -1;
+    block_size = 0;
   }
 };
 
@@ -1387,6 +1389,7 @@ class FrontendForStmt : public Stmt {
   int vectorize;
   int parallelize;
   int cache_level;
+  int block_size;
 
   bool is_ranged() const {
     if (global_var.expr == nullptr) {
@@ -1415,6 +1418,7 @@ class RangeForStmt : public Stmt {
   std::unique_ptr<Block> body;
   int vectorize;
   int parallelize;
+  int block_size;
 
   RangeForStmt(Stmt *loop_var,
                Stmt *begin,
@@ -1430,6 +1434,7 @@ class RangeForStmt : public Stmt {
         parallelize(parallelize) {
     add_operand(this->begin);
     add_operand(this->end);
+    block_size = 256;
   }
 
   bool is_container_statement() const override {
@@ -1448,6 +1453,7 @@ class StructForStmt : public Stmt {
   int vectorize;
   int parallelize;
   int cached_level;
+  int block_size;
 
   StructForStmt(std::vector<Stmt *> loop_vars,
                 SNode *snode,
@@ -1460,6 +1466,7 @@ class StructForStmt : public Stmt {
         vectorize(vectorize),
         parallelize(parallelize) {
     cached_level = -1;
+    block_size = 0;
   }
 
   bool is_container_statement() const override {
@@ -1650,6 +1657,10 @@ inline void Cache(int v) {
 
 inline void Uniform() {
   dec.uniform = true;
+}
+
+inline void BlockDim(int v) {
+  dec.block_size = v;
 }
 
 class PragmaSLPStmt : public Stmt {

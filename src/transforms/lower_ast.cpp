@@ -142,6 +142,7 @@ class LowerAST : public IRVisitor {
       auto &&new_for = std::make_unique<RangeForStmt>(
           stmt->parent->lookup_var(stmt->loop_var_id[0]), begin->stmt,
           end->stmt, std::move(stmt->body), stmt->vectorize, stmt->parallelize);
+      new_for->block_size = stmt->block_size;
       flattened.push_back(std::move(new_for));
     } else {
       std::vector<Stmt *> vars(stmt->loop_var_id.size());
@@ -152,6 +153,7 @@ class LowerAST : public IRVisitor {
           vars, stmt->global_var.cast<GlobalVariableExpression>()->snode,
           std::move(stmt->body), stmt->vectorize, stmt->parallelize);
       new_for->cached_level = stmt->cache_level;
+      new_for->block_size = stmt->block_size;
       flattened.push_back(std::move(new_for));
     }
     stmt->parent->replace_with(stmt, flattened);

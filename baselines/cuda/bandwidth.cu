@@ -10,7 +10,7 @@ double get_time() {
   return tv.tv_sec + 1e-6 * tv.tv_usec;
 }
 
-constexpr int m = 128;
+constexpr int m = 256;
 
 inline __device__ int indirect(int *c, int i) {
   // return c[c[i & 127] & 127] + i;
@@ -62,8 +62,15 @@ __global__ void fd(float *a, float *b, int *c, int n) {
   i += int(sin(i * 1e-20f));
   i += int(sin(i * 1e-20f));
   i += int(sin(i * 1e-20f));
-  //atomicAdd(b_s + (int(i)) % m, 1.0f);
-  b_s[i % m] = 1.0f;
+  i += int(sin(i * 1e-20f));
+  i += int(sin(i * 1e-20f));
+  i += int(sin(i * 1e-20f));
+  i += int(sin(i * 1e-20f));
+  i += int(sin(i * 1e-20f));
+  i += int(sin(i * 1e-20f));
+  for (int j = 0; j < 27; j++) {
+    atomicAdd(b_s + (unsigned int)(i/4 + j * 431) % (m / 1), 1.0f);
+  }
   __syncthreads();
 
   if (i < m) {

@@ -24,27 +24,30 @@ TC_TEST("snode") {
 }
 
 TC_TEST("snode_loop") {
-  Program prog(Arch::x86_64);
-  CoreState::set_trigger_gdb_when_crash(true);
-  prog.config.print_ir = true;
+  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+    Program prog(arch);
+    CoreState::set_trigger_gdb_when_crash(true);
+    prog.config.print_ir = true;
 
-  auto i = Index(0);
-  Global(u, i32);
+    auto i = Index(0);
+    Global(u, i32);
 
-  int n = 128;
+    int n = 8192;
 
-  // All data structure originates from a "root", which is a forked node.
-  prog.layout([&] { root.dense(i, n).place(u); });
+    // All data structure originates from a "root", which is a forked node.
+    prog.layout([&] { root.dense(i, n).place(u); });
 
-  auto set = kernel([&] {
-    Declare(i);
-    For(i, u, [&] { u[i] = i * 2; });
-  });
+    auto set = kernel([&] {
+      Declare(i);
+      BlockDim(256);
+      For(i, u, [&] { u[i] = i * 2; });
+    });
 
-  set();
+    set();
 
-  for (int i = 0; i < n; i++) {
-    TC_CHECK_EQUAL(u.val<int32>(i), i * 2, 0);
+    for (int i = 0; i < n; i++) {
+      TC_CHECK_EQUAL(u.val<int32>(i), i * 2, 0);
+    }
   }
 }
 

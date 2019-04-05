@@ -16,3 +16,4 @@ particles
 ms_output
 _tlang_cache
 __pycache__
+*.bin

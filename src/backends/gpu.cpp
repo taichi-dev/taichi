@@ -53,7 +53,11 @@ class GPUIRCodeGen : public IRVisitor {
 
       TC_ASSERT(begin == 0);
 
-      int block_size = 256;
+      int block_size = range_for->block_size;
+      if (block_size == 0) {
+        TC_WARN("Using default block size = 256");
+        block_size = 256;
+      }
       emit("gpu_runtime_init();");
       int num_blocks = (end - begin + block_size - 1) / block_size;
       emit("{}_kernel<<<{}, {}>>>(context);", codegen->func_name, num_blocks,
@@ -66,6 +70,12 @@ class GPUIRCodeGen : public IRVisitor {
       current_struct_for = for_stmt;
       auto leaf = for_stmt->snode->parent;
 
+      int block_division = 1;
+      if (for_stmt->block_size != 0) {
+        TC_ASSERT((1 << leaf->total_num_bits) % for_stmt->block_size == 0);
+        block_division = (1 << leaf->total_num_bits) / for_stmt->block_size;
+      }
+
       emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
       emit("auto root = ({} *)context.buffers[0];",
            codegen->prog->snode_root->node_type_name);
@@ -74,12 +84,16 @@ class GPUIRCodeGen : public IRVisitor {
            codegen->prog->snode_root->node_type_name);
       emit("auto num_leaves = context.num_leaves;",
            codegen->prog->snode_root->node_type_name);
-      emit("auto leaf_loop = blockIdx.x;",
-           codegen->prog->snode_root->node_type_name);
+      emit("auto leaf_loop = blockIdx.x / {};", block_division);
       emit("if (leaf_loop >= num_leaves) return;");
 
       loopgen.emit_load_from_context(leaf);
-      emit("auto {} = threadIdx.x;", loopgen.loop_variable(leaf));
+      emit("auto {} = blockDim.x * (blockIdx.x % {}) + threadIdx.x;",
+           loopgen.loop_variable(leaf), block_division);
+      if (leaf->type == SNodeType::dynamic) {
+        emit("if ({} > {}_cache.get_n()) return;", loopgen.loop_variable(leaf),
+             leaf->node_type_name);
+      }
       loopgen.update_indices(leaf);
       loopgen.emit_setup_loop_variables(for_stmt, leaf);
       for_stmt->body->accept(this);
@@ -111,8 +125,11 @@ class GPUIRCodeGen : public IRVisitor {
       // emit("printf(\"num leaves %d\\n\", context.num_leaves);");
       // allocate the vector...
 
-      emit("{}_kernel<<<context.num_leaves, {}().get_n()>>>(context);",
-           codegen->func_name, leaf->node_type_name);
+      emit(
+          "{}_kernel<<<context.num_leaves * {}, ({}().get_n() + {} - 1) / "
+          "{}>>>(context);",
+          codegen->func_name, block_division, leaf->node_type_name,
+          block_division, block_division);
 
       emit("cudaFree(context.leaves); context.leaves = nullptr;");
 

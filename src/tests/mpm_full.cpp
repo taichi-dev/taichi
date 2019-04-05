@@ -59,8 +59,6 @@ auto mpm3d = []() {
   Vector grid_v(f32, dim);
   Global(grid_m, f32);
 
-  Global(Jp, f32);
-
   int max_n_particles = 1024 * 1024 / 8;
 
   int n_particles = 0;
@@ -175,7 +173,8 @@ auto mpm3d = []() {
           auto Jp = particle_J[p] * oldJ / newJ;
           particle_J[p] = Jp;
           J = newJ;
-          F = std::get<0>(svd) * diag_matrix(sig) * transposed(std::get<2>(svd));
+          F = std::get<0>(svd) * diag_matrix(sig) *
+              transposed(std::get<2>(svd));
           particle_F[p] = F;
           /*
           auto harderning = exp((1.0f - Jp) * 10.0f);
@@ -224,7 +223,6 @@ auto mpm3d = []() {
       Local(v2) = grid_v[i, j, k](2);
       auto m = load(grid_m[i, j, k]);
 
-      // auto inv_m = Expr(1.0_f) / max(m, Expr(1e-20_f));
       If(m > 0.0f, [&]() {
         auto inv_m = Eval(1.0f / m);
         v0 *= inv_m;

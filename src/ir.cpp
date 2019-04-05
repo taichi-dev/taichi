@@ -55,7 +55,6 @@ ExpressionGroup ExpressionGroup::loaded() const {
   return indices_loaded;
 }
 
-
 template Expr cast<float32>(Expr);
 template Expr cast<int32>(Expr);
 

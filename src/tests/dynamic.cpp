@@ -199,4 +199,64 @@ TC_TEST("sort") {
   }
 };
 
+TC_TEST("dynamic_sort") {
+  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+    int n = 4;
+    Program prog(arch);
+
+    std::vector<int> particles(n * n);
+    std::vector<int> count(n * n, 0);
+
+    for (int i = 0; i < n * n; i++) {
+      particles[i] = rand_int() % (n * n);
+      count[particles[i]]++;
+    }
+
+    Global(c, i32);
+    Global(coord, i32);
+    Global(p, i32);
+    TC_P(particles);
+    layout([&]() {
+      auto i = Index(0);
+      auto j = Index(1);
+      root.dense(i, n * n).place(coord);
+      auto &fork = root.dense(i, n).pointer();
+      fork.dense(i, n).place(c);
+      fork.dynamic(j, n * n).place(p);
+    });
+
+    for (int i = 0; i < n * n; i++) {
+      coord.val<int32>(i) = particles[i];
+    }
+
+    auto sort = kernel([&]() {
+      Declare(i);
+      Declare(j);
+      For(i, 0, n * n, [&] {
+        Activate(p.snode(), coord[i]);
+        Append(p.parent().snode(), coord[i], i);
+      });
+    });
+
+    sort();
+
+    kernel([&]() {
+      Declare(i);
+      Declare(j);
+      For(i, p.parent(), [&] {
+        auto len = Eval(Probe(p.parent().snode(), i));
+        Print(len);
+        For(j, 0, len, [&] {
+          auto pos = coord[p[i, j]];
+          c[pos] += 1;
+        });
+      });
+    })();
+
+    for (int i = 0; i < n * n; i++) {
+      TC_CHECK(c.val<int>(i) == count[i]);
+    }
+  }
+};
+
 TLANG_NAMESPACE_END

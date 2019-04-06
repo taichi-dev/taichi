@@ -652,9 +652,9 @@ class Expr {
     return Expr(std::make_shared<T>(std::forward<Args>(args)...));
   }
 
-  Expr parent();
+  Expr parent() const;
 
-  SNode *snode();
+  SNode *snode() const;
 };
 
 class ExpressionGroup {

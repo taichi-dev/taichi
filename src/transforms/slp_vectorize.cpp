@@ -549,8 +549,9 @@ class SLPVectorize : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) override {
-    if (if_stmt->true_statements)
+    if (if_stmt->true_statements) {
       if_stmt->true_statements->accept(this);
+    }
     if (if_stmt->false_statements) {
       if_stmt->false_statements->accept(this);
     }

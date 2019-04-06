@@ -241,13 +241,13 @@ void *Expr::val_tmp(DataType dt, Indices... indices) {
   return evaluate_addr(ind[0], ind[1], ind[2], ind[3]);
 }
 
-Expr Expr::parent() {
+Expr Expr::parent() const {
   TC_ASSERT(is<GlobalVariableExpression>());
   return Expr::make<GlobalVariableExpression>(
       cast<GlobalVariableExpression>()->snode->parent);
 }
 
-SNode *Expr::snode() {
+SNode *Expr::snode() const {
   TC_ASSERT(is<GlobalVariableExpression>());
   return cast<GlobalVariableExpression>()->snode;
 }

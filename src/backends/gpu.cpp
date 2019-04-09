@@ -128,7 +128,7 @@ class GPUIRCodeGen : public IRVisitor {
           "int gridDim = context.num_leaves * {}, blockDim = ({}::get_max_n()"
           "+ {} - 1) / {};",
           block_division, leaf->node_type_name, block_division, block_division);
-      emit("printf(\"launching kernel <<<%d, %d>>>\\n\", gridDim, blockDim);");
+      // emit("printf(\"launching kernel <<<%d, %d>>>\\n\", gridDim, blockDim);");
 
       emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
 

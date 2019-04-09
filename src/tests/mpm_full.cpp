@@ -62,6 +62,9 @@ auto mpm3d = []() {
   Global(grid_m, f32);
 
   bool sorted = true;
+  if (sorted) {
+    TC_ASSERT(!fluid);
+  }
 
   int max_n_particles = 1024 * 1024 / 8;
 
@@ -73,7 +76,7 @@ auto mpm3d = []() {
     std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f);
     std::fclose(f);
   } else {
-    n_particles = max_n_particles / 8;
+    n_particles = max_n_particles;
   }
 
   auto i = Index(0), j = Index(1), k = Index(2);
@@ -248,6 +251,7 @@ auto mpm3d = []() {
     BlockDim(256);
     For((i, j, k, p_ptr), l, [&] {
       auto p = Eval(l[i, j, k, p_ptr]);
+      /*
       auto x = particle_x[p];
       Print(Probe(l.parent(), (i, j, k)));
       auto dx = x(0) * inv_dx - 0.5f - cast<float32>(i);
@@ -257,6 +261,86 @@ auto mpm3d = []() {
       auto min_d = min(dx, min(dy, dz));
       If(min_d < 0.0f, [&] { Print(min_d); });
       If(max_d > 1.0f * grid_block_size, [&] { Print(max_d); });
+      */
+
+      auto x = particle_x[p];
+      auto v = particle_v[p];
+      auto C = particle_C[p];
+
+      Expr J;
+      Matrix F;
+      if (fluid) {
+        J = particle_J[p] * (1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2)));
+        particle_J[p] = J;
+      } else {
+        F = Eval((Matrix::identity(3) + dt * C) * particle_F[p]);
+      }
+      Mutable(F, DataType::f32);
+
+      auto base_coord = floor(Expr(inv_dx) * x - Expr(0.5_f));
+      auto fx = x * Expr(inv_dx) - base_coord;
+
+      Vector w[] = {Eval(0.5_f * sqr(1.5_f - fx)),
+                    Eval(0.75_f - sqr(fx - 1.0_f)),
+                    Eval(0.5_f * sqr(fx - 0.5_f))};
+
+      Matrix cauchy(3, 3);
+      Local(mu) = mu_0;
+      Local(lambda) = lambda_0;
+      if (fluid) {
+        cauchy = (J - 1.0_f) * Matrix::identity(3) * E;
+      } else {
+        auto svd = sifakis_svd(F);
+        auto R = std::get<0>(svd) * transposed(std::get<2>(svd));
+        auto sig = std::get<1>(svd);
+        Mutable(sig, DataType::f32);
+        auto oldJ = sig(0) * sig(1) * sig(2);
+        if (plastic) {
+          for (int i = 0; i < dim; i++) {
+            sig(i) = clamp(sig(i), 1 - 2.5e-2f, 1 + 7.5e-3f);
+          }
+          auto newJ = sig(0) * sig(1) * sig(2);
+          // plastic J
+          auto Jp = particle_J[p] * oldJ / newJ;
+          particle_J[p] = Jp;
+          J = newJ;
+          F = std::get<0>(svd) * diag_matrix(sig) *
+              transposed(std::get<2>(svd));
+          particle_F[p] = F;
+          /*
+          auto harderning = exp((1.0f - Jp) * 10.0f);
+          mu *= harderning;
+          lambda *= harderning;
+          */
+        } else {
+          J = oldJ;
+          particle_F[p] = F;
+        }
+        cauchy = Eval(2.0_f * mu * (F - R) * transposed(F) +
+                      (Matrix::identity(3) * lambda) * (J - 1.0f) * J);
+      }
+
+      auto affine = Expr(particle_mass) * C +
+                    Expr(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
+
+      // scatter
+      for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+          for (int k = 0; k < 3; k++) {
+            auto dpos = Vector(dim);
+            dpos(0) = dx * ((i * 1.0_f) - fx(0));
+            dpos(1) = dx * ((j * 1.0_f) - fx(1));
+            dpos(2) = dx * ((k * 1.0_f) - fx(2));
+            auto weight = w[i](0) * w[j](1) * w[k](2);
+            auto node = (cast<int32>(base_coord(0)) + Expr(i),
+                         cast<int32>(base_coord(1)) + Expr(j),
+                         cast<int32>(base_coord(2)) + Expr(k));
+            Atomic(grid_v[node]) +=
+                weight * (Expr(particle_mass) * v + affine * dpos);
+            Atomic(grid_m[node]) += weight * Expr(particle_mass);
+          }
+        }
+      }
     });
   });
 

@@ -32,6 +32,7 @@ void write_partio(std::vector<Vector3> positions,
 
 auto mpm3d = []() {
   bool benchmark_dragon = false;
+  //Program prog(Arch::x86_64);
   Program prog(Arch::gpu);
   //  prog.config.print_ir = true;
   bool fluid = false;
@@ -60,7 +61,7 @@ auto mpm3d = []() {
   Vector grid_v(f32, dim);
   Global(grid_m, f32);
 
-  bool sorted = false;
+  bool sorted = true;
 
   int max_n_particles = 1024 * 1024 / 8;
 
@@ -72,7 +73,7 @@ auto mpm3d = []() {
     std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f);
     std::fclose(f);
   } else {
-    n_particles = max_n_particles;
+    n_particles = max_n_particles / 8;
   }
 
   auto i = Index(0), j = Index(1), k = Index(2);
@@ -112,6 +113,7 @@ auto mpm3d = []() {
     auto &block = root.dense({i, j, k}, n / grid_block_size);
     block.dense({i, j, k}, grid_block_size)
         .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
+
     block.dynamic(p, pow<dim>(grid_block_size) * 16).place(l);
 
     root.place(gravity_x);
@@ -221,15 +223,17 @@ auto mpm3d = []() {
     Declare(i);
     Declare(j);
     Declare(k);
-    For((i, j, k), l, [&] { Clear(l, (i, j, k)); });
+    BlockDim(256);
+    For((i, j, k), l.parent(), [&] { Clear(l.parent(), (i, j, k)); });
   });
 
   auto sort = kernel([&] {
     Declare(p);
+    BlockDim(256);
     For(p, particle_x(0), [&] {
-      auto node_coord = floor(particle_x * inv_dx - 0.5_f);
+      auto node_coord = floor(particle_x[p] * inv_dx - 0.5_f);
       Activate(l.parent(), (node_coord(0), node_coord(1), node_coord(2)));
-      Append(l, (node_coord(0), node_coord(1), node_coord(2)), p);
+      Append(l.parent(), (node_coord(0), node_coord(1), node_coord(2)), p);
     });
   });
 
@@ -237,8 +241,19 @@ auto mpm3d = []() {
     Declare(i);
     Declare(j);
     Declare(k);
-    For((i, j, k), l, [&] {
-
+    Declare(p_ptr);
+    BlockDim(256);
+    For((i, j, k, p_ptr), l, [&] {
+      auto p = Eval(l[i, j, k, p_ptr]);
+      auto x = particle_x[p];
+      Print(Probe(l.parent(), (i, j, k)));
+      auto dx = x(0) * inv_dx - 0.5f - cast<float32>(i);
+      auto dy = x(1) * inv_dx - 0.5f - cast<float32>(j);
+      auto dz = x(2) * inv_dx - 0.5f - cast<float32>(k);
+      auto max_d = max(dx, max(dy, dz));
+      auto min_d = min(dx, min(dy, dz));
+      If(min_d < 0.0f, [&] { Print(min_d); });
+      If(max_d > 1.0f * grid_block_size, [&] { Print(max_d); });
     });
   });
 

@@ -122,14 +122,15 @@ class GPUIRCodeGen : public IRVisitor {
       emit(
           "cudaMemcpy(context.leaves, leaves.data(), list_size, "
           "cudaMemcpyHostToDevice);");
-      // emit("printf(\"num leaves %d\\n\", context.num_leaves);");
       // allocate the vector...
 
       emit(
-          "{}_kernel<<<context.num_leaves * {}, ({}::get_max_n() + {} - 1) / "
-          "{}>>>(context);",
-          codegen->func_name, block_division, leaf->node_type_name,
-          block_division, block_division);
+          "int gridDim = context.num_leaves * {}, blockDim = ({}::get_max_n()"
+          "+ {} - 1) / {};",
+          block_division, leaf->node_type_name, block_division, block_division);
+      emit("printf(\"launching kernel <<<%d, %d>>>\\n\", gridDim, blockDim);");
+
+      emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
 
       emit("cudaFree(context.leaves); context.leaves = nullptr;");
 

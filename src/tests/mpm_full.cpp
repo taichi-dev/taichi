@@ -45,7 +45,7 @@ auto mpm3d = []() {
   auto E = 2e3_f, nu = 0.3f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
 
-  int dim = 3;
+  constexpr int dim = 3;
 
   auto f32 = DataType::f32;
   int grid_block_size = 8;
@@ -53,11 +53,14 @@ auto mpm3d = []() {
 
   Vector particle_x(f32, dim), particle_v(f32, dim);
   Matrix particle_F(f32, dim, dim), particle_C(f32, dim, dim);
+  Global(l, i32);
   Global(particle_J, f32);
   Global(gravity_x, f32);
 
   Vector grid_v(f32, dim);
   Global(grid_m, f32);
+
+  bool sorted = false;
 
   int max_n_particles = 1024 * 1024 / 8;
 
@@ -106,9 +109,10 @@ auto mpm3d = []() {
     place(particle_J);
 
     TC_ASSERT(n % grid_block_size == 0);
-    root.dense({i, j, k}, n / grid_block_size)
-        .dense({i, j, k}, grid_block_size)
+    auto &block = root.dense({i, j, k}, n / grid_block_size);
+    block.dense({i, j, k}, grid_block_size)
         .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
+    block.dynamic(p, pow<dim>(grid_block_size) * 16).place(l);
 
     root.place(gravity_x);
   });
@@ -127,7 +131,7 @@ auto mpm3d = []() {
     });
   });
 
-  auto p2g = kernel([&]() {
+  auto p2g_naive = kernel([&]() {
     Declare(p);
     if (particle_block_size == 1)
       BlockDim(256);
@@ -212,6 +216,41 @@ auto mpm3d = []() {
       }
     });
   });
+
+  auto clear_lists = kernel([&] {
+    Declare(i);
+    Declare(j);
+    Declare(k);
+    For((i, j, k), l, [&] { Clear(l, (i, j, k)); });
+  });
+
+  auto sort = kernel([&] {
+    Declare(p);
+    For(p, particle_x(0), [&] {
+      auto node_coord = floor(particle_x * inv_dx - 0.5_f);
+      Activate(l.parent(), (node_coord(0), node_coord(1), node_coord(2)));
+      Append(l, (node_coord(0), node_coord(1), node_coord(2)), p);
+    });
+  });
+
+  auto p2g_sorted = kernel([&] {
+    Declare(i);
+    Declare(j);
+    Declare(k);
+    For((i, j, k), l, [&] {
+
+    });
+  });
+
+  auto p2g = [&] {
+    if (sorted) {
+      clear_lists();
+      sort();
+      p2g_sorted();
+    } else {
+      p2g_naive();
+    }
+  };
 
   auto grid_op = kernel([&]() {
     Declare(i);

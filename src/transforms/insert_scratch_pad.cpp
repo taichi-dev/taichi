@@ -7,11 +7,12 @@ TLANG_NAMESPACE_BEGIN
 class AccessAnalysis : public IRVisitor {
  public:
   StructForStmt *for_stmt;
-  ScratchPads pads;
+  ScratchPads *pads;
 
   std::vector<std::vector<int>> block_indices;
 
-  AccessAnalysis(StructForStmt *for_stmt) : for_stmt(for_stmt) {
+  AccessAnalysis(StructForStmt *for_stmt, ScratchPads *pads)
+      : for_stmt(for_stmt) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
 
@@ -30,7 +31,7 @@ class AccessAnalysis : public IRVisitor {
       block->statements[i]->accept(this);
     }
 
-    pads.print();
+    pads->print();
   }
 
   void generate_block_indices(SNode *snode, std::vector<int> index, int s) {
@@ -84,8 +85,8 @@ class AccessAnalysis : public IRVisitor {
           for (int d = 0; d < num_indices; d++) {
             access_ind[d] += offsets[d];
           }
-          //TC_P(access_ind);
-          pads.access(snode, access_ind, ScratchPad::AccessFlag::read);
+          // TC_P(access_ind);
+          pads->access(snode, access_ind, ScratchPad::AccessFlag::read);
         }
       }
     }
@@ -106,7 +107,8 @@ class AccessAnalysis : public IRVisitor {
 
 class InsertScratchPad : public IRVisitor {
  public:
-  InsertScratchPad(IRNode *node) {
+  std::unique_ptr<ScratchPads> pads;
+  InsertScratchPad(StructForStmt *node) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     node->accept(this);
@@ -138,17 +140,22 @@ class InsertScratchPad : public IRVisitor {
     // do the work here...
     TC_P(for_stmt->cached_level);
     if (for_stmt->cached_level != -1) {
-      AccessAnalysis _(for_stmt);
+      AccessAnalysis _(for_stmt, pads.get());
       // WeakenAccess _(for_stmt);
     }
     for_stmt->body->accept(this);
+  }
+
+  std::unique_ptr<ScratchPads> get() {
+    return std::move(pads);
   }
 };
 
 namespace irpass {
 
-void insert_scratch_pad(IRNode *root) {
+std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root) {
   InsertScratchPad _(root);
+  return _.get();
 }
 
 }  // namespace irpass

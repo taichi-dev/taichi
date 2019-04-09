@@ -1,5 +1,6 @@
 #include "gpu.h"
 #include "loop_gen.h"
+#include "../scratch_pad.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -91,12 +92,44 @@ class GPUIRCodeGen : public IRVisitor {
            loopgen.loop_variable(leaf),
            (1 << leaf->total_num_bits) / block_division, block_division);
       if (leaf->type == SNodeType::dynamic) {
-        emit("if ({} >= {}_cache->get_n()) return;", loopgen.loop_variable(leaf),
-             leaf->node_type_name);
+        emit("if ({} >= {}_cache->get_n()) return;",
+             loopgen.loop_variable(leaf), leaf->node_type_name);
       }
       loopgen.update_indices(leaf);
       loopgen.emit_setup_loop_variables(for_stmt, leaf);
+
+      std::unique_ptr<ScratchPads> scratch_pads =
+          irpass::initialize_scratch_pad(for_stmt);
+
+      for (auto &pad : scratch_pads->pads) {
+        emit("__shared__ {} {}[{}];", pad.first->node_type_name,
+             pad.second.name(), pad.second.linear_size());
+        TC_ASSERT(!pad.second.has_write() && !pad.second.has_read());
+        if (pad.second.has_write()) {
+          emit("if (flat_index < {}) {{", pad.second.linear_size());
+          // load from global if read
+          auto addr = fmt::format();
+          emit("{}[flat_index] = *{}", pad.second., addr);
+        } else {
+
+        }
+        emit("}}");
+      }
+
       for_stmt->body->accept(this);
+
+      for (auto &pad : scratch_pads->pads) {
+        if (pad.second.has_write()) {
+          emit("if (flat_index < {}) {{", pad.second.linear_size());
+          // load from global if read
+          for (int i = 0; i < dim; i++) {
+
+          }
+          auto addr = fmt::format("access{}_{}");
+          emit("*{} = {}[flat_index];", addr, pad.second.name());
+          emit("}}");
+        }
+      }
 
       emit("}}");
 
@@ -128,7 +161,8 @@ class GPUIRCodeGen : public IRVisitor {
           "int gridDim = context.num_leaves * {}, blockDim = ({}::get_max_n()"
           "+ {} - 1) / {};",
           block_division, leaf->node_type_name, block_division, block_division);
-      // emit("printf(\"launching kernel <<<%d, %d>>>\\n\", gridDim, blockDim);");
+      // emit("printf(\"launching kernel <<<%d, %d>>>\\n\", gridDim,
+      // blockDim);");
 
       emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
 

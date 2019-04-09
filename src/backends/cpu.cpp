@@ -401,7 +401,7 @@ void CPUCodeGen::lower() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
-  irpass::insert_scratch_pad(ir);
+  // irpass::initialize_scratch_pad(ir);
   if (prog->config.print_ir) {
     irpass::re_id(ir);
     irpass::print(ir);

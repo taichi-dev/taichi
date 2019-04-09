@@ -3,19 +3,38 @@
 
 TLANG_NAMESPACE_BEGIN
 
+enum AccessFlag : unsigned int { read = 1 << 1, write = 1 << 2 };
+
+inline AccessFlag operator|(AccessFlag a, AccessFlag b) {
+  return static_cast<AccessFlag>(static_cast<unsigned>(a) |
+                                 static_cast<unsigned>(b));
+}
+
+inline AccessFlag operator&(AccessFlag a, AccessFlag b) {
+  return static_cast<AccessFlag>(static_cast<unsigned>(a) &
+                                 static_cast<unsigned>(b));
+}
+
+inline AccessFlag operator|=(AccessFlag &a, AccessFlag &b) {
+  a = a | b;
+  return a;
+}
+
 class ScratchPad {
  public:
-  enum AccessFlag : int { read = 1 << 1, write = 1 << 2 };
-
   SNode *snode;
+  using AccessFlag = taichi::Tlang::AccessFlag;
 
   std::vector<int> bounds[2];
   std::vector<int> pad_size;
   std::vector<int> block_size;
+  bool finalized;
   int dim;
   bool empty;
 
+  AccessFlag total_flags;
   std::vector<AccessFlag> flags;
+  std::vector<std::pair<std::vector<int>, AccessFlag>> accesses;
 
   ScratchPad() = default;
 
@@ -25,6 +44,10 @@ class ScratchPad {
     bounds[1].resize(dim);
     pad_size.resize(dim);
 
+    finalized = false;
+
+    total_flags = AccessFlag(0);
+    flags = std::vector<AccessFlag>(linear_size(), AccessFlag(0));
     std::fill(bounds[0].begin(), bounds[0].end(),
               std::numeric_limits<int>::max());
     std::fill(bounds[1].begin(), bounds[1].end(),
@@ -33,6 +56,7 @@ class ScratchPad {
   }
 
   void access(const std::vector<int> &indices, AccessFlag flags) {
+    TC_ASSERT(!finalized);
     empty = true;
     TC_ASSERT(indices.size() == dim);
     for (int i = 0; i < dim; i++) {
@@ -40,9 +64,10 @@ class ScratchPad {
       bounds[1][i] = std::max(bounds[1][i], indices[i] + 1);
       pad_size[i] = bounds[1][i] - bounds[0][i];
     }
+    accesses.push_back(std::make_pair(indices, flags));
   }
 
-  void compile() {
+  void finalize() {
     int size = 1;
     for (int i = 0; i < dim; i++) {
       size *= pad_size[i];
@@ -57,6 +82,12 @@ class ScratchPad {
     TC_ASSERT(dim == 1);
     for (int i = 0; i < pad_size[0]; i++) {
     }
+    finalized = true;
+
+    for (auto &acc : accesses) {
+      total_flags |= acc.second;
+      flags[linearized_index(acc.first)] |= acc.second;
+    }
   }
 
   void codegen_cpu() {
@@ -66,7 +97,16 @@ class ScratchPad {
     return snode->node_type_name + "_scratch_pad";
   }
 
+  bool has_write() {
+    return total_flags & AccessFlag::write;
+  }
+
+  bool has_read() {
+    return total_flags & AccessFlag::read;
+  }
+
   int linear_size() {
+    TC_ASSERT(finalized);
     int s = 1;
     for (int i = 0; i < dim; i++) {
       s *= pad_size[i];
@@ -74,13 +114,25 @@ class ScratchPad {
     return s;
   }
 
-  std::string initialize() {
-    return fmt::format("{} {}[{}];", snode->node_type_name, name(),
-                       linear_size());
+  int linearized_index(const std::vector<int> &indices) {
+    int ret = 0;
+    TC_ASSERT(finalized);
+    for (int i = 0; i < dim; i++) {
+      ret *= (bounds[1][i] - bounds[0][i]);
+      ret += indices[i] - bounds[0][i];
+    }
+    return ret;
   }
 
-  std::string finalize() {
+  /*
+  std::string array_dimensions_str() const {
+    std::string ret = "";
+    for (int i = 0; i < dim; i++) {
+      ret += fmt::format("[{}]", bounds[1][i] - bounds[0][i]);
+    }
+    return ret;
   }
+   */
 };
 
 inline int div_floor(int a, int b) {
@@ -111,9 +163,9 @@ class ScratchPads {
     }
   }
 
-  void compile() {
+  void finalize() {
     for (auto &pad : pads) {
-      pad.second.compile();
+      pad.second.finalize();
     }
   }
 

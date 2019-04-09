@@ -58,6 +58,7 @@ class ElementShuffleStmt;
 
 // Pragma statements
 class PragmaSLPStmt;
+class ScratchPads;
 
 // IR passes
 namespace irpass {
@@ -71,7 +72,7 @@ void loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
 void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
-void insert_scratch_pad(IRNode *root);
+std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 
 }  // namespace irpass
 

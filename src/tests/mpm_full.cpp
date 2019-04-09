@@ -32,7 +32,7 @@ void write_partio(std::vector<Vector3> positions,
 
 auto mpm3d = []() {
   bool benchmark_dragon = false;
-  //Program prog(Arch::x86_64);
+  // Program prog(Arch::x86_64);
   Program prog(Arch::gpu);
   //  prog.config.print_ir = true;
   bool fluid = false;
@@ -233,7 +233,10 @@ auto mpm3d = []() {
     For(p, particle_x(0), [&] {
       auto node_coord = floor(particle_x[p] * inv_dx - 0.5_f);
       Activate(l.parent(), (node_coord(0), node_coord(1), node_coord(2)));
-      Append(l.parent(), (node_coord(0), node_coord(1), node_coord(2)), p);
+      Append(l.parent(),
+             (cast<int32>(node_coord(0)), cast<int32>(node_coord(1)),
+              cast<int32>(node_coord(2))),
+             p);
     });
   });
 

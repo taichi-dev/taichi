@@ -91,7 +91,7 @@ class GPUIRCodeGen : public IRVisitor {
            loopgen.loop_variable(leaf),
            (1 << leaf->total_num_bits) / block_division, block_division);
       if (leaf->type == SNodeType::dynamic) {
-        emit("if ({} > {}_cache->get_n()) return;", loopgen.loop_variable(leaf),
+        emit("if ({} >= {}_cache->get_n()) return;", loopgen.loop_variable(leaf),
              leaf->node_type_name);
       }
       loopgen.update_indices(leaf);

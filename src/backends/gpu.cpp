@@ -310,8 +310,18 @@ class GPUIRCodeGen : public IRVisitor {
     TC_ASSERT(stmt->val->ret_type.data_type == DataType::f32 ||
               stmt->val->ret_type.data_type == DataType::i32);
     TC_ASSERT(stmt->op_type == AtomicType::add);
-    emit("atomicAdd({}[0], {});", stmt->dest->raw_name(),
-         stmt->val->raw_name());
+    auto ptr = stmt->dest->as<GlobalPtrStmt>();
+    auto snode = ptr->snodes[0];
+    if (current_scratch_pads && current_scratch_pads->has(snode)) {
+      auto &pad = current_scratch_pads->get(snode);
+      emit("atomicAdd({}[{}], {});", pad.name(),
+           pad.global_to_linearized_local(current_struct_for->loop_vars,
+                                          ptr->indices),
+           stmt->val->raw_name());
+    } else {
+      emit("atomicAdd({}[0], {});", stmt->dest->raw_name(),
+           stmt->val->raw_name());
+    }
   }
 
   void visit(IfStmt *if_stmt) {

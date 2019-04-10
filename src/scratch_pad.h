@@ -145,6 +145,7 @@ class ScratchPad {
   }
    */
 
+
   std::string global_to_linearized_local(const std::vector<Stmt *> &loop_vars,
                                          const std::vector<Stmt *> &indices) {
     std::string ret = "";
@@ -228,6 +229,10 @@ class ScratchPads {
       TC_P(it.second.bounds[0]);
       TC_P(it.second.bounds[1]);
     }
+  }
+
+  bool has(SNode *snode) {
+    return pads.find(snode) != pads.end();
   }
 
   ScratchPad &get(SNode *snode) {

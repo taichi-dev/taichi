@@ -121,14 +121,20 @@ class GPUIRCodeGen : public IRVisitor {
                pad.second.name(), pad.second.linear_size());
           TC_ASSERT(!pad.second.has_write() || !pad.second.has_read());
           if (pad.second.has_write()) {
-            emit("if (flat_index < {}) {{", pad.second.linear_size());
-            // load from global if read
-            emit("{}[flat_index] = *{}", pad.second.name(),
-                 access_global(pad.first));
-            emit("}}");
           } else {
+            // read case
+            emit("{{");
+            emit("int flat_index = threadIdx.x;");
+            emit("while (flat_index < {}) {{", pad.second.linear_size());
+            // load from global if read
+            emit("{}[flat_index] = *{};", pad.second.name(),
+                 access_global(pad.first));
+            emit("flat_index += blockDim.x;");
+            emit("}}");
+            emit("}}");
           }
         }
+        emit("__syncthreads();");
       }
 
       for_stmt->body->accept(this);

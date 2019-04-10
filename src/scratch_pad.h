@@ -132,7 +132,7 @@ class ScratchPad {
       div *= pad_size[i];
     }
     return fmt::format("({} / {} % {} + {})", var, div, pad_size[d],
-                       bounds[0][dim]);
+                       bounds[0][d]);
   }
 
   /*

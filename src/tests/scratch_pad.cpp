@@ -98,7 +98,7 @@ TC_TEST("scratch_pad_3d") {
             TC_P(k);
           }
           TC_CHECK_EQUAL(gt, y.val<float32>(i, j, k),
-                         1.0f / domain_size / domain_size);
+                         1e-1f / domain_size / domain_size);
         }
       }
     }

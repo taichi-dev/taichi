@@ -3,7 +3,11 @@
 
 TLANG_NAMESPACE_BEGIN
 
-enum AccessFlag : unsigned int { read = 1 << 1, write = 1 << 2 };
+enum AccessFlag : unsigned int {
+  read = 1 << 1,
+  write = 1 << 2,
+  accumulate = 1 << 3
+};
 
 inline AccessFlag operator|(AccessFlag a, AccessFlag b) {
   return static_cast<AccessFlag>(static_cast<unsigned>(a) |
@@ -99,12 +103,8 @@ class ScratchPad {
     return snode->node_type_name + "_scratch_pad";
   }
 
-  bool has_write() {
-    return total_flags & AccessFlag::write;
-  }
-
-  bool has_read() {
-    return total_flags & AccessFlag::read;
+  bool is_pure() const {
+    return bit::is_power_of_two((unsigned)total_flags);
   }
 
   int linear_size() {

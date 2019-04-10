@@ -116,24 +116,33 @@ class GPUIRCodeGen : public IRVisitor {
                            "(root, " + make_list(indices, "") + ")");
       };
 
+      auto for_every_element = [&](SNode *snode, ScratchPad &pad,
+                                   std::string statement) {
+        emit("{{");
+        emit("int flat_index = threadIdx.x;");
+        emit("while (flat_index < {}) {{", pad.linear_size());
+        emit(statement);
+        emit("flat_index += blockDim.x;");
+        emit("}}");
+        emit("}}");
+      };
+
       if (for_stmt->cached_level != -1) {
         scratch_pads = irpass::initialize_scratch_pad(for_stmt);
         for (auto &pad : scratch_pads->pads) {
           emit("__shared__ {} {}[{}];", pad.first->node_type_name,
                pad.second.name(), pad.second.linear_size());
-          TC_ASSERT(!pad.second.has_write() || !pad.second.has_read());
-          if (pad.second.has_write()) {
-          } else {
-            // read case
-            emit("{{");
-            emit("int flat_index = threadIdx.x;");
-            emit("while (flat_index < {}) {{", pad.second.linear_size());
+          TC_ASSERT(pad.second.is_pure());
+          if (pad.second.total_flags == AccessFlag::read ||
+              pad.second.total_flags == AccessFlag::accumulate) {
+            // read & accumulate case
             // load from global if read
-            emit("{}[flat_index] = *{};", pad.second.name(),
-                 access_global(pad.first));
-            emit("flat_index += blockDim.x;");
-            emit("}}");
-            emit("}}");
+            std::string source = pad.second.total_flags == AccessFlag::read
+                                     ? "*" + access_global(pad.first)
+                                     : "0";
+            auto statement =
+                fmt::format("{}[flat_index] = {};", pad.second.name(), source);
+            for_every_element(pad.first, pad.second, statement);
           }
         }
         emit("__syncthreads();");
@@ -144,13 +153,19 @@ class GPUIRCodeGen : public IRVisitor {
       current_scratch_pads = nullptr;
 
       if (for_stmt->cached_level != -1) {
+        emit("__syncthreads();");
         for (auto &pad : scratch_pads->pads) {
-          if (pad.second.has_write()) {
-            emit("if (flat_index < {}) {{", pad.second.linear_size());
-            // load from global if read
-            emit("*{} = {}[flat_index];", access_global(pad.first),
-                 pad.second.name());
-            emit("}}");
+          if (pad.second.total_flags == AccessFlag::write ||
+              pad.second.total_flags == AccessFlag::accumulate) {
+            std::string source = access_global(pad.first);
+            std::string statement;
+            if (pad.second.total_flags == AccessFlag::accumulate)
+              statement = fmt::format("atomicAdd({}, {}[flat_index]);", source,
+                                      pad.second.name());
+            else
+              statement = fmt::format("*{} = {}[flat_index];", source,
+                                      pad.second.name());
+            for_every_element(pad.first, pad.second, statement);
           }
         }
       }
@@ -458,8 +473,19 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    emit("*({} *){}[{}] = {};", data_type_name(stmt->data->ret_type.data_type),
-         stmt->ptr->raw_name(), 0, stmt->data->raw_name());
+    if (current_scratch_pads) {
+      auto ptr = stmt->ptr->as<GlobalPtrStmt>();
+      auto snode = ptr->snodes[0];
+      auto &pad = current_scratch_pads->get(snode);
+      emit("{}[{}] = {};", pad.name(),
+           pad.global_to_linearized_local(current_struct_for->loop_vars,
+                                          ptr->indices),
+           stmt->data->raw_name());
+    } else {
+      emit("*({} *){}[{}] = {};",
+           data_type_name(stmt->data->ret_type.data_type),
+           stmt->ptr->raw_name(), 0, stmt->data->raw_name());
+    }
   }
 
   void visit(GlobalLoadStmt *stmt) {

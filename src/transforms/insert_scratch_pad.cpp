@@ -55,12 +55,9 @@ class AccessAnalysis : public IRVisitor {
   void visit(GlobalPtrStmt *stmt) override {
   }
 
-  // Do not eliminate global data access
-  void visit(GlobalLoadStmt *stmt) override {
-    TC_ASSERT(stmt->width() == 1);  // TODO: support vectorization
+  void access(Stmt *stmt, AccessFlag flag) {
+    auto ptr = stmt->as<GlobalPtrStmt>();
     for (int l = 0; l < stmt->width(); l++) {
-      auto ptr_ = stmt->ptr;
-      auto ptr = ptr_->as<GlobalPtrStmt>();
       auto snode = ptr->snodes[l];
       bool matching_indices = true;
       std::vector<int> offsets;  // TODO: change to offset_ranges
@@ -86,18 +83,27 @@ class AccessAnalysis : public IRVisitor {
             access_ind[d] += offsets[d];
           }
           // TC_P(access_ind);
-          pads->access(snode, access_ind, ScratchPad::AccessFlag::read);
+          pads->access(snode, access_ind, flag);
         }
       }
     }
   }
 
+  // Do not eliminate global data access
+  void visit(GlobalLoadStmt *stmt) override {
+    TC_ASSERT(stmt->width() == 1);  // TODO: support vectorization
+    access(stmt->ptr, AccessFlag::read);
+  }
+
   void visit(GlobalStoreStmt *stmt) override {
-    return;
+    TC_ASSERT(stmt->width() == 1);  // TODO: support vectorization
+    access(stmt->ptr, AccessFlag::write);
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    return;
+    if (stmt->op_type == AtomicType::add) {
+      access(stmt->val, AccessFlag::accumulate);
+    }
   }
 
   void visit(Stmt *stmt) override {

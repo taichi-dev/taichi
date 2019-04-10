@@ -2,10 +2,19 @@
 
 TLANG_NAMESPACE_BEGIN
 
+DiffRange operator+(const DiffRange &a, const DiffRange &b) {
+  return DiffRange(a.related && b.related, a.low + b.low, a.high + b.high - 1);
+}
+
+DiffRange operator-(const DiffRange &a, const DiffRange &b) {
+  return DiffRange(a.related && b.related, a.low - b.high + 1,
+                   a.high - b.low);
+}
+
 class ValueDiff : public IRVisitor {
  public:
   // first: related, second: offset
-  using ret_type = std::pair<bool, int>;
+  using ret_type = DiffRange;
   int lane;
   Stmt *input_stmt, *alloc;
   std::map<int, ret_type> results;
@@ -16,15 +25,15 @@ class ValueDiff : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) override {
     if (stmt->ptr[lane].var == alloc) {
-      results[stmt->instance_id] = {true, 0};
+      results[stmt->instance_id] = DiffRange(true, 0);
     }
   }
 
   void visit(ConstStmt *stmt) override {
     if (stmt->val[lane].dt == DataType::i32) {
-      results[stmt->instance_id] = {true, stmt->val[lane].val_i32};
+      results[stmt->instance_id] = DiffRange(true, stmt->val[lane].val_i32);
     } else {
-      results[stmt->instance_id] = {false, 0};
+      results[stmt->instance_id] = DiffRange(false);
     }
   }
 
@@ -35,11 +44,11 @@ class ValueDiff : public IRVisitor {
         stmt->rhs->accept(this);
         auto ret1 = results[stmt->lhs->instance_id];
         auto ret2 = results[stmt->rhs->instance_id];
-        if (ret1.first && ret2.first) {
+        if (ret1.related && ret2.related) {
           if (stmt->op_type == BinaryType::add) {
-            results[stmt->instance_id] = {true, ret1.second + ret2.second};
+            results[stmt->instance_id] = ret1 + ret2;
           } else {
-            results[stmt->instance_id] = {true, ret1.second - ret2.second};
+            results[stmt->instance_id] = ret1 - ret2;
           }
           return;
         }
@@ -56,7 +65,7 @@ class ValueDiff : public IRVisitor {
 
 namespace analysis {
 
-std::pair<bool, int> value_diff(Stmt *stmt, int lane, Stmt *alloca) {
+DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca) {
   ValueDiff _(stmt, lane, alloca);
   return _.run();
 }

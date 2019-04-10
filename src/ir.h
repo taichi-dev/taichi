@@ -7,11 +7,40 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class DiffRange {
+ public:
+  bool related;
+  int low, high;
+
+  DiffRange() : DiffRange(false) {
+  }
+
+  DiffRange(bool related) : DiffRange(related, 0, 0) {
+    TC_ASSERT(related == false);
+  }
+
+  DiffRange(bool related, int low) : DiffRange(related, low, low + 1) {
+  }
+
+  DiffRange(bool related, int low, int high)
+      : related(related), low(low), high(high) {
+    if (!related) {
+      this->low = this->high = 0;
+    }
+  }
+
+  bool certain() {
+    TC_ASSERT(related);
+    return high == low + 1;
+  }
+};
+
 class IRBuilder;
 class IRNode;
 class Block;
 class Stmt;
 using pStmt = std::unique_ptr<Stmt>;
+class DiffRange;
 
 class SNode;
 class Expression;
@@ -79,7 +108,7 @@ std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 
 // Analysis
 namespace analysis {
-std::pair<bool, int> value_diff(Stmt *stmt, int lane, Stmt *alloca);
+DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
 }
 
 IRBuilder &current_ast_builder();

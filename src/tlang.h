@@ -200,6 +200,13 @@ inline Expr Probe(const Expr &expr, const ExpressionGroup &indices) {
   return Probe(expr.snode(), indices);
 }
 
+inline Expr AssumeInRange(const Expr &expr,
+                          const Expr &base,
+                          int low,
+                          int high) {
+  return Expr::make<RangeAssumptionExpression>(expr, base, low, high);
+}
+
 TLANG_NAMESPACE_END
 
 TC_NAMESPACE_BEGIN

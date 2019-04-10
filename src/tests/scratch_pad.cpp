@@ -4,6 +4,36 @@
 
 TLANG_NAMESPACE_BEGIN
 
+TC_TEST("range_assumption") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  Program prog(Arch::gpu);
+  prog.config.print_ir = true;
+
+  Global(x, f32);
+  Global(y, f32);
+
+  int domain_size = 256;
+  int block_size = 8;
+
+  auto i = Indices(0);
+  layout([&]() {
+    root.dense(i, domain_size / block_size)
+        // .pointer()
+        .dense(i, block_size)
+        .place(x, y);
+  });
+
+  // Initialize
+  kernel([&]() {
+    Declare(i);
+    BlockDim(1);
+    For(i, 0, domain_size, [&] {
+      auto j = AssumeInRange(i + cast<int32>(i % 3 - 1), i, -1, 2);
+      Print(j);
+    });
+  })();
+};
+
 TC_TEST("scratch_pad_3d") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 10000000;

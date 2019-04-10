@@ -269,6 +269,12 @@ class IRPrinter : public IRVisitor {
             return fmt::format("{}[{}]", ve.stmt->name(), ve.index);
           }));
   }
+
+  void visit(RangeAssumptionStmt *stmt) override {
+    print("{}{} = assume_in_range({}{:+d} <= {} < {}{:+d})", stmt->type_hint(),
+          stmt->name(), stmt->base->name(), stmt->low, stmt->input->name(),
+          stmt->base->name(), stmt->high);
+  }
 };
 
 namespace irpass {

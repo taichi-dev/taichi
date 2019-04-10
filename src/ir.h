@@ -50,6 +50,7 @@ class GlobalLoadStmt;
 class GlobalStoreStmt;
 class LocalStoreStmt;
 class SNodeOpStmt;
+class RangeAssumptionStmt;
 
 // With per-lane attributes
 class LocalLoadStmt;
@@ -317,6 +318,7 @@ class IRVisitor {
   DEFINE_VISIT(WhileStmt);
   DEFINE_VISIT(WhileControlStmt);
   DEFINE_VISIT(RandStmt);
+  DEFINE_VISIT(RangeAssumptionStmt);
 
   DEFINE_VISIT(PragmaSLPStmt);
   DEFINE_VISIT(ElementShuffleStmt);
@@ -1135,10 +1137,7 @@ class FrontendSNodeOpStmt : public Stmt {
                       SNode *snode,
                       ExpressionGroup indices,
                       Expr val = Expr(nullptr))
-      : op_type(op_type),
-        snode(snode),
-        indices(indices.loaded()),
-        val(val) {
+      : op_type(op_type), snode(snode), indices(indices.loaded()), val(val) {
     if (val.expr != nullptr) {
       TC_ASSERT(op_type == SNodeOpType::append);
       this->val.set(load_if_ptr(val));
@@ -1176,6 +1175,21 @@ class SNodeOpStmt : public Stmt {
     }
     width() = snodes.size();
     element_type() = snodes[0]->dt;
+  }
+
+  DEFINE_ACCEPT
+};
+
+class RangeAssumptionStmt : public Stmt {
+ public:
+  Stmt *input;
+  Stmt *base;
+  int low, high;
+
+  RangeAssumptionStmt(Stmt *input, Stmt *base, int low, int high)
+      : input(input), base(base), low(low), high(high) {
+    add_operand(input);
+    add_operand(base);
   }
 
   DEFINE_ACCEPT
@@ -1538,6 +1552,33 @@ class EvalExpression : public Expression {
 
   void flatten(VecStatement &ret) override {
     stmt = stmt_ptr;
+  }
+};
+
+class RangeAssumptionExpression : public Expression {
+ public:
+  Expr input, base;
+  int low, high;
+
+  RangeAssumptionExpression(const Expr &input,
+                            const Expr &base,
+                            int low,
+                            int high)
+      : input(input), base(base), low(low), high(high) {
+  }
+
+  std::string serialize() override {
+    return fmt::format("assume_in_range({}{:+d} <= ({}) < {}{:+d})",
+                       base.serialize(), low, input.serialize(),
+                       base.serialize(), high);
+  }
+
+  void flatten(VecStatement &ret) override {
+    input->flatten(ret);
+    base->flatten(ret);
+    ret.push_back(
+        Stmt::make<RangeAssumptionStmt>(input->stmt, base->stmt, low, high));
+    stmt = ret.back().get();
   }
 };
 

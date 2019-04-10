@@ -323,18 +323,21 @@ auto mpm3d = []() {
       auto affine = Expr(particle_mass) * C +
                     Expr(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
 
+      auto base_coord_i = cast<int32>(base_coord(0));
+      auto base_coord_j = cast<int32>(base_coord(1));
+      auto base_coord_k = cast<int32>(base_coord(2));
+
       // scatter
-      for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-          for (int k = 0; k < 3; k++) {
+      for (int a = 0; a < 3; a++) {
+        for (int b = 0; b < 3; b++) {
+          for (int c = 0; c < 3; c++) {
             auto dpos = Vector(dim);
-            dpos(0) = dx * ((i * 1.0_f) - fx(0));
-            dpos(1) = dx * ((j * 1.0_f) - fx(1));
-            dpos(2) = dx * ((k * 1.0_f) - fx(2));
-            auto weight = w[i](0) * w[j](1) * w[k](2);
-            auto node = (cast<int32>(base_coord(0)) + Expr(i),
-                         cast<int32>(base_coord(1)) + Expr(j),
-                         cast<int32>(base_coord(2)) + Expr(k));
+            dpos(0) = dx * ((a * 1.0_f) - fx(0));
+            dpos(1) = dx * ((b * 1.0_f) - fx(1));
+            dpos(2) = dx * ((c * 1.0_f) - fx(2));
+            auto weight = w[a](0) * w[b](1) * w[c](2);
+            auto node = (base_coord_i + Expr(a), base_coord_j + Expr(b),
+                         base_coord_k + Expr(c));
             Atomic(grid_v[node]) +=
                 weight * (Expr(particle_mass) * v + affine * dpos);
             Atomic(grid_m[node]) += weight * Expr(particle_mass);
@@ -415,18 +418,22 @@ auto mpm3d = []() {
                     Eval(0.75_f - sqr(fx - 1.0_f)),
                     Eval(0.5_f * sqr(fx - 0.5_f))};
 
+      auto base_i = cast<int32>(base_coord(0));
+      auto base_j = cast<int32>(base_coord(1));
+      auto base_k = cast<int32>(base_coord(2));
+
       // scatter
-      for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-          for (int k = 0; k < 3; k++) {
+      for (int p = 0; p < 3; p++) {
+        for (int q = 0; q < 3; q++) {
+          for (int r = 0; r < 3; r++) {
             auto dpos = Vector(dim);
-            dpos(0) = Expr(i * 1.0_f) - fx(0);
-            dpos(1) = Expr(j * 1.0_f) - fx(1);
-            dpos(2) = Expr(k * 1.0_f) - fx(2);
-            auto weight = w[i](0) * w[j](1) * w[k](2);
-            auto wv = weight * grid_v[cast<int32>(base_coord(0)) + Expr(i),
-                                      cast<int32>(base_coord(1)) + Expr(j),
-                                      cast<int32>(base_coord(2)) + Expr(k)];
+            dpos(0) = Expr(p * 1.0_f) - fx(0);
+            dpos(1) = Expr(q * 1.0_f) - fx(1);
+            dpos(2) = Expr(r * 1.0_f) - fx(2);
+            auto weight = w[p](0) * w[q](1) * w[r](2);
+            auto wv =
+                weight *
+                grid_v[base_i + Expr(p), base_j + Expr(q), base_k + Expr(r)];
             v = v + wv;
             C = C + Expr(4 * inv_dx) * outer_product(wv, dpos);
           }

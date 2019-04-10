@@ -145,6 +145,11 @@ class TypeCheck : public IRVisitor {
     stmt->element_type() = stmt->elements[0].stmt->element_type();
   }
 
+  void visit(RangeAssumptionStmt *stmt) {
+    TC_ASSERT(stmt->input->ret_type == stmt->base->ret_type);
+    stmt->ret_type = stmt->input->ret_type;
+  }
+
   static void run(IRNode *node) {
     TypeCheck inst;
     node->accept(&inst);

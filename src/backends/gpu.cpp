@@ -521,6 +521,10 @@ class GPUIRCodeGen : public IRVisitor {
              },
              "{"));
   }
+
+  void visit(RangeAssumptionStmt *stmt) {
+    emit("const auto {} = {};", stmt->raw_name(), stmt->input->raw_name());
+  }
 };
 
 void GPUCodeGen::lower() {

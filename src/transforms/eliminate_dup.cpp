@@ -259,6 +259,10 @@ class BasicBlockEliminate : public IRVisitor {
   void visit(WhileControlStmt *stmt) override {
     return;
   }
+
+  void visit(RangeAssumptionStmt *stmt) override {
+    return;
+  }
 };
 
 class EliminateDup : public IRVisitor {

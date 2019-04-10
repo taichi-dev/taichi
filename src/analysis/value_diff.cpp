@@ -22,6 +22,10 @@ class ValueDiff : public IRVisitor {
       : lane(lane), input_stmt(stmt), alloc(alloc) {
   }
 
+  void visit(GlobalLoadStmt *stmt) override {
+    results[stmt->instance_id] = DiffRange(false);
+  }
+
   void visit(LocalLoadStmt *stmt) override {
     if (stmt->ptr[lane].var == alloc) {
       results[stmt->instance_id] = DiffRange(true, 0);
@@ -37,6 +41,7 @@ class ValueDiff : public IRVisitor {
   }
 
   void visit(RangeAssumptionStmt *stmt) override {
+    stmt->base->accept(this);
     results[stmt->instance_id] = results[stmt->base->instance_id] +
                                  DiffRange(true, stmt->low, stmt->high);
   }

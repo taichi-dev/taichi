@@ -68,7 +68,7 @@ class ScratchPad {
       bounds[1][i] = std::max(bounds[1][i], indices[i] + 1);
       pad_size[i] = bounds[1][i] - bounds[0][i];
     }
-    accesses.push_back(std::make_pair(indices, flags));
+    accesses.emplace_back(indices, flags);
   }
 
   void finalize() {
@@ -82,11 +82,10 @@ class ScratchPad {
     for (int i = 0; i < dim; i++) {
       block_size[i] =
           1 << snode->extractors[snode->physical_index_position[i]].num_bits;
+      TC_ASSERT(bounds[0][i] != std::numeric_limits<int>::max());
+      TC_ASSERT(bounds[1][i] != std::numeric_limits<int>::min());
     }
 
-    // TC_ASSERT(dim == 1);
-    for (int i = 0; i < pad_size[0]; i++) {
-    }
     finalized = true;
     flags = std::vector<AccessFlag>(linear_size(), AccessFlag(0));
 

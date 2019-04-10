@@ -16,14 +16,7 @@ class AccessAnalysis : public IRVisitor {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
 
-    generate_block_indices(for_stmt->snode->parent, {}, 0);
-
-    /*
-    TC_P(block_indices.size());
-    for (int i = 0; i < block_indices.size(); i++) {
-      TC_P(block_indices[i]);
-    }
-    */
+    generate_block_indices(for_stmt->scratch_opt[0].second->parent, {}, 0);
 
     const auto &block = for_stmt->body;
 
@@ -60,14 +53,15 @@ class AccessAnalysis : public IRVisitor {
     for (int l = 0; l < stmt->width(); l++) {
       auto snode = ptr->snodes[l];
       bool matching_indices = true;
-      std::vector<int> offsets;  // TODO: change to offset_ranges
+      std::vector<std::pair<int, int>> offsets;
       offsets.resize(ptr->indices.size());
       int num_indices = (int)ptr->indices.size();
       for (int i = 0; i < num_indices; i++) {
         auto diff =
             analysis::value_diff(ptr->indices[i], l, for_stmt->loop_vars[i]);
-        if (diff.related && diff.certain()) {
-          offsets[i] = diff.low;
+        if (diff.related) {
+          offsets[i].first = diff.low;
+          offsets[i].second = diff.high;
         } else {
           matching_indices = false;
         }
@@ -78,12 +72,22 @@ class AccessAnalysis : public IRVisitor {
           TC_P(offsets[i]);
         }
         for (const auto &bind : block_indices) {
-          auto access_ind = bind;
-          for (int d = 0; d < num_indices; d++) {
-            access_ind[d] += offsets[d];
-          }
-          // TC_P(access_ind);
-          pads->access(snode, access_ind, flag);
+          TC_P(bind);
+          std::function<void(std::vector<int>, int)> visit =
+              [&](std::vector<int> ind, int depth) {
+                if (depth == num_indices) {
+                  pads->access(snode, ind, flag);
+                  TC_P(snode->node_type_name);
+                  TC_P(ind);
+                  return;
+                }
+                for (int i = offsets[depth].first; i < offsets[depth].second;
+                     i++) {
+                  ind[depth] = bind[depth] + i;
+                  visit(ind, depth + 1);
+                }
+              };
+          visit(bind, 0);
         }
       }
     }
@@ -147,7 +151,7 @@ class InsertScratchPad : public IRVisitor {
   void visit(StructForStmt *for_stmt) override {
     // do the work here...
     if (!for_stmt->scratch_opt.empty()) {
-      for (auto &opt: for_stmt->scratch_opt) {
+      for (auto &opt : for_stmt->scratch_opt) {
         pads->insert(opt.second);
       }
       AccessAnalysis _(for_stmt, pads.get());

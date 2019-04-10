@@ -250,12 +250,10 @@ auto mpm3d = []() {
     Declare(p_ptr);
     BlockDim(256);
 
-    /*
     Cache(0, grid_v(0));
     Cache(0, grid_v(1));
     Cache(0, grid_v(2));
     Cache(0, grid_m);
-    */
     For((i, j, k, p_ptr), l, [&] {
       auto p = Eval(l[i, j, k, p_ptr]);
       /*
@@ -330,9 +328,10 @@ auto mpm3d = []() {
       auto affine = Expr(particle_mass) * C +
                     Expr(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
 
-      auto base_coord_i = cast<int32>(base_coord(0));
-      auto base_coord_j = cast<int32>(base_coord(1));
-      auto base_coord_k = cast<int32>(base_coord(2));
+      int low = 0, high = 1;//grid_block_size;
+      auto base_coord_i = AssumeInRange(cast<int32>(base_coord(0)), i, low, high);
+      auto base_coord_j = AssumeInRange(cast<int32>(base_coord(1)), j, low, high);
+      auto base_coord_k = AssumeInRange(cast<int32>(base_coord(2)), k, low, high);
 
       // scatter
       for (int a = 0; a < 3; a++) {

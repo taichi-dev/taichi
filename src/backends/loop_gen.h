@@ -83,10 +83,10 @@ class LoopGenerator {
       }
       std::string addition = "0";
       if (snode->extractors[i].num_bits) {
-        addition = fmt::format(
-            "((({} >> {}) & ((1 << {}) - 1)) << {})", l,
-            snode->extractors[i].acc_offset,
-            snode->extractors[i].num_bits, snode->extractors[i].start);
+        addition = fmt::format("((({} >> {}) & ((1 << {}) - 1)) << {})", l,
+                               snode->extractors[i].acc_offset,
+                               snode->extractors[i].num_bits,
+                               snode->extractors[i].start);
       }
       emit("int {} = {};", index_name_local(snode, i), addition);
       emit("int {} = {} {};", index_name_global(snode, i), ancester,
@@ -127,13 +127,17 @@ class LoopGenerator {
   void emit_setup_loop_variables(StructForStmt *for_stmt, SNode *leaf) {
     for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
       for (int j = 0; j < max_num_indices; j++) {
-        if (for_stmt->snode->physical_index_position[i] == j)
+        if (for_stmt->snode->physical_index_position[i] == j) {
           emit("auto {} = {};", for_stmt->loop_vars[i]->raw_name(),
                index_name_global(leaf, j));
+          if (leaf->parent) {
+            emit("auto {}_base = {};", for_stmt->loop_vars[i]->raw_name(),
+                 index_name_global(leaf->parent, j));
+          }
+        }
       }
     }
   }
-
 };
 
 TLANG_NAMESPACE_END

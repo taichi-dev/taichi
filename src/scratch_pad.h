@@ -144,6 +144,20 @@ class ScratchPad {
     return ret;
   }
    */
+
+  std::string global_to_linearized_local(const std::vector<Stmt *> &loop_vars,
+                                         const std::vector<Stmt *> &indices) {
+    std::string ret = "";
+    TC_ASSERT(indices.size() == dim);
+    int step_size = linear_size();
+    for (int i = 0; i < indices.size(); i++) {
+      TC_ASSERT(step_size % pad_size[i] == 0);
+      step_size /= pad_size[i];
+      ret += fmt::format(" + ({} - {}_base - {}) * {}", indices[i]->raw_name(),
+                         loop_vars[i]->raw_name(), bounds[0][i], step_size);
+    }
+    return ret;
+  }
 };
 
 inline int div_floor(int a, int b) {
@@ -158,7 +172,6 @@ class ScratchPads {
 
   void access(SNode *snode, const std::vector<int> &indices, AccessFlag flags) {
     TC_ASSERT(snode != nullptr);
-    TC_P(pads.size());
     if (pads.find(snode) == pads.end()) {
       pads.emplace(std::piecewise_construct, std::forward_as_tuple(snode),
                    std::forward_as_tuple(snode));
@@ -215,6 +228,11 @@ class ScratchPads {
       TC_P(it.second.bounds[0]);
       TC_P(it.second.bounds[1]);
     }
+  }
+
+  ScratchPad &get(SNode *snode) {
+    TC_ASSERT(pads.find(snode) != pads.end());
+    return pads[snode];
   }
 };
 

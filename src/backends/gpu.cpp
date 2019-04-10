@@ -7,12 +7,14 @@ TLANG_NAMESPACE_BEGIN
 class GPUIRCodeGen : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
+  ScratchPads *current_scratch_pads;
   GPUCodeGen *codegen;
   LoopGenerator loopgen;
   bool first_level = false;
 
   GPUIRCodeGen(GPUCodeGen *codegen) : codegen(codegen), loopgen(codegen) {
     current_struct_for = nullptr;
+    current_scratch_pads = nullptr;
   }
 
   template <typename... Args>
@@ -106,7 +108,7 @@ class GPUIRCodeGen : public IRVisitor {
           if (snode->physical_index_position[i] != -1) {
             auto var = for_stmt->loop_vars[i]->raw_name();
             indices[snode->physical_index_position[i]] =
-                var + " + " +
+                var + "_base " + " + " +
                 (*scratch_pads).pads[snode].extract_offset("flat_index", i);
           }
         }
@@ -137,7 +139,9 @@ class GPUIRCodeGen : public IRVisitor {
         emit("__syncthreads();");
       }
 
+      current_scratch_pads = scratch_pads.get();
       for_stmt->body->accept(this);
+      current_scratch_pads = nullptr;
 
       if (for_stmt->cached_level != -1) {
         for (auto &pad : scratch_pads->pads) {
@@ -454,18 +458,23 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    if (!current_program->config.force_vectorized_global_store) {
-      emit("*({} *){}[{}] = {};",
-           data_type_name(stmt->data->ret_type.data_type),
-           stmt->ptr->raw_name(), 0, stmt->data->raw_name());
-    } else {
-      emit("{}.store({});", stmt->data->raw_name(), stmt->ptr->raw_name());
-    }
+    emit("*({} *){}[{}] = {};", data_type_name(stmt->data->ret_type.data_type),
+         stmt->ptr->raw_name(), 0, stmt->data->raw_name());
   }
 
   void visit(GlobalLoadStmt *stmt) {
     TC_ASSERT(stmt->width() == 1);
-    emit("const auto {} = *({}[0]);", stmt->raw_name(), stmt->ptr->raw_name());
+    if (current_scratch_pads) {
+      auto ptr = stmt->ptr->as<GlobalPtrStmt>();
+      auto snode = ptr->snodes[0];
+      auto &pad = current_scratch_pads->get(snode);
+      emit("const auto {} = {}[{}];", stmt->raw_name(), pad.name(),
+           pad.global_to_linearized_local(current_struct_for->loop_vars,
+                                          ptr->indices));
+    } else {
+      emit("const auto {} = *({}[0]);", stmt->raw_name(),
+           stmt->ptr->raw_name());
+    }
   }
 
   void visit(ElementShuffleStmt *stmt) {

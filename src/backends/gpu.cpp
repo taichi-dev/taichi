@@ -98,36 +98,50 @@ class GPUIRCodeGen : public IRVisitor {
       loopgen.update_indices(leaf);
       loopgen.emit_setup_loop_variables(for_stmt, leaf);
 
-      std::unique_ptr<ScratchPads> scratch_pads =
-          irpass::initialize_scratch_pad(for_stmt);
+      std::unique_ptr<ScratchPads> scratch_pads;
 
-      for (auto &pad : scratch_pads->pads) {
-        emit("__shared__ {} {}[{}];", pad.first->node_type_name,
-             pad.second.name(), pad.second.linear_size());
-        TC_ASSERT(!pad.second.has_write() && !pad.second.has_read());
-        if (pad.second.has_write()) {
-          emit("if (flat_index < {}) {{", pad.second.linear_size());
-          // load from global if read
-          auto addr = fmt::format();
-          emit("{}[flat_index] = *{}", pad.second., addr);
-        } else {
-
+      auto access_global = [&](SNode *snode) -> std::string {
+        std::vector<std::string> indices(max_num_indices, "0");
+        for (int i = 0; i < for_stmt->loop_vars.size(); i++) {
+          if (snode->physical_index_position[i] != -1) {
+            auto var = for_stmt->loop_vars[i]->raw_name();
+            indices[snode->physical_index_position[i]] =
+                var + " + " +
+                (*scratch_pads).pads[snode].extract_offset("flat_index", i);
+          }
         }
-        emit("}}");
+        return fmt::format("access_{}{}", snode->node_type_name,
+                           "(root, " + make_list(indices, "") + ")");
+      };
+
+      if (for_stmt->cached_level != -1) {
+        scratch_pads = irpass::initialize_scratch_pad(for_stmt);
+        for (auto &pad : scratch_pads->pads) {
+          emit("__shared__ {} {}[{}];", pad.first->node_type_name,
+               pad.second.name(), pad.second.linear_size());
+          TC_ASSERT(!pad.second.has_write() || !pad.second.has_read());
+          if (pad.second.has_write()) {
+            emit("if (flat_index < {}) {{", pad.second.linear_size());
+            // load from global if read
+            emit("{}[flat_index] = *{}", pad.second.name(),
+                 access_global(pad.first));
+            emit("}}");
+          } else {
+          }
+        }
       }
 
       for_stmt->body->accept(this);
 
-      for (auto &pad : scratch_pads->pads) {
-        if (pad.second.has_write()) {
-          emit("if (flat_index < {}) {{", pad.second.linear_size());
-          // load from global if read
-          for (int i = 0; i < dim; i++) {
-
+      if (for_stmt->cached_level != -1) {
+        for (auto &pad : scratch_pads->pads) {
+          if (pad.second.has_write()) {
+            emit("if (flat_index < {}) {{", pad.second.linear_size());
+            // load from global if read
+            emit("*{} = {}[flat_index];", access_global(pad.first),
+                 pad.second.name());
+            emit("}}");
           }
-          auto addr = fmt::format("access{}_{}");
-          emit("*{} = {}[flat_index];", addr, pad.second.name());
-          emit("}}");
         }
       }
 

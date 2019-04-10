@@ -38,7 +38,8 @@ class ScratchPad {
 
   ScratchPad() = default;
 
-  ScratchPad(SNode *snode) {
+  ScratchPad(SNode *snode) : snode(snode) {
+    TC_ASSERT(snode != nullptr);
     dim = snode->num_active_indices;
     bounds[0].resize(dim);
     bounds[1].resize(dim);
@@ -47,7 +48,6 @@ class ScratchPad {
     finalized = false;
 
     total_flags = AccessFlag(0);
-    flags = std::vector<AccessFlag>(linear_size(), AccessFlag(0));
     std::fill(bounds[0].begin(), bounds[0].end(),
               std::numeric_limits<int>::max());
     std::fill(bounds[1].begin(), bounds[1].end(),
@@ -74,15 +74,17 @@ class ScratchPad {
     }
     flags.resize(size);
 
+    block_size.resize(dim);
     for (int i = 0; i < dim; i++) {
       block_size[i] =
           1 << snode->extractors[snode->physical_index_position[i]].num_bits;
     }
 
-    TC_ASSERT(dim == 1);
+    // TC_ASSERT(dim == 1);
     for (int i = 0; i < pad_size[0]; i++) {
     }
     finalized = true;
+    flags = std::vector<AccessFlag>(linear_size(), AccessFlag(0));
 
     for (auto &acc : accesses) {
       total_flags |= acc.second;
@@ -124,6 +126,15 @@ class ScratchPad {
     return ret;
   }
 
+  std::string extract_offset(std::string var, int d) const {
+    auto div = 1;
+    for (int i = d + 1; i < dim; i++) {
+      div *= pad_size[i];
+    }
+    return fmt::format("({} / {} % {} + {})", var, div, pad_size[d],
+                       bounds[0][dim]);
+  }
+
   /*
   std::string array_dimensions_str() const {
     std::string ret = "";
@@ -146,11 +157,14 @@ class ScratchPads {
   using AccessFlag = ScratchPad::AccessFlag;
 
   void access(SNode *snode, const std::vector<int> &indices, AccessFlag flags) {
+    TC_ASSERT(snode != nullptr);
+    TC_P(pads.size());
     if (pads.find(snode) == pads.end()) {
       pads.emplace(std::piecewise_construct, std::forward_as_tuple(snode),
                    std::forward_as_tuple(snode));
     }
     pads.find(snode)->second.access(indices, flags);
+    /*
     if (snode->parent->type != SNodeType::root) {
       auto parent_indices = indices;
       for (int i = 0; i < snode->parent->num_active_indices; i++) {
@@ -161,6 +175,7 @@ class ScratchPads {
       }
       access(snode->parent, parent_indices, flags);
     }
+    */
   }
 
   void finalize() {

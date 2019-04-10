@@ -34,7 +34,7 @@ TC_TEST("scratch_pad_3d") {
   auto x_val = [&](int i, int j, int k) {
     auto d = dist_imm(i, j, k);
     if (0.43f < d && d < 0.47f) {
-      return 1000.0f / d;
+      return d * d * d;
     } else {
       return 0.0f;
     }
@@ -59,7 +59,7 @@ TC_TEST("scratch_pad_3d") {
           auto d = Eval(dist(i, j, k));
           If(0.43f < d && d < 0.47f, [&] {
             Activate(x, (i, j, k));
-            x[i, j, k] = 1000.0f / d;
+            x[i, j, k] = d * d * d;
           });
         });
       });
@@ -97,7 +97,8 @@ TC_TEST("scratch_pad_3d") {
             TC_P(j);
             TC_P(k);
           }
-          TC_CHECK(gt == y.val<float32>(i, j, k));
+          TC_CHECK_EQUAL(gt, y.val<float32>(i, j, k),
+                         1.0f / domain_size / domain_size);
         }
       }
     }

@@ -12,7 +12,7 @@ class AccessAnalysis : public IRVisitor {
   std::vector<std::vector<int>> block_indices;
 
   AccessAnalysis(StructForStmt *for_stmt, ScratchPads *pads)
-      : for_stmt(for_stmt) {
+      : for_stmt(for_stmt), pads(pads) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
 
@@ -109,9 +109,11 @@ class InsertScratchPad : public IRVisitor {
  public:
   std::unique_ptr<ScratchPads> pads;
   InsertScratchPad(StructForStmt *node) {
+    pads = std::make_unique<ScratchPads>();
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     node->accept(this);
+    pads->finalize();
   }
 
   void visit(Block *block) override {
@@ -138,7 +140,6 @@ class InsertScratchPad : public IRVisitor {
 
   void visit(StructForStmt *for_stmt) override {
     // do the work here...
-    TC_P(for_stmt->cached_level);
     if (for_stmt->cached_level != -1) {
       AccessAnalysis _(for_stmt, pads.get());
       // WeakenAccess _(for_stmt);

@@ -146,7 +146,10 @@ class InsertScratchPad : public IRVisitor {
 
   void visit(StructForStmt *for_stmt) override {
     // do the work here...
-    if (for_stmt->cached_level != -1) {
+    if (!for_stmt->scratch_opt.empty()) {
+      for (auto &opt: for_stmt->scratch_opt) {
+        pads->insert(opt.second);
+      }
       AccessAnalysis _(for_stmt, pads.get());
       // WeakenAccess _(for_stmt);
     }

@@ -145,7 +145,6 @@ class ScratchPad {
   }
    */
 
-
   std::string global_to_linearized_local(const std::vector<Stmt *> &loop_vars,
                                          const std::vector<Stmt *> &indices) {
     std::string ret = "";
@@ -171,12 +170,19 @@ class ScratchPads {
 
   using AccessFlag = ScratchPad::AccessFlag;
 
-  void access(SNode *snode, const std::vector<int> &indices, AccessFlag flags) {
-    TC_ASSERT(snode != nullptr);
+  void insert(SNode *snode) {
     if (pads.find(snode) == pads.end()) {
       pads.emplace(std::piecewise_construct, std::forward_as_tuple(snode),
                    std::forward_as_tuple(snode));
+    } else {
+      TC_ERROR("ScratchPad for {} already exists.", snode->node_type_name);
     }
+  }
+
+  void access(SNode *snode, const std::vector<int> &indices, AccessFlag flags) {
+    TC_ASSERT(snode != nullptr);
+    if (pads.find(snode) == pads.end())
+      return;
     pads.find(snode)->second.access(indices, flags);
     /*
     if (snode->parent->type != SNodeType::root) {

@@ -43,6 +43,7 @@ using pStmt = std::unique_ptr<Stmt>;
 class DiffRange;
 
 class SNode;
+using ScratchPadOptions = std::vector<std::pair<int, SNode *>>;
 class Expression;
 class Expr;
 class ExpressionGroup;
@@ -145,7 +146,7 @@ class DecoratorRecorder {
  public:
   int vectorize;
   int parallelize;
-  int cache_level;
+  ScratchPadOptions scratch_opt;
   int block_size;
   bool uniform;
 
@@ -157,7 +158,7 @@ class DecoratorRecorder {
     vectorize = -1;
     parallelize = 0;
     uniform = false;
-    cache_level = -1;
+    scratch_opt.clear();
     block_size = 0;
   }
 };
@@ -1434,7 +1435,7 @@ class FrontendForStmt : public Stmt {
   std::vector<Ident> loop_var_id;
   int vectorize;
   int parallelize;
-  int cache_level;
+  ScratchPadOptions scratch_opt;
   int block_size;
 
   bool is_ranged() const {
@@ -1498,8 +1499,8 @@ class StructForStmt : public Stmt {
   std::unique_ptr<Block> body;
   int vectorize;
   int parallelize;
-  int cached_level;
   int block_size;
+  ScratchPadOptions scratch_opt;
 
   StructForStmt(std::vector<Stmt *> loop_vars,
                 SNode *snode,
@@ -1511,7 +1512,6 @@ class StructForStmt : public Stmt {
         body(std::move(body)),
         vectorize(vectorize),
         parallelize(parallelize) {
-    cached_level = -1;
     block_size = 0;
   }
 
@@ -1724,8 +1724,8 @@ inline void Parallelize(int v) {
   dec.parallelize = v;
 }
 
-inline void Cache(int v) {
-  dec.cache_level = v;
+inline void Cache(int v, const Expr &var) {
+  dec.scratch_opt.push_back(std::make_pair(v, var.snode()));
 }
 
 inline void Uniform() {

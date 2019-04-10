@@ -149,6 +149,7 @@ FrontendForStmt::FrontendForStmt(ExpressionGroup loop_var, Expr begin, Expr end)
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;
   block_size = dec.block_size;
+  scratch_opt = dec.scratch_opt;
   dec.reset();
   if (vectorize == -1)
     vectorize = 1;
@@ -162,7 +163,7 @@ FrontendForStmt::FrontendForStmt(ExpressionGroup loop_var, Expr global_var)
     : global_var(global_var) {
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;
-  cache_level = dec.cache_level;
+  scratch_opt = dec.scratch_opt;
   block_size = dec.block_size;
   dec.reset();
   if (vectorize == -1)

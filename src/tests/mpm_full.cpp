@@ -249,6 +249,13 @@ auto mpm3d = []() {
     Declare(k);
     Declare(p_ptr);
     BlockDim(256);
+
+    /*
+    Cache(0, grid_v(0));
+    Cache(0, grid_v(1));
+    Cache(0, grid_v(2));
+    Cache(0, grid_m);
+    */
     For((i, j, k, p_ptr), l, [&] {
       auto p = Eval(l[i, j, k, p_ptr]);
       /*

@@ -100,7 +100,8 @@ TC_TEST("scratch_pad_3d") {
     Declare(i);
     Declare(j);
     Declare(k);
-    Cache(0);
+    Cache(0, x);
+    Cache(0, y);
     For((i, j, k), x, [&]() {
       y[i, j, k] = 6.0f * x[i, j, k] - x[i, j, k - 1] - x[i, j, k + 1] -
                    x[i, j - 1, k] - x[i, j + 1, k] - x[i - 1, j, k] -

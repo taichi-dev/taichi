@@ -127,7 +127,7 @@ class GPUIRCodeGen : public IRVisitor {
         emit("}}");
       };
 
-      if (for_stmt->cached_level != -1) {
+      if (!for_stmt->scratch_opt.empty()) {
         scratch_pads = irpass::initialize_scratch_pad(for_stmt);
         for (auto &pad : scratch_pads->pads) {
           emit("__shared__ {} {}[{}];", pad.first->node_type_name,
@@ -152,7 +152,7 @@ class GPUIRCodeGen : public IRVisitor {
       for_stmt->body->accept(this);
       current_scratch_pads = nullptr;
 
-      if (for_stmt->cached_level != -1) {
+      if (!for_stmt->scratch_opt.empty()) {
         emit("__syncthreads();");
         for (auto &pad : scratch_pads->pads) {
           if (pad.second.total_flags == AccessFlag::write ||
@@ -304,24 +304,6 @@ class GPUIRCodeGen : public IRVisitor {
     emit("const {} {} = {} ? {} : {};", tri->ret_data_type_name(),
          tri->raw_name(), tri->op1->raw_name(), tri->op2->raw_name(),
          tri->op3->raw_name());
-  }
-
-  void visit(AtomicOpStmt *stmt) {
-    TC_ASSERT(stmt->val->ret_type.data_type == DataType::f32 ||
-              stmt->val->ret_type.data_type == DataType::i32);
-    TC_ASSERT(stmt->op_type == AtomicType::add);
-    auto ptr = stmt->dest->as<GlobalPtrStmt>();
-    auto snode = ptr->snodes[0];
-    if (current_scratch_pads && current_scratch_pads->has(snode)) {
-      auto &pad = current_scratch_pads->get(snode);
-      emit("atomicAdd({}[{}], {});", pad.name(),
-           pad.global_to_linearized_local(current_struct_for->loop_vars,
-                                          ptr->indices),
-           stmt->val->raw_name());
-    } else {
-      emit("atomicAdd({}[0], {});", stmt->dest->raw_name(),
-           stmt->val->raw_name());
-    }
   }
 
   void visit(IfStmt *if_stmt) {
@@ -483,9 +465,9 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    if (current_scratch_pads) {
-      auto ptr = stmt->ptr->as<GlobalPtrStmt>();
-      auto snode = ptr->snodes[0];
+    auto ptr = stmt->ptr->as<GlobalPtrStmt>();
+    auto snode = ptr->snodes[0];
+    if (current_scratch_pads && current_scratch_pads->has(snode)) {
       auto &pad = current_scratch_pads->get(snode);
       emit("{}[{}] = {};", pad.name(),
            pad.global_to_linearized_local(current_struct_for->loop_vars,
@@ -500,9 +482,9 @@ class GPUIRCodeGen : public IRVisitor {
 
   void visit(GlobalLoadStmt *stmt) {
     TC_ASSERT(stmt->width() == 1);
-    if (current_scratch_pads) {
-      auto ptr = stmt->ptr->as<GlobalPtrStmt>();
-      auto snode = ptr->snodes[0];
+    auto ptr = stmt->ptr->as<GlobalPtrStmt>();
+    auto snode = ptr->snodes[0];
+    if (current_scratch_pads && current_scratch_pads->has(snode)) {
       auto &pad = current_scratch_pads->get(snode);
       emit("const auto {} = {}[{}];", stmt->raw_name(), pad.name(),
            pad.global_to_linearized_local(current_struct_for->loop_vars,
@@ -510,6 +492,24 @@ class GPUIRCodeGen : public IRVisitor {
     } else {
       emit("const auto {} = *({}[0]);", stmt->raw_name(),
            stmt->ptr->raw_name());
+    }
+  }
+
+  void visit(AtomicOpStmt *stmt) {
+    TC_ASSERT(stmt->val->ret_type.data_type == DataType::f32 ||
+              stmt->val->ret_type.data_type == DataType::i32);
+    TC_ASSERT(stmt->op_type == AtomicType::add);
+    auto ptr = stmt->dest->as<GlobalPtrStmt>();
+    auto snode = ptr->snodes[0];
+    if (current_scratch_pads && current_scratch_pads->has(snode)) {
+      auto &pad = current_scratch_pads->get(snode);
+      emit("atomicAdd({}[{}], {});", pad.name(),
+           pad.global_to_linearized_local(current_struct_for->loop_vars,
+                                          ptr->indices),
+           stmt->val->raw_name());
+    } else {
+      emit("atomicAdd({}[0], {});", stmt->dest->raw_name(),
+           stmt->val->raw_name());
     }
   }
 

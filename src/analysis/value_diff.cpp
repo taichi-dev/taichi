@@ -7,8 +7,7 @@ DiffRange operator+(const DiffRange &a, const DiffRange &b) {
 }
 
 DiffRange operator-(const DiffRange &a, const DiffRange &b) {
-  return DiffRange(a.related && b.related, a.low - b.high + 1,
-                   a.high - b.low);
+  return DiffRange(a.related && b.related, a.low - b.high + 1, a.high - b.low);
 }
 
 class ValueDiff : public IRVisitor {
@@ -35,6 +34,11 @@ class ValueDiff : public IRVisitor {
     } else {
       results[stmt->instance_id] = DiffRange(false);
     }
+  }
+
+  void visit(RangeAssumptionStmt *stmt) override {
+    results[stmt->instance_id] = results[stmt->base->instance_id] +
+                                 DiffRange(true, stmt->low, stmt->high);
   }
 
   void visit(BinaryOpStmt *stmt) override {

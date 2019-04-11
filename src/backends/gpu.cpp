@@ -547,7 +547,7 @@ void GPUCodeGen::lower() {
   if (prog->config.print_ir) {
     irpass::print(ir);
   }
-  irpass::eliminate_dup(ir);
+  // irpass::eliminate_dup(ir);
   irpass::re_id(ir);
   if (prog->config.print_ir)
     irpass::print(ir);

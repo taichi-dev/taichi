@@ -31,16 +31,16 @@ void write_partio(std::vector<Vector3> positions,
 }
 
 auto mpm3d = []() {
-  bool benchmark_dragon = false;
+  bool benchmark_dragon = true;
   // Program prog(Arch::x86_64);
   Program prog(Arch::gpu);
   prog.config.print_ir = true;
-  bool fluid = false;
+  bool fluid = true;
   bool plastic = true;
   CoreState::set_trigger_gdb_when_crash(true);
   // Program prog(Arch::x86_64);
 
-  constexpr int n = 128;  // grid_resolution
+  constexpr int n = 256;  // grid_resolution
   const real dt = 1e-4_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
   auto E = 2e3_f, nu = 0.3f;
@@ -62,22 +62,23 @@ auto mpm3d = []() {
   Global(grid_m, f32);
 
   bool sorted = true;
-  if (sorted) {
-    TC_ASSERT(!fluid);
-  }
 
-  int max_n_particles = 1024 * 1024 / 8;
+  int max_n_particles = 1024 * 1024;
 
   int n_particles = 0;
-  std::vector<float> benchmark_particles(n_particles * 3);
+  std::vector<float> benchmark_particles;
   if (benchmark_dragon) {
     n_particles = 775196;
     auto f = fopen("dragon_particles.bin", "rb");
+    TC_ASSERT(f);
+    benchmark_particles.resize(n_particles * 3);
     std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f);
     std::fclose(f);
   } else {
-    n_particles = max_n_particles;
+    n_particles = max_n_particles / 8;
   }
+
+  TC_ASSERT(n_particles <= max_n_particles);
 
   auto i = Index(0), j = Index(1), k = Index(2);
   auto p = Index(3);
@@ -117,7 +118,7 @@ auto mpm3d = []() {
     block.dense({i, j, k}, grid_block_size)
         .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
 
-    block.dynamic(p, pow<dim>(grid_block_size) * 8).place(l);
+    block.dynamic(p, pow<dim>(grid_block_size) * 32).place(l);
 
     root.place(gravity_x);
   });
@@ -248,7 +249,7 @@ auto mpm3d = []() {
     Declare(j);
     Declare(k);
     Declare(p_ptr);
-    // BlockDim(256);
+    BlockDim(512);
 
     Cache(0, grid_v(0));
     Cache(0, grid_v(1));
@@ -360,7 +361,7 @@ auto mpm3d = []() {
     if (sorted) {
       clear_lists();
       sort();
-      while (1)
+      //while (1)
         TC_TIME(p2g_sorted());
     } else {
       p2g_naive();

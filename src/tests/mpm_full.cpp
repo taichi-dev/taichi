@@ -115,8 +115,16 @@ auto mpm3d = []() {
 
     TC_ASSERT(n % grid_block_size == 0);
     auto &block = root.dense({i, j, k}, n / grid_block_size);
-    block.dense({i, j, k}, grid_block_size)
-        .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
+    constexpr bool block_soa = false;
+    if (block_soa) {
+      block.dense({i, j, k}, grid_block_size).place(grid_v(0));
+      block.dense({i, j, k}, grid_block_size).place(grid_v(1));
+      block.dense({i, j, k}, grid_block_size).place(grid_v(2));
+      block.dense({i, j, k}, grid_block_size).place(grid_m);
+    } else {
+      block.dense({i, j, k}, grid_block_size)
+          .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
+    }
 
     block.dynamic(p, pow<dim>(grid_block_size) * 32).place(l);
 
@@ -125,7 +133,7 @@ auto mpm3d = []() {
 
   TC_ASSERT(bit::is_power_of_two(n));
 
-  auto clear_buffer = kernel([&]() {
+  auto reset_grid = kernel([&]() {
     Declare(i);
     Declare(j);
     Declare(k);
@@ -136,6 +144,9 @@ auto mpm3d = []() {
       grid_m[i, j, k] = 0.0_f;
     });
   });
+
+  while (1)
+    TC_TIME(reset_grid());
 
   auto p2g_naive = kernel([&]() {
     Declare(p);
@@ -361,8 +372,8 @@ auto mpm3d = []() {
     if (sorted) {
       clear_lists();
       sort();
-      //while (1)
-        TC_TIME(p2g_sorted());
+      // while (1)
+      TC_TIME(p2g_sorted());
     } else {
       p2g_naive();
     }
@@ -507,7 +518,7 @@ auto mpm3d = []() {
   for (int f = 0;; f++) {
     TC_PROFILER("mpm 3d");
     for (int t = 0; t < 20; t++) {
-      TC_PROFILE("reset grid", clear_buffer());
+      TC_PROFILE("reset grid", reset_grid());
       TC_PROFILE("p2g", p2g());
       TC_PROFILE("grid_op", grid_op());
       TC_PROFILE("g2p", g2p());

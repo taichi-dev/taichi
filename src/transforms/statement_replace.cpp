@@ -38,6 +38,10 @@ class StatementReplace : public IRVisitor {
     stmt->body->accept(this);
   }
 
+  void visit(StructForStmt *stmt) {
+    stmt->body->accept(this);
+  }
+
   static void run(IRNode *node, Stmt *old_stmt, Stmt *new_stmt) {
     StatementReplace inst(old_stmt, new_stmt);
     node->accept(&inst);

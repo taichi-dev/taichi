@@ -538,14 +538,17 @@ void GPUCodeGen::lower() {
     irpass::print(ir);
   }
   irpass::lower(ir);
+  irpass::re_id(ir);
   if (prog->config.print_ir) {
     irpass::print(ir);
   }
   irpass::typecheck(ir);
+  irpass::re_id(ir);
   if (prog->config.print_ir) {
     irpass::print(ir);
   }
   irpass::eliminate_dup(ir);
+  irpass::re_id(ir);
   if (prog->config.print_ir)
     irpass::print(ir);
 }

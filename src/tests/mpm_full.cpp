@@ -360,7 +360,8 @@ auto mpm3d = []() {
     if (sorted) {
       clear_lists();
       sort();
-      p2g_sorted();
+      while (1)
+        TC_TIME(p2g_sorted());
     } else {
       p2g_naive();
     }

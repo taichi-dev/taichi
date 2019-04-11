@@ -65,6 +65,11 @@ class ReId : public IRVisitor {
     re_id(for_stmt);
     for_stmt->body->accept(this);
   }
+
+  void visit(StructForStmt *for_stmt) {
+    re_id(for_stmt);
+    for_stmt->body->accept(this);
+  }
 };
 
 namespace irpass {

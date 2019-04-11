@@ -302,6 +302,10 @@ class EliminateDup : public IRVisitor {
     for_stmt->body->accept(this);
   }
 
+  void visit(StructForStmt *for_stmt) override {
+    for_stmt->body->accept(this);
+  }
+
   void visit(WhileStmt *stmt) override {
     stmt->body->accept(this);
   }

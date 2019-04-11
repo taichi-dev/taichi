@@ -43,7 +43,6 @@ auto reset_grid_benchmark = []() {
 
   Vector grid_v(f32, dim);
   Global(grid_m, f32);
-  Global(l, i32);
 
   auto i = Index(0), j = Index(1), k = Index(2);
   auto p = Index(3);
@@ -63,9 +62,8 @@ auto reset_grid_benchmark = []() {
     } else {
       block.dense({i, j, k}, grid_block_size)
           .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
+      //.place(grid_m);
     }
-
-    block.dynamic(p, pow<dim>(grid_block_size) * 32).place(l);
   });
 
   TC_ASSERT(bit::is_power_of_two(n));
@@ -98,7 +96,7 @@ auto mpm3d = []() {
   // Program prog(Arch::x86_64);
 
   constexpr int n = 256;  // grid_resolution
-  const real dt = 1e-4_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+  const real dt = 5e-5_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
   auto E = 2e3_f, nu = 0.3f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
@@ -172,7 +170,8 @@ auto mpm3d = []() {
 
     TC_ASSERT(n % grid_block_size == 0);
     auto &block = root.dense({i, j, k}, n / grid_block_size);
-    constexpr bool block_soa = false;
+    constexpr bool block_soa = true;
+
     if (block_soa) {
       block.dense({i, j, k}, grid_block_size).place(grid_v(0));
       block.dense({i, j, k}, grid_block_size).place(grid_v(1));
@@ -197,13 +196,10 @@ auto mpm3d = []() {
     For((i, j, k), grid_m, [&] {
       grid_v(0)[i, j, k] = 0.0_f;
       grid_v(1)[i, j, k] = 0.0_f;
-      // grid_v(2)[i, j, k] = 0.0_f;
-      // grid_m[i, j, k] = 0.0_f;
+      grid_v(2)[i, j, k] = 0.0_f;
+      grid_m[i, j, k] = 0.0_f;
     });
   });
-
-  while (1)
-    TC_TIME(reset_grid());
 
   auto p2g_naive = kernel([&]() {
     Declare(p);
@@ -429,8 +425,8 @@ auto mpm3d = []() {
     if (sorted) {
       clear_lists();
       sort();
-      // while (1)
-      TC_TIME(p2g_sorted());
+      while (1)
+        TC_TIME(p2g_sorted());
     } else {
       p2g_naive();
     }
@@ -501,7 +497,6 @@ auto mpm3d = []() {
       auto base_j = cast<int32>(base_coord(1));
       auto base_k = cast<int32>(base_coord(2));
 
-      // scatter
       for (int p = 0; p < 3; p++) {
         for (int q = 0; q < 3; q++) {
           for (int r = 0; r < 3; r++) {

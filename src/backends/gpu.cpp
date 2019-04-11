@@ -166,8 +166,9 @@ class GPUIRCodeGen : public IRVisitor {
             std::string source = access_global(pad.first);
             std::string statement;
             if (pad.second.total_flags == AccessFlag::accumulate)
-              statement = fmt::format("atomicAdd({}, {}[flat_index]);", source,
-                                      pad.second.name());
+              statement = fmt::format(
+                  "if ({}[flat_index] != 0) atomicAdd({}, {}[flat_index]);",
+                  pad.second.name(), source, pad.second.name());
             else
               statement = fmt::format("*{} = {}[flat_index];", source,
                                       pad.second.name());
@@ -192,6 +193,7 @@ class GPUIRCodeGen : public IRVisitor {
           vars += ",";
         }
       }
+      emit("auto t = get_time();");
       emit("gpu_runtime_init();");
       emit("context.num_leaves = leaves.size();");
       emit("auto list_size = sizeof(LeafContext<{}>) * context.num_leaves;",
@@ -206,11 +208,27 @@ class GPUIRCodeGen : public IRVisitor {
           "int gridDim = context.num_leaves * {}, blockDim = ({}::get_max_n()"
           "+ {} - 1) / {};",
           block_division, leaf->node_type_name, block_division, block_division);
-      // emit("printf(\"launching kernel <<<%d, %d>>>\\n\", gridDim, blockDim);");
+      emit(
+          "printf(\"launching kernel {} <<<%d, %d>>> num_leaves = %d\\n\", "
+          "gridDim, blockDim, context.num_leaves);",
+          codegen->func_name);
+      emit("std::cout << (get_time() - t) * 1000 << std::endl;");
+      emit("cudaEvent_t start, stop;");
+      emit("cudaEventCreate(&start);");
+      emit("cudaEventCreate(&stop);");
 
+      emit("cudaEventRecord(start);");
       emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
+      emit("cudaEventRecord(stop);");
 
+      emit("t = get_time();");
       emit("cudaFree(context.leaves); context.leaves = nullptr;");
+      emit("std::cout << (get_time() - t) * 1000 << std::endl;");
+      emit("cudaEventSynchronize(stop);");
+
+      emit("float milliseconds = 0;");
+      emit("cudaEventElapsedTime(&milliseconds, start, stop);");
+      emit("std::cout << \"device\" << milliseconds << std::endl;");
 
       emit("}}");
       current_struct_for = nullptr;

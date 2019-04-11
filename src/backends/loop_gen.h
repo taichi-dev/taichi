@@ -106,13 +106,18 @@ class LoopGenerator {
   void loop_gen_leaves(StructForStmt *for_stmt, SNode *leaf) {
     emit("std::vector<LeafContext<{}>> leaves;", leaf->node_type_name);
     generate_loop_header(leaf->parent, for_stmt);
-    emit("LeafContext<{}> leaf_context;", leaf->node_type_name);
     single_loop_body_head(leaf);
+    if (leaf->type == SNodeType::dynamic) {
+      emit("if ({}_cache->get_n())", leaf->node_type_name);
+    }
+    emit("{{");
+    emit("LeafContext<{}> leaf_context;", leaf->node_type_name);
     emit("leaf_context.ptr = {}_cache;", leaf->node_type_name);
     for (int i = 0; i < max_num_indices; i++)
       emit("leaf_context.indices[{}] = {};", i,
            index_name_global(leaf->parent, i));
     emit("leaves.push_back(leaf_context);");
+    emit("}}");
     generate_loop_tail(leaf->parent, for_stmt);
   }
 

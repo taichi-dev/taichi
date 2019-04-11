@@ -16,6 +16,8 @@ class AccessAnalysis : public IRVisitor {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
 
+    TC_WARN(
+        "Using the size of scratch_opt[0].second as the snode size to cache");
     generate_block_indices(for_stmt->scratch_opt[0].second->parent, {}, 0);
 
     const auto &block = for_stmt->body;
@@ -52,6 +54,17 @@ class AccessAnalysis : public IRVisitor {
     auto ptr = stmt->as<GlobalPtrStmt>();
     for (int l = 0; l < stmt->width(); l++) {
       auto snode = ptr->snodes[l];
+      //std::vector<SNode *> snodes;
+      /*
+      for (auto it: pads->pads) {
+        //snodes.push_back(it.first);
+        TC_P(it.first->node_type_name);
+      }
+      TC_P(snode->node_type_name);
+      */
+      if (!pads->has(snode)) {
+        continue;
+      }
       bool matching_indices = true;
       std::vector<std::pair<int, int>> offsets;
       offsets.resize(ptr->indices.size());
@@ -62,23 +75,32 @@ class AccessAnalysis : public IRVisitor {
         if (diff.related) {
           offsets[i].first = diff.low;
           offsets[i].second = diff.high;
+          /*
+          TC_P(ptr->name());
+          TC_P(diff.low);
+          TC_P(diff.high);
+          */
         } else {
+          /*
+          TC_P(i);
+          TC_P(for_stmt->loop_vars[i]->raw_name());
+          TC_P(ptr->indices[i]->raw_name());
+          */
           matching_indices = false;
         }
       }
       if (matching_indices) {
         TC_INFO("Detected regular access");
+        /*
         for (int i = 0; i < num_indices; i++) {
           TC_P(offsets[i]);
         }
+        */
         for (const auto &bind : block_indices) {
-          TC_P(bind);
           std::function<void(std::vector<int>, int)> visit =
               [&](std::vector<int> ind, int depth) {
                 if (depth == num_indices) {
                   pads->access(snode, ind, flag);
-                  TC_P(snode->node_type_name);
-                  TC_P(ind);
                   return;
                 }
                 for (int i = offsets[depth].first; i < offsets[depth].second;

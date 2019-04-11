@@ -93,10 +93,7 @@ class GPUIRCodeGen : public IRVisitor {
       emit("auto {} = {} * (blockIdx.x % {}) + threadIdx.x;",
            loopgen.loop_variable(leaf),
            (1 << leaf->total_num_bits) / block_division, block_division);
-      if (leaf->type == SNodeType::dynamic) {
-        emit("if ({} >= {}_cache->get_n()) return;",
-             loopgen.loop_variable(leaf), leaf->node_type_name);
-      }
+
       loopgen.update_indices(leaf);
       loopgen.emit_setup_loop_variables(for_stmt, leaf);
 
@@ -148,9 +145,18 @@ class GPUIRCodeGen : public IRVisitor {
         emit("__syncthreads();");
       }
 
+      if (leaf->type == SNodeType::dynamic) {
+        emit("if ({} < {}_cache->get_n())",
+             loopgen.loop_variable(leaf), leaf->node_type_name);
+      }
+
+      emit("{{");
+
       current_scratch_pads = scratch_pads.get();
       for_stmt->body->accept(this);
       current_scratch_pads = nullptr;
+
+      emit("}}");
 
       if (!for_stmt->scratch_opt.empty()) {
         emit("__syncthreads();");
@@ -503,7 +509,7 @@ class GPUIRCodeGen : public IRVisitor {
     auto snode = ptr->snodes[0];
     if (current_scratch_pads && current_scratch_pads->has(snode)) {
       auto &pad = current_scratch_pads->get(snode);
-      emit("atomicAdd({}[{}], {});", pad.name(),
+      emit("atomicAdd(&{}[{}], {});", pad.name(),
            pad.global_to_linearized_local(current_struct_for->loop_vars,
                                           ptr->indices),
            stmt->val->raw_name());

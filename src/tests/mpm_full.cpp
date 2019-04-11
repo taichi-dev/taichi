@@ -34,7 +34,7 @@ auto mpm3d = []() {
   bool benchmark_dragon = false;
   // Program prog(Arch::x86_64);
   Program prog(Arch::gpu);
-  //  prog.config.print_ir = true;
+  prog.config.print_ir = true;
   bool fluid = false;
   bool plastic = true;
   CoreState::set_trigger_gdb_when_crash(true);
@@ -328,10 +328,13 @@ auto mpm3d = []() {
       auto affine = Expr(particle_mass) * C +
                     Expr(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
 
-      int low = 0, high = 1;//grid_block_size;
-      auto base_coord_i = AssumeInRange(cast<int32>(base_coord(0)), i, low, high);
-      auto base_coord_j = AssumeInRange(cast<int32>(base_coord(1)), j, low, high);
-      auto base_coord_k = AssumeInRange(cast<int32>(base_coord(2)), k, low, high);
+      int low = 0, high = 1;
+      auto base_coord_i =
+          AssumeInRange(cast<int32>(base_coord(0)), i, low, high);
+      auto base_coord_j =
+          AssumeInRange(cast<int32>(base_coord(1)), j, low, high);
+      auto base_coord_k =
+          AssumeInRange(cast<int32>(base_coord(2)), k, low, high);
 
       // scatter
       for (int a = 0; a < 3; a++) {

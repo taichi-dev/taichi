@@ -225,6 +225,16 @@ inline Matrix operator-(const Expr &A, const Matrix &B) {
   return C;
 }
 
+inline Matrix operator+(const Matrix &B, const Expr &A) {
+  Matrix C(B.n, B.m);
+  for (int i = 0; i < B.n; i++) {
+    for (int j = 0; j < B.m; j++) {
+      C(i, j) = B(i, j) + A;
+    }
+  }
+  return C;
+}
+
 inline Matrix operator-(const Matrix &B, const Expr &A) {
   Matrix C(B.n, B.m);
   for (int i = 0; i < B.n; i++) {

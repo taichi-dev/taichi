@@ -49,7 +49,7 @@ auto mpm3d = []() {
   constexpr int dim = 3;
 
   auto f32 = DataType::f32;
-  int grid_block_size = 8;
+  int grid_block_size = 4;
   int particle_block_size = 1;
 
   Vector particle_x(f32, dim), particle_v(f32, dim);
@@ -117,7 +117,7 @@ auto mpm3d = []() {
     block.dense({i, j, k}, grid_block_size)
         .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
 
-    block.dynamic(p, pow<dim>(grid_block_size) * 16).place(l);
+    block.dynamic(p, pow<dim>(grid_block_size) * 8).place(l);
 
     root.place(gravity_x);
   });
@@ -248,7 +248,7 @@ auto mpm3d = []() {
     Declare(j);
     Declare(k);
     Declare(p_ptr);
-    BlockDim(256);
+    // BlockDim(256);
 
     Cache(0, grid_v(0));
     Cache(0, grid_v(1));

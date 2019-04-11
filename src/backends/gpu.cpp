@@ -146,8 +146,8 @@ class GPUIRCodeGen : public IRVisitor {
       }
 
       if (leaf->type == SNodeType::dynamic) {
-        emit("if ({} < {}_cache->get_n())",
-             loopgen.loop_variable(leaf), leaf->node_type_name);
+        emit("if ({} < {}_cache->get_n())", loopgen.loop_variable(leaf),
+             leaf->node_type_name);
       }
 
       emit("{{");
@@ -206,8 +206,7 @@ class GPUIRCodeGen : public IRVisitor {
           "int gridDim = context.num_leaves * {}, blockDim = ({}::get_max_n()"
           "+ {} - 1) / {};",
           block_division, leaf->node_type_name, block_division, block_division);
-      // emit("printf(\"launching kernel <<<%d, %d>>>\\n\", gridDim,
-      // blockDim);");
+      // emit("printf(\"launching kernel <<<%d, %d>>>\\n\", gridDim, blockDim);");
 
       emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
 

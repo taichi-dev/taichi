@@ -86,7 +86,7 @@ auto reset_grid_benchmark = []() {
 TC_REGISTER_TASK(reset_grid_benchmark);
 
 auto mpm3d = []() {
-  bool benchmark_dragon = false;
+  bool benchmark_dragon = true;
   // Program prog(Arch::x86_64);
   Program prog(Arch::gpu);
   prog.config.print_ir = true;

@@ -184,6 +184,7 @@ class GPUIRCodeGen : public IRVisitor {
            current_program->snode_root->node_type_name);
       emit("{{");
 
+      emit("auto t = get_time();");
       loopgen.loop_gen_leaves(for_stmt, leaf);
 
       std::string vars;
@@ -193,7 +194,6 @@ class GPUIRCodeGen : public IRVisitor {
           vars += ",";
         }
       }
-      emit("auto t = get_time();");
       emit("gpu_runtime_init();");
       emit("context.num_leaves = leaves.size();");
       emit("auto list_size = sizeof(LeafContext<{}>) * context.num_leaves;",
@@ -208,11 +208,11 @@ class GPUIRCodeGen : public IRVisitor {
           "int gridDim = context.num_leaves * {}, blockDim = ({}::get_max_n()"
           "+ {} - 1) / {};",
           block_division, leaf->node_type_name, block_division, block_division);
+      emit("std::cout << \"list    \" << (get_time() - t) * 1000 << \" ms\" << std::endl;");
       emit(
           "printf(\"launching kernel {} <<<%d, %d>>> num_leaves = %d\\n\", "
           "gridDim, blockDim, context.num_leaves);",
           codegen->func_name);
-      emit("std::cout << (get_time() - t) * 1000 << std::endl;");
       emit("cudaEvent_t start, stop;");
       emit("cudaEventCreate(&start);");
       emit("cudaEventCreate(&stop);");
@@ -221,14 +221,14 @@ class GPUIRCodeGen : public IRVisitor {
       emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
       emit("cudaEventRecord(stop);");
 
-      emit("t = get_time();");
+      // emit("t = get_time();");
       emit("cudaFree(context.leaves); context.leaves = nullptr;");
-      emit("std::cout << (get_time() - t) * 1000 << std::endl;");
+      // emit("std::cout << (get_time() - t) * 1000 << std::endl;");
       emit("cudaEventSynchronize(stop);");
 
       emit("float milliseconds = 0;");
       emit("cudaEventElapsedTime(&milliseconds, start, stop);");
-      emit("std::cout << \"device\" << milliseconds << std::endl;");
+      emit("std::cout << \"device  \" << milliseconds << std::endl;");
 
       emit("}}");
       current_struct_for = nullptr;

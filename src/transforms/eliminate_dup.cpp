@@ -42,7 +42,8 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) override {
-    if (is_done(stmt)) return;
+    if (is_done(stmt))
+      return;
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
@@ -76,7 +77,8 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(ConstStmt *stmt) override {
-    if (is_done(stmt)) return;
+    if (is_done(stmt))
+      return;
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       auto &bstmt_data = *bstmt;
@@ -106,7 +108,8 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(ElementShuffleStmt *stmt) override {
-    if (is_done(stmt)) return;
+    if (is_done(stmt))
+      return;
     // is this stmt necessary?
     {
       bool same_source = true;
@@ -153,7 +156,8 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    if (is_done(stmt)) return;
+    if (is_done(stmt))
+      return;
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
@@ -219,7 +223,8 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    if (is_done(stmt)) return;
+    if (is_done(stmt))
+      return;
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
@@ -238,7 +243,8 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) override {
-    if (is_done(stmt)) return;
+    if (is_done(stmt))
+      return;
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
@@ -258,7 +264,8 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(TrinaryOpStmt *stmt) override {
-    if (is_done(stmt)) return;
+    if (is_done(stmt))
+      return;
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
@@ -307,22 +314,15 @@ class EliminateDup : public IRVisitor {
   }
 
   void visit(Block *block) override {
-    int counter = 0;
-    auto t = Time::get_time();
     std::set<int> visited;
     while (true) {
       try {
         BasicBlockEliminate _(block, visited);
       } catch (IRModifiedException) {
-        TC_P(counter);
-        counter++;
-        if (counter > 1000)
-          break;
         continue;
       }
       break;
     }
-    TC_P(Time::get_time() - t);
     for (auto &stmt : block->statements) {
       stmt->accept(this);
     }

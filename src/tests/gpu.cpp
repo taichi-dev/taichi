@@ -17,16 +17,15 @@ TC_TEST("compiler_basics_gpu") {
 
   auto dou = [](Expr a) { return a * 2; };
 
-  auto func = kernel([&]() {
+  kernel([&]() {
     Declare(i);
     For(i, 0, n, [&] {
       Local(ret) = 0;
       If(i % 2 == 0).Then([&] { ret = dou(i); }).Else([&] { ret = i; });
       a[i] = ret;
     });
-  });
+  })();
 
-  func();
 
   for (int i = 0; i < n; i++) {
     TC_CHECK(a.val<int32>(i) == (2 - i % 2) * i);

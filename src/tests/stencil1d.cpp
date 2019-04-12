@@ -229,20 +229,20 @@ TC_TEST("stencil1d") {
     root.hashed(i, 8192).dense(i, 1024).pointer().dense(i, 256).place(x, y);
   });
 
-  auto copy = kernel([&] {
+  auto &copy = kernel([&] {
     Declare(i);
     // Cache(0);
     For(i, x, [&] { y[i] = x[i]; });
   });
 
-  auto copy_parallelized = kernel([&] {
+  auto &copy_parallelized = kernel([&] {
     Declare(i);
     Parallelize(4);
     // Cache(0);
     For(i, x, [&] { y[i] = x[i]; });
   });
 
-  auto stencil = kernel([&] {
+  auto &stencil = kernel([&] {
     Declare(i);
     // Cache(0);
     For(i, x, [&] { y[i] = (1.0f / 3) * (x[i - 1] + x[i] + x[i + 1]); });

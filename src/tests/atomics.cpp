@@ -14,7 +14,7 @@ TC_TEST("atomics") {
   Global(fsum, f32);
   layout([&]() { root.place(sum, fsum); });
 
-  auto func = kernel([&]() {
+  auto &func = kernel([&]() {
     Declare(i);
     Parallelize(4);
     For(i, 0, n, [&] {
@@ -37,7 +37,7 @@ TC_TEST("atomics2") {
   Global(fsum, f32);
   layout([&]() { root.place(fsum); });
 
-  auto func = kernel([&]() {
+  auto &func = kernel([&]() {
     Declare(i);
     Parallelize(4);
     For(i, 0, n, [&] {

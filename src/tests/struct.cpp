@@ -37,13 +37,11 @@ TC_TEST("snode_loop") {
     // All data structure originates from a "root", which is a forked node.
     prog.layout([&] { root.dense(i, n).place(u); });
 
-    auto set = kernel([&] {
+    kernel([&] {
       Declare(i);
       BlockDim(256);
       For(i, u, [&] { u[i] = i * 2; });
-    });
-
-    set();
+    })();
 
     for (int i = 0; i < n; i++) {
       TC_CHECK_EQUAL(u.val<int32>(i), i * 2, 0);
@@ -76,18 +74,15 @@ TC_TEST("snode_loop2") {
         v.cast<GlobalVariableExpression>()->snode->physical_index_position[0] ==
         1);
 
-    auto set1 = kernel([&] {
+    kernel([&] {
       Declare(i);
       For(i, u, [&] { u[i] = i * 2; });
-    });
+    })();
 
-    auto set2 = kernel([&] {
+    kernel([&] {
       Declare(j);
       For(j, v, [&] { v[j] = j * 3; });
-    });
-
-    set1();
-    set2();
+    })();
 
     for (int i = 0; i < n; i++) {
       TC_CHECK_EQUAL(u.val<int32>(i), i * 2, 0);
@@ -120,19 +115,17 @@ TC_TEST("2d_blocked_array") {
         }
       });
 
-      auto inc = kernel([&]() {
-        Declare(i);
-        Declare(j);
-        For({i, j}, a, [&] { b[i, j] = a[i, j] + i; });
-      });
-
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < n * 2; j++) {
           a.val<int32>(i, j) = i + j * 3;
         }
       }
 
-      inc();
+      kernel([&]() {
+        Declare(i);
+        Declare(j);
+        For({i, j}, a, [&] { b[i, j] = a[i, j] + i; });
+      })();
 
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < n * 2; j++) {
@@ -467,11 +460,6 @@ TC_TEST("pointer") {
     root.place(sum);
   });
 
-  auto red = kernel([&]() {
-    Declare(i);
-    For(i, a, [&] { sum[Expr(0)] += a[i]; });
-  });
-
   int sum_gt = 0;
   for (int i = 0; i < m; i++) {
     if (i / k % 3 == 1) {
@@ -480,7 +468,10 @@ TC_TEST("pointer") {
     }
   }
 
-  red();
+  kernel([&]() {
+    Declare(i);
+    For(i, a, [&] { sum[Expr(0)] += a[i]; });
+  })();
 
   auto reduced = sum.val<int32>();
   TC_CHECK(reduced == sum_gt);
@@ -540,10 +531,6 @@ TC_TEST("hashed") {
     root.place(sum);
   });
 
-  auto red = kernel([&]() {
-    Declare(i);
-    For(i, a, [&] { sum[Expr(0)] += a[i]; });
-  });
   sum.val<int32>() = 0;
 
   int sum_gt = 0;
@@ -554,37 +541,13 @@ TC_TEST("hashed") {
     }
   }
 
-  red();
+  kernel([&]() {
+    Declare(i);
+    For(i, a, [&] { sum[Expr(0)] += a[i]; });
+  })();
 
   auto reduced = sum.val<int32>();
   TC_CHECK(reduced == sum_gt);
-}
-
-TC_TEST("box_filter") {
-  return;
-  Program prog;
-
-  int n = 64;
-  int k = 128;
-  int m = n * k;
-
-  Global(x, i32);
-  Global(y, i32);
-
-  layout([&] {
-    auto i = Index(0);
-    root.hashed(i, n).dense(i, k).place(x, y);
-  });
-
-  auto red = kernel([&]() {
-    Declare(i);
-    For(i, x, [&] { y[i] = x[i - 1] + x[i] + x[i + 1]; });
-  });
-
-  red();
-
-  // auto reduced = sum.val<int32>();
-  // TC_CHECK(reduced == sum_gt);
 }
 
 TLANG_NAMESPACE_END

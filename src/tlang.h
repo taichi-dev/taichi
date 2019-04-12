@@ -23,7 +23,7 @@ inline void layout(const std::function<void()> &body) {
   get_current_program().layout(body);
 }
 
-inline Kernel kernel(const std::function<void()> &body) {
+inline Kernel &kernel(const std::function<void()> &body) {
   return get_current_program().kernel(body);
 }
 

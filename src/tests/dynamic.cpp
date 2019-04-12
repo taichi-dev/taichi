@@ -117,7 +117,7 @@ TC_TEST("clear") {
       list->place(x);
     });
 
-    auto append = kernel([&]() {
+    auto &append = kernel([&]() {
       Declare(i);
       Declare(j);
       For(i, 0, n, [&] { For(j, 0, i, [&] { Append(list, i, i + j); }); });
@@ -172,7 +172,7 @@ TC_TEST("sort") {
       coord.val<int32>(i) = particles[i];
     }
 
-    auto sort = kernel([&]() {
+    auto &sort = kernel([&]() {
       Declare(i);
       Declare(j);
       For(i, 0, n * n, [&] { Append(p.parent().snode(), coord[i], i); });
@@ -229,7 +229,7 @@ TC_TEST("dynamic_sort") {
       coord.val<int32>(i) = particles[i];
     }
 
-    auto sort = kernel([&]() {
+    auto &sort = kernel([&]() {
       Declare(i);
       Declare(j);
       For(i, 0, n * n, [&] {

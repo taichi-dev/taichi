@@ -388,7 +388,7 @@ TC_TEST("simd_mpm") {
         .place(grid(0), grid(1), grid(2), grid(3));
   });
 
-  auto p2g = kernel([&]() {
+  auto &p2g = kernel([&]() {
     Declare(p_i);
     Vectorize(4);
     For(p_i, 0, n_particles, [&]() {

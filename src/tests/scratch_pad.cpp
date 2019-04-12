@@ -96,7 +96,7 @@ TC_TEST("scratch_pad_3d") {
     });
   })();
 
-  auto laplacian = kernel([&]() {
+  auto &laplacian = kernel([&]() {
     Declare(i);
     Declare(j);
     Declare(k);

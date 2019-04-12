@@ -28,14 +28,12 @@ TC_TEST("hashed_3d") {
   x.val<int>(12, 5, 9) = 30;
   x.val<int>(2, 115, 9) = 11;
 
-  auto reduce = kernel([&] {
+  kernel([&] {
     Declare(i);
     Declare(j);
     Declare(k);
     For((i, j, k), x, [&]() { sum[Expr(0)] += x[i, j, k]; });
-  });
-
-  reduce();
+  })();
 
   TC_ASSERT(sum.val<int>() == 51);
 };
@@ -60,14 +58,12 @@ TC_TEST("hashed_3d_negative") {
   x.val<int>(12, 5, -9) = 30;
   x.val<int>(2, -115, 9) = 11;
 
-  auto reduce = kernel([&] {
+  kernel([&] {
     Declare(i);
     Declare(j);
     Declare(k);
     For((i, j, k), x, [&]() { sum[Expr(0)] += x[i, j, k]; });
-  });
-
-  reduce();
+  })();
 
   TC_ASSERT(sum.val<int>() == 51);
   TC_CHECK(x.val<int>(-2, 5, 9) == 10);
@@ -211,7 +207,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
       TC_TIME(filter.mean(1));
   });
 
-  auto count = kernel([&] {
+  auto &count = kernel([&] {
     Declare(i);
     Declare(j);
     Declare(k);
@@ -223,7 +219,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
   TC_P(num_leaves);
   // TC_ASSERT(num_leaves * pow<3>(8) == sum.val<int>());
 
-  auto mean_x = kernel([&] {
+  auto &mean_x = kernel([&] {
     Declare(i);
     Declare(j);
     Declare(k);
@@ -232,7 +228,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     });
   });
 
-  auto mean_y = kernel([&] {
+  auto &mean_y = kernel([&] {
     Declare(i);
     Declare(j);
     Declare(k);
@@ -241,7 +237,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     });
   });
 
-  auto mean_z = kernel([&] {
+  auto &mean_z = kernel([&] {
     Declare(i);
     Declare(j);
     Declare(k);
@@ -250,7 +246,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     });
   });
 
-  auto copy_y_to_x = kernel([&] {
+  auto &copy_y_to_x = kernel([&] {
     Declare(i);
     Declare(j);
     Declare(k);

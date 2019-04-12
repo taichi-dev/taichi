@@ -68,7 +68,7 @@ auto reset_grid_benchmark = []() {
 
   TC_ASSERT(bit::is_power_of_two(n));
 
-  auto reset_grid = kernel([&]() {
+  auto &reset_grid = kernel([&]() {
     Declare(i);
     Declare(j);
     Declare(k);
@@ -189,7 +189,7 @@ auto mpm3d = []() {
 
   TC_ASSERT(bit::is_power_of_two(n));
 
-  auto reset_grid = kernel([&]() {
+  auto &reset_grid = kernel([&]() {
     Declare(i);
     Declare(j);
     Declare(k);
@@ -201,7 +201,7 @@ auto mpm3d = []() {
     });
   });
 
-  auto p2g_naive = kernel([&]() {
+  auto &p2g_naive = kernel([&]() {
     Declare(p);
     if (particle_block_size == 1)
       BlockDim(256);
@@ -287,7 +287,7 @@ auto mpm3d = []() {
     });
   });
 
-  auto clear_lists = kernel([&] {
+  auto &clear_lists = kernel([&] {
     Declare(i);
     Declare(j);
     Declare(k);
@@ -295,7 +295,7 @@ auto mpm3d = []() {
     For((i, j, k), l.parent(), [&] { Clear(l.parent(), (i, j, k)); });
   });
 
-  auto sort = kernel([&] {
+  auto &sort = kernel([&] {
     Declare(p);
     BlockDim(256);
     For(p, particle_x(0), [&] {
@@ -308,7 +308,7 @@ auto mpm3d = []() {
     });
   });
 
-  auto p2g_sorted = kernel([&] {
+  auto &p2g_sorted = kernel([&] {
     get_current_program().get_current_kernel().benchmarking = true;
     Declare(i);
     Declare(j);
@@ -422,7 +422,7 @@ auto mpm3d = []() {
     }
   };
 
-  auto grid_op = kernel([&]() {
+  auto &grid_op = kernel([&]() {
     Declare(i);
     Declare(j);
     Declare(k);
@@ -457,7 +457,7 @@ auto mpm3d = []() {
     });
   });
 
-  auto g2p = kernel([&]() {
+  auto &g2p = kernel([&]() {
     Declare(p);
     if (particle_block_size == 1)
       BlockDim(256);

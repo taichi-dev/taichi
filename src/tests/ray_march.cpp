@@ -10,6 +10,7 @@ Vector complex_mul(const Vector &a, const Vector &b) {
   return ret;
 }
 
+#if(0)
 auto mset = [] {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 1024;
@@ -19,7 +20,7 @@ auto mset = [] {
 
   layout([&]() { root.dense(0, n * n).place(a); });
 
-  auto func = kernel([&]() {
+  auto &func = kernel([&]() {
     Declare(i);
 
     Vectorize(8);
@@ -66,6 +67,7 @@ auto mset = [] {
     gui.update();
 };
 TC_REGISTER_TASK(mset);
+#endif
 
 auto ray_march = [] {
   CoreState::set_trigger_gdb_when_crash(true);
@@ -145,7 +147,7 @@ auto ray_march = [] {
 
   float fov = 0.3;
 
-  auto main = kernel([&]() {
+  auto &main = kernel([&]() {
     Declare(i);
     Parallelize(8);
     Vectorize(8);

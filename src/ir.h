@@ -176,6 +176,10 @@ class FrontendContext {
   }
 
   IRNode *root();
+
+  std::unique_ptr<Block> get_root() {
+    return std::move(root_node);
+  }
 };
 
 extern std::unique_ptr<FrontendContext> context;

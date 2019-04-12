@@ -21,31 +21,35 @@ class Program {
   // Should be copiable
   class Kernel {
    public:
+    std::unique_ptr<IRNode> ir_holder;
     IRNode *ir;
     Program &program;
     FunctionType compiled;
     std::string name;
 
     Kernel(Program &program, std::function<void()> func) : program(program) {
-      program.current_kernel = this;
+      compiled = nullptr;
       benchmarking = false;
       context = std::make_unique<FrontendContext>();
-      ir = context->root();
+      ir_holder = context->get_root();
+      ir = ir_holder.get();
 
+      program.current_kernel = this;
       program.start_function_definition(this);
       func();
       program.end_function_definition();
-
-      compile();
-
       program.current_kernel = nullptr;
     }
 
     void compile() {
+      program.current_kernel = this;
       compiled = program.compile(*this);
+      program.current_kernel = nullptr;
     }
 
     void operator()() {
+      if (!compiled)
+        compile();
       auto c = program.get_context();
       compiled(c);
     }
@@ -59,7 +63,7 @@ class Program {
   void *data_structure;
   CompileConfig config;
 
-  std::vector<Kernel> functions;
+  std::vector<std::unique_ptr<Kernel>> functions;
   int index_counter;
 
   std::string layout_fn;
@@ -92,21 +96,13 @@ class Program {
     materialize_layout();
   }
 
-  Kernel def(const std::function<void()> &body) {
+  Kernel &kernel(const std::function<void()> &body) {
     // Expr::set_allow_store(true);
-    auto func = Kernel(*this, body);
-    functions.push_back(func);
+    auto func = std::make_unique<Kernel>(*this, body);
     // Expr::set_allow_store(false);
-    return func;
-  }
-
-  Kernel kernel(const std::function<void()> &body) {
-    // Expr::set_allow_store(true);
-    auto func = Kernel(*this, body);
-    // Expr::set_allow_store(false);
-    functions.push_back(func);
+    functions.emplace_back(std::move(func));
     current_snode = nullptr;
-    return func;
+    return *functions.back();
   }
 
   void start_function_definition(Kernel *func) {

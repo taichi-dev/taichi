@@ -23,7 +23,8 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(Stmt *stmt) override {
-    if (stmt->is_container_statement()) return;
+    if (stmt->is_container_statement())
+      return;
     else {
       TC_ERROR("Visitor for non-container stmt undefined.");
     }
@@ -289,13 +290,15 @@ class EliminateDup : public IRVisitor {
       } catch (IRModifiedException) {
         TC_P(counter);
         counter++;
-        if (counter > 1000) break;
+        if (counter > 1000)
+          break;
         continue;
       }
       break;
     }
     TC_P(Time::get_time() - t);
-    exit(-1);
+    if (counter > 100)
+      exit(-1);
     for (auto &stmt : block->statements) {
       stmt->accept(this);
     }

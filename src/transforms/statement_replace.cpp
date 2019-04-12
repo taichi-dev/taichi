@@ -35,6 +35,7 @@ class StatementReplace : public IRVisitor {
   }
 
   void visit(RangeForStmt *stmt) {
+    stmt->replace_operand_with(old_stmt, new_stmt);
     stmt->body->accept(this);
   }
 

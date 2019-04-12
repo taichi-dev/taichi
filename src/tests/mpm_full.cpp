@@ -309,7 +309,7 @@ auto mpm3d = []() {
   });
 
   auto &p2g_sorted = kernel([&] {
-    get_current_program().get_current_kernel().benchmarking = true;
+    //get_current_program().get_current_kernel().benchmarking = true;
     Declare(i);
     Declare(j);
     Declare(k);
@@ -410,6 +410,9 @@ auto mpm3d = []() {
       }
     });
   });
+
+  p2g_sorted();
+  exit(0);
 
   auto p2g = [&] {
     if (sorted) {

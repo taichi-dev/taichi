@@ -9,8 +9,8 @@ class BasicBlockEliminate : public IRVisitor {
   int current_stmt_id;
 
   BasicBlockEliminate(Block *block) : block(block) {
-    // allow_undefined_visitor = true;
-    // invoke_default_visitor = false;
+    allow_undefined_visitor = true;
+    invoke_default_visitor = false;
     run();
   }
 
@@ -18,6 +18,13 @@ class BasicBlockEliminate : public IRVisitor {
     for (int i = 0; i < (int)block->statements.size(); i++) {
       current_stmt_id = i;
       block->statements[i]->accept(this);
+    }
+  }
+
+  void visit(Stmt *stmt) override {
+    if (stmt->is_container_statement()) return;
+    else {
+      TC_ERROR("Visitor for non-container stmt undefined.");
     }
   }
 
@@ -150,7 +157,6 @@ class BasicBlockEliminate : public IRVisitor {
               if (block->statements[j]
                       ->is_container_statement()) {  // no if, while, etc..
                 has_related_store = true;
-                TC_WARN("Jumping");
                 break;
               }
               if (block->statements[j]->is<LocalStoreStmt>()) {
@@ -274,19 +280,16 @@ class EliminateDup : public IRVisitor {
   }
 
   void visit(Block *block) override {
-    if (!block->has_container_statements()) {
-      while (true) {
-        try {
-          BasicBlockEliminate _(block);
-        } catch (IRModifiedException) {
-          continue;
-        }
-        break;
+    while (true) {
+      try {
+        BasicBlockEliminate _(block);
+      } catch (IRModifiedException) {
+        continue;
       }
-    } else {
-      for (auto &stmt : block->statements) {
-        stmt->accept(this);
-      }
+      break;
+    }
+    for (auto &stmt : block->statements) {
+      stmt->accept(this);
     }
   }
 

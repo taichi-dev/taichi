@@ -1,3 +1,4 @@
+#include <taichi/taichi>
 #include "../ir.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -280,14 +281,21 @@ class EliminateDup : public IRVisitor {
   }
 
   void visit(Block *block) override {
+    int counter = 0;
+    auto t = Time::get_time();
     while (true) {
       try {
         BasicBlockEliminate _(block);
       } catch (IRModifiedException) {
+        TC_P(counter);
+        counter++;
+        if (counter > 1000) break;
         continue;
       }
       break;
     }
+    TC_P(Time::get_time() - t);
+    exit(-1);
     for (auto &stmt : block->statements) {
       stmt->accept(this);
     }

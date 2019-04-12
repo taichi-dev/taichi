@@ -214,15 +214,18 @@ class GPUIRCodeGen : public IRVisitor {
           "gridDim, blockDim, context.num_leaves);",
           codegen->func_name);
       emit("cudaEvent_t start, stop;");
+
+      if (current_program->get_current_kernel().benchmarking) {
+        emit("while(1) {{");
+      }
+
       emit("cudaEventCreate(&start);");
       emit("cudaEventCreate(&stop);");
-
       emit("cudaEventRecord(start);");
       emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
       emit("cudaEventRecord(stop);");
 
       // emit("t = get_time();");
-      emit("cudaFree(context.leaves); context.leaves = nullptr;");
       // emit("std::cout << (get_time() - t) * 1000 << std::endl;");
       emit("cudaEventSynchronize(stop);");
 
@@ -230,6 +233,11 @@ class GPUIRCodeGen : public IRVisitor {
       emit("cudaEventElapsedTime(&milliseconds, start, stop);");
       emit("std::cout << \"device  \" << milliseconds << std::endl;");
 
+      if (current_program->current_kernel->benchmarking) {
+        emit("}}");
+      }
+
+      emit("cudaFree(context.leaves); context.leaves = nullptr;");
       emit("}}");
       current_struct_for = nullptr;
     }

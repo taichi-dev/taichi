@@ -90,7 +90,7 @@ auto mpm3d = []() {
   // Program prog(Arch::x86_64);
   Program prog(Arch::gpu);
   prog.config.print_ir = true;
-  bool fluid = true;
+  bool fluid = false;
   bool plastic = true;
   CoreState::set_trigger_gdb_when_crash(true);
   // Program prog(Arch::x86_64);
@@ -309,6 +309,7 @@ auto mpm3d = []() {
   });
 
   auto p2g_sorted = kernel([&] {
+    get_current_program().get_current_kernel().benchmarking = true;
     Declare(i);
     Declare(j);
     Declare(k);
@@ -321,17 +322,6 @@ auto mpm3d = []() {
     Cache(0, grid_m);
     For((i, j, k, p_ptr), l, [&] {
       auto p = Eval(l[i, j, k, p_ptr]);
-      /*
-      auto x = particle_x[p];
-      Print(Probe(l.parent(), (i, j, k)));
-      auto dx = x(0) * inv_dx - 0.5f - cast<float32>(i);
-      auto dy = x(1) * inv_dx - 0.5f - cast<float32>(j);
-      auto dz = x(2) * inv_dx - 0.5f - cast<float32>(k);
-      auto max_d = max(dx, max(dy, dz));
-      auto min_d = min(dx, min(dy, dz));
-      If(min_d < 0.0f, [&] { Print(min_d); });
-      If(max_d > 1.0f * grid_block_size, [&] { Print(max_d); });
-      */
 
       auto x = particle_x[p];
       auto v = particle_v[p];

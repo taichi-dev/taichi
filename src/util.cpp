@@ -258,7 +258,8 @@ std::string CompileConfig::compile_cmd(const std::string &input,
   } else {
     cmd = fmt::format(
         "nvcc {} -std=c++14 -shared {} -Xcompiler \"-fPIC\" --use_fast_math "
-        "--ptxas-options=-allow-expensive-optimizations=true,-O3 -I {}/include "
+        "-Xptxas -O3,-v "
+        "--ptxas-options=-allow-expensive-optimizations=true,-O3,-v -I {}/include "
         "-ccbin {} "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -lstdc++ -L{}/build/ -ltaichi_lang "
         "-DTLANG_GPU -o {} {} -Xptxas -dlcm=ca",

@@ -108,7 +108,7 @@ class LoopGenerator {
     generate_loop_header(leaf->parent, for_stmt);
     single_loop_body_head(leaf);
     if (leaf->type == SNodeType::dynamic) {
-      // emit("if ({}_cache->get_n())", leaf->node_type_name);
+      emit("if ({}_cache->get_n())", leaf->node_type_name);
     }
     emit("{{");
     emit("LeafContext<{}> leaf_context;", leaf->node_type_name);

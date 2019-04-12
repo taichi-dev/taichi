@@ -27,15 +27,18 @@ class Program {
     std::string name;
 
     Kernel(Program &program, std::function<void()> func) : program(program) {
+      program.current_kernel = this;
+      benchmarking = false;
       context = std::make_unique<FrontendContext>();
       ir = context->root();
 
       program.start_function_definition(this);
       func();
-
       program.end_function_definition();
 
       compile();
+
+      program.current_kernel = nullptr;
     }
 
     void compile() {
@@ -46,6 +49,8 @@ class Program {
       auto c = program.get_context();
       compiled(c);
     }
+
+    bool benchmarking;
   };
 
   Kernel *current_kernel;
@@ -109,7 +114,6 @@ class Program {
   }
 
   void end_function_definition() {
-    current_kernel = nullptr;
   }
 
   FunctionType compile(Kernel &kernel);

@@ -91,7 +91,7 @@ auto mpm3d = []() {
   Program prog(Arch::gpu);
   prog.config.print_ir = true;
   bool fluid = false;
-  bool plastic = true;
+  bool plastic = false;
   CoreState::set_trigger_gdb_when_crash(true);
   // Program prog(Arch::x86_64);
 
@@ -138,7 +138,7 @@ auto mpm3d = []() {
   auto i = Index(0), j = Index(1), k = Index(2);
   auto p = Index(3);
 
-  bool SOA = true;
+  bool SOA = false;
 
   layout([&]() {
     SNode *fork;
@@ -309,12 +309,12 @@ auto mpm3d = []() {
   });
 
   auto &p2g_sorted = kernel([&] {
-    //get_current_program().get_current_kernel().benchmarking = true;
+    get_current_program().get_current_kernel().benchmarking = true;
     Declare(i);
     Declare(j);
     Declare(k);
     Declare(p_ptr);
-    BlockDim(512);
+    BlockDim(256);
 
     Cache(0, grid_v(0));
     Cache(0, grid_v(1));
@@ -415,8 +415,7 @@ auto mpm3d = []() {
     if (sorted) {
       clear_lists();
       sort();
-      while (1)
-        TC_TIME(p2g_sorted());
+      TC_TIME(p2g_sorted());
     } else {
       p2g_naive();
     }

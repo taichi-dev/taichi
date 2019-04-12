@@ -262,7 +262,7 @@ std::string CompileConfig::compile_cmd(const std::string &input,
         "--ptxas-options=-allow-expensive-optimizations=true,-O3,-v -I {}/include "
         "-ccbin {} "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -lstdc++ -L{}/build/ -ltaichi_lang "
-        "-DTLANG_GPU -o {} {} -Xptxas -dlcm=ca",
+        "-DTLANG_GPU -o {} {} ",
         input, gcc_opt_flag(), get_project_fn(), "g++-6", get_repo_dir(),
         output, extra_flags);
   }

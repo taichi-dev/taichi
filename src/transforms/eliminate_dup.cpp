@@ -1,4 +1,5 @@
 #include <taichi/taichi>
+#include <set>
 #include "../ir.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -8,11 +9,21 @@ class BasicBlockEliminate : public IRVisitor {
   Block *block;
 
   int current_stmt_id;
+  std::set<int> &visited;
 
-  BasicBlockEliminate(Block *block) : block(block) {
+  BasicBlockEliminate(Block *block, std::set<int> &visited)
+      : block(block), visited(visited) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
     run();
+  }
+
+  bool is_done(Stmt *stmt) {
+    return visited.find(stmt->instance_id) != visited.end();
+  }
+
+  void set_done(Stmt *stmt) {
+    visited.insert(stmt->instance_id);
   }
 
   void run() {
@@ -31,6 +42,7 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) override {
+    if (is_done(stmt)) return;
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
@@ -60,9 +72,11 @@ class BasicBlockEliminate : public IRVisitor {
         }
       }
     }
+    set_done(stmt);
   }
 
   void visit(ConstStmt *stmt) override {
+    if (is_done(stmt)) return;
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       auto &bstmt_data = *bstmt;
@@ -84,6 +98,7 @@ class BasicBlockEliminate : public IRVisitor {
         }
       }
     }
+    set_done(stmt);
   }
 
   void visit(AllocaStmt *stmt) override {
@@ -91,6 +106,7 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(ElementShuffleStmt *stmt) override {
+    if (is_done(stmt)) return;
     // is this stmt necessary?
     {
       bool same_source = true;
@@ -133,9 +149,11 @@ class BasicBlockEliminate : public IRVisitor {
         }
       }
     }
+    set_done(stmt);
   }
 
   void visit(LocalLoadStmt *stmt) override {
+    if (is_done(stmt)) return;
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
@@ -180,6 +198,7 @@ class BasicBlockEliminate : public IRVisitor {
         }
       }
     }
+    set_done(stmt);
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -200,6 +219,7 @@ class BasicBlockEliminate : public IRVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
+    if (is_done(stmt)) return;
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
@@ -214,9 +234,11 @@ class BasicBlockEliminate : public IRVisitor {
         }
       }
     }
+    set_done(stmt);
   }
 
   void visit(BinaryOpStmt *stmt) override {
+    if (is_done(stmt)) return;
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
@@ -232,9 +254,11 @@ class BasicBlockEliminate : public IRVisitor {
         }
       }
     }
+    set_done(stmt);
   }
 
   void visit(TrinaryOpStmt *stmt) override {
+    if (is_done(stmt)) return;
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
@@ -250,6 +274,7 @@ class BasicBlockEliminate : public IRVisitor {
         }
       }
     }
+    set_done(stmt);
   }
 
   void visit(AtomicOpStmt *stmt) override {
@@ -284,9 +309,10 @@ class EliminateDup : public IRVisitor {
   void visit(Block *block) override {
     int counter = 0;
     auto t = Time::get_time();
+    std::set<int> visited;
     while (true) {
       try {
-        BasicBlockEliminate _(block);
+        BasicBlockEliminate _(block, visited);
       } catch (IRModifiedException) {
         TC_P(counter);
         counter++;
@@ -297,8 +323,6 @@ class EliminateDup : public IRVisitor {
       break;
     }
     TC_P(Time::get_time() - t);
-    if (counter > 100)
-      exit(-1);
     for (auto &stmt : block->statements) {
       stmt->accept(this);
     }

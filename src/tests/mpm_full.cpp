@@ -385,11 +385,11 @@ auto mpm3d = []() {
 
       int low = 0, high = 1;
       auto base_coord_i =
-          AssumeInRange(cast<int32>(base_coord(0)), i, low, high);
+          Eval(AssumeInRange(cast<int32>(base_coord(0)), i, low, high));
       auto base_coord_j =
-          AssumeInRange(cast<int32>(base_coord(1)), j, low, high);
+          Eval(AssumeInRange(cast<int32>(base_coord(1)), j, low, high));
       auto base_coord_k =
-          AssumeInRange(cast<int32>(base_coord(2)), k, low, high);
+          Eval(AssumeInRange(cast<int32>(base_coord(2)), k, low, high));
 
       // scatter
       for (int a = 0; a < 3; a++) {
@@ -410,9 +410,6 @@ auto mpm3d = []() {
       }
     });
   });
-
-  p2g_sorted();
-  exit(0);
 
   auto p2g = [&] {
     if (sorted) {

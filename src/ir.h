@@ -1222,8 +1222,8 @@ class RangeAssumptionStmt : public Stmt {
 
   RangeAssumptionStmt(Stmt *input, Stmt *base, int low, int high)
       : input(input), base(base), low(low), high(high) {
-    add_operand(input);
-    add_operand(base);
+    add_operand(this->input);
+    add_operand(this->base);
   }
 
   DEFINE_ACCEPT

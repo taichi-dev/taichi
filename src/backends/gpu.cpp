@@ -592,5 +592,3 @@ void GPUCodeGen::codegen() {
 
 TLANG_NAMESPACE_END
 
-#if (0)
-#endif

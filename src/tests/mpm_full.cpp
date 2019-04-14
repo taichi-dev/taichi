@@ -160,17 +160,24 @@ auto mpm3d = []() {
     };
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
-        place(particle_C(i, j));
         place(particle_F(i, j));
       }
-      place(particle_x(i));
-      place(particle_v(i));
     }
+    for (int i = 0; i < dim; i++) {
+      for (int j = 0; j < dim; j++) {
+        place(particle_C(i, j));
+      }
+    }
+    for (int i = 0; i < dim; i++) {
+      place(particle_x(i));
+    }
+    for (int i = 0; i < dim; i++)
+      place(particle_v(i));
     place(particle_J);
 
     TC_ASSERT(n % grid_block_size == 0);
     auto &block = root.dense({i, j, k}, n / grid_block_size);
-    constexpr bool block_soa = true;
+    constexpr bool block_soa = false;
 
     if (block_soa) {
       block.dense({i, j, k}, grid_block_size).place(grid_v(0));
@@ -309,12 +316,11 @@ auto mpm3d = []() {
   });
 
   auto &p2g_sorted = kernel([&] {
-    get_current_program().get_current_kernel().benchmarking = true;
     Declare(i);
     Declare(j);
     Declare(k);
     Declare(p_ptr);
-    BlockDim(256);
+    BlockDim(128);
 
     Cache(0, grid_v(0));
     Cache(0, grid_v(1));
@@ -366,7 +372,6 @@ auto mpm3d = []() {
           J = newJ;
           F = std::get<0>(svd) * diag_matrix(sig) *
               transposed(std::get<2>(svd));
-          particle_F[p] = F;
           /*
           auto harderning = exp((1.0f - Jp) * 10.0f);
           mu *= harderning;
@@ -374,8 +379,8 @@ auto mpm3d = []() {
           */
         } else {
           J = oldJ;
-          particle_F[p] = F;
         }
+        particle_F[p] = F;
         cauchy = Eval(2.0_f * mu * (F - R) * transposed(F) +
                       (Matrix::identity(3) * lambda) * (J - 1.0f) * J);
       }
@@ -457,6 +462,7 @@ auto mpm3d = []() {
   });
 
   auto &g2p = kernel([&]() {
+    benchmark_kernel();
     Declare(p);
     if (particle_block_size == 1)
       BlockDim(256);

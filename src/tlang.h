@@ -207,6 +207,10 @@ inline Expr AssumeInRange(const Expr &expr,
   return Expr::make<RangeAssumptionExpression>(expr, base, low, high);
 }
 
+inline void benchmark_kernel() {
+  get_current_program().get_current_kernel().benchmarking = true;
+}
+
 TLANG_NAMESPACE_END
 
 TC_NAMESPACE_BEGIN

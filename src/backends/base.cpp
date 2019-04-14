@@ -1,4 +1,5 @@
 #include "base.h"
+#include <sstream>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -36,6 +37,32 @@ void CodeGenBase::write_source() {
   auto format_ret =
       std::system(fmt::format("clang-format -i {}", get_source_path()).c_str());
   trash(format_ret);
+}
+
+std::string CodeGenBase::get_source() {
+  /*
+  std::ifstream ifs(get_source_path());
+  std::string firstline;
+  std::getline(ifs, firstline);
+  if (firstline.find("debug") != firstline.npos) {
+    TC_WARN("Debugging file {}. Code overridden.", get_source_path());
+    return;
+  }
+  */
+  std::stringstream of;
+  for (auto const &k : codes) {
+    of << "// region " << get_region_name(k.first) << std::endl;
+    of << k.second;
+  }
+  return of.str();
+  /*
+  trash(std::system(
+      fmt::format("cp {} {}_unformated", get_source_path(), get_source_path())
+          .c_str()));
+  auto format_ret =
+      std::system(fmt::format("clang-format -i {}", get_source_path()).c_str());
+  trash(format_ret);
+  */
 }
 
 void CodeGenBase::load_dll() {

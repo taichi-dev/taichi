@@ -35,6 +35,10 @@ struct CompileConfig {
 
   std::string gcc_opt_flag();
 
+  std::string compiler_config();
+
+  std::string preprocess_cmd(const std::string &input, const std::string &output);
+
   std::string compile_cmd(const std::string &input,
                           const std::string &output,
                           bool verbose = false);

@@ -242,30 +242,43 @@ std::string snode_op_type_name(SNodeOpType type) {
   return type_names[type];
 }
 
-std::string CompileConfig::compile_cmd(const std::string &input,
-                                       const std::string &output,
-                                       bool verbose) {
+std::string CompileConfig::compiler_config() {
   std::string cmd;
   if (arch == Arch::x86_64) {
     cmd = fmt::format(
-        "{} {} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/include "
+        "{} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/include "
         "-ffp-contract=fast "
-        "-fopenmp -Wall -g -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU -o {} "
-        "-lstdc++  -L{}/build/ -ltaichi_lang"
-        "{}",
-        compiler_name(), input, gcc_opt_flag(), get_project_fn(), output,
-        get_repo_dir(), extra_flags);
+        "-fopenmp -Wall -g -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU "
+        "-lstdc++  -L{}/build/ -ltaichi_lang {}",
+        compiler_name(), gcc_opt_flag(), get_project_fn(), get_repo_dir(),
+        extra_flags);
   } else {
     cmd = fmt::format(
-        "nvcc {} -std=c++14 -shared {} -Xcompiler \"-fPIC\" --use_fast_math "
+        "nvcc -std=c++14 -shared {} -Xcompiler \"-fPIC\" --use_fast_math "
         "-Xptxas -O3,-v "
-        "--ptxas-options=-allow-expensive-optimizations=true,-O3,-v -I {}/include "
-        "-ccbin {} "
+        "--ptxas-options=-allow-expensive-optimizations=true,-O3,-v -I "
+        "{}/include -ccbin {} "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -lstdc++ -L{}/build/ -ltaichi_lang "
-        "-DTLANG_GPU -o {} {} ",
-        input, gcc_opt_flag(), get_project_fn(), "g++-6", get_repo_dir(),
-        output, extra_flags);
+        "-DTLANG_GPU {} ",
+        gcc_opt_flag(), get_project_fn(), "g++-6", get_repo_dir(), extra_flags);
   }
+  return cmd;
+}
+
+std::string CompileConfig::preprocess_cmd(const std::string &input,
+                                           const std::string &output) {
+  std::string cmd = compiler_config();
+  std::string io = fmt::format(" -E {} -o {} ", input, output);
+  return cmd + io;
+}
+
+std::string CompileConfig::compile_cmd(const std::string &input,
+                                       const std::string &output,
+                                       bool verbose) {
+  std::string cmd = compiler_config();
+  std::string io = fmt::format(" {} -o {} ", input, output);
+
+  cmd += io;
 
   if (!verbose) {
     cmd += fmt::format(" 2> {}.log", input);

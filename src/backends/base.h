@@ -117,6 +117,8 @@ class CodeGenBase {
 
   void write_source();
 
+  std::string get_source();
+
   void load_dll();
 
   template <typename T>

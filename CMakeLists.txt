@@ -1,5 +1,5 @@
 set(TAICHI_PROJECT_NAME "lang")
-file(GLOB_RECURSE PROJECT_SOURCES "src/*.cpp" "src/*.h" "headers/*.h")
+file(GLOB_RECURSE PROJECT_SOURCES "src/*.cpp" "src/*.h" "headers/*.h" "external/xxhash/*.c")
 include_directories(include)
 set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(TAICHI_PROJECT_LIBRARIES ${TAICHI_PROJECT_LIBRARIES} ${TAICHI_PROJECT_NAME} PARENT_SCOPE)
@@ -7,6 +7,7 @@ set(TAICHI_PROJECT_LIBRARIES ${TAICHI_PROJECT_LIBRARIES} ${TAICHI_PROJECT_NAME} 
 add_subdirectory(external/partio)
 include_directories(external/openvdb/)
 include_directories(external/partio/include)
+include_directories(external/xxhash)
 
 add_library(taichi_lang SHARED ${PROJECT_SOURCES})
 target_link_libraries(taichi_lang ${CORE_LIBRARY_NAME} partio ${CMAKE_CURRENT_LIST_DIR}/external/openvdb/openvdb/libopenvdb.so Half log4cplus boost_iostreams)

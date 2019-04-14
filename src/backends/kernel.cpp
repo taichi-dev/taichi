@@ -8,6 +8,7 @@ FunctionType KernelCodeGen::compile(taichi::Tlang::Program &prog,
   this->kernel = &kernel;
   lower();
   codegen();
+  //std::string source = get_source();
   write_source();
   auto cmd = get_current_program().config.compile_cmd(get_source_path(),
                                                       get_library_path());

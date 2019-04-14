@@ -158,7 +158,17 @@ class GPUIRCodeGen : public IRVisitor {
 
       emit("}}");
 
+      bool needs_write_back = false;
       if (!for_stmt->scratch_opt.empty()) {
+        for (auto &pad : scratch_pads->pads) {
+          if (pad.second.total_flags == AccessFlag::write ||
+              pad.second.total_flags == AccessFlag::accumulate) {
+            needs_write_back = true;
+          }
+        }
+      }
+
+      if (needs_write_back) {
         emit("__syncthreads();");
         for (auto &pad : scratch_pads->pads) {
           if (pad.second.total_flags == AccessFlag::write ||
@@ -208,7 +218,9 @@ class GPUIRCodeGen : public IRVisitor {
           "int gridDim = context.num_leaves * {}, blockDim = ({}::get_max_n()"
           "+ {} - 1) / {};",
           block_division, leaf->node_type_name, block_division, block_division);
-      emit("std::cout << \"list    \" << (get_time() - t) * 1000 << \" ms\" << std::endl;");
+      emit(
+          "std::cout << \"list    \" << (get_time() - t) * 1000 << \" ms\" << "
+          "std::endl;");
       emit(
           "printf(\"launching kernel {} <<<%d, %d>>> num_leaves = %d\\n\", "
           "gridDim, blockDim, context.num_leaves);",
@@ -234,6 +246,13 @@ class GPUIRCodeGen : public IRVisitor {
       emit("std::cout << \"device  \" << milliseconds << std::endl;");
 
       if (current_program->current_kernel->benchmarking) {
+        emit("cudaDeviceSynchronize();\n");
+        emit("auto err = cudaGetLastError();");
+        emit("if (err) {{");
+        emit(
+            "printf(\"CUDA Error (File %s Ln %d): %s\\n\", "
+            "__FILE__, __LINE__, cudaGetErrorString(err));");
+        emit("exit(-1);}}");
         emit("}}");
       }
 
@@ -591,4 +610,3 @@ void GPUCodeGen::codegen() {
 }
 
 TLANG_NAMESPACE_END
-

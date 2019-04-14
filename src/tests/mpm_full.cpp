@@ -39,7 +39,6 @@ auto reset_grid_benchmark = []() {
 
   auto f32 = DataType::f32;
   int grid_block_size = 4;
-  int particle_block_size = 1;
 
   Vector grid_v(f32, dim);
   Global(grid_m, f32);
@@ -50,7 +49,6 @@ auto reset_grid_benchmark = []() {
   bool SOA = true;
 
   layout([&]() {
-    SNode *fork;
     TC_ASSERT(n % grid_block_size == 0);
     auto &block = root.dense({i, j, k}, n / grid_block_size);
     constexpr bool block_soa = false;
@@ -463,14 +461,22 @@ auto mpm3d = []() {
 
   auto &g2p = kernel([&]() {
     benchmark_kernel();
-    Declare(p);
-    if (particle_block_size == 1)
-      BlockDim(256);
-    For(p, particle_x(0), [&] {
+    Declare(i);
+    Declare(j);
+    Declare(k);
+    Declare(p_ptr);
+    BlockDim(128);
+
+    Cache(0, grid_v(0));
+    Cache(0, grid_v(1));
+    Cache(0, grid_v(2));
+    For((i, j, k, p_ptr), l, [&] {
+      auto p = Eval(l[i, j, k, p_ptr]);
+
+      // For(p, particle_x(0), [&] {
       auto x = particle_x[p];
       auto v = Vector(dim);
       Mutable(v, DataType::f32);
-      // auto F = particle_F[p];
       auto C = Matrix(dim, dim);
       Mutable(C, DataType::f32);
 
@@ -488,32 +494,34 @@ auto mpm3d = []() {
                     Eval(0.75_f - sqr(fx - 1.0_f)),
                     Eval(0.5_f * sqr(fx - 0.5_f))};
 
-      auto base_i = cast<int32>(base_coord(0));
-      auto base_j = cast<int32>(base_coord(1));
-      auto base_k = cast<int32>(base_coord(2));
+      int low = 0, high = 1;
+      auto base_coord_i =
+          Eval(AssumeInRange(cast<int32>(base_coord(0)), i, low, high));
+      auto base_coord_j =
+          Eval(AssumeInRange(cast<int32>(base_coord(1)), j, low, high));
+      auto base_coord_k =
+          Eval(AssumeInRange(cast<int32>(base_coord(2)), k, low, high));
 
-      for (int p = 0; p < 3; p++) {
-        for (int q = 0; q < 3; q++) {
-          for (int r = 0; r < 3; r++) {
+      for (int p = 0; p < 1; p++) {
+        for (int q = 0; q < 1; q++) {
+          for (int r = 0; r < 1; r++) {
             auto dpos = Vector(dim);
             dpos(0) = Expr(p * 1.0_f) - fx(0);
             dpos(1) = Expr(q * 1.0_f) - fx(1);
             dpos(2) = Expr(r * 1.0_f) - fx(2);
             auto weight = w[p](0) * w[q](1) * w[r](2);
             auto wv =
-                weight *
-                grid_v[base_i + Expr(p), base_j + Expr(q), base_k + Expr(r)];
-            v = v + wv;
-            C = C + Expr(4 * inv_dx) * outer_product(wv, dpos);
+                weight * grid_v[base_coord_i + Expr(p), base_coord_j + Expr(q),
+                                base_coord_k + Expr(r)];
+            v += wv;
+            C += (4 * inv_dx) * outer_product(wv, dpos);
           }
         }
       }
 
-      x = x + dt * v;
-
       particle_C[p] = C;
       particle_v[p] = v;
-      particle_x[p] = x;
+      particle_x[p] = x + dt * v;
     });
   });
 

@@ -19,6 +19,7 @@ using grid_type = float[m / block_size][m / block_size][m / block_size][4]
 
 __global__ void fill(grid_type *grid_) {
   unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) return;
   float *data = (float *)grid_;
   grid_type &grid = *grid_;
   for (int k = 0; k < 4; k++) {
@@ -34,10 +35,17 @@ int main() {
   for (int i = 0; i < 20; i++) {
     cudaDeviceSynchronize();
     auto t = get_time();
-    fill<<<n / bs, bs>>>((grid_type *)a);
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
     cudaDeviceSynchronize();
-    t = get_time() - t;
-    printf("%.2f ms   bw %.3f GB/s\n", t * 1000, n * 1.0f * 16 / t / 1e9);
+    fill<<<n / bs, bs>>>((grid_type *)a);
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    std::cout << "device  " << milliseconds << std::endl;
   }
   std::cout << std::endl;
 }

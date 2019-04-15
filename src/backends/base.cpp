@@ -32,12 +32,6 @@ void CodeGenBase::write_source() {
       of << k.second;
     }
   }
-  trash(std::system(
-      fmt::format("cp {} {}_unformated", get_source_path(), get_source_path())
-          .c_str()));
-  auto format_ret =
-      std::system(fmt::format("clang-format -i {}", get_source_path()).c_str());
-  trash(format_ret);
 }
 
 std::string CodeGenBase::get_source() {
@@ -111,6 +105,12 @@ void CodeGenBase::generate_binary() {
     std::system(
         fmt::format("cp {} {}", cached_binary_fn, get_library_path()).c_str());
   } else {
+    trash(std::system(
+        fmt::format("cp {} {}_unformated", get_source_path(), get_source_path())
+            .c_str()));
+    auto format_ret =
+        std::system(fmt::format("clang-format -i {}", get_source_path()).c_str());
+    trash(format_ret);
     auto cmd = get_current_program().config.compile_cmd(get_source_path(),
                                                         get_library_path());
     auto compile_ret = std::system(cmd.c_str());

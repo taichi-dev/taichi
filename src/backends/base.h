@@ -88,6 +88,10 @@ class CodeGenBase {
     return id++;
   }
 
+  std::string db_folder() {  // binary database
+    return folder + "/db";
+  }
+
   CodeGenBase() {
     id = get_kernel_id();
     func_name = fmt::format("func{:06d}", id);
@@ -97,6 +101,7 @@ class CodeGenBase {
 
     folder = "_tlang_cache/";
     create_directories(folder);
+    create_directories(db_folder());
     line_suffix = "\n";
   }
 

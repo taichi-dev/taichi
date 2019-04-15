@@ -268,7 +268,7 @@ std::string CompileConfig::compiler_config() {
 std::string CompileConfig::preprocess_cmd(const std::string &input,
                                            const std::string &output) {
   std::string cmd = compiler_config();
-  std::string io = fmt::format(" -E {} -o {} ", input, output);
+  std::string io = fmt::format(" -E {} -o {} 2> /dev/null ", input, output);
   return cmd + io;
 }
 

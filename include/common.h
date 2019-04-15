@@ -50,7 +50,8 @@ using uint16 = unsigned short;
 
 #define TC_ASSERT(x) \
   if (!(x))            \
-    std::cout << "Ln" << __LINE__ << ":" << #x << std::endl;
+    std::cout << "Ln" << __LINE__ << ":" << #x << ": Assertion failed." << std::endl;\
+    exit(-1);
 namespace taichi {
 TC_FORCE_INLINE uint32 rand_int() noexcept {
   static unsigned int x = 123456789, y = 362436069, z = 521288629, w = 88675123;

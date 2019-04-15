@@ -25,6 +25,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+using PhysicalIndexGroup = int[max_num_indices];
+
 template <typename child_type>
 struct layout_root {
   child_type children;
@@ -41,7 +43,8 @@ struct layout_root {
     return 1;
   }
 
-  TC_DEVICE TC_FORCE_INLINE void activate(int i) {
+  TC_DEVICE TC_FORCE_INLINE void activate(int i,
+                                          const PhysicalIndexGroup &index) {
   }
 
   static constexpr bool has_null = false;
@@ -64,7 +67,8 @@ struct dense {
     return n;
   }
 
-  TC_DEVICE TC_FORCE_INLINE void activate(int i) {
+  TC_DEVICE TC_FORCE_INLINE void activate(int i,
+                                          const PhysicalIndexGroup &index) {
   }
 
   static constexpr bool has_null = false;
@@ -146,8 +150,8 @@ struct SNodeManager {
   using Allocator = SNodeAllocator<T>;
   Allocator *allocator;
 
-  Allocator &get_allocator() {
-    return *allocator;
+  Allocator *get_allocator() {
+    return allocator;
   }
 };
 
@@ -181,17 +185,14 @@ struct hashed {
   std::mutex mut;
   TC_DEVICE TC_FORCE_INLINE child_type *look_up(
       int i) {  // i is flattened index
-#if defined(TLANG_HOST)
-    activate(i);
-#else
     if (data.find(i) == data.end()) {
       return nullptr;
     }
-#endif
     return data[i];
   }
 
-  TC_DEVICE TC_FORCE_INLINE void activate(int i) {
+  TC_DEVICE TC_FORCE_INLINE void activate(int i,
+                                          const PhysicalIndexGroup &index) {
     if (data.find(i) == data.end()) {
       child_type *ptr = allocate<child_type>();
       data.insert(std::make_pair(i, ptr));
@@ -226,7 +227,8 @@ struct pointer {
     return 1;
   }
 
-  TC_DEVICE TC_FORCE_INLINE void activate(int i) {
+  TC_DEVICE TC_FORCE_INLINE void activate(int i,
+                                          const PhysicalIndexGroup &index) {
     if (data == nullptr) {
       data = allocate<child_type>();
     }
@@ -268,7 +270,8 @@ struct dynamic {
   }
 #endif
 
-  TC_DEVICE TC_FORCE_INLINE void activate(int i) {
+  TC_DEVICE TC_FORCE_INLINE void activate(int i,
+                                          const PhysicalIndexGroup &index) {
     // TC_ASSERT();
     // Do nothing
   }

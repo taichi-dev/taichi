@@ -195,8 +195,12 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
           }
         }
       }
-      if (mode == mode_activate) {
-        emit("n{}->activate(tmp);", i);
+      if (mode != mode_activate) {
+        emit("#if !defined(TC_HOST)");
+      }
+      emit("n{}->activate(tmp, {{i0, i1, i2, i3}});", i);
+      if (mode != mode_activate) {
+        emit("#endif");
       }
       emit("auto n{} = access_{}(n{}, tmp);", i + 1,
            stack[i + 1]->node_type_name, i);

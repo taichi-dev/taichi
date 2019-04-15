@@ -37,10 +37,13 @@ struct CompileConfig {
 
   std::string compiler_config();
 
-  std::string preprocess_cmd(const std::string &input, const std::string &output);
+  std::string preprocess_cmd(const std::string &input,
+                             const std::string &output,
+                             const std::string &extra_flags);
 
   std::string compile_cmd(const std::string &input,
                           const std::string &output,
+                          const std::string &extra_flags,
                           bool verbose = false);
 };
 

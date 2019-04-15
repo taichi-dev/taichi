@@ -85,13 +85,12 @@ TC_REGISTER_TASK(reset_grid_benchmark);
 
 auto mpm3d = []() {
   bool benchmark_dragon = true;
-  // Program prog(Arch::x86_64);
   Program prog(Arch::gpu);
+  // Program prog(Arch::x86_64);
   prog.config.print_ir = true;
   bool fluid = false;
   bool plastic = false;
   CoreState::set_trigger_gdb_when_crash(true);
-  // Program prog(Arch::x86_64);
 
   constexpr int n = 256;  // grid_resolution
   const real dt = 5e-5_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
@@ -460,12 +459,12 @@ auto mpm3d = []() {
   });
 
   auto &g2p = kernel([&]() {
-    benchmark_kernel();
+    // benchmark_kernel();
     Declare(i);
     Declare(j);
     Declare(k);
     Declare(p_ptr);
-    BlockDim(128);
+    BlockDim(64);
 
     Cache(0, grid_v(0));
     Cache(0, grid_v(1));
@@ -488,7 +487,7 @@ auto mpm3d = []() {
       }
 
       auto base_coord = floor(inv_dx * x - 0.5_f);
-      auto fx = x * Expr(inv_dx) - base_coord;
+      auto fx = x * inv_dx - base_coord;
 
       Vector w[] = {Eval(0.5_f * sqr(1.5_f - fx)),
                     Eval(0.75_f - sqr(fx - 1.0_f)),
@@ -502,24 +501,24 @@ auto mpm3d = []() {
       auto base_coord_k =
           Eval(AssumeInRange(cast<int32>(base_coord(2)), k, low, high));
 
-      for (int p = 0; p < 1; p++) {
-        for (int q = 0; q < 1; q++) {
-          for (int r = 0; r < 1; r++) {
+      for (int p = 0; p < 3; p++) {
+        for (int q = 0; q < 3; q++) {
+          for (int r = 0; r < 3; r++) {
             auto dpos = Vector(dim);
             dpos(0) = Expr(p * 1.0_f) - fx(0);
             dpos(1) = Expr(q * 1.0_f) - fx(1);
             dpos(2) = Expr(r * 1.0_f) - fx(2);
             auto weight = w[p](0) * w[q](1) * w[r](2);
             auto wv =
-                weight * grid_v[base_coord_i + Expr(p), base_coord_j + Expr(q),
-                                base_coord_k + Expr(r)];
+                weight *
+                grid_v[base_coord_i + p, base_coord_j + q, base_coord_k + r];
             v += wv;
-            C += (4 * inv_dx) * outer_product(wv, dpos);
+            C += outer_product(wv, dpos);
           }
         }
       }
 
-      particle_C[p] = C;
+      particle_C[p] = (4 * inv_dx) * C;
       particle_v[p] = v;
       particle_x[p] = x + dt * v;
     });

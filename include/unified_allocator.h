@@ -58,4 +58,18 @@ class UnifiedAllocator {
   static void free();
 };
 
+#if defined(TC_GPU) && !defined(TC_STRUCT)
+template <typename T, typename... Args>
+__device__ T *create_unified(Args&& ...args) {
+  auto addr = allocator()->alloc(*device_head, sizeof(T));
+  return new (addr) T(std::forward<Args>(args)...);
+}
+#else
+template <typename T, typename... Args>
+T *create_unified(Args&& ...args) {
+  auto addr = allocator()->alloc(sizeof(T));
+  return new (addr) T(std::forward<Args>(args)...);
+}
+#endif
+
 TLANG_NAMESPACE_END

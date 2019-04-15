@@ -10,7 +10,6 @@
   }
 
 #include "context.h"
-#include "unified_allocator.h"
 
 #include <atomic>
 #include <numeric>
@@ -50,7 +49,7 @@ using uint16 = unsigned short;
 #endif
 
 #define TC_ASSERT(x) \
-  if (!x)            \
+  if (!(x))            \
     std::cout << "Ln" << __LINE__ << ":" << #x << std::endl;
 namespace taichi {
 TC_FORCE_INLINE uint32 rand_int() noexcept {
@@ -99,6 +98,7 @@ TC_FORCE_INLINE T rand() noexcept;
 TLANG_NAMESPACE_BEGIN
 
 constexpr int max_num_indices = 4;
+constexpr int max_num_snodes = 1024;
 
 template <typename T, typename G>
 __device__ T union_cast(G g) {
@@ -122,3 +122,7 @@ T union_cast_different_size(G g) {
 }
 
 TLANG_NAMESPACE_END
+
+#if defined(TC_GPU)
+__device__ __constant__ void **device_head;
+#endif

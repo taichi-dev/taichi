@@ -10,7 +10,7 @@ FunctionType KernelCodeGen::compile(taichi::Tlang::Program &prog,
   this->kernel = &kernel;
   lower();
   codegen();
-  generate_binary();
+  generate_binary("");
   TC_P(Time::get_time() - t);
   return load_function();
 }

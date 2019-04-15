@@ -139,7 +139,7 @@ class CodeGenBase {
 
   FunctionType load_function();
 
-  void generate_binary();
+  void generate_binary(std::string extra_flags);
 
   void disassemble();
 };

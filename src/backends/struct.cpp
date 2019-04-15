@@ -16,6 +16,7 @@ StructCompiler::StructCompiler() : CodeGenBase() {
 }
 
 void StructCompiler::visit(SNode &snode) {
+  snodes.push_back(&snode);
   // TC_P(snode.type_name());
   for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {
     auto &ch = snode.ch[ch_id];
@@ -239,11 +240,20 @@ void StructCompiler::run(SNode &node) {
   visit(node);
   root_type = node.node_type_name;
   generate_leaf_accessors(node);
-  emit("#if !defined(TC_GPU)");
-  emit(
-      "TC_EXPORT void *create_data_structure() {{auto addr = "
-      "taichi::Tlang::allocator()->alloc(sizeof({})); auto p= new(addr) {}; ",
-      root_type, root_type);
+  emit("#if defined(TC_STRUCT)");
+  emit("TC_EXPORT void *create_data_structure() {{");
+
+  emit("Managers::initialize();");
+  TC_ASSERT(snodes.size() <= max_num_snodes);
+  for (int i = 0; i < snodes.size(); i++) {
+    emit(
+        "Managers::get_instance()->get<{}>({}) = "
+        "create_unified<SNodeManager<{}>>();",
+        snodes[i]->node_type_name, i, snodes[i]->node_type_name);
+  }
+
+  emit("auto p = create_unified<{}>(); ", root_type);
+
   emit("return p;}}");
   emit(
       "TC_EXPORT void release_data_structure(void *ds) {{delete ({} "
@@ -252,7 +262,7 @@ void StructCompiler::run(SNode &node) {
   emit("#endif");
   write_source();
 
-  generate_binary();
+  generate_binary("-DTC_STRUCT");
   load_dll();
   creator = load_function<void *(*)()>("create_data_structure");
   load_accessors(node);

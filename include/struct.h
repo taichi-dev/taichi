@@ -85,6 +85,95 @@ TC_FORCE_INLINE __host__ T *allocate() {
 }
 #endif
 
+struct SNodeMeta {
+  bool active;
+  int ptr;
+  int indices[max_num_indices];
+};
+
+template <typename T>
+struct SNodeAllocator {
+  static constexpr int pool_size = (1 << 20);
+  SNodeMeta *meta_pool;
+  T *data_pool;
+  int tail;
+
+  TC_DEVICE SNodeAllocator() {
+    data_pool = (T *)allocate(sizeof(T) * pool_size);
+    meta_pool = (SNodeMeta *)allocate(sizeof(SNodeMeta) * pool_size);
+  }
+
+#if defined(TC_GPU)
+  __device__ T *allocate_node(int i0, int i1, int i2, int i3) {
+    auto id = atomicAdd(&tail, 1);
+    SNodeMeta &meta = meta_pool[id];
+    meta.active = true;
+    meta.ptr = id;
+
+    meta.indices[0] = i0;
+    meta.indices[1] = i1;
+    meta.indices[2] = i2;
+    meta.indices[3] = i3;
+
+    return data_pool[id];
+  }
+#else
+  T *allocate_node(int i0, int i1, int i2, int i3) {
+    auto id = atomicAdd(&tail, 1);
+    SNodeMeta &meta = meta_pool[id];
+    meta.active = true;
+    meta.ptr = id;
+
+    meta.indices[0] = i0;
+    meta.indices[1] = i1;
+    meta.indices[2] = i2;
+    meta.indices[3] = i3;
+
+    return data_pool[id];
+  }
+#endif
+
+  void gc() {
+  }
+
+  void print_statistics() {
+    std::cout << "  num nodes: " << tail << std::endl;
+  }
+};
+
+template <typename T>
+struct SNodeManager {
+  using Allocator = SNodeAllocator<T>;
+  Allocator *allocator;
+
+  Allocator &get_allocator() {
+    return *allocator;
+  }
+};
+
+struct Managers {
+  void *managers[max_num_snodes];
+
+  Managers() {
+  }
+
+  template <typename T>
+  SNodeManager<T> *&get(int i) {
+    return (SNodeManager<T> *&)(managers[i]);
+  }
+
+#if defined(TC_STRUCT)
+  static void initialize() {
+    auto addr = create_unified<Managers>();
+    TC_ASSERT(addr == get_instance());
+  }
+#endif
+
+  static Managers *get_instance() {
+    return (Managers *)((unsigned char *)(*allocator()->head) + sizeof(void *));
+  }
+};
+
 template <typename _child_type>
 struct hashed {
   using child_type = _child_type;

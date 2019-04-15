@@ -85,18 +85,17 @@ std::string CodeGenBase::get_source_name() {
   return fmt::format("tmp{:04d}.{}", id, suffix);
 }
 
-void CodeGenBase::generate_binary() {
+void CodeGenBase::generate_binary(std::string extra_flags) {
   write_source();
-  auto compiler_config = get_current_program().config.compiler_config();
   auto pp_fn = get_source_path() + ".i";
-  auto preprocess_cmd =
-      get_current_program().config.preprocess_cmd(get_source_path(), pp_fn);
+  auto preprocess_cmd = get_current_program().config.preprocess_cmd(
+      get_source_path(), pp_fn, extra_flags);
   std::system(preprocess_cmd.c_str());
   std::ifstream ifs(pp_fn);
   TC_ASSERT(ifs);
   auto hash_input =
-      compiler_config + std::string(std::istreambuf_iterator<char>(ifs),
-                                    std::istreambuf_iterator<char>());
+      preprocess_cmd + std::string(std::istreambuf_iterator<char>(ifs),
+                                   std::istreambuf_iterator<char>());
   auto hash = XXH64(hash_input.data(), hash_input.size(), 0);
 
   std::string cached_binary_fn = db_folder() + fmt::format("/{}.so", hash);
@@ -108,15 +107,15 @@ void CodeGenBase::generate_binary() {
     trash(std::system(
         fmt::format("cp {} {}_unformated", get_source_path(), get_source_path())
             .c_str()));
-    auto format_ret =
-        std::system(fmt::format("clang-format -i {}", get_source_path()).c_str());
+    auto format_ret = std::system(
+        fmt::format("clang-format -i {}", get_source_path()).c_str());
     trash(format_ret);
-    auto cmd = get_current_program().config.compile_cmd(get_source_path(),
-                                                        get_library_path());
+    auto cmd = get_current_program().config.compile_cmd(
+        get_source_path(), get_library_path(), extra_flags);
     auto compile_ret = std::system(cmd.c_str());
     if (compile_ret != 0) {
       auto cmd = get_current_program().config.compile_cmd(
-          get_source_path(), get_library_path(), true);
+          get_source_path(), get_library_path(), extra_flags, true);
       trash(std::system(cmd.c_str()));
       TC_ERROR("Source {} compilation failed.", get_source_path());
     } else {

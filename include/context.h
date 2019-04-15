@@ -29,7 +29,6 @@ __device__ __host__
 #endif
     void *
     allocate(std::size_t size);
-
 }  // namespace Tlang
 
 };  // namespace taichi

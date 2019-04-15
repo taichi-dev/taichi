@@ -1017,8 +1017,6 @@ __global__ void init_random_numbers(unsigned int seed) {
   curand_init(idx + (seed * 1000000007), 0, 0, &states[idx]);
 }
 
-__device__ __constant__ void **device_head;
-
 __host__ void gpu_runtime_init() {
   static int initialized = false;
   if (initialized)

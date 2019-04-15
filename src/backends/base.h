@@ -2,6 +2,7 @@
 #include "../util.h"
 #include "../snode.h"
 #include "../ir.h"
+#include "../program.h"
 #include <dlfcn.h>
 
 TLANG_NAMESPACE_BEGIN
@@ -137,6 +138,8 @@ class CodeGenBase {
   }
 
   FunctionType load_function();
+
+  void generate_binary();
 
   void disassemble();
 };

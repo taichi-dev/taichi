@@ -252,17 +252,7 @@ void StructCompiler::run(SNode &node) {
   emit("#endif");
   write_source();
 
-  auto cmd = get_current_program().config.compile_cmd(get_source_path(),
-                                                      get_library_path());
-  auto compile_ret = std::system(cmd.c_str());
-
-  if (compile_ret != 0) {
-    auto cmd = get_current_program().config.compile_cmd(
-        get_source_path(), get_library_path(), true);
-    trash(std::system(cmd.c_str()));
-    TC_ERROR("Compilation failed");
-  }
-  disassemble();
+  generate_binary();
   load_dll();
   creator = load_function<void *(*)()>("create_data_structure");
   load_accessors(node);

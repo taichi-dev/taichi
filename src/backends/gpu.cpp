@@ -177,7 +177,7 @@ class GPUIRCodeGen : public IRVisitor {
             std::string statement;
             if (pad.second.total_flags == AccessFlag::accumulate)
               statement = fmt::format(
-                  "if ({}[flat_index] != 0) atomicAdd({}, {}[flat_index]);",
+                  "if ({}[flat_index] != 0) atomicAdd(&{}->val, {}[flat_index]);",
                   pad.second.name(), source, pad.second.name());
             else
               statement = fmt::format("*{} = {}[flat_index];", source,

@@ -54,6 +54,9 @@ using uint16 = unsigned short;
               << std::endl;                                             \
     exit(-1);                                                           \
   }
+#define TC_P(x)                                                          \
+  std::cout << __FILE__ << "@" << __LINE__ << ": " << #x << " = " << (x) \
+            << std::endl;
 namespace taichi {
 TC_FORCE_INLINE uint32 rand_int() noexcept {
   static unsigned int x = 123456789, y = 362436069, z = 521288629, w = 88675123;

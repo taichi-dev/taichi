@@ -71,24 +71,8 @@ struct SNodeAllocator {
   }
 
 #if defined(TC_GPU)
-  __device__ T *allocate_node(int i0, int i1, int i2, int i3) {
+  __device__ data_type *allocate_node(const PhysicalIndexGroup &index) {
     auto id = atomicAdd(&tail, 1);
-    SNodeMeta &meta = meta_pool[id];
-    meta.active = true;
-    meta.ptr = id;
-
-    meta.indices[0] = i0;
-    meta.indices[1] = i1;
-    meta.indices[2] = i2;
-    meta.indices[3] = i3;
-
-    return data_pool[id];
-  }
-#else
-  data_type *allocate_node(const PhysicalIndexGroup &index) {
-    std::cout << id << " " << this << std::endl;
-    auto id = atomicAdd(&tail, 1);
-    std::cout << "id " << id << std::endl;
     SNodeMeta &meta = meta_pool[id];
     meta.active = true;
     meta.ptr = id;
@@ -96,7 +80,20 @@ struct SNodeAllocator {
     for (int i = 0; i < max_num_indices; i++)
       meta.indices[i] = index[i];
 
-    return &data_pool[id];
+    return new (data_pool + id) data_type();
+  }
+#else
+  data_type *allocate_node(const PhysicalIndexGroup &index) {
+    TC_ASSERT(this != nullptr);
+    auto id = atomicAdd(&tail, 1);
+    SNodeMeta &meta = meta_pool[id];
+    meta.active = true;
+    meta.ptr = id;
+
+    for (int i = 0; i < max_num_indices; i++)
+      meta.indices[i] = index[i];
+
+    return new (data_pool + id) data_type();
   }
 #endif
 
@@ -205,6 +202,11 @@ struct hashed {
   using child_type = _child_type;
   std::unordered_map<int, child_type *> data;
   std::mutex mut;
+
+  hashed() {
+    std::cout << "initializing hashed" << std::endl;
+  };
+
   TC_DEVICE TC_FORCE_INLINE child_type *look_up(
       int i) {  // i is flattened index
     if (data.find(i) == data.end()) {
@@ -216,12 +218,15 @@ struct hashed {
   TC_DEVICE TC_FORCE_INLINE void activate(int i,
                                           const PhysicalIndexGroup &index) {
     if (data.find(i) == data.end()) {
-      // child_type *ptr = allocate<child_type>();
       auto ptr = Managers::get_instance()
                      ->get<hashed>()
                      ->get_allocator()
                      ->allocate_node(index);
+      std::cout << data.size() << ptr<< std::endl;
+      std::cout << "aaaaa" << std::endl;
+      TC_P(&data);
       data.insert(std::make_pair(i, ptr));
+      std::cout << "bbbbb" << std::endl;
     }
   }
 

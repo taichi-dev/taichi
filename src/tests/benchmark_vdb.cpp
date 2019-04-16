@@ -9,6 +9,7 @@
 TLANG_NAMESPACE_BEGIN
 
 TC_TEST("hashed_3d") {
+  return;
   CoreState::set_trigger_gdb_when_crash(true);
 
   Program prog;
@@ -39,6 +40,7 @@ TC_TEST("hashed_3d") {
 };
 
 TC_TEST("hashed_3d_negative") {
+  return;
   CoreState::set_trigger_gdb_when_crash(true);
 
   Program prog;

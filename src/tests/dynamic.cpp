@@ -39,7 +39,7 @@ TC_TEST("append_and_probe") {
 
 TC_TEST("activate") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
-    int n = 4;
+    int n = 32;
     Program prog(arch);
     prog.config.print_ir = true;
 
@@ -58,9 +58,18 @@ TC_TEST("activate") {
           Print(i);
           Print(j);
           Activate(x.snode(), {i, j});
+        });
+      });
+    })();
+
+    kernel([&]() {
+      Declare(i);
+      Declare(j);
+      For(i, 0, n, [&] {
+        For(j, 0, i, [&] {
           Print(i);
+          Print(j);
           x[i, j] = i + j;
-          Print(i);
         });
       });
     })();

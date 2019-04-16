@@ -60,7 +60,8 @@ struct SNodeAllocator {
   SNodeMeta *meta_pool;
   using data_type = typename T::child_type;
   static constexpr std::size_t pool_size =
-      (1LL << 33) / sizeof(data_type);  // each snode allocator takes at most 8 GB
+      (1LL << 33) /
+      sizeof(data_type);  // each snode allocator takes at most 8 GB
   data_type *data_pool;
   int tail;
   static constexpr int id = SNodeID<T>::value;
@@ -139,7 +140,7 @@ struct Managers {
 
 #if defined(TC_GPU)
   static Managers *get_instance() {
-    return (Managers *)((unsigned char *)(device_data) + sizeof(void *));
+    return (Managers *)((unsigned char *)(device_data));
   }
 #else
   static Managers *get_instance() {
@@ -222,7 +223,7 @@ struct hashed {
                      ->get<hashed>()
                      ->get_allocator()
                      ->allocate_node(index);
-      std::cout << data.size() << ptr<< std::endl;
+      std::cout << data.size() << ptr << std::endl;
       std::cout << "aaaaa" << std::endl;
       TC_P(&data);
       data.insert(std::make_pair(i, ptr));
@@ -241,7 +242,9 @@ template <typename _child_type>
 struct pointer {
   using child_type = _child_type;
   child_type *data;
+  int lock;
   // std::mutex mut;
+
   TC_DEVICE TC_FORCE_INLINE child_type *look_up(
       int i) {  // i is flattened index
     // TC_ASSERT(i == 0);
@@ -258,12 +261,25 @@ struct pointer {
 
   TC_DEVICE TC_FORCE_INLINE void activate(int i,
                                           const PhysicalIndexGroup &index) {
-    if (data == nullptr) {
-      data = Managers::get_instance()
-                 ->get<pointer>()
-                 ->get_allocator()
-                 ->allocate_node(index);
+#if defined(__CUDA_ARCH__)
+    int warp_id = threadIdx.x % 32;
+    for (int k = 0; k < 32; k++) {
+      if (k == warp_id) {
+        while (!atomicCAS(&lock, 0, 1))
+          ;
+#endif
+        if (data == nullptr) {
+          data = Managers::get_instance()
+                     ->get<pointer>()
+                     ->get_allocator()
+                     ->allocate_node(index);
+        }
+#if defined(__CUDA_ARCH__)
+        printf("data %p\n", data);
+        lock = 0;
+      }
     }
+#endif
   }
 
   static constexpr bool has_null = true;

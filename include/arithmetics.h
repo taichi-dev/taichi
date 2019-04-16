@@ -1028,7 +1028,7 @@ __host__ void gpu_runtime_init() {
   init_random_numbers<<<1024, 1024>>>(1);
 
   cudaMemcpyToSymbol(device_head, &allocator()->head, sizeof(device_head));
-  cudaMemcpyToSymbol(device_data, allocator()->data, sizeof(device_data));
+  cudaMemcpyToSymbol(device_data, &allocator()->data, sizeof(device_data));
 }
 
 __device__ float randf() {

@@ -89,7 +89,6 @@ void StructCompiler::visit(SNode &snode) {
     TC_ERROR("Non-place node should have at least one child.");
   }
 
-
   // create children type that supports forking...
   emit("struct {}_ch {{", snode.node_type_name);
   for (int i = 0; i < (int)snode.ch.size(); i++) {
@@ -153,12 +152,17 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
     TC_ASSERT(snode.ch.size() > 0);
     for (int i = 0; i < (int)snode.ch.size(); i++) {
       auto ch = snode.ch[i];
-      emit("TLANG_ACCESSOR {} *access_{}({} *parent, int i) {{",
-           ch->node_type_name, ch->node_type_name, snode.node_type_name);
       emit(
-          "auto lookup = parent->look_up(i); "
-          "if ({}::has_null && lookup == nullptr) return nullptr;",
-          snode.node_type_name);
+          "TLANG_ACCESSOR {} *access_{}({} *parent, int i "
+          ") {{",
+          ch->node_type_name, ch->node_type_name, snode.node_type_name);
+      // emit("#if defined(TC_STRUCT)");
+      // emit("parent->activate(i, index);");
+      // emit("#endif");
+      emit("auto lookup = parent->look_up(i); ");
+      emit("if ({}::has_null && lookup == nullptr) ",
+           snode.node_type_name);
+      emit("return nullptr;");
       emit("return lookup->get{}();", i);
       emit("}}");
     }
@@ -204,7 +208,8 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
       if (mode != mode_activate) {
         emit("#if defined(TC_STRUCT)");
       }
-      emit("n{}->activate(tmp, {{i0, i1, i2, i3}});", i);
+      if (stack[i]->type != SNodeType::place)
+        emit("n{}->activate(tmp, {{i0, i1, i2, i3}});", i);
       if (mode != mode_activate) {
         emit("#endif");
       }
@@ -266,10 +271,14 @@ void StructCompiler::run(SNode &node) {
 
   TC_ASSERT(snodes.size() <= max_num_snodes);
   for (int i = 0; i < snodes.size(); i++) {
-    emit(
-        "Managers::get_instance()->get<{}>({}) = "
-        "create_unified<SNodeManager<{}>>();",
-        snodes[i]->node_type_name, i, snodes[i]->node_type_name);
+    if (snodes[i]->type != SNodeType::place) {
+      emit(
+          "Managers::get_instance()->get<{}>() = "
+          "create_unified<SNodeManager<{}>>();",
+          snodes[i]->node_type_name, snodes[i]->node_type_name);
+      emit("std::cout << Managers::get_instance()->get<{}>() << std::endl;",
+           snodes[i]->node_type_name);
+    }
   }
 
   emit("auto p = create_unified<{}>(); ", root_type);

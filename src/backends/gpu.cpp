@@ -127,7 +127,7 @@ class GPUIRCodeGen : public IRVisitor {
       if (!for_stmt->scratch_opt.empty()) {
         scratch_pads = irpass::initialize_scratch_pad(for_stmt);
         for (auto &pad : scratch_pads->pads) {
-          emit("__shared__ {} {}[{}];", pad.first->node_type_name,
+          emit("__shared__ {}::val_type {}[{}];", pad.first->node_type_name,
                pad.second.name(), pad.second.linear_size());
           TC_ASSERT(pad.second.is_pure());
           if (pad.second.total_flags == AccessFlag::read ||
@@ -475,7 +475,7 @@ class GPUIRCodeGen : public IRVisitor {
         }
       }
       std::string strong_access =
-          fmt::format("{}[{}] = access_{}{};", stmt->raw_name(), l,
+          fmt::format("{}[{}] = &access_{}{}->val;", stmt->raw_name(), l,
                       stmt->snodes[l]->node_type_name,
                       "(root, " + make_list(indices, "") + ")");
 
@@ -500,7 +500,8 @@ class GPUIRCodeGen : public IRVisitor {
 
     if (stmt->op_type == SNodeOpType::append) {
       TC_ASSERT(stmt->val->width() == 1);
-      emit("{}_tmp->append({});", snode->node_type_name, stmt->val->raw_name());
+      emit("{}_tmp->append({}({}));", snode->node_type_name,
+           snode->ch[0]->node_type_name, stmt->val->raw_name());
     } else if (stmt->op_type == SNodeOpType::clear) {
       emit("{}_tmp->clear();", snode->node_type_name);
     } else if (stmt->op_type == SNodeOpType::probe) {

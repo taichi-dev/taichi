@@ -11,13 +11,13 @@ UnifiedAllocator *&allocator();
 
 class UnifiedAllocator {
   std::vector<char> _data;
-  void *data;
   void *_cuda_data{};
   std::size_t size;
   bool gpu;
 
   // put these two on the unified memroy so that GPU can have access
  public:
+  void *data;
   void **head;
   void **tail;
 

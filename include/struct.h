@@ -25,7 +25,24 @@
 
 TLANG_NAMESPACE_BEGIN
 
+#if defined(TC_GPU)
+template <typename T>
+TC_FORCE_INLINE __device__ T *allocate() {
+  auto addr = taichi::Tlang::UnifiedAllocator::alloc(*device_head, sizeof(T));
+  return new (addr) T();
+}
+#else
+template <typename T>
+TC_FORCE_INLINE __host__ T *allocate() {
+  auto addr = taichi::Tlang::allocator()->alloc(sizeof(T));
+  return new (addr) T();
+}
+#endif
+
 using PhysicalIndexGroup = int[max_num_indices];
+
+template <typename T>
+struct SNodeID;
 
 template <typename child_type>
 struct layout_root {
@@ -74,110 +91,6 @@ struct dense {
   static constexpr bool has_null = false;
 };
 
-#if defined(TC_GPU)
-
-template <typename T>
-TC_FORCE_INLINE __device__ T *allocate() {
-  auto addr = taichi::Tlang::UnifiedAllocator::alloc(*device_head, sizeof(T));
-  return new (addr) T();
-}
-#else
-template <typename T>
-TC_FORCE_INLINE __host__ T *allocate() {
-  auto addr = taichi::Tlang::allocator()->alloc(sizeof(T));
-  return new (addr) T();
-}
-#endif
-
-struct SNodeMeta {
-  bool active;
-  int ptr;
-  int indices[max_num_indices];
-};
-
-template <typename T>
-struct SNodeAllocator {
-  static constexpr int pool_size = (1 << 20);
-  SNodeMeta *meta_pool;
-  T *data_pool;
-  int tail;
-
-  TC_DEVICE SNodeAllocator() {
-    data_pool = (T *)allocate(sizeof(T) * pool_size);
-    meta_pool = (SNodeMeta *)allocate(sizeof(SNodeMeta) * pool_size);
-  }
-
-#if defined(TC_GPU)
-  __device__ T *allocate_node(int i0, int i1, int i2, int i3) {
-    auto id = atomicAdd(&tail, 1);
-    SNodeMeta &meta = meta_pool[id];
-    meta.active = true;
-    meta.ptr = id;
-
-    meta.indices[0] = i0;
-    meta.indices[1] = i1;
-    meta.indices[2] = i2;
-    meta.indices[3] = i3;
-
-    return data_pool[id];
-  }
-#else
-  T *allocate_node(int i0, int i1, int i2, int i3) {
-    auto id = atomicAdd(&tail, 1);
-    SNodeMeta &meta = meta_pool[id];
-    meta.active = true;
-    meta.ptr = id;
-
-    meta.indices[0] = i0;
-    meta.indices[1] = i1;
-    meta.indices[2] = i2;
-    meta.indices[3] = i3;
-
-    return data_pool[id];
-  }
-#endif
-
-  void gc() {
-  }
-
-  void print_statistics() {
-    std::cout << "  num nodes: " << tail << std::endl;
-  }
-};
-
-template <typename T>
-struct SNodeManager {
-  using Allocator = SNodeAllocator<T>;
-  Allocator *allocator;
-
-  Allocator *get_allocator() {
-    return allocator;
-  }
-};
-
-struct Managers {
-  void *managers[max_num_snodes];
-
-  Managers() {
-  }
-
-  template <typename T>
-  SNodeManager<T> *&get(int i) {
-    return (SNodeManager<T> *&)(managers[i]);
-  }
-
-#if defined(TC_STRUCT)
-  static void initialize() {
-    auto addr = create_unified<Managers>();
-    TC_ASSERT(addr == get_instance());
-  }
-#endif
-
-  static Managers *get_instance() {
-    return (Managers *)((unsigned char *)(*allocator()->head) + sizeof(void *));
-  }
-};
-
 template <typename _child_type>
 struct hashed {
   using child_type = _child_type;
@@ -213,9 +126,6 @@ struct pointer {
   // std::mutex mut;
   TC_DEVICE TC_FORCE_INLINE child_type *look_up(
       int i) {  // i is flattened index
-#if defined(TLANG_HOST)
-    activate(i);
-#endif
     return data;
   }
 
@@ -325,5 +235,98 @@ struct LeafContext {
   T *ptr;
 };
 // *****************************************************************************
+
+struct SNodeMeta {
+  bool active;
+  int ptr;
+  int indices[max_num_indices];
+};
+
+template <typename T>
+struct SNodeAllocator {
+  static constexpr int pool_size = (1 << 20);
+  SNodeMeta *meta_pool;
+  T *data_pool;
+  int tail;
+
+  TC_DEVICE SNodeAllocator() {
+    data_pool = (T *)allocate(sizeof(T) * pool_size);
+    meta_pool = (SNodeMeta *)allocate(sizeof(SNodeMeta) * pool_size);
+  }
+
+#if defined(TC_GPU)
+  __device__ T *allocate_node(int i0, int i1, int i2, int i3) {
+    auto id = atomicAdd(&tail, 1);
+    SNodeMeta &meta = meta_pool[id];
+    meta.active = true;
+    meta.ptr = id;
+
+    meta.indices[0] = i0;
+    meta.indices[1] = i1;
+    meta.indices[2] = i2;
+    meta.indices[3] = i3;
+
+    return data_pool[id];
+  }
+#else
+  T *allocate_node(const PhysicalIndexGroup &index) {
+    auto id = atomicAdd(&tail, 1);
+    SNodeMeta &meta = meta_pool[id];
+    meta.active = true;
+    meta.ptr = id;
+
+    for (int i = 0; i < max_num_indices; i++)
+      meta.indices[i] = index[i];
+
+    return data_pool[id];
+  }
+#endif
+
+  void gc() {
+  }
+
+  void print_statistics() {
+    std::cout << "  num nodes: " << tail << std::endl;
+  }
+};
+
+template <typename T>
+struct SNodeManager {
+  using Allocator = SNodeAllocator<T>;
+  Allocator *allocator;
+
+  Allocator *get_allocator() {
+    return allocator;
+  }
+};
+
+struct Managers {
+  void *managers[max_num_snodes];
+
+  Managers() {
+  }
+
+  template <typename T>
+  SNodeManager<T> *&get(int i) {
+    return (SNodeManager<T> *&)(managers[i]);
+  }
+
+#if defined(TC_STRUCT)
+  static void initialize() {
+    auto addr = create_unified<Managers>();
+    TC_ASSERT(addr == get_instance());
+  }
+#endif
+
+#if defined(TC_GPU)
+  static Managers *get_instance() {
+    return (Managers *)((unsigned char *)(device_data) + sizeof(void *));
+  }
+#else
+  static Managers *get_instance() {
+    return (Managers *)((unsigned char *)(allocator()->data));
+  }
+#endif
+};
 
 TLANG_NAMESPACE_END

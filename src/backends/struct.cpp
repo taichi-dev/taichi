@@ -10,8 +10,8 @@ StructCompiler::StructCompiler() : CodeGenBase() {
   suffix = "cpp";
   emit("#define TLANG_HOST");
   emit("#include <kernel.h>");
-  emit("using namespace taichi;");
-  emit("using namespace Tlang;");
+  emit(" namespace taichi {{");
+  emit(" namespace Tlang {{");
   emit("\n");
 }
 
@@ -89,10 +89,6 @@ void StructCompiler::visit(SNode &snode) {
     TC_ERROR("Non-place node should have at least one child.");
   }
 
-  if (snode.has_ambient) {
-    emit("{} {}_ambient = {};", snode.data_type_name(), snode.node_type_name,
-         snode.ambient_val.stringify());
-  }
 
   // create children type that supports forking...
   emit("struct {}_ch {{", snode.node_type_name);
@@ -128,12 +124,22 @@ void StructCompiler::visit(SNode &snode) {
     emit("using {} = hashed<{}_ch>;", snode.node_type_name,
          snode.node_type_name);
   } else if (type == SNodeType::place) {
-    emit("using {} = {};", snode.node_type_name, snode.data_type_name());
+    emit(
+        "struct {} {{ using val_type = {}; val_type val; TC_DEVICE operator "
+        "{}() {{return val;}} "
+        "TC_DEVICE {}(){{}} TC_DEVICE {}({} val) "
+        ": val(val){{ }} }};",
+        snode.node_type_name, snode.data_type_name(), snode.data_type_name(),
+        snode.node_type_name, snode.node_type_name, snode.data_type_name());
   } else {
     TC_P(snode.type_name());
     TC_NOT_IMPLEMENTED;
   }
-  emit("");
+
+  if (snode.has_ambient) {
+    emit("{} {}_ambient({});", snode.node_type_name, snode.node_type_name,
+         snode.ambient_val.stringify());
+  }
 }
 
 void StructCompiler::generate_leaf_accessors(SNode &snode) {
@@ -196,7 +202,7 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
         }
       }
       if (mode != mode_activate) {
-        emit("#if !defined(TC_HOST)");
+        emit("#if defined(TC_STRUCT)");
       }
       emit("n{}->activate(tmp, {{i0, i1, i2, i3}});", i);
       if (mode != mode_activate) {
@@ -242,12 +248,22 @@ void StructCompiler::run(SNode &node) {
   set_parents(node);
   // bottom to top
   visit(node);
+
+  for (int i = 0; i < snodes.size(); i++) {
+    // if (snodes[i]->type != SNodeType::place)
+    emit(
+        "template <> struct SNodeID<{}> {{static constexpr int value = "
+        "{};}};",
+        snodes[i]->node_type_name, snodes[i]->id);
+  }
+
   root_type = node.node_type_name;
   generate_leaf_accessors(node);
   emit("#if defined(TC_STRUCT)");
   emit("TC_EXPORT void *create_data_structure() {{");
 
   emit("Managers::initialize();");
+
   TC_ASSERT(snodes.size() <= max_num_snodes);
   for (int i = 0; i < snodes.size(); i++) {
     emit(
@@ -264,6 +280,7 @@ void StructCompiler::run(SNode &node) {
       "*)ds;}}",
       root_type);
   emit("#endif");
+  emit("}} }}");
   write_source();
 
   generate_binary("-DTC_STRUCT");

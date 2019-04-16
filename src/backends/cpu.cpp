@@ -222,8 +222,8 @@ class CPUIRCodeGen : public IRVisitor {
            make_list(indices, ""));
     if (stmt->op_type == SNodeOpType::append) {
       TC_ASSERT(stmt->val->width() == 1);
-      emit("{}_tmp->append({}[0]);", snode->node_type_name,
-           stmt->val->raw_name());
+      emit("{}_tmp->append({}({}[0]));", snode->node_type_name,
+           snode->ch[0]->node_type_name, stmt->val->raw_name());
     } else if (stmt->op_type == SNodeOpType::clear) {
       emit("{}_tmp->clear();", snode->node_type_name);
     } else if (stmt->op_type == SNodeOpType::probe) {
@@ -269,7 +269,7 @@ class CPUIRCodeGen : public IRVisitor {
         }
       }
       std::string strong_access =
-          fmt::format("{}[{}] = access_{}{};", stmt->raw_name(), l,
+          fmt::format("{}[{}] = &access_{}{}->val;", stmt->raw_name(), l,
                       stmt->snodes[l]->node_type_name,
                       "(root, " + make_list(indices, "") + ")");
 
@@ -320,9 +320,10 @@ class CPUIRCodeGen : public IRVisitor {
           }
 
           emit("if ({}) {{", cond);
-          emit("{}[{}] = access_{}({}_cache, {}_loop + {});", stmt->raw_name(),
-               l, snode->node_type_name, snode->parent->node_type_name,
-               snode->parent->node_type_name, offset);
+          emit("{}[{}] = &access_{}({}_cache, {}_loop + {})->val;",
+               stmt->raw_name(), l, snode->node_type_name,
+               snode->parent->node_type_name, snode->parent->node_type_name,
+               offset);
           emit("}} else {{");
           emit("{}", strong_access);
           emit("}}");

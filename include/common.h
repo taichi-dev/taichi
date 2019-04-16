@@ -48,10 +48,12 @@ using uint16 = unsigned short;
 #define FUNC_DECL __host__ __device__
 #endif
 
-#define TC_ASSERT(x) \
-  if (!(x))            \
-    std::cout << "Ln" << __LINE__ << ":" << #x << ": Assertion failed." << std::endl;\
-    exit(-1);
+#define TC_ASSERT(x)                                                    \
+  if (!(x)) {                                                           \
+    std::cout << "Ln" << __LINE__ << ":" << #x << ": Assertion failed." \
+              << std::endl;                                             \
+    exit(-1);                                                           \
+  }
 namespace taichi {
 TC_FORCE_INLINE uint32 rand_int() noexcept {
   static unsigned int x = 123456789, y = 362436069, z = 521288629, w = 88675123;
@@ -126,4 +128,5 @@ TLANG_NAMESPACE_END
 
 #if defined(TC_GPU)
 __device__ __constant__ void **device_head;
+__device__ __constant__ void *device_data;
 #endif

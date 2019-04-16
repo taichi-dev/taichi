@@ -270,8 +270,9 @@ void StructCompiler::run(SNode &node) {
 
   TC_ASSERT(snodes.size() <= max_num_snodes);
   for (int i = 0; i < snodes.size(); i++) {
-    if (snodes[i]->type == SNodeType::pointer ||
-        snodes[i]->type == SNodeType::hashed) {
+    // if (snodes[i]->type == SNodeType::pointer ||
+    // snodes[i]->type == SNodeType::hashed) {
+    if (snodes[i]->type != SNodeType::place) {
       emit(
           "Managers::get<{}>() = "
           "create_unified<SNodeManager<{}>>();",

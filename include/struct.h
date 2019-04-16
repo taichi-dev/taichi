@@ -67,8 +67,15 @@ struct SNodeAllocator {
   static constexpr int id = SNodeID<T>::value;
 
   TC_DEVICE SNodeAllocator() {
-    data_pool = (data_type *)allocate(sizeof(data_type) * pool_size);
+    if (T::has_null)
+      data_pool = (data_type *)allocate(sizeof(data_type) * pool_size);
+    else
+      data_pool = nullptr;
     meta_pool = (SNodeMeta *)allocate(sizeof(SNodeMeta) * pool_size);
+  }
+
+  __device__ __host__ void reset_meta() {
+    tail = 0;
   }
 
 #if defined(TC_GPU)

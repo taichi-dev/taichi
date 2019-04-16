@@ -35,7 +35,7 @@ class UnifiedAllocator {
   }
 #else
   std::mutex lock;
-  void *alloc(int size) {
+  void *alloc(std::size_t size) {
     std::lock_guard<std::mutex> _(lock);
     auto ret = *head;
     *head = (char *)(*head) + size;

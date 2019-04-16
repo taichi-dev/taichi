@@ -244,6 +244,7 @@ struct pointer {
   // std::mutex mut;
   TC_DEVICE TC_FORCE_INLINE child_type *look_up(
       int i) {  // i is flattened index
+    // TC_ASSERT(i == 0);
     return data;
   }
 

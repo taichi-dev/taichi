@@ -160,8 +160,7 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
       // emit("parent->activate(i, index);");
       // emit("#endif");
       emit("auto lookup = parent->look_up(i); ");
-      emit("if ({}::has_null && lookup == nullptr) ",
-           snode.node_type_name);
+      emit("if ({}::has_null && lookup == nullptr) ", snode.node_type_name);
       emit("return nullptr;");
       emit("return lookup->get{}();", i);
       emit("}}");
@@ -271,13 +270,12 @@ void StructCompiler::run(SNode &node) {
 
   TC_ASSERT(snodes.size() <= max_num_snodes);
   for (int i = 0; i < snodes.size(); i++) {
-    if (snodes[i]->type == SNodeType::pointer || snodes[i]->type == SNodeType::hashed) {
+    if (snodes[i]->type == SNodeType::pointer ||
+        snodes[i]->type == SNodeType::hashed) {
       emit(
-          "Managers::get_instance()->get<{}>() = "
+          "Managers::get<{}>() = "
           "create_unified<SNodeManager<{}>>();",
           snodes[i]->node_type_name, snodes[i]->node_type_name);
-      emit("std::cout << \"managers \" <<  Managers::get_instance()->get<{}>() << std::endl;",
-           snodes[i]->node_type_name);
     }
   }
 

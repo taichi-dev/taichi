@@ -177,7 +177,8 @@ class GPUIRCodeGen : public IRVisitor {
             std::string statement;
             if (pad.second.total_flags == AccessFlag::accumulate)
               statement = fmt::format(
-                  "if ({}[flat_index] != 0) atomicAdd(&{}->val, {}[flat_index]);",
+                  "if ({}[flat_index] != 0) atomicAdd(&{}->val, "
+                  "{}[flat_index]);",
                   pad.second.name(), source, pad.second.name());
             else
               statement = fmt::format("*{} = {}[flat_index];", source,
@@ -205,6 +206,8 @@ class GPUIRCodeGen : public IRVisitor {
         }
       }
       emit("gpu_runtime_init();");
+      emit("std::cout << \"tail \" << Managers::get_allocator<{}>()->tail << std::endl;",
+           leaf->parent->node_type_name);
       emit("context.num_leaves = leaves.size();");
       emit("auto list_size = sizeof(LeafContext<{}>) * context.num_leaves;",
            leaf->node_type_name);

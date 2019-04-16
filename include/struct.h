@@ -127,7 +127,7 @@ struct Managers {
   }
 
   template <typename T>
-  SNodeManager<T> *&get() {
+  SNodeManager<T> *&get_manager() {
     return (SNodeManager<T> *&)(managers[SNodeID<T>::value]);
   }
 
@@ -138,15 +138,23 @@ struct Managers {
   }
 #endif
 
-#if defined(TC_GPU)
-  static Managers *get_instance() {
+  template <typename T>
+  __host__ __device__ static SNodeManager<T> *&get() {
+    return get_instance()->get_manager<T>();
+  }
+
+  template <typename T>
+  __host__ __device__ static SNodeAllocator<T> *get_allocator() {
+    return get<T>()->get_allocator();
+  }
+
+  __host__ __device__ static Managers *get_instance() {
+#if __CUDA_ARCH__
     return (Managers *)((unsigned char *)(device_data));
-  }
 #else
-  static Managers *get_instance() {
     return (Managers *)((unsigned char *)(allocator()->data));
-  }
 #endif
+  }
 };
 
 template <typename child_type_>
@@ -219,15 +227,8 @@ struct hashed {
   TC_DEVICE TC_FORCE_INLINE void activate(int i,
                                           const PhysicalIndexGroup &index) {
     if (data.find(i) == data.end()) {
-      auto ptr = Managers::get_instance()
-                     ->get<hashed>()
-                     ->get_allocator()
-                     ->allocate_node(index);
-      std::cout << data.size() << ptr << std::endl;
-      std::cout << "aaaaa" << std::endl;
-      TC_P(&data);
+      auto ptr = Managers::get<hashed>()->get_allocator()->allocate_node(index);
       data.insert(std::make_pair(i, ptr));
-      std::cout << "bbbbb" << std::endl;
     }
   }
 
@@ -275,7 +276,6 @@ struct pointer {
                      ->allocate_node(index);
         }
 #if defined(__CUDA_ARCH__)
-        printf("data %p\n", data);
         lock = 0;
       }
     }

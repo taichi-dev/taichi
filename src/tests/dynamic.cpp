@@ -84,7 +84,8 @@ TC_TEST("activate") {
 
 TC_TEST("task_list") {
   for (auto arch : {Arch::gpu}) {
-    int n = 32;
+    int n = 262144;
+    int m = 64;
     Program prog(arch);
     // prog.config.print_ir = true;
 
@@ -92,33 +93,40 @@ TC_TEST("task_list") {
     layout([&]() {
       auto i = Index(0);
       auto j = Index(1);
-      root.dense(i, n).dense(j, n).place(x);
+      root.dense(i, n).pointer().dense(j, m).place(x);
     });
 
     kernel([&]() {
       Declare(i);
       Declare(j);
       For(i, 0, n, [&] {
-        For(j, 0, i, [&] {
-          Activate(x.snode(), {i, j});
-        });
+        For(j, 0, max(i % 5 - 3, 0), [&] { Activate(x.snode(), {i, j}); });
       });
     })();
 
-    auto &set = kernel([&]() {
+    kernel([&]() {
       Declare(i);
       Declare(j);
-      For({i, j}, x, [&] {
-        x[i, j] = i + j;
-      });
+      For({i, j}, x, [&] { x[i, j] = i + j; });
+    })();
+
+    auto &inc = kernel([&]() {
+      Declare(i);
+      Declare(j);
+      For({i, j}, x, [&] { x[i, j] += 1; });
     });
 
-    set();
+    int P = 10;
+
+    for (int i = 0; i < P; i++) {
+      inc();
+    }
 
     for (int i = 0; i < n; i++) {
-      for (int j = 0; j < i; j++) {
-        TC_CHECK(x.val<int>(i, j) == i + j);
-      }
+      if (i % 5 == 4)
+        for (int j = 0; j < m; j++) {
+          TC_CHECK(x.val<int>(i, j) == i + j + P);
+        }
     }
   }
 };

@@ -131,6 +131,63 @@ TC_TEST("task_list") {
   }
 };
 
+TC_TEST("task_list_dynamic") {
+  for (auto arch : {Arch::gpu}) {
+    int n = 262144;
+    int m = 64;
+    Program prog(arch);
+    // prog.config.print_ir = true;
+
+    Global(x, i32);
+    layout([&]() {
+      auto i = Index(0);
+      auto j = Index(1);
+      root.dense(i, n).dynamic(j, m).place(x);
+    });
+
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < m; j++) {
+        x.val<int32>(i, j) = i + j;
+      }
+    }
+
+    /*
+    kernel([&]() {
+      Declare(i);
+      Declare(j);
+      BlockDim(256);
+      For(i, 0, n,
+          [&] { For(j, 0, m, [&] { Append(x.parent(), i, i + j); }); });
+    })();
+
+        kernel([&]() {
+          Declare(i);
+          Declare(j);
+          For({i, j}, x, [&] { x[i, j] = i + j; });
+        })();
+     */
+
+    auto &inc = kernel([&]() {
+      Declare(i);
+      Declare(j);
+      For({i, j}, x, [&] { x[i, j] += 1; });
+    });
+
+    int P = 10;
+
+    for (int i = 0; i < P; i++) {
+      inc();
+    }
+
+    for (int i = 0; i < n; i++) {
+      if (i % 5 == 4)
+        for (int j = 0; j < 1; j++) {
+          TC_CHECK(x.val<int>(i, j) == i + j + P);
+        }
+    }
+  }
+};
+
 TC_TEST("append_2d") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 32;

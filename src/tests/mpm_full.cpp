@@ -85,16 +85,17 @@ auto reset_grid_benchmark = []() {
 TC_REGISTER_TASK(reset_grid_benchmark);
 
 auto mpm3d = []() {
-  bool benchmark_dragon = true;
+  bool benchmark_dragon = false;
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
   prog.config.print_ir = true;
-  bool fluid = false;
+  bool fluid = true;
   bool plastic = false;
+  constexpr bool highres = true;
   CoreState::set_trigger_gdb_when_crash(true);
 
-  constexpr int n = 256;  // grid_resolution
-  const real dt = 5e-5_f, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+  constexpr int n = highres ? 256 : 128;  // grid_resolution
+  const real dt = 5e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
   auto E = 2e3_f, nu = 0.3f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
@@ -128,7 +129,7 @@ auto mpm3d = []() {
     std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f);
     std::fclose(f);
   } else {
-    n_particles = max_n_particles / 8;
+    n_particles = max_n_particles / (highres ? 8 : 1);
   }
 
   TC_ASSERT(n_particles <= max_n_particles);
@@ -569,15 +570,18 @@ auto mpm3d = []() {
 
   reset();
 
-  Vector2i cam_res(1280, 720);
+  Vector2i cam_res(640, 360);
 
   int scale = 128 * 6 / n;
-  GUI gui("MPM", n * scale + 200, n * scale);
+  // GUI gui("MPM", n * scale + 200, n * scale);
+  GUI gui("MPM", cam_res);
   int angle = 0;
   int gravity_x_slider = 0;
+  /*
   gui.button("Restart", reset)
       .slider("Camera", angle, 0, 360, 1)
       .slider("Gravity Dir", gravity_x_slider, -100, 100);
+      */
 
   auto renderer = create_instance_unique<ParticleRenderer>("shadow_map");
   auto radius = 1.0_f;
@@ -592,8 +596,8 @@ auto mpm3d = []() {
   };
 
   Dict cam_dict;
-  cam_dict.set("origin", Vector3(0, radius * 0.3_f, radius * 1_f))
-      .set("look_at", Vector3(0, 0, 0))
+  cam_dict.set("origin", Vector3(radius * 0.6f, radius * 0.3_f, radius * 0.6_f))
+      .set("look_at", Vector3(0, -0.2f, 0))
       .set("up", Vector3(0, 1, 0))
       .set("fov", 70)
       .set("res", cam_res);
@@ -601,10 +605,10 @@ auto mpm3d = []() {
 
   Dict dict;
   dict.set("shadow_map_resolution", 0.005_f)
-      .set("alpha", 0.3_f)
-      .set("shadowing", 0.0008_f)
-      .set("ambient_light", 0.2_f)
-      .set("light_direction", Vector3(1, 0.5, 0.5));
+      .set("alpha", 0.5_f)
+      .set("shadowing", 0.08_f)
+      .set("ambient_light", 0.5_f)
+      .set("light_direction", Vector3(1, 0.5, 0.3));
 
   renderer->initialize(dict);
   renderer->set_camera(cam);
@@ -624,9 +628,11 @@ auto mpm3d = []() {
       auto x = particle_x(0).val<float32>(i), y = particle_x(1).val<float32>(i),
            z = particle_x(2).val<float32>(i);
       // auto color = hsv2rgb(Vector3(fract(p.pos[3] / 4) * 2, 0.7_f, 0.9_f));
-      auto pos = Vector3(x, y, z) * Vector3(0.3f);
+      auto pos = Vector3(x, y, z);
+      pos = pos - Vector3(0.5f);
+      pos = pos * Vector3(0.5f);
       render_particles.push_back(
-          RenderParticle(pos, Vector4(0.2f, 0.7f, 0.3f, 1.0_f)));
+          RenderParticle(pos, Vector4(0.3f, 0.5f, 0.9f, 1.0_f)));
     }
 
     renderer->render(image, render_particles);

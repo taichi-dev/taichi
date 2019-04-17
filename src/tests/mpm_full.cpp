@@ -113,7 +113,7 @@ auto mpm3d = []() {
   Vector grid_v(f32, dim);
   Global(grid_m, f32);
 
-  bool sorted = true;
+  bool sorted = false;
 
   int max_n_particles = 1024 * 1024;
 
@@ -466,13 +466,18 @@ auto mpm3d = []() {
     Declare(p_ptr);
     BlockDim(64);
 
-    Cache(0, grid_v(0));
-    Cache(0, grid_v(1));
-    Cache(0, grid_v(2));
+    if (sorted) {
+      Cache(0, grid_v(0));
+      Cache(0, grid_v(1));
+      Cache(0, grid_v(2));
+    }
+    /*
     For((i, j, k, p_ptr), l, [&] {
       auto p = Eval(l[i, j, k, p_ptr]);
+      */
 
-      // For(p, particle_x(0), [&] {
+    Declare(p);
+    For(p, particle_x(0), [&] {
       auto x = particle_x[p];
       auto v = Vector(dim);
       Mutable(v, DataType::f32);
@@ -493,6 +498,7 @@ auto mpm3d = []() {
                     Eval(0.75_f - sqr(fx - 1.0_f)),
                     Eval(0.5_f * sqr(fx - 0.5_f))};
 
+      /*
       int low = 0, high = 1;
       auto base_coord_i =
           Eval(AssumeInRange(cast<int32>(base_coord(0)), i, low, high));
@@ -500,6 +506,10 @@ auto mpm3d = []() {
           Eval(AssumeInRange(cast<int32>(base_coord(1)), j, low, high));
       auto base_coord_k =
           Eval(AssumeInRange(cast<int32>(base_coord(2)), k, low, high));
+      */
+      auto base_coord_i = cast<int32>(base_coord(0));
+      auto base_coord_j = cast<int32>(base_coord(1));
+      auto base_coord_k = cast<int32>(base_coord(2));
 
       for (int p = 0; p < 3; p++) {
         for (int q = 0; q < 3; q++) {

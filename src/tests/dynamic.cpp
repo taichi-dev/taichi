@@ -151,22 +151,6 @@ TC_TEST("task_list_dynamic") {
       }
     }
 
-    /*
-    kernel([&]() {
-      Declare(i);
-      Declare(j);
-      BlockDim(256);
-      For(i, 0, n,
-          [&] { For(j, 0, m, [&] { Append(x.parent(), i, i + j); }); });
-    })();
-
-        kernel([&]() {
-          Declare(i);
-          Declare(j);
-          For({i, j}, x, [&] { x[i, j] = i + j; });
-        })();
-     */
-
     auto &inc = kernel([&]() {
       Declare(i);
       Declare(j);

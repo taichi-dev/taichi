@@ -463,7 +463,7 @@ class GPUIRCodeGen : public IRVisitor {
       emit("{}_kernel<<<{}, {}>>>(context);", codegen->func_name, num_blocks,
            block_size);
     } else {
-      struct_for_new(for_stmt_.get());
+      struct_for_old(for_stmt_.get());
     }
 
     emit("cudaDeviceSynchronize();\n");

@@ -93,6 +93,8 @@ struct SNodeAllocator {
 #else
   data_type *allocate_node(const PhysicalIndexGroup &index) {
     TC_ASSERT(this != nullptr);
+    TC_ASSERT(data_pool != nullptr);
+    TC_ASSERT(meta_pool != nullptr);
     auto id = atomicAdd(&tail, 1);
     SNodeMeta &meta = meta_pool[id];
     meta.active = true;
@@ -185,7 +187,7 @@ struct layout_root {
                                           const PhysicalIndexGroup &index) {
   }
 
-  static constexpr bool has_null = false;
+  static constexpr bool has_null = true;
 };
 
 template <typename child_type_, int n_>

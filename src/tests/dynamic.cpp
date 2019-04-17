@@ -92,7 +92,7 @@ TC_TEST("task_list") {
     layout([&]() {
       auto i = Index(0);
       auto j = Index(1);
-      root.dense(i, n).pointer().dense(j, n).place(x);
+      root.dense(i, n).dense(j, n).place(x);
     });
 
     kernel([&]() {

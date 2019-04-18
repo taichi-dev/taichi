@@ -88,7 +88,7 @@ auto mpm3d = []() {
   prog.config.print_ir = true;
   bool fluid = false;
   bool plastic = true;
-  constexpr bool highres = true;
+  constexpr bool highres = false;
   CoreState::set_trigger_gdb_when_crash(true);
 
   constexpr int n = highres ? 256 : 128;  // grid_resolution
@@ -112,7 +112,7 @@ auto mpm3d = []() {
   Vector grid_v(f32, dim);
   Global(grid_m, f32);
 
-  bool sorted = false;
+  bool sorted = true;
 
   int max_n_particles = 1024 * 1024;
 
@@ -200,7 +200,8 @@ auto mpm3d = []() {
     For(i, 0, t, [&] {
       For(j, 0, t, [&] {
         For(k, 0, t, [&] {
-          Activate(grid_m, (i, j, k));
+          Activate(grid_m, (i * grid_block_size, j * grid_block_size,
+                            k * grid_block_size));
         });
       });
     });
@@ -220,8 +221,7 @@ auto mpm3d = []() {
 
   auto &p2g_naive = kernel([&]() {
     Declare(p);
-    if (particle_block_size == 1)
-      BlockDim(256);
+    BlockDim(256);
     For(p, particle_x(0), [&] {
       auto x = particle_x[p];
       auto v = particle_v[p];
@@ -306,7 +306,7 @@ auto mpm3d = []() {
     Declare(i);
     Declare(j);
     Declare(k);
-    BlockDim(256);
+    // BlockDim(64);
     For((i, j, k), l.parent(), [&] { Clear(l.parent(), (i, j, k)); });
   });
 
@@ -480,13 +480,11 @@ auto mpm3d = []() {
       Cache(0, grid_v(1));
       Cache(0, grid_v(2));
     }
-    /*
+
+    // Declare(p);
     For((i, j, k, p_ptr), l, [&] {
       auto p = Eval(l[i, j, k, p_ptr]);
-      */
-
-    Declare(p);
-    For(p, particle_x(0), [&] {
+      // For(p, particle_x(0), [&] {
       auto x = particle_x[p];
       auto v = Vector(dim);
       Mutable(v, DataType::f32);
@@ -507,7 +505,6 @@ auto mpm3d = []() {
                     Eval(0.75_f - sqr(fx - 1.0_f)),
                     Eval(0.5_f * sqr(fx - 0.5_f))};
 
-      /*
       int low = 0, high = 1;
       auto base_coord_i =
           Eval(AssumeInRange(cast<int32>(base_coord(0)), i, low, high));
@@ -515,10 +512,12 @@ auto mpm3d = []() {
           Eval(AssumeInRange(cast<int32>(base_coord(1)), j, low, high));
       auto base_coord_k =
           Eval(AssumeInRange(cast<int32>(base_coord(2)), k, low, high));
-      */
+
+      /*
       auto base_coord_i = cast<int32>(base_coord(0));
       auto base_coord_j = cast<int32>(base_coord(1));
       auto base_coord_k = cast<int32>(base_coord(2));
+      */
 
       for (int p = 0; p < 3; p++) {
         for (int q = 0; q < 3; q++) {

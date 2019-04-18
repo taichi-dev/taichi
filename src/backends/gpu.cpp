@@ -173,10 +173,6 @@ class GPUIRCodeGen : public IRVisitor {
       }
     }
     emit("gpu_runtime_init();");
-    /*
-    emit("std::cout << \"tail \" << Managers::get_allocator<{}>()->tail <<
-    std::endl;", leaf->parent->node_type_name);
-         */
 
     emit("context.num_leaves = leaves.size();");
     emit("auto list_size = sizeof(LeafContext<{}>) * context.num_leaves;",
@@ -216,7 +212,7 @@ class GPUIRCodeGen : public IRVisitor {
 
     emit("float milliseconds = 0;");
     emit("cudaEventElapsedTime(&milliseconds, start, stop);");
-    emit("std::cout << \"device  \" << milliseconds << std::endl;");
+    emit("std::cout << \"device  \" << milliseconds << \" ms\" << std::endl;");
 
     if (current_program->current_kernel->benchmarking) {
       emit("cudaDeviceSynchronize();\n");
@@ -411,7 +407,7 @@ class GPUIRCodeGen : public IRVisitor {
 
     emit("float milliseconds = 0;");
     emit("cudaEventElapsedTime(&milliseconds, start, stop);");
-    emit("std::cout << \"device  \" << milliseconds << std::endl;");
+    emit("std::cout << \"device only \" << milliseconds << \" ms\" << std::endl;");
 
     if (current_program->current_kernel->benchmarking) {
       emit("cudaDeviceSynchronize();\n");

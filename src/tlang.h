@@ -23,7 +23,7 @@ inline void layout(const std::function<void()> &body) {
   get_current_program().layout(body);
 }
 
-inline Kernel &kernel(const std::function<void()> &body) {
+inline Program::Kernel &kernel(const std::function<void()> &body) {
   return get_current_program().kernel(body);
 }
 
@@ -210,6 +210,8 @@ inline Expr AssumeInRange(const Expr &expr,
 inline void benchmark_kernel() {
   get_current_program().get_current_kernel().benchmarking = true;
 }
+
+#define Kernel(x) auto &x = get_current_program().kernel(#x)
 
 TLANG_NAMESPACE_END
 

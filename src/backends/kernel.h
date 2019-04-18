@@ -10,7 +10,7 @@ class Program;
 class KernelCodeGen : public CodeGenBase {
  public:
   Program *prog;
-  Kernel *kernel;
+  Program::Kernel *kernel;
   KernelCodeGen() : CodeGenBase() {
   }
 
@@ -28,7 +28,7 @@ class KernelCodeGen : public CodeGenBase {
 
   virtual void codegen() = 0;
 
-  virtual FunctionType compile(Program &prog, Kernel &kernel);
+  virtual FunctionType compile(Program &prog, Program::Kernel &kernel);
 };
 
 TLANG_NAMESPACE_END

@@ -85,16 +85,16 @@ auto mpm3d = []() {
   bool benchmark_dragon = false;
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
+  // prog.config.print_ir = true;
   bool fluid = false;
   bool plastic = true;
   constexpr bool highres = false;
   CoreState::set_trigger_gdb_when_crash(true);
 
   constexpr int n = highres ? 256 : 128;  // grid_resolution
-  const real dt = 2e-5_f * 256 / n / 3, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+  const real dt = 2e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
-  auto E = 4e4_f, nu = 0.3f;
+  auto E = 3e4_f, nu = 0.3f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
 
   constexpr int dim = 3;
@@ -207,7 +207,8 @@ auto mpm3d = []() {
     });
   })();
 
-  auto &reset_grid = kernel([&]() {
+
+  Kernel(reset_grid).def([&]() {
     Declare(i);
     Declare(j);
     Declare(k);
@@ -593,7 +594,7 @@ auto mpm3d = []() {
   auto radius = 1.0_f;
 
   auto simulate_frame = [&]() {
-    for (int t = 0; t < 160 * 3; t++) {
+    for (int t = 0; t < 60; t++) {
       TC_PROFILE("reset grid", reset_grid());
       TC_PROFILE("p2g", p2g());
       TC_PROFILE("grid_op", grid_op());

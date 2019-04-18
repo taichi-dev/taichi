@@ -187,13 +187,12 @@ class GPUIRCodeGen : public IRVisitor {
         "int gridDim = context.num_leaves * {}, blockDim = ({}::get_max_n()"
         "+ {} - 1) / {};",
         block_division, leaf->node_type_name, block_division, block_division);
-    emit(
-        "std::cout << \"list    \" << (get_time() - t) * 1000 << \" ms\" << "
-        "std::endl;");
+    emit("auto list_time = (get_time() - t) * 1000;");
     emit(
         "printf(\"launching kernel {} <<<%d, %d>>> num_leaves = %d\\n\", "
         "gridDim, blockDim, context.num_leaves);",
         codegen->func_name);
+    emit(R"(std::cout << "list    " << list_time << " ms" << std::endl;)");
     emit("cudaEvent_t start, stop;");
 
     if (current_program->get_current_kernel().benchmarking) {
@@ -205,9 +204,6 @@ class GPUIRCodeGen : public IRVisitor {
     emit("cudaEventRecord(start);");
     emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
     emit("cudaEventRecord(stop);");
-
-    // emit("t = get_time();");
-    // emit("std::cout << (get_time() - t) * 1000 << std::endl;");
     emit("cudaEventSynchronize(stop);");
 
     emit("float milliseconds = 0;");
@@ -400,14 +396,12 @@ class GPUIRCodeGen : public IRVisitor {
     emit("cudaEventRecord(start);");
     emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
     emit("cudaEventRecord(stop);");
-
-    // emit("t = get_time();");
-    // emit("std::cout << (get_time() - t) * 1000 << std::endl;");
     emit("cudaEventSynchronize(stop);");
 
     emit("float milliseconds = 0;");
     emit("cudaEventElapsedTime(&milliseconds, start, stop);");
-    emit("std::cout << \"device only \" << milliseconds << \" ms\" << std::endl;");
+    emit(
+        R"(std::cout << "device only " << milliseconds << " ms" << std::endl;)");
 
     if (current_program->current_kernel->benchmarking) {
       emit("cudaDeviceSynchronize();\n");
@@ -464,6 +458,12 @@ class GPUIRCodeGen : public IRVisitor {
       if (struct_for->snode->parent->type == SNodeType::dense &&
           struct_for->snode->parent->parent->type == SNodeType::pointer)
         use_activity_tracking = true;
+
+      /*
+      if (struct_for->snode->parent->type == SNodeType::dynamic &&
+          struct_for->snode->parent->parent->type == SNodeType::pointer)
+        use_activity_tracking = true;
+      */
 
       if (use_activity_tracking) {
         TC_WARN("Using activity tracking");

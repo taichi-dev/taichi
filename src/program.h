@@ -27,7 +27,8 @@ class Program {
     FunctionType compiled;
     std::string name;
 
-    Kernel(Program &program, std::function<void()> func) : program(program) {
+    Kernel(Program &program, std::function<void()> func, std::string name = "")
+        : program(program), name(name) {
       compiled = nullptr;
       benchmarking = false;
       context = std::make_unique<FrontendContext>();
@@ -96,9 +97,25 @@ class Program {
     materialize_layout();
   }
 
-  Kernel &kernel(const std::function<void()> &body) {
+  struct KernelProxy {
+    std::string name;
+    Program *prog;
+
+    Kernel &def(const std::function<void()> &func) {
+      return prog->kernel(func, name);
+    }
+  };
+
+  KernelProxy kernel(std::string name) {
+    KernelProxy proxy;
+    proxy.prog = this;
+    proxy.name = name;
+    return proxy;
+  }
+
+  Kernel &kernel(const std::function<void()> &body, std::string name = "") {
     // Expr::set_allow_store(true);
-    auto func = std::make_unique<Kernel>(*this, body);
+    auto func = std::make_unique<Kernel>(*this, body, name);
     // Expr::set_allow_store(false);
     functions.emplace_back(std::move(func));
     current_snode = nullptr;
@@ -121,7 +138,5 @@ class Program {
     return *current_kernel;
   }
 };
-
-using Kernel = Program::Kernel;
 
 TLANG_NAMESPACE_END

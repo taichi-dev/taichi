@@ -88,7 +88,7 @@ auto mpm3d = []() {
   // prog.config.print_ir = true;
   bool fluid = false;
   bool plastic = true;
-  constexpr bool highres = false;
+  constexpr bool highres = true;
   CoreState::set_trigger_gdb_when_crash(true);
 
   constexpr int n = highres ? 256 : 128;  // grid_resolution
@@ -426,7 +426,7 @@ auto mpm3d = []() {
     if (sorted) {
       clear_lists();
       sort();
-      TC_TIME(p2g_sorted());
+      p2g_sorted();
     } else {
       p2g_naive();
     }

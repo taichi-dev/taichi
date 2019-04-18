@@ -188,11 +188,9 @@ class GPUIRCodeGen : public IRVisitor {
         "+ {} - 1) / {};",
         block_division, leaf->node_type_name, block_division, block_division);
     emit("auto list_time = (get_time() - t) * 1000;");
-    emit(
-        "printf(\"launching kernel {} <<<%d, %d>>> num_leaves = %d\\n\", "
-        "gridDim, blockDim, context.num_leaves);",
-        codegen->func_name);
-    emit(R"(std::cout << "list    " << list_time << " ms" << std::endl;)");
+    emit(R"(printf("kernel {} <<<%d, %d>>> ", gridDim, blockDim);)",
+         codegen->func_name);
+    emit(R"(std::cout << "list gen: " << list_time << " ms  ";)");
     emit("cudaEvent_t start, stop;");
 
     if (current_program->get_current_kernel().benchmarking) {
@@ -256,8 +254,11 @@ class GPUIRCodeGen : public IRVisitor {
 
     TC_ASSERT(chid != -1);
 
-    emit("auto {}_cache = list_element->get{}();", leaf->node_type_name,
-         chid, leaf->node_type_name);
+    emit("auto {}_cache = list_element->get{}();", leaf->node_type_name, chid,
+         leaf->node_type_name);
+    if (leaf->type == SNodeType::dynamic) {
+      emit("if ({}_cache->get_n() == 0) return;", leaf->node_type_name);
+    }
     for (int i = 0; i < max_num_indices; i++) {
       emit("auto {} = leaves[leaf_loop].indices[{}];",
            loopgen.index_name_global(leaf->parent, i), i);
@@ -388,9 +389,9 @@ class GPUIRCodeGen : public IRVisitor {
         "+ {} - 1) / {};",
         block_division, leaf->node_type_name, block_division, block_division);
     emit(
-        "printf(\"launching kernel {} <<<%d, %d>>> num_leaves = %d\\n\", "
-        "gridDim, blockDim, context.num_leaves);",
+        R"(printf("kernel {} <<<%d, %d>>> ", gridDim, blockDim);)",
         codegen->func_name);
+
     emit("cudaEvent_t start, stop;");
 
     if (current_program->get_current_kernel().benchmarking) {
@@ -406,8 +407,7 @@ class GPUIRCodeGen : public IRVisitor {
 
     emit("float milliseconds = 0;");
     emit("cudaEventElapsedTime(&milliseconds, start, stop);");
-    emit(
-        R"(std::cout << "device only " << milliseconds << " ms" << std::endl;)");
+    emit(R"(std::cout << "     device only : " << milliseconds << " ms\n";)");
 
     if (current_program->current_kernel->benchmarking) {
       emit("cudaDeviceSynchronize();\n");

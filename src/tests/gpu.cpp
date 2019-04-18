@@ -40,6 +40,7 @@ TC_TEST("cuda_malloc_managed") {
   for (int i = 0; i < 100000; i++) {
     TC_CHECK(data[i * 749] == 0);
   }
+  cudaFree(ptr);
 }
 
 TLANG_NAMESPACE_END

@@ -236,8 +236,11 @@ void StructCompiler::load_accessors(SNode &snode) {
     load_accessors(*ch);
   }
   if (snode.type == SNodeType::place) {
-    snode.func = load_function<SNode::AccessorFunction>(
+    snode.access_func = load_function<SNode::AccessorFunction>(
         fmt::format("access_{}", snode.node_type_name));
+  } else {
+    snode.stat_func = load_function<SNode::StatFunction>(
+        fmt::format("stat_{}", snode.node_type_name));
   }
 }
 
@@ -259,6 +262,14 @@ void StructCompiler::run(SNode &node) {
         "template <> struct SNodeID<{}> {{static constexpr int value = "
         "{};}};",
         snodes[i]->node_type_name, snodes[i]->id);
+  }
+
+  for (int i = 0; i < snodes.size(); i++) {
+    if (snodes[i]->type != SNodeType::place)
+      emit(
+          "TC_EXPORT AllocatorStat stat_{}() {{return "
+          "Managers::get_allocator<{}>()->get_stat();}} ",
+          snodes[i]->node_type_name, snodes[i]->node_type_name);
   }
 
   root_type = node.node_type_name;

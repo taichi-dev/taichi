@@ -108,6 +108,13 @@ TC_FORCE_INLINE T rand() noexcept;
 
 TLANG_NAMESPACE_BEGIN
 
+struct AllocatorStat {
+  int snode_id;
+  size_t pool_size;
+  size_t num_resident_blocks;
+  size_t num_recycled_blocks;
+};
+
 constexpr int max_num_indices = 4;
 constexpr int max_num_snodes = 1024;
 

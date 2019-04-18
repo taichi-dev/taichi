@@ -11,7 +11,7 @@ TC_FORCE_INLINE int32 constexpr operator"" _bits(unsigned long long a) {
 }
 
 struct IndexExtractor {
-  int start, num_bits;//, dest_offset;
+  int start, num_bits;  //, dest_offset;
   int acc_offset;
   int dimension;
 
@@ -47,7 +47,7 @@ class Index {
     value = 0;
   }
   Index(int value) : value(value) {
-    TC_ASSERT(0 <= value  && value < max_num_indices);
+    TC_ASSERT(0 <= value && value < max_num_indices);
   }
 };
 
@@ -83,7 +83,9 @@ class SNode {
   }
 
   using AccessorFunction = void *(*)(void *, int, int, int, int);
-  AccessorFunction func;
+  using StatFunction = AllocatorStat (*)();
+  AccessorFunction access_func;
+  StatFunction stat_func;
 
   std::string node_type_name;
   SNodeType type;
@@ -100,7 +102,8 @@ class SNode {
     num_active_indices = 0;
     std::memset(taken_bits, 0, sizeof(taken_bits));
     std::memset(physical_index_position, -1, sizeof(physical_index_position));
-    func = nullptr;
+    access_func = nullptr;
+    stat_func = nullptr;
     parent = nullptr;
     _verbose = false;
     _multi_threaded = false;
@@ -210,8 +213,13 @@ class SNode {
   }
 
   TC_FORCE_INLINE void *evaluate(void *ds, int i, int j, int k, int l) {
-    TC_ASSERT(func);
-    return func(ds, i, j, k, l);
+    TC_ASSERT(access_func);
+    return access_func(ds, i, j, k, l);
+  }
+
+  TC_FORCE_INLINE AllocatorStat stat() {
+    TC_ASSERT(stat_func);
+    return stat_func();
   }
 
   int child_id(SNode *c) {

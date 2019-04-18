@@ -38,13 +38,6 @@ struct SNodeMeta {
   int indices[max_num_indices];
 };
 
-struct AllocatorStat {
-  int snode_id;
-  size_t pool_size;
-  size_t num_resident_blocks;
-  size_t num_recycled_blocks;
-};
-
 /*
 static_assert(sizeof(std::uint64_t) == sizeof(unsigned long long), "");
 static_assert(sizeof(std::uint64_t) == sizeof(unsigned long), "");

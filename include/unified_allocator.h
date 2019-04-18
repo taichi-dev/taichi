@@ -58,13 +58,24 @@ class UnifiedAllocator {
   static void free();
 };
 
+TC_FORCE_INLINE __host__ __device__ void *allocate(std::size_t size) {
+#if __CUDA_ARCH__
+  auto addr = allocator()->alloc_gpu(*device_head, size);
+#else
+  auto addr = allocator()->alloc(size);
+#endif
+  return addr;
+}
+
+template <typename T>
+TC_FORCE_INLINE __host__ __device__ T *allocate() {
+  auto addr = allocate(sizeof(T));
+  return new (addr) T();
+}
+
 template <typename T, typename... Args>
 __device__ __host__ T *create_unified(Args&& ...args) {
-#if __CUDA_ARCH__
-  auto addr = allocator()->alloc_gpu(*device_head, sizeof(T));
-#else
-  auto addr = allocator()->alloc(sizeof(T));
-#endif
+  auto addr = allocate(sizeof(T));
   return new (addr) T(std::forward<Args>(args)...);
 }
 

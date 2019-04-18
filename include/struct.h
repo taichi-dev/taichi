@@ -25,25 +25,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-#if defined(TC_GPU)
-TC_FORCE_INLINE __device__ void *allocate(std::size_t size) {
-  return taichi::Tlang::UnifiedAllocator::alloc_gpu(*device_head, size);
-}
-template <typename T>
-TC_FORCE_INLINE __device__ T *allocate() {
-  return new (allocate(sizeof(T))) T();
-}
-#else
-TC_FORCE_INLINE __host__ void *allocate(std::size_t size) {
-  return taichi::Tlang::allocator()->alloc(size);
-}
-template <typename T>
-TC_FORCE_INLINE __host__ T *allocate() {
-  auto addr = taichi::Tlang::allocator()->alloc(sizeof(T));
-  return new (addr) T();
-}
-#endif
-
 using PhysicalIndexGroup = int[max_num_indices];
 
 template <typename T>
@@ -78,21 +59,6 @@ struct SNodeAllocator {
     tail = 0;
   }
 
-  /*
-#if defined(TC_GPU)
-  __device__ data_type *allocate_node(const PhysicalIndexGroup &index) {
-    auto id = atomicAdd(&tail, 1);
-    SNodeMeta &meta = meta_pool[id];
-    meta.active = true;
-    meta.ptr = id;
-
-    for (int i = 0; i < max_num_indices; i++)
-      meta.indices[i] = index[i];
-
-    return new (data_pool + id) data_type();
-  }
-#else
-   */
   __host__ __device__ data_type *allocate_node(const PhysicalIndexGroup &index) {
 #if !defined(__CUDA_ARCH__)
     TC_ASSERT(this != nullptr);

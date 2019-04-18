@@ -1,9 +1,9 @@
-#include "../include/unified_allocator.h"
-#include "util.h"
-#include <string>
 #if defined(CUDA_FOUND)
 #include <cuda_runtime.h>
 #endif
+#include "util.h"
+#include "../include/unified_allocator.h"
+#include <string>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -37,7 +37,6 @@ taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
   data = (char *)data + 4096;
   *head = data;
   *tail = (void *)(((char *)head) + size);
-  // memset(0);
 }
 
 taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {

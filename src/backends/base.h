@@ -93,9 +93,9 @@ class CodeGenBase {
     return folder + "/db";
   }
 
-  CodeGenBase() {
+  CodeGenBase(const std::string &kernel_name = "") {
     id = get_kernel_id();
-    func_name = fmt::format("func{:06d}", id);
+    func_name = fmt::format("k{:04d}_{}", id, kernel_name);
 
     dll = nullptr;
     current_code_region = CodeRegion::header;

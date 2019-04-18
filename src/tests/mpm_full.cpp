@@ -220,7 +220,7 @@ auto mpm3d = []() {
     });
   });
 
-  auto &p2g_naive = kernel([&]() {
+  Kernel(p2g_naive).def([&]() {
     Declare(p);
     BlockDim(256);
     For(p, particle_x(0), [&] {
@@ -303,7 +303,7 @@ auto mpm3d = []() {
     });
   });
 
-  auto &clear_lists = kernel([&] {
+  Kernel(clear_lists).def([&] {
     Declare(i);
     Declare(j);
     Declare(k);
@@ -311,7 +311,7 @@ auto mpm3d = []() {
     For((i, j, k), l.parent(), [&] { Clear(l.parent(), (i, j, k)); });
   });
 
-  auto &sort = kernel([&] {
+  Kernel(sort).def([&] {
     Declare(p);
     BlockDim(256);
     For(p, particle_x(0), [&] {
@@ -324,7 +324,7 @@ auto mpm3d = []() {
     });
   });
 
-  auto &p2g_sorted = kernel([&] {
+  Kernel(p2g_sorted).def([&] {
     Declare(i);
     Declare(j);
     Declare(k);
@@ -433,7 +433,7 @@ auto mpm3d = []() {
     }
   };
 
-  auto &grid_op = kernel([&]() {
+  Kernel(grid_op).def([&]() {
     Declare(i);
     Declare(j);
     Declare(k);
@@ -468,7 +468,7 @@ auto mpm3d = []() {
     });
   });
 
-  auto &g2p = kernel([&]() {
+  Kernel(g2p).def([&]() {
     // benchmark_kernel();
     Declare(i);
     Declare(j);

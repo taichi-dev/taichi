@@ -9,7 +9,7 @@ class CPUCodeGen : public KernelCodeGen {
   std::map<int, std::string> masks;
 
  public:
-  CPUCodeGen() : KernelCodeGen() {
+  CPUCodeGen(const std::string &kernel_name) : KernelCodeGen(kernel_name) {
     suffix = "cpp";
   }
 

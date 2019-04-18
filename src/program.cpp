@@ -13,10 +13,10 @@ SNode root;
 FunctionType Program::compile(Kernel &kernel) {
   FunctionType ret = nullptr;
   if (config.arch == Arch::x86_64) {
-    CPUCodeGen codegen;
+    CPUCodeGen codegen(kernel.name);
     ret = codegen.compile(*this, kernel);
   } else if (config.arch == Arch::gpu) {
-    GPUCodeGen codegen;
+    GPUCodeGen codegen(kernel.name);
     ret = codegen.compile(*this, kernel);
   } else {
     TC_NOT_IMPLEMENTED;

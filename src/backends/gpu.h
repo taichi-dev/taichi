@@ -7,7 +7,7 @@ TLANG_NAMESPACE_BEGIN
 class GPUCodeGen : public KernelCodeGen {
  public:
  public:
-  GPUCodeGen() : KernelCodeGen() {
+  GPUCodeGen(const std::string &kernel_name) : KernelCodeGen(kernel_name) {
     suffix = "cu";
   }
 

@@ -106,14 +106,15 @@ class Program {
     }
   };
 
-  KernelProxy kernel(std::string name) {
+  KernelProxy kernel(const std::string &name) {
     KernelProxy proxy;
     proxy.prog = this;
     proxy.name = name;
     return proxy;
   }
 
-  Kernel &kernel(const std::function<void()> &body, std::string name = "") {
+  Kernel &kernel(const std::function<void()> &body,
+                 const std::string &name = "") {
     // Expr::set_allow_store(true);
     auto func = std::make_unique<Kernel>(*this, body, name);
     // Expr::set_allow_store(false);

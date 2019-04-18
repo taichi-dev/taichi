@@ -11,7 +11,7 @@ class KernelCodeGen : public CodeGenBase {
  public:
   Program *prog;
   Program::Kernel *kernel;
-  KernelCodeGen() : CodeGenBase() {
+  KernelCodeGen(const std::string &kernel_name) : CodeGenBase(kernel_name) {
   }
 
   virtual void generate_header() {

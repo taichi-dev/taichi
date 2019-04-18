@@ -34,7 +34,7 @@ using size_t = std::size_t;
 
 struct SNodeMeta {
   int indices[max_num_indices];
-  void * ptr;
+  void *ptr;
   int active;
 };
 
@@ -53,7 +53,7 @@ struct SNodeAllocator {
       sizeof(data_type);  // each snode allocator takes at most 8 GB
   static constexpr int id = SNodeID<T>::value;
 
-  SNodeMeta *meta_pool;
+  SNodeMeta *resident_pool;
   SNodeMeta *recycle_pool;
   data_type *data_pool;
   size_t resident_tail;
@@ -61,11 +61,14 @@ struct SNodeAllocator {
 
   SNodeAllocator() {
     if (T::has_null)
-      data_pool = (data_type *)allocate(sizeof(data_type) * pool_size, sizeof(data_type));
+      data_pool = (data_type *)allocate(sizeof(data_type) * pool_size,
+                                        sizeof(data_type));
     else
       data_pool = nullptr;
-    meta_pool = (SNodeMeta *)allocate(sizeof(SNodeMeta) * pool_size, sizeof(SNodeMeta));
-    recycle_pool = (SNodeMeta *)allocate(sizeof(SNodeMeta) * pool_size, sizeof(SNodeMeta));
+    resident_pool =
+        (SNodeMeta *)allocate(sizeof(SNodeMeta) * pool_size, sizeof(SNodeMeta));
+    recycle_pool =
+        (SNodeMeta *)allocate(sizeof(SNodeMeta) * pool_size, sizeof(SNodeMeta));
 
     resident_tail = 0;
     recycle_tail = 0;
@@ -80,9 +83,9 @@ struct SNodeAllocator {
       const PhysicalIndexGroup &index) {
     TC_ASSERT(this != nullptr);
     TC_ASSERT(data_pool != nullptr);
-    TC_ASSERT(meta_pool != nullptr);
+    TC_ASSERT(resident_pool != nullptr);
     auto id = atomic_add(&resident_tail, 1UL);
-    SNodeMeta &meta = meta_pool[id];
+    SNodeMeta &meta = resident_pool[id];
     meta.active = true;
     meta.ptr = data_pool + id;
 
@@ -95,6 +98,10 @@ struct SNodeAllocator {
   void gc() {
   }
 
+  static_assert(sizeof(data_type) % 4 == 0, "");
+
+  __host__ void recycle_all();
+
   AllocatorStat get_stat() {
     AllocatorStat stat;
     stat.snode_id = SNodeID<T>::value;
@@ -104,6 +111,30 @@ struct SNodeAllocator {
     return stat;
   }
 };
+
+#if __CUDA_ARCH__
+template <typename T>
+__global__ void recycle_all_gpu(SNodeAllocator<T> *allocator) {
+  auto b = blockIdx.x;
+  auto t = threadIdx.x;
+  if (allocator->resident_pool[b].active)
+    return;  // still active, do nothing
+  // zero-fill
+  auto ptr = (int *)data_pool[b];
+  ptr[b] = 0;
+  // push to recycle list
+  if (t == 0) {
+    recycle_pool[atomicAdd(&allocator->recycle_tail, 1)] =
+        allocator->resident_pool[b];
+  }
+}
+#endif
+
+template <typename T>
+__host__ void SNodeAllocator<T>::recycle_all() {
+  recycle_all_gpu(this);
+  resident_tail = 0;
+}
 
 template <typename T>
 struct SNodeManager {

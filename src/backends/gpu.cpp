@@ -381,7 +381,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("context.num_leaves = Managers::get_allocator<{}>()->resident_tail;",
          leaf->parent->node_type_name);
 
-    emit("context.leaves = Managers::get_allocator<{}>()->meta_pool;",
+    emit("context.leaves = Managers::get_allocator<{}>()->resident_pool;",
          leaf->parent->node_type_name);
 
     emit(

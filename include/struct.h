@@ -27,7 +27,7 @@ TLANG_NAMESPACE_BEGIN
 
 #if defined(TC_GPU)
 TC_FORCE_INLINE __device__ void *allocate(std::size_t size) {
-  return taichi::Tlang::UnifiedAllocator::alloc(*device_head, size);
+  return taichi::Tlang::UnifiedAllocator::alloc_gpu(*device_head, size);
 }
 template <typename T>
 TC_FORCE_INLINE __device__ T *allocate() {
@@ -78,6 +78,7 @@ struct SNodeAllocator {
     tail = 0;
   }
 
+  /*
 #if defined(TC_GPU)
   __device__ data_type *allocate_node(const PhysicalIndexGroup &index) {
     auto id = atomicAdd(&tail, 1);
@@ -91,11 +92,14 @@ struct SNodeAllocator {
     return new (data_pool + id) data_type();
   }
 #else
-  data_type *allocate_node(const PhysicalIndexGroup &index) {
+   */
+  __host__ __device__ data_type *allocate_node(const PhysicalIndexGroup &index) {
+#if !defined(__CUDA_ARCH__)
     TC_ASSERT(this != nullptr);
     TC_ASSERT(data_pool != nullptr);
     TC_ASSERT(meta_pool != nullptr);
-    auto id = atomicAdd(&tail, 1);
+#endif
+    auto id = atomic_add(&tail, 1);
     SNodeMeta &meta = meta_pool[id];
     meta.active = true;
     meta.ptr = id;
@@ -105,7 +109,6 @@ struct SNodeAllocator {
 
     return new (data_pool + id) data_type();
   }
-#endif
 
   void gc() {
   }
@@ -140,12 +143,10 @@ struct Managers {
     return (SNodeManager<T> *&)(managers[SNodeID<T>::value]);
   }
 
-#if defined(TC_STRUCT)
-  static void initialize() {
+  __host__ __device__ static void initialize() {
     auto addr = create_unified<Managers>();
     TC_ASSERT(addr == get_instance());
   }
-#endif
 
   template <typename T>
   __host__ __device__ static SNodeManager<T> *&get() {
@@ -317,15 +318,9 @@ struct dynamic {
     n = 0;
   }
 
-#if defined(TC_GPU)
-  __device__ TC_FORCE_INLINE void append(child_type t) {
-    data[atomicAdd(&n, 1)] = t;
+  __device__ __host__ TC_FORCE_INLINE void append(child_type t) {
+    data[atomic_add(&n, 1)] = t;
   }
-#else
-  TC_FORCE_INLINE void append(child_type t) {
-    data[atomicAdd(&n, 1)] = t;
-  }
-#endif
 
   TC_DEVICE TC_FORCE_INLINE void activate(int i,
                                           const PhysicalIndexGroup &index) {

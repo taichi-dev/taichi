@@ -99,6 +99,9 @@ TC_FORCE_INLINE T rand() noexcept;
 #if !defined(__device__)
 #define __device__
 #endif
+#if !defined(__host__)
+#define __host__
+#endif
 #endif
 
 TLANG_NAMESPACE_BEGIN

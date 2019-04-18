@@ -930,23 +930,41 @@ inline vec<float32, dim> mod(vec<float32, dim> a, vec<float32, dim> b) {
   return sub(a, mul(floor(div(a, b)), b));
 };
 
-// Follow the CUDA naming style
-TC_FORCE_INLINE __host__ int atomicAdd(int32 *dest, int32 val) {
+#endif  // Intrinsics wrapper
+// common atomics interface
+
+TC_FORCE_INLINE __host__ int32 atomicAddCPU(volatile int32 *dest, int32 val) {
   return __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
 }
 
-TC_FORCE_INLINE __host__ void atomicAdd(volatile float32 *dest, float32 inc) {
+TC_FORCE_INLINE __host__ float32 atomicAddCPU(volatile float32 *dest,
+                                              float32 inc) {
   float32 old_val;
-  volatile float32 new_val;
+  float32 new_val;
   do {
     old_val = *dest;
     new_val = old_val + inc;
+#if defined(__clang__)
   } while (!__atomic_compare_exchange(dest, &old_val, &new_val, true,
                                       std::memory_order::memory_order_seq_cst,
                                       std::memory_order::memory_order_seq_cst));
+#else
+  } while (!__atomic_compare_exchange((float32 *)dest, &old_val, &new_val, true,
+                                      std::memory_order::memory_order_seq_cst,
+                                      std::memory_order::memory_order_seq_cst));
+#endif
+  return old_val;
 }
 
-#endif  // Intrinsics wrapper
+
+template <typename T>
+TC_FORCE_INLINE __host__ __device__ T atomic_add(T *dest, T inc) {
+#if __CUDA_ARCH__
+  return atomicAdd(dest, inc);
+#else
+  return atomicAddCPU(dest, inc);
+#endif
+}
 TLANG_NAMESPACE_END
 
 #if defined(TC_GPU)

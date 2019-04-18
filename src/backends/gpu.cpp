@@ -379,7 +379,7 @@ class GPUIRCodeGen : public IRVisitor {
       }
     }
     emit("gpu_runtime_init();");
-    emit("context.num_leaves = Managers::get_allocator<{}>()->tail;",
+    emit("context.num_leaves = Managers::get_allocator<{}>()->resident_tail;",
          leaf->parent->node_type_name);
 
     emit("context.leaves = Managers::get_allocator<{}>()->meta_pool;",
@@ -463,7 +463,18 @@ class GPUIRCodeGen : public IRVisitor {
       emit("{}_kernel<<<{}, {}>>>(context);", codegen->func_name, num_blocks,
            block_size);
     } else {
-      struct_for_old(for_stmt_.get());
+      auto struct_for = for_stmt_->as<StructForStmt>();
+      bool use_activity_tracking = false;
+      if (struct_for->snode->parent->type == SNodeType::dense &&
+          struct_for->snode->parent->parent->type == SNodeType::pointer)
+        use_activity_tracking = true;
+
+      if (use_activity_tracking) {
+        TC_WARN("Using activity tracking");
+        struct_for_new(for_stmt_.get());
+      } else {
+        struct_for_old(for_stmt_.get());
+      }
     }
 
     emit("cudaDeviceSynchronize();\n");

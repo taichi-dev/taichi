@@ -45,9 +45,6 @@ auto reset_grid_benchmark = []() {
   Global(grid_m, f32);
 
   auto i = Index(0), j = Index(1), k = Index(2);
-  auto p = Index(3);
-
-  bool SOA = true;
 
   layout([&]() {
     TC_ASSERT(n % grid_block_size == 0);
@@ -572,11 +569,11 @@ auto mpm3d = []() {
 
   Vector2i cam_res(640, 360);
 
-  int scale = 128 * 6 / n;
+  // int scale = 128 * 6 / n;
   // GUI gui("MPM", n * scale + 200, n * scale);
   GUI gui("MPM", cam_res);
-  int angle = 0;
-  int gravity_x_slider = 0;
+  // int angle = 0;
+  // int gravity_x_slider = 0;
   /*
   gui.button("Restart", reset)
       .slider("Camera", angle, 0, 360, 1)

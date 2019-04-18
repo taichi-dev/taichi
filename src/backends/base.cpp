@@ -36,6 +36,7 @@ void CodeGenBase::write_source() {
 
 std::string CodeGenBase::get_source() {
   TC_NOT_IMPLEMENTED
+  return "";
 }
 
 void CodeGenBase::load_dll() {

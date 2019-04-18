@@ -36,11 +36,14 @@
 
 using float32 = float;
 using float64 = double;
-using int32 = int;
-using uint32 = unsigned int;
-using uint64 = unsigned long long;
-using uint8 = unsigned char;
-using uint16 = unsigned short;
+using uint8 = std::uint8_t;
+using uint16 = std::uint16_t;
+using uint32 = std::uint32_t;
+using uint64 = std::uint64_t;
+using int8 = std::int8_t;
+using int16 = std::int16_t;
+using int32 = std::int32_t;
+using int64 = std::int64_t;
 
 #if defined(TLANG_GPU)
 #include <cuda_runtime.h>
@@ -50,8 +53,7 @@ using uint16 = unsigned short;
 
 #define TC_ASSERT(x)                                                    \
   if (!(x)) {                                                           \
-    std::cout << "Ln" << __LINE__ << ":" << #x << ": Assertion failed." \
-              << std::endl;                                             \
+    printf("Assertion failed (Ln %d): %s\n", __LINE__, #x); \
     exit(-1);                                                           \
   }
 #define TC_P(x)                                                          \

@@ -30,42 +30,64 @@ using PhysicalIndexGroup = int[max_num_indices];
 template <typename T>
 struct SNodeID;
 
+using size_t = std::size_t;
+
 struct SNodeMeta {
   bool active;
-  int ptr;
+  size_t ptr;
   int indices[max_num_indices];
 };
+
+struct AllocatorStat {
+  int snode_id;
+  size_t pool_size;
+  size_t num_resident_blocks;
+  size_t num_recycled_blocks;
+};
+
+/*
+static_assert(sizeof(std::uint64_t) == sizeof(unsigned long long), "");
+static_assert(sizeof(std::uint64_t) == sizeof(unsigned long), "");
+// static_assert(std::is_same_v<std::uint64_t, unsigned long long>, "");
+static_assert(std::is_same_v<std::uint64_t, unsigned long int>, "");
+*/
 
 template <typename T>
 struct SNodeAllocator {
   SNodeMeta *meta_pool;
+  SNodeMeta *recycle_pool;
   using data_type = typename T::child_type;
   static constexpr std::size_t pool_size =
       (1LL << 33) /
       sizeof(data_type);  // each snode allocator takes at most 8 GB
   data_type *data_pool;
-  int tail;
+  size_t resident_tail;
+  size_t recycle_tail;
   static constexpr int id = SNodeID<T>::value;
 
-  TC_DEVICE SNodeAllocator() {
+  SNodeAllocator() {
     if (T::has_null)
       data_pool = (data_type *)allocate(sizeof(data_type) * pool_size);
     else
       data_pool = nullptr;
     meta_pool = (SNodeMeta *)allocate(sizeof(SNodeMeta) * pool_size);
+    recycle_pool = (SNodeMeta *)allocate(sizeof(SNodeMeta) * pool_size);
+
+    resident_tail = 0;
+    recycle_tail = 0;
   }
 
   __device__ __host__ void reset_meta() {
-    tail = 0;
+    resident_tail = 0;
+    recycle_tail = 0;
   }
 
-  __host__ __device__ data_type *allocate_node(const PhysicalIndexGroup &index) {
-#if !defined(__CUDA_ARCH__)
+  __host__ __device__ data_type *allocate_node(
+      const PhysicalIndexGroup &index) {
     TC_ASSERT(this != nullptr);
     TC_ASSERT(data_pool != nullptr);
     TC_ASSERT(meta_pool != nullptr);
-#endif
-    auto id = atomic_add(&tail, 1);
+    auto id = atomic_add(&resident_tail, 1UL);
     SNodeMeta &meta = meta_pool[id];
     meta.active = true;
     meta.ptr = id;
@@ -79,8 +101,13 @@ struct SNodeAllocator {
   void gc() {
   }
 
-  void print_statistics() {
-    std::cout << "  num nodes: " << tail << std::endl;
+  AllocatorStat get_stat() {
+    AllocatorStat stat;
+    stat.snode_id = SNodeID<T>::value;
+    stat.pool_size = pool_size;
+    stat.num_recycled_blocks = recycle_tail;
+    stat.num_resident_blocks = resident_tail;
+    return stat;
   }
 };
 

@@ -937,6 +937,15 @@ TC_FORCE_INLINE __host__ int32 atomicAddCPU(volatile int32 *dest, int32 val) {
   return __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
 }
 
+TC_FORCE_INLINE __host__ int64 atomicAddCPU(volatile int64 *dest, int64 val) {
+  return __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
+}
+
+TC_FORCE_INLINE __host__ uint64 atomicAddCPU(volatile uint64 *dest,
+                                             uint64 val) {
+  return __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
+}
+
 TC_FORCE_INLINE __host__ float32 atomicAddCPU(volatile float32 *dest,
                                               float32 inc) {
   float32 old_val;
@@ -956,7 +965,6 @@ TC_FORCE_INLINE __host__ float32 atomicAddCPU(volatile float32 *dest,
   return old_val;
 }
 
-
 template <typename T>
 TC_FORCE_INLINE __host__ __device__ T atomic_add(T *dest, T inc) {
 #if __CUDA_ARCH__
@@ -965,6 +973,15 @@ TC_FORCE_INLINE __host__ __device__ T atomic_add(T *dest, T inc) {
   return atomicAddCPU(dest, inc);
 #endif
 }
+
+#if __CUDA_ARCH__
+static_assert(sizeof(unsigned long) == sizeof(unsigned long long), "");
+TC_FORCE_INLINE __device__ unsigned long atomic_add(unsigned long *dest,
+                                                    unsigned long inc) {
+  return atomicAdd((unsigned long long *)dest, (unsigned long long)(inc));
+}
+#endif
+
 TLANG_NAMESPACE_END
 
 #if defined(TC_GPU)

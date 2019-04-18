@@ -34,7 +34,7 @@ using size_t = std::size_t;
 
 struct SNodeMeta {
   int indices[max_num_indices];
-  size_t ptr;
+  void * ptr;
   int active;
 };
 
@@ -84,7 +84,7 @@ struct SNodeAllocator {
     auto id = atomic_add(&resident_tail, 1UL);
     SNodeMeta &meta = meta_pool[id];
     meta.active = true;
-    meta.ptr = id;
+    meta.ptr = data_pool + id;
 
     for (int i = 0; i < max_num_indices; i++)
       meta.indices[i] = index[i];

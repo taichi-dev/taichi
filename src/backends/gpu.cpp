@@ -248,10 +248,16 @@ class GPUIRCodeGen : public IRVisitor {
          leaf->parent->node_type_name);
     emit("auto num_leaves = context.num_leaves;");
     emit("auto leaf_loop = blockIdx.x / {};", block_division);
-    emit("if (leaf_loop >= num_leaves) return;");
+    emit("if (leaf_loop >= num_leaves || !leaves[leaf_loop].active) return;");
 
-    emit("auto {}_cache = ({} *)leaves[leaf_loop].ptr;", leaf->node_type_name,
-         leaf->node_type_name);
+    emit("auto list_element = ({}::child_type *)leaves[leaf_loop].ptr;",
+         leaf->parent->node_type_name);
+    auto chid = leaf->parent->child_id(leaf);
+
+    TC_ASSERT(chid != -1);
+
+    emit("auto {}_cache = list_element->get{}();", leaf->node_type_name,
+         chid, leaf->node_type_name);
     for (int i = 0; i < max_num_indices; i++) {
       emit("auto {} = leaves[leaf_loop].indices[{}];",
            loopgen.index_name_global(leaf->parent, i), i);
@@ -459,11 +465,9 @@ class GPUIRCodeGen : public IRVisitor {
           struct_for->snode->parent->parent->type == SNodeType::pointer)
         use_activity_tracking = true;
 
-      /*
       if (struct_for->snode->parent->type == SNodeType::dynamic &&
           struct_for->snode->parent->parent->type == SNodeType::pointer)
         use_activity_tracking = true;
-      */
 
       if (use_activity_tracking) {
         TC_WARN("Using activity tracking");

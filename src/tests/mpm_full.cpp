@@ -207,7 +207,6 @@ auto mpm3d = []() {
     });
   })();
 
-
   Kernel(reset_grid).def([&]() {
     Declare(i);
     Declare(j);

@@ -86,15 +86,15 @@ auto mpm3d = []() {
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
   prog.config.print_ir = true;
-  bool fluid = true;
-  bool plastic = false;
+  bool fluid = false;
+  bool plastic = true;
   constexpr bool highres = true;
   CoreState::set_trigger_gdb_when_crash(true);
 
   constexpr int n = highres ? 256 : 128;  // grid_resolution
-  const real dt = 5e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+  const real dt = 2e-5_f * 256 / n / 3, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
-  auto E = 2e3_f, nu = 0.3f;
+  auto E = 4e4_f, nu = 0.3f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
 
   constexpr int dim = 3;
@@ -126,7 +126,7 @@ auto mpm3d = []() {
     std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f);
     std::fclose(f);
   } else {
-    n_particles = max_n_particles / (highres ? 8 : 1);
+    n_particles = max_n_particles / (highres ? 1 : 8);
   }
 
   TC_ASSERT(n_particles <= max_n_particles);
@@ -219,7 +219,7 @@ auto mpm3d = []() {
         J = particle_J[p] * (1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2)));
         particle_J[p] = J;
       } else {
-        F = Eval((Matrix::identity(3) + dt * C) * particle_F[p]);
+        F = Eval((Matrix::identity(dim) + dt * C) * particle_F[p]);
       }
       Mutable(F, DataType::f32);
 
@@ -240,28 +240,26 @@ auto mpm3d = []() {
         auto R = std::get<0>(svd) * transposed(std::get<2>(svd));
         auto sig = std::get<1>(svd);
         Mutable(sig, DataType::f32);
-        auto oldJ = sig(0) * sig(1) * sig(2);
+        auto oldJ = Eval(sig(0) * sig(1) * sig(2));
         if (plastic) {
           for (int i = 0; i < dim; i++) {
             sig(i) = clamp(sig(i), 1 - 2.5e-2f, 1 + 7.5e-3f);
           }
-          auto newJ = sig(0) * sig(1) * sig(2);
+          auto newJ = Eval(sig(0) * sig(1) * sig(2));
           // plastic J
           auto Jp = particle_J[p] * oldJ / newJ;
-          particle_J[p] = Jp;
           J = newJ;
           F = std::get<0>(svd) * diag_matrix(sig) *
               transposed(std::get<2>(svd));
-          particle_F[p] = F;
-          /*
-          auto harderning = exp((1.0f - Jp) * 10.0f);
-          mu *= harderning;
-          lambda *= harderning;
-          */
+          auto hardening = exp((1.0f - Jp) * 10.0f);
+
+          mu *= hardening;
+          lambda *= hardening;
+          particle_J[p] = Jp;
         } else {
           J = oldJ;
-          particle_F[p] = F;
         }
+        particle_F[p] = F;
         cauchy = Eval(2.0_f * mu * (F - R) * transposed(F) +
                       (Matrix::identity(3) * lambda) * (J - 1.0f) * J);
       }
@@ -363,16 +361,14 @@ auto mpm3d = []() {
           }
           auto newJ = sig(0) * sig(1) * sig(2);
           // plastic J
-          auto Jp = particle_J[p] * oldJ / newJ;
-          particle_J[p] = Jp;
+          auto Jp = Eval(particle_J[p] * oldJ / newJ);
           J = newJ;
           F = std::get<0>(svd) * diag_matrix(sig) *
               transposed(std::get<2>(svd));
-          /*
           auto harderning = exp((1.0f - Jp) * 10.0f);
           mu *= harderning;
           lambda *= harderning;
-          */
+          particle_J[p] = Jp;
         } else {
           J = oldJ;
         }
@@ -552,7 +548,7 @@ auto mpm3d = []() {
         particle_x(2).val<float32>(i) = 0.4_f + rand() * 0.2_f;
       }
       particle_v(0).val<float32>(i) = 0._f;
-      particle_v(1).val<float32>(i) = -0.3_f;
+      particle_v(1).val<float32>(i) = -13.0_f;
       particle_v(2).val<float32>(i) = 0._f;
       particle_J.val<float32>(i) = 1_f;
       if (!fluid) {
@@ -567,7 +563,7 @@ auto mpm3d = []() {
 
   reset();
 
-  Vector2i cam_res(640, 360);
+  Vector2i cam_res(1280, 720);
 
   // int scale = 128 * 6 / n;
   // GUI gui("MPM", n * scale + 200, n * scale);
@@ -584,7 +580,7 @@ auto mpm3d = []() {
   auto radius = 1.0_f;
 
   auto simulate_frame = [&]() {
-    for (int t = 0; t < 60; t++) {
+    for (int t = 0; t < 160 * 3; t++) {
       TC_PROFILE("reset grid", reset_grid());
       TC_PROFILE("p2g", p2g());
       TC_PROFILE("grid_op", grid_op());
@@ -603,7 +599,7 @@ auto mpm3d = []() {
   Dict dict;
   dict.set("shadow_map_resolution", 0.005_f)
       .set("alpha", 0.5_f)
-      .set("shadowing", 0.08_f)
+      .set("shadowing", 0.008_f)
       .set("ambient_light", 0.5_f)
       .set("light_direction", Vector3(1, 0.5, 0.3));
 
@@ -629,7 +625,7 @@ auto mpm3d = []() {
       pos = pos - Vector3(0.5f);
       pos = pos * Vector3(0.5f);
       render_particles.push_back(
-          RenderParticle(pos, Vector4(0.3f, 0.5f, 0.9f, 1.0_f)));
+          RenderParticle(pos, Vector4(0.6f, 0.7f, 0.9f, 1.0_f)));
     }
 
     renderer->render(image, render_particles);

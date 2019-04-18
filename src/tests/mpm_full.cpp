@@ -92,9 +92,9 @@ auto mpm3d = []() {
   CoreState::set_trigger_gdb_when_crash(true);
 
   constexpr int n = highres ? 256 : 128;  // grid_resolution
-  const real dt = 2e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+  const real dt = 1e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
-  auto E = 3e4_f, nu = 0.3f;
+  auto E = 1e4_f, nu = 0.3f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
 
   constexpr int dim = 3;
@@ -118,15 +118,37 @@ auto mpm3d = []() {
 
   int n_particles = 0;
   std::vector<float> benchmark_particles;
+  std::vector<Vector3> p_x;
   if (benchmark_dragon) {
     n_particles = 775196;
+    p_x.resize(n_particles);
+    TC_ASSERT(n_particles <= max_n_particles);
     auto f = fopen("dragon_particles.bin", "rb");
     TC_ASSERT(f);
     benchmark_particles.resize(n_particles * 3);
     std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f);
     std::fclose(f);
+    for (int i = 0; i < n_particles; i++) {
+      for (int j = 0; j < dim; j++)
+        p_x[i][j] = benchmark_particles[i * 3 + j];
+    }
   } else {
     n_particles = max_n_particles / (highres ? 1 : 8);
+    p_x.resize(n_particles);
+    /*
+    for (int i = 0; i < n_particles; i++) {
+      p_x[i].x = 0.4_f + rand() * 0.2_f;
+      p_x[i].y = 0.15_f + rand() * 0.55_f;
+      p_x[i].z = 0.4_f + rand() * 0.2_f;
+    }
+    */
+    for (int i = 0; i < n_particles; i++) {
+      Vector3 offset = Vector3::rand() - Vector3(0.5_f);
+      while (offset.length() > 0.5f) {
+        offset = Vector3::rand() - Vector3(0.5_f);
+      }
+      p_x[i] = Vector3(0.5_f) + offset * 0.3f;
+    }
   }
 
   TC_ASSERT(n_particles <= max_n_particles);
@@ -185,7 +207,7 @@ auto mpm3d = []() {
           .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
     }
 
-    block.dynamic(p, pow<dim>(grid_block_size) * 32).place(l);
+    block.dynamic(p, pow<dim>(grid_block_size) * 16).place(l);
 
     root.place(gravity_x);
   });
@@ -261,7 +283,7 @@ auto mpm3d = []() {
           }
           auto newJ = Eval(sig(0) * sig(1) * sig(2));
           // plastic J
-          auto Jp = particle_J[p] * oldJ / newJ;
+          auto Jp = Eval(clamp(particle_J[p] * oldJ / newJ, 0.6_f, 20.0_f));
           J = newJ;
           F = std::get<0>(svd) * diag_matrix(sig) *
               transposed(std::get<2>(svd));
@@ -368,14 +390,14 @@ auto mpm3d = []() {
         auto R = std::get<0>(svd) * transposed(std::get<2>(svd));
         auto sig = std::get<1>(svd);
         Mutable(sig, DataType::f32);
-        auto oldJ = sig(0) * sig(1) * sig(2);
+        auto oldJ = Eval(sig(0) * sig(1) * sig(2));
         if (plastic) {
           for (int i = 0; i < dim; i++) {
             sig(i) = clamp(sig(i), 1 - 2.5e-2f, 1 + 7.5e-3f);
           }
           auto newJ = sig(0) * sig(1) * sig(2);
           // plastic J
-          auto Jp = Eval(particle_J[p] * oldJ / newJ);
+          auto Jp = Eval(clamp(particle_J[p] * oldJ / newJ, 0.6_f, 20.0_f));
           J = newJ;
           F = std::get<0>(svd) * diag_matrix(sig) *
               transposed(std::get<2>(svd));
@@ -442,6 +464,8 @@ auto mpm3d = []() {
       Local(v2) = grid_v[i, j, k](2);
       auto m = load(grid_m[i, j, k]);
 
+      int bound = 8;
+
       If(m > 0.0f, [&]() {
         auto inv_m = Eval(1.0f / m);
         v0 *= inv_m;
@@ -449,17 +473,26 @@ auto mpm3d = []() {
         v2 *= inv_m;
 
         auto f = gravity_x[Expr(0)];
-        v1 += dt * (-100_f + abs(f));
+        v1 += dt * (-1000_f + abs(f));
         v0 += dt * f;
       });
 
-      v0 = select(n - 5 < i, min(v0, Expr(0.0_f)), v0);
-      v1 = select(n - 5 < j, min(v1, Expr(0.0_f)), v1);
-      v2 = select(n - 5 < k, min(v2, Expr(0.0_f)), v2);
+      v0 = select(n - bound < i, min(v0, Expr(0.0_f)), v0);
+      v1 = select(n - bound < j, min(v1, Expr(0.0_f)), v1);
+      v2 = select(n - bound < k, min(v2, Expr(0.0_f)), v2);
 
-      v0 = select(i < 5, max(v0, Expr(0.0_f)), v0);
-      v1 = select(j < 5, max(v1, Expr(0.0_f)), v1);
-      v2 = select(k < 5, max(v2, Expr(0.0_f)), v2);
+      v0 = select(i < bound, max(v0, Expr(0.0_f)), v0);
+      v2 = select(k < bound, max(v2, Expr(0.0_f)), v2);
+
+      If(j < bound, [&] {
+        auto norm = Eval(sqrt(v0 * v0 + v2 * v2));
+        auto s = Eval(clamp((norm + v1 * 0.10f) / (norm + 1e-30f), Expr(0.0_f),
+                            Expr(1.0_f)));
+
+        v0 = v0 * s;
+        v2 = v2 * s;
+        v1 = max(v1, Expr(0.0_f));
+      });
 
       grid_v[i, j, k](0) = v0;
       grid_v[i, j, k](1) = v1;
@@ -542,26 +575,23 @@ auto mpm3d = []() {
     });
   });
 
-  std::vector<int> index(n_particles);
-  for (int i = 0; i < n_particles; i++) {
-    index[i] = i;
-  }
-  // std::random_shuffle(index.begin(), index.end());
+  auto block_id = [&](Vector3 x) {
+    auto xi = (x * inv_dx - Vector3(0.5f)).floor().template cast<int>() /
+              Vector3i(grid_block_size);
+    return xi.x * pow<2>(n / grid_block_size) + xi.y * n / grid_block_size +
+           xi.z;
+  };
+
+  std::sort(p_x.begin(), p_x.end(),
+            [&](Vector3 a, Vector3 b) { return block_id(a) < block_id(b); });
 
   auto reset = [&] {
     for (int i = 0; i < n_particles; i++) {
-      if (benchmark_dragon) {
-        for (int d = 0; d < dim; d++) {
-          particle_x(d).val<float32>(i) =
-              benchmark_particles[dim * index[i] + d];
-        }
-      } else {
-        particle_x(0).val<float32>(i) = 0.4_f + rand() * 0.2_f;
-        particle_x(1).val<float32>(i) = 0.15_f + rand() * 0.75_f;
-        particle_x(2).val<float32>(i) = 0.4_f + rand() * 0.2_f;
+      for (int d = 0; d < dim; d++) {
+        particle_x(d).val<float32>(i) = p_x[i][d];
       }
       particle_v(0).val<float32>(i) = 0._f;
-      particle_v(1).val<float32>(i) = -13.0_f;
+      particle_v(1).val<float32>(i) = -3.0_f;
       particle_v(2).val<float32>(i) = 0._f;
       particle_J.val<float32>(i) = 1_f;
       if (!fluid) {
@@ -593,12 +623,14 @@ auto mpm3d = []() {
   auto radius = 1.0_f;
 
   auto simulate_frame = [&]() {
-    for (int t = 0; t < 60; t++) {
+    auto t = Time::get_time();
+    for (int t = 0; t < 160; t++) {
       TC_PROFILE("reset grid", reset_grid());
       TC_PROFILE("p2g", p2g());
       TC_PROFILE("grid_op", grid_op());
       TC_PROFILE("g2p", g2p());
     }
+    TC_P((Time::get_time() - t) / 160 * 1000);
   };
 
   Dict cam_dict;
@@ -610,9 +642,9 @@ auto mpm3d = []() {
   auto cam = create_instance<Camera>("pinhole", cam_dict);
 
   Dict dict;
-  dict.set("shadow_map_resolution", 0.005_f)
+  dict.set("shadow_map_resolution", 0.002_f)
       .set("alpha", 0.5_f)
-      .set("shadowing", 0.008_f)
+      .set("shadowing", 0.018_f)
       .set("ambient_light", 0.5_f)
       .set("light_direction", Vector3(1, 0.5, 0.3));
 
@@ -650,6 +682,7 @@ auto mpm3d = []() {
     create_directories(render_dir);
     gui.get_canvas().img.write_as_image(
         fmt::format("{}/{:05d}.png", render_dir, frame));
+    print_profile_info();
   }
 
   /*
@@ -692,7 +725,6 @@ auto mpm3d = []() {
       frame++;
     }
 
-    print_profile_info();
   }
   */
 };

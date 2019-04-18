@@ -30,15 +30,20 @@ class UnifiedAllocator {
   UnifiedAllocator(std::size_t size, bool gpu);
 
 #if defined(TC_GPU)
-  __device__ static void *alloc_gpu(void *&head, int size) {
-    return (void *)atomicAdd(reinterpret_cast<unsigned long long *>(&head),
-                             size);
+  __device__ static void *alloc_gpu(void *&head, int size, int alignment = 1) {
+    if (alignment == 1) {
+      return (void *)atomicAdd(reinterpret_cast<unsigned long long *>(&head),
+                               size);
+    } else {
+      TC_ASSERT(false); // aligned allocation is not supported on GPU
+    }
   }
 #endif
 
-  __host__ void *alloc(std::size_t size) {
+  __host__ void *alloc(std::size_t size, int alignment) {
     std::lock_guard<std::mutex> _(lock);
-    auto ret = *head;
+    auto ret = (char *)(*head) + alignment - 1 -
+               ((unsigned long)(char *)(*head) + alignment - 1) % alignment;
     *head = (char *)(*head) + size;
     return ret;
   }
@@ -58,11 +63,12 @@ class UnifiedAllocator {
   static void free();
 };
 
-TC_FORCE_INLINE __host__ __device__ void *allocate(std::size_t size) {
+TC_FORCE_INLINE __host__ __device__ void *allocate(std::size_t size,
+                                                   int alignment = 1) {
 #if __CUDA_ARCH__
-  auto addr = allocator()->alloc_gpu(*device_head, size);
+  auto addr = allocator()->alloc_gpu(*device_head, size, alignment);
 #else
-  auto addr = allocator()->alloc(size);
+  auto addr = allocator()->alloc(size, alignment);
 #endif
   return addr;
 }
@@ -74,7 +80,7 @@ TC_FORCE_INLINE __host__ __device__ T *allocate() {
 }
 
 template <typename T, typename... Args>
-__device__ __host__ T *create_unified(Args&& ...args) {
+__device__ __host__ T *create_unified(Args &&... args) {
   auto addr = allocate(sizeof(T));
   return new (addr) T(std::forward<Args>(args)...);
 }

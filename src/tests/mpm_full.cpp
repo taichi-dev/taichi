@@ -172,7 +172,7 @@ auto mpm3d = []() {
     place(particle_J);
 
     TC_ASSERT(n % grid_block_size == 0);
-    auto &block = root.dense({i, j, k}, n / grid_block_size);
+    auto &block = root.dense({i, j, k}, n / grid_block_size).pointer();
     constexpr bool block_soa = false;
 
     if (block_soa) {
@@ -191,6 +191,20 @@ auto mpm3d = []() {
   });
 
   TC_ASSERT(bit::is_power_of_two(n));
+
+  kernel([&]() {
+    Declare(i);
+    Declare(j);
+    Declare(k);
+    int t = n / grid_block_size;
+    For(i, 0, t, [&] {
+      For(j, 0, t, [&] {
+        For(k, 0, t, [&] {
+          Activate(grid_m, (i, j, k));
+        });
+      });
+    });
+  })();
 
   auto &reset_grid = kernel([&]() {
     Declare(i);

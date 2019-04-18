@@ -33,9 +33,9 @@ struct SNodeID;
 using size_t = std::size_t;
 
 struct SNodeMeta {
-  bool active;
-  size_t ptr;
   int indices[max_num_indices];
+  size_t ptr;
+  int active;
 };
 
 /*
@@ -47,24 +47,25 @@ static_assert(std::is_same_v<std::uint64_t, unsigned long int>, "");
 
 template <typename T>
 struct SNodeAllocator {
-  SNodeMeta *meta_pool;
-  SNodeMeta *recycle_pool;
   using data_type = typename T::child_type;
   static constexpr std::size_t pool_size =
       (1LL << 33) /
       sizeof(data_type);  // each snode allocator takes at most 8 GB
+  static constexpr int id = SNodeID<T>::value;
+
+  SNodeMeta *meta_pool;
+  SNodeMeta *recycle_pool;
   data_type *data_pool;
   size_t resident_tail;
   size_t recycle_tail;
-  static constexpr int id = SNodeID<T>::value;
 
   SNodeAllocator() {
     if (T::has_null)
-      data_pool = (data_type *)allocate(sizeof(data_type) * pool_size);
+      data_pool = (data_type *)allocate(sizeof(data_type) * pool_size, sizeof(data_type));
     else
       data_pool = nullptr;
-    meta_pool = (SNodeMeta *)allocate(sizeof(SNodeMeta) * pool_size);
-    recycle_pool = (SNodeMeta *)allocate(sizeof(SNodeMeta) * pool_size);
+    meta_pool = (SNodeMeta *)allocate(sizeof(SNodeMeta) * pool_size, sizeof(SNodeMeta));
+    recycle_pool = (SNodeMeta *)allocate(sizeof(SNodeMeta) * pool_size, sizeof(SNodeMeta));
 
     resident_tail = 0;
     recycle_tail = 0;

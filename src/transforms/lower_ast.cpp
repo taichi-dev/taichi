@@ -244,6 +244,20 @@ class LowerAST : public IRVisitor {
     throw IRModifiedException();
   }
 
+  void visit(FrontendAssertStmt *stmt) override {
+    // expand rhs
+    Stmt *val_stmt = nullptr;
+    VecStatement flattened;
+    if (stmt->val.expr) {
+      auto expr = stmt->val;
+      expr->flatten(flattened);
+      val_stmt = expr->stmt;
+    }
+    flattened.push_back(Stmt::make<AssertStmt>(stmt->text, val_stmt));
+    stmt->parent->replace_with(stmt, flattened);
+    throw IRModifiedException();
+  }
+
   static void run(IRNode *node) {
     LowerAST inst;
     while (true) {

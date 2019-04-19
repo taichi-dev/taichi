@@ -219,8 +219,6 @@ class GPUIRCodeGen : public IRVisitor {
       emit("}}");
     }
 
-    emit(
-        R"(if (allocator()->gpu_error_code) {{printf("GPU Assertion Error\n"); exit(-1);}})");
     emit("cudaFree(context.leaves); context.leaves = nullptr;");
     emit("}}");
     current_struct_for = nullptr;
@@ -422,8 +420,6 @@ class GPUIRCodeGen : public IRVisitor {
       emit("}}");
     }
 
-    emit(
-        R"(if (allocator()->gpu_error_code) {{ printf("GPU Assertion Error\n"); exit(-1);}})");
     emit("context.leaves = nullptr;");
     emit("}}");
     current_struct_for = nullptr;
@@ -485,6 +481,8 @@ class GPUIRCodeGen : public IRVisitor {
     }
 
     emit("cudaDeviceSynchronize();\n");
+    emit(
+        R"(if (allocator()->gpu_error_code) {{printf("GPU Assertion Error\n"); exit(-1);}})");
     emit("auto err = cudaGetLastError();");
     emit("if (err) {{");
     emit(
@@ -798,6 +796,10 @@ class GPUIRCodeGen : public IRVisitor {
 
   void visit(RangeAssumptionStmt *stmt) {
     emit("const auto {} = {};", stmt->raw_name(), stmt->input->raw_name());
+  }
+
+  void visit(AssertStmt *stmt) {
+    emit(R"(TC_ASSERT_INFO({}, "{}");)", stmt->val->raw_name(), stmt->text);
   }
 };
 

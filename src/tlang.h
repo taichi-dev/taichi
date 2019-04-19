@@ -183,6 +183,10 @@ inline void Append(const Expr &expr,
   Append(expr.snode(), indices, val);
 }
 
+inline void InsertAssert(const std::string &text, const Expr &expr) {
+  current_ast_builder().insert(Stmt::make<FrontendAssertStmt>(text, expr));
+}
+
 inline void Clear(SNode *snode, const ExpressionGroup &indices) {
   current_ast_builder().insert(
       Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::clear, snode, indices));
@@ -212,6 +216,7 @@ inline void benchmark_kernel() {
 }
 
 #define Kernel(x) auto &x = get_current_program().kernel(#x)
+#define Assert(x) InsertAssert(#x, (x))
 
 TLANG_NAMESPACE_END
 

@@ -68,7 +68,7 @@ using int64 = std::int64_t;
 
 __device__ __host__ void exit() {
 #if __CUDA_ARCH__
-  *error_code = 1;
+  assert(0);
 #else
   exit(-1);
 #endif
@@ -78,6 +78,12 @@ __device__ __host__ void exit() {
   if (!(x)) {                                               \
     printf("Assertion failed (Ln %d): %s\n", __LINE__, #x); \
     exit();                                                 \
+  }
+
+#define TC_ASSERT_INFO(x, t)                               \
+  if (!(x)) {                                              \
+    printf("Assertion failed (Ln %d): %s\n", __LINE__, t); \
+    exit();                                                \
   }
 
 #define TC_P(x)                                                          \
@@ -121,7 +127,6 @@ TC_FORCE_INLINE T rand() noexcept;
 
 #endif
 
-
 TLANG_NAMESPACE_BEGIN
 
 struct AllocatorStat {
@@ -156,4 +161,3 @@ T union_cast_different_size(G g) {
 }
 
 TLANG_NAMESPACE_END
-

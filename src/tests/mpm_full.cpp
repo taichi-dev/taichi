@@ -352,9 +352,9 @@ auto mpm3d = []() {
     Declare(p_ptr);
     BlockDim(128);
 
-    Cache(0, grid_v(0));
-    Cache(0, grid_v(1));
-    Cache(0, grid_v(2));
+    // Cache(0, grid_v(0));
+    // Cache(0, grid_v(1));
+    // Cache(0, grid_v(2));
     Cache(0, grid_m);
     For((i, j, k, p_ptr), l, [&] {
       auto p = Eval(l[i, j, k, p_ptr]);
@@ -424,10 +424,13 @@ auto mpm3d = []() {
       auto base_coord_k =
           Eval(AssumeInRange(cast<int32>(base_coord(2)), k, low, high));
 
+      Assert(i % 4 == 0);
+      Assert(j % 4 == 0);
+      Assert(k % 4 == 0);
       // scatter
-      for (int a = 0; a < 3; a++) {
-        for (int b = 0; b < 3; b++) {
-          for (int c = 0; c < 3; c++) {
+      for (int a = 0; a < 1; a++) {
+        for (int b = 0; b < 1; b++) {
+          for (int c = 0; c < 1; c++) {
             auto dpos = Vector(dim);
             dpos(0) = dx * ((a * 1.0_f) - fx(0));
             dpos(1) = dx * ((b * 1.0_f) - fx(1));

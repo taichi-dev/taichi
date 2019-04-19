@@ -58,6 +58,7 @@ class FrontendAssignStmt;
 class FrontendAtomicStmt;
 class FrontendEvalStmt;
 class FrontendSNodeOpStmt;  // activate, deactivate, append, clear
+class FrontendAssertStmt;
 
 // Midend statement
 
@@ -81,6 +82,7 @@ class GlobalStoreStmt;
 class LocalStoreStmt;
 class SNodeOpStmt;
 class RangeAssumptionStmt;
+class AssertStmt;
 
 // With per-lane attributes
 class LocalLoadStmt;
@@ -332,6 +334,7 @@ class IRVisitor {
   DEFINE_VISIT(FrontendAtomicStmt);
   DEFINE_VISIT(FrontendSNodeOpStmt);
   DEFINE_VISIT(FrontendEvalStmt);
+  DEFINE_VISIT(FrontendAssertStmt);
 
   DEFINE_VISIT(SNodeOpStmt);
   DEFINE_VISIT(AllocaStmt);
@@ -353,6 +356,7 @@ class IRVisitor {
   DEFINE_VISIT(WhileControlStmt);
   DEFINE_VISIT(RandStmt);
   DEFINE_VISIT(RangeAssumptionStmt);
+  DEFINE_VISIT(AssertStmt);
 
   DEFINE_VISIT(PragmaSLPStmt);
   DEFINE_VISIT(ElementShuffleStmt);
@@ -1214,6 +1218,28 @@ class SNodeOpStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
+class FrontendAssertStmt : public Stmt {
+ public:
+  std::string text;
+  Expr val;
+
+  FrontendAssertStmt(const std::string &text, Expr val) : text(text), val(val) {
+  }
+
+  DEFINE_ACCEPT
+};
+
+class AssertStmt : public Stmt {
+ public:
+  std::string text;
+  Stmt *val;
+
+  AssertStmt(const std::string &text, Stmt *val) : text(text), val(val) {
+    TC_ASSERT(val);
+  }
+
+  DEFINE_ACCEPT
+};
 class RangeAssumptionStmt : public Stmt {
  public:
   Stmt *input;

@@ -65,11 +65,7 @@ TC_TEST("activate") {
     kernel([&]() {
       Declare(i);
       Declare(j);
-      For(i, 0, n, [&] {
-        For(j, 0, i, [&] {
-          x[i, j] = i + j;
-        });
-      });
+      For(i, 0, n, [&] { For(j, 0, i, [&] { x[i, j] = i + j; }); });
     })();
 
     for (int i = 0; i < n; i++) {
@@ -166,6 +162,36 @@ TC_TEST("task_list_dynamic") {
         for (int j = 0; j < 1; j++) {
           TC_CHECK(x.val<int>(i, j) == i + j + P);
         }
+    }
+  }
+};
+
+TC_TEST("parallel_append") {
+  for (auto arch : {Arch::gpu}) {
+    int n = 1024;
+    Program prog(arch);
+    prog.config.print_ir = true;
+
+    Global(x, i32);
+    SNode *list;
+    layout([&]() {
+      auto i = Index(0);
+      auto j = Index(1);
+      root.dense(i, n).pointer().dynamic(j, n).place(x);
+    });
+
+    Kernel(append).def([&]() {
+      Declare(i);
+      For(i, 0, n * n, [&] {
+        Print(i);  // Append(x.parent(), (i % n, 0), i);
+      });
+    });
+
+    for (int i = 0; i < 100; i++) {
+      x.parent().parent().snode()->clear();
+      append();
+      auto stat = x.parent().parent().snode()->stat();
+      TC_P(stat.num_resident_blocks);
     }
   }
 };

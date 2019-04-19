@@ -337,7 +337,7 @@ struct pointer {
 
   TC_DEVICE TC_FORCE_INLINE void activate(int i,
                                           const PhysicalIndexGroup &index) {
-    if (data == nullptr) {
+    //if (data == nullptr) {
 #if defined(__CUDA_ARCH__)
       int warp_id = threadIdx.x % 32;
       for (int k = 0; k < 32; k++) {
@@ -345,7 +345,8 @@ struct pointer {
           while (atomicCAS(&lock, 0, 1))
             ;
 #endif
-          if (data == nullptr) {
+          volatile auto v_data = data;
+          if (v_data == nullptr) {
             auto meta = Managers::get_instance()
                             ->get<pointer>()
                             ->get_allocator()
@@ -355,10 +356,11 @@ struct pointer {
           }
 #if defined(__CUDA_ARCH__)
           lock = 0;
+          // atomicExch(&lock, 0);
         }
       }
 #endif
-    }
+    //}
   }
 
   static constexpr bool has_null = true;

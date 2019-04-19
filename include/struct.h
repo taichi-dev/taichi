@@ -33,6 +33,10 @@ using PhysicalIndexGroup = int[max_num_indices];
 template <typename T>
 struct SNodeID;
 
+template <typename T>
+__host__ __device__ void get_corner_coord(const PhysicalIndexGroup &indices,
+                                          PhysicalIndexGroup &corner);
+
 using size_t = std::size_t;
 
 struct SNodeMeta {
@@ -92,8 +96,12 @@ struct SNodeAllocator {
     meta.active = true;
     meta.ptr = data_pool + id;
 
-    for (int i = 0; i < max_num_indices; i++)
-      meta.indices[i] = index[i];
+    PhysicalIndexGroup corner;
+    get_corner_coord<T>(index, corner);
+
+    for (int i = 0; i < max_num_indices; i++) {
+      meta.indices[i] = corner[i];
+    }
 
     return new (data_pool + id) data_type();
   }
@@ -304,7 +312,7 @@ struct pointer {
     int warp_id = threadIdx.x % 32;
     for (int k = 0; k < 32; k++) {
       if (k == warp_id) {
-        while (!atomicCAS(&lock, 0, 1))
+        while (atomicCAS(&lock, 0, 1))
           ;
 #endif
         if (data == nullptr) {
@@ -313,8 +321,8 @@ struct pointer {
                      ->get_allocator()
                      ->allocate_node(index);
         }
-#if defined(__CUDA_ARCH__)
         lock = 0;
+#if defined(__CUDA_ARCH__)
       }
     }
 #endif
@@ -347,7 +355,9 @@ struct dynamic {
   }
 
   __device__ __host__ TC_FORCE_INLINE void append(child_type t) {
-    data[atomic_add(&n, 1)] = t;
+    auto tail = atomic_add(&n, 1);
+    TC_ASSERT(tail < max_n);
+    data[tail] = t;
   }
 
   TC_DEVICE TC_FORCE_INLINE void activate(int i,

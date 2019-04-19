@@ -50,25 +50,23 @@ TC_TEST("activate") {
       root.dense(i, n).pointer().dense(j, n).place(x);
     });
 
+    /*
     kernel([&]() {
       Declare(i);
       Declare(j);
       For(i, 0, n, [&] {
         For(j, 0, i, [&] {
-          Print(i);
-          Print(j);
           Activate(x.snode(), {i, j});
         });
       });
     })();
+    */
 
     kernel([&]() {
       Declare(i);
       Declare(j);
       For(i, 0, n, [&] {
         For(j, 0, i, [&] {
-          Print(i);
-          Print(j);
           x[i, j] = i + j;
         });
       });

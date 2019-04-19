@@ -276,6 +276,21 @@ void StructCompiler::run(SNode &node) {
   }
 
   for (int i = 0; i < snodes.size(); i++) {
+    auto snode = snodes[i];
+    emit(
+        "template <> __host__ __device__ void "
+        "get_corner_coord<{}>(const "
+        "PhysicalIndexGroup &indices, PhysicalIndexGroup &output) {{",
+        snode->node_type_name);
+    for (int j = 0; j < max_num_indices; j++) {
+      auto e = snode->extractors[j];
+      emit("output[{}] = indices[{}] & (~((1 << {}) - 1));", j, j,
+           e.start + e.num_bits);
+    }
+    emit("}}");
+  }
+
+  for (int i = 0; i < snodes.size(); i++) {
     if (snodes[i]->type != SNodeType::place)
       emit(
           "TC_EXPORT AllocatorStat stat_{}() {{return "

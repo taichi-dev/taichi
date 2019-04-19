@@ -120,22 +120,26 @@ template <typename T>
 __global__ void recycle_all_gpu(SNodeAllocator<T> *allocator) {
   auto b = blockIdx.x;
   auto t = threadIdx.x;
+  /*
   if (allocator->resident_pool[b].active)
     return;  // still active, do nothing
+  */
   // zero-fill
   auto ptr = (int *)(&allocator->data_pool[b]);
-  ptr[b] = 0;
+  ptr[t] = 0;
   // push to recycle list
+  static_assert(sizeof(unsigned long long) == sizeof(unsigned long), "");
   if (t == 0) {
-    allocator->recycle_pool[atomic_add(&allocator->recycle_tail, 1)] =
-        allocator->resident_pool[b];
+    auto x = atomic_add(&allocator->recycle_tail, 1);
+    allocator->recycle_pool[x] = allocator->resident_pool[b];
   }
 }
 
 template <typename T>
 __host__ void SNodeAllocator<T>::clear() {
-  recycle_all_gpu<T><<<resident_tail, sizeof(data_type) / 4>>>(this);
+  recycle_all_gpu<T><<<resident_tail, sizeof(data_type) / sizeof(int)>>>(this);
   resident_tail = 0;
+  cudaDeviceSynchronize();
 }
 #endif
 

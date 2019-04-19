@@ -337,30 +337,35 @@ struct pointer {
 
   TC_DEVICE TC_FORCE_INLINE void activate(int i,
                                           const PhysicalIndexGroup &index) {
-    //if (data == nullptr) {
+    // if (data == nullptr) {
 #if defined(__CUDA_ARCH__)
-      int warp_id = threadIdx.x % 32;
+    int warp_id = threadIdx.x % 32;
+    bool leave_loop = false;
+    int done = 0;
+    auto m = __activemask();
+    printf("mask %d\n", m);
+    while (!__all_sync(m, done)) {
       for (int k = 0; k < 32; k++) {
-        if (k == warp_id) {
-          while (atomicCAS(&lock, 0, 1))
-            ;
+        if (k == warp_id && !done) {
+          // printf("%d\n", k);
+          if (atomicCAS(&lock, 0, 1) == 0) {
 #endif
-          volatile auto v_data = data;
-          if (v_data == nullptr) {
-            auto meta = Managers::get_instance()
-                            ->get<pointer>()
-                            ->get_allocator()
-                            ->allocate_node(index);
-            data = (child_type *)meta->ptr;
-            meta->snode_ptr = (void **)(&data);
-          }
+            if (data == nullptr) {
+              auto meta = Managers::get_instance()
+                              ->get<pointer>()
+                              ->get_allocator()
+                              ->allocate_node(index);
+              data = (child_type *)meta->ptr;
+              meta->snode_ptr = (void **)(&data);
+            }
 #if defined(__CUDA_ARCH__)
-          lock = 0;
-          // atomicExch(&lock, 0);
+            done = true;
+            atomicExch(&lock, 0);
+          }
         }
       }
+    }
 #endif
-    //}
   }
 
   static constexpr bool has_null = true;

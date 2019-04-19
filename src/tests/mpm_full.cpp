@@ -453,10 +453,6 @@ auto mpm3d = []() {
   });
 
   auto p2g = [&] {
-    while(1) {
-      grid_m.parent().parent().snode()->clear();
-      sort();
-    }
     grid_m.parent().parent().snode()->clear();
     if (sorted) {
       sort();

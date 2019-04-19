@@ -20,22 +20,25 @@ class UnifiedAllocator {
   void *data;
   void **head;
   void **tail;
+  int gpu_error_code;
   std::mutex lock;
 
  public:
   UnifiedAllocator() {
     data = nullptr;
+    gpu_error_code = 0;
   }
 
   UnifiedAllocator(std::size_t size, bool gpu);
 
-#if defined(TC_GPU)
+#if defined(TLANG_GPU)
   __device__ static void *alloc_gpu(void *&head, int size, int alignment = 1) {
     if (alignment == 1) {
       return (void *)atomicAdd(reinterpret_cast<unsigned long long *>(&head),
                                size);
     } else {
       TC_ASSERT(false); // aligned allocation is not supported on GPU
+      return nullptr;
     }
   }
 #endif
@@ -80,7 +83,7 @@ TC_FORCE_INLINE __host__ __device__ T *allocate() {
 }
 
 template <typename T, typename... Args>
-__device__ __host__ T *create_unified(Args &&... args) {
+__host__ T *create_unified(Args &&... args) {
   auto addr = allocate(sizeof(T));
   return new (addr) T(std::forward<Args>(args)...);
 }

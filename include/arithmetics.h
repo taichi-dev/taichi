@@ -1,7 +1,7 @@
 #pragma once
 #include "common.h"
 
-#if !defined(TC_GPU)
+#if !defined(TLANG_GPU)
 #include <immintrin.h>
 #define __host__
 #define __device__
@@ -9,7 +9,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-#if !defined(TC_HOST) && !defined(TC_GPU)
+#if !defined(TC_HOST) && !defined(TLANG_GPU)
 
 // Intrinsics wrapper
 
@@ -984,7 +984,7 @@ TC_FORCE_INLINE __device__ unsigned long atomic_add(unsigned long *dest,
 
 TLANG_NAMESPACE_END
 
-#if defined(TC_GPU)
+#if defined(TLANG_GPU)
 
 #include <curand.h>
 #include <curand_kernel.h>
@@ -1064,6 +1064,7 @@ __host__ void gpu_runtime_init() {
 
   cudaMemcpyToSymbol(device_head, &allocator()->head, sizeof(device_head));
   cudaMemcpyToSymbol(device_data, &allocator()->data, sizeof(device_data));
+  cudaMemcpyToSymbol(error_code, &allocator()->gpu_error_code, sizeof(int *));
 }
 
 __device__ float randf() {

@@ -7,7 +7,10 @@ TLANG_NAMESPACE_BEGIN
 StructCompiler::StructCompiler() : CodeGenBase() {
   snode_count = 0;
   creator = nullptr;
-  suffix = "cpp";
+  if (get_current_program().config.arch == Arch::x86_64)
+    suffix = "cpp";
+  else
+    suffix = "cu";
   emit("#define TLANG_HOST");
   emit("#include <kernel.h>");
   emit(" namespace taichi {{");
@@ -242,6 +245,10 @@ void StructCompiler::load_accessors(SNode &snode) {
     snode.stat_func = load_function<SNode::StatFunction>(
         fmt::format("stat_{}", snode.node_type_name));
   }
+  if (snode.type == SNodeType::pointer) {
+    snode.clear_func = load_function<SNode::ClearFunction>(
+        fmt::format("clear_{}", snode.node_type_name));
+  }
 }
 
 void StructCompiler::set_parents(SNode &snode) {
@@ -270,6 +277,12 @@ void StructCompiler::run(SNode &node) {
           "TC_EXPORT AllocatorStat stat_{}() {{return "
           "Managers::get_allocator<{}>()->get_stat();}} ",
           snodes[i]->node_type_name, snodes[i]->node_type_name);
+    if (snodes[i]->type == SNodeType::pointer) {
+      emit(
+          "TC_EXPORT void clear_{}() {{"
+          "Managers::get_allocator<{}>()->clear();}} ",
+          snodes[i]->node_type_name, snodes[i]->node_type_name);
+    }
   }
 
   root_type = node.node_type_name;
@@ -291,16 +304,12 @@ void StructCompiler::run(SNode &node) {
     }
   }
 
-  emit(
-      "auto p = Managers::get_allocator<{}>()->allocate_node({{0, 0, 0, "
-      "0}}); ",
-      root_type);
+  emit("auto p = Managers::get_allocator<{}>()->allocate_node({{0, 0, 0, 0}});",
+       root_type);
 
   emit("return p;}}");
-  emit(
-      "TC_EXPORT void release_data_structure(void *ds) {{delete ({} "
-      "*)ds;}}",
-      root_type);
+  emit("TC_EXPORT void release_data_structure(void *ds) {{delete ({} *)ds;}}",
+       root_type);
   emit("#endif");
   emit("}} }}");
   write_source();

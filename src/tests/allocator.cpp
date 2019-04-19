@@ -38,6 +38,7 @@ TC_TEST("gpu_gc_basics") {
 
     auto stat = x.parent().parent().snode()->stat();
     TC_CHECK(stat.num_resident_blocks == n - 1);
+    x.parent().parent().snode()->clear();
 
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < i; j++) {

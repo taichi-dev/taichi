@@ -93,6 +93,7 @@ void CodeGenBase::generate_binary(std::string extra_flags) {
         get_source_path(), get_library_path(), extra_flags);
     auto compile_ret = std::system(cmd.c_str());
     if (compile_ret != 0) {
+      TC_WARN("Compilation cmd: {}", cmd);
       auto cmd = get_current_program().config.compile_cmd(
           get_source_path(), get_library_path(), extra_flags, true);
       trash(std::system(cmd.c_str()));

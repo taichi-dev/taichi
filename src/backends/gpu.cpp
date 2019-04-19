@@ -219,6 +219,8 @@ class GPUIRCodeGen : public IRVisitor {
       emit("}}");
     }
 
+    emit(
+        R"(if (allocator()->gpu_error_code) {{printf("GPU Assertion Error\n"); exit(-1);}})");
     emit("cudaFree(context.leaves); context.leaves = nullptr;");
     emit("}}");
     current_struct_for = nullptr;
@@ -420,6 +422,8 @@ class GPUIRCodeGen : public IRVisitor {
       emit("}}");
     }
 
+    emit(
+        R"(if (allocator()->gpu_error_code) {{ printf("GPU Assertion Error\n"); exit(-1);}})");
     emit("context.leaves = nullptr;");
     emit("}}");
     current_struct_for = nullptr;
@@ -468,6 +472,9 @@ class GPUIRCodeGen : public IRVisitor {
       if (struct_for->snode->parent->type == SNodeType::dynamic &&
           struct_for->snode->parent->parent->type == SNodeType::pointer)
         use_activity_tracking = true;
+
+      // if (struct_for->snode->parent->type == SNodeType::pointer)
+      //  use_activity_tracking = true;
 
       if (use_activity_tracking) {
         TC_WARN("Using activity tracking");
@@ -556,7 +563,7 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(BinaryOpStmt *bin) {
-    std::string ns = "";
+    std::string ns;
     if (bin->op_type == BinaryType::div) {
       ns = "taichi::Tlang::";
     }

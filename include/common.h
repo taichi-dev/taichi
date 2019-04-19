@@ -2,6 +2,21 @@
 
 #define FUNC_DECL
 
+#if defined(TLANG_GPU)
+__device__ __constant__ void **device_head;
+__device__ __constant__ void *device_data;
+__device__ __constant__ int *error_code;
+#endif
+
+#if !defined(TLANG_GPU)
+#if !defined(__device__)
+#define __device__
+#endif
+#if !defined(__host__)
+#define __host__
+#endif
+#endif
+
 #define TLANG_NAMESPACE_BEGIN \
   namespace taichi {          \
   namespace Tlang {
@@ -51,11 +66,20 @@ using int64 = std::int64_t;
 #define FUNC_DECL __host__ __device__
 #endif
 
-#define TC_ASSERT(x)                                                    \
-  if (!(x)) {                                                           \
+__device__ __host__ void exit() {
+#if __CUDA_ARCH__
+  *error_code = 1;
+#else
+  exit(-1);
+#endif
+}
+
+#define TC_ASSERT(x)                                        \
+  if (!(x)) {                                               \
     printf("Assertion failed (Ln %d): %s\n", __LINE__, #x); \
-    exit(-1);                                                           \
+    exit();                                                 \
   }
+
 #define TC_P(x)                                                          \
   std::cout << __FILE__ << "@" << __LINE__ << ": " << #x << " = " << (x) \
             << std::endl;
@@ -97,14 +121,6 @@ TC_FORCE_INLINE T rand() noexcept;
 
 #endif
 
-#if !defined(TC_GPU)
-#if !defined(__device__)
-#define __device__
-#endif
-#if !defined(__host__)
-#define __host__
-#endif
-#endif
 
 TLANG_NAMESPACE_BEGIN
 
@@ -141,7 +157,3 @@ T union_cast_different_size(G g) {
 
 TLANG_NAMESPACE_END
 
-#if defined(TC_GPU)
-__device__ __constant__ void **device_head;
-__device__ __constant__ void *device_data;
-#endif

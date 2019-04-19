@@ -1,6 +1,9 @@
 #pragma once
 #include "common.h"
 #include "arithmetics.h"
+#if defined(TL_GPU)
+#include <cuda_runtime.h>
+#endif
 
 // *****************************************************************************
 // these structures are used for maintaining metadata and sparsity.
@@ -9,7 +12,7 @@
 
 #if defined(TLANG_KERNEL)
 #define TC_EXPORT
-#if defined(TC_GPU)
+#if defined(TLANG_GPU)
 #define TC_DEVICE __device__ __host__
 #define TLANG_ACCESSOR __device__ __host__ TC_FORCE_INLINE
 #else
@@ -100,7 +103,7 @@ struct SNodeAllocator {
 
   static_assert(sizeof(data_type) % 4 == 0, "");
 
-  __host__ void recycle_all();
+  __host__ void clear();
 
   AllocatorStat get_stat() {
     AllocatorStat stat;
@@ -112,7 +115,7 @@ struct SNodeAllocator {
   }
 };
 
-#if __CUDA_ARCH__
+#if defined(TLANG_GPU)
 template <typename T>
 __global__ void recycle_all_gpu(SNodeAllocator<T> *allocator) {
   auto b = blockIdx.x;
@@ -120,21 +123,21 @@ __global__ void recycle_all_gpu(SNodeAllocator<T> *allocator) {
   if (allocator->resident_pool[b].active)
     return;  // still active, do nothing
   // zero-fill
-  auto ptr = (int *)data_pool[b];
+  auto ptr = (int *)(&allocator->data_pool[b]);
   ptr[b] = 0;
   // push to recycle list
   if (t == 0) {
-    recycle_pool[atomicAdd(&allocator->recycle_tail, 1)] =
+    allocator->recycle_pool[atomic_add(&allocator->recycle_tail, 1)] =
         allocator->resident_pool[b];
   }
 }
-#endif
 
 template <typename T>
-__host__ void SNodeAllocator<T>::recycle_all() {
-  recycle_all_gpu(this);
+__host__ void SNodeAllocator<T>::clear() {
+  recycle_all_gpu<T><<<resident_tail, sizeof(data_type) / 4>>>(this);
   resident_tail = 0;
 }
+#endif
 
 template <typename T>
 struct SNodeManager {
@@ -145,7 +148,7 @@ struct SNodeManager {
     allocator = create_unified<Allocator>();
   }
 
-  Allocator *get_allocator() {
+  __host__ __device__ Allocator *get_allocator() {
     return allocator;
   }
 };
@@ -157,7 +160,7 @@ struct Managers {
   }
 
   template <typename T>
-  SNodeManager<T> *&get_manager() {
+  __host__ __device__ SNodeManager<T> *&get_manager() {
     return (SNodeManager<T> *&)(managers[SNodeID<T>::value]);
   }
 

@@ -625,10 +625,10 @@ auto mpm3d = []() {
   auto simulate_frame = [&]() {
     auto t = Time::get_time();
     for (int t = 0; t < 160; t++) {
-      TC_PROFILE("reset grid", reset_grid());
       TC_PROFILE("p2g", p2g());
       TC_PROFILE("grid_op", grid_op());
       TC_PROFILE("g2p", g2p());
+      TC_PROFILE("reset grid", reset_grid());
     }
     TC_P((Time::get_time() - t) / 160 * 1000);
   };

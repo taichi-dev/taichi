@@ -21,7 +21,7 @@ struct Node {
 __global__ void inc(Node *nodes) {
   unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-  int b = i * 423423 % m;
+  int b = i * 3 % m;
 
   int warp_id = threadIdx.x % 32;
   int done = 0;

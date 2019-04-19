@@ -453,6 +453,11 @@ auto mpm3d = []() {
   });
 
   auto p2g = [&] {
+    while(1) {
+      grid_m.parent().parent().snode()->clear();
+      sort();
+    }
+    grid_m.parent().parent().snode()->clear();
     if (sorted) {
       sort();
       p2g_sorted();
@@ -636,7 +641,6 @@ auto mpm3d = []() {
       TC_PROFILE("grid_op", grid_op());
       TC_PROFILE("g2p", g2p());
       // TC_PROFILE("reset grid", reset_grid());
-      grid_m.parent().parent().snode()->clear();
     }
     TC_P((Time::get_time() - t) / 160 * 1000);
   };

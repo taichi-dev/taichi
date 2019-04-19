@@ -147,6 +147,7 @@ __global__ void recycle_all_gpu(SNodeAllocator<T> *allocator) {
 
 template <typename T>
 __host__ void SNodeAllocator<T>::clear() {
+  printf("tail %d size %d\n", resident_tail, sizeof(data_type));
   recycle_all_gpu<T><<<resident_tail, sizeof(data_type) / sizeof(int)>>>(this);
   cudaDeviceSynchronize();
   resident_tail = 0;

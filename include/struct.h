@@ -43,6 +43,7 @@ struct SNodeMeta {
   int indices[max_num_indices];
   void *ptr;
   int active;
+  void **snode_ptr;
 };
 
 /*
@@ -86,7 +87,7 @@ struct SNodeAllocator {
     recycle_tail = 0;
   }
 
-  __host__ __device__ data_type *allocate_node(
+  __host__ __device__ SNodeMeta *allocate_node(
       const PhysicalIndexGroup &index) {
     TC_ASSERT(this != nullptr);
     TC_ASSERT(data_pool != nullptr);
@@ -103,7 +104,8 @@ struct SNodeAllocator {
       meta.indices[i] = corner[i];
     }
 
-    return new (data_pool + id) data_type();
+    new (meta.ptr) data_type();
+    return &meta;
   }
 
   void gc() {
@@ -124,6 +126,15 @@ struct SNodeAllocator {
 };
 
 #if defined(TLANG_GPU)
+
+inline constexpr std::size_t least_pot_bound(std::size_t v) {
+  std::size_t ret = 1;
+  while (ret < v) {
+    ret *= 2;
+  }
+  return ret;
+}
+
 template <typename T>
 __global__ void recycle_all_gpu(SNodeAllocator<T> *allocator) {
   auto b = blockIdx.x;
@@ -133,10 +144,18 @@ __global__ void recycle_all_gpu(SNodeAllocator<T> *allocator) {
     return;  // still active, do nothing
   */
   // zero-fill
-  auto ptr = (int *)(&allocator->data_pool[b]);
-  ptr[t] = 0;
+  auto &meta = allocator->resident_pool[b];
+  if (t == 0)
+    *(meta.snode_ptr) = nullptr;
+  auto ptr = (int *)(meta.ptr);
+  while (t * sizeof(int) < sizeof(T::child_type)) {
+    ptr[t] = 0;
+    t += blockDim.x;
+  }
+
   // push to recycle list
   static_assert(sizeof(unsigned long long) == sizeof(unsigned long), "");
+
   /*
   if (t == 0) {
     auto x = atomic_add(&allocator->recycle_tail, 1);
@@ -147,9 +166,18 @@ __global__ void recycle_all_gpu(SNodeAllocator<T> *allocator) {
 
 template <typename T>
 __host__ void SNodeAllocator<T>::clear() {
-  printf("tail %d size %d\n", resident_tail, sizeof(data_type));
-  recycle_all_gpu<T><<<resident_tail, sizeof(data_type) / sizeof(int)>>>(this);
+  int blockDim = 256;  // least_pot_bound(sizeof(data_type) / sizeof(int));
+  printf("tail    %d size %d blockDim %d\n", resident_tail, sizeof(data_type),
+         blockDim);
+  if (resident_tail > 0)
+    recycle_all_gpu<<<resident_tail, blockDim>>>(this);
   cudaDeviceSynchronize();
+  auto err = cudaGetLastError();
+  if (err) {
+    printf("CUDA Error (File %s Ln %d): %s\n", __FILE__, __LINE__,
+           cudaGetErrorString(err));
+    exit(-1);
+  }
   resident_tail = 0;
   recycle_tail = 0;
 }
@@ -317,10 +345,12 @@ struct pointer {
           ;
 #endif
         if (data == nullptr) {
-          data = Managers::get_instance()
-                     ->get<pointer>()
-                     ->get_allocator()
-                     ->allocate_node(index);
+          auto meta = Managers::get_instance()
+                          ->get<pointer>()
+                          ->get_allocator()
+                          ->allocate_node(index);
+          data = (child_type *)meta->ptr;
+          meta->snode_ptr = (void **)(&data);
         }
         lock = 0;
 #if defined(__CUDA_ARCH__)

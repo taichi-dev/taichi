@@ -11,27 +11,41 @@ double get_time() {
 }
 
 constexpr int m = 256;
-constexpr int n = m * m * m;
-constexpr int block_size = 4;
+constexpr int block_size = 128;
 
-using grid_type = float[m / block_size][m / block_size][m / block_size][4]
-                       [block_size][block_size][block_size];
+struct Node {
+  int lock;
+  int sum;
+};
 
-__global__ void fill(grid_type *grid_) {
+__global__ void inc(Node *nodes) {
   unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i >= n) return;
-  float *data = (float *)grid_;
-  grid_type &grid = *grid_;
-  for (int k = 0; k < 4; k++) {
-    data[i + k * n] = 0;
+
+  int b = i * 423423 % m;
+
+  int warp_id = threadIdx.x % 32;
+  int done = 0;
+  auto mask = __activemask();
+  // printf("mask %d\n", mask);
+  while (!__all_sync(mask, done)) {
+    for (int k = 0; k < 32; k++) {
+      if (k == warp_id && !done) {
+        int &lock = nodes[b].lock;
+        if (atomicCAS(&lock, 0, 1) == 0) {
+          nodes[b].sum += 1;
+          done = true;
+          atomicExch(&lock, 0);
+        }
+      }
+    }
   }
 }
 
 int main() {
-  float *a;
-  cudaMallocManaged(&a, n * sizeof(float) * 4);
-  auto bs = block_size * block_size * block_size;
-  std::cout << "bs = " << bs << std::endl;
+  Node *a;
+
+  cudaMallocManaged(&a, m * sizeof(Node));
+
   for (int i = 0; i < 20; i++) {
     cudaDeviceSynchronize();
     auto t = get_time();
@@ -40,12 +54,17 @@ int main() {
     cudaEventCreate(&stop);
     cudaEventRecord(start);
     cudaDeviceSynchronize();
-    fill<<<n / bs, bs>>>((grid_type *)a);
+    inc<<<m, block_size>>>((Node *)a);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
     std::cout << "device  " << milliseconds << std::endl;
+    int sum = 0;
+    for (int j = 0; j < m; j++) {
+      sum += a[j].sum;
+    }
+    printf("sum %d\n", sum);
   }
   std::cout << std::endl;
 }

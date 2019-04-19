@@ -214,7 +214,7 @@ auto mpm3d = []() {
 
   TC_ASSERT(bit::is_power_of_two(n));
 
-  kernel([&]() {
+  Kernel(activate_all).def([&]() {
     Declare(i);
     Declare(j);
     Declare(k);
@@ -227,7 +227,7 @@ auto mpm3d = []() {
         });
       });
     });
-  })();
+  });
 
   Kernel(reset_grid).def([&]() {
     Declare(i);
@@ -337,7 +337,7 @@ auto mpm3d = []() {
     BlockDim(256);
     For(p, particle_x(0), [&] {
       auto node_coord = floor(particle_x[p] * inv_dx - 0.5_f);
-      Activate(l.parent(), (node_coord(0), node_coord(1), node_coord(2)));
+      // Activate(l.parent(), (node_coord(0), node_coord(1), node_coord(2)));
       Append(l.parent(),
              (cast<int32>(node_coord(0)), cast<int32>(node_coord(1)),
               cast<int32>(node_coord(2))),
@@ -446,7 +446,6 @@ auto mpm3d = []() {
 
   auto p2g = [&] {
     if (sorted) {
-      clear_lists();
       sort();
       p2g_sorted();
     } else {
@@ -628,7 +627,8 @@ auto mpm3d = []() {
       TC_PROFILE("p2g", p2g());
       TC_PROFILE("grid_op", grid_op());
       TC_PROFILE("g2p", g2p());
-      TC_PROFILE("reset grid", reset_grid());
+      // TC_PROFILE("reset grid", reset_grid());
+      grid_m.parent().parent().snode()->clear();
     }
     TC_P((Time::get_time() - t) / 160 * 1000);
   };

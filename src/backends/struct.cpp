@@ -207,8 +207,12 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
           }
         }
       }
+      bool force_activate = true;
       if (mode != mode_activate) {
-        emit("#if defined(TC_STRUCT)");
+        if (force_activate)
+          emit("#if 1");
+        else
+          emit("#if defined(TC_STRUCT)");
       }
       if (stack[i]->type != SNodeType::place)
         emit("n{}->activate(tmp, {{i0, i1, i2, i3}});", i);

@@ -457,6 +457,7 @@ auto mpm3d = []() {
     if (sorted) {
       sort();
       p2g_sorted();
+      exit(-1);
     } else {
       p2g_naive();
     }

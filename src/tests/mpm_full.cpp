@@ -337,11 +337,13 @@ auto mpm3d = []() {
     BlockDim(256);
     For(p, particle_x(0), [&] {
       auto node_coord = floor(particle_x[p] * inv_dx - 0.5_f);
-      // Activate(l.parent(), (node_coord(0), node_coord(1), node_coord(2)));
+      Activate(l.parent(), (node_coord(0), node_coord(1), node_coord(2)));
+      /*
       Append(l.parent(),
              (cast<int32>(node_coord(0)), cast<int32>(node_coord(1)),
               cast<int32>(node_coord(2))),
              p);
+             */
     });
   });
 
@@ -462,7 +464,7 @@ auto mpm3d = []() {
       grid_m.parent().parent().snode()->clear();
       // activate_all();
       sort();
-      p2g_sorted();
+      // p2g_sorted();
       auto stat = grid_m.parent().parent().snode()->stat();
       int nb = stat.num_resident_blocks;
       TC_P(nb);

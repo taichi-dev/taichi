@@ -323,7 +323,7 @@ void StructCompiler::run(SNode &node) {
     }
   }
 
-  emit("auto p = Managers::get_allocator<{}>()->allocate_node({{0, 0, 0, 0}});",
+  emit("auto p = Managers::get_allocator<{}>()->allocate_node({{0, 0, 0, 0}})->ptr;",
        root_type);
 
   emit("return p;}}");

@@ -679,6 +679,11 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) {
+    auto snode = stmt->snodes[0];
+    if (current_scratch_pads && current_scratch_pads->has(snode)) {
+      return;
+    }
+
     TC_ASSERT(stmt->width() == 1);
     emit("{} *{}[{}];", data_type_name(stmt->ret_type.data_type),
          stmt->raw_name(), stmt->ret_type.width);

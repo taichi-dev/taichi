@@ -89,7 +89,7 @@ auto mpm3d = []() {
   // Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
   auto material = MPMMaterial::sand;
-  constexpr bool highres = false;
+  constexpr bool highres = true;
   CoreState::set_trigger_gdb_when_crash(true);
 
   constexpr int n = highres ? 256 : 128;  // grid_resolution
@@ -98,7 +98,7 @@ auto mpm3d = []() {
   auto E = 1e4_f, nu = 0.3f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
 
-  auto friction_angle = 30._f;
+  auto friction_angle = 45._f;
   real sin_phi = std::sin(friction_angle / 180._f * real(3.141592653));
   auto alpha = std::sqrt(2._f / 3._f) * 2._f * sin_phi / (3._f - sin_phi);
 
@@ -243,13 +243,13 @@ auto mpm3d = []() {
     Mutable(sigma_out, f32);
     auto tr = Eval(epsilon.sum() + particle_J[p]);
     auto epsilon_hat = Eval(epsilon - tr / fdim);
-    auto epsilon_hat_for = Eval(epsilon_hat.norm() + 1e-20_f);
+    auto epsilon_hat_norm = Eval(epsilon_hat.norm() + 1e-20_f);
     If(tr >= 0.0_f).Then([&] { particle_J[p] += epsilon.sum(); }).Else([&] {
       particle_J[p] = 0.0f;
       auto delta_gamma =
-          Eval(epsilon_hat_for +
+          Eval(epsilon_hat_norm +
                (fdim * lambda_0 + 2.0_f * mu_0) / (2.0_f * mu_0) * tr * alpha);
-      sigma_out = Eval(exp(epsilon - max(0.0_f, delta_gamma) / epsilon_hat_for *
+      sigma_out = Eval(exp(epsilon - max(0.0_f, delta_gamma) / epsilon_hat_norm *
                                          epsilon_hat));
     });
 
@@ -541,7 +541,11 @@ auto mpm3d = []() {
       particle_v(0).val<float32>(i) = 0._f;
       particle_v(1).val<float32>(i) = -3.0_f;
       particle_v(2).val<float32>(i) = 0._f;
-      particle_J.val<float32>(i) = 1_f;
+      if (material == MPMMaterial::sand) {
+        particle_J.val<float32>(i) = 0_f;
+      } else {
+        particle_J.val<float32>(i) = 1_f;
+      }
       if (material != MPMMaterial::fluid) {
         for (int p = 0; p < dim; p++) {
           for (int q = 0; q < dim; q++) {
@@ -584,8 +588,8 @@ auto mpm3d = []() {
   };
 
   Dict cam_dict;
-  cam_dict.set("origin", Vector3(radius * 0.6f, radius * 0.3_f, radius * 0.6_f))
-      .set("look_at", Vector3(0, -0.2f, 0))
+  cam_dict.set("origin", Vector3(radius * 0.6f, radius * 0.2_f, radius * 0.6_f))
+      .set("look_at", Vector3(0, 0.0f, 0))
       .set("up", Vector3(0, 1, 0))
       .set("fov", 70)
       .set("res", cam_res);

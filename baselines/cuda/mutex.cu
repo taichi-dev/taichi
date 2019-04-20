@@ -120,12 +120,29 @@ __device__ bool unique_in_warp(T val) {
   return !has_following_eqiv;
 }
 
-__global__ void elect(long long *addr_) {
-  unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
-  auto addr = addr_[i];
+__device__ int elect_leader(int mask) {
+  return __ffs(mask) - 1;
+}
 
+__global__ void elect(long long *addr) {
+  unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+  auto warpId = threadIdx.x % warpSize;
+
+  /*
   if (unique_in_warp(addr)) {
     printf("%lld\n", addr);
+  }
+  */
+
+  auto mask = __activemask();
+
+  int uniques = __ballot_sync(mask, unique_in_warp(addr[i]));
+  while (uniques) {
+    int leader = elect_leader(uniques);
+    if (warpId == leader) {
+      printf("leader %d val %lld\n", leader, addr[i]);
+    }
+    uniques ^= 1 << leader;
   }
 }
 

@@ -21,6 +21,8 @@ taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
   } else {
 #if defined(CUDA_FOUND)
     cudaMallocManaged(&_cuda_data, size + 4096);
+    cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetPreferredLocation,
+                  0);
     data = _cuda_data;
 #else
     static_assert(false, "implement mmap on CPU for memset..");

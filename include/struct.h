@@ -170,6 +170,7 @@ __host__ void SNodeAllocator<T>::clear(int flags) {
   printf("tail    %d size %d blockDim %d\n", resident_tail, sizeof(data_type),
          blockDim);
   if (resident_tail > 0) {
+    gpu_runtime_init();
     printf("gc ");
     cudaEvent_t start, stop;
     cudaEventCreate(&start);

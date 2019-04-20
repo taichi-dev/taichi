@@ -26,6 +26,10 @@ Expr exp(const Expr &expr) {
   return Expr::make<UnaryOpExpression>(UnaryType::exp, expr);
 }
 
+Expr log(const Expr &expr) {
+  return Expr::make<UnaryOpExpression>(UnaryType::log, expr);
+}
+
 template <typename T>
 Expr cast(Expr input) {
   auto ret = std::make_shared<UnaryOpExpression>(UnaryType::cast, input);

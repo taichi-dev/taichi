@@ -232,6 +232,27 @@ auto mpm3d = []() {
     });
   });
 
+  auto project = [&](Vector sigma, const Expr &p) {
+    Vector sigma_out({1.0f, 1.0f, 1.0f});
+    Vector epsilon_diag;
+    for (int i = 0; i < dim; i++) {
+      epsilon_diag(i) = log(max(abs(sigma(i)), 1e-4_f));
+    }
+    Vector epsilon = Eval(epsilon_diag);
+    auto tr = epsilon.sum() + particle_J[p];
+    auto epsilon_hat = Eval(epsilon - tr / dim);
+    auto epsilon_hat_for = epsilon_hat.norm() + 1e-20_f;
+    If(tr >= 0.0_f).Then([&] { particle_J[p] += epsilon.sum(); }).Else([&] {
+      particle_J[p] = 0.0f;
+      auto delta_gamma = Eval(epsilon_hat_for + (dim * lambda_0 + 2 * mu_0) /
+                                                    (2 * mu_0) * tr * alpha);
+      sigma_out = exp(epsilon -
+                      max(0.0_f, delta_gamma) / epsilon_hat_for * epsilon_hat);
+    });
+
+    return sigma_out;
+  };
+
   Kernel(p2g_sorted).def([&] {
     Declare(i);
     Declare(j);
@@ -256,7 +277,7 @@ auto mpm3d = []() {
         J = particle_J[p] * (1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2)));
         particle_J[p] = J;
       } else {
-        F = Eval((Matrix::identity(3) + dt * C) * particle_F[p]);
+        F = Eval((Matrix::identity(dim) + dt * C) * particle_F[p]);
       }
       Mutable(F, DataType::f32);
 
@@ -272,7 +293,8 @@ auto mpm3d = []() {
       Local(lambda) = lambda_0;
       if (material == MPMMaterial::fluid) {
         cauchy = (J - 1.0_f) * Matrix::identity(3) * E;
-      } else {
+      } else if (material == MPMMaterial::elastic ||
+                 material == MPMMaterial::snow) {
         auto svd = sifakis_svd(F);
         auto R = std::get<0>(svd) * transposed(std::get<2>(svd));
         auto sig = std::get<1>(svd);
@@ -295,10 +317,21 @@ auto mpm3d = []() {
         } else {
           J = oldJ;
         }
-        particle_F[p] = F;
         cauchy = Eval(2.0_f * mu * (F - R) * transposed(F) +
                       (Matrix::identity(3) * lambda) * (J - 1.0f) * J);
+      } else if (material == MPMMaterial::sand) {
+        auto svd = sifakis_svd(F);
+        auto sig = Eval(project(std::get<1>(svd), particle_J[p]));
+        auto log_sig = log(sig);
+        auto inv_sig = 1.0_f / sig;
+        auto center = Eval(2.0_f * mu_0 * inv_sig.element_wise_prod(log_sig) +
+                           lambda_0 * log_sig.sum() * inv_sig);
+        cauchy = std::get<0>(svd) * diag_matrix(center) *
+                 transposed(std::get<2>(svd));
       }
+
+      if (material != MPMMaterial::fluid)
+        particle_F[p] = F;
 
       auto affine = Expr(particle_mass) * C +
                     Expr(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
@@ -351,10 +384,7 @@ auto mpm3d = []() {
 
   auto p2g = [&] {
     TC_ASSERT(sorted);
-    /*
-    while (1)
-      check_fluctuation();
-    */
+    // check_fluctuation();
     grid_m.parent().parent().snode()->clear(0);
     sort();
     p2g_sorted();

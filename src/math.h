@@ -215,6 +215,16 @@ inline Matrix operator+(const Expr &A, const Matrix &B) {
   return C;
 }
 
+inline Matrix operator/(const Expr &A, const Matrix &B) {
+  Matrix C(B.n, B.m);
+  for (int i = 0; i < B.n; i++) {
+    for (int j = 0; j < B.m; j++) {
+      C(i, j) = A / B(i, j);
+    }
+  }
+  return C;
+}
+
 inline Matrix operator-(const Expr &A, const Matrix &B) {
   Matrix C(B.n, B.m);
   for (int i = 0; i < B.n; i++) {
@@ -330,6 +340,22 @@ inline Float32 lerp(Float a, Float x0, Float x1) {
 
 inline Matrix sqr(const Matrix &M) {
   return M.map([](Expr e) { return e * e; });
+}
+
+inline Matrix exp(const Matrix &M) {
+  return M.map([](Expr e) { return exp(e); });
+}
+
+inline Matrix log(const Matrix &M) {
+  return M.map([](Expr e) { return log(e); });
+}
+
+inline Matrix abs(const Matrix &M) {
+  return M.map([](Expr e) { return abs(e); });
+}
+
+inline Matrix inv(const Matrix &M) {
+  return M.map([](Expr e) { return inv(e); });
 }
 
 inline Matrix outer_product(Vector a, Vector b) {

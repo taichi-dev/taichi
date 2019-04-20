@@ -116,6 +116,7 @@ enum class UnaryType : int {
   inv,
   rcp,
   exp,
+  log,
   rsqrt,
   bit_not,
   undefined

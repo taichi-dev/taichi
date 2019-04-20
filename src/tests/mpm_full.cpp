@@ -461,12 +461,14 @@ auto mpm3d = []() {
     while (1) {
       grid_m.parent().parent().snode()->clear();
       sort();
-      p2g_sorted();
+      // p2g_sorted();
       auto stat = grid_m.parent().parent().snode()->stat();
+      int nb = stat.num_resident_blocks;
+      TC_P(nb);
       if (last_nb == -1) {
-        last_nb = stat.num_resident_blocks;
+        last_nb = nb;
       } else {
-        TC_ASSERT(last_nb == stat.num_resident_blocks);
+        TC_ASSERT(last_nb == nb);
       }
     }
     grid_m.parent().parent().snode()->clear();

@@ -182,16 +182,28 @@ TC_TEST("parallel_append") {
 
     Kernel(append).def([&]() {
       Declare(i);
-      For(i, 0, n * n, [&] {
-        Append(x.parent(), (i % n, 0), i);
-      });
+      For(i, 0, n * n, [&] { Append(x.parent(), (i % n, 0), i); });
+    });
+
+    Kernel(activate).def([&]() {
+      Declare(i);
+      For(i, 0, n * n, [&] { Activate(x.parent(), (i % n, 0)); });
     });
 
     for (int i = 0; i < 32; i++) {
       x.parent().parent().snode()->clear();
-      append();
+      if (i % 2)
+        activate();
+      else
+        append();
       auto stat = x.parent().parent().snode()->stat();
       TC_CHECK(stat.num_resident_blocks == n);
+      if (i % 2)
+        for (int i = 0; i < n; i++) {
+          for (int j = 0; j < n; j++) {
+            TC_CHECK(x.val<int>(i, j) == 0);
+          }
+        }
     }
   }
 };

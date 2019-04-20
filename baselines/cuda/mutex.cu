@@ -10,35 +10,59 @@ double get_time() {
   return tv.tv_sec + 1e-6 * tv.tv_usec;
 }
 
-constexpr int m = 256;
+constexpr int m = 17;
 constexpr int block_size = 128;
 
 struct Node {
   int lock;
   int sum;
+
+  __device__  void inc() {
+    while (atomicCAS(&lock, 0, 1))
+      ;
+    sum += 1;
+    atomicExch(&lock, 0);
+  }
 };
 
 __global__ void inc(Node *nodes) {
   unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-  int b = i * 3 % m;
+  int b = i % m;
+  nodes[b].inc();
 
+  /*
   int warp_id = threadIdx.x % 32;
+  int b = warp_id;
   int done = 0;
-  auto mask = __activemask();
-  // printf("mask %d\n", mask);
-  while (!__all_sync(mask, done)) {
-    for (int k = 0; k < 32; k++) {
-      if (k == warp_id && !done) {
-        int &lock = nodes[b].lock;
-        if (atomicCAS(&lock, 0, 1) == 0) {
-          nodes[b].sum += 1;
-          done = true;
-          atomicExch(&lock, 0);
+  if (true) {
+    auto mask = __activemask();
+    // printf("mask %d\n", mask);
+    while (!__all_sync(mask, done)) {
+      for (int k = 0; k < 32; k++) {
+        if (k == warp_id && !done) {
+          int &lock = nodes[b].lock;
+          if (atomicCAS(&lock, 0, 1) == 0) {
+            nodes[b].sum += 1;
+            done = true;
+            atomicExch(&lock, 0);
+          }
         }
       }
     }
+  } else {
+    for (int k = 0; k < 32; k++) {
+      if (k == warp_id) {
+        int &lock = nodes[b].lock;
+        while (atomicCAS(&lock, 0, 1))
+          ;
+        nodes[b].sum += 1;
+        done = true;
+        atomicExch(&lock, 0);
+      }
+    }
   }
+  */
 }
 
 int main() {
@@ -54,7 +78,7 @@ int main() {
     cudaEventCreate(&stop);
     cudaEventRecord(start);
     cudaDeviceSynchronize();
-    inc<<<m, block_size>>>((Node *)a);
+    inc<<<m * 128, block_size>>>((Node *)a);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     float milliseconds = 0;

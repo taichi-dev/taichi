@@ -343,13 +343,15 @@ struct pointer {
     bool leave_loop = false;
     int done = 0;
     auto m = __activemask();
-    printf("mask %d\n", m);
     while (!__all_sync(m, done)) {
       for (int k = 0; k < 32; k++) {
         if (k == warp_id && !done) {
-          // printf("%d\n", k);
+          printf("k %d done %d lock %p=%d\n", k, done, &lock, lock);
           if (atomicCAS(&lock, 0, 1) == 0) {
+            printf("lock %d %d %d %d %p\n", index[0], index[1], index[2],
+                   index[3], &lock);
 #endif
+            /*
             if (data == nullptr) {
               auto meta = Managers::get_instance()
                               ->get<pointer>()
@@ -358,9 +360,12 @@ struct pointer {
               data = (child_type *)meta->ptr;
               meta->snode_ptr = (void **)(&data);
             }
+            */
 #if defined(__CUDA_ARCH__)
             done = true;
             atomicExch(&lock, 0);
+            printf("unlock %d %d %d %d %p\n", index[0], index[1], index[2],
+                   index[3], &lock);
           }
         }
       }

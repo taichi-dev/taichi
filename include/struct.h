@@ -169,8 +169,19 @@ __host__ void SNodeAllocator<T>::clear(int flags) {
   int blockDim = 256;  // least_pot_bound(sizeof(data_type) / sizeof(int));
   printf("tail    %d size %d blockDim %d\n", resident_tail, sizeof(data_type),
          blockDim);
-  if (resident_tail > 0)
+  if (resident_tail > 0) {
+    printf("gc ");
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
     recycle_all_gpu<<<resident_tail, blockDim>>>(this, flags);
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    std::cout << "device  " << milliseconds << " ms" << std::endl;
+  }
   cudaDeviceSynchronize();
   auto err = cudaGetLastError();
   if (err) {

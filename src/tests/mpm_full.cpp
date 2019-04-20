@@ -88,7 +88,7 @@ auto mpm3d = []() {
   // prog.config.print_ir = true;
   bool fluid = false;
   bool plastic = true;
-  constexpr bool highres = true;
+  constexpr bool highres = false;
   CoreState::set_trigger_gdb_when_crash(true);
 
   constexpr int n = highres ? 256 : 128;  // grid_resolution
@@ -215,130 +215,11 @@ auto mpm3d = []() {
 
   TC_ASSERT(bit::is_power_of_two(n));
 
-  Kernel(activate_all).def([&]() {
-    Declare(i);
-    Declare(j);
-    Declare(k);
-    int t = n / grid_block_size;
-    For(i, 0, t, [&] {
-      For(j, 0, t, [&] {
-        For(k, 0, t, [&] {
-          Activate(grid_m, (i * grid_block_size, j * grid_block_size,
-                            k * grid_block_size));
-        });
-      });
-    });
-  });
-
-  Kernel(reset_grid).def([&]() {
-    Declare(i);
-    Declare(j);
-    Declare(k);
-    For((i, j, k), grid_m, [&] {
-      grid_v(0)[i, j, k] = 0.0_f;
-      grid_v(1)[i, j, k] = 0.0_f;
-      grid_v(2)[i, j, k] = 0.0_f;
-      grid_m[i, j, k] = 0.0_f;
-    });
-  });
-
-  Kernel(p2g_naive).def([&]() {
-    Declare(p);
-    BlockDim(256);
-    For(p, particle_x(0), [&] {
-      auto x = particle_x[p];
-      auto v = particle_v[p];
-      auto C = particle_C[p];
-
-      Expr J;
-      Matrix F;
-      if (fluid) {
-        J = particle_J[p] * (1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2)));
-        particle_J[p] = J;
-      } else {
-        F = Eval((Matrix::identity(dim) + dt * C) * particle_F[p]);
-      }
-      Mutable(F, DataType::f32);
-
-      auto base_coord = floor(Expr(inv_dx) * x - Expr(0.5_f));
-      auto fx = x * Expr(inv_dx) - base_coord;
-
-      Vector w[] = {Eval(0.5_f * sqr(1.5_f - fx)),
-                    Eval(0.75_f - sqr(fx - 1.0_f)),
-                    Eval(0.5_f * sqr(fx - 0.5_f))};
-
-      Matrix cauchy(3, 3);
-      Local(mu) = mu_0;
-      Local(lambda) = lambda_0;
-      if (fluid) {
-        cauchy = (J - 1.0_f) * Matrix::identity(3) * E;
-      } else {
-        auto svd = sifakis_svd(F);
-        auto R = std::get<0>(svd) * transposed(std::get<2>(svd));
-        auto sig = std::get<1>(svd);
-        Mutable(sig, DataType::f32);
-        auto oldJ = Eval(sig(0) * sig(1) * sig(2));
-        if (plastic) {
-          for (int i = 0; i < dim; i++) {
-            sig(i) = clamp(sig(i), 1 - 2.5e-2f, 1 + 7.5e-3f);
-          }
-          auto newJ = Eval(sig(0) * sig(1) * sig(2));
-          // plastic J
-          auto Jp = Eval(clamp(particle_J[p] * oldJ / newJ, 0.6_f, 20.0_f));
-          J = newJ;
-          F = std::get<0>(svd) * diag_matrix(sig) *
-              transposed(std::get<2>(svd));
-          auto hardening = exp((1.0f - Jp) * 10.0f);
-
-          mu *= hardening;
-          lambda *= hardening;
-          particle_J[p] = Jp;
-        } else {
-          J = oldJ;
-        }
-        particle_F[p] = F;
-        cauchy = Eval(2.0_f * mu * (F - R) * transposed(F) +
-                      (Matrix::identity(3) * lambda) * (J - 1.0f) * J);
-      }
-
-      auto affine = Expr(particle_mass) * C +
-                    Expr(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
-
-      // scatter
-      for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-          for (int k = 0; k < 3; k++) {
-            auto dpos = Vector(dim);
-            dpos(0) = dx * ((i * 1.0_f) - fx(0));
-            dpos(1) = dx * ((j * 1.0_f) - fx(1));
-            dpos(2) = dx * ((k * 1.0_f) - fx(2));
-            auto weight = w[i](0) * w[j](1) * w[k](2);
-            auto node = (cast<int32>(base_coord(0)) + Expr(i),
-                         cast<int32>(base_coord(1)) + Expr(j),
-                         cast<int32>(base_coord(2)) + Expr(k));
-            Atomic(grid_v[node]) +=
-                weight * (Expr(particle_mass) * v + affine * dpos);
-            Atomic(grid_m[node]) += weight * Expr(particle_mass);
-          }
-        }
-      }
-    });
-  });
-
-  Kernel(clear_lists).def([&] {
-    Declare(i);
-    Declare(j);
-    Declare(k);
-    // BlockDim(64);
-    For((i, j, k), l.parent(), [&] { Clear(l.parent(), (i, j, k)); });
-  });
-
   Kernel(sort).def([&] {
     Declare(p);
     BlockDim(256);
     For(p, particle_x(0), [&] {
       auto node_coord = floor(particle_x[p] * inv_dx - 0.5_f);
-      // Activate(l.parent(), (node_coord(0), node_coord(1), node_coord(2)));
       Append(l.parent(),
              (cast<int32>(node_coord(0)), cast<int32>(node_coord(1)),
               cast<int32>(node_coord(2))),
@@ -464,17 +345,14 @@ auto mpm3d = []() {
   };
 
   auto p2g = [&] {
+    TC_ASSERT(sorted);
     /*
     while (1)
       check_fluctuation();
     */
     grid_m.parent().parent().snode()->clear(0);
-    if (sorted) {
-      sort();
-      p2g_sorted();
-    } else {
-      p2g_naive();
-    }
+    sort();
+    p2g_sorted();
   };
 
   Kernel(grid_op).def([&]() {
@@ -573,12 +451,12 @@ auto mpm3d = []() {
       auto base_coord_i = cast<int32>(base_coord(0));
       auto base_coord_j = cast<int32>(base_coord(1));
       auto base_coord_k = cast<int32>(base_coord(2));
-      */
       Assert(base_coord_i < i + 4);
       Assert(base_coord_i - i >= 0);
       Assert(i % 4 == 0);
       Assert(j % 4 == 0);
       Assert(k % 4 == 0);
+      */
 
       for (int p = 0; p < 3; p++) {
         for (int q = 0; q < 3; q++) {
@@ -686,11 +564,6 @@ auto mpm3d = []() {
     simulate_frame();
     auto res = canvas.img.get_res();
     Array2D<Vector3> image(Vector2i(res), Vector3(1) - Vector3(0.0_f));
-    /*
-    std::vector<Particle> particles;
-    read_from_binary_file(particles,
-                          fmt::format("{}/{:06d}.tcb", folder, frame));
-                          */
     std::vector<RenderParticle> render_particles;
     for (int i = 0; i < n_particles; i++) {
       auto x = particle_x(0).val<float32>(i), y = particle_x(1).val<float32>(i),
@@ -714,49 +587,6 @@ auto mpm3d = []() {
         fmt::format("{}/{:05d}.png", render_dir, frame));
     print_profile_info();
   }
-
-  /*
-  int frame = 0;
-  for (int f = 0;; f++) {
-    TC_PROFILER("mpm 3d");
-    simulate_frame();
-    canvas.clear(0x112F41);
-
-    Matrix4 trans(1);
-    trans = matrix4_translate(&trans, Vector3(-0.5f));
-    trans = matrix4_scale_s(&trans, 0.7f);
-    trans = matrix4_rotate_angle_axis(&trans, angle * 1.0f, Vector3::axis(1));
-    trans = matrix4_rotate_angle_axis(&trans, 15.0f, Vector3::axis(0));
-    trans = matrix4_translate(&trans, Vector3(0.5f));
-
-    {
-      TC_PROFILER("cpu render");
-
-      std::vector<Vector3> particles;
-      for (int i = 0; i < n_particles; i++) {
-        auto x = particle_x(0).val<float32>(i),
-             y = particle_x(1).val<float32>(i);
-        auto z = particle_x(2).val<float32>(i);
-
-        particles.push_back(Vector3(x, y, z));
-
-        Vector3 pos(x, y, z);
-        pos = transform(trans, pos);
-
-        if (0.01f < pos.x && pos.x < 0.99f && 0.01f < pos.y && pos.y < 0.99f)
-          canvas.circle(pos.x, pos.y)
-              .radius(1.6)
-              .color(0.4f + 0.6f * x, 0.4f + 0.6f * y, 0.4f + 0.6f * z, 1.0f);
-      }
-
-      gravity_x.val<float32>() = gravity_x_slider;
-      gui.update();
-      // write_partio(particles, fmt::format("particles/{:04d}.bgeo", frame));
-      frame++;
-    }
-
-  }
-  */
 };
 TC_REGISTER_TASK(mpm3d);
 

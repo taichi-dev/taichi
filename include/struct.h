@@ -354,6 +354,9 @@ struct pointer {
                             ->get_allocator()
                             ->allocate_node(index);
             data = (child_type *)meta->ptr;
+#if __CUDA_ARCH__
+            __threadfence();
+#endif
             meta->snode_ptr = (void **)(&data);
           }
 #if defined(__CUDA_ARCH__)

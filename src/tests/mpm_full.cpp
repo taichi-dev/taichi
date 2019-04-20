@@ -88,7 +88,7 @@ auto mpm3d = []() {
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
-  auto material = MPMMaterial::snow;
+  auto material = MPMMaterial::sand;
   constexpr bool highres = false;
   CoreState::set_trigger_gdb_when_crash(true);
 
@@ -233,19 +233,22 @@ auto mpm3d = []() {
   });
 
   auto project = [&](Vector sigma, const Expr &p) {
-    Vector sigma_out({1.0f, 1.0f, 1.0f});
-    Vector epsilon_diag;
+    real fdim = 1.0_f / dim;
+    Vector sigma_out(dim);
+    Vector epsilon(dim);
     for (int i = 0; i < dim; i++) {
-      epsilon_diag(i) = log(max(abs(sigma(i)), 1e-4_f));
+      epsilon(i) = log(max(abs(sigma(i)), 1e-4_f));
+      sigma_out(i) = 1.0_f;
     }
-    Vector epsilon = Eval(epsilon_diag);
+    Mutable(sigma_out, f32);
     auto tr = epsilon.sum() + particle_J[p];
-    auto epsilon_hat = Eval(epsilon - tr / dim);
+    auto epsilon_hat = Eval(epsilon - tr / fdim);
     auto epsilon_hat_for = epsilon_hat.norm() + 1e-20_f;
     If(tr >= 0.0_f).Then([&] { particle_J[p] += epsilon.sum(); }).Else([&] {
       particle_J[p] = 0.0f;
-      auto delta_gamma = Eval(epsilon_hat_for + (dim * lambda_0 + 2 * mu_0) /
-                                                    (2 * mu_0) * tr * alpha);
+      auto delta_gamma =
+          Eval(epsilon_hat_for +
+               (fdim * lambda_0 + 2.0_f * mu_0) / (2.0_f * mu_0) * tr * alpha);
       sigma_out = exp(epsilon -
                       max(0.0_f, delta_gamma) / epsilon_hat_for * epsilon_hat);
     });
@@ -321,13 +324,15 @@ auto mpm3d = []() {
                       (Matrix::identity(3) * lambda) * (J - 1.0f) * J);
       } else if (material == MPMMaterial::sand) {
         auto svd = sifakis_svd(F);
-        auto sig = Eval(project(std::get<1>(svd), particle_J[p]));
+        auto u = std::get<0>(svd), sig = std::get<1>(svd), v = std::get<2>(svd);
+        Mutable(sig, f32);
+        sig = Eval(project(std::get<1>(svd), p));
+        F = u * diag_matrix(sig) * transposed(v);
         auto log_sig = log(sig);
         auto inv_sig = 1.0_f / sig;
         auto center = Eval(2.0_f * mu_0 * inv_sig.element_wise_prod(log_sig) +
                            lambda_0 * log_sig.sum() * inv_sig);
-        cauchy = std::get<0>(svd) * diag_matrix(center) *
-                 transposed(std::get<2>(svd));
+        cauchy = u * diag_matrix(center) * transposed(v);
       }
 
       if (material != MPMMaterial::fluid)

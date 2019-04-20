@@ -335,9 +335,10 @@ struct pointer {
     return 1;
   }
 
-  TC_DEVICE TC_FORCE_INLINE void activate(int i,
-                                          const PhysicalIndexGroup &index) {
+  TC_DEVICE TC_FORCE_INLINE void activate_old(int i,
+                                              const PhysicalIndexGroup &index) {
     // if (data == nullptr) {
+
 #if defined(__CUDA_ARCH__)
     int warp_id = threadIdx.x % 32;
     bool leave_loop = false;
@@ -368,6 +369,24 @@ struct pointer {
                    index[3], &lock);
           }
         }
+      }
+    }
+#endif
+  }
+
+  TC_DEVICE TC_FORCE_INLINE void activate(int i,
+                                          const PhysicalIndexGroup &index) {
+    printf("starting...\n");
+#if defined(__CUDA_ARCH__)
+    bool leaveLoop = false;
+    while (!leaveLoop) {
+      printf("attempting...\n");
+      if (atomicExch(&lock, 1) == 0) {
+        printf("locked\n");
+        leaveLoop = true;
+        atomicExch(&lock, 0);
+      } else {
+        printf("%d failed...\n", threadIdx.x);
       }
     }
 #endif

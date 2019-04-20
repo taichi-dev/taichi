@@ -10,7 +10,7 @@ double get_time() {
   return tv.tv_sec + 1e-6 * tv.tv_usec;
 }
 
-constexpr int m = 17;
+constexpr int m = 2;
 constexpr int block_size = 128;
 
 struct Node {
@@ -18,10 +18,23 @@ struct Node {
   int sum;
 
   __device__  void inc() {
+    /*
     while (atomicCAS(&lock, 0, 1))
       ;
     sum += 1;
     atomicExch(&lock, 0);
+     */
+    bool leaveLoop = false;
+    while (!leaveLoop) {
+      printf("attempting...\n");
+      if (atomicExch(&lock, 1) == 0) {
+        printf("locked\n");
+        leaveLoop = true;
+        atomicExch(&lock, 0);
+      } else {
+        printf("%d failed...\n", threadIdx.x);
+      }
+    }
   }
 };
 
@@ -78,7 +91,7 @@ int main() {
     cudaEventCreate(&stop);
     cudaEventRecord(start);
     cudaDeviceSynchronize();
-    inc<<<m * 128, block_size>>>((Node *)a);
+    inc<<<1, 4>>>((Node *)a);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     float milliseconds = 0;

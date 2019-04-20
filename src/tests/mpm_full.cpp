@@ -350,7 +350,7 @@ auto mpm3d = []() {
     Declare(j);
     Declare(k);
     Declare(p_ptr);
-    BlockDim(128);
+    BlockDim(64);
 
     Cache(0, grid_v(0));
     Cache(0, grid_v(1));
@@ -460,6 +460,7 @@ auto mpm3d = []() {
     int last_nb = -1;
     while (1) {
       grid_m.parent().parent().snode()->clear();
+      // activate_all();
       sort();
       p2g_sorted();
       auto stat = grid_m.parent().parent().snode()->stat();
@@ -474,6 +475,8 @@ auto mpm3d = []() {
   };
 
   auto p2g = [&] {
+    while (1)
+      check_fluctuation();
     grid_m.parent().parent().snode()->clear();
     if (sorted) {
       sort();

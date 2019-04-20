@@ -76,7 +76,7 @@ __global__ void inc(Node *nodes) {
   */
 }
 
-int main() {
+void mutex() {
   Node *a;
 
   cudaMallocManaged(&a, m * sizeof(Node));
@@ -102,4 +102,56 @@ int main() {
     printf("sum %d\n", sum);
   }
   std::cout << std::endl;
+}
+
+__global__ void elect(long long *addr_) {
+  unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+  auto addr = addr_[i];
+  auto warpId = threadIdx.x % warpSize;
+
+#define FULLMASK 0xFFFFFFFF
+
+  bool has_following_eqiv = 0;
+  for (int i = 1; i < warpSize; i++) {
+    auto cond = warpId + i < warpSize;
+    // auto mask = __ballot_sync(FULLMASK, cond);
+    bool same = (addr == __shfl_down_sync(FULLMASK, addr, i));
+    if (cond) {
+      has_following_eqiv = has_following_eqiv || same;
+    }
+  }
+  if (!has_following_eqiv) {
+    printf("%lld\n", addr);
+  }
+}
+
+void elect_diff() {
+  long long *a;
+
+  cudaMallocManaged(&a, 32 * sizeof(long long));
+
+  for (int i = 0; i < 32; i++) {
+    a[i] = i % 5;
+  }
+
+  for (int i = 0; i < 20; i++) {
+    cudaDeviceSynchronize();
+    auto t = get_time();
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
+    cudaDeviceSynchronize();
+    elect<<<1, 32>>>(a);
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    std::cout << "device  " << milliseconds << std::endl;
+  }
+  std::cout << std::endl;
+}
+
+int main() {
+  elect_diff();
 }

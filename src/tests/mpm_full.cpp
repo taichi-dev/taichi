@@ -207,7 +207,8 @@ auto mpm3d = []() {
           .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
     }
 
-    block.dynamic(p, pow<dim>(grid_block_size) * 16).place(l);
+    block.dynamic(p, pow<dim>(grid_block_size) * (benchmark_dragon ? 64 : 16))
+        .place(l);
 
     root.place(gravity_x);
   });

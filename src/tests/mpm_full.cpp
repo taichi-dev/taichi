@@ -233,8 +233,7 @@ auto mpm3d = []() {
   });
 
   auto project = [&](Vector sigma, const Expr &p) {
-    return Eval(sigma);
-    real fdim = 1.0_f / dim;
+    real fdim = dim;
     Vector sigma_out(dim);
     Vector epsilon(dim);
     for (int i = 0; i < dim; i++) {
@@ -428,8 +427,10 @@ auto mpm3d = []() {
 
       If(j < bound, [&] {
         auto norm = Eval(sqrt(v0 * v0 + v2 * v2));
-        auto s = Eval(clamp((norm + v1 * 0.10f) / (norm + 1e-30f), Expr(0.0_f),
-                            Expr(1.0_f)));
+        auto s = Eval(
+            clamp((norm + v1 * (material == MPMMaterial::sand ? 1.0f : 0.10f)) /
+                      (norm + 1e-30f),
+                  Expr(0.0_f), Expr(1.0_f)));
 
         v0 = v0 * s;
         v2 = v2 * s;

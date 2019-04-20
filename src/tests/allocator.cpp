@@ -43,7 +43,7 @@ TC_TEST("gpu_gc_basics") {
         TC_CHECK(x.val<int>(i, j) == i + j);
       }
     }
-    x.parent().parent().snode()->clear();
+    x.parent().parent().snode()->clear(1);
     stat = x.parent().parent().snode()->stat();
     TC_CHECK(stat.num_resident_blocks == 0);
     TC_CHECK(stat.num_recycled_blocks == 0);

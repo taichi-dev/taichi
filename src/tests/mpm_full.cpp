@@ -447,7 +447,7 @@ auto mpm3d = []() {
   auto check_fluctuation = [&] {
     int last_nb = -1;
     while (1) {
-      grid_m.parent().parent().snode()->clear();
+      grid_m.parent().parent().snode()->clear(1);
       // activate_all();
       sort();
       // p2g_sorted();
@@ -467,7 +467,7 @@ auto mpm3d = []() {
     while (1)
       check_fluctuation();
     */
-    grid_m.parent().parent().snode()->clear();
+    grid_m.parent().parent().snode()->clear(0);
     if (sorted) {
       sort();
       p2g_sorted();
@@ -657,6 +657,8 @@ auto mpm3d = []() {
       TC_PROFILE("g2p", g2p());
       // TC_PROFILE("reset grid", reset_grid());
     }
+    // gc
+    grid_m.parent().parent().snode()->clear(1);
     TC_P((Time::get_time() - t) / 160 * 1000);
   };
 

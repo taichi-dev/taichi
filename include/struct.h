@@ -113,7 +113,7 @@ struct SNodeAllocator {
 
   static_assert(sizeof(data_type) % 4 == 0, "");
 
-  __host__ void clear();
+  __host__ void clear(int flags);
 
   AllocatorStat get_stat() {
     AllocatorStat stat;
@@ -136,7 +136,7 @@ inline constexpr std::size_t least_pot_bound(std::size_t v) {
 }
 
 template <typename T>
-__global__ void recycle_all_gpu(SNodeAllocator<T> *allocator) {
+__global__ void recycle_all_gpu(SNodeAllocator<T> *allocator, int flags) {
   auto b = blockIdx.x;
   auto t = threadIdx.x;
   /*
@@ -145,7 +145,7 @@ __global__ void recycle_all_gpu(SNodeAllocator<T> *allocator) {
   */
   // zero-fill
   auto &meta = allocator->resident_pool[b];
-  if (t == 0)
+  if (t == 0 && flags)
     *(meta.snode_ptr) = nullptr;
   auto ptr = (int *)(meta.ptr);
   while (t * sizeof(int) < sizeof(T::child_type)) {
@@ -165,12 +165,12 @@ __global__ void recycle_all_gpu(SNodeAllocator<T> *allocator) {
 }
 
 template <typename T>
-__host__ void SNodeAllocator<T>::clear() {
+__host__ void SNodeAllocator<T>::clear(int flags) {
   int blockDim = 256;  // least_pot_bound(sizeof(data_type) / sizeof(int));
   printf("tail    %d size %d blockDim %d\n", resident_tail, sizeof(data_type),
          blockDim);
   if (resident_tail > 0)
-    recycle_all_gpu<<<resident_tail, blockDim>>>(this);
+    recycle_all_gpu<<<resident_tail, blockDim>>>(this, flags);
   cudaDeviceSynchronize();
   auto err = cudaGetLastError();
   if (err) {
@@ -178,8 +178,10 @@ __host__ void SNodeAllocator<T>::clear() {
            cudaGetErrorString(err));
     exit(-1);
   }
-  resident_tail = 0;
-  recycle_tail = 0;
+  if (flags) {
+    resident_tail = 0;
+    recycle_tail = 0;
+  }
 }
 #endif
 

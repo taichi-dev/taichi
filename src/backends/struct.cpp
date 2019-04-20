@@ -298,8 +298,8 @@ void StructCompiler::run(SNode &node) {
           snodes[i]->node_type_name, snodes[i]->node_type_name);
     if (snodes[i]->type == SNodeType::pointer) {
       emit(
-          "TC_EXPORT void clear_{}() {{"
-          "Managers::get_allocator<{}>()->clear();}} ",
+          "TC_EXPORT void clear_{}(int flags) {{"
+          "Managers::get_allocator<{}>()->clear(flags);}} ",
           snodes[i]->node_type_name, snodes[i]->node_type_name);
     }
   }
@@ -323,8 +323,10 @@ void StructCompiler::run(SNode &node) {
     }
   }
 
-  emit("auto p = Managers::get_allocator<{}>()->allocate_node({{0, 0, 0, 0}})->ptr;",
-       root_type);
+  emit(
+      "auto p = Managers::get_allocator<{}>()->allocate_node({{0, 0, 0, "
+      "0}})->ptr;",
+      root_type);
 
   emit("return p;}}");
   emit("TC_EXPORT void release_data_structure(void *ds) {{delete ({} *)ds;}}",

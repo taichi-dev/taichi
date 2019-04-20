@@ -84,7 +84,7 @@ class SNode {
 
   using AccessorFunction = void *(*)(void *, int, int, int, int);
   using StatFunction = AllocatorStat (*)();
-  using ClearFunction = void (*)();
+  using ClearFunction = void (*)(int);
   AccessorFunction access_func;
   StatFunction stat_func;
   ClearFunction clear_func;
@@ -233,9 +233,9 @@ class SNode {
     return -1;
   }
 
-  void clear() {
+  void clear(int flags) {
     TC_ASSERT(clear_func != nullptr);
-    clear_func();
+    clear_func(flags);
   }
 };
 

@@ -46,7 +46,7 @@ TC_TEST("gpu_gc_basics") {
     x.parent().parent().snode()->clear();
     stat = x.parent().parent().snode()->stat();
     TC_CHECK(stat.num_resident_blocks == 0);
-    TC_CHECK(stat.num_recycled_blocks == n - 1);
+    TC_CHECK(stat.num_recycled_blocks == 0);
 
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < i; j++) {

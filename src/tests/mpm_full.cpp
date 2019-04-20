@@ -428,6 +428,10 @@ auto mpm3d = []() {
       Print(base_coord_i - i);
       */
       Assert(base_coord_i < i + 4);
+      If(base_coord_i < i, [&] {
+        Print(base_coord_i);
+        Print(i);
+      });
       Assert(base_coord_i - i >= 0);
       Assert(i % 4 == 0);
       Assert(j % 4 == 0);
@@ -453,6 +457,18 @@ auto mpm3d = []() {
   });
 
   auto p2g = [&] {
+    int last_nb = -1;
+    while (1) {
+      grid_m.parent().parent().snode()->clear();
+      sort();
+      p2g_sorted();
+      auto stat = grid_m.parent().parent().snode()->stat();
+      if (last_nb == -1) {
+        last_nb = stat.num_resident_blocks;
+      } else {
+        TC_ASSERT(last_nb == stat.num_resident_blocks);
+      }
+    }
     grid_m.parent().parent().snode()->clear();
     if (sorted) {
       sort();

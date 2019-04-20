@@ -233,24 +233,25 @@ auto mpm3d = []() {
   });
 
   auto project = [&](Vector sigma, const Expr &p) {
+    return Eval(sigma);
     real fdim = 1.0_f / dim;
     Vector sigma_out(dim);
     Vector epsilon(dim);
     for (int i = 0; i < dim; i++) {
-      epsilon(i) = log(max(abs(sigma(i)), 1e-4_f));
+      epsilon(i) = Eval(log(max(abs(sigma(i)), 1e-4_f)));
       sigma_out(i) = 1.0_f;
     }
     Mutable(sigma_out, f32);
-    auto tr = epsilon.sum() + particle_J[p];
+    auto tr = Eval(epsilon.sum() + particle_J[p]);
     auto epsilon_hat = Eval(epsilon - tr / fdim);
-    auto epsilon_hat_for = epsilon_hat.norm() + 1e-20_f;
+    auto epsilon_hat_for = Eval(epsilon_hat.norm() + 1e-20_f);
     If(tr >= 0.0_f).Then([&] { particle_J[p] += epsilon.sum(); }).Else([&] {
       particle_J[p] = 0.0f;
       auto delta_gamma =
           Eval(epsilon_hat_for +
                (fdim * lambda_0 + 2.0_f * mu_0) / (2.0_f * mu_0) * tr * alpha);
-      sigma_out = exp(epsilon -
-                      max(0.0_f, delta_gamma) / epsilon_hat_for * epsilon_hat);
+      sigma_out = Eval(exp(epsilon - max(0.0_f, delta_gamma) / epsilon_hat_for *
+                                         epsilon_hat));
     });
 
     return sigma_out;
@@ -332,7 +333,7 @@ auto mpm3d = []() {
         auto inv_sig = 1.0_f / sig;
         auto center = Eval(2.0_f * mu_0 * inv_sig.element_wise_prod(log_sig) +
                            lambda_0 * log_sig.sum() * inv_sig);
-        cauchy = u * diag_matrix(center) * transposed(v);
+        cauchy = u * diag_matrix(center) * transposed(v) * transposed(F);
       }
 
       if (material != MPMMaterial::fluid)

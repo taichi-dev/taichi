@@ -344,7 +344,7 @@ struct pointer {
 #if defined(__CUDA_ARCH__)
       int warp_id = threadIdx.x % 32;
       for (int k = 0; k < 32; k++) {
-        if (k == warp_id) {
+        if (k == warp_id && data == nullptr) {
           while (atomicCAS(&lock, 0, 1) == 1)
             ;
 #endif

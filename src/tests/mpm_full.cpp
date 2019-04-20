@@ -456,12 +456,12 @@ auto mpm3d = []() {
     });
   });
 
-  auto p2g = [&] {
+  auto check_fluctuation = [&] {
     int last_nb = -1;
     while (1) {
       grid_m.parent().parent().snode()->clear();
       sort();
-      // p2g_sorted();
+      p2g_sorted();
       auto stat = grid_m.parent().parent().snode()->stat();
       int nb = stat.num_resident_blocks;
       TC_P(nb);
@@ -471,6 +471,9 @@ auto mpm3d = []() {
         TC_ASSERT(last_nb == nb);
       }
     }
+  };
+
+  auto p2g = [&] {
     grid_m.parent().parent().snode()->clear();
     if (sorted) {
       sort();

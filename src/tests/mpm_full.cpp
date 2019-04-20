@@ -337,13 +337,11 @@ auto mpm3d = []() {
     BlockDim(256);
     For(p, particle_x(0), [&] {
       auto node_coord = floor(particle_x[p] * inv_dx - 0.5_f);
-      Activate(l.parent(), (node_coord(0), node_coord(1), node_coord(2)));
-      /*
+      // Activate(l.parent(), (node_coord(0), node_coord(1), node_coord(2)));
       Append(l.parent(),
              (cast<int32>(node_coord(0)), cast<int32>(node_coord(1)),
               cast<int32>(node_coord(2))),
              p);
-             */
     });
   });
 
@@ -426,18 +424,6 @@ auto mpm3d = []() {
       auto base_coord_k =
           Eval(AssumeInRange(cast<int32>(base_coord(2)), k, low, high));
 
-      /*
-      Print(base_coord_i - i);
-      */
-      Assert(base_coord_i < i + 4);
-      If(base_coord_i < i, [&] {
-        Print(base_coord_i);
-        Print(i);
-      });
-      Assert(base_coord_i - i >= 0);
-      Assert(i % 4 == 0);
-      Assert(j % 4 == 0);
-      Assert(k % 4 == 0);
       // scatter
       for (int a = 0; a < 3; a++) {
         for (int b = 0; b < 3; b++) {
@@ -477,8 +463,10 @@ auto mpm3d = []() {
   };
 
   auto p2g = [&] {
+    /*
     while (1)
       check_fluctuation();
+    */
     grid_m.parent().parent().snode()->clear();
     if (sorted) {
       sort();

@@ -168,7 +168,7 @@ TC_TEST("task_list_dynamic") {
 
 TC_TEST("parallel_append") {
   for (auto arch : {Arch::gpu}) {
-    int n = 2;
+    int n = 32;
     Program prog(arch);
     prog.config.print_ir = true;
 
@@ -182,18 +182,16 @@ TC_TEST("parallel_append") {
 
     Kernel(append).def([&]() {
       Declare(i);
-      BlockDim(32);
       For(i, 0, n * n, [&] {
-        // Append(x.parent(), (i % n, 0), i);
-        Activate(x.parent(), (i % n, 0));
+        Append(x.parent(), (i % n, 0), i);
       });
     });
 
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 32; i++) {
       x.parent().parent().snode()->clear();
       append();
       auto stat = x.parent().parent().snode()->stat();
-      TC_P(stat.num_resident_blocks);
+      TC_CHECK(stat.num_resident_blocks == n);
     }
   }
 };

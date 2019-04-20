@@ -340,18 +340,12 @@ struct pointer {
     // if (data == nullptr) {
 
 #if defined(__CUDA_ARCH__)
-    printf("entering: %d %p = %d\n", __activemask(), &lock, lock);
     int warp_id = threadIdx.x % 32;
     for (int k = 0; k < 32; k++) {
-      printf("k = %d\n", k);
       if (k == warp_id) {
-        printf("processing mask %d\n", __activemask());
-        while (atomicCAS(&lock, 0, 1) == 1) {
-          printf("failed: %d %p %d\n", __activemask(), &lock, lock);
-        }
-        printf("locked: %d %p set to 1\n", __activemask(), &lock);
+        while (atomicCAS(&lock, 0, 1) == 1)
+          ;
 #endif
-        /*
         if (data == nullptr) {
           auto meta = Managers::get_instance()
                           ->get<pointer>()
@@ -360,10 +354,8 @@ struct pointer {
           data = (child_type *)meta->ptr;
           meta->snode_ptr = (void **)(&data);
         }
-        */
 #if defined(__CUDA_ARCH__)
         atomicExch(&lock, 0);
-        printf("released: %d %p set to 0\n", __activemask(), &lock);
       }
     }
 #endif

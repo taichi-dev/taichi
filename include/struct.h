@@ -335,58 +335,35 @@ struct pointer {
     return 1;
   }
 
-  TC_DEVICE TC_FORCE_INLINE void activate_old(int i,
-                                              const PhysicalIndexGroup &index) {
+  TC_DEVICE TC_FORCE_INLINE void activate(int i,
+                                          const PhysicalIndexGroup &index) {
     // if (data == nullptr) {
 
 #if defined(__CUDA_ARCH__)
+    printf("entering: %d %p = %d\n", __activemask(), &lock, lock);
     int warp_id = threadIdx.x % 32;
-    bool leave_loop = false;
-    int done = 0;
-    auto m = __activemask();
-    while (!__all_sync(m, done)) {
-      for (int k = 0; k < 32; k++) {
-        if (k == warp_id && !done) {
-          printf("k %d done %d lock %p=%d\n", k, done, &lock, lock);
-          if (atomicCAS(&lock, 0, 1) == 0) {
-            printf("lock %d %d %d %d %p\n", index[0], index[1], index[2],
-                   index[3], &lock);
-#endif
-            /*
-            if (data == nullptr) {
-              auto meta = Managers::get_instance()
-                              ->get<pointer>()
-                              ->get_allocator()
-                              ->allocate_node(index);
-              data = (child_type *)meta->ptr;
-              meta->snode_ptr = (void **)(&data);
-            }
-            */
-#if defined(__CUDA_ARCH__)
-            done = true;
-            atomicExch(&lock, 0);
-            printf("unlock %d %d %d %d %p\n", index[0], index[1], index[2],
-                   index[3], &lock);
-          }
+    for (int k = 0; k < 32; k++) {
+      printf("k = %d\n", k);
+      if (k == warp_id) {
+        printf("processing mask %d\n", __activemask());
+        while (atomicCAS(&lock, 0, 1) == 1) {
+          printf("failed: %d %p %d\n", __activemask(), &lock, lock);
         }
-      }
-    }
+        printf("locked: %d %p set to 1\n", __activemask(), &lock);
 #endif
-  }
-
-  TC_DEVICE TC_FORCE_INLINE void activate(int i,
-                                          const PhysicalIndexGroup &index) {
-    printf("starting...\n");
+        /*
+        if (data == nullptr) {
+          auto meta = Managers::get_instance()
+                          ->get<pointer>()
+                          ->get_allocator()
+                          ->allocate_node(index);
+          data = (child_type *)meta->ptr;
+          meta->snode_ptr = (void **)(&data);
+        }
+        */
 #if defined(__CUDA_ARCH__)
-    bool leaveLoop = false;
-    while (!leaveLoop) {
-      printf("attempting...\n");
-      if (atomicExch(&lock, 1) == 0) {
-        printf("locked\n");
-        leaveLoop = true;
         atomicExch(&lock, 0);
-      } else {
-        printf("%d failed...\n", threadIdx.x);
+        printf("released: %d %p set to 0\n", __activemask(), &lock);
       }
     }
 #endif

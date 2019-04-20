@@ -104,23 +104,27 @@ void mutex() {
   std::cout << std::endl;
 }
 
-__global__ void elect(long long *addr_) {
-  unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
-  auto addr = addr_[i];
-  auto warpId = threadIdx.x % warpSize;
+template <typename T>
+__device__ bool unique_in_warp(T val) {
+  auto mask = __activemask();
 
-#define FULLMASK 0xFFFFFFFF
+  auto warpId = threadIdx.x % warpSize;
 
   bool has_following_eqiv = 0;
   for (int i = 1; i < warpSize; i++) {
     auto cond = warpId + i < warpSize;
-    // auto mask = __ballot_sync(FULLMASK, cond);
-    bool same = (addr == __shfl_down_sync(FULLMASK, addr, i));
-    if (cond) {
-      has_following_eqiv = has_following_eqiv || same;
-    }
+    bool same = (cond & (val == __shfl_down_sync(mask, val, i)));
+    has_following_eqiv = has_following_eqiv || (cond && same);
   }
-  if (!has_following_eqiv) {
+
+  return !has_following_eqiv;
+}
+
+__global__ void elect(long long *addr_) {
+  unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+  auto addr = addr_[i];
+
+  if (unique_in_warp(addr)) {
     printf("%lld\n", addr);
   }
 }

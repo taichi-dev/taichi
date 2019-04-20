@@ -17,22 +17,20 @@ struct Node {
   int lock;
   int sum;
 
-  __device__  void inc() {
+  __device__ void inc() {
     /*
     while (atomicCAS(&lock, 0, 1))
       ;
     sum += 1;
     atomicExch(&lock, 0);
      */
-    bool leaveLoop = false;
-    while (!leaveLoop) {
-      printf("attempting...\n");
-      if (atomicExch(&lock, 1) == 0) {
-        printf("locked\n");
-        leaveLoop = true;
+
+    for (int i = 0; i < 32; i++) {
+      if (i == threadIdx.x % 32) {
+        while (atomicExch(&lock, 1) == 1)
+          ;
+        // printf("locked\n");
         atomicExch(&lock, 0);
-      } else {
-        printf("%d failed...\n", threadIdx.x);
       }
     }
   }

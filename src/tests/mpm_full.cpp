@@ -81,13 +81,14 @@ auto reset_grid_benchmark = []() {
 };
 TC_REGISTER_TASK(reset_grid_benchmark);
 
+enum class MPMMaterial : int { fluid, elastic, snow, sand };
+
 auto mpm3d = []() {
   bool benchmark_dragon = false;
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
-  bool fluid = false;
-  bool plastic = true;
+  auto material = MPMMaterial::snow;
   constexpr bool highres = false;
   CoreState::set_trigger_gdb_when_crash(true);
 
@@ -96,6 +97,10 @@ auto mpm3d = []() {
   auto particle_mass = 1.0_f, vol = 1.0_f;
   auto E = 1e4_f, nu = 0.3f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
+
+  auto friction_angle = 30._f;
+  real sin_phi = std::sin(friction_angle / 180._f * real(3.141592653));
+  auto alpha = std::sqrt(2._f / 3._f) * 2._f * sin_phi / (3._f - sin_phi);
 
   constexpr int dim = 3;
 
@@ -247,7 +252,7 @@ auto mpm3d = []() {
 
       Expr J;
       Matrix F;
-      if (fluid) {
+      if (material == MPMMaterial::fluid) {
         J = particle_J[p] * (1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2)));
         particle_J[p] = J;
       } else {
@@ -265,7 +270,7 @@ auto mpm3d = []() {
       Matrix cauchy(3, 3);
       Local(mu) = mu_0;
       Local(lambda) = lambda_0;
-      if (fluid) {
+      if (material == MPMMaterial::fluid) {
         cauchy = (J - 1.0_f) * Matrix::identity(3) * E;
       } else {
         auto svd = sifakis_svd(F);
@@ -273,7 +278,7 @@ auto mpm3d = []() {
         auto sig = std::get<1>(svd);
         Mutable(sig, DataType::f32);
         auto oldJ = Eval(sig(0) * sig(1) * sig(2));
-        if (plastic) {
+        if (material == MPMMaterial::snow) {
           for (int i = 0; i < dim; i++) {
             sig(i) = clamp(sig(i), 1 - 2.5e-2f, 1 + 7.5e-3f);
           }
@@ -500,7 +505,7 @@ auto mpm3d = []() {
       particle_v(1).val<float32>(i) = -3.0_f;
       particle_v(2).val<float32>(i) = 0._f;
       particle_J.val<float32>(i) = 1_f;
-      if (!fluid) {
+      if (material != MPMMaterial::fluid) {
         for (int p = 0; p < dim; p++) {
           for (int q = 0; q < dim; q++) {
             particle_F(p, q).val<float32>(i) = (p == q);

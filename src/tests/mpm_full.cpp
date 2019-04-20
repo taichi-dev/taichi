@@ -426,12 +426,12 @@ auto mpm3d = []() {
 
       /*
       Print(base_coord_i - i);
+      */
       Assert(base_coord_i < i + 4);
-      Assert(base_coord_i - i >= -1);
+      Assert(base_coord_i - i >= 0);
       Assert(i % 4 == 0);
       Assert(j % 4 == 0);
       Assert(k % 4 == 0);
-      */
       // scatter
       for (int a = 0; a < 3; a++) {
         for (int b = 0; b < 3; b++) {
@@ -559,6 +559,11 @@ auto mpm3d = []() {
       auto base_coord_j = cast<int32>(base_coord(1));
       auto base_coord_k = cast<int32>(base_coord(2));
       */
+      Assert(base_coord_i < i + 4);
+      Assert(base_coord_i - i >= 0);
+      Assert(i % 4 == 0);
+      Assert(j % 4 == 0);
+      Assert(k % 4 == 0);
 
       for (int p = 0; p < 3; p++) {
         for (int q = 0; q < 3; q++) {

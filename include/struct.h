@@ -172,6 +172,7 @@ __global__ void zero_tails(SNodeAllocator<t> *allocator) {
 
 template <typename T>
 __host__ void SNodeAllocator<T>::clear(int flags) {
+  cudaDeviceSynchronize();
   int blockDim = 256;  // least_pot_bound(sizeof(data_type) / sizeof(int));
 #if defined(TL_DEBUG)
   printf("tail    %d size %d blockDim %d\n", resident_tail, sizeof(data_type),

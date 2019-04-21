@@ -160,6 +160,8 @@ class GPUIRCodeGen : public IRVisitor {
     emit("}}");
 
     emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
+    // always sync here since CPU list gen needs the latest data structure
+    emit("cudaDeviceSynchronize();");
     emit("auto root = ({} *)context.buffers[0];",
          current_program->snode_root->node_type_name);
     emit("{{");
@@ -205,6 +207,7 @@ class GPUIRCodeGen : public IRVisitor {
       emit("cudaEventRecord(start);");
     }
     emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
+    emit("cudaDeviceSynchronize();");
     if (debug) {
       emit("cudaEventRecord(stop);");
       emit("cudaEventSynchronize(stop);");
@@ -249,11 +252,18 @@ class GPUIRCodeGen : public IRVisitor {
     emit("auto root = ({} *)context.buffers[0];",
          codegen->prog->snode_root->node_type_name);
 
-    emit("auto leaves = (SNodeMeta *)(context.leaves);",
+    emit(
+        "auto leaves = (SNodeMeta "
+        "*)(Managers::get_allocator<{}>()->resident_pool);",
+        leaf->parent->node_type_name);
+    emit("auto num_leaves = Managers::get_allocator<{}>()->resident_tail;",
          leaf->parent->node_type_name);
-    emit("auto num_leaves = context.num_leaves;");
-    emit("auto leaf_loop = blockIdx.x / {};", block_division);
-    emit("if (leaf_loop >= num_leaves || !leaves[leaf_loop].active) return;");
+    emit(
+        "for (int bid = blockIdx.x; bid < num_leaves * {}; bid += gridDim.x) "
+        "{{",
+        block_division);
+    emit("auto leaf_loop = bid / {};", block_division);
+    emit("if (leaf_loop >= num_leaves || !leaves[leaf_loop].active) continue;");
 
     emit("auto list_element = ({}::child_type *)leaves[leaf_loop].ptr;",
          leaf->parent->node_type_name);
@@ -264,7 +274,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("auto {}_cache = list_element->get{}();", leaf->node_type_name, chid,
          leaf->node_type_name);
     if (leaf->type == SNodeType::dynamic) {
-      emit("if (blockIdx.x % {} * {} >= {}_cache->get_n()) return;",
+      emit("if (bid % {} * {} >= {}_cache->get_n()) continue;",
            block_division, (1 << leaf->total_num_bits) / block_division,
            leaf->node_type_name);
     }
@@ -272,7 +282,7 @@ class GPUIRCodeGen : public IRVisitor {
       emit("auto {} = leaves[leaf_loop].indices[{}];",
            loopgen.index_name_global(leaf->parent, i), i);
     }
-    emit("auto {} = {} * (blockIdx.x % {}) + threadIdx.x;",
+    emit("auto {} = {} * (bid % {}) + threadIdx.x;",
          loopgen.loop_variable(leaf),
          (1 << leaf->total_num_bits) / block_division, block_division);
 
@@ -370,7 +380,8 @@ class GPUIRCodeGen : public IRVisitor {
       }
     }
 
-    emit("}}");
+    emit("}}");  // end for
+    emit("}}");  // end kernel
 
     emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
     emit("auto root = ({} *)context.buffers[0];",
@@ -387,16 +398,10 @@ class GPUIRCodeGen : public IRVisitor {
       }
     }
     emit("gpu_runtime_init();");
-    emit("context.num_leaves = Managers::get_allocator<{}>()->resident_tail;",
-         leaf->parent->node_type_name);
-
-    emit("context.leaves = Managers::get_allocator<{}>()->resident_pool;",
-         leaf->parent->node_type_name);
-
     emit(
-        "int gridDim = context.num_leaves * {}, blockDim = ({}::get_max_n()"
+        "int gridDim = 12800, blockDim = ({}::get_max_n()"
         "+ {} - 1) / {};",
-        block_division, leaf->node_type_name, block_division, block_division);
+        leaf->node_type_name, block_division, block_division);
     if (debug) {
       emit(
           R"(printf("kernel {} <<<%d, %d>>> ", gridDim, blockDim);)",

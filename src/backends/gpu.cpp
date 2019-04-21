@@ -317,6 +317,7 @@ class GPUIRCodeGen : public IRVisitor {
     };
 
     if (!for_stmt->scratch_opt.empty()) {
+      emit("__syncthreads();");
       scratch_pads = irpass::initialize_scratch_pad(for_stmt);
       for (auto &pad : scratch_pads->pads) {
         emit("__shared__ {}::val_type {}[{}];", pad.first->node_type_name,
@@ -640,7 +641,7 @@ class GPUIRCodeGen : public IRVisitor {
   void visit(StructForStmt *for_stmt) {
     // generate_loop_header(for_stmt->snode, for_stmt, true);
     TC_ASSERT_INFO(current_struct_for == nullptr,
-                   "Structu for cannot be nested.");
+                   "StructFor cannot be nested.");
     current_struct_for = for_stmt;
     for_stmt->body->accept(this);
     current_struct_for = nullptr;
@@ -826,7 +827,7 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(AssertStmt *stmt) {
-    emit("#if TL_DEBUG");
+    emit("#if defined(TL_DEBUG)");
     emit(R"(TC_ASSERT_INFO({}, "{}");)", stmt->val->raw_name(), stmt->text);
     emit("#endif");
   }

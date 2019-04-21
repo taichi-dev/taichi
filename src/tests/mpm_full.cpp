@@ -443,12 +443,12 @@ auto mpm3d = []() {
       auto base_coord_i = cast<int32>(base_coord(0));
       auto base_coord_j = cast<int32>(base_coord(1));
       auto base_coord_k = cast<int32>(base_coord(2));
+      */
       Assert(base_coord_i < i + 4);
       Assert(base_coord_i - i >= 0);
       Assert(i % 4 == 0);
       Assert(j % 4 == 0);
       Assert(k % 4 == 0);
-      */
 
       for (int p = 0; p < 3; p++) {
         for (int q = 0; q < 3; q++) {

@@ -39,7 +39,7 @@ auto mpm3d = []() {
   // Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
   auto material = MPMMaterial::sand;
-  constexpr bool highres = false;
+  constexpr bool highres = true;
   CoreState::set_trigger_gdb_when_crash(true);
 
   constexpr int n = highres ? 256 : 128;  // grid_resolution

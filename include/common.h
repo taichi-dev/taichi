@@ -74,6 +74,7 @@ __device__ __host__ void exit() {
 #endif
 }
 
+#if defined(TL_DEBUG)
 #define TC_ASSERT(x)                                        \
   if (!(x)) {                                               \
     printf("Assertion failed (Ln %d): %s\n", __LINE__, #x); \
@@ -85,6 +86,10 @@ __device__ __host__ void exit() {
     printf("Assertion failed (Ln %d): %s\n", __LINE__, t); \
     exit();                                                \
   }
+#else
+#define TC_ASSERT(x)
+#define TC_ASSERT_INFO(x, t)
+#endif
 
 #define TC_P(x)                                                          \
   std::cout << __FILE__ << "@" << __LINE__ << ": " << #x << " = " << (x) \

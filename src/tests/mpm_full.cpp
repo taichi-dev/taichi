@@ -34,7 +34,7 @@ void write_partio(std::vector<Vector3> positions,
 enum class MPMMaterial : int { fluid, jelly, snow, sand };
 
 auto mpm3d = []() {
-  bool benchmark_dragon = false;
+  bool benchmark_dragon = true;
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
@@ -542,6 +542,7 @@ auto mpm3d = []() {
     // gc
     grid_m.parent().parent().snode()->clear(1);
     TC_P((Time::get_time() - t) / 160 * 1000);
+    exit(0);
   };
 
   Dict cam_dict;

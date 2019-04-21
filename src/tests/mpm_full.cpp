@@ -31,60 +31,10 @@ void write_partio(std::vector<Vector3> positions,
   parts->release();
 }
 
-auto reset_grid_benchmark = []() {
-  Program prog(Arch::gpu);
-  prog.config.print_ir = true;
-
-  constexpr int n = 256;  // grid_resolution
-  constexpr int dim = 3;
-
-  auto f32 = DataType::f32;
-  int grid_block_size = 4;
-
-  Vector grid_v(f32, dim);
-  Global(grid_m, f32);
-
-  auto i = Index(0), j = Index(1), k = Index(2);
-
-  layout([&]() {
-    TC_ASSERT(n % grid_block_size == 0);
-    auto &block = root.dense({i, j, k}, n / grid_block_size);
-    constexpr bool block_soa = false;
-    if (block_soa) {
-      block.dense({i, j, k}, grid_block_size).place(grid_v(0));
-      block.dense({i, j, k}, grid_block_size).place(grid_v(1));
-      block.dense({i, j, k}, grid_block_size).place(grid_v(2));
-      block.dense({i, j, k}, grid_block_size).place(grid_m);
-    } else {
-      block.dense({i, j, k}, grid_block_size)
-          .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
-      //.place(grid_m);
-    }
-  });
-
-  TC_ASSERT(bit::is_power_of_two(n));
-
-  auto &reset_grid = kernel([&]() {
-    Declare(i);
-    Declare(j);
-    Declare(k);
-    For((i, j, k), grid_m, [&] {
-      grid_v(0)[i, j, k] = 0.0_f;
-      grid_v(1)[i, j, k] = 0.0_f;
-      grid_v(2)[i, j, k] = 0.0_f;
-      grid_m[i, j, k] = 0.0_f;
-    });
-  });
-
-  while (1)
-    TC_TIME(reset_grid());
-};
-TC_REGISTER_TASK(reset_grid_benchmark);
-
-enum class MPMMaterial : int { fluid, elastic, snow, sand };
+enum class MPMMaterial : int { fluid, jelly, snow, sand };
 
 auto mpm3d = []() {
-  bool benchmark_dragon = false;
+  bool benchmark_dragon = true;
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
@@ -249,8 +199,8 @@ auto mpm3d = []() {
       auto delta_gamma =
           Eval(epsilon_hat_norm +
                (fdim * lambda_0 + 2.0_f * mu_0) / (2.0_f * mu_0) * tr * alpha);
-      sigma_out = Eval(exp(epsilon - max(0.0_f, delta_gamma) / epsilon_hat_norm *
-                                         epsilon_hat));
+      sigma_out = Eval(exp(epsilon - max(0.0_f, delta_gamma) /
+                                         epsilon_hat_norm * epsilon_hat));
     });
 
     return sigma_out;
@@ -296,7 +246,7 @@ auto mpm3d = []() {
       Local(lambda) = lambda_0;
       if (material == MPMMaterial::fluid) {
         cauchy = (J - 1.0_f) * Matrix::identity(3) * E;
-      } else if (material == MPMMaterial::elastic ||
+      } else if (material == MPMMaterial::jelly ||
                  material == MPMMaterial::snow) {
         auto svd = sifakis_svd(F);
         auto R = std::get<0>(svd) * transposed(std::get<2>(svd));

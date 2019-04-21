@@ -1,6 +1,7 @@
 #include "../tlang.h"
 #include <taichi/testing.h>
 #include <numeric>
+#include <taichi/taichi>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -394,5 +395,55 @@ TC_TEST("dynamic_sort") {
     }
   }
 };
+
+auto reset_grid_benchmark = []() {
+  Program prog(Arch::gpu);
+  prog.config.print_ir = true;
+
+  constexpr int n = 256;  // grid_resolution
+  constexpr int dim = 3;
+
+  auto f32 = DataType::f32;
+  int grid_block_size = 4;
+
+  Vector grid_v(f32, dim);
+  Global(grid_m, f32);
+
+  auto i = Index(0), j = Index(1), k = Index(2);
+
+  layout([&]() {
+    TC_ASSERT(n % grid_block_size == 0);
+    auto &block = root.dense({i, j, k}, n / grid_block_size);
+    constexpr bool block_soa = false;
+    if (block_soa) {
+      block.dense({i, j, k}, grid_block_size).place(grid_v(0));
+      block.dense({i, j, k}, grid_block_size).place(grid_v(1));
+      block.dense({i, j, k}, grid_block_size).place(grid_v(2));
+      block.dense({i, j, k}, grid_block_size).place(grid_m);
+    } else {
+      block.dense({i, j, k}, grid_block_size)
+          .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
+      //.place(grid_m);
+    }
+  });
+
+  TC_ASSERT(bit::is_power_of_two(n));
+
+  auto &reset_grid = kernel([&]() {
+    Declare(i);
+    Declare(j);
+    Declare(k);
+    For((i, j, k), grid_m, [&] {
+      grid_v(0)[i, j, k] = 0.0_f;
+      grid_v(1)[i, j, k] = 0.0_f;
+      grid_v(2)[i, j, k] = 0.0_f;
+      grid_m[i, j, k] = 0.0_f;
+    });
+  });
+
+  while (1)
+    TC_TIME(reset_grid());
+};
+TC_REGISTER_TASK(reset_grid_benchmark);
 
 TLANG_NAMESPACE_END

@@ -150,9 +150,9 @@ static_assert(sizeof(unsigned long long) == sizeof(unsigned long), "");
 
 template <typename T>
 __global__ void recycle_all_gpu(SNodeAllocator<T> *allocator, int flags) {
-  auto t = threadIdx.x;
   auto num_blocks = allocator->resident_tail;
   for (int b = blockIdx.x; b < num_blocks; b += gridDim.x) {
+    auto t = threadIdx.x;
     /*
     if (allocator->resident_pool[b].active)
       return;  // still active, do nothing
@@ -197,7 +197,6 @@ __host__ void SNodeAllocator<T>::backup_tails() {
 template <typename T>
 __host__ void SNodeAllocator<T>::clear(int flags) {
   int blockDim = 256;  // least_pot_bound(sizeof(data_type) / sizeof(int));
-  cudaDeviceSynchronize();
 #if defined(TL_DEBUG)
   cudaDeviceSynchronize();
   printf("tail    %d size %d blockDim %d\n", resident_tail, sizeof(data_type),
@@ -211,8 +210,7 @@ __host__ void SNodeAllocator<T>::clear(int flags) {
   cudaEventCreate(&stop);
   cudaEventRecord(start);
 #endif
-  if (resident_tail > 0)
-  recycle_all_gpu<<<128, blockDim>>>(this, flags);
+  recycle_all_gpu<<<2048, blockDim>>>(this, flags);
 #if defined(TL_DEBUG)
   cudaEventRecord(stop);
   cudaEventSynchronize(stop);

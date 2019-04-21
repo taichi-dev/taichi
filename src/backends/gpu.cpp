@@ -438,6 +438,7 @@ class GPUIRCodeGen : public IRVisitor {
     current_struct_for = nullptr;
   }
 
+  // For cases where the kernel body has only a for loop
   void generate_pure_loop(Block *stmt_list) {
     auto &for_stmt_ = stmt_list->statements.back();
     if (for_stmt_->is<RangeForStmt>()) {
@@ -493,15 +494,17 @@ class GPUIRCodeGen : public IRVisitor {
       }
     }
 
-    emit("cudaDeviceSynchronize();\n");
-    emit(
-        R"(if (allocator()->gpu_error_code) {{printf("GPU Assertion Error\n"); exit(-1);}})");
-    emit("auto err = cudaGetLastError();");
-    emit("if (err) {{");
-    emit(
-        "printf(\"CUDA Error (File %s Ln %d): %s\\n\", "
-        "__FILE__, __LINE__, cudaGetErrorString(err));");
-    emit("exit(-1);}}");
+    if (debug) {
+      emit("cudaDeviceSynchronize();\n");
+      emit(
+          R"(if (allocator()->gpu_error_code) {{printf("GPU Assertion Error\n"); exit(-1);}})");
+      emit("auto err = cudaGetLastError();");
+      emit("if (err) {{");
+      emit(
+          "printf(\"CUDA Error (File %s Ln %d): %s\\n\", "
+          "__FILE__, __LINE__, cudaGetErrorString(err));");
+      emit("exit(-1);}}");
+    }
     emit("}}\n");
   }
 

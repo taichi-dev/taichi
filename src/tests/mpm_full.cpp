@@ -526,11 +526,12 @@ auto mpm3d = []() {
 
   auto simulate_frame = [&]() {
     auto t = Time::get_time();
-    for (int t = 0; t < 160; t++) {
+    for (int f = 0; f < 160; f++) {
+      auto t = Time::get_time();
       TC_PROFILE("p2g", p2g());
       TC_PROFILE("grid_op", grid_op());
       TC_PROFILE("g2p", g2p());
-      // TC_PROFILE("reset grid", reset_grid());
+      TC_INFO("Substep time {} ms", (Time::get_time() - t) * 1000);
     }
     // gc
     grid_m.parent().parent().snode()->clear(1);

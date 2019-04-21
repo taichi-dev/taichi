@@ -26,37 +26,13 @@ class Program {
     Program &program;
     FunctionType compiled;
     std::string name;
-
-    Kernel(Program &program, std::function<void()> func, std::string name = "")
-        : program(program), name(name) {
-      compiled = nullptr;
-      benchmarking = false;
-      context = std::make_unique<FrontendContext>();
-      ir_holder = context->get_root();
-      ir = ir_holder.get();
-
-      program.current_kernel = this;
-      program.start_function_definition(this);
-      func();
-      program.end_function_definition();
-      program.current_kernel = nullptr;
-    }
-
-    void compile() {
-      program.current_kernel = this;
-      compiled = program.compile(*this);
-      program.current_kernel = nullptr;
-    }
-
-    void operator()() {
-      if (!compiled)
-        compile();
-      auto c = program.get_context();
-      compiled(c);
-      program.sync = false;
-    }
-
     bool benchmarking;
+
+    Kernel(Program &program, std::function<void()> func, std::string name = "");
+
+    void compile();
+
+    void operator()();
   };
 
   Kernel *current_kernel;
@@ -64,7 +40,7 @@ class Program {
   SNode *snode_root;
   void *data_structure;
   CompileConfig config;
-  bool sync; // device/host synchronized?
+  bool sync;  // device/host synchronized?
 
   std::vector<std::unique_ptr<Kernel>> functions;
   int index_counter;

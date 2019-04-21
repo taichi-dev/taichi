@@ -164,6 +164,12 @@ __global__ void recycle_all_gpu(SNodeAllocator<T> *allocator, int flags) {
   */
 }
 
+template <typename t>
+__global__ void zero_tails(SNodeAllocator<t> *allocator) {
+  allocator->resident_tail = 0;
+  allocator->recycle_tail = 0;
+}
+
 template <typename T>
 __host__ void SNodeAllocator<T>::clear(int flags) {
   int blockDim = 256;  // least_pot_bound(sizeof(data_type) / sizeof(int));
@@ -189,8 +195,8 @@ __host__ void SNodeAllocator<T>::clear(int flags) {
     std::cout << "device  " << milliseconds << " ms" << std::endl;
 #endif
   }
-  cudaDeviceSynchronize();
 #if defined(TL_DEBUG)
+  cudaDeviceSynchronize();
   auto err = cudaGetLastError();
   if (err) {
     printf("CUDA Error (File %s Ln %d): %s\n", __FILE__, __LINE__,
@@ -199,8 +205,7 @@ __host__ void SNodeAllocator<T>::clear(int flags) {
   }
 #endif
   if (flags) {
-    resident_tail = 0;
-    recycle_tail = 0;
+    zero_tails<<<1, 1>>>(this);
   }
 }
 #endif

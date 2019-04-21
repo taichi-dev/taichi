@@ -274,9 +274,8 @@ class GPUIRCodeGen : public IRVisitor {
     emit("auto {}_cache = list_element->get{}();", leaf->node_type_name, chid,
          leaf->node_type_name);
     if (leaf->type == SNodeType::dynamic) {
-      emit("if (bid % {} * {} >= {}_cache->get_n()) continue;",
-           block_division, (1 << leaf->total_num_bits) / block_division,
-           leaf->node_type_name);
+      emit("if (bid % {} * {} >= {}_cache->get_n()) continue;", block_division,
+           (1 << leaf->total_num_bits) / block_division, leaf->node_type_name);
     }
     for (int i = 0; i < max_num_indices; i++) {
       emit("auto {} = leaves[leaf_loop].indices[{}];",

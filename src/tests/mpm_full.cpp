@@ -34,12 +34,12 @@ void write_partio(std::vector<Vector3> positions,
 enum class MPMMaterial : int { fluid, jelly, snow, sand };
 
 auto mpm3d = []() {
-  bool benchmark_dragon = true;
+  bool benchmark_dragon = false;
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
   auto material = MPMMaterial::sand;
-  constexpr bool highres = true;
+  constexpr bool highres = false;
   CoreState::set_trigger_gdb_when_crash(true);
 
   constexpr int n = highres ? 256 : 128;  // grid_resolution

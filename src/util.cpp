@@ -255,7 +255,7 @@ std::string CompileConfig::compiler_config() {
         extra_flags);
   } else {
     cmd = fmt::format(
-        "nvcc -std=c++14 -shared {} -Xcompiler \"-fPIC\" --use_fast_math "
+        "nvcc -lineinfo -std=c++14 -shared {} -Xcompiler \"-fPIC\" --use_fast_math "
         "-Xptxas -O3,-v "
         "--ptxas-options=-allow-expensive-optimizations=true,-O3,-v -I "
         "{}/include -ccbin {} "

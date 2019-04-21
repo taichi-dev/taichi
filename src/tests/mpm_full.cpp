@@ -411,6 +411,8 @@ auto mpm3d = []() {
     For((i, j, k, p_ptr), l, [&] {
       auto p = Eval(l[i, j, k, p_ptr]);
       // For(p, particle_x(0), [&] {
+      Assert(p >= 0);
+      Assert(p < n_particles);
       auto x = particle_x[p];
       auto v = Vector(dim);
       Mutable(v, DataType::f32);
@@ -446,6 +448,10 @@ auto mpm3d = []() {
       */
       Assert(base_coord_i < i + 4);
       Assert(base_coord_i - i >= 0);
+      Assert(base_coord_j < j + 4);
+      Assert(base_coord_j - j >= 0);
+      Assert(base_coord_k < k + 4);
+      Assert(base_coord_k - k >= 0);
       Assert(i % 4 == 0);
       Assert(j % 4 == 0);
       Assert(k % 4 == 0);

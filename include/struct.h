@@ -68,6 +68,10 @@ struct SNodeAllocator {
   size_t resident_tail;
   size_t recycle_tail;
 
+  // backups that will not change during a single kernel execution
+  size_t resident_tail_const;
+  size_t recycle_tail_const;
+
   SNodeAllocator() {
     if (T::has_null)
       data_pool = (data_type *)allocate(sizeof(data_type) * pool_size,
@@ -94,6 +98,7 @@ struct SNodeAllocator {
     TC_ASSERT(data_pool != nullptr);
     TC_ASSERT(resident_pool != nullptr);
     auto id = atomic_add(&resident_tail, 1UL);
+    TC_ASSERT(id < pool_size);
     SNodeMeta &meta = resident_pool[id];
     meta.active = true;
     meta.ptr = data_pool + id;
@@ -127,6 +132,8 @@ struct SNodeAllocator {
     stat.num_resident_blocks = resident_tail;
     return stat;
   }
+
+  __host__ void backup_tails();
 };
 
 #if defined(TLANG_GPU)
@@ -172,6 +179,17 @@ template <typename t>
 __global__ void zero_tails(SNodeAllocator<t> *allocator) {
   allocator->resident_tail = 0;
   allocator->recycle_tail = 0;
+}
+
+template <typename T>
+__global__ void backup_tails_device(SNodeAllocator<T> *allocator) {
+  allocator->resident_tail_const = allocator->resident_tail;
+  allocator->recycle_tail_const = allocator->recycle_tail;
+}
+
+template <typename T>
+__host__ void SNodeAllocator<T>::backup_tails() {
+  backup_tails_device(this);
 }
 
 template <typename T>
@@ -381,6 +399,7 @@ struct pointer {
   TC_DEVICE TC_FORCE_INLINE child_type *look_up(
       int i) {  // i is flattened index
     // TC_ASSERT(i == 0);
+    TC_ASSERT(data != nullptr);
     return data;
   }
 
@@ -443,6 +462,8 @@ struct dynamic {
 #if defined(TL_HOST)
     // assuming serial
     n = std::max(n, i + 1);
+#else
+    TC_ASSERT(i < n);
 #endif
     return &data[i];
   }

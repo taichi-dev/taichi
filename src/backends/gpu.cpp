@@ -166,7 +166,8 @@ class GPUIRCodeGen : public IRVisitor {
          current_program->snode_root->node_type_name);
     emit("{{");
 
-    emit("auto t = get_time();");
+    if (debug)
+      emit("auto t = get_time();");
     loopgen.loop_gen_leaves(for_stmt, leaf);
 
     std::string vars;
@@ -256,8 +257,9 @@ class GPUIRCodeGen : public IRVisitor {
         "auto leaves = (SNodeMeta "
         "*)(Managers::get_allocator<{}>()->resident_pool);",
         leaf->parent->node_type_name);
-    emit("auto num_leaves = Managers::get_allocator<{}>()->resident_tail_const;",
-         leaf->parent->node_type_name);
+    emit(
+        "auto num_leaves = Managers::get_allocator<{}>()->resident_tail_const;",
+        leaf->parent->node_type_name);
     emit(
         "for (int bid = blockIdx.x; bid < num_leaves * {}; bid += gridDim.x) "
         "{{",
@@ -388,7 +390,8 @@ class GPUIRCodeGen : public IRVisitor {
          current_program->snode_root->node_type_name);
     emit("{{");
 
-    emit("auto t = get_time();");
+    if (debug)
+      emit("auto t = get_time();");
 
     std::string vars;
     for (int i = 0; i < for_stmt->loop_vars.size(); i++) {
@@ -439,8 +442,6 @@ class GPUIRCodeGen : public IRVisitor {
         emit("}}");
       }
     }
-
-    emit("context.leaves = nullptr;");
     emit("}}");
     current_struct_for = nullptr;
   }

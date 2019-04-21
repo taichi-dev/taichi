@@ -146,33 +146,35 @@ inline constexpr std::size_t least_pot_bound(std::size_t v) {
   return ret;
 }
 
+static_assert(sizeof(unsigned long long) == sizeof(unsigned long), "");
+
 template <typename T>
 __global__ void recycle_all_gpu(SNodeAllocator<T> *allocator, int flags) {
-  auto b = blockIdx.x;
   auto t = threadIdx.x;
-  /*
-  if (allocator->resident_pool[b].active)
-    return;  // still active, do nothing
-  */
-  // zero-fill
-  auto &meta = allocator->resident_pool[b];
-  if (t == 0 && flags)
-    *(meta.snode_ptr) = nullptr;
-  auto ptr = (int *)(meta.ptr);
-  while (t * sizeof(int) < sizeof(T::child_type)) {
-    ptr[t] = 0;
-    t += blockDim.x;
-  }
+  auto num_blocks = allocator->resident_tail;
+  for (int b = blockIdx.x; b < num_blocks; b += gridDim.x) {
+    /*
+    if (allocator->resident_pool[b].active)
+      return;  // still active, do nothing
+    */
+    // zero-fill
+    auto &meta = allocator->resident_pool[b];
+    if (t == 0 && flags)
+      *(meta.snode_ptr) = nullptr;
+    auto ptr = (int *)(meta.ptr);
+    while (t * sizeof(int) < sizeof(T::child_type)) {
+      ptr[t] = 0;
+      t += blockDim.x;
+    }
 
-  // push to recycle list
-  static_assert(sizeof(unsigned long long) == sizeof(unsigned long), "");
-
-  /*
-  if (t == 0) {
-    auto x = atomic_add(&allocator->recycle_tail, 1);
-    allocator->recycle_pool[x] = allocator->resident_pool[b];
+    /*
+    // push to recycle list
+    if (t == 0) {
+      auto x = atomic_add(&allocator->recycle_tail, 1);
+      allocator->recycle_pool[x] = allocator->resident_pool[b];
+    }
+    */
   }
-  */
 }
 
 template <typename t>
@@ -194,30 +196,31 @@ __host__ void SNodeAllocator<T>::backup_tails() {
 
 template <typename T>
 __host__ void SNodeAllocator<T>::clear(int flags) {
-  cudaDeviceSynchronize();
   int blockDim = 256;  // least_pot_bound(sizeof(data_type) / sizeof(int));
+  cudaDeviceSynchronize();
 #if defined(TL_DEBUG)
+  cudaDeviceSynchronize();
   printf("tail    %d size %d blockDim %d\n", resident_tail, sizeof(data_type),
          blockDim);
 #endif
-  if (resident_tail > 0) {
-    gpu_runtime_init();
+  gpu_runtime_init();
 #if defined(TL_DEBUG)
-    printf("gc ");
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start);
+  printf("gc ");
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+  cudaEventRecord(start);
 #endif
-    recycle_all_gpu<<<resident_tail, blockDim>>>(this, flags);
+  if (resident_tail > 0)
+  recycle_all_gpu<<<128, blockDim>>>(this, flags);
 #if defined(TL_DEBUG)
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
-    float milliseconds = 0;
-    cudaEventElapsedTime(&milliseconds, start, stop);
-    std::cout << "device  " << milliseconds << " ms" << std::endl;
+  cudaEventRecord(stop);
+  cudaEventSynchronize(stop);
+  float milliseconds = 0;
+  cudaEventElapsedTime(&milliseconds, start, stop);
+  std::cout << "device  " << milliseconds << " ms" << std::endl;
 #endif
-  }
+
 #if defined(TL_DEBUG)
   cudaDeviceSynchronize();
   auto err = cudaGetLastError();

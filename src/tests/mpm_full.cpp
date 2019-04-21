@@ -542,7 +542,6 @@ auto mpm3d = []() {
     // gc
     grid_m.parent().parent().snode()->clear(1);
     TC_P((Time::get_time() - t) / 160 * 1000);
-    exit(0);
   };
 
   Dict cam_dict;
@@ -564,7 +563,7 @@ auto mpm3d = []() {
   renderer->set_camera(cam);
 
   auto &canvas = gui.get_canvas();
-  for (int frame = 1;; frame++) {
+  for (int frame = 1; frame < 3; frame++) {
     simulate_frame();
     auto res = canvas.img.get_res();
     Array2D<Vector3> image(Vector2i(res), Vector3(1) - Vector3(0.0_f));

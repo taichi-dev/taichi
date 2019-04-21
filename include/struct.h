@@ -167,29 +167,37 @@ __global__ void recycle_all_gpu(SNodeAllocator<T> *allocator, int flags) {
 template <typename T>
 __host__ void SNodeAllocator<T>::clear(int flags) {
   int blockDim = 256;  // least_pot_bound(sizeof(data_type) / sizeof(int));
+#if defined(TL_DEBUG)
   printf("tail    %d size %d blockDim %d\n", resident_tail, sizeof(data_type),
          blockDim);
+#endif
   if (resident_tail > 0) {
     gpu_runtime_init();
+#if defined(TL_DEBUG)
     printf("gc ");
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     cudaEventRecord(start);
+#endif
     recycle_all_gpu<<<resident_tail, blockDim>>>(this, flags);
+#if defined(TL_DEBUG)
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
     std::cout << "device  " << milliseconds << " ms" << std::endl;
+#endif
   }
   cudaDeviceSynchronize();
+#if defined(TL_DEBUG)
   auto err = cudaGetLastError();
   if (err) {
     printf("CUDA Error (File %s Ln %d): %s\n", __FILE__, __LINE__,
            cudaGetErrorString(err));
     exit(-1);
   }
+#endif
   if (flags) {
     resident_tail = 0;
     recycle_tail = 0;
@@ -422,7 +430,7 @@ struct dynamic {
 
   TC_DEVICE TC_FORCE_INLINE child_type *look_up(
       int i) {  // i is flattened index
-#if defined(TLANG_HOST)
+#if defined(TL_HOST)
     // assuming serial
     n = std::max(n, i + 1);
 #endif
@@ -475,7 +483,7 @@ struct indirect {
   }
 
   TC_DEVICE TC_FORCE_INLINE int *look_up(int i) {  // i is flattened index
-#if defined(TLANG_HOST)
+#if defined(TL_HOST)
     n.store(std::max(n.load(), i + 1));
 #endif
     return &data[i];

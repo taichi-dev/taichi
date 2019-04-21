@@ -18,6 +18,7 @@ int default_simd_width(Arch arch);
 
 struct CompileConfig {
   Arch arch;
+  bool debug;
   int simd_width;
   int gcc_version;
   bool internal_optimization;

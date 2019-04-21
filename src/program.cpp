@@ -1,3 +1,4 @@
+#include <cuda_runtime.h>
 #include <taichi/common/task.h>
 #include "program.h"
 #include "snode.h"
@@ -30,6 +31,15 @@ void Program::materialize_layout() {
   scomp.run(root);
   layout_fn = scomp.get_source_path();
   data_structure = scomp.creator();
+}
+
+void Program::synchronize() {
+  if (!sync) {
+    if (config.arch == Arch::gpu) {
+      cudaDeviceSynchronize();
+    }
+    sync = true;
+  }
 }
 
 TLANG_NAMESPACE_END

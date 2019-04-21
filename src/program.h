@@ -53,6 +53,7 @@ class Program {
         compile();
       auto c = program.get_context();
       compiled(c);
+      program.sync = false;
     }
 
     bool benchmarking;
@@ -63,6 +64,7 @@ class Program {
   SNode *snode_root;
   void *data_structure;
   CompileConfig config;
+  bool sync; // device/host synchronized?
 
   std::vector<std::unique_ptr<Kernel>> functions;
   int index_counter;
@@ -83,7 +85,10 @@ class Program {
     current_kernel = nullptr;
     snode_root = nullptr;
     index_counter = 0;
+    sync = true;
   }
+
+  void synchronize();
 
   ~Program() {
     current_program = nullptr;

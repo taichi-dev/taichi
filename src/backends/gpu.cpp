@@ -11,10 +11,12 @@ class GPUIRCodeGen : public IRVisitor {
   GPUCodeGen *codegen;
   LoopGenerator loopgen;
   bool first_level = false;
+  bool debug;
 
   GPUIRCodeGen(GPUCodeGen *codegen) : codegen(codegen), loopgen(codegen) {
     current_struct_for = nullptr;
     current_scratch_pads = nullptr;
+    debug = codegen->prog->config.debug;
   }
 
   template <typename... Args>
@@ -187,36 +189,41 @@ class GPUIRCodeGen : public IRVisitor {
         "int gridDim = context.num_leaves * {}, blockDim = ({}::get_max_n()"
         "+ {} - 1) / {};",
         block_division, leaf->node_type_name, block_division, block_division);
-    emit("auto list_time = (get_time() - t) * 1000;");
-    emit(R"(printf("kernel {} <<<%d, %d>>> ", gridDim, blockDim);)",
-         codegen->func_name);
-    emit(R"(std::cout << "list gen: " << list_time << " ms  ";)");
-    emit("cudaEvent_t start, stop;");
+    if (debug) {
+      emit("auto list_time = (get_time() - t) * 1000;");
+      emit(R"(printf("kernel {} <<<%d, %d>>> ", gridDim, blockDim);)",
+           codegen->func_name);
+      emit(R"(std::cout << "list gen: " << list_time << " ms  ";)");
+      emit("cudaEvent_t start, stop;");
 
-    if (current_program->get_current_kernel().benchmarking) {
-      emit("while(1) {{");
+      if (current_program->get_current_kernel().benchmarking) {
+        emit("while(1) {{");
+      }
+
+      emit("cudaEventCreate(&start);");
+      emit("cudaEventCreate(&stop);");
+      emit("cudaEventRecord(start);");
     }
-
-    emit("cudaEventCreate(&start);");
-    emit("cudaEventCreate(&stop);");
-    emit("cudaEventRecord(start);");
     emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
-    emit("cudaEventRecord(stop);");
-    emit("cudaEventSynchronize(stop);");
+    if (debug) {
+      emit("cudaEventRecord(stop);");
+      emit("cudaEventSynchronize(stop);");
 
-    emit("float milliseconds = 0;");
-    emit("cudaEventElapsedTime(&milliseconds, start, stop);");
-    emit("std::cout << \"device  \" << milliseconds << \" ms\" << std::endl;");
-
-    if (current_program->current_kernel->benchmarking) {
-      emit("cudaDeviceSynchronize();\n");
-      emit("auto err = cudaGetLastError();");
-      emit("if (err) {{");
+      emit("float milliseconds = 0;");
+      emit("cudaEventElapsedTime(&milliseconds, start, stop);");
       emit(
-          "printf(\"CUDA Error (File %s Ln %d): %s\\n\", "
-          "__FILE__, __LINE__, cudaGetErrorString(err));");
-      emit("exit(-1);}}");
-      emit("}}");
+          "std::cout << \"device  \" << milliseconds << \" ms\" << std::endl;");
+
+      if (current_program->current_kernel->benchmarking) {
+        emit("cudaDeviceSynchronize();\n");
+        emit("auto err = cudaGetLastError();");
+        emit("if (err) {{");
+        emit(
+            "printf(\"CUDA Error (File %s Ln %d): %s\\n\", "
+            "__FILE__, __LINE__, cudaGetErrorString(err));");
+        emit("exit(-1);}}");
+        emit("}}");
+      }
     }
 
     emit("cudaFree(context.leaves); context.leaves = nullptr;");
@@ -390,36 +397,40 @@ class GPUIRCodeGen : public IRVisitor {
         "int gridDim = context.num_leaves * {}, blockDim = ({}::get_max_n()"
         "+ {} - 1) / {};",
         block_division, leaf->node_type_name, block_division, block_division);
-    emit(
-        R"(printf("kernel {} <<<%d, %d>>> ", gridDim, blockDim);)",
-        codegen->func_name);
-
-    emit("cudaEvent_t start, stop;");
-
-    if (current_program->get_current_kernel().benchmarking) {
-      emit("while(1) {{");
-    }
-
-    emit("cudaEventCreate(&start);");
-    emit("cudaEventCreate(&stop);");
-    emit("cudaEventRecord(start);");
-    emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
-    emit("cudaEventRecord(stop);");
-    emit("cudaEventSynchronize(stop);");
-
-    emit("float milliseconds = 0;");
-    emit("cudaEventElapsedTime(&milliseconds, start, stop);");
-    emit(R"(std::cout << "     device only : " << milliseconds << " ms\n";)");
-
-    if (current_program->current_kernel->benchmarking) {
-      emit("cudaDeviceSynchronize();\n");
-      emit("auto err = cudaGetLastError();");
-      emit("if (err) {{");
+    if (debug) {
       emit(
-          "printf(\"CUDA Error (File %s Ln %d): %s\\n\", "
-          "__FILE__, __LINE__, cudaGetErrorString(err));");
-      emit("exit(-1);}}");
-      emit("}}");
+          R"(printf("kernel {} <<<%d, %d>>> ", gridDim, blockDim);)",
+          codegen->func_name);
+
+      emit("cudaEvent_t start, stop;");
+
+      if (current_program->get_current_kernel().benchmarking) {
+        emit("while(1) {{");
+      }
+
+      emit("cudaEventCreate(&start);");
+      emit("cudaEventCreate(&stop);");
+      emit("cudaEventRecord(start);");
+    }
+    emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
+    if (debug) {
+      emit("cudaEventRecord(stop);");
+      emit("cudaEventSynchronize(stop);");
+
+      emit("float milliseconds = 0;");
+      emit("cudaEventElapsedTime(&milliseconds, start, stop);");
+      emit(R"(std::cout << "     device only : " << milliseconds << " ms\n";)");
+
+      if (current_program->current_kernel->benchmarking) {
+        emit("cudaDeviceSynchronize();\n");
+        emit("auto err = cudaGetLastError();");
+        emit("if (err) {{");
+        emit(
+            "printf(\"CUDA Error (File %s Ln %d): %s\\n\", "
+            "__FILE__, __LINE__, cudaGetErrorString(err));");
+        emit("exit(-1);}}");
+        emit("}}");
+      }
     }
 
     emit("context.leaves = nullptr;");
@@ -802,11 +813,14 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(RangeAssumptionStmt *stmt) {
+    // TODO: ASSERT
     emit("const auto {} = {};", stmt->raw_name(), stmt->input->raw_name());
   }
 
   void visit(AssertStmt *stmt) {
+    emit("#if TL_DEBUG");
     emit(R"(TC_ASSERT_INFO({}, "{}");)", stmt->val->raw_name(), stmt->text);
+    emit("#endif");
   }
 };
 

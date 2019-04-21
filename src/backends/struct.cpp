@@ -11,7 +11,10 @@ StructCompiler::StructCompiler() : CodeGenBase() {
     suffix = "cpp";
   else
     suffix = "cu";
-  emit("#define TLANG_HOST");
+  if (get_current_program().config.debug) {
+    emit("#define TL_DEBUG");
+  }
+  emit("#define TL_HOST");
   emit("#include <kernel.h>");
   emit(" namespace taichi {{");
   emit(" namespace Tlang {{");

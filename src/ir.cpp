@@ -206,6 +206,7 @@ std::unique_ptr<FrontendContext> context;
 
 void *Expr::evaluate_addr(int i, int j, int k, int l) {
   auto snode = this->cast<GlobalVariableExpression>()->snode;
+  get_current_program().synchronize();
   return snode->evaluate(get_current_program().data_structure, i, j, k, l);
 }
 

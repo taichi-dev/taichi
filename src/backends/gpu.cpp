@@ -256,7 +256,7 @@ class GPUIRCodeGen : public IRVisitor {
         "auto leaves = (SNodeMeta "
         "*)(Managers::get_allocator<{}>()->resident_pool);",
         leaf->parent->node_type_name);
-    emit("auto num_leaves = Managers::get_allocator<{}>()->resident_tail;",
+    emit("auto num_leaves = Managers::get_allocator<{}>()->resident_tail_const;",
          leaf->parent->node_type_name);
     emit(
         "for (int bid = blockIdx.x; bid < num_leaves * {}; bid += gridDim.x) "
@@ -398,6 +398,8 @@ class GPUIRCodeGen : public IRVisitor {
       }
     }
     emit("gpu_runtime_init();");
+    emit("Managers::get_allocator<{}>()->backup_tails();",
+         leaf->parent->node_type_name);
     emit(
         "int gridDim = 128000, blockDim = ({}::get_max_n()"
         "+ {} - 1) / {};",

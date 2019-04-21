@@ -189,7 +189,7 @@ __global__ void backup_tails_device(SNodeAllocator<T> *allocator) {
 
 template <typename T>
 __host__ void SNodeAllocator<T>::backup_tails() {
-  backup_tails_device(this);
+  backup_tails_device<T><<<1, 1>>>(this);
 }
 
 template <typename T>

@@ -51,7 +51,7 @@ def plot(fn):
   plt.ylim(0, max(M) * 1.2)
   plt.show()
 
-def main():
+def main(debug=False):
   lines = []
   print()
   lines.append(u'{:^43}'.format(u' '.join([u'\u262f'] * 8)))
@@ -65,6 +65,8 @@ def main():
   print(u'\n'.join(lines))
   print()
   import taichi as tc
+  
+  tc.core.set_core_debug(debug)
 
   argc = len(sys.argv)
   if argc == 1 or sys.argv[1] == 'help':

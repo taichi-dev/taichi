@@ -1,7 +1,8 @@
 #pragma once
+
 #include "common.h"
 #include "arithmetics.h"
-#if defined(TL_GPU)
+#if defined(TLANG_GPU)
 #include <cuda_runtime.h>
 #endif
 
@@ -115,7 +116,10 @@ struct SNodeAllocator {
 
   __host__ void clear(int flags);
 
-  AllocatorStat get_stat() {
+  __host__ AllocatorStat get_stat() {
+#if defined(TLANG_GPU)
+    cudaDeviceSynchronize();
+#endif
     AllocatorStat stat;
     stat.snode_id = SNodeID<T>::value;
     stat.pool_size = pool_size;

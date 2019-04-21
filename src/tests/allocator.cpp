@@ -1,3 +1,4 @@
+#include <cuda_runtime.h>
 #include "../tlang.h"
 #include <taichi/testing.h>
 #include <numeric>

@@ -399,7 +399,7 @@ class GPUIRCodeGen : public IRVisitor {
     }
     emit("gpu_runtime_init();");
     emit(
-        "int gridDim = 12800, blockDim = ({}::get_max_n()"
+        "int gridDim = 128000, blockDim = ({}::get_max_n()"
         "+ {} - 1) / {};",
         leaf->node_type_name, block_division, block_division);
     if (debug) {

@@ -441,11 +441,6 @@ auto mpm3d = []() {
       auto base_coord_k =
           Eval(AssumeInRange(cast<int32>(base_coord(2)), k, low, high));
 
-      /*
-      auto base_coord_i = cast<int32>(base_coord(0));
-      auto base_coord_j = cast<int32>(base_coord(1));
-      auto base_coord_k = cast<int32>(base_coord(2));
-      */
       Assert(base_coord_i < i + 4);
       Assert(base_coord_i - i >= 0);
       Assert(base_coord_j < j + 4);
@@ -516,16 +511,7 @@ auto mpm3d = []() {
 
   Vector2i cam_res(1280, 720);
 
-  // int scale = 128 * 6 / n;
-  // GUI gui("MPM", n * scale + 200, n * scale);
   GUI gui("MPM", cam_res);
-  // int angle = 0;
-  // int gravity_x_slider = 0;
-  /*
-  gui.button("Restart", reset)
-      .slider("Camera", angle, 0, 360, 1)
-      .slider("Gravity Dir", gravity_x_slider, -100, 100);
-      */
 
   auto renderer = create_instance_unique<ParticleRenderer>("shadow_map");
   auto radius = 1.0_f;
@@ -563,7 +549,7 @@ auto mpm3d = []() {
   renderer->set_camera(cam);
 
   auto &canvas = gui.get_canvas();
-  for (int frame = 1; frame < 3; frame++) {
+  for (int frame = 1;; frame++) {
     simulate_frame();
     auto res = canvas.img.get_res();
     Array2D<Vector3> image(Vector2i(res), Vector3(1) - Vector3(0.0_f));

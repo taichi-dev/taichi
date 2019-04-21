@@ -66,6 +66,9 @@ std::string CodeGenBase::get_source_name() {
 
 void CodeGenBase::generate_binary(std::string extra_flags) {
   write_source();
+  auto format_ret =
+      std::system(fmt::format("clang-format -i {}", get_source_path()).c_str());
+  trash(format_ret);
   auto pp_fn = get_source_path() + ".i";
   auto preprocess_cmd = get_current_program().config.preprocess_cmd(
       get_source_path(), pp_fn, extra_flags);
@@ -83,12 +86,11 @@ void CodeGenBase::generate_binary(std::string extra_flags) {
     std::system(
         fmt::format("cp {} {}", cached_binary_fn, get_library_path()).c_str());
   } else {
+    /*
     trash(std::system(
-        fmt::format("cp {} {}_unformated", get_source_path(), get_source_path())
+        fmt::format("cp {} {}", get_source_path(), get_source_path())
             .c_str()));
-    auto format_ret = std::system(
-        fmt::format("clang-format -i {}", get_source_path()).c_str());
-    trash(format_ret);
+            */
     auto cmd = get_current_program().config.compile_cmd(
         get_source_path(), get_library_path(), extra_flags);
     auto compile_ret = std::system(cmd.c_str());
@@ -103,7 +105,7 @@ void CodeGenBase::generate_binary(std::string extra_flags) {
                       .c_str());
     }
   }
-  // disassemble();
+  std::system(fmt::format("rm {}", pp_fn).c_str());
 }
 
 TLANG_NAMESPACE_END

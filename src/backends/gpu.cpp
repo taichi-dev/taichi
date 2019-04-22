@@ -824,7 +824,12 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(RangeAssumptionStmt *stmt) {
-    // TODO: ASSERT
+    /*
+    emit("TC_ASSERT({} + {} <= {});", stmt->base->name(), stmt->low,
+         stmt->input->name());
+    emit("TC_ASSERT({} < {} + {});", stmt->input->name(), stmt->base->name(),
+         stmt->high);
+    */
     emit("const auto {} = {};", stmt->raw_name(), stmt->input->raw_name());
   }
 

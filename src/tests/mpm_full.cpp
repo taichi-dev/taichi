@@ -299,6 +299,16 @@ auto mpm3d = []() {
       auto base_coord_k =
           Eval(AssumeInRange(cast<int32>(base_coord(2)), k, low, high));
 
+      Assert(base_coord_i < i + 4);
+      Assert(base_coord_i - i >= 0);
+      Assert(base_coord_j < j + 4);
+      Assert(base_coord_j - j >= 0);
+      Assert(base_coord_k < k + 4);
+      Assert(base_coord_k - k >= 0);
+      Assert(i % 4 == 0);
+      Assert(j % 4 == 0);
+      Assert(k % 4 == 0);
+
       // scatter
       for (int a = 0; a < 3; a++) {
         for (int b = 0; b < 3; b++) {

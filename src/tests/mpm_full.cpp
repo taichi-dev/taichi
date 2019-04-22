@@ -162,8 +162,7 @@ auto mpm3d = []() {
           .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
     }
 
-    block.dynamic(p, pow<dim>(grid_block_size) * (benchmark_dragon ? 64 : 16))
-        .place(l);
+    block.dynamic(p, pow<dim>(grid_block_size) * 64).place(l);
 
     root.place(gravity_x);
   });
@@ -349,7 +348,7 @@ auto mpm3d = []() {
 
   auto p2g = [&] {
     TC_ASSERT(sorted);
-    // check_fluctuation();
+    check_fluctuation();
     grid_m.parent().parent().snode()->clear(0);
     sort();
     p2g_sorted();

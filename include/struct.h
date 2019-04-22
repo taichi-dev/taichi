@@ -424,6 +424,7 @@ struct pointer {
         if (warpId == leader && data == nullptr) {
           while (atomicCAS(&lock, 0, 1) == 1)
             ;
+          __threadfence();
 #endif
           if (data == nullptr) {
             auto meta = Managers::get_instance()
@@ -431,10 +432,10 @@ struct pointer {
                             ->get_allocator()
                             ->allocate_node(index);
             data = (child_type *)meta->ptr;
+            meta->snode_ptr = (void **)(&data);
 #if defined(__CUDA_ARCH__)
             __threadfence();
 #endif
-            meta->snode_ptr = (void **)(&data);
           }
 #if defined(__CUDA_ARCH__)
           atomicExch(&lock, 0);

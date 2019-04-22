@@ -111,15 +111,8 @@ TC_TEST("parallel_particle_sort") {
     auto &block = root.dense({i, j, k}, n / grid_block_size).pointer();
     constexpr bool block_soa = false;
 
-    if (block_soa) {
-      block.dense({i, j, k}, grid_block_size).place(grid_v(0));
-      block.dense({i, j, k}, grid_block_size).place(grid_v(1));
-      block.dense({i, j, k}, grid_block_size).place(grid_v(2));
-      block.dense({i, j, k}, grid_block_size).place(grid_m);
-    } else {
-      block.dense({i, j, k}, grid_block_size)
-          .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
-    }
+    block.dense({i, j, k}, grid_block_size)
+        .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
 
     block.dynamic(p, pow<dim>(grid_block_size) * 64).place(l);
 
@@ -140,21 +133,6 @@ TC_TEST("parallel_particle_sort") {
     });
   });
 
-  auto check_fluctuation = [&] {
-    int last_nb = -1;
-    while (1) {
-      grid_m.parent().parent().snode()->clear(1);
-      sort();
-      auto stat = grid_m.parent().parent().snode()->stat();
-      int nb = stat.num_resident_blocks;
-      TC_P(nb);
-      if (last_nb == -1) {
-        last_nb = nb;
-      } else {
-        TC_ASSERT(last_nb == nb);
-      }
-    }
-  };
 
   for (int i = 0; i < n_particles; i++) {
     for (int d = 0; d < dim; d++) {
@@ -162,7 +140,18 @@ TC_TEST("parallel_particle_sort") {
     }
   }
 
-  check_fluctuation();
+  int last_nb = -1;
+  for (int i = 0; i < 128; i++) {
+    grid_m.parent().parent().snode()->clear(1);
+    sort();
+    auto stat = grid_m.parent().parent().snode()->stat();
+    int nb = stat.num_resident_blocks;
+    if (last_nb == -1) {
+      last_nb = nb;
+    } else {
+      TC_CHECK(last_nb == nb);
+    }
+  }
 };
 
 TLANG_NAMESPACE_END

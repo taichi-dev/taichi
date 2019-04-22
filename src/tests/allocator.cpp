@@ -57,30 +57,18 @@ TC_TEST("parallel_particle_sort") {
 
   constexpr int n = highres ? 256 : 128;  // grid_resolution
   const real dt = 1e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
-  auto particle_mass = 1.0_f, vol = 1.0_f;
-  auto E = 1e4_f, nu = 0.3f;
-  real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
-
-  auto friction_angle = 45._f;
-  real sin_phi = std::sin(friction_angle / 180._f * real(3.141592653));
-  auto alpha = std::sqrt(2._f / 3._f) * 2._f * sin_phi / (3._f - sin_phi);
 
   constexpr int dim = 3;
 
   auto f32 = DataType::f32;
   int grid_block_size = 4;
-  int particle_block_size = 1;
 
-  Vector particle_x(f32, dim), particle_v(f32, dim);
-  Matrix particle_F(f32, dim, dim), particle_C(f32, dim, dim);
+  Vector particle_x(f32, dim);
   Global(l, i32);
-  Global(particle_J, f32);
   Global(gravity_x, f32);
 
   Vector grid_v(f32, dim);
   Global(grid_m, f32);
-
-  bool sorted = true;
 
   int max_n_particles = 1024 * 1024;
 
@@ -110,34 +98,14 @@ TC_TEST("parallel_particle_sort") {
       fork = &root.dynamic(p, max_n_particles);
     auto place = [&](Expr &expr) {
       if (SOA) {
-        if (particle_block_size == 1) {
-          root.dynamic(p, max_n_particles).place(expr);
-        } else {
-          TC_ASSERT(max_n_particles % particle_block_size == 0);
-          root.dense(p, max_n_particles / particle_block_size)
-              .dense(p, particle_block_size)
-              .place(expr);
-        }
+        root.dynamic(p, max_n_particles).place(expr);
       } else {
         fork->place(expr);
       }
     };
     for (int i = 0; i < dim; i++) {
-      for (int j = 0; j < dim; j++) {
-        place(particle_F(i, j));
-      }
-    }
-    for (int i = 0; i < dim; i++) {
-      for (int j = 0; j < dim; j++) {
-        place(particle_C(i, j));
-      }
-    }
-    for (int i = 0; i < dim; i++) {
       place(particle_x(i));
     }
-    for (int i = 0; i < dim; i++)
-      place(particle_v(i));
-    place(particle_J);
 
     TC_ASSERT(n % grid_block_size == 0);
     auto &block = root.dense({i, j, k}, n / grid_block_size).pointer();
@@ -187,16 +155,6 @@ TC_TEST("parallel_particle_sort") {
       }
     }
   };
-
-  auto block_id = [&](Vector3 x) {
-    auto xi = (x * inv_dx - Vector3(0.5f)).floor().template cast<int>() /
-              Vector3i(grid_block_size);
-    return xi.x * pow<2>(n / grid_block_size) + xi.y * n / grid_block_size +
-           xi.z;
-  };
-
-  std::sort(p_x.begin(), p_x.end(),
-            [&](Vector3 a, Vector3 b) { return block_id(a) < block_id(b); });
 
   for (int i = 0; i < n_particles; i++) {
     for (int d = 0; d < dim; d++) {

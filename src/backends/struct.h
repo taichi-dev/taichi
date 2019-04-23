@@ -10,6 +10,7 @@ class StructCompiler : public CodeGenBase {
   std::string root_type;
   int snode_count;
   void *(*creator)();
+  void (*profiler_print)();
 
   StructCompiler();
 

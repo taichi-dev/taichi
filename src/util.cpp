@@ -255,7 +255,8 @@ std::string CompileConfig::compiler_config() {
         extra_flags);
   } else {
     cmd = fmt::format(
-        "nvcc -lineinfo -std=c++14 -shared {} -Xcompiler \"-fPIC\" --use_fast_math "
+        "nvcc -lineinfo -std=c++14 -shared {} -Xcompiler \"-fPIC\" "
+        "--use_fast_math "
         "-Xptxas -O3,-v "
         "--ptxas-options=-allow-expensive-optimizations=true,-O3,-v -I "
         "{}/include -ccbin {} "
@@ -268,10 +269,13 @@ std::string CompileConfig::compiler_config() {
 
 std::string CompileConfig::preprocess_cmd(const std::string &input,
                                           const std::string &output,
-                                          const std::string &extra_flags) {
+                                          const std::string &extra_flags,
+                                          bool verbose) {
   std::string cmd = compiler_config();
-  std::string io =
-      fmt::format(" {} -E {} -o {} 2> /dev/null ", extra_flags, input, output);
+  std::string io = fmt::format(" {} -E {} -o {} ", extra_flags, input, output);
+  if (!verbose) {
+    io += " 2> /dev/null ";
+  }
   return cmd + io;
 }
 

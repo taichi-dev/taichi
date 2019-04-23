@@ -13,3 +13,4 @@ double get_time() {
 #include "context.h"
 #include "struct.h"
 #include "arithmetics.h"
+#include "gpu_profiler.h"

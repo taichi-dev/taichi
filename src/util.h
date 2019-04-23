@@ -40,7 +40,8 @@ struct CompileConfig {
 
   std::string preprocess_cmd(const std::string &input,
                              const std::string &output,
-                             const std::string &extra_flags);
+                             const std::string &extra_flags,
+                             bool verbose = false);
 
   std::string compile_cmd(const std::string &input,
                           const std::string &output,

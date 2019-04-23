@@ -72,7 +72,14 @@ void CodeGenBase::generate_binary(std::string extra_flags) {
   auto pp_fn = get_source_path() + ".i";
   auto preprocess_cmd = get_current_program().config.preprocess_cmd(
       get_source_path(), pp_fn, extra_flags);
-  std::system(preprocess_cmd.c_str());
+  auto ret = std::system(preprocess_cmd.c_str());
+  if (ret) {
+    std::system(
+        get_current_program()
+            .config.preprocess_cmd(get_source_path(), pp_fn, extra_flags, true)
+            .c_str());
+    TC_ERROR("Preprocessing failed.");
+  }
   std::ifstream ifs(pp_fn);
   TC_ASSERT(ifs);
   auto hash_input =

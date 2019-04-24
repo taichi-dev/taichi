@@ -421,7 +421,6 @@ class GPUIRCodeGen : public IRVisitor {
 
     TC_ASSERT(leaf->parent->type == SNodeType::pointer);
 
-    emit("cudaDeviceSynchronize();");
     emit("Managers::get_allocator<{}>()->reset_tails();", leaf->node_type_name);
 
     emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
@@ -431,12 +430,12 @@ class GPUIRCodeGen : public IRVisitor {
         "{}>>>(context);",
         codegen->func_name, leaf->parent->node_type_name, block_division);
     emit(R"(GPUProfiler::get_instance().stop();)");
-    emit("cudaDeviceSynchronize();");
-    emit(
-        R"(printf("task list %d\n", Managers::get_allocator<{}>()->resident_tail);)",
-        leaf->node_type_name);
 
     if (debug) {
+      emit("cudaDeviceSynchronize();");
+      emit(
+          R"(printf("task list %d\n", Managers::get_allocator<{}>()->resident_tail);)",
+          leaf->node_type_name);
       emit(
           R"(printf("kernel {} <<<%d, %d>>> ", gridDim, blockDim);)",
           codegen->func_name);

@@ -422,6 +422,9 @@ class GPUIRCodeGen : public IRVisitor {
         "{}>>>(context);",
         codegen->func_name, leaf->parent->node_type_name, block_division);
     emit("cudaDeviceSynchronize();");
+    emit(
+        R"(printf("task list %d\n", Managers::get_allocator<{}>()->resident_tail);)",
+        leaf->node_type_name);
 
     if (debug) {
       emit(

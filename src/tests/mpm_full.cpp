@@ -38,7 +38,7 @@ auto mpm3d = []() {
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
-  auto material = MPMMaterial::sand;
+  auto material = MPMMaterial::jelly;
   constexpr bool highres = true;
   CoreState::set_trigger_gdb_when_crash(true);
 
@@ -90,20 +90,20 @@ auto mpm3d = []() {
   } else {
     n_particles = max_n_particles / (highres ? 1 : 8);
     p_x.resize(n_particles);
-    /*
     for (int i = 0; i < n_particles; i++) {
       p_x[i].x = 0.4_f + rand() * 0.2_f;
       p_x[i].y = 0.15_f + rand() * 0.55_f;
       p_x[i].z = 0.4_f + rand() * 0.2_f;
     }
-    */
+    /*
     for (int i = 0; i < n_particles; i++) {
       Vector3 offset = Vector3::rand() - Vector3(0.5_f);
       while (offset.length() > 0.5f) {
         offset = Vector3::rand() - Vector3(0.5_f);
       }
-      p_x[i] = Vector3(0.5_f) + offset * 0.3f;
+      p_x[i] = Vector3(0.5_f) + offset * 0.25f;
     }
+    */
   }
 
   TC_ASSERT(n_particles <= max_n_particles);
@@ -526,6 +526,7 @@ auto mpm3d = []() {
   auto radius = 1.0_f;
 
   auto simulate_frame = [&]() {
+    grid_m.parent().parent().snode()->clear(1);
     auto t = Time::get_time();
     for (int f = 0; f < 160; f++) {
       TC_PROFILE("p2g", p2g());
@@ -533,14 +534,14 @@ auto mpm3d = []() {
       TC_PROFILE("g2p", g2p());
     }
     // gc
-    grid_m.parent().parent().snode()->clear(1);
     prog.profiler_print();
     TC_P((Time::get_time() - t) / 160 * 1000);
   };
 
+
   Dict cam_dict;
-  cam_dict.set("origin", Vector3(radius * 0.6f, radius * 0.2_f, radius * 0.6_f))
-      .set("look_at", Vector3(0, 0.0f, 0))
+  cam_dict.set("origin", Vector3(radius * 0.6f, radius * 0.3_f, radius * 0.6_f))
+      .set("look_at", Vector3(0, -0.2f, 0))
       .set("up", Vector3(0, 1, 0))
       .set("fov", 70)
       .set("res", cam_res);
@@ -577,6 +578,19 @@ auto mpm3d = []() {
     for (auto &ind : image.get_region()) {
       canvas.img[ind] = Vector4(image[ind]);
     }
+
+    auto stat = grid_m.parent().parent().snode()->stat();
+    for (int p = 0; p < stat.num_resident_blocks; p++) {
+      auto &meta = stat.resident_metas[p];
+      int x = meta.indices[0];
+      int y = meta.indices[1];
+      for (int i = 0; i < grid_block_size; i++) {
+        for (int j = 0; j < grid_block_size; j++) {
+          canvas.img[x + i][y + j] *= 0.9f;
+        }
+      }
+    }
+
     gui.update();
     auto render_dir = fmt::format("{}_rendered", "mpm");
     create_directories(render_dir);

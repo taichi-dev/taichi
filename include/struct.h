@@ -38,18 +38,6 @@ template <typename T>
 __host__ __device__ void get_corner_coord(const PhysicalIndexGroup &indices,
                                           PhysicalIndexGroup &corner);
 
-using size_t = std::size_t;
-
-struct SNodeMeta {
-  int indices[max_num_indices];
-  int active;
-  int start_loop;
-  int end_loop;
-  int _;
-  void **snode_ptr;
-  void *ptr;
-};
-
 /*
 static_assert(sizeof(std::uint64_t) == sizeof(unsigned long long), "");
 static_assert(sizeof(std::uint64_t) == sizeof(unsigned long), "");
@@ -134,6 +122,7 @@ struct SNodeAllocator {
     stat.pool_size = pool_size;
     stat.num_recycled_blocks = recycle_tail;
     stat.num_resident_blocks = resident_tail;
+    stat.resident_metas = resident_pool;
     return stat;
   }
 

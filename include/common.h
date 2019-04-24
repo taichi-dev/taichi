@@ -134,14 +134,29 @@ TC_FORCE_INLINE T rand() noexcept;
 
 TLANG_NAMESPACE_BEGIN
 
+using size_t = std::size_t;
+
+constexpr int max_num_indices = 4;
+
+struct SNodeMeta {
+  int indices[max_num_indices];
+  int active;
+  int start_loop;
+  int end_loop;
+  int _;
+  void **snode_ptr;
+  void *ptr;
+};
+
+
 struct AllocatorStat {
   int snode_id;
   size_t pool_size;
   size_t num_resident_blocks;
   size_t num_recycled_blocks;
+  SNodeMeta *resident_metas;
 };
 
-constexpr int max_num_indices = 4;
 constexpr int max_num_snodes = 1024;
 
 template <typename T, typename G>

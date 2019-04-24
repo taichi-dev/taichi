@@ -465,9 +465,6 @@ struct dynamic {
     // assuming serial
     n = std::max(n, i + 1);
 #else
-    if (i >= n) {
-      printf("err %d %d\n", i, n);
-    }
     TC_ASSERT(i < n);
 #endif
     return &data[i];

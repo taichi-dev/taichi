@@ -42,11 +42,12 @@ using size_t = std::size_t;
 
 struct SNodeMeta {
   int indices[max_num_indices];
-  void *ptr;
   int active;
-  void **snode_ptr;
   int start_loop;
   int end_loop;
+  int _;
+  void **snode_ptr;
+  void *ptr;
 };
 
 /*

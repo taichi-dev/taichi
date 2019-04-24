@@ -403,12 +403,26 @@ class GPUIRCodeGen : public IRVisitor {
       }
     }
     emit("gpu_runtime_init();");
+
     emit("Managers::get_allocator<{}>()->backup_tails();",
          leaf->parent->node_type_name);
     emit(
         "int gridDim = 12800, blockDim = ({}::get_max_n()"
         "+ {} - 1) / {};",
         leaf->node_type_name, block_division, block_division);
+
+    TC_ASSERT(leaf->parent->type == SNodeType::pointer);
+
+    emit("cudaDeviceSynchronize();");
+    emit("Managers::get_allocator<{}>()->resident_tail = 0;",
+         leaf->node_type_name);
+
+    emit(
+        "{}_kernel_list_gen<<<Managers::get_allocator<{}>()->resident_tail, "
+        "{}>>>(context);",
+        codegen->func_name, leaf->parent->node_type_name, block_division);
+    emit("cudaDeviceSynchronize();");
+
     if (debug) {
       emit(
           R"(printf("kernel {} <<<%d, %d>>> ", gridDim, blockDim);)",
@@ -467,8 +481,6 @@ class GPUIRCodeGen : public IRVisitor {
       }
     }
 
-    TC_P(path.size());
-
     TC_ASSERT(first_managed_ancestor);
 
     auto ancestor_allocator = fmt::format(
@@ -480,11 +492,8 @@ class GPUIRCodeGen : public IRVisitor {
     emit("");
 
     // kernel body starts
-    emit("__global__ void {}_kernel_listgen(Context context) {{",
+    emit("__global__ void {}_kernel_list_gen(Context context) {{",
          codegen->func_name);
-
-    emit("auto root = ({} *)context.buffers[0];",
-         codegen->prog->snode_root->node_type_name);
 
     // one block takes one ancestor meta
 
@@ -501,10 +510,19 @@ class GPUIRCodeGen : public IRVisitor {
         "auto num_leaves = Managers::get_allocator<{}>()->resident_tail_const;",
         path[0]->node_type_name);
 
-    loopgen.emit_load_from_context(path[0]);
-    loopgen.update_indices(path[0]);
+    emit("auto list_element = ({}::child_type *)leaves[leaf_loop].ptr;",
+         path[0]->node_type_name);
+    auto chid = path[0]->child_id(path[1]);
+    TC_ASSERT(chid != -1);
+    emit("auto {}_cache = list_element->get{}();", path[1]->node_type_name,
+         chid);
 
-    emit("auto {} = 0;", loopgen.loop_variable(path[0]));
+    for (int i = 0; i < max_num_indices; i++) {
+      emit("auto {} = leaves[leaf_loop].indices[{}];",
+           loopgen.index_name_global(path[1], i), i);
+    }
+
+    /*
     for (int i = 1; i < (int)path.size(); i++) {
       auto path_node = path[i];
       emit("auto {} = (subblock_id) & ((1 << {}) - 1);",
@@ -514,6 +532,7 @@ class GPUIRCodeGen : public IRVisitor {
       loopgen.single_loop_body_head(path_node);
       loopgen.update_indices(path_node);
     }
+    */
 
     // output
 
@@ -522,12 +541,14 @@ class GPUIRCodeGen : public IRVisitor {
     emit("int end_idx = (subblock_id + 1) * {};", block_size);
 
     if (snode->type == SNodeType::dynamic) {
-      emit("if (start_idx < {}_cache->get_n()) return;", snode->node_type_name);
+      emit("if (start_idx >= {}_cache->get_n()) return;",
+           snode->node_type_name);
       emit("end_idx = min(end_idx, {}_cache->get_n());", snode->node_type_name);
     }
 
     emit(
-        "int meta_id = atomicAdd((unsigned long long *)(&{}->resident_tail), 1ULL);",
+        "int meta_id = atomicAdd((unsigned long long *)(&{}->resident_tail), "
+        "1ULL);",
         leaf_allocator);
     emit("auto &meta = {}->resident_pool[meta_id];", leaf_allocator);
 

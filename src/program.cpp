@@ -39,10 +39,7 @@ void Program::Kernel::operator()() {
   if (!compiled)
     compile();
   auto c = program.get_context();
-  auto t = Time::get_time();
   compiled(c);
-  TC_P((Time::get_time() - t) * 1000);
-
   program.sync = false;
 }
 

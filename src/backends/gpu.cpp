@@ -404,7 +404,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("Managers::get_allocator<{}>()->backup_tails();",
          leaf->parent->node_type_name);
     emit(
-        "int gridDim = 128000, blockDim = ({}::get_max_n()"
+        "int gridDim = 12800, blockDim = ({}::get_max_n()"
         "+ {} - 1) / {};",
         leaf->node_type_name, block_division, block_division);
     if (debug) {

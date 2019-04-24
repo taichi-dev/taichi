@@ -528,14 +528,13 @@ auto mpm3d = []() {
   auto simulate_frame = [&]() {
     auto t = Time::get_time();
     for (int f = 0; f < 160; f++) {
-      auto t = Time::get_time();
       TC_PROFILE("p2g", p2g());
       TC_PROFILE("grid_op", grid_op());
       TC_PROFILE("g2p", g2p());
-      TC_INFO("Substep time {} ms", (Time::get_time() - t) * 1000);
     }
     // gc
     grid_m.parent().parent().snode()->clear(1);
+    prog.profiler_print();
     TC_P((Time::get_time() - t) / 160 * 1000);
   };
 
@@ -560,7 +559,6 @@ auto mpm3d = []() {
   auto &canvas = gui.get_canvas();
   for (int frame = 1;; frame++) {
     simulate_frame();
-    prog.profiler_print();
     auto res = canvas.img.get_res();
     Array2D<Vector3> image(Vector2i(res), Vector3(1) - Vector3(0.0_f));
     std::vector<RenderParticle> render_particles;

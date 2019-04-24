@@ -137,6 +137,8 @@ struct SNodeAllocator {
   }
 
   __host__ void backup_tails();
+
+  __host__ void reset_tails();
 };
 
 #if defined(TLANG_GPU)
@@ -195,6 +197,11 @@ __global__ void backup_tails_device(SNodeAllocator<T> *allocator) {
 template <typename T>
 __host__ void SNodeAllocator<T>::backup_tails() {
   backup_tails_device<T><<<1, 1>>>(this);
+}
+
+template <typename T>
+__host__ void SNodeAllocator<T>::reset_tails() {
+  zero_tails<T><<<1, 1>>>(this);
 }
 
 template <typename T>

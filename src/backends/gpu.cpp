@@ -414,7 +414,7 @@ class GPUIRCodeGen : public IRVisitor {
     TC_ASSERT(leaf->parent->type == SNodeType::pointer);
 
     emit("cudaDeviceSynchronize();");
-    emit("Managers::get_allocator<{}>()->resident_tail = 0;",
+    emit("Managers::get_allocator<{}>()->reset_tails();",
          leaf->node_type_name);
 
     emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)", codegen->func_name);

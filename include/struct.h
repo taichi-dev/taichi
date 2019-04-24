@@ -70,6 +70,7 @@ struct SNodeAllocator {
   data_type *data_pool;
   size_t resident_tail;
   size_t recycle_tail;
+  size_t execution_tail;
 
   // backups that will not change during a single kernel execution
   size_t resident_tail_const;
@@ -136,9 +137,12 @@ struct SNodeAllocator {
     return stat;
   }
 
+  // TODO: clean up
   __host__ void backup_tails();
 
   __host__ void reset_tails();
+
+  __host__ void reset_execution_tail();
 };
 
 #if defined(TLANG_GPU)
@@ -183,6 +187,11 @@ __global__ void recycle_all_gpu(SNodeAllocator<T> *allocator, int flags) {
 }
 
 template <typename t>
+__global__ void zero_execution_tail(SNodeAllocator<t> *allocator) {
+  allocator->execution_tail = 0;
+}
+
+template <typename t>
 __global__ void zero_tails(SNodeAllocator<t> *allocator) {
   allocator->resident_tail = 0;
   allocator->recycle_tail = 0;
@@ -197,6 +206,11 @@ __global__ void backup_tails_device(SNodeAllocator<T> *allocator) {
 template <typename T>
 __host__ void SNodeAllocator<T>::backup_tails() {
   backup_tails_device<T><<<1, 1>>>(this);
+}
+
+template <typename T>
+__host__ void SNodeAllocator<T>::reset_execution_tail() {
+  zero_execution_tail<T><<<1, 1>>>(this);
 }
 
 template <typename T>

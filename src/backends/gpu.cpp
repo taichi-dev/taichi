@@ -262,10 +262,19 @@ class GPUIRCodeGen : public IRVisitor {
     // TODO: use const tail
     emit("auto num_leaves = Managers::get_allocator<{}>()->resident_tail;",
          leaf->node_type_name);
+    emit("int bid = 0;");
+    emit("while (1) {{", block_division);
+    emit("__shared__ int bid_shared;");
+    emit("if (threadIdx.x == 0) {{ ");
     emit(
-        "for (int bid = blockIdx.x; bid < num_leaves; bid += gridDim.x) "
-        "{{",
-        block_division);
+        "bid_shared = atomicAdd((unsigned long long "
+        "*)(&Managers::get_allocator<{}>()->execution_tail), 1ULL);",
+        leaf->node_type_name);
+    emit("}}");
+
+    emit("__syncthreads();");
+    emit("bid = bid_shared;");
+    emit("if (bid >= num_leaves) break;");
     emit("auto leaf_loop = bid;");
 
     emit("auto list_element = ({} *)leaves[leaf_loop].ptr;",
@@ -334,8 +343,8 @@ class GPUIRCodeGen : public IRVisitor {
     }
 
     if (leaf->type == SNodeType::dynamic) {
-      emit("if ({} < leaves[leaf_loop].end_loop)",
-           loopgen.loop_variable(leaf), leaf->node_type_name);
+      emit("if ({} < leaves[leaf_loop].end_loop)", loopgen.loop_variable(leaf),
+           leaf->node_type_name);
     }
 
     emit("{{");
@@ -398,8 +407,10 @@ class GPUIRCodeGen : public IRVisitor {
 
     emit("Managers::get_allocator<{}>()->backup_tails();",
          leaf->parent->node_type_name);
+    emit("Managers::get_allocator<{}>()->reset_execution_tail();",
+         leaf->node_type_name);
     emit(
-        "int gridDim = 12800, blockDim = ({}::get_max_n()"
+        "int gridDim = 896, blockDim = ({}::get_max_n()"
         "+ {} - 1) / {};",
         leaf->node_type_name, block_division, block_division);
 
@@ -550,8 +561,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("auto &meta = {}->resident_pool[meta_id];", leaf_allocator);
 
     for (int i = 0; i < max_num_indices; i++)
-      emit("meta.indices[{}] = {};", i,
-           loopgen.index_name_global(snode, i));
+      emit("meta.indices[{}] = {};", i, loopgen.index_name_global(snode, i));
 
     emit("meta.ptr = {}_cache;", snode->node_type_name);
     emit("meta.start_loop = start_idx;");

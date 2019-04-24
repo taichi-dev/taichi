@@ -249,6 +249,8 @@ class GPUIRCodeGen : public IRVisitor {
       block_division = (1 << leaf->total_num_bits) / for_stmt->block_size;
     }
 
+    emit_list_gen_kernel(for_stmt);
+
     emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
     emit("auto root = ({} *)context.buffers[0];",
          codegen->prog->snode_root->node_type_name);
@@ -449,24 +451,33 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void emit_list_gen_kernel(StructForStmt *sfor) {
-    auto snode = sfor->snode;
+    auto snode = sfor->snode->parent;
+
+    auto block_size = sfor->block_size;
+    auto block_bits = bit::log2int(block_size);
 
     SNode *first_managed_ancestor = nullptr;
+    std::vector<SNode *> path;
 
     for (auto p = snode; p; p = p->parent) {
+      path.push_back(p);
       if (p->type == SNodeType::pointer) {
         first_managed_ancestor = p;
         break;
       }
     }
 
+    TC_P(path.size());
+
     TC_ASSERT(first_managed_ancestor);
 
     auto ancestor_allocator = fmt::format(
         "Managers::get<{}>()", first_managed_ancestor->node_type_name);
     auto leaf_allocator =
-        fmt::format("Managers::get<{}>()", snode->node_type_name);
-    emit("{}->reset_tails();", leaf_allocator);
+        fmt::format("Managers::get_allocator<{}>()", snode->node_type_name);
+    // emit("{}->reset_tails();", leaf_allocator);
+
+    emit("");
 
     // kernel body starts
     emit("__global__ void {}_kernel_listgen(Context context) {{",
@@ -477,11 +488,32 @@ class GPUIRCodeGen : public IRVisitor {
 
     // one block takes one ancestor meta
 
-    emit("int ancestor_mid = blockIdx.x;");
+    emit("int leaf_loop = blockIdx.x;");
     emit("int subblock_id = threadIdx.x;");
 
-    auto block_size = sfor->block_size;
-    auto block_bits = bit::log2int(block_size);
+    std::reverse(path.begin(), path.end());
+
+    emit(
+        "auto leaves = (SNodeMeta "
+        "*)(Managers::get_allocator<{}>()->resident_pool);",
+        path[0]->node_type_name);
+    emit(
+        "auto num_leaves = Managers::get_allocator<{}>()->resident_tail_const;",
+        path[0]->node_type_name);
+
+    loopgen.emit_load_from_context(path[0]);
+    loopgen.update_indices(path[0]);
+
+    emit("auto {} = 0;", loopgen.loop_variable(path[0]));
+    for (int i = 1; i < (int)path.size(); i++) {
+      auto path_node = path[i];
+      emit("auto {} = (subblock_id) & ((1 << {}) - 1);",
+           loopgen.loop_variable(
+               path_node),  // path_node->parent->total_bit_start,
+           path_node->parent->total_num_bits);
+      loopgen.single_loop_body_head(path_node);
+      loopgen.update_indices(path_node);
+    }
 
     // output
 
@@ -489,22 +521,28 @@ class GPUIRCodeGen : public IRVisitor {
     emit("int start_idx = subblock_id * {};", block_size);
     emit("int end_idx = (subblock_id + 1) * {};", block_size);
 
-    if (snode->parent->type == SNodeType::dynamic) {
-      emit("if (start_idx < {}_cache->get_n()) return;",
-           snode->parent->node_type_name);
-      emit("end_idx = min(end_idx, {}_cache->get_n());",
-           snode->parent->node_type_name);
+    if (snode->type == SNodeType::dynamic) {
+      emit("if (start_idx < {}_cache->get_n()) return;", snode->node_type_name);
+      emit("end_idx = min(end_idx, {}_cache->get_n());", snode->node_type_name);
     }
 
-    emit("int meta_id = atomic_add(&{}->resident_tail, 1);", leaf_allocator);
-    emit("auto &meta = {}->resident_pool[meta_id];");
-    for (int i = 0; i < max_num_indices; i++)
-      emit("meta.indices[i] = {}", loopgen.index_name_global(snode->parent, i));
+    emit(
+        "int meta_id = atomicAdd((unsigned long long *)(&{}->resident_tail), 1ULL);",
+        leaf_allocator);
+    emit("auto &meta = {}->resident_pool[meta_id];", leaf_allocator);
 
+    /*
+    for (int i = 0; i < max_num_indices; i++)
+      emit("meta.indices[{}] = {};", i,
+           loopgen.index_name_global(snode->parent, i));
+    */
+
+    emit("meta.ptr = {}_cache;", snode->node_type_name);
     emit("meta.start_loop = start_idx;");
     emit("meta.end_loop = end_idx;");
 
     emit("}}");
+    emit("");
   }
 
   // For cases where the kernel body has only a for loop

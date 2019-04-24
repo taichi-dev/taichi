@@ -35,6 +35,7 @@ class LoopGenerator {
     generate_single_loop_header(snode);
   }
 
+  // load the SNode cache, given loop variables and a pointer to its parent
   void single_loop_body_head(SNode *snode) {
     if (snode->parent == nullptr) {
       emit("auto {}_cache = root;", snode->node_type_name);
@@ -42,6 +43,28 @@ class LoopGenerator {
       auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
       emit("auto {}_cache = access_{}({}, {});", snode->node_type_name,
            snode->node_type_name, parent, loop_variable(snode->parent));
+    }
+  }
+
+  // compute the physical indices of snode, based on the physical indices of it
+  // parent and loop var
+  void update_indices(SNode *snode) {
+    auto l = loop_variable(snode);
+    for (int i = 0; i < max_num_indices; i++) {
+      std::string ancestor = "0 |";
+      if (snode->parent != nullptr) {
+        ancestor = index_name_global(snode->parent, i) + " |";
+      }
+      std::string addition = "0";
+      if (snode->extractors[i].num_bits) {
+        addition = fmt::format("((({} >> {}) & ((1 << {}) - 1)) << {})", l,
+                               snode->extractors[i].acc_offset,
+                               snode->extractors[i].num_bits,
+                               snode->extractors[i].start);
+      }
+      emit("int {} = {};", index_name_local(snode, i), addition);
+      emit("int {} = {} {};", index_name_global(snode, i), ancestor,
+           index_name_local(snode, i));
     }
   }
 
@@ -73,27 +96,6 @@ class LoopGenerator {
     update_indices(snode);
   }
 
-  void update_indices(SNode *snode) {
-    // update indices....
-    auto l = loop_variable(snode);
-    for (int i = 0; i < max_num_indices; i++) {
-      std::string ancester = "0 |";
-      if (snode->parent != nullptr) {
-        ancester = index_name_global(snode->parent, i) + " |";
-      }
-      std::string addition = "0";
-      if (snode->extractors[i].num_bits) {
-        addition = fmt::format("((({} >> {}) & ((1 << {}) - 1)) << {})", l,
-                               snode->extractors[i].acc_offset,
-                               snode->extractors[i].num_bits,
-                               snode->extractors[i].start);
-      }
-      emit("int {} = {};", index_name_local(snode, i), addition);
-      emit("int {} = {} {};", index_name_global(snode, i), ancester,
-           index_name_local(snode, i));
-    }
-  }
-
   void generate_loop_tail(SNode *snode, StructForStmt *stmt) {
     emit("}}\n");
     if (snode->parent != nullptr) {
@@ -112,8 +114,7 @@ class LoopGenerator {
            leaf->node_type_name);
     }
     if (leaf->type == SNodeType::pointer) {
-      emit("if ({}_cache->data)", leaf->node_type_name,
-           leaf->node_type_name);
+      emit("if ({}_cache->data)", leaf->node_type_name, leaf->node_type_name);
     }
     emit("{{");
     emit("LeafContext<{}> leaf_context;", leaf->node_type_name);

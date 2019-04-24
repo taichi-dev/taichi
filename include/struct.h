@@ -45,6 +45,8 @@ struct SNodeMeta {
   void *ptr;
   int active;
   void **snode_ptr;
+  int start_loop;
+  int end_loop;
 };
 
 /*

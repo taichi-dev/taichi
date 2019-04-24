@@ -1,3 +1,4 @@
+#include <cuda_runtime.h>
 #include "gpu.h"
 #include "loop_gen.h"
 #include "../scratch_pad.h"
@@ -409,10 +410,14 @@ class GPUIRCodeGen : public IRVisitor {
          leaf->parent->node_type_name);
     emit("Managers::get_allocator<{}>()->reset_execution_tail();",
          leaf->node_type_name);
+
+    int num_SMs;
+    cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
+
     emit(
-        "int gridDim = 896, blockDim = ({}::get_max_n()"
+        "int gridDim = {} * 32, blockDim = ({}::get_max_n()"
         "+ {} - 1) / {};",
-        leaf->node_type_name, block_division, block_division);
+        num_SMs, leaf->node_type_name, block_division, block_division);
 
     TC_ASSERT(leaf->parent->type == SNodeType::pointer);
 

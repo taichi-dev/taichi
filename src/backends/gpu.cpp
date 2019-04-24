@@ -422,7 +422,9 @@ class GPUIRCodeGen : public IRVisitor {
       emit("cudaEventCreate(&stop);");
       emit("cudaEventRecord(start);");
     }
+    emit(R"(GPUProfiler::get_instance().start("{}");)", codegen->func_name);
     emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
+    emit(R"(GPUProfiler::get_instance().stop();)");
     if (debug) {
       emit("cudaEventRecord(stop);");
       emit("cudaEventSynchronize(stop);");

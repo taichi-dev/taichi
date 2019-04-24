@@ -560,6 +560,7 @@ auto mpm3d = []() {
   auto &canvas = gui.get_canvas();
   for (int frame = 1;; frame++) {
     simulate_frame();
+    prog.profiler_print();
     auto res = canvas.img.get_res();
     Array2D<Vector3> image(Vector2i(res), Vector3(1) - Vector3(0.0_f));
     std::vector<RenderParticle> render_particles;

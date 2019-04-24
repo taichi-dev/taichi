@@ -45,6 +45,8 @@ class Program {
   std::vector<std::unique_ptr<Kernel>> functions;
   int index_counter;
 
+  void (*profiler_print)();
+
   std::string layout_fn;
 
   Context get_context() {

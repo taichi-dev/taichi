@@ -1,8 +1,9 @@
-#if defined(TL_GPU)
+#if defined(TLANG_GPU)
 
 #include <string>
 #include <map>
 #include <vector>
+#include <algorithm>
 #include <cuda_runtime.h>
 #include "common.h"
 
@@ -49,7 +50,7 @@ class GPUProfiler {
     current_stop = stop;
   }
 
-  void end() {
+  void stop() {
     cudaEventRecord(current_stop);
   }
 
@@ -57,7 +58,7 @@ class GPUProfiler {
     sync();
     printf("GPU Profiler:\n");
     for (auto &rec : records) {
-      printf("    %10s     min %.3f ms   avg %.3f ms    max %.3f ms\n",
+      printf("    %20s     min %7.3f ms   avg %7.3f ms    max %7.3f ms\n",
              rec.name.c_str(), rec.min, rec.total / rec.counter, rec.max);
     }
   }
@@ -82,7 +83,7 @@ class GPUProfiler {
     outstanding_events.clear();
   }
 
-  GPUProfiler &get_instance() {
+  static GPUProfiler &get_instance() {
     static GPUProfiler profiler;
     return profiler;
   }

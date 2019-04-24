@@ -336,10 +336,10 @@ void StructCompiler::run(SNode &node) {
        root_type);
   emit("TC_EXPORT void profiler_print()");
   emit("{{");
-  emit("#if defined(__CUDA_ARCH__)");
+  emit("#if defined(TLANG_GPU)");
   emit("GPUProfiler::get_instance().print();");
   emit("#else");
-  emit(R"(printf("CPU Profiler not implemented.\n);)");
+  emit(R"(printf("CPU Profiler not implemented.\n");)");
   emit("#endif");
   emit("}}");
   emit("#endif");

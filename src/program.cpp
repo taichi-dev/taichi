@@ -66,6 +66,7 @@ void Program::materialize_layout() {
   scomp.run(root);
   layout_fn = scomp.get_source_path();
   data_structure = scomp.creator();
+  profiler_print = scomp.profiler_print;
 }
 
 void Program::synchronize() {

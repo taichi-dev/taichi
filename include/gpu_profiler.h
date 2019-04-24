@@ -58,7 +58,7 @@ class GPUProfiler {
     sync();
     printf("GPU Profiler:\n");
     for (auto &rec : records) {
-      printf("    %20s     min %7.3f ms   avg %7.3f ms    max %7.3f ms\n",
+      printf("    %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms\n",
              rec.name.c_str(), rec.min, rec.total / rec.counter, rec.max);
     }
   }

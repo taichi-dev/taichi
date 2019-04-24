@@ -448,6 +448,65 @@ class GPUIRCodeGen : public IRVisitor {
     current_struct_for = nullptr;
   }
 
+  void emit_list_gen_kernel(StructForStmt *sfor) {
+    auto snode = sfor->snode;
+
+    SNode *first_managed_ancestor = nullptr;
+
+    for (auto p = snode; p; p = p->parent) {
+      if (p->type == SNodeType::pointer) {
+        first_managed_ancestor = p;
+        break;
+      }
+    }
+
+    TC_ASSERT(first_managed_ancestor);
+
+    auto ancestor_allocator = fmt::format(
+        "Managers::get<{}>()", first_managed_ancestor->node_type_name);
+    auto leaf_allocator =
+        fmt::format("Managers::get<{}>()", snode->node_type_name);
+    emit("{}->reset_tails();", leaf_allocator);
+
+    // kernel body starts
+    emit("__global__ void {}_kernel_listgen(Context context) {{",
+         codegen->func_name);
+
+    emit("auto root = ({} *)context.buffers[0];",
+         codegen->prog->snode_root->node_type_name);
+
+    // one block takes one ancestor meta
+
+    emit("int ancestor_mid = blockIdx.x;");
+    emit("int subblock_id = threadIdx.x;");
+
+    auto block_size = sfor->block_size;
+    auto block_bits = bit::log2int(block_size);
+
+    // output
+
+    // check if necessary
+    emit("int start_idx = subblock_id * {};", block_size);
+    emit("int end_idx = (subblock_id + 1) * {};", block_size);
+
+    if (snode->parent->type == SNodeType::dynamic) {
+      emit("if (start_idx < {}_cache->get_n()) return;",
+           snode->parent->node_type_name);
+      emit("end_idx = min(end_idx, {}_cache->get_n());",
+           snode->parent->node_type_name);
+    }
+
+    emit("int meta_id = atomic_add(&{}->resident_tail, 1);", leaf_allocator);
+    emit("auto &meta = {}->resident_pool[meta_id];");
+    for (int i = 0; i < max_num_indices; i++)
+      emit("meta.indices[i] = {}", loopgen.index_name_global(snode->parent, i));
+
+    emit("meta.start_loop = start_idx;");
+    emit("meta.end_loop = end_idx;");
+
+    emit("}}");
+  }
+
   // For cases where the kernel body has only a for loop
   void generate_pure_loop(Block *stmt_list) {
     auto &for_stmt_ = stmt_list->statements.back();

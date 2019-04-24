@@ -19,11 +19,13 @@ std::string CodeGenBase::get_library_path() {
 
 void CodeGenBase::write_source() {
   std::ifstream ifs(get_source_path());
-  std::string firstline;
-  std::getline(ifs, firstline);
-  if (firstline.find("debug") != firstline.npos) {
-    TC_WARN("Debugging file {}. Code overridden.", get_source_path());
-    return;
+  if (ifs) {
+    std::string firstline;
+    std::getline(ifs, firstline);
+    if (firstline.find("debug") != firstline.npos) {
+      TC_WARN("Debugging file {}. Code overridden.", get_source_path());
+      return;
+    }
   }
   {
     std::ofstream of(get_source_path());

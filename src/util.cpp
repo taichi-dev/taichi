@@ -256,8 +256,7 @@ std::string CompileConfig::compiler_config() {
   } else {
     cmd = fmt::format(
         "nvcc -lineinfo -std=c++14 -shared {} -Xcompiler \"-fPIC\" "
-        "--use_fast_math "
-        "-Xptxas -O3,-v "
+        "--use_fast_math -arch=compute_61 -code=sm_61,compute_61 "
         "--ptxas-options=-allow-expensive-optimizations=true,-O3,-v -I "
         "{}/include -ccbin {} "
         "-D_GLIBCXX_USE_CXX11_ABI=0 -lstdc++ -L{}/build/ -ltaichi_lang "

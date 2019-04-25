@@ -531,6 +531,7 @@ class GPUIRCodeGen : public IRVisitor {
          leaf->parent->node_type_name);
 
     emit("Managers::get_allocator<{}>()->reset_tails();", leaf->node_type_name);
+
     emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
          codegen->func_name);
     emit("{}_kernel_list_gen<<<gridDim, {}>>>(context);", codegen->func_name,

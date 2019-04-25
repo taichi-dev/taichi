@@ -54,7 +54,6 @@ auto mpm3d = []() {
   real sin_phi = std::sin(friction_angle / 180._f * real(3.141592653));
   auto alpha = std::sqrt(2._f / 3._f) * 2._f * sin_phi / (3._f - sin_phi);
 
-
   auto f32 = DataType::f32;
   int grid_block_size = 4;
 
@@ -161,9 +160,8 @@ auto mpm3d = []() {
   TC_ASSERT(bit::is_power_of_two(n));
 
   Kernel(sort).def([&] {
-    Declare(p);
     BlockDim(1024);
-    For(p, particle_x(0), [&] {
+    For(particle_x(0), [&](Expr p) {
       auto node_coord = floor(particle_x[p] * inv_dx - 0.5_f);
       Append(l.parent(),
              (cast<int32>(node_coord(0)), cast<int32>(node_coord(1)),
@@ -197,17 +195,13 @@ auto mpm3d = []() {
   };
 
   Kernel(p2g_sorted).def([&] {
-    Declare(i);
-    Declare(j);
-    Declare(k);
-    Declare(p_ptr);
     BlockDim(128);
 
     Cache(0, grid_v(0));
     Cache(0, grid_v(1));
     Cache(0, grid_v(2));
     Cache(0, grid_m);
-    For((i, j, k, p_ptr), l, [&] {
+    For(l, [&](Expr i, Expr j, Expr k, Expr p_ptr) {
       auto p = Eval(l[i, j, k, p_ptr]);
 
       auto x = particle_x[p];

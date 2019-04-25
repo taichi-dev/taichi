@@ -1760,10 +1760,6 @@ inline void Cache(int v, const Expr &var) {
   dec.scratch_opt.push_back(std::make_pair(v, var.snode()));
 }
 
-inline void Uniform() {
-  dec.uniform = true;
-}
-
 inline void BlockDim(int v) {
   dec.block_size = v;
 }
@@ -1826,6 +1822,48 @@ class For {
     current_ast_builder().insert(std::move(stmt_unique));
     auto _ = current_ast_builder().create_scope(stmt->body);
     func();
+  }
+
+  For(Expr global, const std::function<void(Expr)> &func) {
+    auto i = Expr(std::make_shared<IdExpression>());
+    auto stmt_unique = std::make_unique<FrontendForStmt>(i, global);
+    auto stmt = stmt_unique.get();
+    current_ast_builder().insert(std::move(stmt_unique));
+    auto _ = current_ast_builder().create_scope(stmt->body);
+    func(i);
+  }
+
+  For(Expr global, const std::function<void(Expr, Expr)> &func) {
+    auto i = Expr(std::make_shared<IdExpression>());
+    auto j = Expr(std::make_shared<IdExpression>());
+    auto stmt_unique = std::make_unique<FrontendForStmt>((i, j), global);
+    auto stmt = stmt_unique.get();
+    current_ast_builder().insert(std::move(stmt_unique));
+    auto _ = current_ast_builder().create_scope(stmt->body);
+    func(i, j);
+  }
+
+  For(Expr global, const std::function<void(Expr, Expr, Expr)> &func) {
+    auto i = Expr(std::make_shared<IdExpression>());
+    auto j = Expr(std::make_shared<IdExpression>());
+    auto k = Expr(std::make_shared<IdExpression>());
+    auto stmt_unique = std::make_unique<FrontendForStmt>((i, j, k), global);
+    auto stmt = stmt_unique.get();
+    current_ast_builder().insert(std::move(stmt_unique));
+    auto _ = current_ast_builder().create_scope(stmt->body);
+    func(i, j, k);
+  }
+
+  For(Expr global, const std::function<void(Expr, Expr, Expr, Expr)> &func) {
+    auto i = Expr(std::make_shared<IdExpression>());
+    auto j = Expr(std::make_shared<IdExpression>());
+    auto k = Expr(std::make_shared<IdExpression>());
+    auto l = Expr(std::make_shared<IdExpression>());
+    auto stmt_unique = std::make_unique<FrontendForStmt>((i, j, k, l), global);
+    auto stmt = stmt_unique.get();
+    current_ast_builder().insert(std::move(stmt_unique));
+    auto _ = current_ast_builder().create_scope(stmt->body);
+    func(i, j, k, l);
   }
 
   For(Expr s, Expr e, const std::function<void(Expr)> &func);

@@ -23,6 +23,13 @@ taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
     cudaMallocManaged(&_cuda_data, size + 4096);
     cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetPreferredLocation,
                   0);
+    // http://on-demand.gputechconf.com/gtc/2017/presentation/s7285-nikolay-sakharnykh-unified-memory-on-pascal-and-volta.pdf
+    /*
+    cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetReadMostly,
+                  cudaCpuDeviceId);
+    cudaMemAdvise(_cuda_data, size + 4096, cudaMemAdviseSetAccessedBy,
+                  0);
+                  */
     data = _cuda_data;
 #else
     static_assert(false, "implement mmap on CPU for memset..");

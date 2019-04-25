@@ -339,10 +339,7 @@ auto mpm3d = []() {
   };
 
   Kernel(grid_op).def([&]() {
-    Declare(i);
-    Declare(j);
-    Declare(k);
-    For((i, j, k), grid_m, [&] {
+    For(grid_m, [&](Expr i, Expr j, Expr k) {
       Local(v0) = grid_v[i, j, k](0);
       Local(v1) = grid_v[i, j, k](1);
       Local(v2) = grid_v[i, j, k](2);
@@ -387,16 +384,11 @@ auto mpm3d = []() {
   });
 
   Kernel(g2p).def([&]() {
-    Declare(i);
-    Declare(j);
-    Declare(k);
-    Declare(p_ptr);
     BlockDim(128);
-
     Cache(0, grid_v(0));
     Cache(0, grid_v(1));
     Cache(0, grid_v(2));
-    For((i, j, k, p_ptr), l, [&] {
+    For(l, [&](Expr i, Expr j, Expr k, Expr p_ptr) {
       auto p = Eval(l[i, j, k, p_ptr]);
       Assert(p >= 0);
       Assert(p < n_particles);

@@ -122,9 +122,8 @@ TC_TEST("parallel_particle_sort") {
   TC_ASSERT(bit::is_power_of_two(n));
 
   Kernel(sort).def([&] {
-    Declare(p);
     BlockDim(256);
-    For(p, particle_x(0), [&] {
+    For(particle_x(0), [&] (Expr p) {
       auto node_coord = floor(particle_x[p] * inv_dx - 0.5_f);
       Append(l.parent(),
              (cast<int32>(node_coord(0)), cast<int32>(node_coord(1)),

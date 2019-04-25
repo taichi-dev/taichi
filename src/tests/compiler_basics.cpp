@@ -47,9 +47,8 @@ TC_TEST("select") {
   auto dou = [](Expr a) { return a * 2; };
 
   kernel([&]() {
-    Declare(i);
     Local(sum) = 0;
-    For(i, 0, n, [&] {
+    For(0, n, [&](Expr i) {
       sum = sum + i;
       a[i] = select(i % 2 == 0, dou(i), i);
     });
@@ -73,9 +72,8 @@ TC_TEST("compiler_basics") {
   auto dou = [](Expr a) { return a * 2; };
 
   kernel([&]() {
-    Declare(i);
     Local(sum) = 0;
-    For(i, 0, n, [&] {
+    For(0, n, [&](Expr i) {
       sum = sum + i;
       Local(ret) = 0;
       If(i % 2 == 0).Then([&] { ret = dou(i); }).Else([&] { ret = i; });
@@ -102,7 +100,7 @@ TC_TEST("fancy_for") {
 
   kernel([&]() {
     Local(sum) = 0;
-    For(Expr(0), Expr(n), [&] (Expr i) {
+    For(Expr(0), Expr(n), [&](Expr i) {
       sum = sum + i;
       Local(ret) = 0;
       If(i % 2 == 0).Then([&] { ret = dou(i); }).Else([&] { ret = i; });
@@ -127,10 +125,9 @@ TC_TEST("simd_if") {
   auto dou = [](Expr a) { return a * 2; };
 
   kernel([&]() {
-    Declare(i);
     Local(sum) = 0;
     Vectorize(8);
-    For(i, 0, n, [&] {
+    For(0, n, [&](Expr i) {
       Local(ret) = 0;
       If(i % 2 == 0).Then([&] { ret = dou(i); }).Else([&] { ret = i; });
       a[i] = ret;
@@ -152,10 +149,9 @@ TC_TEST("simd_if2") {
   layout([&]() { root.dense(i, n).place(a); });
 
   kernel([&]() {
-    Declare(i);
     Local(sum) = 0;
     Vectorize(8);
-    For(i, 0, n, [&] {
+    For(0, n, [&](Expr i) {
       Local(ret) = 0;
       If(i % 3 == 0).Then([&] { ret = i; }).Else([&] {
         If(i % 3 == 1).Then([&] { ret = i * 2; }).Else([&] { ret = i * 3; });
@@ -180,10 +176,8 @@ auto test_circle = [] {
   layout([&]() { root.dense(i, n * n).place(a); });
 
   kernel([&]() {
-    Declare(i);
-
     Vectorize(8);
-    For(i, 0, n * n, [&] {
+    For(0, n * n, [&](Expr i) {
       auto x = i / n - n / 2;
       auto y = i % n - n / 2;
       If(x * x + y * y < n * n / 4).Then([&] { a[i] = 1; }).Else([&] {
@@ -279,10 +273,8 @@ TC_TEST("vectorize") {
   layout([&]() { root.dense(0, n).place(a); });
 
   kernel([&]() {
-    Declare(i);
-
     Vectorize(8);
-    For(i, 0, n, [&] { a[i] = i; });
+    For(0, n, [&](Expr i) { a[i] = i; });
   })();
 
   for (int i = 0; i < n; i++) {
@@ -312,11 +304,7 @@ TC_TEST("rand") {
 
   layout([&]() { root.dense(0, n).place(a); });
 
-  kernel([&]() {
-    Declare(i);
-
-    For(i, 0, n, [&] { Print(Rand<float>()); });
-  })();
+  kernel([&]() { For(0, n, [&](Expr i) { Print(Rand<float>()); }); })();
 };
 
 TC_TEST("while") {
@@ -329,10 +317,8 @@ TC_TEST("while") {
   layout([&]() { root.dense(0, n).place(a); });
 
   kernel([&]() {
-    Declare(i);
-
     Vectorize(8);
-    For(i, 0, n, [&] {
+    For(0, n, [&](Expr i) {
       Local(j) = 0;
       Local(sum) = 0;
       While(j < i, [&] {
@@ -362,10 +348,8 @@ TC_TEST("slp") {
   layout([&]() { root.dense(0, n).place(a, b, c, d); });
 
   kernel([&]() {
-    Declare(i);
-
     Vectorize(1);
-    For(i, 0, n, [&] {
+    For(0, n, [&](Expr i) {
       SLP(4);
       a[i] = 1;
       b[i] = 2;
@@ -392,9 +376,8 @@ TC_TEST("slp1") {
     layout(
         [&]() { root.dense(0, n).place(grid(0), grid(1), grid(2), grid(3)); });
     kernel([&]() {
-      Declare(i);
       Vectorize(1);
-      For(i, 0, n, [&] {
+      For(0, n, [&](Expr i) {
         if (slp1)
           SLP(1);
         Vector v(4);
@@ -427,10 +410,8 @@ TC_TEST("slp2") {
   layout([&]() { root.dense(0, n).place(a, b); });
 
   kernel([&]() {
-    Declare(i);
-
     Vectorize(4);
-    For(i, 0, n, [&] {
+    For(0, n, [&](Expr i) {
       SLP(2);
       a[i] = 1 + i * 7;
       b[i] = 2 + i * 9;
@@ -455,10 +436,8 @@ TC_TEST("slp3") {
   layout([&]() { root.dense(0, n).place(a, b); });
 
   kernel([&]() {
-    Declare(i);
-
     Vectorize(4);
-    For(i, 0, n, [&] {
+    For(0, n, [&](Expr i) {
       SLP(2);
       Local(x) = i * 7;
       Local(y) = i * 9;
@@ -497,10 +476,8 @@ TC_TEST("slpmatvecmul") {
   });
 
   kernel([&]() {
-    Declare(i);
-
     Vectorize(8 / dim);
-    For(i, 0, n, [&] {
+    For(0, n, [&](Expr i) {
       SLP(dim);
       y[i] = A[i] * x[i];
       SLP(dim);
@@ -545,8 +522,7 @@ TC_TEST("mixed_simd1") {
     }
 
     kernel([&]() {
-      Declare(i);
-      For(i, 0, n, [&]() {
+      For(0, n, [&](Expr i) {
         SLP(1);
         Local(ab) = a[i] * b[i];
 
@@ -595,8 +571,7 @@ TC_TEST("mixed_simd2") {
     }
 
     kernel([&] {
-      Declare(i);
-      For(i, 0, n, [&]() {
+      For(0, n, [&](Expr i) {
         SLP(vec_size);
         auto vi = v[i];
         auto v_ind = vi;
@@ -657,8 +632,7 @@ TC_TEST("mixed_simd3_slp") {
     }
 
     kernel([&]() {
-      Declare(i);
-      For(i, 0, n, [&]() {
+      For(0, n, [&](Expr i) {
         SLP(vec_size);
         auto diff_ =
             a[i].element_wise_prod(a[i]) - b[i].element_wise_prod(b[i]);
@@ -762,9 +736,9 @@ TC_TEST("union_cast") {
     }
 
     kernel([&]() {
-      Declare(i);
-      For(i, 0, n,
-          [&] { a[i] = bit_cast<int32>(bit_cast<float32>(a[i]) + 1234.0f); });
+      For(0, n, [&](Expr i) {
+        a[i] = bit_cast<int32>(bit_cast<float32>(a[i]) + 1234.0f);
+      });
     })();
 
     for (int i = 0; i < n; i++) {

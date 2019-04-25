@@ -56,7 +56,6 @@ auto mpm3d = []() {
 
   auto f32 = DataType::f32;
   int grid_block_size = 4;
-  int particle_block_size = 1;
 
   Vector particle_x(f32, dim), particle_v(f32, dim);
   Matrix particle_F(f32, dim, dim), particle_C(f32, dim, dim);
@@ -119,14 +118,7 @@ auto mpm3d = []() {
       fork = &root.dynamic(p, max_n_particles);
     auto place = [&](Expr &expr) {
       if (SOA) {
-        if (particle_block_size == 1) {
-          root.dynamic(p, max_n_particles).place(expr);
-        } else {
-          TC_ASSERT(max_n_particles % particle_block_size == 0);
-          root.dense(p, max_n_particles / particle_block_size)
-              .dense(p, particle_block_size)
-              .place(expr);
-        }
+        root.dynamic(p, max_n_particles).place(expr);
       } else {
         fork->place(expr);
       }
@@ -150,7 +142,7 @@ auto mpm3d = []() {
 
     TC_ASSERT(n % grid_block_size == 0);
     auto &block = root.dense({i, j, k}, n / grid_block_size).pointer();
-    constexpr bool block_soa = false;
+    constexpr bool block_soa = true;
 
     if (block_soa) {
       block.dense({i, j, k}, grid_block_size).place(grid_v(0));
@@ -210,7 +202,7 @@ auto mpm3d = []() {
     Declare(j);
     Declare(k);
     Declare(p_ptr);
-    BlockDim(64);
+    BlockDim(128);
 
     Cache(0, grid_v(0));
     Cache(0, grid_v(1));
@@ -408,7 +400,7 @@ auto mpm3d = []() {
     Declare(j);
     Declare(k);
     Declare(p_ptr);
-    BlockDim(64);
+    BlockDim(128);
 
     if (sorted) {
       Cache(0, grid_v(0));
@@ -537,7 +529,6 @@ auto mpm3d = []() {
     prog.profiler_print();
     TC_P((Time::get_time() - t) / 160 * 1000);
   };
-
 
   Dict cam_dict;
   cam_dict.set("origin", Vector3(radius * 0.6f, radius * 0.3_f, radius * 0.6_f))

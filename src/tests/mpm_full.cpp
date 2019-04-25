@@ -34,13 +34,15 @@ void write_partio(std::vector<Vector3> positions,
 enum class MPMMaterial : int { fluid, jelly, snow, sand };
 
 auto mpm3d = []() {
+  CoreState::set_trigger_gdb_when_crash(true);
+
   bool benchmark_dragon = true;
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
   auto material = MPMMaterial::jelly;
+  constexpr int dim = 3;
   constexpr bool highres = true;
-  CoreState::set_trigger_gdb_when_crash(true);
 
   constexpr int n = highres ? 256 : 128;  // grid_resolution
   const real dt = 1e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
@@ -52,7 +54,6 @@ auto mpm3d = []() {
   real sin_phi = std::sin(friction_angle / 180._f * real(3.141592653));
   auto alpha = std::sqrt(2._f / 3._f) * 2._f * sin_phi / (3._f - sin_phi);
 
-  constexpr int dim = 3;
 
   auto f32 = DataType::f32;
   int grid_block_size = 4;
@@ -65,8 +66,6 @@ auto mpm3d = []() {
 
   Vector grid_v(f32, dim);
   Global(grid_m, f32);
-
-  bool sorted = true;
 
   int max_n_particles = 1024 * 1024;
 
@@ -339,7 +338,6 @@ auto mpm3d = []() {
   };
 
   auto p2g = [&] {
-    TC_ASSERT(sorted);
     // check_fluctuation();
     grid_m.parent().parent().snode()->clear(0);
     sort();
@@ -395,23 +393,17 @@ auto mpm3d = []() {
   });
 
   Kernel(g2p).def([&]() {
-    // benchmark_kernel();
     Declare(i);
     Declare(j);
     Declare(k);
     Declare(p_ptr);
     BlockDim(128);
 
-    if (sorted) {
-      Cache(0, grid_v(0));
-      Cache(0, grid_v(1));
-      Cache(0, grid_v(2));
-    }
-
-    // Declare(p);
+    Cache(0, grid_v(0));
+    Cache(0, grid_v(1));
+    Cache(0, grid_v(2));
     For((i, j, k, p_ptr), l, [&] {
       auto p = Eval(l[i, j, k, p_ptr]);
-      // For(p, particle_x(0), [&] {
       Assert(p >= 0);
       Assert(p < n_particles);
       auto x = particle_x[p];
@@ -520,14 +512,14 @@ auto mpm3d = []() {
   auto simulate_frame = [&]() {
     grid_m.parent().parent().snode()->clear(1);
     auto t = Time::get_time();
-    for (int f = 0; f < 160; f++) {
+    for (int f = 0; f < 200; f++) {
       TC_PROFILE("p2g", p2g());
       TC_PROFILE("grid_op", grid_op());
       TC_PROFILE("g2p", g2p());
     }
-    // gc
     prog.profiler_print();
-    TC_P((Time::get_time() - t) / 160 * 1000);
+    auto ms_per_substep = (Time::get_time() - t) / 200 * 1000;
+    TC_P(ms_per_substep);
   };
 
   Dict cam_dict;

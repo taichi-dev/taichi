@@ -66,9 +66,8 @@ class GPUIRCodeGen : public IRVisitor {
     emit("__global__ void {}_kernel_list_gen(Context context) {{",
          codegen->func_name);
 
-    emit(
-        "int num_leaves = Managers::get_allocator<{}>()->resident_tail;",
-        path[0]->node_type_name);
+    emit("int num_leaves = Managers::get_allocator<{}>()->resident_tail;",
+         path[0]->node_type_name);
     emit("while (1) {{");
 
     // one block takes one ancestor meta
@@ -147,7 +146,6 @@ class GPUIRCodeGen : public IRVisitor {
     emit("}}");
     emit("");
   }
-
 
   void struct_for_old(Stmt *for_stmt_) {
     // struct for
@@ -519,27 +517,24 @@ class GPUIRCodeGen : public IRVisitor {
       }
     }
     emit("gpu_runtime_init();");
+    int num_SMs;
+    cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
+    emit(
+        "int gridDim = {} * 32, blockDim = ({}::get_max_n()"
+        "+ {} - 1) / {};",
+        num_SMs, leaf->node_type_name, block_division, block_division);
+    emit("");
 
     emit("Managers::get_allocator<{}>()->backup_tails();",
          leaf->parent->node_type_name);
     emit("Managers::get_allocator<{}>()->reset_execution_tail();",
          leaf->parent->node_type_name);
 
-    int num_SMs;
-    cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
-
-    emit(
-        "int gridDim = {} * 32, blockDim = ({}::get_max_n()"
-        "+ {} - 1) / {};",
-        num_SMs, leaf->node_type_name, block_division, block_division);
-
     emit("Managers::get_allocator<{}>()->reset_tails();", leaf->node_type_name);
-
     emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
          codegen->func_name);
-    emit(
-        "{}_kernel_list_gen<<<gridDim, {}>>>(context);",
-        codegen->func_name, block_division);
+    emit("{}_kernel_list_gen<<<gridDim, {}>>>(context);", codegen->func_name,
+         block_division);
     emit(R"(GPUProfiler::get_instance().stop();)");
 
     emit("");
@@ -552,7 +547,6 @@ class GPUIRCodeGen : public IRVisitor {
       emit(
           R"(printf("kernel {} <<<%d, %d>>> \n", gridDim, blockDim);)",
           codegen->func_name);
-
 
       emit("cudaEvent_t start, stop;");
 

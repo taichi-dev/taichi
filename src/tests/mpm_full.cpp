@@ -348,7 +348,7 @@ auto mpm3d = []() {
 
   auto p2g = [&] {
     TC_ASSERT(sorted);
-    check_fluctuation();
+    // check_fluctuation();
     grid_m.parent().parent().snode()->clear(0);
     sort();
     p2g_sorted();

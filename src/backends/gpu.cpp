@@ -35,6 +35,120 @@ class GPUIRCodeGen : public IRVisitor {
     node->accept(&p);
   }
 
+  void emit_list_gen_kernel(StructForStmt *sfor) {
+    auto snode = sfor->snode->parent;
+
+    auto block_size = sfor->block_size;
+    auto block_bits = bit::log2int(block_size);
+
+    SNode *first_managed_ancestor = nullptr;
+    std::vector<SNode *> path;
+
+    for (auto p = snode; p; p = p->parent) {
+      path.push_back(p);
+      if (p->type == SNodeType::pointer || p->type == SNodeType::root) {
+        first_managed_ancestor = p;
+        break;
+      }
+    }
+
+    std::reverse(path.begin(), path.end());
+
+    TC_ASSERT(first_managed_ancestor);
+
+    auto ancestor_allocator = fmt::format(
+        "Managers::get<{}>()", first_managed_ancestor->node_type_name);
+    auto leaf_allocator =
+        fmt::format("Managers::get_allocator<{}>()", snode->node_type_name);
+    // emit("{}->reset_tails();", leaf_allocator);
+
+    // kernel body starts
+    emit("__global__ void {}_kernel_list_gen(Context context) {{",
+         codegen->func_name);
+
+    emit(
+        "int num_leaves = Managers::get_allocator<{}>()->resident_tail;",
+        path[0]->node_type_name);
+    emit("while (1) {{");
+
+    // one block takes one ancestor meta
+    emit("__shared__ int bid_shared;");
+    emit("if (threadIdx.x == 0) {{ ");
+    emit(
+        "bid_shared = atomicAdd((unsigned long long "
+        "*)(&Managers::get_allocator<{}>()->execution_tail), 1ULL);",
+        path[0]->node_type_name);
+    emit("}}");
+
+    emit("__syncthreads();");
+    emit("int leaf_loop = bid_shared;");
+    emit("if (leaf_loop >= num_leaves) break;");
+
+    emit("int subblock_id = threadIdx.x;");
+
+    emit(
+        "auto leaves = (SNodeMeta "
+        "*)(Managers::get_allocator<{}>()->resident_pool);",
+        path[0]->node_type_name);
+    emit(
+        "auto num_leaves = Managers::get_allocator<{}>()->resident_tail_const;",
+        path[0]->node_type_name);
+
+    emit("auto list_element = ({}::child_type *)leaves[leaf_loop].ptr;",
+         path[0]->node_type_name);
+    auto chid = path[0]->child_id(path[1]);
+    TC_ASSERT(chid != -1);
+    emit("auto {}_cache = list_element->get{}();", path[1]->node_type_name,
+         chid);
+
+    for (int i = 0; i < max_num_indices; i++) {
+      emit("auto {} = leaves[leaf_loop].indices[{}];",
+           loopgen.index_name_global(path[1], i), i);
+    }
+
+    /*
+    for (int i = 1; i < (int)path.size(); i++) {
+      auto path_node = path[i];
+      emit("auto {} = (subblock_id) & ((1 << {}) - 1);",
+           loopgen.loop_variable(
+               path_node),  // path_node->parent->total_bit_start,
+           path_node->parent->total_num_bits);
+      loopgen.single_loop_body_head(path_node);
+      loopgen.update_indices(path_node);
+    }
+    */
+
+    // output
+
+    // check if necessary
+    emit("int start_idx = subblock_id * {};", block_size);
+    emit("int end_idx = (subblock_id + 1) * {};", block_size);
+
+    if (snode->type == SNodeType::dynamic) {
+      emit("if (start_idx >= {}_cache->get_n()) continue;",
+           snode->node_type_name);
+      emit("end_idx = min(end_idx, {}_cache->get_n());", snode->node_type_name);
+    }
+
+    emit(
+        "int meta_id = atomicAdd((unsigned long long *)(&{}->resident_tail), "
+        "1ULL);",
+        leaf_allocator);
+    emit("auto &meta = {}->resident_pool[meta_id];", leaf_allocator);
+
+    for (int i = 0; i < max_num_indices; i++)
+      emit("meta.indices[{}] = {};", i, loopgen.index_name_global(snode, i));
+
+    emit("meta.ptr = {}_cache;", snode->node_type_name);
+    emit("meta.start_loop = start_idx;");
+    emit("meta.end_loop = end_idx;");
+
+    emit("}}");
+    emit("}}");
+    emit("");
+  }
+
+
   void struct_for_old(Stmt *for_stmt_) {
     // struct for
     TC_ASSERT_INFO(current_struct_for == nullptr,
@@ -409,7 +523,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("Managers::get_allocator<{}>()->backup_tails();",
          leaf->parent->node_type_name);
     emit("Managers::get_allocator<{}>()->reset_execution_tail();",
-         leaf->node_type_name);
+         leaf->parent->node_type_name);
 
     int num_SMs;
     cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
@@ -424,20 +538,21 @@ class GPUIRCodeGen : public IRVisitor {
     emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
          codegen->func_name);
     emit(
-        "{}_kernel_list_gen<<<Managers::get_allocator<{}>()->resident_tail, "
-        "{}>>>(context);",
-        codegen->func_name, leaf->parent->node_type_name, block_division);
+        "{}_kernel_list_gen<<<gridDim, {}>>>(context);",
+        codegen->func_name, block_division);
     emit(R"(GPUProfiler::get_instance().stop();)");
 
-    emit("cudaDeviceSynchronize();");
-    emit(
-        R"(printf("task list %d\n", Managers::get_allocator<{}>()->resident_tail);)",
-        leaf->node_type_name);
-    emit(
-        R"(printf("kernel {} <<<%d, %d>>> \n", gridDim, blockDim);)",
-        codegen->func_name);
+    emit("");
 
     if (debug) {
+      emit("cudaDeviceSynchronize();");
+      emit(
+          R"(printf("task list %d\n", Managers::get_allocator<{}>()->resident_tail);)",
+          leaf->node_type_name);
+      emit(
+          R"(printf("kernel {} <<<%d, %d>>> \n", gridDim, blockDim);)",
+          codegen->func_name);
+
 
       emit("cudaEvent_t start, stop;");
 
@@ -449,9 +564,13 @@ class GPUIRCodeGen : public IRVisitor {
       emit("cudaEventCreate(&stop);");
       emit("cudaEventRecord(start);");
     }
+    emit("");
+    emit("Managers::get_allocator<{}>()->reset_execution_tail();",
+         leaf->node_type_name);
     emit(R"(GPUProfiler::get_instance().start("{}");)", codegen->func_name);
     emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
     emit(R"(GPUProfiler::get_instance().stop();)");
+    emit("");
     if (debug) {
       emit("cudaEventRecord(stop);");
       emit("cudaEventSynchronize(stop);");
@@ -473,105 +592,6 @@ class GPUIRCodeGen : public IRVisitor {
     }
     emit("}}");
     current_struct_for = nullptr;
-  }
-
-  void emit_list_gen_kernel(StructForStmt *sfor) {
-    auto snode = sfor->snode->parent;
-
-    auto block_size = sfor->block_size;
-    auto block_bits = bit::log2int(block_size);
-
-    SNode *first_managed_ancestor = nullptr;
-    std::vector<SNode *> path;
-
-    for (auto p = snode; p; p = p->parent) {
-      path.push_back(p);
-      if (p->type == SNodeType::pointer || p->type == SNodeType::root) {
-        first_managed_ancestor = p;
-        break;
-      }
-    }
-
-    TC_ASSERT(first_managed_ancestor);
-
-    auto ancestor_allocator = fmt::format(
-        "Managers::get<{}>()", first_managed_ancestor->node_type_name);
-    auto leaf_allocator =
-        fmt::format("Managers::get_allocator<{}>()", snode->node_type_name);
-    // emit("{}->reset_tails();", leaf_allocator);
-
-    emit("");
-
-    // kernel body starts
-    emit("__global__ void {}_kernel_list_gen(Context context) {{",
-         codegen->func_name);
-
-    // one block takes one ancestor meta
-
-    emit("int leaf_loop = blockIdx.x;");
-    emit("int subblock_id = threadIdx.x;");
-
-    std::reverse(path.begin(), path.end());
-
-    emit(
-        "auto leaves = (SNodeMeta "
-        "*)(Managers::get_allocator<{}>()->resident_pool);",
-        path[0]->node_type_name);
-    emit(
-        "auto num_leaves = Managers::get_allocator<{}>()->resident_tail_const;",
-        path[0]->node_type_name);
-
-    emit("auto list_element = ({}::child_type *)leaves[leaf_loop].ptr;",
-         path[0]->node_type_name);
-    auto chid = path[0]->child_id(path[1]);
-    TC_ASSERT(chid != -1);
-    emit("auto {}_cache = list_element->get{}();", path[1]->node_type_name,
-         chid);
-
-    for (int i = 0; i < max_num_indices; i++) {
-      emit("auto {} = leaves[leaf_loop].indices[{}];",
-           loopgen.index_name_global(path[1], i), i);
-    }
-
-    /*
-    for (int i = 1; i < (int)path.size(); i++) {
-      auto path_node = path[i];
-      emit("auto {} = (subblock_id) & ((1 << {}) - 1);",
-           loopgen.loop_variable(
-               path_node),  // path_node->parent->total_bit_start,
-           path_node->parent->total_num_bits);
-      loopgen.single_loop_body_head(path_node);
-      loopgen.update_indices(path_node);
-    }
-    */
-
-    // output
-
-    // check if necessary
-    emit("int start_idx = subblock_id * {};", block_size);
-    emit("int end_idx = (subblock_id + 1) * {};", block_size);
-
-    if (snode->type == SNodeType::dynamic) {
-      emit("if (start_idx >= {}_cache->get_n()) return;",
-           snode->node_type_name);
-      emit("end_idx = min(end_idx, {}_cache->get_n());", snode->node_type_name);
-    }
-
-    emit(
-        "int meta_id = atomicAdd((unsigned long long *)(&{}->resident_tail), "
-        "1ULL);",
-        leaf_allocator);
-    emit("auto &meta = {}->resident_pool[meta_id];", leaf_allocator);
-
-    for (int i = 0; i < max_num_indices; i++)
-      emit("meta.indices[{}] = {};", i, loopgen.index_name_global(snode, i));
-
-    emit("meta.ptr = {}_cache;", snode->node_type_name);
-    emit("meta.start_loop = start_idx;");
-    emit("meta.end_loop = end_idx;");
-
-    emit("}}");
-    emit("");
   }
 
   // For cases where the kernel body has only a for loop

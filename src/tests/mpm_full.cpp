@@ -334,7 +334,7 @@ auto mpm3d = []() {
       grid_m.parent().parent().snode()->clear(1);
       // activate_all();
       sort();
-      // p2g_sorted();
+      p2g_sorted();
       auto stat = grid_m.parent().parent().snode()->stat();
       int nb = stat.num_resident_blocks;
       TC_P(nb);
@@ -348,7 +348,7 @@ auto mpm3d = []() {
 
   auto p2g = [&] {
     TC_ASSERT(sorted);
-    // check_fluctuation();
+    check_fluctuation();
     grid_m.parent().parent().snode()->clear(0);
     sort();
     p2g_sorted();

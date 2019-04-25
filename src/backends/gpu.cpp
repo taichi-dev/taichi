@@ -525,12 +525,10 @@ class GPUIRCodeGen : public IRVisitor {
         num_SMs, leaf->node_type_name, block_division, block_division);
     emit("");
 
-    emit("Managers::get_allocator<{}>()->backup_tails();",
-         leaf->parent->node_type_name);
-    emit("Managers::get_allocator<{}>()->reset_execution_tail();",
-         leaf->parent->node_type_name);
+    emit("backup_tails<{}><<<1, 1>>>();", leaf->parent->node_type_name);
+    emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->parent->node_type_name);
 
-    emit("Managers::get_allocator<{}>()->reset_tails();", leaf->node_type_name);
+    emit("reset_tails<{}><<<1, 1>>>();", leaf->node_type_name);
 
     emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
          codegen->func_name);
@@ -560,8 +558,7 @@ class GPUIRCodeGen : public IRVisitor {
       emit("cudaEventRecord(start);");
     }
     emit("");
-    emit("Managers::get_allocator<{}>()->reset_execution_tail();",
-         leaf->node_type_name);
+    emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->node_type_name);
     emit(R"(GPUProfiler::get_instance().start("{}");)", codegen->func_name);
     emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
     emit(R"(GPUProfiler::get_instance().stop();)");

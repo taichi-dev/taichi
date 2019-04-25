@@ -125,127 +125,8 @@ struct SNodeAllocator {
     stat.resident_metas = resident_pool;
     return stat;
   }
-
-  // TODO: clean up
-  __host__ void backup_tails();
-
-  __host__ void reset_tails();
-
-  __host__ void reset_execution_tail();
 };
 
-#if defined(TLANG_GPU)
-
-inline constexpr std::size_t least_pot_bound(std::size_t v) {
-  std::size_t ret = 1;
-  while (ret < v) {
-    ret *= 2;
-  }
-  return ret;
-}
-
-static_assert(sizeof(unsigned long long) == sizeof(unsigned long), "");
-
-template <typename T>
-__global__ void recycle_all_gpu(SNodeAllocator<T> *allocator, int flags) {
-  auto num_blocks = allocator->resident_tail;
-  for (int b = blockIdx.x; b < num_blocks; b += gridDim.x) {
-    auto t = threadIdx.x;
-    /*
-    if (allocator->resident_pool[b].active)
-      return;  // still active, do nothing
-    */
-    // zero-fill
-    auto &meta = allocator->resident_pool[b];
-    if (t == 0 && flags)
-      *(meta.snode_ptr) = nullptr;
-    auto ptr = (int *)(meta.ptr);
-    while (t * sizeof(int) < sizeof(T::child_type)) {
-      ptr[t] = 0;
-      t += blockDim.x;
-    }
-
-    /*
-    // push to recycle list
-    if (t == 0) {
-      auto x = atomic_add(&allocator->recycle_tail, 1);
-      allocator->recycle_pool[x] = allocator->resident_pool[b];
-    }
-    */
-  }
-}
-
-template <typename t>
-__global__ void zero_execution_tail(SNodeAllocator<t> *allocator) {
-  allocator->execution_tail = 0;
-}
-
-template <typename t>
-__global__ void zero_tails(SNodeAllocator<t> *allocator) {
-  allocator->resident_tail = 0;
-  allocator->recycle_tail = 0;
-}
-
-template <typename T>
-__global__ void backup_tails_device(SNodeAllocator<T> *allocator) {
-  allocator->resident_tail_const = allocator->resident_tail;
-  allocator->recycle_tail_const = allocator->recycle_tail;
-}
-
-template <typename T>
-__host__ void SNodeAllocator<T>::backup_tails() {
-  backup_tails_device<T><<<1, 1>>>(this);
-}
-
-template <typename T>
-__host__ void SNodeAllocator<T>::reset_execution_tail() {
-  zero_execution_tail<T><<<1, 1>>>(this);
-}
-
-template <typename T>
-__host__ void SNodeAllocator<T>::reset_tails() {
-  zero_tails<T><<<1, 1>>>(this);
-}
-
-template <typename T>
-__host__ void SNodeAllocator<T>::clear(int flags) {
-  int blockDim = 256;  // least_pot_bound(sizeof(data_type) / sizeof(int));
-#if defined(TL_DEBUG)
-  cudaDeviceSynchronize();
-  printf("tail    %d size %d blockDim %d\n", resident_tail, sizeof(data_type),
-         blockDim);
-#endif
-  gpu_runtime_init();
-#if defined(TL_DEBUG)
-  printf("gc ");
-  cudaEvent_t start, stop;
-  cudaEventCreate(&start);
-  cudaEventCreate(&stop);
-  cudaEventRecord(start);
-#endif
-  recycle_all_gpu<<<2048, blockDim>>>(this, flags);
-#if defined(TL_DEBUG)
-  cudaEventRecord(stop);
-  cudaEventSynchronize(stop);
-  float milliseconds = 0;
-  cudaEventElapsedTime(&milliseconds, start, stop);
-  std::cout << "device  " << milliseconds << " ms" << std::endl;
-#endif
-
-#if defined(TL_DEBUG)
-  cudaDeviceSynchronize();
-  auto err = cudaGetLastError();
-  if (err) {
-    printf("CUDA Error (File %s Ln %d): %s\n", __FILE__, __LINE__,
-           cudaGetErrorString(err));
-    exit(-1);
-  }
-#endif
-  if (flags) {
-    zero_tails<<<1, 1>>>(this);
-  }
-}
-#endif
 
 template <typename T>
 struct SNodeManager {
@@ -295,6 +176,105 @@ struct Managers {
 #endif
   }
 };
+
+#if defined(TLANG_GPU)
+
+inline constexpr std::size_t least_pot_bound(std::size_t v) {
+  std::size_t ret = 1;
+  while (ret < v) {
+    ret *= 2;
+  }
+  return ret;
+}
+
+static_assert(sizeof(unsigned long long) == sizeof(unsigned long), "");
+
+template <typename T>
+__global__ void recycle_all_gpu(SNodeAllocator<T> *allocator, int flags) {
+  auto num_blocks = allocator->resident_tail;
+  for (int b = blockIdx.x; b < num_blocks; b += gridDim.x) {
+    auto t = threadIdx.x;
+    /*
+    if (allocator->resident_pool[b].active)
+      return;  // still active, do nothing
+    */
+    // zero-fill
+    auto &meta = allocator->resident_pool[b];
+    if (t == 0 && flags)
+      *(meta.snode_ptr) = nullptr;
+    auto ptr = (int *)(meta.ptr);
+    while (t * sizeof(int) < sizeof(T::child_type)) {
+      ptr[t] = 0;
+      t += blockDim.x;
+    }
+
+    /*
+    // push to recycle list
+    if (t == 0) {
+      auto x = atomic_add(&allocator->recycle_tail, 1);
+      allocator->recycle_pool[x] = allocator->resident_pool[b];
+    }
+    */
+  }
+}
+
+template <typename T>
+__global__ void reset_execution_tail() {
+  Managers::get_allocator<T>()->execution_tail = 0;
+}
+
+template <typename T>
+__global__ void reset_tails() {
+  Managers::get_allocator<T>()->resident_tail = 0;
+  Managers::get_allocator<T>()->recycle_tail = 0;
+}
+
+template <typename T>
+__global__ void backup_tails() {
+  auto allocator = Managers::get_allocator<T>();
+  allocator->resident_tail_const = allocator->resident_tail;
+  allocator->recycle_tail_const = allocator->recycle_tail;
+}
+
+template <typename T>
+__host__ void SNodeAllocator<T>::clear(int flags) {
+  int blockDim = 256;  // least_pot_bound(sizeof(data_type) / sizeof(int));
+#if defined(TL_DEBUG)
+  cudaDeviceSynchronize();
+  printf("tail    %d size %d blockDim %d\n", resident_tail, sizeof(data_type),
+         blockDim);
+#endif
+  gpu_runtime_init();
+#if defined(TL_DEBUG)
+  printf("gc ");
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+  cudaEventRecord(start);
+#endif
+  recycle_all_gpu<<<2048, blockDim>>>(this, flags);
+#if defined(TL_DEBUG)
+  cudaEventRecord(stop);
+  cudaEventSynchronize(stop);
+  float milliseconds = 0;
+  cudaEventElapsedTime(&milliseconds, start, stop);
+  std::cout << "device  " << milliseconds << " ms" << std::endl;
+#endif
+
+#if defined(TL_DEBUG)
+  cudaDeviceSynchronize();
+  auto err = cudaGetLastError();
+  if (err) {
+    printf("CUDA Error (File %s Ln %d): %s\n", __FILE__, __LINE__,
+           cudaGetErrorString(err));
+    exit(-1);
+  }
+#endif
+  if (flags) {
+    reset_tails<T><<<1, 1>>>();
+  }
+}
+#endif
 
 template <typename child_type_>
 struct layout_root {

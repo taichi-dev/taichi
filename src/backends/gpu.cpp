@@ -419,8 +419,6 @@ class GPUIRCodeGen : public IRVisitor {
         "+ {} - 1) / {};",
         num_SMs, leaf->node_type_name, block_division, block_division);
 
-    TC_ASSERT(leaf->parent->type == SNodeType::pointer);
-
     emit("Managers::get_allocator<{}>()->reset_tails();", leaf->node_type_name);
 
     emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
@@ -487,7 +485,7 @@ class GPUIRCodeGen : public IRVisitor {
 
     for (auto p = snode; p; p = p->parent) {
       path.push_back(p);
-      if (p->type == SNodeType::pointer) {
+      if (p->type == SNodeType::pointer || p->type == SNodeType::root) {
         first_managed_ancestor = p;
         break;
       }
@@ -618,6 +616,10 @@ class GPUIRCodeGen : public IRVisitor {
 
       if (struct_for->snode->parent->type == SNodeType::dynamic &&
           struct_for->snode->parent->parent->type == SNodeType::pointer)
+        use_activity_tracking = true;
+
+      if (struct_for->snode->parent->type == SNodeType::dynamic &&
+          struct_for->snode->parent->parent->type == SNodeType::root)
         use_activity_tracking = true;
 
       // if (struct_for->snode->parent->type == SNodeType::pointer)

@@ -345,9 +345,7 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
   return nullptr;
 }
 
-TLANG_NAMESPACE_END
-
-void taichi::Tlang::Block::erase(int location) {
+void Block::erase(int location) {
   trash_bin.push_back(std::move(statements[location]));  // do not delete the
   // stmt, otherwise
   // print_ir will not
@@ -355,8 +353,7 @@ void taichi::Tlang::Block::erase(int location) {
   statements.erase(statements.begin() + location);
 }
 
-void taichi::Tlang::Block::insert(std::unique_ptr<taichi::Tlang::Stmt> &&stmt,
-                                  int location) {
+void Block::insert(std::unique_ptr<Stmt> &&stmt, int location) {
   stmt->parent = this;
   if (location == -1) {
     statements.push_back(std::move(stmt));
@@ -365,10 +362,9 @@ void taichi::Tlang::Block::insert(std::unique_ptr<taichi::Tlang::Stmt> &&stmt,
   }
 }
 
-void taichi::Tlang::Block::replace_statements_in_range(
-    int start,
-    int end,
-    taichi::Tlang::VecStatement &&stmts) {
+void Block::replace_statements_in_range(int start,
+                                        int end,
+                                        VecStatement &&stmts) {
   TC_ASSERT(start <= end);
   for (int i = 0; i < end - start; i++) {
     erase(start);
@@ -379,16 +375,14 @@ void taichi::Tlang::Block::replace_statements_in_range(
   }
 }
 
-void taichi::Tlang::Block::replace_with(
-    taichi::Tlang::Stmt *old_statement,
-    std::unique_ptr<taichi::Tlang::Stmt> &&new_statement) {
+void Block::replace_with(Stmt *old_statement,
+                         std::unique_ptr<Stmt> &&new_statement) {
   VecStatement vec;
   vec.push_back(std::move(new_statement));
   replace_with(old_statement, vec);
 }
 
-taichi::Tlang::Stmt *taichi::Tlang::Block::lookup_var(
-    taichi::Tlang::Ident ident) const {
+Stmt *Block::lookup_var(taichi::Tlang::Ident ident) const {
   auto ptr = local_var_alloca.find(ident);
   if (ptr != local_var_alloca.end()) {
     return ptr->second;
@@ -401,7 +395,7 @@ taichi::Tlang::Stmt *taichi::Tlang::Block::lookup_var(
   }
 }
 
-taichi::Tlang::Stmt *taichi::Tlang::Block::mask() {
+Stmt *Block::mask() {
   if (mask_var)
     return mask_var;
   else if (parent == nullptr) {
@@ -410,3 +404,14 @@ taichi::Tlang::Stmt *taichi::Tlang::Block::mask() {
     return parent->mask();
   }
 }
+
+For::For(Expr s, Expr e, const std::function<void(Expr)> &func) {
+  auto i = Expr(std::make_shared<IdExpression>());
+  auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
+  auto stmt = stmt_unique.get();
+  current_ast_builder().insert(std::move(stmt_unique));
+  auto _ = current_ast_builder().create_scope(stmt->body);
+  func(i);
+}
+
+TLANG_NAMESPACE_END

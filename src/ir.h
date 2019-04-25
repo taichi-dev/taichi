@@ -1827,6 +1827,8 @@ class For {
     auto _ = current_ast_builder().create_scope(stmt->body);
     func();
   }
+
+  For(Expr s, Expr e, const std::function<void(Expr)> &func);
 };
 
 class While {

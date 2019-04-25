@@ -88,6 +88,33 @@ TC_TEST("compiler_basics") {
   }
 };
 
+TC_TEST("fancy_for") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 128;
+  Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
+
+  Global(a, i32);
+  auto i = Index(0);
+  layout([&]() { root.dense(i, n).place(a); });
+
+  auto dou = [](Expr a) { return a * 2; };
+
+  kernel([&]() {
+    Local(sum) = 0;
+    For(Expr(0), Expr(n), [&] (Expr i) {
+      sum = sum + i;
+      Local(ret) = 0;
+      If(i % 2 == 0).Then([&] { ret = dou(i); }).Else([&] { ret = i; });
+      a[i] = ret;
+    });
+  })();
+
+  for (int i = 0; i < n; i++) {
+    TC_CHECK(a.val<int32>(i) == (2 - i % 2) * i);
+  }
+};
+
 TC_TEST("simd_if") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;

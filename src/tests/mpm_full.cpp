@@ -171,7 +171,7 @@ auto mpm3d = []() {
 
   Kernel(sort).def([&] {
     Declare(p);
-    BlockDim(256);
+    BlockDim(1024);
     For(p, particle_x(0), [&] {
       auto node_coord = floor(particle_x[p] * inv_dx - 0.5_f);
       Append(l.parent(),

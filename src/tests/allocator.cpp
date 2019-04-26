@@ -18,15 +18,13 @@ TC_TEST("gpu_gc_basics") {
     });
 
     kernel([&]() {
-      Declare(i);
-      Declare(j);
-      For(i, 0, n, [&] { For(j, 0, i, [&] { Activate(x.snode(), {i, j}); }); });
+      For(0, n, [&](Expr i) {
+        For(0, i, [&](Expr j) { Activate(x.snode(), {i, j}); });
+      });
     })();
 
     kernel([&]() {
-      Declare(i);
-      Declare(j);
-      For(i, 0, n, [&] { For(j, 0, i, [&] { x[i, j] = i + j; }); });
+      For(0, n, [&](Expr i) { For(0, i, [&](Expr j) { x[i, j] = i + j; }); });
     })();
 
     auto stat = x.parent().parent().snode()->stat();
@@ -123,7 +121,7 @@ TC_TEST("parallel_particle_sort") {
 
   Kernel(sort).def([&] {
     BlockDim(256);
-    For(particle_x(0), [&] (Expr p) {
+    For(particle_x(0), [&](Expr p) {
       auto node_coord = floor(particle_x[p] * inv_dx - 0.5_f);
       Append(l.parent(),
              (cast<int32>(node_coord(0)), cast<int32>(node_coord(1)),
@@ -131,7 +129,6 @@ TC_TEST("parallel_particle_sort") {
              p);
     });
   });
-
 
   for (int i = 0; i < n_particles; i++) {
     for (int d = 0; d < dim; d++) {

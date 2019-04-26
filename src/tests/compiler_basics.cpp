@@ -675,9 +675,8 @@ TC_TEST("vector_split1") {
   layout([&]() { root.dense(0, n).place(a); });
 
   kernel([&]() {
-    Declare(i);
     Vectorize(16);
-    For(i, 0, n, [&] { a[i] = i; });
+    For(0, n, [&] (Expr i) { a[i] = i; });
   })();
 
   for (int i = 0; i < n; i++) {
@@ -700,10 +699,8 @@ TC_TEST("vector_split_slp") {
   layout([&]() { root.dense(0, n).place(a, b, c, d); });
 
   kernel([&]() {
-    Declare(i);
-
     Vectorize(32);
-    For(i, 0, n, [&] {
+    For(0, n, [&] (Expr i) {
       SLP(4);
       a[i] = 1 + i;
       b[i] = 2 + i;

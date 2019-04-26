@@ -64,9 +64,7 @@ TC_TEST("activate") {
     */
 
     kernel([&]() {
-      Declare(i);
-      Declare(j);
-      For(i, 0, n, [&] { For(j, 0, i, [&] { x[i, j] = i + j; }); });
+      For(0, n, [&](Expr i) { For(0, i, [&](Expr j) { x[i, j] = i + j; }); });
     })();
 
     for (int i = 0; i < n; i++) {
@@ -92,24 +90,15 @@ TC_TEST("task_list") {
     });
 
     kernel([&]() {
-      Declare(i);
-      Declare(j);
-      For(i, 0, n, [&] {
-        For(j, 0, max(i % 5 - 3, 0), [&] { Activate(x.snode(), {i, j}); });
+      For(0, n, [&](Expr i) {
+        For(0, max(i % 5 - 3, 0), [&](Expr j) { Activate(x.snode(), {i, j}); });
       });
     })();
 
-    kernel([&]() {
-      Declare(i);
-      Declare(j);
-      For({i, j}, x, [&] { x[i, j] = i + j; });
-    })();
+    kernel([&]() { For(x, [&](Expr i, Expr j) { x[i, j] = i + j; }); })();
 
-    auto &inc = kernel([&]() {
-      Declare(i);
-      Declare(j);
-      For({i, j}, x, [&] { x[i, j] += 1; });
-    });
+    auto &inc =
+        kernel([&]() { For(x, [&](Expr i, Expr j) { x[i, j] += 1; }); });
 
     int P = 10;
 

@@ -15,9 +15,8 @@ TC_TEST("atomics") {
   layout([&]() { root.place(sum, fsum); });
 
   auto &func = kernel([&]() {
-    Declare(i);
     Parallelize(4);
-    For(i, 0, n, [&] {
+    For(0, n, [&](Expr i) {
       Atomic(sum[Expr(0)]) += 1;
       Atomic(fsum[Expr(0)]) += cast<float32>(1 - 2 * (i % 2));
     });
@@ -38,11 +37,8 @@ TC_TEST("atomics2") {
   layout([&]() { root.place(fsum); });
 
   auto &func = kernel([&]() {
-    Declare(i);
     Parallelize(4);
-    For(i, 0, n, [&] {
-      Atomic(fsum[Expr(0)]) += 1.0f;
-    });
+    For(0, n, [&](Expr i) { Atomic(fsum[Expr(0)]) += 1.0f; });
   });
 
   func();

@@ -38,8 +38,8 @@ auto ray_march = [] {
   int limit = 200;
 
   auto ray_march = [&](Vector p, Vector dir) {
-    Local(j) = 0;
-    Local(dist) = 0.0f;
+    auto j = Var(0);
+    auto dist = Var(0.0f);
 
     While(j < limit && sdf(p + dist * dir) > eps && dist < dist_limit, [&] {
       dist += sdf(p + dist * dir);
@@ -66,9 +66,9 @@ auto ray_march = [] {
       u = normalized(cross(n, Vector({0.0f, 1.0f, 0.0f})));
     });
     v = cross(n, u);
-    Local(phi) = 2 * pi * Rand<float>();
-    Local(r) = Rand<float>();
-    Local(alpha) = 0.5_f * pi * (r * r);
+    auto phi = Var(2 * pi * Rand<float>());
+    auto r = Var(Rand<float>());
+    auto alpha = Var(0.5_f * pi * (r * r));
     return sin(alpha) * (cos(phi) * u + sin(phi) * v) + cos(alpha) * n;
   };
 
@@ -92,11 +92,11 @@ auto ray_march = [] {
 
       auto color = Var(Vector({1.0f, 1.0f, 1.0f}));
       int depth_limit = 4;
-      Local(depth) = 0;
+      auto depth = Var(0);
 
       While(depth < depth_limit, [&] {
         depth += 1;
-        Local(_dist) = ray_march(orig, c);
+        auto _dist = Var(ray_march(orig, c));
         If(_dist < dist_limit,
            [&] {
              orig += _dist * c;

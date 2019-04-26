@@ -38,7 +38,7 @@ print()
 print()
 
 for var in variables:
-    print("Local({}) = 0.0f;".format(var), file=f)
+    print("auto {} = Var(0.0f);".format(var), file=f)
 
 print(
 '''
@@ -107,7 +107,7 @@ for l in lines[l_compute + 1:l_end]:
         print("{} = max({}, {});".format(to_var(tokens[0]), tokens[2][9:-3], tokens[3][:-3]), file=f)
         continue
     if tokens[0] == 'for':
-        print('Declare(sweep); For (sweep, 0, 5, [&]{', file =f)
+        print('For (0, 5, [&] (Expr sweep) {', file =f)
         continue
     if tokens[0] == '}':
         print('});', file =f)

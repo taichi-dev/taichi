@@ -224,8 +224,8 @@ auto mpm3d = []() {
                     Eval(0.5_f * sqr(fx - 0.5_f))};
 
       Matrix cauchy(3, 3);
-      Local(mu) = mu_0;
-      Local(lambda) = lambda_0;
+      auto mu = Var(mu_0);
+      auto lambda = Var(lambda_0);
       if (material == MPMMaterial::fluid) {
         cauchy = (J - 1.0_f) * Matrix::identity(3) * E;
       } else if (material == MPMMaterial::jelly ||
@@ -337,9 +337,9 @@ auto mpm3d = []() {
 
   Kernel(grid_op).def([&]() {
     For(grid_m, [&](Expr i, Expr j, Expr k) {
-      Local(v0) = grid_v[i, j, k](0);
-      Local(v1) = grid_v[i, j, k](1);
-      Local(v2) = grid_v[i, j, k](2);
+      auto v0 = Var(grid_v[i, j, k](0));
+      auto v1 = Var(grid_v[i, j, k](1));
+      auto v2 = Var(grid_v[i, j, k](2));
       auto m = load(grid_m[i, j, k]);
 
       int bound = 8;

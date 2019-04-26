@@ -18,7 +18,7 @@ TC_TEST("compiler_basics_gpu") {
 
   kernel([&]() {
     For(0, n, [&](Expr i) {
-      Local(ret) = 0;
+      auto ret = Var(0);
       If(i % 2 == 0).Then([&] { ret = dou(i); }).Else([&] { ret = i; });
       a[i] = ret;
     });

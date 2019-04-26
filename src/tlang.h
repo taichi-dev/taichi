@@ -57,13 +57,6 @@ inline void declare_var(Expr &a) {
 
 #define Declare(x) auto x = Expr(std::make_shared<IdExpression>());
 
-#define var(type, x) declare_var<type>(x);
-
-#define Local(x)  \
-  Declare(x);     \
-  declare_var(x); \
-  x
-
 #define Global(x, dt)  \
   Declare(x##_global); \
   auto x = global_new(x##_global, DataType::dt);

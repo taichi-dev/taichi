@@ -5,14 +5,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-Expr Var(Expr x) {
-  auto var = Expr(std::make_shared<IdExpression>());
-  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-      std::static_pointer_cast<IdExpression>(var.expr)->id, DataType::unknown));
-  var = x;
-  return var;
-}
-
 TC_TEST("compiler_linalg") {
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::x86_64);
@@ -205,70 +197,6 @@ auto test_circle = [] {
   }
 };
 TC_REGISTER_TASK(test_circle);
-
-auto test_ast = []() {
-  CoreState::set_trigger_gdb_when_crash(true);
-
-  Program prog(Arch::x86_64);
-  int n = 128;
-
-  context = std::make_unique<FrontendContext>();
-  Declare(a);
-  Declare(x);
-  Declare(b);
-  Declare(p);
-  Declare(q);
-  Declare(i);
-  Declare(j);
-
-  // var(float32, a);
-  x.set(global_new(x, DataType::f32));
-  TC_ASSERT(x.is<GlobalVariableExpression>());
-
-  var(float32, a);
-  var(float32, b);
-  var(int32, p);
-  var(int32, q);
-
-  p = p + q;
-
-  Print(a);
-  If(a < 500).Then([&] { Print(b); }).Else([&] { Print(a); });
-
-  If(a > 5)
-      .Then([&] {
-        b = (b + 1) / 3;
-        b *= 3;
-      })
-      .Else([&] {
-        b = b + 2;
-        b -= 4;
-      });
-
-  For(i, 0, 8, [&] {
-    x[i] = i;
-    For(j, 0, 8, [&] {
-      auto k = i + j;
-      Print(k);
-      // While(k < 500, [&] { Print(k); });
-    });
-  });
-  Print(b);
-
-  auto root = context->root();
-
-  TC_INFO("AST");
-  irpass::print(root);
-
-  irpass::lower(root);
-  TC_INFO("Lowered");
-  irpass::print(root);
-
-  irpass::typecheck(root);
-  TC_INFO("TypeChecked");
-  irpass::print(root);
-};
-TC_REGISTER_TASK(test_ast);
 
 TC_TEST("vectorize") {
   CoreState::set_trigger_gdb_when_crash(true);

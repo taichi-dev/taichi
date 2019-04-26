@@ -1880,4 +1880,12 @@ class While {
   }
 };
 
+inline Expr Var(Expr x) {
+  auto var = Expr(std::make_shared<IdExpression>());
+  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
+      std::static_pointer_cast<IdExpression>(var.expr)->id, DataType::unknown));
+  var = x;
+  return var;
+}
+
 TLANG_NAMESPACE_END

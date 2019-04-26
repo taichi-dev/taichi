@@ -207,14 +207,13 @@ auto mpm3d = []() {
       Expr J;
       Matrix F;
       if (material == MPMMaterial::fluid) {
-        J = particle_J[p] * (1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2)));
-        particle_J[p] = J;
+        particle_J[p] *= 1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2));
       } else {
         F = Var(Matrix::identity(dim) + dt * C) * particle_F[p];
       }
 
-      auto base_coord = floor(Expr(inv_dx) * x - Expr(0.5_f));
-      auto fx = x * Expr(inv_dx) - base_coord;
+      auto base_coord = floor(inv_dx * x - 0.5_f);
+      auto fx = x * inv_dx - base_coord;
 
       Vector w[] = {Var(0.5_f * sqr(1.5_f - fx)), Var(0.75_f - sqr(fx - 1.0_f)),
                     Var(0.5_f * sqr(fx - 0.5_f))};
@@ -231,11 +230,9 @@ auto mpm3d = []() {
         auto sig = Var(std::get<1>(svd));
         auto oldJ = Var(sig(0) * sig(1) * sig(2));
         if (material == MPMMaterial::snow) {
-          for (int i = 0; i < dim; i++) {
-            sig(i) = clamp(sig(i), 1 - 2.5e-2f, 1 + 7.5e-3f);
-          }
+          for (int d = 0; d < dim; d++)
+            sig(d) = clamp(sig(d), 1 - 2.5e-2f, 1 + 7.5e-3f);
           auto newJ = sig(0) * sig(1) * sig(2);
-          // plastic J
           auto Jp = Var(clamp(particle_J[p] * oldJ / newJ, 0.6_f, 20.0_f));
           J = newJ;
           F = std::get<0>(svd) * diag_matrix(sig) *
@@ -290,16 +287,12 @@ auto mpm3d = []() {
       for (int a = 0; a < 3; a++) {
         for (int b = 0; b < 3; b++) {
           for (int c = 0; c < 3; c++) {
-            auto dpos = Vector(dim);
-            dpos(0) = dx * ((a * 1.0_f) - fx(0));
-            dpos(1) = dx * ((b * 1.0_f) - fx(1));
-            dpos(2) = dx * ((c * 1.0_f) - fx(2));
+            auto dpos = dx * (Vector({a, b, c}).cast_elements<float32>() - fx);
             auto weight = w[a](0) * w[b](1) * w[c](2);
-            auto node = (base_coord_i + Expr(a), base_coord_j + Expr(b),
-                         base_coord_k + Expr(c));
+            auto node = (base_coord_i + a, base_coord_j + b, base_coord_k + c);
             Atomic(grid_v[node]) +=
-                weight * (Expr(particle_mass) * v + affine * dpos);
-            Atomic(grid_m[node]) += weight * Expr(particle_mass);
+                weight * (particle_mass * v + affine * dpos);
+            Atomic(grid_m[node]) += weight * particle_mass;
           }
         }
       }
@@ -377,7 +370,7 @@ auto mpm3d = []() {
       auto p = Var(l[i, j, k, p_ptr]);
       Assert(p >= 0);
       Assert(p < n_particles);
-      auto x = particle_x[p];
+      auto x = Var(particle_x[p]);
       auto v = Var(Vector(dim));
       auto C = Var(Matrix(dim, dim));
 
@@ -415,10 +408,7 @@ auto mpm3d = []() {
       for (int p = 0; p < 3; p++) {
         for (int q = 0; q < 3; q++) {
           for (int r = 0; r < 3; r++) {
-            auto dpos = Vector(dim);
-            dpos(0) = Expr(p * 1.0_f) - fx(0);
-            dpos(1) = Expr(q * 1.0_f) - fx(1);
-            dpos(2) = Expr(r * 1.0_f) - fx(2);
+            auto dpos = Vector({p, q, r}).cast_elements<float32>() - fx;
             auto weight = w[p](0) * w[q](1) * w[r](2);
             auto wv =
                 weight *

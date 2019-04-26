@@ -9,7 +9,6 @@ TC_TEST("compiler_basics_gpu") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::gpu);
-  prog.config.print_ir = true;
 
   Global(a, i32);
   auto i = Index(0);
@@ -18,14 +17,12 @@ TC_TEST("compiler_basics_gpu") {
   auto dou = [](Expr a) { return a * 2; };
 
   kernel([&]() {
-    Declare(i);
-    For(i, 0, n, [&] {
+    For(0, n, [&](Expr i) {
       Local(ret) = 0;
       If(i % 2 == 0).Then([&] { ret = dou(i); }).Else([&] { ret = i; });
       a[i] = ret;
     });
   })();
-
 
   for (int i = 0; i < n; i++) {
     TC_CHECK(a.val<int32>(i) == (2 - i % 2) * i);

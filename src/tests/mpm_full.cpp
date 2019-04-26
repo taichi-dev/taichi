@@ -214,7 +214,7 @@ auto mpm3d = []() {
         J = particle_J[p] * (1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2)));
         particle_J[p] = J;
       } else {
-        F = Eval((Matrix::identity(dim) + dt * C) * particle_F[p]);
+        F = (Matrix::identity(dim) + dt * C) * particle_F[p];
       }
       Mutable(F, DataType::f32);
 
@@ -254,13 +254,13 @@ auto mpm3d = []() {
         } else {
           J = oldJ;
         }
-        cauchy = Eval(2.0_f * mu * (F - R) * transposed(F) +
-                      (Matrix::identity(3) * lambda) * (J - 1.0f) * J);
+        cauchy = 2.0_f * mu * (F - R) * transposed(F) +
+                 (Matrix::identity(3) * lambda) * (J - 1.0f) * J;
       } else if (material == MPMMaterial::sand) {
         auto svd = sifakis_svd(F);
         auto u = std::get<0>(svd), sig = std::get<1>(svd), v = std::get<2>(svd);
         Mutable(sig, f32);
-        sig = Eval(project(std::get<1>(svd), p));
+        sig = project(std::get<1>(svd), p);
         F = u * diag_matrix(sig) * transposed(v);
         auto log_sig = log(sig);
         auto inv_sig = 1.0_f / sig;

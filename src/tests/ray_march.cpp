@@ -3,72 +3,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-Vector complex_mul(const Vector &a, const Vector &b) {
-  Vector ret(2);
-  ret(0) = a(0) * b(0) - a(1) * b(1);
-  ret(1) = a(0) * b(1) + a(1) * b(0);
-  return ret;
-}
-
-#if(0)
-auto mset = [] {
-  CoreState::set_trigger_gdb_when_crash(true);
-  int n = 1024;
-  Program prog(Arch::x86_64);
-
-  Global(a, i32);
-
-  layout([&]() { root.dense(0, n * n).place(a); });
-
-  auto &func = kernel([&]() {
-    Declare(i);
-
-    Vectorize(8);
-    For(i, 0, n * n, [&] {
-      Local(j) = 0;
-      int limit = 20;
-      if (false) {
-        Local(c_re) = cast<float>(i / n) / float(n / 2) - 1.5f;
-        Local(c_im) = cast<float>(i % n) / float(n / 2) - 1.0f;
-        Local(z_re) = c_re;
-        Local(z_im) = c_im;
-
-        While(j < limit && (z_re * z_re + z_im * z_im) < 4.0f, [&] {
-          Local(new_re) = z_re * z_re - z_im * z_im;
-          Local(new_im) = 2.0f * z_re * z_im;
-          z_re = c_re + new_re;
-          z_im = c_im + new_im;
-          j += 1;
-        });
-      } else {
-        Vector c(2);
-
-        c(0) = cast<float>(i / n) / float(n / 2) - 1.5f;
-        c(1) = cast<float>(i % n) / float(n / 2) - 1.0f;
-
-        Vector z = c;
-
-        While(j < limit && z.norm2() < 4.0f, [&] {
-          z = complex_mul(z, z) + c;
-          j += 1;
-        });
-      }
-      a[i] = j;
-    });
-  });
-
-  TC_P(measure_cpe(func, 1));
-
-  GUI gui("Mandelbrot Set", Vector2i(n));
-  for (int i = 0; i < n * n; i++) {
-    gui.buffer[i / n][i % n] = Vector4(a.val<int>(i) % 11 * 0.1f);
-  }
-  while (1)
-    gui.update();
-};
-TC_REGISTER_TASK(mset);
-#endif
-
 auto ray_march = [] {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 512;
@@ -148,10 +82,9 @@ auto ray_march = [] {
   float fov = 0.3;
 
   auto &main = kernel([&]() {
-    Declare(i);
     Parallelize(8);
     Vectorize(8);
-    For(i, 0, n * n * 2, [&] {
+    For(0, n * n * 2, [&](Expr i) {
       Vector orig({0.0f, 0.0f, 12.0f}), c(3);
       Mutable(orig, DataType::f32);
 

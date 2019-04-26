@@ -73,7 +73,7 @@ auto mpm3d = []() {
     p_x.resize(n_particles);
     TC_ASSERT(n_particles <= max_n_particles);
     auto f = fopen("dragon_particles.bin", "rb");
-    TC_ASSERT(f);
+    TC_ASSERT_INFO(f, "./dragon_particles.bin not found");
     benchmark_particles.resize(n_particles * 3);
     std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f);
     std::fclose(f);
@@ -332,46 +332,39 @@ auto mpm3d = []() {
 
   Kernel(grid_op).def([&]() {
     For(grid_m, [&](Expr i, Expr j, Expr k) {
-      auto v0 = Var(grid_v[i, j, k](0));
-      auto v1 = Var(grid_v[i, j, k](1));
-      auto v2 = Var(grid_v[i, j, k](2));
+      auto v = Var(grid_v[i, j, k]);
       auto m = load(grid_m[i, j, k]);
 
       int bound = 8;
 
       If(m > 0.0f, [&]() {
         auto inv_m = Var(1.0f / m);
-        v0 *= inv_m;
-        v1 *= inv_m;
-        v2 *= inv_m;
+        v *= inv_m;
 
         auto f = gravity_x[Expr(0)];
-        v1 += dt * (-1000_f + abs(f));
-        v0 += dt * f;
+        v(1) += dt * (-1000_f + abs(f));
+        v(0) += dt * f;
       });
 
-      v0 = select(n - bound < i, min(v0, Expr(0.0_f)), v0);
-      v1 = select(n - bound < j, min(v1, Expr(0.0_f)), v1);
-      v2 = select(n - bound < k, min(v2, Expr(0.0_f)), v2);
+      v(0) = select(n - bound < i, min(v(0), Expr(0.0_f)), v(0));
+      v(1) = select(n - bound < j, min(v(1), Expr(0.0_f)), v(1));
+      v(2) = select(n - bound < k, min(v(2), Expr(0.0_f)), v(2));
 
-      v0 = select(i < bound, max(v0, Expr(0.0_f)), v0);
-      v2 = select(k < bound, max(v2, Expr(0.0_f)), v2);
+      v(0) = select(i < bound, max(v(0), Expr(0.0_f)), v(0));
+      v(2) = select(k < bound, max(v(2), Expr(0.0_f)), v(2));
 
       If(j < bound, [&] {
-        auto norm = Var(sqrt(v0 * v0 + v2 * v2));
-        auto s = Var(
-            clamp((norm + v1 * (material == MPMMaterial::sand ? 1.0f : 0.10f)) /
-                      (norm + 1e-30f),
-                  Expr(0.0_f), Expr(1.0_f)));
+        auto norm = Var(sqrt(v(0) * v(0) + v(2) * v(2)));
+        auto s = Var(clamp(
+            (norm + v(1) * (material == MPMMaterial::sand ? 1.0f : 0.10f)) /
+                (norm + 1e-30f),
+            Expr(0.0_f), Expr(1.0_f)));
 
-        v0 = v0 * s;
-        v2 = v2 * s;
-        v1 = max(v1, Expr(0.0_f));
+        v *= s;
+        v(1) = max(v(1), Expr(0.0_f));
       });
 
-      grid_v[i, j, k](0) = v0;
-      grid_v[i, j, k](1) = v1;
-      grid_v[i, j, k](2) = v2;
+      grid_v[i, j, k] = v;
     });
   });
 

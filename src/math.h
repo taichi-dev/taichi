@@ -96,7 +96,17 @@ struct Matrix {
     } else {
       TC_ASSERT(n == o.n && m == o.m);
       for (int i = 0; i < (int)entries.size(); i++) {
-        entries[i] = o.entries[i];
+        TC_ASSERT((entries[i].expr != nullptr) == (entries[0].expr != nullptr));
+        if (entries[i].expr != nullptr) {
+          TC_ASSERT(entries[i]->is_lvalue() == entries[0]->is_lvalue());
+        }
+      }
+      for (int i = 0; i < (int)entries.size(); i++) {
+        if (!entries[i].expr.get() || entries[i]->is_lvalue()) {
+          entries[i] = o.entries[i];
+        } else {
+          entries[i].set(o.entries[i]);
+        }
       }
     }
     return *this;

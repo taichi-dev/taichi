@@ -229,8 +229,7 @@ auto mpm3d = []() {
         J = particle_J[p] * (1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2)));
         particle_J[p] = J;
       } else {
-        F = (Matrix::identity(dim) + dt * C) * particle_F[p];
-        Mutable(F);
+        F = Variable(Matrix::identity(dim) + dt * C) * particle_F[p];
       }
 
       auto base_coord = floor(Expr(inv_dx) * x - Expr(0.5_f));

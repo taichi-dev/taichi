@@ -25,7 +25,7 @@ TC_TEST("compiler_linalg") {
     B(0, 1) = 2;
     B(1, 0) = 3;
     B(1, 1) = 4;
-    auto C = Eval(A * B + A);
+    auto C = Var(A * B + A);
     for (int p = 0; p < 2; p++) {
       for (int q = 0; q < 2; q++) {
         Print(C(p, q));

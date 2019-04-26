@@ -310,7 +310,7 @@ TC_TEST("sort") {
       Declare(i);
       Declare(j);
       For(i, p.parent(), [&] {
-        auto len = Eval(Probe(p.parent().snode(), i));
+        auto len = Var(Probe(p.parent().snode(), i));
         Print(len);
         For(j, 0, len, [&] {
           auto pos = coord[p[i, j]];
@@ -370,7 +370,7 @@ TC_TEST("dynamic_sort") {
       Declare(i);
       Declare(j);
       For(i, p.parent(), [&] {
-        auto len = Eval(Probe(p.parent().snode(), i));
+        auto len = Var(Probe(p.parent().snode(), i));
         Print(len);
         For(j, 0, len, [&] {
           auto pos = coord[p[i, j]];

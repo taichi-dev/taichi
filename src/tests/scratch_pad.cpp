@@ -86,7 +86,7 @@ TC_TEST("scratch_pad_3d") {
     For(i, 0, domain_size, [&] {
       For(j, 0, domain_size, [&] {
         For(k, 0, domain_size, [&] {
-          auto d = Eval(dist(i, j, k));
+          auto d = Var(dist(i, j, k));
           If(0.43f < d && d < 0.47f, [&] {
             Activate(x, (i, j, k));
             x[i, j, k] = d * d * d;

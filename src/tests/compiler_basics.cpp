@@ -5,6 +5,14 @@
 
 TLANG_NAMESPACE_BEGIN
 
+Expr Var(Expr x) {
+  auto var = Expr(std::make_shared<IdExpression>());
+  current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
+      std::static_pointer_cast<IdExpression>(var.expr)->id, DataType::unknown));
+  var = x;
+  return var;
+}
+
 TC_TEST("compiler_linalg") {
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::x86_64);
@@ -38,7 +46,6 @@ TC_TEST("select") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
 
   Global(a, i32);
   auto i = Index(0);
@@ -47,7 +54,7 @@ TC_TEST("select") {
   auto dou = [](Expr a) { return a * 2; };
 
   kernel([&]() {
-    Local(sum) = 0;
+    auto sum = Var(0);
     For(0, n, [&](Expr i) {
       sum = sum + i;
       a[i] = select(i % 2 == 0, dou(i), i);
@@ -72,10 +79,10 @@ TC_TEST("compiler_basics") {
   auto dou = [](Expr a) { return a * 2; };
 
   kernel([&]() {
-    Local(sum) = 0;
+    auto sum = Var(0);
     For(0, n, [&](Expr i) {
       sum = sum + i;
-      Local(ret) = 0;
+      auto ret = Var(0);
       If(i % 2 == 0).Then([&] { ret = dou(i); }).Else([&] { ret = i; });
       a[i] = ret;
     });
@@ -99,10 +106,10 @@ TC_TEST("fancy_for") {
   auto dou = [](Expr a) { return a * 2; };
 
   kernel([&]() {
-    Local(sum) = 0;
+    auto sum = Var(0);
     For(Expr(0), Expr(n), [&](Expr i) {
       sum = sum + i;
-      Local(ret) = 0;
+      auto ret = Var(0);
       If(i % 2 == 0).Then([&] { ret = dou(i); }).Else([&] { ret = i; });
       a[i] = ret;
     });
@@ -125,10 +132,10 @@ TC_TEST("simd_if") {
   auto dou = [](Expr a) { return a * 2; };
 
   kernel([&]() {
-    Local(sum) = 0;
+    auto sum = Var(0);
     Vectorize(8);
     For(0, n, [&](Expr i) {
-      Local(ret) = 0;
+      auto ret = Var(0);
       If(i % 2 == 0).Then([&] { ret = dou(i); }).Else([&] { ret = i; });
       a[i] = ret;
     });
@@ -149,10 +156,10 @@ TC_TEST("simd_if2") {
   layout([&]() { root.dense(i, n).place(a); });
 
   kernel([&]() {
-    Local(sum) = 0;
+    auto sum = Var(0);
     Vectorize(8);
     For(0, n, [&](Expr i) {
-      Local(ret) = 0;
+      auto ret = Var(0);
       If(i % 3 == 0).Then([&] { ret = i; }).Else([&] {
         If(i % 3 == 1).Then([&] { ret = i * 2; }).Else([&] { ret = i * 3; });
       });
@@ -319,8 +326,8 @@ TC_TEST("while") {
   kernel([&]() {
     Vectorize(8);
     For(0, n, [&](Expr i) {
-      Local(j) = 0;
-      Local(sum) = 0;
+      auto j = Var(0);
+      auto sum = Var(0);
       While(j < i, [&] {
         sum += j;
         j += 1;
@@ -439,8 +446,8 @@ TC_TEST("slp3") {
     Vectorize(4);
     For(0, n, [&](Expr i) {
       SLP(2);
-      Local(x) = i * 7;
-      Local(y) = i * 9;
+      auto x = Var(i * 7);
+      auto y = Var(i * 9);
       a[i] = 1 + x;
       b[i] = 2 + y;
     });
@@ -524,7 +531,7 @@ TC_TEST("mixed_simd1") {
     kernel([&]() {
       For(0, n, [&](Expr i) {
         SLP(1);
-        Local(ab) = a[i] * b[i];
+        auto ab = Var(a[i] * b[i]);
 
         SLP(vec_size);
         v[i] = ab * v[i];
@@ -577,7 +584,7 @@ TC_TEST("mixed_simd2") {
         auto v_ind = vi;
 
         SLP(1);
-        Local(acc) = 0.0_f;
+        auto acc = Var(0.0_f);
         for (int d = 0; d < vec_size; d++) {
           acc = acc + v_ind(d);
         }
@@ -639,7 +646,7 @@ TC_TEST("mixed_simd3_slp") {
         auto diff = diff_;
 
         SLP(1);
-        Local(acc) = 0.0_f;
+        auto acc = Var(0.0_f);
         for (int d = 0; d < vec_size; d++) {
           acc = acc + diff(d);
         }
@@ -676,7 +683,7 @@ TC_TEST("vector_split1") {
 
   kernel([&]() {
     Vectorize(16);
-    For(0, n, [&] (Expr i) { a[i] = i; });
+    For(0, n, [&](Expr i) { a[i] = i; });
   })();
 
   for (int i = 0; i < n; i++) {
@@ -700,7 +707,7 @@ TC_TEST("vector_split_slp") {
 
   kernel([&]() {
     Vectorize(32);
-    For(0, n, [&] (Expr i) {
+    For(0, n, [&](Expr i) {
       SLP(4);
       a[i] = 1 + i;
       b[i] = 2 + i;

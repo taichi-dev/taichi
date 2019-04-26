@@ -21,13 +21,13 @@ Matrix &&Variable(Matrix &&mat) {
   return std::move(mat);
 }
 
-Matrix &&Variable(const Matrix &mat_) {
+Matrix Variable(const Matrix &mat_) {
   Matrix mat;
   mat.set(mat_);
   for (int i = 0; i < mat.entries.size(); i++) {
     declare_unnamed_var(mat.entries[i], DataType::unknown);
   }
-  return std::move(mat);
+  return mat;
 }
 
 void write_partio(std::vector<Vector3> positions,
@@ -249,8 +249,7 @@ auto mpm3d = []() {
                  material == MPMMaterial::snow) {
         auto svd = sifakis_svd(F);
         auto R = std::get<0>(svd) * transposed(std::get<2>(svd));
-        auto sig = (std::get<1>(svd));
-        Mutable(sig);
+        auto sig = Variable(std::get<1>(svd));
         auto oldJ = Eval(sig(0) * sig(1) * sig(2));
         if (material == MPMMaterial::snow) {
           for (int i = 0; i < dim; i++) {
@@ -273,9 +272,8 @@ auto mpm3d = []() {
                  (Matrix::identity(3) * lambda) * (J - 1.0f) * J;
       } else if (material == MPMMaterial::sand) {
         auto svd = sifakis_svd(F);
-        auto u = std::get<0>(svd), sig = (std::get<1>(svd)),
+        auto u = std::get<0>(svd), sig = Variable(std::get<1>(svd)),
              v = std::get<2>(svd);
-        Mutable(sig);
         sig = project(std::get<1>(svd), p);
         F = u * diag_matrix(sig) * transposed(v);
         auto log_sig = log(sig);

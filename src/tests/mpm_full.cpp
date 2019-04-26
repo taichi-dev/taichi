@@ -5,10 +5,7 @@
 #include <Partio.h>
 #include <taichi/system/profiler.h>
 #include <taichi/visualization/particle_visualization.h>
-
-TLANG_NAMESPACE_BEGIN
-std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a);
-TLANG_NAMESPACE_END
+#include "svd.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -108,14 +105,14 @@ auto mpm3d = []() {
   auto i = Index(0), j = Index(1), k = Index(2);
   auto p = Index(3);
 
-  bool SOA = false;
+  bool particle_SOA = false;
 
   layout([&]() {
     SNode *fork;
-    if (!SOA)
+    if (!particle_SOA)
       fork = &root.dynamic(p, max_n_particles);
     auto place = [&](Expr &expr) {
-      if (SOA) {
+      if (particle_SOA) {
         root.dynamic(p, max_n_particles).place(expr);
       } else {
         fork->place(expr);
@@ -273,11 +270,11 @@ auto mpm3d = []() {
 
       int low = 0, high = 1;
       auto base_coord_i =
-          (AssumeInRange(cast<int32>(base_coord(0)), i, low, high));
+          AssumeInRange(cast<int32>(base_coord(0)), i, low, high);
       auto base_coord_j =
-          (AssumeInRange(cast<int32>(base_coord(1)), j, low, high));
+          AssumeInRange(cast<int32>(base_coord(1)), j, low, high);
       auto base_coord_k =
-          (AssumeInRange(cast<int32>(base_coord(2)), k, low, high));
+          AssumeInRange(cast<int32>(base_coord(2)), k, low, high);
 
       Assert(base_coord_i < i + 4);
       Assert(base_coord_i - i >= 0);
@@ -313,7 +310,6 @@ auto mpm3d = []() {
     int last_nb = -1;
     while (1) {
       grid_m.parent().parent().snode()->clear(1);
-      // activate_all();
       sort();
       p2g_sorted();
       auto stat = grid_m.parent().parent().snode()->stat();
@@ -407,11 +403,11 @@ auto mpm3d = []() {
 
       int low = 0, high = 1;
       auto base_coord_i =
-          (AssumeInRange(cast<int32>(base_coord(0)), i, low, high));
+          AssumeInRange(cast<int32>(base_coord(0)), i, low, high);
       auto base_coord_j =
-          (AssumeInRange(cast<int32>(base_coord(1)), j, low, high));
+          AssumeInRange(cast<int32>(base_coord(1)), j, low, high);
       auto base_coord_k =
-          (AssumeInRange(cast<int32>(base_coord(2)), k, low, high));
+          AssumeInRange(cast<int32>(base_coord(2)), k, low, high);
 
       Assert(base_coord_i < i + 4);
       Assert(base_coord_i - i >= 0);

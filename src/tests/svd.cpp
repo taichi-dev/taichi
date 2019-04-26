@@ -21,7 +21,7 @@ Expr float32_bitwise_and(const Expr &a, const Expr &b) {
   return bit_cast<float32>(bit_cast<int32>(a) & bit_cast<int32>(b));
 }
 
-#include "svd.h"
+#include "svd_body.h"
 
 template <int sweeps = 5>
 __attribute_noinline__ void sifakis_svd(Matrix3 &a,

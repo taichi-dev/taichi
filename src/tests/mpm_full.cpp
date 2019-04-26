@@ -178,14 +178,14 @@ auto mpm3d = []() {
       epsilon(i) = log(max(abs(sigma(i)), 1e-4_f));
       sigma_out(i) = 1.0_f;
     }
-    auto tr = Eval(epsilon.sum() + particle_J[p]);
-    auto epsilon_hat = Eval(epsilon - tr / fdim);
-    auto epsilon_hat_norm = Eval(epsilon_hat.norm() + 1e-20_f);
+    auto tr = Var(epsilon.sum() + particle_J[p]);
+    auto epsilon_hat = Var(epsilon - tr / fdim);
+    auto epsilon_hat_norm = Var(epsilon_hat.norm() + 1e-20_f);
     If(tr >= 0.0_f).Then([&] { particle_J[p] += epsilon.sum(); }).Else([&] {
       particle_J[p] = 0.0f;
       auto delta_gamma =
-          Eval(epsilon_hat_norm +
-               (fdim * lambda_0 + 2.0_f * mu_0) / (2.0_f * mu_0) * tr * alpha);
+          Var(epsilon_hat_norm +
+              (fdim * lambda_0 + 2.0_f * mu_0) / (2.0_f * mu_0) * tr * alpha);
       sigma_out = exp(epsilon -
                       max(0.0_f, delta_gamma) / epsilon_hat_norm * epsilon_hat);
     });
@@ -201,7 +201,7 @@ auto mpm3d = []() {
     Cache(0, grid_v(2));
     Cache(0, grid_m);
     For(l, [&](Expr i, Expr j, Expr k, Expr p_ptr) {
-      auto p = Eval(l[i, j, k, p_ptr]);
+      auto p = Var(l[i, j, k, p_ptr]);
 
       auto x = particle_x[p];
       auto v = particle_v[p];
@@ -219,9 +219,8 @@ auto mpm3d = []() {
       auto base_coord = floor(Expr(inv_dx) * x - Expr(0.5_f));
       auto fx = x * Expr(inv_dx) - base_coord;
 
-      Vector w[] = {Eval(0.5_f * sqr(1.5_f - fx)),
-                    Eval(0.75_f - sqr(fx - 1.0_f)),
-                    Eval(0.5_f * sqr(fx - 0.5_f))};
+      Vector w[] = {Var(0.5_f * sqr(1.5_f - fx)), Var(0.75_f - sqr(fx - 1.0_f)),
+                    Var(0.5_f * sqr(fx - 0.5_f))};
 
       Matrix cauchy(3, 3);
       auto mu = Var(mu_0);
@@ -233,14 +232,14 @@ auto mpm3d = []() {
         auto svd = sifakis_svd(F);
         auto R = std::get<0>(svd) * transposed(std::get<2>(svd));
         auto sig = Var(std::get<1>(svd));
-        auto oldJ = Eval(sig(0) * sig(1) * sig(2));
+        auto oldJ = Var(sig(0) * sig(1) * sig(2));
         if (material == MPMMaterial::snow) {
           for (int i = 0; i < dim; i++) {
             sig(i) = clamp(sig(i), 1 - 2.5e-2f, 1 + 7.5e-3f);
           }
           auto newJ = sig(0) * sig(1) * sig(2);
           // plastic J
-          auto Jp = Eval(clamp(particle_J[p] * oldJ / newJ, 0.6_f, 20.0_f));
+          auto Jp = Var(clamp(particle_J[p] * oldJ / newJ, 0.6_f, 20.0_f));
           J = newJ;
           F = std::get<0>(svd) * diag_matrix(sig) *
               transposed(std::get<2>(svd));
@@ -261,8 +260,8 @@ auto mpm3d = []() {
         F = u * diag_matrix(sig) * transposed(v);
         auto log_sig = log(sig);
         auto inv_sig = 1.0_f / sig;
-        auto center = Eval(2.0_f * mu_0 * inv_sig.element_wise_prod(log_sig) +
-                           lambda_0 * log_sig.sum() * inv_sig);
+        auto center = Var(2.0_f * mu_0 * inv_sig.element_wise_prod(log_sig) +
+                          lambda_0 * log_sig.sum() * inv_sig);
         cauchy = u * diag_matrix(center) * transposed(v) * transposed(F);
       }
 
@@ -274,11 +273,11 @@ auto mpm3d = []() {
 
       int low = 0, high = 1;
       auto base_coord_i =
-          Eval(AssumeInRange(cast<int32>(base_coord(0)), i, low, high));
+          (AssumeInRange(cast<int32>(base_coord(0)), i, low, high));
       auto base_coord_j =
-          Eval(AssumeInRange(cast<int32>(base_coord(1)), j, low, high));
+          (AssumeInRange(cast<int32>(base_coord(1)), j, low, high));
       auto base_coord_k =
-          Eval(AssumeInRange(cast<int32>(base_coord(2)), k, low, high));
+          (AssumeInRange(cast<int32>(base_coord(2)), k, low, high));
 
       Assert(base_coord_i < i + 4);
       Assert(base_coord_i - i >= 0);
@@ -345,7 +344,7 @@ auto mpm3d = []() {
       int bound = 8;
 
       If(m > 0.0f, [&]() {
-        auto inv_m = Eval(1.0f / m);
+        auto inv_m = Var(1.0f / m);
         v0 *= inv_m;
         v1 *= inv_m;
         v2 *= inv_m;
@@ -363,8 +362,8 @@ auto mpm3d = []() {
       v2 = select(k < bound, max(v2, Expr(0.0_f)), v2);
 
       If(j < bound, [&] {
-        auto norm = Eval(sqrt(v0 * v0 + v2 * v2));
-        auto s = Eval(
+        auto norm = Var(sqrt(v0 * v0 + v2 * v2));
+        auto s = Var(
             clamp((norm + v1 * (material == MPMMaterial::sand ? 1.0f : 0.10f)) /
                       (norm + 1e-30f),
                   Expr(0.0_f), Expr(1.0_f)));
@@ -386,7 +385,7 @@ auto mpm3d = []() {
     Cache(0, grid_v(1));
     Cache(0, grid_v(2));
     For(l, [&](Expr i, Expr j, Expr k, Expr p_ptr) {
-      auto p = Eval(l[i, j, k, p_ptr]);
+      auto p = Var(l[i, j, k, p_ptr]);
       Assert(p >= 0);
       Assert(p < n_particles);
       auto x = particle_x[p];
@@ -403,17 +402,16 @@ auto mpm3d = []() {
       auto base_coord = floor(inv_dx * x - 0.5_f);
       auto fx = x * inv_dx - base_coord;
 
-      Vector w[] = {Eval(0.5_f * sqr(1.5_f - fx)),
-                    Eval(0.75_f - sqr(fx - 1.0_f)),
-                    Eval(0.5_f * sqr(fx - 0.5_f))};
+      Vector w[] = {Var(0.5_f * sqr(1.5_f - fx)), Var(0.75_f - sqr(fx - 1.0_f)),
+                    Var(0.5_f * sqr(fx - 0.5_f))};
 
       int low = 0, high = 1;
       auto base_coord_i =
-          Eval(AssumeInRange(cast<int32>(base_coord(0)), i, low, high));
+          (AssumeInRange(cast<int32>(base_coord(0)), i, low, high));
       auto base_coord_j =
-          Eval(AssumeInRange(cast<int32>(base_coord(1)), j, low, high));
+          (AssumeInRange(cast<int32>(base_coord(1)), j, low, high));
       auto base_coord_k =
-          Eval(AssumeInRange(cast<int32>(base_coord(2)), k, low, high));
+          (AssumeInRange(cast<int32>(base_coord(2)), k, low, high));
 
       Assert(base_coord_i < i + 4);
       Assert(base_coord_i - i >= 0);

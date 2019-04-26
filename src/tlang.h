@@ -31,28 +31,6 @@ inline void kernel_name(std::string name) {
   get_current_program().get_current_kernel().name = name;
 }
 
-/*
-inline void touch(SNode *snode, Expr target_index, Expr value) {
-  auto e = Expr::create(NodeType::touch, Expr::load_if_pointer(target_index),
-                        Expr::load_if_pointer(value));
-  e->snode_ptr(0) = snode;
-  auto &ker = get_current_program().get_current_kernel();
-  ker.has_touch = true;
-  return ker.ret->ch.push_back(e);
-}
-
-inline void touch(Expr &expr, Expr target_index, Expr value) {
-  return taichi::Tlang::touch(expr->snode_ptr(0)->parent, target_index, value);
-}
-
-inline void reduce(Expr target, Expr value) {
-  TC_ASSERT(target->type == NodeType::pointer);
-  auto e = Expr::create(NodeType::reduce, target, Expr::load_if_pointer(value));
-  auto &ker = get_current_program().get_current_kernel();
-  return ker.ret->ch.push_back(e);
-}
-*/
-
 template <typename T>
 inline void declare_var(Expr &a) {
   current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(

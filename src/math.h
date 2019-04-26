@@ -416,7 +416,7 @@ inline Matrix Atomic(const Matrix &dest) {
   return ret;
 }
 
-void Mutable(Matrix &mat, DataType dt);
+Matrix& Mutable(Matrix &mat);
 
 Matrix transposed(const Matrix &m);
 

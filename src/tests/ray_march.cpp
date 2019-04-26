@@ -53,8 +53,8 @@ auto ray_march = [] {
     Vector n(3);
     for (int i = 0; i < 3; i++) {
       Vector inc = p, dec = p;
-      Mutable(inc, DataType::f32);
-      Mutable(dec, DataType::f32);
+      Mutable(inc);
+      Mutable(dec);
       inc(i) += d;
       dec(i) -= d;
       n(i) = (0.5f / d) * (sdf(inc) - sdf(dec));
@@ -64,7 +64,7 @@ auto ray_march = [] {
 
   auto out_dir = [&](Vector n) {
     Vector u({1.0f, 0.0f, 0.0f}), v(3);
-    Mutable(u, DataType::f32);
+    Mutable(u);
     If(abs(n(1)) < 1 - 1e-3f, [&] {
       u = normalized(cross(n, Vector({0.0f, 1.0f, 0.0f})));
     });
@@ -86,18 +86,18 @@ auto ray_march = [] {
     Vectorize(8);
     For(0, n * n * 2, [&](Expr i) {
       Vector orig({0.0f, 0.0f, 12.0f}), c(3);
-      Mutable(orig, DataType::f32);
+      Mutable(orig);
 
       c(0) = fov * (cast<float>(i / n) / float(n / 2) - 2.0f);
       c(1) = fov * (cast<float>(i % n) / float(n / 2) - 1.0f);
       c(2) = -1.0f;
 
-      Mutable(c, DataType::f32);
+      Mutable(c);
       c = normalized(c);
 
       Vector color(3);
       color = Vector({1.0f, 1.0f, 1.0f});
-      Mutable(color, DataType::f32);
+      Mutable(color);
       int depth_limit = 4;
       Local(depth) = 0;
 

@@ -40,7 +40,7 @@ auto mpm3d = []() {
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
-  auto material = MPMMaterial::jelly;
+  auto material = MPMMaterial::sand;
   constexpr int dim = 3;
   constexpr bool highres = true;
 
@@ -174,11 +174,12 @@ auto mpm3d = []() {
     real fdim = dim;
     Vector sigma_out(dim);
     Vector epsilon(dim);
+    Mutable(epsilon);
+    Mutable(sigma_out);
     for (int i = 0; i < dim; i++) {
       epsilon(i) = Eval(log(max(abs(sigma(i)), 1e-4_f)));
       sigma_out(i) = 1.0_f;
     }
-    Mutable(sigma_out, f32);
     auto tr = Eval(epsilon.sum() + particle_J[p]);
     auto epsilon_hat = Eval(epsilon - tr / fdim);
     auto epsilon_hat_norm = Eval(epsilon_hat.norm() + 1e-20_f);
@@ -216,7 +217,7 @@ auto mpm3d = []() {
       } else {
         F = (Matrix::identity(dim) + dt * C) * particle_F[p];
       }
-      Mutable(F, DataType::f32);
+      Mutable(F);
 
       auto base_coord = floor(Expr(inv_dx) * x - Expr(0.5_f));
       auto fx = x * Expr(inv_dx) - base_coord;
@@ -235,7 +236,7 @@ auto mpm3d = []() {
         auto svd = sifakis_svd(F);
         auto R = std::get<0>(svd) * transposed(std::get<2>(svd));
         auto sig = std::get<1>(svd);
-        Mutable(sig, DataType::f32);
+        Mutable(sig);
         auto oldJ = Eval(sig(0) * sig(1) * sig(2));
         if (material == MPMMaterial::snow) {
           for (int i = 0; i < dim; i++) {
@@ -259,7 +260,7 @@ auto mpm3d = []() {
       } else if (material == MPMMaterial::sand) {
         auto svd = sifakis_svd(F);
         auto u = std::get<0>(svd), sig = std::get<1>(svd), v = std::get<2>(svd);
-        Mutable(sig, f32);
+        Mutable(sig);
         sig = project(std::get<1>(svd), p);
         F = u * diag_matrix(sig) * transposed(v);
         auto log_sig = log(sig);
@@ -394,9 +395,9 @@ auto mpm3d = []() {
       Assert(p < n_particles);
       auto x = particle_x[p];
       auto v = Vector(dim);
-      Mutable(v, DataType::f32);
+      Mutable(v);
       auto C = Matrix(dim, dim);
-      Mutable(C, DataType::f32);
+      Mutable(C);
 
       for (int i = 0; i < dim; i++) {
         v(i) = Expr(0.0_f);

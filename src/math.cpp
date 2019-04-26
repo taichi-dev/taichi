@@ -31,10 +31,11 @@ Matrix Matrix::identity(int dim) {
   return mat;
 }
 
-void Mutable(Matrix &mat, DataType dt) {
+Matrix &Mutable(Matrix &mat) {
   for (int i = 0; i < mat.entries.size(); i++) {
-    declare_unnamed_var(mat.entries[i], dt);
+    declare_unnamed_var(mat.entries[i], DataType::unknown);
   }
+  return mat;
 }
 
 SNode &SNode::place(Matrix &mat) {
@@ -43,7 +44,6 @@ SNode &SNode::place(Matrix &mat) {
   }
   return *this;
 }
-
 
 Matrix transposed(const Matrix &A) {
   TC_ASSERT(A.m == A.n);
@@ -70,6 +70,5 @@ Matrix diag_matrix(const Matrix &A) {
   }
   return ret;
 }
-
 
 TLANG_NAMESPACE_END

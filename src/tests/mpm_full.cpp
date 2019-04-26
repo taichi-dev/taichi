@@ -14,22 +14,6 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-Matrix &&Variable(Matrix &&mat) {
-  for (int i = 0; i < mat.entries.size(); i++) {
-    declare_unnamed_var(mat.entries[i], DataType::unknown);
-  }
-  return std::move(mat);
-}
-
-Matrix Variable(const Matrix &mat_) {
-  Matrix mat;
-  mat.set(mat_);
-  for (int i = 0; i < mat.entries.size(); i++) {
-    declare_unnamed_var(mat.entries[i], DataType::unknown);
-  }
-  return mat;
-}
-
 void write_partio(std::vector<Vector3> positions,
                   const std::string &file_name) {
   Partio::ParticlesDataMutable *parts = Partio::create();

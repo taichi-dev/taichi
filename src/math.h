@@ -37,7 +37,7 @@ struct Matrix {
 
   // Initialize vector
   template <int d>
-  explicit Matrix(const std::array<Expr, d> &input) {
+  explicit Matrix(const std::array<Expr, d> &input) : n(d), m(1) {
     entries.resize(d);
     for (int i = 0; i < d; i++) {
       entries[i] = input[i];
@@ -45,9 +45,9 @@ struct Matrix {
   }
 
   // Initialize vector
-  explicit Matrix(const std::vector<float32> &input) : Matrix(input.size(), 1) {
+  explicit Matrix(const std::vector<Expr> &input) : Matrix(input.size(), 1) {
     for (int i = 0; i < (int)input.size(); i++) {
-      entries[i] = input[i];
+      entries[i].set(input[i]);
     }
   }
 
@@ -334,22 +334,6 @@ void Matrix::operator*=(const T &o) {
   (*this) = (*this) * o;
 }
 
-/*
-inline Expr operator-(const Expr &a) {
-  return n;
-}
-
-inline Expr inv(const Expr &a) {
-  auto n = Expr::create(NodeType::inv, a);
-  n->data_type = a->data_type;
-  return n;
-}
-
-inline Float32 lerp(Float a, Float x0, Float x1) {
-  return (imm(1.0_f) - a) * x0 + a * x1;
-}
-*/
-
 inline Matrix sqr(const Matrix &M) {
   return M.map([](Expr e) { return e * e; });
 }
@@ -428,10 +412,13 @@ inline Matrix Atomic(const Matrix &dest) {
   return ret;
 }
 
-Matrix &Mutable(Matrix &mat);
-
 Matrix transposed(const Matrix &m);
 
 Matrix diag_matrix(const Matrix &m);
+
+Matrix &&Variable(Matrix &&mat);
+
+Matrix Variable(const Matrix &mat_);
+
 
 TLANG_NAMESPACE_END

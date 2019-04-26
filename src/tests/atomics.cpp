@@ -8,7 +8,6 @@ TC_TEST("atomics") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 10000000;
   Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
 
   Global(sum, i32);
   Global(fsum, f32);

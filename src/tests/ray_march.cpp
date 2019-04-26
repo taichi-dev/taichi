@@ -52,9 +52,7 @@ auto ray_march = [] {
     float d = 1e-3f;
     Vector n(3);
     for (int i = 0; i < 3; i++) {
-      Vector inc = p, dec = p;
-      Mutable(inc);
-      Mutable(dec);
+      auto inc = Variable(p), dec = Variable(p);
       inc(i) += d;
       dec(i) -= d;
       n(i) = (0.5f / d) * (sdf(inc) - sdf(dec));
@@ -63,8 +61,7 @@ auto ray_march = [] {
   };
 
   auto out_dir = [&](Vector n) {
-    Vector u({1.0f, 0.0f, 0.0f}), v(3);
-    Mutable(u);
+    auto u = Variable(Vector({1.0f, 0.0f, 0.0f})), v = Variable(Vector(3));
     If(abs(n(1)) < 1 - 1e-3f, [&] {
       u = normalized(cross(n, Vector({0.0f, 1.0f, 0.0f})));
     });
@@ -85,19 +82,15 @@ auto ray_march = [] {
     Parallelize(8);
     Vectorize(8);
     For(0, n * n * 2, [&](Expr i) {
-      Vector orig({0.0f, 0.0f, 12.0f}), c(3);
-      Mutable(orig);
+      auto orig = Variable(Vector({0.0f, 0.0f, 12.0f}));
 
-      c(0) = fov * (cast<float>(i / n) / float(n / 2) - 2.0f);
-      c(1) = fov * (cast<float>(i % n) / float(n / 2) - 1.0f);
-      c(2) = -1.0f;
+      auto c = Variable(Vector(
+          {fov * (cast<float>(i / n) / float(n / 2) - 2.0f),
+           fov * (cast<float>(i % n) / float(n / 2) - 1.0f), Expr(-1.0f)}));
 
-      Mutable(c);
       c = normalized(c);
 
-      Vector color(3);
-      color = Vector({1.0f, 1.0f, 1.0f});
-      Mutable(color);
+      auto color = Variable(Vector({1.0f, 1.0f, 1.0f}));
       int depth_limit = 4;
       Local(depth) = 0;
 

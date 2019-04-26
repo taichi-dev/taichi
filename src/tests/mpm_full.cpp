@@ -14,6 +14,13 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
+Matrix &&Variable(Matrix &&mat) {
+  for (int i = 0; i < mat.entries.size(); i++) {
+    declare_unnamed_var(mat.entries[i], DataType::unknown);
+  }
+  return std::move(mat);
+}
+
 void write_partio(std::vector<Vector3> positions,
                   const std::string &file_name) {
   Partio::ParticlesDataMutable *parts = Partio::create();
@@ -172,12 +179,15 @@ auto mpm3d = []() {
 
   auto project = [&](Vector sigma, const Expr &p) {
     real fdim = dim;
-    Vector sigma_out(dim);
-    Vector epsilon(dim);
-    Mutable(epsilon);
+    // auto sigma_out = Variable(Vector(dim));
+    // auto epsilon = Variable(Vector(dim));
+
+    auto sigma_out = Vector(dim);
+    auto epsilon = Vector(dim);
     Mutable(sigma_out);
+    Mutable(epsilon);
     for (int i = 0; i < dim; i++) {
-      epsilon(i) = Eval(log(max(abs(sigma(i)), 1e-4_f)));
+      epsilon(i) = log(max(abs(sigma(i)), 1e-4_f));
       sigma_out(i) = 1.0_f;
     }
     auto tr = Eval(epsilon.sum() + particle_J[p]);
@@ -188,8 +198,8 @@ auto mpm3d = []() {
       auto delta_gamma =
           Eval(epsilon_hat_norm +
                (fdim * lambda_0 + 2.0_f * mu_0) / (2.0_f * mu_0) * tr * alpha);
-      sigma_out = Eval(exp(epsilon - max(0.0_f, delta_gamma) /
-                                         epsilon_hat_norm * epsilon_hat));
+      sigma_out = exp(epsilon -
+                      max(0.0_f, delta_gamma) / epsilon_hat_norm * epsilon_hat);
     });
 
     return sigma_out;

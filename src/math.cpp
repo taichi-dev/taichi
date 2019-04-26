@@ -64,14 +64,14 @@ Matrix diag_matrix(const Matrix &A) {
   return ret;
 }
 
-Matrix &&Variable(Matrix &&mat) {
+Matrix &&Var(Matrix &&mat) {
   for (int i = 0; i < mat.entries.size(); i++) {
     declare_unnamed_var(mat.entries[i], DataType::unknown);
   }
   return std::move(mat);
 }
 
-Matrix Variable(const Matrix &mat_) {
+Matrix Var(const Matrix &mat_) {
   Matrix mat;
   mat.set(mat_);
   for (int i = 0; i < mat.entries.size(); i++) {

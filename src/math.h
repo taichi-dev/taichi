@@ -416,9 +416,9 @@ Matrix transposed(const Matrix &m);
 
 Matrix diag_matrix(const Matrix &m);
 
-Matrix &&Variable(Matrix &&mat);
+Matrix &&Var(Matrix &&mat);
 
-Matrix Variable(const Matrix &mat_);
+Matrix Var(const Matrix &mat_);
 
 
 TLANG_NAMESPACE_END

@@ -172,8 +172,8 @@ auto mpm3d = []() {
 
   auto project = [&](Vector sigma, const Expr &p) {
     real fdim = dim;
-    auto sigma_out = Variable(Vector(dim));
-    auto epsilon = Variable(Vector(dim));
+    auto sigma_out = Var(Vector(dim));
+    auto epsilon = Var(Vector(dim));
     for (int i = 0; i < dim; i++) {
       epsilon(i) = log(max(abs(sigma(i)), 1e-4_f));
       sigma_out(i) = 1.0_f;
@@ -213,7 +213,7 @@ auto mpm3d = []() {
         J = particle_J[p] * (1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2)));
         particle_J[p] = J;
       } else {
-        F = Variable(Matrix::identity(dim) + dt * C) * particle_F[p];
+        F = Var(Matrix::identity(dim) + dt * C) * particle_F[p];
       }
 
       auto base_coord = floor(Expr(inv_dx) * x - Expr(0.5_f));
@@ -232,7 +232,7 @@ auto mpm3d = []() {
                  material == MPMMaterial::snow) {
         auto svd = sifakis_svd(F);
         auto R = std::get<0>(svd) * transposed(std::get<2>(svd));
-        auto sig = Variable(std::get<1>(svd));
+        auto sig = Var(std::get<1>(svd));
         auto oldJ = Eval(sig(0) * sig(1) * sig(2));
         if (material == MPMMaterial::snow) {
           for (int i = 0; i < dim; i++) {
@@ -255,7 +255,7 @@ auto mpm3d = []() {
                  (Matrix::identity(3) * lambda) * (J - 1.0f) * J;
       } else if (material == MPMMaterial::sand) {
         auto svd = sifakis_svd(F);
-        auto u = std::get<0>(svd), sig = Variable(std::get<1>(svd)),
+        auto u = std::get<0>(svd), sig = Var(std::get<1>(svd)),
              v = std::get<2>(svd);
         sig = project(std::get<1>(svd), p);
         F = u * diag_matrix(sig) * transposed(v);
@@ -390,8 +390,8 @@ auto mpm3d = []() {
       Assert(p >= 0);
       Assert(p < n_particles);
       auto x = particle_x[p];
-      auto v = Variable(Vector(dim));
-      auto C = Variable(Matrix(dim, dim));
+      auto v = Var(Vector(dim));
+      auto C = Var(Matrix(dim, dim));
 
       for (int i = 0; i < dim; i++) {
         v(i) = Expr(0.0_f);

@@ -3,7 +3,7 @@
 TLANG_NAMESPACE_BEGIN
 
 // "Type" here does not include vector width
-// Variable lookup and Type inference
+// Var lookup and Type inference
 class TypeCheck : public IRVisitor {
  public:
   TypeCheck() {

@@ -21,6 +21,15 @@ Matrix &&Variable(Matrix &&mat) {
   return std::move(mat);
 }
 
+Matrix &&Variable(const Matrix &mat_) {
+  Matrix mat;
+  mat.set(mat_);
+  for (int i = 0; i < mat.entries.size(); i++) {
+    declare_unnamed_var(mat.entries[i], DataType::unknown);
+  }
+  return std::move(mat);
+}
+
 void write_partio(std::vector<Vector3> positions,
                   const std::string &file_name) {
   Partio::ParticlesDataMutable *parts = Partio::create();
@@ -179,13 +188,8 @@ auto mpm3d = []() {
 
   auto project = [&](Vector sigma, const Expr &p) {
     real fdim = dim;
-    // auto sigma_out = Variable(Vector(dim));
-    // auto epsilon = Variable(Vector(dim));
-
-    auto sigma_out = Vector(dim);
-    auto epsilon = Vector(dim);
-    Mutable(sigma_out);
-    Mutable(epsilon);
+    auto sigma_out = Variable(Vector(dim));
+    auto epsilon = Variable(Vector(dim));
     for (int i = 0; i < dim; i++) {
       epsilon(i) = log(max(abs(sigma(i)), 1e-4_f));
       sigma_out(i) = 1.0_f;
@@ -226,8 +230,8 @@ auto mpm3d = []() {
         particle_J[p] = J;
       } else {
         F = (Matrix::identity(dim) + dt * C) * particle_F[p];
+        Mutable(F);
       }
-      Mutable(F);
 
       auto base_coord = floor(Expr(inv_dx) * x - Expr(0.5_f));
       auto fx = x * Expr(inv_dx) - base_coord;
@@ -245,7 +249,7 @@ auto mpm3d = []() {
                  material == MPMMaterial::snow) {
         auto svd = sifakis_svd(F);
         auto R = std::get<0>(svd) * transposed(std::get<2>(svd));
-        auto sig = std::get<1>(svd);
+        auto sig = (std::get<1>(svd));
         Mutable(sig);
         auto oldJ = Eval(sig(0) * sig(1) * sig(2));
         if (material == MPMMaterial::snow) {
@@ -269,7 +273,8 @@ auto mpm3d = []() {
                  (Matrix::identity(3) * lambda) * (J - 1.0f) * J;
       } else if (material == MPMMaterial::sand) {
         auto svd = sifakis_svd(F);
-        auto u = std::get<0>(svd), sig = std::get<1>(svd), v = std::get<2>(svd);
+        auto u = std::get<0>(svd), sig = (std::get<1>(svd)),
+             v = std::get<2>(svd);
         Mutable(sig);
         sig = project(std::get<1>(svd), p);
         F = u * diag_matrix(sig) * transposed(v);
@@ -404,10 +409,8 @@ auto mpm3d = []() {
       Assert(p >= 0);
       Assert(p < n_particles);
       auto x = particle_x[p];
-      auto v = Vector(dim);
-      Mutable(v);
-      auto C = Matrix(dim, dim);
-      Mutable(C);
+      auto v = Variable(Vector(dim));
+      auto C = Variable(Matrix(dim, dim));
 
       for (int i = 0; i < dim; i++) {
         v(i) = Expr(0.0_f);

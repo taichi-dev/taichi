@@ -9,8 +9,10 @@ struct Matrix {
   int n, m;
   std::vector<Expr> entries;
 
-  Matrix() {
-    n = m = 0;
+  Matrix() : n(0), m(0) {
+  }
+
+  Matrix(Matrix &&o) : n(o.n), m(o.m), entries(std::move(o.entries)) {
   }
 
   bool initialized() {
@@ -416,7 +418,7 @@ inline Matrix Atomic(const Matrix &dest) {
   return ret;
 }
 
-Matrix& Mutable(Matrix &mat);
+Matrix &Mutable(Matrix &mat);
 
 Matrix transposed(const Matrix &m);
 

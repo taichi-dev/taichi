@@ -7,6 +7,14 @@ auto volume_renderer = [] {
   CoreState::set_trigger_gdb_when_crash(true);
 
   int n = 512;
+  int grid_resolution = 256;
+
+  auto f = fopen("snow_density_256.bin", "rb");
+  TC_ASSERT_INFO(f, "./snow_density_256.bin not found");
+  std::vector<float32> density_field(pow<3>(grid_resolution));
+  std::fread(density_field.data(), sizeof(float32), density_field.size(), f);
+  std::fclose(f);
+
   Program prog(Arch::gpu);
   prog.config.print_ir = true;
 
@@ -36,7 +44,7 @@ auto volume_renderer = [] {
 
   float32 eps = 1e-5f;
   float32 dist_limit = 1e2;
-  int limit = 100;
+  int limit = 200;
 
   // shoot a ray
   auto ray_march = [&](Vector p, Vector dir) {
@@ -47,33 +55,6 @@ auto volume_renderer = [] {
       j += 1;
     });
     return dist;
-  };
-
-  // normal near the surface
-  auto normal = [&](Vector p) {
-    float32 d = 1e-3f;
-    Vector n(3);
-    // finite difference
-    for (int i = 0; i < 3; i++) {
-      auto inc = Var(p), dec = Var(p);
-      inc(i) += d;
-      dec(i) -= d;
-      n(i) = (0.5f / d) * (sdf(inc) - sdf(dec));
-    }
-    return normalized(n);
-  };
-
-  // sample BRDF (bias the out direction to the normal so we have reflection..)
-  auto out_dir = [&](Vector n) {
-    auto u = Var(Vector({1.0f, 0.0f, 0.0f})), v = Var(Vector(3));
-    If(abs(n(1)) < 1 - 1e-3f, [&] {
-      u = normalized(cross(n, Vector({0.0f, 1.0f, 0.0f})));
-    });
-    v = cross(n, u);
-    auto phi = Var(2 * pi * Rand<float32>());
-    auto r = Var(Rand<float32>());
-    auto alpha = Var(0.5f * pi * (r * r));
-    return sin(alpha) * (cos(phi) * u + sin(phi) * v) + cos(alpha) * n;
   };
 
   auto background = [](Vector dir) {
@@ -95,32 +76,17 @@ auto volume_renderer = [] {
       c = normalized(c);
 
       auto color = Var(Vector({1.0f, 1.0f, 1.0f}));
-      int depth_limit = 4;
-      auto depth = Var(0);
 
-      While(depth < depth_limit, [&] {
-        depth += 1;
-        auto dist = Var(ray_march(orig, c));
-        If(dist < dist_limit)
-            .Then([&] {
-              orig += dist * c;
-              Vector nor;
-              nor = normal(orig);
-              c = normalized(out_dir(nor));
-              orig += 0.01f * c;
-              color *= 0.7f;
-            })
-            .Else([&] {
-              color = color * background(c);
-              depth = depth_limit;
-            });
+      auto dist = Var(ray_march(orig, c));
+      If(dist < dist_limit).Then([&] {
+        color = color * (dist / (dist + 1.0f));
       });
 
       buffer[i] += color;
     });
   });
 
-  GUI gui("ray march", Vector2i(n * 2, n));
+  GUI gui("Volume Renderer", Vector2i(n * 2, n));
 
   auto tone_map = [](real x) { return x; };
   constexpr int N = 100;

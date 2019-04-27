@@ -11,8 +11,6 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-enum class MPMMaterial : int { fluid, jelly, snow, sand };
-
 auto mpm_benchmark = []() {
   CoreState::set_trigger_gdb_when_crash(true);
 
@@ -20,7 +18,6 @@ auto mpm_benchmark = []() {
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
-  auto material = MPMMaterial::jelly;
   constexpr int dim = 3;
   constexpr bool highres = true;
 
@@ -189,11 +186,7 @@ auto mpm_benchmark = []() {
 
       Expr J;
       Matrix F;
-      if (material == MPMMaterial::fluid) {
-        particle_J[p] *= 1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2));
-      } else {
-        F = Var(Matrix::identity(dim) + dt * C) * particle_F[p];
-      }
+      F = Var(Matrix::identity(dim) + dt * C) * particle_F[p];
 
       auto base_coord = floor(inv_dx * x - 0.5_f);
       auto fx = x * inv_dx - base_coord;
@@ -204,46 +197,14 @@ auto mpm_benchmark = []() {
       Matrix cauchy(3, 3);
       auto mu = Var(mu_0);
       auto lambda = Var(lambda_0);
-      if (material == MPMMaterial::fluid) {
-        cauchy = (J - 1.0_f) * Matrix::identity(3) * E;
-      } else if (material == MPMMaterial::jelly ||
-                 material == MPMMaterial::snow) {
-        auto svd = sifakis_svd(F);
-        auto R = std::get<0>(svd) * transposed(std::get<2>(svd));
-        auto sig = Var(std::get<1>(svd));
-        auto oldJ = Var(sig(0) * sig(1) * sig(2));
-        if (material == MPMMaterial::snow) {
-          for (int d = 0; d < dim; d++)
-            sig(d) = clamp(sig(d), 1 - 2.5e-2f, 1 + 7.5e-3f);
-          auto newJ = sig(0) * sig(1) * sig(2);
-          auto Jp = Var(clamp(particle_J[p] * oldJ / newJ, 0.6_f, 20.0_f));
-          J = newJ;
-          F = std::get<0>(svd) * diag_matrix(sig) *
-              transposed(std::get<2>(svd));
-          auto harderning = exp((1.0f - Jp) * 10.0f);
-          mu *= harderning;
-          lambda *= harderning;
-          particle_J[p] = Jp;
-        } else {
-          J = oldJ;
-        }
-        cauchy = 2.0_f * mu * (F - R) * transposed(F) +
-                 (Matrix::identity(3) * lambda) * (J - 1.0f) * J;
-      } else if (material == MPMMaterial::sand) {
-        auto svd = sifakis_svd(F);
-        auto u = std::get<0>(svd), sig = Var(std::get<1>(svd)),
-             v = std::get<2>(svd);
-        sig = project(std::get<1>(svd), p);
-        F = u * diag_matrix(sig) * transposed(v);
-        auto log_sig = log(sig);
-        auto inv_sig = 1.0_f / sig;
-        auto center = Var(2.0_f * mu_0 * inv_sig.element_wise_prod(log_sig) +
-                          lambda_0 * log_sig.sum() * inv_sig);
-        cauchy = u * diag_matrix(center) * transposed(v) * transposed(F);
-      }
-
-      if (material != MPMMaterial::fluid)
-        particle_F[p] = F;
+      auto svd = sifakis_svd(F);
+      auto R = std::get<0>(svd) * transposed(std::get<2>(svd));
+      auto sig = Var(std::get<1>(svd));
+      auto oldJ = Var(sig(0) * sig(1) * sig(2));
+      J = oldJ;
+      cauchy = 2.0_f * mu * (F - R) * transposed(F) +
+               (Matrix::identity(3) * lambda) * (J - 1.0f) * J;
+      particle_F[p] = F;
 
       auto affine = Expr(particle_mass) * C +
                     Expr(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
@@ -329,16 +290,7 @@ auto mpm_benchmark = []() {
       v(0) = select(i < bound, max(v(0), Expr(0.0_f)), v(0));
       v(2) = select(k < bound, max(v(2), Expr(0.0_f)), v(2));
 
-      If(j < bound, [&] {
-        auto norm = Var(sqrt(v(0) * v(0) + v(2) * v(2)));
-        auto s = Var(clamp(
-            (norm + v(1) * (material == MPMMaterial::sand ? 1.0f : 0.10f)) /
-                (norm + 1e-30f),
-            Expr(0.0_f), Expr(1.0_f)));
-
-        v *= s;
-        v(1) = max(v(1), Expr(0.0_f));
-      });
+      If(j < bound, [&] { v(1) = max(v(1), Expr(0.0_f)); });
 
       grid_v[i, j, k] = v;
     });
@@ -426,16 +378,10 @@ auto mpm_benchmark = []() {
       particle_v(0).val<float32>(i) = 0._f;
       particle_v(1).val<float32>(i) = -3.0_f;
       particle_v(2).val<float32>(i) = 0._f;
-      if (material == MPMMaterial::sand) {
-        particle_J.val<float32>(i) = 0_f;
-      } else {
-        particle_J.val<float32>(i) = 1_f;
-      }
-      if (material != MPMMaterial::fluid) {
-        for (int p = 0; p < dim; p++) {
-          for (int q = 0; q < dim; q++) {
-            particle_F(p, q).val<float32>(i) = (p == q);
-          }
+      particle_J.val<float32>(i) = 1_f;
+      for (int p = 0; p < dim; p++) {
+        for (int q = 0; q < dim; q++) {
+          particle_F(p, q).val<float32>(i) = (p == q);
         }
       }
     }

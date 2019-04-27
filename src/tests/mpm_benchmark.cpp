@@ -27,17 +27,12 @@ auto mpm_benchmark = []() {
   auto E = 1e4_f, nu = 0.3f;
   real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
 
-  auto friction_angle = 45._f;
-  real sin_phi = std::sin(friction_angle / 180._f * real(3.141592653));
-  auto alpha = std::sqrt(2._f / 3._f) * 2._f * sin_phi / (3._f - sin_phi);
-
   auto f32 = DataType::f32;
   int grid_block_size = 4;
 
   Vector particle_x(f32, dim), particle_v(f32, dim);
   Matrix particle_F(f32, dim, dim), particle_C(f32, dim, dim);
   Global(l, i32);
-  Global(particle_J, f32);
   Global(gravity_x, f32);
 
   Vector grid_v(f32, dim);
@@ -48,46 +43,24 @@ auto mpm_benchmark = []() {
   int n_particles = 0;
   std::vector<float> benchmark_particles;
   std::vector<Vector3> p_x;
-  if (benchmark_dragon) {
-    n_particles = 775196;
-    p_x.resize(n_particles);
-    TC_ASSERT(n_particles <= max_n_particles);
-    auto f = fopen("dragon_particles.bin", "rb");
-    TC_ASSERT_INFO(f, "./dragon_particles.bin not found");
-    benchmark_particles.resize(n_particles * 3);
-    std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f);
-    std::fclose(f);
-    for (int i = 0; i < n_particles; i++) {
-      for (int j = 0; j < dim; j++)
-        p_x[i][j] = benchmark_particles[i * 3 + j];
-    }
-  } else {
-    n_particles = max_n_particles / (highres ? 1 : 8);
-    p_x.resize(n_particles);
-    for (int i = 0; i < n_particles; i++) {
-      p_x[i].x = 0.4_f + rand() * 0.2_f;
-      p_x[i].y = 0.15_f + rand() * 0.55_f;
-      p_x[i].z = 0.4_f + rand() * 0.2_f;
-    }
-    /*
-    for (int i = 0; i < n_particles; i++) {
-      Vector3 offset = Vector3::rand() - Vector3(0.5_f);
-      while (offset.length() > 0.5f) {
-        offset = Vector3::rand() - Vector3(0.5_f);
-      }
-      p_x[i] = Vector3(0.5_f) + offset * 0.25f;
-    }
-    */
-  }
 
+  n_particles = 775196;
+  p_x.resize(n_particles);
   TC_ASSERT(n_particles <= max_n_particles);
-
-  auto i = Index(0), j = Index(1), k = Index(2);
-  auto p = Index(3);
+  auto f = fopen("dragon_particles.bin", "rb");
+  TC_ASSERT_INFO(f, "./dragon_particles.bin not found");
+  benchmark_particles.resize(n_particles * 3);
+  std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f);
+  std::fclose(f);
+  for (int i = 0; i < n_particles; i++) {
+    for (int j = 0; j < dim; j++)
+      p_x[i][j] = benchmark_particles[i * 3 + j];
+  }
 
   bool particle_SOA = false;
 
   layout([&]() {
+    auto i = Index(0), j = Index(1), k = Index(2), p = Index(3);
     SNode *fork;
     if (!particle_SOA)
       fork = &root.dynamic(p, max_n_particles);
@@ -113,7 +86,6 @@ auto mpm_benchmark = []() {
     }
     for (int i = 0; i < dim; i++)
       place(particle_v(i));
-    place(particle_J);
 
     TC_ASSERT(n % grid_block_size == 0);
     auto &block = root.dense({i, j, k}, n / grid_block_size).pointer();
@@ -146,29 +118,6 @@ auto mpm_benchmark = []() {
              p);
     });
   });
-
-  auto project = [&](Vector sigma, const Expr &p) {
-    real fdim = dim;
-    auto sigma_out = Var(Vector(dim));
-    auto epsilon = Var(Vector(dim));
-    for (int i = 0; i < dim; i++) {
-      epsilon(i) = log(max(abs(sigma(i)), 1e-4_f));
-      sigma_out(i) = 1.0_f;
-    }
-    auto tr = Var(epsilon.sum() + particle_J[p]);
-    auto epsilon_hat = Var(epsilon - tr / fdim);
-    auto epsilon_hat_norm = Var(epsilon_hat.norm() + 1e-20_f);
-    If(tr >= 0.0_f).Then([&] { particle_J[p] += epsilon.sum(); }).Else([&] {
-      particle_J[p] = 0.0f;
-      auto delta_gamma =
-          Var(epsilon_hat_norm +
-              (fdim * lambda_0 + 2.0_f * mu_0) / (2.0_f * mu_0) * tr * alpha);
-      sigma_out = exp(epsilon -
-                      max(0.0_f, delta_gamma) / epsilon_hat_norm * epsilon_hat);
-    });
-
-    return sigma_out;
-  };
 
   Kernel(p2g_sorted).def([&] {
     BlockDim(128);
@@ -216,16 +165,6 @@ auto mpm_benchmark = []() {
           AssumeInRange(cast<int32>(base_coord(1)), j, low, high);
       auto base_coord_k =
           AssumeInRange(cast<int32>(base_coord(2)), k, low, high);
-
-      Assert(base_coord_i < i + 4);
-      Assert(base_coord_i - i >= 0);
-      Assert(base_coord_j < j + 4);
-      Assert(base_coord_j - j >= 0);
-      Assert(base_coord_k < k + 4);
-      Assert(base_coord_k - k >= 0);
-      Assert(i % 4 == 0);
-      Assert(j % 4 == 0);
-      Assert(k % 4 == 0);
 
       // scatter
       for (int a = 0; a < 3; a++) {
@@ -303,8 +242,6 @@ auto mpm_benchmark = []() {
     Cache(0, grid_v(2));
     For(l, [&](Expr i, Expr j, Expr k, Expr p_ptr) {
       auto p = Var(l[i, j, k, p_ptr]);
-      Assert(p >= 0);
-      Assert(p < n_particles);
       auto x = Var(particle_x[p]);
       auto v = Var(Vector(dim));
       auto C = Var(Matrix(dim, dim));
@@ -329,16 +266,6 @@ auto mpm_benchmark = []() {
           AssumeInRange(cast<int32>(base_coord(1)), j, low, high);
       auto base_coord_k =
           AssumeInRange(cast<int32>(base_coord(2)), k, low, high);
-
-      Assert(base_coord_i < i + 4);
-      Assert(base_coord_i - i >= 0);
-      Assert(base_coord_j < j + 4);
-      Assert(base_coord_j - j >= 0);
-      Assert(base_coord_k < k + 4);
-      Assert(base_coord_k - k >= 0);
-      Assert(i % 4 == 0);
-      Assert(j % 4 == 0);
-      Assert(k % 4 == 0);
 
       for (int p = 0; p < 3; p++) {
         for (int q = 0; q < 3; q++) {
@@ -370,24 +297,19 @@ auto mpm_benchmark = []() {
   std::sort(p_x.begin(), p_x.end(),
             [&](Vector3 a, Vector3 b) { return block_id(a) < block_id(b); });
 
-  auto reset = [&] {
-    for (int i = 0; i < n_particles; i++) {
-      for (int d = 0; d < dim; d++) {
-        particle_x(d).val<float32>(i) = p_x[i][d];
-      }
-      particle_v(0).val<float32>(i) = 0._f;
-      particle_v(1).val<float32>(i) = -3.0_f;
-      particle_v(2).val<float32>(i) = 0._f;
-      particle_J.val<float32>(i) = 1_f;
-      for (int p = 0; p < dim; p++) {
-        for (int q = 0; q < dim; q++) {
-          particle_F(p, q).val<float32>(i) = (p == q);
-        }
+  for (int i = 0; i < n_particles; i++) {
+    for (int d = 0; d < dim; d++) {
+      particle_x(d).val<float32>(i) = p_x[i][d];
+    }
+    particle_v(0).val<float32>(i) = 0._f;
+    particle_v(1).val<float32>(i) = -3.0_f;
+    particle_v(2).val<float32>(i) = 0._f;
+    for (int p = 0; p < dim; p++) {
+      for (int q = 0; q < dim; q++) {
+        particle_F(p, q).val<float32>(i) = (p == q);
       }
     }
-  };
-
-  reset();
+  }
 
   Vector2i cam_res(1280, 720);
 

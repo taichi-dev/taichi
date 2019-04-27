@@ -18,12 +18,11 @@ auto mpm_benchmark = []() {
   auto particle_mass = 1.0_f, vol = 1.0_f, E = 1e4_f, nu = 0.3f;
   real mu = E / (2 * (1 + nu)), lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
   auto f32 = DataType::f32;
-  Vector particle_x(f32, dim), particle_v(f32, dim);
+  Vector particle_x(f32, dim), particle_v(f32, dim), grid_v(f32, dim);
   Matrix particle_F(f32, dim, dim), particle_C(f32, dim, dim);
+  Global(grid_m, f32);
   Global(l, i32);
   Global(gravity_x, f32);
-  Global(grid_m, f32);
-  Vector grid_v(f32, dim);
   int max_n_particles = 1024 * 1024;
   std::vector<Vector3> p_x;
   p_x.resize(n_particles);

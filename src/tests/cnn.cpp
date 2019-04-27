@@ -1,11 +1,8 @@
 #include "../tlang.h"
 #include <taichi/util.h>
 #include <taichi/visual/gui.h>
-#include <taichi/common/bit.h>
-#include <Partio.h>
 #include <taichi/system/profiler.h>
 #include <taichi/visualization/particle_visualization.h>
-#include "svd.h"
 
 TC_NAMESPACE_BEGIN
 

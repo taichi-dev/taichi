@@ -16,7 +16,7 @@ auto mpm_benchmark = []() {
   constexpr int dim = 3, n = 256, grid_block_size = 4, n_particles = 775196;
   const real dt = 1e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f, E = 1e4_f, nu = 0.3f;
-  real mu_0 = E / (2 * (1 + nu)), lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
+  real mu = E / (2 * (1 + nu)), lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
   auto f32 = DataType::f32;
   Vector particle_x(f32, dim), particle_v(f32, dim);
   Matrix particle_F(f32, dim, dim), particle_C(f32, dim, dim);
@@ -94,23 +94,21 @@ auto mpm_benchmark = []() {
     Cache(0, grid_m);
     For(l, [&](Expr i, Expr j, Expr k, Expr p_ptr) {
       auto p = Var(l[i, j, k, p_ptr]);
-      auto x = particle_x[p], v = particle_v[p], C = particle_C[p];
+      auto x = Var(particle_x[p]), v = Var(particle_v[p]),
+           C = Var(particle_C[p]);
       auto base_coord = floor(inv_dx * x - 0.5_f), fx = x * inv_dx - base_coord;
       Matrix F = Var(Matrix::identity(dim) + dt * C) * particle_F[p];
+      particle_F[p] = F;
       Vector w[] = {Var(0.5_f * sqr(1.5_f - fx)), Var(0.75_f - sqr(fx - 1.0_f)),
                     Var(0.5_f * sqr(fx - 0.5_f))};
-      Matrix cauchy(3, 3);
-      auto mu = Var(mu_0);
-      auto lambda = Var(lambda_0);
       auto svd = sifakis_svd(F);
-      auto R = std::get<0>(svd) * transposed(std::get<2>(svd));
+      auto R = Var(std::get<0>(svd) * transposed(std::get<2>(svd)));
       auto sig = Var(std::get<1>(svd));
       auto J = Var(sig(0) * sig(1) * sig(2));
-      cauchy = 2.0_f * mu * (F - R) * transposed(F) +
-               (Matrix::identity(3) * lambda) * (J - 1.0f) * J;
-      particle_F[p] = F;
-      auto affine = Expr(particle_mass) * C +
-                    Expr(-4 * inv_dx * inv_dx * dt * vol) * cauchy;
+      auto cauchy = Var(2.0_f * mu * (F - R) * transposed(F) +
+                        (Matrix::identity(3) * lambda) * (J - 1.0f) * J);
+      auto affine =
+          Var(particle_mass * C - (4 * inv_dx * inv_dx * dt * vol) * cauchy);
       int low = 0, high = 1;
       auto base_coord_i =
           AssumeInRange(cast<int32>(base_coord(0)), i, low, high);
@@ -118,8 +116,8 @@ auto mpm_benchmark = []() {
           AssumeInRange(cast<int32>(base_coord(1)), j, low, high);
       auto base_coord_k =
           AssumeInRange(cast<int32>(base_coord(2)), k, low, high);
-      for (int a = 0; a < 3; a++) {
-        for (int b = 0; b < 3; b++) {
+      for (int a = 0; a < 3; a++)
+        for (int b = 0; b < 3; b++)
           for (int c = 0; c < 3; c++) {
             auto dpos = dx * (Vector({a, b, c}).cast_elements<float32>() - fx);
             auto weight = w[a](0) * w[b](1) * w[c](2);
@@ -128,14 +126,12 @@ auto mpm_benchmark = []() {
                 weight * (particle_mass * v + affine * dpos);
             Atomic(grid_m[node]) += weight * particle_mass;
           }
-        }
-      }
     });
   });
   Kernel(grid_op).def([&]() {
     For(grid_m, [&](Expr i, Expr j, Expr k) {
       auto v = Var(grid_v[i, j, k]);
-      auto m = load(grid_m[i, j, k]);
+      auto m = Var(grid_m[i, j, k]);
       int bound = 8;
       If(m > 0.0f, [&]() {
         auto inv_m = Var(1.0f / m);
@@ -179,8 +175,8 @@ auto mpm_benchmark = []() {
           AssumeInRange(cast<int32>(base_coord(1)), j, low, high);
       auto base_coord_k =
           AssumeInRange(cast<int32>(base_coord(2)), k, low, high);
-      for (int p = 0; p < 3; p++) {
-        for (int q = 0; q < 3; q++) {
+      for (int p = 0; p < 3; p++)
+        for (int q = 0; q < 3; q++)
           for (int r = 0; r < 3; r++) {
             auto dpos = Vector({p, q, r}).cast_elements<float32>() - fx;
             auto weight = w[p](0) * w[q](1) * w[r](2);
@@ -190,8 +186,6 @@ auto mpm_benchmark = []() {
             v += wv;
             C += outer_product(wv, dpos);
           }
-        }
-      }
       particle_C[p] = (4 * inv_dx) * C;
       particle_v[p] = v;
       particle_x[p] = x + dt * v;
@@ -212,11 +206,9 @@ auto mpm_benchmark = []() {
     particle_v(0).val<float32>(i) = 0._f;
     particle_v(1).val<float32>(i) = -3.0_f;
     particle_v(2).val<float32>(i) = 0._f;
-    for (int p = 0; p < dim; p++) {
-      for (int q = 0; q < dim; q++) {
+    for (int p = 0; p < dim; p++)
+      for (int q = 0; q < dim; q++)
         particle_F(p, q).val<float32>(i) = (p == q);
-      }
-    }
   }
   auto simulate_frame = [&]() {
     grid_m.parent().parent().snode()->clear(1);
@@ -266,7 +258,6 @@ auto mpm_benchmark = []() {
     for (int i = 0; i < n_particles; i++) {
       auto x = particle_x(0).val<float32>(i), y = particle_x(1).val<float32>(i),
            z = particle_x(2).val<float32>(i);
-      // auto color = hsv2rgb(Vector3(fract(p.pos[3] / 4) * 2, 0.7_f, 0.9_f));
       auto pos = Vector3(x, y, z);
       pos = pos - Vector3(0.5f);
       pos = pos * Vector3(0.5f);

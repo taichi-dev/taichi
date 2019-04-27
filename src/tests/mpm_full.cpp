@@ -33,11 +33,11 @@ enum class MPMMaterial : int { fluid, jelly, snow, sand };
 auto mpm3d = []() {
   CoreState::set_trigger_gdb_when_crash(true);
 
-  bool benchmark_dragon = true;
+  bool benchmark_dragon = false;
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
-  auto material = MPMMaterial::sand;
+  auto material = MPMMaterial::snow;
   constexpr int dim = 3;
   constexpr bool highres = true;
 
@@ -84,20 +84,21 @@ auto mpm3d = []() {
   } else {
     n_particles = max_n_particles / (highres ? 1 : 8);
     p_x.resize(n_particles);
-    for (int i = 0; i < n_particles; i++) {
-      p_x[i].x = 0.4_f + rand() * 0.2_f;
-      p_x[i].y = 0.15_f + rand() * 0.55_f;
-      p_x[i].z = 0.4_f + rand() * 0.2_f;
-    }
-    /*
-    for (int i = 0; i < n_particles; i++) {
-      Vector3 offset = Vector3::rand() - Vector3(0.5_f);
-      while (offset.length() > 0.5f) {
-        offset = Vector3::rand() - Vector3(0.5_f);
+    if (false) {
+      for (int i = 0; i < n_particles; i++) {
+        p_x[i].x = 0.4_f + rand() * 0.2_f;
+        p_x[i].y = 0.15_f + rand() * 0.55_f;
+        p_x[i].z = 0.4_f + rand() * 0.2_f;
       }
-      p_x[i] = Vector3(0.5_f) + offset * 0.25f;
+    } else {
+      for (int i = 0; i < n_particles; i++) {
+        Vector3 offset = Vector3::rand() - Vector3(0.5_f);
+        while (offset.length() > 0.5f) {
+          offset = Vector3::rand() - Vector3(0.5_f);
+        }
+        p_x[i] = Vector3(0.5_f) + offset * 0.25f;
+      }
     }
-    */
   }
 
   TC_ASSERT(n_particles <= max_n_particles);
@@ -538,6 +539,20 @@ auto mpm3d = []() {
     gui.get_canvas().img.write_as_image(
         fmt::format("{}/{:05d}.png", render_dir, frame));
     print_profile_info();
+
+    bool dump_mass_field = frame % 10 == 0;
+    if (dump_mass_field) {
+      std::vector<float32> density;
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+          for (int k = 0; k < n; k++) {
+            density.push_back(grid_m.val<float32>(i, j, k));
+          }
+        }
+      }
+      auto f = fopen("snow_density_256.bin", "wb");
+      std::fwrite(density.data(), sizeof(float32), pow<dim>(n), f);
+    }
   }
 };
 TC_REGISTER_TASK(mpm3d);

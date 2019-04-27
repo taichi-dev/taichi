@@ -11,7 +11,7 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-auto mpm3d = []() {
+auto cnn = []() {
   CoreState::set_trigger_gdb_when_crash(true);
 
   Program prog(Arch::gpu);
@@ -26,16 +26,16 @@ auto mpm3d = []() {
   layout([&]() {
     auto ijkl = Indices(0, 1, 2, 3);
     root.dense(ijkl, {n, n, n, 4}).place(layer1);
-    root.dense(ijkl, {3, 3, 3, 16}).place(weight);
+    root.dense(ijkl, {3, 3, 3, 16}).place(weights);
   });
 
   Kernel(forward).def([&] {
     BlockDim(1024);
-    For(layer2, [&](Expr i, Expr j, Expr j, Expr c_out) {
+    For(layer2, [&](Expr i, Expr j, Expr k, Expr c_out) {
       // layer1[]
     });
   });
 };
-TC_REGISTER_TASK(mpm3d);
+TC_REGISTER_TASK(cnn);
 
 TC_NAMESPACE_END

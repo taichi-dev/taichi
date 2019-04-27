@@ -18,6 +18,8 @@ Ubuntu, Arch Linux, and Mac OS X
    python3 install.py
 
 
+Note, if python complains that a package is missing, simply rerun install.py and the package should be loaded.
+
 Windows
 -------------------------------
 Download and execute `this script <https://raw.githubusercontent.com/yuanming-hu/taichi/master/install.py>`_ with python3.

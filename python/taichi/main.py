@@ -164,11 +164,12 @@ def main(debug=False):
     os.chdir(tc.get_directory('projects'))
     pkg = sys.argv[2]
     if pkg not in packages:
-      tc.error('package {} not found.'.format(pkg))
+      url = pkg
+      pkg = pkg.split('/')[-1]
     else:
-      tc.info('Installing package {}...'.format(pkg))
       url = packages[pkg]
-    os.system('git clone {} {} --depth=1'.format(url, pkg))
+    tc.info('Cloning and building package {}...'.format(pkg))
+    os.system('git clone {} {}'.format(url, pkg))
     tc.core.build()
   elif mode == "asm":
     fn = sys.argv[2]

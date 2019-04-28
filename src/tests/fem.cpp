@@ -6,6 +6,8 @@
 
 TC_NAMESPACE_BEGIN
 
+#include "fem_coeff.h"
+
 using namespace Tlang;
 
 auto fem = []() {
@@ -20,6 +22,9 @@ auto fem = []() {
   Global(alpha, f32);
   Global(beta, f32);
   Global(sum, f32);
+
+  Global(mu, f32);
+  Global(lambda, f32);
 
   layout([&]() {
     auto ijk = Indices(0, 1, 2);
@@ -37,6 +42,8 @@ auto fem = []() {
           for (int p = 0; p < dim; p++) {
             for (int q = 0; q < dim; q++) {
               auto weight = 1.0f;
+              K_la[cell][node][p][q];
+              K_mu[cell][node][p][q];
               Ku_tmp(p) += weight * x[i, j, k](q);
             }
           }
@@ -64,6 +71,12 @@ auto fem = []() {
   Kernel(update_p).def([&] {
     For(p(0), [&](Expr i, Expr j, Expr k) {
       p[i, j, k] = r[i, j, k] + beta * p[i, j, k];
+    });
+  });
+
+  Kernel(enforce_bc).def([&] {
+    For(x(0), [&](Expr i, Expr j, Expr k) {
+      If(j == 0).Then([&] { x[i, j, k] = Vector({0.0f, 0.0f, 0.0f}); });
     });
   });
 

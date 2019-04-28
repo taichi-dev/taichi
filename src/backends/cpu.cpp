@@ -338,6 +338,10 @@ class CPUIRCodeGen : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) {
     if (!current_program->config.force_vectorized_global_store) {
       for (int i = 0; i < stmt->data->ret_type.width; i++) {
+        if (stmt->parent->mask()) {
+          TC_ASSERT(stmt->width() == 1);
+          emit("if ({}[{}])", stmt->parent->mask()->raw_name(), i);
+        }
         emit("*({} *){}[{}] = {}[{}];",
              data_type_name(stmt->data->ret_type.data_type),
              stmt->ptr->raw_name(), i, stmt->data->raw_name(), i);

@@ -14,8 +14,10 @@ auto fem = []() {
   CoreState::set_trigger_gdb_when_crash(true);
 
   Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
+  prog.config.lazy_compilation = false;
 
-  constexpr int dim = 3, n = 256;
+  constexpr int dim = 3, n = 2;
 
   Vector x(DataType::f32, dim), r(DataType::f32, dim), p(DataType::f32, dim),
       Ap(DataType::f32, dim);
@@ -41,6 +43,7 @@ auto fem = []() {
   Kernel(compute_Ap).def([&] {
     BlockDim(1024);
     For(Ap(0), [&](Expr i, Expr j, Expr k) {
+      /*
       auto cell_coord = Var(Vector({i, j, k}));
       auto Ku_tmp = Var(Vector(dim));
       Ku_tmp = Vector({0.0f, 0.0f, 0.0f});
@@ -63,6 +66,8 @@ auto fem = []() {
       // boundary condition
       If(j == 0).Then([&] { Ku_tmp = Vector({0.0f, 0.0f, 0.0f}); });
       Ap[i, j, k] = Ku_tmp;
+      */
+      Ap[i, j, k] = p[i, j, k] * 0.5f;
     });
   });
 
@@ -83,26 +88,20 @@ auto fem = []() {
   });
 
   Kernel(update_x).def([&] {
-    For(x(0),
-        [&](Expr i, Expr j, Expr k) { x[i, j, k] += alpha[Expr(0)] * p[i, j, k]; });
+    For(x(0), [&](Expr i, Expr j, Expr k) {
+      x[i, j, k] += alpha[Expr(0)] * p[i, j, k];
+    });
   });
 
   Kernel(update_r).def([&] {
-    For(p(0),
-        [&](Expr i, Expr j, Expr k) { r[i, j, k] -= alpha[Expr(0)] * p[i, j, k]; });
-  });
-
-  Kernel(copy_r_to_p).def([&] {
-    For(p(0), [&](Expr i, Expr j, Expr k) { p[i, j, k] = r[i, j, k]; });
-  });
-
-  Kernel(copy_x_to_p).def([&] {
-    For(p(0), [&](Expr i, Expr j, Expr k) { p[i, j, k] = x[i, j, k]; });
+    For(p(0), [&](Expr i, Expr j, Expr k) {
+      r[i, j, k] -= alpha[Expr(0)] * p[i, j, k];
+    });
   });
 
   Kernel(copy_b_to_r).def([&] {
     For(p(0), [&](Expr i, Expr j, Expr k) {
-      If(i == 0 && j == n && k == 0)
+      If(i == 0 && j == n - 1 && k == 0)
           .Then([&] {
             r[i, j, k] = Vector({0.0f, -1.0f, 0.0f});
           })
@@ -133,17 +132,15 @@ auto fem = []() {
     }
   }
 
-  // r = b - Ax
-  copy_x_to_p();
+  // r = b - Ax = b    since x = 0
   copy_b_to_r();
-  alpha.val<float32>() = -1;
-  update_r();
-  // p = r
-  copy_r_to_p();
+  // p = r = r + 0 p
+  update_p();
   sum.val<float32>() = 0;
   reduce_r();
   auto old_rTr = sum.val<float32>();
-  for (int i = 0; i < 1000; i++) {
+  TC_P(old_rTr);
+  for (int i = 0; i < 10; i++) {
     // CG
     compute_Ap();
     sum.val<float32>() = 0;
@@ -151,6 +148,7 @@ auto fem = []() {
     auto pAp = sum.val<float32>();
     // alpha = rTr / pTAp
     alpha.val<float32>() = old_rTr / pAp;
+    TC_P(alpha.val<float32>());
     // x = x + alpha p
     update_x();
     // r = r - alpha Ap
@@ -164,6 +162,7 @@ auto fem = []() {
       break;
     // beta = new rTr / old rTr
     beta.val<float32>() = new_rTr / old_rTr;
+    TC_P(beta.val<float32>());
     // p = r + beta p
     update_p();
     old_rTr = new_rTr;

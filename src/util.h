@@ -22,6 +22,7 @@ struct CompileConfig {
   int simd_width;
   int gcc_version;
   bool internal_optimization;
+  bool lazy_compilation;
   bool force_vectorized_global_load;
   bool force_vectorized_global_store;
   int external_optimization_level;

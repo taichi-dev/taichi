@@ -27,6 +27,9 @@ Program::Kernel::Kernel(Program &program,
   func();
   program.end_function_definition();
   program.current_kernel = nullptr;
+
+  if (!program.config.lazy_compilation)
+    compile();
 }
 
 void Program::Kernel::compile() {

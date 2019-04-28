@@ -1028,8 +1028,10 @@ class GlobalVariableExpression : public Expression {
   }
 
   void flatten(VecStatement &ret) override {
-    TC_ERROR("This should not be invoked");
-    // ret.push_back(std::make_unique<LocalLoadStmt>(id));
+    TC_ASSERT(snode->num_active_indices == 0);
+    auto ptr = Stmt::make<GlobalPtrStmt>(
+        LaneAttribute<SNode *>(snode), std::vector<Stmt *>());
+    ret.push_back(std::move(ptr));
   }
 };
 

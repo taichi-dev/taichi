@@ -309,6 +309,7 @@ CompileConfig::CompileConfig() {
   gcc_version = -2;  // not 7 for faster compilation
                      // Use clang for faster speed
 #endif
+  lazy_compilation = true;
   serial_schedule = false;
 }
 

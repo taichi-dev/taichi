@@ -13,64 +13,108 @@ using namespace Tlang;
 auto fem = []() {
   CoreState::set_trigger_gdb_when_crash(true);
 
-  Program prog(Arch::gpu);
+  Program prog(Arch::x86_64);
 
   constexpr int dim = 3, n = 256;
 
-  Vector x(dim), r(dim), p(dim), Ap(dim);
+  Vector x(DataType::f32, dim), r(DataType::f32, dim), p(DataType::f32, dim),
+      Ap(DataType::f32, dim);
 
   Global(alpha, f32);
   Global(beta, f32);
   Global(sum, f32);
 
-  Global(mu, f32);
-  Global(lambda, f32);
+  AmbientGlobal(lambda, f32, 0.0f);
+  AmbientGlobal(mu, f32, 0.0f);
 
   layout([&]() {
     auto ijk = Indices(0, 1, 2);
     root.dense(ijk, {n, n, n}).place(x);
+    root.dense(ijk, {n, n, n}).place(p);
+    root.dense(ijk, {n, n, n}).place(Ap);
     root.dense(ijk, {n, n, n}).place(r);
+    root.dense(ijk, {n, n, n}).place(lambda);
+    root.dense(ijk, {n, n, n}).place(mu);
     root.place(alpha, beta, sum);
   });
 
-  Kernel(compute_ku).def([&] {
+  Kernel(compute_Ap).def([&] {
     BlockDim(1024);
     For(Ap(0), [&](Expr i, Expr j, Expr k) {
+      auto cell_coord = Var(Vector({i, j, k}));
       auto Ku_tmp = Var(Vector(dim));
+      Ku_tmp = Vector({0.0f, 0.0f, 0.0f});
       for (int cell = 0; cell < pow<dim>(2); cell++) {
+        auto cell_offset = Var(Vector({cell / 4, cell / 2 % 2, cell % 2}));
+        auto cell_lambda = lambda[cell_coord + cell_offset];
+        auto cell_mu = mu[cell_coord + cell_offset];
         for (int node = 0; node < pow<dim>(2); node++) {
-          for (int p = 0; p < dim; p++) {
-            for (int q = 0; q < dim; q++) {
+          auto node_offset = Var(Vector({node / 4, node / 2 % 2, node % 2}));
+          for (int u = 0; u < dim; u++) {
+            for (int v = 0; v < dim; v++) {
               auto weight = 1.0f;
-              K_la[cell][node][p][q];
-              K_mu[cell][node][p][q];
-              Ku_tmp(p) += weight * x[i, j, k](q);
+              Ku_tmp(u) += (cell_lambda * K_la[cell][node][u][v] +
+                            cell_mu * K_mu[cell][node][u][v]) *
+                           p[i, j, k](v);
             }
           }
         }
       }
+      // boundary condition
+      If(j == 0).Then([&] { Ku_tmp = Vector({0.0f, 0.0f, 0.0f}); });
       Ap[i, j, k] = Ku_tmp;
     });
   });
 
   Kernel(reduce_r).def([&] {
-    For(r(0),
-        [&](Expr i, Expr j, Expr k) { sum[Expr(0)] += r[i, j, k].norm2(); });
+    For(r(0), [&](Expr i, Expr j, Expr k) {
+      Atomic(sum[Expr(0)]) += r[i, j, k].norm2();
+    });
+  });
+
+  Kernel(reduce_pAp).def([&] {
+    For(r(0), [&](Expr i, Expr j, Expr k) {
+      auto tmp = Var(0.0f);
+      for (int d = 0; d < dim; d++) {
+        tmp += p[i, j, k](d) * Ap[i, j, k](d);
+      }
+      Atomic(sum[Expr(0)]) += tmp;
+    });
   });
 
   Kernel(update_x).def([&] {
     For(x(0),
-        [&](Expr i, Expr j, Expr k) { x[i, j, k] += alpha * p[i, j, k]; });
+        [&](Expr i, Expr j, Expr k) { x[i, j, k] += alpha[Expr(0)] * p[i, j, k]; });
   });
 
   Kernel(update_r).def([&] {
     For(p(0),
-        [&](Expr i, Expr j, Expr k) { r[i, j, k] -= alpha * p[i, j, k]; });
+        [&](Expr i, Expr j, Expr k) { r[i, j, k] -= alpha[Expr(0)] * p[i, j, k]; });
+  });
+
+  Kernel(copy_r_to_p).def([&] {
+    For(p(0), [&](Expr i, Expr j, Expr k) { p[i, j, k] = r[i, j, k]; });
+  });
+
+  Kernel(copy_x_to_p).def([&] {
+    For(p(0), [&](Expr i, Expr j, Expr k) { p[i, j, k] = x[i, j, k]; });
+  });
+
+  Kernel(copy_b_to_r).def([&] {
+    For(p(0), [&](Expr i, Expr j, Expr k) {
+      If(i == 0 && j == n && k == 0)
+          .Then([&] {
+            r[i, j, k] = Vector({0.0f, -1.0f, 0.0f});
+          })
+          .Else([&] {
+            r[i, j, k] = Vector({0.0f, 0.0f, 0.0f});
+          });
+    });
   });
 
   Kernel(update_p).def([&] {
     For(p(0), [&](Expr i, Expr j, Expr k) {
-      p[i, j, k] = r[i, j, k] + beta * p[i, j, k];
+      p[i, j, k] = r[i, j, k] + beta[Expr(0)] * p[i, j, k];
     });
   });
 
@@ -80,11 +124,33 @@ auto fem = []() {
     });
   });
 
-  // r = n - Ax
+  for (int i = 0; i < n - 1; i++) {
+    for (int j = 0; j < n - 1; j++) {
+      for (int k = 0; k < n - 1; k++) {
+        lambda.val<float32>(i, j, k) = 1.0f;
+        mu.val<float32>(i, j, k) = 1.0f;
+      }
+    }
+  }
+
+  // r = b - Ax
+  copy_x_to_p();
+  copy_b_to_r();
+  alpha.val<float32>() = -1;
+  update_r();
   // p = r
+  copy_r_to_p();
+  sum.val<float32>() = 0;
+  reduce_r();
+  auto old_rTr = sum.val<float32>();
   for (int i = 0; i < 1000; i++) {
     // CG
+    compute_Ap();
+    sum.val<float32>() = 0;
+    reduce_pAp();
+    auto pAp = sum.val<float32>();
     // alpha = rTr / pTAp
+    alpha.val<float32>() = old_rTr / pAp;
     // x = x + alpha p
     update_x();
     // r = r - alpha Ap
@@ -92,13 +158,15 @@ auto fem = []() {
     // return if |r| small
     sum.val<float32>() = 0;
     reduce_r();
-    auto rTr = 0.0_f;
-    auto old_rTr = rTr;
     auto new_rTr = sum.val<float32>();
+    TC_P(new_rTr);
+    if (new_rTr < 1e-5f)
+      break;
     // beta = new rTr / old rTr
     beta.val<float32>() = new_rTr / old_rTr;
     // p = r + beta p
     update_p();
+    old_rTr = new_rTr;
   }
 };
 TC_REGISTER_TASK(fem);

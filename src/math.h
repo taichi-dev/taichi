@@ -195,6 +195,15 @@ struct Matrix {
   }
 
   static Matrix identity(int dim);
+
+  operator ExpressionGroup() {
+    TC_ASSERT(m == 1);
+    ExpressionGroup ret;
+    for (int i = 0; i < n; i++) {
+      ret.exprs.push_back(entries[i]);
+    }
+    return ret;
+  }
 };
 
 inline Matrix operator*(const Expr &A, const Matrix &B) {

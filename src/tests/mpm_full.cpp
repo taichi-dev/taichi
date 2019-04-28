@@ -288,9 +288,11 @@ auto mpm3d = []() {
       for (int a = 0; a < 3; a++) {
         for (int b = 0; b < 3; b++) {
           for (int c = 0; c < 3; c++) {
+            auto offset = Vector({a, b, c});
             auto dpos = dx * (Vector({a, b, c}).cast_elements<float32>() - fx);
             auto weight = w[a](0) * w[b](1) * w[c](2);
-            auto node = (base_coord_i + a, base_coord_j + b, base_coord_k + c);
+            auto node =
+                Vector({base_coord_i, base_coord_j, base_coord_k}) + offset;
             Atomic(grid_v[node]) +=
                 weight * (particle_mass * v + affine * dpos);
             Atomic(grid_m[node]) += weight * particle_mass;

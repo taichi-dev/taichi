@@ -1,4 +1,3 @@
-
 #pragma once
 
 #define FEM_INTERFACE_VERSION_MAJOR 3
@@ -490,7 +489,7 @@ static_assert(std::is_same<FEMOutputs, Serializer::has_io<FEMOutputs &>::T__>(),
               "");
 static_assert(Serializer::has_io<FEMOutputs &>::value, "");
 static_assert(Serializer::has_io<FEMOutputs &&>::value, "");
-}
+}  // namespace fem_interface
 #ifdef TC_INCLUDED
 TC_NAMESPACE_END
 #endif

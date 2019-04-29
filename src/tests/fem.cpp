@@ -1,5 +1,4 @@
 #include "../tlang.h"
-#define TESTING
 #include <taichi/util.h>
 #include <taichi/visual/gui.h>
 #include <taichi/system/profiler.h>

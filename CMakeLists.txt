@@ -5,6 +5,7 @@ set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(TAICHI_PROJECT_LIBRARIES ${TAICHI_PROJECT_LIBRARIES} ${TAICHI_PROJECT_NAME} PARENT_SCOPE)
 
 option(TLANG_WITH_VDB "Use VDB" OFF)
+option(TLANG_WITH_FEM "Use FEM" OFF)
 
 add_subdirectory(external/partio)
 include_directories(external/openvdb/)
@@ -15,12 +16,22 @@ if (TLANG_WITH_VDB)
     list(APPEND  PROJECT_SOURCES "baselines/vdb/benchmark_vdb.cpp")
 endif()
 
+if (NOT TLANG_WITH_FEM)
+    set(SPGridSource "")
+else()
+    include_directories(external/)
+    file(GLOB SPGridSource "external/SPGrid/*/*.cpp")
+endif()
 
-add_library(taichi_lang SHARED ${PROJECT_SOURCES})
+add_library(taichi_lang SHARED ${PROJECT_SOURCES} ${SPGridSource})
 target_link_libraries(taichi_lang ${CORE_LIBRARY_NAME} partio)
 
 if (TLANG_WITH_VDB)
     target_link_libraries(taichi_lang ${CMAKE_CURRENT_LIST_DIR}/external/openvdb/openvdb/libopenvdb.so Half log4cplus boost_iostreams)
+endif()
+
+if (TLANG_WITH_FEM)
+    target_link_libraries(taichi_lang /home/yuanming/repos/topo_opt_private/solver/libSPGridCPUSolver.so /opt/intel/compilers_and_libraries_2019.2.187/linux/mkl/lib/intel64_lin/libmkl_rt.so)
 endif()
 
 find_package(CUDA 8.0)
@@ -33,7 +44,3 @@ if (CUDA_FOUND)
 else()
     message("CUDA Not Found.")
 endif()
-
-# find_package(MPI 3.1 REQUIRED)
-# include_directories(SYSTEM ${MPI_INCLUDE_PATH})
-# target_link_libraries(taichi_pangu ${MPI_C_LIBRARIES})

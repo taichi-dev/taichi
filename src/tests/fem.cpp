@@ -11,7 +11,7 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-constexpr int dim = 3, n = 128;
+constexpr int dim = 3, n = 64;
 bool active[n][n][n];
 
 auto fem = []() {
@@ -56,7 +56,6 @@ auto fem = []() {
           auto node_offset = Var(Vector({node / 4, node / 2 % 2, node % 2}));
           for (int u = 0; u < dim; u++) {
             for (int v = 0; v < dim; v++) {
-              auto weight = 1.0f;
               Ku_tmp(u) += (cell_lambda * K_la[cell][node][u][v] +
                             cell_mu * K_mu[cell][node][u][v]) *
                            p[cell_coord + cell_offset + node_offset](v);
@@ -65,11 +64,8 @@ auto fem = []() {
         }
       }
       // boundary condition
-      If(j == 0).Then([&] { Ku_tmp = Vector({0.0f, 0.0f, 0.0f}); });
+      If(j < 2).Then([&] { Ku_tmp = Vector({0.0f, 0.0f, 0.0f}); });
       Ap[i, j, k] = Ku_tmp;
-      /*
-      Ap[i, j, k] = p[i, j, k] * 0.5f;
-      */
     });
   });
 
@@ -140,18 +136,19 @@ auto fem = []() {
                   .set("adaptive", false)
                   .set("filename", "$mpm/bunny_small.obj"));
 
-  for (int i = 0; i < n - 1; i++) {
-    for (int j = 0; j < n - 1; j++) {
-      for (int k = 0; k < n - 1; k++) {
+  for (int i = 1; i < n - 2; i++) {
+    for (int j = 1; j < n - 2; j++) {
+      for (int k = 1; k < n - 2; k++) {
         bool inside = tex->sample((Vector3(0.5f) + Vector3(i, j, k)) *
                                   Vector3(1.0f / (n - 1)))
                           .x > 0.5f;
+        inside = pow<2>(i - n / 2) + pow<2>(k - n / 2) < pow<2>(n / 2) / 2;
         // bool inside = i + j > n * 0.2;
         if (inside) {
           active[i][j][k] = true;
           lambda.val<float32>(i, j, k) = lambda_0;
           mu.val<float32>(i, j, k) = mu_0;
-          if (j == n / 2 && i == n / 2 && k == n / 2)
+          if (j == n / 3 && i == n / 2)
             r(0).val<float32>(i, j, k) = -1.0f;
         }
         // if (j == n / 2 && i == n / 2)
@@ -218,7 +215,7 @@ auto fem = []() {
     reduce_r();
     auto new_rTr = sum.val<float32>();
     // TC_P(new_rTr);
-    if (new_rTr < 1e-5f)
+    if (new_rTr < 1e-3f)
       break;
     // beta = new rTr / old rTr
     beta.val<float32>() = new_rTr / old_rTr;

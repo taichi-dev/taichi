@@ -13,6 +13,7 @@ using namespace Tlang;
 
 constexpr int dim = 3, n = 64;
 bool active[n][n][n];
+real R[n][n][n][dim];
 
 auto fem = []() {
   CoreState::set_trigger_gdb_when_crash(true);
@@ -143,14 +144,16 @@ auto fem = []() {
         bool inside = tex->sample((Vector3(0.5f) + Vector3(i, j, k)) *
                                   Vector3(1.0f / (n - 1)))
                           .x > 0.5f;
-        inside = pow<2>(i - n / 2) + pow<2>(k - n / 2) < pow<2>(n / 2) / 2;
+        // inside = pow<2>(i - n / 2) + pow<2>(k - n / 2) < pow<2>(n / 2) / 2;
         // bool inside = i + j > n * 0.2;
         if (inside) {
           active[i][j][k] = true;
           lambda.val<float32>(i, j, k) = lambda_0;
           mu.val<float32>(i, j, k) = mu_0;
-          if (j == n / 3 && i == n / 2)
+          if (j == 4 && i == n / 2) {
             r(0).val<float32>(i, j, k) = -1.0f;
+            R[i][j][k][0] = -1.0f;
+          }
         }
         // if (j == n / 2 && i == n / 2)
         // r(0).val<float32>(i, j, k) = -1.0f;
@@ -160,7 +163,7 @@ auto fem = []() {
 
   std::deque<Vector3i> q;
   q.push_back(Vector3i(n / 2));  // Assuming the center voxel is active
-  std::function<void(int, int, int)> dfs = [&](int i, int j, int k) {
+  std::function<void(int, int, int)> enqueue = [&](int i, int j, int k) {
     if (active[i][j][k]) {
       active[i][j][k] = 0;
       q.push_back(Vector3i(i, j, k));
@@ -173,12 +176,12 @@ auto fem = []() {
     auto j = x[1];
     auto k = x[2];
     // TC_INFO("{} {} {}", i, j, k);
-    dfs(i + 1, j, k);
-    dfs(i - 1, j, k);
-    dfs(i, j + 1, k);
-    dfs(i, j - 1, k);
-    dfs(i, j, k + 1);
-    dfs(i, j, k - 1);
+    enqueue(i + 1, j, k);
+    enqueue(i - 1, j, k);
+    enqueue(i, j + 1, k);
+    enqueue(i, j - 1, k);
+    enqueue(i, j, k + 1);
+    enqueue(i, j, k - 1);
   }
 
   for (int i = 0; i < n - 1; i++) {
@@ -206,7 +209,7 @@ auto fem = []() {
     alpha.val<float32>() = old_rTr / pAp;
     TC_P(old_rTr);
     // TC_P(pAp);
-    // TC_P(alpha.val<float32>());
+    TC_P(alpha.val<float32>());
     // x = x + alpha p
     update_x();
     // r = r - alpha Ap
@@ -216,15 +219,38 @@ auto fem = []() {
     reduce_r();
     auto new_rTr = sum.val<float32>();
     // TC_P(new_rTr);
-    if (new_rTr < 1e-3f)
+    if (new_rTr < 1e-7f)
       break;
     // beta = new rTr / old rTr
     beta.val<float32>() = new_rTr / old_rTr;
-    // TC_P(beta.val<float32>());
+    TC_P(beta.val<float32>());
     // p = r + beta p
     update_p();
     old_rTr = new_rTr;
   }
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      for (int k = 0; k < n; k++) {
+        for (int d = 0; d < dim; d++) {
+          p(d).val<float32>(i, j, k) = x(d).val<float32>(i, j, k);
+        }
+      }
+    }
+  }
+  compute_Ap();
+  auto residual = 0.0f;
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      for (int k = 0; k < n; k++) {
+        for (int d = 0; d < dim; d++) {
+          residual += std::abs(R[i][j][k][d] -
+                          Ap(d).val<float32>(i, j, k));
+        }
+      }
+    }
+  }
+  TC_P(residual);
 
   int gui_res = 512;
   GUI gui("FEM", Vector2i(gui_res + 200, gui_res), false);

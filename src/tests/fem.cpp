@@ -113,6 +113,7 @@ void fem_solve() {
                 for (int jj = 0; jj < scalar_block_size::y; jj++) {
                   for (int kk = 0; kk < scalar_block_size::z; kk++) {
                     auto scale = (double)D[i + ii][j + jj][k + kk];
+                    // auto scale = 1.0;
                     density_block.get(ii, jj, kk) = scale;
                     bounds[0] = std::min(bounds[0], scale);
                     bounds[1] = std::max(bounds[1], scale);
@@ -135,9 +136,9 @@ void fem_solve() {
       for (int k = 1; k < n - 2; k++) {
         for (int d = 0; d < 3; d++) {
           DirichletOnNode dirichlet;
-          dirichlet.coord[0] = i;
-          dirichlet.coord[1] = j;
-          dirichlet.coord[2] = k;
+          dirichlet.coord[0] = i + padding;
+          dirichlet.coord[1] = j + padding;
+          dirichlet.coord[2] = k + padding;
           dirichlet.axis = d;
           dirichlet.value = 0;
           param.dirichlet_nodes.push_back(dirichlet);
@@ -147,7 +148,7 @@ void fem_solve() {
   }
 
   param.forces.push_back(
-      fem_interface::ForceOnNode{{n / 2, n / 2, n / 2}, {0, -1, 0}});
+      fem_interface::ForceOnNode{{n / 2 + padding, n / 2 + padding, n / 2 + padding}, {0, -1, 0}});
 
   param.caller_method = "taichi_benchmark";
   interface.preserve_output(param.density.blocks.size());
@@ -323,10 +324,10 @@ auto fem = []() {
         bool inside = tex->sample((Vector3(0.5f) + Vector3(i, j, k)) *
                                   Vector3(1.0f / (n - 1)))
                           .x > 0.5f;
-        D[i][j][k] = 1;
         // inside = pow<2>(i - n / 2) + pow<2>(k - n / 2) < pow<2>(n / 2) / 2;
-        // bool inside = i + j > n * 0.2;
+        inside = i < n * 0.8 && j < n * 0.8 && k < n * 0.8;
         if (inside) {
+          D[i][j][k] = 1;
           active[i][j][k] = true;
           lambda.val<float32>(i, j, k) = lambda_0;
           mu.val<float32>(i, j, k) = mu_0;

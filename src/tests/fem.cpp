@@ -17,7 +17,7 @@ auto fem = []() {
   prog.config.print_ir = true;
   prog.config.lazy_compilation = false;
 
-  constexpr int dim = 3, n = 16;
+  constexpr int dim = 3, n = 64;
 
   Vector x(DataType::f32, dim), r(DataType::f32, dim), p(DataType::f32, dim),
       Ap(DataType::f32, dim);
@@ -103,7 +103,7 @@ auto fem = []() {
     For(p(0), [&](Expr i, Expr j, Expr k) {
       If(i == 0 && j == n - 1 && k == 0)
           .Then([&] {
-            r[i, j, k] = Vector({0.0f, -1.0f, 0.0f});
+            r[i, j, k] = Vector({1.0f, -1.0f, 1.0f});
           })
           .Else([&] {
             r[i, j, k] = Vector({0.0f, 0.0f, 0.0f});
@@ -123,11 +123,17 @@ auto fem = []() {
     });
   });
 
+  const auto E = 1_f;     // Young's Modulus
+  const auto nu = 0.2_f;  // Poisson ratio
+
+  const real mu_0 = E / (2 * (1 + nu));
+  const real lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
+
   for (int i = 0; i < n - 1; i++) {
     for (int j = 0; j < n - 1; j++) {
       for (int k = 0; k < n - 1; k++) {
-        lambda.val<float32>(i, j, k) = 1.0f;
-        mu.val<float32>(i, j, k) = 1.0f;
+        lambda.val<float32>(i, j, k) = mu_0;
+        mu.val<float32>(i, j, k) = lambda_0;
       }
     }
   }
@@ -167,6 +173,25 @@ auto fem = []() {
     // p = r + beta p
     update_p();
     old_rTr = new_rTr;
+  }
+
+  int gui_res = 512;
+  GUI gui("FEM", Vector2i(gui_res + 200, gui_res), false);
+  int k = 0;
+  gui.slider("z", k, 0, n);
+
+  int scale = gui_res / n;
+  auto &canvas = gui.get_canvas();
+  for (int frame = 1;; frame++) {
+    for (int i = 0; i < gui_res; i++) {
+      for (int j = 0; j < gui_res; j++) {
+        auto dx = x(0).val<float32>(i / scale, j / scale, k);
+        auto dy = x(1).val<float32>(i / scale, j / scale, k);
+        auto dz = x(2).val<float32>(i / scale, j / scale, k);
+        canvas.img[i][j] = Vector4(0.5f) + Vector4(dx, dy, dz, 0) * 0.5f;
+      }
+    }
+    gui.update();
   }
 };
 TC_REGISTER_TASK(fem);

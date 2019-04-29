@@ -130,7 +130,6 @@ void fem_solve() {
   TC_P(bounds);
   TC_ERROR_IF(has_nan, "density field contains nan!");
 
-  std::map<uint64, real> dirichlet_bc[3];
   for (int i = 1; i < n - 2; i++) {
     for (int j = 0; j < 2; j++) {
       for (int k = 1; k < n - 2; k++) {
@@ -147,8 +146,8 @@ void fem_solve() {
     }
   }
 
-  param.forces.push_back(
-      fem_interface::ForceOnNode{{n / 2 + padding, n / 2 + padding, n / 2 + padding}, {0, -1, 0}});
+  param.forces.push_back(fem_interface::ForceOnNode{
+      {n / 2 + padding, n / 2 + padding, n / 2 + padding}, {0, -1, 0}});
 
   param.caller_method = "taichi_benchmark";
   interface.preserve_output(param.density.blocks.size());
@@ -167,7 +166,6 @@ void fem_solve() {
 
   has_nan = false;
 
-  /*
   for (auto &block : interface.outputs.displacements.blocks) {
     int i = block.base_coordinates[0];
     int j = block.base_coordinates[1];
@@ -175,12 +173,16 @@ void fem_solve() {
     for (int ii = 0; ii < vector_block_size::x; ii++) {
       for (int jj = 0; jj < vector_block_size::y; jj++) {
         for (int kk = 0; kk < vector_block_size::z; kk++) {
+          /*
           auto sparse_v0 = grid->v0();
           auto sparse_v1 = grid->v1();
           auto sparse_v2 = grid->v2();
           sparse_v0(i + ii, j + jj, k + kk) = block.get(ii, jj, kk)[0];
           sparse_v1(i + ii, j + jj, k + kk) = block.get(ii, jj, kk)[1];
           sparse_v2(i + ii, j + jj, k + kk) = block.get(ii, jj, kk)[2];
+          */
+
+          block.get(ii, jj, kk)[0];
 
           for (int r = 0; r < dim; r++) {
             bounds[0] = std::min(bounds[0], block.get(ii, jj, kk)[r]);
@@ -192,7 +194,6 @@ void fem_solve() {
       }
     }
   }
-  */
   TC_P(bounds);
   TC_WARN_UNLESS(interface.outputs.success, "FEM solve has failed!");
   TC_WARN_UNLESS(!has_nan, "FEM solution contains nan!");

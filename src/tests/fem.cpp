@@ -3,6 +3,7 @@
 #include <taichi/visual/gui.h>
 #include <taichi/system/profiler.h>
 #include <taichi/visualization/particle_visualization.h>
+#include <taichi/visual/texture.h>
 
 TC_NAMESPACE_BEGIN
 
@@ -10,14 +11,15 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
+constexpr int dim = 3, n = 128;
+bool active[n][n][n];
+
 auto fem = []() {
   CoreState::set_trigger_gdb_when_crash(true);
 
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
   prog.config.lazy_compilation = false;
-
-  constexpr int dim = 3, n = 64;
 
   Vector x(DataType::f32, dim), r(DataType::f32, dim), p(DataType::f32, dim),
       Ap(DataType::f32, dim);
@@ -101,9 +103,10 @@ auto fem = []() {
 
   Kernel(copy_b_to_r).def([&] {
     For(p(0), [&](Expr i, Expr j, Expr k) {
-      If(i == 0 && j == n - 1 && k == 0)
+      If(i == n / 2 && j == n / 2 && k == n / 2)
+          // If(j == n / 2)
           .Then([&] {
-            r[i, j, k] = Vector({1.0f, -1.0f, 1.0f});
+            r[i, j, k] = Vector({0.0f, -1.0f, 0.0f});
           })
           .Else([&] {
             r[i, j, k] = Vector({0.0f, 0.0f, 0.0f});
@@ -129,24 +132,74 @@ auto fem = []() {
   const real mu_0 = E / (2 * (1 + nu));
   const real lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
 
+  auto tex = create_instance<Texture>(
+      "mesh", Dict()
+                  .set("resolution", Vector3(n))
+                  .set("translate", Vector3(0.55, 0.40, 0.47))
+                  .set("scale", Vector3(1.1))
+                  .set("adaptive", false)
+                  .set("filename", "$mpm/bunny_small.obj"));
+
   for (int i = 0; i < n - 1; i++) {
     for (int j = 0; j < n - 1; j++) {
       for (int k = 0; k < n - 1; k++) {
-        lambda.val<float32>(i, j, k) = mu_0;
-        mu.val<float32>(i, j, k) = lambda_0;
+        bool inside = tex->sample((Vector3(0.5f) + Vector3(i, j, k)) *
+                                  Vector3(1.0f / (n - 1)))
+                          .x > 0.5f;
+        // bool inside = i + j > n * 0.2;
+        if (inside) {
+          active[i][j][k] = true;
+          lambda.val<float32>(i, j, k) = lambda_0;
+          mu.val<float32>(i, j, k) = mu_0;
+          if (j == n / 2 && i == n / 2 && k == n / 2)
+            r(0).val<float32>(i, j, k) = -1.0f;
+        }
+        // if (j == n / 2 && i == n / 2)
+        // r(0).val<float32>(i, j, k) = -1.0f;
+      }
+    }
+  }
+
+  std::deque<Vector3i> q;
+  q.push_back(Vector3i(n / 2));  // Assuming the center voxel is active
+  std::function<void(int, int, int)> dfs = [&](int i, int j, int k) {
+    if (active[i][j][k]) {
+      active[i][j][k] = 0;
+      q.push_back(Vector3i(i, j, k));
+    }
+  };
+  while (!q.empty()) {
+    auto x = q.front();
+    q.pop_front();
+    auto i = x[0];
+    auto j = x[1];
+    auto k = x[2];
+    // TC_INFO("{} {} {}", i, j, k);
+    dfs(i + 1, j, k);
+    dfs(i - 1, j, k);
+    dfs(i, j + 1, k);
+    dfs(i, j - 1, k);
+    dfs(i, j, k + 1);
+    dfs(i, j, k - 1);
+  }
+
+  for (int i = 0; i < n - 1; i++) {
+    for (int j = 0; j < n - 1; j++) {
+      for (int k = 0; k < n - 1; k++) {
+        TC_ASSERT(!active[i][j][k]);
       }
     }
   }
 
   // r = b - Ax = b    since x = 0
-  copy_b_to_r();
+  // copy_b_to_r();
   // p = r = r + 0 p
   update_p();
   sum.val<float32>() = 0;
   reduce_r();
   auto old_rTr = sum.val<float32>();
-  for (int i = 0; i < 100; i++) {
-    // CG
+
+  for (int i = 0; i < 1000; i++) {
     compute_Ap();
     sum.val<float32>() = 0;
     reduce_pAp();
@@ -183,8 +236,8 @@ auto fem = []() {
   int scale = gui_res / n;
   auto &canvas = gui.get_canvas();
   for (int frame = 1;; frame++) {
-    for (int i = 0; i < gui_res; i++) {
-      for (int j = 0; j < gui_res; j++) {
+    for (int i = 0; i < gui_res - scale; i++) {
+      for (int j = 0; j < gui_res - scale; j++) {
         auto dx = x(0).val<float32>(i / scale, j / scale, k);
         auto dy = x(1).val<float32>(i / scale, j / scale, k);
         auto dz = x(2).val<float32>(i / scale, j / scale, k);

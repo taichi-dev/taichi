@@ -27,11 +27,12 @@ void fem_solve() {
   using namespace fem_interface;
   FEMInterface interface;
   auto &param = interface.param;
+  constexpr int padding = 8;
 
   // TC_P(container_bounds);
   // Cell size, instead of node size
   for (int i = 0; i < 3; i++)
-    param.resolution[i] = n + 48;
+    param.resolution[i] = n + padding * 3;
 
   param.global_mu = mu_0;
   param.global_lambda = lambda_0;
@@ -104,14 +105,14 @@ void fem_solve() {
                  k += scalar_block_size::z) {
               FEMInputs::ScalarGrid::Block density_block;
 
-              density_block.base_coordinates[0] = i;
-              density_block.base_coordinates[1] = j;
-              density_block.base_coordinates[2] = k;
+              density_block.base_coordinates[0] = i + padding;
+              density_block.base_coordinates[1] = j + padding;
+              density_block.base_coordinates[2] = k + padding;
 
               for (int ii = 0; ii < scalar_block_size::x; ii++) {
                 for (int jj = 0; jj < scalar_block_size::y; jj++) {
                   for (int kk = 0; kk < scalar_block_size::z; kk++) {
-                    auto scale = (double)D[I + ii][J + jj][K + kk];
+                    auto scale = (double)D[i + ii][j + jj][k + kk];
                     density_block.get(ii, jj, kk) = scale;
                     bounds[0] = std::min(bounds[0], scale);
                     bounds[1] = std::max(bounds[1], scale);
@@ -370,6 +371,8 @@ auto fem = []() {
       }
     }
   }
+
+  fem_solve();
 
   // r = b - Ax = b    since x = 0
   // copy_b_to_r();

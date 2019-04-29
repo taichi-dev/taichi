@@ -17,7 +17,7 @@ auto fem = []() {
   prog.config.print_ir = true;
   prog.config.lazy_compilation = false;
 
-  constexpr int dim = 3, n = 2;
+  constexpr int dim = 3, n = 16;
 
   Vector x(DataType::f32, dim), r(DataType::f32, dim), p(DataType::f32, dim),
       Ap(DataType::f32, dim);
@@ -43,12 +43,11 @@ auto fem = []() {
   Kernel(compute_Ap).def([&] {
     BlockDim(1024);
     For(Ap(0), [&](Expr i, Expr j, Expr k) {
-      /*
       auto cell_coord = Var(Vector({i, j, k}));
       auto Ku_tmp = Var(Vector(dim));
       Ku_tmp = Vector({0.0f, 0.0f, 0.0f});
       for (int cell = 0; cell < pow<dim>(2); cell++) {
-        auto cell_offset = Var(Vector({cell / 4, cell / 2 % 2, cell % 2}));
+        auto cell_offset = Var(Vector({-cell / 4, -cell / 2 % 2, -cell % 2}));
         auto cell_lambda = lambda[cell_coord + cell_offset];
         auto cell_mu = mu[cell_coord + cell_offset];
         for (int node = 0; node < pow<dim>(2); node++) {
@@ -58,7 +57,7 @@ auto fem = []() {
               auto weight = 1.0f;
               Ku_tmp(u) += (cell_lambda * K_la[cell][node][u][v] +
                             cell_mu * K_mu[cell][node][u][v]) *
-                           p[i, j, k](v);
+                           p[cell_coord + cell_offset + node_offset](v);
             }
           }
         }
@@ -66,8 +65,9 @@ auto fem = []() {
       // boundary condition
       If(j == 0).Then([&] { Ku_tmp = Vector({0.0f, 0.0f, 0.0f}); });
       Ap[i, j, k] = Ku_tmp;
-      */
+      /*
       Ap[i, j, k] = p[i, j, k] * 0.5f;
+      */
     });
   });
 
@@ -95,7 +95,7 @@ auto fem = []() {
 
   Kernel(update_r).def([&] {
     For(p(0), [&](Expr i, Expr j, Expr k) {
-      r[i, j, k] -= alpha[Expr(0)] * p[i, j, k];
+      r[i, j, k] -= alpha[Expr(0)] * Ap[i, j, k];
     });
   });
 
@@ -139,8 +139,7 @@ auto fem = []() {
   sum.val<float32>() = 0;
   reduce_r();
   auto old_rTr = sum.val<float32>();
-  TC_P(old_rTr);
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 100; i++) {
     // CG
     compute_Ap();
     sum.val<float32>() = 0;
@@ -148,7 +147,9 @@ auto fem = []() {
     auto pAp = sum.val<float32>();
     // alpha = rTr / pTAp
     alpha.val<float32>() = old_rTr / pAp;
-    TC_P(alpha.val<float32>());
+    TC_P(old_rTr);
+    // TC_P(pAp);
+    // TC_P(alpha.val<float32>());
     // x = x + alpha p
     update_x();
     // r = r - alpha Ap
@@ -157,12 +158,12 @@ auto fem = []() {
     sum.val<float32>() = 0;
     reduce_r();
     auto new_rTr = sum.val<float32>();
-    TC_P(new_rTr);
+    // TC_P(new_rTr);
     if (new_rTr < 1e-5f)
       break;
     // beta = new rTr / old rTr
     beta.val<float32>() = new_rTr / old_rTr;
-    TC_P(beta.val<float32>());
+    // TC_P(beta.val<float32>());
     // p = r + beta p
     update_p();
     old_rTr = new_rTr;

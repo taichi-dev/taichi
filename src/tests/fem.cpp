@@ -49,7 +49,8 @@ auto fem = []() {
       auto Ku_tmp = Var(Vector(dim));
       Ku_tmp = Vector({0.0f, 0.0f, 0.0f});
       for (int cell = 0; cell < pow<dim>(2); cell++) {
-        auto cell_offset = Var(Vector({-cell / 4, -cell / 2 % 2, -cell % 2}));
+        auto cell_offset =
+            Var(Vector({-(cell / 4), -(cell / 2 % 2), -(cell % 2)}));
         auto cell_lambda = lambda[cell_coord + cell_offset];
         auto cell_mu = mu[cell_coord + cell_offset];
         for (int node = 0; node < pow<dim>(2); node++) {

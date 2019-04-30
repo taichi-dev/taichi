@@ -453,7 +453,7 @@ auto fem = []() {
   GUI gui("FEM", Vector2i(gui_res + 200, gui_res), false);
   int gt = 0;
   int k = 0;
-  gui.slider("z", k, 0, n).slider("Ground truth", gt, 0, 2);
+  gui.slider("z", k, 0, n - 1).slider("Ground truth", gt, 0, 1);
 
   int scale = gui_res / n;
   auto &canvas = gui.get_canvas();

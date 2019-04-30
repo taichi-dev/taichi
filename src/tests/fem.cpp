@@ -314,7 +314,7 @@ auto fem = []() {
   auto tex = create_instance<Texture>(
       "mesh", Dict()
                   .set("resolution", Vector3(n))
-                  .set("translate", Vector3(0.55, 0.40, 0.47))
+                  .set("translate", Vector3(0.55, 0.35, 0.47))
                   .set("scale", Vector3(1.1))
                   .set("adaptive", false)
                   .set("filename", "$mpm/bunny_small.obj"));
@@ -326,15 +326,13 @@ auto fem = []() {
                                   Vector3(1.0f / (n - 1)))
                           .x > 0.5f;
         // inside = pow<2>(i - n / 2) + pow<2>(k - n / 2) < pow<2>(n / 2) / 2;
-        inside = i < n * 0.8 && j < n * 0.8 && k < n * 0.8;
+        // inside = i < n * 0.8 && j < n * 0.8 && k < n * 0.8;
         if (inside) {
           D[i][j][k] = 1;
           active[i][j][k] = true;
           lambda.val<float32>(i, j, k) = lambda_0;
           mu.val<float32>(i, j, k) = mu_0;
         }
-        // if (j == n / 2 && i == n / 2)
-        // r(0).val<float32>(i, j, k) = -1.0f;
       }
     }
   }
@@ -477,5 +475,7 @@ auto fem = []() {
   }
 };
 TC_REGISTER_TASK(fem);
+
+// FEM ret bounds: [-7.73062, 0.458078]
 
 TC_NAMESPACE_END

@@ -84,6 +84,11 @@ class GPUProfiler {
     }
     outstanding_events.clear();
   }
+
+  static GPUProfiler &get_instance() {
+    static GPUProfiler profiler;
+    return profiler;
+  }
 };
 #endif
 

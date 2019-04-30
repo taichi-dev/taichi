@@ -42,7 +42,12 @@ std::string CodeGenBase::get_source() {
 }
 
 void CodeGenBase::load_dll() {
-  dll = dlopen(("./" + get_library_path()).c_str(), RTLD_NOW | RTLD_GLOBAL);
+  if (get_current_program().config.arch == Arch::gpu) {
+    // TODO: figure out how NVCC linking works and remove this hack
+    dll = dlopen(("./" + get_library_path()).c_str(), RTLD_LAZY);
+  } else {
+    dll = dlopen(("./" + get_library_path()).c_str(), RTLD_NOW | RTLD_GLOBAL);
+  }
   if (dll == nullptr) {
     TC_ERROR("{}", dlerror());
   }

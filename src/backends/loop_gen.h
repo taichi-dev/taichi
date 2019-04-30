@@ -68,7 +68,9 @@ class LoopGenerator {
     }
   }
 
-  void generate_single_loop_header(SNode *snode, bool leaf = false) {
+  void generate_single_loop_header(SNode *snode,
+                                   bool leaf = false,
+                                   int step_size = 1) {
     if (!leaf)
       single_loop_body_head(snode);
 
@@ -90,7 +92,7 @@ class LoopGenerator {
       emit("int {} = {}_it.first;", l, l);
     } else {
       emit("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
-           snode->node_type_name, l, 1);
+           snode->node_type_name, l, step_size);
     }
 
     update_indices(snode);

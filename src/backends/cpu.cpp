@@ -132,7 +132,7 @@ class CPUIRCodeGen : public IRVisitor {
     }
     emit("for (int leaf_loop = 0; leaf_loop < num_leaves; leaf_loop++) {{");
     loopgen.emit_load_from_context(leaf);
-    loopgen.generate_single_loop_header(leaf, true);
+    loopgen.generate_single_loop_header(leaf, true, for_stmt->vectorize);
     loopgen.emit_setup_loop_variables(for_stmt, leaf);
     for_stmt->body->accept(this);
     emit("}}");

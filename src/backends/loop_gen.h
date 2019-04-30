@@ -139,8 +139,8 @@ class LoopGenerator {
     for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
       for (int j = 0; j < max_num_indices; j++) {
         if (for_stmt->snode->physical_index_position[i] == j) {
-          emit("auto {} = {};", for_stmt->loop_vars[i]->raw_name(),
-               index_name_global(leaf, j));
+          emit("{} {} = {};", for_stmt->loop_vars[i]->ret_data_type_name(),
+               for_stmt->loop_vars[i]->raw_name(), index_name_global(leaf, j));
           if (leaf->parent) {
             emit("auto {}_base = {};", for_stmt->loop_vars[i]->raw_name(),
                  index_name_global(leaf->parent, j));

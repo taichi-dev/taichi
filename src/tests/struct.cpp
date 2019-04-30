@@ -139,6 +139,7 @@ TC_TEST("2d_blocked_array_vec") {
   for (auto arch : {Arch::x86_64})
     for (auto blocked : {false, true}) {
       Program prog(arch);
+      prog.config.print_ir = true;
 
       Global(a, i32);
       Global(b, i32);

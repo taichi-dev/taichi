@@ -425,7 +425,9 @@ void CPUCodeGen::codegen() {
   emit("auto root = ({} *)context.buffers[0];",
        prog->snode_root->node_type_name);
 
+  emit(R"(profiler.start("{}");)", func_name);
   CPUIRCodeGen::run(this, kernel->ir);
+  emit(R"(profiler.stop();)", func_name);
 
   emit("}}\n");
 

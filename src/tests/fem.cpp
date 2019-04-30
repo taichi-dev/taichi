@@ -232,6 +232,7 @@ auto fem = []() {
 
   Kernel(compute_Ap).def([&] {
     BlockDim(1024);
+    // Parallelize(8);
     For(Ap(0), [&](Expr i, Expr j, Expr k) {
       auto cell_coord = Var(Vector({i, j, k}));
       auto Ku_tmp = Var(Vector(dim));
@@ -399,7 +400,7 @@ auto fem = []() {
     reduce_r();
     auto new_rTr = sum.val<float32>();
     // TC_P(new_rTr);
-    if (new_rTr < 1e-10f)
+    if (new_rTr < 1e-5f)
       break;
     // beta = new rTr / old rTr
     beta.val<float32>() = new_rTr / old_rTr;
@@ -407,6 +408,7 @@ auto fem = []() {
     // p = r + beta p
     update_p();
     old_rTr = new_rTr;
+    get_current_program().profiler_print();
   }
 
   for (int i = 0; i < n; i++) {

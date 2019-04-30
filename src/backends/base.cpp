@@ -42,7 +42,7 @@ std::string CodeGenBase::get_source() {
 }
 
 void CodeGenBase::load_dll() {
-  dll = dlopen(("./" + get_library_path()).c_str(), RTLD_LAZY);
+  dll = dlopen(("./" + get_library_path()).c_str(), RTLD_NOW | RTLD_GLOBAL);
   if (dll == nullptr) {
     TC_ERROR("{}", dlerror());
   }

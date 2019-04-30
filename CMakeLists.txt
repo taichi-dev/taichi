@@ -32,7 +32,7 @@ endif()
 
 if (TLANG_WITH_FEM)
     target_link_libraries(taichi_lang /home/yuanming/repos/topo_opt_private/solver/libSPGridCPUSolver.so )
-    target_link_libraries(taichi_lang /opt/intel/compilers_and_libraries_2019.1.144/linux/mkl/lib/intel64_lin/libmkl_rt.so)
+    target_link_libraries(taichi_lang /opt/intel/compilers_and_libraries_2019/linux/mkl/lib/intel64_lin/libmkl_rt.so)
 endif()
 
 find_package(CUDA 8.0)

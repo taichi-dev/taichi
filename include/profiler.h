@@ -1,13 +1,15 @@
-#if defined(TLANG_GPU)
-
 #include <string>
 #include <map>
 #include <vector>
 #include <algorithm>
-#include <cuda_runtime.h>
+#include <sys/time.h>
 #include "common.h"
 
 TLANG_NAMESPACE_BEGIN
+
+#if defined(TLANG_GPU)
+
+#include <cuda_runtime.h>
 
 class GPUProfiler {
  public:
@@ -82,13 +84,63 @@ class GPUProfiler {
     }
     outstanding_events.clear();
   }
+};
+#endif
 
-  static GPUProfiler &get_instance() {
-    static GPUProfiler profiler;
-    return profiler;
+class CPUProfiler {
+ public:
+  struct ProfileRecord {
+    std::string name;
+    int counter;
+    double min;
+    double max;
+    double total;
+
+    ProfileRecord(const std::string &name)
+        : name(name), counter(0), min(0), max(0), total(0) {
+    }
+
+    void insert_sample(double t) {
+      if (counter == 0) {
+        min = t;
+        max = t;
+      }
+      counter++;
+      min = std::min(min, t);
+      max = std::max(max, t);
+      total += t;
+    }
+  };
+
+  std::vector<ProfileRecord> records;
+  double start_t;
+  std::string event_name;
+
+  void start(const std::string &kernel_name) {
+    start_t = get_time();
+    event_name = kernel_name;
+  }
+
+  void stop() {
+    auto t = get_time() - start_t;
+    auto ms = t * 1000.0;
+    auto it =
+        std::find_if(records.begin(), records.end(),
+                     [&](ProfileRecord &r) { return r.name == event_name; });
+    if (it == records.end()) {
+      records.emplace_back(event_name);
+      it = std::prev(records.end());
+    }
+    it->insert_sample(ms);
+  }
+
+  void print() {
+    printf("CPU Profiler:\n");
+    for (auto &rec : records) {
+      printf("    %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms\n",
+             rec.name.c_str(), rec.min, rec.total / rec.counter, rec.max);
+    }
   }
 };
 
 TLANG_NAMESPACE_END
-
-#endif

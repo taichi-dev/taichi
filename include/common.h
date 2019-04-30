@@ -31,6 +31,7 @@ __device__ __constant__ int *error_code;
 #include <mutex>
 #include <unordered_map>
 #include <iostream>
+#include <sys/time.h>
 
 #if !defined(TC_INCLUDED)
 
@@ -133,6 +134,12 @@ TC_FORCE_INLINE T rand() noexcept;
 #endif
 
 TLANG_NAMESPACE_BEGIN
+
+inline double get_time() {
+  struct timeval tv;
+  gettimeofday(&tv, nullptr);
+  return tv.tv_sec + 1e-6 * tv.tv_usec;
+}
 
 using size_t = std::size_t;
 

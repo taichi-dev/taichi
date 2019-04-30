@@ -219,20 +219,28 @@ auto fem = []() {
   AmbientGlobal(lambda, f32, 0.0f);
   AmbientGlobal(mu, f32, 0.0f);
 
+  int block_size = 8;
+
   layout([&]() {
     auto ijk = Indices(0, 1, 2);
-    root.dense(ijk, {n, n, n}).place(x);
-    root.dense(ijk, {n, n, n}).place(p);
-    root.dense(ijk, {n, n, n}).place(Ap);
-    root.dense(ijk, {n, n, n}).place(r);
-    root.dense(ijk, {n, n, n}).place(lambda);
-    root.dense(ijk, {n, n, n}).place(mu);
+    auto place = [&](Matrix &mat) {
+      root.dense(ijk, n / block_size).dense(ijk, block_size).place(mat);
+    };
+    auto place_scalar = [&](Expr &mat) {
+      root.dense(ijk, n / block_size).dense(ijk, block_size).place(mat);
+    };
+    place(x);
+    place(p);
+    place(Ap);
+    place(r);
+    place_scalar(lambda);
+    place_scalar(mu);
     root.place(alpha, beta, sum);
   });
 
   Kernel(compute_Ap).def([&] {
     BlockDim(1024);
-    // Parallelize(8);
+    Parallelize(8);
     For(Ap(0), [&](Expr i, Expr j, Expr k) {
       auto cell_coord = Var(Vector({i, j, k}));
       auto Ku_tmp = Var(Vector(dim));

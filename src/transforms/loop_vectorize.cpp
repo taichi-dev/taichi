@@ -112,6 +112,16 @@ class LoopVectorize : public IRVisitor {
     vectorize = old_vectorize;
   }
 
+  void visit(StructForStmt *for_stmt) override {
+    auto old_vectorize = for_stmt->vectorize;
+    if (for_stmt->vectorize != 1)
+      vectorize = for_stmt->vectorize;
+    loop_var = for_stmt->loop_vars.back();
+    for_stmt->body->accept(this);
+    loop_var = nullptr;
+    vectorize = old_vectorize;
+  }
+
   void visit(WhileStmt *stmt) override {
     stmt->body->accept(this);
   }

@@ -121,10 +121,51 @@ TC_TEST("2d_blocked_array") {
         }
       }
 
+      kernel(
+          [&]() { For(a, [&](Expr i, Expr j) { b[i, j] = a[i, j] + i; }); })();
+
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n * 2; j++) {
+          TC_CHECK(a.val<int32>(i, j) == i + j * 3);
+          TC_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
+        }
+      }
+    }
+}
+
+TC_TEST("2d_blocked_array_vec") {
+  int n = 8, block_size = 4;
+
+  for (auto arch : {Arch::x86_64})
+    for (auto blocked : {false, true}) {
+      Program prog(arch);
+
+      Global(a, i32);
+      Global(b, i32);
+
+      layout([&] {
+        auto i = Index(0);
+        auto j = Index(1);
+        if (blocked) {
+          TC_ASSERT(n % block_size == 0);
+          root.dense({i, j}, {n / block_size, n * 2 / block_size})
+              .dense({i, j}, {block_size, block_size})
+              .place(a, b);
+        } else {
+          root.dense({i, j}, {n, n * 2}).place(a);
+          root.dense({i, j}, {n, n * 2}).place(b);
+        }
+      });
+
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n * 2; j++) {
+          a.val<int32>(i, j) = i + j * 3;
+        }
+      }
+
       kernel([&]() {
-        Declare(i);
-        Declare(j);
-        For({i, j}, a, [&] { b[i, j] = a[i, j] + i; });
+        Vectorize(block_size);
+        For(a, [&](Expr i, Expr j) { b[i, j] = a[i, j] + i; });
       })();
 
       for (int i = 0; i < n; i++) {
@@ -156,9 +197,7 @@ TC_TEST("loop_over_blocks") {
     });
 
     kernel([&]() {
-      Declare(i);
-      Declare(j);
-      For({i, j}, a.parent(), [&] {
+      For(a.parent(), [&](Expr i, Expr j) {
         Atomic(sum_i[Expr(0)]) += i;
         Atomic(sum_j[Expr(0)]) += j;
       });

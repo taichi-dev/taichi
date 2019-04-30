@@ -334,7 +334,7 @@ void StructCompiler::run(SNode &node) {
   emit("return p;}}");
 
   emit("#if !defined(TLANG_GPU)");
-  emit("CPUProfiler profiler;");
+  // emit("CPUProfiler profiler;");
   emit("#endif");
 
   emit("TC_EXPORT void release_data_structure(void *ds) {{delete ({} *)ds;}}",
@@ -344,12 +344,12 @@ void StructCompiler::run(SNode &node) {
   emit("#if defined(TLANG_GPU)");
   emit("GPUProfiler::get_instance().print();");
   emit("#else");
-  emit("profiler.print();");
+  // emit("profiler.print();");
   emit("#endif");
   emit("}}");
   emit("#endif");
   emit("#if !defined(TLANG_GPU)");
-  emit("extern CPUProfiler profiler;");
+  // emit("extern CPUProfiler profiler;");
   emit("#endif");
   emit("}} }}");
   write_source();

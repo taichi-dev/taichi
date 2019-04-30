@@ -274,6 +274,12 @@ __host__ void SNodeAllocator<T>::clear(int flags) {
     reset_tails<T><<<1, 1>>>();
   }
 }
+#else
+template <typename T>
+void SNodeAllocator<T>::clear(int flags) {
+  printf("not implemented\n");
+  exit(-1);
+}
 #endif
 
 template <typename child_type_>

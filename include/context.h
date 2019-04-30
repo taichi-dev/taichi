@@ -5,12 +5,15 @@
 namespace taichi {
 namespace Tlang {
 
+class CPUProfiler;
+
 struct Context {
   using Buffer = void *;
   Buffer buffers[1];
 
   void *leaves;
   int num_leaves;
+  CPUProfiler *cpu_profiler;
 
   Context() {
     leaves = 0;

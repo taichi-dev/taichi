@@ -142,6 +142,8 @@ class CodeGenBase {
   void generate_binary(std::string extra_flags);
 
   void disassemble();
+
+  ~CodeGenBase();
 };
 
 inline std::vector<std::string> indices_str(SNode *snode,

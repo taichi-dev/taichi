@@ -42,12 +42,7 @@ std::string CodeGenBase::get_source() {
 }
 
 void CodeGenBase::load_dll() {
-  if (get_current_program().config.arch == Arch::gpu) {
-    // TODO: figure out how NVCC linking works and remove this hack
-    dll = dlopen(("./" + get_library_path()).c_str(), RTLD_LAZY);
-  } else {
-    dll = dlopen(("./" + get_library_path()).c_str(), RTLD_NOW | RTLD_GLOBAL);
-  }
+  dll = dlopen(("./" + get_library_path()).c_str(), RTLD_LAZY);
   if (dll == nullptr) {
     TC_ERROR("{}", dlerror());
   }
@@ -120,6 +115,9 @@ void CodeGenBase::generate_binary(std::string extra_flags) {
     }
   }
   std::system(fmt::format("rm {}", pp_fn).c_str());
+}
+
+CodeGenBase::~CodeGenBase() {
 }
 
 TLANG_NAMESPACE_END

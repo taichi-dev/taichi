@@ -2,9 +2,11 @@
 
 #include "../include/context.h"
 #include "../include/unified_allocator.h"
+#include "../include/profiler.h"
 #include "util.h"
 #include "snode.h"
 #include "ir.h"
+#include <dlfcn.h>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -35,23 +37,34 @@ class Program {
     void operator()();
   };
 
+  std::vector<void *> loaded_dlls;
   Kernel *current_kernel;
   SNode *current_snode;
   SNode *snode_root;
   void *data_structure;
   CompileConfig config;
+  CPUProfiler cpu_profiler;
   bool sync;  // device/host synchronized?
 
   std::vector<std::unique_ptr<Kernel>> functions;
   int index_counter;
 
-  void (*profiler_print)();
+  void (*profiler_print_gpu)();
 
   std::string layout_fn;
+
+  void profiler_print() {
+    if (config.arch == Arch::gpu) {
+      profiler_print_gpu();
+    } else {
+      cpu_profiler.print();
+    }
+  }
 
   Context get_context() {
     Context context;
     context.buffers[0] = data_structure;
+    context.cpu_profiler = &cpu_profiler;
     return context;
   }
 
@@ -70,6 +83,9 @@ class Program {
 
   ~Program() {
     current_program = nullptr;
+    for (auto &dll : loaded_dlls) {
+      dlclose(dll);
+    }
     UnifiedAllocator::free();
   }
 

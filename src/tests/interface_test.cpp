@@ -38,6 +38,7 @@ TC_NAMESPACE_BEGIN
 using namespace fem_interface;
 
 TC_TEST("fem_interface") {
+  return;
   CoreState::set_trigger_gdb_when_crash(true);
   {
     std::unique_ptr<FEMInterface> inter_ptr = std::make_unique<FEMInterface>();

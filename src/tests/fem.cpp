@@ -14,7 +14,8 @@ using namespace Tlang;
 
 constexpr int dim = 3, n = 64;
 bool active[n][n][n];
-real R[n][n][n][dim], D[n][n][n];
+real F = -10;
+real R[n][n][n][dim], D[n][n][n], X[n][n][n][dim];
 
 const auto E = 1_f;     // Young's Modulus
 const auto nu = 0.2_f;  // Poisson ratio
@@ -39,7 +40,7 @@ void fem_solve() {
   param.use_density_only = true;
   param.dx = 1;
 
-  param.krylov.tolerance = config.get("cg_tolerance", 1e-4_f);
+  param.krylov.tolerance = config.get("cg_tolerance", 1e-7_f);
   param.krylov.max_iterations = config.get("cg_max_iterations", 50);
   param.krylov.print_residuals = config.get("print_residuals", true);
   param.krylov.restart_iterations = config.get("restart_iterations", 0);
@@ -49,8 +50,6 @@ void fem_solve() {
       config.get("defect_correction_cg_iter", 3);
   param.penalty() = 1;
   param.minimum_stiffness() = 0;
-
-  param.defect_correction_iter() = config.get<int>("defect_correction_iter", 0);
 
   // Do not do warm starting for a pure objective solve
   param.keep_state() = false;
@@ -147,7 +146,7 @@ void fem_solve() {
   }
 
   param.forces.push_back(fem_interface::ForceOnNode{
-      {n / 2 + padding, n / 2 + padding, n / 2 + padding}, {0, -1, 0}});
+      {n / 2 + padding, n / 2 + padding, n / 2 + padding}, {0, F, 0}});
 
   param.caller_method = "taichi_benchmark";
   interface.preserve_output(param.density.blocks.size());
@@ -175,14 +174,15 @@ void fem_solve() {
         for (int kk = 0; kk < vector_block_size::z; kk++) {
           /*
           auto sparse_v0 = grid->v0();
-          auto sparse_v1 = grid->v1();
-          auto sparse_v2 = grid->v2();
-          sparse_v0(i + ii, j + jj, k + kk) = block.get(ii, jj, kk)[0];
-          sparse_v1(i + ii, j + jj, k + kk) = block.get(ii, jj, kk)[1];
           sparse_v2(i + ii, j + jj, k + kk) = block.get(ii, jj, kk)[2];
           */
 
-          block.get(ii, jj, kk)[0];
+          for (int d = 0; d < dim; d++) {
+            int I = i + ii - padding, J = j + jj - padding,
+                K = k + kk - padding;
+            if (0 <= I && I < n && 0 <= J && J < n && 0 <= K && K < n)
+              X[I][J][K][d] = block.get(ii, jj, kk)[d];
+          }
 
           for (int r = 0; r < dim; r++) {
             bounds[0] = std::min(bounds[0], block.get(ii, jj, kk)[r]);
@@ -332,22 +332,20 @@ auto fem = []() {
           active[i][j][k] = true;
           lambda.val<float32>(i, j, k) = lambda_0;
           mu.val<float32>(i, j, k) = mu_0;
-          if (j == 4 && i == n / 2) {
-            r(0).val<float32>(i, j, k) = -1.0f;
-            R[i][j][k][0] = -1.0f;
-          }
         }
         // if (j == n / 2 && i == n / 2)
         // r(0).val<float32>(i, j, k) = -1.0f;
       }
     }
   }
+  r(1).val<float32>(n / 2, n / 2, n / 2) = F;
+  R[n / 2][n / 2][n / 2][1] = F;
 
   std::deque<Vector3i> q;
   q.push_back(Vector3i(n / 2));  // Assuming the center voxel is active
   std::function<void(int, int, int)> enqueue = [&](int i, int j, int k) {
     if (active[i][j][k]) {
-      active[i][j][k] = 0;
+      active[i][j][k] = false;
       q.push_back(Vector3i(i, j, k));
     }
   };
@@ -393,7 +391,7 @@ auto fem = []() {
     alpha.val<float32>() = old_rTr / pAp;
     TC_P(old_rTr);
     // TC_P(pAp);
-    TC_P(alpha.val<float32>());
+    // TC_P(alpha.val<float32>());
     // x = x + alpha p
     update_x();
     // r = r - alpha Ap
@@ -403,11 +401,11 @@ auto fem = []() {
     reduce_r();
     auto new_rTr = sum.val<float32>();
     // TC_P(new_rTr);
-    if (new_rTr < 1e-7f)
+    if (new_rTr < 1e-10f)
       break;
     // beta = new rTr / old rTr
     beta.val<float32>() = new_rTr / old_rTr;
-    TC_P(beta.val<float32>());
+    // TC_P(beta.val<float32>());
     // p = r + beta p
     update_p();
     old_rTr = new_rTr;
@@ -434,20 +432,44 @@ auto fem = []() {
     }
   }
   TC_P(residual);
+  auto difference = 0.0f;
+  auto difference_max = 0.0f;
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      for (int k = 0; k < n; k++) {
+        for (int d = 0; d < dim; d++) {
+          difference += std::abs(X[i][j][k][d] - x(d).val<float32>(i, j, k));
+          difference_max =
+              std::max(difference_max,
+                       std::abs(X[i][j][k][d] - x(d).val<float32>(i, j, k)));
+        }
+      }
+    }
+  }
+  TC_P(difference);
+  TC_P(difference_max);
 
   int gui_res = 512;
   GUI gui("FEM", Vector2i(gui_res + 200, gui_res), false);
+  int gt = 0;
   int k = 0;
-  gui.slider("z", k, 0, n);
+  gui.slider("z", k, 0, n).slider("Ground truth", gt, 0, 2);
 
   int scale = gui_res / n;
   auto &canvas = gui.get_canvas();
   for (int frame = 1;; frame++) {
     for (int i = 0; i < gui_res - scale; i++) {
       for (int j = 0; j < gui_res - scale; j++) {
-        auto dx = x(0).val<float32>(i / scale, j / scale, k);
-        auto dy = x(1).val<float32>(i / scale, j / scale, k);
-        auto dz = x(2).val<float32>(i / scale, j / scale, k);
+        real dx, dy, dz;
+        if (!gt) {
+          dx = x(0).val<float32>(i / scale, j / scale, k);
+          dy = x(1).val<float32>(i / scale, j / scale, k);
+          dz = x(2).val<float32>(i / scale, j / scale, k);
+        } else {
+          dx = X[i / scale][j / scale][k][0];
+          dy = X[i / scale][j / scale][k][1];
+          dz = X[i / scale][j / scale][k][2];
+        }
         canvas.img[i][j] = Vector4(0.5f) + Vector4(dx, dy, dz, 0) * 0.5f;
       }
     }

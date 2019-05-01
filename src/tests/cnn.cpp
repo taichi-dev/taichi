@@ -44,16 +44,15 @@ auto cnn = []() {
   }
 
   Kernel(forward).def([&] {
-    BlockDim(1024);
+    BlockDim(128);
     For(layer2, [&](Expr i, Expr j, Expr k, Expr c_out) {
       for (int c_in = 0; c_in < num_ch1; c_in++) {
         for (int dx = -1; dx < 2; dx++) {
           for (int dy = -1; dy < 2; dy++) {
             for (int dz = -1; dz < 2; dz++) {
               auto weight =
-                  weights[Expr(dx + 1), Expr(dy + 1), Expr(dz + 1), c_in * num_ch1 + c_out];
-              Print(weight);
-              layer2[i, j, k, c_out] += layer1[i + dx, j + dy, k + dz, c_in];
+                  weights[Expr(dx + 1), Expr(dy + 1), Expr(dz + 1), c_in * num_ch2 + c_out];
+              layer2[i, j, k, c_out] += weight * layer1[i + dx, j + dy, k + dz, c_in];
             }
           }
         }
@@ -67,7 +66,7 @@ auto cnn = []() {
         for (int dy = -1; dy < 2; dy++) {
           for (int dz = -1; dz < 2; dz++) {
             weights.val<float32>(dx + 1, dy + 1, dz + 1,
-                                 c_in * num_ch1 + c_out) = rand() - 0.5f;
+                                 c_in * num_ch2 + c_out) = rand() - 0.5f;
           }
         }
       }

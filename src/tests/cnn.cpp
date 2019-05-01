@@ -14,9 +14,9 @@ auto cnn = []() {
   Program prog(Arch::gpu);
 
   constexpr int dim = 3;
-  constexpr int n = 256;
+  constexpr int n = 128;
 
-  constexpr int num_ch1 = 4, num_ch2 = 4;
+  constexpr int num_ch1 = 16, num_ch2 = 16;
 
   Global(layer1, f32);
   Global(layer2, f32);
@@ -24,35 +24,66 @@ auto cnn = []() {
 
   layout([&]() {
     auto ijkl = Indices(0, 1, 2, 3);
-    root.dense(ijkl, {n, n, n, 4}).place(layer1);
-    root.dense(ijkl, {n, n, n, 4}).place(layer2);
-    root.dense(ijkl, {4, 4, 4, 16}).place(weights);
+    root.dense(ijkl, {n, n, n, num_ch1}).place(layer1);
+    root.dense(ijkl, {n, n, n, num_ch2}).place(layer2);
+    root.dense(ijkl, {4, 4, 4, num_ch1 * num_ch2}).place(weights);
   });
 
-  Kernel(forward).def([&] {
-    BlockDim(1024);
-    For(layer2, [&](Expr i, Expr j, Expr k, Expr c_out) {
-      // layer1[]
-    });
-  });
-
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      for (int k = 0; k < n; k++) {
-        auto len = (Vector3i(i, j, k) - Vector3i(n / 2)).length() / (float32)n;
-        if (0.4 < len && len < 0.5) {
-          layer1.val<float32>(i, j, k, 0) = len;
+  for (int c_in = 0; c_in < num_ch1; c_in++) {
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        for (int k = 0; k < n; k++) {
+          auto len =
+              (Vector3i(i, j, k) - Vector3i(n / 2)).length() / (float32) n;
+          if (0.4 < len && len < 0.5) {
+            layer1.val<float32>(i, j, k, c_in) = len;
+          }
         }
       }
     }
   }
 
+  Kernel(forward).def([&] {
+    BlockDim(1024);
+    For(layer2, [&](Expr i, Expr j, Expr k, Expr c_out) {
+      for (int c_in = 0; c_in < num_ch1; c_in++) {
+        for (int dx = -1; dx < 2; dx++) {
+          for (int dy = -1; dy < 2; dy++) {
+            for (int dz = -1; dz < 2; dz++) {
+              auto weight =
+                  weights[Expr(dx + 1), Expr(dy + 1), Expr(dz + 1), c_in * num_ch1 + c_out];
+              Print(weight);
+              layer2[i, j, k, c_out] += layer1[i + dx, j + dy, k + dz, c_in];
+            }
+          }
+        }
+      }
+    });
+  });
+
+  for (int c_out = 0; c_out < num_ch1; c_out++) {
+    for (int c_in = 0; c_in < num_ch1; c_in++) {
+      for (int dx = -1; dx < 2; dx++) {
+        for (int dy = -1; dy < 2; dy++) {
+          for (int dz = -1; dz < 2; dz++) {
+            weights.val<float32>(dx + 1, dy + 1, dz + 1,
+                                 c_in * num_ch1 + c_out) = rand() - 0.5f;
+          }
+        }
+      }
+    }
+  }
+
+  forward();
+
   int gui_res = 512;
-  GUI gui("FEM", Vector2i(gui_res + 200, gui_res), false);
+  GUI gui("Sparse CNN", Vector2i(gui_res + 200, gui_res), false);
   int layer = 1;
   int k = 0;
   int channel = 0;
-  gui.slider("z", k, 0, n - 1).slider("Layer", layer, 1, 2);
+  gui.slider("z", k, 0, n - 1)
+      .slider("Layer", layer, 1, 2)
+      .slider("Channel", channel, 0, num_ch1);
 
   int scale = gui_res / n;
   auto &canvas = gui.get_canvas();

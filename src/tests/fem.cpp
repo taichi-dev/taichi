@@ -241,7 +241,7 @@ auto fem = []() {
   Kernel(compute_Ap).def([&] {
     BlockDim(1024);
     Parallelize(8);
-    Vectorize(block_size);
+    // Vectorize(block_size);
     For(Ap(0), [&](Expr i, Expr j, Expr k) {
       auto cell_coord = Var(Vector({i, j, k}));
       auto Ku_tmp = Var(Vector(dim));

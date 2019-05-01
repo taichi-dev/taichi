@@ -18,6 +18,7 @@ endif()
 
 if (NOT TLANG_WITH_FEM)
     set(SPGridSource "")
+    list(REMOVE_ITEM PROJECT_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/tests/fem.cpp)
 else()
     include_directories(external/)
     file(GLOB SPGridSource "external/SPGrid/*/*.cpp")

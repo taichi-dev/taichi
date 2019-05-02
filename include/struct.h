@@ -331,6 +331,33 @@ struct dense {
   static constexpr bool has_null = false;
 };
 
+/*
+template <typename _child_type>
+struct ghashed {
+  using child_type = _child_type;
+  int n;
+  int lock;
+
+
+  ghashed() {
+  };
+
+  TC_DEVICE TC_FORCE_INLINE child_type *look_up(
+      int i) {
+  }
+
+  TC_DEVICE TC_FORCE_INLINE void activate(int i,
+                                          const PhysicalIndexGroup &index) {
+  }
+
+  TC_DEVICE TC_FORCE_INLINE int get_n() const {
+    return n;
+  }
+
+  static constexpr bool has_null = true;
+};
+*/
+
 template <typename _child_type>
 struct hashed {
   using child_type = _child_type;

@@ -349,10 +349,10 @@ auto mpm3d = []() {
       v(0) = select(n - bound < i, min(v(0), Expr(0.0_f)), v(0));
       v(1) = select(n - bound < j, min(v(1), Expr(0.0_f)), v(1));
       v(2) = select(n - bound < k, min(v(2), Expr(0.0_f)), v(2));
-      */
 
       v(0) = select(i < bound, max(v(0), Expr(0.0_f)), v(0));
       v(2) = select(k < bound, max(v(2), Expr(0.0_f)), v(2));
+      */
 
       If(j < bound, [&] {
         auto norm = Var(sqrt(v(0) * v(0) + v(2) * v(2)));
@@ -529,6 +529,7 @@ auto mpm3d = []() {
     }
 
     auto stat = grid_m.parent().parent().snode()->stat();
+    /*
     for (int p = 0; p < stat.num_resident_blocks; p++) {
       auto &meta = stat.resident_metas[p];
       int x = meta.indices[0];
@@ -539,6 +540,7 @@ auto mpm3d = []() {
         }
       }
     }
+    */
 
     gui.update();
     auto render_dir = fmt::format("{}_rendered", "mpm");

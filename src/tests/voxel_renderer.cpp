@@ -159,7 +159,7 @@ auto voxel_renderer = [] {
   GUI gui("Voxel Renderer", Vector2i(n * 2, n));
 
   auto tone_map = [](real x) { return x; };
-  constexpr int N = 10;
+  constexpr int N = 20;
   for (int frame = 0;; frame++) {
     for (int i = 0; i < N; i++)
       main();

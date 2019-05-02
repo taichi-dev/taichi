@@ -42,6 +42,7 @@ auto mpm3d = []() {
   constexpr bool highres = true;
 
   constexpr int n = highres ? 256 : 128;  // grid_resolution
+  constexpr int grid_n = n * 8;
   const real dt = 1e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
   auto E = 1e4_f, nu = 0.3f;
@@ -137,7 +138,9 @@ auto mpm3d = []() {
     place(particle_J);
 
     TC_ASSERT(n % grid_block_size == 0);
-    auto &block = root.dense({i, j, k}, n / grid_block_size).pointer();
+    auto &block = root.dense({i, j, k}, grid_n / 8 / grid_block_size)
+                      .pointer()
+                      .dense({i, j, k}, 8).pointer();
     constexpr bool block_soa = true;
 
     if (block_soa) {
@@ -342,9 +345,11 @@ auto mpm3d = []() {
         v(0) += dt * f;
       });
 
+      /*
       v(0) = select(n - bound < i, min(v(0), Expr(0.0_f)), v(0));
       v(1) = select(n - bound < j, min(v(1), Expr(0.0_f)), v(1));
       v(2) = select(n - bound < k, min(v(2), Expr(0.0_f)), v(2));
+      */
 
       v(0) = select(i < bound, max(v(0), Expr(0.0_f)), v(0));
       v(2) = select(k < bound, max(v(2), Expr(0.0_f)), v(2));

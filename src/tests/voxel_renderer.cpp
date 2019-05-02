@@ -53,7 +53,7 @@ auto voxel_renderer = [] {
   };
 
   auto get_next_hit = [&](const Vector &eye_o, const Vector &eye_d,
-                          Expr &hit_distance, Vector &hit_pos) {
+                          Expr &hit_distance, Vector &hit_pos, Vector &normal) {
     auto d = normalized(eye_d);
     /*
     auto tnear, tfar;
@@ -112,6 +112,7 @@ auto voxel_renderer = [] {
                 });
             dis += mm.element_wise_prod(rsign).element_wise_prod(rinv);
             ipos += mm.element_wise_prod(rsign);
+            normal = -mm.element_wise_prod(rsign);
           });
       i += 1;
       If(i > 1000).Then([&] { running = 0; });
@@ -122,7 +123,7 @@ auto voxel_renderer = [] {
 
   Kernel(main).def([&]() {
     For(0, n * n * 2, [&](Expr i) {
-      auto orig = Var(Vector({0.5f, 0.3f, 1.5f}));
+      auto orig = Var(Vector({0.5f, 0.3f, 1.0f}));
 
       auto c = Var(Vector({fov * (cast<float32>(i / n) / float32(n / 2) - 2.0f),
                            fov * (cast<float32>(i % n) / float32(n / 2) - 1.0f),
@@ -132,11 +133,13 @@ auto voxel_renderer = [] {
 
       auto hit_dist = Var(0.0f);
       auto hit_pos = Var(Vector({1.0f, 1.0f, 1.0f}));
-      get_next_hit(orig, c, hit_dist, hit_pos);
+      auto normal = Var(Vector({1.0f, 1.0f, 1.0f}));
+      get_next_hit(orig, c, hit_dist, hit_pos, normal);
 
       auto v = Var(1.0f / (1.0f + max(Expr(0.0f), hit_dist)));
 
-      auto color = Var(Vector({v, v, v}));
+      //auto color = Var(Vector({v, v, v}));
+      auto color = Var(normal);
       /*
       For(0, 200, [&](Expr k) {
         auto p = Var(orig + c * ((cast<float32>(k) + Rand<float32>()) * 0.01f));

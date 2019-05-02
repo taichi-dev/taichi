@@ -99,9 +99,26 @@ void Program::visualize_layout(const std::string &fn) {
     emit(header);
 
     std::function<void(SNode * snode)> visit = [&](SNode *snode) {
-      emit("[.\\textbf{");
-      emit(snode->node_type_name);
+      emit("[.{\\textbf{");
+      emit(snode_type_name(snode->type));
+      emit("}");
+
+      // \mathbf{i}^{\mathbf{6}|64\mathrm{K}}
+
+      std::string indices;
+      for (int i = 0; i < max_num_indices; i++) {
+        if (snode->extractors[i].active) {
+          int nb = snode->extractors[i].num_bits;
+          int start = snode->extractors[i].start + nb;
+          indices += fmt::format(
+              R"($\mathbf{{{}}}^{{\mathbf{{{}}}|{}}}_{{\mathbf{{{}}}|{}}}$)",
+              std::string(1, 'i' + i), start, 1 << start, nb, 1 << nb);
+        }
+      }
+      if (!indices.empty())
+        emit("\\\\" + indices);
       emit("} ");
+
       for (int i = 0; i < snode->ch.size(); i++) {
         visit(snode->ch[i].get());
       }
@@ -117,6 +134,7 @@ void Program::visualize_layout(const std::string &fn) {
     emit(tail);
   }
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
+  exit(0);
 }
 
 TLANG_NAMESPACE_END

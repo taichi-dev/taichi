@@ -5,14 +5,19 @@ TLANG_NAMESPACE_BEGIN
 
 // https://github.com/yuanming-hu/topo_opt_private/blob/master/misc/volume_rendering_kernel.cu
 
-auto voxel_renderer = [] {
+auto voxel_renderer = [](const std::vector<std::string> &params) {
   CoreState::set_trigger_gdb_when_crash(true);
 
   int n = 512;
   int grid_resolution = 256;
 
-  auto f = fopen("snow_density_256.bin", "rb");
-  TC_ASSERT_INFO(f, "./snow_density_256.bin not found");
+  if (params.size() != 2) {
+    TC_INFO("Usage: ti voxel renderer filename.bin resolution");
+    exit(-1);
+  }
+
+  auto f = fopen(params[0].c_str(), "rb");
+  TC_ERROR_UNLESS(f, "File {} not found", params[0]);
   std::vector<float32> density_field(pow<3>(grid_resolution));
   std::fread(density_field.data(), sizeof(float32), density_field.size(), f);
   std::fclose(f);
@@ -90,7 +95,14 @@ auto voxel_renderer = [] {
   float32 fov = 0.7;
 
   auto background = [](Vector dir) {
-    return 1.0f * max(dir(1) + dir(0), 0.0f);
+    /*
+    auto dot = Var(dir.dot(Vector({0.6f, 0.75f, 0.15f})));
+    auto coeff1 = Var(clamp(dot * 0.5f + 0.5f, 0.0f, 1.0f));
+    auto light = Var(coeff1 * Vector({0.9f, 0.7f, 0.3f}) +
+                     (1.0f - coeff1) * Vector({0.4f, 0.5f, 0.9f}));
+    return light;
+    */
+    return Vector({0.7f, 0.7f, 0.8f});
   };
 
   auto out_dir = [&](Vector n) {
@@ -134,10 +146,10 @@ auto voxel_renderer = [] {
             .Then([&] {
               c = normalized(out_dir(normal));
               orig = hit_pos;
-              color *= 0.7f;
+              color = color.element_wise_prod(Vector({0.7f, 0.4f, 0.4f}));
             })
             .Else([&] {
-              color = color * background(c);
+              color = color.element_wise_prod(background(c));
               depth = depth_limit;
             });
       });
@@ -158,7 +170,7 @@ auto voxel_renderer = [] {
 
   GUI gui("Voxel Renderer", Vector2i(n * 2, n));
 
-  auto tone_map = [](real x) { return x; };
+  auto tone_map = [](real x) { return std::sqrt(x); };
   constexpr int N = 20;
   for (int frame = 0;; frame++) {
     for (int i = 0; i < N; i++)

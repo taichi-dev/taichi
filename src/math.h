@@ -155,6 +155,17 @@ struct Matrix {
     return ret;
   }
 
+  Expr dot(const Matrix &o) const {
+    TC_ASSERT(m == 1);
+    TC_ASSERT(o.m == 1);
+    TC_ASSERT(n == o.n);
+    Expr ret = entries[0] * o.entries[0];
+    for (int i = 1; i < n * m; i++) {
+      ret.set(ret + entries[i] * o.entries[i]);
+    }
+    return ret;
+  }
+
   Expr norm() const {
     return sqrt(norm2());
   }
@@ -428,6 +439,5 @@ Matrix diag_matrix(const Matrix &m);
 Matrix &&Var(Matrix &&mat);
 
 Matrix Var(const Matrix &mat_);
-
 
 TLANG_NAMESPACE_END

@@ -159,6 +159,8 @@ auto mpm3d = []() {
     root.place(gravity_x);
   });
 
+  prog.visualize_layout("layout.tex");
+
   TC_ASSERT(bit::is_power_of_two(n));
 
   Kernel(sort).def([&] {

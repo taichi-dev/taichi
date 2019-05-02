@@ -96,6 +96,8 @@ class Program {
     materialize_layout();
   }
 
+  void visualize_layout(const std::string &fn);
+
   struct KernelProxy {
     std::string name;
     Program *prog;

@@ -78,4 +78,45 @@ void Program::synchronize() {
   }
 }
 
+void Program::visualize_layout(const std::string &fn) {
+  {
+    std::ofstream ofs(fn);
+    TC_ASSERT(ofs);
+    auto emit = [&](std::string str) { ofs << str; };
+
+    auto header = R"(
+\documentclass[tikz, border=16pt]{standalone}
+\usepackage{latexsym}
+\usepackage{tikz-qtree,ulem}
+
+\begin{document}
+
+\begin{tikzpicture}[level distance=40pt]
+  \tikzset{edge from parent/.style={draw,->,
+    edge from parent path={(\tikzparentnode.south) -- +(0,-2pt) -| (\tikzchildnode)}}}
+  \tikzset{every tree node/.style={align=center, font=\small, text width=2cm}}
+\Tree)";
+    emit(header);
+
+    std::function<void(SNode * snode)> visit = [&](SNode *snode) {
+      emit("[.\\textbf{");
+      emit(snode->node_type_name);
+      emit("} ");
+      for (int i = 0; i < snode->ch.size(); i++) {
+        visit(snode->ch[i].get());
+      }
+      emit("]");
+    };
+
+    visit(snode_root);
+
+    auto tail = R"(
+\end{tikzpicture}
+\end{document}
+)";
+    emit(tail);
+  }
+  trash(system(fmt::format("pdflatex {}", fn).c_str()));
+}
+
 TLANG_NAMESPACE_END

@@ -52,7 +52,7 @@ auto voxel_renderer = [] {
   };
 
   auto get_next_hit = [&](const Vector &eye_o, const Vector &eye_d, Expr hit,
-                          Vector &hit_pos, bool need_position = true) {
+                          Vector &hit_pos, Expr &hit_distance) {
     auto d = normalized(eye_d);
     hit = Expr(0);
 
@@ -71,54 +71,52 @@ auto voxel_renderer = [] {
     if (tnear < 0.0f)
       tnear = 0.0f;  // clamp to near plane
     */
+
     auto tnear = Var(0.0f);
 
     auto pos = eye_o + d * (tnear + 1e-4f);
 
-    auto ri = Var(1.0f / d);
-    auto rs = Vector(3);
+    auto rinv = Var(1.0f / d);
+    auto rsign = Vector(3);
     for (int i = 0; i < 3; i++) {
-      rs(i) = (d(i) > 0) * 2 - 1;  // sign...
+      rsign(i) = cast<float32>((d(i) > 0) * 2.0f - 1.0f);  // sign...
     }
-    auto o = Var((pos + 1) * 0.5f * grid_resolution);
-    auto ipos = Var(o.cast_elements<int32>());
-    auto dis = Var((ipos - o + 0.5f + rs * 0.5f) * ri);
 
-    auto last_sample = Var(0.0f);
+    auto o = Var(pos * grid_resolution);
+    auto ipos = Var(floor(o));
+    auto dis = Var((ipos - o + 0.5f + rsign * 0.5f) * rinv);
+
     auto running = Var(1);
     auto i = Var(0);
     While(running, [&] {
-      last_sample = query_density_int(ipos);
-
-      If(last_sample > 0).Then([&] {
-        // intersect the cube
-        auto mini = Var(ipos - o + Vector({0.5f, 0.5f, 0.5f}) - rs * 0.5f) * ri;
-        auto t = Var(max(max(mini(0), mini(1)), mini(2)) *
-                     (1.0f / grid_resolution) * 2.0f);
-        hit_pos = pos + t * d;
-        hit = 1;
-        return;
-      });
-
-      auto mm = Var(Vector({0.0f, 0.0f, 0.0f}));
-      If(dis(0) <= dis(1) && dis(0) < dis(2))
+      auto last_sample = Var(query_density_int(ipos));
+      If(last_sample > 0)
           .Then([&] {
-            mm = Vector({1.0f, 0.0f, 0.0f});
+            // intersect the cube
+            auto mini =
+                Var(ipos - o + Vector({0.5f, 0.5f, 0.5f}) - rsign * 0.5f) *
+                rinv;
+            hit_distance =
+                max(max(mini(0), mini(1)), mini(2)) * (1.0f / grid_resolution);
+            hit_pos = pos + hit_distance * d;
+            hit = 1;
+            running = 0;
           })
           .Else([&] {
-            If(dis(1) <= dis(0) && dis(1) <= dis(2))
-                .Then([&] {
-                  mm = Vector({0.0f, 1.0f, 0.0f});
-                })
+            auto mm = Var(Vector({0.0f, 0.0f, 0.0f}));
+            If(dis(0) <= dis(1) && dis(0) < dis(2))
+                .Then([&] { mm(0) = 1.0f; })
                 .Else([&] {
-                  mm = Vector({0.0f, 0.0f, 1.0f});
+                  If(dis(1) <= dis(0) && dis(1) <= dis(2))
+                      .Then([&] { mm(1) = 1.0f; })
+                      .Else([&] { mm(2) = 1.0f; });
                 });
+            dis += mm.element_wise_prod(rsign).element_wise_prod(rinv);
+            ipos += mm.element_wise_prod(rsign);
           });
-      dis += mm.element_wise_prod(rs).element_wise_prod(ri);
-      ipos += mm.element_wise_prod(rs);
       i += 1;
+      If(i > 1000).Then([&] { running = 0; });
     });
-    return last_sample;
   };
 
   float32 fov = 0.7;

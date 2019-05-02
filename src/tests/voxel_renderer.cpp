@@ -92,7 +92,7 @@ auto voxel_renderer = [](const std::vector<std::string> &params) {
     });
   };
 
-  float32 fov = 0.7;
+  float32 fov = 0.6;
 
   auto background = [](Vector dir) {
     /*
@@ -133,7 +133,7 @@ auto voxel_renderer = [](const std::vector<std::string> &params) {
       int depth_limit = 4;
       auto depth = Var(0);
 
-      auto color = Var(Vector({1.0f, 1.0f, 1.0f}));
+      auto importon = Var(Vector({1.0f, 1.0f, 1.2f}));
 
       While(depth < depth_limit, [&] {
         auto hit_dist = Var(0.0f);
@@ -146,15 +146,23 @@ auto voxel_renderer = [](const std::vector<std::string> &params) {
             .Then([&] {
               c = normalized(out_dir(normal));
               orig = hit_pos;
-              color = color.element_wise_prod(Vector({0.7f, 0.4f, 0.4f}));
+              importon = importon.element_wise_prod(Vector({0.3f, 0.3f, 0.4f}));
+
+              If(depth == 1).Then([&] {
+                // direct lighting on camera ray...
+                get_next_hit(orig, Vector({0.5f, 0.3f, -0.1f}), hit_dist,
+                             hit_pos, normal);
+                If(hit_dist < 0.0f).Then([&] {
+                  buffer[i] +=
+                      importon.element_wise_prod(Vector({0.3f, 0.3f, 0.3f}));
+                });
+              });
             })
             .Else([&] {
-              color = color.element_wise_prod(background(c));
+              buffer[i] += importon.element_wise_prod(background(c));
               depth = depth_limit;
             });
       });
-
-      buffer[i] += color;
     });
   });
 
@@ -170,7 +178,7 @@ auto voxel_renderer = [](const std::vector<std::string> &params) {
 
   GUI gui("Voxel Renderer", Vector2i(n * 2, n));
 
-  auto tone_map = [](real x) { return std::sqrt(x); };
+  auto tone_map = [](real x) { return std::sqrt(x * 2); };
   constexpr int N = 20;
   for (int frame = 0;; frame++) {
     for (int i = 0; i < N; i++)

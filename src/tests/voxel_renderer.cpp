@@ -9,18 +9,18 @@ auto voxel_renderer = [](const std::vector<std::string> &params) {
   CoreState::set_trigger_gdb_when_crash(true);
 
   int n = 512;
-  int grid_resolution = 256;
 
-  if (params.size() != 2) {
+  if (params.size() < 2) {
     TC_INFO("Usage: ti voxel renderer filename.bin resolution");
     exit(-1);
   }
 
-  auto f = fopen(params[0].c_str(), "rb");
-  TC_ERROR_UNLESS(f, "File {} not found", params[0]);
-  std::vector<float32> density_field(pow<3>(grid_resolution));
-  std::fread(density_field.data(), sizeof(float32), density_field.size(), f);
-  std::fclose(f);
+  int grid_resolution = std::atoi(params[1].c_str());
+
+  int frames = 1;
+  if (params.size() == 3) {
+    frames = std::atoi(params[2].c_str());
+  }
 
   Program prog(Arch::gpu);
   prog.config.print_ir = true;
@@ -42,6 +42,15 @@ auto voxel_renderer = [](const std::vector<std::string> &params) {
     If(inside_box).Then([&] { ret = density[p]; });
     return ret;
   };
+
+  Kernel(clear_buffer).def([&] {
+    BlockDim(256);
+    For(buffer(0), [&](Expr i) {
+      buffer(0)[i] = 0.0f;
+      buffer(1)[i] = 0.0f;
+      buffer(2)[i] = 0.0f;
+    });
+  });
 
   auto get_next_hit = [&](const Vector &eye_o, const Vector &eye_d,
                           Expr &hit_distance, Vector &hit_pos, Vector &normal) {
@@ -119,7 +128,7 @@ auto voxel_renderer = [](const std::vector<std::string> &params) {
 
   Kernel(main).def([&]() {
     For(0, n * n * 2, [&](Expr i) {
-      auto orig = Var(Vector({0.5f, 0.2f, 1.0f}));
+      auto orig = Var(Vector({0.5f, 0.5f, 1.0f}));
 
       auto c = Var(Vector(
           {fov * ((Rand<float32>() + cast<float32>(i / n)) / float32(n / 2) -
@@ -166,24 +175,36 @@ auto voxel_renderer = [](const std::vector<std::string> &params) {
     });
   });
 
-  for (int i = 0; i < grid_resolution; i++) {
-    for (int j = 0; j < grid_resolution; j++) {
-      for (int k = 0; k < grid_resolution; k++) {
-        density.val<float32>(i, j, k) =
-            density_field[i * grid_resolution * grid_resolution +
-                          j * grid_resolution + k];
-      }
-    }
-  }
-
   GUI gui("Voxel Renderer", Vector2i(n * 2, n));
 
   auto tone_map = [](real x) { return std::sqrt(x * 2); };
-  constexpr int N = 20;
-  for (int frame = 0;; frame++) {
+
+  for (int frame = 1; frame <= frames; frame++) {
+    std::string fn;
+    if (frames != 0) {
+      fn = fmt::format(params[0], frame);
+    }
+    auto f = fopen(fn.c_str(), "rb");
+    TC_ERROR_UNLESS(f, "File {} not found", params[0]);
+    std::vector<char> density_field(pow<3>(grid_resolution), 0);
+    std::fread(density_field.data(), sizeof(char), density_field.size(), f);
+    std::fclose(f);
+
+    for (int i = 0; i < grid_resolution; i++) {
+      for (int j = 0; j < grid_resolution; j++) {
+        for (int k = 0; k < grid_resolution; k++) {
+          density.val<float32>(i, j, k) =
+              density_field[i * grid_resolution * grid_resolution +
+                            j * grid_resolution + k];
+        }
+      }
+    }
+
+    constexpr int N = 100;
+    clear_buffer();
     for (int i = 0; i < N; i++)
       main();
-    real scale = 1.0f / ((frame + 1) * N);
+    real scale = 1.0f / (N);
     for (int i = 0; i < n * n * 2; i++) {
       gui.buffer[i / n][i % n] =
           Vector4(tone_map(scale * buffer(0).val<float32>(i)),
@@ -191,6 +212,7 @@ auto voxel_renderer = [](const std::vector<std::string> &params) {
                   tone_map(scale * buffer(2).val<float32>(i)), 1);
     }
     gui.update();
+    gui.canvas->img.write_as_image(fn + ".png");
   }
 };
 TC_REGISTER_TASK(voxel_renderer);

@@ -42,7 +42,7 @@ auto mpm3d = []() {
   constexpr bool highres = true;
 
   constexpr int n = highres ? 256 : 128;  // grid_resolution
-  constexpr int grid_n = n * 8;
+  constexpr int grid_n = n * 4;
   const real dt = 1e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f;
   auto E = 1e4_f, nu = 0.3f;
@@ -138,9 +138,10 @@ auto mpm3d = []() {
     place(particle_J);
 
     TC_ASSERT(n % grid_block_size == 0);
-    auto &block = root.dense({i, j, k}, grid_n / 8 / grid_block_size)
+    auto &block = root.dense({i, j, k}, grid_n / 4 / grid_block_size)
                       .pointer()
-                      .dense({i, j, k}, 8).pointer();
+                      .dense({i, j, k}, 4)
+                      .pointer();
     constexpr bool block_soa = true;
 
     if (block_soa) {
@@ -477,6 +478,7 @@ auto mpm3d = []() {
 
   auto simulate_frame = [&]() {
     grid_m.parent().parent().snode()->clear(1);
+    grid_m.parent().parent().parent().parent().snode()->clear(1);
     auto t = Time::get_time();
     for (int f = 0; f < 200; f++) {
       TC_PROFILE("p2g", p2g());
@@ -528,20 +530,6 @@ auto mpm3d = []() {
       canvas.img[ind] = Vector4(image[ind]);
     }
 
-    auto stat = grid_m.parent().parent().snode()->stat();
-    /*
-    for (int p = 0; p < stat.num_resident_blocks; p++) {
-      auto &meta = stat.resident_metas[p];
-      int x = meta.indices[0];
-      int y = meta.indices[1];
-      for (int i = 0; i < grid_block_size; i++) {
-        for (int j = 0; j < grid_block_size; j++) {
-          canvas.img[x + i][y + j] *= 0.9f;
-        }
-      }
-    }
-    */
-
     gui.update();
     auto render_dir = fmt::format("{}_rendered", "mpm");
     create_directories(render_dir);
@@ -549,19 +537,29 @@ auto mpm3d = []() {
         fmt::format("{}/{:05d}.png", render_dir, frame));
     print_profile_info();
 
-    bool dump_mass_field = frame % 10 == 0;
-    if (dump_mass_field) {
-      std::vector<float32> density;
-      for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-          for (int k = 0; k < n; k++) {
-            density.push_back(grid_m.val<float32>(i, j, k));
-          }
-        }
+    auto dump_blocks = [&](int block_res, AllocatorStat &stat) {
+      auto output_res = grid_n / block_res;
+      std::vector<char> density(pow<dim>(output_res), 0);
+      for (int p = 0; p < stat.num_resident_blocks; p++) {
+        auto &meta = stat.resident_metas[p];
+        Vector3i offset_x(512 - 128);
+        auto x = (Vector3i(meta.indices[0], meta.indices[1], meta.indices[2]) +
+                  offset_x) /
+                 Vector3i(block_res);
+        x = (x % Vector3i(output_res) + Vector3i(output_res)) %
+            Vector3i(output_res);
+        density[x[0] * output_res * output_res + x[1] * output_res + x[2]] = 1;
       }
-      auto f = fopen("snow_density_256.bin", "wb");
-      std::fwrite(density.data(), sizeof(float32), pow<dim>(n), f);
-    }
+      auto f = fopen(
+          fmt::format("blocks/snow_{}_{:04d}.bin", block_res, frame).c_str(),
+          "wb");
+      std::fwrite(density.data(), sizeof(char), pow<dim>(output_res), f);
+      std::fclose(f);
+    };
+    auto stat1 = grid_m.parent().parent().snode()->stat();
+    dump_blocks(4, stat1);
+    auto stat2 = grid_m.parent().parent().parent().parent().snode()->stat();
+    dump_blocks(16, stat2);
   }
 };
 TC_REGISTER_TASK(mpm3d);

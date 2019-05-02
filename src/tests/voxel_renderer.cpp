@@ -28,11 +28,35 @@ auto voxel_renderer = [] {
     root.dense(Indices(0, 1, 2), grid_resolution).place(density);
   });
 
-#if 0
-  auto get_next_hit = [](Ray eyeRay, const Vector &eye_o, const Vector &eye_d,
-                         Expr &hit, float3 &hit_pos, float density,
-                         bool need_position = true) {
+  // If p is in the density field return the density, other 0
+  auto query_density = [&](Vector p) {
+    auto inside_box = Var(0.0f <= p(0) && p(0) < 1.0f && 0.0f <= p(1) &&
+                          p(1) < 1.0f && 0.0f <= p(2) && p(2) < 1.0f);
+    auto ret = Var(0.0f);
+    If(inside_box).Then([&] {
+      auto i = floor(p(0) * float32(grid_resolution));
+      auto j = floor(p(1) * float32(grid_resolution));
+      auto k = floor(p(2) * float32(grid_resolution));
+      ret = density[i, j, k];
+    });
+    return ret;
+  };
+
+  auto query_density_int = [&](Vector p) {
+    auto inside_box =
+        Var(0 <= p(0) && p(0) < grid_resolution && 0 <= p(1) &&
+            p(1) < grid_resolution && 0 <= p(2) && p(2) < grid_resolution);
+    auto ret = Var(0.0f);
+    If(inside_box).Then([&] { ret = density[p]; });
+    return ret;
+  };
+
+  auto get_next_hit = [&](const Vector &eye_o, const Vector &eye_d, Expr hit,
+                          Vector &hit_pos, bool need_position = true) {
     auto d = normalized(eye_d);
+    hit = Expr(0);
+
+    /*
     auto tnear, tfar;
     auto box_size = get_box_size();
     auto box_res = get_box_res();
@@ -46,61 +70,55 @@ auto voxel_renderer = [] {
 
     if (tnear < 0.0f)
       tnear = 0.0f;  // clamp to near plane
+    */
+    auto tnear = Var(0.0f);
 
-    auto pos = eyeRay.o + eyeRay.d * (tnear + 1e-4f);
-    auto step = eyeRay.d * tstep;
+    auto pos = eye_o + d * (tnear + 1e-4f);
 
-    auto ri = Var(1.0f / eyeRay.d);
-    auto rs = Var(sign(eyeRay.d));
-    auto o = (pos + box_size) * 0.5f * (box_res.x / box_size.x);
-    auto ipos = Var(cast<int>(o));
+    auto ri = Var(1.0f / d);
+    auto rs = Vector(3);
+    for (int i = 0; i < 3; i++) {
+      rs(i) = (d(i) > 0) * 2 - 1;  // sign...
+    }
+    auto o = Var((pos + 1) * 0.5f * grid_resolution);
+    auto ipos = Var(o.cast_elements<int32>());
     auto dis = Var((ipos - o + 0.5f + rs * 0.5f) * ri);
 
-    float last_sample = 0;
-    for (int i = 0; i < maxSteps; i++) {
-      last_sample = sample_tex_int(ipos);
-      if (last_sample > density) {
+    auto last_sample = Var(0.0f);
+    auto running = Var(1);
+    auto i = Var(0);
+    While(running, [&] {
+      last_sample = query_density_int(ipos);
+
+      If(last_sample > 0).Then([&] {
         // intersect the cube
-        auto mini = Var(ipos - o + 0.5 - rs * 0.5f) * ri;
-        float t =
-            max(mini.x, max(mini.y, mini.z)) * (box_size.x / box_res.x) * 2;
-        hit_pos = pos + t * eyeRay.d;
-        hit = true;
+        auto mini = Var(ipos - o + Vector({0.5f, 0.5f, 0.5f}) - rs * 0.5f) * ri;
+        auto t = Var(max(max(mini(0), mini(1)), mini(2)) *
+                     (1.0f / grid_resolution) * 2.0f);
+        hit_pos = pos + t * d;
+        hit = 1;
         return;
-      }
-
-      auto mm = Vector3({0.0f, 0.0f, 0.0f});
-      If(dis.x <= dis.y && dis.x < dis.z).Then([&]{
-        mm = Vector3({1.0f, 0.0f, 0.0f});
-      }.Else([&]{
-        If(dis.y <= dis.x && dis.y <= dis.z)
-            .Then([&] {
-              mm = Vector3({0.0f, 1.0f, 0.0f});
-            })
-            .Else([&] {
-              mm = Vector3({0.0f, 0.0f, 1.0f});
-            });
       });
-      dis += mm * rs * ri;
-      ipos += mm * rs;
-    }
-    hit = 0;
-    return last_sample;
-  };
-#endif
 
-  // If p is in the density field return the density, other 0
-  auto query_density = [&](Vector p) {
-    auto inside_box = Var(0.0f <= p(0) && p(0) < 1.0f && 0.0f <= p(1) &&
-                          p(1) < 1.0f && 0.0f <= p(2) && p(2) < 1.0f);
-    auto ret = Var(0.0f);
-    If(inside_box).Then([&] {
-      auto i = floor(p(0) * float32(grid_resolution));
-      auto j = floor(p(1) * float32(grid_resolution));
-      auto k = floor(p(2) * float32(grid_resolution));
-      ret = density[i, j, k];
+      auto mm = Var(Vector({0.0f, 0.0f, 0.0f}));
+      If(dis(0) <= dis(1) && dis(0) < dis(2))
+          .Then([&] {
+            mm = Vector({1.0f, 0.0f, 0.0f});
+          })
+          .Else([&] {
+            If(dis(1) <= dis(0) && dis(1) <= dis(2))
+                .Then([&] {
+                  mm = Vector({0.0f, 1.0f, 0.0f});
+                })
+                .Else([&] {
+                  mm = Vector({0.0f, 0.0f, 1.0f});
+                });
+          });
+      dis += mm.element_wise_prod(rs).element_wise_prod(ri);
+      ipos += mm.element_wise_prod(rs);
+      i += 1;
     });
-    return ret;
+    return last_sample;
   };
 
   float32 fov = 0.7;
@@ -136,7 +154,7 @@ auto voxel_renderer = [] {
     }
   }
 
-  GUI gui("Volume Renderer", Vector2i(n * 2, n));
+  GUI gui("Voxel Renderer", Vector2i(n * 2, n));
 
   auto tone_map = [](real x) { return x; };
   constexpr int N = 10;

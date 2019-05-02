@@ -115,37 +115,63 @@ auto voxel_renderer = [] {
             normal = -mm.element_wise_prod(rsign);
           });
       i += 1;
-      If(i > 1000).Then([&] { running = 0; });
+      If(i > 500).Then([&] { running = 0; });
     });
   };
 
   float32 fov = 0.7;
 
+  auto background = [](Vector dir) {
+    return 1.0f * max(dir(1) + dir(0), 0.0f);
+  };
+
+  auto out_dir = [&](Vector n) {
+    auto u = Var(Vector({1.0f, 0.0f, 0.0f})), v = Var(Vector(3));
+    If(abs(n(1)) < 1 - 1e-3f, [&] {
+      u = normalized(cross(n, Vector({0.0f, 1.0f, 0.0f})));
+    });
+    v = cross(n, u);
+    auto phi = Var(2 * pi * Rand<float32>());
+    auto r = Var(Rand<float32>());
+    auto alpha = Var(0.5f * pi * (r * r));
+    return sin(alpha) * (cos(phi) * u + sin(phi) * v) + cos(alpha) * n;
+  };
+
   Kernel(main).def([&]() {
     For(0, n * n * 2, [&](Expr i) {
-      auto orig = Var(Vector({0.5f, 0.3f, 1.0f}));
+      auto orig = Var(Vector({0.5f, 0.2f, 1.0f}));
 
-      auto c = Var(Vector({fov * (cast<float32>(i / n) / float32(n / 2) - 2.0f),
-                           fov * (cast<float32>(i % n) / float32(n / 2) - 1.0f),
-                           -1.0f}));
+      auto c = Var(Vector(
+          {fov * ((Rand<float32>() + cast<float32>(i / n)) / float32(n / 2) - 2.01f),
+           fov * ((Rand<float32>() + cast<float32>(i % n)) / float32(n / 2) - 1.01f),
+           -1.0f}));
 
       c = normalized(c);
 
-      auto hit_dist = Var(0.0f);
-      auto hit_pos = Var(Vector({1.0f, 1.0f, 1.0f}));
-      auto normal = Var(Vector({1.0f, 1.0f, 1.0f}));
-      get_next_hit(orig, c, hit_dist, hit_pos, normal);
+      int depth_limit = 4;
+      auto depth = Var(0);
 
-      auto v = Var(1.0f / (1.0f + max(Expr(0.0f), hit_dist)));
+      auto color = Var(Vector({1.0f, 1.0f, 1.0f}));
 
-      //auto color = Var(Vector({v, v, v}));
-      auto color = Var(normal);
-      /*
-      For(0, 200, [&](Expr k) {
-        auto p = Var(orig + c * ((cast<float32>(k) + Rand<float32>()) * 0.01f));
-        color *= (1.0_f - query_density(p) * 0.1f);
+      While(depth < depth_limit, [&] {
+        auto hit_dist = Var(0.0f);
+        auto hit_pos = Var(Vector({1.0f, 1.0f, 1.0f}));
+        auto normal = Var(Vector({1.0f, 1.0f, 1.0f}));
+        get_next_hit(orig, c, hit_dist, hit_pos, normal);
+
+        depth += 1;
+        If(hit_dist > 0.0f)
+            .Then([&] {
+              orig += hit_dist * c;
+              c = normalized(out_dir(normal));
+              orig += 0.0001f * c;
+              color *= 0.7f;
+            })
+            .Else([&] {
+              color = color * background(c);
+              depth = depth_limit;
+            });
       });
-      */
 
       buffer[i] += color;
     });

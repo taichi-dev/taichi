@@ -42,7 +42,8 @@ auto voxel_renderer = [] {
     return ret;
   };
 
-  auto query_density_int = [&](Vector p) {
+  auto query_density_int = [&](Vector p_) {
+    auto p = p_.cast_elements<int32>();
     auto inside_box =
         Var(0 <= p(0) && p(0) < grid_resolution && 0 <= p(1) &&
             p(1) < grid_resolution && 0 <= p(2) && p(2) < grid_resolution);
@@ -51,11 +52,9 @@ auto voxel_renderer = [] {
     return ret;
   };
 
-  auto get_next_hit = [&](const Vector &eye_o, const Vector &eye_d, Expr hit,
-                          Vector &hit_pos, Expr &hit_distance) {
+  auto get_next_hit = [&](const Vector &eye_o, const Vector &eye_d,
+                          Expr &hit_distance, Vector &hit_pos) {
     auto d = normalized(eye_d);
-    hit = Expr(0);
-
     /*
     auto tnear, tfar;
     auto box_size = get_box_size();
@@ -74,32 +73,32 @@ auto voxel_renderer = [] {
 
     auto tnear = Var(0.0f);
 
-    auto pos = eye_o + d * (tnear + 1e-4f);
+    auto pos = Var(eye_o + d * (tnear + 1e-4f));
 
     auto rinv = Var(1.0f / d);
     auto rsign = Vector(3);
     for (int i = 0; i < 3; i++) {
-      rsign(i) = cast<float32>((d(i) > 0) * 2.0f - 1.0f);  // sign...
+      rsign(i) = cast<float32>(d(i) > 0.0f) * 2.0f - 1.0f;  // sign...
     }
 
-    auto o = Var(pos * grid_resolution);
+    auto o = Var(pos * float32(grid_resolution));
     auto ipos = Var(floor(o));
-    auto dis = Var((ipos - o + 0.5f + rsign * 0.5f) * rinv);
+    auto dis = Var((ipos - o + 0.5f + rsign * 0.5f).element_wise_prod(rinv));
 
     auto running = Var(1);
     auto i = Var(0);
+    hit_distance = -1.0f;
     While(running, [&] {
       auto last_sample = Var(query_density_int(ipos));
-      If(last_sample > 0)
+      If(last_sample > 0.0f)
           .Then([&] {
             // intersect the cube
             auto mini =
-                Var(ipos - o + Vector({0.5f, 0.5f, 0.5f}) - rsign * 0.5f) *
-                rinv;
+                Var((ipos - o + Vector({0.5f, 0.5f, 0.5f}) - rsign * 0.5f)
+                        .element_wise_prod(rinv));
             hit_distance =
                 max(max(mini(0), mini(1)), mini(2)) * (1.0f / grid_resolution);
             hit_pos = pos + hit_distance * d;
-            hit = 1;
             running = 0;
           })
           .Else([&] {
@@ -131,12 +130,19 @@ auto voxel_renderer = [] {
 
       c = normalized(c);
 
-      auto color = Var(Vector({1.0f, 1.0f, 1.0f}));
+      auto hit_dist = Var(0.0f);
+      auto hit_pos = Var(Vector({1.0f, 1.0f, 1.0f}));
+      get_next_hit(orig, c, hit_dist, hit_pos);
 
+      auto v = Var(1.0f / (1.0f + max(Expr(0.0f), hit_dist)));
+
+      auto color = Var(Vector({v, v, v}));
+      /*
       For(0, 200, [&](Expr k) {
         auto p = Var(orig + c * ((cast<float32>(k) + Rand<float32>()) * 0.01f));
         color *= (1.0_f - query_density(p) * 0.1f);
       });
+      */
 
       buffer[i] += color;
     });

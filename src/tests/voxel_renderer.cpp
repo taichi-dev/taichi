@@ -28,20 +28,6 @@ auto voxel_renderer = [] {
     root.dense(Indices(0, 1, 2), grid_resolution).place(density);
   });
 
-  // If p is in the density field return the density, other 0
-  auto query_density = [&](Vector p) {
-    auto inside_box = Var(0.0f <= p(0) && p(0) < 1.0f && 0.0f <= p(1) &&
-                          p(1) < 1.0f && 0.0f <= p(2) && p(2) < 1.0f);
-    auto ret = Var(0.0f);
-    If(inside_box).Then([&] {
-      auto i = floor(p(0) * float32(grid_resolution));
-      auto j = floor(p(1) * float32(grid_resolution));
-      auto k = floor(p(2) * float32(grid_resolution));
-      ret = density[i, j, k];
-    });
-    return ret;
-  };
-
   auto query_density_int = [&](Vector p_) {
     auto p = p_.cast_elements<int32>();
     auto inside_box =
@@ -55,25 +41,7 @@ auto voxel_renderer = [] {
   auto get_next_hit = [&](const Vector &eye_o, const Vector &eye_d,
                           Expr &hit_distance, Vector &hit_pos, Vector &normal) {
     auto d = normalized(eye_d);
-    /*
-    auto tnear, tfar;
-    auto box_size = get_box_size();
-    auto box_res = get_box_res();
-
-    hit = (bool)intersectBox(eyeRay, -box_size, box_size, &tnear, &tfar);
-
-    if (!hit) {
-      hit = false;
-      return;
-    }
-
-    if (tnear < 0.0f)
-      tnear = 0.0f;  // clamp to near plane
-    */
-
-    auto tnear = Var(0.0f);
-
-    auto pos = Var(eye_o + d * (tnear + 1e-4f));
+    auto pos = Var(eye_o + d * 1e-4f);
 
     auto rinv = Var(1.0f / d);
     auto rsign = Vector(3);
@@ -142,8 +110,10 @@ auto voxel_renderer = [] {
       auto orig = Var(Vector({0.5f, 0.2f, 1.0f}));
 
       auto c = Var(Vector(
-          {fov * ((Rand<float32>() + cast<float32>(i / n)) / float32(n / 2) - 2.01f),
-           fov * ((Rand<float32>() + cast<float32>(i % n)) / float32(n / 2) - 1.01f),
+          {fov * ((Rand<float32>() + cast<float32>(i / n)) / float32(n / 2) -
+                  2.01f),
+           fov * ((Rand<float32>() + cast<float32>(i % n)) / float32(n / 2) -
+                  1.01f),
            -1.0f}));
 
       c = normalized(c);
@@ -162,9 +132,8 @@ auto voxel_renderer = [] {
         depth += 1;
         If(hit_dist > 0.0f)
             .Then([&] {
-              orig += hit_dist * c;
               c = normalized(out_dir(normal));
-              orig += 0.0001f * c;
+              orig = hit_pos;
               color *= 0.7f;
             })
             .Else([&] {

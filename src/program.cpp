@@ -109,7 +109,7 @@ void Program::visualize_layout(const std::string &fn) {
 \usepackage{tikz-qtree,tikz-qtree-compat,ulem}
 \begin{document}
 \begin{tikzpicture}[level distance=40pt]
-\tikzset{level 1/.style={sibling distance=-100pt}}
+\tikzset{level 1/.style={sibling distance=-5pt}}
   \tikzset{edge from parent/.style={draw,->,
     edge from parent path={(\tikzparentnode.south) -- +(0,-4pt) -| (\tikzchildnode)}}}
   \tikzset{every tree node/.style={align=center, font=\small}}

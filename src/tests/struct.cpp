@@ -590,4 +590,76 @@ TC_TEST("hashed") {
   TC_CHECK(reduced == sum_gt);
 }
 
+TC_TEST("mpm_layout") {
+  Program prog(Arch::gpu);
+  constexpr int dim = 3;
+  constexpr bool highres = true;
+
+  constexpr int n = 256;
+  constexpr int grid_n = n * 4;
+  int max_n_particles = 1024 * 1024;
+
+  auto f32 = DataType::f32;
+  int grid_block_size = 4;
+
+  Vector particle_x("x", f32, dim), particle_v("v", f32, dim);
+  Matrix particle_F("F", f32, dim, dim), particle_C("C", f32, dim, dim);
+
+  NamedScalar(l, l, i32);
+  NamedScalar(particle_J, J, f32);
+  NamedScalar(gravity_x, g, f32);
+
+  Vector grid_v("v^{g}", f32, dim);
+  NamedScalar(grid_m, m ^ {p}, f32);
+
+  auto i = Index(0), j = Index(1), k = Index(2);
+  auto p = Index(3);
+
+  bool particle_soa = true;
+
+  layout([&]() {
+    SNode *fork;
+    if (!particle_soa)
+      fork = &root.dynamic(p, max_n_particles);
+    auto place = [&](Expr &expr) {
+      if (particle_soa) {
+        root.dynamic(p, max_n_particles).place(expr);
+      } else {
+        fork->place(expr);
+      }
+    };
+    for (int i = 0; i < dim; i++)
+      for (int j = 0; j < dim; j++)
+        place(particle_F(i, j));
+    for (int i = 0; i < dim; i++)
+      for (int j = 0; j < dim; j++)
+        place(particle_C(i, j));
+    for (int i = 0; i < dim; i++)
+      place(particle_x(i));
+    for (int i = 0; i < dim; i++)
+      place(particle_v(i));
+    place(particle_J);
+
+    TC_ASSERT(n % grid_block_size == 0);
+    auto &block = root.dense({i, j, k}, grid_n / 4 / grid_block_size)
+                      .pointer()
+                      .dense({i, j, k}, 4)
+                      .pointer();
+    constexpr bool block_soa = true;
+
+    if (block_soa) {
+      block.dense({i, j, k}, grid_block_size).place(grid_v(0));
+      block.dense({i, j, k}, grid_block_size).place(grid_v(1));
+      block.dense({i, j, k}, grid_block_size).place(grid_v(2));
+      block.dense({i, j, k}, grid_block_size).place(grid_m);
+    } else {
+      block.dense({i, j, k}, grid_block_size).place(grid_v).place(grid_m);
+    }
+
+    block.dynamic(p, pow<dim>(grid_block_size) * 64).place(l);
+
+    root.place(gravity_x);
+  });
+}
+
 TLANG_NAMESPACE_END

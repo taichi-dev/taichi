@@ -55,7 +55,7 @@ inline void declare_var(Expr &a) {
       std::static_pointer_cast<IdExpression>(a.expr)->id, DataType::unknown));
 }
 
-#define Declare(x) auto x = Expr(std::make_shared<IdExpression>());
+#define Declare(x) auto x = Expr(std::make_shared<IdExpression>(#x));
 
 #define Global(x, dt)  \
   Declare(x##_global); \

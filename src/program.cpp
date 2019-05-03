@@ -119,7 +119,7 @@ void Program::visualize_layout(const std::string &fn) {
     std::function<void(SNode * snode)> visit = [&](SNode *snode) {
       emit("[.{\\textbf{");
       if (snode->type == SNodeType::place) {
-        emit(snode->node_type_name);
+        emit(snode->name);
       } else {
         emit(capitalize_first(snode_type_name(snode->type)));
       }

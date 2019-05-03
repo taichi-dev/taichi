@@ -55,7 +55,13 @@ inline void declare_var(Expr &a) {
       std::static_pointer_cast<IdExpression>(a.expr)->id, DataType::unknown));
 }
 
-#define Declare(x) auto x = Expr(std::make_shared<IdExpression>());
+#define Declare(x) auto x = Expr(std::make_shared<IdExpression>(#x));
+#define DeclareNamed(x, name) \
+  auto x = Expr(std::make_shared<IdExpression>(name));
+
+#define NamedScalar(x, name, dt)   \
+  DeclareNamed(x##_global, #name); \
+  auto x = global_new(x##_global, DataType::dt);
 
 #define Global(x, dt)  \
   Declare(x##_global); \
@@ -85,8 +91,8 @@ inline Expr global_new(Expr id_expr, DataType dt) {
   return ret;
 }
 
-inline Expr global_new(DataType dt) {
-  auto id_expr = std::make_shared<IdExpression>();
+inline Expr global_new(DataType dt, std::string name = "") {
+  auto id_expr = std::make_shared<IdExpression>(name);
   return Expr::make<GlobalVariableExpression>(dt, id_expr->id);
 }
 

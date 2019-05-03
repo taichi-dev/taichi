@@ -5,7 +5,13 @@ TLANG_NAMESPACE_BEGIN
 
 void Matrix::fill_global(DataType dt) {
   for (int i = 0; i < n * m; i++) {
-    entries[i].set(global_new(dt));
+    auto latex_name = "\\textbf{" + name + "}";
+    if (m == 1) {
+      latex_name += fmt::format("_{}", i + 1);
+    } else {
+      latex_name += fmt::format("_{{{},{}}}", i / m + 1, i % m + 1);
+    }
+    entries[i].set(global_new(dt, latex_name));
   }
 }
 

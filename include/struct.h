@@ -49,8 +49,8 @@ template <typename T>
 struct SNodeAllocator {
   using data_type = typename T::child_type;
   static constexpr std::size_t pool_size =
-      (1LL << 33) /
-      sizeof(data_type);  // each snode allocator takes at most 8 GB
+      std::min((1ULL << 33) / sizeof(data_type),
+               1ULL << 25);  // each snode allocator takes at most 8 GB, max 32M metas
   static constexpr int id = SNodeID<T>::value;
 
   SNodeMeta *resident_pool;
@@ -126,7 +126,6 @@ struct SNodeAllocator {
     return stat;
   }
 };
-
 
 template <typename T>
 struct SNodeManager {

@@ -129,6 +129,7 @@ TC_TEST("svd_scalar") {
 
 TC_TEST("svd_dsl") {
   for (auto vec : {1}) {
+    CoreState::set_trigger_gdb_when_crash(true);
     using TMat = TMatrix<float32, 3>;
     float32 tolerance = 2e-3_f32;
 
@@ -164,9 +165,8 @@ TC_TEST("svd_dsl") {
     }
 
     kernel([&] {
-      Declare(i);
-      Vectorize(vec);
-      For(i, 0, N, [&] {
+      // Vectorize(vec);
+      For(0, N, [&](Expr i) {
         auto svd = sifakis_svd(gA[i]);
         gU[i] = std::get<0>(svd);
         gSigma[i] = std::get<1>(svd);

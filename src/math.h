@@ -13,7 +13,7 @@ struct Matrix {
   Matrix() : n(0), m(0) {
   }
 
-  Matrix(Matrix &&o) : n(o.n), m(o.m), entries(std::move(o.entries)) {
+  Matrix(Matrix &&o) : n(o.n), m(o.m), entries(std::move(o.entries)), name(std::move(o.name)) {
   }
 
   bool initialized() {
@@ -100,6 +100,7 @@ struct Matrix {
       n = o.n;
       m = o.m;
       entries = o.entries;
+      name = o.name;
     } else {
       TC_ASSERT(n == o.n && m == o.m);
       for (int i = 0; i < (int)entries.size(); i++) {

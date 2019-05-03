@@ -8,6 +8,7 @@ TLANG_NAMESPACE_BEGIN
 struct Matrix {
   int n, m;
   std::vector<Expr> entries;
+  std::string name;
 
   Matrix() : n(0), m(0) {
   }
@@ -32,6 +33,12 @@ struct Matrix {
   }
 
   explicit Matrix(DataType dt, int n, int m = 1) : Matrix(n, m) {
+    fill_global(dt);
+  }
+
+  explicit Matrix(std::string name, DataType dt, int n, int m = 1)
+      : Matrix(n, m) {
+    this->name = name;
     fill_global(dt);
   }
 

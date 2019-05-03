@@ -117,13 +117,13 @@ void Program::visualize_layout(const std::string &fn) {
     emit(header);
 
     std::function<void(SNode * snode)> visit = [&](SNode *snode) {
-      emit("[.{\\textbf{");
+      emit("[.{");
       if (snode->type == SNodeType::place) {
         emit(snode->name);
       } else {
-        emit(capitalize_first(snode_type_name(snode->type)));
+        emit("\\textbf{" + capitalize_first(snode_type_name(snode->type)) +
+             "}");
       }
-      emit("}");
 
       std::string indices;
       for (int i = 0; i < max_num_indices; i++) {

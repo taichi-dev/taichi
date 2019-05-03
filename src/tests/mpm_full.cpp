@@ -55,14 +55,15 @@ auto mpm3d = []() {
   auto f32 = DataType::f32;
   int grid_block_size = 4;
 
-  Vector particle_x(f32, dim), particle_v(f32, dim);
-  Matrix particle_F(f32, dim, dim), particle_C(f32, dim, dim);
-  Global(l, i32);
-  Global(particle_J, f32);
-  Global(gravity_x, f32);
+  Vector particle_x("x", f32, dim), particle_v("v", f32, dim);
+  Matrix particle_F("F", f32, dim, dim), particle_C("C", f32, dim, dim);
 
-  Vector grid_v(f32, dim);
-  Global(grid_m, f32);
+  NamedScalar(l, l, i32);
+  NamedScalar(particle_J, J, f32);
+  NamedScalar(gravity_x, g, f32);
+
+  Vector grid_v("v^{g}", f32, dim);
+  NamedScalar(grid_m, m^{p}, f32);
 
   int max_n_particles = 1024 * 1024;
 
@@ -107,14 +108,14 @@ auto mpm3d = []() {
   auto i = Index(0), j = Index(1), k = Index(2);
   auto p = Index(3);
 
-  bool particle_SOA = false;
+  bool particle_soa = false;
 
   layout([&]() {
     SNode *fork;
-    if (!particle_SOA)
+    if (!particle_soa)
       fork = &root.dynamic(p, max_n_particles);
     auto place = [&](Expr &expr) {
-      if (particle_SOA) {
+      if (particle_soa) {
         root.dynamic(p, max_n_particles).place(expr);
       } else {
         fork->place(expr);

@@ -11,7 +11,7 @@ SNode &SNode::place(Expr &expr_) {
   auto expr = expr_.cast<GlobalVariableExpression>();
   auto &child = insert_children(SNodeType::place);
   expr->snode = &child;
-  child.name = expr->ident.name();
+  child.name = expr->ident.raw_name();
   if (expr->has_ambient) {
     expr->snode->has_ambient = true;
     expr->snode->ambient_val = expr->ambient_value;

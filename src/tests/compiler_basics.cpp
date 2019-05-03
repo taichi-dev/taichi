@@ -680,4 +680,32 @@ TC_TEST("union_cast") {
   }
 };
 
+TC_TEST("logic_not") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+    int n = 16;
+    Program prog(arch);
+    prog.config.print_ir = true;
+
+    Global(a, i32);
+    Global(b, i32);
+    Global(c, i32);
+
+    layout([&]() { root.place(a, b, c); });
+
+    kernel([&]() {
+      a[Expr(0)] = !(Expr(1) < Expr(2));
+      b[Expr(0)] = !!(Expr(1) < Expr(2));
+      c[Expr(0)] = !!!(Expr(1) < Expr(2));
+    })();
+
+    for (int i = 0; i < n; i++) {
+      TC_CHECK(a.val<int>() == 0);
+      TC_CHECK(b.val<int>() != 0);
+      TC_CHECK(c.val<int>() == 0);
+    }
+  }
+};
+
+
 TLANG_NAMESPACE_END

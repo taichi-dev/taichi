@@ -47,6 +47,14 @@ class IRPrinter : public IRVisitor {
           alloca->ident.name());
   }
 
+  void visit(FrontendAssertStmt *assert) override {
+    print("{} : assert {}", assert->id, assert->val->serialize());
+  }
+
+  void visit(AssertStmt *assert) override {
+    print("{} : assert {}", assert->id, assert->val->name());
+  }
+
   void visit(FrontendSNodeOpStmt *stmt) override {
     std::string extras = "[";
     for (int i = 0; i < (int)stmt->indices.size(); i++) {

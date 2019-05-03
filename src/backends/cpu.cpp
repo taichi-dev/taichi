@@ -371,6 +371,12 @@ class CPUIRCodeGen : public IRVisitor {
              },
              "{"));
   }
+
+  void visit(AssertStmt *stmt) {
+    emit("#if defined(TL_DEBUG)");
+    emit(R"(TC_ASSERT_INFO({}, "{}");)", stmt->val->raw_name(), stmt->text);
+    emit("#endif");
+  }
 };
 
 void CPUCodeGen::lower() {

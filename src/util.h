@@ -122,6 +122,7 @@ enum class UnaryType : int {
   log,
   rsqrt,
   bit_not,
+  logic_not,
   undefined
 };
 

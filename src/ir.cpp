@@ -258,6 +258,10 @@ SNode *Expr::snode() const {
   return cast<GlobalVariableExpression>()->snode;
 }
 
+Expr Expr::operator!() {
+  return Expr::make<UnaryOpExpression>(UnaryType::logic_not, expr);
+}
+
 template void *Expr::val_tmp<>(DataType);
 template void *Expr::val_tmp<int>(DataType, int);
 template void *Expr::val_tmp<int, int>(DataType, int, int);

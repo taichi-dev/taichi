@@ -151,6 +151,7 @@ std::string unary_type_name(UnaryType type) {
     REGISTER_TYPE(rcp);
     REGISTER_TYPE(rsqrt);
     REGISTER_TYPE(bit_not);
+    REGISTER_TYPE(logic_not);
     REGISTER_TYPE(undefined);
 #undef REGISTER_TYPE
   }

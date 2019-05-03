@@ -561,6 +561,15 @@ inline vec<float32, dim> cos(const vec<float32, dim> &v) {
   return ret;
 }
 
+template <int dim, typename T>
+inline vec<T, dim> logic_not(vec<T, dim> v) {
+  auto ret = v;
+  for (int i = 0; i < dim; i++) {
+    ret.element(i) = !ret.element(i);
+  }
+  return ret;
+}
+
 //*****************************************************************************
 
 template <typename T, int dim>
@@ -1007,6 +1016,11 @@ __device__ float mod(float a, float b) {
 
 __device__ int mod(int a, int b) {
   return a % b;
+}
+
+template <typename T>
+__device__ T logic_not(T v) {
+  return T(!v);
 }
 
 DEFINE_CUDA_OP(add, +)

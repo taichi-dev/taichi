@@ -685,6 +685,7 @@ class Expr {
   void operator-=(const Expr &o);
   void operator*=(const Expr &o);
   void operator/=(const Expr &o);
+  Expr operator!();
 
   Expr eval() const;
 
@@ -1029,8 +1030,8 @@ class GlobalVariableExpression : public Expression {
 
   void flatten(VecStatement &ret) override {
     TC_ASSERT(snode->num_active_indices == 0);
-    auto ptr = Stmt::make<GlobalPtrStmt>(
-        LaneAttribute<SNode *>(snode), std::vector<Stmt *>());
+    auto ptr = Stmt::make<GlobalPtrStmt>(LaneAttribute<SNode *>(snode),
+                                         std::vector<Stmt *>());
     ret.push_back(std::move(ptr));
   }
 };

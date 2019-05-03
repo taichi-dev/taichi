@@ -158,7 +158,6 @@ void Program::visualize_layout(const std::string &fn) {
     emit(tail);
   }
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
-  exit(0);
 }
 
 TLANG_NAMESPACE_END

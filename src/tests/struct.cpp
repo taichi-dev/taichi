@@ -592,6 +592,8 @@ TC_TEST("hashed") {
 
 TC_TEST("mpm_layout") {
   Program prog(Arch::gpu);
+  // Program prog(Arch::x86_64);
+  // prog.config.print_ir = true;
   constexpr int dim = 3;
   constexpr bool highres = true;
 
@@ -634,8 +636,9 @@ TC_TEST("mpm_layout") {
     for (int i = 0; i < dim; i++)
       for (int j = 0; j < dim; j++)
         place(particle_C(i, j));
-    for (int i = 0; i < dim; i++)
+    for (int i = 0; i < dim; i++) {
       place(particle_x(i));
+    }
     for (int i = 0; i < dim; i++)
       place(particle_v(i));
     place(particle_J);

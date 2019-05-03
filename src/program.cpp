@@ -78,6 +78,25 @@ void Program::synchronize() {
   }
 }
 
+std::string capitalize_first(std::string s) {
+  s[0] = std::toupper(s[0]);
+  return s;
+}
+
+std::string latex_short_digit(int v) {
+  std::string units = "KMGT";
+  int unit_id = -1;
+  while (v >= 1024 && unit_id + 1 < units.size()) {
+    TC_ASSERT(v % 1024 == 0);
+    v /= 1024;
+    unit_id++;
+  }
+  if (unit_id != -1)
+    return fmt::format("{}\\mathrm{{{}}}", v, units[unit_id]);
+  else
+    return std::to_string(v);
+}
+
 void Program::visualize_layout(const std::string &fn) {
   {
     std::ofstream ofs(fn);
@@ -87,23 +106,24 @@ void Program::visualize_layout(const std::string &fn) {
     auto header = R"(
 \documentclass[tikz, border=16pt]{standalone}
 \usepackage{latexsym}
-\usepackage{tikz-qtree,ulem}
-
+\usepackage{tikz-qtree,tikz-qtree-compat,ulem}
 \begin{document}
-
 \begin{tikzpicture}[level distance=40pt]
+\tikzset{level 1/.style={sibling distance=-100pt}}
   \tikzset{edge from parent/.style={draw,->,
-    edge from parent path={(\tikzparentnode.south) -- +(0,-2pt) -| (\tikzchildnode)}}}
-  \tikzset{every tree node/.style={align=center, font=\small, text width=2cm}}
+    edge from parent path={(\tikzparentnode.south) -- +(0,-4pt) -| (\tikzchildnode)}}}
+  \tikzset{every tree node/.style={align=center, font=\small}}
 \Tree)";
     emit(header);
 
     std::function<void(SNode * snode)> visit = [&](SNode *snode) {
       emit("[.{\\textbf{");
-      emit(snode_type_name(snode->type));
+      if (snode->type == SNodeType::place) {
+        emit(snode->node_type_name);
+      } else {
+        emit(capitalize_first(snode_type_name(snode->type)));
+      }
       emit("}");
-
-      // \mathbf{i}^{\mathbf{6}|64\mathrm{K}}
 
       std::string indices;
       for (int i = 0; i < max_num_indices; i++) {
@@ -111,12 +131,16 @@ void Program::visualize_layout(const std::string &fn) {
           int nb = snode->extractors[i].num_bits;
           int start = snode->extractors[i].start + nb;
           indices += fmt::format(
-              R"($\mathbf{{{}}}^{{\mathbf{{{}}}|{}}}_{{\mathbf{{{}}}|{}}}$)",
-              std::string(1, 'i' + i), start, 1 << start, nb, 1 << nb);
+              R"($\mathbf{{{}}}^{{\mathbf{{{}b}}:{}}}_{{\mathbf{{{}b}}:{}}}$)",
+              std::string(1, 'I' + i), start, latex_short_digit(1 << start), nb,
+              latex_short_digit(1 << nb));
         }
       }
       if (!indices.empty())
         emit("\\\\" + indices);
+      if (snode->type == SNodeType::place) {
+        emit("\\\\" + data_type_short_name(snode->dt));
+      }
       emit("} ");
 
       for (int i = 0; i < snode->ch.size(); i++) {

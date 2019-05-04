@@ -29,6 +29,7 @@ struct CompileConfig {
   int max_vector_width;
   int print_ir;
   bool serial_schedule;
+  bool lower_access;
   std::string extra_flags;
 
   CompileConfig();

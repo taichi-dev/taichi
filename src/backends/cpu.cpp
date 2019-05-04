@@ -382,44 +382,62 @@ class CPUIRCodeGen : public IRVisitor {
 void CPUCodeGen::lower() {
   auto ir = kernel->ir;
   if (prog->config.print_ir) {
+    TC_TRACE("Initial IR:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::lower(ir);
   if (prog->config.print_ir) {
+    TC_TRACE("Lowered:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::typecheck(ir);
   if (prog->config.print_ir) {
+    TC_TRACE("Typechecked:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::slp_vectorize(ir);
   if (prog->config.print_ir) {
+    TC_TRACE("SLPed:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::loop_vectorize(ir);
   if (prog->config.print_ir) {
+    TC_TRACE("LoopVeced:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::vector_split(ir, prog->config.max_vector_width,
                        prog->config.serial_schedule);
   if (prog->config.print_ir) {
+    TC_TRACE("LoopSplitted:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
-  // irpass::initialize_scratch_pad(ir);
+  /*
+  irpass::initialize_scratch_pad(ir);
   if (prog->config.print_ir) {
+    TC_TRACE("InitializeScratchPad:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
+  */
   irpass::eliminate_dup(ir);
   if (prog->config.print_ir) {
+    TC_TRACE("DupEliminated:");
     irpass::re_id(ir);
     irpass::print(ir);
+  }
+  if (prog->config.lower_access) {
+    TC_TRACE("Access Lowered:");
+    irpass::lower_access(ir);
+    if (prog->config.print_ir) {
+      irpass::re_id(ir);
+      irpass::print(ir);
+    }
   }
 }
 

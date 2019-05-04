@@ -85,6 +85,7 @@ class RangeAssumptionStmt;
 class AssertStmt;
 
 // SNodeOps
+class OffsetAndExtractBitsStmt;
 class LinearizeStmt;
 class SNodeLookupStmt;
 
@@ -109,6 +110,7 @@ void loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
 void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
+void lower_access(IRNode *root);
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 
 }  // namespace irpass
@@ -362,6 +364,7 @@ class IRVisitor {
   DEFINE_VISIT(RangeAssumptionStmt);
   DEFINE_VISIT(AssertStmt);
 
+  DEFINE_VISIT(OffsetAndExtractBitsStmt);
   DEFINE_VISIT(LinearizeStmt);
   DEFINE_VISIT(SNodeLookupStmt);
 
@@ -1831,6 +1834,19 @@ class LinearizeStmt : public Stmt {
   }
 
   DEFINE_ACCEPT
+};
+
+class OffsetAndExtractBitsStmt : public Stmt {
+ public:
+  Stmt *input;
+  int bit_begin, bit_end;
+  int offset;
+  OffsetAndExtractBitsStmt(Stmt *input, int bit_begin, int bit_end, int offset)
+      : input(input), bit_begin(bit_begin), bit_end(bit_end), offset(offset) {
+    add_operand(this->input);
+  }
+
+  DEFINE_ACCEPT;
 };
 
 class SNodeLookupStmt : public Stmt {

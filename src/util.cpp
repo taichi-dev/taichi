@@ -312,7 +312,7 @@ CompileConfig::CompileConfig() {
 #endif
   lazy_compilation = true;
   serial_schedule = false;
-  lower_access = true;
+  lower_access = false;
 }
 
 std::string CompileConfig::compiler_name() {

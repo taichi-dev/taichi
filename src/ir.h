@@ -84,6 +84,10 @@ class SNodeOpStmt;
 class RangeAssumptionStmt;
 class AssertStmt;
 
+// SNodeOps
+class LinearizeStmt;
+class SNodeLookupStmt;
+
 // With per-lane attributes
 class LocalLoadStmt;
 class GlobalPtrStmt;
@@ -357,6 +361,9 @@ class IRVisitor {
   DEFINE_VISIT(RandStmt);
   DEFINE_VISIT(RangeAssumptionStmt);
   DEFINE_VISIT(AssertStmt);
+
+  DEFINE_VISIT(LinearizeStmt);
+  DEFINE_VISIT(SNodeLookupStmt);
 
   DEFINE_VISIT(PragmaSLPStmt);
   DEFINE_VISIT(ElementShuffleStmt);
@@ -1245,6 +1252,7 @@ class AssertStmt : public Stmt {
 
   DEFINE_ACCEPT
 };
+
 class RangeAssumptionStmt : public Stmt {
  public:
   Stmt *input;
@@ -1800,6 +1808,48 @@ class ElementShuffleStmt : public Stmt {
     for (int i = 0; i < width(); i++) {
       add_operand(this->elements[i].stmt);
     }
+  }
+
+  DEFINE_ACCEPT
+};
+
+class LinearizeStmt : public Stmt {
+ public:
+  std::vector<Stmt *> inputs;
+  std::vector<int> strides;
+  std::vector<int> offsets;
+
+  LinearizeStmt(const std::vector<Stmt *> &inputs,
+                const std::vector<int> &strides,
+                const std::vector<int> &offsets)
+      : inputs(inputs), strides(strides), offsets(offsets) {
+    TC_ASSERT(inputs.size() == strides.size());
+    TC_ASSERT(inputs.size() == offsets.size());
+    for (auto &op : this->inputs) {
+      add_operand(op);
+    }
+  }
+
+  DEFINE_ACCEPT
+};
+
+class SNodeLookupStmt : public Stmt {
+ public:
+  SNode *snode;
+  Stmt *input_snode;
+  Stmt *input_index;
+  bool activate;
+
+  SNodeLookupStmt(SNode *snode,
+                  Stmt *input_snode,
+                  Stmt *input_index,
+                  bool activate)
+      : snode(snode),
+        input_snode(input_snode),
+        input_index(input_index),
+        activate(activate) {
+    add_operand(this->input_snode);
+    add_operand(this->input_index);
   }
 
   DEFINE_ACCEPT

@@ -101,8 +101,8 @@ class LowerAccess : public IRVisitor {
     for (int i = 0; i < ptr->width(); i++) {
       lanes.push_back(VectorElement(lowered_pointers[i], 0));
     }
-    auto merge = Stmt::make<ElementShuffleStmt>(lanes);
-    merge->ret_type.data_type = DataType::ptr;
+    auto merge = Stmt::make<ElementShuffleStmt>(lanes, true);
+    merge->ret_type.data_type = ptr->snodes[0]->dt;
     lowered.push_back(std::move(merge));
     ptr->parent->replace_with(ptr, lowered);
     throw IRModifiedException();

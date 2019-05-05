@@ -1803,9 +1803,11 @@ class VectorElement {
 class ElementShuffleStmt : public Stmt {
  public:
   LaneAttribute<VectorElement> elements;
+  bool pointer;
 
-  ElementShuffleStmt(const LaneAttribute<VectorElement> &elements)
-      : elements(elements) {
+  ElementShuffleStmt(const LaneAttribute<VectorElement> &elements,
+                     bool pointer = false)
+      : elements(elements), pointer(pointer) {
     width() = elements.size();
     element_type() = elements[0].stmt->element_type();
     for (int i = 0; i < width(); i++) {

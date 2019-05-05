@@ -477,9 +477,9 @@ void CPUCodeGen::lower() {
     irpass::print(ir);
   }
   if (prog->config.lower_access) {
-    TC_TRACE("Access Lowered:");
     irpass::lower_access(ir);
     if (prog->config.print_ir) {
+      TC_TRACE("Access Lowered:");
       irpass::re_id(ir);
       irpass::print(ir);
     }

@@ -40,7 +40,10 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *ptr) override {
-    TC_ASSERT(ptr->width() == 1);
+    if (ptr->width() != 1) {
+      TC_WARN("Not lowering vectorized GlobalPtr");
+      return;
+    }
     // emit a sequence of micro access ops
     std::deque<SNode *> snodes;
     for (auto snode = ptr->snodes[0]; snode != nullptr; snode = snode->parent)
@@ -53,16 +56,19 @@ class LowerAccess : public IRVisitor {
       std::vector<int> strides;
       std::vector<int> offsets;
       // extract bits
-      for (int k = 0; k < (int)ptr->indices.size(); k++) {
-        int begin = snode->extractors[k].start;
-        int end = begin + snode->extractors[k].num_bits;
-        // TODO: fix index order
-        auto extracted = Stmt::make<OffsetAndExtractBitsStmt>(ptr->indices[k],
-                                                              begin, end, 0);
-        lowered_indices.push_back(extracted.get());
-        lowered.push_back(std::move(extracted));
-        strides.push_back(1 << snode->extractors[k].num_bits);
-        offsets.push_back(0);
+      for (int k_ = 0; k_ < (int)ptr->indices.size(); k_++) {
+        for (int k = 0; k < max_num_indices; k++) {
+          if (snode->physical_index_position[k_] == k) {
+            int begin = snode->extractors[k].start;
+            int end = begin + snode->extractors[k].num_bits;
+            auto extracted = Stmt::make<OffsetAndExtractBitsStmt>(
+                ptr->indices[k_], begin, end, 0);
+            lowered_indices.push_back(extracted.get());
+            lowered.push_back(std::move(extracted));
+            strides.push_back(1 << snode->extractors[k].num_bits);
+            offsets.push_back(0);
+          }
+        }
       }
 
       // linearize

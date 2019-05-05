@@ -59,7 +59,7 @@ TC_TEST("snode_loop2") {
     Global(u, i32);
     Global(v, i32);
 
-    int n = 128;
+    int n = 16;
 
     // All data structure originates from a "root", which is a forked node.
     prog.layout([&] {

@@ -304,7 +304,8 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(SNodeLookupStmt *stmt) override {
-    print("{} = lookup({}, {}) activate = {}", stmt->name(),
+    print("{} = {}[{}]::lookup({}, {}) activate = {}", stmt->name(),
+          stmt->snode->node_type_name, stmt->snode->type_name(),
           stmt->input_snode ? stmt->input_snode->name() : "root",
           stmt->input_index->name(), stmt->activate);
   }

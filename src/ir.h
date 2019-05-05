@@ -1852,20 +1852,29 @@ class OffsetAndExtractBitsStmt : public Stmt {
 class SNodeLookupStmt : public Stmt {
  public:
   SNode *snode;
+  int chid;
   Stmt *input_snode;
   Stmt *input_index;
+  std::vector<Stmt *> global_indices;
   bool activate;
 
   SNodeLookupStmt(SNode *snode,
+                  int chid,
                   Stmt *input_snode,
                   Stmt *input_index,
-                  bool activate)
+                  bool activate,
+                  const std::vector<Stmt *> &global_indices)
       : snode(snode),
+        chid(chid),
         input_snode(input_snode),
         input_index(input_index),
+        global_indices(global_indices),
         activate(activate) {
     add_operand(this->input_snode);
     add_operand(this->input_index);
+    for (int i = 0; i < (int)global_indices.size(); i++) {
+      add_operand(this->global_indices[i]);
+    }
   }
 
   DEFINE_ACCEPT

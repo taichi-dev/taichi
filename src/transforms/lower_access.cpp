@@ -47,7 +47,7 @@ class LowerAccess : public IRVisitor {
       snodes.push_front(snode);
     Stmt *last = nullptr;
     VecStatement lowered;
-    for (int i = 0; i < (int)snodes.size(); i++) {
+    for (int i = 0; i < (int)snodes.size() - 1; i++) {
       auto snode = snodes[i];
       std::vector<Stmt *> lowered_indices;
       std::vector<int> strides;
@@ -69,8 +69,9 @@ class LowerAccess : public IRVisitor {
       auto linearized =
           Stmt::make<LinearizeStmt>(lowered_indices, strides, offsets);
 
-      auto lookup =
-          Stmt::make<SNodeLookupStmt>(snode, last, linearized.get(), true);
+      auto lookup = Stmt::make<SNodeLookupStmt>(
+          snode, snode->child_id(snodes[i + 1]), last, linearized.get(), true,
+          ptr->indices);
 
       lowered.push_back(std::move(linearized));
       last = lookup.get();

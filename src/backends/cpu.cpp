@@ -377,6 +377,51 @@ class CPUIRCodeGen : public IRVisitor {
     emit(R"(TC_ASSERT_INFO({}, "{}");)", stmt->val->raw_name(), stmt->text);
     emit("#endif");
   }
+
+  void visit(OffsetAndExtractBitsStmt *stmt) {
+    emit(R"(auto {} = ((({}) >> {}) & ((1 << {}) - 1)) + {};)",
+         stmt->raw_name(), stmt->input->raw_name(), stmt->bit_begin,
+         (stmt->bit_end - stmt->bit_begin), stmt->offset);
+  }
+
+  void visit(LinearizeStmt *stmt) {
+    std::string val = "0";
+    for (int i = 0; i < stmt->inputs.size(); i++) {
+      val = fmt::format("({}) * {} + {} + {}", val, stmt->strides[i],
+                        stmt->inputs[i]->raw_name(), stmt->offsets[i]);
+    }
+    emit(R"(auto {} = {};)", stmt->raw_name(), val);
+  }
+
+  void visit(SNodeLookupStmt *stmt) {
+    std::string parent;
+    if (stmt->input_snode) {
+      parent = stmt->input_snode->raw_name();
+    } else {
+      parent = "root";
+    }
+    std::vector<std::string> global_indices(max_num_indices, "0");
+    auto snode = stmt->snode;
+    for (int i = 0; i < (int)stmt->global_indices.size(); i++) {
+      if (snode->physical_index_position[i] != -1) {
+        global_indices[snode->physical_index_position[i]] =
+            stmt->global_indices[i]->raw_name() + fmt::format("[{}]", 0);
+      }
+    }
+    if (stmt->activate && stmt->snode->type != SNodeType::place) {
+      emit(R"({}->activate({}, {});)", parent, stmt->input_index->raw_name(),
+           make_list(global_indices, "{"));
+    }
+    auto ch = stmt->snode->ch[stmt->chid];
+    if (ch->type == SNodeType::place) {
+      emit("{} *{}[1];", ch->data_type_name(), stmt->raw_name());
+      emit(R"({}[0] = &{}->look_up({})->get{}()->val;)", stmt->raw_name(),
+           parent, stmt->input_index->raw_name(), stmt->chid);
+    } else {
+      emit(R"(auto {} = {}->look_up({})->get{}();)", stmt->raw_name(), parent,
+           stmt->input_index->raw_name(), stmt->chid);
+    }
+  }
 };
 
 void CPUCodeGen::lower() {

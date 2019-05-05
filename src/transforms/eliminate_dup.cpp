@@ -301,6 +301,23 @@ class BasicBlockEliminate : public IRVisitor {
   void visit(BinaryOpStmt *stmt) override {
     if (is_done(stmt))
       return;
+    if (stmt->op_type == BinaryType::add &&
+        stmt->ret_type.data_type == DataType::i32) {
+      if (stmt->rhs->is<ConstStmt>()) {
+        auto stmt_ = stmt->rhs->as<ConstStmt>();
+        bool all_zero = true;
+        for (int l = 0; l < stmt_->width(); l++) {
+          if (stmt_->val[l].val_int32() != 0) {
+            all_zero = false;
+          }
+        }
+        if (all_zero) {
+          stmt->replace_with(stmt->lhs);
+          stmt->parent->erase(current_stmt_id);
+          throw IRModifiedException();
+        }
+      }
+    }
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {

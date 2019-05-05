@@ -364,7 +364,7 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(ElementShuffleStmt *stmt) {
-    emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
+    emit("const {} {} {};", stmt->ret_data_type_name(), stmt->raw_name(),
          stmt->elements.serialize(
              [](const VectorElement &elem) {
                return fmt::format("{}[{}]", elem.stmt->raw_name(), elem.index);

@@ -343,6 +343,32 @@ class BasicBlockEliminate : public IRVisitor {
     set_done(stmt);
   }
 
+  void visit(SNodeLookupStmt *stmt) override {
+    if (is_done(stmt))
+      return;
+    for (int i = 0; i < current_stmt_id; i++) {
+      auto &bstmt = block->statements[i];
+      if (stmt->ret_type == bstmt->ret_type) {
+        auto &bstmt_data = *bstmt;
+        if (typeid(bstmt_data) == typeid(*stmt)) {
+          auto bstmt_ = bstmt->as<SNodeLookupStmt>();
+          if (bstmt_->snode == stmt->snode &&
+              bstmt_->input_snode == stmt->input_snode &&
+              bstmt_->input_index == stmt->input_index &&
+              bstmt_->chid == stmt->chid &&
+              identical_vectors(bstmt_->global_indices, stmt->global_indices) &&
+              bstmt_->activate == stmt->activate) {
+            TC_INFO("eliminated");
+            stmt->replace_with(bstmt.get());
+            stmt->parent->erase(current_stmt_id);
+            throw IRModifiedException();
+          }
+        }
+      }
+    }
+    set_done(stmt);
+  }
+
   void visit(AtomicOpStmt *stmt) override {
     return;
   }

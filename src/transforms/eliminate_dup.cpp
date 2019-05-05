@@ -284,6 +284,29 @@ class BasicBlockEliminate : public IRVisitor {
     set_done(stmt);
   }
 
+  void visit(OffsetAndExtractBitsStmt *stmt) override {
+    if (is_done(stmt))
+      return;
+    for (int i = 0; i < current_stmt_id; i++) {
+      auto &bstmt = block->statements[i];
+      if (stmt->ret_type == bstmt->ret_type) {
+        auto &bstmt_data = *bstmt;
+        if (typeid(bstmt_data) == typeid(*stmt)) {
+          auto bstmt_ = bstmt->as<OffsetAndExtractBitsStmt>();
+          if (bstmt_->input == stmt->input &&
+              bstmt_->bit_begin == stmt->bit_begin &&
+              bstmt_->bit_end == stmt->bit_end &&
+              bstmt_->offset == stmt->offset) {
+            stmt->replace_with(bstmt.get());
+            stmt->parent->erase(current_stmt_id);
+            throw IRModifiedException();
+          }
+        }
+      }
+    }
+    set_done(stmt);
+  }
+
   void visit(AtomicOpStmt *stmt) override {
     return;
   }

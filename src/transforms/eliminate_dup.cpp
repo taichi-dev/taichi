@@ -202,7 +202,33 @@ class BasicBlockEliminate : public IRVisitor {
         }
       }
     }
-    set_done(stmt);
+
+    // store-forwarding
+    bool regular = true;
+    auto alloca = stmt->ptr[0].var;
+    for (int l = 0; l < stmt->width(); l++) {
+      if (stmt->ptr[l].offset != l || stmt->ptr[l].var != alloca) {
+        regular = false;
+      }
+    }
+    if (regular) {
+      for (int i = current_stmt_id - 1; i >= 0; i--) {
+        auto &bstmt = block->statements[i];
+        if (bstmt->is<LocalStoreStmt>()) {
+          auto bstmt_ = bstmt->as<LocalStoreStmt>();
+          if (bstmt_->ptr == alloca) {
+            // forward
+            stmt->replace_with(bstmt_->data);
+            stmt->parent->erase(current_stmt_id);
+            throw IRModifiedException();
+          }
+        } else if (bstmt->is_container_statement()) {
+          // assume this container may modify the local var
+          break;
+        }
+      }
+      set_done(stmt);
+    }
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -356,7 +382,8 @@ class BasicBlockEliminate : public IRVisitor {
               bstmt_->input_snode == stmt->input_snode &&
               bstmt_->input_index == stmt->input_index &&
               bstmt_->chid == stmt->chid &&
-              // identical_vectors(bstmt_->global_indices, stmt->global_indices)
+              // identical_vectors(bstmt_->global_indices,
+              // stmt->global_indices)
               // && no need for the above line. As long as inptu_index are the
               // same global indices comparison can be omitted
               bstmt_->activate == stmt->activate) {

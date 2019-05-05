@@ -227,17 +227,47 @@ class BasicBlockEliminate : public IRVisitor {
           break;
         }
       }
-      set_done(stmt);
     }
+    set_done(stmt);
   }
 
   void visit(LocalStoreStmt *stmt) override {
     return;
   }
 
-  // Do not eliminate global data access
   void visit(GlobalLoadStmt *stmt) override {
-    return;
+    if (is_done(stmt))
+      return;
+    for (int i = 0; i < current_stmt_id; i++) {
+      auto &bstmt = block->statements[i];
+      if (stmt->ret_type == bstmt->ret_type) {
+        auto &bstmt_data = *bstmt;
+        if (typeid(bstmt_data) == typeid(*stmt)) {
+          auto bstmt_ = bstmt->as<GlobalLoadStmt>();
+          bool same = stmt->ptr == bstmt_->ptr;
+          if (same) {
+            // no store to the var?
+            bool has_store = false;
+            for (int j = i + 1; j < current_stmt_id; j++) {
+              if (block->statements[j]
+                      ->is_container_statement()) {  // no if, while, etc..
+                has_store = true;
+                break;
+              }
+              if (block->statements[j]->is<GlobalStoreStmt>()) {
+                has_store = true;
+              }
+            }
+            if (!has_store) {
+              stmt->replace_with(bstmt.get());
+              stmt->parent->erase(current_stmt_id);
+              throw IRModifiedException();
+            }
+          }
+        }
+      }
+    }
+    set_done(stmt);
   }
 
   void visit(GlobalStoreStmt *stmt) override {

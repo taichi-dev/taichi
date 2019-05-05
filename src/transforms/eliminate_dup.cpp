@@ -307,6 +307,42 @@ class BasicBlockEliminate : public IRVisitor {
     set_done(stmt);
   }
 
+  template <typename T>
+  static bool identical_vectors(const std::vector<T> &a,
+                                const std::vector<T> &b) {
+    if (a.size() != b.size()) {
+      return false;
+    } else {
+      for (int i = 0; i < (int)a.size(); i++) {
+        if (a[i] != b[i])
+          return false;
+      }
+    }
+    return true;
+  }
+
+  void visit(LinearizeStmt *stmt) override {
+    if (is_done(stmt))
+      return;
+    for (int i = 0; i < current_stmt_id; i++) {
+      auto &bstmt = block->statements[i];
+      if (stmt->ret_type == bstmt->ret_type) {
+        auto &bstmt_data = *bstmt;
+        if (typeid(bstmt_data) == typeid(*stmt)) {
+          auto bstmt_ = bstmt->as<LinearizeStmt>();
+          if (identical_vectors(bstmt_->inputs, stmt->inputs) &&
+              identical_vectors(bstmt_->strides, stmt->strides) &&
+              identical_vectors(bstmt_->offsets, stmt->offsets)) {
+            stmt->replace_with(bstmt.get());
+            stmt->parent->erase(current_stmt_id);
+            throw IRModifiedException();
+          }
+        }
+      }
+    }
+    set_done(stmt);
+  }
+
   void visit(AtomicOpStmt *stmt) override {
     return;
   }

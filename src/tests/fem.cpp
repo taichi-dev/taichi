@@ -268,6 +268,8 @@ auto fem = []() {
     });
   });
 
+  prog.config.print_ir = false;
+
   Kernel(reduce_r).def([&] {
     For(r(0), [&](Expr i, Expr j, Expr k) {
       Atomic(sum[Expr(0)]) += r[i, j, k].norm2();
@@ -363,7 +365,6 @@ auto fem = []() {
     auto i = x[0];
     auto j = x[1];
     auto k = x[2];
-    // TC_INFO("{} {} {}", i, j, k);
     enqueue(i + 1, j, k);
     enqueue(i - 1, j, k);
     enqueue(i, j + 1, k);

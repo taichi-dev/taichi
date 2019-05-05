@@ -356,9 +356,10 @@ class BasicBlockEliminate : public IRVisitor {
               bstmt_->input_snode == stmt->input_snode &&
               bstmt_->input_index == stmt->input_index &&
               bstmt_->chid == stmt->chid &&
-              identical_vectors(bstmt_->global_indices, stmt->global_indices) &&
+              // identical_vectors(bstmt_->global_indices, stmt->global_indices)
+              // && no need for the above line. As long as inptu_index are the
+              // same global indices comparison can be omitted
               bstmt_->activate == stmt->activate) {
-            TC_INFO("eliminated");
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
             throw IRModifiedException();

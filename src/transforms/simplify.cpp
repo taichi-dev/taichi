@@ -493,6 +493,18 @@ class BasicBlockSimplify : public IRVisitor {
     if (is_done(stmt))
       return;
 
+    if (stmt->inputs.size() && stmt->inputs.back()->is<IntegerOffsetStmt>()) {
+      auto previous_offset = stmt->inputs.back()->as<IntegerOffsetStmt>();
+      // try push forward offset
+      auto offset_stmt = stmt->insert_after_me(
+          Stmt::make<IntegerOffsetStmt>(stmt, previous_offset->offset));
+
+      stmt->inputs.back() = previous_offset->input;
+      stmt->replace_with(offset_stmt);
+      offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
+      throw IRModifiedException();
+    }
+
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {

@@ -309,6 +309,12 @@ class BasicBlockSimplify : public IRVisitor {
   void visit(IntegerOffsetStmt *stmt) override {
     if (is_done(stmt))
       return;
+    if (stmt->offset == 0) {
+      stmt->replace_with(stmt->input);
+      stmt->parent->erase(stmt);
+      throw IRModifiedException();
+    }
+
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {

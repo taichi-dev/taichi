@@ -353,11 +353,28 @@ class CPUIRCodeGen : public IRVisitor {
   void visit(GlobalLoadStmt *stmt) {
     int width = stmt->width();
     if (width > 1 && stmt->ptr->is<ElementShuffleStmt>()) {
+      TC_ASSERT(stmt->ret_type.data_type == DataType::i32 ||
+                stmt->ret_type.data_type == DataType::f32);
       bool loaded[width];
       for (int i = 0; i < width; i++)
         loaded[i] = false;
 
       auto shuffle = stmt->ptr->as<ElementShuffleStmt>();
+      Stmt *statements[width];
+      int offsets[width];
+
+      for (int i = 0; i < width; i++) {
+        auto src = shuffle->elements[i].stmt;
+        if (shuffle->elements[i].stmt->is<IntegerOffsetStmt>()) {
+          auto indir = src->as<IntegerOffsetStmt>();
+          statements[i] = indir->input;
+          offsets[i] = indir->offset;
+        } else {
+          statements[i] = src;
+          offsets[i] = 0;
+        }
+      }
+
       emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
       for (int i = 0; i < width; i++) {
         if (loaded[i])
@@ -366,12 +383,8 @@ class CPUIRCodeGen : public IRVisitor {
         std::memset(mask, 0, sizeof(mask));
         mask[i] = true;
         for (int j = i + 1; j < width; j++) {
-          if (shuffle->elements[j].stmt->is<IntegerOffsetStmt>()) {
-            auto indir = shuffle->elements[j].stmt->as<IntegerOffsetStmt>();
-            TC_ASSERT(stmt->ret_type.data_type == DataType::i32 ||
-                      stmt->ret_type.data_type == DataType::f32);
-            if (indir->input == shuffle->elements[i].stmt &&
-                (j - i) * sizeof(int32) == indir->offset) {
+          if (statements[i] == statements[j]) {
+            if ((j - i) * sizeof(int32) == offsets[j] - offsets[i]) {
               mask[j] = true;
             }
           }
@@ -385,9 +398,15 @@ class CPUIRCodeGen : public IRVisitor {
           imm_mask += (int)mask[j];
         }
         // load and blend in
-        emit("{} = blend<{}>({}, {}::load({}[0] - {}));", stmt->raw_name(),
-             imm_mask, stmt->raw_name(), stmt->ret_data_type_name(),
-             shuffle->elements[i].stmt->raw_name(), i);
+        if (i == 0) {
+          emit("{} = {}::load({}[0]);", stmt->raw_name(),
+               stmt->ret_data_type_name(),
+               shuffle->elements[i].stmt->raw_name());
+        } else {
+          emit("{} = blend<{}>({}, {}::load({}[0] - {}));", stmt->raw_name(),
+               imm_mask, stmt->raw_name(), stmt->ret_data_type_name(),
+               shuffle->elements[i].stmt->raw_name(), i);
+        }
       }
     } else {
       emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());

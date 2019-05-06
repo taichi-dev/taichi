@@ -385,9 +385,9 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(OffsetAndExtractBitsStmt *stmt) {
-    emit(R"(auto {} = ((({}) >> {}) & ((1 << {}) - 1)) + {};)",
-         stmt->raw_name(), stmt->input->raw_name(), stmt->bit_begin,
-         (stmt->bit_end - stmt->bit_begin), stmt->offset);
+    emit(R"(auto {} = ((({} + {}) >> {}) & ((1 << {}) - 1));)",
+         stmt->raw_name(), stmt->offset, stmt->input->raw_name(),
+         stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
   }
 
   void visit(LinearizeStmt *stmt) {

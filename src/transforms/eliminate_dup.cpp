@@ -382,15 +382,13 @@ class BasicBlockEliminate : public IRVisitor {
         if (diff.related && diff.certain()) {
           // case 1: last loop var, vectorized, has assumption on vec size
           if (k == (int)current_struct_for->loop_vars.size() - 1) {
-            /*
             auto load = stmt->insert_before_me(
                 Stmt::make<LocalLoadStmt>(LocalAddress(loop_vars[k], 0)));
             load->ret_type.data_type = DataType::i32;
             stmt->input = load;  // TODO: needs a DIE pass
-            int div = 1 << stmt->bit_begin;
-            int bound = 1 << (stmt->bit_end - stmt->bit_begin);
-            stmt->offset = ((div_floor(diff.low, div)) % bound + bound) % bound;
-             */
+            int bound = 1 << stmt->bit_end;
+            stmt->offset = ((diff.low % bound + bound) % bound) &
+                           ~((1 << (stmt->bit_begin)) - 1);
           } else {
             // insert constant
             auto constant = stmt->insert_before_me(

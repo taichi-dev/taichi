@@ -299,18 +299,19 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(OffsetAndExtractBitsStmt *stmt) override {
-    print("{} = bit_extract({}, {}~{}) + {}", stmt->name(), stmt->input->name(),
-          stmt->bit_begin, stmt->bit_end, stmt->offset);
+    print("{} = bit_extract({} + {}, {}~{})", stmt->name(), stmt->input->name(),
+          stmt->offset, stmt->bit_begin, stmt->bit_end);
   }
 
   void visit(SNodeLookupStmt *stmt) override {
-    print("{} = {}[{}]::lookup({}, {}) coord = {} activate = {}", stmt->name(),
-          stmt->snode->node_type_name, stmt->snode->type_name(),
-          stmt->input_snode ? stmt->input_snode->name() : "root",
-          stmt->input_index->name(),
-          make_list<Stmt *>(stmt->global_indices,
-                    [&](Stmt *const &stmt) { return stmt->name(); }, "{"),
-          stmt->activate);
+    print(
+        "{} = {}[{}]::lookup({}, {}) coord = {} activate = {}", stmt->name(),
+        stmt->snode->node_type_name, stmt->snode->type_name(),
+        stmt->input_snode ? stmt->input_snode->name() : "root",
+        stmt->input_index->name(),
+        make_list<Stmt *>(stmt->global_indices,
+                          [&](Stmt *const &stmt) { return stmt->name(); }, "{"),
+        stmt->activate);
   }
 };
 

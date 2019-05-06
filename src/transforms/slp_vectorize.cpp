@@ -486,7 +486,7 @@ class SLPVectorize : public IRVisitor {
     TC_P(first_pragma_slp_location);
     TC_P(second_pragma_slp_location);
     TC_INFO("SLPed...");
-    throw IRModifiedException();
+    throw IRModified();
   }
 
   void eliminate_redundant_shuffles(Block *block) {
@@ -534,10 +534,10 @@ class SLPVectorize : public IRVisitor {
     for (int iter = 0;; iter++) {
       try {
         slp_attempt(block, iter);
-      } catch (IRModifiedException) {
+      } catch (IRModified) {
         continue;
       }
-      break;  // if no IRModifiedException
+      break;  // if no IRModified
     }
     for (auto &stmt : block->statements) {
       stmt->accept(this);

@@ -72,7 +72,7 @@ class BasicBlockSimplify : public IRVisitor {
           if (same) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
-            throw IRModifiedException();
+            throw IRModified();
           }
         }
       }
@@ -99,7 +99,7 @@ class BasicBlockSimplify : public IRVisitor {
           if (same) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
-            throw IRModifiedException();
+            throw IRModified();
           }
         }
       }
@@ -129,7 +129,7 @@ class BasicBlockSimplify : public IRVisitor {
         // useless shuffle.
         stmt->replace_with(stmt->elements[0].stmt);
         stmt->parent->erase(current_stmt_id);
-        throw IRModifiedException();
+        throw IRModified();
       }
     }
 
@@ -152,7 +152,7 @@ class BasicBlockSimplify : public IRVisitor {
           add->ret_type.data_type = DataType::i32;
           stmt->replace_with(add);
           stmt->parent->erase(stmt);
-          throw IRModifiedException();
+          throw IRModified();
         }
       }
     }
@@ -175,7 +175,7 @@ class BasicBlockSimplify : public IRVisitor {
           if (same) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(stmt);
-            throw IRModifiedException();
+            throw IRModified();
           }
         }
       }
@@ -224,7 +224,7 @@ class BasicBlockSimplify : public IRVisitor {
             if (!has_related_store) {
               stmt->replace_with(bstmt.get());
               stmt->parent->erase(current_stmt_id);
-              throw IRModifiedException();
+              throw IRModified();
             }
           }
         }
@@ -248,7 +248,7 @@ class BasicBlockSimplify : public IRVisitor {
             // forward
             stmt->replace_with(bstmt_->data);
             stmt->parent->erase(current_stmt_id);
-            throw IRModifiedException();
+            throw IRModified();
           }
         } else if (bstmt->is_container_statement()) {
           // assume this container may modify the local var
@@ -289,7 +289,7 @@ class BasicBlockSimplify : public IRVisitor {
             if (!has_store) {
               stmt->replace_with(bstmt.get());
               stmt->parent->erase(current_stmt_id);
-              throw IRModifiedException();
+              throw IRModified();
             }
           }
         }
@@ -312,7 +312,7 @@ class BasicBlockSimplify : public IRVisitor {
     if (stmt->offset == 0) {
       stmt->replace_with(stmt->input);
       stmt->parent->erase(stmt);
-      throw IRModifiedException();
+      throw IRModified();
     }
 
     for (int i = 0; i < current_stmt_id; i++) {
@@ -324,7 +324,7 @@ class BasicBlockSimplify : public IRVisitor {
           if (bstmt_->input == stmt->input && bstmt_->offset == stmt->offset) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
-            throw IRModifiedException();
+            throw IRModified();
           }
         }
       }
@@ -344,7 +344,7 @@ class BasicBlockSimplify : public IRVisitor {
           if (bstmt_->same_operation(stmt) && bstmt_->rhs == stmt->rhs) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
-            throw IRModifiedException();
+            throw IRModified();
           }
         }
       }
@@ -369,7 +369,7 @@ class BasicBlockSimplify : public IRVisitor {
         if (all_zero) {
           stmt->replace_with(stmt->lhs);
           stmt->parent->erase(current_stmt_id);
-          throw IRModifiedException();
+          throw IRModified();
         }
       }
     }
@@ -383,7 +383,7 @@ class BasicBlockSimplify : public IRVisitor {
               bstmt_->rhs == stmt->rhs) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
-            throw IRModifiedException();
+            throw IRModified();
           }
         }
       }
@@ -404,7 +404,7 @@ class BasicBlockSimplify : public IRVisitor {
               bstmt_->op2 == stmt->op2 && bstmt_->op3 == stmt->op3) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
-            throw IRModifiedException();
+            throw IRModified();
           }
         }
       }
@@ -455,7 +455,7 @@ class BasicBlockSimplify : public IRVisitor {
             stmt->input = add;
           }
           stmt->simplified = true;
-          throw IRModifiedException();
+          throw IRModified();
         }
       }
     }
@@ -473,7 +473,7 @@ class BasicBlockSimplify : public IRVisitor {
               bstmt_->offset == stmt->offset) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
-            throw IRModifiedException();
+            throw IRModified();
           }
         }
       }
@@ -508,7 +508,7 @@ class BasicBlockSimplify : public IRVisitor {
       stmt->inputs.back() = previous_offset->input;
       stmt->replace_with(offset_stmt);
       offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
-      throw IRModifiedException();
+      throw IRModified();
     }
 
     for (int i = 0; i < current_stmt_id; i++) {
@@ -521,7 +521,7 @@ class BasicBlockSimplify : public IRVisitor {
               identical_vectors(bstmt_->strides, stmt->strides)) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
-            throw IRModifiedException();
+            throw IRModified();
           }
         }
       }
@@ -551,7 +551,7 @@ class BasicBlockSimplify : public IRVisitor {
       stmt->input_index = previous_offset->input;
       stmt->replace_with(offset_stmt);
       offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
-      throw IRModifiedException();
+      throw IRModified();
     }
 
     for (int i = 0; i < current_stmt_id; i++) {
@@ -571,7 +571,7 @@ class BasicBlockSimplify : public IRVisitor {
               bstmt_->activate == stmt->activate) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
-            throw IRModifiedException();
+            throw IRModified();
           }
         }
       }
@@ -616,7 +616,7 @@ class Simplify : public IRVisitor {
     while (true) {
       try {
         BasicBlockSimplify _(block, visited, current_struct_for);
-      } catch (IRModifiedException) {
+      } catch (IRModified) {
         continue;
       }
       break;

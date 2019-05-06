@@ -102,7 +102,7 @@ class LowerAccess : public IRVisitor {
     merge->ret_type.data_type = ptr->snodes[0]->dt;
     lowered.push_back(std::move(merge));
     ptr->parent->replace_with(ptr, lowered);
-    throw IRModifiedException();
+    throw IRModified();
   }
 
   static void run(IRNode *node) {
@@ -111,7 +111,7 @@ class LowerAccess : public IRVisitor {
       bool modified = false;
       try {
         node->accept(&inst);
-      } catch (IRModifiedException) {
+      } catch (IRModified) {
         modified = true;
       }
       if (!modified)

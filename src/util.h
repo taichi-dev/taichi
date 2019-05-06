@@ -173,7 +173,7 @@ enum class SNodeOpType : int { probe, activate, deactivate, append, clear };
 
 std::string snode_op_type_name(SNodeOpType type);
 
-class IRModifiedException {};
+class IRModified {};
 
 class TypedConstant {
  public:

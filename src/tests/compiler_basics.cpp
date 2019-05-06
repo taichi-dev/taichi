@@ -246,6 +246,7 @@ TC_TEST("while") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 4096;
   Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
 
   Global(a, i32);
 

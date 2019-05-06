@@ -295,14 +295,16 @@ class BasicBlockSimplify : public IRVisitor {
     }
 
     // has following load?
-    bool has_related = false;
-    for (int i = current_stmt_id + 1; i < block->statements.size(); i++) {
-      auto &bstmt = block->statements[i];
-      if (bstmt->is_container_statement()) {
-        has_related = true;
-        break;
-      }
-      if (stmt->ret_type == bstmt->ret_type) {
+
+    if (stmt->parent->locate(stmt->ptr) != -1) {
+      // optimize local variables only
+      bool has_related = false;
+      for (int i = current_stmt_id + 1; i < block->statements.size(); i++) {
+        auto &bstmt = block->statements[i];
+        if (bstmt->is_container_statement()) {
+          has_related = true;
+          break;
+        }
         if (bstmt->is<LocalLoadStmt>()) {
           auto bstmt_ = bstmt->as<LocalLoadStmt>();
           if (bstmt_->has_source(stmt->ptr)) {
@@ -311,10 +313,10 @@ class BasicBlockSimplify : public IRVisitor {
           }
         }
       }
-    }
-    if (!has_related) {
-      stmt->parent->erase(stmt);
-      throw IRModified();
+      if (!has_related) {
+        stmt->parent->erase(stmt);
+        throw IRModified();
+      }
     }
 
     set_done(stmt);
@@ -484,7 +486,7 @@ class BasicBlockSimplify : public IRVisitor {
             auto load = stmt->insert_before_me(
                 Stmt::make<LocalLoadStmt>(LocalAddress(loop_vars[k], 0)));
             load->ret_type.data_type = DataType::i32;
-            stmt->input = load;  // TODO: needs a DIE pass
+            stmt->input = load;
             int64 bound = 1LL << stmt->bit_end;
             auto offset = (((int64)diff.low % bound + bound) % bound) &
                           ~((1LL << (stmt->bit_begin)) - 1);

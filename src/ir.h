@@ -103,6 +103,7 @@ class ScratchPads;
 namespace irpass {
 
 void re_id(IRNode *root);
+void die(IRNode *root);
 void simplify(IRNode *root);
 void print(IRNode *root);
 void lower(IRNode *root);
@@ -1197,7 +1198,6 @@ class Block : public IRNode {
         return i;
       }
     }
-    TC_ERROR("Stmt not found");
     return -1;
   }
 
@@ -1611,6 +1611,7 @@ class RangeForStmt : public Stmt {
         body(std::move(body)),
         vectorize(vectorize),
         parallelize(parallelize) {
+    add_operand(this->loop_var);
     add_operand(this->begin);
     add_operand(this->end);
     block_size = 256;
@@ -1644,6 +1645,9 @@ class StructForStmt : public Stmt {
         body(std::move(body)),
         vectorize(vectorize),
         parallelize(parallelize) {
+    for (auto &v : this->loop_vars) {
+      add_operand(v);
+    }
     block_size = 0;
   }
 

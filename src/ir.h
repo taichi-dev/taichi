@@ -522,6 +522,10 @@ class Stmt : public IRNode {
     return ret_type.width;
   }
 
+  const int &width() const {
+    return ret_type.width;
+  }
+
   virtual bool is_container_statement() const {
     return false;
   }
@@ -1401,6 +1405,14 @@ class LocalLoadStmt : public Stmt {
         return false;
     }
     return true;
+  }
+
+  bool has_source(Stmt *alloca) const {
+    for (int i = 0; i < width(); i++) {
+      if (ptr[i].var == alloca)
+        return true;
+    }
+    return false;
   }
 
   bool integral_operands() const override {

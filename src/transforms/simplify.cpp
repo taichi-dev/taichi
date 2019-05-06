@@ -262,6 +262,8 @@ class BasicBlockSimplify : public IRVisitor {
   void visit(LocalStoreStmt *stmt) override {
     if (is_done(stmt))
       return;
+
+    // has previous store?
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
@@ -277,7 +279,9 @@ class BasicBlockSimplify : public IRVisitor {
                 has_load = true;
                 break;
               }
-              if (block->statements[j]->is<LocalLoadStmt>()) {
+              if (block->statements[j]->is<LocalLoadStmt>() &&
+                  block->statements[j]->as<LocalLoadStmt>()->has_source(
+                      stmt->ptr)) {
                 has_load = true;
               }
             }
@@ -289,6 +293,30 @@ class BasicBlockSimplify : public IRVisitor {
         }
       }
     }
+
+    // has following load?
+    bool has_related = false;
+    for (int i = current_stmt_id + 1; i < block->statements.size(); i++) {
+      auto &bstmt = block->statements[i];
+      if (bstmt->is_container_statement()) {
+        has_related = true;
+        break;
+      }
+      if (stmt->ret_type == bstmt->ret_type) {
+        if (bstmt->is<LocalLoadStmt>()) {
+          auto bstmt_ = bstmt->as<LocalLoadStmt>();
+          if (bstmt_->has_source(stmt->ptr)) {
+            has_related = true;
+            break;
+          }
+        }
+      }
+    }
+    if (!has_related) {
+      stmt->parent->erase(stmt);
+      throw IRModified();
+    }
+
     set_done(stmt);
   }
 

@@ -351,15 +351,50 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) {
-    if (!current_program->config.force_vectorized_global_load) {
+    int width = stmt->width();
+    if (width > 1 && stmt->ptr->is<ElementShuffleStmt>()) {
+      bool loaded[width];
+      for (int i = 0; i < width; i++)
+        loaded[i] = false;
+
+      auto shuffle = stmt->ptr->as<ElementShuffleStmt>();
+      emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
+      for (int i = 0; i < width; i++) {
+        if (loaded[i])
+          continue;
+        bool mask[width];
+        std::memset(mask, 0, sizeof(mask));
+        mask[i] = true;
+        for (int j = i + 1; j < width; j++) {
+          if (shuffle->elements[j].stmt->is<IntegerOffsetStmt>()) {
+            auto indir = shuffle->elements[j].stmt->as<IntegerOffsetStmt>();
+            TC_ASSERT(stmt->ret_type.data_type == DataType::i32 ||
+                      stmt->ret_type.data_type == DataType::f32);
+            if (indir->input == shuffle->elements[i].stmt &&
+                (j - i) * sizeof(int32) == indir->offset) {
+              mask[j] = true;
+            }
+          }
+        }
+        int imm_mask = 0;
+        for (int j = width - 1; j >= 0; j--) {
+          if (mask[j]) {
+            loaded[j] = true;
+          }
+          imm_mask *= 2;
+          imm_mask += (int)mask[j];
+        }
+        // load and blend in
+        emit("{} = blend<{}>({}, {}::load({}[0] - {}));", stmt->raw_name(),
+             imm_mask, stmt->raw_name(), stmt->ret_data_type_name(),
+             shuffle->elements[i].stmt->raw_name(), i);
+      }
+    } else {
       emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
       for (int i = 0; i < stmt->ret_type.width; i++) {
         emit("{}[{}] = *{}[{}];", stmt->raw_name(), i, stmt->ptr->raw_name(),
              i);
       }
-    } else {
-      emit("const auto {} = {}::load({}[0]);", stmt->raw_name(),
-           stmt->ret_data_type_name(), stmt->ptr->raw_name());
     }
   }
 
@@ -403,8 +438,8 @@ class CPUIRCodeGen : public IRVisitor {
     if (stmt->input->is<SNodeLookupStmt>()) {
       auto input = stmt->input->as<SNodeLookupStmt>();
       auto dtn = input->snode->ch[input->chid]->data_type_name();
-      emit(R"({}* {}[1] {{({} *)((char *){}[0] + {})}};)", dtn, stmt->raw_name(),
-           dtn, stmt->input->raw_name(), stmt->offset);
+      emit(R"({}* {}[1] {{({} *)((char *){}[0] + {})}};)", dtn,
+           stmt->raw_name(), dtn, stmt->input->raw_name(), stmt->offset);
     } else {
       emit(R"(auto {} = {} + {};)", stmt->raw_name(), stmt->input->raw_name(),
            stmt->offset);

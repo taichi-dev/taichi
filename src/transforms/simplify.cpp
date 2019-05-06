@@ -260,7 +260,36 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    return;
+    if (is_done(stmt))
+      return;
+    for (int i = 0; i < current_stmt_id; i++) {
+      auto &bstmt = block->statements[i];
+      if (stmt->ret_type == bstmt->ret_type) {
+        auto &bstmt_data = *bstmt;
+        if (typeid(bstmt_data) == typeid(*stmt)) {
+          auto bstmt_ = bstmt->as<LocalStoreStmt>();
+          bool same = stmt->ptr == bstmt_->ptr;
+          if (same) {
+            bool has_load = false;
+            for (int j = i + 1; j < current_stmt_id; j++) {
+              if (block->statements[j]
+                      ->is_container_statement()) {  // no if, while, etc..
+                has_load = true;
+                break;
+              }
+              if (block->statements[j]->is<LocalLoadStmt>()) {
+                has_load = true;
+              }
+            }
+            if (!has_load) {
+              stmt->parent->erase(bstmt_);
+              throw IRModified();
+            }
+          }
+        }
+      }
+    }
+    set_done(stmt);
   }
 
   void visit(GlobalLoadStmt *stmt) override {

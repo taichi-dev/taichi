@@ -242,8 +242,7 @@ auto fem = []() {
         root.dense(ijk, n / block_size).dense(ijk, block_size).place(mat);
       };
       place_scalar = [&](Expr &mat) {
-        root.dense(ijk, n / block_size).dense(ijk, block_size).place(mat);
-      };
+        root.dense(ijk, n / block_size).dense(ijk, block_size).place(mat); };
     }
 
     place(x);

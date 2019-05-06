@@ -490,8 +490,13 @@ class BasicBlockSimplify : public IRVisitor {
             int64 bound = 1LL << stmt->bit_end;
             auto offset = (((int64)diff.low % bound + bound) % bound) &
                           ~((1LL << (stmt->bit_begin)) - 1);
-            if (stmt->bit_begin == 0) {
-              // TODO: assuming vectorization width == z dimension of the block
+
+            if (current_struct_for->vectorize == 1)
+              offset = diff.low;
+            if (stmt->bit_begin == 0 &&
+                current_struct_for->vectorize == bound) {
+              // TODO: take care of cases where vectorization width != z
+              // dimension of the block
               auto offset_stmt = stmt->insert_after_me(
                   Stmt::make<IntegerOffsetStmt>(stmt, offset));
               stmt->replace_with(offset_stmt);

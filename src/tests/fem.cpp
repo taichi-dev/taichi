@@ -242,7 +242,8 @@ auto fem = []() {
         root.dense(ijk, n / block_size).dense(ijk, block_size).place(mat);
       };
       place_scalar = [&](Expr &mat) {
-        root.dense(ijk, n / block_size).dense(ijk, block_size).place(mat); };
+        root.dense(ijk, n / block_size).dense(ijk, block_size).place(mat);
+      };
     }
 
     place(x);
@@ -257,7 +258,7 @@ auto fem = []() {
   Kernel(compute_Ap).def([&] {
     BlockDim(1024);
     Parallelize(8);
-    // Vectorize(1);
+    Vectorize(block_size);
     For(Ap(0), [&](Expr i, Expr j, Expr k) {
       auto cell_coord = Var(Vector({i, j, k}));
       auto Ku_tmp = Var(Vector(dim));

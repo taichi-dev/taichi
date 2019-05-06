@@ -1857,7 +1857,7 @@ class OffsetAndExtractBitsStmt : public Stmt {
  public:
   Stmt *input;
   int bit_begin, bit_end;
-  int offset;
+  int64 offset;
   bool simplified;
   OffsetAndExtractBitsStmt(Stmt *input, int bit_begin, int bit_end, int offset)
       : input(input), bit_begin(bit_begin), bit_end(bit_end), offset(offset) {

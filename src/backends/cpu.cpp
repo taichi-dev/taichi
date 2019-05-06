@@ -399,6 +399,11 @@ class CPUIRCodeGen : public IRVisitor {
     emit(R"(auto {} = {};)", stmt->raw_name(), val);
   }
 
+  void visit(IntegerOffsetStmt *stmt) {
+    emit(R"(auto {} = {} + {};)", stmt->raw_name(), stmt->input->raw_name(),
+         stmt->offset);
+  }
+
   void visit(SNodeLookupStmt *stmt) {
     std::string parent;
     if (stmt->input_snode) {

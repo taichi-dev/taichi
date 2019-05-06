@@ -306,6 +306,26 @@ class BasicBlockSimplify : public IRVisitor {
     return;
   }
 
+  void visit(IntegerOffsetStmt *stmt) override {
+    if (is_done(stmt))
+      return;
+    for (int i = 0; i < current_stmt_id; i++) {
+      auto &bstmt = block->statements[i];
+      if (stmt->ret_type == bstmt->ret_type) {
+        auto &bstmt_data = *bstmt;
+        if (typeid(bstmt_data) == typeid(*stmt)) {
+          auto bstmt_ = bstmt->as<IntegerOffsetStmt>();
+          if (bstmt_->input == stmt->input && bstmt_->offset == stmt->offset) {
+            stmt->replace_with(bstmt.get());
+            stmt->parent->erase(current_stmt_id);
+            throw IRModifiedException();
+          }
+        }
+      }
+    }
+    set_done(stmt);
+  }
+
   void visit(UnaryOpStmt *stmt) override {
     if (is_done(stmt))
       return;
@@ -386,14 +406,6 @@ class BasicBlockSimplify : public IRVisitor {
     set_done(stmt);
   }
 
-  static int div_floor(int a, int b) {
-    if (a < 0) {
-      return (a - b + 1) / b;
-    } else {
-      return a / b;
-    }
-  }
-
   void visit(OffsetAndExtractBitsStmt *stmt) override {
     if (is_done(stmt))
       return;
@@ -411,8 +423,19 @@ class BasicBlockSimplify : public IRVisitor {
             load->ret_type.data_type = DataType::i32;
             stmt->input = load;  // TODO: needs a DIE pass
             int64 bound = 1LL << stmt->bit_end;
-            stmt->offset = (((int64)diff.low % bound + bound) % bound) &
-                           ~((1LL << (stmt->bit_begin)) - 1);
+            auto offset = (((int64)diff.low % bound + bound) % bound) &
+                          ~((1LL << (stmt->bit_begin)) - 1);
+            if (stmt->bit_begin == 0) {
+              // TODO: assuming vectorization width == z dimension of the block
+              auto offset_stmt = stmt->insert_after_me(
+                  Stmt::make<IntegerOffsetStmt>(stmt, offset));
+              stmt->replace_with(offset_stmt);
+              // fix the offset stmt operand
+              offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
+              stmt->offset = 0;
+            } else {
+              stmt->offset = offset;
+            }
           } else {
             // insert constant
             auto load = stmt->insert_before_me(
@@ -469,6 +492,7 @@ class BasicBlockSimplify : public IRVisitor {
   void visit(LinearizeStmt *stmt) override {
     if (is_done(stmt))
       return;
+
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {

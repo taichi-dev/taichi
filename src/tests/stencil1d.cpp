@@ -211,7 +211,6 @@ void benchmark_layers() {
   };
 
   TC_P(measure_cpe(test_block, n));
-
   TC_P(cnt);
 }
 
@@ -220,6 +219,9 @@ TLANG_NAMESPACE_BEGIN
 TC_TEST("stencil1d") {
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog;
+  prog.config.print_ir = true;
+  prog.config.lower_access = false;
+  TC_WARN("Disabled access lowering since ambient is not yet supported.");
 
   AmbientGlobal(x, f32, 0.0f);
   Global(y, f32);

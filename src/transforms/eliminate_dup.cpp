@@ -410,9 +410,9 @@ class BasicBlockEliminate : public IRVisitor {
                 Stmt::make<LocalLoadStmt>(LocalAddress(loop_vars[k], 0)));
             load->ret_type.data_type = DataType::i32;
             stmt->input = load;  // TODO: needs a DIE pass
-            int bound = 1 << stmt->bit_end;
-            stmt->offset = ((diff.low % bound + bound) % bound) &
-                           ~((1 << (stmt->bit_begin)) - 1);
+            int64 bound = 1LL << stmt->bit_end;
+            stmt->offset = (((int64)diff.low % bound + bound) % bound) &
+                           ~((1LL << (stmt->bit_begin)) - 1);
           } else {
             // insert constant
             auto load = stmt->insert_before_me(
@@ -476,8 +476,7 @@ class BasicBlockEliminate : public IRVisitor {
         if (typeid(bstmt_data) == typeid(*stmt)) {
           auto bstmt_ = bstmt->as<LinearizeStmt>();
           if (identical_vectors(bstmt_->inputs, stmt->inputs) &&
-              identical_vectors(bstmt_->strides, stmt->strides) &&
-              identical_vectors(bstmt_->offsets, stmt->offsets)) {
+              identical_vectors(bstmt_->strides, stmt->strides)) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
             throw IRModifiedException();

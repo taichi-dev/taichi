@@ -290,19 +290,19 @@ class IRPrinter : public IRVisitor {
     auto stride = make_list<int>(
         stmt->strides,
         [&](const int &stride) { return std::to_string(stride); }, "{");
-    auto offset = make_list<int>(
-        stmt->offsets,
-        [&](const int &stride) { return std::to_string(stride); }, "{");
 
-    print("{} = linearized(ind {}, stride {}, offset {})", stmt->name(), ind,
-          stride, offset);
+    print("{} = linearized(ind {}, stride {})", stmt->name(), ind, stride);
+  }
+
+  void visit(IntegerOffsetStmt *stmt) override {
+    print("{} = offset {} + {}", stmt->name(), stmt->input->name(),
+          stmt->offset);
   }
 
   void visit(OffsetAndExtractBitsStmt *stmt) override {
     print("{} = bit_extract({} + {}, {}~{})", stmt->name(), stmt->input->name(),
           stmt->offset, stmt->bit_begin, stmt->bit_end);
   }
-
   void visit(SNodeLookupStmt *stmt) override {
     print(
         "{} = {}[{}]::lookup({}, {}) coord = {} activate = {}", stmt->name(),

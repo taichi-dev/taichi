@@ -393,8 +393,8 @@ class CPUIRCodeGen : public IRVisitor {
   void visit(LinearizeStmt *stmt) {
     std::string val = "0";
     for (int i = 0; i < stmt->inputs.size(); i++) {
-      val = fmt::format("({}) * {} + {} + {}", val, stmt->strides[i],
-                        stmt->inputs[i]->raw_name(), stmt->offsets[i]);
+      val = fmt::format("({}) * {} + {}", val, stmt->strides[i],
+                        stmt->inputs[i]->raw_name());
     }
     emit(R"(auto {} = {};)", stmt->raw_name(), val);
   }

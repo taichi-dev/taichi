@@ -51,7 +51,6 @@ class LowerAccess : public IRVisitor {
       auto snode = snodes[i];
       std::vector<Stmt *> lowered_indices;
       std::vector<int> strides;
-      std::vector<int> offsets;
       // extract bits
       for (int k_ = 0; k_ < (int)indices.size(); k_++) {
         for (int k = 0; k < max_num_indices; k++) {
@@ -63,14 +62,12 @@ class LowerAccess : public IRVisitor {
             lowered_indices.push_back(extracted.get());
             lowered.push_back(std::move(extracted));
             strides.push_back(1 << snode->extractors[k].num_bits);
-            offsets.push_back(0);
           }
         }
       }
 
       // linearize
-      auto linearized =
-          Stmt::make<LinearizeStmt>(lowered_indices, strides, offsets);
+      auto linearized = Stmt::make<LinearizeStmt>(lowered_indices, strides);
 
       auto lookup =
           Stmt::make<SNodeLookupStmt>(snode, snode->child_id(snodes[i + 1]),

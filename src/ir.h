@@ -85,6 +85,7 @@ class RangeAssumptionStmt;
 class AssertStmt;
 
 // SNodeOps
+class IntegerOffsetStmt;
 class OffsetAndExtractBitsStmt;
 class LinearizeStmt;
 class SNodeLookupStmt;
@@ -364,6 +365,7 @@ class IRVisitor {
   DEFINE_VISIT(RangeAssumptionStmt);
   DEFINE_VISIT(AssertStmt);
 
+  DEFINE_VISIT(IntegerOffsetStmt);
   DEFINE_VISIT(OffsetAndExtractBitsStmt);
   DEFINE_VISIT(LinearizeStmt);
   DEFINE_VISIT(SNodeLookupStmt);
@@ -584,10 +586,10 @@ class Stmt : public IRNode {
   virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
   // returns the inserted stmt
-  Stmt * insert_before_me(std::unique_ptr<Stmt> &&new_stmt);
+  Stmt *insert_before_me(std::unique_ptr<Stmt> &&new_stmt);
 
   // returns the inserted stmt
-  Stmt * insert_after_me(std::unique_ptr<Stmt> &&new_stmt);
+  Stmt *insert_after_me(std::unique_ptr<Stmt> &&new_stmt);
 
   virtual bool integral_operands() const {
     return true;
@@ -1822,18 +1824,27 @@ class ElementShuffleStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
+class IntegerOffsetStmt : public Stmt {
+ public:
+  Stmt *input;
+  int64 offset;
+
+  IntegerOffsetStmt(Stmt *input, int64 offset) : input(input), offset(offset) {
+    add_operand(this->input);
+  }
+
+  DEFINE_ACCEPT
+};
+
 class LinearizeStmt : public Stmt {
  public:
   std::vector<Stmt *> inputs;
   std::vector<int> strides;
-  std::vector<int> offsets;
 
   LinearizeStmt(const std::vector<Stmt *> &inputs,
-                const std::vector<int> &strides,
-                const std::vector<int> &offsets)
-      : inputs(inputs), strides(strides), offsets(offsets) {
+                const std::vector<int> &strides)
+      : inputs(inputs), strides(strides) {
     TC_ASSERT(inputs.size() == strides.size());
-    TC_ASSERT(inputs.size() == offsets.size());
     for (auto &op : this->inputs) {
       add_operand(op);
     }

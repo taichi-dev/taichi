@@ -1077,8 +1077,6 @@ __host__ void gpu_runtime_init() {
   if (initialized)
     return;
 
-  printf("Initializing...\n");
-
   initialized = true;
   init_random_numbers<<<1024, 1024>>>(1);
 

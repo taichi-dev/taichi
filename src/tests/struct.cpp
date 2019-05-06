@@ -27,7 +27,6 @@ TC_TEST("snode_loop") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     Program prog(arch);
     CoreState::set_trigger_gdb_when_crash(true);
-    prog.config.print_ir = true;
 
     auto i = Index(0);
     Global(u, i32);
@@ -53,7 +52,6 @@ TC_TEST("snode_loop2") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     Program prog(arch);
     CoreState::set_trigger_gdb_when_crash(true);
-    prog.config.print_ir = true;
 
     auto i = Index(0), j = Index(1);
     Global(u, i32);
@@ -139,7 +137,6 @@ TC_TEST("2d_blocked_array_vec") {
   for (auto arch : {Arch::x86_64})
     for (auto blocked : {false, true}) {
       Program prog(arch);
-      prog.config.print_ir = true;
 
       Global(a, i32);
       Global(b, i32);

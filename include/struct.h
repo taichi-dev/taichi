@@ -364,7 +364,7 @@ struct hashed {
   std::mutex mut;
 
   hashed() {
-    std::cout << "initializing hashed" << std::endl;
+    // std::cout << "initializing hashed" << std::endl;
   };
 
   TC_DEVICE TC_FORCE_INLINE child_type *look_up(

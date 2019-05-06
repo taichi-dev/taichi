@@ -7,7 +7,6 @@ TLANG_NAMESPACE_BEGIN
 TC_TEST("range_assumption") {
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::gpu);
-  prog.config.print_ir = true;
 
   Global(x, f32);
   Global(y, f32);
@@ -38,7 +37,6 @@ TC_TEST("scratch_pad_3d") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 10000000;
   Program prog(Arch::gpu);
-  prog.config.print_ir = true;
 
   Global(x, f32);
   Global(y, f32);

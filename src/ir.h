@@ -858,6 +858,8 @@ class WhileControlStmt : public Stmt {
   Stmt *mask;
   Stmt *cond;
   WhileControlStmt(Stmt *mask, Stmt *cond) : mask(mask), cond(cond) {
+    add_operand(this->mask);
+    add_operand(this->cond);
   }
   DEFINE_ACCEPT;
 };

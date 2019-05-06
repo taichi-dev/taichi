@@ -11,7 +11,7 @@ FunctionType KernelCodeGen::compile(taichi::Tlang::Program &prog,
   lower();
   codegen();
   generate_binary("");
-  TC_P(Time::get_time() - t);
+  // TC_P(Time::get_time() - t);
   return load_function();
 }
 

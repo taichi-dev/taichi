@@ -289,7 +289,7 @@ class CPUIRCodeGen : public IRVisitor {
             all_offsets_zero = false;
         }
         if (identical_indices) {
-          TC_WARN("Weakened addressing");
+          // TC_WARN("Weakened addressing");
           weakened = true;
 
           std::string cond;

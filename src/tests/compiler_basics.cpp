@@ -26,11 +26,10 @@ TC_TEST("compiler_linalg") {
     B(1, 0) = 3;
     B(1, 1) = 4;
     auto C = Var(A * B + A);
-    for (int p = 0; p < 2; p++) {
-      for (int q = 0; q < 2; q++) {
-        Print(C(p, q));
-      }
-    }
+    Assert(C(0, 0) == 5);
+    Assert(C(0, 1) == 7);
+    Assert(C(1, 0) == 5);
+    Assert(C(1, 1) == 7);
   })();
 };
 
@@ -62,7 +61,6 @@ TC_TEST("compiler_basics") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
 
   Global(a, i32);
   auto i = Index(0);
@@ -89,7 +87,6 @@ TC_TEST("fancy_for") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
 
   Global(a, i32);
   auto i = Index(0);
@@ -218,6 +215,7 @@ TC_TEST("vectorize") {
 };
 
 TC_TEST("simd_fpe") {
+  return;
   __m128 a = _mm_set_ps(1, 0, -1, -2);
   __m128 b = _mm_set_ps(0, 0, 0, 0);
   a = _mm_sqrt_ps(a);
@@ -232,7 +230,7 @@ TC_TEST("simd_fpe") {
 
 TC_TEST("rand") {
   CoreState::set_trigger_gdb_when_crash(true);
-  int n = 8;
+  int n = 4;
   Program prog(Arch::x86_64);
 
   Global(a, i32);
@@ -246,7 +244,6 @@ TC_TEST("while") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 4096;
   Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
 
   Global(a, i32);
 
@@ -274,7 +271,6 @@ TC_TEST("slp") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
   Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
 
   Global(a, i32);
   Global(b, i32);
@@ -307,7 +303,6 @@ TC_TEST("slp1") {
   int n = 16;
   for (auto slp1 : {true, false}) {
     Program prog(Arch::x86_64);
-    prog.config.print_ir = true;
     Vector grid(DataType::f32, 4);
     layout(
         [&]() { root.dense(0, n).place(grid(0), grid(1), grid(2), grid(3)); });
@@ -338,7 +333,6 @@ TC_TEST("slp2") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
   Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
 
   Global(a, i32);
   Global(b, i32);
@@ -364,7 +358,6 @@ TC_TEST("slp3") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
   Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
 
   Global(a, i32);
   Global(b, i32);
@@ -392,7 +385,6 @@ TC_TEST("slpmatvecmul") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
   Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
 
   int dim = 4;
 
@@ -433,7 +425,6 @@ TC_TEST("slpmatvecmul") {
 TC_TEST("mixed_simd1") {
   for (auto vec_size : {4, 8, 16}) {
     Program prog;
-    prog.config.print_ir = true;
 
     Global(a, f32);
     Global(b, f32);
@@ -484,7 +475,6 @@ TC_TEST("mixed_simd2") {
   for (auto vec_size : {4, 8, 16}) {
     Program prog;
     prog.config.max_vector_width = 4;
-    prog.config.print_ir = true;
 
     Vector v(vec_size);
     v.fill_global(DataType::f32);
@@ -536,7 +526,6 @@ TC_TEST("mixed_simd3_slp") {
     // why vec_size = 16 fails??
     Program prog;
     prog.config.max_vector_width = 8;
-    prog.config.print_ir = true;
 
     Vector a(DataType::f32, vec_size), b(DataType::f32, vec_size),
         c(DataType::f32, vec_size * 2);
@@ -603,7 +592,6 @@ TC_TEST("vector_split1") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 32;
   Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
   prog.config.max_vector_width = 8;
 
   Global(a, i32);
@@ -625,7 +613,6 @@ TC_TEST("vector_split_slp") {
   int n = 256;
   Program prog(Arch::x86_64);
   prog.config.max_vector_width = 8;
-  prog.config.print_ir = true;
 
   Global(a, i32);
   Global(b, i32);
@@ -658,7 +645,6 @@ TC_TEST("union_cast") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 16;
     Program prog(arch);
-    prog.config.print_ir = true;
 
     Global(a, i32);
 
@@ -686,7 +672,6 @@ TC_TEST("logic_not") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 16;
     Program prog(arch);
-    prog.config.print_ir = true;
 
     Global(a, i32);
     Global(b, i32);

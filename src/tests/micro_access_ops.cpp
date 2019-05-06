@@ -8,8 +8,6 @@ TC_TEST("lower_access_basics") {
     CoreState::set_trigger_gdb_when_crash(true);
     int n = 32;
     Program prog(Arch::x86_64);
-    prog.config.print_ir = true;
-    prog.config.lower_access = true;
 
     Global(a, i32);
     layout([&]() { root.dense(Index(0), n).place(a); });

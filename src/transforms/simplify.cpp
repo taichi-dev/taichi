@@ -624,6 +624,61 @@ class BasicBlockSimplify : public IRVisitor {
     return;
   }
 
+  void visit(IfStmt *if_stmt) override {
+    auto flatten = [&](std::vector<pStmt> &clause, bool true_branch) {
+      bool plain_clause = true;  // no global store, no container
+      for (int i = 0; i < (int)clause.size(); i++) {
+        if (!clause[i]->is_container_statement() &&
+            (!clause[i]->has_side_effect() ||
+             clause[i]->is<LocalStoreStmt>())) {
+        } else {
+          plain_clause = false;
+        }
+      }
+      if (plain_clause) {
+        for (int i = 0; i < (int)clause.size(); i++) {
+          if (clause[i]->is<LocalStoreStmt>()) {
+            auto store = clause[i]->as<LocalStoreStmt>();
+            auto lanes = LaneAttribute<LocalAddress>();
+            for (int l = 0; l < store->width(); l++) {
+              lanes.push_back(LocalAddress(store->ptr, l));
+            }
+            auto load =
+                if_stmt->insert_before_me(Stmt::make<LocalLoadStmt>(lanes));
+            load->infer_type();
+            auto select = if_stmt->insert_before_me(
+                Stmt::make<TrinaryOpStmt>(TrinaryType::select, if_stmt->cond,
+                                          true_branch ? store->data : load,
+                                          true_branch ? load : store->data));
+            select->infer_type();
+            store->data = select;
+            if_stmt->insert_before_me(std::move(clause[i]));
+          } else {
+            if_stmt->insert_before_me(std::move(clause[i]));
+          }
+        }
+        clause.clear();
+        return true;
+      }
+      return false;
+    };
+
+    if (if_stmt->true_statements &&
+        flatten(if_stmt->true_statements->statements, true)) {
+      if_stmt->true_statements = nullptr;
+      throw IRModified();
+    }
+    if (if_stmt->false_statements &&
+        flatten(if_stmt->false_statements->statements, false)) {
+      if_stmt->false_statements = nullptr;
+      throw IRModified();
+    }
+    if (!if_stmt->true_statements && !if_stmt->false_statements) {
+      if_stmt->parent->erase(if_stmt);
+      throw IRModified();
+    }
+  }
+
   void visit(RangeAssumptionStmt *stmt) override {
     return;
   }
@@ -658,9 +713,8 @@ class Simplify : public IRVisitor {
   void visit(IfStmt *if_stmt) override {
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
-    if (if_stmt->false_statements) {
+    if (if_stmt->false_statements)
       if_stmt->false_statements->accept(this);
-    }
   }
 
   void visit(RangeForStmt *for_stmt) override {

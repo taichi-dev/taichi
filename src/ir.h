@@ -1135,6 +1135,8 @@ class Block : public IRNode {
 
   void erase(int location);
 
+  void erase(Stmt *stmt);
+
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
 
   void replace_statements_in_range(int start, int end, VecStatement &&stmts);

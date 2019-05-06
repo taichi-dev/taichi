@@ -133,6 +133,30 @@ class BasicBlockEliminate : public IRVisitor {
       }
     }
 
+    // weaken indexing
+    if (current_struct_for && stmt->width() == 1) {
+      auto &loop_vars = current_struct_for->loop_vars;
+      for (int k = 0; k < (int)loop_vars.size(); k++) {
+        auto diff = analysis::value_diff(stmt->elements[0].stmt,
+                                         stmt->elements[0].index,
+                                         current_struct_for->loop_vars[k]);
+        if (diff.related && diff.certain()) {
+          auto load = stmt->insert_before_me(
+              Stmt::make<LocalLoadStmt>(LocalAddress(loop_vars[k], 0)));
+          load->ret_type.data_type = DataType::i32;
+          auto constant = stmt->insert_before_me(
+              Stmt::make<ConstStmt>(TypedConstant(diff.low)));
+          constant->ret_type.data_type = DataType::i32;
+          auto add = stmt->insert_before_me(
+              Stmt::make<BinaryOpStmt>(BinaryType::add, load, constant));
+          add->ret_type.data_type = DataType::i32;
+          stmt->replace_with(add);
+          stmt->parent->erase(stmt);
+          throw IRModifiedException();
+        }
+      }
+    }
+
     // find dup
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
@@ -150,7 +174,7 @@ class BasicBlockEliminate : public IRVisitor {
           }
           if (same) {
             stmt->replace_with(bstmt.get());
-            stmt->parent->erase(current_stmt_id);
+            stmt->parent->erase(stmt);
             throw IRModifiedException();
           }
         }
@@ -391,10 +415,13 @@ class BasicBlockEliminate : public IRVisitor {
                            ~((1 << (stmt->bit_begin)) - 1);
           } else {
             // insert constant
+            auto load = stmt->insert_before_me(
+                Stmt::make<LocalLoadStmt>(LocalAddress(loop_vars[k], 0)));
+            load->ret_type.data_type = DataType::i32;
             auto constant = stmt->insert_before_me(
                 Stmt::make<ConstStmt>(TypedConstant(diff.low)));
-            auto add = stmt->insert_before_me(Stmt::make<BinaryOpStmt>(
-                BinaryType::add, loop_vars[k], constant));
+            auto add = stmt->insert_before_me(
+                Stmt::make<BinaryOpStmt>(BinaryType::add, load, constant));
             add->ret_type.data_type = DataType::i32;
             stmt->input = add;
           }

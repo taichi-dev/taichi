@@ -355,10 +355,17 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
 
 void Block::erase(int location) {
   trash_bin.push_back(std::move(statements[location]));  // do not delete the
-  // stmt, otherwise
-  // print_ir will not
-  // function properly
+  // stmt, otherwise print_ir will not function properly
   statements.erase(statements.begin() + location);
+}
+
+void Block::erase(Stmt *stmt) {
+  for (int i = 0; i < statements.size(); i++) {
+    if (statements[i].get() == stmt) {
+      erase(i);
+      break;
+    }
+  }
 }
 
 void Block::insert(std::unique_ptr<Stmt> &&stmt, int location) {

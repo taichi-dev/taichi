@@ -20,6 +20,12 @@ class ValueDiff : public IRVisitor {
 
   ValueDiff(Stmt *stmt, int lane, Stmt *alloc)
       : lane(lane), input_stmt(stmt), alloc(alloc) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  void  visit(Stmt *stmt) override {
+    results[stmt->instance_id] = DiffRange(false);
   }
 
   void visit(AllocaStmt *stmt) override {

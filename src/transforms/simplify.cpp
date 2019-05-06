@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class BasicBlockEliminate : public IRVisitor {
+class BasicBlockSimplify : public IRVisitor {
  public:
   Block *block;
 
@@ -12,9 +12,9 @@ class BasicBlockEliminate : public IRVisitor {
   std::set<int> &visited;
   StructForStmt *current_struct_for;
 
-  BasicBlockEliminate(Block *block,
-                      std::set<int> &visited,
-                      StructForStmt *current_struct_for)
+  BasicBlockSimplify(Block *block,
+                     std::set<int> &visited,
+                     StructForStmt *current_struct_for)
       : block(block), visited(visited), current_struct_for(current_struct_for) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
@@ -536,11 +536,11 @@ class BasicBlockEliminate : public IRVisitor {
   }
 };
 
-class EliminateDup : public IRVisitor {
+class Simplify : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
 
-  EliminateDup(IRNode *node) {
+  Simplify(IRNode *node) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     current_struct_for = nullptr;
@@ -551,7 +551,7 @@ class EliminateDup : public IRVisitor {
     std::set<int> visited;
     while (true) {
       try {
-        BasicBlockEliminate _(block, visited, current_struct_for);
+        BasicBlockSimplify _(block, visited, current_struct_for);
       } catch (IRModifiedException) {
         continue;
       }
@@ -588,8 +588,8 @@ class EliminateDup : public IRVisitor {
 
 namespace irpass {
 
-void eliminate_dup(IRNode *root) {
-  EliminateDup _(root);
+void simplify(IRNode *root) {
+  Simplify _(root);
 }
 
 }  // namespace irpass

@@ -476,7 +476,7 @@ void CPUCodeGen::lower() {
     irpass::print(ir);
   }
   */
-  irpass::eliminate_dup(ir);
+  irpass::simplify(ir);
   if (prog->config.print_ir) {
     TC_TRACE("DupEliminated:");
     irpass::re_id(ir);
@@ -489,7 +489,7 @@ void CPUCodeGen::lower() {
       irpass::re_id(ir);
       irpass::print(ir);
     }
-    irpass::eliminate_dup(ir);
+    irpass::simplify(ir);
     if (prog->config.print_ir) {
       TC_TRACE("DupEliminated2:");
       irpass::re_id(ir);

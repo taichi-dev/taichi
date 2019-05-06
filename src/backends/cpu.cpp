@@ -508,6 +508,12 @@ void CPUCodeGen::lower() {
       irpass::print(ir);
     }
   }
+  irpass::die(ir);
+  if (prog->config.print_ir) {
+    TC_TRACE("DIEd:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
 }
 
 void CPUCodeGen::codegen() {

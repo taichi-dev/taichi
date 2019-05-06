@@ -562,12 +562,12 @@ class Stmt : public IRNode {
     return dynamic_cast<T *>(this);
   }
 
-  int num_operands() const {
+  TC_FORCE_INLINE int num_operands() const {
     return operands.size();
   }
 
-  Stmt *&operand(int i) {
-    TC_ASSERT(0 <= i && i < (int)operands.size());
+  TC_FORCE_INLINE Stmt *&operand(int i) {
+    // TC_ASSERT(0 <= i && i < (int)operands.size());
     return *operands[i];
   }
 

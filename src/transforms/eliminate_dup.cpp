@@ -10,11 +10,15 @@ class BasicBlockEliminate : public IRVisitor {
 
   int current_stmt_id;
   std::set<int> &visited;
+  StructForStmt *current_struct_for;
 
-  BasicBlockEliminate(Block *block, std::set<int> &visited)
-      : block(block), visited(visited) {
+  BasicBlockEliminate(Block *block,
+                      std::set<int> &visited,
+                      StructForStmt *current_struct_for)
+      : block(block), visited(visited), current_struct_for(current_struct_for) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
+    current_struct_for = nullptr;
     run();
   }
 
@@ -301,7 +305,8 @@ class BasicBlockEliminate : public IRVisitor {
   void visit(BinaryOpStmt *stmt) override {
     if (is_done(stmt))
       return;
-    if (stmt->op_type == BinaryType::add &&
+    if ((stmt->op_type == BinaryType::add ||
+         stmt->op_type == BinaryType::sub) &&
         stmt->ret_type.data_type == DataType::i32) {
       if (stmt->rhs->is<ConstStmt>()) {
         auto stmt_ = stmt->rhs->as<ConstStmt>();
@@ -357,9 +362,51 @@ class BasicBlockEliminate : public IRVisitor {
     set_done(stmt);
   }
 
+  static int div_floor(int a, int b) {
+    if (a < 0) {
+      return (a - b + 1) / b;
+    } else {
+      return a / b;
+    }
+  }
+
   void visit(OffsetAndExtractBitsStmt *stmt) override {
     if (is_done(stmt))
       return;
+    // step 1: try weakening when a struct for is used
+    if (current_struct_for && !stmt->simplified) {
+      auto &loop_vars = current_struct_for->loop_vars;
+      for (int k = 0; k < (int)loop_vars.size(); k++) {
+        auto diff = analysis::value_diff(stmt->input, 0,
+                                         current_struct_for->loop_vars[k]);
+        if (diff.related && diff.certain()) {
+          // case 1: last loop var, vectorized, has assumption on vec size
+          if (k == (int)current_struct_for->loop_vars.size() - 1) {
+            /*
+            auto load = stmt->insert_before_me(
+                Stmt::make<LocalLoadStmt>(LocalAddress(loop_vars[k], 0)));
+            load->ret_type.data_type = DataType::i32;
+            stmt->input = load;  // TODO: needs a DIE pass
+            int div = 1 << stmt->bit_begin;
+            int bound = 1 << (stmt->bit_end - stmt->bit_begin);
+            stmt->offset = ((div_floor(diff.low, div)) % bound + bound) % bound;
+             */
+          } else {
+            // insert constant
+            auto constant = stmt->insert_before_me(
+                Stmt::make<ConstStmt>(TypedConstant(diff.low)));
+            auto add = stmt->insert_before_me(Stmt::make<BinaryOpStmt>(
+                BinaryType::add, loop_vars[k], constant));
+            add->ret_type.data_type = DataType::i32;
+            stmt->input = add;
+          }
+          stmt->simplified = true;
+          throw IRModifiedException();
+        }
+      }
+    }
+
+    // step 2: eliminate dup
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
@@ -467,9 +514,12 @@ class BasicBlockEliminate : public IRVisitor {
 
 class EliminateDup : public IRVisitor {
  public:
+  StructForStmt *current_struct_for;
+
   EliminateDup(IRNode *node) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
+    current_struct_for = nullptr;
     node->accept(this);
   }
 
@@ -477,7 +527,7 @@ class EliminateDup : public IRVisitor {
     std::set<int> visited;
     while (true) {
       try {
-        BasicBlockEliminate _(block, visited);
+        BasicBlockEliminate _(block, visited, current_struct_for);
       } catch (IRModifiedException) {
         continue;
       }
@@ -501,7 +551,10 @@ class EliminateDup : public IRVisitor {
   }
 
   void visit(StructForStmt *for_stmt) override {
+    TC_ASSERT(current_struct_for == nullptr);
+    current_struct_for = for_stmt;
     for_stmt->body->accept(this);
+    current_struct_for = nullptr;
   }
 
   void visit(WhileStmt *stmt) override {

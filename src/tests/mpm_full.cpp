@@ -540,6 +540,7 @@ auto mpm3d = []() {
         fmt::format("{}/{:05d}.png", render_dir, frame));
     print_profile_info();
 
+    /*
     auto dump_blocks = [&](int block_res, AllocatorStat &stat) {
       auto output_res = grid_n / block_res;
       std::vector<char> density(pow<dim>(output_res), 0);
@@ -563,6 +564,7 @@ auto mpm3d = []() {
     dump_blocks(4, stat1);
     auto stat2 = grid_m.parent().parent().parent().parent().snode()->stat();
     dump_blocks(16, stat2);
+    */
   }
 };
 TC_REGISTER_TASK(mpm3d);

@@ -583,9 +583,11 @@ class Stmt : public IRNode {
 
   virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
-  void insert_before_me(std::unique_ptr<Stmt> &&new_stmt);
+  // returns the inserted stmt
+  Stmt * insert_before_me(std::unique_ptr<Stmt> &&new_stmt);
 
-  void insert_after_me(std::unique_ptr<Stmt> &&new_stmt);
+  // returns the inserted stmt
+  Stmt * insert_after_me(std::unique_ptr<Stmt> &&new_stmt);
 
   virtual bool integral_operands() const {
     return true;
@@ -1843,9 +1845,11 @@ class OffsetAndExtractBitsStmt : public Stmt {
   Stmt *input;
   int bit_begin, bit_end;
   int offset;
+  bool simplified;
   OffsetAndExtractBitsStmt(Stmt *input, int bit_begin, int bit_end, int offset)
       : input(input), bit_begin(bit_begin), bit_end(bit_end), offset(offset) {
     add_operand(this->input);
+    simplified = false;
   }
 
   DEFINE_ACCEPT;

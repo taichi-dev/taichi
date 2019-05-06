@@ -268,7 +268,8 @@ template void *Expr::val_tmp<int, int>(DataType, int, int);
 template void *Expr::val_tmp<int, int, int>(DataType, int, int, int);
 template void *Expr::val_tmp<int, int, int, int>(DataType, int, int, int, int);
 
-void Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
+Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
+  auto ret = new_stmt.get();
   TC_ASSERT(parent);
   auto &stmts = parent->statements;
   int loc = -1;
@@ -281,9 +282,11 @@ void Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
   TC_ASSERT(loc != -1);
   new_stmt->parent = parent;
   stmts.insert(stmts.begin() + loc, std::move(new_stmt));
+  return ret;
 }
 
-void Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
+Stmt *Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
+  auto ret = new_stmt.get();
   TC_ASSERT(parent);
   auto &stmts = parent->statements;
   int loc = -1;
@@ -296,6 +299,7 @@ void Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
   TC_ASSERT(loc != -1);
   new_stmt->parent = parent;
   stmts.insert(stmts.begin() + loc + 1, std::move(new_stmt));
+  return ret;
 }
 
 void Stmt::replace_with(Stmt *new_stmt) {

@@ -48,9 +48,9 @@ static_assert(std::is_same_v<std::uint64_t, unsigned long int>, "");
 template <typename T>
 struct SNodeAllocator {
   using data_type = typename T::child_type;
-  static constexpr std::size_t pool_size =
-      std::min((1ULL << 33) / sizeof(data_type),
-               1ULL << 25);  // each snode allocator takes at most 8 GB, max 32M metas
+  static constexpr std::size_t pool_size = std::min(
+      (1ULL << 33) / sizeof(data_type),
+      1ULL << 25);  // each snode allocator takes at most 8 GB, max 32M metas
   static constexpr int id = SNodeID<T>::value;
 
   SNodeMeta *resident_pool;

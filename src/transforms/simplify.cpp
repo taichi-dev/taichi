@@ -501,7 +501,7 @@ class BasicBlockSimplify : public IRVisitor {
 
     if (stmt->inputs.size() && stmt->inputs.back()->is<IntegerOffsetStmt>()) {
       auto previous_offset = stmt->inputs.back()->as<IntegerOffsetStmt>();
-      // try push forward offset
+      // push forward offset
       auto offset_stmt = stmt->insert_after_me(
           Stmt::make<IntegerOffsetStmt>(stmt, previous_offset->offset));
 
@@ -532,6 +532,28 @@ class BasicBlockSimplify : public IRVisitor {
   void visit(SNodeLookupStmt *stmt) override {
     if (is_done(stmt))
       return;
+
+    if (stmt->input_index->is<IntegerOffsetStmt>()) {
+      auto previous_offset = stmt->input_index->as<IntegerOffsetStmt>();
+      // push forward offset
+
+      auto snode = stmt->snode;
+      // compute offset...
+      for (int i = 0; i < (int)snode->ch.size(); i++) {
+        TC_ASSERT(snode->ch[i]->type == SNodeType::place);
+        TC_ASSERT(snode->ch[i]->dt == DataType::i32 ||
+                  snode->ch[i]->dt == DataType::f32);
+      }
+
+      auto offset_stmt = stmt->insert_after_me(Stmt::make<IntegerOffsetStmt>(
+          stmt, previous_offset->offset * sizeof(int32) * (snode->ch.size())));
+
+      stmt->input_index = previous_offset->input;
+      stmt->replace_with(offset_stmt);
+      offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
+      throw IRModifiedException();
+    }
+
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {
@@ -544,7 +566,7 @@ class BasicBlockSimplify : public IRVisitor {
               bstmt_->chid == stmt->chid &&
               // identical_vectors(bstmt_->global_indices,
               // stmt->global_indices)
-              // && no need for the above line. As long as inptu_index are the
+              // && no need for the above line. As long as input_index are the
               // same global indices comparison can be omitted
               bstmt_->activate == stmt->activate) {
             stmt->replace_with(bstmt.get());

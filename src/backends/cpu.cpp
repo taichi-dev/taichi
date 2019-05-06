@@ -400,8 +400,15 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(IntegerOffsetStmt *stmt) {
-    emit(R"(auto {} = {} + {};)", stmt->raw_name(), stmt->input->raw_name(),
-         stmt->offset);
+    if (stmt->input->is<SNodeLookupStmt>()) {
+      auto input = stmt->input->as<SNodeLookupStmt>();
+      auto dtn = input->snode->ch[input->chid]->data_type_name();
+      emit(R"({}* {}[1] {{({} *)((char *){}[0] + {})}};)", dtn, stmt->raw_name(),
+           dtn, stmt->input->raw_name(), stmt->offset);
+    } else {
+      emit(R"(auto {} = {} + {};)", stmt->raw_name(), stmt->input->raw_name(),
+           stmt->offset);
+    }
   }
 
   void visit(SNodeLookupStmt *stmt) {

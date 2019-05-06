@@ -503,12 +503,20 @@ struct LaneAttribute {
 };
 
 class Stmt : public IRNode {
+ private:  // NOTE: operands should not be directly modified, for the
+           // correctness of operand_bitmap
+  std::vector<Stmt **> operands;
+
  public:
   static std::atomic<int> instance_id_counter;
   int instance_id;
   int id;
   Block *parent;
-  std::vector<Stmt **> operands;
+  uint64 operand_bitmap;
+
+  static uint64 operand_hash(Stmt *stmt) {
+    return uint64(1) << ((uint64(stmt) >> 4) % 64);
+  }
 
   int &width() {
     return ret_type.width;
@@ -530,6 +538,7 @@ class Stmt : public IRNode {
     parent = nullptr;
     instance_id = instance_id_counter++;
     id = instance_id;
+    operand_bitmap = 0;
   }
 
   std::string ret_data_type_name() const {
@@ -563,27 +572,56 @@ class Stmt : public IRNode {
   }
 
   TC_FORCE_INLINE int num_operands() const {
-    return operands.size();
+    return (int)operands.size();
   }
 
-  TC_FORCE_INLINE Stmt *&operand(int i) {
+  TC_FORCE_INLINE Stmt *operand(int i) const {
     // TC_ASSERT(0 <= i && i < (int)operands.size());
     return *operands[i];
   }
 
+  std::vector<Stmt *> get_operands() const {
+    std::vector<Stmt *> ret;
+    for (int i = 0; i < num_operands(); i++) {
+      ret.push_back(*operands[i]);
+    }
+    return ret;
+  }
+
+  void rebuild_operand_bitmap() {
+    return;  // disable bitmap maintenance since the fact that the user can
+             // modify the operand from the statement field (e.g.
+             // IntegralOffsetStmt::input) makes it impossible to achieve our
+             // goal
+    operand_bitmap = 0;
+    for (int i = 0; i < operands.size(); i++) {
+      operand_bitmap |= operand_hash(*operands[i]);
+    }
+  }
+
+  void set_operand(int i, Stmt *stmt) {
+    *operands[i] = stmt;
+    rebuild_operand_bitmap();
+  }
+
   void add_operand(Stmt *&stmt) {
     operands.push_back(&stmt);
+    rebuild_operand_bitmap();
   }
+
+  TC_FORCE_INLINE bool may_have_operand(Stmt *stmt) const {
+    return (operand_bitmap & operand_hash(stmt)) != 0;
+  }
+
+  void replace_with(Stmt *new_stmt);
+
+  virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
   IRNode *get_ir_root();
 
   virtual void repeat(int factor) {
     ret_type.width *= factor;
   }
-
-  void replace_with(Stmt *new_stmt);
-
-  virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
   // returns the inserted stmt
   Stmt *insert_before_me(std::unique_ptr<Stmt> &&new_stmt);

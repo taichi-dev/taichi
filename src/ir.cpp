@@ -309,12 +309,15 @@ void Stmt::replace_with(Stmt *new_stmt) {
 }
 
 void Stmt::replace_operand_with(Stmt *old_stmt, Stmt *new_stmt) {
+  operand_bitmap = 0;
   int n_op = num_operands();
   for (int i = 0; i < n_op; i++) {
     if (operand(i) == old_stmt) {
-      operand(i) = new_stmt;
+      *operands[i] = new_stmt;
     }
+    operand_bitmap |= operand_hash(operand(i));
   }
+  rebuild_operand_bitmap();
 }
 
 Block *current_block = nullptr;

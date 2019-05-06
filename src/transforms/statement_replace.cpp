@@ -13,6 +13,7 @@ class StatementReplace : public IRVisitor {
   }
 
   void visit(Stmt *stmt) {
+    // if (stmt->may_have_operand(old_stmt))
     stmt->replace_operand_with(old_stmt, new_stmt);
   }
 

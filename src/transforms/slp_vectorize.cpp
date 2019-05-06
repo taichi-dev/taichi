@@ -167,10 +167,10 @@ class BasicBlockSLP : public IRVisitor {
     fmt::print("\n");
     Pack operands;
     if (!pack[0]->is<LocalLoadStmt>()) {
-      for (int i = 0; i < (int)pack[0]->operands.size(); i++) {
+      for (int i = 0; i < pack[0]->num_operands(); i++) {
         Pack operand_pack;
         for (int j = 0; j < (int)pack.size(); j++) {
-          operand_pack.push_back(*pack[j]->operands[i]);
+          operand_pack.push_back(pack[j]->operand(i));
         }
         operands.push_back(build(operand_pack));
       }
@@ -445,13 +445,14 @@ class SLPVectorize : public IRVisitor {
           }
         }
       } else {
-        for (auto ope : stmt->operands) {
-          if (rec.find(*ope) != rec.end()) {
+        for (int i = 0; i < stmt->num_operands(); i++) {
+          auto ope = stmt->operand(i);
+          if (rec.find(ope) != rec.end()) {
             auto shuffle = Stmt::make<ElementShuffleStmt>(
-                VectorElement(rec[*ope].first, rec[*ope].second));
-            TC_INFO("Shuffle {}: replaced {} with {}", shuffle->id, (*ope)->id,
-                    rec[*ope].first->id);
-            *ope = shuffle.get();
+                VectorElement(rec[ope].first, rec[ope].second));
+            TC_INFO("Shuffle {}: replaced {} with {}", shuffle->id, ope->id,
+                    rec[ope].first->id);
+            stmt->set_operand(i, shuffle.get());
             shuffles.push_back(std::move(shuffle));
           }
         }

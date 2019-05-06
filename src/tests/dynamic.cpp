@@ -272,6 +272,7 @@ TC_TEST("sort") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 4;
     Program prog(arch);
+    prog.config.print_ir = true;
 
     std::vector<int> particles(n * n);
     std::vector<int> count(n * n, 0);

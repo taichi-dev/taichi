@@ -838,6 +838,11 @@ inline float32x8 blend(float32x8 a, float32x8 b) {
 }
 
 template <int imm>
+inline int32x4 blend(int32x4 a, int32x4 b) {
+  return _mm_blend_epi32(a, b, imm);
+}
+
+template <int imm>
 inline int32x8 blend(int32x8 a, int32x8 b) {
   return _mm256_blend_epi32(a, b, imm);
 }

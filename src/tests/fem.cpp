@@ -221,14 +221,31 @@ auto fem = []() {
 
   int block_size = 8;
 
+  bool block_soa = true;
+
   layout([&]() {
     auto ijk = Indices(0, 1, 2);
-    auto place = [&](Matrix &mat) {
-      root.dense(ijk, n / block_size).dense(ijk, block_size).place(mat);
-    };
-    auto place_scalar = [&](Expr &mat) {
-      root.dense(ijk, n / block_size).dense(ijk, block_size).place(mat);
-    };
+    std::function<void(Matrix & mat)> place;
+    std::function<void(Expr & expr)> place_scalar;
+
+    SNode *block;
+    if (block_soa) {
+      block = &root.dense(ijk, n / block_size);
+      place_scalar = [&](Expr &s) { block->dense(ijk, block_size).place(s); };
+      place = [&](Matrix &mat) {
+        for (auto &e : mat.entries) {
+          place_scalar(e);
+        }
+      };
+    } else {
+      place = [&](Matrix &mat) {
+        root.dense(ijk, n / block_size).dense(ijk, block_size).place(mat);
+      };
+      place_scalar = [&](Expr &mat) {
+        root.dense(ijk, n / block_size).dense(ijk, block_size).place(mat);
+      };
+    }
+
     place(x);
     place(p);
     place(Ap);

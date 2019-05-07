@@ -12,7 +12,7 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-constexpr int dim = 3, n = 64;
+constexpr int dim = 3, n = 128;
 bool active[n][n][n];
 real F = -10;
 real R[n][n][n][dim], D[n][n][n], X[n][n][n][dim];
@@ -108,19 +108,29 @@ void fem_solve() {
               density_block.base_coordinates[1] = j + padding;
               density_block.base_coordinates[2] = k + padding;
 
-              for (int ii = 0; ii < scalar_block_size::x; ii++) {
-                for (int jj = 0; jj < scalar_block_size::y; jj++) {
-                  for (int kk = 0; kk < scalar_block_size::z; kk++) {
-                    auto scale = (double)D[i + ii][j + jj][k + kk];
-                    // auto scale = 1.0;
-                    density_block.get(ii, jj, kk) = scale;
-                    bounds[0] = std::min(bounds[0], scale);
-                    bounds[1] = std::max(bounds[1], scale);
-                    has_nan = has_nan || (scale != scale);
+              bool has_non_zero = false;
+              for (int ii = -1; ii < scalar_block_size::x; ii++) {
+                for (int jj = -1; jj < scalar_block_size::y; jj++) {
+                  for (int kk = -1; kk < scalar_block_size::z; kk++) {
+                    if (i + ii >= 0 && j + jj >= 0 && k + kk >= 0) {
+                      auto scale = (double)D[i + ii][j + jj][k + kk];
+                      // auto scale = 1.0;
+                      if (scale != 0) {
+                        has_non_zero = true;
+                      }
+                      if (ii >= 0 && jj >= 0 && kk >= 0) {
+                        density_block.get(ii, jj, kk) = scale;
+                        bounds[0] = std::min(bounds[0], scale);
+                        bounds[1] = std::max(bounds[1], scale);
+                        has_nan = has_nan || (scale != scale);
+                      }
+                    }
                   }
                 }
               }
-              param.density.blocks.push_back(density_block);
+              if (has_non_zero) {
+                param.density.blocks.push_back(density_block);
+              }
             }
           }
         }
@@ -207,7 +217,7 @@ auto fem = []() {
 
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
-  prog.config.lazy_compilation = false;
+  // prog.config.lazy_compilation = false;
 
   Vector x(DataType::f32, dim), r(DataType::f32, dim), p(DataType::f32, dim),
       Ap(DataType::f32, dim);

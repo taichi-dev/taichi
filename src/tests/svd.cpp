@@ -48,6 +48,7 @@ int g_i = 1;
 int g_j = 1;
 
 TC_TEST("svd_benchmark") {
+  return;
   using Matrix = TMatrix<float32, 3>;
   using Vector = TVector<float32, 3>;
   int N = 10000;

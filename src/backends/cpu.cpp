@@ -485,13 +485,20 @@ class CPUIRCodeGen : public IRVisitor {
            make_list(global_indices, "{"));
     }
     auto ch = stmt->snode->ch[stmt->chid];
+    auto guarded_look_up =
+        fmt::format("{}->look_up({})", parent, stmt->input_index->raw_name());
+    if (!stmt->activate) {
+      // safe guard with ambient node
+      guarded_look_up = fmt::format("ambient({})", guarded_look_up);
+    }
+
     if (ch->type == SNodeType::place) {
       emit("{} *{}[1];", ch->data_type_name(), stmt->raw_name());
-      emit(R"({}[0] = &{}->look_up({})->get{}()->val;)", stmt->raw_name(),
-           parent, stmt->input_index->raw_name(), stmt->chid);
+      emit(R"({}[0] = &{}->get{}()->val;)", stmt->raw_name(), guarded_look_up,
+           stmt->chid);
     } else {
-      emit(R"(auto {} = {}->look_up({})->get{}();)", stmt->raw_name(), parent,
-           stmt->input_index->raw_name(), stmt->chid);
+      emit(R"(auto {} = {}->get{}();)", stmt->raw_name(), guarded_look_up,
+           stmt->chid);
     }
   }
 };

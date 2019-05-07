@@ -12,7 +12,7 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-constexpr int dim = 3, n = 128;
+constexpr int dim = 3, n = 64;
 bool active[n][n][n];
 real F = -10;
 real R[n][n][n][dim], D[n][n][n], X[n][n][n][dim];
@@ -240,7 +240,7 @@ auto fem = []() {
 
     SNode *block;
     if (block_soa) {
-      block = &root.dense(ijk, n / block_size).pointer();
+      block = &root.dense(ijk, n / block_size).morton();//.pointer();
       place_scalar = [&](Expr &s) { block->dense(ijk, block_size).place(s); };
       place = [&](Matrix &mat) {
         for (auto &e : mat.entries) {

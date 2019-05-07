@@ -131,6 +131,42 @@ TC_TEST("2d_blocked_array") {
     }
 }
 
+TC_TEST("2d_blocked_array_morton") {
+  int n = 16, block_size = 4;
+
+  for (auto arch : {Arch::x86_64}) {
+    Program prog(arch);
+
+    Global(a, i32);
+    Global(b, i32);
+
+    layout([&] {
+      auto i = Index(0);
+      auto j = Index(1);
+      TC_ASSERT(n % block_size == 0);
+      root.dense({i, j}, {n / block_size, n / block_size})
+          .morton()
+          .dense({i, j}, {block_size, block_size})
+          .place(a, b);
+    });
+
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        a.val<int32>(i, j) = i + j * 3;
+      }
+    }
+
+    kernel([&]() { For(a, [&](Expr i, Expr j) { b[i, j] = a[i, j] + i; }); })();
+
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        TC_CHECK(a.val<int32>(i, j) == i + j * 3);
+        TC_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
+      }
+    }
+  }
+}
+
 TC_TEST("2d_blocked_array_vec") {
   int n = 8, block_size = 4;
 
@@ -427,7 +463,8 @@ TC_TEST("indirect") {
     Declare(j);
 
     // the second
-    touch(snode, load(a[j]) / imm(k), j);  // put main index into snode sparsity
+    touch(snode, load(a[j]) / imm(k),
+          j);  // put main index into snode sparsity
   });
 
   auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });

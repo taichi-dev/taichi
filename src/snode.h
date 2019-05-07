@@ -92,8 +92,8 @@ class SNode {
   std::string node_type_name;
   SNodeType type;
   int index_id;
-  bool morton;
-  bool bitmasked;
+  bool _morton;
+  bool _bitmasked;
 
   SNode() {
     id = counter++;
@@ -114,8 +114,8 @@ class SNode {
     index_id = -1;
     has_ambient = false;
     dt = DataType::unknown;
-    morton = false;
-    bitmasked = false;
+    _morton = false;
+    _bitmasked = false;
   }
 
   SNode &insert_children(SNodeType t) {
@@ -216,6 +216,16 @@ class SNode {
 
   SNode &pointer() {
     return insert_children(SNodeType::pointer);
+  }
+
+  SNode &morton(bool val = true) {
+    _morton = val;
+    return *this;
+  }
+
+  SNode &bitmasked(bool val = true) {
+    _bitmasked = val;
+    return *this;
   }
 
   TC_FORCE_INLINE void *evaluate(void *ds, int i, int j, int k, int l) {

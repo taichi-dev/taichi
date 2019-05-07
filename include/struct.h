@@ -346,13 +346,13 @@ struct dense {
       i_translated = i;
     } else if (dim == 2) {
       i_translated =
-          _pdep_u32(0x55555555, extract_bit(i, 0, n_bit_axis)) |
-          _pdep_u32(0xaaaaaaaa, extract_bit(i, n_bit_axis, n_bit_axis * 2));
+          _pdep_u32(extract_bit(i, 0, n_bit_axis), 0x55555555) |
+          _pdep_u32(extract_bit(i, n_bit_axis, n_bit_axis * 2), 0xaaaaaaaa);
     } else if (dim == 3) {
       i_translated =
-          _pdep_u32(0x49249249, extract_bit(i, 0, n_bit_axis)) |
-          _pdep_u32(0x92492492, extract_bit(i, n_bit_axis, n_bit_axis * 2)) |
-          _pdep_u32(0x24924924, extract_bit(i, n_bit_axis * 2, n_bit_axis * 3));
+          _pdep_u32(extract_bit(i, 0, n_bit_axis), 0x49249249) |
+          _pdep_u32(extract_bit(i, n_bit_axis, n_bit_axis * 2), 0x92492492) |
+          _pdep_u32(extract_bit(i, n_bit_axis * 2, n_bit_axis * 3), 0x24924924);
     } else if (dim == 4) {
       TC_ASSERT(false);
       i_translated = 0;

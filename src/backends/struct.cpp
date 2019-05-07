@@ -114,7 +114,7 @@ void StructCompiler::visit(SNode &snode) {
   if (type == SNodeType::dense) {
     emit("using {} = dense<{}_ch, {}, {}, {}>;", snode.node_type_name,
          snode.node_type_name, snode.n,
-         snode.morton ? snode.num_active_indices : 1, snode.bitmasked);
+         snode._morton ? snode.num_active_indices : 1, snode._bitmasked);
   } else if (type == SNodeType::root) {
     emit("using {} = layout_root<{}_ch>;", snode.node_type_name,
          snode.node_type_name);

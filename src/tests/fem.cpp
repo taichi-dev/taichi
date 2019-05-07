@@ -230,7 +230,7 @@ auto fem = []() {
 
     SNode *block;
     if (block_soa) {
-      block = &root.dense(ijk, n / block_size);
+      block = &root.dense(ijk, n / block_size).pointer();
       place_scalar = [&](Expr &s) { block->dense(ijk, block_size).place(s); };
       place = [&](Matrix &mat) {
         for (auto &e : mat.entries) {
@@ -361,6 +361,10 @@ auto fem = []() {
           active[i][j][k] = true;
           lambda.val<float32>(i, j, k) = lambda_0;
           mu.val<float32>(i, j, k) = mu_0;
+          for (int K = 0; K < 8; K++) {
+            // populate neighbouring nodes
+            x(0).val<float32>(i + K / 4, j + K / 2 % 2, k + K % 2) = 0.0f;
+          }
         }
       }
     }

@@ -92,6 +92,8 @@ class SNode {
   std::string node_type_name;
   SNodeType type;
   int index_id;
+  bool morton;
+  bool bitmasked;
 
   SNode() {
     id = counter++;
@@ -112,6 +114,8 @@ class SNode {
     index_id = -1;
     has_ambient = false;
     dt = DataType::unknown;
+    morton = false;
+    bitmasked = false;
   }
 
   SNode &insert_children(SNodeType t) {

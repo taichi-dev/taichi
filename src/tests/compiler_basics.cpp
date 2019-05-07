@@ -139,6 +139,7 @@ TC_TEST("simd_if2") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 32;
   Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
 
   Global(a, i32);
   auto i = Index(0);

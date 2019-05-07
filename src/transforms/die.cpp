@@ -13,7 +13,6 @@ class DIE : public IRVisitor {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     while (1) {
-      irpass::print(node);
       bool modified = false;
       phase = 0;
       used.clear();
@@ -24,7 +23,7 @@ class DIE : public IRVisitor {
           node->accept(this);
         } catch (IRModified) {
           modified = true;
-          break;
+          continue;
         }
         break;
       }

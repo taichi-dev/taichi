@@ -374,7 +374,8 @@ struct dense {
 
   TC_DEVICE TC_FORCE_INLINE bool query_active(int i_) {
     if (bitmasked) {
-      int i = translate(i_);
+      // int i = translate(i_);
+      int i = i_;
       return (bitmask[i / 64] & (1ul << (i % 64))) != 0;
     } else {
       return true;

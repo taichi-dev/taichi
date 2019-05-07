@@ -334,8 +334,7 @@ struct dense {
   // TODO: fix potential alignment issues
   uint64 bitmask[bitmasked ? (n + 63) / 64 : 1];
 
-  TC_DEVICE TC_FORCE_INLINE child_type *look_up(
-      int i) {  // i is flattened index
+  TC_DEVICE TC_FORCE_INLINE int32 translate(int i) {  // i is flattened index
     int i_translated;
     constexpr int dim = morton_dim;
 #if defined(TLANG_GPU)
@@ -358,7 +357,11 @@ struct dense {
       i_translated = 0;
     }
 #endif
-    return &children[i_translated];
+    return i_translated;
+  }
+
+  TC_DEVICE TC_FORCE_INLINE child_type *look_up(int i) {
+    return &children[translate(i)];
   }
 
   TC_DEVICE TC_FORCE_INLINE int get_n() const {
@@ -369,9 +372,11 @@ struct dense {
     return n;
   }
 
-  TC_DEVICE TC_FORCE_INLINE void activate(int i,
+  TC_DEVICE TC_FORCE_INLINE void activate(int i_,
                                           const PhysicalIndexGroup &index) {
     if (bitmasked) {
+      int i = translate(i_);
+      // TODO: atomicOr on GPU
       bitmask[i / 64] = bitmask[i / 64] | (1ul << (i % 64));
     }
   }

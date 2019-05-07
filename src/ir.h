@@ -1220,6 +1220,20 @@ class Block : public IRNode {
 
   void replace_with(Stmt *old_statement, std::unique_ptr<Stmt> &&new_statement);
 
+  void insert_before(Stmt *old_statement, VecStatement &new_statements) {
+    int location = -1;
+    for (int i = 0; i < (int)statements.size(); i++) {
+      if (old_statement == statements[i].get()) {
+        location = i;
+        break;
+      }
+    }
+    TC_ASSERT(location != -1);
+    for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
+      insert(std::move(new_statements[i]), location);
+    }
+  }
+
   void replace_with(Stmt *old_statement, VecStatement &new_statements) {
     int location = -1;
     for (int i = 0; i < (int)statements.size(); i++) {

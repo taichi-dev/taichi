@@ -41,7 +41,8 @@ class LowerAccess : public IRVisitor {
 
   void lower_scalar_ptr(VecStatement &lowered,
                         SNode *snode,
-                        std::vector<Stmt *> indices) {
+                        std::vector<Stmt *> indices,
+                        bool activate) {
     // emit a sequence of micro access ops
     std::deque<SNode *> snodes;
     for (; snode != nullptr; snode = snode->parent)
@@ -69,9 +70,9 @@ class LowerAccess : public IRVisitor {
       // linearize
       auto linearized = Stmt::make<LinearizeStmt>(lowered_indices, strides);
 
-      auto lookup =
-          Stmt::make<SNodeLookupStmt>(snode, snode->child_id(snodes[i + 1]),
-                                      last, linearized.get(), true, indices);
+      auto lookup = Stmt::make<SNodeLookupStmt>(
+          snode, snode->child_id(snodes[i + 1]), last, linearized.get(),
+          activate, indices);
 
       lowered.push_back(std::move(linearized));
       last = lookup.get();
@@ -79,7 +80,7 @@ class LowerAccess : public IRVisitor {
     }
   }
 
-  void visit(GlobalPtrStmt *ptr) override {
+  VecStatement lower_vector_ptr(GlobalPtrStmt *ptr, bool activate) {
     VecStatement lowered;
     std::vector<Stmt *> lowered_pointers;
     for (int i = 0; i < ptr->width(); i++) {
@@ -90,7 +91,7 @@ class LowerAccess : public IRVisitor {
         indices.push_back(extractor.get());
         lowered.push_back(std::move(extractor));
       }
-      lower_scalar_ptr(lowered, ptr->snodes[i], indices);
+      lower_scalar_ptr(lowered, ptr->snodes[i], indices, activate);
       lowered_pointers.push_back(lowered.back().get());
     }
     // create shuffle
@@ -101,8 +102,25 @@ class LowerAccess : public IRVisitor {
     auto merge = Stmt::make<ElementShuffleStmt>(lanes, true);
     merge->ret_type.data_type = ptr->snodes[0]->dt;
     lowered.push_back(std::move(merge));
-    ptr->parent->replace_with(ptr, lowered);
-    throw IRModified();
+    return lowered;
+  }
+
+  void visit(GlobalLoadStmt *stmt) {
+    if (stmt->ptr->is<GlobalPtrStmt>()) {
+      auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), true);
+      stmt->ptr = lowered.back().get();
+      stmt->parent->insert_before(stmt, lowered);
+      throw IRModified();
+    }
+  }
+
+  void visit(GlobalStoreStmt *stmt) {
+    if (stmt->ptr->is<GlobalPtrStmt>()) {
+      auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), true);
+      stmt->ptr = lowered.back().get();
+      stmt->parent->insert_before(stmt, lowered);
+      throw IRModified();
+    }
   }
 
   static void run(IRNode *node) {

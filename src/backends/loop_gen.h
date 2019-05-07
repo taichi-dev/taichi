@@ -119,6 +119,9 @@ class LoopGenerator {
       emit("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
            snode->node_type_name, l, step_size);
     }
+    if (snode->type == SNodeType::dense && snode->_bitmasked) {
+      emit("if (!{}_cache->query_active({})) continue;", snode->node_type_name, l);
+    }
 
     update_indices(snode);
   }

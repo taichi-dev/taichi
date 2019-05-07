@@ -34,20 +34,11 @@ class DIE : public IRVisitor {
   }
 
   void register_usage(Stmt *stmt) {
-    TC_TAG;
-    TC_P(stmt->id);
-    TC_P(stmt->num_operands());
-    int counter = 0;
     for (auto op : stmt->get_operands()) {
-      TC_P(counter++);
       if (op) {  // might be nullptr
-        TC_ASSERT(!op->erased);
-        TC_P(op);
         if (used.find(op->instance_id) == used.end()) {
           used.insert(op->instance_id);
         }
-        TC_P(op->id);
-        TC_P(op->instance_id);
       }
     }
   }

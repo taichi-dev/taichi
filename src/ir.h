@@ -504,8 +504,8 @@ struct LaneAttribute {
 };
 
 class Stmt : public IRNode {
- private:  // NOTE: operands should not be directly modified, for the
-           // correctness of operand_bitmap
+ protected:  // NOTE: operands should not be directly modified, for the
+             // correctness of operand_bitmap
   std::vector<Stmt **> operands;
 
  public:
@@ -614,6 +614,10 @@ class Stmt : public IRNode {
   void add_operand(Stmt *&stmt) {
     operands.push_back(&stmt);
     rebuild_operand_bitmap();
+  }
+
+  virtual void rebuild_operands() {
+    TC_NOT_IMPLEMENTED;
   }
 
   TC_FORCE_INLINE bool may_have_operand(Stmt *stmt) const {
@@ -1416,6 +1420,13 @@ class LocalLoadStmt : public Stmt {
   LaneAttribute<LocalAddress> ptr;
 
   LocalLoadStmt(LaneAttribute<LocalAddress> ptr) : ptr(ptr) {
+    for (int i = 0; i < (int)ptr.size(); i++) {
+      add_operand(this->ptr[i].var);
+    }
+  }
+
+  void rebuild_operands() override {
+    operands.clear();
     for (int i = 0; i < (int)ptr.size(); i++) {
       add_operand(this->ptr[i].var);
     }

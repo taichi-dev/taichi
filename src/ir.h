@@ -514,6 +514,7 @@ class Stmt : public IRNode {
   int id;
   Block *parent;
   uint64 operand_bitmap;
+  bool erased;
 
   static uint64 operand_hash(Stmt *stmt) {
     return uint64(1) << ((uint64(stmt) >> 4) % 64);
@@ -544,6 +545,7 @@ class Stmt : public IRNode {
     instance_id = instance_id_counter++;
     id = instance_id;
     operand_bitmap = 0;
+    erased = false;
   }
 
   std::string ret_data_type_name() const {

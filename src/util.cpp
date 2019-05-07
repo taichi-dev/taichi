@@ -299,7 +299,7 @@ CompileConfig::CompileConfig() {
   simd_width = default_simd_width(arch);
   internal_optimization = true;
   external_optimization_level = 3;
-  print_ir = false;
+  print_ir = true;
   max_vector_width = 8;
   force_vectorized_global_load = false;
   force_vectorized_global_store = false;

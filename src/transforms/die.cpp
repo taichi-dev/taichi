@@ -13,6 +13,7 @@ class DIE : public IRVisitor {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     while (1) {
+      irpass::print(node);
       bool modified = false;
       phase = 0;
       used.clear();
@@ -23,7 +24,7 @@ class DIE : public IRVisitor {
           node->accept(this);
         } catch (IRModified) {
           modified = true;
-          continue;
+          break;
         }
         break;
       }
@@ -33,19 +34,26 @@ class DIE : public IRVisitor {
   }
 
   void register_usage(Stmt *stmt) {
+    TC_TAG;
+    TC_P(stmt->id);
+    TC_P(stmt->num_operands());
+    int counter = 0;
     for (auto op : stmt->get_operands()) {
+      TC_P(counter++);
       if (op) {  // might be nullptr
+        TC_ASSERT(!op->erased);
         TC_P(op);
         if (used.find(op->instance_id) == used.end()) {
           used.insert(op->instance_id);
         }
-        TC_TAG;
+        TC_P(op->id);
         TC_P(op->instance_id);
       }
     }
   }
 
   void visit(Stmt *stmt) {
+    TC_ASSERT(!stmt->erased);
     if (phase == 0) {
       register_usage(stmt);
     } else {

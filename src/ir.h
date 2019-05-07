@@ -1085,6 +1085,10 @@ class GlobalPtrStmt : public Stmt {
     element_type() = snodes[0]->dt;
   }
 
+  virtual bool has_side_effect() const override {
+    return false;
+  }
+
   DEFINE_ACCEPT
 };
 
@@ -1440,6 +1444,7 @@ class LocalLoadStmt : public Stmt {
   virtual bool has_side_effect() const override {
     return false;
   }
+
   DEFINE_ACCEPT;
 };
 

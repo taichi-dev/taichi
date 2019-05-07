@@ -107,7 +107,7 @@ class LowerAccess : public IRVisitor {
 
   void visit(GlobalLoadStmt *stmt) {
     if (stmt->ptr->is<GlobalPtrStmt>()) {
-      auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), true);
+      auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), false);
       stmt->ptr = lowered.back().get();
       stmt->parent->insert_before(stmt, lowered);
       throw IRModified();

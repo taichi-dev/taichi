@@ -141,7 +141,12 @@ void StructCompiler::visit(SNode &snode) {
     TC_NOT_IMPLEMENTED;
   }
 
-  emit("{} {}_ambient;", snode.node_type_name, snode.node_type_name);
+  if (snode.has_null()) {
+    emit("{}::child_type {}_ambient;", snode.node_type_name,
+         snode.node_type_name);
+  } else if (snode.type == SNodeType::place) {
+    emit("{} {}_ambient;", snode.node_type_name, snode.node_type_name);
+  }
 }
 
 void StructCompiler::generate_leaf_accessors(SNode &snode) {

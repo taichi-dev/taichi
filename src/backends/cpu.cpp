@@ -485,20 +485,21 @@ class CPUIRCodeGen : public IRVisitor {
            make_list(global_indices, "{"));
     }
     auto ch = stmt->snode->ch[stmt->chid];
-    auto guarded_look_up =
-        fmt::format("{}->look_up({})", parent, stmt->input_index->raw_name());
-    if (!stmt->activate) {
+    emit("auto {}_guarded = {}->look_up({});", stmt->raw_name(), parent,
+         stmt->input_index->raw_name());
+    if (!stmt->activate && snode->has_null()) {
       // safe guard with ambient node
-      guarded_look_up = fmt::format("ambient({})", guarded_look_up);
+      emit("if({}_guarded == nullptr) {}_guarded = &{}_ambient;",
+           stmt->raw_name(), stmt->raw_name(), snode->node_type_name);
     }
 
     if (ch->type == SNodeType::place) {
       emit("{} *{}[1];", ch->data_type_name(), stmt->raw_name());
-      emit(R"({}[0] = &{}->get{}()->val;)", stmt->raw_name(), guarded_look_up,
-           stmt->chid);
+      emit(R"({}[0] = &{}_guarded->get{}()->val;)", stmt->raw_name(),
+           stmt->raw_name(), stmt->chid);
     } else {
-      emit(R"(auto {} = {}->get{}();)", stmt->raw_name(), guarded_look_up,
-           stmt->chid);
+      emit(R"(auto {} = {}_guarded->get{}();)", stmt->raw_name(),
+           stmt->raw_name(), stmt->chid);
     }
   }
 };

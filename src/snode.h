@@ -237,6 +237,10 @@ class SNode {
     TC_ASSERT(clear_func != nullptr);
     clear_func(flags);
   }
+
+  bool has_null() const {
+    return type == SNodeType::pointer || type == SNodeType::hashed;
+  }
 };
 
 TLANG_NAMESPACE_END

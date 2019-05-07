@@ -72,7 +72,9 @@ class LowerAccess : public IRVisitor {
 
       auto lookup = Stmt::make<SNodeLookupStmt>(
           snode, snode->child_id(snodes[i + 1]), last, linearized.get(),
-          activate, indices);
+          snode->has_null() && activate,
+          indices);  // if snode has no possibility of null child, set activate
+                     // = false
 
       lowered.push_back(std::move(linearized));
       last = lookup.get();

@@ -1,6 +1,7 @@
 import sys
 import os
 import shutil
+import time
 import random
 from taichi.tools.video import make_video, interpolate_frames
 from taichi.core.util import get_projects, activate_package, deactivate_package
@@ -96,21 +97,18 @@ def main(debug=False):
     exit(-1)
   mode = sys.argv[1]
 
+  t = time.time()
   if mode.endswith('.py'):
     with open(mode) as script:
       script = script.read()
     exec(script, {'__name__': '__main__'})
-    exit()
-
-  if mode.endswith('.cpp'):
+  elif mode.endswith('.cpp'):
     command = 'g++ {} -o {} -g -std=c++14 -O3 -lX11 -lpthread'.format(mode, mode[:-4])
     print(command)
     ret = os.system(command)
     if ret == 0:
       os.system('./{}'.format(mode[:-4]))
-    exit()
-
-  if mode == "run":
+  elif mode == "run":
     if argc <= 2:
       print("Please specify [task name], e.g. test_math")
       exit(-1)
@@ -126,7 +124,6 @@ def main(debug=False):
     with open(name) as script:
       script = script.read()
     exec(script, {'__name__': '__main__'})
-    exit()
   elif mode == "daemon":
     from taichi.system.daemon import start
     if len(sys.argv) > 2:
@@ -147,6 +144,7 @@ def main(debug=False):
     else:
       assert False
   elif mode == "test":
+    print("Running tests...")
     task = tc.Task('test')
     task.run(*sys.argv[2:])
   elif mode == "build":
@@ -190,7 +188,6 @@ def main(debug=False):
     exec(script, {'__name__': '__main__'})
     os.chdir(cwd)
     shutil.copy(os.path.join(tc.get_repo_directory(), 'build/taichi.h'), './taichi.h')
-    exit()
   elif mode == "doc":
     os.system('cd docs && sphinx-build -b html . build')
   elif mode == "video":
@@ -234,6 +231,8 @@ def main(debug=False):
     print('Running task [{}]...'.format(name))
     task = tc.Task(name)
     task.run(*sys.argv[2:])
+  print()
+  print(">>> Running time: {:.2f}s".format(time.time() - t))
 
 if __name__ == '__main__':
   main()

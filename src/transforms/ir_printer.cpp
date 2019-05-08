@@ -315,9 +315,9 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(GetChStmt *stmt) override {
-    print("{} = get child {}->{}", stmt->name(),
-          stmt->input_snode->node_type_name,
-          stmt->output_snode->node_type_name);
+    print("{} = get child [{}->{}] {}", stmt->name(),
+          stmt->input_snode->node_type_name, stmt->output_snode->node_type_name,
+          stmt->input_ptr->name());
   }
 };
 

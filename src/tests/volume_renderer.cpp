@@ -8,13 +8,13 @@ bool use_gui = false;
 auto volume_renderer = [] {
   // CoreState::set_trigger_gdb_when_crash(true);
 
-  int depth_limit = 40;
+  int depth_limit = 5;
   int n = 512;
   int grid_resolution = 256;
-  Vector3 albedo(0.95, 0.95, 0.95);
+  Vector3 albedo(0.9, 0.95, 1);
   float32 scale = 724.0;
-  float32 one_over_four_pi = 0.07957747154;
-  float32 pi = 3.14159265359;
+  float32 one_over_four_pi = 0.07957747154f;
+  float32 pi = 3.14159265359f;
 
   auto f = fopen("snow_density_256.bin", "rb");
   TC_ASSERT_INFO(f, "./snow_density_256.bin not found");
@@ -46,7 +46,7 @@ auto volume_renderer = [] {
       auto i = floor(p(0) * float32(grid_resolution));
       auto j = floor(p(1) * float32(grid_resolution));
       auto k = floor(p(2) * float32(grid_resolution));
-      ret = density[i, j, k] * scale;
+      ret = density[i, j, k];
     });
     return ret;
   };
@@ -104,8 +104,8 @@ auto volume_renderer = [] {
 
   // Direct sample light
   auto sample_light = [&](Vector p, float32 inv_max_density) {
-    auto Le = Var(Vector({5.0f, 5.0f, 5.0f}));
-    auto light_p = Var(Vector({0.5f, 1.5f, 0.5f}));
+    auto Le = Var(700.0f * Vector({5.0f, 5.0f, 5.0f}));
+    auto light_p = Var(10.0f * Vector({2.5f, 1.0f, 0.5f}));
     auto dir_to_p = Var(p - light_p);
     auto dist_to_p = Var(dir_to_p.norm());
     auto inv_dist_to_p = Var(1.f / dist_to_p);
@@ -178,10 +178,20 @@ auto volume_renderer = [] {
 
   auto background = [](Vector dir) { return Vector({0.4f, 0.4f, 0.4f}); };
 
-  float32 fov = 0.7;
+  float32 fov = 0.5;
 
-  auto max_density =
-      *std::max_element(density_field.begin(), density_field.end()) * scale;
+  auto max_density = 0.0f;
+  for (int i = 0; i < pow<3>(grid_resolution); i++) {
+    max_density = std::max(max_density, density_field[i]);
+  }
+
+  for (int i = 0; i < pow<3>(grid_resolution); i++) {
+    density_field[i] /= max_density; // normalize to 1 first
+    density_field[i] *= scale; // then scale
+  }
+
+  max_density = scale;
+
   auto inv_max_density = 0.f;
   if (max_density > 0.f) {
     inv_max_density = 1.f / max_density;
@@ -228,7 +238,7 @@ auto volume_renderer = [] {
               c = sample_phase_isotropic();
             })
             .Else([&] {
-              Li += throughput.element_wise_prod(background(c));
+              // Li += throughput.element_wise_prod(background(c));
               depth = depth_limit;
             });
       });
@@ -255,14 +265,14 @@ auto volume_renderer = [] {
   Vector2i render_size(n * 2, n);
   Array2D<Vector4> render_buffer;
 
-  auto tone_map = [](real x) { return x; };
+  auto tone_map = [](real x) { return std::sqrt(x); };
 
-  constexpr int N = 100;
+  constexpr int N = 10;
   for (int frame = 0; frame < 100; frame++) {
     for (int i = 0; i < N; i++) {
       main();
     }
-    prog.profiler_print();
+    // prog.profiler_print();
 
     real scale = 1.0f / ((frame + 1) * N);
     render_buffer.initialize(render_size);

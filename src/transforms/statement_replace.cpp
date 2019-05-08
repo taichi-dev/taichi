@@ -18,10 +18,12 @@ class StatementReplace : public IRVisitor {
   }
 
   void visit(WhileStmt *stmt) {
+    stmt->replace_operand_with(old_stmt, new_stmt);
     stmt->body->accept(this);
   }
 
   void visit(IfStmt *if_stmt) {
+    if_stmt->replace_operand_with(old_stmt, new_stmt);
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {

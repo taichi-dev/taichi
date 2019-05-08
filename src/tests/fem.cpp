@@ -217,7 +217,7 @@ auto fem = []() {
 
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
-  // prog.config.lazy_compilation = false;
+  prog.config.lazy_compilation = false;
 
   Vector x(DataType::f32, dim), r(DataType::f32, dim), p(DataType::f32, dim),
       Ap(DataType::f32, dim);

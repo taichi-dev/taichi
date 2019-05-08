@@ -563,17 +563,19 @@ void CPUCodeGen::lower() {
       irpass::re_id(ir);
       irpass::print(ir);
     }
-    irpass::die(ir);
-    if (prog->config.print_ir) {
-      TC_TRACE("DIEd:");
-      irpass::re_id(ir);
-      irpass::print(ir);
-    }
-    irpass::simplify(ir);
-    if (prog->config.print_ir) {
-      TC_TRACE("DupEliminated2:");
-      irpass::re_id(ir);
-      irpass::print(ir);
+    for (int i = 0; i < 1; i++) {
+      irpass::die(ir);
+      if (prog->config.print_ir) {
+        TC_TRACE("DIEd:");
+        irpass::re_id(ir);
+        irpass::print(ir);
+      }
+      irpass::simplify(ir);
+      if (prog->config.print_ir) {
+        TC_TRACE("DupEliminated2:");
+        irpass::re_id(ir);
+        irpass::print(ir);
+      }
     }
   }
   irpass::die(ir);

@@ -29,6 +29,7 @@ struct CompileConfig {
   int max_vector_width;
   int print_ir;
   bool serial_schedule;
+  bool lower_access;
   std::string extra_flags;
 
   CompileConfig();
@@ -172,7 +173,7 @@ enum class SNodeOpType : int { probe, activate, deactivate, append, clear };
 
 std::string snode_op_type_name(SNodeOpType type);
 
-class IRModifiedException {};
+class IRModified {};
 
 class TypedConstant {
  public:

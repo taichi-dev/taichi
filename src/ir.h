@@ -84,6 +84,13 @@ class SNodeOpStmt;
 class RangeAssumptionStmt;
 class AssertStmt;
 
+// SNodeOps
+class IntegerOffsetStmt;
+class OffsetAndExtractBitsStmt;
+class LinearizeStmt;
+class SNodeLookupStmt;
+class GetChStmt;
+
 // With per-lane attributes
 class LocalLoadStmt;
 class GlobalPtrStmt;
@@ -97,7 +104,8 @@ class ScratchPads;
 namespace irpass {
 
 void re_id(IRNode *root);
-void eliminate_dup(IRNode *root);
+void die(IRNode *root);
+void simplify(IRNode *root);
 void print(IRNode *root);
 void lower(IRNode *root);
 void typecheck(IRNode *root);
@@ -105,6 +113,7 @@ void loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
 void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
+void lower_access(IRNode *root);
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 
 }  // namespace irpass
@@ -358,6 +367,12 @@ class IRVisitor {
   DEFINE_VISIT(RangeAssumptionStmt);
   DEFINE_VISIT(AssertStmt);
 
+  DEFINE_VISIT(IntegerOffsetStmt);
+  DEFINE_VISIT(OffsetAndExtractBitsStmt);
+  DEFINE_VISIT(LinearizeStmt);
+  DEFINE_VISIT(SNodeLookupStmt);
+  DEFINE_VISIT(GetChStmt);
+
   DEFINE_VISIT(PragmaSLPStmt);
   DEFINE_VISIT(ElementShuffleStmt);
 };
@@ -491,14 +506,27 @@ struct LaneAttribute {
 };
 
 class Stmt : public IRNode {
+ protected:  // NOTE: operands should not be directly modified, for the
+             // correctness of operand_bitmap
+  std::vector<Stmt **> operands;
+
  public:
   static std::atomic<int> instance_id_counter;
   int instance_id;
   int id;
   Block *parent;
-  std::vector<Stmt **> operands;
+  uint64 operand_bitmap;
+  bool erased;
+
+  static uint64 operand_hash(Stmt *stmt) {
+    return uint64(1) << ((uint64(stmt) >> 4) % 64);
+  }
 
   int &width() {
+    return ret_type.width;
+  }
+
+  const int &width() const {
     return ret_type.width;
   }
 
@@ -518,6 +546,8 @@ class Stmt : public IRNode {
     parent = nullptr;
     instance_id = instance_id_counter++;
     id = instance_id;
+    operand_bitmap = 0;
+    erased = false;
   }
 
   std::string ret_data_type_name() const {
@@ -550,18 +580,55 @@ class Stmt : public IRNode {
     return dynamic_cast<T *>(this);
   }
 
-  int num_operands() const {
-    return operands.size();
+  TC_FORCE_INLINE int num_operands() const {
+    return (int)operands.size();
   }
 
-  Stmt *&operand(int i) {
-    TC_ASSERT(0 <= i && i < (int)operands.size());
+  TC_FORCE_INLINE Stmt *operand(int i) const {
+    // TC_ASSERT(0 <= i && i < (int)operands.size());
     return *operands[i];
+  }
+
+  std::vector<Stmt *> get_operands() const {
+    std::vector<Stmt *> ret;
+    for (int i = 0; i < num_operands(); i++) {
+      ret.push_back(*operands[i]);
+    }
+    return ret;
+  }
+
+  void rebuild_operand_bitmap() {
+    return;  // disable bitmap maintenance since the fact that the user can
+             // modify the operand from the statement field (e.g.
+             // IntegralOffsetStmt::input) makes it impossible to achieve our
+             // goal
+    operand_bitmap = 0;
+    for (int i = 0; i < operands.size(); i++) {
+      operand_bitmap |= operand_hash(*operands[i]);
+    }
+  }
+
+  void set_operand(int i, Stmt *stmt) {
+    *operands[i] = stmt;
+    rebuild_operand_bitmap();
   }
 
   void add_operand(Stmt *&stmt) {
     operands.push_back(&stmt);
+    rebuild_operand_bitmap();
   }
+
+  virtual void rebuild_operands() {
+    TC_NOT_IMPLEMENTED;
+  }
+
+  TC_FORCE_INLINE bool may_have_operand(Stmt *stmt) const {
+    return (operand_bitmap & operand_hash(stmt)) != 0;
+  }
+
+  void replace_with(Stmt *new_stmt);
+
+  virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
   IRNode *get_ir_root();
 
@@ -569,21 +636,27 @@ class Stmt : public IRNode {
     ret_type.width *= factor;
   }
 
-  void replace_with(Stmt *new_stmt);
+  // returns the inserted stmt
+  Stmt *insert_before_me(std::unique_ptr<Stmt> &&new_stmt);
 
-  virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
-
-  void insert_before_me(std::unique_ptr<Stmt> &&new_stmt);
-
-  void insert_after_me(std::unique_ptr<Stmt> &&new_stmt);
+  // returns the inserted stmt
+  Stmt *insert_after_me(std::unique_ptr<Stmt> &&new_stmt);
 
   virtual bool integral_operands() const {
+    return true;
+  }
+
+  virtual bool has_side_effect() const {
     return true;
   }
 
   template <typename T, typename... Args>
   static pStmt make(Args &&... args) {
     return std::make_unique<T>(std::forward<Args>(args)...);
+  }
+
+  void infer_type() {
+    irpass::typecheck(this);
   }
 
   virtual ~Stmt() {
@@ -780,6 +853,10 @@ class AllocaStmt : public Stmt {
     ret_type = VectorType(width, type);
   }
 
+  virtual bool has_side_effect() const override {
+    return false;
+  }
+
   DEFINE_ACCEPT
 };
 
@@ -789,6 +866,8 @@ class WhileControlStmt : public Stmt {
   Stmt *mask;
   Stmt *cond;
   WhileControlStmt(Stmt *mask, Stmt *cond) : mask(mask), cond(cond) {
+    add_operand(this->mask);
+    add_operand(this->cond);
   }
   DEFINE_ACCEPT;
 };
@@ -817,6 +896,9 @@ class UnaryOpStmt : public Stmt {
     return false;
   }
 
+  virtual bool has_side_effect() const override {
+    return false;
+  }
   DEFINE_ACCEPT
 };
 
@@ -826,6 +908,9 @@ class RandStmt : public Stmt {
     ret_type.data_type = dt;
   }
 
+  virtual bool has_side_effect() const override {
+    return false;
+  }
   DEFINE_ACCEPT
 };
 
@@ -893,6 +978,9 @@ class BinaryOpStmt : public Stmt {
     add_operand(this->rhs);
   }
 
+  virtual bool has_side_effect() const override {
+    return false;
+  }
   DEFINE_ACCEPT
 };
 
@@ -908,6 +996,9 @@ class TrinaryOpStmt : public Stmt {
     add_operand(this->op3);
   }
 
+  virtual bool has_side_effect() const override {
+    return false;
+  }
   DEFINE_ACCEPT
 };
 
@@ -1000,6 +1091,10 @@ class GlobalPtrStmt : public Stmt {
     }
     width() = snodes.size();
     element_type() = snodes[0]->dt;
+  }
+
+  virtual bool has_side_effect() const override {
+    return false;
   }
 
   DEFINE_ACCEPT
@@ -1117,11 +1212,12 @@ class Block : public IRNode {
         return i;
       }
     }
-    TC_ERROR("Stmt not found");
     return -1;
   }
 
   void erase(int location);
+
+  void erase(Stmt *stmt);
 
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
 
@@ -1135,6 +1231,20 @@ class Block : public IRNode {
   }
 
   void replace_with(Stmt *old_statement, std::unique_ptr<Stmt> &&new_statement);
+
+  void insert_before(Stmt *old_statement, VecStatement &new_statements) {
+    int location = -1;
+    for (int i = 0; i < (int)statements.size(); i++) {
+      if (old_statement == statements[i].get()) {
+        location = i;
+        break;
+      }
+    }
+    TC_ASSERT(location != -1);
+    for (int i = (int)new_statements.size() - 1; i >= 0; i--) {
+      insert(std::move(new_statements[i]), location);
+    }
+  }
 
   void replace_with(Stmt *old_statement, VecStatement &new_statements) {
     int location = -1;
@@ -1245,6 +1355,7 @@ class AssertStmt : public Stmt {
 
   DEFINE_ACCEPT
 };
+
 class RangeAssumptionStmt : public Stmt {
  public:
   Stmt *input;
@@ -1316,6 +1427,13 @@ class LocalLoadStmt : public Stmt {
     }
   }
 
+  void rebuild_operands() override {
+    operands.clear();
+    for (int i = 0; i < (int)ptr.size(); i++) {
+      add_operand(this->ptr[i].var);
+    }
+  }
+
   bool same_source() const {
     for (int i = 1; i < (int)ptr.size(); i++) {
       if (ptr[i].var != ptr[0].var)
@@ -1324,11 +1442,23 @@ class LocalLoadStmt : public Stmt {
     return true;
   }
 
+  bool has_source(Stmt *alloca) const {
+    for (int i = 0; i < width(); i++) {
+      if (ptr[i].var == alloca)
+        return true;
+    }
+    return false;
+  }
+
   bool integral_operands() const override {
     return false;
   }
 
   Stmt *previous_store_or_alloca_in_block();
+
+  virtual bool has_side_effect() const override {
+    return false;
+  }
 
   DEFINE_ACCEPT;
 };
@@ -1459,6 +1589,9 @@ class ConstStmt : public Stmt {
     val.repeat(factor);
   }
 
+  virtual bool has_side_effect() const override {
+    return false;
+  }
   DEFINE_ACCEPT
 };
 
@@ -1514,6 +1647,7 @@ class RangeForStmt : public Stmt {
         body(std::move(body)),
         vectorize(vectorize),
         parallelize(parallelize) {
+    add_operand(this->loop_var);
     add_operand(this->begin);
     add_operand(this->end);
     block_size = 256;
@@ -1547,6 +1681,9 @@ class StructForStmt : public Stmt {
         body(std::move(body)),
         vectorize(vectorize),
         parallelize(parallelize) {
+    for (auto &v : this->loop_vars) {
+      add_operand(v);
+    }
     block_size = 0;
   }
 
@@ -1792,15 +1929,112 @@ class VectorElement {
 class ElementShuffleStmt : public Stmt {
  public:
   LaneAttribute<VectorElement> elements;
+  bool pointer;
 
-  ElementShuffleStmt(const LaneAttribute<VectorElement> &elements)
-      : elements(elements) {
+  ElementShuffleStmt(const LaneAttribute<VectorElement> &elements,
+                     bool pointer = false)
+      : elements(elements), pointer(pointer) {
     width() = elements.size();
     element_type() = elements[0].stmt->element_type();
     for (int i = 0; i < width(); i++) {
       add_operand(this->elements[i].stmt);
     }
   }
+
+  virtual bool has_side_effect() const override {
+    return false;
+  }
+  DEFINE_ACCEPT
+};
+
+class IntegerOffsetStmt : public Stmt {
+ public:
+  Stmt *input;
+  int64 offset;
+
+  IntegerOffsetStmt(Stmt *input, int64 offset) : input(input), offset(offset) {
+    add_operand(this->input);
+  }
+
+  virtual bool has_side_effect() const override {
+    return false;
+  }
+  DEFINE_ACCEPT
+};
+
+class LinearizeStmt : public Stmt {
+ public:
+  std::vector<Stmt *> inputs;
+  std::vector<int> strides;
+
+  LinearizeStmt(const std::vector<Stmt *> &inputs,
+                const std::vector<int> &strides)
+      : inputs(inputs), strides(strides) {
+    TC_ASSERT(inputs.size() == strides.size());
+    for (auto &op : this->inputs) {
+      add_operand(op);
+    }
+  }
+
+  virtual bool has_side_effect() const override {
+    return false;
+  }
+  DEFINE_ACCEPT
+};
+
+class OffsetAndExtractBitsStmt : public Stmt {
+ public:
+  Stmt *input;
+  int bit_begin, bit_end;
+  int64 offset;
+  bool simplified;
+  OffsetAndExtractBitsStmt(Stmt *input, int bit_begin, int bit_end, int offset)
+      : input(input), bit_begin(bit_begin), bit_end(bit_end), offset(offset) {
+    add_operand(this->input);
+    simplified = false;
+  }
+
+  virtual bool has_side_effect() const override {
+    return false;
+  }
+  DEFINE_ACCEPT;
+};
+
+class SNodeLookupStmt : public Stmt {
+ public:
+  SNode *snode;
+  Stmt *input_snode;
+  Stmt *input_index;
+  std::vector<Stmt *> global_indices;
+  bool activate;
+
+  SNodeLookupStmt(SNode *snode,
+                  Stmt *input_snode,
+                  Stmt *input_index,
+                  bool activate,
+                  const std::vector<Stmt *> &global_indices)
+      : snode(snode),
+        input_snode(input_snode),
+        input_index(input_index),
+        global_indices(global_indices),
+        activate(activate) {
+    add_operand(this->input_snode);
+    add_operand(this->input_index);
+    for (int i = 0; i < (int)global_indices.size(); i++) {
+      add_operand(this->global_indices[i]);
+    }
+  }
+
+  DEFINE_ACCEPT
+};
+
+class GetChStmt : public Stmt {
+ public:
+  Stmt *input_ptr;
+  SNode *input_snode, *output_snode;
+  int chid;
+
+  GetChStmt(Stmt *input_ptr, int chid);
 
   DEFINE_ACCEPT
 };

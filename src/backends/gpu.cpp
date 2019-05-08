@@ -639,7 +639,7 @@ class GPUIRCodeGen : public IRVisitor {
       //  use_activity_tracking = true;
 
       if (use_activity_tracking) {
-        TC_WARN("Using activity tracking");
+        // TC_WARN("Using activity tracking");
         struct_for_new(for_stmt_.get());
       } else {
         struct_for_old(for_stmt_.get());
@@ -999,7 +999,7 @@ void GPUCodeGen::lower() {
   if (prog->config.print_ir) {
     irpass::print(ir);
   }
-  irpass::eliminate_dup(ir);
+  irpass::simplify(ir);
   irpass::re_id(ir);
   if (prog->config.print_ir)
     irpass::print(ir);

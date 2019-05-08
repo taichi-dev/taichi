@@ -86,7 +86,7 @@ std::string data_type_name(DataType t) {
     REGISTER_DATA_TYPE(u16, uint16);
     REGISTER_DATA_TYPE(u32, uint32);
     REGISTER_DATA_TYPE(u64, uint64);
-    REGISTER_DATA_TYPE(ptr, pointer);
+    REGISTER_DATA_TYPE(ptr, void_pointer);
     REGISTER_DATA_TYPE(none, none);
     REGISTER_DATA_TYPE(unknown, unknown);
 #undef REGISTER_DATA_TYPE
@@ -256,7 +256,7 @@ std::string CompileConfig::compiler_config() {
         extra_flags);
   } else {
     cmd = fmt::format(
-        "nvcc -g -lineinfo -std=c++14 -shared {} -Xcompiler \"-fPIC\" "
+        "nvcc -g -lineinfo -std=c++14 -shared {} -Xcompiler \"-fPIC -march=native \" "
         "--use_fast_math -arch=compute_61 -code=sm_61,compute_61 "
         "--ptxas-options=-allow-expensive-optimizations=true,-O3,-v -I "
         "{}/include -ccbin {} "
@@ -312,6 +312,7 @@ CompileConfig::CompileConfig() {
 #endif
   lazy_compilation = true;
   serial_schedule = false;
+  lower_access = true;
 }
 
 std::string CompileConfig::compiler_name() {

@@ -211,7 +211,6 @@ void benchmark_layers() {
   };
 
   TC_P(measure_cpe(test_block, n));
-
   TC_P(cnt);
 }
 

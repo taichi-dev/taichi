@@ -14,12 +14,22 @@ class ValueDiff : public IRVisitor {
  public:
   // first: related, second: offset
   using ret_type = DiffRange;
-  int lane;
+  int lane;  // Note:  lane may change when visiting ElementShuffle
   Stmt *input_stmt, *alloc;
   std::map<int, ret_type> results;
 
   ValueDiff(Stmt *stmt, int lane, Stmt *alloc)
       : lane(lane), input_stmt(stmt), alloc(alloc) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  void  visit(Stmt *stmt) override {
+    results[stmt->instance_id] = DiffRange(false);
+  }
+
+  void visit(AllocaStmt *stmt) override {
+    results[stmt->instance_id] = DiffRange(stmt == alloc, 0);
   }
 
   void visit(GlobalLoadStmt *stmt) override {
@@ -30,6 +40,16 @@ class ValueDiff : public IRVisitor {
     if (stmt->ptr[lane].var == alloc) {
       results[stmt->instance_id] = DiffRange(true, 0);
     }
+  }
+
+  void visit(ElementShuffleStmt *stmt) override {
+    int old_lane = lane;
+    TC_ASSERT(stmt->width() == 1);
+    auto src = stmt->elements[lane].stmt;
+    lane = stmt->elements[lane].index;
+    src->accept(this);
+    results[stmt->instance_id] = results[src->instance_id];
+    lane = old_lane;
   }
 
   void visit(ConstStmt *stmt) override {
@@ -48,7 +68,7 @@ class ValueDiff : public IRVisitor {
 
   void visit(BinaryOpStmt *stmt) override {
     if (stmt->op_type == BinaryType::add || stmt->op_type == BinaryType::sub) {
-      //if (stmt->lhs->is<LocalLoadStmt>() && stmt->rhs->is<ConstStmt>()) {
+      // if (stmt->lhs->is<LocalLoadStmt>() && stmt->rhs->is<ConstStmt>()) {
       if (true) {
         stmt->lhs->accept(this);
         stmt->rhs->accept(this);

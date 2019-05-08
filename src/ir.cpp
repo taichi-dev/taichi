@@ -9,6 +9,14 @@ TLANG_NAMESPACE_BEGIN
 #define TC_EXPRESSION_IMPLEMENTATION
 #include "expression.h"
 
+GetChStmt::GetChStmt(taichi::Tlang::Stmt *input_ptr, int chid)
+    : input_ptr(input_ptr), chid(chid) {
+  add_operand(this->input_ptr);
+  TC_ASSERT(input_ptr->is<SNodeLookupStmt>());
+  input_snode = input_ptr->as<SNodeLookupStmt>()->snode;
+  output_snode = input_snode->ch[chid].get();
+}
+
 Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
   return Expr::make<TrinaryOpExpression>(TrinaryType::select, cond, true_val,
                                          false_val);
@@ -268,7 +276,8 @@ template void *Expr::val_tmp<int, int>(DataType, int, int);
 template void *Expr::val_tmp<int, int, int>(DataType, int, int, int);
 template void *Expr::val_tmp<int, int, int, int>(DataType, int, int, int, int);
 
-void Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
+Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
+  auto ret = new_stmt.get();
   TC_ASSERT(parent);
   auto &stmts = parent->statements;
   int loc = -1;
@@ -281,9 +290,11 @@ void Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
   TC_ASSERT(loc != -1);
   new_stmt->parent = parent;
   stmts.insert(stmts.begin() + loc, std::move(new_stmt));
+  return ret;
 }
 
-void Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
+Stmt *Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
+  auto ret = new_stmt.get();
   TC_ASSERT(parent);
   auto &stmts = parent->statements;
   int loc = -1;
@@ -296,6 +307,7 @@ void Stmt::insert_after_me(std::unique_ptr<Stmt> &&new_stmt) {
   TC_ASSERT(loc != -1);
   new_stmt->parent = parent;
   stmts.insert(stmts.begin() + loc + 1, std::move(new_stmt));
+  return ret;
 }
 
 void Stmt::replace_with(Stmt *new_stmt) {
@@ -305,11 +317,15 @@ void Stmt::replace_with(Stmt *new_stmt) {
 }
 
 void Stmt::replace_operand_with(Stmt *old_stmt, Stmt *new_stmt) {
-  for (int i = 0; i < num_operands(); i++) {
+  operand_bitmap = 0;
+  int n_op = num_operands();
+  for (int i = 0; i < n_op; i++) {
     if (operand(i) == old_stmt) {
-      operand(i) = new_stmt;
+      *operands[i] = new_stmt;
     }
+    operand_bitmap |= operand_hash(operand(i));
   }
+  rebuild_operand_bitmap();
 }
 
 Block *current_block = nullptr;
@@ -350,11 +366,19 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
 }
 
 void Block::erase(int location) {
+  statements[location]->erased = true;
   trash_bin.push_back(std::move(statements[location]));  // do not delete the
-  // stmt, otherwise
-  // print_ir will not
-  // function properly
+  // stmt, otherwise print_ir will not function properly
   statements.erase(statements.begin() + location);
+}
+
+void Block::erase(Stmt *stmt) {
+  for (int i = 0; i < statements.size(); i++) {
+    if (statements[i].get() == stmt) {
+      erase(i);
+      break;
+    }
+  }
 }
 
 void Block::insert(std::unique_ptr<Stmt> &&stmt, int location) {

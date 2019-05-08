@@ -67,6 +67,7 @@ class LoopVectorize : public IRVisitor {
     int original_width = stmt->width();
     stmt->ret_type.width *= vectorize;
     stmt->ptr.repeat(vectorize);
+    stmt->rebuild_operands();
     // TODO: this can be buggy
     int stride = stmt->ptr[original_width - 1].offset + 1;
     if (stmt->ptr[0].var->width() != 1) {

@@ -112,8 +112,9 @@ void StructCompiler::visit(SNode &snode) {
   emit("}};");
 
   if (type == SNodeType::dense) {
-    emit("using {} = dense<{}_ch, {}>;", snode.node_type_name,
-         snode.node_type_name, snode.n);
+    emit("using {} = dense<{}_ch, {}, {}, {}>;", snode.node_type_name,
+         snode.node_type_name, snode.n,
+         snode._morton ? snode.num_active_indices : 1, snode._bitmasked);
   } else if (type == SNodeType::root) {
     emit("using {} = layout_root<{}_ch>;", snode.node_type_name,
          snode.node_type_name);
@@ -141,9 +142,11 @@ void StructCompiler::visit(SNode &snode) {
     TC_NOT_IMPLEMENTED;
   }
 
-  if (snode.has_ambient) {
-    emit("{} {}_ambient({});", snode.node_type_name, snode.node_type_name,
-         snode.ambient_val.stringify());
+  if (snode.has_null()) {
+    emit("{}::child_type {}_ambient;", snode.node_type_name,
+         snode.node_type_name);
+  } else if (snode.type == SNodeType::place) {
+    emit("{} {}_ambient;", snode.node_type_name, snode.node_type_name);
   }
 }
 

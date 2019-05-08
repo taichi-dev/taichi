@@ -48,9 +48,9 @@ static_assert(std::is_same_v<std::uint64_t, unsigned long int>, "");
 template <typename T>
 struct SNodeAllocator {
   using data_type = typename T::child_type;
-  static constexpr std::size_t pool_size =
-      std::min((1ULL << 33) / sizeof(data_type),
-               1ULL << 25);  // each snode allocator takes at most 8 GB, max 32M metas
+  static constexpr std::size_t pool_size = std::min(
+      (1ULL << 33) / sizeof(data_type),
+      1ULL << 25);  // each snode allocator takes at most 8 GB, max 32M metas
   static constexpr int id = SNodeID<T>::value;
 
   SNodeMeta *resident_pool;
@@ -305,14 +305,63 @@ struct layout_root {
   static constexpr bool has_null = true;
 };
 
-template <typename child_type_, int n_>
+TC_FORCE_INLINE constexpr uint32 log2int(uint64 value) {
+  int ret = 0;
+  value >>= 1;
+  while (value) {
+    value >>= 1;
+    ret += 1;
+  }
+  return ret;
+}
+
+TC_FORCE_INLINE uint32 extract_bit(uint32 n, int begin, int end) {
+  return (n >> begin) & ((1 << (end - begin)) - 1);
+}
+
+template <typename child_type_, int n_, int morton_dim_, bool bitmasked>
 struct dense {
   using child_type = child_type_;
   static constexpr int n = n_;
+  static_assert(n < (1 << 30), "n too large");
+  static constexpr int morton_dim = morton_dim_;
+  static constexpr int n_bits = log2int(n);
+  static_assert(n_bits % morton_dim == 0,
+                "bits of n cannot be distributed into dimensions");
+  static constexpr int n_bit_axis = n_bits / morton_dim;
+
   child_type children[n];
-  TC_DEVICE TC_FORCE_INLINE child_type *look_up(
-      int i) {  // i is flattened index
-    return &children[i];
+  // TODO: fix potential alignment issues
+  uint64 bitmask[bitmasked ? (n + 63) / 64 : 1];
+
+  TC_DEVICE TC_FORCE_INLINE int32 translate(int i) {  // i is flattened index
+    int i_translated;
+    constexpr int dim = morton_dim;
+#if defined(TLANG_GPU)
+    static_assert(dim == 1, "morton not yet implemented on GPU");
+    i_translated = i;
+#else
+    if (dim == 1) {
+      i_translated = i;
+    } else if (dim == 2) {
+      i_translated =
+          _pdep_u32(extract_bit(i, 0, n_bit_axis), 0x55555555) |
+          _pdep_u32(extract_bit(i, n_bit_axis, n_bit_axis * 2), 0xaaaaaaaa);
+    } else if (dim == 3) {
+      i_translated =
+          _pdep_u32(extract_bit(i, 0, n_bit_axis), 0x49249249) |
+          _pdep_u32(extract_bit(i, n_bit_axis, n_bit_axis * 2), 0x92492492) |
+          _pdep_u32(extract_bit(i, n_bit_axis * 2, n_bit_axis * 3), 0x24924924);
+    } else if (dim == 4) {
+      TC_ASSERT(false);
+      i_translated = 0;
+    }
+#endif
+    return i_translated;
+  }
+
+  TC_DEVICE TC_FORCE_INLINE child_type *look_up(int i) {
+    return &children[translate(i)];
   }
 
   TC_DEVICE TC_FORCE_INLINE int get_n() const {
@@ -323,8 +372,23 @@ struct dense {
     return n;
   }
 
-  TC_DEVICE TC_FORCE_INLINE void activate(int i,
+  TC_DEVICE TC_FORCE_INLINE bool query_active(int i_) {
+    if (bitmasked) {
+      // int i = translate(i_);
+      int i = i_;
+      return (bitmask[i / 64] & (1ul << (i % 64))) != 0;
+    } else {
+      return true;
+    }
+  }
+
+  TC_DEVICE TC_FORCE_INLINE void activate(int i_,
                                           const PhysicalIndexGroup &index) {
+    if (bitmasked) {
+      int i = translate(i_);
+      // TODO: atomicOr on GPU
+      bitmask[i / 64] = bitmask[i / 64] | (1ul << (i % 64));
+    }
   }
 
   static constexpr bool has_null = false;
@@ -363,8 +427,8 @@ struct hashed {
   std::unordered_map<int, child_type *> data;
   std::mutex mut;
 
-  hashed() {
-    std::cout << "initializing hashed" << std::endl;
+  hashed(){
+      // std::cout << "initializing hashed" << std::endl;
   };
 
   TC_DEVICE TC_FORCE_INLINE child_type *look_up(

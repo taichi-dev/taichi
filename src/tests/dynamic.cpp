@@ -10,7 +10,6 @@ TC_TEST("append_and_probe") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 32;
     Program prog(arch);
-    prog.config.print_ir = true;
 
     Global(x, i32);
     Global(len, i32);
@@ -42,7 +41,6 @@ TC_TEST("activate") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 32;
     Program prog(arch);
-    prog.config.print_ir = true;
 
     Global(x, i32);
     layout([&]() {
@@ -80,7 +78,6 @@ TC_TEST("task_list") {
     int n = 262144;
     int m = 64;
     Program prog(arch);
-    // prog.config.print_ir = true;
 
     Global(x, i32);
     layout([&]() {
@@ -120,7 +117,6 @@ TC_TEST("task_list_dynamic") {
     int n = 262144;
     int m = 64;
     Program prog(arch);
-    // prog.config.print_ir = true;
 
     Global(x, i32);
     layout([&]() {
@@ -160,7 +156,6 @@ TC_TEST("parallel_append") {
   for (auto arch : {Arch::gpu}) {
     int n = 32;
     Program prog(arch);
-    prog.config.print_ir = true;
 
     Global(x, i32);
     SNode *list;
@@ -202,7 +197,6 @@ TC_TEST("append_2d") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 32;
     Program prog(arch);
-    prog.config.print_ir = true;
 
     Global(x, i32);
     SNode *list;
@@ -232,7 +226,6 @@ TC_TEST("clear") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     int n = 32;
     Program prog(arch);
-    prog.config.print_ir = true;
 
     Global(x, i32);
     SNode *list;
@@ -387,7 +380,6 @@ TC_TEST("dynamic_sort") {
 
 auto reset_grid_benchmark = []() {
   Program prog(Arch::gpu);
-  prog.config.print_ir = true;
 
   constexpr int n = 256;  // grid_resolution
   constexpr int dim = 3;

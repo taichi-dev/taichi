@@ -12,7 +12,7 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-constexpr int dim = 3, n = 64;
+constexpr int dim = 3, n = 256;
 bool active[n][n][n];
 real F = -10;
 real R[n][n][n][dim], D[n][n][n], X[n][n][n][dim];
@@ -108,19 +108,29 @@ void fem_solve() {
               density_block.base_coordinates[1] = j + padding;
               density_block.base_coordinates[2] = k + padding;
 
-              for (int ii = 0; ii < scalar_block_size::x; ii++) {
-                for (int jj = 0; jj < scalar_block_size::y; jj++) {
-                  for (int kk = 0; kk < scalar_block_size::z; kk++) {
-                    auto scale = (double)D[i + ii][j + jj][k + kk];
-                    // auto scale = 1.0;
-                    density_block.get(ii, jj, kk) = scale;
-                    bounds[0] = std::min(bounds[0], scale);
-                    bounds[1] = std::max(bounds[1], scale);
-                    has_nan = has_nan || (scale != scale);
+              bool has_non_zero = false;
+              for (int ii = -1; ii < scalar_block_size::x; ii++) {
+                for (int jj = -1; jj < scalar_block_size::y; jj++) {
+                  for (int kk = -1; kk < scalar_block_size::z; kk++) {
+                    if (i + ii >= 0 && j + jj >= 0 && k + kk >= 0) {
+                      auto scale = (double)D[i + ii][j + jj][k + kk];
+                      // auto scale = 1.0;
+                      if (scale != 0) {
+                        has_non_zero = true;
+                      }
+                      if (ii >= 0 && jj >= 0 && kk >= 0) {
+                        density_block.get(ii, jj, kk) = scale;
+                        bounds[0] = std::min(bounds[0], scale);
+                        bounds[1] = std::max(bounds[1], scale);
+                        has_nan = has_nan || (scale != scale);
+                      }
+                    }
                   }
                 }
               }
-              param.density.blocks.push_back(density_block);
+              if (has_non_zero) {
+                param.density.blocks.push_back(density_block);
+              }
             }
           }
         }
@@ -221,14 +231,32 @@ auto fem = []() {
 
   int block_size = 8;
 
+  bool block_soa = true;
+
   layout([&]() {
     auto ijk = Indices(0, 1, 2);
-    auto place = [&](Matrix &mat) {
-      root.dense(ijk, n / block_size).dense(ijk, block_size).place(mat);
-    };
-    auto place_scalar = [&](Expr &mat) {
-      root.dense(ijk, n / block_size).dense(ijk, block_size).place(mat);
-    };
+    std::function<void(Matrix & mat)> place;
+    std::function<void(Expr & expr)> place_scalar;
+
+    SNode *block;
+    if (block_soa) {
+      block =
+          &root.dense(ijk, n / block_size).morton().bitmasked();  //.pointer();
+      place_scalar = [&](Expr &s) { block->dense(ijk, block_size).place(s); };
+      place = [&](Matrix &mat) {
+        for (auto &e : mat.entries) {
+          place_scalar(e);
+        }
+      };
+    } else {
+      place = [&](Matrix &mat) {
+        root.dense(ijk, n / block_size).dense(ijk, block_size).place(mat);
+      };
+      place_scalar = [&](Expr &mat) {
+        root.dense(ijk, n / block_size).dense(ijk, block_size).place(mat);
+      };
+    }
+
     place(x);
     place(p);
     place(Ap);
@@ -241,7 +269,7 @@ auto fem = []() {
   Kernel(compute_Ap).def([&] {
     BlockDim(1024);
     Parallelize(8);
-    // Vectorize(block_size);
+    Vectorize(block_size);
     For(Ap(0), [&](Expr i, Expr j, Expr k) {
       auto cell_coord = Var(Vector({i, j, k}));
       auto Ku_tmp = Var(Vector(dim));
@@ -267,6 +295,8 @@ auto fem = []() {
       Ap[i, j, k] = Ku_tmp;
     });
   });
+
+  prog.config.print_ir = false;
 
   Kernel(reduce_r).def([&] {
     For(r(0), [&](Expr i, Expr j, Expr k) {
@@ -342,6 +372,10 @@ auto fem = []() {
           active[i][j][k] = true;
           lambda.val<float32>(i, j, k) = lambda_0;
           mu.val<float32>(i, j, k) = mu_0;
+          for (int K = 0; K < 8; K++) {
+            // populate neighbouring nodes
+            x(0).val<float32>(i + K / 4, j + K / 2 % 2, k + K % 2) = 0.0f;
+          }
         }
       }
     }
@@ -363,7 +397,6 @@ auto fem = []() {
     auto i = x[0];
     auto j = x[1];
     auto k = x[2];
-    // TC_INFO("{} {} {}", i, j, k);
     enqueue(i + 1, j, k);
     enqueue(i - 1, j, k);
     enqueue(i, j + 1, k);

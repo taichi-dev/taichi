@@ -9,6 +9,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+using void_pointer = void *;
+
 #if !defined(TC_HOST) && !defined(TLANG_GPU)
 
 // Intrinsics wrapper
@@ -175,6 +177,10 @@ using float32x8 = vec<float32, 8>;
 using int32x8 = vec<int32, 8>;
 using float32x16 = vec<float32, 16>;
 using int32x16 = vec<int32, 16>;
+using void_pointerx1 = void_pointer[1];
+using void_pointerx4 = void_pointer[4];
+using void_pointerx8 = void_pointer[8];
+using void_pointerx16 = void_pointer[16];
 //*****************************************************************************
 
 #define DEFINE_BINARY_OP(T, OP, INST) \
@@ -832,6 +838,11 @@ inline float32x8 blend(float32x8 a, float32x8 b) {
 }
 
 template <int imm>
+inline int32x4 blend(int32x4 a, int32x4 b) {
+  return _mm_blend_epi32(a, b, imm);
+}
+
+template <int imm>
 inline int32x8 blend(int32x8 a, int32x8 b) {
   return _mm256_blend_epi32(a, b, imm);
 }
@@ -1070,8 +1081,6 @@ __host__ void gpu_runtime_init() {
   static int initialized = false;
   if (initialized)
     return;
-
-  printf("Initializing...\n");
 
   initialized = true;
   init_random_numbers<<<1024, 1024>>>(1);

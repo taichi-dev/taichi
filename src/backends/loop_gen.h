@@ -19,6 +19,10 @@ class LoopGenerator {
     return snode->node_type_name + "_loop";
   }
 
+  std::string index_variable(SNode *snode) {
+    return snode->node_type_name + "_index";
+  }
+
   std::string index_name_local(SNode *snode, int i) {
     return fmt::format("index_{}_{}_local", snode->node_type_name, i);
   }
@@ -42,7 +46,7 @@ class LoopGenerator {
     } else {
       auto parent = fmt::format("{}_cache", snode->parent->node_type_name);
       emit("auto {}_cache = access_{}({}, {});", snode->node_type_name,
-           snode->node_type_name, parent, loop_variable(snode->parent));
+           snode->node_type_name, parent, index_variable(snode->parent));
     }
   }
 
@@ -50,21 +54,42 @@ class LoopGenerator {
   // parent and loop var
   void update_indices(SNode *snode) {
     auto l = loop_variable(snode);
+    int morton_id = 0;
     for (int i = 0; i < max_num_indices; i++) {
       std::string ancestor = "0 |";
       if (snode->parent != nullptr) {
         ancestor = index_name_global(snode->parent, i) + " |";
       }
       std::string addition = "0";
+      uint32 mask_base[3]{0xffffffff, 0x55555555, 0x49249249};
       if (snode->extractors[i].num_bits) {
-        addition = fmt::format("((({} >> {}) & ((1 << {}) - 1)) << {})", l,
-                               snode->extractors[i].acc_offset,
-                               snode->extractors[i].num_bits,
-                               snode->extractors[i].start);
+        if (!snode->_morton) {
+          // no reorder
+          addition = fmt::format("((({} >> {}) & ((1 << {}) - 1)) << {})", l,
+                                 snode->extractors[i].acc_offset,
+                                 snode->extractors[i].num_bits,
+                                 snode->extractors[i].start);
+        } else {
+          TC_ASSERT(snode->num_active_indices <= 3);
+          uint32 mask = mask_base[snode->num_active_indices - 1]
+                        << (snode->num_active_indices - morton_id - 1);
+          morton_id++;
+          addition = fmt::format("(_pext_u32({}, {}) << {})", l, mask,
+                                 snode->extractors[i].start);
+        }
       }
       emit("int {} = {};", index_name_local(snode, i), addition);
       emit("int {} = {} {};", index_name_global(snode, i), ancestor,
            index_name_local(snode, i));
+    }
+    if (snode->_morton) {
+      emit("int {} = 0;", index_variable(snode));
+      for (int i = 0; i < max_num_indices; i++) {
+        emit("{} = {} | {};", index_variable(snode), index_variable(snode),
+             index_name_local(snode, i));
+      }
+    } else {
+      emit("int {} = {};", index_variable(snode), l);
     }
   }
 
@@ -93,6 +118,9 @@ class LoopGenerator {
     } else {
       emit("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
            snode->node_type_name, l, step_size);
+    }
+    if (snode->type == SNodeType::dense && snode->_bitmasked) {
+      emit("if (!{}_cache->query_active({})) continue;", snode->node_type_name, l);
     }
 
     update_indices(snode);

@@ -36,7 +36,7 @@ class LowerAST : public IRVisitor {
     auto lowered = std::make_unique<AllocaStmt>(stmt->ret_type.data_type);
     block->local_var_alloca.insert(std::make_pair(ident, lowered.get()));
     stmt->parent->replace_with(stmt, std::move(lowered));
-    throw IRModifiedException();
+    throw IRModified();
   }
 
   void visit(FrontendIfStmt *stmt) override {
@@ -65,7 +65,7 @@ class LowerAST : public IRVisitor {
 
     flattened.push_back(std::move(new_if));
     stmt->parent->replace_with(stmt, flattened);
-    throw IRModifiedException();
+    throw IRModified();
   }
 
   void visit(IfStmt *if_stmt) override {
@@ -83,7 +83,7 @@ class LowerAST : public IRVisitor {
     expr->flatten(flattened);
     flattened.push_back<PrintStmt>(expr->stmt, stmt->str);
     stmt->parent->replace_with(stmt, flattened);
-    throw IRModifiedException();
+    throw IRModified();
   }
 
   void visit(FrontendWhileStmt *stmt) override {
@@ -117,7 +117,7 @@ class LowerAST : public IRVisitor {
     new_while->body->mask_var = new_while->mask;
     stmt->parent->replace_with(stmt, std::move(new_while));
     // insert an alloca for the mask
-    throw IRModifiedException();
+    throw IRModified();
   }
 
   void visit(WhileStmt *stmt) override {
@@ -158,7 +158,7 @@ class LowerAST : public IRVisitor {
     }
     stmt->parent->replace_with(stmt, flattened);
 
-    throw IRModifiedException();
+    throw IRModified();
   }
 
   void visit(RangeForStmt *for_stmt) override {
@@ -176,7 +176,7 @@ class LowerAST : public IRVisitor {
     expr->flatten(flattened);
     stmt->eval_expr.cast<EvalExpression>()->stmt_ptr = stmt->expr->stmt;
     stmt->parent->replace_with(stmt, flattened);
-    throw IRModifiedException();
+    throw IRModified();
   }
 
   void visit(FrontendAssignStmt *assign) override {
@@ -196,7 +196,7 @@ class LowerAST : public IRVisitor {
       flattened.push_back<GlobalStoreStmt>(flattened.back().get(), expr->stmt);
     }
     assign->parent->replace_with(assign, flattened);
-    throw IRModifiedException();
+    throw IRModified();
   }
 
   void visit(FrontendAtomicStmt *stmt) override {
@@ -218,7 +218,7 @@ class LowerAST : public IRVisitor {
                                         expr->stmt);
     }
     stmt->parent->replace_with(stmt, flattened);
-    throw IRModifiedException();
+    throw IRModified();
   }
 
   void visit(FrontendSNodeOpStmt *stmt) override {
@@ -241,7 +241,7 @@ class LowerAST : public IRVisitor {
                                                 indices_stmt, val_stmt));
 
     stmt->parent->replace_with(stmt, flattened);
-    throw IRModifiedException();
+    throw IRModified();
   }
 
   void visit(FrontendAssertStmt *stmt) override {
@@ -255,7 +255,7 @@ class LowerAST : public IRVisitor {
     }
     flattened.push_back(Stmt::make<AssertStmt>(stmt->text, val_stmt));
     stmt->parent->replace_with(stmt, flattened);
-    throw IRModifiedException();
+    throw IRModified();
   }
 
   static void run(IRNode *node) {
@@ -264,7 +264,7 @@ class LowerAST : public IRVisitor {
       bool modified = false;
       try {
         node->accept(&inst);
-      } catch (IRModifiedException) {
+      } catch (IRModified) {
         modified = true;
       }
       if (!modified)

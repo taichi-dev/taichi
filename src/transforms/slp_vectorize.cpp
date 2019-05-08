@@ -160,17 +160,17 @@ class BasicBlockSLP : public IRVisitor {
       if (inside.find(pack[i]) == inside.end()) {
         return pack[i];
       }
-      fmt::print(" {} ", pack[i]->id);
+      // fmt::print(" {} ", pack[i]->id);
       TC_ASSERT(visited.find(pack[i]) == visited.end());
       visited.insert(pack[i]);
     }
-    fmt::print("\n");
+    // fmt::print("\n");
     Pack operands;
     if (!pack[0]->is<LocalLoadStmt>()) {
-      for (int i = 0; i < (int)pack[0]->operands.size(); i++) {
+      for (int i = 0; i < pack[0]->num_operands(); i++) {
         Pack operand_pack;
         for (int j = 0; j < (int)pack.size(); j++) {
-          operand_pack.push_back(*pack[j]->operands[i]);
+          operand_pack.push_back(pack[j]->operand(i));
         }
         operands.push_back(build(operand_pack));
       }
@@ -218,11 +218,13 @@ class BasicBlockSLP : public IRVisitor {
     TC_ASSERT(pos != -1);
     position[ret] = pos;
     existing_stmts.push_back(std::make_pair(pack, ret));
+    /*
     for (int i = 0; i < slp_width; i++) {
       fmt::print(" {} ", pack[i]->id);
     }
     fmt::print(" -> {} ", ret->id);
     fmt::print("\n");
+    */
     return ret;
   }
 
@@ -260,7 +262,7 @@ class BasicBlockSLP : public IRVisitor {
     auto &stmts = input_statements;
     Stmt *last_last_stmt = nullptr;
     while (1) {
-      TC_INFO("Seeding...");
+      // TC_INFO("Seeding...");
       // Find the last statement
       Stmt *last_stmt = nullptr;
       for (int i = stmts.size() - 1; i >= 0; i--) {
@@ -297,7 +299,7 @@ class BasicBlockSLP : public IRVisitor {
                  width);
       }
       std::reverse(seed_statements.begin(), seed_statements.end());
-      TC_P(last_stmt->id);
+      // TC_P(last_stmt->id);
       build(seed_statements);
     }
     sort(new_stmts);
@@ -417,7 +419,7 @@ class SLPVectorize : public IRVisitor {
       // until the end...
       second_pragma_slp_location = (int)block->statements.size();
     }
-    TC_P(block->statements[first_pragma_slp_location]->id);
+    // TC_P(block->statements[first_pragma_slp_location]->id);
     TC_ASSERT(
         block->statements[first_pragma_slp_location]->is<PragmaSLPStmt>());
 
@@ -445,13 +447,16 @@ class SLPVectorize : public IRVisitor {
           }
         }
       } else {
-        for (auto ope : stmt->operands) {
-          if (rec.find(*ope) != rec.end()) {
+        for (int i = 0; i < stmt->num_operands(); i++) {
+          auto ope = stmt->operand(i);
+          if (rec.find(ope) != rec.end()) {
             auto shuffle = Stmt::make<ElementShuffleStmt>(
-                VectorElement(rec[*ope].first, rec[*ope].second));
-            TC_INFO("Shuffle {}: replaced {} with {}", shuffle->id, (*ope)->id,
-                    rec[*ope].first->id);
-            *ope = shuffle.get();
+                VectorElement(rec[ope].first, rec[ope].second));
+            /*
+            TC_INFO("Shuffle {}: replaced {} with {}", shuffle->id, ope->id,
+                    rec[ope].first->id);
+                    */
+            stmt->set_operand(i, shuffle.get());
             shuffles.push_back(std::move(shuffle));
           }
         }
@@ -459,16 +464,16 @@ class SLPVectorize : public IRVisitor {
     }
 
     for (int i = 0; i < (int)shuffles.size(); i++) {
-      TC_P(shuffles[i]->id);
+      // TC_P(shuffles[i]->id);
       block->insert(std::move(shuffles[i]), first_pragma_slp_location + i + 1);
     }
     second_pragma_slp_location += (int)shuffles.size();
 
-    TC_P(block->statements[first_pragma_slp_location]->id);
+    // TC_P(block->statements[first_pragma_slp_location]->id);
     TC_ASSERT(
         block->statements[first_pragma_slp_location]->is<PragmaSLPStmt>());
     // irpass::print(context->root());
-    TC_P(block->statements[first_pragma_slp_location]->id);
+    // TC_P(block->statements[first_pragma_slp_location]->id);
     int current_slp_width = block->statements[first_pragma_slp_location]
                                 ->as<PragmaSLPStmt>()
                                 ->slp_width;
@@ -478,15 +483,17 @@ class SLPVectorize : public IRVisitor {
          i++) {
       vec.push_back(block->statements[i].get());
     }
-    TC_INFO("Before SLP");
+    // TC_INFO("Before SLP");
     auto slp = BasicBlockSLP();
     block->replace_statements_in_range(
         first_pragma_slp_location, second_pragma_slp_location,
         slp.run(block, current_slp_width, vec, &rec));
+    /*
     TC_P(first_pragma_slp_location);
     TC_P(second_pragma_slp_location);
     TC_INFO("SLPed...");
-    throw IRModifiedException();
+    */
+    throw IRModified();
   }
 
   void eliminate_redundant_shuffles(Block *block) {
@@ -534,10 +541,10 @@ class SLPVectorize : public IRVisitor {
     for (int iter = 0;; iter++) {
       try {
         slp_attempt(block, iter);
-      } catch (IRModifiedException) {
+      } catch (IRModified) {
         continue;
       }
-      break;  // if no IRModifiedException
+      break;  // if no IRModified
     }
     for (auto &stmt : block->statements) {
       stmt->accept(this);

@@ -27,7 +27,6 @@ TC_TEST("snode_loop") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     Program prog(arch);
     CoreState::set_trigger_gdb_when_crash(true);
-    prog.config.print_ir = true;
 
     auto i = Index(0);
     Global(u, i32);
@@ -53,13 +52,12 @@ TC_TEST("snode_loop2") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
     Program prog(arch);
     CoreState::set_trigger_gdb_when_crash(true);
-    prog.config.print_ir = true;
 
     auto i = Index(0), j = Index(1);
     Global(u, i32);
     Global(v, i32);
 
-    int n = 128;
+    int n = 16;
 
     // All data structure originates from a "root", which is a forked node.
     prog.layout([&] {
@@ -133,13 +131,89 @@ TC_TEST("2d_blocked_array") {
     }
 }
 
+TC_TEST("2d_blocked_array_morton") {
+  int n = 16, block_size = 4;
+
+  for (auto arch : {Arch::x86_64}) {
+    Program prog(arch);
+
+    Global(a, i32);
+    Global(b, i32);
+
+    layout([&] {
+      auto i = Index(0);
+      auto j = Index(1);
+      TC_ASSERT(n % block_size == 0);
+      root.dense({i, j}, {n / block_size, n / block_size})
+          .morton()
+          .dense({i, j}, {block_size, block_size})
+          .place(a, b);
+    });
+
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        a.val<int32>(i, j) = i + j * 3;
+      }
+    }
+
+    kernel([&]() { For(a, [&](Expr i, Expr j) { b[i, j] = a[i, j] + i; }); })();
+
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        TC_CHECK(a.val<int32>(i, j) == i + j * 3);
+        TC_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
+      }
+    }
+  }
+}
+
+TC_TEST("2d_blocked_array_bitmasked") {
+  int n = 16, block_size = 4;
+
+  for (auto arch : {Arch::x86_64}) {
+    for (auto morton : {true, false}) {
+      Program prog(arch);
+
+      Global(a, i32);
+      Global(b, i32);
+
+      layout([&] {
+        auto i = Index(0);
+        auto j = Index(1);
+        TC_ASSERT(n % block_size == 0);
+        root.dense({i, j}, {n / block_size, n / block_size})
+            .morton(morton)
+            .bitmasked()
+            .dense({i, j}, {block_size, block_size})
+            .place(a, b);
+      });
+
+      for (int i = 0; i < n / 2; i++) {
+        for (int j = n / 2; j < n; j++) {
+          a.val<int32>(i, j) = i + j * 3;
+        }
+      }
+
+      kernel(
+          [&]() { For(a, [&](Expr i, Expr j) { b[i, j] = a[i, j] + i; }); })();
+
+      for (int i = 0; i < n / 2; i++) {
+        for (int j = n / 2; j < n; j++) {
+          TC_CHECK(a.val<int32>(i, j) == i + j * 3);
+          TC_CHECK(b.val<int32>(i, j) == i * 2 + j * 3);
+        }
+      }
+      TC_CHECK(b.val<int32>(1, 1) == 0);
+    }
+  }
+}
+
 TC_TEST("2d_blocked_array_vec") {
   int n = 8, block_size = 4;
 
   for (auto arch : {Arch::x86_64})
     for (auto blocked : {false, true}) {
       Program prog(arch);
-      prog.config.print_ir = true;
 
       Global(a, i32);
       Global(b, i32);
@@ -430,7 +504,8 @@ TC_TEST("indirect") {
     Declare(j);
 
     // the second
-    touch(snode, load(a[j]) / imm(k), j);  // put main index into snode sparsity
+    touch(snode, load(a[j]) / imm(k),
+          j);  // put main index into snode sparsity
   });
 
   auto inc = kernel(a, [&]() { a[j] = a[j] + imm(1); });

@@ -18,3 +18,5 @@ _tlang_cache
 __pycache__
 *.bin
 mpm_rendered
+layout*
+blocks

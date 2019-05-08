@@ -355,7 +355,6 @@ TC_TEST("simd_mpm") {
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::x86_64);
   prog.config.max_vector_width = 4;
-  prog.config.print_ir = true;
   prog.config.gcc_version = -2;
   prog.config.serial_schedule = true;
   prog.config.force_vectorized_global_load = true;

@@ -283,6 +283,42 @@ class IRPrinter : public IRVisitor {
           stmt->name(), stmt->base->name(), stmt->low, stmt->input->name(),
           stmt->base->name(), stmt->high);
   }
+
+  void visit(LinearizeStmt *stmt) override {
+    auto ind = make_list<Stmt *>(
+        stmt->inputs, [&](Stmt *const &stmt) { return stmt->name(); }, "{");
+    auto stride = make_list<int>(
+        stmt->strides,
+        [&](const int &stride) { return std::to_string(stride); }, "{");
+
+    print("{} = linearized(ind {}, stride {})", stmt->name(), ind, stride);
+  }
+
+  void visit(IntegerOffsetStmt *stmt) override {
+    print("{} = offset {} + {}", stmt->name(), stmt->input->name(),
+          stmt->offset);
+  }
+
+  void visit(OffsetAndExtractBitsStmt *stmt) override {
+    print("{} = bit_extract({} + {}, {}~{})", stmt->name(), stmt->input->name(),
+          stmt->offset, stmt->bit_begin, stmt->bit_end);
+  }
+  void visit(SNodeLookupStmt *stmt) override {
+    print(
+        "{} = [{}][{}]::lookup({}, {}) coord = {} activate = {}", stmt->name(),
+        stmt->snode->node_type_name, stmt->snode->type_name(),
+        stmt->input_snode ? stmt->input_snode->name() : "root",
+        stmt->input_index->name(),
+        make_list<Stmt *>(stmt->global_indices,
+                          [&](Stmt *const &stmt) { return stmt->name(); }, "{"),
+        stmt->activate);
+  }
+
+  void visit(GetChStmt *stmt) override {
+    print("{} = get child [{}->{}] {}", stmt->name(),
+          stmt->input_snode->node_type_name, stmt->output_snode->node_type_name,
+          stmt->input_ptr->name());
+  }
 };
 
 namespace irpass {

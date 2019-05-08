@@ -289,7 +289,7 @@ class CPUIRCodeGen : public IRVisitor {
             all_offsets_zero = false;
         }
         if (identical_indices) {
-          TC_WARN("Weakened addressing");
+          // TC_WARN("Weakened addressing");
           weakened = true;
 
           std::string cond;
@@ -351,25 +351,85 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) {
-    if (!current_program->config.force_vectorized_global_load) {
+    int width = stmt->width();
+    if (width >= 4 && stmt->ptr->is<ElementShuffleStmt>()) {
+      TC_ASSERT(stmt->ret_type.data_type == DataType::i32 ||
+                stmt->ret_type.data_type == DataType::f32);
+      bool loaded[width];
+      for (int i = 0; i < width; i++)
+        loaded[i] = false;
+
+      auto shuffle = stmt->ptr->as<ElementShuffleStmt>();
+      Stmt *statements[width];
+      int offsets[width];
+
+      for (int i = 0; i < width; i++) {
+        auto src = shuffle->elements[i].stmt;
+        if (shuffle->elements[i].stmt->is<IntegerOffsetStmt>()) {
+          auto indir = src->as<IntegerOffsetStmt>();
+          statements[i] = indir->input;
+          offsets[i] = indir->offset;
+        } else {
+          statements[i] = src;
+          offsets[i] = 0;
+        }
+      }
+
+      emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
+      for (int i = 0; i < width; i++) {
+        if (loaded[i])
+          continue;
+        bool mask[width];
+        std::memset(mask, 0, sizeof(mask));
+        mask[i] = true;
+        for (int j = i + 1; j < width; j++) {
+          if (statements[i] == statements[j]) {
+            if ((j - i) * sizeof(int32) == offsets[j] - offsets[i]) {
+              mask[j] = true;
+            }
+          }
+        }
+        int imm_mask = 0;
+        for (int j = width - 1; j >= 0; j--) {
+          if (mask[j]) {
+            loaded[j] = true;
+          }
+          imm_mask *= 2;
+          imm_mask += (int)mask[j];
+        }
+        // load and blend in
+        if (i == 0) {
+          emit("{} = {}::load({}[0]);", stmt->raw_name(),
+               stmt->ret_data_type_name(),
+               shuffle->elements[i].stmt->raw_name());
+        } else {
+          emit("{} = blend<{}>({}, {}::load({}[0] - {}));", stmt->raw_name(),
+               imm_mask, stmt->raw_name(), stmt->ret_data_type_name(),
+               shuffle->elements[i].stmt->raw_name(), i);
+        }
+      }
+    } else {
       emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
       for (int i = 0; i < stmt->ret_type.width; i++) {
         emit("{}[{}] = *{}[{}];", stmt->raw_name(), i, stmt->ptr->raw_name(),
              i);
       }
-    } else {
-      emit("const auto {} = {}::load({}[0]);", stmt->raw_name(),
-           stmt->ret_data_type_name(), stmt->ptr->raw_name());
     }
   }
 
   void visit(ElementShuffleStmt *stmt) {
-    emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
-         stmt->elements.serialize(
-             [](const VectorElement &elem) {
-               return fmt::format("{}[{}]", elem.stmt->raw_name(), elem.index);
-             },
-             "{"));
+    auto init = stmt->elements.serialize(
+        [](const VectorElement &elem) {
+          return fmt::format("{}[{}]", elem.stmt->raw_name(), elem.index);
+        },
+        "{");
+    if (stmt->pointer) {
+      emit("{} * const {} [{}] {};", data_type_name(stmt->ret_type.data_type),
+           stmt->raw_name(), stmt->width(), init);
+    } else {
+      emit("const {} {} ({});", stmt->ret_data_type_name(), stmt->raw_name(),
+           init);
+    }
   }
 
   void visit(AssertStmt *stmt) {
@@ -377,47 +437,155 @@ class CPUIRCodeGen : public IRVisitor {
     emit(R"(TC_ASSERT_INFO({}, "{}");)", stmt->val->raw_name(), stmt->text);
     emit("#endif");
   }
+
+  void visit(OffsetAndExtractBitsStmt *stmt) {
+    emit(R"(auto {} = ((({} + {}) >> {}) & ((1 << {}) - 1));)",
+         stmt->raw_name(), stmt->offset, stmt->input->raw_name(),
+         stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
+  }
+
+  void visit(LinearizeStmt *stmt) {
+    std::string val = "0";
+    for (int i = 0; i < stmt->inputs.size(); i++) {
+      val = fmt::format("({}) * {} + {}", val, stmt->strides[i],
+                        stmt->inputs[i]->raw_name());
+    }
+    emit(R"(auto {} = {};)", stmt->raw_name(), val);
+  }
+
+  void visit(IntegerOffsetStmt *stmt) {
+    if (stmt->input->is<GetChStmt>() &&
+        stmt->input->as<GetChStmt>()->output_snode->type == SNodeType::place) {
+      auto input = stmt->input->as<GetChStmt>();
+      auto dtn = input->output_snode->data_type_name();
+      emit(R"({}* {}[1] {{({} *)((char *){}[0] + {})}};)", dtn,
+           stmt->raw_name(), dtn, stmt->input->raw_name(), stmt->offset);
+    } else {
+      emit(R"(auto {} = {} + {};)", stmt->raw_name(), stmt->input->raw_name(),
+           stmt->offset);
+    }
+  }
+
+  void visit(SNodeLookupStmt *stmt) {
+    std::string parent;
+    if (stmt->input_snode) {
+      parent = stmt->input_snode->raw_name();
+    } else {
+      parent = "root";
+    }
+    std::vector<std::string> global_indices(max_num_indices, "0");
+    auto snode = stmt->snode;
+    for (int i = 0; i < (int)stmt->global_indices.size(); i++) {
+      if (snode->physical_index_position[i] != -1) {
+        global_indices[snode->physical_index_position[i]] =
+            stmt->global_indices[i]->raw_name() + fmt::format("[{}]", 0);
+      }
+    }
+    if (stmt->activate && stmt->snode->type != SNodeType::place) {
+      emit(R"({}->activate({}, {});)", parent, stmt->input_index->raw_name(),
+           make_list(global_indices, "{"));
+    }
+    emit("auto {}_guarded = {}->look_up({});", stmt->raw_name(), parent,
+         stmt->input_index->raw_name());
+    if (!stmt->activate && snode->has_null()) {
+      // safe guard with ambient node
+      emit("if({}_guarded == nullptr) {}_guarded = &{}_ambient;",
+           stmt->raw_name(), stmt->raw_name(), snode->node_type_name);
+    }
+    emit(R"(auto {} = {}_guarded;)", stmt->raw_name(), stmt->raw_name());
+  }
+
+  void visit(GetChStmt *stmt) {
+    // emit("{} *{};", stmt->output_snode->data_type_name(),
+    //     stmt->raw_name());
+    if (stmt->output_snode->type == SNodeType::place) {
+      emit(R"({} *{}[1] {{&{}->get{}()->val}};)",
+           stmt->output_snode->data_type_name(), stmt->raw_name(),
+           stmt->input_ptr->raw_name(), stmt->chid);
+    } else {
+      emit(R"(auto {} = {}->get{}();)", stmt->raw_name(),
+           stmt->input_ptr->raw_name(), stmt->chid);
+    }
+  }
 };
 
 void CPUCodeGen::lower() {
   auto ir = kernel->ir;
   if (prog->config.print_ir) {
+    TC_TRACE("Initial IR:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::lower(ir);
   if (prog->config.print_ir) {
+    TC_TRACE("Lowered:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::typecheck(ir);
   if (prog->config.print_ir) {
+    TC_TRACE("Typechecked:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::slp_vectorize(ir);
   if (prog->config.print_ir) {
+    TC_TRACE("SLPed:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::loop_vectorize(ir);
   if (prog->config.print_ir) {
+    TC_TRACE("LoopVeced:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
   irpass::vector_split(ir, prog->config.max_vector_width,
                        prog->config.serial_schedule);
   if (prog->config.print_ir) {
+    TC_TRACE("LoopSplitted:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
-  // irpass::initialize_scratch_pad(ir);
+  /*
+  irpass::initialize_scratch_pad(ir);
   if (prog->config.print_ir) {
+    TC_TRACE("InitializeScratchPad:");
     irpass::re_id(ir);
     irpass::print(ir);
   }
-  irpass::eliminate_dup(ir);
+  */
+  irpass::simplify(ir);
   if (prog->config.print_ir) {
+    TC_TRACE("DupEliminated:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
+  if (prog->config.lower_access) {
+    irpass::lower_access(ir);
+    if (prog->config.print_ir) {
+      TC_TRACE("Access Lowered:");
+      irpass::re_id(ir);
+      irpass::print(ir);
+    }
+    for (int i = 0; i < 1; i++) {
+      irpass::die(ir);
+      if (prog->config.print_ir) {
+        TC_TRACE("DIEd:");
+        irpass::re_id(ir);
+        irpass::print(ir);
+      }
+      irpass::simplify(ir);
+      if (prog->config.print_ir) {
+        TC_TRACE("DupEliminated2:");
+        irpass::re_id(ir);
+        irpass::print(ir);
+      }
+    }
+  }
+  irpass::die(ir);
+  if (prog->config.print_ir) {
+    TC_TRACE("DIEd:");
     irpass::re_id(ir);
     irpass::print(ir);
   }

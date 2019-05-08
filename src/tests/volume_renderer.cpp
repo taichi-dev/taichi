@@ -186,8 +186,8 @@ auto volume_renderer = [] {
   }
 
   for (int i = 0; i < pow<3>(grid_resolution); i++) {
-    density_field[i] /= max_density; // normalize to 1 first
-    density_field[i] *= scale; // then scale
+    density_field[i] /= max_density;  // normalize to 1 first
+    density_field[i] *= scale;        // then scale
   }
 
   max_density = scale;

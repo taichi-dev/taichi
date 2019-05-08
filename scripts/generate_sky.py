@@ -21,6 +21,27 @@ R = np.array(R).reshape(sz)
 G = np.array(G).reshape(sz)
 B = np.array(B).reshape(sz)
 img = np.stack([R, G, B], axis=2)[:sz[0] // 2]
+l = 0.2126 * img[:,:,0] + 0.715 * img[:,:,1] + 0.072 * img[:, :,2]
+l = l.flatten()
+l /= np.sum(l)
+
+nsamples = 1024
+
 cv2.imshow('sky', img[:, :, ::-1])
-cv2.waitKey()
+cv2.waitKey(1)
+
+choices = np.random.choice(list(range(len(l))), nsamples, p=l)
+print(choices)
+
+# u, v, r, g, b
+output = np.ndarray(shape=(nsamples, 5), dtype=np.uint32)
+for i in range(nsamples):
+    c = choices[i]
+    u, v = c // sz[1], c % sz[1]
+    output[i, 0] = u
+    output[i, 1] = v
+    output[i, 2:5] = img[u, v] * (1 << 30) / l[c]
+
+print(output)
+output.tofile("sky.bin")
 

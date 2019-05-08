@@ -89,6 +89,7 @@ class IntegerOffsetStmt;
 class OffsetAndExtractBitsStmt;
 class LinearizeStmt;
 class SNodeLookupStmt;
+class GetChStmt;
 
 // With per-lane attributes
 class LocalLoadStmt;
@@ -370,6 +371,7 @@ class IRVisitor {
   DEFINE_VISIT(OffsetAndExtractBitsStmt);
   DEFINE_VISIT(LinearizeStmt);
   DEFINE_VISIT(SNodeLookupStmt);
+  DEFINE_VISIT(GetChStmt);
 
   DEFINE_VISIT(PragmaSLPStmt);
   DEFINE_VISIT(ElementShuffleStmt);
@@ -2001,20 +2003,17 @@ class OffsetAndExtractBitsStmt : public Stmt {
 class SNodeLookupStmt : public Stmt {
  public:
   SNode *snode;
-  int chid;
   Stmt *input_snode;
   Stmt *input_index;
   std::vector<Stmt *> global_indices;
   bool activate;
 
   SNodeLookupStmt(SNode *snode,
-                  int chid,
                   Stmt *input_snode,
                   Stmt *input_index,
                   bool activate,
                   const std::vector<Stmt *> &global_indices)
       : snode(snode),
-        chid(chid),
         input_snode(input_snode),
         input_index(input_index),
         global_indices(global_indices),
@@ -2025,6 +2024,17 @@ class SNodeLookupStmt : public Stmt {
       add_operand(this->global_indices[i]);
     }
   }
+
+  DEFINE_ACCEPT
+};
+
+class GetChStmt : public Stmt {
+ public:
+  Stmt *input_ptr;
+  SNode *input_snode, *output_snode;
+  int chid;
+
+  GetChStmt(Stmt *input_ptr, int chid);
 
   DEFINE_ACCEPT
 };

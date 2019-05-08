@@ -305,14 +305,19 @@ class IRPrinter : public IRVisitor {
   }
   void visit(SNodeLookupStmt *stmt) override {
     print(
-        "{} = [{}->{}][{}]::lookup({}, {}) coord = {} activate = {}",
-        stmt->name(), stmt->snode->node_type_name,
-        stmt->snode->ch[stmt->chid]->node_type_name, stmt->snode->type_name(),
+        "{} = [{}][{}]::lookup({}, {}) coord = {} activate = {}", stmt->name(),
+        stmt->snode->node_type_name, stmt->snode->type_name(),
         stmt->input_snode ? stmt->input_snode->name() : "root",
         stmt->input_index->name(),
         make_list<Stmt *>(stmt->global_indices,
                           [&](Stmt *const &stmt) { return stmt->name(); }, "{"),
         stmt->activate);
+  }
+
+  void visit(GetChStmt *stmt) override {
+    print("{} = get child {}->{}", stmt->name(),
+          stmt->input_snode->node_type_name,
+          stmt->output_snode->node_type_name);
   }
 };
 

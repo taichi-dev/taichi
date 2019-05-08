@@ -454,9 +454,10 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(IntegerOffsetStmt *stmt) {
-    if (stmt->input->is<SNodeLookupStmt>()) {
-      auto input = stmt->input->as<SNodeLookupStmt>();
-      auto dtn = input->snode->ch[input->chid]->data_type_name();
+    if (stmt->input->is<GetChStmt>() &&
+        stmt->input->as<GetChStmt>()->output_snode->type == SNodeType::place) {
+      auto input = stmt->input->as<GetChStmt>();
+      auto dtn = input->output_snode->data_type_name();
       emit(R"({}* {}[1] {{({} *)((char *){}[0] + {})}};)", dtn,
            stmt->raw_name(), dtn, stmt->input->raw_name(), stmt->offset);
     } else {
@@ -484,7 +485,6 @@ class CPUIRCodeGen : public IRVisitor {
       emit(R"({}->activate({}, {});)", parent, stmt->input_index->raw_name(),
            make_list(global_indices, "{"));
     }
-    auto ch = stmt->snode->ch[stmt->chid];
     emit("auto {}_guarded = {}->look_up({});", stmt->raw_name(), parent,
          stmt->input_index->raw_name());
     if (!stmt->activate && snode->has_null()) {
@@ -492,14 +492,19 @@ class CPUIRCodeGen : public IRVisitor {
       emit("if({}_guarded == nullptr) {}_guarded = &{}_ambient;",
            stmt->raw_name(), stmt->raw_name(), snode->node_type_name);
     }
+    emit(R"(auto {} = {}_guarded;)", stmt->raw_name(), stmt->raw_name());
+  }
 
-    if (ch->type == SNodeType::place) {
-      emit("{} *{}[1];", ch->data_type_name(), stmt->raw_name());
-      emit(R"({}[0] = &{}_guarded->get{}()->val;)", stmt->raw_name(),
-           stmt->raw_name(), stmt->chid);
+  void visit(GetChStmt *stmt) {
+    // emit("{} *{};", stmt->output_snode->data_type_name(),
+    //     stmt->raw_name());
+    if (stmt->output_snode->type == SNodeType::place) {
+      emit(R"({} *{}[1] {{&{}->get{}()->val}};)",
+           stmt->output_snode->data_type_name(), stmt->raw_name(),
+           stmt->input_ptr->raw_name(), stmt->chid);
     } else {
-      emit(R"(auto {} = {}_guarded->get{}();)", stmt->raw_name(),
-           stmt->raw_name(), stmt->chid);
+      emit(R"(auto {} = {}->get{}();)", stmt->raw_name(),
+           stmt->input_ptr->raw_name(), stmt->chid);
     }
   }
 };

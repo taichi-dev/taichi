@@ -9,6 +9,14 @@ TLANG_NAMESPACE_BEGIN
 #define TC_EXPRESSION_IMPLEMENTATION
 #include "expression.h"
 
+GetChStmt::GetChStmt(taichi::Tlang::Stmt *input_ptr, int chid)
+    : input_ptr(input_ptr), chid(chid) {
+  add_operand(this->input_ptr);
+  TC_ASSERT(input_ptr->is<SNodeLookupStmt>());
+  input_snode = input_ptr->as<SNodeLookupStmt>()->snode;
+  output_snode = input_snode->ch[chid].get();
+}
+
 Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
   return Expr::make<TrinaryOpExpression>(TrinaryType::select, cond, true_val,
                                          false_val);

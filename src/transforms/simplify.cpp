@@ -627,12 +627,50 @@ class BasicBlockSimplify : public IRVisitor {
           if (bstmt_->snode == stmt->snode &&
               bstmt_->input_snode == stmt->input_snode &&
               bstmt_->input_index == stmt->input_index &&
-              bstmt_->chid == stmt->chid &&
               // identical_vectors(bstmt_->global_indices,
               // stmt->global_indices)
               // && no need for the above line. As long as input_index are the
               // same global indices comparison can be omitted
               bstmt_->activate == stmt->activate) {
+            stmt->replace_with(bstmt.get());
+            stmt->parent->erase(current_stmt_id);
+            throw IRModified();
+          }
+        }
+      }
+    }
+    set_done(stmt);
+  }
+
+  void visit(GetChStmt *stmt) override {
+    if (is_done(stmt))
+      return;
+
+    if (stmt->input_ptr->is<IntegerOffsetStmt>()) {
+      auto previous_offset = stmt->input_ptr->as<IntegerOffsetStmt>();
+      // push forward offset
+
+      auto snode = stmt->input_snode;
+      auto offset_stmt = stmt->insert_after_me(Stmt::make<IntegerOffsetStmt>(
+          stmt, stmt->chid * sizeof(int32) + previous_offset->offset));
+
+      stmt->input_ptr = previous_offset->input;
+      stmt->replace_with(offset_stmt);
+      stmt->chid = 0;
+      stmt->output_snode = stmt->input_snode->ch[stmt->chid].get();
+      offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
+      throw IRModified();
+    }
+
+    for (int i = 0; i < current_stmt_id; i++) {
+      auto &bstmt = block->statements[i];
+      if (stmt->ret_type == bstmt->ret_type) {
+        auto &bstmt_data = *bstmt;
+        if (typeid(bstmt_data) == typeid(*stmt)) {
+          auto bstmt_ = bstmt->as<GetChStmt>();
+          if (bstmt_->input_ptr == stmt->input_ptr &&
+              bstmt_->input_snode == stmt->input_snode &&
+              bstmt_->chid == stmt->chid) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
             throw IRModified();

@@ -4,7 +4,7 @@
 TLANG_NAMESPACE_BEGIN
 
 bool use_gui = false;
-bool use_sky_map = true;
+bool use_sky_map = false;
 
 auto volume_renderer = [] {
   // CoreState::set_trigger_gdb_when_crash(true);
@@ -17,23 +17,14 @@ auto volume_renderer = [] {
   float32 one_over_four_pi = 0.07957747154f;
   float32 pi = 3.14159265359f;
 
+  Vector2i sky_map_size(512, 128);
+  int n_sky_samples = 1024;
+
   auto f = fopen("snow_density_256.bin", "rb");
   TC_ASSERT_INFO(f, "./snow_density_256.bin not found");
   std::vector<float32> density_field(pow<3>(grid_resolution));
   std::fread(density_field.data(), sizeof(float32), density_field.size(), f);
   std::fclose(f);
-
-  Vector2i sky_map_size(512, 128);
-  f = fopen("sky_map.bin", "rb");
-  TC_ASSERT_INFO(f, "./sky_map.bin not found");
-  std::vector<uint32> sky_map_data(sky_map_size.prod() * 3);
-  std::fread(sky_map_data.data(), sizeof(uint32), sky_map_data.size(), f);
-
-  int n_sky_samples = 1024;
-  f = fopen("sky_samples.bin", "rb");
-  TC_ASSERT_INFO(f, "./sky_samples.bin not found");
-  std::vector<uint32> sky_sample_data(n_sky_samples * 5);
-  std::fread(sky_sample_data.data(), sizeof(uint32), sky_sample_data.size(), f);
 
   Program prog(Arch::gpu);
   prog.config.print_ir = true;
@@ -138,7 +129,6 @@ auto volume_renderer = [] {
       auto near_t = Var(-std::numeric_limits<float>::max());
       auto far_t = Var(std::numeric_limits<float>::max());
       auto hit = box_intersect(light_p, dir_to_p, near_t, far_t);
-      auto interaction = Var(0);
       auto transmittance = Var(1.f);
 
       // TODO: reverse the direction to have the importon killed earlier
@@ -179,12 +169,11 @@ auto volume_renderer = [] {
                 */
 
       auto Le =
-          Var(5000.0f * sky_map[cast<int32>(uv(0) * (float32)sky_map_size[0]),
+          Var(1000.0f * sky_map[cast<int32>(uv(0) * (float32)sky_map_size[0]),
                                 cast<int32>(uv(1) * (float32)sky_map_size[1])]);
       auto near_t = Var(-std::numeric_limits<float>::max());
       auto far_t = Var(std::numeric_limits<float>::max());
       auto hit = box_intersect(p, dir_to_sky, near_t, far_t);
-      auto interaction = Var(0);
       auto transmittance = Var(1.f);
 
       If(hit, [&] {
@@ -331,27 +320,39 @@ auto volume_renderer = [] {
     });
   });
 
-  for (int i = 0; i < sky_map_size[0]; i++) {
-    for (int j = 0; j < sky_map_size[1]; j++) {
+  if (use_sky_map) {
+    f = fopen("sky_map.bin", "rb");
+    TC_ASSERT_INFO(f, "./sky_map.bin not found");
+    std::vector<uint32> sky_map_data(sky_map_size.prod() * 3);
+    std::fread(sky_map_data.data(), sizeof(uint32), sky_map_data.size(), f);
+
+    f = fopen("sky_samples.bin", "rb");
+    TC_ASSERT_INFO(f, "./sky_samples.bin not found");
+    std::vector<uint32> sky_sample_data(n_sky_samples * 5);
+    std::fread(sky_sample_data.data(), sizeof(uint32), sky_sample_data.size(),
+               f);
+
+    for (int i = 0; i < sky_map_size[0]; i++) {
+      for (int j = 0; j < sky_map_size[1]; j++) {
+        for (int d = 0; d < 3; d++) {
+          auto l = sky_map_data[(i * sky_map_size[1] + j) * 3 + d] *
+                   (1.0f / (1 << 20));
+          sky_map(d).val<float32>(i, j) = l;
+        }
+      }
+    }
+
+    for (int i = 0; i < n_sky_samples; i++) {
+      for (int d = 0; d < 2; d++) {
+        sky_sample_uv(d).val<float32>(i) =
+            sky_sample_data[i * 5 + 1 - d] * (1.0f / (sky_map_size[d]));
+      }
       for (int d = 0; d < 3; d++) {
-        auto l = sky_map_data[(i * sky_map_size[1] + j) * 3 + d] *
-                 (1.0f / (1 << 20));
-        sky_map(d).val<float32>(i, j) = l;
+        sky_sample_color(d).val<float32>(i) =
+            sky_sample_data[i * 5 + 2 + d] * (1.0f / (1 << 20));
       }
     }
   }
-
-  for (int i = 0; i < n_sky_samples; i++) {
-    for (int d = 0; d < 2; d++) {
-      sky_sample_uv(d).val<float32>(i) =
-          sky_sample_data[i * 5 + 1 - d] * (1.0f / (sky_map_size[d]));
-    }
-    for (int d = 0; d < 3; d++) {
-      sky_sample_color(d).val<float32>(i) =
-          sky_sample_data[i * 5 + 2 + d] * (1.0f / (1 << 20));
-    }
-  }
-
   for (int i = 0; i < grid_resolution; i++) {
     for (int j = 0; j < grid_resolution; j++) {
       for (int k = 0; k < grid_resolution; k++) {
@@ -361,7 +362,6 @@ auto volume_renderer = [] {
       }
     }
   }
-
   std::unique_ptr<GUI> gui = nullptr;
 
   if (use_gui) {

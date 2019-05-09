@@ -29,14 +29,13 @@ print(sz)
 for i in range(0, sz[1]):
     l[:, sz[1] - i - 1] *= np.sin((i + 0.5) / sz[1] * np.pi / 2)
 l = l.flatten()
-l /= np.sum(l)
 
 nsamples = 1024
 
 cv2.imshow('sky', img.swapaxes(0, 1)[:, :, ::-1])
 cv2.waitKey(1)
 
-choices = np.random.choice(list(range(len(l))), nsamples, p=l)
+choices = np.random.choice(list(range(len(l))), nsamples, p=l / sum(l))
 print(choices)
 
 # u, v, r, g, b

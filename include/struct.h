@@ -454,6 +454,10 @@ struct hashed {
     }
   }
 
+  TC_DEVICE TC_FORCE_INLINE bool is_active(int i) {
+    return data.find(i) != data.end();
+  }
+
   TC_DEVICE TC_FORCE_INLINE int get_n() const {
     return data.size();
   }

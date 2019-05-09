@@ -386,8 +386,12 @@ struct dense {
                                           const PhysicalIndexGroup &index) {
     if (bitmasked) {
       int i = translate(i_);
-      // TODO: atomicOr on GPU
-      bitmask[i / 64] = bitmask[i / 64] | (1ul << (i % 64));
+#if __CUDA_ARCH__
+      atomicOr((unsigned long long *)&bitmask[i / 64],
+               (unsigned long long)(1ul << (i % 64)));
+#else
+      atomicOrCPU(&bitmask[i / 64], 1ul << (i % 64));
+#endif
     }
   }
 

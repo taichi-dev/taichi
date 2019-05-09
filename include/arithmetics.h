@@ -966,6 +966,10 @@ TC_FORCE_INLINE __host__ uint64 atomicAddCPU(volatile uint64 *dest,
   return __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
 }
 
+TC_FORCE_INLINE __host__ uint64 atomicOrCPU(volatile uint64 *dest, uint64 val) {
+  return __atomic_fetch_or(dest, val, std::memory_order::memory_order_seq_cst);
+}
+
 TC_FORCE_INLINE __host__ float32 atomicAddCPU(volatile float32 *dest,
                                               float32 inc) {
   float32 old_val;

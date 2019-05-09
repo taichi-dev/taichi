@@ -72,7 +72,7 @@ class LowerAccess : public IRVisitor {
 
       int chid = snode->child_id(snodes[i + 1]);
       auto lookup = Stmt::make<SNodeLookupStmt>(
-          snode, last, linearized.get(), snode->has_null() && activate,
+          snode, last, linearized.get(), snode->need_activation() && activate,
           indices);  // if snode has no possibility of null child, set activate
       // = false
       auto get_ch = Stmt::make<GetChStmt>(lookup.get(), chid);

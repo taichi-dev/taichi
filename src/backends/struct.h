@@ -7,6 +7,7 @@ class StructCompiler : public CodeGenBase {
  public:
   std::vector<SNode *> stack;
   std::vector<SNode *> snodes;
+  std::vector<SNode *> ambient_snodes;
   std::string root_type;
   int snode_count;
   void *(*creator)();

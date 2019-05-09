@@ -143,8 +143,13 @@ void StructCompiler::visit(SNode &snode) {
   }
 
   if (snode.has_null()) {
+    if (get_current_program().config.arch == Arch::gpu) {
+      emit("__device__ __constant__ {}::child_type *{}_ambient_ptr;",
+           snode.node_type_name, snode.node_type_name);
+    }
     emit("{}::child_type {}_ambient;", snode.node_type_name,
          snode.node_type_name);
+    ambient_snodes.push_back(&snode);
   } else if (snode.type == SNodeType::place) {
     emit("{} {}_ambient;", snode.node_type_name, snode.node_type_name);
   }
@@ -169,8 +174,10 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
       // emit("parent->activate(i, index);");
       // emit("#endif");
       emit("auto lookup = parent->look_up(i); ");
-      emit("if ({}::has_null && lookup == nullptr) ", snode.node_type_name);
-      emit("return nullptr;");
+      if (snode.has_null()) {
+        emit("if (lookup == nullptr) ", snode.node_type_name);
+        emit("return nullptr;");
+      }
       emit("return lookup->get{}();", i);
       emit("}}");
     }
@@ -228,9 +235,14 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
       emit("auto n{} = access_{}(n{}, tmp);", i + 1,
            stack[i + 1]->node_type_name, i);
       if (mode == mode_access)
-        if (snode.has_ambient && stack[i + 1] != &snode)
-          emit("if ({}::has_null && n{} == nullptr) return &{}_ambient;",
-               stack[i]->node_type_name, i + 1, snode.node_type_name);
+        if (snode.has_ambient && stack[i + 1] != &snode) {
+          if (snode.has_null()) {
+            emit(
+                "if (n{} == nullptr)\n#if __CUDA_ARCH__\n return "
+                "{}_ambient_ptr;\n #else \n return &{}_ambient;\n #endif",
+                i + 1, snode.node_type_name, snode.node_type_name);
+          }
+        }
     }
     emit("return n{};", (int)stack.size() - 1);
     emit("}}");
@@ -327,6 +339,15 @@ void StructCompiler::run(SNode &node) {
           "create_unified<SNodeManager<{}>>();",
           snodes[i]->node_type_name, snodes[i]->node_type_name);
     }
+  }
+
+  for (int i = 0; i < (int)ambient_snodes.size(); i++) {
+    emit("{{");
+    emit("auto ambient_ptr = create_instance<{}::child_type>();");
+    emit(
+        "cudaMemcpyToSymbol({}_ambient_ptr, &ambient_ptr, "
+        "sizeof(ambient_ptr));");
+    emit("}}");
   }
 
   emit(

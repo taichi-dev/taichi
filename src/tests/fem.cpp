@@ -12,7 +12,7 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-constexpr int dim = 3, n = 256;
+constexpr int dim = 3, n = 128;
 bool active[n][n][n];
 real F = -10;
 real R[n][n][n][dim], D[n][n][n], X[n][n][n][dim];
@@ -215,7 +215,8 @@ void fem_solve() {
 auto fem = []() {
   CoreState::set_trigger_gdb_when_crash(true);
 
-  Program prog(Arch::x86_64);
+  bool gpu = true;
+  Program prog(gpu ? Arch::gpu : Arch::x86_64);
   prog.config.print_ir = true;
   prog.config.lazy_compilation = false;
 
@@ -241,7 +242,7 @@ auto fem = []() {
     SNode *block;
     if (block_soa) {
       block =
-          &root.dense(ijk, n / block_size).morton().bitmasked();  //.pointer();
+          &root.dense(ijk, n / block_size).bitmasked();  //.pointer();
       place_scalar = [&](Expr &s) { block->dense(ijk, block_size).place(s); };
       place = [&](Matrix &mat) {
         for (auto &e : mat.entries) {
@@ -267,9 +268,11 @@ auto fem = []() {
   });
 
   Kernel(compute_Ap).def([&] {
-    BlockDim(1024);
-    Parallelize(8);
-    Vectorize(block_size);
+    BlockDim(256);
+    if (!gpu) {
+      Parallelize(8);
+      Vectorize(block_size);
+    }
     For(Ap(0), [&](Expr i, Expr j, Expr k) {
       auto cell_coord = Var(Vector({i, j, k}));
       auto Ku_tmp = Var(Vector(dim));
@@ -424,6 +427,7 @@ auto fem = []() {
   auto old_rTr = sum.val<float32>();
 
   for (int i = 0; i < 1000; i++) {
+    TC_P(i);
     compute_Ap();
     sum.val<float32>() = 0;
     reduce_pAp();

@@ -237,15 +237,17 @@ auto volume_renderer = [] {
   auto background = [&](Vector dir) {
     // return Vector({0.4f, 0.4f, 0.4f});
     auto ret = Var(Vector({0.0f, 0.0f, 0.0f}));
-    If(dir(1) >= 0.0f).Then([&] {
-      auto phi = Var(atan2(dir(0), dir(2)));
-      auto theta = Var(asin(dir(1)));
-      auto u = cast<int32>((phi + pi) * (sky_map_size[0] / (2 * pi)));
-      auto v = cast<int32>(theta * (sky_map_size[1] / pi * 2));
-      ret = sky_map[u, v];
-    }).Else([&]{
-      ret = Vector({0.6f, 0.6f, 0.6f});
-    });
+    If(dir(1) >= 0.0f)
+        .Then([&] {
+          auto phi = Var(atan2(dir(0), dir(2)));
+          auto theta = Var(asin(dir(1)));
+          auto u = cast<int32>((phi + pi) * (sky_map_size[0] / (2 * pi)));
+          auto v = cast<int32>(theta * (sky_map_size[1] / pi * 2));
+          ret = sky_map[u, v];
+        })
+        .Else([&] {
+          ret = Vector({0.6f, 0.6f, 0.6f});
+        });
     return ret;
   };
 

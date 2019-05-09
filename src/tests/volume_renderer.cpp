@@ -38,7 +38,12 @@ auto volume_renderer = [] {
 
   layout([&]() {
     root.dense(Index(0), n * n * 2).place(buffer(0), buffer(1), buffer(2));
-    root.dense(Indices(0, 1, 2), grid_resolution).place(density);
+
+    auto block_size = 16;
+    root.dense(Indices(0, 1, 2), grid_resolution / block_size)
+        .dense(Indices(0, 1, 2), block_size)
+        .place(density);
+
     root.dense(Indices(0, 1), {sky_map_size[0], sky_map_size[1]})
         .place(sky_map);
     root.dense(Indices(0), n_sky_samples)
@@ -128,27 +133,24 @@ auto volume_renderer = [] {
 
       auto near_t = Var(-std::numeric_limits<float>::max());
       auto far_t = Var(std::numeric_limits<float>::max());
-      auto hit = box_intersect(light_p, dir_to_p, near_t, far_t);
+      auto hit = box_intersect(p, -dir_to_p, near_t, far_t);
       auto transmittance = Var(1.f);
 
-      // TODO: reverse the direction to have the importon killed earlier
       If(hit, [&] {
         auto cond = Var(hit);
-        auto t = Var(near_t);
+        auto t = Var(0.0f);
 
         While(cond, [&] {
           t -= log(1.f - Rand<float32>()) * inv_max_density;
 
-          p = Var(light_p + t * dir_to_p);
-          If(t >= dist_to_p || !point_inside_box(p))
-              .Then([&] { cond = 0; })
-              .Else([&] {
-                auto density_at_p = query_density(p);
-                If(density_at_p * inv_max_density > Rand<float32>()).Then([&] {
-                  cond = 0;
-                  transmittance = Var(0.f);
-                });
-              });
+          auto q = Var(p - t * dir_to_p);
+          If(!point_inside_box(q)).Then([&] { cond = 0; }).Else([&] {
+            auto density_at_p = query_density(q);
+            If(density_at_p * inv_max_density > Rand<float32>()).Then([&] {
+              cond = 0;
+              transmittance = Var(0.f);
+            });
+          });
         });
       });
 

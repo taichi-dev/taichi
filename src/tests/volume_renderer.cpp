@@ -42,7 +42,7 @@ auto volume_renderer = [] {
     root.dense(Index(0), n * n * 2).place(buffer(0), buffer(1), buffer(2));
 
     root.dense(Indices(0, 1, 2), grid_resolution / block_size)
-        .bitmasked()
+        .pointer()
         .dense(Indices(0, 1, 2), block_size)
         .place(density);
 

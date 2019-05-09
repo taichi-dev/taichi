@@ -362,10 +362,7 @@ void StructCompiler::run(SNode &node) {
       emit("{{");
       auto ntn = ambient_snodes[i]->node_type_name;
       emit("auto ambient_ptr = create_unified<{}::child_type>();", ntn);
-      emit(
-          "cudaMemcpyToSymbol({}_ambient_ptr, &ambient_ptr, "
-          "sizeof(ambient_ptr));",
-          ntn);
+      emit("Managers::get_allocator<{}>()->ambient = ambient_ptr;", ntn);
       emit("}}");
     }
   }

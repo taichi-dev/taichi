@@ -63,6 +63,7 @@ struct SNodeAllocator {
   // backups that will not change during a single kernel execution
   size_t resident_tail_const;
   size_t recycle_tail_const;
+  data_type *ambient;
 
   SNodeAllocator() {
     if (T::has_null)
@@ -77,6 +78,7 @@ struct SNodeAllocator {
 
     resident_tail = 0;
     recycle_tail = 0;
+    ambient = nullptr;
   }
 
   __device__ __host__ void reset_meta() {

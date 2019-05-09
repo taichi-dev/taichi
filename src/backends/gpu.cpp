@@ -958,7 +958,8 @@ class GPUIRCodeGen : public IRVisitor {
              stmt->ptr->raw_name());
       }
     } else {
-      emit("const auto {} = *({}[0]);", stmt->raw_name(), stmt->ptr->raw_name());
+      emit("const auto {} = *({}[0]);", stmt->raw_name(),
+           stmt->ptr->raw_name());
     }
   }
 
@@ -982,8 +983,13 @@ class GPUIRCodeGen : public IRVisitor {
 
   void visit(ElementShuffleStmt *stmt) {
     auto init = stmt->elements.serialize(
-        [](const VectorElement &elem) {
-          return fmt::format("{}[{}]", elem.stmt->raw_name(), elem.index);
+        [&](const VectorElement &elem) {
+          TC_ASSERT(elem.index == 0);
+          if (stmt->pointer) {
+            return fmt::format("{}[0]", elem.stmt->raw_name(), elem.index);
+          } else {
+            return fmt::format("{}", elem.stmt->raw_name(), elem.index);
+          }
         },
         "{");
     if (stmt->pointer) {
@@ -1062,8 +1068,10 @@ class GPUIRCodeGen : public IRVisitor {
          stmt->input_index->raw_name());
     if (!stmt->activate && snode->has_null()) {
       // safe guard with ambient node
-      emit("if({}_guarded == nullptr) {}_guarded = {}_ambient_ptr;",
-           stmt->raw_name(), stmt->raw_name(), snode->node_type_name);
+      emit(
+          "if({}_guarded == nullptr) {}_guarded = "
+          "Managers::get_allocator<{}>()->ambient;",
+          stmt->raw_name(), stmt->raw_name(), snode->node_type_name);
     }
     emit(R"(auto {} = {}_guarded;)", stmt->raw_name(), stmt->raw_name());
   }

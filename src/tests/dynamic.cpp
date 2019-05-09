@@ -320,36 +320,38 @@ TC_TEST("sort") {
 
 TC_TEST("dilate") {
   for (auto arch : {Arch::x86_64, Arch::gpu}) {
-    int n = 16;
-    int bs = 4;
-    Program prog(arch);
+    for (auto ds: {0, 1}) {
+      int n = 16;
+      int bs = 4;
+      Program prog(arch);
 
-    Global(x, i32);
-    layout([&]() {
-      auto i = Index(0);
-      root.dense(i, n / bs).pointer().dense(i, n / bs).place(x);
-    });
-
-    x.val<int32>(bs * 2);
-
-    // dilate
-    kernel([&]() {
-      For(x, [&](Expr i) {
-        x[i - 1] = 0;
-        x[i + 1] = 0;
+      Global(x, i32);
+      layout([&]() {
+        auto i = Index(0);
+        if (ds) {
+          root.dense(i, n / bs).pointer().dense(i, n / bs).place(x);
+        } else {
+          root.dense(i, n / bs).bitmasked().dense(i, n / bs).place(x);
+        }
       });
-    })();
 
-    // dilate
-    kernel([&]() {
-      For(x, [&](Expr i) {
-        x[i] += 1;
-      });
-    })();
+      x.val<int32>(bs * 2);
 
-    for (int i = 0; i < n; i++) {
-      int bid = i / bs;
-      TC_CHECK(x.val<int32>(i) == (1 <= bid && bid < 4));
+      // dilate
+      kernel([&]() {
+        For(x, [&](Expr i) {
+          x[i - 1] = 0;
+          x[i + 1] = 0;
+        });
+      })();
+
+      // dilate
+      kernel([&]() { For(x, [&](Expr i) { x[i] += 1; }); })();
+
+      for (int i = 0; i < n; i++) {
+        int bid = i / bs;
+        TC_CHECK(x.val<int32>(i) == (1 <= bid && bid < 4));
+      }
     }
   }
 };

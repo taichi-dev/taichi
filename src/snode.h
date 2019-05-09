@@ -255,6 +255,11 @@ class SNode {
   bool has_null() const {
     return type == SNodeType::pointer || type == SNodeType::hashed;
   }
+
+  bool need_activation() const {
+    return type == SNodeType::pointer || type == SNodeType::hashed ||
+           (type == SNodeType::dense && _bitmasked);
+  }
 };
 
 TLANG_NAMESPACE_END

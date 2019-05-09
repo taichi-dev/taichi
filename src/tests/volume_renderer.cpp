@@ -9,7 +9,7 @@ bool use_sky_map = false;
 auto volume_renderer = [] {
   // CoreState::set_trigger_gdb_when_crash(true);
 
-  int depth_limit = 10;
+  int depth_limit = 20;
   int n = 512;
   int grid_resolution = 256;
   Vector3 albedo(0.9, 0.95, 1);
@@ -170,9 +170,7 @@ auto volume_renderer = [] {
           normalized(Vector({2.5f, 1.0f, 0.5f})));
                 */
 
-      auto Le =
-          Var(1000.0f * sky_map[cast<int32>(uv(0) * (float32)sky_map_size[0]),
-                                cast<int32>(uv(1) * (float32)sky_map_size[1])]);
+      auto Le = Var(sky_sample_color[sample]);
       auto near_t = Var(-std::numeric_limits<float>::max());
       auto far_t = Var(std::numeric_limits<float>::max());
       auto hit = box_intersect(p, dir_to_sky, near_t, far_t);
@@ -244,7 +242,9 @@ auto volume_renderer = [] {
       auto theta = Var(asin(dir(1)));
       auto u = cast<int32>((phi + pi) * (sky_map_size[0] / (2 * pi)));
       auto v = cast<int32>(theta * (sky_map_size[1] / pi * 2));
-      ret = sky_map[u, v] * 1000.0f;
+      ret = sky_map[u, v];
+    }).Else([&]{
+      ret = Vector({0.6f, 0.6f, 0.6f});
     });
     return ret;
   };
@@ -343,7 +343,7 @@ auto volume_renderer = [] {
         for (int d = 0; d < 3; d++) {
           auto l = sky_map_data[(i * sky_map_size[1] + j) * 3 + d] *
                    (1.0f / (1 << 20));
-          sky_map(d).val<float32>(i, j) = l;
+          sky_map(d).val<float32>(i, j) = l * 1000;
         }
       }
     }

@@ -618,8 +618,11 @@ class GPUIRCodeGen : public IRVisitor {
       }
       emit("gpu_runtime_init();");
       int num_blocks = (end - begin + block_size - 1) / block_size;
+      emit(R"(GPUProfiler::get_instance().start("{}");)",
+           codegen->func_name);
       emit("{}_kernel<<<{}, {}>>>(context);", codegen->func_name, num_blocks,
            block_size);
+      emit(R"(GPUProfiler::get_instance().stop();)");
     } else {
       auto struct_for = for_stmt_->as<StructForStmt>();
       bool use_activity_tracking = false;

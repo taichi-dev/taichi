@@ -60,12 +60,16 @@ class GPUProfiler {
     sync();
     printf("GPU Profiler:\n");
     for (auto &rec : records) {
-      printf("    %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms\n",
-             rec.name.c_str(), rec.min, rec.total / rec.counter, rec.max);
+      printf(
+          "    %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   count "
+          "%7d\n",
+          rec.name.c_str(), rec.min, rec.total / rec.counter, rec.max,
+          rec.counter);
     }
   }
 
   void sync() {
+    cudaDeviceSynchronize();
     for (auto &map_elem : outstanding_events) {
       auto &list = map_elem.second;
       for (auto &item : list) {
@@ -142,8 +146,11 @@ class CPUProfiler {
   void print() {
     printf("CPU Profiler:\n");
     for (auto &rec : records) {
-      printf("    %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms\n",
-             rec.name.c_str(), rec.min, rec.total / rec.counter, rec.max);
+      printf(
+          "    %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   count "
+          "%7d\n",
+          rec.name.c_str(), rec.min, rec.total / rec.counter, rec.max,
+          rec.counter);
     }
   }
 };

@@ -377,7 +377,7 @@ auto volume_renderer = [] {
     for (int i = 0; i < N; i++) {
       main();
     }
-    // prog.profiler_print();
+    prog.profiler_print();
 
     real scale = 1.0f / ((frame + 1) * N);
     render_buffer.initialize(render_size);

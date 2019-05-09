@@ -78,13 +78,13 @@ __device__ __host__ void exit() {
 #if defined(TL_DEBUG)
 #define TC_ASSERT(x)                                        \
   if (!(x)) {                                               \
-    printf("Assertion failed (Ln %d): %s\n", __LINE__, #x); \
+    printf("Assertion failed (%s@Ln %d): %s\n", __FILE__, __LINE__, #x); \
     exit();                                                 \
   }
 
 #define TC_ASSERT_INFO(x, t)                               \
   if (!(x)) {                                              \
-    printf("Assertion failed (Ln %d): %s\n", __LINE__, t); \
+    printf("Assertion failed (%s@Ln %d): %s\n", __FILE__, __LINE__, t); \
     exit();                                                \
   }
 #else

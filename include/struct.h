@@ -50,7 +50,7 @@ struct SNodeAllocator {
   using data_type = typename T::child_type;
   static constexpr std::size_t pool_size = std::min(
       (1ULL << 33) / sizeof(data_type),
-      1ULL << 25);  // each snode allocator takes at most 8 GB, max 32M metas
+      1ULL << 25);  // each snode allocator takes at most 8 GB (VM), max 32M metas
   static constexpr int id = SNodeID<T>::value;
 
   SNodeMeta *resident_pool;
@@ -92,6 +92,11 @@ struct SNodeAllocator {
     TC_ASSERT(data_pool != nullptr);
     TC_ASSERT(resident_pool != nullptr);
     auto id = atomic_add(&resident_tail, 1UL);
+#if defined(TL_DEBUG)
+    if (id >= pool_size) {
+      printf("pool size %lld\n", pool_size);
+    }
+#endif
     TC_ASSERT(id < pool_size);
     SNodeMeta &meta = resident_pool[id];
     meta.active = true;

@@ -42,7 +42,7 @@ auto volume_renderer = [] {
     root.dense(Index(0), n * n * 2).place(buffer(0), buffer(1), buffer(2));
 
     root.dense(Indices(0, 1, 2), grid_resolution / block_size)
-        .pointer()
+        .bitmasked()
         .dense(Indices(0, 1, 2), block_size)
         .place(density);
 
@@ -59,12 +59,12 @@ auto volume_renderer = [] {
   };
 
   auto query_active = [&](Vector p) {
-    auto inside_box = Var(1);//point_inside_box(p);
+    auto inside_box = Var(1);  // point_inside_box(p);
     auto ret = Var(0);
     If(inside_box).Then([&] {
-      auto i = floor(p(0) * float32(grid_resolution));
-      auto j = floor(p(1) * float32(grid_resolution));
-      auto k = floor(p(2) * float32(grid_resolution));
+      auto i = cast<int>(floor(p(0) * float32(grid_resolution)));
+      auto j = cast<int>(floor(p(1) * float32(grid_resolution)));
+      auto k = cast<int>(floor(p(2) * float32(grid_resolution)));
       ret = Probe(density, (i, j, k));
     });
     return ret;
@@ -75,9 +75,9 @@ auto volume_renderer = [] {
     auto inside_box = point_inside_box(p);
     auto ret = Var(0.0f);
     If(inside_box).Then([&] {
-      auto i = floor(p(0) * float32(grid_resolution));
-      auto j = floor(p(1) * float32(grid_resolution));
-      auto k = floor(p(2) * float32(grid_resolution));
+      auto i = cast<int>(floor(p(0) * float32(grid_resolution)));
+      auto j = cast<int>(floor(p(1) * float32(grid_resolution)));
+      auto k = cast<int>(floor(p(2) * float32(grid_resolution)));
       ret = density[i, j, k];
     });
     return ret;
@@ -428,7 +428,7 @@ auto volume_renderer = [] {
 
   auto tone_map = [](real x) { return std::sqrt(x); };
 
-  constexpr int N = 10;
+  constexpr int N = 100;
   for (int frame = 0; frame < 100; frame++) {
     for (int i = 0; i < N; i++) {
       main();

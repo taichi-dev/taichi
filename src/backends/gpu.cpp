@@ -922,14 +922,20 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    auto ptr = stmt->ptr->as<GlobalPtrStmt>();
-    auto snode = ptr->snodes[0];
-    if (current_scratch_pads && current_scratch_pads->has(snode)) {
-      auto &pad = current_scratch_pads->get(snode);
-      emit("{}[{}] = {};", pad.name(),
-           pad.global_to_linearized_local(current_struct_for->loop_vars,
-                                          ptr->indices),
-           stmt->data->raw_name());
+    if (stmt->ptr->is<GlobalPtrStmt>()) {
+      auto ptr = stmt->ptr->as<GlobalPtrStmt>();
+      auto snode = ptr->snodes[0];
+      if (current_scratch_pads && current_scratch_pads->has(snode)) {
+        auto &pad = current_scratch_pads->get(snode);
+        emit("{}[{}] = {};", pad.name(),
+             pad.global_to_linearized_local(current_struct_for->loop_vars,
+                                            ptr->indices),
+             stmt->data->raw_name());
+      } else {
+        emit("*({} *){}[{}] = {};",
+             data_type_name(stmt->data->ret_type.data_type),
+             stmt->ptr->raw_name(), 0, stmt->data->raw_name());
+      }
     } else {
       emit("*({} *){}[{}] = {};",
            data_type_name(stmt->data->ret_type.data_type),
@@ -939,16 +945,20 @@ class GPUIRCodeGen : public IRVisitor {
 
   void visit(GlobalLoadStmt *stmt) {
     TC_ASSERT(stmt->width() == 1);
-    auto ptr = stmt->ptr->as<GlobalPtrStmt>();
-    auto snode = ptr->snodes[0];
-    if (current_scratch_pads && current_scratch_pads->has(snode)) {
-      auto &pad = current_scratch_pads->get(snode);
-      emit("const auto {} = {}[{}];", stmt->raw_name(), pad.name(),
-           pad.global_to_linearized_local(current_struct_for->loop_vars,
-                                          ptr->indices));
+    if (stmt->ptr->is<GlobalPtrStmt>()) {
+      auto ptr = stmt->ptr->as<GlobalPtrStmt>();
+      auto snode = ptr->snodes[0];
+      if (current_scratch_pads && current_scratch_pads->has(snode)) {
+        auto &pad = current_scratch_pads->get(snode);
+        emit("const auto {} = {}[{}];", stmt->raw_name(), pad.name(),
+             pad.global_to_linearized_local(current_struct_for->loop_vars,
+                                            ptr->indices));
+      } else {
+        emit("const auto {} = *({}[0]);", stmt->raw_name(),
+             stmt->ptr->raw_name());
+      }
     } else {
-      emit("const auto {} = *({}[0]);", stmt->raw_name(),
-           stmt->ptr->raw_name());
+      emit("const auto {} = *({}[0]);", stmt->raw_name(), stmt->ptr->raw_name());
     }
   }
 
@@ -971,12 +981,18 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(ElementShuffleStmt *stmt) {
-    emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
-         stmt->elements.serialize(
-             [](const VectorElement &elem) {
-               return fmt::format("{}[{}]", elem.stmt->raw_name(), elem.index);
-             },
-             "{"));
+    auto init = stmt->elements.serialize(
+        [](const VectorElement &elem) {
+          return fmt::format("{}[{}]", elem.stmt->raw_name(), elem.index);
+        },
+        "{");
+    if (stmt->pointer) {
+      emit("{} * const {} [{}] {};", data_type_name(stmt->ret_type.data_type),
+           stmt->raw_name(), stmt->width(), init);
+    } else {
+      emit("const {} {} ({});", stmt->ret_data_type_name(), stmt->raw_name(),
+           init);
+    }
   }
 
   void visit(RangeAssumptionStmt *stmt) {
@@ -993,6 +1009,76 @@ class GPUIRCodeGen : public IRVisitor {
     emit("#if defined(TL_DEBUG)");
     emit(R"(TC_ASSERT_INFO({}, "{}");)", stmt->val->raw_name(), stmt->text);
     emit("#endif");
+  }
+
+  void visit(OffsetAndExtractBitsStmt *stmt) {
+    emit(R"(auto {} = ((({} + {}) >> {}) & ((1 << {}) - 1));)",
+         stmt->raw_name(), stmt->offset, stmt->input->raw_name(),
+         stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
+  }
+
+  void visit(LinearizeStmt *stmt) {
+    std::string val = "0";
+    for (int i = 0; i < stmt->inputs.size(); i++) {
+      val = fmt::format("({}) * {} + {}", val, stmt->strides[i],
+                        stmt->inputs[i]->raw_name());
+    }
+    emit(R"(auto {} = {};)", stmt->raw_name(), val);
+  }
+
+  void visit(IntegerOffsetStmt *stmt) {
+    if (stmt->input->is<GetChStmt>() &&
+        stmt->input->as<GetChStmt>()->output_snode->type == SNodeType::place) {
+      auto input = stmt->input->as<GetChStmt>();
+      auto dtn = input->output_snode->data_type_name();
+      emit(R"({}* {}[1] {{({} *)((char *){}[0] + {})}};)", dtn,
+           stmt->raw_name(), dtn, stmt->input->raw_name(), stmt->offset);
+    } else {
+      emit(R"(auto {} = {} + {};)", stmt->raw_name(), stmt->input->raw_name(),
+           stmt->offset);
+    }
+  }
+
+  void visit(SNodeLookupStmt *stmt) {
+    std::string parent;
+    if (stmt->input_snode) {
+      parent = stmt->input_snode->raw_name();
+    } else {
+      parent = "root";
+    }
+    std::vector<std::string> global_indices(max_num_indices, "0");
+    auto snode = stmt->snode;
+    for (int i = 0; i < (int)stmt->global_indices.size(); i++) {
+      if (snode->physical_index_position[i] != -1) {
+        global_indices[snode->physical_index_position[i]] =
+            stmt->global_indices[i]->raw_name();
+      }
+    }
+    if (stmt->activate && stmt->snode->type != SNodeType::place) {
+      emit(R"({}->activate({}, {});)", parent, stmt->input_index->raw_name(),
+           make_list(global_indices, "{"));
+    }
+    emit("auto {}_guarded = {}->look_up({});", stmt->raw_name(), parent,
+         stmt->input_index->raw_name());
+    if (!stmt->activate && snode->has_null()) {
+      // safe guard with ambient node
+      emit("if({}_guarded == nullptr) {}_guarded = {}_ambient_ptr;",
+           stmt->raw_name(), stmt->raw_name(), snode->node_type_name);
+    }
+    emit(R"(auto {} = {}_guarded;)", stmt->raw_name(), stmt->raw_name());
+  }
+
+  void visit(GetChStmt *stmt) {
+    // emit("{} *{};", stmt->output_snode->data_type_name(),
+    //     stmt->raw_name());
+    if (stmt->output_snode->type == SNodeType::place) {
+      emit(R"({} *{}[1] {{&{}->get{}()->val}};)",
+           stmt->output_snode->data_type_name(), stmt->raw_name(),
+           stmt->input_ptr->raw_name(), stmt->chid);
+    } else {
+      emit(R"(auto {} = {}->get{}();)", stmt->raw_name(),
+           stmt->input_ptr->raw_name(), stmt->chid);
+    }
   }
 };
 
@@ -1015,6 +1101,34 @@ void GPUCodeGen::lower() {
   irpass::re_id(ir);
   if (prog->config.print_ir)
     irpass::print(ir);
+  if (prog->config.lower_access) {
+    irpass::lower_access(ir);
+    if (prog->config.print_ir) {
+      TC_TRACE("Access Lowered:");
+      irpass::re_id(ir);
+      irpass::print(ir);
+    }
+    for (int i = 0; i < 1; i++) {
+      irpass::die(ir);
+      if (prog->config.print_ir) {
+        TC_TRACE("DIEd:");
+        irpass::re_id(ir);
+        irpass::print(ir);
+      }
+      irpass::simplify(ir);
+      if (prog->config.print_ir) {
+        TC_TRACE("DupEliminated2:");
+        irpass::re_id(ir);
+        irpass::print(ir);
+      }
+    }
+  }
+  irpass::die(ir);
+  if (prog->config.print_ir) {
+    TC_TRACE("DIEd:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
 }
 
 void GPUCodeGen::codegen() {

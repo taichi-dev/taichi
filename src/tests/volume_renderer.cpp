@@ -36,11 +36,13 @@ auto volume_renderer = [] {
 
   Global(density, f32);
 
+  auto const block_size = 4;
+
   layout([&]() {
     root.dense(Index(0), n * n * 2).place(buffer(0), buffer(1), buffer(2));
 
-    auto block_size = 16;
-    root.dense(Indices(0, 1, 2), grid_resolution / block_size).bitmasked()
+    root.dense(Indices(0, 1, 2), grid_resolution / block_size)
+        .bitmasked()
         .dense(Indices(0, 1, 2), block_size)
         .place(density);
 
@@ -54,6 +56,18 @@ auto volume_renderer = [] {
   auto point_inside_box = [&](Vector p) {
     return Var(0.0f <= p(0) && p(0) < 1.0f && 0.0f <= p(1) && p(1) < 1.0f &&
                0.0f <= p(2) && p(2) < 1.0f);
+  };
+
+  auto query_active = [&](Vector p) {
+    auto inside_box = Var(1);//point_inside_box(p);
+    auto ret = Var(0);
+    If(inside_box).Then([&] {
+      auto i = floor(p(0) * float32(grid_resolution));
+      auto j = floor(p(1) * float32(grid_resolution));
+      auto k = floor(p(2) * float32(grid_resolution));
+      ret = Probe(density, (i, j, k));
+    });
+    return ret;
   };
 
   // If p is in the density field, return the density, otherwise return 0
@@ -144,12 +158,18 @@ auto volume_renderer = [] {
           t -= log(1.f - Rand<float32>()) * inv_max_density;
 
           auto q = Var(p - t * dir_to_p);
+
           If(!point_inside_box(q)).Then([&] { cond = 0; }).Else([&] {
-            auto density_at_p = query_density(q);
-            If(density_at_p * inv_max_density > Rand<float32>()).Then([&] {
-              cond = 0;
-              transmittance = Var(0.f);
-            });
+            If(!query_active(q))
+                .Then([&] { t += 1.0f * block_size / grid_resolution; })
+                .Else([&] {
+                  auto density_at_p = query_density(q);
+                  If(density_at_p * inv_max_density > Rand<float32>())
+                      .Then([&] {
+                        cond = 0;
+                        transmittance = Var(0.f);
+                      });
+                });
           });
         });
       });
@@ -184,11 +204,16 @@ auto volume_renderer = [] {
           t -= log(1.f - Rand<float32>()) * inv_max_density;
           auto q = Var(p + t * dir_to_sky);
           If(!point_inside_box(q)).Then([&] { cond = 0; }).Else([&] {
-            auto density_at_p = query_density(q);
-            If(density_at_p * inv_max_density > Rand<float32>()).Then([&] {
-              cond = 0;
-              transmittance = Var(0.f);
-            });
+            If(!query_active(q))
+                .Then([&] { t += 1.0f * block_size / grid_resolution; })
+                .Else([&] {
+                  auto density_at_p = query_density(q);
+                  If(density_at_p * inv_max_density > Rand<float32>())
+                      .Then([&] {
+                        cond = 0;
+                        transmittance = Var(0.f);
+                      });
+                });
           });
         });
       });
@@ -215,17 +240,21 @@ auto volume_renderer = [] {
 
       p = Var(o + t * d);
       If(t >= far_t || !point_inside_box(p)).Then([&] { cond = 0; }).Else([&] {
-        auto density_at_p = query_density(p);
-        If(density_at_p * inv_max_density > Rand<float32>()).Then([&] {
-          sigma_s(0) = Var(density_at_p * albedo[0]);
-          sigma_s(1) = Var(density_at_p * albedo[1]);
-          sigma_s(2) = Var(density_at_p * albedo[2]);
-          If(density_at_p != 0.f).Then([&] {
-            transmittance = 1.f / density_at_p;
-          });
-          cond = 0;
-          interaction = 1;
-        });
+        If(!query_active(p))
+            .Then([&] { t += 1.0f * block_size / grid_resolution; })
+            .Else([&] {
+              auto density_at_p = query_density(p);
+              If(density_at_p * inv_max_density > Rand<float32>()).Then([&] {
+                sigma_s(0) = Var(density_at_p * albedo[0]);
+                sigma_s(1) = Var(density_at_p * albedo[1]);
+                sigma_s(2) = Var(density_at_p * albedo[2]);
+                If(density_at_p != 0.f).Then([&] {
+                  transmittance = 1.f / density_at_p;
+                });
+                cond = 0;
+                interaction = 1;
+              });
+            });
       });
     });
 
@@ -364,12 +393,31 @@ auto volume_renderer = [] {
   for (int i = 0; i < grid_resolution; i++) {
     for (int j = 0; j < grid_resolution; j++) {
       for (int k = 0; k < grid_resolution; k++) {
-        density.val<float32>(i, j, k) =
-            density_field[i * grid_resolution * grid_resolution +
-                          j * grid_resolution + k];
+        auto d = density_field[i * grid_resolution * grid_resolution +
+                               j * grid_resolution + k];
+        if (d != 0) {  // populate non empty voxels only
+          density.val<float32>(i, j, k) = d;
+        }
       }
     }
   }
+
+  // expand blocks
+  Kernel(dilate).def([&] {
+    For(density, [&](Expr i, Expr j, Expr k) {
+      for (int x = -1; x < 2; x++) {
+        for (int y = -1; y < 2; y++) {
+          for (int z = -1; z < 2; z++) {
+            density[i + x * block_size, j + y * block_size,
+                    k + z * block_size] += 0.0f;  // simply activate the block
+          }
+        }
+      }
+    });
+  });
+
+  dilate();
+
   std::unique_ptr<GUI> gui = nullptr;
 
   if (use_gui) {

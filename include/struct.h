@@ -315,7 +315,7 @@ TC_FORCE_INLINE constexpr uint32 log2int(uint64 value) {
   return ret;
 }
 
-TC_FORCE_INLINE uint32 extract_bit(uint32 n, int begin, int end) {
+TC_DEVICE TC_FORCE_INLINE uint32 extract_bits(uint32 n, int begin, int end) {
   return (n >> begin) & ((1 << (end - begin)) - 1);
 }
 
@@ -345,13 +345,13 @@ struct dense {
       i_translated = i;
     } else if (dim == 2) {
       i_translated =
-          _pdep_u32(extract_bit(i, 0, n_bit_axis), 0x55555555) |
-          _pdep_u32(extract_bit(i, n_bit_axis, n_bit_axis * 2), 0xaaaaaaaa);
+          _pdep_u32(extract_bits(i, 0, n_bit_axis), 0x55555555) |
+          _pdep_u32(extract_bits(i, n_bit_axis, n_bit_axis * 2), 0xaaaaaaaa);
     } else if (dim == 3) {
       i_translated =
-          _pdep_u32(extract_bit(i, 0, n_bit_axis), 0x49249249) |
-          _pdep_u32(extract_bit(i, n_bit_axis, n_bit_axis * 2), 0x92492492) |
-          _pdep_u32(extract_bit(i, n_bit_axis * 2, n_bit_axis * 3), 0x24924924);
+          _pdep_u32(extract_bits(i, 0, n_bit_axis), 0x49249249) |
+          _pdep_u32(extract_bits(i, n_bit_axis, n_bit_axis * 2), 0x92492492) |
+          _pdep_u32(extract_bits(i, n_bit_axis * 2, n_bit_axis * 3), 0x24924924);
     } else if (dim == 4) {
       TC_ASSERT(false);
       i_translated = 0;

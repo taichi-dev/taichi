@@ -216,10 +216,12 @@ class CPUIRCodeGen : public IRVisitor {
     }
 
     emit("{{");
-    if (stmt->op_type != SNodeOpType::activate)
+    if (stmt->op_type != SNodeOpType::activate &&
+        stmt->op_type != SNodeOpType::probe) {
       emit("{} *{}_tmp = access_{}(root, {});", snode->node_type_name,
            snode->node_type_name, snode->node_type_name,
            make_list(indices, ""));
+    }
     if (stmt->op_type == SNodeOpType::append) {
       TC_ASSERT(stmt->val->width() == 1);
       emit("{}_tmp->append({}({}[0]));", snode->node_type_name,
@@ -227,7 +229,17 @@ class CPUIRCodeGen : public IRVisitor {
     } else if (stmt->op_type == SNodeOpType::clear) {
       emit("{}_tmp->clear();", snode->node_type_name);
     } else if (stmt->op_type == SNodeOpType::probe) {
-      emit("{}[0] = {}_tmp->get_n();", stmt->raw_name(), snode->node_type_name);
+      emit("{}[0] = query_{}(root, {});", stmt->raw_name(),
+           snode->node_type_name, make_list(indices, ""));
+      if (snode->type == SNodeType::dynamic) {
+        emit("if ({}[0]) {{", stmt->raw_name());
+        emit("{} *{}_tmp = access_{}(root, {});", snode->node_type_name,
+             snode->node_type_name, snode->node_type_name,
+             make_list(indices, ""));
+        emit("{}[0] = {}_tmp->get_n();", stmt->raw_name(),
+             snode->node_type_name);
+        emit("}}");
+      }
     } else if (stmt->op_type == SNodeOpType::activate) {
       emit("activate_{}(root, {});", snode->node_type_name,
            make_list(indices, ""));

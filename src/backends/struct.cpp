@@ -188,15 +188,20 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
   TC_ASSERT(max_num_indices == 4);
   constexpr int mode_access = 0;
   constexpr int mode_activate = 1;
+  constexpr int mode_query = 2;
 
-  for (auto mode : {mode_access, mode_activate}) {
-    auto verb = mode == mode_activate ? "activate" : "access";
+  for (auto mode : {mode_access, mode_activate, mode_query}) {
+    auto verb = mode == mode_activate
+                    ? "activate"
+                    : (mode == mode_access ? "access" : "query");
+    auto ret_type =
+        mode == mode_query ? "bool" : fmt::format("{} *", snode.node_type_name);
     emit(
-        "TLANG_ACCESSOR TC_EXPORT {} * {}_{}(void *root, int i0=0, int i1=0, "
+        "TLANG_ACCESSOR TC_EXPORT {} {}_{}(void *root, int i0=0, int i1=0, "
         "int "
         "i2=0, "
         "int i3=0) {{",
-        snode.node_type_name, verb, snode.node_type_name);
+        ret_type, verb, snode.node_type_name);
     if (snode._verbose) {
       emit(
           "std::cout << \"accessing node {} at \" << i0 << ' ' << i1 << ' ' "
@@ -227,14 +232,20 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
         else
           emit("#if defined(TC_STRUCT)");
       }
-      if (stack[i]->type != SNodeType::place)
-        emit("n{}->activate(tmp, {{i0, i1, i2, i3}});", i);
+      if (stack[i]->type != SNodeType::place) {
+        if (mode == mode_query) {
+          if (stack[i]->need_activation())
+            emit("if (!n{}->is_active(tmp)) return false;", i);
+        } else {
+          emit("n{}->activate(tmp, {{i0, i1, i2, i3}});", i);
+        }
+      }
       if (mode != mode_activate) {
         emit("#endif");
       }
       emit("auto n{} = access_{}(n{}, tmp);", i + 1,
            stack[i + 1]->node_type_name, i);
-      if (mode == mode_access)
+      if (mode == mode_access) {
         if (snode.has_ambient && stack[i + 1] != &snode) {
           if (snode.has_null()) {
             emit(
@@ -243,8 +254,13 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
                 i + 1, snode.node_type_name, snode.node_type_name);
           }
         }
+      }
     }
-    emit("return n{};", (int)stack.size() - 1);
+    if (mode == mode_query) {
+      emit("return true;");
+    } else {
+      emit("return n{};", (int)stack.size() - 1);
+    }
     emit("}}");
     emit("");
   }

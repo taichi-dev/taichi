@@ -497,7 +497,8 @@ struct pointer {
   TC_DEVICE TC_FORCE_INLINE child_type *look_up(
       int i) {  // i is flattened index
     // TC_ASSERT(i == 0);
-    TC_ASSERT(data != nullptr);
+    // TC_ASSERT(data != nullptr);
+    // Returning nullptr is allowed.
     return data;
   }
 

@@ -42,7 +42,7 @@ auto volume_renderer = [] {
     root.dense(Index(0), n * n * 2).place(buffer(0), buffer(1), buffer(2));
 
     root.dense(Indices(0, 1, 2), grid_resolution / block_size)
-        .bitmasked()
+        .pointer()
         .dense(Indices(0, 1, 2), block_size)
         .place(density);
 
@@ -405,9 +405,9 @@ auto volume_renderer = [] {
   // expand blocks
   Kernel(dilate).def([&] {
     For(density, [&](Expr i, Expr j, Expr k) {
-      for (int x = -1; x < 2; x++) {
-        for (int y = -1; y < 2; y++) {
-          for (int z = -1; z < 2; z++) {
+      for (int x = 0; x < 2; x++) {
+        for (int y = 0; y < 1; y++) {
+          for (int z = 0; z < 1; z++) {
             density[i + x * block_size, j + y * block_size,
                     k + z * block_size] += 0.0f;  // simply activate the block
           }

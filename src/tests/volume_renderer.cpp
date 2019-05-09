@@ -267,6 +267,7 @@ auto volume_renderer = [] {
   }
 
   Kernel(main).def([&]() {
+    BlockDim(32);
     For(0, n * n * 2, [&](Expr i) {
       auto orig = Var(Vector({0.5f, 0.3f, 1.5f}));
 

@@ -116,7 +116,9 @@ enum class UnaryType : int {
   cast,
   abs,
   sin,
+  asin,
   cos,
+  acos,
   inv,
   rcp,
   exp,
@@ -150,6 +152,7 @@ enum class BinaryType : int {
   cmp_ge,
   cmp_eq,
   cmp_ne,
+  atan2,
   undefined
 };
 

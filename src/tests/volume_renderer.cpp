@@ -22,15 +22,24 @@ auto volume_renderer = [] {
   std::fread(density_field.data(), sizeof(float32), density_field.size(), f);
   std::fclose(f);
 
+  Vector2i sky_map_size(512, 128);
+  f = fopen("sky_map.bin", "rb");
+  TC_ASSERT_INFO(f, "./sky_map.bin not found");
+  std::vector<uint32> sky_map_data(sky_map_size.prod() * 3);
+  std::fread(sky_map_data.data(), sizeof(uint32), sky_map_data.size(), f);
+
   Program prog(Arch::gpu);
   prog.config.print_ir = true;
 
   Vector buffer(DataType::f32, 3);
+  Vector sky_map(DataType::f32, 3);
   Global(density, f32);
 
   layout([&]() {
     root.dense(Index(0), n * n * 2).place(buffer(0), buffer(1), buffer(2));
     root.dense(Indices(0, 1, 2), grid_resolution).place(density);
+    root.dense(Indices(0, 1), {sky_map_size[0], sky_map_size[1]})
+        .place(sky_map);
   });
 
   auto point_inside_box = [&](Vector p) {
@@ -176,9 +185,22 @@ auto volume_renderer = [] {
     return hit && interaction;
   };
 
-  auto background = [](Vector dir) { return Vector({0.4f, 0.4f, 0.4f}); };
+  auto background = [&](Vector dir) {
+    // return Vector({0.4f, 0.4f, 0.4f});
+    auto ret = Var(Vector({0.0f, 0.0f, 0.0f}));
+    If(dir(1) >= 0.0f).Then([&] {
+      auto phi = Var(atan2(dir(0), dir(2)));
+      auto theta = Var(asin(dir(1)));
+      // Print(phi);
+      // Print(theta);
+      auto u = cast<int32>((phi + pi) * (sky_map_size[0] / (2 * pi)));
+      auto v = cast<int32>(theta * (sky_map_size[1] / pi));
+      ret = sky_map[u, v] * 1000.0f;
+    });
+    return ret;
+  };
 
-  float32 fov = 0.5;
+  float32 fov = 1.5;
 
   auto max_density = 0.0f;
   for (int i = 0; i < pow<3>(grid_resolution); i++) {
@@ -238,7 +260,7 @@ auto volume_renderer = [] {
               c = sample_phase_isotropic();
             })
             .Else([&] {
-              // Li += throughput.element_wise_prod(background(c));
+              Li += throughput.element_wise_prod(background(c));
               depth = depth_limit;
             });
       });
@@ -246,6 +268,16 @@ auto volume_renderer = [] {
       buffer[i] += Li;
     });
   });
+
+  for (int i = 0; i < sky_map_size[0]; i++) {
+    for (int j = 0; j < sky_map_size[1]; j++) {
+      for (int d = 0; d < 3; d++) {
+        auto l = sky_map_data[(j * sky_map_size[0] + i) * 3 + d] *
+                 (1.0f / (1 << 20));
+        sky_map(d).val<float32>(i, j) = l;
+      }
+    }
+  }
 
   for (int i = 0; i < grid_resolution; i++) {
     for (int j = 0; j < grid_resolution; j++) {
@@ -284,6 +316,15 @@ auto volume_renderer = [] {
                   tone_map(scale * buffer(1).val<float32>(i)),
                   tone_map(scale * buffer(2).val<float32>(i)), 1);
     }
+
+    for (int i = 0; i < sky_map_size[0]; i++) {
+      for (int j = 0; j < sky_map_size[1]; j++) {
+        for (int d = 0; d < 3; d++) {
+          canvas->img[i][j][d] = sky_map(d).val<float32>(i, j) * 500;
+        }
+      }
+    }
+
     if (use_gui) {
       gui->canvas->img = canvas->img;
       gui->update();

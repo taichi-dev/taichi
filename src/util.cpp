@@ -144,7 +144,9 @@ std::string unary_type_name(UnaryType type) {
     REGISTER_TYPE(cast);
     REGISTER_TYPE(abs);
     REGISTER_TYPE(sin);
+    REGISTER_TYPE(asin);
     REGISTER_TYPE(cos);
+    REGISTER_TYPE(acos);
     REGISTER_TYPE(inv);
     REGISTER_TYPE(exp);
     REGISTER_TYPE(log);
@@ -178,6 +180,7 @@ std::string binary_type_name(BinaryType type) {
     REGISTER_TYPE(cmp_ge);
     REGISTER_TYPE(cmp_ne);
     REGISTER_TYPE(cmp_eq);
+    REGISTER_TYPE(atan2);
 #undef REGISTER_TYPE
   }
   return type_names[type];

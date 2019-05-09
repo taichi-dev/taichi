@@ -4,6 +4,7 @@
 TLANG_NAMESPACE_BEGIN
 
 bool use_gui = false;
+bool use_sky_map = true;
 
 auto volume_renderer = [] {
   // CoreState::set_trigger_gdb_when_crash(true);
@@ -28,11 +29,20 @@ auto volume_renderer = [] {
   std::vector<uint32> sky_map_data(sky_map_size.prod() * 3);
   std::fread(sky_map_data.data(), sizeof(uint32), sky_map_data.size(), f);
 
+  int n_sky_samples = 1024;
+  f = fopen("sky_samples.bin", "rb");
+  TC_ASSERT_INFO(f, "./sky_samples.bin not found");
+  std::vector<uint32> sky_sample_data(n_sky_samples * 5);
+  std::fread(sky_sample_data.data(), sizeof(uint32), sky_sample_data.size(), f);
+
   Program prog(Arch::gpu);
   prog.config.print_ir = true;
 
   Vector buffer(DataType::f32, 3);
   Vector sky_map(DataType::f32, 3);
+  Vector sky_sample_color(DataType::f32, 3);
+  Vector sky_sample_uv(DataType::f32, 2);
+
   Global(density, f32);
 
   layout([&]() {
@@ -40,6 +50,9 @@ auto volume_renderer = [] {
     root.dense(Indices(0, 1, 2), grid_resolution).place(density);
     root.dense(Indices(0, 1), {sky_map_size[0], sky_map_size[1]})
         .place(sky_map);
+    root.dense(Indices(0), n_sky_samples)
+        .place(sky_sample_color)
+        .place(sky_sample_uv);
   });
 
   auto point_inside_box = [&](Vector p) {
@@ -113,40 +126,76 @@ auto volume_renderer = [] {
 
   // Direct sample light
   auto sample_light = [&](Vector p, float32 inv_max_density) {
-    auto Le = Var(700.0f * Vector({5.0f, 5.0f, 5.0f}));
-    auto light_p = Var(10.0f * Vector({2.5f, 1.0f, 0.5f}));
-    auto dir_to_p = Var(p - light_p);
-    auto dist_to_p = Var(dir_to_p.norm());
-    auto inv_dist_to_p = Var(1.f / dist_to_p);
-    dir_to_p = normalized(dir_to_p);
+    auto ret = Vector({0.0f, 0.0f, 0.0f});
+    if (!use_sky_map) {  // point light source
+      auto Le = Var(700.0f * Vector({5.0f, 5.0f, 5.0f}));
+      auto light_p = Var(10.0f * Vector({2.5f, 1.0f, 0.5f}));
+      auto dir_to_p = Var(p - light_p);
+      auto dist_to_p = Var(dir_to_p.norm());
+      auto inv_dist_to_p = Var(1.f / dist_to_p);
+      dir_to_p = normalized(dir_to_p);
 
-    auto near_t = Var(-std::numeric_limits<float>::max());
-    auto far_t = Var(std::numeric_limits<float>::max());
-    auto hit = box_intersect(light_p, dir_to_p, near_t, far_t);
-    auto interaction = Var(0);
-    auto transmittance = Var(1.f);
+      auto near_t = Var(-std::numeric_limits<float>::max());
+      auto far_t = Var(std::numeric_limits<float>::max());
+      auto hit = box_intersect(light_p, dir_to_p, near_t, far_t);
+      auto interaction = Var(0);
+      auto transmittance = Var(1.f);
 
-    If(hit, [&] {
-      auto cond = Var(hit);
-      auto t = Var(near_t);
+      If(hit, [&] {
+        auto cond = Var(hit);
+        auto t = Var(near_t);
 
-      While(cond, [&] {
-        t -= log(1.f - Rand<float32>()) * inv_max_density;
+        While(cond, [&] {
+          t -= log(1.f - Rand<float32>()) * inv_max_density;
 
-        p = Var(light_p + t * dir_to_p);
-        If(t >= dist_to_p || !point_inside_box(p))
-            .Then([&] { cond = 0; })
-            .Else([&] {
-              auto density_at_p = query_density(p);
-              If(density_at_p * inv_max_density > Rand<float32>()).Then([&] {
-                cond = 0;
-                transmittance = Var(0.f);
+          p = Var(light_p + t * dir_to_p);
+          If(t >= dist_to_p || !point_inside_box(p))
+              .Then([&] { cond = 0; })
+              .Else([&] {
+                auto density_at_p = query_density(p);
+                If(density_at_p * inv_max_density > Rand<float32>()).Then([&] {
+                  cond = 0;
+                  transmittance = Var(0.f);
+                });
               });
-            });
+        });
       });
-    });
 
-    return Var(transmittance * Le * inv_dist_to_p * inv_dist_to_p);
+      ret = Var(transmittance * Le * inv_dist_to_p * inv_dist_to_p);
+    } else {
+      auto sample = Var(cast<int>(Rand<float32>() * float32(n_sky_samples)));
+      auto phi = Var(sky_sample_uv[sample](0) * (2 * pi / sky_map_size[0]));
+      auto theta = Var(sky_sample_uv[sample](1) * (pi / 2 / sky_map_size[1]));
+
+      auto dir_to_sky = Var(Vector({cos(phi), sin(theta), sin(phi)}));
+
+      auto Le = Var(1.0f * Vector({5.0f, 5.0f, 5.0f}));
+      auto near_t = Var(-std::numeric_limits<float>::max());
+      auto far_t = Var(std::numeric_limits<float>::max());
+      auto hit = box_intersect(p, dir_to_sky, near_t, far_t);
+      auto interaction = Var(0);
+      auto transmittance = Var(1.f);
+
+      If(hit, [&] {
+        auto cond = Var(hit);
+        auto t = Var(near_t);
+
+        While(cond, [&] {
+          t -= log(1.f - Rand<float32>()) * inv_max_density;
+          p = Var(p + t * dir_to_sky);
+          If(!point_inside_box(p)).Then([&] { cond = 0; }).Else([&] {
+            auto density_at_p = query_density(p);
+            If(density_at_p * inv_max_density > Rand<float32>()).Then([&] {
+              cond = 0;
+              transmittance = Var(0.f);
+            });
+          });
+        });
+      });
+
+      ret = Var(transmittance * Le);
+    }
+    return ret;
   };
 
   // Woodcock tracking
@@ -191,16 +240,14 @@ auto volume_renderer = [] {
     If(dir(1) >= 0.0f).Then([&] {
       auto phi = Var(atan2(dir(0), dir(2)));
       auto theta = Var(asin(dir(1)));
-      // Print(phi);
-      // Print(theta);
       auto u = cast<int32>((phi + pi) * (sky_map_size[0] / (2 * pi)));
-      auto v = cast<int32>(theta * (sky_map_size[1] / pi));
+      auto v = cast<int32>(theta * (sky_map_size[1] / pi * 2));
       ret = sky_map[u, v] * 1000.0f;
     });
     return ret;
   };
 
-  float32 fov = 1.5;
+  float32 fov = 0.6;
 
   auto max_density = 0.0f;
   for (int i = 0; i < pow<3>(grid_resolution); i++) {
@@ -260,7 +307,9 @@ auto volume_renderer = [] {
               c = sample_phase_isotropic();
             })
             .Else([&] {
-              Li += throughput.element_wise_prod(background(c));
+              if (use_sky_map) {
+                Li += throughput.element_wise_prod(background(c));
+              }
               depth = depth_limit;
             });
       });
@@ -276,6 +325,17 @@ auto volume_renderer = [] {
                  (1.0f / (1 << 20));
         sky_map(d).val<float32>(i, j) = l;
       }
+    }
+  }
+
+  for (int i = 0; i < n_sky_samples; i++) {
+    for (int d = 0; d < 2; d++) {
+      sky_sample_uv(d).val<float32>(i) =
+          sky_sample_data[i * 5 + d] * (1.0f / (sky_map_size[d]));
+    }
+    for (int d = 0; d < 3; d++) {
+      sky_sample_color(d).val<float32>(i) =
+          sky_sample_data[i * 5 + 2 + d] * (1.0f / (1 << 20));
     }
   }
 

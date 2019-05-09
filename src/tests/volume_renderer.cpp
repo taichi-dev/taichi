@@ -273,11 +273,14 @@ auto volume_renderer = [] {
     For(0, n * n * 2, [&](Expr i) {
       auto orig = Var(Vector({0.5f, 0.3f, 1.5f}));
 
+      auto bid = Var(i / 32);
+      auto tid = Var(i % 32);
+      auto x = Var(bid / (n / 4) * 8 + tid / 4),
+           y = Var(bid % (n / 4) * 4 + tid % 4);
+
       auto c = Var(Vector(
-          {fov * ((Rand<float32>() + cast<float32>(i / n)) / float32(n / 2) -
-                  2.0f),
-           fov * ((Rand<float32>() + cast<float32>(i % n)) / float32(n / 2) -
-                  1.0f),
+          {fov * ((Rand<float32>() + cast<float32>(x)) / float32(n / 2) - 2.0f),
+           fov * ((Rand<float32>() + cast<float32>(y)) / float32(n / 2) - 1.0f),
            -1.0f}));
 
       c = normalized(c);
@@ -319,7 +322,7 @@ auto volume_renderer = [] {
             });
       });
 
-      buffer[i] += Li;
+      buffer[x * n + y] += Li;
     });
   });
 

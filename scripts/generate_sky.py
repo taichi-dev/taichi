@@ -20,18 +20,20 @@ R = np.array(R).reshape(sz)
 G = np.array(G).reshape(sz)
 B = np.array(B).reshape(sz)
 
-img = np.stack([R, G, B], axis=2)[:sz[0] // 2]
+img = np.stack([R, G, B], axis=2)[:sz[0] // 2].swapaxes(0, 1)[:, ::-1]
 l = 0.2126 * img[:,:,0] + 0.715 * img[:,:,1] + 0.072 * img[:, :,2]
-sz = (sz[0] // 2, sz[1])
+
+sz = (sz[1], sz[0] // 2)
+print(img.shape)
 print(sz)
-for i in range(0, sz[0]):
-    l[sz[0] - i - 1] *= np.sin((i + 0.5) / sz[0] * np.pi / 2)
+for i in range(0, sz[1]):
+    l[:, sz[1] - i - 1] *= np.sin((i + 0.5) / sz[1] * np.pi / 2)
 l = l.flatten()
 l /= np.sum(l)
 
 nsamples = 1024
 
-cv2.imshow('sky', img[:, :, ::-1])
+cv2.imshow('sky', img.swapaxes(0, 1)[:, :, ::-1])
 cv2.waitKey(1)
 
 choices = np.random.choice(list(range(len(l))), nsamples, p=l)

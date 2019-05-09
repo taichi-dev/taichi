@@ -164,18 +164,20 @@ auto volume_renderer = [] {
 
       ret = Var(transmittance * Le * inv_dist_to_p * inv_dist_to_p);
     } else {
-      /*
       auto sample = Var(cast<int>(Rand<float32>() * float32(n_sky_samples)));
-      auto phi = Var(-pi + sky_sample_uv[sample](0) * (2 * pi));
+      auto phi = Var(-0.5f * pi + sky_sample_uv[sample](0) * (2 * pi));
       auto theta = Var(sky_sample_uv[sample](1) * (pi / 2));
+      // auto phi = Var(0.0f);
+      // auto theta = Var(0.9f);
 
       auto dir_to_sky = Var(
           Vector({cos(phi) * cos(theta), sin(theta), sin(phi) * cos(theta)}));
-          */
+      /*
       auto dir_to_sky = Var(
           normalized(Vector({2.5f, 1.0f, 0.5f})));
+                */
 
-      auto Le = Var(0.1f * Vector({5.0f, 5.0f, 5.0f}));  // TODO
+      auto Le = Var(1.0f * Vector({5.0f, 5.0f, 5.0f}));  // TODO
       auto near_t = Var(-std::numeric_limits<float>::max());
       auto far_t = Var(std::numeric_limits<float>::max());
       auto hit = box_intersect(p, dir_to_sky, near_t, far_t);
@@ -329,7 +331,7 @@ auto volume_renderer = [] {
   for (int i = 0; i < sky_map_size[0]; i++) {
     for (int j = 0; j < sky_map_size[1]; j++) {
       for (int d = 0; d < 3; d++) {
-        auto l = sky_map_data[(j * sky_map_size[0] + i) * 3+ d] *
+        auto l = sky_map_data[(j * sky_map_size[0] + i) * 3 + d] *
                  (1.0f / (1 << 20));
         sky_map(d).val<float32>(i, j) = l;
       }

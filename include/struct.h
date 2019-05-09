@@ -372,7 +372,7 @@ struct dense {
     return n;
   }
 
-  TC_DEVICE TC_FORCE_INLINE bool query_active(int i_) {
+  TC_DEVICE TC_FORCE_INLINE bool is_active(int i_) {
     if (bitmasked) {
       // int i = translate(i_);
       int i = i_;
@@ -499,6 +499,10 @@ struct pointer {
 
   TC_DEVICE TC_FORCE_INLINE static int get_max_n() {
     return 1;
+  }
+
+  TC_DEVICE TC_FORCE_INLINE bool is_active(int i) {
+    return data != nullptr;
   }
 
   TC_DEVICE TC_FORCE_INLINE void activate(int i,

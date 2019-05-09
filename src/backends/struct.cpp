@@ -341,13 +341,17 @@ void StructCompiler::run(SNode &node) {
     }
   }
 
-  for (int i = 0; i < (int)ambient_snodes.size(); i++) {
-    emit("{{");
-    emit("auto ambient_ptr = create_instance<{}::child_type>();");
-    emit(
-        "cudaMemcpyToSymbol({}_ambient_ptr, &ambient_ptr, "
-        "sizeof(ambient_ptr));");
-    emit("}}");
+  if (get_current_program().config.arch == Arch::gpu) {
+    for (int i = 0; i < (int)ambient_snodes.size(); i++) {
+      emit("{{");
+      auto ntn = ambient_snodes[i]->node_type_name;
+      emit("auto ambient_ptr = create_unified<{}::child_type>();", ntn);
+      emit(
+          "cudaMemcpyToSymbol({}_ambient_ptr, &ambient_ptr, "
+          "sizeof(ambient_ptr));",
+          ntn);
+      emit("}}");
+    }
   }
 
   emit(

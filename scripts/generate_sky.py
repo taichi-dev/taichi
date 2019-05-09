@@ -45,6 +45,7 @@ for i in range(nsamples):
     output[i, 0] = u
     output[i, 1] = v
     output[i, 2:5] = img[u, v] * (1 << 20) / l[c]
+print(output)
 
 output.tofile("sky_samples.bin")
 (img.astype(np.float32) / np.max(img) * (1 << 20)).astype(np.uint32).tofile("sky_map.bin")

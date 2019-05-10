@@ -211,7 +211,7 @@ auto mgpcg_poisson = []() {
   apply_preconditioner();
   update_p();
   sum.val<float32>() = 0;
-  reduce_r();
+  reduce_zTr();
   auto old_zTr = sum.val<float32>();
 
   // CG

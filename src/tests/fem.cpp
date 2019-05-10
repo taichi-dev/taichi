@@ -241,8 +241,7 @@ auto fem = []() {
 
     SNode *block;
     if (block_soa) {
-      block =
-          &root.dense(ijk, n / block_size).bitmasked();  //.pointer();
+      block = &root.dense(ijk, n / block_size).bitmasked();  //.pointer();
       place_scalar = [&](Expr &s) { block->dense(ijk, block_size).place(s); };
       place = [&](Matrix &mat) {
         for (auto &e : mat.entries) {

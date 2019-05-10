@@ -11,6 +11,7 @@ TC_NAMESPACE_BEGIN
 using namespace Tlang;
 
 constexpr int dim = 3, n = 64;
+constexpr int pre_and_post_smoothing = 10, bottom_smoothing = 1;
 
 auto mgpcg_poisson = []() {
   CoreState::set_trigger_gdb_when_crash(true);
@@ -21,8 +22,10 @@ auto mgpcg_poisson = []() {
 
   Global(x, f32);
   Global(r, f32);
+  Global(r2, f32);
   Global(p, f32);
   Global(z, f32);
+  Global(z2, f32);
   Global(Ap, f32);
   Global(alpha, f32);
   Global(beta, f32);
@@ -52,6 +55,10 @@ auto mgpcg_poisson = []() {
     place_scalar(Ap);
     place_scalar(r);
     place_scalar(z);
+    root.dense(ijk, n / block_size)
+        .bitmasked()
+        .dense(ijk, block_size)
+        .place(r2, z2);
     root.place(alpha, beta, sum, phase);
   });
 
@@ -70,16 +77,28 @@ auto mgpcg_poisson = []() {
     });
   };
 
-  auto get_restrict = [&](const Expr &fine,
-                          const Expr &coarse) -> Program::Kernel & {
+  auto get_restrict = [&](const Expr &x, const Expr &r,
+                          const Expr &coarse_r) -> Program::Kernel & {
     return kernel([&] {
       Parallelize(8);
       Vectorize(1);
       For(x, [&](Expr i, Expr j, Expr k) {
-        x[i, j, k] =
-            (r[i, j, k] - x[i - 1, j, k] - x[i + 1, j, k] - x[i, j + 1, k] -
-             x[i, j - 1, k] - x[i, j, k + 1] - x[i, j, k - 1]) *
-            (1.0f / 6);
+        auto res =
+            Var(r[i, j, k] - (6.0f * x[i, j, k] - x[i - 1, j, k] -
+                              x[i + 1, j, k] - x[i, j + 1, k] - x[i, j - 1, k] -
+                              x[i, j, k + 1] - x[i, j, k - 1]));
+        coarse_r[i / 2, j / 2, k / 2] += res * 0.5f;  // TODO: x2 or x0.5?
+      });
+    });
+  };
+
+  auto get_prolongate = [&](const Expr &z2,
+                            const Expr &z) -> Program::Kernel & {
+    return kernel([&] {
+      Parallelize(8);
+      Vectorize(1);
+      For(z, [&](Expr i, Expr j, Expr k) {
+        z[i, j, k] += z2[i / 2, j / 2, k / 2];
       });
     });
   };
@@ -98,6 +117,12 @@ auto mgpcg_poisson = []() {
   prog.config.print_ir = false;
 
   Kernel(reduce_r).def([&] {
+    For(r, [&](Expr i, Expr j, Expr k) {
+      Atomic(sum[Expr(0)]) += r[i, j, k] * r[i, j, k];
+    });
+  });
+
+  Kernel(reduce_zTr).def([&] {
     For(r, [&](Expr i, Expr j, Expr k) {
       Atomic(sum[Expr(0)]) += z[i, j, k] * r[i, j, k];
     });
@@ -138,19 +163,42 @@ auto mgpcg_poisson = []() {
     }
   }
 
-
   auto &smooth_level1 = get_smoother(z, r);
+  auto &smooth_level2 = get_smoother(z2, r2);
+  auto &restrict = get_restrict(z, r, r2);
+  auto &prolongate = get_prolongate(z2, z);
 
-  Kernel(clear_z).def([&]{
-    For(z, [&](Expr i, Expr j, Expr k) {
-      z[i, j, k] = 0.0f;
-    });
-  });
+  Kernel(clear_z).def(
+      [&] { For(z, [&](Expr i, Expr j, Expr k) { z[i, j, k] = 0.0f; }); });
+
+  Kernel(clear_r2).def(
+      [&] { For(r2, [&](Expr i, Expr j, Expr k) { r2[i, j, k] = 0.0f; }); });
+
+  Kernel(clear_z2).def(
+      [&] { For(z2, [&](Expr i, Expr j, Expr k) { z2[i, j, k] = 0.0f; }); });
 
   // z = M^-1 r
   auto apply_preconditioner = [&] {
     clear_z();
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < pre_and_post_smoothing; i++) {
+      phase.val<int32>() = 0;
+      smooth_level1();
+      phase.val<int32>() = 1;
+      smooth_level1();
+    }
+    // clear_z2();
+    // clear_r2();
+    /*
+    restrict();
+    for (int i = 0; i < bottom_smoothing; i++) {
+      phase.val<int32>() = 0;
+      smooth_level2();
+      phase.val<int32>() = 1;
+      smooth_level2();
+    }
+    prolongate();
+     */
+    for (int i = 0; i < pre_and_post_smoothing; i++) {
       phase.val<int32>() = 0;
       smooth_level1();
       phase.val<int32>() = 1;
@@ -183,13 +231,16 @@ auto mgpcg_poisson = []() {
     // r = r - alpha Ap
     update_r();
     // return if |r| small
-    sum.val<float32>() = 0;
     // z = M^-1 r
     apply_preconditioner();
-    reduce_r();
+    sum.val<float32>() = 0;
+    reduce_zTr();
     auto new_zTr = sum.val<float32>();
     TC_P(new_zTr);
-    if (new_zTr < 1e-5f)
+    sum.val<float32>() = 0;
+    reduce_r();
+    auto rTr = sum.val<float32>();
+    if (rTr < 1e-5f)
       break;
     // beta = new rTr / old rTr
     beta.val<float32>() = new_zTr / old_zTr;

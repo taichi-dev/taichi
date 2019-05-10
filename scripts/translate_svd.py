@@ -26,7 +26,7 @@ for l in range(l_var, l_compute - 1, 4):
 
 print('variables:', variables)
 
-f = open(tc.get_repo_directory() + '/projects/taichi_lang/src/tests/svd.h', 'w')
+f = open(tc.get_repo_directory() + '/projects/taichi_lang/src/tests/svd_body.h', 'w')
 
 print('std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {', file=f)
 
@@ -97,11 +97,11 @@ for l in lines[l_compute + 1:l_end]:
                 op_name = 'and'
             else:
                 assert False
-            print("{} = float32_bitwise_{}({}, {});".format(to_var_ui(tokens[0]), op_name, to_var_ui(tokens[2]), to_var_ui(tokens[4])), file=f)
+            print("{} = svd_bitwise_{}<Tf, Ti>({}, {});".format(to_var_ui(tokens[0]), op_name, to_var_ui(tokens[2]), to_var_ui(tokens[4])), file=f)
         continue
     if len(tokens) == 9 and tokens[1] == '=' and tokens[5] == '?' and tokens[7] == ':':
         # a = b ? a : d
-        print("{} = bit_cast<Tf>(select({} {} {}, Expr(int({})), Expr({})));".format(to_var_ui(tokens[0]), tokens[2][1:-2], tokens[3], tokens[4][:-3], tokens[6], tokens[8]), file=f)
+        print("{} = bit_cast<Tf>(select({} {} {}, Expr(Ti({})), Expr({})));".format(to_var_ui(tokens[0]), tokens[2][1:-2], tokens[3], tokens[4][:-3], tokens[6], tokens[8]), file=f)
         continue
     if len(tokens) == 4 and tokens[1] == '=' and tokens[2][:8] == 'std::max':
         # a = std::max(...)
@@ -131,4 +131,4 @@ print("}", file=f)
 
 f.close()
 
-os.system('clang-format-6.0 -i {}'.format(tc.get_repo_directory() + '/projects/taichi_lang/src/tests/svd.h'))
+os.system('clang-format-6.0 -i {}'.format(tc.get_repo_directory() + '/projects/taichi_lang/src/tests/svd_body.h'))

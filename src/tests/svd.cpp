@@ -9,16 +9,19 @@
 
 TLANG_NAMESPACE_BEGIN
 
-Expr float32_bitwise_or(const Expr &a, const Expr &b) {
-  return bit_cast<float32>(bit_cast<int32>(a) | bit_cast<int32>(b));
+template <typename Tf, typename Ti>
+Expr svd_bitwise_or(const Expr &a, const Expr &b) {
+  return bit_cast<Tf>(bit_cast<Ti>(a) | bit_cast<Ti>(b));
 }
 
-Expr float32_bitwise_xor(const Expr &a, const Expr &b) {
-  return bit_cast<float32>(bit_cast<int32>(a) ^ bit_cast<int32>(b));
+template <typename Tf, typename Ti>
+Expr svd_bitwise_xor(const Expr &a, const Expr &b) {
+  return bit_cast<Tf>(bit_cast<Ti>(a) ^ bit_cast<Ti>(b));
 }
 
-Expr float32_bitwise_and(const Expr &a, const Expr &b) {
-  return bit_cast<float32>(bit_cast<int32>(a) & bit_cast<int32>(b));
+template <typename Tf, typename Ti>
+Expr svd_bitwise_and(const Expr &a, const Expr &b) {
+  return bit_cast<Tf>(bit_cast<Ti>(a) & bit_cast<Ti>(b));
 }
 
 #include "svd_body.h"

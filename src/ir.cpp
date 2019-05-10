@@ -105,7 +105,15 @@ Expr::Expr(int32 x) : Expr() {
   expr = std::make_shared<ConstExpression>(x);
 }
 
+Expr::Expr(int64 x) : Expr() {
+  expr = std::make_shared<ConstExpression>(x);
+}
+
 Expr::Expr(float32 x) : Expr() {
+  expr = std::make_shared<ConstExpression>(x);
+}
+
+Expr::Expr(float64 x) : Expr() {
   expr = std::make_shared<ConstExpression>(x);
 }
 

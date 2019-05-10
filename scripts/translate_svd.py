@@ -42,9 +42,11 @@ for var in variables:
 
 print(
 '''
-constexpr float Four_Gamma_Squared = 5.82842712474619f;
-constexpr float Sine_Pi_Over_Eight = 0.3826834323650897f;
-constexpr float Cosine_Pi_Over_Eight = 0.9238795325112867f;
+using Tf = float32;
+using Ti = int32;
+constexpr Tf Four_Gamma_Squared = 5.82842712474619f;
+constexpr Tf Sine_Pi_Over_Eight = 0.3826834323650897f;
+constexpr Tf Cosine_Pi_Over_Eight = 0.9238795325112867f;
 ''', file=f)
 
 def to_var(s):
@@ -70,7 +72,7 @@ def to_var_ui(s):
         return s
     else:
         if s[0] == '~':
-            s = '~bit_cast<int32>({})'.format(s[1:])
+            s = '~bit_cast<Ti>({})'.format(s[1:])
         return 'Expr(' + s + ')'
 
 for l in lines[l_compute + 1:l_end]:
@@ -99,7 +101,7 @@ for l in lines[l_compute + 1:l_end]:
         continue
     if len(tokens) == 9 and tokens[1] == '=' and tokens[5] == '?' and tokens[7] == ':':
         # a = b ? a : d
-        print("{} = bit_cast<float32>(select({} {} {}, Expr(int({})), Expr({})));".format(to_var_ui(tokens[0]), tokens[2][1:-2], tokens[3], tokens[4][:-3], tokens[6], tokens[8]), file=f)
+        print("{} = bit_cast<Tf>(select({} {} {}, Expr(int({})), Expr({})));".format(to_var_ui(tokens[0]), tokens[2][1:-2], tokens[3], tokens[4][:-3], tokens[6], tokens[8]), file=f)
         continue
     if len(tokens) == 4 and tokens[1] == '=' and tokens[2][:8] == 'std::max':
         # a = std::max(...)

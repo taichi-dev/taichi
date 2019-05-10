@@ -189,6 +189,8 @@ class TypedConstant {
     uint64 value_bits;
     int32 val_i32;
     float32 val_f32;
+    int64 val_i64;
+    float64 val_f64;
   };
 
  public:
@@ -201,11 +203,21 @@ class TypedConstant {
   TypedConstant(float32 x) : dt(DataType::f32), val_f32(x) {
   }
 
+  TypedConstant(int64 x) : dt(DataType::i64), val_i64(x) {
+  }
+
+  TypedConstant(float64 x) : dt(DataType::f64), val_f64(x) {
+  }
+
   std::string stringify() const {
     if (dt == DataType::f32) {
       return fmt::format("{}", val_f32);
     } else if (dt == DataType::i32) {
       return fmt::format("{}", val_i32);
+    } else if (dt == DataType::i64) {
+      return fmt::format("{}", val_i64);
+    } else if (dt == DataType::f64) {
+      return fmt::format("{}", val_f64);
     } else {
       TC_P(data_type_name(dt));
       TC_NOT_IMPLEMENTED
@@ -220,6 +232,10 @@ class TypedConstant {
       return val_f32 == o.val_f32;
     } else if (dt == DataType::i32) {
       return val_i32 == o.val_i32;
+    } else if (dt == DataType::i64) {
+      return val_i64 == o.val_i64;
+    } else if (dt == DataType::f64) {
+      return val_f64 == o.val_f64;
     } else {
       TC_NOT_IMPLEMENTED
       return false;
@@ -234,6 +250,16 @@ class TypedConstant {
   float32 &val_float32() {
     TC_ASSERT(get_data_type<float32>() == dt);
     return val_f32;
+  }
+
+  int64 &val_int64() {
+    TC_ASSERT(get_data_type<int64>() == dt);
+    return val_i64;
+  }
+
+  float64 &val_float64() {
+    TC_ASSERT(get_data_type<float64>() == dt);
+    return val_f64;
   }
 };
 

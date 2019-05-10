@@ -699,7 +699,11 @@ class Expr {
 
   Expr(int32 x);
 
+  Expr(int64 x);
+
   Expr(float32 x);
+
+  Expr(float64 x);
 
   Expr(std::shared_ptr<Expression> expr) : Expr() {
     this->expr = expr;

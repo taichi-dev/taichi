@@ -159,33 +159,48 @@ auto mgpcg_poisson = []() {
   for (int i = begin; i < end; i++) {
     for (int j = begin; j < end; j++) {
       for (int k = begin; k < end; k++) {
-        r(0).val<float32>(i, j, k) = (i == n / 2) && (j == n / 2) && (k == n / 2);
+        r(0).val<float32>(i, j, k) =
+            (i == n / 2) && (j == n / 2) && (k == n / 2);
       }
     }
   }
+
+  std::vector<std::function<void()>> smoothers(mg_levels),
+      restrictors(mg_levels - 1), prolongators(mg_levels - 1),
+      clearer_z(mg_levels), clearer_r(mg_levels);
 
   auto &smooth_level1 = get_smoother(z(0), r(0));
   auto &smooth_level2 = get_smoother(z(1), r(1));
   auto &restrict = get_restrict(z(0), r(0), r(1));
   auto &prolongate = get_prolongate(z(1), z(0));
 
-  Kernel(clear_z).def(
-      [&] { For(z(0), [&](Expr i, Expr j, Expr k) { z(0)[i, j, k] = 0.0f; }); });
+  for (int i = 0; i < mg_levels; i++) {
+    if (i < mg_levels - 1) {
+    }
+    auto &smoother = get_smoother(z(i), r(i));
+    smoothers[i] = [&] { return smoother(); };
+  }
 
-  Kernel(clear_r2).def(
-      [&] { For(r(1), [&](Expr i, Expr j, Expr k) { r(1)[i, j, k] = 0.0f; }); });
+  Kernel(clear_z).def([&] {
+    For(z(0), [&](Expr i, Expr j, Expr k) { z(0)[i, j, k] = 0.0f; });
+  });
 
-  Kernel(clear_z2).def(
-      [&] { For(z(1), [&](Expr i, Expr j, Expr k) { z(1)[i, j, k] = 0.0f; }); });
+  Kernel(clear_r2).def([&] {
+    For(r(1), [&](Expr i, Expr j, Expr k) { r(1)[i, j, k] = 0.0f; });
+  });
+
+  Kernel(clear_z2).def([&] {
+    For(z(1), [&](Expr i, Expr j, Expr k) { z(1)[i, j, k] = 0.0f; });
+  });
 
   // z = M^-1 r
   auto apply_preconditioner = [&] {
     clear_z();
     for (int i = 0; i < pre_and_post_smoothing; i++) {
       phase.val<int32>() = 0;
-      smooth_level1();
+      smoothers[0]();
       phase.val<int32>() = 1;
-      smooth_level1();
+      smoothers[0]();
     }
     clear_z2();
     clear_r2();
@@ -199,9 +214,9 @@ auto mgpcg_poisson = []() {
     prolongate();
     for (int i = 0; i < pre_and_post_smoothing; i++) {
       phase.val<int32>() = 0;
-      smooth_level1();
+      smoothers[0]();
       phase.val<int32>() = 1;
-      smooth_level1();
+      smoothers[0]();
     }
   };
 

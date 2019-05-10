@@ -63,17 +63,6 @@ auto mgpcg_poisson = []() {
     root.place(alpha, beta, sum, phase);
   });
 
-  auto get_prolongate = [&](const Expr &z2,
-                            const Expr &z) -> Program::Kernel & {
-    return kernel([&] {
-      Parallelize(8);
-      Vectorize(1);
-      For(z, [&](Expr i, Expr j, Expr k) {
-        z[i, j, k] += z2[i / 2, j / 2, k / 2];
-      });
-    });
-  };
-
   Kernel(compute_Ap).def([&] {
     BlockDim(1024);
     Parallelize(8);
@@ -139,8 +128,6 @@ auto mgpcg_poisson = []() {
       restrictors(mg_levels - 1), prolongators(mg_levels - 1),
       clearer_z(mg_levels), clearer_r(mg_levels);
 
-  auto &prolongate = get_prolongate(z(1), z(0));
-
   for (int l = 0; l < mg_levels; l++) {
     if (l < mg_levels - 1) {
       restrictors[l] =
@@ -157,6 +144,14 @@ auto mgpcg_poisson = []() {
             });
           })
               .func();
+      prolongators[l] = kernel([&] {
+                          Parallelize(8);
+                          Vectorize(1);
+                          For(z(l), [&](Expr i, Expr j, Expr k) {
+                            z(l)[i, j, k] += z(l + 1)[i / 2, j / 2, k / 2];
+                          });
+                        })
+                            .func();
     }
     smoothers[l] =
         kernel([&] {
@@ -203,7 +198,7 @@ auto mgpcg_poisson = []() {
       phase.val<int32>() = 1;
       smoothers[1]();
     }
-    prolongate();
+    prolongators[0]();
     for (int i = 0; i < pre_and_post_smoothing; i++) {
       phase.val<int32>() = 0;
       smoothers[0]();

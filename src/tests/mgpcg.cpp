@@ -10,8 +10,8 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-constexpr int dim = 3, n = 64;
-constexpr int pre_and_post_smoothing = 10, bottom_smoothing = 1;
+constexpr int dim = 3, n = 256;
+constexpr int pre_and_post_smoothing = 3, bottom_smoothing = 10;
 
 auto mgpcg_poisson = []() {
   CoreState::set_trigger_gdb_when_crash(true);
@@ -186,9 +186,8 @@ auto mgpcg_poisson = []() {
       phase.val<int32>() = 1;
       smooth_level1();
     }
-    // clear_z2();
-    // clear_r2();
-    /*
+    clear_z2();
+    clear_r2();
     restrict();
     for (int i = 0; i < bottom_smoothing; i++) {
       phase.val<int32>() = 0;
@@ -197,7 +196,6 @@ auto mgpcg_poisson = []() {
       smooth_level2();
     }
     prolongate();
-     */
     for (int i = 0; i < pre_and_post_smoothing; i++) {
       phase.val<int32>() = 0;
       smooth_level1();
@@ -215,7 +213,7 @@ auto mgpcg_poisson = []() {
   auto old_zTr = sum.val<float32>();
 
   // CG
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 40; i++) {
     TC_P(i);
     compute_Ap();
     sum.val<float32>() = 0;
@@ -240,7 +238,7 @@ auto mgpcg_poisson = []() {
     sum.val<float32>() = 0;
     reduce_r();
     auto rTr = sum.val<float32>();
-    if (rTr < 1e-5f)
+    if (rTr < 1e-7f)
       break;
     // beta = new rTr / old rTr
     beta.val<float32>() = new_zTr / old_zTr;

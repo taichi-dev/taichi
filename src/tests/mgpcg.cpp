@@ -12,6 +12,7 @@ using namespace Tlang;
 
 constexpr int dim = 3, n = 256;
 constexpr int pre_and_post_smoothing = 3, bottom_smoothing = 10;
+constexpr int mg_levels = 2;
 
 auto mgpcg_poisson = []() {
   CoreState::set_trigger_gdb_when_crash(true);
@@ -20,12 +21,10 @@ auto mgpcg_poisson = []() {
   prog.config.print_ir = true;
   prog.config.lazy_compilation = false;
 
+  auto r = Vector(DataType::f32, mg_levels);
+  auto z = Vector(DataType::f32, mg_levels);
   Global(x, f32);
-  Global(r, f32);
-  Global(r2, f32);
   Global(p, f32);
-  Global(z, f32);
-  Global(z2, f32);
   Global(Ap, f32);
   Global(alpha, f32);
   Global(beta, f32);
@@ -53,12 +52,14 @@ auto mgpcg_poisson = []() {
     place_scalar(x);
     place_scalar(p);
     place_scalar(Ap);
-    place_scalar(r);
-    place_scalar(z);
-    root.dense(ijk, n / block_size)
-        .bitmasked()
-        .dense(ijk, block_size)
-        .place(r2, z2);
+    place_scalar(r(0));
+    place_scalar(z(0));
+    for (int i = 1; i < mg_levels; i++) {
+      root.dense(ijk, n / block_size)
+          .bitmasked()
+          .dense(ijk, block_size)
+          .place(r(i), z(i));
+    }
     root.place(alpha, beta, sum, phase);
   });
 
@@ -117,19 +118,19 @@ auto mgpcg_poisson = []() {
   prog.config.print_ir = false;
 
   Kernel(reduce_r).def([&] {
-    For(r, [&](Expr i, Expr j, Expr k) {
-      Atomic(sum[Expr(0)]) += r[i, j, k] * r[i, j, k];
+    For(p, [&](Expr i, Expr j, Expr k) {
+      Atomic(sum[Expr(0)]) += r(0)[i, j, k] * r(0)[i, j, k];
     });
   });
 
   Kernel(reduce_zTr).def([&] {
-    For(r, [&](Expr i, Expr j, Expr k) {
-      Atomic(sum[Expr(0)]) += z[i, j, k] * r[i, j, k];
+    For(p, [&](Expr i, Expr j, Expr k) {
+      Atomic(sum[Expr(0)]) += z(0)[i, j, k] * r(0)[i, j, k];
     });
   });
 
   Kernel(reduce_pAp).def([&] {
-    For(r, [&](Expr i, Expr j, Expr k) {
+    For(p, [&](Expr i, Expr j, Expr k) {
       auto tmp = Var(0.0f);
       tmp += p[i, j, k] * Ap[i, j, k];
       Atomic(sum[Expr(0)]) += tmp;
@@ -144,13 +145,13 @@ auto mgpcg_poisson = []() {
 
   Kernel(update_r).def([&] {
     For(p, [&](Expr i, Expr j, Expr k) {
-      r[i, j, k] -= alpha[Expr(0)] * Ap[i, j, k];
+      r(0)[i, j, k] -= alpha[Expr(0)] * Ap[i, j, k];
     });
   });
 
   Kernel(update_p).def([&] {
     For(p, [&](Expr i, Expr j, Expr k) {
-      p[i, j, k] = z[i, j, k] + beta[Expr(0)] * p[i, j, k];
+      p[i, j, k] = z(0)[i, j, k] + beta[Expr(0)] * p[i, j, k];
     });
   });
 
@@ -158,24 +159,24 @@ auto mgpcg_poisson = []() {
   for (int i = begin; i < end; i++) {
     for (int j = begin; j < end; j++) {
       for (int k = begin; k < end; k++) {
-        r.val<float32>(i, j, k) = (i == n / 2) && (j == n / 2) && (k == n / 2);
+        r(0).val<float32>(i, j, k) = (i == n / 2) && (j == n / 2) && (k == n / 2);
       }
     }
   }
 
-  auto &smooth_level1 = get_smoother(z, r);
-  auto &smooth_level2 = get_smoother(z2, r2);
-  auto &restrict = get_restrict(z, r, r2);
-  auto &prolongate = get_prolongate(z2, z);
+  auto &smooth_level1 = get_smoother(z(0), r(0));
+  auto &smooth_level2 = get_smoother(z(1), r(1));
+  auto &restrict = get_restrict(z(0), r(0), r(1));
+  auto &prolongate = get_prolongate(z(1), z(0));
 
   Kernel(clear_z).def(
-      [&] { For(z, [&](Expr i, Expr j, Expr k) { z[i, j, k] = 0.0f; }); });
+      [&] { For(z(0), [&](Expr i, Expr j, Expr k) { z(0)[i, j, k] = 0.0f; }); });
 
   Kernel(clear_r2).def(
-      [&] { For(r2, [&](Expr i, Expr j, Expr k) { r2[i, j, k] = 0.0f; }); });
+      [&] { For(r(1), [&](Expr i, Expr j, Expr k) { r(1)[i, j, k] = 0.0f; }); });
 
   Kernel(clear_z2).def(
-      [&] { For(z2, [&](Expr i, Expr j, Expr k) { z2[i, j, k] = 0.0f; }); });
+      [&] { For(z(1), [&](Expr i, Expr j, Expr k) { z(1)[i, j, k] = 0.0f; }); });
 
   // z = M^-1 r
   auto apply_preconditioner = [&] {

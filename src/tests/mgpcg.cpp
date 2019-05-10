@@ -183,27 +183,31 @@ auto mgpcg_poisson = []() {
   // z = M^-1 r
   auto apply_preconditioner = [&] {
     clearer_z[0]();
-    for (int i = 0; i < pre_and_post_smoothing; i++) {
-      phase.val<int32>() = 0;
-      smoothers[0]();
-      phase.val<int32>() = 1;
-      smoothers[0]();
+    for (int l = 0; l < mg_levels - 1; l++) {
+      for (int i = 0; i < pre_and_post_smoothing; i++) {
+        phase.val<int32>() = 0;
+        smoothers[l]();
+        phase.val<int32>() = 1;
+        smoothers[l]();
+      }
+      clearer_z[l + 1]();
+      clearer_r[l + 1]();
+      restrictors[l]();
     }
-    clearer_z[1]();
-    clearer_r[1]();
-    restrictors[0]();
     for (int i = 0; i < bottom_smoothing; i++) {
       phase.val<int32>() = 0;
-      smoothers[1]();
+      smoothers[mg_levels - 1]();
       phase.val<int32>() = 1;
-      smoothers[1]();
+      smoothers[mg_levels - 1]();
     }
-    prolongators[0]();
-    for (int i = 0; i < pre_and_post_smoothing; i++) {
-      phase.val<int32>() = 0;
-      smoothers[0]();
-      phase.val<int32>() = 1;
-      smoothers[0]();
+    for (int l = mg_levels - 2; l >= 0; l--) {
+      prolongators[l]();
+      for (int i = 0; i < pre_and_post_smoothing; i++) {
+        phase.val<int32>() = 0;
+        smoothers[l]();
+        phase.val<int32>() = 1;
+        smoothers[l]();
+      }
     }
   };
 

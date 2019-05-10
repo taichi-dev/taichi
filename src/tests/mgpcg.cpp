@@ -22,6 +22,7 @@ auto mgpcg_poisson = []() {
   Global(x, f32);
   Global(r, f32);
   Global(p, f32);
+  Global(z, f32);
   Global(Ap, f32);
   Global(alpha, f32);
   Global(beta, f32);
@@ -50,6 +51,7 @@ auto mgpcg_poisson = []() {
     place_scalar(p);
     place_scalar(Ap);
     place_scalar(r);
+    place_scalar(z);
     root.place(alpha, beta, sum, phase);
   });
 
@@ -97,7 +99,7 @@ auto mgpcg_poisson = []() {
 
   Kernel(reduce_r).def([&] {
     For(r, [&](Expr i, Expr j, Expr k) {
-      Atomic(sum[Expr(0)]) += r[i, j, k] * r[i, j, k];
+      Atomic(sum[Expr(0)]) += z[i, j, k] * r[i, j, k];
     });
   });
 
@@ -123,7 +125,7 @@ auto mgpcg_poisson = []() {
 
   Kernel(update_p).def([&] {
     For(p, [&](Expr i, Expr j, Expr k) {
-      p[i, j, k] = r[i, j, k] + beta[Expr(0)] * p[i, j, k];
+      p[i, j, k] = z[i, j, k] + beta[Expr(0)] * p[i, j, k];
     });
   });
 
@@ -136,34 +138,44 @@ auto mgpcg_poisson = []() {
     }
   }
 
+
+  auto &smooth_level1 = get_smoother(z, r);
+
+  Kernel(clear_z).def([&]{
+    For(z, [&](Expr i, Expr j, Expr k) {
+      z[i, j, k] = 0.0f;
+    });
+  });
+
+  // z = M^-1 r
+  auto apply_preconditioner = [&] {
+    clear_z();
+    for (int i = 0; i < 20; i++) {
+      phase.val<int32>() = 0;
+      smooth_level1();
+      phase.val<int32>() = 1;
+      smooth_level1();
+    }
+  };
+
   // r = b - Ax = b    since x = 0
-  // copy_b_to_r();
   // p = r = r + 0 p
+  apply_preconditioner();
   update_p();
   sum.val<float32>() = 0;
   reduce_r();
-  auto old_rTr = sum.val<float32>();
+  auto old_zTr = sum.val<float32>();
 
-  auto &smooth_level1 = get_smoother(x, r);
-
-  for (int i = 0; i < 100; i++) {
-    phase.val<int32>() = 0;
-    smooth_level1();
-    phase.val<int32>() = 1;
-    smooth_level1();
-  }
-
-  /*
   // CG
-  for (int i = 0; i < 1000; i++) {
+  for (int i = 0; i < 10; i++) {
     TC_P(i);
     compute_Ap();
     sum.val<float32>() = 0;
     reduce_pAp();
     auto pAp = sum.val<float32>();
     // alpha = rTr / pTAp
-    alpha.val<float32>() = old_rTr / pAp;
-    TC_P(old_rTr);
+    alpha.val<float32>() = old_zTr / pAp;
+    TC_P(old_zTr);
     // TC_P(pAp);
     // TC_P(alpha.val<float32>());
     // x = x + alpha p
@@ -172,19 +184,20 @@ auto mgpcg_poisson = []() {
     update_r();
     // return if |r| small
     sum.val<float32>() = 0;
+    // z = M^-1 r
+    apply_preconditioner();
     reduce_r();
-    auto new_rTr = sum.val<float32>();
-    // TC_P(new_rTr);
-    if (new_rTr < 1e-5f)
+    auto new_zTr = sum.val<float32>();
+    TC_P(new_zTr);
+    if (new_zTr < 1e-5f)
       break;
     // beta = new rTr / old rTr
-    beta.val<float32>() = new_rTr / old_rTr;
-    // TC_P(beta.val<float32>());
-    // p = r + beta p
+    beta.val<float32>() = new_zTr / old_zTr;
+    TC_P(beta.val<float32>());
+    // p = z + beta p
     update_p();
-    old_rTr = new_rTr;
+    old_zTr = new_zTr;
   }
-  */
   get_current_program().profiler_print();
 
   compute_Ap();

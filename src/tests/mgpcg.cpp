@@ -63,21 +63,6 @@ auto mgpcg_poisson = []() {
     root.place(alpha, beta, sum, phase);
   });
 
-  auto get_smoother = [&](const Expr &x, const Expr &r) -> Program::Kernel & {
-    return kernel([&] {
-      Parallelize(8);
-      Vectorize(1);
-      For(x, [&](Expr i, Expr j, Expr k) {
-        If(((i + j + k) & 1) == phase[Expr(0)]).Then([&] {
-          x[i, j, k] =
-              (r[i, j, k] + x[i - 1, j, k] + x[i + 1, j, k] + x[i, j + 1, k] +
-               x[i, j - 1, k] + x[i, j, k + 1] + x[i, j, k - 1]) *
-              (1.0f / 6);
-        });
-      });
-    });
-  };
-
   auto get_restrict = [&](const Expr &x, const Expr &r,
                           const Expr &coarse_r) -> Program::Kernel & {
     return kernel([&] {
@@ -169,16 +154,26 @@ auto mgpcg_poisson = []() {
       restrictors(mg_levels - 1), prolongators(mg_levels - 1),
       clearer_z(mg_levels), clearer_r(mg_levels);
 
-  auto &smooth_level1 = get_smoother(z(0), r(0));
-  auto &smooth_level2 = get_smoother(z(1), r(1));
   auto &restrict = get_restrict(z(0), r(0), r(1));
   auto &prolongate = get_prolongate(z(1), z(0));
 
-  for (int i = 0; i < mg_levels; i++) {
-    if (i < mg_levels - 1) {
+  for (int l = 0; l < mg_levels; l++) {
+    if (l < mg_levels - 1) {
     }
-    auto &smoother = get_smoother(z(i), r(i));
-    smoothers[i] = [&] { return smoother(); };
+    auto &smoother = kernel([&] {
+      Parallelize(8);
+      Vectorize(1);
+      For(z(l), [&](Expr i, Expr j, Expr k) {
+        If(((i + j + k) & 1) == phase[Expr(0)]).Then([&] {
+          z(l)[i, j, k] =
+              (r(l)[i, j, k] + z(l)[i - 1, j, k] + z(l)[i + 1, j, k] +
+               z(l)[i, j + 1, k] + z(l)[i, j - 1, k] + z(l)[i, j, k + 1] +
+               z(l)[i, j, k - 1]) *
+              (1.0f / 6);
+        });
+      });
+    });
+    smoothers[l] = [&] { return smoother(); };
   }
 
   Kernel(clear_z).def([&] {
@@ -207,9 +202,9 @@ auto mgpcg_poisson = []() {
     restrict();
     for (int i = 0; i < bottom_smoothing; i++) {
       phase.val<int32>() = 0;
-      smooth_level2();
+      smoothers[1]();
       phase.val<int32>() = 1;
-      smooth_level2();
+      smoothers[1]();
     }
     prolongate();
     for (int i = 0; i < pre_and_post_smoothing; i++) {

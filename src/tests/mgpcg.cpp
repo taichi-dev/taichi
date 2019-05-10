@@ -160,7 +160,7 @@ auto mgpcg_poisson = []() {
   for (int l = 0; l < mg_levels; l++) {
     if (l < mg_levels - 1) {
     }
-    auto &smoother = kernel([&] {
+    smoothers[l] = kernel([&] {
       Parallelize(8);
       Vectorize(1);
       For(z(l), [&](Expr i, Expr j, Expr k) {
@@ -173,7 +173,6 @@ auto mgpcg_poisson = []() {
         });
       });
     });
-    smoothers[l] = [&] { return smoother(); };
   }
 
   Kernel(clear_z).def([&] {

@@ -35,6 +35,10 @@ class Program {
     void compile();
 
     void operator()();
+
+    operator typename std::function<void()>() {
+      return std::function<void()>([&] { (*this)(); });
+    }
   };
 
   std::vector<void *> loaded_dlls;
@@ -139,6 +143,7 @@ class Program {
     TC_ASSERT(current_kernel);
     return *current_kernel;
   }
+
 };
 
 TLANG_NAMESPACE_END

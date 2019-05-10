@@ -36,7 +36,7 @@ class Program {
 
     void operator()();
 
-    operator typename std::function<void()>() {
+    std::function<void()> func() {
       return std::function<void()>([&] { (*this)(); });
     }
   };
@@ -143,7 +143,6 @@ class Program {
     TC_ASSERT(current_kernel);
     return *current_kernel;
   }
-
 };
 
 TLANG_NAMESPACE_END

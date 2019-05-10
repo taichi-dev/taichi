@@ -172,32 +172,26 @@ auto mgpcg_poisson = []() {
               (1.0f / 6);
         });
       });
-    });
+    }).func();
+    clearer_r[l] = kernel([&] {
+      For(r(l), [&](Expr i, Expr j, Expr k) { r(l)[i, j, k] = 0.0f; });
+    }).func();
+    clearer_z[l] = kernel([&] {
+      For(z(l), [&](Expr i, Expr j, Expr k) { z(l)[i, j, k] = 0.0f; });
+    }).func();
   }
-
-  Kernel(clear_z).def([&] {
-    For(z(0), [&](Expr i, Expr j, Expr k) { z(0)[i, j, k] = 0.0f; });
-  });
-
-  Kernel(clear_r2).def([&] {
-    For(r(1), [&](Expr i, Expr j, Expr k) { r(1)[i, j, k] = 0.0f; });
-  });
-
-  Kernel(clear_z2).def([&] {
-    For(z(1), [&](Expr i, Expr j, Expr k) { z(1)[i, j, k] = 0.0f; });
-  });
 
   // z = M^-1 r
   auto apply_preconditioner = [&] {
-    clear_z();
+    clearer_z[0]();
     for (int i = 0; i < pre_and_post_smoothing; i++) {
       phase.val<int32>() = 0;
       smoothers[0]();
       phase.val<int32>() = 1;
       smoothers[0]();
     }
-    clear_z2();
-    clear_r2();
+    clearer_z[1]();
+    clearer_r[1]();
     restrict();
     for (int i = 0; i < bottom_smoothing; i++) {
       phase.val<int32>() = 0;

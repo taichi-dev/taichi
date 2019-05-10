@@ -37,6 +37,7 @@ auto mpm3d = []() {
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
+  prog.config.lower_access = false;
   auto material = MPMMaterial::snow;
   constexpr int dim = 3;
   constexpr bool highres = true;

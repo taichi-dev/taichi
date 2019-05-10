@@ -10,7 +10,7 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-constexpr int dim = 3, n = 256;
+constexpr int dim = 3, n = 64;
 
 auto mgpcg_poisson = []() {
   CoreState::set_trigger_gdb_when_crash(true);
@@ -37,8 +37,7 @@ auto mgpcg_poisson = []() {
 
     SNode *block;
     if (block_soa) {
-      block =
-          &root.dense(ijk, n / block_size).morton().bitmasked();  //.pointer();
+      block = &root.dense(ijk, n / block_size).bitmasked();  //.pointer();
       place_scalar = [&](Expr &s) { block->dense(ijk, block_size).place(s); };
     } else {
       place_scalar = [&](Expr &mat) {
@@ -92,27 +91,20 @@ auto mgpcg_poisson = []() {
     });
   });
 
-  Kernel(copy_b_to_r).def([&] {
-    For(p, [&](Expr i, Expr j, Expr k) {
-      If(i == n / 2 && j == n / 2 && k == n / 2)
-          // If(j == n / 2)
-          .Then([&] { r[i, j, k] = -1.0f; })
-          .Else([&] { r[i, j, k] = 0.0f; });
-    });
-  });
-
   Kernel(update_p).def([&] {
     For(p, [&](Expr i, Expr j, Expr k) {
       p[i, j, k] = r[i, j, k] + beta[Expr(0)] * p[i, j, k];
     });
   });
 
-  // No bc
-  Kernel(enforce_bc).def([&] {
-    For(x, [&](Expr i, Expr j, Expr k) {
-      // If(j == 0).Then([&] { x[i, j, k] = 0.0f; });
-    });
-  });
+  int begin = n / 8, end = n * 7 / 8;
+  for (int i = begin; i < end; i++) {
+    for (int j = begin; j < end; j++) {
+      for (int k = begin; k < end; k++) {
+        r.val<float32>(i, j, k) = (i == n / 2) && (j == n / 2) && (k == n / 2);
+      }
+    }
+  }
 
   // r = b - Ax = b    since x = 0
   // copy_b_to_r();
@@ -178,7 +170,7 @@ auto mgpcg_poisson = []() {
     for (int i = 0; i < gui_res - scale; i++) {
       for (int j = 0; j < gui_res - scale; j++) {
         real dx = x.val<float32>(i / scale, j / scale, k);
-        canvas.img[i][j] = Vector4(0.5f) + Vector4(dx, dx, dx, 0) * 0.5f;
+        canvas.img[i][j] = Vector4(0.5f) + Vector4(dx, dx, dx, 0) * 1.5f;
       }
     }
     gui.update();

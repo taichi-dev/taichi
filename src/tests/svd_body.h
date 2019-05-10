@@ -1,6 +1,6 @@
+template <typename Tf, typename Ti>
 std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
-  using Tf = float32;
-  using Ti = int32;
+  static_assert(sizeof(Tf) == sizeof(Ti), "");
   constexpr Tf Four_Gamma_Squared = 5.82842712474619f;
   constexpr Tf Sine_Pi_Over_Eight = 0.3826834323650897f;
   constexpr Tf Cosine_Pi_Over_Eight = 0.9238795325112867f;

@@ -1015,8 +1015,9 @@ TLANG_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
 
-using float32x1 = float32;
 using int32x1 = int32;
+using int64x1 = int64;
+using float32x1 = float32;
 using float64x1 = float64;
 
 #define DEFINE_CUDA_OP(name, op)                 \

@@ -29,7 +29,7 @@ print('variables:', variables)
 
 f = open(tc.get_repo_directory() + '/projects/taichi_lang/src/tests/svd_body.h', 'w')
 
-print('std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {', file=f)
+print('template <typename Tf=float32, typename Ti=int32> std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {', file=f)
 
 
 print()
@@ -40,8 +40,7 @@ print()
 
 print(
 '''
-using Tf = float32;
-using Ti = int32;
+static_assert(sizeof(Tf) == sizeof(Ti), "");
 constexpr Tf Four_Gamma_Squared = 5.82842712474619f;
 constexpr Tf Sine_Pi_Over_Eight = 0.3826834323650897f;
 constexpr Tf Cosine_Pi_Over_Eight = 0.9238795325112867f;

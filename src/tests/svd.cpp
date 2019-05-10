@@ -6,6 +6,7 @@
 #include <taichi/system/threading.h>
 #include <taichi/math/svd.h>
 #include "scalar_svd.h"
+#include "svd.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -27,7 +28,7 @@ Expr svd_bitwise_and(const Expr &a, const Expr &b) {
 #include "svd_body.h"
 
 template <int sweeps = 5>
-__attribute_noinline__ void sifakis_svd(Matrix3 &a,
+__attribute_noinline__ void sifakis_svd_gt(Matrix3 &a,
                                         Matrix3 &u,
                                         Matrix3 &v,
                                         Vector3 &sig) {
@@ -61,7 +62,7 @@ TC_TEST("svd_benchmark") {
           Matrix m = Matrix::rand();
           Matrix U, sig, V, Q, R, S;
           Vector sig_vec;
-          sifakis_svd<4>(m, U, V, sig_vec);
+          sifakis_svd_gt<4>(m, U, V, sig_vec);
           trash(U(g_i, g_j));
         }
       },
@@ -106,7 +107,7 @@ TC_TEST("svd_scalar") {
     Matrix U, sig, V, Q, R, S;
     Vector sig_vec;
 
-    sifakis_svd<6>(m, U, V, sig_vec);
+    sifakis_svd_gt<6>(m, U, V, sig_vec);
     sig = Matrix(sig_vec);
     TC_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
     TC_CHECK_EQUAL(Matrix(1), U * transposed(U), tolerance);
@@ -171,7 +172,7 @@ TC_TEST("svd_dsl") {
     kernel([&] {
       // Vectorize(vec);
       For(0, N, [&](Expr i) {
-        auto svd = sifakis_svd(gA[i]);
+        auto svd = sifakis_svd<float32, int32>(gA[i]);
         gU[i] = std::get<0>(svd);
         gSigma[i] = std::get<1>(svd);
         gV[i] = std::get<2>(svd);
@@ -198,16 +199,16 @@ TC_TEST("svd_dsl") {
   }
 }
 
-TC_TEST("svd_dsl") {
+TC_TEST("svd_dsl_float64") {
   for (auto vec : {1}) {
     CoreState::set_trigger_gdb_when_crash(true);
     using TMat = TMatrix<float32, 3>;
     float32 tolerance = 2e-3_f32;
 
-    Matrix gA(DataType::f32, 3, 3);
-    Matrix gU(DataType::f32, 3, 3);
-    Matrix gSigma(DataType::f32, 3, 1);
-    Matrix gV(DataType::f32, 3, 3);
+    Matrix gA(DataType::f64, 3, 3);
+    Matrix gU(DataType::f64, 3, 3);
+    Matrix gSigma(DataType::f64, 3, 1);
+    Matrix gV(DataType::f64, 3, 3);
 
     // Program prog(Arch::x86_64);
     Program prog(Arch::gpu);
@@ -230,7 +231,7 @@ TC_TEST("svd_dsl") {
 
       for (int p = 0; p < 3; p++) {
         for (int q = 0; q < 3; q++) {
-          gA(p, q).val<float32>(i) = A(p, q);
+          gA(p, q).val<float64>(i) = A(p, q);
         }
       }
     }
@@ -238,7 +239,7 @@ TC_TEST("svd_dsl") {
     kernel([&] {
       // Vectorize(vec);
       For(0, N, [&](Expr i) {
-        auto svd = sifakis_svd(gA[i]);
+        auto svd = sifakis_svd<float64, int64>(gA[i]);
         gU[i] = std::get<0>(svd);
         gSigma[i] = std::get<1>(svd);
         gV[i] = std::get<2>(svd);
@@ -251,10 +252,10 @@ TC_TEST("svd_dsl") {
 
       for (int p = 0; p < 3; p++) {
         for (int q = 0; q < 3; q++) {
-          U(p, q) = gU(p, q).val<float32>(i);
-          V(p, q) = gV(p, q).val<float32>(i);
+          U(p, q) = gU(p, q).val<float64>(i);
+          V(p, q) = gV(p, q).val<float64>(i);
         }
-        sig(p, p) = gSigma(p).val<float32>(i);
+        sig(p, p) = gSigma(p).val<float64>(i);
       }
 
       TC_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);

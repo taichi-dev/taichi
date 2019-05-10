@@ -212,6 +212,7 @@ TC_TEST("svd_dsl_float64") {
 
     // Program prog(Arch::x86_64);
     Program prog(Arch::gpu);
+    prog.config.lower_access = false;
 
     constexpr int N = 2048;
 

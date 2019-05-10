@@ -198,4 +198,71 @@ TC_TEST("svd_dsl") {
   }
 }
 
+TC_TEST("svd_dsl") {
+  for (auto vec : {1}) {
+    CoreState::set_trigger_gdb_when_crash(true);
+    using TMat = TMatrix<float32, 3>;
+    float32 tolerance = 2e-3_f32;
+
+    Matrix gA(DataType::f32, 3, 3);
+    Matrix gU(DataType::f32, 3, 3);
+    Matrix gSigma(DataType::f32, 3, 1);
+    Matrix gV(DataType::f32, 3, 3);
+
+    // Program prog(Arch::x86_64);
+    Program prog(Arch::gpu);
+
+    constexpr int N = 2048;
+
+    prog.layout([&] {
+      auto i = Index(0);
+      // TODO: SOA
+      root.dense(i, N).place(gA);
+      root.dense(i, N).place(gU);
+      root.dense(i, N).place(gSigma);
+      root.dense(i, N).place(gV);
+    });
+
+    std::vector<TMat> As;
+    for (int i = 0; i < N; i++) {
+      TMat A = TMat::rand();
+      As.push_back(A);
+
+      for (int p = 0; p < 3; p++) {
+        for (int q = 0; q < 3; q++) {
+          gA(p, q).val<float32>(i) = A(p, q);
+        }
+      }
+    }
+
+    kernel([&] {
+      // Vectorize(vec);
+      For(0, N, [&](Expr i) {
+        auto svd = sifakis_svd(gA[i]);
+        gU[i] = std::get<0>(svd);
+        gSigma[i] = std::get<1>(svd);
+        gV[i] = std::get<2>(svd);
+      });
+    })();
+
+    for (int i = 0; i < N; i++) {
+      TMat m = As[i];
+      TMat U, sig, V;
+
+      for (int p = 0; p < 3; p++) {
+        for (int q = 0; q < 3; q++) {
+          U(p, q) = gU(p, q).val<float32>(i);
+          V(p, q) = gV(p, q).val<float32>(i);
+        }
+        sig(p, p) = gSigma(p).val<float32>(i);
+      }
+
+      TC_CHECK_EQUAL(m, U * sig * transposed(V), tolerance);
+      TC_CHECK_EQUAL(TMat(1), U * transposed(U), tolerance);
+      TC_CHECK_EQUAL(TMat(1), V * transposed(V), tolerance);
+      TC_CHECK_EQUAL(sig, TMat(sig.diag()), tolerance);
+    }
+  }
+}
+
 TLANG_NAMESPACE_END

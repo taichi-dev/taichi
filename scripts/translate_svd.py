@@ -1,5 +1,6 @@
 import taichi as tc
 import os
+import re
 
 
 with open(tc.get_repo_directory() + '/include/taichi/math/sifakis_svd.h') as f:
@@ -37,9 +38,6 @@ print('code...')
 print()
 print()
 
-for var in variables:
-    print("auto {} = Var(0.0f);".format(var), file=f)
-
 print(
 '''
 using Tf = float32;
@@ -48,6 +46,10 @@ constexpr Tf Four_Gamma_Squared = 5.82842712474619f;
 constexpr Tf Sine_Pi_Over_Eight = 0.3826834323650897f;
 constexpr Tf Cosine_Pi_Over_Eight = 0.9238795325112867f;
 ''', file=f)
+
+for var in variables:
+    print("auto {} = Var(Tf(0.0));".format(var), file=f)
+
 
 def to_var(s):
     if len(s) == 3 and s[0] == 'a':
@@ -81,7 +83,10 @@ for l in lines[l_compute + 1:l_end]:
     tokens = l.split()
     if len(tokens) == 3 and tokens[1] == '=':
         if tokens[0][-2:] == '.f':
-            print("{} = {};".format(to_var(tokens[0]), to_var(tokens[2])), file=f)
+            if re.search('[a-zA-Z]', tokens[2]) and ('.' not in tokens[2] or 'sqrt' in tokens[2] or 'S' in tokens[2]):
+                print("{} = {};".format(to_var(tokens[0]), to_var(tokens[2])), file=f)
+            else:
+                print("{} = Tf({});".format(to_var(tokens[0]), to_var(tokens[2])), file=f)
         continue
     if len(tokens) == 5 and tokens[1] == '=' and len(tokens[3]) == 1:
         # a = b + c ...
@@ -101,7 +106,7 @@ for l in lines[l_compute + 1:l_end]:
         continue
     if len(tokens) == 9 and tokens[1] == '=' and tokens[5] == '?' and tokens[7] == ':':
         # a = b ? a : d
-        print("{} = bit_cast<Tf>(select({} {} {}, Expr(Ti({})), Expr({})));".format(to_var_ui(tokens[0]), tokens[2][1:-2], tokens[3], tokens[4][:-3], tokens[6], tokens[8]), file=f)
+        print("{} = bit_cast<Tf>(select({} {} {}, Expr(Ti(int32({}))), Expr(Ti({}))));".format(to_var_ui(tokens[0]), tokens[2][1:-2], tokens[3], tokens[4][:-3], tokens[6], tokens[8]), file=f)
         continue
     if len(tokens) == 4 and tokens[1] == '=' and tokens[2][:8] == 'std::max':
         # a = std::max(...)

@@ -1,71 +1,70 @@
 std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
-  auto Sfour_gamma_squared = Var(0.0f);
-  auto Ssine_pi_over_eight = Var(0.0f);
-  auto Scosine_pi_over_eight = Var(0.0f);
-  auto Sone_half = Var(0.0f);
-  auto Sone = Var(0.0f);
-  auto Stiny_number = Var(0.0f);
-  auto Ssmall_number = Var(0.0f);
-  auto Sa11 = Var(0.0f);
-  auto Sa21 = Var(0.0f);
-  auto Sa31 = Var(0.0f);
-  auto Sa12 = Var(0.0f);
-  auto Sa22 = Var(0.0f);
-  auto Sa32 = Var(0.0f);
-  auto Sa13 = Var(0.0f);
-  auto Sa23 = Var(0.0f);
-  auto Sa33 = Var(0.0f);
-  auto Sv11 = Var(0.0f);
-  auto Sv21 = Var(0.0f);
-  auto Sv31 = Var(0.0f);
-  auto Sv12 = Var(0.0f);
-  auto Sv22 = Var(0.0f);
-  auto Sv32 = Var(0.0f);
-  auto Sv13 = Var(0.0f);
-  auto Sv23 = Var(0.0f);
-  auto Sv33 = Var(0.0f);
-  auto Su11 = Var(0.0f);
-  auto Su21 = Var(0.0f);
-  auto Su31 = Var(0.0f);
-  auto Su12 = Var(0.0f);
-  auto Su22 = Var(0.0f);
-  auto Su32 = Var(0.0f);
-  auto Su13 = Var(0.0f);
-  auto Su23 = Var(0.0f);
-  auto Su33 = Var(0.0f);
-  auto Sc = Var(0.0f);
-  auto Ss = Var(0.0f);
-  auto Sch = Var(0.0f);
-  auto Ssh = Var(0.0f);
-  auto Stmp1 = Var(0.0f);
-  auto Stmp2 = Var(0.0f);
-  auto Stmp3 = Var(0.0f);
-  auto Stmp4 = Var(0.0f);
-  auto Stmp5 = Var(0.0f);
-  auto Sqvs = Var(0.0f);
-  auto Sqvvx = Var(0.0f);
-  auto Sqvvy = Var(0.0f);
-  auto Sqvvz = Var(0.0f);
-  auto Ss11 = Var(0.0f);
-  auto Ss21 = Var(0.0f);
-  auto Ss31 = Var(0.0f);
-  auto Ss22 = Var(0.0f);
-  auto Ss32 = Var(0.0f);
-  auto Ss33 = Var(0.0f);
-
   using Tf = float32;
   using Ti = int32;
   constexpr Tf Four_Gamma_Squared = 5.82842712474619f;
   constexpr Tf Sine_Pi_Over_Eight = 0.3826834323650897f;
   constexpr Tf Cosine_Pi_Over_Eight = 0.9238795325112867f;
 
+  auto Sfour_gamma_squared = Var(Tf(0.0));
+  auto Ssine_pi_over_eight = Var(Tf(0.0));
+  auto Scosine_pi_over_eight = Var(Tf(0.0));
+  auto Sone_half = Var(Tf(0.0));
+  auto Sone = Var(Tf(0.0));
+  auto Stiny_number = Var(Tf(0.0));
+  auto Ssmall_number = Var(Tf(0.0));
+  auto Sa11 = Var(Tf(0.0));
+  auto Sa21 = Var(Tf(0.0));
+  auto Sa31 = Var(Tf(0.0));
+  auto Sa12 = Var(Tf(0.0));
+  auto Sa22 = Var(Tf(0.0));
+  auto Sa32 = Var(Tf(0.0));
+  auto Sa13 = Var(Tf(0.0));
+  auto Sa23 = Var(Tf(0.0));
+  auto Sa33 = Var(Tf(0.0));
+  auto Sv11 = Var(Tf(0.0));
+  auto Sv21 = Var(Tf(0.0));
+  auto Sv31 = Var(Tf(0.0));
+  auto Sv12 = Var(Tf(0.0));
+  auto Sv22 = Var(Tf(0.0));
+  auto Sv32 = Var(Tf(0.0));
+  auto Sv13 = Var(Tf(0.0));
+  auto Sv23 = Var(Tf(0.0));
+  auto Sv33 = Var(Tf(0.0));
+  auto Su11 = Var(Tf(0.0));
+  auto Su21 = Var(Tf(0.0));
+  auto Su31 = Var(Tf(0.0));
+  auto Su12 = Var(Tf(0.0));
+  auto Su22 = Var(Tf(0.0));
+  auto Su32 = Var(Tf(0.0));
+  auto Su13 = Var(Tf(0.0));
+  auto Su23 = Var(Tf(0.0));
+  auto Su33 = Var(Tf(0.0));
+  auto Sc = Var(Tf(0.0));
+  auto Ss = Var(Tf(0.0));
+  auto Sch = Var(Tf(0.0));
+  auto Ssh = Var(Tf(0.0));
+  auto Stmp1 = Var(Tf(0.0));
+  auto Stmp2 = Var(Tf(0.0));
+  auto Stmp3 = Var(Tf(0.0));
+  auto Stmp4 = Var(Tf(0.0));
+  auto Stmp5 = Var(Tf(0.0));
+  auto Sqvs = Var(Tf(0.0));
+  auto Sqvvx = Var(Tf(0.0));
+  auto Sqvvy = Var(Tf(0.0));
+  auto Sqvvz = Var(Tf(0.0));
+  auto Ss11 = Var(Tf(0.0));
+  auto Ss21 = Var(Tf(0.0));
+  auto Ss31 = Var(Tf(0.0));
+  auto Ss22 = Var(Tf(0.0));
+  auto Ss32 = Var(Tf(0.0));
+  auto Ss33 = Var(Tf(0.0));
   Sfour_gamma_squared = Expr(Four_Gamma_Squared);
   Ssine_pi_over_eight = Expr(Sine_Pi_Over_Eight);
   Scosine_pi_over_eight = Expr(Cosine_Pi_Over_Eight);
-  Sone_half = 0.5f;
-  Sone = 1.0f;
-  Stiny_number = 1.e-20f;
-  Ssmall_number = 1.e-12f;
+  Sone_half = Tf(0.5f);
+  Sone = Tf(1.0f);
+  Stiny_number = Tf(1.e-20f);
+  Ssmall_number = Tf(1.e-12f);
   Sa11 = a(0, 0);
   Sa21 = a(1, 0);
   Sa31 = a(2, 0);
@@ -75,10 +74,10 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Sa13 = a(0, 2);
   Sa23 = a(1, 2);
   Sa33 = a(2, 2);
-  Sqvs = 1.0f;
-  Sqvvx = 0.0f;
-  Sqvvy = 0.0f;
-  Sqvvz = 0.0f;
+  Sqvs = Tf(1.0f);
+  Sqvvx = Tf(0.0f);
+  Sqvvy = Tf(0.0f);
+  Sqvvz = Tf(0.0f);
   Ss11 = Sa11 * Sa11;
   Stmp1 = Sa21 * Sa21;
   Ss11 = Stmp1 + Ss11;
@@ -113,8 +112,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
     Ssh = Ss21 * Sone_half;
     Stmp5 = Ss11 - Ss22;
     Stmp2 = Ssh * Ssh;
-    Stmp1 = bit_cast<Tf>(
-        select(Stmp2 >= Stiny_number, Expr(Ti(0xffffffff)), Expr(0)));
+    Stmp1 = bit_cast<Tf>(select(Stmp2 >= Stiny_number,
+                                Expr(Ti(int32(0xffffffff))), Expr(Ti(0))));
     Ssh = svd_bitwise_and<Tf, Ti>(Stmp1, Ssh);
     Sch = svd_bitwise_and<Tf, Ti>(Stmp1, Stmp5);
     Stmp2 = svd_bitwise_and<Tf, Ti>(Expr(~bit_cast<Ti>(Stmp1)), Sone);
@@ -126,7 +125,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
     Ssh = Stmp4 * Ssh;
     Sch = Stmp4 * Sch;
     Stmp1 = Sfour_gamma_squared * Stmp1;
-    Stmp1 = bit_cast<Tf>(select(Stmp2 <= Stmp1, Expr(Ti(0xffffffff)), Expr(0)));
+    Stmp1 = bit_cast<Tf>(
+        select(Stmp2 <= Stmp1, Expr(Ti(int32(0xffffffff))), Expr(Ti(0))));
     Stmp2 = svd_bitwise_and<Tf, Ti>(Ssine_pi_over_eight, Stmp1);
     Ssh = svd_bitwise_and<Tf, Ti>(Expr(~bit_cast<Ti>(Stmp1)), Ssh);
     Ssh = svd_bitwise_or<Tf, Ti>(Ssh, Stmp2);
@@ -181,8 +181,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
     Ssh = Ss32 * Sone_half;
     Stmp5 = Ss22 - Ss33;
     Stmp2 = Ssh * Ssh;
-    Stmp1 = bit_cast<Tf>(
-        select(Stmp2 >= Stiny_number, Expr(Ti(0xffffffff)), Expr(0)));
+    Stmp1 = bit_cast<Tf>(select(Stmp2 >= Stiny_number,
+                                Expr(Ti(int32(0xffffffff))), Expr(Ti(0))));
     Ssh = svd_bitwise_and<Tf, Ti>(Stmp1, Ssh);
     Sch = svd_bitwise_and<Tf, Ti>(Stmp1, Stmp5);
     Stmp2 = svd_bitwise_and<Tf, Ti>(Expr(~bit_cast<Ti>(Stmp1)), Sone);
@@ -194,7 +194,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
     Ssh = Stmp4 * Ssh;
     Sch = Stmp4 * Sch;
     Stmp1 = Sfour_gamma_squared * Stmp1;
-    Stmp1 = bit_cast<Tf>(select(Stmp2 <= Stmp1, Expr(Ti(0xffffffff)), Expr(0)));
+    Stmp1 = bit_cast<Tf>(
+        select(Stmp2 <= Stmp1, Expr(Ti(int32(0xffffffff))), Expr(Ti(0))));
     Stmp2 = svd_bitwise_and<Tf, Ti>(Ssine_pi_over_eight, Stmp1);
     Ssh = svd_bitwise_and<Tf, Ti>(Expr(~bit_cast<Ti>(Stmp1)), Ssh);
     Ssh = svd_bitwise_or<Tf, Ti>(Ssh, Stmp2);
@@ -249,8 +250,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
     Ssh = Ss31 * Sone_half;
     Stmp5 = Ss33 - Ss11;
     Stmp2 = Ssh * Ssh;
-    Stmp1 = bit_cast<Tf>(
-        select(Stmp2 >= Stiny_number, Expr(Ti(0xffffffff)), Expr(0)));
+    Stmp1 = bit_cast<Tf>(select(Stmp2 >= Stiny_number,
+                                Expr(Ti(int32(0xffffffff))), Expr(Ti(0))));
     Ssh = svd_bitwise_and<Tf, Ti>(Stmp1, Ssh);
     Sch = svd_bitwise_and<Tf, Ti>(Stmp1, Stmp5);
     Stmp2 = svd_bitwise_and<Tf, Ti>(Expr(~bit_cast<Ti>(Stmp1)), Sone);
@@ -262,7 +263,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
     Ssh = Stmp4 * Ssh;
     Sch = Stmp4 * Sch;
     Stmp1 = Sfour_gamma_squared * Stmp1;
-    Stmp1 = bit_cast<Tf>(select(Stmp2 <= Stmp1, Expr(Ti(0xffffffff)), Expr(0)));
+    Stmp1 = bit_cast<Tf>(
+        select(Stmp2 <= Stmp1, Expr(Ti(int32(0xffffffff))), Expr(Ti(0))));
     Stmp2 = svd_bitwise_and<Tf, Ti>(Ssine_pi_over_eight, Stmp1);
     Ssh = svd_bitwise_and<Tf, Ti>(Expr(~bit_cast<Ti>(Stmp1)), Ssh);
     Ssh = svd_bitwise_or<Tf, Ti>(Ssh, Stmp2);
@@ -426,7 +428,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Stmp3 = Stmp3 + Stmp4;
   Stmp4 = Sa33 * Sa33;
   Stmp3 = Stmp3 + Stmp4;
-  Stmp4 = bit_cast<Tf>(select(Stmp1 < Stmp2, Expr(Ti(0xffffffff)), Expr(0)));
+  Stmp4 = bit_cast<Tf>(
+      select(Stmp1 < Stmp2, Expr(Ti(int32(0xffffffff))), Expr(Ti(0))));
   Stmp5 = svd_bitwise_xor<Tf, Ti>(Sa11, Sa12);
   Stmp5 = svd_bitwise_and<Tf, Ti>(Stmp5, Stmp4);
   Sa11 = svd_bitwise_xor<Tf, Ti>(Sa11, Stmp5);
@@ -455,9 +458,9 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Stmp5 = svd_bitwise_and<Tf, Ti>(Stmp5, Stmp4);
   Stmp1 = svd_bitwise_xor<Tf, Ti>(Stmp1, Stmp5);
   Stmp2 = svd_bitwise_xor<Tf, Ti>(Stmp2, Stmp5);
-  Stmp5 = -2.0f;
+  Stmp5 = Tf(-2.0f);
   Stmp5 = svd_bitwise_and<Tf, Ti>(Stmp5, Stmp4);
-  Stmp4 = 1.0f;
+  Stmp4 = Tf(1.0f);
   Stmp4 = Stmp4 + Stmp5;
   Sa12 = Sa12 * Stmp4;
   Sa22 = Sa22 * Stmp4;
@@ -465,7 +468,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Sv12 = Sv12 * Stmp4;
   Sv22 = Sv22 * Stmp4;
   Sv32 = Sv32 * Stmp4;
-  Stmp4 = bit_cast<Tf>(select(Stmp1 < Stmp3, Expr(Ti(0xffffffff)), Expr(0)));
+  Stmp4 = bit_cast<Tf>(
+      select(Stmp1 < Stmp3, Expr(Ti(int32(0xffffffff))), Expr(Ti(0))));
   Stmp5 = svd_bitwise_xor<Tf, Ti>(Sa11, Sa13);
   Stmp5 = svd_bitwise_and<Tf, Ti>(Stmp5, Stmp4);
   Sa11 = svd_bitwise_xor<Tf, Ti>(Sa11, Stmp5);
@@ -494,9 +498,9 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Stmp5 = svd_bitwise_and<Tf, Ti>(Stmp5, Stmp4);
   Stmp1 = svd_bitwise_xor<Tf, Ti>(Stmp1, Stmp5);
   Stmp3 = svd_bitwise_xor<Tf, Ti>(Stmp3, Stmp5);
-  Stmp5 = -2.0f;
+  Stmp5 = Tf(-2.0f);
   Stmp5 = svd_bitwise_and<Tf, Ti>(Stmp5, Stmp4);
-  Stmp4 = 1.0f;
+  Stmp4 = Tf(1.0f);
   Stmp4 = Stmp4 + Stmp5;
   Sa11 = Sa11 * Stmp4;
   Sa21 = Sa21 * Stmp4;
@@ -504,7 +508,8 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Sv11 = Sv11 * Stmp4;
   Sv21 = Sv21 * Stmp4;
   Sv31 = Sv31 * Stmp4;
-  Stmp4 = bit_cast<Tf>(select(Stmp2 < Stmp3, Expr(Ti(0xffffffff)), Expr(0)));
+  Stmp4 = bit_cast<Tf>(
+      select(Stmp2 < Stmp3, Expr(Ti(int32(0xffffffff))), Expr(Ti(0))));
   Stmp5 = svd_bitwise_xor<Tf, Ti>(Sa12, Sa13);
   Stmp5 = svd_bitwise_and<Tf, Ti>(Stmp5, Stmp4);
   Sa12 = svd_bitwise_xor<Tf, Ti>(Sa12, Stmp5);
@@ -533,9 +538,9 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Stmp5 = svd_bitwise_and<Tf, Ti>(Stmp5, Stmp4);
   Stmp2 = svd_bitwise_xor<Tf, Ti>(Stmp2, Stmp5);
   Stmp3 = svd_bitwise_xor<Tf, Ti>(Stmp3, Stmp5);
-  Stmp5 = -2.0f;
+  Stmp5 = Tf(-2.0f);
   Stmp5 = svd_bitwise_and<Tf, Ti>(Stmp5, Stmp4);
-  Stmp4 = 1.0f;
+  Stmp4 = Tf(1.0f);
   Stmp4 = Stmp4 + Stmp5;
   Sa13 = Sa13 * Stmp4;
   Sa23 = Sa23 * Stmp4;
@@ -543,24 +548,25 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Sv13 = Sv13 * Stmp4;
   Sv23 = Sv23 * Stmp4;
   Sv33 = Sv33 * Stmp4;
-  Su11 = 1.0f;
-  Su21 = 0.0f;
-  Su31 = 0.0f;
-  Su12 = 0.0f;
-  Su22 = 1.0f;
-  Su32 = 0.0f;
-  Su13 = 0.0f;
-  Su23 = 0.0f;
-  Su33 = 1.0f;
+  Su11 = Tf(1.0f);
+  Su21 = Tf(0.0f);
+  Su31 = Tf(0.0f);
+  Su12 = Tf(0.0f);
+  Su22 = Tf(1.0f);
+  Su32 = Tf(0.0f);
+  Su13 = Tf(0.0f);
+  Su23 = Tf(0.0f);
+  Su33 = Tf(1.0f);
   Ssh = Sa21 * Sa21;
-  Ssh =
-      bit_cast<Tf>(select(Ssh >= Ssmall_number, Expr(Ti(0xffffffff)), Expr(0)));
+  Ssh = bit_cast<Tf>(
+      select(Ssh >= Ssmall_number, Expr(Ti(int32(0xffffffff))), Expr(Ti(0))));
   Ssh = svd_bitwise_and<Tf, Ti>(Ssh, Sa21);
-  Stmp5 = 0.0f;
+  Stmp5 = Tf(0.0f);
   Sch = Stmp5 - Sa11;
   Sch = max(Sch, Sa11);
   Sch = max(Sch, Ssmall_number);
-  Stmp5 = bit_cast<Tf>(select(Sa11 >= Stmp5, Expr(Ti(0xffffffff)), Expr(0)));
+  Stmp5 = bit_cast<Tf>(
+      select(Sa11 >= Stmp5, Expr(Ti(int32(0xffffffff))), Expr(Ti(0))));
   Stmp1 = Sch * Sch;
   Stmp2 = Ssh * Ssh;
   Stmp2 = Stmp1 + Stmp2;
@@ -633,14 +639,15 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Su31 = Su31 + Stmp2;
   Su32 = Su32 - Stmp1;
   Ssh = Sa31 * Sa31;
-  Ssh =
-      bit_cast<Tf>(select(Ssh >= Ssmall_number, Expr(Ti(0xffffffff)), Expr(0)));
+  Ssh = bit_cast<Tf>(
+      select(Ssh >= Ssmall_number, Expr(Ti(int32(0xffffffff))), Expr(Ti(0))));
   Ssh = svd_bitwise_and<Tf, Ti>(Ssh, Sa31);
-  Stmp5 = 0.0f;
+  Stmp5 = Tf(0.0f);
   Sch = Stmp5 - Sa11;
   Sch = max(Sch, Sa11);
   Sch = max(Sch, Ssmall_number);
-  Stmp5 = bit_cast<Tf>(select(Sa11 >= Stmp5, Expr(Ti(0xffffffff)), Expr(0)));
+  Stmp5 = bit_cast<Tf>(
+      select(Sa11 >= Stmp5, Expr(Ti(int32(0xffffffff))), Expr(Ti(0))));
   Stmp1 = Sch * Sch;
   Stmp2 = Ssh * Ssh;
   Stmp2 = Stmp1 + Stmp2;
@@ -713,14 +720,15 @@ std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a) {
   Su31 = Su31 + Stmp2;
   Su33 = Su33 - Stmp1;
   Ssh = Sa32 * Sa32;
-  Ssh =
-      bit_cast<Tf>(select(Ssh >= Ssmall_number, Expr(Ti(0xffffffff)), Expr(0)));
+  Ssh = bit_cast<Tf>(
+      select(Ssh >= Ssmall_number, Expr(Ti(int32(0xffffffff))), Expr(Ti(0))));
   Ssh = svd_bitwise_and<Tf, Ti>(Ssh, Sa32);
-  Stmp5 = 0.0f;
+  Stmp5 = Tf(0.0f);
   Sch = Stmp5 - Sa22;
   Sch = max(Sch, Sa22);
   Sch = max(Sch, Ssmall_number);
-  Stmp5 = bit_cast<Tf>(select(Sa22 >= Stmp5, Expr(Ti(0xffffffff)), Expr(0)));
+  Stmp5 = bit_cast<Tf>(
+      select(Sa22 >= Stmp5, Expr(Ti(int32(0xffffffff))), Expr(Ti(0))));
   Stmp1 = Sch * Sch;
   Stmp2 = Ssh * Ssh;
   Stmp2 = Stmp1 + Stmp2;

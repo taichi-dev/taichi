@@ -12,7 +12,7 @@ using namespace Tlang;
 
 constexpr int dim = 3, n = 256;
 constexpr int pre_and_post_smoothing = 3, bottom_smoothing = 10;
-constexpr int mg_levels = 2;
+constexpr int mg_levels = 3;
 
 auto mgpcg_poisson = []() {
   CoreState::set_trigger_gdb_when_crash(true);

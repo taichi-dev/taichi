@@ -26,6 +26,7 @@ auto mgpcg_poisson = []() {
   Global(alpha, f32);
   Global(beta, f32);
   Global(sum, f32);
+  Global(phase, i32);
 
   int block_size = 8;
 
@@ -49,8 +50,37 @@ auto mgpcg_poisson = []() {
     place_scalar(p);
     place_scalar(Ap);
     place_scalar(r);
-    root.place(alpha, beta, sum);
+    root.place(alpha, beta, sum, phase);
   });
+
+  auto get_smoother = [&](const Expr &x, const Expr &r) -> Program::Kernel & {
+    return kernel([&] {
+      Parallelize(8);
+      Vectorize(1);
+      For(x, [&](Expr i, Expr j, Expr k) {
+        If(((i + j + k) & 1) == phase[Expr(0)]).Then([&] {
+          x[i, j, k] =
+              (r[i, j, k] + x[i - 1, j, k] + x[i + 1, j, k] + x[i, j + 1, k] +
+               x[i, j - 1, k] + x[i, j, k + 1] + x[i, j, k - 1]) *
+              (1.0f / 6);
+        });
+      });
+    });
+  };
+
+  auto get_restrict = [&](const Expr &fine,
+                          const Expr &coarse) -> Program::Kernel & {
+    return kernel([&] {
+      Parallelize(8);
+      Vectorize(1);
+      For(x, [&](Expr i, Expr j, Expr k) {
+        x[i, j, k] =
+            (r[i, j, k] - x[i - 1, j, k] - x[i + 1, j, k] - x[i, j + 1, k] -
+             x[i, j - 1, k] - x[i, j, k + 1] - x[i, j, k - 1]) *
+            (1.0f / 6);
+      });
+    });
+  };
 
   Kernel(compute_Ap).def([&] {
     BlockDim(1024);
@@ -97,7 +127,7 @@ auto mgpcg_poisson = []() {
     });
   });
 
-  int begin = n / 8, end = n * 7 / 8;
+  int begin = n / 4, end = n * 3 / 4;
   for (int i = begin; i < end; i++) {
     for (int j = begin; j < end; j++) {
       for (int k = begin; k < end; k++) {
@@ -114,7 +144,19 @@ auto mgpcg_poisson = []() {
   reduce_r();
   auto old_rTr = sum.val<float32>();
 
+  auto &smooth_level1 = get_smoother(x, r);
+
+  for (int i = 0; i < 100; i++) {
+    phase.val<int32>() = 0;
+    smooth_level1();
+    phase.val<int32>() = 1;
+    smooth_level1();
+  }
+
+  /*
+  // CG
   for (int i = 0; i < 1000; i++) {
+    TC_P(i);
     compute_Ap();
     sum.val<float32>() = 0;
     reduce_pAp();
@@ -141,8 +183,9 @@ auto mgpcg_poisson = []() {
     // p = r + beta p
     update_p();
     old_rTr = new_rTr;
-    get_current_program().profiler_print();
   }
+  */
+  get_current_program().profiler_print();
 
   compute_Ap();
   auto residual = 0.0f;
@@ -170,7 +213,7 @@ auto mgpcg_poisson = []() {
     for (int i = 0; i < gui_res - scale; i++) {
       for (int j = 0; j < gui_res - scale; j++) {
         real dx = x.val<float32>(i / scale, j / scale, k);
-        canvas.img[i][j] = Vector4(0.5f) + Vector4(dx, dx, dx, 0) * 1.5f;
+        canvas.img[i][j] = Vector4(0.5f) + Vector4(dx, dx, dx, 0) * 15.0f;
       }
     }
     gui.update();

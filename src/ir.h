@@ -739,7 +739,7 @@ class Expr {
 
   void operator=(const Expr &o);
 
-  Expr operator[](ExpressionGroup);
+  Expr operator[](ExpressionGroup) const;
 
   std::string serialize() const {
     TC_ASSERT(expr);

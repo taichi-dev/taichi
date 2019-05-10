@@ -46,7 +46,7 @@ Expr bit_cast(Expr input) {
   return Expr(ret);
 }
 
-Expr Expr::operator[](ExpressionGroup indices) {
+Expr Expr::operator[](ExpressionGroup indices) const {
   TC_ASSERT(is<GlobalVariableExpression>());
   return Expr::make<GlobalPtrExpression>(cast<GlobalVariableExpression>(),
                                          indices.loaded());

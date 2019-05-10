@@ -84,8 +84,12 @@ template <typename T>
 inline DataType get_data_type() {
   if (std::is_same<T, float32>()) {
     return DataType::f32;
+  } else if (std::is_same<T, float64>()) {
+    return DataType::f64;
   } else if (std::is_same<T, int32>()) {
     return DataType::i32;
+  } else if (std::is_same<T, int64>()) {
+    return DataType::i64;
   } else {
     TC_NOT_IMPLEMENTED;
   }

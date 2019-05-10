@@ -5,7 +5,6 @@
 TLANG_NAMESPACE_BEGIN
 
 TC_TEST("float64") {
-  return;
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 32;
   Program prog(Arch::gpu);
@@ -23,7 +22,7 @@ TC_TEST("float64") {
 
   // TC_CHECK(sum.val<int>() == n);
   for (int i = 0; i < n; i++)
-    TC_CHECK(a.val<float64>() == i);
+    TC_CHECK(a.val<float64>(i) == i);
 };
 
 TLANG_NAMESPACE_END

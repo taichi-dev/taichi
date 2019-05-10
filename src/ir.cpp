@@ -61,9 +61,13 @@ ExpressionGroup ExpressionGroup::loaded() const {
 
 template Expr cast<float32>(Expr);
 template Expr cast<int32>(Expr);
+template Expr cast<float64>(Expr);
+template Expr cast<int64>(Expr);
 
 template Expr bit_cast<float32>(Expr);
 template Expr bit_cast<int32>(Expr);
+template Expr bit_cast<float64>(Expr);
+template Expr bit_cast<int64>(Expr);
 
 DecoratorRecorder dec;
 

@@ -1350,6 +1350,7 @@ class AssertStmt : public Stmt {
   Stmt *val;
 
   AssertStmt(const std::string &text, Stmt *val) : text(text), val(val) {
+    add_operand(this->val);
     TC_ASSERT(val);
   }
 

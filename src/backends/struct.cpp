@@ -127,8 +127,7 @@ void StructCompiler::visit(SNode &snode) {
     emit("using {} = pointer<{}_ch>;", snode.node_type_name,
          snode.node_type_name);
   } else if (type == SNodeType::hash) {
-    emit("using {} = hash<{}_ch>;", snode.node_type_name,
-         snode.node_type_name);
+    emit("using {} = hash<{}_ch>;", snode.node_type_name, snode.node_type_name);
   } else if (type == SNodeType::place) {
     emit(
         "struct {} {{ using val_type = {}; val_type val; TC_DEVICE operator "
@@ -283,7 +282,7 @@ void StructCompiler::load_accessors(SNode &snode) {
     snode.stat_func = load_function<SNode::StatFunction>(
         fmt::format("stat_{}", snode.node_type_name));
   }
-  if (snode.type == SNodeType::pointer) {
+  if (snode.type == SNodeType::pointer || snode.type == SNodeType::hash) {
     snode.clear_func = load_function<SNode::ClearFunction>(
         fmt::format("clear_{}", snode.node_type_name));
   }
@@ -330,7 +329,8 @@ void StructCompiler::run(SNode &node) {
           "TC_EXPORT AllocatorStat stat_{}() {{return "
           "Managers::get_allocator<{}>()->get_stat();}} ",
           snodes[i]->node_type_name, snodes[i]->node_type_name);
-    if (snodes[i]->type == SNodeType::pointer) {
+    if (snodes[i]->type == SNodeType::pointer ||
+        snodes[i]->type == SNodeType::hash) {
       emit(
           "TC_EXPORT void clear_{}(int flags) {{"
           "Managers::get_allocator<{}>()->clear(flags);}} ",

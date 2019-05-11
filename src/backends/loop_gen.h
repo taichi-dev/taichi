@@ -103,7 +103,7 @@ class LoopGenerator {
     if (snode->type == SNodeType::pointer) {
       emit("if (!{}_cache->data) continue;", snode->node_type_name, l);
     }
-    if (snode->type != SNodeType::hash) {
+    if (snode->type != SNodeType::hash || true) {
       emit("int {};", l);
       emit("auto {}_cache_n = {}_cache->get_n();", snode->node_type_name,
            snode->node_type_name);
@@ -113,13 +113,16 @@ class LoopGenerator {
     }
 
     if (snode->type == SNodeType::hash) {
-      emit("for (auto &{}_it : {}_cache->data) {{", l, snode->node_type_name);
-      emit("int {} = {}_it.first;", l, l);
+      // emit("for (auto &{}_it : {}_cache->data) {{", l,
+      // snode->node_type_name); emit("int {} = {}_it.first;", l, l);
+      emit("for (int {}_e=0;{}_e < {}_cache_n; {}_e++) {{", l, l,
+           snode->node_type_name, l);
+      emit("int {} = {}_cache->entries[{}_e];", l, snode->node_type_name, l);
     } else {
       emit("for ({} = 0; {} < {}_cache_n; {} += {}) {{", l, l,
            snode->node_type_name, l, step_size);
     }
-    if (snode->type == SNodeType::dense && snode->_bitmasked) {
+    if (snode->need_activation()) {
       emit("if (!{}_cache->is_active({})) continue;", snode->node_type_name, l);
     }
 

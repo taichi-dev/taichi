@@ -441,6 +441,7 @@ struct hash {
   // zero-filled
   int key[table_size];
   child_type *addr[table_size];
+  int entries[table_size];
 
   hash() {
   }
@@ -495,7 +496,6 @@ struct hash {
         __threadfence();
 #endif
         while (1) {
-          // this part should be locked
           if (key[k] == 0) {
             key[k] = i + 1;
             auto &data = addr[k];
@@ -508,6 +508,7 @@ struct hash {
 #if defined(__CUDA_ARCH__)
             __threadfence();
 #endif
+            entries[atomic_add(&n, 1)] = i;
             break;
           } else if (key[k] == i + 1) {
             break;  // allocated

@@ -48,27 +48,10 @@ class GPUIRCodeGen : public IRVisitor {
     TC_ASSERT(sfor->block_size <= max_gpu_block_size);
     auto block_bits = bit::log2int(block_size);
 
-    SNode *first_managed_ancestor = nullptr;
-    std::vector<SNode *> path;
+    auto parent = snode->parent;
 
-    int dist_to_managed = 0;
-    for (auto p = snode; p; p = p->parent) {
-      path.push_back(p);
-      if (p->type == SNodeType::pointer || p->type == SNodeType::root) {
-        first_managed_ancestor = p;
-        break;
-      }
-      dist_to_managed++;
-    }
-
-    TC_ASSERT(dist_to_managed == 1);
-
-    std::reverse(path.begin(), path.end());
-
-    TC_ASSERT(first_managed_ancestor);
-
-    auto ancestor_allocator = fmt::format(
-        "Managers::get<{}>()", first_managed_ancestor->node_type_name);
+    auto ancestor_allocator =
+        fmt::format("Managers::get<{}>()", parent->node_type_name);
     auto leaf_allocator =
         fmt::format("Managers::get_allocator<{}>()", snode->node_type_name);
     // emit("{}->reset_tails();", leaf_allocator);
@@ -78,7 +61,7 @@ class GPUIRCodeGen : public IRVisitor {
          sfor->snode->parent->node_type_name);
 
     emit("int num_leaves = Managers::get_allocator<{}>()->resident_tail;",
-         path[0]->node_type_name);
+         parent->node_type_name);
     emit("while (1) {{");
 
     // one block takes one ancestor meta
@@ -87,7 +70,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit(
         "bid_shared = atomicAdd((unsigned long long "
         "*)(&Managers::get_allocator<{}>()->execution_tail), 1ULL);",
-        path[0]->node_type_name);
+        parent->node_type_name);
     emit("}}");
 
     emit("__syncthreads();");
@@ -107,21 +90,20 @@ class GPUIRCodeGen : public IRVisitor {
     emit(
         "auto leaves = (SNodeMeta "
         "*)(Managers::get_allocator<{}>()->resident_pool);",
-        path[0]->node_type_name);
+        parent->node_type_name);
     emit(
         "auto num_leaves = Managers::get_allocator<{}>()->resident_tail_const;",
-        path[0]->node_type_name);
+        parent->node_type_name);
 
     emit("auto list_element = ({}::child_type *)leaves[leaf_loop].ptr;",
-         path[0]->node_type_name);
-    auto chid = path[0]->child_id(path[1]);
+         parent->node_type_name);
+    auto chid = parent->child_id(snode);
     TC_ASSERT(chid != -1);
-    emit("auto {}_cache = list_element->get{}();", path[1]->node_type_name,
-         chid);
+    emit("auto {}_cache = list_element->get{}();", snode->node_type_name, chid);
 
     for (int i = 0; i < max_num_indices; i++) {
       emit("auto {} = leaves[leaf_loop].indices[{}];",
-           loopgen.index_name_global(path[1], i), i);
+           loopgen.index_name_global(snode, i), i);
     }
 
     /*

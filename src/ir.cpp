@@ -138,7 +138,7 @@ Expr Expr::eval() const {
 void Expr::operator+=(const Expr &o) {
   if (this->atomic) {
     current_ast_builder().insert(
-        Stmt::make<FrontendAtomicStmt>(AtomicType::add, *this, o));
+        Stmt::make<FrontendAtomicStmt>(AtomicType::add, *this, load_if_ptr(o)));
   } else {
     (*this) = (*this) + o;
   }
@@ -146,18 +146,18 @@ void Expr::operator+=(const Expr &o) {
 void Expr::operator-=(const Expr &o) {
   if (this->atomic) {
     current_ast_builder().insert(
-        Stmt::make<FrontendAtomicStmt>(AtomicType::add, *this, -o));
+        Stmt::make<FrontendAtomicStmt>(AtomicType::add, *this, -load_if_ptr(o)));
   } else {
     (*this) = (*this) - o;
   }
 }
 void Expr::operator*=(const Expr &o) {
   TC_ASSERT(!this->atomic);
-  (*this) = (*this) * o;
+  (*this) = (*this) * load_if_ptr(o);
 }
 void Expr::operator/=(const Expr &o) {
   TC_ASSERT(!this->atomic);
-  (*this) = (*this) / o;
+  (*this) = (*this) / load_if_ptr(o);
 }
 
 FrontendForStmt::FrontendForStmt(ExpressionGroup loop_var, Expr begin, Expr end)

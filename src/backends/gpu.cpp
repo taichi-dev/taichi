@@ -387,7 +387,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("auto num_leaves = Managers::get_allocator<{}>()->resident_tail;",
          leaf->node_type_name);
     emit("int bid = 0;");
-    emit("while (1) {{", block_division);
+    emit("while (1) {{");
     emit("__shared__ int bid_shared;");
     emit("if (threadIdx.x == 0) {{ ");
     emit(
@@ -652,7 +652,6 @@ class GPUIRCodeGen : public IRVisitor {
       //  use_activity_tracking = true;
 
       if (use_activity_tracking) {
-        // TC_WARN("Using activity tracking");
         struct_for_new(for_stmt_.get());
       } else {
         struct_for_old(for_stmt_.get());

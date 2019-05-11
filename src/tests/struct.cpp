@@ -170,8 +170,11 @@ TC_TEST("2d_blocked_array_morton") {
 TC_TEST("2d_blocked_array_bitmasked") {
   int n = 16, block_size = 4;
 
-  for (auto arch : {Arch::x86_64}) {
+  for (auto arch : {Arch::x86_64, Arch::gpu}) {
     for (auto morton : {true, false}) {
+      if (morton && arch == Arch::gpu) {
+        continue;
+      }
       Program prog(arch);
 
       Global(a, i32);
@@ -560,36 +563,38 @@ TC_TEST("leaf_context") {
 }
 
 TC_TEST("pointer") {
-  Program prog;
+  for (auto arch : {Arch::x86_64, Arch::gpu}) {
+    Program prog(arch);
 
-  int n = 32;
-  int k = 64;
-  int m = n * k;
+    int n = 32;
+    int k = 64;
+    int m = n * k;
 
-  Global(a, i32);
-  Global(sum, i32);
+    Global(a, i32);
+    Global(sum, i32);
 
-  layout([&] {
-    auto i = Index(0);
-    root.dense(i, n).pointer().dense(i, k).place(a);
-    root.place(sum);
-  });
+    layout([&] {
+      auto i = Index(0);
+      root.dense(i, n).pointer().dense(i, k).place(a);
+      root.place(sum);
+    });
 
-  int sum_gt = 0;
-  for (int i = 0; i < m; i++) {
-    if (i / k % 3 == 1) {
-      a.val<int32>(i) = i;
-      sum_gt += i;
+    int sum_gt = 0;
+    for (int i = 0; i < m; i++) {
+      if (i / k % 3 == 1) {
+        a.val<int32>(i) = i;
+        sum_gt += i;
+      }
     }
+
+    kernel([&]() {
+      Declare(i);
+      For(i, a, [&] { Atomic(sum[Expr(0)]) += a[i]; });
+    })();
+
+    auto reduced = sum.val<int32>();
+    TC_CHECK(reduced == sum_gt);
   }
-
-  kernel([&]() {
-    Declare(i);
-    For(i, a, [&] { sum[Expr(0)] += a[i]; });
-  })();
-
-  auto reduced = sum.val<int32>();
-  TC_CHECK(reduced == sum_gt);
 }
 
 TC_TEST("misaligned") {

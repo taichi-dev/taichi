@@ -462,6 +462,10 @@ class GPUIRCodeGen : public IRVisitor {
           struct_for->snode->parent->parent->type == SNodeType::root)
         use_activity_tracking = true;
 
+      if (struct_for->snode->parent->type == SNodeType::dense &&
+          struct_for->snode->parent->parent->type == SNodeType::root)
+        use_activity_tracking = true;
+
       // if (struct_for->snode->parent->type == SNodeType::pointer)
       //  use_activity_tracking = true;
       if (use_activity_tracking) {

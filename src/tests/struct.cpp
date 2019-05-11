@@ -586,10 +586,7 @@ TC_TEST("pointer") {
       }
     }
 
-    kernel([&]() {
-      Declare(i);
-      For(i, a, [&] { Atomic(sum[Expr(0)]) += a[i]; });
-    })();
+    kernel([&]() { For(a, [&](Expr i) { Atomic(sum[Expr(0)]) += a[i]; }); })();
 
     auto reduced = sum.val<int32>();
     TC_CHECK(reduced == sum_gt);
@@ -621,10 +618,7 @@ TC_TEST("gpu_listgen") {
       }
     }
 
-    kernel([&]() {
-      Declare(i);
-      For(i, a, [&] { Atomic(sum[Expr(0)]) += a[i]; });
-    })();
+    kernel([&]() { For(a, [&](Expr i) { Atomic(sum[Expr(0)]) += a[i]; }); })();
 
     auto reduced = sum.val<int32>();
     TC_CHECK(reduced == sum_gt);

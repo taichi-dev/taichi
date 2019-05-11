@@ -8,17 +8,24 @@ bool use_sky_map = false;
 
 class Renderer {
  public:
+  int n;
+  Vector2i sky_map_size;
+  int n_sky_samples;
+  Program::Kernel *main, *dilate;
+  Vector buffer;
+  int depth_limit;
+
   Renderer() {
-    int depth_limit = 20;
-    int n = 512;
+    depth_limit = 20;
+    n = 512;
     int grid_resolution = 256;
     Vector3 albedo(0.9, 0.95, 1);
     float32 scale = 724.0;
     float32 one_over_four_pi = 0.07957747154f;
     float32 pi = 3.14159265359f;
 
-    Vector2i sky_map_size(512, 128);
-    int n_sky_samples = 1024;
+    sky_map_size = Vector2i(512, 128);
+    n_sky_samples = 1024;
 
     auto f = fopen("snow_density_256.bin", "rb");
     TC_ASSERT_INFO(f, "./snow_density_256.bin not found");
@@ -26,10 +33,8 @@ class Renderer {
     std::fread(density_field.data(), sizeof(float32), density_field.size(), f);
     std::fclose(f);
 
-    Program prog(Arch::gpu);
-    prog.config.print_ir = true;
-
     Vector buffer(DataType::f32, 3);
+    this->buffer.set(buffer);
     Vector sky_map(DataType::f32, 3);
     Vector sky_sample_color(DataType::f32, 3);
     Vector sky_sample_uv(DataType::f32, 2);
@@ -305,7 +310,7 @@ class Renderer {
       inv_max_density = 1.f / max_density;
     }
 
-    Kernel(main).def([&]() {
+    main = &kernel([&]() {
       BlockDim(32);
       For(0, n * n * 2, [&](Expr i) {
         auto orig = Var(Vector({0.5f, 0.3f, 1.5f}));
@@ -411,7 +416,7 @@ class Renderer {
     }
 
     // expand blocks
-    Kernel(dilate).def([&] {
+    dilate = &kernel([&] {
       For(density, [&](Expr i, Expr j, Expr k) {
         for (int x = -1; x < 2; x++) {
           for (int y = -1; y < 2; y++) {
@@ -424,62 +429,65 @@ class Renderer {
       });
     });
 
-    dilate();
-
-    std::unique_ptr<GUI> gui = nullptr;
-
-    if (use_gui) {
-      gui = std::make_unique<GUI>("Volume Renderer", Vector2i(n * 2, n));
-    }
-    Vector2i render_size(n * 2, n);
-    Array2D<Vector4> render_buffer;
-
-    auto tone_map = [](real x) { return std::sqrt(x); };
-
-    constexpr int N = 100;
-    for (int frame = 0; frame < 100; frame++) {
-      for (int i = 0; i < N; i++) {
-        main();
-      }
-      prog.profiler_print();
-
-      real scale = 1.0f / ((frame + 1) * N);
-      render_buffer.initialize(render_size);
-      std::unique_ptr<Canvas> canvas;
-      canvas = std::make_unique<Canvas>(render_buffer);
-      for (int i = 0; i < n * n * 2; i++) {
-        render_buffer[i / n][i % n] =
-            Vector4(tone_map(scale * buffer(0).val<float32>(i)),
-                    tone_map(scale * buffer(1).val<float32>(i)),
-                    tone_map(scale * buffer(2).val<float32>(i)), 1);
-      }
-
-      for (int i = 0; i < sky_map_size[0]; i++) {
-        for (int j = 0; j < sky_map_size[1]; j++) {
-          for (int d = 0; d < 3; d++) {
-            // canvas->img[i][j][d] = sky_map(d).val<float32>(i, j) * 500;
-          }
-        }
-      }
-
-      if (use_gui) {
-        gui->canvas->img = canvas->img;
-        gui->update();
-      } else {
-        canvas->img.write_as_image(
-            fmt::format("{:05d}-{:05d}-{:05d}.png", frame, N, depth_limit));
-      }
-    }
+    (*dilate)();
   }
 
-  void run() {
+  void sample() {
+    (*main)();
   }
 };
 
 auto volume_renderer = [] {
+  Program prog(Arch::gpu);
+  prog.config.print_ir = true;
+
   // CoreState::set_trigger_gdb_when_crash(true);
   Renderer renderer;
-  renderer.run();
+  std::unique_ptr<GUI> gui = nullptr;
+  int n = renderer.n;
+
+  if (use_gui) {
+    gui = std::make_unique<GUI>("Volume Renderer", Vector2i(n * 2, n));
+  }
+  Vector2i render_size(n * 2, n);
+  Array2D<Vector4> render_buffer;
+
+  auto tone_map = [](real x) { return std::sqrt(x); };
+
+  constexpr int N = 100;
+  for (int frame = 0; frame < 100; frame++) {
+    for (int i = 0; i < N; i++) {
+      renderer.sample();
+    }
+    prog.profiler_print();
+
+    real scale = 1.0f / ((frame + 1) * N);
+    render_buffer.initialize(render_size);
+    std::unique_ptr<Canvas> canvas;
+    canvas = std::make_unique<Canvas>(render_buffer);
+    for (int i = 0; i < n * n * 2; i++) {
+      render_buffer[i / n][i % n] =
+          Vector4(tone_map(scale * renderer.buffer(0).val<float32>(i)),
+                  tone_map(scale * renderer.buffer(1).val<float32>(i)),
+                  tone_map(scale * renderer.buffer(2).val<float32>(i)), 1);
+    }
+
+    for (int i = 0; i < renderer.sky_map_size[0]; i++) {
+      for (int j = 0; j < renderer.sky_map_size[1]; j++) {
+        for (int d = 0; d < 3; d++) {
+          // canvas->img[i][j][d] = sky_map(d).val<float32>(i, j) * 500;
+        }
+      }
+    }
+
+    if (use_gui) {
+      gui->canvas->img = canvas->img;
+      gui->update();
+    } else {
+      canvas->img.write_as_image(fmt::format("{:05d}-{:05d}-{:05d}.png", frame,
+                                             N, renderer.depth_limit));
+    }
+  }
 };
 TC_REGISTER_TASK(volume_renderer);
 

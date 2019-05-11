@@ -166,7 +166,7 @@ auto mpm3d = []() {
   TC_ASSERT(bit::is_power_of_two(n));
 
   Kernel(sort).def([&] {
-    BlockDim(1024);
+    BlockDim(512);
     For(particle_x(0), [&](Expr p) {
       auto node_coord = floor(particle_x[p] * inv_dx - 0.5_f);
       Append(l.parent(),

@@ -282,7 +282,7 @@ void StructCompiler::load_accessors(SNode &snode) {
     snode.stat_func = load_function<SNode::StatFunction>(
         fmt::format("stat_{}", snode.node_type_name));
   }
-  if (snode.type == SNodeType::pointer || snode.type == SNodeType::hash) {
+  if (snode.need_activation()) {
     snode.clear_func = load_function<SNode::ClearFunction>(
         fmt::format("clear_{}", snode.node_type_name));
   }
@@ -331,6 +331,12 @@ void StructCompiler::run(SNode &node) {
           snodes[i]->node_type_name, snodes[i]->node_type_name);
     if (snodes[i]->type == SNodeType::pointer ||
         snodes[i]->type == SNodeType::hash) {
+      emit(
+          "TC_EXPORT void clear_{}(int flags) {{"
+          "Managers::get_allocator<{}>()->clear(flags);}} ",
+          snodes[i]->node_type_name, snodes[i]->node_type_name);
+    }
+    if (snodes[i]->type == SNodeType ::dense && snodes[i]->_bitmasked) {
       emit(
           "TC_EXPORT void clear_{}(int flags) {{"
           "Managers::get_allocator<{}>()->clear(flags);}} ",

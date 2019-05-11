@@ -415,7 +415,7 @@ auto fem = []() {
     }
   }
 
-  fem_solve();
+  // fem_solve();
 
   // r = b - Ax = b    since x = 0
   // copy_b_to_r();

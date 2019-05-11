@@ -19,8 +19,10 @@ auto mpm_benchmark = []() {
   auto particle_mass = 1.0_f, vol = 1.0_f, E = 1e4_f, nu = 0.3f;
   real mu = E / (2 * (1 + nu)), lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
   auto f32 = DataType::f32;
+
   Vector particle_x(f32, dim), particle_v(f32, dim), grid_v(f32, dim);
   Matrix particle_F(f32, dim, dim), particle_C(f32, dim, dim);
+
   Global(grid_m, f32);
   Global(l, i32);
   Global(gravity_x, f32);
@@ -33,11 +35,14 @@ auto mpm_benchmark = []() {
   benchmark_particles.resize(n_particles * 3);
   std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f);
   std::fclose(f);
+
   for (int i = 0; i < n_particles; i++) {
     for (int j = 0; j < dim; j++)
       p_x[i][j] = benchmark_particles[i * dim + j];
   }
+
   bool particle_SOA = false;
+
   layout([&]() {
     auto i = Index(0), j = Index(1), k = Index(2), p = Index(3);
     SNode *fork;
@@ -61,7 +66,7 @@ auto mpm_benchmark = []() {
     for (int i = 0; i < dim; i++)
       place(particle_v(i));
     TC_ASSERT(n % grid_block_size == 0);
-    auto &block = root.dense({i, j, k}, n / grid_block_size).pointer();
+    auto &block = root.dense({i, j, k}, n / grid_block_size).bitmasked();
     constexpr bool block_soa = true;
     if (block_soa) {
       block.dense({i, j, k}, grid_block_size).place(grid_v(0));

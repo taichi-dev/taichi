@@ -132,8 +132,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("int end_idx = (subblock_id + 1) * {};", block_size);
 
     if (snode->type == SNodeType::dynamic) {
-      emit("if (start_idx >= {}_cache->get_n()) break;",
-           snode->node_type_name);
+      emit("if (start_idx >= {}_cache->get_n()) break;", snode->node_type_name);
       emit("end_idx = min(end_idx, {}_cache->get_n());", snode->node_type_name);
     }
 
@@ -157,6 +156,7 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void struct_for_old(Stmt *for_stmt_) {
+    TC_WARN("Using old struct for");
     // struct for
     TC_ASSERT_INFO(current_struct_for == nullptr,
                    "Struct for cannot be nested.");
@@ -329,7 +329,9 @@ class GPUIRCodeGen : public IRVisitor {
       emit("cudaEventCreate(&stop);");
       emit("cudaEventRecord(start);");
     }
+    emit(R"(GPUProfiler::get_instance().start("{}");)", codegen->func_name);
     emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
+    emit(R"(GPUProfiler::get_instance().stop();)");
     emit("cudaDeviceSynchronize();");
     if (debug) {
       emit("cudaEventRecord(stop);");

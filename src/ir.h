@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <taichi/util.h>
+#include <taichi/common/bit.h>
 #include "util.h"
 #include "snode.h"
 
@@ -1902,6 +1903,7 @@ inline void Cache(int v, const Expr &var) {
 }
 
 inline void BlockDim(int v) {
+  TC_ASSERT(bit::is_power_of_two(v) && v <= max_gpu_block_size);
   dec.block_size = v;
 }
 

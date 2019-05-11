@@ -35,7 +35,7 @@ class GPUIRCodeGen : public IRVisitor {
     node->accept(&p);
   }
 
-  void emit_list_gen_kernel(StructForStmt *sfor) {
+  void emit_list_gen_kernel(StructForStmt *sfor, int block_division) {
     auto snode = sfor->snode->parent;
 
     auto block_size = sfor->block_size;
@@ -83,7 +83,15 @@ class GPUIRCodeGen : public IRVisitor {
     emit("int leaf_loop = bid_shared;");
     emit("if (leaf_loop >= num_leaves) break;");
 
-    emit("int subblock_id = threadIdx.x;");
+    int div_size = block_division;
+    int num_div = 1;
+    if (block_division > max_gpu_block_size) {
+      num_div = block_division / max_gpu_block_size;
+      div_size = max_gpu_block_size;
+    }
+
+    emit("for (int div = 0; div < {}; div++) {{", num_div);
+    emit("int subblock_id = threadIdx.x + div * {};", div_size);
 
     emit(
         "auto leaves = (SNodeMeta "
@@ -124,7 +132,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("int end_idx = (subblock_id + 1) * {};", block_size);
 
     if (snode->type == SNodeType::dynamic) {
-      emit("if (start_idx >= {}_cache->get_n()) continue;",
+      emit("if (start_idx >= {}_cache->get_n()) break;",
            snode->node_type_name);
       emit("end_idx = min(end_idx, {}_cache->get_n());", snode->node_type_name);
     }
@@ -141,6 +149,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("meta.ptr = {}_cache;", snode->node_type_name);
     emit("meta.start_loop = start_idx;");
     emit("meta.end_loop = end_idx;");
+    emit("}}");
 
     emit("}}");
     emit("}}");
@@ -362,7 +371,7 @@ class GPUIRCodeGen : public IRVisitor {
       block_division = (1 << leaf->total_num_bits) / for_stmt->block_size;
     }
 
-    emit_list_gen_kernel(for_stmt);
+    emit_list_gen_kernel(for_stmt, block_division);
 
     emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
     emit("auto root = ({} *)context.buffers[0];",
@@ -533,7 +542,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
          codegen->func_name);
     emit("{}_kernel_list_gen<<<gridDim, {}>>>(context);", codegen->func_name,
-         block_division);
+         std::min(1024, block_division));
     emit(R"(GPUProfiler::get_instance().stop();)");
 
     emit("");

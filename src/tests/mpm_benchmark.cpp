@@ -13,6 +13,7 @@ using namespace Tlang;
 
 auto mpm_benchmark = []() {
   Program prog(Arch::gpu);
+  prog.config.lower_access = false;
   constexpr int dim = 3, n = 256, grid_block_size = 4, n_particles = 775196;
   const real dt = 1e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f, E = 1e4_f, nu = 0.3f;

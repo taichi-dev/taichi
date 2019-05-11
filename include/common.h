@@ -165,6 +165,7 @@ struct AllocatorStat {
 };
 
 constexpr int max_num_snodes = 1024;
+constexpr int max_gpu_block_size = 1024;
 
 template <typename T, typename G>
 __device__ T union_cast(G g) {

@@ -41,11 +41,7 @@ class GPUIRCodeGen : public IRVisitor {
 
   void struct_for_old(Stmt *for_stmt_);
 
-  void emit_listgen_func(StructForStmt *sfor, int block_division) {
-    auto snode = sfor->snode->parent;
-
-    auto block_size = sfor->block_size;
-    TC_ASSERT(sfor->block_size <= max_gpu_block_size);
+  void emit_listgen_func(SNode *snode, int block_size, int block_division) {
     auto block_bits = bit::log2int(block_size);
 
     auto parent = snode->parent;
@@ -58,7 +54,7 @@ class GPUIRCodeGen : public IRVisitor {
 
     // kernel body starts
     emit("__global__ void {}_listgen_device(Context context) {{",
-         sfor->snode->parent->node_type_name);
+         snode->node_type_name);
 
     emit("int num_leaves = Managers::get_allocator<{}>()->resident_tail;",
          parent->node_type_name);
@@ -148,14 +144,14 @@ class GPUIRCodeGen : public IRVisitor {
     emit("");
 
     // host function
-    auto leaf = sfor->snode->parent;
-    emit("void {}(Context context) {{", listgen_func_name(leaf));
-    emit("backup_tails<{}><<<1, 1>>>();", leaf->parent->node_type_name);
-    emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->parent->node_type_name);
+    emit("void {}(Context context) {{", listgen_func_name(snode));
+    emit("backup_tails<{}><<<1, 1>>>();", snode->parent->node_type_name);
+    emit("reset_execution_tail<{}><<<1, 1>>>();",
+         snode->parent->node_type_name);
 
-    emit("reset_tails<{}><<<1, 1>>>();", leaf->node_type_name);
+    emit("reset_tails<{}><<<1, 1>>>();", snode->node_type_name);
 
-    emit("{}_listgen_device<<<{}, {}>>>(context);", leaf->node_type_name,
+    emit("{}_listgen_device<<<{}, {}>>>(context);", snode->node_type_name,
          grid_dim, std::min(1024, block_division));
     emit("}}");
   }
@@ -180,7 +176,8 @@ class GPUIRCodeGen : public IRVisitor {
     TC_ASSERT((1 << leaf->total_num_bits) % for_stmt->block_size == 0);
     int block_division = (1 << leaf->total_num_bits) / for_stmt->block_size;
 
-    emit_listgen_func(for_stmt, block_division);
+    emit_listgen_func(for_stmt->snode->parent, for_stmt->block_size,
+                      block_division);
 
     emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
     emit("auto root = ({} *)context.buffers[0];",

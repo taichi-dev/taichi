@@ -4,8 +4,7 @@
 TLANG_NAMESPACE_BEGIN
 
 TC_TEST("hash") {
-  //for (auto arch : {Arch::gpu, Arch::x86_64}) {
-  for (auto arch : {Arch::x86_64}) {
+  for (auto arch : {Arch::gpu, Arch::x86_64}) {
     Program prog(arch);
     CoreState::set_trigger_gdb_when_crash(true);
 

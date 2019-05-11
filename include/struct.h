@@ -407,6 +407,28 @@ struct dense {
   static constexpr bool has_null = false;
 };
 
+#if __CUDA_ARCH__
+template <typename T>
+__device__ bool unique_in_warp(T val) {
+  auto mask = __activemask();
+
+  auto warpId = threadIdx.x % warpSize;
+
+  bool has_following_eqiv = 0;
+  for (int i = 1; i < warpSize; i++) {
+    auto cond = warpId + i < warpSize;
+    bool same = (cond & (val == __shfl_down_sync(mask, val, i)));
+    has_following_eqiv = has_following_eqiv || (cond && same);
+  }
+
+  return !has_following_eqiv;
+}
+
+__device__ int elect_leader(int mask) {
+  return __ffs(mask) - 1;
+}
+#endif
+
 template <typename _child_type>
 struct hash {
   using child_type = _child_type;
@@ -451,18 +473,53 @@ struct hash {
     int k = h(i);
     while (1) {
       if (key[k] == i + 1) {
-        break;
+        return;
       } else if (key[k] == 0) {
-        key[k] = i + 1;
-        auto ptr = (child_type *)Managers::get<hash>()
-                       ->get_allocator()
-                       ->allocate_node(index)
-                       ->ptr;
-        addr[k] = ptr;
         break;
       }
       k += jump;
       k %= table_size;
+    }
+    // now already active parts have returned
+
+#if defined(__CUDA_ARCH__)
+    int warpId = threadIdx.x % warpSize;
+    int mask = __activemask();
+    int uniques = __ballot_sync(mask, unique_in_warp((long long)&lock));
+    // The address of lock is a reprensentitive for pointer instances
+    while (uniques) {
+      int leader = elect_leader(uniques);
+      if (warpId == leader) {
+        while (atomicCAS(&lock, 0, 1) == 1)
+          ;
+        __threadfence();
+#endif
+        while (1) {
+          // this part should be locked
+          if (key[k] == 0) {
+            key[k] = i + 1;
+            auto &data = addr[k];
+            auto meta = Managers::get_instance()
+                            ->get<hash>()
+                            ->get_allocator()
+                            ->allocate_node(index);
+            data = (child_type *)meta->ptr;
+            meta->snode_ptr = (void **)(&data);
+#if defined(__CUDA_ARCH__)
+            __threadfence();
+#endif
+            break;
+          } else if (key[k] == i + 1) {
+            break;  // allocated
+          }
+          k += jump;
+          k %= table_size;
+#if defined(__CUDA_ARCH__)
+        }
+        atomicExch(&lock, 0);
+      }
+      uniques ^= 1 << leader;
+#endif
     }
   }
 
@@ -517,28 +574,6 @@ struct hash {
 
   static constexpr bool has_null = true;
 };
-#endif
-
-#if __CUDA_ARCH__
-template <typename T>
-__device__ bool unique_in_warp(T val) {
-  auto mask = __activemask();
-
-  auto warpId = threadIdx.x % warpSize;
-
-  bool has_following_eqiv = 0;
-  for (int i = 1; i < warpSize; i++) {
-    auto cond = warpId + i < warpSize;
-    bool same = (cond & (val == __shfl_down_sync(mask, val, i)));
-    has_following_eqiv = has_following_eqiv || (cond && same);
-  }
-
-  return !has_following_eqiv;
-}
-
-__device__ int elect_leader(int mask) {
-  return __ffs(mask) - 1;
-}
 #endif
 
 template <typename _child_type>

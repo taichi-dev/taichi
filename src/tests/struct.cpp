@@ -595,33 +595,40 @@ TC_TEST("pointer") {
 
 TC_TEST("gpu_listgen") {
   for (auto arch : {Arch::gpu}) {
-    Program prog(arch);
+    for (auto level : {1}) {
+      Program prog(arch);
 
-    int n = 64;
-    int k = 64;
-    int m = n * k;
+      int n = 64;
+      int k = 64;
+      int m = n * k;
 
-    Global(a, i32);
-    Global(sum, i32);
+      Global(a, i32);
+      Global(sum, i32);
 
-    layout([&] {
-      auto i = Index(0);
-      root.dense(i, n * k).place(a);
-      root.place(sum);
-    });
+      layout([&] {
+        auto i = Index(0);
+        if (level == 1) {
+          root.dense(i, n * k).place(a);
+        } else {
+          root.dense(i, n).dense(i, k).place(a);
+        }
+        root.place(sum);
+      });
 
-    int sum_gt = 0;
-    for (int i = 0; i < m; i++) {
-      if (i / k % 3 == 1) {
-        a.val<int32>(i) = i;
-        sum_gt += i;
+      int sum_gt = 0;
+      for (int i = 0; i < m; i++) {
+        if (i / k % 3 == 1) {
+          a.val<int32>(i) = i;
+          sum_gt += i;
+        }
       }
+
+      kernel(
+          [&]() { For(a, [&](Expr i) { Atomic(sum[Expr(0)]) += a[i]; }); })();
+
+      auto reduced = sum.val<int32>();
+      TC_CHECK(reduced == sum_gt);
     }
-
-    kernel([&]() { For(a, [&](Expr i) { Atomic(sum[Expr(0)]) += a[i]; }); })();
-
-    auto reduced = sum.val<int32>();
-    TC_CHECK(reduced == sum_gt);
   }
 }
 

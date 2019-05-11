@@ -51,13 +51,17 @@ class GPUIRCodeGen : public IRVisitor {
     SNode *first_managed_ancestor = nullptr;
     std::vector<SNode *> path;
 
+    int dist_to_managed = 0;
     for (auto p = snode; p; p = p->parent) {
       path.push_back(p);
       if (p->type == SNodeType::pointer || p->type == SNodeType::root) {
         first_managed_ancestor = p;
         break;
       }
+      dist_to_managed++;
     }
+
+    TC_ASSERT(dist_to_managed == 1);
 
     std::reverse(path.begin(), path.end());
 
@@ -465,6 +469,13 @@ class GPUIRCodeGen : public IRVisitor {
       if (struct_for->snode->parent->type == SNodeType::dense &&
           struct_for->snode->parent->parent->type == SNodeType::root)
         use_activity_tracking = true;
+
+      /*
+      if (struct_for->snode->parent->type == SNodeType::dense &&
+          struct_for->snode->parent->parent->type == SNodeType::dense &&
+          struct_for->snode->parent->parent->parent->type == SNodeType::root)
+        use_activity_tracking = true;
+        */
 
       // if (struct_for->snode->parent->type == SNodeType::pointer)
       //  use_activity_tracking = true;

@@ -295,7 +295,6 @@ TC_TEST("loop_over_blocks") {
 }
 
 #if (0)
-
 TC_TEST("spmv") {
   initialize_benchmark();
   int n = 8192;
@@ -576,6 +575,41 @@ TC_TEST("pointer") {
     layout([&] {
       auto i = Index(0);
       root.dense(i, n).pointer().dense(i, k).place(a);
+      root.place(sum);
+    });
+
+    int sum_gt = 0;
+    for (int i = 0; i < m; i++) {
+      if (i / k % 3 == 1) {
+        a.val<int32>(i) = i;
+        sum_gt += i;
+      }
+    }
+
+    kernel([&]() {
+      Declare(i);
+      For(i, a, [&] { Atomic(sum[Expr(0)]) += a[i]; });
+    })();
+
+    auto reduced = sum.val<int32>();
+    TC_CHECK(reduced == sum_gt);
+  }
+}
+
+TC_TEST("gpu_listgen") {
+  for (auto arch : {Arch::gpu}) {
+    Program prog(arch);
+
+    int n = 64;
+    int k = 64;
+    int m = n * k;
+
+    Global(a, i32);
+    Global(sum, i32);
+
+    layout([&] {
+      auto i = Index(0);
+      root.dense(i, n * k).place(a);
       root.place(sum);
     });
 

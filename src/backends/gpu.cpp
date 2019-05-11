@@ -45,6 +45,7 @@ class GPUIRCodeGen : public IRVisitor {
     auto snode = sfor->snode->parent;
 
     auto block_size = sfor->block_size;
+    TC_ASSERT(sfor->block_size <= max_gpu_block_size);
     auto block_bits = bit::log2int(block_size);
 
     SNode *first_managed_ancestor = nullptr;
@@ -185,11 +186,13 @@ class GPUIRCodeGen : public IRVisitor {
     current_struct_for = for_stmt;
     auto leaf = for_stmt->snode->parent;
 
-    int block_division = 1;
-    if (for_stmt->block_size != 0) {
-      TC_ASSERT((1 << leaf->total_num_bits) % for_stmt->block_size == 0);
-      block_division = (1 << leaf->total_num_bits) / for_stmt->block_size;
+    if (for_stmt->block_size == 0) {
+      for_stmt->block_size =
+          std::min(1 << leaf->total_num_bits, max_gpu_block_size);
     }
+
+    TC_ASSERT((1 << leaf->total_num_bits) % for_stmt->block_size == 0);
+    int block_division = (1 << leaf->total_num_bits) / for_stmt->block_size;
 
     emit_listgen_func(for_stmt, block_division);
 
@@ -461,7 +464,6 @@ class GPUIRCodeGen : public IRVisitor {
 
       // if (struct_for->snode->parent->type == SNodeType::pointer)
       //  use_activity_tracking = true;
-
       if (use_activity_tracking) {
         struct_for_new(for_stmt_.get());
       } else {

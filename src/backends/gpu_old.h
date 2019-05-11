@@ -8,11 +8,13 @@ void GPUIRCodeGen::struct_for_old(Stmt *for_stmt_) {
   current_struct_for = for_stmt;
   auto leaf = for_stmt->snode->parent;
 
-  int block_division = 1;
-  if (for_stmt->block_size != 0) {
-    TC_ASSERT((1 << leaf->total_num_bits) % for_stmt->block_size == 0);
-    block_division = (1 << leaf->total_num_bits) / for_stmt->block_size;
+  if (for_stmt->block_size == 0) {
+    for_stmt->block_size =
+        std::min(1 << leaf->total_num_bits, max_gpu_block_size);
   }
+
+  TC_ASSERT((1 << leaf->total_num_bits) % for_stmt->block_size == 0);
+  int block_division = (1 << leaf->total_num_bits) / for_stmt->block_size;
 
   emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
   emit("auto root = ({} *)context.buffers[0];",

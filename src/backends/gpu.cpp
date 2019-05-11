@@ -63,8 +63,8 @@ class GPUIRCodeGen : public IRVisitor {
     // emit("{}->reset_tails();", leaf_allocator);
 
     // kernel body starts
-    emit("__global__ void {}_kernel_list_gen(Context context) {{",
-         codegen->func_name);
+    emit("__global__ void {}_list_gen(Context context) {{",
+         sfor->snode->parent->node_type_name);
 
     emit("int num_leaves = Managers::get_allocator<{}>()->resident_tail;",
          path[0]->node_type_name);
@@ -359,6 +359,16 @@ class GPUIRCodeGen : public IRVisitor {
     current_struct_for = nullptr;
   }
 
+  void emit_listgen_host(SNode *leaf, int block_division) {
+    emit("backup_tails<{}><<<1, 1>>>();", leaf->parent->node_type_name);
+    emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->parent->node_type_name);
+
+    emit("reset_tails<{}><<<1, 1>>>();", leaf->node_type_name);
+
+    emit("{}_list_gen<<<gridDim, {}>>>(context);", leaf->node_type_name,
+         std::min(1024, block_division));
+  };
+
   void struct_for_new(Stmt *for_stmt_) {
     // struct for
     TC_ASSERT_INFO(current_struct_for == nullptr,
@@ -536,15 +546,11 @@ class GPUIRCodeGen : public IRVisitor {
         num_SMs, leaf->node_type_name, block_division, block_division);
     emit("");
 
-    emit("backup_tails<{}><<<1, 1>>>();", leaf->parent->node_type_name);
-    emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->parent->node_type_name);
-
-    emit("reset_tails<{}><<<1, 1>>>();", leaf->node_type_name);
-
     emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
          codegen->func_name);
-    emit("{}_kernel_list_gen<<<gridDim, {}>>>(context);", codegen->func_name,
-         std::min(1024, block_division));
+
+    emit_listgen_host(leaf, block_division);
+
     emit(R"(GPUProfiler::get_instance().stop();)");
 
     emit("");

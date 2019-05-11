@@ -13,11 +13,15 @@ class GPUIRCodeGen : public IRVisitor {
   LoopGenerator loopgen;
   bool first_level = false;
   bool debug;
+  int gridDim;
 
   GPUIRCodeGen(GPUCodeGen *codegen) : codegen(codegen), loopgen(codegen) {
     current_struct_for = nullptr;
     current_scratch_pads = nullptr;
     debug = codegen->prog->config.debug;
+    int num_SMs;
+    cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
+    gridDim = num_SMs * 32;  // each SM can have 16-32 resident blocks
   }
 
   template <typename... Args>
@@ -65,7 +69,7 @@ class GPUIRCodeGen : public IRVisitor {
     // emit("{}->reset_tails();", leaf_allocator);
 
     // kernel body starts
-    emit("__global__ void {}_list_gen(Context context) {{",
+    emit("__global__ void {}_listgen_device(Context context) {{",
          sfor->snode->parent->node_type_name);
 
     emit("int num_leaves = Managers::get_allocator<{}>()->resident_tail;",
@@ -157,14 +161,20 @@ class GPUIRCodeGen : public IRVisitor {
     emit("");
   }
 
+  std::string listgen_func_name(SNode *leaf) {
+    return fmt::format("{}_listgen", leaf->node_type_name);
+  }
+
   void emit_listgen_host(SNode *leaf, int block_division) {
+    emit("void {}(Context context) {{", listgen_func_name(leaf));
     emit("backup_tails<{}><<<1, 1>>>();", leaf->parent->node_type_name);
     emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->parent->node_type_name);
 
     emit("reset_tails<{}><<<1, 1>>>();", leaf->node_type_name);
 
-    emit("{}_list_gen<<<gridDim, {}>>>(context);", leaf->node_type_name,
-         std::min(1024, block_division));
+    emit("{}_listgen_device<<<{}, {}>>>(context);", leaf->node_type_name,
+         gridDim, std::min(1024, block_division));
+    emit("}}");
   };
 
   void struct_for_new(Stmt *for_stmt_) {
@@ -320,6 +330,8 @@ class GPUIRCodeGen : public IRVisitor {
     emit("}}");  // end for
     emit("}}");  // end kernel
 
+    emit_listgen_host(leaf, block_division);
+
     emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
     emit("auto root = ({} *)context.buffers[0];",
          current_program->snode_root->node_type_name);
@@ -336,19 +348,16 @@ class GPUIRCodeGen : public IRVisitor {
       }
     }
     emit("gpu_runtime_init();");
-    int num_SMs;
-    cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
     emit(
-        "int gridDim = {} * 32, blockDim = ({}::get_max_n()"
+        "int blockDim = ({}::get_max_n()"
         "+ {} - 1) / {};",
-        num_SMs, leaf->node_type_name, block_division, block_division);
+        leaf->node_type_name, block_division, block_division);
     emit("");
 
+    // generate the list
     emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
          codegen->func_name);
-
-    emit_listgen_host(leaf, block_division);
-
+    emit("{}(context);", listgen_func_name(leaf));
     emit(R"(GPUProfiler::get_instance().stop();)");
 
     emit("");
@@ -359,8 +368,8 @@ class GPUIRCodeGen : public IRVisitor {
           R"(printf("task list %d\n", Managers::get_allocator<{}>()->resident_tail);)",
           leaf->node_type_name);
       emit(
-          R"(printf("kernel {} <<<%d, %d>>> \n", gridDim, blockDim);)",
-          codegen->func_name);
+          R"(printf("kernel {} <<<%d, %d>>> \n", {}, blockDim);)",
+          codegen->func_name, gridDim);
 
       emit("cudaEvent_t start, stop;");
 
@@ -375,7 +384,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("");
     emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->node_type_name);
     emit(R"(GPUProfiler::get_instance().start("{}");)", codegen->func_name);
-    emit("{}_kernel<<<gridDim, blockDim>>>(context);", codegen->func_name);
+    emit("{}_kernel<<<{}, blockDim>>>(context);", codegen->func_name, gridDim);
     emit(R"(GPUProfiler::get_instance().stop();)");
     emit("");
     if (debug) {
@@ -965,3 +974,5 @@ void GPUCodeGen::codegen() {
 }
 
 TLANG_NAMESPACE_END
+
+#include "gpu_old.h"

@@ -1,11 +1,6 @@
-#include <cuda_runtime.h>
-#include "gpu.h"
-#include "loop_gen.h"
-#include "../scratch_pad.h"
-
 TLANG_NAMESPACE_BEGIN
 
-void GPUCodeGen::struct_for_old(Stmt *for_stmt_) {
+void GPUIRCodeGen::struct_for_old(Stmt *for_stmt_) {
   TC_WARN("Using old struct for");
   // struct for
   TC_ASSERT_INFO(current_struct_for == nullptr, "Struct for cannot be nested.");

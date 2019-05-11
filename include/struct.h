@@ -48,9 +48,10 @@ static_assert(std::is_same_v<std::uint64_t, unsigned long int>, "");
 template <typename T>
 struct SNodeAllocator {
   using data_type = typename T::child_type;
-  static constexpr std::size_t pool_size = std::min(
-      (1ULL << 33) / sizeof(data_type),
-      1ULL << 25);  // each snode allocator takes at most 8 GB (VM), max 32M metas
+  static constexpr std::size_t pool_size =
+      std::min((1ULL << 33) / sizeof(data_type),
+               1ULL << 25);  // each snode allocator takes at most 8 GB (VM),
+                             // max 32M metas
   static constexpr int id = SNodeID<T>::value;
 
   SNodeMeta *resident_pool;
@@ -358,7 +359,8 @@ struct dense {
       i_translated =
           _pdep_u32(extract_bits(i, 0, n_bit_axis), 0x49249249) |
           _pdep_u32(extract_bits(i, n_bit_axis, n_bit_axis * 2), 0x92492492) |
-          _pdep_u32(extract_bits(i, n_bit_axis * 2, n_bit_axis * 3), 0x24924924);
+          _pdep_u32(extract_bits(i, n_bit_axis * 2, n_bit_axis * 3),
+                    0x24924924);
     } else if (dim == 4) {
       TC_ASSERT(false);
       i_translated = 0;
@@ -405,23 +407,63 @@ struct dense {
   static constexpr bool has_null = false;
 };
 
-/*
 template <typename _child_type>
-struct ghashed {
+struct hash {
   using child_type = _child_type;
   int n;
   int lock;
 
+  static constexpr int table_size = 4097;
+  static constexpr int jump = 47;
 
-  ghashed() {
-  };
+  // zero-filled
+  int key[table_size];
+  child_type *addr[table_size];
 
-  TC_DEVICE TC_FORCE_INLINE child_type *look_up(
-      int i) {
+  hash() {
+  }
+
+  int h(int i) {  // the hash function
+    return i * 129 % table_size;
+  }
+
+  TC_DEVICE TC_FORCE_INLINE bool is_active(int i) {
+    return look_up(i) != nullptr;
+  }
+
+  TC_DEVICE TC_FORCE_INLINE child_type *look_up(int i) {
+    int k = h(i);
+    while (1) {
+      if (key[k] == i + 1) {
+        return addr[k];
+      } else if (key[k] == 0) {
+        return nullptr;
+      }
+      k += jump;
+      k %= table_size;
+    }
   }
 
   TC_DEVICE TC_FORCE_INLINE void activate(int i,
                                           const PhysicalIndexGroup &index) {
+    // TODO: speed up
+    // serialize...
+    int k = h(i);
+    while (1) {
+      if (key[k] == i + 1) {
+        break;
+      } else if (key[k] == 0) {
+        key[k] = i + 1;
+        auto ptr = (child_type *)Managers::get<hash>()
+                       ->get_allocator()
+                       ->allocate_node(index)
+                       ->ptr;
+        addr[k] = ptr;
+        break;
+      }
+      k += jump;
+      k %= table_size;
+    }
   }
 
   TC_DEVICE TC_FORCE_INLINE int get_n() const {
@@ -430,8 +472,8 @@ struct ghashed {
 
   static constexpr bool has_null = true;
 };
-*/
 
+#if (0)
 template <typename _child_type>
 struct hash {
   using child_type = _child_type;
@@ -448,6 +490,10 @@ struct hash {
       return nullptr;
     }
     return data[i];
+  }
+
+  TC_DEVICE TC_FORCE_INLINE bool is_active(int i) {
+    return data != nullptr;
   }
 
   TC_DEVICE TC_FORCE_INLINE void activate(int i,
@@ -471,6 +517,7 @@ struct hash {
 
   static constexpr bool has_null = true;
 };
+#endif
 
 #if __CUDA_ARCH__
 template <typename T>
@@ -528,6 +575,7 @@ struct pointer {
       int warpId = threadIdx.x % warpSize;
       int mask = __activemask();
       int uniques = __ballot_sync(mask, unique_in_warp((long long)&lock));
+      // The address of lock is a reprensentitive for pointer instances
       while (uniques) {
         int leader = elect_leader(uniques);
         if (warpId == leader && data == nullptr) {

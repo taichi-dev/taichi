@@ -13,7 +13,7 @@ class GPUIRCodeGen : public IRVisitor {
   LoopGenerator loopgen;
   bool first_level = false;
   bool debug;
-  int gridDim;
+  int grid_dim;
 
   GPUIRCodeGen(GPUCodeGen *codegen) : codegen(codegen), loopgen(codegen) {
     current_struct_for = nullptr;
@@ -21,7 +21,7 @@ class GPUIRCodeGen : public IRVisitor {
     debug = codegen->prog->config.debug;
     int num_SMs;
     cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
-    gridDim = num_SMs * 32;  // each SM can have 16-32 resident blocks
+    grid_dim = num_SMs * 32;  // each SM can have 16-32 resident blocks
   }
 
   template <typename... Args>
@@ -173,7 +173,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("reset_tails<{}><<<1, 1>>>();", leaf->node_type_name);
 
     emit("{}_listgen_device<<<{}, {}>>>(context);", leaf->node_type_name,
-         gridDim, std::min(1024, block_division));
+         grid_dim, std::min(1024, block_division));
     emit("}}");
   };
 
@@ -369,7 +369,7 @@ class GPUIRCodeGen : public IRVisitor {
           leaf->node_type_name);
       emit(
           R"(printf("kernel {} <<<%d, %d>>> \n", {}, blockDim);)",
-          codegen->func_name, gridDim);
+          codegen->func_name, grid_dim);
 
       emit("cudaEvent_t start, stop;");
 
@@ -384,7 +384,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("");
     emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->node_type_name);
     emit(R"(GPUProfiler::get_instance().start("{}");)", codegen->func_name);
-    emit("{}_kernel<<<{}, blockDim>>>(context);", codegen->func_name, gridDim);
+    emit("{}_kernel<<<{}, blockDim>>>(context);", codegen->func_name, grid_dim);
     emit(R"(GPUProfiler::get_instance().stop();)");
     emit("");
     if (debug) {

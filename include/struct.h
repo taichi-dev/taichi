@@ -433,12 +433,12 @@ struct ghashed {
 */
 
 template <typename _child_type>
-struct hashed {
+struct hash {
   using child_type = _child_type;
   std::unordered_map<int, child_type *> data;
   std::mutex mut;
 
-  hashed(){
+  hash(){
       // std::cout << "initializing hashed" << std::endl;
   };
 
@@ -453,7 +453,7 @@ struct hashed {
   TC_DEVICE TC_FORCE_INLINE void activate(int i,
                                           const PhysicalIndexGroup &index) {
     if (data.find(i) == data.end()) {
-      auto ptr = (child_type *)Managers::get<hashed>()
+      auto ptr = (child_type *)Managers::get<hash>()
                      ->get_allocator()
                      ->allocate_node(index)
                      ->ptr;

@@ -126,7 +126,7 @@ std::string snode_type_name(SNodeType t) {
     REGISTER_TYPE(dense);
     REGISTER_TYPE(dynamic);
     REGISTER_TYPE(place);
-    REGISTER_TYPE(hashed);
+    REGISTER_TYPE(hash);
     REGISTER_TYPE(pointer);
     REGISTER_TYPE(indirect);
 #undef REGISTER_TYPE

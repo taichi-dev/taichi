@@ -103,7 +103,7 @@ class LoopGenerator {
     if (snode->type == SNodeType::pointer) {
       emit("if (!{}_cache->data) continue;", snode->node_type_name, l);
     }
-    if (snode->type != SNodeType::hashed) {
+    if (snode->type != SNodeType::hash) {
       emit("int {};", l);
       emit("auto {}_cache_n = {}_cache->get_n();", snode->node_type_name,
            snode->node_type_name);
@@ -112,7 +112,7 @@ class LoopGenerator {
       TC_NOT_IMPLEMENTED
     }
 
-    if (snode->type == SNodeType::hashed) {
+    if (snode->type == SNodeType::hash) {
       emit("for (auto &{}_it : {}_cache->data) {{", l, snode->node_type_name);
       emit("int {} = {}_it.first;", l, l);
     } else {

@@ -202,16 +202,16 @@ class SNode {
     return child;
   }
 
-  SNode &hashed(std::vector<Index> indices, std::vector<int> sizes) {
-    return create_node(indices, sizes, SNodeType::hashed);
+  SNode &hash(std::vector<Index> indices, std::vector<int> sizes) {
+    return create_node(indices, sizes, SNodeType::hash);
   }
 
-  SNode &hashed(std::vector<Index> indices, int sizes) {
-    return create_node(indices, std::vector<int>{sizes}, SNodeType::hashed);
+  SNode &hash(std::vector<Index> indices, int sizes) {
+    return create_node(indices, std::vector<int>{sizes}, SNodeType::hash);
   }
 
-  SNode &hashed(Index &expr, int n) {
-    return hashed(std::vector<Index>{expr}, n);
+  SNode &hash(Index &expr, int n) {
+    return hash(std::vector<Index>{expr}, n);
   }
 
   SNode &pointer() {
@@ -253,11 +253,11 @@ class SNode {
   }
 
   bool has_null() const {
-    return type == SNodeType::pointer || type == SNodeType::hashed;
+    return type == SNodeType::pointer || type == SNodeType::hash;
   }
 
   bool need_activation() const {
-    return type == SNodeType::pointer || type == SNodeType::hashed ||
+    return type == SNodeType::pointer || type == SNodeType::hash ||
            (type == SNodeType::dense && _bitmasked);
   }
 };

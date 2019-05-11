@@ -126,8 +126,8 @@ void StructCompiler::visit(SNode &snode) {
   } else if (type == SNodeType::pointer) {
     emit("using {} = pointer<{}_ch>;", snode.node_type_name,
          snode.node_type_name);
-  } else if (type == SNodeType::hashed) {
-    emit("using {} = hashed<{}_ch>;", snode.node_type_name,
+  } else if (type == SNodeType::hash) {
+    emit("using {} = hash<{}_ch>;", snode.node_type_name,
          snode.node_type_name);
   } else if (type == SNodeType::place) {
     emit(

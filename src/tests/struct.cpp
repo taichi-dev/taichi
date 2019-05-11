@@ -642,7 +642,7 @@ TC_TEST("hashed") {
 
   layout([&] {
     auto i = Index(0);
-    root.hashed(i, n).dense(i, k).place(a);
+    root.hash(i, n).dense(i, k).place(a);
     root.place(sum);
   });
 

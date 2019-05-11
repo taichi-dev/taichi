@@ -106,7 +106,7 @@ enum class SNodeType {
   dense,
   dynamic,
   place,
-  hashed,
+  hash,
   pointer,
   indirect,
 };

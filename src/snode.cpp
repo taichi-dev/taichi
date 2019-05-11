@@ -36,7 +36,7 @@ SNode &SNode::create_node(std::vector<Index> indices,
   if (all_one)
     return *this;  // do nothing
 
-  if (type == SNodeType::hashed)
+  if (type == SNodeType::hash)
     TC_ASSERT_INFO(depth == 0,
                    "hashed node must be child of root due to initialization "
                    "memset limitation.");

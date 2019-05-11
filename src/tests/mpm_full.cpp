@@ -64,7 +64,7 @@ auto mpm3d = []() {
   NamedScalar(gravity_x, g, f32);
 
   Vector grid_v("v^{g}", f32, dim);
-  NamedScalar(grid_m, m^{p}, f32);
+  NamedScalar(grid_m, m ^ {p}, f32);
 
   int max_n_particles = 1024 * 1024;
 

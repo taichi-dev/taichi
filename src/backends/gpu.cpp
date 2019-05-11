@@ -41,7 +41,7 @@ class GPUIRCodeGen : public IRVisitor {
 
   void struct_for_old(Stmt *for_stmt_);
 
-  void emit_list_gen_kernel(StructForStmt *sfor, int block_division) {
+  void emit_listgen_func(StructForStmt *sfor, int block_division) {
     auto snode = sfor->snode->parent;
 
     auto block_size = sfor->block_size;
@@ -159,13 +159,9 @@ class GPUIRCodeGen : public IRVisitor {
     emit("}}");
     emit("}}");
     emit("");
-  }
 
-  std::string listgen_func_name(SNode *leaf) {
-    return fmt::format("{}_listgen", leaf->node_type_name);
-  }
-
-  void emit_listgen_host(SNode *leaf, int block_division) {
+    // host function
+    auto leaf = sfor->snode->parent;
     emit("void {}(Context context) {{", listgen_func_name(leaf));
     emit("backup_tails<{}><<<1, 1>>>();", leaf->parent->node_type_name);
     emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->parent->node_type_name);
@@ -175,7 +171,11 @@ class GPUIRCodeGen : public IRVisitor {
     emit("{}_listgen_device<<<{}, {}>>>(context);", leaf->node_type_name,
          grid_dim, std::min(1024, block_division));
     emit("}}");
-  };
+  }
+
+  std::string listgen_func_name(SNode *leaf) {
+    return fmt::format("{}_listgen", leaf->node_type_name);
+  }
 
   void struct_for_new(Stmt *for_stmt_) {
     // struct for
@@ -191,7 +191,7 @@ class GPUIRCodeGen : public IRVisitor {
       block_division = (1 << leaf->total_num_bits) / for_stmt->block_size;
     }
 
-    emit_list_gen_kernel(for_stmt, block_division);
+    emit_listgen_func(for_stmt, block_division);
 
     emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
     emit("auto root = ({} *)context.buffers[0];",
@@ -329,8 +329,6 @@ class GPUIRCodeGen : public IRVisitor {
 
     emit("}}");  // end for
     emit("}}");  // end kernel
-
-    emit_listgen_host(leaf, block_division);
 
     emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
     emit("auto root = ({} *)context.buffers[0];",

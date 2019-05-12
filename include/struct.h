@@ -49,8 +49,8 @@ template <typename T>
 struct SNodeAllocator {
   using data_type = typename T::child_type;
   static constexpr std::size_t pool_size =
-      std::min((1ULL << 33) / sizeof(data_type),
-               1ULL << 25);  // each snode allocator takes at most 8 GB (VM),
+      std::max(1ULL, std::min((1ULL << 33) / sizeof(data_type),
+               1ULL << 25));  // each snode allocator takes at most 8 GB (VM),
                              // max 32M metas
   static constexpr int id = SNodeID<T>::value;
 
@@ -69,7 +69,7 @@ struct SNodeAllocator {
   SNodeAllocator() {
     if (T::has_null)
       data_pool = (data_type *)allocate(sizeof(data_type) * pool_size,
-                                        sizeof(data_type));
+                                        4096); // 4KB page alignment
     else
       data_pool = nullptr;
     resident_pool =
@@ -341,6 +341,10 @@ struct dense {
   child_type children[n];
   // TODO: fix potential alignment issues
   uint64 bitmask[bitmasked ? (n + 63) / 64 : 1];
+
+
+  TC_DEVICE TC_FORCE_INLINE dense() {
+  }
 
   TC_DEVICE TC_FORCE_INLINE int32 translate(int i) {  // i is flattened index
     int i_translated;

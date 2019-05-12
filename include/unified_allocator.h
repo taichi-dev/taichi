@@ -47,7 +47,7 @@ class UnifiedAllocator {
     std::lock_guard<std::mutex> _(lock);
     auto ret = (char *)(*head) + alignment - 1 -
                ((unsigned long)(char *)(*head) + alignment - 1) % alignment;
-    *head = (char *)(*head) + size;
+    *head = (char *)ret + size;
     return ret;
   }
 

@@ -49,7 +49,7 @@ class Renderer {
       root.dense(Indices(0, 1, 2), 4)
           .bitmasked()
           .dense(Indices(0, 1, 2), grid_resolution / block_size)
-          //.pointer()
+          // .pointer()
           .bitmasked()
           .dense(Indices(0, 1, 2), block_size)
           .place(density);
@@ -408,7 +408,7 @@ class Renderer {
         for (int k = 0; k < grid_resolution; k++) {
           auto d = density_field[i * grid_resolution * grid_resolution +
                                  j * grid_resolution + k];
-          if (d != 0) {  // populate non empty voxels only
+          if (d != 0) {  // populate non-empty voxels only
             density.val<float32>(i, j, k) = d;
           }
         }

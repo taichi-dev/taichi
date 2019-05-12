@@ -131,11 +131,8 @@ TC_TEST("task_list_dynamic") {
       }
     }
 
-    auto &inc = kernel([&]() {
-      Declare(i);
-      Declare(j);
-      For({i, j}, x, [&] { x[i, j] += 1; });
-    });
+    auto &inc =
+        kernel([&]() { For(x, [&](Expr i, Expr j) { x[i, j] += 1; }); });
 
     int P = 10;
 
@@ -350,11 +347,7 @@ TC_TEST("dilate") {
       // dilate
       kernel([&]() { For(x, [&](Expr i) { x[i] += 1; }); })();
 
-      kernel([&] {
-        For(x, [&](Expr i) {
-          y[i / bs] = Probe(x, i);
-        });
-      })();
+      kernel([&] { For(x, [&](Expr i) { y[i / bs] = Probe(x, i); }); })();
 
       for (int i = 0; i < n; i++) {
         int bid = i / bs;

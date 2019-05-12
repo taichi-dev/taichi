@@ -105,38 +105,19 @@ class GPUIRCodeGen : public IRVisitor {
         "auto num_leaves = Managers::get_allocator<{}>()->resident_tail_const;",
         parent->node_type_name);
 
-    emit("constexpr int child_block_division={};", child_block_division);
+    emit("constexpr int child_block_division = {};", child_block_division);
     emit(
         "constexpr int num_divided_child_blocks = child_block_division * "
         "parent_branching;");
-    emit(
-        "for (int div = threadIdx.x; div < num_divided_child_blocks; div += "
-        "{}) {{",
-        listgen_block_dim);
-
-    if (parent->type == SNodeType::dense) {  // TODO: dynamic
-      // dense nodes have no allocator, while they have large branching factors.
-      // therefore we use a for loop to enumerate the elements
-
-      // we need a for loop here since parent->get_max_n() may be bigger than
-      // max_gpu_block_size
-      emit("auto cid = div / child_block_division;");
-    } else {
-      emit("auto cid = 0;");
-    }
 
     if (parent->type == SNodeType::dense) {
-      emit("auto {}_cache = ({} *)leaves[leaf_loop].ptr;",
-           parent->node_type_name, parent->node_type_name);
-      emit("auto {} = cid;", loopgen.loop_variable(parent));
-      if (parent->parent) {
-        for (int i = 0; i < max_num_indices; i++) {
-          emit("auto {} = leaves[leaf_loop].indices[{}];",
-               loopgen.index_name_global(parent->parent, i), i);
-        }
+      emit("auto &input_meta = leaves[leaf_loop];");
+      emit("auto {}_cache = ({} *)input_meta.ptr;", parent->node_type_name,
+           parent->node_type_name);
+      for (int i = 0; i < max_num_indices; i++) {
+        emit("auto {} = leaves[leaf_loop].indices[{}];",
+             loopgen.index_name_global(parent->parent, i), i);
       }
-      loopgen.update_indices(parent);
-      loopgen.single_loop_body_head(snode);
     } else {
       emit("auto list_element = ({}::child_type *)leaves[leaf_loop].ptr;",
            parent->node_type_name);
@@ -148,6 +129,28 @@ class GPUIRCodeGen : public IRVisitor {
         emit("auto {} = leaves[leaf_loop].indices[{}];",
              loopgen.index_name_global(parent, i), i);
       }
+    }
+    emit(
+        "for (int div = threadIdx.x; div < num_divided_child_blocks; div += "
+        "{}) {{",
+        listgen_block_dim);
+
+    if (parent->type == SNodeType::dense) {  // TODO: dynamic
+      // dense nodes have no allocator, while they have large branching
+      // factors. therefore we use a for loop to enumerate the elements
+
+      // we need a for loop here since parent->get_max_n() may be bigger than
+      // max_gpu_block_size
+      emit("auto cid = div / child_block_division + input_meta.start_loop;");
+      emit("if (cid >= input_meta.end_loop) break;");
+    } else {
+      emit("auto cid = 0;");
+    }
+
+    if (parent->type == SNodeType::dense) {
+      emit("auto {} = cid;", loopgen.loop_variable(parent));
+      loopgen.update_indices(parent);
+      loopgen.single_loop_body_head(snode);
     }
 
     // check if necessary
@@ -421,7 +424,8 @@ class GPUIRCodeGen : public IRVisitor {
 
       emit("float milliseconds = 0;");
       emit("cudaEventElapsedTime(&milliseconds, start, stop);");
-      emit(R"(std::cout << "     device only : " << milliseconds << " ms\n";)");
+      emit(
+          R"(std::cout << "     device only : " << milliseconds << " ms\n";)");
 
       if (current_program->current_kernel->benchmarking) {
         emit("cudaDeviceSynchronize();\n");

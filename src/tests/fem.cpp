@@ -12,16 +12,18 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-constexpr int dim = 3, n = 128;
-bool active[n][n][n];
+constexpr int dim = 3, n = 256;
 real F = -10;
-real R[n][n][n][dim], D[n][n][n], X[n][n][n][dim];
 
 const auto E = 1_f;     // Young's Modulus
 const auto nu = 0.2_f;  // Poisson ratio
 
 const real mu_0 = E / (2 * (1 + nu));
 const real lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
+auto active = new bool[n][n][n]();
+auto R = new real[n][n][n][dim]();
+auto D = new real[n][n][n]();
+auto X = new real[n][n][n][dim]();
 
 void fem_solve() {
   Dict config;
@@ -218,6 +220,7 @@ auto fem = []() {
   bool gpu = true;
   Program prog(gpu ? Arch::gpu : Arch::x86_64);
   prog.config.print_ir = true;
+  prog.config.lower_access = false;
   prog.config.lazy_compilation = false;
 
   Vector x(DataType::f32, dim), r(DataType::f32, dim), p(DataType::f32, dim),
@@ -415,7 +418,7 @@ auto fem = []() {
     }
   }
 
-  // fem_solve();
+  fem_solve();
 
   // r = b - Ax = b    since x = 0
   // copy_b_to_r();
@@ -465,6 +468,7 @@ auto fem = []() {
       }
     }
   }
+
   compute_Ap();
   auto residual = 0.0f;
   for (int i = 0; i < n; i++) {

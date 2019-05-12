@@ -14,24 +14,19 @@ class Renderer {
   Program::Kernel *main, *dilate;
   Vector buffer;
   int depth_limit;
+  Expr density;
+  int grid_resolution = 256;
 
   Renderer() {
     depth_limit = 20;
     n = 512;
-    int grid_resolution = 256;
     Vector3 albedo(0.9, 0.95, 1);
-    float32 scale = 724.0;
     float32 one_over_four_pi = 0.07957747154f;
     float32 pi = 3.14159265359f;
 
     sky_map_size = Vector2i(512, 128);
     n_sky_samples = 1024;
-
-    auto f = fopen("snow_density_256.bin", "rb");
-    TC_ASSERT_INFO(f, "./snow_density_256.bin not found");
-    std::vector<float32> density_field(pow<3>(grid_resolution));
-    std::fread(density_field.data(), sizeof(float32), density_field.size(), f);
-    std::fclose(f);
+    auto inv_max_density = 1.0f / 724.0f;
 
     Vector buffer(DataType::f32, 3);
     this->buffer.set(buffer);
@@ -40,6 +35,7 @@ class Renderer {
     Vector sky_sample_uv(DataType::f32, 2);
 
     Global(density, f32);
+    this->density.set(density);
 
     auto const block_size = 4;
 
@@ -288,23 +284,6 @@ class Renderer {
 
     float32 fov = 0.6;
 
-    auto max_density = 0.0f;
-    for (int i = 0; i < pow<3>(grid_resolution); i++) {
-      max_density = std::max(max_density, density_field[i]);
-    }
-
-    for (int i = 0; i < pow<3>(grid_resolution); i++) {
-      density_field[i] /= max_density;  // normalize to 1 first
-      density_field[i] *= scale;        // then scale
-    }
-
-    max_density = scale;
-
-    auto inv_max_density = 0.f;
-    if (max_density > 0.f) {
-      inv_max_density = 1.f / max_density;
-    }
-
     main = &kernel([&]() {
       BlockDim(32);
       For(0, n * n * 2, [&](Expr i) {
@@ -365,6 +344,7 @@ class Renderer {
       });
     });
 
+    std::FILE *f;
     if (use_sky_map) {
       f = fopen("sky_map.bin", "rb");
       TC_ASSERT_INFO(f, "./sky_map.bin not found");
@@ -398,18 +378,6 @@ class Renderer {
         }
       }
     }
-    for (int i = 0; i < grid_resolution; i++) {
-      for (int j = 0; j < grid_resolution; j++) {
-        for (int k = 0; k < grid_resolution; k++) {
-          auto d = density_field[i * grid_resolution * grid_resolution +
-                                 j * grid_resolution + k];
-          if (d != 0) {  // populate non-empty voxels only
-            density.val<float32>(i, j, k) = d;
-          }
-        }
-      }
-    }
-
     // expand blocks
     dilate = &kernel([&] {
       For(density, [&](Expr i, Expr j, Expr k) {
@@ -423,7 +391,9 @@ class Renderer {
         }
       });
     });
+  }
 
+  void preprocess_volume() {
     (*dilate)();
   }
 
@@ -440,6 +410,45 @@ auto volume_renderer = [] {
   Renderer renderer;
   std::unique_ptr<GUI> gui = nullptr;
   int n = renderer.n;
+  int grid_resolution = renderer.grid_resolution;
+
+  auto f = fopen("snow_density_256.bin", "rb");
+  TC_ASSERT_INFO(f, "./snow_density_256.bin not found");
+  std::vector<float32> density_field(pow<3>(grid_resolution));
+  std::fread(density_field.data(), sizeof(float32), density_field.size(), f);
+  std::fclose(f);
+
+  float32 scale = 724.0;
+  auto max_density = 0.0f;
+  for (int i = 0; i < pow<3>(grid_resolution); i++) {
+    max_density = std::max(max_density, density_field[i]);
+  }
+
+  for (int i = 0; i < pow<3>(grid_resolution); i++) {
+    density_field[i] /= max_density;  // normalize to 1 first
+    density_field[i] *= scale;        // then scale
+  }
+
+  max_density = scale;
+
+  auto inv_max_density = 0.f;
+  if (max_density > 0.f) {
+    inv_max_density = 1.f / max_density;
+  }
+
+  for (int i = 0; i < grid_resolution; i++) {
+    for (int j = 0; j < grid_resolution; j++) {
+      for (int k = 0; k < grid_resolution; k++) {
+        auto d = density_field[i * grid_resolution * grid_resolution +
+                               j * grid_resolution + k];
+        if (d != 0) {  // populate non-empty voxels only
+          renderer.density.val<float32>(i, j, k) = d;
+        }
+      }
+    }
+  }
+
+  renderer.preprocess_volume();
 
   if (use_gui) {
     gui = std::make_unique<GUI>("Volume Renderer", Vector2i(n * 2, n));

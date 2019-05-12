@@ -54,8 +54,8 @@ class GPUIRCodeGen : public IRVisitor {
     } else {
       child_block_size /= child_block_division;
     }
-    TC_P(child_block_size);
-    TC_P(child_block_division);
+    // TC_P(child_block_size);
+    // TC_P(child_block_division);
 
     auto parent = snode->parent;
     int listgen_block_dim =
@@ -142,8 +142,8 @@ class GPUIRCodeGen : public IRVisitor {
     }
 
     // check if necessary
-    emit("int start_idx = subblock_id * {};", child_block_size);
-    emit("int end_idx = (subblock_id + 1) * {};", child_block_size);
+    emit("int start_idx = div * {};", child_block_size);
+    emit("int end_idx = (div + 1) * {};", child_block_size);
 
     if (snode->type == SNodeType::dynamic) {
       emit("if (start_idx >= {}_cache->get_n()) break;", snode->node_type_name);
@@ -154,7 +154,7 @@ class GPUIRCodeGen : public IRVisitor {
         "int meta_id = atomicAdd((unsigned long long *)(&{}->resident_tail), "
         "1ULL);",
         leaf_allocator);
-    emit(R"(printf("{} %d\n", meta_id);)", snode->node_type_name);
+    // emit(R"(printf("{} %d\n", meta_id);)", snode->node_type_name);
     emit("auto &meta = {}->resident_pool[meta_id];", leaf_allocator);
 
     for (int i = 0; i < max_num_indices; i++)

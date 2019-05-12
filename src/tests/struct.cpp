@@ -595,7 +595,7 @@ TC_TEST("pointer") {
 
 TC_TEST("gpu_listgen") {
   for (auto arch : {Arch::gpu}) {
-    for (auto level : {1, 2}) {
+    for (auto level : {1, 2, 3}) {
       Program prog(arch);
 
       int n = 64;

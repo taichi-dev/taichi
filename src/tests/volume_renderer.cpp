@@ -153,32 +153,27 @@ class Renderer {
         auto inv_dist_to_p = Var(1.f / dist_to_p);
         dir_to_p = normalized(dir_to_p);
 
-        auto near_t = Var(-std::numeric_limits<float>::max());
-        auto far_t = Var(std::numeric_limits<float>::max());
-        auto hit = box_intersect(p, -dir_to_p, near_t, far_t);
         auto transmittance = Var(1.f);
 
-        If(hit, [&] {
-          auto cond = Var(hit);
-          auto t = Var(0.0f);
+        auto cond = Var(1);
+        auto t = Var(0.0f);
 
-          While(cond, [&] {
-            t -= log(1.f - Rand<float32>()) * inv_max_density;
+        While(cond, [&] {
+          t -= log(1.f - Rand<float32>()) * inv_max_density;
 
-            auto q = Var(p - t * dir_to_p);
+          auto q = Var(p - t * dir_to_p);
 
-            If(!point_inside_box(q)).Then([&] { cond = 0; }).Else([&] {
-              If(!query_active(q))
-                  .Then([&] { t += 1.0f * block_size / grid_resolution; })
-                  .Else([&] {
-                    auto density_at_p = query_density(q);
-                    If(density_at_p * inv_max_density > Rand<float32>())
-                        .Then([&] {
-                          cond = 0;
-                          transmittance = Var(0.f);
-                        });
-                  });
-            });
+          If(!point_inside_box(q)).Then([&] { cond = 0; }).Else([&] {
+            If(!query_active(q))
+                .Then([&] { t += 1.0f * block_size / grid_resolution; })
+                .Else([&] {
+                  auto density_at_p = query_density(q);
+                  If(density_at_p * inv_max_density > Rand<float32>())
+                      .Then([&] {
+                        cond = 0;
+                        transmittance = Var(0.f);
+                      });
+                });
           });
         });
 

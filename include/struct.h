@@ -225,6 +225,25 @@ __global__ void recycle_all_gpu(SNodeAllocator<T> *allocator, int flags) {
   }
 }
 
+/*
+template <typename T>
+__global__ void recycle_all_gpu_bitmask(SNodeAllocator<T> *allocator, int flags) {
+  auto num_blocks = allocator->resident_tail;
+  for (int b = blockIdx.x; b < num_blocks; b += gridDim.x) {
+    auto t = threadIdx.x;
+    // zero-fill bitmask
+    auto &meta = allocator->resident_pool[b];
+    if (t == 0 && flags)
+      *(meta.snode_ptr) = nullptr;
+    auto ptr = (T *)(meta.ptr);
+    while (t * sizeof(unsigned long long) < sizeof(T::bitmask)) {
+      bitmask[t] = 0;
+      t += blockDim.x;
+    }
+  }
+}
+*/
+
 template <typename T>
 __global__ void reset_execution_tail() {
   Managers::get_allocator<T>()->execution_tail = 0;
@@ -243,8 +262,10 @@ __global__ void backup_tails() {
   allocator->recycle_tail_const = allocator->recycle_tail;
 }
 
+
+// for pointer only
 template <typename T>
-__host__ void SNodeAllocator<T>::clear(int flags) {
+void clear_pointer(SNodeAllocator<T> *alloc, int flags) {
   int blockDim = 256;  // least_pot_bound(sizeof(data_type) / sizeof(int));
 #if defined(TL_DEBUG)
   cudaDeviceSynchronize();
@@ -259,7 +280,7 @@ __host__ void SNodeAllocator<T>::clear(int flags) {
   cudaEventCreate(&stop);
   cudaEventRecord(start);
 #endif
-  recycle_all_gpu<<<2048, blockDim>>>(this, flags);
+  recycle_all_gpu<<<2048, blockDim>>>(alloc, flags);
 #if defined(TL_DEBUG)
   cudaEventRecord(stop);
   cudaEventSynchronize(stop);
@@ -280,6 +301,12 @@ __host__ void SNodeAllocator<T>::clear(int flags) {
   if (flags) {
     reset_tails<T><<<1, 1>>>();
   }
+}
+
+// for pointer only
+template <typename T>
+__host__ void SNodeAllocator<T>::clear(int flags) {
+  clear_pointer<T>(this, flags);
 }
 #else
 template <typename T>

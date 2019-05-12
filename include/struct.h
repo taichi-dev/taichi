@@ -302,7 +302,7 @@ struct layout_root {
     return 1;
   }
 
-  TC_DEVICE TC_FORCE_INLINE static int get_max_n() {
+  TC_DEVICE TC_FORCE_INLINE static int constexpr get_max_n() {
     return 1;
   }
 
@@ -377,7 +377,7 @@ struct dense {
     return n;
   }
 
-  TC_DEVICE TC_FORCE_INLINE static int get_max_n() {
+  TC_DEVICE TC_FORCE_INLINE static int constexpr get_max_n() {
     return n;
   }
 
@@ -596,7 +596,7 @@ struct pointer {
     return 1;
   }
 
-  TC_DEVICE TC_FORCE_INLINE static int get_max_n() {
+  TC_DEVICE TC_FORCE_INLINE static constexpr int get_max_n() {
     return 1;
   }
 
@@ -683,44 +683,13 @@ struct dynamic {
     return n;
   }
 
-  TC_DEVICE TC_FORCE_INLINE static int get_max_n() {
+  TC_DEVICE TC_FORCE_INLINE static constexpr int get_max_n() {
     return max_n;
   }
 
   static constexpr bool has_null = false;
 };
 // *****************************************************************************
-
-template <int max_n_>
-struct indirect {
-  static constexpr int max_n = max_n_;
-  int data[max_n];
-  std::atomic<int> n;
-
-  TC_DEVICE indirect() : n(0) {
-  }
-
-  TC_DEVICE TC_FORCE_INLINE int get_n() {
-    return n;
-  }
-
-  TC_DEVICE TC_FORCE_INLINE static int get_max_n() {
-    return max_n;
-  }
-
-  TC_DEVICE TC_FORCE_INLINE int *look_up(int i) {  // i is flattened index
-#if defined(TL_HOST)
-    n.store(std::max(n.load(), i + 1));
-#endif
-    return &data[i];
-  }
-
-  TC_DEVICE TC_FORCE_INLINE void clear() {
-    n.store(0);
-  }
-
-  static constexpr bool has_null = false;
-};
 
 template <typename T>
 struct LeafContext {

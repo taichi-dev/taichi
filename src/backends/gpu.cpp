@@ -58,10 +58,14 @@ class GPUIRCodeGen : public IRVisitor {
     // TC_P(child_block_division);
 
     auto parent = snode->parent;
+
+    int parent_branching = 1;
+    if (parent->type == SNodeType::dense) {  // TODO: dynamic
+      parent_branching = 1 << parent->total_num_bits;
+    }
+
     int listgen_block_dim =
-        parent->has_allocator()
-            ? 1
-            : std::min(max_gpu_block_size, 1 << snode->parent->total_num_bits);
+        std::min(max_gpu_block_size, parent_branching * child_block_division);
 
     auto leaf_allocator =
         fmt::format("Managers::get_allocator<{}>()", snode->node_type_name);
@@ -72,6 +76,7 @@ class GPUIRCodeGen : public IRVisitor {
 
     emit("int num_leaves = Managers::get_allocator<{}>()->resident_tail;",
          parent->node_type_name);
+    emit("constexpr int parent_branching = {};", parent_branching);
     emit("while (1) {{");
 
     // one block takes one ancestor meta
@@ -92,22 +97,6 @@ class GPUIRCodeGen : public IRVisitor {
     to its child_type; otherwise pointers to the nodes themselves.
 
     */
-    if (parent->type == SNodeType::dense) {  // TODO: dynamic
-      // dense nodes have no allocator, while they have large branching factors.
-      // therefore we use a for loop to enumerate the elements
-
-      // we need a for loop here since parent->get_max_n() may be bigger than
-      // max_gpu_block_size
-      emit("for (int cid = threadIdx.x; cid < {}::get_max_n(); cid += {}) {{",
-           parent->node_type_name, listgen_block_dim);
-    } else {
-      emit("auto cid = 0;");
-    }
-
-    emit("for (int div = 0; div < {}; div++) {{", child_block_division);
-    // TODO: reorder for higher locality
-    emit("int subblock_id = cid * {} + div;", child_block_division);
-
     emit(
         "auto leaves = (SNodeMeta "
         "*)(Managers::get_allocator<{}>()->resident_pool);",
@@ -115,6 +104,26 @@ class GPUIRCodeGen : public IRVisitor {
     emit(
         "auto num_leaves = Managers::get_allocator<{}>()->resident_tail_const;",
         parent->node_type_name);
+
+    emit("constexpr int child_block_division={};", child_block_division);
+    emit(
+        "constexpr int num_divided_child_blocks = child_block_division * "
+        "parent_branching;");
+    emit(
+        "for (int div = threadIdx.x; div < num_divided_child_blocks; div += "
+        "{}) {{",
+        listgen_block_dim);
+
+    if (parent->type == SNodeType::dense) {  // TODO: dynamic
+      // dense nodes have no allocator, while they have large branching factors.
+      // therefore we use a for loop to enumerate the elements
+
+      // we need a for loop here since parent->get_max_n() may be bigger than
+      // max_gpu_block_size
+      emit("auto cid = div / child_block_division;");
+    } else {
+      emit("auto cid = 0;");
+    }
 
     if (parent->type == SNodeType::dense) {
       emit("auto {}_cache = ({} *)leaves[leaf_loop].ptr;",
@@ -142,8 +151,9 @@ class GPUIRCodeGen : public IRVisitor {
     }
 
     // check if necessary
-    emit("int start_idx = div * {};", child_block_size);
-    emit("int end_idx = (div + 1) * {};", child_block_size);
+    emit("int start_idx = div % child_block_division * {};", child_block_size);
+    emit("int end_idx = (div % child_block_division + 1) * {};",
+         child_block_size);
 
     if (snode->type == SNodeType::dynamic) {
       emit("if (start_idx >= {}_cache->get_n()) break;", snode->node_type_name);
@@ -168,9 +178,6 @@ class GPUIRCodeGen : public IRVisitor {
     emit("}}");
     emit("}}");
 
-    if (parent->type == SNodeType::dense) {
-      emit("}}");
-    }
     emit("");
 
     // host function
@@ -179,7 +186,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("reset_execution_tail<{}><<<1, 1>>>();", parent->node_type_name);
     emit("reset_tails<{}><<<1, 1>>>();", snode->node_type_name);
     emit("{}_listgen_device<<<{}, {}>>>(context);", snode->node_type_name,
-         grid_dim, std::min(max_gpu_block_size, listgen_block_dim));
+         grid_dim, listgen_block_dim);
     emit("}}");
   }
 
@@ -367,10 +374,8 @@ class GPUIRCodeGen : public IRVisitor {
       }
     }
     emit("gpu_runtime_init();");
-    emit(
-        "int blockDim = ({}::get_max_n()"
-        "+ {} - 1) / {};",
-        leaf->node_type_name, block_division, block_division);
+    emit("int blockDim = ({}::get_max_n()+ {} - 1) / {};", leaf->node_type_name,
+         block_division, block_division);
     emit("");
 
     // generate the list
@@ -471,37 +476,7 @@ class GPUIRCodeGen : public IRVisitor {
       emit(R"(GPUProfiler::get_instance().stop();)");
     } else {
       auto struct_for = for_stmt_->as<StructForStmt>();
-      bool use_activity_tracking = true;
-      if (struct_for->snode->parent->type == SNodeType::dense &&
-          struct_for->snode->parent->parent->type == SNodeType::pointer)
-        use_activity_tracking = true;
-
-      if (struct_for->snode->parent->type == SNodeType::dynamic &&
-          struct_for->snode->parent->parent->type == SNodeType::pointer)
-        use_activity_tracking = true;
-
-      if (struct_for->snode->parent->type == SNodeType::dynamic &&
-          struct_for->snode->parent->parent->type == SNodeType::root)
-        use_activity_tracking = true;
-
-      if (struct_for->snode->parent->type == SNodeType::dense &&
-          struct_for->snode->parent->parent->type == SNodeType::root)
-        use_activity_tracking = true;
-
-      /*
-      if (struct_for->snode->parent->type == SNodeType::dense &&
-          struct_for->snode->parent->parent->type == SNodeType::dense &&
-          struct_for->snode->parent->parent->parent->type == SNodeType::root)
-        use_activity_tracking = true;
-        */
-
-      // if (struct_for->snode->parent->type == SNodeType::pointer)
-      //  use_activity_tracking = true;
-      if (use_activity_tracking) {
-        struct_for_new(for_stmt_.get());
-      } else {
-        struct_for_old(for_stmt_.get());
-      }
+      struct_for_new(for_stmt_.get());
     }
 
     if (debug) {

@@ -38,6 +38,8 @@ class Renderer {
     this->density.set(density);
 
     auto const block_size = 4;
+    auto lower_bound = -2.0f;
+    auto upper_bound = 3.0f;
 
     layout([&]() {
       root.dense(Index(0), n * n * 2).place(buffer(0), buffer(1), buffer(2));
@@ -58,8 +60,9 @@ class Renderer {
     });
 
     auto point_inside_box = [&](Vector p) {
-      return Var(0.0f <= p(0) && p(0) < 1.0f && 0.0f <= p(1) && p(1) < 1.0f &&
-                 0.0f <= p(2) && p(2) < 1.0f);
+      return Var(lower_bound <= p(0) && p(0) < upper_bound &&
+                 lower_bound <= p(1) && p(1) < upper_bound &&
+                 lower_bound <= p(2) && p(2) < upper_bound);
     };
 
     auto query_active = [&](Vector p) {
@@ -94,8 +97,8 @@ class Renderer {
       /* For each pair of AABB planes */
       for (int i = 0; i < 3; i++) {
         auto origin = o(i);
-        auto min_val = Var(0.f);
-        auto max_val = Var(1.f);
+        auto min_val = Var(lower_bound);
+        auto max_val = Var(upper_bound);
         auto d_rcp = Var(1.f / d(i));
 
         If(d(i) == 0.f)
@@ -418,22 +421,15 @@ auto volume_renderer = [] {
   std::fread(density_field.data(), sizeof(float32), density_field.size(), f);
   std::fclose(f);
 
-  float32 scale = 724.0;
+  float32 target_max_density = 724.0;
   auto max_density = 0.0f;
   for (int i = 0; i < pow<3>(grid_resolution); i++) {
     max_density = std::max(max_density, density_field[i]);
   }
 
   for (int i = 0; i < pow<3>(grid_resolution); i++) {
-    density_field[i] /= max_density;  // normalize to 1 first
-    density_field[i] *= scale;        // then scale
-  }
-
-  max_density = scale;
-
-  auto inv_max_density = 0.f;
-  if (max_density > 0.f) {
-    inv_max_density = 1.f / max_density;
+    density_field[i] /= max_density;         // normalize to 1 first
+    density_field[i] *= target_max_density;  // then scale
   }
 
   for (int i = 0; i < grid_resolution; i++) {
@@ -458,7 +454,7 @@ auto volume_renderer = [] {
 
   auto tone_map = [](real x) { return std::sqrt(x); };
 
-  constexpr int N = 100;
+  constexpr int N = 10;
   for (int frame = 0; frame < 100; frame++) {
     for (int i = 0; i < N; i++) {
       renderer.sample();

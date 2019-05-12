@@ -143,6 +143,7 @@ class GPUIRCodeGen : public IRVisitor {
       // max_gpu_block_size
       emit("auto cid = div / child_block_division + input_meta.start_loop;");
       emit("if (cid >= input_meta.end_loop) break;");
+      emit("if (!{}_cache->is_active(cid)) continue;", parent->node_type_name);
     } else {
       emit("auto cid = 0;");
     }

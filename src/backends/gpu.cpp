@@ -41,16 +41,30 @@ class GPUIRCodeGen : public IRVisitor {
 
   void struct_for_old(Stmt *for_stmt_);
 
-  void emit_listgen_func(SNode *snode, int block_size, int block_division) {
-    auto block_bits = bit::log2int(block_size);
+  void emit_listgen_func(SNode *snode, int child_block_division = 0) {
+    auto child_block_size = 1 << snode->total_num_bits;
+    if (child_block_division == 0) {
+      // how many divisions should the CHILD node have?
+      if (child_block_size > max_gpu_block_size) {
+        child_block_division = child_block_size / max_gpu_block_size;
+        child_block_size = max_gpu_block_size;
+      } else {
+        child_block_division = 1;
+      }
+    } else {
+      child_block_size /= child_block_division;
+    }
+    TC_P(child_block_size);
+    TC_P(child_block_division);
 
     auto parent = snode->parent;
+    int listgen_block_dim =
+        parent->has_allocator()
+            ? 1
+            : std::min(max_gpu_block_size, 1 << snode->parent->total_num_bits);
 
-    auto ancestor_allocator =
-        fmt::format("Managers::get<{}>()", parent->node_type_name);
     auto leaf_allocator =
         fmt::format("Managers::get_allocator<{}>()", snode->node_type_name);
-    // emit("{}->reset_tails();", leaf_allocator);
 
     // kernel body starts
     emit("__global__ void {}_listgen_device(Context context) {{",
@@ -73,15 +87,26 @@ class GPUIRCodeGen : public IRVisitor {
     emit("int leaf_loop = bid_shared;");
     emit("if (leaf_loop >= num_leaves) break;");
 
-    int div_size = block_division;
-    int num_div = 1;
-    if (block_division > max_gpu_block_size) {
-      num_div = block_division / max_gpu_block_size;
-      div_size = max_gpu_block_size;
+    /*
+    NOTE: when parent has an allocator, this kernel loops over the pointers
+    to its child_type; otherwise pointers to the nodes themselves.
+
+    */
+    if (parent->type == SNodeType::dense) {  // TODO: dynamic
+      // dense nodes have no allocator, while they have large branching factors.
+      // therefore we use a for loop to enumerate the elements
+
+      // we need a for loop here since parent->get_max_n() may be bigger than
+      // max_gpu_block_size
+      emit("for (int cid = threadIdx.x; cid < {}::get_max_n(); cid += {}) {{",
+           parent->node_type_name, listgen_block_dim);
+    } else {
+      emit("auto cid = 0;");
     }
 
-    emit("for (int div = 0; div < {}; div++) {{", num_div);
-    emit("int subblock_id = threadIdx.x + div * {};", div_size);
+    emit("for (int div = 0; div < {}; div++) {{", child_block_division);
+    // TODO: reorder for higher locality
+    emit("int subblock_id = cid * {} + div;", child_block_division);
 
     emit(
         "auto leaves = (SNodeMeta "
@@ -91,34 +116,34 @@ class GPUIRCodeGen : public IRVisitor {
         "auto num_leaves = Managers::get_allocator<{}>()->resident_tail_const;",
         parent->node_type_name);
 
-    emit("auto list_element = ({}::child_type *)leaves[leaf_loop].ptr;",
-         parent->node_type_name);
-    auto chid = parent->child_id(snode);
-    TC_ASSERT(chid != -1);
-    emit("auto {}_cache = list_element->get{}();", snode->node_type_name, chid);
-
-    for (int i = 0; i < max_num_indices; i++) {
-      emit("auto {} = leaves[leaf_loop].indices[{}];",
-           loopgen.index_name_global(snode, i), i);
+    if (parent->type == SNodeType::dense) {
+      emit("auto {}_cache = ({} *)leaves[leaf_loop].ptr;",
+           parent->node_type_name, parent->node_type_name);
+      emit("auto {} = cid;", loopgen.loop_variable(parent));
+      if (parent->parent) {
+        for (int i = 0; i < max_num_indices; i++) {
+          emit("auto {} = leaves[leaf_loop].indices[{}];",
+               loopgen.index_name_global(parent->parent, i), i);
+        }
+      }
+      loopgen.update_indices(parent);
+      loopgen.single_loop_body_head(snode);
+    } else {
+      emit("auto list_element = ({}::child_type *)leaves[leaf_loop].ptr;",
+           parent->node_type_name);
+      auto chid = parent->child_id(snode);
+      TC_ASSERT(chid != -1);
+      emit("auto {}_cache = list_element->get{}();", snode->node_type_name,
+           chid);
+      for (int i = 0; i < max_num_indices; i++) {
+        emit("auto {} = leaves[leaf_loop].indices[{}];",
+             loopgen.index_name_global(parent, i), i);
+      }
     }
-
-    /*
-    for (int i = 1; i < (int)path.size(); i++) {
-      auto path_node = path[i];
-      emit("auto {} = (subblock_id) & ((1 << {}) - 1);",
-           loopgen.loop_variable(
-               path_node),  // path_node->parent->total_bit_start,
-           path_node->parent->total_num_bits);
-      loopgen.single_loop_body_head(path_node);
-      loopgen.update_indices(path_node);
-    }
-    */
-
-    // output
 
     // check if necessary
-    emit("int start_idx = subblock_id * {};", block_size);
-    emit("int end_idx = (subblock_id + 1) * {};", block_size);
+    emit("int start_idx = subblock_id * {};", child_block_size);
+    emit("int end_idx = (subblock_id + 1) * {};", child_block_size);
 
     if (snode->type == SNodeType::dynamic) {
       emit("if (start_idx >= {}_cache->get_n()) break;", snode->node_type_name);
@@ -129,10 +154,11 @@ class GPUIRCodeGen : public IRVisitor {
         "int meta_id = atomicAdd((unsigned long long *)(&{}->resident_tail), "
         "1ULL);",
         leaf_allocator);
+    emit(R"(printf("{} %d\n", meta_id);)", snode->node_type_name);
     emit("auto &meta = {}->resident_pool[meta_id];", leaf_allocator);
 
     for (int i = 0; i < max_num_indices; i++)
-      emit("meta.indices[{}] = {};", i, loopgen.index_name_global(snode, i));
+      emit("meta.indices[{}] = {};", i, loopgen.index_name_global(parent, i));
 
     emit("meta.ptr = {}_cache;", snode->node_type_name);
     emit("meta.start_loop = start_idx;");
@@ -141,18 +167,19 @@ class GPUIRCodeGen : public IRVisitor {
 
     emit("}}");
     emit("}}");
+
+    if (parent->type == SNodeType::dense) {
+      emit("}}");
+    }
     emit("");
 
     // host function
     emit("void {}(Context context) {{", listgen_func_name(snode));
-    emit("backup_tails<{}><<<1, 1>>>();", snode->parent->node_type_name);
-    emit("reset_execution_tail<{}><<<1, 1>>>();",
-         snode->parent->node_type_name);
-
+    emit("backup_tails<{}><<<1, 1>>>();", parent->node_type_name);
+    emit("reset_execution_tail<{}><<<1, 1>>>();", parent->node_type_name);
     emit("reset_tails<{}><<<1, 1>>>();", snode->node_type_name);
-
     emit("{}_listgen_device<<<{}, {}>>>(context);", snode->node_type_name,
-         grid_dim, std::min(1024, block_division));
+         grid_dim, std::min(max_gpu_block_size, listgen_block_dim));
     emit("}}");
   }
 
@@ -176,8 +203,16 @@ class GPUIRCodeGen : public IRVisitor {
     TC_ASSERT((1 << leaf->total_num_bits) % for_stmt->block_size == 0);
     int block_division = (1 << leaf->total_num_bits) / for_stmt->block_size;
 
-    emit_listgen_func(for_stmt->snode->parent, for_stmt->block_size,
-                      block_division);
+    std::vector<SNode *> path;
+    for (auto p = leaf; !p->has_allocator(); p = p->parent) {
+      path.push_back(p);
+    }
+
+    emit_listgen_func(leaf, block_division);
+
+    for (int i = 1; i < path.size(); i++) {
+      emit_listgen_func(path[i]);
+    }
 
     emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
     emit("auto root = ({} *)context.buffers[0];",
@@ -341,7 +376,11 @@ class GPUIRCodeGen : public IRVisitor {
     // generate the list
     emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
          codegen->func_name);
-    emit("{}(context);", listgen_func_name(leaf));
+
+    std::reverse(path.begin(), path.end());
+    for (auto &s : path) {
+      emit("{}(context);", listgen_func_name(s));
+    }
     emit(R"(GPUProfiler::get_instance().stop();)");
 
     emit("");
@@ -432,7 +471,7 @@ class GPUIRCodeGen : public IRVisitor {
       emit(R"(GPUProfiler::get_instance().stop();)");
     } else {
       auto struct_for = for_stmt_->as<StructForStmt>();
-      bool use_activity_tracking = false;
+      bool use_activity_tracking = true;
       if (struct_for->snode->parent->type == SNodeType::dense &&
           struct_for->snode->parent->parent->type == SNodeType::pointer)
         use_activity_tracking = true;

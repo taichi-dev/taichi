@@ -256,6 +256,11 @@ class SNode {
     return type == SNodeType::pointer || type == SNodeType::hash;
   }
 
+  bool has_allocator() const {
+    return type == SNodeType::pointer || type == SNodeType::hash ||
+           type == SNodeType::root;
+  }
+
   bool need_activation() const {
     return type == SNodeType::pointer || type == SNodeType::hash ||
            (type == SNodeType::dense && _bitmasked);

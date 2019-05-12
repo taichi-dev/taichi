@@ -595,7 +595,7 @@ TC_TEST("pointer") {
 
 TC_TEST("gpu_listgen") {
   for (auto arch : {Arch::gpu}) {
-    for (auto level : {1}) {
+    for (auto level : {1, 2}) {
       Program prog(arch);
 
       int n = 64;
@@ -609,8 +609,10 @@ TC_TEST("gpu_listgen") {
         auto i = Index(0);
         if (level == 1) {
           root.dense(i, n * k).place(a);
-        } else {
+        } else if (level == 2) {
           root.dense(i, n).dense(i, k).place(a);
+        } else {
+          root.dense(i, n / 8).dense(i, 8).dense(i, k).place(a);
         }
         root.place(sum);
       });
@@ -623,8 +625,11 @@ TC_TEST("gpu_listgen") {
         }
       }
 
-      kernel(
-          [&]() { For(a, [&](Expr i) { Atomic(sum[Expr(0)]) += a[i]; }); })();
+      kernel([&]() {
+        For(a, [&](Expr i) {
+          Atomic(sum[Expr(0)]) += a[i];
+        });
+      })();
 
       auto reduced = sum.val<int32>();
       TC_CHECK(reduced == sum_gt);

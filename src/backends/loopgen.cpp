@@ -46,7 +46,7 @@ void LoopGenerator::emit_listgen_func(SNode *snode,
   emit("__global__ void {}_listgen{}_device(Context context) {{",
        snode->node_type_name, suffix);
 
-  emit("int num_leaves = Managers::get_allocator<{}>()->resident_tail;",
+  emit("int num_leaves = Managers::get_allocator<{}>()->resident_tail_const;",
        parent->node_type_name);
   emit("constexpr int parent_branching = {};", parent_branching);
   emit("while (1) {{");
@@ -73,8 +73,6 @@ void LoopGenerator::emit_listgen_func(SNode *snode,
       "auto leaves = (SNodeMeta "
       "*)(Managers::get_allocator<{}>()->resident_pool);",
       parent->node_type_name);
-  emit("auto num_leaves = Managers::get_allocator<{}>()->resident_tail_const;",
-       parent->node_type_name);
 
   emit("constexpr int child_block_division = {};", child_block_division);
   emit(
@@ -134,7 +132,7 @@ void LoopGenerator::emit_listgen_func(SNode *snode,
        child_block_size);
 
   if (snode->type == SNodeType::dynamic) {
-    emit("if (start_idx >= {}_cache->get_n()) break;", snode->node_type_name);
+    emit("if (start_idx >= {}_cache->get_n()) continue;", snode->node_type_name);
     emit("end_idx = min(end_idx, {}_cache->get_n());", snode->node_type_name);
   }
 

@@ -90,8 +90,8 @@ class AccessAnalysis : public IRVisitor {
         }
       }
       if (matching_indices) {
-        TC_INFO("Detected regular access");
         /*
+        TC_INFO("Detected regular access");
         for (int i = 0; i < num_indices; i++) {
           TC_P(offsets[i]);
         }

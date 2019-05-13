@@ -268,8 +268,8 @@ void clear_pointer(SNodeAllocator<T> *alloc, int flags) {
   int blockDim = 256;  // least_pot_bound(sizeof(data_type) / sizeof(int));
 #if defined(TL_DEBUG)
   cudaDeviceSynchronize();
-  printf("tail    %d size %d blockDim %d\n", resident_tail, sizeof(data_type),
-         blockDim);
+  printf("tail    %d size %d blockDim %d\n", alloc->resident_tail,
+         sizeof(typename SNodeAllocator<T>::data_type), blockDim);
 #endif
   gpu_runtime_init();
 #if defined(TL_DEBUG)
@@ -425,7 +425,7 @@ struct dense {
       int i = translate(i_);
 #if __CUDA_ARCH__
       atomicAnd((unsigned long long *)&bitmask[i / 64],
-               (unsigned long long)(~(1ul << (i % 64))));
+                (unsigned long long)(~(1ul << (i % 64))));
 #else
       atomicAndCPU(&bitmask[i / 64], ~(1ul << (i % 64)));
 #endif
@@ -435,6 +435,7 @@ struct dense {
   TC_DEVICE TC_FORCE_INLINE void activate(int i_,
                                           const PhysicalIndexGroup &index) {
     if (bitmasked) {
+      // if (is_active(i_)) {
       int i = translate(i_);
 #if __CUDA_ARCH__
       atomicOr((unsigned long long *)&bitmask[i / 64],
@@ -442,6 +443,7 @@ struct dense {
 #else
       atomicOrCPU(&bitmask[i / 64], 1ul << (i % 64));
 #endif
+      //}
     }
   }
 

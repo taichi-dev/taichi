@@ -78,7 +78,7 @@ auto mpm_benchmark = []() {
           .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
     }
 
-    block.dynamic(p, pow<dim>(grid_block_size) * 64).place(l);
+    block.dynamic(p, pow<dim>(grid_block_size) * 128).place(l);
     root.place(gravity_x);
   });
   Kernel(sort).def([&] {
@@ -89,6 +89,17 @@ auto mpm_benchmark = []() {
              (cast<int32>(node_coord(0)), cast<int32>(node_coord(1)),
               cast<int32>(node_coord(2))),
              p);
+    });
+  });
+  Kernel(sort_print).def([&] {
+    BlockDim(1024);
+    For(particle_x(0), [&](Expr p) {
+      auto node_coord = floor(particle_x[p] * inv_dx - 0.5_f);
+      auto len = Var(Probe(l.parent(),
+             (cast<int32>(node_coord(0)), cast<int32>(node_coord(1)),
+                 cast<int32>(node_coord(2)))));
+      Print(len);
+      Assert(len == 0);
     });
   });
   Kernel(p2g_sorted).def([&] {
@@ -220,6 +231,7 @@ auto mpm_benchmark = []() {
     auto t = Time::get_time();
     for (int f = 0; f < 200; f++) {
       grid_m.parent().parent().snode()->clear_data();
+      if (f > 0) sort_print();
       sort();
       p2g_sorted();
       grid_op();

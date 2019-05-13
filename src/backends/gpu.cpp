@@ -685,12 +685,13 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(RangeAssumptionStmt *stmt) {
+    // this does not necessarily hold since any index within the leaf block can be the base
     /*
-    emit("TC_ASSERT({} + {} <= {});", stmt->base->name(), stmt->low,
-         stmt->input->name());
-    emit("TC_ASSERT({} < {} + {});", stmt->input->name(), stmt->base->name(),
-         stmt->high);
-    */
+    emit("TC_ASSERT({} + {} <= {});", stmt->base->raw_name(), stmt->low,
+         stmt->input->raw_name());
+    emit("TC_ASSERT({} < {} + {});", stmt->input->raw_name(),
+         stmt->base->raw_name(), stmt->high);
+         */
     emit("const auto {} = {};", stmt->raw_name(), stmt->input->raw_name());
   }
 
@@ -863,26 +864,6 @@ class GPUIRCodeGen : public IRVisitor {
     emit(R"(GPUProfiler::get_instance().stop();)");
 
     emit("");
-    if (debug) {
-      emit("cudaEventRecord(stop);");
-      emit("cudaEventSynchronize(stop);");
-
-      emit("float milliseconds = 0;");
-      emit("cudaEventElapsedTime(&milliseconds, start, stop);");
-      emit(
-          R"(std::cout << "     device only : " << milliseconds << " ms\n";)");
-
-      if (current_program->current_kernel->benchmarking) {
-        emit("cudaDeviceSynchronize();\n");
-        emit("auto err = cudaGetLastError();");
-        emit("if (err) {{");
-        emit(
-            "printf(\"CUDA Error (File %s Ln %d): %s\\n\", "
-            "__FILE__, __LINE__, cudaGetErrorString(err));");
-        emit("exit(-1);}}");
-        emit("}}");
-      }
-    }
     emit("}}");
     emit("}}");
   }

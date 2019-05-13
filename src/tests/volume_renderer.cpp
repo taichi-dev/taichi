@@ -5,7 +5,7 @@ TLANG_NAMESPACE_BEGIN
 bool use_gui = false;
 
 auto volume_renderer = [] {
-  // CoreState::set_trigger_gdb_when_crash(true);
+  CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
   TRenderer renderer((Dict()));

@@ -205,13 +205,24 @@ TC_TEST("bitmask_clear") {
 
     a.parent().snode()->clear_data();
 
-    // should do nothing
     kernel([&]() { For(a, [&](Expr i, Expr j) { b[i, j] = a[i, j] + i; }); })();
 
     for (int i = 0; i < n / 2; i++) {
       for (int j = n / 2; j < n; j++) {
-        TC_CHECK(a.val<int32>(i, j) == i + j * 3);
-        TC_CHECK(b.val<int32>(i, j) == i + j * 3 + 1);
+        TC_CHECK(a.val<int32>(i, j) == 0);
+        TC_CHECK(b.val<int32>(i, j) == i);
+      }
+    }
+    TC_CHECK(b.val<int32>(block_size + 1, 1) == 0);
+
+    a.parent().snode()->clear_data_and_deactivate();
+
+    kernel([&]() { For(a, [&](Expr i, Expr j) { b[i, j] = a[i, j] + i; }); })();
+
+    for (int i = 0; i < n / 2; i++) {
+      for (int j = n / 2; j < n; j++) {
+        TC_CHECK(a.val<int32>(i, j) == 0);
+        TC_CHECK(b.val<int32>(i, j) == 0);
       }
     }
     TC_CHECK(b.val<int32>(block_size + 1, 1) == 0);

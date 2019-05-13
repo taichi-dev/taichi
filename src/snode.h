@@ -88,6 +88,7 @@ class SNode {
   AccessorFunction access_func;
   StatFunction stat_func;
   ClearFunction clear_func;
+  void *clear_kernel, *clear_and_deactivate_kernel;
 
   std::string node_type_name;
   SNodeType type;
@@ -116,6 +117,9 @@ class SNode {
     dt = DataType::unknown;
     _morton = false;
     _bitmasked = false;
+
+    clear_kernel = nullptr;
+    clear_and_deactivate_kernel = nullptr;
   }
 
   SNode &insert_children(SNodeType t) {

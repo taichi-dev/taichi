@@ -781,7 +781,7 @@ class GPUIRCodeGen : public IRVisitor {
       path.push_back(p);
     }
 
-    loopgen.emit_listgen_func(snode, 0, "", true);
+    loopgen.emit_listgen_func(snode, 0, "", stmt->deactivate);
     for (int i = 1; i < path.size(); i++) {
       loopgen.emit_listgen_func(path[i]);
     }
@@ -857,13 +857,11 @@ class GPUIRCodeGen : public IRVisitor {
 
     emit("");
 
-    if (stmt->reset_data) {
-      emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->node_type_name);
-      emit(R"(GPUProfiler::get_instance().start("{}");)", codegen->func_name);
-      emit("{}_kernel<<<{}, blockDim>>>(context);", codegen->func_name,
-           grid_dim);
-      emit(R"(GPUProfiler::get_instance().stop();)");
-    }
+    emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->node_type_name);
+    emit(R"(GPUProfiler::get_instance().start("{}");)", codegen->func_name);
+    emit("{}_kernel<<<{}, blockDim>>>(context);", codegen->func_name, grid_dim);
+    emit(R"(GPUProfiler::get_instance().stop();)");
+
     emit("");
     if (debug) {
       emit("cudaEventRecord(stop);");

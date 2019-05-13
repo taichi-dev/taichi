@@ -2050,10 +2050,10 @@ class GetChStmt : public Stmt {
 class ClearAllStmt : public Stmt {
  public:
   SNode *snode;
-  bool reset_data;
+  bool deactivate;
 
-  ClearAllStmt(SNode *snode, bool reset_data)
-      : snode(snode), reset_data(reset_data) {
+  ClearAllStmt(SNode *snode, bool deactivate)
+      : snode(snode), deactivate(deactivate) {
   }
 
   DEFINE_ACCEPT

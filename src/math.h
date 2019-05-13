@@ -42,6 +42,11 @@ struct Matrix {
     fill_global(dt);
   }
 
+  void declare(DataType dt, int n, int m = 1) {
+    initialize(n, m);
+    fill_global(dt);
+  }
+
   // Initialize vector
   template <int d>
   explicit Matrix(const std::array<Expr, d> &input) : n(d), m(1) {

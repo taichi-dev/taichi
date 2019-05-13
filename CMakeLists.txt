@@ -17,7 +17,7 @@ if (TLANG_WITH_VDB)
 endif()
 
 if (NOT TLANG_WITH_FEM)
-    set(SPGridSource "")
+    set(SPGridSource "" src/tests/volume_renderer.h)
     list(REMOVE_ITEM PROJECT_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/tests/fem.cpp)
 else()
     include_directories(external/)

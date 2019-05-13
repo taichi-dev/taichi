@@ -6,6 +6,7 @@
 #include <taichi/system/profiler.h>
 #include <taichi/visualization/particle_visualization.h>
 #include "svd.h"
+#include "volume_renderer.h"
 
 TC_NAMESPACE_BEGIN
 
@@ -545,32 +546,6 @@ auto mpm3d = []() {
     gui.get_canvas().img.write_as_image(
         fmt::format("{}/{:05d}.png", render_dir, frame));
     print_profile_info();
-
-    /*
-    auto dump_blocks = [&](int block_res, AllocatorStat &stat) {
-      auto output_res = grid_n / block_res;
-      std::vector<char> density(pow<dim>(output_res), 0);
-      for (int p = 0; p < stat.num_resident_blocks; p++) {
-        auto &meta = stat.resident_metas[p];
-        Vector3i offset_x(512 - 128);
-        auto x = (Vector3i(meta.indices[0], meta.indices[1], meta.indices[2]) +
-                  offset_x) /
-                 Vector3i(block_res);
-        x = (x % Vector3i(output_res) + Vector3i(output_res)) %
-            Vector3i(output_res);
-        density[x[0] * output_res * output_res + x[1] * output_res + x[2]] = 1;
-      }
-      auto f = fopen(
-          fmt::format("blocks/snow_{}_{:04d}.bin", block_res, frame).c_str(),
-          "wb");
-      std::fwrite(density.data(), sizeof(char), pow<dim>(output_res), f);
-      std::fclose(f);
-    };
-    auto stat1 = grid_m.parent().parent().snode()->stat();
-    dump_blocks(4, stat1);
-    auto stat2 = grid_m.parent().parent().parent().parent().snode()->stat();
-    dump_blocks(16, stat2);
-    */
   }
 };
 TC_REGISTER_TASK(mpm3d);

@@ -13,7 +13,7 @@ class TRenderer {
   Vector buffer;
   int depth_limit;
   Expr density;
-  int grid_resolution = 256;
+  int grid_resolution;
   bool use_sky_map = false;
   int block_size = 4;
   float32 one_over_four_pi = 0.07957747154f;
@@ -22,7 +22,7 @@ class TRenderer {
   Vector sky_sample_color;
   Vector sky_sample_uv;
 
-  TRenderer() {
+  TRenderer(int grid_resolution = 256) : grid_resolution(grid_resolution) {
     depth_limit = 20;
     n = 512;
 
@@ -39,13 +39,21 @@ class TRenderer {
   void place_data() {
     root.dense(Index(0), n * n * 2).place(buffer(0), buffer(1), buffer(2));
 
-    root.dense(Indices(0, 1, 2), 4)
-        .bitmasked()
-        .dense(Indices(0, 1, 2), grid_resolution / block_size)
-        // .pointer()
-        .bitmasked()
-        .dense(Indices(0, 1, 2), block_size)
-        .place(density);
+    if (grid_resolution <= 256) {
+      root.dense(Indices(0, 1, 2), 4)
+          .bitmasked()
+          .dense(Indices(0, 1, 2), grid_resolution / block_size)
+          // .pointer()
+          .bitmasked()
+          .dense(Indices(0, 1, 2), block_size)
+          .place(density);
+    } else {
+      root.dense(Indices(0, 1, 2), grid_resolution / block_size)
+          // .pointer()
+          .bitmasked()
+          .dense(Indices(0, 1, 2), block_size)
+          .place(density);
+    }
 
     root.dense(Indices(0, 1), {sky_map_size[0], sky_map_size[1]})
         .place(sky_map);

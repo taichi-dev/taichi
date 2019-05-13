@@ -4,51 +4,67 @@ TLANG_NAMESPACE_BEGIN
 
 extern bool use_gui;
 
-auto bunny_renderer = [] {
+auto smoke_renderer = [] {
+  bool benchmark = true; // benchmark the bunny cloud against tungsten?
+  TC_ASSERT(benchmark);
   // CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::gpu);
   // prog.config.print_ir = true;
-  TRenderer renderer;
+  TRenderer renderer(1024);
+  TC_TAG;
 
   layout([&]{
     renderer.place_data();
   });
+  TC_TAG;
 
   renderer.declare_kernels();
+  TC_TAG;
 
   std::unique_ptr<GUI> gui = nullptr;
   int n = renderer.n;
   int grid_resolution = renderer.grid_resolution;
 
-  auto f = fopen("snow_density_256.bin", "rb");
-  TC_ASSERT_INFO(f, "./snow_density_256.bin not found");
-  std::vector<float32> density_field(pow<3>(grid_resolution));
-  std::fread(density_field.data(), sizeof(float32), density_field.size(), f);
-  std::fclose(f);
 
-  float32 target_max_density = 724.0;
-  auto max_density = 0.0f;
-  for (int i = 0; i < pow<3>(grid_resolution); i++) {
-    max_density = std::max(max_density, density_field[i]);
-  }
+  if (benchmark) {
+    auto f = fopen("bunny_cloud.bin", "rb");
+    TC_ASSERT_INFO(f, "./bunny_cloud.bin not found");
+    int box_sizes[3] {584, 576, 440};
+    TC_TAG;
+    int total_voxels = box_sizes[0] * box_sizes[1] * box_sizes[2];
+    TC_TAG;
+    std::vector<float32> density_field(total_voxels);
+    std::fread(density_field.data(), sizeof(float32), density_field.size(), f);
+    std::fclose(f);
 
-  TC_P(max_density);
+    TC_TAG;
 
-  for (int i = 0; i < pow<3>(grid_resolution); i++) {
-    density_field[i] /= max_density;         // normalize to 1 first
-    density_field[i] *= target_max_density;  // then scale
-  }
+    float32 target_max_density = 724.0;
+    auto max_density = 0.0f;
+    for (int i = 0; i < total_voxels; i++) {
+      max_density = std::max(max_density, density_field[i]);
+    }
+    TC_TAG;
 
-  for (int i = 0; i < grid_resolution; i++) {
-    for (int j = 0; j < grid_resolution; j++) {
-      for (int k = 0; k < grid_resolution; k++) {
-        auto d = density_field[i * grid_resolution * grid_resolution +
-                               j * grid_resolution + k];
-        if (d != 0) {  // populate non-empty voxels only
-          renderer.density.val<float32>(i, j, k) = d;
+    TC_P(max_density);
+
+    for (int i = 0; i < total_voxels; i++) {
+      density_field[i] /= max_density;         // normalize to 1 first
+      density_field[i] *= target_max_density;  // then scale
+    }
+
+    for (int i = 0; i < box_sizes[0]; i++) {
+      for (int j = 0; j < box_sizes[1]; j++) {
+        for (int k = 0; k < box_sizes[2]; k++) {
+          auto d = density_field[i * box_sizes[2] * box_sizes[1] +
+                                 j * box_sizes[2] + k];
+          if (d != 0) {  // populate non-empty voxels only
+            renderer.density.val<float32>(i, j, k) = d;
+          }
         }
       }
     }
+
   }
 
   renderer.preprocess_volume();
@@ -96,13 +112,13 @@ auto bunny_renderer = [] {
     }
   }
 };
-TC_REGISTER_TASK(bunny_renderer);
+TC_REGISTER_TASK(smoke_renderer);
 
-auto bunny_renderer_gui = [] {
+auto smoke_renderer_gui = [] {
   use_gui = true;
-  bunny_renderer();
+  smoke_renderer();
 };
 
-TC_REGISTER_TASK(bunny_renderer_gui);
+TC_REGISTER_TASK(smoke_renderer_gui);
 
 TLANG_NAMESPACE_END

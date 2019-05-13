@@ -822,14 +822,14 @@ class GPUIRCodeGen : public IRVisitor {
       emit("auto {} = leaves[leaf_loop].indices[{}];",
            loopgen.index_name_global(leaf->parent, i), i);
     }
-    emit("auto {} = threadIdx.x + leaves[leaf_loop].start_loop;",
-         loopgen.loop_variable(leaf));
-
-    loopgen.update_indices(leaf);
+    emit(
+        "for(int i = threadIdx.x; i * sizeof(int32) < sizeof({}); i += "
+        "blockDim.x) ",
+        snode->node_type_name);
 
     emit("{{");
 
-    // Clear object here
+    emit("((int32 *){}_cache)[i] = 0;", snode->node_type_name);
 
     emit("}}");
 

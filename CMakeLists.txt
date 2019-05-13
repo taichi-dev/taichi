@@ -14,6 +14,7 @@ include_directories(external/xxhash)
 
 if (TLANG_WITH_VDB)
     list(APPEND  PROJECT_SOURCES "baselines/vdb/benchmark_vdb.cpp")
+    list(APPEND  PROJECT_SOURCES "baselines/vdb/convert_vdb.cpp")
 endif()
 
 if (NOT TLANG_WITH_FEM)

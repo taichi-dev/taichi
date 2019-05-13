@@ -20,3 +20,4 @@ __pycache__
 mpm_rendered
 layout*
 blocks
+*.vdb

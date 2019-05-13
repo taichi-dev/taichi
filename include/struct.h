@@ -420,6 +420,18 @@ struct dense {
     }
   }
 
+  TC_DEVICE TC_FORCE_INLINE void deactivate(int i_) {
+    if (bitmasked) {
+      int i = translate(i_);
+#if __CUDA_ARCH__
+      atomicAnd((unsigned long long *)&bitmask[i / 64],
+               (unsigned long long)(~(1ul << (i % 64))));
+#else
+      atomicAndCPU(&bitmask[i / 64], ~(1ul << (i % 64)));
+#endif
+    }
+  }
+
   TC_DEVICE TC_FORCE_INLINE void activate(int i_,
                                           const PhysicalIndexGroup &index) {
     if (bitmasked) {

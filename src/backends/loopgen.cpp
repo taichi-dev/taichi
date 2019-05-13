@@ -11,11 +11,13 @@ LoopGenerator::LoopGenerator(taichi::Tlang::CodeGenBase *gen) : gen(gen) {
 
 void LoopGenerator::emit_listgen_func(SNode *snode,
                                       int child_block_division,
-                                      std::string suffix) {
+                                      std::string suffix,
+                                      bool deactivate) {
   auto child_block_size = 1 << snode->total_num_bits;
   if (child_block_division == 0) {
     // how many divisions should the CHILD node have?
-    if (child_block_size > max_gpu_block_size) {
+    if (child_block_size > max_gpu_block_size && !deactivate) {
+      // no need to split block if emitted for ClearAllStmt
       child_block_division = child_block_size / max_gpu_block_size;
       child_block_size = max_gpu_block_size;
     } else {
@@ -112,6 +114,10 @@ void LoopGenerator::emit_listgen_func(SNode *snode,
     emit("auto cid = div / child_block_division + input_meta.start_loop;");
     emit("if (cid >= input_meta.end_loop) break;");
     emit("if (!{}_cache->is_active(cid)) continue;", parent->node_type_name);
+    if (deactivate) {
+      TC_ASSERT(child_block_division == 1);
+      emit("{}_cache->deactivate(cid);", parent->node_type_name);
+    }
   } else {
     emit("auto cid = 0;");
   }
@@ -157,8 +163,8 @@ void LoopGenerator::emit_listgen_func(SNode *snode,
   emit("backup_tails<{}><<<1, 1>>>();", parent->node_type_name);
   emit("reset_execution_tail<{}><<<1, 1>>>();", parent->node_type_name);
   emit("reset_tails<{}><<<1, 1>>>();", snode->node_type_name);
-  emit("{}_device<<<{}, {}>>>(context);",
-       listgen_func_name(snode, suffix), grid_dim, listgen_block_dim);
+  emit("{}_device<<<{}, {}>>>(context);", listgen_func_name(snode, suffix),
+       grid_dim, listgen_block_dim);
   emit("}}");
 }
 

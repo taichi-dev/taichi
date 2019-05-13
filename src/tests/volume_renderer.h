@@ -29,10 +29,8 @@ class Renderer {
     sky_map_size = Vector2i(512, 128);
     n_sky_samples = 1024;
 
-    Vector buffer(DataType::f32, 3);
-    this->buffer.set(buffer);
-    Global(density, f32);
-    this->density.set(density);
+    density.declare(DataType::f32);
+    buffer.declare(DataType::f32, 3);
     sky_map.declare(DataType::f32, 3);
     sky_sample_color.declare(DataType::f32, 3);
     sky_sample_uv.declare(DataType::f32, 2);

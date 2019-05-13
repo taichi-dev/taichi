@@ -780,6 +780,8 @@ class Expr {
   Expr parent() const;
 
   SNode *snode() const;
+
+  void declare(DataType dt);
 };
 
 class ExpressionGroup {

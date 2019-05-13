@@ -274,6 +274,10 @@ Expr Expr::operator!() {
   return Expr::make<UnaryOpExpression>(UnaryType::logic_not, expr);
 }
 
+void Expr::declare(DataType dt) {
+  set(Expr::make<GlobalVariableExpression>(dt, Identifier()));
+}
+
 template void *Expr::val_tmp<>(DataType);
 template void *Expr::val_tmp<int>(DataType, int);
 template void *Expr::val_tmp<int, int>(DataType, int, int);

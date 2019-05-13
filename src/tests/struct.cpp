@@ -203,10 +203,7 @@ TC_TEST("bitmask_clear") {
     }
     TC_CHECK(b.val<int32>(1, 1) == 0);
 
-    kernel([&]() {
-      current_ast_builder().insert(
-          Stmt::make<ClearAllStmt>(a.parent().snode(), false));
-    })();
+    a.parent().snode()->clear_data();
 
     // should do nothing
     kernel([&]() { For(a, [&](Expr i, Expr j) { b[i, j] = a[i, j] + i; }); })();

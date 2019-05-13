@@ -313,7 +313,7 @@ auto mpm3d = []() {
   auto check_fluctuation = [&] {
     int last_nb = -1;
     while (1) {
-      grid_m.parent().parent().snode()->clear(1);
+      grid_m.parent().parent().snode()->clear_data_and_deactivate();
       sort();
       p2g_sorted();
       auto stat = grid_m.parent().parent().snode()->stat();
@@ -329,7 +329,7 @@ auto mpm3d = []() {
 
   auto p2g = [&] {
     // check_fluctuation();
-    grid_m.parent().parent().snode()->clear(0);
+    grid_m.parent().parent().snode()->clear_data();
     sort();
     p2g_sorted();
   };
@@ -481,8 +481,13 @@ auto mpm3d = []() {
   auto radius = 1.0_f;
 
   auto simulate_frame = [&]() {
-    grid_m.parent().parent().snode()->clear(1);
-    grid_m.parent().parent().parent().parent().snode()->clear(1);
+    grid_m.parent().parent().snode()->clear_data_and_deactivate();
+    grid_m.parent()
+        .parent()
+        .parent()
+        .parent()
+        .snode()
+        ->clear_data_and_deactivate();
     auto t = Time::get_time();
     for (int f = 0; f < 200; f++) {
       TC_PROFILE("p2g", p2g());

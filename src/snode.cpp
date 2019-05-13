@@ -53,4 +53,26 @@ SNode &SNode::create_node(std::vector<Index> indices,
   return new_node;
 }
 
+/*
+void SNode::clear(int flags) {
+  if (clear_func == nullptr) {
+    kernel([&]() {
+      current_ast_builder().insert(
+          Stmt::make<ClearAllStmt>(a.parent().snode(), false));
+    })();
+
+  }
+}
+*/
+
+void SNode::clear_data() {
+  TC_ASSERT(clear_func != nullptr);
+  clear_func(0);
+}
+
+void SNode::clear_data_and_deactivate() {
+  TC_ASSERT(clear_func != nullptr);
+  clear_func(1);
+}
+
 TLANG_NAMESPACE_END

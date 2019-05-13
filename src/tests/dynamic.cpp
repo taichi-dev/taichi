@@ -173,7 +173,7 @@ TC_TEST("parallel_append") {
     });
 
     for (int i = 0; i < 32; i++) {
-      x.parent().parent().snode()->clear(1);
+      x.parent().parent().snode()->clear_data_and_deactivate();
       if (i % 2)
         activate();
       else

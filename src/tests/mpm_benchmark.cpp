@@ -216,10 +216,10 @@ auto mpm_benchmark = []() {
         particle_F(p, q).val<float32>(i) = (p == q);
   }
   auto simulate_frame = [&]() {
-    grid_m.parent().parent().snode()->clear(1);
+    grid_m.parent().parent().snode()->clear_data_and_deactivate();
     auto t = Time::get_time();
     for (int f = 0; f < 200; f++) {
-      grid_m.parent().parent().snode()->clear(0);
+      grid_m.parent().parent().snode()->clear_data();
       sort();
       p2g_sorted();
       grid_op();

@@ -247,10 +247,9 @@ class SNode {
     return -1;
   }
 
-  void clear(int flags) {
-    TC_ASSERT(clear_func != nullptr);
-    clear_func(flags);
-  }
+  void clear_data();
+
+  void clear_data_and_deactivate();
 
   bool has_null() const {
     return type == SNodeType::pointer || type == SNodeType::hash;

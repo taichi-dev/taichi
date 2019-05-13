@@ -34,7 +34,7 @@ TC_TEST("gpu_gc_basics") {
         TC_CHECK(x.val<int>(i, j) == i + j);
       }
     }
-    x.parent().parent().snode()->clear(1);
+    x.parent().parent().snode()->clear_data_and_deactivate();
     stat = x.parent().parent().snode()->stat();
     TC_CHECK(stat.num_resident_blocks == 0);
     TC_CHECK(stat.num_recycled_blocks == 0);
@@ -138,7 +138,7 @@ TC_TEST("parallel_particle_sort") {
 
   int last_nb = -1;
   for (int i = 0; i < 128; i++) {
-    grid_m.parent().parent().snode()->clear(1);
+    grid_m.parent().parent().snode()->clear_data_and_deactivate();
     sort();
     auto stat = grid_m.parent().parent().snode()->stat();
     int nb = stat.num_resident_blocks;

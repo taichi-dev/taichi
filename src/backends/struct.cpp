@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-StructCompiler::StructCompiler() : CodeGenBase() {
+StructCompiler::StructCompiler() : CodeGenBase(), loopgen(this) {
   snode_count = 0;
   creator = nullptr;
   if (get_current_program().config.arch == Arch::x86_64)

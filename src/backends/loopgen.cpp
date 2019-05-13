@@ -9,7 +9,9 @@ LoopGenerator::LoopGenerator(taichi::Tlang::CodeGenBase *gen) : gen(gen) {
   grid_dim = num_SMs * 32;  // each SM can have 16-32 resident blocks
 }
 
-void LoopGenerator::emit_listgen_func(SNode *snode, int child_block_division) {
+void LoopGenerator::emit_listgen_func(SNode *snode,
+                                      int child_block_division,
+                                      std::string suffix) {
   auto child_block_size = 1 << snode->total_num_bits;
   if (child_block_division == 0) {
     // how many divisions should the CHILD node have?
@@ -39,8 +41,8 @@ void LoopGenerator::emit_listgen_func(SNode *snode, int child_block_division) {
       fmt::format("Managers::get_allocator<{}>()", snode->node_type_name);
 
   // kernel body starts
-  emit("__global__ void {}_listgen_device(Context context) {{",
-       snode->node_type_name);
+  emit("__global__ void {}_listgen{}_device(Context context) {{",
+       snode->node_type_name, suffix);
 
   emit("int num_leaves = Managers::get_allocator<{}>()->resident_tail;",
        parent->node_type_name);
@@ -151,12 +153,12 @@ void LoopGenerator::emit_listgen_func(SNode *snode, int child_block_division) {
   emit("");
 
   // host function
-  emit("void {}(Context context) {{", listgen_func_name(snode));
+  emit("void {}(Context context) {{", listgen_func_name(snode, suffix));
   emit("backup_tails<{}><<<1, 1>>>();", parent->node_type_name);
   emit("reset_execution_tail<{}><<<1, 1>>>();", parent->node_type_name);
   emit("reset_tails<{}><<<1, 1>>>();", snode->node_type_name);
-  emit("{}_listgen_device<<<{}, {}>>>(context);", snode->node_type_name,
-       grid_dim, listgen_block_dim);
+  emit("{}_device<<<{}, {}>>>(context);",
+       listgen_func_name(snode, suffix), grid_dim, listgen_block_dim);
   emit("}}");
 }
 

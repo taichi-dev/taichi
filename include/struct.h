@@ -49,9 +49,10 @@ template <typename T>
 struct SNodeAllocator {
   using data_type = typename T::child_type;
   static constexpr std::size_t pool_size =
-      std::max(1ULL, std::min((1ULL << 33) / sizeof(data_type),
-               1ULL << 25));  // each snode allocator takes at most 8 GB (VM),
-                             // max 32M metas
+      std::max(1ULL,
+               std::min((1ULL << 33) / sizeof(data_type),
+                        1ULL << 25));  // each snode allocator takes at most 8
+                                       // GB (VM), max 32M metas
   static constexpr int id = SNodeID<T>::value;
 
   SNodeMeta *resident_pool;
@@ -69,7 +70,7 @@ struct SNodeAllocator {
   SNodeAllocator() {
     if (T::has_null)
       data_pool = (data_type *)allocate(sizeof(data_type) * pool_size,
-                                        4096); // 4KB page alignment
+                                        4096);  // 4KB page alignment
     else
       data_pool = nullptr;
     resident_pool =
@@ -227,10 +228,9 @@ __global__ void recycle_all_gpu(SNodeAllocator<T> *allocator, int flags) {
 
 /*
 template <typename T>
-__global__ void recycle_all_gpu_bitmask(SNodeAllocator<T> *allocator, int flags) {
-  auto num_blocks = allocator->resident_tail;
-  for (int b = blockIdx.x; b < num_blocks; b += gridDim.x) {
-    auto t = threadIdx.x;
+__global__ void recycle_all_gpu_bitmask(SNodeAllocator<T> *allocator, int flags)
+{ auto num_blocks = allocator->resident_tail; for (int b = blockIdx.x; b <
+num_blocks; b += gridDim.x) { auto t = threadIdx.x;
     // zero-fill bitmask
     auto &meta = allocator->resident_pool[b];
     if (t == 0 && flags)
@@ -261,7 +261,6 @@ __global__ void backup_tails() {
   allocator->resident_tail_const = allocator->resident_tail;
   allocator->recycle_tail_const = allocator->recycle_tail;
 }
-
 
 // for pointer only
 template <typename T>
@@ -368,7 +367,6 @@ struct dense {
   child_type children[n];
   // TODO: fix potential alignment issues
   uint64 bitmask[bitmasked ? (n + 63) / 64 : 1];
-
 
   TC_DEVICE TC_FORCE_INLINE dense() {
   }

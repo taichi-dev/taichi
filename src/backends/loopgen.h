@@ -183,10 +183,12 @@ class LoopGenerator {
     }
   }
 
-  void emit_listgen_func(SNode *snode, int child_block_division = 0);
+  void emit_listgen_func(SNode *snode,
+                         int child_block_division = 0,
+                         std::string suffix = "");
 
-  std::string listgen_func_name(SNode *leaf) {
-    return fmt::format("{}_listgen", leaf->node_type_name);
+  std::string listgen_func_name(SNode *leaf, std::string suffix = "") {
+    return fmt::format("{}_listgen{}", leaf->node_type_name, suffix);
   }
 };
 

@@ -1,5 +1,6 @@
 #include "../snode.h"
 #include "base.h"
+#include "loopgen.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -12,6 +13,7 @@ class StructCompiler : public CodeGenBase {
   int snode_count;
   void *(*creator)();
   void (*profiler_print)();
+  LoopGenerator loopgen;
 
   StructCompiler();
 

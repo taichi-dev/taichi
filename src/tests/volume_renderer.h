@@ -318,7 +318,7 @@ class TRenderer {
 
         auto c = Var(Vector({fov * ((Rand<float32>() + cast<float32>(x)) /
                                         float32(output_res.y / 2) -
-                                    1.0f),
+                                    (float32)output_res.x / output_res.y),
                              fov * ((Rand<float32>() + cast<float32>(y)) /
                                         float32(output_res.y / 2) -
                                     1.0f),

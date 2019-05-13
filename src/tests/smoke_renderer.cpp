@@ -5,46 +5,37 @@ TLANG_NAMESPACE_BEGIN
 extern bool use_gui;
 
 auto smoke_renderer = [] {
-  bool benchmark = true; // benchmark the bunny cloud against tungsten?
+  bool benchmark = true;  // benchmark the bunny cloud against tungsten?
   TC_ASSERT(benchmark);
   // CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::gpu);
   // prog.config.print_ir = true;
-  TRenderer renderer(1024);
-  TC_TAG;
+  Dict param;
+  param.set("grid_resolution", 1024);
+  param.set("output_res", Vector2i(512, 512));
+  TRenderer renderer(param);
 
-  layout([&]{
-    renderer.place_data();
-  });
-  TC_TAG;
+  layout([&] { renderer.place_data(); });
 
   renderer.declare_kernels();
-  TC_TAG;
 
   std::unique_ptr<GUI> gui = nullptr;
-  int n = renderer.n;
   int grid_resolution = renderer.grid_resolution;
-
 
   if (benchmark) {
     auto f = fopen("bunny_cloud.bin", "rb");
     TC_ASSERT_INFO(f, "./bunny_cloud.bin not found");
-    int box_sizes[3] {584, 576, 440};
-    TC_TAG;
+    int box_sizes[3]{584, 576, 440};
     int total_voxels = box_sizes[0] * box_sizes[1] * box_sizes[2];
-    TC_TAG;
     std::vector<float32> density_field(total_voxels);
     std::fread(density_field.data(), sizeof(float32), density_field.size(), f);
     std::fclose(f);
-
-    TC_TAG;
 
     float32 target_max_density = 724.0;
     auto max_density = 0.0f;
     for (int i = 0; i < total_voxels; i++) {
       max_density = std::max(max_density, density_field[i]);
     }
-    TC_TAG;
 
     TC_P(max_density);
 
@@ -64,15 +55,13 @@ auto smoke_renderer = [] {
         }
       }
     }
-
   }
 
   renderer.preprocess_volume();
 
   if (use_gui) {
-    gui = std::make_unique<GUI>("Volume Renderer", Vector2i(n * 2, n));
+    gui = std::make_unique<GUI>("Volume Renderer", renderer.output_res);
   }
-  Vector2i render_size(n * 2, n);
   Array2D<Vector4> render_buffer;
 
   auto tone_map = [](real x) { return std::sqrt(x); };
@@ -85,11 +74,11 @@ auto smoke_renderer = [] {
     prog.profiler_print();
 
     real scale = 1.0f / ((frame + 1) * N);
-    render_buffer.initialize(render_size);
+    render_buffer.initialize(renderer.output_res);
     std::unique_ptr<Canvas> canvas;
     canvas = std::make_unique<Canvas>(render_buffer);
-    for (int i = 0; i < n * n * 2; i++) {
-      render_buffer[i / n][i % n] =
+    for (int i = 0; i < renderer.output_res.prod(); i++) {
+      render_buffer[i / renderer.output_res.y][i % renderer.output_res.y] =
           Vector4(tone_map(scale * renderer.buffer(0).val<float32>(i)),
                   tone_map(scale * renderer.buffer(1).val<float32>(i)),
                   tone_map(scale * renderer.buffer(2).val<float32>(i)), 1);

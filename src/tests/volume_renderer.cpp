@@ -8,7 +8,7 @@ auto volume_renderer = [] {
   // CoreState::set_trigger_gdb_when_crash(true);
   Program prog(Arch::gpu);
   // prog.config.print_ir = true;
-  TRenderer renderer;
+  TRenderer renderer((Dict()));
 
   layout([&]{
     renderer.place_data();
@@ -17,7 +17,7 @@ auto volume_renderer = [] {
   renderer.declare_kernels();
 
   std::unique_ptr<GUI> gui = nullptr;
-  int n = renderer.n;
+  int n = renderer.output_res.y;
   int grid_resolution = renderer.grid_resolution;
 
   auto f = fopen("snow_density_256.bin", "rb");

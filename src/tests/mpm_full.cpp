@@ -34,7 +34,7 @@ auto mpm3d = []() {
   Program prog(Arch::gpu);
   prog.config.lower_access = false;
 
-  TRenderer renderer;
+  TRenderer renderer((Dict()));
 
   CoreState::set_trigger_gdb_when_crash(true);
 

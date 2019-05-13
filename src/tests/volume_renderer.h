@@ -6,7 +6,7 @@ TLANG_NAMESPACE_BEGIN
 
 class TRenderer {
  public:
-  int n;
+  Vector2i output_res;
   Vector2i sky_map_size;
   int n_sky_samples;
   Program::Kernel *main, *dilate;
@@ -22,9 +22,13 @@ class TRenderer {
   Vector sky_sample_color;
   Vector sky_sample_uv;
 
-  TRenderer(int grid_resolution = 256) : grid_resolution(grid_resolution) {
-    depth_limit = 20;
-    n = 512;
+  TRenderer(Dict param) {
+    grid_resolution = param.get("grid_resolution", 256);
+    depth_limit = param.get("depth_limit", 20);
+    output_res = param.get("output_res", Vector2i(1024, 512));
+
+    TC_ASSERT(bit::is_power_of_two(output_res.x));
+    TC_ASSERT(bit::is_power_of_two(output_res.y));
 
     sky_map_size = Vector2i(512, 128);
     n_sky_samples = 1024;
@@ -37,7 +41,8 @@ class TRenderer {
   }
 
   void place_data() {
-    root.dense(Index(0), n * n * 2).place(buffer(0), buffer(1), buffer(2));
+    root.dense(Index(0), output_res.prod())
+        .place(buffer(0), buffer(1), buffer(2));
 
     if (grid_resolution <= 256) {
       root.dense(Indices(0, 1, 2), 4)
@@ -299,9 +304,10 @@ class TRenderer {
 
     main = &kernel([&]() {
       BlockDim(32);
-      For(0, n * n * 2, [&](Expr i) {
+      For(0, output_res.prod(), [&](Expr i) {
         auto orig = Var(Vector({0.5f, 0.3f, 1.5f}));
 
+        auto n = output_res.y;
         auto bid = Var(i / 32);
         auto tid = Var(i % 32);
         auto x = Var(bid / (n / 4) * 8 + tid / 4),
@@ -353,7 +359,7 @@ class TRenderer {
               });
         });
 
-        buffer[x * n + y] += Li;
+        buffer[x * output_res.y + y] += Li;
       });
     });
 

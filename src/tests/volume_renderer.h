@@ -305,6 +305,8 @@ class TRenderer {
 
     main = &kernel([&]() {
       kernel_name("main");
+      Parallelize(16);
+      // Vectorize(8);
       BlockDim(32);
       For(0, output_res.prod(), [&](Expr i) {
         auto orig_input = param.get("orig", Vector3(0.5, 0.3, 1.5f));

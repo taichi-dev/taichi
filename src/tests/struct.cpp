@@ -168,7 +168,7 @@ TC_TEST("2d_blocked_array_morton") {
 }
 
 TC_TEST("bitmask_clear") {
-  return;
+  CoreState::set_trigger_gdb_when_crash(true);
   int n = 256, block_size = 16;
 
   for (auto arch : {Arch::gpu}) {
@@ -203,8 +203,10 @@ TC_TEST("bitmask_clear") {
     }
     TC_CHECK(b.val<int32>(1, 1) == 0);
 
-    // clear activity
-    a.parent().parent().snode()->clear(0);
+    kernel([&]() {
+      current_ast_builder().insert(
+          Stmt::make<ClearAllStmt>(a.parent().snode(), false));
+    })();
 
     // should do nothing
     kernel([&]() { For(a, [&](Expr i, Expr j) { b[i, j] = a[i, j] + i; }); })();

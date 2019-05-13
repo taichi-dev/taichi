@@ -353,6 +353,8 @@ class GPUIRCodeGen : public IRVisitor {
           pure_loop = false;
         }
       }
+      if (stmt_list->statements.back()->is<ClearAllStmt>())
+        pure_loop = false;
 
       if (pure_loop) {
         generate_pure_loop(stmt_list);
@@ -763,6 +765,141 @@ class GPUIRCodeGen : public IRVisitor {
       emit(R"(auto {} = {}->get{}();)", stmt->raw_name(),
            stmt->input_ptr->raw_name(), stmt->chid);
     }
+  }
+
+  void visit(ClearAllStmt *stmt) {
+    auto snode = stmt->snode;
+    auto leaf = snode;
+
+    emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
+    emit("auto root = ({} *)context.buffers[0];",
+         codegen->prog->snode_root->node_type_name);
+
+    emit(
+        "auto leaves = (SNodeMeta "
+        "*)(Managers::get_allocator<{}>()->resident_pool);",
+        leaf->node_type_name);
+    // TODO: use const tail
+    emit("auto num_leaves = Managers::get_allocator<{}>()->resident_tail;",
+         leaf->node_type_name);
+    emit("int bid = 0;");
+    emit("while (1) {{");
+    emit("__shared__ int bid_shared;");
+    emit("if (threadIdx.x == 0) {{ ");
+    emit(
+        "bid_shared = atomicAdd((unsigned long long "
+        "*)(&Managers::get_allocator<{}>()->execution_tail), 1ULL);",
+        leaf->node_type_name);
+    emit("}}");
+
+    emit("__syncthreads();");
+    emit("bid = bid_shared;");
+    emit("if (bid >= num_leaves) break;");
+    emit("auto leaf_loop = bid;");
+
+    emit("auto list_element = ({} *)leaves[leaf_loop].ptr;",
+         leaf->node_type_name);
+    auto chid = leaf->parent->child_id(leaf);
+
+    emit("auto {}_cache = list_element;", leaf->node_type_name,
+         leaf->node_type_name);
+    for (int i = 0; i < max_num_indices; i++) {
+      emit("auto {} = leaves[leaf_loop].indices[{}];",
+           loopgen.index_name_global(leaf->parent, i), i);
+    }
+    emit("auto {} = threadIdx.x + leaves[leaf_loop].start_loop;",
+         loopgen.loop_variable(leaf));
+
+    loopgen.update_indices(leaf);
+
+    emit("{{");
+
+    // Clear object here
+
+    emit("}}");
+
+    emit("}}");  // end for
+    emit("}}");  // end kernel
+
+    emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
+    emit("auto root = ({} *)context.buffers[0];",
+         current_program->snode_root->node_type_name);
+    emit("{{");
+
+    if (debug)
+      emit("auto t = get_time();");
+
+    std::vector<SNode *> path;
+    for (auto p = leaf; !p->has_allocator(); p = p->parent) {
+      path.push_back(p);
+    }
+
+    for (int i = 1; i < path.size(); i++) {
+      loopgen.emit_listgen_func(path[i]);
+    }
+
+    emit("gpu_runtime_init();");
+    emit("int blockDim = {};", leaf->node_type_name, max_gpu_block_size);
+    emit("");
+
+    // generate the list
+    emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
+         codegen->func_name);
+
+    std::reverse(path.begin(), path.end());
+    for (auto &s : path) {
+      emit("{}(context);", loopgen.listgen_func_name(s));
+    }
+    emit(R"(GPUProfiler::get_instance().stop();)");
+
+    emit("");
+
+    if (debug) {
+      emit("cudaDeviceSynchronize();");
+      emit(
+          R"(printf("task list %d\n", Managers::get_allocator<{}>()->resident_tail);)",
+          leaf->node_type_name);
+      emit(
+          R"(printf("kernel {} <<<%d, %d>>> \n", {}, blockDim);)",
+          codegen->func_name, grid_dim);
+
+      emit("cudaEvent_t start, stop;");
+
+      if (current_program->get_current_kernel().benchmarking) {
+        emit("while(1) {{");
+      }
+
+      emit("cudaEventCreate(&start);");
+      emit("cudaEventCreate(&stop);");
+      emit("cudaEventRecord(start);");
+    }
+    emit("");
+    emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->node_type_name);
+    emit(R"(GPUProfiler::get_instance().start("{}");)", codegen->func_name);
+    emit("{}_kernel<<<{}, blockDim>>>(context);", codegen->func_name, grid_dim);
+    emit(R"(GPUProfiler::get_instance().stop();)");
+    emit("");
+    if (debug) {
+      emit("cudaEventRecord(stop);");
+      emit("cudaEventSynchronize(stop);");
+
+      emit("float milliseconds = 0;");
+      emit("cudaEventElapsedTime(&milliseconds, start, stop);");
+      emit(
+          R"(std::cout << "     device only : " << milliseconds << " ms\n";)");
+
+      if (current_program->current_kernel->benchmarking) {
+        emit("cudaDeviceSynchronize();\n");
+        emit("auto err = cudaGetLastError();");
+        emit("if (err) {{");
+        emit(
+            "printf(\"CUDA Error (File %s Ln %d): %s\\n\", "
+            "__FILE__, __LINE__, cudaGetErrorString(err));");
+        emit("exit(-1);}}");
+        emit("}}");
+      }
+    }
+    emit("}}");
   }
 };
 

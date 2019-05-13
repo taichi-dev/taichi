@@ -101,6 +101,9 @@ class ElementShuffleStmt;
 class PragmaSLPStmt;
 class ScratchPads;
 
+// Clearer
+class ClearAllStmt;
+
 // IR passes
 namespace irpass {
 
@@ -376,6 +379,8 @@ class IRVisitor {
 
   DEFINE_VISIT(PragmaSLPStmt);
   DEFINE_VISIT(ElementShuffleStmt);
+
+  DEFINE_VISIT(ClearAllStmt);
 };
 
 class IRNode {
@@ -2038,6 +2043,18 @@ class GetChStmt : public Stmt {
   int chid;
 
   GetChStmt(Stmt *input_ptr, int chid);
+
+  DEFINE_ACCEPT
+};
+
+class ClearAllStmt : public Stmt {
+ public:
+  SNode *snode;
+  bool reset_data;
+
+  ClearAllStmt(SNode *snode, bool reset_data)
+      : snode(snode), reset_data(reset_data) {
+  }
 
   DEFINE_ACCEPT
 };

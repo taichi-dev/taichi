@@ -227,11 +227,14 @@ auto mpm_benchmark = []() {
         particle_F(p, q).val<float32>(i) = (p == q);
   }
   auto simulate_frame = [&]() {
-    grid_m.parent().parent().snode()->clear_data_and_deactivate();
+    // l.parent().snode()->clear_data();
+    grid_m.parent().parent().snode()->clear_data();
+    // l.parent().snode()->clear_data_and_deactivate();
     auto t = Time::get_time();
     for (int f = 0; f < 200; f++) {
+      // l.parent().snode()->clear_data();
       grid_m.parent().parent().snode()->clear_data();
-      if (f > 0) sort_print();
+      // if (f > 0) sort_print();
       sort();
       p2g_sorted();
       grid_op();

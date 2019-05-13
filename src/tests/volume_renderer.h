@@ -21,8 +21,9 @@ class TRenderer {
   Vector sky_map;
   Vector sky_sample_color;
   Vector sky_sample_uv;
+  Dict param;
 
-  TRenderer(Dict param) {
+  TRenderer(Dict param) : param(param) {
     grid_resolution = param.get("grid_resolution", 256);
     depth_limit = param.get("depth_limit", 20);
     output_res = param.get("output_res", Vector2i(1024, 512));
@@ -300,12 +301,14 @@ class TRenderer {
       return ret;
     };
 
-    float32 fov = 0.6;
+    float32 fov = param.get("fov", 0.6f);
 
     main = &kernel([&]() {
+      kernel_name("main");
       BlockDim(32);
       For(0, output_res.prod(), [&](Expr i) {
-        auto orig = Var(Vector({0.5f, 0.3f, 1.5f}));
+        auto orig_input = param.get("orig", Vector3(0.5, 0.3, 1.5f));
+        auto orig = Var(Vector({orig_input.x, orig_input.y, orig_input.z}));
 
         auto n = output_res.y;
         auto bid = Var(i / 32);
@@ -313,12 +316,13 @@ class TRenderer {
         auto x = Var(bid / (n / 4) * 8 + tid / 4),
              y = Var(bid % (n / 4) * 4 + tid % 4);
 
-        auto c = Var(Vector(
-            {fov *
-                 ((Rand<float32>() + cast<float32>(x)) / float32(n / 2) - 2.0f),
-             fov *
-                 ((Rand<float32>() + cast<float32>(y)) / float32(n / 2) - 1.0f),
-             -1.0f}));
+        auto c = Var(Vector({fov * ((Rand<float32>() + cast<float32>(x)) /
+                                        float32(output_res.y / 2) -
+                                    1.0f),
+                             fov * ((Rand<float32>() + cast<float32>(y)) /
+                                        float32(output_res.y / 2) -
+                                    1.0f),
+                             -1.0f}));
 
         c = normalized(c);
 
@@ -399,6 +403,7 @@ class TRenderer {
     }
     // expand blocks
     dilate = &kernel([&] {
+      kernel_name("dilate");
       For(density, [&](Expr i, Expr j, Expr k) {
         for (int x = -1; x < 2; x++) {
           for (int y = -1; y < 2; y++) {

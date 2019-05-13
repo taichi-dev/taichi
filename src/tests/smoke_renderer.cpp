@@ -13,6 +13,8 @@ auto smoke_renderer = [] {
   Dict param;
   param.set("grid_resolution", 1024);
   param.set("output_res", Vector2i(512, 512));
+  param.set("orig", Vector3(0.25, 0.25, 0.7));
+  param.set("fov", 1);
   TRenderer renderer(param);
 
   layout([&] { renderer.place_data(); });
@@ -20,7 +22,6 @@ auto smoke_renderer = [] {
   renderer.declare_kernels();
 
   std::unique_ptr<GUI> gui = nullptr;
-  int grid_resolution = renderer.grid_resolution;
 
   if (benchmark) {
     auto f = fopen("bunny_cloud.bin", "rb");

@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class Renderer {
+class TRenderer {
  public:
   int n;
   Vector2i sky_map_size;
@@ -22,7 +22,7 @@ class Renderer {
   Vector sky_sample_color;
   Vector sky_sample_uv;
 
-  Renderer() {
+  TRenderer() {
     depth_limit = 20;
     n = 512;
 

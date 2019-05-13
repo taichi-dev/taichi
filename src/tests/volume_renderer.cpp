@@ -9,7 +9,7 @@ auto volume_renderer = [] {
   prog.config.print_ir = true;
 
   // CoreState::set_trigger_gdb_when_crash(true);
-  Renderer renderer;
+  TRenderer renderer;
 
   layout([&]{
     renderer.place_data();

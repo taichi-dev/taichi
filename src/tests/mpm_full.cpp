@@ -4,7 +4,6 @@
 #include <taichi/common/bit.h>
 #include <Partio.h>
 #include <taichi/system/profiler.h>
-#include <taichi/visualization/particle_visualization.h>
 #include "svd.h"
 #include "volume_renderer.h"
 
@@ -32,13 +31,16 @@ void write_partio(std::vector<Vector3> positions,
 enum class MPMMaterial : int { fluid, jelly, snow, sand };
 
 auto mpm3d = []() {
+  Program prog(Arch::gpu);
+  prog.config.lower_access = false;
+
+  TRenderer renderer;
+
   CoreState::set_trigger_gdb_when_crash(true);
 
   bool benchmark_dragon = false;
-  Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
-  prog.config.lower_access = false;
   auto material = MPMMaterial::snow;
   constexpr int dim = 3;
   constexpr bool highres = true;
@@ -160,7 +162,11 @@ auto mpm3d = []() {
     block.dynamic(p, pow<dim>(grid_block_size) * 64).place(l);
 
     root.place(gravity_x);
+
+    renderer.place_data();
   });
+
+  renderer.declare_kernels();
 
   // prog.visualize_layout("layout.tex");
 
@@ -474,12 +480,10 @@ auto mpm3d = []() {
 
   reset();
 
-  Vector2i cam_res(1280, 720);
+  Vector2i cam_res(1024, 512);
 
+  int np = 512;
   GUI gui("MPM", cam_res);
-
-  auto renderer = create_instance_unique<ParticleRenderer>("shadow_map");
-  auto radius = 1.0_f;
 
   auto simulate_frame = [&]() {
     grid_m.parent().parent().snode()->clear_data_and_deactivate();
@@ -500,45 +504,28 @@ auto mpm3d = []() {
     TC_P(ms_per_substep);
   };
 
-  Dict cam_dict;
-  cam_dict.set("origin", Vector3(radius * 0.6f, radius * 0.3_f, radius * 0.6_f))
-      .set("look_at", Vector3(0, -0.2f, 0))
-      .set("up", Vector3(0, 1, 0))
-      .set("fov", 70)
-      .set("res", cam_res);
-  auto cam = create_instance<Camera>("pinhole", cam_dict);
-
-  Dict dict;
-  dict.set("shadow_map_resolution", 0.002_f)
-      .set("alpha", 0.5_f)
-      .set("shadowing", 0.018_f)
-      .set("ambient_light", 0.5_f)
-      .set("light_direction", Vector3(1, 0.5, 0.3));
-
-  renderer->initialize(dict);
-  renderer->set_camera(cam);
-
+  auto tone_map = [](real x) { return std::sqrt(x); };
   auto &canvas = gui.get_canvas();
   for (int frame = 1;; frame++) {
     simulate_frame();
     auto res = canvas.img.get_res();
-    Array2D<Vector3> image(Vector2i(res), Vector3(1) - Vector3(0.0_f));
-    std::vector<RenderParticle> render_particles;
-    for (int i = 0; i < n_particles; i++) {
-      auto x = particle_x(0).val<float32>(i), y = particle_x(1).val<float32>(i),
-           z = particle_x(2).val<float32>(i);
-      // auto color = hsv2rgb(Vector3(fract(p.pos[3] / 4) * 2, 0.7_f, 0.9_f));
-      auto pos = Vector3(x, y, z);
-      pos = pos - Vector3(0.5f);
-      pos = pos * Vector3(0.5f);
-      render_particles.push_back(
-          RenderParticle(pos, Vector4(0.6f, 0.7f, 0.9f, 1.0_f)));
+
+    renderer.preprocess_volume();
+    int nsamples = 10;
+    for (int s = 0; s < nsamples; s++) {
+      renderer.sample();
     }
 
-    renderer->render(image, render_particles);
-    for (auto &ind : image.get_region()) {
-      canvas.img[ind] = Vector4(image[ind]);
+    constexpr int N = 10;
+    real scale = 1.0f / nsamples;
+    for (int i = 0; i < np * np * 2; i++) {
+      gui.canvas->img[i / np][i % np] =
+          Vector4(tone_map(scale * renderer.buffer(0).val<float32>(i)),
+                  tone_map(scale * renderer.buffer(1).val<float32>(i)),
+                  tone_map(scale * renderer.buffer(2).val<float32>(i)), 1);
     }
+
+    prog.profiler_print();
 
     gui.update();
     auto render_dir = fmt::format("{}_rendered", "mpm");

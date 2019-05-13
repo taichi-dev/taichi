@@ -815,6 +815,8 @@ class GPUIRCodeGen : public IRVisitor {
 
     emit("auto list_element = ({} *)leaves[leaf_loop].ptr;",
          leaf->node_type_name);
+    emit("auto input_meta = leaves[leaf_loop];",
+         leaf->node_type_name);
     auto chid = leaf->parent->child_id(leaf);
 
     emit("auto {}_cache = list_element;", leaf->node_type_name,
@@ -823,14 +825,19 @@ class GPUIRCodeGen : public IRVisitor {
       emit("auto {} = leaves[leaf_loop].indices[{}];",
            loopgen.index_name_global(leaf->parent, i), i);
     }
+    emit("for (int cid = input_meta.start_loop; cid < input_meta.end_loop; cid++) {{");
+    emit("if (!{}_cache->is_active(cid)) continue;", snode->node_type_name);
+    emit("auto {}_child = {}_cache->look_up(cid);", snode->node_type_name, snode->node_type_name);
     emit(
-        "for(int i = threadIdx.x; i * sizeof(int32) < sizeof({}); i += "
+        "for(int i = threadIdx.x; i * sizeof(int32) < sizeof({}::child_type); i += "
         "blockDim.x) ",
         snode->node_type_name);
 
     emit("{{");
 
-    emit("((int32 *){}_cache)[i] = 0;", snode->node_type_name);
+    emit("((int32 *){}_child)[i] = 0;", snode->node_type_name);
+
+    emit("}}");
 
     emit("}}");
 

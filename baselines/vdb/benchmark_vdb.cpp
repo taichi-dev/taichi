@@ -21,7 +21,7 @@ TC_TEST("hashed_3d") {
 
   layout([&] {
     auto i = Index(0), j = Index(1), k = Index(2);
-    root.hashed({i, j, k}, n).place(x);
+    root.hash({i, j, k}, n).place(x);
     root.place(sum);
   });
 
@@ -52,7 +52,7 @@ TC_TEST("hashed_3d_negative") {
 
   layout([&] {
     auto i = Index(0), j = Index(1), k = Index(2);
-    root.hashed({i, j, k}, n).place(x);
+    root.hash({i, j, k}, n).place(x);
     root.place(sum);
   });
 
@@ -96,7 +96,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
     auto ijk = Indices(0, 1, 2);
 
     if (AOS) {
-      root.hashed(ijk, 1024)
+      root.hash(ijk, 1024)
           .dense(ijk, tree_config[0])
           .pointer()
           .dense(ijk, tree_config[1])
@@ -104,7 +104,7 @@ auto benchmark_vdb = [](std::vector<std::string> param) {
           .dense(ijk, tree_config[2])
           .place(x, y);
     } else {
-      auto &fork = root.hashed(ijk, 1024)
+      auto &fork = root.hash(ijk, 1024)
                        .dense(ijk, tree_config[0])
                        .pointer()
                        .dense(ijk, tree_config[1])

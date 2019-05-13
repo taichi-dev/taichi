@@ -5,10 +5,9 @@ TLANG_NAMESPACE_BEGIN
 bool use_gui = false;
 
 auto volume_renderer = [] {
-  Program prog(Arch::gpu);
-  prog.config.print_ir = true;
-
   // CoreState::set_trigger_gdb_when_crash(true);
+  Program prog(Arch::gpu);
+  // prog.config.print_ir = true;
   TRenderer renderer;
 
   layout([&]{
@@ -32,6 +31,8 @@ auto volume_renderer = [] {
   for (int i = 0; i < pow<3>(grid_resolution); i++) {
     max_density = std::max(max_density, density_field[i]);
   }
+
+  TC_P(max_density);
 
   for (int i = 0; i < pow<3>(grid_resolution); i++) {
     density_field[i] /= max_density;         // normalize to 1 first

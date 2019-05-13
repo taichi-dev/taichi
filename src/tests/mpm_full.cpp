@@ -504,19 +504,30 @@ auto mpm3d = []() {
     TC_P(ms_per_substep);
   };
 
+  Kernel(set_renderer_volume).def([&] {
+    For(grid_m, [&](Expr i, Expr j, Expr k) {
+      If (grid_m[i, j, k] > 0.0f).Then([&]{
+        renderer.density[i, j, k] = grid_m[i, j, k] * 50.0f;
+      });
+    });
+  });
+
   auto tone_map = [](real x) { return std::sqrt(x); };
   auto &canvas = gui.get_canvas();
   for (int frame = 1;; frame++) {
     simulate_frame();
     auto res = canvas.img.get_res();
 
+    renderer.density.parent().parent().snode()->clear_data_and_deactivate();
+    renderer.density.parent().parent().parent().snode()->clear_data_and_deactivate();
+    renderer.buffer(0).parent().snode()->clear_data();
+    set_renderer_volume();
     renderer.preprocess_volume();
     int nsamples = 10;
     for (int s = 0; s < nsamples; s++) {
       renderer.sample();
     }
 
-    constexpr int N = 10;
     real scale = 1.0f / nsamples;
     for (int i = 0; i < np * np * 2; i++) {
       gui.canvas->img[i / np][i % np] =

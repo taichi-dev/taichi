@@ -507,7 +507,7 @@ auto mpm3d = []() {
   Kernel(set_renderer_volume).def([&] {
     For(grid_m, [&](Expr i, Expr j, Expr k) {
       If (grid_m[i, j, k] > 0.0f).Then([&]{
-        renderer.density[i, j, k] = grid_m[i, j, k] * 50.0f;
+        renderer.density[i, j, k] = grid_m[i, j, k] * 40.0f;
       });
     });
   });
@@ -518,12 +518,12 @@ auto mpm3d = []() {
     simulate_frame();
     auto res = canvas.img.get_res();
 
+    renderer.density.parent().snode()->clear_data_and_deactivate();
     renderer.density.parent().parent().snode()->clear_data_and_deactivate();
-    renderer.density.parent().parent().parent().snode()->clear_data_and_deactivate();
     renderer.buffer(0).parent().snode()->clear_data();
     set_renderer_volume();
     renderer.preprocess_volume();
-    int nsamples = 10;
+    int nsamples = 200;
     for (int s = 0; s < nsamples; s++) {
       renderer.sample();
     }

@@ -6,13 +6,13 @@ TLANG_NAMESPACE_BEGIN
 class LoopGenerator {
  public:
   CodeGenBase *gen;
+  int grid_dim;
+
+  LoopGenerator(CodeGenBase *gen);
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
     gen->emit(f, std::forward<Args>(args)...);
-  }
-
-  LoopGenerator(CodeGenBase *gen) : gen(gen) {
   }
 
   std::string loop_variable(SNode *snode) {
@@ -181,6 +181,12 @@ class LoopGenerator {
         }
       }
     }
+  }
+
+  void emit_listgen_func(SNode *snode, int child_block_division = 0);
+
+  std::string listgen_func_name(SNode *leaf) {
+    return fmt::format("{}_listgen", leaf->node_type_name);
   }
 };
 

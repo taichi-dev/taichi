@@ -1,6 +1,7 @@
 #include "base.h"
 #include <xxhash.h>
 #include <sstream>
+#include <taichi/system/timer.h>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -67,6 +68,7 @@ std::string CodeGenBase::get_source_name() {
 }
 
 void CodeGenBase::generate_binary(std::string extra_flags) {
+  auto t = Time::get_time();
   write_source();
   auto format_ret =
       std::system(fmt::format("clang-format -i {}", get_source_path()).c_str());
@@ -115,6 +117,7 @@ void CodeGenBase::generate_binary(std::string extra_flags) {
     }
   }
   std::system(fmt::format("rm {}", pp_fn).c_str());
+  TC_INFO("Compilation time: {:.1f} ms", 1000 * (Time::get_time() - t));
 }
 
 CodeGenBase::~CodeGenBase() {

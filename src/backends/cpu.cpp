@@ -4,7 +4,7 @@
 
 #include "../util.h"
 #include "cpu.h"
-#include "loop_gen.h"
+#include "loopgen.h"
 #include "../program.h"
 #include "../ir.h"
 

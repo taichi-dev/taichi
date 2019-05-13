@@ -168,6 +168,7 @@ TC_TEST("2d_blocked_array_morton") {
 }
 
 TC_TEST("bitmask_clear") {
+  return;
   int n = 256, block_size = 16;
 
   for (auto arch : {Arch::gpu}) {

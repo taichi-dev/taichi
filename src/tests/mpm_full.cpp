@@ -36,7 +36,7 @@ auto mpm3d = []() {
   bool benchmark_dragon = false;
   Program prog(Arch::gpu);
   // Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
+  // prog.config.print_ir = true;
   prog.config.lower_access = false;
   auto material = MPMMaterial::snow;
   constexpr int dim = 3;

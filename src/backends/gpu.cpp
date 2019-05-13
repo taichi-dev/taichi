@@ -353,10 +353,15 @@ class GPUIRCodeGen : public IRVisitor {
           pure_loop = false;
         }
       }
+      bool is_clearer = false;
       if (stmt_list->statements.back()->is<ClearAllStmt>())
-        pure_loop = false;
+        is_clearer = true;
 
-      if (pure_loop) {
+      if (is_clearer) {
+        for (auto &stmt : stmt_list->statements) {
+          stmt->accept(this);
+        }
+      } else if (pure_loop) {
         generate_pure_loop(stmt_list);
       } else {
         // GPU Kernel
@@ -771,6 +776,16 @@ class GPUIRCodeGen : public IRVisitor {
     auto snode = stmt->snode;
     auto leaf = snode;
 
+    std::vector<SNode *> path;
+    for (auto p = leaf; !p->has_allocator(); p = p->parent) {
+      path.push_back(p);
+    }
+
+    loopgen.emit_listgen_func(snode);
+    for (int i = 1; i < path.size(); i++) {
+      loopgen.emit_listgen_func(path[i]);
+    }
+
     emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
     emit("auto root = ({} *)context.buffers[0];",
          codegen->prog->snode_root->node_type_name);
@@ -826,20 +841,8 @@ class GPUIRCodeGen : public IRVisitor {
          current_program->snode_root->node_type_name);
     emit("{{");
 
-    if (debug)
-      emit("auto t = get_time();");
-
-    std::vector<SNode *> path;
-    for (auto p = leaf; !p->has_allocator(); p = p->parent) {
-      path.push_back(p);
-    }
-
-    for (int i = 1; i < path.size(); i++) {
-      loopgen.emit_listgen_func(path[i]);
-    }
-
     emit("gpu_runtime_init();");
-    emit("int blockDim = {};", leaf->node_type_name, max_gpu_block_size);
+    emit("int blockDim = {};", max_gpu_block_size);
     emit("");
 
     // generate the list
@@ -854,26 +857,6 @@ class GPUIRCodeGen : public IRVisitor {
 
     emit("");
 
-    if (debug) {
-      emit("cudaDeviceSynchronize();");
-      emit(
-          R"(printf("task list %d\n", Managers::get_allocator<{}>()->resident_tail);)",
-          leaf->node_type_name);
-      emit(
-          R"(printf("kernel {} <<<%d, %d>>> \n", {}, blockDim);)",
-          codegen->func_name, grid_dim);
-
-      emit("cudaEvent_t start, stop;");
-
-      if (current_program->get_current_kernel().benchmarking) {
-        emit("while(1) {{");
-      }
-
-      emit("cudaEventCreate(&start);");
-      emit("cudaEventCreate(&stop);");
-      emit("cudaEventRecord(start);");
-    }
-    emit("");
     emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->node_type_name);
     emit(R"(GPUProfiler::get_instance().start("{}");)", codegen->func_name);
     emit("{}_kernel<<<{}, blockDim>>>(context);", codegen->func_name, grid_dim);
@@ -899,6 +882,7 @@ class GPUIRCodeGen : public IRVisitor {
         emit("}}");
       }
     }
+    emit("}}");
     emit("}}");
   }
 };

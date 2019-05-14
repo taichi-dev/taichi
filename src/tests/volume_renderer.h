@@ -25,7 +25,7 @@ class TRenderer {
 
   TRenderer(Dict param) : param(param) {
     grid_resolution = param.get("grid_resolution", 256);
-    depth_limit = param.get("depth_limit", 20);
+    depth_limit = param.get("depth_limit", 1);
     output_res = param.get("output_res", Vector2i(1024, 512));
 
     TC_ASSERT(bit::is_power_of_two(output_res.x));
@@ -333,37 +333,19 @@ class TRenderer {
         auto throughput = Var(Vector({1.0f, 1.0f, 1.0f}));
         auto depth = Var(0);
 
-        While(depth < depth_limit, [&] {
-          auto dist = Var(0.f);
-          auto transmittance = Var(0.f);
-          auto sigma_s = Var(Vector({0.f, 0.f, 0.f}));
-          auto interaction_p = Var(Vector({0.f, 0.f, 0.f}));
-          auto interaction =
-              sample_distance(orig, c, inv_max_density, dist, sigma_s,
-                              transmittance, interaction_p);
+        auto dist = Var(0.f);
+        auto transmittance = Var(0.f);
+        auto sigma_s = Var(Vector({0.f, 0.f, 0.f}));
+        auto interaction_p = Var(Vector({0.f, 0.f, 0.f}));
+        auto interaction =
+            sample_distance(orig, c, inv_max_density, dist, sigma_s,
+                            transmittance, interaction_p);
 
-          depth += 1;
-          If(interaction)
-              .Then([&] {
-                throughput =
-                    throughput.element_wise_prod(sigma_s * transmittance);
-
-                auto phase_value = eval_phase_isotropic();
-                auto light_value = sample_light(interaction_p, inv_max_density);
-                Li += phase_value * throughput.element_wise_prod(light_value);
-
-                orig = interaction_p;
-                c = sample_phase_isotropic();
-              })
-              .Else([&] {
-                if (use_sky_map) {
-                  If(depth == 1).Then([&] {
-                    Li += throughput.element_wise_prod(background(c));
-                  });
-                }
-                depth = depth_limit;
-              });
-        });
+        If(interaction)
+            .Then([&] {
+              Li += Vector({1.0f, 1.0f, 1.0f});
+            })
+            .Else([&] { depth = depth_limit; });
 
         buffer[x * output_res.y + y] += Li;
       });

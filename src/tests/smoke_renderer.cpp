@@ -8,6 +8,8 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
   auto cli_param = parse_param(cli_param_);
   bool gpu = cli_param.get("gpu", true);
   TC_P(gpu);
+  int vectorization = cli_param.get("vectorization", 8);
+  TC_P(vectorization);
   Program prog(gpu ? Arch::gpu : Arch::x86_64);
   bool benchmark = true;  // benchmark the bunny cloud against tungsten?
   TC_ASSERT(benchmark);
@@ -18,6 +20,7 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
   param.set("output_res", Vector2i(512, 512));
   param.set("orig", Vector3(0.25, 0.25, 0.7));
   param.set("fov", 1);
+  param.set("vectorization", vectorization);
   TRenderer renderer(param);
 
   layout([&] { renderer.place_data(); });
@@ -70,7 +73,7 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
 
   auto tone_map = [](real x) { return std::sqrt(x); };
 
-  constexpr int N = 10;
+  int N = gpu ? 10 : 1;
   for (int frame = 0; frame < 100; frame++) {
     for (int i = 0; i < N; i++) {
       renderer.sample();

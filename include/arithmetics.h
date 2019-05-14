@@ -698,6 +698,16 @@ inline int32x4 cmp_lt(int32x4 a, int32x4 b) {
   return ret;
 }
 
+inline int32x4 cmp_le(float32x4 a, float32x4 b) {
+  auto ret = _mm_cmp_ps(a, b, _CMP_LE_OQ);
+  return union_cast<int32x4>(ret);
+}
+
+inline int32x8 cmp_le(float32x8 a, float32x8 b) {
+  auto ret = _mm256_cmp_ps(a, b, _CMP_LE_OQ);
+  return union_cast<int32x8>(ret);
+}
+
 inline int32x8 cmp_lt(float32x8 a, float32x8 b) {
   auto ret = _mm256_cmp_ps(a, b, _CMP_LT_OQ);
   return union_cast<int32x8>(ret);
@@ -928,6 +938,15 @@ inline float32x8 rsqrt(float32x8 x) {
 inline float32x16 rsqrt(float32x16 x) {
   return _mm512_rsqrt14_ps(x);
 }
+
+template <int dim>
+inline vec<float32, dim> log(const vec<float32, dim> &a) {
+  vec<float32, dim> ret;
+  for (int i = 0; i < dim; i++) {
+    ret[i] = std::log(a[i]);
+  }
+  return ret;
+};
 
 template <int dim>
 inline vec<int32, dim> div(vec<int32, dim> a, vec<int32, dim> b) {

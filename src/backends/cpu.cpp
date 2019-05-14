@@ -87,8 +87,13 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(PrintStmt *print_stmt) {
-    emit("std::cout << \"[debug] \" \"{}\" \" = \" << {} << std::endl;",
-         print_stmt->str, print_stmt->stmt->raw_name());
+    if (print_stmt->width() == 1) {
+      emit("std::cout << \"[debug] \" \"{}\" \" = \" << {} << std::endl;",
+           print_stmt->str, print_stmt->stmt->raw_name());
+    } else {
+      emit(R"(std::cout << "[debug] {} = "; {}.print();)", print_stmt->str,
+           print_stmt->stmt->raw_name());
+    }
   }
 
   void visit(ConstStmt *const_stmt) {
@@ -208,13 +213,14 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) {
+    stmt->ret_type.data_type = DataType::i32;
+    if (stmt->op_type == SNodeOpType::probe) {
+      emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
+    }
+
     for (auto l = 0; l < stmt->width(); l++) {
       auto snode = stmt->snodes[l];
       auto indices = indices_str(snode, l, stmt->indices);
-
-      if (stmt->op_type == SNodeOpType::probe) {
-        emit("int32x1 {};", stmt->raw_name());
-      }
 
       emit("{{");
       if (stmt->op_type != SNodeOpType::activate &&
@@ -230,7 +236,7 @@ class CPUIRCodeGen : public IRVisitor {
       } else if (stmt->op_type == SNodeOpType::clear) {
         emit("{}_tmp->clear();", snode->node_type_name);
       } else if (stmt->op_type == SNodeOpType::probe) {
-        emit("{}[0] = query_{}(root, {});", stmt->raw_name(),
+        emit("{}[{}] = query_{}(root, {});", stmt->raw_name(), l,
              snode->node_type_name, make_list(indices, ""));
         if (snode->type == SNodeType::dynamic) {
           emit("if ({}[{}]) {{", stmt->raw_name(), l);

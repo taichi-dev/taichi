@@ -165,14 +165,7 @@ class TRenderer {
       auto far_t = Var(std::numeric_limits<float>::max());
       auto hit = box_intersect(o, d, near_t, far_t);
 
-      auto interaction = Var(0);
-      auto t = Var(near_t);
-
-      If(t >= far_t || !point_inside_box(p)).Else([&] { interaction = 1; });
-
-      dist = t - near_t;
-
-      return hit && interaction;
+      return hit;
     };
 
     float32 fov = param.get("fov", 0.6f);

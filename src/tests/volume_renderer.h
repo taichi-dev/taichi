@@ -172,26 +172,19 @@ class TRenderer {
         t -= log(1.f - Rand<float32>()) * inv_max_density;
 
         p = Var(o + t * d);
-        If(t >= far_t || !point_inside_box(p))
-            .Then([&] { cond = 0; })
-            .Else([&] {
-              If(!query_active(p))
-                  .Then([&] { t += 1.0f * block_size / grid_resolution; })
-                  .Else([&] {
-                    auto density_at_p = query_density(p);
-                    If(density_at_p * inv_max_density > Rand<float32>())
-                        .Then([&] {
-                          sigma_s(0) = Var(density_at_p * albedo[0]);
-                          sigma_s(1) = Var(density_at_p * albedo[1]);
-                          sigma_s(2) = Var(density_at_p * albedo[2]);
-                          If(density_at_p != 0.f).Then([&] {
-                            transmittance = 1.f / density_at_p;
-                          });
-                          cond = 0;
-                          interaction = 1;
-                        });
-                  });
+        If(t >= far_t).Then([&] { cond = 0; }).Else([&] {
+          auto density_at_p = query_density(p);
+          If(density_at_p * inv_max_density > Rand<float32>()).Then([&] {
+            sigma_s(0) = Var(density_at_p * albedo[0]);
+            sigma_s(1) = Var(density_at_p * albedo[1]);
+            sigma_s(2) = Var(density_at_p * albedo[2]);
+            If(density_at_p != 0.f).Then([&] {
+              transmittance = 1.f / density_at_p;
             });
+            cond = 0;
+            interaction = 1;
+          });
+        });
       });
 
       dist = t - near_t;

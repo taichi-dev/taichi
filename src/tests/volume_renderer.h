@@ -25,7 +25,7 @@ class TRenderer {
 
   TRenderer(Dict param) : param(param) {
     grid_resolution = param.get("grid_resolution", 256);
-    depth_limit = param.get("depth_limit", 1);
+    depth_limit = param.get("depth_limit", 20);
     output_res = param.get("output_res", Vector2i(1024, 512));
 
     TC_ASSERT(bit::is_power_of_two(output_res.x));
@@ -95,15 +95,12 @@ class TRenderer {
 
     // If p is in the density field, return the density, otherwise return 0
     auto query_density = [&](Vector p) {
-      auto inside_box = Var(point_inside_box(p));
+      auto inside_box = point_inside_box(p);
       auto ret = Var(0.0f);
       If(inside_box).Then([&] {
         auto i = cast<int>(floor(p(0) * float32(grid_resolution)));
         auto j = cast<int>(floor(p(1) * float32(grid_resolution)));
         auto k = cast<int>(floor(p(2) * float32(grid_resolution)));
-        Print(i);
-        Print(j);
-        Print(k);
         ret = density[i, j, k];
       });
       return ret;
@@ -115,7 +112,7 @@ class TRenderer {
 
       /* For each pair of AABB planes */
       for (int i = 0; i < 3; i++) {
-        auto origin = Var(o(i));
+        auto origin = o(i);
         auto min_val = Var(lower_bound);
         auto max_val = Var(upper_bound);
         auto d_rcp = Var(1.f / d(i));
@@ -160,20 +157,131 @@ class TRenderer {
 
     auto eval_phase_isotropic = [&]() { return pdf_phase_isotropic(); };
 
+    // Direct sample light
+    auto sample_light = [&](Vector p, float32 inv_max_density) {
+      auto ret = Vector({0.0f, 0.0f, 0.0f});
+      if (!use_sky_map) {  // point light source
+        auto Le = Var(700.0f * Vector({5.0f, 5.0f, 5.0f}));
+        auto light_p = Var(10.0f * Vector({2.5f, 1.0f, 0.5f}));
+        auto dir_to_p = Var(p - light_p);
+        auto dist_to_p = Var(dir_to_p.norm());
+        auto inv_dist_to_p = Var(1.f / dist_to_p);
+        dir_to_p = normalized(dir_to_p);
+
+        auto transmittance = Var(1.f);
+
+        auto cond = Var(1);
+        auto t = Var(0.0f);
+
+        While(cond, [&] {
+          t -= log(1.f - Rand<float32>()) * inv_max_density;
+
+          auto q = Var(p - t * dir_to_p);
+
+          If(!point_inside_box(q)).Then([&] { cond = 0; }).Else([&] {
+            If(!query_active(q))
+                .Then([&] { t += 1.0f * block_size / grid_resolution; })
+                .Else([&] {
+                  auto density_at_p = query_density(q);
+                  If(density_at_p * inv_max_density > Rand<float32>())
+                      .Then([&] {
+                        cond = 0;
+                        transmittance = Var(0.f);
+                      });
+                });
+          });
+        });
+
+        ret = Var(transmittance * Le * inv_dist_to_p * inv_dist_to_p);
+      } else {
+        auto sample = Var(cast<int>(Rand<float32>() * float32(n_sky_samples)));
+        auto uv = Var(sky_sample_uv[sample]);
+        auto phi = Var(uv(0) * (2 * pi));
+        auto theta = Var(uv(1) * (pi / 2));
+        // auto phi = Var(0.0f);
+        // auto theta = Var(0.9f);
+
+        auto dir_to_sky = Var(
+            Vector({cos(phi) * cos(theta), sin(theta), sin(phi) * cos(theta)}));
+        /*
+        auto dir_to_sky = Var(
+            normalized(Vector({2.5f, 1.0f, 0.5f})));
+                  */
+
+        auto Le = Var(sky_sample_color[sample]);
+        auto near_t = Var(-std::numeric_limits<float>::max());
+        auto far_t = Var(std::numeric_limits<float>::max());
+        auto hit = box_intersect(p, dir_to_sky, near_t, far_t);
+        auto transmittance = Var(1.f);
+
+        If(hit, [&] {
+          auto cond = Var(hit);
+          auto t = Var(0.0f);
+
+          While(cond, [&] {
+            t -= log(1.f - Rand<float32>()) * inv_max_density;
+            auto q = Var(p + t * dir_to_sky);
+            If(!point_inside_box(q)).Then([&] { cond = 0; }).Else([&] {
+              If(!query_active(q))
+                  .Then([&] { t += 1.0f * block_size / grid_resolution; })
+                  .Else([&] {
+                    auto density_at_p = query_density(q);
+                    If(density_at_p * inv_max_density > Rand<float32>())
+                        .Then([&] {
+                          cond = 0;
+                          transmittance = Var(0.f);
+                        });
+                  });
+            });
+          });
+        });
+
+        ret = Var(transmittance * Le);
+      }
+      return ret;
+    };
+
     // Woodcock tracking
     auto sample_distance = [&](Vector o, Vector d, float32 inv_max_density,
                                Expr &dist, Vector &sigma_s, Expr &transmittance,
                                Vector &p) {
-      auto cond = Var(1);
+      auto near_t = Var(-std::numeric_limits<float>::max());
+      auto far_t = Var(std::numeric_limits<float>::max());
+      auto hit = box_intersect(o, d, near_t, far_t);
+
+      auto cond = Var(hit);
       auto interaction = Var(0);
+      auto t = Var(near_t);
 
       While(cond, [&] {
-        Print(cond);
-        cond = 0;
-        interaction = 1;
+        t -= log(1.f - Rand<float32>()) * inv_max_density;
+
+        p = Var(o + t * d);
+        If(t >= far_t || !point_inside_box(p))
+            .Then([&] { cond = 0; })
+            .Else([&] {
+              If(!query_active(p))
+                  .Then([&] { t += 1.0f * block_size / grid_resolution; })
+                  .Else([&] {
+                    auto density_at_p = query_density(p);
+                    If(density_at_p * inv_max_density > Rand<float32>())
+                        .Then([&] {
+                          sigma_s(0) = Var(density_at_p * albedo[0]);
+                          sigma_s(1) = Var(density_at_p * albedo[1]);
+                          sigma_s(2) = Var(density_at_p * albedo[2]);
+                          If(density_at_p != 0.f).Then([&] {
+                            transmittance = 1.f / density_at_p;
+                          });
+                          cond = 0;
+                          interaction = 1;
+                        });
+                  });
+            });
       });
 
-      return interaction;
+      dist = t - near_t;
+
+      return hit && interaction;
     };
 
     auto background = [&](Vector dir) {
@@ -197,8 +305,8 @@ class TRenderer {
 
     main = &kernel([&]() {
       kernel_name("main");
-      Parallelize(param.get<int>("num_threads", 16));
-      Vectorize(param.get<int>("vectorization", 8));
+      Parallelize(param.get<int>("num_threads"));
+      Vectorize(param.get<int>("vectorization"));
       BlockDim(32);
       For(0, output_res.prod(), [&](Expr i) {
         auto orig_input = param.get("orig", Vector3(0.5, 0.3, 1.5f));
@@ -225,16 +333,37 @@ class TRenderer {
         auto throughput = Var(Vector({1.0f, 1.0f, 1.0f}));
         auto depth = Var(0);
 
-        auto dist = Var(0.f);
-        auto transmittance = Var(0.f);
-        auto sigma_s = Var(Vector({0.f, 0.f, 0.f}));
-        auto interaction_p = Var(Vector({0.f, 0.f, 0.f}));
-        auto interaction =
-            sample_distance(orig, c, inv_max_density, dist, sigma_s,
-                            transmittance, interaction_p);
+        While(depth < depth_limit, [&] {
+          auto dist = Var(0.f);
+          auto transmittance = Var(0.f);
+          auto sigma_s = Var(Vector({0.f, 0.f, 0.f}));
+          auto interaction_p = Var(Vector({0.f, 0.f, 0.f}));
+          auto interaction =
+              sample_distance(orig, c, inv_max_density, dist, sigma_s,
+                              transmittance, interaction_p);
 
-        depth += 1;
-        If(interaction).Then([&] { Li += (Vector({1.0f, 1.0f, 1.0f})); });
+          depth += 1;
+          If(interaction)
+              .Then([&] {
+                throughput =
+                    throughput.element_wise_prod(sigma_s * transmittance);
+
+                auto phase_value = eval_phase_isotropic();
+                auto light_value = sample_light(interaction_p, inv_max_density);
+                Li += phase_value * throughput.element_wise_prod(light_value);
+
+                orig = interaction_p;
+                c = sample_phase_isotropic();
+              })
+              .Else([&] {
+                if (use_sky_map) {
+                  If(depth == 1).Then([&] {
+                    Li += throughput.element_wise_prod(background(c));
+                  });
+                }
+                depth = depth_limit;
+              });
+        });
 
         buffer[x * output_res.y + y] += Li;
       });

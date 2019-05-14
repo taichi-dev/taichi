@@ -819,12 +819,28 @@ inline bool any(int32x1 v) {
   return v;
 }
 
+inline int32x4 shr(int32x4 a, int b) {
+  return _mm_srli_epi32(a, b);
+}
+
+inline int32x4 shl(int32x4 a, int b) {
+  return _mm_slli_epi32(a, b);
+}
+
+inline int32x8 shr(int32x8 a, int b) {
+  return _mm256_srli_epi32(a, b);
+}
+
+inline int32x8 shl(int32x8 a, int b) {
+  return _mm256_slli_epi32(a, b);
+}
+
 inline bool any(int32x4 v) {
-  return _mm_movemask_ps(union_cast<__m128>(v));
+  return _mm_movemask_ps(union_cast<__m128>(shl(v, 31)));
 }
 
 inline bool any(int32x8 v) {
-  return _mm256_movemask_ps(union_cast<__m256>(v));
+  return _mm256_movemask_ps(union_cast<__m256>(shl(v, 31)));
 }
 
 //*****************************************************************************
@@ -871,14 +887,6 @@ inline int32x4 bit_not(int32x4 a) {
 
 inline int32x8 bit_not(int32x8 a) {
   return _mm256_xor_si256(a, _mm256_set1_epi64x(-1LL));
-}
-
-inline int32x8 shr(int32x8 a, int b) {
-  return _mm256_srli_epi32(a, b);
-}
-
-inline int32x8 shl(int32x8 a, int b) {
-  return _mm256_slli_epi32(a, b);
 }
 
 inline int32x8 bit_and(int32x8 a, int b) {

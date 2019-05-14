@@ -69,10 +69,8 @@ class TRenderer {
   }
 
   void declare_kernels() {
-    auto inv_max_density = 1.0f / 724.0f;
-    Vector3 albedo(0.9, 0.95, 1);
     auto const block_size = 4;
-    auto lower_bound = -0.0f;
+    auto lower_bound = 0.0f;
     auto upper_bound = 1.0f;
 
     // Adapted from Mitsuba: include/mitsuba/core/aabb.h#L308
@@ -86,34 +84,22 @@ class TRenderer {
       auto max_val = Var(upper_bound);
       auto d_rcp = Var(1.f / d(0));
 
-      If(d(0) == 0.f)
-          .Then([&] {
-            /* The ray is parallel to the planes */
-            If(origin < min_val || origin > max_val, [&] { result = 0; });
-          })
-          .Else([&] {
-            /* Calculate intersection distances */
-            auto t1 = Var((min_val - origin) * d_rcp);
-            auto t2 = Var((max_val - origin) * d_rcp);
+      /* Calculate intersection distances */
+      auto t1 = Var((min_val - origin) * d_rcp);
+      auto t2 = Var((max_val - origin) * d_rcp);
 
-            If(t1 > t2, [&] {
-              auto tmp = Var(t1);
-              t1 = t2;
-              t2 = tmp;
-            });
+      If(t1 > t2, [&] {
+        auto tmp = Var(t1);
+        t1 = t2;
+        t2 = tmp;
+      });
 
-            near_t = max(t1, near_t);
-            far_t = min(t2, far_t);
+      near_t = max(t1, near_t);
+      far_t = min(t2, far_t);
 
-            If(near_t > far_t, [&] { result = 0; });
-          });
+      If(near_t > far_t, [&] { result = 0; });
 
       return result;
-    };
-
-    auto sample_distance = [&](Vector o, Vector d) {
-      auto hit = box_intersect(o, d);
-      return hit;
     };
 
     float32 fov = param.get("fov", 0.6f);
@@ -133,19 +119,11 @@ class TRenderer {
         auto x = Var(bid / (n / 4) * 8 + tid / 4),
              y = Var(bid % (n / 4) * 4 + tid % 4);
 
-        auto c = Var(Vector({fov * ((Rand<float32>() + cast<float32>(x)) /
-                                        float32(output_res.y / 2) -
-                                    (float32)output_res.x / output_res.y),
-                             fov * ((Rand<float32>() + cast<float32>(y)) /
-                                        float32(output_res.y / 2) -
-                                    1.0f),
-                             -1.0f}));
-
-        c = normalized(c);
+        auto c = Var(Vector({1.0f, 0.0f, -1.0f}));
 
         auto Li = Var(Vector({0.0f, 0.0f, 0.0f}));
 
-        auto interaction = sample_distance(orig, c);
+        auto interaction = box_intersect(orig, c);
 
         If(interaction).Then([&] { Li += Vector({1.0f, 1.0f, 1.0f}); });
 

@@ -11,6 +11,10 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
   int vectorization = cli_param.get("vectorization", 8);
   TC_P(vectorization);
   Program prog(gpu ? Arch::gpu : Arch::x86_64);
+  prog.config.simplify_before_lower_access = false;
+  prog.config.lower_access = false;
+  prog.config.simplify_after_lower_access = false;
+  prog.config.print_ir = true;
   bool benchmark = true;  // benchmark the bunny cloud against tungsten?
   TC_ASSERT(benchmark);
   // CoreState::set_trigger_gdb_when_crash(true);

@@ -75,37 +75,6 @@ class TRenderer {
     auto lower_bound = -0.0f;
     auto upper_bound = 1.0f;
 
-    auto point_inside_box = [&](Vector p) {
-      return Var(lower_bound <= p(0) && p(0) < upper_bound &&
-                 lower_bound <= p(1) && p(1) < upper_bound &&
-                 lower_bound <= p(2) && p(2) < upper_bound);
-    };
-
-    auto query_active = [&](Vector p) {
-      auto inside_box = Var(1);  // point_inside_box(p);
-      auto ret = Var(0);
-      If(inside_box).Then([&] {
-        auto i = cast<int>(floor(p(0) * float32(grid_resolution)));
-        auto j = cast<int>(floor(p(1) * float32(grid_resolution)));
-        auto k = cast<int>(floor(p(2) * float32(grid_resolution)));
-        ret = Probe(density, (i, j, k));
-      });
-      return ret;
-    };
-
-    // If p is in the density field, return the density, otherwise return 0
-    auto query_density = [&](Vector p) {
-      auto inside_box = point_inside_box(p);
-      auto ret = Var(0.0f);
-      If(inside_box).Then([&] {
-        auto i = cast<int>(floor(p(0) * float32(grid_resolution)));
-        auto j = cast<int>(floor(p(1) * float32(grid_resolution)));
-        auto k = cast<int>(floor(p(2) * float32(grid_resolution)));
-        ret = density[i, j, k];
-      });
-      return ret;
-    };
-
     // Adapted from Mitsuba: include/mitsuba/core/aabb.h#L308
     auto box_intersect = [&](Vector o, Vector d, Expr &near_t, Expr &far_t) {
       auto result = Var(1);
@@ -143,21 +112,6 @@ class TRenderer {
       return result;
     };
 
-    // Adapted from Mitsuba: src/libcore/warp.cpp#L25
-    auto sample_phase_isotropic = [&]() {
-      auto z = Var(1.0f - 2.0f * Rand<float32>());
-      auto r = Var(sqrt(1.0f - z * z));
-      auto phi = Var(2.0f * pi * Rand<float32>());
-      auto sin_phi = Var(sin(phi));
-      auto cos_phi = Var(cos(phi));
-      return Var(Vector({r * cos_phi, r * sin_phi, z}));
-    };
-
-    auto pdf_phase_isotropic = [&]() { return Var(one_over_four_pi); };
-
-    auto eval_phase_isotropic = [&]() { return pdf_phase_isotropic(); };
-
-    // Woodcock tracking
     auto sample_distance = [&](Vector o, Vector d, float32 inv_max_density,
                                Expr &dist, Vector &sigma_s, Expr &transmittance,
                                Vector &p) {
@@ -211,8 +165,7 @@ class TRenderer {
         If(interaction)
             .Then([&] {
               Li += Vector({1.0f, 1.0f, 1.0f});
-            })
-            .Else([&] { depth = depth_limit; });
+            });
 
         buffer[x * output_res.y + y] += Li;
       });

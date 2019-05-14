@@ -78,7 +78,7 @@ auto mpm_benchmark = []() {
           .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
     }
 
-    block.dynamic(p, pow<dim>(grid_block_size) * 128).place(l);
+    block.dynamic(p, pow<dim>(grid_block_size) * 64).place(l);
     root.place(gravity_x);
   });
   Kernel(sort).def([&] {

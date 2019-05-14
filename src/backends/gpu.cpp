@@ -866,7 +866,7 @@ class GPUIRCodeGen : public IRVisitor {
     emit("");
 
     emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->node_type_name);
-    emit(R"(GPUProfiler::get_instance().start("{}");)", codegen->func_name);
+    emit(R"(GPUProfiler::get_instance().start("clear_{}");)", snode->node_type_name);
     emit("{}_kernel<<<{}, blockDim>>>(context);", codegen->func_name, grid_dim);
     emit(R"(GPUProfiler::get_instance().stop();)");
 

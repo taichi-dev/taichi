@@ -164,29 +164,16 @@ class TRenderer {
     auto sample_distance = [&](Vector o, Vector d, float32 inv_max_density,
                                Expr &dist, Vector &sigma_s, Expr &transmittance,
                                Vector &p) {
-      auto near_t = Var(-std::numeric_limits<float>::max());
-      auto far_t = Var(std::numeric_limits<float>::max());
-      auto hit = Var(box_intersect(o, d, near_t, far_t));
-      auto cond = Var(hit);
+      auto cond = Var(1);
       auto interaction = Var(0);
-      auto t = Var(near_t);
 
       While(cond, [&] {
         Print(cond);
-        t += Rand<float32>() * 0.01f;
-        p = Var(o + t * d);
-        If(t >= far_t).Then([&] { cond = 0; }).Else([&] {
-          auto inside = Var(point_inside_box(Vector({0.5f, 0.5f, 0.5f})));
-          If(inside).Then([&] {
-            cond = 0;
-            interaction = 1;
-          });
-        });
+        cond = 0;
+        interaction = 1;
       });
 
-      dist = t - near_t;
-
-      return hit && interaction;
+      return interaction;
     };
 
     auto background = [&](Vector dir) {

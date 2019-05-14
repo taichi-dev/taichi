@@ -10,10 +10,12 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
   TC_P(gpu);
   int vectorization = cli_param.get("vectorization", 8);
   TC_P(vectorization);
+  int num_threads = cli_param.get("num_threads", 8);
+  TC_P(num_threads);
   Program prog(gpu ? Arch::gpu : Arch::x86_64);
-  prog.config.simplify_before_lower_access = false;
-  prog.config.lower_access = false;
-  prog.config.simplify_after_lower_access = false;
+  prog.config.simplify_before_lower_access = true;
+  prog.config.lower_access = true;
+  prog.config.simplify_after_lower_access = true;
   prog.config.print_ir = true;
   bool benchmark = true;  // benchmark the bunny cloud against tungsten?
   TC_ASSERT(benchmark);
@@ -25,6 +27,7 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
   param.set("orig", Vector3(0.25, 0.25, 0.7));
   param.set("fov", 1);
   param.set("vectorization", vectorization);
+  param.set("num_threads", num_threads);
   TRenderer renderer(param);
 
   layout([&] { renderer.place_data(); });

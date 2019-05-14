@@ -4,11 +4,14 @@ TLANG_NAMESPACE_BEGIN
 
 extern bool use_gui;
 
-auto smoke_renderer = [] {
+auto smoke_renderer = [](std::vector<std::string> cli_param_) {
+  auto cli_param = parse_param(cli_param_);
+  bool gpu = cli_param.get("gpu", true);
+  TC_P(gpu);
+  Program prog(gpu ? Arch::gpu : Arch::x86_64);
   bool benchmark = true;  // benchmark the bunny cloud against tungsten?
   TC_ASSERT(benchmark);
   // CoreState::set_trigger_gdb_when_crash(true);
-  Program prog(Arch::gpu);
   // prog.config.print_ir = true;
   Dict param;
   param.set("grid_resolution", 1024);
@@ -104,9 +107,9 @@ auto smoke_renderer = [] {
 };
 TC_REGISTER_TASK(smoke_renderer);
 
-auto smoke_renderer_gui = [] {
+auto smoke_renderer_gui = [](std::vector<std::string> cli_param) {
   use_gui = true;
-  smoke_renderer();
+  smoke_renderer(cli_param);
 };
 
 TC_REGISTER_TASK(smoke_renderer_gui);

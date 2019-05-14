@@ -44,6 +44,11 @@ class LoopVectorize : public IRVisitor {
     alloca->ret_type.width *= vectorize;
   }
 
+  void visit(SNodeOpStmt *stmt) override {
+    stmt->snodes.repeat(vectorize);
+    stmt->ret_type.width *= vectorize;
+  }
+
   void visit(ElementShuffleStmt *stmt) override {
     if (vectorize == 1)
       return;

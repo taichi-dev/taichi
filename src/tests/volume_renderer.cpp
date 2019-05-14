@@ -4,15 +4,17 @@ TLANG_NAMESPACE_BEGIN
 
 bool use_gui = false;
 
-auto volume_renderer = [] {
+auto volume_renderer = [](std::vector<std::string> cli_param) {
+  auto param = parse_param(cli_param);
+
+  bool gpu = param.get("gpu", true);
+  TC_P(gpu);
   CoreState::set_trigger_gdb_when_crash(true);
-  Program prog(Arch::x86_64);
-  // prog.config.print_ir = true;
+  Program prog(gpu ? Arch::gpu : Arch::x86_64);
+  prog.config.print_ir = true;
   TRenderer renderer((Dict()));
 
-  layout([&]{
-    renderer.place_data();
-  });
+  layout([&] { renderer.place_data(); });
 
   renderer.declare_kernels();
 
@@ -98,9 +100,9 @@ auto volume_renderer = [] {
 };
 TC_REGISTER_TASK(volume_renderer);
 
-auto volume_renderer_gui = [] {
+auto volume_renderer_gui = [](std::vector<std::string> cli_param) {
   use_gui = true;
-  volume_renderer();
+  volume_renderer(cli_param);
 };
 
 TC_REGISTER_TASK(volume_renderer_gui);

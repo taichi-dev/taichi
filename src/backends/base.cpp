@@ -6,7 +6,7 @@
 TLANG_NAMESPACE_BEGIN
 
 std::string CodeGenBase::get_source_path() {
-  return fmt::format("{}/{}/{}", get_project_fn(), folder, get_source_name());
+  return fmt::format("{}/{}", folder, get_source_name());
 }
 
 std::string CodeGenBase::get_library_path() {
@@ -43,7 +43,7 @@ std::string CodeGenBase::get_source() {
 }
 
 void CodeGenBase::load_dll() {
-  dll = dlopen(("./" + get_library_path()).c_str(), RTLD_LAZY);
+  dll = dlopen((get_library_path()).c_str(), RTLD_LAZY);
   if (dll == nullptr) {
     TC_ERROR("{}", dlerror());
   }

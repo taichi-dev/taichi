@@ -100,7 +100,7 @@ class CodeGenBase {
     dll = nullptr;
     current_code_region = CodeRegion::header;
 
-    folder = "_tlang_cache/";
+    folder = get_project_fn() + "/_tlang_cache/";
     create_directories(folder);
     create_directories(db_folder());
     line_suffix = "\n";

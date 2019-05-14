@@ -237,7 +237,7 @@ class CPUIRCodeGen : public IRVisitor {
           emit("{} *{}_tmp = access_{}(root, {});", snode->node_type_name,
                snode->node_type_name, snode->node_type_name,
                make_list(indices, ""));
-          emit("{}[{}] = {}_tmp->get_n();", l, stmt->raw_name(),
+          emit("{}[{}] = {}_tmp->get_n();", stmt->raw_name(), l,
                snode->node_type_name);
           emit("}}");
         }

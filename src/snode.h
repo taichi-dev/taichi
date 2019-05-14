@@ -118,6 +118,7 @@ class SNode {
     _morton = false;
     _bitmasked = false;
 
+    clear_func = nullptr;
     clear_kernel = nullptr;
     clear_and_deactivate_kernel = nullptr;
   }

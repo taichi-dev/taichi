@@ -27,11 +27,12 @@ struct CompileConfig {
   bool force_vectorized_global_store;
   int external_optimization_level;
   int max_vector_width;
-  int print_ir;
+  bool print_ir;
   bool serial_schedule;
   bool simplify_before_lower_access;
   bool lower_access;
   bool simplify_after_lower_access;
+  bool attempt_vectorized_load_cpu;
   std::string extra_flags;
 
   CompileConfig();

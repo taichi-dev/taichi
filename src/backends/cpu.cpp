@@ -366,7 +366,8 @@ class CPUIRCodeGen : public IRVisitor {
 
   void visit(GlobalLoadStmt *stmt) {
     int width = stmt->width();
-    if (width >= 4 && stmt->ptr->is<ElementShuffleStmt>()) {
+    if (get_current_program().config.attempt_vectorized_load_cpu &&
+        width >= 4 && stmt->ptr->is<ElementShuffleStmt>()) {
       TC_ASSERT(stmt->ret_type.data_type == DataType::i32 ||
                 stmt->ret_type.data_type == DataType::f32);
       bool loaded[width];

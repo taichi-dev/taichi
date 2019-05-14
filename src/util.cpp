@@ -318,6 +318,7 @@ CompileConfig::CompileConfig() {
   simplify_before_lower_access = true;
   lower_access = true;
   simplify_after_lower_access = true;
+  attempt_vectorized_load_cpu = true;
 }
 
 std::string CompileConfig::compiler_name() {

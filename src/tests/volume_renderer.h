@@ -174,13 +174,7 @@ class TRenderer {
         p = Var(o + t * d);
         If(t >= far_t).Then([&] { cond = 0; }).Else([&] {
           auto density_at_p = query_density(p);
-          If(density_at_p * inv_max_density > Rand<float32>()).Then([&] {
-            sigma_s(0) = Var(density_at_p * albedo[0]);
-            sigma_s(1) = Var(density_at_p * albedo[1]);
-            sigma_s(2) = Var(density_at_p * albedo[2]);
-            If(density_at_p != 0.f).Then([&] {
-              transmittance = 1.f / density_at_p;
-            });
+          If(density_at_p > 0.0f).Then([&] {
             cond = 0;
             interaction = 1;
           });

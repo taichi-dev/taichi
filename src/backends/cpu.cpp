@@ -147,7 +147,8 @@ class CPUIRCodeGen : public IRVisitor {
       // emit("#pragma omp parallel for num_threads({})",
       // for_stmt->parallelize);
       emit("omp_set_num_threads({});", for_stmt->parallelize);
-      emit("#pragma omp parallel for schedule(dynamic) private({})", loop_var->raw_name());
+      emit("#pragma omp parallel for schedule(dynamic) private({})",
+           loop_var->raw_name());
     }
     if (loop_var->ret_type.width == 1 &&
         loop_var->ret_type.data_type == DataType::i32) {
@@ -560,19 +561,13 @@ void CPUCodeGen::lower() {
     irpass::re_id(ir);
     irpass::print(ir);
   }
-  /*
-  irpass::initialize_scratch_pad(ir);
-  if (prog->config.print_ir) {
-    TC_TRACE("InitializeScratchPad:");
-    irpass::re_id(ir);
-    irpass::print(ir);
-  }
-  */
-  irpass::simplify(ir);
-  if (prog->config.print_ir) {
-    TC_TRACE("DupEliminated:");
-    irpass::re_id(ir);
-    irpass::print(ir);
+  if (prog->config.simplify_before_lower_access) {
+    irpass::simplify(ir);
+    if (prog->config.print_ir) {
+      TC_TRACE("DupEliminated:");
+      irpass::re_id(ir);
+      irpass::print(ir);
+    }
   }
   if (prog->config.lower_access) {
     irpass::lower_access(ir);
@@ -581,7 +576,7 @@ void CPUCodeGen::lower() {
       irpass::re_id(ir);
       irpass::print(ir);
     }
-    for (int i = 0; i < 1; i++) {
+    if (prog->config.simplify_after_lower_access) {
       irpass::die(ir);
       if (prog->config.print_ir) {
         TC_TRACE("DIEd:");

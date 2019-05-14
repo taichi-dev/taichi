@@ -198,5 +198,16 @@ inline void benchmark_kernel() {
 TLANG_NAMESPACE_END
 
 TC_NAMESPACE_BEGIN
+inline Dict parse_param(std::vector<std::string> cli_param) {
+  Dict dict;
+  for (auto &s : cli_param) {
+    int div = s.find('=');
+    TC_ASSERT(div != std::string::npos);
+    dict.set(s.substr(0, div), s.substr(div + 1));
+  }
+  TC_P(dict);
+  return dict;
+}
+
 void write_partio(std::vector<Vector3> positions, const std::string &file_name);
 TC_NAMESPACE_END

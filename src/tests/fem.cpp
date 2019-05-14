@@ -214,14 +214,26 @@ void fem_solve() {
   TC_ASSERT(success);
 }
 
-auto fem = []() {
+auto fem = [](std::vector<std::string> cli_param) {
   CoreState::set_trigger_gdb_when_crash(true);
 
-  bool gpu = true;
+  auto param = parse_param(cli_param);
+
+  bool gpu = param.get("gpu", false);
+  TC_P(gpu);
+  bool use_cache = param.get("use_cache", true);
+  TC_P(use_cache);
+  bool compute_gt = param.get("compute_gt", false);
+  TC_P(compute_gt);
   Program prog(gpu ? Arch::gpu : Arch::x86_64);
-  prog.config.print_ir = true;
-  prog.config.lower_access = false;
-  prog.config.lazy_compilation = false;
+  prog.config.simplify_before_lower_access =
+      param.get("simplify_before_lower_access", true);
+  TC_P(prog.config.simplify_before_lower_access);
+  prog.config.lower_access = param.get("lower_access", true);
+  TC_P(prog.config.lower_access);
+  prog.config.simplify_after_lower_access =
+      param.get("simplify_after_lower_access", true);
+  TC_P(prog.config.simplify_after_lower_access);
 
   Vector x(DataType::f32, dim), r(DataType::f32, dim), p(DataType::f32, dim),
       Ap(DataType::f32, dim);
@@ -418,7 +430,8 @@ auto fem = []() {
     }
   }
 
-  fem_solve();
+  if (compute_gt)
+    fem_solve();
 
   // r = b - Ax = b    since x = 0
   // copy_b_to_r();

@@ -231,7 +231,7 @@ auto mpm_benchmark = []() {
     auto ms_per_substep = (Time::get_time() - t) / 200 * 1000;
     TC_P(ms_per_substep);
   };
-  // Visualization emitted...
+  // Visualization omitted...
 };
 TC_REGISTER_TASK(mpm_benchmark);
 TC_NAMESPACE_END

@@ -685,7 +685,8 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(RangeAssumptionStmt *stmt) {
-    // this does not necessarily hold since any index within the leaf block can be the base
+    // this does not necessarily hold since any index within the leaf block can
+    // be the base
     /*
     emit("TC_ASSERT({} + {} <= {});", stmt->base->raw_name(), stmt->low,
          stmt->input->raw_name());
@@ -815,8 +816,7 @@ class GPUIRCodeGen : public IRVisitor {
 
     emit("auto list_element = ({} *)leaves[leaf_loop].ptr;",
          leaf->node_type_name);
-    emit("auto input_meta = leaves[leaf_loop];",
-         leaf->node_type_name);
+    emit("auto input_meta = leaves[leaf_loop];", leaf->node_type_name);
     auto chid = leaf->parent->child_id(leaf);
 
     emit("auto {}_cache = list_element;", leaf->node_type_name,
@@ -825,11 +825,15 @@ class GPUIRCodeGen : public IRVisitor {
       emit("auto {} = leaves[leaf_loop].indices[{}];",
            loopgen.index_name_global(leaf->parent, i), i);
     }
-    emit("for (int cid = input_meta.start_loop; cid < input_meta.end_loop; cid++) {{");
-    emit("if (!{}_cache->is_active(cid)) continue;", snode->node_type_name);
-    emit("auto {}_child = {}_cache->look_up(cid);", snode->node_type_name, snode->node_type_name);
     emit(
-        "for(int i = threadIdx.x; i * sizeof(int32) < sizeof({}::child_type); i += "
+        "for (int cid = input_meta.start_loop; cid < input_meta.end_loop; "
+        "cid++) {{");
+    emit("if (!{}_cache->is_active(cid)) continue;", snode->node_type_name);
+    emit("auto {}_child = {}_cache->look_up(cid);", snode->node_type_name,
+         snode->node_type_name);
+    emit(
+        "for(int i = threadIdx.x; i * sizeof(int32) < sizeof({}::child_type); "
+        "i += "
         "blockDim.x) ",
         snode->node_type_name);
 
@@ -866,7 +870,8 @@ class GPUIRCodeGen : public IRVisitor {
     emit("");
 
     emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->node_type_name);
-    emit(R"(GPUProfiler::get_instance().start("clear_{}");)", snode->node_type_name);
+    emit(R"(GPUProfiler::get_instance().start("clear_{}");)",
+         snode->node_type_name);
     emit("{}_kernel<<<{}, blockDim>>>(context);", codegen->func_name, grid_dim);
     emit(R"(GPUProfiler::get_instance().stop();)");
 
@@ -891,10 +896,12 @@ void GPUCodeGen::lower() {
   if (prog->config.print_ir) {
     irpass::print(ir);
   }
-  irpass::simplify(ir);
-  irpass::re_id(ir);
-  if (prog->config.print_ir)
-    irpass::print(ir);
+  if (prog->config.simplify_before_lower_access) {
+    irpass::simplify(ir);
+    irpass::re_id(ir);
+    if (prog->config.print_ir)
+      irpass::print(ir);
+  }
   if (prog->config.lower_access) {
     irpass::lower_access(ir);
     if (prog->config.print_ir) {
@@ -902,7 +909,7 @@ void GPUCodeGen::lower() {
       irpass::re_id(ir);
       irpass::print(ir);
     }
-    for (int i = 0; i < 1; i++) {
+    if (prog->config.simplify_after_lower_access) {
       irpass::die(ir);
       if (prog->config.print_ir) {
         TC_TRACE("DIEd:");

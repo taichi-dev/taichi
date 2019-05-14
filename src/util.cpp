@@ -315,7 +315,9 @@ CompileConfig::CompileConfig() {
 #endif
   lazy_compilation = true;
   serial_schedule = false;
+  simplify_before_lower_access = true;
   lower_access = true;
+  simplify_after_lower_access = true;
 }
 
 std::string CompileConfig::compiler_name() {

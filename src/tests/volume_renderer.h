@@ -95,12 +95,15 @@ class TRenderer {
 
     // If p is in the density field, return the density, otherwise return 0
     auto query_density = [&](Vector p) {
-      auto inside_box = point_inside_box(p);
+      auto inside_box = Var(point_inside_box(p));
       auto ret = Var(0.0f);
       If(inside_box).Then([&] {
         auto i = cast<int>(floor(p(0) * float32(grid_resolution)));
         auto j = cast<int>(floor(p(1) * float32(grid_resolution)));
         auto k = cast<int>(floor(p(2) * float32(grid_resolution)));
+        Print(i);
+        Print(j);
+        Print(k);
         ret = density[i, j, k];
       });
       return ret;
@@ -163,18 +166,18 @@ class TRenderer {
                                Vector &p) {
       auto near_t = Var(-std::numeric_limits<float>::max());
       auto far_t = Var(std::numeric_limits<float>::max());
-      auto hit = box_intersect(o, d, near_t, far_t);
+      auto hit = Var(box_intersect(o, d, near_t, far_t));
       auto cond = Var(hit);
       auto interaction = Var(0);
       auto t = Var(near_t);
 
       While(cond, [&] {
-        t -= log(1.f - Rand<float32>()) * inv_max_density;
+        t += Rand<float32>() * 0.01f;
 
         p = Var(o + t * d);
         If(t >= far_t).Then([&] { cond = 0; }).Else([&] {
-          auto density_at_p = query_density(p);
-          If(density_at_p > 0.0f).Then([&] {
+          auto inside = Var(point_inside_box(p));
+          If(inside).Then([&] {
             cond = 0;
             interaction = 1;
           });

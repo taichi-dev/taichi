@@ -76,8 +76,10 @@ class TRenderer {
     auto upper_bound = 1.0f;
 
     // Adapted from Mitsuba: include/mitsuba/core/aabb.h#L308
-    auto box_intersect = [&](Vector o, Vector d, Expr &near_t, Expr &far_t) {
+    auto box_intersect = [&](Vector o, Vector d) {
       auto result = Var(1);
+      auto near_t = Var(0.0f);
+      auto far_t = Var(0.0f);
 
       /* For each pair of AABB planes */
       for (int i = 0; i < 3; i++) {
@@ -112,13 +114,8 @@ class TRenderer {
       return result;
     };
 
-    auto sample_distance = [&](Vector o, Vector d, float32 inv_max_density,
-                               Expr &dist, Vector &sigma_s, Expr &transmittance,
-                               Vector &p) {
-      auto near_t = Var(-std::numeric_limits<float>::max());
-      auto far_t = Var(std::numeric_limits<float>::max());
-      auto hit = box_intersect(o, d, near_t, far_t);
-
+    auto sample_distance = [&](Vector o, Vector d) {
+      auto hit = box_intersect(o, d);
       return hit;
     };
 
@@ -149,18 +146,10 @@ class TRenderer {
 
         c = normalized(c);
 
-        auto color = Var(Vector({1.0f, 1.0f, 1.0f}));
         auto Li = Var(Vector({0.0f, 0.0f, 0.0f}));
-        auto throughput = Var(Vector({1.0f, 1.0f, 1.0f}));
-        auto depth = Var(0);
 
-        auto dist = Var(0.f);
-        auto transmittance = Var(0.f);
-        auto sigma_s = Var(Vector({0.f, 0.f, 0.f}));
-        auto interaction_p = Var(Vector({0.f, 0.f, 0.f}));
         auto interaction =
-            sample_distance(orig, c, inv_max_density, dist, sigma_s,
-                            transmittance, interaction_p);
+            sample_distance(orig, c);
 
         If(interaction)
             .Then([&] {

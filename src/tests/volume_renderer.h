@@ -70,23 +70,19 @@ class TRenderer {
 
   void declare_kernels() {
     auto const block_size = 4;
-    auto lower_bound = 0.0f;
-    auto upper_bound = 1.0f;
 
     // Adapted from Mitsuba: include/mitsuba/core/aabb.h#L308
-    auto box_intersect = [&](Vector o, Vector d) {
+    auto box_intersect = [&](Vector o) {
       auto result = Var(1);
       auto near_t = Var(0.0f);
       auto far_t = Var(0.0f);
 
       auto origin = Var(o(0));
-      auto min_val = Var(lower_bound);
-      auto max_val = Var(upper_bound);
-      auto d_rcp = Var(1.f / d(0));
+      auto min_val = Var(0.0f);
+      auto max_val = Var(1.0f);
 
-      /* Calculate intersection distances */
-      auto t1 = Var((min_val - origin) * d_rcp);
-      auto t2 = Var((max_val - origin) * d_rcp);
+      auto t1 = Var((min_val - origin));
+      auto t2 = Var((max_val - origin));
 
       If(t1 > t2, [&] {
         auto tmp = Var(t1);
@@ -119,11 +115,9 @@ class TRenderer {
         auto x = Var(bid / (n / 4) * 8 + tid / 4),
              y = Var(bid % (n / 4) * 4 + tid % 4);
 
-        auto c = Var(Vector({1.0f, 0.0f, -1.0f}));
-
         auto Li = Var(Vector({0.0f, 0.0f, 0.0f}));
 
-        auto interaction = box_intersect(orig, c);
+        auto interaction = box_intersect(orig);
 
         If(interaction).Then([&] { Li += Vector({1.0f, 1.0f, 1.0f}); });
 

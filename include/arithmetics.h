@@ -738,13 +738,13 @@ inline int32x1 cmp_le(float32x1 a, float32x1 b) {
   return a <= b;
 }
 
-inline int32x4 cmp_gt(float32x4 b, float32x4 a) {
-  auto ret = _mm_cmp_ps(a, b, _CMP_LT_OQ);
+inline int32x4 cmp_gt(float32x4 a, float32x4 b) {
+  auto ret = _mm_cmp_ps(a, b, _CMP_GT_OQ);
   return union_cast<int32x4>(ret);
 }
 
-inline int32x4 cmp_gt(int32x4 b, int32x4 a) {
-  auto ret = _mm_cmpgt_epi32(b, a);
+inline int32x4 cmp_gt(int32x4 a, int32x4 b) {
+  auto ret = _mm_cmpgt_epi32(a, b);
   return ret;
 }
 

@@ -694,5 +694,41 @@ TC_TEST("logic_not") {
   }
 };
 
+TC_TEST("cmp") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  for (auto arch : {Arch::x86_64}) {
+    for (auto vec : {1, 4, 8}) {
+      int n = 16;
+      Program prog(arch);
+
+      Global(a, f32);
+      Global(b, f32);
+      Global(c, i32);
+
+      layout([&]() { root.dense(Index(0), n).place(a, b, c); });
+
+      for (int i = 0; i < n; i++) {
+        a.val<float32>(i) = i % 3;
+        b.val<float32>(i) = i / 3 % 3;
+      }
+
+#define TEST_CMP(OP)                                                         \
+  kernel([&]() {                                                             \
+    Vectorize(vec);                                                          \
+    For(0, n, [&](Expr i) { c[i] = a[i] OP b[i]; });                         \
+  })();                                                                      \
+  for (int i = 0; i < n; i++) {                                              \
+    TC_CHECK(bool(c.val<int32>(i)) == bool(a.val<float32>(i) OP b.val<float32>(i))); \
+  }
+
+      TEST_CMP(<);
+      TEST_CMP(<=);
+      TEST_CMP(>);
+      TEST_CMP(>=);
+      TEST_CMP(!=);
+      TEST_CMP(==);
+    }
+  }
+};
 
 TLANG_NAMESPACE_END

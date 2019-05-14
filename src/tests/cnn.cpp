@@ -12,6 +12,7 @@ auto cnn = []() {
   CoreState::set_trigger_gdb_when_crash(true);
 
   Program prog(Arch::gpu);
+  prog.config.lower_access = false;
 
   constexpr int dim = 3;
   constexpr int n = 128;

@@ -11,9 +11,34 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-auto mpm_benchmark = []() {
+Dict parse_param(std::vector<std::string> cli_param) {
+  Dict dict;
+  for (auto &s : cli_param) {
+    int div = s.find('=');
+    TC_ASSERT(div != std::string::npos);
+    dict.set(s.substr(0, div), s.substr(div + 1));
+  }
+  TC_P(dict);
+  return dict;
+}
+
+auto mpm_benchmark = [](std::vector<std::string> cli_param) {
   Program prog(Arch::gpu);
-  prog.config.lower_access = false;
+
+  auto param = parse_param(cli_param);
+  bool particle_soa = param.get("particle_soa", false);
+  TC_P(particle_soa);
+  bool block_soa = param.get("block_soa", true);
+  TC_P(block_soa);
+  bool use_cache = param.get("use_cache", true);
+  TC_P(use_cache);
+  bool initial_reorder = param.get("initial_reorder", true);
+  TC_P(initial_reorder);
+  bool initial_shuffle = param.get("initial_shuffle", false);
+  TC_P(initial_shuffle);
+  prog.config.lower_access = param.get("lower_access", false);
+  TC_P(prog.config.lower_access);
+
   constexpr int dim = 3, n = 256, grid_block_size = 4, n_particles = 775196;
   const real dt = 1e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f, E = 1e4_f, nu = 0.3f;
@@ -41,15 +66,13 @@ auto mpm_benchmark = []() {
       p_x[i][j] = benchmark_particles[i * dim + j];
   }
 
-  bool particle_SOA = false;
-
   layout([&]() {
     auto i = Index(0), j = Index(1), k = Index(2), p = Index(3);
     SNode *fork;
-    if (!particle_SOA)
+    if (!particle_soa)
       fork = &root.dynamic(p, max_n_particles);
     auto place = [&](Expr &expr) {
-      if (particle_SOA) {
+      if (particle_soa) {
         root.dynamic(p, max_n_particles).place(expr);
       } else {
         fork->place(expr);
@@ -67,7 +90,6 @@ auto mpm_benchmark = []() {
       place(particle_v(i));
     TC_ASSERT(n % grid_block_size == 0);
     auto &block = root.dense({i, j, k}, n / grid_block_size).pointer();
-    constexpr bool block_soa = true;
     if (block_soa) {
       block.dense({i, j, k}, grid_block_size).place(grid_v(0));
       block.dense({i, j, k}, grid_block_size).place(grid_v(1));
@@ -91,23 +113,14 @@ auto mpm_benchmark = []() {
              p);
     });
   });
-  Kernel(sort_print).def([&] {
-    BlockDim(1024);
-    For(particle_x(0), [&](Expr p) {
-      auto node_coord = floor(particle_x[p] * inv_dx - 0.5_f);
-      auto len = Var(Probe(l.parent(),
-             (cast<int32>(node_coord(0)), cast<int32>(node_coord(1)),
-                 cast<int32>(node_coord(2)))));
-      Print(len);
-      Assert(len == 0);
-    });
-  });
   Kernel(p2g_sorted).def([&] {
     BlockDim(128);
-    Cache(0, grid_v(0));
-    Cache(0, grid_v(1));
-    Cache(0, grid_v(2));
-    Cache(0, grid_m);
+    if (use_cache) {
+      Cache(0, grid_v(0));
+      Cache(0, grid_v(1));
+      Cache(0, grid_v(2));
+      Cache(0, grid_m);
+    }
     For(l, [&](Expr i, Expr j, Expr k, Expr p_ptr) {
       auto p = Var(l[i, j, k, p_ptr]);
       auto x = Var(particle_x[p]), v = Var(particle_v[p]),
@@ -167,9 +180,11 @@ auto mpm_benchmark = []() {
   });
   Kernel(g2p).def([&]() {
     BlockDim(128);
-    Cache(0, grid_v(0));
-    Cache(0, grid_v(1));
-    Cache(0, grid_v(2));
+    if (use_cache) {
+      Cache(0, grid_v(0));
+      Cache(0, grid_v(1));
+      Cache(0, grid_v(2));
+    }
     For(l, [&](Expr i, Expr j, Expr k, Expr p_ptr) {
       auto p = Var(l[i, j, k, p_ptr]);
       auto x = Var(particle_x[p]), v = Var(Vector(dim)),
@@ -213,8 +228,13 @@ auto mpm_benchmark = []() {
     return xi.x * pow<2>(n / grid_block_size) + xi.y * n / grid_block_size +
            xi.z;
   };
-  std::sort(p_x.begin(), p_x.end(),
-            [&](Vector3 a, Vector3 b) { return block_id(a) < block_id(b); });
+  if (initial_reorder) {
+    std::sort(p_x.begin(), p_x.end(),
+              [&](Vector3 a, Vector3 b) { return block_id(a) < block_id(b); });
+  }
+  if (initial_shuffle) {
+    std::random_shuffle(p_x.begin(), p_x.end());
+  }
   for (int i = 0; i < n_particles; i++) {
     for (int d = 0; d < dim; d++) {
       particle_x(d).val<float32>(i) = p_x[i][d];

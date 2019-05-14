@@ -72,17 +72,14 @@ class TRenderer {
     auto const block_size = 4;
 
     // Adapted from Mitsuba: include/mitsuba/core/aabb.h#L308
-    auto box_intersect = [&](Vector o) {
+    auto box_intersect = [&]() {
       auto result = Var(1);
       auto near_t = Var(0.0f);
       auto far_t = Var(0.0f);
 
-      auto origin = Var(o(0));
-      auto min_val = Var(0.0f);
-      auto max_val = Var(1.0f);
 
-      auto t1 = Var((min_val - origin));
-      auto t2 = Var((max_val - origin));
+      auto t1 = Var(-0.5f);
+      auto t2 = Var(0.5f);
 
       If(t1 > t2, [&] {
         auto tmp = Var(t1);
@@ -106,9 +103,6 @@ class TRenderer {
       Vectorize(param.get<int>("vectorization"));
       BlockDim(32);
       For(0, output_res.prod(), [&](Expr i) {
-        auto orig_input = param.get("orig", Vector3(0.5, 0.3, 1.5f));
-        auto orig = Var(Vector({orig_input.x, orig_input.y, orig_input.z}));
-
         auto n = output_res.y;
         auto bid = Var(i / 32);
         auto tid = Var(i % 32);
@@ -117,7 +111,7 @@ class TRenderer {
 
         auto Li = Var(Vector({0.0f, 0.0f, 0.0f}));
 
-        auto interaction = box_intersect(orig);
+        auto interaction = box_intersect();
 
         If(interaction).Then([&] { Li += Vector({1.0f, 1.0f, 1.0f}); });
 

@@ -722,6 +722,76 @@ TC_TEST("simd_if_5") {
   }
 };
 
+TC_TEST("point_inside_box") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  for (auto arch : {Arch::x86_64}) {
+    for (auto vec : {1, 4, 8}) {
+      int n = 16;
+      Program prog(arch);
+
+      Global(c, i32);
+
+      layout([&]() { root.dense(Index(0), n).place(c); });
+
+      auto lower_bound = -0.0f;
+      auto upper_bound = 1.0f;
+
+      auto point_inside_box = [&](Vector p) {
+        return Var(lower_bound <= p(0) && p(0) < upper_bound &&
+                   lower_bound <= p(1) && p(1) < upper_bound &&
+                   lower_bound <= p(2) && p(2) < upper_bound);
+      };
+
+      kernel([&]() {
+        Vectorize(vec);
+        For(0, n, [&](Expr i) {
+          c[i] = point_inside_box(Vector({0.5f, 0.5f, 0.5f}));
+        });
+      })();
+      for (int i = 0; i < n; i++) {
+        TC_CHECK(c.val<int32>(i) == -1);
+      }
+    }
+  }
+};
+
+TC_TEST("while_in_while") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  for (auto arch : {Arch::x86_64}) {
+    for (auto vec : {1, 4, 8}) {
+      int n = 16;
+      Program prog(arch);
+
+      Global(c, i32);
+
+      layout([&]() { root.dense(Index(0), n).place(c); });
+
+      kernel([&]() {
+        Vectorize(vec);
+        For(0, n, [&](Expr i) {
+          auto cond1 = Var(0);
+          auto s = Var(0);
+          While(cond1 < 10, [&] {
+            cond1 += 1;
+            auto cond2 = Var(0);
+            If(i % 2 == 0, [&] {
+              While(cond2 < 10, [&] {
+                cond2 += 1;
+                s += 1;
+              });
+            });
+          });
+          c[i] = s;
+        });
+      })();
+      for (int i = 0; i < n; i++) {
+        // TC_CHECK(c.val<int32>(i) == -1);
+        TC_P(c.val<int32>(i));
+      }
+    }
+  }
+};
+
 TC_TEST("cmp") {
   CoreState::set_trigger_gdb_when_crash(true);
   for (auto arch : {Arch::x86_64}) {

@@ -172,11 +172,11 @@ class TRenderer {
       auto t = Var(near_t);
 
       While(cond, [&] {
+        Print(cond);
         t += Rand<float32>() * 0.01f;
-
         p = Var(o + t * d);
         If(t >= far_t).Then([&] { cond = 0; }).Else([&] {
-          auto inside = Var(point_inside_box(p));
+          auto inside = Var(point_inside_box(Vector({0.5f, 0.5f, 0.5f})));
           If(inside).Then([&] {
             cond = 0;
             interaction = 1;
@@ -238,38 +238,16 @@ class TRenderer {
         auto throughput = Var(Vector({1.0f, 1.0f, 1.0f}));
         auto depth = Var(0);
 
-        While(depth < depth_limit, [&] {
-          auto dist = Var(0.f);
-          auto transmittance = Var(0.f);
-          auto sigma_s = Var(Vector({0.f, 0.f, 0.f}));
-          auto interaction_p = Var(Vector({0.f, 0.f, 0.f}));
-          auto interaction =
-              sample_distance(orig, c, inv_max_density, dist, sigma_s,
-                              transmittance, interaction_p);
+        auto dist = Var(0.f);
+        auto transmittance = Var(0.f);
+        auto sigma_s = Var(Vector({0.f, 0.f, 0.f}));
+        auto interaction_p = Var(Vector({0.f, 0.f, 0.f}));
+        auto interaction =
+            sample_distance(orig, c, inv_max_density, dist, sigma_s,
+                            transmittance, interaction_p);
 
-          depth += 1;
-          If(interaction)
-              .Then([&] {
-                throughput =
-                    throughput.element_wise_prod(sigma_s * transmittance);
-
-                auto phase_value = eval_phase_isotropic();
-                // auto light_value = sample_light(interaction_p,
-                // inv_max_density);
-                Li += phase_value * (Vector({1.0f, 1.0f, 1.0f}));
-
-                orig = interaction_p;
-                c = sample_phase_isotropic();
-              })
-              .Else([&] {
-                if (use_sky_map) {
-                  If(depth == 1).Then([&] {
-                    Li += throughput.element_wise_prod(background(c));
-                  });
-                }
-                depth = depth_limit;
-              });
-        });
+        depth += 1;
+        If(interaction).Then([&] { Li += (Vector({1.0f, 1.0f, 1.0f})); });
 
         buffer[x * output_res.y + y] += Li;
       });

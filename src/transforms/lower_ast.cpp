@@ -157,7 +157,6 @@ class LowerAST : public IRVisitor {
       flattened.push_back(std::move(new_for));
     }
     stmt->parent->replace_with(stmt, flattened);
-
     throw IRModified();
   }
 

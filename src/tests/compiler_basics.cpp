@@ -749,7 +749,7 @@ TC_TEST("point_inside_box") {
         });
       })();
       for (int i = 0; i < n; i++) {
-        TC_CHECK(c.val<int32>(i) == -1);
+        TC_CHECK(bool(c.val<int32>(i)) == true);
       }
     }
   }

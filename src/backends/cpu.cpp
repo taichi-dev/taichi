@@ -76,14 +76,16 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) {
-    emit("{{");
-    if (if_stmt->true_statements)
+    if (if_stmt->true_statements) {
+      emit("if (any({})) {{", if_stmt->true_mask->raw_name());
       if_stmt->true_statements->accept(this);
-    if (if_stmt->false_statements) {
-      emit("}}  {{");
-      if_stmt->false_statements->accept(this);
+      emit("}}");
     }
-    emit("}}");
+    if (if_stmt->false_statements) {
+      emit("if (any({})) {{", if_stmt->false_mask->raw_name());
+      if_stmt->false_statements->accept(this);
+      emit("}}");
+    }
   }
 
   void visit(PrintStmt *print_stmt) {

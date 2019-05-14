@@ -51,7 +51,7 @@ class LowerAST : public IRVisitor {
     flattened.push_back<LocalStoreStmt>(new_if->true_mask,
                                         stmt->condition->stmt);
     auto lnot_stmt_ptr = flattened.push_back<UnaryOpStmt>(
-        UnaryType::bit_not, stmt->condition->stmt);
+        UnaryType::logic_not, stmt->condition->stmt);
     flattened.push_back<LocalStoreStmt>(new_if->false_mask, lnot_stmt_ptr);
 
     if (stmt->true_statements) {

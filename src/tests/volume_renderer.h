@@ -71,14 +71,12 @@ class TRenderer {
   void declare_kernels() {
     auto const block_size = 4;
 
-    // Adapted from Mitsuba: include/mitsuba/core/aabb.h#L308
     auto box_intersect = [&]() {
       auto result = Var(1);
-      auto near_t = Var(0.0f);
-      auto far_t = Var(0.0f);
 
-      If(near_t > far_t, [&] { result = 0; });
+      If(0, [&] { result = 0; });
 
+      Print(result);
       return result;
     };
 
@@ -98,9 +96,10 @@ class TRenderer {
 
         auto Li = Var(Vector({0.0f, 0.0f, 0.0f}));
 
-        auto interaction = box_intersect();
+        auto interaction = Var(1);
 
-        If(interaction).Then([&] { Li += Vector({1.0f, 1.0f, 1.0f}); });
+        If(interaction).Then([&] { Li = Vector({1.0f, 1.0f, 1.0f}); });
+        Print(Li(0));
 
         buffer[x * output_res.y + y] += Li;
       });

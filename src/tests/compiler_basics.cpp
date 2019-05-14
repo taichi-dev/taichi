@@ -694,6 +694,34 @@ TC_TEST("logic_not") {
   }
 };
 
+TC_TEST("simd_if_5") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  for (auto arch : {Arch::x86_64}) {
+    for (auto vec : {1, 4, 8}) {
+      int n = 16;
+      Program prog(arch);
+      prog.config.lower_access = false;
+      prog.config.print_ir = true;
+
+      Global(c, i32);
+
+      layout([&]() { root.dense(Index(0), n).place(c); });
+
+      kernel([&]() {
+        Vectorize(vec);
+        For(0, n, [&](Expr i) {
+          auto v = Var(0);
+          If(1, [&] { v = 1; });
+          c[i] = v;
+        });
+      })();
+      for (int i = 0; i < n; i++) {
+        TC_CHECK(c.val<int32>(i) == 1);
+      }
+    }
+  }
+};
+
 TC_TEST("cmp") {
   CoreState::set_trigger_gdb_when_crash(true);
   for (auto arch : {Arch::x86_64}) {
@@ -712,13 +740,14 @@ TC_TEST("cmp") {
         b.val<float32>(i) = i / 3 % 3;
       }
 
-#define TEST_CMP(OP)                                                         \
-  kernel([&]() {                                                             \
-    Vectorize(vec);                                                          \
-    For(0, n, [&](Expr i) { c[i] = a[i] OP b[i]; });                         \
-  })();                                                                      \
-  for (int i = 0; i < n; i++) {                                              \
-    TC_CHECK(bool(c.val<int32>(i)) == bool(a.val<float32>(i) OP b.val<float32>(i))); \
+#define TEST_CMP(OP)                                        \
+  kernel([&]() {                                            \
+    Vectorize(vec);                                         \
+    For(0, n, [&](Expr i) { c[i] = a[i] OP b[i]; });        \
+  })();                                                     \
+  for (int i = 0; i < n; i++) {                             \
+    TC_CHECK(bool(c.val<int32>(i)) ==                       \
+             bool(a.val<float32>(i) OP b.val<float32>(i))); \
   }
 
       TEST_CMP(<);

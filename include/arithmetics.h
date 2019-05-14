@@ -789,10 +789,12 @@ inline int32x1 select(int32x1 mask, int32x1 true_val, int32x1 false_val) {
 }
 
 inline float32x4 select(int32x4 mask, float32x4 true_val, float32x4 false_val) {
+  mask = _mm_slli_epi32(mask.v, 31);
   return _mm_blendv_ps(false_val, true_val, union_cast<float32x4>(mask));
 }
 
 inline int32x4 select(int32x4 mask, int32x4 true_val, int32x4 false_val) {
+  mask = _mm_slli_epi32(mask.v, 31);
   auto ret = _mm_blendv_ps(union_cast<float32x4>(false_val),
                            union_cast<float32x4>(true_val),
                            union_cast<float32x4>(mask));
@@ -800,10 +802,12 @@ inline int32x4 select(int32x4 mask, int32x4 true_val, int32x4 false_val) {
 }
 
 inline float32x8 select(int32x8 mask, float32x8 true_val, float32x8 false_val) {
+  mask = _mm256_slli_epi32(mask.v, 31);
   return _mm256_blendv_ps(false_val, true_val, union_cast<float32x8>(mask));
 }
 
 inline int32x8 select(int32x8 mask, int32x8 true_val, int32x8 false_val) {
+  mask = _mm256_slli_epi32(mask.v, 31);
   auto ret = _mm256_blendv_ps(union_cast<float32x8>(false_val),
                               union_cast<float32x8>(true_val),
                               union_cast<float32x8>(mask));
@@ -989,7 +993,8 @@ TC_FORCE_INLINE __host__ uint64 atomicOrCPU(volatile uint64 *dest, uint64 val) {
   return __atomic_fetch_or(dest, val, std::memory_order::memory_order_seq_cst);
 }
 
-TC_FORCE_INLINE __host__ uint64 atomicAndCPU(volatile uint64 *dest, uint64 val) {
+TC_FORCE_INLINE __host__ uint64 atomicAndCPU(volatile uint64 *dest,
+                                             uint64 val) {
   return __atomic_fetch_and(dest, val, std::memory_order::memory_order_seq_cst);
 }
 

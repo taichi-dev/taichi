@@ -81,35 +81,32 @@ class TRenderer {
       auto near_t = Var(0.0f);
       auto far_t = Var(0.0f);
 
-      /* For each pair of AABB planes */
-      for (int i = 0; i < 3; i++) {
-        auto origin = o(i);
-        auto min_val = Var(lower_bound);
-        auto max_val = Var(upper_bound);
-        auto d_rcp = Var(1.f / d(i));
+      auto origin = Var(o(0));
+      auto min_val = Var(lower_bound);
+      auto max_val = Var(upper_bound);
+      auto d_rcp = Var(1.f / d(0));
 
-        If(d(i) == 0.f)
-            .Then([&] {
-              /* The ray is parallel to the planes */
-              If(origin < min_val || origin > max_val, [&] { result = 0; });
-            })
-            .Else([&] {
-              /* Calculate intersection distances */
-              auto t1 = Var((min_val - origin) * d_rcp);
-              auto t2 = Var((max_val - origin) * d_rcp);
+      If(d(0) == 0.f)
+          .Then([&] {
+            /* The ray is parallel to the planes */
+            If(origin < min_val || origin > max_val, [&] { result = 0; });
+          })
+          .Else([&] {
+            /* Calculate intersection distances */
+            auto t1 = Var((min_val - origin) * d_rcp);
+            auto t2 = Var((max_val - origin) * d_rcp);
 
-              If(t1 > t2, [&] {
-                auto tmp = Var(t1);
-                t1 = t2;
-                t2 = tmp;
-              });
-
-              near_t = max(t1, near_t);
-              far_t = min(t2, far_t);
-
-              If(near_t > far_t, [&] { result = 0; });
+            If(t1 > t2, [&] {
+              auto tmp = Var(t1);
+              t1 = t2;
+              t2 = tmp;
             });
-      }
+
+            near_t = max(t1, near_t);
+            far_t = min(t2, far_t);
+
+            If(near_t > far_t, [&] { result = 0; });
+          });
 
       return result;
     };
@@ -148,13 +145,9 @@ class TRenderer {
 
         auto Li = Var(Vector({0.0f, 0.0f, 0.0f}));
 
-        auto interaction =
-            sample_distance(orig, c);
+        auto interaction = sample_distance(orig, c);
 
-        If(interaction)
-            .Then([&] {
-              Li += Vector({1.0f, 1.0f, 1.0f});
-            });
+        If(interaction).Then([&] { Li += Vector({1.0f, 1.0f, 1.0f}); });
 
         buffer[x * output_res.y + y] += Li;
       });

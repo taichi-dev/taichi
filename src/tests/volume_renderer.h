@@ -25,7 +25,7 @@ class TRenderer {
 
   TRenderer(Dict param) : param(param) {
     grid_resolution = param.get("grid_resolution", 256);
-    depth_limit = param.get("depth_limit", 20);
+    depth_limit = param.get("depth_limit", 1);
     output_res = param.get("output_res", Vector2i(1024, 512));
 
     TC_ASSERT(bit::is_power_of_two(output_res.x));
@@ -248,7 +248,6 @@ class TRenderer {
       auto near_t = Var(-std::numeric_limits<float>::max());
       auto far_t = Var(std::numeric_limits<float>::max());
       auto hit = box_intersect(o, d, near_t, far_t);
-
       auto cond = Var(hit);
       auto interaction = Var(0);
       auto t = Var(near_t);
@@ -349,8 +348,9 @@ class TRenderer {
                     throughput.element_wise_prod(sigma_s * transmittance);
 
                 auto phase_value = eval_phase_isotropic();
-                auto light_value = sample_light(interaction_p, inv_max_density);
-                Li += phase_value * throughput.element_wise_prod(light_value);
+                // auto light_value = sample_light(interaction_p,
+                // inv_max_density);
+                Li += phase_value * (Vector({1.0f, 1.0f, 1.0f}));
 
                 orig = interaction_p;
                 c = sample_phase_isotropic();

@@ -77,19 +77,6 @@ class TRenderer {
       auto near_t = Var(0.0f);
       auto far_t = Var(0.0f);
 
-
-      auto t1 = Var(-0.5f);
-      auto t2 = Var(0.5f);
-
-      If(t1 > t2, [&] {
-        auto tmp = Var(t1);
-        t1 = t2;
-        t2 = tmp;
-      });
-
-      near_t = max(t1, near_t);
-      far_t = min(t2, far_t);
-
       If(near_t > far_t, [&] { result = 0; });
 
       return result;

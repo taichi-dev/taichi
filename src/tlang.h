@@ -202,7 +202,10 @@ inline Dict parse_param(std::vector<std::string> cli_param) {
   Dict dict;
   for (auto &s : cli_param) {
     auto div = s.find('=');
-    TC_ASSERT(div != std::string::npos);
+    if (div == std::string::npos) {
+      TC_INFO("CLI parameter format: key=value, e.g. file_name=test.bin.");
+      exit(-1);
+    }
     dict.set(s.substr(0, div), s.substr(div + 1));
   }
   TC_P(dict);

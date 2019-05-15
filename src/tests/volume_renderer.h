@@ -201,12 +201,13 @@ class TRenderer {
         // auto phi = Var(0.0f);
         // auto theta = Var(0.9f);
 
+
         auto dir_to_sky = Var(
             Vector({cos(phi) * cos(theta), sin(theta), sin(phi) * cos(theta)}));
         /*
         auto dir_to_sky = Var(
             normalized(Vector({2.5f, 1.0f, 0.5f})));
-                  */
+        */
 
         auto Le = Var(sky_sample_color[sample]);
         auto near_t = Var(-std::numeric_limits<float>::max());
@@ -305,8 +306,8 @@ class TRenderer {
 
     main = &kernel([&]() {
       kernel_name("main");
-      Parallelize(param.get<int>("num_threads"));
-      Vectorize(param.get<int>("vectorization"));
+      Parallelize(param.get<int>("num_threads", 16));
+      Vectorize(param.get<int>("vectorization", 1));
       BlockDim(32);
       For(0, output_res.prod(), [&](Expr i) {
         auto orig_input = param.get("orig", Vector3(0.5, 0.3, 1.5f));
@@ -358,7 +359,7 @@ class TRenderer {
               .Else([&] {
                 if (use_sky_map) {
                   If(depth == 1).Then([&] {
-                    Li += throughput.element_wise_prod(background(c));
+                    // Li += throughput.element_wise_prod(background(c));
                   });
                 }
                 depth = depth_limit;
@@ -395,7 +396,7 @@ class TRenderer {
       for (int i = 0; i < n_sky_samples; i++) {
         for (int d = 0; d < 2; d++) {
           sky_sample_uv(d).val<float32>(i) =
-              sky_sample_data[i * 5 + 1 - d] * (1.0f / (sky_map_size[d]));
+              sky_sample_data[i * 5 + d] * (1.0f / (sky_map_size[d]));
         }
         for (int d = 0; d < 3; d++) {
           sky_sample_color(d).val<float32>(i) =

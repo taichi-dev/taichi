@@ -38,7 +38,8 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
 
   for (int i = 0; i < pow<3>(grid_resolution); i++) {
     density_field[i] /= max_density;         // normalize to 1 first
-    density_field[i] *= target_max_density;  // then scale
+    density_field[i] *= target_max_density * 1;  // then scale
+    density_field[i] = std::min(density_field[i], target_max_density);
   }
 
   for (int i = 0; i < grid_resolution; i++) {

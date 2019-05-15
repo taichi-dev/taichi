@@ -36,7 +36,7 @@ class BasicBlockVectorSplit : public IRVisitor {
       return old;
     } else {
       TC_ASSERT(0 <= index);
-      TC_ASSERT(index < origin2split[old].size());
+      TC_ASSERT(index < (int)origin2split[old].size());
       return origin2split[old][index];
     }
   }

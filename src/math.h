@@ -352,13 +352,13 @@ inline Matrix operator-(const Matrix &A) {
 
 template <typename T>
 void Matrix::operator+=(const T &o) {
-  for (int i = 0; i < entries.size(); i++)
+  for (int i = 0; i < (int)entries.size(); i++)
     entries[i] += o.entries[i];
 }
 
 template <typename T>
 void Matrix::operator-=(const T &o) {
-  for (int i = 0; i < entries.size(); i++)
+  for (int i = 0; i < (int)entries.size(); i++)
     entries[i] -= o.entries[i];
 }
 

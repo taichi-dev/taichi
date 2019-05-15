@@ -609,7 +609,7 @@ class Stmt : public IRNode {
              // IntegralOffsetStmt::input) makes it impossible to achieve our
              // goal
     operand_bitmap = 0;
-    for (int i = 0; i < operands.size(); i++) {
+    for (int i = 0; i < (int)operands.size(); i++) {
       operand_bitmap |= operand_hash(*operands[i]);
     }
   }

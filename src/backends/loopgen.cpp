@@ -1,4 +1,11 @@
 #include "loopgen.h"
+// XXX: HACK to remove warning
+#if defined(__device__)
+#undef __device__
+#endif
+#if defined(__host__)
+#undef __host__
+#endif
 #include <cuda_runtime.h>
 
 TLANG_NAMESPACE_BEGIN

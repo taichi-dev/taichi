@@ -201,7 +201,7 @@ TC_NAMESPACE_BEGIN
 inline Dict parse_param(std::vector<std::string> cli_param) {
   Dict dict;
   for (auto &s : cli_param) {
-    int div = s.find('=');
+    auto div = s.find('=');
     TC_ASSERT(div != std::string::npos);
     dict.set(s.substr(0, div), s.substr(div + 1));
   }

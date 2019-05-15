@@ -62,7 +62,7 @@ class ScratchPad {
   void access(const std::vector<int> &indices, AccessFlag flags) {
     TC_ASSERT(!finalized);
     empty = true;
-    TC_ASSERT(indices.size() == dim);
+    TC_ASSERT((int)indices.size() == dim);
     for (int i = 0; i < dim; i++) {
       bounds[0][i] = std::min(bounds[0][i], indices[i]);
       bounds[1][i] = std::max(bounds[1][i], indices[i] + 1);
@@ -147,9 +147,9 @@ class ScratchPad {
   std::string global_to_linearized_local(const std::vector<Stmt *> &loop_vars,
                                          const std::vector<Stmt *> &indices) {
     std::string ret = "";
-    TC_ASSERT(indices.size() == dim);
+    TC_ASSERT((int)indices.size() == dim);
     int step_size = linear_size();
-    for (int i = 0; i < indices.size(); i++) {
+    for (int i = 0; i < (int)indices.size(); i++) {
       TC_ASSERT(step_size % pad_size[i] == 0);
       step_size /= pad_size[i];
       ret += fmt::format(" + ({} - {}_base - {}) * {}", indices[i]->raw_name(),

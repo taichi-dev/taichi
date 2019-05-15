@@ -375,13 +375,13 @@ class TRenderer {
       f = fopen("sky_map.bin", "rb");
       TC_ASSERT_INFO(f, "./sky_map.bin not found");
       std::vector<uint32> sky_map_data(sky_map_size.prod() * 3);
-      std::fread(sky_map_data.data(), sizeof(uint32), sky_map_data.size(), f);
+      if (std::fread(sky_map_data.data(), sizeof(uint32), sky_map_data.size(), f)) {}
 
       f = fopen("sky_samples.bin", "rb");
       TC_ASSERT_INFO(f, "./sky_samples.bin not found");
       std::vector<uint32> sky_sample_data(n_sky_samples * 5);
-      std::fread(sky_sample_data.data(), sizeof(uint32), sky_sample_data.size(),
-                 f);
+      if (std::fread(sky_sample_data.data(), sizeof(uint32), (int)sky_sample_data.size(),
+                 f)) {}
 
       for (int i = 0; i < sky_map_size[0]; i++) {
         for (int j = 0; j < sky_map_size[1]; j++) {

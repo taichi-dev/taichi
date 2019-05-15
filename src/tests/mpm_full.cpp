@@ -81,7 +81,7 @@ auto mpm3d = []() {
     auto f = fopen("dragon_particles.bin", "rb");
     TC_ASSERT_INFO(f, "./dragon_particles.bin not found");
     benchmark_particles.resize(n_particles * 3);
-    std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f);
+    if (std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f)) {};
     std::fclose(f);
     for (int i = 0; i < n_particles; i++) {
       for (int j = 0; j < dim; j++)
@@ -115,7 +115,7 @@ auto mpm3d = []() {
   bool particle_soa = false;
 
   layout([&]() {
-    SNode *fork;
+    SNode *fork = nullptr;
     if (!particle_soa)
       fork = &root.dynamic(p, max_n_particles);
     auto place = [&](Expr &expr) {
@@ -317,7 +317,7 @@ auto mpm3d = []() {
     });
   });
 
-  auto check_fluctuation = [&] {
+  /*auto check_fluctuation = [&] {
     int last_nb = -1;
     while (1) {
       grid_m.parent().parent().snode()->clear_data_and_deactivate();
@@ -332,7 +332,7 @@ auto mpm3d = []() {
         TC_ASSERT(last_nb == nb);
       }
     }
-  };
+  };*/
 
   auto p2g = [&] {
     // check_fluctuation();
@@ -513,10 +513,10 @@ auto mpm3d = []() {
   });
 
   auto tone_map = [](real x) { return std::sqrt(x); };
-  auto &canvas = gui.get_canvas();
+  // auto &canvas = gui.get_canvas();
   for (int frame = 1;; frame++) {
     simulate_frame();
-    auto res = canvas.img.get_res();
+    // auto res = canvas.img.get_res();
 
     renderer.density.parent().snode()->clear_data_and_deactivate();
     renderer.density.parent().parent().snode()->clear_data_and_deactivate();

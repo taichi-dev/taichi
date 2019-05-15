@@ -150,7 +150,7 @@ inline std::vector<std::string> indices_str(SNode *snode,
                                             int lane_id,
                                             const std::vector<Stmt *> indices) {
   std::vector<std::string> ret(max_num_indices, "0");
-  for (int i = 0; i < indices.size(); i++) {
+  for (int i = 0; i < (int)indices.size(); i++) {
     if (snode->physical_index_position[i] != -1) {
       ret[snode->physical_index_position[i]] =
           indices[i]->raw_name() +

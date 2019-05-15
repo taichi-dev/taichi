@@ -38,7 +38,7 @@ void GPUIRCodeGen::struct_for_old(Stmt *for_stmt_) {
 
   auto access_global = [&](SNode *snode) -> std::string {
     std::vector<std::string> indices(max_num_indices, "0");
-    for (int i = 0; i < for_stmt->loop_vars.size(); i++) {
+    for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
       if (snode->physical_index_position[i] != -1) {
         auto var = for_stmt->loop_vars[i]->raw_name();
         indices[snode->physical_index_position[i]] =
@@ -139,9 +139,9 @@ void GPUIRCodeGen::struct_for_old(Stmt *for_stmt_) {
   loopgen.loop_gen_leaves(for_stmt, leaf);
 
   std::string vars;
-  for (int i = 0; i < for_stmt->loop_vars.size(); i++) {
+  for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
     vars += for_stmt->loop_vars[i]->raw_name();
-    if (i + 1 < for_stmt->loop_vars.size()) {
+    if (i + 1 < (int)for_stmt->loop_vars.size()) {
       vars += ",";
     }
   }

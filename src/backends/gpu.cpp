@@ -61,7 +61,7 @@ class GPUIRCodeGen : public IRVisitor {
 
     loopgen.emit_listgen_func(leaf, block_division);
 
-    for (int i = 1; i < path.size(); i++) {
+    for (int i = 1; i < (int)path.size(); i++) {
       loopgen.emit_listgen_func(path[i]);
     }
 
@@ -111,7 +111,7 @@ class GPUIRCodeGen : public IRVisitor {
 
     auto access_global = [&](SNode *snode) -> std::string {
       std::vector<std::string> indices(max_num_indices, "0");
-      for (int i = 0; i < for_stmt->loop_vars.size(); i++) {
+      for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
         if (snode->physical_index_position[i] != -1) {
           auto var = for_stmt->loop_vars[i]->raw_name();
           indices[snode->physical_index_position[i]] =
@@ -211,9 +211,9 @@ class GPUIRCodeGen : public IRVisitor {
       emit("auto t = get_time();");
 
     std::string vars;
-    for (int i = 0; i < for_stmt->loop_vars.size(); i++) {
+    for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
       vars += for_stmt->loop_vars[i]->raw_name();
-      if (i + 1 < for_stmt->loop_vars.size()) {
+      if (i + 1 < (int)for_stmt->loop_vars.size()) {
         vars += ",";
       }
     }
@@ -347,7 +347,7 @@ class GPUIRCodeGen : public IRVisitor {
 
       bool pure_loop = true;
 
-      for (int i = 0; i + 1 < stmt_list->statements.size(); i++) {
+      for (int i = 0; i + 1 < (int)stmt_list->statements.size(); i++) {
         auto s = stmt_list->statements[i].get();
         if (!(s->is<AllocaStmt>() || s->is<ConstStmt>())) {
           pure_loop = false;
@@ -546,7 +546,7 @@ class GPUIRCodeGen : public IRVisitor {
 
       auto snode = stmt->snodes[l];
       std::vector<std::string> indices(max_num_indices, "0");  // = "(root, ";
-      for (int i = 0; i < stmt->indices.size(); i++) {
+      for (int i = 0; i < (int)stmt->indices.size(); i++) {
         if (snode->physical_index_position[i] != -1) {
           // TC_ASSERT(snode->physical_index_position[i] != -1);
           indices[snode->physical_index_position[i]] =
@@ -710,7 +710,7 @@ class GPUIRCodeGen : public IRVisitor {
 
   void visit(LinearizeStmt *stmt) {
     std::string val = "0";
-    for (int i = 0; i < stmt->inputs.size(); i++) {
+    for (int i = 0; i < (int)stmt->inputs.size(); i++) {
       val = fmt::format("({}) * {} + {}", val, stmt->strides[i],
                         stmt->inputs[i]->raw_name());
     }
@@ -784,7 +784,7 @@ class GPUIRCodeGen : public IRVisitor {
     }
 
     loopgen.emit_listgen_func(snode, 0, "", stmt->deactivate);
-    for (int i = 1; i < path.size(); i++) {
+    for (int i = 1; i < (int)path.size(); i++) {
       loopgen.emit_listgen_func(path[i]);
     }
 

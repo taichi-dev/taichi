@@ -8,8 +8,18 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-auto cnn = []() {
+auto cnn = [](std::vector<std::string> cli_param) {
   CoreState::set_trigger_gdb_when_crash(true);
+  auto param = parse_param(cli_param);
+  auto path = param.get("grid_path", "");
+
+  auto f = fopen(path.c_str(), "rb");
+  TC_ASSERT_INFO(f, "grid not found");
+  int magic_number = -1;
+  fread(&magic_number, sizeof(int), 1, f);
+  std::cerr << "magic_number:" << magic_number << std::endl;
+  fclose(f);
+  exit(0);
 
   Program prog(Arch::gpu);
   prog.config.lower_access = false;

@@ -299,7 +299,7 @@ class BasicBlockSimplify : public IRVisitor {
     if (stmt->parent->locate(stmt->ptr) != -1) {
       // optimize local variables only
       bool has_related = false;
-      for (int i = current_stmt_id + 1; i < block->statements.size(); i++) {
+      for (int i = current_stmt_id + 1; i < (int)block->statements.size(); i++) {
         auto &bstmt = block->statements[i];
         if (bstmt->is_container_statement()) {
           has_related = true;
@@ -650,7 +650,7 @@ class BasicBlockSimplify : public IRVisitor {
       auto previous_offset = stmt->input_ptr->as<IntegerOffsetStmt>();
       // push forward offset
 
-      auto snode = stmt->input_snode;
+      // auto snode = stmt->input_snode;
       auto offset_stmt = stmt->insert_after_me(Stmt::make<IntegerOffsetStmt>(
           stmt, stmt->chid * sizeof(int32) + previous_offset->offset));
 

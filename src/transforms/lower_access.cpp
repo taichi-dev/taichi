@@ -89,7 +89,7 @@ class LowerAccess : public IRVisitor {
     std::vector<Stmt *> lowered_pointers;
     for (int i = 0; i < ptr->width(); i++) {
       std::vector<Stmt *> indices;
-      for (int k = 0; k < ptr->indices.size(); k++) {
+      for (int k = 0; k < (int)ptr->indices.size(); k++) {
         auto extractor =
             Stmt::make<ElementShuffleStmt>(VectorElement(ptr->indices[k], i));
         indices.push_back(extractor.get());

@@ -25,7 +25,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
   auto f = fopen("snow_density_256.bin", "rb");
   TC_ASSERT_INFO(f, "./snow_density_256.bin not found");
   std::vector<float32> density_field(pow<3>(grid_resolution));
-  std::fread(density_field.data(), sizeof(float32), density_field.size(), f);
+  if (std::fread(density_field.data(), sizeof(float32), density_field.size(), f)) {}
   std::fclose(f);
 
   float32 target_max_density = 724.0;

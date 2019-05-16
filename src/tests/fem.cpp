@@ -221,24 +221,22 @@ auto fem = [](std::vector<std::string> cli_param) {
 
   bool gpu = param.get("gpu", false);
   TC_P(gpu);
-  bool vectorization = param.get("vectorization", true);
+  bool vectorization = param.get("vec", true);
   TC_P(vectorization);
-  int num_threads = param.get("num_threads", 8);
+  int num_threads = param.get("threads", 8);
   TC_P(num_threads);
-  bool use_cache = param.get("use_cache", true);
+  bool use_cache = param.get("cache", true);
   TC_P(use_cache);
   bool compute_gt = param.get("compute_gt", false);
   TC_P(compute_gt);
   Program prog(gpu ? Arch::gpu : Arch::x86_64);
-  prog.config.simplify_before_lower_access =
-      param.get("simplify_before_lower_access", true);
+  prog.config.simplify_before_lower_access = param.get("simp1", true);
   TC_P(prog.config.simplify_before_lower_access);
   prog.config.lower_access = param.get("lower_access", true);
   TC_P(prog.config.lower_access);
   prog.config.print_ir = param.get("print_ir", false);
   TC_P(prog.config.print_ir);
-  prog.config.simplify_after_lower_access =
-      param.get("simplify_after_lower_access", true);
+  prog.config.simplify_after_lower_access = param.get("simp2", true);
   prog.config.attempt_vectorized_load_cpu = param.get("vec_load_cpu", true);
   TC_P(prog.config.attempt_vectorized_load_cpu);
   bool use_pointer = param.get("use_pointer", true);

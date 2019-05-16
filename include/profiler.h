@@ -148,7 +148,7 @@ class CPUProfiler {
     for (auto &rec : records) {
       printf(
           "    %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   total "
-          "%7.3f s\n count %7d\n",
+          "%7.3f s  count %7d\n",
           rec.name.c_str(), rec.min, rec.total / rec.counter, rec.max,
           rec.total / 1000.0f, rec.counter);
     }

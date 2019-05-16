@@ -18,7 +18,7 @@ auto mgpcg_poisson = []() {
   CoreState::set_trigger_gdb_when_crash(true);
 
   Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
+  // prog.config.print_ir = true;
   prog.config.lazy_compilation = false;
 
   auto r = Vector(DataType::f32, mg_levels);
@@ -74,7 +74,6 @@ auto mgpcg_poisson = []() {
     });
   });
 
-  prog.config.print_ir = false;
 
   Kernel(reduce_r).def([&] {
     For(p, [&](Expr i, Expr j, Expr k) {
@@ -130,12 +129,13 @@ auto mgpcg_poisson = []() {
 
   for (int l = 0; l < mg_levels; l++) {
     if (l < mg_levels - 1) {
+      prog.config.print_ir = true;
       restrictors[l] =
           kernel([&] {
             kernel_name(fmt::format("restrict_lv{}", l));
             Parallelize(8);
             Vectorize(1);
-            For(x, [&](Expr i, Expr j, Expr k) {
+            For(r(l), [&](Expr i, Expr j, Expr k) {
               auto res =
                   Var(r(l)[i, j, k] - (6.0f * z(l)[i, j, k] -
                                        z(l)[i - 1, j, k] - z(l)[i + 1, j, k] -
@@ -145,6 +145,7 @@ auto mgpcg_poisson = []() {
             });
           })
               .func();
+      prog.config.print_ir = false;
       prolongators[l] = kernel([&] {
                           kernel_name(fmt::format("prolongate_lv{}", l));
                           Parallelize(8);
@@ -175,12 +176,16 @@ auto mgpcg_poisson = []() {
     clearer_r[l] =
         kernel([&] {
           kernel_name(fmt::format("clear_r_lv{}", l));
+          Parallelize(8);
+          Vectorize(8);
           For(r(l), [&](Expr i, Expr j, Expr k) { r(l)[i, j, k] = 0.0f; });
         })
             .func();
     clearer_z[l] =
         kernel([&] {
           kernel_name(fmt::format("clear_z_lv{}", l));
+          Parallelize(8);
+          Vectorize(8);
           For(z(l), [&](Expr i, Expr j, Expr k) { z(l)[i, j, k] = 0.0f; });
         })
             .func();

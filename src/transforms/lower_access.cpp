@@ -1,13 +1,16 @@
 #include "../ir.h"
 #include <deque>
+#include <set>
 
 TLANG_NAMESPACE_BEGIN
 
 class LowerAccess : public IRVisitor {
  public:
+  StructForStmt *current_struct_for;
   LowerAccess() {
     // TODO: change this to false
     allow_undefined_visitor = true;
+    current_struct_for = nullptr;
   }
 
   void visit(Block *stmt_list) override {
@@ -36,7 +39,9 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(StructForStmt *for_stmt) override {
+    current_struct_for = for_stmt;
     for_stmt->body->accept(this);
+    current_struct_for = nullptr;
   }
 
   void lower_scalar_ptr(VecStatement &lowered,
@@ -44,9 +49,17 @@ class LowerAccess : public IRVisitor {
                         std::vector<Stmt *> indices,
                         bool activate) {
     // emit a sequence of micro access ops
+    std::set<SNode *> nodes_on_loop;
+    if (current_struct_for) {
+      for (SNode *s = current_struct_for->snode; s != nullptr; s = s->parent) {
+        nodes_on_loop.insert(s);
+      }
+    }
+
     std::deque<SNode *> snodes;
     for (; snode != nullptr; snode = snode->parent)
       snodes.push_front(snode);
+
     Stmt *last = nullptr;
     for (int i = 0; i < (int)snodes.size() - 1; i++) {
       auto snode = snodes[i];
@@ -67,12 +80,34 @@ class LowerAccess : public IRVisitor {
         }
       }
 
+      bool on_loop_tree = nodes_on_loop.find(snode) != nodes_on_loop.end();
+      if (on_loop_tree &&
+          indices.size() == current_struct_for->loop_vars.size()) {
+        for (int j = 0; j < (int)indices.size(); j++) {
+          auto diff = analysis::value_diff(indices[j], 0,
+                                           current_struct_for->loop_vars[j]);
+          if (!diff.related)
+            on_loop_tree = false;
+          else if (i == (int)indices.size() - 1) {
+            if (!(0 <= diff.low &&
+                  diff.high <= current_struct_for->vectorize)) {
+              on_loop_tree = false;
+            }
+          } else {
+            if (!diff.certain() || diff.low != 0) {
+              on_loop_tree = false;
+            }
+          }
+        }
+      }
+
       // linearize
       auto linearized = Stmt::make<LinearizeStmt>(lowered_indices, strides);
 
       int chid = snode->child_id(snodes[i + 1]);
       auto lookup = Stmt::make<SNodeLookupStmt>(
-          snode, last, linearized.get(), snode->need_activation() && activate,
+          snode, last, linearized.get(),
+          snode->need_activation() && activate && !on_loop_tree,
           indices);  // if snode has no possibility of null child, set activate
       // = false
       auto get_ch = Stmt::make<GetChStmt>(lookup.get(), chid);

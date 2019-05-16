@@ -12,22 +12,31 @@ auto cnn = [](std::vector<std::string> cli_param) {
   CoreState::set_trigger_gdb_when_crash(true);
   auto param = parse_param(cli_param);
   auto path = param.get("grid_path", "");
+  TC_P(path);
 
   auto f = fopen(path.c_str(), "rb");
   TC_ASSERT_INFO(f, "grid not found");
   int magic_number = -1;
   fread(&magic_number, sizeof(int), 1, f);
-  std::cerr << "magic_number:" << magic_number << std::endl;
+  int n_dim = -1;
+  fread(&n_dim, sizeof(int), 1, f);
+  int size = 1;
+  for (int i = 0; i < n_dim; i++) {
+      int d = -1;
+      fread(&d, sizeof(int), 1, f);
+      size *= d;
+  }
+  float *data = new float[size];
+  fread(data, sizeof(float), size, f);
   fclose(f);
-  exit(0);
 
   Program prog(Arch::gpu);
   prog.config.lower_access = false;
 
   constexpr int dim = 3;
-  constexpr int n = 128;
+  constexpr int n = 256;
 
-  constexpr int num_ch1 = 16, num_ch2 = 16;
+  constexpr int num_ch1 = 20, num_ch2 = 26;
 
   Global(layer1, f32);
   Global(layer2, f32);
@@ -44,15 +53,12 @@ auto cnn = [](std::vector<std::string> cli_param) {
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
         for (int k = 0; k < n; k++) {
-          auto len =
-              (Vector3i(i, j, k) - Vector3i(n / 2)).length() / (float32) n;
-          if (0.4 < len && len < 0.5) {
-            layer1.val<float32>(i, j, k, c_in) = len;
-          }
+          layer1.val<float32>(i, j, k, c_in) = data[((c_in * n + k) * n + j) * n + i];
         }
       }
     }
   }
+  delete[] data;
 
   Kernel(forward).def([&] {
     BlockDim(128);
@@ -71,13 +77,15 @@ auto cnn = [](std::vector<std::string> cli_param) {
     });
   });
 
-  for (int c_out = 0; c_out < num_ch1; c_out++) {
+  float inc = 0.f;
+  for (int c_out = 0; c_out < num_ch2; c_out++) {
     for (int c_in = 0; c_in < num_ch1; c_in++) {
       for (int dx = -1; dx < 2; dx++) {
         for (int dy = -1; dy < 2; dy++) {
           for (int dz = -1; dz < 2; dz++) {
             weights.val<float32>(dx + 1, dy + 1, dz + 1,
-                                 c_in * num_ch2 + c_out) = rand() - 0.5f;
+                                 c_in * num_ch2 + c_out) = inc;
+            inc += 0.1f;
           }
         }
       }
@@ -86,6 +94,22 @@ auto cnn = [](std::vector<std::string> cli_param) {
 
   forward();
 
+  // Write the first layer of output
+  data = new float[n * n * n];
+  for (int c_out = 0; c_in < num_ch2; c_in++) {
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        for (int k = 0; k < n; k++) {
+          data[((c_out * n + k) * n + j) * n + i] = layer2.val<float32>(i, j, k, c_out);
+        }
+      }
+    }
+  }
+  auto f_out = fopen("our_output.bin", "wb");
+  fwrite(data, sizeof(float), n * n * n, f_out);
+  fclose(f_out);
+
+#if 0
   int gui_res = 512;
   GUI gui("Sparse CNN", Vector2i(gui_res + 200, gui_res), false);
   int layer = 1;
@@ -111,6 +135,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
     }
     gui.update();
   }
+#endif
 };
 TC_REGISTER_TASK(cnn);
 

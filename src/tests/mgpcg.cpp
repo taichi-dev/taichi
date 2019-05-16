@@ -159,15 +159,16 @@ auto mgpcg_poisson = []() {
         kernel([&] {
           kernel_name(fmt::format("smooth_lv{}", l));
           Parallelize(8);
-          Vectorize(1);
+          Vectorize(8);
           For(z(l), [&](Expr i, Expr j, Expr k) {
+            auto ret = Var(z(l)[i, j, k]);
             If(((i + j + k) & 1) == phase[Expr(0)]).Then([&] {
-              z(l)[i, j, k] =
-                  (r(l)[i, j, k] + z(l)[i - 1, j, k] + z(l)[i + 1, j, k] +
-                   z(l)[i, j + 1, k] + z(l)[i, j - 1, k] + z(l)[i, j, k + 1] +
-                   z(l)[i, j, k - 1]) *
-                  (1.0f / 6);
+              ret = (r(l)[i, j, k] + z(l)[i - 1, j, k] + z(l)[i + 1, j, k] +
+                     z(l)[i, j + 1, k] + z(l)[i, j - 1, k] + z(l)[i, j, k + 1] +
+                     z(l)[i, j, k - 1]) *
+                    (1.0f / 6);
             });
+            z(l)[i, j, k] = ret;
           });
         })
             .func();
@@ -225,6 +226,7 @@ auto mgpcg_poisson = []() {
   auto old_zTr = sum.val<float32>();
 
   // CG
+  auto t = Time::get_time();
   for (int i = 0; i < 40; i++) {
     TC_P(i);
     compute_Ap();
@@ -259,6 +261,7 @@ auto mgpcg_poisson = []() {
     update_p();
     old_zTr = new_zTr;
   }
+  TC_P(Time::get_time() - t);
   get_current_program().profiler_print();
 
   compute_Ap();

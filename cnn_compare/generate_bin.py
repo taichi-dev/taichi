@@ -18,8 +18,8 @@ def main(path, res, channels):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('model_paths', type = str, nargs = '+')
-    parser.add_argument('-r', '--res', type = int, default = 64)
-    parser.add_argument('-c', '--channels', type = int, default = 20)
+    parser.add_argument('-r', '--res', type = int, default = 256)
+    parser.add_argument('-c', '--channels', type = int, default = 16)
 
     args = parser.parse_args()
     for m in args.model_paths:

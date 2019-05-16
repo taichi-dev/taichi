@@ -1,7 +1,7 @@
 Installation
 ===============================================
 
-Suppoprted Platforms:
+Supported Platforms:
  - Ubuntu (gcc 5+)
  - Mac OS X (gcc 5+, clang 4.0+)
  - Windows (Microsoft Visual Studio 2017)

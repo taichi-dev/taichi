@@ -5,7 +5,9 @@ TC_NAMESPACE_BEGIN
 
 auto diff_conv = [](const std::vector<std::string> args) {
   int grid_resolution = 256;
-  TC_ASSERT(args.size() == 2);
+  TC_ASSERT(args.size() == 3);
+  float th = std::stof(args[2]);
+  TC_P(th);
   auto f = fopen(args[0].c_str(), "rb");
 
   int n = pow<3>(grid_resolution);

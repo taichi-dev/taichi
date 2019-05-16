@@ -11,7 +11,7 @@ TC_NAMESPACE_BEGIN
 using namespace Tlang;
 
 constexpr int dim = 3, n = 256;
-constexpr int pre_and_post_smoothing = 3, bottom_smoothing = 10;
+constexpr int pre_and_post_smoothing = 3, bottom_smoothing = 200;
 constexpr int mg_levels = 3;
 
 auto mgpcg_poisson = []() {
@@ -195,7 +195,7 @@ auto mgpcg_poisson = []() {
   auto apply_preconditioner = [&] {
     clearer_z[0]();
     for (int l = 0; l < mg_levels - 1; l++) {
-      for (int i = 0; i < pre_and_post_smoothing; i++) {
+      for (int i = 0; i < (pre_and_post_smoothing << l); i++) {
         phase.val<int32>() = 0;
         smoothers[l]();
         phase.val<int32>() = 1;
@@ -213,7 +213,7 @@ auto mgpcg_poisson = []() {
     }
     for (int l = mg_levels - 2; l >= 0; l--) {
       prolongators[l]();
-      for (int i = 0; i < pre_and_post_smoothing; i++) {
+      for (int i = 0; i < (pre_and_post_smoothing << l); i++) {
         phase.val<int32>() = 0;
         smoothers[l]();
         phase.val<int32>() = 1;

@@ -31,12 +31,12 @@ auto cnn = [](std::vector<std::string> cli_param) {
   fclose(f);
 
   Program prog(Arch::gpu);
-  prog.config.lower_access = false;
+  //prog.config.lower_access = false;
 
   //constexpr int dim = 3;
   constexpr int n = 256;
 
-  constexpr int num_ch1 = 20, num_ch2 = 26;
+  constexpr int num_ch1 = 16, num_ch2 = 16;
 
   Global(layer1, f32);
   Global(layer2, f32);
@@ -44,8 +44,10 @@ auto cnn = [](std::vector<std::string> cli_param) {
 
   layout([&]() {
     auto ijkl = Indices(0, 1, 2, 3);
-    root.dense(ijkl, {n, n, n, num_ch1}).place(layer1);
-    root.dense(ijkl, {n, n, n, num_ch2}).place(layer2);
+    root.dense(ijkl, {n / 8, n / 8, n / 8, 1}).bitmasked()
+        .dense(ijkl, {8, 8, 8, num_ch1}).place(layer1);
+    root.dense(ijkl, {n / 8, n / 8, n / 8, 1}).bitmasked()
+        .dense(ijkl, {8, 8, 8, num_ch2}).place(layer2);
     root.dense(ijkl, {4, 4, 4, num_ch1 * num_ch2}).place(weights);
   });
 
@@ -53,7 +55,10 @@ auto cnn = [](std::vector<std::string> cli_param) {
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
         for (int k = 0; k < n; k++) {
-          layer1.val<float32>(i, j, k, c_in) = data[((c_in * n + k) * n + j) * n + i];
+          float v = data[((c_in * n + k) * n + j) * n + i];
+          if (v != 0) {
+            layer1.val<float32>(i, j, k, c_in) = v;
+          }
         }
       }
     }
@@ -92,16 +97,17 @@ auto cnn = [](std::vector<std::string> cli_param) {
     }
   }
 
-  forward();
+  for (int i = 0; i < 10; i++) {
+      forward();
+  }
+  prog.profiler_print();
 
   // Write the first layer of output
   data = new float[n * n * n];
-  for (int c_out = 0; c_out < num_ch2; c_out++) {
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < n; j++) {
-        for (int k = 0; k < n; k++) {
-          data[((c_out * n + k) * n + j) * n + i] = layer2.val<float32>(i, j, k, c_out);
-        }
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      for (int k = 0; k < n; k++) {
+        data[((0 * n + k) * n + j) * n + i] = layer2.val<float32>(i, j, k, 0);
       }
     }
   }

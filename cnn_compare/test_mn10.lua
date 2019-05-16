@@ -10,7 +10,7 @@ require('oc')
 
 local n_grids = 4096 -- Parallelization granularity
 net = nn.Sequential()
-  :add( oc.OctreeConvolutionMM(20, 26, n_grids) )
+  :add( oc.OctreeConvolutionMM(16, 16, n_grids) )
 
 local s = net:get(1).weight:size()
 local inc = 0.0
@@ -29,7 +29,7 @@ end
 net:cuda()
 
 vx_res = 256
-channels = 20
+channels = 16
 local tensor = torch.FloatTensor(1, channels, vx_res, vx_res, vx_res)
 oc.read_dense_from_bin(arg[1], tensor)
 print(torch.nonzero(tensor):size(1))

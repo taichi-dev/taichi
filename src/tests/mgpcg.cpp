@@ -132,6 +132,7 @@ auto mgpcg_poisson = []() {
     if (l < mg_levels - 1) {
       restrictors[l] =
           kernel([&] {
+            kernel_name(fmt::format("restrict_lv{}", l));
             Parallelize(8);
             Vectorize(1);
             For(x, [&](Expr i, Expr j, Expr k) {
@@ -145,6 +146,7 @@ auto mgpcg_poisson = []() {
           })
               .func();
       prolongators[l] = kernel([&] {
+                          kernel_name(fmt::format("prolongate_lv{}", l));
                           Parallelize(8);
                           Vectorize(1);
                           For(z(l), [&](Expr i, Expr j, Expr k) {
@@ -155,6 +157,7 @@ auto mgpcg_poisson = []() {
     }
     smoothers[l] =
         kernel([&] {
+          kernel_name(fmt::format("smooth_lv{}", l));
           Parallelize(8);
           Vectorize(1);
           For(z(l), [&](Expr i, Expr j, Expr k) {
@@ -170,11 +173,13 @@ auto mgpcg_poisson = []() {
             .func();
     clearer_r[l] =
         kernel([&] {
+          kernel_name(fmt::format("clear_r_lv{}", l));
           For(r(l), [&](Expr i, Expr j, Expr k) { r(l)[i, j, k] = 0.0f; });
         })
             .func();
     clearer_z[l] =
         kernel([&] {
+          kernel_name(fmt::format("clear_z_lv{}", l));
           For(z(l), [&](Expr i, Expr j, Expr k) { z(l)[i, j, k] = 0.0f; });
         })
             .func();

@@ -25,7 +25,7 @@ auto diff_conv = [](const std::vector<std::string> args) {
 
   int counter[2] = {0, 0};
   for (int i = 0; i < n; i++) {
-    bool same = std::abs(ret1[i] - ret2[i]) < 1e-3f;
+    bool same = std::abs(ret1[i] - ret2[i]) < th;
     if (same)
       counter[0]++;
     else

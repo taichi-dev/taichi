@@ -96,7 +96,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
 
   // Write the first layer of output
   data = new float[n * n * n];
-  for (int c_out = 0; c_in < num_ch2; c_in++) {
+  for (int c_out = 0; c_out < num_ch2; c_out++) {
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
         for (int k = 0; k < n; k++) {

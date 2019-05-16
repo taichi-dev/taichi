@@ -285,7 +285,7 @@ class TRenderer {
       return hit && interaction;
     };
 
-    auto background = [&](Vector dir) {
+    /*auto background = [&](Vector dir) {
       // return Vector({0.4f, 0.4f, 0.4f});
       auto ret = Var(Vector({0.0f, 0.0f, 0.0f}));
       If(dir(1) >= 0.0f)
@@ -300,7 +300,7 @@ class TRenderer {
             ret = Vector({0.6f, 0.6f, 0.6f});
           });
       return ret;
-    };
+    };*/
 
     float32 fov = param.get("fov", 0.6f);
 

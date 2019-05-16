@@ -47,7 +47,7 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
   auto f = fopen("dragon_particles.bin", "rb");
   TC_ASSERT_INFO(f, "./dragon_particles.bin not found");
   benchmark_particles.resize(n_particles * 3);
-  std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f);
+  if (std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f)) {}
   std::fclose(f);
 
   for (int i = 0; i < n_particles; i++) {
@@ -57,7 +57,7 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
 
   layout([&]() {
     auto i = Index(0), j = Index(1), k = Index(2), p = Index(3);
-    SNode *fork;
+    SNode *fork = nullptr;
     if (!particle_soa)
       fork = &root.dynamic(p, max_n_particles);
     auto place = [&](Expr &expr) {
@@ -296,7 +296,7 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
     }
 
     auto stat = grid_m.parent().parent().snode()->stat();
-    for (int p = 0; p < stat.num_resident_blocks; p++) {
+    for (int p = 0; p < (int)stat.num_resident_blocks; p++) {
       auto &meta = stat.resident_metas[p];
       int x = meta.indices[0];
       int y = meta.indices[1];

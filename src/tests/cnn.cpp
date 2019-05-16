@@ -17,23 +17,23 @@ auto cnn = [](std::vector<std::string> cli_param) {
   auto f = fopen(path.c_str(), "rb");
   TC_ASSERT_INFO(f, "grid not found");
   int magic_number = -1;
-  fread(&magic_number, sizeof(int), 1, f);
+  if (fread(&magic_number, sizeof(int), 1, f)) {}
   int n_dim = -1;
-  fread(&n_dim, sizeof(int), 1, f);
+  if (fread(&n_dim, sizeof(int), 1, f)) {}
   int size = 1;
   for (int i = 0; i < n_dim; i++) {
       int d = -1;
-      fread(&d, sizeof(int), 1, f);
+      if (fread(&d, sizeof(int), 1, f)) {}
       size *= d;
   }
   float *data = new float[size];
-  fread(data, sizeof(float), size, f);
+  if (fread(data, sizeof(float), size, f)) {}
   fclose(f);
 
   Program prog(Arch::gpu);
   prog.config.lower_access = false;
 
-  constexpr int dim = 3;
+  //constexpr int dim = 3;
   constexpr int n = 256;
 
   constexpr int num_ch1 = 20, num_ch2 = 26;

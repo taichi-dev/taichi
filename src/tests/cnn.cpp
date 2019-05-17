@@ -33,7 +33,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
   fclose(f);
 
   Program prog(Arch::gpu);
-  //prog.config.lower_access = false;
+  prog.config.lower_access = false;
 
   //constexpr int dim = 3;
   constexpr int n = 256;
@@ -78,11 +78,12 @@ auto cnn = [](std::vector<std::string> cli_param) {
     For(layer2, [&](Expr i, Expr j, Expr k, Expr c_out) {
       auto sum = Var(0.0f);
       for (int c_in = 0; c_in < num_ch1; c_in++) {
-        for (int dx = -1; dx < 2; dx++) {
-          for (int dy = -1; dy < 2; dy++) {
-            for (int dz = -1; dz < 2; dz++) {
+        for (int dx = 0; dx < 1; dx++) {
+          for (int dy = 0; dy < 1; dy++) {
+            for (int dz = 0; dz < 1; dz++) {
               auto weight =
                   weights[Expr(dx + 1), Expr(dy + 1), Expr(dz + 1), c_in * num_ch2 + c_out];
+              Assert(weight == (1.f/16.f));
               sum += weight * layer1[i + dx, j + dy, k + dz, c_in];
               //layer2[i, j, k, c_out] += weight * layer1[i + dx, j + dy, k + dz, c_in];
             }
@@ -131,9 +132,29 @@ auto cnn = [](std::vector<std::string> cli_param) {
 
   // prog.config.print_ir = true;
 
-  for (int i = 0; i < 20; i++) {
-      forward();
-  }
+  /*kernel([&] {
+    kernel_name("weight");
+    For(weights, [&](Expr i, Expr j, Expr k, Expr l) {
+            for (int c_out = 0; c_out < num_ch2; c_out++) {
+            for (int c_in = 0; c_in < num_ch1; c_in++) {
+            for (int dx = 0; dx < 1; dx++) {
+            for (int dy = 0; dy < 1; dy++) {
+            for (int dz = 0; dz < 1; dz++) {
+                auto weight =
+                    weights[Expr(dx + 1), Expr(dy + 1), Expr(dz + 1), c_in * num_ch2 + c_out];
+                Assert(weight == (1.f/16.f));
+            }
+            }
+            }
+            }
+            }
+    });
+  })();
+  exit(0);*/
+
+  //for (int i = 0; i < 1; i++) {
+  //    forward();
+  //}
   prog.profiler_print();
 
   // Write the first layer of output

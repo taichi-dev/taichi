@@ -10,9 +10,9 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-constexpr int dim = 3, n = 256;
+constexpr int dim = 3, n = 512;
 constexpr int pre_and_post_smoothing = 3, bottom_smoothing = 200;
-constexpr int mg_levels = 3;
+constexpr int mg_levels = 6;
 
 auto mgpcg_poisson = []() {
   CoreState::set_trigger_gdb_when_crash(true);
@@ -74,7 +74,6 @@ auto mgpcg_poisson = []() {
     });
   });
 
-
   Kernel(reduce_r).def([&] {
     For(p, [&](Expr i, Expr j, Expr k) {
       Atomic(sum[Expr(0)]) += r(0)[i, j, k] * r(0)[i, j, k];
@@ -96,18 +95,24 @@ auto mgpcg_poisson = []() {
   });
 
   Kernel(update_x).def([&] {
+    Parallelize(8);
+    Vectorize(block_size);
     For(x, [&](Expr i, Expr j, Expr k) {
       x[i, j, k] += alpha[Expr(0)] * p[i, j, k];
     });
   });
 
   Kernel(update_r).def([&] {
+    Parallelize(8);
+    Vectorize(block_size);
     For(p, [&](Expr i, Expr j, Expr k) {
       r(0)[i, j, k] -= alpha[Expr(0)] * Ap[i, j, k];
     });
   });
 
   Kernel(update_p).def([&] {
+    Parallelize(8);
+    Vectorize(block_size);
     For(p, [&](Expr i, Expr j, Expr k) {
       p[i, j, k] = z(0)[i, j, k] + beta[Expr(0)] * p[i, j, k];
     });
@@ -117,8 +122,15 @@ auto mgpcg_poisson = []() {
   for (int i = begin; i < end; i++) {
     for (int j = begin; j < end; j++) {
       for (int k = begin; k < end; k++) {
+        /*
         r(0).val<float32>(i, j, k) =
             (i == n / 2) && (j == n / 2) && (k == n / 2);
+            */
+        float x = (i - begin) * 2.0f / n;
+        float y = (i - begin) * 2.0f / n;
+        float z = (i - begin) * 2.0f / n;
+        r(0).val<float32>(i, j, k) =
+            sin(2 * pi * x) * cos(2 * pi * y) * sin(2 * pi * z);
       }
     }
   }
@@ -160,7 +172,7 @@ auto mgpcg_poisson = []() {
         kernel([&] {
           kernel_name(fmt::format("smooth_lv{}", l));
           Parallelize(8);
-          Vectorize(8);
+          Vectorize(block_size);
           For(z(l), [&](Expr i, Expr j, Expr k) {
             auto ret = Var(z(l)[i, j, k]);
             If(((i + j + k) & 1) == phase[Expr(0)]).Then([&] {
@@ -177,7 +189,7 @@ auto mgpcg_poisson = []() {
         kernel([&] {
           kernel_name(fmt::format("clear_r_lv{}", l));
           Parallelize(8);
-          Vectorize(8);
+          Vectorize(block_size);
           For(r(l), [&](Expr i, Expr j, Expr k) { r(l)[i, j, k] = 0.0f; });
         })
             .func();
@@ -240,7 +252,7 @@ auto mgpcg_poisson = []() {
     auto pAp = sum.val<float32>();
     // alpha = rTr / pTAp
     alpha.val<float32>() = old_zTr / pAp;
-    TC_P(old_zTr);
+    // TC_P(old_zTr);
     // TC_P(pAp);
     // TC_P(alpha.val<float32>());
     // x = x + alpha p
@@ -253,15 +265,16 @@ auto mgpcg_poisson = []() {
     sum.val<float32>() = 0;
     reduce_zTr();
     auto new_zTr = sum.val<float32>();
-    TC_P(new_zTr);
+    // TC_P(new_zTr);
     sum.val<float32>() = 0;
     reduce_r();
     auto rTr = sum.val<float32>();
+    TC_P(rTr);
     if (rTr < 1e-7f)
       break;
     // beta = new rTr / old rTr
     beta.val<float32>() = new_zTr / old_zTr;
-    TC_P(beta.val<float32>());
+    // TC_P(beta.val<float32>());
     // p = z + beta p
     update_p();
     old_zTr = new_zTr;
@@ -295,7 +308,7 @@ auto mgpcg_poisson = []() {
     for (int i = 0; i < gui_res - scale; i++) {
       for (int j = 0; j < gui_res - scale; j++) {
         real dx = x.val<float32>(i / scale, j / scale, k);
-        canvas.img[i][j] = Vector4(0.5f) + Vector4(dx, dx, dx, 0) * 15.0f;
+        canvas.img[i][j] = Vector4(0.5f) + Vector4(dx, dx, dx, 0) * 0.01f;
       }
     }
     gui.update();

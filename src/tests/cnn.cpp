@@ -12,7 +12,9 @@ auto cnn = [](std::vector<std::string> cli_param) {
   CoreState::set_trigger_gdb_when_crash(true);
   auto param = parse_param(cli_param);
   auto path = param.get("grid_path", "");
+  auto use_dense = param.get("use_dense", false);
   TC_P(path);
+  TC_P(use_dense);
 
   auto f = fopen(path.c_str(), "rb");
   TC_ASSERT_INFO(f, "grid not found");
@@ -44,10 +46,15 @@ auto cnn = [](std::vector<std::string> cli_param) {
 
   layout([&]() {
     auto ijkl = Indices(0, 1, 2, 3);
-    root.dense(ijkl, {n / 8, n / 8, n / 8, 1}).bitmasked()
-        .dense(ijkl, {8, 8, 8, num_ch1}).place(layer1);
-    root.dense(ijkl, {n / 8, n / 8, n / 8, 1}).bitmasked()
-        .dense(ijkl, {8, 8, 8, num_ch2}).place(layer2);
+    if (use_dense) {
+      root.dense(ijkl, {n, n, n, num_ch1}).place(layer1);
+      root.dense(ijkl, {n, n, n, num_ch2}).place(layer2);
+    } else {
+      auto &block = root.dense(ijkl, {n / 8, n / 8, n / 8, 1}).bitmasked();
+      block.dense(ijkl, {8, 8, 8, num_ch1}).place(layer1);
+      //root.dense(ijkl, {n / 8, n / 8, n / 8, 1}).bitmasked()
+      block.dense(ijkl, {8, 8, 8, num_ch2}).place(layer2);
+    }
     root.dense(ijkl, {4, 4, 4, num_ch1 * num_ch2}).place(weights);
   });
 
@@ -66,25 +73,45 @@ auto cnn = [](std::vector<std::string> cli_param) {
   delete[] data;
 
   Kernel(forward).def([&] {
+    // Cache(0, layer2);
     BlockDim(128);
-    For(layer2, [&](Expr i, Expr j, Expr k, Expr c_out) {
+    For(layer1, [&](Expr i, Expr j, Expr k, Expr c_out) {
+      auto sum = Var(0.0f);
       for (int c_in = 0; c_in < num_ch1; c_in++) {
         for (int dx = -1; dx < 2; dx++) {
           for (int dy = -1; dy < 2; dy++) {
             for (int dz = -1; dz < 2; dz++) {
               auto weight =
                   weights[Expr(dx + 1), Expr(dy + 1), Expr(dz + 1), c_in * num_ch2 + c_out];
-              layer2[i, j, k, c_out] += weight * layer1[i + dx, j + dy, k + dz, c_in];
+              sum += weight * layer1[i + dx, j + dy, k + dz, c_in];
+              //layer2[i, j, k, c_out] += weight * layer1[i + dx, j + dy, k + dz, c_in];
             }
           }
         }
       }
+      Atomic(layer2[i, j, k, c_out]) += sum;
     });
   });
 
-  float inc = 0.f;
+  // expand blocks
+  kernel([&] {
+    kernel_name("dilate");
+    auto block_size = 8;
+    For(layer1, [&](Expr i, Expr j, Expr k) {
+      for (int x = -1; x < 2; x++) {
+        for (int y = -1; y < 2; y++) {
+          for (int z = -1; z < 2; z++) {
+            layer1[i + x * block_size, j + y * block_size,
+                   k + z * block_size] += 0.0f;  // simply activate the block
+          }
+        }
+      }
+    });
+  })();
+
   for (int c_out = 0; c_out < num_ch2; c_out++) {
     for (int c_in = 0; c_in < num_ch1; c_in++) {
+      float inc = 0.1f;
       for (int dx = -1; dx < 2; dx++) {
         for (int dy = -1; dy < 2; dy++) {
           for (int dz = -1; dz < 2; dz++) {
@@ -97,6 +124,8 @@ auto cnn = [](std::vector<std::string> cli_param) {
     }
   }
 
+  prog.config.print_ir = true;
+
   for (int i = 0; i < 10; i++) {
       forward();
   }
@@ -104,13 +133,22 @@ auto cnn = [](std::vector<std::string> cli_param) {
 
   // Write the first layer of output
   data = new float[n * n * n];
+  int non_zero = 0;
+  int zero = 0;
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       for (int k = 0; k < n; k++) {
         data[((0 * n + k) * n + j) * n + i] = layer2.val<float32>(i, j, k, 0);
+        if (layer2.val<float32>(i, j, k, 0) != 0) {
+            non_zero++;
+        } else {
+            zero++;
+        }
       }
     }
   }
+  std::cout << "Non zero:" << non_zero << ", zero:" << zero << std::endl;
+  std::cerr << "Sparsity:" << (double)non_zero / (double)(non_zero + zero) << std::endl;
   auto f_out = fopen("our_output.bin", "wb");
   fwrite(data, sizeof(float), n * n * n, f_out);
   fclose(f_out);

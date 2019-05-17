@@ -32,7 +32,6 @@ vx_res = 256
 channels = 16
 local tensor = torch.FloatTensor(1, channels, vx_res, vx_res, vx_res)
 oc.read_dense_from_bin(arg[1], tensor)
-print(torch.nonzero(tensor):size(1))
 local input_cpu = oc.FloatOctree()
 input_cpu = input_cpu:create_from_dense(tensor)
 local input = input_cpu:cuda()
@@ -43,3 +42,13 @@ for i = 1, 20 do
     output = net:forward(input)
 end
 print(string.format('[INFO] net fwd took %f[s]', timer:time().real / 20.0))
+output = output:cpu():to_cdhw()
+local f = assert(io.open('octnet_output.bin', 'rw'))
+local t = tensor[{1, 1, {1, 256}, {1, 256}, {1, 256}}]
+for i = 1, 256 do
+    for j = 1, 256 do
+        for k = 1, 256 do
+            io.write(t[i, j, k])
+        end
+    end
+end

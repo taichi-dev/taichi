@@ -1675,6 +1675,8 @@ class StructForStmt : public Stmt {
   std::vector<Stmt *> loop_vars;
   SNode *snode;
   std::unique_ptr<Block> body;
+  std::unique_ptr<Block> block_initialization;
+  std::unique_ptr<Block> block_finalization;
   int vectorize;
   int parallelize;
   int block_size;

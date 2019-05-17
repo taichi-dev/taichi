@@ -10,9 +10,9 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-constexpr int dim = 3, n = 256;
+constexpr int dim = 3, n = 512;
 constexpr int pre_and_post_smoothing = 3, bottom_smoothing = 200;
-constexpr int mg_levels = 3;
+constexpr int mg_levels = 6;
 
 auto mgpcg_poisson = []() {
   CoreState::set_trigger_gdb_when_crash(true);
@@ -95,18 +95,24 @@ auto mgpcg_poisson = []() {
   });
 
   Kernel(update_x).def([&] {
+    Parallelize(8);
+    Vectorize(block_size);
     For(x, [&](Expr i, Expr j, Expr k) {
       x[i, j, k] += alpha[Expr(0)] * p[i, j, k];
     });
   });
 
   Kernel(update_r).def([&] {
+    Parallelize(8);
+    Vectorize(block_size);
     For(p, [&](Expr i, Expr j, Expr k) {
       r(0)[i, j, k] -= alpha[Expr(0)] * Ap[i, j, k];
     });
   });
 
   Kernel(update_p).def([&] {
+    Parallelize(8);
+    Vectorize(block_size);
     For(p, [&](Expr i, Expr j, Expr k) {
       p[i, j, k] = z(0)[i, j, k] + beta[Expr(0)] * p[i, j, k];
     });

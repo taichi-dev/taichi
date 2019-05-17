@@ -441,7 +441,8 @@ struct dense {
       atomicOr((unsigned long long *)&bitmask[i / 64],
                (unsigned long long)(1ul << (i % 64)));
 #else
-      atomicOrCPU(&bitmask[i / 64], 1ul << (i % 64));
+      if (!is_active(i))
+        atomicOrCPU(&bitmask[i / 64], 1ul << (i % 64));
 #endif
       //}
     }

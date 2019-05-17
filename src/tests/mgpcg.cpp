@@ -74,7 +74,6 @@ auto mgpcg_poisson = []() {
     });
   });
 
-
   Kernel(reduce_r).def([&] {
     For(p, [&](Expr i, Expr j, Expr k) {
       Atomic(sum[Expr(0)]) += r(0)[i, j, k] * r(0)[i, j, k];
@@ -117,8 +116,15 @@ auto mgpcg_poisson = []() {
   for (int i = begin; i < end; i++) {
     for (int j = begin; j < end; j++) {
       for (int k = begin; k < end; k++) {
+        /*
         r(0).val<float32>(i, j, k) =
             (i == n / 2) && (j == n / 2) && (k == n / 2);
+            */
+        float x = (i - begin) * 2.0f / n;
+        float y = (i - begin) * 2.0f / n;
+        float z = (i - begin) * 2.0f / n;
+        r(0).val<float32>(i, j, k) =
+            sin(2 * pi  * x) * cos(2 * pi * y) * sin(2 * pi * z);
       }
     }
   }
@@ -240,7 +246,7 @@ auto mgpcg_poisson = []() {
     auto pAp = sum.val<float32>();
     // alpha = rTr / pTAp
     alpha.val<float32>() = old_zTr / pAp;
-    TC_P(old_zTr);
+    // TC_P(old_zTr);
     // TC_P(pAp);
     // TC_P(alpha.val<float32>());
     // x = x + alpha p
@@ -253,15 +259,16 @@ auto mgpcg_poisson = []() {
     sum.val<float32>() = 0;
     reduce_zTr();
     auto new_zTr = sum.val<float32>();
-    TC_P(new_zTr);
+    // TC_P(new_zTr);
     sum.val<float32>() = 0;
     reduce_r();
     auto rTr = sum.val<float32>();
+    TC_P(rTr);
     if (rTr < 1e-7f)
       break;
     // beta = new rTr / old rTr
     beta.val<float32>() = new_zTr / old_zTr;
-    TC_P(beta.val<float32>());
+    // TC_P(beta.val<float32>());
     // p = z + beta p
     update_p();
     old_zTr = new_zTr;
@@ -295,7 +302,7 @@ auto mgpcg_poisson = []() {
     for (int i = 0; i < gui_res - scale; i++) {
       for (int j = 0; j < gui_res - scale; j++) {
         real dx = x.val<float32>(i / scale, j / scale, k);
-        canvas.img[i][j] = Vector4(0.5f) + Vector4(dx, dx, dx, 0) * 15.0f;
+        canvas.img[i][j] = Vector4(0.5f) + Vector4(dx, dx, dx, 0) * 0.01f;
       }
     }
     gui.update();

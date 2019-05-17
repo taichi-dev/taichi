@@ -11,7 +11,7 @@ TC_NAMESPACE_BEGIN
 using namespace Tlang;
 
 constexpr int dim = 3, n = 512;
-constexpr int pre_and_post_smoothing = 3, bottom_smoothing = 200;
+constexpr int pre_and_post_smoothing = 3, bottom_smoothing = 50;
 constexpr int mg_levels = 6;
 
 auto mgpcg_poisson = []() {

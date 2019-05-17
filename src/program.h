@@ -29,6 +29,7 @@ class Program {
     FunctionType compiled;
     std::string name;
     bool benchmarking;
+    bool is_reduction; // TODO: systematically treat all types of reduction
 
     Kernel(Program &program, std::function<void()> func, std::string name = "");
 

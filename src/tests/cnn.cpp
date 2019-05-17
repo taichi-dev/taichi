@@ -50,10 +50,10 @@ auto cnn = [](std::vector<std::string> cli_param) {
       root.dense(ijkl, {n, n, n, num_ch1}).place(layer1);
       root.dense(ijkl, {n, n, n, num_ch2}).place(layer2);
     } else {
-      auto &block = root.dense(ijkl, {n / 8, n / 8, n / 8, 1}).bitmasked();
-      block.dense(ijkl, {8, 8, 8, num_ch1}).place(layer1);
-      //root.dense(ijkl, {n / 8, n / 8, n / 8, 1}).bitmasked()
-      block.dense(ijkl, {8, 8, 8, num_ch2}).place(layer2);
+      root.dense(ijkl, {n / 8, n / 8, n / 8, 1}).bitmasked()
+          .dense(ijkl, {8, 8, 8, num_ch1}).place(layer1);
+      root.dense(ijkl, {n / 8, n / 8, n / 8, 1}).bitmasked()
+          .dense(ijkl, {8, 8, 8, num_ch2}).place(layer2);
     }
     root.dense(ijkl, {4, 4, 4, num_ch1 * num_ch2}).place(weights);
   });
@@ -75,7 +75,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
   Kernel(forward).def([&] {
     // Cache(0, layer2);
     BlockDim(128);
-    For(layer1, [&](Expr i, Expr j, Expr k, Expr c_out) {
+    For(layer2, [&](Expr i, Expr j, Expr k, Expr c_out) {
       auto sum = Var(0.0f);
       for (int c_in = 0; c_in < num_ch1; c_in++) {
         for (int dx = -1; dx < 2; dx++) {
@@ -89,7 +89,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
           }
         }
       }
-      Atomic(layer2[i, j, k, c_out]) += sum;
+      layer2[i, j, k, c_out] = sum;
     });
   });
 
@@ -101,7 +101,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
       for (int x = -1; x < 2; x++) {
         for (int y = -1; y < 2; y++) {
           for (int z = -1; z < 2; z++) {
-            layer1[i + x * block_size, j + y * block_size,
+            layer2[i + x * block_size, j + y * block_size,
                    k + z * block_size] += 0.0f;  // simply activate the block
           }
         }
@@ -115,8 +115,13 @@ auto cnn = [](std::vector<std::string> cli_param) {
       for (int dx = -1; dx < 2; dx++) {
         for (int dy = -1; dy < 2; dy++) {
           for (int dz = -1; dz < 2; dz++) {
-            weights.val<float32>(dx + 1, dy + 1, dz + 1,
-                                 c_in * num_ch2 + c_out) = inc;
+            if (dx == 0 && dy == 0 && dz == 0) {
+                weights.val<float32>(dx + 1, dy + 1, dz + 1,
+                                     c_in * num_ch2 + c_out) = 1.f/16.f;
+            } else {
+                weights.val<float32>(dx + 1, dy + 1, dz + 1,
+                                     c_in * num_ch2 + c_out) = 0.f;
+            }
             inc += 0.1f;
           }
         }
@@ -124,9 +129,9 @@ auto cnn = [](std::vector<std::string> cli_param) {
     }
   }
 
-  prog.config.print_ir = true;
+  // prog.config.print_ir = true;
 
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 20; i++) {
       forward();
   }
   prog.profiler_print();

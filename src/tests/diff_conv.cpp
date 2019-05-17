@@ -26,6 +26,7 @@ auto diff_conv = [](const std::vector<std::string> args) {
   int counter[2] = {0, 0};
   double sum1 = 0, sum2 = 0;
   float max1 = 0, max2 = 0;
+  int non_zero1 = 0, non_zero2 = 0;
   int total_non_zero = 0;
   for (int i = 0; i < n; i++) {
     sum1 += std::abs(ret1[i]);
@@ -40,6 +41,18 @@ auto diff_conv = [](const std::vector<std::string> args) {
 
     if (same && total_non_zero)
       counter[1]++;
+
+    if (ret1[i] == 0) {
+      non_zero1++;
+    }
+
+    if (ret2[i] == 0) {
+      non_zero2++;
+    }
+
+    if (!same) {
+        fprintf(stderr, "ret1:%f, ret2:%f\n", ret1[i], ret2[i]);
+    }
   }
   TC_INFO("same {} {}%", counter[0], 100.0f * counter[0] / n);
   TC_INFO("non zero same {} {}%", counter[0],
@@ -50,6 +63,8 @@ auto diff_conv = [](const std::vector<std::string> args) {
   TC_P(sum2 / total_non_zero);
   TC_P(max1);
   TC_P(max2);
+  TC_P(non_zero1);
+  TC_P(non_zero2);
 };
 
 TC_REGISTER_TASK(diff_conv);

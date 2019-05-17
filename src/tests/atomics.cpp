@@ -45,4 +45,31 @@ TC_TEST("atomics2") {
   TC_CHECK(fsum.val<float32>() == 1000);
 };
 
+TC_TEST("parallel_reduce") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 1024 * 1024 * 32;
+  Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
+
+  Global(fsum, i32);
+  Global(a, i32);
+  layout([&]() {
+    root.place(fsum).dense(Index(0), n / 1024).dense(Index(0), 1024).place(a);
+  });
+
+  for (int i = 0; i < n; i++)
+    a.val<int32>(i) = i;
+
+  auto &func = kernel([&]() {
+    Parallelize(8);
+    For(a, [&](Expr i) { Atomic(fsum[Expr(0)]) += a[i]; });
+  });
+
+  for (int i = 0; i < 10; i++)
+    func();
+  prog.profiler_print();
+
+  TC_CHECK(fsum.val<int32>() == (n / 2) * (n - 1) * 10);
+};
+
 TLANG_NAMESPACE_END

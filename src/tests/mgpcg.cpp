@@ -130,7 +130,7 @@ auto mgpcg_poisson = []() {
         float y = (i - begin) * 2.0f / n;
         float z = (i - begin) * 2.0f / n;
         r(0).val<float32>(i, j, k) =
-            sin(2 * pi  * x) * cos(2 * pi * y) * sin(2 * pi * z);
+            sin(2 * pi * x) * cos(2 * pi * y) * sin(2 * pi * z);
       }
     }
   }
@@ -172,7 +172,7 @@ auto mgpcg_poisson = []() {
         kernel([&] {
           kernel_name(fmt::format("smooth_lv{}", l));
           Parallelize(8);
-          Vectorize(8);
+          Vectorize(block_size);
           For(z(l), [&](Expr i, Expr j, Expr k) {
             auto ret = Var(z(l)[i, j, k]);
             If(((i + j + k) & 1) == phase[Expr(0)]).Then([&] {
@@ -189,7 +189,7 @@ auto mgpcg_poisson = []() {
         kernel([&] {
           kernel_name(fmt::format("clear_r_lv{}", l));
           Parallelize(8);
-          Vectorize(8);
+          Vectorize(block_size);
           For(r(l), [&](Expr i, Expr j, Expr k) { r(l)[i, j, k] = 0.0f; });
         })
             .func();

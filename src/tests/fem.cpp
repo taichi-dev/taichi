@@ -329,6 +329,9 @@ auto fem = [](std::vector<std::string> cli_param) {
   prog.config.print_ir = false;
 
   Kernel(reduce_r).def([&] {
+    mark_reduction();
+    Parallelize(threads);
+    Vectorize(block_size);
     For(r(0), [&](Expr i, Expr j, Expr k) {
       Atomic(sum[Expr(0)]) += r[i, j, k].norm2();
     });
@@ -348,12 +351,16 @@ auto fem = [](std::vector<std::string> cli_param) {
   });
 
   Kernel(update_x).def([&] {
+    Parallelize(threads);
+    Vectorize(block_size);
     For(x(0), [&](Expr i, Expr j, Expr k) {
       x[i, j, k] += alpha[Expr(0)] * p[i, j, k];
     });
   });
 
   Kernel(update_r).def([&] {
+    Parallelize(threads);
+    Vectorize(block_size);
     For(p(0), [&](Expr i, Expr j, Expr k) {
       r[i, j, k] -= alpha[Expr(0)] * Ap[i, j, k];
     });
@@ -373,6 +380,8 @@ auto fem = [](std::vector<std::string> cli_param) {
   });
 
   Kernel(update_p).def([&] {
+    Parallelize(threads);
+    Vectorize(block_size);
     For(p(0), [&](Expr i, Expr j, Expr k) {
       p[i, j, k] = r[i, j, k] + beta[Expr(0)] * p[i, j, k];
     });

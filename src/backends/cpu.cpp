@@ -142,7 +142,6 @@ class CPUIRCodeGen : public IRVisitor {
     }
     emit("for (int leaf_loop = 0; leaf_loop < num_leaves; leaf_loop++) {{");
 
-    TC_P(kernel->is_reduction);
     if (kernel->is_reduction) {
       atomic_add = std::move(for_stmt->body->statements.back());
       for_stmt->body->statements.resize((int)for_stmt->body->statements.size() -

@@ -31,6 +31,10 @@ inline void kernel_name(std::string name) {
   get_current_program().get_current_kernel().name = name;
 }
 
+inline void mark_reduction() {
+  get_current_program().get_current_kernel().is_reduction = true;
+}
+
 template <typename T>
 inline void declare_var(Expr &a) {
   current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(

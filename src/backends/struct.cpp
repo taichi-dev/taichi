@@ -158,7 +158,7 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
   auto type = snode.type;
   stack.push_back(&snode);
 
-  bool is_leaf = type == SNodeType::place || type == SNodeType ::indirect;
+  bool is_leaf = type == SNodeType::place;
 
   if (!is_leaf) {
     // Chain accessors for non-leaf nodes
@@ -198,6 +198,8 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
 
   for (auto mode :
        {mode_weak_access, mode_strong_access, mode_activate, mode_query}) {
+    if (mode == mode_weak_access && !is_leaf)
+      continue;
     bool is_access = mode == mode_weak_access || mode == mode_strong_access;
     auto verb = verbs[mode];
     auto ret_type =
@@ -249,18 +251,18 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
       if (mode != mode_activate) {
         emit("#endif");
       }
-      emit("auto n{} = access_{}(n{}, tmp);", i + 1,
-           stack[i + 1]->node_type_name, i);
-      if (is_access) {
-        if (snode.has_ambient && stack[i + 1] != &snode) {
-          if (snode.has_null()) {
-            emit(
-                "if (n{} == nullptr)\n#if __CUDA_ARCH__\n return "
-                "{}_ambient_ptr;\n #else \n return &{}_ambient;\n #endif",
-                i + 1, snode.node_type_name, snode.node_type_name);
-          }
+      if (mode == mode_weak_access) {
+        if (stack[i]->has_null()) {
+          emit("if (!n{}->is_active(tmp))", i);
+          emit(
+              "#if __CUDA_ARCH__\n return "
+              "({} *)Managers::get_zeros();\n #else \n return &{}_ambient;\n "
+              "#endif",
+              snode.node_type_name, snode.node_type_name, snode.node_type_name);
         }
       }
+      emit("auto n{} = access_{}(n{}, tmp);", i + 1,
+           stack[i + 1]->node_type_name, i);
     }
     if (mode == mode_query) {
       emit("return true;");

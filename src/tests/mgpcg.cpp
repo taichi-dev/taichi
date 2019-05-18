@@ -10,7 +10,7 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-constexpr int dim = 3, n = 512; // double the size. actual box is 256^3
+constexpr int dim = 3, n = 512;  // double the size. actual box is 256^3
 constexpr int pre_and_post_smoothing = 2, bottom_smoothing = 50;
 constexpr int mg_levels = 6;
 
@@ -23,7 +23,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
   TC_P(threads);
   int vec = param.get("vec", 8);
   TC_P(vec);
-  TC_ASSERT(vec == 1 || vec == 8);
+  TC_ASSERT(vec == 1 || vec == block_size);
 
   CoreState::set_trigger_gdb_when_crash(true);
 
@@ -72,7 +72,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
 
   Kernel(compute_Ap).def([&] {
     BlockDim(1024);
-    Parallelize(8);
+    Parallelize(threads);
     Vectorize(block_size);
     For(Ap, [&](Expr i, Expr j, Expr k) {
       Ap[i, j, k] = 6.0f * p[i, j, k] - p[i - 1, j, k] - p[i + 1, j, k] -
@@ -111,7 +111,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
   });
 
   Kernel(update_x).def([&] {
-    Parallelize(8);
+    Parallelize(threads);
     Vectorize(block_size);
     For(x, [&](Expr i, Expr j, Expr k) {
       x[i, j, k] += alpha[Expr(0)] * p[i, j, k];
@@ -127,7 +127,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
   });
 
   Kernel(update_p).def([&] {
-    Parallelize(8);
+    Parallelize(threads);
     Vectorize(block_size);
     For(p, [&](Expr i, Expr j, Expr k) {
       p[i, j, k] = z(0)[i, j, k] + beta[Expr(0)] * p[i, j, k];
@@ -161,7 +161,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
       restrictors[l] =
           kernel([&] {
             kernel_name(fmt::format("restrict_lv{}", l));
-            Parallelize(8);
+            Parallelize(threads);
             Vectorize(1);
             For(r(l), [&](Expr i, Expr j, Expr k) {
               auto res =
@@ -187,24 +187,24 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
     smoothers[l] =
         kernel([&] {
           kernel_name(fmt::format("smooth_lv{}", l));
-          Parallelize(8);
+          Parallelize(threads);
           Vectorize(block_size);
           For(z(l), [&](Expr i, Expr j, Expr k) {
-            auto ret = Var(z(l)[i, j, k]);
+            auto ret = Var(0.0f);
             If(((i + j + k) & 1) == phase[Expr(0)]).Then([&] {
               ret = (r(l)[i, j, k] + z(l)[i - 1, j, k] + z(l)[i + 1, j, k] +
                      z(l)[i, j + 1, k] + z(l)[i, j - 1, k] + z(l)[i, j, k + 1] +
                      z(l)[i, j, k - 1]) *
-                    (1.0f / 6);
+                    (1.0f / 6) - z(l)[i, j, k];
             });
-            z(l)[i, j, k] = ret;
+            z(l)[i, j, k] += ret;
           });
         })
             .func();
     clearer_r[l] =
         kernel([&] {
           kernel_name(fmt::format("clear_r_lv{}", l));
-          Parallelize(8);
+          Parallelize(threads);
           Vectorize(block_size);
           For(r(l), [&](Expr i, Expr j, Expr k) { r(l)[i, j, k] = 0.0f; });
         })
@@ -212,8 +212,8 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
     clearer_z[l] =
         kernel([&] {
           kernel_name(fmt::format("clear_z_lv{}", l));
-          Parallelize(8);
-          Vectorize(8);
+          Parallelize(threads);
+          Vectorize(block_size);
           For(z(l), [&](Expr i, Expr j, Expr k) { z(l)[i, j, k] = 0.0f; });
         })
             .func();

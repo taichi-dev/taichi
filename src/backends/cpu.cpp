@@ -303,7 +303,7 @@ class CPUIRCodeGen : public IRVisitor {
         for (int i = 0; i < stmt->indices.size(); i++) {
           auto ret = analysis::value_diff(stmt->indices[i], l,
                                           current_struct_for->loop_vars[i]);
-          if (!ret.related || !ret.certain()) {
+          if (!ret.linear_related() || !ret.certain()) {
             identical_indices = false;
           }
           offsets[i] = ret.low;

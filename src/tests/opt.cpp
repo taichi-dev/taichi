@@ -9,7 +9,7 @@ TC_TEST("access_simp") {
   int n = 16;
   Program prog(Arch::x86_64);
   prog.config.print_ir = true;
-  prog.config.lower_access = false;
+  prog.config.lower_access = true;
 
   Global(sum, i32);
   Global(val, i32);

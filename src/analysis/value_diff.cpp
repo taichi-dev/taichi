@@ -3,11 +3,13 @@
 TLANG_NAMESPACE_BEGIN
 
 DiffRange operator+(const DiffRange &a, const DiffRange &b) {
-  return DiffRange(a.related && b.related, a.low + b.low, a.high + b.high - 1);
+  return DiffRange(a.related_() && b.related_(), a.coeff + b.coeff, a.low + b.low,
+                   a.high + b.high - 1);
 }
 
 DiffRange operator-(const DiffRange &a, const DiffRange &b) {
-  return DiffRange(a.related && b.related, a.low - b.high + 1, a.high - b.low);
+  return DiffRange(a.related_() && b.related_(), a.coeff - b.coeff,
+                   a.low - b.high + 1, a.high - b.low);
 }
 
 class ValueDiff : public IRVisitor {
@@ -24,21 +26,21 @@ class ValueDiff : public IRVisitor {
     invoke_default_visitor = true;
   }
 
-  void  visit(Stmt *stmt) override {
-    results[stmt->instance_id] = DiffRange(false);
+  void visit(Stmt *stmt) override {
+    results[stmt->instance_id] = DiffRange();
   }
 
   void visit(AllocaStmt *stmt) override {
-    results[stmt->instance_id] = DiffRange(stmt == alloc, 0);
+    results[stmt->instance_id] = DiffRange(stmt == alloc, 1, 0);
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    results[stmt->instance_id] = DiffRange(false);
+    results[stmt->instance_id] = DiffRange();
   }
 
   void visit(LocalLoadStmt *stmt) override {
     if (stmt->ptr[lane].var == alloc) {
-      results[stmt->instance_id] = DiffRange(true, 0);
+      results[stmt->instance_id] = DiffRange(true, 1, 0);
     }
   }
 
@@ -54,16 +56,16 @@ class ValueDiff : public IRVisitor {
 
   void visit(ConstStmt *stmt) override {
     if (stmt->val[lane].dt == DataType::i32) {
-      results[stmt->instance_id] = DiffRange(true, stmt->val[lane].val_i32);
+      results[stmt->instance_id] = DiffRange(true, 0, stmt->val[lane].val_i32);
     } else {
-      results[stmt->instance_id] = DiffRange(false);
+      results[stmt->instance_id] = DiffRange();
     }
   }
 
   void visit(RangeAssumptionStmt *stmt) override {
     stmt->base->accept(this);
     results[stmt->instance_id] = results[stmt->base->instance_id] +
-                                 DiffRange(true, stmt->low, stmt->high);
+                                 DiffRange(true, 0, stmt->low, stmt->high);
   }
 
   void visit(BinaryOpStmt *stmt) override {
@@ -74,7 +76,7 @@ class ValueDiff : public IRVisitor {
         stmt->rhs->accept(this);
         auto ret1 = results[stmt->lhs->instance_id];
         auto ret2 = results[stmt->rhs->instance_id];
-        if (ret1.related && ret2.related) {
+        if (ret1.related_() && ret2.related_()) {
           if (stmt->op_type == BinaryType::add) {
             results[stmt->instance_id] = ret1 + ret2;
           } else {

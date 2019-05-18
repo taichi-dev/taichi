@@ -10,24 +10,37 @@ TLANG_NAMESPACE_BEGIN
 
 class DiffRange {
  public:
+ private:
   bool related;
+
+ public:
+  int coeff;
   int low, high;
 
-  DiffRange() : DiffRange(false) {
+  DiffRange() : DiffRange(false, 0) {
   }
 
-  DiffRange(bool related) : DiffRange(related, 0, 0) {
+  DiffRange(bool related, int coeff) : DiffRange(related, 0, 0) {
     TC_ASSERT(related == false);
   }
 
-  DiffRange(bool related, int low) : DiffRange(related, low, low + 1) {
+  DiffRange(bool related, int coeff, int low)
+      : DiffRange(related, coeff, low, low + 1) {
   }
 
-  DiffRange(bool related, int low, int high)
-      : related(related), low(low), high(high) {
+  DiffRange(bool related, int coeff, int low, int high)
+      : related(related), coeff(coeff), low(low), high(high) {
     if (!related) {
       this->low = this->high = 0;
     }
+  }
+
+  bool related_() const {
+    return related;
+  }
+
+  bool linear_related() const {
+    return related && coeff == 1;
   }
 
   bool certain() {

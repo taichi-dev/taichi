@@ -19,23 +19,27 @@ auto cnn = [](std::vector<std::string> cli_param) {
   auto f = fopen(path.c_str(), "rb");
   TC_ASSERT_INFO(f, "grid not found");
   int magic_number = -1;
-  if (fread(&magic_number, sizeof(int), 1, f)) {}
+  if (fread(&magic_number, sizeof(int), 1, f)) {
+  }
   int n_dim = -1;
-  if (fread(&n_dim, sizeof(int), 1, f)) {}
+  if (fread(&n_dim, sizeof(int), 1, f)) {
+  }
   int size = 1;
   for (int i = 0; i < n_dim; i++) {
-      int d = -1;
-      if (fread(&d, sizeof(int), 1, f)) {}
-      size *= d;
+    int d = -1;
+    if (fread(&d, sizeof(int), 1, f)) {
+    }
+    size *= d;
   }
   float *data = new float[size];
-  if (fread(data, sizeof(float), size, f)) {}
+  trash(fread(data, sizeof(float), size, f));
   fclose(f);
 
   Program prog(Arch::gpu);
-  //prog.config.lower_access = false;
+  prog.config.lower_access = true;
+  prog.config.print_ir = true;
 
-  //constexpr int dim = 3;
+  // constexpr int dim = 3;
   constexpr int n = 256;
 
   constexpr int num_ch1 = 16, num_ch2 = 16;
@@ -50,10 +54,14 @@ auto cnn = [](std::vector<std::string> cli_param) {
       root.dense(ijkl, {n, n, n, num_ch1}).place(layer1);
       root.dense(ijkl, {n, n, n, num_ch2}).place(layer2);
     } else {
-      root.dense(ijkl, {n / 8, n / 8, n / 8, 1}).bitmasked()
-          .dense(ijkl, {8, 8, 8, num_ch1}).place(layer1);
-      root.dense(ijkl, {n / 8, n / 8, n / 8, 1}).bitmasked()
-          .dense(ijkl, {8, 8, 8, num_ch2}).place(layer2);
+      root.dense(ijkl, {n / 8, n / 8, n / 8, 1})
+          .bitmasked()
+          .dense(ijkl, {8, 8, 8, num_ch1})
+          .place(layer1);
+      root.dense(ijkl, {n / 8, n / 8, n / 8, 1})
+          .bitmasked()
+          .dense(ijkl, {8, 8, 8, num_ch2})
+          .place(layer2);
     }
     root.dense(ijkl, {4, 4, 4, num_ch1 * num_ch2}).place(weights);
   });
@@ -77,19 +85,8 @@ auto cnn = [](std::vector<std::string> cli_param) {
     BlockDim(128);
     For(layer2, [&](Expr i, Expr j, Expr k, Expr c_out) {
       auto sum = Var(0.0f);
-      for (int c_in = 0; c_in < num_ch1; c_in++) {
-        for (int dx = -1; dx < 2; dx++) {
-          for (int dy = -1; dy < 2; dy++) {
-            for (int dz = -1; dz < 2; dz++) {
-              auto weight =
-                  weights[Expr(dx + 1), Expr(dy + 1), Expr(dz + 1), c_in * num_ch2 + c_out];
-              sum += weight * layer1[i + dx, j + dy, k + dz, c_in];
-              //layer2[i, j, k, c_out] += weight * layer1[i + dx, j + dy, k + dz, c_in];
-            }
-          }
-        }
-      }
-      layer2[i, j, k, c_out] = sum;
+      auto weight = weights[Expr(1), Expr(1), Expr(1), c_out];
+      Assert(weight == 1.0f / 16.0f);
     });
   });
 
@@ -116,11 +113,11 @@ auto cnn = [](std::vector<std::string> cli_param) {
         for (int dy = -1; dy < 2; dy++) {
           for (int dz = -1; dz < 2; dz++) {
             if (dx == 0 && dy == 0 && dz == 0) {
-                weights.val<float32>(dx + 1, dy + 1, dz + 1,
-                                     c_in * num_ch2 + c_out) = 1.f/16.f;
+              weights.val<float32>(dx + 1, dy + 1, dz + 1,
+                                   c_in * num_ch2 + c_out) = 1.f / 16.f;
             } else {
-                weights.val<float32>(dx + 1, dy + 1, dz + 1,
-                                     c_in * num_ch2 + c_out) = 0.f;
+              weights.val<float32>(dx + 1, dy + 1, dz + 1,
+                                   c_in * num_ch2 + c_out) = 0.f;
             }
             inc += 0.1f;
           }
@@ -132,7 +129,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
   // prog.config.print_ir = true;
 
   for (int i = 0; i < 20; i++) {
-      forward();
+    forward();
   }
   prog.profiler_print();
 
@@ -145,15 +142,16 @@ auto cnn = [](std::vector<std::string> cli_param) {
       for (int k = 0; k < n; k++) {
         data[((0 * n + k) * n + j) * n + i] = layer2.val<float32>(i, j, k, 0);
         if (layer2.val<float32>(i, j, k, 0) != 0) {
-            non_zero++;
+          non_zero++;
         } else {
-            zero++;
+          zero++;
         }
       }
     }
   }
   std::cout << "Non zero:" << non_zero << ", zero:" << zero << std::endl;
-  std::cerr << "Sparsity:" << (double)non_zero / (double)(non_zero + zero) << std::endl;
+  std::cerr << "Sparsity:" << (double)non_zero / (double)(non_zero + zero)
+            << std::endl;
   auto f_out = fopen("our_output.bin", "wb");
   fwrite(data, sizeof(float), n * n * n, f_out);
   fclose(f_out);

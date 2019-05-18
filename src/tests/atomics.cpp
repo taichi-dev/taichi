@@ -60,13 +60,15 @@ TC_TEST("parallel_reduce") {
   for (int i = 0; i < n; i++)
     a.val<int32>(i) = i;
 
-  auto &func = kernel([&]() {
+  Kernel(reduce).def([&]() {
     Parallelize(8);
+    Vectorize(8);
+    mark_reduction();
     For(a, [&](Expr i) { Atomic(fsum[Expr(0)]) += a[i]; });
   });
 
   for (int i = 0; i < 10; i++)
-    func();
+    reduce();
   prog.profiler_print();
 
   TC_CHECK(fsum.val<int32>() == (n / 2) * (n - 1) * 10);

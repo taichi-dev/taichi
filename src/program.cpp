@@ -16,6 +16,7 @@ Program::Kernel::Kernel(Program &program,
                         std::function<void()> func,
                         std::string name)
     : program(program), name(name) {
+  is_reduction = false;
   compiled = nullptr;
   benchmarking = false;
   context = std::make_unique<FrontendContext>();
@@ -28,7 +29,6 @@ Program::Kernel::Kernel(Program &program,
   program.end_function_definition();
   program.current_kernel = nullptr;
 
-  is_reduction = false;
 
   if (!program.config.lazy_compilation)
     compile();

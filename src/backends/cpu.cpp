@@ -15,6 +15,8 @@ class CPUIRCodeGen : public IRVisitor {
   StructForStmt *current_struct_for;
   CodeGenBase *codegen;
   LoopGenerator loopgen;
+  Program::Kernel *kernel;
+  std::unique_ptr<Stmt> atomic_add;
 
   CPUIRCodeGen(CodeGenBase *codegen) : codegen(codegen), loopgen(codegen) {
     current_struct_for = nullptr;
@@ -25,8 +27,9 @@ class CPUIRCodeGen : public IRVisitor {
     codegen->emit(f, std::forward<Args>(args)...);
   }
 
-  static void run(CodeGenBase *codegen, IRNode *node) {
+  static void run(CodeGenBase *codegen, IRNode *node, Program::Kernel *kernel) {
     auto p = CPUIRCodeGen(codegen);
+    p.kernel = kernel;
     node->accept(&p);
   }
 
@@ -138,11 +141,37 @@ class CPUIRCodeGen : public IRVisitor {
       emit("#pragma omp parallel for schedule(dynamic) private({})", vars);
     }
     emit("for (int leaf_loop = 0; leaf_loop < num_leaves; leaf_loop++) {{");
+
+    TC_P(kernel->is_reduction);
+    if (kernel->is_reduction) {
+      atomic_add = std::move(for_stmt->body->statements.back());
+      for_stmt->body->statements.resize((int)for_stmt->body->statements.size() -
+                                        1);
+      // initialize back
+      auto atomic = atomic_add->as<AtomicOpStmt>();
+      auto ptr = atomic->dest;
+      emit("{} reduction(0);", ptr->ret_data_type_name());
+    }
     loopgen.emit_load_from_context(leaf);
     loopgen.generate_single_loop_header(leaf, true, for_stmt->vectorize);
     loopgen.emit_setup_loop_variables(for_stmt, leaf);
     for_stmt->body->accept(this);
+    if (kernel->is_reduction) {
+      auto atomic = atomic_add->as<AtomicOpStmt>();
+      emit("reduction = add(reduction, {});",
+           atomic->val->raw_name());
+    }
     emit("}}");
+    if (kernel->is_reduction) {
+      // write back
+      emit("for (int i = 1; i < {}; i++) {{", atomic_add->width());
+      emit("reduction[0] += reduction[i];");
+      emit("}}");
+      auto atomic = atomic_add->as<AtomicOpStmt>();
+      auto ptr = atomic->dest->as<GlobalPtrStmt>();
+      emit("atomic_add(&access_{}(root, 0, 0, 0, 0)->val, reduction[0]);",
+           ptr->snodes[0]->node_type_name);
+    }
     emit("}}");
     emit("}}");
     current_struct_for = nullptr;
@@ -623,7 +652,7 @@ void CPUCodeGen::codegen() {
        prog->snode_root->node_type_name);
 
   emit(R"(context.cpu_profiler->start("{}");)", func_name);
-  CPUIRCodeGen::run(this, kernel->ir);
+  CPUIRCodeGen::run(this, kernel->ir, kernel);
   emit(R"(context.cpu_profiler->stop();)", func_name);
 
   emit("}}\n");

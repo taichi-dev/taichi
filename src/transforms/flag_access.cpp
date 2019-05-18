@@ -47,6 +47,12 @@ class FlagAccess : public IRVisitor {
       stmt->ptr->as<GlobalPtrStmt>()->activate = true;
     }
   }
+
+  void visit(AtomicOpStmt *stmt) {
+    if (stmt->dest->is<GlobalPtrStmt>()) {
+      stmt->dest->as<GlobalPtrStmt>()->activate = true;
+    }
+  }
 };
 
 namespace irpass {

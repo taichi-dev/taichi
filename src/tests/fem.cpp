@@ -335,6 +335,9 @@ auto fem = [](std::vector<std::string> cli_param) {
   });
 
   Kernel(reduce_pAp).def([&] {
+    mark_reduction();
+    Parallelize(threads);
+    Vectorize(block_size);
     For(r(0), [&](Expr i, Expr j, Expr k) {
       auto tmp = Var(0.0f);
       for (int d = 0; d < dim; d++) {

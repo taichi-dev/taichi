@@ -290,10 +290,10 @@ class CPUIRCodeGen : public IRVisitor {
               stmt->indices[i]->raw_name() + fmt::format("[{}]", l);
         }
       }
-      std::string strong_access =
-          fmt::format("{}[{}] = &access_{}{}->val;", stmt->raw_name(), l,
-                      stmt->snodes[l]->node_type_name,
-                      "(root, " + make_list(indices, "") + ")");
+      std::string full_access = fmt::format(
+          "{}[{}] = &{}_{}{}->val;", stmt->raw_name(), l,
+          stmt->accessor_func_name(), stmt->snodes[l]->node_type_name,
+          "(root, " + make_list(indices, "") + ")");
 
       bool weakened = false;
       if (current_struct_for &&
@@ -346,12 +346,12 @@ class CPUIRCodeGen : public IRVisitor {
                snode->parent->node_type_name, snode->parent->node_type_name,
                offset);
           emit("}} else {{");
-          emit("{}", strong_access);
+          emit("{}", full_access);
           emit("}}");
         }
       }
       if (!weakened) {
-        emit("{}", strong_access);
+        emit("{}", full_access);
       }
     }
   }
@@ -603,6 +603,13 @@ void CPUCodeGen::lower() {
   irpass::die(ir);
   if (prog->config.print_ir) {
     TC_TRACE("DIEd:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
+
+  irpass::flag_access(ir);
+  if (prog->config.print_ir) {
+    TC_TRACE("Access Flagged:");
     irpass::re_id(ir);
     irpass::print(ir);
   }

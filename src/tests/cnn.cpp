@@ -37,7 +37,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
   fclose(f);
 
   Program prog(Arch::gpu);
-  prog.config.lower_access = true;
+  prog.config.lower_access = false;
 
   // constexpr int dim = 3;
   constexpr int n = 256;

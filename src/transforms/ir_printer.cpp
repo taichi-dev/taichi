@@ -249,6 +249,8 @@ class IRPrinter : public IRVisitor {
     }
     s += "]";
 
+    s += " activate=" + std::string(stmt->activate ? "true" : "false");
+
     print_raw(s);
   }
 

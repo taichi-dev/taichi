@@ -121,6 +121,7 @@ class ClearAllStmt;
 namespace irpass {
 
 void re_id(IRNode *root);
+void flag_access(IRNode *root);
 void die(IRNode *root);
 void simplify(IRNode *root);
 void print(IRNode *root);
@@ -1103,10 +1104,12 @@ class GlobalPtrStmt : public Stmt {
  public:
   LaneAttribute<SNode *> snodes;
   std::vector<Stmt *> indices;
+  bool activate;
 
   GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
                 const std::vector<Stmt *> &indices)
       : snodes(snodes), indices(indices) {
+    activate = true; // use a strong access by default
     for (int i = 0; i < (int)snodes.size(); i++) {
       TC_ASSERT(snodes[i] != nullptr);
       TC_ASSERT(snodes[0]->dt == snodes[i]->dt);
@@ -1120,6 +1123,14 @@ class GlobalPtrStmt : public Stmt {
 
   virtual bool has_side_effect() const override {
     return false;
+  }
+
+  std::string accessor_func_name() {
+    if (activate) {
+      return "access";
+    } else {
+      return "weak_access";
+    }
   }
 
   DEFINE_ACCEPT

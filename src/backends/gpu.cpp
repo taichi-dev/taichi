@@ -553,10 +553,10 @@ class GPUIRCodeGen : public IRVisitor {
               stmt->indices[i]->raw_name();
         }
       }
-      std::string strong_access =
-          fmt::format("{}[{}] = &access_{}{}->val;", stmt->raw_name(), l,
-                      stmt->snodes[l]->node_type_name,
-                      "(root, " + make_list(indices, "") + ")");
+      std::string strong_access = fmt::format(
+          "{}[{}] = &{}_{}{}->val;", stmt->raw_name(), l,
+          stmt->accessor_func_name(), stmt->snodes[l]->node_type_name,
+          "(root, " + make_list(indices, "") + ")");
 
       emit("{}", strong_access);
     }
@@ -927,6 +927,12 @@ void GPUCodeGen::lower() {
   irpass::die(ir);
   if (prog->config.print_ir) {
     TC_TRACE("DIEd:");
+    irpass::re_id(ir);
+    irpass::print(ir);
+  }
+  irpass::flag_access(ir);
+  if (prog->config.print_ir) {
+    TC_TRACE("Access Flagged:");
     irpass::re_id(ir);
     irpass::print(ir);
   }

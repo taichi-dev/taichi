@@ -124,8 +124,7 @@ class BasicBlockSimplify : public IRVisitor {
         if (stmt->elements[l].index != l)
           inc_index = false;
       }
-      if (same_source && inc_index &&
-          stmt->elements[0].stmt->ret_type == stmt->ret_type) {
+      if (same_source && inc_index) {
         // useless shuffle.
         stmt->replace_with(stmt->elements[0].stmt);
         stmt->parent->erase(current_stmt_id);
@@ -299,7 +298,8 @@ class BasicBlockSimplify : public IRVisitor {
     if (stmt->parent->locate(stmt->ptr) != -1) {
       // optimize local variables only
       bool has_related = false;
-      for (int i = current_stmt_id + 1; i < (int)block->statements.size(); i++) {
+      for (int i = current_stmt_id + 1; i < (int)block->statements.size();
+           i++) {
         auto &bstmt = block->statements[i];
         if (bstmt->is_container_statement()) {
           has_related = true;

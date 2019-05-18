@@ -38,6 +38,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
 
   Program prog(Arch::gpu);
   prog.config.lower_access = true;
+  // prog.config.print_ir = true;
 
   // constexpr int dim = 3;
   constexpr int n = 256;

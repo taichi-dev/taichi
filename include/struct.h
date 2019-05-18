@@ -444,6 +444,7 @@ struct dense {
       // if (is_active(i_)) {
       int i = translate(i_);
 #if __CUDA_ARCH__
+      // on GPU no condition is faster
       atomicOr((unsigned long long *)&bitmask[i / 64],
                (unsigned long long)(1ul << (i % 64)));
 #else

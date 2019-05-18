@@ -19,26 +19,37 @@ auto cnn = [](std::vector<std::string> cli_param) {
   auto f = fopen(path.c_str(), "rb");
   TC_ASSERT_INFO(f, "grid not found");
   int magic_number = -1;
-  if (fread(&magic_number, sizeof(int), 1, f)) {}
+  if (fread(&magic_number, sizeof(int), 1, f)) {
+  }
   int n_dim = -1;
-  if (fread(&n_dim, sizeof(int), 1, f)) {}
+  if (fread(&n_dim, sizeof(int), 1, f)) {
+  }
   int size = 1;
   for (int i = 0; i < n_dim; i++) {
-      int d = -1;
-      if (fread(&d, sizeof(int), 1, f)) {}
-      size *= d;
+    int d = -1;
+    if (fread(&d, sizeof(int), 1, f)) {
+    }
+    size *= d;
   }
   float *data = new float[size];
-  if (fread(data, sizeof(float), size, f)) {}
+  if (fread(data, sizeof(float), size, f)) {
+  }
   fclose(f);
 
   Program prog(Arch::gpu);
+<<<<<<< HEAD
   prog.config.lower_access = false;
+=======
+  prog.config.lower_access = true;
+  // prog.config.print_ir = true;
+>>>>>>> e9de80e844ed709ad229e8ba9158767939659607
 
-  //constexpr int dim = 3;
+  // constexpr int dim = 3;
   constexpr int n = 256;
 
   constexpr int num_ch1 = 16, num_ch2 = 16;
+
+  int block_size = 4;
 
   Global(layer1, f32);
   Global(layer2, f32);
@@ -50,10 +61,14 @@ auto cnn = [](std::vector<std::string> cli_param) {
       root.dense(ijkl, {n, n, n, num_ch1}).place(layer1);
       root.dense(ijkl, {n, n, n, num_ch2}).place(layer2);
     } else {
-      root.dense(ijkl, {n / 8, n / 8, n / 8, 1}).bitmasked()
-          .dense(ijkl, {8, 8, 8, num_ch1}).place(layer1);
-      root.dense(ijkl, {n / 8, n / 8, n / 8, 1}).bitmasked()
-          .dense(ijkl, {8, 8, 8, num_ch2}).place(layer2);
+      root.dense(ijkl, {n / block_size, n / block_size, n / block_size, 1})
+          .bitmasked()
+          .dense(ijkl, {block_size, block_size, block_size, num_ch1})
+          .place(layer1);
+      root.dense(ijkl, {n / block_size, n / block_size, n / block_size, 1})
+          .bitmasked()
+          .dense(ijkl, {block_size, block_size, block_size, num_ch2})
+          .place(layer2);
     }
     root.dense(ijkl, {4, 4, 4, num_ch1 * num_ch2}).place(weights);
   });
@@ -73,11 +88,13 @@ auto cnn = [](std::vector<std::string> cli_param) {
   delete[] data;
 
   Kernel(forward).def([&] {
-    // Cache(0, layer2);
-    BlockDim(128);
+    // Cache(0, layer1);
+    Cache(1, weights);
+    BlockDim(256);
     For(layer2, [&](Expr i, Expr j, Expr k, Expr c_out) {
       auto sum = Var(0.0f);
       for (int c_in = 0; c_in < num_ch1; c_in++) {
+<<<<<<< HEAD
         for (int dx = 0; dx < 1; dx++) {
           for (int dy = 0; dy < 1; dy++) {
             for (int dz = 0; dz < 1; dz++) {
@@ -86,6 +103,17 @@ auto cnn = [](std::vector<std::string> cli_param) {
               Assert(weight == (1.f/16.f));
               sum += weight * layer1[i + dx, j + dy, k + dz, c_in];
               //layer2[i, j, k, c_out] += weight * layer1[i + dx, j + dy, k + dz, c_in];
+=======
+        for (int dx = -1; dx < 2; dx++) {
+          for (int dy = -1; dy < 2; dy++) {
+            for (int dz = -1; dz < 2; dz++) {
+              auto weight = weights[Expr(dx + 1), Expr(dy + 1), Expr(dz + 1),
+                                    c_in * num_ch2 + c_out];
+              auto c_in2 = AssumeInRange(c_in, c_out, 0, 1);
+              sum += weight * layer1[i + dx, j + dy, k + dz, c_in2];
+              // layer2[i, j, k, c_out] += weight * layer1[i + dx, j + dy, k +
+              // dz, c_in];
+>>>>>>> e9de80e844ed709ad229e8ba9158767939659607
             }
           }
         }
@@ -97,16 +125,19 @@ auto cnn = [](std::vector<std::string> cli_param) {
   // expand blocks
   kernel([&] {
     kernel_name("dilate");
-    auto block_size = 8;
     For(layer1, [&](Expr i, Expr j, Expr k) {
-      for (int x = -1; x < 2; x++) {
-        for (int y = -1; y < 2; y++) {
-          for (int z = -1; z < 2; z++) {
-            layer2[i + x * block_size, j + y * block_size,
-                   k + z * block_size] += 0.0f;  // simply activate the block
-          }
-        }
-      }
+      If(i % block_size == 0 && j % block_size == 0 && k % block_size == 0)
+          .Then([&] {
+            for (int x = -1; x < 2; x++) {
+              for (int y = -1; y < 2; y++) {
+                for (int z = -1; z < 2; z++) {
+                  layer2[i + x * block_size, j + y * block_size,
+                         k + z * block_size] =
+                      0.0f;  // simply activate the block
+                }
+              }
+            }
+          });
     });
   })();
 
@@ -117,11 +148,11 @@ auto cnn = [](std::vector<std::string> cli_param) {
         for (int dy = -1; dy < 2; dy++) {
           for (int dz = -1; dz < 2; dz++) {
             if (dx == 0 && dy == 0 && dz == 0) {
-                weights.val<float32>(dx + 1, dy + 1, dz + 1,
-                                     c_in * num_ch2 + c_out) = 1.f/16.f;
+              weights.val<float32>(dx + 1, dy + 1, dz + 1,
+                                   c_in * num_ch2 + c_out) = 1.f / 16.f;
             } else {
-                weights.val<float32>(dx + 1, dy + 1, dz + 1,
-                                     c_in * num_ch2 + c_out) = 0.f;
+              weights.val<float32>(dx + 1, dy + 1, dz + 1,
+                                   c_in * num_ch2 + c_out) = 0.f;
             }
             inc += 0.1f;
           }
@@ -132,29 +163,9 @@ auto cnn = [](std::vector<std::string> cli_param) {
 
   // prog.config.print_ir = true;
 
-  /*kernel([&] {
-    kernel_name("weight");
-    For(weights, [&](Expr i, Expr j, Expr k, Expr l) {
-            for (int c_out = 0; c_out < num_ch2; c_out++) {
-            for (int c_in = 0; c_in < num_ch1; c_in++) {
-            for (int dx = 0; dx < 1; dx++) {
-            for (int dy = 0; dy < 1; dy++) {
-            for (int dz = 0; dz < 1; dz++) {
-                auto weight =
-                    weights[Expr(dx + 1), Expr(dy + 1), Expr(dz + 1), c_in * num_ch2 + c_out];
-                Assert(weight == (1.f/16.f));
-            }
-            }
-            }
-            }
-            }
-    });
-  })();
-  exit(0);*/
-
-  //for (int i = 0; i < 1; i++) {
-  //    forward();
-  //}
+  for (int i = 0; i < 50; i++) {
+    forward();
+  }
   prog.profiler_print();
 
   // Write the first layer of output
@@ -166,15 +177,16 @@ auto cnn = [](std::vector<std::string> cli_param) {
       for (int k = 0; k < n; k++) {
         data[((0 * n + k) * n + j) * n + i] = layer2.val<float32>(i, j, k, 0);
         if (layer2.val<float32>(i, j, k, 0) != 0) {
-            non_zero++;
+          non_zero++;
         } else {
-            zero++;
+          zero++;
         }
       }
     }
   }
   std::cout << "Non zero:" << non_zero << ", zero:" << zero << std::endl;
-  std::cerr << "Sparsity:" << (double)non_zero / (double)(non_zero + zero) << std::endl;
+  std::cerr << "Sparsity:" << (double)non_zero / (double)(non_zero + zero)
+            << std::endl;
   auto f_out = fopen("our_output.bin", "wb");
   fwrite(data, sizeof(float), n * n * n, f_out);
   fclose(f_out);

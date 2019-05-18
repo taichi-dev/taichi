@@ -125,7 +125,7 @@ class BasicBlockSimplify : public IRVisitor {
           inc_index = false;
       }
       if (same_source && inc_index &&
-          stmt->elements[0].stmt->ret_type == stmt->ret_type) {
+          stmt->width() == stmt->elements[0].stmt->width()) {
         // useless shuffle.
         stmt->replace_with(stmt->elements[0].stmt);
         stmt->parent->erase(current_stmt_id);
@@ -140,7 +140,7 @@ class BasicBlockSimplify : public IRVisitor {
         auto diff = analysis::value_diff(stmt->elements[0].stmt,
                                          stmt->elements[0].index,
                                          current_struct_for->loop_vars[k]);
-        if (diff.related && diff.certain()) {
+        if (diff.linear_related() && diff.certain()) {
           auto load = stmt->insert_before_me(
               Stmt::make<LocalLoadStmt>(LocalAddress(loop_vars[k], 0)));
           load->ret_type.data_type = DataType::i32;
@@ -299,7 +299,8 @@ class BasicBlockSimplify : public IRVisitor {
     if (stmt->parent->locate(stmt->ptr) != -1) {
       // optimize local variables only
       bool has_related = false;
-      for (int i = current_stmt_id + 1; i < (int)block->statements.size(); i++) {
+      for (int i = current_stmt_id + 1; i < (int)block->statements.size();
+           i++) {
         auto &bstmt = block->statements[i];
         if (bstmt->is_container_statement()) {
           has_related = true;
@@ -480,7 +481,7 @@ class BasicBlockSimplify : public IRVisitor {
       for (int k = 0; k < (int)loop_vars.size(); k++) {
         auto diff = analysis::value_diff(stmt->input, 0,
                                          current_struct_for->loop_vars[k]);
-        if (diff.related && diff.certain()) {
+        if (diff.linear_related() && diff.certain()) {
           // case 1: last loop var, vectorized, has assumption on vec size
           if (k == (int)current_struct_for->loop_vars.size() - 1) {
             auto load = stmt->insert_before_me(

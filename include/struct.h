@@ -152,8 +152,10 @@ struct SNodeManager {
 
 struct Managers {
   void *managers[max_num_snodes];
+  void *zeros;
 
   Managers() {
+    zeros = create_unified<long long>();
   }
 
   template <typename T>
@@ -174,6 +176,10 @@ struct Managers {
   template <typename T>
   __host__ __device__ static SNodeAllocator<T> *get_allocator() {
     return get<T>()->get_allocator();
+  }
+
+  __host__ __device__ static void *get_zeros() {
+    return get_instance()->zeros;
   }
 
   __host__ __device__ static Managers *get_instance() {
@@ -438,6 +444,7 @@ struct dense {
       // if (is_active(i_)) {
       int i = translate(i_);
 #if __CUDA_ARCH__
+      // on GPU no condition is faster
       atomicOr((unsigned long long *)&bitmask[i / 64],
                (unsigned long long)(1ul << (i % 64)));
 #else

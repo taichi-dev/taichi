@@ -72,7 +72,7 @@ class AccessAnalysis : public IRVisitor {
       for (int i = 0; i < num_indices; i++) {
         auto diff =
             analysis::value_diff(ptr->indices[i], l, for_stmt->loop_vars[i]);
-        if (diff.related) {
+        if (diff.linear_related()) {
           offsets[i].first = diff.low;
           offsets[i].second = diff.high;
           /*

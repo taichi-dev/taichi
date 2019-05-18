@@ -21,7 +21,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
 
   int threads = param.get("threads", 8);
   TC_P(threads);
-  int vec = param.get("vec", 8);
+  int vec = param.get("vec", block_size);
   TC_P(vec);
   TC_ASSERT(vec == 1 || vec == block_size);
 
@@ -157,7 +157,6 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
 
   for (int l = 0; l < mg_levels; l++) {
     if (l < mg_levels - 1) {
-      prog.config.print_ir = true;
       restrictors[l] =
           kernel([&] {
             kernel_name(fmt::format("restrict_lv{}", l));
@@ -173,7 +172,6 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
             });
           })
               .func();
-      prog.config.print_ir = false;
       prolongators[l] = kernel([&] {
                           kernel_name(fmt::format("prolongate_lv{}", l));
                           Parallelize(8);
@@ -184,6 +182,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
                         })
                             .func();
     }
+    // prog.config.print_ir = true;
     smoothers[l] =
         kernel([&] {
           kernel_name(fmt::format("smooth_lv{}", l));
@@ -201,6 +200,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
           });
         })
             .func();
+    prog.config.print_ir = false;
     clearer_r[l] =
         kernel([&] {
           kernel_name(fmt::format("clear_r_lv{}", l));
@@ -242,9 +242,9 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
     for (int l = mg_levels - 2; l >= 0; l--) {
       prolongators[l]();
       for (int i = 0; i < (pre_and_post_smoothing << l); i++) {
-        phase.val<int32>() = 0;
-        smoothers[l]();
         phase.val<int32>() = 1;
+        smoothers[l]();
+        phase.val<int32>() = 0;
         smoothers[l]();
       }
     }

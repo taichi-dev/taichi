@@ -88,7 +88,7 @@ class LowerAccess : public IRVisitor {
                                            current_struct_for->loop_vars[j]);
           if (!diff.linear_related())
             on_loop_tree = false;
-          else if (i == (int)indices.size() - 1) {
+          else if (j == (int)indices.size() - 1) {
             if (!(0 <= diff.low &&
                   diff.high <= current_struct_for->vectorize)) {
               on_loop_tree = false;

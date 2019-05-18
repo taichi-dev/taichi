@@ -37,12 +37,14 @@ auto cnn = [](std::vector<std::string> cli_param) {
   fclose(f);
 
   Program prog(Arch::gpu);
-  // prog.config.lower_access = false;
+  prog.config.lower_access = true;
 
   // constexpr int dim = 3;
   constexpr int n = 256;
 
   constexpr int num_ch1 = 16, num_ch2 = 16;
+
+  int block_size = 4;
 
   Global(layer1, f32);
   Global(layer2, f32);
@@ -54,13 +56,13 @@ auto cnn = [](std::vector<std::string> cli_param) {
       root.dense(ijkl, {n, n, n, num_ch1}).place(layer1);
       root.dense(ijkl, {n, n, n, num_ch2}).place(layer2);
     } else {
-      root.dense(ijkl, {n / 8, n / 8, n / 8, 1})
+      root.dense(ijkl, {n / block_size, n / block_size, n / block_size, 1})
           .bitmasked()
-          .dense(ijkl, {8, 8, 8, num_ch1})
+          .dense(ijkl, {block_size, block_size, block_size, num_ch1})
           .place(layer1);
-      root.dense(ijkl, {n / 8, n / 8, n / 8, 1})
+      root.dense(ijkl, {n / block_size, n / block_size, n / block_size, 1})
           .bitmasked()
-          .dense(ijkl, {8, 8, 8, num_ch2})
+          .dense(ijkl, {block_size, block_size, block_size, num_ch2})
           .place(layer2);
     }
     root.dense(ijkl, {4, 4, 4, num_ch1 * num_ch2}).place(weights);
@@ -81,7 +83,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
   delete[] data;
 
   Kernel(forward).def([&] {
-    // Cache(0, layer2);
+    // Cache(0, layer1);
     BlockDim(128);
     For(layer2, [&](Expr i, Expr j, Expr k, Expr c_out) {
       auto sum = Var(0.0f);
@@ -91,7 +93,8 @@ auto cnn = [](std::vector<std::string> cli_param) {
             for (int dz = -1; dz < 2; dz++) {
               auto weight = weights[Expr(dx + 1), Expr(dy + 1), Expr(dz + 1),
                                     c_in * num_ch2 + c_out];
-              sum += weight * layer1[i + dx, j + dy, k + dz, c_in];
+              auto c_in2 = AssumeInRange(c_in, c_out, 0, 1);
+              sum += weight * layer1[i + dx, j + dy, k + dz, c_in2];
               // layer2[i, j, k, c_out] += weight * layer1[i + dx, j + dy, k +
               // dz, c_in];
             }

@@ -108,7 +108,6 @@ auto cnn = [](std::vector<std::string> cli_param) {
   // expand blocks
   kernel([&] {
     kernel_name("dilate");
-    auto block_size = 8;
     For(layer1, [&](Expr i, Expr j, Expr k) {
       for (int x = -1; x < 2; x++) {
         for (int y = -1; y < 2; y++) {

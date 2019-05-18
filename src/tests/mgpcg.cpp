@@ -63,10 +63,9 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
     place_scalar(r(0));
     place_scalar(z(0));
     for (int i = 1; i < mg_levels; i++) {
-      root.dense(ijk, n / block_size)
-          .bitmasked()
-          .dense(ijk, block_size)
-          .place(r(i), z(i));
+      auto &fork = root.dense(ijk, n / block_size).bitmasked();
+      fork.dense(ijk, block_size).place(r(i));
+      fork.dense(ijk, block_size).place(z(i));
     }
     root.place(alpha, beta, sum, phase);
   });
@@ -153,8 +152,8 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
   }
 
   std::vector<std::function<void()>> smoothers(mg_levels),
-      restrictors(mg_levels - 1), prolongators(mg_levels - 1),
-      clearer_z(mg_levels), clearer_r(mg_levels);
+      smoothers2(mg_levels), restrictors(mg_levels - 1),
+      prolongators(mg_levels - 1), clearer_z(mg_levels), clearer_r(mg_levels);
 
   for (int l = 0; l < mg_levels; l++) {
     if (l < mg_levels - 1) {

@@ -661,8 +661,14 @@ class GPUIRCodeGen : public IRVisitor {
         }
       }
     } else {
-      auto ptr = stmt->ptr->as<GetChStmt>();
-      auto snode = ptr->output_snode;
+      SNode *snode;
+      if (stmt->ptr->is<GetChStmt>()) {
+        auto ptr = stmt->ptr->as<GetChStmt>();
+        snode = ptr->output_snode;
+      } else {
+        auto ptr = stmt->ptr->as<IntegerOffsetStmt>();
+        snode = ptr->input->as<GetChStmt>()->output_snode;
+      }
       if (ldg.find(snode) != ldg.end()) {
         emit("const auto {} = __ldg({}[0]);", stmt->raw_name(),
              stmt->ptr->raw_name());

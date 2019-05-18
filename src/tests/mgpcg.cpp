@@ -27,8 +27,8 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
 
   CoreState::set_trigger_gdb_when_crash(true);
 
-  Program prog(Arch::x86_64);
-  // prog.config.print_ir = true;
+  Program prog(Arch::gpu);
+  prog.config.print_ir = true;
   prog.config.lazy_compilation = false;
 
   auto r = Vector(DataType::f32, mg_levels);
@@ -71,7 +71,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
   });
 
   Kernel(compute_Ap).def([&] {
-    BlockDim(1024);
+    // BlockDim(1024);
     Parallelize(threads);
     Vectorize(block_size);
     For(Ap, [&](Expr i, Expr j, Expr k) {

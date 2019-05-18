@@ -37,7 +37,8 @@ auto cnn = [](std::vector<std::string> cli_param) {
 
   Program prog(Arch::gpu);
   prog.config.lower_access = true;
-  prog.config.print_ir = true;
+  prog.config.lazy_compilation = false;
+  prog.config.simplify_after_lower_access = true;
 
   // constexpr int dim = 3;
   constexpr int n = 256;
@@ -80,6 +81,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
   }
   delete[] data;
 
+  prog.config.print_ir = true;
   Kernel(forward).def([&] {
     // Cache(0, layer2);
     BlockDim(128);
@@ -89,6 +91,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
       Assert(weight == 1.0f / 16.0f);
     });
   });
+  prog.config.print_ir = false;
 
   // expand blocks
   kernel([&] {
@@ -128,7 +131,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
 
   // prog.config.print_ir = true;
 
-  for (int i = 0; i < 20; i++) {
+  for (int i = 0; i < 1; i++) {
     forward();
   }
   prog.profiler_print();

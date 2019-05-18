@@ -21,3 +21,4 @@ mpm_rendered
 layout*
 blocks
 *.vdb
+*.log

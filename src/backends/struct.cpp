@@ -185,14 +185,21 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
   // SNode::place & indirect
   // emit end2end accessors for leaf (place) nodes, using chain accessors
   TC_ASSERT(max_num_indices == 4);
-  constexpr int mode_access = 0;
-  constexpr int mode_activate = 1;
-  constexpr int mode_query = 2;
+  constexpr int mode_weak_access = 0;
+  constexpr int mode_strong_access = 1;
+  constexpr int mode_activate = 2;
+  constexpr int mode_query = 3;
 
-  for (auto mode : {mode_access, mode_activate, mode_query}) {
-    auto verb = mode == mode_activate
-                    ? "activate"
-                    : (mode == mode_access ? "access" : "query");
+  std::vector<std::string> verbs(4);
+  verbs[mode_weak_access] = "weak_access";
+  verbs[mode_strong_access] = "access";
+  verbs[mode_activate] = "activate";
+  verbs[mode_query] = "query";
+
+  for (auto mode :
+       {mode_weak_access, mode_strong_access, mode_activate, mode_query}) {
+    bool is_access = mode == mode_weak_access || mode == mode_strong_access;
+    auto verb = verbs[mode];
     auto ret_type =
         mode == mode_query ? "bool" : fmt::format("{} *", snode.node_type_name);
     emit(
@@ -224,7 +231,7 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
           }
         }
       }
-      bool force_activate = true;
+      bool force_activate = mode == mode_strong_access;
       if (mode != mode_activate) {
         if (force_activate)
           emit("#if 1");
@@ -244,7 +251,7 @@ void StructCompiler::generate_leaf_accessors(SNode &snode) {
       }
       emit("auto n{} = access_{}(n{}, tmp);", i + 1,
            stack[i + 1]->node_type_name, i);
-      if (mode == mode_access) {
+      if (is_access) {
         if (snode.has_ambient && stack[i + 1] != &snode) {
           if (snode.has_null()) {
             emit(

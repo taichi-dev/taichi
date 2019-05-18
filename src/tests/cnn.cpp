@@ -37,7 +37,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
   fclose(f);
 
   Program prog(Arch::gpu);
-  prog.config.lower_access = false;
+  prog.config.lower_access = true;
 
   // constexpr int dim = 3;
   constexpr int n = 256;
@@ -84,7 +84,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
 
   Kernel(forward).def([&] {
     // Cache(0, layer1);
-    BlockDim(128);
+    BlockDim(256);
     For(layer2, [&](Expr i, Expr j, Expr k, Expr c_out) {
       auto sum = Var(0.0f);
       for (int c_in = 0; c_in < num_ch1; c_in++) {
@@ -109,14 +109,18 @@ auto cnn = [](std::vector<std::string> cli_param) {
   kernel([&] {
     kernel_name("dilate");
     For(layer1, [&](Expr i, Expr j, Expr k) {
-      for (int x = -1; x < 2; x++) {
-        for (int y = -1; y < 2; y++) {
-          for (int z = -1; z < 2; z++) {
-            layer2[i + x * block_size, j + y * block_size,
-                   k + z * block_size] += 0.0f;  // simply activate the block
-          }
-        }
-      }
+      If(i % block_size == 0 && j % block_size == 0 && k % block_size == 0)
+          .Then([&] {
+            for (int x = -1; x < 2; x++) {
+              for (int y = -1; y < 2; y++) {
+                for (int z = -1; z < 2; z++) {
+                  layer2[i + x * block_size, j + y * block_size,
+                         k + z * block_size] =
+                      0.0f;  // simply activate the block
+                }
+              }
+            }
+          });
     });
   })();
 

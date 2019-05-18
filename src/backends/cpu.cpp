@@ -298,7 +298,7 @@ class CPUIRCodeGen : public IRVisitor {
       bool weakened = false;
       if (current_struct_for &&
           snode->parent == current_struct_for->snode->parent) {
-        bool identical_indices = true;
+        bool identical_indices = false;
         bool all_offsets_zero = true;
         for (int i = 0; i < stmt->indices.size(); i++) {
           auto ret = analysis::value_diff(stmt->indices[i], l,

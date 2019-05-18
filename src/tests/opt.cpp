@@ -8,6 +8,8 @@ TC_TEST("access_simp") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 16;
   Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
+  prog.config.lower_access = false;
 
   Global(sum, i32);
   Global(val, i32);
@@ -21,7 +23,12 @@ TC_TEST("access_simp") {
     val.val<int32>(i) = i;
   }
 
-  kernel([&]() { For(val, [&](Expr i) { sum[Expr(0)] += val[Expr(1)]; }); })();
+  kernel([&]() {
+    For(val, [&](Expr i) {
+      sum[Expr(0)] += val[Expr(1)];
+      Print(val[Expr(1)]);
+    });
+  })();
 
   TC_CHECK(sum.val<int32>() == 16);
 };

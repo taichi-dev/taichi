@@ -14,7 +14,17 @@ constexpr int dim = 3, n = 512;
 constexpr int pre_and_post_smoothing = 3, bottom_smoothing = 50;
 constexpr int mg_levels = 6;
 
-auto mgpcg_poisson = []() {
+auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
+  auto param = parse_param(cli_param);
+
+  int block_size = 8;
+
+  int threads = param.get("threads", 8);
+  TC_P(threads);
+  int vec = param.get("vec", 8);
+  TC_P(vec);
+  TC_ASSERT(vec == 1 || vec == 8);
+
   CoreState::set_trigger_gdb_when_crash(true);
 
   Program prog(Arch::x86_64);
@@ -30,8 +40,6 @@ auto mgpcg_poisson = []() {
   Global(beta, f32);
   Global(sum, f32);
   Global(phase, i32);
-
-  int block_size = 8;
 
   bool block_soa = true;
 
@@ -75,18 +83,27 @@ auto mgpcg_poisson = []() {
   });
 
   Kernel(reduce_r).def([&] {
+    mark_reduction();
+    Parallelize(threads);
+    Vectorize(block_size);
     For(p, [&](Expr i, Expr j, Expr k) {
       Atomic(sum[Expr(0)]) += r(0)[i, j, k] * r(0)[i, j, k];
     });
   });
 
   Kernel(reduce_zTr).def([&] {
+    mark_reduction();
+    Parallelize(threads);
+    Vectorize(block_size);
     For(p, [&](Expr i, Expr j, Expr k) {
       Atomic(sum[Expr(0)]) += z(0)[i, j, k] * r(0)[i, j, k];
     });
   });
 
   Kernel(reduce_pAp).def([&] {
+    mark_reduction();
+    Parallelize(threads);
+    Vectorize(block_size);
     For(p, [&](Expr i, Expr j, Expr k) {
       auto tmp = Var(0.0f);
       tmp += p[i, j, k] * Ap[i, j, k];

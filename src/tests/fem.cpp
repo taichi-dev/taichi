@@ -565,6 +565,4 @@ auto fem = [](std::vector<std::string> cli_param) {
 };
 TC_REGISTER_TASK(fem);
 
-// FEM ret bounds: [-7.73062, 0.458078]
-
 TC_NAMESPACE_END

@@ -157,8 +157,7 @@ class CPUIRCodeGen : public IRVisitor {
     for_stmt->body->accept(this);
     if (kernel->is_reduction) {
       auto atomic = atomic_add->as<AtomicOpStmt>();
-      emit("reduction = add(reduction, {});",
-           atomic->val->raw_name());
+      emit("reduction = add(reduction, {});", atomic->val->raw_name());
     }
     emit("}}");
     if (kernel->is_reduction) {

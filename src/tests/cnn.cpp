@@ -32,10 +32,12 @@ auto cnn = [](std::vector<std::string> cli_param) {
     size *= d;
   }
   float *data = new float[size];
-  trash(fread(data, sizeof(float), size, f));
+  if (fread(data, sizeof(float), size, f)) {
+  }
   fclose(f);
 
   Program prog(Arch::gpu);
+  // prog.config.lower_access = false;
 
   // constexpr int dim = 3;
   constexpr int n = 256;
@@ -83,8 +85,20 @@ auto cnn = [](std::vector<std::string> cli_param) {
     BlockDim(128);
     For(layer2, [&](Expr i, Expr j, Expr k, Expr c_out) {
       auto sum = Var(0.0f);
-      auto weight = weights[Expr(1), Expr(1), Expr(1), c_out];
-      Assert(weight == 1.0f / 16.0f);
+      for (int c_in = 0; c_in < num_ch1; c_in++) {
+        for (int dx = -1; dx < 2; dx++) {
+          for (int dy = -1; dy < 2; dy++) {
+            for (int dz = -1; dz < 2; dz++) {
+              auto weight = weights[Expr(dx + 1), Expr(dy + 1), Expr(dz + 1),
+                                    c_in * num_ch2 + c_out];
+              sum += weight * layer1[i + dx, j + dy, k + dz, c_in];
+              // layer2[i, j, k, c_out] += weight * layer1[i + dx, j + dy, k +
+              // dz, c_in];
+            }
+          }
+        }
+      }
+      layer2[i, j, k, c_out] = sum;
     });
   });
 

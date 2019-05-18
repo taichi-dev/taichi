@@ -13,6 +13,7 @@ class GPUIRCodeGen : public IRVisitor {
   bool first_level = false;
   bool debug;
   int grid_dim;
+  std::set<SNode *> ldg;
 
   GPUIRCodeGen(GPUCodeGen *codegen) : codegen(codegen), loopgen(codegen) {
     current_struct_for = nullptr;
@@ -283,6 +284,19 @@ class GPUIRCodeGen : public IRVisitor {
     current_struct_for = nullptr;
   }
 
+  void extract_ldg(ScratchPadOptions &opt) {
+    ScratchPadOptions new_opt;
+    for (auto &o : opt) {
+      if (o.first == 1) {
+        ldg.insert(o.second);
+        TC_INFO("Caching to L1: {}", o.second->node_type_name);
+      } else {
+        new_opt.push_back(o);
+      }
+    }
+    opt = new_opt;
+  }
+
   // For cases where the kernel body has only a for loop
   void generate_pure_loop(Block *stmt_list) {
     auto &for_stmt_ = stmt_list->statements.back();
@@ -321,6 +335,7 @@ class GPUIRCodeGen : public IRVisitor {
       emit(R"(GPUProfiler::get_instance().stop();)");
     } else {
       auto struct_for = for_stmt_->as<StructForStmt>();
+      extract_ldg(struct_for->scratch_opt);
       struct_for_new(for_stmt_.get());
     }
 
@@ -637,12 +652,24 @@ class GPUIRCodeGen : public IRVisitor {
              pad.global_to_linearized_local(current_struct_for->loop_vars,
                                             ptr->indices));
       } else {
+        if (ldg.find(snode) != ldg.end()) {
+          emit("const auto {} = __ldg({}[0]);", stmt->raw_name(),
+               stmt->ptr->raw_name());
+        } else {
+          emit("const auto {} = *({}[0]);", stmt->raw_name(),
+               stmt->ptr->raw_name());
+        }
+      }
+    } else {
+      auto ptr = stmt->ptr->as<GetChStmt>();
+      auto snode = ptr->output_snode;
+      if (ldg.find(snode) != ldg.end()) {
+        emit("const auto {} = __ldg({}[0]);", stmt->raw_name(),
+             stmt->ptr->raw_name());
+      } else {
         emit("const auto {} = *({}[0]);", stmt->raw_name(),
              stmt->ptr->raw_name());
       }
-    } else {
-      emit("const auto {} = *({}[0]);", stmt->raw_name(),
-           stmt->ptr->raw_name());
     }
   }
 

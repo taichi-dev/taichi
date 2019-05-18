@@ -124,7 +124,8 @@ class BasicBlockSimplify : public IRVisitor {
         if (stmt->elements[l].index != l)
           inc_index = false;
       }
-      if (same_source && inc_index) {
+      if (same_source && inc_index &&
+          stmt->width() == stmt->elements[0].stmt->width()) {
         // useless shuffle.
         stmt->replace_with(stmt->elements[0].stmt);
         stmt->parent->erase(current_stmt_id);

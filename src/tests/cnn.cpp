@@ -85,6 +85,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
 
   Kernel(forward).def([&] {
     // Cache(0, layer1);
+    Cache(1, weights);
     BlockDim(256);
     For(layer2, [&](Expr i, Expr j, Expr k, Expr c_out) {
       auto sum = Var(0.0f);
@@ -147,7 +148,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
 
   // prog.config.print_ir = true;
 
-  for (int i = 0; i < 20; i++) {
+  for (int i = 0; i < 50; i++) {
     forward();
   }
   prog.profiler_print();

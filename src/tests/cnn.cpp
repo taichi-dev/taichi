@@ -37,12 +37,8 @@ auto cnn = [](std::vector<std::string> cli_param) {
   fclose(f);
 
   Program prog(Arch::gpu);
-<<<<<<< HEAD
-  prog.config.lower_access = false;
-=======
   prog.config.lower_access = true;
   // prog.config.print_ir = true;
->>>>>>> e9de80e844ed709ad229e8ba9158767939659607
 
   // constexpr int dim = 3;
   constexpr int n = 256;
@@ -94,16 +90,6 @@ auto cnn = [](std::vector<std::string> cli_param) {
     For(layer2, [&](Expr i, Expr j, Expr k, Expr c_out) {
       auto sum = Var(0.0f);
       for (int c_in = 0; c_in < num_ch1; c_in++) {
-<<<<<<< HEAD
-        for (int dx = 0; dx < 1; dx++) {
-          for (int dy = 0; dy < 1; dy++) {
-            for (int dz = 0; dz < 1; dz++) {
-              auto weight =
-                  weights[Expr(dx + 1), Expr(dy + 1), Expr(dz + 1), c_in * num_ch2 + c_out];
-              Assert(weight == (1.f/16.f));
-              sum += weight * layer1[i + dx, j + dy, k + dz, c_in];
-              //layer2[i, j, k, c_out] += weight * layer1[i + dx, j + dy, k + dz, c_in];
-=======
         for (int dx = -1; dx < 2; dx++) {
           for (int dy = -1; dy < 2; dy++) {
             for (int dz = -1; dz < 2; dz++) {
@@ -113,7 +99,6 @@ auto cnn = [](std::vector<std::string> cli_param) {
               sum += weight * layer1[i + dx, j + dy, k + dz, c_in2];
               // layer2[i, j, k, c_out] += weight * layer1[i + dx, j + dy, k +
               // dz, c_in];
->>>>>>> e9de80e844ed709ad229e8ba9158767939659607
             }
           }
         }

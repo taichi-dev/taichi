@@ -24,9 +24,13 @@ class TRenderer {
   Dict param;
 
   Expr depth_limit;
+  Expr inv_max_density;
+  Expr ground_y;
 
   struct Parameters {
     int depth_limit;
+    float32 max_density;
+    float32 ground_y;
   };
 
   Parameters old_parameters;
@@ -45,6 +49,8 @@ class TRenderer {
     grid_resolution = param.get("grid_resolution", 256);
     old_parameters.depth_limit = -1;  // force initial update
     parameters.depth_limit = param.get("depth_limit", 20);
+    parameters.max_density = param.get("max_density", 724.0f);
+    parameters.ground_y = param.get("ground_y", 0.0f);
     output_res = param.get("output_res", Vector2i(1024, 512));
 
     acc_samples = 0;
@@ -56,6 +62,8 @@ class TRenderer {
     n_sky_samples = 1024;
 
     depth_limit.declare(DataType::i32);
+    inv_max_density.declare(DataType::f32);
+    ground_y.declare(DataType::f32);
 
     density.declare(DataType::f32);
     buffer.declare(DataType::f32, 3);
@@ -67,6 +75,8 @@ class TRenderer {
   void update_parameters() {
     (*clear_buffer)();
     depth_limit.val<int32>() = parameters.depth_limit;
+    inv_max_density.val<float32>() = 1.0f / parameters.max_density;
+    ground_y.val<float32>() = parameters.ground_y;
     old_parameters = parameters;
   }
 
@@ -103,10 +113,11 @@ class TRenderer {
         .place(sky_sample_color)
         .place(sky_sample_uv);
     root.place(depth_limit);
+    root.place(inv_max_density);
+    root.place(ground_y);
   }
 
   void declare_kernels() {
-    auto inv_max_density = 1.0f / 724.0f;
     Vector3 albedo(0.9, 0.95, 1);
     auto const block_size = 4;
     auto lower_bound = -0.0f;
@@ -195,7 +206,7 @@ class TRenderer {
     auto eval_phase_isotropic = [&]() { return pdf_phase_isotropic(); };
 
     // Direct sample light
-    auto sample_light = [&](Vector p, float32 inv_max_density) {
+    auto sample_light = [&](Vector p) {
       auto ret = Vector({0.0f, 0.0f, 0.0f});
       if (!use_sky_map) {  // point light source
         auto Le = Var(700.0f * Vector({5.0f, 5.0f, 5.0f}));
@@ -280,9 +291,8 @@ class TRenderer {
     };
 
     // Woodcock tracking
-    auto sample_distance = [&](Vector o, Vector d, float32 inv_max_density,
-                               Expr &dist, Vector &sigma_s, Expr &transmittance,
-                               Vector &p) {
+    auto sample_distance = [&](Vector o, Vector d, Expr &dist, Vector &sigma_s,
+                               Expr &transmittance, Vector &p) {
       auto near_t = Var(-std::numeric_limits<float>::max());
       auto far_t = Var(std::numeric_limits<float>::max());
       auto hit = box_intersect(o, d, near_t, far_t);
@@ -333,7 +343,7 @@ class TRenderer {
             auto v = cast<int32>(theta * (sky_map_size[1] / pi * 2));
             ret = sky_map[u, v];
           })
-          .Else([&] { ret = sample_light(p, inv_max_density); });
+          .Else([&] { ret = sample_light(p); });
       return ret;
     };
 
@@ -374,9 +384,8 @@ class TRenderer {
           auto transmittance = Var(0.f);
           auto sigma_s = Var(Vector({0.f, 0.f, 0.f}));
           auto interaction_p = Var(Vector({0.f, 0.f, 0.f}));
-          auto interaction =
-              sample_distance(orig, c, inv_max_density, dist, sigma_s,
-                              transmittance, interaction_p);
+          auto interaction = sample_distance(orig, c, dist, sigma_s,
+                                             transmittance, interaction_p);
 
           depth += 1;
           If(interaction)
@@ -385,7 +394,7 @@ class TRenderer {
                     throughput.element_wise_prod(sigma_s * transmittance);
 
                 auto phase_value = eval_phase_isotropic();
-                auto light_value = sample_light(interaction_p, inv_max_density);
+                auto light_value = sample_light(interaction_p);
                 Li += phase_value * throughput.element_wise_prod(light_value);
 
                 orig = interaction_p;
@@ -394,7 +403,7 @@ class TRenderer {
               .Else([&] {
                 if (use_sky_map) {
                   If(depth == 1).Then([&] {
-                    auto p = Var(orig - ((orig(1) - 1 / 40.0f) / c(1) * c));
+                    auto p = Var(orig - ((orig(1) - ground_y) / c(1) * c));
                     Li += throughput.element_wise_prod(background(p, c));
                   });
                 }
@@ -460,9 +469,7 @@ class TRenderer {
 
     clear_buffer = &kernel([&] {
       kernel_name("clear_buffer");
-      For(buffer(0), [&](Expr i) {
-        buffer[i] = Vector({0.0f, 0.0f, 0.0f});
-      });
+      For(buffer(0), [&](Expr i) { buffer[i] = Vector({0.0f, 0.0f, 0.0f}); });
     });
   }
 

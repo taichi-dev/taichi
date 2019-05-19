@@ -25,7 +25,9 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
   auto f = fopen("snow_density_256.bin", "rb");
   TC_ASSERT_INFO(f, "./snow_density_256.bin not found");
   std::vector<float32> density_field(pow<3>(grid_resolution));
-  if (std::fread(density_field.data(), sizeof(float32), density_field.size(), f)) {}
+  if (std::fread(density_field.data(), sizeof(float32), density_field.size(),
+                 f)) {
+  }
   std::fclose(f);
 
   float32 target_max_density = 724.0;
@@ -37,7 +39,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
   TC_P(max_density);
 
   for (int i = 0; i < pow<3>(grid_resolution); i++) {
-    density_field[i] /= max_density;         // normalize to 1 first
+    density_field[i] /= max_density;             // normalize to 1 first
     density_field[i] *= target_max_density * 1;  // then scale
     density_field[i] = std::min(density_field[i], target_max_density);
   }
@@ -59,6 +61,8 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
   if (use_gui) {
     gui = std::make_unique<GUI>("Volume Renderer", Vector2i(n * 2, n));
     gui->slider("depth_limit", renderer.parameters.depth_limit, 1, 20);
+    gui->slider("max_density", renderer.parameters.max_density, 1.0f, 2000.0f);
+    gui->slider("ground_y", renderer.parameters.ground_y, 0.0f, 0.4f);
   }
   Vector2i render_size(n * 2, n);
   Array2D<Vector4> render_buffer;
@@ -96,7 +100,8 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
       gui->update();
     } else {
       canvas->img.write_as_image(fmt::format("{:05d}-{:05d}-{:05d}.png", frame,
-                                             N, renderer.parameters.depth_limit));
+                                             N,
+                                             renderer.parameters.depth_limit));
     }
   }
 };

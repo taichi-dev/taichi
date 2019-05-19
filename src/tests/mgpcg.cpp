@@ -346,10 +346,9 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
       for (int j = 0; j < gui_res - scale; j++) {
         real dx;
         if (!gt) {
-          dx = x.val<float32>(i / scale + n / 4, j / scale + n / 4, k) * 0.001;
+          dx = x.val<float32>(i / scale + n / 4, j / scale + n / 4, k) / 256;
         } else {
-          dx = ref_input[((i / scale) * n / 2 + j / scale) * n / 2 + k] /
-               absmax * 0.5f;
+          dx = ref_input[((i / scale) * n / 2 + j / scale) * n / 2 + k] * 256;
         }
         canvas.img[i][j] = Vector4(0.5f) + Vector4(dx, dx, dx, 0);
       }

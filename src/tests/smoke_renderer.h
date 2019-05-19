@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class TRenderer {
+class SmokeRenderer {
  public:
   Vector2i output_res;
   Vector2i sky_map_size;
@@ -24,7 +24,7 @@ class TRenderer {
   Vector sky_sample_uv;
   Dict param;
 
-  TRenderer(Dict param) : param(param) {
+  SmokeRenderer(Dict param) : param(param) {
     grid_resolution = param.get("grid_resolution", 256);
     depth_limit = param.get("depth_limit", 128);
     output_res = param.get("output_res", Vector2i(1024, 512));

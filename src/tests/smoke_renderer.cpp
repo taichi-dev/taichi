@@ -23,7 +23,7 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
   param.set("albedo", Vector3(0.5111111, 0.5111111, 0.5111111));
   param.set("target_max_density", target_max_density);
   param.set("fov", 1);
-  TRenderer renderer(param);
+  SmokeRenderer renderer(param);
 
   layout([&] { renderer.place_data(); });
 

@@ -58,14 +58,15 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
 
   if (use_gui) {
     gui = std::make_unique<GUI>("Volume Renderer", Vector2i(n * 2, n));
+    gui->slider("depth_limit", renderer.parameters.depth_limit, 1, 20);
   }
   Vector2i render_size(n * 2, n);
   Array2D<Vector4> render_buffer;
 
   auto tone_map = [](real x) { return std::sqrt(x); };
 
-  constexpr int N = 10;
-  for (int frame = 0; frame < 100; frame++) {
+  constexpr int N = 1;
+  for (int frame = 0; frame < 1000000; frame++) {
     for (int i = 0; i < N; i++) {
       renderer.sample();
     }

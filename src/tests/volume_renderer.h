@@ -130,9 +130,9 @@ class TRenderer {
       parameters.depth_limit = param.get("depth_limit", 20);
       parameters.max_density = param.get("max_density", 724.0f);
       parameters.ground_y = param.get("ground_y", 0.029f);
-      parameters.light_phi = param.get("light_phi", 0.7f);
-      parameters.light_theta = param.get("light_theta", 0.7f);
-      parameters.light_smoothness = param.get("light_smoothness", 0.01f);
+      parameters.light_phi = param.get("light_phi", 0.419f);
+      parameters.light_theta = param.get("light_theta", 0.218f);
+      parameters.light_smoothness = param.get("light_smoothness", 0.05f);
       initial = false;
     }
     if (needs_update()) {

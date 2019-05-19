@@ -147,8 +147,8 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
             (i == n / 2) && (j == n / 2) && (k == n / 2);
             */
         float x = (i - begin) * 2.0f / n;
-        float y = (i - begin) * 2.0f / n;
-        float z = (i - begin) * 2.0f / n;
+        float y = (j - begin) * 2.0f / n;
+        float z = (k - begin) * 2.0f / n;
         r(0).val<float32>(i, j, k) =
             sin(2 * pi * x) * cos(2 * pi * y) * sin(2 * pi * z);
       }
@@ -223,6 +223,11 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
         })
             .func();
   }
+  Kernel(identity).def([&] {
+    Parallelize(threads);
+    Vectorize(block_size);
+    For(z(0), [&](Expr i, Expr j, Expr k) { z(0)[i, j, k] = r(0)[i, j, k]; });
+  });
 
   // z = M^-1 r
   auto apply_preconditioner = [&] {
@@ -265,7 +270,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
 
   // CG
   auto t = Time::get_time();
-  for (int i = 0; i < 40; i++) {
+  for (int i = 0; i < 400; i++) {
     TC_P(i);
     compute_Ap();
     sum.val<float32>() = 0;
@@ -332,7 +337,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
   GUI gui("MGPCG Poisson", Vector2i(gui_res + 200, gui_res), false);
   int gt = 0;
   int k = 0;
-  gui.slider("z", k, 0, n - 1).slider("Ground truth", gt, 0, 1);
+  gui.slider("z", k, n / 4, n * 3 / 4 - 1).slider("Ground truth", gt, 0, 1);
 
   int scale = gui_res / n * 2;
   auto &canvas = gui.get_canvas();
@@ -341,9 +346,10 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
       for (int j = 0; j < gui_res - scale; j++) {
         real dx;
         if (!gt) {
-          dx = x.val<float32>(i / scale + n / 4, j / scale + n / 4, k) * 0.01;
+          dx = x.val<float32>(i / scale + n / 4, j / scale + n / 4, k) * 0.001;
         } else {
-          dx = ref_input[((i / scale) * n / 2 + j / scale) * n / 2 + k] / absmax * 0.5f;
+          dx = ref_input[((i / scale) * n / 2 + j / scale) * n / 2 + k] /
+               absmax * 0.5f;
         }
         canvas.img[i][j] = Vector4(0.5f) + Vector4(dx, dx, dx, 0);
       }

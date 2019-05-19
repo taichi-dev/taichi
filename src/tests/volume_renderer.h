@@ -205,6 +205,57 @@ class TRenderer {
       return result;
     };
 
+    // The signed distance field of the geometry
+    auto sdf = [&](Vector q) {
+      /*
+      float32 alpha = -0.7f;
+      auto p =
+          Vector({(cos(alpha) * q(0) + sin(alpha) * q(2) + 1.0f) % 2.0f - 1.0f,
+                  q(1), -sin(alpha) * q(0) + cos(alpha) * q(2)});
+
+      auto dist_sphere = p.norm() - 0.5f;
+      auto dist_walls = min(p(2) + 6.0f, p(1) + 1.0f);
+      Vector d =
+          Var(abs(p + Vector({-1.0f, 0.5f, -1.0f})) - Vector({0.3f, 1.2f,
+      0.2f}));
+
+      auto dist_cube = norm(d.map([](const Expr &v) { return max(v, 0.0f); })) +
+                       min(max(max(d(0), d(1)), d(2)), 0.0f);
+
+      return min(dist_sphere, min(dist_walls, dist_cube));
+      */
+      return q(1);
+    };
+
+    float32 eps = 1e-5f;
+    float32 dist_limit = 1e2;
+    int limit = 100;
+
+    // shoot a ray
+    auto ray_march = [&](Vector p, Vector dir) {
+      auto j = Var(0);
+      auto dist = Var(0.0f);
+      While(j < limit && sdf(p + dist * dir) > eps && dist < dist_limit, [&] {
+        dist += sdf(p + dist * dir);
+        j += 1;
+      });
+      return dist;
+    };
+
+    // normal near the surface
+    auto sdf_normal = [&](Vector p) {
+      float32 d = 1e-3f;
+      Vector n(3);
+      // finite difference
+      for (int i = 0; i < 3; i++) {
+        auto inc = Var(p), dec = Var(p);
+        inc(i) += d;
+        dec(i) -= d;
+        n(i) = (0.5f / d) * (sdf(inc) - sdf(dec));
+      }
+      return normalized(n);
+    };
+
     // Adapted from Mitsuba: src/libcore/warp.cpp#L25
     auto sample_phase_isotropic = [&]() {
       auto z = Var(1.0f - 2.0f * Rand<float32>());
@@ -305,8 +356,9 @@ class TRenderer {
     };
 
     // Woodcock tracking
-    auto sample_distance = [&](Vector o, Vector d, Expr &dist, Vector &sigma_s,
-                               Expr &transmittance, Vector &p) {
+    auto sample_volume_distance = [&](Vector o, Vector d, Expr &dist,
+                                      Vector &sigma_s, Expr &transmittance,
+                                      Vector &p) {
       auto near_t = Var(-std::numeric_limits<float>::max());
       auto far_t = Var(std::numeric_limits<float>::max());
       auto hit = box_intersect(o, d, near_t, far_t);
@@ -397,15 +449,16 @@ class TRenderer {
         auto depth = Var(0);
 
         While(depth < depth_limit, [&] {
-          auto dist = Var(0.f);
+          auto volume_dist = Var(0.f);
           auto transmittance = Var(0.f);
           auto sigma_s = Var(Vector({0.f, 0.f, 0.f}));
           auto interaction_p = Var(Vector({0.f, 0.f, 0.f}));
-          auto interaction = sample_distance(orig, c, dist, sigma_s,
-                                             transmittance, interaction_p);
+          auto volume_interaction = sample_volume_distance(
+              orig, c, volume_dist, sigma_s, transmittance, interaction_p);
+          auto surface_dist = Var(ray_march(orig, c));
 
           depth += 1;
-          If(interaction)
+          If(volume_interaction)
               .Then([&] {
                 throughput =
                     throughput.element_wise_prod(sigma_s * transmittance);

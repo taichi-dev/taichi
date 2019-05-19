@@ -20,6 +20,8 @@ class TRenderer {
   Vector sky_map;
   Vector sky_sample_color;
   Vector sky_sample_uv;
+  Vector box_min;
+  Vector box_max;
   int acc_samples;
   Dict param;
 
@@ -55,10 +57,14 @@ class TRenderer {
 
     depth_limit.declare(DataType::i32);
     inv_max_density.declare(DataType::f32);
+    max_density.declare(DataType::f32);
     ground_y.declare(DataType::f32);
     light_phi.declare(DataType::f32);
     light_theta.declare(DataType::f32);
     light_smoothness.declare(DataType::f32);
+
+    box_min.declare(DataType::f32, 3);
+    box_max.declare(DataType::f32, 3);
   }
 
   void place_data() {
@@ -90,10 +96,13 @@ class TRenderer {
     // parameters
     root.place(depth_limit);
     root.place(inv_max_density);
+    root.place(max_density);
     root.place(ground_y);
     root.place(light_phi);
     root.place(light_theta);
     root.place(light_smoothness);
+    root.place(box_min);
+    root.place(box_max);
   }
 
   struct Parameters {
@@ -103,10 +112,13 @@ class TRenderer {
     float32 light_phi;
     float32 light_theta;
     float32 light_smoothness;
+    float32 box_min[3];
+    float32 box_max[3];
   };
 
   Expr depth_limit;
   Expr inv_max_density;
+  Expr max_density;
   Expr ground_y;
   Expr light_phi, light_theta, light_smoothness;
   bool initial;
@@ -114,6 +126,7 @@ class TRenderer {
   void update_parameters() {
     (*clear_buffer)();
     depth_limit.val<int32>() = parameters.depth_limit;
+    max_density.val<float32>() = parameters.max_density;
     inv_max_density.val<float32>() = 1.0f / parameters.max_density;
     ground_y.val<float32>() = parameters.ground_y;
     light_phi.val<float32>() = parameters.light_phi;
@@ -133,6 +146,10 @@ class TRenderer {
       parameters.light_phi = param.get("light_phi", 0.419f);
       parameters.light_theta = param.get("light_theta", 0.218f);
       parameters.light_smoothness = param.get("light_smoothness", 0.05f);
+      for (int i = 0; i < 3; i++) {
+        parameters.box_min[i] = param.get("box_min", Vector3(0.0f))(i);
+        parameters.box_max[i] = param.get("box_max", Vector3(1.0f))(i);
+      }
       initial = false;
     }
     if (needs_update()) {
@@ -144,17 +161,21 @@ class TRenderer {
   void declare_kernels() {
     Vector3 albedo(0.9, 0.95, 1);
     auto const block_size = 4;
-    auto lower_bound = -0.0f;
-    auto upper_bound = 1.0f;
 
     auto point_inside_box = [&](Vector p) {
-      return Var(lower_bound <= p(0) && p(0) < upper_bound &&
-                 lower_bound <= p(1) && p(1) < upper_bound &&
-                 lower_bound <= p(2) && p(2) < upper_bound);
+      Print(box_min(0));
+      Print(box_max(0));
+      Print(box_min(1));
+      Print(box_max(1));
+      Print(box_min(2));
+      Print(box_max(2));
+      return Var(box_min(0) <= p(0) && p(0) < box_max(0) &&
+                 box_min(1) <= p(1) && p(1) < box_max(1) &&
+                 box_min(2) <= p(2) && p(2) < box_max(2));
     };
 
     auto query_active = [&](Vector p) {
-      auto inside_box = Var(1);  // point_inside_box(p);
+      auto inside_box = point_inside_box(p);
       auto ret = Var(0);
       If(inside_box).Then([&] {
         auto i = cast<int>(floor(p(0) * float32(grid_resolution)));
@@ -185,8 +206,8 @@ class TRenderer {
       /* For each pair of AABB planes */
       for (int i = 0; i < 3; i++) {
         auto origin = o(i);
-        auto min_val = Var(lower_bound);
-        auto max_val = Var(upper_bound);
+        auto min_val = Var(box_min(i));
+        auto max_val = Var(box_max(i));
         auto d_rcp = Var(1.f / d(i));
 
         If(d(i) == 0.f)

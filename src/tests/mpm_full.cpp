@@ -489,7 +489,7 @@ auto mpm3d = []() {
   Kernel(set_renderer_volume).def([&] {
     For(grid_m, [&](Expr i, Expr j, Expr k) {
       If (grid_m[i, j, k] > 0.0f).Then([&]{
-        renderer.density[i, j, k] = grid_m[i, j, k] * 40.0f;
+        renderer.density[i, j, k] = grid_m[i, j, k] * 140.0f;
       });
     });
   });

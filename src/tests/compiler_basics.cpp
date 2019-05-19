@@ -83,6 +83,24 @@ TC_TEST("compiler_basics") {
   }
 };
 
+TC_TEST("simplify_access") {
+  CoreState::set_trigger_gdb_when_crash(true);
+  int n = 128;
+  Program prog(Arch::x86_64);
+  prog.config.print_ir = true;
+
+  Global(a, i32);
+  Global(b, i32);
+  auto i = Index(0);
+  layout([&]() { root.dense(i, n).dense(i, n).place(a, b); });
+
+  kernel([&]() {
+    For(a, [&](Expr i) {
+      a[i] = b[i] + 1;
+    });
+  })();
+};
+
 TC_TEST("fancy_for") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;

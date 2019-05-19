@@ -10,9 +10,10 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-constexpr int dim = 3, n = 512;  // double the size. actual box is 256^3
-constexpr int pre_and_post_smoothing = 2, bottom_smoothing = 50;
-constexpr int mg_levels = 6;
+constexpr int dim = 3,
+              n = 512;  // double the size for padding. actual box is 256^3
+constexpr int pre_and_post_smoothing = 1, bottom_smoothing = 50;
+constexpr int mg_levels = 5;
 
 auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
   auto param = parse_param(cli_param);
@@ -172,7 +173,10 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
                                        z(l)[i - 1, j, k] - z(l)[i + 1, j, k] -
                                        z(l)[i, j + 1, k] - z(l)[i, j - 1, k] -
                                        z(l)[i, j, k + 1] - z(l)[i, j, k - 1]));
-              Atomic(r(l + 1)[i / 2, j / 2, k / 2]) += res * 0.5f;
+              if (gpu)
+                Atomic(r(l + 1)[i / 2, j / 2, k / 2]) += res * 0.5f;
+              else
+                r(l + 1)[i / 2, j / 2, k / 2] += res * 0.5f;
             });
           })
               .func();
@@ -260,6 +264,11 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
     }
   };
 
+  sum.val<float32>() = 0;
+  reduce_r();
+  auto initial_rTr = sum.val<float32>();
+  TC_P(initial_rTr);
+
   // r = b - Ax = b    since x = 0
   // p = r = r + 0 p
   apply_preconditioner();
@@ -296,7 +305,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
     reduce_r();
     auto rTr = sum.val<float32>();
     TC_P(rTr);
-    if (rTr < 1e-7f)
+    if (rTr < initial_rTr * 1e-12f)
       break;
     // beta = new rTr / old rTr
     beta.val<float32>() = new_zTr / old_zTr;
@@ -348,7 +357,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
         if (!gt) {
           dx = x.val<float32>(i / scale + n / 4, j / scale + n / 4, k) / 256;
         } else {
-          dx = ref_input[((i / scale) * n / 2 + j / scale) * n / 2 + k] * 256;
+          dx = ref_input[((i / scale) * n / 2 + j / scale) * n / 2 + k] / 256;
         }
         canvas.img[i][j] = Vector4(0.5f) + Vector4(dx, dx, dx, 0);
       }

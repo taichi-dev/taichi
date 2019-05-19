@@ -60,7 +60,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
 
   renderer.preprocess_volume();
 
-  float32 exposure = 0;
+  float32 exposure = 0.567;
   float32 exposure_linear = 1;
   float32 gamma = 0.5;
   float SPPS = 0;
@@ -70,7 +70,9 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     gui->slider("depth_limit", renderer.parameters.depth_limit, 1, 20);
     gui->slider("max_density", renderer.parameters.max_density, 1.0f, 2000.0f);
     gui->slider("ground_y", renderer.parameters.ground_y, 0.0f, 0.4f);
-    gui->slider("light_y", renderer.parameters.light_y, 0.0f, 4.0f);
+    gui->slider("light_phi", renderer.parameters.light_phi, 0.0f, pi * 2);
+    gui->slider("light_theta", renderer.parameters.light_theta, 0.0f, pi / 2);
+    gui->slider("light_smoothness", renderer.parameters.light_smoothness, 0.0f, 0.7f);
     gui->slider("exposure", exposure, -3.0f, 3.0f);
     gui->slider("gamma", gamma, 0.2f, 2.0f);
   }

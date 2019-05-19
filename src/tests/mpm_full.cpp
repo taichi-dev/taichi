@@ -317,25 +317,7 @@ auto mpm3d = []() {
     });
   });
 
-  /*auto check_fluctuation = [&] {
-    int last_nb = -1;
-    while (1) {
-      grid_m.parent().parent().snode()->clear_data_and_deactivate();
-      sort();
-      p2g_sorted();
-      auto stat = grid_m.parent().parent().snode()->stat();
-      int nb = stat.num_resident_blocks;
-      TC_P(nb);
-      if (last_nb == -1) {
-        last_nb = nb;
-      } else {
-        TC_ASSERT(last_nb == nb);
-      }
-    }
-  };*/
-
   auto p2g = [&] {
-    // check_fluctuation();
     grid_m.parent().parent().snode()->clear_data();
     sort();
     p2g_sorted();
@@ -523,7 +505,7 @@ auto mpm3d = []() {
     renderer.buffer(0).parent().snode()->clear_data();
     set_renderer_volume();
     renderer.preprocess_volume();
-    int nsamples = 200;
+    int nsamples = 20;
     for (int s = 0; s < nsamples; s++) {
       renderer.sample();
     }

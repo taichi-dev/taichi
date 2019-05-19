@@ -45,11 +45,6 @@ class TRenderer {
     sky_map_size = Vector2i(512, 128);
     n_sky_samples = 1024;
 
-    depth_limit.declare(DataType::i32);
-    inv_max_density.declare(DataType::f32);
-    ground_y.declare(DataType::f32);
-    light_y.declare(DataType::f32);
-
     density.declare(DataType::f32);
     buffer.declare(DataType::f32, 3);
     sky_map.declare(DataType::f32, 3);
@@ -57,6 +52,13 @@ class TRenderer {
     sky_sample_uv.declare(DataType::f32, 2);
 
     initial = true;
+
+    depth_limit.declare(DataType::i32);
+    inv_max_density.declare(DataType::f32);
+    ground_y.declare(DataType::f32);
+    light_phi.declare(DataType::f32);
+    light_theta.declare(DataType::f32);
+    light_smoothness.declare(DataType::f32);
   }
 
   void place_data() {
@@ -89,20 +91,24 @@ class TRenderer {
     root.place(depth_limit);
     root.place(inv_max_density);
     root.place(ground_y);
-    root.place(light_y);
+    root.place(light_phi);
+    root.place(light_theta);
+    root.place(light_smoothness);
   }
 
   struct Parameters {
     int depth_limit;
     float32 max_density;
     float32 ground_y;
-    float32 light_y;
+    float32 light_phi;
+    float32 light_theta;
+    float32 light_smoothness;
   };
 
   Expr depth_limit;
   Expr inv_max_density;
   Expr ground_y;
-  Expr light_y;
+  Expr light_phi, light_theta, light_smoothness;
   bool initial;
 
   void update_parameters() {
@@ -110,7 +116,9 @@ class TRenderer {
     depth_limit.val<int32>() = parameters.depth_limit;
     inv_max_density.val<float32>() = 1.0f / parameters.max_density;
     ground_y.val<float32>() = parameters.ground_y;
-    light_y.val<float32>() = parameters.light_y;
+    light_phi.val<float32>() = parameters.light_phi;
+    light_theta.val<float32>() = parameters.light_theta;
+    light_smoothness.val<float32>() = parameters.light_smoothness;
     old_parameters = parameters;
   }
 
@@ -121,8 +129,10 @@ class TRenderer {
     if (initial) {
       parameters.depth_limit = param.get("depth_limit", 20);
       parameters.max_density = param.get("max_density", 724.0f);
-      parameters.ground_y = param.get("ground_y", 0.0f);
-      parameters.light_y = param.get("light_y", 0.7f);
+      parameters.ground_y = param.get("ground_y", 0.029f);
+      parameters.light_phi = param.get("light_phi", 0.419f);
+      parameters.light_theta = param.get("light_theta", 0.218f);
+      parameters.light_smoothness = param.get("light_smoothness", 0.05f);
       initial = false;
     }
     if (needs_update()) {
@@ -307,21 +317,12 @@ class TRenderer {
 
         ret = Var(transmittance * Le * inv_dist_to_p * inv_dist_to_p);
       } else {
-        auto sample = Var(cast<int>(Rand<float32>() * float32(n_sky_samples)));
-        auto uv = Var(sky_sample_uv[sample]);
-        auto phi = Var(uv(0) * (2 * pi));
-        auto theta = Var(uv(1) * (pi / 2));
-        // auto phi = Var(0.0f);
-        // auto theta = Var(0.9f);
+        auto phi = light_phi + (Rand<float32>() - 0.5f) * light_smoothness;
+        auto theta = light_theta + (Rand<float32>() - 0.5f) * light_smoothness;
 
-        /*
         auto dir_to_sky = Var(
             Vector({cos(phi) * cos(theta), sin(theta), sin(phi) * cos(theta)}));
-        */
 
-        auto dir_to_sky = Var(normalized(Vector({2.5f, light_y, 0.5f})));
-
-        // auto Le = Var(sky_sample_color[sample]);
         auto Le = Var(3.0f * Vector({1.0f, 1.0f, 1.0f}));
         auto near_t = Var(-std::numeric_limits<float>::max());
         auto far_t = Var(std::numeric_limits<float>::max());

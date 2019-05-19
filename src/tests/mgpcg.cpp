@@ -24,11 +24,15 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
   int vec = param.get("vec", block_size);
   TC_P(vec);
   TC_ASSERT(vec == 1 || vec == block_size);
+  bool load_gt = param.get("load_gt", false);
+  TC_P(load_gt)
+  bool gpu = param.get("gpu", false);
+  TC_P(gpu)
 
   CoreState::set_trigger_gdb_when_crash(true);
 
-  Program prog(Arch::gpu);
-  prog.config.print_ir = true;
+  Program prog(gpu ? Arch::gpu : Arch::x86_64);
+  // prog.config.print_ir = true;
   prog.config.lazy_compilation = false;
 
   auto r = Vector(DataType::f32, mg_levels);
@@ -168,7 +172,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
                                        z(l)[i - 1, j, k] - z(l)[i + 1, j, k] -
                                        z(l)[i, j + 1, k] - z(l)[i, j - 1, k] -
                                        z(l)[i, j, k + 1] - z(l)[i, j, k - 1]));
-              r(l + 1)[i / 2, j / 2, k / 2] += res * 0.5f;
+              Atomic(r(l + 1)[i / 2, j / 2, k / 2]) += res * 0.5f;
             });
           })
               .func();
@@ -194,7 +198,8 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
               ret = (r(l)[i, j, k] + z(l)[i - 1, j, k] + z(l)[i + 1, j, k] +
                      z(l)[i, j + 1, k] + z(l)[i, j - 1, k] + z(l)[i, j, k + 1] +
                      z(l)[i, j, k - 1]) *
-                    (1.0f / 6) - z(l)[i, j, k];
+                        (1.0f / 6) -
+                    z(l)[i, j, k];
             });
             z(l)[i, j, k] += ret;
           });
@@ -312,19 +317,35 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
   TC_P(residual);
   // TC_P(difference_max);
 
+  std::vector<float32> ref_input(pow<3>(n / 2));
+  if (load_gt) {
+    auto f = fopen("mgpcg_ref.bin", "rb");
+    fread(ref_input.data(), sizeof(float), ref_input.size(), f);
+  }
+  float absmax = 0;
+  for (auto r : ref_input) {
+    absmax = std::max(std::abs(absmax), r);
+  }
+  TC_P(absmax);
+
   int gui_res = 512;
   GUI gui("MGPCG Poisson", Vector2i(gui_res + 200, gui_res), false);
   int gt = 0;
   int k = 0;
   gui.slider("z", k, 0, n - 1).slider("Ground truth", gt, 0, 1);
 
-  int scale = gui_res / n;
+  int scale = gui_res / n * 2;
   auto &canvas = gui.get_canvas();
   for (int frame = 1;; frame++) {
     for (int i = 0; i < gui_res - scale; i++) {
       for (int j = 0; j < gui_res - scale; j++) {
-        real dx = x.val<float32>(i / scale, j / scale, k);
-        canvas.img[i][j] = Vector4(0.5f) + Vector4(dx, dx, dx, 0) * 0.01f;
+        real dx;
+        if (!gt) {
+          dx = x.val<float32>(i / scale + n / 4, j / scale + n / 4, k) * 0.01;
+        } else {
+          dx = ref_input[((i / scale) * n / 2 + j / scale) * n / 2 + k] / absmax * 0.5f;
+        }
+        canvas.img[i][j] = Vector4(0.5f) + Vector4(dx, dx, dx, 0);
       }
     }
     gui.update();

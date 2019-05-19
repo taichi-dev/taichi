@@ -1,5 +1,6 @@
 #include "volume_renderer.h"
 #include <tbb/tbb.h>
+#include <cuda_runtime_api.h>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -73,41 +74,40 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
   }
   Vector2i render_size(n * 2, n);
   Array2D<Vector4> render_buffer;
+  render_buffer.initialize(render_size);
 
   auto tone_map = [&](real x) { return std::pow(x * exposure_linear, gamma); };
 
+  std::vector<float32> buffer(render_size.prod() * 3);
+
   constexpr int N = 1;
   for (int frame = 0; frame < 1000000; frame++) {
+    auto t = Time::get_time();
     for (int i = 0; i < N; i++) {
       renderer.sample();
     }
     prog.profiler_print();
+    TC_P(Time::get_time() - t);
 
     real scale = 1.0f / renderer.acc_samples;
-    render_buffer.initialize(render_size);
-    std::unique_ptr<Canvas> canvas;
-    canvas = std::make_unique<Canvas>(render_buffer);
     exposure_linear = std::exp(exposure);
 
+    cudaMemcpy(buffer.data(), &renderer.buffer(0).val<float32>(0),
+               buffer.size() * sizeof(float32), cudaMemcpyDeviceToHost);
     tbb::parallel_for(0, n * n * 2, [&](int i) {
       render_buffer[i / n][i % n] =
-          Vector4(tone_map(scale * renderer.buffer(0).val<float32>(i)),
-                  tone_map(scale * renderer.buffer(1).val<float32>(i)),
-                  tone_map(scale * renderer.buffer(2).val<float32>(i)), 1);
+          Vector4(tone_map(scale * buffer[i * 3 + 0]),
+                  tone_map(scale * buffer[i * 3 + 1]),
+                  tone_map(scale * buffer[i * 3 + 2]), 1.0f);
     });
-
-    for (int i = 0; i < renderer.sky_map_size[0]; i++) {
-      for (int j = 0; j < renderer.sky_map_size[1]; j++) {
-        for (int d = 0; d < 3; d++) {
-          // canvas->img[i][j][d] = sky_map(d).val<float32>(i, j) * 500;
-        }
-      }
-    }
+    TC_P(Time::get_time() - t);
 
     if (use_gui) {
-      gui->canvas->img = canvas->img;
+      gui->canvas->img = render_buffer;
       gui->update();
     } else {
+      std::unique_ptr<Canvas> canvas;
+      canvas = std::make_unique<Canvas>(render_buffer);
       canvas->img.write_as_image(fmt::format("{:05d}-{:05d}-{:05d}.png", frame,
                                              N,
                                              renderer.parameters.depth_limit));

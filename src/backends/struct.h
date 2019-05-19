@@ -13,6 +13,7 @@ class StructCompiler : public CodeGenBase {
   int snode_count;
   void *(*creator)();
   void (*profiler_print)();
+  void (*profiler_clear)();
   LoopGenerator loopgen;
 
   StructCompiler();

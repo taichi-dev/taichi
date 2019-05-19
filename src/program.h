@@ -55,6 +55,7 @@ class Program {
   int index_counter;
 
   void (*profiler_print_gpu)();
+  void (*profiler_clear_gpu)();
 
   std::string layout_fn;
 
@@ -63,6 +64,14 @@ class Program {
       profiler_print_gpu();
     } else {
       cpu_profiler.print();
+    }
+  }
+
+  void profiler_clear() {
+    if (config.arch == Arch::gpu) {
+      profiler_clear_gpu();
+    } else {
+      cpu_profiler.clear();
     }
   }
 

@@ -63,8 +63,10 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
   float32 exposure = 0;
   float32 exposure_linear = 1;
   float32 gamma = 0.5;
+  float SPPS = 0;
   if (use_gui) {
     gui = std::make_unique<GUI>("Volume Renderer", Vector2i(n * 2, n));
+    gui->label("Sample/pixel/sec", SPPS);
     gui->slider("depth_limit", renderer.parameters.depth_limit, 1, 20);
     gui->slider("max_density", renderer.parameters.max_density, 1.0f, 2000.0f);
     gui->slider("ground_y", renderer.parameters.ground_y, 0.0f, 0.4f);
@@ -81,13 +83,18 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
   std::vector<float32> buffer(render_size.prod() * 3);
 
   constexpr int N = 1;
+  auto last_time = Time::get_time();
   for (int frame = 0; frame < 1000000; frame++) {
-    auto t = Time::get_time();
     for (int i = 0; i < N; i++) {
       renderer.sample();
     }
-    prog.profiler_print();
-    TC_P(Time::get_time() - t);
+    if (frame % 10 == 0) {
+      auto elapsed = Time::get_time() - last_time;
+      last_time = Time::get_time();
+      SPPS = 1.0f / (elapsed / 10.0f);
+      prog.profiler_print();
+      prog.profiler_clear();
+    }
 
     real scale = 1.0f / renderer.acc_samples;
     exposure_linear = std::exp(exposure);
@@ -100,7 +107,6 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
                   tone_map(scale * buffer[i * 3 + 1]),
                   tone_map(scale * buffer[i * 3 + 2]), 1.0f);
     });
-    TC_P(Time::get_time() - t);
 
     if (use_gui) {
       gui->canvas->img = render_buffer;

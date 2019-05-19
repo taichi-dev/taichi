@@ -389,6 +389,7 @@ void StructCompiler::run(SNode &node) {
 
   emit("TC_EXPORT void release_data_structure(void *ds) {{delete ({} *)ds;}}",
        root_type);
+
   emit("TC_EXPORT void profiler_print()");
   emit("{{");
   emit("#if defined(TLANG_GPU)");
@@ -397,6 +398,16 @@ void StructCompiler::run(SNode &node) {
   // emit("profiler.print();");
   emit("#endif");
   emit("}}");
+
+  emit("TC_EXPORT void profiler_clear()");
+  emit("{{");
+  emit("#if defined(TLANG_GPU)");
+  emit("GPUProfiler::get_instance().clear();");
+  emit("#else");
+  // emit("profiler.print();");
+  emit("#endif");
+  emit("}}");
+
   emit("#endif");
   emit("#if !defined(TLANG_GPU)");
   // emit("extern CPUProfiler profiler;");
@@ -408,6 +419,7 @@ void StructCompiler::run(SNode &node) {
   load_dll();
   creator = load_function<void *(*)()>("create_data_structure");
   profiler_print = load_function<void (*)()>("profiler_print");
+  profiler_clear = load_function<void (*)()>("profiler_clear");
   load_accessors(node);
 }
 

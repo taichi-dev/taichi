@@ -93,6 +93,10 @@ class GPUProfiler {
     static GPUProfiler profiler;
     return profiler;
   }
+
+  void clear() {
+    records.clear();
+  }
 };
 #endif
 
@@ -152,6 +156,10 @@ class CPUProfiler {
           rec.name.c_str(), rec.min, rec.total / rec.counter, rec.max,
           rec.total / 1000.0f, rec.counter);
     }
+  }
+
+  void clear() {
+    records.clear();
   }
 };
 

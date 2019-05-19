@@ -69,6 +69,7 @@ void Program::materialize_layout() {
   layout_fn = scomp.get_source_path();
   data_structure = scomp.creator();
   profiler_print_gpu = scomp.profiler_print;
+  profiler_clear_gpu = scomp.profiler_clear;
 }
 
 void Program::synchronize() {

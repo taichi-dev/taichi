@@ -14,7 +14,7 @@ class TRenderer {
   int depth_limit;
   Expr density;
   int grid_resolution;
-  bool use_sky_map = false;
+  bool use_sky_map = true;
   int block_size = 4;
   float32 one_over_four_pi = 0.07957747154f;
   float32 pi = 3.14159265359f;
@@ -202,14 +202,16 @@ class TRenderer {
         // auto theta = Var(0.9f);
 
 
-        auto dir_to_sky = Var(
-            Vector({cos(phi) * cos(theta), sin(theta), sin(phi) * cos(theta)}));
         /*
         auto dir_to_sky = Var(
-            normalized(Vector({2.5f, 1.0f, 0.5f})));
+            Vector({cos(phi) * cos(theta), sin(theta), sin(phi) * cos(theta)}));
         */
 
-        auto Le = Var(sky_sample_color[sample]);
+        auto dir_to_sky = Var(
+            normalized(Vector({2.5f, 0.7f, 0.5f})));
+
+        // auto Le = Var(sky_sample_color[sample]);
+        auto Le = Var(3.0f * Vector({1.0f, 1.0f, 1.0f}));
         auto near_t = Var(-std::numeric_limits<float>::max());
         auto far_t = Var(std::numeric_limits<float>::max());
         auto hit = box_intersect(p, dir_to_sky, near_t, far_t);
@@ -217,7 +219,7 @@ class TRenderer {
 
         If(hit, [&] {
           auto cond = Var(hit);
-          auto t = Var(0.0f);
+          auto t = Var(max(near_t + 1e-4f, 0.0f));
 
           While(cond, [&] {
             t -= log(1.f - Rand<float32>()) * inv_max_density;
@@ -285,7 +287,7 @@ class TRenderer {
       return hit && interaction;
     };
 
-    /*auto background = [&](Vector dir) {
+    auto background = [&](Vector p, Vector dir) {
       // return Vector({0.4f, 0.4f, 0.4f});
       auto ret = Var(Vector({0.0f, 0.0f, 0.0f}));
       If(dir(1) >= 0.0f)
@@ -297,10 +299,10 @@ class TRenderer {
             ret = sky_map[u, v];
           })
           .Else([&] {
-            ret = Vector({0.6f, 0.6f, 0.6f});
+            ret = sample_light(p, inv_max_density);
           });
       return ret;
-    };*/
+    };
 
     float32 fov = param.get("fov", 0.6f);
 
@@ -359,7 +361,8 @@ class TRenderer {
               .Else([&] {
                 if (use_sky_map) {
                   If(depth == 1).Then([&] {
-                    // Li += throughput.element_wise_prod(background(c));
+                    auto p = Var(orig - ((orig(1) - 1 / 40.0f) / c(1) * c));
+                    Li += throughput.element_wise_prod(background(p, c));
                   });
                 }
                 depth = depth_limit;

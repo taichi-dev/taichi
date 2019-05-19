@@ -95,7 +95,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
       gui->update();
     } else {
       canvas->img.write_as_image(fmt::format("{:05d}-{:05d}-{:05d}.png", frame,
-                                             N, renderer.depth_limit));
+                                             N, renderer.parameters.depth_limit));
     }
   }
 };

@@ -42,7 +42,9 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
     int box_sizes[3]{584, 576, 440};
     int total_voxels = box_sizes[0] * box_sizes[1] * box_sizes[2];
     std::vector<float32> density_field(total_voxels);
-    if (std::fread(density_field.data(), sizeof(float32), density_field.size(), f)) {}
+    if (std::fread(density_field.data(), sizeof(float32), density_field.size(),
+                   f)) {
+    }
     std::fclose(f);
 
     float32 target_max_density = 724.0;
@@ -111,7 +113,8 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
       gui->update();
     } else {
       canvas->img.write_as_image(fmt::format("{:05d}-{:05d}-{:05d}.png", frame,
-                                             N, renderer.depth_limit));
+                                             N,
+                                             renderer.parameters.depth_limit));
     }
   }
 };

@@ -11,7 +11,6 @@ class TRenderer {
   int n_sky_samples;
   Program::Kernel *main, *dilate;
   Vector buffer;
-  int depth_limit;
   Expr density;
   int grid_resolution;
   bool use_sky_map = true;
@@ -23,10 +22,30 @@ class TRenderer {
   Vector sky_sample_uv;
   Dict param;
 
+  Expr depth_limit;
+
+  struct Parameters {
+    int depth_limit;
+  };
+
+  Parameters old_parameters;
+  Parameters parameters;
+
+  bool needs_update() {
+    for (int i = 0; i < sizeof(Parameters); i++) {
+      if (((char *)(&old_parameters))[i] != ((char *)(&parameters))[i]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   TRenderer(Dict param) : param(param) {
     grid_resolution = param.get("grid_resolution", 256);
-    depth_limit = param.get("depth_limit", 20);
+    old_parameters.depth_limit = -1; // force initial update
+    parameters.depth_limit = param.get("depth_limit", 20);
     output_res = param.get("output_res", Vector2i(1024, 512));
+
 
     TC_ASSERT(bit::is_power_of_two(output_res.x));
     TC_ASSERT(bit::is_power_of_two(output_res.y));
@@ -34,11 +53,24 @@ class TRenderer {
     sky_map_size = Vector2i(512, 128);
     n_sky_samples = 1024;
 
+    depth_limit.declare(DataType::i32);
+
     density.declare(DataType::f32);
     buffer.declare(DataType::f32, 3);
     sky_map.declare(DataType::f32, 3);
     sky_sample_color.declare(DataType::f32, 3);
     sky_sample_uv.declare(DataType::f32, 2);
+  }
+
+  void update_parameters() {
+    depth_limit.val<int32>() = parameters.depth_limit;
+    old_parameters = parameters;
+  }
+
+  void check_param_update() {
+    if (needs_update()) {
+      update_parameters();
+    }
   }
 
   void place_data() {
@@ -66,6 +98,7 @@ class TRenderer {
     root.dense(Indices(0), n_sky_samples)
         .place(sky_sample_color)
         .place(sky_sample_uv);
+    root.place(depth_limit);
   }
 
   void declare_kernels() {
@@ -201,14 +234,12 @@ class TRenderer {
         // auto phi = Var(0.0f);
         // auto theta = Var(0.9f);
 
-
         /*
         auto dir_to_sky = Var(
             Vector({cos(phi) * cos(theta), sin(theta), sin(phi) * cos(theta)}));
         */
 
-        auto dir_to_sky = Var(
-            normalized(Vector({2.5f, 0.7f, 0.5f})));
+        auto dir_to_sky = Var(normalized(Vector({2.5f, 0.7f, 0.5f})));
 
         // auto Le = Var(sky_sample_color[sample]);
         auto Le = Var(3.0f * Vector({1.0f, 1.0f, 1.0f}));
@@ -298,9 +329,7 @@ class TRenderer {
             auto v = cast<int32>(theta * (sky_map_size[1] / pi * 2));
             ret = sky_map[u, v];
           })
-          .Else([&] {
-            ret = sample_light(p, inv_max_density);
-          });
+          .Else([&] { ret = sample_light(p, inv_max_density); });
       return ret;
     };
 
@@ -378,13 +407,16 @@ class TRenderer {
       f = fopen("sky_map.bin", "rb");
       TC_ASSERT_INFO(f, "./sky_map.bin not found");
       std::vector<uint32> sky_map_data(sky_map_size.prod() * 3);
-      if (std::fread(sky_map_data.data(), sizeof(uint32), sky_map_data.size(), f)) {}
+      if (std::fread(sky_map_data.data(), sizeof(uint32), sky_map_data.size(),
+                     f)) {
+      }
 
       f = fopen("sky_samples.bin", "rb");
       TC_ASSERT_INFO(f, "./sky_samples.bin not found");
       std::vector<uint32> sky_sample_data(n_sky_samples * 5);
-      if (std::fread(sky_sample_data.data(), sizeof(uint32), (int)sky_sample_data.size(),
-                 f)) {}
+      if (std::fread(sky_sample_data.data(), sizeof(uint32),
+                     (int)sky_sample_data.size(), f)) {
+      }
 
       for (int i = 0; i < sky_map_size[0]; i++) {
         for (int j = 0; j < sky_map_size[1]; j++) {
@@ -428,6 +460,7 @@ class TRenderer {
   }
 
   void sample() {
+    check_param_update();
     (*main)();
   }
 };

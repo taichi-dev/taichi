@@ -1109,7 +1109,7 @@ class GlobalPtrStmt : public Stmt {
   GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
                 const std::vector<Stmt *> &indices)
       : snodes(snodes), indices(indices) {
-    activate = true; // use a strong access by default
+    activate = true;  // use a strong access by default
     for (int i = 0; i < (int)snodes.size(); i++) {
       TC_ASSERT(snodes[i] != nullptr);
       TC_ASSERT(snodes[0]->dt == snodes[i]->dt);
@@ -1916,9 +1916,12 @@ inline Expr load(Expr ptr) {
 inline Expr load_if_ptr(const Expr &ptr) {
   if (ptr.is<GlobalPtrExpression>()) {
     return load(ptr);
-  } else {
+  } else if (ptr.is<GlobalVariableExpression>()) {
+    TC_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
+              0);
+    return load(ptr[Expr(0)]);
+  } else
     return ptr;
-  }
 }
 
 extern DecoratorRecorder dec;

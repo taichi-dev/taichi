@@ -1,4 +1,5 @@
 #include "volume_renderer.h"
+#include <tbb/tbb.h>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -58,16 +59,22 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
 
   renderer.preprocess_volume();
 
+  float32 exposure = 0;
+  float32 exposure_linear = 1;
+  float32 gamma = 0.5;
   if (use_gui) {
     gui = std::make_unique<GUI>("Volume Renderer", Vector2i(n * 2, n));
     gui->slider("depth_limit", renderer.parameters.depth_limit, 1, 20);
     gui->slider("max_density", renderer.parameters.max_density, 1.0f, 2000.0f);
     gui->slider("ground_y", renderer.parameters.ground_y, 0.0f, 0.4f);
+    gui->slider("light_y", renderer.parameters.light_y, 0.0f, 4.0f);
+    gui->slider("exposure", exposure, -3.0f, 3.0f);
+    gui->slider("gamma", gamma, 0.2f, 2.0f);
   }
   Vector2i render_size(n * 2, n);
   Array2D<Vector4> render_buffer;
 
-  auto tone_map = [](real x) { return std::sqrt(x); };
+  auto tone_map = [&](real x) { return std::pow(x * exposure_linear, gamma); };
 
   constexpr int N = 1;
   for (int frame = 0; frame < 1000000; frame++) {
@@ -80,12 +87,14 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     render_buffer.initialize(render_size);
     std::unique_ptr<Canvas> canvas;
     canvas = std::make_unique<Canvas>(render_buffer);
-    for (int i = 0; i < n * n * 2; i++) {
+    exposure_linear = std::exp(exposure);
+
+    tbb::parallel_for(0, n * n * 2, [&](int i) {
       render_buffer[i / n][i % n] =
           Vector4(tone_map(scale * renderer.buffer(0).val<float32>(i)),
                   tone_map(scale * renderer.buffer(1).val<float32>(i)),
                   tone_map(scale * renderer.buffer(2).val<float32>(i)), 1);
-    }
+    });
 
     for (int i = 0; i < renderer.sky_map_size[0]; i++) {
       for (int j = 0; j < renderer.sky_map_size[1]; j++) {

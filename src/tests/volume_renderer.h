@@ -23,19 +23,6 @@ class TRenderer {
   int acc_samples;
   Dict param;
 
-  Expr depth_limit;
-  Expr inv_max_density;
-  Expr ground_y;
-
-  struct Parameters {
-    int depth_limit;
-    float32 max_density;
-    float32 ground_y;
-  };
-
-  Parameters old_parameters;
-  Parameters parameters;
-
   bool needs_update() {
     for (int i = 0; i < sizeof(Parameters); i++) {
       if (((char *)(&old_parameters))[i] != ((char *)(&parameters))[i]) {
@@ -48,9 +35,6 @@ class TRenderer {
   TRenderer(Dict param) : param(param) {
     grid_resolution = param.get("grid_resolution", 256);
     old_parameters.depth_limit = -1;  // force initial update
-    parameters.depth_limit = param.get("depth_limit", 20);
-    parameters.max_density = param.get("max_density", 724.0f);
-    parameters.ground_y = param.get("ground_y", 0.0f);
     output_res = param.get("output_res", Vector2i(1024, 512));
 
     acc_samples = 0;
@@ -64,27 +48,15 @@ class TRenderer {
     depth_limit.declare(DataType::i32);
     inv_max_density.declare(DataType::f32);
     ground_y.declare(DataType::f32);
+    light_y.declare(DataType::f32);
 
     density.declare(DataType::f32);
     buffer.declare(DataType::f32, 3);
     sky_map.declare(DataType::f32, 3);
     sky_sample_color.declare(DataType::f32, 3);
     sky_sample_uv.declare(DataType::f32, 2);
-  }
 
-  void update_parameters() {
-    (*clear_buffer)();
-    depth_limit.val<int32>() = parameters.depth_limit;
-    inv_max_density.val<float32>() = 1.0f / parameters.max_density;
-    ground_y.val<float32>() = parameters.ground_y;
-    old_parameters = parameters;
-  }
-
-  void check_param_update() {
-    if (needs_update()) {
-      update_parameters();
-      acc_samples = 0;
-    }
+    initial = true;
   }
 
   void place_data() {
@@ -112,9 +84,51 @@ class TRenderer {
     root.dense(Indices(0), n_sky_samples)
         .place(sky_sample_color)
         .place(sky_sample_uv);
+
+    // parameters
     root.place(depth_limit);
     root.place(inv_max_density);
     root.place(ground_y);
+    root.place(light_y);
+  }
+
+  struct Parameters {
+    int depth_limit;
+    float32 max_density;
+    float32 ground_y;
+    float32 light_y;
+  };
+
+  Expr depth_limit;
+  Expr inv_max_density;
+  Expr ground_y;
+  Expr light_y;
+  bool initial;
+
+  void update_parameters() {
+    (*clear_buffer)();
+    depth_limit.val<int32>() = parameters.depth_limit;
+    inv_max_density.val<float32>() = 1.0f / parameters.max_density;
+    ground_y.val<float32>() = parameters.ground_y;
+    light_y.val<float32>() = parameters.light_y;
+    old_parameters = parameters;
+  }
+
+  Parameters old_parameters;
+  Parameters parameters;
+
+  void check_param_update() {
+    if (initial) {
+      parameters.depth_limit = param.get("depth_limit", 20);
+      parameters.max_density = param.get("max_density", 724.0f);
+      parameters.ground_y = param.get("ground_y", 0.0f);
+      parameters.light_y = param.get("light_y", 0.7f);
+      initial = false;
+    }
+    if (needs_update()) {
+      update_parameters();
+      acc_samples = 0;
+    }
   }
 
   void declare_kernels() {
@@ -254,7 +268,7 @@ class TRenderer {
             Vector({cos(phi) * cos(theta), sin(theta), sin(phi) * cos(theta)}));
         */
 
-        auto dir_to_sky = Var(normalized(Vector({2.5f, 0.7f, 0.5f})));
+        auto dir_to_sky = Var(normalized(Vector({2.5f, light_y, 0.5f})));
 
         // auto Le = Var(sky_sample_color[sample]);
         auto Le = Var(3.0f * Vector({1.0f, 1.0f, 1.0f}));
@@ -343,7 +357,10 @@ class TRenderer {
             auto v = cast<int32>(theta * (sky_map_size[1] / pi * 2));
             ret = sky_map[u, v];
           })
-          .Else([&] { ret = sample_light(p); });
+          .Else([&] {
+            ret =
+                Vector({0.1f, 0.12f, 0.14f}).element_wise_prod(sample_light(p));
+          });
       return ret;
     };
 

@@ -661,11 +661,11 @@ class GPUIRCodeGen : public IRVisitor {
         }
       }
     } else {
-      SNode *snode;
+      SNode *snode = nullptr;
       if (stmt->ptr->is<GetChStmt>()) {
         auto ptr = stmt->ptr->as<GetChStmt>();
         snode = ptr->output_snode;
-      } else {
+      } else if (stmt->ptr->is<IntegerOffsetStmt>()) {
         auto ptr = stmt->ptr->as<IntegerOffsetStmt>();
         snode = ptr->input->as<GetChStmt>()->output_snode;
       }

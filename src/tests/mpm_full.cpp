@@ -353,7 +353,7 @@ auto mpm3d = []() {
       If(j < bound, [&] {
         auto norm = Var(sqrt(v(0) * v(0) + v(2) * v(2)));
         auto s = Var(clamp(
-            (norm + v(1) * (material == MPMMaterial::sand ? 1.0f : 0.10f)) /
+            (norm + v(1) * (material == MPMMaterial::sand ? 1.0f : 0.20f)) /
                 (norm + 1e-30f),
             Expr(0.0_f), Expr(1.0_f)));
 

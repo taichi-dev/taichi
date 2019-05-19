@@ -237,6 +237,7 @@ auto fem = [](std::vector<std::string> cli_param) {
   prog.config.print_ir = param.get("print_ir", false);
   TC_P(prog.config.print_ir);
   prog.config.simplify_after_lower_access = param.get("simp2", true);
+  TC_P(prog.config.simplify_after_lower_access);
   prog.config.attempt_vectorized_load_cpu = param.get("vec_load_cpu", true);
   TC_P(prog.config.attempt_vectorized_load_cpu);
   bool use_pointer = param.get("use_pointer", true);

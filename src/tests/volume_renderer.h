@@ -430,8 +430,8 @@ class TRenderer {
             ret = sky_map[u, v];
           })
           .Else([&] {
-            auto albedo = Var(Vector({0.1f, 0.12f, 0.14f}));
-            auto background = Var(Vector({0.1f, 0.12f, 0.14f}));
+            auto albedo = Var( Vector({0.1f, 0.12f, 0.14f}));
+            auto background = Var( Vector({0.1f, 0.12f, 0.14f}));
             ret = background + albedo.element_wise_prod(sample_light(p));
           });
       return ret;

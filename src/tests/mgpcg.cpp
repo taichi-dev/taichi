@@ -12,7 +12,7 @@ using namespace Tlang;
 
 constexpr int dim = 3,
               n = 512;  // double the size for padding. actual box is 256^3
-constexpr int pre_and_post_smoothing = 1, bottom_smoothing = 50;
+constexpr int pre_and_post_smoothing = 2, bottom_smoothing = 50;
 constexpr int mg_levels = 5;
 
 auto mgpcg_poisson = [](std::vector<std::string> cli_param) {

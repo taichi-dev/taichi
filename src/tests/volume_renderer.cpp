@@ -72,7 +72,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     }
     prog.profiler_print();
 
-    real scale = 1.0f / ((frame + 1) * N);
+    real scale = 1.0f / renderer.acc_samples;
     render_buffer.initialize(render_size);
     std::unique_ptr<Canvas> canvas;
     canvas = std::make_unique<Canvas>(render_buffer);

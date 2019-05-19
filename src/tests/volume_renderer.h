@@ -9,7 +9,7 @@ class TRenderer {
   Vector2i output_res;
   Vector2i sky_map_size;
   int n_sky_samples;
-  Program::Kernel *main, *dilate;
+  Program::Kernel *main, *dilate, *clear_buffer;
   Vector buffer;
   Expr density;
   int grid_resolution;
@@ -20,6 +20,7 @@ class TRenderer {
   Vector sky_map;
   Vector sky_sample_color;
   Vector sky_sample_uv;
+  int acc_samples;
   Dict param;
 
   Expr depth_limit;
@@ -42,10 +43,11 @@ class TRenderer {
 
   TRenderer(Dict param) : param(param) {
     grid_resolution = param.get("grid_resolution", 256);
-    old_parameters.depth_limit = -1; // force initial update
+    old_parameters.depth_limit = -1;  // force initial update
     parameters.depth_limit = param.get("depth_limit", 20);
     output_res = param.get("output_res", Vector2i(1024, 512));
 
+    acc_samples = 0;
 
     TC_ASSERT(bit::is_power_of_two(output_res.x));
     TC_ASSERT(bit::is_power_of_two(output_res.y));
@@ -63,6 +65,7 @@ class TRenderer {
   }
 
   void update_parameters() {
+    (*clear_buffer)();
     depth_limit.val<int32>() = parameters.depth_limit;
     old_parameters = parameters;
   }
@@ -70,6 +73,7 @@ class TRenderer {
   void check_param_update() {
     if (needs_update()) {
       update_parameters();
+      acc_samples = 0;
     }
   }
 
@@ -453,6 +457,13 @@ class TRenderer {
         }
       });
     });
+
+    clear_buffer = &kernel([&] {
+      kernel_name("clear_buffer");
+      For(buffer(0), [&](Expr i) {
+        buffer[i] = Vector({0.0f, 0.0f, 0.0f});
+      });
+    });
   }
 
   void preprocess_volume() {
@@ -462,6 +473,7 @@ class TRenderer {
   void sample() {
     check_param_update();
     (*main)();
+    acc_samples += 1;
   }
 };
 

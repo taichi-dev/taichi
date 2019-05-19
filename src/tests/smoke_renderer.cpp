@@ -25,6 +25,10 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
   param.set("fov", 1);
   SmokeRenderer renderer(param);
 
+  prog.config.simplify_before_lower_access = param.get("opt", true);
+  prog.config.lower_access = param.get("opt", true);
+  prog.config.simplify_after_lower_access = param.get("opt", true);
+
   layout([&] { renderer.place_data(); });
 
   renderer.declare_kernels();
@@ -74,14 +78,13 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
 
   auto tone_map = [](real x) { return std::sqrt(x); };
 
-  constexpr int N = 16;
+  constexpr int N = 128;
   for (int frame = 0; frame < 1; frame++) {
     auto t = Time::get_time();
     for (int i = 0; i < N; i++) {
       renderer.sample();
     }
     //prog.profiler_print();
-    std::cout << Time::get_time() - t << std::endl;
 
     real scale = 1.0f / ((frame + 1) * N);
     render_buffer.initialize(renderer.output_res);
@@ -93,6 +96,11 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
                   tone_map(scale * renderer.buffer(1).val<float32>(i)),
                   tone_map(scale * renderer.buffer(2).val<float32>(i)), 1);
     }
+
+    auto time_in_s = Time::get_time() - t;
+    auto time_in_s_per_spp = time_in_s / N;
+    std::cout << "Render time (" << N << "spp): " << time_in_s << "s" << std::endl;
+    std::cout << "Render time / spp (" << N << "spp):" << time_in_s_per_spp << "s/spp" << std::endl;
 
 
     for (int i = 0; i < renderer.sky_map_size[0]; i++) {
@@ -107,8 +115,10 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
       gui->canvas->img = canvas->img;
       gui->update();
     } else {
-      canvas->img.write_as_image(fmt::format("smoke-{:05d}-{:05d}-{:05d}-{:05f}.png", frame,
-                                             N, renderer.depth_limit, target_max_density));
+      auto filename = fmt::format("smoke-{:05d}-{:05d}-{:05d}-{:05f}.png", frame,
+                                             N, renderer.depth_limit, target_max_density);
+      std::cout << "Saving image to " << filename << std::endl;
+      canvas->img.write_as_image(filename);
     }
   }
 };

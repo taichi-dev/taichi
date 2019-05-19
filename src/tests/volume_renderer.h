@@ -132,6 +132,10 @@ class TRenderer {
     light_phi.val<float32>() = parameters.light_phi;
     light_theta.val<float32>() = parameters.light_theta;
     light_smoothness.val<float32>() = parameters.light_smoothness;
+    for (int i = 0; i < 3; i++) {
+      box_min(i).val<float32>() = parameters.box_min[i];
+      box_max(i).val<float32>() = parameters.box_max[i];
+    }
     old_parameters = parameters;
   }
 
@@ -163,12 +167,6 @@ class TRenderer {
     auto const block_size = 4;
 
     auto point_inside_box = [&](Vector p) {
-      Print(box_min(0));
-      Print(box_max(0));
-      Print(box_min(1));
-      Print(box_max(1));
-      Print(box_min(2));
-      Print(box_max(2));
       return Var(box_min(0) <= p(0) && p(0) < box_max(0) &&
                  box_min(1) <= p(1) && p(1) < box_max(1) &&
                  box_min(2) <= p(2) && p(2) < box_max(2));

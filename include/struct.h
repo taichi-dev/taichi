@@ -724,6 +724,14 @@ struct dynamic {
     data[tail] = t;
   }
 
+  TC_DEVICE TC_FORCE_INLINE bool is_active(int i) {
+    return true;
+  }
+
+  TC_DEVICE TC_FORCE_INLINE void deactivate(int i_) {
+    n = 0;  // TODO: fix this
+  }
+
   TC_DEVICE TC_FORCE_INLINE void activate(int i,
                                           const PhysicalIndexGroup &index) {
     // TC_ASSERT();

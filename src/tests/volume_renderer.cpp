@@ -33,7 +33,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     For(particle_pos(0), [&](Expr l) {
       auto inv_dx = Var(cast<float32>(256));
       auto x = Var(particle_pos[l]);
-      auto downscale = 1; //Var(256 / renderer.grid_resolution);
+      auto downscale = Var(256 / renderer.grid_resolution);
 
       auto base_coord = Var(floor(inv_dx * x - 0.5_f));
       auto fx = x * inv_dx - base_coord;
@@ -114,6 +114,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     }
 
     if ((int)particles.size()) {
+      particle_pos(0).parent().snode()->clear_data_and_deactivate();
       // renderer.check_param_update();
       for (int i = 0; i < particles.size(); i++) {
         for (int d = 0; d < 3; d++) {

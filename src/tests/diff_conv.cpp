@@ -4,7 +4,7 @@
 TC_NAMESPACE_BEGIN
 
 auto diff_conv = [](const std::vector<std::string> args) {
-  int grid_resolution = 256;
+  int grid_resolution = 254;
   TC_ASSERT(args.size() == 3);
   float th = std::stof(args[2]);
   TC_P(th);
@@ -50,9 +50,9 @@ auto diff_conv = [](const std::vector<std::string> args) {
       non_zero2++;
     }
 
-    if (!same) {
-        fprintf(stderr, "ret1:%f, ret2:%f\n", ret1[i], ret2[i]);
-    }
+    //if (!same) {
+        //fprintf(stderr, "ret1:%f, ret2:%f\n", ret1[i], ret2[i]);
+    //}
   }
   TC_INFO("same {} {}%", counter[0], 100.0f * counter[0] / n);
   TC_INFO("non zero same {} {}%", counter[0],

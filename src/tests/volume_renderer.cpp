@@ -175,9 +175,13 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     gui->slider("file_id", fid, 0, 500);
     gui->slider("output_samples", output_samples, 0, 100);
     gui->slider("grid_level", voxel_level, 1, 4);
-    gui->button("Save",
-                [&] { render_buffer.write_as_image("screenshot.png"); });
-    gui->button("Render All", [&] {});
+    gui->button("Save", [&] {
+      static int counter = 0;
+      render_buffer.write_as_image(fmt::format("screenshot{}.png", counter++));
+    });
+    gui->button("Render All", [&] {
+      
+    });
   }
 
   auto tone_map = [&](real x) { return std::pow(x * exposure_linear, gamma); };

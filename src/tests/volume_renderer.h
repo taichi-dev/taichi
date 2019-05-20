@@ -599,19 +599,22 @@ class TRenderer {
                       c = normalized(out_dir(normal));
                       orig = hit_pos;
                       throughput = throughput.element_wise_prod(
-                          Vector({0.3f, 0.3f, 0.4f}));
+                          Vector({0.6f, 0.5f, 0.5f}));
 
                       // direct lighting
                       auto light_dir = Var(dir_to_sky());
                       get_next_hit(orig, light_dir, hit_dist, hit_pos, normal);
                       If(hit_dist < 0.0f).Then([&] {
                         Li += throughput.element_wise_prod(
-                            Vector({0.3f, 0.3f, 0.3f}));
+                            Vector({0.5f, 0.5f, 0.5f}));
                       });
                     })
                     .Else([&] {
                       // buffer[i] +=
                       //    throughput.element_wise_prod(background(p, c));
+                      If(depth == 1).Then([&] {
+                        Li += Vector({100.0f, 100.0f, 100.0f});
+                      });
                       depth = -depth_limit + 1;
                     });
               });

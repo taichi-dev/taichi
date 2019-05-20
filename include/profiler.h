@@ -61,10 +61,10 @@ class GPUProfiler {
     printf("GPU Profiler:\n");
     for (auto &rec : records) {
       printf(
-          "    %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   count "
-          "%7d\n",
+          "    %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   total "
+          "%7.3f s  count %7d\n",
           rec.name.c_str(), rec.min, rec.total / rec.counter, rec.max,
-          rec.counter);
+          rec.total / 1000.0f, rec.counter);
     }
   }
 

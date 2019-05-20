@@ -302,6 +302,7 @@ class GPUIRCodeGen : public IRVisitor {
     auto &for_stmt_ = stmt_list->statements.back();
     if (for_stmt_->is<RangeForStmt>()) {
       auto range_for = for_stmt_->as<RangeForStmt>();
+      TC_ASSERT(range_for->vectorize == 1);
 
       // GPU Kernel
       emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
@@ -335,6 +336,7 @@ class GPUIRCodeGen : public IRVisitor {
       emit(R"(GPUProfiler::get_instance().stop();)");
     } else {
       auto struct_for = for_stmt_->as<StructForStmt>();
+      TC_ASSERT(struct_for->vectorize == 1);
       extract_ldg(struct_for->scratch_opt);
       struct_for_new(for_stmt_.get());
     }

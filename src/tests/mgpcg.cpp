@@ -34,6 +34,18 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
 
   Program prog(gpu ? Arch::gpu : Arch::x86_64);
   // prog.config.print_ir = true;
+
+  prog.config.simplify_before_lower_access = param.get("simp1", true);
+  TC_P(prog.config.simplify_before_lower_access);
+  prog.config.lower_access = param.get("lower_access", true);
+  TC_P(prog.config.lower_access);
+  prog.config.print_ir = param.get("print_ir", false);
+  TC_P(prog.config.print_ir);
+  prog.config.simplify_after_lower_access = param.get("simp2", true);
+  TC_P(prog.config.simplify_after_lower_access);
+  prog.config.attempt_vectorized_load_cpu = param.get("vec_load_cpu", true);
+  TC_P(prog.config.attempt_vectorized_load_cpu);
+
   prog.config.lazy_compilation = false;
 
   auto r = Vector(DataType::f32, mg_levels);

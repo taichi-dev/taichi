@@ -145,8 +145,8 @@ void Expr::operator+=(const Expr &o) {
 }
 void Expr::operator-=(const Expr &o) {
   if (this->atomic) {
-    current_ast_builder().insert(
-        Stmt::make<FrontendAtomicStmt>(AtomicType::add, *this, -load_if_ptr(o)));
+    current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
+        AtomicType::add, *this, -load_if_ptr(o)));
   } else {
     (*this) = (*this) - o;
   }
@@ -165,6 +165,12 @@ FrontendForStmt::FrontendForStmt(ExpressionGroup loop_var, Expr begin, Expr end)
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;
   block_size = dec.block_size;
+  if (get_current_program().config.arch == Arch::gpu) {
+    vectorize = 1;
+    parallelize = 1;
+  } else {
+    block_size = 1;
+  }
   scratch_opt = dec.scratch_opt;
   dec.reset();
   if (vectorize == -1)
@@ -179,8 +185,14 @@ FrontendForStmt::FrontendForStmt(ExpressionGroup loop_var, Expr global_var)
     : global_var(global_var) {
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;
-  scratch_opt = dec.scratch_opt;
   block_size = dec.block_size;
+  if (get_current_program().config.arch == Arch::gpu) {
+    vectorize = 1;
+    parallelize = 1;
+  } else {
+    block_size = 1;
+  }
+  scratch_opt = dec.scratch_opt;
   dec.reset();
   if (vectorize == -1)
     vectorize = 1;

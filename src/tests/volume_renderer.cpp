@@ -27,6 +27,9 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
   });
 
   renderer.declare_kernels();
+  std::unique_ptr<GUI> gui = nullptr;
+  int n = renderer.output_res.y;
+  int grid_resolution = renderer.grid_resolution;
 
   Kernel(rasterize).def([&] {
     const int n = 256;
@@ -54,64 +57,81 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     });
   });
 
-  std::unique_ptr<GUI> gui = nullptr;
-  int n = renderer.output_res.y;
-  int grid_resolution = renderer.grid_resolution;
-
-  std::vector<Vector3> particles;
-  if (fn.back() == 'n') {
-    std::vector<float32> density_field(pow<3>(grid_resolution));
+  auto load = [&](std::string fn) {
+    static std::string last_fn;
+    if (fn == last_fn)
+      return;
+    last_fn = fn;
+    std::vector<Vector3> particles;
     auto f = fopen(fn.c_str(), "rb");
-    TC_ERROR_IF(!f, "{} not found", fn);
-    if (std::fread(density_field.data(), sizeof(float32), density_field.size(),
-                   f)) {
-    }
-    std::fclose(f);
-    float32 target_max_density = 724.0;
-    auto max_density = 0.0f;
-    for (int i = 0; i < pow<3>(grid_resolution); i++) {
-      max_density = std::max(max_density, density_field[i]);
-    }
+    TC_WARN_IF(!f, "{} not found", fn);
+    if (!f)
+      return;
 
-    TC_P(max_density);
+    renderer.density.parent().snode()->clear_data_and_deactivate();
+    renderer.density.parent().parent().snode()->clear_data_and_deactivate();
+    if (fn.back() == 'n') {
+      std::vector<float32> density_field(pow<3>(grid_resolution));
+      if (std::fread(density_field.data(), sizeof(float32),
+                     density_field.size(), f)) {
+      }
+      std::fclose(f);
+      float32 target_max_density = 1.0;
+      auto max_density = 0.0f;
+      for (int i = 0; i < pow<3>(grid_resolution); i++) {
+        max_density = std::max(max_density, density_field[i]);
+      }
 
-    for (int i = 0; i < pow<3>(grid_resolution); i++) {
-      density_field[i] /= max_density;             // normalize to 1 first
-      density_field[i] *= target_max_density * 1;  // then scale
-      density_field[i] = std::min(density_field[i], target_max_density);
-    }
+      TC_P(max_density);
 
-    for (int i = 0; i < grid_resolution; i++) {
-      for (int j = 0; j < grid_resolution; j++) {
-        for (int k = 0; k < grid_resolution; k++) {
-          auto d = density_field[i * grid_resolution * grid_resolution +
-                                 j * grid_resolution + k];
-          if (d != 0) {  // populate non-empty voxels only
-            renderer.density.val<float32>(i, j, k) = d;
+      for (int i = 0; i < pow<3>(grid_resolution); i++) {
+        density_field[i] /= max_density;             // normalize to 1 first
+        density_field[i] *= target_max_density * 1;  // then scale
+        density_field[i] = std::min(density_field[i], target_max_density);
+      }
+
+      for (int i = 0; i < grid_resolution; i++) {
+        for (int j = 0; j < grid_resolution; j++) {
+          for (int k = 0; k < grid_resolution; k++) {
+            auto d = density_field[i * grid_resolution * grid_resolution +
+                                   j * grid_resolution + k];
+            if (d != 0) {  // populate non-empty voxels only
+              renderer.density.val<float32>(i, j, k) = d;
+            }
           }
         }
       }
+    } else {
+      // load particles and rasterize
+      fclose(f);
+      read_from_binary_file(particles, fn);
     }
-  } else {
-    // load particles and rasterize
-    read_from_binary_file(particles, fn);
-  }
 
-  if ((int)particles.size()) {
-    for (int i = 0; i < particles.size(); i++) {
-      for (int d = 0; d < 3; d++) {
-        particle_pos(d).val<float32>(i) = particles[i](d);
+    if ((int)particles.size()) {
+      for (int i = 0; i < particles.size(); i++) {
+        for (int d = 0; d < 3; d++) {
+          particle_pos(d).val<float32>(i) = particles[i](d);
+        }
       }
+      rasterize();
     }
-    rasterize();
-  }
+    renderer.preprocess_volume();
 
-  renderer.preprocess_volume();
+    renderer.reset();
+  };
 
   float32 exposure = 0.567;
   float32 exposure_linear = 1;
   float32 gamma = 0.5;
   float SPPS = 0;
+
+  int fid = 0;
+
+  Vector2i render_size(n * 2, n);
+  Array2D<Vector4> render_buffer;
+  render_buffer.initialize(render_size);
+
+  int state = 0;
   if (use_gui) {
     gui = std::make_unique<GUI>("Volume Renderer", Vector2i(n * 2, n));
     gui->label("Sample/pixel/sec", SPPS);
@@ -127,24 +147,26 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     gui->slider("light_ambient", renderer.parameters.light_ambient, 0.0f, 1.0f);
     gui->slider("exposure", exposure, -3.0f, 3.0f);
     gui->slider("gamma", gamma, 0.2f, 2.0f);
-    gui->button("Save", [&]{
-
-    });
-    gui->button("Render All", [&]{
+    gui->slider("file", fid, 0, 1000);
+    gui->button("Save",
+                [&] { render_buffer.write_as_image("screenshot.png"); });
+    gui->button("Render All", [&] {
 
     });
   }
-  Vector2i render_size(n * 2, n);
-  Array2D<Vector4> render_buffer;
-  render_buffer.initialize(render_size);
 
   auto tone_map = [&](real x) { return std::pow(x * exposure_linear, gamma); };
 
   std::vector<float32> buffer(render_size.prod() * 3);
 
+  auto get_fn = [&]() {
+    return fn.find('{') == std::string::npos ? fn : fmt::format(fn, fid);
+  };
+
   constexpr int N = 1;
   auto last_time = Time::get_time();
-  for (int frame = 0; frame < 1000000; frame++) {
+  for (int frame = 0;; frame++) {
+    load(get_fn());
     for (int i = 0; i < N; i++) {
       renderer.sample();
     }

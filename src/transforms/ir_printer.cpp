@@ -326,6 +326,11 @@ class IRPrinter : public IRVisitor {
           stmt->input_snode->node_type_name, stmt->output_snode->node_type_name,
           stmt->input_ptr->name());
   }
+
+  void visit(ClearAllStmt *stmt) override {
+    print("{} = clear {} deactivate={}", stmt->name(),
+          stmt->snode->node_type_name, stmt->deactivate);
+  }
 };
 
 namespace irpass {

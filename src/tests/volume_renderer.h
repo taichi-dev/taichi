@@ -131,7 +131,7 @@ class TRenderer {
   bool initial;
 
   void update_parameters() {
-    (*clear_buffer)();
+    reset();
     depth_limit.val<int32>() = parameters.depth_limit;
     max_density.val<float32>() = parameters.max_density;
     inv_max_density.val<float32>() = 1.0f / parameters.max_density;
@@ -169,7 +169,6 @@ class TRenderer {
     }
     if (needs_update()) {
       update_parameters();
-      acc_samples = 0;
     }
   }
 
@@ -706,6 +705,11 @@ class TRenderer {
       kernel_name("clear_buffer");
       For(buffer(0), [&](Expr i) { buffer[i] = Vector({0.0f, 0.0f, 0.0f}); });
     });
+  }
+
+  void reset() {
+    (*clear_buffer)();
+    acc_samples = 0;
   }
 
   void preprocess_volume() {

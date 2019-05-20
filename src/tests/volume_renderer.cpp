@@ -31,16 +31,17 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
 
   Kernel(rasterize).def([&] {
     For(particle_pos(0), [&](Expr l) {
-      auto n = Var(256);
-      auto dx = Var(1.0_f / cast<float32>(n));
-      auto inv_dx = Var(1.0_f / dx);
+      auto inv_dx = Var(cast<float32>(renderer.grid_resolution));
       auto x = Var(particle_pos[l]);
+      auto downscale = 1; //Var(256 / renderer.grid_resolution);
 
       auto base_coord = Var(floor(inv_dx * x - 0.5_f));
       auto fx = x * inv_dx - base_coord;
 
       Vector w[] = {Var(0.5_f * sqr(1.5_f - fx)), Var(0.75_f - sqr(fx - 1.0_f)),
                     Var(0.5_f * sqr(fx - 0.5_f))};
+
+      auto down_vec = Var(Vector({downscale, downscale, downscale}));
 
       // scatter
       for (int a = 0; a < 3; a++) {
@@ -49,18 +50,23 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
             auto weight = w[a](0) * w[b](1) * w[c](2);
             auto offset = Vector({a, b, c});
             auto node = base_coord.cast_elements<int32>() + offset;
-            Atomic(renderer.density[node]) += weight;
+            Atomic(renderer.density[node(0) / downscale, node(1) / downscale,
+                                    node(2) / downscale]) += weight;
           }
         }
       }
     });
   });
 
+  int last_voxel_level = 0;
+  int voxel_level = 1;
+
   auto load = [&](std::string fn) {
     static std::string last_fn;
-    if (fn == last_fn)
+    if (fn == last_fn && voxel_level == last_voxel_level)
       return;
     last_fn = fn;
+    last_voxel_level = voxel_level;
     std::vector<Vector3> particles;
     auto f = fopen(fn.c_str(), "rb");
     TC_WARN_IF(!f, "{} not found", fn);
@@ -114,6 +120,20 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
           particle_pos(d).val<float32>(i) = particles[i](d);
         }
       }
+      int coarsening = 1;
+      if (voxel_level == 1) {
+        coarsening = 1;
+      } else if (voxel_level == 2) {
+        coarsening = 4;
+      } else if (voxel_level == 3) {
+        coarsening = 16;
+      } else if (voxel_level == 4) {
+        coarsening = 64;
+      } else {
+        TC_ASSERT(false);
+      }
+      renderer.parameters.grid_resolution = 256 / coarsening;
+      renderer.check_param_update();
       TC_P(particles.size());
       rasterize();
     }
@@ -153,10 +173,10 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     gui->slider("gamma", gamma, 0.2f, 2.0f);
     gui->slider("file_id", fid, 0, 500);
     gui->slider("output_samples", output_samples, 0, 100);
+    gui->slider("grid_level", voxel_level, 1, 4);
     gui->button("Save",
                 [&] { render_buffer.write_as_image("screenshot.png"); });
-    gui->button("Render All", [&] {
-    });
+    gui->button("Render All", [&] {});
   }
 
   auto tone_map = [&](real x) { return std::pow(x * exposure_linear, gamma); };

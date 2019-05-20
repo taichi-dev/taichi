@@ -15,7 +15,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
   TC_P(fn);
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(gpu ? Arch::gpu : Arch::x86_64);
-  prog.config.print_ir = true;
+  // prog.config.print_ir = true;
   TRenderer renderer((Dict()));
 
   Vector particle_pos(DataType::f32, 3);
@@ -28,14 +28,13 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
 
   renderer.declare_kernels();
   std::unique_ptr<GUI> gui = nullptr;
-  int n = renderer.output_res.y;
-  int grid_resolution = renderer.grid_resolution;
 
   Kernel(rasterize).def([&] {
-    const int n = 256;
-    auto dx = 1.0_f / n, inv_dx = 1.0_f / dx;
     For(particle_pos(0), [&](Expr l) {
-      auto x = particle_pos[l];
+      auto n = Var(256);
+      auto dx = Var(1.0_f / cast<float32>(n));
+      auto inv_dx = Var(1.0_f / dx);
+      auto x = Var(particle_pos[l]);
 
       auto base_coord = Var(floor(inv_dx * x - 0.5_f));
       auto fx = x * inv_dx - base_coord;
@@ -71,6 +70,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     renderer.density.parent().snode()->clear_data_and_deactivate();
     renderer.density.parent().parent().snode()->clear_data_and_deactivate();
     if (fn.back() == 'n') {
+      int grid_resolution = 256;
       std::vector<float32> density_field(pow<3>(grid_resolution));
       if (std::fread(density_field.data(), sizeof(float32),
                      density_field.size(), f)) {
@@ -108,11 +108,13 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     }
 
     if ((int)particles.size()) {
+      // renderer.check_param_update();
       for (int i = 0; i < particles.size(); i++) {
         for (int d = 0; d < 3; d++) {
           particle_pos(d).val<float32>(i) = particles[i](d);
         }
       }
+      TC_P(particles.size());
       rasterize();
     }
     renderer.preprocess_volume();
@@ -132,6 +134,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
   render_buffer.initialize(render_size);
 
   int state = 0;
+  int output_samples = 1;
   if (use_gui) {
     gui = std::make_unique<GUI>("Volume Renderer",
                                 Vector2i(render_size.x, render_size.y));
@@ -148,11 +151,11 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     gui->slider("light_ambient", renderer.parameters.light_ambient, 0.0f, 1.0f);
     gui->slider("exposure", exposure, -3.0f, 3.0f);
     gui->slider("gamma", gamma, 0.2f, 2.0f);
-    gui->slider("file", fid, 0, 1000);
+    gui->slider("file_id", fid, 0, 500);
+    gui->slider("output_samples", output_samples, 0, 100);
     gui->button("Save",
                 [&] { render_buffer.write_as_image("screenshot.png"); });
     gui->button("Render All", [&] {
-
     });
   }
 

@@ -12,7 +12,7 @@ class TRenderer {
   Program::Kernel *main, *dilate, *clear_buffer;
   Vector buffer;
   Expr density;
-  int grid_resolution;
+  Expr grid_resolution;
   bool use_sky_map = true;
   int block_size = 4;
   float32 one_over_four_pi = 0.07957747154f;
@@ -35,14 +35,10 @@ class TRenderer {
   }
 
   TRenderer(Dict param) : param(param) {
-    grid_resolution = param.get("grid_resolution", 256);
     old_parameters.depth_limit = -1;  // force initial update
     output_res = param.get("output_res", Vector2i(1280, 720));
 
     acc_samples = 0;
-
-    // TC_ASSERT(bit::is_power_of_two(output_res.x));
-    // TC_ASSERT(bit::is_power_of_two(output_res.y));
 
     sky_map_size = Vector2i(512, 128);
     n_sky_samples = 1024;
@@ -55,6 +51,7 @@ class TRenderer {
 
     initial = true;
 
+    grid_resolution.declare(DataType::i32);
     depth_limit.declare(DataType::i32);
     inv_max_density.declare(DataType::f32);
     max_density.declare(DataType::f32);
@@ -73,6 +70,15 @@ class TRenderer {
     TC_ASSERT(output_res == Vector2i(1280, 720));
     root.dense(Index(0), 1024 * 1024).place(buffer(0), buffer(1), buffer(2));
 
+    root.dense(Indices(0, 1, 2), 4)
+        .bitmasked()
+        .dense(Indices(0, 1, 2), 256 / block_size)
+        // .pointer()
+        .bitmasked()
+        .dense(Indices(0, 1, 2), block_size)
+        .place(density);
+
+    /*
     if (grid_resolution <= 256) {
       root.dense(Indices(0, 1, 2), 4)
           .bitmasked()
@@ -88,6 +94,7 @@ class TRenderer {
           .dense(Indices(0, 1, 2), block_size)
           .place(density);
     }
+    */
 
     root.dense(Indices(0, 1), {sky_map_size[0], sky_map_size[1]})
         .place(sky_map);
@@ -96,6 +103,7 @@ class TRenderer {
         .place(sky_sample_uv);
 
     // parameters
+    root.place(grid_resolution);
     root.place(depth_limit);
     root.place(inv_max_density);
     root.place(max_density);
@@ -110,6 +118,7 @@ class TRenderer {
   }
 
   struct Parameters {
+    int grid_resolution;
     int depth_limit;
     float32 max_density;
     float32 ground_y;
@@ -132,6 +141,7 @@ class TRenderer {
 
   void update_parameters() {
     reset();
+    grid_resolution.val<int32>() = parameters.grid_resolution;
     depth_limit.val<int32>() = parameters.depth_limit;
     max_density.val<float32>() = parameters.max_density;
     inv_max_density.val<float32>() = 1.0f / parameters.max_density;
@@ -153,6 +163,7 @@ class TRenderer {
 
   void check_param_update() {
     if (initial) {
+      parameters.grid_resolution = param.get("grid_resolution", 256);
       parameters.depth_limit = param.get("depth_limit", 20);
       parameters.max_density = param.get("max_density", 724.0f);
       parameters.ground_y = param.get("ground_y", 0.029f);
@@ -186,9 +197,9 @@ class TRenderer {
       auto inside_box = point_inside_box(p);
       auto ret = Var(0);
       If(inside_box).Then([&] {
-        auto i = cast<int>(floor(p(0) * float32(grid_resolution)));
-        auto j = cast<int>(floor(p(1) * float32(grid_resolution)));
-        auto k = cast<int>(floor(p(2) * float32(grid_resolution)));
+        auto i = cast<int>(floor(p(0) * cast<float32>(grid_resolution)));
+        auto j = cast<int>(floor(p(1) * cast<float32>(grid_resolution)));
+        auto k = cast<int>(floor(p(2) * cast<float32>(grid_resolution)));
         ret = Probe(density, (i, j, k));
       });
       return ret;
@@ -211,9 +222,9 @@ class TRenderer {
       auto inside_box = point_inside_box(p);
       auto ret = Var(0.0f);
       If(inside_box).Then([&] {
-        auto i = cast<int>(floor(p(0) * float32(grid_resolution)));
-        auto j = cast<int>(floor(p(1) * float32(grid_resolution)));
-        auto k = cast<int>(floor(p(2) * float32(grid_resolution)));
+        auto i = cast<int>(floor(p(0) * cast<float32>(grid_resolution)));
+        auto j = cast<int>(floor(p(1) * cast<float32>(grid_resolution)));
+        auto k = cast<int>(floor(p(2) * cast<float32>(grid_resolution)));
         ret = density[i, j, k] * density_scale;
       });
       return ret;
@@ -355,7 +366,9 @@ class TRenderer {
 
           If(!point_inside_box(q)).Then([&] { cond = 0; }).Else([&] {
             If(!query_active(q))
-                .Then([&] { t += 1.0f * block_size / grid_resolution; })
+                .Then([&] {
+                  t += 1.0f * block_size / cast<float32>(grid_resolution);
+                })
                 .Else([&] {
                   auto density_at_p = query_density(q);
                   If(density_at_p * inv_max_density > Rand<float32>())
@@ -386,7 +399,9 @@ class TRenderer {
             auto q = Var(p + t * dir);
             If(!point_inside_box(q)).Then([&] { cond = 0; }).Else([&] {
               If(!query_active(q))
-                  .Then([&] { t += 1.0f * block_size / grid_resolution; })
+                  .Then([&] {
+                    t += 1.0f * block_size / cast<float32>(grid_resolution);
+                  })
                   .Else([&] {
                     auto density_at_p = query_density(q);
                     If(density_at_p * inv_max_density > Rand<float32>())
@@ -416,7 +431,7 @@ class TRenderer {
         rsign(i) = cast<float32>(d(i) > 0.0f) * 2.0f - 1.0f;  // sign...
       }
 
-      auto o = Var(pos * float32(grid_resolution));
+      auto o = Var(pos * cast<float32>(grid_resolution));
       auto ipos = Var(floor(o));
       auto dis = Var((ipos - o + 0.5f + rsign * 0.5f).element_wise_prod(rinv));
 
@@ -432,7 +447,7 @@ class TRenderer {
                   Var((ipos - o + Vector({0.5f, 0.5f, 0.5f}) - rsign * 0.5f)
                           .element_wise_prod(rinv));
               hit_distance = max(max(mini(0), mini(1)), mini(2)) *
-                             (1.0f / grid_resolution);
+                             (1.0f / cast<float32>(grid_resolution));
               hit_pos = pos + hit_distance * d;
               running = 0;
             })
@@ -474,7 +489,9 @@ class TRenderer {
             .Then([&] { cond = 0; })
             .Else([&] {
               If(!query_active(p))
-                  .Then([&] { t += 1.0f * block_size / grid_resolution; })
+                  .Then([&] {
+                    t += 1.0f * block_size / cast<float32>(grid_resolution);
+                  })
                   .Else([&] {
                     auto density_at_p = query_density(p);
                     If(density_at_p * inv_max_density > Rand<float32>())
@@ -608,9 +625,10 @@ class TRenderer {
                       .Then([&] {
                         c = normalized(out_dir(normal));
                         orig = hit_pos + 1e-4f * c;
-                        auto frac =
-                            Var(hit_pos * (1.0f * grid_resolution) -
-                                floor(hit_pos * (1.0f * grid_resolution)));
+                        auto frac = Var(
+                            hit_pos * (1.0f * cast<float32>(grid_resolution)) -
+                            floor(hit_pos *
+                                  (1.0f * cast<float32>(grid_resolution))));
                         auto bcount = Var(0);
                         auto th = Var(1e-3f * density_scale);
                         bcount += frac(0) < th;

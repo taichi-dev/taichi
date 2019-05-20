@@ -26,7 +26,8 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
   bool initial_shuffle = param.get("initial_shuffle", false);
   TC_P(initial_shuffle);
   prog.config.lower_access = param.get("lower_access", false);
-  TC_P(prog.config.lower_access);
+  int stagger = param.get("stagger", true);
+  TC_P(stagger);
 
   constexpr int dim = 3, n = 256, grid_block_size = 4, n_particles = 775196;
   const real dt = 1e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
@@ -95,7 +96,7 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
   Kernel(sort).def([&] {
     BlockDim(1024);
     For(particle_x(0), [&](Expr p) {
-      auto node_coord = floor(particle_x[p] * inv_dx - 0.5_f);
+      auto node_coord = floor(particle_x[p] * inv_dx + (0.5_f - stagger));
       Append(l.parent(),
              (cast<int32>(node_coord(0)), cast<int32>(node_coord(1)),
               cast<int32>(node_coord(2))),
@@ -127,7 +128,7 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
                         (Matrix::identity(3) * lambda) * (J - 1.0f) * J);
       auto affine =
           Var(particle_mass * C - (4 * inv_dx * inv_dx * dt * vol) * cauchy);
-      int low = 0, high = 1;
+      int low = -1 + stagger, high = stagger;
       auto base_coord_i =
           AssumeInRange(cast<int32>(base_coord(0)), i, low, high);
       auto base_coord_j =
@@ -188,7 +189,7 @@ auto mpm_benchmark = [](std::vector<std::string> cli_param) {
       auto fx = x * inv_dx - base_coord;
       Vector w[] = {Var(0.5_f * sqr(1.5_f - fx)), Var(0.75_f - sqr(fx - 1.0_f)),
                     Var(0.5_f * sqr(fx - 0.5_f))};
-      int low = 0, high = 1;
+      int low = -1 + stagger, high = stagger;
       auto base_coord_i =
           AssumeInRange(cast<int32>(base_coord(0)), i, low, high);
       auto base_coord_j =

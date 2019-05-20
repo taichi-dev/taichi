@@ -242,6 +242,8 @@ auto fem = [](std::vector<std::string> cli_param) {
   TC_P(prog.config.attempt_vectorized_load_cpu);
   bool use_pointer = param.get("use_pointer", true);
   TC_P(use_pointer);
+  bool block_soa = param.get("block_soa", true);
+  TC_P(block_soa);
   prog.config.lazy_compilation = false;
 
   Vector x(DataType::f32, dim), r(DataType::f32, dim), p(DataType::f32, dim),
@@ -256,7 +258,6 @@ auto fem = [](std::vector<std::string> cli_param) {
 
   int block_size = 8;
 
-  bool block_soa = true;
 
   layout([&]() {
     auto ijk = Indices(0, 1, 2);

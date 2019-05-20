@@ -22,9 +22,10 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
 
   int threads = param.get("threads", 8);
   TC_P(threads);
-  int vec = param.get("vec", block_size);
-  TC_P(vec);
+  bool vec_option = param.get("vec", true);
+  int vec = vec_option ? block_size : 1;
   TC_ASSERT(vec == 1 || vec == block_size);
+  TC_P(vec);
   bool load_gt = param.get("load_gt", false);
   TC_P(load_gt)
   bool gpu = param.get("gpu", false);

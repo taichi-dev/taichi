@@ -154,8 +154,10 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
   Array2D<Vector4> render_buffer;
   render_buffer.initialize(render_size);
 
-  int state = 0;
-  int output_samples = 1;
+  int frame = 0;
+  int video_mode = 0;
+  int output_samples = 10;
+  int video_step = 1;
   if (use_gui) {
     gui = std::make_unique<GUI>("Volume Renderer",
                                 Vector2i(render_size.x, render_size.y));
@@ -175,12 +177,15 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     gui->slider("file_id", fid, 0, 500);
     gui->slider("output_samples", output_samples, 0, 100);
     gui->slider("grid_level", voxel_level, 1, 4);
+    gui->slider("video_step", video_step, 1, 10);
     gui->button("Save", [&] {
       static int counter = 0;
       render_buffer.write_as_image(fmt::format("screenshot{}.png", counter++));
     });
     gui->button("Render All", [&] {
-      
+      create_directories("frames");
+      frame = -video_step;
+      video_mode = true;
     });
   }
 
@@ -194,9 +199,12 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
 
   constexpr int N = 1;
   auto last_time = Time::get_time();
-  for (int frame = 0;; frame++) {
+  for (frame = 0;; frame++) {
+    auto ft = Time::get_time();
+    if (video_mode)
+      fid = frame;
     load(get_fn());
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < (video_mode ? output_samples : N); i++) {
       renderer.sample();
     }
     if (frame % 10 == 0) {
@@ -219,6 +227,10 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
                   tone_map(scale * buffer[i * 3 + 2]), 1.0f);
     });
 
+    if (video_mode) {
+      render_buffer.write_as_image(fmt::format("frames/{:04d}.png", frame));
+    }
+
     if (use_gui) {
       gui->canvas->img = render_buffer;
       gui->update();
@@ -229,6 +241,9 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
                                              N,
                                              renderer.parameters.depth_limit));
     }
+    if (video_mode)
+      frame += video_step - 1;
+    TC_P(Time::get_time() - ft);
   }
 };
 TC_REGISTER_TASK(volume_renderer);

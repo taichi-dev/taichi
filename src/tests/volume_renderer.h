@@ -62,6 +62,7 @@ class TRenderer {
     light_phi.declare(DataType::f32);
     light_theta.declare(DataType::f32);
     light_smoothness.declare(DataType::f32);
+    density_scale.declare(DataType::f32);
 
     box_min.declare(DataType::f32, 3);
     box_max.declare(DataType::f32, 3);
@@ -101,6 +102,7 @@ class TRenderer {
     root.place(light_phi);
     root.place(light_theta);
     root.place(light_smoothness);
+    root.place(density_scale);
     root.place(box_min);
     root.place(box_max);
   }
@@ -114,6 +116,7 @@ class TRenderer {
     float32 light_smoothness;
     float32 box_min[3];
     float32 box_max[3];
+    float32 density_scale;
   };
 
   Expr depth_limit;
@@ -121,6 +124,7 @@ class TRenderer {
   Expr max_density;
   Expr ground_y;
   Expr light_phi, light_theta, light_smoothness;
+  Expr density_scale;
   bool initial;
 
   void update_parameters() {
@@ -132,6 +136,7 @@ class TRenderer {
     light_phi.val<float32>() = parameters.light_phi;
     light_theta.val<float32>() = parameters.light_theta;
     light_smoothness.val<float32>() = parameters.light_smoothness;
+    density_scale.val<float32>() = parameters.density_scale;
     for (int i = 0; i < 3; i++) {
       box_min(i).val<float32>() = parameters.box_min[i];
       box_max(i).val<float32>() = parameters.box_max[i];
@@ -150,6 +155,7 @@ class TRenderer {
       parameters.light_phi = param.get("light_phi", 0.419f);
       parameters.light_theta = param.get("light_theta", 0.218f);
       parameters.light_smoothness = param.get("light_smoothness", 0.05f);
+      parameters.density_scale = param.get("density_scale", 400);
       for (int i = 0; i < 3; i++) {
         parameters.box_min[i] = param.get("box_min", Vector3(0.0f))(i);
         parameters.box_max[i] = param.get("box_max", Vector3(1.0f))(i);
@@ -192,7 +198,7 @@ class TRenderer {
         auto i = cast<int>(floor(p(0) * float32(grid_resolution)));
         auto j = cast<int>(floor(p(1) * float32(grid_resolution)));
         auto k = cast<int>(floor(p(2) * float32(grid_resolution)));
-        ret = density[i, j, k];
+        ret = density[i, j, k] * density_scale;
       });
       return ret;
     };

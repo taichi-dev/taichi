@@ -116,6 +116,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     gui = std::make_unique<GUI>("Volume Renderer", Vector2i(n * 2, n));
     gui->label("Sample/pixel/sec", SPPS);
     gui->slider("depth_limit", renderer.parameters.depth_limit, 1, 20);
+    gui->slider("density_scale", renderer.parameters.density_scale, 1.0f, 2000.0f);
     gui->slider("max_density", renderer.parameters.max_density, 1.0f, 2000.0f);
     gui->slider("ground_y", renderer.parameters.ground_y, 0.0f, 0.4f);
     gui->slider("light_phi", renderer.parameters.light_phi, 0.0f, pi * 2);

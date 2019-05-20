@@ -576,7 +576,12 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
       renderer.parameters.box_min[d] = 1e16f;
       renderer.parameters.box_max[d] = -1e16f;
     }
+
+    std::vector<Vector3> particles;
     for (int i = 0; i < n_particles; i++) {
+      particles.push_back(Vector3(particle_x(0).val<float32>(i),
+                                  particle_x(1).val<float32>(i),
+                                  particle_x(2).val<float32>(i)));
       for (int d = 0; d < 3; d++) {
         renderer.parameters.box_min[d] = std::min(
             renderer.parameters.box_min[d], particle_x(d).val<float32>(i));
@@ -584,6 +589,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
             renderer.parameters.box_max[d], particle_x(d).val<float32>(i));
       }
     }
+    write_to_binary_file(particles, fmt::format("{:04d}.tcb", frame));
     for (int d = 0; d < 3; d++) {
       renderer.parameters.box_min[d] -= 5.0f / grid_n;
       renderer.parameters.box_max[d] += 5.0f / grid_n;

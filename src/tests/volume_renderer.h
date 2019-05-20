@@ -613,11 +613,16 @@ class TRenderer {
                       auto frac =
                           Var(hit_pos * (1.0f * grid_resolution) -
                               floor(hit_pos * (1.0f * grid_resolution)));
-                      auto P = Var(max(frac(0), max(frac(1), frac(2))));
-                      auto Q = Var(min(frac(0), min(frac(1), frac(2))));
-                      auto boarder = Var(min(1.0f - P, Q));
+                      auto bcount = Var(0);
+                      auto th = Var(1e-3f * density_scale);
+                      bcount += frac(0) < th;
+                      bcount += frac(1) < th;
+                      bcount += frac(2) < th;
+                      bcount += 1.0f - th < frac(0);
+                      bcount += 1.0f - th < frac(1);
+                      bcount += 1.0f - th < frac(2);
                       auto albedo = Var(Vector({0.8f, 0.5f, 0.5f}));
-                      If(boarder < density_scale * 1e-3f).Then([&] {
+                      If(bcount >= 2).Then([&] {
                         albedo *= 0.1f;
                       });
                       throughput = throughput.element_wise_prod(albedo);

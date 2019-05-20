@@ -11,23 +11,6 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
-void write_partio(std::vector<Vector3> positions,
-                  const std::string &file_name) {
-  Partio::ParticlesDataMutable *parts = Partio::create();
-  Partio::ParticleAttribute posH;
-  posH = parts->addAttribute("position", Partio::VECTOR, 3);
-  for (auto p : positions) {
-    int idx = parts->addParticle();
-    float32 *p_p = parts->dataWrite<float32>(posH, idx);
-    for (int k = 0; k < 3; k++)
-      p_p[k] = 0.f;
-    for (int k = 0; k < 3; k++)
-      p_p[k] = p[k];
-  }
-  Partio::write(file_name.c_str(), *parts);
-  parts->release();
-}
-
 enum class MPMMaterial : int { fluid, jelly, snow, sand };
 
 auto mpm3d = [](std::vector<std::string> cli_param) {
@@ -80,6 +63,8 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   TC_P(bbox);
   TC_P(scene);
 
+  // scene 1: ball drop   2: jets
+
   Vector particle_x("x", f32, dim), particle_v("v", f32, dim);
   Matrix particle_F("F", f32, dim, dim), particle_C("C", f32, dim, dim);
 
@@ -90,7 +75,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   Vector grid_v("v^{g}", f32, dim);
   NamedScalar(grid_m, m ^ {p}, f32);
 
-  int max_n_particles = 1024 * 1024;
+  int max_n_particles = 1024 * 1024 * 4;
 
   int n_particles = 0;
   std::vector<float> benchmark_particles;
@@ -111,26 +96,36 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
         p_x[i][j] = benchmark_particles[i * 3 + j];
     }
   } else {
-    n_particles = max_n_particles / (highres ? 1 : 8);
-    p_x.resize(n_particles);
-    if (false) {
-      for (int i = 0; i < n_particles; i++) {
-        p_x[i].x = 0.4_f + rand() * 0.2_f;
-        p_x[i].y = 0.15_f + rand() * 0.55_f;
-        p_x[i].z = 0.4_f + rand() * 0.2_f;
-      }
-    } else {
-      for (int i = 0; i < n_particles; i++) {
-        Vector3 offset = Vector3::rand() - Vector3(0.5_f);
-        while (offset.length() > 0.5f) {
-          offset = Vector3::rand() - Vector3(0.5_f);
+    if (scene == 1) {
+      n_particles = max_n_particles / (highres ? 1 : 8);
+      p_x.resize(n_particles);
+      if (false) {
+        for (int i = 0; i < n_particles; i++) {
+          p_x[i].x = 0.4_f + rand() * 0.2_f;
+          p_x[i].y = 0.15_f + rand() * 0.55_f;
+          p_x[i].z = 0.4_f + rand() * 0.2_f;
         }
-        p_x[i] = Vector3(0.5_f) + offset * 0.25f;
+      } else {
+        for (int i = 0; i < n_particles; i++) {
+          Vector3 offset = Vector3::rand() - Vector3(0.5_f);
+          while (offset.length() > 0.5f) {
+            offset = Vector3::rand() - Vector3(0.5_f);
+          }
+          p_x[i] = Vector3(0.5_f) + offset * 0.25f;
+        }
       }
     }
   }
 
   TC_ASSERT(n_particles <= max_n_particles);
+
+  auto sample_unit_sphere = [&] {
+    Vector3 offset = Vector3::rand() - Vector3(0.5_f);
+    while (offset.length() > 0.5f) {
+      offset = Vector3::rand() - Vector3(0.5_f);
+    }
+    return offset * 2.0f;
+  };
 
   auto i = Index(0), j = Index(1), k = Index(2);
   auto p = Index(3);
@@ -461,6 +456,27 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   std::sort(p_x.begin(), p_x.end(),
             [&](Vector3 a, Vector3 b) { return block_id(a) < block_id(b); });
 
+  auto insert_part = [&](int i, Vector3 pos, Vector3 v) {
+    for (int d = 0; d < dim; d++) {
+      particle_x(d).val<float32>(i) = pos[d];
+    }
+    particle_v(0).val<float32>(i) = v(0);
+    particle_v(1).val<float32>(i) = v(1);
+    particle_v(2).val<float32>(i) = v(2);
+    if (material == MPMMaterial::sand) {
+      particle_J.val<float32>(i) = 0_f;
+    } else {
+      particle_J.val<float32>(i) = 1_f;
+    }
+    if (material != MPMMaterial::fluid) {
+      for (int p = 0; p < dim; p++) {
+        for (int q = 0; q < dim; q++) {
+          particle_F(p, q).val<float32>(i) = (p == q);
+        }
+      }
+    }
+  };
+
   auto reset = [&] {
     for (int i = 0; i < n_particles; i++) {
       for (int d = 0; d < dim; d++) {
@@ -520,7 +536,35 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
 
   auto tone_map = [](real x) { return std::sqrt(x); };
   // auto &canvas = gui.get_canvas();
-  for (int frame = 1;; frame++) {
+  for (int frame = 0;; frame++) {
+    if (scene == 2) {
+      int N = 10000;
+      if (n_particles + N <= max_n_particles) {
+        for (int i = 0; i < N; i++) {
+          insert_part(i + frame * N,
+                      sample_unit_sphere() * 0.1f + Vector3(0.5f, 0.5f, 0.5f),
+                      Vector3());
+        }
+        n_particles += N;
+      }
+    }
+    if (scene == 3) {
+      int N = 10000;
+      if (n_particles + N <= max_n_particles) {
+        for (int i = 0; i < N / 2; i++) {
+          insert_part(i + frame * N,
+                      sample_unit_sphere() * 0.03f + Vector3(0.4f, 0.6f, 0.4f),
+                      Vector3(10, 0, 10));
+        }
+        for (int i = N / 2; i < N; i++) {
+          insert_part(i + frame * N,
+                      sample_unit_sphere() * 0.03f + Vector3(0.6f, 0.6f, 0.6f),
+                      Vector3(-10, 0, -10));
+        }
+        n_particles += N;
+      }
+    }
+    TC_P(n_particles)
     simulate_frame();
     // auto res = canvas.img.get_res();
 
@@ -547,7 +591,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
 
     set_renderer_volume();
     renderer.preprocess_volume();
-    int nsamples = 50;
+    int nsamples = 21;
     for (int s = 0; s < nsamples; s++) {
       renderer.sample();
     }

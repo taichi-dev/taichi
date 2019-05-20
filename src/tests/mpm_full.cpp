@@ -30,7 +30,9 @@ void write_partio(std::vector<Vector3> positions,
 
 enum class MPMMaterial : int { fluid, jelly, snow, sand };
 
-auto mpm3d = []() {
+auto mpm3d = [](std::vector<std::string> cli_param) {
+  auto param = parse_param(cli_param);
+
   Program prog(Arch::gpu);
   prog.config.lower_access = false;
 
@@ -41,7 +43,6 @@ auto mpm3d = []() {
   bool benchmark_dragon = false;
   // Program prog(Arch::x86_64);
   // prog.config.print_ir = true;
-  auto material = MPMMaterial::snow;
   constexpr int dim = 3;
   constexpr bool highres = true;
 
@@ -58,6 +59,26 @@ auto mpm3d = []() {
 
   auto f32 = DataType::f32;
   int grid_block_size = 4;
+
+  bool bbox = param.get("bbox", false);
+  int scene = param.get("scene", 0);
+  std::string material_name = param.get("material_name", "snow");
+  MPMMaterial material;
+  if (material_name == "snow") {
+    material = MPMMaterial::snow;
+  } else if (material_name == "sand") {
+    material = MPMMaterial::sand;
+  } else if (material_name == "fluid") {
+    material = MPMMaterial::fluid;
+  } else if (material_name == "jelly") {
+    material = MPMMaterial::jelly;
+  } else {
+    TC_ERROR("Unknown material {}", material_name);
+  }
+
+  TC_P(material_name);
+  TC_P(bbox);
+  TC_P(scene);
 
   Vector particle_x("x", f32, dim), particle_v("v", f32, dim);
   Matrix particle_F("F", f32, dim, dim), particle_C("C", f32, dim, dim);
@@ -226,6 +247,7 @@ auto mpm3d = []() {
       Matrix F;
       if (material == MPMMaterial::fluid) {
         particle_J[p] *= 1.0_f + dt * (C(0, 0) + C(1, 1) + C(2, 2));
+        J = particle_J[p];
       } else {
         F = Var(Matrix::identity(dim) + dt * C) * particle_F[p];
       }
@@ -341,14 +363,14 @@ auto mpm3d = []() {
         v(0) += dt * f;
       });
 
-      /*
-      v(0) = select(n - bound < i, min(v(0), Expr(0.0_f)), v(0));
-      v(1) = select(n - bound < j, min(v(1), Expr(0.0_f)), v(1));
-      v(2) = select(n - bound < k, min(v(2), Expr(0.0_f)), v(2));
+      if (bbox) {
+        v(0) = select(n - bound < i, min(v(0), Expr(0.0_f)), v(0));
+        v(1) = select(n - bound < j, min(v(1), Expr(0.0_f)), v(1));
+        v(2) = select(n - bound < k, min(v(2), Expr(0.0_f)), v(2));
 
-      v(0) = select(i < bound, max(v(0), Expr(0.0_f)), v(0));
-      v(2) = select(k < bound, max(v(2), Expr(0.0_f)), v(2));
-      */
+        v(0) = select(i < bound, max(v(0), Expr(0.0_f)), v(0));
+        v(2) = select(k < bound, max(v(2), Expr(0.0_f)), v(2));
+      }
 
       If(j < bound, [&] {
         auto norm = Var(sqrt(v(0) * v(0) + v(2) * v(2)));

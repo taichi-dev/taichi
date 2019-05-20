@@ -315,6 +315,12 @@ class TRenderer {
 
     auto eval_phase_isotropic = [&]() { return pdf_phase_isotropic(); };
 
+    auto dir_to_sky = [&]() {
+      auto phi = light_phi + (Rand<float32>() - 0.5f) * light_smoothness;
+      auto theta = light_theta + (Rand<float32>() - 0.5f) * light_smoothness;
+      return Vector({cos(phi) * cos(theta), sin(theta), sin(phi) * cos(theta)});
+    };
+
     // Direct sample light
     auto sample_light = [&](Vector p) {
       auto ret = Vector({0.0f, 0.0f, 0.0f});
@@ -352,16 +358,12 @@ class TRenderer {
 
         ret = Var(transmittance * Le * inv_dist_to_p * inv_dist_to_p);
       } else {
-        auto phi = light_phi + (Rand<float32>() - 0.5f) * light_smoothness;
-        auto theta = light_theta + (Rand<float32>() - 0.5f) * light_smoothness;
-
-        auto dir_to_sky = Var(
-            Vector({cos(phi) * cos(theta), sin(theta), sin(phi) * cos(theta)}));
+        auto dir = Var(dir_to_sky());
 
         auto Le = Var(3.0f * Vector({1.0f, 1.0f, 1.0f}));
         auto near_t = Var(-std::numeric_limits<float>::max());
         auto far_t = Var(std::numeric_limits<float>::max());
-        auto hit = box_intersect(p, dir_to_sky, near_t, far_t);
+        auto hit = box_intersect(p, dir, near_t, far_t);
         auto transmittance = Var(1.f);
 
         If(hit, [&] {
@@ -370,7 +372,7 @@ class TRenderer {
 
           While(cond, [&] {
             t -= log(1.f - Rand<float32>()) * inv_max_density;
-            auto q = Var(p + t * dir_to_sky);
+            auto q = Var(p + t * dir);
             If(!point_inside_box(q)).Then([&] { cond = 0; }).Else([&] {
               If(!query_active(q))
                   .Then([&] { t += 1.0f * block_size / grid_resolution; })
@@ -585,8 +587,8 @@ class TRenderer {
                     });
               });
             })
-            .Else([&] { // negative ones are for voxels
-              While(depth < -depth_limit, [&] {
+            .Else([&] {  // negative ones are for voxels
+              While(depth < -depth_limit + 1, [&] {
                 auto hit_dist = Var(0.0f);
                 auto hit_pos = Var(Vector({1.0f, 1.0f, 1.0f}));
                 auto normal = Var(Vector({1.0f, 1.0f, 1.0f}));
@@ -599,26 +601,18 @@ class TRenderer {
                       throughput = throughput.element_wise_prod(
                           Vector({0.3f, 0.3f, 0.4f}));
 
-                      /*
-                      If(depth == 1).Then([&] {
-                        // direct lighting on camera ray...
-                        get_next_hit(orig, Vector({0.5f, 0.3f, -0.1f}),
-                                     hit_dist, hit_pos, normal);
-                        If(hit_dist < 0.0f).Then([&] {
-                          buffer[i] += throughput.element_wise_prod(
-                              Vector({0.3f, 0.3f, 0.3f}));
-                        });
+                      // direct lighting
+                      auto light_dir = Var(dir_to_sky());
+                      get_next_hit(orig, light_dir, hit_dist, hit_pos, normal);
+                      If(hit_dist < 0.0f).Then([&] {
+                        Li += throughput.element_wise_prod(
+                            Vector({0.3f, 0.3f, 0.3f}));
                       });
-                      */
-
-                      Li += Vector({1.0f, 1.0f, 1.0f});
-
-                      depth = -depth_limit;
                     })
                     .Else([&] {
-                      //buffer[i] +=
+                      // buffer[i] +=
                       //    throughput.element_wise_prod(background(p, c));
-                      depth = -depth_limit;
+                      depth = -depth_limit + 1;
                     });
               });
             });

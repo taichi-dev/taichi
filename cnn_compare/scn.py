@@ -36,12 +36,15 @@ for co in range(0, 16):
 conv = conv.cuda()
 
 conv_sparse_voxel = conv(sparse_voxel)
-start = time.time()
+min_time = 1e10
 for i in range(50):
+    start = time.time()
     conv_sparse_voxel = conv(sparse_voxel)
-end = time.time()
+    end = time.time()
+    if end - start < min_time:
+        min_time = end - start
 print(conv_sparse_voxel)
-print('time:', (end - start) / 50)
+print('time:', min_time)
 
 sparse_to_dense = scn.SparseToDense(3, 16)
 output_voxel = sparse_to_dense(conv_sparse_voxel)

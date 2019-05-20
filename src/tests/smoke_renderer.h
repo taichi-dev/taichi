@@ -4,42 +4,30 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class TRenderer {
+class SmokeRenderer {
  public:
   Vector2i output_res;
   Vector2i sky_map_size;
   int n_sky_samples;
-  Program::Kernel *main, *dilate, *clear_buffer;
+  Program::Kernel *main, *dilate;
   Vector buffer;
+  int depth_limit;
   Expr density;
   int grid_resolution;
-  bool use_sky_map = true;
+  bool use_sky_map = false;
+  bool use_box_size_optimization = false;
   int block_size = 4;
   float32 one_over_four_pi = 0.07957747154f;
   float32 pi = 3.14159265359f;
   Vector sky_map;
   Vector sky_sample_color;
   Vector sky_sample_uv;
-  Vector box_min;
-  Vector box_max;
-  int acc_samples;
   Dict param;
 
-  bool needs_update() {
-    for (int i = 0; i < sizeof(Parameters); i++) {
-      if (((char *)(&old_parameters))[i] != ((char *)(&parameters))[i]) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  TRenderer(Dict param) : param(param) {
+  SmokeRenderer(Dict param) : param(param) {
     grid_resolution = param.get("grid_resolution", 256);
-    old_parameters.depth_limit = -1;  // force initial update
+    depth_limit = param.get("depth_limit", 128);
     output_res = param.get("output_res", Vector2i(1024, 512));
-
-    acc_samples = 0;
 
     TC_ASSERT(bit::is_power_of_two(output_res.x));
     TC_ASSERT(bit::is_power_of_two(output_res.y));
@@ -52,19 +40,6 @@ class TRenderer {
     sky_map.declare(DataType::f32, 3);
     sky_sample_color.declare(DataType::f32, 3);
     sky_sample_uv.declare(DataType::f32, 2);
-
-    initial = true;
-
-    depth_limit.declare(DataType::i32);
-    inv_max_density.declare(DataType::f32);
-    max_density.declare(DataType::f32);
-    ground_y.declare(DataType::f32);
-    light_phi.declare(DataType::f32);
-    light_theta.declare(DataType::f32);
-    light_smoothness.declare(DataType::f32);
-
-    box_min.declare(DataType::f32, 3);
-    box_max.declare(DataType::f32, 3);
   }
 
   void place_data() {
@@ -92,88 +67,23 @@ class TRenderer {
     root.dense(Indices(0), n_sky_samples)
         .place(sky_sample_color)
         .place(sky_sample_uv);
-
-    // parameters
-    root.place(depth_limit);
-    root.place(inv_max_density);
-    root.place(max_density);
-    root.place(ground_y);
-    root.place(light_phi);
-    root.place(light_theta);
-    root.place(light_smoothness);
-    root.place(box_min);
-    root.place(box_max);
-  }
-
-  struct Parameters {
-    int depth_limit;
-    float32 max_density;
-    float32 ground_y;
-    float32 light_phi;
-    float32 light_theta;
-    float32 light_smoothness;
-    float32 box_min[3];
-    float32 box_max[3];
-  };
-
-  Expr depth_limit;
-  Expr inv_max_density;
-  Expr max_density;
-  Expr ground_y;
-  Expr light_phi, light_theta, light_smoothness;
-  bool initial;
-
-  void update_parameters() {
-    (*clear_buffer)();
-    depth_limit.val<int32>() = parameters.depth_limit;
-    max_density.val<float32>() = parameters.max_density;
-    inv_max_density.val<float32>() = 1.0f / parameters.max_density;
-    ground_y.val<float32>() = parameters.ground_y;
-    light_phi.val<float32>() = parameters.light_phi;
-    light_theta.val<float32>() = parameters.light_theta;
-    light_smoothness.val<float32>() = parameters.light_smoothness;
-    for (int i = 0; i < 3; i++) {
-      box_min(i).val<float32>() = parameters.box_min[i];
-      box_max(i).val<float32>() = parameters.box_max[i];
-    }
-    old_parameters = parameters;
-  }
-
-  Parameters old_parameters;
-  Parameters parameters;
-
-  void check_param_update() {
-    if (initial) {
-      parameters.depth_limit = param.get("depth_limit", 20);
-      parameters.max_density = param.get("max_density", 724.0f);
-      parameters.ground_y = param.get("ground_y", 0.029f);
-      parameters.light_phi = param.get("light_phi", 0.419f);
-      parameters.light_theta = param.get("light_theta", 0.218f);
-      parameters.light_smoothness = param.get("light_smoothness", 0.05f);
-      for (int i = 0; i < 3; i++) {
-        parameters.box_min[i] = param.get("box_min", Vector3(0.0f))(i);
-        parameters.box_max[i] = param.get("box_max", Vector3(1.0f))(i);
-      }
-      initial = false;
-    }
-    if (needs_update()) {
-      update_parameters();
-      acc_samples = 0;
-    }
   }
 
   void declare_kernels() {
-    Vector3 albedo(0.9, 0.95, 1);
+    auto inv_max_density = 1 / param.get("target_max_density", 1.f);
+    auto albedo = param.get("albedo", Vector3(0.9, 0.95, 1));
     auto const block_size = 4;
+    auto lower_bound = -0.0f;
+    auto upper_bound = 1.0f;
 
     auto point_inside_box = [&](Vector p) {
-      return Var(box_min(0) <= p(0) && p(0) < box_max(0) &&
-                 box_min(1) <= p(1) && p(1) < box_max(1) &&
-                 box_min(2) <= p(2) && p(2) < box_max(2));
+      return Var(lower_bound <= p(0) && p(0) < upper_bound &&
+                 lower_bound <= p(1) && p(1) < upper_bound &&
+                 lower_bound <= p(2) && p(2) < upper_bound);
     };
 
     auto query_active = [&](Vector p) {
-      auto inside_box = point_inside_box(p);
+      auto inside_box = Var(1);  // point_inside_box(p);
       auto ret = Var(0);
       If(inside_box).Then([&] {
         auto i = cast<int>(floor(p(0) * float32(grid_resolution)));
@@ -204,8 +114,8 @@ class TRenderer {
       /* For each pair of AABB planes */
       for (int i = 0; i < 3; i++) {
         auto origin = o(i);
-        auto min_val = Var(box_min(i));
-        auto max_val = Var(box_max(i));
+        auto min_val = Var(lower_bound);
+        auto max_val = Var(use_box_size_optimization ? 0.6f : upper_bound);
         auto d_rcp = Var(1.f / d(i));
 
         If(d(i) == 0.f)
@@ -234,57 +144,6 @@ class TRenderer {
       return result;
     };
 
-    // The signed distance field of the geometry
-    auto sdf = [&](Vector q) {
-      /*
-      float32 alpha = -0.7f;
-      auto p =
-          Vector({(cos(alpha) * q(0) + sin(alpha) * q(2) + 1.0f) % 2.0f - 1.0f,
-                  q(1), -sin(alpha) * q(0) + cos(alpha) * q(2)});
-
-      auto dist_sphere = p.norm() - 0.5f;
-      auto dist_walls = min(p(2) + 6.0f, p(1) + 1.0f);
-      Vector d =
-          Var(abs(p + Vector({-1.0f, 0.5f, -1.0f})) - Vector({0.3f, 1.2f,
-      0.2f}));
-
-      auto dist_cube = norm(d.map([](const Expr &v) { return max(v, 0.0f); })) +
-                       min(max(max(d(0), d(1)), d(2)), 0.0f);
-
-      return min(dist_sphere, min(dist_walls, dist_cube));
-      */
-      return q(1);
-    };
-
-    float32 eps = 1e-5f;
-    float32 dist_limit = 1e2;
-    int limit = 100;
-
-    // shoot a ray
-    auto ray_march = [&](Vector p, Vector dir) {
-      auto j = Var(0);
-      auto dist = Var(0.0f);
-      While(j < limit && sdf(p + dist * dir) > eps && dist < dist_limit, [&] {
-        dist += sdf(p + dist * dir);
-        j += 1;
-      });
-      return dist;
-    };
-
-    // normal near the surface
-    auto sdf_normal = [&](Vector p) {
-      float32 d = 1e-3f;
-      Vector n(3);
-      // finite difference
-      for (int i = 0; i < 3; i++) {
-        auto inc = Var(p), dec = Var(p);
-        inc(i) += d;
-        dec(i) -= d;
-        n(i) = (0.5f / d) * (sdf(inc) - sdf(dec));
-      }
-      return normalized(n);
-    };
-
     // Adapted from Mitsuba: src/libcore/warp.cpp#L25
     auto sample_phase_isotropic = [&]() {
       auto z = Var(1.0f - 2.0f * Rand<float32>());
@@ -300,7 +159,7 @@ class TRenderer {
     auto eval_phase_isotropic = [&]() { return pdf_phase_isotropic(); };
 
     // Direct sample light
-    auto sample_light = [&](Vector p) {
+    auto sample_light = [&](Vector p, float32 inv_max_density) {
       auto ret = Vector({0.0f, 0.0f, 0.0f});
       if (!use_sky_map) {  // point light source
         auto Le = Var(700.0f * Vector({5.0f, 5.0f, 5.0f}));
@@ -336,13 +195,21 @@ class TRenderer {
 
         ret = Var(transmittance * Le * inv_dist_to_p * inv_dist_to_p);
       } else {
-        auto phi = light_phi + (Rand<float32>() - 0.5f) * light_smoothness;
-        auto theta = light_theta + (Rand<float32>() - 0.5f) * light_smoothness;
+        auto sample = Var(cast<int>(Rand<float32>() * float32(n_sky_samples)));
+        auto uv = Var(sky_sample_uv[sample]);
+        auto phi = Var(uv(0) * (2 * pi));
+        auto theta = Var(uv(1) * (pi / 2));
+        // auto phi = Var(0.0f);
+        // auto theta = Var(0.9f);
 
         auto dir_to_sky = Var(
             Vector({cos(phi) * cos(theta), sin(theta), sin(phi) * cos(theta)}));
+        /*
+        auto dir_to_sky = Var(
+            normalized(Vector({2.5f, 1.0f, 0.5f})));
+                  */
 
-        auto Le = Var(3.0f * Vector({1.0f, 1.0f, 1.0f}));
+        auto Le = Var(sky_sample_color[sample]);
         auto near_t = Var(-std::numeric_limits<float>::max());
         auto far_t = Var(std::numeric_limits<float>::max());
         auto hit = box_intersect(p, dir_to_sky, near_t, far_t);
@@ -350,7 +217,7 @@ class TRenderer {
 
         If(hit, [&] {
           auto cond = Var(hit);
-          auto t = Var(max(near_t + 1e-4f, 0.0f));
+          auto t = Var(0.0f);
 
           While(cond, [&] {
             t -= log(1.f - Rand<float32>()) * inv_max_density;
@@ -376,9 +243,9 @@ class TRenderer {
     };
 
     // Woodcock tracking
-    auto sample_volume_distance = [&](Vector o, Vector d, Expr &dist,
-                                      Vector &sigma_s, Expr &transmittance,
-                                      Vector &p) {
+    auto sample_distance = [&](Vector o, Vector d, float32 inv_max_density,
+                               Expr &dist, Vector &sigma_s, Expr &transmittance,
+                               Vector &p) {
       auto near_t = Var(-std::numeric_limits<float>::max());
       auto far_t = Var(std::numeric_limits<float>::max());
       auto hit = box_intersect(o, d, near_t, far_t);
@@ -418,7 +285,7 @@ class TRenderer {
       return hit && interaction;
     };
 
-    auto background = [&](Vector p, Vector dir) {
+    auto background = [&](Vector dir) {
       // return Vector({0.4f, 0.4f, 0.4f});
       auto ret = Var(Vector({0.0f, 0.0f, 0.0f}));
       If(dir(1) >= 0.0f)
@@ -430,9 +297,7 @@ class TRenderer {
             ret = sky_map[u, v];
           })
           .Else([&] {
-            auto albedo = Var( Vector({0.1f, 0.12f, 0.14f}));
-            auto background = Var( Vector({0.1f, 0.12f, 0.14f}));
-            ret = background + albedo.element_wise_prod(sample_light(p));
+            ret = Vector({0.6f, 0.6f, 0.6f});
           });
       return ret;
     };
@@ -441,8 +306,8 @@ class TRenderer {
 
     main = &kernel([&]() {
       kernel_name("main");
-      Parallelize(param.get<int>("num_threads", 16));
-      Vectorize(param.get<int>("vectorization", 1));
+      Parallelize(8);
+      Vectorize(1);
       BlockDim(32);
       For(0, output_res.prod(), [&](Expr i) {
         auto orig_input = param.get("orig", Vector3(0.5, 0.3, 1.5f));
@@ -470,22 +335,22 @@ class TRenderer {
         auto depth = Var(0);
 
         While(depth < depth_limit, [&] {
-          auto volume_dist = Var(0.f);
+          auto dist = Var(0.f);
           auto transmittance = Var(0.f);
           auto sigma_s = Var(Vector({0.f, 0.f, 0.f}));
           auto interaction_p = Var(Vector({0.f, 0.f, 0.f}));
-          auto volume_interaction = sample_volume_distance(
-              orig, c, volume_dist, sigma_s, transmittance, interaction_p);
-          auto surface_dist = Var(ray_march(orig, c));
+          auto interaction =
+              sample_distance(orig, c, inv_max_density, dist, sigma_s,
+                              transmittance, interaction_p);
 
           depth += 1;
-          If(volume_interaction)
+          If(interaction)
               .Then([&] {
                 throughput =
                     throughput.element_wise_prod(sigma_s * transmittance);
 
                 auto phase_value = eval_phase_isotropic();
-                auto light_value = sample_light(interaction_p);
+                auto light_value = sample_light(interaction_p, inv_max_density);
                 Li += phase_value * throughput.element_wise_prod(light_value);
 
                 orig = interaction_p;
@@ -494,8 +359,7 @@ class TRenderer {
               .Else([&] {
                 if (use_sky_map) {
                   If(depth == 1).Then([&] {
-                    auto p = Var(orig - ((orig(1) - ground_y) / c(1) * c));
-                    Li += throughput.element_wise_prod(background(p, c));
+                    Li += throughput.element_wise_prod(background(c));
                   });
                 }
                 depth = depth_limit;
@@ -511,16 +375,13 @@ class TRenderer {
       f = fopen("sky_map.bin", "rb");
       TC_ASSERT_INFO(f, "./sky_map.bin not found");
       std::vector<uint32> sky_map_data(sky_map_size.prod() * 3);
-      if (std::fread(sky_map_data.data(), sizeof(uint32), sky_map_data.size(),
-                     f)) {
-      }
+      std::fread(sky_map_data.data(), sizeof(uint32), sky_map_data.size(), f);
 
       f = fopen("sky_samples.bin", "rb");
       TC_ASSERT_INFO(f, "./sky_samples.bin not found");
       std::vector<uint32> sky_sample_data(n_sky_samples * 5);
-      if (std::fread(sky_sample_data.data(), sizeof(uint32),
-                     (int)sky_sample_data.size(), f)) {
-      }
+      std::fread(sky_sample_data.data(), sizeof(uint32), sky_sample_data.size(),
+                 f);
 
       for (int i = 0; i < sky_map_size[0]; i++) {
         for (int j = 0; j < sky_map_size[1]; j++) {
@@ -535,7 +396,7 @@ class TRenderer {
       for (int i = 0; i < n_sky_samples; i++) {
         for (int d = 0; d < 2; d++) {
           sky_sample_uv(d).val<float32>(i) =
-              sky_sample_data[i * 5 + d] * (1.0f / (sky_map_size[d]));
+              sky_sample_data[i * 5 + 1 - d] * (1.0f / (sky_map_size[d]));
         }
         for (int d = 0; d < 3; d++) {
           sky_sample_color(d).val<float32>(i) =
@@ -557,11 +418,6 @@ class TRenderer {
         }
       });
     });
-
-    clear_buffer = &kernel([&] {
-      kernel_name("clear_buffer");
-      For(buffer(0), [&](Expr i) { buffer[i] = Vector({0.0f, 0.0f, 0.0f}); });
-    });
   }
 
   void preprocess_volume() {
@@ -569,9 +425,7 @@ class TRenderer {
   }
 
   void sample() {
-    check_param_update();
     (*main)();
-    acc_samples += 1;
   }
 };
 

@@ -81,7 +81,9 @@ auto mpm3d = []() {
     auto f = fopen("dragon_particles.bin", "rb");
     TC_ASSERT_INFO(f, "./dragon_particles.bin not found");
     benchmark_particles.resize(n_particles * 3);
-    if (std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3, f)) {};
+    if (std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3,
+                   f)) {
+    };
     std::fclose(f);
     for (int i = 0; i < n_particles; i++) {
       for (int j = 0; j < dim; j++)
@@ -317,25 +319,7 @@ auto mpm3d = []() {
     });
   });
 
-  /*auto check_fluctuation = [&] {
-    int last_nb = -1;
-    while (1) {
-      grid_m.parent().parent().snode()->clear_data_and_deactivate();
-      sort();
-      p2g_sorted();
-      auto stat = grid_m.parent().parent().snode()->stat();
-      int nb = stat.num_resident_blocks;
-      TC_P(nb);
-      if (last_nb == -1) {
-        last_nb = nb;
-      } else {
-        TC_ASSERT(last_nb == nb);
-      }
-    }
-  };*/
-
   auto p2g = [&] {
-    // check_fluctuation();
     grid_m.parent().parent().snode()->clear_data();
     sort();
     p2g_sorted();
@@ -369,7 +353,7 @@ auto mpm3d = []() {
       If(j < bound, [&] {
         auto norm = Var(sqrt(v(0) * v(0) + v(2) * v(2)));
         auto s = Var(clamp(
-            (norm + v(1) * (material == MPMMaterial::sand ? 1.0f : 0.10f)) /
+            (norm + v(1) * (material == MPMMaterial::sand ? 1.0f : 0.20f)) /
                 (norm + 1e-30f),
             Expr(0.0_f), Expr(1.0_f)));
 
@@ -506,8 +490,8 @@ auto mpm3d = []() {
 
   Kernel(set_renderer_volume).def([&] {
     For(grid_m, [&](Expr i, Expr j, Expr k) {
-      If (grid_m[i, j, k] > 0.0f).Then([&]{
-        renderer.density[i, j, k] = grid_m[i, j, k] * 40.0f;
+      If(grid_m[i, j, k] > 0.0f).Then([&] {
+        renderer.density[i, j, k] = grid_m[i, j, k] * 100.0f;
       });
     });
   });
@@ -521,9 +505,27 @@ auto mpm3d = []() {
     renderer.density.parent().snode()->clear_data_and_deactivate();
     renderer.density.parent().parent().snode()->clear_data_and_deactivate();
     renderer.buffer(0).parent().snode()->clear_data();
+
+    for (int d = 0; d < 3; d++) {
+      renderer.parameters.box_min[d] = 1e16f;
+      renderer.parameters.box_max[d] = -1e16f;
+    }
+    for (int i = 0; i < n_particles; i++) {
+      for (int d = 0; d < 3; d++) {
+        renderer.parameters.box_min[d] = std::min(
+            renderer.parameters.box_min[d], particle_x(d).val<float32>(i));
+        renderer.parameters.box_max[d] = std::max(
+            renderer.parameters.box_max[d], particle_x(d).val<float32>(i));
+      }
+    }
+    for (int d = 0; d < 3; d++) {
+      renderer.parameters.box_min[d] -= 5.0f / grid_n;
+      renderer.parameters.box_max[d] += 5.0f / grid_n;
+    }
+
     set_renderer_volume();
     renderer.preprocess_volume();
-    int nsamples = 200;
+    int nsamples = 50;
     for (int s = 0; s < nsamples; s++) {
       renderer.sample();
     }

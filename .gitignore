@@ -22,3 +22,5 @@ layout*
 blocks
 *.vdb
 *.log
+*.png
+*_rendered*

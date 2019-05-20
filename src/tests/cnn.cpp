@@ -15,17 +15,21 @@ constexpr int num_ch1 = 16, num_ch2 = 16;
 auto cnn = [](std::vector<std::string> cli_param) {
   CoreState::set_trigger_gdb_when_crash(true);
   auto param = parse_param(cli_param);
+  auto gpu = param.get("gpu", true);
+  auto opt = param.get("opt", true);
   auto use_dense = param.get("use_dense", false);
   auto write_input_voxel = param.get("write_input", true);
   TC_P(use_dense);
 
-  Program prog(Arch::gpu);
-  prog.config.lower_access = true;
+  Program prog(gpu ? Arch::gpu : Arch::x86_64);
+  prog.config.simplify_before_lower_access = opt;
+  prog.config.lower_access = opt;
+  prog.config.simplify_after_lower_access = opt;
   // prog.config.print_ir = true;
 
   // constexpr int dim = 3;
 
-  int block_size = 4;
+  int block_size = gpu ? 4 : 8;
 
   Global(layer1, f32);
   Global(layer2, f32);
@@ -53,7 +57,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
       "mesh", Dict()
           .set("resolution", Vector3(n))
           .set("translate", Vector3(0.55, 0.35, 0.47))
-          .set("scale", Vector3(1.1))
+          .set("scale", Vector3(0.5))
           .set("adaptive", false)
           .set("filename", "$mpm/bunny_small.obj"));
   float *in_data = new float[num_ch1 * n * n * n];
@@ -79,15 +83,24 @@ auto cnn = [](std::vector<std::string> cli_param) {
   }
   std::cout << "non_zero:" << count << ", total:" << (num_ch1 * n * n * n) << std::endl;
   if (write_input_voxel) {
-    auto f = fopen("bunny.bin", "wb");
+    auto f = fopen("bunny_sparse.bin", "wb");
     fwrite(in_data, sizeof(float), num_ch1 * n * n * n, f);
     fclose(f);
   }
 
   Kernel(forward).def([&] {
     // Cache(0, layer1);
-    Cache(1, weights);
-    BlockDim(256);
+    bool use_cache = false;
+    if (opt && gpu) {
+      use_cache = true;
+      Cache(1, weights);
+    }
+    if (!gpu) {
+      Parallelize(8);
+      Vectorize(block_size);
+    } else {
+      BlockDim(256);
+    }
     For(layer2, [&](Expr i, Expr j, Expr k, Expr c_out) {
       auto sum = Var(0.0f);
       for (int c_in = 0; c_in < num_ch1; c_in++) {
@@ -96,7 +109,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
             for (int dz = -1; dz < 2; dz++) {
               auto weight = weights[Expr(dx + 1), Expr(dy + 1), Expr(dz + 1),
                                     c_in * num_ch2 + c_out];
-              auto c_in2 = AssumeInRange(c_in, c_out, 0, 1);
+              auto c_in2 = use_cache ? AssumeInRange(c_in, c_out, 0, 1) : c_in;
               sum += weight * layer1[i + dx, j + dy, k + dz, c_in2];
               // layer2[i, j, k, c_out] += weight * layer1[i + dx, j + dy, k +
               // dz, c_in];
@@ -110,6 +123,13 @@ auto cnn = [](std::vector<std::string> cli_param) {
 
   // expand blocks
   kernel([&] {
+    if (!gpu) {
+      Parallelize(8);
+      //Vectorize(block_size);
+    } else {
+      BlockDim(256);
+    }
+
     kernel_name("dilate");
     For(layer1, [&](Expr i, Expr j, Expr k) {
       If(i % block_size == 0 && j % block_size == 0 && k % block_size == 0)
@@ -144,8 +164,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
   }
 
   // prog.config.print_ir = true;
-
-  for (int i = 0; i < 1; i++) {
+  for (int i = 0; i < 50; i++) {
     forward();
   }
   prog.profiler_print();

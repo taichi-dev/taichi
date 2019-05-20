@@ -7,7 +7,8 @@ n = 256
 num_ch = 16
 
 input_voxel = array.array('f')
-f = open('bunny.bin', 'rb')
+#f = open('bunny.bin', 'rb')
+f = open('bunny_sparse.bin', 'rb')
 input_voxel.fromfile(f, num_ch * n * n * n)
 
 input_voxel = torch.tensor(input_voxel)

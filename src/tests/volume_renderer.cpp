@@ -15,7 +15,6 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
   TC_P(fn);
   CoreState::set_trigger_gdb_when_crash(true);
   Program prog(gpu ? Arch::gpu : Arch::x86_64);
-  // prog.config.print_ir = true;
   TRenderer renderer((Dict()));
 
   Vector particle_pos(DataType::f32, 3);
@@ -70,6 +69,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     std::vector<Vector3> particles;
     auto f = fopen(fn.c_str(), "rb");
     TC_WARN_IF(!f, "{} not found", fn);
+
     if (!f)
       return;
 
@@ -121,6 +121,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
           particle_pos(d).val<float32>(i) = particles[i](d);
         }
       }
+
       int coarsening = 1;
       if (voxel_level == 1) {
         coarsening = 1;
@@ -138,6 +139,24 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
       TC_P(particles.size());
       rasterize();
     }
+    for (int d = 0; d < 3; d++) {
+      renderer.parameters.box_min[d] = 1e16f;
+      renderer.parameters.box_max[d] = -1e16f;
+    }
+
+    for (int i = 0; i < particles.size(); i++) {
+      for (int d = 0; d < 3; d++) {
+        renderer.parameters.box_min[d] = std::min(
+            renderer.parameters.box_min[d], particle_pos(d).val<float32>(i));
+        renderer.parameters.box_max[d] = std::max(
+            renderer.parameters.box_max[d], particle_pos(d).val<float32>(i));
+      }
+    }
+    for (int d = 0; d < 3; d++) {
+      renderer.parameters.box_min[d] -= 5.0f / 256;
+      renderer.parameters.box_max[d] += 5.0f / 256;
+    }
+
     renderer.preprocess_volume();
 
     renderer.reset();
@@ -243,6 +262,8 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     }
     if (video_mode)
       frame += video_step - 1;
+    gui->canvas->img.write_as_image(fmt::format("gui/{:05d}.png", frame));
+    Time::sleep(0.03);
     TC_P(Time::get_time() - ft);
   }
 };

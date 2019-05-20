@@ -55,11 +55,11 @@ auto cnn = [](std::vector<std::string> cli_param) {
 
   auto tex = create_instance<Texture>(
       "mesh", Dict()
-          .set("resolution", Vector3(n))
-          .set("translate", Vector3(0.55, 0.35, 0.47))
-          .set("scale", Vector3(0.5))
-          .set("adaptive", false)
-          .set("filename", "$mpm/bunny_small.obj"));
+                  .set("resolution", Vector3(n))
+                  .set("translate", Vector3(0.55, 0.35, 0.47))
+                  .set("scale", Vector3(0.5))
+                  .set("adaptive", false)
+                  .set("filename", "$mpm/bunny_small.obj"));
   float *in_data = new float[num_ch1 * n * n * n];
   memset(in_data, 0, sizeof(float) * num_ch1 * n * n * n);
   int count = 0;
@@ -81,7 +81,8 @@ auto cnn = [](std::vector<std::string> cli_param) {
       }
     }
   }
-  std::cout << "non_zero:" << count << ", total:" << (num_ch1 * n * n * n) << std::endl;
+  std::cout << "non_zero:" << count << ", total:" << (num_ch1 * n * n * n)
+            << std::endl;
   if (write_input_voxel) {
     auto f = fopen("bunny_sparse.bin", "wb");
     fwrite(in_data, sizeof(float), num_ch1 * n * n * n, f);
@@ -125,7 +126,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
   kernel([&] {
     if (!gpu) {
       Parallelize(8);
-      //Vectorize(block_size);
+      // Vectorize(block_size);
     } else {
       BlockDim(256);
     }
@@ -154,8 +155,8 @@ auto cnn = [](std::vector<std::string> cli_param) {
         for (int dy = -1; dy < 2; dy++) {
           for (int dz = -1; dz < 2; dz++) {
             if (dx == 0 && dy == 0 && dz == 0)
-                weights.val<float32>(dx + 1, dy + 1, dz + 1,
-                                     c_in * num_ch2 + c_out) = inc;
+              weights.val<float32>(dx + 1, dy + 1, dz + 1,
+                                   c_in * num_ch2 + c_out) = inc;
             inc += 0.1f;
           }
         }
@@ -170,13 +171,14 @@ auto cnn = [](std::vector<std::string> cli_param) {
   prog.profiler_print();
 
   // Write the first layer of output
-  float *data = new float[(n-2) * (n-2) * (n-2)];
+  float *data = new float[(n - 2) * (n - 2) * (n - 2)];
   int non_zero = 0;
   int zero = 0;
-  for (int i = 1; i < (n-1); i++) {
-    for (int j = 1; j < (n-1); j++) {
-      for (int k = 1; k < (n-1); k++) {
-        data[((0 * (n-2) + (k-1)) * (n-2) + (j-1)) * (n-2) + (i-1)] = layer2.val<float32>(i, j, k, 0);
+  for (int i = 1; i < (n - 1); i++) {
+    for (int j = 1; j < (n - 1); j++) {
+      for (int k = 1; k < (n - 1); k++) {
+        data[((0 * (n - 2) + (k - 1)) * (n - 2) + (j - 1)) * (n - 2) +
+             (i - 1)] = layer2.val<float32>(i, j, k, 0);
         if (layer2.val<float32>(i, j, k, 0) != 0) {
           non_zero++;
         } else {
@@ -189,7 +191,7 @@ auto cnn = [](std::vector<std::string> cli_param) {
   std::cerr << "Sparsity:" << (double)non_zero / (double)(non_zero + zero)
             << std::endl;
   auto f_out = fopen("our_bunny.bin", "wb");
-  fwrite(data, sizeof(float), (n-2) * (n-2) * (n-2), f_out);
+  fwrite(data, sizeof(float), (n - 2) * (n - 2) * (n - 2), f_out);
   fclose(f_out);
 
 #if 0

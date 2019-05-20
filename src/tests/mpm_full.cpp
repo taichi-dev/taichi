@@ -45,6 +45,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
 
   bool bbox = param.get("bbox", false);
   int scene = param.get("scene", 0);
+  std::string output = param.get<std::string>("output");
   std::string material_name = param.get("material_name", "snow");
   MPMMaterial material;
   if (material_name == "snow") {
@@ -502,10 +503,8 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
 
   reset();
 
-  Vector2i cam_res(1024, 512);
-
-  int np = 512;
-  GUI gui("MPM", cam_res);
+  auto res = renderer.output_res;
+  GUI gui("MPM", res);
 
   auto simulate_frame = [&]() {
     grid_m.parent().parent().snode()->clear_data_and_deactivate();
@@ -529,7 +528,7 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
   Kernel(set_renderer_volume).def([&] {
     For(grid_m, [&](Expr i, Expr j, Expr k) {
       If(grid_m[i, j, k] > 0.0f).Then([&] {
-        renderer.density[i, j, k] = grid_m[i, j, k] * 100.0f;
+        renderer.density[i, j, k] = grid_m[i, j, k];
       });
     });
   });
@@ -589,7 +588,9 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
             renderer.parameters.box_max[d], particle_x(d).val<float32>(i));
       }
     }
-    write_to_binary_file(particles, fmt::format("{:04d}.tcb", frame));
+    create_directories(fmt::format("final_particles/{}", output));
+    write_to_binary_file(
+        particles, fmt::format("final_particles/{}/{:04d}.tcb", output, frame));
     for (int d = 0; d < 3; d++) {
       renderer.parameters.box_min[d] -= 5.0f / grid_n;
       renderer.parameters.box_max[d] += 5.0f / grid_n;
@@ -597,14 +598,14 @@ auto mpm3d = [](std::vector<std::string> cli_param) {
 
     set_renderer_volume();
     renderer.preprocess_volume();
-    int nsamples = 21;
+    int nsamples = 51;
     for (int s = 0; s < nsamples; s++) {
       renderer.sample();
     }
 
     real scale = 1.0f / nsamples;
-    for (int i = 0; i < np * np * 2; i++) {
-      gui.canvas->img[i / np][i % np] =
+    for (int i = 0; i < res.prod(); i++) {
+      gui.canvas->img[i / res.y][i % res.y] =
           Vector4(tone_map(scale * renderer.buffer(0).val<float32>(i)),
                   tone_map(scale * renderer.buffer(1).val<float32>(i)),
                   tone_map(scale * renderer.buffer(2).val<float32>(i)), 1);

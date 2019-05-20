@@ -116,15 +116,23 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     gui = std::make_unique<GUI>("Volume Renderer", Vector2i(n * 2, n));
     gui->label("Sample/pixel/sec", SPPS);
     gui->slider("depth_limit", renderer.parameters.depth_limit, -10, 20);
-    gui->slider("density_scale", renderer.parameters.density_scale, 1.0f, 2000.0f);
+    gui->slider("density_scale", renderer.parameters.density_scale, 1.0f,
+                2000.0f);
     gui->slider("max_density", renderer.parameters.max_density, 1.0f, 2000.0f);
     gui->slider("ground_y", renderer.parameters.ground_y, 0.0f, 0.4f);
     gui->slider("light_phi", renderer.parameters.light_phi, 0.0f, pi * 2);
     gui->slider("light_theta", renderer.parameters.light_theta, 0.0f, pi / 2);
     gui->slider("light_smoothness", renderer.parameters.light_smoothness, 0.0f,
                 0.7f);
+    gui->slider("light_ambient", renderer.parameters.light_ambient, 0.0f, 1.0f);
     gui->slider("exposure", exposure, -3.0f, 3.0f);
     gui->slider("gamma", gamma, 0.2f, 2.0f);
+    gui->button("Save", [&]{
+
+    });
+    gui->button("Render All", [&]{
+
+    });
   }
   Vector2i render_size(n * 2, n);
   Array2D<Vector4> render_buffer;

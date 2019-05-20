@@ -62,6 +62,7 @@ class TRenderer {
     light_phi.declare(DataType::f32);
     light_theta.declare(DataType::f32);
     light_smoothness.declare(DataType::f32);
+    light_ambient.declare(DataType::f32);
     density_scale.declare(DataType::f32);
 
     box_min.declare(DataType::f32, 3);
@@ -102,6 +103,7 @@ class TRenderer {
     root.place(light_phi);
     root.place(light_theta);
     root.place(light_smoothness);
+    root.place(light_ambient);
     root.place(density_scale);
     root.place(box_min);
     root.place(box_max);
@@ -114,6 +116,7 @@ class TRenderer {
     float32 light_phi;
     float32 light_theta;
     float32 light_smoothness;
+    float32 light_ambient;
     float32 box_min[3];
     float32 box_max[3];
     float32 density_scale;
@@ -123,7 +126,7 @@ class TRenderer {
   Expr inv_max_density;
   Expr max_density;
   Expr ground_y;
-  Expr light_phi, light_theta, light_smoothness;
+  Expr light_phi, light_theta, light_smoothness, light_ambient;
   Expr density_scale;
   bool initial;
 
@@ -136,6 +139,7 @@ class TRenderer {
     light_phi.val<float32>() = parameters.light_phi;
     light_theta.val<float32>() = parameters.light_theta;
     light_smoothness.val<float32>() = parameters.light_smoothness;
+    light_ambient.val<float32>() = parameters.light_ambient;
     density_scale.val<float32>() = parameters.density_scale;
     for (int i = 0; i < 3; i++) {
       box_min(i).val<float32>() = parameters.box_min[i];
@@ -155,6 +159,7 @@ class TRenderer {
       parameters.light_phi = param.get("light_phi", 0.419f);
       parameters.light_theta = param.get("light_theta", 0.218f);
       parameters.light_smoothness = param.get("light_smoothness", 0.05f);
+      parameters.light_ambient = param.get("light_ambient", 0.15f);
       parameters.density_scale = param.get("density_scale", 400);
       for (int i = 0; i < 3; i++) {
         parameters.box_min[i] = param.get("box_min", Vector3(0.0f))(i);
@@ -196,7 +201,9 @@ class TRenderer {
           Var(0 <= p(0) && p(0) < grid_resolution && 0 <= p(1) &&
               p(1) < grid_resolution && 0 <= p(2) && p(2) < grid_resolution);
       auto ret = Var(0.0f);
-      If(inside_box).Then([&] { ret = density[p]; });
+      If(inside_box).Then([&] {
+        ret = max(Expr(0.0f), density[p] - 0.001f * max_density);
+      });
       return ret;
     };
 
@@ -316,8 +323,13 @@ class TRenderer {
     auto eval_phase_isotropic = [&]() { return pdf_phase_isotropic(); };
 
     auto dir_to_sky = [&]() {
-      auto phi = light_phi + (Rand<float32>() - 0.5f) * light_smoothness;
-      auto theta = light_theta + (Rand<float32>() - 0.5f) * light_smoothness;
+      auto phi = Var(light_phi + (Rand<float32>() - 0.5f) * light_smoothness);
+      auto theta =
+          Var(light_theta + (Rand<float32>() - 0.5f) * light_smoothness);
+      If(Rand<float32>() < light_ambient).Then([&] {
+        phi = Rand<float32>() * (2.0f * pi);
+        theta = Rand<float32>() * (0.5f * pi);
+      });
       return Vector({cos(phi) * cos(theta), sin(theta), sin(phi) * cos(theta)});
     };
 
@@ -597,9 +609,18 @@ class TRenderer {
                 If(hit_dist > 0.0f)
                     .Then([&] {
                       c = normalized(out_dir(normal));
-                      orig = hit_pos;
-                      throughput = throughput.element_wise_prod(
-                          Vector({0.6f, 0.5f, 0.5f}));
+                      orig = hit_pos + 1e-4f * c;
+                      auto frac =
+                          Var(hit_pos * (1.0f * grid_resolution) -
+                              floor(hit_pos * (1.0f * grid_resolution)));
+                      auto P = Var(max(frac(0), max(frac(1), frac(2))));
+                      auto Q = Var(min(frac(0), min(frac(1), frac(2))));
+                      auto boarder = Var(min(1.0f - P, Q));
+                      auto albedo = Var(Vector({0.8f, 0.5f, 0.5f}));
+                      If(boarder < density_scale * 1e-3f).Then([&] {
+                        albedo *= 0.1f;
+                      });
+                      throughput = throughput.element_wise_prod(albedo);
 
                       // direct lighting
                       auto light_dir = Var(dir_to_sky());

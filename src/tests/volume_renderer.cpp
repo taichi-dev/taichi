@@ -31,7 +31,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
 
   Kernel(rasterize).def([&] {
     For(particle_pos(0), [&](Expr l) {
-      auto inv_dx = Var(cast<float32>(renderer.grid_resolution));
+      auto inv_dx = Var(cast<float32>(256));
       auto x = Var(particle_pos[l]);
       auto downscale = 1; //Var(256 / renderer.grid_resolution);
 

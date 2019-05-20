@@ -37,12 +37,12 @@ class TRenderer {
   TRenderer(Dict param) : param(param) {
     grid_resolution = param.get("grid_resolution", 256);
     old_parameters.depth_limit = -1;  // force initial update
-    output_res = param.get("output_res", Vector2i(1024, 512));
+    output_res = param.get("output_res", Vector2i(1280, 720));
 
     acc_samples = 0;
 
-    TC_ASSERT(bit::is_power_of_two(output_res.x));
-    TC_ASSERT(bit::is_power_of_two(output_res.y));
+    // TC_ASSERT(bit::is_power_of_two(output_res.x));
+    // TC_ASSERT(bit::is_power_of_two(output_res.y));
 
     sky_map_size = Vector2i(512, 128);
     n_sky_samples = 1024;
@@ -70,8 +70,8 @@ class TRenderer {
   }
 
   void place_data() {
-    root.dense(Index(0), output_res.prod())
-        .place(buffer(0), buffer(1), buffer(2));
+    TC_ASSERT(output_res == Vector2i(1280, 720));
+    root.dense(Index(0), 1024 * 1024).place(buffer(0), buffer(1), buffer(2));
 
     if (grid_resolution <= 256) {
       root.dense(Indices(0, 1, 2), 4)
@@ -535,117 +535,116 @@ class TRenderer {
       Parallelize(param.get<int>("num_threads", 16));
       Vectorize(param.get<int>("vectorization", 1));
       BlockDim(32);
-      For(0, output_res.prod(), [&](Expr i) {
-        auto orig_input = param.get("orig", Vector3(0.5, 0.3, 1.5f));
-        auto orig = Var(Vector({orig_input.x, orig_input.y, orig_input.z}));
+      For(0, (int)bit::least_pot_bound(output_res.prod()), [&](Expr i) {
+        If(i < output_res.prod()).Then([&] {
+          auto orig_input = param.get("orig", Vector3(0.5, 0.3, 1.5f));
+          auto orig = Var(Vector({orig_input.x, orig_input.y, orig_input.z}));
 
-        auto n = output_res.y;
-        auto bid = Var(i / 32);
-        auto tid = Var(i % 32);
-        auto x = Var(bid / (n / 4) * 8 + tid / 4),
-             y = Var(bid % (n / 4) * 4 + tid % 4);
+          auto x = Var(i / output_res.y);
+          auto y = Var(i % output_res.y);
 
-        auto c = Var(Vector({fov * ((Rand<float32>() + cast<float32>(x)) /
-                                        float32(output_res.y / 2) -
-                                    (float32)output_res.x / output_res.y),
-                             fov * ((Rand<float32>() + cast<float32>(y)) /
-                                        float32(output_res.y / 2) -
-                                    1.0f),
-                             -1.0f}));
+          auto c = Var(Vector({fov * ((Rand<float32>() + cast<float32>(x)) /
+                                          float32(output_res.y / 2) -
+                                      (float32)output_res.x / output_res.y),
+                               fov * ((Rand<float32>() + cast<float32>(y)) /
+                                          float32(output_res.y / 2) -
+                                      1.0f),
+                               -1.0f}));
 
-        c = normalized(c);
+          c = normalized(c);
 
-        auto color = Var(Vector({1.0f, 1.0f, 1.0f}));
-        auto Li = Var(Vector({0.0f, 0.0f, 0.0f}));
-        auto throughput = Var(Vector({1.0f, 1.0f, 1.0f}));
-        auto depth = Var(0);
+          auto color = Var(Vector({1.0f, 1.0f, 1.0f}));
+          auto Li = Var(Vector({0.0f, 0.0f, 0.0f}));
+          auto throughput = Var(Vector({1.0f, 1.0f, 1.0f}));
+          auto depth = Var(0);
 
-        If(depth_limit > 0)
-            .Then([&] {
-              While(depth < depth_limit, [&] {
-                auto volume_dist = Var(0.f);
-                auto transmittance = Var(0.f);
-                auto sigma_s = Var(Vector({0.f, 0.f, 0.f}));
-                auto interaction_p = Var(Vector({0.f, 0.f, 0.f}));
-                auto volume_interaction =
-                    sample_volume_distance(orig, c, volume_dist, sigma_s,
-                                           transmittance, interaction_p);
-                auto surface_dist = Var(ray_march(orig, c));
+          If(depth_limit > 0)
+              .Then([&] {
+                While(depth < depth_limit, [&] {
+                  auto volume_dist = Var(0.f);
+                  auto transmittance = Var(0.f);
+                  auto sigma_s = Var(Vector({0.f, 0.f, 0.f}));
+                  auto interaction_p = Var(Vector({0.f, 0.f, 0.f}));
+                  auto volume_interaction =
+                      sample_volume_distance(orig, c, volume_dist, sigma_s,
+                                             transmittance, interaction_p);
+                  auto surface_dist = Var(ray_march(orig, c));
 
-                depth += 1;
-                If(volume_interaction)
-                    .Then([&] {
-                      throughput =
-                          throughput.element_wise_prod(sigma_s * transmittance);
+                  depth += 1;
+                  If(volume_interaction)
+                      .Then([&] {
+                        throughput = throughput.element_wise_prod(
+                            sigma_s * transmittance);
 
-                      auto phase_value = eval_phase_isotropic();
-                      auto light_value = sample_light(interaction_p);
-                      Li += phase_value *
-                            throughput.element_wise_prod(light_value);
+                        auto phase_value = eval_phase_isotropic();
+                        auto light_value = sample_light(interaction_p);
+                        Li += phase_value *
+                              throughput.element_wise_prod(light_value);
 
-                      orig = interaction_p;
-                      c = sample_phase_isotropic();
-                    })
-                    .Else([&] {
-                      if (use_sky_map) {
-                        If(depth == 1).Then([&] {
-                          auto p =
-                              Var(orig - ((orig(1) - ground_y) / c(1) * c));
-                          Li += throughput.element_wise_prod(background(p, c));
+                        orig = interaction_p;
+                        c = sample_phase_isotropic();
+                      })
+                      .Else([&] {
+                        if (use_sky_map) {
+                          If(depth == 1).Then([&] {
+                            auto p =
+                                Var(orig - ((orig(1) - ground_y) / c(1) * c));
+                            Li +=
+                                throughput.element_wise_prod(background(p, c));
+                          });
+                        }
+                        depth = depth_limit;
+                      });
+                });
+              })
+              .Else([&] {  // negative ones are for voxels
+                While(depth < -depth_limit + 1, [&] {
+                  auto hit_dist = Var(0.0f);
+                  auto hit_pos = Var(Vector({1.0f, 1.0f, 1.0f}));
+                  auto normal = Var(Vector({1.0f, 1.0f, 1.0f}));
+                  get_next_hit(orig, c, hit_dist, hit_pos, normal);
+                  depth += 1;
+                  If(hit_dist > 0.0f)
+                      .Then([&] {
+                        c = normalized(out_dir(normal));
+                        orig = hit_pos + 1e-4f * c;
+                        auto frac =
+                            Var(hit_pos * (1.0f * grid_resolution) -
+                                floor(hit_pos * (1.0f * grid_resolution)));
+                        auto bcount = Var(0);
+                        auto th = Var(1e-3f * density_scale);
+                        bcount += frac(0) < th;
+                        bcount += frac(1) < th;
+                        bcount += frac(2) < th;
+                        bcount += 1.0f - th < frac(0);
+                        bcount += 1.0f - th < frac(1);
+                        bcount += 1.0f - th < frac(2);
+                        auto albedo = Var(Vector({0.8f, 0.5f, 0.5f}));
+                        If(bcount >= 2).Then([&] { albedo *= 0.1f; });
+                        throughput = throughput.element_wise_prod(albedo);
+
+                        // direct lighting
+                        auto light_dir = Var(dir_to_sky());
+                        get_next_hit(orig, light_dir, hit_dist, hit_pos,
+                                     normal);
+                        If(hit_dist < 0.0f).Then([&] {
+                          Li += throughput.element_wise_prod(
+                              Vector({0.5f, 0.5f, 0.5f}));
                         });
-                      }
-                      depth = depth_limit;
-                    });
+                      })
+                      .Else([&] {
+                        // buffer[i] +=
+                        //    throughput.element_wise_prod(background(p, c));
+                        If(depth == 1).Then([&] {
+                          Li += Vector({100.0f, 100.0f, 100.0f});
+                        });
+                        depth = -depth_limit + 1;
+                      });
+                });
               });
-            })
-            .Else([&] {  // negative ones are for voxels
-              While(depth < -depth_limit + 1, [&] {
-                auto hit_dist = Var(0.0f);
-                auto hit_pos = Var(Vector({1.0f, 1.0f, 1.0f}));
-                auto normal = Var(Vector({1.0f, 1.0f, 1.0f}));
-                get_next_hit(orig, c, hit_dist, hit_pos, normal);
-                depth += 1;
-                If(hit_dist > 0.0f)
-                    .Then([&] {
-                      c = normalized(out_dir(normal));
-                      orig = hit_pos + 1e-4f * c;
-                      auto frac =
-                          Var(hit_pos * (1.0f * grid_resolution) -
-                              floor(hit_pos * (1.0f * grid_resolution)));
-                      auto bcount = Var(0);
-                      auto th = Var(1e-3f * density_scale);
-                      bcount += frac(0) < th;
-                      bcount += frac(1) < th;
-                      bcount += frac(2) < th;
-                      bcount += 1.0f - th < frac(0);
-                      bcount += 1.0f - th < frac(1);
-                      bcount += 1.0f - th < frac(2);
-                      auto albedo = Var(Vector({0.8f, 0.5f, 0.5f}));
-                      If(bcount >= 2).Then([&] {
-                        albedo *= 0.1f;
-                      });
-                      throughput = throughput.element_wise_prod(albedo);
 
-                      // direct lighting
-                      auto light_dir = Var(dir_to_sky());
-                      get_next_hit(orig, light_dir, hit_dist, hit_pos, normal);
-                      If(hit_dist < 0.0f).Then([&] {
-                        Li += throughput.element_wise_prod(
-                            Vector({0.5f, 0.5f, 0.5f}));
-                      });
-                    })
-                    .Else([&] {
-                      // buffer[i] +=
-                      //    throughput.element_wise_prod(background(p, c));
-                      If(depth == 1).Then([&] {
-                        Li += Vector({100.0f, 100.0f, 100.0f});
-                      });
-                      depth = -depth_limit + 1;
-                    });
-              });
-            });
-
-        buffer[x * output_res.y + y] += Li;
+          buffer[x * output_res.y + y] += Li;
+        });
       });
     });
 

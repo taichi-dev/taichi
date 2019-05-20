@@ -127,13 +127,14 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
 
   int fid = 0;
 
-  Vector2i render_size(n * 2, n);
+  Vector2i render_size(1280, 720);
   Array2D<Vector4> render_buffer;
   render_buffer.initialize(render_size);
 
   int state = 0;
   if (use_gui) {
-    gui = std::make_unique<GUI>("Volume Renderer", Vector2i(n * 2, n));
+    gui = std::make_unique<GUI>("Volume Renderer",
+                                Vector2i(render_size.x + 200, render_size.y));
     gui->label("Sample/pixel/sec", SPPS);
     gui->slider("depth_limit", renderer.parameters.depth_limit, -10, 20);
     gui->slider("density_scale", renderer.parameters.density_scale, 1.0f,
@@ -157,7 +158,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
 
   auto tone_map = [&](real x) { return std::pow(x * exposure_linear, gamma); };
 
-  std::vector<float32> buffer(render_size.prod() * 3);
+  std::vector<float32> buffer(render_size.prod() * 5);
 
   auto get_fn = [&]() {
     return fn.find('{') == std::string::npos ? fn : fmt::format(fn, fid);
@@ -183,8 +184,8 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
 
     cudaMemcpy(buffer.data(), &renderer.buffer(0).val<float32>(0),
                buffer.size() * sizeof(float32), cudaMemcpyDeviceToHost);
-    tbb::parallel_for(0, n * n * 2, [&](int i) {
-      render_buffer[i / n][i % n] =
+    tbb::parallel_for(0, render_size.prod(), [&](int i) {
+      render_buffer[i / render_size.y][i % render_size.y] =
           Vector4(tone_map(scale * buffer[i * 3 + 0]),
                   tone_map(scale * buffer[i * 3 + 1]),
                   tone_map(scale * buffer[i * 3 + 2]), 1.0f);

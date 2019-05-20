@@ -8,42 +8,22 @@ TC_NAMESPACE_BEGIN
 
 using namespace Tlang;
 
+constexpr int n = 256;
+
+constexpr int num_ch1 = 16, num_ch2 = 16;
+
 auto cnn = [](std::vector<std::string> cli_param) {
   CoreState::set_trigger_gdb_when_crash(true);
   auto param = parse_param(cli_param);
-  auto path = param.get("grid_path", "");
   auto use_dense = param.get("use_dense", false);
-  TC_P(path);
+  auto write_input_voxel = param.get("write_input", true);
   TC_P(use_dense);
-
-  auto f = fopen(path.c_str(), "rb");
-  TC_ASSERT_INFO(f, "grid not found");
-  int magic_number = -1;
-  if (fread(&magic_number, sizeof(int), 1, f)) {
-  }
-  int n_dim = -1;
-  if (fread(&n_dim, sizeof(int), 1, f)) {
-  }
-  int size = 1;
-  for (int i = 0; i < n_dim; i++) {
-    int d = -1;
-    if (fread(&d, sizeof(int), 1, f)) {
-    }
-    size *= d;
-  }
-  float *data = new float[size];
-  if (fread(data, sizeof(float), size, f)) {
-  }
-  fclose(f);
 
   Program prog(Arch::gpu);
   prog.config.lower_access = true;
   // prog.config.print_ir = true;
 
   // constexpr int dim = 3;
-  constexpr int n = 256;
-
-  constexpr int num_ch1 = 16, num_ch2 = 16;
 
   int block_size = 4;
 
@@ -69,19 +49,40 @@ auto cnn = [](std::vector<std::string> cli_param) {
     root.dense(ijkl, {4, 4, 4, num_ch1 * num_ch2}).place(weights);
   });
 
-  for (int c_in = 0; c_in < num_ch1; c_in++) {
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < n; j++) {
-        for (int k = 0; k < n; k++) {
-          float v = data[((c_in * n + k) * n + j) * n + i];
-          if (v != 0) {
-            layer1.val<float32>(i, j, k, c_in) = v;
+  auto tex = create_instance<Texture>(
+      "mesh", Dict()
+          .set("resolution", Vector3(n))
+          .set("translate", Vector3(0.55, 0.35, 0.47))
+          .set("scale", Vector3(1.1))
+          .set("adaptive", false)
+          .set("filename", "$mpm/bunny_small.obj"));
+  float *in_data = new float[num_ch1 * n * n * n];
+  memset(in_data, 0, sizeof(float) * num_ch1 * n * n * n);
+  int count = 0;
+  for (int i = 1; i < n - 2; i++) {
+    for (int j = 1; j < n - 2; j++) {
+      for (int k = 1; k < n - 2; k++) {
+        bool inside = tex->sample((Vector3(0.5f) + Vector3(i, j, k)) *
+                                  Vector3(1.0f / (n - 1)))
+                          .x > 0.5f;
+        // inside = pow<2>(i - n / 2) + pow<2>(k - n / 2) < pow<2>(n / 2) / 2;
+        // inside = i < n * 0.8 && j < n * 0.8 && k < n * 0.8;
+        if (inside) {
+          for (int c = 0; c < num_ch1; c++) {
+            in_data[c * n * n * n + k * n * n + j * n + i] = 1.f;
+            layer1.val<float32>(i, j, k, c) = 1.f;
+            count++;
           }
         }
       }
     }
   }
-  delete[] data;
+  std::cout << "non_zero:" << count << ", total:" << (num_ch1 * n * n * n) << std::endl;
+  if (write_input_voxel) {
+    auto f = fopen("bunny.bin", "wb");
+    fwrite(in_data, sizeof(float), num_ch1 * n * n * n, f);
+    fclose(f);
+  }
 
   Kernel(forward).def([&] {
     // Cache(0, layer1);
@@ -132,13 +133,9 @@ auto cnn = [](std::vector<std::string> cli_param) {
       for (int dx = -1; dx < 2; dx++) {
         for (int dy = -1; dy < 2; dy++) {
           for (int dz = -1; dz < 2; dz++) {
-            if (dx == 0 && dy == 0 && dz == 0) {
-              weights.val<float32>(dx + 1, dy + 1, dz + 1,
-                                   c_in * num_ch2 + c_out) = 1.f / 16.f;
-            } else {
-              weights.val<float32>(dx + 1, dy + 1, dz + 1,
-                                   c_in * num_ch2 + c_out) = 0.f;
-            }
+            if (dx == 0 && dy == 0 && dz == 0)
+                weights.val<float32>(dx + 1, dy + 1, dz + 1,
+                                     c_in * num_ch2 + c_out) = inc;
             inc += 0.1f;
           }
         }
@@ -148,19 +145,19 @@ auto cnn = [](std::vector<std::string> cli_param) {
 
   // prog.config.print_ir = true;
 
-  for (int i = 0; i < 50; i++) {
+  for (int i = 0; i < 1; i++) {
     forward();
   }
   prog.profiler_print();
 
   // Write the first layer of output
-  data = new float[n * n * n];
+  float *data = new float[(n-2) * (n-2) * (n-2)];
   int non_zero = 0;
   int zero = 0;
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      for (int k = 0; k < n; k++) {
-        data[((0 * n + k) * n + j) * n + i] = layer2.val<float32>(i, j, k, 0);
+  for (int i = 1; i < (n-1); i++) {
+    for (int j = 1; j < (n-1); j++) {
+      for (int k = 1; k < (n-1); k++) {
+        data[((0 * (n-2) + (k-1)) * (n-2) + (j-1)) * (n-2) + (i-1)] = layer2.val<float32>(i, j, k, 0);
         if (layer2.val<float32>(i, j, k, 0) != 0) {
           non_zero++;
         } else {
@@ -172,8 +169,8 @@ auto cnn = [](std::vector<std::string> cli_param) {
   std::cout << "Non zero:" << non_zero << ", zero:" << zero << std::endl;
   std::cerr << "Sparsity:" << (double)non_zero / (double)(non_zero + zero)
             << std::endl;
-  auto f_out = fopen("our_output.bin", "wb");
-  fwrite(data, sizeof(float), n * n * n, f_out);
+  auto f_out = fopen("our_bunny.bin", "wb");
+  fwrite(data, sizeof(float), (n-2) * (n-2) * (n-2), f_out);
   fclose(f_out);
 
 #if 0

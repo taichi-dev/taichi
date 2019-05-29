@@ -44,18 +44,10 @@ auto diff_mpm = [](std::vector<std::string> cli_param) {
   int max_n_particles = 1024 * 1024;
   std::vector<Vector3> p_x;
   p_x.resize(n_particles);
-  std::vector<float> benchmark_particles;
-  auto f = fopen("dragon_particles.bin", "rb");
-  TC_ASSERT_INFO(f, "./dragon_particles.bin not found");
-  benchmark_particles.resize(n_particles * 3);
-  if (std::fread(benchmark_particles.data(), sizeof(float), n_particles * 3,
-                 f)) {
-  }
-  std::fclose(f);
 
   for (int i = 0; i < n_particles; i++) {
     for (int j = 0; j < dim; j++)
-      p_x[i][j] = benchmark_particles[i * dim + j];
+      p_x[i][j] = rand() * 0.4f + 0.3f;
   }
 
   layout([&]() {

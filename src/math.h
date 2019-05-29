@@ -13,7 +13,8 @@ struct Matrix {
   Matrix() : n(0), m(0) {
   }
 
-  Matrix(Matrix &&o) : n(o.n), m(o.m), entries(std::move(o.entries)), name(std::move(o.name)) {
+  Matrix(Matrix &&o)
+      : n(o.n), m(o.m), entries(std::move(o.entries)), name(std::move(o.name)) {
   }
 
   bool initialized() {
@@ -56,11 +57,32 @@ struct Matrix {
     }
   }
 
+  template <int d>
+  static Matrix from_list(const std::array<Expr, d> &input) {
+    Matrix ret;
+    ret.n = d;
+    ret.m = 1;
+    ret.entries.resize(d);
+    for (int i = 0; i < d; i++) {
+      ret.entries[i] = input[i];
+    }
+    return ret;
+  }
+
   // Initialize vector
   explicit Matrix(const std::vector<Expr> &input) : Matrix(input.size(), 1) {
     for (int i = 0; i < (int)input.size(); i++) {
       entries[i].set(input[i]);
     }
+  }
+
+  // Initialize vector
+  static Matrix from_list(const std::vector<Expr> &input) {
+    Matrix ret(input.size(), 1);
+    for (int i = 0; i < (int)input.size(); i++) {
+      ret.entries[i].set(input[i]);
+    }
+    return ret;
   }
 
   Matrix(const Matrix &o) : Matrix(o.n, o.m) {

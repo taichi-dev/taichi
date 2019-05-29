@@ -59,7 +59,8 @@ auto diff_mpm = [](std::vector<std::string> cli_param) {
   }
 
   layout([&]() {
-    auto i = Index(0), j = Index(1), k = Index(2), p = Index(3);
+    auto space = dim == 2 ? Indices(0, 1) : Indices(0, 1, 2);
+    auto p = Index(dim);
     SNode *fork = nullptr;
     if (!particle_soa)
       fork = &root.dynamic(p, max_n_particles);
@@ -81,15 +82,13 @@ auto diff_mpm = [](std::vector<std::string> cli_param) {
     for (int i = 0; i < dim; i++)
       place(particle_v(i));
     TC_ASSERT(n % grid_block_size == 0);
-    auto &block = root.dense({i, j, k}, n / grid_block_size).pointer();
+    auto &block = root.dense(space, n / grid_block_size).pointer();
     if (block_soa) {
-      block.dense({i, j, k}, grid_block_size).place(grid_v(0));
-      block.dense({i, j, k}, grid_block_size).place(grid_v(1));
-      block.dense({i, j, k}, grid_block_size).place(grid_v(2));
-      block.dense({i, j, k}, grid_block_size).place(grid_m);
+      for (int i = 0; i < dim; i++)
+        block.dense(space, grid_block_size).place(grid_v(i));
+      block.dense(space, grid_block_size).place(grid_m);
     } else {
-      block.dense({i, j, k}, grid_block_size)
-          .place(grid_v(0), grid_v(1), grid_v(2), grid_m);
+      block.dense(space, grid_block_size).place(grid_v).place(grid_m);
     }
 
     block.dynamic(p, pow<dim>(grid_block_size) * 64).place(l);
@@ -108,9 +107,8 @@ auto diff_mpm = [](std::vector<std::string> cli_param) {
   Kernel(p2g_sorted).def([&] {
     BlockDim(128);
     if (use_cache) {
-      Cache(0, grid_v(0));
-      Cache(0, grid_v(1));
-      Cache(0, grid_v(2));
+      for (int i = 0; i < dim; i++)
+        Cache(0, grid_v(i));
       Cache(0, grid_m);
     }
     For(l, [&](Expr i, Expr j, Expr k, Expr p_ptr) {
@@ -173,9 +171,8 @@ auto diff_mpm = [](std::vector<std::string> cli_param) {
   Kernel(g2p).def([&]() {
     BlockDim(128);
     if (use_cache) {
-      Cache(0, grid_v(0));
-      Cache(0, grid_v(1));
-      Cache(0, grid_v(2));
+      for (int i = 0; i < dim; i++)
+        Cache(0, grid_v(i));
     }
     For(l, [&](Expr i, Expr j, Expr k, Expr p_ptr) {
       auto p = Var(l[i, j, k, p_ptr]);
@@ -230,10 +227,8 @@ auto diff_mpm = [](std::vector<std::string> cli_param) {
   for (int i = 0; i < n_particles; i++) {
     for (int d = 0; d < dim; d++) {
       particle_x(d).val<float32>(i) = p_x[i][d];
+      particle_v(d).val<float32>(i) = d == 1 ? -3 : 0;
     }
-    particle_v(0).val<float32>(i) = 0._f;
-    particle_v(1).val<float32>(i) = -3.0_f;
-    particle_v(2).val<float32>(i) = 0._f;
     for (int p = 0; p < dim; p++)
       for (int q = 0; q < dim; q++)
         particle_F(p, q).val<float32>(i) = (p == q);
@@ -254,28 +249,9 @@ auto diff_mpm = [](std::vector<std::string> cli_param) {
   };
 
   // Visualization
-  Vector2i cam_res(1280, 720);
+  Vector2i cam_res(1024, 1024);
   GUI gui("MPM", cam_res);
   auto renderer = create_instance_unique<ParticleRenderer>("shadow_map");
-  auto radius = 1.0_f;
-
-  Dict cam_dict;
-  cam_dict.set("origin", Vector3(radius * 0.6f, radius * 0.3_f, radius * 0.6_f))
-      .set("look_at", Vector3(0, -0.2f, 0))
-      .set("up", Vector3(0, 1, 0))
-      .set("fov", 70)
-      .set("res", cam_res);
-  auto cam = create_instance<Camera>("pinhole", cam_dict);
-
-  Dict dict;
-  dict.set("shadow_map_resolution", 0.002_f)
-      .set("alpha", 0.5_f)
-      .set("shadowing", 0.018_f)
-      .set("ambient_light", 0.5_f)
-      .set("light_direction", Vector3(1, 0.5, 0.3));
-
-  renderer->initialize(dict);
-  renderer->set_camera(cam);
 
   auto &canvas = gui.get_canvas();
   for (int frame = 1;; frame++) {
@@ -283,39 +259,13 @@ auto diff_mpm = [](std::vector<std::string> cli_param) {
     auto res = canvas.img.get_res();
     Array2D<Vector3> image(Vector2i(res), Vector3(1) - Vector3(0.0_f));
     std::vector<RenderParticle> render_particles;
+    canvas.clear(Vector4(1.0f));
     for (int i = 0; i < n_particles; i++) {
-      auto x = particle_x(0).val<float32>(i), y = particle_x(1).val<float32>(i),
-           z = particle_x(2).val<float32>(i);
-      auto pos = Vector3(x, y, z);
-      pos = pos - Vector3(0.5f);
-      pos = pos * Vector3(0.5f);
-      render_particles.push_back(
-          RenderParticle(pos, Vector4(0.6f, 0.7f, 0.9f, 1.0_f)));
+      auto x = particle_x(0).val<float32>(i), y = particle_x(1).val<float32>(i);
+      canvas.circle(x, y).radius(2).color(Vector4(0.5, 0.5, 0.5, 1.f));
     }
-
-    renderer->render(image, render_particles);
-    for (auto &ind : image.get_region()) {
-      canvas.img[ind] = Vector4(image[ind]);
-    }
-
-    auto stat = grid_m.parent().parent().snode()->stat();
-    for (int p = 0; p < (int)stat.num_resident_blocks; p++) {
-      auto &meta = stat.resident_metas[p];
-      int x = meta.indices[0];
-      int y = meta.indices[1];
-      for (int i = 0; i < grid_block_size; i++) {
-        for (int j = 0; j < grid_block_size; j++) {
-          canvas.img[x + i][y + j] *= 0.9f;
-        }
-      }
-    }
-
-    gui.update();
-    auto render_dir = fmt::format("{}_rendered", "mpm");
-    create_directories(render_dir);
-    gui.get_canvas().img.write_as_image(
-        fmt::format("{}/{:05d}.png", render_dir, frame));
     print_profile_info();
+    gui.update();
   }
 };
 TC_REGISTER_TASK(diff_mpm);

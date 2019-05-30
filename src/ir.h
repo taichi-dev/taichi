@@ -1047,7 +1047,7 @@ class BinaryOpExpression : public Expression {
   BinaryType type;
   Expr lhs, rhs;
 
-  BinaryOpExpression(BinaryType type, const Expr &lhs, const Expr &rhs)
+  BinaryOpExpression(const BinaryType &type, const Expr &lhs, const Expr &rhs)
       : type(type) {
     this->lhs.set(load_if_ptr(lhs));
     this->rhs.set(load_if_ptr(rhs));

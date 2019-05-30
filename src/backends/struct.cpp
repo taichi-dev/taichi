@@ -309,7 +309,7 @@ void StructCompiler::run(SNode &node) {
   // bottom to top
   visit(node);
 
-  for (int i = 0; i < snodes.size(); i++) {
+  for (int i = 0; i < (int)snodes.size(); i++) {
     // if (snodes[i]->type != SNodeType::place)
     emit(
         "template <> struct SNodeID<{}> {{static constexpr int value = "
@@ -317,7 +317,7 @@ void StructCompiler::run(SNode &node) {
         snodes[i]->node_type_name, snodes[i]->id);
   }
 
-  for (int i = 0; i < snodes.size(); i++) {
+  for (int i = 0; i < (int)snodes.size(); i++) {
     auto snode = snodes[i];
     emit(
         "template <> __host__ __device__ void "
@@ -332,7 +332,7 @@ void StructCompiler::run(SNode &node) {
     emit("}}");
   }
 
-  for (int i = 0; i < snodes.size(); i++) {
+  for (int i = 0; i < (int)snodes.size(); i++) {
     if (snodes[i]->type != SNodeType::place)
       emit(
           "TC_EXPORT AllocatorStat stat_{}() {{return "
@@ -354,8 +354,8 @@ void StructCompiler::run(SNode &node) {
 
   emit("Managers::initialize();");
 
-  TC_ASSERT(snodes.size() <= max_num_snodes);
-  for (int i = 0; i < snodes.size(); i++) {
+  TC_ASSERT((int)snodes.size() <= max_num_snodes);
+  for (int i = 0; i < (int)snodes.size(); i++) {
     // if (snodes[i]->type == SNodeType::pointer ||
     // snodes[i]->type == SNodeType::hashed) {
     if (snodes[i]->type != SNodeType::place) {

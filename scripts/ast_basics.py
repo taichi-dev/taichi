@@ -3,8 +3,14 @@ import astpretty
 import ast
 import taichi as tc
 import os
-os.symlink(tc.get_build_directory() + '/libtaichi_lang.so', tc.get_build_directory() + '/taichi_lang.so')
+try:
+  os.symlink(tc.get_build_directory() + '/libtaichi_lang.so', tc.get_build_directory() + '/taichi_lang.so')
+except:
+  pass
 import taichi_lang
+
+taichi_lang.lang()
+print(taichi_lang.BinaryType.mul)
 
 x = []
 
@@ -27,18 +33,16 @@ class FuncVisitor(ast.NodeVisitor):
     self.indent -= 1
 
   def visit_For(self, node):
-    print('Visiting For...')
     self.generic_visit(node)
 
 
   def visit_AugAssign(self, node):
-    print('AugAssign')
     self.generic_visit(node)
 
   # differentiate visit statement and visit expr
 
   def visit_Name(self, node):
-    print('Visit name')
+    pass
 
 def ti(foo):
   src = inspect.getsource(foo)

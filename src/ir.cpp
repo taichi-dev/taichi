@@ -393,7 +393,7 @@ void Block::erase(int location) {
 }
 
 void Block::erase(Stmt *stmt) {
-  for (int i = 0; i < statements.size(); i++) {
+  for (int i = 0; i < (int)statements.size(); i++) {
     if (statements[i].get() == stmt) {
       erase(i);
       break;

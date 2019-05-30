@@ -11,6 +11,8 @@
 
 TC_NAMESPACE_BEGIN
 
+std::vector<std::function<void()>> extra_exports;
+
 PYBIND11_MODULE(taichi_core, m) {
   m.doc() = "taichi_core";
 
@@ -23,6 +25,10 @@ PYBIND11_MODULE(taichi_core, m) {
   export_visual(m);
   export_io(m);
   export_misc(m);
+
+  for (auto &func: extra_exports) {
+    func();
+  }
 }
 
 TC_NAMESPACE_END

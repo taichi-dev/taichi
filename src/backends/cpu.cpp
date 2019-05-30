@@ -50,9 +50,9 @@ class CPUIRCodeGen : public IRVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) {
-    if (stmt->op_type != UnaryType::cast) {
+    if (stmt->op_type != UnaryOpType::cast) {
       emit("const {} {}({}({}));", stmt->ret_data_type_name(), stmt->raw_name(),
-           unary_type_name(stmt->op_type), stmt->rhs->raw_name());
+           unary_op_type_name(stmt->op_type), stmt->rhs->raw_name());
     } else {
       if (stmt->cast_by_value) {
         emit("const {} {}(cast<{}>({}));", stmt->ret_data_type_name(),
@@ -68,13 +68,13 @@ class CPUIRCodeGen : public IRVisitor {
 
   void visit(BinaryOpStmt *bin) {
     emit("const {} {}({}({}, {}));", bin->ret_data_type_name(), bin->raw_name(),
-         binary_type_name(bin->op_type), bin->lhs->raw_name(),
+         binary_op_type_name(bin->op_type), bin->lhs->raw_name(),
          bin->rhs->raw_name());
   }
 
   void visit(TrinaryOpStmt *tri) {
     emit("const {} {}({}({}, {}, {}));", tri->ret_data_type_name(),
-         tri->raw_name(), trinary_type_name(tri->op_type), tri->op1->raw_name(),
+         tri->raw_name(), ternary_type_name(tri->op_type), tri->op1->raw_name(),
          tri->op2->raw_name(), tri->op3->raw_name());
   }
 
@@ -327,7 +327,7 @@ class CPUIRCodeGen : public IRVisitor {
           snode->parent == current_struct_for->snode->parent) {
         bool identical_indices = false;
         bool all_offsets_zero = true;
-        for (int i = 0; i < stmt->indices.size(); i++) {
+        for (int i = 0; i < (int)stmt->indices.size(); i++) {
           auto ret = analysis::value_diff(stmt->indices[i], l,
                                           current_struct_for->loop_vars[i]);
           if (!ret.linear_related() || !ret.certain()) {
@@ -496,7 +496,7 @@ class CPUIRCodeGen : public IRVisitor {
 
   void visit(LinearizeStmt *stmt) {
     std::string val = "0";
-    for (int i = 0; i < stmt->inputs.size(); i++) {
+    for (int i = 0; i < (int)stmt->inputs.size(); i++) {
       val = fmt::format("({}) * {} + {}", val, stmt->strides[i],
                         stmt->inputs[i]->raw_name());
     }

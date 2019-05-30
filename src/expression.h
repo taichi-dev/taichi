@@ -6,17 +6,17 @@
 
 #define DEFINE_EXPRESSION_OP(op, op_name)                                 \
   Expr operator op(const Expr &lhs, const Expr &rhs) {                    \
-    return Expr::make<BinaryOpExpression>(BinaryType::op_name, lhs, rhs); \
+    return Expr::make<BinaryOpExpression>(BinaryOpType::op_name, lhs, rhs); \
   }
 
 #define DEFINE_EXPRESSION_OP_UNARY(opname)                         \
   Expr opname(Expr expr) {                                         \
-    return Expr::make<UnaryOpExpression>(UnaryType::opname, expr); \
+    return Expr::make<UnaryOpExpression>(UnaryOpType::opname, expr); \
   }
 
 #define DEFINE_EXPRESSION_FUNC(op_name)                                   \
   Expr op_name(const Expr &lhs, const Expr &rhs) {                        \
-    return Expr::make<BinaryOpExpression>(BinaryType::op_name, lhs, rhs); \
+    return Expr::make<BinaryOpExpression>(BinaryOpType::op_name, lhs, rhs); \
   }
 
 #else

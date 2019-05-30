@@ -100,25 +100,25 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    if (stmt->op_type == UnaryType::cast) {
+    if (stmt->op_type == UnaryOpType::cast) {
       std::string reint = stmt->cast_by_value ? "" : "reinterpret_";
       print("{}{} = {}{}<{}> {}", stmt->type_hint(), stmt->name(), reint,
-            unary_type_name(stmt->op_type), data_type_name(stmt->cast_type),
+            unary_op_type_name(stmt->op_type), data_type_name(stmt->cast_type),
             stmt->rhs->name());
     } else {
       print("{}{} = {} {}", stmt->type_hint(), stmt->name(),
-            unary_type_name(stmt->op_type), stmt->rhs->name());
+            unary_op_type_name(stmt->op_type), stmt->rhs->name());
     }
   }
 
   void visit(BinaryOpStmt *bin) override {
     print("{}{} = {} {} {}", bin->type_hint(), bin->name(),
-          binary_type_name(bin->op_type), bin->lhs->name(), bin->rhs->name());
+          binary_op_type_name(bin->op_type), bin->lhs->name(), bin->rhs->name());
   }
 
   void visit(TrinaryOpStmt *stmt) override {
     print("{}{} = {}({}, {}, {})", stmt->type_hint(), stmt->name(),
-          trinary_type_name(stmt->op_type), stmt->op1->name(),
+          ternary_type_name(stmt->op_type), stmt->op1->name(),
           stmt->op2->name(), stmt->op3->name());
   }
 

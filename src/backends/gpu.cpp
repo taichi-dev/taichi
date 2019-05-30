@@ -415,9 +415,9 @@ class GPUIRCodeGen : public IRVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) {
-    if (stmt->op_type != UnaryType::cast) {
+    if (stmt->op_type != UnaryOpType::cast) {
       emit("const {} {}({}({}));", stmt->ret_data_type_name(), stmt->raw_name(),
-           unary_type_name(stmt->op_type), stmt->rhs->raw_name());
+           unary_op_type_name(stmt->op_type), stmt->rhs->raw_name());
     } else {
       if (stmt->cast_by_value)
         emit("const {} {}(static_cast<{}>({}));", stmt->ret_data_type_name(),
@@ -432,16 +432,16 @@ class GPUIRCodeGen : public IRVisitor {
 
   void visit(BinaryOpStmt *bin) {
     std::string ns;
-    if (bin->op_type == BinaryType::div) {
+    if (bin->op_type == BinaryOpType::div) {
       ns = "taichi::Tlang::";
     }
     emit("const {} {}({}{}({}, {}));", bin->ret_data_type_name(),
-         bin->raw_name(), ns, binary_type_name(bin->op_type),
+         bin->raw_name(), ns, binary_op_type_name(bin->op_type),
          bin->lhs->raw_name(), bin->rhs->raw_name());
   }
 
   void visit(TrinaryOpStmt *tri) {
-    TC_ASSERT(tri->op_type == TrinaryType::select);
+    TC_ASSERT(tri->op_type == TernaryOpType::select);
     emit("const {} {} = {} ? {} : {};", tri->ret_data_type_name(),
          tri->raw_name(), tri->op1->raw_name(), tri->op2->raw_name(),
          tri->op3->raw_name());

@@ -26,7 +26,7 @@ class TRenderer {
   Dict param;
 
   bool needs_update() {
-    for (int i = 0; i < sizeof(Parameters); i++) {
+    for (int i = 0; i < (int)sizeof(Parameters); i++) {
       if (((char *)(&old_parameters))[i] != ((char *)(&parameters))[i]) {
         return true;
       }

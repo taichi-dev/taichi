@@ -18,21 +18,21 @@ GetChStmt::GetChStmt(taichi::Tlang::Stmt *input_ptr, int chid)
 }
 
 Expr select(const Expr &cond, const Expr &true_val, const Expr &false_val) {
-  return Expr::make<TrinaryOpExpression>(TrinaryType::select, cond, true_val,
+  return Expr::make<TrinaryOpExpression>(TernaryOpType::select, cond, true_val,
                                          false_val);
 }
 
 Expr operator-(Expr expr) {
-  return Expr::make<UnaryOpExpression>(UnaryType::neg, expr);
+  return Expr::make<UnaryOpExpression>(UnaryOpType::neg, expr);
 }
 
 Expr operator~(Expr expr) {
-  return Expr::make<UnaryOpExpression>(UnaryType::bit_not, expr);
+  return Expr::make<UnaryOpExpression>(UnaryOpType::bit_not, expr);
 }
 
 template <typename T>
 Expr cast(Expr input) {
-  auto ret = std::make_shared<UnaryOpExpression>(UnaryType::cast, input);
+  auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast, input);
   ret->cast_type = get_data_type<T>();
   ret->cast_by_value = true;
   return Expr(ret);
@@ -40,7 +40,7 @@ Expr cast(Expr input) {
 
 template <typename T>
 Expr bit_cast(Expr input) {
-  auto ret = std::make_shared<UnaryOpExpression>(UnaryType::cast, input);
+  auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast, input);
   ret->cast_type = get_data_type<T>();
   ret->cast_by_value = false;
   return Expr(ret);
@@ -283,7 +283,7 @@ SNode *Expr::snode() const {
 }
 
 Expr Expr::operator!() {
-  return Expr::make<UnaryOpExpression>(UnaryType::logic_not, expr);
+  return Expr::make<UnaryOpExpression>(UnaryOpType::logic_not, expr);
 }
 
 void Expr::declare(DataType dt) {

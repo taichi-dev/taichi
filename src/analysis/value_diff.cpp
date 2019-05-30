@@ -69,7 +69,7 @@ class ValueDiff : public IRVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) override {
-    if (stmt->op_type == BinaryType::add || stmt->op_type == BinaryType::sub) {
+    if (stmt->op_type == BinaryOpType::add || stmt->op_type == BinaryOpType::sub) {
       // if (stmt->lhs->is<LocalLoadStmt>() && stmt->rhs->is<ConstStmt>()) {
       if (true) {
         stmt->lhs->accept(this);
@@ -77,7 +77,7 @@ class ValueDiff : public IRVisitor {
         auto ret1 = results[stmt->lhs->instance_id];
         auto ret2 = results[stmt->rhs->instance_id];
         if (ret1.related_() && ret2.related_()) {
-          if (stmt->op_type == BinaryType::add) {
+          if (stmt->op_type == BinaryOpType::add) {
             results[stmt->instance_id] = ret1 + ret2;
           } else {
             results[stmt->instance_id] = ret1 - ret2;

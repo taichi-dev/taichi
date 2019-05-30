@@ -148,7 +148,7 @@ class BasicBlockSimplify : public IRVisitor {
               Stmt::make<ConstStmt>(TypedConstant(diff.low)));
           constant->ret_type.data_type = DataType::i32;
           auto add = stmt->insert_before_me(
-              Stmt::make<BinaryOpStmt>(BinaryType::add, load, constant));
+              Stmt::make<BinaryOpStmt>(BinaryOpType::add, load, constant));
           add->ret_type.data_type = DataType::i32;
           stmt->replace_with(add);
           stmt->parent->erase(stmt);
@@ -415,8 +415,8 @@ class BasicBlockSimplify : public IRVisitor {
   void visit(BinaryOpStmt *stmt) override {
     if (is_done(stmt))
       return;
-    if ((stmt->op_type == BinaryType::add ||
-         stmt->op_type == BinaryType::sub) &&
+    if ((stmt->op_type == BinaryOpType::add ||
+         stmt->op_type == BinaryOpType::sub) &&
         stmt->ret_type.data_type == DataType::i32) {
       if (stmt->rhs->is<ConstStmt>()) {
         auto stmt_ = stmt->rhs->as<ConstStmt>();
@@ -515,7 +515,7 @@ class BasicBlockSimplify : public IRVisitor {
             auto constant = stmt->insert_before_me(
                 Stmt::make<ConstStmt>(TypedConstant(diff.low)));
             auto add = stmt->insert_before_me(
-                Stmt::make<BinaryOpStmt>(BinaryType::add, load, constant));
+                Stmt::make<BinaryOpStmt>(BinaryOpType::add, load, constant));
             add->ret_type.data_type = DataType::i32;
             stmt->input = add;
           }
@@ -721,7 +721,7 @@ class BasicBlockSimplify : public IRVisitor {
                 if_stmt->insert_before_me(Stmt::make<LocalLoadStmt>(lanes));
             load->infer_type();
             auto select = if_stmt->insert_before_me(
-                Stmt::make<TrinaryOpStmt>(TrinaryType::select, if_stmt->cond,
+                Stmt::make<TrinaryOpStmt>(TernaryOpType::select, if_stmt->cond,
                                           true_branch ? store->data : load,
                                           true_branch ? load : store->data));
             select->infer_type();

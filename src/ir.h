@@ -900,12 +900,12 @@ class WhileControlStmt : public Stmt {
 
 class UnaryOpStmt : public Stmt {
  public:
-  UnaryType op_type;
+  UnaryOpType op_type;
   Stmt *rhs;
   DataType cast_type;
   bool cast_by_value = true;
 
-  UnaryOpStmt(UnaryType op_type, Stmt *rhs) : op_type(op_type), rhs(rhs) {
+  UnaryOpStmt(UnaryOpType op_type, Stmt *rhs) : op_type(op_type), rhs(rhs) {
     add_operand(this->rhs);
     cast_type = DataType::unknown;
     cast_by_value = true;
@@ -913,7 +913,7 @@ class UnaryOpStmt : public Stmt {
 
   bool same_operation(UnaryOpStmt *o) const {
     if (op_type == o->op_type) {
-      if (op_type == UnaryType::cast) {
+      if (op_type == UnaryOpType::cast) {
         return cast_type == o->cast_type;
       } else {
         return true;
@@ -960,31 +960,31 @@ class RandExpression : public Expression {
 
 class UnaryOpExpression : public Expression {
  public:
-  UnaryType type;
+  UnaryOpType type;
   Expr rhs;
   DataType cast_type;
   bool cast_by_value;
 
-  UnaryOpExpression(UnaryType type, Expr rhs)
+  UnaryOpExpression(UnaryOpType type, Expr rhs)
       : type(type), rhs(load_if_ptr(rhs)) {
     cast_type = DataType::unknown;
     cast_by_value = true;
   }
 
   std::string serialize() override {
-    if (type == UnaryType::cast) {
+    if (type == UnaryOpType::cast) {
       std::string reint = cast_by_value ? "" : "reinterpret_";
-      return fmt::format("({}{}<{}> {})", reint, unary_type_name(type),
+      return fmt::format("({}{}<{}> {})", reint, unary_op_type_name(type),
                          data_type_name(cast_type), rhs->serialize());
     } else {
-      return fmt::format("({} {})", unary_type_name(type), rhs->serialize());
+      return fmt::format("({} {})", unary_op_type_name(type), rhs->serialize());
     }
   }
 
   void flatten(VecStatement &ret) override {
     rhs->flatten(ret);
     auto unary = std::make_unique<UnaryOpStmt>(type, rhs->stmt);
-    if (type == UnaryType::cast) {
+    if (type == UnaryOpType::cast) {
       unary->cast_type = cast_type;
       unary->cast_by_value = cast_by_value;
     }
@@ -995,10 +995,10 @@ class UnaryOpExpression : public Expression {
 
 class BinaryOpStmt : public Stmt {
  public:
-  BinaryType op_type;
+  BinaryOpType op_type;
   Stmt *lhs, *rhs;
 
-  BinaryOpStmt(BinaryType op_type, Stmt *lhs, Stmt *rhs)
+  BinaryOpStmt(BinaryOpType op_type, Stmt *lhs, Stmt *rhs)
       : op_type(op_type), lhs(lhs), rhs(rhs) {
     add_operand(this->lhs);
     add_operand(this->rhs);
@@ -1012,10 +1012,10 @@ class BinaryOpStmt : public Stmt {
 
 class TrinaryOpStmt : public Stmt {
  public:
-  TrinaryType op_type;
+  TernaryOpType op_type;
   Stmt *op1, *op2, *op3;
 
-  TrinaryOpStmt(TrinaryType op_type, Stmt *op1, Stmt *op2, Stmt *op3)
+  TrinaryOpStmt(TernaryOpType op_type, Stmt *op1, Stmt *op2, Stmt *op3)
       : op_type(op_type), op1(op1), op2(op2), op3(op3) {
     add_operand(this->op1);
     add_operand(this->op2);
@@ -1044,17 +1044,17 @@ class AtomicOpStmt : public Stmt {
 
 class BinaryOpExpression : public Expression {
  public:
-  BinaryType type;
+  BinaryOpType type;
   Expr lhs, rhs;
 
-  BinaryOpExpression(const BinaryType &type, const Expr &lhs, const Expr &rhs)
+  BinaryOpExpression(const BinaryOpType &type, const Expr &lhs, const Expr &rhs)
       : type(type) {
     this->lhs.set(load_if_ptr(lhs));
     this->rhs.set(load_if_ptr(rhs));
   }
 
   std::string serialize() override {
-    return fmt::format("({} {} {})", lhs->serialize(), binary_type_symbol(type),
+    return fmt::format("({} {} {})", lhs->serialize(), binary_op_type_symbol(type),
                        rhs->serialize());
   }
 
@@ -1070,10 +1070,10 @@ class BinaryOpExpression : public Expression {
 
 class TrinaryOpExpression : public Expression {
  public:
-  TrinaryType type;
+  TernaryOpType type;
   Expr op1, op2, op3;
 
-  TrinaryOpExpression(TrinaryType type,
+  TrinaryOpExpression(TernaryOpType type,
                       const Expr &op1,
                       const Expr &op2,
                       const Expr &op3)
@@ -1084,7 +1084,7 @@ class TrinaryOpExpression : public Expression {
   }
 
   std::string serialize() override {
-    return fmt::format("{}({} {} {})", trinary_type_name(type),
+    return fmt::format("{}({} {} {})", ternary_type_name(type),
                        op1->serialize(), op2->serialize(), op3->serialize());
   }
 

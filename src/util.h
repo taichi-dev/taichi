@@ -116,7 +116,7 @@ enum class SNodeType {
 
 std::string snode_type_name(SNodeType t);
 
-enum class UnaryType : int {
+enum class UnaryOpType : int {
   neg,
   sqrt,
   floor,
@@ -136,13 +136,13 @@ enum class UnaryType : int {
   undefined
 };
 
-std::string unary_type_name(UnaryType type);
+std::string unary_op_type_name(UnaryOpType type);
 
 // Regular binary ops:
 // Operations that take two oprands, and returns a single operand with the same
 // type
 
-enum class BinaryType : int {
+enum class BinaryOpType : int {
   mul,
   add,
   sub,
@@ -163,17 +163,17 @@ enum class BinaryType : int {
   undefined
 };
 
-std::string binary_type_name(BinaryType type);
+std::string binary_op_type_name(BinaryOpType type);
 
-inline bool is_comparison(BinaryType type) {
-  return starts_with(binary_type_name(type), "cmp");
+inline bool is_comparison(BinaryOpType type) {
+  return starts_with(binary_op_type_name(type), "cmp");
 }
 
-std::string binary_type_symbol(BinaryType type);
+std::string binary_op_type_symbol(BinaryOpType type);
 
-enum class TrinaryType : int { select, undefined };
+enum class TernaryOpType : int { select, undefined };
 
-std::string trinary_type_name(TrinaryType type);
+std::string ternary_type_name(TernaryOpType type);
 
 enum class AtomicType : int { add, max, min };
 

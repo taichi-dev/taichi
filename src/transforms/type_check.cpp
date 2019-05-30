@@ -102,7 +102,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(UnaryOpStmt *stmt) {
     stmt->ret_type = stmt->rhs->ret_type;
-    if (stmt->op_type == UnaryType::cast) {
+    if (stmt->op_type == UnaryOpType::cast) {
       stmt->ret_type.data_type = stmt->cast_type;
     }
   }
@@ -130,7 +130,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(TrinaryOpStmt *stmt) {
-    if (stmt->op_type == TrinaryType::select) {
+    if (stmt->op_type == TernaryOpType::select) {
       TC_ASSERT(stmt->op2->ret_type == stmt->op3->ret_type);
       TC_ASSERT(stmt->op1->ret_type.data_type == DataType::i32)
       TC_ASSERT(stmt->op1->ret_type.width == stmt->op2->ret_type.width);

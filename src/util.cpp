@@ -134,10 +134,10 @@ std::string snode_type_name(SNodeType t) {
   return type_names[t];
 }
 
-std::string unary_type_name(UnaryType type) {
-  static std::map<UnaryType, std::string> type_names;
+std::string unary_op_type_name(UnaryOpType type) {
+  static std::map<UnaryOpType, std::string> type_names;
   if (type_names.empty()) {
-#define REGISTER_TYPE(i) type_names[UnaryType::i] = #i;
+#define REGISTER_TYPE(i) type_names[UnaryOpType::i] = #i;
     REGISTER_TYPE(neg);
     REGISTER_TYPE(sqrt);
     REGISTER_TYPE(floor);
@@ -160,10 +160,10 @@ std::string unary_type_name(UnaryType type) {
   return type_names[type];
 }
 
-std::string binary_type_name(BinaryType type) {
-  static std::map<BinaryType, std::string> type_names;
+std::string binary_op_type_name(BinaryOpType type) {
+  static std::map<BinaryOpType, std::string> type_names;
   if (type_names.empty()) {
-#define REGISTER_TYPE(i) type_names[BinaryType::i] = #i;
+#define REGISTER_TYPE(i) type_names[BinaryOpType::i] = #i;
     REGISTER_TYPE(mul);
     REGISTER_TYPE(add);
     REGISTER_TYPE(sub);
@@ -186,10 +186,10 @@ std::string binary_type_name(BinaryType type) {
   return type_names[type];
 }
 
-std::string binary_type_symbol(BinaryType type) {
-  static std::map<BinaryType, std::string> type_names;
+std::string binary_op_type_symbol(BinaryOpType type) {
+  static std::map<BinaryOpType, std::string> type_names;
   if (type_names.empty()) {
-#define REGISTER_TYPE(i, s) type_names[BinaryType::i] = #s;
+#define REGISTER_TYPE(i, s) type_names[BinaryOpType::i] = #s;
     REGISTER_TYPE(mul, *);
     REGISTER_TYPE(add, +);
     REGISTER_TYPE(sub, -);
@@ -211,10 +211,10 @@ std::string binary_type_symbol(BinaryType type) {
   return type_names[type];
 }
 
-std::string trinary_type_name(TrinaryType type) {
-  static std::map<TrinaryType, std::string> type_names;
+std::string ternary_type_name(TernaryOpType type) {
+  static std::map<TernaryOpType, std::string> type_names;
   if (type_names.empty()) {
-#define REGISTER_TYPE(i) type_names[TrinaryType::i] = #i;
+#define REGISTER_TYPE(i) type_names[TernaryOpType::i] = #i;
     REGISTER_TYPE(select);
 #undef REGISTER_TYPE
   }

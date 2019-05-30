@@ -146,7 +146,7 @@ void Program::visualize_layout(const std::string &fn) {
       }
       emit("} ");
 
-      for (int i = 0; i < snode->ch.size(); i++) {
+      for (int i = 0; i < (int)snode->ch.size(); i++) {
         visit(snode->ch[i].get());
       }
       emit("]");

@@ -222,10 +222,10 @@ class BasicBlockVectorSplit : public IRVisitor {
     }
   }
 
-  void visit(TrinaryOpStmt *stmt) override {
+  void visit(TernaryOpStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] =
-          Stmt::make<TrinaryOpStmt>(stmt->op_type, lookup(stmt->op1, i),
+          Stmt::make<TernaryOpStmt>(stmt->op_type, lookup(stmt->op1, i),
                                     lookup(stmt->op2, i), lookup(stmt->op3, i));
     }
   }

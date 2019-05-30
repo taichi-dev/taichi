@@ -451,7 +451,7 @@ class BasicBlockSimplify : public IRVisitor {
     set_done(stmt);
   }
 
-  void visit(TrinaryOpStmt *stmt) override {
+  void visit(TernaryOpStmt *stmt) override {
     if (is_done(stmt))
       return;
     for (int i = 0; i < current_stmt_id; i++) {
@@ -459,7 +459,7 @@ class BasicBlockSimplify : public IRVisitor {
       if (stmt->ret_type == bstmt->ret_type) {
         auto &bstmt_data = *bstmt;
         if (typeid(bstmt_data) == typeid(*stmt)) {
-          auto bstmt_ = bstmt->as<TrinaryOpStmt>();
+          auto bstmt_ = bstmt->as<TernaryOpStmt>();
           if (bstmt_->op_type == stmt->op_type && bstmt_->op1 == stmt->op1 &&
               bstmt_->op2 == stmt->op2 && bstmt_->op3 == stmt->op3) {
             stmt->replace_with(bstmt.get());
@@ -721,7 +721,7 @@ class BasicBlockSimplify : public IRVisitor {
                 if_stmt->insert_before_me(Stmt::make<LocalLoadStmt>(lanes));
             load->infer_type();
             auto select = if_stmt->insert_before_me(
-                Stmt::make<TrinaryOpStmt>(TernaryOpType::select, if_stmt->cond,
+                Stmt::make<TernaryOpStmt>(TernaryOpType::select, if_stmt->cond,
                                           true_branch ? store->data : load,
                                           true_branch ? load : store->data));
             select->infer_type();

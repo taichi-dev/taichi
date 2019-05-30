@@ -87,7 +87,7 @@ class ConstStmt;
 class AllocaStmt;
 class UnaryOpStmt;
 class BinaryOpStmt;
-class TrinaryOpStmt;
+class TernaryOpStmt;
 class PrintStmt;
 class RandStmt;
 class GlobalLoadStmt;
@@ -368,7 +368,7 @@ class IRVisitor {
   DEFINE_VISIT(UnaryOpStmt);
   DEFINE_VISIT(LocalLoadStmt);
   DEFINE_VISIT(BinaryOpStmt);
-  DEFINE_VISIT(TrinaryOpStmt);
+  DEFINE_VISIT(TernaryOpStmt);
   DEFINE_VISIT(AtomicOpStmt);
   DEFINE_VISIT(LocalStoreStmt);
   DEFINE_VISIT(GlobalLoadStmt);
@@ -1010,12 +1010,12 @@ class BinaryOpStmt : public Stmt {
   DEFINE_ACCEPT
 };
 
-class TrinaryOpStmt : public Stmt {
+class TernaryOpStmt : public Stmt {
  public:
   TernaryOpType op_type;
   Stmt *op1, *op2, *op3;
 
-  TrinaryOpStmt(TernaryOpType op_type, Stmt *op1, Stmt *op2, Stmt *op3)
+  TernaryOpStmt(TernaryOpType op_type, Stmt *op1, Stmt *op2, Stmt *op3)
       : op_type(op_type), op1(op1), op2(op2), op3(op3) {
     add_operand(this->op1);
     add_operand(this->op2);
@@ -1095,7 +1095,7 @@ class TrinaryOpExpression : public Expression {
     op2->flatten(ret);
     op3->flatten(ret);
     ret.push_back(
-        std::make_unique<TrinaryOpStmt>(type, op1->stmt, op2->stmt, op3->stmt));
+        std::make_unique<TernaryOpStmt>(type, op1->stmt, op2->stmt, op3->stmt));
     stmt = ret.back().get();
   }
 };

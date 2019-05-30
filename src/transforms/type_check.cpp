@@ -129,7 +129,7 @@ class TypeCheck : public IRVisitor {
     }
   }
 
-  void visit(TrinaryOpStmt *stmt) {
+  void visit(TernaryOpStmt *stmt) {
     if (stmt->op_type == TernaryOpType::select) {
       TC_ASSERT(stmt->op2->ret_type == stmt->op3->ret_type);
       TC_ASSERT(stmt->op1->ret_type.data_type == DataType::i32)

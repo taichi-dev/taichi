@@ -440,7 +440,7 @@ class GPUIRCodeGen : public IRVisitor {
          bin->lhs->raw_name(), bin->rhs->raw_name());
   }
 
-  void visit(TrinaryOpStmt *tri) {
+  void visit(TernaryOpStmt *tri) {
     TC_ASSERT(tri->op_type == TernaryOpType::select);
     emit("const {} {} = {} ? {} : {};", tri->ret_data_type_name(),
          tri->raw_name(), tri->op1->raw_name(), tri->op2->raw_name(),

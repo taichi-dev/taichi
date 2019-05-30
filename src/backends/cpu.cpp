@@ -72,7 +72,7 @@ class CPUIRCodeGen : public IRVisitor {
          bin->rhs->raw_name());
   }
 
-  void visit(TrinaryOpStmt *tri) {
+  void visit(TernaryOpStmt *tri) {
     emit("const {} {}({}({}, {}, {}));", tri->ret_data_type_name(),
          tri->raw_name(), ternary_type_name(tri->op_type), tri->op1->raw_name(),
          tri->op2->raw_name(), tri->op3->raw_name());

@@ -828,6 +828,10 @@ class ExprGroup {
     exprs.insert(exprs.begin(), a);
   }
 
+  void push_back(const Expr &expr) {
+    exprs.emplace_back(expr);
+  }
+
   std::size_t size() const {
     return exprs.size();
   }

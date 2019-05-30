@@ -41,6 +41,14 @@ class FuncVisitor(ast.NodeVisitor):
   def visit_AugAssign(self, node):
     self.generic_visit(node)
 
+  def visit_Tuple(self, node):
+    self.generic_visit(node)
+    g = taichi_lang.ExprGroup()
+    for s in node.elts:
+      g.push_back(self.exprs[s])
+    self.exprs[g] = g
+    print(g.serialize())
+
   # differentiate visit statement and visit expr
 
   def visit_BinOp(self, node):
@@ -79,7 +87,7 @@ class FuncVisitor(ast.NodeVisitor):
     print(expr.serialize())
 
   def visit_Name(self, node):
-    pass
+    self.exprs[node] = taichi_lang.make_id_expr(node.id)
 
   def visit_Num(self, node):
     self.generic_visit(node)

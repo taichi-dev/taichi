@@ -7,7 +7,7 @@ set(TAICHI_PROJECT_LIBRARIES ${TAICHI_PROJECT_LIBRARIES} ${TAICHI_PROJECT_NAME} 
 option(TLANG_WITH_VDB "Use VDB" OFF)
 option(TLANG_WITH_FEM "Use FEM" OFF)
 
-add_subdirectory(external/partio)
+# add_subdirectory(external/partio)
 include_directories(external/openvdb/)
 include_directories(external/partio/include)
 include_directories(external/xxhash)

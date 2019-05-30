@@ -2,19 +2,9 @@ import inspect
 import astpretty
 import ast
 import taichi as tc
-import os
-try:
-  os.symlink(tc.get_build_directory() + '/libtaichi_lang.so', tc.get_build_directory() + '/taichi_lang.so')
-except:
-  pass
-import taichi_lang
+from core import taichi_lang
 
 taichi_lang.lang()
-print(taichi_lang.BinaryOpType.mul)
-one = taichi_lang.make_constant_expr(1)
-two = taichi_lang.make_constant_expr(2)
-expr = taichi_lang.make_binary_op_expr(taichi_lang.BinaryOpType.add, one, two)
-print(expr.serialize())
 
 x = []
 
@@ -30,7 +20,7 @@ class FuncVisitor(ast.NodeVisitor):
     self.exprs = {}
 
   def generic_visit(self, node):
-    for i in range(self.indent):
+    for _ in range(self.indent):
       print('  ', end='')
     print(type(node).__name__)
     self.indent += 1
@@ -38,8 +28,15 @@ class FuncVisitor(ast.NodeVisitor):
     self.indent -= 1
 
   def visit_For(self, node):
-    self.generic_visit(node)
+    print(node.target)
+    iter = node.iter
+    is_taichi_loop = False
 
+    if isinstance(iter, ast.Call):
+      if iter.func.id == 'trange':
+        is_taichi_loop = True
+
+    self.generic_visit(node)
 
   def visit_AugAssign(self, node):
     self.generic_visit(node)
@@ -103,11 +100,4 @@ def ti(foo):
   visitor.visit(tree)
 
   return foo
-
-@ti
-def foo():
-  #for i in x:
-  #  x[i] += i
-  for i in x:
-    x[i] += -7 + 1 + 2 + 3 * 4 / 5 - 6
 

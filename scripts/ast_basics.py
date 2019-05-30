@@ -68,6 +68,19 @@ class FuncVisitor(ast.NodeVisitor):
     self.exprs[node] = expr
     print(expr.serialize())
 
+  def visit_UnaryOp(self, node):
+    self.generic_visit(node)
+    if isinstance(node.op, ast.UAdd):
+      self.exprs[node] = self.exprs[node.operand]
+      return
+    if isinstance(node.op, ast.USub):
+      op = taichi_lang.UnaryOpType.neg
+    else:
+      assert False
+    expr = taichi_lang.make_unary_op_expr(op, self.exprs[node.operand])
+    self.exprs[node] = expr
+    print(expr.serialize())
+
   def visit_Name(self, node):
     pass
 
@@ -96,5 +109,5 @@ def foo():
   #for i in x:
   #  x[i] += i
   for i in x:
-    x[i] += 1 + 2 + 3 * 4 / 5 - 6
+    x[i] += -7 + 1 + 2 + 3 * 4 / 5 - 6
 

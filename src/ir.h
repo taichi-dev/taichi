@@ -60,7 +60,7 @@ class SNode;
 using ScratchPadOptions = std::vector<std::pair<int, SNode *>>;
 class Expression;
 class Expr;
-class ExpressionGroup;
+class ExprGroup;
 
 // Frontend statements
 class FrontendIfStmt;
@@ -750,6 +750,10 @@ class Expr {
     return expr.get();
   }
 
+  Expression const *operator->() const {
+    return expr.get();
+  }
+
   template <typename T>
   Handle<T> cast() const {
     TC_ASSERT(expr != nullptr);
@@ -763,7 +767,7 @@ class Expr {
 
   void operator=(const Expr &o);
 
-  Expr operator[](ExpressionGroup) const;
+  Expr operator[](ExprGroup) const;
 
   std::string serialize() const {
     TC_ASSERT(expr);
@@ -798,28 +802,28 @@ class Expr {
   void declare(DataType dt);
 };
 
-class ExpressionGroup {
+class ExprGroup {
  public:
   std::vector<Expr> exprs;
 
-  ExpressionGroup() {
+  ExprGroup() {
   }
 
-  ExpressionGroup(const Expr &a) {
+  ExprGroup(const Expr &a) {
     exprs.push_back(a);
   }
 
-  ExpressionGroup(const Expr &a, const Expr &b) {
+  ExprGroup(const Expr &a, const Expr &b) {
     exprs.push_back(a);
     exprs.push_back(b);
   }
 
-  ExpressionGroup(ExpressionGroup a, const Expr &b) {
+  ExprGroup(ExprGroup a, const Expr &b) {
     exprs = a.exprs;
     exprs.push_back(b);
   }
 
-  ExpressionGroup(const Expr &a, ExpressionGroup b) {
+  ExprGroup(const Expr &a, ExprGroup b) {
     exprs = b.exprs;
     exprs.insert(exprs.begin(), a);
   }
@@ -847,15 +851,15 @@ class ExpressionGroup {
     return ret;
   }
 
-  ExpressionGroup loaded() const;
+  ExprGroup loaded() const;
 };
 
-inline ExpressionGroup operator,(const Expr &a, const Expr &b) {
-  return ExpressionGroup(a, b);
+inline ExprGroup operator,(const Expr &a, const Expr &b) {
+  return ExprGroup(a, b);
 }
 
-inline ExpressionGroup operator,(const ExpressionGroup &a, const Expr &b) {
-  return ExpressionGroup(a, b);
+inline ExprGroup operator,(const ExprGroup &a, const Expr &b) {
+  return ExprGroup(a, b);
 }
 
 class FrontendAllocaStmt : public Stmt {
@@ -1054,8 +1058,8 @@ class BinaryOpExpression : public Expression {
   }
 
   std::string serialize() override {
-    return fmt::format("({} {} {})", lhs->serialize(), binary_op_type_symbol(type),
-                       rhs->serialize());
+    return fmt::format("({} {} {})", lhs->serialize(),
+                       binary_op_type_symbol(type), rhs->serialize());
   }
 
   void flatten(VecStatement &ret) override {
@@ -1170,9 +1174,9 @@ class GlobalVariableExpression : public Expression {
 class GlobalPtrExpression : public Expression {
  public:
   Expr var;
-  ExpressionGroup indices;
+  ExprGroup indices;
 
-  GlobalPtrExpression(Handle<Expression> var, ExpressionGroup indices)
+  GlobalPtrExpression(const Expr &var, const ExprGroup &indices)
       : var(var), indices(indices) {
   }
 
@@ -1315,12 +1319,12 @@ class FrontendSNodeOpStmt : public Stmt {
  public:
   SNodeOpType op_type;
   SNode *snode;
-  ExpressionGroup indices;
+  ExprGroup indices;
   Expr val;
 
   FrontendSNodeOpStmt(SNodeOpType op_type,
                       SNode *snode,
-                      ExpressionGroup indices,
+                      ExprGroup indices,
                       Expr val = Expr(nullptr))
       : op_type(op_type), snode(snode), indices(indices.loaded()), val(val) {
     if (val.expr != nullptr) {
@@ -1408,7 +1412,7 @@ class FrontendAssignStmt : public Stmt {
  public:
   Expr lhs, rhs;
 
-  FrontendAssignStmt(Expr lhs, Expr rhs);
+  FrontendAssignStmt(const Expr &lhs, const Expr &rhs);
 
   DEFINE_ACCEPT
 };
@@ -1647,9 +1651,9 @@ class FrontendForStmt : public Stmt {
     }
   }
 
-  FrontendForStmt(ExpressionGroup loop_var, Expr global_var);
+  FrontendForStmt(ExprGroup loop_var, Expr global_var);
 
-  FrontendForStmt(ExpressionGroup loop_var, Expr begin, Expr end);
+  FrontendForStmt(ExprGroup loop_var, Expr begin, Expr end);
 
   bool is_container_statement() const override {
     return true;
@@ -1844,8 +1848,8 @@ class IdExpression : public Expression {
 class ProbeExpression : public Expression {
  public:
   SNode *snode;
-  ExpressionGroup indices;
-  ProbeExpression(SNode *snode, const ExpressionGroup &indices)
+  ExprGroup indices;
+  ProbeExpression(SNode *snode, const ExprGroup &indices)
       : snode(snode), indices(indices) {
   }
 
@@ -2104,7 +2108,7 @@ class For {
     func();
   }
 
-  For(ExpressionGroup i, Expr global, const std::function<void()> &func) {
+  For(ExprGroup i, Expr global, const std::function<void()> &func) {
     auto stmt_unique = std::make_unique<FrontendForStmt>(i, global);
     auto stmt = stmt_unique.get();
     current_ast_builder().insert(std::move(stmt_unique));

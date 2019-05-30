@@ -137,29 +137,29 @@ inline Expr Atomic(Expr dest) {
 }
 
 // expr_group are indices
-inline void Activate(SNode *snode, const ExpressionGroup &expr_group) {
+inline void Activate(SNode *snode, const ExprGroup &expr_group) {
   current_ast_builder().insert(Stmt::make<FrontendSNodeOpStmt>(
       SNodeOpType::activate, snode, expr_group));
 }
 
-inline void Activate(const Expr &expr, const ExpressionGroup &expr_group) {
+inline void Activate(const Expr &expr, const ExprGroup &expr_group) {
   return Activate(expr.snode(), expr_group);
 }
 
-inline void Deactivate(SNode *snode, const ExpressionGroup &expr_group) {
+inline void Deactivate(SNode *snode, const ExprGroup &expr_group) {
   current_ast_builder().insert(Stmt::make<FrontendSNodeOpStmt>(
       SNodeOpType::deactivate, snode, expr_group));
 }
 
 inline void Append(SNode *snode,
-                   const ExpressionGroup &indices,
+                   const ExprGroup &indices,
                    const Expr &val) {
   current_ast_builder().insert(Stmt::make<FrontendSNodeOpStmt>(
       SNodeOpType::append, snode, indices, val));
 }
 
 inline void Append(const Expr &expr,
-                   const ExpressionGroup &indices,
+                   const ExprGroup &indices,
                    const Expr &val) {
   Append(expr.snode(), indices, val);
 }
@@ -168,20 +168,20 @@ inline void InsertAssert(const std::string &text, const Expr &expr) {
   current_ast_builder().insert(Stmt::make<FrontendAssertStmt>(text, expr));
 }
 
-inline void Clear(SNode *snode, const ExpressionGroup &indices) {
+inline void Clear(SNode *snode, const ExprGroup &indices) {
   current_ast_builder().insert(
       Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::clear, snode, indices));
 }
 
-inline void Clear(const Expr &expr, const ExpressionGroup &indices) {
+inline void Clear(const Expr &expr, const ExprGroup &indices) {
   return Clear(expr.snode(), indices);
 }
 
-inline Expr Probe(SNode *snode, const ExpressionGroup &indices) {
+inline Expr Probe(SNode *snode, const ExprGroup &indices) {
   return Expr::make<ProbeExpression>(snode, indices);
 }
 
-inline Expr Probe(const Expr &expr, const ExpressionGroup &indices) {
+inline Expr Probe(const Expr &expr, const ExprGroup &indices) {
   return Probe(expr.snode(), indices);
 }
 

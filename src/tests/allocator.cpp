@@ -91,7 +91,7 @@ TC_TEST("parallel_particle_sort") {
   bool SOA = false;
 
   layout([&]() {
-    SNode *fork;
+    SNode *fork = nullptr;
     if (!SOA)
       fork = &root.dynamic(p, max_n_particles);
     auto place = [&](Expr &expr) {

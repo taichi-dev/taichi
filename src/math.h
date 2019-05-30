@@ -166,7 +166,7 @@ struct Matrix {
     return ret;
   }
 
-  Matrix operator[](ExpressionGroup index) {
+  Matrix operator[](ExprGroup index) {
     Matrix ret(n, m);
     for (int i = 0; i < n * m; i++) {
       ret.entries[i].set(entries[i][index]);
@@ -242,9 +242,9 @@ struct Matrix {
 
   static Matrix identity(int dim);
 
-  operator ExpressionGroup() {
+  operator ExprGroup() {
     TC_ASSERT(m == 1);
-    ExpressionGroup ret;
+    ExprGroup ret;
     for (int i = 0; i < n; i++) {
       ret.exprs.push_back(entries[i]);
     }

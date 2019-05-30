@@ -13,11 +13,20 @@ PYBIND11_MODULE(taichi_lang, m) {
   m.def("lang", &lang, "lang func");
 
   py::class_<Expr>(m, "Expr").def("serialize", &Expr::serialize);
-  // .def("initialize", &Texture::initialize);
+  py::class_<ExprGroup>(m, "ExprGroup");
+  py::class_<Stmt>(m, "Stmt");
+
+  m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
+  m.def("make_global_store_stmt", Stmt::make<GlobalStoreStmt, Stmt *, Stmt *>);
+  m.def("make_frontend_assign_stmt",
+        Stmt::make<FrontendAssignStmt, const Expr &, const Expr &>);
 
   m.def("make_constant_expr", Expr::make<ConstExpression, int>);
   m.def("make_constant_expr", Expr::make<ConstExpression, float32>);
   m.def("make_constant_expr", Expr::make<ConstExpression, float64>);
+
+  m.def("make_global_ptr_expr",
+        Expr::make<GlobalPtrExpression, const Expr &, const ExprGroup &>);
 
   auto &&bin = py::enum_<BinaryOpType>(m, "BinaryOpType", py::arithmetic());
   for (int t = 0; t <= (int)BinaryOpType::undefined; t++)

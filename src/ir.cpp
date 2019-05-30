@@ -46,13 +46,13 @@ Expr bit_cast(Expr input) {
   return Expr(ret);
 }
 
-Expr Expr::operator[](ExpressionGroup indices) const {
+Expr Expr::operator[](ExprGroup indices) const {
   TC_ASSERT(is<GlobalVariableExpression>());
-  return Expr::make<GlobalPtrExpression>(cast<GlobalVariableExpression>(),
+  return Expr::make<GlobalPtrExpression>(Expr(cast<GlobalVariableExpression>()),
                                          indices.loaded());
 }
 
-ExpressionGroup ExpressionGroup::loaded() const {
+ExprGroup ExprGroup::loaded() const {
   auto indices_loaded = *this;
   for (int i = 0; i < (int)this->size(); i++)
     indices_loaded[i].set(load_if_ptr(indices_loaded[i]));
@@ -160,7 +160,7 @@ void Expr::operator/=(const Expr &o) {
   (*this) = (*this) / load_if_ptr(o);
 }
 
-FrontendForStmt::FrontendForStmt(ExpressionGroup loop_var, Expr begin, Expr end)
+FrontendForStmt::FrontendForStmt(ExprGroup loop_var, Expr begin, Expr end)
     : begin(begin), end(end) {
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;
@@ -181,7 +181,7 @@ FrontendForStmt::FrontendForStmt(ExpressionGroup loop_var, Expr begin, Expr end)
   }
 }
 
-FrontendForStmt::FrontendForStmt(ExpressionGroup loop_var, Expr global_var)
+FrontendForStmt::FrontendForStmt(ExprGroup loop_var, Expr global_var)
     : global_var(global_var) {
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;
@@ -210,7 +210,7 @@ IRNode *Stmt::get_ir_root() {
   return dynamic_cast<IRNode *>(block);
 }
 
-FrontendAssignStmt::FrontendAssignStmt(Expr lhs, Expr rhs)
+FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
     : lhs(lhs), rhs(rhs) {
   TC_ASSERT(lhs->is_lvalue());
 }

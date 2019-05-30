@@ -30,8 +30,8 @@ auto diff_mpm = [](std::vector<std::string> cli_param) {
   int stagger = param.get("stagger", true);
   TC_P(stagger);
 
-  constexpr int dim = 2, n = 256, grid_block_size = 4, n_particles = 512 * 512;
-  const real dt = 1e-5_f * 256 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
+  constexpr int dim = 2, n = 512, grid_block_size = 8, n_particles = 1024 * 1024;
+  const real dt = 1e-5_f * 512 / n, dx = 1.0_f / n, inv_dx = 1.0_f / dx;
   auto particle_mass = 1.0_f, vol = 1.0_f, E = 1e4_f, nu = 0.3f;
   real mu = E / (2 * (1 + nu)), lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
   auto f32 = DataType::f32;

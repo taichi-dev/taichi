@@ -146,7 +146,7 @@ class LowerAST : public IRVisitor {
       flattened.push_back(std::move(new_for));
     } else {
       std::vector<Stmt *> vars(stmt->loop_var_id.size());
-      for (int i = 0; i < stmt->loop_var_id.size(); i++) {
+      for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
         vars[i] = stmt->parent->lookup_var(stmt->loop_var_id[i]);
       }
       auto &&new_for = std::make_unique<StructForStmt>(
@@ -231,7 +231,7 @@ class LowerAST : public IRVisitor {
     }
     std::vector<Stmt *> indices_stmt(stmt->indices.size(), nullptr);
 
-    for (int i = 0; i < stmt->indices.size(); i++) {
+    for (int i = 0; i < (int)stmt->indices.size(); i++) {
       stmt->indices[i]->flatten(flattened);
       indices_stmt[i] = stmt->indices[i]->stmt;
     }

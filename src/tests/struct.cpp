@@ -799,7 +799,7 @@ TC_TEST("mpm_layout") {
   bool particle_soa = true;
 
   layout([&]() {
-    SNode *fork;
+    SNode *fork = nullptr;
     if (!particle_soa)
       fork = &root.dynamic(p, max_n_particles);
     auto place = [&](Expr &expr) {

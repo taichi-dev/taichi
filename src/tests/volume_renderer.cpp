@@ -116,7 +116,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
     if ((int)particles.size()) {
       particle_pos(0).parent().snode()->clear_data_and_deactivate();
       // renderer.check_param_update();
-      for (int i = 0; i < particles.size(); i++) {
+      for (int i = 0; i < (int)particles.size(); i++) {
         for (int d = 0; d < 3; d++) {
           particle_pos(d).val<float32>(i) = particles[i](d);
         }
@@ -144,7 +144,7 @@ auto volume_renderer = [](std::vector<std::string> cli_param) {
       renderer.parameters.box_max[d] = -1e16f;
     }
 
-    for (int i = 0; i < particles.size(); i++) {
+    for (int i = 0; i < (int)particles.size(); i++) {
       for (int d = 0; d < 3; d++) {
         renderer.parameters.box_min[d] = std::min(
             renderer.parameters.box_min[d], particle_pos(d).val<float32>(i));

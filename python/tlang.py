@@ -46,7 +46,7 @@ class FuncVisitor(ast.NodeVisitor):
     g = taichi_lang.ExprGroup()
     for s in node.elts:
       g.push_back(self.exprs[s])
-    self.exprs[g] = g
+    self.exprs[node] = g
     print(g.serialize())
 
   # differentiate visit statement and visit expr
@@ -93,10 +93,19 @@ class FuncVisitor(ast.NodeVisitor):
     self.generic_visit(node)
     self.exprs[node] = taichi_lang.make_constant_expr(node.n)
 
+  def visit_Subscript(self, node):
+    self.generic_visit(node)
+    self.exprs[node] = taichi_lang.make_global_ptr_expr(self.exprs[node.value], self.exprs[node.slice.value])
+    print(self.exprs[node].serialize())
+
+  def visit_Index(self, node):
+    self.generic_visit(node)
+    self.exprs[node] = self.exprs[node.value]
+
 def ti(foo):
   src = inspect.getsource(foo)
   tree = ast.parse(src)
-  astpretty.pprint(tree)
+  # astpretty.pprint(tree)
 
   func_body = tree.body[0]
   statements = func_body.body

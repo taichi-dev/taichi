@@ -1,17 +1,15 @@
 #include <pybind11/pybind11.h>
 #include <taichi/python/export.h>
+#include <taichi/common/interface.h>
 
 TC_NAMESPACE_BEGIN
 
-void export_tlang() {
+void lang() {
   TC_TAG;
 }
 
-inline class Injector {
-public:
-  Injector() {
-    extra_exports.push_back(export_tlang);
-  }
-} injector;
+PYBIND11_MODULE(taichi_lang, m) {
+  m.def("lang", &lang, "lang func");
+}
 
 TC_NAMESPACE_END

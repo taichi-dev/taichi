@@ -14,13 +14,13 @@ auto diff_conv = [](const std::vector<std::string> args) {
   TC_ASSERT(f);
 
   std::vector<float32> ret1(n);
-  std::fread(ret1.data(), sizeof(float32), ret1.size(), f);
+  trash(std::fread(ret1.data(), sizeof(float32), ret1.size(), f));
   std::fclose(f);
 
   f = fopen(args[1].c_str(), "rb");
   TC_ASSERT(f);
   std::vector<float32> ret2(n);
-  std::fread(ret2.data(), sizeof(float32), ret2.size(), f);
+  trash(std::fread(ret2.data(), sizeof(float32), ret2.size(), f));
   std::fclose(f);
 
   int counter[2] = {0, 0};

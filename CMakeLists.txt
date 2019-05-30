@@ -9,7 +9,7 @@ option(TLANG_WITH_FEM "Use FEM" OFF)
 
 # add_subdirectory(external/partio)
 include_directories(external/openvdb/)
-include_directories(external/partio/include)
+# include_directories(external/partio/include)
 include_directories(external/xxhash)
 
 if (TLANG_WITH_VDB)
@@ -26,7 +26,7 @@ else()
 endif()
 
 add_library(taichi_lang SHARED ${PROJECT_SOURCES} ${SPGridSource})
-target_link_libraries(taichi_lang ${CORE_LIBRARY_NAME} partio)
+target_link_libraries(taichi_lang ${CORE_LIBRARY_NAME})
 
 if (TLANG_WITH_VDB)
     target_link_libraries(taichi_lang ${CMAKE_CURRENT_LIST_DIR}/external/openvdb/openvdb/libopenvdb.so Half log4cplus boost_iostreams)

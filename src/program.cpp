@@ -89,7 +89,7 @@ std::string capitalize_first(std::string s) {
 std::string latex_short_digit(int v) {
   std::string units = "KMGT";
   int unit_id = -1;
-  while (v >= 1024 && unit_id + 1 < units.size()) {
+  while (v >= 1024 && unit_id + 1 < (int)units.size()) {
     TC_ASSERT(v % 1024 == 0);
     v /= 1024;
     unit_id++;

@@ -1,6 +1,7 @@
 import inspect
 import astpretty
 import ast
+import taichi as tc
 
 def taichi(**kwargs):
   return lambda x: x

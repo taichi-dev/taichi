@@ -1,7 +1,10 @@
 import inspect
 import astpretty
 import ast
-import taichi.core
+import taichi as tc
+import os
+os.symlink(tc.get_build_directory() + '/libtaichi_lang.so', tc.get_build_directory() + '/taichi_lang.so')
+import taichi_lang
 
 x = []
 

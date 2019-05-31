@@ -13,6 +13,7 @@ x = []
 
 a = ast.BoolOp()
 
+
 class FuncVisitor(ast.NodeVisitor):
   def __init__(self):
     self.indent = 0
@@ -69,7 +70,8 @@ class FuncVisitor(ast.NodeVisitor):
       op = taichi_lang.BinaryOpType.bit_xor
     else:
       assert False
-    expr = taichi_lang.make_binary_op_expr(op, self.exprs[node.left], self.exprs[node.right])
+    expr = taichi_lang.make_binary_op_expr(op, self.exprs[node.left],
+                                           self.exprs[node.right])
     self.exprs[node] = expr
     print(expr.serialize())
 
@@ -95,7 +97,9 @@ class FuncVisitor(ast.NodeVisitor):
 
   def visit_Subscript(self, node):
     self.generic_visit(node)
-    self.exprs[node] = taichi_lang.make_global_ptr_expr(self.exprs[node.value], self.exprs[node.slice.value])
+    self.exprs[node] = taichi_lang.make_global_ptr_expr(self.exprs[node.value],
+                                                        self.exprs[
+                                                          node.slice.value])
     print(self.exprs[node].serialize())
 
   def visit_Index(self, node):
@@ -117,4 +121,3 @@ def ti(foo):
   visitor.visit(tree)
 
   return foo
-

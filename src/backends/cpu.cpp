@@ -129,9 +129,9 @@ class CPUIRCodeGen : public IRVisitor {
     loopgen.loop_gen_leaves(for_stmt, leaf);
 
     std::string vars;
-    for (int i = 0; i < for_stmt->loop_vars.size(); i++) {
+    for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
       vars += for_stmt->loop_vars[i]->raw_name();
-      if (i + 1 < for_stmt->loop_vars.size()) {
+      if (i + 1 < (int)for_stmt->loop_vars.size()) {
         vars += ",";
       }
     }
@@ -310,7 +310,7 @@ class CPUIRCodeGen : public IRVisitor {
 
       auto snode = stmt->snodes[l];
       std::vector<std::string> indices(max_num_indices, "0");  // = "(root, ";
-      for (int i = 0; i < stmt->indices.size(); i++) {
+      for (int i = 0; i < (int)stmt->indices.size(); i++) {
         if (snode->physical_index_position[i] != -1) {
           // TC_ASSERT(snode->physical_index_position[i] != -1);
           indices[snode->physical_index_position[i]] =
@@ -434,7 +434,7 @@ class CPUIRCodeGen : public IRVisitor {
         mask[i] = true;
         for (int j = i + 1; j < width; j++) {
           if (statements[i] == statements[j]) {
-            if ((j - i) * sizeof(int32) == offsets[j] - offsets[i]) {
+            if ((j - i) * (int)sizeof(int32) == offsets[j] - offsets[i]) {
               mask[j] = true;
             }
           }

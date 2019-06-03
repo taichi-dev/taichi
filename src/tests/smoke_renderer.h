@@ -380,8 +380,8 @@ class SmokeRenderer {
       f = fopen("sky_samples.bin", "rb");
       TC_ASSERT_INFO(f, "./sky_samples.bin not found");
       std::vector<uint32> sky_sample_data(n_sky_samples * 5);
-      std::fread(sky_sample_data.data(), sizeof(uint32), sky_sample_data.size(),
-                 f);
+      trash(std::fread(sky_sample_data.data(), sizeof(uint32),
+                       sky_sample_data.size(), f));
 
       for (int i = 0; i < sky_map_size[0]; i++) {
         for (int j = 0; j < sky_map_size[1]; j++) {

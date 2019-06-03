@@ -41,7 +41,7 @@ auto smoke_renderer = [](std::vector<std::string> cli_param_) {
     int box_sizes[3]{584, 576, 440};
     int total_voxels = box_sizes[0] * box_sizes[1] * box_sizes[2];
     std::vector<float32> density_field(total_voxels);
-    std::fread(density_field.data(), sizeof(float32), density_field.size(), f);
+    trash(std::fread(density_field.data(), sizeof(float32), density_field.size(), f));
     std::fclose(f);
 
     auto max_density = 0.0f;

@@ -5,19 +5,25 @@
 
 TLANG_NAMESPACE_BEGIN
 
-void lang() {
-  TC_TAG;
-}
-
 PYBIND11_MODULE(taichi_lang, m) {
-  m.def("lang", &lang, "lang func");
-
   py::class_<Expr>(m, "Expr").def("serialize", &Expr::serialize);
   py::class_<ExprGroup>(m, "ExprGroup")
       .def(py::init<>())
       .def("push_back", &ExprGroup::push_back)
       .def("serialize", &ExprGroup::serialize);
   py::class_<Stmt>(m, "Stmt");
+
+  m.def("expr_add", expr_add);
+  m.def("expr_sub", expr_sub);
+  m.def("expr_mul", expr_mul);
+  m.def("expr_div", expr_div);
+
+  m.def("expr_cmp_le", expr_cmp_le);
+  m.def("expr_cmp_lt", expr_cmp_lt);
+  m.def("expr_cmp_ge", expr_cmp_ge);
+  m.def("expr_cmp_gt", expr_cmp_gt);
+  m.def("expr_cmp_ne", expr_cmp_ne);
+  m.def("expr_cmp_eq", expr_cmp_eq);
 
   m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
   m.def("make_global_store_stmt", Stmt::make<GlobalStoreStmt, Stmt *, Stmt *>);

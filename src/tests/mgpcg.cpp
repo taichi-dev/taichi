@@ -211,7 +211,7 @@ auto mgpcg_poisson = [](std::vector<std::string> cli_param) {
           Vectorize(block_size);
           For(z(l), [&](Expr i, Expr j, Expr k) {
             auto ret = Var(0.0f);
-            If(((i + j + k) & 1) == phase[Expr(0)]).Then([&] {
+            If(((i + j + k) && 1) == phase[Expr(0)]).Then([&] {
               ret = (r(l)[i, j, k] + z(l)[i - 1, j, k] + z(l)[i + 1, j, k] +
                      z(l)[i, j + 1, k] + z(l)[i, j - 1, k] + z(l)[i, j, k + 1] +
                      z(l)[i, j, k - 1]) *

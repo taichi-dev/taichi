@@ -78,10 +78,10 @@ void CodeGenBase::generate_binary(std::string extra_flags) {
       get_source_path(), pp_fn, extra_flags);
   auto ret = std::system(preprocess_cmd.c_str());
   if (ret) {
-    std::system(
+    trash(std::system(
         get_current_program()
             .config.preprocess_cmd(get_source_path(), pp_fn, extra_flags, true)
-            .c_str());
+            .c_str()));
     TC_ERROR("Preprocessing failed.");
   }
   std::ifstream ifs(pp_fn);
@@ -94,8 +94,8 @@ void CodeGenBase::generate_binary(std::string extra_flags) {
   std::string cached_binary_fn = db_folder() + fmt::format("/{}.so", hash);
   std::ifstream key_file(cached_binary_fn);
   if (key_file) {
-    std::system(
-        fmt::format("cp {} {}", cached_binary_fn, get_library_path()).c_str());
+    trash(std::system(
+        fmt::format("cp {} {}", cached_binary_fn, get_library_path()).c_str()));
   } else {
     /*
     trash(std::system(
@@ -112,11 +112,12 @@ void CodeGenBase::generate_binary(std::string extra_flags) {
       trash(std::system(cmd.c_str()));
       TC_ERROR("Source {} compilation failed.", get_source_path());
     } else {
-      std::system(fmt::format("cp {} {}", get_library_path(), cached_binary_fn)
-                      .c_str());
+      trash(std::system(
+          fmt::format("cp {} {}", get_library_path(), cached_binary_fn)
+              .c_str()));
     }
   }
-  std::system(fmt::format("rm {}", pp_fn).c_str());
+  trash(std::system(fmt::format("rm {}", pp_fn).c_str()));
   TC_INFO("Compilation time: {:.1f} ms", 1000 * (Time::get_time() - t));
 }
 

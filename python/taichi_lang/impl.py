@@ -131,7 +131,9 @@ def kernel(foo):
       # print(codegen.to_source(tree))
       # print(astor.to_source(tree.body[0]))
 
-      exec(compile(tree, filename='tmp', mode='exec'), inspect.currentframe().f_back.f_globals, locals())
+      ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
+
+      exec(compile(tree, filename=inspect.getsourcefile(foo), mode='exec'), inspect.currentframe().f_back.f_globals, locals())
       compiled = locals()[foo.__name__]
 
       t_kernel = taichi_lang_core.create_kernel("test")

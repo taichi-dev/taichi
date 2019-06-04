@@ -5,10 +5,10 @@ import astpretty
 import astor
 
 def expr_init(rhs):
-  return Expr(taichi_lang.expr_var(rhs.ptr))
+  return Expr(taichi_lang.expr_var(Expr(rhs).ptr))
 
 def expr_assign(lhs, rhs):
-  taichi_lang.expr_assign(lhs.ptr, rhs.ptr)
+  taichi_lang.expr_assign(lhs.ptr, Expr(rhs).ptr)
 
 
 class Expr:
@@ -119,7 +119,7 @@ def comp(foo):
       kernel = taichi_lang.create_kernel("test")
       kernel = kernel.define(lambda: compiled())
       compiled_functions[foo] = lambda: kernel()
-    return compiled_functions[foo]
+    compiled_functions[foo]()
   return ret
 
 x = Expr(taichi_lang.make_id_expr(""))
@@ -130,8 +130,8 @@ def tiprint(var):
 
 @comp
 def test():
-  a = Expr(1)
-  b = Expr(2)
+  a = 1
+  b = 2
   c = a + b * b
   tiprint(c)
   tiprint(1)

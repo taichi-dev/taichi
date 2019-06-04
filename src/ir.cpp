@@ -75,13 +75,13 @@ IRBuilder &current_ast_builder() {
   return context->builder();
 }
 
-IRBuilder::ScopeGuard IRBuilder::create_scope(std::unique_ptr<Block> &list) {
+std::unique_ptr<IRBuilder::ScopeGuard> IRBuilder::create_scope(std::unique_ptr<Block> &list) {
   TC_ASSERT(list == nullptr);
   list = std::make_unique<Block>();
   if (!stack.empty()) {
     list->parent = stack.back();
   }
-  return ScopeGuard(this, list.get());
+  return std::make_unique<ScopeGuard>(this, list.get());
 }
 
 void Expr::operator=(const Expr &o) {
@@ -160,7 +160,9 @@ void Expr::operator/=(const Expr &o) {
   (*this) = (*this) / load_if_ptr(o);
 }
 
-FrontendForStmt::FrontendForStmt(ExprGroup loop_var, Expr begin, Expr end)
+FrontendForStmt::FrontendForStmt(const Expr &loop_var,
+                                 const Expr &begin,
+                                 const Expr &end)
     : begin(begin), end(end) {
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;
@@ -175,13 +177,12 @@ FrontendForStmt::FrontendForStmt(ExprGroup loop_var, Expr begin, Expr end)
   dec.reset();
   if (vectorize == -1)
     vectorize = 1;
-  loop_var_id.resize(loop_var.size());
-  for (int i = 0; i < (int)loop_var.size(); i++) {
-    loop_var_id[i] = loop_var[i].cast<IdExpression>()->id;
-  }
+  loop_var_id.resize(1);
+  loop_var_id[0] = loop_var.cast<IdExpression>()->id;
 }
 
-FrontendForStmt::FrontendForStmt(ExprGroup loop_var, Expr global_var)
+FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
+                                 const Expr &global_var)
     : global_var(global_var) {
   vectorize = dec.vectorize;
   parallelize = dec.parallelize;

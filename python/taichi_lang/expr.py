@@ -1,7 +1,6 @@
-from core import taichi_lang_core
+from .core import taichi_lang_core
 
 # Scalar, basic data type
-
 class Expr:
   def __init__(self, *args):
     if len(args) == 1:

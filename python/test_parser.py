@@ -10,6 +10,8 @@ def taichi(**kwargs):
 @taichi(dim=2, opt=False)
 def foo(x):
   ttt.print(1)
+  for i in range(1, 10):
+    pass
 
   '''
   a = ti.float32(123)

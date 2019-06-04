@@ -1,5 +1,5 @@
 import inspect
-from core import taichi_lang_core
+from .core import taichi_lang_core
 from .transformer import ASTTransformer
 from .expr import Expr
 import ast
@@ -16,6 +16,7 @@ class PyTaichi:
     self.prog = None
     self.layout_functions = []
     self.compiled_functions = {}
+    self.scope_stack = []
 
 
   def materialize(self):

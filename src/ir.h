@@ -236,7 +236,7 @@ class IRBuilder {
     }
   };
 
-  ScopeGuard create_scope(std::unique_ptr<Block> &list);
+  std::unique_ptr<ScopeGuard> create_scope(std::unique_ptr<Block> &list);
 
   Block *current_block() {
     if (stack.empty())
@@ -1655,9 +1655,9 @@ class FrontendForStmt : public Stmt {
     }
   }
 
-  FrontendForStmt(ExprGroup loop_var, Expr global_var);
+  FrontendForStmt(const ExprGroup &loop_var, const Expr &global_var);
 
-  FrontendForStmt(ExprGroup loop_var, Expr begin, Expr end);
+  FrontendForStmt(const Expr &loop_var, const Expr &begin, const Expr &end);
 
   bool is_container_statement() const override {
     return true;

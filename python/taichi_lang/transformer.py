@@ -1,4 +1,6 @@
 import ast
+import astpretty
+import astor
 
 class ScopeGuard:
   def __init__(self, t):
@@ -10,6 +12,7 @@ class ScopeGuard:
   def __exit__(self, exc_type, exc_val, exc_tb):
     self.t.local_scopes = self.t.local_scopes[:-1]
 
+# Single-pass transform
 class ASTTransformer(ast.NodeTransformer):
   def __init__(self):
     super().__init__()
@@ -50,6 +53,22 @@ class ASTTransformer(ast.NodeTransformer):
       return ast.copy_location(ast.Expr(value=call), node)
 
   def visit_For(self, node):
+    loop_var = node.target.id
+    template = ''' 
+if 1:
+  {} = ti.create_id_expr(0)
+  ___begin = ti.Expr(0) 
+  ___end = ti.Expr(0)
+  ti.core.begin_frontend_range_for({}, ___begin, ___end)
+  ti.core.end_frontend_range_for()
+    '''.format(loop_var, loop_var)
+    t = ast.parse(template).body[0]
+    bgn = node.iter.args[0]
+    end = node.iter.args[1]
+    t.body[1].value.args[0] = bgn
+    t.body[2].value.args[0] = end
+    astpretty.pprint(t)
+    print(astor.to_source(t))
     with self.variable_scope():
       self.generic_visit(node)
 

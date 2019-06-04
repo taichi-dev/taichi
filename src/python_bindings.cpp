@@ -16,6 +16,8 @@ void expr_assign(const Expr &lhs, const Expr &rhs) {
       std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs)));
 }
 
+std::vector<std::unique_ptr<IRBuilder::ScopeGuard>> scope_stack;
+
 PYBIND11_MODULE(taichi_lang_core, m) {
   py::class_<SNode>(m, "SNode")
       .def(py::init<>())
@@ -32,6 +34,16 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   py::class_<Program::KernelProxy>(m, "KernelProxy")
       .def("define", &Program::KernelProxy::def,
            py::return_value_policy::reference);
+
+  m.def("begin_frontend_range_for",
+        [&](const Expr &i, const Expr &s, const Expr &e) {
+          auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e);
+          auto stmt = stmt_unique.get();
+          current_ast_builder().insert(std::move(stmt_unique));
+          scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
+        });
+
+  m.def("end_frontend_range_for", [&]() { scope_stack.pop_back(); });
 
   m.def("layout", layout);
 

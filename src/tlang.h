@@ -19,9 +19,7 @@ inline int maximum(int a) {
 
 TLANG_NAMESPACE_BEGIN
 
-inline void layout(const std::function<void()> &body) {
-  get_current_program().layout(body);
-}
+void layout(const std::function<void()> &body);
 
 inline Program::Kernel &kernel(const std::function<void()> &body) {
   return get_current_program().kernel(body);

@@ -29,7 +29,7 @@ class Program {
     FunctionType compiled;
     std::string name;
     bool benchmarking;
-    bool is_reduction; // TODO: systematically treat all types of reduction
+    bool is_reduction;  // TODO: systematically treat all types of reduction
 
     Kernel(Program &program, std::function<void()> func, std::string name = "");
 
@@ -82,7 +82,10 @@ class Program {
     return context;
   }
 
-  Program(Arch arch = Arch::x86_64) {
+  Program() : Program(Arch::x86_64) {
+  }
+
+  Program(Arch arch) {
     UnifiedAllocator::create();
     TC_ASSERT(current_program == nullptr);
     current_program = this;

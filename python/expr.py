@@ -5,7 +5,6 @@ import astpretty
 import astor
 
 def expr_init(rhs):
-  print('init')
   return taichi_lang.expr_var(rhs.ptr)
 
 def expr_assign(lhs, rhs):
@@ -103,5 +102,10 @@ def test():
 
 test = comp(test)
 
+def l():
+  taichi_lang.get_root().place()
+
 if __name__ == '__main__':
+  prog = taichi_lang.Program()
+  taichi_lang.layout(l)
   test()

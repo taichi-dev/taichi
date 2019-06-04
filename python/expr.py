@@ -93,27 +93,34 @@ class ASTTransformer(ast.NodeTransformer):
     )
     return ast.copy_location(ast.Assign(targets=node.targets, value=rhs), node)
 
+compiled_functions = {}
+
 def comp(foo):
-  src = inspect.getsource(foo)
-  tree = ast.parse(src)
-  # print(astor.to_source(tree.body[0]))
+  def ret():
+    if foo not in compiled_functions:
+      src = inspect.getsource(foo)
+      tree = ast.parse(src)
+      # print(astor.to_source(tree.body[0]))
 
-  func_body = tree.body[0]
-  func_body.decorator_list = []
+      func_body = tree.body[0]
+      func_body.decorator_list = []
 
-  visitor = ASTTransformer()
-  visitor.visit(tree)
-  ast.fix_missing_locations(tree)
+      visitor = ASTTransformer()
+      visitor.visit(tree)
+      ast.fix_missing_locations(tree)
 
-  astpretty.pprint(func_body)
-  #print(codegen.to_source(tree))
-  print(astor.to_source(tree.body[0]))
+      # astpretty.pprint(func_body)
+      # print(codegen.to_source(tree))
+      print(astor.to_source(tree.body[0]))
 
-  exec(compile(tree, filename='tmp', mode='exec'))
-  return locals()[foo.__name__]
-  #print(locals())
-  #print(globals())
-  #return locals()[foo.__name__]
+      exec(compile(tree, filename='tmp', mode='exec'))
+      compiled = locals()[foo.__name__]
+
+      kernel = taichi_lang.create_kernel("test")
+      kernel = kernel.define(lambda: compiled())
+      compiled_functions[foo] = lambda: kernel()
+    return compiled_functions[foo]
+  return ret
 
 x = Expr(taichi_lang.make_id_expr(""))
 
@@ -132,14 +139,10 @@ def test():
   tiprint(x)
 
 
-#test = comp(test)
-
 if __name__ == '__main__':
   prog = taichi_lang.Program()
   x.ptr = taichi_lang.global_new(x.ptr, taichi_lang.DataType.float32)
   def l():
     taichi_lang.get_root().place(x.ptr)
   taichi_lang.layout(l)
-  kernel = taichi_lang.create_kernel("test")
-  kernel = kernel.define(lambda: test())
-  kernel()
+  test()

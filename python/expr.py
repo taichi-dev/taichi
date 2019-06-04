@@ -10,6 +10,25 @@ def expr_init(rhs):
 def expr_assign(lhs, rhs):
   taichi_lang.expr_assign(lhs.ptr, Expr(rhs).ptr)
 
+class PyTaichi:
+  def __init__(self):
+    self.materialized = False
+    self.prog = None
+    self.layout_functions = []
+    self.compiled_functions = {}
+
+
+  def materialize(self):
+    assert self.materialized == False
+    self.prog = taichi_lang.Program()
+    def layout():
+      for func in self.layout_functions:
+        func()
+    taichi_lang.layout(layout)
+    self.materialized = True
+
+pytaichi = PyTaichi()
+
 
 class Expr:
   def __init__(self, *args):
@@ -93,10 +112,11 @@ class ASTTransformer(ast.NodeTransformer):
     )
     return ast.copy_location(ast.Assign(targets=node.targets, value=rhs), node)
 
-compiled_functions = {}
-
 def kernel(foo):
   def ret():
+    compiled_functions = pytaichi.compiled_functions
+    if not pytaichi.materialized:
+      pytaichi.materialize()
     if foo not in compiled_functions:
       src = inspect.getsource(foo)
       tree = ast.parse(src)
@@ -128,28 +148,15 @@ def global_var(dt):
   return x
 
 root = taichi_lang.get_root()
-layout_functions = []
 
 def layout(func):
-  layout_functions.append(func)
+  pytaichi.layout_functions.append(func)
 
 def tiprint(var):
   taichi_lang.print_(Expr(var).ptr, 'var')
 
-def initialize_layout():
-  def layout():
-    for func in layout_functions:
-      func()
-  taichi_lang.layout(layout)
 
-prog = None
-
-def taichi_initialize():
-  global prog
-  prog = taichi_lang.Program()
-  initialize_layout()
-
-
+x = global_var(taichi_lang.DataType.float32)
 
 @kernel
 def test():
@@ -166,6 +173,4 @@ def place_variables():
   root.place(x.ptr)
 
 if __name__ == '__main__':
-  x = global_var(taichi_lang.DataType.float32)
-  taichi_initialize()
   test()

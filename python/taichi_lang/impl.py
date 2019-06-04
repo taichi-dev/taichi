@@ -49,8 +49,7 @@ def kernel(foo):
       ast.fix_missing_locations(tree)
 
       # astpretty.pprint(func_body)
-      # print(codegen.to_source(tree))
-      # print(astor.to_source(tree.body[0]))
+      print(astor.to_source(tree.body[0]))
 
       ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
 

@@ -9,9 +9,9 @@ def taichi(**kwargs):
 
 @taichi(dim=2, opt=False)
 def foo(x):
-  global s
-  local.r = 1
+  ttt.print(1)
 
+  '''
   a = ti.float32(123)
 
   x = float32(1)
@@ -40,6 +40,7 @@ def foo(x):
     for i in ti.range(123):
       pass
     pass
+  '''
 
 
 # p = ast.parse(expr)

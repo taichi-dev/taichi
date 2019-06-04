@@ -19,9 +19,13 @@ void expr_assign(const Expr &lhs, const Expr &rhs) {
 std::vector<std::unique_ptr<IRBuilder::ScopeGuard>> scope_stack;
 
 PYBIND11_MODULE(taichi_lang_core, m) {
+  py::class_<Index>(m, "Index").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
       .def(py::init<>())
-      .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place));
+      .def("dense", (SNode & (SNode::*)(const Index &, int s))(&SNode::dense),
+           py::return_value_policy::reference)
+      .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place),
+           py::return_value_policy::reference);
   py::class_<Program>(m, "Program").def(py::init<>());
   py::class_<Program::Kernel>(m, "Kernel")
       .def("__call__", &Program::Kernel::operator());

@@ -19,7 +19,7 @@ void expr_assign(const Expr &lhs, const Expr &rhs) {
 PYBIND11_MODULE(taichi_lang, m) {
   py::class_<SNode>(m, "SNode")
       .def(py::init<>())
-      .def("place", (SNode &(SNode::*)(Expr &))(&SNode::place));
+      .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place));
   py::class_<Program>(m, "Program").def(py::init<>());
   py::class_<Expr>(m, "Expr").def("serialize", &Expr::serialize);
   py::class_<ExprGroup>(m, "ExprGroup")
@@ -30,7 +30,8 @@ PYBIND11_MODULE(taichi_lang, m) {
 
   m.def("layout", layout);
 
-  m.def("get_root", [&] { return root; });
+  m.def("get_root", [&]() -> SNode * { return &root; },
+        py::return_value_policy::reference);
 
   m.def("expr_add", expr_add);
   m.def("expr_sub", expr_sub);
@@ -76,6 +77,13 @@ PYBIND11_MODULE(taichi_lang, m) {
   unary.export_values();
   m.def("make_unary_op_expr",
         Expr::make<UnaryOpExpression, const UnaryOpType &, const Expr &>);
+
+  auto &&data_type = py::enum_<DataType>(m, "DataType", py::arithmetic());
+  for (int t = 0; t <= (int)DataType::unknown; t++)
+    data_type.value(data_type_name(DataType(t)).c_str(), DataType(t));
+  data_type.export_values();
+
+  m.def("global_new", static_cast<Expr (*)(Expr, DataType)>(global_new));
 }
 
 TLANG_NAMESPACE_END

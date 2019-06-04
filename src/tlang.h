@@ -86,17 +86,9 @@ inline void set_ambient(Expr expr_, int32 val) {
   expr->has_ambient = true;
 }
 
-inline Expr global_new(Expr id_expr, DataType dt) {
-  TC_ASSERT(id_expr.is<IdExpression>());
-  auto ret = Expr(std::make_shared<GlobalVariableExpression>(
-      dt, id_expr.cast<IdExpression>()->id));
-  return ret;
-}
+Expr global_new(Expr id_expr, DataType dt);
 
-inline Expr global_new(DataType dt, std::string name = "") {
-  auto id_expr = std::make_shared<IdExpression>(name);
-  return Expr::make<GlobalVariableExpression>(dt, id_expr->id);
-}
+Expr global_new(DataType dt, std::string name = "");
 
 template <typename T>
 inline Expr Rand() {
@@ -149,9 +141,7 @@ inline void Deactivate(SNode *snode, const ExprGroup &expr_group) {
       SNodeOpType::deactivate, snode, expr_group));
 }
 
-inline void Append(SNode *snode,
-                   const ExprGroup &indices,
-                   const Expr &val) {
+inline void Append(SNode *snode, const ExprGroup &indices, const Expr &val) {
   current_ast_builder().insert(Stmt::make<FrontendSNodeOpStmt>(
       SNodeOpType::append, snode, indices, val));
 }

@@ -102,10 +102,13 @@ def test():
 
 test = comp(test)
 
-def l():
-  taichi_lang.get_root().place()
 
 if __name__ == '__main__':
   prog = taichi_lang.Program()
+  a = Expr(taichi_lang.make_id_expr(""))
+  a.ptr = taichi_lang.global_new(a.ptr, taichi_lang.DataType.float32)
+  def l():
+    for i in range(10):
+      taichi_lang.get_root().place(a.ptr)
   taichi_lang.layout(l)
   test()

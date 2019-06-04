@@ -5,6 +5,16 @@
 
 TLANG_NAMESPACE_BEGIN
 
+Expr expr_index(const Expr &expr, const Expr &index) {
+  return expr[index];
+}
+
+void expr_assign(const Expr &lhs, const Expr &rhs) {
+  TC_ASSERT(lhs->is_lvalue());
+  current_ast_builder().insert(
+      std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs)));
+}
+
 PYBIND11_MODULE(taichi_lang, m) {
   py::class_<Expr>(m, "Expr").def("serialize", &Expr::serialize);
   py::class_<ExprGroup>(m, "ExprGroup")
@@ -24,6 +34,11 @@ PYBIND11_MODULE(taichi_lang, m) {
   m.def("expr_cmp_gt", expr_cmp_gt);
   m.def("expr_cmp_ne", expr_cmp_ne);
   m.def("expr_cmp_eq", expr_cmp_eq);
+
+  m.def("expr_index", expr_index);
+
+  m.def("expr_var", [](const Expr &e) { return Var(e); });
+  m.def("expr_assign", expr_assign);
 
   m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);
   m.def("make_global_store_stmt", Stmt::make<GlobalStoreStmt, Stmt *, Stmt *>);

@@ -1,4 +1,15 @@
+import inspect
 from core import taichi_lang
+import ast
+import astpretty
+import astor
+
+def expr_init(rhs):
+  print('init')
+  return taichi_lang.expr_var(rhs.ptr)
+
+def expr_assign(lhs, rhs):
+  taichi_lang.expr_assign(lhs.ptr, rhs.ptr)
 
 
 class Expr:
@@ -41,14 +52,56 @@ class Expr:
   def __ne__(self, other):
     return Expr(taichi_lang.expr_cmp_ne(self.ptr, other.ptr))
 
+  def __getitem__(self, item):
+    return Expr(expr_index(self, item.ptr))
+
   def serialize(self):
     return self.ptr.serialize()
 
-def main():
+
+class ASTTransformer(ast.NodeTransformer):
+  def visit_Assign(self, node):
+    assert (len(node.targets) == 1)
+    '''
+    ast.Attribute(
+        value=ast.Name(id='taichi_lang', ctx=ast.Load()), attr='expr_init',
+        ctx=ast.Load())
+    '''
+    rhs = ast.Call(
+      func=ast.Name(id='expr_init', ctx=ast.Load()),
+      args=[node.value],
+      keywords=[],
+    )
+    return ast.copy_location(ast.Assign(targets=node.targets, value=rhs), node)
+
+def comp(foo):
+  src = inspect.getsource(foo)
+  tree = ast.parse(src)
+  # print(astor.to_source(tree.body[0]))
+
+  func_body = tree.body[0]
+
+  visitor = ASTTransformer()
+  visitor.visit(tree)
+  ast.fix_missing_locations(tree)
+
+  # astpretty.pprint(func_body)
+  #print(codegen.to_source(tree))
+  print(astor.to_source(tree.body[0]))
+
+  exec(compile(tree, filename='tmp', mode='exec'))
+  return locals()[foo.__name__]
+  #print(locals())
+  #print(globals())
+  #return locals()[foo.__name__]
+
+def test():
   a = Expr(1)
   b = Expr(2)
   c = a + b
   print(c.serialize())
 
+test = comp(test)
+
 if __name__ == '__main__':
-  main()
+  test()

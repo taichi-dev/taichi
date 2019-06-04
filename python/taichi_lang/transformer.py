@@ -25,7 +25,10 @@ class ASTTransformer(ast.NodeTransformer):
     return self.local_scopes[-1]
 
   def is_creation(self, name):
-    return name not in self.current_scope()
+    for s in self.local_scopes:
+      if name in s:
+        return False
+    return True
 
   def create_variable(self, name):
     self.current_scope().add(name)
@@ -53,13 +56,15 @@ class ASTTransformer(ast.NodeTransformer):
       return ast.copy_location(ast.Expr(value=call), node)
 
   def visit_For(self, node):
+    with self.variable_scope():
+      self.generic_visit(node)
     loop_var = node.target.id
     template = ''' 
 if 1:
-  {} = ti.create_id_expr(0)
+  {} = ti.core.make_id_expr('')
   ___begin = ti.Expr(0) 
   ___end = ti.Expr(0)
-  ti.core.begin_frontend_range_for({}, ___begin, ___end)
+  ti.core.begin_frontend_range_for({}, ___begin.ptr, ___end.ptr)
   ti.core.end_frontend_range_for()
     '''.format(loop_var, loop_var)
     t = ast.parse(template).body[0]
@@ -68,9 +73,9 @@ if 1:
     t.body[1].value.args[0] = bgn
     t.body[2].value.args[0] = end
     astpretty.pprint(t)
+    t.body = t.body[:4] + node.body + t.body[4:]
     print(astor.to_source(t))
-    with self.variable_scope():
-      self.generic_visit(node)
+    return ast.copy_location(t, node)
 
   def visit_Module(self, node):
     with self.variable_scope():

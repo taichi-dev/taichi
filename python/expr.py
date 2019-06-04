@@ -96,10 +96,15 @@ def comp(foo):
 
 x = Expr(taichi_lang.make_id_expr(""))
 
+
+def tiprint(var):
+  taichi_lang.print_(var.ptr, 'var')
+
 def test():
   a = Expr(1)
   b = Expr(2)
   c = a + b
+  tiprint(c)
 
 test = comp(test)
 

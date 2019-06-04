@@ -93,6 +93,8 @@ PYBIND11_MODULE(taichi_lang, m) {
   m.def("create_kernel", [&](std::string name) -> Program::KernelProxy {
     return get_current_program().kernel(name);
   });
+
+  m.def("print_", Print_);
 }
 
 TLANG_NAMESPACE_END

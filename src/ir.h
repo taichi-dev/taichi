@@ -1774,9 +1774,7 @@ inline void IRBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
 
 #define Print(x) Print_(x, #x);
 
-inline void Print_(const Expr &a, std::string str) {
-  current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a, str));
-}
+void Print_(const Expr &a, std::string str);
 
 // TODO: fix this hack...
 // for current ast

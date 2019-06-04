@@ -358,6 +358,10 @@ Expr Var(Expr x) {
   return var;
 }
 
+void Print_(const Expr &a, std::string str) {
+  current_ast_builder().insert(std::make_unique<FrontendPrintStmt>(a, str));
+}
+
 template <>
 std::string to_string(const LaneAttribute<LocalAddress> &ptr) {
   std::string ret = " [";

@@ -21,12 +21,16 @@ PYBIND11_MODULE(taichi_lang, m) {
       .def(py::init<>())
       .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place));
   py::class_<Program>(m, "Program").def(py::init<>());
+  py::class_<Program::Kernel>(m, "Kernel");
   py::class_<Expr>(m, "Expr").def("serialize", &Expr::serialize);
   py::class_<ExprGroup>(m, "ExprGroup")
       .def(py::init<>())
       .def("push_back", &ExprGroup::push_back)
       .def("serialize", &ExprGroup::serialize);
   py::class_<Stmt>(m, "Stmt");
+  py::class_<Program::KernelProxy>(m, "KernelProxy")
+      .def("define", &Program::KernelProxy::def,
+           py::return_value_policy::reference);
 
   m.def("layout", layout);
 
@@ -84,6 +88,10 @@ PYBIND11_MODULE(taichi_lang, m) {
   data_type.export_values();
 
   m.def("global_new", static_cast<Expr (*)(Expr, DataType)>(global_new));
+
+  m.def("create_kernel", [&](std::string name) -> Program::KernelProxy {
+    return get_current_program().kernel(name);
+  });
 }
 
 TLANG_NAMESPACE_END

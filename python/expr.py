@@ -5,7 +5,7 @@ import astpretty
 import astor
 
 def expr_init(rhs):
-  return taichi_lang.expr_var(rhs.ptr)
+  return Expr(taichi_lang.expr_var(rhs.ptr))
 
 def expr_assign(lhs, rhs):
   taichi_lang.expr_assign(lhs.ptr, rhs.ptr)
@@ -111,4 +111,5 @@ if __name__ == '__main__':
     for i in range(10):
       taichi_lang.get_root().place(a.ptr)
   taichi_lang.layout(l)
-  test()
+  kernel = taichi_lang.create_kernel("test")
+  kernel.define(lambda: test())

@@ -95,7 +95,7 @@ class ASTTransformer(ast.NodeTransformer):
 
 compiled_functions = {}
 
-def comp(foo):
+def kernel(foo):
   def ret():
     if foo not in compiled_functions:
       src = inspect.getsource(foo)
@@ -116,19 +116,42 @@ def comp(foo):
       exec(compile(tree, filename='tmp', mode='exec'))
       compiled = locals()[foo.__name__]
 
-      kernel = taichi_lang.create_kernel("test")
-      kernel = kernel.define(lambda: compiled())
-      compiled_functions[foo] = lambda: kernel()
+      t_kernel = taichi_lang.create_kernel("test")
+      t_kernel = t_kernel.define(lambda: compiled())
+      compiled_functions[foo] = lambda: t_kernel()
     compiled_functions[foo]()
   return ret
 
-x = Expr(taichi_lang.make_id_expr(""))
+def global_var(dt):
+  x = Expr(taichi_lang.make_id_expr(""))
+  x.ptr = taichi_lang.global_new(x.ptr, dt)
+  return x
 
+root = taichi_lang.get_root()
+layout_functions = []
+
+def layout(func):
+  layout_functions.append(func)
 
 def tiprint(var):
   taichi_lang.print_(Expr(var).ptr, 'var')
 
-@comp
+def initialize_layout():
+  def layout():
+    for func in layout_functions:
+      func()
+  taichi_lang.layout(layout)
+
+prog = None
+
+def taichi_initialize():
+  global prog
+  prog = taichi_lang.Program()
+  initialize_layout()
+
+
+
+@kernel
 def test():
   a = 1
   b = 2
@@ -138,11 +161,11 @@ def test():
   tiprint(1 + 11)
   tiprint(x)
 
+@layout
+def place_variables():
+  root.place(x.ptr)
 
 if __name__ == '__main__':
-  prog = taichi_lang.Program()
-  x.ptr = taichi_lang.global_new(x.ptr, taichi_lang.DataType.float32)
-  def l():
-    taichi_lang.get_root().place(x.ptr)
-  taichi_lang.layout(l)
+  x = global_var(taichi_lang.DataType.float32)
+  taichi_initialize()
   test()

@@ -1,14 +1,14 @@
 import inspect
-from core import taichi_lang
+from core import taichi_lang_core
 import ast
 import astpretty
 import astor
 
 def expr_init(rhs):
-  return Expr(taichi_lang.expr_var(Expr(rhs).ptr))
+  return Expr(taichi_lang_core.expr_var(Expr(rhs).ptr))
 
 def expr_assign(lhs, rhs):
-  taichi_lang.expr_assign(lhs.ptr, Expr(rhs).ptr)
+  taichi_lang_core.expr_assign(lhs.ptr, Expr(rhs).ptr)
 
 class PyTaichi:
   def __init__(self):
@@ -20,11 +20,11 @@ class PyTaichi:
 
   def materialize(self):
     assert self.materialized == False
-    self.prog = taichi_lang.Program()
+    self.prog = taichi_lang_core.Program()
     def layout():
       for func in self.layout_functions:
         func()
-    taichi_lang.layout(layout)
+    taichi_lang_core.layout(layout)
     self.materialized = True
 
 pytaichi = PyTaichi()
@@ -33,61 +33,61 @@ pytaichi = PyTaichi()
 class Expr:
   def __init__(self, *args):
     if len(args) == 1:
-      if isinstance(args[0], taichi_lang.Expr):
+      if isinstance(args[0], taichi_lang_core.Expr):
         self.ptr = args[0]
       elif isinstance(args[0], Expr):
         self.ptr = args[0].ptr
       else:
-        self.ptr = taichi_lang.make_constant_expr(args[0])
+        self.ptr = taichi_lang_core.make_constant_expr(args[0])
     else:
       assert False
 
   def __add__(self, other):
     other = Expr(other)
-    return Expr(taichi_lang.expr_add(self.ptr, other.ptr))
+    return Expr(taichi_lang_core.expr_add(self.ptr, other.ptr))
 
   __radd__ = __add__
 
   def __sub__(self, other):
     other = Expr(other)
-    return Expr(taichi_lang.expr_sub(self.ptr, other.ptr))
+    return Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr))
 
   def __mul__(self, other):
     other = Expr(other)
-    return Expr(taichi_lang.expr_mul(self.ptr, other.ptr))
+    return Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr))
 
   __rmul__ = __mul__
 
   def __div__(self, other):
     other = Expr(other)
-    return Expr(taichi_lang.expr_div(self.ptr, other.ptr))
+    return Expr(taichi_lang_core.expr_div(self.ptr, other.ptr))
 
 
   def __le__(self, other):
     other = Expr(other)
-    return Expr(taichi_lang.expr_cmp_le(self.ptr, other.ptr))
+    return Expr(taichi_lang_core.expr_cmp_le(self.ptr, other.ptr))
 
   __rle__ = __le__
 
   def __lt__(self, other):
     other = Expr(other)
-    return Expr(taichi_lang.expr_cmp_lt(self.ptr, other.ptr))
+    return Expr(taichi_lang_core.expr_cmp_lt(self.ptr, other.ptr))
 
   def __ge__(self, other):
     other = Expr(other)
-    return Expr(taichi_lang.expr_cmp_ge(self.ptr, other.ptr))
+    return Expr(taichi_lang_core.expr_cmp_ge(self.ptr, other.ptr))
 
   def __gt__(self, other):
     other = Expr(other)
-    return Expr(taichi_lang.expr_cmp_gt(self.ptr, other.ptr))
+    return Expr(taichi_lang_core.expr_cmp_gt(self.ptr, other.ptr))
 
   def __eq__(self, other):
     other = Expr(other)
-    return Expr(taichi_lang.expr_cmp_eq(self.ptr, other.ptr))
+    return Expr(taichi_lang_core.expr_cmp_eq(self.ptr, other.ptr))
 
   def __ne__(self, other):
     other = Expr(other)
-    return Expr(taichi_lang.expr_cmp_ne(self.ptr, other.ptr))
+    return Expr(taichi_lang_core.expr_cmp_ne(self.ptr, other.ptr))
 
   def __getitem__(self, item):
     item = Expr(item)
@@ -102,7 +102,7 @@ class ASTTransformer(ast.NodeTransformer):
     assert (len(node.targets) == 1)
     '''
     ast.Attribute(
-        value=ast.Name(id='taichi_lang', ctx=ast.Load()), attr='expr_init',
+        value=ast.Name(id='taichi_lang_core', ctx=ast.Load()), attr='expr_init',
         ctx=ast.Load())
     '''
     rhs = ast.Call(
@@ -136,41 +136,26 @@ def kernel(foo):
       exec(compile(tree, filename='tmp', mode='exec'))
       compiled = locals()[foo.__name__]
 
-      t_kernel = taichi_lang.create_kernel("test")
+      t_kernel = taichi_lang_core.create_kernel("test")
       t_kernel = t_kernel.define(lambda: compiled())
       compiled_functions[foo] = lambda: t_kernel()
     compiled_functions[foo]()
   return ret
 
 def global_var(dt):
-  x = Expr(taichi_lang.make_id_expr(""))
-  x.ptr = taichi_lang.global_new(x.ptr, dt)
+  x = Expr(taichi_lang_core.make_id_expr(""))
+  x.ptr = taichi_lang_core.global_new(x.ptr, dt)
   return x
 
-root = taichi_lang.get_root()
+root = taichi_lang_core.get_root()
 
 def layout(func):
+  assert not pytaichi.materialized, "All layout must be specified before the first kernel launch."
   pytaichi.layout_functions.append(func)
 
-def tiprint(var):
-  taichi_lang.print_(Expr(var).ptr, 'var')
+float32 = taichi_lang_core.DataType.float32
+f32 = float32
 
+def tprint(var):
+  taichi_lang_core.print_(Expr(var).ptr, 'var')
 
-x = global_var(taichi_lang.DataType.float32)
-
-@kernel
-def test():
-  a = 1
-  b = 2
-  c = a + b * b
-  tiprint(c)
-  tiprint(1)
-  tiprint(1 + 11)
-  tiprint(x)
-
-@layout
-def place_variables():
-  root.place(x.ptr)
-
-if __name__ == '__main__':
-  test()

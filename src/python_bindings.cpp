@@ -16,7 +16,7 @@ void expr_assign(const Expr &lhs, const Expr &rhs) {
       std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs)));
 }
 
-PYBIND11_MODULE(taichi_lang, m) {
+PYBIND11_MODULE(taichi_lang_core, m) {
   py::class_<SNode>(m, "SNode")
       .def(py::init<>())
       .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place));

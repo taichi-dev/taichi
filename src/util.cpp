@@ -254,7 +254,7 @@ std::string CompileConfig::compiler_config() {
         "{} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/include "
         "-ffp-contract=fast "
         "-fopenmp -Wall -g -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU "
-        "-lstdc++  -L{}/build/ -ltaichi_lang {}",
+        "-lstdc++  -L{}/build/ -ltaichi_lang_core {}",
         compiler_name(), gcc_opt_flag(), get_project_fn(), get_repo_dir(),
         extra_flags);
   } else {
@@ -263,7 +263,7 @@ std::string CompileConfig::compiler_config() {
         "--use_fast_math -arch=compute_61 -code=sm_61,compute_61 "
         "--ptxas-options=-allow-expensive-optimizations=true,-O3,-v -I "
         "{}/include -ccbin {} "
-        "-D_GLIBCXX_USE_CXX11_ABI=0 -lstdc++ -L{}/build/ -ltaichi_lang "
+        "-D_GLIBCXX_USE_CXX11_ABI=0 -lstdc++ -L{}/build/ -ltaichi_lang_core "
         "-DTLANG_GPU {} ",
         gcc_opt_flag(), get_project_fn(), "g++-6", get_repo_dir(), extra_flags);
   }

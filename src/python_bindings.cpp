@@ -21,7 +21,8 @@ PYBIND11_MODULE(taichi_lang, m) {
       .def(py::init<>())
       .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place));
   py::class_<Program>(m, "Program").def(py::init<>());
-  py::class_<Program::Kernel>(m, "Kernel");
+  py::class_<Program::Kernel>(m, "Kernel")
+      .def("__call__", &Program::Kernel::operator());
   py::class_<Expr>(m, "Expr").def("serialize", &Expr::serialize);
   py::class_<ExprGroup>(m, "ExprGroup")
       .def(py::init<>())

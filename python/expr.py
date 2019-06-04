@@ -94,22 +94,22 @@ def comp(foo):
   #print(globals())
   #return locals()[foo.__name__]
 
+x = Expr(taichi_lang.make_id_expr(""))
+
 def test():
   a = Expr(1)
   b = Expr(2)
   c = a + b
-  print(c.serialize())
 
 test = comp(test)
 
 
 if __name__ == '__main__':
   prog = taichi_lang.Program()
-  a = Expr(taichi_lang.make_id_expr(""))
-  a.ptr = taichi_lang.global_new(a.ptr, taichi_lang.DataType.float32)
+  x.ptr = taichi_lang.global_new(x.ptr, taichi_lang.DataType.float32)
   def l():
-    for i in range(10):
-      taichi_lang.get_root().place(a.ptr)
+    taichi_lang.get_root().place(x.ptr)
   taichi_lang.layout(l)
   kernel = taichi_lang.create_kernel("test")
-  kernel.define(lambda: test())
+  kernel = kernel.define(lambda: test())
+  kernel()

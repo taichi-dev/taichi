@@ -99,12 +99,13 @@ def comp(foo):
   # print(astor.to_source(tree.body[0]))
 
   func_body = tree.body[0]
+  func_body.decorator_list = []
 
   visitor = ASTTransformer()
   visitor.visit(tree)
   ast.fix_missing_locations(tree)
 
-  # astpretty.pprint(func_body)
+  astpretty.pprint(func_body)
   #print(codegen.to_source(tree))
   print(astor.to_source(tree.body[0]))
 
@@ -120,16 +121,18 @@ x = Expr(taichi_lang.make_id_expr(""))
 def tiprint(var):
   taichi_lang.print_(Expr(var).ptr, 'var')
 
+@comp
 def test():
   a = Expr(1)
   b = Expr(2)
   c = a + b * b
   tiprint(c)
   tiprint(1)
-  tiprint(1 + Expr(11))
+  tiprint(1 + 11)
+  tiprint(x)
 
-test = comp(test)
 
+#test = comp(test)
 
 if __name__ == '__main__':
   prog = taichi_lang.Program()

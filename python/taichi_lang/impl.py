@@ -30,7 +30,6 @@ class PyTaichi:
 pytaichi = PyTaichi()
 
 
-
 def kernel(foo):
   def ret():
     compiled_functions = pytaichi.compiled_functions

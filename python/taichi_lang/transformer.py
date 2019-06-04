@@ -1,15 +1,22 @@
 import ast
 
+class ScopeGuard:
+  def __init__(self, t):
+    self.t = t
+
+  def __enter__(self):
+    self.t.local_scopes.append(set())
+
+  def __exit__(self, exc_type, exc_val, exc_tb):
+    self.t.local_scopes = self.t.local_scopes[:-1]
+
 class ASTTransformer(ast.NodeTransformer):
   def __init__(self):
     super().__init__()
     self.local_scopes = []
 
-  def push_scope(self):
-    self.local_scopes.append(set())
-
-  def pop_scope(self):
-    self.local_scopes = self.local_scopes[:-1]
+  def variable_scope(self):
+    return ScopeGuard(self)
 
   def current_scope(self):
     return self.local_scopes[-1]
@@ -42,15 +49,17 @@ class ASTTransformer(ast.NodeTransformer):
       call = ast.Call(func=func, args=[node.value], keywords=[])
       return ast.copy_location(ast.Expr(value=call), node)
 
+  def visit_For(self, node):
+    with self.variable_scope():
+      self.generic_visit(node)
+
   def visit_Module(self, node):
-    self.push_scope()
-    self.generic_visit(node)
-    self.pop_scope()
+    with self.variable_scope():
+      self.generic_visit(node)
     return node
 
   def visit_FunctionDef(self, node):
-    self.push_scope()
-    self.generic_visit(node)
-    self.pop_scope()
+    with self.variable_scope():
+      self.generic_visit(node)
     return node
 

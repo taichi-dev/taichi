@@ -100,13 +100,11 @@ class Expr:
 class ASTTransformer(ast.NodeTransformer):
   def visit_Assign(self, node):
     assert (len(node.targets) == 1)
-    '''
-    ast.Attribute(
-        value=ast.Name(id='taichi_lang_core', ctx=ast.Load()), attr='expr_init',
+    init = ast.Attribute(
+        value=ast.Name(id='ti', ctx=ast.Load()), attr='expr_init',
         ctx=ast.Load())
-    '''
     rhs = ast.Call(
-      func=ast.Name(id='expr_init', ctx=ast.Load()),
+      func=init,
       args=[node.value],
       keywords=[],
     )
@@ -131,9 +129,9 @@ def kernel(foo):
 
       # astpretty.pprint(func_body)
       # print(codegen.to_source(tree))
-      print(astor.to_source(tree.body[0]))
+      # print(astor.to_source(tree.body[0]))
 
-      exec(compile(tree, filename='tmp', mode='exec'))
+      exec(compile(tree, filename='tmp', mode='exec'), inspect.currentframe().f_back.f_globals, locals())
       compiled = locals()[foo.__name__]
 
       t_kernel = taichi_lang_core.create_kernel("test")

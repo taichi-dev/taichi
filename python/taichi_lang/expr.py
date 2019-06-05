@@ -35,6 +35,10 @@ class Expr:
 
   __rmul__ = __mul__
 
+  def __mod__(self, other):
+    other = Expr(other)
+    return Expr(taichi_lang_core.expr_mod(self.ptr, other.ptr))
+
   def __div__(self, other):
     other = Expr(other)
     return Expr(taichi_lang_core.expr_div(self.ptr, other.ptr))
@@ -42,8 +46,6 @@ class Expr:
   def __le__(self, other):
     other = Expr(other)
     return Expr(taichi_lang_core.expr_cmp_le(self.ptr, other.ptr))
-
-  __rle__ = __le__
 
   def __lt__(self, other):
     other = Expr(other)

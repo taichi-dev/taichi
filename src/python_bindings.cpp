@@ -98,6 +98,24 @@ PYBIND11_MODULE(taichi_lang_core, m) {
         });
 
   m.def("end_frontend_range_for", [&]() { scope_stack.pop_back(); });
+  m.def("pop_scope", [&]() { scope_stack.pop_back(); });
+
+  m.def("begin_frontend_if", [&](const Expr &cond) {
+    auto stmt_tmp = std::make_unique<FrontendIfStmt>(cond);
+    current_ast_builder().insert(std::move(stmt_tmp));
+  });
+
+  m.def("begin_frontend_if_true", [&]() {
+    auto if_stmt = current_ast_builder().get_last_stmt()->as<FrontendIfStmt>();
+    scope_stack.push_back(
+        current_ast_builder().create_scope(if_stmt->true_statements));
+  });
+
+  m.def("begin_frontend_if_false", [&]() {
+    auto if_stmt = current_ast_builder().get_last_stmt()->as<FrontendIfStmt>();
+    scope_stack.push_back(
+        current_ast_builder().create_scope(if_stmt->false_statements));
+  });
 
   m.def("layout", layout);
 
@@ -108,6 +126,7 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("expr_sub", expr_sub);
   m.def("expr_mul", expr_mul);
   m.def("expr_div", expr_div);
+  m.def("expr_mod", expr_mod);
 
   m.def("expr_cmp_le", expr_cmp_le);
   m.def("expr_cmp_lt", expr_cmp_lt);

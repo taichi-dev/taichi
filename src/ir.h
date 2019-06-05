@@ -244,6 +244,8 @@ class IRBuilder {
     else
       return stack.back();
   }
+
+  Stmt *get_last_stmt();
 };
 
 IRBuilder &current_ast_uilder();
@@ -1310,6 +1312,10 @@ class Block : public IRNode {
   Stmt *lookup_var(Ident ident) const;
 
   Stmt *mask();
+
+  Stmt *back() const {
+    return statements.back().get();
+  }
 
   DEFINE_ACCEPT
 };

@@ -13,41 +13,10 @@ def foo(x):
   # for i in range(1, 10):
   #  pass
 
-  a[i] = 1
-  a[i] = b[i, j]
-  c[i, j, k] = 123
-
-  '''
-  a = ti.float32(123)
-
-  x = float32(1)
-  x = float64(1)
-  x = int(1)
-  y = x
-  x[i] = (1 + 2 - 3)
-
-  if dim == 2:
-    print(2)
+  if i == 0:
+    a()
   else:
-    print(1)
-
-  if x[i, j] == 2:
-    pass
-  else:
-    pass
-
-  unroll()
-  for i, j in range(x):
-    print("hello world")
-    print(x[i, j])
-    SLP(4)
-
-  for t in range(100):
-    for i in ti.range(123):
-      pass
-    pass
-  '''
-
+    b()
 
 # p = ast.parse(expr)
 # p.body[0].body = [ast.parse("return 42").body[0]] # Replace function body with "return 42"

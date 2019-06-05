@@ -476,4 +476,8 @@ For::For(Expr s, Expr e, const std::function<void(Expr)> &func) {
   func(i);
 }
 
+Stmt *IRBuilder::get_last_stmt() {
+  return stack.back()->back();
+}
+
 TLANG_NAMESPACE_END

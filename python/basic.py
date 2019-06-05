@@ -15,6 +15,7 @@ def test():
     c = c + i
     x[i + 3] = i
     ti.print(x[i + 2])
+
   ti.print(c)
   ti.print(1)
   ti.print(1 + 11)

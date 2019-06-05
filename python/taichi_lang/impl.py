@@ -23,7 +23,6 @@ class PyTaichi:
     self.compiled_functions = {}
     self.scope_stack = []
 
-
   def materialize(self):
     assert self.materialized == False
     self.prog = taichi_lang_core.Program()
@@ -84,5 +83,7 @@ int32 = taichi_lang_core.DataType.int32
 i32 = int32
 
 def tprint(var):
-  taichi_lang_core.print_(Expr(var).ptr, 'var')
+  code = inspect.getframeinfo(inspect.currentframe().f_back).code_context[0]
+  arg_name = code[code.index('(') + 1 : code.index(')')]
+  taichi_lang_core.print_(Expr(var).ptr, arg_name)
 

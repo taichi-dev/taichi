@@ -80,6 +80,8 @@ def layout(func):
 
 float32 = taichi_lang_core.DataType.float32
 f32 = float32
+int32 = taichi_lang_core.DataType.int32
+i32 = int32
 
 def tprint(var):
   taichi_lang_core.print_(Expr(var).ptr, 'var')

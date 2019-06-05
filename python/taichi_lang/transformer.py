@@ -35,9 +35,10 @@ class ASTTransformer(ast.NodeTransformer):
 
   def visit_Assign(self, node):
     assert (len(node.targets) == 1)
-    assert isinstance(node.targets[0], ast.Name)
-    var_name = node.targets[0].id
-    if self.is_creation(var_name):
+    self.generic_visit(node)
+    is_local = isinstance(node.targets[0], ast.Name)
+    if is_local and self.is_creation(node.targets[0].id):
+      var_name = node.targets[0].id
       # Create
       init = ast.Attribute(
         value=ast.Name(id='ti', ctx=ast.Load()), attr='expr_init',
@@ -51,7 +52,8 @@ class ASTTransformer(ast.NodeTransformer):
       return ast.copy_location(ast.Assign(targets=node.targets, value=rhs), node)
     else:
       # Assign
-      func = ast.Attribute(value=ast.Name(id=var_name, ctx=ast.Load()), attr='assign', ctx=ast.Load())
+      node.targets[0].ctx = ast.Load()
+      func = ast.Attribute(value=node.targets[0], attr='assign', ctx=ast.Load())
       call = ast.Call(func=func, args=[node.value], keywords=[])
       return ast.copy_location(ast.Expr(value=call), node)
 
@@ -72,7 +74,6 @@ if 1:
     end = node.iter.args[1]
     t.body[1].value.args[0] = bgn
     t.body[2].value.args[0] = end
-    astpretty.pprint(t)
     t.body = t.body[:4] + node.body + t.body[4:]
     print(astor.to_source(t))
     return ast.copy_location(t, node)

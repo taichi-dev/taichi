@@ -2,6 +2,7 @@ import inspect
 from .core import taichi_lang_core
 from .transformer import ASTTransformer
 from .expr import Expr
+from .snode import SNode
 import ast
 import astpretty
 import astor
@@ -80,7 +81,7 @@ def global_var(dt):
   x.ptr = taichi_lang_core.global_new(x.ptr, dt)
   return x
 
-root = taichi_lang_core.get_root()
+root = SNode(taichi_lang_core.get_root())
 
 def layout(func):
   assert not pytaichi.materialized, "All layout must be specified before the first kernel launch / data access."

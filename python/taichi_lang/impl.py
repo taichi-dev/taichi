@@ -29,9 +29,11 @@ class PyTaichi:
     self.layout_functions = []
     self.compiled_functions = {}
     self.scope_stack = []
+    Expr.materialize_layout_callback = self.materialize
 
   def materialize(self):
     assert self.materialized == False
+    Expr.layout_materialized = True
     self.prog = taichi_lang_core.Program()
     def layout():
       for func in self.layout_functions:
@@ -81,7 +83,7 @@ def global_var(dt):
 root = taichi_lang_core.get_root()
 
 def layout(func):
-  assert not pytaichi.materialized, "All layout must be specified before the first kernel launch."
+  assert not pytaichi.materialized, "All layout must be specified before the first kernel launch / data access."
   pytaichi.layout_functions.append(func)
 
 float32 = taichi_lang_core.DataType.float32

@@ -2,6 +2,9 @@ from .core import taichi_lang_core
 
 # Scalar, basic data type
 class Expr:
+  materialize_layout_callback = None
+  layout_materialized = False
+
   def __init__(self, *args):
     if len(args) == 1:
       if isinstance(args[0], taichi_lang_core.Expr):
@@ -71,8 +74,11 @@ class Expr:
     return self.ptr.serialize()
 
   def __setitem__(self, key, value):
-
+    if not Expr.layout_materialized:
+      self.materialize_layout_callback()
     self.ptr.set_val(value, *key)
 
   def __getitem__(self, key):
+    if not Expr.layout_materialized:
+      self.materialize_layout_callback()
     return self.ptr.val(*key)

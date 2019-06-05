@@ -77,6 +77,27 @@ if 1:
     print(astor.to_source(t))
     return ast.copy_location(t, node)
 
+  @staticmethod
+  def parse_expr(expr):
+    return ast.parse(expr).body[0]
+
+  @staticmethod
+  def func_call(name, *args):
+    return ast.Call(func=ASTTransformer.parse_expr(name).value, args=list(args), keywords=[])
+
+  def visit_Subscript(self, node):
+    value = node.value
+    indices = node.slice
+    if isinstance(indices, ast.Tuple):
+      indices = indices.value.elts
+    else:
+      indices = [indices.value]
+
+    self.generic_visit(node)
+
+    call = ast.Call(func=self.parse_expr('ti.subscript').value, args=[value] + indices, keywords=[])
+    return ast.copy_location(call, node)
+
   def visit_Module(self, node):
     with self.variable_scope():
       self.generic_visit(node)

@@ -106,6 +106,10 @@ PYBIND11_MODULE(taichi_lang_core, m) {
 
   m.def("global_new", static_cast<Expr (*)(Expr, DataType)>(global_new));
 
+  m.def("subscript", [](const Expr &expr, const ExprGroup &expr_group) {
+    return expr[expr_group];
+  });
+
   m.def("create_kernel", [&](std::string name) -> Program::KernelProxy {
     return get_current_program().kernel(name);
   });

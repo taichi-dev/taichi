@@ -61,7 +61,7 @@ class ASTTransformer(ast.NodeTransformer):
     with self.variable_scope():
       self.generic_visit(node)
     is_range_for = isinstance(node.iter, ast.Call)
-    print(is_range_for)
+    # print(is_range_for)
     if is_range_for:
       loop_var = node.target.id
       template = ''' 
@@ -78,13 +78,13 @@ if 1:
       t.body[1].value.args[0] = bgn
       t.body[2].value.args[0] = end
       t.body = t.body[:4] + node.body + t.body[4:]
-      print(astor.to_source(t))
+      # print(astor.to_source(t))
       return ast.copy_location(t, node)
     else:
       #TODO: 1d array case
       var_decl = ''.join('  {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(ind.id) for ind in node.target.elts)
       vars = ', '.join(ind.id for ind in node.target.elts)
-      print(var_decl)
+      # print(var_decl)
       template = ''' 
 if 1:
 {}
@@ -95,7 +95,7 @@ if 1:
       t = ast.parse(template).body[0]
       cut = len(node.target.elts) + 2
       t.body = t.body[:cut] + node.body + t.body[cut:]
-      print(astor.to_source(t))
+      # print(astor.to_source(t))
       return ast.copy_location(t, node)
 
   @staticmethod

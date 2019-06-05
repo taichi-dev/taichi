@@ -11,7 +11,6 @@ def test():
   b = 2
   c = a + b * b + sum(a, b)
   c = c + 1
-
   for i in range(0, 10):
     c = c + i
     x[i + 3, i + 3] = i

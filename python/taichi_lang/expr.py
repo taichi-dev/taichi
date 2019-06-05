@@ -69,3 +69,10 @@ class Expr:
 
   def serialize(self):
     return self.ptr.serialize()
+
+  def __setitem__(self, key, value):
+
+    self.ptr.set_val(value, *key)
+
+  def __getitem__(self, key):
+    return self.ptr.val(*key)

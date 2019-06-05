@@ -15,6 +15,7 @@ def foo(x):
 
   a[i] = 1
   a[i] = b[i, j]
+  c[i, j, k] = 123
 
   '''
   a = ti.float32(123)

@@ -26,12 +26,20 @@ PYBIND11_MODULE(taichi_lang_core, m) {
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::dense),
            py::return_value_policy::reference)
+      .def("pointer", &SNode::pointer)
       .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place),
            py::return_value_policy::reference);
   py::class_<Program>(m, "Program").def(py::init<>());
   py::class_<Program::Kernel>(m, "Kernel")
       .def("__call__", &Program::Kernel::operator());
-  py::class_<Expr>(m, "Expr").def("serialize", &Expr::serialize);
+
+  py::class_<Expr>(m, "Expr")
+      .def("serialize", &Expr::serialize)
+      .def("set_val", &Expr::set_val<float32, int, int>,
+           py::return_value_policy::reference)
+      .def("val", &Expr::val<float32, int, int>,
+            py::return_value_policy::reference);
+
   py::class_<ExprGroup>(m, "ExprGroup")
       .def(py::init<>())
       .def("push_back", &ExprGroup::push_back)

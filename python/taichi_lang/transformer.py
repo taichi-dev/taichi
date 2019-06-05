@@ -89,7 +89,7 @@ if 1:
   def visit_Subscript(self, node):
     value = node.value
     indices = node.slice
-    if isinstance(indices, ast.Tuple):
+    if isinstance(indices.value, ast.Tuple):
       indices = indices.value.elts
     else:
       indices = [indices.value]

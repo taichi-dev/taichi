@@ -134,11 +134,12 @@ class SNode {
                      SNodeType type);
 
   // SNodes maintains how flattened index bits are taken from indices
-  SNode &dense(std::vector<Index> indices, std::vector<int> sizes) {
+  SNode &dense(const std::vector<Index> &indices,
+               const std::vector<int> &sizes) {
     return create_node(indices, sizes, SNodeType::dense);
   }
 
-  SNode &dense(std::vector<Index> indices, int sizes) {
+  SNode &dense(const std::vector<Index> &indices, int sizes) {
     return create_node(indices, std::vector<int>{sizes}, SNodeType::dense);
   }
 

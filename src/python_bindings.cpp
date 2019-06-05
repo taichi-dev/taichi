@@ -22,7 +22,9 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   py::class_<Index>(m, "Index").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
       .def(py::init<>())
-      .def("dense", (SNode & (SNode::*)(const Index &, int s))(&SNode::dense),
+      .def("dense",
+           (SNode & (SNode::*)(const std::vector<Index> &,
+                               const std::vector<int> &))(&SNode::dense),
            py::return_value_policy::reference)
       .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place),
            py::return_value_policy::reference);

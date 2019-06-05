@@ -139,7 +139,8 @@ void LoopGenerator::emit_listgen_func(SNode *snode,
        child_block_size);
 
   if (snode->type == SNodeType::dynamic) {
-    emit("if (start_idx >= {}_cache->get_n()) continue;", snode->node_type_name);
+    emit("if (start_idx >= {}_cache->get_n()) continue;",
+         snode->node_type_name);
     emit("end_idx = min(end_idx, {}_cache->get_n());", snode->node_type_name);
   }
 

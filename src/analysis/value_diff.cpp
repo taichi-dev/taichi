@@ -3,8 +3,8 @@
 TLANG_NAMESPACE_BEGIN
 
 DiffRange operator+(const DiffRange &a, const DiffRange &b) {
-  return DiffRange(a.related_() && b.related_(), a.coeff + b.coeff, a.low + b.low,
-                   a.high + b.high - 1);
+  return DiffRange(a.related_() && b.related_(), a.coeff + b.coeff,
+                   a.low + b.low, a.high + b.high - 1);
 }
 
 DiffRange operator-(const DiffRange &a, const DiffRange &b) {
@@ -69,7 +69,8 @@ class ValueDiff : public IRVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) override {
-    if (stmt->op_type == BinaryOpType::add || stmt->op_type == BinaryOpType::sub) {
+    if (stmt->op_type == BinaryOpType::add ||
+        stmt->op_type == BinaryOpType::sub) {
       // if (stmt->lhs->is<LocalLoadStmt>() && stmt->rhs->is<ConstStmt>()) {
       if (true) {
         stmt->lhs->accept(this);

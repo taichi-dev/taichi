@@ -18,6 +18,35 @@ void expr_assign(const Expr &lhs, const Expr &rhs) {
 
 std::vector<std::unique_ptr<IRBuilder::ScopeGuard>> scope_stack;
 
+template <typename T, typename C>
+void export_accessors(C &c) {
+  c.def(
+      fmt::format("val1_{}", data_type_short_name(get_data_type<T>())).c_str(),
+      &Expr::val<T, int>);
+  c.def(
+      fmt::format("val2_{}", data_type_short_name(get_data_type<T>())).c_str(),
+      &Expr::val<T, int, int>);
+  c.def(
+      fmt::format("val3_{}", data_type_short_name(get_data_type<T>())).c_str(),
+      &Expr::val<T, int, int, int>);
+  c.def(
+      fmt::format("val4_{}", data_type_short_name(get_data_type<T>())).c_str(),
+      &Expr::val<T, int, int, int, int>);
+
+  c.def(fmt::format("set_val1_{}", data_type_short_name(get_data_type<T>()))
+            .c_str(),
+        &Expr::set_val<T, int>);
+  c.def(fmt::format("set_val2_{}", data_type_short_name(get_data_type<T>()))
+            .c_str(),
+        &Expr::set_val<T, int, int>);
+  c.def(fmt::format("set_val3_{}", data_type_short_name(get_data_type<T>()))
+            .c_str(),
+        &Expr::set_val<T, int, int, int>);
+  c.def(fmt::format("set_val4_{}", data_type_short_name(get_data_type<T>()))
+            .c_str(),
+        &Expr::set_val<T, int, int, int, int>);
+}
+
 PYBIND11_MODULE(taichi_lang_core, m) {
   py::class_<Index>(m, "Index").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
@@ -28,17 +57,20 @@ PYBIND11_MODULE(taichi_lang_core, m) {
            py::return_value_policy::reference)
       .def("pointer", &SNode::pointer)
       .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place),
-           py::return_value_policy::reference);
+           py::return_value_policy::reference)
+      .def("data_type", [](SNode *snode) { return snode->dt; })
+      .def("num_active_indices",
+           [](SNode *snode) { return snode->num_active_indices; });
   py::class_<Program>(m, "Program").def(py::init<>());
   py::class_<Program::Kernel>(m, "Kernel")
       .def("__call__", &Program::Kernel::operator());
 
-  py::class_<Expr>(m, "Expr")
-      .def("serialize", &Expr::serialize)
-      .def("set_val", &Expr::set_val<float32, int, int>,
-           py::return_value_policy::reference)
-      .def("val", &Expr::val<float32, int, int>,
-            py::return_value_policy::reference);
+  py::class_<Expr> expr(m, "Expr");
+  expr.def("serialize", &Expr::serialize)
+      .def("snode", &Expr::snode, py::return_value_policy::reference);
+  export_accessors<int32>(expr);
+  export_accessors<float32>(expr);
+  // export_accessors<float64>(expr);
 
   py::class_<ExprGroup>(m, "ExprGroup")
       .def(py::init<>())
@@ -123,6 +155,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   data_type.export_values();
 
   m.def("global_new", static_cast<Expr (*)(Expr, DataType)>(global_new));
+  m.def("data_type_name", data_type_name);
+  m.def("data_type_short_name", data_type_short_name);
 
   m.def("subscript", [](const Expr &expr, const ExprGroup &expr_group) {
     return expr[expr_group];

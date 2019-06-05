@@ -75,7 +75,8 @@ IRBuilder &current_ast_builder() {
   return context->builder();
 }
 
-std::unique_ptr<IRBuilder::ScopeGuard> IRBuilder::create_scope(std::unique_ptr<Block> &list) {
+std::unique_ptr<IRBuilder::ScopeGuard> IRBuilder::create_scope(
+    std::unique_ptr<Block> &list) {
   TC_ASSERT(list == nullptr);
   list = std::make_unique<Block>();
   if (!stack.empty()) {

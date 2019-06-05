@@ -177,11 +177,7 @@ for (int i = 0; i < Block::size[0]; i++) {
 }
 */
 
-
-
-
 // -----------------------------------------------------------------------------
-
 
 /*
 template <int dim, typename T>
@@ -218,8 +214,6 @@ real AOS2_matmatmul() {
   return Time::get_time() - t;
 }
 */
-
-
 
 /*
 auto test_saxpy = []() {
@@ -261,7 +255,6 @@ auto test_saxpy = []() {
 };
 */
 
-
 // array of N * dim * dim * 8 * float64
 /*
 template <int dim>
@@ -290,7 +283,6 @@ void AOSOA_matmul(float64 *A, float64 *B, float64 *C) {
 }
 */
 
-
 /*
 // array of N * dim * dim * 8 * float64
 template <int dim>
@@ -317,7 +309,6 @@ void SOA_matmul(float64 *A, float64 *B, float64 *C) {
   }
 }
 */
-
 
 /*
 auto test_slp = []() {
@@ -477,4 +468,3 @@ void visualize_IR(std::string fn, Expr &expr) {
   trash(system(cmd.c_str()));
 }
 */
-

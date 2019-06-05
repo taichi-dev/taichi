@@ -1,11 +1,14 @@
 from .core import taichi_lang_core
 
+
 # Scalar, basic data type
 class Expr:
   materialize_layout_callback = None
   layout_materialized = False
 
   def __init__(self, *args):
+    self.getter = None
+    self.setter = None
     if len(args) == 1:
       if isinstance(args[0], taichi_lang_core.Expr):
         self.ptr = args[0]
@@ -35,7 +38,6 @@ class Expr:
   def __div__(self, other):
     other = Expr(other)
     return Expr(taichi_lang_core.expr_div(self.ptr, other.ptr))
-
 
   def __le__(self, other):
     other = Expr(other)
@@ -73,12 +75,23 @@ class Expr:
   def serialize(self):
     return self.ptr.serialize()
 
+  def initialize_accessor(self):
+    if self.getter:
+      return
+    snode = self.ptr.snode()
+    num_ind = snode.num_active_indices()
+    dt_name = taichi_lang_core.data_type_short_name(snode.data_type())
+    self.getter = getattr(self.ptr, 'val{}_{}'.format(num_ind, dt_name))
+    self.setter = getattr(self.ptr, 'set_val{}_{}'.format(num_ind, dt_name))
+
   def __setitem__(self, key, value):
     if not Expr.layout_materialized:
       self.materialize_layout_callback()
-    self.ptr.set_val(value, *key)
+    self.initialize_accessor()
+    self.setter(value, *key)
 
   def __getitem__(self, key):
     if not Expr.layout_materialized:
       self.materialize_layout_callback()
-    return self.ptr.val(*key)
+    self.initialize_accessor()
+    return self.getter(*key)

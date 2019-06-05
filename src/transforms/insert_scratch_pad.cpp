@@ -54,7 +54,7 @@ class AccessAnalysis : public IRVisitor {
     auto ptr = stmt->as<GlobalPtrStmt>();
     for (int l = 0; l < stmt->width(); l++) {
       auto snode = ptr->snodes[l];
-      //std::vector<SNode *> snodes;
+      // std::vector<SNode *> snodes;
       /*
       for (auto it: pads->pads) {
         //snodes.push_back(it.first);

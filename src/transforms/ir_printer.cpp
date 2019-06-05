@@ -113,7 +113,8 @@ class IRPrinter : public IRVisitor {
 
   void visit(BinaryOpStmt *bin) override {
     print("{}{} = {} {} {}", bin->type_hint(), bin->name(),
-          binary_op_type_name(bin->op_type), bin->lhs->name(), bin->rhs->name());
+          binary_op_type_name(bin->op_type), bin->lhs->name(),
+          bin->rhs->name());
   }
 
   void visit(TernaryOpStmt *stmt) override {

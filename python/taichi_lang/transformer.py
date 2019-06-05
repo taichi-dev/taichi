@@ -2,6 +2,7 @@ import ast
 import astpretty
 import astor
 
+
 class ScopeGuard:
   def __init__(self, t):
     self.t = t
@@ -11,6 +12,7 @@ class ScopeGuard:
 
   def __exit__(self, exc_type, exc_val, exc_tb):
     self.t.local_scopes = self.t.local_scopes[:-1]
+
 
 # Single-pass transform
 class ASTTransformer(ast.NodeTransformer):
@@ -49,7 +51,8 @@ class ASTTransformer(ast.NodeTransformer):
         keywords=[],
       )
       self.create_variable(var_name)
-      return ast.copy_location(ast.Assign(targets=node.targets, value=rhs), node)
+      return ast.copy_location(ast.Assign(targets=node.targets, value=rhs),
+                               node)
     else:
       # Assign
       node.targets[0].ctx = ast.Load()
@@ -100,8 +103,10 @@ if 1:
       # print(astor.to_source(t))
       return ast.copy_location(t, node)
     else:
-      #TODO: 1d array case
-      var_decl = ''.join('  {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(ind.id) for ind in node.target.elts)
+      # TODO: 1d array case
+      var_decl = ''.join(
+        '  {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(ind.id) for ind in
+        node.target.elts)
       vars = ', '.join(ind.id for ind in node.target.elts)
       # print(var_decl)
       template = ''' 
@@ -123,7 +128,8 @@ if 1:
 
   @staticmethod
   def func_call(name, *args):
-    return ast.Call(func=ASTTransformer.parse_expr(name).value, args=list(args), keywords=[])
+    return ast.Call(func=ASTTransformer.parse_expr(name).value, args=list(args),
+                    keywords=[])
 
   def visit_Subscript(self, node):
     value = node.value
@@ -135,7 +141,8 @@ if 1:
 
     self.generic_visit(node)
 
-    call = ast.Call(func=self.parse_expr('ti.subscript').value, args=[value] + indices, keywords=[])
+    call = ast.Call(func=self.parse_expr('ti.subscript').value,
+                    args=[value] + indices, keywords=[])
     return ast.copy_location(call, node)
 
   def visit_Module(self, node):
@@ -147,4 +154,3 @@ if 1:
     with self.variable_scope():
       self.generic_visit(node)
     return node
-

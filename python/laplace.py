@@ -3,8 +3,8 @@ import taichi_lang as ti
 x, y = ti.var(ti.f32), ti.var(ti.f32)
 
 @ti.layout
-def place_variables():
-  ti.root.dense(ti.indices(0, 1), (16, 16)).place(x.ptr).place(y.ptr)
+def xy():
+  ti.root.dense(ti.ij, 16).place(x, y)
 
 @ti.kernel
 def laplace():

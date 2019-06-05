@@ -4,12 +4,15 @@ class SNode:
   def __init__(self, ptr):
     self.ptr = ptr
 
-  def dense(self, *args):
-    return SNode(self.ptr.dense(*args))
+  def dense(self, indices, dimensions):
+    if isinstance(dimensions, int):
+      dimensions = [dimensions] * len(indices)
+    return SNode(self.ptr.dense(indices, dimensions))
 
   def pointer(self):
     return SNode(self.ptr.pointer())
 
   def place(self, *args):
-    self.ptr.place(*args)
+    from .expr import Expr
+    [self.ptr.place(Expr(arg).ptr) for arg in args]
     return self

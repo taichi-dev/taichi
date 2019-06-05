@@ -98,8 +98,7 @@ def tprint(var):
   taichi_lang_core.print_(Expr(var).ptr, arg_name)
 
 
-def index(x):
-  return [taichi_lang_core.Index(x)]
-
 def indices(*x):
   return [taichi_lang_core.Index(i) for i in x]
+
+index = indices

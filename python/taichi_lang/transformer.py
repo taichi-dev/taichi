@@ -60,23 +60,43 @@ class ASTTransformer(ast.NodeTransformer):
   def visit_For(self, node):
     with self.variable_scope():
       self.generic_visit(node)
-    loop_var = node.target.id
-    template = ''' 
+    is_range_for = isinstance(node.iter, ast.Call)
+    print(is_range_for)
+    if is_range_for:
+      loop_var = node.target.id
+      template = ''' 
 if 1:
   {} = ti.Expr(ti.core.make_id_expr(''))
   ___begin = ti.Expr(0) 
   ___end = ti.Expr(0)
   ti.core.begin_frontend_range_for({}.ptr, ___begin.ptr, ___end.ptr)
   ti.core.end_frontend_range_for()
-    '''.format(loop_var, loop_var)
-    t = ast.parse(template).body[0]
-    bgn = node.iter.args[0]
-    end = node.iter.args[1]
-    t.body[1].value.args[0] = bgn
-    t.body[2].value.args[0] = end
-    t.body = t.body[:4] + node.body + t.body[4:]
-    print(astor.to_source(t))
-    return ast.copy_location(t, node)
+      '''.format(loop_var, loop_var)
+      t = ast.parse(template).body[0]
+      bgn = node.iter.args[0]
+      end = node.iter.args[1]
+      t.body[1].value.args[0] = bgn
+      t.body[2].value.args[0] = end
+      t.body = t.body[:4] + node.body + t.body[4:]
+      print(astor.to_source(t))
+      return ast.copy_location(t, node)
+    else:
+      #TODO: 1d array case
+      var_decl = ''.join('  {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(ind.id) for ind in node.target.elts)
+      vars = ', '.join(ind.id for ind in node.target.elts)
+      print(var_decl)
+      template = ''' 
+if 1:
+{}
+  ___expr_group = ti.make_expr_group({})
+  ti.core.begin_frontend_struct_for(___expr_group, {}.ptr)
+  ti.core.end_frontend_range_for()
+      '''.format(var_decl, vars, node.iter.id)
+      t = ast.parse(template).body[0]
+      cut = len(node.target.elts) + 2
+      t.body = t.body[:cut] + node.body + t.body[cut:]
+      print(astor.to_source(t))
+      return ast.copy_location(t, node)
 
   @staticmethod
   def parse_expr(expr):

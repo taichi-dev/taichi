@@ -9,6 +9,13 @@ import astor
 def expr_init(rhs):
   return Expr(taichi_lang_core.expr_var(Expr(rhs).ptr))
 
+def make_expr_group(*exprs):
+  expr_group = taichi_lang_core.ExprGroup()
+  for i in exprs:
+    expr_group.push_back(Expr(i).ptr)
+  return expr_group
+
+
 def subscript(value, *indices):
   expr_group = taichi_lang_core.ExprGroup()
   for i in indices:

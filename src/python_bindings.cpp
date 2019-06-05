@@ -49,6 +49,14 @@ PYBIND11_MODULE(taichi_lang_core, m) {
           scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
         });
 
+  m.def("begin_frontend_struct_for",
+        [&](const ExprGroup &indices, const Expr &global) {
+          auto stmt_unique = std::make_unique<FrontendForStmt>(indices, global);
+          auto stmt = stmt_unique.get();
+          current_ast_builder().insert(std::move(stmt_unique));
+          scope_stack.push_back(current_ast_builder().create_scope(stmt->body));
+        });
+
   m.def("end_frontend_range_for", [&]() { scope_stack.pop_back(); });
 
   m.def("layout", layout);

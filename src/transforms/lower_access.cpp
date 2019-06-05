@@ -144,7 +144,7 @@ class LowerAccess : public IRVisitor {
     return lowered;
   }
 
-  void visit(GlobalLoadStmt *stmt) {
+  void visit(GlobalLoadStmt *stmt) override {
     if (stmt->ptr->is<GlobalPtrStmt>()) {
       auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), false);
       stmt->ptr = lowered.back().get();
@@ -153,7 +153,7 @@ class LowerAccess : public IRVisitor {
     }
   }
 
-  void visit(GlobalStoreStmt *stmt) {
+  void visit(GlobalStoreStmt *stmt) override {
     if (stmt->ptr->is<GlobalPtrStmt>()) {
       auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), true);
       stmt->ptr = lowered.back().get();

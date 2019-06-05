@@ -11,10 +11,15 @@ def test():
   b = 2
   c = a + b * b + sum(a, b)
   c = c + 1
+
   for i in range(0, 10):
     c = c + i
     x[i + 3, i + 3] = i
     ti.print(x[i + 2, i + 2])
+
+  for i, j in x:
+    x[i, j] = i + j
+    ti.print(x[i, j])
 
   ti.print(c)
   ti.print(1)
@@ -22,6 +27,6 @@ def test():
 
 @ti.layout
 def place_variables():
-  ti.root.dense(ti.indices(0, 1), (256, 256)).place(x.ptr)
+  ti.root.dense(ti.indices(0, 1), (16, 16)).place(x.ptr)
 
 test()

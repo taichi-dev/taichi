@@ -63,10 +63,10 @@ class ASTTransformer(ast.NodeTransformer):
     loop_var = node.target.id
     template = ''' 
 if 1:
-  {} = ti.core.make_id_expr('')
+  {} = ti.Expr(ti.core.make_id_expr(''))
   ___begin = ti.Expr(0) 
   ___end = ti.Expr(0)
-  ti.core.begin_frontend_range_for({}, ___begin.ptr, ___end.ptr)
+  ti.core.begin_frontend_range_for({}.ptr, ___begin.ptr, ___end.ptr)
   ti.core.end_frontend_range_for()
     '''.format(loop_var, loop_var)
     t = ast.parse(template).body[0]

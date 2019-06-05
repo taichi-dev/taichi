@@ -1,5 +1,8 @@
 import taichi_lang as ti
 import time
+import ctypes
+
+libm = ctypes.CDLL('libm.so.6')
 
 x, y = ti.var(ti.f32), ti.var(ti.f32)
 
@@ -29,3 +32,10 @@ for i in range(N):
 print((time.time() - t) / N * 1e9, 'ns')
 
 
+t = time.time()
+N = 1000000
+a = 0
+sin = getattr(libm, 'sin')
+for i in range(N):
+  a += sin(i)
+print((time.time() - t) / N * 1e9, 'ns')

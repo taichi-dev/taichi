@@ -90,10 +90,14 @@ class Expr:
     if not Expr.layout_materialized:
       self.materialize_layout_callback()
     self.initialize_accessor()
+    if not isinstance(key, tuple):
+      key = (key, )
     self.setter(value, *key)
 
   def __getitem__(self, key):
     if not Expr.layout_materialized:
       self.materialize_layout_callback()
     self.initialize_accessor()
+    if not isinstance(key, tuple):
+      key = (key, )
     return self.getter(*key)

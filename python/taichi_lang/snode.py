@@ -14,5 +14,9 @@ class SNode:
 
   def place(self, *args):
     from .expr import Expr
-    [self.ptr.place(Expr(arg).ptr) for arg in args]
+    for arg in args:
+      if isinstance(arg, Expr):
+        self.ptr.place(Expr(arg).ptr)
+      else:
+        arg.place(self)
     return self

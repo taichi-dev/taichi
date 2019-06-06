@@ -13,6 +13,8 @@ def foo(x):
   for i in range(1, 10):
     pass
 
+  a.b = 1
+
   if i == 0:
     a()
   else:

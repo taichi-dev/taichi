@@ -7,7 +7,7 @@ import numbers
 def broadcast_if_scalar(func):
   def broadcasted(self, other):
     if isinstance(other, expr.Expr) or isinstance(other, numbers.Number):
-      other = self.broadcast(other)
+      other = self.broadcast(expr.Expr(other))
     return func(self, other)
 
   return broadcasted
@@ -17,20 +17,26 @@ class Matrix:
   is_taichi_class = True
 
   def __init__(self, n, m=1, dt=None, empty=False):
-    self.entries = []
-    self.n = n
-    self.m = m
-    self.dt = dt
-    if empty:
-      self.entries = [None] * n * m
+    if isinstance(n, list):
+      if not isinstance(n[0], list):
+        mat = [list([expr.Expr(x)]) for x in n]
+      self.n, self.m = len(mat), len(mat[0])
+      self.entries = [x for row in mat for x in row]
     else:
-      if dt is None:
-        for i in range(n * m):
-          self.entries.append(impl.expr_init(0.0))
+      self.entries = []
+      self.n = n
+      self.m = m
+      self.dt = dt
+      if empty:
+        self.entries = [None] * n * m
       else:
-        assert not impl.inside_kernel()
-        for i in range(n * m):
-          self.entries.append(impl.var(dt))
+        if dt is None:
+          for i in range(n * m):
+            self.entries.append(impl.expr_init(0.0))
+        else:
+          assert not impl.inside_kernel()
+          for i in range(n * m):
+            self.entries.append(impl.var(dt))
 
   def assign(self, other):
     assert other.n == self.n and other.m == self.m

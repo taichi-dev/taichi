@@ -6,15 +6,7 @@ from .snode import SNode
 import ast
 import astpretty
 import astor
-
-def is_taichi_class(rhs):
-  taichi_class = False
-  try:
-    if rhs.is_taichi_class:
-      taichi_class = True
-  except:
-    pass
-  return taichi_class
+from .util import *
 
 def expr_init(rhs):
   if is_taichi_class(rhs):
@@ -35,7 +27,10 @@ def make_expr_group(*exprs):
 
 
 def subscript(value, *indices):
-  if is_taichi_class(value):
+  if isinstance(value, tuple) or isinstance(value, list):
+    assert len(indices) == 1
+    return value[indices[0]]
+  elif is_taichi_class(value):
     return value.subscript(*indices)
   else:
     return Expr(taichi_lang_core.subscript(value.ptr, make_expr_group(*indices)))
@@ -133,7 +128,10 @@ def cast(obj, type):
   if is_taichi_class(obj):
     return obj.cast(type)
   else:
-    return taichi_lang_core.value_cast(Expr(obj).ptr, type)
+    return Expr(taichi_lang_core.value_cast(Expr(obj).ptr, type))
 
 def sqr(obj):
   return obj * obj
+
+def static(x):
+  return x

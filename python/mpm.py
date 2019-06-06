@@ -44,8 +44,8 @@ def p2g():
     base_coord = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base_coord, ti.f32)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 * ti.sqr(fx - 1), 0.5 * ti.sqr(fx - 0.5)]
-    for i in range(3):
-      for j in range(3):
+    for i in ti.static(range(3)):
+      for j in ti.static(range(3)):
         dpos = (ti.Vector([i, j]) - fx) * dx
         weight = w[i](0) * w[j](1)
         grid_v[base_coord(0) + i, base_coord(1) + j].assign(

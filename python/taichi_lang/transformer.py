@@ -82,9 +82,21 @@ if 1:
   def visit_For(self, node):
     with self.variable_scope():
       self.generic_visit(node)
-    is_range_for = isinstance(node.iter, ast.Call) and node.iter.func == 'Name' and node.iter.func.id == 'range'
-    # print(is_range_for)
-    if is_range_for:
+    is_static_for = isinstance(node.iter,
+                              ast.Call) and isinstance(node.iter.func,
+                                                       ast.Attribute)
+    if is_static_for:
+      attr = node.iter.func
+      if attr.attr == 'static':
+        is_static_for = True
+      else:
+        is_static_for = False
+    is_range_for = isinstance(node.iter,
+                              ast.Call) and isinstance(node.iter.func,
+                                                       ast.Name) and node.iter.func.id == 'range'
+    if is_static_for:
+      return node
+    elif is_range_for:
       loop_var = node.target.id
       template = ''' 
 if 1:

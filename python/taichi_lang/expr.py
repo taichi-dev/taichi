@@ -1,5 +1,5 @@
 from .core import taichi_lang_core
-
+from .util import is_taichi_class
 
 # Scalar, basic data type
 class Expr:
@@ -40,8 +40,11 @@ class Expr:
     self.assign(Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr)))
 
   def __mul__(self, other):
-    other = Expr(other)
-    return Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr))
+    if is_taichi_class(other) and hasattr(other, '__rmul__'):
+      return other.__rmul__(self)
+    else:
+      other = Expr(other)
+      return Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr))
 
   __rmul__ = __mul__
 

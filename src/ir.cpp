@@ -30,18 +30,16 @@ Expr operator~(Expr expr) {
   return Expr::make<UnaryOpExpression>(UnaryOpType::bit_not, expr);
 }
 
-template <typename T>
-Expr cast(Expr input) {
+Expr cast(const Expr &input, DataType dt) {
   auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast, input);
-  ret->cast_type = get_data_type<T>();
+  ret->cast_type = dt;
   ret->cast_by_value = true;
   return Expr(ret);
 }
 
-template <typename T>
-Expr bit_cast(Expr input) {
+Expr bit_cast(const Expr &input, DataType dt) {
   auto ret = std::make_shared<UnaryOpExpression>(UnaryOpType::cast, input);
-  ret->cast_type = get_data_type<T>();
+  ret->cast_type = dt;
   ret->cast_by_value = false;
   return Expr(ret);
 }
@@ -58,16 +56,6 @@ ExprGroup ExprGroup::loaded() const {
     indices_loaded[i].set(load_if_ptr(indices_loaded[i]));
   return indices_loaded;
 }
-
-template Expr cast<float32>(Expr);
-template Expr cast<int32>(Expr);
-template Expr cast<float64>(Expr);
-template Expr cast<int64>(Expr);
-
-template Expr bit_cast<float32>(Expr);
-template Expr bit_cast<int32>(Expr);
-template Expr bit_cast<float64>(Expr);
-template Expr bit_cast<int64>(Expr);
 
 DecoratorRecorder dec;
 

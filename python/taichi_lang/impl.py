@@ -20,7 +20,12 @@ def expr_init(rhs):
   if is_taichi_class(rhs):
     return rhs
   else:
-    return Expr(taichi_lang_core.expr_var(Expr(rhs).ptr))
+    if isinstance(rhs, list):
+      return [expr_init(e) for e in rhs]
+    elif isinstance(rhs, tuple):
+      return tuple(expr_init(e) for e in rhs)
+    else:
+      return Expr(taichi_lang_core.expr_var(Expr(rhs).ptr))
 
 def make_expr_group(*exprs):
   expr_group = taichi_lang_core.ExprGroup()
@@ -78,7 +83,7 @@ def kernel(foo):
       ast.fix_missing_locations(tree)
 
       # astpretty.pprint(func_body)
-      print(astor.to_source(tree.body[0]))
+      print(astor.to_source(tree.body[0], indent_with='  '))
 
       ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
 
@@ -123,3 +128,12 @@ def indices(*x):
   return [taichi_lang_core.Index(i) for i in x]
 
 index = indices
+
+def cast(obj, type):
+  if is_taichi_class(obj):
+    return obj.cast(type)
+  else:
+    return taichi_lang_core.value_cast(Expr(obj).ptr, type)
+
+def sqr(obj):
+  return obj * obj

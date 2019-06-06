@@ -23,11 +23,21 @@ class Expr:
     other = Expr(other)
     return Expr(taichi_lang_core.expr_add(self.ptr, other.ptr))
 
+  def __iadd__(self, other):
+    self.assign(Expr(taichi_lang_core.expr_add(self.ptr, other.ptr)))
+
   __radd__ = __add__
 
   def __sub__(self, other):
     other = Expr(other)
     return Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr))
+
+  def __rsub__(self, other):
+    other = Expr(other)
+    return Expr(taichi_lang_core.expr_sub(other.ptr, self.ptr))
+
+  def __isub__(self, other):
+    self.assign(Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr)))
 
   def __mul__(self, other):
     other = Expr(other)

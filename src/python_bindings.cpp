@@ -122,6 +122,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("get_root", [&]() -> SNode * { return &root; },
         py::return_value_policy::reference);
 
+  m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
+
   m.def("expr_add", expr_add);
   m.def("expr_sub", expr_sub);
   m.def("expr_mul", expr_mul);

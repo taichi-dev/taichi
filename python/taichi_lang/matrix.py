@@ -1,13 +1,17 @@
 import taichi_lang.impl as impl
 import taichi_lang.expr as expr
+import copy
 import numbers
+
 
 def broadcast_if_scalar(func):
   def broadcasted(self, other):
     if isinstance(other, expr.Expr) or isinstance(other, numbers.Number):
       other = self.broadcast(other)
     return func(self, other)
+
   return broadcasted
+
 
 class Matrix:
   is_taichi_class = True
@@ -88,6 +92,15 @@ class Matrix:
         ret(i, j).assign(self(i, j) - other(i, j))
     return ret
 
+  @broadcast_if_scalar
+  def __rsub__(self, other):
+    assert self.n == other.n and self.m == other.m
+    ret = Matrix(self.n, self.m)
+    for i in range(self.n):
+      for j in range(self.m):
+        ret(i, j).assign(other(i, j) - self(i, j))
+    return ret
+
   def __call__(self, *args, **kwargs):
     assert kwargs == {}
     assert 1 <= len(args) <= 2
@@ -112,3 +125,12 @@ class Matrix:
 
   def __setitem__(self, item):
     assert False
+
+  def copy(self):
+    return copy.copy(self)
+
+  def cast(self, type):
+    ret = self.copy()
+    for i in range(len(self.entries)):
+      ret.entries[i] = impl.cast(ret.entries[i], type)
+    return ret

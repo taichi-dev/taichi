@@ -1227,11 +1227,19 @@ Expr operator-(Expr expr);
 Expr operator~(Expr expr);
 
 // Value cast
-template <typename T>
-Expr cast(Expr input);
+Expr cast(const Expr &input, DataType dt);
 
 template <typename T>
-Expr bit_cast(Expr input);
+Expr cast(const Expr &input) {
+  return taichi::Tlang::cast(input, get_data_type<T>());
+}
+
+Expr bit_cast(const Expr &input, DataType dt);
+
+template <typename T>
+Expr bit_cast(const Expr &input) {
+  return taichi::Tlang::bit_cast(input, get_data_type<T>());
+}
 
 class Block : public IRNode {
  public:

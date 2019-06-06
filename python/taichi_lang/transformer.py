@@ -82,7 +82,7 @@ if 1:
   def visit_For(self, node):
     with self.variable_scope():
       self.generic_visit(node)
-    is_range_for = isinstance(node.iter, ast.Call)
+    is_range_for = isinstance(node.iter, ast.Call) and node.iter.func == 'Name' and node.iter.func.id == 'range'
     # print(is_range_for)
     if is_range_for:
       loop_var = node.target.id
@@ -103,23 +103,28 @@ if 1:
       # print(astor.to_source(t))
       return ast.copy_location(t, node)
     else:
-      # TODO: 1d array case
+      if isinstance(node.target, ast.Name):
+        elts = [node.target]
+      else:
+        elts = node.target.elts
+
       var_decl = ''.join(
         '  {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(ind.id) for ind in
-        node.target.elts)
-      vars = ', '.join(ind.id for ind in node.target.elts)
+        elts)
+      vars = ', '.join(ind.id for ind in elts)
       # print(var_decl)
       template = ''' 
 if 1:
 {}
+  ___loop_var = 0
   ___expr_group = ti.make_expr_group({})
-  ti.core.begin_frontend_struct_for(___expr_group, {}.ptr)
+  ti.core.begin_frontend_struct_for(___expr_group, ___loop_var.ptr)
   ti.core.end_frontend_range_for()
-      '''.format(var_decl, vars, node.iter.id)
+      '''.format(var_decl, vars)
       t = ast.parse(template).body[0]
-      cut = len(node.target.elts) + 2
+      cut = len(elts) + 3
+      t.body[cut - 3].value = node.iter
       t.body = t.body[:cut] + node.body + t.body[cut:]
-      # print(astor.to_source(t))
       return ast.copy_location(t, node)
 
   @staticmethod

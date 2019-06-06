@@ -48,7 +48,7 @@ def xy():
 
 @ti.kernel
 def inc():
-  for i in range(1, 2):
+  for i in x(0, 0):
     x(1, 1)[i] = x(0, 0)[i] + 1
 
 for i in range(10):

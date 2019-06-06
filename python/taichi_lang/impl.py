@@ -106,6 +106,8 @@ def layout(func):
   assert not pytaichi.materialized, "All layout must be specified before the first kernel launch / data access."
   pytaichi.layout_functions.append(func)
 
+float64 = taichi_lang_core.DataType.float64
+f64 = float64
 float32 = taichi_lang_core.DataType.float32
 f32 = float32
 int32 = taichi_lang_core.DataType.int32

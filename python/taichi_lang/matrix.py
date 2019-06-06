@@ -1,18 +1,28 @@
 import taichi_lang.impl as impl
+import taichi_lang.expr as expr
+import numbers
+
+def broadcast_if_scalar(func):
+  def broadcasted(self, other):
+    if isinstance(other, expr.Expr) or isinstance(other, numbers.Number):
+      other = self.broadcast(other)
+    return func(self, other)
+  return broadcasted
 
 class Matrix:
   is_taichi_class = True
 
-  def __init__(self, n, m, dt=None, empty=False):
+  def __init__(self, n, m=1, dt=None, empty=False):
     self.entries = []
     self.n = n
     self.m = m
+    self.dt = dt
     if empty:
       self.entries = [None] * n * m
     else:
       if dt is None:
         for i in range(n * m):
-          self.entries.append(impl.expr_init(0))
+          self.entries.append(impl.expr_init(0.0))
       else:
         assert not impl.inside_kernel()
         for i in range(n * m):
@@ -32,6 +42,7 @@ class Matrix:
           ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
     return ret
 
+  @broadcast_if_scalar
   def __div__(self, other):
     assert self.n == other.n and self.m == other.m
     ret = Matrix(self.n, self.m)
@@ -40,6 +51,13 @@ class Matrix:
         ret(i, j).assign(self(i, j) / other(i, j))
     return ret
 
+  def broadcast(self, scalar):
+    ret = Matrix(self.n, self.m, empty=True)
+    for i in range(self.n * self.m):
+      ret.entries[i] = scalar
+    return ret
+
+  @broadcast_if_scalar
   def __mul__(self, other):
     assert self.n == other.n and self.m == other.m
     ret = Matrix(self.n, self.m)
@@ -48,6 +66,9 @@ class Matrix:
         ret(i, j).assign(self(i, j) * other(i, j))
     return ret
 
+  __rmul__ = __mul__
+
+  @broadcast_if_scalar
   def __add__(self, other):
     assert self.n == other.n and self.m == other.m
     ret = Matrix(self.n, self.m)
@@ -58,6 +79,7 @@ class Matrix:
 
   __radd__ = __add__
 
+  @broadcast_if_scalar
   def __sub__(self, other):
     assert self.n == other.n and self.m == other.m
     ret = Matrix(self.n, self.m)
@@ -70,10 +92,10 @@ class Matrix:
     assert kwargs == {}
     assert 1 <= len(args) <= 2
     if len(args) == 1:
-      args.append(0)
+      args = args + (0,)
     assert 0 <= args[0] < self.n
     assert 0 <= args[1] < self.m
-    return self.entries[args[0] * self.n + args[1]]
+    return self.entries[args[0] * self.m + args[1]]
 
   def place(self, snode):
     for e in self.entries:

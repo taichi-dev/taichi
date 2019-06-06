@@ -7,8 +7,20 @@ import ast
 import astpretty
 import astor
 
+def is_taichi_class(rhs):
+  taichi_class = False
+  try:
+    if rhs.is_taichi_class:
+      taichi_class = True
+  except:
+    pass
+  return taichi_class
+
 def expr_init(rhs):
-  return Expr(taichi_lang_core.expr_var(Expr(rhs).ptr))
+  if is_taichi_class(rhs):
+    return rhs
+  else:
+    return Expr(taichi_lang_core.expr_var(Expr(rhs).ptr))
 
 def make_expr_group(*exprs):
   expr_group = taichi_lang_core.ExprGroup()
@@ -18,10 +30,10 @@ def make_expr_group(*exprs):
 
 
 def subscript(value, *indices):
-  expr_group = taichi_lang_core.ExprGroup()
-  for i in indices:
-    expr_group.push_back(Expr(i).ptr)
-  return Expr(taichi_lang_core.subscript(value.ptr, expr_group))
+  if is_taichi_class(value):
+    return value.subscript(*indices)
+  else:
+    return Expr(taichi_lang_core.subscript(value.ptr, make_expr_group(*indices)))
 
 class PyTaichi:
   def __init__(self):
@@ -30,6 +42,7 @@ class PyTaichi:
     self.layout_functions = []
     self.compiled_functions = {}
     self.scope_stack = []
+    self.inside_kernel = False
     Expr.materialize_layout_callback = self.materialize
 
   def materialize(self):
@@ -44,6 +57,8 @@ class PyTaichi:
 
 pytaichi = PyTaichi()
 
+def inside_kernel():
+  return pytaichi.inside_kernel
 
 def kernel(foo):
   def ret():
@@ -67,7 +82,9 @@ def kernel(foo):
 
       ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
 
+      pytaichi.inside_kernel = True
       exec(compile(tree, filename=inspect.getsourcefile(foo), mode='exec'), inspect.currentframe().f_back.f_globals, locals())
+      pytaichi.inside_kernel = False
       compiled = locals()[foo.__name__]
 
       t_kernel = taichi_lang_core.create_kernel("test")

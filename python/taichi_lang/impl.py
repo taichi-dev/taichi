@@ -98,6 +98,8 @@ def global_var(dt):
   x.ptr = taichi_lang_core.global_new(x.ptr, dt)
   return x
 
+var = global_var
+
 root = SNode(taichi_lang_core.get_root())
 
 def layout(func):

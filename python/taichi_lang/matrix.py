@@ -48,9 +48,12 @@ class Matrix:
   def __matmul__(self, other):
     assert self.m == other.n
     ret = Matrix(self.n, other.m)
+    print(self.n, self.m)
+    print(other.n, other.m)
     for i in range(self.n):
-      for j in range(self.m):
-        for k in range(other.m):
+      for j in range(other.m):
+        for k in range(other.n):
+          print(i, j, k)
           ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
     return ret
 

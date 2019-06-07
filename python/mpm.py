@@ -5,8 +5,8 @@ import cv2
 
 real = ti.f32
 dim = 2
-n_particles = 8192
-n_grid = 128
+n_particles = 8192 * 4
+n_grid = 256
 dx = 1.0 / n_grid
 inv_dx = 1.0 / dx
 dt = 1e-4
@@ -114,7 +114,7 @@ def main():
       grid_op()
       g2p()
     scale = 4
-    img = np.zeros(shape=(scale * n_grid, scale * n_grid))
+    img = np.zeros(shape=(scale * n_grid, scale * n_grid)) + 0.3
     for i in range(n_particles):
       p_x = int(scale * x(0)[i] / dx)
       p_y = int(scale * x(1)[i] / dx)
@@ -122,7 +122,7 @@ def main():
     img = img.swapaxes(0, 1)[::-1]
     cv2.imshow('MPM', img)
     cv2.waitKey(1)
-    # cv2.imwrite('frame{:03d}.png'.format(f), img * 255)
+    cv2.imwrite('frame{:03d}.png'.format(f), img * 255)
 
 if __name__ == '__main__':
   main()

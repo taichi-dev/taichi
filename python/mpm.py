@@ -10,29 +10,17 @@ n_grid = 128
 dx = 1.0 / n_grid
 inv_dx = 1.0 / dx
 dt = 1e-4
-
 p_mass = 1.0
 p_vol = 1.0
 E = 100.0
 
-
-def scalar():
-  return ti.var(dt=real)
-
-
-def vec():
-  return ti.Vector(dim, dt=real)
-
-
-def mat():
-  return ti.Matrix(dim, dim, dt=real)
-
+scalar = lambda: ti.var(dt=real)
+vec = lambda: ti.Vector(dim, dt=real)
+mat = lambda: ti.Matrix(dim, dim, dt=real)
 
 x, v = vec(), vec()
-grid_v = vec()
-grid_m = scalar()
-C = mat()
-J = scalar()
+grid_v, grid_m = vec(), scalar()
+C, J = mat(), scalar()
 
 
 @ti.layout
@@ -40,6 +28,7 @@ def place():
   ti.root.dense(ti.k, n_particles).place(x, v, J, C)
   ti.root.dense(ti.ij, n_grid).place(grid_v, grid_m)
   ti.cfg().print_ir = True
+
 
 @ti.kernel
 def clear_grid():
@@ -53,7 +42,8 @@ def p2g():
   for p in x(0):
     base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)
-    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0), 0.5 * ti.sqr(fx - 0.5)]
+    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
+         0.5 * ti.sqr(fx - 0.5)]
     stress = dt * p_vol * (J[p] - 1.0) * -4.0 * inv_dx * inv_dx * E
     affine = ti.Matrix([[stress, 0.0], [0.0, stress]]) + p_mass * C[p]
     for i in ti.static(range(3)):
@@ -61,12 +51,14 @@ def p2g():
         dpos = (ti.cast(ti.Vector([i, j]), ti.f32) - fx) * dx
         weight = w[i](0) * w[j](1)
         grid_v[base(0) + i, base(1) + j].assign(
-          grid_v[base(0) + i, base(1) + j] + p_mass * weight * v[p] + weight * affine @ dpos)
+          grid_v[base(0) + i, base(1) + j] + p_mass * weight * v[
+            p] + weight * affine @ dpos)
         grid_m[base(0) + i, base(1) + j].assign(
           grid_m[base(0) + i, base(1) + j] + p_mass * weight)
 
 
 bound = 3
+
 
 @ti.kernel
 def grid_op():
@@ -94,7 +86,8 @@ def g2p():
   for p in x(0):
     base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)
-    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0), 0.5 * ti.sqr(fx - 0.5)]
+    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
+         0.5 * ti.sqr(fx - 0.5)]
     new_v = ti.Vector([0.0, 0.0])
     new_C = ti.Matrix([[0.0, 0.0], [0.0, 0.0]])
 
@@ -104,13 +97,13 @@ def g2p():
         g_v = grid_v[base(0) + i, base(1) + j]
         weight = w[i](0) * w[j](1)
         new_v = new_v + weight * g_v
-        new_C = new_C + 4.0 * weight * ti.Matrix.outer_product(g_v, dpos) * inv_dx
+        new_C = new_C + 4.0 * weight * ti.Matrix.outer_product(g_v,
+                                                               dpos) * inv_dx
 
     v[p].assign(new_v)
     x[p] = x[p] + dt * v[p]
     J[p] = J[p] * (1.0 + dt * (new_C(0, 0) + new_C(1, 1)))
     C[p] = new_C
-
 
 
 def main():
@@ -134,7 +127,7 @@ def main():
     img = img.swapaxes(0, 1)[::-1]
     cv2.imshow('MPM', img)
     cv2.waitKey(1)
-    cv2.imwrite('frame{:03d}.png'.format(f), img * 255)
+    # cv2.imwrite('frame{:03d}.png'.format(f), img * 255)
 
 
 if __name__ == '__main__':

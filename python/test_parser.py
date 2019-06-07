@@ -14,6 +14,7 @@ def foo(x):
     pass
 
   a.b = 1
+  a[i] += 1
 
   if i == 0:
     a()

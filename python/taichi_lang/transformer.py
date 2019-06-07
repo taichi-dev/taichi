@@ -35,6 +35,16 @@ class ASTTransformer(ast.NodeTransformer):
   def create_variable(self, name):
     self.current_scope().add(name)
 
+  def visit_AugAssign(self, node):
+    self.generic_visit(node)
+    template = 'x.augassign(0, 0)'
+    t = ast.parse(template).body[0]
+    t.value.func.value = node.target
+    t.value.args[0] = node.value
+    t.value.args[1] = ast.Str(s=type(node.op).__name__, ctx=ast.Load())
+    # astpretty.pprint(t)
+    return ast.copy_location(t, node)
+
   def visit_Assign(self, node):
     assert (len(node.targets) == 1)
     self.generic_visit(node)

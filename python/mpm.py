@@ -27,14 +27,13 @@ C, J = mat(), scalar()
 def place():
   ti.root.dense(ti.k, n_particles).place(x, v, J, C)
   ti.root.dense(ti.ij, n_grid).place(grid_v, grid_m)
-  ti.cfg().print_ir = True
 
 
 @ti.kernel
 def clear_grid():
   for i, j in grid_m:
-    grid_v[i, j].assign(ti.Vector([0.0, 0.0]))
-    grid_m[i, j].assign(0.0)
+    grid_v[i, j] = ti.Vector([0.0, 0.0])
+    grid_m[i, j] = 0.0
 
 
 @ti.kernel
@@ -51,10 +50,8 @@ def p2g():
         dpos = (ti.cast(ti.Vector([i, j]), ti.f32) - fx) * dx
         weight = w[i](0) * w[j](1)
         grid_v[base(0) + i, base(1) + j].assign(
-          grid_v[base(0) + i, base(1) + j] + p_mass * weight * v[
-            p] + weight * affine @ dpos)
-        grid_m[base(0) + i, base(1) + j].assign(
-          grid_m[base(0) + i, base(1) + j] + p_mass * weight)
+          grid_v[base(0) + i, base(1) + j] + weight * (p_mass * v[p] + affine @ dpos))
+        grid_m[base(0) + i, base(1) + j] += weight * p_mass
 
 
 bound = 3
@@ -99,7 +96,7 @@ def g2p():
         new_v = new_v + weight * g_v
         new_C = new_C + 4.0 * weight * ti.outer_product(g_v, dpos) * inv_dx
 
-    v[p].assign(new_v)
+    v[p] = new_v
     x[p] = x[p] + dt * v[p]
     J[p] = J[p] * (1.0 + dt * new_C.trace())
     C[p] = new_C

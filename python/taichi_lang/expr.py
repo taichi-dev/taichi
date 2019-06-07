@@ -134,3 +134,9 @@ class Expr:
 
   def loop_range(self):
     return self
+
+  def augassign(self, x, op):
+    if op == 'Add':
+      self += x
+    else:
+      assert False

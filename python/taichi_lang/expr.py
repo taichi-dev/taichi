@@ -65,9 +65,13 @@ class Expr:
     other = Expr(other)
     return Expr(taichi_lang_core.expr_mod(self.ptr, other.ptr))
 
-  def __div__(self, other):
+  def __truediv__(self, other):
     other = Expr(other)
     return Expr(taichi_lang_core.expr_div(self.ptr, other.ptr))
+
+  def __rtruediv__(self, other):
+    other = Expr(other)
+    return Expr(taichi_lang_core.expr_div(other.ptr, self.ptr))
 
   def __le__(self, other):
     other = Expr(other)

@@ -57,15 +57,18 @@ def p2g():
         grid_m[base_coord(0) + i, base_coord(1) + j].assign(1.0)
 
 
-'''
 @ti.kernel
 def grid_op():
-  pass
+  for i, j in grid_m:
+    if grid_m[i, j] > 0.0:
+      inv_m = 1.0 / grid_m[i, j]
+      grid_v[i, j] = inv_m * grid_v[i, j]
+
 
 @ti.kernel
 def g2p():
-  pass
-'''
+  for p in x(0):
+    ti.print(p)
 
 
 def main():
@@ -80,7 +83,7 @@ if __name__ == '__main__':
   for f in range(100):
     for s in range(1):
       p2g()
-      # grid_op()
+      grid_op()
       # g2p()
     scale = 20
     img = np.zeros(shape=(scale * n_grid, scale * n_grid))

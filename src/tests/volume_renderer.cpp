@@ -10,8 +10,6 @@ TLANG_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
 
-bool use_gui = false;
-
 auto volume_renderer = [](std::vector<std::string> cli_param) {
   auto param = parse_param(cli_param);
 

@@ -2,7 +2,11 @@
 #include "common.h"
 #include <mutex>
 #include <vector>
-#include <taichi/system/virtual_memory.h>
+#include <memory>
+
+namespace taichi {
+  class VirtualMemoryAllocator;
+}
 
 TLANG_NAMESPACE_BEGIN
 
@@ -14,22 +18,19 @@ class UnifiedAllocator {
   std::unique_ptr<VirtualMemoryAllocator> cpu_vm;
   std::vector<char> _data;
   void *_cuda_data{};
-  std::size_t size;
-  bool gpu;
+  std::size_t size{};
+  bool gpu{};
 
   // put these two on the unified memroy so that GPU can have access
  public:
   void *data;
-  void **head;
-  void **tail;
+  void **head{};
+  void **tail{};
   int gpu_error_code;
   std::mutex lock;
 
  public:
-  UnifiedAllocator() {
-    data = nullptr;
-    gpu_error_code = 0;
-  }
+  UnifiedAllocator();
 
   UnifiedAllocator(std::size_t size, bool gpu);
 

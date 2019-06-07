@@ -5,6 +5,9 @@
 #include "backends/struct.h"
 #include "backends/cpu.h"
 #include "backends/gpu.h"
+#if defined(CUDA_FOUND)
+#include <cuda_runtime.h>
+#endif
 
 TLANG_NAMESPACE_BEGIN
 

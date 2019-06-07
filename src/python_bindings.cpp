@@ -149,6 +149,12 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("expr_index", expr_index);
 
   m.def("expr_var", [](const Expr &e) { return Var(e); });
+  m.def("expr_alloca", []() {
+    auto var = Expr(std::make_shared<IdExpression>());
+    current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
+        std::static_pointer_cast<IdExpression>(var.expr)->id, DataType::unknown));
+    return var;
+  });
   m.def("expr_assign", expr_assign);
 
   m.def("make_global_load_stmt", Stmt::make<GlobalLoadStmt, Stmt *>);

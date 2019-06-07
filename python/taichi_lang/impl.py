@@ -9,6 +9,8 @@ import astor
 from .util import *
 
 def expr_init(rhs):
+  if rhs is None:
+    return Expr(taichi_lang_core.expr_alloca())
   if is_taichi_class(rhs):
     return rhs.variable()
   else:
@@ -27,6 +29,8 @@ def make_expr_group(*exprs):
 
 
 def subscript(value, *indices):
+  if len(indices) == 1 and is_taichi_class(indices[0]):
+    indices = indices[0].entries
   if isinstance(value, tuple) or isinstance(value, list):
     assert len(indices) == 1
     return value[indices[0]]

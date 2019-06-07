@@ -13,7 +13,7 @@ dt = 1e-3
 
 p_mass = 1.0
 p_vol = 1.0
-E = 1e3
+E = 1e4
 
 
 def scalar():
@@ -54,7 +54,7 @@ def p2g():
     base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0), 0.5 * ti.sqr(fx - 0.5)]
-    stress = dt * p_vol * (J[p] - 1.0) * 4.0
+    stress = dt * p_vol * (J[p] - 1.0) * 4.0 * E
     for i in ti.static(range(3)):
       for j in ti.static(range(3)):
         dpos = (ti.cast(ti.Vector([i, j]), ti.f32) - fx) * dx
@@ -65,6 +65,8 @@ def p2g():
           grid_m[base(0) + i, base(1) + j] + p_mass * weight)
 
 
+bound = 3
+
 @ti.kernel
 def grid_op():
   for i, j in grid_m:
@@ -72,9 +74,15 @@ def grid_op():
       inv_m = 1.0 / grid_m[i, j]
       grid_v[i, j] = inv_m * grid_v[i, j]
       grid_v(1)[i, j] = grid_v(1)[i, j] - dt * 9.8
-      if j < 5:
+      if j < bound:
         if grid_v(1)[i, j] < 0.0:
           grid_v(1)[i, j] = 0.0
+      if i < bound:
+        if grid_v(0)[i, j] < 0.0:
+          grid_v(0)[i, j] = 0.0
+      if i > n_grid - bound:
+        if grid_v(0)[i, j] > 0.0:
+          grid_v(0)[i, j] = 0.0
 
 
 @ti.kernel

@@ -101,7 +101,7 @@ def g2p():
 
     v[p].assign(new_v)
     x[p] = x[p] + dt * v[p]
-    J[p] = J[p] * (1.0 + dt * (new_C(0, 0) + new_C(1, 1)))
+    J[p] = J[p] * (1.0 + dt * new_C.trace())
     C[p] = new_C
 
 

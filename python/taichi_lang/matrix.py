@@ -157,6 +157,13 @@ class Matrix:
       ret.entries[i] = impl.cast(ret.entries[i], type)
     return ret
 
+  def trace(self):
+    assert self.n == self.m
+    sum = self(0, 0)
+    for i in range(1, self.n):
+      sum = sum + self(i, i)
+    return sum
+
   @staticmethod
   def outer_product(a, b):
     assert a.m == 1

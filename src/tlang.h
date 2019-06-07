@@ -1,7 +1,11 @@
 #pragma once
 
+#if defined(CUDA_FOUND)
+#include <cuda_runtime.h>
+#endif
 #include <taichi/common/util.h>
 #include <taichi/io/io.h>
+
 namespace taichi {
 namespace math {
 inline int maximum(int a) {

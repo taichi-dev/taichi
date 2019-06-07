@@ -369,6 +369,7 @@ struct FEMOutputs : public FEMDataBase {
   bool success;
 
   TC_IO_DECL {
+#if !defined(TC_PLATFORM_OSX)
     FEMDataBase::io(serializer);
     TC_IO(displacements);
     TC_IO(residual_field);
@@ -376,6 +377,9 @@ struct FEMOutputs : public FEMDataBase {
     TC_IO(residuals);
     TC_IO(error_code);
     TC_IO(success);
+#else
+    TC_NOT_IMPLEMENTED
+#endif
   }
 
   void record_residual(double res) {
@@ -427,6 +431,7 @@ class FEMInterface {
   }
 
   ~FEMInterface() {
+#if !defined(TC_PLATFORM_OSX)
     // This is where the interface actually serializes the solution
     if (mode == Mode::CALLEE) {
       preserve_output();
@@ -438,6 +443,9 @@ class FEMInterface {
              sizeof(char) * output_serializer.data.size());
       *output_data = data;
     }
+#else
+    TC_NOT_IMPLEMENTED
+#endif
   }
 
   void preserve_output(std::size_t num_active_blocks) {

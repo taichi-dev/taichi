@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <random>
 #include "../tlang.h"
 #include <taichi/util.h>
 #include <taichi/visual/gui.h>
@@ -214,7 +216,9 @@ auto diff_mpm = [](std::vector<std::string> cli_param) {
               [&](Vector2 a, Vector2 b) { return block_id(a) < block_id(b); });
   }
   if (initial_shuffle) {
-    std::random_shuffle(p_x.begin(), p_x.end());
+    std::random_device rng;
+    std::mt19937 urng(rng());
+    std::shuffle(p_x.begin(), p_x.end(), urng);
   }
   for (int i = 0; i < n_particles; i++) {
     for (int d = 0; d < dim; d++) {

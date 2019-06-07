@@ -3,6 +3,7 @@
 #endif
 #include "util.h"
 #include "../include/unified_allocator.h"
+#include <taichi/system/virtual_memory.h>
 #include <string>
 
 TLANG_NAMESPACE_BEGIN
@@ -32,8 +33,8 @@ taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
                   */
     data = _cuda_data;
 #else
-    static_assert(false, "implement mmap on CPU for memset..");
-    TC_ERROR("No CUDA support");
+    cpu_vm = std::make_unique<VirtualMemoryAllocator>(size);
+    data = cpu_vm->ptr;
 #endif
   }
   auto p = reinterpret_cast<uint64>(data);
@@ -64,12 +65,20 @@ taichi::Tlang::UnifiedAllocator::~UnifiedAllocator() {
 void taichi::Tlang::UnifiedAllocator::create() {
   TC_ASSERT(allocator() == nullptr);
   void *dst;
+#if defined(CUDA_FOUND)
   cudaMallocManaged(&dst, sizeof(UnifiedAllocator));
+#else
+  dst = std::malloc(sizeof(UnifiedAllocator));
+#endif
   allocator() = new (dst) UnifiedAllocator(1LL << 40, true);
 }
 
 void taichi::Tlang::UnifiedAllocator::free() {
+#if defined(CUDA_FOUND)
   cudaFree(allocator());
+#else
+  std::free(allocator());
+#endif
   allocator() = nullptr;
 }
 

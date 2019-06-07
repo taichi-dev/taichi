@@ -1,4 +1,3 @@
-#include <cuda_runtime.h>
 #include "../tlang.h"
 #include <taichi/testing.h>
 #include <numeric>
@@ -29,6 +28,8 @@ TC_TEST("compiler_basics_gpu") {
   }
 };
 
+
+#if defined(CUDA_FOUND)
 TC_TEST("cuda_malloc_managed") {
   void *ptr;
   cudaMallocManaged(&ptr, 1LL << 40);
@@ -39,5 +40,6 @@ TC_TEST("cuda_malloc_managed") {
   }
   cudaFree(ptr);
 }
+#endif
 
 TLANG_NAMESPACE_END

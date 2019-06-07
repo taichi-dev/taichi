@@ -28,7 +28,7 @@ Expr svd_bitwise_and(const Expr &a, const Expr &b) {
 #include "svd_body.h"
 
 template <int sweeps = 5>
-__attribute_noinline__ void sifakis_svd_gt(Matrix3 &a,
+void sifakis_svd_gt(Matrix3 &a,
                                         Matrix3 &u,
                                         Matrix3 &v,
                                         Vector3 &sig) {

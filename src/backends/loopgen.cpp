@@ -6,14 +6,20 @@
 #if defined(__host__)
 #undef __host__
 #endif
+#if defined(CUDA_FOUND)
 #include <cuda_runtime.h>
+#endif
 
 TLANG_NAMESPACE_BEGIN
 
 LoopGenerator::LoopGenerator(taichi::Tlang::CodeGenBase *gen) : gen(gen) {
   int num_SMs;
+#if defined(CUDA_FOUND)
   cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount, 0);
   grid_dim = num_SMs * 32;  // each SM can have 16-32 resident blocks
+#else
+  grid_dim = -1;
+#endif
 }
 
 void LoopGenerator::emit_listgen_func(SNode *snode,

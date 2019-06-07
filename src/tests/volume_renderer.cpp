@@ -1,4 +1,10 @@
 #include "volume_renderer.h"
+
+TLANG_NAMESPACE_BEGIN
+bool use_gui = false;
+TLANG_NAMESPACE_END
+
+#if defined(CUDA_FOUND)
 #include <tbb/tbb.h>
 #include <cuda_runtime_api.h>
 
@@ -277,3 +283,4 @@ auto volume_renderer_gui = [](std::vector<std::string> cli_param) {
 TC_REGISTER_TASK(volume_renderer_gui);
 
 TLANG_NAMESPACE_END
+#endif

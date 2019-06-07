@@ -1,4 +1,3 @@
-#include <cuda_runtime.h>
 #include <taichi/common/task.h>
 #include <taichi/taichi>
 #include "program.h"
@@ -74,7 +73,11 @@ void Program::materialize_layout() {
 void Program::synchronize() {
   if (!sync) {
     if (config.arch == Arch::gpu) {
+#if defined(CUDA_FOUND)
       cudaDeviceSynchronize();
+#else
+      TC_ERROR("No CUDA support");
+#endif
     }
     sync = true;
   }

@@ -2,6 +2,7 @@
 #include "common.h"
 #include <mutex>
 #include <vector>
+#include <taichi/system/virtual_memory.h>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -10,6 +11,7 @@ class UnifiedAllocator;
 UnifiedAllocator *&allocator();
 
 class UnifiedAllocator {
+  std::unique_ptr<VirtualMemoryAllocator> cpu_vm;
   std::vector<char> _data;
   void *_cuda_data{};
   std::size_t size;

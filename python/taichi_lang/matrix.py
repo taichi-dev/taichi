@@ -20,6 +20,8 @@ class Matrix:
     if isinstance(n, list):
       if not isinstance(n[0], list):
         mat = [list([expr.Expr(x)]) for x in n]
+      else:
+        mat = n
       self.n, self.m = len(mat), len(mat[0])
       self.entries = [x for row in mat for x in row]
     else:
@@ -151,5 +153,15 @@ class Matrix:
     for i in range(len(self.entries)):
       ret.entries[i] = impl.cast(ret.entries[i], type)
     return ret
+
+  @staticmethod
+  def outer_product(a, b):
+    assert a.m == 1
+    assert b.m == 1
+    c = Matrix(a.n, b.n)
+    for i in range(a.n):
+      for j in range(b.n):
+        c(i, j).assign(a(i) * b(j))
+    return c
 
 

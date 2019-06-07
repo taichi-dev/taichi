@@ -10,7 +10,7 @@ from .util import *
 
 def expr_init(rhs):
   if is_taichi_class(rhs):
-    return rhs
+    return rhs.variable()
   else:
     if isinstance(rhs, list):
       return [expr_init(e) for e in rhs]

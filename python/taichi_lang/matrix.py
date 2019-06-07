@@ -141,8 +141,15 @@ class Matrix:
     ret.entries = copy.copy(self.entries)
     return ret
 
+  def variable(self):
+    ret = self.copy()
+    ret.entries = [impl.expr_init(e) for e in ret.entries]
+    return ret
+
   def cast(self, type):
     ret = self.copy()
     for i in range(len(self.entries)):
       ret.entries[i] = impl.cast(ret.entries[i], type)
     return ret
+
+

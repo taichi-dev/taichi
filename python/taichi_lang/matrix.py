@@ -167,4 +167,5 @@ class Matrix:
         c(i, j).assign(a(i) * b(j))
     return c
 
-
+  def loop_range(self):
+    return self.entries[0]

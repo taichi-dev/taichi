@@ -39,7 +39,7 @@ def clear_grid():
 
 @ti.kernel
 def p2g():
-  for p in x(0):
+  for p in x:
     base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
@@ -83,7 +83,7 @@ def grid_op():
 
 @ti.kernel
 def g2p():
-  for p in x(0):
+  for p in x:
     base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
@@ -97,8 +97,7 @@ def g2p():
         g_v = grid_v[base(0) + i, base(1) + j]
         weight = w[i](0) * w[j](1)
         new_v = new_v + weight * g_v
-        new_C = new_C + 4.0 * weight * ti.Matrix.outer_product(g_v,
-                                                               dpos) * inv_dx
+        new_C = new_C + 4.0 * weight * ti.outer_product(g_v, dpos) * inv_dx
 
     v[p].assign(new_v)
     x[p] = x[p] + dt * v[p]
@@ -128,7 +127,6 @@ def main():
     cv2.imshow('MPM', img)
     cv2.waitKey(1)
     # cv2.imwrite('frame{:03d}.png'.format(f), img * 255)
-
 
 if __name__ == '__main__':
   main()

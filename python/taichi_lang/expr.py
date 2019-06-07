@@ -131,3 +131,6 @@ class Expr:
     if not isinstance(key, tuple):
       key = (key, )
     return self.getter(*key)
+
+  def loop_range(self):
+    return self

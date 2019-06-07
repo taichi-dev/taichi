@@ -10,7 +10,8 @@ k = indices(2)
 ij = indices(0, 1)
 ijk = indices(0, 1, 2)
 Vector = Matrix
+outer_product = Matrix.outer_product
 
 __all__ = [kernel, layout, var, global_var, f64, float64, f32, float32, i32,
            int32, print, core, index, make_expr_group, i, j, k, ij, ijk,
-           inside_kernel, Matrix, Vector, cfg]
+           inside_kernel, Matrix, Vector, cfg, outer_product]

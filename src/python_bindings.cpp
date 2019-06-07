@@ -67,7 +67,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
 
   py::class_<Expr> expr(m, "Expr");
   expr.def("serialize", &Expr::serialize)
-      .def("snode", &Expr::snode, py::return_value_policy::reference);
+      .def("snode", &Expr::snode, py::return_value_policy::reference)
+      .def("set_tb", &Expr::set_tb);
   export_accessors<int32>(expr);
   export_accessors<float32>(expr);
   // export_accessors<float64>(expr);

@@ -539,6 +539,7 @@ class Stmt : public IRNode {
   Block *parent;
   uint64 operand_bitmap;
   bool erased;
+  std::string tb;
 
   static uint64 operand_hash(Stmt *stmt) {
     return uint64(1) << ((uint64(stmt) >> 4) % 64);
@@ -689,6 +690,7 @@ class Stmt : public IRNode {
 class Expression {
  public:
   Stmt *stmt;
+  std::string tb;
 
   Expression() {
     stmt = nullptr;
@@ -807,6 +809,11 @@ class Expr {
   SNode *snode() const;
 
   void declare(DataType dt);
+
+  // traceback for type checking error message
+  void set_tb(const std::string &tb) {
+    expr->tb = tb;
+  }
 };
 
 class ExprGroup {
@@ -1079,6 +1086,7 @@ class BinaryOpExpression : public Expression {
     lhs->flatten(ret);
     rhs->flatten(ret);
     ret.push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
+    ret.back()->tb = tb;
     stmt = ret.back().get();
   }
 };

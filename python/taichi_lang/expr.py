@@ -1,28 +1,40 @@
 from .core import taichi_lang_core
 from .util import is_taichi_class
-import inspect
+import sys
+import traceback
 
 # Scalar, basic data type
 class Expr:
   materialize_layout_callback = None
   layout_materialized = False
 
-  def __init__(self, *args):
+  def __init__(self, *args, tb=None):
     self.getter = None
     self.setter = None
+    self.tb = tb
     if len(args) == 1:
       if isinstance(args[0], taichi_lang_core.Expr):
         self.ptr = args[0]
       elif isinstance(args[0], Expr):
         self.ptr = args[0].ptr
+        self.tb = args[0].tb
       else:
         self.ptr = taichi_lang_core.make_constant_expr(args[0])
     else:
       assert False
+    if self.tb:
+      self.ptr.set_tb(self.tb)
+
+  @staticmethod
+  def stack_info():
+    s = traceback.extract_stack()[3:-1]
+    raw = ''.join(traceback.format_list(s))
+    # remove the confusing last line
+    return '\n'.join(raw.split('\n')[:-2]) + '\n'
 
   def __add__(self, other):
     other = Expr(other)
-    return Expr(taichi_lang_core.expr_add(self.ptr, other.ptr))
+    return Expr(taichi_lang_core.expr_add(self.ptr, other.ptr), tb=self.stack_info())
 
   def __iadd__(self, other):
     self.assign(Expr(taichi_lang_core.expr_add(self.ptr, other.ptr)))

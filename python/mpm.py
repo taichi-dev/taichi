@@ -36,6 +36,8 @@ grid_m = scalar()
 def place():
   ti.root.dense(ti.k, n_particles).place(x, v)
   ti.root.dense(ti.ij, n_grid).place(grid_v, grid_m)
+  ti.cfg().print_ir = True
+
 
 
 @ti.kernel
@@ -48,10 +50,11 @@ def p2g():
       for j in ti.static(range(3)):
         # dpos = (ti.Vector([i, j]) - fx) * dx
         weight = w[i](0) * w[j](1)
-        grid_v[base_coord(0) + i, base_coord(1) + j].assign(
-          grid_v[base_coord(0) + i, base_coord(1) + j] + weight * p_mass * v[p])
-        grid_m[base_coord(0) + i, base_coord(1) + j].assign(
-          grid_m[base_coord(0) + i, base_coord(1) + j] + weight * p_mass)
+        #grid_v[base_coord(0) + i, base_coord(1) + j].assign(
+        #  grid_v[base_coord(0) + i, base_coord(1) + j] + weight * p_mass * v[p])
+        #grid_m[base_coord(0) + i, base_coord(1) + j].assign(
+        #  grid_m[base_coord(0) + i, base_coord(1) + j] + weight * p_mass)
+        grid_m[base_coord(0) + i, base_coord(1) + j].assign(1.0)
 
 
 '''

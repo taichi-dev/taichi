@@ -48,6 +48,14 @@ void export_accessors(C &c) {
 }
 
 PYBIND11_MODULE(taichi_lang_core, m) {
+  py::class_<CompileConfig>(m, "CompileConfig")
+      .def(py::init<>())
+      .def_readwrite("print_ir", &CompileConfig::print_ir);
+
+  m.def("current_compile_config",
+        [&]() -> CompileConfig & { return get_current_program().config; },
+        py::return_value_policy::reference);
+
   py::class_<Index>(m, "Index").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
       .def(py::init<>())

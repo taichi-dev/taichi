@@ -13,4 +13,4 @@ Vector = Matrix
 
 __all__ = [kernel, layout, var, global_var, f64, float64, f32, float32, i32,
            int32, print, core, index, make_expr_group, i, j, k, ij, ijk,
-           inside_kernel, Matrix, Vector]
+           inside_kernel, Matrix, Vector, cfg]

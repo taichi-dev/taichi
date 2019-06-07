@@ -109,7 +109,9 @@ class TypeCheck : public IRVisitor {
 
   void visit(BinaryOpStmt *stmt) {
     auto error = [&] {
-      TC_WARN("Error: type mismatch at");
+      TC_WARN("Error: type mismatch (left = {}, right = {}, stmt_id = {}) at",
+              stmt->lhs->ret_data_type_name(), stmt->rhs->ret_data_type_name(),
+              stmt->id);
       fmt::print(stmt->tb);
       TC_WARN("Compilation stopped due to type mismatch.");
       exit(-1);

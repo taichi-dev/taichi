@@ -137,7 +137,9 @@ class Matrix:
         self(i, j)[index] = item[i][j]
 
   def copy(self):
-    return copy.copy(self)
+    ret = Matrix(self.n, self.m)
+    ret.entries = copy.copy(self.entries)
+    return ret
 
   def cast(self, type):
     ret = self.copy()

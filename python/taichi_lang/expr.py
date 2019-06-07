@@ -1,5 +1,6 @@
 from .core import taichi_lang_core
 from .util import is_taichi_class
+import inspect
 
 # Scalar, basic data type
 class Expr:

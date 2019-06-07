@@ -129,8 +129,12 @@ class Matrix:
   def __getitem__(self, item):
     assert False
 
-  def __setitem__(self, item):
-    assert False
+  def __setitem__(self, index, item):
+    if not isinstance(item[0], list):
+      item = [[i] for i in item]
+    for i in range(self.n):
+      for j in range(self.m):
+        self(i, j)[index] = item[i][j]
 
   def copy(self):
     return copy.copy(self)

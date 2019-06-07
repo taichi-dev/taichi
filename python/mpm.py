@@ -11,8 +11,8 @@ dx = 1.0 / n_grid
 inv_dx = 1.0 / dx
 dt = 1e-3
 
-p_mass = 1
-p_vol = 1
+p_mass = 1.0
+p_vol = 1.0
 
 
 def scalar():
@@ -43,10 +43,10 @@ def p2g():
   for p in x(0):
     base_coord = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base_coord, ti.f32)
-    w = [0.5 * ti.sqr(1.5 - fx), 0.75 * ti.sqr(fx - 1), 0.5 * ti.sqr(fx - 0.5)]
+    w = [0.5 * ti.sqr(1.5 - fx), 0.75 * ti.sqr(fx - 1.0), 0.5 * ti.sqr(fx - 0.5)]
     for i in ti.static(range(3)):
       for j in ti.static(range(3)):
-        dpos = (ti.Vector([i, j]) - fx) * dx
+        # dpos = (ti.Vector([i, j]) - fx) * dx
         weight = w[i](0) * w[j](1)
         grid_v[base_coord(0) + i, base_coord(1) + j].assign(
           grid_v[base_coord(0) + i, base_coord(1) + j] + weight * p_mass * v[p])
@@ -71,10 +71,8 @@ def main():
 
 if __name__ == '__main__':
   for i in range(n_particles):
-    x(0)[i] = random.random() * 0.4 + 0.2
-    x(1)[i] = random.random() * 0.4 + 0.2
-    v(0)[i] = 1
-    v(1)[i] = 1
+    x[i] = [random.random() * 0.4 + 0.2, random.random() * 0.4 + 0.2]
+    v[i] = [1, 1]
 
   for f in range(100):
     for s in range(1):

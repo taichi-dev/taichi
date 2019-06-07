@@ -40,6 +40,7 @@ class ASTTransformer(ast.NodeTransformer):
     template = 'x.augassign(0, 0)'
     t = ast.parse(template).body[0]
     t.value.func.value = node.target
+    t.value.func.value.ctx = ast.Load()
     t.value.args[0] = node.value
     t.value.args[1] = ast.Str(s=type(node.op).__name__, ctx=ast.Load())
     # astpretty.pprint(t)

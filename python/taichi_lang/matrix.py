@@ -176,3 +176,8 @@ class Matrix:
 
   def loop_range(self):
     return self.entries[0]
+
+  def augassign(self, other, op):
+    assert self.n == other.n and self.m == other.m
+    for i in range(len(self.entries)):
+      self.entries[i].augassign(other.entries[i], op)

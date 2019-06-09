@@ -255,12 +255,19 @@ std::string CompileConfig::compiler_config() {
 #else
     std::string omp_flag = "";
 #endif
+
+#if defined(TC_PLATFORM_OSX)
+    std::string linking = "-undefined dynamic_lookup";
+#else
+    std::string linking = "-ltaichi_lang_core";
+#endif
+
     cmd = fmt::format(
         "{} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/include "
         "-ffp-contract=fast "
         "{} -Wall -g -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU "
-        "-lstdc++  -L{}/build/ -ltaichi_lang_core {}",
-        compiler_name(), gcc_opt_flag(), get_project_fn(), omp_flag, get_repo_dir(),
+        "-lstdc++  -L{}/build/ {} {}",
+        compiler_name(), gcc_opt_flag(), get_project_fn(), omp_flag, get_repo_dir(), linking,
         extra_flags);
   } else {
     cmd = fmt::format(

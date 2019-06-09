@@ -10,8 +10,6 @@ TLANG_NAMESPACE_BEGIN
 
 UnifiedAllocator *allocator_instance = nullptr;
 UnifiedAllocator *&allocator() {
-  printf("instance ptr addr %p\n", &allocator_instance);
-  printf("instance addr %p\n", allocator_instance);
   return allocator_instance;
 }
 

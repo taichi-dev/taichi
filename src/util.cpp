@@ -250,12 +250,17 @@ std::string snode_op_type_name(SNodeOpType type) {
 std::string CompileConfig::compiler_config() {
   std::string cmd;
   if (arch == Arch::x86_64) {
+#if defined(OPENMP_FOUND)
+    std::string omp_flag = "-fopenmp";
+#else
+    std::string omp_flag = "";
+#endif
     cmd = fmt::format(
         "{} -std=c++14 -shared -fPIC {} -march=native -mfma -I {}/include "
         "-ffp-contract=fast "
-        "-fopenmp -Wall -g -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU "
+        "{} -Wall -g -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU "
         "-lstdc++  -L{}/build/ -ltaichi_lang_core {}",
-        compiler_name(), gcc_opt_flag(), get_project_fn(), get_repo_dir(),
+        compiler_name(), gcc_opt_flag(), get_project_fn(), omp_flag, get_repo_dir(),
         extra_flags);
   } else {
     cmd = fmt::format(
@@ -324,7 +329,7 @@ CompileConfig::CompileConfig() {
 
 std::string CompileConfig::compiler_name() {
   if (gcc_version == -1) {
-    return "gcc";
+    return "clang";
   } else if (gcc_version == -2) {
     return "clang-7";
   } else {

@@ -8,9 +8,11 @@
 
 TLANG_NAMESPACE_BEGIN
 
+UnifiedAllocator *allocator_instance = nullptr;
 UnifiedAllocator *&allocator() {
-  static UnifiedAllocator *instance = nullptr;
-  return instance;
+  printf("instance ptr addr %p\n", &allocator_instance);
+  printf("instance addr %p\n", allocator_instance);
+  return allocator_instance;
 }
 
 taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
@@ -35,6 +37,7 @@ taichi::Tlang::UnifiedAllocator::UnifiedAllocator(std::size_t size, bool gpu)
 #else
     cpu_vm = std::make_unique<VirtualMemoryAllocator>(size);
     data = cpu_vm->ptr;
+    TC_ASSERT(data != nullptr);
 #endif
   }
   auto p = reinterpret_cast<uint64>(data);

@@ -12,7 +12,8 @@ TLANG_NAMESPACE_BEGIN
 
 class UnifiedAllocator;
 
-UnifiedAllocator *&allocator();
+extern UnifiedAllocator *&allocator();
+extern UnifiedAllocator* allocator_instance;
 
 class UnifiedAllocator {
   std::unique_ptr<VirtualMemoryAllocator> cpu_vm;

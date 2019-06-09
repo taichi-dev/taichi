@@ -224,6 +224,12 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   });
 
   m.def("print_", Print_);
+
+  // Schedules
+  m.def("parallelize", Parallelize);
+  m.def("vectorize", Vectorize);
+  m.def("block_dim", BlockDim);
+  m.def("cache", Cache);
 }
 
 TLANG_NAMESPACE_END

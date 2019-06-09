@@ -39,6 +39,7 @@ def clear_grid():
 
 @ti.kernel
 def p2g():
+  ti.parallelize(4)
   for p in x:
     base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)

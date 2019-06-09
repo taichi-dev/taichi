@@ -18,7 +18,14 @@ cuda = core.gpu
 profiler_print = lambda: core.get_current_program().profiler_print()
 profiler_clear = lambda: core.get_current_program().profiler_clear()
 
+parallelize = core.parallelize
+vectorize = core.vectorize
+block_dim = core.block_dim
+cache = core.cache
+
+schedules = [parallelize, vectorize, block_dim, cache]
+
 __all__ = [kernel, layout, var, global_var, f64, float64, f32, float32, i32,
            int32, print, core, index, make_expr_group, i, j, k, ij, ijk,
            inside_kernel, Matrix, Vector, cfg, current_cfg, outer_product,
-           profiler_print, profiler_clear]
+           profiler_print, profiler_clear] + schedules

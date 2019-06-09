@@ -5,6 +5,9 @@
 TC_NAMESPACE_BEGIN
 
 namespace Tlang {
+
+   CompileConfig default_compile_config;
+
 real get_cpu_frequency() {
   static real cpu_frequency = 0;
   if (cpu_frequency == 0) {

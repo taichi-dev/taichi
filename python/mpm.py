@@ -22,6 +22,7 @@ x, v = vec(), vec()
 grid_v, grid_m = vec(), scalar()
 C, J = mat(), scalar()
 
+ti.cfg.arch = ti.x86_64
 
 @ti.layout
 def place():

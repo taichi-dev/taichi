@@ -48,13 +48,25 @@ void export_accessors(C &c) {
 }
 
 PYBIND11_MODULE(taichi_lang_core, m) {
+  py::enum_<Arch>(m, "Arch", py::arithmetic())
+      .value("gpu", Arch::gpu)
+      .value("x86_64", Arch::x86_64)
+      .export_values();
+
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
+      .def_readwrite("arch", &CompileConfig::arch)
       .def_readwrite("print_ir", &CompileConfig::print_ir);
 
-  m.def("current_compile_config",
-        [&]() -> CompileConfig & { return get_current_program().config; },
-        py::return_value_policy::reference);
+  m.def(
+      "default_compile_config",
+      [&]() -> CompileConfig & { return default_compile_config; },
+      py::return_value_policy::reference);
+
+  m.def(
+      "current_compile_config",
+      [&]() -> CompileConfig & { return get_current_program().config; },
+      py::return_value_policy::reference);
 
   py::class_<Index>(m, "Index").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
@@ -128,8 +140,9 @@ PYBIND11_MODULE(taichi_lang_core, m) {
 
   m.def("layout", layout);
 
-  m.def("get_root", [&]() -> SNode * { return &root; },
-        py::return_value_policy::reference);
+  m.def(
+      "get_root", [&]() -> SNode * { return &root; },
+      py::return_value_policy::reference);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
 
@@ -152,7 +165,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("expr_alloca", []() {
     auto var = Expr(std::make_shared<IdExpression>());
     current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-        std::static_pointer_cast<IdExpression>(var.expr)->id, DataType::unknown));
+        std::static_pointer_cast<IdExpression>(var.expr)->id,
+        DataType::unknown));
     return var;
   });
   m.def("expr_assign", expr_assign);

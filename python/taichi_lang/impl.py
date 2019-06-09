@@ -140,5 +140,8 @@ def sqr(obj):
 def static(x):
   return x
 
-def cfg():
+def current_cfg():
   return taichi_lang_core.current_compile_config()
+
+def default_cfg():
+  return taichi_lang_core.default_compile_config()

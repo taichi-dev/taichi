@@ -54,6 +54,8 @@ struct CompileConfig {
                           bool verbose = false);
 };
 
+extern CompileConfig default_compile_config;
+
 real get_cpu_frequency();
 
 extern real default_measurement_time;

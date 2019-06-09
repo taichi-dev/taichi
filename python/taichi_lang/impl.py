@@ -91,7 +91,7 @@ def kernel(foo):
       pytaichi.inside_kernel = False
       compiled = locals()[foo.__name__]
 
-      t_kernel = taichi_lang_core.create_kernel("test")
+      t_kernel = taichi_lang_core.create_kernel(foo.__name__)
       t_kernel = t_kernel.define(lambda: compiled())
       compiled_functions[foo] = lambda: t_kernel()
     compiled_functions[foo]()

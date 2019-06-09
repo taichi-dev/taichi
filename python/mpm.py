@@ -114,7 +114,10 @@ def main():
       p2g()
       grid_op()
       g2p()
-    scale = 4
+
+    ti.profiler_print()
+
+    scale = 2
     img = np.zeros(shape=(scale * n_grid, scale * n_grid)) + 0.3
     for i in range(n_particles):
       p_x = int(scale * x(0)[i] / dx)
@@ -123,7 +126,7 @@ def main():
     img = img.swapaxes(0, 1)[::-1]
     cv2.imshow('MPM', img)
     cv2.waitKey(1)
-    cv2.imwrite('frame{:03d}.png'.format(f), img * 255)
+    # cv2.imwrite('frame{:03d}.png'.format(f), img * 255)
 
 if __name__ == '__main__':
   main()

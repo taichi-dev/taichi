@@ -63,6 +63,14 @@ PYBIND11_MODULE(taichi_lang_core, m) {
       [&]() -> CompileConfig & { return default_compile_config; },
       py::return_value_policy::reference);
 
+  py::class_<Program>(m, "Program")
+      .def(py::init<>())
+      .def("profiler_print", &Program::profiler_print)
+      .def("profiler_print", &Program::profiler_clear);
+
+  m.def("get_current_program", get_current_program,
+        py::return_value_policy::reference);
+
   m.def(
       "current_compile_config",
       [&]() -> CompileConfig & { return get_current_program().config; },
@@ -81,7 +89,6 @@ PYBIND11_MODULE(taichi_lang_core, m) {
       .def("data_type", [](SNode *snode) { return snode->dt; })
       .def("num_active_indices",
            [](SNode *snode) { return snode->num_active_indices; });
-  py::class_<Program>(m, "Program").def(py::init<>());
   py::class_<Program::Kernel>(m, "Kernel")
       .def("__call__", &Program::Kernel::operator());
 

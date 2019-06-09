@@ -15,7 +15,10 @@ cfg = default_cfg()
 current_cfg = current_cfg()
 x86_64 = core.x86_64
 cuda = core.gpu
+profiler_print = lambda: core.get_current_program().profiler_print()
+profiler_clear = lambda: core.get_current_program().profiler_clear()
 
 __all__ = [kernel, layout, var, global_var, f64, float64, f32, float32, i32,
            int32, print, core, index, make_expr_group, i, j, k, ij, ijk,
-           inside_kernel, Matrix, Vector, cfg, current_cfg, outer_product]
+           inside_kernel, Matrix, Vector, cfg, current_cfg, outer_product,
+           profiler_print, profiler_clear]

@@ -85,11 +85,17 @@ class Program {
   Program() : Program(Arch::x86_64) {
   }
 
+  Program(const Program &){
+      TC_NOT_IMPLEMENTED  // for pybind11..
+  }
+
   Program(Arch arch) {
 #if !defined(CUDA_FOUND)
-    TC_WARN_IF(arch == Arch::gpu, "CUDA not found. GPU is not supported.");
-    TC_WARN("Falling back to x86_64");
-    arch = Arch::x86_64;
+    if (arch == Arch::gpu) {
+      TC_WARN("CUDA not found. GPU is not supported.");
+      TC_WARN("Falling back to x86_64");
+      arch = Arch::x86_64;
+    }
 #endif
     UnifiedAllocator::create();
     TC_ASSERT(current_program == nullptr);

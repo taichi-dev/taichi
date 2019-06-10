@@ -95,6 +95,7 @@ class SNode {
   int index_id;
   bool _morton;
   bool _bitmasked;
+  SNode *grad;
 
   SNode() {
     id = counter++;
@@ -102,6 +103,7 @@ class SNode {
 
   SNode(int depth, SNodeType t) : depth(depth), type(t) {
     id = counter++;
+    grad = nullptr;
     total_num_bits = 0;
     total_bit_start = 0;
     num_active_indices = 0;

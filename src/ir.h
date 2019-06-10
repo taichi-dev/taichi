@@ -132,6 +132,7 @@ void slp_vectorize(IRNode *root);
 void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 void lower_access(IRNode *root);
+void make_adjoint(IRNode *root);
 std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 
 }  // namespace irpass
@@ -540,6 +541,18 @@ class Stmt : public IRNode {
   uint64 operand_bitmap;
   bool erased;
   std::string tb;
+  Stmt *adjoint;
+
+  Stmt(const Stmt &stmt) = delete;
+
+  Stmt() {
+    adjoint = nullptr;
+    parent = nullptr;
+    instance_id = instance_id_counter++;
+    id = instance_id;
+    operand_bitmap = 0;
+    erased = false;
+  }
 
   static uint64 operand_hash(Stmt *stmt) {
     return uint64(1) << ((uint64(stmt) >> 4) % 64);
@@ -562,16 +575,6 @@ class Stmt : public IRNode {
   }
 
   VectorType ret_type;
-
-  Stmt(const Stmt &stmt) = delete;
-
-  Stmt() {
-    parent = nullptr;
-    instance_id = instance_id_counter++;
-    id = instance_id;
-    operand_bitmap = 0;
-    erased = false;
-  }
 
   std::string ret_data_type_name() const {
     return ret_type.str();

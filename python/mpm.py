@@ -22,7 +22,8 @@ x, v = vec(), vec()
 grid_v, grid_m = vec(), scalar()
 C, J = mat(), scalar()
 
-ti.cfg.arch = ti.x86_64
+# ti.cfg.arch = ti.x86_64
+ti.cfg.arch = ti.cuda
 
 @ti.layout
 def place():
@@ -39,7 +40,6 @@ def clear_grid():
 
 @ti.kernel
 def p2g():
-  ti.parallelize(4)
   for p in x:
     base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)

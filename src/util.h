@@ -183,6 +183,10 @@ inline bool is_comparison(BinaryOpType type) {
   return starts_with(binary_op_type_name(type), "cmp");
 }
 
+inline bool is_bit_op(BinaryOpType type) {
+  return starts_with(binary_op_type_name(type), "bit");
+}
+
 std::string binary_op_type_symbol(BinaryOpType type);
 
 enum class TernaryOpType : int { select, undefined };

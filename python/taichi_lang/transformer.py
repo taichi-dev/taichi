@@ -185,7 +185,6 @@ if 1:
 
   def visit_BoolOp(self, node):
     self.generic_visit(node)
-    print('nodeop', node.op)
     if isinstance(node.op, ast.And):
       # Python does not support overloading logical and & or
       new_node = self.parse_expr('ti.logical_and(0, 0)')
@@ -193,6 +192,12 @@ if 1:
       new_node.args[0] = node.values[0]
       new_node.args[1] = node.values[1]
       node = new_node
-
+    elif isinstance(node.op, ast.Or):
+      # Python does not support overloading logical and & or
+      new_node = self.parse_expr('ti.logical_or(0, 0)')
+      astpretty.pprint(new_node)
+      new_node.args[0] = node.values[0]
+      new_node.args[1] = node.values[1]
+      node = new_node
 
     return node

@@ -20,17 +20,19 @@ def xy():
 def poly():
   for i in x:
     v = x[i]
-    v += 1
-    if v > 2:
-      v = 0
-    y[i] = (v - 1) * (v + 2) * (v - 3)
+    ret = 0.0
+    if v < -1 or v > 1:
+      ret = v - 1
+    else:
+      ret = v * v * 0.5 - 3
+    y[i] = ret
 
 xs = []
 ys = []
 grad_xs = []
 
 for i in range(N):
-  v = (i / (N - 1)) * 7 - 3
+  v = ((i + 0.5) / N) * 7 - 3
   xs.append(v)
   x[i] = v
 
@@ -38,18 +40,18 @@ poly()
 
 print('y')
 for i in range(N):
-  # print(y[i])
-  ys.append(y[i])
   grad_y[i] = 1
+  ys.append(y[i])
+  print(y[i])
 print()
 
 poly.grad()
 print('grad_x')
 for i in range(N):
   grad_xs.append(grad_x[i])
-  # print(grad_x[i])
+  print(grad_x[i])
 
-plt.title('Auto Diff (x - 1)(x + 2)(x - 3)')
+plt.title('Auto Diff')
 ax = plt.gca()
 ax.plot(xs, ys, label='f(x)')
 ax.plot(xs, grad_xs, label='f\'(x)')

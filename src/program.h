@@ -86,7 +86,7 @@ class Program {
     return context;
   }
 
-  Program() : Program(Arch::x86_64) {
+  Program() : Program(default_compile_config.arch) {
   }
 
   Program(const Program &){

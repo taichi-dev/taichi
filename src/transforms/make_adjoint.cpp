@@ -75,8 +75,15 @@ class MakeAdjoint : public IRVisitor {
     if (bin->op_type == BinaryOpType::add) {
       accumulate(bin->lhs, alloc(bin));
       accumulate(bin->rhs, alloc(bin));
-    } else {
-      TC_NOT_IMPLEMENTED
+    } else if (bin->op_type == BinaryOpType::mul){
+      auto lmul = Stmt::make<BinaryOpStmt>(BinaryOpType::mul, alloc(bin), bin->rhs);
+      auto rmul = Stmt::make<BinaryOpStmt>(BinaryOpType::mul, alloc(bin), bin->lhs);
+      auto lptr = lmul.get();
+      auto rptr = rmul.get();
+      insert_back(std::move(lmul));
+      insert_back(std::move(rmul));
+      accumulate(bin->lhs, lptr);
+      accumulate(bin->rhs, rptr);
     }
   }
 

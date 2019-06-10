@@ -35,20 +35,22 @@ class MakeAdjoint : public IRVisitor {
     return ptr;
   }
 
+  template <typename T, typename... Args>
+  Stmt *insert(Args &&... args) {
+    return insert_back(Stmt::make<T>(args...));
+  }
+
   void accumulate(Stmt *primal, Stmt *value) {
     auto alloca_ = alloc(primal);
     TC_ASSERT(alloca_->is<AllocaStmt>());
     auto alloca = alloca_->as<AllocaStmt>();
     TC_ASSERT(alloca->width() == 1);
-    auto local_load =
-        insert_back(Stmt::make<LocalLoadStmt>(LocalAddress(alloca, 0)));
+    auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
     if (value->is<AllocaStmt>()) {
-      value = insert_back(
-          Stmt::make<LocalLoadStmt>(LocalAddress(value->as<AllocaStmt>(), 0)));
+      value = insert<LocalLoadStmt>(LocalAddress(value->as<AllocaStmt>(), 0));
     }
-    auto add = insert_back(
-        Stmt::make<BinaryOpStmt>(BinaryOpType::add, local_load, value));
-    insert_back(Stmt::make<LocalStoreStmt>(alloca, add));
+    auto add = insert<BinaryOpStmt>(BinaryOpType::add, local_load, value);
+    insert<LocalStoreStmt>(alloca, add);
   }
 
   Stmt *alloc(Stmt *stmt) {
@@ -80,10 +82,8 @@ class MakeAdjoint : public IRVisitor {
       insert_back(std::move(rgrad));
       accumulate(bin->rhs, rptr);
     } else if (bin->op_type == BinaryOpType::mul) {
-      auto lptr = insert_back(
-          Stmt::make<BinaryOpStmt>(BinaryOpType::mul, alloc(bin), bin->rhs));
-      auto rptr = insert_back(
-          Stmt::make<BinaryOpStmt>(BinaryOpType::mul, alloc(bin), bin->lhs));
+      auto lptr = insert<BinaryOpStmt>(BinaryOpType::mul, alloc(bin), bin->rhs);
+      auto rptr = insert<BinaryOpStmt>(BinaryOpType::mul, alloc(bin), bin->lhs);
       accumulate(bin->lhs, lptr);
       accumulate(bin->rhs, rptr);
     } else {
@@ -144,10 +144,8 @@ class MakeAdjoint : public IRVisitor {
     auto snodes = ptr->snodes;
     TC_ASSERT(snodes[0]->grad != nullptr);
     snodes[0] = snodes[0]->grad;
-    auto adjoint_ptr =
-        insert_back(Stmt::make<GlobalPtrStmt>(snodes, ptr->indices));
-    auto adjoint_store =
-        insert_back(Stmt::make<GlobalStoreStmt>(adjoint_ptr, alloc(stmt)));
+    auto adjoint = insert<GlobalPtrStmt>(snodes, ptr->indices);
+    insert<GlobalStoreStmt>(adjoint, alloc(stmt));
   }
 
   void visit(GlobalStoreStmt *stmt) override {
@@ -157,10 +155,8 @@ class MakeAdjoint : public IRVisitor {
     auto snodes = ptr->snodes;
     TC_ASSERT(snodes[0]->grad != nullptr);
     snodes[0] = snodes[0]->grad;
-    auto adjoint_ptr =
-        insert_back(Stmt::make<GlobalPtrStmt>(snodes, ptr->indices));
-    auto adjoint_load = insert_back(Stmt::make<GlobalLoadStmt>(adjoint_ptr));
-    accumulate(stmt->data, adjoint_load);
+    auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
+    accumulate(stmt->data, insert<GlobalLoadStmt>(adjoint_ptr));
     stmt->parent->erase(stmt);
   }
 

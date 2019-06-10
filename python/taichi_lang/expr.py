@@ -101,6 +101,10 @@ class Expr:
     item = Expr(item)
     return Expr(expr_index(self, item.ptr))
 
+  def __and__(self, item):
+    item = Expr(item)
+    return Expr(taichi_lang_core.expr_bit_and(self.ptr, item.ptr))
+
   def assign(self, other):
     taichi_lang_core.expr_assign(self.ptr, Expr(other).ptr)
 

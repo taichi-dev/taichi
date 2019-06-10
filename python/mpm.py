@@ -34,7 +34,7 @@ def place():
 @ti.kernel
 def clear_grid():
   for i, j in grid_m:
-    grid_v[i, j] = ti.Vector([0.0, 0.0])
+    grid_v[i, j] = ti.Vector([0, 0])
     grid_m[i, j] = 0
 
 
@@ -64,21 +64,17 @@ bound = 3
 def grid_op():
   for i, j in grid_m:
     if grid_m[i, j] > 0:
-      inv_m = 1.0 / grid_m[i, j]
+      inv_m = 1 / grid_m[i, j]
       grid_v[i, j] = inv_m * grid_v[i, j]
       grid_v(1)[i, j] = grid_v(1)[i, j] - dt * 9.8
-      if i < bound:
-        if grid_v(0)[i, j] < 0:
-          grid_v(0)[i, j] = 0
-      if i > n_grid - bound:
-        if grid_v(0)[i, j] > 0:
-          grid_v(0)[i, j] = 0
-      if j < bound:
-        if grid_v(1)[i, j] < 0:
-          grid_v(1)[i, j] = 0
-      if j > n_grid - bound:
-        if grid_v(1)[i, j] > 0:
-          grid_v(1)[i, j] = 0
+      if (i < bound) & (grid_v(0)[i, j] < 0):
+        grid_v(0)[i, j] = 0
+      if (i > n_grid - bound) & (grid_v(0)[i, j] > 0):
+        grid_v(0)[i, j] = 0
+      if (j < bound) & (grid_v(1)[i, j] < 0):
+        grid_v(1)[i, j] = 0
+      if (j > n_grid - bound) & (grid_v(1)[i, j] > 0):
+        grid_v(1)[i, j] = 0
 
 
 @ti.kernel
@@ -109,7 +105,7 @@ def main():
   for i in range(n_particles):
     x[i] = [random.random() * 0.4 + 0.2, random.random() * 0.4 + 0.2]
     v[i] = [0, -1]
-    J[i] = 1.0
+    J[i] = 1
 
   for f in range(200):
     for s in range(150):

@@ -145,3 +145,9 @@ def current_cfg():
 
 def default_cfg():
   return taichi_lang_core.default_compile_config()
+
+def logical_and(a, b):
+  return a.logical_and(b)
+
+def logical_or(a, b):
+  return a.logical_or(b)

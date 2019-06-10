@@ -67,13 +67,13 @@ def grid_op():
       inv_m = 1 / grid_m[i, j]
       grid_v[i, j] = inv_m * grid_v[i, j]
       grid_v(1)[i, j] = grid_v(1)[i, j] - dt * 9.8
-      if (i < bound) & (grid_v(0)[i, j] < 0):
+      if i < bound and grid_v(0)[i, j] < 0:
         grid_v(0)[i, j] = 0
-      if (i > n_grid - bound) & (grid_v(0)[i, j] > 0):
+      if i > n_grid - bound and grid_v(0)[i, j] > 0:
         grid_v(0)[i, j] = 0
-      if (j < bound) & (grid_v(1)[i, j] < 0):
+      if j < bound and grid_v(1)[i, j] < 0:
         grid_v(1)[i, j] = 0
-      if (j > n_grid - bound) & (grid_v(1)[i, j] > 0):
+      if j > n_grid - bound and grid_v(1)[i, j] > 0:
         grid_v(1)[i, j] = 0
 
 

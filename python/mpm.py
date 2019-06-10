@@ -23,7 +23,6 @@ grid_v, grid_m = vec(), scalar()
 C, J = mat(), scalar()
 
 ti.cfg.arch = ti.x86_64
-# ti.cfg.print_ir = True
 
 @ti.layout
 def place():
@@ -34,7 +33,7 @@ def place():
 @ti.kernel
 def clear_grid():
   for i, j in grid_m:
-    grid_v[i, j] = ti.Vector([0, 0])
+    grid_v[i, j] = [0, 0]
     grid_m[i, j] = 0
 
 
@@ -47,7 +46,7 @@ def p2g():
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
          0.5 * ti.sqr(fx - 0.5)]
     stress = -dt * p_vol * (J[p] - 1) * 4 * inv_dx * inv_dx * E
-    affine = ti.Matrix([[stress, 0.0], [0.0, stress]]) + p_mass * C[p]
+    affine = ti.Matrix([[stress, 0], [0, stress]]) + p_mass * C[p]
     for i in ti.static(range(3)):
       for j in ti.static(range(3)):
         offset = ti.Vector([i, j])
@@ -66,7 +65,7 @@ def grid_op():
     if grid_m[i, j] > 0:
       inv_m = 1 / grid_m[i, j]
       grid_v[i, j] = inv_m * grid_v[i, j]
-      grid_v(1)[i, j] = grid_v(1)[i, j] - dt * 9.8
+      grid_v(1)[i, j] -= dt * 9.8
       if i < bound and grid_v(0)[i, j] < 0:
         grid_v(0)[i, j] = 0
       if i > n_grid - bound and grid_v(0)[i, j] > 0:

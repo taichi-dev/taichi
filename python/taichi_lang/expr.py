@@ -159,6 +159,7 @@ class Expr:
     return self
 
   def augassign(self, x, op):
+    x = Expr(x)
     if op == 'Add':
       self += x
     elif op == 'Sub':

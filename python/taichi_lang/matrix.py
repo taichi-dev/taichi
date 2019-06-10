@@ -41,6 +41,8 @@ class Matrix:
             self.entries.append(impl.var(dt))
 
   def assign(self, other):
+    if not isinstance(other, Matrix):
+      other = Matrix(other)
     assert other.n == self.n and other.m == self.m
     for i in range(self.n * self.m):
       self.entries[i].assign(other.entries[i])
@@ -176,6 +178,8 @@ class Matrix:
     return self.entries[0]
 
   def augassign(self, other, op):
+    if not isinstance(other, Matrix):
+      other = Matrix(other)
     assert self.n == other.n and self.m == other.m
     for i in range(len(self.entries)):
       self.entries[i].augassign(other.entries[i], op)

@@ -91,10 +91,22 @@ inline DataType get_data_type() {
     return DataType::f32;
   } else if (std::is_same<T, float64>()) {
     return DataType::f64;
+  } else if (std::is_same<T, int8>()) {
+    return DataType::i8;
+  } else if (std::is_same<T, int16>()) {
+    return DataType::i16;
   } else if (std::is_same<T, int32>()) {
     return DataType::i32;
   } else if (std::is_same<T, int64>()) {
     return DataType::i64;
+  } else if (std::is_same<T, uint8>()) {
+    return DataType::u8;
+  } else if (std::is_same<T, uint16>()) {
+    return DataType::u16;
+  } else if (std::is_same<T, uint32>()) {
+    return DataType::u32;
+  } else if (std::is_same<T, uint64>()) {
+    return DataType::u64;
   } else {
     TC_NOT_IMPLEMENTED;
   }
@@ -302,6 +314,9 @@ std::string make_list(const std::vector<T> &data,
   }
   return make_list(ret, bracket);
 }
+
+int data_type_size(DataType t);
+DataType promoted_type(DataType a, DataType b);
 
 TLANG_NAMESPACE_END
 

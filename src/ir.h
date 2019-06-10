@@ -678,6 +678,11 @@ class Stmt : public IRNode {
     return std::make_unique<T>(std::forward<Args>(args)...);
   }
 
+  template <typename T, typename... Args>
+  static std::unique_ptr<T> make_typed(Args &&... args) {
+    return std::make_unique<T>(std::forward<Args>(args)...);
+  }
+
   void infer_type() {
     irpass::typecheck(this);
   }

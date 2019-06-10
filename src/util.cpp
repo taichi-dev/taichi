@@ -6,7 +6,7 @@ TC_NAMESPACE_BEGIN
 
 namespace Tlang {
 
-   CompileConfig default_compile_config;
+CompileConfig default_compile_config;
 
 real get_cpu_frequency() {
   static real cpu_frequency = 0;
@@ -95,6 +95,29 @@ std::string data_type_name(DataType t) {
 #undef REGISTER_DATA_TYPE
   }
   return type_names[t];
+}
+
+int data_type_size(DataType t) {
+  static std::map<DataType, int> type_sizes;
+  if (type_sizes.empty()) {
+#define REGISTER_DATA_TYPE(i, j) type_sizes[DataType::i] = sizeof(j);
+    type_sizes[DataType::f16] = 2;
+    REGISTER_DATA_TYPE(f32, float32);
+    REGISTER_DATA_TYPE(f64, float64);
+    REGISTER_DATA_TYPE(i8, int8);
+    REGISTER_DATA_TYPE(i16, int16);
+    REGISTER_DATA_TYPE(i32, int32);
+    REGISTER_DATA_TYPE(i64, int64);
+    REGISTER_DATA_TYPE(u8, uint8);
+    REGISTER_DATA_TYPE(u16, uint16);
+    REGISTER_DATA_TYPE(u32, uint32);
+    REGISTER_DATA_TYPE(u64, uint64);
+    type_sizes[DataType::ptr] = sizeof(void *);
+    type_sizes[DataType::none] = 0;
+    type_sizes[DataType::unknown] = -1;
+#undef REGISTER_DATA_TYPE
+  }
+  return type_sizes[t];
 }
 
 std::string data_type_short_name(DataType t) {
@@ -270,8 +293,8 @@ std::string CompileConfig::compiler_config() {
         "-ffp-contract=fast "
         "{} -Wall -g -D_GLIBCXX_USE_CXX11_ABI=0 -DTLANG_CPU "
         "-lstdc++  -L{}/build/ {} {}",
-        compiler_name(), gcc_opt_flag(), get_project_fn(), omp_flag, get_repo_dir(), linking,
-        extra_flags);
+        compiler_name(), gcc_opt_flag(), get_project_fn(), omp_flag,
+        get_repo_dir(), linking, extra_flags);
   } else {
     cmd = fmt::format(
         "nvcc -g -lineinfo -std=c++14 -shared {} -Xcompiler \"-fPIC "
@@ -354,6 +377,38 @@ std::string CompileConfig::gcc_opt_flag() {
     return fmt::format("-O{}", external_optimization_level);
   } else
     return "-Ofast";
+}
+
+DataType promoted_type(DataType a, DataType b) {
+  std::map<std::pair<DataType, DataType>, DataType> mapping;
+  if (mapping.empty()) {
+#define TRY_SECOND(x, y)                                            \
+  mapping[std::make_pair(get_data_type<x>(), get_data_type<y>())] = \
+      get_data_type<decltype(std::declval<x>() + std::declval<y>())>();
+#define TRY_FIRST(x)      \
+  TRY_SECOND(x, float32); \
+  TRY_SECOND(x, float64); \
+  TRY_SECOND(x, int8);    \
+  TRY_SECOND(x, int16);   \
+  TRY_SECOND(x, int32);   \
+  TRY_SECOND(x, int64);   \
+  TRY_SECOND(x, uint8);   \
+  TRY_SECOND(x, uint16);  \
+  TRY_SECOND(x, uint32);  \
+  TRY_SECOND(x, uint64);
+
+    TRY_FIRST(float32);
+    TRY_FIRST(float64);
+    TRY_FIRST(int8);
+    TRY_FIRST(int16);
+    TRY_FIRST(int32);
+    TRY_FIRST(int64);
+    TRY_FIRST(uint8);
+    TRY_FIRST(uint16);
+    TRY_FIRST(uint32);
+    TRY_FIRST(uint64);
+  }
+  return mapping[std::make_pair(a, b)];
 }
 }  // namespace Tlang
 

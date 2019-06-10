@@ -17,6 +17,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(AllocaStmt *stmt) {
+    // Do nothing.
+    // Alloca type is determined by first (compile-time) LocalStore
   }
 
   void visit(IfStmt *if_stmt) {
@@ -28,9 +30,14 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(Block *stmt_list) {
+    std::vector<Stmt *> stmts;
+    // Make a copy since type casts may be inserted for type promotion
     for (auto &stmt : stmt_list->statements) {
-      stmt->accept(this);
+      stmts.push_back(stmt.get());
+      // stmt->accept(this);
     }
+    for (auto stmt : stmts)
+      stmt->accept(this);
   }
 
   void visit(AtomicOpStmt *stmt) {
@@ -45,12 +52,20 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) {
-    // auto block = stmt->parent;
-    // auto lookup = block->local_var_alloca.find(stmt->ident);
     if (stmt->ptr->ret_type.data_type == DataType::unknown) {
+      // Infer data type for alloca
       stmt->ptr->ret_type = stmt->data->ret_type;
     }
-    TC_ASSERT(stmt->ptr->ret_type == stmt->data->ret_type);
+    if (stmt->ptr->ret_type != stmt->data->ret_type) {
+      TC_WARN(
+          "Error: type mismatch in local store (target = {}, value = {}, "
+          "stmt_id = {}) at",
+          stmt->ptr->ret_data_type_name(), stmt->data->ret_data_type_name(),
+          stmt->id);
+      fmt::print(stmt->tb);
+      TC_WARN("Compilation stopped due to type mismatch.");
+      exit(-1);
+    }
     stmt->ret_type = stmt->ptr->ret_type;
   }
 
@@ -119,13 +134,26 @@ class TypeCheck : public IRVisitor {
     if (!(stmt->lhs->ret_type.data_type != DataType::unknown ||
           stmt->rhs->ret_type.data_type != DataType::unknown))
       error();
-    if (stmt->lhs->ret_type.data_type == DataType::unknown &&
-        stmt->lhs->is<ConstStmt>()) {
-      stmt->lhs->ret_type = stmt->rhs->ret_type;
-    }
-    if (stmt->rhs->ret_type.data_type == DataType::unknown &&
-        stmt->rhs->is<ConstStmt>()) {
-      stmt->rhs->ret_type = stmt->lhs->ret_type;
+    if (stmt->lhs->ret_type.data_type != stmt->rhs->ret_type.data_type) {
+      auto ret_type = promoted_type(stmt->lhs->ret_type.data_type, stmt->rhs->ret_type.data_type);
+      if (ret_type != stmt->lhs->ret_type.data_type) {
+        // promote rhs
+        auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast, stmt->lhs);
+        cast_stmt->cast_type = ret_type;
+        cast_stmt->cast_by_value = true;
+        cast_stmt->accept(this);
+        stmt->lhs = cast_stmt.get();
+        stmt->insert_before_me(std::move(cast_stmt));
+      }
+      if (ret_type != stmt->rhs->ret_type.data_type) {
+        // promote rhs
+        auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast, stmt->rhs);
+        cast_stmt->cast_type = ret_type;
+        cast_stmt->cast_by_value = true;
+        cast_stmt->accept(this);
+        stmt->rhs = cast_stmt.get();
+        stmt->insert_before_me(std::move(cast_stmt));
+      }
     }
     bool matching = true;
     matching =

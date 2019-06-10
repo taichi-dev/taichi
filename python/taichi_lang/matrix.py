@@ -34,7 +34,7 @@ class Matrix:
       else:
         if dt is None:
           for i in range(n * m):
-            self.entries.append(impl.expr_init(0.0))
+            self.entries.append(impl.expr_init(None))
         else:
           assert not impl.inside_kernel()
           for i in range(n * m):
@@ -50,7 +50,8 @@ class Matrix:
     ret = Matrix(self.n, other.m)
     for i in range(self.n):
       for j in range(other.m):
-        for k in range(other.n):
+        ret(i, j).assign(self(i, 0) * other(0, j))
+        for k in range(1, other.n):
           ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
     return ret
 

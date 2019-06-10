@@ -23,6 +23,7 @@ grid_v, grid_m = vec(), scalar()
 C, J = mat(), scalar()
 
 ti.cfg.arch = ti.x86_64
+# ti.cfg.print_ir = True
 
 @ti.layout
 def place():
@@ -45,14 +46,15 @@ def p2g():
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
          0.5 * ti.sqr(fx - 0.5)]
-    stress = dt * p_vol * (J[p] - 1.0) * -4.0 * inv_dx * inv_dx * E
+    stress = dt * p_vol * (J[p] - 1) * -4.0 * inv_dx * inv_dx * E
     affine = ti.Matrix([[stress, 0.0], [0.0, stress]]) + p_mass * C[p]
     for i in ti.static(range(3)):
       for j in ti.static(range(3)):
+        offset = ti.Vector([i, j])
         dpos = (ti.cast(ti.Vector([i, j]), ti.f32) - fx) * dx
         weight = w[i](0) * w[j](1)
-        grid_v[base(0) + i, base(1) + j] += weight * (p_mass * v[p] + affine @ dpos)
-        grid_m[base(0) + i, base(1) + j] += weight * p_mass
+        grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
+        grid_m[base + offset] += weight * p_mass
 
 
 bound = 3

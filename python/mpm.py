@@ -46,7 +46,7 @@ def p2g():
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
          0.5 * ti.sqr(fx - 0.5)]
-    stress = dt * p_vol * (J[p] - 1) * -4 * inv_dx * inv_dx * E
+    stress = -dt * p_vol * (J[p] - 1) * 4 * inv_dx * inv_dx * E
     affine = ti.Matrix([[stress, 0.0], [0.0, stress]]) + p_mass * C[p]
     for i in ti.static(range(3)):
       for j in ti.static(range(3)):
@@ -96,8 +96,8 @@ def g2p():
         new_C += 4 * weight * ti.outer_product(g_v, dpos) * inv_dx
 
     v[p] = new_v
-    x[p] = x[p] + dt * v[p]
-    J[p] = J[p] * (1 + dt * new_C.trace())
+    x[p] += dt * v[p]
+    J[p] *= 1 + dt * new_C.trace()
     C[p] = new_C
 
 

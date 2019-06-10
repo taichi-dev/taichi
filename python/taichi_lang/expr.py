@@ -35,15 +35,24 @@ class Expr:
   def __add__(self, other):
     other = Expr(other)
     return Expr(taichi_lang_core.expr_add(self.ptr, other.ptr), tb=self.stack_info())
+  __radd__ = __add__
 
   def __iadd__(self, other):
     self.assign(Expr(taichi_lang_core.expr_add(self.ptr, other.ptr)))
 
-  __radd__ = __add__
 
   def __sub__(self, other):
     other = Expr(other)
     return Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr))
+
+  def __isub__(self, other):
+    self.assign(Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr)))
+
+  def __imul__(self, other):
+    self.assign(Expr(taichi_lang_core.expr_mul(self.ptr, other.ptr)))
+
+  def __idiv__(self, other):
+    self.assign(Expr(taichi_lang_core.expr_div(self.ptr, other.ptr)))
 
   def __rsub__(self, other):
     other = Expr(other)
@@ -152,5 +161,11 @@ class Expr:
   def augassign(self, x, op):
     if op == 'Add':
       self += x
+    elif op == 'Sub':
+      self -= x
+    elif op == 'Mult':
+      self *= x
+    elif op == 'Div':
+      self /= x
     else:
-      assert False
+      assert False, op

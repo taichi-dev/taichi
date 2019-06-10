@@ -7,12 +7,12 @@ real = ti.f32
 dim = 2
 n_particles = 8192 * 4
 n_grid = 256
-dx = 1.0 / n_grid
-inv_dx = 1.0 / dx
+dx = 1 / n_grid
+inv_dx = 1 / dx
 dt = 1e-4
-p_mass = 1.0
-p_vol = 1.0
-E = 100.0
+p_mass = 1
+p_vol = 1
+E = 100
 
 scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(dim, dt=real)

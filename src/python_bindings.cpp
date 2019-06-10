@@ -58,10 +58,9 @@ PYBIND11_MODULE(taichi_lang_core, m) {
       .def_readwrite("arch", &CompileConfig::arch)
       .def_readwrite("print_ir", &CompileConfig::print_ir);
 
-  m.def(
-      "default_compile_config",
-      [&]() -> CompileConfig & { return default_compile_config; },
-      py::return_value_policy::reference);
+  m.def("default_compile_config",
+        [&]() -> CompileConfig & { return default_compile_config; },
+        py::return_value_policy::reference);
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -71,10 +70,9 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);
 
-  m.def(
-      "current_compile_config",
-      [&]() -> CompileConfig & { return get_current_program().config; },
-      py::return_value_policy::reference);
+  m.def("current_compile_config",
+        [&]() -> CompileConfig & { return get_current_program().config; },
+        py::return_value_policy::reference);
 
   py::class_<Index>(m, "Index").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
@@ -95,7 +93,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   py::class_<Expr> expr(m, "Expr");
   expr.def("serialize", &Expr::serialize)
       .def("snode", &Expr::snode, py::return_value_policy::reference)
-      .def("set_tb", &Expr::set_tb);
+      .def("set_tb", &Expr::set_tb)
+      .def("set_grad", &Expr::set_grad);
   export_accessors<int32>(expr);
   export_accessors<float32>(expr);
   // export_accessors<float64>(expr);
@@ -147,9 +146,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
 
   m.def("layout", layout);
 
-  m.def(
-      "get_root", [&]() -> SNode * { return &root; },
-      py::return_value_policy::reference);
+  m.def("get_root", [&]() -> SNode * { return &root; },
+        py::return_value_policy::reference);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
 

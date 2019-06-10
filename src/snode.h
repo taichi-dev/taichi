@@ -77,6 +77,7 @@ class SNode {
   TypedConstant ambient_val;
   // Note: parent will not be set until structural nodes are compiled!
   SNode *parent;
+  SNode *grad;
 
   std::string data_type_name() {
     return Tlang::data_type_name(dt);
@@ -95,7 +96,6 @@ class SNode {
   int index_id;
   bool _morton;
   bool _bitmasked;
-  SNode *grad;
 
   SNode() {
     id = counter++;

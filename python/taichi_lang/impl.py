@@ -95,6 +95,7 @@ def kernel(foo):
       t_kernel = t_kernel.define(lambda: compiled())
       compiled_functions[foo] = lambda: t_kernel()
     compiled_functions[foo]()
+  ret.grad = lambda: print('not implemented')
   return ret
 
 def global_var(dt):

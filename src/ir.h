@@ -822,6 +822,12 @@ class Expr {
   void set_tb(const std::string &tb) {
     expr->tb = tb;
   }
+
+  void set_grad(const Expr &o) {
+    TC_ASSERT(snode() != nullptr);
+    TC_ASSERT(o.snode() != nullptr);
+    snode()->grad = o.snode();
+  }
 };
 
 class ExprGroup {

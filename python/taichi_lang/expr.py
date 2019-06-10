@@ -170,3 +170,6 @@ class Expr:
       self /= x
     else:
       assert False, op
+
+  def set_grad(self, grad):
+    self.ptr.set_grad(grad.ptr)

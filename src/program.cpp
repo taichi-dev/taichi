@@ -16,8 +16,9 @@ SNode root;
 
 Program::Kernel::Kernel(Program &program,
                         std::function<void()> func,
-                        std::string name)
-    : program(program), name(name) {
+                        std::string name,
+                        bool grad)
+    : program(program), name(name), grad(grad) {
   is_reduction = false;
   compiled = nullptr;
   benchmarking = false;

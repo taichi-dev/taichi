@@ -45,6 +45,7 @@ class PyTaichi:
     self.prog = None
     self.layout_functions = []
     self.compiled_functions = {}
+    self.compiled_grad_functions = {}
     self.scope_stack = []
     self.inside_kernel = False
     Expr.materialize_layout_callback = self.materialize
@@ -91,11 +92,42 @@ def kernel(foo):
       pytaichi.inside_kernel = False
       compiled = locals()[foo.__name__]
 
-      t_kernel = taichi_lang_core.create_kernel(foo.__name__)
+      t_kernel = taichi_lang_core.create_kernel(foo.__name__, False) # Primal
       t_kernel = t_kernel.define(lambda: compiled())
       compiled_functions[foo] = lambda: t_kernel()
     compiled_functions[foo]()
-  ret.grad = lambda: print('not implemented')
+
+  def grad():
+    compiled_grad_functions = pytaichi.compiled_grad_functions
+    if not pytaichi.materialized:
+      pytaichi.materialize()
+    if foo not in compiled_grad_functions:
+      src = inspect.getsource(foo)
+      tree = ast.parse(src)
+
+      func_body = tree.body[0]
+      func_body.decorator_list = []
+
+      visitor = ASTTransformer()
+      visitor.visit(tree)
+      ast.fix_missing_locations(tree)
+
+      print(astor.to_source(tree.body[0], indent_with='  '))
+
+      ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
+
+      pytaichi.inside_kernel = True
+      exec(compile(tree, filename=inspect.getsourcefile(foo), mode='exec'), inspect.currentframe().f_back.f_globals, locals())
+      pytaichi.inside_kernel = False
+      compiled = locals()[foo.__name__]
+
+      t_kernel = taichi_lang_core.create_kernel(foo.__name__ + '_grad', True) # Dual
+      t_kernel = t_kernel.define(lambda: compiled())
+      compiled_grad_functions[foo] = lambda: t_kernel()
+    compiled_grad_functions[foo]()
+
+
+  ret.grad = grad
   return ret
 
 def global_var(dt):

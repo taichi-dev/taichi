@@ -221,8 +221,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
     return expr[expr_group];
   });
 
-  m.def("create_kernel", [&](std::string name) -> Program::KernelProxy {
-    return get_current_program().kernel(name);
+  m.def("create_kernel", [&](std::string name, bool grad) -> Program::KernelProxy {
+    return get_current_program().kernel(name, grad);
   });
 
   m.def("print_", Print_);

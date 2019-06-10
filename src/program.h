@@ -30,8 +30,12 @@ class Program {
     std::string name;
     bool benchmarking;
     bool is_reduction;  // TODO: systematically treat all types of reduction
+    bool grad;
 
-    Kernel(Program &program, std::function<void()> func, std::string name = "");
+    Kernel(Program &program,
+           std::function<void()> func,
+           std::string name = "",
+           bool grad = false);
 
     void compile();
 
@@ -130,23 +134,26 @@ class Program {
   struct KernelProxy {
     std::string name;
     Program *prog;
+    bool grad;
 
     Kernel &def(const std::function<void()> &func) {
-      return prog->kernel(func, name);
+      return prog->kernel(func, name, grad);
     }
   };
 
-  KernelProxy kernel(const std::string &name) {
+  KernelProxy kernel(const std::string &name, bool grad = false) {
     KernelProxy proxy;
     proxy.prog = this;
     proxy.name = name;
+    proxy.grad = grad;
     return proxy;
   }
 
   Kernel &kernel(const std::function<void()> &body,
-                 const std::string &name = "") {
+                 const std::string &name = "",
+                 bool grad = false) {
     // Expr::set_allow_store(true);
-    auto func = std::make_unique<Kernel>(*this, body, name);
+    auto func = std::make_unique<Kernel>(*this, body, name, grad);
     // Expr::set_allow_store(false);
     functions.emplace_back(std::move(func));
     current_snode = nullptr;

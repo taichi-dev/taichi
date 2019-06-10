@@ -30,15 +30,21 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void insert_back(std::unique_ptr<Stmt> &&stmt) {
-    current_block->statements.push_back(std::move(stmt));
+    current_block->insert(std::move(stmt), current_block->statements.size());
   }
 
   void accumulate(Stmt *primal, Stmt *value) {
-    auto alloca_ = primal->adjoint;
+    auto alloca_ = alloc(primal);
     TC_ASSERT(alloca_->is<AllocaStmt>());
     auto alloca = alloca_->as<AllocaStmt>();
     TC_ASSERT(alloca->width() == 1);
     auto local_load = Stmt::make<LocalLoadStmt>(LocalAddress(alloca, 0));
+    if (value->is<AllocaStmt>()) {
+      auto value_load = Stmt::make<LocalLoadStmt>(
+          LocalAddress(value->as<AllocaStmt>(), 0));
+      value = value_load.get();
+      insert_back(std::move(value_load));
+    }
     auto add =
         Stmt::make<BinaryOpStmt>(BinaryOpType::add, local_load.get(), value);
     auto local_store = Stmt::make<LocalStoreStmt>(alloca, add.get());
@@ -48,12 +54,12 @@ class MakeAdjoint : public IRVisitor {
   }
 
   Stmt *alloc(Stmt *stmt) {
-    if (stmt->adjoint != nullptr) {
+    if (stmt->adjoint == nullptr) {
       // create the alloca
       auto alloca = Stmt::make<AllocaStmt>(1, DataType::unknown);
       stmt->adjoint = alloca.get();
-      current_block->statements.insert(current_block->statements.begin(),
-                                       std::move(alloca));
+      alloca->ret_type = stmt->ret_type;
+      current_block->insert(std::move(alloca), 0);
     }
     return stmt->adjoint;
   }
@@ -67,8 +73,8 @@ class MakeAdjoint : public IRVisitor {
 
   void visit(BinaryOpStmt *bin) override {
     if (bin->op_type == BinaryOpType::add) {
-      accumulate(bin->lhs, bin->adjoint);
-      accumulate(bin->rhs, bin->adjoint);
+      accumulate(bin->lhs, alloc(bin));
+      accumulate(bin->rhs, alloc(bin));
     } else {
       TC_NOT_IMPLEMENTED
     }
@@ -103,7 +109,7 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(StructForStmt *for_stmt) override {
-    TC_NOT_IMPLEMENTED
+    for_stmt->body->accept(this);
   }
 
   void visit(GlobalPtrStmt *stmt) override {
@@ -111,7 +117,8 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    TC_NOT_IMPLEMENTED
+    // do nothing
+    TC_WARN("needs impl when loading something other loop var");
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -119,10 +126,23 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    TC_NOT_IMPLEMENTED
+    //
   }
 
   void visit(GlobalStoreStmt *stmt) override {
+    // erase and replace with global load adjoint
+    GlobalPtrStmt *ptr = stmt->ptr->as<GlobalPtrStmt>();
+    TC_ASSERT(ptr->width() == 1);
+    auto snodes = ptr->snodes;
+    TC_ASSERT(snodes[0]->grad != nullptr);
+    snodes[0] = snodes[0]->grad;
+    auto adjoint_ptr = Stmt::make<GlobalPtrStmt>(snodes, ptr->indices);
+    auto adjoint_load = Stmt::make<GlobalLoadStmt>(adjoint_ptr.get());
+    auto adjoint_load_ptr = adjoint_load.get();
+    insert_back(std::move(adjoint_ptr));
+    insert_back(std::move(adjoint_load));
+    accumulate(stmt->data, adjoint_load_ptr);
+    stmt->parent->erase(stmt);
   }
 
   void visit(ElementShuffleStmt *stmt) override {
@@ -138,6 +158,7 @@ namespace irpass {
 
 void make_adjoint(IRNode *root) {
   MakeAdjoint::run(root);
+  print(root);
   typecheck(root);
 }
 

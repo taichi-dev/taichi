@@ -605,6 +605,15 @@ void CPUCodeGen::lower() {
       irpass::print(ir);
     }
   }
+  if (kernel->grad) {
+    irpass::re_id(ir);
+    TC_TRACE("Primal:");
+    irpass::print(ir);
+    irpass::make_adjoint(ir);
+    irpass::re_id(ir);
+    TC_TRACE("Adjoint:");
+    irpass::print(ir);
+  }
   if (prog->config.lower_access) {
     irpass::lower_access(ir);
     if (prog->config.print_ir) {

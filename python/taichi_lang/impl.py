@@ -121,7 +121,7 @@ def kernel(foo):
       pytaichi.inside_kernel = False
       compiled = locals()[foo.__name__]
 
-      t_kernel = taichi_lang_core.create_kernel(foo.__name__ + '_grad', True) # Dual
+      t_kernel = taichi_lang_core.create_kernel(foo.__name__ + '_grad', True) # Adjoint
       t_kernel = t_kernel.define(lambda: compiled())
       compiled_grad_functions[foo] = lambda: t_kernel()
     compiled_grad_functions[foo]()

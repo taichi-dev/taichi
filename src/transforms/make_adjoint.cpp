@@ -86,6 +86,8 @@ class MakeAdjoint : public IRVisitor {
       auto rptr = insert<BinaryOpStmt>(BinaryOpType::mul, alloc(bin), bin->lhs);
       accumulate(bin->lhs, lptr);
       accumulate(bin->rhs, rptr);
+    } else if (is_comparison(bin->op_type)) {
+      // do nothing
     } else {
       TC_WARN("", binary_op_type_name(bin->op_type));
       TC_NOT_IMPLEMENTED
@@ -94,6 +96,11 @@ class MakeAdjoint : public IRVisitor {
 
   void visit(TernaryOpStmt *stmt) override {
     TC_ASSERT(stmt->op_type == TernaryOpType::select);
+    auto zero = insert<ConstStmt>(TypedConstant(stmt->ret_type.data_type));
+    accumulate(stmt->op2, insert<TernaryOpStmt>(TernaryOpType::select,
+                                                stmt->op1, stmt, zero));
+    accumulate(stmt->op3, insert<TernaryOpStmt>(TernaryOpType::select,
+                                                stmt->op1, zero, stmt));
   }
 
   void visit(IfStmt *if_stmt) override {

@@ -214,6 +214,10 @@ class TypedConstant {
   TypedConstant() : dt(DataType::unknown) {
   }
 
+  TypedConstant(DataType dt) : dt(dt) {
+    value_bits = 0;
+  }
+
   TypedConstant(int32 x) : dt(DataType::i32), val_i32(x) {
   }
 

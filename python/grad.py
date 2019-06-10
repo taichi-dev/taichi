@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 tc.set_gdb_trigger(True)
 
-N = 128
+N = 2048
 x, y = ti.var(ti.f32), ti.var(ti.f32)
 grad_x, grad_y = ti.var(ti.f32), ti.var(ti.f32)
 
@@ -21,8 +21,8 @@ def poly():
   for i in x:
     v = x[i]
     v += 1
-    # if v > 2:
-    #  v = 0
+    if v > 2:
+      v = 0
     y[i] = (v - 1) * (v + 2) * (v - 3)
 
 xs = []
@@ -38,7 +38,7 @@ poly()
 
 print('y')
 for i in range(N):
-  print(y[i])
+  # print(y[i])
   ys.append(y[i])
   grad_y[i] = 1
 print()
@@ -47,7 +47,7 @@ poly.grad()
 print('grad_x')
 for i in range(N):
   grad_xs.append(grad_x[i])
-  print(grad_x[i])
+  # print(grad_x[i])
 
 plt.title('Auto Diff (x - 1)(x + 2)(x - 3)')
 ax = plt.gca()

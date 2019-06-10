@@ -56,7 +56,12 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
-      .def_readwrite("print_ir", &CompileConfig::print_ir);
+      .def_readwrite("print_ir", &CompileConfig::print_ir)
+      .def_readwrite("simplify_before_lower_access",
+                     &CompileConfig::simplify_before_lower_access)
+      .def_readwrite("simplify_after_lower_access",
+                     &CompileConfig::simplify_after_lower_access)
+      .def_readwrite("lower_access", &CompileConfig::lower_access);
 
   m.def("default_compile_config",
         [&]() -> CompileConfig & { return default_compile_config; },
@@ -221,9 +226,10 @@ PYBIND11_MODULE(taichi_lang_core, m) {
     return expr[expr_group];
   });
 
-  m.def("create_kernel", [&](std::string name, bool grad) -> Program::KernelProxy {
-    return get_current_program().kernel(name, grad);
-  });
+  m.def("create_kernel",
+        [&](std::string name, bool grad) -> Program::KernelProxy {
+          return get_current_program().kernel(name, grad);
+        });
 
   m.def("print_", Print_);
 

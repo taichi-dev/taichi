@@ -126,7 +126,17 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    //
+    // issue global store to adjoint
+    GlobalPtrStmt *ptr = stmt->ptr->as<GlobalPtrStmt>();
+    TC_ASSERT(ptr->width() == 1);
+    auto snodes = ptr->snodes;
+    TC_ASSERT(snodes[0]->grad != nullptr);
+    snodes[0] = snodes[0]->grad;
+    auto adjoint_ptr = Stmt::make<GlobalPtrStmt>(snodes, ptr->indices);
+    auto adjoint_store = Stmt::make<GlobalStoreStmt>(adjoint_ptr.get(), alloc(stmt));
+    auto adjoint_store_ptr = adjoint_store.get();
+    insert_back(std::move(adjoint_ptr));
+    insert_back(std::move(adjoint_store));
   }
 
   void visit(GlobalStoreStmt *stmt) override {

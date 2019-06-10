@@ -56,6 +56,11 @@ class TypeCheck : public IRVisitor {
       // Infer data type for alloca
       stmt->ptr->ret_type = stmt->data->ret_type;
     }
+    auto ret_type = promoted_type(stmt->ptr->ret_type.data_type,
+                                  stmt->data->ret_type.data_type);
+    if (ret_type != stmt->data->ret_type.data_type) {
+      stmt->data = insert_type_cast_before(stmt, stmt->data, ret_type);
+    }
     if (stmt->ptr->ret_type != stmt->data->ret_type) {
       TC_WARN(
           "Error: type mismatch in local store (target = {}, value = {}, "
@@ -85,6 +90,11 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
+    auto ret_type = promoted_type(stmt->ptr->ret_type.data_type,
+                                  stmt->data->ret_type.data_type);
+    if (ret_type != stmt->data->ret_type.data_type) {
+      stmt->data = insert_type_cast_before(stmt, stmt->data, ret_type);
+    }
     if (stmt->ptr->ret_type != stmt->data->ret_type) {
       TC_ERROR("Global store type mismatch: {} <- {}",
                stmt->ptr->ret_data_type_name(),
@@ -122,6 +132,18 @@ class TypeCheck : public IRVisitor {
     }
   }
 
+  Stmt *insert_type_cast_before(Stmt *anchor,
+                                Stmt *input,
+                                DataType output_type) {
+    auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast, input);
+    cast_stmt->cast_type = output_type;
+    cast_stmt->cast_by_value = true;
+    cast_stmt->accept(this);
+    auto stmt = cast_stmt.get();
+    anchor->insert_before_me(std::move(cast_stmt));
+    return stmt;
+  }
+
   void visit(BinaryOpStmt *stmt) {
     auto error = [&] {
       TC_WARN("Error: type mismatch (left = {}, right = {}, stmt_id = {}) at",
@@ -135,24 +157,17 @@ class TypeCheck : public IRVisitor {
           stmt->rhs->ret_type.data_type != DataType::unknown))
       error();
     if (stmt->lhs->ret_type.data_type != stmt->rhs->ret_type.data_type) {
-      auto ret_type = promoted_type(stmt->lhs->ret_type.data_type, stmt->rhs->ret_type.data_type);
+      auto ret_type = promoted_type(stmt->lhs->ret_type.data_type,
+                                    stmt->rhs->ret_type.data_type);
       if (ret_type != stmt->lhs->ret_type.data_type) {
         // promote rhs
-        auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast, stmt->lhs);
-        cast_stmt->cast_type = ret_type;
-        cast_stmt->cast_by_value = true;
-        cast_stmt->accept(this);
-        stmt->lhs = cast_stmt.get();
-        stmt->insert_before_me(std::move(cast_stmt));
+        auto cast_stmt = insert_type_cast_before(stmt, stmt->lhs, ret_type);
+        stmt->lhs = cast_stmt;
       }
       if (ret_type != stmt->rhs->ret_type.data_type) {
         // promote rhs
-        auto &&cast_stmt = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast, stmt->rhs);
-        cast_stmt->cast_type = ret_type;
-        cast_stmt->cast_by_value = true;
-        cast_stmt->accept(this);
-        stmt->rhs = cast_stmt.get();
-        stmt->insert_before_me(std::move(cast_stmt));
+        auto cast_stmt = insert_type_cast_before(stmt, stmt->rhs, ret_type);
+        stmt->rhs = cast_stmt;
       }
     }
     bool matching = true;

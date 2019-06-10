@@ -35,7 +35,7 @@ def place():
 def clear_grid():
   for i, j in grid_m:
     grid_v[i, j] = ti.Vector([0.0, 0.0])
-    grid_m[i, j] = 0.0
+    grid_m[i, j] = 0
 
 
 @ti.kernel
@@ -69,16 +69,16 @@ def grid_op():
       grid_v(1)[i, j] = grid_v(1)[i, j] - dt * 9.8
       if i < bound:
         if grid_v(0)[i, j] < 0:
-          grid_v(0)[i, j] = 0.0
+          grid_v(0)[i, j] = 0
       if i > n_grid - bound:
         if grid_v(0)[i, j] > 0:
-          grid_v(0)[i, j] = 0.0
+          grid_v(0)[i, j] = 0
       if j < bound:
         if grid_v(1)[i, j] < 0:
-          grid_v(1)[i, j] = 0.0
+          grid_v(1)[i, j] = 0
       if j > n_grid - bound:
         if grid_v(1)[i, j] > 0:
-          grid_v(1)[i, j] = 0.0
+          grid_v(1)[i, j] = 0
 
 
 @ti.kernel

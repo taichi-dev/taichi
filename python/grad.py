@@ -19,7 +19,11 @@ def xy():
 @ti.kernel
 def poly():
   for i in x:
-    y[i] = (x[i] - 1) * (x[i] + 2) * (x[i] - 3)
+    v = x[i]
+    v += 1
+    # if v > 2:
+    #  v = 0
+    y[i] = (v - 1) * (v + 2) * (v - 3)
 
 xs = []
 ys = []

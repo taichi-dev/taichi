@@ -359,7 +359,7 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    return;
+    // do nothing for global mem ops
   }
 
   void visit(SNodeOpStmt *stmt) override {
@@ -761,8 +761,10 @@ class BasicBlockSimplify : public IRVisitor {
 class Simplify : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
+  bool modified;
 
   Simplify(IRNode *node) {
+    modified = false;
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     current_struct_for = nullptr;
@@ -775,6 +777,7 @@ class Simplify : public IRVisitor {
       try {
         BasicBlockSimplify _(block, visited, current_struct_for);
       } catch (IRModified) {
+        modified = true;
         continue;
       }
       break;
@@ -810,7 +813,11 @@ class Simplify : public IRVisitor {
 namespace irpass {
 
 void simplify(IRNode *root) {
-  Simplify _(root);
+  while (1) {
+    Simplify pass(root);
+    if (!pass.modified)
+      break;
+  }
 }
 
 }  // namespace irpass

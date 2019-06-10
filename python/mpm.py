@@ -44,9 +44,9 @@ def p2g():
   for p in x:
     base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)
-    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
+    w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
          0.5 * ti.sqr(fx - 0.5)]
-    stress = dt * p_vol * (J[p] - 1) * -4.0 * inv_dx * inv_dx * E
+    stress = dt * p_vol * (J[p] - 1) * -4 * inv_dx * inv_dx * E
     affine = ti.Matrix([[stress, 0.0], [0.0, stress]]) + p_mass * C[p]
     for i in ti.static(range(3)):
       for j in ti.static(range(3)):
@@ -63,21 +63,21 @@ bound = 3
 @ti.kernel
 def grid_op():
   for i, j in grid_m:
-    if grid_m[i, j] > 0.0:
+    if grid_m[i, j] > 0:
       inv_m = 1.0 / grid_m[i, j]
       grid_v[i, j] = inv_m * grid_v[i, j]
       grid_v(1)[i, j] = grid_v(1)[i, j] - dt * 9.8
       if i < bound:
-        if grid_v(0)[i, j] < 0.0:
+        if grid_v(0)[i, j] < 0:
           grid_v(0)[i, j] = 0.0
       if i > n_grid - bound:
-        if grid_v(0)[i, j] > 0.0:
+        if grid_v(0)[i, j] > 0:
           grid_v(0)[i, j] = 0.0
       if j < bound:
-        if grid_v(1)[i, j] < 0.0:
+        if grid_v(1)[i, j] < 0:
           grid_v(1)[i, j] = 0.0
       if j > n_grid - bound:
-        if grid_v(1)[i, j] > 0.0:
+        if grid_v(1)[i, j] > 0:
           grid_v(1)[i, j] = 0.0
 
 
@@ -97,11 +97,11 @@ def g2p():
         g_v = grid_v[base(0) + i, base(1) + j]
         weight = w[i](0) * w[j](1)
         new_v += weight * g_v
-        new_C += 4.0 * weight * ti.outer_product(g_v, dpos) * inv_dx
+        new_C += 4 * weight * ti.outer_product(g_v, dpos) * inv_dx
 
     v[p] = new_v
     x[p] = x[p] + dt * v[p]
-    J[p] = J[p] * (1.0 + dt * new_C.trace())
+    J[p] = J[p] * (1 + dt * new_C.trace())
     C[p] = new_C
 
 

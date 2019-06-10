@@ -19,15 +19,14 @@ def xy():
 @ti.kernel
 def poly():
   for i in x:
-    # y[i] = x[i] + x[i] * x[i] - x[i] * x[i] * x[i]
-    y[i] = x[i] * x[i]
+    y[i] = (x[i] - 1) * (x[i] + 2) * (x[i] - 3)
 
 xs = []
 ys = []
 grad_xs = []
 
 for i in range(N):
-  v = (i / (N - 1)) * 2 - 1
+  v = (i / (N - 1)) * 7 - 3
   xs.append(v)
   x[i] = v
 
@@ -46,9 +45,15 @@ for i in range(N):
   grad_xs.append(grad_x[i])
   print(grad_x[i])
 
-plt.title('Auto Diff')
-plt.plot(xs, ys, label='f(x)')
-plt.plot(xs, grad_xs, label='f\'(x)')
-plt.legend()
+plt.title('Auto Diff (x - 1)(x + 2)(x - 3)')
+ax = plt.gca()
+ax.plot(xs, ys, label='f(x)')
+ax.plot(xs, grad_xs, label='f\'(x)')
+ax.legend()
+ax.grid(True)
+ax.spines['left'].set_position('zero')
+ax.spines['right'].set_color('none')
+ax.spines['bottom'].set_position('zero')
+ax.spines['top'].set_color('none')
 plt.show()
 

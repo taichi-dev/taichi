@@ -40,8 +40,8 @@ class MakeAdjoint : public IRVisitor {
     TC_ASSERT(alloca->width() == 1);
     auto local_load = Stmt::make<LocalLoadStmt>(LocalAddress(alloca, 0));
     if (value->is<AllocaStmt>()) {
-      auto value_load = Stmt::make<LocalLoadStmt>(
-          LocalAddress(value->as<AllocaStmt>(), 0));
+      auto value_load =
+          Stmt::make<LocalLoadStmt>(LocalAddress(value->as<AllocaStmt>(), 0));
       value = value_load.get();
       insert_back(std::move(value_load));
     }
@@ -75,15 +75,26 @@ class MakeAdjoint : public IRVisitor {
     if (bin->op_type == BinaryOpType::add) {
       accumulate(bin->lhs, alloc(bin));
       accumulate(bin->rhs, alloc(bin));
-    } else if (bin->op_type == BinaryOpType::mul){
-      auto lmul = Stmt::make<BinaryOpStmt>(BinaryOpType::mul, alloc(bin), bin->rhs);
-      auto rmul = Stmt::make<BinaryOpStmt>(BinaryOpType::mul, alloc(bin), bin->lhs);
+    } else if (bin->op_type == BinaryOpType::sub) {
+      accumulate(bin->lhs, alloc(bin));
+      auto rgrad = Stmt::make<UnaryOpStmt>(UnaryOpType::neg, alloc(bin));
+      auto rptr = rgrad.get();
+      insert_back(std::move(rgrad));
+      accumulate(bin->rhs, rptr);
+    } else if (bin->op_type == BinaryOpType::mul) {
+      auto lmul =
+          Stmt::make<BinaryOpStmt>(BinaryOpType::mul, alloc(bin), bin->rhs);
+      auto rmul =
+          Stmt::make<BinaryOpStmt>(BinaryOpType::mul, alloc(bin), bin->lhs);
       auto lptr = lmul.get();
       auto rptr = rmul.get();
       insert_back(std::move(lmul));
       insert_back(std::move(rmul));
       accumulate(bin->lhs, lptr);
       accumulate(bin->rhs, rptr);
+    } else {
+      TC_WARN("", binary_op_type_name(bin->op_type));
+      TC_NOT_IMPLEMENTED
     }
   }
 
@@ -100,7 +111,7 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(ConstStmt *const_stmt) override {
-    TC_NOT_IMPLEMENTED
+    // do nothing
   }
 
   void visit(WhileControlStmt *stmt) override {
@@ -140,7 +151,8 @@ class MakeAdjoint : public IRVisitor {
     TC_ASSERT(snodes[0]->grad != nullptr);
     snodes[0] = snodes[0]->grad;
     auto adjoint_ptr = Stmt::make<GlobalPtrStmt>(snodes, ptr->indices);
-    auto adjoint_store = Stmt::make<GlobalStoreStmt>(adjoint_ptr.get(), alloc(stmt));
+    auto adjoint_store =
+        Stmt::make<GlobalStoreStmt>(adjoint_ptr.get(), alloc(stmt));
     auto adjoint_store_ptr = adjoint_store.get();
     insert_back(std::move(adjoint_ptr));
     insert_back(std::move(adjoint_store));

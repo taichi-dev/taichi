@@ -178,7 +178,7 @@ PYBIND11_MODULE(taichi_lang_core, m) {
 
   m.def("expr_index", expr_index);
 
-#define DEFINE_EXPRESSION_OP_UNARY(x) m.def("expr" #x, expr_##x);
+#define DEFINE_EXPRESSION_OP_UNARY(x) m.def("expr_" #x, expr_##x);
 
   DEFINE_EXPRESSION_OP_UNARY(sqrt)
   DEFINE_EXPRESSION_OP_UNARY(floor)

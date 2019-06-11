@@ -8,6 +8,7 @@ import astpretty
 import astor
 from .util import *
 
+
 def expr_init(rhs):
   if rhs is None:
     return Expr(taichi_lang_core.expr_alloca())
@@ -20,6 +21,7 @@ def expr_init(rhs):
       return tuple(expr_init(e) for e in rhs)
     else:
       return Expr(taichi_lang_core.expr_var(Expr(rhs).ptr))
+
 
 def make_expr_group(*exprs):
   expr_group = taichi_lang_core.ExprGroup()
@@ -37,7 +39,9 @@ def subscript(value, *indices):
   elif is_taichi_class(value):
     return value.subscript(*indices)
   else:
-    return Expr(taichi_lang_core.subscript(value.ptr, make_expr_group(*indices)))
+    return Expr(
+      taichi_lang_core.subscript(value.ptr, make_expr_group(*indices)))
+
 
 class PyTaichi:
   def __init__(self):
@@ -55,9 +59,11 @@ class PyTaichi:
     assert self.materialized == False
     Expr.layout_materialized = True
     self.prog = taichi_lang_core.Program()
+
     def layout():
       for func in self.layout_functions:
         func()
+
     taichi_lang_core.layout(layout)
     self.link_adjoints()
     self.materialized = True
@@ -73,6 +79,7 @@ class PyTaichi:
 
 pytaichi = PyTaichi()
 
+
 def reset():
   global pytaichi
   global root
@@ -84,13 +91,33 @@ def reset():
 def inside_kernel():
   return pytaichi.inside_kernel
 
+
+def remove_indent(lines):
+  lines = lines.split('\n')
+  to_remove = 0
+  for i in range(len(lines[0])):
+    if lines[0][i] == ' ':
+      to_remove = i + 1
+    else:
+      break
+
+  cleaned = []
+  for l in lines:
+    cleaned.append(l[to_remove:])
+    if len(l) >= to_remove:
+      for i in range(to_remove):
+        assert l[i] == ' '
+
+  return '\n'.join(cleaned)
+
+
 def kernel(foo):
   def ret():
     compiled_functions = pytaichi.compiled_functions
     if not pytaichi.materialized:
       pytaichi.materialize()
     if foo not in compiled_functions:
-      src = inspect.getsource(foo)
+      src = remove_indent(inspect.getsource(foo))
       tree = ast.parse(src)
       # print(astor.to_source(tree.body[0]))
 
@@ -107,11 +134,13 @@ def kernel(foo):
       ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
 
       pytaichi.inside_kernel = True
-      exec(compile(tree, filename=inspect.getsourcefile(foo), mode='exec'), inspect.currentframe().f_back.f_globals, locals())
+      frame = inspect.currentframe().f_back
+      exec(compile(tree, filename=inspect.getsourcefile(foo), mode='exec'),
+           dict(frame.f_globals, **frame.f_locals), locals())
       pytaichi.inside_kernel = False
       compiled = locals()[foo.__name__]
 
-      t_kernel = taichi_lang_core.create_kernel(foo.__name__, False) # Primal
+      t_kernel = taichi_lang_core.create_kernel(foo.__name__, False)  # Primal
       t_kernel = t_kernel.define(lambda: compiled())
       compiled_functions[foo] = lambda: t_kernel()
     compiled_functions[foo]()
@@ -121,7 +150,7 @@ def kernel(foo):
     if not pytaichi.materialized:
       pytaichi.materialize()
     if foo not in compiled_grad_functions:
-      src = inspect.getsource(foo)
+      src = remove_indent(inspect.getsource(foo))
       tree = ast.parse(src)
 
       func_body = tree.body[0]
@@ -136,18 +165,21 @@ def kernel(foo):
       ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
 
       pytaichi.inside_kernel = True
-      exec(compile(tree, filename=inspect.getsourcefile(foo), mode='exec'), inspect.currentframe().f_back.f_globals, locals())
+      frame = inspect.currentframe().f_back
+      exec(compile(tree, filename=inspect.getsourcefile(foo), mode='exec'),
+           dict(frame.f_globals, **frame.f_locals), locals())
       pytaichi.inside_kernel = False
       compiled = locals()[foo.__name__]
 
-      t_kernel = taichi_lang_core.create_kernel(foo.__name__ + '_grad', True) # Adjoint
+      t_kernel = taichi_lang_core.create_kernel(foo.__name__ + '_grad',
+                                                True)  # Adjoint
       t_kernel = t_kernel.define(lambda: compiled())
       compiled_grad_functions[foo] = lambda: t_kernel()
     compiled_grad_functions[foo]()
 
-
   ret.grad = grad
   return ret
+
 
 def global_var(dt):
   # primal
@@ -162,13 +194,16 @@ def global_var(dt):
 
   return x
 
+
 var = global_var
 
 root = SNode(taichi_lang_core.get_root())
 
+
 def layout(func):
   assert not pytaichi.materialized, "All layout must be specified before the first kernel launch / data access."
   pytaichi.layout_functions.append(func)
+
 
 float64 = taichi_lang_core.DataType.float64
 f64 = float64
@@ -177,16 +212,19 @@ f32 = float32
 int32 = taichi_lang_core.DataType.int32
 i32 = int32
 
+
 def tprint(var):
   code = inspect.getframeinfo(inspect.currentframe().f_back).code_context[0]
-  arg_name = code[code.index('(') + 1 : code.index(')')]
+  arg_name = code[code.index('(') + 1: code.index(')')]
   taichi_lang_core.print_(Expr(var).ptr, arg_name)
 
 
 def indices(*x):
   return [taichi_lang_core.Index(i) for i in x]
 
+
 index = indices
+
 
 def cast(obj, type):
   if is_taichi_class(obj):
@@ -194,20 +232,26 @@ def cast(obj, type):
   else:
     return Expr(taichi_lang_core.value_cast(Expr(obj).ptr, type))
 
+
 def sqr(obj):
   return obj * obj
+
 
 def static(x):
   return x
 
+
 def current_cfg():
   return taichi_lang_core.current_compile_config()
+
 
 def default_cfg():
   return taichi_lang_core.default_compile_config()
 
+
 def logical_and(a, b):
   return a.logical_and(b)
+
 
 def logical_or(a, b):
   return a.logical_or(b)
@@ -215,15 +259,17 @@ def logical_or(a, b):
 
 unary_ops = []
 
+
 def unary(x):
   unary_ops.append(x)
   return x
 
+
 @unary
 def sin(expr):
-  return Expr(taichi_lang_core.sin(expr))
+  return Expr(taichi_lang_core.expr_sin(expr.ptr))
+
 
 @unary
 def cos(expr):
-  return Expr(taichi_lang_core.cos(expr))
-
+  return Expr(taichi_lang_core.expr_cos(expr.ptr))

@@ -39,14 +39,12 @@ print('y')
 for i in range(N):
   y.grad[i] = 1
   ys.append(y[i])
-  # print(y[i])
 print()
 
 poly.grad()
 print('grad_x')
 for i in range(N):
   grad_xs.append(x.grad[i])
-  # print(x.grad[i])
 
 plt.title('Auto Diff')
 ax = plt.gca()

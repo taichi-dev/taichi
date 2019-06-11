@@ -12,12 +12,13 @@ def test_size1():
   x[0] = 1
   assert x[0] == 1
 
-test_size1()
+# test_size1()
 
 def test_diff_sincos():
   ti.reset()
 
   x = ti.var(ti.i32)
+  y = ti.var(ti.i32)
 
   @ti.layout
   def place():

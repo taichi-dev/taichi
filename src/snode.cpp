@@ -28,6 +28,7 @@ SNode &SNode::create_node(std::vector<Index> indices,
   if (sizes.size() == 1) {
     sizes = std::vector<int>(indices.size(), sizes[0]);
   }
+  /*
   bool all_one = true;
   for (auto s : sizes) {
     if (s != 1) {
@@ -36,6 +37,7 @@ SNode &SNode::create_node(std::vector<Index> indices,
   }
   if (all_one)
     return *this;  // do nothing
+  */
 
   if (type == SNodeType::hash)
     TC_ASSERT_INFO(depth == 0,

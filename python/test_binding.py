@@ -1,4 +1,5 @@
-from core import taichi_lang
+import taichi_lang as ti
+taichi_lang = ti.core
 
 print(taichi_lang.BinaryOpType.mul)
 one = taichi_lang.make_constant_expr(1)

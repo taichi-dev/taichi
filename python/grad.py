@@ -22,7 +22,7 @@ def poly():
       ret = v - 1
     else:
       ret = v * v * 0.5 - 3
-    y[i] = ti.sin(5 * ret)
+    y[i] = ti.sin(3 * ret)
 
 xs = []
 ys = []

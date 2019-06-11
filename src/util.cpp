@@ -358,6 +358,7 @@ CompileConfig::CompileConfig() {
   lower_access = true;
   simplify_after_lower_access = true;
   attempt_vectorized_load_cpu = true;
+  grad_precision = DataType::f32;
 }
 
 std::string CompileConfig::compiler_name() {

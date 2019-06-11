@@ -16,46 +16,6 @@ enum class Arch { x86_64, gpu };
 
 int default_simd_width(Arch arch);
 
-struct CompileConfig {
-  Arch arch;
-  bool debug;
-  int simd_width;
-  int gcc_version;
-  bool internal_optimization;
-  bool lazy_compilation;
-  bool force_vectorized_global_load;
-  bool force_vectorized_global_store;
-  int external_optimization_level;
-  int max_vector_width;
-  bool print_ir;
-  bool serial_schedule;
-  bool simplify_before_lower_access;
-  bool lower_access;
-  bool simplify_after_lower_access;
-  bool attempt_vectorized_load_cpu;
-  std::string extra_flags;
-
-  CompileConfig();
-
-  std::string compiler_name();
-
-  std::string gcc_opt_flag();
-
-  std::string compiler_config();
-
-  std::string preprocess_cmd(const std::string &input,
-                             const std::string &output,
-                             const std::string &extra_flags,
-                             bool verbose = false);
-
-  std::string compile_cmd(const std::string &input,
-                          const std::string &output,
-                          const std::string &extra_flags,
-                          bool verbose = false);
-};
-
-extern CompileConfig default_compile_config;
-
 real get_cpu_frequency();
 
 extern real default_measurement_time;
@@ -337,6 +297,47 @@ std::string make_list(const std::vector<T> &data,
 
 int data_type_size(DataType t);
 DataType promoted_type(DataType a, DataType b);
+
+struct CompileConfig {
+  Arch arch;
+  bool debug;
+  int simd_width;
+  int gcc_version;
+  bool internal_optimization;
+  bool lazy_compilation;
+  bool force_vectorized_global_load;
+  bool force_vectorized_global_store;
+  int external_optimization_level;
+  int max_vector_width;
+  bool print_ir;
+  bool serial_schedule;
+  bool simplify_before_lower_access;
+  bool lower_access;
+  bool simplify_after_lower_access;
+  bool attempt_vectorized_load_cpu;
+  DataType grad_precision;
+  std::string extra_flags;
+
+  CompileConfig();
+
+  std::string compiler_name();
+
+  std::string gcc_opt_flag();
+
+  std::string compiler_config();
+
+  std::string preprocess_cmd(const std::string &input,
+                             const std::string &output,
+                             const std::string &extra_flags,
+                             bool verbose = false);
+
+  std::string compile_cmd(const std::string &input,
+                          const std::string &output,
+                          const std::string &extra_flags,
+                          bool verbose = false);
+};
+
+extern CompileConfig default_compile_config;
 
 TLANG_NAMESPACE_END
 

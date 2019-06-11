@@ -1,5 +1,6 @@
 #include <typeinfo>
 #include "../ir.h"
+#include "../tlang.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -56,9 +57,9 @@ class MakeAdjoint : public IRVisitor {
   Stmt *alloc(Stmt *stmt) {
     if (stmt->adjoint == nullptr) {
       // create the alloca
-      auto alloca = Stmt::make<AllocaStmt>(1, DataType::unknown);
+      auto alloca = Stmt::make<AllocaStmt>(
+          1, get_current_program().config.grad_precision);
       stmt->adjoint = alloca.get();
-      alloca->ret_type = stmt->ret_type;
       current_block->insert(std::move(alloca), 0);
     }
     return stmt->adjoint;

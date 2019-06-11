@@ -48,6 +48,7 @@ class PyTaichi:
     self.compiled_grad_functions = {}
     self.scope_stack = []
     self.inside_kernel = False
+    self.global_vars = []
     Expr.materialize_layout_callback = self.materialize
 
   def materialize(self):
@@ -58,7 +59,13 @@ class PyTaichi:
       for func in self.layout_functions:
         func()
     taichi_lang_core.layout(layout)
+    self.link_adjoints()
     self.materialized = True
+
+  def link_adjoints(self):
+    for var in self.global_vars:
+      if var.ptr.snode() is not None and var.grad is not None and var.grad.ptr.snode() is not None:
+        var.set_grad(var.grad)
 
 pytaichi = PyTaichi()
 
@@ -131,8 +138,16 @@ def kernel(foo):
   return ret
 
 def global_var(dt):
+  # primal
   x = Expr(taichi_lang_core.make_id_expr(""))
   x.ptr = taichi_lang_core.global_new(x.ptr, dt)
+  pytaichi.global_vars.append(x)
+
+  # adjoint
+  x_grad = Expr(taichi_lang_core.make_id_expr(""))
+  x_grad.ptr = taichi_lang_core.global_new(x_grad.ptr, dt)
+  x.grad = x_grad
+
   return x
 
 var = global_var

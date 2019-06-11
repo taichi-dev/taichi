@@ -24,6 +24,7 @@ class Expr:
       assert False
     if self.tb:
       self.ptr.set_tb(self.tb)
+    self.grad = None
 
   @staticmethod
   def stack_info():
@@ -173,3 +174,4 @@ class Expr:
 
   def set_grad(self, grad):
     self.ptr.set_grad(grad.ptr)
+

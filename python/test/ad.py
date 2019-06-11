@@ -47,4 +47,5 @@ def test_diff_sincos():
   print(y[0], math.cos(v))
   print(x.grad[0], -math.sin(v))
 
+test_size1()
 test_diff_sincos()

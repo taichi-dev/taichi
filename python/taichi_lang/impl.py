@@ -75,6 +75,8 @@ class PyTaichi:
 
   def clear(self):
     del self.prog
+    Expr.materialize_layout_callback = None
+    Expr.layout_materialized = False
 
 
 pytaichi = PyTaichi()

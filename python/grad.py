@@ -7,11 +7,12 @@ tc.set_gdb_trigger(True)
 N = 2048
 x, y = ti.var(ti.f32), ti.var(ti.f32)
 
-ti.cfg.lower_access = False
-
 @ti.layout
 def xy():
-  ti.root.dense(ti.i, N).place(x, y, x.grad, y.grad)
+  ti.root.dense(ti.i, N).place(x, x.grad, y, y.grad)
+
+#ti.cfg.lower_access = True
+#ti.cfg.print_ir = True
 
 @ti.kernel
 def poly():
@@ -44,6 +45,7 @@ print()
 poly.grad()
 print('grad_x')
 for i in range(N):
+  # print(x[i], x.grad[i], y[i], y.grad[i])
   grad_xs.append(x.grad[i])
 
 plt.title('Auto Diff')

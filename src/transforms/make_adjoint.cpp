@@ -47,11 +47,7 @@ class MakeAdjoint : public IRVisitor {
     auto alloca = alloca_->as<AllocaStmt>();
     TC_ASSERT(alloca->width() == 1);
     auto local_load = insert<LocalLoadStmt>(LocalAddress(alloca, 0));
-    if (value->is<AllocaStmt>()) {
-      value = insert<LocalLoadStmt>(LocalAddress(value->as<AllocaStmt>(), 0));
-    }
-    auto add = insert<BinaryOpStmt>(BinaryOpType::add, local_load, value);
-    insert<LocalStoreStmt>(alloca, add);
+    insert<LocalStoreStmt>(alloca, add(local_load, value));
   }
 
   Stmt *alloc(Stmt *stmt) {
@@ -74,11 +70,10 @@ class MakeAdjoint : public IRVisitor {
       // do nothing
     } else if (stmt->op_type == UnaryOpType::sin) {
       accumulate(stmt->rhs,
-                 mul(load(alloc(stmt)),
-                     insert<UnaryOpStmt>(UnaryOpType::cos, stmt->rhs)));
+                 mul(stmt, insert<UnaryOpStmt>(UnaryOpType::cos, stmt->rhs)));
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt->rhs,
-                 negate(mul(load(alloc(stmt)),
+                 negate(mul(alloc(stmt),
                             insert<UnaryOpStmt>(UnaryOpType::sin, stmt->rhs))));
     } else if (stmt->op_type == UnaryOpType::cast) {
       if (stmt->cast_by_value && is_real(stmt->cast_type)) {
@@ -93,11 +88,23 @@ class MakeAdjoint : public IRVisitor {
   }
 
   Stmt *negate(Stmt *inp) {
-    return insert<UnaryOpStmt>(UnaryOpType::neg, inp);
+    return insert<UnaryOpStmt>(UnaryOpType::neg, load(inp));
   }
 
   Stmt *mul(Stmt *op1, Stmt *op2) {
-    return insert<BinaryOpStmt>(BinaryOpType::mul, op1, op2);
+    return insert<BinaryOpStmt>(BinaryOpType::mul, load(op1), load(op2));
+  }
+
+  Stmt *add(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::add, load(op1), load(op2));
+  }
+
+  Stmt *sub(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::sub, load(op1), load(op2));
+  }
+
+  Stmt *div(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::div, load(op1), load(op2));
   }
 
   void visit(BinaryOpStmt *bin) override {
@@ -106,10 +113,10 @@ class MakeAdjoint : public IRVisitor {
       accumulate(bin->rhs, alloc(bin));
     } else if (bin->op_type == BinaryOpType::sub) {
       accumulate(bin->lhs, alloc(bin));
-      accumulate(bin->rhs, insert<UnaryOpStmt>(UnaryOpType::neg, alloc(bin)));
+      accumulate(bin->rhs, negate(alloc(bin)));
     } else if (bin->op_type == BinaryOpType::mul) {
-      auto lptr = insert<BinaryOpStmt>(BinaryOpType::mul, alloc(bin), bin->rhs);
-      auto rptr = insert<BinaryOpStmt>(BinaryOpType::mul, alloc(bin), bin->lhs);
+      auto lptr = mul(alloc(bin), bin->rhs);
+      auto rptr = mul(alloc(bin), bin->lhs);
       accumulate(bin->lhs, lptr);
       accumulate(bin->rhs, rptr);
     } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
@@ -123,10 +130,12 @@ class MakeAdjoint : public IRVisitor {
   void visit(TernaryOpStmt *stmt) override {
     TC_ASSERT(stmt->op_type == TernaryOpType::select);
     auto zero = insert<ConstStmt>(TypedConstant(stmt->ret_type.data_type));
-    accumulate(stmt->op2, insert<TernaryOpStmt>(TernaryOpType::select,
-                                                stmt->op1, alloc(stmt), zero));
-    accumulate(stmt->op3, insert<TernaryOpStmt>(TernaryOpType::select,
-                                                stmt->op1, zero, alloc(stmt)));
+    accumulate(stmt->op2,
+               insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1,
+                                     load(alloc(stmt)), zero));
+    accumulate(stmt->op3,
+               insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1, zero,
+                                     load(alloc(stmt))));
   }
 
   void visit(IfStmt *if_stmt) override {
@@ -169,7 +178,12 @@ class MakeAdjoint : public IRVisitor {
   void visit(LocalStoreStmt *stmt) override{TC_NOT_IMPLEMENTED}
 
   Stmt *load(Stmt *alloc) {
-    return insert<LocalLoadStmt>(LocalAddress(alloc, 0));
+    if (alloc->is<AllocaStmt>()) {
+      return insert<LocalLoadStmt>(LocalAddress(alloc, 0));
+    } else {
+      // non alloca
+      return alloc;
+    }
   }
 
   void visit(GlobalLoadStmt *stmt) override {

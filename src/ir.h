@@ -942,6 +942,7 @@ class UnaryOpStmt : public Stmt {
   bool cast_by_value = true;
 
   UnaryOpStmt(UnaryOpType op_type, Stmt *rhs) : op_type(op_type), rhs(rhs) {
+    TC_ASSERT(!rhs->is<AllocaStmt>());
     add_operand(this->rhs);
     cast_type = DataType::unknown;
     cast_by_value = true;
@@ -1036,6 +1037,8 @@ class BinaryOpStmt : public Stmt {
 
   BinaryOpStmt(BinaryOpType op_type, Stmt *lhs, Stmt *rhs)
       : op_type(op_type), lhs(lhs), rhs(rhs) {
+    TC_ASSERT(!lhs->is<AllocaStmt>());
+    TC_ASSERT(!rhs->is<AllocaStmt>());
     add_operand(this->lhs);
     add_operand(this->rhs);
   }
@@ -1053,6 +1056,9 @@ class TernaryOpStmt : public Stmt {
 
   TernaryOpStmt(TernaryOpType op_type, Stmt *op1, Stmt *op2, Stmt *op3)
       : op_type(op_type), op1(op1), op2(op2), op3(op3) {
+    TC_ASSERT(!op1->is<AllocaStmt>());
+    TC_ASSERT(!op2->is<AllocaStmt>());
+    TC_ASSERT(!op3->is<AllocaStmt>());
     add_operand(this->op1);
     add_operand(this->op2);
     add_operand(this->op3);

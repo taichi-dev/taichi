@@ -999,7 +999,7 @@ TC_FORCE_INLINE __host__ uint64 atomicAddCPU(volatile uint64 *dest,
 
 template <typename T = unsigned long>
 TC_FORCE_INLINE __host__
-    std::enable_if_t<std::is_same<unsigned long, uint64>::type::value,
+    std::enable_if_t<std::is_same<T, uint64>::type::value,
                      unsigned long>
     atomicAddCPU(volatile unsigned long *dest, unsigned long val) {
   return __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);

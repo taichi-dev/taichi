@@ -67,7 +67,19 @@ class PyTaichi:
       if var.ptr.snode() is not None and var.grad is not None and var.grad.ptr.snode() is not None:
         var.set_grad(var.grad)
 
+  def clear(self):
+    del self.prog
+
+
 pytaichi = PyTaichi()
+
+def reset():
+  global pytaichi
+  global root
+  pytaichi.clear()
+  pytaichi = PyTaichi()
+  root = SNode(taichi_lang_core.get_root())
+
 
 def inside_kernel():
   return pytaichi.inside_kernel
@@ -199,3 +211,19 @@ def logical_and(a, b):
 
 def logical_or(a, b):
   return a.logical_or(b)
+
+
+unary_ops = []
+
+def unary(x):
+  unary_ops.append(x)
+  return x
+
+@unary
+def sin(expr):
+  return Expr(taichi_lang_core.sin(expr))
+
+@unary
+def cos(expr):
+  return Expr(taichi_lang_core.cos(expr))
+

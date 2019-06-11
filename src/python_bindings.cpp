@@ -63,9 +63,10 @@ PYBIND11_MODULE(taichi_lang_core, m) {
                      &CompileConfig::simplify_after_lower_access)
       .def_readwrite("lower_access", &CompileConfig::lower_access);
 
-  m.def("default_compile_config",
-        [&]() -> CompileConfig & { return default_compile_config; },
-        py::return_value_policy::reference);
+  m.def(
+      "default_compile_config",
+      [&]() -> CompileConfig & { return default_compile_config; },
+      py::return_value_policy::reference);
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -75,9 +76,10 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);
 
-  m.def("current_compile_config",
-        [&]() -> CompileConfig & { return get_current_program().config; },
-        py::return_value_policy::reference);
+  m.def(
+      "current_compile_config",
+      [&]() -> CompileConfig & { return get_current_program().config; },
+      py::return_value_policy::reference);
 
   py::class_<Index>(m, "Index").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
@@ -151,8 +153,9 @@ PYBIND11_MODULE(taichi_lang_core, m) {
 
   m.def("layout", layout);
 
-  m.def("get_root", [&]() -> SNode * { return &root; },
-        py::return_value_policy::reference);
+  m.def(
+      "get_root", [&]() -> SNode * { return &root; },
+      py::return_value_policy::reference);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
 
@@ -174,6 +177,21 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("expr_cmp_eq", expr_cmp_eq);
 
   m.def("expr_index", expr_index);
+
+#define DEFINE_EXPRESSION_OP_UNARY(x) m.def("expr" #x, expr_##x);
+
+  DEFINE_EXPRESSION_OP_UNARY(sqrt)
+  DEFINE_EXPRESSION_OP_UNARY(floor)
+  DEFINE_EXPRESSION_OP_UNARY(abs)
+  DEFINE_EXPRESSION_OP_UNARY(sin)
+  DEFINE_EXPRESSION_OP_UNARY(asin)
+  DEFINE_EXPRESSION_OP_UNARY(cos)
+  DEFINE_EXPRESSION_OP_UNARY(acos)
+  DEFINE_EXPRESSION_OP_UNARY(inv)
+  DEFINE_EXPRESSION_OP_UNARY(rcp)
+  DEFINE_EXPRESSION_OP_UNARY(rsqrt)
+  DEFINE_EXPRESSION_OP_UNARY(exp)
+  DEFINE_EXPRESSION_OP_UNARY(log)
 
   m.def("expr_var", [](const Expr &e) { return Var(e); });
   m.def("expr_alloca", []() {

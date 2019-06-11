@@ -29,11 +29,22 @@ def test_diff_sincos():
     for i in x:
       y[i] = ti.sin(x[i])
 
+  @ti.kernel
+  def tri2():
+    for i in x:
+      y[i] = ti.cos(x[i])
+
+  y.grad[0] = 1
   v = 1
   x[0] = v
   tri()
   tri.grad()
   print(y[0], math.sin(v))
   print(x.grad[0], math.cos(v))
+
+  tri2()
+  tri2.grad()
+  print(y[0], math.cos(v))
+  print(x.grad[0], -math.sin(v))
 
 test_diff_sincos()

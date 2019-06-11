@@ -72,17 +72,31 @@ class MakeAdjoint : public IRVisitor {
     if (stmt->op_type == UnaryOpType::floor) {
       // do nothing
     } else if (stmt->op_type == UnaryOpType::sin) {
-      accumulate(stmt->rhs, insert<UnaryOpStmt>(UnaryOpType::cos, stmt->rhs));
+      accumulate(stmt->rhs,
+                 mul(load(alloc(stmt)),
+                     insert<UnaryOpStmt>(UnaryOpType::cos, stmt->rhs)));
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt->rhs,
-                 negate(insert<UnaryOpStmt>(UnaryOpType::sin, stmt->rhs)));
+                 negate(mul(load(alloc(stmt)),
+                            insert<UnaryOpStmt>(UnaryOpType::sin, stmt->rhs))));
+    } else if (stmt->op_type == UnaryOpType::cast) {
+      if (stmt->cast_by_value && is_real(stmt->cast_type)) {
+        accumulate(stmt->rhs, stmt);
+      }
+    } else if (stmt->op_type == UnaryOpType::logic_not) {
+      // do nothing
     } else {
+      TC_P(unary_op_type_name(stmt->op_type));
       TC_NOT_IMPLEMENTED
     }
   }
 
   Stmt *negate(Stmt *inp) {
     return insert<UnaryOpStmt>(UnaryOpType::neg, inp);
+  }
+
+  Stmt *mul(Stmt *op1, Stmt *op2) {
+    return insert<BinaryOpStmt>(BinaryOpType::mul, op1, op2);
   }
 
   void visit(BinaryOpStmt *bin) override {

@@ -130,6 +130,10 @@ class TypeCheck : public IRVisitor {
     if (stmt->op_type == UnaryOpType::cast) {
       stmt->ret_type.data_type = stmt->cast_type;
     }
+    if (is_trigonometric(stmt->op_type) &&
+        !is_real(stmt->rhs->ret_type.data_type)) {
+      TC_ERROR("Trigonometric operator takes real inputs only.");
+    }
   }
 
   Stmt *insert_type_cast_before(Stmt *anchor,

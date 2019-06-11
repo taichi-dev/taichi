@@ -69,6 +69,20 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
+    if (stmt->op_type == UnaryOpType::floor) {
+      // do nothing
+    } else if (stmt->op_type == UnaryOpType::sin) {
+      accumulate(stmt->rhs, insert<UnaryOpStmt>(UnaryOpType::cos, stmt->rhs));
+    } else if (stmt->op_type == UnaryOpType::cos) {
+      accumulate(stmt->rhs,
+                 negate(insert<UnaryOpStmt>(UnaryOpType::sin, stmt->rhs)));
+    } else {
+      TC_NOT_IMPLEMENTED
+    }
+  }
+
+  Stmt *negate(Stmt *inp) {
+    return insert<UnaryOpStmt>(UnaryOpType::neg, inp);
   }
 
   void visit(BinaryOpStmt *bin) override {
@@ -77,10 +91,7 @@ class MakeAdjoint : public IRVisitor {
       accumulate(bin->rhs, alloc(bin));
     } else if (bin->op_type == BinaryOpType::sub) {
       accumulate(bin->lhs, alloc(bin));
-      auto rgrad = Stmt::make<UnaryOpStmt>(UnaryOpType::neg, alloc(bin));
-      auto rptr = rgrad.get();
-      insert_back(std::move(rgrad));
-      accumulate(bin->rhs, rptr);
+      accumulate(bin->rhs, insert<UnaryOpStmt>(UnaryOpType::neg, alloc(bin)));
     } else if (bin->op_type == BinaryOpType::mul) {
       auto lptr = insert<BinaryOpStmt>(BinaryOpType::mul, alloc(bin), bin->rhs);
       auto rptr = insert<BinaryOpStmt>(BinaryOpType::mul, alloc(bin), bin->lhs);
@@ -140,8 +151,10 @@ class MakeAdjoint : public IRVisitor {
     TC_WARN("needs impl when loading something other loop var");
   }
 
-  void visit(LocalStoreStmt *stmt) override {
-    TC_NOT_IMPLEMENTED
+  void visit(LocalStoreStmt *stmt) override{TC_NOT_IMPLEMENTED}
+
+  Stmt *load(Stmt *alloc) {
+    return insert<LocalLoadStmt>(LocalAddress(alloc, 0));
   }
 
   void visit(GlobalLoadStmt *stmt) override {
@@ -152,7 +165,7 @@ class MakeAdjoint : public IRVisitor {
     TC_ASSERT(snodes[0]->grad != nullptr);
     snodes[0] = snodes[0]->grad;
     auto adjoint = insert<GlobalPtrStmt>(snodes, ptr->indices);
-    insert<GlobalStoreStmt>(adjoint, alloc(stmt));
+    insert<GlobalStoreStmt>(adjoint, load(alloc(stmt)));
   }
 
   void visit(GlobalStoreStmt *stmt) override {

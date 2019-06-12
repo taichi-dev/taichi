@@ -1977,6 +1977,17 @@ inline Expr load_if_ptr(const Expr &ptr) {
     return ptr;
 }
 
+inline Expr ptr_if_global(const Expr &var) {
+  if (var.is<GlobalVariableExpression>()) {
+    // singleton global variable
+    TC_ASSERT(var.snode()->num_active_indices == 0);
+    return var[ExprGroup()];
+  } else {
+    TC_ASSERT(var.is<GlobalPtrStmt>());
+    return var;
+  }
+}
+
 extern DecoratorRecorder dec;
 
 inline void Vectorize(int v) {

@@ -50,7 +50,7 @@ class ProfilerBase {
     printf("%s\n", title().c_str());
     for (auto &rec : records) {
       printf(
-          "[%5.2f%%] %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   "
+          "[%6.2f%%] %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   "
           "total %7.3f s [%7dx]\n",
           rec.total / total_time * 100.0f, rec.name.c_str(), rec.min,
           rec.total / rec.counter, rec.max, rec.total / 1000.0f, rec.counter);

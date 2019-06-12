@@ -21,6 +21,9 @@ std::vector<std::unique_ptr<IRBuilder::ScopeGuard>> scope_stack;
 template <typename T, typename C>
 void export_accessors(C &c) {
   c.def(
+      fmt::format("val0_{}", data_type_short_name(get_data_type<T>())).c_str(),
+      &Expr::val<T>);
+  c.def(
       fmt::format("val1_{}", data_type_short_name(get_data_type<T>())).c_str(),
       &Expr::val<T, int>);
   c.def(
@@ -33,6 +36,9 @@ void export_accessors(C &c) {
       fmt::format("val4_{}", data_type_short_name(get_data_type<T>())).c_str(),
       &Expr::val<T, int, int, int, int>);
 
+  c.def(fmt::format("set_val0_{}", data_type_short_name(get_data_type<T>()))
+            .c_str(),
+        &Expr::set_val<T>);
   c.def(fmt::format("set_val1_{}", data_type_short_name(get_data_type<T>()))
             .c_str(),
         &Expr::set_val<T, int>);
@@ -160,8 +166,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
 
   m.def("expr_atomic_add", [&](const Expr &a, const Expr &b) {
-    current_ast_builder().insert(
-        Stmt::make<FrontendAtomicStmt>(AtomicType::add, a, load_if_ptr(b)));
+    current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
+        AtomicType::add, ptr_if_global(a), load_if_ptr(b)));
   });
   m.def("expr_add", expr_add);
   m.def("expr_sub", expr_sub);

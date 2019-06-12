@@ -147,17 +147,23 @@ class Expr:
     if not Expr.layout_materialized:
       self.materialize_layout_callback()
     self.initialize_accessor()
-    if not isinstance(key, tuple):
-      key = (key, )
-    self.setter(value, *key)
+    if key is None:
+      self.setter(value)
+    else:
+      if not isinstance(key, tuple):
+        key = (key, )
+      self.setter(value, *key)
 
   def __getitem__(self, key):
     if not Expr.layout_materialized:
       self.materialize_layout_callback()
     self.initialize_accessor()
-    if not isinstance(key, tuple):
-      key = (key, )
-    return self.getter(*key)
+    if key is None:
+      return self.getter()
+    else:
+      if not isinstance(key, tuple):
+        key = (key, )
+      return self.getter(*key)
 
   def loop_range(self):
     return self

@@ -220,6 +220,19 @@ class MakeAdjoint : public IRVisitor {
     stmt->parent->erase(stmt);
   }
 
+  void visit(AtomicOpStmt *stmt) override {
+    // erase and replace with global load adjoint
+    GlobalPtrStmt *ptr = stmt->dest->as<GlobalPtrStmt>();
+    TC_ASSERT(ptr->width() == 1);
+    auto snodes = ptr->snodes;
+    TC_ASSERT(snodes[0]->grad != nullptr);
+    snodes[0] = snodes[0]->grad;
+    auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
+    accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
+    stmt->parent->erase(stmt);
+  }
+
+
   void visit(ElementShuffleStmt *stmt) override {
     TC_NOT_IMPLEMENTED
   }

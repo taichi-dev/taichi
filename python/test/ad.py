@@ -1,6 +1,8 @@
 import taichi_lang as ti
 from pytest import approx
 import math
+import autograd.numpy as np
+from autograd import grad
 
 def test_size1():
   ti.reset()
@@ -15,7 +17,7 @@ def test_size1():
 
 # test_size1()
 
-def test_diff_sincos():
+def grad_test(tifunc, npfunc):
   ti.reset()
 
   x = ti.var(ti.f32)
@@ -26,28 +28,21 @@ def test_diff_sincos():
     ti.root.dense(ti.i, 1).place(x, x.grad, y, y.grad)
 
   @ti.kernel
-  def tri():
+  def func():
     for i in x:
-      y[i] = ti.sin(x[i])
-
-  @ti.kernel
-  def tri2():
-    for i in x:
-      y[i] = ti.cos(x[i])
+      y[i] = tifunc(x[i])
 
   v = 0.2
 
   y.grad[0] = 1
   x[0] = v
-  tri()
-  tri.grad()
+  func()
+  func.grad()
 
-  assert y[0] == approx(math.sin(v))
-  assert x.grad[0] == approx(math.cos(v))
+  assert y[0] == approx(npfunc(v))
+  assert x.grad[0] == approx(grad(npfunc)(v))
 
-  tri2()
-  tri2.grad()
-  assert y[0] == approx(math.cos(v))
-  assert x.grad[0] == approx(-math.sin(v))
-
-
+def test_trigonometric():
+  grad_test(lambda x: ti.sin(x), lambda x: np.sin(x))
+  grad_test(lambda x: ti.cos(x), lambda x: np.cos(x))
+  grad_test(lambda x: x * x, lambda x: x * x)

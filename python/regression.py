@@ -2,14 +2,16 @@ import taichi_lang as ti
 import taichi as tc
 import matplotlib.pyplot as plt
 import random
+import numpy as np
 
 tc.set_gdb_trigger(True)
 
-number_coeffs = 3
+number_coeffs = 4
+learning_rate = 1e-4
 
-N = 128
+N = 32
 x, y = ti.var(ti.f32), ti.var(ti.f32)
-coeffs = [ti.var(ti.f32)] * number_coeffs
+coeffs = [ti.var(ti.f32) for _ in range(number_coeffs)]
 loss = ti.var(ti.f32)
 
 @ti.layout
@@ -25,19 +27,28 @@ def regress():
   for i in x:
     v = x[i]
     est = 0.0
-    for i in ti.static(range(number_coeffs)):
-      est += coeffs[i] * ti.pow(v, i)
+    for j in ti.static(range(number_coeffs)):
+      est += coeffs[j] * ti.pow(v, j)
     loss.atomic_add(0.5 * ti.sqr(y[i] - est))
+
+@ti.kernel
+def update():
+  for i in ti.static(range(number_coeffs)):
+    ti.print(i)
+    ti.print(coeffs[i][None])
+    ti.print(coeffs[i].grad[None])
+    coeffs[i][None] -= learning_rate * coeffs[i].grad[None]
+    coeffs[i].grad[None] = 0
 
 xs = []
 ys = []
-grad_xs = []
 
 for i in range(N):
   v = random.random() * 5 - 2.5
   xs.append(v)
   x[i] = v
   y[i] = (v - 1) * (v - 2) * (v + 2) + random.random() - 0.5
+  # y[i] = v * 2 + 1 + random.random() - 0.1
 
 regress()
 
@@ -47,15 +58,26 @@ for i in range(N):
   ys.append(y[i])
 print()
 
-for i in range(10):
+for i in range(1000):
+  loss[None] = 0
+  loss.grad[None] = 1
+  regress()
   regress.grad()
-  print('grad_x')
-  for i in range(N):
-    grad_xs.append(x.grad[i])
+  print('Loss =', loss[None])
+  update()
+  for i in range(number_coeffs):
+    print(coeffs[i][None])
+  print()
 
-plt.title('Nonlinear Regression')
+curve_xs = np.arange(-2.5, 2.5, 0.01)
+curve_ys = curve_xs * 0
+for i in range(number_coeffs):
+  curve_ys += coeffs[i][None] * np.power(curve_xs, i)
+
+plt.title('Nonlinear Regression with Gradient Descent (3rd order polynomial)')
 ax = plt.gca()
-ax.scatter(xs, ys, label='f(x)')
+ax.scatter(xs, ys, label='data', color='r')
+ax.plot(curve_xs, curve_ys, label='fitted')
 ax.legend()
 ax.grid(True)
 ax.spines['left'].set_position('zero')

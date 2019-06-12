@@ -41,8 +41,13 @@ def subscript(value, *indices):
   elif is_taichi_class(value):
     return value.subscript(*indices)
   else:
-    return Expr(
-      taichi_lang_core.subscript(value.ptr, make_expr_group(*indices)))
+    print(indices)
+    if isinstance(indices, tuple) and len(indices) == 1 and indices[0] is None:
+      return Expr(
+        taichi_lang_core.subscript(value.ptr, make_expr_group()))
+    else:
+      return Expr(
+        taichi_lang_core.subscript(value.ptr, make_expr_group(*indices)))
 
 
 class PyTaichi:
@@ -133,7 +138,7 @@ def kernel(foo):
       ast.fix_missing_locations(tree)
 
       # astpretty.pprint(func_body)
-      # print(astor.to_source(tree.body[0], indent_with='  '))
+      print(astor.to_source(tree.body[0], indent_with='  '))
 
       ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
 

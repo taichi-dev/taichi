@@ -1973,7 +1973,7 @@ inline Expr load_if_ptr(const Expr &ptr) {
   } else if (ptr.is<GlobalVariableExpression>()) {
     TC_ASSERT(ptr.cast<GlobalVariableExpression>()->snode->num_active_indices ==
               0);
-    return load(ptr[Expr(0)]);
+    return load(ptr[ExprGroup()]);
   } else
     return ptr;
 }

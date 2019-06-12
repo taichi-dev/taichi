@@ -47,7 +47,7 @@ def inc_f():
 
 @ti.kernel
 def p2g():
-  for p in x:
+  for p in range(0, n_particles):
     base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
     fx = x[p] * inv_dx - ti.cast(base, ti.f32)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
@@ -85,7 +85,7 @@ def grid_op():
 
 @ti.kernel
 def g2p():
-  for p in x:
+  for p in range(0, n_particles):
     base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
     fx = x[f, p] * inv_dx - ti.cast(base, ti.f32)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
@@ -113,13 +113,12 @@ def main():
     v[0, i] = [0, -1]
     J[0, i] = 1
 
-  for s in range(150):
-    inc_f()
-    continue
+  for s in range(steps - 1):
     clear_grid()
     p2g()
     grid_op()
     g2p()
+    inc_f()
 
   ti.profiler_print()
 

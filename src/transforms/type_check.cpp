@@ -87,6 +87,13 @@ class TypeCheck : public IRVisitor {
       stmt->ret_type.data_type = stmt->snodes[0]->dt;
     else
       TC_WARN("Type inference failed: snode is nullptr.");
+    for (int l = 0; l < stmt->snodes.size(); l++) {
+      if (stmt->snodes[l]->num_active_indices != stmt->indices.size()) {
+        TC_ERROR("{} has {} indices. Indexed with {}.",
+                 stmt->snodes[l]->node_type_name,
+                 stmt->snodes[l]->num_active_indices, stmt->indices.size());
+      }
+    }
   }
 
   void visit(GlobalStoreStmt *stmt) {

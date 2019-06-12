@@ -41,7 +41,6 @@ def subscript(value, *indices):
   elif is_taichi_class(value):
     return value.subscript(*indices)
   else:
-    print(indices)
     if isinstance(indices, tuple) and len(indices) == 1 and indices[0] is None:
       return Expr(
         taichi_lang_core.subscript(value.ptr, make_expr_group()))

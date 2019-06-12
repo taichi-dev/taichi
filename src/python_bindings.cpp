@@ -10,7 +10,8 @@ Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
 }
 
-void expr_assign(const Expr &lhs, const Expr &rhs) {
+void expr_assign(const Expr &lhs_, const Expr &rhs) {
+  auto lhs = ptr_if_global(lhs_);
   TC_ASSERT(lhs->is_lvalue());
   current_ast_builder().insert(
       std::make_unique<FrontendAssignStmt>(lhs, load_if_ptr(rhs)));

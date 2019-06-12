@@ -78,7 +78,7 @@ void Expr::operator=(const Expr &o) {
     set(o.eval());
   } else if (expr->is_lvalue()) {
     current_ast_builder().insert(
-        std::make_unique<FrontendAssignStmt>(*this, load_if_ptr(o)));
+        std::make_unique<FrontendAssignStmt>(ptr_if_global(*this), load_if_ptr(o)));
   } else {
     // set(o.eval());
     TC_ERROR("Cannot assign to non-lvalue: {}", serialize());
@@ -126,8 +126,8 @@ Expr Expr::eval() const {
 
 void Expr::operator+=(const Expr &o) {
   if (this->atomic) {
-    current_ast_builder().insert(
-        Stmt::make<FrontendAtomicStmt>(AtomicOpType::add, *this, load_if_ptr(o)));
+    current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
+        AtomicOpType::add, ptr_if_global(*this), load_if_ptr(o)));
   } else {
     (*this) = (*this) + o;
   }
@@ -205,7 +205,9 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
   TC_ASSERT(lhs->is_lvalue());
 }
 
-FrontendAtomicStmt::FrontendAtomicStmt(AtomicOpType op_type, Expr dest, Expr val)
+FrontendAtomicStmt::FrontendAtomicStmt(AtomicOpType op_type,
+                                       Expr dest,
+                                       Expr val)
     : op_type(op_type), dest(dest), val(val) {
 }
 

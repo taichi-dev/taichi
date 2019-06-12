@@ -7,6 +7,7 @@ core = taichi_lang_core
 i = indices(0)
 j = indices(1)
 k = indices(2)
+l = indices(3)
 ij = indices(0, 1)
 ijk = indices(0, 1, 2)
 Vector = Matrix

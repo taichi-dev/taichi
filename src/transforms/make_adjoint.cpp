@@ -205,7 +205,7 @@ class MakeAdjoint : public IRVisitor {
     TC_ASSERT(snodes[0]->grad != nullptr);
     snodes[0] = snodes[0]->grad;
     auto adj_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
-    insert<GlobalStoreStmt>(adj_ptr, load(adjoint(stmt)));
+    insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
   }
 
   void visit(GlobalStoreStmt *stmt) override {

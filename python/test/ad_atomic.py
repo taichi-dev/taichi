@@ -1,6 +1,5 @@
 import taichi_lang as ti
 from pytest import approx
-import math
 
 def test_ad_reduce():
   ti.reset()
@@ -31,4 +30,3 @@ def test_ad_reduce():
   for i in range(N):
     assert x.grad[i] == approx(i * 2)
 
-test_ad_reduce()

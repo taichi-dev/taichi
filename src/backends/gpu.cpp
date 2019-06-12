@@ -684,7 +684,7 @@ class GPUIRCodeGen : public IRVisitor {
   void visit(AtomicOpStmt *stmt) {
     TC_ASSERT(stmt->val->ret_type.data_type == DataType::f32 ||
               stmt->val->ret_type.data_type == DataType::i32);
-    TC_ASSERT(stmt->op_type == AtomicType::add);
+    TC_ASSERT(stmt->op_type == AtomicOpType::add);
     auto ptr = stmt->dest->as<GlobalPtrStmt>();
     auto snode = ptr->snodes[0];
     if (current_scratch_pads && current_scratch_pads->has(snode)) {

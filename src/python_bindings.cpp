@@ -167,7 +167,7 @@ PYBIND11_MODULE(taichi_lang_core, m) {
 
   m.def("expr_atomic_add", [&](const Expr &a, const Expr &b) {
     current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
-        AtomicType::add, ptr_if_global(a), load_if_ptr(b)));
+        AtomicOpType::add, ptr_if_global(a), load_if_ptr(b)));
   });
   m.def("expr_add", expr_add);
   m.def("expr_sub", expr_sub);

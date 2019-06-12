@@ -268,6 +268,15 @@ def unary(x):
   unary_ops.append(x)
   return x
 
+def pow(x, n):
+  assert isinstance(n, int) and n >= 0
+  if n == 0:
+    return 1
+  ret = x
+  for i in range(n - 1):
+    ret = ret * x
+  return ret
+
 
 @unary
 def sin(expr):

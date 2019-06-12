@@ -165,9 +165,9 @@ enum class TernaryOpType : int { select, undefined };
 
 std::string ternary_type_name(TernaryOpType type);
 
-enum class AtomicType : int { add, max, min };
+enum class AtomicOpType : int { add, max, min };
 
-std::string atomic_type_name(AtomicType type);
+std::string atomic_op_type_name(AtomicOpType type);
 
 enum class SNodeOpType : int { probe, activate, deactivate, append, clear };
 

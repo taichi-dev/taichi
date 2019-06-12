@@ -127,7 +127,7 @@ Expr Expr::eval() const {
 void Expr::operator+=(const Expr &o) {
   if (this->atomic) {
     current_ast_builder().insert(
-        Stmt::make<FrontendAtomicStmt>(AtomicType::add, *this, load_if_ptr(o)));
+        Stmt::make<FrontendAtomicStmt>(AtomicOpType::add, *this, load_if_ptr(o)));
   } else {
     (*this) = (*this) + o;
   }
@@ -135,7 +135,7 @@ void Expr::operator+=(const Expr &o) {
 void Expr::operator-=(const Expr &o) {
   if (this->atomic) {
     current_ast_builder().insert(Stmt::make<FrontendAtomicStmt>(
-        AtomicType::add, *this, -load_if_ptr(o)));
+        AtomicOpType::add, *this, -load_if_ptr(o)));
   } else {
     (*this) = (*this) - o;
   }
@@ -205,7 +205,7 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
   TC_ASSERT(lhs->is_lvalue());
 }
 
-FrontendAtomicStmt::FrontendAtomicStmt(AtomicType op_type, Expr dest, Expr val)
+FrontendAtomicStmt::FrontendAtomicStmt(AtomicOpType op_type, Expr dest, Expr val)
     : op_type(op_type), dest(dest), val(val) {
 }
 

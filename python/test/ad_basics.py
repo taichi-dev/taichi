@@ -15,8 +15,6 @@ def test_size1():
   x[0] = 1
   assert x[0] == 1
 
-# test_size1()
-
 def grad_test(tifunc, npfunc=None):
   if npfunc is None:
     npfunc = tifunc
@@ -62,4 +60,5 @@ def test_trigonometric():
 def test_frac():
   grad_test(lambda x: 1 / x)
   grad_test(lambda x: (x + 1) / (x - 1))
-  grad_test(lambda x: (x + 1) * (x + 2) / ((x - 1) * (x + 3)))
+  grad_test(
+    lambda x: (x + 1) * (x + 2) / ((x - 1) * (x + 3)))

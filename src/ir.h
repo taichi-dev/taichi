@@ -1072,10 +1072,10 @@ class TernaryOpStmt : public Stmt {
 
 class AtomicOpStmt : public Stmt {
  public:
-  AtomicType op_type;
+  AtomicOpType op_type;
   Stmt *dest, *val;
 
-  AtomicOpStmt(AtomicType op_type, Stmt *dest, Stmt *val)
+  AtomicOpStmt(AtomicOpType op_type, Stmt *dest, Stmt *val)
       : op_type(op_type), dest(dest), val(val) {
     add_operand(this->dest);
     add_operand(this->val);
@@ -1358,10 +1358,10 @@ class Block : public IRNode {
 
 class FrontendAtomicStmt : public Stmt {
  public:
-  AtomicType op_type;
+  AtomicOpType op_type;
   Expr dest, val;
 
-  FrontendAtomicStmt(AtomicType op_type, Expr dest, Expr val);
+  FrontendAtomicStmt(AtomicOpType op_type, Expr dest, Expr val);
 
   DEFINE_ACCEPT
 };

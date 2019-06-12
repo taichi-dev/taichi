@@ -127,7 +127,7 @@ class AccessAnalysis : public IRVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    if (stmt->op_type == AtomicType::add) {
+    if (stmt->op_type == AtomicOpType::add) {
       access(stmt->dest, AccessFlag::accumulate);
     }
   }

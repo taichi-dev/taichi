@@ -294,7 +294,7 @@ class CPUIRCodeGen : public IRVisitor {
       } else {
         TC_ASSERT(stmt->val->ret_type.data_type == DataType::f32 ||
                   stmt->val->ret_type.data_type == DataType::i32);
-        TC_ASSERT(stmt->op_type == AtomicType::add);
+        TC_ASSERT(stmt->op_type == AtomicOpType::add);
         emit("atomic_add({}[{}], {}[{}]);", stmt->dest->raw_name(), l,
              stmt->val->raw_name(), l);
       }

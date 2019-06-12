@@ -247,10 +247,10 @@ std::string ternary_type_name(TernaryOpType type) {
   return type_names[type];
 }
 
-std::string atomic_type_name(AtomicType type) {
-  static std::map<AtomicType, std::string> type_names;
+std::string atomic_op_type_name(AtomicOpType type) {
+  static std::map<AtomicOpType, std::string> type_names;
   if (type_names.empty()) {
-#define REGISTER_TYPE(i) type_names[AtomicType::i] = #i;
+#define REGISTER_TYPE(i) type_names[AtomicOpType::i] = #i;
     REGISTER_TYPE(add);
     REGISTER_TYPE(max);
     REGISTER_TYPE(min);

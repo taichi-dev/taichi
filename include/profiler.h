@@ -33,25 +33,27 @@ struct ProfileRecord {
 class ProfilerBase {
  protected:
   std::vector<ProfileRecord> records;
+  double total_time;
 
  public:
   void clear() {
+    total_time = 0;
     records.clear();
   }
 
-  virtual void sync() {
-  }
+  virtual void sync() = 0;
 
   virtual std::string title() = 0;
 
   void print() {
+    sync();
     printf("%s\n", title().c_str());
     for (auto &rec : records) {
       printf(
-          "    %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   total "
-          "%7.3f s  count %7d\n",
-          rec.name.c_str(), rec.min, rec.total / rec.counter, rec.max,
-          rec.total / 1000.0f, rec.counter);
+          "[%5.2f%%] %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   "
+          "total %7.3f s [%7dx]\n",
+          rec.total / total_time * 100.0f, rec.name.c_str(), rec.min,
+          rec.total / rec.counter, rec.max, rec.total / 1000.0f, rec.counter);
     }
   }
 };
@@ -100,6 +102,7 @@ class GPUProfiler : public ProfilerBase {
           it = std::prev(records.end());
         }
         it->insert_sample(ms);
+        total_time += ms;
       }
     }
     outstanding_events.clear();
@@ -117,13 +120,16 @@ class CPUProfiler : public ProfilerBase {
   double start_t;
   std::string event_name;
 
-  void start(const std::string &kernel_name) {
-    start_t = get_time();
-    event_name = kernel_name;
+  void sync() override {
   }
 
   std::string title() override {
     return "CPU Profiler";
+  }
+
+  void start(const std::string &kernel_name) {
+    start_t = get_time();
+    event_name = kernel_name;
   }
 
   void stop() {
@@ -137,6 +143,7 @@ class CPUProfiler : public ProfilerBase {
       it = std::prev(records.end());
     }
     it->insert_sample(ms);
+    total_time += ms;
   }
 };
 

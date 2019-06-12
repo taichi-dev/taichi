@@ -252,6 +252,7 @@ class IRBuilder {
 IRBuilder &current_ast_uilder();
 
 inline Expr load_if_ptr(const Expr &ptr);
+inline Expr smart_load(const Expr &var);
 
 class Identifier {
  public:
@@ -1003,7 +1004,7 @@ class UnaryOpExpression : public Expression {
   bool cast_by_value;
 
   UnaryOpExpression(UnaryOpType type, Expr rhs)
-      : type(type), rhs(load_if_ptr(rhs)) {
+      : type(type), rhs(smart_load(rhs)) {
     cast_type = DataType::unknown;
     cast_by_value = true;
   }
@@ -1091,8 +1092,8 @@ class BinaryOpExpression : public Expression {
 
   BinaryOpExpression(const BinaryOpType &type, const Expr &lhs, const Expr &rhs)
       : type(type) {
-    this->lhs.set(load_if_ptr(lhs));
-    this->rhs.set(load_if_ptr(rhs));
+    this->lhs.set(smart_load(lhs));
+    this->rhs.set(smart_load(rhs));
   }
 
   std::string serialize() override {
@@ -1983,9 +1984,13 @@ inline Expr ptr_if_global(const Expr &var) {
     TC_ASSERT(var.snode()->num_active_indices == 0);
     return var[ExprGroup()];
   } else {
-    TC_ASSERT(var.is<GlobalPtrStmt>());
+    // may be any local or global expr
     return var;
   }
+}
+
+inline Expr smart_load(const Expr &var) {
+  return load_if_ptr(ptr_if_global(var));
 }
 
 extern DecoratorRecorder dec;

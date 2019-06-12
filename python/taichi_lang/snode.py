@@ -17,6 +17,9 @@ class SNode:
     for arg in args:
       if isinstance(arg, Expr):
         self.ptr.place(Expr(arg).ptr)
+      elif isinstance(arg, list):
+        for x in arg:
+          self.ptr.place(x)
       else:
         arg.place(self)
     return self

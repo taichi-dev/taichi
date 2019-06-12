@@ -1,12 +1,13 @@
 import taichi_lang as ti
 import taichi as tc
 import matplotlib.pyplot as plt
+import random
 
 tc.set_gdb_trigger(True)
 
-number_coeffs = 0
+number_coeffs = 3
 
-N = 2048
+N = 128
 x, y = ti.var(ti.f32), ti.var(ti.f32)
 coeffs = [ti.var(ti.f32)] * number_coeffs
 loss = ti.var(ti.f32)
@@ -14,28 +15,31 @@ loss = ti.var(ti.f32)
 @ti.layout
 def xy():
   ti.root.dense(ti.i, N).place(x, x.grad, y, y.grad)
-  ti.root.place(coeffs, loss)
+  ti.root.place(loss, loss.grad)
+  for i in range(number_coeffs):
+    ti.root.place(coeffs[i], coeffs[i].grad)
 
-
+ti.cfg.print_ir = True
 @ti.kernel
 def regress():
   for i in x:
     v = x[i]
-    est = 0
-    for i in range(number_coeffs):
+    est = 0.0
+    for i in ti.static(range(number_coeffs)):
       est += coeffs[i] * ti.pow(v, i)
-    y[i] = ret
+    loss.atomic_add(0.5 * ti.sqr(y[i] - est))
 
 xs = []
 ys = []
 grad_xs = []
 
 for i in range(N):
-  v = ((i + 0.5) / N) * 7 - 3
+  v = random.random() * 5 - 2.5
   xs.append(v)
   x[i] = v
+  y[i] = (v - 1) * (v - 2) * (v + 2) + random.random() - 0.5
 
-poly()
+regress()
 
 print('y')
 for i in range(N):
@@ -43,16 +47,15 @@ for i in range(N):
   ys.append(y[i])
 print()
 
-poly.grad()
-print('grad_x')
-for i in range(N):
-  # print(x[i], x.grad[i], y[i], y.grad[i])
-  grad_xs.append(x.grad[i])
+for i in range(10):
+  regress.grad()
+  print('grad_x')
+  for i in range(N):
+    grad_xs.append(x.grad[i])
 
-plt.title('Auto Diff')
+plt.title('Nonlinear Regression')
 ax = plt.gca()
-ax.plot(xs, ys, label='f(x)')
-ax.plot(xs, grad_xs, label='f\'(x)')
+ax.scatter(xs, ys, label='f(x)')
 ax.legend()
 ax.grid(True)
 ax.spines['left'].set_position('zero')

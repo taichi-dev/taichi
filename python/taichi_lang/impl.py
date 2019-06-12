@@ -29,6 +29,8 @@ def make_expr_group(*exprs):
     expr_group.push_back(Expr(i).ptr)
   return expr_group
 
+def atomic_add(a, b):
+  a.atomic_add(b)
 
 def subscript(value, *indices):
   if len(indices) == 1 and is_taichi_class(indices[0]):

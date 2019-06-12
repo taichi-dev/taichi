@@ -184,3 +184,7 @@ class Expr:
     assert node
     node.clear_data()
 
+  def atomic_add(self, other):
+    taichi_lang_core.expr_atomic_add(self.ptr, other.ptr)
+
+

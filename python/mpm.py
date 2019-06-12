@@ -52,8 +52,8 @@ def p2g():
         offset = ti.Vector([i, j])
         dpos = (ti.cast(ti.Vector([i, j]), ti.f32) - fx) * dx
         weight = w[i](0) * w[j](1)
-        grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
-        grid_m[base + offset] += weight * p_mass
+        ti.atomic_add(grid_v[base + offset], weight * (p_mass * v[p] + affine @ dpos))
+        ti.atomic_add(grid_m[base + offset], weight * p_mass)
 
 
 bound = 3

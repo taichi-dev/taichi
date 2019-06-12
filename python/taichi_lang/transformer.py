@@ -43,7 +43,6 @@ class ASTTransformer(ast.NodeTransformer):
     t.value.func.value.ctx = ast.Load()
     t.value.args[0] = node.value
     t.value.args[1] = ast.Str(s=type(node.op).__name__, ctx=ast.Load())
-    # astpretty.pprint(t)
     return ast.copy_location(t, node)
 
   def visit_Assign(self, node):
@@ -188,14 +187,12 @@ if 1:
     if isinstance(node.op, ast.And):
       # Python does not support overloading logical and & or
       new_node = self.parse_expr('ti.logical_and(0, 0)')
-      astpretty.pprint(new_node)
       new_node.args[0] = node.values[0]
       new_node.args[1] = node.values[1]
       node = new_node
     elif isinstance(node.op, ast.Or):
       # Python does not support overloading logical and & or
       new_node = self.parse_expr('ti.logical_or(0, 0)')
-      astpretty.pprint(new_node)
       new_node.args[0] = node.values[0]
       new_node.args[1] = node.values[1]
       node = new_node

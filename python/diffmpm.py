@@ -49,7 +49,7 @@ def inc_f():
 def p2g():
   for p in range(0, n_particles):
     base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
-    fx = x[p] * inv_dx - ti.cast(base, ti.f32)
+    fx = x[f, p] * inv_dx - ti.cast(base, ti.f32)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
          0.5 * ti.sqr(fx - 0.5)]
     stress = -dt * p_vol * (J[f, p] - 1) * 4 * inv_dx * inv_dx * E
@@ -102,7 +102,7 @@ def g2p():
         new_C += 4 * weight * ti.outer_product(g_v, dpos) * inv_dx
 
     v[f + 1, p] = new_v
-    x[f + 1, p] = x[f, p] + dt * v[p]
+    x[f + 1, p] = x[f, p] + dt * v[f + 1, p]
     J[f + 1, p] = J[f, p] * (1 + dt * new_C.trace())
     C[f + 1, p] = new_C
 

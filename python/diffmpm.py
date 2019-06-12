@@ -132,10 +132,6 @@ def main():
     g2p()
     inc_f()
 
-  dec_f()
-  g2p.grad()
-  p2g.grad()
-
   ti.profiler_print()
 
   while True:

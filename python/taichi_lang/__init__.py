@@ -23,6 +23,8 @@ parallelize = core.parallelize
 vectorize = core.vectorize
 block_dim = core.block_dim
 cache = core.cache
+transposed = Matrix.transposed
+polar_decomposition = Matrix.polar_decomposition
 
 schedules = [parallelize, vectorize, block_dim, cache]
 

@@ -112,14 +112,24 @@ class Matrix:
         ret(i, j).assign(other(i, j) - self(i, j))
     return ret
 
-  def __call__(self, *args, **kwargs):
-    assert kwargs == {}
+  def linearize_entry_id(self, *args):
     assert 1 <= len(args) <= 2
     if len(args) == 1:
       args = args + (0,)
     assert 0 <= args[0] < self.n
     assert 0 <= args[1] < self.m
-    return self.entries[args[0] * self.m + args[1]]
+    return args[0] * self.m + args[1]
+
+  def __call__(self, *args, **kwargs):
+    assert kwargs == {}
+    return self.entries[self.linearize_entry_id(*args)]
+
+  def get_entry(self, *args, **kwargs):
+    assert kwargs == {}
+    return self.entries[self.linearize_entry_id(*args)]
+
+  def set_entry(self, i, j, e):
+    self.entries[self.linearize_entry_id(i, j)] = e
 
   def place(self, snode):
     for e in self.entries:
@@ -173,6 +183,25 @@ class Matrix:
       for j in range(b.n):
         c(i, j).assign(a(i) * b(j))
     return c
+
+  @staticmethod
+  def transposed(a):
+    assert a.n == a.m
+    ret = Matrix(a.n, a.m, empty=True)
+    for i in range(a.n):
+      for j in range(a.m):
+        ret.set_entry(j, i, a(i, j))
+    return ret
+
+  @staticmethod
+  def polar_decomposition(a):
+    assert a.n == 2 and a.m == 2
+    x, y = a(0, 0) + a(11), a(1, 0) - a(0, 1)
+    scale = impl.expr_init(1.0 / impl.sqrt(x * x + y * y))
+    c = x * scale
+    s = y * scale
+    r = Matrix([[c, -s], [s, c]])
+    return r, Matrix.transposed(r) @ a
 
   def loop_range(self):
     return self.entries[0]

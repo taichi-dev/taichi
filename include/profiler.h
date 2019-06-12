@@ -7,38 +7,62 @@
 
 TLANG_NAMESPACE_BEGIN
 
+struct ProfileRecord {
+  std::string name;
+  int counter;
+  double min;
+  double max;
+  double total;
+
+  ProfileRecord(const std::string &name)
+      : name(name), counter(0), min(0), max(0), total(0) {
+  }
+
+  void insert_sample(double t) {
+    if (counter == 0) {
+      min = t;
+      max = t;
+    }
+    counter++;
+    min = std::min(min, t);
+    max = std::max(max, t);
+    total += t;
+  }
+};
+
+class ProfilerBase {
+ protected:
+  std::vector<ProfileRecord> records;
+
+ public:
+  void clear() {
+    records.clear();
+  }
+
+  virtual void sync() {
+  }
+
+  virtual std::string title() = 0;
+
+  void print() {
+    printf("%s\n", title().c_str());
+    for (auto &rec : records) {
+      printf(
+          "    %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   total "
+          "%7.3f s  count %7d\n",
+          rec.name.c_str(), rec.min, rec.total / rec.counter, rec.max,
+          rec.total / 1000.0f, rec.counter);
+    }
+  }
+};
+
 #if defined(TLANG_GPU)
 
 #include <cuda_runtime.h>
 
-class GPUProfiler {
+class GPUProfiler : public ProfilerBase {
  public:
   cudaEvent_t current_stop;
-
-  struct ProfileRecord {
-    std::string name;
-    int counter;
-    double min;
-    double max;
-    double total;
-
-    ProfileRecord(const std::string &name)
-        : name(name), counter(0), min(0), max(0), total(0) {
-    }
-
-    void insert_sample(double t) {
-      if (counter == 0) {
-        min = t;
-        max = t;
-      }
-      counter++;
-      min = std::min(min, t);
-      max = std::max(max, t);
-      total += t;
-    }
-  };
-
-  std::vector<ProfileRecord> records;
 
   std::map<std::string, std::vector<std::pair<cudaEvent_t, cudaEvent_t>>>
       outstanding_events;
@@ -56,19 +80,11 @@ class GPUProfiler {
     cudaEventRecord(current_stop);
   }
 
-  void print() {
-    sync();
-    printf("GPU Profiler:\n");
-    for (auto &rec : records) {
-      printf(
-          "    %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   total "
-          "%7.3f s  count %7d\n",
-          rec.name.c_str(), rec.min, rec.total / rec.counter, rec.max,
-          rec.total / 1000.0f, rec.counter);
-    }
+  std::string title() override {
+    return "GPU Profiler";
   }
 
-  void sync() {
+  void sync() override {
     cudaDeviceSynchronize();
     for (auto &map_elem : outstanding_events) {
       auto &list = map_elem.second;
@@ -93,45 +109,21 @@ class GPUProfiler {
     static GPUProfiler profiler;
     return profiler;
   }
-
-  void clear() {
-    records.clear();
-  }
 };
 #endif
 
-class CPUProfiler {
+class CPUProfiler : public ProfilerBase {
  public:
-  struct ProfileRecord {
-    std::string name;
-    int counter;
-    double min;
-    double max;
-    double total;
-
-    ProfileRecord(const std::string &name)
-        : name(name), counter(0), min(0), max(0), total(0) {
-    }
-
-    void insert_sample(double t) {
-      if (counter == 0) {
-        min = t;
-        max = t;
-      }
-      counter++;
-      min = std::min(min, t);
-      max = std::max(max, t);
-      total += t;
-    }
-  };
-
-  std::vector<ProfileRecord> records;
   double start_t;
   std::string event_name;
 
   void start(const std::string &kernel_name) {
     start_t = get_time();
     event_name = kernel_name;
+  }
+
+  std::string title() override {
+    return "CPU Profiler";
   }
 
   void stop() {
@@ -145,21 +137,6 @@ class CPUProfiler {
       it = std::prev(records.end());
     }
     it->insert_sample(ms);
-  }
-
-  void print() {
-    printf("CPU Profiler:\n");
-    for (auto &rec : records) {
-      printf(
-          "    %30s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   total "
-          "%7.3f s  count %7d\n",
-          rec.name.c_str(), rec.min, rec.total / rec.counter, rec.max,
-          rec.total / 1000.0f, rec.counter);
-    }
-  }
-
-  void clear() {
-    records.clear();
   }
 };
 

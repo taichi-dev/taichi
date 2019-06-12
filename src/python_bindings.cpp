@@ -82,6 +82,9 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   py::class_<Index>(m, "Index").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
       .def(py::init<>())
+      .def("clear_data", &SNode::clear_data)
+      .def("clear_data_and_deactivate", &SNode::clear_data_and_deactivate)
+      .def_readwrite("parent", &SNode::parent)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::dense),

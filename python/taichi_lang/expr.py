@@ -178,3 +178,9 @@ class Expr:
   def set_grad(self, grad):
     self.ptr.set_grad(grad.ptr)
 
+  def clear(self, deactivate=False):
+    assert not deactivate
+    node = self.ptr.snode().parent
+    assert node
+    node.clear_data()
+

@@ -72,7 +72,7 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void accumulate(Stmt *primal, Stmt *value) {
-    auto alloca_ = alloc(primal);
+    auto alloca_ = adjoint(primal);
     TC_ASSERT(alloca_->is<AllocaStmt>());
     auto alloca = alloca_->as<AllocaStmt>();
     TC_ASSERT(alloca->width() == 1);
@@ -80,7 +80,7 @@ class MakeAdjoint : public IRVisitor {
     insert<LocalStoreStmt>(alloca, add(local_load, value));
   }
 
-  Stmt *alloc(Stmt *stmt) {
+  Stmt *adjoint(Stmt *stmt) {
     if (stmt->adjoint == nullptr) {
       // create the alloca
       auto alloca = Stmt::make<AllocaStmt>(
@@ -99,11 +99,11 @@ class MakeAdjoint : public IRVisitor {
     if (stmt->op_type == UnaryOpType::floor) {
       // do nothing
     } else if (stmt->op_type == UnaryOpType::neg) {
-      accumulate(stmt->rhs, negate(alloc(stmt)));
+      accumulate(stmt->rhs, negate(adjoint(stmt)));
     } else if (stmt->op_type == UnaryOpType::sin) {
-      accumulate(stmt->rhs, mul(alloc(stmt), cos(stmt->rhs)));
+      accumulate(stmt->rhs, mul(adjoint(stmt), cos(stmt->rhs)));
     } else if (stmt->op_type == UnaryOpType::cos) {
-      accumulate(stmt->rhs, negate(mul(alloc(stmt), sin(stmt->rhs))));
+      accumulate(stmt->rhs, negate(mul(adjoint(stmt), sin(stmt->rhs))));
     } else if (stmt->op_type == UnaryOpType::cast) {
       if (stmt->cast_by_value && is_real(stmt->cast_type)) {
         accumulate(stmt->rhs, stmt);
@@ -118,17 +118,17 @@ class MakeAdjoint : public IRVisitor {
 
   void visit(BinaryOpStmt *bin) override {
     if (bin->op_type == BinaryOpType::add) {
-      accumulate(bin->lhs, alloc(bin));
-      accumulate(bin->rhs, alloc(bin));
+      accumulate(bin->lhs, adjoint(bin));
+      accumulate(bin->rhs, adjoint(bin));
     } else if (bin->op_type == BinaryOpType::sub) {
-      accumulate(bin->lhs, alloc(bin));
-      accumulate(bin->rhs, negate(alloc(bin)));
+      accumulate(bin->lhs, adjoint(bin));
+      accumulate(bin->rhs, negate(adjoint(bin)));
     } else if (bin->op_type == BinaryOpType::mul) {
-      accumulate(bin->lhs, mul(alloc(bin), bin->rhs));
-      accumulate(bin->rhs, mul(alloc(bin), bin->lhs));
+      accumulate(bin->lhs, mul(adjoint(bin), bin->rhs));
+      accumulate(bin->rhs, mul(adjoint(bin), bin->lhs));
     } else if (bin->op_type == BinaryOpType::div) {
-      accumulate(bin->lhs, div(alloc(bin), bin->rhs));
-      accumulate(bin->rhs, negate(div(mul(alloc(bin), bin->lhs),
+      accumulate(bin->lhs, div(adjoint(bin), bin->rhs));
+      accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs),
                                       mul(bin->rhs, bin->rhs))));
     } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
       // do nothing
@@ -143,10 +143,10 @@ class MakeAdjoint : public IRVisitor {
     auto zero = insert<ConstStmt>(TypedConstant(stmt->ret_type.data_type));
     accumulate(stmt->op2,
                insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1,
-                                     load(alloc(stmt)), zero));
+                                     load(adjoint(stmt)), zero));
     accumulate(stmt->op3,
                insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1, zero,
-                                     load(alloc(stmt))));
+                                     load(adjoint(stmt))));
   }
 
   void visit(IfStmt *if_stmt) override {
@@ -204,8 +204,8 @@ class MakeAdjoint : public IRVisitor {
     auto snodes = ptr->snodes;
     TC_ASSERT(snodes[0]->grad != nullptr);
     snodes[0] = snodes[0]->grad;
-    auto adjoint = insert<GlobalPtrStmt>(snodes, ptr->indices);
-    insert<GlobalStoreStmt>(adjoint, load(alloc(stmt)));
+    auto adj_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
+    insert<GlobalStoreStmt>(adj_ptr, load(adjoint(stmt)));
   }
 
   void visit(GlobalStoreStmt *stmt) override {

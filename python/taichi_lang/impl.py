@@ -131,7 +131,7 @@ def kernel(foo):
       ast.fix_missing_locations(tree)
 
       # astpretty.pprint(func_body)
-      print(astor.to_source(tree.body[0], indent_with='  '))
+      # print(astor.to_source(tree.body[0], indent_with='  '))
 
       ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
 
@@ -162,7 +162,7 @@ def kernel(foo):
       visitor.visit(tree)
       ast.fix_missing_locations(tree)
 
-      print(astor.to_source(tree.body[0], indent_with='  '))
+      # print(astor.to_source(tree.body[0], indent_with='  '))
 
       ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
 

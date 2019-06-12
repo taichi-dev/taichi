@@ -1,4 +1,5 @@
 import taichi_lang as ti
+from pytest import approx
 import math
 
 def test_size1():
@@ -34,18 +35,19 @@ def test_diff_sincos():
     for i in x:
       y[i] = ti.cos(x[i])
 
+  v = 0.2
+
   y.grad[0] = 1
-  v = 1
   x[0] = v
   tri()
   tri.grad()
-  print(y[0], math.sin(v))
-  print(x.grad[0], math.cos(v))
+
+  assert y[0] == approx(math.sin(v))
+  assert x.grad[0] == approx(math.cos(v))
 
   tri2()
   tri2.grad()
-  print(y[0], math.cos(v))
-  print(x.grad[0], -math.sin(v))
+  assert y[0] == approx(math.cos(v))
+  assert x.grad[0] == approx(-math.sin(v))
 
-# test_size1()
-# test_diff_sincos()
+

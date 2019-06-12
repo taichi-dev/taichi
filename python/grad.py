@@ -19,11 +19,12 @@ def poly():
   for i in x:
     v = x[i]
     ret = 0.0
-    if v < -1 or v > 1:
-      ret = v - 1
+    guard = 0.2
+    if v < -guard or v > guard:
+      ret = ti.sin(4 / v)
     else:
-      ret = v * v * 0.5 - 3
-    y[i] = ti.sin(3 * ret)
+      ret = 0
+    y[i] = ret
 
 xs = []
 ys = []

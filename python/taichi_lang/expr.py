@@ -42,6 +42,9 @@ class Expr:
     self.assign(Expr(taichi_lang_core.expr_add(self.ptr, other.ptr)))
 
 
+  def __neg__(self):
+    return Expr(taichi_lang_core.expr_neg(self.ptr))
+
   def __sub__(self, other):
     other = Expr(other)
     return Expr(taichi_lang_core.expr_sub(self.ptr, other.ptr))

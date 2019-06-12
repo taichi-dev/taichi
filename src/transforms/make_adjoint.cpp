@@ -98,6 +98,8 @@ class MakeAdjoint : public IRVisitor {
   void visit(UnaryOpStmt *stmt) override {
     if (stmt->op_type == UnaryOpType::floor) {
       // do nothing
+    } else if (stmt->op_type == UnaryOpType::neg) {
+      accumulate(stmt->rhs, negate(alloc(stmt)));
     } else if (stmt->op_type == UnaryOpType::sin) {
       accumulate(stmt->rhs, mul(alloc(stmt), cos(stmt->rhs)));
     } else if (stmt->op_type == UnaryOpType::cos) {
@@ -122,10 +124,12 @@ class MakeAdjoint : public IRVisitor {
       accumulate(bin->lhs, alloc(bin));
       accumulate(bin->rhs, negate(alloc(bin)));
     } else if (bin->op_type == BinaryOpType::mul) {
-      auto lptr = mul(alloc(bin), bin->rhs);
-      auto rptr = mul(alloc(bin), bin->lhs);
-      accumulate(bin->lhs, lptr);
-      accumulate(bin->rhs, rptr);
+      accumulate(bin->lhs, mul(alloc(bin), bin->rhs));
+      accumulate(bin->rhs, mul(alloc(bin), bin->lhs));
+    } else if (bin->op_type == BinaryOpType::div) {
+      accumulate(bin->lhs, div(alloc(bin), bin->rhs));
+      accumulate(bin->rhs, negate(div(mul(alloc(bin), bin->lhs),
+                                      mul(bin->rhs, bin->rhs))));
     } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
       // do nothing
     } else {

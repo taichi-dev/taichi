@@ -63,10 +63,9 @@ PYBIND11_MODULE(taichi_lang_core, m) {
                      &CompileConfig::simplify_after_lower_access)
       .def_readwrite("lower_access", &CompileConfig::lower_access);
 
-  m.def(
-      "default_compile_config",
-      [&]() -> CompileConfig & { return default_compile_config; },
-      py::return_value_policy::reference);
+  m.def("default_compile_config",
+        [&]() -> CompileConfig & { return default_compile_config; },
+        py::return_value_policy::reference);
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -76,10 +75,9 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);
 
-  m.def(
-      "current_compile_config",
-      [&]() -> CompileConfig & { return get_current_program().config; },
-      py::return_value_policy::reference);
+  m.def("current_compile_config",
+        [&]() -> CompileConfig & { return get_current_program().config; },
+        py::return_value_policy::reference);
 
   py::class_<Index>(m, "Index").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
@@ -153,9 +151,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
 
   m.def("layout", layout);
 
-  m.def(
-      "get_root", [&]() -> SNode * { return &root; },
-      py::return_value_policy::reference);
+  m.def("get_root", [&]() -> SNode * { return &root; },
+        py::return_value_policy::reference);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
 
@@ -180,6 +177,7 @@ PYBIND11_MODULE(taichi_lang_core, m) {
 
 #define DEFINE_EXPRESSION_OP_UNARY(x) m.def("expr_" #x, expr_##x);
 
+  m.def("expr_neg", [&](const Expr &e) { return -e; });
   DEFINE_EXPRESSION_OP_UNARY(sqrt)
   DEFINE_EXPRESSION_OP_UNARY(floor)
   DEFINE_EXPRESSION_OP_UNARY(abs)

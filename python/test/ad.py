@@ -45,6 +45,7 @@ def grad_test(tifunc, npfunc=None):
   assert x.grad[0] == approx(grad(npfunc)(v))
 
 def test_poly():
+  grad_test(lambda x: -x)
   grad_test(lambda x: x)
   grad_test(lambda x: x * x)
   grad_test(lambda x: ti.sqr(x))
@@ -57,3 +58,8 @@ def test_poly():
 def test_trigonometric():
   grad_test(lambda x: ti.sin(x), lambda x: np.sin(x))
   grad_test(lambda x: ti.cos(x), lambda x: np.cos(x))
+
+def test_frac():
+  grad_test(lambda x: 1 / x)
+  grad_test(lambda x: (x + 1) / (x - 1))
+  grad_test(lambda x: (x + 1) * (x + 2) / ((x - 1) * (x + 3)))

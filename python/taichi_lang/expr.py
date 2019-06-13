@@ -25,6 +25,7 @@ class Expr:
     if self.tb:
       self.ptr.set_tb(self.tb)
     self.grad = None
+    self.val = self
 
   @staticmethod
   def stack_info():

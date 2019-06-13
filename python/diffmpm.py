@@ -35,6 +35,7 @@ loss = scalar()
 
 # ti.cfg.arch = ti.x86_64
 ti.cfg.arch = ti.cuda
+ti.cfg.print_ir = True
 
 
 @ti.layout
@@ -101,23 +102,23 @@ bound = 3
 @ti.kernel
 def grid_op():
   for i, j in grid_m_in:
+    v_out = ti.Vector([0.0, 0.0])
     if grid_m_in[i, j] > 0:
       inv_m = 1 / grid_m_in[i, j]
 
-      grid_v_out[i, j] = inv_m * grid_v_in[i, j]
+      v_out = inv_m * grid_v_in[i, j]
 
-      grid_v_out(1)[i, j] -= dt * gravity
+      v_out(1).val -= dt * gravity
 
-      if i < bound and grid_v_out(0)[i, j] < 0:
-        grid_v_out(0)[i, j] = 0
-      if i > n_grid - bound and grid_v_out(0)[i, j] > 0:
-        grid_v_out(0)[i, j] = 0
-      if j < bound and grid_v_out(1)[i, j] < 0:
-        grid_v_out(1)[i, j] = 0
-      if j > n_grid - bound and grid_v_out(1)[i, j] > 0:
-        grid_v_out(1)[i, j] = 0
-    else:
-      grid_v_out[i, j] = ti.Vector([0, 0])
+      if i < bound and v_out(0) < 0:
+        v_out(0).val = 0
+      if i > n_grid - bound and v_out(0) > 0:
+        v_out(0).val = 0
+      if j < bound and v_out(1) < 0:
+        v_out(1).val = 0
+      if j > n_grid - bound and v_out(1) > 0:
+        v_out(1).val = 0
+    grid_v_out[i, j] = v_out
 
 
 @ti.kernel

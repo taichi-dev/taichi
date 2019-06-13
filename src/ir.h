@@ -1477,6 +1477,10 @@ class GlobalLoadStmt : public Stmt {
     add_operand(this->ptr);
   }
 
+  virtual bool has_side_effect() const override {
+    return false;
+  }
+
   DEFINE_ACCEPT;
 };
 

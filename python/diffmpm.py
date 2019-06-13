@@ -208,31 +208,39 @@ def backward():
 
 def main():
   # initialization
-  init_v[None] = [0, -2]
+  init_v[None] = [0, 0]
 
   for i in range(n_particles):
     x[0, i] = [random.random() * 0.4 + 0.3, random.random() * 0.4 + 0.3]
     F[0, i] = [[1, 0], [0, 1]]
 
 
-  for i in range(10):
+  img_count = 0
+  for i in range(30):
     l = forward()
     grad = backward()
     print('loss=', l, '   grad=', grad)
-    learning_rate = 1
+    learning_rate = 10
     init_v(0)[None] -= learning_rate * grad[0][0]
     init_v(1)[None] -= learning_rate * grad[1][0]
 
     # visualize
-    for s in range(0, steps - 1, 32):
+    for s in range(0, steps - 1, 64):
       scale = 4
       img = np.zeros(shape=(scale * n_grid, scale * n_grid)) + 0.3
+      total = [0, 0]
       for i in range(n_particles):
         p_x = int(scale * x(0)[s, i] / dx)
         p_y = int(scale * x(1)[s, i] / dx)
+        total[0] += p_x
+        total[1] += p_y
         img[p_x, p_y] = 1
+      cv2.circle(img, (total[1] // n_particles, total[0] // n_particles), radius=5, color=0, thickness=5)
+      cv2.circle(img, (int(target[1] * scale * n_grid), int(target[0] * scale * n_grid)), radius=5, color=1, thickness=5)
       img = img.swapaxes(0, 1)[::-1]
       cv2.imshow('MPM', img)
+      img_count += 1
+      cv2.imwrite('MPM{:04d}.png'.format(img_count), img * 255)
       cv2.waitKey(1)
 
   ti.profiler_print()

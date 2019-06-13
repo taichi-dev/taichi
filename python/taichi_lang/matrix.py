@@ -203,6 +203,21 @@ class Matrix:
     r = Matrix([[c, -s], [s, c]])
     return r, Matrix.transposed(r) @ a
 
+  @staticmethod
+  def determinant(a):
+    assert a.n == 2 and a.m == 2
+    return a(0, 0) * a(1, 1) - a(0, 1) * a(1, 0)
+
+  @staticmethod
+  def diag(dim, val):
+    ret = Matrix(dim, dim)
+    for i in range(dim):
+      for j in range(dim):
+        ret.set_entry(i, j, 0)
+    for i in range(dim):
+      ret.set_entry(i, i, val)
+    return ret
+
   def loop_range(self):
     return self.entries[0]
 

@@ -43,7 +43,7 @@ def place():
     x.grad, v.grad, C.grad, F.grad)
   ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out).place(
     grid_v_in.grad, grid_m_in.grad, grid_v_out.grad)
-  ti.root.place(f, init_v, init_v.grad, loss, loss.grad)
+  ti.root.place(f, f.grad, init_v, init_v.grad, loss, loss.grad)
 
 @ti.kernel
 def set_v():

@@ -84,7 +84,7 @@ class MakeAdjoint : public IRVisitor {
     if (stmt->adjoint == nullptr) {
       // create the alloca
       auto alloca = Stmt::make<AllocaStmt>(
-          1, get_current_program().config.grad_precision);
+          1, get_current_program().config.gradient_dt);
       stmt->adjoint = alloca.get();
       current_block->insert(std::move(alloca), 0);
     }
@@ -170,7 +170,8 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    TC_NOT_IMPLEMENTED
+    TC_WARN("Range for order not yet reversed.");
+    for_stmt->body->accept(this);
   }
 
   void visit(StructForStmt *for_stmt) override {

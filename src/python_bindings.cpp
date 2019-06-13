@@ -68,7 +68,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
                      &CompileConfig::simplify_before_lower_access)
       .def_readwrite("simplify_after_lower_access",
                      &CompileConfig::simplify_after_lower_access)
-      .def_readwrite("lower_access", &CompileConfig::lower_access);
+      .def_readwrite("lower_access", &CompileConfig::lower_access)
+      .def_readwrite("gradient_dt", &CompileConfig::gradient_dt);
 
   m.def("default_compile_config",
         [&]() -> CompileConfig & { return default_compile_config; },

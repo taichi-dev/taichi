@@ -315,7 +315,7 @@ struct CompileConfig {
   bool lower_access;
   bool simplify_after_lower_access;
   bool attempt_vectorized_load_cpu;
-  DataType grad_precision;
+  DataType gradient_dt;
   std::string extra_flags;
 
   CompileConfig();

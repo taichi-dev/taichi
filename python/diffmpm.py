@@ -16,7 +16,8 @@ E = 100
 # TODO: update
 mu = E
 la = E
-steps = 32
+max_steps = 8192
+steps = 1024
 gravity = 9.8
 
 scalar = lambda: ti.var(dt=real)
@@ -34,12 +35,12 @@ loss = scalar()
 
 # ti.cfg.arch = ti.x86_64
 ti.cfg.arch = ti.cuda
-ti.cfg.print_ir = True
+# ti.cfg.print_ir = True
 
 
 @ti.layout
 def place():
-  ti.root.dense(ti.l, steps).dense(ti.k, n_particles).place(x, v, C, F).place(
+  ti.root.dense(ti.l, max_steps).dense(ti.k, n_particles).place(x, v, C, F).place(
     x.grad, v.grad, C.grad, F.grad)
   ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out).place(
     grid_v_in.grad, grid_m_in.grad, grid_v_out.grad)
@@ -55,6 +56,9 @@ def clear_grid():
   for i, j in grid_m_in:
     grid_v_in[i, j] = [0, 0]
     grid_m_in[i, j] = 0
+    grid_v_in.grad[i, j] = [0, 0]
+    grid_m_in.grad[i, j] = 0
+    grid_v_out.grad[i, j] = [0, 0]
 
 
 @ti.kernel

@@ -24,7 +24,7 @@ vectorize = core.vectorize
 block_dim = core.block_dim
 cache = core.cache
 transposed = Matrix.transposed
-polar_decomposition = Matrix.polar_decomposition
+polar_decompose = Matrix.polar_decompose
 
 schedules = [parallelize, vectorize, block_dim, cache]
 

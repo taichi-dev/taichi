@@ -194,9 +194,9 @@ class Matrix:
     return ret
 
   @staticmethod
-  def polar_decomposition(a):
+  def polar_decompose(a):
     assert a.n == 2 and a.m == 2
-    x, y = a(0, 0) + a(11), a(1, 0) - a(0, 1)
+    x, y = a(0, 0) + a(1, 1), a(1, 0) - a(0, 1)
     scale = impl.expr_init(1.0 / impl.sqrt(x * x + y * y))
     c = x * scale
     s = y * scale

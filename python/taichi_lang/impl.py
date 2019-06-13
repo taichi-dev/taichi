@@ -286,7 +286,26 @@ def pow(x, n):
 def sin(expr):
   return Expr(taichi_lang_core.expr_sin(expr.ptr))
 
-
 @unary
 def cos(expr):
   return Expr(taichi_lang_core.expr_cos(expr.ptr))
+
+@unary
+def sqrt(expr):
+  return Expr(taichi_lang_core.expr_sqrt(expr.ptr))
+
+@unary
+def floor(expr):
+  return Expr(taichi_lang_core.expr_sqrt(expr.ptr))
+
+@unary
+def inv(expr):
+  return Expr(taichi_lang_core.expr_inv(expr.ptr))
+
+@unary
+def tan(expr):
+  return Expr(taichi_lang_core.expr_tan(expr.ptr))
+
+@unary
+def tanh(expr):
+  return Expr(taichi_lang_core.expr_tanh(expr.ptr))

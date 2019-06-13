@@ -49,6 +49,22 @@ class ASTTransformer(ast.NodeTransformer):
     assert (len(node.targets) == 1)
     self.generic_visit(node)
     is_local = isinstance(node.targets[0], ast.Name)
+
+    if isinstance(node.targets[0], ast.Tuple):
+      # Create
+      init = ast.Attribute(
+        value=ast.Name(id='ti', ctx=ast.Load()), attr='expr_init',
+        ctx=ast.Load())
+      rhs = ast.Call(
+        func=init,
+        args=[node.value],
+        keywords=[],
+      )
+      for var in node.targets[0].elts:
+        self.create_variable(var.id)
+      return ast.copy_location(ast.Assign(targets=node.targets, value=rhs),
+                               node)
+
     if is_local and self.is_creation(node.targets[0].id):
       var_name = node.targets[0].id
       # Create

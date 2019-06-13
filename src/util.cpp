@@ -336,6 +336,14 @@ std::string CompileConfig::compile_cmd(const std::string &input,
   return cmd;
 }
 
+bool command_exist(const std::string &command) {
+  if (std::system(fmt::format("which {} > /dev/null 2>&1", command).c_str())) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
 CompileConfig::CompileConfig() {
   arch = Arch::x86_64;
   simd_width = default_simd_width(arch);
@@ -352,6 +360,14 @@ CompileConfig::CompileConfig() {
   gcc_version = -2;  // not 7 for faster compilation
                      // Use clang for faster speed
 #endif
+  if (gcc_version == -2 && !command_exist("clang-7")) {
+    TC_WARN("Command clang-7 not found. Attempting clang");
+    gcc_version = -1;
+  }
+  if (gcc_version == -1 && !command_exist("clang")) {
+    TC_WARN("Command clang not found. Attempting gcc-6");
+    gcc_version = 6;
+  }
   lazy_compilation = true;
   serial_schedule = false;
   simplify_before_lower_access = true;

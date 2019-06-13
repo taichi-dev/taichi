@@ -2,6 +2,7 @@ import taichi_lang as ti
 import numpy as np
 import random
 import cv2
+import matplotlib.pyplot as plt
 
 real = ti.f32
 dim = 2
@@ -215,9 +216,11 @@ def main():
     F[0, i] = [[1, 0], [0, 1]]
 
 
+  losses = []
   img_count = 0
   for i in range(30):
     l = forward()
+    losses.append(l)
     grad = backward()
     print('loss=', l, '   grad=', grad)
     learning_rate = 10
@@ -244,6 +247,8 @@ def main():
       cv2.waitKey(1)
 
   ti.profiler_print()
+  plt.plot(losses)
+  plt.show()
 
 
 if __name__ == '__main__':

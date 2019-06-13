@@ -60,6 +60,15 @@ def clear_grid():
     grid_m_in.grad[i, j] = 0
     grid_v_out.grad[i, j] = [0, 0]
 
+@ti.kernel
+def clear_particle_grad():
+  # for all time steps and all particles
+  for f, i in x:
+    x.grad[f, i] = [0, 0]
+    v.grad[f, i] = [0, 0]
+    C.grad[f, i] = [[0, 0], [0, 0]]
+    F.grad[f, i] = [[0, 0], [0, 0]]
+
 
 @ti.kernel
 def inc_f():
@@ -152,14 +161,7 @@ def compute_loss():
   for i in range(n_particles):
     loss[None].atomic_add(x[steps - 1, i](0) / n_particles)
 
-def main():
-  # initialization
-  init_v[None] = [0, -2]
-
-  for i in range(n_particles):
-    x[0, i] = [random.random() * 0.4 + 0.3, random.random() * 0.4 + 0.3]
-    F[0, i] = [[1, 0], [0, 1]]
-
+def forward():
   # simulation
   set_v()
   for s in range(steps - 1):
@@ -171,12 +173,17 @@ def main():
 
   loss[None] = 0
   compute_loss()
+  return loss[None]
 
-  print('Loss=', loss[None])
+def backward():
+  clear_particle_grad()
+  init_v.grad[None] = [0, 0]
+
   loss.grad[None] = 1
 
   compute_loss.grad()
   for s in range(steps - 1):
+    # Since we do not store the grid history (to save space), we redo p2g and grid op
     dec_f()
     clear_grid()
     p2g()
@@ -186,9 +193,20 @@ def main():
     grid_op.grad()
     p2g.grad()
   set_v.grad()
-  print('init_v.grad=', init_v.grad[None])
-  print('loss_grad=', loss.grad[None])
-  print('x_grad=', x.grad[1, 1])
+  return init_v.grad[None]
+
+
+def main():
+  # initialization
+  init_v[None] = [0, -2]
+
+  for i in range(n_particles):
+    x[0, i] = [random.random() * 0.4 + 0.3, random.random() * 0.4 + 0.3]
+    F[0, i] = [[1, 0], [0, 1]]
+
+
+  print(forward())
+  print(backward())
 
   ti.profiler_print()
 

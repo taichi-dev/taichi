@@ -16,8 +16,7 @@ E = 100
 # TODO: update
 mu = E
 la = E
-# steps = 4096
-steps = 2
+steps = 32
 gravity = 9.8
 
 scalar = lambda: ti.var(dt=real)
@@ -103,21 +102,22 @@ bound = 3
 def grid_op():
   for i, j in grid_m_in:
     v_out = ti.Vector([0.0, 0.0])
-    if grid_m_in[i, j] > 0:
-      inv_m = 1 / grid_m_in[i, j]
+    #if grid_m_in[i, j] > 0:
 
-      v_out = inv_m * grid_v_in[i, j]
+    inv_m = 1 / (grid_m_in[i, j] + 1e-10)
 
-      v_out(1).val -= dt * gravity
+    v_out = inv_m * grid_v_in[i, j]
 
-      if i < bound and v_out(0) < 0:
-        v_out(0).val = 0
-      if i > n_grid - bound and v_out(0) > 0:
-        v_out(0).val = 0
-      if j < bound and v_out(1) < 0:
-        v_out(1).val = 0
-      if j > n_grid - bound and v_out(1) > 0:
-        v_out(1).val = 0
+    v_out(1).val -= dt * gravity
+
+    if i < bound and v_out(0) < 0:
+      v_out(0).val = 0
+    if i > n_grid - bound and v_out(0) > 0:
+      v_out(0).val = 0
+    if j < bound and v_out(1) < 0:
+      v_out(1).val = 0
+    if j > n_grid - bound and v_out(1) > 0:
+      v_out(1).val = 0
     grid_v_out[i, j] = v_out
 
 

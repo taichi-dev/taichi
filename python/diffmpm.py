@@ -30,6 +30,7 @@ grid_v_out = vec()
 C, F = mat(), mat()
 
 init_v = vec()
+loss = scalar()
 
 # ti.cfg.arch = ti.x86_64
 ti.cfg.arch = ti.cuda
@@ -41,8 +42,7 @@ def place():
     x.grad, v.grad, C.grad, F.grad)
   ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out).place(
     grid_v_in.grad, grid_m_in.grad, grid_v_out.grad)
-  ti.root.place(f)
-  ti.root.place(init_v, init_v.grad)
+  ti.root.place(f, init_v, init_v.grad, loss, loss.grad)
 
 @ti.kernel
 def set_v():
@@ -141,10 +141,14 @@ def g2p():
     x[f + 1, p] = x[f, p] + dt * v[f + 1, p]
     C[f + 1, p] = new_C
 
+@ti.kernel
+def compute_loss():
+  for i in range(n_particles):
+    loss[None].atomic_add(x[steps - 1, i](0) / n_particles)
 
 def main():
   # initialization
-  init_v[None] = [1, -2]
+  init_v[None] = [0, -2]
 
   for i in range(n_particles):
     x[0, i] = [random.random() * 0.4 + 0.3, random.random() * 0.4 + 0.3]
@@ -158,6 +162,13 @@ def main():
     grid_op()
     g2p()
     inc_f()
+
+  loss[None] = 0
+  compute_loss()
+  print(loss[None])
+
+  loss.grad[None] = -1
+
 
   ti.profiler_print()
 

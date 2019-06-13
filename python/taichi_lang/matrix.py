@@ -17,6 +17,7 @@ class Matrix:
   is_taichi_class = True
 
   def __init__(self, n, m=1, dt=None, empty=False):
+    self.grad = None
     if isinstance(n, list):
       if not isinstance(n[0], list):
         mat = [list([expr.Expr(x)]) for x in n]
@@ -39,6 +40,7 @@ class Matrix:
           assert not impl.inside_kernel()
           for i in range(n * m):
             self.entries.append(impl.var(dt))
+          self.grad = self.make_grad()
 
   def assign(self, other):
     if not isinstance(other, Matrix):
@@ -232,3 +234,9 @@ class Matrix:
     assert self.n == other.n and self.m == other.m
     for i in range(len(self.entries)):
       self.entries[i].atomic_add(other.entries[i])
+
+  def make_grad(self):
+    ret = Matrix(self.n, self.m, empty=True)
+    for i in range(len(ret.entries)):
+      ret.entries[i] = self.entries[i].grad
+    return ret

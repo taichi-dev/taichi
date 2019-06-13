@@ -9,14 +9,14 @@ n_particles = 8192
 n_grid = 128
 dx = 1 / n_grid
 inv_dx = 1 / dx
-dt = 1e-4
+dt = 3e-4
 p_mass = 1
 p_vol = 1
-E = 1000
+E = 100
 # TODO: update
 mu = E
 la = E
-steps = 8192
+steps = 4096
 gravity = 9.8
 
 scalar = lambda: ti.var(dt=real)
@@ -35,8 +35,10 @@ ti.cfg.arch = ti.cuda
 
 @ti.layout
 def place():
-  ti.root.dense(ti.l, steps).dense(ti.k, n_particles).place(x, v, C, F)
-  ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out)
+  ti.root.dense(ti.l, steps).dense(ti.k, n_particles).place(x, v, C, F).place(
+    x.grad, v.grad, C.grad, F.grad)
+  ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out).place(
+    grid_v_in.grad, grid_m_in.grad, grid_v_out.grad)
   ti.root.place(f)
 
 
@@ -134,11 +136,13 @@ def g2p():
 
 
 def main():
+  # initialization
   for i in range(n_particles):
-    x[0, i] = [random.random() * 0.4 + 0.2, random.random() * 0.4 + 0.1]
+    x[0, i] = [random.random() * 0.4 + 0.3, random.random() * 0.4 + 0.3]
     v[0, i] = [0, -1]
     F[0, i] = [[1, 0], [0, 1]]
 
+  # simulation
   for s in range(steps - 1):
     clear_grid()
     p2g()

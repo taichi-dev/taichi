@@ -16,7 +16,8 @@ E = 100
 # TODO: update
 mu = E
 la = E
-steps = 4096
+# steps = 4096
+steps = 2
 gravity = 9.8
 
 scalar = lambda: ti.var(dt=real)
@@ -167,8 +168,9 @@ def main():
   compute_loss()
 
   print('Loss=', loss[None])
-  loss.grad[None] = -1
+  loss.grad[None] = 1
 
+  compute_loss.grad()
   for s in range(steps - 1):
     dec_f()
     clear_grid()
@@ -179,7 +181,9 @@ def main():
     grid_op.grad()
     p2g.grad()
   set_v.grad()
-  print('grad_v=', init_v.grad[None])
+  print('init_v.grad=', init_v.grad[None])
+  print('loss_grad=', loss.grad[None])
+  print('x_grad=', x.grad[1, 1])
 
   ti.profiler_print()
 

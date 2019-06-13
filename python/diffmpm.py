@@ -29,6 +29,8 @@ grid_v_in, grid_m_in = vec(), scalar()
 grid_v_out = vec()
 C, F = mat(), mat()
 
+init_v = vec()
+
 # ti.cfg.arch = ti.x86_64
 ti.cfg.arch = ti.cuda
 
@@ -40,7 +42,12 @@ def place():
   ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out).place(
     grid_v_in.grad, grid_m_in.grad, grid_v_out.grad)
   ti.root.place(f)
+  ti.root.place(init_v, init_v.grad)
 
+@ti.kernel
+def set_v():
+  for i in range(n_particles):
+    v[0, i] = init_v
 
 @ti.kernel
 def clear_grid():
@@ -137,12 +144,14 @@ def g2p():
 
 def main():
   # initialization
+  init_v[None] = [1, -2]
+
   for i in range(n_particles):
     x[0, i] = [random.random() * 0.4 + 0.3, random.random() * 0.4 + 0.3]
-    v[0, i] = [0, -1]
     F[0, i] = [[1, 0], [0, 1]]
 
   # simulation
+  set_v()
   for s in range(steps - 1):
     clear_grid()
     p2g()

@@ -109,8 +109,8 @@ if 1:
     with self.variable_scope():
       self.generic_visit(node)
     is_static_for = isinstance(node.iter,
-                              ast.Call) and isinstance(node.iter.func,
-                                                       ast.Attribute)
+                               ast.Call) and isinstance(node.iter.func,
+                                                        ast.Attribute)
     if is_static_for:
       attr = node.iter.func
       if attr.attr == 'static':
@@ -133,8 +133,15 @@ if 1:
   ti.core.end_frontend_range_for()
       '''.format(loop_var, loop_var)
       t = ast.parse(template).body[0]
-      bgn = node.iter.args[0]
-      end = node.iter.args[1]
+
+      assert len(node.iter.args) in [1, 2]
+      if len(node.iter.args) == 2:
+        bgn = node.iter.args[0]
+        end = node.iter.args[1]
+      else:
+        bgn = ast.Constant(value=0)
+        end = node.iter.args[0]
+
       t.body[1].value.args[0] = bgn
       t.body[2].value.args[0] = end
       t.body = t.body[:4] + node.body + t.body[4:]

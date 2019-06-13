@@ -62,3 +62,6 @@ def test_frac():
   grad_test(lambda x: (x + 1) / (x - 1))
   grad_test(
     lambda x: (x + 1) * (x + 2) / ((x - 1) * (x + 3)))
+
+def test_unary():
+  grad_test(lambda x: ti.sqrt(x), lambda x: np.sqrt(x))

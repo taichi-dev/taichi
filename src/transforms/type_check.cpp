@@ -199,10 +199,20 @@ class TypeCheck : public IRVisitor {
 
   void visit(TernaryOpStmt *stmt) {
     if (stmt->op_type == TernaryOpType::select) {
-      TC_ASSERT(stmt->op2->ret_type == stmt->op3->ret_type);
+      auto ret_type = promoted_type(stmt->op2->ret_type.data_type,
+                                    stmt->op3->ret_type.data_type);
       TC_ASSERT(stmt->op1->ret_type.data_type == DataType::i32)
       TC_ASSERT(stmt->op1->ret_type.width == stmt->op2->ret_type.width);
-      stmt->ret_type = stmt->op2->ret_type;
+      TC_ASSERT(stmt->op2->ret_type.width == stmt->op3->ret_type.width);
+      if (ret_type != stmt->op2->ret_type.data_type) {
+        auto cast_stmt = insert_type_cast_before(stmt, stmt->op2, ret_type);
+        stmt->op2 = cast_stmt;
+      }
+      if (ret_type != stmt->op3->ret_type.data_type) {
+        auto cast_stmt = insert_type_cast_before(stmt, stmt->op3, ret_type);
+        stmt->op3 = cast_stmt;
+      }
+      stmt->ret_type = VectorType(stmt->op1->width(), ret_type);
     } else {
       TC_NOT_IMPLEMENTED
     }

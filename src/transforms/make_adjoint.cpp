@@ -6,9 +6,18 @@ TLANG_NAMESPACE_BEGIN
 
 class MakeAdjoint : public IRVisitor {
  private:
+
+  Stmt *constant(float32 x) {
+    return insert<ConstStmt>(TypedConstant(x));
+  }
+
   // utils
   Stmt *negate(Stmt *inp) {
     return insert<UnaryOpStmt>(UnaryOpType::neg, load(inp));
+  }
+
+  Stmt *sqrt(Stmt *inp) {
+    return insert<UnaryOpStmt>(UnaryOpType::sqrt, load(inp));
   }
 
   Stmt *mul(Stmt *op1, Stmt *op2) {
@@ -104,6 +113,8 @@ class MakeAdjoint : public IRVisitor {
       accumulate(stmt->rhs, mul(adjoint(stmt), cos(stmt->rhs)));
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt->rhs, negate(mul(adjoint(stmt), sin(stmt->rhs))));
+    } else if (stmt->op_type == UnaryOpType::sqrt) {
+      accumulate(stmt->rhs, mul(adjoint(stmt), div(constant(0.5), sqrt(stmt->rhs))));
     } else if (stmt->op_type == UnaryOpType::cast) {
       if (stmt->cast_by_value && is_real(stmt->cast_type)) {
         accumulate(stmt->rhs, stmt);

@@ -209,15 +209,13 @@ def main():
     l = forward()
     grad = backward()
     print('loss=', l, '   grad=', grad)
-    learning_rate = 1e-1
+    learning_rate = 5e-1
     init_v(0)[None] -= learning_rate * grad[0][0]
     init_v(1)[None] -= learning_rate * grad[1][0]
 
-  ti.profiler_print()
-
-  while True:
-    for s in range(0, steps - 1, 64):
-      scale = 2
+    # visualize
+    for s in range(0, steps - 1, 32):
+      scale = 4
       img = np.zeros(shape=(scale * n_grid, scale * n_grid)) + 0.3
       for i in range(n_particles):
         p_x = int(scale * x(0)[s, i] / dx)
@@ -226,6 +224,8 @@ def main():
       img = img.swapaxes(0, 1)[::-1]
       cv2.imshow('MPM', img)
       cv2.waitKey(1)
+
+  ti.profiler_print()
 
 
 if __name__ == '__main__':

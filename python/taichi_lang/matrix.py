@@ -143,8 +143,12 @@ class Matrix:
       ret.entries[i] = impl.subscript(e, *indices)
     return ret
 
-  def __getitem__(self, item):
-    assert False
+  def __getitem__(self, index):
+    ret = [[] for _ in range(self.n)]
+    for i in range(self.n):
+      for j in range(self.m):
+        ret[i].append(self(i, j)[index])
+    return ret
 
   def __setitem__(self, index, item):
     if not isinstance(item[0], list):

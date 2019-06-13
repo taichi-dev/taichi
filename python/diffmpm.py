@@ -165,10 +165,21 @@ def main():
 
   loss[None] = 0
   compute_loss()
-  print(loss[None])
 
+  print('Loss=', loss[None])
   loss.grad[None] = -1
 
+  for s in range(steps - 1):
+    dec_f()
+    clear_grid()
+    p2g()
+    grid_op()
+
+    g2p.grad()
+    grid_op.grad()
+    p2g.grad()
+  set_v.grad()
+  print('grad_v=', init_v.grad[None])
 
   ti.profiler_print()
 

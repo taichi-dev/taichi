@@ -205,8 +205,13 @@ def main():
     F[0, i] = [[1, 0], [0, 1]]
 
 
-  print(forward())
-  print(backward())
+  for i in range(10):
+    l = forward()
+    grad = backward()
+    print('loss=', l, '   grad=', grad)
+    learning_rate = 1e-1
+    init_v(0)[None] -= learning_rate * grad[0][0]
+    init_v(1)[None] -= learning_rate * grad[1][0]
 
   ti.profiler_print()
 

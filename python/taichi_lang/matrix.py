@@ -244,3 +244,9 @@ class Matrix:
     for i in range(len(ret.entries)):
       ret.entries[i] = self.entries[i].grad
     return ret
+
+  def sum(self):
+    ret = self.entries[0]
+    for i in range(1, len(self.entries)):
+      ret += self.entries[i]
+    return ret

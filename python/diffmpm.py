@@ -19,13 +19,14 @@ la = E
 max_steps = 8192
 steps = 1024
 gravity = 9.8
+target = [0.3, 0.6]
 
 scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(dim, dt=real)
 mat = lambda: ti.Matrix(dim, dim, dt=real)
 f = ti.var(ti.i32)
 
-x, v = vec(), vec()
+x, v, x_avg = vec(), vec(), vec()
 grid_v_in, grid_m_in = vec(), scalar()
 grid_v_out = vec()
 C, F = mat(), mat()
@@ -44,7 +45,7 @@ def place():
     x.grad, v.grad, C.grad, F.grad)
   ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out).place(
     grid_v_in.grad, grid_m_in.grad, grid_v_out.grad)
-  ti.root.place(f, f.grad, init_v, init_v.grad, loss, loss.grad)
+  ti.root.place(f, f.grad, init_v, init_v.grad, loss, loss.grad, x_avg, x_avg.grad)
 
 @ti.kernel
 def set_v():
@@ -157,9 +158,14 @@ def g2p():
     C[f + 1, p] = new_C
 
 @ti.kernel
-def compute_loss():
+def compute_x_avg():
   for i in range(n_particles):
-    loss[None].atomic_add(x[steps - 1, i](0) / n_particles)
+    x_avg[None].atomic_add((1 / n_particles) * x[steps - 1, i])
+
+@ti.kernel
+def compute_loss():
+  dist = ti.sqr(x_avg - ti.Vector(target))
+  loss[None] = 0.5 * (dist(0) + dist(1))
 
 def forward():
   # simulation
@@ -172,6 +178,8 @@ def forward():
     inc_f()
 
   loss[None] = 0
+  x_avg[None] = [0, 0]
+  compute_x_avg()
   compute_loss()
   return loss[None]
 
@@ -180,8 +188,10 @@ def backward():
   init_v.grad[None] = [0, 0]
 
   loss.grad[None] = 1
+  x_avg.grad[None] = [0, 0]
 
   compute_loss.grad()
+  compute_x_avg.grad()
   for s in range(steps - 1):
     # Since we do not store the grid history (to save space), we redo p2g and grid op
     dec_f()
@@ -209,7 +219,7 @@ def main():
     l = forward()
     grad = backward()
     print('loss=', l, '   grad=', grad)
-    learning_rate = 5e-1
+    learning_rate = 1
     init_v(0)[None] -= learning_rate * grad[0][0]
     init_v(1)[None] -= learning_rate * grad[1][0]
 

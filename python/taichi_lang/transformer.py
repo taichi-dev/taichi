@@ -173,6 +173,10 @@ if 1:
       return ast.copy_location(t, node)
 
   @staticmethod
+  def parse_stmt(stmt):
+    return ast.parse(stmt).body[0]
+
+  @staticmethod
   def parse_expr(expr):
     return ast.parse(expr).body[0].value
 
@@ -203,6 +207,18 @@ if 1:
   def visit_FunctionDef(self, node):
     with self.variable_scope():
       self.generic_visit(node)
+    args = node.args
+    assert args.vararg is None
+    assert args.kwonlyargs == []
+    assert args.kw_defaults == []
+    assert args.kwarg is None
+    arg_decls = []
+    for arg in args.args:
+      arg_init = self.parse_stmt('x = ti.decl_arg(0)')
+      arg_init.targets[0].id = arg.arg
+      arg_init.value.args[0] = arg.annotation
+      arg_decls.append(arg_init)
+    node.body = arg_decls + node.body
     return node
 
   def visit_BoolOp(self, node):

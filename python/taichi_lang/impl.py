@@ -8,6 +8,8 @@ import astpretty
 import astor
 from .util import *
 
+def declare_arg(dt):
+  print('declaring kernel argument ', dt)
 
 def expr_init(rhs):
   if rhs is None:
@@ -120,7 +122,7 @@ def remove_indent(lines):
 
 
 def kernel(foo):
-  def ret():
+  def ret(*args):
     compiled_functions = pytaichi.compiled_functions
     if not pytaichi.materialized:
       pytaichi.materialize()
@@ -131,13 +133,14 @@ def kernel(foo):
 
       func_body = tree.body[0]
       func_body.decorator_list = []
+      astpretty.pprint(func_body)
 
       visitor = ASTTransformer()
       visitor.visit(tree)
       ast.fix_missing_locations(tree)
 
       # astpretty.pprint(func_body)
-      # print(astor.to_source(tree.body[0], indent_with='  '))
+      print(astor.to_source(tree.body[0], indent_with='  '))
 
       ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
 
@@ -153,7 +156,7 @@ def kernel(foo):
       compiled_functions[foo] = lambda: t_kernel()
     compiled_functions[foo]()
 
-  def grad():
+  def grad(*args):
     compiled_grad_functions = pytaichi.compiled_grad_functions
     if not pytaichi.materialized:
       pytaichi.materialize()

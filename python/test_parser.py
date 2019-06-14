@@ -4,7 +4,8 @@ import ast
 import taichi as tc
 
 def foo(x):
-  a.b -= 1
+  def pr(x: ti.i32):
+    print(x)
 
 src = inspect.getsource(foo)
 tree = ast.parse(src)

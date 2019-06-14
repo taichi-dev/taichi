@@ -88,7 +88,8 @@ class TypeCheck : public IRVisitor {
     else
       TC_WARN("Type inference failed: snode is nullptr.");
     for (int l = 0; l < stmt->snodes.size(); l++) {
-      if (stmt->snodes[l]->num_active_indices != stmt->indices.size()) {
+      if (stmt->snodes[l]->num_active_indices != 0 &&
+          stmt->snodes[l]->num_active_indices != stmt->indices.size()) {
         TC_ERROR("{} has {} indices. Indexed with {}.",
                  stmt->snodes[l]->node_type_name,
                  stmt->snodes[l]->num_active_indices, stmt->indices.size());

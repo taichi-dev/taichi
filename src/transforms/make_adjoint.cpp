@@ -6,7 +6,6 @@ TLANG_NAMESPACE_BEGIN
 
 class MakeAdjoint : public IRVisitor {
  private:
-
   Stmt *constant(float32 x) {
     return insert<ConstStmt>(TypedConstant(x));
   }
@@ -92,8 +91,8 @@ class MakeAdjoint : public IRVisitor {
   Stmt *adjoint(Stmt *stmt) {
     if (stmt->adjoint == nullptr) {
       // create the alloca
-      auto alloca = Stmt::make<AllocaStmt>(
-          1, get_current_program().config.gradient_dt);
+      auto alloca =
+          Stmt::make<AllocaStmt>(1, get_current_program().config.gradient_dt);
       stmt->adjoint = alloca.get();
       current_block->insert(std::move(alloca), 0);
     }
@@ -101,6 +100,10 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(AllocaStmt *alloca) override {
+    // do nothing.
+  }
+
+  void visit(ArgLoadStmt *stmt) override {
     // do nothing.
   }
 
@@ -114,7 +117,8 @@ class MakeAdjoint : public IRVisitor {
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt->rhs, negate(mul(adjoint(stmt), sin(stmt->rhs))));
     } else if (stmt->op_type == UnaryOpType::sqrt) {
-      accumulate(stmt->rhs, mul(adjoint(stmt), div(constant(0.5), sqrt(stmt->rhs))));
+      accumulate(stmt->rhs,
+                 mul(adjoint(stmt), div(constant(0.5), sqrt(stmt->rhs))));
     } else if (stmt->op_type == UnaryOpType::cast) {
       if (stmt->cast_by_value && is_real(stmt->cast_type)) {
         accumulate(stmt->rhs, stmt);
@@ -243,7 +247,6 @@ class MakeAdjoint : public IRVisitor {
     accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     stmt->parent->erase(stmt);
   }
-
 
   void visit(ElementShuffleStmt *stmt) override {
     TC_NOT_IMPLEMENTED

@@ -25,7 +25,6 @@ target = [0.3, 0.6]
 scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(dim, dt=real)
 mat = lambda: ti.Matrix(dim, dim, dt=real)
-f = ti.var(ti.i32)
 
 x, v, x_avg = vec(), vec(), vec()
 grid_v_in, grid_m_in = vec(), scalar()
@@ -46,7 +45,7 @@ def place():
     x.grad, v.grad, C.grad, F.grad)
   ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out).place(
     grid_v_in.grad, grid_m_in.grad, grid_v_out.grad)
-  ti.root.place(f, f.grad, init_v, init_v.grad, loss, loss.grad, x_avg, x_avg.grad)
+  ti.root.place(init_v, init_v.grad, loss, loss.grad, x_avg, x_avg.grad)
 
 @ti.kernel
 def set_v():
@@ -73,12 +72,7 @@ def clear_particle_grad():
 
 
 @ti.kernel
-def set_f(s: ti.i32):
-  global f
-  f = s
-
-@ti.kernel
-def p2g():
+def p2g(f: ti.i32):
   for p in range(0, n_particles):
     base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
     fx = x[f, p] * inv_dx - ti.cast(base, ti.f32)
@@ -130,7 +124,7 @@ def grid_op():
 
 
 @ti.kernel
-def g2p():
+def g2p(f: ti.i32):
   for p in range(0, n_particles):
     base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
     fx = x[f, p] * inv_dx - ti.cast(base, ti.f32)
@@ -165,11 +159,10 @@ def forward():
   # simulation
   set_v()
   for s in range(steps - 1):
-    set_f(s)
     clear_grid()
-    p2g()
+    p2g(s)
     grid_op()
-    g2p()
+    g2p(s)
 
   loss[None] = 0
   x_avg[None] = [0, 0]
@@ -188,14 +181,13 @@ def backward():
   compute_x_avg.grad()
   for s in reversed(range(steps - 1)):
     # Since we do not store the grid history (to save space), we redo p2g and grid op
-    set_f(s)
     clear_grid()
-    p2g()
+    p2g(s)
     grid_op()
 
-    g2p.grad()
+    g2p.grad(s)
     grid_op.grad()
-    p2g.grad()
+    p2g.grad(s)
   set_v.grad()
   return init_v.grad[None]
 

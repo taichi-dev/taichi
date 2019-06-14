@@ -255,6 +255,11 @@ class IRPrinter : public IRVisitor {
     print_raw(s);
   }
 
+  void visit(ArgLoadStmt *stmt) override {
+    print("{}{} = arg load [{}]", stmt->type_hint(), stmt->name(),
+          stmt->arg_id);
+  }
+
   void visit(LocalLoadStmt *stmt) override {
     print("{}{} = local load [{}]", stmt->type_hint(), stmt->name(),
           to_string(stmt->ptr));

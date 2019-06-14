@@ -83,6 +83,7 @@ class IfStmt;
 class WhileStmt;
 class WhileControlStmt;
 
+class ArgLoadStmt;
 class ConstStmt;
 class AllocaStmt;
 class UnaryOpStmt;
@@ -367,6 +368,7 @@ class IRVisitor {
   DEFINE_VISIT(FrontendEvalStmt);
   DEFINE_VISIT(FrontendAssertStmt);
 
+  DEFINE_VISIT(ArgLoadStmt);
   DEFINE_VISIT(SNodeOpStmt);
   DEFINE_VISIT(AllocaStmt);
   DEFINE_VISIT(UnaryOpStmt);
@@ -964,6 +966,36 @@ class UnaryOpStmt : public Stmt {
     return false;
   }
   DEFINE_ACCEPT
+};
+
+class ArgLoadStmt : public Stmt {
+ public:
+  int arg_id;
+  ArgLoadStmt(int arg_id) : arg_id(arg_id) {
+  }
+
+  virtual bool has_side_effect() const override {
+    return false;
+  }
+  DEFINE_ACCEPT
+};
+
+class ArgLoadExpression : public Expression {
+ public:
+  int arg_id;
+
+  ArgLoadExpression(int arg_id) : arg_id(arg_id) {
+  }
+
+  std::string serialize() override {
+    return fmt::format("arg[{}]", arg_id);
+  }
+
+  void flatten(VecStatement &ret) override {
+    auto ran = std::make_unique<ArgLoadStmt>(arg_id);
+    ret.push_back(std::move(ran));
+    stmt = ret.back().get();
+  }
 };
 
 class RandStmt : public Stmt {

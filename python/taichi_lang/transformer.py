@@ -211,10 +211,11 @@ if 1:
     assert args.kw_defaults == []
     assert args.kwarg is None
     arg_decls = []
-    for arg in args.args:
-      arg_init = self.parse_stmt('x = ti.decl_arg(0)')
+    for i, arg in enumerate(args.args):
+      arg_init = self.parse_stmt('x = ti.decl_arg(0, 0)')
       arg_init.targets[0].id = arg.arg
       arg_init.value.args[0] = arg.annotation
+      arg_init.value.args[1] = ast.Constant(val=i)
       arg_decls.append(arg_init)
     node.body = arg_decls + node.body
     return node

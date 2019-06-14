@@ -1,4 +1,5 @@
 #include "../ir.h"
+#include "../tlang.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -227,6 +228,12 @@ class TypeCheck : public IRVisitor {
   void visit(RangeAssumptionStmt *stmt) {
     TC_ASSERT(stmt->input->ret_type == stmt->base->ret_type);
     stmt->ret_type = stmt->input->ret_type;
+  }
+
+  void visit(ArgLoadStmt *stmt) {
+    auto &args = get_current_program().get_current_kernel().args;
+    TC_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
+    stmt->ret_type = VectorType(1, args[stmt->arg_id]);
   }
 
   static void run(IRNode *node) {

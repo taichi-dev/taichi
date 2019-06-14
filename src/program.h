@@ -28,6 +28,7 @@ class Program {
     Program &program;
     FunctionType compiled;
     std::string name;
+    std::vector<DataType> args;
     bool benchmarking;
     bool is_reduction;  // TODO: systematically treat all types of reduction
     bool grad;
@@ -43,6 +44,10 @@ class Program {
 
     std::function<void()> func() {
       return std::function<void()>([&] { (*this)(); });
+    }
+
+    void insert_arg(DataType dt) {
+      args.push_back(dt);
     }
   };
 

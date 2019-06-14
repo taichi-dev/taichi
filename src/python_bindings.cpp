@@ -114,6 +114,10 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   expr.def("serialize", &Expr::serialize)
       .def("snode", &Expr::snode, py::return_value_policy::reference)
       .def("set_tb", &Expr::set_tb)
+      .def("set_is_primal",
+           [&](Expr *expr, bool v) {
+             expr->cast<GlobalVariableExpression>()->is_primal = v;
+           })
       .def("set_grad", &Expr::set_grad);
   export_accessors<int32>(expr);
   export_accessors<float32>(expr);

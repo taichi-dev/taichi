@@ -174,12 +174,13 @@ def global_var(dt):
   # primal
   x = Expr(taichi_lang_core.make_id_expr(""))
   x.ptr = taichi_lang_core.global_new(x.ptr, dt)
+  x.ptr.set_is_primal(True)
   pytaichi.global_vars.append(x)
 
   # adjoint
   x_grad = Expr(taichi_lang_core.make_id_expr(""))
   x_grad.ptr = taichi_lang_core.global_new(x_grad.ptr, default_cfg().gradient_dt)
-  x_grad.is_primal = False
+  x_grad.ptr.set_is_primal(False)
   x.set_grad(x_grad)
 
   return x

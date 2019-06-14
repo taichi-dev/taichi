@@ -265,7 +265,6 @@ namespace irpass {
 
 void make_adjoint(IRNode *root) {
   MakeAdjoint::run(root);
-  // print(root);
   typecheck(root);
 }
 

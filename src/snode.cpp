@@ -108,6 +108,7 @@ bool SNode::is_primal() {
 }
 
 SNode *SNode::get_grad() {
+  TC_ASSERT(is_primal());
   return (*expr)
       .cast<GlobalVariableExpression>()
       ->adjoint.cast<GlobalVariableExpression>()

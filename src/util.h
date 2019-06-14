@@ -124,6 +124,10 @@ inline bool is_real(DataType dt) {
   return dt == DataType::f16 || dt == DataType::f32 || dt == DataType::f64;
 }
 
+inline bool needs_grad(DataType dt) {
+  return is_real(dt);
+}
+
 // Regular binary ops:
 // Operations that take two oprands, and returns a single operand with the same
 // type

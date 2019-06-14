@@ -77,8 +77,8 @@ void Expr::operator=(const Expr &o) {
   if (expr == nullptr) {
     set(o.eval());
   } else if (expr->is_lvalue()) {
-    current_ast_builder().insert(
-        std::make_unique<FrontendAssignStmt>(ptr_if_global(*this), load_if_ptr(o)));
+    current_ast_builder().insert(std::make_unique<FrontendAssignStmt>(
+        ptr_if_global(*this), load_if_ptr(o)));
   } else {
     // set(o.eval());
     TC_ERROR("Cannot assign to non-lvalue: {}", serialize());
@@ -280,6 +280,10 @@ Expr Expr::operator!() {
 
 void Expr::declare(DataType dt) {
   set(Expr::make<GlobalVariableExpression>(dt, Identifier()));
+}
+
+void Expr::set_grad(const Expr &o) {
+  this->cast<GlobalVariableExpression>()->adjoint.set(o);
 }
 
 template void *Expr::val_tmp<>(DataType);

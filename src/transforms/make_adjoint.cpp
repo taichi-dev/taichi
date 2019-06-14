@@ -90,7 +90,7 @@ class MakeAdjoint : public IRVisitor {
   }
 
   Stmt *adjoint(Stmt *stmt) {
-    if (!is_real(stmt->ret_type.data_type)) {
+    if (!needs_grad(stmt->ret_type.data_type)) {
       return nullptr;
     }
     if (stmt->adjoint == nullptr) {
@@ -222,8 +222,8 @@ class MakeAdjoint : public IRVisitor {
     GlobalPtrStmt *ptr = stmt->ptr->as<GlobalPtrStmt>();
     TC_ASSERT(ptr->width() == 1);
     auto snodes = ptr->snodes;
-    TC_ASSERT(snodes[0]->grad != nullptr);
-    snodes[0] = snodes[0]->grad;
+    TC_ASSERT(snodes[0]->get_grad() != nullptr);
+    snodes[0] = snodes[0]->get_grad();
     auto adj_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
     insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
   }
@@ -233,8 +233,8 @@ class MakeAdjoint : public IRVisitor {
     GlobalPtrStmt *ptr = stmt->ptr->as<GlobalPtrStmt>();
     TC_ASSERT(ptr->width() == 1);
     auto snodes = ptr->snodes;
-    TC_ASSERT(snodes[0]->grad != nullptr);
-    snodes[0] = snodes[0]->grad;
+    TC_ASSERT(snodes[0]->get_grad() != nullptr);
+    snodes[0] = snodes[0]->get_grad();
     auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
     accumulate(stmt->data, insert<GlobalLoadStmt>(adjoint_ptr));
     stmt->parent->erase(stmt);
@@ -245,8 +245,8 @@ class MakeAdjoint : public IRVisitor {
     GlobalPtrStmt *ptr = stmt->dest->as<GlobalPtrStmt>();
     TC_ASSERT(ptr->width() == 1);
     auto snodes = ptr->snodes;
-    TC_ASSERT(snodes[0]->grad != nullptr);
-    snodes[0] = snodes[0]->grad;
+    TC_ASSERT(snodes[0]->get_grad() != nullptr);
+    snodes[0] = snodes[0]->get_grad();
     auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
     accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     stmt->parent->erase(stmt);

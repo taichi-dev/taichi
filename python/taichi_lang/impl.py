@@ -75,13 +75,7 @@ class PyTaichi:
         func()
 
     taichi_lang_core.layout(layout)
-    self.link_adjoints()
     self.materialized = True
-
-  def link_adjoints(self):
-    for var in self.global_vars:
-      if var.ptr.snode() is not None and var.grad is not None and var.grad.ptr.snode() is not None:
-        var.set_grad(var.grad)
 
   def clear(self):
     del self.prog
@@ -186,7 +180,7 @@ def global_var(dt):
   x_grad = Expr(taichi_lang_core.make_id_expr(""))
   x_grad.ptr = taichi_lang_core.global_new(x_grad.ptr, default_cfg().gradient_dt)
   x_grad.is_primal = False
-  x.grad = x_grad
+  x.set_grad(x_grad)
 
   return x
 
@@ -201,12 +195,15 @@ def layout(func):
   pytaichi.layout_functions.append(func)
 
 
-float64 = taichi_lang_core.DataType.float64
-f64 = float64
 float32 = taichi_lang_core.DataType.float32
 f32 = float32
+float64 = taichi_lang_core.DataType.float64
+f64 = float64
+
 int32 = taichi_lang_core.DataType.int32
 i32 = int32
+int64 = taichi_lang_core.DataType.int64
+i64 = int64
 
 
 def tprint(var):

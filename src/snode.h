@@ -68,7 +68,6 @@ class SNode {
   int depth;
   bool _verbose;
   bool _multi_threaded;
-  bool is_primal;
 
   std::string name;
   int64 n;
@@ -78,8 +77,7 @@ class SNode {
   TypedConstant ambient_val;
   // Note: parent will not be set until structural nodes are compiled!
   SNode *parent;
-  Expr *grad_expr;
-  SNode *grad;
+  std::unique_ptr<Expr> expr;
 
   std::string data_type_name() {
     return Tlang::data_type_name(dt);
@@ -105,7 +103,6 @@ class SNode {
 
   SNode(int depth, SNodeType t) : depth(depth), type(t) {
     id = counter++;
-    grad = nullptr;
     total_num_bits = 0;
     total_bit_start = 0;
     num_active_indices = 0;
@@ -126,7 +123,7 @@ class SNode {
     clear_kernel = nullptr;
     clear_and_deactivate_kernel = nullptr;
 
-    is_primal = true;
+    expr = nullptr;
   }
 
   SNode &insert_children(SNodeType t) {
@@ -278,6 +275,10 @@ class SNode {
   }
 
   void lazy_grad();
+
+  bool is_primal();
+
+  SNode *get_grad();
 };
 
 TLANG_NAMESPACE_END

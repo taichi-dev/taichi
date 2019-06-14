@@ -93,7 +93,6 @@ PYBIND11_MODULE(taichi_lang_core, m) {
       .def("clear_data", &SNode::clear_data)
       .def("clear_data_and_deactivate", &SNode::clear_data_and_deactivate)
       .def_readwrite("parent", &SNode::parent)
-      .def_readwrite("grad_expr", &SNode::grad_expr)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::dense),

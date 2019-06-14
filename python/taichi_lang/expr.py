@@ -183,6 +183,7 @@ class Expr:
       assert False, op
 
   def set_grad(self, grad):
+    self.grad = grad
     self.ptr.set_grad(grad.ptr)
 
   def clear(self, deactivate=False):

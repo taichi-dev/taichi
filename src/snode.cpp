@@ -10,6 +10,7 @@ int SNode::counter = 0;
 SNode &SNode::place(Expr &expr_) {
   TC_ASSERT(expr_.is<GlobalVariableExpression>());
   auto expr = expr_.cast<GlobalVariableExpression>();
+  TC_ERROR_UNLESS(expr->snode == nullptr, "This variable has been placed.");
   auto &child = insert_children(SNodeType::place);
   expr->snode = &child;
   child.name = expr->ident.raw_name();
@@ -17,7 +18,7 @@ SNode &SNode::place(Expr &expr_) {
     expr->snode->has_ambient = true;
     expr->snode->ambient_val = expr->ambient_value;
   }
-  expr->snode->is_primal = expr->is_primal;
+  expr->snode->expr = std::make_unique<Expr>(expr);
   child.dt = expr->dt;
   return *this;
 }
@@ -84,19 +85,33 @@ void SNode::clear_data_and_deactivate() {
 }
 
 void SNode::lazy_grad() {
-  if (this->type == SNodeType::place) return;
-  for (auto c: ch) {
+  if (this->type == SNodeType::place)
+    return;
+  for (auto c : ch) {
     c->lazy_grad();
   }
-  std::vector<Expr *> new_grads;
-  for (auto c: ch) {
-    if (c->type == SNodeType::place && c->is_primal && c->grad == nullptr) {
-      new_grads.push_back(c->grad_expr);
+  std::vector<Expr> new_grads;
+  for (auto c : ch) {
+    if (c->type == SNodeType::place && c->is_primal() &&
+        c->get_grad() == nullptr && needs_grad(c->dt)) {
+      new_grads.push_back(c->expr->cast<GlobalVariableExpression>()->adjoint);
     }
   }
   for (auto p : new_grads) {
-    this->place(*p);
+    this->place(p);
   }
+}
+
+bool SNode::is_primal() {
+  TC_ASSERT(expr != nullptr);
+  return (*expr).cast<GlobalVariableExpression>()->is_primal;
+}
+
+SNode *SNode::get_grad() {
+  return (*expr)
+      .cast<GlobalVariableExpression>()
+      ->adjoint.cast<GlobalVariableExpression>()
+      ->snode;
 }
 
 TLANG_NAMESPACE_END

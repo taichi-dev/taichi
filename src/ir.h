@@ -826,11 +826,7 @@ class Expr {
     expr->tb = tb;
   }
 
-  void set_grad(const Expr &o) {
-    TC_ASSERT(snode() != nullptr);
-    TC_ASSERT(o.snode() != nullptr);
-    snode()->grad = o.snode();
-  }
+  void set_grad(const Expr &o);
 };
 
 class ExprGroup {
@@ -1222,6 +1218,7 @@ class GlobalVariableExpression : public Expression {
   bool has_ambient;
   TypedConstant ambient_value;
   bool is_primal;
+  Expr adjoint;
 
   GlobalVariableExpression(DataType dt, Ident ident) : ident(ident), dt(dt) {
     snode = nullptr;
@@ -1233,6 +1230,7 @@ class GlobalVariableExpression : public Expression {
     dt = DataType::unknown;
     snode = nullptr;
     has_ambient = false;
+    is_primal = true;
   }
 
   std::string serialize() override {

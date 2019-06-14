@@ -104,14 +104,9 @@ bound = 3
 def grid_op():
   for i, j in grid_m_in:
     v_out = ti.Vector([0.0, 0.0])
-    #if grid_m_in[i, j] > 0:
-
     inv_m = 1 / (grid_m_in[i, j] + 1e-10)
-
     v_out = inv_m * grid_v_in[i, j]
-
     v_out(1).val -= dt * gravity
-
     if i < bound and v_out(0) < 0:
       v_out(0).val = 0
     if i > n_grid - bound and v_out(0) > 0:

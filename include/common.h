@@ -166,7 +166,7 @@ constexpr int max_num_snodes = 1024;
 constexpr int max_gpu_block_size = 1024;
 
 template <typename T, typename G>
-__device__ T union_cast(G g) {
+__device__ __host__ T union_cast(G g) {
   static_assert(sizeof(T) == sizeof(G), "");
   union {
     T t;
@@ -177,7 +177,7 @@ __device__ T union_cast(G g) {
 }
 
 template <typename T, typename G>
-T union_cast_different_size(G g) {
+__device__ __host__ T union_cast_different_size(G g) {
   union {
     T t;
     G g;

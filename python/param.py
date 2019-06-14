@@ -1,6 +1,7 @@
 import taichi_lang as ti
 
 # ti.cfg.print_ir = True
+ti.cfg.arch = ti.cuda
 x = ti.var(ti.f32)
 
 @ti.layout

@@ -61,6 +61,7 @@ class PyTaichi:
     self.scope_stack = []
     self.inside_kernel = False
     self.global_vars = []
+    self.print_preprocessed = False
     Expr.materialize_layout_callback = self.materialize
 
   def materialize(self):
@@ -122,73 +123,46 @@ def remove_indent(lines):
 
 
 def kernel(foo):
-  def ret(*args):
-    compiled_functions = pytaichi.compiled_functions
-    if not pytaichi.materialized:
-      pytaichi.materialize()
-    if foo not in compiled_functions:
-      src = remove_indent(inspect.getsource(foo))
-      tree = ast.parse(src)
-      # print(astor.to_source(tree.body[0]))
+  def invoke(grad=False, *args, **kwargs):
+    def ret(*args):
+      if grad:
+        compiled_functions = pytaichi.compiled_functions
+      else:
+        compiled_functions = pytaichi.compiled_grad_functions
+      if not pytaichi.materialized:
+        pytaichi.materialize()
+      if foo not in compiled_functions:
+        src = remove_indent(inspect.getsource(foo))
+        tree = ast.parse(src)
+        # print(astor.to_source(tree.body[0]))
 
-      func_body = tree.body[0]
-      func_body.decorator_list = []
-      astpretty.pprint(func_body)
+        func_body = tree.body[0]
+        func_body.decorator_list = []
 
-      visitor = ASTTransformer()
-      visitor.visit(tree)
-      ast.fix_missing_locations(tree)
+        visitor = ASTTransformer()
+        visitor.visit(tree)
+        ast.fix_missing_locations(tree)
 
-      # astpretty.pprint(func_body)
-      print(astor.to_source(tree.body[0], indent_with='  '))
+        if pytaichi.print_preprocessed:
+          print(astor.to_source(tree.body[0], indent_with='  '))
 
-      ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
+        ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
 
-      pytaichi.inside_kernel = True
-      frame = inspect.currentframe().f_back
-      exec(compile(tree, filename=inspect.getsourcefile(foo), mode='exec'),
-           dict(frame.f_globals, **frame.f_locals), locals())
-      pytaichi.inside_kernel = False
-      compiled = locals()[foo.__name__]
+        pytaichi.inside_kernel = True
+        frame = inspect.currentframe().f_back
+        exec(compile(tree, filename=inspect.getsourcefile(foo), mode='exec'),
+             dict(frame.f_globals, **frame.f_locals), locals())
+        pytaichi.inside_kernel = False
+        compiled = locals()[foo.__name__]
 
-      t_kernel = taichi_lang_core.create_kernel(foo.__name__, False)  # Primal
-      t_kernel = t_kernel.define(lambda: compiled())
-      compiled_functions[foo] = lambda: t_kernel()
-    compiled_functions[foo]()
+        t_kernel = taichi_lang_core.create_kernel(foo.__name__, grad)
+        t_kernel = t_kernel.define(lambda: compiled())
+        compiled_functions[foo] = lambda: t_kernel()
+      compiled_functions[foo]()
+    return ret
 
-  def grad(*args):
-    compiled_grad_functions = pytaichi.compiled_grad_functions
-    if not pytaichi.materialized:
-      pytaichi.materialize()
-    if foo not in compiled_grad_functions:
-      src = remove_indent(inspect.getsource(foo))
-      tree = ast.parse(src)
-
-      func_body = tree.body[0]
-      func_body.decorator_list = []
-
-      visitor = ASTTransformer()
-      visitor.visit(tree)
-      ast.fix_missing_locations(tree)
-
-      # print(astor.to_source(tree.body[0], indent_with='  '))
-
-      ast.increment_lineno(tree, inspect.getsourcelines(foo)[1] - 1)
-
-      pytaichi.inside_kernel = True
-      frame = inspect.currentframe().f_back
-      exec(compile(tree, filename=inspect.getsourcefile(foo), mode='exec'),
-           dict(frame.f_globals, **frame.f_locals), locals())
-      pytaichi.inside_kernel = False
-      compiled = locals()[foo.__name__]
-
-      t_kernel = taichi_lang_core.create_kernel(foo.__name__ + '_grad',
-                                                True)  # Adjoint
-      t_kernel = t_kernel.define(lambda: compiled())
-      compiled_grad_functions[foo] = lambda: t_kernel()
-    compiled_grad_functions[foo]()
-
-  ret.grad = grad
+  ret = invoke(False)
+  ret.grad = invoke(True)
   return ret
 
 

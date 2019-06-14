@@ -145,7 +145,6 @@ if 1:
       t.body[1].value.args[0] = bgn
       t.body[2].value.args[0] = end
       t.body = t.body[:4] + node.body + t.body[4:]
-      # print(astor.to_source(t))
       return ast.copy_location(t, node)
     else:
       if isinstance(node.target, ast.Name):
@@ -157,7 +156,6 @@ if 1:
         '  {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(ind.id) for ind in
         elts)
       vars = ', '.join(ind.id for ind in elts)
-      # print(var_decl)
       template = ''' 
 if 1:
 {}

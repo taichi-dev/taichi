@@ -4,7 +4,7 @@ import random
 import cv2
 import matplotlib.pyplot as plt
 
-real = ti.f64
+real = ti.f32
 ti.set_default_fp(real)
 
 dim = 2

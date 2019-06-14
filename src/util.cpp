@@ -173,6 +173,8 @@ std::string unary_op_type_name(UnaryOpType type) {
     REGISTER_TYPE(asin);
     REGISTER_TYPE(cos);
     REGISTER_TYPE(acos);
+    REGISTER_TYPE(tan);
+    REGISTER_TYPE(tanh);
     REGISTER_TYPE(inv);
     REGISTER_TYPE(exp);
     REGISTER_TYPE(log);

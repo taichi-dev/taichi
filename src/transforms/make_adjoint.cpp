@@ -23,6 +23,10 @@ class MakeAdjoint : public IRVisitor {
     return insert<BinaryOpStmt>(BinaryOpType::mul, load(op1), load(op2));
   }
 
+  Stmt *sqr(Stmt *op1) {
+    return mul(op1, op1);
+  }
+
   Stmt *add(Stmt *op1, Stmt *op2) {
     return insert<BinaryOpStmt>(BinaryOpType::add, load(op1), load(op2));
   }
@@ -123,9 +127,18 @@ class MakeAdjoint : public IRVisitor {
       accumulate(stmt->rhs, mul(adjoint(stmt), cos(stmt->rhs)));
     } else if (stmt->op_type == UnaryOpType::cos) {
       accumulate(stmt->rhs, negate(mul(adjoint(stmt), sin(stmt->rhs))));
+    } else if (stmt->op_type == UnaryOpType::tan) {
+      TC_NOT_IMPLEMENTED
+    } else if (stmt->op_type == UnaryOpType::tanh) {
+      accumulate(stmt->rhs,
+                 mul(adjoint(stmt), sub(constant(1), sqr(stmt))));
+    } else if (stmt->op_type == UnaryOpType::exp) {
+      accumulate(stmt->rhs, mul(adjoint(stmt), stmt));
+    } else if (stmt->op_type == UnaryOpType::log) {
+      accumulate(stmt->rhs, div(adjoint(stmt), stmt->rhs));
     } else if (stmt->op_type == UnaryOpType::sqrt) {
       accumulate(stmt->rhs,
-                 mul(adjoint(stmt), div(constant(0.5), sqrt(stmt->rhs))));
+                 mul(adjoint(stmt), div(constant(0.5f), sqrt(stmt->rhs))));
     } else if (stmt->op_type == UnaryOpType::cast) {
       if (stmt->cast_by_value && is_real(stmt->cast_type)) {
         accumulate(stmt->rhs, stmt);

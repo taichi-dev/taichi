@@ -4,17 +4,6 @@ import math
 import autograd.numpy as np
 from autograd import grad
 
-def test_size1():
-  ti.reset()
-  x = ti.var(ti.i32)
-
-  @ti.layout
-  def place():
-    ti.root.dense(ti.i, 1).place(x)
-
-  x[0] = 1
-  assert x[0] == 1
-
 def grad_test(tifunc, npfunc=None):
   if npfunc is None:
     npfunc = tifunc
@@ -42,6 +31,17 @@ def grad_test(tifunc, npfunc=None):
   assert y[0] == approx(npfunc(v))
   assert x.grad[0] == approx(grad(npfunc)(v))
 
+def test_size1():
+  ti.reset()
+  x = ti.var(ti.i32)
+
+  @ti.layout
+  def place():
+    ti.root.dense(ti.i, 1).place(x)
+
+  x[0] = 1
+  assert x[0] == 1
+
 def test_poly():
   grad_test(lambda x: -x)
   grad_test(lambda x: x)
@@ -56,6 +56,7 @@ def test_poly():
 def test_trigonometric():
   grad_test(lambda x: ti.sin(x), lambda x: np.sin(x))
   grad_test(lambda x: ti.cos(x), lambda x: np.cos(x))
+  grad_test(lambda x: ti.tanh(x), lambda x: np.tanh(x))
 
 def test_frac():
   grad_test(lambda x: 1 / x)
@@ -65,3 +66,7 @@ def test_frac():
 
 def test_unary():
   grad_test(lambda x: ti.sqrt(x), lambda x: np.sqrt(x))
+  grad_test(lambda x: ti.exp(x), lambda x: np.exp(x))
+  grad_test(lambda x: ti.log(x), lambda x: np.log(x))
+
+test_trigonometric()

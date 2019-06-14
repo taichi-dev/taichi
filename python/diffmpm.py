@@ -25,6 +25,7 @@ target = [0.3, 0.6]
 scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(dim, dt=real)
 mat = lambda: ti.Matrix(dim, dim, dt=real)
+f = ti.var(ti.i32)
 
 x, v, x_avg = vec(), vec(), vec()
 grid_v_in, grid_m_in = vec(), scalar()
@@ -45,7 +46,7 @@ def place():
     x.grad, v.grad, C.grad, F.grad)
   ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out).place(
     grid_v_in.grad, grid_m_in.grad, grid_v_out.grad)
-  ti.root.place(init_v, init_v.grad, loss, loss.grad, x_avg, x_avg.grad)
+  ti.root.place(f, f.grad, init_v, init_v.grad, loss, loss.grad, x_avg, x_avg.grad)
 
 @ti.kernel
 def set_v():
@@ -72,7 +73,19 @@ def clear_particle_grad():
 
 
 @ti.kernel
-def p2g(f: ti.i32):
+def inc_f():
+  global f
+  f += 1
+
+
+@ti.kernel
+def dec_f():
+  global f
+  f -= 1
+
+
+@ti.kernel
+def p2g():
   for p in range(0, n_particles):
     base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
     fx = x[f, p] * inv_dx - ti.cast(base, ti.f32)
@@ -124,7 +137,7 @@ def grid_op():
 
 
 @ti.kernel
-def g2p(f: ti.i32):
+def g2p():
   for p in range(0, n_particles):
     base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
     fx = x[f, p] * inv_dx - ti.cast(base, ti.f32)
@@ -160,9 +173,10 @@ def forward():
   set_v()
   for s in range(steps - 1):
     clear_grid()
-    p2g(s)
+    p2g()
     grid_op()
-    g2p(s)
+    g2p()
+    inc_f()
 
   loss[None] = 0
   x_avg[None] = [0, 0]
@@ -179,15 +193,16 @@ def backward():
 
   compute_loss.grad()
   compute_x_avg.grad()
-  for s in reversed(range(steps - 1)):
+  for s in range(steps - 1):
     # Since we do not store the grid history (to save space), we redo p2g and grid op
+    dec_f()
     clear_grid()
-    p2g(s)
+    p2g()
     grid_op()
 
-    g2p.grad(s)
+    g2p.grad()
     grid_op.grad()
-    p2g.grad(s)
+    p2g.grad()
   set_v.grad()
   return init_v.grad[None]
 
@@ -228,7 +243,7 @@ def main():
       img = img.swapaxes(0, 1)[::-1]
       cv2.imshow('MPM', img)
       img_count += 1
-      # cv2.imwrite('MPM{:04d}.png'.format(img_count), img * 255)
+      cv2.imwrite('MPM{:04d}.png'.format(img_count), img * 255)
       cv2.waitKey(1)
 
   ti.profiler_print()

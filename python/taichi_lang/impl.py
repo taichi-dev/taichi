@@ -8,8 +8,9 @@ import astpretty
 import astor
 from .util import *
 
-def declare_arg(dt):
-  print('declaring kernel argument ', dt)
+def decl_arg(dt):
+  id = taichi_lang_core.decl_arg(dt)
+  return Expr(taichi_lang_core.make_arg_load_expr(id))
 
 def expr_init(rhs):
   if rhs is None:

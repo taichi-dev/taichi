@@ -2,14 +2,14 @@
 #include "common.h"
 #include <string>
 
-namespace taichi {
-namespace Tlang {
+TLANG_NAMESPACE_BEGIN
 
 class CPUProfiler;
 
 struct Context {
   using Buffer = void *;
   Buffer buffers[1];
+  uint64 args[max_num_args];
 
   void *leaves;
   int num_leaves;
@@ -25,8 +25,11 @@ struct Context {
   Context(void *x) : Context() {
     buffers[0] = x;
   }
+
+  template <typename T>
+  inline T get_arg(int i) {
+    return union_cast_different_size<T>(args[i]);
+  }
 };
 
-}  // namespace Tlang
-
-};  // namespace taichi
+TLANG_NAMESPACE_END

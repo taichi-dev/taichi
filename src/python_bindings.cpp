@@ -267,7 +267,7 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("print_", Print_);
 
   m.def("decl_arg", [&](DataType dt) {
-    get_current_program().get_current_kernel().insert_arg(dt);
+    return get_current_program().get_current_kernel().insert_arg(dt);
   });
 
   // Schedules

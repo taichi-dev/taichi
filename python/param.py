@@ -1,5 +1,6 @@
 import taichi_lang as ti
 
+ti.cfg.print_ir = True
 x = ti.var(ti.f32)
 
 @ti.layout

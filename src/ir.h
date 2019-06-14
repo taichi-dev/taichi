@@ -971,12 +971,14 @@ class UnaryOpStmt : public Stmt {
 class ArgLoadStmt : public Stmt {
  public:
   int arg_id;
+
   ArgLoadStmt(int arg_id) : arg_id(arg_id) {
   }
 
   virtual bool has_side_effect() const override {
     return false;
   }
+
   DEFINE_ACCEPT
 };
 

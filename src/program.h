@@ -46,8 +46,9 @@ class Program {
       return std::function<void()>([&] { (*this)(); });
     }
 
-    void insert_arg(DataType dt) {
+    int insert_arg(DataType dt) {
       args.push_back(dt);
+      return args.size() - 1;
     }
   };
 

@@ -256,7 +256,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) override {
-    print("{}{} = arg load [{}]", stmt->type_hint(), stmt->name(),
+    print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(),
           stmt->arg_id);
   }
 

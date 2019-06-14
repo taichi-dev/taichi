@@ -24,8 +24,6 @@ __device__ __constant__ int *error_code;
   }                         \
   }
 
-#include "context.h"
-
 #include <atomic>
 #include <numeric>
 #include <mutex>
@@ -76,16 +74,16 @@ __device__ __host__ void exit() {
 }
 
 #if defined(TL_DEBUG)
-#define TC_ASSERT(x)                                        \
-  if (!(x)) {                                               \
+#define TC_ASSERT(x)                                                     \
+  if (!(x)) {                                                            \
     printf("Assertion failed (%s@Ln %d): %s\n", __FILE__, __LINE__, #x); \
-    exit();                                                 \
+    exit();                                                              \
   }
 
-#define TC_ASSERT_INFO(x, t)                               \
-  if (!(x)) {                                              \
+#define TC_ASSERT_INFO(x, t)                                            \
+  if (!(x)) {                                                           \
     printf("Assertion failed (%s@Ln %d): %s\n", __FILE__, __LINE__, t); \
-    exit();                                                \
+    exit();                                                             \
   }
 #else
 #define TC_ASSERT(x)
@@ -144,6 +142,7 @@ inline double get_time() {
 using size_t = std::size_t;
 
 constexpr int max_num_indices = 4;
+constexpr int max_num_args = 8;
 
 struct SNodeMeta {
   int indices[max_num_indices];
@@ -154,7 +153,6 @@ struct SNodeMeta {
   void **snode_ptr;
   void *ptr;
 };
-
 
 struct AllocatorStat {
   int snode_id;

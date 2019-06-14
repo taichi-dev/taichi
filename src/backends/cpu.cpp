@@ -203,6 +203,12 @@ class CPUIRCodeGen : public IRVisitor {
     emit("}}");
   }
 
+  void visit(ArgLoadStmt *stmt) {
+    emit("const {} {}({{context.get_arg<{}>({})}});",
+         stmt->ret_data_type_name(), stmt->raw_name(),
+         data_type_name(stmt->ret_type.data_type), stmt->arg_id);
+  }
+
   void visit(LocalLoadStmt *stmt) {
     // TODO: optimize for partially vectorized load...
 

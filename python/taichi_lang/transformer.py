@@ -139,7 +139,7 @@ if 1:
         bgn = node.iter.args[0]
         end = node.iter.args[1]
       else:
-        bgn = ast.Constant(value=0)
+        bgn = self.make_constant(value=0)
         end = node.iter.args[0]
 
       t.body[1].value.args[0] = bgn
@@ -202,6 +202,13 @@ if 1:
       self.generic_visit(node)
     return node
 
+  @staticmethod
+  def make_constant(value):
+    # Do not use ast.Constant which does not exist in python3.5
+    node = ASTTransformer.parse_expr('0')
+    node.value = value
+    return node
+
   def visit_FunctionDef(self, node):
     with self.variable_scope():
       self.generic_visit(node)
@@ -215,7 +222,7 @@ if 1:
       arg_init = self.parse_stmt('x = ti.decl_arg(0, 0)')
       arg_init.targets[0].id = arg.arg
       arg_init.value.args[0] = arg.annotation
-      arg_init.value.args[1] = ast.Constant(val=i)
+      arg_init.value.args[1] = self.make_constant(val=i)
       arg_decls.append(arg_init)
     node.body = arg_decls + node.body
     return node

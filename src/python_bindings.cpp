@@ -221,7 +221,7 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("make_frontend_assign_stmt",
         Stmt::make<FrontendAssignStmt, const Expr &, const Expr &>);
 
-  m.def("make_arg_load_expr", Expr::make<ArgLoadExpression>);
+  m.def("make_arg_load_expr", Expr::make<ArgLoadExpression, int>);
 
   m.def("make_id_expr", Expr::make<IdExpression, std::string>);
   m.def("make_constant_expr", Expr::make<ConstExpression, int>);

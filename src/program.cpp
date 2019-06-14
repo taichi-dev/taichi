@@ -22,8 +22,8 @@ Program::Kernel::Kernel(Program &program,
   is_reduction = false;
   compiled = nullptr;
   benchmarking = false;
-  context = std::make_unique<FrontendContext>();
-  ir_holder = context->get_root();
+  taichi::Tlang::context = std::make_unique<FrontendContext>();
+  ir_holder = taichi::Tlang::context->get_root();
   ir = ir_holder.get();
 
   program.current_kernel = this;

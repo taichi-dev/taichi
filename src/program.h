@@ -50,6 +50,50 @@ class Program {
       args.push_back(dt);
       return args.size() - 1;
     }
+
+    void set_arg_float(int i, float64 d) {
+      if (args[i] == DataType::f32) {
+        program.context.set_arg(i, (float32)d);
+      } else if (args[i] == DataType::f64) {
+        program.context.set_arg(i, (float64)d);
+      } else if (args[i] == DataType::i32) {
+        program.context.set_arg(i, (int32)d);
+      } else if (args[i] == DataType::i64) {
+        program.context.set_arg(i, (int64)d);
+      } else if (args[i] == DataType::i16) {
+        program.context.set_arg(i, (int16)d);
+      } else if (args[i] == DataType::u16) {
+        program.context.set_arg(i, (uint16)d);
+      } else if (args[i] == DataType::u32) {
+        program.context.set_arg(i, (uint32)d);
+      } else if (args[i] == DataType::u64) {
+        program.context.set_arg(i, (uint64)d);
+      } else {
+        TC_NOT_IMPLEMENTED
+      }
+    }
+
+    void set_arg_int(int i, int64 d) {
+      if (args[i] == DataType::i32) {
+        program.context.set_arg(i, (int32)d);
+      } else if (args[i] == DataType::i64) {
+        program.context.set_arg(i, (int64)d);
+      } else if (args[i] == DataType::i16) {
+        program.context.set_arg(i, (int16)d);
+      } else if (args[i] == DataType::u16) {
+        program.context.set_arg(i, (uint16)d);
+      } else if (args[i] == DataType::u32) {
+        program.context.set_arg(i, (uint32)d);
+      } else if (args[i] == DataType::u64) {
+        program.context.set_arg(i, (uint64)d);
+      } else if (args[i] == DataType::f32) {
+        program.context.set_arg(i, (float32)d);
+      } else if (args[i] == DataType::f64) {
+        program.context.set_arg(i, (float64)d);
+      } else {
+        TC_NOT_IMPLEMENTED
+      }
+    }
   };
 
   std::vector<void *> loaded_dlls;
@@ -59,6 +103,7 @@ class Program {
   void *data_structure;
   CompileConfig config;
   CPUProfiler cpu_profiler;
+  Context context;
   bool sync;  // device/host synchronized?
 
   std::vector<std::unique_ptr<Kernel>> functions;
@@ -86,7 +131,6 @@ class Program {
   }
 
   Context get_context() {
-    Context context;
     context.buffers[0] = data_structure;
     context.cpu_profiler = &cpu_profiler;
     return context;

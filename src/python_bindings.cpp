@@ -71,9 +71,10 @@ PYBIND11_MODULE(taichi_lang_core, m) {
       .def_readwrite("lower_access", &CompileConfig::lower_access)
       .def_readwrite("gradient_dt", &CompileConfig::gradient_dt);
 
-  m.def("default_compile_config",
-        [&]() -> CompileConfig & { return default_compile_config; },
-        py::return_value_policy::reference);
+  m.def(
+      "default_compile_config",
+      [&]() -> CompileConfig & { return default_compile_config; },
+      py::return_value_policy::reference);
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -83,9 +84,10 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);
 
-  m.def("current_compile_config",
-        [&]() -> CompileConfig & { return get_current_program().config; },
-        py::return_value_policy::reference);
+  m.def(
+      "current_compile_config",
+      [&]() -> CompileConfig & { return get_current_program().config; },
+      py::return_value_policy::reference);
 
   py::class_<Index>(m, "Index").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
@@ -103,7 +105,10 @@ PYBIND11_MODULE(taichi_lang_core, m) {
       .def("data_type", [](SNode *snode) { return snode->dt; })
       .def("num_active_indices",
            [](SNode *snode) { return snode->num_active_indices; });
+
   py::class_<Program::Kernel>(m, "Kernel")
+      .def("set_arg_int", &Program::Kernel::set_arg_int)
+      .def("set_arg_float", &Program::Kernel::set_arg_float)
       .def("__call__", &Program::Kernel::operator());
 
   py::class_<Expr> expr(m, "Expr");
@@ -162,8 +167,9 @@ PYBIND11_MODULE(taichi_lang_core, m) {
 
   m.def("layout", layout);
 
-  m.def("get_root", [&]() -> SNode * { return &root; },
-        py::return_value_policy::reference);
+  m.def(
+      "get_root", [&]() -> SNode * { return &root; },
+      py::return_value_policy::reference);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
 

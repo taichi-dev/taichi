@@ -158,8 +158,17 @@ def kernel(foo):
 
         t_kernel = taichi_lang_core.create_kernel(foo.__name__, grad)
         t_kernel = t_kernel.define(lambda: compiled())
-        compiled_functions[foo] = lambda: t_kernel()
-      compiled_functions[foo]()
+        def func(*args):
+          for i, v in enumerate(args):
+            if isinstance(v, float):
+              t_kernel.set_arg_float(i, v)
+            elif isinstance(v, int):
+              t_kernel.set_arg_int(i, v)
+            else:
+              assert False, 'Argument to kernels must have type float/int'
+          t_kernel()
+        compiled_functions[foo] = func
+      compiled_functions[foo](*args)
     return ret
 
   ret = invoke(False)

@@ -30,6 +30,11 @@ struct Context {
   inline T get_arg(int i) {
     return union_cast_different_size<T>(args[i]);
   }
+
+  template <typename T>
+  inline void set_arg(int i, T v) {
+    args[i] = union_cast_different_size<uint64>(v);
+  }
 };
 
 TLANG_NAMESPACE_END

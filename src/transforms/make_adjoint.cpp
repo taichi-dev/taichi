@@ -81,7 +81,8 @@ class MakeAdjoint : public IRVisitor {
 
   void accumulate(Stmt *primal, Stmt *value) {
     auto alloca_ = adjoint(primal);
-    if (!alloca_) return; // primal may be int variable
+    if (!alloca_)
+      return;  // primal may be int variable
     TC_ASSERT(alloca_->is<AllocaStmt>());
     auto alloca = alloca_->as<AllocaStmt>();
     TC_ASSERT(alloca->width() == 1);
@@ -95,8 +96,10 @@ class MakeAdjoint : public IRVisitor {
     }
     if (stmt->adjoint == nullptr) {
       // create the alloca
-      auto alloca =
-          Stmt::make<AllocaStmt>(1, get_current_program().config.gradient_dt);
+      // auto alloca =
+      //    Stmt::make<AllocaStmt>(1, get_current_program().config.gradient_dt);
+      // maybe it's better to use the statement data type than the default type
+      auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type.data_type);
       stmt->adjoint = alloca.get();
       current_block->insert(std::move(alloca), 0);
     }
@@ -265,6 +268,7 @@ namespace irpass {
 
 void make_adjoint(IRNode *root) {
   MakeAdjoint::run(root);
+  // print(root);
   typecheck(root);
 }
 

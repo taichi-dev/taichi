@@ -27,10 +27,11 @@ cache = core.cache
 transposed = Matrix.transposed
 polar_decompose = Matrix.polar_decompose
 determinant = Matrix.determinant
+set_default_fp = pytaichi.set_default_fp
 
 schedules = [parallelize, vectorize, block_dim, cache]
 
 __all__ = [kernel, layout, var, global_var, f64, float64, f32, float32, i32,
            int32, print, core, index, make_expr_group, i, j, k, ij, ijk,
            inside_kernel, Matrix, Vector, cfg, current_cfg, outer_product,
-           profiler_print, profiler_clear, reset, runtime] + schedules + unary_ops
+           profiler_print, profiler_clear, reset, runtime, set_default_fp] + schedules + unary_ops

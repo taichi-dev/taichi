@@ -19,7 +19,8 @@ class Expr:
         self.ptr = args[0].ptr
         self.tb = args[0].tb
       else:
-        self.ptr = taichi_lang_core.make_constant_expr(args[0])
+        from .impl import make_constant_expr
+        self.ptr = make_constant_expr(args[0]).ptr
     else:
       assert False
     if self.tb:
@@ -194,5 +195,4 @@ class Expr:
 
   def atomic_add(self, other):
     taichi_lang_core.expr_atomic_add(self.ptr, other.ptr)
-
 

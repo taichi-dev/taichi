@@ -119,9 +119,12 @@ PYBIND11_MODULE(taichi_lang_core, m) {
              expr->cast<GlobalVariableExpression>()->is_primal = v;
            })
       .def("set_grad", &Expr::set_grad);
+
   export_accessors<int32>(expr);
+  export_accessors<int64>(expr);
+
   export_accessors<float32>(expr);
-  // export_accessors<float64>(expr);
+  export_accessors<float64>(expr);
 
   py::class_<ExprGroup>(m, "ExprGroup")
       .def(py::init<>())
@@ -232,9 +235,11 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("make_arg_load_expr", Expr::make<ArgLoadExpression, int>);
 
   m.def("make_id_expr", Expr::make<IdExpression, std::string>);
-  m.def("make_constant_expr", Expr::make<ConstExpression, int>);
-  m.def("make_constant_expr", Expr::make<ConstExpression, float32>);
-  m.def("make_constant_expr", Expr::make<ConstExpression, float64>);
+
+  m.def("make_const_expr_i32", Expr::make<ConstExpression, int32>);
+  m.def("make_const_expr_i64", Expr::make<ConstExpression, int64>);
+  m.def("make_const_expr_f32", Expr::make<ConstExpression, float32>);
+  m.def("make_const_expr_f64", Expr::make<ConstExpression, float64>);
 
   m.def("make_global_ptr_expr",
         Expr::make<GlobalPtrExpression, const Expr &, const ExprGroup &>);
@@ -287,6 +292,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("vectorize", Vectorize);
   m.def("block_dim", BlockDim);
   m.def("cache", Cache);
+
+  m.def("needs_grad", needs_grad);
 }
 
 TLANG_NAMESPACE_END

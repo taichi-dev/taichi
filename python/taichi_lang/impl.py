@@ -8,6 +8,17 @@ import astpretty
 import astor
 from .util import *
 
+float32 = taichi_lang_core.DataType.float32
+f32 = float32
+float64 = taichi_lang_core.DataType.float64
+f64 = float64
+
+int32 = taichi_lang_core.DataType.int32
+i32 = int32
+int64 = taichi_lang_core.DataType.int64
+i64 = int64
+
+
 def decl_arg(dt):
   id = taichi_lang_core.decl_arg(dt)
   return Expr(taichi_lang_core.make_arg_load_expr(id))
@@ -63,7 +74,17 @@ class PyTaichi:
     self.inside_kernel = False
     self.global_vars = []
     self.print_preprocessed = False
+    self.default_fp = f32
+    self.default_ip = i32
     Expr.materialize_layout_callback = self.materialize
+
+  def set_default_fp(self, fp):
+    assert fp in [f32, f64]
+    self.default_fp = fp
+
+  def set_default_ip(self, ip):
+    assert ip in [i32, i64]
+    self.default_ip = ip
 
   def materialize(self):
     assert self.materialized == False
@@ -85,6 +106,21 @@ class PyTaichi:
 
 pytaichi = PyTaichi()
 
+def make_constant_expr(val):
+  if isinstance(val, int):
+    if pytaichi.default_ip == i32:
+      return Expr(taichi_lang_core.make_const_expr_i32(val))
+    elif pytaichi.default_ip == i64:
+      return Expr(taichi_lang_core.make_const_expr_i64(val))
+    else:
+      assert False
+  else:
+    if pytaichi.default_fp == f32:
+      return Expr(taichi_lang_core.make_const_expr_f32(val))
+    elif pytaichi.default_fp == f64:
+      return Expr(taichi_lang_core.make_const_expr_f64(val))
+    else:
+      assert False
 
 def reset():
   global pytaichi
@@ -177,11 +213,12 @@ def global_var(dt):
   x.ptr.set_is_primal(True)
   pytaichi.global_vars.append(x)
 
-  # adjoint
-  x_grad = Expr(taichi_lang_core.make_id_expr(""))
-  x_grad.ptr = taichi_lang_core.global_new(x_grad.ptr, default_cfg().gradient_dt)
-  x_grad.ptr.set_is_primal(False)
-  x.set_grad(x_grad)
+  if taichi_lang_core.needs_grad(dt):
+    # adjoint
+    x_grad = Expr(taichi_lang_core.make_id_expr(""))
+    x_grad.ptr = taichi_lang_core.global_new(x_grad.ptr, dt)
+    x_grad.ptr.set_is_primal(False)
+    x.set_grad(x_grad)
 
   return x
 
@@ -195,16 +232,6 @@ def layout(func):
   assert not pytaichi.materialized, "All layout must be specified before the first kernel launch / data access."
   pytaichi.layout_functions.append(func)
 
-
-float32 = taichi_lang_core.DataType.float32
-f32 = float32
-float64 = taichi_lang_core.DataType.float64
-f64 = float64
-
-int32 = taichi_lang_core.DataType.int32
-i32 = int32
-int64 = taichi_lang_core.DataType.int64
-i64 = int64
 
 
 def tprint(var):

@@ -4,7 +4,9 @@ import random
 import cv2
 import matplotlib.pyplot as plt
 
-real = ti.f32
+real = ti.f64
+ti.set_default_fp(real)
+
 dim = 2
 n_particles = 8192
 n_grid = 128
@@ -75,7 +77,7 @@ def clear_particle_grad():
 def p2g(f: ti.i32):
   for p in range(0, n_particles):
     base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
-    fx = x[f, p] * inv_dx - ti.cast(base, ti.f32)
+    fx = x[f, p] * inv_dx - ti.cast(base, ti.i32)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
          0.5 * ti.sqr(fx - 0.5)]
     new_F = (ti.Matrix.diag(dim=2, val=1) + dt * C[f, p]) @ F[f, p]
@@ -90,7 +92,7 @@ def p2g(f: ti.i32):
     for i in ti.static(range(3)):
       for j in ti.static(range(3)):
         offset = ti.Vector([i, j])
-        dpos = (ti.cast(ti.Vector([i, j]), ti.f32) - fx) * dx
+        dpos = (ti.cast(ti.Vector([i, j]), real) - fx) * dx
         weight = w[i](0) * w[j](1)
         grid_v_in[base + offset].atomic_add(
           weight * (p_mass * v[f, p] + affine @ dpos))
@@ -103,7 +105,6 @@ bound = 3
 @ti.kernel
 def grid_op():
   for i, j in grid_m_in:
-    v_out = ti.Vector([0.0, 0.0])
     inv_m = 1 / (grid_m_in[i, j] + 1e-10)
     v_out = inv_m * grid_v_in[i, j]
     v_out(1).val -= dt * gravity
@@ -122,7 +123,7 @@ def grid_op():
 def g2p(f: ti.i32):
   for p in range(0, n_particles):
     base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
-    fx = x[f, p] * inv_dx - ti.cast(base, ti.f32)
+    fx = x[f, p] * inv_dx - ti.cast(base, real)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
          0.5 * ti.sqr(fx - 0.5)]
     new_v = ti.Vector([0.0, 0.0])
@@ -130,7 +131,7 @@ def g2p(f: ti.i32):
 
     for i in ti.static(range(3)):
       for j in ti.static(range(3)):
-        dpos = ti.cast(ti.Vector([i, j]), ti.f32) - fx
+        dpos = ti.cast(ti.Vector([i, j]), real) - fx
         g_v = grid_v_out[base(0) + i, base(1) + j]
         weight = w[i](0) * w[j](1)
         new_v += weight * g_v

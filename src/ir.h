@@ -1221,10 +1221,12 @@ class GlobalVariableExpression : public Expression {
   SNode *snode;
   bool has_ambient;
   TypedConstant ambient_value;
+  bool is_primal;
 
   GlobalVariableExpression(DataType dt, Ident ident) : ident(ident), dt(dt) {
     snode = nullptr;
     has_ambient = false;
+    is_primal = true;
   }
 
   GlobalVariableExpression(SNode *snode) : snode(snode) {

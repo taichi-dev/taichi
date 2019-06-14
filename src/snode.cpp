@@ -17,6 +17,7 @@ SNode &SNode::place(Expr &expr_) {
     expr->snode->has_ambient = true;
     expr->snode->ambient_val = expr->ambient_value;
   }
+  expr->snode->is_primal = expr->is_primal;
   child.dt = expr->dt;
   return *this;
 }
@@ -79,6 +80,22 @@ void SNode::clear_data_and_deactivate() {
     (*(Program::Kernel *)clear_and_deactivate_kernel)();
   } else {
     clear_func(1);
+  }
+}
+
+void SNode::lazy_grad() {
+  if (this->type == SNodeType::place) return;
+  for (auto c: ch) {
+    c->lazy_grad();
+  }
+  std::vector<Expr *> new_grads;
+  for (auto c: ch) {
+    if (c->type == SNodeType::place && c->is_primal && c->grad == nullptr) {
+      new_grads.push_back(c->grad_expr);
+    }
+  }
+  for (auto p : new_grads) {
+    this->place(*p);
   }
 }
 

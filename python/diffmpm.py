@@ -41,11 +41,11 @@ ti.cfg.arch = ti.cuda
 
 @ti.layout
 def place():
-  ti.root.dense(ti.l, max_steps).dense(ti.k, n_particles).place(x, v, C, F).place(
-    x.grad, v.grad, C.grad, F.grad)
-  ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out).place(
-    grid_v_in.grad, grid_m_in.grad, grid_v_out.grad)
-  ti.root.place(init_v, init_v.grad, loss, loss.grad, x_avg, x_avg.grad)
+  ti.root.dense(ti.l, max_steps).dense(ti.k, n_particles).place(x, v, C, F)
+  ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out)
+  ti.root.place(init_v, loss, x_avg)
+
+  ti.root.lazy_grad()
 
 @ti.kernel
 def set_v():

@@ -68,6 +68,7 @@ class SNode {
   int depth;
   bool _verbose;
   bool _multi_threaded;
+  bool is_primal;
 
   std::string name;
   int64 n;
@@ -77,6 +78,7 @@ class SNode {
   TypedConstant ambient_val;
   // Note: parent will not be set until structural nodes are compiled!
   SNode *parent;
+  Expr *grad_expr;
   SNode *grad;
 
   std::string data_type_name() {
@@ -123,6 +125,8 @@ class SNode {
     clear_func = nullptr;
     clear_kernel = nullptr;
     clear_and_deactivate_kernel = nullptr;
+
+    is_primal = true;
   }
 
   SNode &insert_children(SNodeType t) {
@@ -272,6 +276,8 @@ class SNode {
     return type == SNodeType::pointer || type == SNodeType::hash ||
            (type == SNodeType::dense && _bitmasked);
   }
+
+  void lazy_grad();
 };
 
 TLANG_NAMESPACE_END

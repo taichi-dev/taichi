@@ -17,9 +17,13 @@ class SNode:
     for arg in args:
       if isinstance(arg, Expr):
         self.ptr.place(Expr(arg).ptr)
+        arg.ptr.snode().grad_expr = arg.grad.ptr
       elif isinstance(arg, list):
         for x in arg:
-          self.ptr.place(x)
+          self.place(x)
       else:
         arg.place(self)
     return self
+
+  def lazy_grad(self):
+    self.ptr.lazy_grad()

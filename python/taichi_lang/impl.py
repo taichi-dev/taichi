@@ -185,6 +185,7 @@ def global_var(dt):
   # adjoint
   x_grad = Expr(taichi_lang_core.make_id_expr(""))
   x_grad.ptr = taichi_lang_core.global_new(x_grad.ptr, default_cfg().gradient_dt)
+  x_grad.is_primal = False
   x.grad = x_grad
 
   return x

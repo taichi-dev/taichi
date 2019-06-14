@@ -71,10 +71,9 @@ PYBIND11_MODULE(taichi_lang_core, m) {
       .def_readwrite("lower_access", &CompileConfig::lower_access)
       .def_readwrite("gradient_dt", &CompileConfig::gradient_dt);
 
-  m.def(
-      "default_compile_config",
-      [&]() -> CompileConfig & { return default_compile_config; },
-      py::return_value_policy::reference);
+  m.def("default_compile_config",
+        [&]() -> CompileConfig & { return default_compile_config; },
+        py::return_value_policy::reference);
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -84,10 +83,9 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);
 
-  m.def(
-      "current_compile_config",
-      [&]() -> CompileConfig & { return get_current_program().config; },
-      py::return_value_policy::reference);
+  m.def("current_compile_config",
+        [&]() -> CompileConfig & { return get_current_program().config; },
+        py::return_value_policy::reference);
 
   py::class_<Index>(m, "Index").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
@@ -95,6 +93,7 @@ PYBIND11_MODULE(taichi_lang_core, m) {
       .def("clear_data", &SNode::clear_data)
       .def("clear_data_and_deactivate", &SNode::clear_data_and_deactivate)
       .def_readwrite("parent", &SNode::parent)
+      .def_readwrite("grad_expr", &SNode::grad_expr)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::dense),
@@ -103,6 +102,7 @@ PYBIND11_MODULE(taichi_lang_core, m) {
       .def("place", (SNode & (SNode::*)(Expr &))(&SNode::place),
            py::return_value_policy::reference)
       .def("data_type", [](SNode *snode) { return snode->dt; })
+      .def("lazy_grad", &SNode::lazy_grad)
       .def("num_active_indices",
            [](SNode *snode) { return snode->num_active_indices; });
 
@@ -167,9 +167,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
 
   m.def("layout", layout);
 
-  m.def(
-      "get_root", [&]() -> SNode * { return &root; },
-      py::return_value_policy::reference);
+  m.def("get_root", [&]() -> SNode * { return &root; },
+        py::return_value_policy::reference);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
 
@@ -258,6 +257,10 @@ PYBIND11_MODULE(taichi_lang_core, m) {
   data_type.export_values();
 
   m.def("global_new", static_cast<Expr (*)(Expr, DataType)>(global_new));
+  m.def("set_global_grad", [&](const Expr &expr) {
+    TC_ASSERT(expr.is<GlobalVariableExpression>());
+    expr.cast<GlobalVariableExpression>()->is_primal = false;
+  });
   m.def("data_type_name", data_type_name);
   m.def("data_type_short_name", data_type_short_name);
 

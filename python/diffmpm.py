@@ -17,15 +17,15 @@ E = 100
 # TODO: update
 mu = E
 la = E
-max_steps = 8192
-steps = 1024
+max_steps = 32
+steps = 32
+assert steps <= max_steps
 gravity = 9.8
 target = [0.3, 0.6]
 
 scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(dim, dt=real)
 mat = lambda: ti.Matrix(dim, dim, dt=real)
-f = ti.var(ti.i32)
 
 x, v, x_avg = vec(), vec(), vec()
 grid_v_in, grid_m_in = vec(), scalar()
@@ -46,7 +46,7 @@ def place():
     x.grad, v.grad, C.grad, F.grad)
   ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out).place(
     grid_v_in.grad, grid_m_in.grad, grid_v_out.grad)
-  ti.root.place(f, f.grad, init_v, init_v.grad, loss, loss.grad, x_avg, x_avg.grad)
+  ti.root.place(init_v, init_v.grad, loss, loss.grad, x_avg, x_avg.grad)
 
 @ti.kernel
 def set_v():
@@ -73,20 +73,9 @@ def clear_particle_grad():
 
 
 @ti.kernel
-def inc_f():
-  global f
-  f += 1
-
-
-@ti.kernel
-def dec_f():
-  global f
-  f -= 1
-
-
-@ti.kernel
-def p2g():
+def p2g(f: ti.i32):
   for p in range(0, n_particles):
+    ti.print(f)
     base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
     fx = x[f, p] * inv_dx - ti.cast(base, ti.f32)
     w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1),
@@ -137,7 +126,7 @@ def grid_op():
 
 
 @ti.kernel
-def g2p():
+def g2p(f: ti.i32):
   for p in range(0, n_particles):
     base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
     fx = x[f, p] * inv_dx - ti.cast(base, ti.f32)
@@ -158,97 +147,17 @@ def g2p():
     x[f + 1, p] = x[f, p] + dt * v[f + 1, p]
     C[f + 1, p] = new_C
 
-@ti.kernel
-def compute_x_avg():
-  for i in range(n_particles):
-    x_avg[None].atomic_add((1 / n_particles) * x[steps - 1, i])
-
-@ti.kernel
-def compute_loss():
-  dist = ti.sqr(x_avg - ti.Vector(target))
-  loss[None] = 0.5 * (dist(0) + dist(1))
-
-def forward():
-  # simulation
-  set_v()
-  for s in range(steps - 1):
-    clear_grid()
-    p2g()
-    grid_op()
-    g2p()
-    inc_f()
-
-  loss[None] = 0
-  x_avg[None] = [0, 0]
-  compute_x_avg()
-  compute_loss()
-  return loss[None]
-
-def backward():
-  clear_particle_grad()
-  init_v.grad[None] = [0, 0]
-
-  loss.grad[None] = 1
-  x_avg.grad[None] = [0, 0]
-
-  compute_loss.grad()
-  compute_x_avg.grad()
-  for s in range(steps - 1):
-    # Since we do not store the grid history (to save space), we redo p2g and grid op
-    dec_f()
-    clear_grid()
-    p2g()
-    grid_op()
-
-    g2p.grad()
-    grid_op.grad()
-    p2g.grad()
-  set_v.grad()
-  return init_v.grad[None]
-
 
 def main():
-  # initialization
   init_v[None] = [0, 0]
 
   for i in range(n_particles):
     x[0, i] = [random.random() * 0.4 + 0.3, random.random() * 0.4 + 0.3]
     F[0, i] = [[1, 0], [0, 1]]
 
-
-  losses = []
-  img_count = 0
-  for i in range(30):
-    l = forward()
-    losses.append(l)
-    grad = backward()
-    print('loss=', l, '   grad=', grad)
-    learning_rate = 10
-    init_v(0)[None] -= learning_rate * grad[0][0]
-    init_v(1)[None] -= learning_rate * grad[1][0]
-
-    # visualize
-    for s in range(0, steps - 1, 64):
-      scale = 4
-      img = np.zeros(shape=(scale * n_grid, scale * n_grid)) + 0.3
-      total = [0, 0]
-      for i in range(n_particles):
-        p_x = int(scale * x(0)[s, i] / dx)
-        p_y = int(scale * x(1)[s, i] / dx)
-        total[0] += p_x
-        total[1] += p_y
-        img[p_x, p_y] = 1
-      cv2.circle(img, (total[1] // n_particles, total[0] // n_particles), radius=5, color=0, thickness=5)
-      cv2.circle(img, (int(target[1] * scale * n_grid), int(target[0] * scale * n_grid)), radius=5, color=1, thickness=5)
-      img = img.swapaxes(0, 1)[::-1]
-      cv2.imshow('MPM', img)
-      img_count += 1
-      cv2.imwrite('MPM{:04d}.png'.format(img_count), img * 255)
-      cv2.waitKey(1)
-
-  ti.profiler_print()
-  plt.plot(losses)
-  plt.show()
+  p2g(0)
+  print("are")
+  exit(0)
 
 
 if __name__ == '__main__':

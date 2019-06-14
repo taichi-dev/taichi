@@ -240,9 +240,8 @@ class GPUIRCodeGen : public IRVisitor {
       emit(
           R"(printf("task list %d\n", Managers::get_allocator<{}>()->resident_tail);)",
           leaf->node_type_name);
-      emit(
-          R"(printf("kernel {} <<<%d, %d>>> \n", {}, blockDim);)",
-          codegen->func_name, grid_dim);
+      emit(R"(printf("kernel {} <<<%d, %d>>> \n", {}, blockDim);)",
+           codegen->func_name, grid_dim);
 
       emit("cudaEvent_t start, stop;");
 
@@ -266,8 +265,7 @@ class GPUIRCodeGen : public IRVisitor {
 
       emit("float milliseconds = 0;");
       emit("cudaEventElapsedTime(&milliseconds, start, stop);");
-      emit(
-          R"(std::cout << "     device only : " << milliseconds << " ms\n";)");
+      emit(R"(std::cout << "     device only : " << milliseconds << " ms\n";)");
 
       if (current_program->current_kernel->benchmarking) {
         emit("cudaDeviceSynchronize();\n");
@@ -516,32 +514,16 @@ class GPUIRCodeGen : public IRVisitor {
     emit("}}");
   }
 
-  void visit(LocalLoadStmt *stmt) {
-    // TODO: optimize for partially vectorized load...
+  void visit(ArgLoadStmt *stmt) {
+    emit("const {} {}({{context.get_arg<{}>({})}});",
+         stmt->ret_data_type_name(), stmt->raw_name(),
+         data_type_name(stmt->ret_type.data_type), stmt->arg_id);
+  }
 
-    bool linear_index = true;
-    for (int i = 0; i < (int)stmt->ptr.size(); i++) {
-      if (stmt->ptr[i].offset != i) {
-        linear_index = false;
-      }
-    }
-    if (stmt->same_source() && linear_index &&
-        stmt->width() == stmt->ptr[0].var->width()) {
-      auto ptr = stmt->ptr[0].var;
-      emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
-           ptr->raw_name());
-    } else {
-      std::string init_v;
-      for (int i = 0; i < stmt->width(); i++) {
-        init_v += fmt::format("{}[{}]", stmt->ptr[i].var->raw_name(),
-                              stmt->ptr[i].offset);
-        if (i + 1 < stmt->width()) {
-          init_v += ", ";
-        }
-      }
-      emit("const {} {}({{{}}});", stmt->ret_data_type_name(), stmt->raw_name(),
-           init_v);
-    }
+  void visit(LocalLoadStmt *stmt) {
+    auto ptr = stmt->ptr[0].var;
+    emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
+         ptr->raw_name());
   }
 
   void visit(LocalStoreStmt *stmt) {

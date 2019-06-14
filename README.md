@@ -10,18 +10,24 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
  - Execute `ti test` to run all the tests. It may take a few minutes.
 
 # Basics
- - Every global variable is a tensor: `X[i, j, k]`. 0-d tensor (scalar) should be access as `X[None]`
- - Differentiate element-wise product `*` and matrix product `@`
- -	Debug your program with `ti.print(x)`
+ - Every global variable is a tensor: `X[i, j, k]`. 0-d tensor (scalar) should be access as `X[None]`.
+ - Differentiate element-wise product `*` and matrix product `@`.
+ -	Debug your program with `ti.print(x)`.
  - Tensors values are initially zero.
+ - Supported data types: `ti.i32`, `ti.i64`, `ti.f32`, `ti.f64`.
+ - Binary operations on different types will give you a promoted type, e.g. i32 + f32 = f32.
  - Sparse tensors are initially inactive.
  
 ## Defining your kernels
- - Functions must be hinted
- - Kernels can have at most 8 scalar parameters
+ - Kernel arguments must be type hinted. Kernels can have at most 8 scalar parameters, e.g.
+```python
+@ti.kernel
+def print(x: ti.i32, y: ti.f32):
+  ti.print(x + y)
+```
  - Restart the Taichi runtime system (clear memory, desctory all variables and kernels) : `ti.reset()`
  - Right now kernels can have either statements or at most one for loop.
- - `Taichi`-scope v.s. `Python`-scope
+ - `Taichi`-scope (`ti.kernel`) v.s. `Python`-scope: everything decorated by `ti.kernel` is in `Taichi`-scope, which will be compiled by the Taichi compiler.
 
 # Differentiable Programming
  - No gradients are propagated to `int` tensors/locals
@@ -35,7 +41,6 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
 ## Tweak your data structure
 ### Improve Cacheline Utilization
 ### Reduce Data Structure Overheads
-### 
 
 # Sparsity
  - The user should make sure `grad` tensors have the same sparsity as the corresponding `primal` tensors.

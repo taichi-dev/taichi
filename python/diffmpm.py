@@ -73,16 +73,9 @@ def clear_particle_grad():
 
 
 @ti.kernel
-def inc_f():
+def set_f(s: ti.i32):
   global f
-  f += 1
-
-
-@ti.kernel
-def dec_f():
-  global f
-  f -= 1
-
+  f = s
 
 @ti.kernel
 def p2g():
@@ -172,11 +165,11 @@ def forward():
   # simulation
   set_v()
   for s in range(steps - 1):
+    set_f(s)
     clear_grid()
     p2g()
     grid_op()
     g2p()
-    inc_f()
 
   loss[None] = 0
   x_avg[None] = [0, 0]
@@ -193,9 +186,9 @@ def backward():
 
   compute_loss.grad()
   compute_x_avg.grad()
-  for s in range(steps - 1):
+  for s in reversed(range(steps - 1)):
     # Since we do not store the grid history (to save space), we redo p2g and grid op
-    dec_f()
+    set_f(s)
     clear_grid()
     p2g()
     grid_op()
@@ -243,7 +236,7 @@ def main():
       img = img.swapaxes(0, 1)[::-1]
       cv2.imshow('MPM', img)
       img_count += 1
-      cv2.imwrite('MPM{:04d}.png'.format(img_count), img * 255)
+      # cv2.imwrite('MPM{:04d}.png'.format(img_count), img * 255)
       cv2.waitKey(1)
 
   ti.profiler_print()

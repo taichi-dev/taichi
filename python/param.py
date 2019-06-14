@@ -12,3 +12,4 @@ def kernel(x: ti.i32):
   ti.print(x)
 
 kernel(123)
+kernel(456)

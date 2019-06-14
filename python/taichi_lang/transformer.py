@@ -202,6 +202,13 @@ if 1:
       self.generic_visit(node)
     return node
 
+  def visit_Global(self, node):
+    with self.variable_scope():
+      self.generic_visit(node)
+    for name in node.names:
+      self.create_variable(name)
+    return node
+
   @staticmethod
   def make_constant(value):
     # Do not use ast.Constant which does not exist in python3.5

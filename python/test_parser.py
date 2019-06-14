@@ -4,6 +4,7 @@ import ast
 import taichi as tc
 
 def foo(x):
+  global y
   def pr(x: ti.i32):
     print(x)
 

@@ -81,6 +81,7 @@ class MakeAdjoint : public IRVisitor {
 
   void accumulate(Stmt *primal, Stmt *value) {
     auto alloca_ = adjoint(primal);
+    if (!alloca_) return; // primal may be int variable
     TC_ASSERT(alloca_->is<AllocaStmt>());
     auto alloca = alloca_->as<AllocaStmt>();
     TC_ASSERT(alloca->width() == 1);
@@ -89,6 +90,9 @@ class MakeAdjoint : public IRVisitor {
   }
 
   Stmt *adjoint(Stmt *stmt) {
+    if (!is_real(stmt->ret_type.data_type)) {
+      return nullptr;
+    }
     if (stmt->adjoint == nullptr) {
       // create the alloca
       auto alloca =

@@ -11,7 +11,7 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
 
 # Basics
  - Every global variable is a tensor: `X[i, j, k]`. 0-d tensor (scalar) should be access as `X[None]`
-Differentiate mul and matmul
+ - Differentiate element-wise product `*` and matrix product `@`
  -	Debug your program with `ti.print(x)`
  - Tensors values are initially zero.
  - Sparse tensors are initially inactive.

@@ -8,8 +8,8 @@ real = ti.f32
 ti.set_default_fp(real)
 
 dim = 2
-n_grid = 128
-dx = 1 / n_grid
+n_grid = (256, 128)
+dx = 1 / n_grid[1]
 inv_dx = 1 / dx
 dt = 3e-4
 p_mass = 1
@@ -20,7 +20,7 @@ la = E
 max_steps = 1024
 steps = 1024
 gravity = 9.8
-target = [0.3, 0.6]
+target = [0.3, 0.4]
 
 scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(dim, dt=real)
@@ -113,11 +113,11 @@ def grid_op():
     v_out(1).val -= dt * gravity
     if i < bound and v_out(0) < 0:
       v_out(0).val = 0
-    if i > n_grid - bound and v_out(0) > 0:
+    if i > n_grid[0] - bound and v_out(0) > 0:
       v_out(0).val = 0
     if j < bound and v_out(1) < 0:
       v_out(1).val = 0
-    if j > n_grid - bound and v_out(1) > 0:
+    if j > n_grid[1] - bound and v_out(1) > 0:
       v_out(1).val = 0
     grid_v_out[i, j] = v_out
 
@@ -193,16 +193,16 @@ def backward():
 
 def main():
   # initialization
-  init_v[None] = [0, 0]
+  init_v[None] = [0, -1]
 
   assert len(group_offsets) == len(group_sizes)
 
   idx = 0
-  scaling = 0.075
+  scaling = 0.125
   for group_offset, group_size in zip(group_offsets, group_sizes):
     for i in range(sample_density):
       for j in range(sample_density):
-        x[0, idx] = [(group_offset[0] + group_size[0] * i / sample_density) * scaling + 0.3, (group_offset[1] + group_size[1] * j / sample_density) * scaling + 0.02]
+        x[0, idx] = [(group_offset[0] + group_size[0] * i / sample_density) * scaling + 0.3, (group_offset[1] + group_size[1] * j / sample_density) * scaling + 0.10]
         F[0, idx] = [[1, 0], [0, 1]]
 
         idx += 1
@@ -214,14 +214,14 @@ def main():
     losses.append(l)
     grad = backward()
     print('loss=', l, '   grad=', grad)
-    learning_rate = 10
+    learning_rate = 4
     init_v(0)[None] -= learning_rate * grad[0][0]
     init_v(1)[None] -= learning_rate * grad[1][0]
 
     # visualize
     for s in range(0, steps - 1, 64):
       scale = 4
-      img = np.zeros(shape=(scale * n_grid, scale * n_grid)) + 0.3
+      img = np.zeros(shape=(scale * n_grid[0], scale * n_grid[1])) + 0.3
       total = [0, 0]
       for i in range(n_particles):
         p_x = int(scale * x(0)[s, i] / dx)
@@ -230,7 +230,7 @@ def main():
         total[1] += p_y
         img[p_x, p_y] = 1
       cv2.circle(img, (total[1] // n_particles, total[0] // n_particles), radius=5, color=0, thickness=5)
-      cv2.circle(img, (int(target[1] * scale * n_grid), int(target[0] * scale * n_grid)), radius=5, color=1, thickness=5)
+      cv2.circle(img, (int(target[1] * scale * inv_dx), int(target[0] * scale * inv_dx)), radius=5, color=1, thickness=5)
       img = img.swapaxes(0, 1)[::-1]
       cv2.imshow('MPM', img)
       img_count += 1

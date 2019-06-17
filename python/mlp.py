@@ -19,17 +19,20 @@ learning_rate = ti.var(ti.f32)
 n_input = 28 ** 2
 n_output = 10
 
+
 @ti.kernel
 def init_weights():
   for i in range(n_input):
     for j in range(n_output):
-      weight[i, j] = ti.random() * 0.01
+      weight[i, j] = ti.random() * 0.001
+
 
 @ti.kernel
 def clear_weight_grad():
   for i in range(n_input):
     for j in range(n_output):
       weight.grad[i, j] = 0
+
 
 @ti.layout
 def layout():
@@ -43,6 +46,7 @@ def layout():
   ti.root.place(loss, learning_rate)
 
   ti.root.lazy_grad()
+
 
 def clear_outputs():
   for i in range(n_output):
@@ -60,31 +64,38 @@ def layer1():
     for j in range(n_output):
       output[j].atomic_add(input[i] * weight[i, j])
 
+
 @ti.kernel
 def layer2():
   for i in range(n_output):
     output_exp[i] = ti.exp(output[i])
 
+
 @ti.kernel
 def layer3():
   for i in range(n_output):
-    softmax_sum.atomic_add(output[i])
+    softmax_sum.atomic_add(output_exp[i] + 1e-6)
+
 
 @ti.kernel
 def layer4():
   for i in range(n_output):
     output_softmax[i] = output_exp[i] / softmax_sum
 
+
 @ti.kernel
 def layer5():
   for i in range(n_output):
-    loss.atomic_add((output_softmax[i] - gt[i]) ** 2)
+    loss.atomic_add(-gt[i] * ti.log(output_softmax[i]) + (gt[i] - 1) * ti.log(
+      1 - output_softmax[i]))
+
 
 @ti.kernel
 def gd():
   for i in range(n_input):
     for j in range(n_output):
       weight[i, j] -= learning_rate * weight.grad[i, j]
+
 
 with open('mnist.pkl', 'rb') as f:
   mnist = pickle.load(f)
@@ -96,9 +107,12 @@ test_labels = mnist['test_labels']
 
 init_weights()
 
-for k in range(1000):
+learning_rate = 1e-3
+
+losses = []
+
+for k in range(12000):
   img_id = random.randrange(0, len(training_images))
-  print(img_id)
   img = training_images[img_id]
 
   for i in range(n_input):
@@ -107,9 +121,9 @@ for k in range(1000):
   for j in range(n_output):
     gt[j] = int(training_labels[img_id] == j)
 
-
-  clear_outputs()
   clear_weight_grad()
+  clear_outputs()
+  softmax_sum[None] = 0
   loss[None] = 0
 
   layer1()
@@ -118,10 +132,16 @@ for k in range(1000):
   layer4()
   layer5()
 
-  loss.grad[None] = -1
 
   l = loss[None]
-  print('loss', l)
+
+  losses.append(l)
+  if len(losses) > 100:
+    losses = losses[-100:]
+    print('loss : ', sum(losses) / len(losses))
+
+  loss.grad[None] = 1
+  softmax_sum.grad[None] = 0
 
   layer5.grad()
   layer4.grad()
@@ -131,8 +151,7 @@ for k in range(1000):
 
   gd()
 
-
-ntest = len(test_images) // 10
+ntest = len(test_images) // 5
 acc = 0
 for k in range(ntest):
   img = test_images[k]
@@ -142,7 +161,6 @@ for k in range(ntest):
 
   for j in range(n_output):
     gt[j] = int(test_labels[k] == j)
-
 
   clear_outputs()
   clear_weight_grad()
@@ -154,8 +172,6 @@ for k in range(ntest):
   for j in range(n_output):
     logits.append(output[j])
   pred = logits.index(max(logits))
-  acc += int(pred == training_labels[k])
+  acc += int(pred == test_labels[k])
 
-print('test accuracy: {:.3f}'.format(100 * acc / ntest))
-
-
+print('test accuracy: {:.2f}%'.format(100 * acc / ntest))

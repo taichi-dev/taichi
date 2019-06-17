@@ -48,6 +48,12 @@ SNode &SNode::create_node(std::vector<Index> indices,
   auto &new_node = insert_children(type);
   new_node.n = 1;
   for (auto s : sizes) {
+    if (!bit::is_power_of_two(s)) {
+      auto promoted_s = bit::least_pot_bound(s);
+      TC_WARN("node size {} promoted to {}. Pay attention to structural for's.",
+              s, promoted_s);
+      s = promoted_s;
+    }
     TC_ASSERT(bit::is_power_of_two(s));
     new_node.n *= s;
   }

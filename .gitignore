@@ -24,3 +24,5 @@ blocks
 *.log
 *.png
 *_rendered*
+*.gz
+*.pkl

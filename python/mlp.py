@@ -63,13 +63,18 @@ print(training_images.shape)
 
 for k in range(100):
   img = training_images[random.randrange(0, len(training_images))]
+
   for i in range(n_input):
     input[i] = img[i]
+
   layer1()
   layer2()
   layer3()
   layer4()
   layer5()
+
+  l = loss[None]
+  print(l)
 
   layer5.grad()
   layer4.grad()

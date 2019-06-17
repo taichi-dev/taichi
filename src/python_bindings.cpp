@@ -238,6 +238,8 @@ PYBIND11_MODULE(taichi_lang_core, m) {
 
   m.def("make_id_expr", Expr::make<IdExpression, std::string>);
 
+  m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
+
   m.def("make_const_expr_i32", Expr::make<ConstExpression, int32>);
   m.def("make_const_expr_i64", Expr::make<ConstExpression, int64>);
   m.def("make_const_expr_f32", Expr::make<ConstExpression, float32>);

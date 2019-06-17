@@ -196,3 +196,13 @@ class Expr:
   def atomic_add(self, other):
     taichi_lang_core.expr_atomic_add(self.ptr, other.ptr)
 
+  def __pow__(self, power, modulo=None):
+    assert isinstance(power, int) and power >= 0
+    if power == 0:
+      return Expr(1)
+    ret = self
+    for i in range(power - 1):
+      ret = ret * self
+    return ret
+
+

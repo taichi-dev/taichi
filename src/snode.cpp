@@ -47,13 +47,16 @@ SNode &SNode::create_node(std::vector<Index> indices,
                    "memset limitation.");
   auto &new_node = insert_children(type);
   new_node.n = 1;
-  for (auto s : sizes) {
+  for (int i = 0; i < sizes.size(); i++) {
+    auto s = sizes[i];
     if (!bit::is_power_of_two(s)) {
       auto promoted_s = bit::least_pot_bound(s);
-      TC_WARN("node size {} promoted to {}. Pay attention to structural for's.",
-              s, promoted_s);
+      TC_WARN(
+          "Non-power-of-two node size {} promoted to {}. Pay attention to "
+          "structural for's.", s, promoted_s);
       s = promoted_s;
     }
+    sizes[i] = s;
     TC_ASSERT(bit::is_power_of_two(s));
     new_node.n *= s;
   }

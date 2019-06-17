@@ -24,7 +24,36 @@ def print(x: ti.i32, y: ti.f32):
 ```
  - Restart the Taichi runtime system (clear memory, desctory all variables and kernels) : `ti.reset()`
  - Right now kernels can have either statements or at most one for loop.
- - `Taichi`-scope (`ti.kernel`) v.s. `Python`-scope: everything decorated by `ti.kernel` is in `Taichi`-scope, which will be compiled by the Taichi compiler.
+```python
+# Good kernels
+@ti.kernel
+def print(x: ti.i32, y: ti.f32):
+  ti.print(x + y)
+  ti.print(x * y)
+
+@ti.kernel
+def copy():
+  for i in x:
+    y[i] = x[i]
+    
+# Bad kernels that won't compile
+# (split them into two kernels for now. Compiler support coming soon.)
+@ti.kernel
+def print():
+  ti.print(x + y)
+  for i in x:
+    y[i] = x[i]
+
+@ti.kernel
+def print():
+  for i in x:
+    y[i] = x[i]
+  for i in x:
+    z[i] = x[i]
+
+```
+
+- `Taichi`-scope (`ti.kernel`) v.s. `Python`-scope: everything decorated by `ti.kernel` is in `Taichi`-scope, which will be compiled by the Taichi compiler.
 
 # Data layout
  - Non-power-of-two tensor dimensions are enlarged into powers of two.

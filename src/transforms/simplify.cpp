@@ -395,6 +395,14 @@ class BasicBlockSimplify : public IRVisitor {
   void visit(UnaryOpStmt *stmt) override {
     if (is_done(stmt))
       return;
+    if (stmt->op_type == UnaryOpType::cast) {
+      if (stmt->cast_type == stmt->rhs->ret_type.data_type) {
+        stmt->replace_with(stmt->rhs);
+        stmt->parent->erase(current_stmt_id);
+        set_done(stmt);
+        return;
+      }
+    }
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {

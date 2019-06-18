@@ -7,6 +7,9 @@
 #include <taichi/io/io.h>
 
 namespace taichi {
+static_assert(
+    sizeof(real) == sizeof(float32),
+    "Please build the taichi compiler with single precision (TC_USE_DOUBLE=0)");
 namespace math {
 inline int maximum(int a) {
   return a;

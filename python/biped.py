@@ -26,16 +26,21 @@ scalar = lambda: ti.var(dt=real)
 vec = lambda: ti.Vector(dim, dt=real)
 mat = lambda: ti.Matrix(dim, dim, dt=real)
 
-x, v, x_avg = vec(), vec(), vec()
+x, v, x_avg, v_avg = vec(), vec(), vec(), vec()
 grid_v_in, grid_m_in = vec(), scalar()
 grid_v_out = vec()
 C, F = mat(), mat()
 
+controller_weights = scalar()
+controller_bias = scalar()
+
 init_v = vec()
 loss = scalar()
+group_id = ti.var(ti.i32)
 
 group_offsets = [(0, 0), (0.5, 0), (0, 1), (1, 1), (2, 1), (2, 0), (2.5, 0)]
 group_sizes = [(0.5, 1), (0.5, 1), (1, 1), (1, 1), (1, 1), (0.5, 1), (0.5, 1)]
+num_groups = len(group_offsets)
 sample_density = 20
 n_particles = sample_density**2 * len(group_offsets)
 
@@ -46,9 +51,13 @@ ti.cfg.arch = ti.cuda
 
 @ti.layout
 def place():
+  ti.root.dense(ti.k, n_particles).place(group_id)
   ti.root.dense(ti.l, max_steps).dense(ti.k, n_particles).place(x, v, C, F)
   ti.root.dense(ti.ij, n_grid).place(grid_v_in, grid_m_in, grid_v_out)
-  ti.root.place(init_v, loss, x_avg)
+  ti.root.place(init_v, loss)
+  ti.root.dense(ti.i, num_groups).place(x_avg, v_avg)
+  ti.root.dense(ti.ij, (2 * dim * num_groups, num_groups)).place(controller_weights)
+  ti.root.dense(ti.i, num_groups).place(controller_bias)
 
   ti.root.lazy_grad()
 

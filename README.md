@@ -56,7 +56,7 @@ def print():
 - `Taichi`-scope (`ti.kernel`) v.s. `Python`-scope: everything decorated by `ti.kernel` is in `Taichi`-scope, which will be compiled by the Taichi compiler.
 
 # Data layout
- - Non-power-of-two tensor dimensions are enlarged into powers of two.
+ - Non-power-of-two tensor dimensions are promoted into powers of two. For example, a tensor of size `(18, 65)` will be materialized as `(32, 128)`. Be careful if you want to iterate over this structural node when it is dense: the loop variables will become iterate over the promoted large domain instead of the original compact domain. For sparse structural nodes, this makes no difference
 
 # Arithematics
  - Supported data types: `ti.i32`, `ti.i64`, `ti.f32`, `ti.f64`.

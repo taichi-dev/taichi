@@ -22,7 +22,7 @@ loss = ti.var(ti.f32)
 learning_rate = ti.var(ti.f32)
 
 n_input = 28 ** 2
-n_hidden = 30
+n_hidden = 500
 n_output = 10
 
 
@@ -160,11 +160,42 @@ test_labels = mnist['test_labels']
 init_weights1()
 init_weights2()
 
-learning_rate = 1e-3
+
+def test_accuracy():
+  ntest = len(test_images) // 10
+  acc = 0
+  for k in range(ntest):
+    img = test_images[k]
+
+    for i in range(n_input):
+      input[i] = img[i] / 255
+
+    for j in range(n_output):
+      gt[j] = int(test_labels[k] == j)
+
+    clear_output1()
+    clear_output2()
+    clear_weight1_grad()
+    clear_weight2_grad()
+
+    loss[None] = 0
+
+    for f in layer.list:
+      f()
+
+    logits = []
+    for j in range(n_output):
+      logits.append(output[j])
+    pred = logits.index(max(logits))
+    acc += int(pred == test_labels[k])
+
+  return acc / ntest
 
 losses = []
-
-for k in range(12000):
+accs = []
+niter = 10000
+for k in range(niter):
+  learning_rate = 5e-3 * (0.1 ** (2 * k // niter))
   img_id = random.randrange(0, len(training_images))
   img = training_images[img_id]
 
@@ -188,9 +219,13 @@ for k in range(12000):
   l = loss[None]
 
   losses.append(l)
-  if len(losses) > 100:
-    losses = losses[-100:]
-    print('loss : ', sum(losses) / len(losses))
+  losses = losses[-100:]
+  if k % 100 == 0:
+    print('k =', k, ' loss : ', sum(losses) / len(losses))
+  if k % 1000 == 0:
+    acc = test_accuracy()
+    print('test accuracy: {:.2f}%'.format(100 * acc))
+    accs.append(acc)
 
   loss.grad[None] = 1
   softmax_sum.grad[None] = 0
@@ -201,31 +236,3 @@ for k in range(12000):
   gd_w1()
   gd_w2()
 
-ntest = len(test_images) // 5
-acc = 0
-for k in range(ntest):
-  img = test_images[k]
-
-  for i in range(n_input):
-    input[i] = img[i] / 255
-
-  for j in range(n_output):
-    gt[j] = int(test_labels[k] == j)
-
-  clear_output1()
-  clear_output2()
-  clear_weight1_grad()
-  clear_weight2_grad()
-
-  loss[None] = 0
-
-  for f in layer.list:
-    f()
-
-  logits = []
-  for j in range(n_output):
-    logits.append(output[j])
-  pred = logits.index(max(logits))
-  acc += int(pred == test_labels[k])
-
-print('test accuracy: {:.2f}%'.format(100 * acc / ntest))

@@ -238,6 +238,10 @@ class MakeAdjoint : public IRVisitor {
     GlobalPtrStmt *ptr = stmt->ptr->as<GlobalPtrStmt>();
     TC_ASSERT(ptr->width() == 1);
     auto snodes = ptr->snodes;
+    if (!snodes[0]->has_grad()) {
+      // No adjoint SNode. Do nothing
+      return;
+    }
     TC_ASSERT(snodes[0]->get_grad() != nullptr);
     snodes[0] = snodes[0]->get_grad();
     auto adj_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);

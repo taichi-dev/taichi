@@ -276,9 +276,11 @@ class SNode {
 
   void lazy_grad();
 
-  bool is_primal();
+  bool is_primal() const;
 
-  SNode *get_grad();
+  bool has_grad() const;
+
+  SNode *get_grad() const;
 };
 
 TLANG_NAMESPACE_END

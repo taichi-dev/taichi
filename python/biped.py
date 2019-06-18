@@ -44,6 +44,7 @@ num_groups = len(group_offsets)
 sample_density = 20
 n_particles = sample_density**2 * len(group_offsets)
 
+ti.runtime.print_preprocessed = True
 # ti.cfg.arch = ti.x86_64
 ti.cfg.arch = ti.cuda
 # ti.cfg.print_ir = True
@@ -156,11 +157,12 @@ def g2p(f: ti.i32):
 @ti.kernel
 def compute_x_avg():
   for i in range(n_particles):
-    x_avg[None].atomic_add((1 / n_particles) * x[steps - 1, i])
+    g = group_id[i]
+    x_avg[g].atomic_add((1 / n_particles) * x[steps - 1, i])
 
 @ti.kernel
 def compute_loss():
-  dist = ti.sqr(x_avg - ti.Vector(target))
+  dist = ti.sqr(x_avg[0] - ti.Vector(target))
   loss[None] = 0.5 * (dist(0) + dist(1))
 
 def forward():
@@ -173,7 +175,8 @@ def forward():
     g2p(s)
 
   loss[None] = 0
-  x_avg[None] = [0, 0]
+  for i in range(num_groups):
+    x_avg[i] = [0, 0]
   compute_x_avg()
   compute_loss()
   return loss[None]
@@ -183,7 +186,9 @@ def backward():
   init_v.grad[None] = [0, 0]
 
   loss.grad[None] = 1
-  x_avg.grad[None] = [0, 0]
+
+  for i in range(num_groups):
+    x_avg.grad[i] = [0, 0]
 
   compute_loss.grad()
   compute_x_avg.grad()

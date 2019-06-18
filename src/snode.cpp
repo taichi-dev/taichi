@@ -53,7 +53,8 @@ SNode &SNode::create_node(std::vector<Index> indices,
       auto promoted_s = bit::least_pot_bound(s);
       TC_WARN(
           "Non-power-of-two node size {} promoted to {}. Pay attention to "
-          "structural for's.", s, promoted_s);
+          "structural for's.",
+          s, promoted_s);
       s = promoted_s;
     }
     sizes[i] = s;
@@ -101,8 +102,8 @@ void SNode::lazy_grad() {
   }
   std::vector<Expr> new_grads;
   for (auto c : ch) {
-    if (c->type == SNodeType::place && c->is_primal() &&
-        c->get_grad() == nullptr && needs_grad(c->dt)) {
+    if (c->type == SNodeType::place && c->is_primal() && needs_grad(c->dt) &&
+        c->get_grad() == nullptr) {
       new_grads.push_back(c->expr->cast<GlobalVariableExpression>()->adjoint);
     }
   }
@@ -111,13 +112,17 @@ void SNode::lazy_grad() {
   }
 }
 
-bool SNode::is_primal() {
+bool SNode::is_primal() const {
   TC_ASSERT(expr != nullptr);
   return (*expr).cast<GlobalVariableExpression>()->is_primal;
 }
 
-SNode *SNode::get_grad() {
-  TC_ASSERT(is_primal());
+bool SNode::has_grad() const {
+  return is_primal() && (*expr).cast<GlobalVariableExpression>()->adjoint.expr != nullptr;
+}
+
+SNode *SNode::get_grad() const {
+  TC_ASSERT(has_grad());
   return (*expr)
       .cast<GlobalVariableExpression>()
       ->adjoint.cast<GlobalVariableExpression>()

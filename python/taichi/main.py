@@ -11,6 +11,19 @@ packages = {
   'wushi': 'https://github.com/yuanming-hu/taichi_wushi'
 }
 
+def run_pytest():
+  print("\nRunning python tests...\n")
+  from pathlib import Path
+  import taichi as ti
+  import subprocess
+  hooks = list(filter(lambda x: str(x).endswith('testhook.py'), Path(ti.get_project_directory()).rglob("*.py")))
+  for hook in map(str, hooks):
+    print("\nRunning testhook {}...\n".format(hook))
+    cwd = os.getcwd()
+    os.chdir(hook[:hook.rfind('/')])
+    subprocess.call([sys.executable, hook])
+    os.chdir(cwd)
+
 def print_all_projects():
   from colorama import Fore, Back, Style
   print(Fore.GREEN, end='')
@@ -66,34 +79,34 @@ def main(debug=False):
   print(u'\n'.join(lines))
   print()
   import taichi as tc
-  
+
   tc.core.set_core_debug(debug)
 
   argc = len(sys.argv)
   if argc == 1 or sys.argv[1] == 'help':
     print(
-        "    Usage: ti run [task name]        |-> Run a specific task\n"
-        "           ti test                   |-> Run tests\n"
-        "           ti daemon                 |-> Start daemon process\n"
-        "           ti install                |-> Install package\n"
-        "           ti proj                   |-> List all projects\n"
-        "           ti proj activate [name]   |-> Activate project\n"
-        "           ti proj deactivate [name] |-> Deactivate project\n"
-        "           ti build                  |-> Build C++ files\n"
-        "           ti amal                   |-> Generate amalgamated taichi.h\n"
-        "           ti clean asm [*.s]        |-> Clean up gcc ASM\n"
-        "           ti plot [*.txt]           |-> Plot a memory usage curve\n"
-        "           ti update                 |-> Update taichi and projects\n"
-        "           ti video                  |-> Make a video using *.png files in the current folder\n"
-        "           ti convert                |-> Delete color controllers in a log file\n"
-        "           ti exec                   |-> Invoke a executable in the 'build' folder\n"
-        "           ti format                 |-> Format taichi and projects\n"
-        "                                         (C++ source and python scripts)\n"
-        "           ti statement [statement]  |-> Execute a single statement (with taichi imported as tc\n"
-        "           ti [script.py]            |-> Run script\n"
-        "           ti doc                    |-> Build documentation\n"
-        "           ti merge                  |-> Merge images in folders horizontally\n"
-        "           ti debug [script.py]      |-> Debug script\n")
+      "    Usage: ti run [task name]        |-> Run a specific task\n"
+      "           ti test                   |-> Run tests\n"
+      "           ti daemon                 |-> Start daemon process\n"
+      "           ti install                |-> Install package\n"
+      "           ti proj                   |-> List all projects\n"
+      "           ti proj activate [name]   |-> Activate project\n"
+      "           ti proj deactivate [name] |-> Deactivate project\n"
+      "           ti build                  |-> Build C++ files\n"
+      "           ti amal                   |-> Generate amalgamated taichi.h\n"
+      "           ti clean asm [*.s]        |-> Clean up gcc ASM\n"
+      "           ti plot [*.txt]           |-> Plot a memory usage curve\n"
+      "           ti update                 |-> Update taichi and projects\n"
+      "           ti video                  |-> Make a video using *.png files in the current folder\n"
+      "           ti convert                |-> Delete color controllers in a log file\n"
+      "           ti exec                   |-> Invoke a executable in the 'build' folder\n"
+      "           ti format                 |-> Format taichi and projects\n"
+      "                                         (C++ source and python scripts)\n"
+      "           ti statement [statement]  |-> Execute a single statement (with taichi imported as tc\n"
+      "           ti [script.py]            |-> Run script\n"
+      "           ti doc                    |-> Build documentation\n"
+      "           ti merge                  |-> Merge images in folders horizontally\n"
+      "           ti debug [script.py]      |-> Debug script\n")
     exit(-1)
   mode = sys.argv[1]
 
@@ -144,7 +157,9 @@ def main(debug=False):
     else:
       assert False
   elif mode == "test":
-    print("Running tests...")
+    if len(sys.argv) == 2:
+      run_pytest()
+    print("Running C++ tests...")
     task = tc.Task('test')
     task.run(*sys.argv[2:])
   elif mode == "build":

@@ -124,6 +124,11 @@ inline bool is_real(DataType dt) {
   return dt == DataType::f16 || dt == DataType::f32 || dt == DataType::f64;
 }
 
+inline bool is_integral(DataType dt) {
+  return dt == DataType::i8 || dt == DataType::i16 || dt == DataType::i32 ||
+         dt == DataType::i64;
+}
+
 inline bool needs_grad(DataType dt) {
   return is_real(dt);
 }

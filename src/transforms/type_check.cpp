@@ -96,6 +96,10 @@ class TypeCheck : public IRVisitor {
                  stmt->snodes[l]->num_active_indices, stmt->indices.size());
       }
     }
+    for (int i = 0; i < stmt->indices.size(); i++) {
+      TC_ASSERT(is_integral(stmt->indices[i]->ret_type.data_type));
+      TC_ASSERT(stmt->indices[i]->ret_type.width == stmt->snodes.size());
+    }
   }
 
   void visit(GlobalStoreStmt *stmt) {

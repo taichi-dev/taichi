@@ -23,7 +23,7 @@ auto voxel_renderer = [](const std::vector<std::string> &params) {
   }
 
   Program prog(Arch::gpu);
-  prog.config.print_ir = true;
+  // prog.config.print_ir = true;
 
   Vector buffer(DataType::f32, 3);
   Global(density, f32);

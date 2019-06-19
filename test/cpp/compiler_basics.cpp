@@ -87,7 +87,6 @@ TC_TEST("simplify_access") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 128;
   Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
 
   Global(a, i32);
   Global(b, i32);
@@ -157,7 +156,6 @@ TC_TEST("simd_if2") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 32;
   Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
 
   Global(a, i32);
   auto i = Index(0);
@@ -719,7 +717,6 @@ TC_TEST("simd_if_5") {
       int n = 16;
       Program prog(arch);
       prog.config.lower_access = false;
-      prog.config.print_ir = true;
 
       Global(c, i32);
 

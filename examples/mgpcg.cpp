@@ -4,7 +4,6 @@
 #include <taichi/system/profiler.h>
 #include <taichi/visualization/particle_visualization.h>
 #include <taichi/visual/texture.h>
-#include "fem_interface.h"
 
 TC_NAMESPACE_BEGIN
 

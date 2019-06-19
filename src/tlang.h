@@ -194,6 +194,9 @@ inline void benchmark_kernel() {
 #define Kernel(x) auto &x = get_current_program().kernel(#x)
 #define Assert(x) InsertAssert(#x, (x))
 
+template <typename Tf = float32, typename Ti = int32>
+std::tuple<Matrix, Matrix, Matrix> sifakis_svd(const Matrix &a);
+
 TLANG_NAMESPACE_END
 
 TC_NAMESPACE_BEGIN
@@ -212,4 +215,5 @@ inline Dict parse_param(std::vector<std::string> cli_param) {
 }
 
 void write_partio(std::vector<Vector3> positions, const std::string &file_name);
+
 TC_NAMESPACE_END

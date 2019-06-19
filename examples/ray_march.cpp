@@ -8,7 +8,7 @@ auto ray_march = [] {
 
   int n = 512;
   Program prog(Arch::gpu);
-  prog.config.print_ir = true;
+  // prog.config.print_ir = true;
 
   Vector buffer(DataType::f32, 3);
 

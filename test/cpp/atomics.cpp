@@ -49,7 +49,6 @@ TC_TEST("parallel_reduce") {
   CoreState::set_trigger_gdb_when_crash(true);
   int n = 1024 * 1024 * 32;
   Program prog(Arch::x86_64);
-  prog.config.print_ir = true;
 
   Global(fsum, i32);
   Global(a, i32);

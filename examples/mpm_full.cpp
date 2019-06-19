@@ -3,7 +3,6 @@
 #include <taichi/visual/gui.h>
 #include <taichi/common/bit.h>
 #include <taichi/system/profiler.h>
-#include "svd.h"
 #include "volume_renderer.h"
 
 TC_NAMESPACE_BEGIN

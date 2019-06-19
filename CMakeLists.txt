@@ -1,5 +1,5 @@
 set(TAICHI_PROJECT_NAME "lang_core")
-file(GLOB_RECURSE PROJECT_SOURCES "src/*.cpp" "src/*.h" "headers/*.h" "external/xxhash/*.c")
+file(GLOB_RECURSE PROJECT_SOURCES "src/*.cpp" "src/*.h" "headers/*.h" "external/xxhash/*.c" "test/cpp/*.cpp")
 include_directories(include)
 set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(TAICHI_PROJECT_LIBRARIES ${TAICHI_PROJECT_LIBRARIES} ${TAICHI_PROJECT_NAME} PARENT_SCOPE)

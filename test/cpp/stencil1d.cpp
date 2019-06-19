@@ -1,6 +1,6 @@
 #include <iostream>
 #include <taichi/testing.h>
-#include "../tlang.h"
+#include <taichi/lang.h>
 #include <taichi/common/util.h>
 #include <taichi/math.h>
 #include <taichi/common/testing.h>

@@ -1,4 +1,4 @@
-#include "../tlang.h"
+#include <taichi/lang.h>
 #include <taichi/util.h>
 #include <taichi/visual/gui.h>
 #include <taichi/system/profiler.h>

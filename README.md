@@ -7,6 +7,10 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
  - Install `taichi` with the [installation script](https://taichi.readthedocs.io/en/latest/installation.html#ubuntu-arch-linux-and-mac-os-x)
  - Execute `ti install https://github.com/yuanming-hu/taichi_lang` to install the DSL project
  - Execute `python3 -m pip install astpretty astor opencv-python`
+ - Add the following line to your `~/.bashrc` or `~/.zshrc` for the python frontend.
+ ```bash
+ export PYTHONPATH=$TAICHI_REPO_DIR/projects/taichi_lang/python:$PYTHONPATH
+ ```
  - Execute `ti test` to run all the tests. It may take a few minutes.
 
 # Global Tensors

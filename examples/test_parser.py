@@ -1,7 +1,6 @@
 import inspect
 import astpretty
 import ast
-import taichi as tc
 
 def foo(x):
   global y

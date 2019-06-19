@@ -415,16 +415,16 @@ class GPUIRCodeGen : public IRVisitor {
   void visit(UnaryOpStmt *stmt) {
     if (stmt->op_type != UnaryOpType::cast) {
       emit("const {} {}({}({}));", stmt->ret_data_type_name(), stmt->raw_name(),
-           unary_op_type_name(stmt->op_type), stmt->rhs->raw_name());
+           unary_op_type_name(stmt->op_type), stmt->operand->raw_name());
     } else {
       if (stmt->cast_by_value)
         emit("const {} {}(static_cast<{}>({}));", stmt->ret_data_type_name(),
              stmt->raw_name(), data_type_name(stmt->cast_type),
-             stmt->rhs->raw_name());
+             stmt->operand->raw_name());
       else
         emit("const {} {}(union_cast<{}>({}));", stmt->ret_data_type_name(),
              stmt->raw_name(), data_type_name(stmt->cast_type),
-             stmt->rhs->raw_name());
+             stmt->operand->raw_name());
     }
   }
 

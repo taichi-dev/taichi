@@ -122,26 +122,26 @@ class MakeAdjoint : public IRVisitor {
     if (stmt->op_type == UnaryOpType::floor) {
       // do nothing
     } else if (stmt->op_type == UnaryOpType::neg) {
-      accumulate(stmt->rhs, negate(adjoint(stmt)));
+      accumulate(stmt->operand, negate(adjoint(stmt)));
     } else if (stmt->op_type == UnaryOpType::sin) {
-      accumulate(stmt->rhs, mul(adjoint(stmt), cos(stmt->rhs)));
+      accumulate(stmt->operand, mul(adjoint(stmt), cos(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::cos) {
-      accumulate(stmt->rhs, negate(mul(adjoint(stmt), sin(stmt->rhs))));
+      accumulate(stmt->operand, negate(mul(adjoint(stmt), sin(stmt->operand))));
     } else if (stmt->op_type == UnaryOpType::tan) {
       TC_NOT_IMPLEMENTED
     } else if (stmt->op_type == UnaryOpType::tanh) {
-      accumulate(stmt->rhs,
+      accumulate(stmt->operand,
                  mul(adjoint(stmt), sub(constant(1), sqr(stmt))));
     } else if (stmt->op_type == UnaryOpType::exp) {
-      accumulate(stmt->rhs, mul(adjoint(stmt), stmt));
+      accumulate(stmt->operand, mul(adjoint(stmt), stmt));
     } else if (stmt->op_type == UnaryOpType::log) {
-      accumulate(stmt->rhs, div(adjoint(stmt), stmt->rhs));
+      accumulate(stmt->operand, div(adjoint(stmt), stmt->operand));
     } else if (stmt->op_type == UnaryOpType::sqrt) {
-      accumulate(stmt->rhs,
-                 mul(adjoint(stmt), div(constant(0.5f), sqrt(stmt->rhs))));
+      accumulate(stmt->operand,
+                 mul(adjoint(stmt), div(constant(0.5f), sqrt(stmt->operand))));
     } else if (stmt->op_type == UnaryOpType::cast) {
       if (stmt->cast_by_value && is_real(stmt->cast_type)) {
-        accumulate(stmt->rhs, stmt);
+        accumulate(stmt->operand, stmt);
       }
     } else if (stmt->op_type == UnaryOpType::logic_not) {
       // do nothing

@@ -135,12 +135,12 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) {
-    stmt->ret_type = stmt->rhs->ret_type;
+    stmt->ret_type = stmt->operand->ret_type;
     if (stmt->op_type == UnaryOpType::cast) {
       stmt->ret_type.data_type = stmt->cast_type;
     }
     if (is_trigonometric(stmt->op_type) &&
-        !is_real(stmt->rhs->ret_type.data_type)) {
+        !is_real(stmt->operand->ret_type.data_type)) {
       TC_ERROR("Trigonometric operator takes real inputs only.");
     }
   }

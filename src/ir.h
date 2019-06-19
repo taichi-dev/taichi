@@ -936,13 +936,14 @@ class WhileControlStmt : public Stmt {
 class UnaryOpStmt : public Stmt {
  public:
   UnaryOpType op_type;
-  Stmt *rhs;
+  Stmt *operand;
   DataType cast_type;
   bool cast_by_value = true;
 
-  UnaryOpStmt(UnaryOpType op_type, Stmt *rhs) : op_type(op_type), rhs(rhs) {
-    TC_ASSERT(!rhs->is<AllocaStmt>());
-    add_operand(this->rhs);
+  UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
+      : op_type(op_type), operand(operand) {
+    TC_ASSERT(!operand->is<AllocaStmt>());
+    add_operand(this->operand);
     cast_type = DataType::unknown;
     cast_by_value = true;
   }
@@ -1029,12 +1030,12 @@ class RandExpression : public Expression {
 class UnaryOpExpression : public Expression {
  public:
   UnaryOpType type;
-  Expr rhs;
+  Expr operand;
   DataType cast_type;
   bool cast_by_value;
 
-  UnaryOpExpression(UnaryOpType type, Expr rhs)
-      : type(type), rhs(smart_load(rhs)) {
+  UnaryOpExpression(UnaryOpType type, const Expr &operand)
+      : type(type), operand(smart_load(operand)) {
     cast_type = DataType::unknown;
     cast_by_value = true;
   }
@@ -1043,15 +1044,15 @@ class UnaryOpExpression : public Expression {
     if (type == UnaryOpType::cast) {
       std::string reint = cast_by_value ? "" : "reinterpret_";
       return fmt::format("({}{}<{}> {})", reint, unary_op_type_name(type),
-                         data_type_name(cast_type), rhs->serialize());
+                         data_type_name(cast_type), operand->serialize());
     } else {
-      return fmt::format("({} {})", unary_op_type_name(type), rhs->serialize());
+      return fmt::format("({} {})", unary_op_type_name(type), operand->serialize());
     }
   }
 
   void flatten(VecStatement &ret) override {
-    rhs->flatten(ret);
-    auto unary = std::make_unique<UnaryOpStmt>(type, rhs->stmt);
+    operand->flatten(ret);
+    auto unary = std::make_unique<UnaryOpStmt>(type, operand->stmt);
     if (type == UnaryOpType::cast) {
       unary->cast_type = cast_type;
       unary->cast_by_value = cast_by_value;

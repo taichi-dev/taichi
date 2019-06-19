@@ -207,7 +207,7 @@ class BasicBlockVectorSplit : public IRVisitor {
   void visit(UnaryOpStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] =
-          Stmt::make<UnaryOpStmt>(stmt->op_type, lookup(stmt->rhs, i));
+          Stmt::make<UnaryOpStmt>(stmt->op_type, lookup(stmt->operand, i));
       current_split[i]->as<UnaryOpStmt>()->cast_type =
           stmt->as<UnaryOpStmt>()->cast_type;
       current_split[i]->as<UnaryOpStmt>()->cast_by_value =

@@ -104,10 +104,10 @@ class IRPrinter : public IRVisitor {
       std::string reint = stmt->cast_by_value ? "" : "reinterpret_";
       print("{}{} = {}{}<{}> {}", stmt->type_hint(), stmt->name(), reint,
             unary_op_type_name(stmt->op_type), data_type_name(stmt->cast_type),
-            stmt->rhs->name());
+            stmt->operand->name());
     } else {
       print("{}{} = {} {}", stmt->type_hint(), stmt->name(),
-            unary_op_type_name(stmt->op_type), stmt->rhs->name());
+            unary_op_type_name(stmt->op_type), stmt->operand->name());
     }
   }
 

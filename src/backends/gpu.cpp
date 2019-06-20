@@ -54,14 +54,14 @@ class GPUIRCodeGen : public IRVisitor {
       path.push_back(p);
     }
 
-    loopgen.emit_listgen_func(leaf, block_division);
-
-    for (int i = 1; i < (int)path.size(); i++) {
-      loopgen.emit_listgen_func(path[i]);
-    }
-
     {
       CODE_REGION(gpu_kernels);
+
+      loopgen.emit_listgen_func(leaf, block_division);
+
+      for (int i = 1; i < (int)path.size(); i++) {
+        loopgen.emit_listgen_func(path[i]);
+      }
 
       emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
       emit("auto root = ({} *)context.buffers[0];",
@@ -306,24 +306,31 @@ class GPUIRCodeGen : public IRVisitor {
       auto range_for = for_stmt_->as<RangeForStmt>();
       TC_ASSERT(range_for->vectorize == 1);
 
-      // GPU Kernel
-      emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
-      emit("auto root = ({} *)context.buffers[0];",
-           codegen->prog->snode_root->node_type_name);
       int begin = range_for->begin->as<ConstStmt>()->val[0].val_int32();
       int end = range_for->end->as<ConstStmt>()->val[0].val_int32();
+      {
+        // GPU Kernel
+        CODE_REGION(gpu_kernels);
 
-      emit("auto {} = blockIdx.x * blockDim.x + threadIdx.x + {};\n",
-           range_for->loop_var->raw_name(), begin);
-      emit("if ({} >= {}) return;", range_for->loop_var->raw_name(), end);
+        emit("__global__ void {}_kernel(Context context) {{",
+             codegen->func_name);
+        emit("auto root = ({} *)context.buffers[0];",
+             codegen->prog->snode_root->node_type_name);
 
-      range_for->body->accept(this);
+        emit("auto {} = blockIdx.x * blockDim.x + threadIdx.x + {};\n",
+             range_for->loop_var->raw_name(), begin);
+        emit("if ({} >= {}) return;", range_for->loop_var->raw_name(), end);
 
-      // CPU Kernel code
-      emit("}}\n\n");
+        range_for->body->accept(this);
+
+        emit("}}\n\n");
+      }
+      // host code
       emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
 
       TC_ASSERT(begin == 0);
+
+      emit("{{");
 
       int block_size = range_for->block_size;
       if (block_size == 0) {
@@ -336,6 +343,7 @@ class GPUIRCodeGen : public IRVisitor {
       emit("{}_kernel<<<{}, {}>>>(context);", codegen->func_name, num_blocks,
            block_size);
       emit(R"(GPUProfiler::get_instance().stop();)");
+      emit("}}");
     } else {
       auto for_stmt = for_stmt_->as<StructForStmt>();
       TC_ASSERT(for_stmt->vectorize == 1);

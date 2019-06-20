@@ -25,6 +25,10 @@ def test_complex_kernels():
         b[i] += 2
       for i in a:
         b[i] += 3
+      for i in b:
+        a[i] += 1
+      for i in a:
+        a[i] += 9
 
     for i in range(n):
       a[i] = i + 1
@@ -32,7 +36,7 @@ def test_complex_kernels():
     add()
 
     for i in range(n):
-      assert a[i] == i + 2
+      assert a[i] == i + 12
       assert b[i] == i + 7
 
 test_complex_kernels()

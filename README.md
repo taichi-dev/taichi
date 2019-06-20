@@ -14,8 +14,9 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
  - Execute `ti test` to run all the tests. It may take a few minutes.
 
 # Global Tensors
- - Every global variable is a N-dimensional tensor. Global scalars are treated as 0-D tensors.
- - Global tensors are accessed using indices, e.g. `x[i, j, k]` if `x` is a 3D tensor be access as `x[None]`.
+ - Every global variable is an N-dimensional tensor. Global scalars are treated as 0-D tensors.
+ - Global tensors are accessed using indices, e.g. `x[i, j, k]` if `x` is a 3D tensor. For 0-D tensor, access it as `x[None]`.
+   - If you access a 0-D tensor `x` using `x = 0`, instead of `x[None] = 0`, the handle `x` will be set to zero instead of the value in that tensor. This is a compromise to the native python semantics. So please always use indexing to access entries in tensors.
  - Tensors values are initially zero.
  - Sparse tensors are initially inactive.
 
@@ -40,7 +41,7 @@ def copy():
   for i in x:
     y[i] = x[i]
     
-# Bad kernels that won't compile
+# Bad kernels that won't compile right now.
 # (split them into two kernels for now. Compiler support coming soon.)
 @ti.kernel
 def print():
@@ -60,7 +61,7 @@ def print():
 - `Taichi`-scope (`ti.kernel`) v.s. `Python`-scope: everything decorated by `ti.kernel` is in `Taichi`-scope, which will be compiled by the Taichi compiler.
 
 # Data layout
- - Non-power-of-two tensor dimensions are promoted into powers of two. For example, a tensor of size `(18, 65)` will be materialized as `(32, 128)`. Be careful if you want to iterate over this structural node when it is dense: the loop variables will become iterate over the promoted large domain instead of the original compact domain. For sparse structural nodes, this makes no difference
+ - Non-power-of-two tensor dimensions are promoted into powers of two. For example, a tensor of size `(18, 65)` will be materialized as `(32, 128)`. Be careful if you want to iterate over this structural node when it is dense: the loop variables will become iterate over the promoted large domain instead of the original compact domain. Use a range-for instead. For sparse structural nodes, this makes no difference.
 
 # Arithematics
  - Supported data types: `ti.i32`, `ti.i64`, `ti.f32`, `ti.f64`.
@@ -75,7 +76,7 @@ def print():
  - Reset gradients every time.
 
 # Debugging
- -	Debug your program with `ti.print(x)`.
+ -    Debug your program with `ti.print(x)`.
 
 # Performance tips
 ## Avoid synchronization

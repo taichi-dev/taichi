@@ -19,19 +19,8 @@ class CodeGenBase {
 
   enum class CodeRegion : int {
     header,
-    exterior_shared_variable_begin,
-    exterior_loop_begin,
-    interior_shared_variable_begin,
-    interior_loop_begin,
+    gpu_kernels,
     body,
-    interior_loop_end,
-    residual_begin,
-    residual_body,
-    residual_end,
-    interior_shared_variable_end,
-    exterior_loop_end,
-    exterior_shared_variable_end,
-    tail
   };
 
   static std::string get_region_name(CodeRegion r) {
@@ -39,19 +28,8 @@ class CodeGenBase {
     if (type_names.empty()) {
 #define REGISTER_TYPE(i) type_names[CodeRegion::i] = #i;
       REGISTER_TYPE(header);
-      REGISTER_TYPE(exterior_shared_variable_begin);
-      REGISTER_TYPE(exterior_loop_begin);
-      REGISTER_TYPE(interior_shared_variable_begin);
-      REGISTER_TYPE(interior_loop_begin);
+      REGISTER_TYPE(gpu_kernels);
       REGISTER_TYPE(body);
-      REGISTER_TYPE(interior_loop_end);
-      REGISTER_TYPE(residual_begin);
-      REGISTER_TYPE(residual_body);
-      REGISTER_TYPE(residual_end);
-      REGISTER_TYPE(interior_shared_variable_end);
-      REGISTER_TYPE(exterior_loop_end);
-      REGISTER_TYPE(exterior_shared_variable_end);
-      REGISTER_TYPE(tail);
 #undef REGISTER_TYPE
     }
     return type_names[r];
@@ -80,8 +58,8 @@ class CodeGenBase {
     return CodeRegionGuard(this, cr);
   }
 
-#define CODE_REGION(region) auto _____ = get_region_guard(CodeRegion::region);
-#define CODE_REGION_VAR(region) auto _____ = get_region_guard(region);
+#define CODE_REGION(region) auto _____ = codegen->get_region_guard(CodeGenBase::CodeRegion::region);
+#define CODE_REGION_VAR(region) auto _____ = codegen->get_region_guard(region);
 
   static int get_kernel_id() {
     static int id = 0;

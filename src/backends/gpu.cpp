@@ -27,13 +27,10 @@ class GPUIRCodeGen : public IRVisitor {
     codegen->emit(f, std::forward<Args>(args)...);
   }
 
-  std::string loop_variable(SNode *snode) {
-    return snode->node_type_name + "_loop";
-  }
-
   static void run(GPUCodeGen *codegen, IRNode *node) {
     auto p = GPUIRCodeGen(codegen);
     p.first_level = true;
+    CODE_REGION(body);
     node->accept(&p);
   }
 
@@ -63,220 +60,230 @@ class GPUIRCodeGen : public IRVisitor {
       loopgen.emit_listgen_func(path[i]);
     }
 
-    emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
-    emit("auto root = ({} *)context.buffers[0];",
-         codegen->prog->snode_root->node_type_name);
+    {
+      CODE_REGION(gpu_kernels);
 
-    emit(
-        "auto leaves = (SNodeMeta "
-        "*)(Managers::get_allocator<{}>()->resident_pool);",
-        leaf->node_type_name);
-    // TODO: use const tail
-    emit("auto num_leaves = Managers::get_allocator<{}>()->resident_tail;",
-         leaf->node_type_name);
-    emit("int bid = 0;");
-    emit("while (1) {{");
-    emit("__shared__ int bid_shared;");
-    emit("if (threadIdx.x == 0) {{ ");
-    emit(
-        "bid_shared = atomicAdd((unsigned long long "
-        "*)(&Managers::get_allocator<{}>()->execution_tail), 1ULL);",
-        leaf->node_type_name);
-    emit("}}");
+      emit("__global__ void {}_kernel(Context context) {{", codegen->func_name);
+      emit("auto root = ({} *)context.buffers[0];",
+           codegen->prog->snode_root->node_type_name);
 
-    emit("__syncthreads();");
-    emit("bid = bid_shared;");
-    emit("if (bid >= num_leaves) break;");
-    emit("auto leaf_loop = bid;");
-
-    emit("auto list_element = ({} *)leaves[leaf_loop].ptr;",
-         leaf->node_type_name);
-    auto chid = leaf->parent->child_id(leaf);
-
-    emit("auto {}_cache = list_element;", leaf->node_type_name,
-         leaf->node_type_name);
-    for (int i = 0; i < max_num_indices; i++) {
-      emit("auto {} = leaves[leaf_loop].indices[{}];",
-           loopgen.index_name_global(leaf->parent, i), i);
-    }
-    emit("auto {} = threadIdx.x + leaves[leaf_loop].start_loop;",
-         loopgen.loop_variable(leaf));
-
-    loopgen.update_indices(leaf);
-    loopgen.emit_setup_loop_variables(for_stmt, leaf);
-
-    std::unique_ptr<ScratchPads> scratch_pads;
-
-    auto access_global = [&](SNode *snode) -> std::string {
-      std::vector<std::string> indices(max_num_indices, "0");
-      for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
-        if (snode->physical_index_position[i] != -1) {
-          auto var = for_stmt->loop_vars[i]->raw_name();
-          indices[snode->physical_index_position[i]] =
-              var + "_base " + " + " +
-              (*scratch_pads).pads[snode].extract_offset("flat_index", i);
-        }
-      }
-      return fmt::format("access_{}{}", snode->node_type_name,
-                         "(root, " + make_list(indices, "") + ")");
-    };
-
-    auto for_every_element = [&](SNode *snode, ScratchPad &pad,
-                                 std::string statement) {
-      emit("{{");
-      emit("int flat_index = threadIdx.x;");
-      emit("while (flat_index < {}) {{", pad.linear_size());
-      emit(statement);
-      emit("flat_index += blockDim.x;");
-      emit("}}");
-      emit("}}");
-    };
-
-    if (!for_stmt->scratch_opt.empty()) {
-      emit("__syncthreads();");
-      scratch_pads = irpass::initialize_scratch_pad(for_stmt);
-      for (auto &pad : scratch_pads->pads) {
-        emit("__shared__ {}::val_type {}[{}];", pad.first->node_type_name,
-             pad.second.name(), pad.second.linear_size());
-        TC_ASSERT(pad.second.is_pure());
-        if (pad.second.total_flags == AccessFlag::read ||
-            pad.second.total_flags == AccessFlag::accumulate) {
-          // read & accumulate case
-          // load from global if read
-          std::string source = pad.second.total_flags == AccessFlag::read
-                                   ? "*" + access_global(pad.first)
-                                   : "0";
-          auto statement =
-              fmt::format("{}[flat_index] = {};", pad.second.name(), source);
-          for_every_element(pad.first, pad.second, statement);
-        }
-      }
-      emit("__syncthreads();");
-    }
-
-    if (leaf->type == SNodeType::dynamic) {
-      emit("if ({} < leaves[leaf_loop].end_loop)", loopgen.loop_variable(leaf),
-           leaf->node_type_name);
-    }
-
-    emit("{{");
-
-    current_scratch_pads = scratch_pads.get();
-    for_stmt->body->accept(this);
-    current_scratch_pads = nullptr;
-
-    emit("}}");
-
-    bool needs_write_back = false;
-    if (!for_stmt->scratch_opt.empty()) {
-      for (auto &pad : scratch_pads->pads) {
-        if (pad.second.total_flags == AccessFlag::write ||
-            pad.second.total_flags == AccessFlag::accumulate) {
-          needs_write_back = true;
-        }
-      }
-    }
-
-    if (needs_write_back) {
-      emit("__syncthreads();");
-      for (auto &pad : scratch_pads->pads) {
-        if (pad.second.total_flags == AccessFlag::write ||
-            pad.second.total_flags == AccessFlag::accumulate) {
-          std::string source = access_global(pad.first);
-          std::string statement;
-          if (pad.second.total_flags == AccessFlag::accumulate)
-            statement = fmt::format(
-                "if ({}[flat_index] != 0) atomicAdd(&{}->val, "
-                "{}[flat_index]);",
-                pad.second.name(), source, pad.second.name());
-          else
-            statement =
-                fmt::format("*{} = {}[flat_index];", source, pad.second.name());
-          for_every_element(pad.first, pad.second, statement);
-        }
-      }
-    }
-
-    emit("}}");  // end for
-    emit("}}");  // end kernel
-
-    emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
-    emit("auto root = ({} *)context.buffers[0];",
-         current_program->snode_root->node_type_name);
-    emit("{{");
-
-    if (debug)
-      emit("auto t = get_time();");
-
-    std::string vars;
-    for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
-      vars += for_stmt->loop_vars[i]->raw_name();
-      if (i + 1 < (int)for_stmt->loop_vars.size()) {
-        vars += ",";
-      }
-    }
-    emit("gpu_runtime_init();");
-    emit("int blockDim = ({}::get_max_n()+ {} - 1) / {};", leaf->node_type_name,
-         block_division, block_division);
-    emit("");
-
-    // generate the list
-    emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
-         codegen->func_name);
-
-    std::reverse(path.begin(), path.end());
-    for (auto &s : path) {
-      emit("{}(context);", loopgen.listgen_func_name(s));
-    }
-    emit(R"(GPUProfiler::get_instance().stop();)");
-
-    emit("");
-
-    if (debug) {
-      emit("cudaDeviceSynchronize();");
       emit(
-          R"(printf("task list %d\n", Managers::get_allocator<{}>()->resident_tail);)",
+          "auto leaves = (SNodeMeta "
+          "*)(Managers::get_allocator<{}>()->resident_pool);",
           leaf->node_type_name);
-      emit(R"(printf("kernel {} <<<%d, %d>>> \n", {}, blockDim);)",
-           codegen->func_name, grid_dim);
+      // TODO: use const tail
+      emit("auto num_leaves = Managers::get_allocator<{}>()->resident_tail;",
+           leaf->node_type_name);
+      emit("int bid = 0;");
+      emit("while (1) {{");
+      emit("__shared__ int bid_shared;");
+      emit("if (threadIdx.x == 0) {{ ");
+      emit(
+          "bid_shared = atomicAdd((unsigned long long "
+          "*)(&Managers::get_allocator<{}>()->execution_tail), 1ULL);",
+          leaf->node_type_name);
+      emit("}}");
 
-      emit("cudaEvent_t start, stop;");
+      emit("__syncthreads();");
+      emit("bid = bid_shared;");
+      emit("if (bid >= num_leaves) break;");
+      emit("auto leaf_loop = bid;");
 
-      if (current_program->get_current_kernel().benchmarking) {
-        emit("while(1) {{");
+      emit("auto list_element = ({} *)leaves[leaf_loop].ptr;",
+           leaf->node_type_name);
+      auto chid = leaf->parent->child_id(leaf);
+
+      emit("auto {}_cache = list_element;", leaf->node_type_name,
+           leaf->node_type_name);
+      for (int i = 0; i < max_num_indices; i++) {
+        emit("auto {} = leaves[leaf_loop].indices[{}];",
+             loopgen.index_name_global(leaf->parent, i), i);
       }
+      emit("auto {} = threadIdx.x + leaves[leaf_loop].start_loop;",
+           loopgen.loop_variable(leaf));
 
-      emit("cudaEventCreate(&start);");
-      emit("cudaEventCreate(&stop);");
-      emit("cudaEventRecord(start);");
-    }
-    emit("");
-    emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->node_type_name);
-    emit(R"(GPUProfiler::get_instance().start("{}");)", codegen->func_name);
-    emit("{}_kernel<<<{}, blockDim>>>(context);", codegen->func_name, grid_dim);
-    emit(R"(GPUProfiler::get_instance().stop();)");
-    emit("");
-    if (debug) {
-      emit("cudaEventRecord(stop);");
-      emit("cudaEventSynchronize(stop);");
+      loopgen.update_indices(leaf);
+      loopgen.emit_setup_loop_variables(for_stmt, leaf);
 
-      emit("float milliseconds = 0;");
-      emit("cudaEventElapsedTime(&milliseconds, start, stop);");
-      emit(R"(std::cout << "     device only : " << milliseconds << " ms\n";)");
+      std::unique_ptr<ScratchPads> scratch_pads;
 
-      if (current_program->current_kernel->benchmarking) {
-        emit("cudaDeviceSynchronize();\n");
-        emit("auto err = cudaGetLastError();");
-        emit("if (err) {{");
-        emit(
-            "printf(\"CUDA Error (File %s Ln %d): %s\\n\", "
-            "__FILE__, __LINE__, cudaGetErrorString(err));");
-        emit("exit(-1);}}");
+      auto access_global = [&](SNode *snode) -> std::string {
+        std::vector<std::string> indices(max_num_indices, "0");
+        for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
+          if (snode->physical_index_position[i] != -1) {
+            auto var = for_stmt->loop_vars[i]->raw_name();
+            indices[snode->physical_index_position[i]] =
+                var + "_base " + " + " +
+                (*scratch_pads).pads[snode].extract_offset("flat_index", i);
+          }
+        }
+        return fmt::format("access_{}{}", snode->node_type_name,
+                           "(root, " + make_list(indices, "") + ")");
+      };
+
+      auto for_every_element = [&](SNode *snode, ScratchPad &pad,
+                                   std::string statement) {
+        emit("{{");
+        emit("int flat_index = threadIdx.x;");
+        emit("while (flat_index < {}) {{", pad.linear_size());
+        emit(statement);
+        emit("flat_index += blockDim.x;");
         emit("}}");
+        emit("}}");
+      };
+
+      if (!for_stmt->scratch_opt.empty()) {
+        emit("__syncthreads();");
+        scratch_pads = irpass::initialize_scratch_pad(for_stmt);
+        for (auto &pad : scratch_pads->pads) {
+          emit("__shared__ {}::val_type {}[{}];", pad.first->node_type_name,
+               pad.second.name(), pad.second.linear_size());
+          TC_ASSERT(pad.second.is_pure());
+          if (pad.second.total_flags == AccessFlag::read ||
+              pad.second.total_flags == AccessFlag::accumulate) {
+            // read & accumulate case
+            // load from global if read
+            std::string source = pad.second.total_flags == AccessFlag::read
+                                     ? "*" + access_global(pad.first)
+                                     : "0";
+            auto statement =
+                fmt::format("{}[flat_index] = {};", pad.second.name(), source);
+            for_every_element(pad.first, pad.second, statement);
+          }
+        }
+        emit("__syncthreads();");
       }
+
+      if (leaf->type == SNodeType::dynamic) {
+        emit("if ({} < leaves[leaf_loop].end_loop)",
+             loopgen.loop_variable(leaf), leaf->node_type_name);
+      }
+
+      emit("{{");
+
+      current_scratch_pads = scratch_pads.get();
+      for_stmt->body->accept(this);
+      current_scratch_pads = nullptr;
+
+      emit("}}");
+
+      bool needs_write_back = false;
+      if (!for_stmt->scratch_opt.empty()) {
+        for (auto &pad : scratch_pads->pads) {
+          if (pad.second.total_flags == AccessFlag::write ||
+              pad.second.total_flags == AccessFlag::accumulate) {
+            needs_write_back = true;
+          }
+        }
+      }
+
+      if (needs_write_back) {
+        emit("__syncthreads();");
+        for (auto &pad : scratch_pads->pads) {
+          if (pad.second.total_flags == AccessFlag::write ||
+              pad.second.total_flags == AccessFlag::accumulate) {
+            std::string source = access_global(pad.first);
+            std::string statement;
+            if (pad.second.total_flags == AccessFlag::accumulate)
+              statement = fmt::format(
+                  "if ({}[flat_index] != 0) atomicAdd(&{}->val, "
+                  "{}[flat_index]);",
+                  pad.second.name(), source, pad.second.name());
+            else
+              statement = fmt::format("*{} = {}[flat_index];", source,
+                                      pad.second.name());
+            for_every_element(pad.first, pad.second, statement);
+          }
+        }
+      }
+
+      emit("}}");  // end for
+      emit("}}");  // end kernel
     }
-    emit("}}");
-    current_struct_for = nullptr;
+
+    {
+      CODE_REGION(body);
+
+      emit("extern \"C\" void {} (Context context) {{\n", codegen->func_name);
+      emit("auto root = ({} *)context.buffers[0];",
+           current_program->snode_root->node_type_name);
+      emit("{{");
+
+      if (debug)
+        emit("auto t = get_time();");
+
+      std::string vars;
+      for (int i = 0; i < (int)for_stmt->loop_vars.size(); i++) {
+        vars += for_stmt->loop_vars[i]->raw_name();
+        if (i + 1 < (int)for_stmt->loop_vars.size()) {
+          vars += ",";
+        }
+      }
+      emit("gpu_runtime_init();");
+      emit("int blockDim = ({}::get_max_n()+ {} - 1) / {};",
+           leaf->node_type_name, block_division, block_division);
+      emit("");
+
+      // generate the list
+      emit(R"(GPUProfiler::get_instance().start("{}_list_gen");)",
+           codegen->func_name);
+
+      std::reverse(path.begin(), path.end());
+      for (auto &s : path) {
+        emit("{}(context);", loopgen.listgen_func_name(s));
+      }
+      emit(R"(GPUProfiler::get_instance().stop();)");
+
+      emit("");
+
+      if (debug) {
+        emit("cudaDeviceSynchronize();");
+        emit(
+            R"(printf("task list %d\n", Managers::get_allocator<{}>()->resident_tail);)",
+            leaf->node_type_name);
+        emit(R"(printf("kernel {} <<<%d, %d>>> \n", {}, blockDim);)",
+             codegen->func_name, grid_dim);
+
+        emit("cudaEvent_t start, stop;");
+
+        if (current_program->get_current_kernel().benchmarking) {
+          emit("while(1) {{");
+        }
+
+        emit("cudaEventCreate(&start);");
+        emit("cudaEventCreate(&stop);");
+        emit("cudaEventRecord(start);");
+      }
+      emit("");
+      emit("reset_execution_tail<{}><<<1, 1>>>();", leaf->node_type_name);
+      emit(R"(GPUProfiler::get_instance().start("{}");)", codegen->func_name);
+      emit("{}_kernel<<<{}, blockDim>>>(context);", codegen->func_name,
+           grid_dim);
+      emit(R"(GPUProfiler::get_instance().stop();)");
+      emit("");
+      if (debug) {
+        emit("cudaEventRecord(stop);");
+        emit("cudaEventSynchronize(stop);");
+
+        emit("float milliseconds = 0;");
+        emit("cudaEventElapsedTime(&milliseconds, start, stop);");
+        emit(
+            R"(std::cout << "     device only : " << milliseconds << " ms\n";)");
+
+        if (current_program->current_kernel->benchmarking) {
+          emit("cudaDeviceSynchronize();\n");
+          emit("auto err = cudaGetLastError();");
+          emit("if (err) {{");
+          emit(
+              "printf(\"CUDA Error (File %s Ln %d): %s\\n\", "
+              "__FILE__, __LINE__, cudaGetErrorString(err));");
+          emit("exit(-1);}}");
+          emit("}}");
+        }
+      }
+      emit("}}");
+      current_struct_for = nullptr;
+    }
   }
 
   void extract_ldg(ScratchPadOptions &opt) {
@@ -975,4 +982,3 @@ void GPUCodeGen::codegen() {
 }
 
 TLANG_NAMESPACE_END
-

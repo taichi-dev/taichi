@@ -4,7 +4,7 @@ from pytest import approx
 # ti.cfg.print_ir = True
 
 def test_complex_kernels():
-  for arch in [ti.x86_64, ti.cuda]:
+  for arch in [ti.x86_64]:
     ti.reset()
     ti.cfg.arch = arch
 
@@ -35,4 +35,4 @@ def test_complex_kernels():
       assert a[i] == i + 2
       assert b[i] == i + 7
 
-test_complex_kernels()
+# test_complex_kernels()

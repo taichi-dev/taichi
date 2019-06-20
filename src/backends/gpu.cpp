@@ -37,10 +37,7 @@ class GPUIRCodeGen : public IRVisitor {
     node->accept(&p);
   }
 
-  void struct_for_old(Stmt *for_stmt_);
-
-  void struct_for_new(Stmt *for_stmt_) {
-    // struct for
+  void struct_for(Stmt *for_stmt_) {
     TC_ASSERT_INFO(current_struct_for == nullptr,
                    "Struct for cannot be nested.");
     auto for_stmt = for_stmt_->as<StructForStmt>();
@@ -333,10 +330,10 @@ class GPUIRCodeGen : public IRVisitor {
            block_size);
       emit(R"(GPUProfiler::get_instance().stop();)");
     } else {
-      auto struct_for = for_stmt_->as<StructForStmt>();
-      TC_ASSERT(struct_for->vectorize == 1);
-      extract_ldg(struct_for->scratch_opt);
-      struct_for_new(for_stmt_.get());
+      auto for_stmt = for_stmt_->as<StructForStmt>();
+      TC_ASSERT(for_stmt->vectorize == 1);
+      extract_ldg(for_stmt->scratch_opt);
+      struct_for(for_stmt_.get());
     }
 
     if (debug) {
@@ -979,4 +976,3 @@ void GPUCodeGen::codegen() {
 
 TLANG_NAMESPACE_END
 
-#include "gpu_old.h"

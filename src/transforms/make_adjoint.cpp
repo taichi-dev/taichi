@@ -85,7 +85,7 @@ class MakeAdjoint : public IRVisitor {
 
   void accumulate(Stmt *primal, Stmt *value) {
     auto alloca_ = adjoint(primal);
-    if (!alloca_)
+    if (!alloca_ || alloca_->is<ConstStmt>())
       return;  // primal may be int variable
     TC_ASSERT(alloca_->is<AllocaStmt>());
     auto alloca = alloca_->as<AllocaStmt>();
@@ -96,7 +96,7 @@ class MakeAdjoint : public IRVisitor {
 
   Stmt *adjoint(Stmt *stmt) {
     if (!needs_grad(stmt->ret_type.data_type)) {
-      return nullptr;
+      return constant(0);
     }
     if (stmt->adjoint == nullptr) {
       // create the alloca
@@ -225,6 +225,7 @@ class MakeAdjoint : public IRVisitor {
   void visit(LocalStoreStmt *stmt) override{TC_NOT_IMPLEMENTED}
 
   Stmt *load(Stmt *alloc) {
+    TC_ASSERT(alloc != nullptr);
     if (alloc->is<AllocaStmt>()) {
       return insert<LocalLoadStmt>(LocalAddress(alloc, 0));
     } else {

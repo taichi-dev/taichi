@@ -21,10 +21,8 @@ def test_complex_kernels():
   def add():
     for i in range(n):
       a[i] += 1
-    for u in range(n):
+    for i in range(n):
       b[i] += 2
-      ti.print(i)
-      ti.print(b[i])
 
   for i in range(n):
     a[i] = i + 1

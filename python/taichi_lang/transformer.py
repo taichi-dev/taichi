@@ -145,6 +145,7 @@ if 1:
       t.body[1].value.args[0] = bgn
       t.body[2].value.args[0] = end
       t.body = t.body[:4] + node.body + t.body[4:]
+      t.body.append(self.parse_stmt('del {}'.format(loop_var)))
       return ast.copy_location(t, node)
     else:
       if isinstance(node.target, ast.Name):

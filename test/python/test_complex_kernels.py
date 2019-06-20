@@ -39,4 +39,3 @@ def test_complex_kernels():
       assert a[i] == i + 12
       assert b[i] == i + 7
 
-test_complex_kernels()

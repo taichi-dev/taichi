@@ -171,7 +171,7 @@ void LoopGenerator::emit_listgen_func(SNode *snode,
   emit("");
 
   // host function
-  emit("void {}(Context context) {{", listgen_func_name(snode, suffix));
+  emit("inline void {}(Context context) {{", listgen_func_name(snode, suffix));
   emit("backup_tails<{}><<<1, 1>>>();", parent->node_type_name);
   emit("reset_execution_tail<{}><<<1, 1>>>();", parent->node_type_name);
   emit("reset_tails<{}><<<1, 1>>>();", snode->node_type_name);

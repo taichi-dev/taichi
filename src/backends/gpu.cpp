@@ -56,13 +56,14 @@ class GPUIRCodeGen : public IRVisitor {
       path.push_back(p);
     }
 
+    auto listgen_suffix = fmt::format("{}", for_stmt_counter);
     {
       CODE_REGION(gpu_kernels);
 
-      loopgen.emit_listgen_func(leaf, block_division);
+      loopgen.emit_listgen_func(leaf, block_division, listgen_suffix);
 
       for (int i = 1; i < (int)path.size(); i++) {
-        loopgen.emit_listgen_func(path[i]);
+        loopgen.emit_listgen_func(path[i], 0, listgen_suffix);
       }
 
       emit("__global__ void {}_kernel(Context context) {{",
@@ -229,7 +230,7 @@ class GPUIRCodeGen : public IRVisitor {
 
       std::reverse(path.begin(), path.end());
       for (auto &s : path) {
-        emit("{}(context);", loopgen.listgen_func_name(s));
+        emit("{}(context);", loopgen.listgen_func_name(s, listgen_suffix));
       }
       emit(R"(GPUProfiler::get_instance().stop();)");
 

@@ -192,8 +192,7 @@ class Matrix:
 
   @staticmethod
   def transposed(a):
-    assert a.n == a.m
-    ret = Matrix(a.n, a.m, empty=True)
+    ret = Matrix(a.m, a.n, empty=True)
     for i in range(a.n):
       for j in range(a.m):
         ret.set_entry(j, i, a(i, j))

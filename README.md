@@ -102,7 +102,7 @@ def print():
 
 # Multi-Stage Programming
  - Use `ti.static` for compile-time branching (For those who come from C++17, this is [`if constexpr`](https://en.cppreference.com/w/cpp/language/if).)
-```
+```python
 enable_projection = True
 
 @ti.kernel
@@ -111,7 +111,7 @@ def static():
     x[0] = 1
 ```
  - Use `ti.static` for forced loop unrolling
-```
+```python
 @ti.kernel
 def g2p(f: ti.i32):
   for p in range(0, n_particles):

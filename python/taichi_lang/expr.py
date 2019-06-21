@@ -19,8 +19,15 @@ class Expr:
         self.ptr = args[0].ptr
         self.tb = args[0].tb
       else:
+        arg = args[0]
+        try:
+          import numpy as np
+          if isinstance(arg, np.ndarray):
+            arg = arg.dtype(arg)
+        except:
+          pass
         from .impl import make_constant_expr
-        self.ptr = make_constant_expr(args[0]).ptr
+        self.ptr = make_constant_expr(arg).ptr
     else:
       assert False
     if self.tb:

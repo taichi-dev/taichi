@@ -144,6 +144,8 @@ if 1:
   {} = ti.Expr(ti.core.make_id_expr(''))
   ___begin = ti.Expr(0) 
   ___end = ti.Expr(0)
+  ___begin = ti.cast(___begin, ti.i32)
+  ___end = ti.cast(___end, ti.i32)
   ti.core.begin_frontend_range_for({}.ptr, ___begin.ptr, ___end.ptr)
   ti.core.end_frontend_range_for()
       '''.format(loop_var, loop_var)
@@ -159,7 +161,7 @@ if 1:
 
       t.body[1].value.args[0] = bgn
       t.body[2].value.args[0] = end
-      t.body = t.body[:4] + node.body + t.body[4:]
+      t.body = t.body[:6] + node.body + t.body[6:]
       t.body.append(self.parse_stmt('del {}'.format(loop_var)))
       return ast.copy_location(t, node)
     else:

@@ -101,6 +101,7 @@ class PyTaichi:
       for func in self.layout_functions:
         func()
 
+    print("Materializing layout...".format())
     taichi_lang_core.layout(layout)
     self.materialized = True
     for var in self.global_vars:
@@ -171,6 +172,11 @@ def kernel(foo):
       if not pytaichi.materialized:
         pytaichi.materialize()
       if foo not in compiled_functions:
+        grad_suffix = ""
+        if grad:
+          grad_suffix = ".grad"
+        print("Compiling kernel {}{}...".format(foo.__name__, grad_suffix))
+
         src = remove_indent(inspect.getsource(foo))
         tree = ast.parse(src)
         # print(astor.to_source(tree.body[0]))

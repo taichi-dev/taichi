@@ -333,5 +333,9 @@ def exp(expr):
 def log(expr):
   return Expr(taichi_lang_core.expr_log(expr.ptr))
 
+@unary
+def abs(expr):
+  return Expr(taichi_lang_core.expr_abs(expr.ptr))
+
 def random(dt=f32):
   return Expr(taichi_lang_core.make_rand_expr(dt))

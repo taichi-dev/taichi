@@ -60,20 +60,14 @@ def print():
 
 - `Taichi`-scope (`ti.kernel`) v.s. `Python`-scope: everything decorated by `ti.kernel` is in `Taichi`-scope, which will be compiled by the Taichi compiler.
 
-# Data layout
+# Data Layout
  - Non-power-of-two tensor dimensions are promoted into powers of two. For example, a tensor of size `(18, 65)` will be materialized as `(32, 128)`. Be careful if you want to iterate over this structural node when it is dense: the loop variables will become iterate over the promoted large domain instead of the original compact domain. Use a range-for instead. For sparse structural nodes, this makes no difference.
 
-# Arithematics
+# Scalar and Vector Arithematics
  - Supported data types: `ti.i32`, `ti.i64`, `ti.f32`, `ti.f64`.
  - Binary operations on different types will give you a promoted type, e.g. `i32 + f32 = f32`.
- - `ti.Matrix` are for small matrices (e.g. `3x3`) only. If you have `64\times 64` matrices, you should consider using a 2D global tensor. `ti.Vector` is the same as `ti.Matrix`, except that it has only 1 column.
+ - `ti.Matrix` are for small matrices (e.g. `3x3`) only. If you have `64x64` matrices, you should consider using a 2D global tensor. `ti.Vector` is the same as `ti.Matrix`, except that it has only 1 column.
  - Differentiate element-wise product `*` and matrix product `@`.
-
-# Differentiable Programming
- - No gradients are propagated to `int` tensors/locals
- - Remember to place your grad tensors, or use `ti.root.lazy_grad()`
- - The user should make sure `grad` tensors have the same sparsity as the corresponding `primal` tensors.
- - Reset gradients every time.
 
 # Debugging
  -    Debug your program with `ti.print(x)`.
@@ -92,7 +86,21 @@ def print():
 
 # Sparsity
 
-# What’s different from existing auto-differentitation frameworks
+# Differentiable Programming
+ - No gradients are propagated to `int` tensors/locals
+ - Remember to place your grad tensors, or use `ti.root.lazy_grad()`
+ - The user should make sure `grad` tensors have the same sparsity as the corresponding `primal` tensors.
+ - Reset gradients every time.
+
+# Gradient Accumulation Kernels
+ - This kernel accumulates
+ - 
+
+# The `make_adjoint` Pass
+ - This pass transforms a forward evaluation (primal) kernel into its gradient accumulation (adjoint) kernel.
+ - Before the `make_adjoint` pass, the simplification pass will simplify most branching into `select(cond, x, y)`, so `make_adjoint` basically takes straightline code. A outer parallel for-loop is allowed.
+
+# Highlights
  - **Sparsity**. The first-class sparse data structures makes it possible to develop efficient. 
  - **Imperative**. Although most neural networks 
  - **Finer Grainularity**.

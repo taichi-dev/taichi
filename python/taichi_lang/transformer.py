@@ -89,6 +89,21 @@ class ASTTransformer(ast.NodeTransformer):
   def visit_If(self, node):
     with self.variable_scope():
       self.generic_visit(node)
+
+    is_static_if = isinstance(node.test,
+                               ast.Call) and isinstance(node.test.func,
+                                                        ast.Attribute)
+    if is_static_if:
+      attr = node.test.func
+      if attr.attr == 'static':
+        is_static_if = True
+      else:
+        is_static_if = False
+
+    if is_static_if:
+      # Do nothing
+      return node
+
     template = ''' 
 if 1:
   __cond = 0

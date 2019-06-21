@@ -135,3 +135,14 @@ def g2p(f: ti.i32):
     x[f + 1, p] = x[f, p] + dt * v[f + 1, p]
     C[f + 1, p] = new_C
 ```
+# Python Frontend
+Embedding the language in `python` has the following advantages:
+- Easy to learn. Python itself is very easy to learn, so is PyTaichiLang.
+- It allows people to reuse existing python infrastructure: 
+   - IDEs. A python IDE simply works for TaichiLang, with syntax highlighting and even some syntax checking
+   - Package manager (pip). A developed Taichi application and be easily submitted to `PyPI` and others can easily set it up   with `pip`.
+   - Existing packages. Interacting with other python components is just trivial.
+
+However, this design decision has drawbacks as well:
+ - Indexing is needed when accesing tensors even for 0D tensors. Use `x[None] = 123` to set the value in `x` if `x` is 0D. This is because `x = 123` will set `x` itself (instead of its containing value) to be the constant `123` in python syntax, and unfortunately we cannot modify this behavior. 
+ - When dealing with local matrices, syntax like `x(0, 1).val = y` is needed. It would be ideal to write `x(0, 1) = y`, but in `python` assigning to function call is not allowed. For global matrices you can use `x(0, 1)[i, j, k] = 42` and no special attention is needed.

@@ -92,12 +92,20 @@ def print():
 
 # Sparsity
 
-# What’s different from TensorFlow
- - Imperative (instead of functional)
- - Fine-grained computation instead of large dense convolution on big tensors
+# What’s different from existing frameworks
+ - **Sparsity**. The first-class sparse data structures makes it possible to develop efficient. 
+ - **Imperative**.
+ - **Fine-grainularity**.
+   A typical data operation granulatity is `128x27x27x128`. instead of large dense convolution on big tensors
  - Controllable (sparse) memory
  - Controllable gradient evaluation 
    - remember to clear the gradients!
+ - **High customizability**
+ - **Auto diff**
+## Comparison with TensorFlow and PyTorch
+ - 
+
+
 ## What do the grad kernels do
 
 # Multi-Stage Programming

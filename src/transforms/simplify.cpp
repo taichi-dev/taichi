@@ -409,7 +409,8 @@ class BasicBlockSimplify : public IRVisitor {
         auto &bstmt_data = *bstmt;
         if (typeid(bstmt_data) == typeid(*stmt)) {
           auto bstmt_ = bstmt->as<UnaryOpStmt>();
-          if (bstmt_->same_operation(stmt) && bstmt_->operand == stmt->operand) {
+          if (bstmt_->same_operation(stmt) &&
+              bstmt_->operand == stmt->operand) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
             throw IRModified();
@@ -706,20 +707,29 @@ class BasicBlockSimplify : public IRVisitor {
     return;
   }
 
+  static bool is_global_write(Stmt *stmt) {
+    return stmt->is<GlobalStoreStmt>() || stmt->is<AtomicOpStmt>();
+  }
+
   void visit(IfStmt *if_stmt) override {
     auto flatten = [&](std::vector<pStmt> &clause, bool true_branch) {
       bool plain_clause = true;  // no global store, no container
+
+      // Keep only global atomics/store
       for (int i = 0; i < (int)clause.size(); i++) {
-        if (!clause[i]->is_container_statement() &&
-            (!clause[i]->has_side_effect() ||
-             clause[i]->is<LocalStoreStmt>())) {
+        if (is_global_write(clause[i].get()) ||
+            (!clause[i]->is_container_statement() &&
+                (!clause[i]->has_side_effect() ||
+                 clause[i]->is<LocalStoreStmt>()))) {
         } else {
           plain_clause = false;
         }
       }
       if (plain_clause) {
         for (int i = 0; i < (int)clause.size(); i++) {
-          if (clause[i]->is<LocalStoreStmt>()) {
+          if (is_global_write(clause[i].get())) {
+            // do nothing. Keep the statement.
+          } else if (clause[i]->is<LocalStoreStmt>()) {
             auto store = clause[i]->as<LocalStoreStmt>();
             auto lanes = LaneAttribute<LocalAddress>();
             for (int l = 0; l < store->width(); l++) {
@@ -739,22 +749,44 @@ class BasicBlockSimplify : public IRVisitor {
             if_stmt->insert_before_me(std::move(clause[i]));
           }
         }
-        clause.clear();
-        return true;
+        auto clean_clause = std::vector<pStmt>();
+        bool reduced = false;
+        for (auto &&stmt: clause) {
+          if (stmt != nullptr) {
+            clean_clause.push_back(std::move(stmt));
+          } else {
+            reduced = true;
+          }
+        }
+        clause = std::move(clean_clause);
+        return reduced;
       }
       return false;
     };
 
     if (if_stmt->true_statements &&
         flatten(if_stmt->true_statements->statements, true)) {
-      if_stmt->true_statements = nullptr;
       throw IRModified();
     }
     if (if_stmt->false_statements &&
         flatten(if_stmt->false_statements->statements, false)) {
-      if_stmt->false_statements = nullptr;
       throw IRModified();
     }
+
+    if (if_stmt->true_statements) {
+      if (if_stmt->true_statements->statements.empty()) {
+        if_stmt->true_statements = nullptr;
+        throw IRModified();
+      }
+    }
+
+    if (if_stmt->false_statements) {
+      if (if_stmt->false_statements->statements.empty()) {
+        if_stmt->false_statements = nullptr;
+        throw IRModified();
+      }
+    }
+
     if (!if_stmt->true_statements && !if_stmt->false_statements) {
       if_stmt->parent->erase(if_stmt);
       throw IRModified();

@@ -537,7 +537,9 @@ class SLPVectorize : public IRVisitor {
   }
 
   void visit(Block *block) override {
-    TC_ASSERT(block->statements.size() != 0);
+    if (block->statements.size() == 0) {
+      return;
+    }
     for (int iter = 0;; iter++) {
       try {
         slp_attempt(block, iter);

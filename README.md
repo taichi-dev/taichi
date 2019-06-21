@@ -142,8 +142,6 @@ for i in range(0, 16, step 1) {
  - Remember to place your grad tensors, or use `ti.root.lazy_grad()`
  - The user should make sure `grad` tensors have the same sparsity as the corresponding `primal` tensors.
  - Reset gradients every time.
-   
-## What do the grad kernels do
 
 # Multi-Stage Programming
  - Use `ti.static` for compile-time branching (For those who come from C++17, this is [`if constexpr`](https://en.cppreference.com/w/cpp/language/if).)

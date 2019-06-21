@@ -247,5 +247,5 @@ class Matrix:
   def sum(self):
     ret = self.entries[0]
     for i in range(1, len(self.entries)):
-      ret += self.entries[i]
+      ret = ret + self.entries[i]
     return ret

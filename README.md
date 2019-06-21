@@ -143,8 +143,8 @@ Embedding the language in `python` has the following advantages:
    - IDEs. A python IDE simply works for TaichiLang, with syntax highlighting, checking, and autocomplete.
    - Package manager (pip). A developed Taichi application and be easily submitted to `PyPI` and others can easily set it up   with `pip`.
    - Existing packages. Interacting with other python components is just trivial.
-- The built-in AST manipulation tools in `python` allows us to do magical things, as long as the kernel body can be parsed by the `python` parser.
+- The built-in AST manipulation tools in `python` allow us to do magical things, as long as the kernel body can be parsed by the `python` parser.
 
 However, this design decision has drawbacks as well:
- - Indexing is always needed when accesing elements in tensors, even if the tensor is 0D. Use `x[None] = 123` to set the value in `x` if `x` is 0D. This is because `x = 123` will set `x` itself (instead of its containing value) to be the constant `123` in python syntax, and unfortunately we cannot modify this behavior. 
+ - Indexing is always needed when accessing elements in tensors, even if the tensor is 0D. Use `x[None] = 123` to set the value in `x` if `x` is 0D. This is because `x = 123` will set `x` itself (instead of its containing value) to be the constant `123` in python syntax, and unfortunately we cannot modify this behavior. 
  - When dealing with local matrices, syntax like `x(0, 1).val = y` is needed. It would be ideal to write `x(0, 1) = y`, but in `python` assigning to function call is not allowed. For global matrices you can use `x(0, 1)[i, j, k] = 42` and no special attention is needed.

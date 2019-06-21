@@ -88,6 +88,7 @@ def print():
 # Sparsity
 
 # Differentiable Programming
+At a high level, our system transforms 
 
 ## Gradient Accumulation Kernels
  - This kernel accumulates
@@ -95,16 +96,19 @@ def print():
 
 ## The `make_adjoint` Pass (Reverse-Mode Auto-Differentiation) 
  - This pass transforms a forward evaluation (primal) kernel into its gradient accumulation (adjoint) kernel.
+ - It operates on the hierarchical intermediate representation of Taichi kernels.
  - Before the `make_adjoint` pass, the simplification pass will simplify most branching into `select(cond, x, y)`, so `make_adjoint` basically takes straightline code. Even nested `if` statements will be transformed into `select`'s.
  - An outer parallel for-loop is allowed for the primal kernel.
 
-## Comparison with TensorFlow/PyTorch
+## Comparison with other AD libraries such as TensorFlow/PyTorch
+**In one word: higher performance on sparse data and algorithms.**
+In detail:
  - **Sparsity**. The first-class sparse data structure primitives make it possible to develop efficient systems on sparse data, such as point clouds and voxels. This make the system especially favourable in 3D computer vision tasks where data (e.g LIDAR scans) are typically sparse. 
- - **Imperative**. TensorFlow 1.0 represents computation as a fixed functional computational graph. In our system the computation is imperative and dynamic.
- - **Finer Grainularity**. Those NN libraries often only expose users with basic large-grained operations like `conv`, `batch_norm` and `relu`, namely the neural network layers. Although it is not impossible to compose these basic operations into complex ones, the resulted performance is often suboptimal. This is because producer/consumer locality is not utilized, since compiler optimization does not optimize across these operations. Our system exposes fine-grained `instructions` to users and an effective optimizing compiler will deliver high-performance code.
- - **Low Overhead**. With TensorFlow or PyTorch, since operations typically operates on big data blobs (e.g. `128x27x27x128xfloat32`), the high runtime overhead (e.g. scheduling, kernel launches on GPU) can be amortized over data entries. In applications such as physical simulation and 
+ - **Imperative**. TensorFlow 1.0 represents computation as a fixed functional computational graph. In our system the computation is completely imperative and dynamic, which is closer to PyTorch and TensorFlow 2.0.
+ - **Finer Grainularity**. Those NN libraries often only expose users with basic large-grained operations like `conv`, `batch_norm` and `relu`, namely the neural network layers. Although it is not impossible to compose these basic operations into complex ones, the resulted performance is often suboptimal. This is because producer/consumer locality is not utilized, since compiler optimization **does not optimize across these operations**. Our system exposes fine-grained `instructions` to users and an effective optimizing compiler will deliver high-performance code.
+ - **Lower Overhead**. With TensorFlow or PyTorch, since operations typically operates on big data blobs (e.g. `128x27x27x128xfloat32`), the high runtime overhead (e.g. scheduling, kernel launches on GPU) can be amortized over data entries. Our system has lower overhead, making it suitable for sparse tensor processing where there is no sufficient data to amortize the overhead.
  - **More Control**. The user takes care of memory allocation and gradient evaluation, and is in charge of invoking the gradient kernels in the correct order. The flexibility allows easier checkpointing to trade time for space complexity, which is critical in many applications. Programmers have to do a little more work in our system though, but the performance gain make extra work worthy.
-   
+
 ## Note
  - No gradients are propagated to `int` tensors/locals
  - Remember to place your grad tensors, or use `ti.root.lazy_grad()`

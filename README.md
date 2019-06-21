@@ -87,20 +87,17 @@ def print():
 # Sparsity
 
 # Differentiable Programming
- - No gradients are propagated to `int` tensors/locals
- - Remember to place your grad tensors, or use `ti.root.lazy_grad()`
- - The user should make sure `grad` tensors have the same sparsity as the corresponding `primal` tensors.
- - Reset gradients every time.
 
-# Gradient Accumulation Kernels
+## Gradient Accumulation Kernels
  - This kernel accumulates
  - 
 
-# The `make_adjoint` Pass
+## The `make_adjoint` Pass (Reverse Mode Auto-Diff) 
  - This pass transforms a forward evaluation (primal) kernel into its gradient accumulation (adjoint) kernel.
- - Before the `make_adjoint` pass, the simplification pass will simplify most branching into `select(cond, x, y)`, so `make_adjoint` basically takes straightline code. A outer parallel for-loop is allowed.
+ - Before the `make_adjoint` pass, the simplification pass will simplify most branching into `select(cond, x, y)`, so `make_adjoint` basically takes straightline code. Even nested `if` statements will be transformed into `select`'s.
+ - An outer parallel for-loop is allowed for the primal kernel.
 
-# Highlights
+## Comparison with TensorFlow/PyTorch
  - **Sparsity**. The first-class sparse data structures makes it possible to develop efficient. 
  - **Imperative**. Although most neural networks 
  - **Finer Grainularity**.
@@ -108,7 +105,12 @@ def print():
  - **Lower overhead**.
  - **More Control**.
    - The user takes care of memory allocation and gradient evaluation. The user is in charge of invoking the gradient kernels in the correct order, and clear the gradient tensors. The user has to do a little more work in our system, but the flexibility allows easier checkpointing to trade time for space complexity is critical in many applications.
-   - 
+   
+## Note
+ - No gradients are propagated to `int` tensors/locals
+ - Remember to place your grad tensors, or use `ti.root.lazy_grad()`
+ - The user should make sure `grad` tensors have the same sparsity as the corresponding `primal` tensors.
+ - Reset gradients every time.
    
 ## What do the grad kernels do
 

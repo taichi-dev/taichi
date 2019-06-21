@@ -96,6 +96,7 @@ enum class UnaryOpType : int {
   floor,
   cast,
   abs,
+  sgn,
   sin,
   asin,
   cos,

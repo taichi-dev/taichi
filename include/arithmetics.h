@@ -576,6 +576,20 @@ inline vec<T, dim> logic_not(vec<T, dim> v) {
   return ret;
 }
 
+template <typename T, int dim>
+inline vec<T, dim> sgn(vec<T, dim> a) {
+  vec<T, dim> b;
+  for (int i = 0; i < dim; i++) {
+    if (a[i] > 0)
+      b[i] = 1;
+    else if (a[i] < 0)
+      b[i] = -1;
+    else
+      b[i] = 0;
+  }
+  return b;
+}
+
 //*****************************************************************************
 
 template <typename T, int dim>
@@ -999,8 +1013,7 @@ TC_FORCE_INLINE __host__ uint64 atomicAddCPU(volatile uint64 *dest,
 
 template <typename T = unsigned long>
 TC_FORCE_INLINE __host__
-    std::enable_if_t<!std::is_same<T, uint64>::type::value,
-                     unsigned long>
+    std::enable_if_t<!std::is_same<T, uint64>::type::value, unsigned long>
     atomicAddCPU(volatile unsigned long *dest, unsigned long val) {
   return __atomic_fetch_add(dest, val, std::memory_order::memory_order_seq_cst);
 }
@@ -1081,6 +1094,16 @@ __device__ int mod(int a, int b) {
 template <typename T>
 __device__ T logic_not(T v) {
   return T(!v);
+}
+
+template <typename T>
+__device__ inline T sgn(T a) {
+  if (a > 0)
+    return 1;
+  else if (a < 0)
+    return -1;
+  else
+    return 0;
 }
 
 DEFINE_CUDA_OP(add, +)

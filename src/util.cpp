@@ -169,6 +169,7 @@ std::string unary_op_type_name(UnaryOpType type) {
     REGISTER_TYPE(floor);
     REGISTER_TYPE(cast);
     REGISTER_TYPE(abs);
+    REGISTER_TYPE(sgn);
     REGISTER_TYPE(sin);
     REGISTER_TYPE(asin);
     REGISTER_TYPE(cos);

@@ -11,6 +11,11 @@ class MakeAdjoint : public IRVisitor {
   }
 
   // utils
+  Stmt *sgn(Stmt *inp) {
+    return insert<UnaryOpStmt>(UnaryOpType::sgn, load(inp));
+  }
+
+  // utils
   Stmt *negate(Stmt *inp) {
     return insert<UnaryOpStmt>(UnaryOpType::neg, load(inp));
   }
@@ -123,6 +128,8 @@ class MakeAdjoint : public IRVisitor {
       // do nothing
     } else if (stmt->op_type == UnaryOpType::neg) {
       accumulate(stmt->operand, negate(adjoint(stmt)));
+    } else if (stmt->op_type == UnaryOpType::abs) {
+      accumulate(stmt->operand, mul(adjoint(stmt), sgn(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::sin) {
       accumulate(stmt->operand, mul(adjoint(stmt), cos(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::cos) {

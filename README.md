@@ -92,20 +92,16 @@ def print():
 
 # Sparsity
 
-# What’s different from existing frameworks
+# What’s different from existing auto-differentitation frameworks
  - **Sparsity**. The first-class sparse data structures makes it possible to develop efficient. 
- - **Imperative**.
- - **Fine-grainularity**.
-   A typical data operation granulatity is `128x27x27x128`. instead of large dense convolution on big tensors
- - Controllable (sparse) memory
- - Controllable gradient evaluation 
-   - remember to clear the gradients!
- - **High customizability**
- - **Auto diff**
-## Comparison with TensorFlow and PyTorch
- - 
-
-
+ - **Imperative**. Although most neural networks 
+ - **Finer Grainularity**.
+   A typical data operation granulatity is `128x27x27x128`. instead of large dense convolution on big tensors.
+ - **Lower overhead**.
+ - **More Control**.
+   - The user takes care of memory allocation and gradient evaluation. The user is in charge of invoking the gradient kernels in the correct order, and clear the gradient tensors. The user has to do a little more work in our system, but the flexibility allows easier checkpointing to trade time for space complexity is critical in many applications.
+   - 
+   
 ## What do the grad kernels do
 
 # Multi-Stage Programming

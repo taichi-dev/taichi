@@ -1,7 +1,7 @@
 import taichi_lang as ti
 from pytest import approx
 
-def test_abs():
+def test_loops():
   for arch in [ti.x86_64, ti.cuda]:
     ti.reset()
     ti.cfg.arch = arch
@@ -15,26 +15,16 @@ def test_abs():
       ti.root.dense(ti.i, N).place(y)
       ti.root.lazy_grad()
 
+    for i in range(1, N):
+      y[i] = i - 5
+
     @ti.kernel
     def func():
-      for i in range(N):
+      for i in range(1, N):
         x[i] = ti.abs(y[i])
 
-    for i in range(N):
-      y[i] = i - 10
-      x.grad[i] = 1
-
     func()
-    func.grad()
 
-    def sgn(x):
-      if x > 0:
-        return 1
-      if x < 0:
-        return -1
-      return 0
-
-    for i in range(N):
+    assert x[0] == abs(y[0])
+    for i in range(1, N):
       assert x[i] == abs(y[i])
-      assert y.grad[i] == sgn(y[i])
-

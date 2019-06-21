@@ -331,9 +331,8 @@ class GPUIRCodeGen : public IRVisitor {
 
         emit("}}\n\n");
       }
-      // host code
-      TC_ASSERT(begin == 0);
 
+      // host code
       emit("{{");
       int block_size = range_for->block_size;
       if (block_size == 0) {

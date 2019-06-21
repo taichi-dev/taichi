@@ -47,6 +47,12 @@ def atomic_add(a, b):
   a.atomic_add(b)
 
 def subscript(value, *indices):
+  try:
+    import numpy as np
+    if isinstance(value, np.ndarray) or isinstance(value, list):
+      return value.__getitem__(*indices)
+  except:
+    pass
   if len(indices) == 1 and is_taichi_class(indices[0]):
     indices = indices[0].entries
   if isinstance(value, tuple) or isinstance(value, list):

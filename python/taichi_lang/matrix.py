@@ -249,3 +249,7 @@ class Matrix:
     for i in range(1, len(self.entries)):
       ret = ret + self.entries[i]
     return ret
+
+  def norm(self, l=2):
+    assert l == 2
+    return impl.sqrt(impl.sqr(self).sum())

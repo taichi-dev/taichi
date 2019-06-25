@@ -17,8 +17,8 @@ def test_clear():
   assert x[0] == 0
 
 def test_nested_subscript():
-  # ti.reset()
-  ti.runtime.print_preprocessed = True
+  ti.reset()
+
   x = ti.var(ti.i32)
   y = ti.var(ti.i32)
 

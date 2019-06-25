@@ -204,12 +204,11 @@ if 1:
   def visit_Subscript(self, node):
     value = node.value
     indices = node.slice
+    self.generic_visit(node)
     if isinstance(indices.value, ast.Tuple):
       indices = indices.value.elts
     else:
       indices = [indices.value]
-
-    self.generic_visit(node)
 
     call = ast.Call(func=self.parse_expr('ti.subscript'),
                     args=[value] + indices, keywords=[])

@@ -83,15 +83,22 @@ class CPULLVMCodeGen : public IRVisitor {
 
     std::vector<Type *> args(0);
     llvm::FunctionType *FT =
-        llvm::FunctionType::get(Type::getVoidTy(llvm_context), args, false);
+        llvm::FunctionType::get(Type::getInt32Ty(llvm_context), args, false);
 
     func =
         Function::Create(FT, Function::ExternalLinkage, "kernel", module.get());
 
-    BasicBlock *bb = BasicBlock::Create(llvm_context, "entry", func);
-    builder.SetInsertPoint(bb);
-    llvm::verifyFunction(*func);
-    func->print(llvm::errs());
+  }
+
+  void gen(IRNode *node) {
+    node->accept(this);
+    TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
+
+    TC_INFO("Module");
+    module->print(errs(), nullptr);
+    TC_INFO("Exiting...");
+
+    exit(-1);
   }
 
   template <typename... Args>
@@ -103,10 +110,12 @@ class CPULLVMCodeGen : public IRVisitor {
   static void run(CodeGenBase *codegen, IRNode *node, Program::Kernel *kernel) {
     auto p = CPULLVMCodeGen(codegen);
     p.kernel = kernel;
-    node->accept(&p);
+    p.gen(node);
   }
 
   void visit(Block *stmt_list) {
+    BasicBlock *bb = BasicBlock::Create(llvm_context, "entry", func);
+    builder.SetInsertPoint(bb);
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
     }
@@ -177,19 +186,21 @@ class CPULLVMCodeGen : public IRVisitor {
     }
   }
 
-  void visit(PrintStmt *print_stmt) {
-    if (print_stmt->width() == 1) {
-      emit("std::cout << \"[debug] \" \"{}\" \" = \" << {} << std::endl;",
-           print_stmt->str, print_stmt->stmt->raw_name());
-    } else {
-      emit(R"(std::cout << "[debug] {} = "; {}.print();)", print_stmt->str,
-           print_stmt->stmt->raw_name());
-    }
+  void visit(PrintStmt *stmt) {
+    TC_ASSERT(stmt->width() == 1);
+    builder.CreateRet(stmt->stmt->value);
   }
 
   void visit(ConstStmt *stmt) {
     TC_ASSERT(stmt->width() == 1);
-    // stmt->value = llvm::ConstantFP::get(llvm_context, llvm::APFloat);
+    auto val = stmt->val[0];
+    if (val.dt == DataType::f32) {
+      stmt->value = llvm::ConstantFP::get(llvm_context, llvm::APFloat(val.val_float32()));
+    } else if (val.dt == DataType::i32) {
+      stmt->value = llvm::ConstantInt::get(llvm_context, llvm::APInt(32, val.val_int32(), true));
+    } else {
+      TC_NOT_IMPLEMENTED;
+    }
   }
 
   void visit(WhileControlStmt *stmt) {

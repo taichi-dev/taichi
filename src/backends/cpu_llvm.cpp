@@ -84,12 +84,14 @@ class CPULLVMCodeGen : public IRVisitor {
   }
 
   void gen(IRNode *node) {
+    BasicBlock *bb = BasicBlock::Create(llvm_context, "entry", func);
+    builder.SetInsertPoint(bb);
     node->accept(this);
-    TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
 
     TC_INFO("Module IR");
     module->print(errs(), nullptr);
 
+    TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
     auto handle = jit->addModule(std::move(module));
 
     // Create a new pass manager attached to it.
@@ -136,15 +138,19 @@ class CPULLVMCodeGen : public IRVisitor {
   }
 
   void visit(Block *stmt_list) {
-    BasicBlock *bb = BasicBlock::Create(llvm_context, "entry", func);
-    builder.SetInsertPoint(bb);
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
     }
   }
 
-  void visit(AllocaStmt *alloca) {
-    emit("{} {}(0);", alloca->ret_data_type_name(), alloca->raw_name());
+  void visit(AllocaStmt *stmt) {
+    TC_ASSERT(stmt->width() == 1);
+    if (stmt->ret_type.data_type == DataType::i32) {
+      stmt->value = builder.CreateAlloca(llvm::Type::getInt32Ty(llvm_context),
+                                         (unsigned)0);
+    } else {
+      TC_NOT_IMPLEMENTED
+    }
   }
 
   void visit(RandStmt *stmt) {
@@ -255,6 +261,30 @@ class CPULLVMCodeGen : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) {
+    auto entry = builder.GetInsertBlock();
+    BasicBlock *body = BasicBlock::Create(llvm_context, "loop_body", func);
+    BasicBlock *after_loop = BasicBlock::Create(llvm_context, "block", func);
+    builder.CreateBr(body);
+
+    // body cfg
+    builder.SetInsertPoint(body);
+    auto phi = builder.CreatePHI(llvm::Type::getInt32Ty(llvm_context), 2);
+
+    auto loop_inc = builder.CreateAdd(
+        phi, llvm::ConstantInt::get(llvm_context, llvm::APInt(32, 1, true)));
+
+    phi->addIncoming(for_stmt->begin->value, entry);
+    phi->addIncoming(loop_inc, body);
+
+    for_stmt->body->accept(this);
+
+    auto cond = builder.CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT, loop_inc,
+                                   for_stmt->end->value);
+
+    builder.CreateCondBr(cond, body, after_loop);
+
+    // next cfg
+    builder.SetInsertPoint(after_loop);
   }
 
   void visit(ArgLoadStmt *stmt) {
@@ -264,40 +294,16 @@ class CPULLVMCodeGen : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) {
-    // TODO: optimize for partially vectorized load...
-
-    bool linear_index = true;
-    for (int i = 0; i < (int)stmt->ptr.size(); i++) {
-      if (stmt->ptr[i].offset != i) {
-        linear_index = false;
-      }
-    }
-    if (stmt->same_source() && linear_index &&
-        stmt->width() == stmt->ptr[0].var->width()) {
-      auto ptr = stmt->ptr[0].var;
-      emit("const {} {}({});", stmt->ret_data_type_name(), stmt->raw_name(),
-           ptr->raw_name());
-    } else {
-      std::string init_v;
-      for (int i = 0; i < stmt->width(); i++) {
-        init_v += fmt::format("{}[{}]", stmt->ptr[i].var->raw_name(),
-                              stmt->ptr[i].offset);
-        if (i + 1 < stmt->width()) {
-          init_v += ", ";
-        }
-      }
-      emit("const {} {}({{{}}});", stmt->ret_data_type_name(), stmt->raw_name(),
-           init_v);
-    }
+    TC_ASSERT(stmt->width() == 1);
+    stmt->value = builder.CreateLoad(stmt->ptr[0].var->value);
   }
 
   void visit(LocalStoreStmt *stmt) {
     auto mask = stmt->parent->mask();
     if (mask) {
-      emit("{} = select({}, {}, {});", stmt->ptr->raw_name(), mask->raw_name(),
-           stmt->data->raw_name(), stmt->ptr->raw_name());
+      TC_NOT_IMPLEMENTED
     } else {
-      emit("{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
+      builder.CreateStore(stmt->data->value, stmt->ptr->value);
     }
   }
 

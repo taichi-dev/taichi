@@ -15,9 +15,8 @@ def test():
   # i = 1
   a = 42
   a += 1
-  b = 3
-  a /= b
-  a *= 10
+  for i in range(16):
+    a += 1
   ti.print(a)
 
 

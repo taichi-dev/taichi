@@ -58,7 +58,18 @@ if (LLVM_FOUND)
     include_directories(${LLVM_INCLUDE_DIRS})
     add_definitions(${LLVM_DEFINITIONS})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTLANG_WITH_LLVM")
-    llvm_map_components_to_libnames(llvm_libs mcjit core native)
+    llvm_map_components_to_libnames(llvm_libs
+            Analysis
+            Core
+            ExecutionEngine
+            InstCombine
+            Object
+            OrcJIT
+            RuntimeDyld
+            ScalarOpts
+            Support
+            native
+            )
     target_link_libraries(${LIBRARY_NAME} ${llvm_libs})
 else()
     message("LLVM not found.")

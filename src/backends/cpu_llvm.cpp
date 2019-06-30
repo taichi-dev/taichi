@@ -50,25 +50,6 @@ TLANG_NAMESPACE_BEGIN
 using namespace llvm;
 
 LLVMContext llvm_context;
-/*
-// https://llvm.org/docs/tutorial/LangImpl07.html
-static IRBuilder<> Builder(TheContext);
-static std::unique_ptr<Module> TheModule;
-static std::map<std::string, AllocaInst *> NamedValues;
-static std::unique_ptr<legacy::FunctionPassManager> TheFPM;
-static std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
-
-
-static void HandleDefinition() {
-    if (auto *FnIR = FnAST->codegen()) {
-      fprintf(stderr, "Read function definition:");
-      FnIR->print(errs());
-      fprintf(stderr, "\n");
-      TheJIT->addModule(std::move(TheModule));
-      InitializeModuleAndPassManager();
-    }
-}
-*/
 
 class CPULLVMCodeGen : public IRVisitor {
  public:
@@ -78,9 +59,14 @@ class CPULLVMCodeGen : public IRVisitor {
   llvm::IRBuilder<> builder;
   std::unique_ptr<Module> module;
   llvm::Function *func;
-  std::unique_ptr<llvm::FunctionPassManager> fpm;
+  std::unique_ptr<llvm::legacy::FunctionPassManager> fpm;
+  std::unique_ptr<llvm::orc::LLVMJIT> jit;
 
   CPULLVMCodeGen(CodeGenBase *codegen) : builder(llvm_context) {
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+    llvm::InitializeNativeTargetAsmParser();
+
     module = llvm::make_unique<Module>("taichi kernel", llvm_context);
     current_struct_for = nullptr;
     // func = module->getFunction("test");
@@ -92,16 +78,47 @@ class CPULLVMCodeGen : public IRVisitor {
     func =
         Function::Create(FT, Function::ExternalLinkage, "kernel", module.get());
 
-    llvm::make_unique<FunctionPassManager>(module.get());
+    jit = std::make_unique<llvm::orc::LLVMJIT>();
 
+    module->setDataLayout(jit->getTargetMachine().createDataLayout());
   }
 
   void gen(IRNode *node) {
     node->accept(this);
     TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
 
-    TC_INFO("Module");
+    TC_INFO("Module IR");
     module->print(errs(), nullptr);
+
+    auto handle = jit->addModule(std::move(module));
+
+    // Create a new pass manager attached to it.
+    fpm = llvm::make_unique<legacy::FunctionPassManager>(module.get());
+
+    // Do simple "peephole" optimizations and bit-twiddling optzns.
+    fpm->add(createInstructionCombiningPass());
+    // Reassociate expressions.
+    fpm->add(createReassociatePass());
+    // Eliminate Common SubExpressions.
+    fpm->add(createGVNPass());
+    // Simplify the control flow graph (deleting unreachable blocks, etc).
+    fpm->add(createCFGSimplificationPass());
+
+    fpm->doInitialization();
+
+
+    // Search the JIT for the __anon_expr symbol.
+    auto ExprSymbol = jit->findSymbol("kernel");
+    TC_ASSERT_INFO(ExprSymbol, "Function not found");
+
+    // Get the symbol's address and cast it to the right type (takes no
+    // arguments, returns a double) so we can call it as a native function.
+    int32 (*f)() = (int32 (*)())(intptr_t)cantFail(ExprSymbol.getAddress());
+    fprintf(stderr, "Evaluated to %d\n", f());
+
+    // Delete the anonymous expression module from the JIT.
+    jit->removeModule(handle);
+
     TC_INFO("Exiting...");
 
     exit(-1);

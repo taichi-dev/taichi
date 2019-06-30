@@ -38,6 +38,9 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#include "llvm_jit.h"
+
 #endif
 
 TLANG_NAMESPACE_BEGIN
@@ -75,6 +78,7 @@ class CPULLVMCodeGen : public IRVisitor {
   llvm::IRBuilder<> builder;
   std::unique_ptr<Module> module;
   llvm::Function *func;
+  std::unique_ptr<llvm::FunctionPassManager> fpm;
 
   CPULLVMCodeGen(CodeGenBase *codegen) : builder(llvm_context) {
     module = llvm::make_unique<Module>("taichi kernel", llvm_context);
@@ -87,6 +91,8 @@ class CPULLVMCodeGen : public IRVisitor {
 
     func =
         Function::Create(FT, Function::ExternalLinkage, "kernel", module.get());
+
+    llvm::make_unique<FunctionPassManager>(module.get());
 
   }
 
@@ -195,9 +201,11 @@ class CPULLVMCodeGen : public IRVisitor {
     TC_ASSERT(stmt->width() == 1);
     auto val = stmt->val[0];
     if (val.dt == DataType::f32) {
-      stmt->value = llvm::ConstantFP::get(llvm_context, llvm::APFloat(val.val_float32()));
+      stmt->value =
+          llvm::ConstantFP::get(llvm_context, llvm::APFloat(val.val_float32()));
     } else if (val.dt == DataType::i32) {
-      stmt->value = llvm::ConstantInt::get(llvm_context, llvm::APInt(32, val.val_int32(), true));
+      stmt->value = llvm::ConstantInt::get(
+          llvm_context, llvm::APInt(32, val.val_int32(), true));
     } else {
       TC_NOT_IMPLEMENTED;
     }

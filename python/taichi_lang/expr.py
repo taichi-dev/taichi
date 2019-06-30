@@ -67,6 +67,11 @@ class Expr:
   def __idiv__(self, other):
     self.assign(Expr(taichi_lang_core.expr_div(self.ptr, other.ptr)))
 
+  __itruediv__ = __idiv__
+
+  def __ifloordiv__(self, other):
+    self.assign(Expr(taichi_lang_core.expr_div(self.ptr, other.ptr)))
+
   def __rsub__(self, other):
     other = Expr(other)
     return Expr(taichi_lang_core.expr_sub(other.ptr, self.ptr))
@@ -187,6 +192,8 @@ class Expr:
       self *= x
     elif op == 'Div':
       self /= x
+    elif op == 'FloorDiv':
+      self //= x
     else:
       assert False, op
 

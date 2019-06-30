@@ -106,14 +106,13 @@ class CPULLVMCodeGen : public IRVisitor {
 
     fpm->doInitialization();
 
-
     // Search the JIT for the __anon_expr symbol.
     auto ExprSymbol = jit->findSymbol("kernel");
     TC_ASSERT_INFO(ExprSymbol, "Function not found");
 
     // Get the symbol's address and cast it to the right type (takes no
     // arguments, returns a double) so we can call it as a native function.
-    int32 (*f)() = (int32 (*)())(intptr_t)cantFail(ExprSymbol.getAddress());
+    int32 (*f)() = (int32(*)())(intptr_t)cantFail(ExprSymbol.getAddress());
     fprintf(stderr, "Evaluated to %d\n", f());
 
     // Delete the anonymous expression module from the JIT.
@@ -175,15 +174,27 @@ class CPULLVMCodeGen : public IRVisitor {
     auto op = stmt->op_type;
     if (op == BinaryOpType::add) {
       if (is_real(stmt->ret_type.data_type)) {
-        stmt->value = builder.CreateAdd(stmt->lhs->value, stmt->rhs->value);
-      } else {
         stmt->value = builder.CreateFAdd(stmt->lhs->value, stmt->rhs->value);
+      } else {
+        stmt->value = builder.CreateAdd(stmt->lhs->value, stmt->rhs->value);
       }
     } else if (op == BinaryOpType::sub) {
       if (is_real(stmt->ret_type.data_type)) {
-        stmt->value = builder.CreateSub(stmt->lhs->value, stmt->rhs->value);
-      } else {
         stmt->value = builder.CreateFSub(stmt->lhs->value, stmt->rhs->value);
+      } else {
+        stmt->value = builder.CreateSub(stmt->lhs->value, stmt->rhs->value);
+      }
+    } else if (op == BinaryOpType::mul) {
+      if (is_real(stmt->ret_type.data_type)) {
+        stmt->value = builder.CreateFMul(stmt->lhs->value, stmt->rhs->value);
+      } else {
+        stmt->value = builder.CreateMul(stmt->lhs->value, stmt->rhs->value);
+      }
+    } else if (op == BinaryOpType::div) {
+      if (is_real(stmt->ret_type.data_type)) {
+        stmt->value = builder.CreateFDiv(stmt->lhs->value, stmt->rhs->value);
+      } else {
+        stmt->value = builder.CreateSDiv(stmt->lhs->value, stmt->rhs->value);
       }
     } else {
       TC_NOT_IMPLEMENTED

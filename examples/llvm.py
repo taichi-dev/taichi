@@ -4,6 +4,7 @@ x, y = ti.var(ti.f32), ti.var(ti.f32)
 
 ti.cfg.use_llvm = True
 ti.cfg.print_ir = True
+ti.runtime.print_preprocessed = True
 
 @ti.layout
 def xy():
@@ -12,8 +13,12 @@ def xy():
 @ti.kernel
 def test():
   # i = 1
-  # a = i + i
-  ti.print(1)
+  a = 42
+  a += 1
+  b = 3
+  a /= b
+  a *= 10
+  ti.print(a)
 
 
 test()

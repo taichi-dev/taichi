@@ -325,6 +325,7 @@ struct CompileConfig {
   bool lower_access;
   bool simplify_after_lower_access;
   bool attempt_vectorized_load_cpu;
+  bool use_llvm;
   DataType gradient_dt;
   std::string extra_flags;
 

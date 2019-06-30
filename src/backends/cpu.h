@@ -16,6 +16,8 @@ class CPUCodeGen : public KernelCodeGen {
   void lower() override;
 
   void codegen() override;
+
+  virtual FunctionType codegen_llvm() override;
 };
 
 TLANG_NAMESPACE_END

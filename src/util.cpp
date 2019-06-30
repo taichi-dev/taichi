@@ -353,6 +353,7 @@ CompileConfig::CompileConfig() {
   internal_optimization = true;
   external_optimization_level = 3;
   print_ir = false;
+  use_llvm = false;
   max_vector_width = 8;
   force_vectorized_global_load = false;
   force_vectorized_global_store = false;

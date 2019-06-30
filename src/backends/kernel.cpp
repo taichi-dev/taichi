@@ -9,10 +9,14 @@ FunctionType KernelCodeGen::compile(taichi::Tlang::Program &prog,
   this->prog = &kernel.program;
   this->kernel = &kernel;
   lower();
-  codegen();
-  generate_binary("");
-  // TC_P(Time::get_time() - t);
-  return load_function();
+  if (prog.config.use_llvm) {
+    return codegen_llvm();
+  } else {
+    codegen();
+    generate_binary("");
+    // TC_P(Time::get_time() - t);
+    return load_function();
+  }
 }
 
 TLANG_NAMESPACE_END

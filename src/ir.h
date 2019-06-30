@@ -6,6 +6,10 @@
 #include "util.h"
 #include "snode.h"
 
+namespace llvm {
+  class Value;
+}
+
 TLANG_NAMESPACE_BEGIN
 
 class DiffRange {
@@ -546,11 +550,14 @@ class Stmt : public IRNode {
   std::string tb;
   Stmt *adjoint;
 
+  llvm::Value *value;
+
   Stmt(const Stmt &stmt) = delete;
 
   Stmt() {
     adjoint = nullptr;
     parent = nullptr;
+    value = nullptr;
     instance_id = instance_id_counter++;
     id = instance_id;
     operand_bitmap = 0;

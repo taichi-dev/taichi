@@ -46,52 +46,15 @@ TLANG_NAMESPACE_BEGIN
 
 using namespace llvm;
 
+LLVMContext llvm_context;
 /*
 // https://llvm.org/docs/tutorial/LangImpl07.html
-static LLVMContext TheContext;
 static IRBuilder<> Builder(TheContext);
 static std::unique_ptr<Module> TheModule;
 static std::map<std::string, AllocaInst *> NamedValues;
 static std::unique_ptr<legacy::FunctionPassManager> TheFPM;
-static std::unique_ptr<KaleidoscopeJIT> TheJIT;
 static std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
 
-Function *getFunction(std::string Name) {
-  // First, see if the function has already been added to the current module.
-  if (auto *F = TheModule->getFunction(Name))
-    return F;
-
-  // If not, check whether we can codegen the declaration from some existing
-  // prototype.
-  auto FI = FunctionProtos.find(Name);
-  if (FI != FunctionProtos.end())
-    return FI->second->codegen();
-
-  // If no existing prototype exists, return null.
-  return nullptr;
-}
-
-static void InitializeModuleAndPassManager() {
-  // Open a new module.
-  TheModule = llvm::make_unique<Module>("my cool jit", TheContext);
-  TheModule->setDataLayout(TheJIT->getTargetMachine().createDataLayout());
-
-  // Create a new pass manager attached to it.
-  TheFPM = llvm::make_unique<legacy::FunctionPassManager>(TheModule.get());
-
-  // Promote allocas to registers.
-  TheFPM->add(createPromoteMemoryToRegisterPass());
-  // Do simple "peephole" optimizations and bit-twiddling optzns.
-  TheFPM->add(createInstructionCombiningPass());
-  // Reassociate expressions.
-  TheFPM->add(createReassociatePass());
-  // Eliminate Common SubExpressions.
-  TheFPM->add(createGVNPass());
-  // Simplify the control flow graph (deleting unreachable blocks, etc).
-  TheFPM->add(createCFGSimplificationPass());
-
-  TheFPM->doInitialization();
-}
 
 static void HandleDefinition() {
     if (auto *FnIR = FnAST->codegen()) {
@@ -102,20 +65,6 @@ static void HandleDefinition() {
       InitializeModuleAndPassManager();
     }
 }
-
-static void HandleExtern() {
-  if (auto ProtoAST = ParseExtern()) {
-    if (auto *FnIR = ProtoAST->codegen()) {
-      fprintf(stderr, "Read extern: ");
-      FnIR->print(errs());
-      fprintf(stderr, "\n");
-      FunctionProtos[ProtoAST->getName()] = std::move(ProtoAST);
-    }
-  } else {
-    // Skip token for error recovery.
-    getNextToken();
-  }
-}
 */
 
 class CPULLVMCodeGen : public IRVisitor {
@@ -123,13 +72,31 @@ class CPULLVMCodeGen : public IRVisitor {
   StructForStmt *current_struct_for;
   CodeGenBase *codegen;
   Program::Kernel *kernel;
+  llvm::IRBuilder<> builder;
+  std::unique_ptr<Module> module;
+  llvm::Function *func;
 
-  CPULLVMCodeGen(CodeGenBase *codegen) {
+  CPULLVMCodeGen(CodeGenBase *codegen) : builder(llvm_context) {
+    module = llvm::make_unique<Module>("taichi kernel", llvm_context);
     current_struct_for = nullptr;
+    // func = module->getFunction("test");
+
+    std::vector<Type *> args(0);
+    llvm::FunctionType *FT =
+        llvm::FunctionType::get(Type::getVoidTy(llvm_context), args, false);
+
+    func =
+        Function::Create(FT, Function::ExternalLinkage, "kernel", module.get());
+
+    BasicBlock *bb = BasicBlock::Create(llvm_context, "entry", func);
+    builder.SetInsertPoint(bb);
+    llvm::verifyFunction(*func);
+    func->print(llvm::errs());
   }
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
+    TC_NOT_IMPLEMENTED
     codegen->emit(f, std::forward<Args>(args)...);
   }
 
@@ -172,10 +139,23 @@ class CPULLVMCodeGen : public IRVisitor {
     }
   }
 
-  void visit(BinaryOpStmt *bin) {
-    emit("const {} {}({}({}, {}));", bin->ret_data_type_name(), bin->raw_name(),
-         binary_op_type_name(bin->op_type), bin->lhs->raw_name(),
-         bin->rhs->raw_name());
+  void visit(BinaryOpStmt *stmt) {
+    auto op = stmt->op_type;
+    if (op == BinaryOpType::add) {
+      if (is_real(stmt->ret_type.data_type)) {
+        stmt->value = builder.CreateAdd(stmt->lhs->value, stmt->rhs->value);
+      } else {
+        stmt->value = builder.CreateFAdd(stmt->lhs->value, stmt->rhs->value);
+      }
+    } else if (op == BinaryOpType::sub) {
+      if (is_real(stmt->ret_type.data_type)) {
+        stmt->value = builder.CreateSub(stmt->lhs->value, stmt->rhs->value);
+      } else {
+        stmt->value = builder.CreateFSub(stmt->lhs->value, stmt->rhs->value);
+      }
+    } else {
+      TC_NOT_IMPLEMENTED
+    }
   }
 
   void visit(TernaryOpStmt *tri) {
@@ -207,10 +187,9 @@ class CPULLVMCodeGen : public IRVisitor {
     }
   }
 
-  void visit(ConstStmt *const_stmt) {
-    emit("const {} {}({});", const_stmt->ret_type.str(), const_stmt->raw_name(),
-         const_stmt->val.serialize(
-             [&](const TypedConstant &t) { return t.stringify(); }, "{"));
+  void visit(ConstStmt *stmt) {
+    TC_ASSERT(stmt->width() == 1);
+    // stmt->value = llvm::ConstantFP::get(llvm_context, llvm::APFloat);
   }
 
   void visit(WhileControlStmt *stmt) {
@@ -594,6 +573,7 @@ class CPULLVMCodeGen : public IRVisitor {
 };
 
 FunctionType CPUCodeGen::codegen_llvm() {
+  CPULLVMCodeGen::run(this, kernel->ir, kernel);
   return nullptr;
 }
 #else

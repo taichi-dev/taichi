@@ -64,6 +64,7 @@ PYBIND11_MODULE(taichi_lang_core, m) {
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
       .def_readwrite("print_ir", &CompileConfig::print_ir)
+      .def_readwrite("use_llvm", &CompileConfig::use_llvm)
       .def_readwrite("simplify_before_lower_access",
                      &CompileConfig::simplify_before_lower_access)
       .def_readwrite("simplify_after_lower_access",

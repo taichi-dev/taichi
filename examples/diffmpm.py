@@ -228,6 +228,9 @@ def main():
       cv2.waitKey(1)
 
   ti.profiler_print()
+  plt.title("Optimization of Initial Velocity")
+  plt.ylabel("Loss")
+  plt.xlabel("Gradient Descent Iterations")
   plt.plot(losses)
   plt.show()
 

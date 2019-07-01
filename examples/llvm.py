@@ -14,9 +14,9 @@ def xy():
 def test():
   a = 0
   for i in range(10):
-    a += i
+    if i % 2 == 0:
+      a += i
   ti.print(a)
-
 
 test()
 

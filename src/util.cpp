@@ -81,6 +81,7 @@ std::string data_type_name(DataType t) {
     REGISTER_DATA_TYPE(f16, float16);
     REGISTER_DATA_TYPE(f32, float32);
     REGISTER_DATA_TYPE(f64, float64);
+    REGISTER_DATA_TYPE(i1, int1);
     REGISTER_DATA_TYPE(i8, int8);
     REGISTER_DATA_TYPE(i16, int16);
     REGISTER_DATA_TYPE(i32, int32);
@@ -104,6 +105,7 @@ int data_type_size(DataType t) {
     type_sizes[DataType::f16] = 2;
     REGISTER_DATA_TYPE(f32, float32);
     REGISTER_DATA_TYPE(f64, float64);
+    REGISTER_DATA_TYPE(i8, bool);
     REGISTER_DATA_TYPE(i8, int8);
     REGISTER_DATA_TYPE(i16, int16);
     REGISTER_DATA_TYPE(i32, int32);
@@ -127,6 +129,7 @@ std::string data_type_short_name(DataType t) {
     REGISTER_DATA_TYPE(f16);
     REGISTER_DATA_TYPE(f32);
     REGISTER_DATA_TYPE(f64);
+    REGISTER_DATA_TYPE(i1);
     REGISTER_DATA_TYPE(i8);
     REGISTER_DATA_TYPE(i16);
     REGISTER_DATA_TYPE(i32);

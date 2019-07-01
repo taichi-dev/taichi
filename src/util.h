@@ -32,6 +32,7 @@ enum class DataType : int {
   f16,
   f32,
   f64,
+  i1,
   i8,
   i16,
   i32,
@@ -51,6 +52,8 @@ inline DataType get_data_type() {
     return DataType::f32;
   } else if (std::is_same<T, float64>()) {
     return DataType::f64;
+  } else if (std::is_same<T, bool>()) {
+    return DataType::i1;
   } else if (std::is_same<T, int8>()) {
     return DataType::i8;
   } else if (std::is_same<T, int16>()) {

@@ -181,6 +181,21 @@ class CPULLVMCodeGen : public IRVisitor {
     }
   }
 
+  llvm::Type *llvm_type(DataType dt) {
+    if (dt == DataType::i32) {
+      return llvm::Type::getInt32Ty(llvm_context);
+    } else if (dt == DataType::i1) {
+      return llvm::Type::getInt1Ty(llvm_context);
+    } else if (dt == DataType::f32) {
+      return llvm::Type::getFloatTy(llvm_context);
+    } else if (dt == DataType::f64) {
+      return llvm::Type::getDoubleTy(llvm_context);
+    } else {
+      TC_NOT_IMPLEMENTED;
+    }
+    return nullptr;
+  }
+
   void visit(BinaryOpStmt *stmt) {
     auto op = stmt->op_type;
     if (op == BinaryOpType::add) {
@@ -207,15 +222,32 @@ class CPULLVMCodeGen : public IRVisitor {
       } else {
         stmt->value = builder.CreateSDiv(stmt->lhs->value, stmt->rhs->value);
       }
+    } else if (op == BinaryOpType::mod) {
+      stmt->value = builder.CreateSRem(stmt->lhs->value, stmt->rhs->value);
+    } else if (is_comparison(op)) {
+      if (op == BinaryOpType::cmp_eq) {
+        if (is_real(stmt->lhs->ret_type.data_type)) {
+          stmt->value = builder.CreateSExt(
+              builder.CreateFCmpOEQ(stmt->lhs->value, stmt->rhs->value),
+              llvm_type(DataType::i32));
+        } else {
+          stmt->value = builder.CreateSExt(
+              builder.CreateICmpEQ(stmt->lhs->value, stmt->rhs->value),
+              llvm_type(DataType::i32));
+        }
+      } else {
+        TC_NOT_IMPLEMENTED
+      }
     } else {
       TC_NOT_IMPLEMENTED
     }
   }
 
-  void visit(TernaryOpStmt *tri) {
-    emit("const {} {}({}({}, {}, {}));", tri->ret_data_type_name(),
-         tri->raw_name(), ternary_type_name(tri->op_type), tri->op1->raw_name(),
-         tri->op2->raw_name(), tri->op3->raw_name());
+  void visit(TernaryOpStmt *stmt) {
+    TC_ASSERT(stmt->op_type == TernaryOpType::select);
+    stmt->value = builder.CreateSelect(
+        builder.CreateTrunc(stmt->op1->value, llvm_type(DataType::i1)),
+        stmt->op2->value, stmt->op3->value);
   }
 
   void visit(IfStmt *if_stmt) {

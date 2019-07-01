@@ -12,11 +12,9 @@ def xy():
 
 @ti.kernel
 def test():
-  # i = 1
-  a = 42
-  a += 1
-  for i in range(16):
-    a += 1
+  a = 0
+  for i in range(10):
+    a += i
   ti.print(a)
 
 

@@ -91,9 +91,6 @@ class CPULLVMCodeGen : public IRVisitor {
     TC_INFO("Module IR");
     module->print(errs(), nullptr);
 
-    TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
-    auto handle = jit->addModule(std::move(module));
-
     // Create a new pass manager attached to it.
     fpm = llvm::make_unique<legacy::FunctionPassManager>(module.get());
 
@@ -107,6 +104,14 @@ class CPULLVMCodeGen : public IRVisitor {
     fpm->add(createCFGSimplificationPass());
 
     fpm->doInitialization();
+
+    fpm->run(*func);
+
+    TC_INFO("Module IR Optimized");
+    module->print(errs(), nullptr);
+
+    TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
+    auto handle = jit->addModule(std::move(module));
 
     // Search the JIT for the __anon_expr symbol.
     auto ExprSymbol = jit->findSymbol("kernel");
@@ -260,26 +265,47 @@ class CPULLVMCodeGen : public IRVisitor {
   void visit(StructForStmt *for_stmt) {
   }
 
+  AllocaInst *CreateEntryBlockAlloca(llvm::Type *type,
+                                     const std::string &name) {
+    llvm::IRBuilder<> TmpB(&func->getEntryBlock(),
+                           func->getEntryBlock().begin());
+    return TmpB.CreateAlloca(type, 0, name.c_str());
+  }
+
+  void increment(llvm::Value *ptr, llvm::Value *value) {
+    builder.CreateStore(builder.CreateAdd(builder.CreateLoad(ptr), value), ptr);
+  }
+
+  llvm::Value *const_int32(int32 val) {
+    return llvm::ConstantInt::get(llvm_context, llvm::APInt(32, val, true));
+  }
+
   void visit(RangeForStmt *for_stmt) {
-    auto entry = builder.GetInsertBlock();
+    // auto entry = builder.GetInsertBlock();
+
     BasicBlock *body = BasicBlock::Create(llvm_context, "loop_body", func);
     BasicBlock *after_loop = BasicBlock::Create(llvm_context, "block", func);
+    builder.CreateStore(const_int32(0), for_stmt->loop_var->value);
     builder.CreateBr(body);
 
     // body cfg
     builder.SetInsertPoint(body);
-    auto phi = builder.CreatePHI(llvm::Type::getInt32Ty(llvm_context), 2);
 
+    /*
+    auto phi = builder.CreatePHI(llvm::Type::getInt32Ty(llvm_context), 2);
     auto loop_inc = builder.CreateAdd(
         phi, llvm::ConstantInt::get(llvm_context, llvm::APInt(32, 1, true)));
-
     phi->addIncoming(for_stmt->begin->value, entry);
     phi->addIncoming(loop_inc, body);
+    */
 
     for_stmt->body->accept(this);
 
-    auto cond = builder.CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT, loop_inc,
-                                   for_stmt->end->value);
+    increment(for_stmt->loop_var->value, const_int32(1));
+
+    auto cond = builder.CreateICmp(
+        llvm::CmpInst::Predicate::ICMP_SLT,
+        builder.CreateLoad(for_stmt->loop_var->value), for_stmt->end->value);
 
     builder.CreateCondBr(cond, body, after_loop);
 

@@ -59,6 +59,7 @@ class CPULLVMCodeGen : public IRVisitor {
   llvm::IRBuilder<> builder;
   std::unique_ptr<Module> module;
   llvm::Function *func;
+  llvm::Constant *func_printf;
   std::unique_ptr<llvm::legacy::FunctionPassManager> fpm;
   std::unique_ptr<llvm::orc::LLVMJIT> jit;
 
@@ -81,15 +82,23 @@ class CPULLVMCodeGen : public IRVisitor {
     jit = std::make_unique<llvm::orc::LLVMJIT>();
 
     module->setDataLayout(jit->getTargetMachine().createDataLayout());
+
+    func_printf = module->getOrInsertFunction(
+        "printf",
+        llvm::FunctionType::get(
+            IntegerType::getInt32Ty(llvm_context),
+            PointerType::get(Type::getInt8Ty(llvm_context), 0), true));
   }
 
   void gen(IRNode *node) {
     BasicBlock *bb = BasicBlock::Create(llvm_context, "entry", func);
     builder.SetInsertPoint(bb);
     node->accept(this);
+    builder.CreateRet(const_int32(0));
 
     TC_INFO("Module IR");
     module->print(errs(), nullptr);
+    TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
 
     // Create a new pass manager attached to it.
     fpm = llvm::make_unique<legacy::FunctionPassManager>(module.get());
@@ -110,7 +119,6 @@ class CPULLVMCodeGen : public IRVisitor {
     TC_INFO("Module IR Optimized");
     module->print(errs(), nullptr);
 
-    TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
     auto handle = jit->addModule(std::move(module));
 
     // Search the JIT for the __anon_expr symbol.
@@ -119,7 +127,13 @@ class CPULLVMCodeGen : public IRVisitor {
 
     // Get the symbol's address and cast it to the right type (takes no
     // arguments, returns a double) so we can call it as a native function.
-    int32 (*f)() = (int32(*)())(intptr_t)cantFail(ExprSymbol.getAddress());
+    TC_INFO("Calling...");
+    auto f = (int32(*)())(*ExprSymbol.getAddress());
+    if (!f) {
+      llvm::logAllUnhandledErrors(ExprSymbol.takeError(), llvm::errs(),
+                                  "taichi llvm kernel execution error:");
+      TC_ERROR("Taichi kernel launch failed.");
+    }
     fprintf(stderr, "Evaluated to %d\n", f());
 
     // Delete the anonymous expression module from the JIT.
@@ -265,7 +279,14 @@ class CPULLVMCodeGen : public IRVisitor {
 
   void visit(PrintStmt *stmt) {
     TC_ASSERT(stmt->width() == 1);
-    builder.CreateRet(stmt->stmt->value);
+    // auto format = llvm::ConstantDataArray::getString(llvm_context,
+    //                                                  stmt->str.c_str(),
+    //                                                  true);
+    std::vector<Value *> args;
+    args.push_back(
+        builder.CreateGlobalStringPtr(stmt->str.c_str(), "format string"));
+
+    stmt->value = builder.CreateCall(func_printf, args, "printf");
   }
 
   void visit(ConstStmt *stmt) {

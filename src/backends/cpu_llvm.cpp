@@ -83,11 +83,12 @@ class CPULLVMCodeGen : public IRVisitor {
 
     module->setDataLayout(jit->getTargetMachine().createDataLayout());
 
-    func_printf = module->getOrInsertFunction(
-        "printf",
-        llvm::FunctionType::get(
-            IntegerType::getInt32Ty(llvm_context),
-            PointerType::get(Type::getInt8Ty(llvm_context), 0), true));
+    auto func_printf_type = llvm::FunctionType::get(
+        IntegerType::getInt32Ty(llvm_context),
+        PointerType::get(Type::getInt8Ty(llvm_context), 0), true);
+    // func_printf = module->getOrInsertFunction("printf");
+    func_printf = Function::Create(func_printf_type, Function::ExternalLinkage,
+                                   "printf", module.get());
   }
 
   void gen(IRNode *node) {
@@ -125,15 +126,14 @@ class CPULLVMCodeGen : public IRVisitor {
     auto ExprSymbol = jit->findSymbol("kernel");
     TC_ASSERT_INFO(ExprSymbol, "Function not found");
 
-    // Get the symbol's address and cast it to the right type (takes no
-    // arguments, returns a double) so we can call it as a native function.
     TC_INFO("Calling...");
-    auto f = (int32(*)())(*ExprSymbol.getAddress());
-    if (!f) {
-      llvm::logAllUnhandledErrors(ExprSymbol.takeError(), llvm::errs(),
-                                  "taichi llvm kernel execution error:");
+    auto addr = ExprSymbol.getAddress();
+    if (!addr) {
+      llvm::logAllUnhandledErrors(addr.takeError(), llvm::errs(),
+                                  "taichi llvm kernel execution error:\n");
       TC_ERROR("Taichi kernel launch failed.");
     }
+    auto f = (int32(*)())(*addr);
     fprintf(stderr, "Evaluated to %d\n", f());
 
     // Delete the anonymous expression module from the JIT.

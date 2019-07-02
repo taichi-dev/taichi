@@ -30,6 +30,13 @@ class LLVMJIT {
  public:
   using ObjLayerT = LegacyRTDyldObjectLinkingLayer;
   using CompileLayerT = LegacyIRCompileLayer<ObjLayerT, SimpleCompiler>;
+  ExecutionSession ES;
+  std::shared_ptr<SymbolResolver> Resolver;
+  std::unique_ptr<TargetMachine> TM;
+  const DataLayout DL;
+  ObjLayerT ObjectLayer;
+  CompileLayerT CompileLayer;
+  std::vector<VModuleKey> ModuleKeys;
 
   LLVMJIT()
       : Resolver(createLegacyLookupResolver(
@@ -80,6 +87,7 @@ class LLVMJIT {
   }
 
   JITSymbol findMangledSymbol(const std::string &Name) {
+    printf("finding... %s\n", Name.c_str());
 #ifdef _WIN32
     // The symbol lookup of ObjectLinkingLayer uses the SymbolRef::SF_Exported
     // flag to decide whether a symbol will be visible or not, when we call
@@ -116,14 +124,6 @@ class LLVMJIT {
 
     return nullptr;
   }
-
-  ExecutionSession ES;
-  std::shared_ptr<SymbolResolver> Resolver;
-  std::unique_ptr<TargetMachine> TM;
-  const DataLayout DL;
-  ObjLayerT ObjectLayer;
-  CompileLayerT CompileLayer;
-  std::vector<VModuleKey> ModuleKeys;
 };
 
 }  // end namespace orc

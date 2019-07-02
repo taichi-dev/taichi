@@ -63,6 +63,8 @@ class CPULLVMCodeGen : public IRVisitor {
   std::unique_ptr<llvm::legacy::FunctionPassManager> fpm;
   std::unique_ptr<llvm::orc::LLVMJIT> jit;
 
+  llvm::ExitOnError exit_on_err;
+
   CPULLVMCodeGen(CodeGenBase *codegen) : builder(llvm_context) {
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
@@ -79,9 +81,9 @@ class CPULLVMCodeGen : public IRVisitor {
     func =
         Function::Create(FT, Function::ExternalLinkage, "kernel", module.get());
 
-    jit = std::make_unique<llvm::orc::LLVMJIT>();
+    jit = exit_on_err(llvm::orc::LLVMJIT::Create());
 
-    module->setDataLayout(jit->getTargetMachine().createDataLayout());
+    module->setDataLayout(jit->getDataLayout());
 
     auto func_printf_type = llvm::FunctionType::get(
         IntegerType::getInt32Ty(llvm_context),
@@ -123,21 +125,19 @@ class CPULLVMCodeGen : public IRVisitor {
     auto handle = jit->addModule(std::move(module));
 
     // Search the JIT for the __anon_expr symbol.
-    auto ExprSymbol = jit->findSymbol("kernel");
+    auto ExprSymbol = exit_on_err(jit->lookup("kernel"));
     TC_ASSERT_INFO(ExprSymbol, "Function not found");
 
     TC_INFO("Calling...");
+    /*
     auto addr = ExprSymbol.getAddress();
     if (!addr) {
       llvm::logAllUnhandledErrors(addr.takeError(), llvm::errs(),
                                   "taichi llvm kernel execution error:\n");
       TC_ERROR("Taichi kernel launch failed.");
     }
-    auto f = (int32(*)())(*addr);
-    fprintf(stderr, "Evaluated to %d\n", f());
-
-    // Delete the anonymous expression module from the JIT.
-    jit->removeModule(handle);
+    */
+    auto f = (int32(*)())(void *)(ExprSymbol.getAddress());
 
     TC_INFO("Exiting...");
 
@@ -283,8 +283,18 @@ class CPULLVMCodeGen : public IRVisitor {
     //                                                  stmt->str.c_str(),
     //                                                  true);
     std::vector<Value *> args;
-    args.push_back(
-        builder.CreateGlobalStringPtr(stmt->str.c_str(), "format string"));
+    std::string format;
+    if (stmt->stmt->ret_type.data_type == DataType::i32) {
+      format = "%d";
+    } else if (stmt->stmt->ret_type.data_type == DataType::f32) {
+      format = "%f";
+    } else {
+      TC_NOT_IMPLEMENTED
+    }
+    args.push_back(builder.CreateGlobalStringPtr(
+        ("[debug] " + stmt->str + " = " + format + "\n").c_str(),
+        "format string"));
+    args.push_back(stmt->stmt->value);
 
     stmt->value = builder.CreateCall(func_printf, args, "printf");
   }

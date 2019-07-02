@@ -93,8 +93,11 @@ class LLVMJIT {
 
     // Run the optimizations over all functions in the module being added to
     // the JIT.
-    for (auto &F : *TSM.getModule())
+    for (auto &F : *TSM.getModule()) {
       FPM->run(F);
+      TC_INFO("Function IR Optimized");
+      F.print(errs(), nullptr);
+    }
 
     return TSM;
   }

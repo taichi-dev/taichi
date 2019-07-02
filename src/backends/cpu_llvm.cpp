@@ -60,7 +60,6 @@ class CPULLVMCodeGen : public IRVisitor {
   std::unique_ptr<Module> module;
   llvm::Function *func;
   llvm::Constant *func_printf;
-  std::unique_ptr<llvm::legacy::FunctionPassManager> fpm;
   std::unique_ptr<llvm::orc::LLVMJIT> jit;
 
   llvm::ExitOnError exit_on_err;
@@ -103,32 +102,11 @@ class CPULLVMCodeGen : public IRVisitor {
     module->print(errs(), nullptr);
     TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
 
-    // Create a new pass manager attached to it.
-    fpm = llvm::make_unique<legacy::FunctionPassManager>(module.get());
-
-    // Do simple "peephole" optimizations and bit-twiddling optzns.
-    fpm->add(createInstructionCombiningPass());
-    // Reassociate expressions.
-    fpm->add(createReassociatePass());
-    // Eliminate Common SubExpressions.
-    fpm->add(createGVNPass());
-    // Simplify the control flow graph (deleting unreachable blocks, etc).
-    fpm->add(createCFGSimplificationPass());
-
-    fpm->doInitialization();
-
-    fpm->run(*func);
-
-    TC_INFO("Module IR Optimized");
-    module->print(errs(), nullptr);
-
     auto handle = jit->addModule(std::move(module));
 
-    // Search the JIT for the __anon_expr symbol.
-    auto ExprSymbol = exit_on_err(jit->lookup("kernel"));
-    TC_ASSERT_INFO(ExprSymbol, "Function not found");
+    auto kernel_symbol = exit_on_err(jit->lookup("kernel"));
+    TC_ASSERT_INFO(kernel_symbol, "Function not found");
 
-    TC_INFO("Calling...");
     /*
     auto addr = ExprSymbol.getAddress();
     if (!addr) {
@@ -137,7 +115,9 @@ class CPULLVMCodeGen : public IRVisitor {
       TC_ERROR("Taichi kernel launch failed.");
     }
     */
-    auto f = (int32(*)())(void *)(ExprSymbol.getAddress());
+
+    auto f = (int32(*)())(void *)(kernel_symbol.getAddress());
+    f();
 
     TC_INFO("Exiting...");
 

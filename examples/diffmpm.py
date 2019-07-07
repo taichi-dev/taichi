@@ -82,7 +82,6 @@ def p2g(f: ti.i32):
          0.5 * ti.sqr(fx - 0.5)]
     new_F = (ti.Matrix.diag(dim=2, val=1) + dt * C[f, p]) @ F[f, p]
     F[f + 1, p] = new_F
-
     J = ti.determinant(new_F)
     r, s = ti.polar_decompose(new_F)
     cauchy = 2 * mu * (new_F - r) @ ti.transposed(new_F) + \

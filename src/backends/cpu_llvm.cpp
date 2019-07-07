@@ -90,6 +90,16 @@ class CPULLVMCodeGen : public IRVisitor {
     // func_printf = module->getOrInsertFunction("printf");
     func_printf = Function::Create(func_printf_type, Function::ExternalLinkage,
                                    "printf", module.get());
+    std::vector<llvm::Type *> members;
+    for (int i = 0; i < 10; i++) {
+      members.push_back(llvm::Type::getInt8Ty(llvm_context));
+    }
+    auto stru = llvm::StructType::create(llvm_context, members, "test_struct");
+    auto ft_test = llvm::FunctionType::get(stru, stru, true);
+    auto test_function = llvm::Function::Create(
+        ft_test, llvm::Function::ExternalLinkage, "test_function", module.get());
+
+    
   }
 
   void gen(IRNode *node) {
@@ -259,9 +269,6 @@ class CPULLVMCodeGen : public IRVisitor {
 
   void visit(PrintStmt *stmt) {
     TC_ASSERT(stmt->width() == 1);
-    // auto format = llvm::ConstantDataArray::getString(llvm_context,
-    //                                                  stmt->str.c_str(),
-    //                                                  true);
     std::vector<Value *> args;
     std::string format;
     if (stmt->stmt->ret_type.data_type == DataType::i32) {

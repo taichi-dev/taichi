@@ -22,7 +22,7 @@ class UnifiedAllocator {
   std::size_t size{};
   bool gpu{};
 
-  // put these two on the unified memroy so that GPU can have access
+  // put these two on the unified memory so that GPU can have access
  public:
   void *data;
   void **head{};

@@ -2,6 +2,7 @@
 
 // https://llvm.org/docs/tutorial/BuildingAJIT2.html
 
+#include "util.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"
@@ -20,10 +21,12 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include <memory>
 
-namespace llvm {
-namespace orc {
+TLANG_NAMESPACE_BEGIN
 
-class LLVMJIT {
+using namespace llvm;
+using namespace llvm::orc;
+
+class TaichiLLVMJIT {
  private:
   ExecutionSession ES;
   RTDyldObjectLinkingLayer ObjectLayer;
@@ -35,7 +38,7 @@ class LLVMJIT {
   ThreadSafeContext Ctx;
 
  public:
-  LLVMJIT(JITTargetMachineBuilder JTMB, DataLayout DL)
+  TaichiLLVMJIT(JITTargetMachineBuilder JTMB, DataLayout DL)
       : ObjectLayer(ES,
                     []() { return llvm::make_unique<SectionMemoryManager>(); }),
         CompileLayer(ES, ObjectLayer, ConcurrentIRCompiler(std::move(JTMB))),
@@ -55,7 +58,7 @@ class LLVMJIT {
     return *Ctx.getContext();
   }
 
-  static Expected<std::unique_ptr<LLVMJIT>> Create() {
+  static Expected<std::unique_ptr<TaichiLLVMJIT>> Create() {
     auto JTMB = JITTargetMachineBuilder::detectHost();
 
     if (!JTMB)
@@ -65,7 +68,7 @@ class LLVMJIT {
     if (!DL)
       return DL.takeError();
 
-    return llvm::make_unique<LLVMJIT>(std::move(*JTMB), std::move(*DL));
+    return llvm::make_unique<TaichiLLVMJIT>(std::move(*JTMB), std::move(*DL));
   }
 
   Error addModule(std::unique_ptr<Module> M) {
@@ -103,5 +106,4 @@ class LLVMJIT {
   }
 };
 
-}  // end namespace orc
-}  // end namespace llvm
+TLANG_NAMESPACE_END

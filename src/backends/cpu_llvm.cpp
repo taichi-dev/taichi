@@ -49,61 +49,57 @@ TLANG_NAMESPACE_BEGIN
 
 using namespace llvm;
 
-LLVMContext llvm_context;
-
 class CPULLVMCodeGen : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
   CodeGenBase *codegen;
   Program::Kernel *kernel;
+  llvm::LLVMContext *llvm_context;
   llvm::IRBuilder<> builder;
   std::unique_ptr<Module> module;
   llvm::Function *func;
   llvm::Constant *func_printf;
-  std::unique_ptr<llvm::orc::LLVMJIT> jit;
+  TaichiLLVMJIT *jit;
 
   llvm::ExitOnError exit_on_err;
 
-  CPULLVMCodeGen(CodeGenBase *codegen) : builder(llvm_context) {
-    llvm::InitializeNativeTarget();
-    llvm::InitializeNativeTargetAsmPrinter();
-    llvm::InitializeNativeTargetAsmParser();
-
-    module = llvm::make_unique<Module>("taichi kernel", llvm_context);
+  CPULLVMCodeGen(CodeGenBase *codegen)
+      : llvm_context(get_current_program().llvm_context.ctx.get()),
+        builder(*llvm_context) {
+    module = llvm::make_unique<Module>("taichi kernel", *llvm_context);
     current_struct_for = nullptr;
     // func = module->getFunction("test");
 
     std::vector<Type *> args(0);
     llvm::FunctionType *FT =
-        llvm::FunctionType::get(Type::getInt32Ty(llvm_context), args, false);
+        llvm::FunctionType::get(Type::getInt32Ty(*llvm_context), args, false);
 
     func =
         Function::Create(FT, Function::ExternalLinkage, "kernel", module.get());
 
-    jit = exit_on_err(llvm::orc::LLVMJIT::Create());
+    jit = get_current_program().llvm_context.jit.get();
 
     module->setDataLayout(jit->getDataLayout());
 
     auto func_printf_type = llvm::FunctionType::get(
-        IntegerType::getInt32Ty(llvm_context),
-        PointerType::get(Type::getInt8Ty(llvm_context), 0), true);
+        IntegerType::getInt32Ty(*llvm_context),
+        PointerType::get(Type::getInt8Ty(*llvm_context), 0), true);
     // func_printf = module->getOrInsertFunction("printf");
     func_printf = Function::Create(func_printf_type, Function::ExternalLinkage,
                                    "printf", module.get());
     std::vector<llvm::Type *> members;
     for (int i = 0; i < 10; i++) {
-      members.push_back(llvm::Type::getInt8Ty(llvm_context));
+      members.push_back(llvm::Type::getInt8Ty(*llvm_context));
     }
-    auto stru = llvm::StructType::create(llvm_context, members, "test_struct");
+    auto stru = llvm::StructType::create(*llvm_context, members, "test_struct");
     auto ft_test = llvm::FunctionType::get(stru, stru, true);
-    auto test_function = llvm::Function::Create(
-        ft_test, llvm::Function::ExternalLinkage, "test_function", module.get());
-
-    
+    auto test_function =
+        llvm::Function::Create(ft_test, llvm::Function::ExternalLinkage,
+                               "test_function", module.get());
   }
 
   void gen(IRNode *node) {
-    BasicBlock *bb = BasicBlock::Create(llvm_context, "entry", func);
+    BasicBlock *bb = BasicBlock::Create(*llvm_context, "entry", func);
     builder.SetInsertPoint(bb);
     node->accept(this);
     builder.CreateRet(const_int32(0));
@@ -155,7 +151,7 @@ class CPULLVMCodeGen : public IRVisitor {
   void visit(AllocaStmt *stmt) {
     TC_ASSERT(stmt->width() == 1);
     if (stmt->ret_type.data_type == DataType::i32) {
-      stmt->value = builder.CreateAlloca(llvm::Type::getInt32Ty(llvm_context),
+      stmt->value = builder.CreateAlloca(llvm::Type::getInt32Ty(*llvm_context),
                                          (unsigned)0);
     } else {
       TC_NOT_IMPLEMENTED
@@ -187,13 +183,13 @@ class CPULLVMCodeGen : public IRVisitor {
 
   llvm::Type *llvm_type(DataType dt) {
     if (dt == DataType::i32) {
-      return llvm::Type::getInt32Ty(llvm_context);
+      return llvm::Type::getInt32Ty(*llvm_context);
     } else if (dt == DataType::i1) {
-      return llvm::Type::getInt1Ty(llvm_context);
+      return llvm::Type::getInt1Ty(*llvm_context);
     } else if (dt == DataType::f32) {
-      return llvm::Type::getFloatTy(llvm_context);
+      return llvm::Type::getFloatTy(*llvm_context);
     } else if (dt == DataType::f64) {
-      return llvm::Type::getDoubleTy(llvm_context);
+      return llvm::Type::getDoubleTy(*llvm_context);
     } else {
       TC_NOT_IMPLEMENTED;
     }
@@ -290,11 +286,11 @@ class CPULLVMCodeGen : public IRVisitor {
     TC_ASSERT(stmt->width() == 1);
     auto val = stmt->val[0];
     if (val.dt == DataType::f32) {
-      stmt->value =
-          llvm::ConstantFP::get(llvm_context, llvm::APFloat(val.val_float32()));
+      stmt->value = llvm::ConstantFP::get(*llvm_context,
+                                          llvm::APFloat(val.val_float32()));
     } else if (val.dt == DataType::i32) {
       stmt->value = llvm::ConstantInt::get(
-          llvm_context, llvm::APInt(32, val.val_int32(), true));
+          *llvm_context, llvm::APInt(32, val.val_int32(), true));
     } else {
       TC_NOT_IMPLEMENTED;
     }
@@ -327,14 +323,14 @@ class CPULLVMCodeGen : public IRVisitor {
   }
 
   llvm::Value *const_int32(int32 val) {
-    return llvm::ConstantInt::get(llvm_context, llvm::APInt(32, val, true));
+    return llvm::ConstantInt::get(*llvm_context, llvm::APInt(32, val, true));
   }
 
   void visit(RangeForStmt *for_stmt) {
     // auto entry = builder.GetInsertBlock();
 
-    BasicBlock *body = BasicBlock::Create(llvm_context, "loop_body", func);
-    BasicBlock *after_loop = BasicBlock::Create(llvm_context, "block", func);
+    BasicBlock *body = BasicBlock::Create(*llvm_context, "loop_body", func);
+    BasicBlock *after_loop = BasicBlock::Create(*llvm_context, "block", func);
     builder.CreateStore(const_int32(0), for_stmt->loop_var->value);
     builder.CreateBr(body);
 

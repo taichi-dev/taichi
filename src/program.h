@@ -6,6 +6,7 @@
 #include "util.h"
 #include "snode.h"
 #include "ir.h"
+#include "taichi_llvm_context.h"
 #include <dlfcn.h>
 
 TLANG_NAMESPACE_BEGIN
@@ -21,6 +22,7 @@ TC_FORCE_INLINE Program &get_current_program() {
 class Program {
  public:
   // Should be copiable
+  // TODO: move it outside Program
   class Kernel {
    public:
     std::unique_ptr<IRNode> ir_holder;
@@ -104,6 +106,7 @@ class Program {
   CompileConfig config;
   CPUProfiler cpu_profiler;
   Context context;
+  TaichiLLVMContext llvm_context;
   bool sync;  // device/host synchronized?
 
   std::vector<std::unique_ptr<Kernel>> functions;

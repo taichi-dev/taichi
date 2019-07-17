@@ -23,15 +23,15 @@ class StructCompiler : public CodeGenBase {
     return fmt::format("S{}", snode_count++);
   }
 
-  void visit(SNode &snode);
+  virtual void visit(SNode &snode);
 
-  void generate_leaf_accessors(SNode &snode);
+  virtual void generate_leaf_accessors(SNode &snode);
 
-  void load_accessors(SNode &snode);
+  virtual void load_accessors(SNode &snode);
 
-  void set_parents(SNode &snode);
+  virtual void set_parents(SNode &snode);
 
-  void run(SNode &node);
+  virtual void run(SNode &node);
 };
 
 TLANG_NAMESPACE_END

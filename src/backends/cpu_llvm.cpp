@@ -52,32 +52,32 @@ using namespace llvm;
 class CPULLVMCodeGen : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
-  CodeGenBase *codegen;
-  Program::Kernel *kernel;
   llvm::LLVMContext *llvm_context;
+  TaichiLLVMJIT *jit;
   llvm::IRBuilder<> builder;
   std::unique_ptr<Module> module;
+
+  CodeGenBase *codegen;
+  Program::Kernel *kernel;
   llvm::Function *func;
   llvm::Constant *func_printf;
-  TaichiLLVMJIT *jit;
 
   llvm::ExitOnError exit_on_err;
 
   CPULLVMCodeGen(CodeGenBase *codegen)
       : llvm_context(get_current_program().llvm_context.ctx.get()),
+        jit(get_current_program().llvm_context.jit.get()),
         builder(*llvm_context) {
     module = llvm::make_unique<Module>("taichi kernel", *llvm_context);
     current_struct_for = nullptr;
     // func = module->getFunction("test");
 
     std::vector<Type *> args(0);
-    llvm::FunctionType *FT =
+    auto *FT =
         llvm::FunctionType::get(Type::getInt32Ty(*llvm_context), args, false);
 
     func =
         Function::Create(FT, Function::ExternalLinkage, "kernel", module.get());
-
-    jit = get_current_program().llvm_context.jit.get();
 
     module->setDataLayout(jit->getDataLayout());
 

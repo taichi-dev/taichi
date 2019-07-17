@@ -51,7 +51,7 @@ else()
 endif()
 
 # http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
-find_package(LLVM CONFIG)
+find_package(LLVM CONFIG 8.0)
 if (LLVM_FOUND)
     message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
     message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")

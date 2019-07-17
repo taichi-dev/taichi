@@ -16,6 +16,8 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
  ```
  - Execute `ti test` to run all the tests. It may take a few minutes.
 
+ 
+
 # Global Tensors
  - Every global variable is an N-dimensional tensor. Global scalars are treated as 0-D tensors.
  - Global tensors are accessed using indices, e.g. `x[i, j, k]` if `x` is a 3D tensor. For 0-D tensor, access it as `x[None]`.

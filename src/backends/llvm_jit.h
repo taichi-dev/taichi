@@ -1,8 +1,6 @@
 #pragma once
 
 // https://llvm.org/docs/tutorial/BuildingAJIT2.html
-
-#include "util.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"

@@ -1,5 +1,3 @@
-
-
 # The **Taichi** Programming Language
 ### High-Performance Differentiable Programming on Sparse Data Structures
 
@@ -16,7 +14,8 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
  ```
  - Execute `ti test` to run all the tests. It may take a few minutes.
 
- 
+# LLVM backend
+ - LLVM 8 is needed. Make sure you build from scratch and enable RTTI in LLVM.
 
 # Global Tensors
  - Every global variable is an N-dimensional tensor. Global scalars are treated as 0-D tensors.

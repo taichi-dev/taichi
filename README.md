@@ -5,7 +5,7 @@
 Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.0+ is needed.
 
  - Install `taichi` with the [installation script](https://taichi.readthedocs.io/en/latest/installation.html#ubuntu-arch-linux-and-mac-os-x)
- - [Optional ]If you use the LLVM backend, make sure you have LLVM 8.0.0 with RTTI enabled.
+ - (Optional) If you use the LLVM backend, make sure you have LLVM 8.0.0 built from scratch, with `LLVM_ENABLE_RTTI` on.
  - Execute `ti install https://github.com/yuanming-hu/taichi_lang` to install the DSL project
  - Execute `python3 -m pip install astpretty astor opencv-python`
  - Add the following line to your `~/.bashrc` or `~/.zshrc` for the python frontend.
@@ -13,9 +13,6 @@ Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.
  export PYTHONPATH=$TAICHI_REPO_DIR/projects/taichi_lang/python:$PYTHONPATH
  ```
  - Execute `ti test` to run all the tests. It may take a few minutes.
-
-# LLVM backend
- - LLVM 8 is needed. Make sure you build from scratch and enable RTTI in LLVM.
 
 # Global Tensors
  - Every global variable is an N-dimensional tensor. Global scalars are treated as 0-D tensors.

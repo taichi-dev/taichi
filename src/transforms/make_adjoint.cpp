@@ -210,7 +210,8 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(PrintStmt *print_stmt) override {
-    TC_NOT_IMPLEMENTED
+    // do nothing
+    return;
   }
 
   void visit(ConstStmt *const_stmt) override {

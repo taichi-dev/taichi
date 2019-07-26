@@ -26,7 +26,6 @@ TLANG_NAMESPACE_BEGIN
 static llvm::ExitOnError exit_on_err;
 
 TaichiLLVMContext::TaichiLLVMContext() {
-  return;
   llvm::InitializeNativeTarget();
   llvm::InitializeNativeTargetAsmPrinter();
   llvm::InitializeNativeTargetAsmParser();

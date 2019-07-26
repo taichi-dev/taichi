@@ -93,6 +93,11 @@ void StructCompiler::compile(SNode &snode) {
   if (snode.has_null()) {
     ambient_snodes.push_back(&snode);
   }
+
+  if (snode.type != SNodeType::indirect && snode.type != SNodeType::place &&
+      snode.ch.empty()) {
+    TC_ERROR("Non-place node should have at least one child.");
+  }
 }
 
 void StructCompiler::codegen(SNode &snode) {

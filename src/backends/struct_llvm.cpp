@@ -9,53 +9,35 @@ StructCompilerLLVM::StructCompilerLLVM() : StructCompiler() {
 
 void StructCompilerLLVM::codegen(SNode &snode) {
   auto type = snode.type;
+  llvm::Type *llvm_type = nullptr;
 
-  if (snode.type != SNodeType::indirect && snode.type != SNodeType::place &&
-      snode.ch.empty()) {
-    TC_ERROR("Non-place node should have at least one child.");
-  }
+  Program *prog = &get_current_program();
+  auto ctx = prog->llvm_context.ctx.get();
 
   // create children type that supports forking...
-  emit("struct {}_ch {{", snode.node_type_name);
-  for (int i = 0; i < (int)snode.ch.size(); i++) {
-    emit("{} member{};", snode.ch[i]->node_type_name, i);
+
+  std::vector<llvm::Type *> ch_types;
+  for (int i = 0; i < snode.ch.size(); i++) {
+    auto ch = llvm_types[snode.ch[i].get()];
+    ch_types.push_back(ch);
   }
-  if (snode.ch.size() == 1 && snode.ch[0]->type == SNodeType::place) {
-    emit("TC_DEVICE {}_ch({} v) {{*get0()=v;}}", snode.node_type_name,
-         snode.ch[0]->node_type_name);
-    emit("TC_DEVICE {}_ch() = default;", snode.node_type_name);
-  }
-  for (int i = 0; i < (int)snode.ch.size(); i++) {
-    emit("TC_DEVICE {} *get{}() {{return &member{};}} ",
-         snode.ch[i]->node_type_name, i, i);
-  }
-  emit("}};");
+
+  auto ch_type = llvm::StructType::get(*ctx, ch_types);
 
   if (type == SNodeType::dense) {
-    emit("using {} = dense<{}_ch, {}, {}, {}>;", snode.node_type_name,
-         snode.node_type_name, snode.n,
-         snode._morton ? snode.num_active_indices : 1, snode._bitmasked);
+    TC_ASSERT(snode._bitmasked == false);
+    TC_ASSERT(snode._morton == false);
+    llvm_type = llvm::ArrayType::get(ch_type, 1 << snode.total_num_bits);
   } else if (type == SNodeType::root) {
-    emit("using {} = layout_root<{}_ch>;", snode.node_type_name,
-         snode.node_type_name);
-  } else if (type == SNodeType::dynamic) {
-    emit("using {} = dynamic<{}_ch, {}>;", snode.node_type_name,
-         snode.node_type_name, snode.n);
-  } else if (type == SNodeType::indirect) {
-    emit("using {} = indirect<{}_ch>;", snode.node_type_name, snode.n);
-  } else if (type == SNodeType::pointer) {
-    emit("using {} = pointer<{}_ch>;", snode.node_type_name,
-         snode.node_type_name);
-  } else if (type == SNodeType::hash) {
-    emit("using {} = hash<{}_ch>;", snode.node_type_name, snode.node_type_name);
+    llvm_type = ch_type;
   } else if (type == SNodeType::place) {
-    emit(
-        "struct {} {{ using val_type = {}; val_type val; TC_DEVICE operator "
-        "{}() {{return val;}} "
-        "TC_DEVICE {}(){{}} TC_DEVICE {}({} val) "
-        ": val(val){{ }} }};",
-        snode.node_type_name, snode.data_type_name(), snode.data_type_name(),
-        snode.node_type_name, snode.node_type_name, snode.data_type_name());
+    if (snode.dt == DataType::f32) {
+      llvm_type = llvm::Type::getFloatTy(*ctx);
+    } else if (snode.dt == DataType::i32) {
+      llvm_type = llvm::Type::getInt32Ty(*ctx);
+    } else {
+      TC_NOT_IMPLEMENTED
+    }
   } else {
     TC_P(snode.type_name());
     TC_NOT_IMPLEMENTED;
@@ -71,6 +53,9 @@ void StructCompilerLLVM::codegen(SNode &snode) {
   } else if (snode.type == SNodeType::place) {
     emit("{} {}_ambient;", snode.node_type_name, snode.node_type_name);
   }
+
+  TC_ASSERT(llvm_type != nullptr);
+  llvm_types[&snode] = llvm_type;
 }
 
 void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
@@ -227,6 +212,18 @@ void StructCompilerLLVM::run(SNode &node) {
   set_parents(node);
   // bottom to top
   compile(node);
+
+  Program *prog = &get_current_program();
+  auto ctx = prog->llvm_context.ctx.get();
+  auto module = llvm::make_unique<Module>("taichi kernel", *ctx);
+
+  auto var = new llvm::GlobalVariable(*module, llvm_types[&root], false,
+                                      llvm::GlobalVariable::CommonLinkage, 0);
+
+  TC_INFO("Struct Module IR");
+  module->print(errs(), nullptr);
+
+  exit(0);
 
   for (int i = 0; i < (int)snodes.size(); i++) {
     // if (snodes[i]->type != SNodeType::place)

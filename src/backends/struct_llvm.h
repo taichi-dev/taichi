@@ -1,10 +1,13 @@
 #include "struct.h"
+#include "llvm_jit.h"
 
 TLANG_NAMESPACE_BEGIN
 
 class StructCompilerLLVM : public StructCompiler {
  public:
   StructCompilerLLVM();
+
+  std::map<SNode *, llvm::Type *> llvm_types;
 
   virtual void codegen(SNode &snode) override;
 

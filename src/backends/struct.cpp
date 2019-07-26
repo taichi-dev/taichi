@@ -88,6 +88,14 @@ void StructCompiler::visit(SNode &snode) {
 
   emit("");
   snode.node_type_name = create_snode();
+  codegen(snode);
+
+  if (snode.has_null()) {
+    ambient_snodes.push_back(&snode);
+  }
+}
+
+void StructCompiler::codegen(SNode &snode) {
   auto type = snode.type;
 
   if (snode.type != SNodeType::indirect && snode.type != SNodeType::place &&
@@ -148,7 +156,6 @@ void StructCompiler::visit(SNode &snode) {
     }
     emit("{}::child_type {}_ambient;", snode.node_type_name,
          snode.node_type_name);
-    ambient_snodes.push_back(&snode);
   } else if (snode.type == SNodeType::place) {
     emit("{} {}_ambient;", snode.node_type_name, snode.node_type_name);
   }

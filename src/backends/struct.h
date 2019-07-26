@@ -25,6 +25,8 @@ class StructCompiler : public CodeGenBase {
 
   virtual void visit(SNode &snode);
 
+  virtual void codegen(SNode &snode);
+
   virtual void generate_leaf_accessors(SNode &snode);
 
   virtual void load_accessors(SNode &snode);

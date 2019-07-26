@@ -6,7 +6,7 @@ class StructCompilerLLVM : public StructCompiler {
  public:
   StructCompilerLLVM();
 
-  virtual void visit(SNode &snode) override;
+  virtual void codegen(SNode &snode) override;
 
   virtual void generate_leaf_accessors(SNode &snode) override;
 

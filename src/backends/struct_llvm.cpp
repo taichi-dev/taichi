@@ -7,62 +7,7 @@ TLANG_NAMESPACE_BEGIN
 StructCompilerLLVM::StructCompilerLLVM() : StructCompiler() {
 }
 
-void StructCompilerLLVM::visit(SNode &snode) {
-  snodes.push_back(&snode);
-  for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {
-    auto &ch = snode.ch[ch_id];
-    for (int i = 0; i < max_num_indices; i++) {
-      bool found = false;
-      for (int k = 0; k < max_num_indices; k++) {
-        if (snode.physical_index_position[k] == i) {
-          found = true;
-          break;
-        }
-      }
-      if (found)
-        continue;
-      if (snode.extractors[i].active) {
-        snode.physical_index_position[snode.num_active_indices++] = i;
-      }
-    }
-    std::memcpy(ch->physical_index_position, snode.physical_index_position,
-                sizeof(snode.physical_index_position));
-    ch->num_active_indices = snode.num_active_indices;
-    visit(*ch);
-
-    int total_bits_start_inferred = ch->total_bit_start + ch->total_num_bits;
-    if (ch_id == 0) {
-      snode.total_bit_start = total_bits_start_inferred;
-    } else if (snode.parent != nullptr) {  // root is ok
-      // TC_ASSERT(snode.total_bit_start == total_bits_start_inferred);
-    }
-    // infer extractors
-    int acc_offsets = 0;
-    for (int i = max_num_indices - 1; i >= 0; i--) {
-      int inferred = ch->extractors[i].start + ch->extractors[i].num_bits;
-      if (ch_id == 0) {
-        snode.extractors[i].start = inferred;
-        snode.extractors[i].acc_offset = acc_offsets;
-      } else if (snode.parent != nullptr) {  // root is OK
-        /*
-        TC_ASSERT_INFO(snode.extractors[i].start == inferred,
-                       "Inconsistent bit configuration");
-        TC_ASSERT_INFO(snode.extractors[i].dest_offset ==
-                           snode.total_bit_start + acc_offsets,
-                       "Inconsistent bit configuration");
-                       */
-      }
-      acc_offsets += snode.extractors[i].num_bits;
-    }
-  }
-
-  snode.total_num_bits = 0;
-  for (int i = 0; i < max_num_indices; i++) {
-    snode.total_num_bits += snode.extractors[i].num_bits;
-  }
-
-  emit("");
-  snode.node_type_name = create_snode();
+void StructCompilerLLVM::codegen(SNode &snode) {
   auto type = snode.type;
 
   if (snode.type != SNodeType::indirect && snode.type != SNodeType::place &&
@@ -123,7 +68,6 @@ void StructCompilerLLVM::visit(SNode &snode) {
     }
     emit("{}::child_type {}_ambient;", snode.node_type_name,
          snode.node_type_name);
-    ambient_snodes.push_back(&snode);
   } else if (snode.type == SNodeType::place) {
     emit("{} {}_ambient;", snode.node_type_name, snode.node_type_name);
   }
@@ -282,7 +226,7 @@ void StructCompilerLLVM::set_parents(SNode &snode) {
 void StructCompilerLLVM::run(SNode &node) {
   set_parents(node);
   // bottom to top
-  visit(node);
+  compile(node);
 
   for (int i = 0; i < (int)snodes.size(); i++) {
     // if (snodes[i]->type != SNodeType::place)
@@ -396,6 +340,14 @@ void StructCompilerLLVM::run(SNode &node) {
   profiler_print = load_function<void (*)()>("profiler_print");
   profiler_clear = load_function<void (*)()>("profiler_clear");
   load_accessors(node);
+}
+
+std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm) {
+  if (use_llvm) {
+    return std::make_unique<StructCompilerLLVM>();
+  } else {
+    return std::make_unique<StructCompiler>();
+  }
 }
 
 TLANG_NAMESPACE_END

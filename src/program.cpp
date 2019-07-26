@@ -66,12 +66,12 @@ FunctionType Program::compile(Kernel &kernel) {
 }
 
 void Program::materialize_layout() {
-  StructCompiler scomp;
-  scomp.run(root);
-  layout_fn = scomp.get_source_path();
-  data_structure = scomp.creator();
-  profiler_print_gpu = scomp.profiler_print;
-  profiler_clear_gpu = scomp.profiler_clear;
+  std::unique_ptr<StructCompiler> scomp = StructCompiler::make(config.use_llvm);
+  scomp->run(root);
+  layout_fn = scomp->get_source_path();
+  data_structure = scomp->creator();
+  profiler_print_gpu = scomp->profiler_print;
+  profiler_clear_gpu = scomp->profiler_clear;
 }
 
 void Program::synchronize() {

@@ -23,8 +23,10 @@ class StructCompiler : public CodeGenBase {
     return fmt::format("S{}", snode_count++);
   }
 
-  virtual void visit(SNode &snode);
+  // propagate root-to-leaf for a well-formed data structure
+  virtual void compile(SNode &snode);
 
+  // generate C++/llvm IR
   virtual void codegen(SNode &snode);
 
   virtual void generate_leaf_accessors(SNode &snode);
@@ -34,6 +36,8 @@ class StructCompiler : public CodeGenBase {
   virtual void set_parents(SNode &snode);
 
   virtual void run(SNode &node);
+
+  static std::unique_ptr<StructCompiler> make(bool use_llvm);
 };
 
 TLANG_NAMESPACE_END

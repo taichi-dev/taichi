@@ -21,7 +21,7 @@ StructCompiler::StructCompiler() : CodeGenBase(), loopgen(this) {
   emit("\n");
 }
 
-void StructCompiler::visit(SNode &snode) {
+void StructCompiler::compile(SNode &snode) {
   snodes.push_back(&snode);
   // TC_P(snode.type_name());
   for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {
@@ -50,7 +50,7 @@ void StructCompiler::visit(SNode &snode) {
     std::memcpy(ch->physical_index_position, snode.physical_index_position,
                 sizeof(snode.physical_index_position));
     ch->num_active_indices = snode.num_active_indices;
-    visit(*ch);
+    compile(*ch);
 
     // TC_P(ch->type_name());
     int total_bits_start_inferred = ch->total_bit_start + ch->total_num_bits;
@@ -314,7 +314,7 @@ void StructCompiler::set_parents(SNode &snode) {
 void StructCompiler::run(SNode &node) {
   set_parents(node);
   // bottom to top
-  visit(node);
+  compile(node);
 
   for (int i = 0; i < (int)snodes.size(); i++) {
     // if (snodes[i]->type != SNodeType::place)

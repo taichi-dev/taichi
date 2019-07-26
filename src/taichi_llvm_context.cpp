@@ -26,9 +26,14 @@ TLANG_NAMESPACE_BEGIN
 static llvm::ExitOnError exit_on_err;
 
 TaichiLLVMContext::TaichiLLVMContext() {
-  llvm::InitializeNativeTarget();
-  llvm::InitializeNativeTargetAsmPrinter();
-  llvm::InitializeNativeTargetAsmParser();
+  return;
+  static bool init = false;
+  if (!init) {
+    init = true;
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+    llvm::InitializeNativeTargetAsmParser();
+  }
   ctx = std::make_unique<llvm::LLVMContext>();
   jit = exit_on_err(TaichiLLVMJIT::Create());
 }

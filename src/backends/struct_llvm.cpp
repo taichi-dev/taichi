@@ -1,3 +1,4 @@
+#include <llvm/IR/IRBuilder.h>
 #include "../ir.h"
 #include "../program.h"
 #include "struct_llvm.h"
@@ -81,27 +82,30 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
       llvm::Type *parent_type = llvm_types[&snode];
       llvm::Type *child_type = llvm_types[ch.get()];
       llvm::Type *parent_ptr_type = llvm::PointerType::get(parent_type, 0);
-      llvm::Type *child_ptr_type = llvm::PointerType::get(parent_type, 0);
+      llvm::Type *child_ptr_type = llvm::PointerType::get(child_type, 0);
 
       // std::vector<llvm::Type *> arg_types ;
       auto ft = llvm::FunctionType::get(
           child_ptr_type, {parent_ptr_type, llvm_index_type}, true);
       auto accessor = llvm::Function::Create(
           ft, llvm::Function::ExternalLinkage, "accessor", module.get());
-      emit(
-          "TLANG_ACCESSOR {} *access_{}({} *parent, int i "
-          ") {{",
-          ch->node_type_name, ch->node_type_name, snode.node_type_name);
-      // emit("#if defined(TC_STRUCT)");
-      // emit("parent->activate(i, index);");
-      // emit("#endif");
-      emit("auto lookup = parent->look_up(i); ");
-      if (snode.has_null()) {
-        emit("if (lookup == nullptr) ", snode.node_type_name);
-        emit("return nullptr;");
+      auto bb = BasicBlock::Create(*llvm_ctx, "body", accessor);
+      llvm::IRBuilder<> builder(bb, bb->begin());
+      std::vector<Value *> args;
+      for (auto &arg : accessor->args()) {
+        args.push_back(&arg);
       }
-      emit("return lookup->get{}();", i);
-      emit("}}");
+      llvm::Value *parent_ptr = args[0];
+      llvm::Value *index = args[1];
+      llvm::Value *fork = nullptr;
+
+      if (snode.type == SNodeType::dense) {
+        fork = builder.CreateGEP(parent_ptr, index);
+      } else if (snode.type == SNodeType::root) {
+        fork = parent_ptr;
+      }
+      auto ret = builder.CreateStructGEP(fork, i);
+      builder.CreateRet(ret);
     }
     emit("");
   }

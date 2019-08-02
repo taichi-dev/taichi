@@ -36,4 +36,16 @@ TaichiLLVMContext::TaichiLLVMContext() {
 TaichiLLVMContext::~TaichiLLVMContext() {
 }
 
+llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
+  if (dt == DataType::i32) {
+    return llvm::Type::getInt32Ty(*ctx);
+  } else if (dt == DataType::f32) {
+    return llvm::Type::getFloatTy(*ctx);
+  } else {
+    TC_INFO(data_type_name(dt));
+    TC_NOT_IMPLEMENTED
+  }
+  return nullptr;
+}
+
 TLANG_NAMESPACE_END

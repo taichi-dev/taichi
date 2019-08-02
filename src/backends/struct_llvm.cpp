@@ -8,7 +8,8 @@ TLANG_NAMESPACE_BEGIN
 
 StructCompilerLLVM::StructCompilerLLVM() : StructCompiler() {
   Program *prog = &get_current_program();
-  llvm_ctx = prog->llvm_context.ctx.get();
+  tlctx = &prog->llvm_context;
+  llvm_ctx = tlctx->ctx.get();
   module = llvm::make_unique<Module>("taichi kernel", *llvm_ctx);
 }
 
@@ -87,7 +88,7 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
       auto ft = llvm::FunctionType::get(
           child_ptr_type, {parent_ptr_type, llvm_index_type}, false);
       auto accessor = llvm::Function::Create(
-          ft, llvm::Function::ExternalLinkage, "accessor", module.get());
+          ft, llvm::Function::ExternalLinkage, "chain_accessor", module.get());
       auto bb = BasicBlock::Create(*llvm_ctx, "body", accessor);
       llvm::IRBuilder<> builder(bb, bb->begin());
       std::vector<Value *> args;
@@ -115,6 +116,8 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
 
       TC_WARN_IF(llvm::verifyFunction(*accessor, &errs()),
                  "function verification failed");
+
+      chain_accessors[ch.get()] = accessor;
     }
     emit("");
   }
@@ -132,9 +135,10 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
   verbs[mode_activate] = "activate";
   verbs[mode_query] = "query";
 
-  for (auto mode :
-       {mode_weak_access, mode_strong_access, mode_activate, mode_query}) {
-    if (mode == mode_weak_access && !is_leaf)
+  TC_WARN("TODO: mode_activate, mode_query");
+
+  for (auto mode : {mode_weak_access, mode_strong_access}) {
+    if (mode == mode_weak_access || !is_leaf)
       continue;
     bool is_access = mode == mode_weak_access || mode == mode_strong_access;
     auto verb = verbs[mode];
@@ -146,23 +150,47 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
         "i2=0, "
         "int i3=0) {{",
         ret_type, verb, snode.node_type_name);
-    if (snode._verbose) {
-      emit(
-          "std::cout << \"accessing node {} at \" << i0 << ' ' << i1 << ' ' "
-          "<< i2 << ' ' << i3 << std::endl;",
-          snode.node_type_name);
+    std::vector<llvm::Type *> arg_types{
+        llvm::PointerType::get(llvm_types[&root], 0)};
+    for (int i = 0; i < max_num_args; i++) {
+      arg_types.push_back(llvm_index_type);
+    }
+    auto ft = llvm::FunctionType::get(
+        llvm::PointerType::get(tlctx->get_data_type(snode.dt), 0), arg_types,
+        false);
+    auto accessor = llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
+                                           "leaf_accessor", module.get());
+    auto bb = BasicBlock::Create(*llvm_ctx, "body", accessor);
+    llvm::IRBuilder<> builder(bb, bb->begin());
+    std::vector<Value *> args;
+    for (auto &arg : accessor->args()) {
+      args.push_back(&arg);
+    }
+    args[0]->setName("root_ptr");
+    for (int i = 0; i < max_num_indices; i++) {
+      args[1 + i]->setName(fmt::format("index{}", i));
     }
     emit("int tmp;");
     emit("auto n0 = ({} *)root;", root_type);
+
+    llvm::Value *node = args[0];
     for (int i = 0; i + 1 < (int)stack.size(); i++) {
       emit("tmp = 0;", i);
+      llvm::Value *tmp = llvm::ConstantInt::get(llvm_index_type, 0);
       for (int j = 0; j < max_num_indices; j++) {
         auto e = stack[i]->extractors[j];
         int b = e.num_bits;
         if (b) {
           if (e.num_bits == e.start || max_num_indices != 1) {
+            /*
             emit("tmp = (tmp << {}) + ((i{} >> {}) & ((1 << {}) - 1));",
                  e.num_bits, j, e.start, e.num_bits);
+            */
+            uint32 mask = (1u << e.num_bits) - 1;
+            tmp = builder.CreateShl(tmp, e.num_bits);
+            auto patch = builder.CreateAShr(args[j + 1], e.start);
+            patch = builder.CreateAnd(patch, mask);
+            tmp = builder.CreateAdd(tmp, patch);
           } else {
             TC_WARN("Emitting shortcut indexing");
             emit("tmp = i{};", j);
@@ -199,6 +227,7 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
       }
       emit("auto n{} = access_{}(n{}, tmp);", i + 1,
            stack[i + 1]->node_type_name, i);
+      node = builder.CreateCall(chain_accessors[stack[i + 1]], {node, tmp});
     }
     if (mode == mode_query) {
       emit("return true;");
@@ -207,6 +236,8 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
     }
     emit("}}");
     emit("");
+    // node = builder.
+    builder.CreateRet(node);
   }
 
   for (auto ch : snode.ch) {

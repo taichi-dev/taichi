@@ -3,6 +3,8 @@
 
 namespace llvm {
   class LLVMContext;
+  class Type;
+  class Value;
 }
 
 TLANG_NAMESPACE_BEGIN
@@ -13,6 +15,8 @@ class TaichiLLVMContext {
  public:
   std::unique_ptr<llvm::LLVMContext> ctx;
   std::unique_ptr<TaichiLLVMJIT> jit;
+
+  llvm::Type *get_data_type(DataType dt);
 
   TaichiLLVMContext();
 

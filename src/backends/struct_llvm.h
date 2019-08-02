@@ -7,10 +7,12 @@ class StructCompilerLLVM : public StructCompiler {
  public:
   StructCompilerLLVM();
 
+  TaichiLLVMContext *tlctx;
   llvm::LLVMContext *llvm_ctx;
   std::unique_ptr<llvm::Module> module;
 
   std::map<SNode *, llvm::Type *> llvm_types;
+  std::map<SNode *, llvm::Function *> chain_accessors;
 
   virtual void codegen(SNode &snode) override;
 

@@ -7,6 +7,9 @@ class StructCompilerLLVM : public StructCompiler {
  public:
   StructCompilerLLVM();
 
+  llvm::LLVMContext *llvm_ctx;
+  std::unique_ptr<llvm::Module> module;
+
   std::map<SNode *, llvm::Type *> llvm_types;
 
   virtual void codegen(SNode &snode) override;

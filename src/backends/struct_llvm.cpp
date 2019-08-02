@@ -5,6 +5,9 @@
 TLANG_NAMESPACE_BEGIN
 
 StructCompilerLLVM::StructCompilerLLVM() : StructCompiler() {
+  Program *prog = &get_current_program();
+  llvm_ctx = prog->llvm_context.ctx.get();
+  module = llvm::make_unique<Module>("taichi kernel", *llvm_ctx);
 }
 
 void StructCompilerLLVM::codegen(SNode &snode) {
@@ -64,11 +67,27 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
 
   bool is_leaf = type == SNodeType::place;
 
+  auto llvm_index_type = llvm::Type::getInt32Ty(*llvm_ctx);
+
   if (!is_leaf) {
     // Chain accessors for non-leaf nodes
     TC_ASSERT(snode.ch.size() > 0);
+    TC_ASSERT_INFO(
+        snode.type == SNodeType::dense || snode.type == SNodeType::root,
+        "TODO: deal with child nullptrs when sparse");
     for (int i = 0; i < (int)snode.ch.size(); i++) {
       auto ch = snode.ch[i];
+      llvm::Function *chain_accessor = nullptr;
+      llvm::Type *parent_type = llvm_types[&snode];
+      llvm::Type *child_type = llvm_types[ch.get()];
+      llvm::Type *parent_ptr_type = llvm::PointerType::get(parent_type, 0);
+      llvm::Type *child_ptr_type = llvm::PointerType::get(parent_type, 0);
+
+      // std::vector<llvm::Type *> arg_types ;
+      auto ft = llvm::FunctionType::get(
+          child_ptr_type, {parent_ptr_type, llvm_index_type}, true);
+      auto accessor = llvm::Function::Create(
+          ft, llvm::Function::ExternalLinkage, "accessor", module.get());
       emit(
           "TLANG_ACCESSOR {} *access_{}({} *parent, int i "
           ") {{",
@@ -215,24 +234,12 @@ void StructCompilerLLVM::run(SNode &node) {
 
   Program *prog = &get_current_program();
   auto ctx = prog->llvm_context.ctx.get();
-  auto module = llvm::make_unique<Module>("taichi kernel", *ctx);
 
   auto var = new llvm::GlobalVariable(*module, llvm_types[&root], false,
                                       llvm::GlobalVariable::CommonLinkage, 0);
 
-  TC_INFO("Struct Module IR");
-  module->print(errs(), nullptr);
-
-  exit(0);
-
-  for (int i = 0; i < (int)snodes.size(); i++) {
-    // if (snodes[i]->type != SNodeType::place)
-    emit(
-        "template <> struct SNodeID<{}> {{static constexpr int value = "
-        "{};}};",
-        snodes[i]->node_type_name, snodes[i]->id);
-  }
-
+  // get corner coordinates
+  /*
   for (int i = 0; i < (int)snodes.size(); i++) {
     auto snode = snodes[i];
     emit(
@@ -247,7 +254,10 @@ void StructCompilerLLVM::run(SNode &node) {
     }
     emit("}}");
   }
+  */
 
+  // allocator stat
+  /*
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (snodes[i]->type != SNodeType::place)
       emit(
@@ -262,9 +272,16 @@ void StructCompilerLLVM::run(SNode &node) {
           snodes[i]->node_type_name, snodes[i]->node_type_name);
     }
   }
+  */
 
   root_type = node.node_type_name;
   generate_leaf_accessors(node);
+
+  TC_INFO("Struct Module IR");
+  module->print(errs(), nullptr);
+
+  exit(0);
+
   emit("#if defined(TC_STRUCT)");
   emit("TC_EXPORT void *create_data_structure() {{");
 

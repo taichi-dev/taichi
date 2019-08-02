@@ -1,3 +1,4 @@
+#include "llvm/IR/Verifier.h"
 #include <llvm/IR/IRBuilder.h>
 #include "../ir.h"
 #include "../program.h"
@@ -86,7 +87,7 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
 
       // std::vector<llvm::Type *> arg_types ;
       auto ft = llvm::FunctionType::get(
-          child_ptr_type, {parent_ptr_type, llvm_index_type}, true);
+          child_ptr_type, {parent_ptr_type, llvm_index_type}, false);
       auto accessor = llvm::Function::Create(
           ft, llvm::Function::ExternalLinkage, "accessor", module.get());
       auto bb = BasicBlock::Create(*llvm_ctx, "body", accessor);
@@ -106,6 +107,9 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
       }
       auto ret = builder.CreateStructGEP(fork, i);
       builder.CreateRet(ret);
+
+      TC_WARN_IF(!llvm::verifyFunction(*accessor, &errs()),
+                 "function verification failed");
     }
     emit("");
   }

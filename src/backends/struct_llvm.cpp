@@ -79,13 +79,11 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
         "TODO: deal with child nullptrs when sparse");
     for (int i = 0; i < (int)snode.ch.size(); i++) {
       auto ch = snode.ch[i];
-      llvm::Function *chain_accessor = nullptr;
       llvm::Type *parent_type = llvm_types[&snode];
       llvm::Type *child_type = llvm_types[ch.get()];
       llvm::Type *parent_ptr_type = llvm::PointerType::get(parent_type, 0);
       llvm::Type *child_ptr_type = llvm::PointerType::get(child_type, 0);
 
-      // std::vector<llvm::Type *> arg_types ;
       auto ft = llvm::FunctionType::get(
           child_ptr_type, {parent_ptr_type, llvm_index_type}, false);
       auto accessor = llvm::Function::Create(
@@ -97,18 +95,25 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
         args.push_back(&arg);
       }
       llvm::Value *parent_ptr = args[0];
+
+      args[0]->setName("parent_ptr");
+      args[1]->setName("index");
+
       llvm::Value *index = args[1];
       llvm::Value *fork = nullptr;
 
       if (snode.type == SNodeType::dense) {
-        fork = builder.CreateGEP(parent_ptr, index);
+        fork = builder.CreateGEP(
+            parent_ptr,
+            {llvm::ConstantInt::get(llvm::Type::getInt32Ty(*llvm_ctx), 0),
+             index});
       } else if (snode.type == SNodeType::root) {
         fork = parent_ptr;
       }
       auto ret = builder.CreateStructGEP(fork, i);
       builder.CreateRet(ret);
 
-      TC_WARN_IF(!llvm::verifyFunction(*accessor, &errs()),
+      TC_WARN_IF(llvm::verifyFunction(*accessor, &errs()),
                  "function verification failed");
     }
     emit("");

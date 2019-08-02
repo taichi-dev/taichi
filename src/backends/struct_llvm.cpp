@@ -28,7 +28,9 @@ void StructCompilerLLVM::codegen(SNode &snode) {
     ch_types.push_back(ch);
   }
 
-  auto ch_type = llvm::StructType::get(*ctx, ch_types);
+  auto ch_type =
+      llvm::StructType::create(*ctx, ch_types, snode.node_type_name + "_ch");
+  ch_type->setName(snode.node_type_name + "_ch");
 
   if (type == SNodeType::dense) {
     TC_ASSERT(snode._bitmasked == false);
@@ -88,7 +90,8 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
       auto ft = llvm::FunctionType::get(
           child_ptr_type, {parent_ptr_type, llvm_index_type}, false);
       auto accessor = llvm::Function::Create(
-          ft, llvm::Function::ExternalLinkage, "chain_accessor", module.get());
+          ft, llvm::Function::ExternalLinkage,
+          "chain_accessor_" + snode.get_name(), module.get());
       auto bb = BasicBlock::Create(*llvm_ctx, "body", accessor);
       llvm::IRBuilder<> builder(bb, bb->begin());
       std::vector<Value *> args;
@@ -152,14 +155,15 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
         ret_type, verb, snode.node_type_name);
     std::vector<llvm::Type *> arg_types{
         llvm::PointerType::get(llvm_types[&root], 0)};
-    for (int i = 0; i < max_num_args; i++) {
+    for (int i = 0; i < max_num_indices; i++) {
       arg_types.push_back(llvm_index_type);
     }
     auto ft = llvm::FunctionType::get(
         llvm::PointerType::get(tlctx->get_data_type(snode.dt), 0), arg_types,
         false);
-    auto accessor = llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
-                                           "leaf_accessor", module.get());
+    auto accessor = llvm::Function::Create(
+        ft, llvm::Function::ExternalLinkage,
+        "leaf_accessor_" + snode.node_type_name, module.get());
     auto bb = BasicBlock::Create(*llvm_ctx, "body", accessor);
     llvm::IRBuilder<> builder(bb, bb->begin());
     std::vector<Value *> args;
@@ -238,6 +242,9 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
     emit("");
     // node = builder.
     builder.CreateRet(node);
+
+    TC_WARN_IF(llvm::verifyFunction(*accessor, &errs()),
+               "function verification failed");
   }
 
   for (auto ch : snode.ch) {
@@ -324,8 +331,6 @@ void StructCompilerLLVM::run(SNode &node) {
   TC_INFO("Struct Module IR");
   module->print(errs(), nullptr);
 
-  exit(0);
-
   emit("#if defined(TC_STRUCT)");
   emit("TC_EXPORT void *create_data_structure() {{");
 
@@ -390,14 +395,21 @@ void StructCompilerLLVM::run(SNode &node) {
   // emit("extern CPUProfiler profiler;");
   emit("#endif");
   emit("}} }}");
-  write_source();
+  // write_source();
 
-  generate_binary("-DTC_STRUCT");
+  // generate_binary("-DTC_STRUCT");
+
   load_dll();
+
+  /*
   creator = load_function<void *(*)()>("create_data_structure");
   profiler_print = load_function<void (*)()>("profiler_print");
   profiler_clear = load_function<void (*)()>("profiler_clear");
+  */
+
   load_accessors(node);
+
+  exit(0);
 }
 
 std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm) {

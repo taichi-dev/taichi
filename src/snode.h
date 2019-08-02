@@ -281,6 +281,10 @@ class SNode {
   bool has_grad() const;
 
   SNode *get_grad() const;
+
+  std::string get_name() const {
+    return node_type_name;
+  }
 };
 
 TLANG_NAMESPACE_END

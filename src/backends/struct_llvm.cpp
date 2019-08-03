@@ -90,8 +90,9 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
       auto ft = llvm::FunctionType::get(
           child_ptr_type, {parent_ptr_type, llvm_index_type}, false);
       auto accessor = llvm::Function::Create(
-          ft, llvm::Function::ExternalLinkage,
-          "chain_accessor_" + snode.get_name(), module.get());
+          ft, llvm::Function::InternalLinkage,
+          "chain_accessor_" + ch->get_name(), module.get());
+      accessor->addAttribute(0, llvm::Attribute::get(*llvm_ctx, llvm::Attribute::AlwaysInline));
       auto bb = BasicBlock::Create(*llvm_ctx, "body", accessor);
       llvm::IRBuilder<> builder(bb, bb->begin());
       std::vector<Value *> args;
@@ -245,6 +246,9 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
 
     TC_WARN_IF(llvm::verifyFunction(*accessor, &errs()),
                "function verification failed");
+    TC_P(accessor);
+    TC_P((std::string)accessor->getName());
+    leaf_accessors[&snode] = accessor;
   }
 
   for (auto ch : snode.ch) {
@@ -259,15 +263,20 @@ void StructCompilerLLVM::load_accessors(SNode &snode) {
     load_accessors(*ch);
   }
   if (snode.type == SNodeType::place) {
-    snode.access_func = load_function<SNode::AccessorFunction>(
-        fmt::format("access_{}", snode.node_type_name));
+    llvm::ExitOnError exit_on_err;
+    std::string name = leaf_accessors[&snode]->getName();
+    TC_P(&snode);
+    TC_P(leaf_accessors[&snode]);
+    TC_P(name);
+    snode.access_func = (SNode::AccessorFunction)(
+        exit_on_err(tlctx->jit->lookup(name)).getAddress());
   } else {
-    snode.stat_func = load_function<SNode::StatFunction>(
-        fmt::format("stat_{}", snode.node_type_name));
+    // snode.stat_func = load_function<SNode::StatFunction>(
+    // fmt::format("stat_{}", snode.node_type_name));
   }
   if (snode.has_null()) {
-    snode.clear_func = load_function<SNode::ClearFunction>(
-        fmt::format("clear_{}", snode.node_type_name));
+    // snode.clear_func = load_function<SNode::ClearFunction>(
+    //    fmt::format("clear_{}", snode.node_type_name));
   }
 }
 
@@ -399,7 +408,10 @@ void StructCompilerLLVM::run(SNode &node) {
 
   // generate_binary("-DTC_STRUCT");
 
-  load_dll();
+  module->setDataLayout(tlctx->jit->getDataLayout());
+  auto handle = tlctx->jit->addModule(std::move(module));
+
+  // load_dll();
 
   /*
   creator = load_function<void *(*)()>("create_data_structure");

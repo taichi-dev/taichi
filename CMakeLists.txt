@@ -67,6 +67,7 @@ if (LLVM_FOUND)
             OrcJIT
             RuntimeDyld
             ScalarOpts
+            IPO
             Support
             native
             )

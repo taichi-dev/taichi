@@ -17,6 +17,7 @@
 #include "llvm/Transforms/InstCombine/InstCombine.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
+#include "llvm/Transforms/IPO.h"
 #include <memory>
 
 TLANG_NAMESPACE_BEGIN
@@ -86,14 +87,24 @@ class TaichiLLVMJIT {
     auto FPM = llvm::make_unique<legacy::FunctionPassManager>(TSM.getModule());
 
     // Add some optimizations.
+    // FPM->add(createFunctionInliningPass());
     FPM->add(createInstructionCombiningPass());
     FPM->add(createReassociatePass());
     FPM->add(createGVNPass());
     FPM->add(createCFGSimplificationPass());
+
     FPM->doInitialization();
+
+    /*
+    llvm::ModulePassManager MPM;
+    llvm::ModuleAnalysisManager moduleAnalysisManager;
+    MPM.addPass(createFunctionInliningPass());
+    MPM.run(*TSM.getModule(), moduleAnalysisManager);
+    */
 
     // Run the optimizations over all functions in the module being added to
     // the JIT.
+
     for (auto &F : *TSM.getModule()) {
       FPM->run(F);
       TC_INFO("Function IR Optimized");

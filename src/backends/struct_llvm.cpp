@@ -92,7 +92,8 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
       auto accessor = llvm::Function::Create(
           ft, llvm::Function::InternalLinkage,
           "chain_accessor_" + ch->get_name(), module.get());
-      accessor->addAttribute(0, llvm::Attribute::get(*llvm_ctx, llvm::Attribute::AlwaysInline));
+      accessor->addAttribute(
+          0, llvm::Attribute::get(*llvm_ctx, llvm::Attribute::AlwaysInline));
       auto bb = BasicBlock::Create(*llvm_ctx, "body", accessor);
       llvm::IRBuilder<> builder(bb, bb->begin());
       std::vector<Value *> args;
@@ -246,9 +247,8 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
 
     TC_WARN_IF(llvm::verifyFunction(*accessor, &errs()),
                "function verification failed");
-    TC_P(accessor);
-    TC_P((std::string)accessor->getName());
     leaf_accessors[&snode] = accessor;
+    leaf_accessor_names[&snode] = (std::string)accessor->getName();
   }
 
   for (auto ch : snode.ch) {
@@ -264,10 +264,7 @@ void StructCompilerLLVM::load_accessors(SNode &snode) {
   }
   if (snode.type == SNodeType::place) {
     llvm::ExitOnError exit_on_err;
-    std::string name = leaf_accessors[&snode]->getName();
-    TC_P(&snode);
-    TC_P(leaf_accessors[&snode]);
-    TC_P(name);
+    std::string name = leaf_accessor_names[&snode];
     snode.access_func = (SNode::AccessorFunction)(
         exit_on_err(tlctx->jit->lookup(name)).getAddress());
   } else {

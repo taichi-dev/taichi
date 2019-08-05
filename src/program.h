@@ -112,8 +112,8 @@ class Program {
   std::vector<std::unique_ptr<Kernel>> functions;
   int index_counter;
 
-  void (*profiler_print_gpu)();
-  void (*profiler_clear_gpu)();
+  std::function<void()> profiler_print_gpu;
+  std::function<void()> profiler_clear_gpu;
 
   std::string layout_fn;
 

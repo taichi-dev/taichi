@@ -290,8 +290,6 @@ void StructCompilerLLVM::run(SNode &node) {
   compile(node);
 
   Program *prog = &get_current_program();
-  auto ctx = prog->llvm_context.ctx.get();
-
   auto var = new llvm::GlobalVariable(*module, llvm_types[&root], false,
                                       llvm::GlobalVariable::CommonLinkage, 0);
 
@@ -310,24 +308,6 @@ void StructCompilerLLVM::run(SNode &node) {
            e.start + e.num_bits);
     }
     emit("}}");
-  }
-  */
-
-  // allocator stat
-  /*
-  for (int i = 0; i < (int)snodes.size(); i++) {
-    if (snodes[i]->type != SNodeType::place)
-      emit(
-          "TC_EXPORT AllocatorStat stat_{}() {{return "
-          "Managers::get_allocator<{}>()->get_stat();}} ",
-          snodes[i]->node_type_name, snodes[i]->node_type_name);
-    if (snodes[i]->type == SNodeType::pointer ||
-        snodes[i]->type == SNodeType::hash) {
-      emit(
-          "TC_EXPORT void clear_{}(int flags) {{"
-          "Managers::get_allocator<{}>()->clear(flags);}} ",
-          snodes[i]->node_type_name, snodes[i]->node_type_name);
-    }
   }
   */
 
@@ -364,61 +344,12 @@ void StructCompilerLLVM::run(SNode &node) {
     }
   }
 
-  emit(
-      "auto p = Managers::get_allocator<{}>()->allocate_node({{0, 0, 0, "
-      "0}})->ptr;",
-      root_type);
-
-  emit("return p;}}");
-
-  emit("#if !defined(TLANG_GPU)");
-  // emit("CPUProfiler profiler;");
-  emit("#endif");
-
-  emit("TC_EXPORT void release_data_structure(void *ds) {{delete ({} *)ds;}}",
-       root_type);
-
-  emit("TC_EXPORT void profiler_print()");
-  emit("{{");
-  emit("#if defined(TLANG_GPU)");
-  emit("GPUProfiler::get_instance().print();");
-  emit("#else");
-  // emit("profiler.print();");
-  emit("#endif");
-  emit("}}");
-
-  emit("TC_EXPORT void profiler_clear()");
-  emit("{{");
-  emit("#if defined(TLANG_GPU)");
-  emit("GPUProfiler::get_instance().clear();");
-  emit("#else");
-  // emit("profiler.print();");
-  emit("#endif");
-  emit("}}");
-
-  emit("#endif");
-  emit("#if !defined(TLANG_GPU)");
-  // emit("extern CPUProfiler profiler;");
-  emit("#endif");
-  emit("}} }}");
-  // write_source();
-
-  // generate_binary("-DTC_STRUCT");
 
   module->setDataLayout(tlctx->jit->getDataLayout());
-  auto handle = tlctx->jit->addModule(std::move(module));
-
-  // load_dll();
-
-  /*
-  creator = load_function<void *(*)()>("create_data_structure");
-  profiler_print = load_function<void (*)()>("profiler_print");
-  profiler_clear = load_function<void (*)()>("profiler_clear");
-  */
+  llvm::cantFail(tlctx->jit->addModule(std::move(module)));
 
   load_accessors(node);
 
-  exit(0);
 }
 
 std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm) {

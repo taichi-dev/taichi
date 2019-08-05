@@ -6,14 +6,13 @@ TLANG_NAMESPACE_BEGIN
 
 StructCompiler::StructCompiler() : CodeGenBase(), loopgen(this) {
   creator = [] {
-    TC_NOT_IMPLEMENTED;
+    TC_ERROR("Not Specified");
     return nullptr;
   };
   profiler_clear = [] { TC_NOT_IMPLEMENTED; };
   profiler_print = [] { TC_NOT_IMPLEMENTED; };
 
   snode_count = 0;
-  creator = nullptr;
   if (get_current_program().config.arch == Arch::x86_64)
     suffix = "cpp";
   else

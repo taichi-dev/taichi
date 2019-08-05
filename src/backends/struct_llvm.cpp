@@ -7,6 +7,10 @@
 TLANG_NAMESPACE_BEGIN
 
 StructCompilerLLVM::StructCompilerLLVM() : StructCompiler() {
+  creator = [] {
+    TC_WARN("Data structure creation not implemented");
+    return nullptr;
+  };
   Program *prog = &get_current_program();
   tlctx = &prog->llvm_context;
   llvm_ctx = tlctx->ctx.get();
@@ -344,12 +348,10 @@ void StructCompilerLLVM::run(SNode &node) {
     }
   }
 
-
   module->setDataLayout(tlctx->jit->getDataLayout());
   llvm::cantFail(tlctx->jit->addModule(std::move(module)));
 
   load_accessors(node);
-
 }
 
 std::unique_ptr<StructCompiler> StructCompiler::make(bool use_llvm) {

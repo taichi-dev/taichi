@@ -72,10 +72,8 @@ class CPULLVMCodeGen : public IRVisitor {
     using namespace llvm;
     module = tlctx->clone_struct_module();
     for (auto &f: *module) {
-      f.setName(std::string(f.getName()) + "x");
+      f.setLinkage(Function::PrivateLinkage);
     }
-    // module = std::make_unique<Module>("taichi_kernel", *llvm_context);
-    // module->setSourceFileName("taichi kernel");
     current_struct_for = nullptr;
 
     std::vector<Type *> args{

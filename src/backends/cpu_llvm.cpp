@@ -157,13 +157,24 @@ class CPULLVMCodeGen : public IRVisitor {
            unary_op_type_name(stmt->op_type), stmt->operand->raw_name());
     } else {
       if (stmt->cast_by_value) {
-        emit("const {} {}(cast<{}>({}));", stmt->ret_data_type_name(),
-             stmt->raw_name(), data_type_name(stmt->cast_type),
-             stmt->operand->raw_name());
+        llvm::CastInst::CastOps cast_op;
+        auto from = stmt->operand->ret_type.data_type;
+        auto to = stmt->cast_type;
+        if (from == DataType::f32 && to == DataType::i32) {
+          cast_op = llvm::Instruction::CastOps::FPToSI;
+        } else if (from == DataType::i32 && to == DataType::f32) {
+          cast_op = llvm::Instruction::CastOps::SIToFP;
+        } else {
+          cast_op = llvm::Instruction::CastOps::FPToSI;
+          TC_NOT_IMPLEMENTED;
+        }
+        stmt->value = builder.CreateCast(cast_op, stmt->operand->value,
+                                         tlctx->get_data_type(stmt->cast_type));
       } else {
-        emit("const {} {}(union_cast<{}>({}));", stmt->ret_data_type_name(),
-             stmt->raw_name(), data_type_name(stmt->cast_type),
-             stmt->operand->raw_name());
+        TC_ASSERT(data_type_size(stmt->ret_type.data_type) ==
+                  data_type_size(stmt->cast_type));
+        stmt->value = builder.CreateBitCast(
+            stmt->operand->value, tlctx->get_data_type(stmt->cast_type));
       }
     }
   }

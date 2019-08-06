@@ -293,11 +293,6 @@ void StructCompilerLLVM::run(SNode &node) {
   // bottom to top
   compile(node);
 
-  /*
-  auto var = new llvm::GlobalVariable(*module, llvm_types[&root], false,
-                                      llvm::GlobalVariable::CommonLinkage, 0);
-                                      */
-
   // get corner coordinates
   /*
   for (int i = 0; i < (int)snodes.size(); i++) {

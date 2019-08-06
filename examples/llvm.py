@@ -8,7 +8,7 @@ z, w = ti.var(ti.f32), ti.var(ti.f32)
 val = ti.var(ti.f32)
 
 ti.cfg.use_llvm = True
-# ti.cfg.print_ir = True
+ti.cfg.print_ir = True
 # ti.runtime.print_preprocessed = True
 
 @ti.layout
@@ -25,6 +25,7 @@ print('val', val[0])
 def test():
   a = 0
   for i in range(10):
+    val[i] = i
     if i % 2 == 0:
       a += i
     ti.print(a)

@@ -14,7 +14,7 @@ StructCompilerLLVM::StructCompilerLLVM() : StructCompiler() {
   Program *prog = &get_current_program();
   tlctx = &prog->llvm_context;
   llvm_ctx = tlctx->ctx.get();
-  module = llvm::make_unique<Module>("taichi kernel", *llvm_ctx);
+  module = llvm::make_unique<Module>("taichi struct", *llvm_ctx);
 }
 
 void StructCompilerLLVM::codegen(SNode &snode) {
@@ -354,6 +354,9 @@ void StructCompilerLLVM::run(SNode &node) {
   }
 
   module->setDataLayout(tlctx->jit->getDataLayout());
+
+  tlctx->set_struct_module(module);
+
   llvm::cantFail(tlctx->jit->addModule(std::move(module)));
 
   load_accessors(node);

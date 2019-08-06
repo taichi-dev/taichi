@@ -27,6 +27,7 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Utils.h"
+#include "llvm/Transforms/Utils/Cloning.h"
 #include <algorithm>
 #include <cassert>
 #include <cctype>
@@ -52,6 +53,7 @@ using namespace llvm;
 class CPULLVMCodeGen : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
+  TaichiLLVMContext *tlctx;
   llvm::LLVMContext *llvm_context;
   TaichiLLVMJIT *jit;
   llvm::IRBuilder<> builder;
@@ -62,17 +64,19 @@ class CPULLVMCodeGen : public IRVisitor {
   llvm::Function *func;
   llvm::Constant *func_printf;
 
-  llvm::ExitOnError exit_on_err;
-
   CPULLVMCodeGen(CodeGenBase *codegen)
-      : llvm_context(get_current_program().llvm_context.ctx.get()),
-        jit(get_current_program().llvm_context.jit.get()),
+      : tlctx(&get_current_program().llvm_context),
+        llvm_context(tlctx->ctx.get()),
+        jit(tlctx->jit.get()),
         builder(*llvm_context) {
-    module = llvm::make_unique<Module>("taichi kernel", *llvm_context);
+    using namespace llvm;
+    // module = tlctx->clone_struct_module();
+    module = std::make_unique<Module>("taichi_kernel", *llvm_context);
+    // module->setSourceFileName("taichi kernel");
     current_struct_for = nullptr;
-    // func = module->getFunction("test");
 
-    std::vector<Type *> args(0);
+    std::vector<Type *> args{
+        llvm::PointerType::get(Type::getInt8Ty(*llvm_context), 0)};
     auto *FT =
         llvm::FunctionType::get(Type::getInt32Ty(*llvm_context), args, false);
 
@@ -84,18 +88,8 @@ class CPULLVMCodeGen : public IRVisitor {
     auto func_printf_type = llvm::FunctionType::get(
         IntegerType::getInt32Ty(*llvm_context),
         PointerType::get(Type::getInt8Ty(*llvm_context), 0), true);
-    // func_printf = module->getOrInsertFunction("printf");
     func_printf = Function::Create(func_printf_type, Function::ExternalLinkage,
                                    "printf", module.get());
-    std::vector<llvm::Type *> members;
-    for (int i = 0; i < 10; i++) {
-      members.push_back(llvm::Type::getInt8Ty(*llvm_context));
-    }
-    auto stru = llvm::StructType::create(*llvm_context, members, "test_struct");
-    auto ft_test = llvm::FunctionType::get(stru, stru, true);
-    auto test_function =
-        llvm::Function::Create(ft_test, llvm::Function::ExternalLinkage,
-                               "test_function", module.get());
   }
 
   void gen(IRNode *node) {
@@ -110,20 +104,12 @@ class CPULLVMCodeGen : public IRVisitor {
 
     auto handle = jit->addModule(std::move(module));
 
-    auto kernel_symbol = exit_on_err(jit->lookup("kernel"));
+    auto kernel_symbol = llvm::cantFail(jit->lookup("kernel"));
     TC_ASSERT_INFO(kernel_symbol, "Function not found");
 
-    /*
-    auto addr = ExprSymbol.getAddress();
-    if (!addr) {
-      llvm::logAllUnhandledErrors(addr.takeError(), llvm::errs(),
-                                  "taichi llvm kernel execution error:\n");
-      TC_ERROR("Taichi kernel launch failed.");
-    }
-    */
-
-    auto f = (int32(*)())(void *)(kernel_symbol.getAddress());
-    f();
+    auto f = (int32(*)(void *))(void *)(kernel_symbol.getAddress());
+    auto context = get_current_program().get_context();
+    f(&context);
 
     TC_INFO("Exiting...");
 
@@ -627,12 +613,14 @@ class CPULLVMCodeGen : public IRVisitor {
   }
 
   void visit(OffsetAndExtractBitsStmt *stmt) {
+    TC_NOT_IMPLEMENTED
     emit(R"(auto {} = ((({} + {}) >> {}) & ((1 << {}) - 1));)",
          stmt->raw_name(), stmt->offset, stmt->input->raw_name(),
          stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
   }
 
   void visit(LinearizeStmt *stmt) {
+    TC_NOT_IMPLEMENTED
     std::string val = "0";
     for (int i = 0; i < (int)stmt->inputs.size(); i++) {
       val = fmt::format("({}) * {} + {}", val, stmt->strides[i],
@@ -642,6 +630,7 @@ class CPULLVMCodeGen : public IRVisitor {
   }
 
   void visit(IntegerOffsetStmt *stmt) {
+    TC_NOT_IMPLEMENTED
     if (stmt->input->is<GetChStmt>() &&
         stmt->input->as<GetChStmt>()->output_snode->type == SNodeType::place) {
       auto input = stmt->input->as<GetChStmt>();

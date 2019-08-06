@@ -1,3 +1,4 @@
+#include <llvm/Transforms/Utils/Cloning.h>
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/BasicBlock.h"
@@ -46,6 +47,22 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     TC_NOT_IMPLEMENTED
   }
   return nullptr;
+}
+
+std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
+  TC_ASSERT(struct_module);
+  return llvm::CloneModule(*struct_module);
+}
+
+void TaichiLLVMContext::set_struct_module(
+    const std::unique_ptr<llvm::Module> &module) {
+  TC_ASSERT(module);
+  struct_module = llvm::CloneModule(*module);
+}
+
+std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module(
+    const std::unique_ptr<llvm::Module> &module_in) {
+
 }
 
 TLANG_NAMESPACE_END

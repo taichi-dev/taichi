@@ -70,8 +70,11 @@ class CPULLVMCodeGen : public IRVisitor {
         jit(tlctx->jit.get()),
         builder(*llvm_context) {
     using namespace llvm;
-    // module = tlctx->clone_struct_module();
-    module = std::make_unique<Module>("taichi_kernel", *llvm_context);
+    module = tlctx->clone_struct_module();
+    for (auto &f: *module) {
+      f.setName(std::string(f.getName()) + "x");
+    }
+    // module = std::make_unique<Module>("taichi_kernel", *llvm_context);
     // module->setSourceFileName("taichi kernel");
     current_struct_for = nullptr;
 
@@ -102,7 +105,7 @@ class CPULLVMCodeGen : public IRVisitor {
     module->print(errs(), nullptr);
     TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
 
-    auto handle = jit->addModule(std::move(module));
+    llvm::cantFail(jit->addModule(std::move(module)));
 
     auto kernel_symbol = llvm::cantFail(jit->lookup("kernel"));
     TC_ASSERT_INFO(kernel_symbol, "Function not found");

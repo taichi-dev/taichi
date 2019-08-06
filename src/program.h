@@ -102,6 +102,8 @@ class Program {
   Kernel *current_kernel;
   SNode *current_snode;
   SNode *snode_root;
+  // pointer to the data structure. assigned to context.buffers[0] during kernel
+  // launches
   void *data_structure;
   CompileConfig config;
   CPUProfiler cpu_profiler;

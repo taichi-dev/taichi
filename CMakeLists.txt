@@ -59,15 +59,12 @@ if (LLVM_FOUND)
     add_definitions(${LLVM_DEFINITIONS})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTLANG_WITH_LLVM")
     llvm_map_components_to_libnames(llvm_libs
-            Analysis
             Core
             ExecutionEngine
             InstCombine
-            Object
             OrcJIT
             RuntimeDyld
             ScalarOpts
-            IPO
             Support
             native
             )

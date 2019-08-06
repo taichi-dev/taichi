@@ -293,9 +293,10 @@ void StructCompilerLLVM::run(SNode &node) {
   // bottom to top
   compile(node);
 
-  Program *prog = &get_current_program();
+  /*
   auto var = new llvm::GlobalVariable(*module, llvm_types[&root], false,
                                       llvm::GlobalVariable::CommonLinkage, 0);
+                                      */
 
   // get corner coordinates
   /*
@@ -315,16 +316,20 @@ void StructCompilerLLVM::run(SNode &node) {
   }
   */
 
+  // TODO: general allocators
+  auto root_size =
+      tlctx->jit->getDataLayout().getTypeAllocSize(llvm_types[&root]);
+
+  creator = [=] {
+    TC_INFO("Allocating data structure of size {}", root_size);
+    return std::malloc(root_size);
+  };
+
   root_type = node.node_type_name;
   generate_leaf_accessors(node);
 
   TC_INFO("Struct Module IR");
   module->print(errs(), nullptr);
-
-  emit("#if defined(TC_STRUCT)");
-  emit("TC_EXPORT void *create_data_structure() {{");
-
-  emit("Managers::initialize();");
 
   TC_ASSERT((int)snodes.size() <= max_num_snodes);
   for (int i = 0; i < (int)snodes.size(); i++) {

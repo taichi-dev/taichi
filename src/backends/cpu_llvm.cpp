@@ -71,7 +71,7 @@ class CPULLVMCodeGen : public IRVisitor {
         builder(*llvm_context) {
     using namespace llvm;
     module = tlctx->clone_struct_module();
-    for (auto &f: *module) {
+    for (auto &f : *module) {
       f.setLinkage(Function::PrivateLinkage);
     }
     current_struct_for = nullptr;
@@ -614,20 +614,31 @@ class CPULLVMCodeGen : public IRVisitor {
   }
 
   void visit(OffsetAndExtractBitsStmt *stmt) {
-    TC_NOT_IMPLEMENTED
+    /*
     emit(R"(auto {} = ((({} + {}) >> {}) & ((1 << {}) - 1));)",
          stmt->raw_name(), stmt->offset, stmt->input->raw_name(),
          stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
+    */
+
+    auto shifted =
+        builder.CreateAdd(stmt->value, tlctx->get_constant(stmt->offset));
+    int mask = (1u << (stmt->bit_end - stmt->bit_begin)) - 1;
+    stmt->value =
+        builder.CreateAnd(builder.CreateLShr(shifted, stmt->bit_begin),
+                          tlctx->get_constant(mask));
   }
 
   void visit(LinearizeStmt *stmt) {
-    TC_NOT_IMPLEMENTED
-    std::string val = "0";
+    llvm::Value *val = tlctx->get_constant(0);
     for (int i = 0; i < (int)stmt->inputs.size(); i++) {
-      val = fmt::format("({}) * {} + {}", val, stmt->strides[i],
-                        stmt->inputs[i]->raw_name());
+      // val = fmt::format("({}) * {} + {}", val, stmt->strides[i],
+      //                  stmt->inputs[i]->raw_name());
+
+      val = builder.CreateAdd(
+          builder.CreateMul(stmt->value, tlctx->get_constant(stmt->strides[i])),
+          stmt->inputs[i]->value);
     }
-    emit(R"(auto {} = {};)", stmt->raw_name(), val);
+    stmt->value = val;
   }
 
   void visit(IntegerOffsetStmt *stmt) {
@@ -645,6 +656,7 @@ class CPULLVMCodeGen : public IRVisitor {
   }
 
   void visit(SNodeLookupStmt *stmt) {
+    TC_NOT_IMPLEMENTED
     std::string parent;
     if (stmt->input_snode) {
       parent = stmt->input_snode->raw_name();

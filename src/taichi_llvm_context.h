@@ -28,8 +28,8 @@ class TaichiLLVMContext {
 
   void set_struct_module(const std::unique_ptr<llvm::Module> &module);
 
-  static std::unique_ptr<llvm::Module> clone_module(
-      const std::unique_ptr<llvm::Module> &module);
+  template <typename T>
+  llvm::Value *get_constant(T t);
 };
 
 TLANG_NAMESPACE_END

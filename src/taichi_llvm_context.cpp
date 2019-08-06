@@ -60,9 +60,23 @@ void TaichiLLVMContext::set_struct_module(
   struct_module = llvm::CloneModule(*module);
 }
 
-std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_module(
-    const std::unique_ptr<llvm::Module> &module_in) {
-
+template <typename T>
+llvm::Value *TaichiLLVMContext::get_constant(T t) {
+  if constexpr (std::is_same_v<T, float32> || std::is_same_v<T, float64>) {
+    return llvm::ConstantFP::get(*ctx, llvm::APFloat(t));
+  } else if (std::is_same_v<T, int32> || std::is_same_v<T, uint32>) {
+    return llvm::ConstantInt::get(*ctx, llvm::APInt(32, t, true));
+  } else if (std::is_same_v<T, int64> || std::is_same_v<T, uint64>) {
+    return llvm::ConstantInt::get(*ctx, llvm::APInt(64, t, true));
+  } else {
+    TC_NOT_IMPLEMENTED
+    return nullptr;
+  }
 }
+
+template llvm::Value *TaichiLLVMContext::get_constant(float32 t);
+template llvm::Value *TaichiLLVMContext::get_constant(int32 t);
+template llvm::Value *TaichiLLVMContext::get_constant(uint32 t);
+template llvm::Value *TaichiLLVMContext::get_constant(int64 t);
 
 TLANG_NAMESPACE_END

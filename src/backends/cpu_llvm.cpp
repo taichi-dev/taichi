@@ -89,6 +89,8 @@ class CPULLVMCodeGen : public IRVisitor {
       kernel_args.push_back(&arg);
     }
 
+    kernel_args[0]->setName("root");
+
     module->setDataLayout(jit->getDataLayout());
 
     auto func_printf_type = llvm::FunctionType::get(
@@ -115,6 +117,7 @@ class CPULLVMCodeGen : public IRVisitor {
 
     auto f = (int32(*)(void *))(void *)(kernel_symbol.getAddress());
     auto context = get_current_program().get_context();
+    TC_INFO("Executing...");
     f(&context);
 
     TC_INFO("Exiting...");
@@ -270,19 +273,21 @@ class CPULLVMCodeGen : public IRVisitor {
     TC_ASSERT(stmt->width() == 1);
     std::vector<Value *> args;
     std::string format;
+    auto value = stmt->stmt->value;
     if (stmt->stmt->ret_type.data_type == DataType::i32) {
       format = "%d";
     } else if (stmt->stmt->ret_type.data_type == DataType::f32) {
       format = "%f";
+      value = builder.CreateFPExt(value, tlctx->get_data_type(DataType::f64));
     } else {
       TC_NOT_IMPLEMENTED
     }
     args.push_back(builder.CreateGlobalStringPtr(
         ("[debug] " + stmt->str + " = " + format + "\n").c_str(),
         "format string"));
-    args.push_back(stmt->stmt->value);
+    args.push_back(value);
 
-    stmt->value = builder.CreateCall(func_printf, args, "printf");
+    stmt->value = builder.CreateCall(func_printf, args, "debug_printf");
   }
 
   void visit(ConstStmt *stmt) {
@@ -547,8 +552,6 @@ class CPULLVMCodeGen : public IRVisitor {
          data_type_name(stmt->data->ret_type.data_type),
          stmt->ptr->raw_name(), i, stmt->data->raw_name(), i);
     */
-    TC_P(tlctx->type_name(stmt->data->value->getType()));
-    TC_P(tlctx->type_name(stmt->ptr->value->getType()));
     builder.CreateStore(stmt->data->value, stmt->ptr->value);
   }
 
@@ -556,6 +559,7 @@ class CPULLVMCodeGen : public IRVisitor {
     int width = stmt->width();
     if (get_current_program().config.attempt_vectorized_load_cpu &&
         width >= 4 && stmt->ptr->is<ElementShuffleStmt>()) {
+      /*
       TC_ASSERT(stmt->ret_type.data_type == DataType::i32 ||
                 stmt->ret_type.data_type == DataType::f32);
       bool loaded[width];
@@ -611,13 +615,19 @@ class CPULLVMCodeGen : public IRVisitor {
                shuffle->elements[i].stmt->raw_name(), i);
         }
       }
+       */
     } else {
+      /*
       emit("{} {};", stmt->ret_data_type_name(), stmt->raw_name());
       for (int i = 0; i < stmt->ret_type.width; i++) {
         emit("{}[{}] = *{}[{}];", stmt->raw_name(), i, stmt->ptr->raw_name(),
              i);
       }
+      */
     }
+    TC_ASSERT(stmt->width() == 1);
+    stmt->value = builder.CreateLoad(
+        tlctx->get_data_type(stmt->ret_type.data_type), stmt->ptr->value);
   }
 
   void visit(ElementShuffleStmt *stmt) {
@@ -718,13 +728,11 @@ class CPULLVMCodeGen : public IRVisitor {
     }
     // emit(R"(auto {} = {}_guarded;)", stmt->raw_name(), stmt->raw_name());
     if (snode->type == SNodeType::root) {
-      stmt->value = builder.CreateGEP(parent, {stmt->input_index->value});
+      stmt->value = builder.CreateGEP(parent, stmt->input_index->value);
     } else {
       stmt->value = builder.CreateGEP(
           parent, {tlctx->get_constant(0), stmt->input_index->value});
     }
-    TC_INFO("Look Up");
-    TC_P(tlctx->type_name(stmt->value->getType()));
   }
 
   void visit(GetChStmt *stmt) {
@@ -740,11 +748,10 @@ class CPULLVMCodeGen : public IRVisitor {
            stmt->input_ptr->raw_name(), stmt->chid);
            */
     }
+    TC_P(stmt->chid);
     stmt->value = builder.CreateGEP(
         stmt->input_ptr->value,
         {tlctx->get_constant(0), tlctx->get_constant(stmt->chid)}, "getch");
-    TC_INFO("Get Ch");
-    TC_P(tlctx->type_name(stmt->value->getType()));
   }
 };
 

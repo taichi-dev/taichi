@@ -42,6 +42,8 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     return llvm::Type::getInt32Ty(*ctx);
   } else if (dt == DataType::f32) {
     return llvm::Type::getFloatTy(*ctx);
+  } else if (dt == DataType::f64) {
+    return llvm::Type::getDoubleTy(*ctx);
   } else {
     TC_INFO(data_type_name(dt));
     TC_NOT_IMPLEMENTED

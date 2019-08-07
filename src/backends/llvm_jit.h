@@ -107,8 +107,8 @@ class TaichiLLVMJIT {
 
     for (auto &F : *TSM.getModule()) {
       FPM->run(F);
-      TC_INFO("Function IR Optimized");
-      F.print(errs(), nullptr);
+      // TC_INFO("Function IR Optimized");
+      // F.print(errs(), nullptr);
     }
 
     return TSM;

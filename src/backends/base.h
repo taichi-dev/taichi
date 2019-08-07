@@ -58,7 +58,8 @@ class CodeGenBase {
     return CodeRegionGuard(this, cr);
   }
 
-#define CODE_REGION(region) auto _____ = codegen->get_region_guard(CodeGenBase::CodeRegion::region);
+#define CODE_REGION(region) \
+  auto _____ = codegen->get_region_guard(CodeGenBase::CodeRegion::region);
 #define CODE_REGION_VAR(region) auto _____ = codegen->get_region_guard(region);
 
   static int get_kernel_id() {
@@ -107,12 +108,13 @@ class CodeGenBase {
 
   template <typename T>
   T load_function(std::string name) {
+    using FP = decltype(function_pointer_helper(std::declval<T>()));
     if (dll == nullptr) {
       load_dll();
     }
     auto ret = dlsym(dll, name.c_str());
     TC_ASSERT(ret != nullptr);
-    return (T)ret;
+    return T((FP)ret);
   }
 
   FunctionType load_function();

@@ -100,7 +100,7 @@ class CPULLVMCodeGen : public IRVisitor {
                                    "printf", module.get());
   }
 
-  void gen(IRNode *node) {
+  FunctionType gen(IRNode *node) {
     BasicBlock *bb = BasicBlock::Create(*llvm_context, "entry", func);
     builder.SetInsertPoint(bb);
     node->accept(this);
@@ -116,13 +116,7 @@ class CPULLVMCodeGen : public IRVisitor {
     TC_ASSERT_INFO(kernel_symbol, "Function not found");
 
     auto f = (int32(*)(void *))(void *)(kernel_symbol.getAddress());
-    auto context = get_current_program().get_context();
-    TC_INFO("Executing...");
-    f(context.buffers[0]);
-
-    TC_INFO("Exiting...");
-
-    exit(-1);
+    return [=](Context context) { f(context.buffers[0]); };
   }
 
   template <typename... Args>
@@ -131,10 +125,12 @@ class CPULLVMCodeGen : public IRVisitor {
     codegen->emit(f, std::forward<Args>(args)...);
   }
 
-  static void run(CodeGenBase *codegen, IRNode *node, Program::Kernel *kernel) {
+  static FunctionType run(CodeGenBase *codegen,
+                          IRNode *node,
+                          Program::Kernel *kernel) {
     auto p = CPULLVMCodeGen(codegen);
     p.kernel = kernel;
-    p.gen(node);
+    return p.gen(node);
   }
 
   void visit(Block *stmt_list) {
@@ -752,12 +748,14 @@ class CPULLVMCodeGen : public IRVisitor {
     stmt->value = builder.CreateGEP(
         stmt->input_ptr->value,
         {tlctx->get_constant(0), tlctx->get_constant(stmt->chid)}, "getch");
+    std::function<int(int)> f;
+
+    using tmp = int(int);
   }
 };
 
 FunctionType CPUCodeGen::codegen_llvm() {
-  CPULLVMCodeGen::run(this, kernel->ir, kernel);
-  return nullptr;
+  return CPULLVMCodeGen::run(this, kernel->ir, kernel);
 }
 #else
 

@@ -84,9 +84,9 @@ class SNode {
     return Tlang::data_type_name(dt);
   }
 
-  using AccessorFunction = void *(*)(void *, int, int, int, int);
-  using StatFunction = AllocatorStat (*)();
-  using ClearFunction = void (*)(int);
+  using AccessorFunction = std::function<void *(void *, int, int, int, int)>;
+  using StatFunction = std::function<AllocatorStat()>;
+  using ClearFunction = std::function<void(int)>;
   AccessorFunction access_func;
   StatFunction stat_func;
   ClearFunction clear_func;

@@ -6,6 +6,8 @@ TLANG_NAMESPACE_BEGIN
 
 class TaichiLLVMJIT;
 
+void *jit_lookup_name(TaichiLLVMJIT *jit, const std::string &name);
+
 class TaichiLLVMContext {
  public:
   std::unique_ptr<llvm::LLVMContext> ctx;
@@ -26,6 +28,11 @@ class TaichiLLVMContext {
   llvm::Value *get_constant(T t);
 
   std::string type_name(llvm::Type *type);
+
+  template <typename T>
+  T lookup_function(const std::string &name) {
+    return T((function_pointer_type<T>)jit_lookup_name(jit.get(), name));
+  }
 };
 
 TLANG_NAMESPACE_END

@@ -26,7 +26,7 @@ real measure_cpe(std::function<void()> target,
 
 struct Context;
 
-using FunctionType = void (*)(Context);
+using FunctionType = std::function<void(Context)>;
 
 enum class DataType : int {
   f16,
@@ -357,4 +357,19 @@ TLANG_NAMESPACE_END
 
 TC_NAMESPACE_BEGIN
 void initialize_benchmark();
+
+template <typename T, typename... Args, typename FP = T (*)(Args...)>
+FP function_pointer_helper(std::function<T(Args...)>) {
+  return nullptr;
+}
+
+template <typename T, typename... Args, typename FP = T (*)(Args...)>
+FP function_pointer_helper(T (*)(Args...)) {
+  return nullptr;
+}
+
+template <typename T>
+using function_pointer_type =
+    decltype(function_pointer_helper(std::declval<T>()));
+
 TC_NAMESPACE_END

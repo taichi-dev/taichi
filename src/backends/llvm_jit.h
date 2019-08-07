@@ -115,4 +115,9 @@ class TaichiLLVMJIT {
   }
 };
 
+inline void *jit_lookup_name(TaichiLLVMJIT *jit, const std::string &name) {
+  llvm::ExitOnError exit_on_err;
+  return (void *)exit_on_err(jit->lookup(name)).getAddress();
+}
+
 TLANG_NAMESPACE_END

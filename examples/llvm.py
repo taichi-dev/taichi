@@ -32,11 +32,11 @@ for i in range(32):
 def test():
   a = 0
   for i in range(32):
-    # val[i] = i * 10
+    val[i] = i * 10
     ti.print(val[i])
-    # if i % 2 == 0:
-    #  a += i
-    #ti.print(a)
+    if i % 2 == 0:
+      a += i
+    ti.print(a)
 
 test()
 

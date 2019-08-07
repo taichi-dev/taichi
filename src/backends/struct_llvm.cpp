@@ -269,8 +269,7 @@ void StructCompilerLLVM::load_accessors(SNode &snode) {
   if (snode.type == SNodeType::place) {
     llvm::ExitOnError exit_on_err;
     std::string name = leaf_accessor_names[&snode];
-    snode.access_func = (SNode::AccessorFunction)(
-        exit_on_err(tlctx->jit->lookup(name)).getAddress());
+    snode.access_func = tlctx->lookup_function<SNode::AccessorFunction>(name);
   } else {
     // snode.stat_func = load_function<SNode::StatFunction>(
     // fmt::format("stat_{}", snode.node_type_name));
@@ -312,8 +311,7 @@ void StructCompilerLLVM::run(SNode &node) {
   */
 
   // TODO: general allocators
-  auto root_size =
-      tlctx->jit->getDataLayout().getTypeAllocSize(root.llvm_type);
+  auto root_size = tlctx->jit->getDataLayout().getTypeAllocSize(root.llvm_type);
 
   creator = [=] {
     TC_INFO("Allocating data structure of size {}", root_size);

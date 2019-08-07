@@ -61,15 +61,16 @@ class CPULLVMCodeGen : public IRVisitor {
 
   CodeGenBase *codegen;
   Program::Kernel *kernel;
+  std::string kernel_name;
   llvm::Function *func;
   llvm::Constant *func_printf;
   std::vector<Value *> kernel_args;
 
-  CPULLVMCodeGen(CodeGenBase *codegen)
+  CPULLVMCodeGen(CodeGenBase *codegen, Program::Kernel *kernel)
       : tlctx(&get_current_program().llvm_context),
         llvm_context(tlctx->ctx.get()),
         jit(tlctx->jit.get()),
-        builder(*llvm_context) {
+        builder(*llvm_context), kernel(kernel) {
     using namespace llvm;
     module = tlctx->clone_struct_module();
     for (auto &f : *module) {
@@ -82,8 +83,10 @@ class CPULLVMCodeGen : public IRVisitor {
     auto *FT =
         llvm::FunctionType::get(Type::getInt32Ty(*llvm_context), args, false);
 
-    func =
-        Function::Create(FT, Function::ExternalLinkage, "kernel", module.get());
+    kernel_name = kernel->name + "_kernel";
+
+    func = Function::Create(FT, Function::ExternalLinkage, kernel_name,
+                            module.get());
 
     for (auto &arg : func->args()) {
       kernel_args.push_back(&arg);
@@ -112,7 +115,7 @@ class CPULLVMCodeGen : public IRVisitor {
 
     llvm::cantFail(jit->addModule(std::move(module)));
 
-    auto kernel_symbol = llvm::cantFail(jit->lookup("kernel"));
+    auto kernel_symbol = llvm::cantFail(jit->lookup(kernel_name));
     TC_ASSERT_INFO(kernel_symbol, "Function not found");
 
     auto f = (int32(*)(void *))(void *)(kernel_symbol.getAddress());
@@ -128,8 +131,7 @@ class CPULLVMCodeGen : public IRVisitor {
   static FunctionType run(CodeGenBase *codegen,
                           IRNode *node,
                           Program::Kernel *kernel) {
-    auto p = CPULLVMCodeGen(codegen);
-    p.kernel = kernel;
+    auto p = CPULLVMCodeGen(codegen, kernel);
     return p.gen(node);
   }
 

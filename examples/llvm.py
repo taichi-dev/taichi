@@ -38,6 +38,12 @@ def test():
       a += i
     ti.print(a)
 
+@ti.kernel
+def test1():
+  for i in range(32):
+    val[i] = i * 20
+    ti.print(val[i])
+
 test()
-
-
+test()
+test1()

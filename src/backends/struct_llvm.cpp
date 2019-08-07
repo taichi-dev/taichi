@@ -246,7 +246,6 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
     }
     emit("}}");
     emit("");
-    // node = builder.
     builder.CreateRet(node);
 
     TC_WARN_IF(llvm::verifyFunction(*accessor, &errs()),

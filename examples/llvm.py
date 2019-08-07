@@ -5,7 +5,7 @@ tc.set_gdb_trigger(True)
 
 # x, y = ti.var(ti.f32), ti.var(ti.f32)
 # z, w = ti.var(ti.f32), ti.var(ti.f32)
-val = ti.var(ti.f32)
+val = ti.var(ti.i32)
 
 ti.cfg.use_llvm = True
 ti.cfg.print_ir = True
@@ -32,11 +32,11 @@ for i in range(32):
 def test():
   a = 0
   for i in range(32):
-    val[i] = i * 10
+    # val[i] = i * 10
     ti.print(val[i])
-    if i % 2 == 0:
-      a += i
-    ti.print(a)
+    # if i % 2 == 0:
+    #  a += i
+    #ti.print(a)
 
 test()
 

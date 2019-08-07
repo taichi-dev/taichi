@@ -118,7 +118,7 @@ class CPULLVMCodeGen : public IRVisitor {
     auto f = (int32(*)(void *))(void *)(kernel_symbol.getAddress());
     auto context = get_current_program().get_context();
     TC_INFO("Executing...");
-    f(&context);
+    f(context.buffers[0]);
 
     TC_INFO("Exiting...");
 

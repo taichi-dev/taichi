@@ -5,7 +5,7 @@
 Supports Ubuntu 14.04/16.04/18.04, ArchLinux, Mac OS X. For GPU support, CUDA 9.0+ is needed.
 
  - Install `taichi` with the [installation script](https://taichi.readthedocs.io/en/latest/installation.html#ubuntu-arch-linux-and-mac-os-x)
- - (Optional) If you use the LLVM backend, make sure you have LLVM 8.0.0 built from scratch, with 
+ - (Optional) If you use the LLVM backend, make sure you have LLVM 8 built from scratch, with 
   ```
   cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=ON
   ```

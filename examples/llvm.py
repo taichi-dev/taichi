@@ -1,7 +1,7 @@
 import taichi_lang as ti
 import taichi as tc
 
-# tc.set_gdb_trigger(True)
+tc.set_gdb_trigger(True)
 
 x, y = ti.var(ti.f32), ti.var(ti.f32)
 z, w = ti.var(ti.f32), ti.var(ti.f32)

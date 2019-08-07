@@ -1,5 +1,6 @@
 #pragma once
 #include "util.h"
+#include "llvm_fwd.h"
 #include <taichi/common/bit.h>
 
 TLANG_NAMESPACE_BEGIN
@@ -96,6 +97,7 @@ class SNode {
   int index_id;
   bool _morton;
   bool _bitmasked;
+  llvm::Type *llvm_type;
 
   SNode() {
     id = counter++;
@@ -124,6 +126,8 @@ class SNode {
     clear_and_deactivate_kernel = nullptr;
 
     expr = nullptr;
+
+    llvm_type = nullptr;
   }
 
   SNode &insert_children(SNodeType t) {

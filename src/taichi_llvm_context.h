@@ -1,12 +1,6 @@
 #pragma once
 #include "util.h"
-
-namespace llvm {
-class LLVMContext;
-class Type;
-class Value;
-class Module;
-}  // namespace llvm
+#include "llvm_fwd.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -30,6 +24,8 @@ class TaichiLLVMContext {
 
   template <typename T>
   llvm::Value *get_constant(T t);
+
+  std::string type_name(llvm::Type *type);
 };
 
 TLANG_NAMESPACE_END

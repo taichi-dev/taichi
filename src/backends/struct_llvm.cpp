@@ -28,7 +28,7 @@ void StructCompilerLLVM::codegen(SNode &snode) {
 
   std::vector<llvm::Type *> ch_types;
   for (int i = 0; i < snode.ch.size(); i++) {
-    auto ch = llvm_types[snode.ch[i].get()];
+    auto ch = snode.ch[i]->llvm_type;
     ch_types.push_back(ch);
   }
 
@@ -67,7 +67,7 @@ void StructCompilerLLVM::codegen(SNode &snode) {
   }
 
   TC_ASSERT(llvm_type != nullptr);
-  llvm_types[&snode] = llvm_type;
+  snode.llvm_type = llvm_type;
 }
 
 void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
@@ -86,8 +86,8 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
         "TODO: deal with child nullptrs when sparse");
     for (int i = 0; i < (int)snode.ch.size(); i++) {
       auto ch = snode.ch[i];
-      llvm::Type *parent_type = llvm_types[&snode];
-      llvm::Type *child_type = llvm_types[ch.get()];
+      llvm::Type *parent_type = snode.llvm_type;
+      llvm::Type *child_type = ch->llvm_type;
       llvm::Type *parent_ptr_type = llvm::PointerType::get(parent_type, 0);
       llvm::Type *child_ptr_type = llvm::PointerType::get(child_type, 0);
 
@@ -160,7 +160,7 @@ void StructCompilerLLVM::generate_leaf_accessors(SNode &snode) {
         "int i3=0) {{",
         ret_type, verb, snode.node_type_name);
     std::vector<llvm::Type *> arg_types{
-        llvm::PointerType::get(llvm_types[&root], 0)};
+        llvm::PointerType::get(root.llvm_type, 0)};
     for (int i = 0; i < max_num_indices; i++) {
       arg_types.push_back(llvm_index_type);
     }
@@ -313,7 +313,7 @@ void StructCompilerLLVM::run(SNode &node) {
 
   // TODO: general allocators
   auto root_size =
-      tlctx->jit->getDataLayout().getTypeAllocSize(llvm_types[&root]);
+      tlctx->jit->getDataLayout().getTypeAllocSize(root.llvm_type);
 
   creator = [=] {
     TC_INFO("Allocating data structure of size {}", root_size);

@@ -11,7 +11,6 @@ class StructCompilerLLVM : public StructCompiler {
   llvm::LLVMContext *llvm_ctx;
   std::unique_ptr<llvm::Module> module;
 
-  std::map<SNode *, llvm::Type *> llvm_types;
   std::map<SNode *, llvm::Function *> chain_accessors;
   std::map<SNode *, llvm::Function *> leaf_accessors;
   std::map<SNode *, std::string> leaf_accessor_names;

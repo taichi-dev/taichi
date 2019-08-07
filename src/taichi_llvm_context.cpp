@@ -74,6 +74,13 @@ llvm::Value *TaichiLLVMContext::get_constant(T t) {
   }
 }
 
+std::string TaichiLLVMContext::type_name(llvm::Type *type) {
+  std::string type_name;
+  llvm::raw_string_ostream rso(type_name);
+  type->print(rso);
+  return rso.str();
+}
+
 template llvm::Value *TaichiLLVMContext::get_constant(float32 t);
 template llvm::Value *TaichiLLVMContext::get_constant(int32 t);
 template llvm::Value *TaichiLLVMContext::get_constant(uint32 t);

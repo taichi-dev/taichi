@@ -63,6 +63,7 @@ class CPULLVMCodeGen : public IRVisitor {
   Program::Kernel *kernel;
   llvm::Function *func;
   llvm::Constant *func_printf;
+  std::vector<Value *> kernel_args;
 
   CPULLVMCodeGen(CodeGenBase *codegen)
       : tlctx(&get_current_program().llvm_context),
@@ -83,6 +84,10 @@ class CPULLVMCodeGen : public IRVisitor {
 
     func =
         Function::Create(FT, Function::ExternalLinkage, "kernel", module.get());
+
+    for (auto &arg : func->args()) {
+      kernel_args.push_back(&arg);
+    }
 
     module->setDataLayout(jit->getDataLayout());
 
@@ -520,6 +525,7 @@ class CPULLVMCodeGen : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
+    /*
     if (!current_program->config.force_vectorized_global_store) {
       for (int i = 0; i < stmt->data->ret_type.width; i++) {
         if (stmt->parent->mask()) {
@@ -533,6 +539,17 @@ class CPULLVMCodeGen : public IRVisitor {
     } else {
       emit("{}.store({}[0]);", stmt->data->raw_name(), stmt->ptr->raw_name());
     }
+    */
+    TC_ASSERT(!stmt->parent->mask());
+    TC_ASSERT(stmt->width() == 1);
+    /*
+    emit("*({} *){}[{}] = {}[{}];",
+         data_type_name(stmt->data->ret_type.data_type),
+         stmt->ptr->raw_name(), i, stmt->data->raw_name(), i);
+    */
+    TC_P(tlctx->type_name(stmt->data->value->getType()));
+    TC_P(tlctx->type_name(stmt->ptr->value->getType()));
+    builder.CreateStore(stmt->data->value, stmt->ptr->value);
   }
 
   void visit(GlobalLoadStmt *stmt) {
@@ -631,8 +648,8 @@ class CPULLVMCodeGen : public IRVisitor {
          stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
     */
 
-    auto shifted =
-        builder.CreateAdd(stmt->value, tlctx->get_constant(stmt->offset));
+    auto shifted = builder.CreateAdd(stmt->input->value,
+                                     tlctx->get_constant((int32)stmt->offset));
     int mask = (1u << (stmt->bit_end - stmt->bit_begin)) - 1;
     stmt->value =
         builder.CreateAnd(builder.CreateLShr(shifted, stmt->bit_begin),
@@ -646,7 +663,7 @@ class CPULLVMCodeGen : public IRVisitor {
       //                  stmt->inputs[i]->raw_name());
 
       val = builder.CreateAdd(
-          builder.CreateMul(stmt->value, tlctx->get_constant(stmt->strides[i])),
+          builder.CreateMul(val, tlctx->get_constant(stmt->strides[i])),
           stmt->inputs[i]->value);
     }
     stmt->value = val;
@@ -667,46 +684,67 @@ class CPULLVMCodeGen : public IRVisitor {
   }
 
   void visit(SNodeLookupStmt *stmt) {
-    TC_NOT_IMPLEMENTED
-    std::string parent;
+    llvm::Value *parent = nullptr;
     if (stmt->input_snode) {
-      parent = stmt->input_snode->raw_name();
+      parent = stmt->input_snode->value;
     } else {
-      parent = "root";
+      parent = builder.CreateBitCast(
+          kernel_args[0],
+          PointerType::get(get_current_program().snode_root->llvm_type, 0));
     }
-    std::vector<std::string> global_indices(max_num_indices, "0");
+    TC_ASSERT(parent);
+    // This part may need a redesign - why do we need both global indices and
+    // linearized indices?
     auto snode = stmt->snode;
+    /*
+    std::vector<std::string> global_indices(max_num_indices, "0");
     for (int i = 0; i < (int)stmt->global_indices.size(); i++) {
       if (snode->physical_index_position[i] != -1) {
         global_indices[snode->physical_index_position[i]] =
             stmt->global_indices[i]->raw_name() + fmt::format("[{}]", 0);
       }
     }
+    */
     if (stmt->activate && stmt->snode->type != SNodeType::place) {
-      emit(R"({}->activate({}, {});)", parent, stmt->input_index->raw_name(),
-           make_list(global_indices, "{"));
+      // emit(R"({}->activate({}, {});)", parent, stmt->input_index->raw_name(),
+      //     make_list(global_indices, "{"));
     }
-    emit("auto {}_guarded = {}->look_up({});", stmt->raw_name(), parent,
-         stmt->input_index->raw_name());
+    // emit("auto {}_guarded = {}->look_up({});", stmt->raw_name(), parent,
+    //     stmt->input_index->raw_name());
     if (!stmt->activate && snode->has_null()) {
       // safe guard with ambient node
       emit("if({}_guarded == nullptr) {}_guarded = &{}_ambient;",
            stmt->raw_name(), stmt->raw_name(), snode->node_type_name);
     }
-    emit(R"(auto {} = {}_guarded;)", stmt->raw_name(), stmt->raw_name());
+    // emit(R"(auto {} = {}_guarded;)", stmt->raw_name(), stmt->raw_name());
+    if (snode->type == SNodeType::root) {
+      stmt->value = builder.CreateGEP(parent, {stmt->input_index->value});
+    } else {
+      stmt->value = builder.CreateGEP(
+          parent, {tlctx->get_constant(0), stmt->input_index->value});
+    }
+    TC_INFO("Look Up");
+    TC_P(tlctx->type_name(stmt->value->getType()));
   }
 
   void visit(GetChStmt *stmt) {
-    // emit("{} *{};", stmt->output_snode->data_type_name(),
-    //     stmt->raw_name());
     if (stmt->output_snode->type == SNodeType::place) {
+      /*
       emit(R"({} *{}[1] {{&{}->get{}()->val}};)",
            stmt->output_snode->data_type_name(), stmt->raw_name(),
            stmt->input_ptr->raw_name(), stmt->chid);
+           */
     } else {
+      /*
       emit(R"(auto {} = {}->get{}();)", stmt->raw_name(),
            stmt->input_ptr->raw_name(), stmt->chid);
+           */
     }
+    stmt->value = builder.CreateGEP(
+        stmt->input_ptr->value,
+        {tlctx->get_constant(0), tlctx->get_constant(stmt->chid)}, "getch");
+    TC_INFO("Get Ch");
+    TC_P(tlctx->type_name(stmt->value->getType()));
   }
 };
 

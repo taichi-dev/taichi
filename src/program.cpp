@@ -50,6 +50,50 @@ void Program::Kernel::operator()() {
   program.sync = false;
 }
 
+void Kernel::set_arg_float(int i, float64 d) {
+  if (args[i] == DataType::f32) {
+    program.context.set_arg(i, (float32)d);
+  } else if (args[i] == DataType::f64) {
+    program.context.set_arg(i, (float64)d);
+  } else if (args[i] == DataType::i32) {
+    program.context.set_arg(i, (int32)d);
+  } else if (args[i] == DataType::i64) {
+    program.context.set_arg(i, (int64)d);
+  } else if (args[i] == DataType::i16) {
+    program.context.set_arg(i, (int16)d);
+  } else if (args[i] == DataType::u16) {
+    program.context.set_arg(i, (uint16)d);
+  } else if (args[i] == DataType::u32) {
+    program.context.set_arg(i, (uint32)d);
+  } else if (args[i] == DataType::u64) {
+    program.context.set_arg(i, (uint64)d);
+  } else {
+    TC_NOT_IMPLEMENTED
+  }
+}
+
+void Kernel::set_arg_int(int i, int64 d) {
+  if (args[i] == DataType::i32) {
+    program.context.set_arg(i, (int32)d);
+  } else if (args[i] == DataType::i64) {
+    program.context.set_arg(i, (int64)d);
+  } else if (args[i] == DataType::i16) {
+    program.context.set_arg(i, (int16)d);
+  } else if (args[i] == DataType::u16) {
+    program.context.set_arg(i, (uint16)d);
+  } else if (args[i] == DataType::u32) {
+    program.context.set_arg(i, (uint32)d);
+  } else if (args[i] == DataType::u64) {
+    program.context.set_arg(i, (uint64)d);
+  } else if (args[i] == DataType::f32) {
+    program.context.set_arg(i, (float32)d);
+  } else if (args[i] == DataType::f64) {
+    program.context.set_arg(i, (float64)d);
+  } else {
+    TC_NOT_IMPLEMENTED
+  }
+}
+
 FunctionType Program::compile(Kernel &kernel) {
   FunctionType ret = nullptr;
   if (config.arch == Arch::x86_64) {

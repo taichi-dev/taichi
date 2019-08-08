@@ -96,11 +96,9 @@ class CPULLVMCodeGen : public IRVisitor {
 
     module->setDataLayout(jit->getDataLayout());
 
-    auto func_printf_type = llvm::FunctionType::get(
-        IntegerType::getInt32Ty(*llvm_context),
-        PointerType::get(Type::getInt8Ty(*llvm_context), 0), true);
-    func_printf = Function::Create(func_printf_type, Function::ExternalLinkage,
-                                   "printf", module.get());
+    func_printf = module->getFunction("printf");
+    TC_P(func_printf);
+    TC_ASSERT(func_printf);
   }
 
   FunctionType gen(IRNode *node) {

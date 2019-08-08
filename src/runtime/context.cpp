@@ -20,11 +20,13 @@ void *context_get_buffer(Context *context) {
   return context->buffer;
 }
 
+extern int printf(const char *, ...);
+
 int test(Context context) {
+  printf("");
   return *context_get_args(&context, 0);
 }
 
-int printf(const char *, ...) {}
 
 }
 

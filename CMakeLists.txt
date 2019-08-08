@@ -67,6 +67,7 @@ if (LLVM_FOUND)
             ScalarOpts
             Support
             native
+            Linker
             )
     target_link_libraries(${LIBRARY_NAME} ${llvm_libs})
 else()

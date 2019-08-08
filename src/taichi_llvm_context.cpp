@@ -19,6 +19,7 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Utils.h"
 #include "llvm/Bitcode/BitcodeReader.h"
+#include <llvm/Linker/Linker.h>
 
 #include "util.h"
 #include "taichi_llvm_context.h"
@@ -90,8 +91,17 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
     TC_P(std::string(f.getName()));
   }
 
+  std::unique_ptr<Module> runtime_module = std::move(runtime.get());
+  runtime_module->print(llvm::errs(), nullptr);
+
+  bool failed = llvm::Linker::linkModules(*runtime_module, llvm::CloneModule(*struct_module));
+  if (failed) {
+    TC_ERROR("Runtime linking failure.");
+  }
+
   TC_ASSERT(struct_module);
-  return llvm::CloneModule(*struct_module);
+  // return llvm::CloneModule(*struct_module);
+  return runtime_module;
 }
 
 void TaichiLLVMContext::set_struct_module(

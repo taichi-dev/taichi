@@ -18,6 +18,7 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Utils.h"
+#include "llvm/Bitcode/BitcodeReader.h"
 
 #include "taichi_llvm_context.h"
 #include "backends/llvm_jit.h"
@@ -52,6 +53,21 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
 }
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
+  using namespace llvm;
+  std::ifstream ifs(get_project_fn() + "/src/runtime/context.bc");
+  std::string bitcode(std::istreambuf_iterator<char>(ifs),
+                      (std::istreambuf_iterator<char>()));
+
+  auto runtime =
+      parseBitcodeFile(MemoryBufferRef(bitcode, "runtime_bitcode"), *ctx);
+  if (!runtime) {
+    TC_ERROR("Runtime bitcode load failed.");
+  }
+
+  for (auto &f : *runtime.get()) {
+    TC_P(std::string(f.getName()));
+  }
+
   TC_ASSERT(struct_module);
   return llvm::CloneModule(*struct_module);
 }

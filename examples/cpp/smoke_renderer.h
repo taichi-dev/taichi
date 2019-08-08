@@ -9,7 +9,7 @@ class SmokeRenderer {
   Vector2i output_res;
   Vector2i sky_map_size;
   int n_sky_samples;
-  Program::Kernel *main, *dilate;
+  Kernel *main, *dilate;
   Vector buffer;
   int depth_limit;
   Expr density;

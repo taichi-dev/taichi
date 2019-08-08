@@ -15,7 +15,7 @@ class CPUIRCodeGen : public IRVisitor {
   StructForStmt *current_struct_for;
   CodeGenBase *codegen;
   LoopGenerator loopgen;
-  Program::Kernel *kernel;
+  Kernel *kernel;
   std::unique_ptr<Stmt> atomic_add;
 
   CPUIRCodeGen(CodeGenBase *codegen) : codegen(codegen), loopgen(codegen) {
@@ -27,7 +27,7 @@ class CPUIRCodeGen : public IRVisitor {
     codegen->emit(f, std::forward<Args>(args)...);
   }
 
-  static void run(CodeGenBase *codegen, IRNode *node, Program::Kernel *kernel) {
+  static void run(CodeGenBase *codegen, IRNode *node, Kernel *kernel) {
     auto p = CPUIRCodeGen(codegen);
     p.kernel = kernel;
     node->accept(&p);

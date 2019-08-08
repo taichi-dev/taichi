@@ -14,7 +14,7 @@ TLANG_NAMESPACE_BEGIN
 Program *current_program = nullptr;
 SNode root;
 
-Program::Kernel::Kernel(Program &program,
+Kernel::Kernel(Program &program,
                         std::function<void()> func,
                         std::string name,
                         bool grad)
@@ -36,13 +36,13 @@ Program::Kernel::Kernel(Program &program,
     compile();
 }
 
-void Program::Kernel::compile() {
+void Kernel::compile() {
   program.current_kernel = this;
   compiled = program.compile(*this);
   program.current_kernel = nullptr;
 }
 
-void Program::Kernel::operator()() {
+void Kernel::operator()() {
   if (!compiled)
     compile();
   auto c = program.get_context();

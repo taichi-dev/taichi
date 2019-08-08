@@ -353,6 +353,8 @@ struct CompileConfig {
 
 extern CompileConfig default_compile_config;
 
+bool command_exist(const std::string &command);
+
 TLANG_NAMESPACE_END
 
 TC_NAMESPACE_BEGIN

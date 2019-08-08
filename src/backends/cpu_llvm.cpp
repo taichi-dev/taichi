@@ -60,13 +60,13 @@ class CPULLVMCodeGen : public IRVisitor {
   std::unique_ptr<Module> module;
 
   CodeGenBase *codegen;
-  Program::Kernel *kernel;
+  Kernel *kernel;
   std::string kernel_name;
   llvm::Function *func;
   llvm::Constant *func_printf;
   std::vector<Value *> kernel_args;
 
-  CPULLVMCodeGen(CodeGenBase *codegen, Program::Kernel *kernel)
+  CPULLVMCodeGen(CodeGenBase *codegen, Kernel *kernel)
       : tlctx(&get_current_program().llvm_context),
         llvm_context(tlctx->ctx.get()),
         jit(tlctx->jit.get()),
@@ -130,7 +130,7 @@ class CPULLVMCodeGen : public IRVisitor {
 
   static FunctionType run(CodeGenBase *codegen,
                           IRNode *node,
-                          Program::Kernel *kernel) {
+                          Kernel *kernel) {
     auto p = CPULLVMCodeGen(codegen, kernel);
     return p.gen(node);
   }

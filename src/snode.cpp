@@ -75,7 +75,7 @@ void SNode::clear_data() {
         current_ast_builder().insert(Stmt::make<ClearAllStmt>(this, false));
       });
     }
-    (*(Program::Kernel *)clear_kernel)();
+    (*(Kernel *)clear_kernel)();
   } else {
     clear_func(0);
   }
@@ -88,7 +88,7 @@ void SNode::clear_data_and_deactivate() {
         current_ast_builder().insert(Stmt::make<ClearAllStmt>(this, true));
       });
     }
-    (*(Program::Kernel *)clear_and_deactivate_kernel)();
+    (*(Kernel *)clear_and_deactivate_kernel)();
   } else {
     clear_func(1);
   }

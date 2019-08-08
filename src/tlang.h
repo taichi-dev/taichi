@@ -28,7 +28,7 @@ TLANG_NAMESPACE_BEGIN
 
 void layout(const std::function<void()> &body);
 
-inline Program::Kernel &kernel(const std::function<void()> &body) {
+inline Kernel &kernel(const std::function<void()> &body) {
   return get_current_program().kernel(body);
 }
 

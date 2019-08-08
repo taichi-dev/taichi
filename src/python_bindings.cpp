@@ -106,10 +106,10 @@ PYBIND11_MODULE(taichi_lang_core, m) {
       .def("num_active_indices",
            [](SNode *snode) { return snode->num_active_indices; });
 
-  py::class_<Program::Kernel>(m, "Kernel")
-      .def("set_arg_int", &Program::Kernel::set_arg_int)
-      .def("set_arg_float", &Program::Kernel::set_arg_float)
-      .def("__call__", &Program::Kernel::operator());
+  py::class_<Kernel>(m, "Kernel")
+      .def("set_arg_int", &Kernel::set_arg_int)
+      .def("set_arg_float", &Kernel::set_arg_float)
+      .def("__call__", &Kernel::operator());
 
   py::class_<Expr> expr(m, "Expr");
   expr.def("serialize", &Expr::serialize)

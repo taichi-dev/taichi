@@ -20,6 +20,7 @@
 #include "llvm/Transforms/Utils.h"
 #include "llvm/Bitcode/BitcodeReader.h"
 
+#include "util.h"
 #include "taichi_llvm_context.h"
 #include "backends/llvm_jit.h"
 
@@ -52,8 +53,29 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
   return nullptr;
 }
 
+void compile_runtime() {
+  static bool compiled = false;
+  if (compiled) {
+    return;
+  }
+  TC_ASSERT(command_exist("clang-7"));
+  TC_ASSERT(command_exist("llvm-as"));
+  TC_TRACE("Compiling runtime module bitcode...");
+  auto runtime_folder = get_project_fn() + "/src/runtime/";
+  std::system(
+      fmt::format(
+          "clang-7 -S {}context.cpp -o {}context.ll -emit-llvm -std=c++17",
+          runtime_folder, runtime_folder)
+          .c_str());
+  std::system(fmt::format("llvm-as {}context.ll -o {}context.bc",
+                          runtime_folder, runtime_folder)
+                  .c_str());
+  compiled = true;
+}
+
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
   using namespace llvm;
+  compile_runtime();
   std::ifstream ifs(get_project_fn() + "/src/runtime/context.bc");
   std::string bitcode(std::istreambuf_iterator<char>(ifs),
                       (std::istreambuf_iterator<char>()));

@@ -23,6 +23,9 @@ void *context_get_buffer(Context *context) {
 int test(Context context) {
   return *context_get_args(&context, 0);
 }
+
+int printf(const char *, ...) {}
+
 }
 
-// clang-7 -S context.cpp -o context.ll -emit-llvm -std=c++17
+// clang-7 -S context.cpp -o context.ll -emit-llvm -std=c++17 -O3

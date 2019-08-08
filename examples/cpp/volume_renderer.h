@@ -9,7 +9,7 @@ class TRenderer {
   Vector2i output_res;
   Vector2i sky_map_size;
   int n_sky_samples;
-  Program::Kernel *main, *dilate, *clear_buffer;
+  Kernel *main, *dilate, *clear_buffer;
   Vector buffer;
   Expr density;
   Expr grid_resolution;

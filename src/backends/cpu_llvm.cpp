@@ -70,11 +70,13 @@ class CPULLVMCodeGen : public IRVisitor {
       : tlctx(&get_current_program().llvm_context),
         llvm_context(tlctx->ctx.get()),
         jit(tlctx->jit.get()),
-        builder(*llvm_context), kernel(kernel) {
+        builder(*llvm_context),
+        kernel(kernel) {
     using namespace llvm;
     module = tlctx->clone_struct_module();
     for (auto &f : *module) {
-      f.setLinkage(Function::PrivateLinkage);
+      if (!f.isDeclaration())
+        f.setLinkage(Function::PrivateLinkage);
     }
     current_struct_for = nullptr;
 
@@ -97,8 +99,6 @@ class CPULLVMCodeGen : public IRVisitor {
     module->setDataLayout(jit->getDataLayout());
 
     func_printf = module->getFunction("printf");
-    TC_P(func_printf);
-    TC_ASSERT(func_printf);
   }
 
   FunctionType gen(IRNode *node) {
@@ -107,7 +107,7 @@ class CPULLVMCodeGen : public IRVisitor {
     node->accept(this);
     builder.CreateRet(const_int32(0));
 
-    TC_INFO("Module IR");
+    TC_INFO("Kernel Module IR");
     module->print(errs(), nullptr);
     TC_ASSERT(!llvm::verifyFunction(*func, &errs()));
 
@@ -126,9 +126,7 @@ class CPULLVMCodeGen : public IRVisitor {
     codegen->emit(f, std::forward<Args>(args)...);
   }
 
-  static FunctionType run(CodeGenBase *codegen,
-                          IRNode *node,
-                          Kernel *kernel) {
+  static FunctionType run(CodeGenBase *codegen, IRNode *node, Kernel *kernel) {
     auto p = CPULLVMCodeGen(codegen, kernel);
     return p.gen(node);
   }
@@ -744,13 +742,9 @@ class CPULLVMCodeGen : public IRVisitor {
            stmt->input_ptr->raw_name(), stmt->chid);
            */
     }
-    TC_P(stmt->chid);
     stmt->value = builder.CreateGEP(
         stmt->input_ptr->value,
         {tlctx->get_constant(0), tlctx->get_constant(stmt->chid)}, "getch");
-    std::function<int(int)> f;
-
-    using tmp = int(int);
   }
 };
 

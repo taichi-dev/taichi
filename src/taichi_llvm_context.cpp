@@ -87,20 +87,20 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
     TC_ERROR("Runtime bitcode load failed.");
   }
 
-  for (auto &f : *runtime.get()) {
+  std::unique_ptr<Module> runtime_module = std::move(runtime.get());
+  for (auto &f : *runtime_module) {
     TC_P(std::string(f.getName()));
   }
 
-  std::unique_ptr<Module> runtime_module = std::move(runtime.get());
-  runtime_module->print(llvm::errs(), nullptr);
-
-  bool failed = llvm::Linker::linkModules(*runtime_module, llvm::CloneModule(*struct_module));
+  bool failed = llvm::Linker::linkModules(*runtime_module,
+                                          llvm::CloneModule(*struct_module));
   if (failed) {
     TC_ERROR("Runtime linking failure.");
   }
 
   TC_ASSERT(struct_module);
   // return llvm::CloneModule(*struct_module);
+  // runtime_module->print(llvm::errs(), nullptr);
   return runtime_module;
 }
 

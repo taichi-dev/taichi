@@ -63,8 +63,9 @@ class CPULLVMCodeGen : public IRVisitor {
   Kernel *kernel;
   std::string kernel_name;
   llvm::Function *func;
-  llvm::Constant *func_printf;
   std::vector<Value *> kernel_args;
+  llvm::Type *context_ty;
+  llvm::Value *root, *context_ptr;
 
   CPULLVMCodeGen(CodeGenBase *codegen, Kernel *kernel)
       : tlctx(&get_current_program().llvm_context),
@@ -80,10 +81,10 @@ class CPULLVMCodeGen : public IRVisitor {
     }
     current_struct_for = nullptr;
 
-    std::vector<Type *> args{
-        llvm::PointerType::get(Type::getInt8Ty(*llvm_context), 0)};
-    auto *FT =
-        llvm::FunctionType::get(Type::getInt32Ty(*llvm_context), args, false);
+    context_ty = get_runtime_type("Context");
+
+    auto *FT = llvm::FunctionType::get(tlctx->get_data_type(DataType::i32),
+                                       {PointerType::get(context_ty, 0)}, false);
 
     kernel_name = kernel->name + "_kernel";
 
@@ -93,17 +94,40 @@ class CPULLVMCodeGen : public IRVisitor {
     for (auto &arg : func->args()) {
       kernel_args.push_back(&arg);
     }
-
-    kernel_args[0]->setName("root");
+    kernel_args[0]->setName("context");
 
     module->setDataLayout(jit->getDataLayout());
+  }
 
-    func_printf = module->getFunction("printf");
+  llvm::Type *get_runtime_type(const std::string &name) {
+    auto ty = module->getTypeByName("struct." + name);
+    if (!ty) {
+      TC_ERROR("Runtime type {} not found.", name);
+    }
+    return ty;
+  }
+
+  llvm::Function *get_runtime_function(const std::string &name) {
+    auto f = module->getFunction(name);
+    if (!f) {
+      TC_ERROR("Runtime function {} not found.", name);
+    }
+    return f;
   }
 
   FunctionType gen(IRNode *node) {
     BasicBlock *bb = BasicBlock::Create(*llvm_context, "entry", func);
     builder.SetInsertPoint(bb);
+
+    // Initialize
+    context_ptr = kernel_args[0];
+    // TC_P(context_ptr->getType()->isPointerTy());
+    // TC_P((std::string)context_ptr->getType()->getStructName());
+
+    get_runtime_function("context_get_buffer")->print(llvm::errs(),nullptr);
+    root = builder.CreateCall(get_runtime_function("context_get_buffer"),
+                              context_ptr);
+
     node->accept(this);
     builder.CreateRet(const_int32(0));
 
@@ -117,7 +141,7 @@ class CPULLVMCodeGen : public IRVisitor {
     TC_ASSERT_INFO(kernel_symbol, "Function not found");
 
     auto f = (int32(*)(void *))(void *)(kernel_symbol.getAddress());
-    return [=](Context context) { f(context.buffers[0]); };
+    return [=](Context context) { f(&context); };
   }
 
   template <typename... Args>
@@ -281,7 +305,8 @@ class CPULLVMCodeGen : public IRVisitor {
         "format string"));
     args.push_back(value);
 
-    stmt->value = builder.CreateCall(func_printf, args, "debug_printf");
+    stmt->value = builder.CreateCall(get_runtime_function("printf"), args,
+                                     "debug_printf");
   }
 
   void visit(ConstStmt *stmt) {
@@ -693,7 +718,7 @@ class CPULLVMCodeGen : public IRVisitor {
       parent = stmt->input_snode->value;
     } else {
       parent = builder.CreateBitCast(
-          kernel_args[0],
+          root,
           PointerType::get(get_current_program().snode_root->llvm_type, 0));
     }
     TC_ASSERT(parent);

@@ -12,8 +12,8 @@ struct Context {
 
 extern "C" {
 
-ContextArgType *context_get_args(Context *context, int arg_id) {
-  return &context->args[arg_id];
+ContextArgType context_get_args(Context *context, int arg_id) {
+  return context->args[arg_id];
 }
 
 void *context_get_buffer(Context *context) {
@@ -22,13 +22,10 @@ void *context_get_buffer(Context *context) {
 
 int printf(const char *, ...);
 
-
 int test(Context context) {
   printf("");
-  return *context_get_args(&context, 0);
+  return 0;
 }
-
-
 }
 
 // clang-7 -S context.cpp -o context.ll -emit-llvm -std=c++17 -O3

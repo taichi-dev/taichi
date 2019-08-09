@@ -12,7 +12,7 @@ struct Context {
 
 extern "C" {
 
-ContextArgType context_get_args(Context *context, int arg_id) {
+ContextArgType context_get_arg(Context *context, int arg_id) {
   return context->args[arg_id];
 }
 

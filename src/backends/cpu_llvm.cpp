@@ -83,8 +83,9 @@ class CPULLVMCodeGen : public IRVisitor {
 
     context_ty = get_runtime_type("Context");
 
-    auto *FT = llvm::FunctionType::get(tlctx->get_data_type(DataType::i32),
-                                       {PointerType::get(context_ty, 0)}, false);
+    auto *FT =
+        llvm::FunctionType::get(tlctx->get_data_type(DataType::i32),
+                                {PointerType::get(context_ty, 0)}, false);
 
     kernel_name = kernel->name + "_kernel";
 
@@ -126,7 +127,7 @@ class CPULLVMCodeGen : public IRVisitor {
     // TC_P(context_ptr->getType()->isPointerTy());
     // TC_P((std::string)context_ptr->getType()->getStructName());
 
-    get_runtime_function("context_get_buffer")->print(llvm::errs(),nullptr);
+    get_runtime_function("context_get_buffer")->print(llvm::errs(), nullptr);
     root = builder.CreateCall(get_runtime_function("context_get_buffer"),
                               context_ptr);
 
@@ -389,9 +390,19 @@ class CPULLVMCodeGen : public IRVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) {
+    /*
     emit("const {} {}({{context.get_arg<{}>({})}});",
          stmt->ret_data_type_name(), stmt->raw_name(),
          data_type_name(stmt->ret_type.data_type), stmt->arg_id);
+    */
+    auto raw_arg =
+        builder.CreateCall(get_runtime_function("context_get_arg"),
+                           {context_ptr, tlctx->get_constant(stmt->arg_id)});
+    auto dest_ty = tlctx->get_data_type(stmt->ret_type.data_type);
+    auto truncated = builder.CreateTrunc(
+        raw_arg,
+        Type::getIntNTy(*llvm_context, dest_ty->getPrimitiveSizeInBits()));
+    stmt->value = builder.CreateBitCast(truncated, dest_ty);
   }
 
   void visit(LocalLoadStmt *stmt) {

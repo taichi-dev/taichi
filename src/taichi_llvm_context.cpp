@@ -78,7 +78,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
     auto runtime =
         parseBitcodeFile(MemoryBufferRef(bitcode, "runtime_bitcode"), *ctx);
     if (!runtime) {
-      TC_ERROR("Runtime bitcode load failed.");
+      TC_ERROR("Runtime bitcode load failure.");
     }
     runtime_module = std::move(runtime.get());
     for (auto &f : *runtime_module) {

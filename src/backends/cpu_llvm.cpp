@@ -182,8 +182,20 @@ class CPULLVMCodeGen : public IRVisitor {
 
   void visit(UnaryOpStmt *stmt) {
     if (stmt->op_type != UnaryOpType::cast) {
-      emit("const {} {}({}({}));", stmt->ret_data_type_name(), stmt->raw_name(),
-           unary_op_type_name(stmt->op_type), stmt->operand->raw_name());
+      auto input = stmt->operand->value;
+      auto op = stmt->op_type;
+      if (op == UnaryOpType::sqrt) {
+        llvm::Function *sqrt_fn = Intrinsic::getDeclaration(
+            module.get(), Intrinsic::sqrt, input->getType());
+        stmt->value = builder.CreateCall(sqrt_fn, input, "sqrt");
+      } else if (op == UnaryOpType::neg) {
+        stmt->value = builder.CreateFNeg(input, "neg");
+      } else {
+        TC_P(unary_op_type_name(stmt->op_type));
+        emit("const {} {}({}({}));", stmt->ret_data_type_name(),
+             stmt->raw_name(), unary_op_type_name(stmt->op_type),
+             stmt->operand->raw_name());
+      }
     } else {
       if (stmt->cast_by_value) {
         llvm::CastInst::CastOps cast_op;
@@ -748,7 +760,8 @@ class CPULLVMCodeGen : public IRVisitor {
     }
     */
     if (stmt->activate && stmt->snode->type != SNodeType::place) {
-      // emit(R"({}->activate({}, {});)", parent, stmt->input_index->raw_name(),
+      // emit(R"({}->activate({}, {});)", parent,
+      // stmt->input_index->raw_name(),
       //     make_list(global_indices, "{"));
     }
     // emit("auto {}_guarded = {}->look_up({});", stmt->raw_name(), parent,

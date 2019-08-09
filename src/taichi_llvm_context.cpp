@@ -61,10 +61,10 @@ void compile_runtime() {
   auto runtime_folder = get_project_fn() + "/src/runtime/";
   std::system(
       fmt::format(
-          "clang-7 -S {}context.cpp -o {}context.ll -emit-llvm -std=c++17",
+          "clang-7 -S {}runtime.cpp -o {}runtime.ll -emit-llvm -std=c++17",
           runtime_folder, runtime_folder)
           .c_str());
-  std::system(fmt::format("llvm-as {}context.ll -o {}context.bc",
+  std::system(fmt::format("llvm-as {}runtime.ll -o {}runtime.bc",
                           runtime_folder, runtime_folder)
                   .c_str());
 }
@@ -72,7 +72,7 @@ void compile_runtime() {
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
   if (!runtime_module) {
     compile_runtime();
-    std::ifstream ifs(get_project_fn() + "/src/runtime/context.bc");
+    std::ifstream ifs(get_project_fn() + "/src/runtime/runtime.bc");
     std::string bitcode(std::istreambuf_iterator<char>(ifs),
                         (std::istreambuf_iterator<char>()));
     auto runtime =

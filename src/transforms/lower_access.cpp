@@ -7,7 +7,8 @@ TLANG_NAMESPACE_BEGIN
 class LowerAccess : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
-  LowerAccess() {
+  bool lower_atomic_ptr;
+  LowerAccess(bool lower_atomic_ptr) : lower_atomic_ptr(lower_atomic_ptr) {
     // TODO: change this to false
     allow_undefined_visitor = true;
     current_struct_for = nullptr;
@@ -163,6 +164,8 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) override {
+    if (!lower_atomic_ptr)
+      return;
     if (stmt->dest->is<GlobalPtrStmt>()) {
       auto lowered = lower_vector_ptr(stmt->dest->as<GlobalPtrStmt>(), true);
       stmt->dest = lowered.back().get();
@@ -171,8 +174,8 @@ class LowerAccess : public IRVisitor {
     }
   }
 
-  static void run(IRNode *node) {
-    LowerAccess inst;
+  static void run(IRNode *node, bool lower_atomic) {
+    LowerAccess inst(lower_atomic);
     while (true) {
       bool modified = false;
       try {
@@ -188,8 +191,8 @@ class LowerAccess : public IRVisitor {
 
 namespace irpass {
 
-void lower_access(IRNode *root) {
-  return LowerAccess::run(root);
+void lower_access(IRNode *root, bool lower_atomic) {
+  return LowerAccess::run(root, lower_atomic);
 }
 
 }  // namespace irpass

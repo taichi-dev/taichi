@@ -800,8 +800,7 @@ TC_TEST("while_in_while") {
         });
       })();
       for (int i = 0; i < n; i++) {
-        // TC_CHECK(c.val<int32>(i) == -1);
-        TC_P(c.val<int32>(i));
+        TC_CHECK(c.val<int32>(i) == ((i + 1) % 2) * 100);
       }
     }
   }

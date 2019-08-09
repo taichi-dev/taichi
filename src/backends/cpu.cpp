@@ -166,9 +166,21 @@ class CPUIRCodeGen : public IRVisitor {
       emit("reduction[0] += reduction[i];");
       emit("}}");
       auto atomic = atomic_add->as<AtomicOpStmt>();
-      auto ptr = atomic->dest->as<GlobalPtrStmt>();
+      std::string node_type_name;
+      if (atomic->dest->is<GlobalPtrStmt>()) {
+        auto ptr = atomic->dest->as<GlobalPtrStmt>();
+        node_type_name = ptr->snodes[0]->node_type_name;
+      } else if (atomic->dest->is<ElementShuffleStmt>()) {
+        node_type_name = atomic->dest->as<ElementShuffleStmt>()
+                             ->elements[0]
+                             .stmt->as<GetChStmt>()
+                             ->output_snode->node_type_name;
+      } else {
+        node_type_name =
+            atomic->dest->as<GetChStmt>()->output_snode->node_type_name;
+      }
       emit("atomic_add(&access_{}(root, 0, 0, 0, 0)->val, reduction[0]);",
-           ptr->snodes[0]->node_type_name);
+           node_type_name);
     }
     emit("}}");
     emit("}}");
@@ -621,7 +633,7 @@ void CPUCodeGen::lower() {
     // irpass::print(ir);
   }
   if (prog->config.lower_access) {
-    irpass::lower_access(ir);
+    irpass::lower_access(ir, true);
     if (prog->config.print_ir) {
       TC_TRACE("Access Lowered:");
       irpass::re_id(ir);

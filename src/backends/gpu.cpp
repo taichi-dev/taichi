@@ -954,7 +954,7 @@ void GPUCodeGen::lower() {
     // irpass::print(ir);
   }
   if (prog->config.lower_access) {
-    irpass::lower_access(ir);
+    irpass::lower_access(ir, false);
     if (prog->config.print_ir) {
       TC_TRACE("Access Lowered:");
       irpass::re_id(ir);

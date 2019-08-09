@@ -39,7 +39,7 @@ loss = scalar()
 # ti.cfg.arch = ti.x86_64
 ti.cfg.use_llvm = True
 # ti.cfg.arch = ti.cuda
-# ti.cfg.print_ir = True
+ti.cfg.print_ir = True
 
 
 @ti.layout

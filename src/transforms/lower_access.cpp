@@ -162,6 +162,15 @@ class LowerAccess : public IRVisitor {
     }
   }
 
+  void visit(AtomicOpStmt *stmt) override {
+    if (stmt->dest->is<GlobalPtrStmt>()) {
+      auto lowered = lower_vector_ptr(stmt->dest->as<GlobalPtrStmt>(), true);
+      stmt->dest = lowered.back().get();
+      stmt->parent->insert_before(stmt, lowered);
+      throw IRModified();
+    }
+  }
+
   static void run(IRNode *node) {
     LowerAccess inst;
     while (true) {

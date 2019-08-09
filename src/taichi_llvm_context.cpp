@@ -74,34 +74,37 @@ void compile_runtime() {
   compiled = true;
 }
 
+std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
+  if (!runtime_module) {
+    compile_runtime();
+    std::ifstream ifs(get_project_fn() + "/src/runtime/context.bc");
+    std::string bitcode(std::istreambuf_iterator<char>(ifs),
+                        (std::istreambuf_iterator<char>()));
+    auto runtime =
+        parseBitcodeFile(MemoryBufferRef(bitcode, "runtime_bitcode"), *ctx);
+    if (!runtime) {
+      TC_ERROR("Runtime bitcode load failed.");
+    }
+    runtime_module = std::move(runtime.get());
+    for (auto &f : *runtime_module) {
+      TC_INFO("Loaded runtime function: {}", std::string(f.getName()));
+    }
+  }
+  return llvm::CloneModule(*runtime_module);
+}
+
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
   using namespace llvm;
-  compile_runtime();
-  std::ifstream ifs(get_project_fn() + "/src/runtime/context.bc");
-  std::string bitcode(std::istreambuf_iterator<char>(ifs),
-                      (std::istreambuf_iterator<char>()));
-
-  auto runtime =
-      parseBitcodeFile(MemoryBufferRef(bitcode, "runtime_bitcode"), *ctx);
-  if (!runtime) {
-    TC_ERROR("Runtime bitcode load failed.");
-  }
-
-  std::unique_ptr<Module> runtime_module = std::move(runtime.get());
-  for (auto &f : *runtime_module) {
-    TC_P(std::string(f.getName()));
-  }
-
-  bool failed = llvm::Linker::linkModules(*runtime_module,
-                                          llvm::CloneModule(*struct_module));
+  auto runtime = clone_runtime_module();
+  TC_ASSERT(struct_module);
+  bool failed =
+      llvm::Linker::linkModules(*runtime, llvm::CloneModule(*struct_module));
   if (failed) {
     TC_ERROR("Runtime linking failure.");
   }
-
-  TC_ASSERT(struct_module);
   // return llvm::CloneModule(*struct_module);
   // runtime_module->print(llvm::errs(), nullptr);
-  return runtime_module;
+  return runtime;
 }
 
 void TaichiLLVMContext::set_struct_module(

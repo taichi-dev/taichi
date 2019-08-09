@@ -97,6 +97,8 @@ class CPULLVMCodeGen : public IRVisitor {
     kernel_args[0]->setName("context");
 
     module->setDataLayout(jit->getDataLayout());
+
+    module->print(errs(), nullptr);
   }
 
   llvm::Type *get_runtime_type(const std::string &name) {

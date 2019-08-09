@@ -12,7 +12,7 @@ class TaichiLLVMContext {
  public:
   std::unique_ptr<llvm::LLVMContext> ctx;
   std::unique_ptr<TaichiLLVMJIT> jit;
-  std::unique_ptr<llvm::Module> struct_module;
+  std::unique_ptr<llvm::Module> struct_module, runtime_module;
 
   llvm::Type *get_data_type(DataType dt);
 
@@ -33,6 +33,9 @@ class TaichiLLVMContext {
   T lookup_function(const std::string &name) {
     return T((function_pointer_type<T>)jit_lookup_name(jit.get(), name));
   }
+
+  std::unique_ptr<llvm::Module> clone_runtime_module();
+
 };
 
 TLANG_NAMESPACE_END

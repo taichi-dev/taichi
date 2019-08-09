@@ -1,5 +1,4 @@
 import taichi_lang as ti
-from pytest import approx
 
 def test_abs():
   for arch in [ti.x86_64, ti.cuda]:

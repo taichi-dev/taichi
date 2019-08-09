@@ -166,12 +166,8 @@ class CPULLVMCodeGen : public IRVisitor {
 
   void visit(AllocaStmt *stmt) {
     TC_ASSERT(stmt->width() == 1);
-    if (stmt->ret_type.data_type == DataType::i32) {
-      stmt->value = builder.CreateAlloca(llvm::Type::getInt32Ty(*llvm_context),
-                                         (unsigned)0);
-    } else {
-      TC_NOT_IMPLEMENTED
-    }
+    stmt->value = builder.CreateAlloca(
+        tlctx->get_data_type(stmt->ret_type.data_type), (unsigned)0);
   }
 
   void visit(RandStmt *stmt) {
@@ -482,11 +478,15 @@ class CPULLVMCodeGen : public IRVisitor {
       if (mask) {
         emit("if ({}[{}]) ", mask->raw_name(), l);
       } else {
-        TC_ASSERT(stmt->val->ret_type.data_type == DataType::f32 ||
-                  stmt->val->ret_type.data_type == DataType::i32);
         TC_ASSERT(stmt->op_type == AtomicOpType::add);
-        emit("atomic_add({}[{}], {}[{}]);", stmt->dest->raw_name(), l,
-             stmt->val->raw_name(), l);
+        if (stmt->val->ret_type.data_type == DataType::i32)
+          builder.CreateAtomicRMW(llvm::AtomicRMWInst::BinOp::Add,
+                                  stmt->dest->value, stmt->val->value,
+                                  llvm::AtomicOrdering::SequentiallyConsistent);
+        else if (stmt->val->ret_type.data_type == DataType::f32) {
+          builder.CreateCall(get_runtime_function("atomic_add_cpu_f32"),
+                             {stmt->dest->value, stmt->val->value});
+        }
       }
     }
   }

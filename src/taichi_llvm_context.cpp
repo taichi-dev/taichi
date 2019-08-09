@@ -55,10 +55,6 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
 }
 
 void compile_runtime() {
-  static bool compiled = false;
-  if (compiled) {
-    return;
-  }
   TC_ASSERT(command_exist("clang-7"));
   TC_ASSERT(command_exist("llvm-as"));
   TC_TRACE("Compiling runtime module bitcode...");
@@ -71,7 +67,6 @@ void compile_runtime() {
   std::system(fmt::format("llvm-as {}context.ll -o {}context.bc",
                           runtime_folder, runtime_folder)
                   .c_str());
-  compiled = true;
 }
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {

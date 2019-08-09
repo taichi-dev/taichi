@@ -32,4 +32,3 @@ def test_arg_load():
   set_f32(1.5)
   assert y[None] == 1.5
 
-test_arg_load()

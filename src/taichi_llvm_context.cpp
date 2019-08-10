@@ -54,15 +54,25 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
   return nullptr;
 }
 
+std::string find_existing_command(const std::vector<std::string> &commands) {
+  for (auto &cmd : commands) {
+    if (command_exist(cmd)) {
+      return cmd;
+    }
+  }
+  TC_P(commands);
+  TC_ERROR("No command found.");
+  return "";
+}
+
 void compile_runtime() {
-  TC_ASSERT(command_exist("clang-7"));
+  auto clang = find_existing_command({"clang-7", "clang"});
   TC_ASSERT(command_exist("llvm-as"));
   TC_TRACE("Compiling runtime module bitcode...");
   auto runtime_folder = get_project_fn() + "/src/runtime/";
   std::system(
-      fmt::format(
-          "clang-7 -S {}runtime.cpp -o {}runtime.ll -emit-llvm -std=c++17",
-          runtime_folder, runtime_folder)
+      fmt::format("{} -S {}runtime.cpp -o {}runtime.ll -emit-llvm -std=c++17",
+                  clang, runtime_folder, runtime_folder)
           .c_str());
   std::system(fmt::format("llvm-as {}runtime.ll -o {}runtime.bc",
                           runtime_folder, runtime_folder)

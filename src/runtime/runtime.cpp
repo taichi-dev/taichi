@@ -1,6 +1,8 @@
 #include <atomic>
+// #include <vector>
 
-constexpr int taichi_max_num_args = 4;
+constexpr int taichi_max_num_indices = 4;
+constexpr int taichi_max_num_args = 8;
 
 using ContextArgType = long long;
 
@@ -24,9 +26,8 @@ void *context_get_buffer(Context *context) {
 
 int printf(const char *, ...);
 
-int test(Context context) {
+void ___test___() {
   printf("");
-  return 0;
 }
 
 using float32 = float;
@@ -48,6 +49,78 @@ float32 atomic_add_cpu_f32(volatile float32 *dest, float32 inc) {
 #endif
   return old_val;
 }
+
+struct NodeRef {
+  int indices[taichi_max_num_indices];
+  int loop_bounds[2];
+  void *node;
+};
+
+int *noderef_get_index_ptr(NodeRef *noderef, int i) {
+  return &noderef->indices[i];
 }
 
-// clang-7 -S context.cpp -o context.ll -emit-llvm -std=c++17 -O3
+int *noderef_get_loop_bound_ptr(NodeRef *noderef, int i) {
+  return &noderef->loop_bounds[i];
+}
+
+void **noderef_get_node_ptr_ptr(NodeRef *noderef) {
+  return &noderef->node;
+}
+
+#define STRUCT_FIELD(S, F)                              \
+  extern "C" decltype(S::F) S##_get_##F(S *s) {         \
+    return s->F;                                        \
+  }                                                     \
+  extern "C" void S##_set_##F(S *s, decltype(S::F) f) { \
+    s->F = f;                                           \
+  }
+
+  /*
+#define STRUCT_FUNCTION(S, F)
+extern "C" decltype()
+   */
+
+// These structures are accessible by both the LLVM backend and this C++ runtime
+// file here (for building complex runtime functions)
+
+struct DenseStruct {
+  void *node;
+  bool bitmasked;
+  int morton_dim;
+  int forking_factor;  // n
+
+  void activate(int i) {
+
+  }
+};
+
+STRUCT_FIELD(DenseStruct, node);
+STRUCT_FIELD(DenseStruct, bitmasked);
+STRUCT_FIELD(DenseStruct, morton_dim);
+// STRUCT_FUNCTION(DenseStruct, activate, int);
+
+void struct_dense_activate(void *) {
+}
+
+/*
+void *create_noderef_vector() {
+  return new std::vector<NodeRef>;
+}
+
+void destory_noderef_vector(void *vec) {
+  auto ptr = (std::vector<NodeRef> *)vec;
+  delete ptr;
+}
+
+int noderef_vector_size(void *vec) {
+  auto ptr = (std::vector<NodeRef> *)vec;
+  return ptr->size();
+}
+
+NodeRef *get_noderef_vector_elem(void *vec, int i) {
+  auto ptr = (std::vector<NodeRef> *)vec;
+  return &(*ptr)[i];
+}
+*/
+}

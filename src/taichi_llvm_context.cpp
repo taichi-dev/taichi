@@ -20,6 +20,7 @@
 #include "llvm/Transforms/Utils.h"
 #include "llvm/Bitcode/BitcodeReader.h"
 #include <llvm/Linker/Linker.h>
+#include <llvm/Demangle/Demangle.h>
 
 #include "util.h"
 #include "taichi_llvm_context.h"
@@ -139,9 +140,16 @@ std::string TaichiLLVMContext::type_name(llvm::Type *type) {
   return rso.str();
 }
 
+std::size_t TaichiLLVMContext::get_type_size(llvm::Type *type) {
+  return jit->get_type_size(type);
+}
+
 template llvm::Value *TaichiLLVMContext::get_constant(float32 t);
+template llvm::Value *TaichiLLVMContext::get_constant(float64 t);
+
 template llvm::Value *TaichiLLVMContext::get_constant(int32 t);
 template llvm::Value *TaichiLLVMContext::get_constant(uint32 t);
 template llvm::Value *TaichiLLVMContext::get_constant(int64 t);
+template llvm::Value *TaichiLLVMContext::get_constant(uint64 t);
 
 TLANG_NAMESPACE_END

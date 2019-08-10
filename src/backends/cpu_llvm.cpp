@@ -775,8 +775,27 @@ class CPULLVMCodeGen : public IRVisitor {
     if (snode->type == SNodeType::root) {
       stmt->value = builder.CreateGEP(parent, stmt->input_index->value);
     } else {
+      TC_ASSERT(snode->type == SNodeType::dense);
+      /*
       stmt->value = builder.CreateGEP(
           parent, {tlctx->get_constant(0), stmt->input_index->value});
+          */
+
+      // allocate the struct
+      auto s = builder.CreateAlloca(get_runtime_type("DenseStruct"));
+
+      builder.CreateCall(
+          get_runtime_function("DenseStruct_set_node"),
+          {s, builder.CreateBitCast(stmt->input_snode->value,
+                                    llvm::Type::getInt8PtrTy(*llvm_context))});
+      auto element_ty = stmt->snode->llvm_type->getArrayElementType();
+      std::size_t element_size = tlctx->get_type_size(element_ty);
+      builder.CreateCall(get_runtime_function("DenseStruct_set_element_size"),
+                         {s, tlctx->get_constant((uint64)element_size)});
+      auto elem = builder.CreateCall(get_runtime_function("DenseStruct_lookup"),
+                                     {s, stmt->input_index->value});
+      stmt->value =
+          builder.CreateBitCast(elem, PointerType::get(element_ty, 0));
     }
   }
 

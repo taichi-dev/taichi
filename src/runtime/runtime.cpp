@@ -76,31 +76,36 @@ void **noderef_get_node_ptr_ptr(NodeRef *noderef) {
     s->F = f;                                           \
   }
 
-  /*
+/*
 #define STRUCT_FUNCTION(S, F)
 extern "C" decltype()
-   */
+ */
 
 // These structures are accessible by both the LLVM backend and this C++ runtime
-// file here (for building complex runtime functions)
+// file here (for building complex runtime functions in C++)
 
 struct DenseStruct {
   void *node;
   bool bitmasked;
   int morton_dim;
+  std::size_t element_size;
   int forking_factor;  // n
-
-  void activate(int i) {
-
-  }
 };
 
-STRUCT_FIELD(DenseStruct, node);
-STRUCT_FIELD(DenseStruct, bitmasked);
-STRUCT_FIELD(DenseStruct, morton_dim);
+STRUCT_FIELD(DenseStruct, node)
+STRUCT_FIELD(DenseStruct, bitmasked)
+STRUCT_FIELD(DenseStruct, morton_dim)
+STRUCT_FIELD(DenseStruct, element_size)
+STRUCT_FIELD(DenseStruct, forking_factor)
+
+// STRUCT_FUNCTION(DenseStruct, activate, int);
 // STRUCT_FUNCTION(DenseStruct, activate, int);
 
-void struct_dense_activate(void *) {
+void DenseStruct_activate(DenseStruct *s, int i) {
+}
+
+void *DenseStruct_lookup(DenseStruct *s, int i) {
+  return (char *)s->node + s->element_size * i;
 }
 
 /*

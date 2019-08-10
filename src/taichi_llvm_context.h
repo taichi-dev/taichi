@@ -36,6 +36,7 @@ class TaichiLLVMContext {
 
   std::unique_ptr<llvm::Module> clone_runtime_module();
 
+  std::size_t get_type_size(llvm::Type *type);
 };
 
 TLANG_NAMESPACE_END

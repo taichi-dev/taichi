@@ -113,6 +113,11 @@ class TaichiLLVMJIT {
 
     return TSM;
   }
+
+ public:
+  std::size_t get_type_size(llvm::Type *type) {
+    return DL.getTypeAllocSize(type);
+  }
 };
 
 inline void *jit_lookup_name(TaichiLLVMJIT *jit, const std::string &name) {
